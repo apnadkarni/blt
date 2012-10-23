@@ -1,0 +1,90 @@
+ENABLE_SYMBOLS=1
+ENABLE_SHARED=1
+ENABLE_STUBS=0
+
+WITH_JPG=0
+
+SRC =	 	H:/src
+JPG_DIR	=	$(SRC)/libs/jpeg-6b
+
+WITH_PNG=0
+PNG_DIR	=	$(SRC)/libs/libpng-1.2.15
+ZLIB_DIR =	$(SRC)/libs/zlib-1.2.3
+
+WITH_TIF=0
+WITH_EXPAT =		0
+WITH_MYSQL =		0
+
+
+#v1 = 8.4
+#v2 = 84
+#v3 = 8.4.0
+
+v1 = 8.4
+v2 = 84
+v3 = 8.4.14
+
+#v1 = 8.2
+#v2 = 82
+#v3 = 8.2.3
+
+#v1 = 8.1
+#v2 = 81
+#v3 = 8.1.1
+
+#v1 = 8.0
+#v2 = 80
+#v3 = 8.0.5
+
+#Use Independent JPEG Group (IJG) library or Intel JPEG Library (IJL)
+# 0 = None.
+# 1 = IJG
+# 2 = IJL
+
+TCLDIR        =	$(SRC)/tcl/tcl$(v3)
+TKDIR         =	$(SRC)/tcl/tk$(v3)
+
+ifeq ($(WITH_JPG),1)
+JPG_LIB_SPEC =	$(JPG_DIR)/libjpeg.lib
+JPG_INC_SPEC =	-I$(JPG_DIR)
+JPG_DEFINES =	-DHAVE_LIBJPG
+endif
+
+ifeq ($(WITH_PNG),1)
+PNG_LIB_SPEC =	$(PNG_DIR)/libpng.lib $(ZLIB_DIR)/zlib.lib
+PNG_INC_SPEC =	-I$(PNG_DIR) -I$(ZLIB_DIR)
+PNG_DEFINES =	-DHAVE_LIBPNG
+endif
+
+ifeq ($(WITH_EXPAT),1)
+EXPAT_DIR =		C:/Expat-2.0.0
+EXPAT_INC_SPEC =	-I$(EXPAT_DIR)/Source/lib
+EXPAT_LIB_SPEC =	$(EXPAT_DIR)/Libs/libexpat.lib
+endif
+
+# ------------------------------------------------------------------------
+#       You shouldn't need to edit anything beyond this point
+# ------------------------------------------------------------------------
+
+BLT_MAJOR_VERSION = 	3
+BLT_MINOR_VERSION = 	0
+BLT_VERSION =		3.0
+
+prefix =		C:/Program\ Files/Tcl
+exec_prefix =		$(prefix)
+includedir =		$(prefix)/include
+bindir =		$(prefix)/bin
+libdir =		$(prefix)/lib
+scriptdir =		$(libdir)/blt$(BLT_VERSION)
+BLT_LIBRARY =		$(libdir)/blt$(BLT_VERSION)
+TCLLIBPATH =		$(libdir)/tcl$(v1)
+
+AUX_LIBS = 
+SHLIB_SUFFIX =		.dll
+
+INSTALL =		install -m 0755
+INSTALL_DATA =		install -m 0444
+RANLIB =		:
+SHELL =			bash.exe
+RM =			rm -f
+

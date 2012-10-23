@@ -1,0 +1,1841 @@
+
+define([AC_CACHE_LOAD], )dnl
+define([AC_CACHE_SAVE], )dnl
+AC_INIT(src/bltInitCmd.c)
+AC_CONFIG_HEADER(src/config.h)
+AC_CONFIG_AUX_DIR(cf)
+AC_PREREQ(2.0)	
+
+# -----------------------------------------------------------------------
+#
+# 	Handle command line options
+#
+#		--with-tcl=DIR
+#		--with-tk=DIR
+#		--with-cflags=flags	This is probably for me only
+#		--with-gnu-ld 
+#
+# -----------------------------------------------------------------------
+
+INC_SPECS=""
+loader_run_path=""
+DEFINES=""
+
+
+blt_enable_symbols="no"
+blt_enable_shared="yes"
+blt_with_expat_include_dir="yes"
+blt_with_expat_lib_dir="yes"
+blt_with_ft2_include_dir="yes"
+blt_with_ft2_lib_dir="yes"
+blt_with_gnu_ld="no"
+blt_with_jpeg_include_dir="yes"
+blt_with_jpeg_lib_dir="yes"
+blt_with_mysql_include_dir="yes"
+blt_with_mysql_lib_dir="yes"
+blt_with_png_include_dir="yes"
+blt_with_png_lib_dir="yes"
+blt_with_z_lib_dir="yes"
+blt_with_scriptdir=""
+blt_with_tcl=""
+blt_with_tcl_include_dir="yes"
+blt_with_tcl_lib_dir="yes"
+blt_with_tiff_include_dir="yes"
+blt_with_tiff_lib_dir="yes"
+blt_with_tk=""
+blt_with_tk_include_dir="yes"
+blt_with_tk_lib_dir="yes"
+blt_with_xft_include_dir="yes"
+blt_with_xft_lib_dir="yes"
+blt_with_xpm_include_dir="yes"
+blt_with_xpm_lib_dir="yes"
+blt_with_xrandr_include_dir="yes"
+blt_with_xrandr_lib_dir="yes"
+blt_with_libssh2_include_dir="yes"
+blt_with_libssh2_lib_dir="yes"
+blt_with_openssl_lib_dir="yes"
+
+AC_ARG_WITH(blt,        
+  [AS_HELP_STRING([--with-blt=DIR],[install BLT scripts in DIR])],
+  [blt_with_scriptdir=$withval]) 
+AC_ARG_WITH(tcl,        
+  [AS_HELP_STRING([--with-tcl=DIR],[find tclConfig.sh in DIR])],
+  [ blt_with_tcl=$withval])
+AC_ARG_WITH(tk,         
+  [AS_HELP_STRING([--with-tk=DIR],[find tkConfig.sh in DIR])],
+  [ blt_with_tk=$withval])
+AC_ARG_WITH(tclincdir,   
+  [AS_HELP_STRING([--with-tclincdir=DIR],[find Tcl includes in DIR])],
+  [blt_with_tcl_include_dir=$withval])
+AC_ARG_WITH(tkincdir,    
+  [AS_HELP_STRING([--with-tkincdir=DIR],[find Tk includes in DIR])],
+  [blt_with_tk_include_dir=$withval])
+AC_ARG_WITH(tcllibdir,    
+  [AS_HELP_STRING([--with-tcllibdir=DIR],[find Tcl libraries in DIR])],
+  [blt_with_tcl_lib_dir=$withval])
+AC_ARG_WITH(tklibdir,
+  [AS_HELP_STRING([--with-tklibdir=DIR],[find Tk libraries in DIR])],
+  [blt_with_tk_lib_dir=$withval])
+AC_ARG_WITH(jpegincdir,       
+  [AS_HELP_STRING([--with-jpegincdir=DIR],[find JPEG headers in DIR])],
+  [unset ac_cv_header_jpeglib_h; blt_with_jpeg_include_dir=$withval])
+AC_ARG_WITH(jpeglibdir,       
+  [AS_HELP_STRING([--with-jpeglibdir=DIR],[find JPEG libraries in DIR])],
+  [unset ac_cv_lib_jpeg ac_cv_lib_jpeg_jpeg_read_header
+   blt_with_jpeg_lib_dir=$withval])
+
+# --with-tiffincdir
+AC_ARG_WITH(tiffincdir,       
+  [AS_HELP_STRING([--with-tiffincdir=DIR],[find TIFF headers in DIR])],
+  [blt_with_tiff_include_dir=$withval])
+# --with-tifflibdir
+AC_ARG_WITH(tifflibdir,       
+  [AS_HELP_STRING([--with-tifflibdir=DIR],[find TIFF libraries in DIR])],
+  [blt_with_tiff_lib_dir=$withval])
+# --with-pngincdir
+AC_ARG_WITH(pngincdir,        
+  [AS_HELP_STRING([--with-pngincdir=DIR],[find PNG headers in DIR])],
+  [blt_with_png_include_dir=$withval])
+# --with-pnglibdir
+AC_ARG_WITH(pnglibdir,        
+  [AS_HELP_STRING([--with-pnglibdir=DIR],[find PNG libraries in DIR])], 
+  [blt_with_png_lib_dir=$withval])
+# --with-zlibdir
+AC_ARG_WITH(zlibdir,        
+  [AS_HELP_STRING([--with-zlibdir=DIR],[find zlib libraries in DIR])], 
+  [blt_with_z_lib_dir=$withval]) 
+# --with-xpmincdir
+AC_ARG_WITH(xpmincdir,        
+  [AS_HELP_STRING([--with-xpmincdir=DIR],[find XPM headers in DIR])],
+  [blt_with_xpm_include_dir=$withval])
+# --with-xpmlibdir
+AC_ARG_WITH(xpmlibdir,        
+  [AS_HELP_STRING([--with-xpmlibdir=DIR],[find XPM libraries in DIR])],
+  [blt_with_xpm_lib_dir=$withval])
+# --with-freetype2incdir
+AC_ARG_WITH(freetype2incdir,  
+  [AS_HELP_STRING([--with-freetype2incdir=DIR],[find freetype2 headers in DIR])],
+  [blt_with_ft2_include_dir=$withval])
+# --with-freetype2libdir
+AC_ARG_WITH(freetype2libdir,  
+  [AS_HELP_STRING([--with-freetype2libdir=DIR],[find freetype2 libraries in DIR])], 
+  [blt_with_ft2_lib_dir=$withval])
+# --with-xftincdir
+AC_ARG_WITH(xftincdir,        
+  [AS_HELP_STRING([--with-xftincdir=DIR],[find Xft headers in DIR])],
+  [blt_with_xft_include_dir=$withval])
+# --with-xftlibdir
+AC_ARG_WITH(xftlibdir,  
+  [AS_HELP_STRING([--with-xftlibdir=DIR],[find Xft libraries in DIR])],
+  [blt_with_xft_lib_dir=$withval]) 
+# --with-xrandrincdir
+AC_ARG_WITH(xrandrincdir,        
+  [AS_HELP_STRING([--with-xrandrincdir=DIR],[find Xrandr headers in DIR])],
+  [blt_with_xrandr_include_dir=$withval])
+# --with-xrandrlibdir
+AC_ARG_WITH(xrandrlibdir,  
+  [AS_HELP_STRING([--with-xrandrlibdir=DIR],[find Xrandr libraries in DIR])],
+  [blt_with_xrandr_lib_dir=$withval]) 
+# --with-expatincdir
+AC_ARG_WITH(expatincdir,      
+  [AS_HELP_STRING([--with-expatincdir=DIR],[find expat headers in DIR])],
+  [blt_with_expat_include_dir=$withval])
+# --with-expatlibdir
+AC_ARG_WITH(expatlibdir,      
+  [AS_HELP_STRING([--with-expatlibdir=DIR],[find expat libraries in DIR])],
+  [blt_with_expat_lib_dir=$withval])
+# --with-mysqlincdir
+AC_ARG_WITH(mysqlincdir,      
+  [AS_HELP_STRING([--with-mysqlincdir=DIR],[find mysql headers in DIR])],
+  [blt_with_mysql_include_dir=$withval])
+# --with-mysqllibdir
+AC_ARG_WITH(mysqllibdir,      
+  [AS_HELP_STRING([--with-mysqllibdir=DIR],[find mysql libraries in DIR])],
+  [blt_with_mysql_lib_dir=$withval])
+# --with-libssh2incdir
+AC_ARG_WITH(libssh2incdir,      
+  [AS_HELP_STRING([--with-libssh2incdir=DIR],[find libssh2 headers in DIR])],
+  [blt_with_libssh2_include_dir=$withval])
+# --with-libssh2libdir
+AC_ARG_WITH(libssh2libdir,      
+  [AS_HELP_STRING([--with-libssh2libdir=DIR],[find libssh2 libraries in DIR])],
+  [blt_with_libssh2_lib_dir=$withval])
+# --with-openssllibdir
+AC_ARG_WITH(openssllibdir,      
+  [AS_HELP_STRING([--with-openssllibdir=DIR],[find openssl libraries in DIR])],
+  [blt_with_openssl_lib_dir=$withval])
+
+AC_ARG_WITH(gnu_ld,     
+  [AS_HELP_STRING([--with-gnu-ld], [use GNU linker])],
+  [blt_with_gnu_ld="yes"])
+
+AC_ARG_ENABLE(shared,  
+  [AS_HELP_STRING([--enable-shared],[created shared libraries])],
+  [blt_enable_shared=$enableval])
+
+AC_ARG_ENABLE(symbols,  
+  [AS_HELP_STRING([--enable-symbols],[compile with debugging symbols])],
+  [blt_enable_symbols=$enableval])
+AC_ARG_ENABLE(stubs,    
+  [AS_HELP_STRING([--enable-stubs],[compile with stubbed version of Tcl library])],
+  [blt_enable_stubs=$enableval])
+
+EXPAT_INC_SPEC=""
+EXPAT_LIB_SPEC=""
+FT2_INC_SPEC=""
+FT2_LIB_SPEC=""
+FTCFG_LIB_SPEC=""
+JPG_INC_SPEC=""
+JPG_LIB_SPEC=""
+MYSQL_INC_SPEC=""
+MYSQL_LIB_SPEC=""
+PNG_INC_SPEC=""
+PNG_LIB_SPEC=""
+TCL_INC_SPEC=""
+TCL_LIB_SPEC=""
+TIF_INC_SPEC=""
+TIF_LIB_SPEC=""
+TK_INC_SPEC=""
+TK_LIB_SPEC=""
+XAU_LIB_SPEC=""
+XDMCP_LIB_SPEC=""
+XFT_INC_SPEC=""
+XFT_LIB_SPEC=""
+XPM_INC_SPEC=""
+XPM_LIB_SPEC=""
+XRANDR_INC_SPEC=""
+XRANDR_LIB_SPEC=""
+XRENDER_LIB_SPEC=""
+Z_LIB_SPEC=""
+
+AC_CANONICAL_TARGET
+AC_PREFIX_PROGRAM(wish)
+
+# -----------------------------------------------------------------------
+# 	Set a variable containing current working directory if /bin/sh
+#	doesn't do it already.
+# -----------------------------------------------------------------------
+
+PWD=`pwd`
+
+# -----------------------------------------------------------------------
+# Programs:	Check for existence of ranlib and install programs
+# -----------------------------------------------------------------------
+# -----------------------------------------------------------------------
+# 	C compiler and debugging flags
+# -----------------------------------------------------------------------
+
+
+AC_PROG_CC
+AC_PROG_CPP
+
+if test "x${GCC}" != "x" ; then
+  blt_have_gcc="yes"
+fi
+
+case $host_os in
+  *cygwin* | *mingw*)
+    blt_platform_win32="yes"
+    blt_platform_macosx="no"
+    AC_MSG_CHECKING([if using MinGW compiler])
+    AC_TRY_COMPILE([], [
+#ifndef __MINGW32__
+    _cc_is_not_mingw_
+#endif
+], [blt_have_mingw=yes], [blt_have_mingw=no])
+    AC_MSG_RESULT([$blt_have_mingw])
+    ;;
+  *darwin*)
+    blt_platform_win32="no"
+    blt_platform_macosx="yes"
+    ;;
+  * )		
+    blt_platform_win32="no"
+    blt_platform_macosx="no"
+    ;;
+esac
+
+AC_PROG_CPP
+if test "x${GCC}" != "x" ; then
+  blt_have_gcc="yes"
+else
+  AC_MSG_CHECKING([if C compiler is really gcc])
+    AC_TRY_COMPILE([], [
+#ifndef __GNUC__
+    _cc_is_not_gcc_
+#endif
+], [blt_have_gcc=yes], [blt_have_gcc=no])
+  AC_MSG_RESULT([$blt_have_gcc])
+fi
+
+AC_PROG_AWK
+AC_PROG_INSTALL
+AC_PROG_RANLIB
+AC_PROG_LN_S
+AC_PROG_MKDIR_P
+AC_EGREP_CPP
+	
+#
+# CFLAGS search order
+#
+#  1. command line (--with-cflags)
+#  2. cached variable ($blt_cv_prog_cflags)
+#  3. set to "-O3" if using gcc ($blt_have_gcc)
+#  4. otherwise, default to "-O"
+#
+
+# Setup default flags for the compiler.
+case $target:$blt_have_gcc:$blt_enable_symbols in
+  *-solaris2*:no:yes)
+    CFLAGS="-g -xs -O"
+    ;;
+  *:yes:no)
+    CFLAGS="-O3"
+    ;;
+  *:yes:yes)
+    CFLAGS="-g -O3"
+    ;;
+  *:no:no) 
+    CFLAGS="-O"
+    ;;
+  *)
+    CFLAGS="-g -O3"
+    ;;
+esac
+
+GCCFLAGS=""
+if test "${blt_have_gcc}" = "yes" ; then
+  GCCFLAGS="-Wall -Wpointer-arith -Wuninitialized -Wmissing-declarations -Wwrite-strings -Wmissing-prototypes -Wundef"
+fi
+
+SO_PREFIX=""
+SO_EXT=""
+IMPLIB_SUFFIX=""
+IMPLIB_EXT=""
+EXEC_EXT=""
+
+case $target in
+  *-*-cygwin*|*-*-mingw*)
+    BLT_PLATFORM="win"
+    if test "${blt_have_mingw}" = "yes" ; then
+      SO_PREFIX=""
+      SO_EXT=".dll"
+      IMPLIB_EXT=".lib"
+      IMPLIB_PREFIX=""
+    else 
+      SO_PREFIX="cyg"
+      SO_EXT=".dll"
+      IMPLIB_EXT=".dll.a"
+      IMPLIB_PREFIX="lib"
+    fi
+    EXEC_EXT=".exe"
+    ;;
+  *-hpux*)
+    SO_EXT=".sl"
+    BLT_PLATFORM="unix" 
+    SO_PREFIX="lib"
+    IMPLIB_SUFFIX=""
+    IMPLIB_EXT=""
+    ;;	
+  *-*-darwin*)
+    BLT_PLATFORM="macosx"
+    SO_EXT=".dylib"
+    SO_PREFIX="lib"
+    IMPLIB_SUFFIX=""
+    IMPLIB_EXT=""
+    ;;
+  *)
+    BLT_PLATFORM="unix" 
+    SO_PREFIX="lib"
+    SO_EXT=".so"
+    IMPLIB_SUFFIX=""
+    IMPLIB_EXT=""
+    ;;
+esac
+
+build_shared="yes"
+if test $blt_enable_symbols = "yes" ; then
+  LIB_SUFFIX=g
+fi
+
+# -----------------------------------------------------------------------
+# Hardware characteristics:	
+# -----------------------------------------------------------------------
+
+AC_C_BIGENDIAN
+AC_CHECK_SIZEOF(int, 4)
+AC_CHECK_SIZEOF(long, 4)
+AC_CHECK_SIZEOF(long long, 8)
+AC_CHECK_SIZEOF(void *, 4)
+AC_CHECK_SIZEOF(float, 4)
+
+# Save the values as shell variables so that we can substitute them
+# into bltHash.h for situtations where there's no bltInt.h.
+
+AC_SUBST(SIZEOF_INT, ${ac_cv_sizeof_int})
+AC_SUBST(SIZEOF_LONG, ${ac_cv_sizeof_long})
+AC_SUBST(SIZEOF_LONG_LONG, ${ac_cv_sizeof_long_long})
+AC_SUBST(SIZEOF_VOID_P, ${ac_cv_sizeof_void_p})
+AC_SUBST(SIZEOF_FLOAT, ${ac_cv_sizeof_float})
+
+
+# -----------------------------------------------------------------------
+# Libraries:	
+# -----------------------------------------------------------------------
+AC_CHECK_LIB(m, main)
+AC_CHECK_LIB(nsl, main)
+AC_CHECK_LIB(socket, main)
+AC_CHECK_LIB(dld, shl_load, [blt_have_dld=yes], [blt_have_dld=no])
+
+AC_PATH_X
+ 
+if test "x${x_libraries}" != "x" ; then 
+  xtop=`dirname ${x_libraries}`
+  PATH=$xtop/bin:$PATH
+fi
+
+# -----------------------------------------------------------------------
+# Headers:	
+# -----------------------------------------------------------------------
+AC_HEADER_STDC
+AC_HEADER_SYS_WAIT
+AC_HEADER_TIME
+
+AC_CHECK_HEADERS(inttypes.h)
+if test "${ac_cv_header_inttypes_h}" = "yes" ; then 
+  AC_SUBST(HAVE_INTTYPES_H, ["#define HAVE_INTTYPES_H 1"])
+else
+  AC_SUBST(HAVE_INTTYPES_H, ["/* can't find inttypes.h */"])
+fi	
+AC_CHECK_HEADERS(limits.h sys/param.h)
+AC_CHECK_HEADERS(sys/types.h)
+AC_CHECK_HEADERS(fcntl.h signal.h time.h)
+AC_CHECK_HEADERS(string.h ctype.h)
+AC_CHECK_HEADERS(errno.h float.h math.h ieeefp.h)
+AC_CHECK_HEADERS(sys/time.h waitflags.h sys/wait.h)
+AC_CHECK_HEADERS(malloc.h memory.h)
+AC_CHECK_HEADERS(setjmp.h)
+AC_CHECK_HEADERS(stdlib.h stddef.h unistd.h)
+AC_CHECK_HEADERS(stropts.h termios.h)
+AC_CHECK_HEADERS(winsock2.h)
+AC_CHECK_HEADERS(sys/socket.h)
+AC_CHECK_HEADERS(netinet/in.h)
+AC_CHECK_HEADERS(arpa/inet.h)
+
+AC_CHECK_FUNCS(posix_openpt ptsname getpt grantpt unlockpt isastream setsid)
+AC_CHECK_FUNCS(tcflush openpty)
+AC_CHECK_FUNCS(open_controlling_pty)
+
+# FREETYPE2 header
+if test "${blt_with_ft2_include_dir}" != "no" ; then
+  ft2_inc_spec=`freetype-config --cflags`
+  save_CPPFLAGS=$CPPFLAGS
+  CPPFLAGS="${ft2_inc_spec}"
+  AC_CHECK_HEADERS(ft2build.h, FT2_INC_SPEC=${ft2_inc_spec}, FT2_INC_SPEC="")
+  CPPFLAGS=${save_CPPFLAGS}
+
+  # Xft header
+  if test "${blt_with_xft_include_dir}" != "no" ; then
+    BLT_CHECK_HEADER(XFT, X11/Xft/Xft.h, $blt_with_xft_include_dir, ${ft2_inc_spec})
+  fi
+fi
+
+# LIBSSH2 header
+if test "${blt_with_libssh2_include_dir}" != "no" ; then
+  BLT_CHECK_HEADER(LIBSSH2, libssh2.h, $blt_with_libssh2_include_dir)
+fi
+
+# EXPAT header
+if test "${blt_with_expat_include_dir}" != "no" ; then
+  BLT_CHECK_HEADER(EXPAT, expat.h, $blt_with_expat_include_dir)
+fi
+
+# MYSQL header
+if test "${blt_with_mysql_include_dir}" != "no" ; then
+  BLT_CHECK_HEADER(MYSQL, mysql/mysql.h, $blt_with_mysql_include_dir)
+fi
+
+# XPM header
+if test "${blt_with_xpm_include_dir}" != "no" ; then
+  BLT_CHECK_HEADER(XPM, X11/xpm.h, $blt_with_xpm_include_dir)
+fi
+
+# JPEG header
+if test "${blt_with_jpeg_include_dir}" != "no" ; then
+  BLT_CHECK_HEADER(JPG, jpeglib.h, $blt_with_jpeg_include_dir)
+fi
+
+# TIFF header
+if test "${blt_with_tiff_include_dir}" != "no" ; then
+  BLT_CHECK_HEADER(TIF, tiff.h, $blt_with_tiff_include_dir)
+fi
+
+# PNG header
+if test "${blt_with_png_include_dir}" != "no" ; then
+  BLT_CHECK_HEADER(PNG, png.h, $blt_with_png_include_dir)
+fi
+
+# XRANDR header
+if test "${blt_with_xrandr_include_dir}" != "no" ; then
+  BLT_CHECK_HEADER(XRANDR, X11/extensions/randr.h, $blt_with_xrandr_include_dir)
+  BLT_CHECK_HEADER(XRANDR, X11/extensions/Xrandr.h, $blt_with_xrandr_include_dir)
+fi
+
+# -----------------------------------------------------------------------
+# Types:
+# -----------------------------------------------------------------------
+AC_TYPE_SIZE_T
+AC_TYPE_PID_T
+
+AC_MSG_CHECKING([whether union wait is defined correctly])
+AC_CACHE_VAL(blt_cv_struct_wait_works,
+    AC_TRY_COMPILE([#include <sys/types.h> 
+#include <sys/wait.h>], [
+    /* 
+     *	Check whether <sys/wait.h> defines the type "union wait" 
+     *	correctly.  It's needed because of weirdness in HP-UX where 
+     *	"union wait" is defined in both the BSD and SYS-V  environments.  
+     *	Checking the usability of WIFEXITED seems to do	the trick.
+     */
+    union wait x;
+    WIFEXITED(x);	/* Generates compiler error if WIFEXITED
+			 * uses an int. */
+], 
+    	[blt_cv_struct_wait_works="yes"], 
+	[blt_cv_struct_wait_works="no"]))
+
+if test "${blt_cv_struct_wait_works}" = "yes"; then
+    AC_DEFINE([HAVE_UNION_WAIT], 1, [Define if 'wait' is a union.])
+fi
+AC_MSG_RESULT([$blt_cv_struct_wait_works])
+
+
+# -----------------------------------------------------------------------
+#
+# Library Functions: 	Check for  drand48, and srand48.
+#
+# -----------------------------------------------------------------------
+
+AC_HAVE_FUNCS(strtolower strcasecmp strncasecmp drand48 srand48 finite isnan)
+
+# For HPUX it's a little more complicated to search for isfinite
+AC_MSG_CHECKING([for isfinite])
+AC_CACHE_VAL(blt_cv_have_isfinite,
+    AC_TRY_LINK([#include <math.h>], [
+double x = 1.0;
+if (isfinite(x)) {
+   return 0;
+}
+], [blt_cv_have_isfinite="yes"], [blt_cv_have_isfinite="no"]))
+
+if test "${blt_cv_have_isfinite}" = "yes"; then
+    AC_DEFINE([HAVE_ISFINITE], 1, [Define if we have a working 'isinfinite'.])
+fi
+AC_MSG_RESULT([$blt_cv_have_isfinite])
+
+# -----------------------------------------------------------------------
+#
+# 	Check the smallest value such that 1.0 + x != 1.0.
+#	For ANSI compilers this is DBL_EPSILON in float.h
+#
+#--------------------------------------------------------------------
+
+AC_MSG_CHECKING([whether DBL_EPSILON is defined in float.h])
+AC_CACHE_VAL(blt_cv_found_dbl_epsilon,
+    AC_TRY_COMPILE([
+#ifdef HAVE_FLOAT_H
+#include <float.h>
+#endif
+], [
+#ifdef DBL_EPSILON
+ exit(0);
+#else
+ exit(1);
+#endif
+], blt_cv_found_dbl_epsilon=yes, blt_cv_found_dbl_epsilon=no) 
+)
+AC_MSG_RESULT([${blt_cv_found_dbl_epsilon}])
+
+if test "${blt_cv_found_dbl_epsilon}" = "no" ; then
+  AC_CACHE_VAL([blt_cv_dbl_epsilon], 
+  old_flags="$CFLAGS"
+  CFLAGS="-lm"
+  AC_MSG_CHECKING([whether DBL_EPSILON can be computed.])
+  BLT_RUN_WITH_OUTPUT([blt_cv_dbl_epsilon], [
+main () {
+    double e, u;
+    /* 
+     *	Check the smallest value such that 1.0 + x != 1.0.
+     *	For ANSI compilers this is DBL_EPSILON in float.h
+     */
+    u = 1.0;
+    for(;;) {
+       u *= 0.5;
+       if ((1.0 + u) == 1.0) {
+	   break;
+       }
+    }
+    e = u * 2.0;
+    printf("%.17e\n", e);
+    exit(0);
+}])
+    CFLAGS="$old_flags"
+    AC_DEFINE_UNQUOTED([BLT_DBL_EPSILON], ${blt_cv_dbl_epsilon}, 
+	[Define the smallest machine value DBL_EPILSON.])
+    AC_MSG_RESULT([${blt_cv_dbl_epsilon}])
+)
+fi
+
+
+AC_CHECK_DECLS(drand48)
+AC_CHECK_DECLS(srand48)
+AC_CHECK_DECLS(j1,,,[
+#ifdef HAVE_MATH_H
+#include <math.h>
+#endif
+])
+AC_CHECK_DECLS(hypot,,,[
+#ifdef HAVE_MATH_H
+#include <math.h>
+#endif
+])
+AC_CHECK_DECLS(isnan,,,[
+#ifdef HAVE_MATH_H
+#include <math.h>
+#endif
+])
+AC_CHECK_DECLS(isfinite,,,[
+#ifdef HAVE_MATH_H
+#include <math.h>
+#endif
+])
+AC_CHECK_DECLS(finite,,,[
+#ifdef HAVE_MATH_H
+#include <math.h>
+#endif
+])
+AC_CHECK_DECLS(free)
+AC_CHECK_DECLS(snprintf)
+AC_CHECK_DECLS(vsnprintf)
+AC_CHECK_DECLS(strcasecmp)
+AC_CHECK_DECLS(strncasecmp)
+AC_CHECK_DECLS(strtolower)
+
+# -----------------------------------------------------------------------
+#
+# System services: 	X, Tcl, Tk
+#
+# -----------------------------------------------------------------------
+
+if test "x${x_libraries}" = "x" ; then
+  X11_LIB_SPEC="-lX11"
+else
+  X11_LIB_SPEC="-L${x_libraries} -lX11"
+fi
+if test "x${x_includes}" = "x" ; then
+  X11_INC_SPEC=""
+else
+  X11_INC_SPEC="-I${x_includes}"
+fi
+
+case "$target_cpu" in
+  [i[3-9]86|x86*|k5|k6|k6-2|k6-3|pentium*|athlon*])
+    AC_DEFINE([HAVE_X86], 1, [Define if we're compiling for an X86.])
+    ;;
+  *)
+    ;;
+esac
+
+# -----------------------------------------------------------------------
+#
+#	Find the Tcl build configuration file "tclConfig.sh"
+#
+# -----------------------------------------------------------------------
+
+AC_MSG_CHECKING([for tclConfig.sh])
+tcl_config_sh=""
+if test "x$blt_with_tcl" != "x" ; then
+
+  # Verify that a tclConfig.sh file exists in the directory specified 
+  # by --with-tcl. 
+
+  for dir in \
+   $blt_with_tcl 
+  do
+    if test -r "$dir/tclConfig.sh" ; then
+      tcl_config_sh="$dir/tclConfig.sh"
+      break
+    elif test -r "$dir/lib/tclConfig.sh" ; then
+      tcl_config_sh="$dir/lib/tclConfig.sh"
+      break
+    elif test -r "$dir/$BLT_PLATFORM/tclConfig.sh" ; then
+      tcl_config_sh="$dir/$BLT_PLATFORM/tclConfig.sh"
+      break
+    fi
+  done
+elif test "${blt_with_tcl_include_dir}" = "yes" -a \
+	  "${blt_with_tcl_lib_dir}" = "yes" ; then 
+
+  # Otherwise, search for Tcl configuration file.  
+
+  #  1. Search previously named locations.
+
+  for dir in \
+   $prefix \
+   $exec_prefix \
+   $blt_cv_tcl_lib 
+  do
+    if test -r "$dir/tclConfig.sh" ; then
+      tcl_config_sh="$dir/tclConfig.sh"
+      break
+    elif test -r "$dir/lib/tclConfig.sh" ; then
+      tcl_config_sh="$dir/lib/tclConfig.sh"
+      break
+    elif test -r "$dir/$BLT_PLATFORM/tclConfig.sh" ; then
+      tcl_config_sh="$dir/$BLT_PLATFORM/tclConfig.sh"
+      break
+    fi
+  done
+
+  #  2. Search source directories.
+
+  if test "x$tcl_config_sh" = "x" ; then
+    for dir in \
+     `ls -dr ../tcl[[7-9]].[[0-9]]* 2>/dev/null` \
+     ../tcl \
+     `ls -dr ../../tcl[[7-9]].[[0-9]]* 2>/dev/null` \
+     ../../tcl \
+     `ls -dr ../../../tcl[[7-9]].[[0-9]]* 2>/dev/null` \
+     ../../../tcl 
+    do
+      if test -r "$dir/$BLT_PLATFORM/tclConfig.sh" ; then
+	tcl_config_sh="$dir/$BLT_PLATFORM/tclConfig.sh"
+	break
+      fi
+    done
+  fi
+
+  #  3. Search standard locations.
+
+  if test "x$tcl_config_sh" = "x" ; then
+    for dir in \
+     /usr/local \
+     /usr
+    do
+      if test -r "$dir/tclConfig.sh" ; then
+	tcl_config_sh="$dir/tclConfig.sh"
+	break
+      elif test -r "$dir/lib/tclConfig.sh" ; then
+	tcl_config_sh="$dir/lib/tclConfig.sh"
+	break
+      fi
+    done
+  fi
+fi
+
+AC_MSG_RESULT([${tcl_config_sh}])
+
+
+# -----------------------------------------------------------------------
+#
+#	Find the Tk build configuration file "tkConfig.sh"
+#
+# -----------------------------------------------------------------------
+
+AC_MSG_CHECKING([for tkConfig.sh])
+tk_config_sh=""
+if test "x$blt_with_tk" != "x" -o "x$blt_with_tcl" != "x"; then
+
+  # Verify that a tkConfig.sh file exists in the directory specified 
+  # by --with-tcl or --with-tk. 
+
+  for dir in \
+   $blt_with_tk \
+   $blt_with_tcl 
+  do
+    if test -r "$dir/tkConfig.sh" ; then
+      tk_config_sh="$dir/tkConfig.sh"
+      break
+    elif test -r "$dir/lib/tkConfig.sh" ; then
+      tk_config_sh="$dir/lib/tkConfig.sh"
+      break
+    elif test -r "$dir/$BLT_PLATFORM/tkConfig.sh" ; then
+      tk_config_sh="$dir/$BLT_PLATFORM/tkConfig.sh"
+      break
+    fi
+  done
+elif test "${blt_with_tk_include_dir}" = "yes" -a \
+	  "${blt_with_tk_lib_dir}" = "yes" ; then 
+
+  # Search for Tk configuration file.  
+
+  #  1. Search previously named locations.
+
+  for dir in \
+   $prefix \
+   $exec_prefix \
+   $blt_cv_tk_lib \
+   $blt_cv_tcl_lib 
+  do
+    if test -r "$dir/tkConfig.sh" ; then
+      tk_config_sh="$dir/tkConfig.sh"
+      break
+    elif test -r "$dir/lib/tkConfig.sh" ; then
+      tk_config_sh="$dir/lib/tkConfig.sh"
+      break
+    elif test -r "$dir/$BLT_PLATFORM/tkConfig.sh" ; then
+      tk_config_sh="$dir/$BLT_PLATFORM/tkConfig.sh"
+      break
+    fi
+  done
+
+  #  2. Search source directories.
+
+  if test "x$tk_config_sh" = "x" ; then
+    for dir in \
+     ../tcl \
+     `ls -dr ../tk[[4-9]].[[0-9]]* 2>/dev/null` \
+     ../../tcl \
+     `ls -dr ../../tk[[4-9]].[[0-9]]* 2>/dev/null` \
+     ../../../tcl \
+     `ls -dr ../../../tk[[4-9]].[[0-9]]* 2>/dev/null`
+    do
+      if test -r "$dir/$BLT_PLATFORM/tkConfig.sh"; then
+	tk_config_sh="$dir/$BLT_PLATFORM/tkConfig.sh"
+	break
+      fi
+    done
+  fi
+
+  #  3. Search standard locations.
+
+  if test "x$tk_config_sh" = "x" ; then
+    for dir in \
+     /usr/local \
+     ${x_libraries} \
+     /usr
+    do
+      if test -r "$dir/tkConfig.sh" ; then
+	tk_config_sh="$dir/tkConfig.sh"
+	break
+      elif test -r "$dir/lib/tkConfig.sh" ; then
+	tk_config_sh="$dir/lib/tkConfig.sh"
+	break
+      fi
+    done
+  fi
+fi
+AC_MSG_RESULT([${tk_config_sh}])
+
+# -----------------------------------------------------------------------
+#
+#	Source in the Tcl/Tk configuration scripts.  
+#
+#
+#	Check for tclConfig.sh and tkConfig.sh.  If found use values
+#	in file, but don't check if libraries exist.  
+#
+# -----------------------------------------------------------------------
+
+if test "x${tcl_config_sh}" != "x" ; then
+  . $tcl_config_sh
+  TCL_INC_SPEC=${TCL_INCLUDE_SPEC}
+fi
+
+if test "x${tk_config_sh}" != "x" ; then
+  . $tk_config_sh
+  TK_INC_SPEC=${TK_INCLUDE_SPEC}
+fi
+
+tcl_includes_dir=""
+tk_includes_dir=""
+TCL_INC_SPEC=${TCL_INCLUDE_SPEC}
+TK_INC_SPEC=${TK_INCLUDE_SPEC}
+
+if test "${blt_with_tcl_include_dir}" = "no" ; then 
+  AC_ERROR([Can't find tcl.h: use --with-tclincdir switch])
+elif test "${blt_with_tcl_include_dir}" != "yes" ; then 
+  if test -r "${blt_with_tcl_include_dir}/tcl.h" ; then 
+    tcl_includes_dir=${blt_with_tcl_include_dir}
+    TCL_INC_SPEC="-I${tcl_includes_dir}"
+    BLT_GET_SYMBOL(TCL_MAJOR_VERSION, TCL_MAJOR_VERSION, 
+	[${tcl_includes_dir}/tcl.h])
+    BLT_GET_SYMBOL(TCL_MINOR_VERSION, TCL_MINOR_VERSION, 
+	[${tcl_includes_dir}/tcl.h])
+    TCL_VERSION=${TCL_MAJOR_VERSION}.${TCL_MINOR_VERSION}
+  else
+    AC_ERROR([Can't find tcl.h in \"${blt_with_tcl_include_dir}\"])
+  fi
+else
+  for dir in \
+   ${TCL_PREFIX}/include \
+   ${TCL_SRC_DIR}/generic  \
+    /usr/local/include \
+    /usr/include 
+  do
+    if test -r "$dir/tcl.h" ; then
+      tcl_includes_dir=$dir
+      break
+    fi
+  done
+  if test "x${tcl_includes_dir}" = "x" ; then
+    AC_ERROR([Can't find tcl.h header file.])
+  fi
+fi
+
+if test "${blt_with_tk_include_dir}" = "no" ; then 
+  AC_ERROR([Can't find tk.h: use --with-tkincdir switch])
+elif test "${blt_with_tk_include_dir}" != "yes" ; then 
+  if test -r "${blt_with_tk_include_dir}/tk.h" ; then 
+    tk_includes_dir=${blt_with_tk_include_dir}
+    TK_INC_SPEC="-I${tk_includes_dir}"
+    BLT_GET_SYMBOL(TK_MAJOR_VERSION, TK_MAJOR_VERSION, 
+	${tk_includes_dir}/tk.h)
+    BLT_GET_SYMBOL(TK_MINOR_VERSION, TK_MINOR_VERSION, 
+	${tk_includes_dir}/tk.h)
+    TK_VERSION=${TK_MAJOR_VERSION}.${TK_MINOR_VERSION}
+  else
+    AC_ERROR([Can't find tk.h in \"${blt_with_tk_include_dir}\"])
+  fi
+else
+  for dir in \
+   ${TK_PREFIX}/include \
+   ${TK_SRC_DIR}/generic \
+   ${tcl_includes_dir} \
+    /usr/local/include \
+    /usr/include 
+  do
+    if test -r "$dir/tk.h" ; then
+      tk_includes_dir=$dir
+      break
+    fi
+  done
+  if test "x${tk_includes_dir}" = "x" ; then
+    AC_ERROR([Can't find tk.h header file.])
+  fi
+fi
+
+case $target in
+  *-sunos4*|*-*-netbsd|NetBSD-*|FreeBSD-*|OpenBSD-*|*-*-cygwin*|*-*-mingw*)
+    TCL_LIB_VERSION="${TCL_MAJOR_VERSION}${TCL_MINOR_VERSION}"
+    TK_LIB_VERSION="${TK_MAJOR_VERSION}${TK_MINOR_VERSION}"
+    ;;
+  *)
+    TCL_LIB_VERSION="${TCL_MAJOR_VERSION}.${TCL_MINOR_VERSION}"
+    TK_LIB_VERSION="${TK_MAJOR_VERSION}.${TK_MINOR_VERSION}"
+    ;;
+esac
+
+if test "${blt_with_tcl_lib_dir}" = "no" ; then
+  AC_ERROR([Can't find Tcl library: use --with-tcllibdir switch])
+elif test "${blt_with_tcl_lib_dir}" = "yes" ; then
+  for libname in \
+   "${TCL_EXEC_PREFIX}/lib/${SO_PREFIX}tcl${TCL_LIB_VERSION}${SO_EXT}" \
+   "${TCL_EXEC_PREFIX}/lib/${IMPLIB_PREFIX}tcl${TCL_LIB_VERSION}${IMPLIB_EXT}" \
+   "${TCL_EXEC_PREFIX}/lib/${IMPLIB_PREFIX}tcl${TCL_LIB_VERSION}.lib" \
+   "${TCL_EXEC_PREFIX}/lib/libtcl${TCL_LIB_VERSION}.a" 
+  do
+    if test -r "$libname" ; then
+      TCL_LIB_DIR="${TCL_EXEC_PREFIX}/lib"
+      TCL_LIB_SPEC="-L${TCL_LIB_DIR} -ltcl${TCL_LIB_VERSION}"
+      break
+    fi
+  done
+else
+  for libname in \
+   "${blt_with_tcl_lib_dir}/${SO_PREFIX}tcl${TCL_LIB_VERSION}${SO_EXT}" \
+   "${blt_with_tcl_lib_dir}/${IMPLIB_PREFIX}tcl${TCL_LIB_VERSION}${IMPLIB_EXT}" \
+   "${blt_with_tcl_lib_dir}/${IMPLIB_PREFIX}tcl${TCL_LIB_VERSION}.lib" \
+   "${blt_with_tcl_lib_dir}/libtcl${TCL_LIB_VERSION}.a"
+  do
+    if test -r "$libname" ; then
+      TCL_LIB_DIR="${blt_with_tcl_lib_dir}"
+      TCL_LIB_SPEC="-L${TCL_LIB_DIR} -ltcl${TCL_LIB_VERSION}"
+      break
+    fi
+  done
+fi
+if test "x${TCL_LIB_DIR}" = "x" ; then
+  AC_ERROR([Can't find tcl library ${libname} in \"${blt_with_tcl_lib_dir}\"])
+fi
+
+if test "${blt_with_tk_lib_dir}" = "no" ; then
+  AC_ERROR([Can't find Tcl library: use --with-tcllibdir switch])
+elif test "${blt_with_tk_lib_dir}" = "yes" ; then
+  for libname in \
+   "${TK_EXEC_PREFIX}/lib/${SO_PREFIX}tk${TK_LIB_VERSION}${SO_EXT}" \
+   "${TK_EXEC_PREFIX}/lib/${IMPLIB_PREFIX}tk${TK_LIB_VERSION}${IMPLIB_EXT}" \
+   "${TK_EXEC_PREFIX}/lib/${IMPLIB_PREFIX}tk${TK_LIB_VERSION}.lib" \
+   "${TK_EXEC_PREFIX}/lib/libtk${TK_LIB_VERSION}.a"
+  do
+    if test -r "$libname" ; then
+      TK_LIB_DIR="${TK_EXEC_PREFIX}/lib"
+      TK_LIB_SPEC="-L${TK_LIB_DIR} -ltk${TK_LIB_VERSION}"
+      break
+    fi
+  done
+else
+  for libname in \
+   "${blt_with_tk_lib_dir}/${SO_PREFIX}tk${TK_LIB_VERSION}${SO_EXT}" \
+   "${blt_with_tk_lib_dir}/${IMPLIB_PREFIX}tk${TK_LIB_VERSION}${IMPLIB_EXT}" \
+   "${blt_with_tk_lib_dir}/${IMPLIB_PREFIX}tk${TK_LIB_VERSION}$.lib" \
+   "${blt_with_tk_lib_dir}/libtk${TK_LIB_VERSION}.a"
+  do
+    if test -r "$libname" ; then
+      TK_LIB_DIR="${blt_with_tk_lib_dir}"
+      TK_LIB_SPEC="-L${TK_LIB_DIR} -ltk${TK_LIB_VERSION}"
+      break
+    fi
+  done
+fi
+if test "x${TK_LIB_DIR}" = "x" ; then
+  AC_ERROR([Can't find tk library.])
+fi
+
+# -----------------------------------------------------------------------
+#
+# Include files
+#
+#	Append to INC_SPECS the various include files specifications
+#	(built fromt the include directory information).
+#
+# -----------------------------------------------------------------------
+
+# Tk include files
+if test "${tk_includes_dir}" != "/usr/include" ; then
+  INC_SPECS="${INC_SPECS} ${TK_INC_SPEC}"
+fi
+
+# Tcl include files
+#
+#	Add the include directory specification only if the Tcl
+#	headers reside in a different directory from Tk's.  
+if test "${tcl_includes_dir}" != "/usr/include" -a \
+	"${tcl_includes_dir}" != "${tk_includes_dir}" ; then
+  INC_SPECS="${INC_SPECS} ${TCL_INC_SPEC}"
+fi
+
+
+# On Windows, override the default include directory with our own.
+if test "${BLT_PLATFORM}" = "win"; then
+   x_includes="NONE"
+fi
+
+# X11 include files
+if test "x${x_includes}" != "x" -a \
+	"${x_includes}" != "NONE" -a \
+	"${x_includes}" != "/usr/include" -a \
+	"${x_includes}" != "${tk_includes_dir}" -a \
+	"${x_includes}" != "${tcl_includes_dir}" ; then
+  INC_SPECS="${INC_SPECS} -I${x_includes}"
+fi
+
+# -----------------------------------------------------------------------
+#
+# Libraries
+#
+#	Append to LIB the various library specifications 
+#	(built from the library directory information).
+#
+# -----------------------------------------------------------------------
+
+# Collect the libraries for AIX that aren't using stubs.
+aix_lib_specs=$LIBS
+
+if test "${BLT_PLATFORM}" = "unix"; then
+
+  # Add specification for X11 library only on Unix platforms.
+
+  if test "x${x_libraries}" = "x"  -o \
+	  "x${x_libraries}" = "NONE"  -o \
+  	  "${x_libraries}" = "/usr/lib" -o  \
+  	  "${x_libraries}" = "/usr/lib64" -o  \
+	  "${x_libraries}" = "${TK_LIB_DIR}"  -o \
+	  "${x_libraries}" = "${TCL_LIB_DIR}" ; then
+    x_lib_spec=""
+    aix_lib_specs="-lX11 ${aix_lib_specs}"
+  else 
+    x_lib_spec="-L${x_libraries}"
+    aix_lib_specs="-L${x_libraries} -lX11 ${aix_lib_specs}"
+    if test "x${loader_run_path}" = "x" ; then
+      loader_run_path="${x_libraries}"
+    else
+      loader_run_path="${loader_run_path}:${x_libraries}"
+    fi
+  fi
+fi
+
+
+# EXPAT library
+
+if test "${blt_with_expat_lib_dir}" != "no" -a \
+	"${ac_cv_header_expat_h}" != "no" ; then
+  BLT_CHECK_LIBRARY(EXPAT, expat, XML_ParserCreate, $blt_with_expat_lib_dir)
+fi
+
+# MYSQL client library
+
+if test "${blt_with_mysql_lib_dir}" != "no" -a \
+	"${ac_cv_header_mysql_mysql_h}" != "no" ; then
+  BLT_CHECK_LIBRARY(MYSQL, mysqlclient, mysql_init, $blt_with_mysql_lib_dir)
+fi
+
+# JPEG library
+
+if test "${blt_with_jpeg_lib_dir}" != "no" -a \
+	"${ac_cv_header_jpeglib_h}" != "no" ; then
+  BLT_CHECK_LIBRARY(JPG, jpeg, jpeg_read_header, $blt_with_jpeg_lib_dir)
+fi
+
+# TIFF library
+
+if test "${blt_with_tiff_lib_dir}" != "no" -a \
+	"${ac_cv_header_tiff_h}" != "no" ; then
+  BLT_CHECK_LIBRARY(TIF, tiff, TIFFReadRGBAImage, $blt_with_tiff_lib_dir, -lz)
+fi
+
+# PNG library
+
+if test "${blt_with_png_lib_dir}" != "no" -a \
+	"${ac_cv_header_png_h}" != "no" ; then
+  BLT_CHECK_LIBRARY(PNG, png, png_read_png, $blt_with_png_lib_dir, -lz)
+fi
+
+# zlib library
+if test "${blt_with_z_lib_dir}" != "no" ; then
+  BLT_CHECK_LIBRARY(Z, z, deflate, $blt_with_z_lib_dir)
+fi
+
+# FREETYPE library
+
+if test "${blt_with_ft2_lib_dir}" != "no" -a \
+	"${ac_cv_header_ft2build_h}" != "no" ; then
+  BLT_CHECK_LIBRARY(FT2, freetype, FT_Init_FreeType, $blt_with_ft2_lib_dir)
+fi
+
+# XPM library
+
+old_CFLAGS=$CFLAGS
+old_LDFLAGS=$LDFLAGS
+old_CPPFLAGS=$CPPFLAGS
+LDFLAGS=$X11_LIB_SPEC
+CPPFLAGS=$X11_INC_SPEC
+if test "${blt_with_xpm_lib_dir}" != "no" -a \
+	"${ac_cv_header_xpm_h}" != "no" ; then
+  BLT_CHECK_LIBRARY(XPM, Xpm, XpmCreateXpmImageFromBuffer, $blt_with_xpm_lib_dir)
+fi
+
+# Xft library
+
+if test "${blt_with_xft2_lib_dir}" != "no" -a \
+	"${ac_cv_header_x11_xft_xft_h}" != "no" ; then
+  BLT_CHECK_LIBRARY(XFT, [Xft -lexpat], XftFontOpenPattern, $blt_with_xft_lib_dir)
+  BLT_CHECK_LIBRARY(FTCFG, fontconfig, FcPatternCreate, yes)
+  BLT_CHECK_LIBRARY(XRENDER, Xrender, XRenderQueryExtension, yes)
+fi
+
+# Xrandr library
+
+BLT_CHECK_LIBRARY(XRANDR, Xrandr, XRRGetScreenInfo, yes)
+LDFLAGS="$X11_LIB_SPEC $XRANDR_LIB_SPEC $XFT_LIB_SPEC $XAU_LIB_SPEC $XDMCP_LIB_SPEC"
+CPPFLAGS="$X11_INC_SPEC $XRANDR_INC_SPEC"
+AC_CHECK_FUNCS(XRRGetScreenResources)
+AC_CHECK_DECLS(XRRGetScreenResources,,,[
+#include <X11/extensions/Xrandr.h>
+])
+
+BLT_CHECK_LIBRARY(XDMCP, Xdmcp, XdmcpWrap, yes)
+BLT_CHECK_LIBRARY(XAU, Xau, XauReadAuth, yes)
+CFLAGS=$old_CFLAGS
+LDFLAGS=$old_LDFLAGS
+CPPFLAGS=$old_CPPFLAGS
+# Tcl libraries
+if test "${TCL_LIB_DIR}" != "/usr/lib" -a \
+	"${TCL_LIB_DIR}" != "/usr/lib64" -a \
+	"${TCL_LIB_DIR}" != "${TK_LIB_DIR}" ; then
+  if test "x${loader_run_path}" = "x" ; then
+    loader_run_path="${TCL_LIB_DIR}"
+  else
+    loader_run_path="${TCL_LIB_DIR}:${loader_run_path}"
+  fi
+fi
+
+# Tk libraries
+if test "${TK_LIB_DIR}" != "/usr/lib" -a \
+	"${TK_LIB_DIR}" != "/usr/lib64" ; then
+  if test "x${loader_run_path}" = "x" ; then
+    loader_run_path="${TK_LIB_DIR}"
+  else
+    loader_run_path="${TK_LIB_DIR}:${loader_run_path}"
+  fi
+fi
+
+# LIBSSH2 library 
+
+if test "${blt_with_libssh2_lib_dir}" != "no" ; then
+  extralibs="-L${blt_with_openssl_lib_dir} -lssl -lcrypto"
+  if test "${blt_platform_win32}" = "yes" ; then
+    extralibs="$extralibs -lws2_32 -luser32 -lgdi32 -ladvapi32"
+  fi
+  BLT_CHECK_LIBRARY(LIBSSH2, ssh2, libssh2_init, $blt_with_libssh2_lib_dir, ${extralibs})
+fi
+
+# -----------------------------------------------------------------------
+#
+# 	Set up a new default prefix to installation path.  The ways
+#	the prefix can be set and their precedence are as follows:
+#
+#	1. --prefix option given to ./configure. (prefix != NONE)
+#       2. use previously configured Tk prefix
+#
+# -----------------------------------------------------------------------
+
+if test "$prefix" = "NONE" ; then
+  prefix=${TCL_PREFIX}
+fi
+
+if test "$exec_prefix" = "NONE" ; then
+  exec_prefix=${TCL_EXEC_PREFIX}
+fi
+
+# -------------------------------------------------------------------------
+#
+#	Extract the BLT version number for the blt.h header
+#
+# -------------------------------------------------------------------------
+# Major version
+AC_MSG_CHECKING([BLT_MAJOR_VERSION])
+AC_CACHE_VAL(blt_cv_major_version, 
+BLT_GET_SYMBOL(blt_cv_major_version, BLT_MAJOR_VERSION, ${srcdir}/src/blt.h)
+)
+BLT_MAJOR_VERSION=${blt_cv_major_version}
+AC_MSG_RESULT([$blt_cv_major_version])
+
+# Minor version
+AC_MSG_CHECKING([BLT_MINOR_VERSION])
+AC_CACHE_VAL(blt_cv_minor_version, 
+BLT_GET_SYMBOL(blt_cv_minor_version, BLT_MINOR_VERSION, ${srcdir}/src/blt.h)
+)
+AC_MSG_RESULT([$blt_cv_minor_version])
+BLT_MINOR_VERSION=${blt_cv_minor_version}
+
+# Standard version
+BLT_VERSION=${BLT_MAJOR_VERSION}.${BLT_MINOR_VERSION}
+
+# Release serial
+AC_MSG_CHECKING([BLT_RELEASE_SERIAL])
+AC_CACHE_VAL(blt_cv_release_serial, 
+BLT_GET_SYMBOL(blt_cv_release_serial, BLT_RELEASE_SERIAL, ${srcdir}/src/blt.h)
+)
+AC_MSG_RESULT([$blt_cv_release_serial])
+BLT_RELEASE_SERIAL=${blt_cv_release_serial}
+
+# Patch level
+AC_MSG_CHECKING([BLT_PATCH_LEVEL])
+AC_CACHE_VAL(blt_cv_patch_level, 
+BLT_GET_SYMBOL(blt_cv_patch_level, BLT_PATCH_LEVEL, ${srcdir}/src/blt.h)
+)
+AC_MSG_RESULT([$blt_cv_patch_level])
+BLT_PATCH_LEVEL=${blt_cv_patch_level}
+
+BLT_LIB_VERSION="${BLT_MAJOR_VERSION}${BLT_MINOR_VERSION}"
+
+# Add BLT to the run path
+libdir=${exec_prefix}/lib
+
+BLT_PREFIX=${prefix}
+BLT_EXEC_PREFIX=${exec_prefix}
+BLT_BIN_DIR=${bindir}
+BLT_LIB_DIR=${libdir}
+BLT_INC_DIR=${prefix}/include
+BLT_SRC_DIR=${srcdir}
+BLT_SO_PREFIX=${SO_PREFIX}
+BLT_SO_EXT=${SO_EXT}
+BLT_IMPLIB_SUFFIX=${IMPLIB_SUFFIX}
+BLT_IMPLIB_EXT=${IMLIB_EXT}
+BLT_EXEC_EXT=${EXEC_EXT}
+
+if test "x${libdir}" != "x"  -a \
+	"${libdir}" != "/usr/lib" -a  \
+	"${libdir}" != "/usr/lib64" -a  \
+	"${libdir}" != "${x_libraries}" -a  \
+	"${libdir}" != "${TK_LIB_DIR}"  -a \
+	"${libdir}" != "${TCL_LIB_DIR}" ; then
+  if test "x${loader_run_path}" = "x" ; then
+    loader_run_path="${libdir}"
+  else
+    loader_run_path="${libdir}:${loader_run_path}"
+  fi
+fi
+
+# -------------------------------------------------------------------------
+#
+#	Extract the Tcl version number for the tcl.h header
+#
+# -------------------------------------------------------------------------
+
+if test "$TCL_VERSION" = "7.6" -a "$TK_VERSION" = "4.2" ; then
+  :
+elif test "$TCL_VERSION" = "7.5" -a "$TK_VERSION" = "4.1" ; then
+  :
+elif test "$TCL_VERSION" = "$TK_VERSION" ; then
+  :
+else
+  AC_ERROR([Mismatched Tcl/Tk versions ($TCL_VERSION != $TK_VERSION)])
+fi
+
+#--------------------------------------------------------------------
+#
+# Check if we can generate shared libraries on this system.  Set flags 
+# to generate shared libraries for systems that we know about.  Start 
+# with the values found in tclConfig.sh, make changes as we know about 
+# the different systems.
+#
+#--------------------------------------------------------------------
+
+LIB_BASE_NAME=libBLT
+
+# Initialize shared library build variables
+
+SO_LD="$TCL_SHLIB_LD"
+SO_LDFLAGS="$TCL_LD_FLAGS"
+SO_RUNPATH="$TCL_LD_SEARCH_FLAGS"
+
+SO_TARGET=""
+SO_CFLAGS=""
+SO_LIBS=""
+LDFLAGS=""
+LD_RPATH="${loader_run_path}"
+EXTRA_LIBS=""
+
+case $target in
+  *-aix4.[[2-9]]*)
+    # No Position-Independent flags needed
+    SO_CFLAGS=""
+    
+    # Use the installed export file or the one found in the source directory.
+
+    if test -r "${TCL_LIB_DIR}/libtcl${TCL_LIB_VERSION}.exp" ; then
+      tcl_exp="${TCL_LIB_DIR}/libtcl${TCL_LIB_VERSION}.exp"
+    else
+      tcl_exp="${TCL_SRC_DIR}/unix/lib.exp"
+    fi
+    if test -r "${TK_LIB_DIR}/libtk${TK_LIB_VERSION}.exp" ; then
+      tk_exp="${TK_LIB_DIR}/libtk${TK_LIB_VERSION}.exp"
+    else
+      tk_exp="${TK_SRC_DIR}/unix/lib.exp"
+    fi
+    
+    full_src_path=`cd ${srcdir}; pwd`
+
+    # Use shell-script to link shared library
+    SO_LD="${full_src_path}/cf/ldAix /bin/ld -bhalt:4 -bM:SRE -bE:lib.exp -H512 -T512 -bnoentry -bI:${tk_exp} -bI:${tcl_exp}"
+    SO_LIBS="${aix_lib_specs} -lc"
+    LDFLAGS='-L$(LD_RPATH)'
+    EXTRA_LIBS="-ldl"
+    ;;
+  
+  *-aix*)
+    # No Position-Independent flags needed
+    SO_CFLAGS=""
+    
+    # Use the installed export file or the one found in the source directory.
+
+    if test -r "${TCL_LIB_DIR}/libtcl${TCL_LIB_VERSION}.exp" ; then
+      tcl_exp="${TCL_LIB_DIR}/libtcl${TCL_LIB_VERSION}.exp"
+    else
+      tcl_exp="${TCL_SRC_DIR}/unix/lib.exp"
+    fi
+    if test -r "${TK_LIB_DIR}/libtk${TK_LIB_VERSION}.exp" ; then
+      tk_exp="${TK_LIB_DIR}/libtk${TK_LIB_VERSION}.exp"
+    else
+      tk_exp="${TK_SRC_DIR}/unix/lib.exp"
+    fi
+
+    full_src_path=`cd ${srcdir}/cf; pwd`
+
+    # Use shell-script to link shared library
+
+    SO_LD="${full_src_path}/ldAix /bin/ld -bhalt:4 -bM:SRE -bE:lib.exp -H512 -T512 -bnoentry -bI:${tk_exp} -bI:${tcl_exp}"
+
+    SO_LIBS="${aix_lib_specs} -lc"
+    LDFLAGS='-L$(LD_RPATH)'
+    EXTRA_LIBS="-lld"
+    ;;
+  
+  *-bsdi2*|*-bsdi3*)
+    SO_CFLAGS=""
+    SO_LD="shlicc"
+    SO_LDFLAGS="-r"
+
+    EXTRA_LIBS="-ldl"
+    ;;
+
+  *-bsdi4*)
+    SO_CFLAGS="-export-dynamic -fPIC"
+    SO_LD="${CC}"
+    SO_LDFLAGS='-shared -Wl,-E -Wl,-soname,$@'
+    ;;
+
+  *-*-cygwin* | *-*-mingw*)
+    SO_LD="${CC}"
+    SO_LDFLAGS='-shared -Wl,-E -Wl,--out-implib,$@'
+    EXTRA_LIBS="-lwinspool"
+    SO_EXT=".dll"
+    LDFLAGS=""
+    ;;
+
+  *-*-darwin*)
+    SO_CFLAGS="-fno-common"
+    SO_EXT=".dylib"
+    SO_LD="${CC}"
+    SO_DYLIB_FLAGS="-dynamiclib"
+    SO_LDFLAGS="-bundle -flat_namespace -undefined suppress"
+
+    AC_MSG_CHECKING([if ld accepts -single_module flag])
+    save_LDFLAGS=$LDFLAGS
+    LDFLAGS="$SO_LDFLAGS -Wl,-single_module"
+    AC_TRY_LINK(, [int i;], [single_module=yes], [single_module=no])
+    if test "${single_module}" = "yes" ; then 
+      SO_LDFLAGS=$LDFLAGS
+    fi
+    AC_MSG_RESULT([$single_module])
+    SO_LIBRARY_PATH="DYLD_LIBRARY_PATH"
+    LDFLAGS=""
+    AC_SUBST(BLT_SO_BUNDLE_FLAGS, "$SO_LDFLAGS")
+    AC_SUBST(BLT_SO_DYLIB_FLAGS, "$SO_DYLIB_FLAGS")
+    ;;
+
+  *-dgux*)
+    SO_CFLAGS="-K PIC"
+    SO_LD="cc"
+    SO_LDFLAGS="-G"
+    EXTRA_LIBS="-ldl"
+    ;;
+  
+  *-hpux*)
+    if test "$blt_have_gcc" = "no" ; then
+      DEFINES="$DEFINES -D_HPUX_SOURCE"
+    fi
+    if test "${blt_have_dld}" = "yes" ; then
+      SO_CFLAGS="+Z"
+      SO_LD="ld"
+      SO_LDFLAGS='-b -E -n +s +b,$(LD_RPATH)'
+      SO_EXT=".sl"
+
+      # The run path is included in both LDFLAGS and SO_LDFLAGS
+      # because SO_LD is ld and LD is cc/gcc.
+
+      LDFLAGS='-Wl,-E -Wl,+s,+b,$(LD_RPATH):.'
+      EXTRA_LIBS="-ldld"
+    fi
+    ;;
+  
+  *-irix64-6.5*)
+    SO_CFLAGS=""
+    SO_LD="ld"
+    SO_LDFLAGS='-32 -shared -rdata_shared -Wl,-rpath,$(LD_RPATH)'
+    LDFLAGS='-Wl,-rpath,$(LD_RPATH)'
+    ;;
+
+  *-irix-[56].*|*-irix64-*)
+    SO_CFLAGS=""
+    SO_LD="ld"
+    LDFLAGS='-Wl,-rpath,$(LD_RPATH)'
+    SO_LDFLAGS='-shared -rdata_shared -Wl,-rpath,$(LD_RPATH)'
+    if test "$blt_have_gcc" = "yes" ; then
+      SO_CFLAGS="-mabi=n32 $SO_CFLAGS"
+      SO_LDFLAGS="-mabi=n32 $SO_LDFLAGS"
+      LDFLAGS="-mabi=n32 $LDFLAGS"
+    else	
+      CFLAGS="-n32 $CFLAGS"
+      LDFLAGS="-n32 $LDFLAGS"
+    fi
+    ;;
+    
+  *-linux*)
+    SO_CFLAGS="-fPIC"
+    SO_LD="${CC}"
+    SO_LDFLAGS='-rdynamic -shared -Wl,-E -Wl,-soname,$@ -Wl,-rpath,$(LD_RPATH)'
+    LDFLAGS='-Wl,-rpath,$(LD_RPATH)'
+    EXTRA_LIBS="-ldl"
+    ;;
+  
+  *-mp-ras-02*)
+    SO_CFLAGS="-G -K PIC"
+    SO_LD="${CC}"
+    SO_LDFLAGS=""
+    ;;
+
+  *-mp-ras-*)
+    SO_CFLAGS="-G -K PIC"
+    SO_LD="${CC}"
+    SO_LDFLAGS="-Wl,-Bexport"
+    ;;
+
+  *-ncr-sysv4-*2*)
+    SO_CFLAGS="-K PIC"
+    SO_LD="cc"
+    SO_LDFLAGS="-G"
+
+    EXTRA_LIBS="-ldl"
+    ;;
+
+  *-ncr-sysv4*)
+    SO_CFLAGS="-K PIC"
+    SO_LD="cc"
+    SO_LDFLAGS="-G -Wl,-Bexport"
+    LDFLAGS="-Wl,-Bexport"
+    EXTRA_LIBS="-ldl"
+    ;;
+
+  *-netbsd*|*-freebsd*|*-openbsd*)
+    # Not available on all versions:  check for include file.
+    AC_CHECK_HEADER(dlfcn.h, test_ok=yes, test_ok=no)
+    if test "$test_ok" = yes; then
+      SO_CFLAGS="-fpic"
+      SO_LD="ld"
+      SO_LDFLAGS="-Bshareable -x"
+    fi
+    ;;
+
+  *-nextstep*)
+    SO_CFLAGS=""
+    SO_LD="cc"
+    SO_LDFLAGS="-nostdlib -r"
+    ;;
+
+  *-osf1-1.[012]*)
+    # OSF/1 1.[012] from OSF, and derivatives, including Paragon OSF/1
+
+    SO_CFLAGS=""
+
+    # Warning: Ugly Makefile Hack 
+    #	Make package name same as library name
+
+    SO_LD='ld -R -export $@:'
+    ;;
+
+  *-osf1-1.*)
+    # OSF/1 1.3 from OSF using ELF, and derivatives, including AD2
+
+    SO_CFLAGS="-fpic"
+    SO_LD="ld -shared"
+    ;;
+
+  *-osf1V*)
+    # Digital OSF/1
+
+    SO_CFLAGS=""
+    SO_LD='ld'
+    SO_LDFLAGS='-shared -expect_unresolved "*" -Wl,-rpath,$(LD_RPATH)'
+    LDFLAGS='-Wl,-rpath,$(LD_RPATH)'
+    ;;
+
+  *-sco*)
+    # Note, dlopen is available only on SCO 3.2.5 and greater.  However,
+    # this test works, since "uname -s" was non-standard in 3.2.4 and
+    # below.
+
+    SO_CFLAGS="-Kpic -belf"
+    SO_LD="ld"
+    SO_LDFLAGS="-G"
+    LDFLAGS="-belf -Wl,-Bexport"
+    ;;
+
+  *-sni-sysv*)
+
+    SO_CFLAGS="-K PIC"
+    SO_LD="cc"
+    SO_LDFLAGS="-G"
+
+    EXTRA_LIBS="-ldl"
+    ;;
+
+  *-sunos4*)
+
+    SO_CFLAGS="-PIC"
+    SO_LD="ld"
+    SO_LDFLAGS="-assert pure-text"
+
+    EXTRA_LIBS="-ldl"
+    ;;
+
+  *-solaris2*)
+
+    SO_CFLAGS="-KPIC"
+    if test "${blt_with_gnu_ld}" = "yes" -a "$blt_have_gcc" = "yes" ; then
+      SO_LD="gcc"
+      SO_LDFLAGS='-rdynamic -shared -Wl,-E -Wl,-soname,$@ -Wl,-rpath,$(LD_RPATH)'
+      LDFLAGS='-Wl,-rpath,$(LD_RPATH)'
+    else
+      SO_LD="/usr/ccs/bin/ld"
+      SO_LDFLAGS='-G -z text -R $(LD_RPATH)'
+      LDFLAGS='-R $(LD_RPATH)'
+    fi
+    EXTRA_LIBS="-ldl"
+  ;;
+
+  *-mips-dde-sysv*)
+
+    SO_CFLAGS="-KPIC"
+    SO_LD="cc"
+    SO_LDFLAGS="-G"
+
+    EXTRA_LIBS="-ldl"
+    ;;
+
+  *-pc-sysv4* | *-unixware-5*)
+    SO_CFLAGS="-G -KPIC"
+    SO_LD="${CC}"
+    SO_LDFLAGS=" -Wl,-Bexport"
+    ;;
+  
+  *)
+    build_shared="no"
+    ;;
+
+esac
+
+# If we're running gcc, then set SO_CFLAGS flags for compiling
+# shared libraries for gcc, instead of those of the vendor's
+# compiler.
+
+
+if test "$blt_have_gcc" = "yes" ; then
+  if test "$blt_platform_win32" = "no" ; then 
+    SO_CFLAGS="-fPIC"
+  fi
+fi
+
+# We can't back link against static versions of Tcl/Tk. 
+# If # ${TCL_SHARED_BUILD} can't be found or isn't "1", assume that
+# shared libraries weren't built.
+
+if test "${TCL_SHARED_BUILD}" != "1" ; then
+  SO_LIBS=""
+fi
+
+if test "${build_shared}" = "yes" -a "$blt_enable_shared" = "yes"; then
+  AC_SUBST(BLT_SO_CFLAGS, "$SO_CFLAGS")
+  AC_SUBST(BLT_TARGET, "shared")
+  AC_SUBST(BLT_SO_LD, "$SO_LD")
+  AC_SUBST(BLT_SO_LDFLAGS, "$SO_LDFLAGS")
+  AC_SUBST(BLT_SO_LIBS, "$SO_LIBS")
+  AC_SUBST(BLT_SO_EXT, "$SO_EXT")
+else 
+  AC_SUBST(BLT_TARGET, "static")
+fi
+AC_SUBST(LD_RPATH)
+
+AC_DEFINE_UNQUOTED([BLT_SO_EXT], "$SO_EXT", [Define 'soext' as the extension for shared libraries.])
+AC_DEFINE_UNQUOTED([BLT_SO_PREFIX], "$SO_PREFIX", [Define 'prefix' as the prefix for shared library names.])
+AC_DEFINE_UNQUOTED([BLT_LIB_SUFFIX], "$LIB_SUFFIX", [Define 'suffix' as the suffix for library names.])
+AC_SUBST(BLT_SO_PREFIX, "$SO_PREFIX")
+AC_SUBST(BLT_LIB_SUFFIX, "$LIB_SUFFIX")
+AC_SUBST(IMPLIB_PREFIX)
+AC_SUBST(IMPLIB_EXT)
+
+if test "${blt_enable_stubs}" = "yes" ; then
+  AC_DEFINE_UNQUOTED([USE_TCL_STUBS], [1], [Define if Tcl stubs are used.])
+  AC_DEFINE_UNQUOTED([USE_TK_STUBS],  [1], [Define if Tk stubs are used.])
+  AC_DEFINE_UNQUOTED([USE_BLT_STUBS], [1], [Define if BLT stubs are used.])
+  TCL_STUBS_SPEC="-L${TCL_LIB_DIR} -ltclstub${TCL_LIB_VERSION}"
+  AC_SUBST(TCL_STUBS_SPEC)
+  TK_STUBS_SPEC="-L${TK_LIB_DIR} -ltkstub${TK_LIB_VERSION}"
+  AC_SUBST(TK_STUBS_SPEC)
+  BLT_STUBS_ENABLED=1
+  AC_SUBST(BLT_STUBS_ENABLED)
+fi
+
+if test "${blt_platform_win32}" = "yes" ; then
+  AC_DEFINE_UNQUOTED([WIN32], [1], [Define if building for Win32.])
+fi
+WIN32=${blt_platform_win32}
+AC_SUBST(WIN32)
+if test "${blt_platform_macosx}" = "yes" ; then
+  AC_DEFINE_UNQUOTED([MACOSX], [1], [Define if building for MacOSX.])
+fi
+MACOSX=${blt_platform_macosx}
+AC_SUBST(MACOSX)
+
+AC_SUBST(AUX_LIBS)
+AC_SUBST(BLT_EXEC_PREFIX)
+AC_SUBST(BLT_LIB_VERSION)
+AC_SUBST(BLT_BIN_DIR)
+AC_SUBST(BLT_INC_DIR)
+AC_SUBST(BLT_LIB_DIR)
+AC_SUBST(BLT_MAJOR_VERSION)
+AC_SUBST(BLT_MINOR_VERSION)
+AC_SUBST(BLT_PATCH_LEVEL)
+AC_SUBST(BLT_PREFIX)
+AC_SUBST(BLT_EXEC_EXT)
+AC_SUBST(BLT_RELEASE_SERIAL)
+AC_SUBST(BLT_SRC_DIR)
+AC_SUBST(BLT_VERSION)
+AC_SUBST(BLT_PLATFORM)
+AC_SUBST(CC)
+AC_SUBST(CFLAGS)
+AC_SUBST(DEFINES)
+AC_SUBST(EXPAT_INC_SPEC)
+AC_SUBST(EXPAT_LIB_DIR)
+AC_SUBST(EXPAT_LIB_SPEC)
+AC_SUBST(EXTRA_LIBS)
+AC_SUBST(FT2_INC_SPEC)
+AC_SUBST(FT2_LIB_DIR)
+AC_SUBST(FT2_LIB_SPEC)
+AC_SUBST(FTCFG_LIB_DIR)
+AC_SUBST(FTCFG_LIB_SPEC)
+AC_SUBST(GCCFLAGS)
+AC_SUBST(INCLUDES, ${INC_SPECS})
+AC_SUBST(JPG_INC_SPEC)
+AC_SUBST(JPG_LIB_DIR)
+AC_SUBST(JPG_LIB_SPEC)
+AC_SUBST(LDFLAGS)
+AC_SUBST(LIBS)
+AC_SUBST(LIB_PREFIX)
+AC_SUBST(LIB_SUFFIX)
+AC_SUBST(MYSQL_INC_SPEC)
+AC_SUBST(MYSQL_LIB_DIR)
+AC_SUBST(MYSQL_LIB_SPEC)
+AC_SUBST(PNG_INC_SPEC)
+AC_SUBST(PNG_LIB_DIR)
+AC_SUBST(PNG_LIB_SPEC)
+AC_SUBST(TCL_DBGX)
+AC_SUBST(TCL_INC_SPEC)
+AC_SUBST(TCL_LIB_DIR)
+AC_SUBST(TCL_LIB_SPEC)
+AC_SUBST(TCL_VERSION)
+AC_SUBST(TCL_CC_SEARCH_FLAGS)
+AC_SUBST(TCL_LIB_VERSION)
+AC_SUBST(TIF_INC_SPEC)
+AC_SUBST(TIF_LIB_DIR)
+AC_SUBST(TIF_LIB_SPEC)
+AC_SUBST(TK_INC_SPEC)
+AC_SUBST(TK_LIB_DIR)
+AC_SUBST(TK_LIB_SPEC)
+AC_SUBST(TK_LIB_VERSION)
+AC_SUBST(TK_CC_SEARCH_FLAGS)
+AC_SUBST(X11_INC_SPEC)
+AC_SUBST(X11_LIB_DIR)
+AC_SUBST(X11_LIB_SPEC)
+AC_SUBST(XAU_LIB_DIR)
+AC_SUBST(XAU_LIB_SPEC)
+AC_SUBST(XDMCP_LIB_DIR)
+AC_SUBST(XDMCP_LIB_SPEC)
+AC_SUBST(XFT_INC_SPEC)
+AC_SUBST(XFT_LIB_DIR)
+AC_SUBST(XFT_LIB_SPEC)
+AC_SUBST(XPM_INC_SPEC)
+AC_SUBST(XPM_LIB_DIR)
+AC_SUBST(XPM_LIB_SPEC)
+AC_SUBST(XRANDR_LIB_DIR)
+AC_SUBST(XRANDR_LIB_SPEC)
+AC_SUBST(XRENDER_LIB_DIR)
+AC_SUBST(XRENDER_LIB_SPEC)
+AC_SUBST(Z_LIB_DIR)
+AC_SUBST(Z_LIB_SPEC)
+
+
+#--------------------------------------------------------------------
+#	The BLT script directory was either specified or we 
+#	assume <prefix>/lib
+#--------------------------------------------------------------------
+if test "x${blt_with_scriptdir}" = "x" ; then 
+  BLT_LIBRARY="${prefix}/lib/blt${BLT_VERSION}"
+else 
+  BLT_LIBRARY="${blt_with_scriptdir}/blt${BLT_VERSION}"
+fi 
+AC_SUBST(BLT_LIBRARY)
+
+#--------------------------------------------------------------------
+#	Print out some of the more important settings 
+#--------------------------------------------------------------------
+echo ""
+echo "Configuration results:"
+echo ""
+echo "  tcl.h      found in  $TCL_INC_SPEC"
+echo "  tk.h       found in  $TK_INC_SPEC"
+echo "  X11/Xlib.h found in  $x_includes"
+echo "  libtcl${TCL_LIB_VERSION}  found in  $TCL_LIB_SPEC"
+echo "  libtk${TK_LIB_VERSION}   found in  $TK_LIB_SPEC"
+echo "  libX11     found in  $x_libraries"
+echo ""
+echo "Directories where BLT is to be installed:"
+echo ""
+echo "  \"\$prefix\" is $prefix"
+echo "  \"\$exec_prefix\" is $exec_prefix"
+echo ""
+echo "  shells       to be installed in  $bindir"
+echo "  libraries    to be installed in  $libdir"
+echo "  scripts      to be installed in  $BLT_LIBRARY"
+echo "  manual pages to be installed in  $mandir"
+echo "Optional packages:"
+echo "  MYSQL library		$MYSQL_LIB_SPEC"
+echo "  MYSQL headers		$MYSQL_INC_SPEC"
+echo "  EXPAT library		$EXPAT_LIB_SPEC"
+echo "  EXPAT headers		$EXPAT_INC_SPEC"
+echo "  FREETYPE library	$FT2_LIB_SPEC"
+echo "  FREETYPE headers	$FT2_INC_SPEC"
+echo "  JPEG library		$JPG_LIB_SPEC"
+echo "  JPEG headers		$JPG_INC_SPEC"
+echo "  LIBSSH2 library         $LIBSSH2_LIB_SPEC"
+echo "  LIBSSH2 headers         $LIBSSH2_INC_SPEC"
+echo "  PNG library		$PNG_LIB_SPEC"
+echo "  PNG headers		$PNG_INC_SPEC"
+echo "  TIFF library 		$TIF_LIB_SPEC"
+echo "  TIFF headers		$TIF_INC_SPEC"
+echo "  XPM library 		$XPM_LIB_SPEC"
+echo "  XPM headers		$XPM_INC_SPEC"
+echo ""
+
+#--------------------------------------------------------------------
+#
+#	Generate the following Makefiles
+#
+#	   ./Makefile
+#	   ./src/Makefile
+#	   ./src/shared/Makefile
+#	   ./man/Makefile
+#	   ./library/Makefile
+#	   ./demos/Makefile
+#
+#--------------------------------------------------------------------
+src_Makefile="src/Makefile"
+
+case ${BLT_PLATFORM} in
+  "win")
+    src_Makefile="src/Makefile:src/Makefile-mingw.in"
+    ;;
+  "macosx")
+    src_Makefile="src/Makefile:src/Makefile-macosx.in"
+    ;;
+  *)
+    ;;
+esac
+
+# --------------------------------------------------------------
+# List of files to have be generated from <name>.in files with
+# autoconf substitutions.  
+# --------------------------------------------------------------
+AC_CONFIG_FILES(
+[
+  Makefile 
+  bltConfig.sh
+  ${src_Makefile} 
+  demos/Makefile
+  demos/bitmaps/Makefile
+  demos/bitmaps/fish/Makefile
+  demos/bitmaps/hand/Makefile
+  demos/images/Makefile
+  demos/scripts/Makefile
+  library/Makefile 
+  library/afm/Makefile 
+  library/dd_protocols/Makefile 
+  man/Makefile 
+  src/bltHash.h 
+]
+)
+
+AC_OUTPUT()
+

@@ -1,0 +1,63 @@
+# ------------------------------------------------------------------------
+#       Makefile for BLT distribution
+# ------------------------------------------------------------------------
+
+# ------------------------------------------------------------------------
+#       Source and target installation directories
+# ------------------------------------------------------------------------
+
+bindir =	@bindir@
+datadir = 	@datadir@
+datarootdir = 	@datarootdir@
+exec_prefix  =	@exec_prefix@
+includedir =	@includedir@
+libdir =	@libdir@
+prefix =	@prefix@
+srcdir =	@srcdir@
+
+version =	@BLT_VERSION@
+scriptdir =	$(prefix)/lib
+bltdir =	$(prefix)/lib/blt$(version)
+
+instdirs =	$(prefix) \
+		$(exec_prefix) \
+		$(bindir) \
+		$(libdir) \
+		$(includedir) \
+		$(scriptdir) \
+		$(bltdir)
+
+# ------------------------------------------------------------------------
+#       Don't edit anything beyond this point
+# ------------------------------------------------------------------------
+
+INSTALL =	@INSTALL@
+INSTALL_DATA =	@INSTALL_DATA@
+SHELL =		/bin/sh
+MKDIR_P =	@MKDIR_P@
+RM =		rm -f
+
+subdirs =	src library man demos 
+
+all:  
+	for i in $(subdirs); do \
+	   $(MAKE) -C $$i all || exit 1 ; \
+	done
+
+install: 
+	for i in $(subdirs); do \
+	   $(MAKE) -C $$i install || exit 1 ; \
+	done
+	$(INSTALL) bltConfig.sh $(libdir)
+
+clean:
+	for i in $(subdirs); do \
+	   $(MAKE) -C $$i clean || exit 1 ; \
+	done
+	$(RM) *.bak *\~ "#"* *pure* .pure*
+
+GENERATED_FILES = \
+	config.status config.cache config.log Makefile 
+
+distclean: clean
+	$(RM) $(GENERATED_FILES)

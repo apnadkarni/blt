@@ -1,0 +1,96 @@
+# ------------------------------------------------------------------------
+# 	Makefile for demos/images
+# ------------------------------------------------------------------------
+
+datadir =	@datadir@
+datarootdir =	@datarootdir@
+exec_prefix =	@exec_prefix@
+libdir =	@libdir@
+prefix =	@prefix@
+srcdir =	@srcdir@
+
+version =	@BLT_VERSION@
+scriptdir =	$(prefix)/lib/blt$(version)
+destdir =	$(scriptdir)/demos/images
+
+SHELL =		/bin/sh
+RM =		rm -rf
+INSTALL =	@INSTALL@
+INSTALL_DATA =	@INSTALL_DATA@
+MKDIR_P	= 	@MKDIR_P@
+
+FILES =	\
+		blt98.gif \
+		buckskin.gif \
+		chalk.gif \
+		close.gif \
+		close2.gif \
+		clouds.gif \
+		corrugated_metal.gif \
+		folder.gif \
+		jan25_palm3x_L.jpg \
+		mini-book1.gif \
+		mini-book2.gif \
+		mini-display.gif \
+		mini-doc.gif \
+		mini-filemgr.gif \
+		mini-ofolder.gif \
+		mini-windows.gif \
+		ofolder.gif \
+		open.gif \
+		open2.gif \
+		out.ps \
+		qv100.t.gif \
+		rain.gif \
+		sample.gif \
+		smblue_rock.gif \
+		spinner01.png \
+		spinner02.png \
+		spinner03.png \
+		spinner04.png \
+		spinner05.png \
+		spinner06.png \
+		spinner07.png \
+		spinner08.png \
+		spinner09.png \
+		spinner10.png \
+		spinner11.png \
+		spinner12.png \
+		spinner13.png \
+		spinner14.png \
+		spinner15.png \
+		spinner16.png \
+		spinner17.png \
+		spinner18.png \
+		spinner19.png \
+		spinner20.png \
+		spinner21.png \
+		spinner22.png \
+		spinner23.png \
+		spinner24.png \
+		spinner25.png \
+		spinner26.png \
+		spinner27.png \
+		spinner28.png \
+		spinner29.png \
+		spinner30.png \
+		spinner31.png \
+		spinner32.png \
+		stopsign.gif \
+		tan_paper.gif \
+		tan_paper2.gif \
+		txtrflag.gif
+
+all:
+
+install: 
+	$(MKDIR_P) $(DESTDIR)$(destdir)
+	for i in $(FILES) ; do \
+	    $(INSTALL_DATA) $(srcdir)/$$i $(DESTDIR)$(destdir) ; \
+	done 
+
+clean:
+	$(RM) $(srcdir)/*.bak $(srcdir)/*\~ $(srcdir)/"#"* 
+
+distclean: clean
+	$(RM) *.ps Makefile

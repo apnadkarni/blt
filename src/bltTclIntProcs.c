@@ -1,0 +1,121 @@
+#define BUILD_BLT_TCL_PROCS 1
+#include <bltInt.h>
+
+/* !BEGIN!: Do not edit below this line. */
+
+BltTclIntProcs bltTclIntProcs = {
+    TCL_STUB_MAGIC,
+    NULL,
+    NULL, /* 0 */
+    Blt_Malloc, /* 1 */
+    Blt_Realloc, /* 2 */
+    Blt_Free, /* 3 */
+    Blt_Calloc, /* 4 */
+    Blt_Strdup, /* 5 */
+    Blt_MallocAbortOnError, /* 6 */
+    Blt_CallocAbortOnError, /* 7 */
+    Blt_StrdupAbortOnError, /* 8 */
+    Blt_DictionaryCompare, /* 9 */
+    Blt_GetUid, /* 10 */
+    Blt_FreeUid, /* 11 */
+    Blt_FindUid, /* 12 */
+    Blt_CreatePipeline, /* 13 */
+    Blt_InitHexTable, /* 14 */
+    Blt_DStringAppendElements, /* 15 */
+    Blt_LoadLibrary, /* 16 */
+    Blt_Panic, /* 17 */
+    Blt_Warn, /* 18 */
+    Blt_GetSideFromObj, /* 19 */
+    Blt_NameOfSide, /* 20 */
+    Blt_OpenFile, /* 21 */
+    Blt_ExprDoubleFromObj, /* 22 */
+    Blt_ExprIntFromObj, /* 23 */
+    Blt_Itoa, /* 24 */
+    Blt_Ltoa, /* 25 */
+    Blt_Utoa, /* 26 */
+    Blt_Dtoa, /* 27 */
+    Blt_Base64_Decode, /* 28 */
+    Blt_Base64_DecodeToBuffer, /* 29 */
+    Blt_Base64_DecodeToObj, /* 30 */
+    Blt_Base64_Encode, /* 31 */
+    Blt_Base64_EncodeToObj, /* 32 */
+    Blt_Base85_Encode, /* 33 */
+    Blt_Base16_Encode, /* 34 */
+    Blt_IsBase64, /* 35 */
+    Blt_GetDoubleFromString, /* 36 */
+    Blt_GetDoubleFromObj, /* 37 */
+    Blt_GetTimeFromObj, /* 38 */
+    Blt_GetTime, /* 39 */
+    Blt_GetDateFromObj, /* 40 */
+    Blt_GetDate, /* 41 */
+    Blt_GetPositionFromObj, /* 42 */
+    Blt_GetCountFromObj, /* 43 */
+    Blt_SimplifyLine, /* 44 */
+    Blt_GetLong, /* 45 */
+    Blt_GetLongFromObj, /* 46 */
+    Blt_FormatString, /* 47 */
+    Blt_LowerCase, /* 48 */
+    Blt_GetPlatformId, /* 49 */
+    Blt_LastError, /* 50 */
+    Blt_NaN, /* 51 */
+    Blt_AlmostEquals, /* 52 */
+    Blt_GetArrayFromObj, /* 53 */
+    Blt_NewArrayObj, /* 54 */
+    Blt_RegisterArrayObj, /* 55 */
+    Blt_IsArrayObj, /* 56 */
+    Blt_Assert, /* 57 */
+    Blt_DBuffer_VarAppend, /* 58 */
+    Blt_DBuffer_Format, /* 59 */
+    Blt_DBuffer_Init, /* 60 */
+    Blt_DBuffer_Free, /* 61 */
+    Blt_DBuffer_Extend, /* 62 */
+    Blt_DBuffer_AppendData, /* 63 */
+    Blt_DBuffer_Concat, /* 64 */
+    Blt_DBuffer_Resize, /* 65 */
+    Blt_DBuffer_SetLength, /* 66 */
+    Blt_DBuffer_Create, /* 67 */
+    Blt_DBuffer_Destroy, /* 68 */
+    Blt_DBuffer_LoadFile, /* 69 */
+    Blt_DBuffer_SaveFile, /* 70 */
+    Blt_DBuffer_AppendByte, /* 71 */
+    Blt_DBuffer_AppendShort, /* 72 */
+    Blt_DBuffer_AppendLong, /* 73 */
+    Blt_DBuffer_ByteArrayObj, /* 74 */
+    Blt_DBuffer_StringObj, /* 75 */
+    Blt_DBuffer_String, /* 76 */
+    Blt_DBuffer_Base64Decode, /* 77 */
+    Blt_DBuffer_Base64Encode, /* 78 */
+    Blt_DBuffer_Base64EncodeToObj, /* 79 */
+    Blt_InitCmd, /* 80 */
+    Blt_InitCmds, /* 81 */
+    Blt_GetOpFromObj, /* 82 */
+    Blt_GetVariableNamespace, /* 83 */
+    Blt_GetCommandNamespace, /* 84 */
+    Blt_EnterNamespace, /* 85 */
+    Blt_LeaveNamespace, /* 86 */
+    Blt_ParseObjectName, /* 87 */
+    Blt_MakeQualifiedName, /* 88 */
+    Blt_CommandExists, /* 89 */
+    Blt_CreateSpline, /* 90 */
+    Blt_EvaluateSpline, /* 91 */
+    Blt_FreeSpline, /* 92 */
+    Blt_CreateParametricCubicSpline, /* 93 */
+    Blt_EvaluateParametricCubicSpline, /* 94 */
+    Blt_FreeParametricCubicSpline, /* 95 */
+    Blt_CreateCatromSpline, /* 96 */
+    Blt_EvaluateCatromSpline, /* 97 */
+    Blt_FreeCatromSpline, /* 98 */
+    Blt_ComputeNaturalSpline, /* 99 */
+    Blt_ComputeQuadraticSpline, /* 100 */
+    Blt_ComputeNaturalParametricSpline, /* 101 */
+    Blt_ComputeCatromParametricSpline, /* 102 */
+    Blt_ParseSwitches, /* 103 */
+    Blt_FreeSwitches, /* 104 */
+    Blt_SwitchChanged, /* 105 */
+    Blt_SwitchInfo, /* 106 */
+    Blt_SwitchValue, /* 107 */
+    Blt_GetCachedVar, /* 108 */
+    Blt_FreeCachedVars, /* 109 */
+};
+
+/* !END!: Do not edit above this line. */

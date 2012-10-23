@@ -1,0 +1,46 @@
+# ------------------------------------------------------------------------
+# 	Makefile for demos/bitmaps/fish
+# ------------------------------------------------------------------------
+
+datadir =	@datadir@
+datarootdir =	@datarootdir@
+exec_prefix =	@exec_prefix@
+libdir =	@libdir@
+prefix =	@prefix@
+srcdir =	@srcdir@
+
+version =	@BLT_VERSION@
+scriptdir =	$(prefix)/lib/blt$(version)
+destdir =	$(scriptdir)/demos/bitmaps/fish
+
+SHELL =		/bin/sh
+RM =		rm -rf
+INSTALL =	@INSTALL@
+INSTALL_DATA =	@INSTALL_DATA@
+MKDIR_P	= 	@MKDIR_P@
+
+FILES =	\
+		left.xbm \
+		left1.xbm \
+		left1m.xbm \
+		leftm.xbm \
+		mid.xbm \
+		midm.xbm \
+		right.xbm \
+		right1.xbm \
+		right1m.xbm \
+		rightm.xbm
+
+all:
+
+install: 
+	$(MKDIR_P) $(DESTDIR)$(destdir)
+	for i in $(FILES) ; do \
+	    $(INSTALL_DATA) $(srcdir)/$$i $(DESTDIR)$(destdir) ; \
+	done 
+
+clean:
+	$(RM) $(srcdir)/*.bak $(srcdir)/*\~ $(srcdir)/"#"* 
+
+distclean: clean
+	$(RM) *.ps Makefile

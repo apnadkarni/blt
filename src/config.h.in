@@ -1,0 +1,386 @@
+/* src/config.h.in.  Generated from configure.in by autoheader.  */
+
+/* Define if building universal (internal helper macro) */
+#undef AC_APPLE_UNIVERSAL_BUILD
+
+/* Define the smallest machine value DBL_EPILSON. */
+#undef BLT_DBL_EPSILON
+
+/* Define 'suffix' as the suffix for library names. */
+#undef BLT_LIB_SUFFIX
+
+/* Define 'soext' as the extension for shared libraries. */
+#undef BLT_SO_EXT
+
+/* Define 'prefix' as the prefix for shared library names. */
+#undef BLT_SO_PREFIX
+
+/* Define to 1 if you have the <arpa/inet.h> header file. */
+#undef HAVE_ARPA_INET_H
+
+/* Define to 1 if you have the <ctype.h> header file. */
+#undef HAVE_CTYPE_H
+
+/* Define to 1 if you have the declaration of `drand48', and to 0 if you
+   don't. */
+#undef HAVE_DECL_DRAND48
+
+/* Define to 1 if you have the declaration of `finite', and to 0 if you don't.
+   */
+#undef HAVE_DECL_FINITE
+
+/* Define to 1 if you have the declaration of `free', and to 0 if you don't.
+   */
+#undef HAVE_DECL_FREE
+
+/* Define to 1 if you have the declaration of `hypot', and to 0 if you don't.
+   */
+#undef HAVE_DECL_HYPOT
+
+/* Define to 1 if you have the declaration of `isfinite', and to 0 if you
+   don't. */
+#undef HAVE_DECL_ISFINITE
+
+/* Define to 1 if you have the declaration of `isnan', and to 0 if you don't.
+   */
+#undef HAVE_DECL_ISNAN
+
+/* Define to 1 if you have the declaration of `j1', and to 0 if you don't. */
+#undef HAVE_DECL_J1
+
+/* Define to 1 if you have the declaration of `snprintf', and to 0 if you
+   don't. */
+#undef HAVE_DECL_SNPRINTF
+
+/* Define to 1 if you have the declaration of `srand48', and to 0 if you
+   don't. */
+#undef HAVE_DECL_SRAND48
+
+/* Define to 1 if you have the declaration of `strcasecmp', and to 0 if you
+   don't. */
+#undef HAVE_DECL_STRCASECMP
+
+/* Define to 1 if you have the declaration of `strncasecmp', and to 0 if you
+   don't. */
+#undef HAVE_DECL_STRNCASECMP
+
+/* Define to 1 if you have the declaration of `strtolower', and to 0 if you
+   don't. */
+#undef HAVE_DECL_STRTOLOWER
+
+/* Define to 1 if you have the declaration of `vsnprintf', and to 0 if you
+   don't. */
+#undef HAVE_DECL_VSNPRINTF
+
+/* Define to 1 if you have the declaration of `XRRGetScreenResources', and to
+   0 if you don't. */
+#undef HAVE_DECL_XRRGETSCREENRESOURCES
+
+/* Define to 1 if you have the `drand48' function. */
+#undef HAVE_DRAND48
+
+/* Define to 1 if you have the <errno.h> header file. */
+#undef HAVE_ERRNO_H
+
+/* Define to 1 if you have the <expat.h> header file. */
+#undef HAVE_EXPAT_H
+
+/* Define to 1 if you have the <fcntl.h> header file. */
+#undef HAVE_FCNTL_H
+
+/* Define to 1 if you have the `finite' function. */
+#undef HAVE_FINITE
+
+/* Define to 1 if you have the <float.h> header file. */
+#undef HAVE_FLOAT_H
+
+/* Define to 1 if you have the <ft2build.h> header file. */
+#undef HAVE_FT2BUILD_H
+
+/* Define to 1 if you have the `getpt' function. */
+#undef HAVE_GETPT
+
+/* Define to 1 if you have the `grantpt' function. */
+#undef HAVE_GRANTPT
+
+/* Define to 1 if you have the <ieeefp.h> header file. */
+#undef HAVE_IEEEFP_H
+
+/* Define to 1 if you have the <inttypes.h> header file. */
+#undef HAVE_INTTYPES_H
+
+/* Define to 1 if you have the `isastream' function. */
+#undef HAVE_ISASTREAM
+
+/* Define if we have a working 'isinfinite'. */
+#undef HAVE_ISFINITE
+
+/* Define to 1 if you have the `isnan' function. */
+#undef HAVE_ISNAN
+
+/* Define to 1 if you have the <jpeglib.h> header file. */
+#undef HAVE_JPEGLIB_H
+
+/* Define to 1 if you have the `EXPAT' library (-lexpat). */
+#undef HAVE_LIBEXPAT
+
+/* Define to 1 if you have the `FT2' library (-lfreetype). */
+#undef HAVE_LIBFT2
+
+/* Define to 1 if you have the `FTCFG' library (-lfontconfig). */
+#undef HAVE_LIBFTCFG
+
+/* Define to 1 if you have the `JPG' library (-ljpeg). */
+#undef HAVE_LIBJPG
+
+/* Define to 1 if you have the `LIBSSH2' library (-lssh2). */
+#undef HAVE_LIBLIBSSH2
+
+/* Define to 1 if you have the `m' library (-lm). */
+#undef HAVE_LIBM
+
+/* Define to 1 if you have the `MYSQL' library (-lmysqlclient). */
+#undef HAVE_LIBMYSQL
+
+/* Define to 1 if you have the `nsl' library (-lnsl). */
+#undef HAVE_LIBNSL
+
+/* Define to 1 if you have the `PNG' library (-lpng). */
+#undef HAVE_LIBPNG
+
+/* Define to 1 if you have the `socket' library (-lsocket). */
+#undef HAVE_LIBSOCKET
+
+/* Define to 1 if you have the <libssh2.h> header file. */
+#undef HAVE_LIBSSH2_H
+
+/* Define to 1 if you have the `TIF' library (-ltiff). */
+#undef HAVE_LIBTIF
+
+/* Define to 1 if you have the `XAU' library (-lXau). */
+#undef HAVE_LIBXAU
+
+/* Define to 1 if you have the `XDMCP' library (-lXdmcp). */
+#undef HAVE_LIBXDMCP
+
+/* Define to 1 if you have the `XFT' library (-lXft -lexpat). */
+#undef HAVE_LIBXFT
+
+/* Define to 1 if you have the `XPM' library (-lXpm). */
+#undef HAVE_LIBXPM
+
+/* Define to 1 if you have the `XRANDR' library (-lXrandr). */
+#undef HAVE_LIBXRANDR
+
+/* Define to 1 if you have the `XRENDER' library (-lXrender). */
+#undef HAVE_LIBXRENDER
+
+/* Define to 1 if you have the `Z' library (-lz). */
+#undef HAVE_LIBZ
+
+/* Define to 1 if you have the <limits.h> header file. */
+#undef HAVE_LIMITS_H
+
+/* Define to 1 if you have the <malloc.h> header file. */
+#undef HAVE_MALLOC_H
+
+/* Define to 1 if you have the <math.h> header file. */
+#undef HAVE_MATH_H
+
+/* Define to 1 if you have the <memory.h> header file. */
+#undef HAVE_MEMORY_H
+
+/* Define to 1 if you have the <mysql/mysql.h> header file. */
+#undef HAVE_MYSQL_MYSQL_H
+
+/* Define to 1 if you have the <netinet/in.h> header file. */
+#undef HAVE_NETINET_IN_H
+
+/* Define to 1 if you have the `openpty' function. */
+#undef HAVE_OPENPTY
+
+/* Define to 1 if you have the `open_controlling_pty' function. */
+#undef HAVE_OPEN_CONTROLLING_PTY
+
+/* Define to 1 if you have the <png.h> header file. */
+#undef HAVE_PNG_H
+
+/* Define to 1 if you have the `posix_openpt' function. */
+#undef HAVE_POSIX_OPENPT
+
+/* Define to 1 if you have the `ptsname' function. */
+#undef HAVE_PTSNAME
+
+/* Define to 1 if you have the <setjmp.h> header file. */
+#undef HAVE_SETJMP_H
+
+/* Define to 1 if you have the `setsid' function. */
+#undef HAVE_SETSID
+
+/* Define to 1 if you have the <signal.h> header file. */
+#undef HAVE_SIGNAL_H
+
+/* Define to 1 if you have the `srand48' function. */
+#undef HAVE_SRAND48
+
+/* Define to 1 if you have the <stddef.h> header file. */
+#undef HAVE_STDDEF_H
+
+/* Define to 1 if you have the <stdint.h> header file. */
+#undef HAVE_STDINT_H
+
+/* Define to 1 if you have the <stdlib.h> header file. */
+#undef HAVE_STDLIB_H
+
+/* Define to 1 if you have the `strcasecmp' function. */
+#undef HAVE_STRCASECMP
+
+/* Define to 1 if you have the <strings.h> header file. */
+#undef HAVE_STRINGS_H
+
+/* Define to 1 if you have the <string.h> header file. */
+#undef HAVE_STRING_H
+
+/* Define to 1 if you have the `strncasecmp' function. */
+#undef HAVE_STRNCASECMP
+
+/* Define to 1 if you have the <stropts.h> header file. */
+#undef HAVE_STROPTS_H
+
+/* Define to 1 if you have the `strtolower' function. */
+#undef HAVE_STRTOLOWER
+
+/* Define to 1 if you have the <sys/param.h> header file. */
+#undef HAVE_SYS_PARAM_H
+
+/* Define to 1 if you have the <sys/socket.h> header file. */
+#undef HAVE_SYS_SOCKET_H
+
+/* Define to 1 if you have the <sys/stat.h> header file. */
+#undef HAVE_SYS_STAT_H
+
+/* Define to 1 if you have the <sys/time.h> header file. */
+#undef HAVE_SYS_TIME_H
+
+/* Define to 1 if you have the <sys/types.h> header file. */
+#undef HAVE_SYS_TYPES_H
+
+/* Define to 1 if you have the <sys/wait.h> header file. */
+#undef HAVE_SYS_WAIT_H
+
+/* Define to 1 if you have the `tcflush' function. */
+#undef HAVE_TCFLUSH
+
+/* Define to 1 if you have the <termios.h> header file. */
+#undef HAVE_TERMIOS_H
+
+/* Define to 1 if you have the <tiff.h> header file. */
+#undef HAVE_TIFF_H
+
+/* Define to 1 if you have the <time.h> header file. */
+#undef HAVE_TIME_H
+
+/* Define if 'wait' is a union. */
+#undef HAVE_UNION_WAIT
+
+/* Define to 1 if you have the <unistd.h> header file. */
+#undef HAVE_UNISTD_H
+
+/* Define to 1 if you have the `unlockpt' function. */
+#undef HAVE_UNLOCKPT
+
+/* Define to 1 if you have the <waitflags.h> header file. */
+#undef HAVE_WAITFLAGS_H
+
+/* Define to 1 if you have the <winsock2.h> header file. */
+#undef HAVE_WINSOCK2_H
+
+/* Define to 1 if you have the <X11/extensions/randr.h> header file. */
+#undef HAVE_X11_EXTENSIONS_RANDR_H
+
+/* Define to 1 if you have the <X11/extensions/Xrandr.h> header file. */
+#undef HAVE_X11_EXTENSIONS_XRANDR_H
+
+/* Define to 1 if you have the <X11/Xft/Xft.h> header file. */
+#undef HAVE_X11_XFT_XFT_H
+
+/* Define to 1 if you have the <X11/xpm.h> header file. */
+#undef HAVE_X11_XPM_H
+
+/* Define if we're compiling for an X86. */
+#undef HAVE_X86
+
+/* Define to 1 if you have the `XRRGetScreenResources' function. */
+#undef HAVE_XRRGETSCREENRESOURCES
+
+/* Define if building for MacOSX. */
+#undef MACOSX
+
+/* Define to the address where bug reports for this package should be sent. */
+#undef PACKAGE_BUGREPORT
+
+/* Define to the full name of this package. */
+#undef PACKAGE_NAME
+
+/* Define to the full name and version of this package. */
+#undef PACKAGE_STRING
+
+/* Define to the one symbol short name of this package. */
+#undef PACKAGE_TARNAME
+
+/* Define to the home page for this package. */
+#undef PACKAGE_URL
+
+/* Define to the version of this package. */
+#undef PACKAGE_VERSION
+
+/* The size of `float', as computed by sizeof. */
+#undef SIZEOF_FLOAT
+
+/* The size of `int', as computed by sizeof. */
+#undef SIZEOF_INT
+
+/* The size of `long', as computed by sizeof. */
+#undef SIZEOF_LONG
+
+/* The size of `long long', as computed by sizeof. */
+#undef SIZEOF_LONG_LONG
+
+/* The size of `void *', as computed by sizeof. */
+#undef SIZEOF_VOID_P
+
+/* Define to 1 if you have the ANSI C header files. */
+#undef STDC_HEADERS
+
+/* Define to 1 if you can safely include both <sys/time.h> and <time.h>. */
+#undef TIME_WITH_SYS_TIME
+
+/* Define if BLT stubs are used. */
+#undef USE_BLT_STUBS
+
+/* Define if Tcl stubs are used. */
+#undef USE_TCL_STUBS
+
+/* Define if Tk stubs are used. */
+#undef USE_TK_STUBS
+
+/* Define if building for Win32. */
+#undef WIN32
+
+/* Define WORDS_BIGENDIAN to 1 if your processor stores words with the most
+   significant byte first (like Motorola and SPARC, unlike Intel). */
+#if defined AC_APPLE_UNIVERSAL_BUILD
+# if defined __BIG_ENDIAN__
+#  define WORDS_BIGENDIAN 1
+# endif
+#else
+# ifndef WORDS_BIGENDIAN
+#  undef WORDS_BIGENDIAN
+# endif
+#endif
+
+/* Define to `int' if <sys/types.h> does not define. */
+#undef pid_t
+
+/* Define to `unsigned int' if <sys/types.h> does not define. */
+#undef size_t

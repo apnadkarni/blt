@@ -1,0 +1,99 @@
+# ------------------------------------------------------------------------
+# 	Makefile for library files and directories of BLT library
+# ------------------------------------------------------------------------
+
+datadir =	@datadir@
+datarootdir = 	@datarootdir@
+exec_prefix =	@exec_prefix@
+libdir =	@libdir@
+prefix =	@prefix@
+srcdir =	@srcdir@
+
+version =	@BLT_VERSION@
+so_prefix =	@BLT_SO_PREFIX@
+so_ext =	@BLT_SO_EXT@
+lib_suffix =	@BLT_LIB_SUFFIX@
+destdir =	@BLT_LIBRARY@
+
+INSTALL =	@INSTALL@
+INSTALL_DATA =  @INSTALL_DATA@
+RM =		rm -f
+SHELL =		/bin/sh
+MKDIR_P =	@MKDIR_P@
+
+cursors = 	$(srcdir)/treeview.xbm \
+		$(srcdir)/treeview_m.xbm \
+	 	$(srcdir)/tableview.xbm \
+		$(srcdir)/tableview_m.xbm
+
+
+WIN32 = 	@WIN32@
+ifeq ("$(WIN32)", "yes")
+cursors += 	$(srcdir)/treeview.cur \
+	 	$(srcdir)/tableview.cur
+endif
+
+FILES = \
+		$(srcdir)/bltCanvEps.pro \
+		$(srcdir)/bltGraph.pro \
+		$(srcdir)/combobutton.tcl \
+		$(srcdir)/comboentry.tcl \
+		$(srcdir)/combomenu.tcl \
+		$(srcdir)/combotree.tcl \
+		$(srcdir)/comboview.tcl \
+		$(srcdir)/dnd.tcl \
+		$(srcdir)/dragdrop.tcl \
+		$(srcdir)/drawerset.tcl \
+		$(srcdir)/filmstrip.tcl \
+		$(srcdir)/graph.tcl \
+		$(srcdir)/listview.tcl \
+		$(srcdir)/macButton.tcl \
+		$(srcdir)/palette.tcl \
+		$(srcdir)/paneset.tcl \
+		$(srcdir)/pushbutton.tcl \
+		$(srcdir)/scrollbar.tcl \
+		$(srcdir)/scrollset.tcl \
+		$(srcdir)/tableview.tcl \
+		$(srcdir)/tabset.tcl \
+		$(srcdir)/tclIndex \
+		$(srcdir)/treeview.tcl \
+		$(srcdir)/unixButton.tcl \
+		$(srcdir)/winButton.tcl \
+		$(cursors) \
+		pkgIndex.tcl
+
+subdirs =	dd_protocols afm
+
+all: pkgIndex
+	for i in $(subdirs); do \
+	   $(MAKE) -C $$i all || exit 1 ; \
+	done
+
+pkgIndex:  
+	rm -f pkgIndex.tcl
+	sed -e 's/%VERSION%/$(version)/' $(srcdir)/pkgIndex.tcl.in | \
+	sed -e 's/%SO_PREFIX%/$(so_prefix)/' | \
+	sed -e 's/%LIB_SUFFIX%/$(lib_suffix)/' | \
+	sed -e 's/%SO_EXT%/$(so_ext)/' | \
+	sed -e 's;%LIB_DIR%;$(libdir);' > pkgIndex.tcl
+
+
+install: pkgIndex
+	$(MKDIR_P) $(DESTDIR)$(destdir)
+	for i in $(FILES) ; do \
+	    $(INSTALL_DATA) $$i $(DESTDIR)$(destdir) ; \
+	done 
+	for i in $(subdirs); do \
+	   $(MAKE) -C $$i install || exit 1 ; \
+	done
+
+clean:
+	for i in $(subdirs); do \
+	   $(MAKE) -C $$i clean || exit 1 ; \
+	done
+
+distclean: clean
+	for i in $(subdirs); do \
+	   $(MAKE) -C $$i distclean || exit 1 ; \
+	done
+	$(RM) $(srcdir)/*.bak $(srcdir)/*\~ $(srcdir)/"#"* Makefile

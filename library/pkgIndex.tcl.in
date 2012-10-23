@@ -1,0 +1,121 @@
+# Tcl package index file, version 1.0
+
+set version "%VERSION%"
+
+namespace eval blt${version} {}
+
+proc blt${version}::load_library { name version dir package } {
+
+    set suffix "%LIB_SUFFIX%"
+    set so [info sharedlibextension]
+    regsub {\.} $version {} version_no_dots
+
+    set fullname ${name}${version_no_dots}${suffix}${so}
+
+    set library [file join $dir $fullname]
+    if { ![file exists $library] } {
+ 	# Try the parent directory.
+	set library [file join [file dirname $dir] $fullname]
+    }
+    if { ![file exists $library] } {
+        # Default to the path generated at compilation.
+        set library [file join "%LIB_DIR%" $fullname]
+    }
+    load $library $package
+}
+
+
+package ifneeded BLT $version [subst -nocommands {
+    package require blt_tcl $version
+    if { [info commands tk] == "tk" } {
+	package require blt_tk $version
+    } 
+    package provide BLT $version
+}]
+
+# blt_tcl (tcl-only) and blt_tk (Tk) packages 
+
+package ifneeded blt_tcl $version \
+    [list blt${version}::load_library "Tcl" $version "$dir" "blt_tcl"]
+
+package ifneeded blt_tk $version [subst {
+    package require blt_tcl $version
+    blt${version}::load_library "Tk" $version "$dir" "blt_tk"
+}]
+
+# Data table data format packages
+
+package ifneeded blt_datatable_csv $version \
+	[list blt::datatable load csv "$dir"]
+
+package ifneeded blt_datatable_mysql $version \
+	[list blt::datatable load mysql "$dir"]
+
+package ifneeded blt_datatable_tree $version \
+	[list blt::datatable load tree "$dir"]
+
+package ifneeded blt_datatable_txt $version \
+	[list blt::datatable load txt "$dir"]
+
+package ifneeded blt_datatable_vector $version \
+	[list blt::datatable load vector "$dir"]
+
+package ifneeded blt_datatable_xml $version \
+	[list blt::datatable load xml "$dir"]
+
+# Picture image format packages
+
+package ifneeded blt_picture_bmp $version \
+	[list blt::picture load bmp "$dir"]
+
+package ifneeded blt_picture_gif $version \
+	[list blt::picture load gif "$dir"]
+
+package ifneeded blt_picture_ico $version \
+	[list blt::picture load ico "$dir"]
+
+package ifneeded blt_picture_jpg $version \
+	[list blt::picture load jpg "$dir"]
+
+package ifneeded blt_picture_pbm $version \
+	[list blt::picture load pbm "$dir"]
+
+package ifneeded blt_picture_pdf $version \
+	[list blt::picture load pdf "$dir"]
+
+package ifneeded blt_picture_png $version \
+	[list blt::picture load png "$dir"]
+
+package ifneeded blt_picture_ps $version \
+	[list blt::picture load ps "$dir"]
+
+package ifneeded blt_picture_tga $version \
+	[list blt::picture load tga "$dir"]
+
+package ifneeded blt_picture_tif $version \
+	[list blt::picture load tif "$dir"]
+
+package ifneeded blt_picture_xbm $version \
+	[list blt::picture load xbm "$dir"]
+
+package ifneeded blt_picture_xpm $version \
+	[list blt::picture load xpm "$dir"]
+
+package ifneeded blt_picture_photo $version \
+	[list blt::picture load photo "$dir"]
+
+# Tree data format packages
+
+package ifneeded blt_tree_xml $version \
+	[list blt::tree load xml "$dir"]
+
+package ifneeded blt_tree_json $version \
+	[list blt::tree load json "$dir"]
+
+package ifneeded blt_sftp $version [subst {
+    package require blt_tcl $version
+    package provide blt_sftp 3.0
+    blt${version}::load_library "Sftp" $version "$dir" "blt_sftp"
+}]
+
+# End of package index file

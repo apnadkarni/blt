@@ -1,0 +1,1505 @@
+
+'\"
+'\" Copyright 1991-1997 by Lucent Technologies, Inc.
+'\"
+'\" Permission to use, copy, modify, and distribute this software and its
+'\" documentation for any purpose and without fee is hereby granted, provided
+'\" that the above copyright notice appear in all copies and that both that the
+'\" copyright notice and warranty disclaimer appear in supporting documentation,
+'\" and that the names of Lucent Technologies any of their entities not be used
+'\" in advertising or publicity pertaining to distribution of the software
+'\" without specific, written prior permission.
+'\"
+'\" Lucent Technologies disclaims all warranties with regard to this software,
+'\" including all implied warranties of merchantability and fitness.  In no event
+'\" shall Lucent Technologies be liable for any special, indirect or
+'\" consequential damages or any damages whatsoever resulting from loss of use,
+'\" data or profits, whether in an action of contract, negligence or other
+'\" tortuous action, arising out of or in connection with the use or performance
+'\" of this software.  
+'\"
+'\" Datatable command created by George Howlett.
+'\"
+.so man.macros
+.TH datatable n BLT_VERSION BLT "BLT Built-In Commands"
+.BS
+'\" Note:  do not modify the .SH NAME line immediately below!
+.SH NAME
+\fBdatatable\fR \-  Create and manage table data objects.
+.SH SYNOPSIS
+\fBblt::datatable create \fR?\fItableName\fR?
+.sp
+\fBblt::datatable destroy\fR \fItableName\fR...
+.sp
+\fBblt::datatable names\fR \fR?\fIpattern\fR?
+.BE
+.SH DESCRIPTION
+The \fBdatatable\fR command creates table data objects.  A \fItable object\fR
+is general ordered tree of nodes.  Each node has both a label and a
+key-value list of data.  Data can be heterogeneous, since nodes do not
+have to contain the same data keys.  It is associated with a Tcl
+command that you can use to access and modify the its structure and
+data. Table objects can also be managed via a C API.
+.SH INTRODUCTION
+
+.SH EXAMPLE
+
+.SH SYNTAX
+.TP
+\fBblt::datatable create\fR ?\fItableName\fR?  
+Creates a new table object.  The name of the new table is returned.  If
+no \fItableName\fR argument is present, then the name of the table is
+automatically generated in the form "\f(CWdatatable0\fR", "\f(CWdatatable1\fR",
+etc.  If the substring "\f(CW#auto\fR" is found in \fItableName\fR, it
+is automatically substituted by a generated name.  For example, the
+name \f(CW.foo.#auto.bar\fR will be translated to \f(CW.foo.datatable0.bar\fR.
+.sp
+A new Tcl command (by the same name as the table) is also created.
+Another Tcl command or table object can not already exist as
+\fItableName\fR.  If the Tcl command is deleted, the table will also be
+freed.  The new table will contain no rows or columns.  Tables are by
+default, created in the current namespace, not the global namespace,
+unless \fItableName\fR contains a namespace qualifier, such as
+"\f(CWfred::myTable\fR".
+.TP
+\fBblt::datatable destroy\fR \fItableName\fR...
+Deletes one of more tables.  The Tcl command associated with
+\fItableName\fR is also removed.  If the table is currently shared
+(another client is using it),  the table data isn't destroyed until 
+no one else is using it.
+.TP
+\fBblt::datatable names \fR?\fIpattern\fR?
+Returns the names of all table objects.  if a \fIpattern\fR argument
+is given, then the only those tables whose name matches pattern will
+be listed.
+.SH ROW/COLUMN IDENTIFIERS
+Rows and columns in a table object may be identified by either an index,
+label, or tag.
+.SS INDEX
+An index is the position of the row/column.  Row/column indices start from
+one (not zero).  Indices may change if rows/columns are inserted, deleted, or
+sorted.
+.SS LABEL
+A label is a string of characters that identifies a row or column.  A label
+may reference more than one row or column.  It is up to the programmer to
+maintain unique labels.  For example, if two columns have the same label, only
+the first column may be accessed using that label.  Row and column labels are
+distinct.  Labels do not change if other rows/columns are inserted, deleted,
+or sorted. Labels can not start with a "-".
+.SS TAG
+A row/column may also have any number of tags associated with it.  A tag is
+just a string of characters, and it may take any form except that of
+an integer.  For example, "\f(CWx123\fR" is valid, but "\f(CW123\fR"
+isn't.  The same tag may be associated with many different rows/columns.
+This is commonly done to group rows/columns in various interesting ways.
+.sp
+There are two built-in tags: The tag \fBall\fR is implicitly
+associated with every row/column in the table.  It may be used to invoke
+operations on all the rows/columns in the table.  The tag \fBend\fR is
+managed automatically by the table object. It applies to the last row/column.
+.sp
+When specifying nodes in table object commands, if the specifier is an
+integer then it is assumed to refer to the single node with that id.
+If the specifier is not an integer, then it is assumed to refer to all
+of the nodes in the table that have a tag matching the specifier.  The
+symbol \fInode\fR is used below to indicate that an argument specifies
+either an id that selects a single node or a tag that selects zero or
+more nodes.  Many table commands only operate on a single node at a
+time; if \fInode\fR is specified in a way that names multiple items, then
+an error "refers to more than one node" is generated.
+.SH NODE MODIFIERS
+You can also specify node in relation to another node by appending one
+or more modifiers to the node id or tag.  A modifier refers to a node
+in relation to the specified node.  For example, 
+"\f(CWroot->firstchild\fR"
+selects the first subtree of the root node.
+.PP
+The following modifiers are available:
+.RS
+.TP 1i
+\fBfirstchild\fR 
+Selects the first child of the node.  
+.TP 1i
+\fBlastchild\fR 
+Selects the last child of the node.  
+.TP 1i
+\fBnext\fR 
+Selects the next node in preorder to the node.  
+.TP 1i
+\fBnextsibling\fR 
+Selects the next sibling of the node.  
+.TP 1i
+\fBparent\fR 
+Selects the parent of the node.  
+.TP 1i
+\fBprevious\fR 
+Selects the previous node in preorder to the node.  
+.TP 1i
+\fBprevsibling\fR 
+Selects the previous sibling of the node.  
+.TP 1i
+"\fIlabel\fR"
+Selects the node whose label is \fIlabel\fR.  Enclosing \fIlabel\fR in 
+quotes indicates to always search for a node by its label (for example, 
+even if the node is labeled "parent").
+.RE
+.sp
+It's an error the node can't be found.  For example,
+\fBlastchild\fR and \fBfirstchild\fR will generate errors if the node
+has no children.  The exception to this is the \fBindex\fR operation.
+You can use \fBindex\fR to test if a modifier is valid.
+.SH TABLE OPERATIONS
+Once you create a table object, you can use its Tcl command 
+to query or modify it.  The
+general form is
+.DS
+\fItableName\fR \fIoperation\fR \fR?\fIarg\fR?...
+.DE
+Both \fIoperation\fR and its arguments determine the exact behavior of
+the command.  The operations available for tables are listed below.
+.TP
+\fItableName\fR \fBarray\fR \fBexists\fR \fIrow\fR \fIcol\fR \fIkey\fR 
+Indicates if \fIkey\fR exists in the array element located at the 
+given row and column position in the table. If \fIrow\fR is not a valid 
+row identifier, \fIcol\fR is not a valid column identifier, or \fIkey\fR 
+is not a valid key for the array, then \f(CW0\fR is returned, otherwise
+\f(CW1\fR. 
+.TP
+\fItableName\fR \fBarray\fR \fBget\fR \fIrow\fR \fIcol\fR \fIkey\fR ?\fIdefValue\fR?
+Returns the value associated with \fIkey\fR in the array located 
+at the given row and column position in the table.  It's normally an 
+error if \fIrow\fR is not a valid row identifier, \fIcol\fR is not a 
+valid column identifier, or \fIkey\fR is not a valid key for the array. 
+But if you provide a \fIdefValue\fR argument, this value is will be returned 
+instead.   This operation may trigger \fBread\fR traces.
+.TP
+\fItableName\fR \fBarray\fR \fBnames\fR \fIrow\fR \fIcol\fR
+Returns a list of the current keys in the array located at the 
+given row and column position in the table. It is an error \fIrow\fR 
+is not a valid row identifier or \fIcol\fR is not a valid column identifier.
+.TP
+\fItableName\fR \fBarray\fR \fBset\fR \fIrow\fR \fIcol\fR \fIkey\fR \fIvalue\fR
+Sets the value to the array element associated with \fIkey\fR located at the 
+given row and column position in the table.  If either \fIrow\fR or 
+\fIcolumn\fR do not exist, they will be automatically created (they must
+be a label or index).  If \fIkey\fR doesn't exist, a new entry in the array 
+be created.  This operation may trigger \fBwrite\fR traces.
+.TP
+\fItableName\fR \fBarray\fR \fBunset\fR \fIrow\fR \fIcol\fR \fIkey\fR...
+Unsets the value to the array element associated with \fIkey\fR located at the 
+given row and column position in the table.  It's an error if either 
+\fIrow\fR or \fIcolumn\fR do not exist.  
+This operation may trigger \fBunset\fR traces.
+.TP
+\fItableName\fR \fBapply\fR \fInode\fR ?\fIswitches\fR?
+Runs commands for all nodes matching the criteria given by
+\fIswitches\fR for the subtree designated by \fInode\fR.  By default
+all nodes match, but you can set switches to narrow the match.  This
+operation differs from \fBfind\fR in two ways: 1) Tcl commands can be
+invoked both pre- and post-traversal of a node and 2) the table is
+always traversed in depth first order.
+.sp
+The \fB\-exact\fR, \fB\-glob\fR, 
+and \fB\-regexp\fR switches indicate both what kind of pattern matching
+to perform and the pattern.  By default each pattern will be compared
+with the node label.  You can set more than one of these switches.  If 
+any of the patterns match (logical or), the node matches.  
+If the \fB\-key\fR switch is
+used, it designates the data field to be matched.  
+.sp
+The valid switches are listed
+below:
+.RS
+.TP 1i
+\fB\-depth\fR \fInumber\fR
+Descend at most \fInumber\fR (a non-negative integer) levels
+If \fInumber\fR is \f(CW1\fR this means only apply the tests
+to the children of \fInode\fR.
+.TP 1i
+\fB\-exact\fR \fIstring\fR
+Matches each node using \fIstring\fR.  The node must match \fIstring\fR
+exactly.
+.TP 1i
+\fB\-glob\fR \fIstring\fR
+Test each node to \fIstring\fR using global pattern
+matching.  Matching is done in a fashion similar to that used by the
+C-shell.
+.TP 1i
+\fB\-invert\fR
+Select non-matching nodes.  Any node that \fIdoesn't\fR match
+the given criteria will be selected.
+.TP 1i
+\fB\-key\fR \fIkey\fR
+If pattern matching is selected (using the \fB\-exact\fR,
+\fB\-glob\fR, or \fB\-regexp\fR switches), compare the values of the
+data field keyed by \fIkey\fR instead of the node's label.  If no
+pattern matching switches are set, then any node with this data key
+will match.
+.TP 1i
+\fB\-leafonly\fR
+Only test nodes with no children.
+.TP 1i
+\fB\-nocase\fR
+Ignore case when matching patterns.
+.TP 1i
+\fB\-path\fR
+Use the node's full path when comparing nodes.  The node's full
+path is a list of labels, starting from the root of each ancestor
+and the node itself.
+.TP 1i
+\fB\-precommand\fR \fIcommand\fR
+Invoke \fIcommand\fR for each matching node.  Before \fIcommand\fR is
+invoked, the id of the node is appended.  You can control 
+processing by the return value of \fIcommand\fR.  If \fIcommand\fR 
+generates an error, processing stops and the \fBfind\fR operation 
+returns an error.  But if \fIcommand\fR returns \fBbreak\fR, then 
+processing stops, no error is generated.  If \fIcommand\fR returns 
+\fBcontinue\fR, then processing
+stops on that subtree and continues on the next.
+.TP 1i
+\fB\-postcommand\fR \fIcommand\fR
+Invoke \fIcommand\fR for each matching node.  Before \fIcommand\fR is
+invoked, the id of the node is appended.  You can control 
+processing by the return value of \fIcommand\fR.  If \fIcommand\fR 
+generates an error, processing stops and the \fBfind\fR operation 
+returns an error.  But if \fIcommand\fR returns \fBbreak\fR, then 
+processing stops, no error is generated.  If \fIcommand\fR returns 
+\fBcontinue\fR, then processing
+stops on that subtree and continues on the next.
+.TP 1i
+\fB\-regexp\fR \fIstring\fR
+Test each node using \fIstring\fR as a regular expression pattern.
+.TP 1i
+\fB\-tag\fR \fIstring\fR
+Only test nodes that have the tag \fIstring\fR.
+.RE
+.TP
+\fItableName\fR \fBattach\fR \fItableObject\fR ?\fIswitches\fR?
+Attaches to an existing table object \fItableObject\fR.  
+The current table associated with \fItableName\fR is discarded.  
+In addition, the current set of tags, notifier events, and traces are 
+removed. The valid \fIswitches\fR are listed below:
+.RS
+.TP
+\fB\-newtags\fR 
+By default, the table will share the tags of the attached table. If this
+flag is present, the table will start with an empty tag table.
+.RE
+.TP
+\fItableName\fR \fBchildren\fR \fInode\fR
+Returns a list of children for \fInode\fR.  If \fInode\fR is a leaf,
+then an empty string is returned.
+.TP
+\fItableName\fR \fBcopy\fR \fIparent\fR ?\fItable\fR? \fInode\fR ?\fIswitches\fR?
+Copies \fInode\fR into \fIparent\fR. Both nodes \fInode\fR and
+\fIparent\fR must already exist. The id of the new node is
+returned. You can also copy nodes from another table.  If a \fItable\fR 
+argument is present, it indicates the name of the source table.  
+The valid \fIswitches\fR are listed below:
+.RS
+.TP
+\fB\-label\fR \fIstring\fR
+Label \fIdestNode\fR as \fIstring\fR.  By default, \fIdestNode\fR has
+the same label as \fIsrcNode\fR.
+.TP
+\fB\-overwrite\fR
+Overwrite nodes that already exist.  Normally nodes are always
+created, even if there already exists a node by the same name.  This
+switch indicates to add or overwrite the node's data fields.
+.TP
+\fB\-recurse\fR
+Recursively copy all the subtables of \fIsrcNode\fR as well.  In this case,
+\fIsrcNode\fR can't be an ancestor of \fIdestNode\fR as it would result
+in a cyclic copy.
+.TP
+\fB\-tags\fR
+Copy tag inforation.  Normally the following node is copied: its 
+label and data fields.  This indicates to copy tags as well.
+.RE
+.TP
+\fItableName\fR \fBdegree\fR \fInode\fR 
+Returns the number of children of \fInode\fR.
+.TP
+\fItableName\fR \fBdelete\fR \fInode\fR...
+Recursively deletes one or more nodes from the table.  
+The node and all its descendants are removed.   The one exception
+is the root node.  In this case, only its descendants are removed.
+The root node will remain.  Any tags or 
+traces on the nodes are released.
+.TP
+\fItableName\fR \fBdepth\fR \fInode\fR 
+Returns the depth of the node.  The depth is the number of 
+steps from the node to the root of the table.  The depth of the
+root node is \f(CW0\fR.
+.TP
+\fItableName\fR \fBdump\fR \fInode\fR 
+Returns a list of the paths and respective data for \fInode\fR
+and its descendants.  The subtable designated by \fInode\fR is
+traversed returning the following information for each node: 1) the node's
+path relative to \fInode\fR, 2) a sublist key value pairs
+representing the node's data fields, and 3) a sublist of tags.  
+This list returned can be used
+later to copy or restore the table with the \fBrestore\fR operation.
+.TP
+\fItableName\fR \fBdumpfile\fR \fInode\fR \fIfileName\fR
+Writes a list of the paths and respective data for \fInode\fR
+and its descendants to the given file \fIfileName\fR.  
+The subtable designated by \fInode\fR is traversed returning the 
+following information for each node: 1) the node's
+path relative to \fInode\fR, 2) a sublist key value pairs
+representing the node's data fields, and 3) a sublist of tags.  
+This list returned can be used
+later to copy or restore the table with the \fBrestore\fR operation.
+.TP
+\fItableName\fR \fBexists\fR \fInode\fR ?\fIkey\fR?
+Indicates if \fInode\fR exists in the table.  If a \fIkey\fR argument
+is present then the command also indicates if the named data field 
+exists.
+.TP
+\fItableName\fR \fBfind\fR \fInode\fR ?\fIswitches\fR? 
+Finds for all nodes matching the criteria given by \fIswitches\fR 
+for the subtable designated by \fInode\fR.  A list of the selected 
+nodes is returned.  By default all nodes match, but you can set
+switches to narrow the match.
+.sp
+The \fB\-exact\fR, \fB\-glob\fR, 
+and \fB\-regexp\fR switches indicate both what kind of pattern matching
+to perform and the pattern.  By default each pattern will be compared
+with the node label.  You can set more than one of these switches.  If 
+any of the patterns match (logical or), the node matches.  
+If the \fB\-key\fR switch is
+used, it designates the data field to be matched.  
+.sp
+The order in 
+which the nodes are traversed is controlled by the  \fB\-order\fR switch.
+The possible orderings are \fBpreorder\fR, \fBpostorder\fR, \fBinorder\fR, 
+and \fBbreadthfirst\fR.  The default is \fBpostorder\fR.
+.sp
+The valid switches are listed
+below:
+.RS 
+.TP 1i
+\fB\-addtag\fR \fIstring\fR 
+Add the tag \fIstring\fR to each selected node.  
+.TP 1i
+\fB\-count\fR \fInumber\fR
+Stop processing after \fInumber\fR (a positive integer) matches. 
+.TP 1i
+\fB\-depth\fR \fInumber\fR
+Descend at most \fInumber\fR (a non-negative integer) levels
+If \fInumber\fR is \f(CW1\fR this means only apply the tests
+to the children of \fInode\fR.
+.TP 1i
+\fB\-exact\fR \fIstring\fR
+Matches each node using \fIstring\fR.  The node must match \fIstring\fR
+exactly.
+.TP 1i
+\fB\-excludes\fR \fInodeList\fR
+Excludes any node in the list \fInodeList\fR from the search.  
+The subnodes of an excluded node are still examined.
+.TP 1i
+\fB\-exec\fR \fIcommand\fR
+Invoke \fIcommand\fR for each matching node.  Before \fIcommand\fR is
+invoked, the id of the node is appended.  You can control 
+processing by the return value of \fIcommand\fR.  If \fIcommand\fR 
+generates an error, processing stops and the \fBfind\fR operation 
+returns an error.  But if \fIcommand\fR returns \fBbreak\fR, then 
+processing stops, no error is generated.  If \fIcommand\fR returns 
+\fBcontinue\fR, then processing
+stops on that subtable and continues on the next.
+.TP 1i
+\fB\-glob\fR \fIstring\fR
+Test each node to \fIstring\fR using global pattern
+matching.  Matching is done in a fashion similar to that used by the
+C-shell.
+.TP 1i
+\fB\-invert\fR
+Select non-matching nodes.  Any node that \fIdoesn't\fR match
+the given criteria will be selected.
+.TP 1i
+\fB\-key\fR \fIkey\fR
+Compare the values of the data field keyed by \fIkey\fR instead of 
+the node's label. If no pattern is given (\fB\-exact\fR, \fB\-glob\fR, or 
+\fB\-regexp\fR switches), then any node with this data key will match.
+.TP 1i
+\fB\-leafonly\fR
+Only test nodes with no children.
+.TP 1i
+\fB\-nocase\fR
+Ignore case when matching patterns.
+.TP
+\fB\-order\fR \fIstring\fR 
+Traverse the table and process nodes according to \fIstring\fR. \fIString\fR
+can be one of the following:
+.RS
+.TP 1i
+\fBbreadthfirst\fR 
+Process the node and the subtables at each sucessive level. Each node
+on a level is processed before going to the next level.
+.TP 1i
+\fBinorder\fR 
+Recursively process the nodes of the first subtable, the node itself,
+and any the remaining subtables.
+.TP 1i
+\fBpostorder\fR 
+Recursively process all subtables before the node.
+.TP 1i
+\fBpreorder\fR 
+Recursively process the node first, then any subtables.
+.RE
+.TP
+\fB\-path\fR
+Use the node's full path when comparing nodes.
+.TP
+\fB\-regexp\fR \fIstring\fR
+Test each node using \fIstring\fR as a regular expression pattern.
+.TP
+\fB\-tag\fR \fIstring\fR
+Only test nodes that have the tag \fIstring\fR.
+.RE
+.TP
+\fItableName\fR \fBfindchild\fR \fInode\fR \fIlabel\fR
+Searches for a child node \Ilabel\fR in \fInode\fR.  The id of the 
+child node is returned if found.  Otherwise \f(CW-1\fR is returned.
+.TP
+\fItableName\fR \fBfirstchild\fR \fInode\fR 
+Returns the id of the first child in the \fInode\fR's list
+of subtables.  If \fInode\fR is a leaf (has no children), 
+then \f(CW-1\fR is returned.
+.TP
+\fItableName\fR \fBget\fR \fInode\fR ?\fIkey\fR? ?\fIdefaultValue\fR?
+Returns a list of key-value pairs of data for the node.  If \fIkey\fR
+is present, then only the value for that particular data field is
+returned.  It's normally an error if \fInode\fR does not contain the
+data field \fIkey\fR.  But if you provide a \fIdefaultValue\fR
+argument, this value is returned instead (\fInode\fR will still not
+contain \fIkey\fR).  This feature can be used to access a data field of
+\fInode\fR without first testing if it exists.  This operation may
+trigger \fBread\fR data traces.
+.TP
+\fItableName\fR \fBindex\fR \fInode\fR
+Returns the id of \fInode\fR.  If \fInode\fR is a tag, it 
+can only specify one node.  If \fInode\fR does not represent a valid
+node id or tag, or has modifiers that are invalid, then \f(CW-1\fR is returned.
+.TP
+\fItableName\fR \fBinsert\fR \fIparent\fR ?\fIswitches\fR? 
+Inserts a new node into parent node \fIparent\fR.  
+The id of the new node is returned. The following switches 
+are available:
+.RS
+.TP 1i
+\fB\-after\fR \fIchild\fR 
+Position \fInode\fR after \fIchild\fR.  The node \fIchild\fR must be a 
+child of \fIparent\fR.
+.TP 1i
+\fB\-at\fR \fInumber\fR 
+Inserts the node into \fIparent\fR's list of children at 
+position \fInumber\fR.  The default is to append \fInode\fR.
+.TP 1i
+\fB\-before\fR \fIchild\fR 
+Position \fInode\fR before \fIchild\fR.  The node \fIchild\fR must be a 
+child of \fIparent\fR.
+.TP 1i
+\fB\-data\fR \fIdataList\fR
+Sets the value for each data field in \fIdataList\fR for the 
+new node. \fIDataList\fR is a list of key-value pairs.
+.TP 1i
+\fB\-label\fR \fIstring\fR 
+Designates the labels of the node as \fIstring\fR.  By default, nodes
+are labeled as \f(CWnode0\fR, \f(CWnode1\fR, etc.
+.TP 1i
+\fB\-node\fR \fIid\fR 
+Designates the id for the node.  Normally new ids are automatically
+generated.  This allows you to create a node with a specific id.
+It is an error if the id is already used by another node in the table.
+.TP 1i
+\fB\-tags\fR \fItagList\fR
+Adds each tag in \fItagList\fR to the new node. \fITagList\fR is a list
+of tags, so be careful if a tag has embedded spaces.
+.RE
+.TP
+\fItableName\fR \fBis\fR \fIproperty\fR \fIargs\fR  
+Indicates the property of a node. Both \fIproperty\fR and \fIargs\fR
+determine the property being tested.  Returns \f(CW1\fR if true and
+\f(CW0\fR otherwise.  The following \fIproperty\fR and \fIargs\fR 
+are valid:
+.RS
+.TP 1i
+\fBancestor\fR \fInode1\fR \fInode2\fR
+Indicates if \fInode1\fR is an ancestor of \fInode2\fR. 
+.TP 1i
+\fBbefore\fR \fInode1\fR \fInode2\fR
+Indicates if \fInode1\fR is before \fInode2\fR in depth first traversal. 
+.TP 1i
+\fBleaf\fR \fInode\fR
+Indicates if \fInode\fR is a leaf (it has no subtables).
+.TP 1i
+\fBroot\fR \fInode\fR
+Indicates if \fInode\fR is the designated root.  This can be changed
+by the \fBroot\fR operation.
+.RE
+.TP
+\fItableName\fR \fBlabel\fR \fInode\fR ?\fInewLabel\fR?
+Returns the label of the node designated by \fInode\fR.  If \fInewLabel\fR
+is present, the node is relabeled using it as the new label.
+.TP
+\fItableName\fR \fBlastchild\fR \fInode\fR
+Returns the id of the last child in the \fInode\fR's list
+of subtables.  If \fInode\fR is a leaf (has no children), 
+then \f(CW-1\fR is returned.
+.TP
+\fItableName\fR \fBmove\fR \fInode\fR \fInewParent\fR ?\fIswitches\fR?
+Moves \fInode\fR into \fInewParent\fR. \fINode\fR is appended to the
+list children of \fInewParent\fR.  \fINode\fR can not be an ancestor
+of \fInewParent\fR.  The valid flags for \fIswitches\fR are described below.
+.RS
+.TP 1i
+\fB\-after\fR \fIchild\fR 
+Position \fInode\fR after \fIchild\fR.  The node \fIchild\fR must be a 
+child of \fInewParent\fR.
+.TP 1i
+\fB\-at\fR \fInumber\fR 
+Inserts \fInode\fR into \fIparent\fR's list of children at 
+position \fInumber\fR. The default is to append the node.
+.TP 1i
+\fB\-before\fR \fIchild\fR 
+Position \fInode\fR before \fIchild\fR.  The node \fIchild\fR must be a 
+child of \fInewParent\fR.
+.RE
+.TP
+\fItableName\fR \fBnext\fR \fInode\fR
+Returns the next node from \fInode\fR in a preorder traversal.
+If \fInode\fR is the last node in the table, 
+then \f(CW-1\fR is returned.
+.TP
+\fItableName\fR \fBnextsibling\fR \fInode\fR
+Returns the node representing the next subtable from \fInode\fR
+in its parent's list of children.  If \fInode\fR is the last child, 
+then \f(CW-1\fR is returned.
+.TP
+\fItableName\fR \fBnotify\fR \fIargs\fR 
+Manages notification events that indicate that the table structure has 
+been changed.
+See the 
+.SB "NOTIFY OPERATIONS"
+section below.
+.TP
+\fItableName\fR \fBparent\fR \fInode\fR
+Returns the parent node of \fInode\fR.  If \fInode\fR is the root
+of the table, 
+then \f(CW-1\fR is returned.
+.TP
+\fItableName\fR \fBpath\fR \fInode\fR
+Returns the full path (from root) of \fInode\fR.
+.TP
+\fItableName\fR \fBposition\fR \fInode\fR
+Returns the position of the node in its parent's list of children.
+Positions are numbered from 0.
+The position of the root node is always 0.
+.TP
+\fItableName\fR \fBprevious\fR \fInode\fR
+Returns the previous node from \fInode\fR in a preorder traversal.
+If \fInode\fR is the root of the table, 
+then \f(CW-1\fR is returned.
+.TP
+\fItableName\fR \fBprevsibling\fR \fInode\fR
+Returns the node representing the previous subtable from \fInode\fR
+in its parent's list of children.  If \fInode\fR is the first child, 
+then \f(CW-1\fR is returned.
+.TP
+\fItableName\fR \fBrestore\fR \fInode\fR \fIdataString\fR \fIswitches\fR
+Performs the inverse function of the \fBdump\fR operation, restoring
+nodes to the table. The format of \fIdataString\fR is exactly what is 
+returned by the \fBdump\fR operation.  It's a list containing information
+for each node to be restored.  The information consists of 1) the relative
+path of the node, 2) a sublist of key value pairs representing the 
+node's data, and 3) a list of tags for the node.  Nodes are created 
+starting from \fInode\fR. Nodes can be listed in any order.  If a node's 
+path describes ancestor nodes that do not already exist, they are 
+automatically created.  The valid \fIswitches\fR are listed below:
+.RS
+.TP
+\fB\-overwrite\fR
+Overwrite nodes that already exist.  Normally nodes are always
+created, even if there already exists a node by the same name.  This
+switch indicates to add or overwrite the node's data fields.
+.RE
+.TP
+\fItableName\fR \fBrestorefile\fR \fInode\fR \fIfileName\fR \fIswitches\fR
+Performs the inverse function of the \fBdumpfile\fR operation, restoring
+nodes to the table from the file \fIfileName\fR. The format of 
+\fIfileName\fR is exactly what is returned by the \fBdumpfile\fR operation.  
+It's a list containing information for each node to be restored.  
+The information consists of 1) the relative path of the node, 2) 
+a sublist of key value pairs representing the node's data, and 3) 
+a list of tags for the node.  Nodes are created 
+starting from \fInode\fR. Nodes can be listed in any order.  If a node's 
+path describes ancestor nodes that do not already exist, they are 
+automatically created.  The valid \fIswitches\fR are listed below:
+.RS
+.TP
+\fB\-overwrite\fR
+Overwrite nodes that already exist.  Normally nodes are always
+created, even if there already exists a node by the same name.  This
+switch indicates to add or overwrite the node's data fields.
+.RE
+.TP
+\fItableName\fR \fBroot\fR ?\fInode\fR?
+Returns the id of the root node.  Normally this is node \f(CW0\fR.  If
+a \fInode\fR argument is provided, it will become the new root of the
+table. This lets you temporarily work within a subset of the table.
+Changing root affects operations such as \fBnext\fR, \fBpath\fR,
+\fBprevious\fR, etc.
+.TP
+\fItableName\fR \fBset\fR \fInode\fR \fIkey value\fR ?\fIkey value\fR...?
+Sets one or more data fields in \fInode\fR. \fINode\fR may 
+be a tag that represents several nodes.  \fIKey\fR is the
+name of the data field to be set and \fIvalue\fR is its respective
+value.  This operation may trigger \fBwrite\fR and \fBcreate\fR data traces.
+.TP
+\fItableName\fR \fBsize\fR \fInode\fR
+Returns the number of nodes in the subtable. This includes the node
+and all its descendants.  The size of a leaf node is 1.
+.TP
+\fItableName\fR \fBsort\fR \fInode\fR ?\fIswitches\fR? 
+.RS
+.TP 1i
+\fB\-ascii\fR 
+Compare strings using the ASCII  collation order.
+.TP 1i
+\fB\-command\fR \fIstring\fR
+Use command \fIstring\fR as a comparison command.  To compare two
+elements, evaluate a Tcl script consisting of command with the two
+elements appended as additional arguments.  The script should return
+an integer less than, equal to, or greater than zero if the first
+element is to be considered less than, equal to, or greater than the
+second, respectively.
+.TP 1i
+\fB\-decreasing\fR
+Sort in decreasing order (largest items come first).
+.TP 1i
+\fB\-dictionary\fR
+Compare strings using a dictionary-style comparison.  This is the same 
+as \fB\-ascii\fR except (a) case is ignored except as a tie-breaker and (b) 
+if two strings contain embedded numbers, the numbers compare as integers, not
+characters.  For example, in \fB\-dictionary\fR mode, bigBoy sorts between
+bigbang and bigboy, and x10y sorts between x9y and x11y.
+.TP 1i
+\fB\-integer\fR
+Compare the nodes as integers.  
+.TP 1i
+\fB\-key\fR \fIstring\fR
+Sort based upon the node's data field keyed by \fIstring\fR. Normally
+nodes are sorted according to their label. 
+.TP 1i
+\fB\-path\fR
+Compare the full path of each node.  The default is to compare only its
+label.
+.TP 1i
+\fB\-real\fR
+Compare the nodes as real numbers.
+.TP 1i
+\fB\-recurse\fR
+Recursively sort the entire subtable rooted at \fInode\fR.
+.TP 1i
+\fB\-reorder\fR 
+Recursively sort subtables for each node.  \fBWarning\fR.  Unlike
+the normal flat sort, where a list of nodes is returned, this will
+reorder the table.  
+.RE
+.TP
+\fItableName\fR \fBtag\fR \fIargs\fR
+Manages tags for the table object.
+See the 
+.SH TABLE OPERATIONS
+Once you create a table object, you can use its Tcl command 
+to query or modify it.  The
+general form is
+.DS
+\fItableName\fR \fIoperation\fR \fR?\fIarg\fR?...
+.DE
+Both \fIoperation\fR and its arguments determine the exact behavior of
+the command.  The operations available for tables are listed below.
+.TP
+\fItableName\fR \fBancestor\fR \fInode1\fR \fInode2\fR
+Returns the mutual ancestor of the two nodes \fInode1\fR and
+\fInode2\fR.  The ancestor can be one of the two nodes.  For example,
+if \fInode1\fR and \fInode2\fR are the same nodes, their ancestor is
+\fInode1\fR.
+.TP
+\fItableName\fR \fBapply\fR \fInode\fR ?\fIswitches\fR?
+Runs commands for all nodes matching the criteria given by
+\fIswitches\fR for the subtree designated by \fInode\fR.  By default
+all nodes match, but you can set switches to narrow the match.  This
+operation differs from \fBfind\fR in two ways: 1) Tcl commands can be
+invoked both pre- and post-traversal of a node and 2) the table is
+always traversed in depth first order.
+.sp
+The \fB\-exact\fR, \fB\-glob\fR, 
+and \fB\-regexp\fR switches indicate both what kind of pattern matching
+to perform and the pattern.  By default each pattern will be compared
+with the node label.  You can set more than one of these switches.  If 
+any of the patterns match (logical or), the node matches.  
+If the \fB\-key\fR switch is
+used, it designates the data field to be matched.  
+.sp
+The valid switches are listed
+below:
+.RS
+.TP 1i
+\fB\-depth\fR \fInumber\fR
+Descend at most \fInumber\fR (a non-negative integer) levels
+If \fInumber\fR is \f(CW1\fR this means only apply the tests
+to the children of \fInode\fR.
+.TP 1i
+\fB\-exact\fR \fIstring\fR
+Matches each node using \fIstring\fR.  The node must match \fIstring\fR
+exactly.
+.TP 1i
+\fB\-glob\fR \fIstring\fR
+Test each node to \fIstring\fR using global pattern
+matching.  Matching is done in a fashion similar to that used by the
+C-shell.
+.TP 1i
+\fB\-invert\fR
+Select non-matching nodes.  Any node that \fIdoesn't\fR match
+the given criteria will be selected.
+.TP 1i
+\fB\-key\fR \fIkey\fR
+If pattern matching is selected (using the \fB\-exact\fR,
+\fB\-glob\fR, or \fB\-regexp\fR switches), compare the values of the
+data field keyed by \fIkey\fR instead of the node's label.  If no
+pattern matching switches are set, then any node with this data key
+will match.
+.TP 1i
+\fB\-leafonly\fR
+Only test nodes with no children.
+.TP 1i
+\fB\-nocase\fR
+Ignore case when matching patterns.
+.TP 1i
+\fB\-path\fR
+Use the node's full path when comparing nodes.  The node's full
+path is a list of labels, starting from the root of each ancestor
+and the node itself.
+.TP 1i
+\fB\-precommand\fR \fIcommand\fR
+Invoke \fIcommand\fR for each matching node.  Before \fIcommand\fR is
+invoked, the id of the node is appended.  You can control 
+processing by the return value of \fIcommand\fR.  If \fIcommand\fR 
+generates an error, processing stops and the \fBfind\fR operation 
+returns an error.  But if \fIcommand\fR returns \fBbreak\fR, then 
+processing stops, no error is generated.  If \fIcommand\fR returns 
+\fBcontinue\fR, then processing
+stops on that subtree and continues on the next.
+.TP 1i
+\fB\-postcommand\fR \fIcommand\fR
+Invoke \fIcommand\fR for each matching node.  Before \fIcommand\fR is
+invoked, the id of the node is appended.  You can control 
+processing by the return value of \fIcommand\fR.  If \fIcommand\fR 
+generates an error, processing stops and the \fBfind\fR operation 
+returns an error.  But if \fIcommand\fR returns \fBbreak\fR, then 
+processing stops, no error is generated.  If \fIcommand\fR returns 
+\fBcontinue\fR, then processing
+stops on that subtree and continues on the next.
+.TP 1i
+\fB\-regexp\fR \fIstring\fR
+Test each node using \fIstring\fR as a regular expression pattern.
+.TP 1i
+\fB\-tag\fR \fIstring\fR
+Only test nodes that have the tag \fIstring\fR.
+.RE
+.TP
+\fItableName\fR \fBattach\fR \fItableObject\fR ?\fIswitches\fR?
+Attaches to an existing table object \fItableObject\fR.  
+The current table associated with \fItableName\fR is discarded.  
+In addition, the current set of tags, notifier events, and traces are 
+removed. The valid \fIswitches\fR are listed below:
+.RS
+.TP
+\fB\-newtags\fR 
+By default, the table will share the tags of the attached table. If this
+flag is present, the table will start with an empty tag table.
+.RE
+.TP
+\fItableName\fR \fBchildren\fR \fInode\fR
+Returns a list of children for \fInode\fR.  If \fInode\fR is a leaf,
+then an empty string is returned.
+.TP
+\fItableName\fR \fBcopy\fR \fIparent\fR ?\fItable\fR? \fInode\fR ?\fIswitches\fR?
+Copies \fInode\fR into \fIparent\fR. Both nodes \fInode\fR and
+\fIparent\fR must already exist. The id of the new node is
+returned. You can also copy nodes from another table.  If a \fItable\fR 
+argument is present, it indicates the name of the source table.  
+The valid \fIswitches\fR are listed below:
+.RS
+.TP
+\fB\-label\fR \fIstring\fR
+Label \fIdestNode\fR as \fIstring\fR.  By default, \fIdestNode\fR has
+the same label as \fIsrcNode\fR.
+.TP
+\fB\-overwrite\fR
+Overwrite nodes that already exist.  Normally nodes are always
+created, even if there already exists a node by the same name.  This
+switch indicates to add or overwrite the node's data fields.
+.TP
+\fB\-recurse\fR
+Recursively copy all the subtables of \fIsrcNode\fR as well.  In this case,
+\fIsrcNode\fR can't be an ancestor of \fIdestNode\fR as it would result
+in a cyclic copy.
+.TP
+\fB\-tags\fR
+Copy tag inforation.  Normally the following node is copied: its 
+label and data fields.  This indicates to copy tags as well.
+.RE
+.TP
+\fItableName\fR \fBdegree\fR \fInode\fR 
+Returns the number of children of \fInode\fR.
+.TP
+\fItableName\fR \fBdelete\fR \fInode\fR...
+Recursively deletes one or more nodes from the table.  
+The node and all its descendants are removed.   The one exception
+is the root node.  In this case, only its descendants are removed.
+The root node will remain.  Any tags or 
+traces on the nodes are released.
+.TP
+\fItableName\fR \fBdepth\fR \fInode\fR 
+Returns the depth of the node.  The depth is the number of 
+steps from the node to the root of the table.  The depth of the
+root node is \f(CW0\fR.
+.TP
+\fItableName\fR \fBdump\fR \fInode\fR 
+Returns a list of the paths and respective data for \fInode\fR
+and its descendants.  The subtable designated by \fInode\fR is
+traversed returning the following information for each node: 1) the node's
+path relative to \fInode\fR, 2) a sublist key value pairs
+representing the node's data fields, and 3) a sublist of tags.  
+This list returned can be used
+later to copy or restore the table with the \fBrestore\fR operation.
+.TP
+\fItableName\fR \fBdumpfile\fR \fInode\fR \fIfileName\fR
+Writes a list of the paths and respective data for \fInode\fR
+and its descendants to the given file \fIfileName\fR.  
+The subtable designated by \fInode\fR is traversed returning the 
+following information for each node: 1) the node's
+path relative to \fInode\fR, 2) a sublist key value pairs
+representing the node's data fields, and 3) a sublist of tags.  
+This list returned can be used
+later to copy or restore the table with the \fBrestore\fR operation.
+.TP
+\fItableName\fR \fBexists\fR \fInode\fR ?\fIkey\fR?
+Indicates if \fInode\fR exists in the table.  If a \fIkey\fR argument
+is present then the command also indicates if the named data field 
+exists.
+.TP
+\fItableName\fR \fBfind\fR \fInode\fR ?\fIswitches\fR? 
+Finds for all nodes matching the criteria given by \fIswitches\fR 
+for the subtable designated by \fInode\fR.  A list of the selected 
+nodes is returned.  By default all nodes match, but you can set
+switches to narrow the match.
+.sp
+The \fB\-exact\fR, \fB\-glob\fR, 
+and \fB\-regexp\fR switches indicate both what kind of pattern matching
+to perform and the pattern.  By default each pattern will be compared
+with the node label.  You can set more than one of these switches.  If 
+any of the patterns match (logical or), the node matches.  
+If the \fB\-key\fR switch is
+used, it designates the data field to be matched.  
+.sp
+The order in 
+which the nodes are traversed is controlled by the  \fB\-order\fR switch.
+The possible orderings are \fBpreorder\fR, \fBpostorder\fR, \fBinorder\fR, 
+and \fBbreadthfirst\fR.  The default is \fBpostorder\fR.
+.sp
+The valid switches are listed
+below:
+.RS 
+.TP 1i
+\fB\-addtag\fR \fIstring\fR 
+Add the tag \fIstring\fR to each selected node.  
+.TP 1i
+\fB\-count\fR \fInumber\fR
+Stop processing after \fInumber\fR (a positive integer) matches. 
+.TP 1i
+\fB\-depth\fR \fInumber\fR
+Descend at most \fInumber\fR (a non-negative integer) levels
+If \fInumber\fR is \f(CW1\fR this means only apply the tests
+to the children of \fInode\fR.
+.TP 1i
+\fB\-exact\fR \fIstring\fR
+Matches each node using \fIstring\fR.  The node must match \fIstring\fR
+exactly.
+.TP 1i
+\fB\-excludes\fR \fInodeList\fR
+Excludes any node in the list \fInodeList\fR from the search.  
+The subnodes of an excluded node are still examined.
+.TP 1i
+\fB\-exec\fR \fIcommand\fR
+Invoke \fIcommand\fR for each matching node.  Before \fIcommand\fR is
+invoked, the id of the node is appended.  You can control 
+processing by the return value of \fIcommand\fR.  If \fIcommand\fR 
+generates an error, processing stops and the \fBfind\fR operation 
+returns an error.  But if \fIcommand\fR returns \fBbreak\fR, then 
+processing stops, no error is generated.  If \fIcommand\fR returns 
+\fBcontinue\fR, then processing
+stops on that subtable and continues on the next.
+.TP 1i
+\fB\-glob\fR \fIstring\fR
+Test each node to \fIstring\fR using global pattern
+matching.  Matching is done in a fashion similar to that used by the
+C-shell.
+.TP 1i
+\fB\-invert\fR
+Select non-matching nodes.  Any node that \fIdoesn't\fR match
+the given criteria will be selected.
+.TP 1i
+\fB\-key\fR \fIkey\fR
+Compare the values of the data field keyed by \fIkey\fR instead of 
+the node's label. If no pattern is given (\fB\-exact\fR, \fB\-glob\fR, or 
+\fB\-regexp\fR switches), then any node with this data key will match.
+.TP 1i
+\fB\-leafonly\fR
+Only test nodes with no children.
+.TP 1i
+\fB\-nocase\fR
+Ignore case when matching patterns.
+.TP
+\fB\-order\fR \fIstring\fR 
+Traverse the table and process nodes according to \fIstring\fR. \fIString\fR
+can be one of the following:
+.RS
+.TP 1i
+\fBbreadthfirst\fR 
+Process the node and the subtables at each sucessive level. Each node
+on a level is processed before going to the next level.
+.TP 1i
+\fBinorder\fR 
+Recursively process the nodes of the first subtable, the node itself,
+and any the remaining subtables.
+.TP 1i
+\fBpostorder\fR 
+Recursively process all subtables before the node.
+.TP 1i
+\fBpreorder\fR 
+Recursively process the node first, then any subtables.
+.RE
+.TP
+\fB\-path\fR
+Use the node's full path when comparing nodes.
+.TP
+\fB\-regexp\fR \fIstring\fR
+Test each node using \fIstring\fR as a regular expression pattern.
+.TP
+\fB\-tag\fR \fIstring\fR
+Only test nodes that have the tag \fIstring\fR.
+.RE
+.TP
+\fItableName\fR \fBfindchild\fR \fInode\fR \fIlabel\fR
+Searches for a child node \Ilabel\fR in \fInode\fR.  The id of the 
+child node is returned if found.  Otherwise \f(CW-1\fR is returned.
+.TP
+\fItableName\fR \fBfirstchild\fR \fInode\fR 
+Returns the id of the first child in the \fInode\fR's list
+of subtables.  If \fInode\fR is a leaf (has no children), 
+then \f(CW-1\fR is returned.
+.TP
+\fItableName\fR \fBget\fR \fInode\fR ?\fIkey\fR? ?\fIdefaultValue\fR?
+Returns a list of key-value pairs of data for the node.  If \fIkey\fR
+is present, then onlyx the value for that particular data field is
+returned.  It's normally an error if \fInode\fR does not contain the
+data field \fIkey\fR.  But if you provide a \fIdefaultValue\fR
+argument, this value is returned instead (\fInode\fR will still not
+contain \fIkey\fR).  This feature can be used to access a data field of
+\fInode\fR without first testing if it exists.  This operation may
+trigger \fBread\fR data traces.
+.TP
+\fItableName\fR \fBindex\fR \fInode\fR
+Returns the id of \fInode\fR.  If \fInode\fR is a tag, it 
+can only specify one node.  If \fInode\fR does not represent a valid
+node id or tag, or has modifiers that are invalid, then \f(CW-1\fR is returned.
+.TP
+\fItableName\fR \fBinsert\fR \fIparent\fR ?\fIswitches\fR? 
+Inserts a new node into parent node \fIparent\fR.  
+The id of the new node is returned. The following switches 
+are available:
+.RS
+.TP 1i
+\fB\-after\fR \fIchild\fR 
+Position \fInode\fR after \fIchild\fR.  The node \fIchild\fR must be a 
+child of \fIparent\fR.
+.TP 1i
+\fB\-at\fR \fInumber\fR 
+Inserts the node into \fIparent\fR's list of children at 
+position \fInumber\fR.  The default is to append \fInode\fR.
+.TP 1i
+\fB\-before\fR \fIchild\fR 
+Position \fInode\fR before \fIchild\fR.  The node \fIchild\fR must be a 
+child of \fIparent\fR.
+.TP 1i
+\fB\-data\fR \fIdataList\fR
+Sets the value for each data field in \fIdataList\fR for the 
+new node. \fIDataList\fR is a list of key-value pairs.
+.TP 1i
+\fB\-label\fR \fIstring\fR 
+Designates the labels of the node as \fIstring\fR.  By default, nodes
+are labeled as \f(CWnode0\fR, \f(CWnode1\fR, etc.
+.TP 1i
+\fB\-node\fR \fIid\fR 
+Designates the id for the node.  Normally new ids are automatically
+generated.  This allows you to create a node with a specific id.
+It is an error if the id is already used by another node in the table.
+.TP 1i
+\fB\-tags\fR \fItagList\fR
+Adds each tag in \fItagList\fR to the new node. \fITagList\fR is a list
+of tags, so be careful if a tag has embedded spaces.
+.RE
+.TP
+\fItableName\fR \fBis\fR \fIproperty\fR \fIargs\fR  
+Indicates the property of a node. Both \fIproperty\fR and \fIargs\fR
+determine the property being tested.  Returns \f(CW1\fR if true and
+\f(CW0\fR otherwise.  The following \fIproperty\fR and \fIargs\fR 
+are valid:
+.RS
+.TP 1i
+\fBancestor\fR \fInode1\fR \fInode2\fR
+Indicates if \fInode1\fR is an ancestor of \fInode2\fR. 
+.TP 1i
+\fBbefore\fR \fInode1\fR \fInode2\fR
+Indicates if \fInode1\fR is before \fInode2\fR in depth first traversal. 
+.TP 1i
+\fBleaf\fR \fInode\fR
+Indicates if \fInode\fR is a leaf (it has no subtables).
+.TP 1i
+\fBroot\fR \fInode\fR
+Indicates if \fInode\fR is the designated root.  This can be changed
+by the \fBroot\fR operation.
+.RE
+.TP
+\fItableName\fR \fBlabel\fR \fInode\fR ?\fInewLabel\fR?
+Returns the label of the node designated by \fInode\fR.  If \fInewLabel\fR
+is present, the node is relabeled using it as the new label.
+.TP
+\fItableName\fR \fBlastchild\fR \fInode\fR
+Returns the id of the last child in the \fInode\fR's list
+of subtables.  If \fInode\fR is a leaf (has no children), 
+then \f(CW-1\fR is returned.
+.TP
+\fItableName\fR \fBmove\fR \fInode\fR \fInewParent\fR ?\fIswitches\fR?
+Moves \fInode\fR into \fInewParent\fR. \fINode\fR is appended to the
+list children of \fInewParent\fR.  \fINode\fR can not be an ancestor
+of \fInewParent\fR.  The valid flags for \fIswitches\fR are described below.
+.RS
+.TP 1i
+\fB\-after\fR \fIchild\fR 
+Position \fInode\fR after \fIchild\fR.  The node \fIchild\fR must be a 
+child of \fInewParent\fR.
+.TP 1i
+\fB\-at\fR \fInumber\fR 
+Inserts \fInode\fR into \fIparent\fR's list of children at 
+position \fInumber\fR. The default is to append the node.
+.TP 1i
+\fB\-before\fR \fIchild\fR 
+Position \fInode\fR before \fIchild\fR.  The node \fIchild\fR must be a 
+child of \fInewParent\fR.
+.RE
+.TP
+\fItableName\fR \fBnext\fR \fInode\fR
+Returns the next node from \fInode\fR in a preorder traversal.
+If \fInode\fR is the last node in the table, 
+then \f(CW-1\fR is returned.
+.TP
+\fItableName\fR \fBnextsibling\fR \fInode\fR
+Returns the node representing the next subtable from \fInode\fR
+in its parent's list of children.  If \fInode\fR is the last child, 
+then \f(CW-1\fR is returned.
+.TP
+\fItableName\fR \fBnotify\fR \fIargs\fR 
+Manages notification events that indicate that the table structure has 
+been changed.
+See the 
+.SB "NOTIFY OPERATIONS"
+section below.
+.TP
+\fItableName\fR \fBparent\fR \fInode\fR
+Returns the parent node of \fInode\fR.  If \fInode\fR is the root
+of the table, 
+then \f(CW-1\fR is returned.
+.TP
+\fItableName\fR \fBpath\fR \fInode\fR
+Returns the full path (from root) of \fInode\fR.
+.TP
+\fItableName\fR \fBposition\fR \fInode\fR
+Returns the position of the node in its parent's list of children.
+Positions are numbered from 0.
+The position of the root node is always 0.
+.TP
+\fItableName\fR \fBprevious\fR \fInode\fR
+Returns the previous node from \fInode\fR in a preorder traversal.
+If \fInode\fR is the root of the table, 
+then \f(CW-1\fR is returned.
+.TP
+\fItableName\fR \fBprevsibling\fR \fInode\fR
+Returns the node representing the previous subtable from \fInode\fR
+in its parent's list of children.  If \fInode\fR is the first child, 
+then \f(CW-1\fR is returned.
+.TP
+\fItableName\fR \fBrestore\fR \fInode\fR \fIdataString\fR \fIswitches\fR
+Performs the inverse function of the \fBdump\fR operation, restoring
+nodes to the table. The format of \fIdataString\fR is exactly what is 
+returned by the \fBdump\fR operation.  It's a list containing information
+for each node to be restored.  The information consists of 1) the relative
+path of the node, 2) a sublist of key value pairs representing the 
+node's data, and 3) a list of tags for the node.  Nodes are created 
+starting from \fInode\fR. Nodes can be listed in any order.  If a node's 
+path describes ancestor nodes that do not already exist, they are 
+automatically created.  The valid \fIswitches\fR are listed below:
+.RS
+.TP
+\fB\-overwrite\fR
+Overwrite nodes that already exist.  Normally nodes are always
+created, even if there already exists a node by the same name.  This
+switch indicates to add or overwrite the node's data fields.
+.RE
+.TP
+\fItableName\fR \fBrestorefile\fR \fInode\fR \fIfileName\fR \fIswitches\fR
+Performs the inverse function of the \fBdumpfile\fR operation, restoring
+nodes to the table from the file \fIfileName\fR. The format of 
+\fIfileName\fR is exactly what is returned by the \fBdumpfile\fR operation.  
+It's a list containing information for each node to be restored.  
+The information consists of 1) the relative path of the node, 2) 
+a sublist of key value pairs representing the node's data, and 3) 
+a list of tags for the node.  Nodes are created 
+starting from \fInode\fR. Nodes can be listed in any order.  If a node's 
+path describes ancestor nodes that do not already exist, they are 
+automatically created.  The valid \fIswitches\fR are listed below:
+.RS
+.TP
+\fB\-overwrite\fR
+Overwrite nodes that already exist.  Normally nodes are always
+created, even if there already exists a node by the same name.  This
+switch indicates to add or overwrite the node's data fields.
+.RE
+.TP
+\fItableName\fR \fBroot\fR ?\fInode\fR?
+Returns the id of the root node.  Normally this is node \f(CW0\fR.  If
+a \fInode\fR argument is provided, it will become the new root of the
+table. This lets you temporarily work within a subset of the table.
+Changing root affects operations such as \fBnext\fR, \fBpath\fR,
+\fBprevious\fR, etc.
+.TP
+\fItableName\fR \fBset\fR \fInode\fR \fIkey value\fR ?\fIkey value\fR...?
+Sets one or more data fields in \fInode\fR. \fINode\fR may 
+be a tag that represents several nodes.  \fIKey\fR is the
+name of the data field to be set and \fIvalue\fR is its respective
+value.  This operation may trigger \fBwrite\fR and \fBcreate\fR data traces.
+.TP
+\fItableName\fR \fBsize\fR \fInode\fR
+Returns the number of nodes in the subtable. This includes the node
+and all its descendants.  The size of a leaf node is 1.
+.TP
+\fItableName\fR \fBsort\fR \fInode\fR ?\fIswitches\fR? 
+.RS
+.TP 1i
+\fB\-ascii\fR 
+Compare strings using the ASCII  collation order.
+.TP 1i
+\fB\-command\fR \fIstring\fR
+Use command \fIstring\fR as a comparison command.  To compare two
+elements, evaluate a Tcl script consisting of command with the two
+elements appended as additional arguments.  The script should return
+an integer less than, equal to, or greater than zero if the first
+element is to be considered less than, equal to, or greater than the
+second, respectively.
+.TP 1i
+\fB\-decreasing\fR
+Sort in decreasing order (largest items come first).
+.TP 1i
+\fB\-dictionary\fR
+Compare strings using a dictionary-style comparison.  This is the same 
+as \fB\-ascii\fR except (a) case is ignored except as a tie-breaker and (b) 
+if two strings contain embedded numbers, the numbers compare as integers, not
+characters.  For example, in \fB\-dictionary\fR mode, bigBoy sorts between
+bigbang and bigboy, and x10y sorts between x9y and x11y.
+.TP 1i
+\fB\-integer\fR
+Compare the nodes as integers.  
+.TP 1i
+\fB\-key\fR \fIstring\fR
+Sort based upon the node's data field keyed by \fIstring\fR. Normally
+nodes are sorted according to their label. 
+.TP 1i
+\fB\-path\fR
+Compare the full path of each node.  The default is to compare only its
+label.
+.TP 1i
+\fB\-real\fR
+Compare the nodes as real numbers.
+.TP 1i
+\fB\-recurse\fR
+Recursively sort the entire subtable rooted at \fInode\fR.
+.TP 1i
+\fB\-reorder\fR 
+Recursively sort subtables for each node.  \fBWarning\fR.  Unlike
+the normal flat sort, where a list of nodes is returned, this will
+reorder the table.  
+.RE
+.TP
+\fItableName\fR \fBtag\fR \fIargs\fR
+Manages tags for the table object.
+See the 
+.SB "TAG OPERATIONS"
+section below.
+.TP
+\fItableName\fR \fBtrace\fR \fIargs\fR
+Manages traces for data fields in the table object.
+Traces cause Tcl commands to be executed whenever a data field of a
+node is created, read, written, or unset.  Traces can be set for a
+specific node or a tag, representing possibly many nodes.
+See the 
+.SB "TRACE OPERATIONS"
+section below.
+.TP
+\fItableName\fR \fBunset\fR \fInode\fR \fIkey\fR...
+Removes one or more data fields from \fInode\fR. \fINode\fR may 
+be a tag that represents several nodes.  \fIKey\fR is the
+name of the data field to be removed.  It's not an error is
+\fInode\fR does not contain \fIkey\fR.  
+This operation may trigger \fBunset\fR data traces.
+.RE
+.SH TAG OPERATIONS
+Tags are a general means of selecting and marking nodes in the table.
+A tag is just a string of characters, and it may take any form except
+that of an integer.  The same tag may be associated with many
+different nodes.  
+.sp
+There are two built-in tags: The tag \fBall\fR is implicitly
+associated with every node in the table.  It may be used to invoke
+operations on all the nodes in the table.  The tag \fBroot\fR is
+managed automatically by the table object.  It specifies the node
+that is currently set as the root of the table.
+.sp
+Most table operations use tags.  And several operations let you
+operate on multiple nodes at once.  For example, you can use the
+\fBset\fR operation with the tag \fBall\fR to set a data field in 
+for all nodes in the table.
+.PP
+Tags are invoked by the \fBtag\fR operation.  The
+general form is
+.DS
+\fItableName\fR \fBtag\fR \fIoperation\fR \fR?\fIarg\fR?...
+.DE
+Both \fIoperation\fR and its arguments determine the exact behavior of
+the command.  The operations available for tags are listed below.
+.TP
+\fItableName\fR \fBtag add\fR \fIstring\fR \fInode\fR...
+Adds the tag \fIstring\fR to one of more nodes.
+.TP
+\fItableName\fR \fBtag delete\fR \fIstring\fR \fInode\fR...
+Deletes the tag \fIstring\fR from one or more nodes.  
+.TP
+\fItableName\fR \fBtag forget\fR \fIstring\fR
+Removes the tag \fIstring\fR from all nodes.  It's not an error if no
+nodes are tagged as \fIstring\fR.
+.TP
+\fItableName\fR \fBtag get\fR \fInode\fR \fIpattern\fR...
+Returns the tag names for a given node.  If one of more pattern
+arguments are provided, then only those matching tags are returned.
+.TP
+\fItableName\fR \fBtag names\fR ?\fInode\fR?
+Returns a list of tags used by the table.  If a \fInode\fR argument
+is present, only those tags used by \fInode\fR are returned.
+.TP
+\fItableName\fR \fBtag nodes\fR \fIstring\fR
+Returns a list of nodes that have the tag \fIstring\fR.  If no node
+is tagged as \fIstring\fR, then an empty string is returned.
+.TP
+\fItableName\fR \fBtag set\fR \fInode\fR \fIstring\fR...
+Sets one or more tags for a given node.  Tag names can't start with a
+digit (to distinquish them from node ids) and can't be a reserved tag
+("root" or "all").
+.TP
+\fItableName\fR \fBtag unset\fR \fInode\fR \fIstring\fR...  
+Removes one or more tags from a given node. Tag names that don't exist 
+or are reserved ("root" or "all") are silently ignored.
+.SH TRACE OPERATIONS
+Data fields can be traced much in the same way that you can trace Tcl
+variables.  Data traces cause Tcl commands to be executed whenever a
+particular data field of a node is created, read, written, or unset.
+A trace can apply to one or more nodes.  You can trace a specific node
+by using its id, or a group of nodes by a their tag.
+.PP
+The table's \fBget\fR, \fBset\fR, and \fBunset\fR operations can 
+trigger various traces.  The \fBget\fR operation can cause 
+a \fIread\fR  trace to fire.  The \fBset\fR operation causes a \fIwrite\fR 
+trace to fire.  And if the data field is written for the first time, you
+will also get a \fIcreate\fR trace.
+The \fBunset\fR operation triggers \fIunset\fR traces.
+.PP
+Data traces are invoked by the \fBtrace\fR
+operation.  The general form is
+.DS
+\fItableName\fR \fBtrace\fR \fIoperation\fR \fR?\fIarg\fR?...
+.DE
+Both \fIoperation\fR and its arguments determine the exact behavior of
+the command.  The operations available for traces are listed below.
+.TP
+\fItableName\fR \fBtrace create\fR \fInode\fR \fIkey\fR \fIops\fR \fIcommand\fR
+Creates a trace for \fInode\fR on data field \fIkey\fR.  \fINode\fR
+can refer to more than one node (for example, the tag \fBall\fR). If
+\fInode\fR is a tag, any node with that tag can possibly trigger a trace,
+invoking \fIcommand\fR.  
+\fICommand\fR is command prefix, typically a procedure name.
+Whenever a trace is triggered, four arguments are appended to
+\fIcommand\fR before it is invoked: \fItableName\fR, id of the
+node, \fIkey\fR and, \fIops\fR.
+Note that no nodes need have the field \fIkey\fR.  
+A trace identifier in the form "\f(CWtrace0\fR", "\f(CWtrace1\fR", etc.
+is returned.  
+.sp
+\fIOps\fR indicates which operations are of
+interest, and consists of one or more of the following letters:
+.RS
+.TP
+\fBr\fR
+Invoke \fIcommand\fR whenever \fIkey\fR is read. Both read and
+write traces are temporarily disabled when \fIcommand\fR is executed.
+.TP
+\fBw\fR
+Invoke \fIcommand\fR whenever \fIkey\fR is written.  Both read and
+write traces are temporarily disabled when \fIcommand\fR is executed.
+.TP
+\fBc\fR
+Invoke \fIcommand\fR whenever \fIkey\fR is created.
+.TP
+\fBu\fR 
+Invoke \fIcommand\fR whenever \fIkey\fR is unset.  Data fields are
+typically unset with the \fBunset\fR command.   Data fields are also 
+unset when the table is released, but all traces are disabled prior
+to that.
+.sp
+.RE
+.TP
+\fItableName\fR \fBtrace delete\fR \fItraceId\fR...
+Deletes one of more traces.  \fITraceId\fR is
+the trace identifier returned by the \fBtrace create\fR operation.
+.TP
+\fItableName\fR \fBtrace info\fR \fItraceId\fR 
+Returns information about the trace \fItraceId\fR.  \fITraceId\fR
+is a trace identifier previously returned by the \fBtrace create\fR operation.
+It's the same information specified for the \fBtrace create\fR operation.
+It consists of the node id or tag, data field key, a string of letters
+indicating the operations that are traced (it's in the same
+form as \fIops\fR) and, the command prefix.
+.TP
+\fItableName\fR \fBtrace names\fR
+Returns a list of identifers for all the current traces.
+.SH NOTIFY OPERATIONS
+Table objects can be shared among many clients, such as a
+\fBhiertable\fR widget.  Any client can create or delete nodes,
+sorting the table, etc.  You can request to be notified whenever these
+events occur.  Notify events cause Tcl commands to be executed
+whenever the table structure is changed.  
+.PP
+Notifications are handled by the \fBnotify\fR operation.  The
+general form is
+.DS
+\fItableName\fR \fBnotify\fR \fIoperation\fR \fR?\fIarg\fR?...
+.DE
+Both \fIoperation\fR and its arguments determine the exact behavior of
+the command.  The operations available for events are listed below.
+.TP
+\fItableName\fR \fBnotify create\fR ?\fIswitches\fR? \fIcommand\fR \fR?\fIargs\fR?...  
+Creates a notifier for the table.  A notify identifier in the form
+"\f(CWnotify0\fR", "\f(CWnotify1\fR", etc.  is returned.
+.sp
+\fICommand\fR and \fIargs\fR are saved and invoked whenever the table
+structure is changed (according to \fIswitches\fR). Two arguments are
+appended to \fIcommand\fR and \fIargs\fR before it's invoked: the id
+of the node and a string representing the type of event that occured.
+One of more switches can be set to indicate the events that are of
+interest.  The valid switches are as follows:
+.RS
+.TP 1i
+\fB\-create\fR 
+Invoke \fIcommand\fR whenever a new node has been added.
+.TP 1i
+\fB\-delete\fR
+Invoke \fIcommand\fR whenever a node has been deleted.
+.TP 1i
+\fB\-move\fR
+Invoke \fIcommand\fR whenever a node has been moved.
+.TP 1i
+\fB\-sort\fR
+Invoke \fIcommand\fR whenever the table has been sorted and reordered.
+.TP 1i
+\fB\-relabel\fR
+Invoke \fIcommand\fR whenever a node has been relabeled.
+.TP 1i
+\fB\-allevents\fR
+Invoke \fIcommand\fR whenever any of the above events occur.
+.TP 1i
+\fB\-whenidle\fR
+When an event occurs don't invoke \fIcommand\fR immediately, but
+queue it to be run the next time the event loop is entered and there 
+are no events to process.  If subsequent events occur before 
+the event loop is entered, \fIcommand\fR will still be 
+invoked only once.
+.RE
+.TP
+\fItableName\fR \fBnotify delete\fR \fInotifyId\fR 
+Deletes one or more notifiers from the table.  \fINotifyId\fR is the
+notifier identifier returned by the \fBnotify create\fR operation.
+.TP
+\fItableName\fR \fBnotify info\fR \fInotifyId\fR
+Returns information about the notify event \fInotifyId\fR.  \fINotifyId\fR
+is a notify identifier previously returned by the \fBnotify create\fR operation.
+It's the same information specified for the \fBnotify create\fR operation.
+It consists of the notify id, a sublist of event flags (it's in the same
+form as \fIflags\fR) and, the command prefix.
+.TP
+\fItableName\fR \fBnotify names\fR
+Returns a list of identifers for all the current notifiers.
+.SH C LANGUAGE API
+Blt_Dt_Apply, 
+Blt_Dt_ApplyBFS, 
+Blt_Dt_ApplyDFS, 
+Blt_Dt_ChangeRoot, 
+Blt_Dt_Create, 
+Blt_Dt_CreateEventHandler, 
+Blt_Dt_CreateNode, 
+Blt_Dt_CreateTrace, 
+Blt_Dt_DeleteEventHandler, 
+Blt_Dt_DeleteNode, 
+Blt_Dt_DeleteTrace, 
+Blt_Dt_Exists, 
+Blt_Dt_FindChild, 
+Blt_Dt_FirstChild, 
+Blt_Dt_FirstKey, 
+Blt_Dt_GetNode, 
+Blt_Dt_GetToken, 
+Blt_Dt_GetValue, 
+Blt_Dt_IsAncestor, 
+Blt_Dt_IsBefore, 
+Blt_Dt_IsLeaf, 
+Blt_Dt_LastChild, 
+Blt_Dt_MoveNode, 
+Blt_Dt_Name, 
+Blt_Dt_NextKey, 
+Blt_Dt_NextNode, 
+Blt_Dt_NextSibling, 
+Blt_Dt_NodeDegree, 
+Blt_Dt_NodeDepth, 
+Blt_Dt_NodeId, 
+Blt_Dt_NodeLabel, 
+Blt_Dt_NodeParent, 
+Blt_Dt_PrevNode, 
+Blt_Dt_PrevSibling, 
+Blt_Dt_RelabelNode, 
+Blt_Dt_ReleaseToken, 
+Blt_Dt_RootNode, 
+Blt_Dt_SetValue, 
+Blt_Dt_Size, 
+Blt_Dt_SortNode, and
+Blt_Dt_UnsetValue.
+.SH KEYWORDS
+table, hiertable, widget

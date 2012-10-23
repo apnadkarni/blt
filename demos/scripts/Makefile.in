@@ -1,0 +1,52 @@
+# ------------------------------------------------------------------------
+# 	Makefile for demos 
+# ------------------------------------------------------------------------
+
+datadir =	@datadir@
+datarootdir =	@datarootdir@
+exec_prefix =	@exec_prefix@
+libdir =	@libdir@
+prefix =	@prefix@
+srcdir =	@srcdir@
+
+version =	@BLT_VERSION@
+scriptdir =	$(prefix)/lib/blt$(version)
+destdir =	$(scriptdir)/demos/scripts
+
+SHELL =		/bin/sh
+RM =		rm -rf
+INSTALL =	@INSTALL@
+INSTALL_DATA =	@INSTALL_DATA@
+MKDIR_P	= 	@MKDIR_P@
+
+FILES =		\
+		barchart2.tcl \
+		bgtest.tcl \
+		clone.tcl \
+		demo.tcl \
+		globe.tcl \
+		graph1.tcl \
+		graph2.tcl \
+		graph3.tcl \
+		graph5.tcl \
+		graph8.tcl \
+		page.tcl \
+		patterns.tcl \
+		ps.tcl \
+		send.tcl \
+		stipples.tcl \
+		xcolors.tcl
+
+all:
+
+install:
+	$(MKDIR_P) $(DESTDIR)$(destdir)
+	for i in $(FILES) ; do \
+            $(INSTALL) $(srcdir)/$$i $(DESTDIR)$(destdir)/$$i ; \
+	done 
+
+clean:
+	$(RM) $(srcdir)/*.bak $(srcdir)/*\~ $(srcdir)/"#"* 
+
+distclean: clean
+	$(RM) *.ps Makefile

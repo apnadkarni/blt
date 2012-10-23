@@ -1,0 +1,66 @@
+# ------------------------------------------------------------------------
+# 	Makefile for manual page files 
+# ------------------------------------------------------------------------
+
+prefix =	@prefix@
+mandir =	@mandir@
+manndir =	$(mandir)/mann
+man1dir =	$(mandir)/man1
+man3dir =	$(mandir)/man3
+srcdir =	@srcdir@
+datadir =	@datadir@
+datarootdir =	@datarootdir@
+version =	@BLT_VERSION@
+
+instdirs =	$(man1dir) $(manndir) $(man3dir)
+
+MAN_N =		BLT.n barchart.n beep.n bgexec.n bitmap.n \
+		bltdebug.n busy.n container.n cutbuffer.n \
+		dragdrop.n eps.n graph.n hierbox.n  \
+		hiertable.n htext.n spline.n stripchart.n \
+	 	table.n tabset.n tile.n tree.n treeview.n vector.n \
+		watch.n winop.n
+
+MAN_3 =		Blt_Tree.3 Blt_TreeGetNode.3 \
+		Blt_TreeCreate.3 Blt_TreeGetToken.3 \
+		Blt_TreeCreateNode.3 Blt_TreeName.3 \
+		Blt_TreeDeleteNode.3 Blt_TreeNodeId.3 \
+		Blt_TreeExists.3 Blt_TreeReleaseToken.3
+
+MANPAGES =	$(MAN_N) $(MAN_3)
+
+INSTALL =	@INSTALL@
+INSTALL_DATA =	@INSTALL_DATA@
+SHELL =		/bin/sh
+RM =		rm -rf
+MKDIR_P =	@MKDIR_P@
+VPATH =		$(srcdir)
+
+all: man.macros $(MANPAGES)
+
+install: all
+	$(MKDIR_P) $(DESTDIR)$(manndir)
+	for i in $(MAN_N) ; do \
+		$(INSTALL_DATA) $$i $(DESTDIR)$(manndir); \
+	done
+	$(MKDIR_P) $(DESTDIR)$(man3dir)
+	for i in $(MAN_3) ; do \
+		$(INSTALL_DATA) $$i $(DESTDIR)$(man3dir); \
+	done
+
+.SUFFIXES: .n .mann .3 .man3
+
+.man3.3: $(srcdir)/man.macros
+	$(RM) $@
+	sed -e "/man\.macros/r $(srcdir)/man.macros" -e '/man\.macros/d'  -e 's/BLT_VERSION/$(version)/' $< > $@
+
+.mann.n: $(srcdir)/man.macros
+	$(RM) $@
+	sed -e "/man\.macros/r $(srcdir)/man.macros" -e '/man\.macros/d' -e 's/BLT_VERSION/$(version)/' $< > $@
+
+clean:
+	$(RM) *.3 *.n
+
+distclean: clean
+	$(RM) $(srcdir)/*.bak $(srcdir)/*\~ $(srcdir)/"#"* Makefile
+

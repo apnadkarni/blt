@@ -1,0 +1,43 @@
+# ------------------------------------------------------------------------
+# 	Makefile for library files and directories of BLT library
+# ------------------------------------------------------------------------
+
+datadir =	@datadir@
+datarootdir = 	@datarootdir@
+exec_prefix =	@exec_prefix@
+libdir =	@libdir@
+prefix =	@prefix@
+srcdir =	@srcdir@
+
+version =	@BLT_VERSION@
+so_prefix =	@BLT_SO_PREFIX@
+so_ext =	@BLT_SO_EXT@
+lib_suffix =	@BLT_LIB_SUFFIX@
+scriptdir =	@BLT_LIBRARY@
+destdir =	$(scriptdir)/dd_protocols
+
+INSTALL =	@INSTALL@
+INSTALL_DATA =  @INSTALL_DATA@
+RM =		rm -f
+SHELL =		/bin/sh
+MKDIR_P =	@MKDIR_P@
+
+FILES =		\
+		dd-color.tcl \
+		dd-file.tcl \
+		dd-number.tcl \
+		dd-text.tcl \
+		tclIndex
+
+all: 
+
+install:
+	$(MKDIR_P) $(DESTDIR)$(destdir)
+	for i in $(FILES) ; do \
+	    $(INSTALL_DATA) $(srcdir)/$$i $(destdir); \
+	done 
+
+clean:
+
+distclean: clean
+	$(RM) $(srcdir)/*.bak $(srcdir)/*\~ $(srcdir)/"#"* Makefile

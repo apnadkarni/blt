@@ -1,0 +1,64 @@
+# ------------------------------------------------------------------------
+# 	Makefile for demos/bitmaps/hand
+# ------------------------------------------------------------------------
+
+datadir =	@datadir@
+datarootdir =	@datarootdir@
+exec_prefix =	@exec_prefix@
+libdir =	@libdir@
+prefix =	@prefix@
+srcdir =	@srcdir@
+
+version =	@BLT_VERSION@
+scriptdir =	$(prefix)/lib/blt$(version)
+destdir =	$(scriptdir)/demos/bitmaps/hand
+
+SHELL =		/bin/sh
+RM =		rm -rf
+INSTALL =	@INSTALL@
+INSTALL_DATA =	@INSTALL_DATA@
+MKDIR_P	= 	@MKDIR_P@
+
+FILES =	\
+		hand01.xbm \
+		hand01m.xbm \
+		hand02.xbm \
+		hand02m.xbm \
+		hand03.xbm \
+		hand03m.xbm \
+		hand04.xbm \
+		hand04m.xbm \
+		hand05.xbm \
+		hand05m.xbm \
+		hand06.xbm \
+		hand06m.xbm \
+		hand07.xbm \
+		hand07m.xbm \
+		hand08.xbm \
+		hand08m.xbm \
+		hand09.xbm \
+		hand09m.xbm \
+		hand10.xbm \
+		hand10m.xbm \
+		hand11.xbm \
+		hand11m.xbm \
+		hand12.xbm \
+		hand12m.xbm \
+		hand13.xbm \
+		hand13m.xbm \
+		hand14.xbm \
+		hand14m.xbm 
+
+all:
+
+install: 
+	$(MKDIR_P) $(DESTDIR)$(destdir)
+	for i in $(FILES) ; do \
+	    $(INSTALL_DATA) $(srcdir)/$$i $(DESTDIR)$(destdir) ; \
+	done 
+
+clean:
+	$(RM) $(srcdir)/*.bak $(srcdir)/*\~ $(srcdir)/"#"* 
+
+distclean: clean
+	$(RM) *.ps Makefile

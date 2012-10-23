@@ -1,0 +1,123 @@
+
+		How to build BLT with Microsoft VC++.
+
+This file describes how to build BLT under Windows 95/98/NT/2000/XP
+with Visual C++.
+
+For most, it's not necessary to compile BLT for Windows.  If you
+have downloaded Tcl/Tk from www.tcltk.com or activestate then
+the precompiled binary versions on www.sourceforge.net should
+suffice.  They are
+
+ http://www.sourceforge.net/projects/blt/files/blt2.4z-for-8.0.exe
+  		           -or-
+ http://www.sourceforge.net/projects/blt/files/blt2.4z-for-8.1.exe
+  		           -or-
+ http://www.sourceforge.net/projects/blt/files/blt2.4z-for-8.2.exe
+  		           -or-
+ http://www.sourceforge.net/projects/blt/files/blt2.4z-for-8.3.exe
+  		           -or-
+ http://www.sourceforge.net/projects/blt/files/blt2.4z-for-8.4.exe
+
+
+Simply pick the one that matches the version of Tcl/Tk that you are
+using.
+
+
+Assuming the you need to build BLT from its sources, here is a short
+description.
+
+
+I. Requirements.
+================
+
+   Visual C++ 5 or 6	I've tested building BLT with both these 
+			compilers
+
+   Tcl/Tk sources	You must have the sources to both Tcl and
+			Tk available.
+
+
+II. Directory structure.
+========================
+
+The Tcl/Tk sources must be installed in the same directory and the
+BLT sources.  The following is an example.
+
+      	______________|______________
+     	|          |       |        |
+      blt2.4   tcl8.3.4  tk8.3.4   jpeg-6b*
+
+* The JPEG library is optional.  
+   
+
+III. Building Tcl/Tk.
+=====================
+
+You must first build the Tcl and Tk libraries.
+
+   cd tcl8.3.4/win
+   nmake -f Makefile.vc 
+   nmake -f Makefile.vc install
+   cd ../../tk8.3.4/win
+   nmake -f Makefile.vc
+   nmake -f Makefile.vc install
+
+This will install Tcl/Tk into C:/Program Files/Tcl
+
+
+IV. Configuring BLT 
+===================
+
+In the BLT directory, edit ./win/makedefs. Set the following macros.
+
+  v1 = 8.3			    Tcl/Tk version.
+  v2 = 83			    Version number without dots.
+  v3 = 8.3.4			    Suffix of Tcl/Tk directories 
+
+  prefix = C:/Program\ Files/Tcl    Location of installed Tcl/Tk files.
+  TOOLS32 = C:/Program\ Files/Microsoft\ Visual\ Studio/VC90
+				    Location of MS C compiler and tools.
+  HAVE_JPEG = 0		
+
+Setting HAVE_JPEG to 0 eliminated the need for the JPEG library. 
+
+
+V. Compiling BLT
+================
+   
+If you have the Cygwin distribution, go into a bash shell and run
+
+   make -f Makefile.vc
+   
+from the blt2.4z directory.  
+
+Otherwise (without cygwin) it's
+
+   nmake -f blt.mak
+   
+
+VI. Installing BLT
+==================
+
+Again, if you have the Cygwin distribution, then run 
+
+   make -f Makefile.vc install
+  
+Without cygwin, you must use the home-brew installer script with 
+tclsh.
+
+   tclsh8.3.exe win/install.tcl 
+
+
+VII. Testing BLT
+================
+
+Add the location of BLT24.dll to your PATH variable.  For example
+from the bash shell
+	
+   export PATH=/cygdrive/c/Program\ Files/Tcl/bin:$PATH
+   cd demos
+
+   bltwish.exe graph1.tcl
+   

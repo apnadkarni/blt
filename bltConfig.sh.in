@@ -1,0 +1,129 @@
+
+# bltConfig.sh --
+# 
+# This shell script (for sh) was generated automatically by BLT's
+# configure script when BLT was built.  It contains shell variables 
+# for many of the parameters used to build BLT.
+#
+# This script is intended to be included by other configure scripts
+# so that they don't have to figure this all out for themselves.
+#
+# The information in this file is specific to a single platform.
+#
+#
+
+# Version of BLT
+BLT_VERSION='@BLT_VERSION@'
+# Major version
+BLT_MAJOR_VERSION='@BLT_MAJOR_VERSION@'
+# Minor version
+BLT_MINOR_VERSION='@BLT_MINOR_VERSION@'
+# Release serial number
+BLT_RELEASE_SERIAL='@BLT_RELEASE_SERIAL@'
+# Patch level string
+BLT_PATCH_LEVEL='@BLT_PATCH_LEVEL@'
+
+# Prefix of installation 
+BLT_PREFIX='@BLT_PREFIX@'
+BLT_EXEC_PREFIX='@BLT_EXEC_PREFIX@'
+
+BLT_LIBRARY='@BLT_LIBRARY@'
+BLT_PLATFORM='@BLT_PLATFORM@'
+
+# Path where the BLT libraries were installed.
+BLT_LIB_DIR='@BLT_LIB_DIR@'
+# Path where bltwish and bltsh were installed.
+BLT_BIN_DIR='@BLT_BIN_DIR@'
+# Path where the BLT include files were installed.
+BLT_INC_DIR='@BLT_INC_DIR@'
+# Path where the BLT sources were found.
+BLT_SRC_DIR='@BLT_SRC_DIR@'
+
+
+# Prefix on library names (lib, cyg, or none)
+BLT_SO_PREFIX='@BLT_SO_PREFIX@'
+# Extension for shared libraries (i.e. dll's)
+BLT_SO_EXT='@BLT_SO_EXT@'
+BLT_SO_CFLAGS='@BLT_SO_CFLAGS@'
+BLT_SO_PREFIX='@BLT_SO_PREFIX@'
+BLT_SO_LD='@BLT_SO_LD@'
+BLT_SO_LDFLAGS='@BLT_SO_LDFLAGS@'
+
+# Extention for executables
+BLT_EXEC_EXT='@BLT_EXEC_EXT@'
+
+# Version string for BLT libraries and executables.
+BLT_LIB_VERSION='@BLT_LIB_VERSION@'
+
+# Name of the standard BLT library.
+BLT_LIB_NAME="Blt${BLT_LIB_VERSION}"
+# Name of the static BLT library.
+BLT_STATIC_LIB="${BLT_LIB_DIR}/lib${BLT_LIB_NAME}.a"
+# Libraries link specification for the full BLT library.
+BLT_LIB_SPEC="-L${BLT_LIB_DIR} -l${BLT_LIB_NAME}"
+
+# Name of the import library for Windows.
+BLT_IMPLIB_NAME="BLT${BLT_LIB_VERSION}.dll"
+# Path where the BLT libraries were installed.
+BLT_IMPLIB_SPEC="-L${BLT_LIB_DIR} -l${BLT_IMPLIB_NAME}"
+
+# Path where the BLT include files were installed.
+BLT_INC_SPEC="-I${BLT_INC_DIR}"
+
+# Name of the bltsh executable on this platform
+BLTSH="bltsh${BLT_LIB_VERSION}${BLT_EXEC_EXT}"
+# Name of the bltwish executable on this platform
+BLTWISH="bltsh${BLT_LIB_VERSION}${BLT_EXEC_EXT}"
+
+# Full path to the bltsh executable on this platform
+BLTSH_PATH="${BLT_BIN_DIR}/${BLTSH}"
+# Full path to the bltwish executable on this platform
+BLTWISH_PATH="${BLT_BIN_DIR}/${BLTWISH}"
+
+lib_version=${BLT_MAJOR_VERSION}${BLT_MINOR_VERSION}
+BLT_TCL_SO_SPEC="-L${BLT_LIBRARY} -lTcl${lib_version}"
+BLT_TK_SO_SPEC="-L${BLT_LIBRARY} -lTk${lib_version}"
+
+# -lexpat
+BLT_MYSQL_DIR='@MYSQL_LIB_DIR@'
+BLT_MYSQL_SPEC='@MYSQL_LIB_SPEC@'
+# -lexpat
+BLT_EXPAT_DIR='@EXPAT_LIB_DIR@'
+BLT_EXPAT_SPEC='@EXPAT_LIB_SPEC@'
+# -lpng
+BLT_PNG_DIR='@PNG_LIB_DIR@'
+BLT_PNG_SPEC='@PNG_LIB_SPEC@'
+# -ltiff
+BLT_TIF_DIR='@TIF_LIB_DIR@'
+BLT_TIF_SPEC='@TIF_LIB_SPEC@'
+#-ljpeg
+BLT_JPG_DIR='@JPG_LIB_DIR@'
+BLT_JPG_SPEC='@JPG_LIB_SPEC@'
+#-lfreetype
+BLT_FT2_DIR='@FT2_LIB_DIR@'
+BLT_FT2_SPEC='@FT2_LIB_SPEC@'
+#-lXpm
+BLT_XPM_DIR='@XPM_LIB_DIR@'
+BLT_XPM_SPEC='@XPM_LIB_SPEC@'
+#-lfontconfig
+BLT_FTCFG_DIR='@FTCFG_LIB_DIR@'
+BLT_FTCFG_SPEC='@FTCFG_LIB_SPEC@'
+# -lz
+BLT_Z_DIR='@Z_LIB_DIR@'
+BLT_Z_SPEC='@Z_LIB_SPEC@'
+# Extra libraries -lXrandr -lXrender -lXft -lX11
+BLT_XRANDR_SPEC='@XRANDR_LIB_SPEC@'
+BLT_XRENDER_SPEC='@XRENDER_LIB_SPEC@'
+BLT_XFT_SPEC='@XFT_LIB_SPEC@'
+BLT_X11_SPEC='@X11_LIB_SPEC@'
+
+if test "x${BLT_PLATFORM}" = "xwin" ; then
+  BLT_EXTRA_LIBS="${BLT_Z_SPEC} -lm -lwinspool"
+else
+  BLT_EXTRA_LIBS="${BLT_XFT_SPEC} ${BLT_XRANDR_SPEC} ${BLT_XRENDER_SPEC} \
+    ${BLT_X11_SPEC} ${BLT_Z_SPEC} -lm"
+fi
+
+BLT_PKG_LIBS="${BLT_EXPAT_SPEC} ${BLT_MYSQL_SPEC} ${BLT_PNG_SPEC} ${BLT_TIF_SPEC} ${BLT_JPG_SPEC} ${BLT_XPM_SPEC} ${BLT_FT2_SPEC} ${BLT_FTCFG_SPEC}"
+
+

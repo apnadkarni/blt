@@ -1,0 +1,78 @@
+
+# ------------------------------------------------------------------------
+# 	Makefile for AFM files.
+# ------------------------------------------------------------------------
+
+datadir =	@datadir@
+datarootdir = 	@datarootdir@
+exec_prefix =	@exec_prefix@
+libdir =	@libdir@
+prefix =	@prefix@
+srcdir =	@srcdir@
+
+version =	@BLT_VERSION@
+so_prefix =	@BLT_SO_PREFIX@
+so_ext =	@BLT_SO_EXT@
+lib_suffix =	@BLT_LIB_SUFFIX@
+pkgdir =	@BLT_LIBRARY@
+destdir =	$(pkgdir)/afm
+
+INSTALL =	@INSTALL@
+INSTALL_DATA =  @INSTALL_DATA@
+RM =		rm -f
+SHELL =		/bin/sh
+MKDIR_P =	@MKDIR_P@
+
+FILES = \
+		AvantGarde-Book.afm \
+		AvantGarde-BookOblique.afm \
+		AvantGarde-Demi.afm \
+		AvantGarde-DemiOblique.afm \
+		Bookman-Demi.afm \
+		Bookman-DemiItalic.afm \
+		Bookman-Light.afm \
+		Bookman-LightItalic.afm \
+		Courier-Bold.afm \
+		Courier-BoldOblique.afm \
+		Courier-Oblique.afm \
+		Courier.afm \
+		Helvetica-Bold.afm \
+		Helvetica-BoldOblique.afm \
+		Helvetica-Condensed-Bold.afm \
+		Helvetica-Condensed-BoldObl.afm \
+		Helvetica-Condensed-Oblique.afm \
+		Helvetica-Condensed.afm \
+		Helvetica-Narrow-Bold.afm \
+		Helvetica-Narrow-BoldOblique.afm \
+		Helvetica-Narrow-Oblique.afm \
+		Helvetica-Narrow.afm \
+		Helvetica-Oblique.afm \
+		Helvetica.afm \
+		NewCenturySchlbk-Bold.afm \
+		NewCenturySchlbk-BoldItalic.afm \
+		NewCenturySchlbk-Italic.afm \
+		NewCenturySchlbk-Roman.afm \
+		Palatino-Bold.afm \
+		Palatino-BoldItalic.afm \
+		Palatino-Italic.afm \
+		Palatino-Roman.afm \
+		Symbol.afm \
+		Times-Bold.afm \
+		Times-BoldItalic.afm \
+		Times-Italic.afm \
+		Times-Roman.afm \
+		ZapfChancery-MediumItalic.afm \
+		ZapfDingbats.afm 
+
+all: 
+
+install: 
+	$(MKDIR_P) $(DESTDIR)$(destdir)
+	for i in $(FILES) ; do \
+	    $(INSTALL_DATA) $(srcdir)/$$i $(DESTDIR)$(destdir) ; \
+	done 
+
+clean:
+
+distclean: clean
+	$(RM) $(srcdir)/*.bak $(srcdir)/*\~ $(srcdir)/"#"* Makefile

@@ -1,0 +1,47 @@
+# ------------------------------------------------------------------------
+# 	Makefile for demos/bitmaps
+# ------------------------------------------------------------------------
+
+datadir =	@datadir@
+datarootdir =	@datarootdir@
+exec_prefix =	@exec_prefix@
+libdir =	@libdir@
+prefix =	@prefix@
+srcdir =	@srcdir@
+
+version =	@BLT_VERSION@
+scriptdir =	$(prefix)/lib/blt$(version)
+destdir =	$(scriptdir)/demos/bitmaps
+
+SHELL =		/bin/sh
+RM =		rm -rf
+INSTALL =	@INSTALL@
+INSTALL_DATA =	@INSTALL_DATA@
+MKDIR_P	= 	@MKDIR_P@
+
+FILES =	\
+		face.xbm \
+		greenback.xbm \
+		hobbes.xbm \
+		hobbes_mask.xbm \
+		sharky.xbm \
+		xbob.xbm
+
+subdirs =	fish hand
+
+all:
+
+install: 
+	$(MKDIR_P) $(DESTDIR)$(destdir)
+	for i in $(FILES) ; do \
+	    $(INSTALL_DATA) $(srcdir)/$$i $(DESTDIR)$(destdir) ; \
+	done 
+	for i in $(subdirs); do \
+	   $(MAKE) -C $$i install || exit 1 ; \
+	done
+
+clean:
+	$(RM) $(srcdir)/*.bak $(srcdir)/*\~ $(srcdir)/"#"* 
+
+distclean: clean
+	$(RM) *.ps Makefile
