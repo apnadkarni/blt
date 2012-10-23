@@ -1242,54 +1242,142 @@ HoldBusy(
     return result;
 }
 
-
 /*
  *---------------------------------------------------------------------------
  *
- * BusyInterpDeleteProc --
+ * StatusOp --
  *
- *	This is called when the interpreter hosting the "busy" command is
- *	destroyed.
+ *	Returns the status of the busy window; whether it's blocking events or
+ *	not.
  *
  * Results:
- *	None.
- *
- * Side effects:
- *	Destroys all the hash table managing the busy windows.
+ *	Returns a standard TCL result. If path name represents a busy window,
+ *	the status is returned via interp->result and TCL_OK is
+ *	returned. Otherwise, TCL_ERROR is returned and an error message is
+ *	left in interp->result.
  *
  *---------------------------------------------------------------------------
  */
-/* ARGSUSED */
-static void
-BusyInterpDeleteProc(
-    ClientData clientData,	/* Interpreter-specific data. */
-    Tcl_Interp *interp)
+/*ARGSUSED*/
+static int
+StatusOp(
+    ClientData clientData,		/* Interpreter-specific data. */
+    Tcl_Interp *interp,			/* Interpreter to report error to */
+    int objc,				/* Not used. */
+    Tcl_Obj *const *objv)
 {
     BusyInterpData *dataPtr = clientData;
-    Blt_HashEntry *hPtr;
-    Blt_HashSearch iter;
+    Busy *busyPtr;
+    int state;
 
-    for (hPtr = Blt_FirstHashEntry(&dataPtr->busyTable, &iter);
-	 hPtr != NULL; hPtr = Blt_NextHashEntry(&iter)) {
-	Busy *busyPtr;
-
-	busyPtr = Blt_GetHashValue(hPtr);
-	busyPtr->hashPtr = NULL;
-	DestroyBusy((DestroyData)busyPtr);
+    state = FALSE;
+    if (GetBusy(dataPtr, NULL, objv[2], &busyPtr) == TCL_OK) {
+	state = busyPtr->flags & ACTIVE;
     }
-    Blt_DeleteHashTable(&dataPtr->busyTable);
-    Tcl_DeleteAssocData(interp, BUSY_THREAD_KEY);
-    Blt_Free(dataPtr);
+    Tcl_SetBooleanObj(Tcl_GetObjResult(interp), state);
+    return TCL_OK;
 }
 
 /*
  *---------------------------------------------------------------------------
  *
- * ActiveOp --
+ * ForgetOp --
+ *
+ *	Destroys the busy window associated with the reference window and
+ *	arranges for internal resources to the released when they're not being
+ *	used anymore.
+ *
+ * Results:
+ *	Returns a standard TCL result. If path name represents a busy window,
+ *	it is destroyed and TCL_OK is returned. Otherwise, TCL_ERROR is
+ *	returned and an error message is left in interp->result.
+ *
+ * Side effects:
+ *	The busy window is removed.  Other related memory and resources are
+ *	eventually released by the Tk dispatcher.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+ForgetOp(
+    ClientData clientData,		/* Interpreter-specific data. */
+    Tcl_Interp *interp,			/* Not used. */
+    int objc,
+    Tcl_Obj *const *objv)
+{
+    BusyInterpData *dataPtr = clientData;
+    int i;
+
+    for (i = 2; i < objc; i++) {
+	Busy *busyPtr;
+
+	if (GetBusy(dataPtr, (Tcl_Interp *)NULL, objv[i], &busyPtr) == TCL_OK) {
+	    /* Unmap the window even though it will be soon destroyed */
+	    HideBusyWindow(busyPtr);
+
+	    /* Remove the entry to this busy window right now so that busy
+	     * commands can't reference this window. */
+	    Blt_DeleteHashEntry(busyPtr->tablePtr, busyPtr->hashPtr);
+	    busyPtr->hashPtr = NULL;
+
+	    /* Destroy the busy window. This in turn frees the busy structure
+	     * allocated. */
+	    if (busyPtr->tkBusy != NULL) {
+		Tk_DestroyWindow(busyPtr->tkBusy);
+	    }
+	}
+    }
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * ReleaseOp --
+ *
+ *	Unmaps the busy window, thereby permitting device events to be
+ *	received by the parent window and its children.
+ *
+ * Results:
+ *	Returns a standard TCL result. If path name represents a busy window,
+ *	it is unmapped and TCL_OK is returned. Otherwise, TCL_ERROR is
+ *	returned and an error message is left in interp->result.
+ *
+ * Side effects:
+ *	The busy window is hidden, allowing the parent window and its children
+ *	to receive events again.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+ReleaseOp(
+    ClientData clientData,		/* Interpreter-specific data. */
+    Tcl_Interp *interp,			/* Not used. */
+    int objc,
+    Tcl_Obj *const *objv)
+{
+    BusyInterpData *dataPtr = clientData;
+    Busy *busyPtr;
+    int i;
+
+    for (i = 2; i < objc; i++) {
+	if (GetBusy(dataPtr, (Tcl_Interp *)NULL, objv[i], &busyPtr) == TCL_OK) {
+	    HideBusyWindow(busyPtr);
+	}
+    }
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * NamesOp --
  *
  *	Reports the names of all widgets with busy windows attached to them,
- *	(matching a given pattern) and are active.  If no pattern is given,
- *	all busy widgets are listed.
+ *	matching a given pattern.  If no pattern is given, all busy widgets
+ *	are listed.
  *
  * Results:
  *	Returns a TCL list of the names of the widget with busy windows
@@ -1298,7 +1386,7 @@ BusyInterpDeleteProc(
  *---------------------------------------------------------------------------
  */
 static int
-ActiveOp(
+NamesOp(
     ClientData clientData,		/* Interpreter-specific data. */
     Tcl_Interp *interp,			/* Interpreter to report errors to */
     int objc,
@@ -1317,9 +1405,6 @@ ActiveOp(
 	Busy *busyPtr;
 
 	busyPtr = Blt_GetHashValue(hPtr);
-	if ((busyPtr->flags & ACTIVE) == 0) {
-	    continue;
-	}
 	if ((pattern == NULL) ||
 	    (Tcl_StringMatch(Tk_PathName(busyPtr->tkRef), pattern))) {
 	    Tcl_Obj *objPtr;
@@ -1383,30 +1468,6 @@ BusyOp(
 /*
  *---------------------------------------------------------------------------
  *
- * CgetOp --
- *
- *---------------------------------------------------------------------------
- */
-/* ARGSUSED*/
-static int
-CgetOp(
-    ClientData clientData,		/* Interpreter-specific data. */
-    Tcl_Interp *interp,			/* Interpreter to report errors to */
-    int objc,
-    Tcl_Obj *const *objv)		/* Widget pathname and option switch */
-{
-    BusyInterpData *dataPtr = clientData;
-    Busy *busyPtr;
-
-    if (GetBusy(dataPtr, interp, objv[2], &busyPtr) != TCL_OK) {
-	return TCL_ERROR;
-    }
-    return Blt_ConfigureValueFromObj(interp, busyPtr->tkRef, configSpecs,
-	(char *)busyPtr, objv[3], 0);
-}
-/*
- *---------------------------------------------------------------------------
- *
  * CheckOp --
  *
  *	Checks if the named window is currently busy.  This also includes
@@ -1450,109 +1511,6 @@ CheckOp(
     Tcl_SetBooleanObj(Tcl_GetObjResult(interp), 0);
     return TCL_OK;
 }
-
-/*
- *---------------------------------------------------------------------------
- *
- * ConfigureOp --
- *
- *	This procedure is called to process an objv/objc list in order to
- *	configure (or reconfigure) a busy window.
- *
- * Results:
- *	The return value is a standard TCL result.  If TCL_ERROR is returned,
- *	then interp->result contains an error message.
- *
- * Side effects:
- *	Configuration information get set for busyPtr; old resources get
- *	freed, if there were any.  The busy window destroyed and recreated in
- *	a new parent window.
- *
- *---------------------------------------------------------------------------
- */
-static int
-ConfigureOp(
-    ClientData clientData,		/* Interpreter-specific data. */
-    Tcl_Interp *interp,			/* Interpreter to report errors to */
-    int objc,
-    Tcl_Obj *const *objv)		/* Reference window path name and
-					 * options */
-{
-    BusyInterpData *dataPtr = clientData;
-    Busy *busyPtr;
-    int result;
-
-    if (GetBusy(dataPtr, interp, objv[2], &busyPtr) != TCL_OK) {
-	return TCL_ERROR;
-    }
-    if (objc == 3) {
-	result = Blt_ConfigureInfoFromObj(interp, busyPtr->tkRef, configSpecs,
-	    (char *)busyPtr, (Tcl_Obj *)NULL, 0);
-    } else if (objc == 4) {
-	result = Blt_ConfigureInfoFromObj(interp, busyPtr->tkRef, configSpecs,
-	    (char *)busyPtr, objv[3], 0);
-    } else {
-	Tcl_Preserve(busyPtr);
-	result = ConfigureBusy(interp, busyPtr, objc - 3, objv + 3,
-		BLT_CONFIG_OBJV_ONLY);
-	Tcl_Release(busyPtr);
-    }
-    return result;
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * ForgetOp --
- *
- *	Destroys the busy window associated with the reference window and
- *	arranges for internal resources to the released when they're not being
- *	used anymore.
- *
- * Results:
- *	Returns a standard TCL result. If path name represents a busy window,
- *	it is destroyed and TCL_OK is returned. Otherwise, TCL_ERROR is
- *	returned and an error message is left in interp->result.
- *
- * Side effects:
- *	The busy window is removed.  Other related memory and resources are
- *	eventually released by the Tk dispatcher.
- *
- *---------------------------------------------------------------------------
- */
-/*ARGSUSED*/
-static int
-ForgetOp(
-    ClientData clientData,		/* Interpreter-specific data. */
-    Tcl_Interp *interp,			/* Not used. */
-    int objc,
-    Tcl_Obj *const *objv)
-{
-    BusyInterpData *dataPtr = clientData;
-    int i;
-
-    for (i = 2; i < objc; i++) {
-	Busy *busyPtr;
-
-	if (GetBusy(dataPtr, (Tcl_Interp *)NULL, objv[i], &busyPtr) == TCL_OK) {
-	    /* Unmap the window even though it will be soon destroyed */
-	    HideBusyWindow(busyPtr);
-
-	    /* Remove the entry to this busy window right now so that busy
-	     * commands can't reference this window. */
-	    Blt_DeleteHashEntry(busyPtr->tablePtr, busyPtr->hashPtr);
-	    busyPtr->hashPtr = NULL;
-
-	    /* Destroy the busy window. This in turn frees the busy structure
-	     * allocated. */
-	    if (busyPtr->tkBusy != NULL) {
-		Tk_DestroyWindow(busyPtr->tkBusy);
-	    }
-	}
-    }
-    return TCL_OK;
-}
-
 
 /*
  *---------------------------------------------------------------------------
@@ -1610,164 +1568,114 @@ HoldOp(
     return TCL_OK;
 }
 
-/*
- *---------------------------------------------------------------------------
- *
- * IsBusyOp --
- *
- *	Returns the status of the busy window; whether it's blocking events or
- *	not.
- *
- * Results:
- *	Returns a standard TCL result. If path name represents a busy window,
- *	the status is returned via interp->result and TCL_OK is
- *	returned. Otherwise, TCL_ERROR is returned and an error message is
- *	left in interp->result.
- *
- *---------------------------------------------------------------------------
- */
-/*ARGSUSED*/
+/* ARGSUSED*/
 static int
-IsBusyOp(
-    ClientData clientData,		/* Interpreter-specific data. */
-    Tcl_Interp *interp,			/* Interpreter to report error to */
-    int objc,				/* Not used. */
-    Tcl_Obj *const *objv)
-{
-    BusyInterpData *dataPtr = clientData;
-    Busy *busyPtr;
-    int state;
-
-    state = FALSE;
-    if (GetBusy(dataPtr, NULL, objv[2], &busyPtr) == TCL_OK) {
-	state = busyPtr->flags & ACTIVE;
-    }
-    Tcl_SetBooleanObj(Tcl_GetObjResult(interp), state);
-    return TCL_OK;
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * NamesOp --
- *
- *	Reports the names of all widgets with busy windows attached to them,
- *	matching a given pattern.  If no pattern is given, all busy widgets
- *	are listed.
- *
- * Results:
- *	Returns a TCL list of the names of the widget with busy windows
- *	attached to them, regardless if the widget is currently busy or not.
- *
- *---------------------------------------------------------------------------
- */
-static int
-NamesOp(
+CgetOp(
     ClientData clientData,		/* Interpreter-specific data. */
     Tcl_Interp *interp,			/* Interpreter to report errors to */
     int objc,
-    Tcl_Obj *const *objv)
+    Tcl_Obj *const *objv)		/* Widget pathname and option switch */
 {
+    BusyInterpData *dataPtr = clientData;
+    Busy *busyPtr;
+    int result;
+
+    if (GetBusy(dataPtr, interp, objv[2], &busyPtr) != TCL_OK) {
+	return TCL_ERROR;
+    }
+    Tcl_Preserve(busyPtr);
+    result = Blt_ConfigureValueFromObj(interp, busyPtr->tkRef, configSpecs,
+	(char *)busyPtr, objv[3], 0);
+    Tcl_Release(busyPtr);
+    return result;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * ConfigureOp --
+ *
+ *	This procedure is called to process an objv/objc list in order to
+ *	configure (or reconfigure) a busy window.
+ *
+ * Results:
+ *	The return value is a standard TCL result.  If TCL_ERROR is returned,
+ *	then interp->result contains an error message.
+ *
+ * Side effects:
+ *	Configuration information get set for busyPtr; old resources get
+ *	freed, if there were any.  The busy window destroyed and recreated in
+ *	a new parent window.
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+ConfigureOp(
+    ClientData clientData,		/* Interpreter-specific data. */
+    Tcl_Interp *interp,			/* Interpreter to report errors to */
+    int objc,
+    Tcl_Obj *const *objv)		/* Reference window path name and
+					 * options */
+{
+    BusyInterpData *dataPtr = clientData;
+    Busy *busyPtr;
+    int result;
+
+    if (GetBusy(dataPtr, interp, objv[2], &busyPtr) != TCL_OK) {
+	return TCL_ERROR;
+    }
+    if (objc == 3) {
+	result = Blt_ConfigureInfoFromObj(interp, busyPtr->tkRef, configSpecs,
+	    (char *)busyPtr, (Tcl_Obj *)NULL, 0);
+    } else if (objc == 4) {
+	result = Blt_ConfigureInfoFromObj(interp, busyPtr->tkRef, configSpecs,
+	    (char *)busyPtr, objv[3], 0);
+    } else {
+	Tcl_Preserve(busyPtr);
+	result = ConfigureBusy(interp, busyPtr, objc - 3, objv + 3,
+		BLT_CONFIG_OBJV_ONLY);
+	Tcl_Release(busyPtr);
+    }
+    return result;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * BusyInterpDeleteProc --
+ *
+ *	This is called when the interpreter hosting the "busy" command is
+ *	destroyed.
+ *
+ * Results:
+ *	None.
+ *
+ * Side effects:
+ *	Destroys all the hash table managing the busy windows.
+ *
+ *---------------------------------------------------------------------------
+ */
+/* ARGSUSED */
+static void
+BusyInterpDeleteProc(
+    ClientData clientData,	/* Interpreter-specific data. */
+    Tcl_Interp *interp)
+{
+    BusyInterpData *dataPtr = clientData;
     Blt_HashEntry *hPtr;
     Blt_HashSearch iter;
-    BusyInterpData *dataPtr = clientData;
-    Tcl_Obj *listObjPtr;
-    const char *pattern;
 
-    listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
-    pattern = (objc > 2) ? Tcl_GetString(objv[2]) : NULL;
     for (hPtr = Blt_FirstHashEntry(&dataPtr->busyTable, &iter);
-	hPtr != NULL; hPtr = Blt_NextHashEntry(&iter)) {
+	 hPtr != NULL; hPtr = Blt_NextHashEntry(&iter)) {
 	Busy *busyPtr;
 
 	busyPtr = Blt_GetHashValue(hPtr);
-	if ((pattern == NULL) ||
-	    (Tcl_StringMatch(Tk_PathName(busyPtr->tkRef), pattern))) {
-	    Tcl_Obj *objPtr;
-	    objPtr = Tcl_NewStringObj(Tk_PathName(busyPtr->tkRef), -1);
-	    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-	}
+	busyPtr->hashPtr = NULL;
+	DestroyBusy((DestroyData)busyPtr);
     }
-    Tcl_SetObjResult(interp, listObjPtr);
-    return TCL_OK;
-}
-
-
-/*
- *---------------------------------------------------------------------------
- *
- * ReleaseOp --
- *
- *	Unmaps the busy window, thereby permitting device events to be
- *	received by the parent window and its children.
- *
- * Results:
- *	Returns a standard TCL result. If path name represents a busy window,
- *	it is unmapped and TCL_OK is returned. Otherwise, TCL_ERROR is
- *	returned and an error message is left in interp->result.
- *
- * Side effects:
- *	The busy window is hidden, allowing the parent window and its children
- *	to receive events again.
- *
- *---------------------------------------------------------------------------
- */
-/*ARGSUSED*/
-static int
-ReleaseOp(
-    ClientData clientData,		/* Interpreter-specific data. */
-    Tcl_Interp *interp,			/* Not used. */
-    int objc,
-    Tcl_Obj *const *objv)
-{
-    BusyInterpData *dataPtr = clientData;
-    Busy *busyPtr;
-    int i;
-
-    for (i = 2; i < objc; i++) {
-	if (GetBusy(dataPtr, (Tcl_Interp *)NULL, objv[i], &busyPtr) == TCL_OK) {
-	    HideBusyWindow(busyPtr);
-	}
-    }
-    return TCL_OK;
-}
-/*
- *---------------------------------------------------------------------------
- *
- * StatusOp --
- *
- *	Returns the status of the busy window; whether it's blocking events or
- *	not.
- *
- * Results:
- *	Returns a standard TCL result. If path name represents a busy window,
- *	the status is returned via interp->result and TCL_OK is
- *	returned. Otherwise, TCL_ERROR is returned and an error message is
- *	left in interp->result.
- *
- *---------------------------------------------------------------------------
- */
-/*ARGSUSED*/
-static int
-StatusOp(
-    ClientData clientData,		/* Interpreter-specific data. */
-    Tcl_Interp *interp,			/* Interpreter to report error to */
-    int objc,				/* Not used. */
-    Tcl_Obj *const *objv)
-{
-    BusyInterpData *dataPtr = clientData;
-    Busy *busyPtr;
-    const char *string;
-
-    if (GetBusy(dataPtr, NULL, objv[2], &busyPtr) != TCL_OK) {
-	string = "???";
-    } else if (busyPtr->flags & ACTIVE) {
-	string = "active";
-    } else {
-	string = "inactive";
-    }
-    Tcl_SetStringObj(Tcl_GetObjResult(interp), string, -1);
-    return TCL_OK;
+    Blt_DeleteHashTable(&dataPtr->busyTable);
+    Tcl_DeleteAssocData(interp, BUSY_THREAD_KEY);
+    Blt_Free(dataPtr);
 }
 
 /*
@@ -1787,13 +1695,12 @@ StatusOp(
  */
 static Blt_OpSpec busyOps[] =
 {
-    {"active",    1, ActiveOp,    2, 3, "?pattern?",},
     {"cget",      2, CgetOp,      4, 4, "window option",},
     {"check",     2, CheckOp,     3, 3, "window",},
     {"configure", 2, ConfigureOp, 3, 0, "window ?options?...",},
     {"forget",    1, ForgetOp,    2, 0, "?window?...",},
     {"hold",      1, HoldOp,      3, 0, "window ?options?... ?window options?...",},
-    {"isbusy",    1, IsBusyOp,    3, 3, "window",},
+    {"isbusy",    1, BusyOp,      2, 3, "?pattern?",},
     {"names",     1, NamesOp,     2, 3, "?pattern?",},
     {"release",   1, ReleaseOp,   2, 0, "?window?...",},
     {"status",    1, StatusOp,    3, 3, "window",},
