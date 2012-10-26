@@ -815,11 +815,11 @@ NewTableDataSource(Tcl_Interp *interp, Mesh *meshPtr, const char *name,
 	srcPtr->table = clientPtr->table;
 	clientPtr->refCount++;
     }
-    srcPtr->column = blt_table_column_find(interp, srcPtr->table, colObjPtr);
+    srcPtr->column = blt_table_get_column(interp, srcPtr->table, colObjPtr);
     if (srcPtr->column == NULL) {
 	goto error;
     }
-    srcPtr->notifier = blt_table_column_create_notifier(interp, srcPtr->table,
+    srcPtr->notifier = blt_table_create_column_notifier(interp, srcPtr->table,
 	srcPtr->column, TABLE_NOTIFY_COLUMN_CHANGED, TableNotifyProc, 
 	(BLT_TABLE_NOTIFIER_DELETE_PROC *)NULL, srcPtr);
     srcPtr->trace = blt_table_set_column_trace(srcPtr->table, srcPtr->column,
@@ -872,7 +872,7 @@ TableDataSourceGetProc(Tcl_Interp *interp, DataSource *basePtr,
     for (i = 0; i < blt_table_num_rows(table); i++) {
 	BLT_TABLE_ROW row;
 
-	row = blt_table_get_row(table, i);
+	row = blt_table_row(table, i);
 	values[i] = blt_table_get_double(table, row, srcPtr->column);
 	if (values[i] < minValue) {
 	    minValue = values[i];

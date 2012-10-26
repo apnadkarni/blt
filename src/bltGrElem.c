@@ -326,7 +326,7 @@ FetchTableValues(Tcl_Interp *interp, ElemValues *valuesPtr,
     for (i = 0; i < blt_table_num_rows(table); i++) {
 	BLT_TABLE_ROW row;
 
-	row = blt_table_get_row(table, i);
+	row = blt_table_row(table, i);
 	array[i] = blt_table_get_double(table, row, col);
     }
     if (valuesPtr->values != NULL) {
@@ -474,14 +474,14 @@ GetTableData(Tcl_Interp *interp, ElemValues *valuesPtr, const char *tableName,
 	srcPtr->table = clientPtr->table;
 	clientPtr->refCount++;
     }
-    srcPtr->column = blt_table_column_find(interp, srcPtr->table, colObjPtr);
+    srcPtr->column = blt_table_get_column(interp, srcPtr->table, colObjPtr);
     if (srcPtr->column == NULL) {
 	goto error;
     }
     if (FetchTableValues(interp, valuesPtr, srcPtr->column) != TCL_OK) {
 	goto error;
     }
-    srcPtr->notifier = blt_table_column_create_notifier(interp, srcPtr->table, 
+    srcPtr->notifier = blt_table_create_column_notifier(interp, srcPtr->table, 
 	srcPtr->column, TABLE_NOTIFY_WHENIDLE | TABLE_NOTIFY_COLUMN_CHANGED, 
 	TableNotifyProc, 
 	(BLT_TABLE_NOTIFIER_DELETE_PROC *)NULL, valuesPtr);

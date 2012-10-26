@@ -704,7 +704,7 @@ PositionSwitch(
     if (flags & INSERT_COL) {
 	BLT_TABLE_COLUMN col;
 
-	col = blt_table_column_find(interp, table, objPtr);
+	col = blt_table_get_column(interp, table, objPtr);
 	if (col == NULL) {
 	    return TCL_ERROR;
 	}
@@ -715,7 +715,7 @@ PositionSwitch(
     } else if (flags & INSERT_ROW) {
 	BLT_TABLE_ROW row;
 
-	row = blt_table_row_find(interp, table, objPtr);
+	row = blt_table_get_row(interp, table, objPtr);
 	if (row == NULL) {
 	    return TCL_ERROR;
 	}
@@ -854,7 +854,7 @@ ColumnsSwitchProc(
     for (i = 0; i < objc; i++) {
 	BLT_TABLE_COLUMN col;
 
-	col = blt_table_column_find(interp, sortPtr->table, objv[i]);
+	col = blt_table_get_column(interp, sortPtr->table, objv[i]);
 	if (col == NULL) {
 	    return TCL_ERROR;
 	}
@@ -993,7 +993,7 @@ RowsSwitchProc(
     for (i = 0; i < objc; i++) {
 	BLT_TABLE_ROW row;
 
-	row = blt_table_row_find(interp, sortPtr->table, objv[i]);
+	row = blt_table_get_row(interp, sortPtr->table, objv[i]);
 	if (row == NULL) {
 	    return TCL_ERROR;
 	}
@@ -1087,7 +1087,7 @@ TypeSwitchProc(
     BLT_TABLE_COLUMN_TYPE *typePtr = (BLT_TABLE_COLUMN_TYPE *)(record + offset);
     BLT_TABLE_COLUMN_TYPE type;
 
-    type = blt_table_column_convert_name_to_type(Tcl_GetString(objPtr));
+    type = blt_table_name_to_column_type(Tcl_GetString(objPtr));
     if (type == TABLE_COLUMN_TYPE_UNKNOWN) {
 	Tcl_AppendResult(interp, "unknown table column type \"",
 		Tcl_GetString(objPtr), "\"", (char *)NULL);
@@ -1109,7 +1109,7 @@ MakeRows(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr)
     case TABLE_SPEC_UNKNOWN:
     case TABLE_SPEC_LABEL:
 	Tcl_ResetResult(interp);
-	if (blt_table_row_create(interp, table, string) == NULL) {
+	if (blt_table_create_row(interp, table, string) == NULL) {
 	    return TCL_ERROR;
 	}
 	break;
@@ -1159,7 +1159,7 @@ MakeColumns(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr)
     case TABLE_SPEC_UNKNOWN:
     case TABLE_SPEC_LABEL:
 	Tcl_ResetResult(interp);
-	if (blt_table_column_create(interp, table, string) == NULL) {
+	if (blt_table_create_column(interp, table, string) == NULL) {
 	    return TCL_ERROR;
 	}
 	break;
@@ -1693,9 +1693,9 @@ ColumnVarResolver(
 
     /* Look up the column from the variable name given. */
     if (Blt_GetLong((Tcl_Interp *)NULL, (char *)name, &index) == TCL_OK) {
- 	col = blt_table_column_find_by_index(findPtr->table, index);
+ 	col = blt_table_get_column_by_index(findPtr->table, index);
     } else {
-	col = blt_table_column_find_by_label(findPtr->table, name);
+	col = blt_table_get_column_by_label(findPtr->table, name);
     }
     if (col == NULL) {
 	/* Variable name doesn't refer to any column. Pass it back to the Tcl
@@ -1793,7 +1793,7 @@ FindRows(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr,
 	    Tcl_Obj *objPtr;
 
 	    if (findPtr->tag != NULL) {
-		result = blt_table_row_set_tag(interp, table, row,findPtr->tag);
+		result = blt_table_set_row_tag(interp, table, row,findPtr->tag);
 		if (result != TCL_OK) {
 		    break;
 		}
@@ -1834,17 +1834,17 @@ CopyColumn(Tcl_Interp *interp, BLT_TABLE srcTable, BLT_TABLE destTable,
 	    return TCL_ERROR;
 	}
     }
-    blt_table_column_set_type(destTable, dest, blt_table_column_type(src));
+    blt_table_set_column_type(destTable, dest, blt_table_column_type(src));
     for (i = 0; i < blt_table_num_rows(srcTable); i++) {
 	BLT_TABLE_ROW row;
 	BLT_TABLE_VALUE value;
 
-	row = blt_table_get_row(srcTable, i);
+	row = blt_table_row(srcTable, i);
 	value = blt_table_get_value(srcTable, row, src);
 	if (value == NULL) {
 	    continue;
 	}
-	row = blt_table_get_row(destTable, i);
+	row = blt_table_row(destTable, i);
 	if (blt_table_set_value(destTable, row, dest, value) != TCL_OK) {
 	    return TCL_ERROR;
 	}
@@ -1872,7 +1872,7 @@ CopyColumnTags(BLT_TABLE srcTable, BLT_TABLE destTable,
 	    /* We know the tag tables are keyed by strings, so we don't need
 	     * to call Blt_GetHashKey or use the hash table pointer to
 	     * retrieve the key. */
-	    blt_table_column_set_tag(NULL, destTable, dest, hPtr->key.string);
+	    blt_table_set_column_tag(NULL, destTable, dest, hPtr->key.string);
 	}
     }
 }	    
@@ -1885,11 +1885,11 @@ ClearTable(BLT_TABLE table)
 
     for (col = blt_table_first_column(table); col != NULL; col = nextCol) {
 	nextCol = blt_table_next_column(table, col);
-	blt_table_column_delete(table, col);
+	blt_table_delete_column(table, col);
     }
     for (row = blt_table_first_row(table); row != NULL;  row = nextRow) {
 	nextRow = blt_table_next_row(table, row);
-	blt_table_row_delete(table, row);
+	blt_table_delete_row(table, row);
     }
 }
 
@@ -1900,7 +1900,7 @@ CopyColumnLabel(Tcl_Interp *interp, BLT_TABLE srcTable, BLT_TABLE destTable,
     const char *label;
 
     label = blt_table_column_label(src);
-    if (blt_table_column_set_label(interp, destTable, dest, label) != TCL_OK) {
+    if (blt_table_set_column_label(interp, destTable, dest, label) != TCL_OK) {
 	return TCL_ERROR;
     }
     return TCL_OK;
@@ -1927,8 +1927,8 @@ CopyTable(Tcl_Interp *interp, BLT_TABLE srcTable, BLT_TABLE destTable)
     for (i = 0; i < blt_table_num_columns(srcTable); i++) {
 	BLT_TABLE_COLUMN src, dest;
 
-	src = blt_table_get_column(srcTable, i);
-	dest = blt_table_get_column(destTable, i);
+	src = blt_table_column(srcTable, i);
+	dest = blt_table_column(destTable, i);
 	if (CopyColumn(interp, srcTable, destTable, src, dest) != TCL_OK) {
 	    return TCL_ERROR;
 	}
@@ -1980,13 +1980,13 @@ ColumnCopyOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     if (switches.table != NULL) {
 	srcTable = switches.table;
     }
-    src = blt_table_column_find(interp, srcTable, objv[3]);
+    src = blt_table_get_column(interp, srcTable, objv[3]);
     if (src == NULL) {
 	goto error;
     }
-    dest = blt_table_column_find(interp, destTable, objv[4]);
+    dest = blt_table_get_column(interp, destTable, objv[4]);
     if (dest == NULL) {
-	dest = blt_table_column_create(interp, destTable, 
+	dest = blt_table_create_column(interp, destTable, 
 		Tcl_GetString(objv[4]));
 	if (dest == NULL) {
 	    goto error;
@@ -2062,21 +2062,21 @@ ColumnJoinOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 
 	/* Copy the label and the column type. */
 	label = blt_table_column_label(srcCol);
-	dstCol = blt_table_get_column(cmdPtr->table, i);
+	dstCol = blt_table_column(cmdPtr->table, i);
 	i++;
-	if (blt_table_column_set_label(interp, cmdPtr->table, dstCol, label) 
+	if (blt_table_set_column_label(interp, cmdPtr->table, dstCol, label) 
 	    != TCL_OK) {
 	    goto error;
 	}
 	srcType = blt_table_column_type(srcCol);
-	blt_table_column_set_type(cmdPtr->table, dstCol, srcType);
+	blt_table_set_column_type(cmdPtr->table, dstCol, srcType);
 
 	for (srcRow = blt_table_first_row(srcTable); srcRow != NULL; 
 	     srcRow = blt_table_next_row(srcTable, srcRow)) {
 	    BLT_TABLE_VALUE value;
 	    BLT_TABLE_ROW dstRow;
 
-	    dstRow = blt_table_row_find_by_label(cmdPtr->table, label);
+	    dstRow = blt_table_get_row_by_label(cmdPtr->table, label);
 	    if (dstRow == NULL) {
 
 		/* If row doesn't exist in destination table, create a new
@@ -2086,7 +2086,7 @@ ColumnJoinOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 		    != TCL_OK) {
 		    goto error;
 		}
-		if (blt_table_row_set_label(interp, cmdPtr->table, dstRow, label) 
+		if (blt_table_set_row_label(interp, cmdPtr->table, dstRow, label) 
 		    != TCL_OK) {
 		    goto error;
 		}
@@ -2146,7 +2146,7 @@ ColumnDeleteOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
      */
     for (col = blt_table_first_tagged_column(&iter); col != NULL; 
 	 col = blt_table_next_tagged_column(&iter)) {
-	if (blt_table_column_delete(cmdPtr->table, col) != TCL_OK) {
+	if (blt_table_delete_column(cmdPtr->table, col) != TCL_OK) {
 	    goto error;
 	}
     }
@@ -2194,7 +2194,7 @@ ColumnDupOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	long i;
 	BLT_TABLE_COLUMN dest;
 
-	dest = blt_table_column_create(interp, table,blt_table_column_label(src));
+	dest = blt_table_create_column(interp, table,blt_table_column_label(src));
 	if (dest == NULL) {
 	    goto error;
 	}
@@ -2240,7 +2240,7 @@ ColumnEmptyOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     Tcl_Obj *listObjPtr;
     long i;
 
-    col = blt_table_column_find(interp, cmdPtr->table, objv[3]);
+    col = blt_table_get_column(interp, cmdPtr->table, objv[3]);
     if (col == NULL) {
 	return TCL_ERROR;
     }
@@ -2293,7 +2293,7 @@ ColumnExistsOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     BLT_TABLE_COLUMN col;
     int bool;
 
-    col = blt_table_column_find(NULL, cmdPtr->table, objv[3]);
+    col = blt_table_get_column(NULL, cmdPtr->table, objv[3]);
     bool = (col != NULL);
     Tcl_SetBooleanObj(Tcl_GetObjResult(interp), bool);
     return TCL_OK;
@@ -2360,7 +2360,7 @@ ColumnExtendOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	long j;
 
 	for (i = 0, j = 3; i < n; i++, j++) {
-	    if (blt_table_column_set_label(interp, table, cols[i], 
+	    if (blt_table_set_column_label(interp, table, cols[i], 
 			Tcl_GetString(objv[j])) != TCL_OK) {
 		goto error;
 	    }
@@ -2417,7 +2417,7 @@ ColumnGetOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	needLabels = TRUE;
     }
     table = cmdPtr->table;
-    col = blt_table_column_find(interp, cmdPtr->table, objv[3]);
+    col = blt_table_get_column(interp, cmdPtr->table, objv[3]);
     if (col == NULL) {
 	return TCL_ERROR;
     }
@@ -2495,7 +2495,7 @@ ColumnIndexOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     long i;
 
     i = -1;
-    col = blt_table_column_find(NULL, cmdPtr->table, objv[3]);
+    col = blt_table_get_column(NULL, cmdPtr->table, objv[3]);
     if (col != NULL) {
 	i = blt_table_column_index(col);
     }
@@ -2579,13 +2579,13 @@ ColumnCreateOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	&switches, flags) < 0) {
 	goto error;
     }
-    col = blt_table_column_create(interp, cmdPtr->table, switches.label);
+    col = blt_table_create_column(interp, cmdPtr->table, switches.label);
     if (col == NULL) {
 	goto error;
     }
-    blt_table_column_set_type(cmdPtr->table, col, switches.type);
+    blt_table_set_column_type(cmdPtr->table, col, switches.type);
     if (switches.column != NULL) {
-	if (blt_table_column_move(interp, cmdPtr->table, col, 
+	if (blt_table_move_column(interp, cmdPtr->table, col, 
 		switches.column, 1) != TCL_OK) {
 	    goto error;
 	}
@@ -2600,7 +2600,7 @@ ColumnCreateOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	    goto error;
 	}
 	for (i = 0; i < elc; i++) {
-	    if (blt_table_column_set_tag(interp, cmdPtr->table, col, 
+	    if (blt_table_set_column_tag(interp, cmdPtr->table, col, 
 			Tcl_GetString(elv[i])) != TCL_OK) {
 		goto error;
 	    }
@@ -2645,7 +2645,7 @@ ColumnLabelOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	const char *label;
 	BLT_TABLE_COLUMN col;
 
-	col = blt_table_column_find(interp, table, objv[3]);
+	col = blt_table_get_column(interp, table, objv[3]);
 	if (col == NULL) {
 	    return TCL_ERROR;
 	}
@@ -2664,7 +2664,7 @@ ColumnLabelOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	    BLT_TABLE_COLUMN col;
 	    const char *label;
 
-	    col = blt_table_column_find(interp, table, objv[i]);
+	    col = blt_table_get_column(interp, table, objv[i]);
 	    if (col == NULL) {
 		return TCL_ERROR;
 	    }
@@ -2672,7 +2672,7 @@ ColumnLabelOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	    if (label[0] == '\0') {
 		continue;		/* Don't set empty labels. */
 	    }
-	    if (blt_table_column_set_label(interp, table, col, label) != TCL_OK) {
+	    if (blt_table_set_column_label(interp, table, col, label) != TCL_OK) {
 		return TCL_ERROR;
 	    }
 	}
@@ -2731,12 +2731,12 @@ ColumnLabelsOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	    BLT_TABLE_COLUMN col;
 	    const char *label;
 
-	    col = blt_table_get_column(table, i);
+	    col = blt_table_column(table, i);
 	    label = Tcl_GetString(elv[i]);
 	    if (label[0] == '\0') {
 		continue;
 	    }
-	    if (blt_table_column_set_label(interp, table, col, label) != TCL_OK) {
+	    if (blt_table_set_column_label(interp, table, col, label) != TCL_OK) {
 		return TCL_ERROR;
 	    }
 	}
@@ -2773,7 +2773,7 @@ ColumnCountOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	BLT_TABLE_COLUMN col;
 	BLT_TABLE_ROW row;
 
-	col = blt_table_column_find(interp, cmdPtr->table, objv[3]);
+	col = blt_table_get_column(interp, cmdPtr->table, objv[3]);
 	if (col == NULL) {
 	    return TCL_ERROR;
 	}
@@ -2812,11 +2812,11 @@ ColumnMoveOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     BLT_TABLE_COLUMN from, to;
     long count;
 
-    from = blt_table_column_find(interp, cmdPtr->table, objv[3]);
+    from = blt_table_get_column(interp, cmdPtr->table, objv[3]);
     if (from == NULL) {
 	return TCL_ERROR;
     }
-    to = blt_table_column_find(interp, cmdPtr->table, objv[4]);
+    to = blt_table_get_column(interp, cmdPtr->table, objv[4]);
     if (to == NULL) {
 	return TCL_ERROR;
     }
@@ -2838,7 +2838,7 @@ ColumnMoveOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	}
 	count = lcount;
     }
-    return blt_table_column_move(interp, cmdPtr->table, from, to, count);
+    return blt_table_move_column(interp, cmdPtr->table, from, to, count);
 }
 
 
@@ -2919,7 +2919,7 @@ ColumnNonEmptyOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc,
     Tcl_Obj *listObjPtr;
     long i;
 
-    col = blt_table_column_find(interp, cmdPtr->table, objv[3]);
+    col = blt_table_get_column(interp, cmdPtr->table, objv[3]);
     if (col == NULL) {
 	return TCL_ERROR;
     }
@@ -2985,7 +2985,7 @@ ColumnNotifyOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     if (spec == TABLE_SPEC_TAG) {
 	tag = string;
     } else {
-	col = blt_table_column_find(interp, table, objv[3]);
+	col = blt_table_get_column(interp, table, objv[3]);
 	if (col == NULL) {
 	    return TCL_ERROR;
 	}
@@ -3009,11 +3009,11 @@ ColumnNotifyOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     notifyPtr = Blt_AssertMalloc(sizeof(NotifierInfo));
     notifyPtr->cmdPtr = cmdPtr;
     if (tag == NULL) {
-	notifyPtr->notifier = blt_table_column_create_notifier(interp, 
+	notifyPtr->notifier = blt_table_create_column_notifier(interp, 
 		cmdPtr->table, col, switches.flags, NotifyProc, 
 		NotifierDeleteProc, notifyPtr);
     } else {
-	notifyPtr->notifier = blt_table_column_create_tag_notifier(interp, 
+	notifyPtr->notifier = blt_table_create_column_tag_notifier(interp, 
 		cmdPtr->table, tag, switches.flags, NotifyProc, 
 		NotifierDeleteProc, notifyPtr);
     }	
@@ -3085,13 +3085,13 @@ ColumnSetOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	for (i = 4; i < objc; i += 2) {
 	    BLT_TABLE_ROW row;
 
-	    row = blt_table_row_find(interp, table, objv[i]);
+	    row = blt_table_get_row(interp, table, objv[i]);
 	    if (row == NULL) {
 		/* Can't find the row. Create it and try to find it again. */
 		if (MakeRows(interp, table, objv[i]) != TCL_OK) {
 		    return TCL_ERROR;
 		}
-		row = blt_table_row_find(interp, table, objv[i]);
+		row = blt_table_get_row(interp, table, objv[i]);
 	    }
 	    if (blt_table_set_obj(table, row, col, objv[i+1]) != TCL_OK) {
 		return TCL_ERROR;
@@ -3124,7 +3124,7 @@ ColumnTagAddOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 
     table = cmdPtr->table;
     tagName = Tcl_GetString(objv[4]);
-    if (blt_table_column_set_tag(interp, table, NULL, tagName) != TCL_OK) {
+    if (blt_table_set_column_tag(interp, table, NULL, tagName) != TCL_OK) {
 	return TCL_ERROR;
     }
     for (i = 5; i < objc; i++) {
@@ -3136,7 +3136,7 @@ ColumnTagAddOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	}
 	for (col = blt_table_first_tagged_column(&iter); col != NULL; 
 	     col = blt_table_next_tagged_column(&iter)) {
-	    if (blt_table_column_set_tag(interp, table, col, tagName) != TCL_OK) {
+	    if (blt_table_set_column_tag(interp, table, col, tagName) != TCL_OK) {
 		return TCL_ERROR;
 	    }
 	}    
@@ -3207,11 +3207,11 @@ ColumnTagExistsOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc,
 
     tagName = Tcl_GetString(objv[3]);
     table = cmdPtr->table;
-    bool = (blt_table_column_find_tag_table(table, tagName) != NULL);
+    bool = (blt_table_get_column_tag_table(table, tagName) != NULL);
     if (objc == 5) {
 	BLT_TABLE_COLUMN col;
 
-	col = blt_table_column_find(interp, table, objv[4]);
+	col = blt_table_get_column(interp, table, objv[4]);
 	if (col == NULL) {
 	    bool = FALSE;
 	} else {
@@ -3365,7 +3365,7 @@ GetColumnTagMatches(Tcl_Interp *interp, BLT_TABLE table, int objc,
 	if ((strcmp("all", tagName) == 0) || (strcmp("end", tagName) == 0)) {
 	    continue;
 	}
-	tagTablePtr = blt_table_column_find_tag_table(table, tagName);
+	tagTablePtr = blt_table_get_column_tag_table(table, tagName);
 	if (tagTablePtr == NULL) {
 	    Tcl_AppendResult(interp, "unknown column tag \"", tagName, "\"",
 		(char *)NULL);
@@ -3454,7 +3454,7 @@ ColumnTagLabelsOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc,
 	    BLT_TABLE_COLUMN col;
 	    Tcl_Obj *objPtr;
 	    
-	    col = blt_table_get_column(cmdPtr->table, j);
+	    col = blt_table_column(cmdPtr->table, j);
 	    objPtr = Tcl_NewStringObj(blt_table_column_label(col), -1);
 	    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
 	}
@@ -3488,11 +3488,11 @@ ColumnTagRangeOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc,
     int i;
 
     table = cmdPtr->table;
-    from = blt_table_column_find(interp, table, objv[4]);
+    from = blt_table_get_column(interp, table, objv[4]);
     if (from == NULL) {
 	return TCL_ERROR;
     }
-    to = blt_table_column_find(interp, table, objv[5]);
+    to = blt_table_get_column(interp, table, objv[5]);
     if (to == NULL) {
 	return TCL_ERROR;
     }
@@ -3508,8 +3508,8 @@ ColumnTagRangeOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc,
 	     j++) {
 	    BLT_TABLE_COLUMN col;
 
-	    col = blt_table_get_column(table, j);
-	    if (blt_table_column_set_tag(interp, table, col, tagName) != TCL_OK) {
+	    col = blt_table_column(table, j);
+	    if (blt_table_set_column_tag(interp, table, col, tagName) != TCL_OK) {
 		return TCL_ERROR;
 	    }
 	}    
@@ -3602,7 +3602,7 @@ ColumnTagSearchOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc,
 	if (endMatch) {
 	    BLT_TABLE_COLUMN col, lastCol;
 	    
-	    lastCol = blt_table_get_column(table, blt_table_num_columns(table) - 1);
+	    lastCol = blt_table_column(table, blt_table_num_columns(table) - 1);
 	    for (col = blt_table_first_tagged_column(&iter); col != NULL; 
 		 col = blt_table_next_tagged_column(&iter)) {
 		if (col == lastCol) {
@@ -3648,7 +3648,7 @@ ColumnTagSetOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	tagName = Tcl_GetString(objv[i]);
 	for (col = blt_table_first_tagged_column(&iter); col != NULL; 
 	     col = blt_table_next_tagged_column(&iter)) {
-	    if (blt_table_column_set_tag(interp, table, col, tagName) != TCL_OK) {
+	    if (blt_table_set_column_tag(interp, table, col, tagName) != TCL_OK) {
 		return TCL_ERROR;
 	    }
 	}    
@@ -3881,7 +3881,7 @@ ColumnTypeOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
     type = TABLE_COLUMN_TYPE_UNKNOWN;	/* Suppress compiler warning. */
     if (objc == 5) {
-	type = blt_table_column_convert_name_to_type(Tcl_GetString(objv[4]));
+	type = blt_table_name_to_column_type(Tcl_GetString(objv[4]));
 	if (type == TABLE_COLUMN_TYPE_UNKNOWN) {
 	    Tcl_AppendResult(interp, "unknown column type \"", 
 			     Tcl_GetString(objv[4]), "\"", (char *)NULL);
@@ -3893,12 +3893,12 @@ ColumnTypeOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	Tcl_Obj *objPtr;
 
 	if (objc == 5) {
-	    if (blt_table_column_set_type(table, col, type) != TCL_OK) {
+	    if (blt_table_set_column_type(table, col, type) != TCL_OK) {
 		return TCL_ERROR;
 	    }
 	}
 	type = blt_table_column_type(col);
-	objPtr = Tcl_NewStringObj(blt_table_name_of_type(type), -1);
+	objPtr = Tcl_NewStringObj(blt_table_column_type_to_name(type), -1);
 	Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
     }
     Tcl_SetObjResult(interp, listObjPtr);
@@ -3985,7 +3985,7 @@ ColumnValuesOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     BLT_TABLE_COLUMN col;
 
     table = cmdPtr->table;
-    col = blt_table_column_find(interp, cmdPtr->table, objv[3]);
+    col = blt_table_get_column(interp, cmdPtr->table, objv[3]);
     if (col == NULL) {
 	return TCL_ERROR;
     }
@@ -4024,7 +4024,7 @@ ColumnValuesOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	for (i = 0; i < elc; i++) {
 	    BLT_TABLE_ROW row;
 
-	    row = blt_table_get_row(cmdPtr->table, i);
+	    row = blt_table_row(cmdPtr->table, i);
 	    if (blt_table_set_obj(table, row, col, elv[i]) != TCL_OK) {
 		return TCL_ERROR;
 	    }
@@ -4118,9 +4118,9 @@ CopyRow(Tcl_Interp *interp, BLT_TABLE srcTable, BLT_TABLE destTable,
 	BLT_TABLE_COLUMN col;
 	BLT_TABLE_VALUE value;
 
-	col = blt_table_get_column(srcTable, i);
+	col = blt_table_column(srcTable, i);
 	value = blt_table_get_value(srcTable, srcRow, col);
-	col = blt_table_get_column(destTable, i);
+	col = blt_table_column(destTable, i);
 	if (blt_table_set_value(destTable, destRow, col, value)!= TCL_OK) {
 	    return TCL_ERROR;
 	}
@@ -4148,7 +4148,7 @@ CopyRowTags(BLT_TABLE srcTable, BLT_TABLE destTable,
 	    /* We know the tag tables are keyed by strings, so we don't need
 	     * to call Blt_GetHashKey and hence the hash table pointer to
 	     * retrieve the key. */
-	    blt_table_row_set_tag(NULL, destTable, destRow, hPtr->key.string);
+	    blt_table_set_row_tag(NULL, destTable, destRow, hPtr->key.string);
 	}
     }
 }	    
@@ -4190,13 +4190,13 @@ RowCopyOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     if (switches.table != NULL) {
 	srcTable = switches.table;
     }
-    src = blt_table_row_find(interp, srcTable, objv[3]);
+    src = blt_table_get_row(interp, srcTable, objv[3]);
     if (src == NULL) {
 	goto error;
     }
-    dest = blt_table_row_find(interp, destTable, objv[4]);
+    dest = blt_table_get_row(interp, destTable, objv[4]);
     if (dest == NULL) {
-	dest = blt_table_row_create(interp, destTable, Tcl_GetString(objv[4]));
+	dest = blt_table_create_row(interp, destTable, Tcl_GetString(objv[4]));
 	if (dest == NULL) {
 	    goto error;
 	}
@@ -4242,7 +4242,7 @@ RowCountOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	BLT_TABLE_COLUMN col;
 	BLT_TABLE_ROW row;
 
-	row = blt_table_row_find(interp, cmdPtr->table, objv[3]);
+	row = blt_table_get_row(interp, cmdPtr->table, objv[3]);
 	if (row == NULL) {
 	    return TCL_ERROR;
 	}
@@ -4296,12 +4296,12 @@ RowCreateOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 		&switches, flags) < 0) {
 	goto error;
     }
-    row = blt_table_row_create(interp, table, switches.label);
+    row = blt_table_create_row(interp, table, switches.label);
     if (row == NULL) {
 	goto error;
     }
     if (switches.row != NULL) {
-	if (blt_table_row_move(interp, table, row, switches.row, 1) != TCL_OK) {
+	if (blt_table_move_row(interp, table, row, switches.row, 1) != TCL_OK) {
 	    goto error;
 	}
     }
@@ -4315,7 +4315,7 @@ RowCreateOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	    goto error;
 	}
 	for (i = 0; i < elc; i++) {
-	    if (blt_table_row_set_tag(interp, table, row, Tcl_GetString(elv[i])) 
+	    if (blt_table_set_row_tag(interp, table, row, Tcl_GetString(elv[i])) 
 		!= TCL_OK) {
 		goto error;
 	    }
@@ -4361,7 +4361,7 @@ RowDeleteOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     /* Walk through the list of row offsets, deleting each row. */
     for (row = blt_table_first_tagged_row(&iter); row != NULL; 
 	 row = blt_table_next_tagged_row(&iter)) {
-	if (blt_table_row_delete(cmdPtr->table, row) != TCL_OK) {
+	if (blt_table_delete_row(cmdPtr->table, row) != TCL_OK) {
 	    goto error;
 	}
     }
@@ -4410,7 +4410,7 @@ RowDupOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	BLT_TABLE_ROW dest;
 
 	label = blt_table_row_label(src);
-	dest = blt_table_row_create(interp, cmdPtr->table, label);
+	dest = blt_table_create_row(interp, cmdPtr->table, label);
 	if (dest == NULL) {
 	    goto error;
 	}
@@ -4455,7 +4455,7 @@ RowEmptyOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     Tcl_Obj *listObjPtr;
     long i;
 
-    row = blt_table_row_find(interp, cmdPtr->table, objv[3]);
+    row = blt_table_get_row(interp, cmdPtr->table, objv[3]);
     if (row == NULL) {
 	return TCL_ERROR;
     }
@@ -4502,7 +4502,7 @@ RowExistsOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     int bool;
     BLT_TABLE_ROW row;
 
-    row = blt_table_row_find(NULL, cmdPtr->table, objv[3]);
+    row = blt_table_get_row(NULL, cmdPtr->table, objv[3]);
     bool = (row != NULL);
     Tcl_SetBooleanObj(Tcl_GetObjResult(interp), bool);
     return TCL_OK;
@@ -4558,7 +4558,7 @@ RowExtendOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	long j;
 
 	for (i = 0, j = 3; i < n; i++, j++) {
-	    if (blt_table_row_set_label(interp, cmdPtr->table, rows[i], 
+	    if (blt_table_set_row_label(interp, cmdPtr->table, rows[i], 
 			Tcl_GetString(objv[j])) != TCL_OK) {
 		goto error;
 	    }
@@ -4615,7 +4615,7 @@ RowGetOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	needLabels = TRUE;
     }
     table = cmdPtr->table;
-    row = blt_table_row_find(interp, table, objv[3]);
+    row = blt_table_get_row(interp, table, objv[3]);
     if (row == NULL) {
 	return TCL_ERROR;
     }
@@ -4694,7 +4694,7 @@ RowIndexOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     long i;
 
     i = -1;
-    row = blt_table_row_find(NULL, cmdPtr->table, objv[3]);
+    row = blt_table_get_row(NULL, cmdPtr->table, objv[3]);
     if (row != NULL) {
 	i = blt_table_row_index(row);
     }
@@ -4796,7 +4796,7 @@ RowJoinOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	long i;
 
 	label = blt_table_column_label(srcCol);
-	dstCol = blt_table_column_find_by_label(cmdPtr->table, label);
+	dstCol = blt_table_get_column_by_label(cmdPtr->table, label);
 	if (dstCol == NULL) {
 
 	    /* If column doesn't exist in destination table, create a new
@@ -4806,11 +4806,11 @@ RowJoinOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 		!= TCL_OK) {
 		goto error;
 	    }
-	    if (blt_table_column_set_label(interp, cmdPtr->table, dstCol, label) 
+	    if (blt_table_set_column_label(interp, cmdPtr->table, dstCol, label) 
 		!= TCL_OK) {
 		goto error;
 	    }
-	    blt_table_column_set_type(cmdPtr->table, dstCol, 
+	    blt_table_set_column_type(cmdPtr->table, dstCol, 
 		blt_table_column_type(srcCol));
 	}
 	i = oldDstLen;
@@ -4823,7 +4823,7 @@ RowJoinOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	    if (value == NULL) {
 		continue;
 	    }
-	    dstRow = blt_table_get_row(cmdPtr->table, i);
+	    dstRow = blt_table_row(cmdPtr->table, i);
 	    i++;
 	    if (blt_table_set_value(cmdPtr->table, dstRow, dstCol, value) 
 		!= TCL_OK) {
@@ -4871,7 +4871,7 @@ RowLabelOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	const char *label;
 	BLT_TABLE_ROW row;
 
-	row = blt_table_row_find(interp, table, objv[3]);
+	row = blt_table_get_row(interp, table, objv[3]);
 	if (row == NULL) {
 	    return TCL_ERROR;
 	}
@@ -4890,12 +4890,12 @@ RowLabelOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	    BLT_TABLE_ROW row;
 	    const char *label;
 
-	    row = blt_table_row_find(interp, table, objv[i]);
+	    row = blt_table_get_row(interp, table, objv[i]);
 	    if (row == NULL) {
 		return TCL_ERROR;
 	    }
 	    label = Tcl_GetString(objv[i+1]);
-	    if (blt_table_row_set_label(interp, table, row, label) != TCL_OK) {
+	    if (blt_table_set_row_label(interp, table, row, label) != TCL_OK) {
 		return TCL_ERROR;
 	    }
 	}
@@ -4955,7 +4955,7 @@ RowLabelsOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	    const char *label;
 
 	    label = Tcl_GetString(elv[i]);
-	    if (blt_table_row_set_label(interp, table, row, label) != TCL_OK) {
+	    if (blt_table_set_row_label(interp, table, row, label) != TCL_OK) {
 		return TCL_ERROR;
 	    }
 	}
@@ -4987,11 +4987,11 @@ RowMoveOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     BLT_TABLE_ROW from, to;
     long count;
 
-    from = blt_table_row_find(interp, cmdPtr->table, objv[3]);
+    from = blt_table_get_row(interp, cmdPtr->table, objv[3]);
     if (from == NULL) {
 	return TCL_ERROR;
     }
-    to = blt_table_row_find(interp, cmdPtr->table, objv[4]);
+    to = blt_table_get_row(interp, cmdPtr->table, objv[4]);
     if (to == NULL) {
 	return TCL_ERROR;
     }
@@ -5013,7 +5013,7 @@ RowMoveOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	}
 	count = lcount;
     }
-    return blt_table_row_move(interp, cmdPtr->table, from, to, count);
+    return blt_table_move_row(interp, cmdPtr->table, from, to, count);
 }
 
 
@@ -5094,7 +5094,7 @@ RowNonEmptyOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     Tcl_Obj *listObjPtr;
     long i;
 
-    row = blt_table_row_find(interp, cmdPtr->table, objv[3]);
+    row = blt_table_get_row(interp, cmdPtr->table, objv[3]);
     if (row == NULL) {
 	return TCL_ERROR;
     }
@@ -5161,7 +5161,7 @@ RowNotifyOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     if (spec == TABLE_SPEC_TAG) {
 	tag = string;
     } else {
-	row = blt_table_row_find(interp, table, objv[3]);
+	row = blt_table_get_row(interp, table, objv[3]);
 	if (row == NULL) {
 	    return TCL_ERROR;
 	}
@@ -5185,10 +5185,10 @@ RowNotifyOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     notifyPtr = Blt_AssertMalloc(sizeof(NotifierInfo));
     notifyPtr->cmdPtr = cmdPtr;
     if (tag == NULL) {
-	notifyPtr->notifier = blt_table_row_create_notifier(interp, cmdPtr->table,
+	notifyPtr->notifier = blt_table_create_row_notifier(interp, cmdPtr->table,
 		row, switches.flags, NotifyProc, NotifierDeleteProc, notifyPtr);
     } else {
-	notifyPtr->notifier = blt_table_row_create_tag_notifier(interp, 
+	notifyPtr->notifier = blt_table_create_row_tag_notifier(interp, 
 		cmdPtr->table, tag, switches.flags, NotifyProc, 
 		NotifierDeleteProc, notifyPtr);
     }	
@@ -5262,14 +5262,14 @@ RowSetOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	for (i = 4; i < objc; i += 2) {
 	    BLT_TABLE_COLUMN col;
 	    
-	    col = blt_table_column_find(interp, table, objv[i]);
+	    col = blt_table_get_column(interp, table, objv[i]);
 	    if (col == NULL) {
 		/* Can't find the column. Create it and try to find it
 		 * again. */
 		if (MakeColumns(interp, table, objv[i]) != TCL_OK) {
 		    return TCL_ERROR;
 		}
-		col = blt_table_column_find(interp, table, objv[i]);
+		col = blt_table_get_column(interp, table, objv[i]);
 	    }
 	    if (blt_table_set_obj(table, row, col, objv[i+1]) != TCL_OK) {
 		return TCL_ERROR;
@@ -5301,7 +5301,7 @@ RowTagAddOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 
     table = cmdPtr->table;
     tagName = Tcl_GetString(objv[4]);
-    if (blt_table_row_set_tag(interp, table, NULL, tagName) != TCL_OK) {
+    if (blt_table_set_row_tag(interp, table, NULL, tagName) != TCL_OK) {
 	return TCL_ERROR;
     }
     for (i = 5; i < objc; i++) {
@@ -5313,7 +5313,7 @@ RowTagAddOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	}
 	for (row = blt_table_first_tagged_row(&iter); row != NULL; 
 	     row = blt_table_next_tagged_row(&iter)) {
-	    if (blt_table_row_set_tag(interp, table, row, tagName) != TCL_OK) {
+	    if (blt_table_set_row_tag(interp, table, row, tagName) != TCL_OK) {
 		return TCL_ERROR;
 	    }
 	}    
@@ -5381,11 +5381,11 @@ RowTagExistsOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     const char *tagName;
 
     tagName = Tcl_GetString(objv[3]);
-    bool = (blt_table_row_find_tag_table(cmdPtr->table, tagName) != NULL);
+    bool = (blt_table_get_row_tag_table(cmdPtr->table, tagName) != NULL);
     if (objc == 5) {
 	BLT_TABLE_ROW row;
 
-	row = blt_table_row_find(interp, cmdPtr->table, objv[4]);
+	row = blt_table_get_row(interp, cmdPtr->table, objv[4]);
 	if (row == NULL) {
 	    bool = FALSE;
 	} else {
@@ -5538,7 +5538,7 @@ GetRowTagMatches(Tcl_Interp *interp, BLT_TABLE table, int objc,
 	if ((strcmp("all", tagName) == 0) || (strcmp("end", tagName) == 0)) {
 	    continue;
 	}
-	tagTablePtr = blt_table_row_find_tag_table(table, tagName);
+	tagTablePtr = blt_table_get_row_tag_table(table, tagName);
 	if (tagTablePtr == NULL) {
 	    Tcl_AppendResult(interp, "unknown row tag \"", tagName, "\"",
 		(char *)NULL);
@@ -5622,7 +5622,7 @@ RowTagLabelsOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	    BLT_TABLE_ROW row;
 	    Tcl_Obj *objPtr;
 	    
-	    row = blt_table_get_row(cmdPtr->table, j);
+	    row = blt_table_row(cmdPtr->table, j);
 	    objPtr = Tcl_NewStringObj(blt_table_row_label(row), -1);
 	    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
 	}
@@ -5653,11 +5653,11 @@ RowTagRangeOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     BLT_TABLE_ROW from, to;
 
     table = cmdPtr->table;
-    from = blt_table_row_find(interp, table, objv[4]);
+    from = blt_table_get_row(interp, table, objv[4]);
     if (from == NULL) {
 	return TCL_ERROR;
     }
-    to = blt_table_row_find(interp, table, objv[5]);
+    to = blt_table_get_row(interp, table, objv[5]);
     if (to == NULL) {
 	return TCL_ERROR;
     }
@@ -5672,8 +5672,8 @@ RowTagRangeOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	for (j = blt_table_row_index(from); j <= blt_table_row_index(to); j++) {
 	    BLT_TABLE_ROW row;
 
-	    row = blt_table_get_row(table, j);
-	    if (blt_table_row_set_tag(interp, table, row, tagName) != TCL_OK) {
+	    row = blt_table_row(table, j);
+	    if (blt_table_set_row_tag(interp, table, row, tagName) != TCL_OK) {
 		return TCL_ERROR;
 	    }
 	}    
@@ -5764,7 +5764,7 @@ RowTagSearchOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	if (endMatch) {
 	    BLT_TABLE_ROW row, lastRow;
 	    
-	    lastRow = blt_table_get_row(table, blt_table_num_rows(table) - 1);
+	    lastRow = blt_table_row(table, blt_table_num_rows(table) - 1);
 	    for (row = blt_table_first_tagged_row(&iter); row != NULL; 
 		 row = blt_table_next_tagged_row(&iter)) {
 		if (row == lastRow) {
@@ -5808,7 +5808,7 @@ RowTagSetOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	tagName = Tcl_GetString(objv[i]);
 	for (row = blt_table_first_tagged_row(&iter); row != NULL; 
 	     row = blt_table_next_tagged_row(&iter)) {
-	    if (blt_table_row_set_tag(interp, table, row, tagName) != TCL_OK) {
+	    if (blt_table_set_row_tag(interp, table, row, tagName) != TCL_OK) {
 		return TCL_ERROR;
 	    }
 	}    
@@ -6080,7 +6080,7 @@ RowValuesOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     Tcl_Obj *listObjPtr;
 
     table = cmdPtr->table;
-    row = blt_table_row_find(interp, cmdPtr->table, objv[3]);
+    row = blt_table_get_row(interp, cmdPtr->table, objv[3]);
     if (row == NULL) {
 	return TCL_ERROR;
     }
@@ -6118,7 +6118,7 @@ RowValuesOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	for (i = 0; i < elc; i++) {
 	    BLT_TABLE_COLUMN col;
 
-	    col = blt_table_get_column(table, i);
+	    col = blt_table_column(table, i);
 	    if (blt_table_set_obj(table, row, col, elv[i]) != TCL_OK) {
 		return TCL_ERROR;
 	    }
@@ -6239,7 +6239,7 @@ AddOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	long i;
 
 	label = blt_table_column_label(srcCol);
-	dstCol = blt_table_column_find_by_label(cmdPtr->table, label);
+	dstCol = blt_table_get_column_by_label(cmdPtr->table, label);
 	if (dstCol == NULL) {
 	    /* If column doesn't exist in destination table, create a new
 	     * column, copying the label and the column type. */
@@ -6247,11 +6247,11 @@ AddOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 		!= TCL_OK) {
 		goto error;
 	    }
-	    if (blt_table_column_set_label(interp, cmdPtr->table, dstCol, label) 
+	    if (blt_table_set_column_label(interp, cmdPtr->table, dstCol, label) 
 		!= TCL_OK) {
 		goto error;
 	    }
-	    blt_table_column_set_type(cmdPtr->table, dstCol, 
+	    blt_table_set_column_type(cmdPtr->table, dstCol, 
 		blt_table_column_type(srcCol));
 	}
 	i = oldLength;
@@ -6264,7 +6264,7 @@ AddOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	    if (value == NULL) {
 		continue;
 	    }
-	    dstRow = blt_table_get_row(cmdPtr->table, i);
+	    dstRow = blt_table_row(cmdPtr->table, i);
 	    if (blt_table_set_value(cmdPtr->table, dstRow, dstCol, value) 
 		!= TCL_OK) {
 		goto error;
@@ -6396,77 +6396,77 @@ ExportToTable(Tcl_Interp *interp, BLT_TABLE table, const char *fileName,
     BLT_TABLE_ROW row;
     BLT_TABLE_COLUMN col;
 
-    row = blt_table_row_create(interp, table, NULL);
+    row = blt_table_create_row(interp, table, NULL);
     if (row == NULL) {
 	return;
     }
     /* name */
-    col = blt_table_column_find_by_label(table, "name");
+    col = blt_table_get_column_by_label(table, "name");
     if (col == NULL) {
-	col = blt_table_column_create(interp, table, "name");
+	col = blt_table_create_column(interp, table, "name");
     }
     blt_table_set_string(table, row, col, fileName, -1);
     /* type */
-    col = blt_table_column_find_by_label(table, "type");
+    col = blt_table_get_column_by_label(table, "type");
     if (col == NULL) {
-	col = blt_table_column_create(interp, table, "type");
+	col = blt_table_create_column(interp, table, "type");
     }
     blt_table_set_string(table, row, col, GetTypeFromMode(statPtr->st_mode),-1);
     /* size */ 
-    col = blt_table_column_find_by_label(table, "size");
+    col = blt_table_get_column_by_label(table, "size");
     if (col == NULL) {
-	col = blt_table_column_create(interp, table, "size");
-	blt_table_column_set_type(table, col, TABLE_COLUMN_TYPE_LONG);
+	col = blt_table_create_column(interp, table, "size");
+	blt_table_set_column_type(table, col, TABLE_COLUMN_TYPE_LONG);
     }
     blt_table_set_long(table, row, col, statPtr->st_size);
 
     /* uid */
-    col = blt_table_column_find_by_label(table, "uid");
+    col = blt_table_get_column_by_label(table, "uid");
     if (col == NULL) {
-	col = blt_table_column_create(interp, table, "uid"); 
-	blt_table_column_set_type(table, col, TABLE_COLUMN_TYPE_LONG);
+	col = blt_table_create_column(interp, table, "uid"); 
+	blt_table_set_column_type(table, col, TABLE_COLUMN_TYPE_LONG);
    }
     blt_table_set_long(table, row, col, statPtr->st_uid);
     /* gid */
-    col = blt_table_column_find_by_label(table, "gid");
+    col = blt_table_get_column_by_label(table, "gid");
     if (col == NULL) {
-	col = blt_table_column_create(interp, table, "gid");
-	blt_table_column_set_type(table, col, TABLE_COLUMN_TYPE_LONG);
+	col = blt_table_create_column(interp, table, "gid");
+	blt_table_set_column_type(table, col, TABLE_COLUMN_TYPE_LONG);
     }
     blt_table_set_long(table, row, col, statPtr->st_gid);
     /* atime */
-    col = blt_table_column_find_by_label(table, "atime");
+    col = blt_table_get_column_by_label(table, "atime");
     if (col == NULL) {
-	col = blt_table_column_create(interp, table, "atime");
-	blt_table_column_set_type(table, col, TABLE_COLUMN_TYPE_LONG);
+	col = blt_table_create_column(interp, table, "atime");
+	blt_table_set_column_type(table, col, TABLE_COLUMN_TYPE_LONG);
     }
     blt_table_set_long(table, row, col, statPtr->st_atime);
     /* mtime */
-    col = blt_table_column_find_by_label(table, "mtime");
+    col = blt_table_get_column_by_label(table, "mtime");
     if (col == NULL) {
-	col = blt_table_column_create(interp, table, "mtime");
-	blt_table_column_set_type(table, col, TABLE_COLUMN_TYPE_LONG);
+	col = blt_table_create_column(interp, table, "mtime");
+	blt_table_set_column_type(table, col, TABLE_COLUMN_TYPE_LONG);
     }
     blt_table_set_long(table, row, col, statPtr->st_mtime);
     /* ctime */
-    col = blt_table_column_find_by_label(table, "ctime");
+    col = blt_table_get_column_by_label(table, "ctime");
     if (col == NULL) {
-	col = blt_table_column_create(interp, table, "ctime");
-	blt_table_column_set_type(table, col, TABLE_COLUMN_TYPE_LONG);
+	col = blt_table_create_column(interp, table, "ctime");
+	blt_table_set_column_type(table, col, TABLE_COLUMN_TYPE_LONG);
     }
     blt_table_set_long(table, row, col, statPtr->st_ctime);
     /* perms */
-    col = blt_table_column_find_by_label(table, "mode");
+    col = blt_table_get_column_by_label(table, "mode");
     if (col == NULL) {
-	col = blt_table_column_create(interp, table, "mode");
-	blt_table_column_set_type(table, col, TABLE_COLUMN_TYPE_LONG);
+	col = blt_table_create_column(interp, table, "mode");
+	blt_table_set_column_type(table, col, TABLE_COLUMN_TYPE_LONG);
     }
     blt_table_set_long(table, row, col, statPtr->st_mode);
     /* dev */
-    col = blt_table_column_find_by_label(table, "dev");
+    col = blt_table_get_column_by_label(table, "dev");
     if (col == NULL) {
-	col = blt_table_column_create(interp, table, "dev");
-	blt_table_column_set_type(table, col, TABLE_COLUMN_TYPE_LONG);
+	col = blt_table_create_column(interp, table, "dev");
+	blt_table_set_column_type(table, col, TABLE_COLUMN_TYPE_LONG);
     }
     blt_table_set_long(table, row, col, statPtr->st_dev);
 }
@@ -6645,7 +6645,7 @@ KeysOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     for (i = 2; i < objc; i++) {
 	BLT_TABLE_COLUMN col;
 
-	col = blt_table_column_find(interp, table, objv[i]);
+	col = blt_table_get_column(interp, table, objv[i]);
 	if (col == NULL) {
 	    Blt_Chain_Destroy(keys);
 	    return TCL_ERROR;
@@ -7036,7 +7036,7 @@ NumColumnsOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	    for (col = blt_table_first_column(table); col != NULL; col = next) {
 		next = blt_table_next_column(table, col);
 		if (blt_table_column_index(col) >= count) {
-		    blt_table_column_delete(table, col);
+		    blt_table_delete_column(table, col);
 		}
 	    }
 	} else if (count > blt_table_num_columns(table)) {
@@ -7083,7 +7083,7 @@ NumRowsOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	    for (row = blt_table_first_row(table); row != NULL; row = next) {
 		next = blt_table_next_row(table, row);
 		if (blt_table_row_index(row) >= count) {
-		    blt_table_row_delete(table, row);
+		    blt_table_delete_row(table, row);
 		}
 	    }
 	} else if (count > blt_table_num_rows(table)) {
@@ -7881,7 +7881,7 @@ DumpColumn(BLT_TABLE table, DumpSwitches *dumpPtr, BLT_TABLE_COLUMN col)
     Tcl_DStringAppendElement(dumpPtr->dsPtr, 
 	Blt_Ltoa(blt_table_column_index(col)));
     Tcl_DStringAppendElement(dumpPtr->dsPtr, blt_table_column_label(col));
-    name = blt_table_name_of_type(blt_table_column_type(col));
+    name = blt_table_column_type_to_name(blt_table_column_type(col));
     if (name == NULL) {
 	name = "";
     }
@@ -8203,8 +8203,8 @@ ExistsOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     BLT_TABLE_COLUMN col;
 
     bool = FALSE;
-    row = blt_table_row_find(NULL, cmdPtr->table, objv[2]);
-    col = blt_table_column_find(NULL, cmdPtr->table, objv[3]);
+    row = blt_table_get_row(NULL, cmdPtr->table, objv[2]);
+    col = blt_table_get_column(NULL, cmdPtr->table, objv[3]);
     if ((row != NULL) && (col != NULL)) {
 	bool = blt_table_value_exists(cmdPtr->table, row, col);
     }
@@ -8277,7 +8277,7 @@ GetOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     BLT_TABLE_ROW row;
     BLT_TABLE_COLUMN col;
 
-    row = blt_table_row_find(interp, cmdPtr->table, objv[2]);
+    row = blt_table_get_row(interp, cmdPtr->table, objv[2]);
     if (row == NULL) {
 	if (objc == 5) {
 	    objPtr = objv[4];
@@ -8285,7 +8285,7 @@ GetOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	}
 	return TCL_ERROR;
     } 
-    col = blt_table_column_find(interp, cmdPtr->table, objv[3]);
+    col = blt_table_get_column(interp, cmdPtr->table, objv[3]);
     if (col == NULL) {
 	if (objc == 5) {
 	    objPtr = objv[4];

@@ -52,25 +52,25 @@ BltTclProcs bltTclProcs = {
     blt_table_same_object, /* 38 */
     blt_table_row_get_label_table, /* 39 */
     blt_table_column_get_label_table, /* 40 */
-    blt_table_row_find_by_label, /* 41 */
-    blt_table_column_find_by_label, /* 42 */
-    blt_table_row_find_by_index, /* 43 */
-    blt_table_column_find_by_index, /* 44 */
-    blt_table_row_set_label, /* 45 */
-    blt_table_column_set_label, /* 46 */
-    blt_table_column_convert_name_to_type, /* 47 */
-    blt_table_column_set_type, /* 48 */
-    blt_table_name_of_type, /* 49 */
-    blt_table_column_set_tag, /* 50 */
-    blt_table_row_set_tag, /* 51 */
-    blt_table_row_create, /* 52 */
-    blt_table_column_create, /* 53 */
+    blt_table_get_row_by_label, /* 41 */
+    blt_table_get_column_by_label, /* 42 */
+    blt_table_get_row_by_index, /* 43 */
+    blt_table_get_column_by_index, /* 44 */
+    blt_table_set_row_label, /* 45 */
+    blt_table_set_column_label, /* 46 */
+    blt_table_name_to_column_type, /* 47 */
+    blt_table_set_column_type, /* 48 */
+    blt_table_column_type_to_name, /* 49 */
+    blt_table_set_column_tag, /* 50 */
+    blt_table_set_row_tag, /* 51 */
+    blt_table_create_row, /* 52 */
+    blt_table_create_column, /* 53 */
     blt_table_extend_rows, /* 54 */
     blt_table_extend_columns, /* 55 */
-    blt_table_row_delete, /* 56 */
-    blt_table_column_delete, /* 57 */
-    blt_table_row_move, /* 58 */
-    blt_table_column_move, /* 59 */
+    blt_table_delete_row, /* 56 */
+    blt_table_delete_column, /* 57 */
+    blt_table_move_row, /* 58 */
+    blt_table_move_column, /* 59 */
     blt_table_get_obj, /* 60 */
     blt_table_set_obj, /* 61 */
     blt_table_get_string, /* 62 */
@@ -84,8 +84,8 @@ BltTclProcs bltTclProcs = {
     blt_table_set_value, /* 70 */
     blt_table_unset_value, /* 71 */
     blt_table_value_exists, /* 72 */
-    blt_table_row_find_tag_table, /* 73 */
-    blt_table_column_find_tag_table, /* 74 */
+    blt_table_get_row_tag_table, /* 73 */
+    blt_table_get_column_tag_table, /* 74 */
     blt_table_row_tags, /* 75 */
     blt_table_column_tags, /* 76 */
     blt_table_tags_are_shared, /* 77 */
@@ -114,8 +114,8 @@ BltTclProcs bltTclProcs = {
     blt_table_first_tagged_column, /* 100 */
     blt_table_next_tagged_row, /* 101 */
     blt_table_next_tagged_column, /* 102 */
-    blt_table_row_find, /* 103 */
-    blt_table_column_find, /* 104 */
+    blt_table_get_row, /* 103 */
+    blt_table_get_column, /* 104 */
     blt_table_list_rows, /* 105 */
     blt_table_list_columns, /* 106 */
     blt_table_clear_row_tags, /* 107 */
@@ -124,14 +124,14 @@ BltTclProcs bltTclProcs = {
     blt_table_clear_column_traces, /* 110 */
     blt_table_create_trace, /* 111 */
     blt_table_set_column_trace, /* 112 */
-    blt_table_column_create_tag_trace, /* 113 */
-    blt_table_row_create_trace, /* 114 */
-    blt_table_row_create_tag_trace, /* 115 */
+    blt_table_create_column_tag_trace, /* 113 */
+    blt_table_create_row_trace, /* 114 */
+    blt_table_create_row_tag_trace, /* 115 */
     blt_table_delete_trace, /* 116 */
-    blt_table_row_create_notifier, /* 117 */
-    blt_table_row_create_tag_notifier, /* 118 */
-    blt_table_column_create_notifier, /* 119 */
-    blt_table_column_create_tag_notifier, /* 120 */
+    blt_table_create_row_notifier, /* 117 */
+    blt_table_create_row_tag_notifier, /* 118 */
+    blt_table_create_column_notifier, /* 119 */
+    blt_table_create_column_tag_notifier, /* 120 */
     blt_table_delete_notifier, /* 121 */
     blt_table_sort_init, /* 122 */
     blt_table_sort_rows, /* 123 */

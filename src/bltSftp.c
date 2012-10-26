@@ -1860,83 +1860,83 @@ ExportToTable(Tcl_Interp *interp, BLT_TABLE table, const char *bytes,
     BLT_TABLE_ROW row;
     BLT_TABLE_COLUMN col;
 
-    row = blt_table_row_create(interp, table, NULL);
+    row = blt_table_create_row(interp, table, NULL);
     if (row == NULL) {
 	return;
     }
     /* name */
-    col = blt_table_column_find_by_label(table, "name");
+    col = blt_table_get_column_by_label(table, "name");
     if (col == NULL) {
-	col = blt_table_column_create(interp, table, "name");
+	col = blt_table_create_column(interp, table, "name");
     }
     blt_table_set_string(table, row, col, bytes, -1);
     /* type */
-    col = blt_table_column_find_by_label(table, "type");
+    col = blt_table_get_column_by_label(table, "type");
     if (col == NULL) {
-	col = blt_table_column_create(interp, table, "type");
+	col = blt_table_create_column(interp, table, "type");
     }
     if (attrsPtr->flags & LIBSSH2_SFTP_ATTR_PERMISSIONS) {
 	blt_table_set_string(table, row, col, SftpFileType(attrsPtr), -1);
     }
     /* size */ 
-    col = blt_table_column_find_by_label(table, "size");
+    col = blt_table_get_column_by_label(table, "size");
     if (col == NULL) {
-	col = blt_table_column_create(interp, table, "size");
-	blt_table_column_set_type(table, col, TABLE_COLUMN_TYPE_LONG);
+	col = blt_table_create_column(interp, table, "size");
+	blt_table_set_column_type(table, col, TABLE_COLUMN_TYPE_LONG);
     }
     if (attrsPtr->flags & LIBSSH2_SFTP_ATTR_SIZE) {
 	blt_table_set_long(table, row, col, attrsPtr->filesize);
     }
     /* uid */
-    col = blt_table_column_find_by_label(table, "uid");
+    col = blt_table_get_column_by_label(table, "uid");
     if (col == NULL) {
-	col = blt_table_column_create(interp, table, "uid"); 
-	blt_table_column_set_type(table, col, TABLE_COLUMN_TYPE_LONG);
+	col = blt_table_create_column(interp, table, "uid"); 
+	blt_table_set_column_type(table, col, TABLE_COLUMN_TYPE_LONG);
    }
     if (attrsPtr->flags & LIBSSH2_SFTP_ATTR_UIDGID) {
 	blt_table_set_long(table, row, col, attrsPtr->uid);
     }
     /* gid */
-    col = blt_table_column_find_by_label(table, "gid");
+    col = blt_table_get_column_by_label(table, "gid");
     if (col == NULL) {
-	col = blt_table_column_create(interp, table, "gid");
-	blt_table_column_set_type(table, col, TABLE_COLUMN_TYPE_LONG);
+	col = blt_table_create_column(interp, table, "gid");
+	blt_table_set_column_type(table, col, TABLE_COLUMN_TYPE_LONG);
     }
     if (attrsPtr->flags & LIBSSH2_SFTP_ATTR_UIDGID) {
 	blt_table_set_long(table, row, col, attrsPtr->gid);
     }
     /* atime */
-    col = blt_table_column_find_by_label(table, "atime");
+    col = blt_table_get_column_by_label(table, "atime");
     if (col == NULL) {
-	col = blt_table_column_create(interp, table, "atime");
-	blt_table_column_set_type(table, col, TABLE_COLUMN_TYPE_LONG);
+	col = blt_table_create_column(interp, table, "atime");
+	blt_table_set_column_type(table, col, TABLE_COLUMN_TYPE_LONG);
     }
     if (attrsPtr->flags & LIBSSH2_SFTP_ATTR_ACMODTIME) {
 	blt_table_set_long(table, row, col, attrsPtr->atime);
     }
     /* mtime */
-    col = blt_table_column_find_by_label(table, "mtime");
+    col = blt_table_get_column_by_label(table, "mtime");
     if (col == NULL) {
-	col = blt_table_column_create(interp, table, "mtime");
-	blt_table_column_set_type(table, col, TABLE_COLUMN_TYPE_LONG);
+	col = blt_table_create_column(interp, table, "mtime");
+	blt_table_set_column_type(table, col, TABLE_COLUMN_TYPE_LONG);
     }
     if (attrsPtr->flags & LIBSSH2_SFTP_ATTR_ACMODTIME) {
 	blt_table_set_long(table, row, col, attrsPtr->mtime);
     }
     /* mode */
-    col = blt_table_column_find_by_label(table, "mode");
+    col = blt_table_get_column_by_label(table, "mode");
     if (col == NULL) {
-	col = blt_table_column_create(interp, table, "mode");
-	blt_table_column_set_type(table, col, TABLE_COLUMN_TYPE_LONG);
+	col = blt_table_create_column(interp, table, "mode");
+	blt_table_set_column_type(table, col, TABLE_COLUMN_TYPE_LONG);
     }
     if (attrsPtr->flags & LIBSSH2_SFTP_ATTR_PERMISSIONS) {
 	blt_table_set_long(table, row, col, 
 			   attrsPtr->permissions & 07777);
     }
     /* longentry */
-    col = blt_table_column_find_by_label(table, "longentry");
+    col = blt_table_get_column_by_label(table, "longentry");
     if (col == NULL) {
-	col = blt_table_column_create(interp, table, "longentry");
+	col = blt_table_create_column(interp, table, "longentry");
     }
     blt_table_set_string(table, row, col, longentry, -1);
 }

@@ -1152,13 +1152,13 @@ ObjToColumnProc(
     if (string[0] != '\0') {
 	ListView *viewPtr = clientData;
 
-	col = blt_table_column_find(interp, srcPtr->table, objPtr);
+	col = blt_table_get_column(interp, srcPtr->table, objPtr);
 	if (col == NULL) {
 	    return TCL_ERROR;
 	}
 	trace = blt_table_set_column_trace(srcPtr->table, col, 
 		TABLE_TRACE_WCU, TableTraceProc, NULL, viewPtr);
-	notifier =  blt_table_column_create_notifier(interp, srcPtr->table, col,
+	notifier =  blt_table_create_column_notifier(interp, srcPtr->table, col,
 		TABLE_NOTIFY_COLUMN_CHANGED | TABLE_NOTIFY_ROW_CHANGED, 
 		TableNotifyProc, NULL, viewPtr);
     }

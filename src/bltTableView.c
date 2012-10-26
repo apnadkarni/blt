@@ -2424,7 +2424,7 @@ NewRow(TableView *viewPtr, BLT_TABLE_ROW row, Blt_HashEntry *hPtr)
     rowPtr->max = SHRT_MAX;
     rowPtr->titleJustify = TK_JUSTIFY_RIGHT;
     rowPtr->titleRelief = rowPtr->activeTitleRelief = TK_RELIEF_RAISED;
-    rowPtr->trace = blt_table_row_create_trace(viewPtr->table, row, 
+    rowPtr->trace = blt_table_create_row_trace(viewPtr->table, row, 
 	TABLE_TRACE_FOREIGN_ONLY | TABLE_TRACE_WRITES | TABLE_TRACE_UNSETS, 
 	RowTraceProc, NULL, rowPtr);
     rowPtr->hashPtr = hPtr;
@@ -2734,7 +2734,7 @@ GetColumn(Tcl_Interp *interp, TableView *viewPtr, Tcl_Obj *objPtr,
 	return TCL_ERROR;
     }
     /* Next see if it's a column in the table. */
-    col = blt_table_column_find(interp, viewPtr->table, objPtr);
+    col = blt_table_get_column(interp, viewPtr->table, objPtr);
     if (col == NULL) {
 	return TCL_ERROR;
     }
@@ -2966,7 +2966,7 @@ GetRow(Tcl_Interp *interp, TableView *viewPtr, Tcl_Obj *objPtr, Row **rowPtrPtr)
 	}
 	return TCL_ERROR;
     }
-    row = blt_table_row_find(interp, viewPtr->table, objPtr);
+    row = blt_table_get_row(interp, viewPtr->table, objPtr);
     if (row == NULL) {
 	return TCL_ERROR;
     }
@@ -5998,7 +5998,7 @@ ColumnInsertOp(ClientData clientData, Tcl_Interp *interp, int objc,
     int isNew;
     long i, insertPos;
 
-    col = blt_table_column_find(interp, viewPtr->table, objv[3]);
+    col = blt_table_get_column(interp, viewPtr->table, objv[3]);
     if (col == NULL) {
 	return TCL_ERROR;
     }
@@ -6612,9 +6612,9 @@ ColumnVarResolver(
 
     /* Look up the column from the variable name given. */
     if (Blt_GetLong((Tcl_Interp *)NULL, (char *)name, &index) == TCL_OK) {
- 	col = blt_table_column_find_by_index(switchesPtr->table, index);
+ 	col = blt_table_get_column_by_index(switchesPtr->table, index);
     } else {
-	col = blt_table_column_find_by_label(switchesPtr->table, name);
+	col = blt_table_get_column_by_label(switchesPtr->table, name);
     }
     if (col == NULL) {
 	/* Variable name doesn't refer to any column. Pass it back to the Tcl
@@ -6718,7 +6718,7 @@ FindRows(Tcl_Interp *interp, TableView *viewPtr, Tcl_Obj *objPtr,
 	    Tcl_Obj *objPtr;
 
 	    if (switchesPtr->tag != NULL) {
-		result = blt_table_row_set_tag(interp, viewPtr->table, 
+		result = blt_table_set_row_tag(interp, viewPtr->table, 
 			rowPtr->row, switchesPtr->tag);
 		if (result != TCL_OK) {
 		    break;
@@ -8068,7 +8068,7 @@ RowInsertOp(ClientData clientData, Tcl_Interp *interp, int objc,
     int isNew;
     long i, insertPos;
 
-    row = blt_table_row_find(interp, viewPtr->table, objv[3]);
+    row = blt_table_get_row(interp, viewPtr->table, objv[3]);
     if (row == NULL) {
 	return TCL_ERROR;
     }
@@ -10466,11 +10466,11 @@ AttachTable(Tcl_Interp *interp, TableView *viewPtr)
     long i;
 
     ResetTableView(viewPtr);
-    viewPtr->colNotifier = blt_table_column_create_notifier(interp, 
+    viewPtr->colNotifier = blt_table_create_column_notifier(interp, 
 	viewPtr->table, TABLE_NOTIFY_ALL, 
 	TABLE_NOTIFY_ALL_EVENTS | TABLE_NOTIFY_WHENIDLE, 
 	TableEventProc, NULL, viewPtr);
-    viewPtr->rowNotifier = blt_table_row_create_notifier(interp, 
+    viewPtr->rowNotifier = blt_table_create_row_notifier(interp, 
 	viewPtr->table, TABLE_NOTIFY_ALL, 
 	TABLE_NOTIFY_ALL_EVENTS | TABLE_NOTIFY_WHENIDLE, 
 	TableEventProc, NULL, viewPtr);

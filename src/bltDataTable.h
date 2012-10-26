@@ -209,43 +209,50 @@ BLT_EXTERN Blt_HashTable *blt_table_row_get_label_table(BLT_TABLE table,
 BLT_EXTERN Blt_HashTable *blt_table_column_get_label_table(BLT_TABLE table, 
 	const char *label);
 
-BLT_EXTERN BLT_TABLE_ROW blt_table_row_find_by_label(BLT_TABLE table, 
+BLT_EXTERN BLT_TABLE_ROW blt_table_get_row(Tcl_Interp *interp, 
+	BLT_TABLE table, Tcl_Obj *objPtr);
+BLT_EXTERN BLT_TABLE_COLUMN blt_table_get_column(Tcl_Interp *interp, 
+	BLT_TABLE table, Tcl_Obj *objPtr);
+BLT_EXTERN BLT_TABLE_ROW blt_table_get_row_by_label(BLT_TABLE table, 
 	const char *label);
-BLT_EXTERN BLT_TABLE_COLUMN blt_table_column_find_by_label(BLT_TABLE table, 
+BLT_EXTERN BLT_TABLE_COLUMN blt_table_get_column_by_label(BLT_TABLE table, 
 	const char *label);
-BLT_EXTERN BLT_TABLE_ROW blt_table_row_find_by_index(BLT_TABLE table, long index);
-BLT_EXTERN BLT_TABLE_COLUMN blt_table_column_find_by_index(BLT_TABLE table, 
+BLT_EXTERN BLT_TABLE_ROW blt_table_get_row_by_index(BLT_TABLE table, 
+	long index);
+BLT_EXTERN BLT_TABLE_COLUMN blt_table_get_column_by_index(BLT_TABLE table, 
 	long index);
 
-BLT_EXTERN int blt_table_row_set_label(Tcl_Interp *interp, BLT_TABLE table, 
+BLT_EXTERN int blt_table_set_row_label(Tcl_Interp *interp, BLT_TABLE table, 
 	BLT_TABLE_ROW row, const char *label);
-BLT_EXTERN int blt_table_column_set_label(Tcl_Interp *interp, BLT_TABLE table, 
+BLT_EXTERN int blt_table_set_column_label(Tcl_Interp *interp, BLT_TABLE table, 
 	BLT_TABLE_COLUMN column, const char *label);
 
-BLT_EXTERN BLT_TABLE_COLUMN_TYPE blt_table_column_convert_name_to_type(const char *typeName);
-BLT_EXTERN int blt_table_column_set_type(BLT_TABLE table, BLT_TABLE_COLUMN column,
+BLT_EXTERN BLT_TABLE_COLUMN_TYPE blt_table_name_to_column_type(
+	const char *typeName);
+BLT_EXTERN int blt_table_set_column_type(BLT_TABLE table, 
+	BLT_TABLE_COLUMN column, BLT_TABLE_COLUMN_TYPE type);
+BLT_EXTERN const char *blt_table_column_type_to_name(
 	BLT_TABLE_COLUMN_TYPE type);
-BLT_EXTERN const char *blt_table_name_of_type(BLT_TABLE_COLUMN_TYPE type);
 
-BLT_EXTERN int blt_table_column_set_tag(Tcl_Interp *interp, BLT_TABLE table, 
+BLT_EXTERN int blt_table_set_column_tag(Tcl_Interp *interp, BLT_TABLE table, 
 	BLT_TABLE_COLUMN column, const char *tagName);
-BLT_EXTERN int blt_table_row_set_tag(Tcl_Interp *interp, BLT_TABLE table, 
+BLT_EXTERN int blt_table_set_row_tag(Tcl_Interp *interp, BLT_TABLE table, 
 	BLT_TABLE_ROW row, const char *tagName);
 
-BLT_EXTERN BLT_TABLE_ROW blt_table_row_create(Tcl_Interp *interp, BLT_TABLE table,
-	const char *label);
-BLT_EXTERN BLT_TABLE_COLUMN blt_table_column_create(Tcl_Interp *interp, 
+BLT_EXTERN BLT_TABLE_ROW blt_table_create_row(Tcl_Interp *interp, 
+	BLT_TABLE table, const char *label);
+BLT_EXTERN BLT_TABLE_COLUMN blt_table_create_column(Tcl_Interp *interp, 
 	BLT_TABLE table, const char *label);
 
 BLT_EXTERN int blt_table_extend_rows(Tcl_Interp *interp, BLT_TABLE table,
 	size_t n, BLT_TABLE_ROW *rows);
 BLT_EXTERN int blt_table_extend_columns(Tcl_Interp *interp, BLT_TABLE table, 
 	size_t n, BLT_TABLE_COLUMN *columms);
-BLT_EXTERN int blt_table_row_delete(BLT_TABLE table, BLT_TABLE_ROW row);
-BLT_EXTERN int blt_table_column_delete(BLT_TABLE table, BLT_TABLE_COLUMN column);
-BLT_EXTERN int blt_table_row_move(Tcl_Interp *interp, BLT_TABLE table, 
+BLT_EXTERN int blt_table_delete_row(BLT_TABLE table, BLT_TABLE_ROW row);
+BLT_EXTERN int blt_table_delete_column(BLT_TABLE table, BLT_TABLE_COLUMN column);
+BLT_EXTERN int blt_table_move_row(Tcl_Interp *interp, BLT_TABLE table, 
 	BLT_TABLE_ROW from, BLT_TABLE_ROW to, size_t n);
-BLT_EXTERN int blt_table_column_move(Tcl_Interp *interp, BLT_TABLE table, 
+BLT_EXTERN int blt_table_move_column(Tcl_Interp *interp, BLT_TABLE table, 
 	BLT_TABLE_COLUMN from, BLT_TABLE_COLUMN to, size_t n);
 
 BLT_EXTERN Tcl_Obj *blt_table_get_obj(BLT_TABLE table, BLT_TABLE_ROW row, 
@@ -279,9 +286,9 @@ BLT_EXTERN int blt_table_unset_value(BLT_TABLE table, BLT_TABLE_ROW row,
 BLT_EXTERN int blt_table_value_exists(BLT_TABLE table, BLT_TABLE_ROW row, 
 	BLT_TABLE_COLUMN column);
 
-BLT_EXTERN Blt_HashTable *blt_table_row_find_tag_table(BLT_TABLE table, 
+BLT_EXTERN Blt_HashTable *blt_table_get_row_tag_table(BLT_TABLE table, 
 	const char *tagName);
-BLT_EXTERN Blt_HashTable *blt_table_column_find_tag_table(BLT_TABLE table, 
+BLT_EXTERN Blt_HashTable *blt_table_get_column_tag_table(BLT_TABLE table, 
 	const char *tagName);
 BLT_EXTERN Blt_Chain blt_table_row_tags(BLT_TABLE table, BLT_TABLE_ROW row);
 BLT_EXTERN Blt_Chain blt_table_column_tags(BLT_TABLE table, 
@@ -425,12 +432,6 @@ BLT_EXTERN BLT_TABLE_ROW blt_table_next_tagged_row(BLT_TABLE_ITERATOR *iter);
 BLT_EXTERN BLT_TABLE_COLUMN blt_table_next_tagged_column(
 	BLT_TABLE_ITERATOR *iter);
 
-BLT_EXTERN BLT_TABLE_ROW blt_table_row_find(Tcl_Interp *interp, 
-	BLT_TABLE table, Tcl_Obj *objPtr);
-
-BLT_EXTERN BLT_TABLE_COLUMN blt_table_column_find(Tcl_Interp *interp, 
-	BLT_TABLE table, Tcl_Obj *objPtr);
-
 BLT_EXTERN int blt_table_list_rows(Tcl_Interp *interp, BLT_TABLE table, 
 	int objc, Tcl_Obj *const *objv, Blt_Chain chain);
 
@@ -537,15 +538,15 @@ BLT_EXTERN BLT_TABLE_TRACE blt_table_set_column_trace(BLT_TABLE table,
 	BLT_TABLE_COLUMN column, unsigned int mask, BLT_TABLE_TRACE_PROC *proc, 
 	BLT_TABLE_TRACE_DELETE_PROC *deleteProc, ClientData clientData);
 
-BLT_EXTERN BLT_TABLE_TRACE blt_table_column_create_tag_trace(BLT_TABLE table, 
+BLT_EXTERN BLT_TABLE_TRACE blt_table_create_column_tag_trace(BLT_TABLE table, 
 	const char *tag, unsigned int mask, BLT_TABLE_TRACE_PROC *proc, 
 	BLT_TABLE_TRACE_DELETE_PROC *deleteProc, ClientData clientData);
 
-BLT_EXTERN BLT_TABLE_TRACE blt_table_row_create_trace(BLT_TABLE table,
+BLT_EXTERN BLT_TABLE_TRACE blt_table_create_row_trace(BLT_TABLE table,
 	BLT_TABLE_ROW row, unsigned int mask, BLT_TABLE_TRACE_PROC *proc, 
 	BLT_TABLE_TRACE_DELETE_PROC *deleteProc, ClientData clientData);
 
-BLT_EXTERN BLT_TABLE_TRACE blt_table_row_create_tag_trace(BLT_TABLE table, 
+BLT_EXTERN BLT_TABLE_TRACE blt_table_create_row_tag_trace(BLT_TABLE table, 
 	const char *tag, unsigned int mask, BLT_TABLE_TRACE_PROC *proc, 
 	BLT_TABLE_TRACE_DELETE_PROC *deleteProc, ClientData clientData);
 
@@ -639,25 +640,25 @@ typedef struct _BLT_TABLE_NOTIFIER {
 
 #define TABLE_NOTIFY_ALL	   (NULL)
 
-BLT_EXTERN BLT_TABLE_NOTIFIER blt_table_row_create_notifier(Tcl_Interp *interp, 
+BLT_EXTERN BLT_TABLE_NOTIFIER blt_table_create_row_notifier(Tcl_Interp *interp, 
 	BLT_TABLE table, BLT_TABLE_ROW row, unsigned int mask, 
 	BLT_TABLE_NOTIFY_EVENT_PROC *proc, 
 	BLT_TABLE_NOTIFIER_DELETE_PROC *deleteProc,
 	ClientData clientData);
 
-BLT_EXTERN BLT_TABLE_NOTIFIER blt_table_row_create_tag_notifier(
+BLT_EXTERN BLT_TABLE_NOTIFIER blt_table_create_row_tag_notifier(
 	Tcl_Interp *interp,
 	BLT_TABLE table, const char *tag, unsigned int mask, 
 	BLT_TABLE_NOTIFY_EVENT_PROC *proc, 
 	BLT_TABLE_NOTIFIER_DELETE_PROC *deleteProc,
 	ClientData clientData);
 
-BLT_EXTERN BLT_TABLE_NOTIFIER blt_table_column_create_notifier(
+BLT_EXTERN BLT_TABLE_NOTIFIER blt_table_create_column_notifier(
 	Tcl_Interp *interp, BLT_TABLE table, BLT_TABLE_COLUMN column, 
 	unsigned int mask, BLT_TABLE_NOTIFY_EVENT_PROC *proc, 
 	BLT_TABLE_NOTIFIER_DELETE_PROC *deleteProc, ClientData clientData);
 
-BLT_EXTERN BLT_TABLE_NOTIFIER blt_table_column_create_tag_notifier(
+BLT_EXTERN BLT_TABLE_NOTIFIER blt_table_create_column_tag_notifier(
 	Tcl_Interp *interp, BLT_TABLE table, const char *tag, 
 	unsigned int mask, BLT_TABLE_NOTIFY_EVENT_PROC *proc, 
 	BLT_TABLE_NOTIFIER_DELETE_PROC *deleteProc, ClientData clientData);
@@ -738,13 +739,13 @@ BLT_EXTERN int blt_table_get_column_limits(Tcl_Interp *interp, BLT_TABLE table,
 #define blt_table_num_rows(t)		((t)->corePtr->rows.numUsed)
 #define blt_table_row_index(r)		((r)->index)
 #define blt_table_row_label(r)		((r)->label)
-#define blt_table_get_row(t,i)  \
+#define blt_table_row(t,i)  \
     (BLT_TABLE_ROW)((t)->corePtr->rows.map[(i)])
 
 #define blt_table_num_columns(t)	((t)->corePtr->columns.numUsed)
 #define blt_table_column_index(c)	((c)->index)
 #define blt_table_column_label(c)	((c)->label)
-#define blt_table_get_column(t,i) \
+#define blt_table_column(t,i) \
 	(BLT_TABLE_COLUMN)((t)->corePtr->columns.map[(i)])
 
 #define blt_table_name(t)		((t)->name)

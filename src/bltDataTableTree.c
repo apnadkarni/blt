@@ -298,7 +298,7 @@ ImportTree(Tcl_Interp *interp, BLT_TABLE table, Blt_Tree tree,
 	    const char *label;
 	    BLT_TABLE_COLUMN col;
 
-	    col = blt_table_get_column(table, colIndex);
+	    col = blt_table_column(table, colIndex);
 	    label = Blt_Tree_NodeLabel(parent);
 	    if (blt_table_set_string(table, row, col, label, -1) !=TCL_OK) {
 		return TCL_ERROR;
@@ -308,9 +308,9 @@ ImportTree(Tcl_Interp *interp, BLT_TABLE table, Blt_Tree tree,
 		const char *label;
 
 		label = "inode";
-		col = blt_table_column_find_by_label(table, label);
+		col = blt_table_get_column_by_label(table, label);
 		if (col == NULL) {
-		    col = blt_table_column_create(interp, table, label);
+		    col = blt_table_create_column(interp, table, label);
 		    if (col == NULL) {
 			return TCL_ERROR;
 		    }
@@ -337,7 +337,7 @@ ImportTree(Tcl_Interp *interp, BLT_TABLE table, Blt_Tree tree,
 	    /* Skipping node because is it beyond the maximum depth desired. */
 	    continue;
 	}
-	row = blt_table_get_row(table, rowIndex);
+	row = blt_table_row(table, rowIndex);
 	for (key = Blt_Tree_FirstKey(tree, node, &iter); key != NULL;
 	     key = Blt_Tree_NextKey(tree, &iter)) {
 	    BLT_TABLE_COLUMN col;
@@ -346,9 +346,9 @@ ImportTree(Tcl_Interp *interp, BLT_TABLE table, Blt_Tree tree,
 	    if (Blt_Tree_GetValue(interp, tree, node, key, &objPtr) != TCL_OK) {
 		return TCL_ERROR;
 	    }
-	    col = blt_table_column_find_by_label(table, key);
+	    col = blt_table_get_column_by_label(table, key);
 	    if (col == NULL) {
-		col = blt_table_column_create(interp, table, key);
+		col = blt_table_create_column(interp, table, key);
 		if (col == NULL) {
 		    return TCL_ERROR;
 		}

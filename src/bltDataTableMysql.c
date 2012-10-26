@@ -193,12 +193,12 @@ MySqlImportLabels(Tcl_Interp *interp, BLT_TABLE table, MYSQL_RES *myResults,
 	BLT_TABLE_COLUMN_TYPE type;
 
 	fp = mysql_fetch_field(myResults);
-	if (blt_table_column_set_label(interp, table, cols[i], fp->name) 
+	if (blt_table_set_column_label(interp, table, cols[i], fp->name) 
 	    != TCL_OK) {
 	    return TCL_ERROR;
 	}
 	type = MySqlFieldToColumnType(fp->type);
-	if (blt_table_column_set_type(table, cols[i], type) != TCL_OK) {
+	if (blt_table_set_column_type(table, cols[i], type) != TCL_OK) {
 	    return TCL_ERROR;
 	}
     }
@@ -238,7 +238,7 @@ MySqlImportRows(Tcl_Interp *interp, BLT_TABLE table, MYSQL_RES *myResults,
 	    break;
 	}
 	fieldLengths = mysql_fetch_lengths(myResults);
-	row = blt_table_get_row(table, i);
+	row = blt_table_row(table, i);
 	for (j = 0; j < numCols; j++) {
 	    int result;
 	    Tcl_Obj *objPtr;

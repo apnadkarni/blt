@@ -378,7 +378,7 @@ StartXmlTag(void *userData, const char *element, const char **attr)
 	 */
 	hPtr = Blt_CreateHashEntry(&importPtr->elemTable, element, &isNew);
 	if (isNew) {
-	    col = blt_table_column_create(interp, table, element);
+	    col = blt_table_create_column(interp, table, element);
 	    if (col == NULL) {
 		goto error;
 	    }
@@ -409,7 +409,7 @@ StartXmlTag(void *userData, const char *element, const char **attr)
 	     */
 	    hPtr = Blt_CreateHashEntry(&importPtr->attrTable, name, &isNew);
 	    if (isNew) {
-		col = blt_table_column_create(interp, table, name);
+		col = blt_table_create_column(interp, table, name);
 		if (col == NULL) {
 		    goto error;
 		}

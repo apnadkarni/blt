@@ -74,7 +74,7 @@ ExportVecProc(BLT_TABLE table, Tcl_Interp *interp, int objc,
 	int k;
 	BLT_TABLE_COLUMN col;
 
-	col = blt_table_column_find(interp, table, objv[i]);
+	col = blt_table_get_column(interp, table, objv[i]);
 	if (col == NULL) {
 	    return TCL_ERROR;
 	}
@@ -91,7 +91,7 @@ ExportVecProc(BLT_TABLE table, Tcl_Interp *interp, int objc,
 	for (k = 0; k < Blt_VecLength(vector); k++) {
 	    BLT_TABLE_ROW row;
 
-	    row = blt_table_get_row(table, k);
+	    row = blt_table_row(table, k);
 	    array[k] = blt_table_get_double(table, row, col);
 	}
 	if (Blt_ResetVector(vector, array, numRows, size, TCL_STATIC) != TCL_OK) {
@@ -143,16 +143,16 @@ ImportVecProc(BLT_TABLE table, Tcl_Interp *interp, int objc,
 	    return TCL_ERROR;
 	}
 	size = Blt_VecLength(vector);
-	col = blt_table_column_find(NULL, table, objv[i+1]);
+	col = blt_table_get_column(NULL, table, objv[i+1]);
 	if (col == NULL) {
 	    const char *label;
 
 	    label = Tcl_GetString(objv[i+1]);
-	    col = blt_table_column_create(interp, table, label);
+	    col = blt_table_create_column(interp, table, label);
 	    if (col == NULL) {
 		return TCL_ERROR;
 	    }
-	    blt_table_column_set_type(table, col, TABLE_COLUMN_TYPE_DOUBLE);
+	    blt_table_set_column_type(table, col, TABLE_COLUMN_TYPE_DOUBLE);
 	    start = 0;
 	} else {
 	    size += oldLength;
@@ -171,7 +171,7 @@ ImportVecProc(BLT_TABLE table, Tcl_Interp *interp, int objc,
 	for (j = 0, k = start; j < numElems; j++, k++) {
 	    BLT_TABLE_ROW row;
 
-	    row = blt_table_get_row(table, k);
+	    row = blt_table_row(table, k);
 	    if (blt_table_set_double(table, row, col, array[j]) != TCL_OK) {
 		return TCL_ERROR;
 	    }

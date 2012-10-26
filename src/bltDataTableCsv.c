@@ -663,7 +663,7 @@ ImportCsv(Tcl_Interp *interp, BLT_TABLE table, ImportSwitches *importPtr)
 			    goto error;
 			}
 		    } else {
-			col = blt_table_get_column(table, i);
+			col = blt_table_column(table, i);
 		    }
 		    if ((last > field) || (isQuoted)) {
 			if (blt_table_set_string(table, row, col, field, 
@@ -754,7 +754,7 @@ ImportCsv(Tcl_Interp *interp, BLT_TABLE table, ImportSwitches *importPtr)
 			goto error;
 		    }
 		}
-		col = blt_table_column_find_by_index(table, i);
+		col = blt_table_get_column_by_index(table, i);
 		if (col == NULL) {
 		    if (blt_table_extend_columns(interp, table, 1, &col) 
 			!= TCL_OK) {
