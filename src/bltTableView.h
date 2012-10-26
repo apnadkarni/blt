@@ -159,11 +159,11 @@
 					 * row. */
 #define TITLES_MASK	(COLUMN_TITLES|ROW_TITLES)
 
-#define ROW_AUTO	(1<<25)		/* Create rows and columns as needed
+#define AUTO_ROWS	(1<<25)		/* Create rows and columns as needed
 					 * when attached a datatable. */
-#define COLUMN_AUTO     (1<<26)		/* Create rows and columns as needed
+#define AUTO_COLUMNS    (1<<26)		/* Create rows and columns as needed
 					 * when attached a datatable. */
-#define AUTOCREATE	(ROW_AUTO|COLUMN_AUTO)
+#define AUTOCREATE	(AUTO_ROWS|AUTO_COLUMNS)
 #define AUTOFILTERS	(1<<27)		/* Display combobox below each column
 					 * title to filter row values. */
 #define FILTERHIGHLIGHT (1<<28)		/* Display the filter with highlighted

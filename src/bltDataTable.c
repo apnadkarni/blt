@@ -1667,8 +1667,8 @@ TriggerColumnNotifiers(Table *tablePtr, Column *colPtr, unsigned int flags)
 {
     if (colPtr == NULL) {		/* Indicates to trigger notifications
 					 * for all columns. */
-	for (colPtr = blt_table_column_first(tablePtr); colPtr != NULL;
-	     colPtr = blt_table_column_next(tablePtr, colPtr)) {
+	for (colPtr = blt_table_first_column(tablePtr); colPtr != NULL;
+	     colPtr = blt_table_next_column(tablePtr, colPtr)) {
 	    NotifyClients(tablePtr, NULL, colPtr, flags | TABLE_NOTIFY_COLUMN);
 	} 
     } else {
@@ -1701,8 +1701,8 @@ TriggerRowNotifiers(Table *tablePtr, Row *rowPtr, unsigned int flags)
 {
     if (rowPtr == TABLE_NOTIFY_ALL) {	
 	/* Trigger notifications for all rows. */
-	for (rowPtr = blt_table_row_first(tablePtr); rowPtr != NULL;
-	     rowPtr = blt_table_row_next(tablePtr, rowPtr)) {
+	for (rowPtr = blt_table_first_row(tablePtr); rowPtr != NULL;
+	     rowPtr = blt_table_next_row(tablePtr, rowPtr)) {
 	    NotifyClients(tablePtr, rowPtr, NULL, flags | TABLE_NOTIFY_ROW);
 	} 
     } else {
@@ -1713,7 +1713,7 @@ TriggerRowNotifiers(Table *tablePtr, Row *rowPtr, unsigned int flags)
 /*
  *---------------------------------------------------------------------------
  *
- * blt_table_row_clear_traces --
+ * blt_table_clear_row_traces --
  *
  *	Removes all traces set for this row.  Note that this doesn't remove
  *	traces set for specific cells (row,column).  Row traces are stored in
@@ -1722,7 +1722,7 @@ TriggerRowNotifiers(Table *tablePtr, Row *rowPtr, unsigned int flags)
  *---------------------------------------------------------------------------
  */
 void
-blt_table_row_clear_traces(Table *tablePtr, Row *rowPtr)
+blt_table_clear_row_traces(Table *tablePtr, Row *rowPtr)
 {
     Blt_ChainLink link, next;
 
@@ -1751,7 +1751,7 @@ blt_table_row_clear_traces(Table *tablePtr, Row *rowPtr)
 /*
  *---------------------------------------------------------------------------
  *
- * blt_table_column_clear_traces --
+ * blt_table_clear_column_traces --
  *
  *	Removes all traces set for this column.  Note that this doesn't remove
  *	traces set for specific cells (row,column).  Column traces are stored
@@ -1761,7 +1761,7 @@ blt_table_row_clear_traces(Table *tablePtr, Row *rowPtr)
  *---------------------------------------------------------------------------
  */
 void
-blt_table_column_clear_traces(Table *tablePtr, BLT_TABLE_COLUMN column)
+blt_table_clear_column_traces(Table *tablePtr, BLT_TABLE_COLUMN column)
 {
     Blt_ChainLink link, next;
 
@@ -1966,8 +1966,8 @@ UnsetRowValues(Table *tablePtr, Row *rowPtr)
 {
     Column *colPtr;
 
-    for (colPtr = blt_table_column_first(tablePtr); colPtr != NULL;
-	 colPtr = blt_table_column_next(tablePtr, colPtr)) {
+    for (colPtr = blt_table_first_column(tablePtr); colPtr != NULL;
+	 colPtr = blt_table_next_column(tablePtr, colPtr)) {
 	UnsetValue(tablePtr, rowPtr, colPtr);
     }
 }
@@ -1978,8 +1978,8 @@ UnsetColumnValues(Table *tablePtr, Column *colPtr)
     Value *vector;
     Row *rowPtr;
 
-    for (rowPtr = blt_table_row_first(tablePtr); rowPtr != NULL;
-	 rowPtr = blt_table_row_next(tablePtr, rowPtr)) {
+    for (rowPtr = blt_table_first_row(tablePtr); rowPtr != NULL;
+	 rowPtr = blt_table_next_row(tablePtr, rowPtr)) {
 	UnsetValue(tablePtr, rowPtr, colPtr);
     }
     vector = tablePtr->corePtr->data[colPtr->offset];
@@ -2760,25 +2760,25 @@ RestoreValue(Tcl_Interp *interp, BLT_TABLE table, RestoreData *restorePtr)
 }
 
 BLT_TABLE_ROW *
-blt_table_row_get_map(Table *tablePtr)  
+blt_table_get_row_map(Table *tablePtr)  
 {
     return (BLT_TABLE_ROW *)tablePtr->corePtr->rows.map;
 }
 
 BLT_TABLE_COLUMN *
-blt_table_column_get_map(Table *tablePtr)  
+blt_table_get_column_map(Table *tablePtr)  
 {
     return (BLT_TABLE_COLUMN *)tablePtr->corePtr->columns.map;
 }
 
 Blt_HashEntry *
-blt_table_row_first_tag(Table *tablePtr, Blt_HashSearch *cursorPtr)  
+blt_table_first_row_tag(Table *tablePtr, Blt_HashSearch *cursorPtr)  
 {
     return Blt_FirstHashEntry(tablePtr->rowTags, cursorPtr);
 }
 
 Blt_HashEntry *
-blt_table_column_first_tag(Table *tablePtr, Blt_HashSearch *cursorPtr)  
+blt_table_first_column_tag(Table *tablePtr, Blt_HashSearch *cursorPtr)  
 {
     return Blt_FirstHashEntry(tablePtr->columnTags, cursorPtr);
 }
@@ -2884,7 +2884,7 @@ blt_table_row_spec(BLT_TABLE table, Tcl_Obj *objPtr, const char **sp)
 }
 
 BLT_TABLE_COLUMN
-blt_table_column_first(Table *tablePtr)  
+blt_table_first_column(Table *tablePtr)  
 {
     if (tablePtr->corePtr->columns.numUsed > 0) {
 	return (BLT_TABLE_COLUMN)tablePtr->corePtr->columns.map[0];
@@ -2893,7 +2893,7 @@ blt_table_column_first(Table *tablePtr)
 }
 
 BLT_TABLE_COLUMN
-blt_table_column_next(Table *tablePtr, Column *colPtr)  
+blt_table_next_column(Table *tablePtr, Column *colPtr)  
 {
     long index;
 
@@ -2905,7 +2905,7 @@ blt_table_column_next(Table *tablePtr, Column *colPtr)
 }
 
 BLT_TABLE_ROW
-blt_table_row_first(Table *tablePtr)  
+blt_table_first_row(Table *tablePtr)  
 {
     if (tablePtr->corePtr->rows.numUsed > 0) {
 	return (BLT_TABLE_ROW)tablePtr->corePtr->rows.map[0];
@@ -2914,7 +2914,7 @@ blt_table_row_first(Table *tablePtr)
 }
 
 BLT_TABLE_ROW
-blt_table_row_next(Table *tablePtr, Row *rowPtr)  
+blt_table_next_row(Table *tablePtr, Row *rowPtr)  
 {
     long index;
 
@@ -2928,7 +2928,7 @@ blt_table_row_next(Table *tablePtr, Row *rowPtr)
 /*
  *---------------------------------------------------------------------------
  *
- * blt_table_row_iterate --
+ * blt_table_iterate_row --
  *
  *	Returns the id of the first row derived from the given tag,
  *	label or index represented in objPtr.  
@@ -2941,7 +2941,7 @@ blt_table_row_next(Table *tablePtr, Row *rowPtr)
  *---------------------------------------------------------------------------
  */
 int
-blt_table_row_iterate(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr, 
+blt_table_iterate_row(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr, 
 		      BLT_TABLE_ITERATOR *iterPtr)
 {
     BLT_TABLE_ROW from, to;
@@ -3067,7 +3067,7 @@ blt_table_row_iterate(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr,
 /*
  *---------------------------------------------------------------------------
  *
- * blt_table_row_first_tagged --
+ * blt_table_first_tagged_row --
  *
  *	Returns the id of the next row derived from the given tag.
  *
@@ -3078,7 +3078,7 @@ blt_table_row_iterate(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr,
  *---------------------------------------------------------------------------
  */
 BLT_TABLE_ROW
-blt_table_row_first_tagged(BLT_TABLE_ITERATOR *iterPtr)
+blt_table_first_tagged_row(BLT_TABLE_ITERATOR *iterPtr)
 {
     if (iterPtr->type == TABLE_ITERATOR_TAG) {
 	Blt_HashEntry *hPtr;
@@ -3106,7 +3106,7 @@ blt_table_row_first_tagged(BLT_TABLE_ITERATOR *iterPtr)
 /*
  *---------------------------------------------------------------------------
  *
- * blt_table_row_next_tagged --
+ * blt_table_next_tagged_row --
  *
  *	Returns the id of the next row derived from the given tag.
  *
@@ -3117,7 +3117,7 @@ blt_table_row_first_tagged(BLT_TABLE_ITERATOR *iterPtr)
  *---------------------------------------------------------------------------
  */
 BLT_TABLE_ROW
-blt_table_row_next_tagged(BLT_TABLE_ITERATOR *iterPtr)
+blt_table_next_tagged_row(BLT_TABLE_ITERATOR *iterPtr)
 {
     if (iterPtr->type == TABLE_ITERATOR_TAG) {
 	Blt_HashEntry *hPtr;
@@ -3160,10 +3160,10 @@ blt_table_row_find(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr)
     BLT_TABLE_ITERATOR iter;
     BLT_TABLE_ROW first, next;
 
-    if (blt_table_row_iterate(interp, table, objPtr, &iter) != TCL_OK) {
+    if (blt_table_iterate_row(interp, table, objPtr, &iter) != TCL_OK) {
 	return NULL;
     }
-    first = blt_table_row_first_tagged(&iter);
+    first = blt_table_first_tagged_row(&iter);
     if (first == NULL) {
 	if (interp != NULL) {
 	    Tcl_AppendResult(interp, "no rows specified by \"", 
@@ -3171,7 +3171,7 @@ blt_table_row_find(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr)
 	}
 	return NULL;
     }
-    next = blt_table_row_next_tagged(&iter);
+    next = blt_table_next_tagged_row(&iter);
     if (next != NULL) {
 	if (interp != NULL) {
 	    Tcl_AppendResult(interp, "multiple rows specified by \"", 
@@ -3241,7 +3241,7 @@ blt_table_column_spec(BLT_TABLE table, Tcl_Obj *objPtr, const char **sp)
 /*
  *---------------------------------------------------------------------------
  *
- * blt_table_column_iterate --
+ * blt_table_iterate_column --
  *
  *	Returns the id of the first column derived from the given tag,
  *	label or index represented in objPtr.  
@@ -3254,7 +3254,7 @@ blt_table_column_spec(BLT_TABLE table, Tcl_Obj *objPtr, const char **sp)
  *---------------------------------------------------------------------------
  */
 int
-blt_table_column_iterate(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr, 
+blt_table_iterate_column(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr, 
 			 BLT_TABLE_ITERATOR *iterPtr)
 {
     BLT_TABLE_COLUMN from, to;
@@ -3378,7 +3378,7 @@ blt_table_column_iterate(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr,
 /*
  *---------------------------------------------------------------------------
  *
- * blt_table_column_iterate --
+ * blt_table_iterate_column --
  *
  *	Initials the table iterator to walk through the columns tagged by the
  *	given tag, label, or index, as represented in objPtr.
@@ -3402,7 +3402,7 @@ blt_table_column_iterate(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr,
  *---------------------------------------------------------------------------
  */
 int
-blt_table_column_iterate(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr, 
+blt_table_iterate_column(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr, 
 			 BLT_TABLE_ITERATOR *iterPtr)
 {
     long index;
@@ -3502,7 +3502,7 @@ blt_table_column_iterate(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr,
 /*
  *---------------------------------------------------------------------------
  *
- * blt_table_column_first_tagged --
+ * blt_table_first_tagged_column --
  *
  *	Returns the first column based upon given iterator.
  *
@@ -3513,7 +3513,7 @@ blt_table_column_iterate(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr,
  *---------------------------------------------------------------------------
  */
 BLT_TABLE_COLUMN
-blt_table_column_first_tagged(BLT_TABLE_ITERATOR *iterPtr)
+blt_table_first_tagged_column(BLT_TABLE_ITERATOR *iterPtr)
 {
     if (iterPtr->type == TABLE_ITERATOR_TAG) {
 	Blt_HashEntry *hPtr;
@@ -3541,7 +3541,7 @@ blt_table_column_first_tagged(BLT_TABLE_ITERATOR *iterPtr)
 /*
  *---------------------------------------------------------------------------
  *
- * blt_table_column_next_tagged --
+ * blt_table_next_tagged_column --
  *
  *	Returns the column location of the next column using the given
  *	iterator.
@@ -3553,7 +3553,7 @@ blt_table_column_first_tagged(BLT_TABLE_ITERATOR *iterPtr)
  *---------------------------------------------------------------------------
  */
 BLT_TABLE_COLUMN
-blt_table_column_next_tagged(BLT_TABLE_ITERATOR *iterPtr)
+blt_table_next_tagged_column(BLT_TABLE_ITERATOR *iterPtr)
 {
     if (iterPtr->type == TABLE_ITERATOR_TAG) {
 	Blt_HashEntry *hPtr;
@@ -3590,10 +3590,10 @@ blt_table_column_find(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr)
     BLT_TABLE_ITERATOR iter;
     BLT_TABLE_COLUMN first, next;
 
-    if (blt_table_column_iterate(interp, table, objPtr, &iter) != TCL_OK) {
+    if (blt_table_iterate_column(interp, table, objPtr, &iter) != TCL_OK) {
 	return NULL;
     }
-    first = blt_table_column_first_tagged(&iter);
+    first = blt_table_first_tagged_column(&iter);
     if (first == NULL) {
 	if (interp != NULL) {
 	    Tcl_AppendResult(interp, "no columns specified by \"", 
@@ -3601,7 +3601,7 @@ blt_table_column_find(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr)
 	}
 	return NULL;
     }
-    next = blt_table_column_next_tagged(&iter);
+    next = blt_table_next_tagged_column(&iter);
     if (next != NULL) {
 	if (interp != NULL) {
 	    Tcl_AppendResult(interp, "multiple columns specified by \"", 
@@ -3636,13 +3636,13 @@ blt_table_list_columns(Tcl_Interp *interp, BLT_TABLE table, int objc,
 	BLT_TABLE_ITERATOR iter;
 	BLT_TABLE_COLUMN col;
 
-	if (blt_table_column_iterate(interp, table, objv[i], &iter) 
+	if (blt_table_iterate_column(interp, table, objv[i], &iter) 
 	    != TCL_OK) {
 	    Blt_DeleteHashTable(&cols);
 	    return TCL_ERROR;
 	}
-	for (col = blt_table_column_first_tagged(&iter); col != NULL; 
-	     col = blt_table_column_next_tagged(&iter)) {
+	for (col = blt_table_first_tagged_column(&iter); col != NULL; 
+	     col = blt_table_next_tagged_column(&iter)) {
 	    int isNew;
 
 	    Blt_CreateHashEntry(&cols, (char *)col, &isNew);
@@ -3677,13 +3677,13 @@ blt_table_list_rows(Tcl_Interp *interp, BLT_TABLE table, int objc,
 	BLT_TABLE_ITERATOR iter;
 	BLT_TABLE_ROW row;
 
-	if (blt_table_row_iterate(interp, table, objv[i], &iter) != TCL_OK){
+	if (blt_table_iterate_row(interp, table, objv[i], &iter) != TCL_OK){
 	    Blt_DeleteHashTable(&rows);
 	    return TCL_ERROR;
 	}
 	/* Append the new rows onto the chain. */
-	for (row = blt_table_row_first_tagged(&iter); row != NULL; 
-	     row = blt_table_row_next_tagged(&iter)) {
+	for (row = blt_table_first_tagged_row(&iter); row != NULL; 
+	     row = blt_table_next_tagged_row(&iter)) {
 	    int isNew;
 
 	    Blt_CreateHashEntry(&rows, (char *)row, &isNew);
@@ -3697,7 +3697,7 @@ blt_table_list_rows(Tcl_Interp *interp, BLT_TABLE table, int objc,
 }
 
 int
-blt_table_row_iterate_objv(Tcl_Interp *interp, BLT_TABLE table, int objc, 
+blt_table_iterate_row_objv(Tcl_Interp *interp, BLT_TABLE table, int objc, 
 			  Tcl_Obj *const *objv, BLT_TABLE_ITERATOR *iterPtr)
 {
     Blt_Chain chain;
@@ -3717,7 +3717,7 @@ blt_table_row_iterate_objv(Tcl_Interp *interp, BLT_TABLE table, int objc,
 }
 
 void
-blt_table_row_iterate_all(BLT_TABLE table, BLT_TABLE_ITERATOR *iterPtr)
+blt_table_iterate_all_rows(BLT_TABLE table, BLT_TABLE_ITERATOR *iterPtr)
 {
     iterPtr->table = table;
     iterPtr->type = TABLE_ITERATOR_ALL;
@@ -3729,7 +3729,7 @@ blt_table_row_iterate_all(BLT_TABLE table, BLT_TABLE_ITERATOR *iterPtr)
 }
 
 int
-blt_table_column_iterate_objv(Tcl_Interp *interp, BLT_TABLE table, int objc, 
+blt_table_iterate_column_objv(Tcl_Interp *interp, BLT_TABLE table, int objc, 
 			     Tcl_Obj *const *objv, BLT_TABLE_ITERATOR *iterPtr)
 {
     Blt_Chain chain;
@@ -3750,7 +3750,7 @@ blt_table_column_iterate_objv(Tcl_Interp *interp, BLT_TABLE table, int objc,
 }
 
 void
-blt_table_column_iterate_all(BLT_TABLE table, BLT_TABLE_ITERATOR *iterPtr)
+blt_table_iterate_all_columns(BLT_TABLE table, BLT_TABLE_ITERATOR *iterPtr)
 {
     iterPtr->table = table;
     iterPtr->type = TABLE_ITERATOR_ALL;
@@ -3900,7 +3900,7 @@ blt_table_create_trace(
 }
 
 BLT_TABLE_TRACE
-blt_table_column_create_trace(
+blt_table_set_column_trace(
     Table *tablePtr,			/* Table to be traced. */
     Column *colPtr,			/* Cell in table. */
     unsigned int flags,			/* Bit mask indicating what actions to
@@ -4083,7 +4083,7 @@ blt_table_column_find_tag_table(Table *tablePtr, const char *tagName)
 /*
  *---------------------------------------------------------------------------
  *
- * blt_table_row_forget_tag --
+ * blt_table_forget_row_tag --
  *
  *	Removes a tag from the row tag table.  Row tags are contained in hash
  *	tables keyed by the tag name.  Each table is in turn hashed by the row
@@ -4099,7 +4099,7 @@ blt_table_column_find_tag_table(Table *tablePtr, const char *tagName)
  *---------------------------------------------------------------------------
  */
 int
-blt_table_row_forget_tag(Tcl_Interp *interp, Table *tablePtr, const char *tagName)
+blt_table_forget_row_tag(Tcl_Interp *interp, Table *tablePtr, const char *tagName)
 {
     Blt_HashEntry *hPtr;
     Blt_HashTable *tagTablePtr;
@@ -4125,7 +4125,7 @@ blt_table_row_forget_tag(Tcl_Interp *interp, Table *tablePtr, const char *tagNam
 /*
  *---------------------------------------------------------------------------
  *
- * blt_table_column_forget_tag --
+ * blt_table_forget_column_tag --
  *
  *	Removes a tag from the column tag table.  Column tags are contained in
  *	hash tables keyed by the tag name.  Each table is in turn hashed by
@@ -4141,7 +4141,7 @@ blt_table_row_forget_tag(Tcl_Interp *interp, Table *tablePtr, const char *tagNam
  *---------------------------------------------------------------------------
  */
 int
-blt_table_column_forget_tag(Tcl_Interp *interp, Table *tablePtr, 
+blt_table_forget_column_tag(Tcl_Interp *interp, Table *tablePtr, 
 			  const char *tagName)
 {
     Blt_HashEntry *hPtr;
@@ -4388,7 +4388,7 @@ blt_table_column_has_tag(Table *tablePtr, Column *colPtr, const char *tagName)
 /*
  *---------------------------------------------------------------------------
  *
- * blt_table_row_unset_tag --
+ * blt_table_unset_row_tag --
  *
  *	Removes a tag from a given row.  
  *
@@ -4403,7 +4403,7 @@ blt_table_column_has_tag(Table *tablePtr, Column *colPtr, const char *tagName)
  *---------------------------------------------------------------------------
  */
 int
-blt_table_row_unset_tag(Tcl_Interp *interp, Table *tablePtr, Row *rowPtr, 
+blt_table_unset_row_tag(Tcl_Interp *interp, Table *tablePtr, Row *rowPtr, 
 		      const char *tagName)
 {
     Blt_HashEntry *hPtr;
@@ -4430,7 +4430,7 @@ blt_table_row_unset_tag(Tcl_Interp *interp, Table *tablePtr, Row *rowPtr,
 /*
  *---------------------------------------------------------------------------
  *
- * blt_table_column_unset_tag --
+ * blt_table_unset_column_tag --
  *
  *	Removes a tag from a given column.  
  *
@@ -4445,7 +4445,7 @@ blt_table_row_unset_tag(Tcl_Interp *interp, Table *tablePtr, Row *rowPtr,
  *---------------------------------------------------------------------------
  */
 int
-blt_table_column_unset_tag(Tcl_Interp *interp, Table *tablePtr, Column *colPtr, 
+blt_table_unset_column_tag(Tcl_Interp *interp, Table *tablePtr, Column *colPtr, 
 			 const char *tagName)
 {
     Blt_HashEntry *hPtr;
@@ -4472,7 +4472,7 @@ blt_table_column_unset_tag(Tcl_Interp *interp, Table *tablePtr, Column *colPtr,
 /*
  *---------------------------------------------------------------------------
  *
- * blt_table_row_clear_tags --
+ * blt_table_clear_row_tags --
  *
  *	Removes all tags for a given row.  
  *
@@ -4485,7 +4485,7 @@ blt_table_column_unset_tag(Tcl_Interp *interp, Table *tablePtr, Column *colPtr,
  *---------------------------------------------------------------------------
  */
 void
-blt_table_row_clear_tags(Table *tablePtr, Row *rowPtr)
+blt_table_clear_row_tags(Table *tablePtr, Row *rowPtr)
 {
     ClearTags(tablePtr->rowTags, (Header *)rowPtr);
 }
@@ -4493,7 +4493,7 @@ blt_table_row_clear_tags(Table *tablePtr, Row *rowPtr)
 /*
  *---------------------------------------------------------------------------
  *
- * blt_table_column_clear_tags --
+ * blt_table_clear_column_tags --
  *
  *	Removes all tags for a given column.  
  *
@@ -4506,7 +4506,7 @@ blt_table_row_clear_tags(Table *tablePtr, Row *rowPtr)
  *---------------------------------------------------------------------------
  */
 void
-blt_table_column_clear_tags(Table *tablePtr, Column *colPtr)
+blt_table_clear_column_tags(Table *tablePtr, Column *colPtr)
 {
     ClearTags(tablePtr->columnTags, (Header *)colPtr);
 }
@@ -5255,7 +5255,7 @@ blt_table_value_exists(Table *tablePtr, Row *rowPtr, Column *colPtr)
 /*
  *---------------------------------------------------------------------------
  *
- * blt_table_row_extend --
+ * blt_table_extend_rows --
  *
  *	Adds new rows to the table.  Rows are slots in an array of Rows.  The
  *	array grows by doubling its size, so there may be more slots than
@@ -5272,7 +5272,7 @@ blt_table_value_exists(Table *tablePtr, Row *rowPtr, Column *colPtr)
  *---------------------------------------------------------------------------
  */
 int
-blt_table_row_extend(Tcl_Interp *interp, Table *tablePtr, size_t n, Row **rows)
+blt_table_extend_rows(Tcl_Interp *interp, Table *tablePtr, size_t n, Row **rows)
 {
     long i;
     Blt_Chain chain;
@@ -5312,8 +5312,8 @@ blt_table_row_delete(Table *tablePtr, Row *rowPtr)
     UnsetRowValues(tablePtr, rowPtr);
     TriggerColumnNotifiers(tablePtr, TABLE_NOTIFY_ALL,TABLE_NOTIFY_ROW_DELETED);
     TriggerRowNotifiers(tablePtr, rowPtr, TABLE_NOTIFY_ROW_DELETED);
-    blt_table_row_clear_tags(tablePtr, rowPtr);
-    blt_table_row_clear_traces(tablePtr, rowPtr);
+    blt_table_clear_row_tags(tablePtr, rowPtr);
+    blt_table_clear_row_traces(tablePtr, rowPtr);
     ClearRowNotifiers(tablePtr, rowPtr);
     tablePtr->flags |= TABLE_KEYS_DIRTY;
     return TCL_OK;
@@ -5324,7 +5324,7 @@ blt_table_row_create(Tcl_Interp *interp, BLT_TABLE table, const char *label)
 {
     Row *rowPtr;
 
-    if (blt_table_row_extend(interp, table, 1, &rowPtr) != TCL_OK) {
+    if (blt_table_extend_rows(interp, table, 1, &rowPtr) != TCL_OK) {
 	return NULL;
     }
     if (label != NULL) {
@@ -5364,7 +5364,7 @@ blt_table_row_move(Tcl_Interp *interp, Table *tablePtr, Row *srcPtr,
 }
 
 void
-blt_table_row_set_map(Table *tablePtr, Row **map)
+blt_table_set_row_map(Table *tablePtr, Row **map)
 {
     ReplaceMap(&tablePtr->corePtr->rows, (Header **)map);
     TriggerColumnNotifiers(tablePtr, TABLE_NOTIFY_ALL, TABLE_NOTIFY_ROW_MOVED);
@@ -5437,7 +5437,7 @@ blt_table_sort_rows_subset(Table *tablePtr, long numRows, BLT_TABLE_ROW *rows)
 }
 
 int
-blt_table_column_get_limits(Tcl_Interp *interp, Table *tablePtr, Column *colPtr,
+blt_table_get_column_limits(Tcl_Interp *interp, Table *tablePtr, Column *colPtr,
 			  Tcl_Obj **minObjPtrPtr, Tcl_Obj **maxObjPtrPtr)
 {
     Row *rowPtr, *minRowPtr, *maxRowPtr;
@@ -5445,11 +5445,11 @@ blt_table_column_get_limits(Tcl_Interp *interp, Table *tablePtr, Column *colPtr,
     if (blt_table_num_rows(tablePtr) == 0) {
 	return TCL_OK;
     }
-    rowPtr = blt_table_row_first(tablePtr);
+    rowPtr = blt_table_first_row(tablePtr);
     maxRowPtr = minRowPtr = rowPtr;
     sortData.table = tablePtr;
     for (/*empty*/; rowPtr != NULL; 
-		  rowPtr = blt_table_row_next(tablePtr, rowPtr)) {
+		  rowPtr = blt_table_next_row(tablePtr, rowPtr)) {
 	BLT_TABLE_COMPARE_PROC *proc;
 
 	proc = blt_table_get_compare_proc(tablePtr, colPtr, 0);
@@ -5492,8 +5492,8 @@ blt_table_column_delete(Table *tablePtr, Column *colPtr)
     UnsetColumnValues(tablePtr, colPtr);
     TriggerColumnNotifiers(tablePtr, colPtr, TABLE_NOTIFY_COLUMN_DELETED);
     TriggerRowNotifiers(tablePtr, TABLE_NOTIFY_ALL,TABLE_NOTIFY_COLUMN_DELETED);
-    blt_table_column_clear_traces(tablePtr, colPtr);
-    blt_table_column_clear_tags(tablePtr, colPtr);
+    blt_table_clear_column_traces(tablePtr, colPtr);
+    blt_table_clear_column_tags(tablePtr, colPtr);
     ClearColumnNotifiers(tablePtr, colPtr);
     DeleteHeader(&tablePtr->corePtr->columns, (Header *)colPtr);
     return TCL_OK;
@@ -5502,7 +5502,7 @@ blt_table_column_delete(Table *tablePtr, Column *colPtr)
 /*
  *---------------------------------------------------------------------------
  *
- * blt_table_column_extend --
+ * blt_table_extend_columns --
  *
  *	Adds new columns to the table.  Columns are slots in an array of
  *	Columns.  The array columns by doubling its size, so there may be more
@@ -5519,7 +5519,7 @@ blt_table_column_delete(Table *tablePtr, Column *colPtr)
  *---------------------------------------------------------------------------
  */
 int
-blt_table_column_extend(Tcl_Interp *interp, BLT_TABLE table, size_t n, 
+blt_table_extend_columns(Tcl_Interp *interp, BLT_TABLE table, size_t n, 
 			Column **cols)
 {
     size_t i;
@@ -5555,7 +5555,7 @@ blt_table_column_create(Tcl_Interp *interp, BLT_TABLE table, const char *label)
 {
     Column *colPtr;
 
-    if (blt_table_column_extend(interp, table, 1, &colPtr) != TCL_OK) {
+    if (blt_table_extend_columns(interp, table, 1, &colPtr) != TCL_OK) {
 	return NULL;
     }
     if (label != NULL) {
@@ -5568,7 +5568,7 @@ blt_table_column_create(Tcl_Interp *interp, BLT_TABLE table, const char *label)
 }
 
 void
-blt_table_column_set_map(Table *tablePtr, Column **map)
+blt_table_set_column_map(Table *tablePtr, Column **map)
 {
     TriggerRowNotifiers(tablePtr, TABLE_NOTIFY_ALL, TABLE_NOTIFY_COLUMN_MOVED);
     ReplaceMap(&tablePtr->corePtr->columns, (Header **)map);

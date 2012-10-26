@@ -822,7 +822,7 @@ NewTableDataSource(Tcl_Interp *interp, Mesh *meshPtr, const char *name,
     srcPtr->notifier = blt_table_column_create_notifier(interp, srcPtr->table,
 	srcPtr->column, TABLE_NOTIFY_COLUMN_CHANGED, TableNotifyProc, 
 	(BLT_TABLE_NOTIFIER_DELETE_PROC *)NULL, srcPtr);
-    srcPtr->trace = blt_table_column_create_trace(srcPtr->table, srcPtr->column,
+    srcPtr->trace = blt_table_set_column_trace(srcPtr->table, srcPtr->column,
 	TABLE_TRACE_WCU, TableTraceProc, (BLT_TABLE_TRACE_DELETE_PROC *)NULL, 
 	srcPtr);
     return (DataSource *)srcPtr;

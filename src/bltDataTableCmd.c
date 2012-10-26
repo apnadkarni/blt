@@ -709,7 +709,7 @@ PositionSwitch(
 	    return TCL_ERROR;
 	}
 	if (clientData == INSERT_AFTER) {
-	    col = blt_table_column_next(table, col);
+	    col = blt_table_next_column(table, col);
 	}
 	insertPtr->column = col;
     } else if (flags & INSERT_ROW) {
@@ -720,7 +720,7 @@ PositionSwitch(
 	    return TCL_ERROR;
 	}
 	if (clientData == INSERT_AFTER) {
-	    row = blt_table_row_next(table, row);
+	    row = blt_table_next_row(table, row);
 	}
 	insertPtr->row = row;
     }
@@ -784,7 +784,7 @@ blt_table_column_iter_switch_proc(
     if (Tcl_ListObjGetElements(interp, objPtr, &objc, &objv) != TCL_OK) {
 	return TCL_ERROR;
     }
-    if (blt_table_column_iterate_objv(interp, table, objc, objv, iterPtr)
+    if (blt_table_iterate_column_objv(interp, table, objc, objv, iterPtr)
 	!= TCL_OK) {
 	return TCL_ERROR;
     }
@@ -923,7 +923,7 @@ blt_table_row_iter_switch_proc(
     if (Tcl_ListObjGetElements(interp, objPtr, &objc, &objv) != TCL_OK) {
 	return TCL_ERROR;
     }
-    if (blt_table_row_iterate_objv(interp, table, objc, objv, iterPtr)
+    if (blt_table_iterate_row_objv(interp, table, objc, objv, iterPtr)
 	!= TCL_OK) {
 	return TCL_ERROR;
     }
@@ -1119,7 +1119,7 @@ MakeRows(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr)
 	    return TCL_ERROR;
 	}
 	n -= blt_table_num_rows(table) - 1;
-	blt_table_row_extend(interp, table, n, NULL);
+	blt_table_extend_rows(interp, table, n, NULL);
 	break;
     default:
 	return TCL_ERROR;
@@ -1131,7 +1131,7 @@ static int
 IterateRows(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr, 
 	    BLT_TABLE_ITERATOR *iterPtr)
 {
-    if (blt_table_row_iterate(interp, table, objPtr, iterPtr) != TCL_OK) {
+    if (blt_table_iterate_row(interp, table, objPtr, iterPtr) != TCL_OK) {
 	/* 
 	 * We could not parse the row descriptor. If the row specification is
 	 * a label or index that doesn't exist, create the new rows and try to
@@ -1140,7 +1140,7 @@ IterateRows(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr,
 	if (MakeRows(interp, table, objPtr) != TCL_OK) {
 	    return TCL_ERROR;
 	}
-	if (blt_table_row_iterate(interp, table, objPtr, iterPtr) != TCL_OK) {
+	if (blt_table_iterate_row(interp, table, objPtr, iterPtr) != TCL_OK) {
 	    return TCL_ERROR;
 	}
     }
@@ -1169,7 +1169,7 @@ MakeColumns(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr)
 	    return TCL_ERROR;
 	}
 	n -= blt_table_num_columns(table) - 1;
-	blt_table_column_extend(interp, table, n, NULL);
+	blt_table_extend_columns(interp, table, n, NULL);
 	break;
     default:
 	return TCL_ERROR;
@@ -1181,7 +1181,7 @@ static int
 IterateColumns(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr, 
 	       BLT_TABLE_ITERATOR *iterPtr)
 {
-    if (blt_table_column_iterate(interp, table, objPtr, iterPtr) != TCL_OK) {
+    if (blt_table_iterate_column(interp, table, objPtr, iterPtr) != TCL_OK) {
 	/* 
 	 * We could not parse column descriptor.  If the column specification
 	 * is a label that doesn't exist, create a new column with that label
@@ -1190,7 +1190,7 @@ IterateColumns(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr,
 	if (MakeColumns(interp, table, objPtr) != TCL_OK) {
 	    return TCL_ERROR;
 	}
-	if (blt_table_column_iterate(interp, table, objPtr, iterPtr) 
+	if (blt_table_iterate_column(interp, table, objPtr, iterPtr) 
 	    != TCL_OK) {
 	    return TCL_ERROR;
 	}
@@ -1777,8 +1777,8 @@ FindRows(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr,
 
     /* Now process each row, evaluating the expression. */
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
-    for (row = blt_table_row_first_tagged(&findPtr->iter); row != NULL; 
-	 row = blt_table_row_next_tagged(&findPtr->iter)) {
+    for (row = blt_table_first_tagged_row(&findPtr->iter); row != NULL; 
+	 row = blt_table_next_tagged_row(&findPtr->iter)) {
 	int bool;
 	
 	findPtr->row = row;
@@ -1830,7 +1830,7 @@ CopyColumn(Tcl_Interp *interp, BLT_TABLE srcTable, BLT_TABLE destTable,
 	long need;
 
 	need = (blt_table_num_rows(srcTable) - blt_table_num_rows(destTable));
-	if (blt_table_row_extend(interp, destTable, need, NULL) != TCL_OK) {
+	if (blt_table_extend_rows(interp, destTable, need, NULL) != TCL_OK) {
 	    return TCL_ERROR;
 	}
     }
@@ -1861,7 +1861,7 @@ CopyColumnTags(BLT_TABLE srcTable, BLT_TABLE destTable,
     Blt_HashSearch iter;
 
     /* Find all tags for with this column index. */
-    for (hPtr = blt_table_column_first_tag(srcTable, &iter); hPtr != NULL; 
+    for (hPtr = blt_table_first_column_tag(srcTable, &iter); hPtr != NULL; 
 	 hPtr = Blt_NextHashEntry(&iter)) {
 	Blt_HashTable *tablePtr;
 	Blt_HashEntry *h2Ptr;
@@ -1883,12 +1883,12 @@ ClearTable(BLT_TABLE table)
     BLT_TABLE_COLUMN col, nextCol;
     BLT_TABLE_ROW row, nextRow;
 
-    for (col = blt_table_column_first(table); col != NULL; col = nextCol) {
-	nextCol = blt_table_column_next(table, col);
+    for (col = blt_table_first_column(table); col != NULL; col = nextCol) {
+	nextCol = blt_table_next_column(table, col);
 	blt_table_column_delete(table, col);
     }
-    for (row = blt_table_row_first(table); row != NULL;  row = nextRow) {
-	nextRow = blt_table_row_next(table, row);
+    for (row = blt_table_first_row(table); row != NULL;  row = nextRow) {
+	nextRow = blt_table_next_row(table, row);
 	blt_table_row_delete(table, row);
     }
 }
@@ -1918,11 +1918,11 @@ CopyTable(Tcl_Interp *interp, BLT_TABLE srcTable, BLT_TABLE destTable)
     ClearTable(destTable);
     count = blt_table_num_columns(srcTable) - blt_table_num_columns(destTable);
     if (count > 0) {
-	blt_table_column_extend(interp, destTable, count, NULL);
+	blt_table_extend_columns(interp, destTable, count, NULL);
     }
     count = blt_table_num_rows(srcTable) - blt_table_num_rows(destTable);
     if (count > 0) {
-	blt_table_row_extend(interp, destTable, count, NULL);
+	blt_table_extend_rows(interp, destTable, count, NULL);
     }
     for (i = 0; i < blt_table_num_columns(srcTable); i++) {
 	BLT_TABLE_COLUMN src, dest;
@@ -2042,19 +2042,19 @@ ColumnJoinOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     switches.flags = 0;
     result = TCL_ERROR;
     columnIterSwitch.clientData = srcTable;
-    blt_table_column_iterate_all(srcTable, &switches.ci);
+    blt_table_iterate_all_columns(srcTable, &switches.ci);
     if (Blt_ParseSwitches(interp, joinSwitches, objc - 4, objv + 4, &switches, 
 	BLT_SWITCH_DEFAULTS | JOIN_COLUMN) < 0) {
 	goto error;
     }
     oldWidth = blt_table_num_columns(cmdPtr->table);
     extra = switches.ci.numEntries;
-    if (blt_table_column_extend(interp, cmdPtr->table, extra, NULL) != TCL_OK) {
+    if (blt_table_extend_columns(interp, cmdPtr->table, extra, NULL) != TCL_OK) {
 	goto error;
     }
     i = oldWidth;
-    for (srcCol = blt_table_column_first_tagged(&switches.ci); srcCol != NULL; 
-	 srcCol = blt_table_column_next_tagged(&switches.ci)) {
+    for (srcCol = blt_table_first_tagged_column(&switches.ci); srcCol != NULL; 
+	 srcCol = blt_table_next_tagged_column(&switches.ci)) {
 	const char *label;
 	BLT_TABLE_COLUMN dstCol;
 	BLT_TABLE_ROW srcRow;
@@ -2071,8 +2071,8 @@ ColumnJoinOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	srcType = blt_table_column_type(srcCol);
 	blt_table_column_set_type(cmdPtr->table, dstCol, srcType);
 
-	for (srcRow = blt_table_row_first(srcTable); srcRow != NULL; 
-	     srcRow = blt_table_row_next(srcTable, srcRow)) {
+	for (srcRow = blt_table_first_row(srcTable); srcRow != NULL; 
+	     srcRow = blt_table_next_row(srcTable, srcRow)) {
 	    BLT_TABLE_VALUE value;
 	    BLT_TABLE_ROW dstRow;
 
@@ -2082,7 +2082,7 @@ ColumnJoinOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 		/* If row doesn't exist in destination table, create a new
 		 * row, copying the label. */
 		
-		if (blt_table_column_extend(interp, cmdPtr->table, 1, &dstCol) 
+		if (blt_table_extend_columns(interp, cmdPtr->table, 1, &dstCol) 
 		    != TCL_OK) {
 		    goto error;
 		}
@@ -2137,15 +2137,15 @@ ColumnDeleteOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     int result;
 
     result = TCL_ERROR;
-    if (blt_table_column_iterate_objv(interp, cmdPtr->table, objc - 3, objv + 3, 
+    if (blt_table_iterate_column_objv(interp, cmdPtr->table, objc - 3, objv + 3, 
 	&iter) != TCL_OK) {
 	return TCL_ERROR;
     }
     /* 
      * Walk through the list of column offsets, deleting each column.
      */
-    for (col = blt_table_column_first_tagged(&iter); col != NULL; 
-	 col = blt_table_column_next_tagged(&iter)) {
+    for (col = blt_table_first_tagged_column(&iter); col != NULL; 
+	 col = blt_table_next_tagged_column(&iter)) {
 	if (blt_table_column_delete(cmdPtr->table, col) != TCL_OK) {
 	    goto error;
 	}
@@ -2184,13 +2184,13 @@ ColumnDupOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 
     table = cmdPtr->table;
     listObjPtr = NULL;
-    if (blt_table_column_iterate_objv(interp, table, objc - 3, objv + 3, &iter) 
+    if (blt_table_iterate_column_objv(interp, table, objc - 3, objv + 3, &iter) 
 	!= TCL_OK) {
 	goto error;
     }
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
-    for (src = blt_table_column_first_tagged(&iter); src != NULL; 
-	 src = blt_table_column_next_tagged(&iter)) {
+    for (src = blt_table_first_tagged_column(&iter); src != NULL; 
+	 src = blt_table_next_tagged_column(&iter)) {
 	long i;
 	BLT_TABLE_COLUMN dest;
 
@@ -2248,8 +2248,8 @@ ColumnEmptyOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     for (i = 0; i < blt_table_num_columns(cmdPtr->table); i++) {
 	BLT_TABLE_ROW row;
 	
-	for (row = blt_table_row_first(cmdPtr->table); row != NULL;
-	     row = blt_table_row_next(cmdPtr->table, row)) {
+	for (row = blt_table_first_row(cmdPtr->table); row != NULL;
+	     row = blt_table_next_row(cmdPtr->table, row)) {
 	    BLT_TABLE_VALUE value;
 
 	    value = blt_table_get_value(cmdPtr->table, row, col);
@@ -2273,7 +2273,7 @@ ColumnEmptyOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *	Indicates is the given column exists.  The column description can be
  *	either an index, label, or single tag.
  *
- *	Problem: The blt_table_column_iterate function checks both for
+ *	Problem: The blt_table_iterate_column function checks both for
  *		 1) valid/invalid indices, labels, and tags and 2) 
  *		 syntax errors.
  * 
@@ -2353,7 +2353,7 @@ ColumnExtendOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	return TCL_OK;
     }
     cols = Blt_AssertMalloc(n * sizeof(BLT_TABLE_COLUMN));
-    if (blt_table_column_extend(interp, table, n, cols) != TCL_OK) {
+    if (blt_table_extend_columns(interp, table, n, cols) != TCL_OK) {
 	goto error;
     }
     if (addLabels) {
@@ -2425,8 +2425,8 @@ ColumnGetOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     if (objc == 4) {
 	BLT_TABLE_ROW row;
 
-	for (row = blt_table_row_first(cmdPtr->table); row != NULL;
-	     row = blt_table_row_next(cmdPtr->table, row)) {
+	for (row = blt_table_first_row(cmdPtr->table); row != NULL;
+	     row = blt_table_next_row(cmdPtr->table, row)) {
 	    Tcl_Obj *objPtr;
 
 	    if (needLabels) {
@@ -2445,12 +2445,12 @@ ColumnGetOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	BLT_TABLE_ITERATOR iter;
 	BLT_TABLE_ROW row;
 
-	if (blt_table_row_iterate_objv(interp, table, objc - 4, objv + 4, &iter) 
+	if (blt_table_iterate_row_objv(interp, table, objc - 4, objv + 4, &iter) 
 	    != TCL_OK) {
 	    return TCL_ERROR;
 	}
-	for (row = blt_table_row_first_tagged(&iter); row != NULL; 
-	     row = blt_table_row_next_tagged(&iter)) {
+	for (row = blt_table_first_tagged_row(&iter); row != NULL; 
+	     row = blt_table_next_tagged_row(&iter)) {
 	    Tcl_Obj *objPtr;
 	    
 	    if (needLabels) {
@@ -2527,13 +2527,13 @@ ColumnIndicesOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     BLT_TABLE_ITERATOR iter;
     BLT_TABLE_COLUMN col;
 
-    if (blt_table_column_iterate_objv(interp, cmdPtr->table, objc - 3, objv + 3,
+    if (blt_table_iterate_column_objv(interp, cmdPtr->table, objc - 3, objv + 3,
 		&iter) != TCL_OK) {
 	return TCL_ERROR;
     }
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
-    for (col = blt_table_column_first_tagged(&iter); col != NULL; 
-	 col = blt_table_column_next_tagged(&iter)) {
+    for (col = blt_table_first_tagged_column(&iter); col != NULL; 
+	 col = blt_table_next_tagged_column(&iter)) {
 	Tcl_Obj *objPtr;
 
 	objPtr = Tcl_NewLongObj(blt_table_column_index(col));
@@ -2708,8 +2708,8 @@ ColumnLabelsOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	Tcl_Obj *listObjPtr;
 
 	listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
-	for (col = blt_table_column_first(cmdPtr->table); col != NULL;
-	     col = blt_table_column_next(cmdPtr->table, col)) {
+	for (col = blt_table_first_column(cmdPtr->table); col != NULL;
+	     col = blt_table_next_column(cmdPtr->table, col)) {
 	    const char *label;
 	    Tcl_Obj *objPtr;
 	    
@@ -2778,8 +2778,8 @@ ColumnCountOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	    return TCL_ERROR;
 	}
 	count = 0;		
-	for (row = blt_table_row_first(cmdPtr->table); row != NULL;
-	     row = blt_table_row_next(cmdPtr->table, row)) {
+	for (row = blt_table_first_row(cmdPtr->table); row != NULL;
+	     row = blt_table_next_row(cmdPtr->table, row)) {
 	    if (blt_table_value_exists(cmdPtr->table, row, col)) {
 		count++;
 	    }
@@ -2865,8 +2865,8 @@ ColumnNamesOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     BLT_TABLE_COLUMN col;
 
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
-    for (col = blt_table_column_first(cmdPtr->table); col != NULL;
-	 col = blt_table_column_next(cmdPtr->table, col)) {
+    for (col = blt_table_first_column(cmdPtr->table); col != NULL;
+	 col = blt_table_next_column(cmdPtr->table, col)) {
 	const char *label;
 	int match;
 	int i;
@@ -2927,8 +2927,8 @@ ColumnNonEmptyOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc,
     for (i = 0; i < blt_table_num_columns(cmdPtr->table); i++) {
 	BLT_TABLE_ROW row;
 	
-	for (row = blt_table_row_first(cmdPtr->table); row != NULL;
-	     row = blt_table_row_next(cmdPtr->table, row)) {
+	for (row = blt_table_first_row(cmdPtr->table); row != NULL;
+	     row = blt_table_next_row(cmdPtr->table, row)) {
 	    BLT_TABLE_VALUE value;
 
 	    value = blt_table_get_value(cmdPtr->table, row, col);
@@ -3077,8 +3077,8 @@ ColumnSetOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 		(char *)NULL);
 	return TCL_ERROR;
     }
-    for (col = blt_table_column_first_tagged(&iter); col != NULL; 
-	 col = blt_table_column_next_tagged(&iter)) {
+    for (col = blt_table_first_tagged_column(&iter); col != NULL; 
+	 col = blt_table_next_tagged_column(&iter)) {
 	long i;
 
 	/* The remaining arguments are index/value pairs. */
@@ -3131,11 +3131,11 @@ ColumnTagAddOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	BLT_TABLE_COLUMN col;
 	BLT_TABLE_ITERATOR iter;
 
-	if (blt_table_column_iterate(interp, table, objv[i], &iter) != TCL_OK) {
+	if (blt_table_iterate_column(interp, table, objv[i], &iter) != TCL_OK) {
 	    return TCL_ERROR;
 	}
-	for (col = blt_table_column_first_tagged(&iter); col != NULL; 
-	     col = blt_table_column_next_tagged(&iter)) {
+	for (col = blt_table_first_tagged_column(&iter); col != NULL; 
+	     col = blt_table_next_tagged_column(&iter)) {
 	    if (blt_table_column_set_tag(interp, table, col, tagName) != TCL_OK) {
 		return TCL_ERROR;
 	    }
@@ -3171,12 +3171,12 @@ ColumnTagDeleteOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc,
     for (i = 5; i < objc; i++) {
 	BLT_TABLE_COLUMN col;
 	
-	if (blt_table_column_iterate(interp, table, objv[i], &iter) != TCL_OK) {
+	if (blt_table_iterate_column(interp, table, objv[i], &iter) != TCL_OK) {
 	    return TCL_ERROR;
 	}
-	for (col = blt_table_column_first_tagged(&iter); col != NULL; 
-	     col = blt_table_column_next_tagged(&iter)) {
-	    if (blt_table_column_unset_tag(interp, table, col, tagName)!=TCL_OK) {
+	for (col = blt_table_first_tagged_column(&iter); col != NULL; 
+	     col = blt_table_next_tagged_column(&iter)) {
+	    if (blt_table_unset_column_tag(interp, table, col, tagName)!=TCL_OK) {
 		return TCL_ERROR;
 	    }
 	}
@@ -3242,7 +3242,7 @@ ColumnTagForgetOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc,
     int i;
 
     for (i = 4; i < objc; i++) {
-	if (blt_table_column_forget_tag(interp, cmdPtr->table, 
+	if (blt_table_forget_column_tag(interp, cmdPtr->table, 
 		Tcl_GetString(objv[i])) != TCL_OK) {
 	    return TCL_ERROR;
 	}
@@ -3274,7 +3274,7 @@ ColumnTagGetOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     Tcl_Obj *listObjPtr;
 
     table = cmdPtr->table;
-    if (blt_table_column_iterate(interp, table, objv[4], &iter) != TCL_OK) {
+    if (blt_table_iterate_column(interp, table, objv[4], &iter) != TCL_OK) {
 	return TCL_ERROR;
     }
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
@@ -3282,8 +3282,8 @@ ColumnTagGetOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     Blt_InitHashTable(&tagTable, BLT_STRING_KEYS);
     
     /* Collect all the tags into a hash table. */
-    for (col = blt_table_column_first_tagged(&iter); col != NULL; 
-	 col = blt_table_column_next_tagged(&iter)) {
+    for (col = blt_table_first_tagged_column(&iter); col != NULL; 
+	 col = blt_table_next_tagged_column(&iter)) {
 	Blt_Chain chain;
 	Blt_ChainLink link;
 
@@ -3541,18 +3541,18 @@ ColumnTagSearchOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc,
     Tcl_Obj *listObjPtr;
 
     table = cmdPtr->table;
-    if (blt_table_column_iterate(interp, table, objv[4], &iter) != TCL_OK) {
+    if (blt_table_iterate_column(interp, table, objv[4], &iter) != TCL_OK) {
 	return TCL_ERROR;
     }
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
-    for (hPtr = blt_table_column_first_tag(table, &cursor); hPtr != NULL; 
+    for (hPtr = blt_table_first_column_tag(table, &cursor); hPtr != NULL; 
 	hPtr = Blt_NextHashEntry(&cursor)) {
 	Blt_HashTable *tablePtr;
 	BLT_TABLE_COLUMN col;
 
 	tablePtr = Blt_GetHashValue(hPtr);
-	for (col = blt_table_column_first_tagged(&iter); col != NULL; 
-	     col = blt_table_column_next_tagged(&iter)) {
+	for (col = blt_table_first_tagged_column(&iter); col != NULL; 
+	     col = blt_table_next_tagged_column(&iter)) {
 	    Blt_HashEntry *h2Ptr;
 	
 	    h2Ptr = Blt_FindHashEntry(tablePtr, (char *)col);
@@ -3603,8 +3603,8 @@ ColumnTagSearchOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc,
 	    BLT_TABLE_COLUMN col, lastCol;
 	    
 	    lastCol = blt_table_get_column(table, blt_table_num_columns(table) - 1);
-	    for (col = blt_table_column_first_tagged(&iter); col != NULL; 
-		 col = blt_table_column_next_tagged(&iter)) {
+	    for (col = blt_table_first_tagged_column(&iter); col != NULL; 
+		 col = blt_table_next_tagged_column(&iter)) {
 		if (col == lastCol) {
 		    Tcl_ListObjAppendElement(interp, listObjPtr,
 			Tcl_NewStringObj("end", 3));
@@ -3638,7 +3638,7 @@ ColumnTagSetOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     int i;
 
     table = cmdPtr->table;
-    if (blt_table_column_iterate(interp, table, objv[4], &iter) != TCL_OK) {
+    if (blt_table_iterate_column(interp, table, objv[4], &iter) != TCL_OK) {
 	return TCL_ERROR;
     }
     for (i = 5; i < objc; i++) {
@@ -3646,8 +3646,8 @@ ColumnTagSetOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	BLT_TABLE_COLUMN col;
 
 	tagName = Tcl_GetString(objv[i]);
-	for (col = blt_table_column_first_tagged(&iter); col != NULL; 
-	     col = blt_table_column_next_tagged(&iter)) {
+	for (col = blt_table_first_tagged_column(&iter); col != NULL; 
+	     col = blt_table_next_tagged_column(&iter)) {
 	    if (blt_table_column_set_tag(interp, table, col, tagName) != TCL_OK) {
 		return TCL_ERROR;
 	    }
@@ -3679,7 +3679,7 @@ ColumnTagUnsetOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc,
     int i;
 
     table = cmdPtr->table;
-    if (blt_table_column_iterate(interp, table, objv[4], &iter) != TCL_OK) {
+    if (blt_table_iterate_column(interp, table, objv[4], &iter) != TCL_OK) {
 	return TCL_ERROR;
     }
     for (i = 5; i < objc; i++) {
@@ -3687,9 +3687,9 @@ ColumnTagUnsetOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc,
 	BLT_TABLE_COLUMN col;
 	
 	tagName = Tcl_GetString(objv[i]);
-	for (col = blt_table_column_first_tagged(&iter); col != NULL; 
-	     col = blt_table_column_next_tagged(&iter)) {
-	    if (blt_table_column_unset_tag(interp, table, col, tagName)!=TCL_OK) {
+	for (col = blt_table_first_tagged_column(&iter); col != NULL; 
+	     col = blt_table_next_tagged_column(&iter)) {
+	    if (blt_table_unset_column_tag(interp, table, col, tagName)!=TCL_OK) {
 		return TCL_ERROR;
 	    }
 	}
@@ -3782,7 +3782,7 @@ ColumnTraceOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     BLT_TABLE table;
 
     table = cmdPtr->table;
-    if (blt_table_column_iterate(interp, table, objv[3], &iter) != TCL_OK) {
+    if (blt_table_iterate_column(interp, table, objv[3], &iter) != TCL_OK) {
 	return TCL_ERROR;
     }
     flags = GetTraceFlags(Tcl_GetString(objv[4]));
@@ -3800,7 +3800,7 @@ ColumnTraceOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     }
     if ((iter.type == TABLE_ITERATOR_INDEX) || 
 	(iter.type == TABLE_ITERATOR_LABEL)) {
-	col = blt_table_column_first_tagged(&iter);
+	col = blt_table_first_tagged_column(&iter);
     } else {
 	tag = iter.tagName;
     } 
@@ -3875,7 +3875,7 @@ ColumnTypeOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     BLT_TABLE_COLUMN_TYPE type;
 
     table = cmdPtr->table;
-    if (blt_table_column_iterate(interp, table, objv[3], &iter) != TCL_OK) {
+    if (blt_table_iterate_column(interp, table, objv[3], &iter) != TCL_OK) {
 	return TCL_ERROR;
     }
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
@@ -3888,8 +3888,8 @@ ColumnTypeOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	    return TCL_ERROR;
 	}
     }
-    for (col = blt_table_column_first_tagged(&iter); col != NULL; 
-	 col = blt_table_column_next_tagged(&iter)) {
+    for (col = blt_table_first_tagged_column(&iter); col != NULL; 
+	 col = blt_table_next_tagged_column(&iter)) {
 	Tcl_Obj *objPtr;
 
 	if (objc == 5) {
@@ -3933,20 +3933,20 @@ ColumnUnsetOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     int result;
 
     table = cmdPtr->table;
-    if (blt_table_column_iterate(interp, table, objv[3], &cIter) != TCL_OK) {
+    if (blt_table_iterate_column(interp, table, objv[3], &cIter) != TCL_OK) {
 	return TCL_ERROR;
     }
-    if (blt_table_row_iterate_objv(interp, table, objc-4, objv+4 , &rIter) 
+    if (blt_table_iterate_row_objv(interp, table, objc-4, objv+4 , &rIter) 
 	!= TCL_OK) {
 	return TCL_ERROR;
     }
     result = TCL_ERROR;
-    for (col = blt_table_column_first_tagged(&cIter); col != NULL; 
-	 col = blt_table_column_next_tagged(&cIter)) {
+    for (col = blt_table_first_tagged_column(&cIter); col != NULL; 
+	 col = blt_table_next_tagged_column(&cIter)) {
 	BLT_TABLE_ROW row;
 
-	for (row = blt_table_row_first_tagged(&rIter); row != NULL;
-	     row = blt_table_row_next_tagged(&rIter)) {
+	for (row = blt_table_first_tagged_row(&rIter); row != NULL;
+	     row = blt_table_next_tagged_row(&rIter)) {
 	    if (blt_table_unset_value(table, row, col) != TCL_OK) {
 		goto error;
 	    }
@@ -3994,8 +3994,8 @@ ColumnValuesOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	Tcl_Obj *listObjPtr;
 
 	listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
-	for (row = blt_table_row_first(cmdPtr->table); row != NULL;
-	     row = blt_table_row_next(cmdPtr->table, row)) {
+	for (row = blt_table_first_row(cmdPtr->table); row != NULL;
+	     row = blt_table_next_row(cmdPtr->table, row)) {
 	    Tcl_Obj *objPtr;
 	    
 	    objPtr = blt_table_get_obj(cmdPtr->table, row, col);
@@ -4017,7 +4017,7 @@ ColumnValuesOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	    long needed;
 
 	    needed = elc - blt_table_num_rows(table);
-	    if (blt_table_row_extend(interp, table, needed, NULL) != TCL_OK) {
+	    if (blt_table_extend_rows(interp, table, needed, NULL) != TCL_OK) {
 		return TCL_ERROR;
 	    }
 	}
@@ -4110,7 +4110,7 @@ CopyRow(Tcl_Interp *interp, BLT_TABLE srcTable, BLT_TABLE destTable,
 
 	needed = blt_table_num_columns(srcTable) - 
 	    blt_table_num_columns(destTable);
-	if (blt_table_column_extend(interp, destTable, needed, NULL)!=TCL_OK) {
+	if (blt_table_extend_columns(interp, destTable, needed, NULL)!=TCL_OK) {
 	    return TCL_ERROR;
 	}
     }
@@ -4137,7 +4137,7 @@ CopyRowTags(BLT_TABLE srcTable, BLT_TABLE destTable,
     Blt_HashSearch iter;
 
     /* Find all tags for with this row index. */
-    for (hPtr = blt_table_row_first_tag(srcTable, &iter); hPtr != NULL; 
+    for (hPtr = blt_table_first_row_tag(srcTable, &iter); hPtr != NULL; 
 	 hPtr = Blt_NextHashEntry(&iter)) {
 	Blt_HashTable *tablePtr;
 	Blt_HashEntry *h2Ptr;
@@ -4247,8 +4247,8 @@ RowCountOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	    return TCL_ERROR;
 	}
 	count = 0;
-	for (col = blt_table_column_first(cmdPtr->table); col != NULL;
-	     col = blt_table_column_next(cmdPtr->table, col)) {
+	for (col = blt_table_first_column(cmdPtr->table); col != NULL;
+	     col = blt_table_next_column(cmdPtr->table, col)) {
 	    if (blt_table_value_exists(cmdPtr->table, row, col)) {
 		count++;
 	    }
@@ -4354,13 +4354,13 @@ RowDeleteOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     int result;
 
     result = TCL_ERROR;
-    if (blt_table_row_iterate_objv(interp, cmdPtr->table, objc - 3, objv + 3, 
+    if (blt_table_iterate_row_objv(interp, cmdPtr->table, objc - 3, objv + 3, 
 	&iter) != TCL_OK) {
 	goto error;
     }
     /* Walk through the list of row offsets, deleting each row. */
-    for (row = blt_table_row_first_tagged(&iter); row != NULL; 
-	 row = blt_table_row_next_tagged(&iter)) {
+    for (row = blt_table_first_tagged_row(&iter); row != NULL; 
+	 row = blt_table_next_tagged_row(&iter)) {
 	if (blt_table_row_delete(cmdPtr->table, row) != TCL_OK) {
 	    goto error;
 	}
@@ -4397,14 +4397,14 @@ RowDupOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     BLT_TABLE_ROW src;
     int result;
 
-    if (blt_table_row_iterate_objv(interp, cmdPtr->table, objc - 3, objv + 3, 
+    if (blt_table_iterate_row_objv(interp, cmdPtr->table, objc - 3, objv + 3, 
 	&iter) != TCL_OK) {
 	return TCL_ERROR;
     }
     result = TCL_ERROR;
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
-    for (src = blt_table_row_first_tagged(&iter); src != NULL; 
-	 src = blt_table_row_next_tagged(&iter)) {
+    for (src = blt_table_first_tagged_row(&iter); src != NULL; 
+	 src = blt_table_next_tagged_row(&iter)) {
 	const char *label;
 	long j;
 	BLT_TABLE_ROW dest;
@@ -4463,8 +4463,8 @@ RowEmptyOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     for (i = 0; i < blt_table_num_rows(cmdPtr->table); i++) {
 	BLT_TABLE_COLUMN col;
 	
-	for (col = blt_table_column_first(cmdPtr->table); col != NULL;
-	     col = blt_table_column_next(cmdPtr->table, col)) {
+	for (col = blt_table_first_column(cmdPtr->table); col != NULL;
+	     col = blt_table_next_column(cmdPtr->table, col)) {
 	    BLT_TABLE_VALUE value;
 
 	    value = blt_table_get_value(cmdPtr->table, row, col);
@@ -4550,7 +4550,7 @@ RowExtendOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	return TCL_ERROR;
     }
     rows = Blt_AssertMalloc(n * sizeof(BLT_TABLE_ROW));
-    if (blt_table_row_extend(interp, cmdPtr->table, n, rows) != TCL_OK) {
+    if (blt_table_extend_rows(interp, cmdPtr->table, n, rows) != TCL_OK) {
 	Blt_Free(rows);
 	goto error;
     }
@@ -4623,8 +4623,8 @@ RowGetOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     if (objc == 4) {
 	BLT_TABLE_COLUMN col;
 
-	for (col = blt_table_column_first(table); col != NULL;
-	     col = blt_table_column_next(table, col)) {
+	for (col = blt_table_first_column(table); col != NULL;
+	     col = blt_table_next_column(table, col)) {
 	    Tcl_Obj *objPtr;
 	    
 	    if (needLabels) {
@@ -4643,12 +4643,12 @@ RowGetOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	BLT_TABLE_ITERATOR iter;
 	BLT_TABLE_COLUMN col;
 
-	if (blt_table_column_iterate_objv(interp, table, objc - 4, objv + 4, 
+	if (blt_table_iterate_column_objv(interp, table, objc - 4, objv + 4, 
 		&iter) != TCL_OK) {
 	    return TCL_ERROR;
 	}
-	for (col = blt_table_column_first_tagged(&iter); col != NULL; 
-	     col = blt_table_column_next_tagged(&iter)) {
+	for (col = blt_table_first_tagged_column(&iter); col != NULL; 
+	     col = blt_table_next_tagged_column(&iter)) {
 	    Tcl_Obj *objPtr;
 	    
 	    if (needLabels) {
@@ -4725,13 +4725,13 @@ RowIndicesOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     BLT_TABLE_ROW row;
     Tcl_Obj *listObjPtr;
 
-    if (blt_table_row_iterate_objv(interp, cmdPtr->table, objc - 3, objv + 3, 
+    if (blt_table_iterate_row_objv(interp, cmdPtr->table, objc - 3, objv + 3, 
 	&iter) != TCL_OK) {
 	return TCL_ERROR;
     }
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
-    for (row = blt_table_row_first_tagged(&iter); row != NULL; 
-	 row = blt_table_row_next_tagged(&iter)) {
+    for (row = blt_table_first_tagged_row(&iter); row != NULL; 
+	 row = blt_table_next_tagged_row(&iter)) {
 	Tcl_Obj *objPtr;
 
 	objPtr = Tcl_NewLongObj(blt_table_row_index(row));
@@ -4777,19 +4777,19 @@ RowJoinOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     /* Process switches following the column names. */
     rowIterSwitch.clientData = srcTable;
     switches.flags = 0;
-    blt_table_row_iterate_all(srcTable, &switches.ri);
+    blt_table_iterate_all_rows(srcTable, &switches.ri);
     if (Blt_ParseSwitches(interp, joinSwitches, objc - 4, objv + 4, &switches, 
 	BLT_SWITCH_DEFAULTS | JOIN_ROW) < 0) {
 	goto error;
     }
     oldDstLen = blt_table_num_rows(cmdPtr->table);
     count = switches.ri.numEntries;
-    if (blt_table_row_extend(interp, cmdPtr->table, count, NULL)
+    if (blt_table_extend_rows(interp, cmdPtr->table, count, NULL)
 	!= TCL_OK) {
 	goto error;
     }
-    for (srcCol = blt_table_column_first(srcTable); srcCol != NULL; 
-	 srcCol = blt_table_column_next(srcTable, srcCol)) {
+    for (srcCol = blt_table_first_column(srcTable); srcCol != NULL; 
+	 srcCol = blt_table_next_column(srcTable, srcCol)) {
 	const char *label;
 	BLT_TABLE_COLUMN dstCol;
 	BLT_TABLE_ROW srcRow;
@@ -4802,7 +4802,7 @@ RowJoinOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	    /* If column doesn't exist in destination table, create a new
 	     * column, copying the label and the column type. */
 
-	    if (blt_table_column_extend(interp, cmdPtr->table, 1, &dstCol) 
+	    if (blt_table_extend_columns(interp, cmdPtr->table, 1, &dstCol) 
 		!= TCL_OK) {
 		goto error;
 	    }
@@ -4814,8 +4814,8 @@ RowJoinOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 		blt_table_column_type(srcCol));
 	}
 	i = oldDstLen;
-	for (srcRow = blt_table_row_first_tagged(&switches.ri); srcRow != NULL; 
-	     srcRow = blt_table_row_next_tagged(&switches.ri)) {
+	for (srcRow = blt_table_first_tagged_row(&switches.ri); srcRow != NULL; 
+	     srcRow = blt_table_next_tagged_row(&switches.ri)) {
 	    BLT_TABLE_VALUE value;
 	    BLT_TABLE_ROW dstRow;
 
@@ -4932,8 +4932,8 @@ RowLabelsOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	Tcl_Obj *listObjPtr;
 
 	listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
-	for (row = blt_table_row_first(table); row != NULL;
-	     row = blt_table_row_next(table, row)) {
+	for (row = blt_table_first_row(table); row != NULL;
+	     row = blt_table_next_row(table, row)) {
 	    Tcl_Obj *objPtr;
 	    
 	    objPtr = Tcl_NewStringObj(blt_table_row_label(row), -1);
@@ -4950,8 +4950,8 @@ RowLabelsOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	    return TCL_ERROR;
 	}
 	n = MIN(elc, blt_table_num_rows(table));
-	for (i = 0, row = blt_table_row_first(table); (row != NULL) && (i < n); 
-	     row = blt_table_row_next(table, row), i++) {
+	for (i = 0, row = blt_table_first_row(table); (row != NULL) && (i < n); 
+	     row = blt_table_next_row(table, row), i++) {
 	    const char *label;
 
 	    label = Tcl_GetString(elv[i]);
@@ -5042,8 +5042,8 @@ RowNamesOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 
     table = cmdPtr->table;
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
-    for (row = blt_table_row_first(table); row != NULL;
-	 row = blt_table_row_next(table, row)) {
+    for (row = blt_table_first_row(table); row != NULL;
+	 row = blt_table_next_row(table, row)) {
 	const char *label;
 	int match;
 	int i;
@@ -5102,8 +5102,8 @@ RowNonEmptyOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     for (i = 0; i < blt_table_num_rows(cmdPtr->table); i++) {
 	BLT_TABLE_COLUMN col;
 	
-	for (col = blt_table_column_first(cmdPtr->table); col != NULL;
-	     col = blt_table_column_next(cmdPtr->table, col)) {
+	for (col = blt_table_first_column(cmdPtr->table); col != NULL;
+	     col = blt_table_next_column(cmdPtr->table, col)) {
 	    BLT_TABLE_VALUE value;
 
 	    value = blt_table_get_value(cmdPtr->table, row, col);
@@ -5254,8 +5254,8 @@ RowSetOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 			 (char *)NULL);
 	return TCL_ERROR;
     }
-    for (row = blt_table_row_first_tagged(&iter); row != NULL; 
-	 row = blt_table_row_next_tagged(&iter)) {
+    for (row = blt_table_first_tagged_row(&iter); row != NULL; 
+	 row = blt_table_next_tagged_row(&iter)) {
 	long i;
 
 	/* The remaining arguments are index/value pairs. */
@@ -5308,11 +5308,11 @@ RowTagAddOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	BLT_TABLE_ROW row;
 	BLT_TABLE_ITERATOR iter;
 
-	if (blt_table_row_iterate(interp, table, objv[i], &iter) != TCL_OK) {
+	if (blt_table_iterate_row(interp, table, objv[i], &iter) != TCL_OK) {
 	    return TCL_ERROR;
 	}
-	for (row = blt_table_row_first_tagged(&iter); row != NULL; 
-	     row = blt_table_row_next_tagged(&iter)) {
+	for (row = blt_table_first_tagged_row(&iter); row != NULL; 
+	     row = blt_table_next_tagged_row(&iter)) {
 	    if (blt_table_row_set_tag(interp, table, row, tagName) != TCL_OK) {
 		return TCL_ERROR;
 	    }
@@ -5348,12 +5348,12 @@ RowTagDeleteOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     for (i = 5; i < objc; i++) {
 	BLT_TABLE_ROW row;
 	
-	if (blt_table_row_iterate(interp, table, objv[i], &iter) != TCL_OK) {
+	if (blt_table_iterate_row(interp, table, objv[i], &iter) != TCL_OK) {
 	    return TCL_ERROR;
 	}
-	for (row = blt_table_row_first_tagged(&iter); row != NULL; 
-	     row = blt_table_row_next_tagged(&iter)) {
-	    if (blt_table_row_unset_tag(interp, table, row, tagName)!=TCL_OK) {
+	for (row = blt_table_first_tagged_row(&iter); row != NULL; 
+	     row = blt_table_next_tagged_row(&iter)) {
+	    if (blt_table_unset_row_tag(interp, table, row, tagName)!=TCL_OK) {
 		return TCL_ERROR;
 	    }
 	}
@@ -5416,7 +5416,7 @@ RowTagForgetOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 
     table = cmdPtr->table;
     for (i = 4; i < objc; i++) {
-	if (blt_table_row_forget_tag(interp, table, Tcl_GetString(objv[i])) 
+	if (blt_table_forget_row_tag(interp, table, Tcl_GetString(objv[i])) 
 	    != TCL_OK) {
 	    return TCL_ERROR;
 	}
@@ -5448,7 +5448,7 @@ RowTagGetOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     Tcl_Obj *listObjPtr;
 
     table = cmdPtr->table;
-    if (blt_table_row_iterate(interp, table, objv[4], &iter) != TCL_OK) {
+    if (blt_table_iterate_row(interp, table, objv[4], &iter) != TCL_OK) {
 	return TCL_ERROR;
     }
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
@@ -5456,8 +5456,8 @@ RowTagGetOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     Blt_InitHashTable(&tagTable, BLT_STRING_KEYS);
     
     /* Collect all the tags into a hash table. */
-    for (row = blt_table_row_first_tagged(&iter); row != NULL; 
-	 row = blt_table_row_next_tagged(&iter)) {
+    for (row = blt_table_first_tagged_row(&iter); row != NULL; 
+	 row = blt_table_next_tagged_row(&iter)) {
 	Blt_Chain chain;
 	Blt_ChainLink link;
 
@@ -5703,18 +5703,18 @@ RowTagSearchOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     Tcl_Obj *listObjPtr;
 
     table = cmdPtr->table;
-    if (blt_table_row_iterate(interp, table, objv[4], &iter) != TCL_OK) {
+    if (blt_table_iterate_row(interp, table, objv[4], &iter) != TCL_OK) {
 	return TCL_ERROR;
     }
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
-    for (hPtr = blt_table_row_first_tag(table, &cursor); hPtr != NULL; 
+    for (hPtr = blt_table_first_row_tag(table, &cursor); hPtr != NULL; 
 	hPtr = Blt_NextHashEntry(&cursor)) {
 	Blt_HashTable *tablePtr;
 	BLT_TABLE_ROW row;
 	
 	tablePtr = Blt_GetHashValue(hPtr);
-	for (row = blt_table_row_first_tagged(&iter); row != NULL; 
-	     row = blt_table_row_next_tagged(&iter)) {
+	for (row = blt_table_first_tagged_row(&iter); row != NULL; 
+	     row = blt_table_next_tagged_row(&iter)) {
 	    Blt_HashEntry *h2Ptr;
 	
 	    h2Ptr = Blt_FindHashEntry(tablePtr, (char *)row);
@@ -5765,8 +5765,8 @@ RowTagSearchOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	    BLT_TABLE_ROW row, lastRow;
 	    
 	    lastRow = blt_table_get_row(table, blt_table_num_rows(table) - 1);
-	    for (row = blt_table_row_first_tagged(&iter); row != NULL; 
-		 row = blt_table_row_next_tagged(&iter)) {
+	    for (row = blt_table_first_tagged_row(&iter); row != NULL; 
+		 row = blt_table_next_tagged_row(&iter)) {
 		if (row == lastRow) {
 		    Tcl_ListObjAppendElement(interp, listObjPtr,
 			Tcl_NewStringObj("end", 3));
@@ -5798,7 +5798,7 @@ RowTagSetOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     int i;
 
     table = cmdPtr->table;
-    if (blt_table_row_iterate(interp, table, objv[4], &iter) != TCL_OK) {
+    if (blt_table_iterate_row(interp, table, objv[4], &iter) != TCL_OK) {
 	return TCL_ERROR;
     }
     for (i = 5; i < objc; i++) {
@@ -5806,8 +5806,8 @@ RowTagSetOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	BLT_TABLE_ROW row;
 
 	tagName = Tcl_GetString(objv[i]);
-	for (row = blt_table_row_first_tagged(&iter); row != NULL; 
-	     row = blt_table_row_next_tagged(&iter)) {
+	for (row = blt_table_first_tagged_row(&iter); row != NULL; 
+	     row = blt_table_next_tagged_row(&iter)) {
 	    if (blt_table_row_set_tag(interp, table, row, tagName) != TCL_OK) {
 		return TCL_ERROR;
 	    }
@@ -5836,7 +5836,7 @@ RowTagUnsetOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     int i;
 
     table = cmdPtr->table;
-    if (blt_table_row_iterate(interp, table, objv[4], &iter) != TCL_OK) {
+    if (blt_table_iterate_row(interp, table, objv[4], &iter) != TCL_OK) {
 	return TCL_ERROR;
     }
     for (i = 5; i < objc; i++) {
@@ -5844,9 +5844,9 @@ RowTagUnsetOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	BLT_TABLE_ROW row;
 	
 	tagName = Tcl_GetString(objv[i]);
-	for (row = blt_table_row_first_tagged(&iter); row != NULL; 
-	     row = blt_table_row_next_tagged(&iter)) {
-	    if (blt_table_row_unset_tag(interp, table, row, tagName)!=TCL_OK) {
+	for (row = blt_table_first_tagged_row(&iter); row != NULL; 
+	     row = blt_table_next_tagged_row(&iter)) {
+	    if (blt_table_unset_row_tag(interp, table, row, tagName)!=TCL_OK) {
 		return TCL_ERROR;
 	    }
 	}
@@ -5938,7 +5938,7 @@ RowTraceOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     BLT_TABLE_ROW row;
 
     table = cmdPtr->table;
-    if (blt_table_row_iterate(interp, table, objv[3], &iter) != TCL_OK) {
+    if (blt_table_iterate_row(interp, table, objv[3], &iter) != TCL_OK) {
 	return TCL_ERROR;
     }
     flags = GetTraceFlags(Tcl_GetString(objv[4]));
@@ -5956,7 +5956,7 @@ RowTraceOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     }
     if ((iter.type == TABLE_ITERATOR_INDEX) || 
 	(iter.type == TABLE_ITERATOR_LABEL)) {
-	row = blt_table_row_first_tagged(&iter);
+	row = blt_table_first_tagged_row(&iter);
     } else {
 	tag = iter.tagName;
     }
@@ -6028,20 +6028,20 @@ RowUnsetOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     int result;
 
     table = cmdPtr->table;
-    if (blt_table_row_iterate(interp, table, objv[3], &rIter) != TCL_OK) {
+    if (blt_table_iterate_row(interp, table, objv[3], &rIter) != TCL_OK) {
 	return TCL_ERROR;
     }
-    if (blt_table_column_iterate_objv(interp, table, objc-4, objv+4 , &cIter) 
+    if (blt_table_iterate_column_objv(interp, table, objc-4, objv+4 , &cIter) 
 	!= TCL_OK) {
 	return TCL_ERROR;
     }
     result = TCL_ERROR;
-    for (col = blt_table_column_first_tagged(&cIter); col != NULL; 
-	 col = blt_table_column_next_tagged(&cIter)) {
+    for (col = blt_table_first_tagged_column(&cIter); col != NULL; 
+	 col = blt_table_next_tagged_column(&cIter)) {
 	BLT_TABLE_ROW row;
 
-	for (row = blt_table_row_first_tagged(&rIter); row != NULL;
-	     row = blt_table_row_next_tagged(&rIter)) {
+	for (row = blt_table_first_tagged_row(&rIter); row != NULL;
+	     row = blt_table_next_tagged_row(&rIter)) {
 	    if (blt_table_unset_value(table, row, col) != TCL_OK) {
 		goto error;
 	    }
@@ -6088,8 +6088,8 @@ RowValuesOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	BLT_TABLE_COLUMN col;
 
 	listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
-	for (col = blt_table_column_first(cmdPtr->table); col != NULL;
-	     col = blt_table_column_next(cmdPtr->table, col)) {
+	for (col = blt_table_first_column(cmdPtr->table); col != NULL;
+	     col = blt_table_next_column(cmdPtr->table, col)) {
 	    Tcl_Obj *objPtr;
 	    
 	    objPtr = blt_table_get_obj(cmdPtr->table, row, col);
@@ -6111,7 +6111,7 @@ RowValuesOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	    long n;
 
 	    n = elc - blt_table_num_columns(table);
-	    if (blt_table_column_extend(interp, table, n, NULL) != TCL_OK) {
+	    if (blt_table_extend_columns(interp, table, n, NULL) != TCL_OK) {
 		return TCL_ERROR;
 	    }
 	}
@@ -6220,19 +6220,19 @@ AddOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     result = TCL_ERROR;
     rowIterSwitch.clientData = srcTable;
     columnIterSwitch.clientData = srcTable;
-    blt_table_row_iterate_all(srcTable, &switches.ri);
-    blt_table_column_iterate_all(srcTable, &switches.ci);
+    blt_table_iterate_all_rows(srcTable, &switches.ri);
+    blt_table_iterate_all_columns(srcTable, &switches.ci);
     if (Blt_ParseSwitches(interp, addSwitches, objc - 3, objv + 3, 
 	&switches, BLT_SWITCH_DEFAULTS) < 0) {
 	goto error;
     }
     oldLength = blt_table_num_rows(cmdPtr->table);
     count = switches.ri.numEntries;
-    if (blt_table_row_extend(interp, cmdPtr->table, count, NULL) != TCL_OK) {
+    if (blt_table_extend_rows(interp, cmdPtr->table, count, NULL) != TCL_OK) {
 	goto error;
     }
-    for (srcCol = blt_table_column_first_tagged(&switches.ci); srcCol != NULL; 
-	 srcCol = blt_table_column_next_tagged(&switches.ci)) {
+    for (srcCol = blt_table_first_tagged_column(&switches.ci); srcCol != NULL; 
+	 srcCol = blt_table_next_tagged_column(&switches.ci)) {
 	const char *label;
 	BLT_TABLE_COLUMN dstCol;
 	BLT_TABLE_ROW srcRow;
@@ -6243,7 +6243,7 @@ AddOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	if (dstCol == NULL) {
 	    /* If column doesn't exist in destination table, create a new
 	     * column, copying the label and the column type. */
-	    if (blt_table_column_extend(interp, cmdPtr->table, 1, &dstCol) 
+	    if (blt_table_extend_columns(interp, cmdPtr->table, 1, &dstCol) 
 		!= TCL_OK) {
 		goto error;
 	    }
@@ -6255,8 +6255,8 @@ AddOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 		blt_table_column_type(srcCol));
 	}
 	i = oldLength;
-	for (srcRow = blt_table_row_first_tagged(&switches.ri); srcRow != NULL; 
-	     srcRow = blt_table_row_next_tagged(&switches.ri)) {
+	for (srcRow = blt_table_first_tagged_row(&switches.ri); srcRow != NULL; 
+	     srcRow = blt_table_next_tagged_row(&switches.ri)) {
 	    BLT_TABLE_VALUE value;
 	    BLT_TABLE_ROW dstRow;
 
@@ -6326,12 +6326,12 @@ AppendOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     if (extra == 0) {
 	return TCL_OK;
     }
-    for (col = blt_table_column_first_tagged(&ci); col != NULL; 
-	 col = blt_table_column_next_tagged(&ci)) {
+    for (col = blt_table_first_tagged_column(&ci); col != NULL; 
+	 col = blt_table_next_tagged_column(&ci)) {
 	BLT_TABLE_ROW row;
 	
-	for (row = blt_table_row_first_tagged(&ri); row != NULL; 
-	     row = blt_table_row_next_tagged(&ri)) {
+	for (row = blt_table_first_tagged_row(&ri); row != NULL; 
+	     row = blt_table_next_tagged_row(&ri)) {
 	    int i;
 
 	    for (i = 4; i < objc; i++) {
@@ -6690,12 +6690,12 @@ LappendOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     if (IterateColumns(interp, table, objv[3], &ci) != TCL_OK) {
 	return TCL_ERROR;
     }
-    for (col = blt_table_column_first_tagged(&ci); col != NULL; 
-	 col = blt_table_column_next_tagged(&ci)) {
+    for (col = blt_table_first_tagged_column(&ci); col != NULL; 
+	 col = blt_table_next_tagged_column(&ci)) {
 	BLT_TABLE_ROW row;
 	
-	for (row = blt_table_row_first_tagged(&ri); row != NULL; 
-	     row = blt_table_row_next_tagged(&ri)) {
+	for (row = blt_table_first_tagged_row(&ri); row != NULL; 
+	     row = blt_table_next_tagged_row(&ri)) {
 	    Tcl_Obj *listObjPtr;
 	    int i, result;
 
@@ -7033,8 +7033,8 @@ NumColumnsOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	if (count < blt_table_num_columns(table)) {
 	    BLT_TABLE_COLUMN col, next;
 
-	    for (col = blt_table_column_first(table); col != NULL; col = next) {
-		next = blt_table_column_next(table, col);
+	    for (col = blt_table_first_column(table); col != NULL; col = next) {
+		next = blt_table_next_column(table, col);
 		if (blt_table_column_index(col) >= count) {
 		    blt_table_column_delete(table, col);
 		}
@@ -7043,7 +7043,7 @@ NumColumnsOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	    long extra;
 
 	    extra = count - blt_table_num_columns(table);
-	    blt_table_column_extend(interp, table, extra, NULL);
+	    blt_table_extend_columns(interp, table, extra, NULL);
 	}
     }
     Tcl_SetObjResult(interp, Tcl_NewLongObj(blt_table_num_columns(table)));
@@ -7080,8 +7080,8 @@ NumRowsOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	if (count < blt_table_num_rows(table)) {
 	    BLT_TABLE_ROW row, next;
 
-	    for (row = blt_table_row_first(table); row != NULL; row = next) {
-		next = blt_table_row_next(table, row);
+	    for (row = blt_table_first_row(table); row != NULL; row = next) {
+		next = blt_table_next_row(table, row);
 		if (blt_table_row_index(row) >= count) {
 		    blt_table_row_delete(table, row);
 		}
@@ -7090,7 +7090,7 @@ NumRowsOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	    long extra;
 
 	    extra = count - blt_table_num_rows(table);
-	    blt_table_row_extend(interp, table, extra, NULL);
+	    blt_table_extend_rows(interp, table, extra, NULL);
 	}
     }
     Tcl_SetObjResult(interp, Tcl_NewLongObj(blt_table_num_rows(table)));
@@ -7238,7 +7238,7 @@ SortOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	Blt_Free(map);
     } else {
 	/* Make row order permanent. */
-	blt_table_row_set_map(table, map);
+	blt_table_set_row_map(table, map);
     }
     if (order != NULL) {
 	Blt_Free(order);
@@ -7296,11 +7296,11 @@ MinMaxOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     if (objc == 2) {
 	BLT_TABLE_COLUMN col;
 
-	for (col = blt_table_column_first(table); col != NULL;
-	     col = blt_table_column_next(table, col)) {
+	for (col = blt_table_first_column(table); col != NULL;
+	     col = blt_table_next_column(table, col)) {
 	    Tcl_Obj *minObjPtr, *maxObjPtr;
 
-	    if (blt_table_column_get_limits(interp, table, col, &minObjPtr, 
+	    if (blt_table_get_column_limits(interp, table, col, &minObjPtr, 
 					  &maxObjPtr) != TCL_OK) {
 		return TCL_ERROR;
 	    }
@@ -7315,14 +7315,14 @@ MinMaxOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	BLT_TABLE_ITERATOR ci;
 	BLT_TABLE_COLUMN col;
 
-	if (blt_table_column_iterate(interp, table, objv[2], &ci) != TCL_OK) {
+	if (blt_table_iterate_column(interp, table, objv[2], &ci) != TCL_OK) {
 	    return TCL_ERROR;
 	}
-	for (col = blt_table_column_first_tagged(&ci); col != NULL; 
-	     col = blt_table_column_next_tagged(&ci)) {
+	for (col = blt_table_first_tagged_column(&ci); col != NULL; 
+	     col = blt_table_next_tagged_column(&ci)) {
 	    Tcl_Obj *minObjPtr, *maxObjPtr;
 
-	    if (blt_table_column_get_limits(interp, table, col, &minObjPtr, 
+	    if (blt_table_get_column_limits(interp, table, col, &minObjPtr, 
 			&maxObjPtr) != TCL_OK) {
 		return TCL_ERROR;
 	    }
@@ -7377,10 +7377,10 @@ TraceCreateOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     BLT_TABLE_COLUMN col;
     
     table = cmdPtr->table;
-    if (blt_table_row_iterate(interp, table, objv[3], &ri) != TCL_OK) {
+    if (blt_table_iterate_row(interp, table, objv[3], &ri) != TCL_OK) {
 	return TCL_ERROR;
     }
-    if (blt_table_column_iterate(interp, table, objv[4], &ci) != TCL_OK) {
+    if (blt_table_iterate_column(interp, table, objv[4], &ci) != TCL_OK) {
 	return TCL_ERROR;
     }
     flags = GetTraceFlags(Tcl_GetString(objv[5]));
@@ -7404,13 +7404,13 @@ TraceCreateOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     }
     if ((ri.type == TABLE_ITERATOR_INDEX) || 
 	(ri.type == TABLE_ITERATOR_LABEL)) {
-	row = blt_table_row_first_tagged(&ri);
+	row = blt_table_first_tagged_row(&ri);
     } else {
 	rowTag = ri.tagName;
     }
     if ((ci.type == TABLE_ITERATOR_INDEX) || 
 	(ci.type == TABLE_ITERATOR_LABEL)) {
-	col = blt_table_column_first_tagged(&ci);
+	col = blt_table_first_tagged_column(&ci);
     } else {
 	colTag = ci.tagName;
     }
@@ -7655,12 +7655,12 @@ SetOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	if (IterateColumns(interp, table, objv[i + 1], &ci) != TCL_OK) {
 	    return TCL_ERROR;
 	}
-	for (col = blt_table_column_first_tagged(&ci); col != NULL; 
-	     col = blt_table_column_next_tagged(&ci)) {
+	for (col = blt_table_first_tagged_column(&ci); col != NULL; 
+	     col = blt_table_next_tagged_column(&ci)) {
 	    BLT_TABLE_ROW row;
 
-	    for (row = blt_table_row_first_tagged(&ri); row != NULL; 
-		 row = blt_table_row_next_tagged(&ri)) {
+	    for (row = blt_table_first_tagged_row(&ri); row != NULL; 
+		 row = blt_table_next_tagged_row(&ri)) {
 		if (blt_table_set_obj(table, row, col, objv[i+2]) != TCL_OK) {
 		    return TCL_ERROR;
 		}
@@ -7706,18 +7706,18 @@ UnsetOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	BLT_TABLE_ITERATOR ri, ci;
 	BLT_TABLE_COLUMN col;
 
-	if (blt_table_row_iterate(NULL, table, objv[i], &ri) != TCL_OK) {
+	if (blt_table_iterate_row(NULL, table, objv[i], &ri) != TCL_OK) {
 	    return TCL_OK;
 	}
-	if (blt_table_column_iterate(NULL, table, objv[i+1], &ci) != TCL_OK) {
+	if (blt_table_iterate_column(NULL, table, objv[i+1], &ci) != TCL_OK) {
 	    return TCL_OK;
 	}
-	for (col = blt_table_column_first_tagged(&ci); col != NULL; 
-	     col = blt_table_column_next_tagged(&ci)) {
+	for (col = blt_table_first_tagged_column(&ci); col != NULL; 
+	     col = blt_table_next_tagged_column(&ci)) {
 	    BLT_TABLE_ROW row;
 
-	    for (row = blt_table_row_first_tagged(&ri); row != NULL; 
-		 row = blt_table_row_next_tagged(&ri)) {
+	    for (row = blt_table_first_tagged_row(&ri); row != NULL; 
+		 row = blt_table_next_tagged_row(&ri)) {
 
 		if (blt_table_unset_value(table, row, col) != TCL_OK) {
 		    return TCL_ERROR;
@@ -7983,22 +7983,22 @@ DumpTable(BLT_TABLE table, DumpSwitches *dumpPtr)
 	numCols = blt_table_num_columns(table);
     }
     result = DumpHeader(dumpPtr, numRows, numCols);
-    for (col = blt_table_column_first_tagged(&dumpPtr->ci); 
+    for (col = blt_table_first_tagged_column(&dumpPtr->ci); 
 	 (result) && (col != NULL); 
-	 col = blt_table_column_next_tagged(&dumpPtr->ci)) {
+	 col = blt_table_next_tagged_column(&dumpPtr->ci)) {
 	result = DumpColumn(table, dumpPtr, col);
     }
-    for (row = blt_table_row_first_tagged(&dumpPtr->ri); 
+    for (row = blt_table_first_tagged_row(&dumpPtr->ri); 
 	 (result) && (row != NULL); 
-	 row = blt_table_row_next_tagged(&dumpPtr->ri)) {
+	 row = blt_table_next_tagged_row(&dumpPtr->ri)) {
 	result = DumpRow(table, dumpPtr, row);
     }
-    for (col = blt_table_column_first_tagged(&dumpPtr->ci); 
+    for (col = blt_table_first_tagged_column(&dumpPtr->ci); 
 	 (result) && (col != NULL); 
-	 col = blt_table_column_next_tagged(&dumpPtr->ci)) {
-	for (row = blt_table_row_first_tagged(&dumpPtr->ri); 
+	 col = blt_table_next_tagged_column(&dumpPtr->ci)) {
+	for (row = blt_table_first_tagged_row(&dumpPtr->ri); 
 	     (result) && (row != NULL); 
-	     row = blt_table_row_next_tagged(&dumpPtr->ri)) {
+	     row = blt_table_next_tagged_row(&dumpPtr->ri)) {
 	    result = DumpValue(table, dumpPtr, row, col);
 	}
     }
@@ -8116,8 +8116,8 @@ DumpOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     switches.dsPtr = &ds;
     rowIterSwitch.clientData = cmdPtr->table;
     columnIterSwitch.clientData = cmdPtr->table;
-    blt_table_row_iterate_all(table, &switches.ri);
-    blt_table_column_iterate_all(table, &switches.ci);
+    blt_table_iterate_all_rows(table, &switches.ri);
+    blt_table_iterate_all_columns(table, &switches.ci);
     if (Blt_ParseSwitches(interp, dumpSwitches, objc - 2, objv + 2, &switches, 
 	BLT_SWITCH_DEFAULTS) < 0) {
 	goto error;
@@ -8236,7 +8236,7 @@ FindOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 
     memset(&switches, 0, sizeof(switches));
     rowIterSwitch.clientData = cmdPtr->table;
-    blt_table_row_iterate_all(cmdPtr->table, &switches.iter);
+    blt_table_iterate_all_rows(cmdPtr->table, &switches.iter);
 
     if (Blt_ParseSwitches(interp, findSwitches, objc - 3, objv + 3, 
 	&switches, BLT_SWITCH_DEFAULTS) < 0) {

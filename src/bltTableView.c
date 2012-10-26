@@ -209,6 +209,12 @@ enum SortTypeValues {
 };
 
 
+static Blt_OptionParseProc ObjToAutoCreateProc;
+static Blt_OptionPrintProc AutoCreateToObjProc;
+static Blt_CustomOption autoCreateOption = {
+    ObjToAutoCreateProc, AutoCreateToObjProc, NULL, (ClientData)0
+};
+
 static Blt_OptionParseProc ObjToColumnTitleProc;
 static Blt_OptionPrintProc ColumnTitleToObjProc;
 static Blt_OptionFreeProc FreeColumnTitleProc;
@@ -309,9 +315,9 @@ static Blt_ConfigSpec tableSpecs[] =
     {BLT_CONFIG_COLOR, "-activerowtitleforeground", "activeRowTitleForeground", 
 	"ActiveTitleForeground", DEF_ACTIVE_TITLE_FG, 
 	Blt_Offset(TableView, rowActiveTitleFg), 0},
-    {BLT_CONFIG_BITMASK, "-autocreate", "autoCreate", "AutoCreate",
+    {BLT_CONFIG_CUSTOM, "-autocreate", "autoCreate", "AutoCreate",
 	DEF_AUTO_CREATE, Blt_Offset(TableView, flags), 
-        BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)AUTOCREATE},
+        BLT_CONFIG_DONT_SET_DEFAULT, &autoCreateOption},
     {BLT_CONFIG_BITMASK, "-autofilters", "autoFilters", "AutoFilters",
 	DEF_AUTO_FILTERS, Blt_Offset(TableView, flags), 
         BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)AUTOFILTERS},
@@ -1151,6 +1157,78 @@ DestroyIcons(TableView *viewPtr)
 	Blt_Free(iconPtr);
     }
     Blt_DeleteHashTable(&viewPtr->iconTable);
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * ObjToAutoCreateProc --
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+ObjToAutoCreateProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+		    Tcl_Obj *objPtr, char *widgRec, int offset, int flags)	
+{
+    char c;
+    const char *string;
+    int *flagsPtr = (int*)(widgRec + offset);
+    int length, mask;
+
+    string = Tcl_GetStringFromObj(objPtr, &length);
+    c = string[0];
+    if ((c == 'b') && (strncmp(string, "both", length) == 0)) {
+	mask = AUTO_ROWS | AUTO_COLUMNS;
+    } else if ((c == 'c') && (strncmp(string, "columns", length) == 0)) {
+	mask = AUTO_COLUMNS;
+    } else if ((c == 'r') && (strncmp(string, "rows", length) == 0)) {
+	mask = AUTO_ROWS;
+    } else if ((c == 'n') && (strncmp(string, "none", length) == 0)) {
+	mask = 0;
+    } else {
+	Tcl_AppendResult(interp, "unknown autocreate value \"", string, 
+		"\": should be both, columns, rows, or none", (char *)NULL);
+	return TCL_ERROR;
+    }
+    *flagsPtr &= AUTOCREATE;
+    *flagsPtr |= mask;
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * AutoCreateToObjProc --
+ *
+ *	Returns the current -autocreate value as a string.
+ *
+ * Results:
+ *	The TCL string object is returned.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static Tcl_Obj *
+AutoCreateToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+		     char *widgRec, int offset, int flags)	
+{
+    int mask = *(int *)(widgRec + offset);
+    const char *string;
+
+    mask &= AUTOCREATE;
+    if (mask == AUTOCREATE) {
+	string = "both";
+    } else if (mask == AUTO_ROWS) {
+	string = "rows";
+    } else if (mask == AUTO_COLUMNS) {
+	string = "columns";
+    } else if (mask == 0) {
+	string = "none";
+    } else {
+	string = "???";
+    }
+    return Tcl_NewStringObj(string, -1);
 }
 
 /*ARGSUSED*/
@@ -2421,7 +2499,7 @@ NewColumn(TableView *viewPtr, BLT_TABLE_COLUMN col, Blt_HashEntry *hPtr)
     colPtr->max = SHRT_MAX;
     colPtr->titleJustify = TK_JUSTIFY_CENTER;
     colPtr->titleRelief = colPtr->activeTitleRelief = TK_RELIEF_RAISED;
-    colPtr->trace = blt_table_column_create_trace(viewPtr->table, col, 
+    colPtr->trace = blt_table_set_column_trace(viewPtr->table, col, 
 	TABLE_TRACE_FOREIGN_ONLY | TABLE_TRACE_WRITES | TABLE_TRACE_UNSETS, 
 	ColumnTraceProc, NULL, colPtr);
     colPtr->hashPtr = hPtr;
@@ -2956,15 +3034,15 @@ IterateRowsObjv(Tcl_Interp *interp, TableView *viewPtr, int objc,
 	    }
 	    continue;
 	}
-	if (blt_table_row_iterate(interp, viewPtr->table, objv[i], &iter) 
+	if (blt_table_iterate_row(interp, viewPtr->table, objv[i], &iter) 
 	    != TCL_OK){
 	    Blt_DeleteHashTable(&rowTable);
 	    Blt_Chain_Destroy(chain);
 	    return NULL;
 	}
 	/* Append the new rows onto the chain. */
-	for (row = blt_table_row_first_tagged(&iter); row != NULL; 
-	     row = blt_table_row_next_tagged(&iter)) {
+	for (row = blt_table_first_tagged_row(&iter); row != NULL; 
+	     row = blt_table_next_tagged_row(&iter)) {
 	    int isNew;
 
 	    Blt_CreateHashEntry(&rowTable, (char *)row, &isNew);
@@ -3003,15 +3081,15 @@ IterateColumnsObjv(Tcl_Interp *interp, TableView *viewPtr, int objc,
 	    }
 	    continue;
 	}
-	if (blt_table_column_iterate(interp, viewPtr->table, objv[i], &iter) 
+	if (blt_table_iterate_column(interp, viewPtr->table, objv[i], &iter) 
 	    != TCL_OK){
 	    Blt_DeleteHashTable(&colTable);
 	    Blt_Chain_Destroy(chain);
 	    return NULL;
 	}
 	/* Append the new columns onto the chain. */
-	for (col = blt_table_column_first_tagged(&iter); col != NULL; 
-	     col = blt_table_column_next_tagged(&iter)) {
+	for (col = blt_table_first_tagged_column(&iter); col != NULL; 
+	     col = blt_table_next_tagged_column(&iter)) {
 	    int isNew;
 
 	    Blt_CreateHashEntry(&colTable, (char *)col, &isNew);
@@ -5107,8 +5185,8 @@ FixRowTable(TableView *viewPtr)
     BLT_TABLE_ROW row;
     long i;
 
-    for (i = 0, row = blt_table_row_first(viewPtr->table); row != NULL;  
-	 row = blt_table_row_next(viewPtr->table, row)) {
+    for (i = 0, row = blt_table_first_row(viewPtr->table); row != NULL;  
+	 row = blt_table_next_row(viewPtr->table, row)) {
 	Blt_HashEntry *hPtr;
 
 	hPtr = Blt_FindHashEntry(&viewPtr->rowTable, (char *)row);
@@ -5129,8 +5207,8 @@ FixColumnTable(TableView *viewPtr)
     BLT_TABLE_COLUMN col;
     long i;
 
-    for (i = 0, col = blt_table_column_first(viewPtr->table); col != NULL;  
-	 col = blt_table_column_next(viewPtr->table, col)) {
+    for (i = 0, col = blt_table_first_column(viewPtr->table); col != NULL;  
+	 col = blt_table_next_column(viewPtr->table, col)) {
 	Blt_HashEntry *hPtr;
 
 	hPtr = Blt_FindHashEntry(&viewPtr->columnTable, (char *)col);
@@ -5913,11 +5991,12 @@ ColumnInsertOp(ClientData clientData, Tcl_Interp *interp, int objc,
 {
     BLT_TABLE_COLUMN col;
     Blt_HashEntry *hPtr;
+    CellKey key;
     Column **columns;
     Column *colPtr;
     TableView *viewPtr = clientData;
     int isNew;
-    long insertPos;
+    long i, insertPos;
 
     col = blt_table_column_find(interp, viewPtr->table, objv[3]);
     if (col == NULL) {
@@ -5958,6 +6037,20 @@ ColumnInsertOp(ClientData clientData, Tcl_Interp *interp, int objc,
     viewPtr->numColumns++;
     Blt_Free(viewPtr->columns);
     viewPtr->columns = columns;
+    key.colPtr = colPtr;
+    for (i = 0; i < viewPtr->numRows; i++) {
+	Blt_HashEntry *hPtr;
+	int isNew;
+
+	key.rowPtr = viewPtr->rows[i];
+	hPtr = Blt_CreateHashEntry(&viewPtr->cellTable, (char *)&key, &isNew);
+	if (isNew) {
+	    Cell *cellPtr;
+
+	    cellPtr = NewCell(viewPtr, hPtr);
+	    Blt_SetHashValue(hPtr, cellPtr);
+	}
+    }
     viewPtr->flags |= GEOMETRY;
     EventuallyRedraw(viewPtr);
     return TCL_OK;
@@ -7968,11 +8061,12 @@ RowInsertOp(ClientData clientData, Tcl_Interp *interp, int objc,
 {
     BLT_TABLE_ROW row;
     Blt_HashEntry *hPtr;
+    CellKey key;
     Row **rows;
     Row *rowPtr;
     TableView *viewPtr = clientData;
     int isNew;
-    long insertPos;
+    long i, insertPos;
 
     row = blt_table_row_find(interp, viewPtr->table, objv[3]);
     if (row == NULL) {
@@ -8013,6 +8107,20 @@ RowInsertOp(ClientData clientData, Tcl_Interp *interp, int objc,
     EventuallyRedraw(viewPtr);
     Blt_Free(viewPtr->rows);
     viewPtr->rows = rows;
+    key.rowPtr = rowPtr;
+    for (i = 0; i < viewPtr->numColumns; i++) {
+	Blt_HashEntry *hPtr;
+	int isNew;
+
+	key.colPtr = viewPtr->columns[i];
+	hPtr = Blt_CreateHashEntry(&viewPtr->cellTable, (char *)&key, &isNew);
+	if (isNew) {
+	    Cell *cellPtr;
+
+	    cellPtr = NewCell(viewPtr, hPtr);
+	    Blt_SetHashValue(hPtr, cellPtr);
+	}
+    }
     viewPtr->flags |= GEOMETRY;
     return TCL_OK;
 }
@@ -10231,8 +10339,8 @@ RebuildTableView(TableView *viewPtr)
     count = 0;
     numRows = blt_table_num_rows(viewPtr->table);
     rows = Blt_AssertMalloc(sizeof(Row *) * numRows);
-    for (row = blt_table_row_first(viewPtr->table); row != NULL;  
-	 row = blt_table_row_next(viewPtr->table, row)) {
+    for (row = blt_table_first_row(viewPtr->table); row != NULL;  
+	 row = blt_table_next_row(viewPtr->table, row)) {
 	Blt_HashEntry *hPtr;
 	int isNew;
 	Row *rowPtr;
@@ -10240,19 +10348,20 @@ RebuildTableView(TableView *viewPtr)
 	hPtr = Blt_CreateHashEntry(&viewPtr->rowTable, (char *)row, &isNew);
 	if (isNew) {
 	    rowPtr = CreateRow(viewPtr, row, hPtr);
-	} else {
+	} else if (viewPtr->flags & AUTO_ROWS) {
 	    rowPtr = Blt_GetHashValue(hPtr);
+	} else {
+	    continue;
 	}
 	rowPtr->flags &= ~DELETED;
 	rows[count] = rowPtr;
 	count++;
     }
-    assert(count==numRows);
     count = 0;
     numColumns = blt_table_num_columns(viewPtr->table);
     columns = Blt_AssertMalloc(sizeof(Column *) * numColumns);
-    for (col = blt_table_column_first(viewPtr->table); col != NULL;  
-	 col = blt_table_column_next(viewPtr->table, col)) {
+    for (col = blt_table_first_column(viewPtr->table); col != NULL;  
+	 col = blt_table_next_column(viewPtr->table, col)) {
 	Blt_HashEntry *hPtr;
 	int isNew;
 	Column *colPtr;
@@ -10260,14 +10369,15 @@ RebuildTableView(TableView *viewPtr)
 	hPtr = Blt_CreateHashEntry(&viewPtr->columnTable, (char *)col, &isNew);
 	if (isNew) {
 	    colPtr = CreateColumn(viewPtr, col, hPtr);
-	} else {
+	} else if (viewPtr->flags & AUTO_COLUMNS) {
 	    colPtr = Blt_GetHashValue(hPtr);
+	} else {
+	    continue;
 	}
 	colPtr->flags &= ~DELETED;
 	columns[count] = colPtr;
 	count++;
     }
-    assert(count==numColumns);
     /* 
      * Step 3:  Remove cells of rows and columns that were deleted.
      */
@@ -10353,12 +10463,9 @@ RebuildTableView(TableView *viewPtr)
 static int
 AttachTable(Tcl_Interp *interp, TableView *viewPtr)
 {
-    BLT_TABLE_ROW row;
-    BLT_TABLE_COLUMN col;
     long i;
 
     ResetTableView(viewPtr);
-
     viewPtr->colNotifier = blt_table_column_create_notifier(interp, 
 	viewPtr->table, TABLE_NOTIFY_ALL, 
 	TABLE_NOTIFY_ALL_EVENTS | TABLE_NOTIFY_WHENIDLE, 
@@ -10368,56 +10475,69 @@ AttachTable(Tcl_Interp *interp, TableView *viewPtr)
 	TABLE_NOTIFY_ALL_EVENTS | TABLE_NOTIFY_WHENIDLE, 
 	TableEventProc, NULL, viewPtr);
 
-    viewPtr->numRows = blt_table_num_rows(viewPtr->table);
-    viewPtr->rows = Blt_Malloc(viewPtr->numRows * sizeof(Row *));
-    if (viewPtr->rows == NULL) {
-	return TCL_ERROR;
-    }
-    viewPtr->numColumns = blt_table_num_columns(viewPtr->table);
-    viewPtr->columns = Blt_Malloc(viewPtr->numColumns *sizeof(Column *));
-    if (viewPtr->columns == NULL) {
-	Blt_Free(viewPtr->rows);
-	viewPtr->rows = NULL;
-	return TCL_ERROR;
-    }
+    viewPtr->numRows = viewPtr->numColumns = 0;
     /* Rows. */
-    for (i = 0, row = blt_table_row_first(viewPtr->table); row != NULL;  
-	 row = blt_table_row_next(viewPtr->table, row), i++) {
-	Blt_HashEntry *hPtr;
-	int isNew;
-	Row *rowPtr;
+    if (viewPtr->flags & AUTO_ROWS) {
+	BLT_TABLE_ROW row;
+	long i;
 
-	hPtr = Blt_CreateHashEntry(&viewPtr->rowTable, (char *)row, &isNew);
-	assert(isNew);
-	rowPtr = CreateRow(viewPtr, row, hPtr);
-	viewPtr->rows[i] = rowPtr;
+	viewPtr->numRows = blt_table_num_rows(viewPtr->table);
+	viewPtr->rows = Blt_Malloc(viewPtr->numRows * sizeof(Row *));
+	if (viewPtr->rows == NULL) {
+	    return TCL_ERROR;
+	}
+	for (i = 0, row = blt_table_first_row(viewPtr->table); row != NULL;  
+	     row = blt_table_next_row(viewPtr->table, row), i++) {
+	    Blt_HashEntry *hPtr;
+	    int isNew;
+	    Row *rowPtr;
+	    
+	    hPtr = Blt_CreateHashEntry(&viewPtr->rowTable, (char *)row, &isNew);
+	    assert(isNew);
+	    rowPtr = CreateRow(viewPtr, row, hPtr);
+	    viewPtr->rows[i] = rowPtr;
+	}
+	assert(i == viewPtr->numRows);
     }
-    assert(i == viewPtr->numRows);
-
     /* Columns. */
-    for (i = 0, col = blt_table_column_first(viewPtr->table); col != NULL;  
-	 col = blt_table_column_next(viewPtr->table, col), i++) {
-	Blt_HashEntry *hPtr;
-	int isNew;
-	Column *colPtr;
-	
-	hPtr = Blt_CreateHashEntry(&viewPtr->columnTable, (char *)col, &isNew);
-	assert(isNew);
-	colPtr = CreateColumn(viewPtr, col, hPtr);
-	viewPtr->columns[i] = colPtr;
+    if (viewPtr->flags & AUTO_COLUMNS) {
+	BLT_TABLE_COLUMN col;
+	long i;
+
+	viewPtr->numColumns = blt_table_num_columns(viewPtr->table);
+	viewPtr->columns = Blt_Malloc(viewPtr->numColumns *sizeof(Column *));
+	if (viewPtr->columns == NULL) {
+	    if (viewPtr->rows != NULL) {
+		Blt_Free(viewPtr->rows);
+		viewPtr->rows = NULL;
+	    }
+	    return TCL_ERROR;
+	}
+	for (i = 0, col = blt_table_first_column(viewPtr->table); col != NULL;  
+	     col = blt_table_next_column(viewPtr->table, col), i++) {
+	    Blt_HashEntry *hPtr;
+	    int isNew;
+	    Column *colPtr;
+	    
+	    hPtr = Blt_CreateHashEntry(&viewPtr->columnTable, (char *)col,
+		&isNew);
+	    assert(isNew);
+	    colPtr = CreateColumn(viewPtr, col, hPtr);
+	    viewPtr->columns[i] = colPtr;
+	}
+	assert(i == viewPtr->numColumns);
     }
-    assert(i == viewPtr->numColumns);
     /* Create cells */
     for (i = 0; i < viewPtr->numRows; i++) {
 	CellKey key;
 	long j;
-
+	
 	key.rowPtr = viewPtr->rows[i];
 	for (j = 0; j < viewPtr->numColumns; j++) {
 	    Cell *cellPtr;
 	    Blt_HashEntry *hPtr;
 	    int isNew;
-
+	    
 	    key.colPtr = viewPtr->columns[j];
 	    hPtr = Blt_CreateHashEntry(&viewPtr->cellTable, (char *)&key, 
 		&isNew);

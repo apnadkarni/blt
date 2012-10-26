@@ -212,7 +212,7 @@ ColumnIterSwitchProc(
     if (Tcl_ListObjGetElements(interp, objPtr, &objc, &objv) != TCL_OK) {
 	return TCL_ERROR;
     }
-    if (blt_table_column_iterate_objv(interp, table, objc, objv, iterPtr)
+    if (blt_table_iterate_column_objv(interp, table, objc, objv, iterPtr)
 	!= TCL_OK) {
 	return TCL_ERROR;
     }
@@ -276,7 +276,7 @@ RowIterSwitchProc(
     if (Tcl_ListObjGetElements(interp, objPtr, &objc, &objv) != TCL_OK) {
 	return TCL_ERROR;
     }
-    if (blt_table_row_iterate_objv(interp, table, objc, objv, iterPtr)
+    if (blt_table_iterate_row_objv(interp, table, objc, objv, iterPtr)
 	!= TCL_OK) {
 	return TCL_ERROR;
     }
@@ -372,8 +372,8 @@ ExportCsvRows(BLT_TABLE table, ExportSwitches *exportPtr)
 {
     BLT_TABLE_ROW row;
 
-    for (row = blt_table_row_first_tagged(&exportPtr->ri); row != NULL; 
-	 row = blt_table_row_next_tagged(&exportPtr->ri)) {
+    for (row = blt_table_first_tagged_row(&exportPtr->ri); row != NULL; 
+	 row = blt_table_next_tagged_row(&exportPtr->ri)) {
 	BLT_TABLE_COLUMN col;
 	    
 	StartCsvRecord(exportPtr);
@@ -383,8 +383,8 @@ ExportCsvRows(BLT_TABLE table, ExportSwitches *exportPtr)
 	    field = blt_table_row_label(row);
 	    AppendCsvRecord(exportPtr, field, -1, TABLE_COLUMN_TYPE_STRING);
 	}
-	for (col = blt_table_column_first_tagged(&exportPtr->ci); col != NULL; 
-	     col = blt_table_column_next_tagged(&exportPtr->ci)) {
+	for (col = blt_table_first_tagged_column(&exportPtr->ci); col != NULL; 
+	     col = blt_table_next_tagged_column(&exportPtr->ci)) {
 	    const char *string;
 	    BLT_TABLE_COLUMN_TYPE type;
 		
@@ -409,8 +409,8 @@ ExportCsvColumns(ExportSwitches *exportPtr)
 	if (exportPtr->flags & EXPORT_ROWLABELS) {
 	    AppendCsvRecord(exportPtr, "*BLT*", 5, TABLE_COLUMN_TYPE_STRING);
 	}
-	for (col = blt_table_column_first_tagged(&exportPtr->ci); col != NULL; 
-	     col = blt_table_column_next_tagged(&exportPtr->ci)) {
+	for (col = blt_table_first_tagged_column(&exportPtr->ci); col != NULL; 
+	     col = blt_table_next_tagged_column(&exportPtr->ci)) {
 	    AppendCsvRecord(exportPtr, blt_table_column_label(col), -1, 
 		TABLE_COLUMN_TYPE_STRING);
 	}
@@ -442,8 +442,8 @@ ExportCsvProc(BLT_TABLE table, Tcl_Interp *interp, int objc,
     switches.quote = Blt_AssertStrdup("\"");
     rowIterSwitch.clientData = table;
     columnIterSwitch.clientData = table;
-    blt_table_row_iterate_all(table, &switches.ri);
-    blt_table_column_iterate_all(table, &switches.ci);
+    blt_table_iterate_all_rows(table, &switches.ri);
+    blt_table_iterate_all_columns(table, &switches.ci);
     if (Blt_ParseSwitches(interp, exportSwitches, objc - 3, objv + 3, &switches,
 	BLT_SWITCH_DEFAULTS) < 0) {
 	return TCL_ERROR;
@@ -646,7 +646,7 @@ ImportCsv(Tcl_Interp *interp, BLT_TABLE table, ImportSwitches *importPtr)
 			if ((*bp == '\n') &&  (fp == field)) {
 			    goto done;	/* Ignore empty lines. */
 			}
-			if (blt_table_row_extend(interp, table, 1, &row) 
+			if (blt_table_extend_rows(interp, table, 1, &row) 
 			    != TCL_OK) {
 			    goto error;
 			}
@@ -658,7 +658,7 @@ ImportCsv(Tcl_Interp *interp, BLT_TABLE table, ImportSwitches *importPtr)
 		    }
 		    /* End of field. Append field to row. */
 		    if (i >= blt_table_num_columns(table)) {
-			if (blt_table_column_extend(interp, table, 1, &col) 
+			if (blt_table_extend_columns(interp, table, 1, &col) 
 			    != TCL_OK) {
 			    goto error;
 			}
@@ -750,13 +750,13 @@ ImportCsv(Tcl_Interp *interp, BLT_TABLE table, ImportSwitches *importPtr)
 		    last--;
 		}
 		if (row == NULL) {
-		    if (blt_table_row_extend(interp, table, 1, &row) != TCL_OK){
+		    if (blt_table_extend_rows(interp, table, 1, &row) != TCL_OK){
 			goto error;
 		    }
 		}
 		col = blt_table_column_find_by_index(table, i);
 		if (col == NULL) {
-		    if (blt_table_column_extend(interp, table, 1, &col) 
+		    if (blt_table_extend_columns(interp, table, 1, &col) 
 			!= TCL_OK) {
 			goto error;
 		    }

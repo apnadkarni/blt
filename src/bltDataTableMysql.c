@@ -218,7 +218,7 @@ MySqlImportRows(Tcl_Interp *interp, BLT_TABLE table, MYSQL_RES *myResults,
 
 	/* Add the number of rows needed */
 	needed = numRows - blt_table_num_rows(table);
-	if (blt_table_row_extend(interp, table, needed, NULL) != TCL_OK) {
+	if (blt_table_extend_rows(interp, table, needed, NULL) != TCL_OK) {
 	    return TCL_ERROR;
 	}
     }
@@ -383,7 +383,7 @@ ImportMysqlProc(BLT_TABLE table, Tcl_Interp *interp, int objc,
     /* Step 1. Create columns to hold the new values.  Label
      *	       the columns using the title. */
     cols = Blt_AssertMalloc(numCols * sizeof(BLT_TABLE_COLUMN));
-    if (blt_table_column_extend(interp, table, numCols, cols) != TCL_OK) {
+    if (blt_table_extend_columns(interp, table, numCols, cols) != TCL_OK) {
 	goto error;
     }
     if (MySqlImportLabels(interp, table, myResults, numCols, cols) != TCL_OK) {

@@ -162,7 +162,7 @@ ImportVecProc(BLT_TABLE table, Tcl_Interp *interp, int objc,
 	    size_t needed;
 
 	    needed = size - oldLength;
-	    if (blt_table_row_extend(interp, table, needed, NULL) != TCL_OK) {
+	    if (blt_table_extend_rows(interp, table, needed, NULL) != TCL_OK) {
 		return TCL_ERROR;
 	    }
 	}

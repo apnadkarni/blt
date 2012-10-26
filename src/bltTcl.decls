@@ -185,11 +185,11 @@ declare 53 generic {
 	BLT_TABLE table, const char *label)
 }
 declare 54 generic {
-   int blt_table_row_extend(Tcl_Interp *interp, BLT_TABLE table,
+   int blt_table_extend_rows(Tcl_Interp *interp, BLT_TABLE table,
 	size_t n, BLT_TABLE_ROW *rows)
 }
 declare 55 generic {
-   int blt_table_column_extend(Tcl_Interp *interp, BLT_TABLE table, 
+   int blt_table_extend_columns(Tcl_Interp *interp, BLT_TABLE table, 
 	size_t n, BLT_TABLE_COLUMN *columms)
 }
 declare 56 generic {
@@ -286,41 +286,41 @@ declare 79 generic {
 	BLT_TABLE_COLUMN column, const char *tagName)
 }
 declare 80 generic {
-   int blt_table_row_forget_tag(Tcl_Interp *interp, BLT_TABLE table, 
+   int blt_table_forget_row_tag(Tcl_Interp *interp, BLT_TABLE table, 
 	const char *tagName)
 }
 declare 81 generic {
-   int blt_table_column_forget_tag(Tcl_Interp *interp, BLT_TABLE table, 
+   int blt_table_forget_column_tag(Tcl_Interp *interp, BLT_TABLE table, 
 	const char *tagName)
 }
 declare 82 generic {
-   int blt_table_row_unset_tag(Tcl_Interp *interp, BLT_TABLE table, 
+   int blt_table_unset_row_tag(Tcl_Interp *interp, BLT_TABLE table, 
 	BLT_TABLE_ROW row, const char *tagName)
 }
 declare 83 generic {
-   int blt_table_column_unset_tag(Tcl_Interp *interp, BLT_TABLE table, 
+   int blt_table_unset_column_tag(Tcl_Interp *interp, BLT_TABLE table, 
 	BLT_TABLE_COLUMN column, const char *tagName)
 }
 declare 84 generic {
-   Blt_HashEntry *blt_table_row_first_tag(BLT_TABLE table, 
+   Blt_HashEntry *blt_table_first_row_tag(BLT_TABLE table, 
 	Blt_HashSearch *cursorPtr)
 }
 declare 85 generic {
-   Blt_HashEntry *blt_table_column_first_tag(BLT_TABLE table, 
+   Blt_HashEntry *blt_table_first_column_tag(BLT_TABLE table, 
 	Blt_HashSearch *cursorPtr)
 }
 declare 86 generic {
-   BLT_TABLE_COLUMN blt_table_column_first(BLT_TABLE table)
+   BLT_TABLE_COLUMN blt_table_first_column(BLT_TABLE table)
 }
 declare 87 generic {
-   BLT_TABLE_COLUMN blt_table_column_next(BLT_TABLE table, 
+   BLT_TABLE_COLUMN blt_table_next_column(BLT_TABLE table, 
 	BLT_TABLE_COLUMN column)
 }
 declare 88 generic {
-   BLT_TABLE_ROW blt_table_row_first(BLT_TABLE table)
+   BLT_TABLE_ROW blt_table_first_row(BLT_TABLE table)
 }
 declare 89 generic {
-   BLT_TABLE_ROW blt_table_row_next(BLT_TABLE table, BLT_TABLE_ROW row)
+   BLT_TABLE_ROW blt_table_next_row(BLT_TABLE table, BLT_TABLE_ROW row)
 }
 declare 90 generic {
    BLT_TABLE_ROWCOLUMN_SPEC blt_table_row_spec(BLT_TABLE table, 
@@ -331,19 +331,19 @@ declare 91 generic {
 	Tcl_Obj *objPtr, const char **sp)
 }
 declare 92 generic {
-   int blt_table_row_iterate(Tcl_Interp *interp, BLT_TABLE table, 
+   int blt_table_iterate_row(Tcl_Interp *interp, BLT_TABLE table, 
 	Tcl_Obj *objPtr, BLT_TABLE_ITERATOR *iter)
 }
 declare 93 generic {
-   int blt_table_column_iterate(Tcl_Interp *interp, BLT_TABLE table, 
+   int blt_table_iterate_column(Tcl_Interp *interp, BLT_TABLE table, 
 	Tcl_Obj *objPtr, BLT_TABLE_ITERATOR *iter)
 }
 declare 94 generic {
-   int blt_table_row_iterate_objv(Tcl_Interp *interp, BLT_TABLE table, 
+   int blt_table_iterate_row_objv(Tcl_Interp *interp, BLT_TABLE table, 
 	int objc, Tcl_Obj *const *objv, BLT_TABLE_ITERATOR *iterPtr)
 }
 declare 95 generic {
-   int blt_table_column_iterate_objv(Tcl_Interp *interp, 
+   int blt_table_iterate_column_objv(Tcl_Interp *interp, 
 	BLT_TABLE table, int objc, Tcl_Obj *const *objv, 
 	BLT_TABLE_ITERATOR *iterPtr)
 }
@@ -351,56 +351,54 @@ declare 96 generic {
    void blt_table_free_iterator_objv(BLT_TABLE_ITERATOR *iterPtr)
 }
 declare 97 generic {
-   void blt_table_row_iterate_all(BLT_TABLE table, 
+   void blt_table_iterate_all_rows(BLT_TABLE table, 
 	BLT_TABLE_ITERATOR *iterPtr)
 }
 declare 98 generic {
-   void blt_table_column_iterate_all(BLT_TABLE table, 
+   void blt_table_iterate_all_columns(BLT_TABLE table, 
 	BLT_TABLE_ITERATOR *iterPtr)
 }
 declare 99 generic {
-   BLT_TABLE_ROW blt_table_row_first_tagged(BLT_TABLE_ITERATOR *iter)
+   BLT_TABLE_ROW blt_table_first_tagged_row(BLT_TABLE_ITERATOR *iter)
 }
 declare 100 generic {
-   BLT_TABLE_COLUMN blt_table_column_first_tagged(
+   BLT_TABLE_COLUMN blt_table_first_tagged_column(
 	BLT_TABLE_ITERATOR *iter)
 }
 declare 101 generic {
-   BLT_TABLE_ROW blt_table_row_next_tagged(BLT_TABLE_ITERATOR *iter)
+   BLT_TABLE_ROW blt_table_next_tagged_row(BLT_TABLE_ITERATOR *iter)
 }
 declare 102 generic {
-   BLT_TABLE_COLUMN blt_table_column_next_tagged(
-	BLT_TABLE_ITERATOR *iter)
+   BLT_TABLE_COLUMN blt_table_next_tagged_column(BLT_TABLE_ITERATOR *iter)
 }
 declare 103 generic {
-   BLT_TABLE_ROW blt_table_row_find(Tcl_Interp *interp, 
-	BLT_TABLE table, Tcl_Obj *objPtr)
+   BLT_TABLE_ROW blt_table_row_find(Tcl_Interp *interp, BLT_TABLE table, 
+	Tcl_Obj *objPtr)
 }
 declare 104 generic {
-   BLT_TABLE_COLUMN blt_table_column_find(Tcl_Interp *interp, 
-	BLT_TABLE table, Tcl_Obj *objPtr)
+   BLT_TABLE_COLUMN blt_table_column_find(Tcl_Interp *interp, BLT_TABLE table, 
+	Tcl_Obj *objPtr)
 }
 declare 105 generic {
-   int blt_table_list_rows(Tcl_Interp *interp, BLT_TABLE table, 
-	int objc, Tcl_Obj *const *objv, Blt_Chain chain)
+   int blt_table_list_rows(Tcl_Interp *interp, BLT_TABLE table, int objc, 
+	Tcl_Obj *const *objv, Blt_Chain chain)
 }
 declare 106 generic {
-   int blt_table_list_columns(Tcl_Interp *interp, BLT_TABLE table, 
-	int objc, Tcl_Obj *const *objv, Blt_Chain chain)
+   int blt_table_list_columns(Tcl_Interp *interp, BLT_TABLE table, int objc, 
+	Tcl_Obj *const *objv, Blt_Chain chain)
 }
 declare 107 generic {
-   void blt_table_row_clear_tags(BLT_TABLE table, BLT_TABLE_ROW row)
+   void blt_table_clear_row_tags(BLT_TABLE table, BLT_TABLE_ROW row)
 }
 declare 108 generic {
-   void blt_table_column_clear_tags(BLT_TABLE table, 
+   void blt_table_clear_column_tags(BLT_TABLE table, 
 	BLT_TABLE_COLUMN column)
 }
 declare 109 generic {
-   void blt_table_row_clear_traces(BLT_TABLE table, BLT_TABLE_ROW row)
+   void blt_table_clear_row_traces(BLT_TABLE table, BLT_TABLE_ROW row)
 }
 declare 110 generic {
-   void blt_table_column_clear_traces(BLT_TABLE table, 
-	BLT_TABLE_COLUMN column)
+   void blt_table_clear_column_traces(BLT_TABLE table, BLT_TABLE_COLUMN column)
 }
 declare 111 generic {
    BLT_TABLE_TRACE blt_table_create_trace(BLT_TABLE table, 
@@ -409,7 +407,7 @@ declare 111 generic {
 	BLT_TABLE_TRACE_DELETE_PROC *deleteProc, ClientData clientData)
 }
 declare 112 generic {
-   BLT_TABLE_TRACE blt_table_column_create_trace(BLT_TABLE table, 
+   BLT_TABLE_TRACE blt_table_set_column_trace(BLT_TABLE table, 
 	BLT_TABLE_COLUMN column, unsigned int mask, BLT_TABLE_TRACE_PROC *proc, 
 	BLT_TABLE_TRACE_DELETE_PROC *deleteProc, ClientData clientData)
 }
@@ -480,16 +478,16 @@ declare 126 generic {
 	BLT_TABLE_COLUMN column, unsigned int flags)
 }
 declare 127 generic {
-   BLT_TABLE_ROW *blt_table_row_get_map(BLT_TABLE table)
+   BLT_TABLE_ROW *blt_table_get_row_map(BLT_TABLE table)
 }
 declare 128 generic {
-   BLT_TABLE_COLUMN *blt_table_column_get_map(BLT_TABLE table)
+   BLT_TABLE_COLUMN *blt_table_get_column_map(BLT_TABLE table)
 }
 declare 129 generic {
-   void blt_table_row_set_map(BLT_TABLE table, BLT_TABLE_ROW *map)
+   void blt_table_set_row_map(BLT_TABLE table, BLT_TABLE_ROW *map)
 }
 declare 130 generic {
-   void blt_table_column_set_map(BLT_TABLE table, BLT_TABLE_COLUMN *map)
+   void blt_table_set_column_map(BLT_TABLE table, BLT_TABLE_COLUMN *map)
 }
 declare 131 generic {
    int blt_table_restore(Tcl_Interp *interp, BLT_TABLE table, 
@@ -517,7 +515,7 @@ declare 137 generic {
 	int objc, Tcl_Obj *const *objv, BLT_TABLE_ROW *rowPtr)
 }
 declare 138 generic {
-   int blt_table_column_get_limits(Tcl_Interp *interp, BLT_TABLE table, 
+   int blt_table_get_column_limits(Tcl_Interp *interp, BLT_TABLE table, 
 	BLT_TABLE_COLUMN col, Tcl_Obj **minObjPtrPtr, Tcl_Obj **maxObjPtrPtr)
 }
 declare 139 generic {

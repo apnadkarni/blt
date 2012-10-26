@@ -177,7 +177,7 @@ ColumnIterSwitchProc(
     if (Tcl_ListObjGetElements(interp, objPtr, &objc, &objv) != TCL_OK) {
 	return TCL_ERROR;
     }
-    if (blt_table_column_iterate_objv(interp, table, objc, objv, iterPtr)
+    if (blt_table_iterate_column_objv(interp, table, objc, objv, iterPtr)
 	!= TCL_OK) {
 	return TCL_ERROR;
     }
@@ -241,7 +241,7 @@ RowIterSwitchProc(
     if (Tcl_ListObjGetElements(interp, objPtr, &objc, &objv) != TCL_OK) {
 	return TCL_ERROR;
     }
-    if (blt_table_row_iterate_objv(interp, table, objc, objv, iterPtr)
+    if (blt_table_iterate_row_objv(interp, table, objc, objv, iterPtr)
 	!= TCL_OK) {
 	return TCL_ERROR;
     }
@@ -282,7 +282,7 @@ ImportTree(Tcl_Interp *interp, BLT_TABLE table, Blt_Tree tree,
 	if (depth > maxDepth) {
 	    BLT_TABLE_COLUMN col;
 
-	    if (blt_table_column_extend(interp, table, 1, &col) != TCL_OK) {
+	    if (blt_table_extend_columns(interp, table, 1, &col) != TCL_OK) {
 		return TCL_ERROR;
 	    }
 	    colIndex = blt_table_column_index(col);
@@ -290,7 +290,7 @@ ImportTree(Tcl_Interp *interp, BLT_TABLE table, Blt_Tree tree,
 	} else {
 	    colIndex = depth - topDepth - 1;
 	}
-	if (blt_table_row_extend(interp, table, 1, &row) != TCL_OK) {
+	if (blt_table_extend_rows(interp, table, 1, &row) != TCL_OK) {
 	    return TCL_ERROR;
 	}
 	for (parent = node; parent != top; 
@@ -401,8 +401,8 @@ ExportTree(Tcl_Interp *interp, BLT_TABLE table, Blt_Tree tree,
 {
     BLT_TABLE_ROW row;
 
-    for (row = blt_table_row_first_tagged(&switchesPtr->rIter); row != NULL;
-	 row = blt_table_row_next_tagged(&switchesPtr->rIter)) {
+    for (row = blt_table_first_tagged_row(&switchesPtr->rIter); row != NULL;
+	 row = blt_table_next_tagged_row(&switchesPtr->rIter)) {
 	BLT_TABLE_COLUMN col;
 	Blt_TreeNode node;
 	const char *label;
@@ -412,9 +412,9 @@ ExportTree(Tcl_Interp *interp, BLT_TABLE table, Blt_Tree tree,
 	if (node == NULL) {
 	    node = Blt_Tree_CreateNode(tree, parent, label, -1);
 	}
-	for (col = blt_table_column_first_tagged(&switchesPtr->cIter); 
+	for (col = blt_table_first_tagged_column(&switchesPtr->cIter); 
 	     col != NULL;
-	     col = blt_table_column_next_tagged(&switchesPtr->cIter)) {
+	     col = blt_table_next_tagged_column(&switchesPtr->cIter)) {
 	    Tcl_Obj *objPtr;
 	    const char *key;
 
@@ -450,8 +450,8 @@ ExportTreeProc(BLT_TABLE table, Tcl_Interp *interp, int objc,
     memset(&switches, 0, sizeof(switches));
     rowIterSwitch.clientData = table;
     columnIterSwitch.clientData = table;
-    blt_table_row_iterate_all(table, &switches.rIter);
-    blt_table_column_iterate_all(table, &switches.cIter);
+    blt_table_iterate_all_rows(table, &switches.rIter);
+    blt_table_iterate_all_columns(table, &switches.cIter);
     if (Blt_ParseSwitches(interp, exportSwitches, objc - 4, objv + 4, &switches,
 	BLT_SWITCH_DEFAULTS) < 0) {
 	return TCL_ERROR;

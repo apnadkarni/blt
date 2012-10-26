@@ -1156,7 +1156,7 @@ ObjToColumnProc(
 	if (col == NULL) {
 	    return TCL_ERROR;
 	}
-	trace = blt_table_column_create_trace(srcPtr->table, col, 
+	trace = blt_table_set_column_trace(srcPtr->table, col, 
 		TABLE_TRACE_WCU, TableTraceProc, NULL, viewPtr);
 	notifier =  blt_table_column_create_notifier(interp, srcPtr->table, col,
 		TABLE_NOTIFY_COLUMN_CHANGED | TABLE_NOTIFY_ROW_CHANGED, 
@@ -3319,8 +3319,8 @@ RebuildTableItems(Tcl_Interp *interp, ListView *viewPtr, BLT_TABLE table)
 	}
     }
     chain = Blt_Chain_Create();
-    for (row = blt_table_row_first(table); row != NULL; 
-	 row = blt_table_row_next(table, row)) {
+    for (row = blt_table_first_row(table); row != NULL; 
+	 row = blt_table_next_row(table, row)) {
 	Item *itemPtr;
 	Blt_HashEntry *hPtr;
 

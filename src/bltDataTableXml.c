@@ -208,7 +208,7 @@ ColumnIterSwitchProc(
     if (Tcl_ListObjGetElements(interp, objPtr, &objc, &objv) != TCL_OK) {
 	return TCL_ERROR;
     }
-    if (blt_table_column_iterate_objv(interp, table, objc, objv, iterPtr)
+    if (blt_table_iterate_column_objv(interp, table, objc, objv, iterPtr)
 	!= TCL_OK) {
 	return TCL_ERROR;
     }
@@ -272,7 +272,7 @@ RowIterSwitchProc(
     if (Tcl_ListObjGetElements(interp, objPtr, &objc, &objv) != TCL_OK) {
 	return TCL_ERROR;
     }
-    if (blt_table_row_iterate_objv(interp, table, objc, objv, iterPtr)
+    if (blt_table_iterate_row_objv(interp, table, objc, objv, iterPtr)
 	!= TCL_OK) {
 	return TCL_ERROR;
     }
@@ -389,7 +389,7 @@ StartXmlTag(void *userData, const char *element, const char **attr)
 	importPtr->col = col;
 	importPtr->node = Blt_List_Append(importPtr->elemList,(char *)col,NULL);
     }
-    if (blt_table_row_extend(interp, table, 1, &row) != TCL_OK) {
+    if (blt_table_extend_rows(interp, table, 1, &row) != TCL_OK) {
 	goto error;
     }
     importPtr->row = row;
@@ -828,16 +828,16 @@ XmlExport(BLT_TABLE table, ExportSwitches *exportPtr)
     BLT_TABLE_ROW row;
 
     XmlStartTable(exportPtr, "root");
-    for (row = blt_table_row_first_tagged(&exportPtr->rIter); row != NULL; 
-	 row = blt_table_row_next_tagged(&exportPtr->rIter)) {
+    for (row = blt_table_first_tagged_row(&exportPtr->rIter); row != NULL; 
+	 row = blt_table_next_tagged_row(&exportPtr->rIter)) {
 	BLT_TABLE_COLUMN col;
 	const char *label;
 	    
 	XmlStartElement(exportPtr, "row");
 	label = blt_table_row_label(row);
 	XmlAppendAttrib(exportPtr, "name", label, -1);
-	for (col = blt_table_column_first_tagged(&exportPtr->cIter); col != NULL; 
-	     col = blt_table_column_next_tagged(&exportPtr->cIter)) {
+	for (col = blt_table_first_tagged_column(&exportPtr->cIter); col != NULL; 
+	     col = blt_table_next_tagged_column(&exportPtr->cIter)) {
 	    const char *string;
 
 	    label = blt_table_column_label(col);
@@ -870,8 +870,8 @@ ExportXmlProc(BLT_TABLE table, Tcl_Interp *interp, int objc, Tcl_Obj *const *obj
     memset(&switches, 0, sizeof(switches));
     rowIterSwitch.clientData = table;
     columnIterSwitch.clientData = table;
-    blt_table_row_iterate_all(table, &switches.rIter);
-    blt_table_column_iterate_all(table, &switches.cIter);
+    blt_table_iterate_all_rows(table, &switches.rIter);
+    blt_table_iterate_all_columns(table, &switches.cIter);
     if (Blt_ParseSwitches(interp, exportSwitches, objc - 3, objv + 3, &switches,
 	BLT_SWITCH_DEFAULTS) < 0) {
 	return TCL_ERROR;
