@@ -20,11 +20,11 @@
 '\" Busy command created by George Howlett.
 '\"
 .so man.macros
-.TH busy n BLT_VERSION BLT "BLT Built-In Commands"
+.TH blt::busy n BLT_VERSION BLT "BLT Built-In Commands"
 .BS 
 '\" Note:  do not modify the .SH NAME line immediately below!
 .SH NAME
-\fBbusy\fR \- Make Tk widgets busy, temporarily blocking user interactions.
+\fBblt::busy\fR \- Make Tk widgets busy, temporarily blocking user interactions.
 .SH SYNOPSIS
 \fBblt::busy hold \fIwindow\fR ?\fIoption value\fR?...
 .sp
@@ -42,7 +42,7 @@
 .BE
 .SH DESCRIPTION
 .PP
-The \fBbusy\fR command provides a simple means to block
+The \fBblt::busy\fR command provides a simple means to block
 keyboard, button, and pointer events from Tk widgets, while overriding
 the widget's cursor with a configurable busy cursor.
 .SH INTRODUCTION
@@ -171,6 +171,14 @@ cursor can be specified for it by either \fBoption\fR command:
 
 .fi
 .TP
+\fBblt::busy active \fR?\fIpattern\fR?
+Returns the pathnames of all widgets that are currently busy (active).
+If a \fIpattern\fR is given, the path names of busy widgets 
+matching \fIpattern\fR are returned.  This differs from the \fBname\fR
+operation in that \fBactive\fR only returns the names of windows
+where the busy window is currently active (\fBnames\fR returns all
+busy windows).
+.TP
 \fBblt::busy forget \fIwindow\fR ?\fIwindow\fR?...
 Releases resources allocated by the busy command for \fIwindow\fR,
 including the busy window.  User events will again be received again 
@@ -183,10 +191,10 @@ Checks if \fIwindow\fR or any of its ancestors are currently busy.  If
 \fIwindow\fR is presently busy (it can not receive user interactions)
 \f(CW1\fR is returned, otherwise \f(CW0\fR.
 .TP
-\fBblt::busy isbusy \fR?\fIpattern\fR?
-Returns the pathnames of all widgets that are currently busy.
-If a \fIpattern\fR is given, the path names of busy widgets 
-matching \fIpattern\fR are returned.
+\fBblt::busy isbusy \fIwindow\fR
+Indicates whether \fIwindow\fR is currently busy.  
+Returns \f(CW1\fR if a busy window exists for \fIwindow\fB and the 
+busy window is currently active.  Other \f(CW0\fR is returned.
 .TP
 \fBblt::busy names \fR?\fIpattern\fR?
 Returns the pathnames of all widgets that have previously been
@@ -203,11 +211,11 @@ is not destroyed, but simply unmapped.
 in a \fBhold\fR operation, otherwise an error is reported.
 .TP
 \fBblt::busy status \fIwindow\fR
-Returns the status of a widget \fIwindow\fR previously made busy.
-An error is reported if \fIwindow\fR does not was never made busy, or
-the \fBforget\fR operation was invoked (i.e. does not currently have a
-busy window associated with it).  If \fIwindow\fR is presently can
-not receive user interactions, \f(CW1\fR is returned, otherwise \f(CW0\fR.
+Indicates the busy status of \fIwindow\fR.  If \fIwindow\fR has a
+busy window and the busy window is currently active (user interactions
+are blocked), \f(CWactive\fR is returned.  If \fIwindow\fR has
+a busy window, but is not active, then \f(CWinactive\fR is returned.
+Otherwise \f(CWnone\fR is returned.
 .sp 1
 .SH BINDINGS
 The event blocking feature is implemented by creating and mapping a
