@@ -600,7 +600,7 @@ WarpToOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *ob
     return QueryOp(tkMain, interp, 0, (Tcl_Obj **)NULL);
 }
 
-#if defined(HAVE_XRANDR) && defined(HAVE_DECL_XRRGETSCREENRESOURCES)
+#if defined(HAVE_RANDR) && defined(HAVE_DECL_XRRGETSCREENRESOURCES)
 #include <X11/Xlib.h>
 #include <X11/Xlibint.h>
 #include <X11/Xproto.h>
@@ -729,7 +729,7 @@ SetScreenSizeOp(ClientData clientData, Tcl_Interp *interp, int objc,
     XRRFreeScreenConfigInfo(configPtr);
     return TCL_OK;
 }
-#endif	/* HAVE_XRANDR && HAVE_DECL_XRRGETSCREENRESOURCES */
+#endif	/* HAVE_RANDR && HAVE_DECL_XRRGETSCREENRESOURCES */
 
 static Blt_OpSpec winOps[] =
 {
@@ -740,9 +740,9 @@ static Blt_OpSpec winOps[] =
     {"move",     2, MoveOp,     5, 5, "window x y",},
     {"query",    1, QueryOp,    2, 2, "",},
     {"raise",    1, RaiseOp,    2, 0, "window ?window?...",},
-#if defined(HAVE_XRANDR) && defined(HAVE_DECL_XRRGETSCREENRESOURCES)
+#if defined(HAVE_RANDR) && defined(HAVE_DECL_XRRGETSCREENRESOURCES)
     {"screensize", 1, SetScreenSizeOp, 4, 4, "w h",},
-#endif	/* HAVE_XRANDR && HAVE_DECL_XRRGETSCREENRESOURCES */
+#endif	/* HAVE_RANDR && HAVE_DECL_XRRGETSCREENRESOURCES */
     {"top",      2, TopOp,      4, 4, "x y",},
     {"tree",     2, TreeOp,     3, 3, "window",},
     {"unmap",    1, UnmapOp,    2, 0, "window ?window?...",},
