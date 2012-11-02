@@ -875,6 +875,7 @@ GrabCmd(
     Tcl_ObjCmdProc *proc;
     GrabCmdInterpData *dataPtr = clientData;
 
+fprintf(stderr, "call BLT grab\n");
     FixCurrent(dataPtr);
     proc = Blt_GetOpFromObj(interp, numGrabOps, grabOps, BLT_OP_ARG1, 
 	objc, objv, 0);
