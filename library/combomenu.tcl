@@ -273,7 +273,6 @@ proc ::blt::ComboMenu::ButtonPressEvent { menu x y } {
     $menu unpost 
     set _private(cascades) ""
     event generate $menu <<MenuSelect>>
-puts stderr "released grab in ButtonPresEvent"
     blt::grab pop $menu
 }
 
@@ -295,7 +294,6 @@ proc ::blt::ComboMenu::ButtonReleaseEvent { menu x y } {
 	set _private(cascades) ""
 	# Pop the grab before invoking the menu item command.
 	#blt::grab pop $menu
- puts stderr "grab stack = [blt::grab list]"
 	event generate $menu <<MenuSelect>>
 	$menu invoke $item
 	return
@@ -321,7 +319,6 @@ proc ::blt::ComboMenu::ButtonReleaseEvent { menu x y } {
 	set _private(cascades) ""
 	# Pop the grab before invoking the menu item command.
 	event generate $menu <<MenuSelect>>
- puts stderr "grab stack = [blt::grab list]"
 	blt::grab pop $menu
 	$m invoke $item
 	return
@@ -491,7 +488,6 @@ proc ::blt::ComboMenu::SelectItem {} {
     $m unpost
     set _private(cascades) ""
     # Pop the grab before invoking the menu item command.
- puts stderr "grab stack = [blt::grab list]"
     blt::grab pop $m
     event generate $m <<MenuSelect>>
     $m invoke $item

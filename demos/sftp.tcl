@@ -1,7 +1,7 @@
 package require BLT
 package require blt_sftp
 
-set sftp [blt::sftp create -host nees.org]
+set sftp [blt::sftp create -host stage.nees.org]
 
 set table [blt::datatable create]
 $sftp dir ~ -table $table
