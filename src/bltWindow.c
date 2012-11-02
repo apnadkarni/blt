@@ -529,7 +529,7 @@ Blt_DeleteWindowInstanceData(Tk_Window tkwin)
 }
 
 
-#if HAVE_RANDR
+#ifdef HAVE_RANDR
 #include <X11/Xlib.h>
 #include <X11/Xlibint.h>
 #include <X11/Xproto.h>
@@ -599,7 +599,7 @@ void
 Blt_InitXRandrConfig(Tcl_Interp *interp) 
 {
 }
-#endif	/* HAVE_XRANDR */
+#endif	/* HAVE_RANDR */
 
 /* ARGSUSED */
 void

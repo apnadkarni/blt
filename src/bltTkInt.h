@@ -318,8 +318,6 @@ BLT_EXTERN Pixmap Blt_GetPixmapAbortOnError(Display *dpy, Drawable draw,
 
 #if defined(HAVE_LIBXRANDR) && defined(HAVE_X11_EXTENSIONS_RANDR_H) && defined(HAVE_X11_EXTENSIONS_XRANDR_H) 
 #define HAVE_RANDR 1
-#else 
-#define HAVE_RANDR 0 
 #endif
 
 BLT_EXTERN void Blt_ScreenDPI(Tk_Window tkwin, int *xPtr, int *yPtr);
