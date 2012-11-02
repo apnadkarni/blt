@@ -573,12 +573,14 @@ ObjToIconProc(
     int offset,				/* Offset to field in structure */
     int flags)	
 {
-    TreeView *viewPtr = clientData;
+    ColumnStyle *stylePtr = (char *)widgRec;
+    TreeView *viewPtr;
     Icon *iconPtr = (Icon *)(widgRec + offset);
     Icon icon;
     int length;
     const char *string;
 
+    viewPtr = stylePtr->viewPtr;
     string = Tcl_GetStringFromObj(objPtr, &length);
     icon = NULL;
     if (length > 0) {

@@ -412,7 +412,7 @@ static Blt_ConfigSpec viewSpecs[] =
     {BLT_CONFIG_SYNONYM, "-altbg", "alternateBackground", (char *)NULL,
 	(char *)NULL, 0, 0},
     {BLT_CONFIG_BACKGROUND, "-alternatebackground", "alternateBackground", 
-	"Background", DEF_ALT_BACKGROUND, Blt_Offset(TreeView, altBg), 
+	"AlternateBackground", DEF_ALT_BACKGROUND, Blt_Offset(TreeView, altBg), 
 	BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_BITMASK, "-autocreate", "autoCreate", "AutoCreate", 
 	DEF_MAKE_PATH, Blt_Offset(TreeView, flags), 

@@ -365,6 +365,10 @@ typedef struct {
 #define DETACHED	(1<<4)		/* Indicates that the pipeline is
 					 * detached from standard I/O, running
 					 * in the background. */
+#define DONTKILL	(1<<6)		/* Indicates that the pipeline is
+					 * detached from standard I/O, running
+					 * in the background and should not be
+					 * signaled on exit. */
 
 static Blt_SwitchParseProc ObjToSignalProc;
 static Blt_SwitchCustom killSignalSwitch =
@@ -381,36 +385,38 @@ static Blt_SwitchCustom encodingSwitch =
 
 static Blt_SwitchSpec switchSpecs[] = 
 {
-    {BLT_SWITCH_CUSTOM,  "-decodeoutput",  "encoding", (char *)NULL,
-	Blt_Offset(Bgexec, out.encoding),  0, 0, &encodingSwitch}, 
-    {BLT_SWITCH_CUSTOM,  "-decodeerror",   "encoding", (char *)NULL,
+    {BLT_SWITCH_CUSTOM,  "-decodeoutput",	"encoding", (char *)NULL,
+	Blt_Offset(Bgexec, out.encoding),   0, 0, &encodingSwitch}, 
+    {BLT_SWITCH_CUSTOM,  "-decodeerror",	"encoding", (char *)NULL,
 	 Blt_Offset(Bgexec, err.encoding),  0, 0, &encodingSwitch},
-    {BLT_SWITCH_BOOLEAN, "-echo",           "bool",  (char *)NULL,
-         Blt_Offset(Bgexec, err.echo),	 0},
-    {BLT_SWITCH_STRING,  "-error",          "variable", (char *)NULL,
-	Blt_Offset(Bgexec, err.doneVar),   0},
-    {BLT_SWITCH_STRING,  "-update",         "variable", (char *)NULL,
+    {BLT_SWITCH_BOOLEAN, "-detach",		"bool", (char *)NULL,
+	Blt_Offset(Bgexec, flags),	    0, DONTKILL},
+    {BLT_SWITCH_BOOLEAN, "-echo",		"bool",  (char *)NULL,
+         Blt_Offset(Bgexec, err.echo),	    0},
+    {BLT_SWITCH_STRING,  "-error",		"variable", (char *)NULL,
+	Blt_Offset(Bgexec, err.doneVar),    0},
+    {BLT_SWITCH_STRING,  "-update",		"variable", (char *)NULL,
 	 Blt_Offset(Bgexec, out.updateVar), 0},
-    {BLT_SWITCH_STRING,  "-output",         "variable", (char *)NULL,
-	Blt_Offset(Bgexec, out.doneVar),   0},
-    {BLT_SWITCH_STRING,  "-lasterror",      "variable", (char *)NULL,
-	Blt_Offset(Bgexec, err.updateVar), 0},
-    {BLT_SWITCH_STRING,  "-lastoutput",     "variable", (char *)NULL,
-	Blt_Offset(Bgexec, out.updateVar), 0},
-    {BLT_SWITCH_OBJ,    "-onerror",        "command", (char *)NULL,
-	Blt_Offset(Bgexec, err.cmdObjPtr), 0},
-    {BLT_SWITCH_OBJ,    "-onoutput",       "command", (char *)NULL,
-	Blt_Offset(Bgexec, out.cmdObjPtr), 0},
-    {BLT_SWITCH_BOOLEAN, "-keepnewline",    "bool", (char *)NULL,
-	Blt_Offset(Bgexec, flags),	   0,	KEEPNEWLINE}, 
-    {BLT_SWITCH_INT,	 "-check",          "interval", (char *)NULL,
-	Blt_Offset(Bgexec, interval),      0},
-    {BLT_SWITCH_CUSTOM,  "-killsignal",     "signal", (char *)NULL,
-	Blt_Offset(Bgexec, signalNum),     0,   0, &killSignalSwitch},
-    {BLT_SWITCH_BOOLEAN, "-linebuffered",   "bool", (char *)NULL,
-	Blt_Offset(Bgexec, flags),	   0,	LINEBUFFERED},
-    {BLT_SWITCH_BOOLEAN, "-ignoreexitcode", "bool", (char *)NULL,
-	Blt_Offset(Bgexec, flags),	   0,	IGNOREEXITCODE},
+    {BLT_SWITCH_STRING,  "-output",		"variable", (char *)NULL,
+	Blt_Offset(Bgexec, out.doneVar),    0},
+    {BLT_SWITCH_STRING,  "-lasterror",		"variable", (char *)NULL,
+	Blt_Offset(Bgexec, err.updateVar),  0},
+    {BLT_SWITCH_STRING,  "-lastoutput",		"variable", (char *)NULL,
+	Blt_Offset(Bgexec, out.updateVar),  0},
+    {BLT_SWITCH_OBJ,     "-onerror",		"command", (char *)NULL,
+	Blt_Offset(Bgexec, err.cmdObjPtr),  0},
+    {BLT_SWITCH_OBJ,     "-onoutput",		"command", (char *)NULL,
+	Blt_Offset(Bgexec, out.cmdObjPtr),  0},
+    {BLT_SWITCH_BOOLEAN, "-keepnewline",	"bool", (char *)NULL,
+	Blt_Offset(Bgexec, flags),	    0, KEEPNEWLINE}, 
+    {BLT_SWITCH_INT,	 "-check",		"interval", (char *)NULL,
+	Blt_Offset(Bgexec, interval),       0},
+    {BLT_SWITCH_CUSTOM,  "-killsignal",		"signal", (char *)NULL,
+	Blt_Offset(Bgexec, signalNum),      0, 0, &killSignalSwitch},
+    {BLT_SWITCH_BOOLEAN, "-linebuffered",	"bool", (char *)NULL,
+	Blt_Offset(Bgexec, flags),	    0, LINEBUFFERED},
+    {BLT_SWITCH_BOOLEAN, "-ignoreexitcode",	"bool", (char *)NULL,
+	Blt_Offset(Bgexec, flags),	    0, IGNOREEXITCODE},
     {BLT_SWITCH_END}
 };
 
@@ -1978,7 +1984,9 @@ BgexecExitProc(ClientData clientData)
 
 	bgPtr = Blt_Chain_GetValue(link);
 	bgPtr->link = NULL;
-	KillProcesses(bgPtr);
+	if ((bgPtr->flags & DONTKILL) == 0) {
+	    KillProcesses(bgPtr);
+	}
     }
     Blt_Chain_Destroy(activePipelines);
     Tcl_MutexUnlock(mutexPtr);
