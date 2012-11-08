@@ -2077,10 +2077,7 @@ NewTrace(LineElement *elemPtr)
  *	Creates a new point 
  *
  * Results:
- *	Returns a pointer to the new trace.
- *
- * Side Effects:
- *	The trace is prepended to the element's list of traces.
+ *	Returns a pointer to the new trace point.
  *
  *---------------------------------------------------------------------------
  */
@@ -2113,9 +2110,6 @@ NewPoint(LineElement *elemPtr, double x, double y, int index)
  * Results:
  *	Returns a pointer to the new trace.
  *
- * Side Effects:
- *	The trace is prepended to the element's list of traces.
- *
  *---------------------------------------------------------------------------
  */
 static INLINE TraceSegment *
@@ -2146,7 +2140,7 @@ NewSegment(LineElement *elemPtr, float x1, float y1, float x2, float y2,
  *	None.
  *
  * Side Effects:
- *	The trace's counter is incremented.
+ *	The trace's segment counter is incremented.
  *
  *---------------------------------------------------------------------------
  */
@@ -2174,7 +2168,7 @@ AddSegment(Trace *tracePtr, TraceSegment *s)
  *	None.
  *
  * Side Effects:
- *	The trace's counter is incremented.
+ *	The trace's point counter is incremented.
  *
  *---------------------------------------------------------------------------
  */
@@ -2422,10 +2416,6 @@ GenerateSpline(Trace *tracePtr)
 
 		p1 = Blt_EvaluateSpline(spline, i, x);
 		t = NewPoint(elemPtr, p1.x, p1.y, p->index);
-#ifdef notdef
-	 fprintf(stderr, "new point x=%g new=%g,%g start(%d)=%g,%g index=%d\n", 
-		    x, p1.x, p1.y, i, p->x, p->y, p->index);
-#endif
 		/* Insert the new point in to line segment. */
 		t->next = lastp->next; 
 		lastp->next = t;
@@ -2499,11 +2489,6 @@ GenerateParametricSplineOld(Trace *tracePtr)
     distance[0] = 0;
     count = 1;
     total = 0.0;
-#ifdef notdef
-	fprintf(stderr, "orig #%d %g,%g d=%g px=%g,%g py=%g,%g\n", 
-		0, p->x, p->y, total, xpoints[0].x, xpoints[0].y, 
-		ypoints[0].x, ypoints[0].y);
-#endif
     for (q = p->next; q != NULL; q = q->next) {
 	double d;
 
@@ -2514,11 +2499,6 @@ GenerateParametricSplineOld(Trace *tracePtr)
         xpoints[count].y = q->x;
         ypoints[count].y = q->y;
 	distance[count] = total;
-#ifdef notdef
-	fprintf(stderr, "orig #%d %g,%g d=%g px=%g,%g py=%g,%g\n", 
-		count, q->x, q->y, total, xpoints[count].x, xpoints[count].y, 
-		ypoints[count].x, ypoints[count].y);
-#endif
 	count++;
 	p = q;
     }
@@ -2560,10 +2540,6 @@ GenerateParametricSplineOld(Trace *tracePtr)
 	    /* Point is indicated by its interval and parameter t. */
 	    px = Blt_EvaluateSpline(xspline, i, d);
 	    py = Blt_EvaluateSpline(yspline, i, d);
-#ifdef notdef
-	    fprintf(stderr, "time x=%g new=%g,%g start(%d)=%g,%g d=%g\n", x, 
-		    px.y, py.y, i, p->x, p->y, distance[i]);
-#endif
 	    t = NewPoint(elemPtr, px.y, py.y, p->index);
 	    /* Insert the new point in to line segment. */
 	    t->next = lastp->next; 
@@ -2866,10 +2842,6 @@ SmoothElement(LineElement *elemPtr)
 	Trace *tracePtr;
 
 	tracePtr = Blt_Chain_GetValue(link);
-#ifdef notdef
-	fprintf(stderr, "SmoothElement(%s) n=%d tw=%d\n", elemPtr->obj.name,
-		tracePtr->numPoints, tracePtr->penPtr->traceWidth);
-#endif
 	if ((tracePtr->numPoints < 2) || (tracePtr->penPtr->traceWidth == 0)) {
 	    continue;
 	}
@@ -3728,6 +3700,8 @@ MapActiveSymbols(LineElement *elemPtr)
  *
  * ReducePoints --
  *
+ *	FIXME: Fix to reduce point list.
+ *
  *	Generates a coordinate array of transformed screen coordinates from
  *	the data points.
  *
@@ -4299,9 +4273,6 @@ GradientColorProc(Blt_Paintbrush *brushPtr, int x, int y)
     } else {
 	return 0x0;
     }
-#ifdef notdef
-    fprintf(stderr, "value=%g, min=%g max=%g x=%d,y=%d axis=%s\n", value, cmapPtr->min, cmapPtr->max, x, y, cmapPtr->axisPtr->obj.name);
-#endif
     color.u32 = Blt_Palette_GetColorFromAbsoluteValue(brushPtr->palette, value,
 	cmapPtr->min, cmapPtr->max);
     return color.u32;
@@ -5086,7 +5057,7 @@ DrawTriangleArrowSymbols(Graph *graphPtr, Drawable drawable, Trace *tracePtr,
     /*
      *
      *                      The triangle symbol is a closed polygon
-     *           0,3         of 3 points. The diagram to the left
+     *           0,3        of 3 points. The diagram to the left
      *                      represents the positions of the points
      *           x,y        which are computed below. The extra
      *                      (fourth) point connects the first and
@@ -5202,35 +5173,11 @@ DrawImageSymbols(Graph *graphPtr, Drawable drawable, Trace *tracePtr,
 	int x, y;
 
 	if (!DRAWN(tracePtr, p->flags)) {
-#ifdef notdef
-	    fprintf(stderr, "not drawn p->x=%g, p->y=%g p->index=%d ", p->x, 
-		    p->y, p->index);
-	    fprintf(stderr, "drawflags=");
-	    DumpFlags(tracePtr->drawFlags);
-	    fprintf(stderr, "  ");
-	    fprintf(stderr, "p->flags=");
-	    DumpFlags(p->flags);
-	    fprintf(stderr, "\n");
-#endif
 	    continue;
 	}
 	if (!PLAYING(graphPtr, p->index)) {
-#ifdef notdef
-	    fprintf(stderr, "not playing flags=%x p->x=%d, p->y=%d p->flags=%x\n",
-		    tracePtr->drawFlags, p->x, p->y, p->flags);
-#endif
 	    continue;
 	}
-#ifdef notdef
-	fprintf(stderr, "drawing p->x=%g, p->y=%g p->index=%d ", p->x, p->y,
-		p->index);
-	fprintf(stderr, "drawflags=");
-	DumpFlags(tracePtr->drawFlags);
-	fprintf(stderr, "  ");
-	fprintf(stderr, "p->flags=");
-	DumpFlags(p->flags);
-	fprintf(stderr, "\n");
-#endif
 	x = Round(p->x) - dx;
 	y = Round(p->y) - dy;
 	Tk_RedrawImage(penPtr->symbol.image, 0, 0, w, h, drawable, x, y);
