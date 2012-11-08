@@ -465,11 +465,11 @@ GetChildren(Display *display, Window window)
 static int
 GetMaxPropertySize(Display *display)
 {
-    int size;
+    int numBytes;
 
-    size = Blt_MaxRequestSize(display, sizeof(char));
-    size -= 32;
-    return size;
+    numBytes = Blt_MaxRequestSize(display, sizeof(char));
+    numBytes -= 32;
+    return numBytes;
 }
 
 static unsigned char *

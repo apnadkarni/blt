@@ -4457,10 +4457,8 @@ DrawPolyline(Graph *graphPtr, Drawable drawable, Trace *tracePtr,
     HPEN pen, oldPen;
     POINT *points;
     TkWinDCState state;
-    int maxPoints;			/* Maximum # of points in a single
-					 * polyline. */
     TracePoint *p;
-    int count;
+    size_t numMax, numReq, count;
 
     /*  
      * If the line is wide (> 1 pixel), arbitrarily break the line in sections
@@ -4469,13 +4467,16 @@ DrawPolyline(Graph *graphPtr, Drawable drawable, Trace *tracePtr,
      * that we lose dash and cap uniformity for unbearably slow polyline
      * draws.
      */
-    if (penPtr->traceGC->line_width > 1) {
-	maxPoints = 100;
-    } else {
-	maxPoints = Blt_MaxRequestSize(graphPtr->display, sizeof(POINT)) - 1;
+    numReq = tracePtr->numPoints;
+    numMax = 100;			/* Default small size for polyline. */
+    if (penPtr->traceGC->line_width < 2) {
+	numMax = Blt_MaxRequestSize(graphPtr->display, sizeof(POINT)) - 1;
     }
-    points = Blt_AssertMalloc((maxPoints + 1) * sizeof(POINT));
-
+    if ((numMax == 0) || (numMax > numReq)) {
+	numMax = numReq;
+    }
+    points = Blt_AssertMalloc((numMax + 1) * sizeof(POINT));
+    
     dc = TkWinGetDrawableDC(graphPtr->display, drawable, &state);
 
     /* FIXME: Add clipping region here. */
@@ -4494,7 +4495,7 @@ DrawPolyline(Graph *graphPtr, Drawable drawable, Trace *tracePtr,
 	points[count].x = Round(p->x);
 	points[count].y = Round(p->y);
 	count++;
-	if (count >= maxPoints) {
+	if (count >= numMax) {
 	    Polyline(dc, points, count);
 	    points[0] = points[count - 1];
 	    count = 1;
@@ -4525,15 +4526,15 @@ DrawPolyline(Graph *graphPtr, Drawable drawable, Trace *tracePtr,
 {
     TracePoint *p;
     XPoint *points;
-    int maxPoints;
-    int count;
+    size_t numMax, numReq, count;
 
-    maxPoints = MAX_DRAWLINES(graphPtr->display);
-    if (maxPoints > tracePtr->numPoints) {
-	maxPoints = tracePtr->numPoints;
+    numReq = tracePtr->numPoints;
+    numMax = MAX_DRAWLINES(graphPtr->display);
+    if ((numMax == 0) || (numMax > numReq)) {
+	numMax = numReq;
     } 
-    points = Blt_AssertMalloc((maxPoints + 1) * sizeof(XPoint));
-    count = 0;			/* Counter for points */
+    points = Blt_AssertMalloc((numMax + 1) * sizeof(XPoint));
+    count = 0;				/* Counter for points */
     for (p = tracePtr->head; p != NULL; p = p->next) {
 	if (!PLAYING(graphPtr, p->index)) {
 	    continue;
@@ -4541,7 +4542,7 @@ DrawPolyline(Graph *graphPtr, Drawable drawable, Trace *tracePtr,
 	points[count].x = Round(p->x);
 	points[count].y = Round(p->y);
 	count++;
-	if (count >= maxPoints) {
+	if (count >= numMax) {
 	    XDrawLines(graphPtr->display, drawable, penPtr->traceGC, points,
 		       count, CoordModeOrigin);
 	    points[0] = points[count - 1];
@@ -4572,14 +4573,14 @@ DrawErrorBars(Graph *graphPtr, Drawable drawable, Trace *tracePtr,
 {
     XSegment *segments;
     TraceSegment *s;
-    int count;
-    int maxSegments;
+    size_t numMax, numReq, count;
 
-    maxSegments = MAX_DRAWSEGMENTS(graphPtr->display);
-    if (maxSegments > tracePtr->numSegments) {
-	maxSegments = tracePtr->numSegments;
-    }
-    segments = Blt_Malloc(maxSegments * sizeof(XSegment));
+    numReq = tracePtr->numSegments;
+    numMax = MAX_DRAWSEGMENTS(graphPtr->display);
+    if ((numMax == 0) || (numMax > numReq)) {
+	numMax = numReq;
+    } 
+    segments = Blt_Malloc(numMax * sizeof(XSegment));
     if (segments == NULL) {
 	return;
     }
@@ -4597,7 +4598,7 @@ DrawErrorBars(Graph *graphPtr, Drawable drawable, Trace *tracePtr,
 	segments[count].x2 = (short int)Round(s->x2);
 	segments[count].y2 = (short int)Round(s->y2);
 	count++;
-	if (count >= maxSegments) {
+	if (count >= numMax) {
 	    XDrawSegments(graphPtr->display, drawable, penPtr->errorGC, 
 			  segments, count);
 	    count = 0;
@@ -4669,14 +4670,14 @@ DrawPointSymbols(Graph *graphPtr, Drawable drawable, Trace *tracePtr,
 {
     TracePoint *p;
     XPoint *points;
-    int count;
-    int maxPoints;
+    size_t numMax, numReq, count;
 
-    maxPoints = MAX_DRAWPOINTS(graphPtr->display);
-    if (maxPoints > tracePtr->numPoints) {
-	maxPoints = tracePtr->numPoints;
-    }
-    points = Blt_Malloc(maxPoints * sizeof(XPoint));
+    numReq = tracePtr->numPoints;
+    numMax = MAX_DRAWPOINTS(graphPtr->display);
+    if ((numMax == 0) || (numMax > numReq)) {
+	numMax = numReq;
+    } 
+    points = Blt_Malloc(numMax * sizeof(XPoint));
     if (points == NULL) {
 	return;
     }
@@ -4691,7 +4692,7 @@ DrawPointSymbols(Graph *graphPtr, Drawable drawable, Trace *tracePtr,
 	points[count].x = Round(p->x);
 	points[count].y = Round(p->y);
 	count++;
-	if (count >= maxPoints) {
+	if (count >= numMax) {
 	    XDrawPoints(graphPtr->display, drawable, penPtr->symbol.fillGC, 
 			points, count, CoordModeOrigin);
 	    count = 0;
@@ -4788,19 +4789,20 @@ DrawCircleSymbols(Graph *graphPtr, Drawable drawable, Trace *tracePtr,
 {
     XArc *arcs;
     TracePoint *p;
-    int maxArcs;
-    int r, s, count;
+    int r, s;
+    size_t numMax, numReq, count;
 
-    r = (int)ceil(size * 0.5);
-    s = r + r;
-    maxArcs = MAX_DRAWARCS(graphPtr->display);
-    if (maxArcs > tracePtr->numPoints) {
-	maxArcs = tracePtr->numPoints;
+    numReq = tracePtr->numPoints;
+    numMax = MAX_DRAWARCS(graphPtr->display);
+    if ((numMax == 0) || (numMax > numReq)) {
+	numMax = numReq;
     }
-    arcs = Blt_Malloc(maxArcs * sizeof(XArc));
+    arcs = Blt_Malloc(numMax * sizeof(XArc));
     if (arcs == NULL) {
 	return;
     }
+    r = (int)ceil(size * 0.5);
+    s = r + r;
     count = 0;				/* Counter for arcs. */
     for (p = tracePtr->head; p != NULL; p = p->next) {
 	if (!DRAWN(tracePtr, p->flags)) {
@@ -4816,7 +4818,7 @@ DrawCircleSymbols(Graph *graphPtr, Drawable drawable, Trace *tracePtr,
 	arcs[count].angle1 = 0;
 	arcs[count].angle2 = 23040;
 	count++;
-	if (count >= maxArcs) {
+	if (count >= numMax) {
 	    if (penPtr->symbol.fillGC != NULL) {
 		XFillArcs(graphPtr->display, drawable, penPtr->symbol.fillGC, 
 			arcs, count);
@@ -4860,19 +4862,22 @@ DrawSquareSymbols(Graph *graphPtr, Drawable drawable, Trace *tracePtr,
 {
     XRectangle *rectangles;
     TracePoint *p;
-    int maxRectangles;
-    int r, s, count;
+    size_t numMax, numReq, count;
+    int r, s;
 
-    r = (int)ceil(size * S_RATIO * 0.5);
-    s = r + r;
-    maxRectangles = MAX_DRAWRECTANGLES(graphPtr->display);
-    if (maxRectangles > tracePtr->numPoints) {
-	maxRectangles = tracePtr->numPoints;
-    }
-    rectangles = Blt_Malloc(maxRectangles * sizeof(XRectangle));
+    numReq = tracePtr->numPoints;
+    numMax = MAX_DRAWRECTANGLES(graphPtr->display);
+    if ((numMax == 0) || (numMax > numReq)) {
+	numMax = numReq;
+    } 
+    rectangles = Blt_Malloc(numMax * sizeof(XRectangle));
     if (rectangles == NULL) {
 	return;
     }
+
+    r = (int)ceil(size * S_RATIO * 0.5);
+    s = r + r;
+
     count = 0;				/* Counter for rectangles. */
     for (p = tracePtr->head; p != NULL; p = p->next) {
 	if (!DRAWN(tracePtr, p->flags)) {
@@ -4886,7 +4891,7 @@ DrawSquareSymbols(Graph *graphPtr, Drawable drawable, Trace *tracePtr,
 	rectangles[count].width = s;
 	rectangles[count].height = s;
 	count++;
-	if (count >= maxRectangles) {
+	if (count >= numMax) {
 	    if (penPtr->symbol.fillGC != NULL) {
 		XFillRectangles(graphPtr->display, drawable, 
 			penPtr->symbol.fillGC, rectangles, count);
@@ -4924,20 +4929,25 @@ DrawSkinnyCrossPlusSymbols(Graph *graphPtr, Drawable drawable, Trace *tracePtr,
 			   LinePen *penPtr, int size)
 {
     TracePoint *p;
-    XPoint pattern[13];			/* Template for polygon symbols */
+    XPoint pattern[4];			/* Template for polygon symbols */
     XSegment *segments;
-    int maxSegments;
-    int r, count;
+    size_t numMax, numReq, count;
+    int r;
 
-    r = (int)ceil(size * 0.5);
-    maxSegments = MAX_DRAWSEGMENTS(graphPtr->display);
-    if (maxSegments < (tracePtr->numPoints * 2)) {
-	maxSegments = tracePtr->numPoints * 2;
+    /* Two line segments for each point in the trace. */
+    numReq = tracePtr->numPoints * 2;
+    /* Limit the size of the segment array to the maximum request size of the
+     * X11 server. */
+    numMax = MAX_DRAWSEGMENTS(graphPtr->display);
+    numMax &= ~0x1;		/* Max # segments must be even. */
+    if ((numMax == 0) || (numMax > numReq)) {
+	numMax = numReq;
     }
-    segments = Blt_Malloc(maxSegments * sizeof(XSegment));
+    segments = Blt_Malloc(numMax * sizeof(XSegment));
     if (segments == NULL) {
 	return;
     }
+    r = (int)ceil(size * 0.5);
     if (penPtr->symbol.type == SYMBOL_SCROSS) {
 	r = Round((double)r * M_SQRT1_2);
 	pattern[3].y = pattern[2].x = pattern[0].x = pattern[0].y = -r;
@@ -4969,7 +4979,7 @@ DrawSkinnyCrossPlusSymbols(Graph *graphPtr, Drawable drawable, Trace *tracePtr,
 	segments[count].x2 = pattern[3].x + rx;
 	segments[count].y2 = pattern[3].y + ry;
 	count++;
-	if (count >= maxSegments) {
+	if (count >= numMax) {
 	    XDrawSegments(graphPtr->display, drawable, 	
 		  penPtr->symbol.outlineGC, segments, count);
 	    count = 0;
