@@ -5073,6 +5073,159 @@ GetSymbolPostScriptInfo(Blt_Ps ps, ContourElement *elemPtr, ContourPen *penPtr,
     Blt_Ps_Append(ps, "} def\n\n");
 }
 
+static void
+SetLineAttributes(Blt_Ps ps, ContourPen *penPtr)
+{
+    /* Set the attributes of the line (color, dashes, linewidth) */
+    Blt_Ps_XSetLineAttributes(ps, penPtr->traceColor,
+	penPtr->traceWidth, &penPtr->traceDashes, CapButt, JoinMiter);
+    if ((LineIsDashed(penPtr->traceDashes)) && 
+	(penPtr->traceOffColor != NULL)) {
+	Blt_Ps_Append(ps, "/DashesProc {\n  gsave\n    ");
+	Blt_Ps_XSetBackground(ps, penPtr->traceOffColor);
+	Blt_Ps_Append(ps, "    ");
+	Blt_Ps_XSetDashes(ps, (Blt_Dashes *)NULL);
+	Blt_Ps_Append(ps, "stroke\n  grestore\n} def\n");
+    } else {
+	Blt_Ps_Append(ps, "/DashesProc {} def\n");
+    }
+}
+
+static void
+PolylineToPostScript(Blt_Ps ps, Trace *tracePtr, ContourPen *penPtr)
+{
+    Point2d *points;
+    TracePoint *p;
+    int count;
+
+    SetLineAttributes(ps, penPtr);
+    points = Blt_AssertMalloc(tracePtr->numPoints * sizeof(Point2d));
+    count = 0;
+    for (p = tracePtr->head; p != NULL; p = p->next) {
+	points[count].x = p->x;
+	points[count].y = p->y;
+	count++;
+    }
+    Blt_Ps_Append(ps, "% start trace\n");
+    Blt_Ps_DrawPolyline(ps, count, points);
+    Blt_Ps_Append(ps, "% end trace\n");
+    Blt_Free(points);
+}
+
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * DrawHull --
+ *
+ * 	Draws the convex hull representing the boundary of the mesh.
+ *
+ * Results:
+ *	None.
+ *
+ *---------------------------------------------------------------------------
+ */
+static void
+HullToPostScript(Graph *graphPtr, Blt_Ps ps, ContourElement *elemPtr)
+{
+    Blt_ChainLink link;
+
+    for (link = Blt_Chain_FirstLink(elemPtr->traces); link != NULL;
+	 link = Blt_Chain_NextLink(link)) {
+	Trace *tracePtr;
+	
+	tracePtr = Blt_Chain_GetValue(link);
+	PolylineToPostScript(ps, tracePtr, elemPtr->boundaryPenPtr);
+    }
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * EdgesToPostScript --
+ *
+ * 	Draws the segments forming of the mesh grid.
+ *
+ * Results:
+ *	None.
+ *
+ *---------------------------------------------------------------------------
+ */
+static void
+EdgesToPostScript(Graph *graphPtr, Blt_Ps ps, ContourElement *elemPtr,
+		  ContourPen *penPtr)
+{
+    Blt_Ps_XSetLineAttributes(ps, elemPtr->meshColor, elemPtr->meshWidth + 2,
+		 &elemPtr->meshDashes, CapButt, JoinRound);
+    Blt_Ps_DrawSegments2d(ps, elemPtr->numWires, elemPtr->wires);
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * TrianglesToPostScript --
+ *
+ * 	Draws the triangles forming of the colormap of the mesh.
+ *
+ * Results:
+ *	None.
+ *
+ *---------------------------------------------------------------------------
+ */
+static void
+TrianglesToPostScript(Graph *graphPtr, Blt_Ps ps, ContourElement *elemPtr,
+	      ContourPen *penPtr)
+{
+    Region2d exts;
+    Triangle *t, *tend;
+    int x, y, w, h;
+
+    Blt_GraphExtents(elemPtr, &exts);
+    w = (exts.right - exts.left) + 1;
+    h = (exts.bottom - exts.top) + 1;
+    if (elemPtr->picture != NULL) {
+	Blt_FreePicture(elemPtr->picture);
+    }
+    elemPtr->picture = Blt_CreatePicture(w, h);
+    Blt_BlankPicture(elemPtr->picture, 0x0);
+    x = exts.left, y = exts.top;
+    for (t = elemPtr->triangles, tend = t + elemPtr->numTriangles; 
+	 t < tend; t++) {
+	DrawTriangle(elemPtr, elemPtr->picture, t, x, y);
+    }
+    /* Create a clip path from the hull and draw the picture */
+    Blt_Ps_DrawPicture(ps, elemPtr->picture, exts.left, exts.top);
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * MeshToPostScript --
+ *
+ * 	Draws the mesh of contour.
+ *
+ * Results:
+ *	None.
+ *
+ *---------------------------------------------------------------------------
+ */
+static void
+MeshToPostScript(Graph *graphPtr, Blt_Ps ps, ContourElement *elemPtr)
+{
+    ContourPen *penPtr;
+
+    penPtr = PEN(elemPtr);
+    if (elemPtr->flags & COLORMAP) {
+	TrianglesToPostScript(graphPtr, ps, elemPtr, penPtr);
+    }
+    if (elemPtr->flags & EDGES) {
+	EdgesToPostScript(graphPtr, ps, elemPtr, penPtr);
+    }
+    if (elemPtr->flags & HULL) {
+	HullToPostScript(graphPtr, ps, elemPtr);
+    }
+}
+
 /*
  *---------------------------------------------------------------------------
  *
@@ -5135,43 +5288,112 @@ SymbolToPostScriptProc(
 		  symbolMacros[penPtr->symbol.type]);
 }
 
-#ifdef notdef
-static void
-GridToPostScript(Graph *graphPtr, Blt_Ps ps, ContourPen *penPtr, 
-		 XRectangle *bars, int numBars)
-{
-    XRectangle *rp, *rend;
 
-    if ((penPtr->bg == NULL) && (penPtr->fgColor == NULL)) {
-	return;
+/*
+ *---------------------------------------------------------------------------
+ *
+ * IsolineToPostScript --
+ *
+ * 	Draws each isolines as one or more polylines.
+ *
+ * Results:
+ *	None.
+ *
+ *---------------------------------------------------------------------------
+ */
+static void
+IsolineToPostScript(Graph *graphPtr, Blt_Ps ps, ContourElement *elemPtr,
+		    Isoline *isoPtr, ContourPen *penPtr)
+{
+    TraceSegment *s;
+    XColor *colorPtr;
+
+    SetLineAttributes(ps, penPtr);
+    colorPtr = NULL;
+    if (penPtr->traceColor == COLOR_PALETTE) {
+	if (colorPtr == NULL) {
+	    XColor color;
+
+	    color.red   = isoPtr->paletteColor.Red * 257;
+	    color.green = isoPtr->paletteColor.Green * 257;
+	    color.blue  = isoPtr->paletteColor.Blue * 257;
+	    colorPtr = Tk_GetColorByValue(graphPtr->tkwin, &color);
+	}
+	/* Temporarily set the color from the interpolated value. */
+	Blt_Ps_XSetForeground(ps, colorPtr);
+    } 
+    Blt_Ps_Append(ps, "% start segments\n");
+    Blt_Ps_Append(ps, "newpath\n");
+    for (s = isoPtr->segments; s != NULL; s = s->next) {
+	Blt_Ps_Format(ps, "  %g %g moveto %g %g lineto\n", 
+		s->x1, s->y1, s->x2, s->y2);
+	Blt_Ps_Append(ps, "DashesProc stroke\n");
     }
-    for (rp = bars, rend = rp + numBars; rp < rend; rp++) {
-	if ((rp->width < 1) || (rp->height < 1)) {
+    Blt_Ps_Append(ps, "% end segments\n");
+}
+
+#ifdef notdef
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * SymbolsToPostScript --
+ *
+ * 	Draw a symbol centered at the given x,y window coordinate based upon
+ * 	the element symbol type and size.
+ *
+ * Results:
+ *	None.
+ *
+ * Problems:
+ *	Most notable is the round-off errors generated when calculating the
+ *	centered position of the symbol.
+ *
+ *---------------------------------------------------------------------------
+ */
+static void
+SymbolsToPostScript(Blt_Ps ps, Trace *tracePtr, LinePen *penPtr)
+{
+    TracePoint *p;
+    double size;
+    static const char *symbolMacros[] =
+    {
+	"Li", "Sq", "Ci", "Di", "Pl", "Cr", "Sp", "Sc", "Tr", "Ar", "Bm", 
+	(char *)NULL,
+    };
+
+    GetSymbolPostScriptInfo(ps, tracePtr->elemPtr, penPtr, 
+	    tracePtr->symbolSize);
+    size = (double)tracePtr->symbolSize;
+    switch (penPtr->symbol.type) {
+    case SYMBOL_SQUARE:
+    case SYMBOL_CROSS:
+    case SYMBOL_PLUS:
+    case SYMBOL_SCROSS:
+    case SYMBOL_SPLUS:
+	size = (double)Round(size * S_RATIO);
+	break;
+    case SYMBOL_TRIANGLE:
+    case SYMBOL_ARROW:
+	size = (double)Round(size * 0.7);
+	break;
+    case SYMBOL_DIAMOND:
+	size = (double)Round(size * M_SQRT1_2);
+	break;
+
+    default:
+	break;
+    }
+    tracePtr->drawFlags |= KNOT;
+    if (tracePtr->elemPtr->reqMaxSymbols > 0) {
+	tracePtr->drawFlags |= SYMBOL;
+    }
+    for (p = tracePtr->head; p != NULL; p = p->next) {
+	if (!DRAWN(tracePtr, p->flags)) {
 	    continue;
 	}
-	if (penPtr->stipple != None) {
-	    Blt_Ps_Rectangle(ps, rp->x, rp->y, rp->width - 1, rp->height - 1);
-	    if (penPtr->bg != NULL) {
-		Blt_Ps_XSetBackground(ps,Blt_Bg_BorderColor(penPtr->bg));
-		Blt_Ps_Append(ps, "gsave fill grestore\n");
-	    }
-	    if (penPtr->fgColor != NULL) {
-		Blt_Ps_XSetForeground(ps, penPtr->fgColor);
-	    } else {
-		Blt_Ps_XSetForeground(ps,Blt_Bg_BorderColor(penPtr->bg));
-	    }
-	    Blt_Ps_XSetStipple(ps, graphPtr->display, penPtr->stipple);
-	} else if (penPtr->fgColor != NULL) {
-	    Blt_Ps_XSetForeground(ps, penPtr->fgColor);
-	    Blt_Ps_XFillRectangle(ps, (double)rp->x, (double)rp->y, 
-		(int)rp->width - 1, (int)rp->height - 1);
-	}
-	if ((penPtr->bg != NULL) && (penPtr->borderWidth > 0) && 
-	    (penPtr->relief != TK_RELIEF_FLAT)) {
-	    Blt_Ps_Draw3DRectangle(ps, Blt_Bg_Border(penPtr->bg), 
-		(double)rp->x, (double)rp->y, (int)rp->width, (int)rp->height,
-		penPtr->borderWidth, penPtr->relief);
-	}
+	Blt_Ps_Format(ps, "%g %g %g %s\n", p->x, p->y, size, 
+		symbolMacros[penPtr->symbol.type]);
     }
 }
 
@@ -5258,8 +5480,25 @@ NormalToPostScriptProc(Graph *graphPtr, Blt_Ps ps, Element *basePtr)
 {
 #ifdef FIXME
     ContourElement *elemPtr = (ContourElement *)basePtr;
-    Blt_ChainLink link;
-    int count;
+    Blt_HashEntry *hPtr;
+    Blt_HashSearch iter;
+
+    MeshToPostScript(graphPtr, drawable, elemPtr);
+    for (hPtr = Blt_FirstHashEntry(&elemPtr->isoTable, &iter); hPtr != NULL;
+	 hPtr = Blt_NextHashEntry(&iter)) {
+	Isoline *isoPtr;
+
+	isoPtr = Blt_GetHashValue(hPtr);
+	if (isoPtr->flags & HIDE) {
+	    continue;			/* Don't draw this isoline. */
+	}
+	if (elemPtr->flags & ISOLINES) {
+	    IsolineToPostScript(graphPtr, ps, elemPtr, isoPtr, isoPtr->penPtr);
+	}
+	if (elemPtr->flags & SYMBOLS) {
+	    SymbolsToPostScript(graphPtr, ps, isoPtr, isoPtr->penPtr);
+	}
+    }
 #endif
 }
 
