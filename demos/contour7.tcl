@@ -20,8 +20,7 @@ foreach  i [$y2 values] {
 puts stderr [blt::palette names]
 #.g axis configure z -logscale yes
 
-create palette
-create colormap -axis -min -max -palette 
+.g colormap create -palette [blt::palette create]
 .g axis configure -min -max -tick -all of that works.
 .g colorbar window -colormap colormap -min -max -title  -orient vertical \
     -title title -tickfont -titlefont -hide no

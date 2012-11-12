@@ -1,6 +1,6 @@
 
 /*
- * bltGrColorbar.c --
+ * bltGrClrbar.c --
  *
  *	This module implements colorbar widget for the BLT graph widget.
  *
@@ -4471,7 +4471,7 @@ Blt_AxisOp(Tcl_Interp *interp, Graph *graphPtr, int margin, int objc,
 
 
 void
-Blt_MapAxes(Graph *graphPtr)
+Blt_MapColorbar(Graph *graphPtr)
 {
     int margin;
     

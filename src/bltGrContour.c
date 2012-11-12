@@ -5096,7 +5096,7 @@ PolylineToPostScript(Blt_Ps ps, Trace *tracePtr, ContourPen *penPtr)
 {
     Point2d *points;
     TracePoint *p;
-    int count;
+    size_t count;
 
     SetLineAttributes(ps, penPtr);
     points = Blt_AssertMalloc(tracePtr->numPoints * sizeof(Point2d));
@@ -5116,7 +5116,7 @@ PolylineToPostScript(Blt_Ps ps, Trace *tracePtr, ContourPen *penPtr)
 /*
  *---------------------------------------------------------------------------
  *
- * DrawHull --
+ * HullToPostScript --
  *
  * 	Draws the convex hull representing the boundary of the mesh.
  *
@@ -5174,7 +5174,7 @@ EdgesToPostScript(Graph *graphPtr, Blt_Ps ps, ContourElement *elemPtr,
  */
 static void
 TrianglesToPostScript(Graph *graphPtr, Blt_Ps ps, ContourElement *elemPtr,
-	      ContourPen *penPtr)
+		      ContourPen *penPtr)
 {
     Region2d exts;
     Triangle *t, *tend;
@@ -6862,10 +6862,13 @@ DrawTriangle(ContourElement *elemPtr, Pict *destPtr, Triangle *t, int xoff,
     TriangleRenderer ren;
 #define A0	ren.edge[0].A
 #define B0	ren.edge[0].B
+#define C0	ren.edge[0].C
 #define A1	ren.edge[1].A
 #define B1	ren.edge[1].B
+#define C1	ren.edge[1].C
 #define A2	ren.edge[2].A 
 #define B2	ren.edge[2].B        
+#define C2	ren.edge[2].C        
 #define Ar	ren.red[0]
 #define Br	ren.red[1]
 #define Ag	ren.green[0]
@@ -6881,9 +6884,9 @@ DrawTriangle(ContourElement *elemPtr, Pict *destPtr, Triangle *t, int xoff,
     fprintf(stderr, "ren.x1=%d y1=%d x2=%d y2=%d\n", 
 	    ren.x1, ren.y1, ren.x2, ren.y1);
 #endif
-    t0 = A0 * ren.x1 + B0 * ren.y1 + ren.edge[0].C;
-    t1 = A1 * ren.x1 + B1 * ren.y1 + ren.edge[1].C;
-    t2 = A2 * ren.x1 + B2 * ren.y1 + ren.edge[2].C;
+    t0 = (A0 * ren.x1) + (B0 * ren.y1) + C0;
+    t1 = (A1 * ren.x1) + (B1 * ren.y1) + C1;
+    t2 = (A2 * ren.x1) + (B2 * ren.y1) + C2;
     tr = ren.red[2];
     tg = ren.green[2];
     tb = ren.blue[2];

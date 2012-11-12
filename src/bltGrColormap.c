@@ -413,7 +413,8 @@ CreateOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	    }
 	    objc--, objv++;
 	}
-    } else {
+    } 
+    if (hPtr == NULL) {
 	/* If no name was given for the colormap, make up one. */
 
 	do { 
