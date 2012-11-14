@@ -216,6 +216,7 @@ static Blt_CustomOption paletteOption =
 #define DEF_TITLE_ALTERNATE	"0"
 #define DEF_TITLE_FG		RGB_BLACK
 #define DEF_TITLE_FONT		"{Sans Serif} 10"
+#define DEF_WEIGHT		"1.0"
 
 static Blt_ConfigSpec configSpecs[] =
 {
@@ -378,6 +379,8 @@ static Blt_ConfigSpec configSpecs[] =
 	Blt_Offset(Axis, titleFont), ALL_GRAPHS},
     {BLT_CONFIG_CUSTOM, "-use", "use", "Use", (char *)NULL, 0, ALL_GRAPHS, 
 	&useOption},
+    {BLT_CONFIG_FLOAT, "-weight", "weight", "Weight", DEF_WEIGHT, 
+	Blt_Offset(Axis, weight), BLT_CONFIG_DONT_SET_DEFAULT | ALL_GRAPHS},
     {BLT_CONFIG_END, NULL, NULL, NULL, NULL, 0, 0}
 };
 
@@ -2227,14 +2230,9 @@ DestroyAxis(Axis *axisPtr)
  *---------------------------------------------------------------------------
  */
 static void
-AxisOffsets(
-    Axis *axisPtr,
-    int margin,
-    int offset,
-    AxisInfo *infoPtr)
+AxisOffsets(Axis *axisPtr, Margin *marginPtr, int offset, AxisInfo *infoPtr)
 {
     Graph *graphPtr = axisPtr->obj.graphPtr;
-    Margin *marginPtr;
     int pad;				/* Offset of axis from interior
 					 * region. This includes a possible
 					 * border and the axis line width. */
@@ -2245,9 +2243,7 @@ AxisOffsets(
     int x, y;
     float fangle;
 
-    axisPtr->titleAngle = titleAngle[margin];
-    marginPtr = graphPtr->margins + margin;
-
+    axisPtr->titleAngle = titleAngle[marginPtr->site];
     tickLabel = axisLine = t1 = t2 = 0;
     labelOffset = AXIS_PAD_TITLE;
     if (axisPtr->lineWidth > 0) {
@@ -2275,7 +2271,7 @@ AxisOffsets(
      * the individual major and minor ticks.
      */
     inset = pad + axisPtr->lineWidth / 2;
-    switch (margin) {
+    switch (marginPtr->site) {
     case MARGIN_TOP:
 	axisLine = graphPtr->top;
 	if (axisPtr->flags & EXTERIOR) {
@@ -2511,7 +2507,7 @@ AxisOffsets(
 	axisLine = 0;
 	break;
     }
-    if ((margin == MARGIN_LEFT) || (margin == MARGIN_TOP)) {
+    if ((marginPtr->site == MARGIN_LEFT) || (marginPtr->site == MARGIN_TOP)) {
 	t1 = -t1, t2 = -t2;
 	labelOffset = -labelOffset;
     }
@@ -2680,7 +2676,7 @@ MakeSegments(Axis *axisPtr, AxisInfo *infoPtr)
  *---------------------------------------------------------------------------
  */
 static void
-MapAxis(Axis *axisPtr, int offset, int margin)
+MapAxis(Axis *axisPtr, Margin *marginPtr, int offset)
 {
     AxisInfo info;
     Graph *graphPtr = axisPtr->obj.graphPtr;
@@ -2700,7 +2696,7 @@ MapAxis(Axis *axisPtr, int offset, int margin)
 	axisPtr->screenRange = graphPtr->vRange;
     }
     axisPtr->screenScale = 1.0 / axisPtr->screenRange;
-    AxisOffsets(axisPtr, margin, offset, &info);
+    AxisOffsets(axisPtr, marginPtr, offset, &info);
     MakeSegments(axisPtr, &info);
 }
 
@@ -2728,37 +2724,38 @@ MapAxis(Axis *axisPtr, int offset, int margin)
  *---------------------------------------------------------------------------
  */
 static void
-MapStackedAxis(Axis *axisPtr, int count, int margin)
+MapStackedAxis(Axis *axisPtr, Margin *marginPtr, float totalWeight)
 {
     AxisInfo info;
     Graph *graphPtr = axisPtr->obj.graphPtr;
-    unsigned int slice, n, w, h;
-   
-    if ((graphPtr->margins[axisPtr->margin].axes->numLinks > 1) ||
-	(axisPtr->reqNumMajorTicks <= 0)) {
+    unsigned int w, h, n, slice;
+    float ratio;
+
+    n = graphPtr->margins[axisPtr->margin].axes->numLinks;
+    if ((n > 1) || (axisPtr->reqNumMajorTicks <= 0)) {
 	axisPtr->reqNumMajorTicks = 4;
     }
-    n = graphPtr->margins[margin].axes->numLinks;
+    ratio = axisPtr->weight / totalWeight;
     if (axisPtr->flags & HORIZONTAL) {
-	slice = graphPtr->hRange / n;
 	axisPtr->screenMin = graphPtr->hOffset;
 	axisPtr->screenRange = graphPtr->hRange;
+	slice = (int)(graphPtr->hRange * ratio);
 	axisPtr->width = slice;
     } else {
-	slice = graphPtr->vRange / n;
-	axisPtr->screenMin = graphPtr->vOffset;
 	axisPtr->screenMin = graphPtr->vOffset;
 	axisPtr->screenRange = graphPtr->vRange;
+	slice = (int)(graphPtr->vRange * ratio);
 	axisPtr->height = slice;
     }
 #define AXIS_PAD 2
     Blt_GetTextExtents(axisPtr->tickFont, 0, "0", 1, &w, &h);
     if (n > 1) {
-	axisPtr->screenMin += (slice * count) + AXIS_PAD + h / 2;
+	axisPtr->screenMin += marginPtr->offset + AXIS_PAD + h / 2;
 	axisPtr->screenRange = slice - 2 * AXIS_PAD - h;
+	marginPtr->offset += slice;
     }
     axisPtr->screenScale = 1.0f / axisPtr->screenRange;
-    AxisOffsets(axisPtr, margin, 0, &info);
+    AxisOffsets(axisPtr, marginPtr, 0, &info);
     MakeSegments(axisPtr, &info);
 }
 
@@ -3254,7 +3251,7 @@ Blt_GetAxisGeometry(Graph *graphPtr, Axis *axisPtr)
 	y += axisPtr->lineWidth + 2;
     }
 
-    axisPtr->maxTickHeight = axisPtr->maxTickWidth = 0;
+    axisPtr->maxTickLabelHeight = axisPtr->maxTickLabelWidth = 0;
     if (axisPtr->flags & SHOWTICKS) {
 	unsigned int pad;
 	unsigned int i, numLabels, numTicks;
@@ -3299,11 +3296,11 @@ Blt_GetAxisGeometry(Graph *graphPtr, Axis *axisPtr)
 		lw = labelPtr->width;
 		lh = labelPtr->height;
 	    }
-	    if (axisPtr->maxTickWidth < lw) {
-		axisPtr->maxTickWidth = lw;
+	    if (axisPtr->maxTickLabelWidth < lw) {
+		axisPtr->maxTickLabelWidth = lw;
 	    }
-	    if (axisPtr->maxTickHeight < lh) {
-		axisPtr->maxTickHeight = lh;
+	    if (axisPtr->maxTickLabelHeight < lh) {
+		axisPtr->maxTickLabelHeight = lh;
 	    }
 	}
 	assert(numLabels <= numTicks);
@@ -3315,10 +3312,10 @@ Blt_GetAxisGeometry(Graph *graphPtr, Axis *axisPtr)
 	    pad = ((axisPtr->lineWidth * 12) / 8);
 	}
 	if (axisPtr->flags & HORIZONTAL) {
-	    y += axisPtr->maxTickHeight + pad;
+	    y += axisPtr->maxTickLabelHeight + pad;
 	} else {
-	    y += axisPtr->maxTickWidth + pad;
-	    if (axisPtr->maxTickWidth > 0) {
+	    y += axisPtr->maxTickLabelWidth + pad;
+	    if (axisPtr->maxTickLabelWidth > 0) {
 		y += 5;			/* Pad either size of label. */
 	    }  
 	}
@@ -3382,7 +3379,7 @@ GetMarginGeometry(Graph *graphPtr, Margin *marginPtr)
     /* Count the visible axes. */
     numVisible = 0;
     l = w = h = 0;
-    marginPtr->maxTickWidth = marginPtr->maxTickHeight = 0;
+    marginPtr->maxTickLabelWidth = marginPtr->maxTickLabelHeight = 0;
     if (graphPtr->stackAxes) {
 	for (link = Blt_Chain_FirstLink(marginPtr->axes); link != NULL;
 	     link = Blt_Chain_NextLink(link)) {
@@ -3403,11 +3400,11 @@ GetMarginGeometry(Graph *graphPtr, Margin *marginPtr)
 			w = axisPtr->width;
 		    }
 		}
-		if (axisPtr->maxTickWidth > marginPtr->maxTickWidth) {
-		    marginPtr->maxTickWidth = axisPtr->maxTickWidth;
+		if (axisPtr->maxTickLabelWidth > marginPtr->maxTickLabelWidth){
+		    marginPtr->maxTickLabelWidth = axisPtr->maxTickLabelWidth;
 		}
-		if (axisPtr->maxTickHeight > marginPtr->maxTickHeight) {
-		    marginPtr->maxTickHeight = axisPtr->maxTickHeight;
+		if (axisPtr->maxTickLabelHeight>marginPtr->maxTickLabelHeight) {
+		    marginPtr->maxTickLabelHeight = axisPtr->maxTickLabelHeight;
 		}
 	    }
 	}
@@ -3430,11 +3427,11 @@ GetMarginGeometry(Graph *graphPtr, Margin *marginPtr)
 		} else {
 		    w += axisPtr->width;
 		}
-		if (axisPtr->maxTickWidth > marginPtr->maxTickWidth) {
-		    marginPtr->maxTickWidth = axisPtr->maxTickWidth;
+		if (axisPtr->maxTickLabelWidth > marginPtr->maxTickLabelWidth) {
+		    marginPtr->maxTickLabelWidth = axisPtr->maxTickLabelWidth;
 		}
-		if (axisPtr->maxTickHeight > marginPtr->maxTickHeight) {
-		    marginPtr->maxTickHeight = axisPtr->maxTickHeight;
+		if (axisPtr->maxTickLabelHeight>marginPtr->maxTickLabelHeight) {
+		    marginPtr->maxTickLabelHeight = axisPtr->maxTickLabelHeight;
 		}
 	    }
 	}
@@ -3560,9 +3557,9 @@ Blt_LayoutGraph(Graph *graphPtr)
     top    = GetMarginGeometry(graphPtr, &graphPtr->topMargin);
     bottom = GetMarginGeometry(graphPtr, &graphPtr->bottomMargin);
 
-    pad = graphPtr->bottomMargin.maxTickWidth;
-    if (pad < graphPtr->topMargin.maxTickWidth) {
-	pad = graphPtr->topMargin.maxTickWidth;
+    pad = graphPtr->bottomMargin.maxTickLabelWidth;
+    if (pad < graphPtr->topMargin.maxTickLabelWidth) {
+	pad = graphPtr->topMargin.maxTickLabelWidth;
     }
     pad = pad / 2 + 3;
     if (right < pad) {
@@ -3571,9 +3568,9 @@ Blt_LayoutGraph(Graph *graphPtr)
     if (left < pad) {
 	left = pad;
     }
-    pad = graphPtr->leftMargin.maxTickHeight;
-    if (pad < graphPtr->rightMargin.maxTickHeight) {
-	pad = graphPtr->rightMargin.maxTickHeight;
+    pad = graphPtr->leftMargin.maxTickLabelHeight;
+    if (pad < graphPtr->rightMargin.maxTickLabelHeight) {
+	pad = graphPtr->rightMargin.maxTickLabelHeight;
     }
     pad = pad / 2;
     if (top < pad) {
@@ -3978,6 +3975,7 @@ NewAxis(Graph *graphPtr, const char *name, int margin)
 	axisPtr->scrollUnits = 10;
 	axisPtr->reqMin = axisPtr->reqMax = Blt_NaN();
 	axisPtr->reqScrollMin = axisPtr->reqScrollMax = Blt_NaN();
+	axisPtr->weight = 1.0;
 	axisPtr->flags = (SHOWTICKS|GRIDMINOR|AUTO_MAJOR|
 			  AUTO_MINOR | EXTERIOR);
 	if (graphPtr->classId == CID_ELEM_BAR) {
@@ -5247,13 +5245,27 @@ Blt_MapAxes(Graph *graphPtr)
     int margin;
     
     for (margin = 0; margin < 4; margin++) {
-	Blt_Chain chain;
 	Blt_ChainLink link;
-	int count, offset;
+	int offset;
+	Margin *marginPtr;
+	float sum;
 
-	chain = graphPtr->margins[margin].axes;
-	count = offset = 0;
-	for (link = Blt_Chain_FirstLink(chain); link != NULL; 
+	marginPtr = graphPtr->margins + margin;
+	offset = 0;
+	sum = 0.0;
+	if (graphPtr->stackAxes) {
+	    marginPtr->offset = 0;
+	    for (link = Blt_Chain_FirstLink(marginPtr->axes); link != NULL; 
+		 link = Blt_Chain_NextLink(link)) {
+		Axis *axisPtr;
+		axisPtr = Blt_Chain_GetValue(link);
+		if ((axisPtr->flags & (USE|DELETE_PENDING)) != USE) {
+		    continue;
+		}
+		sum += axisPtr->weight;
+	    }
+	}
+	for (link = Blt_Chain_FirstLink(marginPtr->axes); link != NULL; 
 	     link = Blt_Chain_NextLink(link)) {
 	    Axis *axisPtr;
 
@@ -5265,19 +5277,18 @@ Blt_MapAxes(Graph *graphPtr)
 		if (axisPtr->reqNumMajorTicks <= 0) {
 		    axisPtr->reqNumMajorTicks = 4;
 		}
-		MapStackedAxis(axisPtr, count, margin);
+		MapStackedAxis(axisPtr, marginPtr, sum);
 	    } else {
 		if (axisPtr->reqNumMajorTicks <= 0) {
 		    axisPtr->reqNumMajorTicks = 4;
 		}
-		MapAxis(axisPtr, offset, margin);
+		MapAxis(axisPtr, marginPtr, offset);
+		offset += (axisPtr->flags & HORIZONTAL) ? 
+		    axisPtr->height : axisPtr->width;
 	    }
 	    if (axisPtr->flags & GRID) {
 		MapGridlines(axisPtr);
 	    }
-	    offset += (axisPtr->flags & HORIZONTAL) ? 
-		axisPtr->height : axisPtr->width;
-	    count++;
 	}
     }
 }

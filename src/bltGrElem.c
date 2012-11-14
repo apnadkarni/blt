@@ -3950,6 +3950,7 @@ Blt_GraphExtents(void *ptr, Region2d *r)
 	x = elemPtr->axes.y;
     } else {
 	x = elemPtr->axes.x;
+
 	y = elemPtr->axes.y;
     }
     r->left   = (double)x->screenMin;

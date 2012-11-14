@@ -356,7 +356,7 @@ catch {.mbar.prefs.m.em invoke "cross"}
 
 # ----------------------------------------------------------------------
 blt::stripchart .sc -title ""  -stackaxes yes -invert no \
-    -bufferelements no
+    -bufferelements no -bg white
 pack .sc -expand yes -fill both
 
 .sc xaxis configure -title "Time (s)" -autorange 20.0 -shiftby 0.5

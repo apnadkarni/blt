@@ -308,8 +308,10 @@ typedef struct {
 					 * shown.  Multiple titles are displayed
 					 * in another margin. This is the
 					 * minimum space requirement. */
-    short int maxTickWidth;
-    short int maxTickHeight;
+    short int maxTickLabelWidth;	/* Maximum width of all axis tick
+					 * labels in this margin. */
+    short int maxTickLabelHeight;	/* Maximum height of all axis tick
+					 * labels in this margin. */
     unsigned int numAxes;		/* # of axes to be displayed */
     Blt_Chain axes;			/* Axes associated with this margin */
     const char *varName;		/* If non-NULL, name of variable to be
@@ -318,6 +320,7 @@ typedef struct {
     int reqSize;			/* Requested size of margin */
     int site;				/* Indicates where margin is located:
 					 * left, right, top, or bottom. */
+    int offset;				/* Offset of next axis in margin. */
 } Margin;
 
 #define MARGIN_NONE	-1

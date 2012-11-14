@@ -247,7 +247,10 @@ struct _Axis {
 					 * axis. */
     short int left, right, top, bottom;	/* Region occupied by the of axis. */
     short int width, height;		/* Extents of axis */
-    short int maxTickWidth, maxTickHeight;
+    short int maxTickLabelWidth;	/* Maximum width of all ticks
+					 * labels. */
+    short int maxTickLabelHeight;	/* Maximum height of all tick
+					 * labels. */
     Blt_Bg normalBg;
     Blt_Bg activeBg;
     XColor *activeFgColor;
@@ -276,6 +279,7 @@ struct _Axis {
     double screenScale;
     int screenMin, screenRange;
     Blt_Palette palette;
+    float weight;
 };
 
 BLT_EXTERN void Blt_GetAxisGeometry(Graph *graphPtr, Axis *axisPtr);

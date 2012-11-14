@@ -2481,7 +2481,7 @@ Blt_GetAxisGeometry(Graph *graphPtr, Axis *axisPtr)
 	y += axisPtr->lineWidth + 2;
     }
 
-    axisPtr->maxTickHeight = axisPtr->maxTickWidth = 0;
+    axisPtr->maxTickLabelHeight = axisPtr->maxTickLabelWidth = 0;
     if (axisPtr->flags & SHOWTICKS) {
 	unsigned int pad;
 	unsigned int i, numLabels, numTicks;
@@ -2526,11 +2526,11 @@ Blt_GetAxisGeometry(Graph *graphPtr, Axis *axisPtr)
 		lw = labelPtr->width;
 		lh = labelPtr->height;
 	    }
-	    if (axisPtr->maxTickWidth < lw) {
-		axisPtr->maxTickWidth = lw;
+	    if (axisPtr->maxTickLabelWidth < lw) {
+		axisPtr->maxTickLabelWidth = lw;
 	    }
-	    if (axisPtr->maxTickHeight < lh) {
-		axisPtr->maxTickHeight = lh;
+	    if (axisPtr->maxTickLabelHeight < lh) {
+		axisPtr->maxTickLabelHeight = lh;
 	    }
 	}
 	assert(nLabels <= numTicks);
@@ -2542,10 +2542,10 @@ Blt_GetAxisGeometry(Graph *graphPtr, Axis *axisPtr)
 	    pad = ((axisPtr->lineWidth * 12) / 8);
 	}
 	if (axisPtr->flags & HORIZONTAL) {
-	    y += axisPtr->maxTickHeight + pad;
+	    y += axisPtr->maxTickLabelHeight + pad;
 	} else {
-	    y += axisPtr->maxTickWidth + pad;
-	    if (axisPtr->maxTickWidth > 0) {
+	    y += axisPtr->maxTickLabelWidth + pad;
+	    if (axisPtr->maxTickLabelWidth > 0) {
 		y += 5;			/* Pad either size of label. */
 	    }  
 	}
@@ -2577,7 +2577,7 @@ Blt_GetAxisGeometry(Graph *graphPtr, Axis *axisPtr)
 /*
  *---------------------------------------------------------------------------
  *
- * GetMarginGeometry --
+ * Blt_Colorbar_GetGeometry --
  *
  *	Examines all the axes in the given margin and determines the area
  *	required to display them.
@@ -2596,89 +2596,32 @@ Blt_GetAxisGeometry(Graph *graphPtr, Axis *axisPtr)
  *
  *---------------------------------------------------------------------------
  */
-static int
-GetMarginGeometry(Graph *graphPtr, Margin *marginPtr)
+static void
+Blt_Colorbar_GetGeometry(Graph *graphPtr, Margin *marginPtr)
 {
     Blt_ChainLink link;
     int l, w, h;			/* Length, width, and height. */
     int isHoriz;
     unsigned int numVisible;
+    Axis *axisPtr;
 
     isHoriz = HORIZMARGIN(marginPtr);
-
-    /* Count the visible axes. */
-    numVisible = 0;
-    l = w = h = 0;
-    marginPtr->maxTickWidth = marginPtr->maxTickHeight = 0;
-    if (graphPtr->stackAxes) {
-	for (link = Blt_Chain_FirstLink(marginPtr->axes); link != NULL;
-	     link = Blt_Chain_NextLink(link)) {
-	    Axis *axisPtr;
-	    
-	    axisPtr = Blt_Chain_GetValue(link);
-	    if ((axisPtr->flags & (HIDE|USE)) == USE) {
-		nVisible++;
-		if (graphPtr->flags & GET_AXIS_GEOMETRY) {
-		    Blt_GetAxisGeometry(graphPtr, axisPtr);
-		}
-		if (isHoriz) {
-		    if (h < axisPtr->height) {
-			h = axisPtr->height;
-		    }
-		} else {
-		    if (w < axisPtr->width) {
-			w = axisPtr->width;
-		    }
-		}
-		if (axisPtr->maxTickWidth > marginPtr->maxTickWidth) {
-		    marginPtr->maxTickWidth = axisPtr->maxTickWidth;
-		}
-		if (axisPtr->maxTickHeight > marginPtr->maxTickHeight) {
-		    marginPtr->maxTickHeight = axisPtr->maxTickHeight;
-		}
-	    }
-	}
+    cbarPtr->height = cbarPtr->width = 0;
+    if ((cbarPtr->axisPtr == NULL) || (cbarPtr->flags & HIDE) ||
+	(cbarPtr->colormap == NULL)) {
+	return;
+    }
+    axisPtr = cbarPtr->axisPtr;
+    if (graphPtr->flags & GET_AXIS_GEOMETRY) {
+	Blt_GetAxisGeometry(graphPtr, axisPtr);
+    }
+    if (isHoriz) {
+	cbarPtr->height += axisPtr->height;
+	cbarPtr->width += cbarPtr->barWidth + axisPtr->width;
     } else {
-	for (link = Blt_Chain_FirstLink(marginPtr->axes); link != NULL;
-	     link = Blt_Chain_NextLink(link)) {
-	    Axis *axisPtr;
-	    
-	    axisPtr = Blt_Chain_GetValue(link);
-	    if ((axisPtr->flags & (HIDE|USE)) == USE) {
-		nVisible++;
-		if (graphPtr->flags & GET_AXIS_GEOMETRY) {
-		    Blt_GetAxisGeometry(graphPtr, axisPtr);
-		}
-		if ((axisPtr->titleAlternate) && (l < axisPtr->titleWidth)) {
-		    l = axisPtr->titleWidth;
-		}
-		if (isHoriz) {
-		    h += axisPtr->height;
-		} else {
-		    w += axisPtr->width;
-		}
-		if (axisPtr->maxTickWidth > marginPtr->maxTickWidth) {
-		    marginPtr->maxTickWidth = axisPtr->maxTickWidth;
-		}
-		if (axisPtr->maxTickHeight > marginPtr->maxTickHeight) {
-		    marginPtr->maxTickHeight = axisPtr->maxTickHeight;
-		}
-	    }
-	}
+	cbarPtr->width += axisPtr->width;
+	cbarPtr->height += cbarPtr->barWidth + axisPtr->height;
     }
-    /* Enforce a minimum size for margins. */
-    if (w < 3) {
-	w = 3;
-    }
-    if (h < 3) {
-	h = 3;
-    }
-    marginPtr->numAxes = numVisible;
-    marginPtr->axesTitleLength = l;
-    marginPtr->width = w;
-    marginPtr->height = h;
-    marginPtr->axesOffset = (isHoriz) ? h : w;
-    return marginPtr->axesOffset;
 }
 
 /*
@@ -2787,9 +2730,9 @@ Blt_LayoutGraph(Graph *graphPtr)
     top    = GetMarginGeometry(graphPtr, &graphPtr->topMargin);
     bottom = GetMarginGeometry(graphPtr, &graphPtr->bottomMargin);
 
-    pad = graphPtr->bottomMargin.maxTickWidth;
-    if (pad < graphPtr->topMargin.maxTickWidth) {
-	pad = graphPtr->topMargin.maxTickWidth;
+    pad = graphPtr->bottomMargin.maxTickLabelWidth;
+    if (pad < graphPtr->topMargin.maxTickLabelWidth) {
+	pad = graphPtr->topMargin.maxTickLabelWidth;
     }
     pad = pad / 2 + 3;
     if (right < pad) {
@@ -2798,9 +2741,9 @@ Blt_LayoutGraph(Graph *graphPtr)
     if (left < pad) {
 	left = pad;
     }
-    pad = graphPtr->leftMargin.maxTickHeight;
-    if (pad < graphPtr->rightMargin.maxTickHeight) {
-	pad = graphPtr->rightMargin.maxTickHeight;
+    pad = graphPtr->leftMargin.maxTickLabelHeight;
+    if (pad < graphPtr->rightMargin.maxTickLabelHeight) {
+	pad = graphPtr->rightMargin.maxTickLabelHeight;
     }
     pad = pad / 2;
     if (top < pad) {
@@ -4441,7 +4384,7 @@ static Blt_OpSpec axisOps[] = {
 static int numAxisOps = sizeof(axisOps) / sizeof(Blt_OpSpec);
 
 int
-Blt_AxisOp(Tcl_Interp *interp, Graph *graphPtr, int margin, int objc,
+Blt_ColorbarOp(Tcl_Interp *interp, Graph *graphPtr, int margin, int objc,
 	   Tcl_Obj *const *objv)
 {
     int result;
@@ -4471,166 +4414,30 @@ Blt_AxisOp(Tcl_Interp *interp, Graph *graphPtr, int margin, int objc,
 
 
 void
-Blt_MapColorbar(Graph *graphPtr)
+Blt_Colorbar_Map(Graph *graphPtr)
 {
-    int margin;
+    Colorbar *cbarPtr;
+    Margin *marginPtr;
+    Blt_Chain chain;
+    Blt_ChainLink link;
+    int count, offset;
+    Axis *axisPtr;
     
-    for (margin = 0; margin < 4; margin++) {
-	Blt_Chain chain;
-	Blt_ChainLink link;
-	int count, offset;
+    cbarPtr = &graphPtr->colorbar;
+    marginPtr = cbarPtr->marginPtr;
+    axisPtr = cbarPtr->axisPtr;
 
-	chain = graphPtr->margins[margin].axes;
-	count = offset = 0;
-	for (link = Blt_Chain_FirstLink(chain); link != NULL; 
-	     link = Blt_Chain_NextLink(link)) {
-	    Axis *axisPtr;
-
-	    axisPtr = Blt_Chain_GetValue(link);
-	    if ((axisPtr->flags & (USE|DELETE_PENDING)) != USE) {
-		continue;
-	    }
-	    if (graphPtr->stackAxes) {
-		if (axisPtr->reqNumMajorTicks <= 0) {
-		    axisPtr->reqNumMajorTicks = 4;
-		}
-		MapStackedAxis(axisPtr, count, margin);
-	    } else {
-		if (axisPtr->reqNumMajorTicks <= 0) {
-		    axisPtr->reqNumMajorTicks = 4;
-		}
-		MapAxis(axisPtr, offset, margin);
-	    }
-	    if (axisPtr->flags & GRID) {
-		MapGridlines(axisPtr);
-	    }
-	    offset += (axisPtr->flags & HORIZONTAL) ? 
-		axisPtr->height : axisPtr->width;
-	    count++;
-	}
+    count = offset = 0;
+	
+    if (axisPtr->flags & (HIDE|DELETE_PENDING)) {
+	return;
     }
-}
-
-
-void
-Blt_DrawAxes(Graph *graphPtr, Drawable drawable)
-{
-    int margin;
-
-    for (margin = 0; margin < 4; margin++) {
-	Blt_ChainLink link;
-	Margin *marginPtr;
-
-	marginPtr = graphPtr->margins + margin;
-	for (link = Blt_Chain_LastLink(marginPtr->axes); link != NULL; 
-	     link = Blt_Chain_PrevLink(link)) {
-	    Axis *axisPtr;
-
-	    axisPtr = Blt_Chain_GetValue(link);
-	    if ((axisPtr->flags & (DELETE_PENDING|HIDE|USE)) == USE) {
-		DrawAxis(axisPtr, drawable);
-	    }
-	}
+    if (axisPtr->reqNumMajorTicks <= 0) {
+	axisPtr->reqNumMajorTicks = 4;
     }
+    MapBar(cbarPtr);
+    MapAxis(axisPtr, offset, cbarPtr->margin);
 }
-
-/*
- *---------------------------------------------------------------------------
- *
- * Blt_DrawGrids --
- *
- *	Draws the grid lines associated with each axis.
- *
- * Results:
- *	None.
- *
- *---------------------------------------------------------------------------
- */
-void
-Blt_DrawGrids(Graph *graphPtr, Drawable drawable) 
-{
-    int margin;
-
-    for (margin = 0; margin < 4; margin++) {
-	Blt_ChainLink link;
-	Margin *marginPtr;
-
-	marginPtr = graphPtr->margins + margin;
-	for (link = Blt_Chain_FirstLink(marginPtr->axes); link != NULL;
-	     link = Blt_Chain_NextLink(link)) {
-	    Axis *axisPtr;
-
-	    axisPtr = Blt_Chain_GetValue(link);
-	    if (axisPtr->flags & (DELETE_PENDING|HIDE)) {
-		continue;
-	    }
-	    if ((axisPtr->flags & USE) && (axisPtr->flags & GRID)) {
-		Blt_DrawSegments2d(graphPtr->display, drawable, 
-			axisPtr->major.gc, axisPtr->major.segments, 
-			axisPtr->major.numUsed);
-		if (axisPtr->flags & GRIDMINOR) {
-		    Blt_DrawSegments2d(graphPtr->display, drawable, 
-			axisPtr->minor.gc, axisPtr->minor.segments, 
-			axisPtr->minor.numUsed);
-		}
-	    }
-	}
-    }
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * Blt_GridsToPostScript --
- *
- *	Draws the grid lines associated with each axis.
- *
- * Results:
- *	None.
- *
- *---------------------------------------------------------------------------
- */
-void
-Blt_GridsToPostScript(Graph *graphPtr, Blt_Ps ps) 
-{
-    int margin;
-
-    for (margin = 0; margin < 4; margin++) {
-	Blt_ChainLink link;
-	Margin *marginPtr;
-
-	marginPtr = graphPtr->margins + margin;
-	for (link = Blt_Chain_FirstLink(marginPtr->axes); link != NULL;
-	     link = Blt_Chain_NextLink(link)) {
-	    Axis *axisPtr;
-
-	    axisPtr = Blt_Chain_GetValue(link);
-	    if ((axisPtr->flags & (DELETE_PENDING|HIDE|USE|GRID)) !=
-		(GRID|USE)) {
-		continue;
-	    }
-	    Blt_Ps_Format(ps, "%% Axis %s: grid line attributes\n", 
-		axisPtr->obj.name);
-	    Blt_Ps_XSetLineAttributes(ps, axisPtr->major.color, 
-		axisPtr->major.lineWidth, &axisPtr->major.dashes, CapButt, 
-		JoinMiter);
-	    Blt_Ps_Format(ps, "%% Axis %s: major grid line segments\n",
-		axisPtr->obj.name);
-	    Blt_Ps_DrawSegments2d(ps, axisPtr->major.numUsed, 
-		axisPtr->major.segments);
-	    if (axisPtr->flags & GRIDMINOR) {
-		Blt_Ps_XSetLineAttributes(ps, axisPtr->minor.color, 
-		    axisPtr->minor.lineWidth, &axisPtr->minor.dashes, CapButt, 
-		    JoinMiter);
-		Blt_Ps_Format(ps, "%% Axis %s: minor grid line segments\n",
-			axisPtr->obj.name);
-		Blt_Ps_DrawSegments2d(ps, axisPtr->minor.numUsed, 
-			axisPtr->minor.segments);
-	    }
-	}
-    }
-}
-
 
 void
 Blt_AxesToPostScript(Graph *graphPtr, Blt_Ps ps) 
