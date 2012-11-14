@@ -202,12 +202,12 @@ blt::table configure . c3 r0 r4 r5 -resize none
 }
 .g axis bind all <Enter> {
     set axis [%W axis get current]
-    #%W axis activate $axis
+    %W axis activate $axis
     %W axis focus $axis
 }
 .g axis bind all <Leave> {
     set axis [%W axis get current]
-    #%W axis deactivate $axis
+    %W axis deactivate $axis
     %W axis focus ""
 }
 .g configure -leftvariable left 

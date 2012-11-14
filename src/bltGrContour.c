@@ -3222,10 +3222,7 @@ DrawPolyline(Graph *graphPtr, Drawable drawable, Trace *tracePtr,
     HPEN pen, oldPen;
     POINT *points;
     TkWinDCState state;
-    int maxPoints;			/* Maximum # of points in a single
-					 * polyline. */
     TracePoint *p;
-    int count;
     size_t numReq, numMax, count;
 #ifdef notdef
     fprintf(stderr, "Entry DrawPolyline\n");
@@ -6673,6 +6670,7 @@ Blt_IsolineOp(ClientData clientData, Tcl_Interp *interp, int objc,
 
 typedef struct {
     int64_t A, B, C;
+    int flag;
 } EdgeEquation;
 
 typedef struct { 
@@ -6716,9 +6714,8 @@ InitRenderer(ContourElement *elemPtr, Triangle *t, TriangleRenderer *renPtr)
 {
     Region2d exts;
     int64_t a, b, c;
-    double scale, zscale;
+    double scale;
     double sp0, sp1, sp2;
-    double da, db, dc;
     int64_t area;
     Region2d bbox;
     Vertex *v1, *v2, *v3;
@@ -6906,11 +6903,27 @@ DrawTriangle(ContourElement *elemPtr, Pict *destPtr, Triangle *t, int xoff,
 		x++, dp++) {
 	    /* all 3 edges must be >= 0 */
 	    if ((e0|e1|e2) >= 0) {
-		int64_t cr, cb, cg, ca;
+		int64_t cr, cb, cg;
+
+		double cz;
+		
+		cz = z;
+		if (cz > t->max) {
+		    cz = t->max;
+		}
+		if (cz < t->min) {
+		    cz = t->min;
+		}
+		dp->u32 = Blt_Colormap_GetColor(elemPtr->colormapPtr, cz);
+#ifdef notdef
+		fprintf(stderr, "z=%.17g color=(%d %d %d %d)\n",
+			cz, dp->Red, dp->Green, dp->Blue, dp->Alpha);
+#endif
+		dp->Alpha = 0xFF;
+
 		cr = r >> FRACBITS;
 		cg = g >> FRACBITS;
 		cb = b >> FRACBITS;
-		ca = a >> FRACBITS;
 		dp->Red   = CLAMP(cr);
 		dp->Green = CLAMP(cg);
 		dp->Blue  = CLAMP(cb);

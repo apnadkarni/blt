@@ -68,6 +68,9 @@
 #define TABWIDTH_SAME		-1
 #define TABWIDTH_VARIABLE	0
 
+#define PERF_OFFSET_X		2
+#define PERF_OFFSET_Y		4
+
 #define PHOTO_ICON		1
 
 #define FCLAMP(x)		((((x) < 0.0) ? 0.0 : ((x) > 1.0) ? 1.0 : (x)))
@@ -2016,17 +2019,17 @@ PickTabProc(ClientData clientData, int x, int y, ClientData *contextPtr)
 	int sx, sy;
 
 	/* Check first for perforation on the selected tab. */
-	WorldToScreen(setPtr, tabPtr->worldX + 2, 
-	      tabPtr->worldY + tabPtr->worldHeight + 4, &sx, &sy);
+	WorldToScreen(setPtr, tabPtr->worldX, 
+	      tabPtr->worldY + tabPtr->worldHeight + PERF_OFFSET_Y, &sx, &sy);
 	if (setPtr->side & (SIDE_TOP|SIDE_BOTTOM)) {
-	    left = sx - 2;
+	    left = sx - PERF_OFFSET_X;
 	    right = left + tabPtr->screenWidth;
-	    top = sy - 4;
-	    bottom = sy + 4;
+	    top = sy - PERF_OFFSET_Y;
+	    bottom = sy + PERF_OFFSET_Y;
 	} else {
-	    left = sx - 4;
-	    right = sx + 4;
-	    top = sy - 2;
+	    left = sx - PERF_OFFSET_Y;
+	    right = sx + PERF_OFFSET_Y;
+	    top = sy - PERF_OFFSET_X;
 	    bottom = top + tabPtr->screenHeight;
 	}
 	if ((x >= left) && (y >= top) && (x < right) && (y < bottom)) {
@@ -4260,6 +4263,39 @@ ConfigureOp(Tabset *setPtr, Tcl_Interp *interp, int objc,
 /*
  *---------------------------------------------------------------------------
  *
+ * DectivateOp --
+ *
+ *	Makes all tabs appear normal again.
+ *
+ *	.t deactivate 
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+DeactivateOp(Tabset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+{
+    Tab *tabPtr;
+    const char *string;
+
+    string = Tcl_GetString(objv[2]);
+    if (string[0] == '\0') {
+	tabPtr = NULL;
+    } else if (GetTabFromObj(interp, setPtr, objv[2], &tabPtr) != TCL_OK) {
+	return TCL_ERROR;
+    }
+    if ((tabPtr != NULL) && (tabPtr->flags & (HIDE|DISABLED))) {
+	tabPtr = NULL;
+    }
+    if (tabPtr != setPtr->activePtr) {
+	setPtr->activePtr = tabPtr;
+	EventuallyRedraw(setPtr);
+    }
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
  * DeleteOp --
  *
  *	Deletes tab from the set. Deletes either a range of tabs or a single
@@ -5084,7 +5120,7 @@ TabOp(Tabset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * 	This procedure is called to highlight the perforation.
  *
- *	  .h perforation highlight boolean
+ *	  .h perforation activate boolean
  *
  * Results:
  *	A standard TCL result.  If TCL_ERROR is returned, then interp->result

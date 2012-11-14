@@ -540,9 +540,12 @@ static void
 FreeIconProc(ClientData clientData, Display *display, char *widgRec, int offset)
 {
     Icon *iconPtr = (Icon *)(widgRec + offset);
-    TreeView *viewPtr = clientData;
+    ColumnStyle *stylePtr = (char *)widgRec;
 
     if (*iconPtr != NULL) {
+	TreeView *viewPtr;
+
+	viewPtr = stylePtr->viewPtr;
 	Blt_TreeView_FreeIcon(viewPtr, *iconPtr);
 	*iconPtr = NULL;
     }

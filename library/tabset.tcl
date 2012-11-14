@@ -92,6 +92,11 @@ bind BltTabset <ButtonRelease-3> {
     %W activate @%x,%y
 }
 
+bind BltTabset <Leave> {
+    puts stderr "leaving %W"
+}
+
+
 # ----------------------------------------------------------------------
 # 
 # KeyPress assignments
@@ -376,9 +381,11 @@ proc blt::Tabset::Init { w } {
     }
     $w configure -perforationcommand [list blt::Tabset::ToggleTearoff $w]
     $w bind Perforation <Enter> { 
+puts stderr "enter perforation"
 	%W perforation activate on
     }
     $w bind Perforation <Leave> { 
+puts stderr "left perforation"
 	%W perforation activate off
     }
     $w bind Perforation <ButtonRelease-1> { 
@@ -397,3 +404,4 @@ proc blt::Tabset::Init { w } {
     }
     set _private(cursor) [$w cget -cursor]
 }
+

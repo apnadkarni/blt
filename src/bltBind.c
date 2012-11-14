@@ -69,6 +69,45 @@ static int buttonMasks[] =
     Button1Mask, Button2Mask, Button3Mask, Button4Mask, Button5Mask,
 };
 
+static char *eventNames[] = {
+    "0", "1", 
+    "KeyPress",
+    "KeyRelease",
+    "ButtonPress",
+    "ButtonRelease",
+    "MotionNotify",
+    "EnterNotify",
+    "LeaveNotify",
+    "FocusIn",
+    "FocusOut",
+    "KeymapNotify",
+    "Expose",
+    "GraphicsExpose",
+    "NoExpose",
+    "VisibilityNotify",
+    "CreateNotify",
+    "DestroyNotify",
+    "UnmapNotify",
+    "MapNotify",
+    "MapRequest",
+    "ReparentNotify",
+    "ConfigureNotify",
+    "ConfigureRequest",
+    "GravityNotify",
+    "ResizeRequest",
+    "CirculateNotify",
+    "CirculateRequest",
+    "PropertyNotify",
+    "SelectionClear",
+    "SelectionRequest",
+    "SelectionNotify",
+    "ColormapNotify",
+    "ClientMessage",
+    "MappingNotify",
+    "GenericEvent"
+};
+
+
 /*
  * How to make drag&drop work?
  *
@@ -256,13 +295,17 @@ PickCurrentObj(
      * A LeaveNotify event automatically means that there's no current object,
      * so the check for closest object can be skipped.
      */
-    if (bindPtr->pickEvent.type != LeaveNotify) {
-	int x, y;
-
-	x = bindPtr->pickEvent.xcrossing.x;
-	y = bindPtr->pickEvent.xcrossing.y;
-	newObj = (*bindPtr->pickProc) (bindPtr->clientData, x, y, &newHint);
-    } 
+    if ((bindPtr->pickEvent.type == LeaveNotify) &&
+	(bindPtr->pickEvent.xcrossing.detail == NotifyInferior)) {
+	newObj = NULL;
+	newHint = NULL;
+    } else {
+	 int x, y;
+	 
+	 x = bindPtr->pickEvent.xcrossing.x;
+	 y = bindPtr->pickEvent.xcrossing.y;
+	 newObj = (*bindPtr->pickProc) (bindPtr->clientData, x, y, &newHint);
+     }
 
     if (((newObj==bindPtr->currentObj) && (newHint==bindPtr->currentHint)) && 
 	((bindPtr->flags & LEFT_GRABBED_OBJECT) == 0)) {
@@ -432,7 +475,7 @@ BindProc(
 
     case EnterNotify:
     case LeaveNotify:
-	bindPtr->state = eventPtr->xcrossing.state;
+ 	bindPtr->state = eventPtr->xcrossing.state;
 	PickCurrentObj(bindPtr, eventPtr);
 	break;
 
