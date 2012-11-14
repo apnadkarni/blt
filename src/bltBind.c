@@ -69,7 +69,7 @@ static int buttonMasks[] =
     Button1Mask, Button2Mask, Button3Mask, Button4Mask, Button5Mask,
 };
 
-static char *eventNames[] = {
+static const char *eventNames[] = {
     "0", "1", 
     "KeyPress",
     "KeyRelease",
@@ -295,10 +295,16 @@ PickCurrentObj(
      * A LeaveNotify event automatically means that there's no current object,
      * so the check for closest object can be skipped.
      */
-    if ((bindPtr->pickEvent.type == LeaveNotify) &&
-	(bindPtr->pickEvent.xcrossing.detail == NotifyInferior)) {
-	newObj = NULL;
-	newHint = NULL;
+    if (bindPtr->pickEvent.type == LeaveNotify) {
+	/* If we've entered an inferior window, there can't be a current
+	 * object.  Otherwise, the Leave event may be part of a Button event.
+	 * (The mode field doesn't seem like it's getting set correctly here.
+	 * It should be NotifyGrab or NotifyUngrab.)  In this case, assume
+	 * we're still on the same object. */
+	if (bindPtr->pickEvent.xcrossing.detail == NotifyInferior) {
+	    newObj = NULL;
+	    newHint = NULL;
+	}
     } else {
 	 int x, y;
 	 
@@ -421,6 +427,13 @@ BindProc(
     int mask;
     ClientData object;
 
+    fprintf(stderr, "BindProc event=%s\n", eventNames[eventPtr->type]);
+    if (eventPtr->type == EnterNotify || eventPtr->type == LeaveNotify) {
+	fprintf(stderr, "event=%s mode=%d detail=%d\n", 
+		eventNames[eventPtr->type], 
+		eventPtr->xcrossing.mode,
+		eventPtr->xcrossing.detail);
+    }
     Tcl_Preserve(bindPtr->clientData);
     /*
      * This code below keeps track of the current modifier state in
@@ -475,7 +488,7 @@ BindProc(
 
     case EnterNotify:
     case LeaveNotify:
- 	bindPtr->state = eventPtr->xcrossing.state;
+	bindPtr->state = eventPtr->xcrossing.state;
 	PickCurrentObj(bindPtr, eventPtr);
 	break;
 
