@@ -427,13 +427,6 @@ BindProc(
     int mask;
     ClientData object;
 
-    fprintf(stderr, "BindProc event=%s\n", eventNames[eventPtr->type]);
-    if (eventPtr->type == EnterNotify || eventPtr->type == LeaveNotify) {
-	fprintf(stderr, "event=%s mode=%d detail=%d\n", 
-		eventNames[eventPtr->type], 
-		eventPtr->xcrossing.mode,
-		eventPtr->xcrossing.detail);
-    }
     Tcl_Preserve(bindPtr->clientData);
     /*
      * This code below keeps track of the current modifier state in
