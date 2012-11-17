@@ -3251,7 +3251,7 @@ Blt_GetAxisGeometry(Graph *graphPtr, Axis *axisPtr)
 	y += axisPtr->lineWidth + 2;
     }
 
-    axisPtr->maxTickLabelHeight = axisPtr->maxTickLabelWidth = 0;
+    axisPtr->maxLabelHeight = axisPtr->maxLabelWidth = 0;
     if (axisPtr->flags & SHOWTICKS) {
 	unsigned int pad;
 	unsigned int i, numLabels, numTicks;
@@ -3296,11 +3296,11 @@ Blt_GetAxisGeometry(Graph *graphPtr, Axis *axisPtr)
 		lw = labelPtr->width;
 		lh = labelPtr->height;
 	    }
-	    if (axisPtr->maxTickLabelWidth < lw) {
-		axisPtr->maxTickLabelWidth = lw;
+	    if (axisPtr->maxLabelWidth < lw) {
+		axisPtr->maxLabelWidth = lw;
 	    }
-	    if (axisPtr->maxTickLabelHeight < lh) {
-		axisPtr->maxTickLabelHeight = lh;
+	    if (axisPtr->maxLabelHeight < lh) {
+		axisPtr->maxLabelHeight = lh;
 	    }
 	}
 	assert(numLabels <= numTicks);
@@ -3312,10 +3312,10 @@ Blt_GetAxisGeometry(Graph *graphPtr, Axis *axisPtr)
 	    pad = ((axisPtr->lineWidth * 12) / 8);
 	}
 	if (axisPtr->flags & HORIZONTAL) {
-	    y += axisPtr->maxTickLabelHeight + pad;
+	    y += axisPtr->maxLabelHeight + pad;
 	} else {
-	    y += axisPtr->maxTickLabelWidth + pad;
-	    if (axisPtr->maxTickLabelWidth > 0) {
+	    y += axisPtr->maxLabelWidth + pad;
+	    if (axisPtr->maxLabelWidth > 0) {
 		y += 5;			/* Pad either size of label. */
 	    }  
 	}
@@ -3379,7 +3379,7 @@ GetMarginGeometry(Graph *graphPtr, Margin *marginPtr)
     /* Count the visible axes. */
     numVisible = 0;
     l = w = h = 0;
-    marginPtr->maxTickLabelWidth = marginPtr->maxTickLabelHeight = 0;
+    marginPtr->maxAxisLabelWidth = marginPtr->maxAxisLabelHeight = 0;
     if (graphPtr->stackAxes) {
 	for (link = Blt_Chain_FirstLink(marginPtr->axes); link != NULL;
 	     link = Blt_Chain_NextLink(link)) {
@@ -3400,11 +3400,11 @@ GetMarginGeometry(Graph *graphPtr, Margin *marginPtr)
 			w = axisPtr->width;
 		    }
 		}
-		if (axisPtr->maxTickLabelWidth > marginPtr->maxTickLabelWidth){
-		    marginPtr->maxTickLabelWidth = axisPtr->maxTickLabelWidth;
+		if (axisPtr->maxLabelWidth > marginPtr->maxAxisLabelWidth) {
+		    marginPtr->maxAxisLabelWidth = axisPtr->maxLabelWidth;
 		}
-		if (axisPtr->maxTickLabelHeight>marginPtr->maxTickLabelHeight) {
-		    marginPtr->maxTickLabelHeight = axisPtr->maxTickLabelHeight;
+		if (axisPtr->maxLabelHeight > marginPtr->maxAxisLabelHeight) {
+		    marginPtr->maxAxisLabelHeight = axisPtr->maxLabelHeight;
 		}
 	    }
 	}
@@ -3427,11 +3427,11 @@ GetMarginGeometry(Graph *graphPtr, Margin *marginPtr)
 		} else {
 		    w += axisPtr->width;
 		}
-		if (axisPtr->maxTickLabelWidth > marginPtr->maxTickLabelWidth) {
-		    marginPtr->maxTickLabelWidth = axisPtr->maxTickLabelWidth;
+		if (axisPtr->maxLabelWidth > marginPtr->maxAxisLabelWidth) {
+		    marginPtr->maxAxisLabelWidth = axisPtr->maxLabelWidth;
 		}
-		if (axisPtr->maxTickLabelHeight>marginPtr->maxTickLabelHeight) {
-		    marginPtr->maxTickLabelHeight = axisPtr->maxTickLabelHeight;
+		if (axisPtr->maxLabelHeight > marginPtr->maxAxisLabelHeight) {
+		    marginPtr->maxAxisLabelHeight = axisPtr->maxLabelHeight;
 		}
 	    }
 	}
@@ -3557,9 +3557,9 @@ Blt_LayoutGraph(Graph *graphPtr)
     top    = GetMarginGeometry(graphPtr, &graphPtr->topMargin);
     bottom = GetMarginGeometry(graphPtr, &graphPtr->bottomMargin);
 
-    pad = graphPtr->bottomMargin.maxTickLabelWidth;
-    if (pad < graphPtr->topMargin.maxTickLabelWidth) {
-	pad = graphPtr->topMargin.maxTickLabelWidth;
+    pad = graphPtr->bottomMargin.maxAxisLabelWidth;
+    if (pad < graphPtr->topMargin.maxAxisLabelWidth) {
+	pad = graphPtr->topMargin.maxAxisLabelWidth;
     }
     pad = pad / 2 + 3;
     if (right < pad) {
@@ -3568,9 +3568,9 @@ Blt_LayoutGraph(Graph *graphPtr)
     if (left < pad) {
 	left = pad;
     }
-    pad = graphPtr->leftMargin.maxTickLabelHeight;
-    if (pad < graphPtr->rightMargin.maxTickLabelHeight) {
-	pad = graphPtr->rightMargin.maxTickLabelHeight;
+    pad = graphPtr->leftMargin.maxAxisLabelHeight;
+    if (pad < graphPtr->rightMargin.maxAxisLabelHeight) {
+	pad = graphPtr->rightMargin.maxAxisLabelHeight;
     }
     pad = pad / 2;
     if (top < pad) {
@@ -5258,6 +5258,7 @@ Blt_MapAxes(Graph *graphPtr)
 	    for (link = Blt_Chain_FirstLink(marginPtr->axes); link != NULL; 
 		 link = Blt_Chain_NextLink(link)) {
 		Axis *axisPtr;
+
 		axisPtr = Blt_Chain_GetValue(link);
 		if ((axisPtr->flags & (USE|DELETE_PENDING)) != USE) {
 		    continue;
@@ -5290,6 +5291,9 @@ Blt_MapAxes(Graph *graphPtr)
 		MapGridlines(axisPtr);
 	    }
 	}
+    }
+    if (graphPtr->colorbar.axisPtr != NULL) {
+	
     }
 }
 

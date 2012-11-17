@@ -2481,7 +2481,7 @@ Blt_GetAxisGeometry(Graph *graphPtr, Axis *axisPtr)
 	y += axisPtr->lineWidth + 2;
     }
 
-    axisPtr->maxTickLabelHeight = axisPtr->maxTickLabelWidth = 0;
+    axisPtr->maxLabelHeight = axisPtr->maxLabelWidth = 0;
     if (axisPtr->flags & SHOWTICKS) {
 	unsigned int pad;
 	unsigned int i, numLabels, numTicks;
@@ -2526,11 +2526,11 @@ Blt_GetAxisGeometry(Graph *graphPtr, Axis *axisPtr)
 		lw = labelPtr->width;
 		lh = labelPtr->height;
 	    }
-	    if (axisPtr->maxTickLabelWidth < lw) {
-		axisPtr->maxTickLabelWidth = lw;
+	    if (axisPtr->maxLabelWidth < lw) {
+		axisPtr->maxLabelWidth = lw;
 	    }
-	    if (axisPtr->maxTickLabelHeight < lh) {
-		axisPtr->maxTickLabelHeight = lh;
+	    if (axisPtr->maxLabelHeight < lh) {
+		axisPtr->maxLabelHeight = lh;
 	    }
 	}
 	assert(nLabels <= numTicks);
@@ -2542,10 +2542,10 @@ Blt_GetAxisGeometry(Graph *graphPtr, Axis *axisPtr)
 	    pad = ((axisPtr->lineWidth * 12) / 8);
 	}
 	if (axisPtr->flags & HORIZONTAL) {
-	    y += axisPtr->maxTickLabelHeight + pad;
+	    y += axisPtr->maxLabelHeight + pad;
 	} else {
-	    y += axisPtr->maxTickLabelWidth + pad;
-	    if (axisPtr->maxTickLabelWidth > 0) {
+	    y += axisPtr->maxLabelWidth + pad;
+	    if (axisPtr->maxLabelWidth > 0) {
 		y += 5;			/* Pad either size of label. */
 	    }  
 	}
@@ -2730,9 +2730,9 @@ Blt_LayoutGraph(Graph *graphPtr)
     top    = GetMarginGeometry(graphPtr, &graphPtr->topMargin);
     bottom = GetMarginGeometry(graphPtr, &graphPtr->bottomMargin);
 
-    pad = graphPtr->bottomMargin.maxTickLabelWidth;
-    if (pad < graphPtr->topMargin.maxTickLabelWidth) {
-	pad = graphPtr->topMargin.maxTickLabelWidth;
+    pad = graphPtr->bottomMargin.maxLabelWidth;
+    if (pad < graphPtr->topMargin.maxLabelWidth) {
+	pad = graphPtr->topMargin.maxLabelWidth;
     }
     pad = pad / 2 + 3;
     if (right < pad) {
@@ -2741,9 +2741,9 @@ Blt_LayoutGraph(Graph *graphPtr)
     if (left < pad) {
 	left = pad;
     }
-    pad = graphPtr->leftMargin.maxTickLabelHeight;
-    if (pad < graphPtr->rightMargin.maxTickLabelHeight) {
-	pad = graphPtr->rightMargin.maxTickLabelHeight;
+    pad = graphPtr->leftMargin.maxLabelHeight;
+    if (pad < graphPtr->rightMargin.maxLabelHeight) {
+	pad = graphPtr->rightMargin.maxLabelHeight;
     }
     pad = pad / 2;
     if (top < pad) {

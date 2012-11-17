@@ -235,16 +235,12 @@ struct _Pen {
 };
 
 /*
- *---------------------------------------------------------------------------
- *
- * Play
+ * Playback --
  *
  *	Contains the line segments positions and graphics context used
  *	to simulate play (by XORing) on the graph.
  *
- *---------------------------------------------------------------------------
  */
-
 typedef struct {
     int first, last;			/* The two time points defining the
 					 * section of points to be displayed.
@@ -263,6 +259,13 @@ typedef struct {
 					 * timer handler queued. */
 } Playback;
 
+/*
+ * GraphColormap --
+ *
+ *	Contains the line segments positions and graphics context used
+ *	to simulate play (by XORing) on the graph.
+ *
+ */
 typedef struct {
     const char *name;
     Blt_HashEntry *hashPtr;
@@ -308,9 +311,9 @@ typedef struct {
 					 * shown.  Multiple titles are displayed
 					 * in another margin. This is the
 					 * minimum space requirement. */
-    short int maxTickLabelWidth;	/* Maximum width of all axis tick
+    short int maxAxisLabelWidth;	/* Maximum width of all axis tick
 					 * labels in this margin. */
-    short int maxTickLabelHeight;	/* Maximum height of all axis tick
+    short int maxAxisLabelHeight;	/* Maximum height of all axis tick
 					 * labels in this margin. */
     unsigned int numAxes;		/* # of axes to be displayed */
     Blt_Chain axes;			/* Axes associated with this margin */

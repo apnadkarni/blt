@@ -247,9 +247,9 @@ struct _Axis {
 					 * axis. */
     short int left, right, top, bottom;	/* Region occupied by the of axis. */
     short int width, height;		/* Extents of axis */
-    short int maxTickLabelWidth;	/* Maximum width of all ticks
+    short int maxLabelWidth;	/* Maximum width of all ticks
 					 * labels. */
-    short int maxTickLabelHeight;	/* Maximum height of all tick
+    short int maxLabelHeight;	/* Maximum height of all tick
 					 * labels. */
     Blt_Bg normalBg;
     Blt_Bg activeBg;
