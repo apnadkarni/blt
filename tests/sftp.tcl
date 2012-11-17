@@ -14,7 +14,7 @@ if [file exists ../library] {
 
 set file [info script]
 set host wolverine
-#set VERBOSE 1
+set VERBOSE 0
 
 
 if 1 {
@@ -86,6 +86,7 @@ following switches are available:
    -user string
    -host string
    -password string
+   -prompt command
    -publickey fileName
    -timeout seconds}}
 
@@ -114,19 +115,23 @@ test sftp.21 {badOp} {
     list [catch {$sftp badOp}  msg] $msg
 } {1 {bad operation "badOp": should be one of...
   ::mySftp atime path ?seconds?
+  ::mySftp auth 
   ::mySftp chdir ?path?
   ::mySftp chgrp path ?gid ?-recurse??
   ::mySftp chmod path ?mode ?-recurse??
   ::mySftp delete path ?switches?
   ::mySftp dir path ?switches?
+  ::mySftp exec command
   ::mySftp exists path
   ::mySftp get path ?file? ?switches?
+  ::mySftp groups ?gid?
   ::mySftp isdirectory path
   ::mySftp isfile path
   ::mySftp lstat path varName
   ::mySftp mkdir path ?-mode mode?
   ::mySftp mtime path ?seconds?
   ::mySftp normalize path
+  ::mySftp owned path
   ::mySftp put file ?path? ?switches?
   ::mySftp pwd 
   ::mySftp read path ?switches?
@@ -159,7 +164,7 @@ test sftp.25 {read} {
 
 test sftp.26 {mkdir /badDir} {
     list [catch {$sftp mkdir /badDir} msg] $msg
-} {1 {can't make directory "/badDir": permission denied}}
+} {1 {can't create directory "/badDir": permission denied}}
 
 test sftp.27 {rmdir test_directory} {
     list [catch {
@@ -175,7 +180,7 @@ test sftp.28 {mkdir test_directory} {
 
 test sftp.29 {mkdir test_directory} {
     list [catch {$sftp mkdir test_directory} msg] $msg
-} {1 {can't make directory "test_directory": directory already exists}}
+} {0 {}}
 
 test sftp.30 {mkdir test_directory/test1} {
     list [catch {$sftp mkdir test_directory/test1} msg] $msg
@@ -527,7 +532,7 @@ test sftp.113 {readable too many arguments } {
 
 test sftp.114 {normalize test_directory} {
     list [catch {$sftp normalize test_directory} msg] $msg
-} {0 1}
+} {0 /home/gah/test_directory}
 
 test sftp.115 {normalize test_directory/$file} {
     list [catch {$sftp normalize test_directory/$file} msg] $msg
@@ -623,13 +628,13 @@ test sftp.133 {lstat too many arguments } {
 
 test sftp.134 {pwd} {
     list [catch {$sftp pwd} msg] $msg
-} {0 1}
+} {0 /home/gah}
 
 test sftp.135 {pwd too many arguments} {
     list [catch {$sftp pwd too many arguments} msg] $msg
 } {1 {wrong # args: should be "::mySftp pwd "}}
 
-exit 1
+#exit 1
 
 test sftp.136 {exists test_directory/test1} {
     list [catch {$sftp exists test_directory/test1} msg] $msg

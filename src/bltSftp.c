@@ -92,6 +92,7 @@
 
 #define SFTP_THREAD_KEY "BLT Sftp Command Data"
 #define KEYFILE		"~/.ssh/id_rsa.pub"
+#define PATH_SEPARATOR	'/'
 
 #define TRUE		1
 #define FALSE		0
@@ -825,6 +826,7 @@ SftpReadDirEntries(Tcl_Interp *interp, SftpCmd *cmdPtr, const char *path,
     return chain;
 }
 
+	
 static int
 SftpApply(Tcl_Interp *interp, SftpCmd *cmdPtr, const char *path, int length, 
 	  LIBSSH2_SFTP_ATTRIBUTES *attrsPtr, Blt_Chain chain, 
@@ -1612,6 +1614,69 @@ SftpSetAttributes(SftpCmd *cmdPtr, const char *path, int length,
     return TCL_OK;
 }
 
+
+static int
+SftpMkdir(Tcl_Interp *interp, SftpCmd *cmdPtr, const char *path, int length, 
+	  int mode)
+{
+    char *partial;
+    LIBSSH2_SFTP_ATTRIBUTES attrs;
+    const char *p, *pend;
+    int count;
+    
+    if (*path != PATH_SEPARATOR) {
+	Tcl_AppendResult(interp, "path \"", path, "\" must be absolute.", 
+			 (char *)NULL); 
+	return TCL_ERROR;
+    }
+    partial = Blt_AssertMalloc(length + 1);
+    count = 0;
+    for (p = path, pend = p + length; p < pend; /*empty*/) {
+	int result;
+
+	/* Skip leading separators. */
+	for (/*empty*/; p < pend; p++) {
+	    if (*p != PATH_SEPARATOR) {
+		break;
+	    }
+	}
+	if (p == pend) {
+	    break;			/* Ignore trailing separators. */
+	}
+	/* Prepend a single path separator */
+	partial[count++] = '/';
+
+	/* Skip the component name, appending it to the partial path. */
+	for (/*empty*/; p < pend; p++) {
+	    if (*p == PATH_SEPARATOR) {
+		break;
+	    }
+	    partial[count++] = *p;
+	}
+	partial[count] = '\0';
+	result = SftpGetAttributes(cmdPtr, partial, count, &attrs);
+	if (result == TCL_OK) {
+	    if (!LIBSSH2_SFTP_S_ISDIR(attrs.permissions)) {
+		Tcl_AppendResult(interp, "can't create directory \"", partial, 
+				 "\": file exists.", (char *)NULL); 
+		goto error;
+	    }	    
+	    continue;			/* Directory already exists. */
+	}
+	/* Try to create the directory */
+	result = libssh2_sftp_mkdir_ex(cmdPtr->sftp, partial, count, mode);
+	if (result != TCL_OK) {
+	    Tcl_AppendResult(interp, "can't create directory \"", partial, 
+			     "\": ", SftpError(cmdPtr), (char *)NULL); 
+	    goto error;
+	}
+    }
+    Blt_Free(partial);
+    return TCL_OK;
+ error:
+    Blt_Free(partial);
+    return TCL_ERROR;
+}
 
 static const char *
 SftpFileType(LIBSSH2_SFTP_ATTRIBUTES *attrsPtr)
@@ -3225,6 +3290,9 @@ LstatOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * MkdirOp --
  *
+ *	Create the directories specified by the path if needed.  This is 
+ *	the equivalent of "mkdir -p".
+ *
  *	sftp mkdir path ?-mode mode?
  *
  *---------------------------------------------------------------------------
@@ -3234,7 +3302,6 @@ MkdirOp(ClientData clientData, Tcl_Interp *interp, int objc,
        Tcl_Obj *const *objv) 
 {
     MkdirSwitches switches;
-    LIBSSH2_SFTP_ATTRIBUTES attrs;
     SftpCmd *cmdPtr = clientData;
     const char *path;
     int length, result;
@@ -3246,38 +3313,13 @@ MkdirOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     switches.mode = 0770;
     path = SftpGetPathFromObj(cmdPtr, objv[2], &length);
-    if (SftpGetAttributes(cmdPtr, path, length, &attrs) == TCL_OK) {
-	if ((attrs.flags & LIBSSH2_SFTP_ATTR_PERMISSIONS) == 0) {
-	    Tcl_AppendResult(interp, 
-		"server does not report permissions for \"", path, "\"", 
-		(char *)NULL);
-	    return TCL_ERROR;
-	}
-	if (LIBSSH2_SFTP_S_ISDIR(attrs.permissions)) {
-	    Tcl_AppendResult(interp, "can't make directory \"", 
-		Tcl_GetString(objv[2]), 
-		"\": directory already exists", (char *)NULL);
-	    return TCL_ERROR;
-	} else {
-	    Tcl_AppendResult(interp, "can't make directory \"", 
-		Tcl_GetString(objv[2]), "\": is a ", SftpFileType(&attrs), 
-		(char *)NULL);
-	    return TCL_ERROR;
-	}
-    }
     if (Blt_ParseSwitches(interp, mkdirSwitches, objc - 3, objv + 3, &switches,
 	BLT_SWITCH_DEFAULTS) < 0) {
 	return TCL_ERROR;
     }
-    result = libssh2_sftp_mkdir_ex(cmdPtr->sftp, path, length, switches.mode);
-    if (result < 0) {
-	Tcl_AppendResult(interp, "can't make directory \"", 
-	    Tcl_GetString(objv[2]), "\": ", SftpError(cmdPtr), (char *)NULL);
-	Blt_FreeSwitches(mkdirSwitches, (char *)&switches, 0);
-	return TCL_ERROR;
-    }
+    result = SftpMkdir(interp, cmdPtr, path, length, switches.mode);
     Blt_FreeSwitches(mkdirSwitches, (char *)&switches, 0);
-    return TCL_OK;
+    return result;
 }
 
 
