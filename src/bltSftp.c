@@ -116,6 +116,20 @@
 
 #define MAXPATHLEN	(1<<12)
 	
+#define FIELD_ATIME	(1<<0)
+#define FIELD_GID	(1<<1)
+#define FIELD_MODE	(1<<2)
+#define FIELD_MTIME	(1<<3)
+#define FIELD_NAME	(1<<4)
+#define FIELD_SIZE	(1<<5)
+#define FIELD_TYPE	(1<<6)
+#define FIELD_UID	(1<<7)
+#define FIELD_LONGENTRY (1<<8)
+#define FIELD_DEFAULT	(FIELD_SIZE|FIELD_TYPE|FIELD_MTIME|FIELD_MODE)
+#define FIELD_ALL	(FIELD_ATIME|FIELD_GID|FIELD_MODE|FIELD_MTIME| \
+			 FIELD_NAME|FIELD_SIZE|FIELD_TYPE|FIELD_UID|\
+			 FIELD_LONGENTRY)
+
 #define TRACE_FLAGS (TCL_TRACE_WRITES | TCL_TRACE_UNSETS | TCL_GLOBAL_ONLY)
 
 typedef struct {
@@ -203,8 +217,9 @@ typedef struct {
 
 typedef struct {
     LIBSSH2_SFTP_ATTRIBUTES attrs;
-    char name[1];
-} DirEntry;
+    const char *name;
+    const char *longentry;
+} SftpEntry;
 
 typedef struct {
     Tcl_Interp *interp;			/* Interpreter used to invoke progress
@@ -411,6 +426,29 @@ static Blt_SwitchSpec renameSwitches[] =
 {
     {BLT_SWITCH_BITMASK, "-force", "", (char *)NULL,
 	Blt_Offset(RenameSwitches, flags), 0, FORCE},
+    {BLT_SWITCH_END}
+};
+
+typedef struct {
+    Blt_Tree tree;
+    Blt_TreeNode root;
+    const char *rootPath;
+    int rootOffset;
+    unsigned int flags;
+    int timeout;
+    int depth;
+    Tcl_Obj *progCmdObjPtr;
+    const char *cancelVarName;
+} TreeWriter;
+
+static Blt_SwitchSpec treeSwitches[] = 
+{
+    {BLT_SWITCH_STRING,    "-cancel",  "varName",  (char *)NULL,
+	Blt_Offset(TreeWriter, cancelVarName), 0},
+    {BLT_SWITCH_INT_NNEG,"-depth",  "depth",     (char *)NULL,
+	Blt_Offset(TreeWriter, depth),       0},
+    {BLT_SWITCH_INT_NNEG, "-timeout",   "seconds", (char *)NULL,
+	Blt_Offset(TreeWriter, timeout),       0},
     {BLT_SWITCH_END}
 };
 
@@ -710,6 +748,57 @@ FileJoin(const char *path1, const char *path2, Tcl_DString *resultPtr)
     return Tcl_DStringValue(resultPtr);
 }
 
+static int
+FileSplit(const char *path, int length, int *argcPtr, char ***argvPtr)
+{
+    const char *p, *pend;
+    int count, argc;
+    char **argv;
+    size_t addrSize;
+    char *q, *buffer;
+
+    for (p = path, pend = p + length; p < pend; p++) {
+	if (*p == PATH_SEPARATOR) {
+	    count++;
+	}
+    }
+    addrSize = (count + 1) * sizeof(char **);
+    buffer = Blt_AssertMalloc(addrSize + length + 3);
+    q = buffer + addrSize;
+    argv = (char **)buffer;
+    argc = 0;
+    if (*path == '/') {
+	argv[argc++] = q;
+	*q++ = '/';
+	*q++ = '\0';
+	path++;
+    }
+    for (p = path; p < pend; /*empty*/) {
+	argv[argc++] = q;
+	/* Copy the component name into the next slot.*/
+	for (/*empty*/; p < pend; p++) {
+	    if (*p == PATH_SEPARATOR) {
+		break;
+	    }
+	    *q++ = *p;
+	}
+	*q++ = '\0';
+	if (p == pend) {
+	    /* Trailing separators. */
+	    break;
+	}
+	/* Skip the next bunch of separators. */
+	for (/*empty*/; p < pend; p++) {
+	    if (*p != PATH_SEPARATOR) {
+		break;
+	    }
+	}
+    }	
+    argv[argc] = NULL;
+    *argcPtr = argc;
+    *argvPtr = argv;
+    return TCL_OK;
+}
 
 static int
 PromptUser(Tcl_Interp *interp, SftpCmd *cmdPtr, const char **userPtr, const char **passPtr)
@@ -735,16 +824,45 @@ PromptUser(Tcl_Interp *interp, SftpCmd *cmdPtr, const char **userPtr, const char
     return TCL_OK;
 }
 
+static SftpEntry *
+NewSftpEntry(const char *name, const char *longentry, 
+	    LIBSSH2_SFTP_ATTRIBUTES *attrsPtr)
+{
+    SftpEntry *entryPtr;
+
+    entryPtr = Blt_AssertMalloc(sizeof(SftpEntry));
+    entryPtr->name = Blt_Strdup(name);
+    entryPtr->longentry = Blt_Strdup(longentry);
+    memcpy(&entryPtr->attrs, attrsPtr, sizeof(LIBSSH2_SFTP_ATTRIBUTES));
+    return entryPtr;
+}
+
+static void
+DestroySftpEntries(Blt_Chain entries) 
+{
+    Blt_ChainLink link;
+
+    for (link = Blt_Chain_FirstLink(entries); link != NULL; 
+	 link = Blt_Chain_NextLink(link)) {
+	SftpEntry *entryPtr;
+
+	entryPtr = Blt_Chain_GetValue(link);
+	Blt_Free(entryPtr->name);
+	Blt_Free(entryPtr->longentry);
+	Blt_Free(entryPtr);
+    }
+    Blt_Chain_Destroy(entries);
+}
+
 /*
  *---------------------------------------------------------------------------
  *
- * SftpReadDirEntry --
+ * SftpReadEntry --
  *
  *---------------------------------------------------------------------------
  */
 static int
-SftpReadDirEntry(Tcl_Interp *interp, LIBSSH2_SFTP_HANDLE *handle, 
-		 Blt_Chain chain)
+SftpReadEntry(Tcl_Interp *interp, LIBSSH2_SFTP_HANDLE *handle, Blt_Chain chain)
 {
     char bytes[2048];
     char longentry[2048];
@@ -763,14 +881,10 @@ SftpReadDirEntry(Tcl_Interp *interp, LIBSSH2_SFTP_HANDLE *handle,
 	return TCL_BREAK;		/* End-of-directory. */
     }	
     if ((strcmp(bytes, ".") != 0) && (strcmp(bytes, "..") != 0)) {
-	Blt_ChainLink link;
-	DirEntry *entryPtr;
+	SftpEntry *entryPtr;
 
-	link = Blt_Chain_AllocLink(sizeof(DirEntry) + strlen(bytes));
-	entryPtr = Blt_Chain_GetValue(link);
-	memcpy(&entryPtr->attrs, &attrs, sizeof(attrs));
-	strcpy(entryPtr->name, bytes);
-	Blt_Chain_AppendLink(chain, link);
+	entryPtr = NewSftpEntry(bytes, longentry, &attrs);
+	Blt_Chain_Append(chain, entryPtr);
     }
     return TCL_OK; 
 }
@@ -778,14 +892,14 @@ SftpReadDirEntry(Tcl_Interp *interp, LIBSSH2_SFTP_HANDLE *handle,
 /*
  *---------------------------------------------------------------------------
  *
- * SftpReadDirEntries --
+ * SftpReadEntries --
  *
  *	Retrieves the listing of the designed directory on the sftp server.
  *
  *---------------------------------------------------------------------------
  */
 static Blt_Chain
-SftpReadDirEntries(Tcl_Interp *interp, SftpCmd *cmdPtr, const char *path, 
+SftpReadEntries(Tcl_Interp *interp, SftpCmd *cmdPtr, const char *path, 
 		   int length)
 {
     LIBSSH2_SFTP_HANDLE *handle;
@@ -812,15 +926,15 @@ SftpReadDirEntries(Tcl_Interp *interp, SftpCmd *cmdPtr, const char *path,
         return NULL;
     }
     chain = Blt_Chain_Create();
-    result = SftpReadDirEntry(interp, handle, chain);
+    result = SftpReadEntry(interp, handle, chain);
     while (result == TCL_OK) {
-	result = SftpReadDirEntry(interp, handle, chain);
+	result = SftpReadEntry(interp, handle, chain);
 	Tcl_DoOneEvent(TCL_DONT_WAIT); 
     }
     libssh2_sftp_closedir(handle);
     libssh2_session_set_blocking(cmdPtr->session, TRUE);
     if (result == TCL_ERROR) {
-	Blt_Chain_Destroy(chain);
+	DestroySftpEntries(chain);
 	return NULL;
     }
     return chain;
@@ -835,8 +949,8 @@ SftpApply(Tcl_Interp *interp, SftpCmd *cmdPtr, const char *path, int length,
     Blt_ChainLink link, next;
     
     /* Pass 1: Apply to files. */
-    for (link = Blt_Chain_FirstLink(chain); link != NULL; link = next){
-	DirEntry *entryPtr;
+    for (link = Blt_Chain_FirstLink(chain); link != NULL; link = next) {
+	SftpEntry *entryPtr;
 	const char *fullPath;
 	Tcl_DString ds;
 	int length;
@@ -857,30 +971,34 @@ SftpApply(Tcl_Interp *interp, SftpCmd *cmdPtr, const char *path, int length,
     }
     /* Pass 2: Recursively apply to subdirectories. */
     for (link = Blt_Chain_FirstLink(chain); link != NULL; link = next) {
-	DirEntry *entryPtr;
+	SftpEntry *entryPtr;
 	const char *fullPath;
 	Tcl_DString ds;
 	int fullLen;
-	Blt_Chain subchain;
+	Blt_Chain subentries;
 	int result;
 
 	next = Blt_Chain_NextLink(link);
 	entryPtr = Blt_Chain_GetValue(link);
+	if ((*dataPtr->dirProc)(interp, cmdPtr, path, length, attrsPtr,
+		 dataPtr->clientData) != TCL_OK) {
+	    return TCL_ERROR;
+	}
 	if (!LIBSSH2_SFTP_S_ISDIR(entryPtr->attrs.permissions)) {
 	    continue;
 	}
 	/* This is a subdirectory. */
 	fullPath = FileJoin(path, entryPtr->name, &ds);
 	fullLen = Tcl_DStringLength(&ds);
-	subchain = SftpReadDirEntries(NULL, cmdPtr, fullPath, fullLen);
-	if (subchain == NULL) {
+	subentries = SftpReadEntries(NULL, cmdPtr, fullPath, fullLen);
+	if (subentries == NULL) {
 	    Tcl_DStringFree(&ds);
 	    return TCL_ERROR;
 	}
 	result = SftpApply(interp, cmdPtr, fullPath, fullLen, &entryPtr->attrs, 
-		subchain, dataPtr);
+		subentries, dataPtr);
 	Tcl_DStringFree(&ds);
-	Blt_Chain_Destroy(subchain);
+	DestroySftpEntries(subentries);
 	if (result != TCL_OK) {
 	    return TCL_ERROR;
 	}
@@ -2216,6 +2334,106 @@ SftpGetFile(Tcl_Interp *interp, const char *path, int length,
     return result;
 }
 
+static int
+SftpTreeEntry(Tcl_Interp *interp, SftpCmd *cmdPtr, const char *path,
+              int length, LIBSSH2_SFTP_ATTRIBUTES *attrsPtr,
+              ClientData clientData)
+{
+    TreeWriter *writerPtr = clientData;
+    Blt_TreeNode node;
+    Tcl_Obj *objPtr;
+    char **argv;
+    int i, argc;
+    Blt_Tree tree;
+
+    tree = writerPtr->tree;
+    path += writerPtr->rootOffset;
+    FileSplit(path, length - writerPtr->rootOffset, &argc, &argv);
+    if (argc == 0) {
+	Blt_Free(argv);
+	return TCL_OK;
+    }
+    node = writerPtr->root;
+    for (i = 0; i < argc; i++) {
+	Blt_TreeNode child;
+
+	child = Blt_Tree_FindChild(node, argv[i]);
+	if (child == NULL) {
+	    child = Blt_Tree_CreateNode(tree, node, argv[i], -1);
+	    if (child == NULL) {
+		goto error;
+	    }
+	}
+	node = child;
+    }
+    /* type */
+    if ((writerPtr->flags & FIELD_TYPE) &&
+	(attrsPtr->flags & LIBSSH2_SFTP_ATTR_PERMISSIONS)) {
+        objPtr = Tcl_NewStringObj(SftpFileType(attrsPtr), -1);
+        if (Blt_Tree_SetValue(interp, tree, node, "type", objPtr) != TCL_OK) {
+            goto error;
+        }
+    }
+    /* size */
+
+    if ((writerPtr->flags & FIELD_SIZE) &&
+	(attrsPtr->flags & LIBSSH2_SFTP_ATTR_SIZE)) {
+        objPtr = Tcl_NewLongObj(attrsPtr->filesize);
+        if (Blt_Tree_SetValue(interp, tree, node, "size", objPtr) != TCL_OK) {
+            goto error;
+        }
+    }
+    /* uid */
+    if ((writerPtr->flags & FIELD_UID) &&
+	(attrsPtr->flags & LIBSSH2_SFTP_ATTR_UIDGID)) {
+        objPtr = Tcl_NewLongObj(attrsPtr->uid);
+        if (Blt_Tree_SetValue(interp, tree, node, "uid", objPtr) != TCL_OK) {
+            goto error;
+        }
+    }
+    /* gid */
+    if ((writerPtr->flags & FIELD_GID) && 
+	(attrsPtr->flags & LIBSSH2_SFTP_ATTR_UIDGID)) {
+        objPtr = Tcl_NewLongObj(attrsPtr->gid);
+        if (Blt_Tree_SetValue(interp, tree, node, "gid", objPtr) != TCL_OK) {
+            goto error;
+        }
+    }
+    /* atime */
+    if ((writerPtr->flags & FIELD_ATIME) && 
+	(attrsPtr->flags & LIBSSH2_SFTP_ATTR_ACMODTIME)) {
+        objPtr = Tcl_NewLongObj(attrsPtr->atime);
+        if (Blt_Tree_SetValue(interp, tree, node, "atime", objPtr) != TCL_OK) {
+            goto error;
+        }
+    }
+    /* mtime */
+    if ((writerPtr->flags & FIELD_MTIME) && 
+	(attrsPtr->flags & LIBSSH2_SFTP_ATTR_ACMODTIME)) {
+        objPtr = Tcl_NewLongObj(attrsPtr->mtime);
+        if (Blt_Tree_SetValue(interp, tree, node, "mtime", objPtr) != TCL_OK) {
+            goto error;
+        }
+    }
+    /* mode */
+    if ((writerPtr->flags & FIELD_MODE) && 
+	(attrsPtr->flags & LIBSSH2_SFTP_ATTR_PERMISSIONS)) {
+        objPtr = Tcl_NewLongObj(attrsPtr->permissions & 07777);
+        if (Blt_Tree_SetValue(interp, tree, node, "mode", objPtr) != TCL_OK) {
+            goto error;
+        }
+    }
+    /* longentry */
+    if (writerPtr->flags & FIELD_LONGENTRY) {
+	objPtr = Tcl_NewStringObj(longentry, -1);
+	if (Blt_Tree_SetValue(interp, tree, node, "longentry", objPtr) 
+	    != TCL_OK) {
+            goto error;
+	}
+    }
+    Blt_Free(argv);
+    return TCL_OK;
+}
 
 static int
 SftpChgrpFile(Tcl_Interp *interp, SftpCmd *cmdPtr, const char *path, 
@@ -2701,19 +2919,19 @@ ChgrpOp(ClientData clientData, Tcl_Interp *interp, int objc,
     data.dirProc = SftpChgrpFile;
     data.clientData = &switches;
     if (LIBSSH2_SFTP_S_ISDIR(attrs.permissions) && (switches.flags & RECURSE)) {
-	Blt_Chain chain;
+	Blt_Chain entries;
 	int result;
 	
-	chain = SftpReadDirEntries(NULL, cmdPtr, path, length);
+	entries = SftpReadEntries(NULL, cmdPtr, path, length);
 	if (chain == NULL) {
 	    return TCL_ERROR;		/* Can't get directory entries. */
 	}
 	result = TCL_OK;
-	if (Blt_Chain_GetLength(chain) > 0) {
+	if (Blt_Chain_GetLength(entries) > 0) {
 	    result = SftpApply(interp, cmdPtr, path, length, &attrs, chain, 
 		&data);
 	}
-	Blt_Chain_Destroy(chain);
+	DestroySftpEntries(entries);
 	if (result !=TCL_OK) {
 	    return TCL_ERROR;		/* Error chmod-ing entries. */
 	}
@@ -2779,24 +2997,23 @@ ChmodOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     switches.clearFlags = clearFlags;
     switches.setFlags = setFlags;
-    data.fileProc = SftpChmodFile;
-    data.dirProc = SftpChmodFile;
+    data.fileProc   = SftpChmodFile;
+    data.dirProc    = SftpChmodFile;
     data.clientData = &switches;
     if (LIBSSH2_SFTP_S_ISDIR(attrs.permissions) && (switches.flags & RECURSE)) {
-	Blt_Chain chain;
-	chain = Blt_Chain_Create();
+	Blt_Chain entries;
 	int result;
 	
-	chain = SftpReadDirEntries(NULL, cmdPtr, path, length);
-	if (chain == NULL) {
+	entries = SftpReadEntries(NULL, cmdPtr, path, length);
+	if (entries == NULL) {
 	    return TCL_ERROR;
 	}
 	result = TCL_OK;
-	if (Blt_Chain_GetLength(chain) > 0) {
-	    result = SftpApply(interp, cmdPtr, path, length, &attrs, chain, 
+	if (Blt_Chain_GetLength(entries) > 0) {
+	    result = SftpApply(interp, cmdPtr, path, length, &attrs, entries, 
 		&data);
 	}
-	Blt_Chain_Destroy(chain);
+	DestroySftpEntries(entries);
 	if (result !=TCL_OK) {
 	    return TCL_ERROR;
 	}
@@ -2855,26 +3072,26 @@ DeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
     data.dirProc = SftpDeleteDirectory;
     data.clientData = NULL;
     if (LIBSSH2_SFTP_S_ISDIR(attrs.permissions)) {
-	Blt_Chain chain;
+	Blt_Chain entries;
 
-	chain = SftpReadDirEntries(NULL, cmdPtr, path, length);
-	if (chain == NULL) {
+	entries = SftpReadEntries(NULL, cmdPtr, path, length);
+	if (entries == NULL) {
 	    return TCL_ERROR;
 	}
-	if (Blt_Chain_GetLength(chain) == 0) {
+	if (Blt_Chain_GetLength(entries) == 0) {
 	    result = SftpDeleteDirectory(interp, cmdPtr, path, length, &attrs, 
 		NULL);
-	    Blt_Chain_Destroy(chain);
+	    DestroySftpEntries(entries);
 	    return result;
 	}
 	if ((switches.flags & FORCE) == 0) {
 	    Tcl_AppendResult(interp, "can't delete directory \"", 
 		Tcl_GetString(objv[2]), "\": is not empty", (char *)NULL);
-	    Blt_Chain_Destroy(chain);
+	    DestroySftpEntries(entries);
 	    return TCL_ERROR;
 	}
-	result = SftpApply(interp, cmdPtr, path, length, &attrs, chain, &data);
-	Blt_Chain_Destroy(chain);
+	result = SftpApply(interp, cmdPtr, path, length, &attrs, entries,&data);
+	DestroySftpEntries(entries);
     } else {
 	result = SftpDeleteFile(interp, cmdPtr, path, length, &attrs, NULL);
     }
@@ -3826,7 +4043,7 @@ RmdirOp(ClientData clientData, Tcl_Interp *interp, int objc,
     LIBSSH2_SFTP_ATTRIBUTES attrs;
     const char *path;
     int length, numEntries;
-    Blt_Chain chain;
+    Blt_Chain entries;
 
     if (cmdPtr->sftp == NULL) {
 	if (SftpConnect(interp, cmdPtr) != TCL_OK) {
@@ -3849,12 +4066,12 @@ RmdirOp(ClientData clientData, Tcl_Interp *interp, int objc,
 		"\": not a directory", (char *)NULL);
 	return TCL_ERROR;
     }	
-    chain = SftpReadDirEntries(NULL, cmdPtr, path, length);
-    if (chain == NULL) {
+    entries = SftpReadEntries(NULL, cmdPtr, path, length);
+    if (entries == NULL) {
 	return TCL_ERROR;
     }
-    numEntries = Blt_Chain_GetLength(chain);
-    Blt_Chain_Destroy(chain);
+    numEntries = Blt_Chain_GetLength(entries);
+    DestroySftpEntries(entries);
     if (numEntries > 0) {
 	Tcl_AppendResult(interp, "can't remove \"", Tcl_GetString(objv[2]), 
 		"\": is not empty", (char *)NULL);

@@ -5292,9 +5292,6 @@ Blt_MapAxes(Graph *graphPtr)
 	    }
 	}
     }
-    if (graphPtr->colorbar.axisPtr != NULL) {
-	
-    }
 }
 
 
