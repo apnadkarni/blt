@@ -65,6 +65,7 @@ static Blt_CustomOption iconOption = {
 #endif
 #define DEF_STYLE_ACTIVE_FOREGROUND 	STD_ACTIVE_FOREGROUND
 #define DEF_STYLE_GAP			"2"
+#define DEF_JUSTIFY			"center"
 
 typedef struct {
     int refCount;			/* Usage reference count.  A reference
@@ -122,6 +123,7 @@ typedef struct {
     /* TextBox-specific fields */
     int side;				/* Position of the text in relation to
 					 * the icon.  */
+    int justify;
 } TextBoxStyle;
 
 #ifdef WIN32
@@ -177,6 +179,8 @@ static Blt_ConfigSpec textBoxSpecs[] =
 	Blt_Offset(TextBoxStyle, icon), BLT_CONFIG_NULL_OK, &iconOption},
     {BLT_CONFIG_STRING, "-key", "key", "key", 	(char *)NULL, 
 	Blt_Offset(TextBoxStyle, key), BLT_CONFIG_NULL_OK, 0},
+    {BLT_CONFIG_JUSTIFY, "-justify", "justify", "Justify", DEF_JUSTIFY, 
+	Blt_Offset(TextBoxStyle, justify), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_BACKGROUND, "-selectbackground", "selectBackground", 
 	"Foreground", (char *)NULL, Blt_Offset(TextBoxStyle, selBg), 0},
     {BLT_CONFIG_COLOR, "-selectforeground", "selectForeground", "Background",
@@ -265,6 +269,7 @@ typedef struct {
     Blt_Picture selectedPicture;
     Blt_Picture normalPicture;
     Blt_Picture disabledPicture;
+    int justify;
 } CheckBoxStyle;
 
 #define DEF_CHECKBOX_BOX_COLOR		(char *)NULL
@@ -327,6 +332,8 @@ static Blt_ConfigSpec checkBoxSpecs[] =
 	Blt_Offset(CheckBoxStyle, icon), BLT_CONFIG_NULL_OK, &iconOption},
     {BLT_CONFIG_STRING, "-key", "key", "key", (char *)NULL, 
 	Blt_Offset(CheckBoxStyle, key), BLT_CONFIG_NULL_OK, 0},
+    {BLT_CONFIG_JUSTIFY, "-justify", "justify", "Justify", DEF_JUSTIFY, 
+	Blt_Offset(CheckBoxStyle, justify), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_PIXELS_NNEG, "-linewidth", "lineWidth", "LineWidth",
 	DEF_CHECKBOX_LINEWIDTH, Blt_Offset(CheckBoxStyle, lineWidth),
 	BLT_CONFIG_DONT_SET_DEFAULT},
@@ -426,6 +433,7 @@ typedef struct {
     int arrowWidth;
     int arrowBW;			/* Border width of arrow. */
     int arrowRelief;			/* Normal relief of arrow. */
+    int justify;
 } ComboBoxStyle;
 
 #define DEF_COMBOBOX_BORDERWIDTH	"1"
@@ -488,6 +496,8 @@ static Blt_ConfigSpec comboBoxSpecs[] =
 	Blt_Offset(ComboBoxStyle, icon), BLT_CONFIG_NULL_OK, &iconOption},
     {BLT_CONFIG_STRING, "-key", "key", "key", (char *)NULL, 
 	Blt_Offset(ComboBoxStyle, key), BLT_CONFIG_NULL_OK, 0},
+    {BLT_CONFIG_JUSTIFY, "-justify", "justify", "Justify", DEF_JUSTIFY, 
+	Blt_Offset(ComboBoxStyle, justify), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_RELIEF, "-relief", "relief", "Relief", DEF_COMBOBOX_RELIEF, 
 	Blt_Offset(ComboBoxStyle, relief), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_BACKGROUND, "-selectbackground", "selectBackground", 

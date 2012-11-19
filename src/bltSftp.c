@@ -124,11 +124,9 @@
 #define FIELD_SIZE	(1<<5)
 #define FIELD_TYPE	(1<<6)
 #define FIELD_UID	(1<<7)
-#define FIELD_LONGENTRY (1<<8)
 #define FIELD_DEFAULT	(FIELD_SIZE|FIELD_TYPE|FIELD_MTIME|FIELD_MODE)
 #define FIELD_ALL	(FIELD_ATIME|FIELD_GID|FIELD_MODE|FIELD_MTIME| \
-			 FIELD_NAME|FIELD_SIZE|FIELD_TYPE|FIELD_UID|\
-			 FIELD_LONGENTRY)
+			 FIELD_NAME|FIELD_SIZE|FIELD_TYPE|FIELD_UID)
 
 #define TRACE_FLAGS (TCL_TRACE_WRITES | TCL_TRACE_UNSETS | TCL_GLOBAL_ONLY)
 
@@ -217,8 +215,7 @@ typedef struct {
 
 typedef struct {
     LIBSSH2_SFTP_ATTRIBUTES attrs;
-    const char *name;
-    const char *longentry;
+    char name[1];
 } SftpEntry;
 
 typedef struct {
@@ -288,10 +285,10 @@ static ApplyProc SftpChmodFile;
 static ApplyProc SftpDeleteDirectory;
 static ApplyProc SftpDeleteFile;
 
-static Blt_SwitchParseProc TableSwitch;
-static Blt_SwitchFreeProc FreeTable;
+static Blt_SwitchParseProc TableSwitchParseProc;
+static Blt_SwitchFreeProc TableSwitchFreeProc;
 static Blt_SwitchCustom tableSwitch = {
-    TableSwitch, NULL, FreeTable, NULL
+    TableSwitchParseProc, NULL, TableSwitchFreeProc, NULL
 };
 
 static Blt_SwitchSpec sftpSwitches[] = 
@@ -441,14 +438,21 @@ typedef struct {
     const char *cancelVarName;
 } TreeWriter;
 
+static Blt_SwitchParseProc TreeNodeSwitchParseProc;
+static Blt_SwitchCustom treeNodeSwitch = {
+    TreeNodeSwitchParseProc, NULL, NULL, NULL
+};
+
 static Blt_SwitchSpec treeSwitches[] = 
 {
     {BLT_SWITCH_STRING,    "-cancel",  "varName",  (char *)NULL,
 	Blt_Offset(TreeWriter, cancelVarName), 0},
-    {BLT_SWITCH_INT_NNEG,"-depth",  "depth",     (char *)NULL,
+    {BLT_SWITCH_INT_NNEG,"-depth",      "depth",     (char *)NULL,
 	Blt_Offset(TreeWriter, depth),       0},
     {BLT_SWITCH_INT_NNEG, "-timeout",   "seconds", (char *)NULL,
 	Blt_Offset(TreeWriter, timeout),       0},
+    {BLT_SWITCH_CUSTOM,   "-root",      "node", (char *)NULL,
+	Blt_Offset(TreeWriter, root),  0, 0, &treeNodeSwitch},
     {BLT_SWITCH_END}
 };
 
@@ -519,7 +523,28 @@ DLLEXPORT extern Tcl_AppInitProc Blt_sftp_Init;
 /*
  *---------------------------------------------------------------------------
  *
- * TableSwitch --
+ * TableSwitchFreeProc --
+ *
+ *	Free the table used.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static void
+TableSwitchFreeProc(ClientData clientData, char *record, int offset, int flags)
+{
+    BLT_TABLE *tablePtr = (BLT_TABLE *)(record + offset);
+
+    if (*tablePtr != NULL) {
+	blt_table_close(*tablePtr);
+	*tablePtr = NULL;
+    }
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * TableSwitchParseProc --
  *
  *	Convert a string representing a datatable.
  *
@@ -530,7 +555,7 @@ DLLEXPORT extern Tcl_AppInitProc Blt_sftp_Init;
  */
 /*ARGSUSED*/
 static int
-TableSwitch(
+TableSwitchParseProc(
     ClientData clientData,	/* Flag indicating type of pattern. */
     Tcl_Interp *interp,		/* Not used. */
     const char *switchName,	/* Not used. */
@@ -557,26 +582,42 @@ TableSwitch(
     return TCL_OK;
 }
 
+
 /*
  *---------------------------------------------------------------------------
  *
- * FreeTable --
+ * TreeNodeSwitchParseProc --
  *
- *	Free the table used.
+ *	Convert a Tcl_Obj representing a node number into its integer value.
+ *
+ * Results:
+ *	The return value is a standard TCL result.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
-static void
-FreeTable(ClientData clientData, char *record, int offset, int flags)
+static int
+TreeNodeSwitchParseProc(
+    ClientData clientData,		/* Not used. */
+    Tcl_Interp *interp,			/* Interpreter to send results back
+					 * to */
+    const char *switchName,		/* Not used. */
+    Tcl_Obj *objPtr,			/* String representation */
+    char *record,			/* Structure record */
+    int offset,				/* Offset to field in structure */
+    int flags)				/* Not used. */
 {
-    BLT_TABLE *tablePtr = (BLT_TABLE *)(record + offset);
+    Blt_TreeNode *nodePtr = (Blt_TreeNode *)(record + offset);
+    Blt_Tree tree  = clientData;
+    long inode;
 
-    if (*tablePtr != NULL) {
-	blt_table_close(*tablePtr);
-	*tablePtr = NULL;
+    if (Tcl_GetLongFromObj(interp, objPtr, &inode) != TCL_OK) {
+	return TCL_ERROR;
     }
+    *nodePtr = Blt_Tree_GetNode(tree, inode);
+    return TCL_OK;
 }
+
 
 /*
  *---------------------------------------------------------------------------
@@ -757,6 +798,7 @@ FileSplit(const char *path, int length, int *argcPtr, char ***argvPtr)
     size_t addrSize;
     char *q, *buffer;
 
+    count = 0;
     for (p = path, pend = p + length; p < pend; p++) {
 	if (*p == PATH_SEPARATOR) {
 	    count++;
@@ -801,7 +843,8 @@ FileSplit(const char *path, int length, int *argcPtr, char ***argvPtr)
 }
 
 static int
-PromptUser(Tcl_Interp *interp, SftpCmd *cmdPtr, const char **userPtr, const char **passPtr)
+PromptUser(Tcl_Interp *interp, SftpCmd *cmdPtr, const char **userPtr, 
+	   const char **passPtr)
 {
     Tcl_Obj **objv;
     Tcl_Obj *objPtr;
@@ -825,14 +868,14 @@ PromptUser(Tcl_Interp *interp, SftpCmd *cmdPtr, const char **userPtr, const char
 }
 
 static SftpEntry *
-NewSftpEntry(const char *name, const char *longentry, 
-	    LIBSSH2_SFTP_ATTRIBUTES *attrsPtr)
+NewSftpEntry(const char *name, LIBSSH2_SFTP_ATTRIBUTES *attrsPtr)
 {
     SftpEntry *entryPtr;
+    Blt_ChainLink link;
 
-    entryPtr = Blt_AssertMalloc(sizeof(SftpEntry));
-    entryPtr->name = Blt_Strdup(name);
-    entryPtr->longentry = Blt_Strdup(longentry);
+    link = Blt_Chain_AllocLink(sizeof(SftpEntry) + strlen(name));
+    entryPtr = Blt_Chain_GetValue(link);
+    strcpy(entryPtr->name, name);
     memcpy(&entryPtr->attrs, attrsPtr, sizeof(LIBSSH2_SFTP_ATTRIBUTES));
     return entryPtr;
 }
@@ -840,17 +883,6 @@ NewSftpEntry(const char *name, const char *longentry,
 static void
 DestroySftpEntries(Blt_Chain entries) 
 {
-    Blt_ChainLink link;
-
-    for (link = Blt_Chain_FirstLink(entries); link != NULL; 
-	 link = Blt_Chain_NextLink(link)) {
-	SftpEntry *entryPtr;
-
-	entryPtr = Blt_Chain_GetValue(link);
-	Blt_Free(entryPtr->name);
-	Blt_Free(entryPtr->longentry);
-	Blt_Free(entryPtr);
-    }
     Blt_Chain_Destroy(entries);
 }
 
@@ -862,7 +894,8 @@ DestroySftpEntries(Blt_Chain entries)
  *---------------------------------------------------------------------------
  */
 static int
-SftpReadEntry(Tcl_Interp *interp, LIBSSH2_SFTP_HANDLE *handle, Blt_Chain chain)
+SftpReadEntry(Tcl_Interp *interp, LIBSSH2_SFTP_HANDLE *handle, 
+	      Blt_Chain entries)
 {
     char bytes[2048];
     char longentry[2048];
@@ -883,8 +916,8 @@ SftpReadEntry(Tcl_Interp *interp, LIBSSH2_SFTP_HANDLE *handle, Blt_Chain chain)
     if ((strcmp(bytes, ".") != 0) && (strcmp(bytes, "..") != 0)) {
 	SftpEntry *entryPtr;
 
-	entryPtr = NewSftpEntry(bytes, longentry, &attrs);
-	Blt_Chain_Append(chain, entryPtr);
+	entryPtr = NewSftpEntry(bytes, &attrs);
+	Blt_Chain_Append(entries, entryPtr);
     }
     return TCL_OK; 
 }
@@ -2423,16 +2456,11 @@ SftpTreeEntry(Tcl_Interp *interp, SftpCmd *cmdPtr, const char *path,
             goto error;
         }
     }
-    /* longentry */
-    if (writerPtr->flags & FIELD_LONGENTRY) {
-	objPtr = Tcl_NewStringObj(longentry, -1);
-	if (Blt_Tree_SetValue(interp, tree, node, "longentry", objPtr) 
-	    != TCL_OK) {
-            goto error;
-	}
-    }
     Blt_Free(argv);
     return TCL_OK;
+ error:
+    Blt_Free(argv);
+    return TCL_ERROR;
 }
 
 static int
@@ -2923,12 +2951,12 @@ ChgrpOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	int result;
 	
 	entries = SftpReadEntries(NULL, cmdPtr, path, length);
-	if (chain == NULL) {
+	if (entries == NULL) {
 	    return TCL_ERROR;		/* Can't get directory entries. */
 	}
 	result = TCL_OK;
 	if (Blt_Chain_GetLength(entries) > 0) {
-	    result = SftpApply(interp, cmdPtr, path, length, &attrs, chain, 
+	    result = SftpApply(interp, cmdPtr, path, length, &attrs, entries, 
 		&data);
 	}
 	DestroySftpEntries(entries);
@@ -4232,6 +4260,77 @@ StatOp(ClientData clientData, Tcl_Interp *interp, int objc,
 /* 
  *---------------------------------------------------------------------------
  *
+ * TreeOp --
+ *
+ *	$sftp tree $path $tree ?-switches?
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+TreeOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+       Tcl_Obj *const *objv) 
+{
+    ApplyData data;
+    TreeWriter writer;
+    LIBSSH2_SFTP_ATTRIBUTES attrs;
+    SftpCmd *cmdPtr = clientData;
+    const char *path;
+    int length;
+    Blt_Tree tree;
+
+    if (cmdPtr->sftp == NULL) {
+	if (SftpConnect(interp, cmdPtr) != TCL_OK) {
+	    return TCL_ERROR;
+	}
+    }
+    path = SftpGetPathFromObj(cmdPtr, objv[2], &length);
+    if (SftpGetAttributes(cmdPtr, path, length, &attrs) != TCL_OK) {
+	Tcl_AppendResult(interp, "can't stat \"", Tcl_GetString(objv[2]), 
+		"\": ", SftpError(cmdPtr), (char *)NULL);
+	return TCL_ERROR;
+    }
+    tree = Blt_Tree_GetFromObj(interp, objv[3]);
+    if (tree == NULL) {
+	return TCL_ERROR;
+    }
+    writer.flags = FIELD_DEFAULT;
+    writer.tree = tree;
+    writer.root = Blt_Tree_RootNode(tree);
+    writer.rootOffset = strlen(path);
+    if (Blt_ParseSwitches(interp, treeSwitches, objc - 4, objv + 4, 
+			  &writer, BLT_SWITCH_DEFAULTS) < 0) {
+	return TCL_ERROR;
+    }
+    data.fileProc = SftpTreeEntry;
+    data.dirProc = SftpTreeEntry;
+    data.clientData = &writer;
+    if (SftpTreeEntry(interp, cmdPtr, path, length, &attrs, &writer)!= TCL_OK) {
+	return TCL_ERROR;
+    }
+    if (LIBSSH2_SFTP_S_ISDIR(attrs.permissions) && (writer.flags & RECURSE)) {
+	Blt_Chain entries;
+	int result;
+	
+	entries = SftpReadEntries(NULL, cmdPtr, path, length);
+	if (entries == NULL) {
+	    return TCL_ERROR;		/* Can't get directory entries. */
+	}
+	result = TCL_OK;
+	if (Blt_Chain_GetLength(entries) > 0) {
+	    result = SftpApply(interp, cmdPtr, path, length, &attrs, entries, 
+		&data);
+	}
+	DestroySftpEntries(entries);
+	if (result !=TCL_OK) {
+	    return TCL_ERROR;		/* Error chmod-ing entries. */
+	}
+    }
+    return TCL_OK;
+}
+
+/* 
+ *---------------------------------------------------------------------------
+ *
  * TypeOp --
  *
  *	sftp type path
@@ -4410,7 +4509,8 @@ static Blt_OpSpec sftpOps[] =
     {"size",        2, SizeOp,		3, 3, "path",},
     {"slink",	    2, SlinkOp,		4, 4, "path link",},
     {"stat",        2, StatOp,		4, 4, "path varName",},
-    {"type",        1, TypeOp,		3, 3, "path",},
+    {"tree",        2, TreeOp,		4, 0, "path tree ?switches?",},
+    {"type",        2, TypeOp,		3, 3, "path",},
     {"writable",    5, WritableOp,	3, 3, "path",},
     {"write",       5, WriteOp,		4, 0, "path string ?switches?",},
 };

@@ -144,7 +144,7 @@
 #define DEF_COLUMN_STYLE		"text"
 #define DEF_COLUMN_TITLE_BACKGROUND	STD_NORMAL_BACKGROUND
 #define DEF_COLUMN_TITLE_BORDERWIDTH	STD_BORDERWIDTH
-#define DEF_COLUMN_TITLE_FONT		STD_FONT_SMALL
+#define DEF_COLUMN_TITLE_FONT		STD_FONT_NORMAL
 #define DEF_COLUMN_TITLE_FOREGROUND	STD_NORMAL_FOREGROUND
 #define DEF_COLUMN_TITLE_RELIEF		"raised"
 #define DEF_COLUMN_WEIGHT		"1.0"
@@ -176,7 +176,7 @@
 #define DEF_FOCUS_EDIT		"no"
 #define DEF_FOCUS_FOREGROUND	STD_ACTIVE_FOREGROUND
 #define DEF_FOCUS_FG_MONO	STD_ACTIVE_FG_MONO
-#define DEF_FONT		STD_FONT_SMALL
+#define DEF_FONT		STD_FONT_NORMAL
 #define DEF_HEIGHT		"400"
 #define DEF_HIDE_LEAVES		"no"
 #define DEF_HIDE_ROOT		"yes"
@@ -12666,6 +12666,59 @@ StyleConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
     return TCL_OK;
 }
 
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * StyleCreateOp --
+ *
+ *	  .t style create combobox "styleName" -background blue
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+StyleCreateOp(TreeView *viewPtr, Tcl_Interp *interp, int objc, 
+	      Tcl_Obj *const *objv)
+{
+    ColumnStyle *stylePtr;
+    char c;
+    const char *string;
+    int type, length;
+
+    string = Tcl_GetStringFromObj(objv[3], &length);
+    c = string[0];
+    if ((c == 't') && (strncmp(string, "textbox", length) == 0)) {
+	type = STYLE_TEXTBOX;
+    } else if ((c == 'c') && (length > 2) && 
+	       (strncmp(string, "checkbox", length) == 0)) {
+	type = STYLE_CHECKBOX;
+    } else if ((c == 'c') && (length > 2) && 
+	       (strncmp(string, "combobox", length) == 0)) {
+	type = STYLE_COMBOBOX;
+#ifdef notdef
+    } else if ((c == 'i') && (strncmp(string, "imagebox", length) == 0)) {
+	type = STYLE_IMAGEBOX;
+#endif
+    } else {
+	Tcl_AppendResult(interp, "unknown style type \"", string, 
+		"\": should be textbox, checkbox, combobox, or imagebox.", 
+		(char *)NULL);
+	return TCL_ERROR;
+    }
+    string = Tcl_GetString(objv[4]);
+    iconOption.clientData = viewPtr;
+    stylePtr = CreateStyle(interp, viewPtr, type, string, objc - 5, objv + 5);
+    if (stylePtr == NULL) {
+	return TCL_ERROR;
+    }
+    stylePtr->link = Blt_Chain_Append(viewPtr->userStyles, stylePtr);
+    ConfigureStyle(viewPtr, stylePtr);
+    Tcl_SetObjResult(interp, objv[4]);
+    EventuallyRedraw(viewPtr);
+    return TCL_OK;
+}
+
 /*
  *---------------------------------------------------------------------------
  *
@@ -12997,6 +13050,7 @@ static Blt_OpSpec styleOps[] = {
     {"checkbox",    2, StyleCheckBoxOp,    4, 0, "styleName options...",},
     {"combobox",    3, StyleComboBoxOp,    4, 0, "styleName options...",},
     {"configure",   3, StyleConfigureOp,   4, 0, "styleName options...",},
+    {"create",      2, StyleCreateOp,      5, 0, "styleName type options...",},
     {"deactivate",  1, StyleDeactivateOp,  3, 3, "",},
     {"forget",      1, StyleForgetOp,      3, 0, "styleName...",},
     {"highlight",   1, StyleHighlightOp,   5, 5, "styleName boolean",},
