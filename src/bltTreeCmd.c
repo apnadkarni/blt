@@ -267,6 +267,7 @@ typedef struct {
     unsigned int mask;			/* Indicates which fields to copy into
 					 * the tree node as data. */
     const char *pattern;		
+    unsigned int flags;
 } DirSwitches;
 
 #define DIR_TYPE	(1<<0)
@@ -280,11 +281,11 @@ typedef struct {
 #define DIR_NLINK	(1<<8)
 #define DIR_DEV		(1<<9)
 #define DIR_INO		(1<<10)
-
 #define DIR_ALL		(DIR_ATIME|DIR_CTIME|DIR_MTIME|DIR_UID|DIR_GID|\
 			 DIR_TYPE|DIR_MODE|DIR_SIZE|DIR_NLINK|DIR_DEV|DIR_INO)
 
 #define DIR_DEFAULT	(DIR_MTIME|DIR_TYPE|DIR_MODE|DIR_SIZE)
+#define DIR_RECURSE	(1<<11)
 
 static Blt_SwitchParseProc FieldsSwitchProc;
 static Blt_SwitchCustom fieldsSwitch = {
@@ -311,6 +312,8 @@ static Blt_SwitchSpec dirSwitches[] =
 	Blt_Offset(DirSwitches, type), 0, TCL_GLOB_TYPE_LINK},
     {BLT_SWITCH_STRING, "-pattern", "string", (char *)NULL,
 	Blt_Offset(DirSwitches, pattern), 0},
+    {BLT_SWITCH_BITMASK, "-recurse", "", (char *)NULL,
+	Blt_Offset(DirSwitches, flags), 0, DIR_RECURSE},
     {BLT_SWITCH_END}
 };
 
@@ -3425,42 +3428,37 @@ GetTypeFromMode(int mode)
 #endif
 }
 
-/* 
- * tree dir $path $node ?switches?
+/*
+ *---------------------------------------------------------------------------
+ *
+ * TreeReadDirectory --
+ *
+ *	Loads contents of directory into the specified node, creating
+ *	a new node for each entry.
+ *
+ *---------------------------------------------------------------------------
  */
-/*ARGSUSED*/
 static int
-DirOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+TreeReadDirectory(Tcl_Interp *interp, TreeCmd *cmdPtr, Tcl_Obj *pathObjPtr,
+		  Blt_TreeNode parent, DirSwitches *switchesPtr)
 {
-    Tcl_Obj *listObjPtr;
-    Blt_TreeNode parent;
-    int i, n;
-    Tcl_Obj **items;
-    DirSwitches switches;
     const char *pattern;
     Tcl_GlobTypeData readableFiles = {
 	0, TCL_GLOB_PERM_R, NULL, NULL
     };
-    if (GetNodeFromObj(interp, cmdPtr->tree, objv[2], &parent) != TCL_OK) {
-	return TCL_ERROR;
-    }
-    memset(&switches, 0, sizeof(switches));
-    if (Blt_ParseSwitches(interp, dirSwitches, objc - 4, objv + 4, &switches,
-	BLT_SWITCH_DEFAULTS) < 0) {
-	return TCL_ERROR;
-    }
-    readableFiles.type = switches.type;
-    readableFiles.perm = switches.perm;
+    Tcl_Obj *listObjPtr;
+    int i, n;
+    Tcl_Obj **items;
+
+    readableFiles.type = switchesPtr->type;
+    readableFiles.perm = switchesPtr->perm;
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
-    if (switches.pattern == NULL) {
+    if (switchesPtr->pattern == NULL) {
 	pattern = "*";
     } else {
-	pattern = switches.pattern;
+	pattern = switchesPtr->pattern;
     }
-    if (switches.mask == 0) {
-	switches.mask = DIR_DEFAULT;
-    }
-    if (Tcl_FSMatchInDirectory(interp, listObjPtr, objv[3], pattern, 
+    if (Tcl_FSMatchInDirectory(interp, listObjPtr, pathObjPtr, pattern, 
 	&readableFiles) != TCL_OK) {
     }
     if (Tcl_ListObjGetElements(interp, listObjPtr, &n, &items) != TCL_OK) {
@@ -3488,42 +3486,104 @@ DirOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	Tcl_ListObjIndex(NULL, objPtr, length-1, &tailPtr);
 	label = Tcl_GetString(tailPtr);
 	child = Blt_Tree_CreateNode(cmdPtr->tree, parent, label, -1);
-	if (switches.mask & DIR_SIZE) {
+	if (switchesPtr->mask & DIR_SIZE) {
 	    Blt_Tree_SetValue(interp, cmdPtr->tree, child, "size",  
 		Tcl_NewWideIntObj((Tcl_WideInt)stat.st_size));
 	}
-	if (switches.mask & DIR_MTIME) {
+	if (switchesPtr->mask & DIR_MTIME) {
 	    Blt_Tree_SetValue(interp, cmdPtr->tree, child, "mtime",  
 		Tcl_NewLongObj((long)stat.st_mtime));
 	}
-	if (switches.mask & DIR_CTIME) {
+	if (switchesPtr->mask & DIR_CTIME) {
 	    Blt_Tree_SetValue(interp, cmdPtr->tree, child, "ctime",  
 		Tcl_NewLongObj((long)stat.st_ctime));
 	}
-	if (switches.mask & DIR_ATIME) {
+	if (switchesPtr->mask & DIR_ATIME) {
 	    Blt_Tree_SetValue(interp, cmdPtr->tree, child, "atime",  
 		Tcl_NewLongObj((long)stat.st_atime));
 	}
-	if (switches.mask & DIR_MODE) {
+	if (switchesPtr->mask & DIR_MODE) {
 	    Blt_Tree_SetValue(interp, cmdPtr->tree, child, "mode", 
 		Tcl_NewIntObj(stat.st_mode));
 	}
-	if (switches.mask & DIR_UID) {
+	if (switchesPtr->mask & DIR_UID) {
 	    Blt_Tree_SetValue(interp, cmdPtr->tree, child, "uid", 
 		Tcl_NewIntObj(stat.st_uid));
 	}
-	if (switches.mask & DIR_GID) {
+	if (switchesPtr->mask & DIR_GID) {
 	    Blt_Tree_SetValue(interp, cmdPtr->tree, child, "gid", 
 		Tcl_NewIntObj(stat.st_gid));
 	}
-	if (switches.mask & DIR_TYPE) {
+	if (switchesPtr->mask & DIR_TYPE) {
 	    Blt_Tree_SetValue(interp, cmdPtr->tree, child, "type", 
 		Tcl_NewStringObj(GetTypeFromMode(stat.st_mode), -1));
 	}
 	Tcl_DecrRefCount(objPtr);
     }
     Tcl_DecrRefCount(listObjPtr);
+
+    if (switchesPtr->flags & DIR_RECURSE) {
+	Blt_TreeNode child;
+	int length;
+
+	/* Now recurse into subdirectories. */
+	Tcl_GetStringFromObj(pathObjPtr, &length);
+	for (child = Blt_Tree_FirstChild(parent); child != NULL; 
+	     child = Blt_Tree_NextSibling(child)) {
+	    Tcl_Obj *objPtr;
+	    const char *label, *value;
+	    int result;
+	    
+	    /* Type field must be "directory". */
+	    if (Blt_Tree_GetValue(interp, cmdPtr->tree, child, "type", &objPtr)
+		!= TCL_OK) {
+		return TCL_ERROR;
+	    }
+	    value = Tcl_GetString(objPtr);
+	    if ((value[0] != 'd') || (strcmp(value, "directory") != 0)) {
+		continue;
+	    }
+	    label = Blt_Tree_NodeLabel(child);
+	    Tcl_AppendStringsToObj(pathObjPtr, "/", label, (char *)NULL);
+	    result = TreeReadDirectory(interp, cmdPtr, pathObjPtr, child, 
+				       switchesPtr);
+	    Tcl_SetObjLength(pathObjPtr, length);
+	    if (result != TCL_OK) {
+		return TCL_ERROR;
+	    }
+	}
+    }
     return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * DirOp --
+ *
+ *	tree dir $path $node ?switches?
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+DirOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+{
+    Blt_TreeNode parent;
+    DirSwitches switches;
+
+    if (GetNodeFromObj(interp, cmdPtr->tree, objv[2], &parent) != TCL_OK) {
+	return TCL_ERROR;
+    }
+    memset(&switches, 0, sizeof(switches));
+    if (Blt_ParseSwitches(interp, dirSwitches, objc - 4, objv + 4, &switches,
+	BLT_SWITCH_DEFAULTS) < 0) {
+	return TCL_ERROR;
+    }
+    if (switches.mask == 0) {
+	switches.mask = DIR_DEFAULT;
+    }
+    return TreeReadDirectory(interp, cmdPtr, objv[3], parent, &switches);
 }
 
 

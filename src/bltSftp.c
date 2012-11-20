@@ -433,7 +433,7 @@ typedef struct {
     int rootOffset;
     unsigned int flags;
     int timeout;
-    int depth;
+    int maxDepth;
     Tcl_Obj *progCmdObjPtr;
     const char *cancelVarName;
 } TreeWriter;
@@ -447,8 +447,8 @@ static Blt_SwitchSpec treeSwitches[] =
 {
     {BLT_SWITCH_STRING,    "-cancel",  "varName",  (char *)NULL,
 	Blt_Offset(TreeWriter, cancelVarName), 0},
-    {BLT_SWITCH_INT_NNEG,"-depth",      "depth",     (char *)NULL,
-	Blt_Offset(TreeWriter, depth),       0},
+    {BLT_SWITCH_INT_NNEG,"-depth",      "number",     (char *)NULL,
+	Blt_Offset(TreeWriter, maxDepth),       0},
     {BLT_SWITCH_INT_NNEG, "-timeout",   "seconds", (char *)NULL,
 	Blt_Offset(TreeWriter, timeout),       0},
     {BLT_SWITCH_CUSTOM,   "-root",      "node", (char *)NULL,
@@ -867,6 +867,31 @@ PromptUser(Tcl_Interp *interp, SftpCmd *cmdPtr, const char **userPtr,
     return TCL_OK;
 }
 
+static const char *
+SftpFileType(LIBSSH2_SFTP_ATTRIBUTES *attrsPtr)
+{
+    const char *type;
+
+    if (LIBSSH2_SFTP_S_ISREG(attrsPtr->permissions)) {
+	type = "file";
+    } else if (LIBSSH2_SFTP_S_ISDIR(attrsPtr->permissions)) {
+	type = "directory";
+    } else if (LIBSSH2_SFTP_S_ISFIFO(attrsPtr->permissions)) {
+	type = "fifo";
+    } else if (LIBSSH2_SFTP_S_ISBLK(attrsPtr->permissions)) {
+	type = "blockSpecial";
+    } else if (LIBSSH2_SFTP_S_ISLNK(attrsPtr->permissions)) {
+	type = "link";
+    } else if (LIBSSH2_SFTP_S_ISCHR(attrsPtr->permissions)) {
+	type = "characterSpecial";
+    } else if (LIBSSH2_SFTP_S_ISSOCK(attrsPtr->permissions)) {
+	type = "socket";
+    } else {
+	type = "???";
+    }
+    return type;
+}
+
 static SftpEntry *
 NewSftpEntry(const char *name, LIBSSH2_SFTP_ATTRIBUTES *attrsPtr)
 {
@@ -1045,100 +1070,15 @@ SftpApply(Tcl_Interp *interp, SftpCmd *cmdPtr, const char *path, int length,
     return TCL_OK;
 }
 
-
-static SftpEntry *
-NewTreeEntry(const char *name, LIBSSH2_SFTP_ATTRIBUTES *attrsPtr)
-{
-    SftpEntry *entryPtr;
-    Blt_ChainLink link;
-
-    link = Blt_Chain_AllocLink(sizeof(SftpEntry) + strlen(name));
-    entryPtr = Blt_Chain_GetValue(link);
-    strcpy(entryPtr->name, name);
-    memcpy(&entryPtr->attrs, attrsPtr, sizeof(LIBSSH2_SFTP_ATTRIBUTES));
-    return entryPtr;
-}
-
-static int
-SftpApply(Tcl_Interp *interp, SftpCmd *cmdPtr, const char *path, int length, 
-	  LIBSSH2_SFTP_ATTRIBUTES *attrsPtr, Blt_Chain chain, 
-	  ApplyData *dataPtr)
-{
-    Blt_ChainLink link, next;
-    
-    /* Pass 1: Apply to files. */
-    for (link = Blt_Chain_FirstLink(chain); link != NULL; link = next) {
-	SftpEntry *entryPtr;
-	const char *fullPath;
-	Tcl_DString ds;
-	int length;
-	
-	next = Blt_Chain_NextLink(link);
-	entryPtr = Blt_Chain_GetValue(link);
-	if (LIBSSH2_SFTP_S_ISDIR(entryPtr->attrs.permissions)) {
-	    continue;
-	}
-	fullPath = FileJoin(path, entryPtr->name, &ds);
-	length = Tcl_DStringLength(&ds);
-	if ((*dataPtr->fileProc)(interp, cmdPtr, fullPath, length, 
-		&entryPtr->attrs, dataPtr->clientData) != TCL_OK) {
-	    Tcl_DStringFree(&ds);
-	    return TCL_ERROR;
-	}
-	Tcl_DStringFree(&ds);
-    }
-    /* Pass 2: Recursively apply to subdirectories. */
-    for (link = Blt_Chain_FirstLink(chain); link != NULL; link = next) {
-	SftpEntry *entryPtr;
-	const char *fullPath;
-	Tcl_DString ds;
-	int fullLen;
-	Blt_Chain subentries;
-	int result;
-
-	next = Blt_Chain_NextLink(link);
-	entryPtr = Blt_Chain_GetValue(link);
-	if ((*dataPtr->dirProc)(interp, cmdPtr, path, length, attrsPtr,
-		 dataPtr->clientData) != TCL_OK) {
-	    return TCL_ERROR;
-	}
-	if (!LIBSSH2_SFTP_S_ISDIR(entryPtr->attrs.permissions)) {
-	    continue;
-	}
-	/* This is a subdirectory. */
-	fullPath = FileJoin(path, entryPtr->name, &ds);
-	fullLen = Tcl_DStringLength(&ds);
-	subentries = SftpReadEntries(NULL, cmdPtr, fullPath, fullLen);
-	if (subentries == NULL) {
-	    Tcl_DStringFree(&ds);
-	    return TCL_ERROR;
-	}
-	result = SftpApply(interp, cmdPtr, fullPath, fullLen, &entryPtr->attrs, 
-		subentries, dataPtr);
-	Tcl_DStringFree(&ds);
-	DestroySftpEntries(subentries);
-	if (result != TCL_OK) {
-	    return TCL_ERROR;
-	}
-    }
-    if (dataPtr->dirProc != NULL) {
-	if ((*dataPtr->dirProc)(interp, cmdPtr, path, length, attrsPtr,
-		 dataPtr->clientData) != TCL_OK) {
-	    return TCL_ERROR;
-	}
-    }
-    return TCL_OK;
-}
-
 /*
  *---------------------------------------------------------------------------
  *
- * TreeReadEntry --
+ * TreeGetEntry --
  *
  *---------------------------------------------------------------------------
  */
-static Blt_TreeNode
-TreeReadEntry(Tcl_Interp *interp, LIBSSH2_SFTP_HANDLE *handle, 
+static int
+TreeGetEntry(Tcl_Interp *interp, LIBSSH2_SFTP_HANDLE *handle, 
 	      TreeWriter *writerPtr, Blt_TreeNode parent)
 {
     char bytes[2048];
@@ -1146,6 +1086,8 @@ TreeReadEntry(Tcl_Interp *interp, LIBSSH2_SFTP_HANDLE *handle,
     ssize_t numBytes;
     LIBSSH2_SFTP_ATTRIBUTES attrs;
     Tcl_Obj *objPtr;
+    Blt_TreeNode node;
+    Blt_Tree tree;
 
     numBytes = libssh2_sftp_readdir_ex(handle, bytes, sizeof(bytes),
 		longentry, sizeof(longentry), &attrs);
@@ -1161,7 +1103,11 @@ TreeReadEntry(Tcl_Interp *interp, LIBSSH2_SFTP_HANDLE *handle,
     if ((strcmp(bytes, ".") == 0) || (strcmp(bytes, "..") == 0)) {
 	return TCL_OK;
     }
+    tree = writerPtr->tree;
     node = Blt_Tree_CreateNode(tree, parent, bytes, -1);
+    if (node == NULL) {
+	return TCL_ERROR;
+    }
     /* type */
     if ((writerPtr->flags & FIELD_TYPE) &&
 	(attrs.flags & LIBSSH2_SFTP_ATTR_PERMISSIONS)) {
@@ -1232,11 +1178,12 @@ TreeReadEntry(Tcl_Interp *interp, LIBSSH2_SFTP_HANDLE *handle,
  */
 static int
 TreeReadDirectory(Tcl_Interp *interp, SftpCmd *cmdPtr, const char *path, 
-		  int length, Blt_TreeNode parent)
+		  int length, TreeWriter *writerPtr, Blt_TreeNode parent)
 {
     LIBSSH2_SFTP_HANDLE *handle;
-    int result;
-    Blt_Chain chain;
+    int result, depth;
+    Blt_TreeNode child;
+    Tcl_DString ds;
 
     libssh2_session_set_blocking(cmdPtr->session, FALSE);
     do {
@@ -1255,22 +1202,60 @@ TreeReadDirectory(Tcl_Interp *interp, SftpCmd *cmdPtr, const char *path,
 		SftpError(cmdPtr), (char *)NULL);
 	}
 	libssh2_session_set_blocking(cmdPtr->session, TRUE);
-        return NULL;
+        return TCL_ERROR;
     }
-    chain = Blt_Chain_Create();
-    result = TreeGetEntry(interp, handle, parent);
+    result = TreeGetEntry(interp, handle, writerPtr, parent);
     while (result == TCL_OK) {
-	result = TreeGetEntry(interp, handle, parent);
+	result = TreeGetEntry(interp, handle, writerPtr, parent);
 	Tcl_DoOneEvent(TCL_DONT_WAIT); 
     }
+
     libssh2_sftp_closedir(handle);
     libssh2_session_set_blocking(cmdPtr->session, TRUE);
     if (result == TCL_ERROR) {
-	return NULL;
+	return TCL_ERROR;
     }
-    return chain;
-}
 
+    depth = Blt_Tree_NodeDepth(parent) - Blt_Tree_NodeDepth(writerPtr->root);
+    if (writerPtr->maxDepth <= depth) {
+	return TCL_OK;
+    }
+
+    /* Now recurse into subdirectories. */
+    Tcl_DStringInit(&ds);
+    Tcl_DStringAppend(&ds, path, length);
+    for (child = Blt_Tree_FirstChild(parent); child != NULL; 
+	 child = Blt_Tree_NextSibling(child)) {
+	Tcl_Obj *objPtr;
+	const char *label;
+	const char *value;
+
+	/* Type field must be "directory". */
+	if (Blt_Tree_GetValue(interp, writerPtr->tree, child, "type", &objPtr)
+	    != TCL_OK) {
+	    Tcl_DStringFree(&ds);
+	    return TCL_ERROR;
+	}
+	value = Tcl_GetString(objPtr);
+	if ((value[0] != 'd') || (strcmp(value, "directory") != 0)) {
+	    continue;
+	}
+	label = Blt_Tree_NodeLabel(child);
+	Tcl_DStringAppend(&ds, "/", 1);
+	Tcl_DStringAppend(&ds, label, -1);
+	result = TreeReadDirectory(interp, cmdPtr, 
+				   Tcl_DStringValue(&ds), 
+				   Tcl_DStringLength(&ds),
+				   writerPtr, child);
+	Tcl_DStringSetLength(&ds, length);
+	if (result != TCL_OK) {
+	    Tcl_DStringFree(&ds);
+	    return TCL_ERROR;
+	}
+    }
+    Tcl_DStringFree(&ds);
+    return TCL_OK;
+}
 
 static int
 GetPermsFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, unsigned int *setFlagsPtr,
@@ -2056,30 +2041,6 @@ SftpMkdir(Tcl_Interp *interp, SftpCmd *cmdPtr, const char *path, int length,
     return TCL_ERROR;
 }
 
-static const char *
-SftpFileType(LIBSSH2_SFTP_ATTRIBUTES *attrsPtr)
-{
-    const char *type;
-
-    if (LIBSSH2_SFTP_S_ISREG(attrsPtr->permissions)) {
-	type = "file";
-    } else if (LIBSSH2_SFTP_S_ISDIR(attrsPtr->permissions)) {
-	type = "directory";
-    } else if (LIBSSH2_SFTP_S_ISFIFO(attrsPtr->permissions)) {
-	type = "fifo";
-    } else if (LIBSSH2_SFTP_S_ISBLK(attrsPtr->permissions)) {
-	type = "blockSpecial";
-    } else if (LIBSSH2_SFTP_S_ISLNK(attrsPtr->permissions)) {
-	type = "link";
-    } else if (LIBSSH2_SFTP_S_ISCHR(attrsPtr->permissions)) {
-	type = "characterSpecial";
-    } else if (LIBSSH2_SFTP_S_ISSOCK(attrsPtr->permissions)) {
-	type = "socket";
-    } else {
-	type = "???";
-    }
-    return type;
-}
 
 /*
  *---------------------------------------------------------------------------
@@ -2592,102 +2553,6 @@ SftpGetFile(Tcl_Interp *interp, const char *path, int length,
     libssh2_session_set_blocking(cmdPtr->session, TRUE);
     libssh2_sftp_close(readerPtr->handle);
     return result;
-}
-
-static int
-SftpTreeEntry(Tcl_Interp *interp, SftpCmd *cmdPtr, const char *path,
-              int length, LIBSSH2_SFTP_ATTRIBUTES *attrsPtr,
-              ClientData clientData)
-{
-    TreeWriter *writerPtr = clientData;
-    Blt_TreeNode node;
-    Tcl_Obj *objPtr;
-    char **argv;
-    int i, argc;
-    Blt_Tree tree;
-
-    tree = writerPtr->tree;
-    path += writerPtr->rootOffset;
-    FileSplit(path, length - writerPtr->rootOffset, &argc, &argv);
-    if (argc == 0) {
-	Blt_Free(argv);
-	return TCL_OK;
-    }
-    node = writerPtr->root;
-    for (i = 0; i < argc; i++) {
-	Blt_TreeNode child;
-
-	child = Blt_Tree_FindChild(node, argv[i]);
-	if (child == NULL) {
-	    child = Blt_Tree_CreateNode(tree, node, argv[i], -1);
-	    if (child == NULL) {
-		goto error;
-	    }
-	}
-	node = child;
-    }
-    /* type */
-    if ((writerPtr->flags & FIELD_TYPE) &&
-	(attrsPtr->flags & LIBSSH2_SFTP_ATTR_PERMISSIONS)) {
-        objPtr = Tcl_NewStringObj(SftpFileType(attrsPtr), -1);
-        if (Blt_Tree_SetValue(interp, tree, node, "type", objPtr) != TCL_OK) {
-            goto error;
-        }
-    }
-    /* size */
-
-    if ((writerPtr->flags & FIELD_SIZE) &&
-	(attrsPtr->flags & LIBSSH2_SFTP_ATTR_SIZE)) {
-        objPtr = Tcl_NewLongObj(attrsPtr->filesize);
-        if (Blt_Tree_SetValue(interp, tree, node, "size", objPtr) != TCL_OK) {
-            goto error;
-        }
-    }
-    /* uid */
-    if ((writerPtr->flags & FIELD_UID) &&
-	(attrsPtr->flags & LIBSSH2_SFTP_ATTR_UIDGID)) {
-        objPtr = Tcl_NewLongObj(attrsPtr->uid);
-        if (Blt_Tree_SetValue(interp, tree, node, "uid", objPtr) != TCL_OK) {
-            goto error;
-        }
-    }
-    /* gid */
-    if ((writerPtr->flags & FIELD_GID) && 
-	(attrsPtr->flags & LIBSSH2_SFTP_ATTR_UIDGID)) {
-        objPtr = Tcl_NewLongObj(attrsPtr->gid);
-        if (Blt_Tree_SetValue(interp, tree, node, "gid", objPtr) != TCL_OK) {
-            goto error;
-        }
-    }
-    /* atime */
-    if ((writerPtr->flags & FIELD_ATIME) && 
-	(attrsPtr->flags & LIBSSH2_SFTP_ATTR_ACMODTIME)) {
-        objPtr = Tcl_NewLongObj(attrsPtr->atime);
-        if (Blt_Tree_SetValue(interp, tree, node, "atime", objPtr) != TCL_OK) {
-            goto error;
-        }
-    }
-    /* mtime */
-    if ((writerPtr->flags & FIELD_MTIME) && 
-	(attrsPtr->flags & LIBSSH2_SFTP_ATTR_ACMODTIME)) {
-        objPtr = Tcl_NewLongObj(attrsPtr->mtime);
-        if (Blt_Tree_SetValue(interp, tree, node, "mtime", objPtr) != TCL_OK) {
-            goto error;
-        }
-    }
-    /* mode */
-    if ((writerPtr->flags & FIELD_MODE) && 
-	(attrsPtr->flags & LIBSSH2_SFTP_ATTR_PERMISSIONS)) {
-        objPtr = Tcl_NewLongObj(attrsPtr->permissions & 07777);
-        if (Blt_Tree_SetValue(interp, tree, node, "mode", objPtr) != TCL_OK) {
-            goto error;
-        }
-    }
-    Blt_Free(argv);
-    return TCL_OK;
- error:
-    Blt_Free(argv);
-    return TCL_ERROR;
 }
 
 static int
@@ -3356,15 +3221,15 @@ DeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
 /* 
  *---------------------------------------------------------------------------
  *
- * DirOp --
+ * DirListOp --
  *
- *	sftp dir path -listing yes 
+ *	sftp dirlist path -listing yes 
  *
  *---------------------------------------------------------------------------
  */
 static int
-DirOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-       Tcl_Obj *const *objv) 
+DirListOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+	  Tcl_Obj *const *objv) 
 {
     SftpCmd *cmdPtr = clientData;
     LIBSSH2_SFTP_ATTRIBUTES attrs;
@@ -4487,17 +4352,16 @@ StatOp(ClientData clientData, Tcl_Interp *interp, int objc,
 /* 
  *---------------------------------------------------------------------------
  *
- * TreeOp --
+ * DirTreeOp --
  *
- *	$sftp tree $path $tree ?-switches?
+ *	$sftp dirtree $path $tree ?-switches?
  *
  *---------------------------------------------------------------------------
  */
 static int
-TreeOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+DirTreeOp(ClientData clientData, Tcl_Interp *interp, int objc, 
        Tcl_Obj *const *objv) 
 {
-    ApplyData data;
     TreeWriter writer;
     LIBSSH2_SFTP_ATTRIBUTES attrs;
     SftpCmd *cmdPtr = clientData;
@@ -4523,34 +4387,14 @@ TreeOp(ClientData clientData, Tcl_Interp *interp, int objc,
     writer.flags = FIELD_DEFAULT;
     writer.tree = tree;
     writer.root = Blt_Tree_RootNode(tree);
-    writer.rootOffset = strlen(path);
+    writer.maxDepth = 0;
     if (Blt_ParseSwitches(interp, treeSwitches, objc - 4, objv + 4, 
 			  &writer, BLT_SWITCH_DEFAULTS) < 0) {
 	return TCL_ERROR;
     }
-    data.fileProc = SftpTreeEntry;
-    data.dirProc = SftpTreeEntry;
-    data.clientData = &writer;
-    if (SftpTreeEntry(interp, cmdPtr, path, length, &attrs, &writer)!= TCL_OK) {
+    if (TreeReadDirectory(interp, cmdPtr, path, length, &writer, writer.root)
+	!= TCL_OK) {
 	return TCL_ERROR;
-    }
-    if (LIBSSH2_SFTP_S_ISDIR(attrs.permissions) && (writer.flags & RECURSE)) {
-	Blt_Chain entries;
-	int result;
-	
-	entries = SftpReadEntries(NULL, cmdPtr, path, length);
-	if (entries == NULL) {
-	    return TCL_ERROR;		/* Can't get directory entries. */
-	}
-	result = TCL_OK;
-	if (Blt_Chain_GetLength(entries) > 0) {
-	    result = SftpApply(interp, cmdPtr, path, length, &attrs, entries, 
-		&data);
-	}
-	DestroySftpEntries(entries);
-	if (result !=TCL_OK) {
-	    return TCL_ERROR;		/* Error chmod-ing entries. */
-	}
     }
     return TCL_OK;
 }
@@ -4714,7 +4558,8 @@ static Blt_OpSpec sftpOps[] =
     {"chgrp",       3, ChgrpOp,         3, 0, "path ?gid ?-recurse??",},
     {"chmod",       3, ChmodOp,         3, 0, "path ?mode ?-recurse??",},
     {"delete",      2, DeleteOp,        3, 0, "path ?switches?",},
-    {"dir",         2, DirOp,           3, 0, "path ?switches?",},
+    {"dirlist",     4, DirListOp,       3, 0, "path ?switches?",},
+    {"dirtree",     4, DirTreeOp,	4, 0, "path tree ?switches?",},
     {"exec",        3, ExecOp,          3, 3, "command",},
     {"exists",      3, ExistsOp,        3, 3, "path",},
     {"get",         2, GetOp,           3, 0, "path ?file? ?switches?",},
@@ -4736,8 +4581,7 @@ static Blt_OpSpec sftpOps[] =
     {"size",        2, SizeOp,		3, 3, "path",},
     {"slink",	    2, SlinkOp,		4, 4, "path link",},
     {"stat",        2, StatOp,		4, 4, "path varName",},
-    {"tree",        2, TreeOp,		4, 0, "path tree ?switches?",},
-    {"type",        2, TypeOp,		3, 3, "path",},
+    {"type",        1, TypeOp,		3, 3, "path",},
     {"writable",    5, WritableOp,	3, 3, "path",},
     {"write",       5, WriteOp,		4, 0, "path string ?switches?",},
 };
