@@ -1217,7 +1217,7 @@ TreeReadDirectory(Tcl_Interp *interp, SftpCmd *cmdPtr, const char *path,
     }
 
     depth = Blt_Tree_NodeDepth(parent) - Blt_Tree_NodeDepth(writerPtr->root);
-    if (writerPtr->maxDepth <= depth) {
+    if ((writerPtr->maxDepth >= 0) && (writerPtr->maxDepth <= depth)) {
 	return TCL_OK;
     }
 
@@ -3282,6 +3282,56 @@ DirListOp(ClientData clientData, Tcl_Interp *interp, int objc,
 /* 
  *---------------------------------------------------------------------------
  *
+ * DirTreeOp --
+ *
+ *	$sftp dirtree $path $tree ?-switches?
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+DirTreeOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+       Tcl_Obj *const *objv) 
+{
+    TreeWriter writer;
+    LIBSSH2_SFTP_ATTRIBUTES attrs;
+    SftpCmd *cmdPtr = clientData;
+    const char *path;
+    int length;
+    Blt_Tree tree;
+
+    if (cmdPtr->sftp == NULL) {
+	if (SftpConnect(interp, cmdPtr) != TCL_OK) {
+	    return TCL_ERROR;
+	}
+    }
+    path = SftpGetPathFromObj(cmdPtr, objv[2], &length);
+    if (SftpGetAttributes(cmdPtr, path, length, &attrs) != TCL_OK) {
+	Tcl_AppendResult(interp, "can't stat \"", Tcl_GetString(objv[2]), 
+		"\": ", SftpError(cmdPtr), (char *)NULL);
+	return TCL_ERROR;
+    }
+    tree = Blt_Tree_GetFromObj(interp, objv[3]);
+    if (tree == NULL) {
+	return TCL_ERROR;
+    }
+    writer.flags = FIELD_DEFAULT;
+    writer.tree = tree;
+    writer.root = Blt_Tree_RootNode(tree);
+    writer.maxDepth = -1;		/* Negative depth means any depth. */
+    if (Blt_ParseSwitches(interp, treeSwitches, objc - 4, objv + 4, 
+			  &writer, BLT_SWITCH_DEFAULTS) < 0) {
+	return TCL_ERROR;
+    }
+    if (TreeReadDirectory(interp, cmdPtr, path, length, &writer, writer.root)
+	!= TCL_OK) {
+	return TCL_ERROR;
+    }
+    return TCL_OK;
+}
+
+/* 
+ *---------------------------------------------------------------------------
+ *
  * ExecOp --
  *
  *	sftp exec cmd
@@ -4345,56 +4395,6 @@ StatOp(ClientData clientData, Tcl_Interp *interp, int objc,
 
 	sprintf(out, "%0#5lo", attrs.permissions & 07777);
 	Tcl_SetVar2Ex(interp, varName, "mode", Tcl_NewStringObj(out, -1), 0);
-    }
-    return TCL_OK;
-}
-
-/* 
- *---------------------------------------------------------------------------
- *
- * DirTreeOp --
- *
- *	$sftp dirtree $path $tree ?-switches?
- *
- *---------------------------------------------------------------------------
- */
-static int
-DirTreeOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-       Tcl_Obj *const *objv) 
-{
-    TreeWriter writer;
-    LIBSSH2_SFTP_ATTRIBUTES attrs;
-    SftpCmd *cmdPtr = clientData;
-    const char *path;
-    int length;
-    Blt_Tree tree;
-
-    if (cmdPtr->sftp == NULL) {
-	if (SftpConnect(interp, cmdPtr) != TCL_OK) {
-	    return TCL_ERROR;
-	}
-    }
-    path = SftpGetPathFromObj(cmdPtr, objv[2], &length);
-    if (SftpGetAttributes(cmdPtr, path, length, &attrs) != TCL_OK) {
-	Tcl_AppendResult(interp, "can't stat \"", Tcl_GetString(objv[2]), 
-		"\": ", SftpError(cmdPtr), (char *)NULL);
-	return TCL_ERROR;
-    }
-    tree = Blt_Tree_GetFromObj(interp, objv[3]);
-    if (tree == NULL) {
-	return TCL_ERROR;
-    }
-    writer.flags = FIELD_DEFAULT;
-    writer.tree = tree;
-    writer.root = Blt_Tree_RootNode(tree);
-    writer.maxDepth = 0;
-    if (Blt_ParseSwitches(interp, treeSwitches, objc - 4, objv + 4, 
-			  &writer, BLT_SWITCH_DEFAULTS) < 0) {
-	return TCL_ERROR;
-    }
-    if (TreeReadDirectory(interp, cmdPtr, path, length, &writer, writer.root)
-	!= TCL_OK) {
-	return TCL_ERROR;
     }
     return TCL_OK;
 }

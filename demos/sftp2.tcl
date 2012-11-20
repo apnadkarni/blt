@@ -1,11 +1,11 @@
 package require BLT
 package require blt_sftp
 
-set sftp [blt::sftp create -host localhost]
+set sftp [blt::sftp create -host nees.org -password au3iteme!!]
 
 set tree [blt::tree create]
 puts stderr "before tree"
-puts stderr time=[time {$sftp dirtree ~/src $tree -depth 3}]
+puts stderr time=[time {$sftp dirtree ~/indeed $tree}]
 puts stderr "after tree"
 
 set view .ss.view
