@@ -107,26 +107,29 @@
 #define AUTH_PUBLICKEY  (1<<3)
 #define AUTH_MASK	(AUTH_PASSWORD|AUTH_PUBLICKEY)
 
-#define LISTING		(1<<0)
 #define APPEND		(1<<1)
 #define RESUME		(1<<2)
-#define LONG		(1<<3)
 #define FORCE		(1<<4)
 #define RECURSE		(1<<5)
 
 #define MAXPATHLEN	(1<<12)
 	
-#define FIELD_ATIME	(1<<0)
-#define FIELD_GID	(1<<1)
-#define FIELD_MODE	(1<<2)
-#define FIELD_MTIME	(1<<3)
-#define FIELD_NAME	(1<<4)
-#define FIELD_SIZE	(1<<5)
-#define FIELD_TYPE	(1<<6)
-#define FIELD_UID	(1<<7)
-#define FIELD_DEFAULT	(FIELD_SIZE|FIELD_TYPE|FIELD_MTIME|FIELD_MODE)
-#define FIELD_ALL	(FIELD_ATIME|FIELD_GID|FIELD_MODE|FIELD_MTIME| \
-			 FIELD_NAME|FIELD_SIZE|FIELD_TYPE|FIELD_UID)
+#define DIR_OVERWRITE	(1<<0)
+#define DIR_LISTING	(1<<1)
+#define DIR_LONG	(1<<11)
+
+#define DIR_ATIME	(1<<3)
+#define DIR_GID		(1<<4)
+#define DIR_MODE	(1<<5)
+#define DIR_MTIME	(1<<6)
+#define DIR_NAME	(1<<7)
+#define DIR_SIZE	(1<<8)
+#define DIR_TYPE	(1<<9)
+#define DIR_UID		(1<<10)
+#define DIR_LONGENTRY	(1<<11)
+#define DIR_DEFAULT	(DIR_SIZE|DIR_TYPE|DIR_MTIME|DIR_MODE)
+#define DIR_ALL		(DIR_ATIME|DIR_GID|DIR_MODE|DIR_MTIME| \
+			 DIR_NAME|DIR_SIZE|DIR_TYPE|DIR_UID|DIR_LONGENTRY)
 
 #define TRACE_FLAGS (TCL_TRACE_WRITES | TCL_TRACE_UNSETS | TCL_GLOBAL_ONLY)
 
@@ -346,16 +349,23 @@ static Blt_SwitchSpec deleteSwitches[] =
     {BLT_SWITCH_END}
 };
 
-static Blt_SwitchSpec dirSwitches[] = 
+static Blt_SwitchParseProc FieldsSwitchParseProc;
+static Blt_SwitchCustom fieldsSwitch = {
+    FieldsSwitchParseProc, NULL, NULL, (ClientData)0,
+};
+
+static Blt_SwitchSpec dirListSwitches[] = 
 {
-    {BLT_SWITCH_INT_NNEG, "-timeout", "seconds", (char *)NULL,
-	Blt_Offset(DirectoryReader, timeout), 0},
+    {BLT_SWITCH_CUSTOM,  "-fields",     "list",    (char *)NULL,
+        Blt_Offset(DirectoryReader, flags), 0, 0, &fieldsSwitch},
     {BLT_SWITCH_BOOLEAN, "-listing",  "bool",    (char *)NULL,
-	Blt_Offset(DirectoryReader, flags), 0, LISTING},
+	Blt_Offset(DirectoryReader, flags), 0, DIR_LISTING},
     {BLT_SWITCH_BOOLEAN, "-long",     "bool",    (char *)NULL,
-	Blt_Offset(DirectoryReader, flags), 0, LONG},
+	Blt_Offset(DirectoryReader, flags), 0, DIR_LONG},
     {BLT_SWITCH_CUSTOM, "-table",     "name",    (char *)NULL,
         Blt_Offset(DirectoryReader, table), 0, 0, &tableSwitch},
+    {BLT_SWITCH_INT_NNEG, "-timeout", "seconds", (char *)NULL,
+	Blt_Offset(DirectoryReader, timeout), 0},
     {BLT_SWITCH_END}
 };
 
@@ -443,16 +453,20 @@ static Blt_SwitchCustom treeNodeSwitch = {
     TreeNodeSwitchParseProc, NULL, NULL, NULL
 };
 
-static Blt_SwitchSpec treeSwitches[] = 
+static Blt_SwitchSpec dirTreeSwitches[] = 
 {
     {BLT_SWITCH_STRING,    "-cancel",  "varName",  (char *)NULL,
 	Blt_Offset(TreeWriter, cancelVarName), 0},
     {BLT_SWITCH_INT_NNEG,"-depth",      "number",     (char *)NULL,
 	Blt_Offset(TreeWriter, maxDepth),       0},
-    {BLT_SWITCH_INT_NNEG, "-timeout",   "seconds", (char *)NULL,
-	Blt_Offset(TreeWriter, timeout),       0},
+    {BLT_SWITCH_CUSTOM,  "-fields",     "list",    (char *)NULL,
+        Blt_Offset(TreeWriter, flags), 0, 0, &fieldsSwitch},
+    {BLT_SWITCH_BOOLEAN,   "-overwrite",   "bool",    (char *)NULL,
+	Blt_Offset(TreeWriter, flags), 0, DIR_OVERWRITE},
     {BLT_SWITCH_CUSTOM,   "-root",      "node", (char *)NULL,
 	Blt_Offset(TreeWriter, root),  0, 0, &treeNodeSwitch},
+    {BLT_SWITCH_INT_NNEG, "-timeout",   "seconds", (char *)NULL,
+	Blt_Offset(TreeWriter, timeout),       0},
     {BLT_SWITCH_END}
 };
 
@@ -519,6 +533,73 @@ static Tcl_ObjCmdProc SftpObjCmd;
 static Tcl_ObjCmdProc SftpInstObjCmd;
 
 DLLEXPORT extern Tcl_AppInitProc Blt_sftp_Init;
+
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * FieldsSwitchParseProc --
+ *
+ *	Convert a string representing a list of field names into a mask.
+ *
+ * Results:
+ *	The return value is a standard TCL result.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+FieldsSwitchParseProc(
+    ClientData clientData,		/* Not used. */
+    Tcl_Interp *interp,			/* Interpreter to send results back
+					 * to */
+    const char *switchName,		/* Not used. */
+    Tcl_Obj *objPtr,			/* String representation */
+    char *record,			/* Structure record */
+    int offset,				/* Offset to field in structure */
+    int flags)				/* Not used. */
+{
+    int *maskPtr = (int *)(record + offset);
+    Tcl_Obj **objv;
+    int objc, i;
+    unsigned int mask;
+
+    if (Tcl_ListObjGetElements(interp, objPtr, &objc, &objv) != TCL_OK) {
+	return TCL_ERROR;
+    }
+    mask = 0;
+    for (i = 0; i < objc; i++) {
+	const char *string;
+	char c;
+
+	string = Tcl_GetString(objv[i]);
+	c = string[0];
+	if ((c == 's') && (strcmp(string, "size") == 0)) {
+	    mask |= DIR_SIZE;
+	} else if ((c == 'm') && (strcmp(string, "mode") == 0)) {
+	    mask |= DIR_MODE;
+	} else if ((c == 't') && (strcmp(string, "type") == 0)) {
+	    mask |= DIR_TYPE;
+	} else if ((c == 'u') && (strcmp(string, "uid") == 0)) {
+	    mask |= DIR_UID;
+	} else if ((c == 'g') && (strcmp(string, "gid") == 0)) {
+	    mask |= DIR_GID;
+	} else if ((c == 'a') && (strcmp(string, "atime") == 0)) {
+	    mask |= DIR_ATIME;
+	} else if ((c == 'm') && (strcmp(string, "mtime") == 0)) {
+	    mask |= DIR_MTIME;
+	} else {
+	    Tcl_AppendResult(interp, "unknown field name \"", string, "\"",
+		(char *)NULL);
+	    return TCL_ERROR;
+	}
+    }
+    if (mask == 0) {
+	mask = DIR_DEFAULT;
+    }
+    *maskPtr = mask;
+    return TCL_OK;
+}
 
 /*
  *---------------------------------------------------------------------------
@@ -1104,12 +1185,19 @@ TreeGetEntry(Tcl_Interp *interp, LIBSSH2_SFTP_HANDLE *handle,
 	return TCL_OK;
     }
     tree = writerPtr->tree;
-    node = Blt_Tree_CreateNode(tree, parent, bytes, -1);
+    if (writerPtr->flags & DIR_OVERWRITE) {
+	node = Blt_Tree_FindChild(parent, "bytes");
+	if (node == NULL) {
+	    node = Blt_Tree_CreateNode(tree, parent, bytes, -1);
+	}
+    } else {
+	node = Blt_Tree_CreateNode(tree, parent, bytes, -1);
+    }
     if (node == NULL) {
 	return TCL_ERROR;
     }
     /* type */
-    if ((writerPtr->flags & FIELD_TYPE) &&
+    if ((writerPtr->flags & DIR_TYPE) &&
 	(attrs.flags & LIBSSH2_SFTP_ATTR_PERMISSIONS)) {
 	objPtr = Tcl_NewStringObj(SftpFileType(&attrs), -1);
 	if (Blt_Tree_SetValue(interp, tree, node, "type", objPtr) != TCL_OK) {
@@ -1117,7 +1205,7 @@ TreeGetEntry(Tcl_Interp *interp, LIBSSH2_SFTP_HANDLE *handle,
 	}
     }
     /* size */
-    if ((writerPtr->flags & FIELD_SIZE) &&
+    if ((writerPtr->flags & DIR_SIZE) &&
 	(attrs.flags & LIBSSH2_SFTP_ATTR_SIZE)) {
 	objPtr = Tcl_NewLongObj(attrs.filesize);
 	if (Blt_Tree_SetValue(interp, tree, node, "size", objPtr) != TCL_OK) {
@@ -1125,7 +1213,7 @@ TreeGetEntry(Tcl_Interp *interp, LIBSSH2_SFTP_HANDLE *handle,
 	}
     }
     /* uid */
-    if ((writerPtr->flags & FIELD_UID) &&
+    if ((writerPtr->flags & DIR_UID) &&
 	(attrs.flags & LIBSSH2_SFTP_ATTR_UIDGID)) {
 	objPtr = Tcl_NewLongObj(attrs.uid);
 	if (Blt_Tree_SetValue(interp, tree, node, "uid", objPtr) != TCL_OK) {
@@ -1133,7 +1221,7 @@ TreeGetEntry(Tcl_Interp *interp, LIBSSH2_SFTP_HANDLE *handle,
 	}
     }
     /* gid */
-    if ((writerPtr->flags & FIELD_GID) && 
+    if ((writerPtr->flags & DIR_GID) && 
 	(attrs.flags & LIBSSH2_SFTP_ATTR_UIDGID)) {
 	objPtr = Tcl_NewLongObj(attrs.gid);
 	if (Blt_Tree_SetValue(interp, tree, node, "gid", objPtr) != TCL_OK) {
@@ -1141,7 +1229,7 @@ TreeGetEntry(Tcl_Interp *interp, LIBSSH2_SFTP_HANDLE *handle,
 	}
     }
     /* atime */
-    if ((writerPtr->flags & FIELD_ATIME) && 
+    if ((writerPtr->flags & DIR_ATIME) && 
 	(attrs.flags & LIBSSH2_SFTP_ATTR_ACMODTIME)) {
 	objPtr = Tcl_NewLongObj(attrs.atime);
 	if (Blt_Tree_SetValue(interp, tree, node, "atime", objPtr) != TCL_OK) {
@@ -1149,7 +1237,7 @@ TreeGetEntry(Tcl_Interp *interp, LIBSSH2_SFTP_HANDLE *handle,
 	}
     }
     /* mtime */
-    if ((writerPtr->flags & FIELD_MTIME) && 
+    if ((writerPtr->flags & DIR_MTIME) && 
 	(attrs.flags & LIBSSH2_SFTP_ATTR_ACMODTIME)) {
 	objPtr = Tcl_NewLongObj(attrs.mtime);
 	if (Blt_Tree_SetValue(interp, tree, node, "mtime", objPtr) != TCL_OK) {
@@ -1157,7 +1245,7 @@ TreeGetEntry(Tcl_Interp *interp, LIBSSH2_SFTP_HANDLE *handle,
 	}
     }
     /* mode */
-    if ((writerPtr->flags & FIELD_MODE) && 
+    if ((writerPtr->flags & DIR_MODE) && 
 	(attrs.flags & LIBSSH2_SFTP_ATTR_PERMISSIONS)) {
         objPtr = Tcl_NewLongObj(attrs.permissions & 07777);
         if (Blt_Tree_SetValue(interp, tree, node, "mode", objPtr) != TCL_OK) {
@@ -2258,178 +2346,219 @@ SftpReadFileContents(FileReader *readerPtr)
 }
 
 static void
-ExportToTable(Tcl_Interp *interp, BLT_TABLE table, const char *bytes, 
+ExportToTable(DirectoryReader *readerPtr, const char *bytes, 
 	      const char *longentry, LIBSSH2_SFTP_ATTRIBUTES *attrsPtr)
 {
     BLT_TABLE_ROW row;
     BLT_TABLE_COLUMN col;
+    Tcl_Interp *interp;
+    BLT_TABLE table;
 
+    interp = readerPtr->interp;
+    table = readerPtr->table;
     row = blt_table_create_row(interp, table, NULL);
     if (row == NULL) {
 	return;
     }
     /* name */
-    col = blt_table_get_column_by_label(table, "name");
-    if (col == NULL) {
-	col = blt_table_create_column(interp, table, "name");
+    if (readerPtr->flags & DIR_NAME) {
+	col = blt_table_get_column_by_label(table, "name");
+	if (col == NULL) {
+	    col = blt_table_create_column(interp, table, "name");
+	}
+	blt_table_set_string(table, row, col, bytes, -1);
     }
-    blt_table_set_string(table, row, col, bytes, -1);
     /* type */
-    col = blt_table_get_column_by_label(table, "type");
-    if (col == NULL) {
-	col = blt_table_create_column(interp, table, "type");
-    }
-    if (attrsPtr->flags & LIBSSH2_SFTP_ATTR_PERMISSIONS) {
-	blt_table_set_string(table, row, col, SftpFileType(attrsPtr), -1);
+    if (readerPtr->flags & DIR_TYPE) {
+	col = blt_table_get_column_by_label(table, "type");
+	if (col == NULL) {
+	    col = blt_table_create_column(interp, table, "type");
+	}
+	if (attrsPtr->flags & LIBSSH2_SFTP_ATTR_PERMISSIONS) {
+	    blt_table_set_string(table, row, col, SftpFileType(attrsPtr), -1);
+	}
     }
     /* size */ 
-    col = blt_table_get_column_by_label(table, "size");
-    if (col == NULL) {
-	col = blt_table_create_column(interp, table, "size");
-	blt_table_set_column_type(table, col, TABLE_COLUMN_TYPE_LONG);
-    }
-    if (attrsPtr->flags & LIBSSH2_SFTP_ATTR_SIZE) {
-	blt_table_set_long(table, row, col, attrsPtr->filesize);
+    if (readerPtr->flags & DIR_SIZE) {
+	col = blt_table_get_column_by_label(table, "size");
+	if (col == NULL) {
+	    col = blt_table_create_column(interp, table, "size");
+	    blt_table_set_column_type(table, col, TABLE_COLUMN_TYPE_LONG);
+	}
+	if (attrsPtr->flags & LIBSSH2_SFTP_ATTR_SIZE) {
+	    blt_table_set_long(table, row, col, attrsPtr->filesize);
+	}
     }
     /* uid */
-    col = blt_table_get_column_by_label(table, "uid");
-    if (col == NULL) {
-	col = blt_table_create_column(interp, table, "uid"); 
-	blt_table_set_column_type(table, col, TABLE_COLUMN_TYPE_LONG);
-   }
-    if (attrsPtr->flags & LIBSSH2_SFTP_ATTR_UIDGID) {
-	blt_table_set_long(table, row, col, attrsPtr->uid);
+    if (readerPtr->flags & DIR_UID) {
+	col = blt_table_get_column_by_label(table, "uid");
+	if (col == NULL) {
+	    col = blt_table_create_column(interp, table, "uid"); 
+	    blt_table_set_column_type(table, col, TABLE_COLUMN_TYPE_LONG);
+	}
+	if (attrsPtr->flags & LIBSSH2_SFTP_ATTR_UIDGID) {
+	    blt_table_set_long(table, row, col, attrsPtr->uid);
+	}
     }
     /* gid */
-    col = blt_table_get_column_by_label(table, "gid");
-    if (col == NULL) {
-	col = blt_table_create_column(interp, table, "gid");
-	blt_table_set_column_type(table, col, TABLE_COLUMN_TYPE_LONG);
-    }
-    if (attrsPtr->flags & LIBSSH2_SFTP_ATTR_UIDGID) {
-	blt_table_set_long(table, row, col, attrsPtr->gid);
+    if (readerPtr->flags & DIR_GID) {
+	col = blt_table_get_column_by_label(table, "gid");
+	if (col == NULL) {
+	    col = blt_table_create_column(interp, table, "gid");
+	    blt_table_set_column_type(table, col, TABLE_COLUMN_TYPE_LONG);
+	}
+	if (attrsPtr->flags & LIBSSH2_SFTP_ATTR_UIDGID) {
+	    blt_table_set_long(table, row, col, attrsPtr->gid);
+	}
     }
     /* atime */
-    col = blt_table_get_column_by_label(table, "atime");
-    if (col == NULL) {
-	col = blt_table_create_column(interp, table, "atime");
-	blt_table_set_column_type(table, col, TABLE_COLUMN_TYPE_LONG);
-    }
-    if (attrsPtr->flags & LIBSSH2_SFTP_ATTR_ACMODTIME) {
-	blt_table_set_long(table, row, col, attrsPtr->atime);
+    if (readerPtr->flags & DIR_ATIME) {
+	col = blt_table_get_column_by_label(table, "atime");
+	if (col == NULL) {
+	    col = blt_table_create_column(interp, table, "atime");
+	    blt_table_set_column_type(table, col, TABLE_COLUMN_TYPE_LONG);
+	}
+	if (attrsPtr->flags & LIBSSH2_SFTP_ATTR_ACMODTIME) {
+	    blt_table_set_long(table, row, col, attrsPtr->atime);
+	}
     }
     /* mtime */
-    col = blt_table_get_column_by_label(table, "mtime");
-    if (col == NULL) {
-	col = blt_table_create_column(interp, table, "mtime");
-	blt_table_set_column_type(table, col, TABLE_COLUMN_TYPE_LONG);
-    }
-    if (attrsPtr->flags & LIBSSH2_SFTP_ATTR_ACMODTIME) {
-	blt_table_set_long(table, row, col, attrsPtr->mtime);
+    if (readerPtr->flags & DIR_MTIME) {
+	col = blt_table_get_column_by_label(table, "mtime");
+	if (col == NULL) {
+	    col = blt_table_create_column(interp, table, "mtime");
+	    blt_table_set_column_type(table, col, TABLE_COLUMN_TYPE_LONG);
+	}
+	if (attrsPtr->flags & LIBSSH2_SFTP_ATTR_ACMODTIME) {
+	    blt_table_set_long(table, row, col, attrsPtr->mtime);
+	}
     }
     /* mode */
-    col = blt_table_get_column_by_label(table, "mode");
-    if (col == NULL) {
-	col = blt_table_create_column(interp, table, "mode");
-	blt_table_set_column_type(table, col, TABLE_COLUMN_TYPE_LONG);
-    }
-    if (attrsPtr->flags & LIBSSH2_SFTP_ATTR_PERMISSIONS) {
-	blt_table_set_long(table, row, col, 
-			   attrsPtr->permissions & 07777);
+    if (readerPtr->flags & DIR_MODE) { 
+	col = blt_table_get_column_by_label(table, "mode");
+	if (col == NULL) {
+	    col = blt_table_create_column(interp, table, "mode");
+	    blt_table_set_column_type(table, col, TABLE_COLUMN_TYPE_LONG);
+	}
+	if (attrsPtr->flags & LIBSSH2_SFTP_ATTR_PERMISSIONS) {
+	    blt_table_set_long(table, row, col, 
+			       attrsPtr->permissions & 07777);
+	}
     }
     /* longentry */
-    col = blt_table_get_column_by_label(table, "longentry");
-    if (col == NULL) {
-	col = blt_table_create_column(interp, table, "longentry");
+    if (readerPtr->flags & DIR_LONGENTRY) {
+	col = blt_table_get_column_by_label(table, "longentry");
+	if (col == NULL) {
+	    col = blt_table_create_column(interp, table, "longentry");
+	}
+	blt_table_set_string(table, row, col, longentry, -1);
     }
-    blt_table_set_string(table, row, col, longentry, -1);
 }
     
 static void
-ExportToList(Tcl_Interp *interp, DirectoryReader *readerPtr, 
-	      const char *bytes, const char *longentry, 
-	      LIBSSH2_SFTP_ATTRIBUTES *attrsPtr)
+ExportToList(DirectoryReader *readerPtr, const char *bytes, 
+	     const char *longentry, LIBSSH2_SFTP_ATTRIBUTES *attrsPtr)
 {
-    Tcl_Obj *listObjPtr, *objPtr;
+    Tcl_Obj *objPtr;
+    Tcl_Interp *interp;
 
-    listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
-    /* type */
-    objPtr = Tcl_NewStringObj("type", -1);
-    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-    if (attrsPtr->flags & LIBSSH2_SFTP_ATTR_PERMISSIONS) {
-	objPtr = Tcl_NewStringObj(SftpFileType(attrsPtr), -1);
-    } else {
-	objPtr = Tcl_NewStringObj("???", -1);
-    }
-    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+    interp = readerPtr->interp;
 
-    /* uid */
-    objPtr = Tcl_NewStringObj("uid", -1);
-    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-    if (attrsPtr->flags & LIBSSH2_SFTP_ATTR_UIDGID) {
-	objPtr = Tcl_NewIntObj(attrsPtr->uid);
-    } else {
-	objPtr = Tcl_NewStringObj("???", -1);
-    }
-    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-    
-    /* gid */
-    objPtr = Tcl_NewStringObj("gid", -1);
-    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-    if (attrsPtr->flags & LIBSSH2_SFTP_ATTR_UIDGID) {
-	objPtr = Tcl_NewIntObj(attrsPtr->gid);
-    } else {
-	objPtr = Tcl_NewStringObj("???", -1);
-    }
-    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-    
-    /* atime */
-    objPtr = Tcl_NewStringObj("atime", -1);
-    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-    if (attrsPtr->flags & LIBSSH2_SFTP_ATTR_ACMODTIME) {
-	objPtr = Tcl_NewLongObj(attrsPtr->atime);
-    } else {
-	objPtr = Tcl_NewStringObj("???", -1);
-    }
-    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-    
-    /* mtime */
-    objPtr = Tcl_NewStringObj("mtime", -1);
-    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-    if (attrsPtr->flags & LIBSSH2_SFTP_ATTR_ACMODTIME) {
-	objPtr = Tcl_NewLongObj(attrsPtr->mtime);
-    } else {
-	objPtr = Tcl_NewStringObj("???", -1);
-    }
-    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-    
-    objPtr = Tcl_NewStringObj("size", -1);
-    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-    if (attrsPtr->flags & LIBSSH2_SFTP_ATTR_UIDGID) {
-	objPtr = Tcl_NewLongObj(attrsPtr->filesize);
-    } else {
-	objPtr = Tcl_NewStringObj("???", -1);
-    }
-    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-    
-    objPtr = Tcl_NewStringObj("perms", -1);
-    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-    if (attrsPtr->flags & LIBSSH2_SFTP_ATTR_PERMISSIONS) {
-	char out[200];
+    /* Name */
+    objPtr = Tcl_NewStringObj(bytes, -1);
+    Tcl_ListObjAppendElement(interp, readerPtr->listObjPtr, objPtr);
+
+    if (readerPtr->flags & DIR_LONG) {
+	Tcl_Obj *listObjPtr;
 	
-	sprintf(out, "%0#5lo", attrsPtr->permissions & 07777);
-	objPtr = Tcl_NewStringObj(out, -1);
-    } else {
-	objPtr = Tcl_NewStringObj("???", -1);
+	listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
+	/* type */
+	if (readerPtr->flags & DIR_TYPE) {
+	    objPtr = Tcl_NewStringObj("type", -1);
+	    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+	    if (attrsPtr->flags & LIBSSH2_SFTP_ATTR_PERMISSIONS) {
+		objPtr = Tcl_NewStringObj(SftpFileType(attrsPtr), -1);
+	    } else {
+		objPtr = Tcl_NewStringObj("???", -1);
+	    }
+	    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+	}
+	/* uid */
+	if (readerPtr->flags & DIR_UID) {
+	    objPtr = Tcl_NewStringObj("uid", -1);
+	    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+	    if (attrsPtr->flags & LIBSSH2_SFTP_ATTR_UIDGID) {
+		objPtr = Tcl_NewIntObj(attrsPtr->uid);
+	    } else {
+		objPtr = Tcl_NewStringObj("???", -1);
+	    }
+	    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+	}
+	/* gid */
+	if (readerPtr->flags & DIR_GID) {
+	    objPtr = Tcl_NewStringObj("gid", -1);
+	    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+	    if (attrsPtr->flags & LIBSSH2_SFTP_ATTR_UIDGID) {
+		objPtr = Tcl_NewIntObj(attrsPtr->gid);
+	    } else {
+		objPtr = Tcl_NewStringObj("???", -1);
+	    }
+	    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+	}
+	
+	/* atime */
+	if (readerPtr->flags & DIR_ATIME) {
+	    objPtr = Tcl_NewStringObj("atime", -1);
+	    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+	    if (attrsPtr->flags & LIBSSH2_SFTP_ATTR_ACMODTIME) {
+		objPtr = Tcl_NewLongObj(attrsPtr->atime);
+	    } else {
+		objPtr = Tcl_NewStringObj("???", -1);
+	    }
+	    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+	}
+	/* mtime */
+	if (readerPtr->flags & DIR_MTIME) {
+	    objPtr = Tcl_NewStringObj("mtime", -1);
+	    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+	    if (attrsPtr->flags & LIBSSH2_SFTP_ATTR_ACMODTIME) {
+		objPtr = Tcl_NewLongObj(attrsPtr->mtime);
+	    } else {
+		objPtr = Tcl_NewStringObj("???", -1);
+	    }
+	    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+	}
+	if (readerPtr->flags & DIR_SIZE) {
+	    objPtr = Tcl_NewStringObj("size", -1);
+	    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+	    if (attrsPtr->flags & LIBSSH2_SFTP_ATTR_UIDGID) {
+		objPtr = Tcl_NewLongObj(attrsPtr->filesize);
+	    } else {
+		objPtr = Tcl_NewStringObj("???", -1);
+	    }
+	    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+	}
+	if (readerPtr->flags & DIR_MODE) {
+	    objPtr = Tcl_NewStringObj("mode", -1);
+	    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+	    if (attrsPtr->flags & LIBSSH2_SFTP_ATTR_PERMISSIONS) {
+		char out[200];
+		
+		sprintf(out, "%0#5lo", attrsPtr->permissions & 07777);
+		objPtr = Tcl_NewStringObj(out, -1);
+	    } else {
+		objPtr = Tcl_NewStringObj("???", -1);
+	    }
+	    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+	}
+	if (readerPtr->flags & DIR_LONGENTRY) {
+	    objPtr = Tcl_NewStringObj("longentry", -1);
+	    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+	    objPtr = Tcl_NewStringObj(longentry, -1);
+	    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+	}
+	Tcl_ListObjAppendElement(interp, readerPtr->listObjPtr, listObjPtr);
     }
-    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-    
-    objPtr = Tcl_NewStringObj("longentry", -1);
-    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-    objPtr = Tcl_NewStringObj(longentry, -1);
-    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-    
-    Tcl_ListObjAppendElement(interp, readerPtr->listObjPtr, listObjPtr);
 }
 
 /*
@@ -2446,8 +2575,6 @@ SftpListDirectoryEntry(DirectoryReader *readerPtr)
     char longentry[2048];
     ssize_t numBytes;
     LIBSSH2_SFTP_ATTRIBUTES attrs;
-    Tcl_Obj *objPtr;
-    Tcl_Interp *interp = readerPtr->cmdPtr->interp;
 
     numBytes = libssh2_sftp_readdir_ex(readerPtr->handle, bytes, sizeof(bytes),
 		longentry, sizeof(longentry), &attrs);
@@ -2465,7 +2592,7 @@ SftpListDirectoryEntry(DirectoryReader *readerPtr)
 	return;				/* Doesn't match the entry we're
 					 * looking for. */
     }
-    if (readerPtr->flags & LISTING) {
+    if (readerPtr->flags & DIR_LISTING) {
 	if (readerPtr->fileCount > 0) {
 	    Tcl_AppendToObj(readerPtr->listObjPtr, "\n", 1);
 	}
@@ -2474,15 +2601,9 @@ SftpListDirectoryEntry(DirectoryReader *readerPtr)
 	return;				/* Just return the listing only. */
     }
     if (readerPtr->table != NULL) {
-	ExportToTable(readerPtr->interp, readerPtr->table, bytes, longentry, 
-		&attrs);
-	return;
-    }
-    objPtr = Tcl_NewStringObj(bytes, -1);
-    Tcl_ListObjAppendElement(interp, readerPtr->listObjPtr, objPtr);
-    
-    if (readerPtr->flags & LONG) {
-	ExportToList(interp, readerPtr, bytes, longentry, &attrs);
+	ExportToTable(readerPtr, bytes, longentry, &attrs);
+    } else {
+	ExportToList(readerPtr, bytes, longentry, &attrs);
     }
 }
 
@@ -3261,7 +3382,7 @@ DirListOp(ClientData clientData, Tcl_Interp *interp, int objc,
     reader.interp = interp;
     reader.cmdPtr = cmdPtr;
     reader.listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
-    if (Blt_ParseSwitches(interp, dirSwitches, objc - 3, objv + 3, &reader,
+    if (Blt_ParseSwitches(interp, dirListSwitches, objc - 3, objv + 3, &reader,
 	BLT_SWITCH_DEFAULTS) < 0) {
 	goto error;
     }
@@ -3269,13 +3390,13 @@ DirListOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	goto error;
     }
     Tcl_SetObjResult(interp, reader.listObjPtr);
-    Blt_FreeSwitches(dirSwitches, (char *)&reader, 0);
+    Blt_FreeSwitches(dirListSwitches, (char *)&reader, 0);
     return TCL_OK;
  error:
     if (reader.listObjPtr != NULL) {
 	Tcl_DecrRefCount(reader.listObjPtr);
     }
-    Blt_FreeSwitches(dirSwitches, (char *)&reader, 0);
+    Blt_FreeSwitches(dirListSwitches, (char *)&reader, 0);
     return TCL_ERROR;
 }
 
@@ -3476,13 +3597,13 @@ GetOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     result = TCL_OK;
     fclose(reader.f);
-    Blt_FreeSwitches(dirSwitches, (char *)&reader, 0);
+    Blt_FreeSwitches(getSwitches, (char *)&reader, 0);
     return result;
  error:
     if (reader.f != NULL) {
 	fclose(reader.f);
     }
-    Blt_FreeSwitches(dirSwitches, (char *)&reader, 0);
+    Blt_FreeSwitches(getSwitches, (char *)&reader, 0);
     return TCL_ERROR;
 }
 
@@ -3942,14 +4063,14 @@ PutOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     result = TCL_OK;
     fclose(writer.f);
-    Blt_FreeSwitches(dirSwitches, (char *)&writer, 0);
+    Blt_FreeSwitches(putSwitches, (char *)&writer, 0);
     Tcl_DStringFree(&ds);
     return result;
  error:
     if (writer.f != NULL) {
 	fclose(writer.f);
     }
-    Blt_FreeSwitches(dirSwitches, (char *)&writer, 0);
+    Blt_FreeSwitches(putSwitches, (char *)&writer, 0);
     Tcl_DStringFree(&ds);
     return TCL_ERROR;
 }
@@ -4031,7 +4152,7 @@ ReadOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	Tcl_SetObjResult(interp, Blt_DBuffer_StringObj(reader.dbuffer));
     }
     Blt_DBuffer_Destroy(reader.dbuffer);
-    Blt_FreeSwitches(dirSwitches, (char *)&reader, 0);
+    Blt_FreeSwitches(readSwitches, (char *)&reader, 0);
     return result;
 }
 
@@ -4402,6 +4523,58 @@ StatOp(ClientData clientData, Tcl_Interp *interp, int objc,
 /* 
  *---------------------------------------------------------------------------
  *
+<<<<<<< HEAD
+=======
+ * DirTreeOp --
+ *
+ *	$sftp dirtree $path $tree ?-switches?
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+DirTreeOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+       Tcl_Obj *const *objv) 
+{
+    Blt_Tree tree;
+    LIBSSH2_SFTP_ATTRIBUTES attrs;
+    SftpCmd *cmdPtr = clientData;
+    TreeWriter writer;
+    const char *path;
+    int length, result;
+
+    if (cmdPtr->sftp == NULL) {
+	if (SftpConnect(interp, cmdPtr) != TCL_OK) {
+	    return TCL_ERROR;
+	}
+    }
+    path = SftpGetPathFromObj(cmdPtr, objv[2], &length);
+    if (SftpGetAttributes(cmdPtr, path, length, &attrs) != TCL_OK) {
+	Tcl_AppendResult(interp, "can't stat \"", Tcl_GetString(objv[2]), 
+		"\": ", SftpError(cmdPtr), (char *)NULL);
+	return TCL_ERROR;
+    }
+    tree = Blt_Tree_GetFromObj(interp, objv[3]);
+    if (tree == NULL) {
+	return TCL_ERROR;
+    }
+    writer.flags = DIR_DEFAULT;
+    writer.tree = tree;
+    writer.root = Blt_Tree_RootNode(tree);
+    writer.maxDepth = 0;
+    if (Blt_ParseSwitches(interp, dirTreeSwitches, objc - 4, objv + 4, 
+			  &writer, BLT_SWITCH_DEFAULTS) < 0) {
+	return TCL_ERROR;
+    }
+    result = TreeReadDirectory(interp, cmdPtr, path, length, &writer, 
+			       writer.root);
+    Blt_FreeSwitches(dirTreeSwitches, (char *)&writer, 0);
+    return result;
+}
+
+/* 
+ *---------------------------------------------------------------------------
+ *
+>>>>>>> a96d4612a9ef3ebfda4f8b9e057dd3874e30916d
  * TypeOp --
  *
  *	sftp type path
@@ -4530,7 +4703,7 @@ WriteOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	fprintf(stderr, "invalid file write: written=%ld wanted=%ld\n",
 		writer.totalBytesWritten, writer.size);
     }
-    Blt_FreeSwitches(dirSwitches, (char *)&writer, 0);
+    Blt_FreeSwitches(writeSwitches, (char *)&writer, 0);
     return result;
 }
 
