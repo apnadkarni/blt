@@ -116,17 +116,18 @@
 
 #define MAXPATHLEN	(1<<12)
 	
-#define FIELD_ATIME	(1<<0)
-#define FIELD_GID	(1<<1)
-#define FIELD_MODE	(1<<2)
-#define FIELD_MTIME	(1<<3)
-#define FIELD_NAME	(1<<4)
-#define FIELD_SIZE	(1<<5)
-#define FIELD_TYPE	(1<<6)
-#define FIELD_UID	(1<<7)
-#define FIELD_DEFAULT	(FIELD_SIZE|FIELD_TYPE|FIELD_MTIME|FIELD_MODE)
-#define FIELD_ALL	(FIELD_ATIME|FIELD_GID|FIELD_MODE|FIELD_MTIME| \
-			 FIELD_NAME|FIELD_SIZE|FIELD_TYPE|FIELD_UID)
+#define DIR_ATIME	(1<<0)
+#define DIR_GID		(1<<1)
+#define DIR_MODE	(1<<2)
+#define DIR_MTIME	(1<<3)
+#define DIR_NAME	(1<<4)
+#define DIR_SIZE	(1<<5)
+#define DIR_TYPE	(1<<6)
+#define DIR_UID		(1<<7)
+#define DIR_DEFAULT	(DIR_SIZE|DIR_TYPE|DIR_MTIME|DIR_MODE)
+#define DIR_ALL		(DIR_ATIME|DIR_GID|DIR_MODE|DIR_MTIME| \
+			 DIR_NAME|DIR_SIZE|DIR_TYPE|DIR_UID)
+#define DIR_OVERWRITE	(1<<8)
 
 #define TRACE_FLAGS (TCL_TRACE_WRITES | TCL_TRACE_UNSETS | TCL_GLOBAL_ONLY)
 
@@ -449,10 +450,12 @@ static Blt_SwitchSpec treeSwitches[] =
 	Blt_Offset(TreeWriter, cancelVarName), 0},
     {BLT_SWITCH_INT_NNEG,"-depth",      "number",     (char *)NULL,
 	Blt_Offset(TreeWriter, maxDepth),       0},
-    {BLT_SWITCH_INT_NNEG, "-timeout",   "seconds", (char *)NULL,
-	Blt_Offset(TreeWriter, timeout),       0},
+    {BLT_SWITCH_BOOLEAN,   "-overwrite",   "bool",    (char *)NULL,
+	Blt_Offset(TreeWriter, flags), 0, DIR_OVERWRITE},
     {BLT_SWITCH_CUSTOM,   "-root",      "node", (char *)NULL,
 	Blt_Offset(TreeWriter, root),  0, 0, &treeNodeSwitch},
+    {BLT_SWITCH_INT_NNEG, "-timeout",   "seconds", (char *)NULL,
+	Blt_Offset(TreeWriter, timeout),       0},
     {BLT_SWITCH_END}
 };
 
@@ -1104,12 +1107,19 @@ TreeGetEntry(Tcl_Interp *interp, LIBSSH2_SFTP_HANDLE *handle,
 	return TCL_OK;
     }
     tree = writerPtr->tree;
-    node = Blt_Tree_CreateNode(tree, parent, bytes, -1);
+    if (writerPtr->flags & DIR_OVERWRITE) {
+	node = Blt_Tree_FindChild(parent, "bytes");
+	if (node == NULL) {
+	    node = Blt_Tree_CreateNode(tree, parent, bytes, -1);
+	}
+    } else {
+	node = Blt_Tree_CreateNode(tree, parent, bytes, -1);
+    }
     if (node == NULL) {
 	return TCL_ERROR;
     }
     /* type */
-    if ((writerPtr->flags & FIELD_TYPE) &&
+    if ((writerPtr->flags & DIR_TYPE) &&
 	(attrs.flags & LIBSSH2_SFTP_ATTR_PERMISSIONS)) {
 	objPtr = Tcl_NewStringObj(SftpFileType(&attrs), -1);
 	if (Blt_Tree_SetValue(interp, tree, node, "type", objPtr) != TCL_OK) {
@@ -1117,7 +1127,7 @@ TreeGetEntry(Tcl_Interp *interp, LIBSSH2_SFTP_HANDLE *handle,
 	}
     }
     /* size */
-    if ((writerPtr->flags & FIELD_SIZE) &&
+    if ((writerPtr->flags & DIR_SIZE) &&
 	(attrs.flags & LIBSSH2_SFTP_ATTR_SIZE)) {
 	objPtr = Tcl_NewLongObj(attrs.filesize);
 	if (Blt_Tree_SetValue(interp, tree, node, "size", objPtr) != TCL_OK) {
@@ -1125,7 +1135,7 @@ TreeGetEntry(Tcl_Interp *interp, LIBSSH2_SFTP_HANDLE *handle,
 	}
     }
     /* uid */
-    if ((writerPtr->flags & FIELD_UID) &&
+    if ((writerPtr->flags & DIR_UID) &&
 	(attrs.flags & LIBSSH2_SFTP_ATTR_UIDGID)) {
 	objPtr = Tcl_NewLongObj(attrs.uid);
 	if (Blt_Tree_SetValue(interp, tree, node, "uid", objPtr) != TCL_OK) {
@@ -1133,7 +1143,7 @@ TreeGetEntry(Tcl_Interp *interp, LIBSSH2_SFTP_HANDLE *handle,
 	}
     }
     /* gid */
-    if ((writerPtr->flags & FIELD_GID) && 
+    if ((writerPtr->flags & DIR_GID) && 
 	(attrs.flags & LIBSSH2_SFTP_ATTR_UIDGID)) {
 	objPtr = Tcl_NewLongObj(attrs.gid);
 	if (Blt_Tree_SetValue(interp, tree, node, "gid", objPtr) != TCL_OK) {
@@ -1141,7 +1151,7 @@ TreeGetEntry(Tcl_Interp *interp, LIBSSH2_SFTP_HANDLE *handle,
 	}
     }
     /* atime */
-    if ((writerPtr->flags & FIELD_ATIME) && 
+    if ((writerPtr->flags & DIR_ATIME) && 
 	(attrs.flags & LIBSSH2_SFTP_ATTR_ACMODTIME)) {
 	objPtr = Tcl_NewLongObj(attrs.atime);
 	if (Blt_Tree_SetValue(interp, tree, node, "atime", objPtr) != TCL_OK) {
@@ -1149,7 +1159,7 @@ TreeGetEntry(Tcl_Interp *interp, LIBSSH2_SFTP_HANDLE *handle,
 	}
     }
     /* mtime */
-    if ((writerPtr->flags & FIELD_MTIME) && 
+    if ((writerPtr->flags & DIR_MTIME) && 
 	(attrs.flags & LIBSSH2_SFTP_ATTR_ACMODTIME)) {
 	objPtr = Tcl_NewLongObj(attrs.mtime);
 	if (Blt_Tree_SetValue(interp, tree, node, "mtime", objPtr) != TCL_OK) {
@@ -1157,7 +1167,7 @@ TreeGetEntry(Tcl_Interp *interp, LIBSSH2_SFTP_HANDLE *handle,
 	}
     }
     /* mode */
-    if ((writerPtr->flags & FIELD_MODE) && 
+    if ((writerPtr->flags & DIR_MODE) && 
 	(attrs.flags & LIBSSH2_SFTP_ATTR_PERMISSIONS)) {
         objPtr = Tcl_NewLongObj(attrs.permissions & 07777);
         if (Blt_Tree_SetValue(interp, tree, node, "mode", objPtr) != TCL_OK) {
@@ -4384,7 +4394,7 @@ DirTreeOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (tree == NULL) {
 	return TCL_ERROR;
     }
-    writer.flags = FIELD_DEFAULT;
+    writer.flags = DIR_DEFAULT;
     writer.tree = tree;
     writer.root = Blt_Tree_RootNode(tree);
     writer.maxDepth = 0;
