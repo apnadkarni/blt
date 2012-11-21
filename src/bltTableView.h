@@ -396,6 +396,7 @@ struct _Row {
     int reqHeight;			/* If > 0, requested height of this
 					 * row.  This overrides the
 					 * computed height. */
+    int nomHeight;
     int reqMin, reqMax;			/* Requested bounds on the height of
 					 * row.  Does not include any padding
 					 * or the borderwidth of row.  If
@@ -462,6 +463,7 @@ struct _Column {
     int reqWidth;			/* Requested width of this column.
 					 * This overrides the computed
 					 * width. */
+    int nomWidth;
     int reqMin, reqMax;			/* Requested bounds on the width of
 					 * column.  Does not include any
 					 * padding or the borderwidth of

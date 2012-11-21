@@ -3960,7 +3960,7 @@ TableViewEventProc(ClientData clientData, XEvent *eventPtr)
 	}
     } else if (eventPtr->type == ConfigureNotify) {
 	/* Size of the viewport has changed. Recompute visibilty. */
-	viewPtr->flags |= VISIBILITY;
+	viewPtr->flags |= VISIBILITY | LAYOUT_PENDING;
 	EventuallyRedraw(viewPtr);
     } else if ((eventPtr->type == FocusIn) || (eventPtr->type == FocusOut)) {
 	if (eventPtr->xfocus.detail != NotifyInferior) {
@@ -5022,6 +5022,9 @@ AdjustColumns(TableView *viewPtr)
 	    Column *colPtr;
 	    int size, avail;
 
+	    if ((numOpen <= 0) || (growth <= 0) || (weight <= 0.0)) {
+		break;
+	    }
 	    colPtr = viewPtr->columns[i];
 	    if (colPtr->flags & HIDDEN) {
 		continue;
@@ -5043,9 +5046,6 @@ AdjustColumns(TableView *viewPtr)
 	    }
 	    colPtr->width += size;
 	    growth -= size;
-	    if ((numOpen <= 0) || (growth <= 0) || (weight <= 0.0)) {
-		break;
-	    }
 	}
     }
     if ((growth > 0) && (lastPtr != NULL)) {
@@ -5056,15 +5056,18 @@ AdjustColumns(TableView *viewPtr)
 	Column *colPtr;
 
 	colPtr = viewPtr->columns[i];
+#ifdef notdef
 	colPtr->width |= 0x1;		/* Make the width of the column
 					 * odd. This means that the dotted
 					 * focus rectangle will have dots on
 					 * the corners.  */
+#endif
 	if (colPtr->flags & HIDDEN) {
 	    continue;			/* Ignore hidden columns. */
 	}
 	colPtr->worldX = x;
 	x += colPtr->width;
+	fprintf(stderr, "Adjust col %s w=%d\n", colPtr->title, colPtr->width);
     }
 }
 
@@ -5145,10 +5148,12 @@ AdjustRows(TableView *viewPtr)
 	Row *rowPtr;
 
 	rowPtr = viewPtr->rows[i];
+#ifdef notdef
 	rowPtr->height |= 0x1;		/* Make the width of the column
 					 * odd. This means that the dotted
 					 * focus rectangle will have dots on
 					 * the corners.  */
+#endif
 	if (rowPtr->flags & HIDDEN) {
 	    continue;			/* Ignore hidden columns. */
 	}
@@ -10061,7 +10066,7 @@ ComputeTableViewGeometry(TableView *viewPtr)
 		colPtr->titleWidth = colPtr->titleHeight = 0;
 	    }
 	}
-	colPtr->width = colPtr->titleWidth;
+	colPtr->nomWidth = colPtr->titleWidth;
 	if ((colPtr->flags & HIDDEN) == 0) {
 	    if (colPtr->titleHeight > viewPtr->colTitleHeight) {
 		viewPtr->colTitleHeight = colPtr->titleHeight;
@@ -10080,7 +10085,7 @@ ComputeTableViewGeometry(TableView *viewPtr)
 		rowPtr->titleHeight = rowPtr->titleWidth = 0;
 	    }
 	}
-	rowPtr->height = rowPtr->titleHeight;
+	rowPtr->nomHeight = rowPtr->titleHeight;
 	if ((rowPtr->flags & HIDDEN) == 0) {
 	    if (rowPtr->titleWidth > viewPtr->rowTitleWidth) {
 		viewPtr->rowTitleWidth = rowPtr->titleWidth;
@@ -10101,11 +10106,11 @@ ComputeTableViewGeometry(TableView *viewPtr)
 	if ((rowPtr->flags|colPtr->flags|cellPtr->flags) & GEOMETRY) {
 	    GetCellGeometry(cellPtr);
 	}
-	if (cellPtr->width > colPtr->width) {
-	    colPtr->width = cellPtr->width;
+	if (cellPtr->width > colPtr->nomWidth) {
+	    colPtr->nomWidth = cellPtr->width;
 	}
-	if (cellPtr->height > rowPtr->height) {
-	    rowPtr->height = cellPtr->height;
+	if (cellPtr->height > rowPtr->nomHeight) {
+	    rowPtr->nomHeight = cellPtr->height;
 	}
     }
     if (viewPtr->flags & AUTOFILTERS) {
@@ -10128,10 +10133,13 @@ LayoutTableView(TableView *viewPtr)
 	rowPtr = viewPtr->rows[i];
 	rowPtr->flags &= ~GEOMETRY;	/* Always remove the geometry flag. */
 	rowPtr->index = i;		/* Reset the index. */
+	rowPtr->height = rowPtr->nomHeight;
+#ifdef notdef
 	rowPtr->height |= 0x1;		/* Make the height of the row
 					 * odd. This means that the dotted
 					 * focus rectangle will have dots on
 					 * the corners.  */
+#endif
 	if (rowPtr->reqHeight > 0) {
 	    rowPtr->height = rowPtr->reqHeight;
 	}
@@ -10147,21 +10155,33 @@ LayoutTableView(TableView *viewPtr)
 	AdjustRows(viewPtr);
     }
 #endif
+
     for (i = 0; i < viewPtr->numColumns; i++) {
 	Column *colPtr;
 
 	colPtr = viewPtr->columns[i];
 	colPtr->flags &= ~GEOMETRY; 	/* Always remove the geometry flag. */
 	colPtr->index = i;		/* Reset the index. */
-	colPtr->width |= 0x1;		/* Make the width of the column
+	colPtr->width = 0;
+	if (colPtr->flags & HIDDEN) {
+	    continue;			/* Ignore hidden columns. */
+	}
+	if (colPtr->reqWidth > 0) {
+	    colPtr->width = colPtr->reqWidth;
+	} else {
+	    colPtr->width = colPtr->nomWidth;
+#ifdef notdef
+	    colPtr->width |= 0x1;	/* Make the width of the column
 					 * odd. This means that the dotted
 					 * focus rectangle will have dots on
 					 * the corners.  */
-	if (colPtr->reqWidth > 0) {
-	    colPtr->width = colPtr->reqWidth;
-	}
-	if (colPtr->flags & HIDDEN) {
-	    continue;			/* Ignore hidden columns. */
+#endif
+	    if ((colPtr->reqMin > 0) && (colPtr->reqMin > colPtr->width)) {
+		colPtr->width = colPtr->reqMin;
+	    }
+	    if ((colPtr->reqMax > 0) && (colPtr->reqMax < colPtr->width)) {
+		colPtr->width = colPtr->reqMax;
+	    }
 	}
 	colPtr->worldX = x;
 	x += colPtr->width;

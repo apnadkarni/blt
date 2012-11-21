@@ -6728,7 +6728,6 @@ LayoutColumns(TreeView *viewPtr)
 	 * height. */
 	viewPtr->titleHeight += 4;
     }
-    /* viewPtr->worldWidth += 10; */
     if (viewPtr->yScrollUnits < 1) {
 	viewPtr->yScrollUnits = 1;
     }

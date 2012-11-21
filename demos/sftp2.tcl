@@ -1,7 +1,7 @@
 package require BLT
 package require blt_sftp
 
-set sftp [blt::sftp create -host nees.org -password au3iteme!!]
+set sftp [blt::sftp create -host nees.org]
 
 set tree [blt::tree create]
 puts stderr "before tree"

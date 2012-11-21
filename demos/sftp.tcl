@@ -4,7 +4,8 @@ package require blt_sftp
 set sftp [blt::sftp create -host nees.org]
 
 set table [blt::datatable create]
-$sftp dir ~ -table $table
+set list "atime name type mtime gid uid mode size longentry"
+$sftp dirlist ~ -table $table -fields all
 
 #option add *Row.titleJustify center
 set view .ss.view
@@ -131,7 +132,6 @@ $view style create textbox date \
     -font "Arial 11" \
     -justify right 
 $view column configure name \
-    -width 2i \
     -rulewidth 1 \
     -title "Name" 
 $view column configure mtime \

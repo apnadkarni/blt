@@ -127,7 +127,7 @@
 #define DIR_TYPE	(1<<9)
 #define DIR_UID		(1<<10)
 #define DIR_LONGENTRY	(1<<11)
-#define DIR_DEFAULT	(DIR_SIZE|DIR_TYPE|DIR_MTIME|DIR_MODE)
+#define DIR_DEFAULT	(DIR_SIZE|DIR_TYPE|DIR_MTIME|DIR_MODE|DIR_NAME)
 #define DIR_ALL		(DIR_ATIME|DIR_GID|DIR_MODE|DIR_MTIME| \
 			 DIR_NAME|DIR_SIZE|DIR_TYPE|DIR_UID|DIR_LONGENTRY)
 
@@ -576,6 +576,8 @@ FieldsSwitchParseProc(
 	c = string[0];
 	if ((c == 's') && (strcmp(string, "size") == 0)) {
 	    mask |= DIR_SIZE;
+	} else if ((c == 'n') && (strcmp(string, "name") == 0)) {
+	    mask |= DIR_NAME;
 	} else if ((c == 'm') && (strcmp(string, "mode") == 0)) {
 	    mask |= DIR_MODE;
 	} else if ((c == 't') && (strcmp(string, "type") == 0)) {
@@ -588,6 +590,12 @@ FieldsSwitchParseProc(
 	    mask |= DIR_ATIME;
 	} else if ((c == 'm') && (strcmp(string, "mtime") == 0)) {
 	    mask |= DIR_MTIME;
+	} else if ((c == 'l') && (strcmp(string, "longentry") == 0)) {
+	    mask |= DIR_LONGENTRY;
+	} else if ((c == 'a') && (strcmp(string, "all") == 0)) {
+	    mask |= DIR_ALL;
+	} else if ((c == 'd') && (strcmp(string, "default") == 0)) {
+	    mask |= DIR_DEFAULT;
 	} else {
 	    Tcl_AppendResult(interp, "unknown field name \"", string, "\"",
 		(char *)NULL);
@@ -3379,6 +3387,7 @@ DirListOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	reader.match = FileTail(path);
 	path = (const char *)FileHead((char *)path);
     }
+    reader.flags = DIR_DEFAULT;
     reader.interp = interp;
     reader.cmdPtr = cmdPtr;
     reader.listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
@@ -3413,12 +3422,12 @@ static int
 DirTreeOp(ClientData clientData, Tcl_Interp *interp, int objc, 
        Tcl_Obj *const *objv) 
 {
-    TreeWriter writer;
+    Blt_Tree tree;
     LIBSSH2_SFTP_ATTRIBUTES attrs;
     SftpCmd *cmdPtr = clientData;
+    TreeWriter writer;
     const char *path;
-    int length;
-    Blt_Tree tree;
+    int length, result;
 
     if (cmdPtr->sftp == NULL) {
 	if (SftpConnect(interp, cmdPtr) != TCL_OK) {
@@ -3435,19 +3444,19 @@ DirTreeOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (tree == NULL) {
 	return TCL_ERROR;
     }
-    writer.flags = FIELD_DEFAULT;
+    memset(&writer, 0, sizeof(writer));
+    writer.flags = DIR_DEFAULT;
     writer.tree = tree;
     writer.root = Blt_Tree_RootNode(tree);
-    writer.maxDepth = -1;		/* Negative depth means any depth. */
-    if (Blt_ParseSwitches(interp, treeSwitches, objc - 4, objv + 4, 
+    writer.maxDepth = -1;
+    if (Blt_ParseSwitches(interp, dirTreeSwitches, objc - 4, objv + 4, 
 			  &writer, BLT_SWITCH_DEFAULTS) < 0) {
 	return TCL_ERROR;
     }
-    if (TreeReadDirectory(interp, cmdPtr, path, length, &writer, writer.root)
-	!= TCL_OK) {
-	return TCL_ERROR;
-    }
-    return TCL_OK;
+    result = TreeReadDirectory(interp, cmdPtr, path, length, &writer, 
+			       writer.root);
+    Blt_FreeSwitches(dirTreeSwitches, (char *)&writer, 0);
+    return result;
 }
 
 /* 
@@ -4523,58 +4532,6 @@ StatOp(ClientData clientData, Tcl_Interp *interp, int objc,
 /* 
  *---------------------------------------------------------------------------
  *
-<<<<<<< HEAD
-=======
- * DirTreeOp --
- *
- *	$sftp dirtree $path $tree ?-switches?
- *
- *---------------------------------------------------------------------------
- */
-static int
-DirTreeOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-       Tcl_Obj *const *objv) 
-{
-    Blt_Tree tree;
-    LIBSSH2_SFTP_ATTRIBUTES attrs;
-    SftpCmd *cmdPtr = clientData;
-    TreeWriter writer;
-    const char *path;
-    int length, result;
-
-    if (cmdPtr->sftp == NULL) {
-	if (SftpConnect(interp, cmdPtr) != TCL_OK) {
-	    return TCL_ERROR;
-	}
-    }
-    path = SftpGetPathFromObj(cmdPtr, objv[2], &length);
-    if (SftpGetAttributes(cmdPtr, path, length, &attrs) != TCL_OK) {
-	Tcl_AppendResult(interp, "can't stat \"", Tcl_GetString(objv[2]), 
-		"\": ", SftpError(cmdPtr), (char *)NULL);
-	return TCL_ERROR;
-    }
-    tree = Blt_Tree_GetFromObj(interp, objv[3]);
-    if (tree == NULL) {
-	return TCL_ERROR;
-    }
-    writer.flags = DIR_DEFAULT;
-    writer.tree = tree;
-    writer.root = Blt_Tree_RootNode(tree);
-    writer.maxDepth = 0;
-    if (Blt_ParseSwitches(interp, dirTreeSwitches, objc - 4, objv + 4, 
-			  &writer, BLT_SWITCH_DEFAULTS) < 0) {
-	return TCL_ERROR;
-    }
-    result = TreeReadDirectory(interp, cmdPtr, path, length, &writer, 
-			       writer.root);
-    Blt_FreeSwitches(dirTreeSwitches, (char *)&writer, 0);
-    return result;
-}
-
-/* 
- *---------------------------------------------------------------------------
- *
->>>>>>> a96d4612a9ef3ebfda4f8b9e057dd3874e30916d
  * TypeOp --
  *
  *	sftp type path
