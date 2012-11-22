@@ -1,0 +1,358 @@
+'\"
+'\" Copyright 1991-1997 by Lucent Technologies, Inc.
+'\"
+'\" Permission to use, copy, modify, and distribute this software and its
+'\" documentation for any purpose and without fee is hereby granted, provided
+'\" that the above copyright notice appear in all copies and that both that the
+'\" copyright notice and warranty disclaimer appear in supporting documentation,
+'\" and that the names of Lucent Technologies any of their entities not be used
+'\" in advertising or publicity pertaining to distribution of the software
+'\" without specific, written prior permission.
+'\"
+'\" Lucent Technologies disclaims all warranties with regard to this software,
+'\" including all implied warranties of merchantability and fitness.  In no event
+'\" shall Lucent Technologies be liable for any special, indirect or
+'\" consequential damages or any damages whatsoever resulting from loss of use,
+'\" data or profits, whether in an action of contract, negligence or other
+'\" tortuous action, arising out of or in connection with the use or performance
+'\" of this software.  
+'\"
+'\" Sftp command created by George Howlett.
+'\"
+.so man.macros
+.TH sftp n BLT_VERSION BLT "BLT Built-In Commands"
+.BS
+'\" Note:  do not modify the .SH NAME line immediately below!
+.SH NAME
+\fBsftp\fR \-  Transfer files to/from SFTP server.
+.SH SYNOPSIS
+\fBblt::sftp create \fR?\fIsftpName\fR?  \fR?\fIswitches\fR? 
+.sp
+\fBblt::sftp destroy\fR \fIsftpName\fR...
+.sp
+\fBblt::sftp names\fR \fR?\fIpattern\fR?
+.BE
+.SH DESCRIPTION
+The \fBsftp\fR command creates sftp objects.  A \fIsftp\fR object
+lets you connect to a SFTP server to transfer files, get
+a directory listing etc.  Most operations that you can perform with a
+sftp client program, you can do programmatically with a sftp object.
+.SH SYNTAX
+.TP
+\fBblt::sftp create\fR ?\fIsftpName\fR ?\fIswitches\fR ?  
+Creates a new sftp object.  The name of the new sftp object is returned.  If
+no \fIsftpName\fR argument is present, then the name of the sftp is
+automatically generated in the form "\f(CWsftp0\fR", "\f(CWsftp1\fR",
+etc.  If the substring "\f(CW#auto\fR" is found in \fIsftpName\fR, it
+is automatically substituted by a generated name.  For example, the
+name \f(CW.foo.#auto.bar\fR will be translated to \f(CW.foo.sftp0.bar\fR.
+.sp
+A new TCL command by the same name as the sftp object is also created.
+Another TCL command or sftp object can not already exist as
+\fIsftpName\fR.  If the TCL command is deleted, the sftp will also be
+freed.  The new sftp will contain just the root node.  Sftp objects are by
+default, created in the current namespace, not the global namespace,
+unless \fIsftpName\fR contains a namespace qualifier, such as
+"\f(CWfred::mySftp\fR".
+.sp
+The following switches are available:
+.RS
+.TP 1i
+\fB\-user\fR \fIstring\fR
+Specifies the username of the remote SFTP account.
+.TP 1i
+\fB\-host\fR \fIstring\fR
+Specifies the hostname of the remote SFTP server.
+.TP 1i
+\fB\-password\fR \fIstring\fR
+Specifies the password of the user account on the remote SFTP server.
+.TP 1i
+\fB\-prompt\fR \fIcommand\fR
+Specifies a TCL script to be called whenever the user name or
+password of the user account on the remote SFTP is required. The script 
+should return a list in the form "\f(CWusername password\fR".
+.TP 1i
+\fB\-publickey\fR \fIfile\fR
+Specifies the location of the public key file.  The default location
+is \f(CW.ssh/id_rsa.pub\fR.
+.TP 1i
+\fB\-timeout\fR \fIseconds\fR
+Specifies the idle timeout for the SFTP connection.  When there is no \fBsftp\fR
+operation performed after the specfied number of seconds, the connection
+is automatically dropped. The sftp object will automatically reconnect
+(if needed) on the next operation.
+If \fItimeout\fR is zero, then no timeout will occur.  The default
+is \f(CW0\fR.
+.RE
+.TP
+\fBblt::sftp destroy\fR \fIsftpName\fR...
+Disconnects and destroys one of more sftp objects.  
+The TCL command associated with \fIsftpName\fR is also removed.  
+.TP
+\fBblt::sftp names \fR?\fIpattern\fR?
+Returns the names of all sftp objects.  if a \fIpattern\fR argument
+is given, then the only those sftp objects whose name matches pattern will
+be listed.
+.SH PATHS
+Paths on the remote SFTP server may be relative or absolute. Initially
+the current working directory is the home directory of the user
+account on the SFTP server.
+.PP
+.SH SFTP OPERATIONS
+Once you create a sftp object, you can use its TCL command 
+to perform operations associated with the connection.  The general form is
+.DS
+\fIsftpName\fR \fIoperation\fR \fR?\fIarg\fR?...
+.DE
+Both \fIoperation\fR and its arguments determine the exact behavior of
+the command.  The operations available for sftps are listed below.
+.TP
+\fIsftpName\fR \fBatime\fR \fIpath\fR ?\fItime\fR?\fR
+Sets or gets the access time of the remote file or directory specified by 
+\fIpath\fR.  If a \fItime\fR argument is provided the access time is
+set to that time.
+.TP
+\fIsftpName\fR \fBauth\fR 
+Returns the type of authentication used to connect to the remote SFTP
+server.  The possible types are \f(CWpassword\fR or \f(CWpublickey\fR.
+.TP
+\fIsftpName\fR \fBchdir\fR ?\fIpath\fR?
+Change to current working directory on the remote SFTP server to \fIpath\fR.
+If no \fIpath\fR argument is provided the user's home directory is assumed.
+.TP
+\fIsftpName\fR \fBchgrp\fR \fIpath\fR ?\fIgid\fR? ?\fI-recurse\fR?
+Queries or changes the group of the file of directory described by 
+\fIpath\fR on the remote SFTP server.  If \fIgid\fR is provided, then
+the group of \fIpath\fR is changed.  \fIGid\fR is the numeric id of the 
+remote group.  If the \fI-recurse\fR flag is set and \fIpath\fR is a 
+directory, then the group of the subdirectories and files underneath 
+\fIpath\fR are also changed.
+.TP
+\fIsftpName\fR \fBchmod\fR \fIpath\fR ?\fImode\fR? ?\fI-recurse\fR?
+Queries or changes the permissions of the file of directory described by 
+\fIpath\fR on the remote SFTP server.  If \fImode\fR is provided, then
+the mode of \fIpath\fR is changed.  \fIMode\fR can be in various forms
+similar to the Unix chmod command. If the \fI-recurse\fR flag is set 
+and \fIpath\fR is a directory, then the mode of the subdirectories and 
+files underneath \fIpath\fR are also changed.
+.TP
+\fIsftpName\fR \fBdelete\fR \fIpath\fR ?\fIswitches\fR?
+Deletes the file or directory described by \fIpath\fR on the remote 
+SFTP server.  Switches can be any of the following:
+.sp
+The valid switches are listed below:
+.RS
+.TP 1i
+\fB\-force\fR 
+Forces the deletion of directories that are not empty.
+.RE
+.TP
+\fIsftpName\fR \fBdirlist\fR \fIpath\fR ?\fIswitches\fR?
+Lists the contents of the directory described by \fIpath\fR on the 
+remote SFTP server.  The files and directories of \fIpath\fR 
+are returned as a list.  The valid switches are listed below:
+.RS
+.TP 1i
+\fB\-fields\fR \fIlist\fR
+Specifies the field to reported.  \fIList\fR is a TCL list that may contain 
+one of more of the following field names:
+\f(CWatime\fR, \f(CWgid\fR, \f(CWmode\fR, \f(CWmtime\fR, \f(CWname\fR, 
+\f(CWsize\fR, \f(CWtype\fR, \f(CWuid\fR, \f(CWlongentry\fR, \f(CWdefault\fR, or
+\f(CWall\fR.
+.TP 1i
+\fB\-listing\fR \fIboolean\fR
+If true, returns the text listing.  This is similar to the output of the 
+"ls" command in a sftp client.
+.TP 1i
+\fB\-long\fR \fIboolean\fR
+If true, the attributes of the file and directories are returned
+in addition to their names.
+.TP 1i
+\fB\-table\fR \fItableName\fR
+Specifies a \fBdatatable\fR object to be loaded with the directory entries.
+.TP 1i
+\fB\-timeout\fR \fIseconds\fR
+Discontinue retrieving the directory listing after the specified number of 
+seconds.
+.RE
+.TP
+\fIsftpName\fR \fBdirtree\fR \fIpath\fR \fItree\fR ?\fIswitches\fR?
+Loads the contents of the directory described by \fIpath\fR on the 
+remote SFTP server into \fItree\fR. \fITree\fR is the name of a
+tree object. The following switches are available:
+.RS
+.TP 1i
+\fB\-fields\fR \fIlist\fR
+Specifies the field to reported.  \fIList\fR is a TCL list that can 
+contain one or more of the following field names:
+\f(CWatime\fR, \f(CWgid\fR, \f(CWmode\fR, \f(CWmtime\fR, \f(CWname\fR, 
+\f(CWsize\fR, \f(CWtype\fR, \f(CWuid\fR, \f(CWlongentry\fR, \f(CWdefault\fR, or
+\f(CWall\fR.
+.TP 1i
+\fB\-cancel\fR \fIvarName\fR
+Specifies the name of a TCL variable that when set will terminate the operation.
+.TP 1i
+\fB\-depth\fR \fInumber\fR
+Descend at most \fInumber\R levels of directories.  
+If \fInumber\fR is \f(CW0\fR, then only \fIpath\fR itself is loaded.
+If \fInumber\fR is \f(CW-1\fR, then there is now limit. The default
+is \f(CW-1\fR.
+.TP 1i
+\fB\-overwrite\fR \fIboolean\fR
+If true, overwrite any entries that already exist in the tree.  By default,
+duplicate entires are added.
+.TP 1i
+\fB\-root\fR \fInode\fR
+Specifies at what node of \fItree\fR to load the directory entries from the 
+remote server.  The default is the root of the tree.
+.TP 1i
+\fB\-timeout\fR \fIseconds\fR
+Discontinue retrieving the directory listing after the specified number of 
+seconds.
+.RE
+.TP
+\fIsftpName\fR \fBexec\fR \fIcommand\fR 
+Executes a Unix shell command on the remote system.  The output of 
+\fRcommand\fI will be the returned.
+.TP
+\fIsftpName\fR \fBexists\fR \fIpath\fR 
+Return \f(CW1\fR is the file or directory \fIpath\fR exists on the remote SFTP server and \f(CW0\fR otherwise.
+.TP
+\fIsftpName\fR \fBget\fR \fIpath\fR  ?\fIfile\fR? ?\fIswitches\fR?
+Transfers \fIpath\fR from the remote SFTP server to the local system.
+If the \fIfile\fR argument is present, this is the name to create on 
+the local system, otherwise the remote name is used.  The following
+switches are available.
+.RS
+.TP 1i
+\fB\-cancel\fR \fIvarName\fR
+Specifies the name of a TCL variable that when set will terminate the operation.
+.TP 1i
+\fB\-maxsize\fR \fInumber\fR
+Specifies the maximum number of bytes to transfer regardless of the size
+of the file.  If the size of \fIpath\fR is greater then \fInumber\R, then
+the file is truncated.
+.TP 1i
+\fB\-progress\fR \fIcommand\fR
+Specifies a TCL command to be invoked periodically as \fIpath\fR is 
+being transfered.  Two arguments are appended: the number of bytes 
+read and the size of the file.
+.TP 1i
+\fB\-resume\fR 
+Specifies that if the local file exists and is smaller than the remote file, 
+the local file is presumed to be a partially transferred copy of the remote 
+file and the transfer is continued from the apparent point of failure. 
+This command is useful when transferring very large files over networks 
+that are prone to dropping connections.
+.TP 1i
+\fB\-timeout\fR \fIseconds\fR
+Discontinue retrieving the directory listing after the specified number of 
+seconds.
+.RE
+.TP
+\fIsftpName\fR \fBgroups\fR ?\fIgid\fR 
+Returns a list of the groups that the remote user is a member.  The groups
+are returned as list of  group id  and group name pairs. If a \fIgid\fR
+argument is present, the only the group name associated with that group id is 
+returned.
+.TP
+\fIsftpName\fR \fBisdirectory\fR \fIpath\fR 
+Return \f(CW1\fR if \fIpath\fR is a directory on the remote server 
+and \f(CW0\fR otherwise.
+.TP
+\fIsftpName\fR \fBisfile\fR \fIpath\fR 
+Return \f(CW1\fR if \fIpath\fR is a file on the remote server 
+and \f(CW0\fR otherwise.
+.TP
+\fIsftpName\fR \fBlstat\fR \fIpath\fR \fIvarName\fR
+Similar to the \fBstat\fR  operation (see below) except that if \fIpath\fR
+refers to a symbolic link the information returned is for the link
+rather than the file it refers to. \fIVarName\fR is name of a TCL variable,
+treated as an array variable. The following elements of that variable are set: 
+\f(CWatime\fR, \f(CWgid\fR, \f(CWmode\fR, \f(CWmtime\fR, 
+\f(CWsize\fR, \f(CWtype\fR, and \f(CWuid\fR.
+Returns an empty string.
+.TP
+\fIsftpName\fR \fBmkdir\fR \fIpath\fR ?\fIswitches\fR?
+Creates each a directory specified by \fIpath\fR.  Directories for \fIpath\fR
+as well as all non-existing parent directories will be created. It is
+not an error is the directory \fIpath\fR already exists.  
+Trying to overwrite an existing file with a directory will result in an
+error.   The following switches are available.
+.RS
+.TP 1i
+\fB\-mode\fR \fImode\fR
+Specifies the permissions for the newly created directory.
+.RE
+.TP
+\fIsftpName\fR \fBmtime\fR \fIpath\fR ?\fItime\fR?\fR
+Returns a decimal string giving the time at which file name was
+last modified. If \fItime\fR is specified, it is a modification time
+to set for the file. The time is measured in the standard POSIX 
+fashion as seconds from a fixed starting time (often January 1, 1970).  
+If the file does not exist or its modified time cannot be 
+queried or set then an error is generated.
+.TP
+\fIsftpName\fR \fBnormalize\fR \fIpath\fR 
+Returns a unique normalized path representation for \fIpath\fR on the 
+remote server.  
+.TP
+\fIsftpName\fR \fBowned\fR \fIpath\fR 
+Returns \f(CW1\fR if \fIpath\fR is owned by the current user, 0 otherwise.
+.TP
+\fIsftpName\fR \fBput\fR \fIfile\fR ?\fIpath\fR? ?\fIswitches\fR? 
+Returns \f(CW1\fR if \fIpath\fR is owned by the current user, 0 otherwise.
+.TP
+\fIsftpName\fR \fBpwd\fR
+Returns the current working directory on the remote server.
+.TP
+\fIsftpName\fR \fBread\fR \fIpath\fR ?\fIswitches\fR? 
+Returns \f(CW1\fR if \fIpath\fR is owned by the current user, 0 otherwise.
+.TP
+\fIsftpName\fR \fBreadable\fR \fIpath\fR
+Returns \f(CW1\fR if \fIpath\fR is readable by the current user, 0 otherwise.
+It is an error is \fIpath\fR does not exist.
+.TP
+\fIsftpName\fR \fBreadlink\fR \fIpath\fR
+Returns the value of the symbolic link given by \fIpath\fR (i.e. the
+name of the file it points to).  If \fIpath\fR is not a symbolic link
+or its value cannot be read, then an error is returned.  
+.TP
+\fIsftpName\fR \fBrename\fR \fIold\fR \fInew\fR ?\fI-force\fR?
+Renames or moves the file or directory \fIold\fR to \fInew\fR.  
+.TP
+\fIsftpName\fR \fBrmdir\fR \fIpath\fR 
+Removes the directory specified by \fIpath\fR. The directory
+must be empty.  
+.TP
+\fIsftpName\fR \fBsize\fR \fIpath\fR 
+Returns the size of in bytes of \fIpath\fR. An error is generated
+is \fIpath\fR does not exist.
+.TP
+\fIsftpName\fR \fBslink\fR \fIpath\fR \fIlink\fR
+Returns the size of in bytes of \fIpath\fR. An error is generated
+is \fIpath\fR does not exist.
+.TP
+\fIsftpName\fR \fBstat\fR \fIpath\fR \fIvarName\fR
+Fills \fIvarName\fR with the attributes of \fIpath\fR.
+\fIVarName\fR is name of a TCL variable that is 
+treated as an array variable. The following elements of that 
+variable are set: 
+\f(CWatime\fR, \f(CWgid\fR, \f(CWmode\fR, \f(CWmtime\fR, 
+\f(CWsize\fR, \f(CWtype\fR, and \f(CWuid\fR.
+.TP
+\fIsftpName\fR \fBtype\fR \fIpath\fR
+Returns a string representing the type of \fIpath\fR:
+\f(CWfile\fR, \f(CWdirectory\fR, \fCWcharacterSpecial\fR, \fCWblockSpecial\fR, 
+\f(CWfifo\fR, \f(CWlink\fR, or \f(CWsocket\fR.  It is an error is
+\fIpath\fR does not exist.
+.TP
+\fIsftpName\fR \fBwritable\fR \fIpath\fR
+Returns \f(CW1\fR if \fIpath\fR is writable by the current user, 0 otherwise.
+It is an error is \fIpath\fR does not exist.
+.TP
+\fIsftpName\fR \fBwrite\fR \fIpath\fR \fIstring\fR ?\fIswitches\fR?
+Returns \f(CW1\fR if \fIpath\fR is writable by the current user, 0 otherwise.
+It is an error is \fIpath\fR does not exist.
+.SH KEYWORDS
+sftp, datatable, tree
