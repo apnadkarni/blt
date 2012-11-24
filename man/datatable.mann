@@ -67,7 +67,7 @@ no one else is using it.
 Returns the names of all table objects.  if a \fIpattern\fR argument
 is given, then the only those tables whose name matches pattern will
 be listed.
-g.SH ROW AND COLUMN IDENTIFIERS
+.SH ROW AND COLUMN IDENTIFIERS
 Rows and columns in a table object may be identified by either an index,
 label, or tag.
 .SS INDICES
