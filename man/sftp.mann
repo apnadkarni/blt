@@ -157,7 +157,7 @@ are returned as a list.  The valid switches are listed below:
 Specifies the field to reported.  \fIList\fR is a TCL list that may contain 
 one of more of the following field names:
 \f(CWatime\fR, \f(CWgid\fR, \f(CWmode\fR, \f(CWmtime\fR, \f(CWname\fR, 
-\f(CWsize\fR, \f(CWtype\fR, \f(CWuid\fR, \f(CWlongentry\fR, \f(CWdefault\fR, or
+\f(CWsize\fR, \f(CWtype\fR, \f(CWuid\fR, \f(CWlongentry\fR, \f(CWdefault\fR, and
 \f(CWall\fR.
 .TP 1i
 \fB\-listing\fR \fIboolean\fR
@@ -186,14 +186,14 @@ tree object. The following switches are available:
 Specifies the field to reported.  \fIList\fR is a TCL list that can 
 contain one or more of the following field names:
 \f(CWatime\fR, \f(CWgid\fR, \f(CWmode\fR, \f(CWmtime\fR, \f(CWname\fR, 
-\f(CWsize\fR, \f(CWtype\fR, \f(CWuid\fR, \f(CWlongentry\fR, \f(CWdefault\fR, or
+\f(CWsize\fR, \f(CWtype\fR, \f(CWuid\fR, \f(CWlongentry\fR, \f(CWdefault\fR, and
 \f(CWall\fR.
 .TP 1i
 \fB\-cancel\fR \fIvarName\fR
 Specifies the name of a TCL variable that when set will terminate the operation.
 .TP 1i
 \fB\-depth\fR \fInumber\fR
-Descend at most \fInumber\R levels of directories.  
+Descend at most \fInumber\fR levels of directories.  
 If \fInumber\fR is \f(CW0\fR, then only \fIpath\fR itself is loaded.
 If \fInumber\fR is \f(CW-1\fR, then there is now limit. The default
 is \f(CW-1\fR.
@@ -213,10 +213,11 @@ seconds.
 .TP
 \fIsftpName\fR \fBexec\fR \fIcommand\fR 
 Executes a Unix shell command on the remote system.  The output of 
-\fRcommand\fI will be the returned.
+\fIcommand\fR will be the returned.
 .TP
 \fIsftpName\fR \fBexists\fR \fIpath\fR 
-Return \f(CW1\fR is the file or directory \fIpath\fR exists on the remote SFTP server and \f(CW0\fR otherwise.
+Return \f(CW1\fR is the file or directory \fIpath\fR exists on the 
+remote SFTP server and \f(CW0\fR otherwise.
 .TP
 \fIsftpName\fR \fBget\fR \fIpath\fR  ?\fIfile\fR? ?\fIswitches\fR?
 Transfers \fIpath\fR from the remote SFTP server to the local system.
@@ -230,13 +231,13 @@ Specifies the name of a TCL variable that when set will terminate the operation.
 .TP 1i
 \fB\-maxsize\fR \fInumber\fR
 Specifies the maximum number of bytes to transfer regardless of the size
-of the file.  If the size of \fIpath\fR is greater then \fInumber\R, then
+of the file.  If the size of \fIpath\fR is greater then \fInumber\fR, then
 the file is truncated.
 .TP 1i
 \fB\-progress\fR \fIcommand\fR
 Specifies a TCL command to be invoked periodically as \fIpath\fR is 
 being transfered.  Two arguments are appended: the number of bytes 
-read and the size of the file.
+read and the size of the remote file.
 .TP 1i
 \fB\-resume\fR 
 Specifies that if the local file exists and is smaller than the remote file, 
@@ -294,20 +295,74 @@ If the file does not exist or its modified time cannot be
 queried or set then an error is generated.
 .TP
 \fIsftpName\fR \fBnormalize\fR \fIpath\fR 
-Returns a unique normalized path representation for \fIpath\fR on the 
-remote server.  
+Returns a unique normalized path representation for \fIpath\fR.
 .TP
 \fIsftpName\fR \fBowned\fR \fIpath\fR 
 Returns \f(CW1\fR if \fIpath\fR is owned by the current user, 0 otherwise.
 .TP
 \fIsftpName\fR \fBput\fR \fIfile\fR ?\fIpath\fR? ?\fIswitches\fR? 
-Returns \f(CW1\fR if \fIpath\fR is owned by the current user, 0 otherwise.
+Transfers \fIfile\fR to the remote SFTP server.  
+\fIFile\fR is a file on the local machine. If 
+\fIpath\fR is not specified, the remote file is given the same name it
+has on the local machine.  It is an error if the remote file already
+exists or is a directory.
+The following switches are valid.
+.RS
+.TP 1i
+\fB\-cancel\fR \fIvarName\fR
+Specifies the name of a TCL variable that when set will terminate the operation.
+.TP 1i
+\fB\-force\fR 
+If the remote file already exists, it will be overwritten.  It is normally an
+error to overwrite a remote file.
+.TP 1i
+\fB\-mode\fR \fImode\fR
+Specifies the permissions for the newly created file.
+.TP 1i
+\fB\-progress\fR \fIcommand\fR
+Specifies a TCL command to be invoked periodically as \fIpath\fR is 
+being transfered.  Two arguments are appended: the number of bytes 
+written and the size of the local file.
+.TP 1i
+\fB\-resume\fR 
+Specifies that if the remote file exists and is smaller than the local file, 
+the remote file is presumed to be a partially transferred copy of the local 
+file and the transfer is continued from the apparent point of failure. 
+This command is useful when transferring very large files over networks 
+that are prone to dropping connections.
+.TP 1i
+\fB\-timeout\fR \fIseconds\fR
+Discontinue retrieving the directory listing after the specified number of 
+seconds.
+.RE
 .TP
 \fIsftpName\fR \fBpwd\fR
 Returns the current working directory on the remote server.
 .TP
 \fIsftpName\fR \fBread\fR \fIpath\fR ?\fIswitches\fR? 
-Returns \f(CW1\fR if \fIpath\fR is owned by the current user, 0 otherwise.
+Returns the contents of \fIpath\fR. \fIPath\fR is a file on the remote
+SFTP server.
+It is an error if \fIpath\fR does not exist.
+The following switches are available.
+.RS
+.TP 1i
+\fB\-cancel\fR \fIvarName\fR
+Specifies the name of a TCL variable that when set will terminate the operation.
+.TP 1i
+\fB\-maxsize\fR \fInumber\fR
+Specifies the maximum number of bytes to transfer regardless of the size
+of the file.  If the size of \fIpath\fR is greater then \fInumber\fR, then
+the read is truncated.
+.TP 1i
+\fB\-progress\fR \fIcommand\fR
+Specifies a TCL command to be invoked periodically as \fIpath\fR is 
+being transfered.  Two arguments are appended: the number of bytes 
+read and the size of the remote file.
+.TP 1i
+\fB\-timeout\fR \fIseconds\fR
+Discontinue retrieving the file after the specified number of 
+seconds.
+.RE
 .TP
 \fIsftpName\fR \fBreadable\fR \fIpath\fR
 Returns \f(CW1\fR if \fIpath\fR is readable by the current user, 0 otherwise.
@@ -343,8 +398,9 @@ variable are set:
 .TP
 \fIsftpName\fR \fBtype\fR \fIpath\fR
 Returns a string representing the type of \fIpath\fR:
-\f(CWfile\fR, \f(CWdirectory\fR, \fCWcharacterSpecial\fR, \fCWblockSpecial\fR, 
-\f(CWfifo\fR, \f(CWlink\fR, or \f(CWsocket\fR.  It is an error is
+\f(CWfile\fR, \f(CWdirectory\fR, \f(CWcharacterSpecial\fR, 
+\f(CWblockSpecial\fR, \f(CWfifo\fR, \f(CWlink\fR, or \f(CWsocket\fR.  
+It is an error is
 \fIpath\fR does not exist.
 .TP
 \fIsftpName\fR \fBwritable\fR \fIpath\fR
@@ -352,7 +408,26 @@ Returns \f(CW1\fR if \fIpath\fR is writable by the current user, 0 otherwise.
 It is an error is \fIpath\fR does not exist.
 .TP
 \fIsftpName\fR \fBwrite\fR \fIpath\fR \fIstring\fR ?\fIswitches\fR?
-Returns \f(CW1\fR if \fIpath\fR is writable by the current user, 0 otherwise.
-It is an error is \fIpath\fR does not exist.
+Writes \fIstring\fR to a file on the remote SFTP server.  
+\fIPath\fR is a file on the remote machine. 
+It is an error if the remote file is a directory.
+The following switches are valid.
+.RS
+.TP 1i
+\fB\-append\fR 
+Append the data to the remote file instead of overwriting it.
+.TP 1i
+\fB\-cancel\fR \fIvarName\fR
+Specifies the name of a TCL variable that when set will terminate the operation.
+.TP 1i
+\fB\-progress\fR \fIcommand\fR
+Specifies a TCL command to be invoked periodically as \fIpath\fR is 
+being transfered.  Two arguments are appended: the number of bytes 
+written and the size of the local file.
+.TP 1i
+\fB\-timeout\fR \fIseconds\fR
+Discontinue retrieving the directory listing after the specified number of 
+seconds.
+.RE
 .SH KEYWORDS
 sftp, datatable, tree

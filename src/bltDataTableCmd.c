@@ -8311,6 +8311,8 @@ GetOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * AttachOp --
  *
+ *	$table attach newTable
+ *
  *---------------------------------------------------------------------------
  */
 static int
@@ -8370,7 +8372,7 @@ static Blt_OpSpec tableOps[] =
 {
     {"add",        2, AddOp,        3, 0, "table ?switches?",},
     {"append",     2, AppendOp,     5, 0, "row column value ?value...?",},
-    {"attach",     2, AttachOp,     3, 0, "args...",},
+    {"attach",     2, AttachOp,     2, 3, "table",},
     {"column",     3, ColumnOp,     3, 0, "op args...",},
     {"copy",       3, CopyOp,       3, 3, "table",},
     {"dir",        2, DirOp,        3, 0, "path ?switches?",},
