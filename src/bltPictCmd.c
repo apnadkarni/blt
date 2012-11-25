@@ -509,12 +509,8 @@ typedef struct {
 					 * image. */
 } DupSwitches;
 
-#define DUP_NOCOPY	1
-
 static Blt_SwitchSpec dupSwitches[] = 
 {
-    {BLT_SWITCH_BITMASK,"-nocopy", "", (char *)NULL,
-	Blt_Offset(DupSwitches, nocopy), 0, DUP_NOCOPY},
     {BLT_SWITCH_CUSTOM, "-region", "bbox", (char *)NULL,
 	Blt_Offset(DupSwitches, region), 0, 0, &bboxSwitch},
     {BLT_SWITCH_END}
@@ -4711,7 +4707,7 @@ static Blt_OpSpec pictInstOps[] =
     {"configure", 4, ConfigureOp, 2, 0, "?option value?...",},
     {"convolve",  4, ConvolveOp,  3, 0, "src ?switches?",},
     {"copy",      3, CopyOp,      3, 0, "srcPict ?switches?",},
-    {"crop",      2, CropOp,      2, 0, "?switches?",},
+    {"crop",      2, CropOp,      2, 0, "bbox",},
     {"draw",      2, DrawOp,	  2, 0, "?args?",},
     {"dup",       2, DupOp,       2, 0, "?switches?",},
     {"export",    1, ExportOp,    2, 0, "format ?switches?...",},
@@ -4731,7 +4727,7 @@ static Blt_OpSpec pictInstOps[] =
     {"nand",      2, ArithOp,     3, 0, "image|color",},
     {"nor",       2, ArithOp,     3, 0, "image|color",},
     {"or",        1, ArithOp,     3, 0, "image|color ?switches?",},
-    {"project",   2, ProjectOp,   5, 0, "src coords coords ?switches",},
+    {"project",   2, ProjectOp,   5, 0, "src coords coords ?switches...?",},
     {"put",       2, PutOp,       2, 0, "color ?window?...",},
     {"quantize",  1, QuantizeOp,  4, 4, "src numColors",},
     {"reflect",   3, ReflectOp,   3, 0, "src ?switches?",},

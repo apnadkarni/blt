@@ -1,0 +1,1117 @@
+'\"
+'\" Copyright 1991-1997 by Lucent Technologies, Inc.
+'\"
+'\" Permission to use, copy, modify, and distribute this software and its
+'\" documentation for any purpose and without fee is hereby granted, provided
+'\" that the above copyright notice appear in all copies and that both that the
+'\" copyright notice and warranty disclaimer appear in supporting documentation,
+'\" and that the names of Lucent Technologies any of their entities not be used
+'\" in advertising or publicity pertaining to distribution of the software
+'\" without specific, written prior permission.
+'\"
+'\" Lucent Technologies disclaims all warranties with regard to this software,
+'\" including all implied warranties of merchantability and fitness.  In no event
+'\" shall Lucent Technologies be liable for any special, indirect or
+'\" consequential damages or any damages whatsoever resulting from loss of use,
+'\" data or profits, whether in an action of contract, negligence or other
+'\" tortuous action, arising out of or in connection with the use or performance
+'\" of this software.  
+'\"
+'\" Picture command created by George Howlett.
+'\"
+.so man.macros
+.TH picture n BLT_VERSION BLT "BLT Built-In Commands"
+.BS
+'\" Note:  do not modify the .SH NAME line immediately below!
+.SH NAME
+\fBpicture\fR \-  Full color image type.
+.SH SYNOPSIS
+\fBimage create picture ?\fIimageName\fR? ?\fIoptions...\fR? 
+.BE
+.SH DESCRIPTION
+The \fBpicture\fR is yet another image type for Tk. It is for full 
+color images (32-bit pixels) with or without transparency.  
+Each color component in a picture is eight bits and there is an 8-bit alpha channel.  
+Image data for a picture image can be obtained from a file or a string, or 
+it can be supplied  from C code through a procedural interface. 
+Many image formats are supported (JPG, GIF, TGA, BMP, TIF, ICO, PDF, PS, etc)
+as well as a number of operations that can be performed on the image such
+as resizing (through resampling).
+.SH SYNTAX
+.TP
+\fBimage create picture\fR ?\fIimageName\fR? ?\fIoptions...\fR? 
+Creates a new picture image.  The name of the new picture is returned.  If
+no \fIimageName\fR argument is present, then the name of the picture is
+automatically generated in the form "\f(CWimage0\fR", "\f(CWimage1\fR",
+etc.  
+.sp
+A new TCL command (by the same name as the picture) is also created.
+Another TCL command or picture object can not already exist as
+\fIimageName\fR.  If the TCL command is deleted, the picture will also be
+freed.   Additional options may be
+specified on the command line or in the option database to configure
+aspects of the widget such as its colors and font.  See the
+\fBconfigure\fR operation below for the exact details about what
+\fIoption\fR and \fIvalue\fR pairs are valid.
+.SH PICTURE COLOR VALUES
+Pixel color values can be desribed in any of the following forms:
+.RS
+.TP 1i
+\fIcolorName\fR		
+Any of the valid textual names for a color defined in the 
+server's color database file, such as red or \f(CWPeachPuff\fR.
+.TP 1i
+#\fIRGB\fR		
+.TP 1i
+#\fIRRGGBB\fR		
+.TP 1i
+#\fIRRRGGGBBB\fR		
+.TP 1i
+#\fIRRRRGGGGBBBB\fR		
+A numeric specification of the red, green, and blue
+intensities to use to display the color. Each R, G, or B represents 
+a single hexadecimal digit.  The four forms  permit colors to be 
+specified with 4-bit, 8-bit, 12-bit or 16-bit values.  When fewer
+than 16 bits are provided for each color, they represent the most 
+significant bits of the color.  For example, #3a7 is the same 
+as #3000a0007000.
+.TP 1i
+0x\fIAARRGGBB\fR		
+A numeric specification of the alpha, red, green, and blue
+intensities to use to display the color. Each A, R, G, or B represents 
+a single hexadecimal digit. The alpha value represents the transparency
+of the pixel: \f(CWFF\fR is fully opaque, \f(CW00\fR is fully transparent.
+.RE
+.SH PICTURE OPERATIONS
+Once you create a picture object, you can use its TCL command 
+to query or modify it.  The
+general form is
+.DS
+\fIimageName\fR \fIoperation\fR \fR?\fIarg\fR?...
+.DE
+Both \fIoperation\fR and its arguments determine the exact behavior of
+the command.  The operations available for pictures are listed below.
+.TP
+\fIimageName\fR \fBadd\fR \fIpicture|color\fR 
+.TP
+\fIimageName\fR \fBand\fR \fIimage\fR|\fIcolor\fR 
+.TP
+\fIimageName\fR \fBblank\fR ?\fIcolor\fR?
+Blanks the image. By default, the entire image is set to be transparent
+and the background of whatever window it is displayed in will show through.  
+If a \fIcolor\fR argument is given then the image will be filled with that 
+color.
+.TP
+\fIimageName\fR \fBblend\fR \fIbgImage\fR \fIfgImage\fR ?\fIswitches...\fR?
+Blends \fIfgImage\fR into the \fIbgImage\fR.  This is useful when the 
+\fIfgImage\fR contains transparent pixels.  
+The following switches are available. 
+.RS
+.TP 1i
+\fB\-mode\fR \fImode\fR
+Specifies the blend mode to use. \fIMode\fR can be one of the following:
+\f(CWnormal\fR, \f(CWmultiply\fR, \f(CWscreen\fR, \f(CWdarken\fR,
+\f(CWdifference\fR, \f(CWhardlight\fR, \f(CWsoftlight\fR,
+\f(CWcolorburn\fR, \f(CWcolordodge\fR, or \f(CWoverlay\fR.
+.TP 1i
+\fB\-from\fR \fIbbox\fR
+Specifies the region in the \fIsrc\fR image to be copied. \fIBbox\fR is
+a list in the form "\fIx1\fR \fIy1\fR \fIx2\fR \fIy2\fR" 
+or "\fIx1\fR \fIy1\fR".  The first desribes the subregion to be copied.
+The second says to copy the subimage starting at \fIx1\fR,\fIy1\fR of
+the foreground image and copying region extending to the lower right corner 
+of \fIfgImage\fR.
+.TP 1i
+\fB\-to\fR \fIbbox\fR
+Specifies the region in the \fIbgImage\fR image to be blended. \fIBbox\fR is
+a list in the form "\fIx1\fR \fIy1\fR \fIx2\fR \fIy2\fR" 
+or "\fIx1\fR \fIy1\fR".  The first desribes the subregion to be blended.
+The second says to copy the subimage starting at \fIx1\fR,\fIy1\fR of
+the background image and copying region extending to the lower right corner 
+of \fIbgImage\fR.
+.RE
+.TP
+\fIimageName\fR \fBblur\fR \fIsrc\fR \fIwidth\fR 
+.TP
+\fIimageName\fR \fBcget\fR \fIoption\fR 
+Returns the current value of the configuration option given
+by \fIoption\fR.
+\fIOption\fR may have any of the values accepted by the
+\fBconfigure\fR operation.
+.TP
+\fIimageName\fR \fBconfigure\fR ?\fIoption value\fR?...
+Query or modify the configuration options for the image.
+If no \fIoption\fR is specified, returns a list describing all of
+the available options for \fIimageName\fR (see \fBTk_ConfigureInfo\fR for
+information on the format of this list).  If \fIoption\fR is specified
+with no \fIvalue\fR, then the command returns a list describing the
+one named option (this list will be identical to the corresponding
+sublist of the value returned if no \fIoption\fR is specified).  If
+one or more \fIoption\-value\fR pairs are specified, then the command
+modifies the given option(s) to have the given value(s);  in
+this case the command returns an empty string.
+The valid option-value pairs are described below.
+.RS
+.TP 1i
+\fB\-autoscale\fR \fIbool\fR
+When the dimensions of the image change, automatically resize the
+image to match the new dimensions.  The \fB\-filter\fR and \fB\-maxpect\fR
+also control how the image is resized.
+.TP 1i
+\fB\-data\fR \fIstring\fR
+Specifies the contents of the image as a string.  The string should
+contain binary data or base64-encoded data.  The format of the
+string must be one of those for which there is an image file format
+handler that will accept string data.  It is an error if both the 
+\fB\-data\fR and \fB\-file\fR options are specified.
+.TP 1i
+\fB\-dither\fR \fIbool\fR
+A dithering algorithm is used in displaying picture images that propagates
+quantization errors from one pixel to its neighbors.
+.TP 1i
+\fB\-file\fR \fIfileName\fR
+\fIFileName\fR gives the name of a file that is to be read to supply data
+for the picture image.  The file format must be one of those for which
+there is an image file format handler that can read data.
+.TP 1i
+\fB\-filter\fR \fIfilterName\fR
+Specifies the use \fIfilterName\fR when resizing the image.  This option
+matters only when \fB-autoscale\fR is on. The valid
+filter names are 
+\f(CWbell\fR, \f(CWbox\fR, \f(CWbspline\fR, \f(CWcatrom\fR,
+\f(CWdefault\fR, \f(CWdummy\fR, \f(CWgauss8\fR, \f(CWgaussian\fR,
+\f(CWgi8\fR, \f(CWlanczos3\fR, \f(CWmitchell\fR, \f(CWnone\fR,
+\f(CWsinc\fR, \f(CWsinc8\fR, \f(CWsinc12\fR, \f(CWtent\fR, or
+\f(CWtriangle\fR.
+.TP 1i
+\fB\-gamma\fR \fInumber\fR
+Specifies that the colors allocated for displaying this image in a
+window should be corrected for a non-linear display with the specified
+gamma exponent value.  (The intensity produced by most
+CRT displays is a power function of the input value, to a good
+approximation; gamma is the exponent and is typically around 2).
+The value specified must be greater than zero.  The default
+value is one (no correction).  In general, values greater than one
+will make the image lighter, and values less than one will make it
+darker.
+.TP 1i
+\fB\-height\fR \fIpixels\fR
+Specifies the height of the image, in pixels.  This option is useful
+primarily in situations where the user wishes to build up the contents
+of the image piece by piece.  A value of zero (the default) allows the
+image to expand or shrink vertically to fit the data stored in it.
+.TP 1i
+\fB\-maxpect\fR \fIbool\fR
+When resizing the image, maintain the aspect ratio of the original picture.
+.TP 1i
+\fB\-rotate\fR \fIangle\fR
+Rotate the image by \fIangle\fR. \fIAngle\fR is the number of degress
+to rotate the image.
+.TP 1i
+\fB\-sharpen\fR \fIbool\fR
+Automatically sharpen the image.
+.TP 1i
+\fB\-width\fR \fIpixels\fR
+Specifies the width of the image, in pixels.    This option is useful
+primarily in situations where the user wishes to build up the contents
+of the image piece by piece.  A value of zero (the default) allows the
+image to expand or shrink horizontally to fit the data stored in it.
+.TP 1i
+\fB\-window\fR \fIwindowName\fR
+Specifies a window of a file that is to be read to supply data for the 
+picture image.  The format \fIwindowName\fR is either a Tk window
+name or a hexidecimal number (e.g. \f(CW0x000000002100\fR) if the 
+window is an external window.  It is an error if \fIwindowName\fR is 
+obscurred.  You should raise it beforehand.
+.RE
+.TP
+\fIimageName\fR \fBconvolve\fR \fIsrc\fR ?\fIswitches...\fR?
+.TP
+\fIimageName\fR \fBcopy\fR \fIsrc\fR ?\fIswitches...\fR?
+Copies a region from the image called \fIsrc\fR (which must
+be a picture image) to the image called \fIimageName\fR.  
+If no options are specified, this command copies the whole 
+of \fIsrc\fR into \fIimageName\fR,
+starting at coordinates (0,0) in \fIimageName\fR.  The following
+options may be specified:
+.RS
+.TP 1i
+\fB\-blend\fR \fIbool\fR
+The contents of the \fIsrc\fR are blended with the background or 
+\fIimageName\fR.  The is only useful when \fIsrc\fR contains transparent
+pixels.
+.TP 1i
+\fB\-from\fR \fIbbox\fR
+Specifies the region in the \fIsrc\fR image to be copied. \fIBbox\fR is
+a list in the form "\fIx1\fR \fIy1\fR \fIx2\fR \fIy2\fR" 
+or "\fIx1\fR \fIy1\fR".  The first desribes the subregion to be copied.
+The second says to copy the subimage starting at \fIx1\fR,\fIy1\fR of
+the source image and copying region extending to the lower right corner 
+of \fIsrc\fR.
+.TP 1i
+\fB\-to\fR \fIbbox\fR
+Specifies the region in the \fIimageName\fR image to be copied. \fIBbox\fR is
+a list in the form "\fIx1\fR \fIy1\fR \fIx2\fR \fIy2\fR" 
+or "\fIx1\fR \fIy1\fR".  The first desribes the subregion to be copied.
+The second says to copy the subimage starting at \fIx1\fR,\fIy1\fR of
+the destination image and copying region extending to the lower right corner 
+of \fIimageName\fR.
+.RE
+.TP
+\fIimageName\fR \fBcrop\fR \fIx1 y1 x2 y2\fR
+Crops the image to the specified size.  The coordinates 
+describe the region of \fIimageName\fR to be retained.
+.TP
+\fIimageName\fR \fBdraw\fR ?\fIargs...\fR?
+.TP
+\fIimageName\fR \fBdup\fR ?\fIswitches...\fR?
+The following switches are available.
+.RS
+.TP 1i
+\fB\-region\fR \fIbbox\fR
+Specifies a subregion in the picture to be copied. \fIBbox\fR is a list in
+the form "\fIx1\fR \fIy1\fR \fIx2\fR \fIy2\fR". 
+.RE
+.TP
+\fIimageName\fR \fBexport\fR 
+Reports the currently available image formats.
+.TP
+\fIimageName\fR \fBexport\fR \fIformat\fR ?\fIswitches...\fR?
+Exports the image in the specified format. \fIFormat\fR can be any 
+registered format. \fISwitches\fR are optional flags, specific the format, 
+that can be used. See the section \fBEXPORT FORMATS\fR below that 
+describes the switches available
+for each format.
+.TP
+\fIimageName\fR \fBfade\fR \fIsrc\fR \fIfactor\fR
+.TP
+\fIimageName\fR \fBflip\fR \fIx|y\fR 
+.TP
+\fIimageName\fR \fBgamma\fR \fIvalue\fR 
+.TP
+\fIimageName\fR \fBget\fR \fIx\fR \fIy\fR 
+.TP
+\fIimageName\fR \fBgradient\fR ?\fIswitches...\fR?
+.TP
+\fIimageName\fR \fBgreyscale\fR \fIsrc\fR
+.TP
+\fIimageName\fR \fBheight\fR ?\fIpixels\fR?
+.TP
+\fIimageName\fR \fBimport\fR \fIformat\fR ?\fIswitches...\fR?
+.TP
+\fIimageName\fR \fBinfo\fR 
+.TP
+\fIimageName\fR \fBlist\fR \fIargs...\fR
+.TP
+\fIimageName\fR \fBmax\fR \fIimage\fR|\fIcolor\fR
+.TP
+\fIimageName\fR \fBmin\fR \fIimage\fR|\fIcolor\fR
+.TP
+\fIimageName\fR \fBmultiply\fR \fInumber\fR
+.TP
+\fIimageName\fR \fBnand\fR \fIimage\fR|\fIcolor\fR
+.TP
+\fIimageName\fR \fBnor\fR \fIimage\fR|\fIcolor\fR
+.TP
+\fIimageName\fR \fBor\fR \fIimage\fR|\fIcolor\fR
+.TP
+\fIimageName\fR \fBproject\fR \fIsrc\fR \fIcoords\fR \fIcoords\fR ?\fIswitches...\fR?
+.TP
+\fIimageName\fR \fBput\fR \fIcolor\fR ?\fIwindow\fR?...
+.TP
+\fIimageName\fR \fBquantize\fR \fIsrc\fR \fInumColors\fR
+.TP
+\fIimageName\fR \fBreflect\fR \fIsrc\fR ?\fIswitches...\fR?
+.TP
+\fIimageName\fR \fBresample\fR \fIsrc\fR ?\fIswitches...\fR?
+.TP
+\fIimageName\fR \fBrotate\fR \fIsrc\fR \fIangle\fR
+.TP
+\fIimageName\fR \fBselect\fR \fIsrc\fR \fIcolor\fR ?\fIcolor\fR?
+.TP
+\fIimageName\fR \fBsharpen\fR 
+.TP
+\fIimageName\fR \fBsnap\fR \fIwindow\fR ?\fIswitches...\fR?
+.TP
+\fIimageName\fR \fBsubtract\fR \fIimage\fR|\fIcolor\fR
+.TP
+\fIimageName\fR \fBtile\fR \fIimage\fR ?\fIswitches...\fR?
+.TP
+\fIimageName\fR \fBtransp\fR \fIbgcolor\fR 
+.TP
+\fIimageName\fR \fBwidth\fR \fIpixels\fR 
+.TP
+\fIimageName\fR \fBxor\fR \fIimage\fR|\fIcolor\fR ?\fIswitches...\fR?
+.TP
+The \fB\-exact\fR, \fB\-glob\fR, 
+and \fB\-regexp\fR switches indicate both what kind of pattern matching
+to perform and the pattern.  By default each pattern will be compared
+with the node label.  You can set more than one of these switches.  If 
+any of the patterns match (logical or), the node matches.  
+If the \fB\-key\fR switch is
+used, it designates the data field to be matched.  
+.sp
+The valid switches are listed
+below:
+.RS
+.TP 1i
+\fB\-depth\fR \fInumber\fR
+Descend at most \fInumber\fR (a non-negative integer) levels
+If \fInumber\fR is \f(CW1\fR this means only apply the tests
+to the children of \fInode\fR.
+.TP 1i
+\fB\-exact\fR \fIstring\fR
+Matches each node using \fIstring\fR.  The node must match \fIstring\fR
+exactly.
+.TP 1i
+\fB\-glob\fR \fIstring\fR
+Test each node to \fIstring\fR using global pattern
+matching.  Matching is done in a fashion similar to that used by the
+C-shell.
+.TP 1i
+\fB\-invert\fR
+Select non-matching nodes.  Any node that \fIdoesn't\fR match
+the given criteria will be selected.
+.TP 1i
+\fB\-key\fR \fIkey\fR
+If pattern matching is selected (using the \fB\-exact\fR,
+\fB\-glob\fR, or \fB\-regexp\fR switches), compare the values of the
+data field keyed by \fIkey\fR instead of the node's label.  If no
+pattern matching switches are set, then any node with this data key
+will match.
+.TP 1i
+\fB\-leafonly\fR
+Only test nodes with no children.
+.TP 1i
+\fB\-nocase\fR
+Ignore case when matching patterns.
+.TP 1i
+\fB\-path\fR
+Use the node's full path when comparing nodes.  The node's full
+path is a list of labels, starting from the root of each ancestor
+and the node itself.
+.TP 1i
+\fB\-precommand\fR \fIcommand\fR
+Invoke \fIcommand\fR for each matching node.  Before \fIcommand\fR is
+invoked, the id of the node is appended.  You can control 
+processing by the return value of \fIcommand\fR.  If \fIcommand\fR 
+generates an error, processing stops and the \fBfind\fR operation 
+returns an error.  But if \fIcommand\fR returns \fBbreak\fR, then 
+processing stops, no error is generated.  If \fIcommand\fR returns 
+\fBcontinue\fR, then processing
+stops on that subpicture and continues on the next.
+.TP 1i
+\fB\-postcommand\fR \fIcommand\fR
+Invoke \fIcommand\fR for each matching node.  Before \fIcommand\fR is
+invoked, the id of the node is appended.  You can control 
+processing by the return value of \fIcommand\fR.  If \fIcommand\fR 
+generates an error, processing stops and the \fBfind\fR operation 
+returns an error.  But if \fIcommand\fR returns \fBbreak\fR, then 
+processing stops, no error is generated.  If \fIcommand\fR returns 
+\fBcontinue\fR, then processing
+stops on that subpicture and continues on the next.
+.TP 1i
+\fB\-regexp\fR \fIstring\fR
+Test each node using \fIstring\fR as a regular expression pattern.
+.TP 1i
+\fB\-tag\fR \fIstring\fR
+Only test nodes that have the tag \fIstring\fR.
+.RE
+.TP
+\fIimageName\fR \fBattach\fR \fIpictureObject\fR ?\fIswitches\fR?
+Attaches to an existing picture object \fIpictureObject\fR.  
+The current picture associated with \fIimageName\fR is discarded.  
+In addition, the current set of tags, notifier events, and traces are 
+removed. The valid \fIswitches\fR are listed below:
+.RS
+.TP
+\fB\-newtags\fR 
+By default, the picture will share the tags of the attached picture. If this
+flag is present, the picture will start with an empty tag table.
+.RE
+.TP
+\fIimageName\fR \fBchildren\fR \fInode\fR
+Returns a list of children for \fInode\fR.  If \fInode\fR is a leaf,
+then an empty string is returned.
+.TP
+\fIimageName\fR \fBconfigure\fR \fIoption value\fR
+Returns a list of children for \fInode\fR.  If \fInode\fR is a leaf,
+then an empty string is returned.
+.TP
+\fIimageName\fR \fBcopy\fR \fIparent\fR ?\fIpicture\fR? \fInode\fR ?\fIswitches\fR?
+Copies \fInode\fR into \fIparent\fR. Both nodes \fInode\fR and
+\fIparent\fR must already exist. The id of the new node is
+returned. You can also copy nodes from another picture.  If a \fIpicture\fR 
+argument is present, it indicates the name of the source picture.  
+The valid \fIswitches\fR are listed below:
+.RS
+.TP
+\fB\-label\fR \fIstring\fR
+Label \fIdestNode\fR as \fIstring\fR.  By default, \fIdestNode\fR has
+the same label as \fIsrcNode\fR.
+.TP
+\fB\-overwrite\fR
+Overwrite nodes that already exist.  Normally nodes are always
+created, even if there already exists a node by the same name.  This
+switch indicates to add or overwrite the node's data fields.
+.TP
+\fB\-recurse\fR
+Recursively copy all the subpictures of \fIsrcNode\fR as well.  In this case,
+\fIsrcNode\fR can't be an ancestor of \fIdestNode\fR as it would result
+in a cyclic copy.
+.TP
+\fB\-tags\fR
+Copy tag inforation.  Normally the following node is copied: its 
+label and data fields.  This indicates to copy tags as well.
+.RE
+.TP
+\fIimageName\fR \fBdegree\fR \fInode\fR 
+Returns the number of children of \fInode\fR.
+.TP
+\fIimageName\fR \fBdelete\fR \fInode\fR...
+Recursively deletes one or more nodes from the picture.  
+The node and all its descendants are removed.   The one exception
+is the root node.  In this case, only its descendants are removed.
+The root node will remain.  Any tags or 
+traces on the nodes are released.
+.TP
+\fIimageName\fR \fBdepth\fR \fInode\fR 
+Returns the depth of the node.  The depth is the number of 
+steps from the node to the root of the picture.  The depth of the
+root node is \f(CW0\fR.
+.TP
+\fIimageName\fR \fBdump\fR \fInode\fR 
+Returns a list of the paths and respective data for \fInode\fR
+and its descendants.  The subpicture designated by \fInode\fR is
+traversed returning the following information for each node: 1) the node's
+path relative to \fInode\fR, 2) a sublist key value pairs
+representing the node's data fields, and 3) a sublist of tags.  
+This list returned can be used
+later to copy or restore the picture with the \fBrestore\fR operation.
+.TP
+\fIimageName\fR \fBdumpfile\fR \fInode\fR \fIfileName\fR
+Writes a list of the paths and respective data for \fInode\fR
+and its descendants to the given file \fIfileName\fR.  
+The subpicture designated by \fInode\fR is traversed returning the 
+following information for each node: 1) the node's
+path relative to \fInode\fR, 2) a sublist key value pairs
+representing the node's data fields, and 3) a sublist of tags.  
+This list returned can be used
+later to copy or restore the picture with the \fBrestore\fR operation.
+.TP
+\fIimageName\fR \fBexists\fR \fInode\fR ?\fIkey\fR?
+Indicates if \fInode\fR exists in the picture.  If a \fIkey\fR argument
+is present then the command also indicates if the named data field 
+exists.
+.TP
+\fIimageName\fR \fBfind\fR \fInode\fR ?\fIswitches\fR? 
+Finds for all nodes matching the criteria given by \fIswitches\fR 
+for the subpicture designated by \fInode\fR.  A list of the selected 
+nodes is returned.  By default all nodes match, but you can set
+switches to narrow the match.
+.sp
+The \fB\-exact\fR, \fB\-glob\fR, 
+and \fB\-regexp\fR switches indicate both what kind of pattern matching
+to perform and the pattern.  By default each pattern will be compared
+with the node label.  You can set more than one of these switches.  If 
+any of the patterns match (logical or), the node matches.  
+If the \fB\-key\fR switch is
+used, it designates the data field to be matched.  
+.sp
+The order in 
+which the nodes are traversed is controlled by the  \fB\-order\fR switch.
+The possible orderings are \fBpreorder\fR, \fBpostorder\fR, \fBinorder\fR, 
+and \fBbreadthfirst\fR.  The default is \fBpostorder\fR.
+.sp
+The valid switches are listed
+below:
+.RS 
+.TP 1i
+\fB\-addtag\fR \fIstring\fR 
+Add the tag \fIstring\fR to each selected node.  
+.TP 1i
+\fB\-count\fR \fInumber\fR
+Stop processing after \fInumber\fR (a positive integer) matches. 
+.TP 1i
+\fB\-depth\fR \fInumber\fR
+Descend at most \fInumber\fR (a non-negative integer) levels
+If \fInumber\fR is \f(CW1\fR this means only apply the tests
+to the children of \fInode\fR.
+.TP 1i
+\fB\-exact\fR \fIstring\fR
+Matches each node using \fIstring\fR.  The node must match \fIstring\fR
+exactly.
+.TP 1i
+\fB\-excludes\fR \fInodeList\fR
+Excludes any node in the list \fInodeList\fR from the search.  
+The subnodes of an excluded node are still examined.
+.TP 1i
+\fB\-exec\fR \fIcommand\fR
+Invoke \fIcommand\fR for each matching node.  Before \fIcommand\fR is
+invoked, the id of the node is appended.  You can control 
+processing by the return value of \fIcommand\fR.  If \fIcommand\fR 
+generates an error, processing stops and the \fBfind\fR operation 
+returns an error.  But if \fIcommand\fR returns \fBbreak\fR, then 
+processing stops, no error is generated.  If \fIcommand\fR returns 
+\fBcontinue\fR, then processing
+stops on that subpicture and continues on the next.
+.TP 1i
+\fB\-glob\fR \fIstring\fR
+Test each node to \fIstring\fR using global pattern
+matching.  Matching is done in a fashion similar to that used by the
+C-shell.
+.TP 1i
+\fB\-invert\fR
+Select non-matching nodes.  Any node that \fIdoesn't\fR match
+the given criteria will be selected.
+.TP 1i
+\fB\-key\fR \fIkey\fR
+Compare the values of the data field keyed by \fIkey\fR instead of 
+the node's label. If no pattern is given (\fB\-exact\fR, \fB\-glob\fR, or 
+\fB\-regexp\fR switches), then any node with this data key will match.
+.TP 1i
+\fB\-leafonly\fR
+Only test nodes with no children.
+.TP 1i
+\fB\-nocase\fR
+Ignore case when matching patterns.
+.TP
+\fB\-order\fR \fIstring\fR 
+Traverse the picture and process nodes according to \fIstring\fR. \fIString\fR
+can be one of the following:
+.RS
+.TP 1i
+\fBbreadthfirst\fR 
+Process the node and the subpictures at each sucessive level. Each node
+on a level is processed before going to the next level.
+.TP 1i
+\fBinorder\fR 
+Recursively process the nodes of the first subpicture, the node itself,
+and any the remaining subpictures.
+.TP 1i
+\fBpostorder\fR 
+Recursively process all subpictures before the node.
+.TP 1i
+\fBpreorder\fR 
+Recursively process the node first, then any subpictures.
+.RE
+.TP
+\fB\-path\fR
+Use the node's full path when comparing nodes.
+.TP
+\fB\-regexp\fR \fIstring\fR
+Test each node using \fIstring\fR as a regular expression pattern.
+.TP
+\fB\-tag\fR \fIstring\fR
+Only test nodes that have the tag \fIstring\fR.
+.RE
+.TP
+\fIimageName\fR \fBfindchild\fR \fInode\fR \fIlabel\fR
+Searches for a child node \Ilabel\fR in \fInode\fR.  The id of the 
+child node is returned if found.  Otherwise \f(CW-1\fR is returned.
+.TP
+\fIimageName\fR \fBfirstchild\fR \fInode\fR 
+Returns the id of the first child in the \fInode\fR's list
+of subpictures.  If \fInode\fR is a leaf (has no children), 
+then \f(CW-1\fR is returned.
+.TP
+\fIimageName\fR \fBget\fR \fInode\fR ?\fIkey\fR? ?\fIdefaultValue\fR?
+Returns a list of key-value pairs of data for the node.  If \fIkey\fR
+is present, then onlyx the value for that particular data field is
+returned.  It's normally an error if \fInode\fR does not contain the
+data field \fIkey\fR.  But if you provide a \fIdefaultValue\fR
+argument, this value is returned instead (\fInode\fR will still not
+contain \fIkey\fR).  This feature can be used to access a data field of
+\fInode\fR without first testing if it exists.  This operation may
+trigger \fBread\fR data traces.
+.TP
+\fIimageName\fR \fBindex\fR \fInode\fR
+Returns the id of \fInode\fR.  If \fInode\fR is a tag, it 
+can only specify one node.  If \fInode\fR does not represent a valid
+node id or tag, or has modifiers that are invalid, then \f(CW-1\fR is returned.
+.TP
+\fIimageName\fR \fBinsert\fR \fIparent\fR ?\fIswitches\fR? 
+Inserts a new node into parent node \fIparent\fR.  
+The id of the new node is returned. The following switches 
+are available:
+.RS
+.TP 1i
+\fB\-after\fR \fIchild\fR 
+Position \fInode\fR after \fIchild\fR.  The node \fIchild\fR must be a 
+child of \fIparent\fR.
+.TP 1i
+\fB\-at\fR \fInumber\fR 
+Inserts the node into \fIparent\fR's list of children at 
+position \fInumber\fR.  The default is to append \fInode\fR.
+.TP 1i
+\fB\-before\fR \fIchild\fR 
+Position \fInode\fR before \fIchild\fR.  The node \fIchild\fR must be a 
+child of \fIparent\fR.
+.TP 1i
+\fB\-data\fR \fIdataList\fR
+Sets the value for each data field in \fIdataList\fR for the 
+new node. \fIDataList\fR is a list of key-value pairs.
+.TP 1i
+\fB\-label\fR \fIstring\fR 
+Designates the labels of the node as \fIstring\fR.  By default, nodes
+are labeled as \f(CWnode0\fR, \f(CWnode1\fR, etc.
+.TP 1i
+\fB\-node\fR \fIid\fR 
+Designates the id for the node.  Normally new ids are automatically
+generated.  This allows you to create a node with a specific id.
+It is an error if the id is already used by another node in the picture.
+.TP 1i
+\fB\-tags\fR \fItagList\fR
+Adds each tag in \fItagList\fR to the new node. \fITagList\fR is a list
+of tags, so be careful if a tag has embedded spaces.
+.RE
+.TP
+\fIimageName\fR \fBis\fR \fIproperty\fR \fIargs\fR  
+Indicates the property of a node. Both \fIproperty\fR and \fIargs\fR
+determine the property being tested.  Returns \f(CW1\fR if true and
+\f(CW0\fR otherwise.  The following \fIproperty\fR and \fIargs\fR 
+are valid:
+.RS
+.TP 1i
+\fBancestor\fR \fInode1\fR \fInode2\fR
+Indicates if \fInode1\fR is an ancestor of \fInode2\fR. 
+.TP 1i
+\fBbefore\fR \fInode1\fR \fInode2\fR
+Indicates if \fInode1\fR is before \fInode2\fR in depth first traversal. 
+.TP 1i
+\fBleaf\fR \fInode\fR
+Indicates if \fInode\fR is a leaf (it has no subpictures).
+.TP 1i
+\fBroot\fR \fInode\fR
+Indicates if \fInode\fR is the designated root.  This can be changed
+by the \fBroot\fR operation.
+.RE
+.TP
+\fIimageName\fR \fBlabel\fR \fInode\fR ?\fInewLabel\fR?
+Returns the label of the node designated by \fInode\fR.  If \fInewLabel\fR
+is present, the node is relabeled using it as the new label.
+.TP
+\fIimageName\fR \fBlastchild\fR \fInode\fR
+Returns the id of the last child in the \fInode\fR's list
+of subpictures.  If \fInode\fR is a leaf (has no children), 
+then \f(CW-1\fR is returned.
+.TP
+\fIimageName\fR \fBmove\fR \fInode\fR \fInewParent\fR ?\fIswitches\fR?
+Moves \fInode\fR into \fInewParent\fR. \fINode\fR is appended to the
+list children of \fInewParent\fR.  \fINode\fR can not be an ancestor
+of \fInewParent\fR.  The valid flags for \fIswitches\fR are described below.
+.RS
+.TP 1i
+\fB\-after\fR \fIchild\fR 
+Position \fInode\fR after \fIchild\fR.  The node \fIchild\fR must be a 
+child of \fInewParent\fR.
+.TP 1i
+\fB\-at\fR \fInumber\fR 
+Inserts \fInode\fR into \fIparent\fR's list of children at 
+position \fInumber\fR. The default is to append the node.
+.TP 1i
+\fB\-before\fR \fIchild\fR 
+Position \fInode\fR before \fIchild\fR.  The node \fIchild\fR must be a 
+child of \fInewParent\fR.
+.RE
+.TP
+\fIimageName\fR \fBnext\fR \fInode\fR
+Returns the next node from \fInode\fR in a preorder traversal.
+If \fInode\fR is the last node in the picture, 
+then \f(CW-1\fR is returned.
+.TP
+\fIimageName\fR \fBnextsibling\fR \fInode\fR
+Returns the node representing the next subpicture from \fInode\fR
+in its parent's list of children.  If \fInode\fR is the last child, 
+then \f(CW-1\fR is returned.
+.TP
+\fIimageName\fR \fBnotify\fR \fIargs\fR 
+Manages notification events that indicate that the picture structure has 
+been changed.
+See the 
+.SB "NOTIFY OPERATIONS"
+section below.
+.TP
+\fIimageName\fR \fBparent\fR \fInode\fR
+Returns the parent node of \fInode\fR.  If \fInode\fR is the root
+of the picture, 
+then \f(CW-1\fR is returned.
+.TP
+\fIimageName\fR \fBpath\fR \fInode\fR
+Returns the full path (from root) of \fInode\fR.
+.TP
+\fIimageName\fR \fBposition\fR \fInode\fR
+Returns the position of the node in its parent's list of children.
+Positions are numbered from 0.
+The position of the root node is always 0.
+.TP
+\fIimageName\fR \fBprevious\fR \fInode\fR
+Returns the previous node from \fInode\fR in a preorder traversal.
+If \fInode\fR is the root of the picture, 
+then \f(CW-1\fR is returned.
+.TP
+\fIimageName\fR \fBprevsibling\fR \fInode\fR
+Returns the node representing the previous subpicture from \fInode\fR
+in its parent's list of children.  If \fInode\fR is the first child, 
+then \f(CW-1\fR is returned.
+.TP
+\fIimageName\fR \fBrestore\fR \fInode\fR \fIdataString\fR \fIswitches\fR
+Performs the inverse function of the \fBdump\fR operation, restoring
+nodes to the picture. The format of \fIdataString\fR is exactly what is 
+returned by the \fBdump\fR operation.  It's a list containing information
+for each node to be restored.  The information consists of 1) the relative
+path of the node, 2) a sublist of key value pairs representing the 
+node's data, and 3) a list of tags for the node.  Nodes are created 
+starting from \fInode\fR. Nodes can be listed in any order.  If a node's 
+path describes ancestor nodes that do not already exist, they are 
+automatically created.  The valid \fIswitches\fR are listed below:
+.RS
+.TP
+\fB\-overwrite\fR
+Overwrite nodes that already exist.  Normally nodes are always
+created, even if there already exists a node by the same name.  This
+switch indicates to add or overwrite the node's data fields.
+.RE
+.TP
+\fIimageName\fR \fBrestorefile\fR \fInode\fR \fIfileName\fR \fIswitches\fR
+Performs the inverse function of the \fBdumpfile\fR operation, restoring
+nodes to the picture from the file \fIfileName\fR. The format of 
+\fIfileName\fR is exactly what is returned by the \fBdumpfile\fR operation.  
+It's a list containing information for each node to be restored.  
+The information consists of 1) the relative path of the node, 2) 
+a sublist of key value pairs representing the node's data, and 3) 
+a list of tags for the node.  Nodes are created 
+starting from \fInode\fR. Nodes can be listed in any order.  If a node's 
+path describes ancestor nodes that do not already exist, they are 
+automatically created.  The valid \fIswitches\fR are listed below:
+.RS
+.TP
+\fB\-overwrite\fR
+Overwrite nodes that already exist.  Normally nodes are always
+created, even if there already exists a node by the same name.  This
+switch indicates to add or overwrite the node's data fields.
+.RE
+.TP
+\fIimageName\fR \fBroot\fR ?\fInode\fR?
+Returns the id of the root node.  Normally this is node \f(CW0\fR.  If
+a \fInode\fR argument is provided, it will become the new root of the
+picture. This lets you temporarily work within a subset of the picture.
+Changing root affects operations such as \fBnext\fR, \fBpath\fR,
+\fBprevious\fR, etc.
+.TP
+\fIimageName\fR \fBset\fR \fInode\fR \fIkey value\fR ?\fIkey value\fR...?
+Sets one or more data fields in \fInode\fR. \fINode\fR may 
+be a tag that represents several nodes.  \fIKey\fR is the
+name of the data field to be set and \fIvalue\fR is its respective
+value.  This operation may trigger \fBwrite\fR and \fBcreate\fR data traces.
+.TP
+\fIimageName\fR \fBsize\fR \fInode\fR
+Returns the number of nodes in the subpicture. This includes the node
+and all its descendants.  The size of a leaf node is 1.
+.TP
+\fIimageName\fR \fBsort\fR \fInode\fR ?\fIswitches\fR? 
+.RS
+.TP 1i
+\fB\-ascii\fR 
+Compare strings using the ASCII  collation order.
+.TP 1i
+\fB\-command\fR \fIstring\fR
+Use command \fIstring\fR as a comparison command.  To compare two
+elements, evaluate a TCL script consisting of command with the two
+elements appended as additional arguments.  The script should return
+an integer less than, equal to, or greater than zero if the first
+element is to be considered less than, equal to, or greater than the
+second, respectively.
+.TP 1i
+\fB\-decreasing\fR
+Sort in decreasing order (largest items come first).
+.TP 1i
+\fB\-dictionary\fR
+Compare strings using a dictionary-style comparison.  This is the same 
+as \fB\-ascii\fR except (a) case is ignored except as a tie-breaker and (b) 
+if two strings contain embedded numbers, the numbers compare as integers, not
+characters.  For example, in \fB\-dictionary\fR mode, bigBoy sorts between
+bigbang and bigboy, and x10y sorts between x9y and x11y.
+.TP 1i
+\fB\-integer\fR
+Compare the nodes as integers.  
+.TP 1i
+\fB\-key\fR \fIstring\fR
+Sort based upon the node's data field keyed by \fIstring\fR. Normally
+nodes are sorted according to their label. 
+.TP 1i
+\fB\-path\fR
+Compare the full path of each node.  The default is to compare only its
+label.
+.TP 1i
+\fB\-real\fR
+Compare the nodes as real numbers.
+.TP 1i
+\fB\-recurse\fR
+Recursively sort the entire subpicture rooted at \fInode\fR.
+.TP 1i
+\fB\-reorder\fR 
+Recursively sort subpictures for each node.  \fBWarning\fR.  Unlike
+the normal flat sort, where a list of nodes is returned, this will
+reorder the picture.  
+.RE
+.TP
+\fIimageName\fR \fBtag\fR \fIargs\fR
+Manages tags for the picture object.
+See the 
+.SB "TAG OPERATIONS"
+section below.
+.TP
+\fIimageName\fR \fBtrace\fR \fIargs\fR
+Manages traces for data fields in the picture object.
+Traces cause TCL commands to be executed whenever a data field of a
+node is created, read, written, or unset.  Traces can be set for a
+specific node or a tag, representing possibly many nodes.
+See the 
+.SB "TRACE OPERATIONS"
+section below.
+.TP
+\fIimageName\fR \fBunset\fR \fInode\fR \fIkey\fR...
+Removes one or more data fields from \fInode\fR. \fINode\fR may 
+be a tag that represents several nodes.  \fIKey\fR is the
+name of the data field to be removed.  It's not an error is
+\fInode\fR does not contain \fIkey\fR.  
+This operation may trigger \fBunset\fR data traces.
+.RE
+.SH TAG OPERATIONS
+Tags are a general means of selecting and marking nodes in the picture.
+A tag is just a string of characters, and it may take any form except
+that of an integer.  The same tag may be associated with many
+different nodes.  
+.sp
+There are two built-in tags: The tag \fBall\fR is implicitly
+associated with every node in the picture.  It may be used to invoke
+operations on all the nodes in the picture.  The tag \fBroot\fR is
+managed automatically by the picture object.  It specifies the node
+that is currently set as the root of the picture.
+.sp
+Most picture operations use tags.  And several operations let you
+operate on multiple nodes at once.  For example, you can use the
+\fBset\fR operation with the tag \fBall\fR to set a data field in 
+for all nodes in the picture.
+.PP
+Tags are invoked by the \fBtag\fR operation.  The
+general form is
+.DS
+\fIimageName\fR \fBtag\fR \fIoperation\fR \fR?\fIarg\fR?...
+.DE
+Both \fIoperation\fR and its arguments determine the exact behavior of
+the command.  The operations available for tags are listed below.
+.TP
+\fIimageName\fR \fBtag add\fR \fIstring\fR \fInode\fR...
+Adds the tag \fIstring\fR to one of more nodes.
+.TP
+\fIimageName\fR \fBtag delete\fR \fIstring\fR \fInode\fR...
+Deletes the tag \fIstring\fR from one or more nodes.  
+.TP
+\fIimageName\fR \fBtag forget\fR \fIstring\fR
+Removes the tag \fIstring\fR from all nodes.  It's not an error if no
+nodes are tagged as \fIstring\fR.
+.TP
+\fIimageName\fR \fBtag get\fR \fInode\fR \fIpattern\fR...
+Returns the tag names for a given node.  If one of more pattern
+arguments are provided, then only those matching tags are returned.
+.TP
+\fIimageName\fR \fBtag names\fR ?\fInode\fR?
+Returns a list of tags used by the picture.  If a \fInode\fR argument
+is present, only those tags used by \fInode\fR are returned.
+.TP
+\fIimageName\fR \fBtag nodes\fR \fIstring\fR
+Returns a list of nodes that have the tag \fIstring\fR.  If no node
+is tagged as \fIstring\fR, then an empty string is returned.
+.TP
+\fIimageName\fR \fBtag set\fR \fInode\fR \fIstring\fR...
+Sets one or more tags for a given node.  Tag names can't start with a
+digit (to distinquish them from node ids) and can't be a reserved tag
+("root" or "all").
+.TP
+\fIimageName\fR \fBtag unset\fR \fInode\fR \fIstring\fR...  
+Removes one or more tags from a given node. Tag names that don't exist 
+or are reserved ("root" or "all") are silently ignored.
+.SH TRACE OPERATIONS
+Data fields can be traced much in the same way that you can trace TCL
+variables.  Data traces cause TCL commands to be executed whenever a
+particular data field of a node is created, read, written, or unset.
+A trace can apply to one or more nodes.  You can trace a specific node
+by using its id, or a group of nodes by a their tag.
+.PP
+The picture's \fBget\fR, \fBset\fR, and \fBunset\fR operations can 
+trigger various traces.  The \fBget\fR operation can cause 
+a \fIread\fR  trace to fire.  The \fBset\fR operation causes a \fIwrite\fR 
+trace to fire.  And if the data field is written for the first time, you
+will also get a \fIcreate\fR trace.
+The \fBunset\fR operation triggers \fIunset\fR traces.
+.PP
+Data traces are invoked by the \fBtrace\fR
+operation.  The general form is
+.DS
+\fIimageName\fR \fBtrace\fR \fIoperation\fR \fR?\fIarg\fR?...
+.DE
+Both \fIoperation\fR and its arguments determine the exact behavior of
+the command.  The operations available for traces are listed below.
+.TP
+\fIimageName\fR \fBtrace create\fR \fInode\fR \fIkey\fR \fIops\fR \fIcommand\fR
+Creates a trace for \fInode\fR on data field \fIkey\fR.  \fINode\fR
+can refer to more than one node (for example, the tag \fBall\fR). If
+\fInode\fR is a tag, any node with that tag can possibly trigger a trace,
+invoking \fIcommand\fR.  
+\fICommand\fR is command prefix, typically a procedure name.
+Whenever a trace is triggered, four arguments are appended to
+\fIcommand\fR before it is invoked: \fIimageName\fR, id of the
+node, \fIkey\fR and, \fIops\fR.
+Note that no nodes need have the field \fIkey\fR.  
+A trace identifier in the form "\f(CWtrace0\fR", "\f(CWtrace1\fR", etc.
+is returned.  
+.sp
+\fIOps\fR indicates which operations are of
+interest, and consists of one or more of the following letters:
+.RS
+.TP
+\fBr\fR
+Invoke \fIcommand\fR whenever \fIkey\fR is read. Both read and
+write traces are temporarily disabled when \fIcommand\fR is executed.
+.TP
+\fBw\fR
+Invoke \fIcommand\fR whenever \fIkey\fR is written.  Both read and
+write traces are temporarily disabled when \fIcommand\fR is executed.
+.TP
+\fBc\fR
+Invoke \fIcommand\fR whenever \fIkey\fR is created.
+.TP
+\fBu\fR 
+Invoke \fIcommand\fR whenever \fIkey\fR is unset.  Data fields are
+typically unset with the \fBunset\fR command.   Data fields are also 
+unset when the picture is released, but all traces are disabled prior
+to that.
+.sp
+.RE
+.TP
+\fIimageName\fR \fBtrace delete\fR \fItraceId\fR...
+Deletes one of more traces.  \fITraceId\fR is
+the trace identifier returned by the \fBtrace create\fR operation.
+.TP
+\fIimageName\fR \fBtrace info\fR \fItraceId\fR 
+Returns information about the trace \fItraceId\fR.  \fITraceId\fR
+is a trace identifier previously returned by the \fBtrace create\fR operation.
+It's the same information specified for the \fBtrace create\fR operation.
+It consists of the node id or tag, data field key, a string of letters
+indicating the operations that are traced (it's in the same
+form as \fIops\fR) and, the command prefix.
+.TP
+\fIimageName\fR \fBtrace names\fR
+Returns a list of identifers for all the current traces.
+.SH NOTIFY OPERATIONS
+Picture objects can be shared among many clients, such as a
+\fBhiertable\fR widget.  Any client can create or delete nodes,
+sorting the picture, etc.  You can request to be notified whenever these
+events occur.  Notify events cause TCL commands to be executed
+whenever the picture structure is changed.  
+.PP
+Notifications are handled by the \fBnotify\fR operation.  The
+general form is
+.DS
+\fIimageName\fR \fBnotify\fR \fIoperation\fR \fR?\fIarg\fR?...
+.DE
+Both \fIoperation\fR and its arguments determine the exact behavior of
+the command.  The operations available for events are listed below.
+.TP
+\fIimageName\fR \fBnotify create\fR ?\fIswitches\fR? \fIcommand\fR \fR?\fIargs\fR?...  
+Creates a notifier for the picture.  A notify identifier in the form
+"\f(CWnotify0\fR", "\f(CWnotify1\fR", etc.  is returned.
+.sp
+\fICommand\fR and \fIargs\fR are saved and invoked whenever the picture
+structure is changed (according to \fIswitches\fR). Two arguments are
+appended to \fIcommand\fR and \fIargs\fR before it's invoked: the id
+of the node and a string representing the type of event that occured.
+One of more switches can be set to indicate the events that are of
+interest.  The valid switches are as follows:
+.RS
+.TP 1i
+\fB\-create\fR 
+Invoke \fIcommand\fR whenever a new node has been added.
+.TP 1i
+\fB\-delete\fR
+Invoke \fIcommand\fR whenever a node has been deleted.
+.TP 1i
+\fB\-move\fR
+Invoke \fIcommand\fR whenever a node has been moved.
+.TP 1i
+\fB\-sort\fR
+Invoke \fIcommand\fR whenever the picture has been sorted and reordered.
+.TP 1i
+\fB\-relabel\fR
+Invoke \fIcommand\fR whenever a node has been relabeled.
+.TP 1i
+\fB\-allevents\fR
+Invoke \fIcommand\fR whenever any of the above events occur.
+.TP 1i
+\fB\-whenidle\fR
+When an event occurs don't invoke \fIcommand\fR immediately, but
+queue it to be run the next time the event loop is entered and there 
+are no events to process.  If subsequent events occur before 
+the event loop is entered, \fIcommand\fR will still be 
+invoked only once.
+.RE
+.TP
+\fIimageName\fR \fBnotify delete\fR \fInotifyId\fR 
+Deletes one or more notifiers from the picture.  \fINotifyId\fR is the
+notifier identifier returned by the \fBnotify create\fR operation.
+.TP
+\fIimageName\fR \fBnotify info\fR \fInotifyId\fR
+Returns information about the notify event \fInotifyId\fR.  \fINotifyId\fR
+is a notify identifier previously returned by the \fBnotify create\fR operation.
+It's the same information specified for the \fBnotify create\fR operation.
+It consists of the notify id, a sublist of event flags (it's in the same
+form as \fIflags\fR) and, the command prefix.
+.TP
+\fIimageName\fR \fBnotify names\fR
+Returns a list of identifers for all the current notifiers.
+.SH C LANGUAGE API
+Blt_PictureApply, 
+Blt_PictureApplyBFS, 
+Blt_PictureApplyDFS, 
+Blt_PictureChangeRoot, 
+Blt_PictureCreate, 
+Blt_PictureCreateEventHandler, 
+Blt_PictureCreateNode, 
+Blt_PictureCreateTrace, 
+Blt_PictureDeleteEventHandler, 
+Blt_PictureDeleteNode, 
+Blt_PictureDeleteTrace, 
+Blt_PictureExists, 
+Blt_PictureFindChild, 
+Blt_PictureFirstChild, 
+Blt_PictureFirstKey, 
+Blt_PictureGetNode, 
+Blt_PictureGetToken, 
+Blt_PictureGetValue, 
+Blt_PictureIsAncestor, 
+Blt_PictureIsBefore, 
+Blt_PictureIsLeaf, 
+Blt_PictureLastChild, 
+Blt_PictureMoveNode, 
+Blt_PictureName, 
+Blt_PictureNextKey, 
+Blt_PictureNextNode, 
+Blt_PictureNextSibling, 
+Blt_PictureNodeDegree, 
+Blt_PictureNodeDepth, 
+Blt_PictureNodeId, 
+Blt_PictureNodeLabel, 
+Blt_PictureNodeParent, 
+Blt_PicturePrevNode, 
+Blt_PicturePrevSibling, 
+Blt_PictureRelabelNode, 
+Blt_PictureReleaseToken, 
+Blt_PictureRootNode, 
+Blt_PictureSetValue, 
+Blt_PictureSize, 
+Blt_PictureSortNode, and
+Blt_PictureUnsetValue.
+.SH KEYWORDS
+picture, hiertable, widget
