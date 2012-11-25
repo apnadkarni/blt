@@ -78,8 +78,6 @@ foreach file { graph1 graph2 graph3 graph5 } {
 	set graph [blt::graph .t.$file]
 	source scripts/$file.tcl
 	.t tab configure $file -window $graph 
-	bind $graph <Enter> "puts stderr {Entering $graph}"
-	bind $graph <Leave> "puts stderr {Leaving $graph}"
     }
 }
 

@@ -7,16 +7,16 @@ source scripts/demo.tcl
 source scripts/stipples.tcl
 
 blt::tabset .t \
-    -tabwidth same \
     -side left \
+    -justify left \
     -iconposition bottom \
-    -iconposition top \
-    -tiers 1 \
+    -iconposition left \
     -scrollincrement 10 \
     -scrollcommand { .s set } \
     -rotate 0 \
     -selectcommand {  MakePicture .t }  \
--width 500 -height 500
+    -pagewidth 500 -pageheight 500 \
+    -scrolltabs 0
 
 scrollbar .s -command { .t view } -orient horizontal
  
@@ -31,44 +31,47 @@ set horzFilter sinc
 #set horzFilter none
 
 
-proc ResizePicture { src dest maxSize } {
-    puts stderr "maxSize=$maxSize"
+proc ResizePicture { file maxSize } {
+    set src [image create picture -file $file]
     set maxSize [winfo fpixels . $maxSize]
     set w [image width $src]
     set h [image height $src]
-    puts stderr "width=$w, height=$h"
     set sw [expr double($maxSize) / $w]
     set sh [expr double($maxSize) / $h]
-    puts stderr "sw=$sw,sh=$sh"
     set s [expr min($sw, $sh)]
     set w [expr round($s * $w)]
     set h [expr round($s * $h)]
-    puts stderr "[$src configure]"
-    $dest configure -width $w -height $h
-    
+    set dst [image create picture -width $w -height $h]
     global horzFilter vertFilter
-    $dest resample $src -filter $horzFilter 
+    $dst resample $src -filter $horzFilter 
+    image delete $src
+    return $dst
 }
 
-image create picture src
-image create picture dest
-
-label .t.label -image dest  -width 500 -height 500
-
 proc MakePicture { w index } {
-    set file [$w tab cget $index -text]
-    src configure -file ./images/$file.gif
-
+    set file [$w id $index]
+    set src [image create picture -file $file]
+    set tail [file tail $file]
+    set root [file root $tail]
+    regsub -all {\.} $root {_} root
     set width [$w cget -pagewidth]
     set height [$w cget -pageheight]
-    puts stderr "pagewidth=$width, pageheight=$height"
     if { $width < $height } {
-	ResizePicture src dest $width
+	set dst [ResizePicture $file $width]
     } else {
-	ResizePicture src dest $height
+	set dst [ResizePicture $file $height]
+    }
+    set label ".t.${root}_l"
+    if { [winfo exists $label] } {
+	set old [$label cget -image]
+	$label configure -image $dst
+	image delete $old
+    } else {
+	label $label -image $dst 
+	.t tab configure $index -window $label -padx 4m -pady 4m -fill both 
     }
     .t dockall
-    .t tab configure $index -window .t.label -padx 4m -pady 4m -fill both
+    image delete $src
 }
 
 blt::table . \
@@ -79,11 +82,11 @@ blt::table configure . r1 -resize none
 focus .t
 
 foreach f $files {
-    src configure -file $f
-    set f [file tail [file root $f]]
-    set thumb [image create picture]
-    ResizePicture src $thumb .5i
-    .t insert end $f -image $thumb -fill both
+    set tail [file tail $f]
+    set root [file root $tail]
+    regsub -all {\.} $root {_} root
+    set thumb [ResizePicture $f .5i]
+    .t insert end $f -image $thumb -fill both -text $root
 }
 
 .t focus 0

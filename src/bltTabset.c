@@ -6109,7 +6109,6 @@ ComputeWorldGeometry(Tabset *setPtr)
 	setPtr->tabHeight = tabHeight;
     }
 
-
     /*
      * Let the user override any page dimension.
      */
@@ -7828,6 +7827,9 @@ ComputeLabelOffsets(Tabset *setPtr, Tab *tabPtr)
     if (iw > w) {
 	iw = w;
     }
+    if (ih > h) {
+	ih = h;
+    }
     w = x2 - x1;
     h = y2 - y1;
     
@@ -7915,15 +7917,15 @@ ComputeLabelOffsets(Tabset *setPtr, Tab *tabPtr)
 #if DEBUG1
 	fprintf(stderr, "ComputeLabelOffset: icon tab=%s x=%d,y=%d,w=%d,h=%d => x=%d,y=%d w=%d,h=%d\n",
 		tabPtr->text, ix, iy, iw, ih, tabPtr->iconRegion.x, 
-		tabPtr->iconRegion.y, tabPtr->iconRegion.width, 
-		tabPtr->iconRegion.height);
+		tabPtr->iconRegion.y, tabPtr->iconRegion.w, 
+		tabPtr->iconRegion.h);
 #endif
     tabPtr->textRegion = RotateRegion(tabPtr, tx, ty, ODD(tw), ODD(th));
 #if DEBUG1
 	fprintf(stderr, "ComputeLabelOffset: text tab=%s x=%d,y=%d,w=%d,h=%d => x=%d,y=%d w=%d,h=%d\n",
 		tabPtr->text, tx, ty, tw, th, tabPtr->textRegion.x, 
-		tabPtr->textRegion.y, tabPtr->textRegion.width, 
-		tabPtr->textRegion.height);
+		tabPtr->textRegion.y, tabPtr->textRegion.w, 
+		tabPtr->textRegion.h);
 #endif
     /* Focus dashed rectangle. */
     {
