@@ -2512,11 +2512,7 @@ ApplyOp(
 
 /*ARGSUSED*/
 static int
-AncestorOp(
-    TreeCmd *cmdPtr,
-    Tcl_Interp *interp,
-    int objc,			/* Not used. */
-    Tcl_Obj *const *objv)
+AncestorOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 {
     long d1, d2, minDepth;
     long i;
@@ -2533,7 +2529,7 @@ AncestorOp(
     d1 = Blt_Tree_NodeDepth(node1);
     d2 = Blt_Tree_NodeDepth(node2);
     minDepth = MIN(d1, d2);
-    if (minDepth == 0) {	/* One of the nodes is root. */
+    if (minDepth == 0) {		/* One of the nodes is root. */
 	ancestor = Blt_Tree_RootNode(cmdPtr->tree);
 	goto done;
     }
@@ -6132,18 +6128,14 @@ SortOp(
 /*
  *---------------------------------------------------------------------------
  *
- * ValuesOp --
+ * NamesOp --
  *
  *	Returns the names of values for a node or array value.
  *
  *---------------------------------------------------------------------------
  */
 static int
-ValuesOp(
-    TreeCmd *cmdPtr,
-    Tcl_Interp *interp,
-    int objc,
-    Tcl_Obj *const *objv)
+NamesOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 {
     Blt_TreeNode node;
     Tcl_Obj *listObjPtr;
@@ -6225,6 +6217,7 @@ static Blt_OpSpec treeOps[] =
     {"lappend",     3, LappendOp,     4, 0, "node key ?value...?",},
     {"lastchild",   3, LastChildOp,   3, 3, "node",},
     {"move",        1, MoveOp,        4, 0, "node newParent ?switches?",},
+    {"names",       2, NamesOp,       3, 4, "node ?key?",},
     {"next",        4, NextOp,        3, 3, "node",},
     {"nextsibling", 5, NextSiblingOp, 3, 3, "node",},
     {"notify",      2, NotifyOp,      2, 0, "args...",},
@@ -6242,7 +6235,6 @@ static Blt_OpSpec treeOps[] =
     {"trace",       2, TraceOp,       2, 0, "args...",},
     {"type",        2, TypeOp,        4, 4, "node key",},
     {"unset",       1, UnsetOp,       3, 0, "node ?key...?",},
-    {"values",      1, ValuesOp,      3, 4, "node ?key?",},
 };
 
 static int numTreeOps = sizeof(treeOps) / sizeof(Blt_OpSpec);
