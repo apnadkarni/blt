@@ -153,7 +153,7 @@ static Blt_SwitchSpec importSwitches[] =
 };
 
 /*
- * ExportSwitches --
+ * XmlWriter --
  */
 typedef struct {
     Tcl_Obj *fileObj;
@@ -165,14 +165,16 @@ typedef struct {
     unsigned int flags;
     Tcl_Channel channel;	/* If non-NULL, channel to write output to. */
     Tcl_DString *dsPtr;
-} ExportSwitches;
+} XmlWriter;
 
 static Blt_SwitchSpec exportSwitches[] = 
 {
     {BLT_SWITCH_OBJ, "-data", "data", (char *)NULL,
-	Blt_Offset(ExportSwitches, dataObj), 0, 0},
+	Blt_Offset(XmlWriter, dataObj), 0, 0},
     {BLT_SWITCH_OBJ, "-file", "fileName", (char *)NULL,
-	Blt_Offset(ExportSwitches, fileObj), 0, 0},
+	Blt_Offset(XmlWriter, fileObj), 0, 0},
+    {BLT_SWITCH_CUSTOM,   "-root",		"node", (char *)NULL,
+	Blt_Offset(XmlWriter, root),	0, 0, &nodeSwitch},
     {BLT_SWITCH_END}
 };
 
@@ -187,7 +189,7 @@ typedef struct {
     int flags;
     Blt_HashTable stringTable;
     XML_Parser parser;
-} ImportData;
+} XmlReader;
 
 
 /*
@@ -226,12 +228,12 @@ TreeNodeSwitchProc(
 }
 
 static Tcl_Obj *
-GetStringObj(ImportData *importPtr, const char *string)
+GetStringObj(XmlReader *readerPtr, const char *string)
 {
     Blt_HashEntry *hPtr;
     int isNew;
 
-    hPtr = Blt_CreateHashEntry(&importPtr->stringTable, string, &isNew);
+    hPtr = Blt_CreateHashEntry(&readerPtr->stringTable, string, &isNew);
     if (isNew) {
 	Tcl_Obj *objPtr;
 
@@ -244,16 +246,16 @@ GetStringObj(ImportData *importPtr, const char *string)
 }
 
 static const char *
-GetBaseUri(ImportData *importPtr, Blt_TreeNode node)
+GetBaseUri(XmlReader *readerPtr, Blt_TreeNode node)
 {
     Blt_TreeNode top;
 
-    top = Blt_Tree_ParentNode(importPtr->root);
+    top = Blt_Tree_ParentNode(readerPtr->root);
     do {
-	if (Blt_Tree_ValueExists(importPtr->tree, node, SYM_BASEURI)) {
+	if (Blt_Tree_ValueExists(readerPtr->tree, node, SYM_BASEURI)) {
 	    Tcl_Obj *objPtr;
 
-	    if (Blt_Tree_GetValue((Tcl_Interp *)NULL, importPtr->tree, node, 
+	    if (Blt_Tree_GetValue((Tcl_Interp *)NULL, readerPtr->tree, node, 
 			SYM_BASEURI, &objPtr) == TCL_OK) {
 		return Tcl_GetString(objPtr);
 	    }
@@ -264,14 +266,14 @@ GetBaseUri(ImportData *importPtr, Blt_TreeNode node)
 }
 
 static void
-SetLocation(ImportData *importPtr, Blt_TreeNode node)
+SetLocation(XmlReader *readerPtr, Blt_TreeNode node)
 {
-    Blt_Tree_SetValue(importPtr->interp, importPtr->tree, node, SYM_LINENO, 
-	Tcl_NewIntObj(XML_GetCurrentLineNumber(importPtr->parser)));
-    Blt_Tree_SetValue(importPtr->interp, importPtr->tree, node, SYM_COLNO, 
-	Tcl_NewIntObj(XML_GetCurrentColumnNumber(importPtr->parser)));
-    Blt_Tree_SetValue(importPtr->interp, importPtr->tree, node, SYM_BYTEIDX, 
-	Tcl_NewLongObj(XML_GetCurrentByteIndex(importPtr->parser)));
+    Blt_Tree_SetValue(readerPtr->interp, readerPtr->tree, node, SYM_LINENO, 
+	Tcl_NewIntObj(XML_GetCurrentLineNumber(readerPtr->parser)));
+    Blt_Tree_SetValue(readerPtr->interp, readerPtr->tree, node, SYM_COLNO, 
+	Tcl_NewIntObj(XML_GetCurrentColumnNumber(readerPtr->parser)));
+    Blt_Tree_SetValue(readerPtr->interp, readerPtr->tree, node, SYM_BYTEIDX, 
+	Tcl_NewLongObj(XML_GetCurrentByteIndex(readerPtr->parser)));
 }
 
 static void
@@ -281,17 +283,17 @@ GetDeclProc(
     const XML_Char  *encoding,
     int standalone)
 {
-    ImportData *importPtr = userData;
+    XmlReader *readerPtr = userData;
 
     if (version != NULL) {
-	Blt_Tree_SetValue(importPtr->interp, importPtr->tree, importPtr->parent,
+	Blt_Tree_SetValue(readerPtr->interp, readerPtr->tree, readerPtr->parent,
 		 SYM_VERSION, Tcl_NewStringObj(version, -1));
     } 
     if (encoding != NULL) {
-	Blt_Tree_SetValue(importPtr->interp, importPtr->tree, importPtr->parent,
+	Blt_Tree_SetValue(readerPtr->interp, readerPtr->tree, readerPtr->parent,
 		SYM_ENCODING, Tcl_NewStringObj(encoding,-1));
     }
-    Blt_Tree_SetValue(importPtr->interp, importPtr->tree, importPtr->parent, 
+    Blt_Tree_SetValue(readerPtr->interp, readerPtr->tree, readerPtr->parent, 
 	SYM_STANDALONE, Tcl_NewIntObj(standalone));
 }
 
@@ -304,23 +306,23 @@ GetNotationProc(
     const XML_Char *systemId,
     const XML_Char *publicId)
 {
-    ImportData *importPtr = userData;
+    XmlReader *readerPtr = userData;
 
     if (publicId != NULL) {
-	Blt_Tree_SetValue(importPtr->interp, importPtr->tree, 
-		importPtr->parent, SYM_PUBID, Tcl_NewStringObj(publicId, -1));
+	Blt_Tree_SetValue(readerPtr->interp, readerPtr->tree, 
+		readerPtr->parent, SYM_PUBID, Tcl_NewStringObj(publicId, -1));
     }
     if (systemId != NULL) {
-	Blt_Tree_SetValue(importPtr->interp, importPtr->tree, 
-		importPtr->parent, SYM_SYSID, Tcl_NewStringObj(systemId, -1));
+	Blt_Tree_SetValue(readerPtr->interp, readerPtr->tree, 
+		readerPtr->parent, SYM_SYSID, Tcl_NewStringObj(systemId, -1));
     } 
     if (base != NULL) {
-	Blt_Tree_SetValue(importPtr->interp, importPtr->tree, 
-		importPtr->parent, SYM_BASEURI, Tcl_NewStringObj(base, -1));
+	Blt_Tree_SetValue(readerPtr->interp, readerPtr->tree, 
+		readerPtr->parent, SYM_BASEURI, Tcl_NewStringObj(base, -1));
     }
     if (notationName != NULL) {
-	Blt_Tree_SetValue(importPtr->interp, importPtr->tree, 
-		importPtr->parent, SYM_NOTATION, 
+	Blt_Tree_SetValue(readerPtr->interp, readerPtr->tree, 
+		readerPtr->parent, SYM_NOTATION, 
 		Tcl_NewStringObj(notationName, -1));
     }
 }
@@ -328,19 +330,19 @@ GetNotationProc(
 static void
 GetCommentProc(void *userData, const XML_Char *string) 
 {
-    ImportData *importPtr = userData;
+    XmlReader *readerPtr = userData;
 
-    if ((importPtr->flags & IMPORT_DTD) == 0) {
+    if ((readerPtr->flags & IMPORT_DTD) == 0) {
 	Blt_Tree tree;
 	Blt_TreeNode child;
 	Tcl_Obj *objPtr;
 
-	tree = importPtr->tree;
-	objPtr = GetStringObj(importPtr, string);
-	child = Blt_Tree_CreateNode(tree, importPtr->parent, SYM_COMMENT, -1);
-	Blt_Tree_SetValue(importPtr->interp, tree, child, SYM_COMMENT, objPtr);
-	if (importPtr->flags & IMPORT_LOCATION) {
-	    SetLocation(importPtr, child);
+	tree = readerPtr->tree;
+	objPtr = GetStringObj(readerPtr, string);
+	child = Blt_Tree_CreateNode(tree, readerPtr->parent, SYM_COMMENT, -1);
+	Blt_Tree_SetValue(readerPtr->interp, tree, child, SYM_COMMENT, objPtr);
+	if (readerPtr->flags & IMPORT_LOCATION) {
+	    SetLocation(readerPtr, child);
 	}
     }
 }
@@ -351,19 +353,19 @@ GetProcessingInstructionProc(
     const char *target, 
     const char *data)
 {
-    ImportData *importPtr = userData;
+    XmlReader *readerPtr = userData;
 
-    if ((importPtr->flags & IMPORT_DTD) == 0) {
+    if ((readerPtr->flags & IMPORT_DTD) == 0) {
 	Tcl_Obj *objPtr;
 	Blt_Tree tree;
 	Blt_TreeNode child;
 
-	tree = importPtr->tree;
-	objPtr = GetStringObj(importPtr, data);
-	child = Blt_Tree_CreateNode(tree, importPtr->parent, SYM_PI, -1);
-	Blt_Tree_SetValue(importPtr->interp, tree, child, target, objPtr);
-	if (importPtr->flags & IMPORT_LOCATION) {
-	    SetLocation(importPtr, child);
+	tree = readerPtr->tree;
+	objPtr = GetStringObj(readerPtr, data);
+	child = Blt_Tree_CreateNode(tree, readerPtr->parent, SYM_PI, -1);
+	Blt_Tree_SetValue(readerPtr->interp, tree, child, target, objPtr);
+	if (readerPtr->flags & IMPORT_LOCATION) {
+	    SetLocation(readerPtr, child);
 	}
     }
 }
@@ -371,12 +373,12 @@ GetProcessingInstructionProc(
 static void
 GetCharacterDataProc(void *userData, const XML_Char *string, int length) 
 {
-    ImportData *importPtr = userData;
+    XmlReader *readerPtr = userData;
     Blt_Tree tree;
     Blt_TreeNode child;
     Tcl_Obj *objPtr;
 
-    if (importPtr->flags & IMPORT_TRIMCDATA) {
+    if (readerPtr->flags & IMPORT_TRIMCDATA) {
 	const char *p, *pend;
 
 	for (p = string, pend = p + length; p < pend; p++) {
@@ -390,23 +392,23 @@ GetCharacterDataProc(void *userData, const XML_Char *string, int length)
 	length = pend - p;
 	string = p;
     }
-    tree = importPtr->tree;
-    child = Blt_Tree_LastChild(importPtr->parent);
+    tree = readerPtr->tree;
+    child = Blt_Tree_LastChild(readerPtr->parent);
     if ((child != NULL) && (strcmp(Blt_Tree_NodeLabel(child), SYM_CDATA)==0)) {
 
 	/* Last child added was a CDATA node, append new data to it.  */
 	
-	if (Blt_Tree_GetValue(importPtr->interp, tree, child, SYM_CDATA, 
+	if (Blt_Tree_GetValue(readerPtr->interp, tree, child, SYM_CDATA, 
 		&objPtr) == TCL_OK) {
 	    Tcl_AppendToObj(objPtr, string, length);
 	    return;
 	}
     } 
     objPtr = Tcl_NewStringObj(string, length);
-    child = Blt_Tree_CreateNode(tree, importPtr->parent, SYM_CDATA,-1);
-    Blt_Tree_SetValue(importPtr->interp, tree, child, SYM_CDATA, objPtr);
-    if (importPtr->flags & IMPORT_LOCATION) {
-	SetLocation(importPtr, child);
+    child = Blt_Tree_CreateNode(tree, readerPtr->parent, SYM_CDATA,-1);
+    Blt_Tree_SetValue(readerPtr->interp, tree, child, SYM_CDATA, objPtr);
+    if (readerPtr->flags & IMPORT_LOCATION) {
+	SetLocation(readerPtr, child);
     }
 }
 
@@ -434,25 +436,25 @@ StartDocTypeProc(
     const char *publicId,
     int         has_internal_subset)
 {   
-    ImportData *importPtr = userData;
+    XmlReader *readerPtr = userData;
 
     if (publicId != NULL) {
-	Blt_Tree_SetValue(importPtr->interp, importPtr->tree, importPtr->root, 
+	Blt_Tree_SetValue(readerPtr->interp, readerPtr->tree, readerPtr->root, 
 		SYM_PUBID, Tcl_NewStringObj(publicId, -1));
     }
     if (systemId != NULL) {
-	Blt_Tree_SetValue(importPtr->interp, importPtr->tree, importPtr->root, 
+	Blt_Tree_SetValue(readerPtr->interp, readerPtr->tree, readerPtr->root, 
 		SYM_SYSID, Tcl_NewStringObj(systemId, -1));
     } 
-    importPtr->flags |= IMPORT_DTD;
+    readerPtr->flags |= IMPORT_DTD;
 }
 
 static void
 EndDocTypeProc(void *userData)
 {
-    ImportData *importPtr = userData;
+    XmlReader *readerPtr = userData;
 
-    importPtr->flags &= ~IMPORT_DTD;
+    readerPtr->flags &= ~IMPORT_DTD;
 }
 
 
@@ -460,50 +462,50 @@ static void
 StartElementProc(void *userData, const char *element, const char **attr) 
 {
     Blt_TreeNode child;
-    ImportData *importPtr = userData;
+    XmlReader *readerPtr = userData;
     Blt_Tree tree;
 
-    tree = importPtr->tree;
+    tree = readerPtr->tree;
     child = NULL;
-    if (importPtr->flags & IMPORT_OVERWRITE) {
-	child = Blt_Tree_FindChild(importPtr->parent, element);
+    if (readerPtr->flags & IMPORT_OVERWRITE) {
+	child = Blt_Tree_FindChild(readerPtr->parent, element);
     }
     if (child == NULL) {
-	child = Blt_Tree_CreateNode(tree, importPtr->parent, element, -1);
+	child = Blt_Tree_CreateNode(tree, readerPtr->parent, element, -1);
     }
-    if (importPtr->flags & IMPORT_ATTRIBUTES) {
+    if (readerPtr->flags & IMPORT_ATTRIBUTES) {
 	const char **p;
 
 	for (p = attr; *p != NULL; p += 2) {
 	    Tcl_Obj *objPtr;
 	    
-	    objPtr = GetStringObj(importPtr, *(p+1));
-	    Blt_Tree_SetValue(importPtr->interp, tree, child, *p, objPtr);
+	    objPtr = GetStringObj(readerPtr, *(p+1));
+	    Blt_Tree_SetValue(readerPtr->interp, tree, child, *p, objPtr);
 	}
     }
-    if (importPtr->flags & IMPORT_LOCATION) {
-	SetLocation(importPtr, child);
+    if (readerPtr->flags & IMPORT_LOCATION) {
+	SetLocation(readerPtr, child);
     }
-    if (importPtr->flags & IMPORT_BASEURI) {
+    if (readerPtr->flags & IMPORT_BASEURI) {
 	const char *oldBase, *newBase;
 
-	newBase = XML_GetBase(importPtr->parser);
-	oldBase = GetBaseUri(importPtr, importPtr->parent);
+	newBase = XML_GetBase(readerPtr->parser);
+	oldBase = GetBaseUri(readerPtr, readerPtr->parent);
 	assert(oldBase != NULL);
 	if (strcmp(oldBase, newBase) != 0) {
-	    Blt_Tree_SetValue(importPtr->interp, tree, importPtr->parent, 
+	    Blt_Tree_SetValue(readerPtr->interp, tree, readerPtr->parent, 
 		SYM_BASEURI, Tcl_NewStringObj(newBase, -1));
 	}
     }
-    importPtr->parent = child;	/* Increase depth.  */
+    readerPtr->parent = child;	/* Increase depth.  */
 }
 
 static void
 EndElementProc(void *userData, const char *element) 
 {
-    ImportData *importPtr = userData;
+    XmlReader *readerPtr = userData;
 
-    importPtr->parent = Blt_Tree_ParentNode(importPtr->parent);
+    readerPtr->parent = Blt_Tree_ParentNode(readerPtr->parent);
 }
 
 static int
@@ -584,15 +586,15 @@ GetExternalEntityRefProc(
     const XML_Char *systemId,
     const XML_Char *publicId)
 {
-    ImportData *importPtr;
+    XmlReader *readerPtr;
     Tcl_DString ds;
     Tcl_Interp *interp;
     XML_Parser newParser, oldParser;
     int result;
 
-    importPtr = XML_GetUserData(parser);
-    assert(importPtr != NULL);
-    interp = importPtr->interp;
+    readerPtr = XML_GetUserData(parser);
+    assert(readerPtr != NULL);
+    interp = readerPtr->interp;
     if (strncmp(systemId, "http:", 5) == 0) {
 	Tcl_AppendResult(interp, "can't handle external entity reference \"", 
 			 systemId, "\"", (char *)NULL);
@@ -636,10 +638,10 @@ GetExternalEntityRefProc(
 #ifdef notdef
     XML_SetParamEntityParsing(newParser, XML_PARAM_ENTITY_PARSING_ALWAYS);
 #endif
-    oldParser = importPtr->parser;
-    importPtr->parser = newParser;
+    oldParser = readerPtr->parser;
+    readerPtr->parser = newParser;
     result = ReadXmlFromFile(interp, newParser, Tcl_DStringValue(&ds));
-    importPtr->parser = oldParser;
+    readerPtr->parser = oldParser;
     Tcl_DStringFree(&ds);
     XML_ParserFree(newParser);
     return result;
@@ -653,7 +655,7 @@ ImportXmlFile(
     Tcl_Obj *objPtr,
     unsigned int flags) 
 {
-    ImportData import;
+    XmlReader reader;
     XML_Parser parser;
     int result;
     char *fileName;
@@ -667,14 +669,14 @@ ImportXmlFile(
 	Tcl_AppendResult(interp, "can't create XML parser", (char *)NULL);
 	return TCL_ERROR;
     }
-    import.flags = flags;
-    import.interp = interp;
-    import.parent = parent;
-    import.parser = parser;
-    import.root = parent;
-    import.tree = tree;
-    Blt_InitHashTable(&import.stringTable, BLT_STRING_KEYS);
-    XML_SetUserData(parser, &import);
+    reader.flags = flags;
+    reader.interp = interp;
+    reader.parent = parent;
+    reader.parser = parser;
+    reader.root = parent;
+    reader.tree = tree;
+    Blt_InitHashTable(&reader.stringTable, BLT_STRING_KEYS);
+    XML_SetUserData(parser, &reader);
     fileName = Tcl_GetString(objPtr);
     /* Set baseURI */
     {
@@ -719,7 +721,7 @@ ImportXmlFile(
     }
     result = ReadXmlFromFile(interp, parser, fileName);
     XML_ParserFree(parser);
-    DumpStringTable(&import.stringTable);
+    DumpStringTable(&reader.stringTable);
     return (result) ? TCL_OK : TCL_ERROR;
 } 
 
@@ -732,7 +734,7 @@ ImportXmlData(
     Tcl_Obj *dataObjPtr,
     unsigned int flags) 
 {
-    ImportData import;
+    XmlReader reader;
     XML_Parser parser;
     char *string;
     int length;
@@ -747,15 +749,15 @@ ImportXmlData(
 	Tcl_AppendResult(interp, "can't create parser", (char *)NULL);
 	return TCL_ERROR;
     }
-    import.flags = flags;
-    import.interp = interp;
-    import.parent = parent;
-    import.parser = parser;
-    import.root = parent;
-    import.tree = tree;
-    Blt_InitHashTable(&import.stringTable, BLT_STRING_KEYS);
+    reader.flags = flags;
+    reader.interp = interp;
+    reader.parent = parent;
+    reader.parser = parser;
+    reader.root = parent;
+    reader.tree = tree;
+    Blt_InitHashTable(&reader.stringTable, BLT_STRING_KEYS);
     XML_SetBase(parser, ".");
-    XML_SetUserData(parser, &import);
+    XML_SetUserData(parser, &reader);
     if (flags & IMPORT_EXTREF) {
 	XML_SetExternalEntityRefHandler(parser, GetExternalEntityRefProc);
 	XML_SetParamEntityParsing(parser, 
@@ -788,7 +790,7 @@ ImportXmlData(
 		(char *)NULL);
     }
     XML_ParserFree(parser);
-    DumpStringTable(&import.stringTable);
+    DumpStringTable(&reader.stringTable);
     return (result) ? TCL_OK : TCL_ERROR;
 } 
 
@@ -833,26 +835,26 @@ ImportXmlProc(
 #endif /* HAVE_LIBEXPAT */
 
 static int
-XmlFlush(ExportSwitches *exportPtr) 
+XmlFlush(XmlWriter *writerPtr) 
 {
     int numWritten;
     char *line;
     int length;
 
-    line = Tcl_DStringValue(exportPtr->dsPtr);
-    length = Tcl_DStringLength(exportPtr->dsPtr);
-    numWritten = Tcl_Write(exportPtr->channel, line, length);
+    line = Tcl_DStringValue(writerPtr->dsPtr);
+    length = Tcl_DStringLength(writerPtr->dsPtr);
+    numWritten = Tcl_Write(writerPtr->channel, line, length);
     if (numWritten != length) {
-	Tcl_AppendResult(exportPtr->interp, "can't write xml element: ",
-		Tcl_PosixError(exportPtr->interp), (char *)NULL);
+	Tcl_AppendResult(writerPtr->interp, "can't write xml element: ",
+		Tcl_PosixError(writerPtr->interp), (char *)NULL);
 	return TCL_ERROR;
     }
-    Tcl_DStringSetLength(exportPtr->dsPtr, 0);
+    Tcl_DStringSetLength(writerPtr->dsPtr, 0);
     return TCL_OK;
 }
 
 static void
-XmlPutEscapeString(const char *from, size_t length, ExportSwitches *exportPtr)
+XmlPutEscapeString(const char *from, size_t length, XmlWriter *writerPtr)
 {
     const char *p, *pend;
 
@@ -860,38 +862,38 @@ XmlPutEscapeString(const char *from, size_t length, ExportSwitches *exportPtr)
 	switch (*p) {
 	case '\'': 
 	    if (p > from) {
-		Tcl_DStringAppend(exportPtr->dsPtr, from, p - from);
+		Tcl_DStringAppend(writerPtr->dsPtr, from, p - from);
 	    }
 	    from = ++p;
-	    Tcl_DStringAppend(exportPtr->dsPtr, "&apos;", 6);
+	    Tcl_DStringAppend(writerPtr->dsPtr, "&apos;", 6);
 	    break;
 	case '&':  
 	    if (p > from) {
-		Tcl_DStringAppend(exportPtr->dsPtr, from, p - from);
+		Tcl_DStringAppend(writerPtr->dsPtr, from, p - from);
 	    }
 	    from = ++p;
-	    Tcl_DStringAppend(exportPtr->dsPtr, "&amp;", 5);
+	    Tcl_DStringAppend(writerPtr->dsPtr, "&amp;", 5);
 	    break;
 	case '>':  
 	    if (p > from) {
-		Tcl_DStringAppend(exportPtr->dsPtr, from, p - from);
+		Tcl_DStringAppend(writerPtr->dsPtr, from, p - from);
 	    }
 	    from = ++p;
-	    Tcl_DStringAppend(exportPtr->dsPtr, "&gt;", 4);
+	    Tcl_DStringAppend(writerPtr->dsPtr, "&gt;", 4);
 	    break; 
 	case '<':  
 	    if (p > from) {
-		Tcl_DStringAppend(exportPtr->dsPtr, from, p - from);
+		Tcl_DStringAppend(writerPtr->dsPtr, from, p - from);
 	    }
 	    from = ++p;
-	    Tcl_DStringAppend(exportPtr->dsPtr, "&lt;", 4);
+	    Tcl_DStringAppend(writerPtr->dsPtr, "&lt;", 4);
 	    break; 
 	case '"':  
 	    if (p > from) {
-		Tcl_DStringAppend(exportPtr->dsPtr, from, p - from);
+		Tcl_DStringAppend(writerPtr->dsPtr, from, p - from);
 	    }
 	    from = ++p;
-	    Tcl_DStringAppend(exportPtr->dsPtr, "&quot;", 6);
+	    Tcl_DStringAppend(writerPtr->dsPtr, "&quot;", 6);
 	    break;
 	default:  
 	    p++;
@@ -899,56 +901,56 @@ XmlPutEscapeString(const char *from, size_t length, ExportSwitches *exportPtr)
 	}
     }	
     if (p > from) {
-	Tcl_DStringAppend(exportPtr->dsPtr, from, p - from);
+	Tcl_DStringAppend(writerPtr->dsPtr, from, p - from);
     }
 }
 
 static void
-XmlOpenStartElement(ExportSwitches *exportPtr, Blt_TreeNode node)
+XmlOpenStartElement(XmlWriter *writerPtr, Blt_TreeNode node)
 {
     long i;
 
-    if (exportPtr->channel != NULL) {
-	Tcl_DStringSetLength(exportPtr->dsPtr, 0);
+    if (writerPtr->channel != NULL) {
+	Tcl_DStringSetLength(writerPtr->dsPtr, 0);
     }
     for (i = 0; i < Blt_Tree_NodeDepth(node); i++) {
-	Tcl_DStringAppend(exportPtr->dsPtr, "  ", 2);
+	Tcl_DStringAppend(writerPtr->dsPtr, "  ", 2);
     }
-    Tcl_DStringAppend(exportPtr->dsPtr, "<", 1);
-    Tcl_DStringAppend(exportPtr->dsPtr, Blt_Tree_NodeLabel(node), -1);
+    Tcl_DStringAppend(writerPtr->dsPtr, "<", 1);
+    Tcl_DStringAppend(writerPtr->dsPtr, Blt_Tree_NodeLabel(node), -1);
 }
 
 static int
-XmlCloseStartElement(ExportSwitches *exportPtr)
+XmlCloseStartElement(XmlWriter *writerPtr)
 {
-    Tcl_DStringAppend(exportPtr->dsPtr, ">\n", 2);
-    if (exportPtr->channel != NULL) {
-	return XmlFlush(exportPtr);
+    Tcl_DStringAppend(writerPtr->dsPtr, ">\n", 2);
+    if (writerPtr->channel != NULL) {
+	return XmlFlush(writerPtr);
     }
     return TCL_OK;
 }
 
 static int
-XmlEndElement(ExportSwitches *exportPtr, Blt_TreeNode node)
+XmlEndElement(XmlWriter *writerPtr, Blt_TreeNode node)
 {
     long i;
 
-    Tcl_DStringAppend(exportPtr->dsPtr, "\n", 1);
+    Tcl_DStringAppend(writerPtr->dsPtr, "\n", 1);
     for (i = 0; i < Blt_Tree_NodeDepth(node); i++) {
-	Tcl_DStringAppend(exportPtr->dsPtr, "  ", 2);
+	Tcl_DStringAppend(writerPtr->dsPtr, "  ", 2);
     }
-    Tcl_DStringAppend(exportPtr->dsPtr, "</", 2);
-    Tcl_DStringAppend(exportPtr->dsPtr, Blt_Tree_NodeLabel(node), -1);
-    Tcl_DStringAppend(exportPtr->dsPtr, ">\n", 2);
-    if (exportPtr->channel != NULL) {
-	return XmlFlush(exportPtr);
+    Tcl_DStringAppend(writerPtr->dsPtr, "</", 2);
+    Tcl_DStringAppend(writerPtr->dsPtr, Blt_Tree_NodeLabel(node), -1);
+    Tcl_DStringAppend(writerPtr->dsPtr, ">\n", 2);
+    if (writerPtr->channel != NULL) {
+	return XmlFlush(writerPtr);
     }
     return TCL_OK;
 }
 
 static void
 XmlAppendAttribute(
-    ExportSwitches *exportPtr, 
+    XmlWriter *writerPtr, 
     const char *attrName, 
     const char *value, 
     int length)
@@ -960,30 +962,30 @@ XmlAppendAttribute(
     } else {
 	valueLen = (size_t)length;
     }
-    Tcl_DStringAppend(exportPtr->dsPtr, " ", 1);
-    Tcl_DStringAppend(exportPtr->dsPtr, attrName, -1);
-    Tcl_DStringAppend(exportPtr->dsPtr, "=", 1);
-    Tcl_DStringAppend(exportPtr->dsPtr, "\"", 1);
-    XmlPutEscapeString(value, valueLen, exportPtr);
-    Tcl_DStringAppend(exportPtr->dsPtr, "\"", 1);
+    Tcl_DStringAppend(writerPtr->dsPtr, " ", 1);
+    Tcl_DStringAppend(writerPtr->dsPtr, attrName, -1);
+    Tcl_DStringAppend(writerPtr->dsPtr, "=", 1);
+    Tcl_DStringAppend(writerPtr->dsPtr, "\"", 1);
+    XmlPutEscapeString(value, valueLen, writerPtr);
+    Tcl_DStringAppend(writerPtr->dsPtr, "\"", 1);
 }
 
 static void
 XmlAppendCharacterData(
-    ExportSwitches *exportPtr, 
+    XmlWriter *writerPtr, 
     const char *string, 
     int length)
 {
     if (length < 0) {
 	length = strlen(string);
     } 
-    Tcl_DStringAppend(exportPtr->dsPtr, "CDATA=(", -1);
-    XmlPutEscapeString(string, length, exportPtr);
-    Tcl_DStringAppend(exportPtr->dsPtr, ")", -1);
+    Tcl_DStringAppend(writerPtr->dsPtr, "CDATA=(", -1);
+    XmlPutEscapeString(string, length, writerPtr);
+    Tcl_DStringAppend(writerPtr->dsPtr, ")", -1);
 }
 
 static int
-XmlExportElement(Blt_Tree tree, Blt_TreeNode parent, ExportSwitches *exportPtr)
+XmlExportElement(Blt_Tree tree, Blt_TreeNode parent, XmlWriter *writerPtr)
 {
     Blt_TreeKey key;
     Blt_TreeKeyIterator iter;
@@ -995,46 +997,46 @@ XmlExportElement(Blt_Tree tree, Blt_TreeNode parent, ExportSwitches *exportPtr)
 	int numBytes;
 
 	/* Just output the CDATA field. */
-	if (Blt_Tree_GetValue(exportPtr->interp, tree, parent, SYM_CDATA, 
+	if (Blt_Tree_GetValue(writerPtr->interp, tree, parent, SYM_CDATA, 
 		&valueObjPtr) != TCL_OK) {
 	    return TCL_ERROR;
 	}
 	value = Tcl_GetStringFromObj(valueObjPtr, &numBytes);
-	XmlAppendCharacterData(exportPtr, value, numBytes);
+	XmlAppendCharacterData(writerPtr, value, numBytes);
 	return TCL_OK;
     }
-    XmlOpenStartElement(exportPtr, parent);
+    XmlOpenStartElement(writerPtr, parent);
     for (key = Blt_Tree_FirstKey(tree, parent, &iter); key != NULL; 
 	 key = Blt_Tree_NextKey(tree, &iter)) {
 	Tcl_Obj *valueObjPtr;
 	const char *value;
 	int numBytes;
 
-	if (Blt_Tree_GetValueByKey(exportPtr->interp, tree, parent, key,
+	if (Blt_Tree_GetValueByKey(writerPtr->interp, tree, parent, key,
 		&valueObjPtr) != TCL_OK) {
 	    return TCL_ERROR;
 	}
 	value = Tcl_GetStringFromObj(valueObjPtr, &numBytes);
-	XmlAppendAttribute(exportPtr, key, value, numBytes);
+	XmlAppendAttribute(writerPtr, key, value, numBytes);
     }
-    XmlCloseStartElement(exportPtr);
+    XmlCloseStartElement(writerPtr);
     for (child = Blt_Tree_FirstChild(parent); child != NULL; 
 	 child = Blt_Tree_NextSibling(child)) {
-	if (XmlExportElement(tree, child, exportPtr) != TCL_OK) {
+	if (XmlExportElement(tree, child, writerPtr) != TCL_OK) {
 	    return TCL_ERROR;
 	}
     }
-    return XmlEndElement(exportPtr, parent);
+    return XmlEndElement(writerPtr, parent);
 }
 
 static int
-XmlExport(Blt_Tree tree, ExportSwitches *exportPtr)
+XmlExport(Blt_Tree tree, XmlWriter *writerPtr)
 {
-    if (XmlExportElement(tree, exportPtr->root, exportPtr) != TCL_OK) {
+    if (XmlExportElement(tree, writerPtr->root, writerPtr) != TCL_OK) {
 	return TCL_ERROR;
     }
-    if (exportPtr->channel != NULL) {
-	return XmlFlush(exportPtr);
+    if (writerPtr->channel != NULL) {
+	return XmlFlush(writerPtr);
     }
     return TCL_OK;
 }
@@ -1046,7 +1048,7 @@ ExportXmlProc(
     int objc, 
     Tcl_Obj *const *objv)
 {
-    ExportSwitches switches;
+    XmlWriter writer;
     Tcl_Channel channel;
     Tcl_DString ds;
     int closeChannel;
@@ -1056,20 +1058,20 @@ ExportXmlProc(
     channel = NULL;
 
     Tcl_DStringInit(&ds);
-    memset(&switches, 0, sizeof(switches));
+    memset(&writer, 0, sizeof(writer));
     nodeSwitch.clientData = tree;
-    switches.root = Blt_Tree_RootNode(tree);
-    switches.flags = IMPORT_ATTRIBUTES | IMPORT_CDATA;
+    writer.root = Blt_Tree_RootNode(tree);
+    writer.flags = IMPORT_ATTRIBUTES | IMPORT_CDATA;
     if (Blt_ParseSwitches(interp, exportSwitches, objc - 3 , objv + 3, 
-	&switches, BLT_SWITCH_DEFAULTS) < 0) {
+	&writer, BLT_SWITCH_DEFAULTS) < 0) {
 	return TCL_ERROR;
     }
     result = TCL_ERROR;
-    if (switches.fileObj != NULL) {
+    if (writer.fileObj != NULL) {
 	char *fileName;
 
 	closeChannel = TRUE;
-	fileName = Tcl_GetString(switches.fileObj);
+	fileName = Tcl_GetString(writer.fileObj);
 	if ((fileName[0] == '@') && (fileName[1] != '\0')) {
 	    int mode;
 	    
@@ -1090,11 +1092,11 @@ ExportXmlProc(
 	    }
 	}
     }
-    switches.interp = interp;
-    switches.dsPtr = &ds;
-    switches.channel = channel;
-    result = XmlExport(tree, &switches); 
-    if ((switches.channel == NULL) && (result == TCL_OK)) {
+    writer.interp = interp;
+    writer.dsPtr = &ds;
+    writer.channel = channel;
+    result = XmlExport(tree, &writer); 
+    if ((writer.channel == NULL) && (result == TCL_OK)) {
 	Tcl_DStringResult(interp, &ds);
     } 
  error:
@@ -1102,7 +1104,7 @@ ExportXmlProc(
     if (closeChannel) {
 	Tcl_Close(interp, channel);
     }
-    Blt_FreeSwitches(exportSwitches, (char *)&switches, 0);
+    Blt_FreeSwitches(exportSwitches, (char *)&writer, 0);
     return result;
 }
 

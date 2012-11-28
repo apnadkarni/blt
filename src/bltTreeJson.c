@@ -125,6 +125,8 @@ static Blt_SwitchSpec importSpecs[] =
 	Blt_Offset(JsonReader, dataObjPtr),	0, 0},
     {BLT_SWITCH_OBJ,      "-file",		"fileName", (char *)NULL,
 	Blt_Offset(JsonReader, fileObjPtr),	0, 0},
+    {BLT_SWITCH_CUSTOM,	  "-root",		"node", (char *)NULL,
+	Blt_Offset(JsonReader, root),	0, 0, &nodeSwitch},
     {BLT_SWITCH_END}
 };
 
@@ -150,10 +152,12 @@ typedef struct {
 
 static Blt_SwitchSpec exportSpecs[] = 
 {
-    {BLT_SWITCH_OBJ, "-data", "data", (char *)NULL,
+    {BLT_SWITCH_OBJ,      "-data",		"data",     (char *)NULL,
 	Blt_Offset(JsonWriter, dataObjPtr), 0, 0},
-    {BLT_SWITCH_OBJ, "-file", "fileName", (char *)NULL,
+    {BLT_SWITCH_OBJ,      "-file",		"fileName", (char *)NULL,
 	Blt_Offset(JsonWriter, fileObjPtr), 0, 0},
+    {BLT_SWITCH_CUSTOM,	  "-root",		"node",     (char *)NULL,
+	Blt_Offset(JsonWriter, root),	0, 0, &nodeSwitch},
     {BLT_SWITCH_END}
 };
 

@@ -1013,6 +1013,140 @@ the command.  The operations available for events are listed below.
 TREE FORMATS
 ============
 
+Handlers for various tree formats can be loaded using the TCL **package**
+mechanism.  There are two formats supported: ``XML`` and ``JSON``.
+
+To use the JSON handler you must first require the package.
+
+  **package require blt_tree_json**
+
+Then the following **import** and **export** commands become available.
+
+  *treeName* **import json** ?\ *switches..*\ ?
+
+    Imports the JSON data into the tree. 
+    The following import switches are supported:
+
+    **-file** *fileName*
+
+      Read the JSON file *fileName* to load the tree.
+
+    **-data** *string*
+
+      Read the JSON information from *string*.
+
+    **-root** *node*
+
+      Load the JSON information into the tree starting at *node*.  The
+      default is the root node of the tree.
+
+  *treeName* **export json** ?\ *switches..*\ ?
+
+    Exports the tree as JSON data. 
+    The following export switches are supported:
+
+    **-file** *fileName*
+
+      Write the tree to the JSON file *fileName*.
+
+    **-data** *varName*
+
+      Write the tree in JSON format to the TCL variable *varName*.
+
+    **-root** *node*
+
+      Write the tree starting from *node*.  The default is the root 
+      node of the tree.
+
+To use the XML handler you must first require the package.
+
+  **package require blt_tree_xml**
+
+Then the following **import** and **export** commands become available.
+
+  *treeName* **import xml** ?\ *switches..*\ ?
+
+    Imports the XML data into the tree. 
+    The following import switches are supported:
+
+    **-all** 
+
+      Import all XML features.
+
+    **-comments** *bool*
+
+      If true, import XML comments.  The default is ``0``.
+
+    **-data** *string*
+
+      Read the JSON information from *string*. It is an error
+      to set both the **-file** and **-data** switches.
+
+    **-declaration**  *bool*
+
+      If true, import XML declarations.  The default is ``0``.
+
+    **-extref**  *bool*
+
+      If true, import XML external references.  The default is ``0``.
+
+    **-file** *fileName*
+
+      Read the JSON file *fileName* to load the tree. It is an error
+      to set both the **-file** and **-data** switches.
+
+    **-locations**  *bool*
+
+      If true, import XML locations.  The default is ``0``.
+
+    **-root** *node*
+
+      Load the XML information into the tree starting at *node*.  The
+      default is the root node of the tree.
+
+    **-attributes**  *bool*
+
+      If true, import XML attributes.  The default is ``1``.
+
+    **-namespace**  *bool*
+
+      If true, import XML namespaces.  The default is ``0``.
+
+    **-cdata**  *bool*
+
+      If true, import XML character data.  The default is ``1``.
+
+    **-overwrite**  *bool*
+
+      If true, overwrite tree nodes is they already exist.  
+      The default is ``0``.
+
+    **-processinginstructions**  *bool*
+
+      If true, import XML processing instructions.  The default is ``0``.
+
+    **-trimwhitespace**  *bool*
+
+      If true, trim white space from XML character data.  The default is ``0``.
+
+  *treeName* **export xml** ?\ *switches..*\ ?
+
+    Exports the tree as XML data. 
+    The following export switches are supported:
+
+    **-file** *fileName*
+
+      Write the tree to the XML file *fileName*.
+
+    **-data** *varName*
+
+      Write the tree in XML format to the TCL variable *varName*.
+
+    **-root** *node*
+
+      Write the tree starting from *node*.  The default is the root 
+      node of the tree.
+
 EXAMPLE
 =======
 
