@@ -24,7 +24,7 @@ $image3 copy $image2 -from "10 0 20 20" -to "10 0"
     -command "puts toggle" -underline 0
 
 proc Post { x y } {
-    blt::ComboMenu::popup .m $x $y
+    blt::popup .m $x $y
 }
 
 bind all <ButtonPress-3> { Post %X %Y }

@@ -6,6 +6,7 @@ namespace eval blt {
 	    posted          ""
 	    trace           0
 	    cascades       ""
+	    ignoreRelease  0
 	}
 	proc trace { mesg } {
 	    variable _private 
@@ -239,6 +240,8 @@ proc ::blt::popup { menu x y } {
 proc ::blt::ComboMenu::Popup { menu x y } {
     variable _private
 
+    # Unless there's mouse motion, ignore the button release event.
+    set _private(ignoreRelease) 1
     blt::ComboMenu::trace "blt::ComboMenu::popup $menu $x $y"
     if { [blt::grab top] == $menu } {
 	blt::ComboMenu::trace "blt::ComboMenu::popup unposting $menu" 
@@ -279,6 +282,12 @@ proc ::blt::ComboMenu::ButtonPressEvent { menu x y } {
 proc ::blt::ComboMenu::ButtonReleaseEvent { menu x y } {
     variable _private
 					
+    # If the mouse hasn't moved, then ignore the button release event.
+    set bool $_private(ignoreRelease)
+    set _private(ignoreRelease) 0
+    if { $bool } {
+	return
+    }
     # Handle top most menu first.
     set item [$menu index @$x,$y]
     if { $item != -1 } {
@@ -293,7 +302,7 @@ proc ::blt::ComboMenu::ButtonReleaseEvent { menu x y } {
 	$menu unpost
 	set _private(cascades) ""
 	# Pop the grab before invoking the menu item command.
-	#blt::grab pop $menu
+	blt::grab pop $menu
 	event generate $menu <<MenuSelect>>
 	$menu invoke $item
 	return
@@ -327,6 +336,9 @@ proc ::blt::ComboMenu::ButtonReleaseEvent { menu x y } {
 
 proc ::blt::ComboMenu::MotionEvent { x y } {
     variable _private
+
+    # If there's any mouse motion, handle the button release event.
+    set _private(ignoreRelease) 0
 
     # Handle the topmost menu first.
     set menu [blt::grab top]
