@@ -141,7 +141,7 @@ Once you create a tree object, you can use its Tcl command
 to query or modify it.  The
 general form is
 
-*treeName* *operation* ?\ *arg*\ ?...
+  *treeName* *operation* ?\ *arg*\ ?...
 
 Both *operation* and its arguments determine the exact behavior of
 the command.  The operations available for trees are listed below.
@@ -173,76 +173,75 @@ the command.  The operations available for trees are listed below.
   will be compared with the node label.  You can set more than one of these
   switches.  If any of the patterns match (logical or), the node matches.  If
   the **-key** switch is used, it designates the data field to be matched.
+  The valid switches are below.
 
-  The valid switches are listed below:
+    **-depth** *number*
 
-  **-depth** *number*
+      Descend at most *number* (a non-negative integer) levels If *number* is
+      ``1`` this means only apply the tests to the children of *node*.
 
-    Descend at most *number* (a non-negative integer) levels If *number* is
-    ``1`` this means only apply the tests to the children of *node*.
+    **-exact** *string*
 
-  **-exact** *string*
+      Matches each node using *string*.  The node must match *string* exactly.
 
-    Matches each node using *string*.  The node must match *string* exactly.
+    **-glob** *string*
 
-  **-glob** *string*
+      Test each node to *string* using global pattern matching.  Matching is
+      done in a fashion similar to that used by the C-shell.
 
-    Test each node to *string* using global pattern matching.  Matching is
-    done in a fashion similar to that used by the C-shell.
+    **-invert**
 
-  **-invert**
+      Select non-matching nodes.  Any node that *doesn't* match the given
+      criteria will be selected.
 
-    Select non-matching nodes.  Any node that *doesn't* match the given
-    criteria will be selected.
+    **-key** *key*
 
-  **-key** *key*
+      If pattern matching is selected (using the **-exact**, **-glob**, or
+      **-regexp** switches), compare the values of the data field keyed by *key*
+      instead of the node's label.  If no pattern matching switches are set,
+      then any node with this data key will match.
 
-    If pattern matching is selected (using the **-exact**, **-glob**, or
-    **-regexp** switches), compare the values of the data field keyed by *key*
-    instead of the node's label.  If no pattern matching switches are set,
-    then any node with this data key will match.
+    **-leafonly**
 
-  **-leafonly**
+      Only test nodes with no children.
 
-    Only test nodes with no children.
+    **-nocase**
 
-  **-nocase**
+      Ignore case when matching patterns.
 
-    Ignore case when matching patterns.
+    **-path**
 
-  **-path**
+      Use the node's full path when comparing nodes.  The node's full path is a
+      list of labels, starting from the root of each ancestor and the node
+      itself.
 
-    Use the node's full path when comparing nodes.  The node's full path is a
-    list of labels, starting from the root of each ancestor and the node
-    itself.
+    **-precommand** *command*
 
-  **-precommand** *command*
+      Invoke *command* for each matching node.  Before *command* is invoked, the
+      id of the node is appended.  You can control processing by the return
+      value of *command*.  If *command* generates an error, processing stops and
+      the **find** operation returns an error.  But if *command* returns
+      **break**, then processing stops, no error is generated.  If *command*
+      returns **continue**, then processing stops on that subtree and continues
+      on the next.
 
-    Invoke *command* for each matching node.  Before *command* is invoked, the
-    id of the node is appended.  You can control processing by the return
-    value of *command*.  If *command* generates an error, processing stops and
-    the **find** operation returns an error.  But if *command* returns
-    **break**, then processing stops, no error is generated.  If *command*
-    returns **continue**, then processing stops on that subtree and continues
-    on the next.
+    **-postcommand** *command*
 
-  **-postcommand** *command*
+      Invoke *command* for each matching node.  Before *command* is invoked, the
+      id of the node is appended.  You can control processing by the return
+      value of *command*.  If *command* generates an error, processing stops and
+      the **find** operation returns an error.  But if *command* returns
+      **break**, then processing stops, no error is generated.  If *command*
+      returns **continue**, then processing stops on that subtree and continues
+      on the next.
 
-    Invoke *command* for each matching node.  Before *command* is invoked, the
-    id of the node is appended.  You can control processing by the return
-    value of *command*.  If *command* generates an error, processing stops and
-    the **find** operation returns an error.  But if *command* returns
-    **break**, then processing stops, no error is generated.  If *command*
-    returns **continue**, then processing stops on that subtree and continues
-    on the next.
+    **-regexp** *string*
 
-  **-regexp** *string*
+      Test each node using *string* as a regular expression pattern.
 
-    Test each node using *string* as a regular expression pattern.
+    **-tag** *string*
 
-  **-tag** *string*
-
-    Only test nodes that have the tag *string*.
+      Only test nodes that have the tag *string*.
 
 *treeName* **attach** *treeObject* ?\ *switches*\ ?
 
@@ -251,10 +250,10 @@ the command.  The operations available for trees are listed below.
   tags, notifier events, and traces are removed. The valid *switches* are
   listed below:
 
-  **-newtags** 
+    **-newtags** 
 
-    By default, the tree will share the tags of the attached tree. If this
-    flag is present, the tree will start with an empty tag table.
+      By default, the tree will share the tags of the attached tree. If this
+      flag is present, the tree will start with an empty tag table.
 
 *treeName* **children** *node*
 
@@ -268,27 +267,27 @@ the command.  The operations available for trees are listed below.
   another tree.  If a *tree* argument is present, it indicates the name of the
   source tree.  The valid *switches* are listed below:
 
-  **-label** *string*
+    **-label** *string*
 
-    Label *destNode* as *string*.  By default, *destNode* has
-    the same label as *srcNode*.
+      Label *destNode* as *string*.  By default, *destNode* has
+      the same label as *srcNode*.
 
-  **-overwrite**
+    **-overwrite**
 
-    Overwrite nodes that already exist.  Normally nodes are always created,
-    even if there already exists a node by the same name.  This switch
-    indicates to add or overwrite the node's data fields.
+      Overwrite nodes that already exist.  Normally nodes are always created,
+      even if there already exists a node by the same name.  This switch
+      indicates to add or overwrite the node's data fields.
 
-  **-recurse**
+    **-recurse**
 
-    Recursively copy all the subtrees of *srcNode* as well.  In this case,
-    *srcNode* can't be an ancestor of *destNode* as it would result in a
-    cyclic copy.
+      Recursively copy all the subtrees of *srcNode* as well.  In this case,
+      *srcNode* can't be an ancestor of *destNode* as it would result in a
+      cyclic copy.
 
-  **-tags**
+    **-tags**
 
-    Copy tag inforation.  Normally the following node is copied: its label and
-    data fields.  This indicates to copy tags as well.
+      Copy tag inforation.  Normally the following node is copied: its label and
+      data fields.  This indicates to copy tags as well.
 
 *treeName* **degree** *node* 
 
@@ -311,37 +310,37 @@ the command.  The operations available for trees are listed below.
   Loads the directory entry *path* into the tree at
   node *node*. The following switches are available:
 
-  **-fields** *list* 
+    **-fields** *list* 
 
-  **-readable**
+    **-readable**
 
-    Only load files and directories that are readable by the user.
+      Only load files and directories that are readable by the user.
 
-  **-readonly**
+    **-readonly**
 
-    Only load files and directories that are readable by the user.
+      Only load files and directories that are readable by the user.
 
-  **-writable**
+    **-writable**
 
-  **-executable**
+    **-executable**
 
-  **-directory**
+    **-directory**
 
-    Only load directories.
+      Only load directories.
 
-  **-link**
+    **-link**
 
-    Only load links.
+      Only load links.
 
-  **-pattern** *pattern*
+    **-pattern** *pattern*
 
-    Only load files and directories that match *pattern*.  The default
-    pattern is "``*``".
+      Only load files and directories that match *pattern*.  The default
+      pattern is "``*``".
 
-  **-recurse** 
+    **-recurse** 
 
-    If *path* is a directory, recusively load files and subdirectories
-    into the tree.  New tree nodes are created for each file and subdirectory.
+      If *path* is a directory, recusively load files and subdirectories
+      into the tree.  New tree nodes are created for each file and subdirectory.
 
 *treeName* **dump** *node* ?\ *switches*...\ ?
 
@@ -353,13 +352,13 @@ the command.  The operations available for trees are listed below.
   the tree with the **restore** operation.  The following switches are 
   available:
 
-  **-file** *fileName*
+    **-file** *fileName*
 
-    Write the dump information to the file *fileName*.
+      Write the dump information to the file *fileName*.
 
-  **-data** *varName*
+    **-data** *varName*
 
-    Saves the dump information in the TCL variable *varName*.
+      Saves the dump information in the TCL variable *varName*.
 
 *treeName* **exists** *node* ?\ *key*\ ?
 
@@ -373,7 +372,7 @@ the command.  The operations available for trees are listed below.
 *treeName* **export** *format* ?\ *switches*\ ?
 
   Exports the tree contents into *format*. *Format* is the format of
-  the exported data.  See TREE FORMATS for what file formats
+  the exported data.  See `TREE FORMATS`_ for what file formats
   are available.
 
 *treeName* **find** *node* ?\ *switches*\ ? 
@@ -394,91 +393,91 @@ the command.  The operations available for trees are listed below.
 
   The valid switches are listed below:
 
-  **-addtag** *string* 
+    **-addtag** *string* 
 
-    Add the tag *string* to each selected node.  
+      Add the tag *string* to each selected node.  
 
-  **-count** *number*
- 
-    Stop processing after *number* (a positive integer) matches. 
+    **-count** *number*
 
-  **-depth** *number*
+      Stop processing after *number* (a positive integer) matches. 
 
-    Descend at most *number* (a non-negative integer) levels
-    If *number* is ``1`` this means only apply the tests
-    to the children of *node*.
+    **-depth** *number*
 
-  **-exact** *string*
- 
-    Matches each node using *string*.  The node must match *string*
-    exactly.
+      Descend at most *number* (a non-negative integer) levels
+      If *number* is ``1`` this means only apply the tests
+      to the children of *node*.
 
-  **-excludes** *nodeList*
+    **-exact** *string*
 
-   Excludes any node in the list *nodeList* from the search.  
-   The subnodes of an excluded node are still examined.
+      Matches each node using *string*.  The node must match *string*
+      exactly.
 
-  **-exec** *command*
+    **-excludes** *nodeList*
 
-    Invoke *command* for each matching node.  Before *command* is invoked, the
-    id of the node is appended.  You can control processing by the return
-    value of *command*.  If *command* generates an error, processing stops and
-    the **find** operation returns an error.  But if *command* returns
-    **break**, then processing stops, no error is generated.  If *command*
-    returns **continue**, then processing stops on that subtree and continues
-    on the next.
+     Excludes any node in the list *nodeList* from the search.  
+     The subnodes of an excluded node are still examined.
 
-  **-glob** *string*
+    **-exec** *command*
 
-    Test each node to *string* using global pattern matching.  Matching is
-    done in a fashion similar to that used by the C-shell.
+      Invoke *command* for each matching node.  Before *command* is invoked, the
+      id of the node is appended.  You can control processing by the return
+      value of *command*.  If *command* generates an error, processing stops and
+      the **find** operation returns an error.  But if *command* returns
+      **break**, then processing stops, no error is generated.  If *command*
+      returns **continue**, then processing stops on that subtree and continues
+      on the next.
 
-  **-invert**
+    **-glob** *string*
 
-   Select non-matching nodes.  Any node that *doesn't* match the given
-   criteria will be selected.
+      Test each node to *string* using global pattern matching.  Matching is
+      done in a fashion similar to that used by the C-shell.
 
-  **-key** *key*
+    **-invert**
 
-    Compare the values of the data field keyed by *key* instead of the node's
-    label. If no pattern is given (**-exact**, **-glob**, or **-regexp**
-    switches), then any node with this data key will match.
+     Select non-matching nodes.  Any node that *doesn't* match the given
+     criteria will be selected.
 
-  **-leafonly**
-  
-    Only test nodes with no children.
+    **-key** *key*
 
-  **-nocase**
-  
-    Ignore case when matching patterns.
+      Compare the values of the data field keyed by *key* instead of the node's
+      label. If no pattern is given (**-exact**, **-glob**, or **-regexp**
+      switches), then any node with this data key will match.
 
-  **-order** *string* 
+    **-leafonly**
 
-    Traverse the tree and process nodes according to *string*. *String* can be
-    one of the following:
+      Only test nodes with no children.
 
-    breadthfirst
-      Process the node and the subtrees at each sucessive level. Each node on a
-      level is processed before going to the next level.
-    inorder
-      Recursively process the nodes of the first subtree, the node itself,
-      and any the remaining subtrees.
-    postorder
-      Recursively process all subtrees before the node.
-    preorder
-      Recursively process the node first, then any subtrees.
+    **-nocase**
 
-  **-path**
+      Ignore case when matching patterns.
 
-    Use the node's full path when comparing nodes.
+    **-order** *string* 
 
-  **-regexp** *string*
+      Traverse the tree and process nodes according to *string*. *String* can be
+      one of the following:
 
-    Test each node using *string* as a regular expression pattern.
+      breadthfirst
+	Process the node and the subtrees at each sucessive level. Each node on a
+	level is processed before going to the next level.
+      inorder
+	Recursively process the nodes of the first subtree, the node itself,
+	and any the remaining subtrees.
+      postorder
+	Recursively process all subtrees before the node.
+      preorder
+	Recursively process the node first, then any subtrees.
 
-  **-tag** *string*
+    **-path**
 
-    Only test nodes that have the tag *string*.
+      Use the node's full path when comparing nodes.
+
+    **-regexp** *string*
+
+      Test each node using *string* as a regular expression pattern.
+
+    **-tag** *string*
+
+      Only test nodes that have the tag *string*.
 
 *treeName* **findchild** *node* *label*
 
@@ -507,7 +506,7 @@ the command.  The operations available for trees are listed below.
 *treeName* **import** *format* ?\ *switches*\ ?
 
   Imports the tree contents into *format*. *Format* is the format of
-  the exported data.  See TREE FORMATS for what file formats
+  the exported data.  See `TREE FORMATS`_ for what file formats
   are available.
 
 *treeName* **index** *node*
@@ -521,41 +520,41 @@ the command.  The operations available for trees are listed below.
   Inserts a new node into parent node *parent*.  The id of the new node is
   returned. The following switches are available:
 
-  **-after** *child* 
+    **-after** *child* 
 
-    Position *node* after *child*.  The node *child* must be a 
-    child of *parent*.
+      Position *node* after *child*.  The node *child* must be a 
+      child of *parent*.
 
-  **-at** *number* 
+    **-at** *number* 
 
-    Inserts the node into *parent*'s list of children at 
-    position *number*.  The default is to append *node*.
+      Inserts the node into *parent*'s list of children at 
+      position *number*.  The default is to append *node*.
 
-  **-before** *child* 
+    **-before** *child* 
 
-    Position *node* before *child*.  The node *child* must be a 
-    child of *parent*.
+      Position *node* before *child*.  The node *child* must be a 
+      child of *parent*.
 
-  **-data** *dataList*
+    **-data** *dataList*
 
-    Sets the value for each data field in *dataList* for the 
-    new node. *DataList* is a list of key-value pairs.
+      Sets the value for each data field in *dataList* for the 
+      new node. *DataList* is a list of key-value pairs.
 
-  **-label** *string* 
+    **-label** *string* 
 
-    Designates the labels of the node as *string*.  By default, nodes
-    are labeled as ``node0``, ``node1``, etc.
+      Designates the labels of the node as *string*.  By default, nodes
+      are labeled as ``node0``, ``node1``, etc.
 
-  **-node** *id* 
+    **-node** *id* 
 
-    Designates the id for the node.  Normally new ids are automatically
-    generated.  This allows you to create a node with a specific id.
-    It is an error if the id is already used by another node in the tree.
+      Designates the id for the node.  Normally new ids are automatically
+      generated.  This allows you to create a node with a specific id.
+      It is an error if the id is already used by another node in the tree.
 
-  **-tags** *tagList*
+    **-tags** *tagList*
 
-    Adds each tag in *tagList* to the new node. *TagList* is a list
-    of tags, so be careful if a tag has embedded spaces.
+      Adds each tag in *tagList* to the new node. *TagList* is a list
+      of tags, so be careful if a tag has embedded spaces.
 
 *treeName* **isancestor** *node1* *node2*
 
@@ -600,20 +599,20 @@ the command.  The operations available for trees are listed below.
   list children of *newParent*.  *Node* can not be an ancestor
   of *newParent*.  The valid flags for *switches* are described below.
 
-  **-after** *child* 
+    **-after** *child* 
 
-    Position *node* after *child*.  The node *child* must be a 
-    child of *newParent*.
+      Position *node* after *child*.  The node *child* must be a 
+      child of *newParent*.
 
-  **-at** *number* 
+    **-at** *number* 
 
-    Inserts *node* into *parent*'s list of children at 
-    position *number*. The default is to append the node.
+      Inserts *node* into *parent*'s list of children at 
+      position *number*. The default is to append the node.
 
-  **-before** *child* 
+    **-before** *child* 
 
-    Position *node* before *child*.  The node *child* must be a 
-    child of *newParent*.
+      Position *node* before *child*.  The node *child* must be a 
+      child of *newParent*.
 
 *treeName* **names** *node* ?\ *key*\ ?
 
@@ -678,19 +677,19 @@ the command.  The operations available for trees are listed below.
   already exist, they are automatically created.  The valid *switches* are
   listed below:
 
-  **-overwrite**
+    **-overwrite**
 
-    Overwrite nodes that already exist.  Normally nodes are always created,
-    even if there already exists a node by the same name.  This switch
-    indicates to add or overwrite the node's data fields.
+      Overwrite nodes that already exist.  Normally nodes are always created,
+      even if there already exists a node by the same name.  This switch
+      indicates to add or overwrite the node's data fields.
 
-  **-file** *fileName*
+    **-file** *fileName*
 
-    Read the dump information from the file *fileName*.
+      Read the dump information from the file *fileName*.
 
-  **-data** *string*
+    **-data** *string*
 
-    Reads the dump information from *string*.
+      Reads the dump information from *string*.
 
 *treeName* **root** ?\ *node*\ ?
 
@@ -717,56 +716,56 @@ the command.  The operations available for trees are listed below.
   Sorts the subtree starting at *node*.  The following switches are
   available:
 
-  **-ascii** 
+    **-ascii** 
 
-    Compare strings using ASCII collation order.
+      Compare strings using ASCII collation order.
 
-  **-command** *string*
+    **-command** *string*
 
-    Use command *string* as a comparison command.  To compare two elements,
-    evaluate a Tcl script consisting of command with the two elements appended
-    as additional arguments.  The script should return an integer less than,
-    equal to, or greater than zero if the first element is to be considered
-    less than, equal to, or greater than the second, respectively.
+      Use command *string* as a comparison command.  To compare two elements,
+      evaluate a Tcl script consisting of command with the two elements appended
+      as additional arguments.  The script should return an integer less than,
+      equal to, or greater than zero if the first element is to be considered
+      less than, equal to, or greater than the second, respectively.
 
-  **-decreasing**
+    **-decreasing**
 
-    Sort in decreasing order (largest items come first).
+      Sort in decreasing order (largest items come first).
 
-  **-dictionary**
+    **-dictionary**
 
-    Compare strings using a dictionary-style comparison.  This is the same as
-    **-ascii** except (a) case is ignored except as a tie-breaker and (b) if
-    two strings contain embedded numbers, the numbers compare as integers, not
-    characters.  For example, in **-dictionary** mode, bigBoy sorts between
-    bigbang and bigboy, and x10y sorts between x9y and x11y.
+      Compare strings using a dictionary-style comparison.  This is the same as
+      **-ascii** except (a) case is ignored except as a tie-breaker and (b) if
+      two strings contain embedded numbers, the numbers compare as integers, not
+      characters.  For example, in **-dictionary** mode, bigBoy sorts between
+      bigbang and bigboy, and x10y sorts between x9y and x11y.
 
-  **-integer**
+    **-integer**
 
-    Compare the nodes as integers.  
+      Compare the nodes as integers.  
 
-  **-key** *string*
+    **-key** *string*
 
-    Sort based upon the node's data field keyed by *string*. Normally
-    nodes are sorted according to their label. 
+      Sort based upon the node's data field keyed by *string*. Normally
+      nodes are sorted according to their label. 
 
-  **-path**
+    **-path**
 
-    Compare the full path of each node.  The default is to compare only its
-    label.
+      Compare the full path of each node.  The default is to compare only its
+      label.
 
-  **-real**
+    **-real**
 
-    Compare the nodes as real numbers.
+      Compare the nodes as real numbers.
 
-  **-recurse**
- 
-    Recursively sort the entire subtree rooted at *node*.
+    **-recurse**
 
-  **-reorder** 
+      Recursively sort the entire subtree rooted at *node*.
 
-    Recursively sort subtrees for each node.  **Warning**.  Unlike the normal
-    flat sort, where a list of nodes is returned, this will reorder the tree.
+    **-reorder** 
+
+      Recursively sort subtrees for each node.  **Warning**.  Unlike the normal
+      flat sort, where a list of nodes is returned, this will reorder the tree.
 
 *treeName* **tag** *args*
 
@@ -1010,6 +1009,8 @@ the command.  The operations available for events are listed below.
 
   Returns a list of identifers for all the current notifiers.
 
+.. _`TREE FORMATS`:
+
 TREE FORMATS
 ============
 
@@ -1022,10 +1023,10 @@ To use the JSON handler you must first require the package.
 
 Then the following **import** and **export** commands become available.
 
-  *treeName* **import json** ?\ *switches..*\ ?
+*treeName* **import json** ?\ *switches..*\ ?
 
-    Imports the JSON data into the tree. 
-    The following import switches are supported:
+  Imports the JSON data into the tree. 
+  The following import switches are supported:
 
     **-file** *fileName*
 
@@ -1040,10 +1041,10 @@ Then the following **import** and **export** commands become available.
       Load the JSON information into the tree starting at *node*.  The
       default is the root node of the tree.
 
-  *treeName* **export json** ?\ *switches..*\ ?
+*treeName* **export json** ?\ *switches..*\ ?
 
-    Exports the tree as JSON data. 
-    The following export switches are supported:
+  Exports the tree as JSON data. 
+  The following export switches are supported:
 
     **-file** *fileName*
 
@@ -1064,10 +1065,10 @@ To use the XML handler you must first require the package.
 
 Then the following **import** and **export** commands become available.
 
-  *treeName* **import xml** ?\ *switches..*\ ?
+*treeName* **import xml** ?\ *switches..*\ ?
 
-    Imports the XML data into the tree. 
-    The following import switches are supported:
+  Imports the XML data into the tree. 
+  The following import switches are supported:
 
     **-all** 
 
@@ -1129,10 +1130,10 @@ Then the following **import** and **export** commands become available.
 
       If true, trim white space from XML character data.  The default is ``0``.
 
-  *treeName* **export xml** ?\ *switches..*\ ?
+*treeName* **export xml** ?\ *switches..*\ ?
 
-    Exports the tree as XML data. 
-    The following export switches are supported:
+  Exports the tree as XML data. 
+  The following export switches are supported:
 
     **-file** *fileName*
 
