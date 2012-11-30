@@ -1,3 +1,4 @@
+
 namespace eval blt {
     namespace eval ComboMenu {
 	variable _private
@@ -5,7 +6,6 @@ namespace eval blt {
 	    afterId         -
 	    posted          ""
 	    trace           0
-	    cascades       ""
 	    ignoreRelease  0
 	}
 	proc trace { mesg } {
@@ -40,7 +40,7 @@ bind BltComboMenu <Leave> {
 
 bind BltComboMenu <Motion> { 
     #blt::ComboMenu::trace "blt::ComboMenu Motion %\# %X,%Y"
-    blt::ComboMenu::MotionEvent %X %Y
+    blt::ComboMenu::MotionEvent %W %X %Y
 }
 
 bind BltComboMenu <ButtonPress> { 
@@ -54,7 +54,7 @@ bind BltComboMenu <ButtonRelease> {
 }
 
 bind BltComboMenu <B1-Motion> { 
-    blt::ComboMenu::MotionEvent %X %Y
+    blt::ComboMenu::MotionEvent %W %X %Y
 }
 
 
@@ -257,28 +257,64 @@ proc ::blt::ComboMenu::Popup { menu x y } {
     }
 }
 
+proc ::blt::ComboMenu::FindCascades { menu } {
+    # Follow the cascade menus to the bottom
+    set m $menu
+    set list {}
+    while {1} {
+	set m [$m postcascade]
+	if { $m == "" } {
+	    break
+	}
+	set list [linsert $list 0 $m]
+    }
+    return $list
+}
+
+#
+# ButtonPressEvent --
+#
+#	Process a button press event on the given menu.  If the
+#	the button press did not occur over a menu (cascade or not),
+#	this means the user is canceling the posting of all menus.
+#	Otherwise ignore it (we select menu items on button release
+#	events).
+#
 proc ::blt::ComboMenu::ButtonPressEvent { menu x y } {
     variable _private
 
-    # Handle top most menu first.
-    set item [$menu index @$x,$y]
-    if { $item != -1 } {
-	return;				# Found it.
-    }
-    # Now examine each of the cascaded menus.
-    foreach m $_private(cascades) {
+    # Examine each of the cascaded menus.
+    foreach m [FindCascades $menu] {
 	set item [$m index @$x,$y]
 	if { $item != -1 } {
 	    return;			# Found it.
 	}
     }
+
+    # Next handle top most menu.
+    set item [$menu index @$x,$y]
+    if { $item != -1 } {
+	return;				# Found it.
+    }
+
     # The button press event did not occur inside of any menu.
     $menu unpost 
-    set _private(cascades) ""
     event generate $menu <<MenuSelect>>
     blt::grab pop $menu
 }
 
+#
+# ButtonReleaseEvent --
+#
+#	Process a button release event on the given menu.  Check if the
+#	the button release occurred over a cascade or the first menu.
+#	Cascade menus are stacked in reverse order of their posting.
+#	This is so that if menus overlap (a cascade menu is on top of
+#	a previous menu) we will find the topmost cascade. 
+#
+#	Once we find a menu, trim the cascade stack removing cascade
+#	menus that are no longer available. 
+#
 proc ::blt::ComboMenu::ButtonReleaseEvent { menu x y } {
     variable _private
 					
@@ -288,86 +324,66 @@ proc ::blt::ComboMenu::ButtonReleaseEvent { menu x y } {
     if { $bool } {
 	return
     }
-    # Handle top most menu first.
+
+    # Examine each of the cascaded menus first.
+    foreach m [FindCascades $menu] {
+	set item [$m index @$x,$y]
+	if { $item == -1 } {
+	    continue
+	}
+	if { [$m type $item] == "cascade" } {
+	    $m activate $item
+	    return
+	} 
+	$m unpost
+	# Pop the grab before invoking the menu item command.
+	event generate $menu <<MenuSelect>>
+	blt::grab pop $menu
+	$m invoke $item
+    }
+
+    # Next handle the first menu.
     set item [$menu index @$x,$y]
     if { $item != -1 } {
 	if { [$menu type $item] == "cascade" } {
 	    set cascade [$menu item cget $item -menu]
 	    if { $cascade != "" } {
 		$menu postcascade $item
-		set _private(cascades) $cascade
+		focus $cascade
 	    }
 	    return
 	} 
 	$menu unpost
-	set _private(cascades) ""
 	# Pop the grab before invoking the menu item command.
 	blt::grab pop $menu
 	event generate $menu <<MenuSelect>>
 	$menu invoke $item
 	return
     }
-    # Now examine each of the cascaded menus.
-    set stack {}
-    foreach m $_private(cascades) {
-	set item [$m index @$x,$y]
-	lappend stack $m
-	if { $item == -1 } {
-	    continue
-	}
-	if { [$m type $item] == "cascade" } {
-	    set cascade [$m item cget $item -menu]
-	    if { $cascade != "" } {
-		lappend stack $cascade
-	    }
-	    set _private(cascades) $stack
-	    $m activate $item
-	    return
-	} 
-	$m unpost
-	set _private(cascades) ""
-	# Pop the grab before invoking the menu item command.
-	event generate $menu <<MenuSelect>>
-	blt::grab pop $menu
-	$m invoke $item
-	return
-    }
+
 }
 
-proc ::blt::ComboMenu::MotionEvent { x y } {
+#
+# MotionEvent --
+#
+#	Process a motion event on the given menu.  Check if the
+#	the button release occurred over a cascade or the first menu.
+#	Cascade menus are stacked in reverse order of their posting.
+#	This is so that if menus overlap (a cascade menu is on top of
+#	a previous menu) we will find the topmost cascade. 
+#
+#	Once we find a menu, trim the cascade stack removing cascade
+#	menus that are no longer available. 
+#
+proc ::blt::ComboMenu::MotionEvent { menu x y } {
     variable _private
 
     # If there's any mouse motion, handle the button release event.
     set _private(ignoreRelease) 0
 
-    # Handle the topmost menu first.
-    set menu [blt::grab top]
-    if { $menu == "" } {
-	error "grab must be set on menu"
-    }
-    set item [$menu index @$x,$y]
-    if { $item != -1 } {
-	if { [$menu type $item] == "cascade" } {
-	    set cascade [$menu item cget $item -menu]
-	    if { $cascade != "" } {
-		$menu activate $item
-		$menu postcascade $item
-		set _private(cascades) $cascade
-		focus $cascade
-	    }
-	    return
-	} 
-	$menu activate $item
-	$menu postcascade none
-	set _private(cascades) ""
-	return
-    }
-
-    # Now examine each of the cascade menus. 
-    set stack {}
-    foreach m $_private(cascades) {
+    # First try to find the item in any the cascades.
+    foreach m [FindCascades $menu] {
 	set item [$m index @$x,$y]
-	lappend stack $m
 	if { $item == -1 } {
 	    continue
 	}
@@ -376,15 +392,29 @@ proc ::blt::ComboMenu::MotionEvent { x y } {
 	    if { $cascade != "" } {
 		$m activate $item
 		$m postcascade $item
-		lappend stack $cascade
 		focus $cascade
 	    }
-	    set _private(cascades) $stack
+	} else {
+	    $m postcascade none
+	    $m activate $item
+	}
+	return
+    }
+
+    # Next handle the first menu.
+    set item [$menu index @$x,$y]
+    if { $item != -1 } {
+	if { [$menu type $item] == "cascade" } {
+	    set cascade [$menu item cget $item -menu]
+	    if { $cascade != "" } {
+		$menu activate $item
+		$menu postcascade $item
+		focus $cascade
+	    }
 	    return
 	} 
-	$m postcascade none
-	$m activate $item
-	set _private(cascades) $stack
+	$menu activate $item
+	$menu postcascade none
 	return
     }
 
@@ -395,7 +425,6 @@ proc ::blt::ComboMenu::MotionEvent { x y } {
 	 [winfo class $parent] == "BltComboButton" &&
 	 [winfo class $w] == "BltComboButton" } {
 	# Release the current combobutton, including removing the grab.
-	set _private(cascades) ""
 	$menu unpost
 	# Reset the grab to the new button.
 	blt::grab set -global $w 
@@ -414,18 +443,13 @@ proc ::blt::ComboMenu::LastMenu {} {
     }
     set top [blt::grab top]
     if { $menu == $top } {
-	return;				# We're already on the topmost menu. 
+	return;				# We're already on the first menu. 
     }
-    set stack {}
-    set last $top
-    foreach m $_private(cascades) {
-	if { $m == $menu } {
-	    break
-	}
-	set last $m
-	lappend stack $m
+    set last [winfo parent $menu] 
+    if { $last == "" } {
+	# No more cascades; the last menu is the first menu.
+	return
     }
-    set _private(cascades) $stack
     if { [winfo class $last] != "BltComboMenu" } {
 	return
     }
@@ -446,7 +470,6 @@ proc ::blt::ComboMenu::NextMenu {} {
 	if { $cascade != "" } {
 	    $m postcascade $item
 	    focus $cascade
-	    lappend _private(cascades) $cascade 
 	}
     }
 }
@@ -489,7 +512,6 @@ proc ::blt::ComboMenu::SelectItem {} {
 	if { $cascade != "" } {
 	    $m postcascade $item
 	    focus $cascade
-	    lappend _private(cascades) $cascade 
 	}
 	return
     } 
@@ -498,7 +520,6 @@ proc ::blt::ComboMenu::SelectItem {} {
 	error "grab must be set on menu"
     }
     $m unpost
-    set _private(cascades) ""
     # Pop the grab before invoking the menu item command.
     blt::grab pop $m
     event generate $m <<MenuSelect>>

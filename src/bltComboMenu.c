@@ -5210,7 +5210,7 @@ PostOp(ComboMenu *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  * Side effects:  
  *	The item's submenu may be posted.
  *
- *  .cm postcascade item
+ *  .cm postcascade ?item?
  *
  *---------------------------------------------------------------------------
  */
@@ -5220,6 +5220,14 @@ PostCascadeOp(ComboMenu *comboPtr, Tcl_Interp *interp, int objc,
 {
     Item *itemPtr;
 
+    if (objc == 2) {
+	itemPtr = comboPtr->postedPtr;
+	if ((itemPtr != NULL) && (itemPtr->flags & ITEM_CASCADE) && 
+	    (itemPtr->menuObjPtr != NULL)) {
+	    Tcl_SetObjResult(interp, itemPtr->menuObjPtr);
+	}
+	return TCL_OK;
+    }
     if (GetItemFromObj(interp, comboPtr, objv[2], &itemPtr) != TCL_OK) {
 	return TCL_ERROR;
     }
@@ -5968,7 +5976,7 @@ static Blt_OpSpec menuOps[] =
     {"nearest",     3, NearestOp,     4, 4, "x y",},
     {"next",        3, NextOp,        3, 3, "item",},
     {"post",        4, PostOp,        5, 7, "align x y ?x2 y2?",},
-    {"postcascade", 5, PostCascadeOp, 3, 3, "item",},
+    {"postcascade", 5, PostCascadeOp, 2, 3, "?item?",},
     {"previous",    2, PreviousOp,    3, 3, "item",},
     {"scan",        2, ScanOp,        5, 5, "dragto|mark x y",},
     {"see",         3, SeeOp,         3, 5, "item",},
