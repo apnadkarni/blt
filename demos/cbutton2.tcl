@@ -227,6 +227,10 @@ bind BltComboEntry <3> {
     grab release [grab current]
 }
 
+bind BltComboButton <Enter> {
+    focus %W
+}
+
 blt::table . \
     0,0 .b -fill both 
 
