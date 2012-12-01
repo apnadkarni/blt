@@ -3447,8 +3447,6 @@ Blt_Picture_TextOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	    }
 	    Blt_BlendPictures(destPtr, tmpPtr, 0, 0, tmpPtr->width, 
 		      tmpPtr->height, x, y);
-	    fprintf(stderr, "tmp width=%d height=%d, w=%d h=%d\n",
-		    tmpPtr->width, tmpPtr->height, w, h);
 	    Blt_FreePicture(tmpPtr);
 	} else {
 	    int i;
