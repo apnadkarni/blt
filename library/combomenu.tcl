@@ -324,7 +324,6 @@ proc ::blt::ComboMenu::ButtonReleaseEvent { menu x y } {
     if { $bool } {
 	return
     }
-
     # Examine each of the cascaded menus first.
     foreach m [FindCascades $menu] {
 	set item [$m index @$x,$y]
