@@ -3353,6 +3353,7 @@ GradientOp(
 	return TCL_ERROR;
     }
     Blt_Jitter_Init(&jitter);
+    jitter.scale = 0.0;
     Blt_GradientPicture(imgPtr->picture, &switches.fg, &switches.bg, 
 			&switches.gradient, &jitter);
     if ((switches.bg.Alpha != 0xFF) || (switches.fg.Alpha != 0xFF)) {
