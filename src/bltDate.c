@@ -287,20 +287,26 @@ static Pattern datePatterns[] = {
     { 3, {T_MONTH, T_YEAR} },		/* mon yyyy (Jan 2012) */
     { 3, {T_YEAR, T_MONTH} },		/* yyyy mon (2012 Jan) */
     { 3, {T_YEAR, T_WEEK} },		/* yyyywww (2012W01)*/
+    { 3, {T_YDAY, T_COLON} },		/* ddd:hh:mm:ss */
     { 4, {T_MDAY, T_MONTH, T_YEAR} },	/* dd mon yyyy (31 Jan 2012) */
     { 4, {T_MONTH, T_MDAY, T_YEAR} },	/* mon dd yyyy (Jan 31 2012) */
     { 4, {T_MONTH, T_SLASH, T_MDAY} },	/* mon/dd (12/23) */
     { 4, {T_YEAR, T_DASH, T_WEEK} },	/* yyyy-www (2012-W01) */
     { 4, {T_YEAR, T_DASH, T_YDAY} },	/* yyyy-ddd (2012-100) */
+    { 4, {T_YEAR, T_DASH, T_MONTH} },	/* yyyy-mm (12/23) */
     { 4, {T_YEAR, T_MONTH, T_MDAY} },	/* yyyymmdd (20120131) */
     { 4, {T_YEAR, T_WEEK, T_WDAY} },	/* yyyywwwd (2012W017) */
+    { 4, {T_PLUS, T_YDAY, T_COLON} },	/* +ddd:hh:mm:ss */
+    { 5, {T_MDAY, T_DOT, T_MONTH, T_YEAR} },  /* (18. Feb 1921) */
     { 5, {T_MONTH, T_MDAY, T_COMMA, T_YEAR} },  /* (Jan 31, 2012) */
+    { 5, {T_COMMA, T_MDAY, T_MONTH, T_YEAR } }, /* (Thu, 01 Jan 04) */
     { 6, {T_MDAY, T_DOT, T_MONTH, T_DOT, T_YEAR} },  /* (31.Jan.2012) */
     { 6, {T_MDAY, T_DASH, T_MONTH, T_DASH, T_YEAR} }, /* (31-Jan-2012) */
     { 6, {T_MONTH, T_DOT, T_MDAY, T_DOT, T_YEAR} },  /* (Jan.31.2012) */
     { 6, {T_MONTH, T_DASH, T_MDAY, T_DASH, T_YEAR} }, /* (Jan-31-2012) */
     { 6, {T_MONTH, T_SLASH, T_MDAY, T_SLASH, T_YEAR} }, /* (Jan/31/2012) */
     { 6, {T_MDAY, T_SLASH, T_MONTH, T_SLASH, T_YEAR} }, /* (31/Jan/2012) */
+    { 6, {T_YEAR, T_SLASH, T_MONTH, T_SLASH, T_MDAY} }, /* (2012/Jan/31) */
     { 6, {T_YEAR, T_DOT, T_MONTH, T_DOT, T_MDAY} },  /* (2012.Jan.31) */
     { 6, {T_YEAR, T_DASH, T_MONTH, T_DASH, T_MDAY} }, /* (2012-Jan-31) */
     { 6, {T_YEAR, T_DASH, T_WEEK, T_DASH, T_WDAY} }, /* (2012-W50-7) */
@@ -409,9 +415,9 @@ DeleteToken(Token *tokenPtr)
 }
 
 static TokenNumber
-ParseNumber(DateParser *datePtr, char *string)
+ParseNumber(DateParser *datePtr, const char *string)
 {
-    char *p;
+    const char *p;
     long lvalue;
     int length, result;
     Token *tokenPtr;
@@ -438,7 +444,7 @@ ParseNumber(DateParser *datePtr, char *string)
 }
 
 static TokenNumber
-ParseString(DateParser *datePtr, int length, char *string)
+ParseString(DateParser *datePtr, int length, const char *string)
 {
     char c;
     int i;
@@ -481,7 +487,7 @@ ParseString(DateParser *datePtr, int length, char *string)
 
 	p = tzTable + i;
 	/* Test of timezomes. No abbreviations. */
-	if ((c == p->name[0]) && (strcmp(p->name, string) == 0)) {
+	if ((c == p->name[0]) && (strncmp(p->name, string, length) == 0)) {
 	    tokenPtr->lvalue = p->value;
 	    tokenPtr->ident = p->name;
 	    tokenPtr->length = 0;
@@ -505,7 +511,7 @@ ParseString(DateParser *datePtr, int length, char *string)
 	}
     }
     /* Military timezone. Single letter a-z. */
-    if (string[1] == '\0') {
+    if (length == 1) {
 	int i;
 
 	/* Test of military timezones. Only one character wide. */
@@ -521,7 +527,7 @@ ParseString(DateParser *datePtr, int length, char *string)
 	    }
 	}
     }
-    ParseError(datePtr, "unknown token \"%*s\"", length, string);
+    ParseError(datePtr, "unknown token \"%.*s\"", length, string);
     return T_UNKNOWN;
 }
 
@@ -820,6 +826,7 @@ ExtractTimezone(DateParser *datePtr)
 	    m = HRS2MINS(tokenPtr->lvalue);
 	    goto found;
 
+	break;
 	default:
 	    break;
 	}
@@ -1036,7 +1043,8 @@ FixTokens(DateParser *datePtr)
  *
  *		time + ampm + timezone
  *
- *	where ampm and timezone are optional.
+ *	where ampm and timezone are optional.  It's easier to extract
+ *	the meridian and timezone once we already found a time.
  *
  *	The following time patterns are accepted:
  *
@@ -1070,6 +1078,21 @@ ExtractTime(DateParser *datePtr)
 	Token *colonPtr;
 
 	hourPtr = firstPtr = tokenPtr;
+	if ((GetId(tokenPtr) == T_NUMBER) && (tokenPtr->length == 6)) {
+	    long value;
+
+	    /* Assuming that any 6-digit number is a time. */
+	    /* ISO time format hhmmss */
+	    value = tokenPtr->lvalue;
+	    datePtr->sec = value % 100;
+	    value /= 100;
+	    datePtr->min = value % 100;
+	    value /= 100;
+	    datePtr->hour = value % 100;
+	    firstPtr = tokenPtr;
+	    tokenPtr = NextToken(tokenPtr);
+	    goto done;
+	}
 	if ((GetId(hourPtr) != T_NUMBER) || (hourPtr->length > 2)) {
 	    continue;
 	}
@@ -1090,7 +1113,7 @@ ExtractTime(DateParser *datePtr)
 	    if ((GetId(tokenPtr) == T_NUMBER) && 
 		((tokenPtr->length == 6) || (tokenPtr->length == 14))) {
 		long value;
-		/* Iso time format hhhmmss */
+		/* Iso time format hhmmss */
 		value = tokenPtr->lvalue;
 		
 		datePtr->sec = value % 100;
@@ -1176,20 +1199,38 @@ ExtractTime(DateParser *datePtr)
  *
  * ExtractDate --
  *
- *	Find and extract the time related tokens in the list.  
- *	The time format is
+ *	Find and extract the date related tokens in the list.  
+ *	The possible date formats are
  *
- *		time + ampm + timezone
- *
- *	where ampm and timezone are optional.
- *
- *	The following time patterns are accepted:
- *
- *	hh:mm						10:21
- *	hh:mm:ss					10:21:00
- *	hh:mm:ss:fff	fff is milliseconds.		10:21:00:001
- *	hh:mm:ss.f+	f+ is fraction of seconds.	10:21:00.001
- *	hhmmss		ISO time format			102100
+ *	yyyyddd			(2012100) 
+ *	yyyymmdd		(20120131)
+ *	yyyy			(2012) 
+ *	mon yyyy		(Jan 2012) 
+ *	yyyy mon		(2012 Jan) 
+ *	yyyyWww			(2012W01)
+ *	ddd:hh:mm:ss		000:00:00:00
+ *	dd mon yyyy		(31 Jan 2012) 
+ *	mon dd yyyy		(Jan 31 2012) 
+ *	mon/dd			(12/23) 
+ *	yyyy-Www		(2012-W01) 
+ *	yyyy-ddd		(2012-100) 
+ *	yyyy-mm			(1957-Dec) 
+ *	yyyymmdd		(20120131) 
+ *	yyyyWwwd		(2012W017) 
+ *	+ddd:hh:mm:ss		+000:00:00:00
+ *	dd.mm yyyy		(18. Feb 1921) 
+ *	mm, dd, yyyy		(Jan 31, 2012) 
+ *	wday, dd, mon, yy	(Thu, 01 Jan 04) 
+ *	dd.mm.yyy		(31.Jan.2012) 
+ *	dd-mm-yyyy		(31-Jan-2012) 
+ *	mm.dd.yyyy		(Jan.31.2012) 
+ *	mm-dd-yyyy		(Jan-31-2012) 
+ *	mm/dd/yyyy		(Jan/31/2012) 
+ *	dd/mm/yyyy		(31/Jan/2012) 
+ *	yyyy/mm/dd		(2012/Jan/31) 
+ *	yyyy/mm/dd		(2012.Jan.31) 
+ *	yyyy-mm-dd		(2012-Jan-31) 
+ *	yyyy-Www-d		(2012-W50-7) 
  *
  * Results:
  *	None.

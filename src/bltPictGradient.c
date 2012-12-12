@@ -103,11 +103,13 @@ Blt_GradientPicture(
 		    t += Jitter(jitterPtr);
 		    t = JCLAMP(t);
 		}
+#ifdef notdef
 		if (gradientPtr->scale == BLT_GRADIENT_SCALE_LOG) {
 		    t = log10(9.0 * t + 1.0);
 		} else if (gradientPtr->scale == BLT_GRADIENT_SCALE_ATAN) {
 		    t = atan(18.0 * (t-0.05) + 1.0) / M_PI_2;
 		}
+#endif
 		dp->Red   = (unsigned char)(minPtr->Red   + t * rRange);
 		dp->Green = (unsigned char)(minPtr->Green + t * gRange);
 		dp->Blue  = (unsigned char)(minPtr->Blue  + t * bRange);

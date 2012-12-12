@@ -82,21 +82,34 @@ typedef struct {
     Tcl_Obj *formatObjPtr;
     int from, to;
     int empty;
-} PrintSwitches;
+} ValuesSwitches;
 
-static Blt_SwitchSpec printSwitches[] = 
+static Blt_SwitchSpec valuesSwitches[] = 
 {
     {BLT_SWITCH_OBJ,    "-format", "string", (char *)NULL,
-	Blt_Offset(PrintSwitches, formatObjPtr), 0},
+	Blt_Offset(ValuesSwitches, formatObjPtr), 0},
     {BLT_SWITCH_CUSTOM, "-from",   "index", (char *)NULL,
-	Blt_Offset(PrintSwitches, from),         0, 0, &indexSwitch},
+	Blt_Offset(ValuesSwitches, from),         0, 0, &indexSwitch},
     {BLT_SWITCH_CUSTOM, "-to",     "index", (char *)NULL,
-	Blt_Offset(PrintSwitches, to),           0, 0, &indexSwitch},
+	Blt_Offset(ValuesSwitches, to),           0, 0, &indexSwitch},
     {BLT_SWITCH_BOOLEAN, "-empty", "bool", (char *)NULL,
-	Blt_Offset(PrintSwitches, empty),           0, 0},
+	Blt_Offset(ValuesSwitches, empty),           0, 0},
     {BLT_SWITCH_END}
 };
 
+
+typedef struct {
+    int from, to;
+} FormatSwitches;
+
+static Blt_SwitchSpec formatSwitches[] = 
+{
+    {BLT_SWITCH_CUSTOM, "-from",   "index", (char *)NULL,
+	Blt_Offset(FormatSwitches, from),         0, 0, &indexSwitch},
+    {BLT_SWITCH_CUSTOM, "-to",     "index", (char *)NULL,
+	Blt_Offset(FormatSwitches, to),           0, 0, &indexSwitch},
+    {BLT_SWITCH_END}
+};
 
 typedef struct {
     int flags;
@@ -1165,7 +1178,6 @@ ValueOp(Vector *vPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     return (*proc) (vPtr, interp, objc, objv);
 }
 
-
 /*
  *---------------------------------------------------------------------------
  *
@@ -1182,7 +1194,7 @@ ValueOp(Vector *vPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 static int
 ValuesOp(Vector *vPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 {
-    PrintSwitches switches;
+    ValuesSwitches switches;
     Tcl_Obj *listObjPtr;
 
     switches.formatObjPtr = NULL;
@@ -1190,7 +1202,7 @@ ValuesOp(Vector *vPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     switches.to = vPtr->length - 1;
     switches.empty = TRUE;
     indexSwitch.clientData = vPtr;
-    if (Blt_ParseSwitches(interp, printSwitches, objc - 2, objv + 2, &switches, 
+    if (Blt_ParseSwitches(interp, valuesSwitches, objc - 2, objv + 2, &switches,
 	BLT_SWITCH_DEFAULTS) < 0) {
 	return TCL_ERROR;
     }
@@ -1235,6 +1247,133 @@ ValuesOp(Vector *vPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	}
     }
     Tcl_SetObjResult(interp, listObjPtr);
+    Blt_FreeSwitches(valuesSwitches, &switches, 0);
+    return TCL_OK;
+}
+
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * ParseFormat --
+ *
+ *	Parses a printf-like format string into individual components.
+ *
+ * Results:
+ *	A standard TCL result.  
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+ParseFormat(const char *format, int *numFmtsPtr, char ***fmtPtr)
+{
+    const char *p;
+    char *q;
+    char *string;
+    char **fmt;
+    size_t addrLength, length;
+    int count, first;
+
+    /* Step 1:  Find out how may descriptors exist. */
+    count = 0;
+    for (p = format; *p != '\0'; p++) {
+	if (p[0] == '%') {
+	    if (p[1] == '%') {
+		p+= 2;
+		continue;
+	    }
+	    count++;
+	}
+    }
+    /* Step 2: Create a format array to hold the individual descriptors. */
+    length = count + (p - format) + 1;
+    addrLength = (count + 1) * sizeof(char **);
+    *numFmtsPtr = count;
+    fmt = Blt_AssertMalloc(addrLength + length);
+    string = (char *)fmt + addrLength;
+
+    /* Step 3:  Load the format array with individual descriptors. */
+    count = 1;
+    fmt[0] = string;
+    first = 0;
+    for (q = string, p = format; *p != '\0'; p++) {
+	if (p[0] == '%') {
+	    if (p[1] == '%') {
+		q[0] = q[1] = '%';
+		q += 2;
+		p += 2;
+		continue;
+	    }
+	    if (first > 0) {
+		*q = '\0';
+		q++;
+		fmt[count++] = q;
+	    }
+	    first++;
+	    *q = '%';
+	    q++;
+	    continue;
+	}
+	*q = *p;
+	q++;
+    }
+    *q = '\0';
+    fmt[count] = NULL;
+    *fmtPtr = fmt;
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * FormatOp --
+ *
+ *	Print the values vector according to the given format.
+ *
+ * Results:
+ *	A standard TCL result.  
+ *
+ *	$v print $format ?switches?
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+FormatOp(Vector *vPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+{
+    FormatSwitches switches;
+    Tcl_Obj *objPtr;
+    char **argv;
+    int argc;
+    char *fmt;
+    int i;
+
+    switches.from = 0;
+    switches.to = vPtr->length - 1;
+    indexSwitch.clientData = vPtr;
+
+    fmt = Tcl_GetString(objv[2]);
+    ParseFormat(fmt, &argc, &argv);
+    if (Blt_ParseSwitches(interp, formatSwitches, objc - 3, objv + 3, &switches,
+	BLT_SWITCH_DEFAULTS) < 0) {
+	return TCL_ERROR;
+    }
+    objPtr = Tcl_NewStringObj("", 0);
+    for (i = switches.from; i <= switches.to; i++) {
+	if (FINITE(vPtr->valueArr[i])) {
+	    char string[200];
+	    int n;
+
+	    n = (i % argc);
+	    fmt = argv[n];
+	    sprintf(string, fmt, vPtr->valueArr[i]);
+	    Tcl_AppendToObj(objPtr, string, -1);
+	}
+    }
+    Blt_Free(argv);
+    Tcl_SetObjResult(interp, objPtr);
+    Blt_FreeSwitches(formatSwitches, &switches, 0);
     return TCL_OK;
 }
 
@@ -2546,7 +2685,8 @@ static Blt_OpSpec vectorInstOps[] =
     {"delete",    2, DeleteOp,    2, 0, "index ?index...?",},
     {"duplicate", 2, DupOp,       2, 3, "?vecName?",},
     {"expr",      1, InstExprOp,  3, 3, "expression",},
-    {"fft",	  1, FFTOp,	  3, 0, "vecName ?switches?",},
+    {"fft",	  2, FFTOp,	  3, 0, "vecName ?switches?",},
+    {"format",    2, FormatOp,    3, 0, "format ?switches?",},
     {"indices",   3, IndicesOp,   3, 3, "what",},
     {"inversefft",3, InverseFFTOp,4, 4, "vecName vecName",},
     {"length",    1, LengthOp,    2, 3, "?newSize?",},
@@ -2556,7 +2696,7 @@ static Blt_OpSpec vectorInstOps[] =
     {"normalize", 3, NormalizeOp, 2, 3, "?vecName?",},	/*Deprecated*/
     {"notify",    3, NotifyOp,    3, 3, "keyword",},
     {"offset",    1, OffsetOp,    2, 3, "?offset?",},
-    {"populate",  1, PopulateOp,  4, 4, "vecName density",},
+    {"populate",  2, PopulateOp,  4, 4, "vecName density",},
     {"random",    4, RandomOp,    2, 3, "?seed?",},	/*Deprecated*/
     {"range",     4, RangeOp,     2, 4, "first last",},
     {"search",    3, SearchOp,    3, 5, "?-value? value ?value?",},

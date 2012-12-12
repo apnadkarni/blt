@@ -3347,7 +3347,7 @@ GradientOp(
     switches.fg.u32 = 0xFFFFFFFF;
     switches.bg.u32 = 0xFF000000;
     switches.gradient.type = BLT_GRADIENT_TYPE_VERTICAL;
-    switches.gradient.scale = BLT_GRADIENT_SCALE_LOG; 
+    switches.gradient.scale = BLT_GRADIENT_SCALE_LINEAR; 
     if (Blt_ParseSwitches(interp, gradientSwitches, objc - 2, objv + 2, 
 	&switches, BLT_SWITCH_DEFAULTS) < 0) {
 	return TCL_ERROR;
@@ -4208,7 +4208,7 @@ ReflectOp(
     destPtr = NULL;			/* Suppress compiler warning. */
     switch (switches.fade.side) {
     case SIDE_BOTTOM:
-	h = srcPtr->height / 3;
+	h = srcPtr->height / 2;
 	dh = srcPtr->height + h;
 	destPtr = Blt_CreatePicture(w, h);
 	Blt_CopyPictureBits(destPtr, srcPtr, 0, srcPtr->height - h, 
@@ -4216,7 +4216,7 @@ ReflectOp(
 	break;
 
     case SIDE_TOP:
-	h = srcPtr->height / 3;
+	h = srcPtr->height / 2;
 	dh = srcPtr->height + h;
 	destPtr = Blt_CreatePicture(w, h);
 	Blt_CopyPictureBits(destPtr, srcPtr, 0, 0, srcPtr->width, h, 0, 0);
