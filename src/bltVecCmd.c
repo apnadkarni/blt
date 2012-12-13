@@ -46,7 +46,8 @@
  */
 
 #include "bltVecInt.h"
-
+#undef SIGN
+#include "tclTomMath.h"
 #ifdef HAVE_STDLIB_H
 #  include <stdlib.h>
 #endif /* HAVE_STDLIB_H */
@@ -1251,6 +1252,705 @@ ValuesOp(Vector *vPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     return TCL_OK;
 }
 
+
+/*
+ *----------------------------------------------------------------------
+ *
+ * Tcl_AppendFormatToObj --
+ *
+ *	This function appends a list of Tcl_Obj's to a Tcl_Obj according to
+ *	the formatting instructions embedded in the format string. The
+ *	formatting instructions are inspired by sprintf(). Returns TCL_OK when
+ *	successful. If there's an error in the arguments, TCL_ERROR is
+ *	returned, and an error message is written to the interp, if non-NULL.
+ *
+ * Results:
+ *	A standard Tcl result.
+ *
+ * Side effects:
+ *	None.
+ *
+ *----------------------------------------------------------------------
+ */
+#define FMT_XPG		(1<<0)
+#define FMT_NEWXPG	(1<<1)
+#define FMT_SEQUENTIAL	(1<<2)
+#define FMT_MINUS	(1<<3)
+#define FMT_HASH	(1<<4)
+#define FMT_ZERO	(1<<5)
+#define FMT_SPACE	(1<<6)
+#define FMT_PLUS	(1<<7)
+#define FMT_SAWFLAG	(1<<8)
+#define FMT_PRECISION	(1<<8)
+#define FMT_WIDTH	(1<<10)
+#define FMT_USESHORT	(1<<11)
+#define FMT_USEBIG	(1<<12)
+#define FMT_USEWIDE	(1<<13)
+#define FMT_ALLOCSEGMENT (1<<14)
+#define FMT_ISNEGATIVE	(1<<15)
+#define FMT_DONE	(1<<16)
+
+static int
+AppendFormatToObj(Tcl_Interp *interp, Tcl_Obj *appendObjPtr, const char *format,
+		  int offset, Vector *vPtr, int objc, Tcl_Obj **objv)
+{
+    const char *span = format, *msg;
+    int parserFlags = 0;
+    int numBytes = 0, objIndex = 0;
+    int originalLength, limit;
+    static const char *mixedXPG =
+	    "cannot mix \"%\" and \"%n$\" conversion specifiers";
+    static const char *badIndex[2] = {
+	"not enough arguments for all format specifiers",
+	"\"%n$\" argument index out of range"
+    };
+    static const char *overflow = "max size for a Tcl value exceeded";
+
+    if (Tcl_IsShared(appendObjPtr)) {
+	Tcl_Panic("%s called with shared object", "Tcl_AppendFormatToObj");
+    }
+    Tcl_GetStringFromObj(appendObjPtr, &originalLength);
+    limit = INT_MAX - originalLength;
+
+    /*
+     * Format string is NUL-terminated.
+     */
+    span = format;
+    while (*format != '\0') {
+	char *end;
+	int width, precision;
+	int numChars, segmentLimit, segmentNumBytes;
+	Tcl_Obj *segment;
+	Tcl_UniChar ch;
+	int step;
+
+	step = Tcl_UtfToUniChar(format, &ch);
+	format += step;
+	if (ch != '%') {
+	    numBytes += step;
+	    continue;
+	}
+	if (numBytes > 0) {
+	    if (numBytes > limit) {
+		msg = overflow;
+		goto errorMsg;
+	    }
+	    Tcl_AppendToObj(appendObjPtr, span, numBytes);
+	    limit -= numBytes;
+	    numBytes = 0;
+	}
+
+	/*
+	 * Saw a '%'. Process the format specifier.
+	 *
+	 * Step 0. Handle special case of escaped format marker (i.e., %%).
+	 */
+	step = Tcl_UtfToUniChar(format, &ch);
+	if (ch == '%') {
+	    span = format;
+	    numBytes = step;
+	    format += step;
+	    continue;			/* This is an escaped percent. */
+	}
+
+	/*
+	 * Step 1. XPG3 position specifier
+	 */
+	parserFlags &= ~FMT_NEWXPG;
+	if (isdigit(UCHAR(ch))) {
+	    int position;
+	    char *end;
+
+	    position = strtoul(format, &end, 10);
+	    if (*end == '$') {
+		parserFlags |= FMT_NEWXPG;
+		objIndex = position - 1;
+		format = end + 1;
+		step = Tcl_UtfToUniChar(format, &ch);
+	    }
+	}
+	if (parserFlags & FMT_NEWXPG) {
+	    if (parserFlags & FMT_SEQUENTIAL) {
+		msg = mixedXPG;
+		goto errorMsg;
+	    }
+	    parserFlags |= FMT_XPG;
+	} else {
+	    if (parserFlags & FMT_XPG) {
+		msg = mixedXPG;
+		goto errorMsg;
+	    }
+	    parserFlags |= FMT_SEQUENTIAL;
+	}
+	if ((objIndex < 0) || (objIndex >= objc)) {
+	    /* Index is outside of available vector elements. */
+	    msg = badIndex[parserFlags & FMT_XPG];
+	    goto errorMsg;		
+	}
+
+	/*
+	 * Step 2. Set of parserFlags.
+	 */
+	parserFlags &= ~(FMT_MINUS|FMT_HASH|FMT_ZERO|FMT_SPACE|FMT_PLUS|FMT_DONE);
+	do {
+	    switch (ch) {
+	    case '-': parserFlags |= FMT_MINUS;	break;
+	    case '#': parserFlags |= FMT_HASH;	break;
+	    case '0': parserFlags |= FMT_ZERO;	break;
+	    case ' ': parserFlags |= FMT_SPACE;	break;
+	    case '+': parserFlags |= FMT_PLUS;	break;
+	    default:
+		parserFlags |= FMT_DONE;
+	    }
+	    if (!(parserFlags & FMT_DONE)) {
+		format += step;
+		step = Tcl_UtfToUniChar(format, &ch);
+	    }
+	} while (!(parserFlags & FMT_DONE));
+
+	/*
+	 * Step 3. Minimum field width.
+	 */
+	width = 0;
+	if (isdigit(UCHAR(ch))) {
+	    parserFlags |= FMT_WIDTH;
+	    width = strtoul(format, &end, 10);
+	    format = end;
+	    step = Tcl_UtfToUniChar(format, &ch);
+	} else if (ch == '*') {
+	    parserFlags |= FMT_WIDTH;
+	    if (objIndex >= objc - 1) {
+		msg = badIndex[parserFlags & FMT_XPG];
+		goto errorMsg;
+	    }
+	    /* Use the next vector element as the field width. */
+	    if (Tcl_GetIntFromObj(interp, objv[objIndex], &width) != TCL_OK) {
+		goto error;
+	    }
+	    if (width < 0) {
+		width = -width;
+		parserFlags |= FMT_MINUS;
+	    }
+	    objIndex++;
+	    format += step;
+	    step = Tcl_UtfToUniChar(format, &ch);
+	}
+	if (width > limit) {
+	    msg = overflow;
+	    goto errorMsg;
+	}
+
+	/*
+	 * Step 4. Precision.
+	 */
+
+	parserFlags &= ~(FMT_PRECISION);
+	precision = 0;
+	if (ch == '.') {
+	    parserFlags |= FMT_PRECISION;
+	    format += step;
+	    step = Tcl_UtfToUniChar(format, &ch);
+	}
+	if (isdigit(UCHAR(ch))) {
+	    precision = strtoul(format, &end, 10);
+	    format = end;
+	    step = Tcl_UtfToUniChar(format, &ch);
+	} else if (ch == '*') {
+	    if (objIndex >= objc - 1) {
+		msg = badIndex[parserFlags & FMT_XPG];
+		goto errorMsg;
+	    }
+	    if (Tcl_GetIntFromObj(interp, objv[objIndex], &precision)
+		    != TCL_OK) {
+		goto error;
+	    }
+	    /*
+	     * TODO: Check this truncation logic.
+	     */
+	    if (precision < 0) {
+		precision = 0;
+	    }
+	    objIndex++;
+	    format += step;
+	    step = Tcl_UtfToUniChar(format, &ch);
+	}
+
+	/*
+	 * Step 5. Length modifier.
+	 */
+	if (ch == 'h') {
+	    parserFlags |= FMT_USESHORT;
+	    format += step;
+	    step = Tcl_UtfToUniChar(format, &ch);
+	} else if (ch == 'l') {
+	    format += step;
+	    step = Tcl_UtfToUniChar(format, &ch);
+	    if (ch == 'l') {
+		parserFlags |= FMT_USEBIG;
+		format += step;
+		step = Tcl_UtfToUniChar(format, &ch);
+	    } else {
+#ifndef TCL_WIDE_INT_IS_LONG
+		parserFlags |= FMT_USEWIDE;
+#endif
+	    }
+	}
+	format += step;
+	span = format;
+
+	/*
+	 * Step 6. The actual conversion character.
+	 */
+
+	segment = objv[objIndex];
+	numChars = -1;
+	if (ch == 'i') {
+	    ch = 'd';
+	}
+	switch (ch) {
+	case '\0':
+	    msg = "format string ended in middle of field specifier";
+	    goto errorMsg;
+	case 's':
+	case 'c': 
+	    msg = "can't use %s or %c as field specifier";
+	    goto errorMsg;
+
+	case 'u':
+	    if (parserFlags & FMT_USEBIG) {
+		msg = "unsigned bignum format is invalid";
+		goto errorMsg;
+	    }
+	case 'd':
+	case 'o':
+	case 'x':
+	case 'X': {
+	    short int s = 0;	/* Silence compiler warning; only defined and
+				 * used when FMT_USESHORT is true. */
+	    long l;
+	    Tcl_WideInt w;
+	    mp_int big;
+	    int toAppend;
+
+	    parserFlags &= ~FMT_ISNEGATIVE;
+	    if (parserFlags & FMT_USEBIG) {
+		if (Tcl_GetBignumFromObj(interp, segment, &big) != TCL_OK) {
+		    goto error;
+		}
+		if (mp_cmp_d(&big, 0) == MP_LT) {
+		    parserFlags |= FMT_ISNEGATIVE;
+		}
+	    } else if (FMT_USEWIDE) {
+		if (Tcl_GetWideIntFromObj(NULL, segment, &w) != TCL_OK) {
+		    Tcl_Obj *objPtr;
+
+		    if (Tcl_GetBignumFromObj(interp,segment,&big) != TCL_OK) {
+			goto error;
+		    }
+		    mp_mod_2d(&big, (int) CHAR_BIT*sizeof(Tcl_WideInt), &big);
+		    objPtr = Tcl_NewBignumObj(&big);
+		    Tcl_IncrRefCount(objPtr);
+		    Tcl_GetWideIntFromObj(NULL, objPtr, &w);
+		    Tcl_DecrRefCount(objPtr);
+		}
+		if (w < (Tcl_WideInt)0) {
+		    parserFlags |= FMT_ISNEGATIVE;
+		}
+	    } else if (Tcl_GetLongFromObj(NULL, segment, &l) != TCL_OK) {
+		if (Tcl_GetWideIntFromObj(NULL, segment, &w) != TCL_OK) {
+		    Tcl_Obj *objPtr;
+
+		    if (Tcl_GetBignumFromObj(interp,segment,&big) != TCL_OK) {
+			goto error;
+		    }
+		    mp_mod_2d(&big, (int) CHAR_BIT * sizeof(long), &big);
+		    objPtr = Tcl_NewBignumObj(&big);
+		    Tcl_IncrRefCount(objPtr);
+		    Tcl_GetLongFromObj(NULL, objPtr, &l);
+		    Tcl_DecrRefCount(objPtr);
+		} else {
+		    l = Tcl_WideAsLong(w);
+		}
+		if (parserFlags & FMT_USESHORT) {
+		    s = (short int) l;
+		    if (s < (short int)0) {
+			parserFlags |= FMT_ISNEGATIVE;
+		    }
+		} else {
+		    if (l < (long)0) {
+			parserFlags |= FMT_ISNEGATIVE;
+		    }
+		}
+	    } else if (parserFlags & FMT_USESHORT) {
+		s = (short int) l;
+		if (s < (short int)0) {
+		    parserFlags |= FMT_ISNEGATIVE;
+		}
+	    } else {
+		if (l < (long)0) {
+		    parserFlags |= FMT_ISNEGATIVE;
+		}
+	    }
+	    segment = Tcl_NewObj();
+	    parserFlags |= FMT_ALLOCSEGMENT;
+	    segmentLimit = INT_MAX;
+	    Tcl_IncrRefCount(segment);
+
+	    if ((parserFlags & (FMT_ISNEGATIVE | FMT_PLUS | FMT_SPACE)) && 
+		((parserFlags & FMT_USEBIG) || (ch == 'd'))) {
+		Tcl_AppendToObj(segment, 
+				((parserFlags & FMT_ISNEGATIVE) ? "-" : 
+				 (parserFlags & FMT_PLUS) ? "+" : " "), 1);
+		segmentLimit -= 1;
+	    }
+
+	    if (parserFlags & FMT_HASH) {
+		switch (ch) {
+		case 'o':
+		    Tcl_AppendToObj(segment, "0", 1);
+		    segmentLimit -= 1;
+		    precision--;
+		    break;
+		case 'x':
+		case 'X':
+		    Tcl_AppendToObj(segment, "0x", 2);
+		    segmentLimit -= 2;
+		    break;
+		}
+	    }
+
+	    switch (ch) {
+	    case 'd': {
+		int length;
+		Tcl_Obj *pure;
+		const char *bytes;
+
+		if (parserFlags & FMT_USESHORT) {
+		    pure = Tcl_NewIntObj((int)(s));
+		} else if (parserFlags & FMT_USEWIDE) {
+		    pure = Tcl_NewWideIntObj(w);
+		} else if (parserFlags & FMT_USEBIG) {
+		    pure = Tcl_NewBignumObj(&big);
+		} else {
+		    pure = Tcl_NewLongObj(l);
+		}
+		Tcl_IncrRefCount(pure);
+		bytes = Tcl_GetStringFromObj(pure, &length);
+
+		/*
+		 * Already did the sign above.
+		 */
+
+		if (*bytes == '-') {
+		    length--;
+		    bytes++;
+		}
+		toAppend = length;
+
+		/*
+		 * Canonical decimal string reps for integers are composed
+		 * entirely of one-byte encoded characters, so "length" is the
+		 * number of chars.
+		 */
+
+		if (parserFlags & FMT_PRECISION) {
+		    if (length < precision) {
+			segmentLimit -= (precision - length);
+		    }
+		    while (length < precision) {
+			Tcl_AppendToObj(segment, "0", 1);
+			length++;
+		    }
+		    parserFlags &= ~FMT_ZERO;
+		}
+		if (parserFlags & FMT_ZERO) {
+		    length += Tcl_GetCharLength(segment);
+		    if (length < width) {
+			segmentLimit -= (width - length);
+		    }
+		    while (length < width) {
+			Tcl_AppendToObj(segment, "0", 1);
+			length++;
+		    }
+		}
+		if (toAppend > segmentLimit) {
+		    msg = overflow;
+		    goto errorMsg;
+		}
+		Tcl_AppendToObj(segment, bytes, toAppend);
+		Tcl_DecrRefCount(pure);
+		break;
+	    }
+
+	    case 'u':
+	    case 'o':
+	    case 'x':
+	    case 'X': {
+		Tcl_WideUInt bits = (Tcl_WideUInt)0;
+		Tcl_WideInt numDigits = (Tcl_WideInt)0;
+		int length, numBits = 4, base = 16;
+		int index = 0, shift = 0;
+		Tcl_Obj *pure;
+		char *bytes;
+
+		if (ch == 'u') {
+		    base = 10;
+		}
+		if (ch == 'o') {
+		    base = 8;
+		    numBits = 3;
+		}
+		if (parserFlags & FMT_USESHORT) {
+		    unsigned short int us = (unsigned short int) s;
+
+		    bits = (Tcl_WideUInt) us;
+		    while (us) {
+			numDigits++;
+			us /= base;
+		    }
+		} else if (parserFlags & FMT_USEWIDE) {
+		    Tcl_WideUInt uw = (Tcl_WideUInt) w;
+
+		    bits = uw;
+		    while (uw) {
+			numDigits++;
+			uw /= base;
+		    }
+		} else if ((parserFlags & FMT_USEBIG) && big.used) {
+		    int leftover = (big.used * DIGIT_BIT) % numBits;
+		    mp_digit mask = (~(mp_digit)0) << (DIGIT_BIT-leftover);
+
+		    numDigits = 1 +
+			    (((Tcl_WideInt)big.used * DIGIT_BIT) / numBits);
+		    while ((mask & big.dp[big.used-1]) == 0) {
+			numDigits--;
+			mask >>= numBits;
+		    }
+		    if (numDigits > INT_MAX) {
+			msg = overflow;
+			goto errorMsg;
+		    }
+		} else if (!(parserFlags & FMT_USEBIG)) {
+		    unsigned long int ul = (unsigned long int) l;
+
+		    bits = (Tcl_WideUInt) ul;
+		    while (ul) {
+			numDigits++;
+			ul /= base;
+		    }
+		}
+
+		/*
+		 * Need to be sure zero becomes "0", not "".
+		 */
+
+		if ((numDigits == 0) && !((ch == 'o') && (parserFlags & FMT_HASH))) {
+		    numDigits = 1;
+		}
+		pure = Tcl_NewObj();
+		Tcl_SetObjLength(pure, (int)numDigits);
+		bytes = Tcl_GetString(pure);
+		toAppend = length = (int)numDigits;
+		while (numDigits--) {
+		    int digitOffset;
+
+		    if ((parserFlags & FMT_USEBIG) && big.used) {
+			if (index < big.used && (size_t) shift <
+				CHAR_BIT*sizeof(Tcl_WideUInt) - DIGIT_BIT) {
+			    bits |= (((Tcl_WideUInt)big.dp[index++]) <<shift);
+			    shift += DIGIT_BIT;
+			}
+			shift -= numBits;
+		    }
+		    digitOffset = (int) (bits % base);
+		    if (digitOffset > 9) {
+			bytes[numDigits] = 'a' + digitOffset - 10;
+		    } else {
+			bytes[numDigits] = '0' + digitOffset;
+		    }
+		    bits /= base;
+		}
+		if (parserFlags & FMT_USEBIG) {
+		    mp_clear(&big);
+		}
+		if (parserFlags & FMT_PRECISION) {
+		    if (length < precision) {
+			segmentLimit -= (precision - length);
+		    }
+		    while (length < precision) {
+			Tcl_AppendToObj(segment, "0", 1);
+			length++;
+		    }
+		    parserFlags &= ~FMT_ZERO;;
+		}
+		if (parserFlags & FMT_ZERO) {
+		    length += Tcl_GetCharLength(segment);
+		    if (length < width) {
+			segmentLimit -= (width - length);
+		    }
+		    while (length < width) {
+			Tcl_AppendToObj(segment, "0", 1);
+			length++;
+		    }
+		}
+		if (toAppend > segmentLimit) {
+		    msg = overflow;
+		    goto errorMsg;
+		}
+		Tcl_AppendObjToObj(segment, pure);
+		Tcl_DecrRefCount(pure);
+		break;
+	    }
+
+	    }
+	    break;
+	}
+
+	case 'e':
+	case 'E':
+	case 'f':
+	case 'g':
+	case 'G': {
+#define MAX_FLOAT_SIZE 320
+	    char spec[2*TCL_INTEGER_SPACE + 9], *p = spec;
+	    double d;
+	    int length = MAX_FLOAT_SIZE;
+	    char *bytes;
+
+	    if (Tcl_GetDoubleFromObj(interp, segment, &d) != TCL_OK) {
+		/* TODO: Figure out ACCEPT_NAN here */
+		goto error;
+	    }
+	    *p++ = '%';
+	    if (parserFlags & FMT_MINUS) {
+		*p++ = '-';
+	    }
+	    if (parserFlags & FMT_HASH) {
+		*p++ = '#';
+	    }
+	    if (parserFlags & FMT_ZERO) {
+		*p++ = '0';
+	    }
+	    if (parserFlags & FMT_SPACE) {
+		*p++ = ' ';
+	    }
+	    if (parserFlags & FMT_PLUS) {
+		*p++ = '+';
+	    }
+	    if (parserFlags & FMT_WIDTH) {
+		p += sprintf(p, "%d", width);
+		if (width > length) {
+		    length = width;
+		}
+	    }
+	    if (parserFlags & FMT_PRECISION) {
+		*p++ = '.';
+		p += sprintf(p, "%d", precision);
+		if (precision > INT_MAX - length) {
+		    msg=overflow;
+		    goto errorMsg;
+		}
+		length += precision;
+	    }
+
+	    /*
+	     * Don't pass length modifiers!
+	     */
+
+	    *p++ = (char) ch;
+	    *p = '\0';
+
+	    segment = Tcl_NewObj();
+	    parserFlags |= FMT_ALLOCSEGMENT;
+	    if (!Tcl_AttemptSetObjLength(segment, length)) {
+		msg = overflow;
+		goto errorMsg;
+	    }
+	    bytes = Tcl_GetString(segment);
+	    if (!Tcl_AttemptSetObjLength(segment, sprintf(bytes, spec, d))) {
+		msg = overflow;
+		goto errorMsg;
+	    }
+	    break;
+	}
+	default:
+	    if (interp != NULL) {
+		Tcl_SetObjResult(interp,
+			Tcl_ObjPrintf("bad field specifier \"%c\"", ch));
+	    }
+	    goto error;
+	}
+
+	switch (ch) {
+	case 'E':
+	case 'G':
+	case 'X': {
+	    Tcl_SetObjLength(segment, Tcl_UtfToUpper(Tcl_GetString(segment)));
+	}
+	}
+
+	if (parserFlags & FMT_WIDTH) {
+	    if (numChars < 0) {
+		numChars = Tcl_GetCharLength(segment);
+	    }
+	    if (!(parserFlags & FMT_MINUS)) {
+		if (numChars < width) {
+		    limit -= (width - numChars);
+		}
+		while (numChars < width) {
+		    Tcl_AppendToObj(appendObjPtr, (FMT_ZERO ? "0" : " "), 1);
+		    numChars++;
+		}
+	    }
+	}
+
+	Tcl_GetStringFromObj(segment, &segmentNumBytes);
+	if (segmentNumBytes > limit) {
+	    if (parserFlags & FMT_ALLOCSEGMENT) {
+		Tcl_DecrRefCount(segment);
+	    }
+	    msg = overflow;
+	    goto errorMsg;
+	}
+	Tcl_AppendObjToObj(appendObjPtr, segment);
+	limit -= segmentNumBytes;
+	if (parserFlags & FMT_ALLOCSEGMENT) {
+	    Tcl_DecrRefCount(segment);
+	}
+	if (parserFlags & FMT_WIDTH) {
+	    if (numChars < width) {
+		limit -= (width - numChars);
+	    }
+	    while (numChars < width) {
+		Tcl_AppendToObj(appendObjPtr, (FMT_ZERO ? "0" : " "), 1);
+		numChars++;
+	    }
+	}
+
+	if (parserFlags & FMT_SEQUENTIAL) {
+	    objIndex++;
+	}
+    }
+    if (numBytes) {
+	if (numBytes > limit) {
+	    msg = overflow;
+	    goto errorMsg;
+	}
+	Tcl_AppendToObj(appendObjPtr, span, numBytes);
+	limit -= numBytes;
+	numBytes = 0;
+    }
+
+    return TCL_OK;
+
+  errorMsg:
+    if (interp != NULL) {
+	Tcl_SetObjResult(interp, Tcl_NewStringObj(msg, -1));
+    }
+  error:
+    Tcl_SetObjLength(appendObjPtr, originalLength);
+    return TCL_ERROR;
+}
 
 /*
  *---------------------------------------------------------------------------

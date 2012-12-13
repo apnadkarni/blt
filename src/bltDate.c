@@ -1219,7 +1219,7 @@ ExtractTime(DateParser *datePtr)
  *	yyyyWwwd		(2012W017) 
  *	+ddd:hh:mm:ss		+000:00:00:00
  *	dd.mm yyyy		(18. Feb 1921) 
- *	mm, dd, yyyy		(Jan 31, 2012) 
+ *	mm dd, yyyy		(Jan 31, 2012) 
  *	wday, dd, mon, yy	(Thu, 01 Jan 04) 
  *	dd.mm.yyy		(31.Jan.2012) 
  *	dd-mm-yyyy		(31-Jan-2012) 
