@@ -1420,6 +1420,40 @@ FormatLong(Tcl_Interp *interp, double d, FormatParser *parserPtr)
 	    break;
 	}
     }
+    p = spec;
+    *p++ = '%';
+    if (parserPtr->flags & FMT_MINUS) {
+	*p++ = '-';
+    }
+    if (parserPtr->flags & FMT_HASH) {
+	*p++ = '#';
+    }
+    if (parserPtr->flags & FMT_ZERO) {
+	*p++ = '0';
+    }
+    if (parserPtr->flags & FMT_SPACE) {
+	*p++ = ' ';
+    }
+    if (parserPtr->flags & FMT_PLUS) {
+	*p++ = '+';
+    }
+    if (parserPtr->flags & FMT_WIDTH) {
+	p += sprintf(p, "%d", parserPtr->width);
+	if (parserPtr->width > length) {
+	    length = parserPtr->width;
+	}
+    }
+    if (parserPtr->flags & FMT_PRECISION) {
+	*p++ = '.';
+	p += sprintf(p, "%d", parserPtr->precision);
+	if (parserPtr->precision > INT_MAX - length) {
+	    Tcl_AppendResult(interp, overflow, (char *)NULL);
+	    return NULL;
+	}
+	length += parserPtr->precision;
+    }
+
+
     switch (parserPtr->ch) {
     case 'd': {
 	int length;
