@@ -98,17 +98,32 @@ static Blt_SwitchSpec valuesSwitches[] =
     {BLT_SWITCH_END}
 };
 
+typedef struct {
+    int from, to;
+    int empty;
+} ExportSwitches;
+
+static Blt_SwitchSpec exportSwitches[] = 
+{
+    {BLT_SWITCH_CUSTOM, "-from",   "index", (char *)NULL,
+	Blt_Offset(ExportSwitches, from),         0, 0, &indexSwitch},
+    {BLT_SWITCH_CUSTOM, "-to",     "index", (char *)NULL,
+	Blt_Offset(ExportSwitches, to),           0, 0, &indexSwitch},
+    {BLT_SWITCH_DOUBLE, "-empty", "value", (char *)NULL,
+	Blt_Offset(ExportSwitches, empty),       0, 0},
+    {BLT_SWITCH_END}
+};
 
 typedef struct {
     int from, to;
-} FormatSwitches;
+} PrintSwitches;
 
-static Blt_SwitchSpec formatSwitches[] = 
+static Blt_SwitchSpec printSwitches[] = 
 {
     {BLT_SWITCH_CUSTOM, "-from",   "index", (char *)NULL,
-	Blt_Offset(FormatSwitches, from),         0, 0, &indexSwitch},
+	Blt_Offset(PrintSwitches, from),         0, 0, &indexSwitch},
     {BLT_SWITCH_CUSTOM, "-to",     "index", (char *)NULL,
-	Blt_Offset(FormatSwitches, to),           0, 0, &indexSwitch},
+	Blt_Offset(PrintSwitches, to),           0, 0, &indexSwitch},
     {BLT_SWITCH_END}
 };
 
@@ -1256,7 +1271,7 @@ ValuesOp(Vector *vPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 /*
  *----------------------------------------------------------------------
  *
- * Tcl_AppendFormatToObj --
+ * AppendFormatToObj --
  *
  *	This function appends a list of Tcl_Obj's to a Tcl_Obj according to
  *	the formatting instructions embedded in the format string. The
@@ -1861,7 +1876,7 @@ ParseFormat(const char *format, int *numFmtsPtr, char ***fmtPtr)
 /*
  *---------------------------------------------------------------------------
  *
- * FormatOp --
+ * PrintOp --
  *
  *	Print the values vector according to the given format.
  *
@@ -1874,9 +1889,9 @@ ParseFormat(const char *format, int *numFmtsPtr, char ***fmtPtr)
  */
 /*ARGSUSED*/
 static int
-FormatOp(Vector *vPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+PrintOp(Vector *vPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 {
-    FormatSwitches switches;
+    PrintSwitches switches;
     Tcl_Obj *objPtr;
     char **argv;
     int argc;
@@ -1889,7 +1904,7 @@ FormatOp(Vector *vPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 
     fmt = Tcl_GetString(objv[2]);
     ParseFormat(fmt, &argc, &argv);
-    if (Blt_ParseSwitches(interp, formatSwitches, objc - 3, objv + 3, &switches,
+    if (Blt_ParseSwitches(interp, printSwitches, objc - 3, objv + 3, &switches,
 	BLT_SWITCH_DEFAULTS) < 0) {
 	return TCL_ERROR;
     }
@@ -1907,7 +1922,7 @@ FormatOp(Vector *vPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     }
     Blt_Free(argv);
     Tcl_SetObjResult(interp, objPtr);
-    Blt_FreeSwitches(formatSwitches, &switches, 0);
+    Blt_FreeSwitches(printSwitches, &switches, 0);
     return TCL_OK;
 }
 
@@ -2190,6 +2205,8 @@ CopyValues(Vector *vPtr, char *byteArr, enum NativeFormats fmt, int size,
  * Caveats:
  *	Channel reads must end on an element boundary.
  *
+ *	vecName binread channel count ?switches?
+ *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
@@ -2322,6 +2339,113 @@ BinreadOp(Vector *vPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 
     /* Set the result as the number of values read.  */
     Tcl_SetIntObj(Tcl_GetObjResult(interp), total);
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * ExportOp --
+ *
+ *	Exports the vector as a binary bytearray.
+ *
+ * Results:
+ *	A standard TCL result.  
+ *
+ *	vecName bytearray ?-empty bool -format float|double -from -to?
+ *	vecName bytearray obj
+ *
+ *	vecName import float -data obj -file file ?switches?
+ *	vecName export float -data obj -file file 
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+ExportOp(Vector *vPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+{
+    ExportSwitches switches;
+    Tcl_Obj *objPtr;
+    void *array;
+    size_t numBytes, numValues;
+    char *fmt;
+    int format;
+
+#define FMT_FLOAT	0
+#define FMT_DOUBLE	1
+    switches.from = 0;
+    switches.to = vPtr->length - 1;
+    switches.empty = Blt_NaN();
+    indexSwitch.clientData = vPtr;
+    fmt = Tcl_GetString(objv[2]);
+    if (strcmp(fmt, "double") == 0) {
+	format = FMT_DOUBLE;
+    } else if (strcmp(fmt, "float") == 0) {
+	format = FMT_FLOAT;
+    } else {
+	Tcl_AppendResult(interp, "unknown export format \"", fmt, "\"",
+			 (char *)NULL);
+	return TCL_ERROR;
+    }
+    if (Blt_ParseSwitches(interp, exportSwitches, objc - 3, objv + 3, 
+			  &switches, BLT_SWITCH_DEFAULTS) < 0) {
+	return TCL_ERROR;
+    }
+    numValues = switches.to - switches.from + 1;
+    if (format == FMT_DOUBLE) {
+	double *darray;
+	size_t count;
+
+	darray = Blt_AssertMalloc(numValues * sizeof(double));
+	count = 0;
+	if (switches.empty) {
+	    long i;
+
+	    for (i = switches.from; i <= switches.to; i++) {
+		darray[count] = vPtr->valueArr[i];
+		count++;
+	    }
+	} else {
+	    long i;
+
+	    for (i = switches.from; i <= switches.to; i++) {
+		if (FINITE(vPtr->valueArr[i])) {
+		    darray[count] = vPtr->valueArr[i];
+		    count++;
+		}
+	    }
+	}
+	array = darray;
+	numBytes = count * sizeof(double);
+    } else if (format == FMT_FLOAT) {
+	float *farray;
+	size_t count;
+
+	farray = Blt_AssertMalloc(numValues * sizeof(float));
+	count = 0;
+	if (switches.empty) {
+	    long i;
+
+	    for (i = switches.from; i <= switches.to; i++) {
+		farray[count] = (float)vPtr->valueArr[i];
+		count++;
+	    }
+	} else {
+	    long i;
+
+	    for (i = switches.from; i <= switches.to; i++) {
+		if (FINITE(vPtr->valueArr[i])) {
+		    farray[count] = (float)vPtr->valueArr[i];
+		    count++;
+		}
+	    }
+	}
+	array = farray;
+	numBytes = count * sizeof(float);
+    }
+    objPtr = Tcl_NewByteArrayObj(array, numBytes);
+    Tcl_SetObjResult(interp, objPtr);
+    Blt_FreeSwitches(exportSwitches, &switches, 0);
     return TCL_OK;
 }
 
@@ -2654,6 +2778,10 @@ SeqOp(Vector *vPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  * Side Effects:
  *	The vector data is reset.  Clients of the vector are notified.  Any
  *	cached array indices are flushed.
+ *
+ *
+ *	vecName set $list 
+ *	vecName set anotherVector
  *
  *---------------------------------------------------------------------------
  */
@@ -3213,14 +3341,14 @@ static Blt_OpSpec vectorInstOps[] =
     {"-",         1, ArithOp,     3, 3, "item",},	/*Deprecated*/
     {"/",         1, ArithOp,     3, 3, "item",},	/*Deprecated*/
     {"append",    1, AppendOp,    3, 0, "item ?item...?",},
-    {"binread",   1, BinreadOp,   3, 0, "channel ?numValues? ?flags?",},
+    {"binread",   2, BinreadOp,   3, 0, "channel ?numValues? ?flags?",},
     {"clear",     2, ClearOp,     2, 2, "",},
     {"count",     2, CountOp,     3, 3, "what",},
     {"delete",    2, DeleteOp,    2, 0, "index ?index...?",},
     {"duplicate", 2, DupOp,       2, 3, "?vecName?",},
-    {"expr",      1, InstExprOp,  3, 3, "expression",},
+    {"export",    4, ExportOp,    3, 0, "format ?switches?",},
+    {"expr",      4, InstExprOp,  3, 3, "expression",},
     {"fft",	  2, FFTOp,	  3, 0, "vecName ?switches?",},
-    {"format",    2, FormatOp,    3, 0, "format ?switches?",},
     {"indices",   3, IndicesOp,   3, 3, "what",},
     {"inversefft",3, InverseFFTOp,4, 4, "vecName vecName",},
     {"length",    1, LengthOp,    2, 3, "?newSize?",},
@@ -3231,6 +3359,7 @@ static Blt_OpSpec vectorInstOps[] =
     {"notify",    3, NotifyOp,    3, 3, "keyword",},
     {"offset",    1, OffsetOp,    2, 3, "?offset?",},
     {"populate",  2, PopulateOp,  4, 4, "vecName density",},
+    {"print",     2, PrintOp,     3, 0, "format ?switches?",},
     {"random",    4, RandomOp,    2, 3, "?seed?",},	/*Deprecated*/
     {"range",     4, RangeOp,     2, 4, "first last",},
     {"search",    3, SearchOp,    3, 5, "?-value? value ?value?",},
