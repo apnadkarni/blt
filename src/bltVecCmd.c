@@ -46,7 +46,8 @@
  */
 
 #include "bltVecInt.h"
-
+#undef SIGN
+#include "tclTomMath.h"
 #ifdef HAVE_STDLIB_H
 #  include <stdlib.h>
 #endif /* HAVE_STDLIB_H */
@@ -97,17 +98,32 @@ static Blt_SwitchSpec valuesSwitches[] =
     {BLT_SWITCH_END}
 };
 
+typedef struct {
+    int from, to;
+    int empty;
+} ExportSwitches;
+
+static Blt_SwitchSpec exportSwitches[] = 
+{
+    {BLT_SWITCH_CUSTOM, "-from",   "index", (char *)NULL,
+	Blt_Offset(ExportSwitches, from),         0, 0, &indexSwitch},
+    {BLT_SWITCH_CUSTOM, "-to",     "index", (char *)NULL,
+	Blt_Offset(ExportSwitches, to),           0, 0, &indexSwitch},
+    {BLT_SWITCH_DOUBLE, "-empty", "value", (char *)NULL,
+	Blt_Offset(ExportSwitches, empty),       0, 0},
+    {BLT_SWITCH_END}
+};
 
 typedef struct {
     int from, to;
-} FormatSwitches;
+} PrintSwitches;
 
-static Blt_SwitchSpec formatSwitches[] = 
+static Blt_SwitchSpec printSwitches[] = 
 {
     {BLT_SWITCH_CUSTOM, "-from",   "index", (char *)NULL,
-	Blt_Offset(FormatSwitches, from),         0, 0, &indexSwitch},
+	Blt_Offset(PrintSwitches, from),         0, 0, &indexSwitch},
     {BLT_SWITCH_CUSTOM, "-to",     "index", (char *)NULL,
-	Blt_Offset(FormatSwitches, to),           0, 0, &indexSwitch},
+	Blt_Offset(PrintSwitches, to),           0, 0, &indexSwitch},
     {BLT_SWITCH_END}
 };
 
@@ -1253,6 +1269,539 @@ ValuesOp(Vector *vPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 
 
 /*
+ *----------------------------------------------------------------------
+ *
+ * AppendFormatToObj --
+ *
+ *	This function appends a list of Tcl_Obj's to a Tcl_Obj according to
+ *	the formatting instructions embedded in the format string. The
+ *	formatting instructions are inspired by sprintf(). Returns TCL_OK when
+ *	successful. If there's an error in the arguments, TCL_ERROR is
+ *	returned, and an error message is written to the interp, if non-NULL.
+ *
+ * Results:
+ *	A standard Tcl result.
+ *
+ * Side effects:
+ *	None.
+ *
+ *----------------------------------------------------------------------
+ */
+#define FMT_ALLOCSEGMENT (1<<0)
+#define FMT_CHAR	(1<<1)
+#define FMT_HASH	(1<<2)
+#define FMT_ISNEGATIVE	(1<<3)
+#define FMT_LONG	(1<<4)
+#define FMT_LONGLONG	(1<<5)
+#define FMT_MINUS	(1<<6)
+#define FMT_NEWXPG	(1<<7)
+#define FMT_PLUS	(1<<8)
+#define FMT_PRECISION	(1<<9)
+#define FMT_SEQUENTIAL	(1<<10)
+#define FMT_SHORT	(1<<11)
+#define FMT_SPACE	(1<<12)
+#define FMT_USEWIDE	(1<<13)
+#define FMT_WIDTH	(1<<14)
+#define FMT_XPG		(1<<15)
+#define FMT_ZERO	(1<<16)
+
+typedef struct {
+    int precision;			/* Precision to use. */
+    int width;				/* Minimum field width. */
+    unsigned int flags;
+    Tcl_UniChar ch;			/* Last character parsed. */
+} FormatParser;
+
+static Tcl_Obj *
+FormatDouble(Tcl_Interp *interp, double d, FormatParser *parserPtr)
+{
+#define MAX_FLOAT_SIZE 320
+    Tcl_Obj *objPtr;
+    char spec[2*TCL_INTEGER_SPACE + 9];
+    char *p;
+    static const char *overflow = "max size for a Tcl value exceeded";
+    int length;
+    char *bytes;
+
+    length = MAX_FLOAT_SIZE;
+    p = spec;
+    *p++ = '%';
+    if (parserPtr->flags & FMT_MINUS) {
+	*p++ = '-';
+    }
+    if (parserPtr->flags & FMT_HASH) {
+	*p++ = '#';
+    }
+    if (parserPtr->flags & FMT_ZERO) {
+	*p++ = '0';
+    }
+    if (parserPtr->flags & FMT_SPACE) {
+	*p++ = ' ';
+    }
+    if (parserPtr->flags & FMT_PLUS) {
+	*p++ = '+';
+    }
+    if (parserPtr->flags & FMT_WIDTH) {
+	p += sprintf(p, "%d", parserPtr->width);
+	if (parserPtr->width > length) {
+	    length = parserPtr->width;
+	}
+    }
+    if (parserPtr->flags & FMT_PRECISION) {
+	*p++ = '.';
+	p += sprintf(p, "%d", parserPtr->precision);
+	if (parserPtr->precision > INT_MAX - length) {
+	    Tcl_AppendResult(interp, overflow, (char *)NULL);
+	    return NULL;
+	}
+	length += parserPtr->precision;
+    }
+    /*
+     * Don't pass length modifiers!
+     */
+    *p++ = (char) parserPtr->ch;
+    *p = '\0';
+    objPtr = Tcl_NewObj();
+    parserPtr->flags |= FMT_ALLOCSEGMENT;
+    if (!Tcl_AttemptSetObjLength(objPtr, length)) {
+	Tcl_AppendResult(interp, overflow, (char *)NULL);
+	return NULL;
+    }
+    bytes = Tcl_GetString(objPtr);
+    if (!Tcl_AttemptSetObjLength(objPtr, sprintf(bytes, spec, d))) {
+	Tcl_AppendResult(interp, overflow, (char *)NULL);
+	return NULL;
+    }
+    return objPtr;
+}
+
+static Tcl_Obj *
+FormatLong(Tcl_Interp *interp, double d, FormatParser *parserPtr)
+{
+    int64_t ll;
+    long l;
+    unsigned short s;
+    int limit;
+    Tcl_Obj *objPtr;
+    char spec[2*TCL_INTEGER_SPACE + 9];
+    char *p;
+    int length;
+    char *bytes;
+    static const char *overflow = "max size for a Tcl value exceeded";
+    length = MAX_FLOAT_SIZE;
+    
+    parserPtr->flags &= ~FMT_ISNEGATIVE;
+    if (parserPtr->flags & FMT_LONGLONG) {
+	ll = (int64_t)d;
+	if (ll < 0) {
+	    parserPtr->flags |= FMT_ISNEGATIVE;
+	}
+    } else if (parserPtr->flags & FMT_LONG) {
+	l = (long)d;
+	if (l < 0) {
+	    parserPtr->flags |= FMT_ISNEGATIVE;
+	}
+    } else if (parserPtr->flags & FMT_SHORT) {
+	s = (unsigned short int)d;
+	if (s < 0) {
+	    parserPtr->flags |= FMT_ISNEGATIVE;
+	}
+    } else {
+	l = (long)d;
+	if (l < (long)0) {
+	    parserPtr->flags |= FMT_ISNEGATIVE;
+	}
+    }
+    objPtr = Tcl_NewObj();
+    parserPtr->flags |= FMT_ALLOCSEGMENT;
+    limit = INT_MAX;
+    Tcl_IncrRefCount(objPtr);
+    
+    if ((parserPtr->flags & (FMT_ISNEGATIVE | FMT_PLUS | FMT_SPACE)) && 
+	((parserPtr->flags & FMT_LONGLONG) || (parserPtr->ch == 'd'))) {
+	Tcl_AppendToObj(objPtr, 
+			((parserPtr->flags & FMT_ISNEGATIVE) ? "-" : 
+			 (parserPtr->flags & FMT_PLUS) ? "+" : " "), 1);
+	limit -= 1;
+    }
+    if (parserPtr->flags & FMT_HASH) {
+	switch (parserPtr->ch) {
+	case 'o':
+	    Tcl_AppendToObj(objPtr, "0", 1);
+	    limit -= 1;
+	    parserPtr->precision--;
+	    break;
+	case 'x':
+	case 'X':
+	    Tcl_AppendToObj(objPtr, "0x", 2);
+	    limit -= 2;
+	    break;
+	}
+    }
+    p = spec;
+    *p++ = '%';
+    if (parserPtr->flags & FMT_MINUS) {
+	*p++ = '-';
+    }
+    if (parserPtr->flags & FMT_HASH) {
+	*p++ = '#';
+    }
+    if (parserPtr->flags & FMT_ZERO) {
+	*p++ = '0';
+    }
+    if (parserPtr->flags & FMT_SPACE) {
+	*p++ = ' ';
+    }
+    if (parserPtr->flags & FMT_PLUS) {
+	*p++ = '+';
+    }
+    if (parserPtr->flags & FMT_WIDTH) {
+	p += sprintf(p, "%d", parserPtr->width);
+	if (parserPtr->width > length) {
+	    length = parserPtr->width;
+	}
+    }
+    if (parserPtr->flags & FMT_PRECISION) {
+	*p++ = '.';
+	p += sprintf(p, "%d", parserPtr->precision);
+	if (parserPtr->precision > INT_MAX - length) {
+	    Tcl_AppendResult(interp, overflow, (char *)NULL);
+	    return NULL;
+	}
+	length += parserPtr->precision;
+    }
+    /*
+     * Don't pass length modifiers!
+     */
+    *p++ = (char)parserPtr->ch;
+    *p = '\0';
+
+    objPtr = Tcl_NewObj();
+    parserPtr->flags |= FMT_ALLOCSEGMENT;
+    if (!Tcl_AttemptSetObjLength(objPtr, length)) {
+	Tcl_AppendResult(interp, overflow, (char *)NULL);
+	return NULL;
+    }
+    bytes = Tcl_GetString(objPtr);
+    if (!Tcl_AttemptSetObjLength(objPtr, sprintf(bytes, spec, d))) {
+	Tcl_AppendResult(interp, overflow, (char *)NULL);
+	return NULL;
+    }
+    return objPtr;
+}
+
+static int
+AppendFormatToObj(Tcl_Interp *interp, Tcl_Obj *appendObjPtr, const char *format,
+		  int *offsetPtr, Vector *vPtr, int maxOffset)
+{
+    FormatParser parser;
+    const char *span = format, *msg;
+    int numBytes = 0, index, count;
+    int originalLength, limit, offset;
+    static const char *mixedXPG =
+	    "cannot mix \"%\" and \"%n$\" conversion specifiers";
+    static const char *badIndex[2] = {
+	"not enough arguments for all format specifiers",
+	"\"%n$\" argument index out of range"
+    };
+    static const char *overflow = "max size for a Tcl value exceeded";
+
+    msg = overflow;
+    if (Tcl_IsShared(appendObjPtr)) {
+	Tcl_Panic("%s called with shared object", "Tcl_AppendFormatToObj");
+    }
+    Tcl_GetStringFromObj(appendObjPtr, &originalLength);
+    limit = INT_MAX - originalLength;
+
+    memset(&parser, 0, sizeof(parser));
+    /*
+     * Format string is NUL-terminated.
+     */
+    span = format;
+    count = index = 0;
+    offset = *offsetPtr;
+    while (*format != '\0') {
+	char *end;
+	int numChars, segmentNumBytes;
+	Tcl_Obj *segment;
+	int step, done;
+	double d;
+
+	step = Tcl_UtfToUniChar(format, &parser.ch);
+	format += step;
+	if (parser.ch != '%') {
+	    numBytes += step;
+	    continue;
+	}
+	if (numBytes > 0) {
+	    if (numBytes > limit) {
+		msg = overflow;
+		goto errorMsg;
+	    }
+	    Tcl_AppendToObj(appendObjPtr, span, numBytes);
+	    limit -= numBytes;
+	    numBytes = 0;
+	}
+
+	/*
+	 * Saw a '%'. Process the format specifier.
+	 *
+	 * Step 0. Handle special case of escaped format marker (i.e., %%).
+	 */
+	step = Tcl_UtfToUniChar(format, &parser.ch);
+	if (parser.ch == '%') {
+	    span = format;
+	    numBytes = step;
+	    format += step;
+	    continue;			/* This is an escaped percent. */
+	}
+
+	/*
+	 * Step 1. XPG3 position specifier
+	 */
+	parser.flags &= ~FMT_NEWXPG;
+	if (isdigit(UCHAR(parser.ch))) {
+	    int position;
+	    char *end;
+
+	    position = strtoul(format, &end, 10);
+	    if (*end == '$') {
+		parser.flags |= FMT_NEWXPG;
+		index = position - 1;
+		format = end + 1;
+		step = Tcl_UtfToUniChar(format, &parser.ch);
+	    }
+	}
+	if (parser.flags & FMT_NEWXPG) {
+	    if (parser.flags & FMT_SEQUENTIAL) {
+		msg = mixedXPG;
+		goto errorMsg;
+	    }
+	    parser.flags |= FMT_XPG;
+	} else {
+	    if (parser.flags & FMT_XPG) {
+		msg = mixedXPG;
+		goto errorMsg;
+	    }
+	    parser.flags |= FMT_SEQUENTIAL;
+	}
+	if (index < 0) {
+	    /* Index is outside of available vector elements. */
+	    msg = badIndex[parser.flags & FMT_XPG];
+	    goto errorMsg;		
+	}
+
+	/*
+	 * Step 2. Set of parser.flags.
+	 */
+	parser.flags &= ~(FMT_MINUS|FMT_HASH|FMT_ZERO|FMT_SPACE|FMT_PLUS);
+	done = FALSE;
+	do {
+	    switch (parser.ch) {
+	    case '-': parser.flags |= FMT_MINUS;	break;
+	    case '#': parser.flags |= FMT_HASH;		break;
+	    case '0': parser.flags |= FMT_ZERO;		break;
+	    case ' ': parser.flags |= FMT_SPACE;	break;
+	    case '+': parser.flags |= FMT_PLUS;		break;
+	    default:
+		done = TRUE;
+	    }
+	    if (!done) {
+		format += step;
+		step = Tcl_UtfToUniChar(format, &parser.ch);
+	    }
+	} while (!done);
+
+	/*
+	 * Step 3. Minimum field width.
+	 */
+	parser.width = 0;
+	if (isdigit(UCHAR(parser.ch))) {
+	    parser.flags |= FMT_WIDTH;
+	    parser.width = strtoul(format, &end, 10);
+	    format = end;
+	    step = Tcl_UtfToUniChar(format, &parser.ch);
+	} else if (parser.ch == '*') {
+	    msg = "can't specify '*' in field width";
+	    goto errorMsg;
+	}
+	if (parser.width > limit) {
+	    msg = overflow;
+	    goto errorMsg;
+	}
+
+	/*
+	 * Step 4. Precision.
+	 */
+
+	parser.flags &= ~(FMT_PRECISION);
+	parser.precision = 0;
+	if (parser.ch == '.') {
+	    parser.flags |= FMT_PRECISION;
+	    format += step;
+	    step = Tcl_UtfToUniChar(format, &parser.ch);
+	}
+	if (isdigit(UCHAR(parser.ch))) {
+	    parser.precision = strtoul(format, &end, 10);
+	    format = end;
+	    step = Tcl_UtfToUniChar(format, &parser.ch);
+	} else if (parser.ch == '*') {
+	    msg = "can't specify '*' in precision";
+	    goto errorMsg;
+	}
+
+	/*
+	 * Step 5. Length modifier.
+	 */
+	if (parser.ch == 'h') {
+	    format += step;
+	    step = Tcl_UtfToUniChar(format, &parser.ch);
+	    if (parser.ch == 'h') {
+		parser.flags |= FMT_CHAR;
+		format += step;
+		step = Tcl_UtfToUniChar(format, &parser.ch);
+	    } else {
+		parser.flags |= FMT_SHORT;
+	    }
+	} else if (parser.ch == 'l') {
+	    format += step;
+	    step = Tcl_UtfToUniChar(format, &parser.ch);
+	    if (parser.ch == 'l') {
+		parser.flags |= FMT_LONGLONG;
+		format += step;
+		step = Tcl_UtfToUniChar(format, &parser.ch);
+	    } else {
+		parser.flags |= FMT_LONG;
+	    }
+	}
+	format += step;
+	span = format;
+
+	/*
+	 * Step 6. The actual conversion character.
+	 */
+	if ((index + offset) > maxOffset) {
+	    continue;
+	}
+	d = vPtr->valueArr[offset + index];
+	numChars = -1;
+	if (parser.ch == 'i') {
+	    parser.ch = 'd';
+	}
+	switch (parser.ch) {
+	case '\0':
+	    msg = "format string ended in middle of field specifier";
+	    goto errorMsg;
+	case 's':
+	    msg = "can't use %s or %c as field specifier";
+	    goto errorMsg;
+	case 'u':
+	    if (parser.flags & FMT_LONGLONG) {
+		msg = "unsigned bignum format is invalid";
+		goto errorMsg;
+	    }
+	case 'd':
+	case 'o':
+	case 'x':
+	case 'X': 
+	    segment = FormatLong(interp, d, &parser);
+	    if (segment == NULL) {
+		goto errorMsg;
+	    }
+	    break;
+
+	case 'e':
+	case 'E':
+	case 'f':
+	case 'g':
+	case 'G': 
+	    segment = FormatDouble(interp, d, &parser);
+	    if (segment == NULL) {
+		goto error;
+	    }
+	    break;
+
+	default:
+	    if (interp != NULL) {
+		Tcl_SetObjResult(interp,
+			Tcl_ObjPrintf("bad field specifier \"%c\"", parser.ch));
+	    }
+	    goto error;
+	}
+
+	switch (parser.ch) {
+	case 'E':
+	case 'G':
+	case 'X': {
+	    Tcl_SetObjLength(segment, Tcl_UtfToUpper(Tcl_GetString(segment)));
+	}
+	}
+
+	if (parser.flags & FMT_WIDTH) {
+	    if (numChars < 0) {
+		numChars = Tcl_GetCharLength(segment);
+	    }
+	    if (!(parser.flags & FMT_MINUS)) {
+		if (numChars < parser.width) {
+		    limit -= (parser.width - numChars);
+		}
+		while (numChars < parser.width) {
+		    Tcl_AppendToObj(appendObjPtr, (FMT_ZERO ? "0" : " "), 1);
+		    numChars++;
+		}
+	    }
+	}
+
+	Tcl_GetStringFromObj(segment, &segmentNumBytes);
+	if (segmentNumBytes > limit) {
+	    if (parser.flags & FMT_ALLOCSEGMENT) {
+		Tcl_DecrRefCount(segment);
+	    }
+	    msg = overflow;
+	    goto errorMsg;
+	}
+	Tcl_AppendObjToObj(appendObjPtr, segment);
+	limit -= segmentNumBytes;
+	if (parser.flags & FMT_ALLOCSEGMENT) {
+	    Tcl_DecrRefCount(segment);
+	}
+	if (parser.flags & FMT_WIDTH) {
+	    if (numChars < parser.width) {
+		limit -= (parser.width - numChars);
+	    }
+	    while (numChars < parser.width) {
+		Tcl_AppendToObj(appendObjPtr, (FMT_ZERO ? "0" : " "), 1);
+		numChars++;
+	    }
+	}
+
+	if (parser.flags & FMT_SEQUENTIAL) {
+	    index++;
+	}
+	count++;
+    }
+    if (numBytes) {
+	if (numBytes > limit) {
+	    msg = overflow;
+	    goto errorMsg;
+	}
+	Tcl_AppendToObj(appendObjPtr, span, numBytes);
+	limit -= numBytes;
+	numBytes = 0;
+    }
+    *offsetPtr = offset + count;
+    return TCL_OK;
+
+  errorMsg:
+    if (interp != NULL) {
+	Tcl_SetObjResult(interp, Tcl_NewStringObj(msg, -1));
+    }
+  error:
+    Tcl_SetObjLength(appendObjPtr, originalLength);
+    return TCL_ERROR;
+}
+
+/*
  *---------------------------------------------------------------------------
  *
  * ParseFormat --
@@ -1327,7 +1876,7 @@ ParseFormat(const char *format, int *numFmtsPtr, char ***fmtPtr)
 /*
  *---------------------------------------------------------------------------
  *
- * FormatOp --
+ * PrintOp --
  *
  *	Print the values vector according to the given format.
  *
@@ -1340,9 +1889,9 @@ ParseFormat(const char *format, int *numFmtsPtr, char ***fmtPtr)
  */
 /*ARGSUSED*/
 static int
-FormatOp(Vector *vPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+PrintOp(Vector *vPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 {
-    FormatSwitches switches;
+    PrintSwitches switches;
     Tcl_Obj *objPtr;
     char **argv;
     int argc;
@@ -1355,12 +1904,12 @@ FormatOp(Vector *vPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 
     fmt = Tcl_GetString(objv[2]);
     ParseFormat(fmt, &argc, &argv);
-    if (Blt_ParseSwitches(interp, formatSwitches, objc - 3, objv + 3, &switches,
+    if (Blt_ParseSwitches(interp, printSwitches, objc - 3, objv + 3, &switches,
 	BLT_SWITCH_DEFAULTS) < 0) {
 	return TCL_ERROR;
     }
     objPtr = Tcl_NewStringObj("", 0);
-    for (i = switches.from; i <= switches.to; i++) {
+    for (i = switches.from; i <= switches.to; /*empty*/) {
 	if (FINITE(vPtr->valueArr[i])) {
 	    char string[200];
 	    int n;
@@ -1368,12 +1917,12 @@ FormatOp(Vector *vPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	    n = (i % argc);
 	    fmt = argv[n];
 	    sprintf(string, fmt, vPtr->valueArr[i]);
-	    Tcl_AppendToObj(objPtr, string, -1);
+	    AppendFormatToObj(interp, objPtr, fmt, &i, vPtr, switches.to);
 	}
     }
     Blt_Free(argv);
     Tcl_SetObjResult(interp, objPtr);
-    Blt_FreeSwitches(formatSwitches, &switches, 0);
+    Blt_FreeSwitches(printSwitches, &switches, 0);
     return TCL_OK;
 }
 
@@ -1468,12 +2017,12 @@ InRange(double value, double min, double max)
 }
 
 enum NativeFormats {
-    FMT_UNKNOWN = -1,
-    FMT_UCHAR, FMT_CHAR,
-    FMT_USHORT, FMT_SHORT,
-    FMT_UINT, FMT_INT,
-    FMT_ULONG, FMT_LONG,
-    FMT_FLOAT, FMT_DOUBLE
+    NF_UNKNOWN = -1,
+    NF_UCHAR, NF_CHAR,
+    NF_USHORT, NF_SHORT,
+    NF_UINT, NF_INT,
+    NF_ULONG, NF_LONG,
+    NF_FLOAT, NF_DOUBLE
 };
 
 /*
@@ -1502,38 +2051,38 @@ GetBinaryFormat(Tcl_Interp *interp, char *string, int *sizePtr)
     if (Tcl_GetInt(interp, string + 1, sizePtr) != TCL_OK) {
 	Tcl_AppendResult(interp, "unknown binary format \"", string,
 	    "\": incorrect byte size", (char *)NULL);
-	return FMT_UNKNOWN;
+	return NF_UNKNOWN;
     }
     switch (c) {
     case 'r':
 	if (*sizePtr == sizeof(double)) {
-	    return FMT_DOUBLE;
+	    return NF_DOUBLE;
 	} else if (*sizePtr == sizeof(float)) {
-	    return FMT_FLOAT;
+	    return NF_FLOAT;
 	}
 	break;
 
     case 'i':
 	if (*sizePtr == sizeof(char)) {
-	    return FMT_CHAR;
+	    return NF_CHAR;
 	} else if (*sizePtr == sizeof(int)) {
-	    return FMT_INT;
+	    return NF_INT;
 	} else if (*sizePtr == sizeof(long)) {
-	    return FMT_LONG;
+	    return NF_LONG;
 	} else if (*sizePtr == sizeof(short)) {
-	    return FMT_SHORT;
+	    return NF_SHORT;
 	}
 	break;
 
     case 'u':
 	if (*sizePtr == sizeof(unsigned char)) {
-	    return FMT_UCHAR;
+	    return NF_UCHAR;
 	} else if (*sizePtr == sizeof(unsigned int)) {
-	    return FMT_UINT;
+	    return NF_UINT;
 	} else if (*sizePtr == sizeof(unsigned long)) {
-	    return FMT_ULONG;
+	    return NF_ULONG;
 	} else if (*sizePtr == sizeof(unsigned short)) {
-	    return FMT_USHORT;
+	    return NF_USHORT;
 	}
 	break;
 
@@ -1541,11 +2090,11 @@ GetBinaryFormat(Tcl_Interp *interp, char *string, int *sizePtr)
 	Tcl_AppendResult(interp, "unknown binary format \"", string,
 	    "\": should be either i#, r#, u# (where # is size in bytes)",
 	    (char *)NULL);
-	return FMT_UNKNOWN;
+	return NF_UNKNOWN;
     }
     Tcl_AppendResult(interp, "can't handle format \"", string, "\"", 
 		     (char *)NULL);
-    return FMT_UNKNOWN;
+    return NF_UNKNOWN;
 }
 
 static int
@@ -1582,47 +2131,47 @@ CopyValues(Vector *vPtr, char *byteArr, enum NativeFormats fmt, int size,
     }
 
     switch (fmt) {
-    case FMT_CHAR:
+    case NF_CHAR:
 	CopyArrayToVector(vPtr, (char *)byteArr);
 	break;
 
-    case FMT_UCHAR:
+    case NF_UCHAR:
 	CopyArrayToVector(vPtr, (unsigned char *)byteArr);
 	break;
 
-    case FMT_INT:
+    case NF_INT:
 	CopyArrayToVector(vPtr, (int *)byteArr);
 	break;
 
-    case FMT_UINT:
+    case NF_UINT:
 	CopyArrayToVector(vPtr, (unsigned int *)byteArr);
 	break;
 
-    case FMT_LONG:
+    case NF_LONG:
 	CopyArrayToVector(vPtr, (long *)byteArr);
 	break;
 
-    case FMT_ULONG:
+    case NF_ULONG:
 	CopyArrayToVector(vPtr, (unsigned long *)byteArr);
 	break;
 
-    case FMT_SHORT:
+    case NF_SHORT:
 	CopyArrayToVector(vPtr, (short int *)byteArr);
 	break;
 
-    case FMT_USHORT:
+    case NF_USHORT:
 	CopyArrayToVector(vPtr, (unsigned short int *)byteArr);
 	break;
 
-    case FMT_FLOAT:
+    case NF_FLOAT:
 	CopyArrayToVector(vPtr, (float *)byteArr);
 	break;
 
-    case FMT_DOUBLE:
+    case NF_DOUBLE:
 	CopyArrayToVector(vPtr, (double *)byteArr);
 	break;
 
-    case FMT_UNKNOWN:
+    case NF_UNKNOWN:
 	break;
     }
     *indexPtr += length;
@@ -1656,6 +2205,8 @@ CopyValues(Vector *vPtr, char *byteArr, enum NativeFormats fmt, int size,
  * Caveats:
  *	Channel reads must end on an element boundary.
  *
+ *	vecName binread channel count ?switches?
+ *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
@@ -1684,7 +2235,7 @@ BinreadOp(Vector *vPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	return TCL_ERROR;
     }
     first = vPtr->length;
-    fmt = FMT_DOUBLE;
+    fmt = NF_DOUBLE;
     size = sizeof(double);
     swap = FALSE;
     count = 0;
@@ -1720,7 +2271,7 @@ BinreadOp(Vector *vPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	    }
 	    string = Tcl_GetString(objv[i]);
 	    fmt = GetBinaryFormat(interp, string, &size);
-	    if (fmt == FMT_UNKNOWN) {
+	    if (fmt == NF_UNKNOWN) {
 		return TCL_ERROR;
 	    }
 	} else if (strcmp(string, "-at") == 0) {
@@ -1788,6 +2339,113 @@ BinreadOp(Vector *vPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 
     /* Set the result as the number of values read.  */
     Tcl_SetIntObj(Tcl_GetObjResult(interp), total);
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * ExportOp --
+ *
+ *	Exports the vector as a binary bytearray.
+ *
+ * Results:
+ *	A standard TCL result.  
+ *
+ *	vecName bytearray ?-empty bool -format float|double -from -to?
+ *	vecName bytearray obj
+ *
+ *	vecName import float -data obj -file file ?switches?
+ *	vecName export float -data obj -file file 
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+ExportOp(Vector *vPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+{
+    ExportSwitches switches;
+    Tcl_Obj *objPtr;
+    void *array;
+    size_t numBytes, numValues;
+    char *fmt;
+    int format;
+
+#define FMT_FLOAT	0
+#define FMT_DOUBLE	1
+    switches.from = 0;
+    switches.to = vPtr->length - 1;
+    switches.empty = Blt_NaN();
+    indexSwitch.clientData = vPtr;
+    fmt = Tcl_GetString(objv[2]);
+    if (strcmp(fmt, "double") == 0) {
+	format = FMT_DOUBLE;
+    } else if (strcmp(fmt, "float") == 0) {
+	format = FMT_FLOAT;
+    } else {
+	Tcl_AppendResult(interp, "unknown export format \"", fmt, "\"",
+			 (char *)NULL);
+	return TCL_ERROR;
+    }
+    if (Blt_ParseSwitches(interp, exportSwitches, objc - 3, objv + 3, 
+			  &switches, BLT_SWITCH_DEFAULTS) < 0) {
+	return TCL_ERROR;
+    }
+    numValues = switches.to - switches.from + 1;
+    if (format == FMT_DOUBLE) {
+	double *darray;
+	size_t count;
+
+	darray = Blt_AssertMalloc(numValues * sizeof(double));
+	count = 0;
+	if (switches.empty) {
+	    long i;
+
+	    for (i = switches.from; i <= switches.to; i++) {
+		darray[count] = vPtr->valueArr[i];
+		count++;
+	    }
+	} else {
+	    long i;
+
+	    for (i = switches.from; i <= switches.to; i++) {
+		if (FINITE(vPtr->valueArr[i])) {
+		    darray[count] = vPtr->valueArr[i];
+		    count++;
+		}
+	    }
+	}
+	array = darray;
+	numBytes = count * sizeof(double);
+    } else if (format == FMT_FLOAT) {
+	float *farray;
+	size_t count;
+
+	farray = Blt_AssertMalloc(numValues * sizeof(float));
+	count = 0;
+	if (switches.empty) {
+	    long i;
+
+	    for (i = switches.from; i <= switches.to; i++) {
+		farray[count] = (float)vPtr->valueArr[i];
+		count++;
+	    }
+	} else {
+	    long i;
+
+	    for (i = switches.from; i <= switches.to; i++) {
+		if (FINITE(vPtr->valueArr[i])) {
+		    farray[count] = (float)vPtr->valueArr[i];
+		    count++;
+		}
+	    }
+	}
+	array = farray;
+	numBytes = count * sizeof(float);
+    }
+    objPtr = Tcl_NewByteArrayObj(array, numBytes);
+    Tcl_SetObjResult(interp, objPtr);
+    Blt_FreeSwitches(exportSwitches, &switches, 0);
     return TCL_OK;
 }
 
@@ -2120,6 +2778,10 @@ SeqOp(Vector *vPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  * Side Effects:
  *	The vector data is reset.  Clients of the vector are notified.  Any
  *	cached array indices are flushed.
+ *
+ *
+ *	vecName set $list 
+ *	vecName set anotherVector
  *
  *---------------------------------------------------------------------------
  */
@@ -2679,14 +3341,14 @@ static Blt_OpSpec vectorInstOps[] =
     {"-",         1, ArithOp,     3, 3, "item",},	/*Deprecated*/
     {"/",         1, ArithOp,     3, 3, "item",},	/*Deprecated*/
     {"append",    1, AppendOp,    3, 0, "item ?item...?",},
-    {"binread",   1, BinreadOp,   3, 0, "channel ?numValues? ?flags?",},
+    {"binread",   2, BinreadOp,   3, 0, "channel ?numValues? ?flags?",},
     {"clear",     2, ClearOp,     2, 2, "",},
     {"count",     2, CountOp,     3, 3, "what",},
     {"delete",    2, DeleteOp,    2, 0, "index ?index...?",},
     {"duplicate", 2, DupOp,       2, 3, "?vecName?",},
-    {"expr",      1, InstExprOp,  3, 3, "expression",},
+    {"export",    4, ExportOp,    3, 0, "format ?switches?",},
+    {"expr",      4, InstExprOp,  3, 3, "expression",},
     {"fft",	  2, FFTOp,	  3, 0, "vecName ?switches?",},
-    {"format",    2, FormatOp,    3, 0, "format ?switches?",},
     {"indices",   3, IndicesOp,   3, 3, "what",},
     {"inversefft",3, InverseFFTOp,4, 4, "vecName vecName",},
     {"length",    1, LengthOp,    2, 3, "?newSize?",},
@@ -2697,6 +3359,7 @@ static Blt_OpSpec vectorInstOps[] =
     {"notify",    3, NotifyOp,    3, 3, "keyword",},
     {"offset",    1, OffsetOp,    2, 3, "?offset?",},
     {"populate",  2, PopulateOp,  4, 4, "vecName density",},
+    {"print",     2, PrintOp,     3, 0, "format ?switches?",},
     {"random",    4, RandomOp,    2, 3, "?seed?",},	/*Deprecated*/
     {"range",     4, RangeOp,     2, 4, "first last",},
     {"search",    3, SearchOp,    3, 5, "?-value? value ?value?",},
