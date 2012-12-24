@@ -470,6 +470,8 @@ ObjToGradientTypeProc(
 	*typePtr = BLT_GRADIENT_TYPE_DIAGONAL_UP;
     } else if ((c == 'd') && (strcmp(string, "downdiagonal") == 0)) {
 	*typePtr = BLT_GRADIENT_TYPE_DIAGONAL_DOWN;
+    } else if ((c == 'c') && (strcmp(string, "conical") == 0)) {
+	*typePtr = BLT_GRADIENT_TYPE_CONICAL;
     } else {
 	Tcl_AppendResult(interp, "unknown gradient type \"", string, "\"",
 			 (char *)NULL);
@@ -492,6 +494,8 @@ NameOfGradientType(Blt_GradientType type)
 	return "updiagonal";
     case BLT_GRADIENT_TYPE_DIAGONAL_DOWN:
 	return "downdiagonal";	
+    case BLT_GRADIENT_TYPE_CONICAL:
+	return "conical";	
     default:
 	return "???";
     }
@@ -873,6 +877,24 @@ GradientColorProc(Blt_Paintbrush *brushPtr, int x, int y)
 	    t = rx * gradPtr->scaleFactor;
 	}
 	break;
+
+    case BLT_GRADIENT_TYPE_CONICAL:
+	{
+	    double d, dx, dy;
+
+	    /* Translate to the center of the reference window. */
+	    dx = x - gradPtr->xOffset;
+	    dy = y - gradPtr->yOffset;
+	    if (dx == 0.0) {
+		d = gradPtr->angle;
+	    } else {
+		d = cos(atan(dy / dx) + gradPtr->angle);
+	    }
+	    d = fabs(fmod(d, 360.0));
+	    t = d;
+	}
+	break;
+
     case BLT_GRADIENT_TYPE_HORIZONTAL:
 	t = (double)x * gradPtr->scaleFactor;
 	break;
@@ -1496,6 +1518,11 @@ Blt_Paintbrush_Region(Blt_Paintbrush *brushPtr, int x, int y, int w, int h)
 	    if (gradPtr->length > 1) {
 		gradPtr->scaleFactor = 1.0 / ((gradPtr->length * 0.5) - 1);
 	    } 
+	    break;
+	case BLT_GRADIENT_TYPE_CONICAL:
+	    gradPtr->xOffset = w * 0.5;
+	    gradPtr->yOffset = h * 0.5;
+	    gradPtr->angle = 45 * DEG2RAD;
 	    break;
 	}
     }

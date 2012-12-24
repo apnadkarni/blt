@@ -101,10 +101,16 @@ static Blt_SwitchSpec valuesSwitches[] =
 typedef struct {
     int from, to;
     int empty;
+    Tcl_Obj *dataObjPtr;
+    Tcl_Obj *fileObjPtr;
 } ExportSwitches;
 
 static Blt_SwitchSpec exportSwitches[] = 
 {
+    {BLT_SWITCH_OBJ,    "-data",   "data", (char *)NULL,
+	Blt_Offset(ExportSwitches, dataObjPtr), 0},
+    {BLT_SWITCH_OBJ,    "-file",   "fileName", (char *)NULL,
+	Blt_Offset(ExportSwitches, fileObjPtr), 0},
     {BLT_SWITCH_CUSTOM, "-from",   "index", (char *)NULL,
 	Blt_Offset(ExportSwitches, from),         0, 0, &indexSwitch},
     {BLT_SWITCH_CUSTOM, "-to",     "index", (char *)NULL,
@@ -150,10 +156,11 @@ static Blt_SwitchSpec sortSwitches[] =
 
 typedef struct {
     double delta;
-    Vector *imagPtr;	/* Vector containing imaginary part. */
-    Vector *freqPtr;	/* Vector containing frequencies. */
+    Vector *imagPtr;		        /* Vector containing imaginary
+					 * part. */
+    Vector *freqPtr;			/* Vector containing frequencies. */
     VectorInterpData *dataPtr;
-    int mask;			/* Flags controlling FFT. */
+    int mask;				/* Flags controlling FFT. */
 } FFTData;
 
 
@@ -188,18 +195,18 @@ static Blt_SwitchSpec fftSwitches[] = {
 /*ARGSUSED*/
 static int
 ObjToFFTVector(
-    ClientData clientData,	/* Not used. */
-    Tcl_Interp *interp,		/* Interpreter to send results back to */
-    const char *switchName,	/* Not used. */
-    Tcl_Obj *objPtr,		/* Name of vector. */
-    char *record,		/* Structure record */
-    int offset,			/* Offset to field in structure */
-    int flags)			/* Not used. */
+    ClientData clientData,		/* Not used. */
+    Tcl_Interp *interp,			/* Interpreter to report results */
+    const char *switchName,		/* Not used. */
+    Tcl_Obj *objPtr,			/* Name of vector. */
+    char *record,			/* Structure record */
+    int offset,				/* Offset to field in structure */
+    int flags)				/* Not used. */
 {
     FFTData *dataPtr = (FFTData *)record;
     Vector *vPtr;
     Vector **vPtrPtr = (Vector **)(record + offset);
-    int isNew;			/* Not used. */
+    int isNew;				/* Not used. */
     char *string;
 
     string = Tcl_GetString(objPtr);
@@ -226,14 +233,14 @@ ObjToFFTVector(
 /*ARGSUSED*/
 static int
 ObjToIndex(
-    ClientData clientData,	/* Contains the vector in question to verify
-				 * its length. */
-    Tcl_Interp *interp,		/* Interpreter to send results back to */
-    const char *switchName,	/* Not used. */
-    Tcl_Obj *objPtr,		/* Name of vector. */
-    char *record,		/* Structure record */
-    int offset,			/* Offset to field in structure */
-    int flags)			/* Not used. */
+    ClientData clientData,		/* Contains the vector in question to
+					 * verify its length. */
+    Tcl_Interp *interp,			/* Interpreter to report results */
+    const char *switchName,		/* Not used. */
+    Tcl_Obj *objPtr,			/* Name of vector. */
+    char *record,			/* Structure record */
+    int offset,				/* Offset to field in structure */
+    int flags)				/* Not used. */
 {
     Vector *vPtr = clientData;
     int *indexPtr = (int *)(record + offset);
@@ -467,13 +474,13 @@ DeleteOp(Vector *vPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	    return TCL_ERROR;
 	}
 	for (j = vPtr->first; j <= vPtr->last; j++) {
-	    SetBit(j);		/* Mark the range of elements for deletion. */
+	    SetBit(j);			/* Mark the element for deletion. */
 	}
     }
     count = 0;
     for (i = 0; i < vPtr->length; i++) {
 	if (GetBit(i)) {
-	    continue;		/* Skip elements marked for deletion. */
+	    continue;			/* Skip marked elements. */
 	}
 	if (count < i) {
 	    vPtr->valueArr[count] = vPtr->valueArr[i];
@@ -637,13 +644,13 @@ InverseFFTOp(Vector *vPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * LengthOp --
  *
- *	Returns the length of the vector.  If a new size is given, the
- *	vector is resized to the new vector.
+ *	Returns the length of the vector.  If a new size is given, the vector
+ *	is resized to the new vector.
  *
  * Results:
- *	A standard TCL result.  If the new length is invalid,
- *	interp->result will an error message and TCL_ERROR is returned.
- *	Otherwise interp->result will contain the length of the vector.
+ *	A standard TCL result.  If the new length is invalid, interp->result
+ *	will an error message and TCL_ERROR is returned.  Otherwise
+ *	interp->result will contain the length of the vector.
  *
  *---------------------------------------------------------------------------
  */
@@ -679,13 +686,13 @@ LengthOp(Vector *vPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * MapOp --
  *
- *	Queries or sets the offset of the array index from the base
- *	address of the data array of values.
+ *	Queries or sets the offset of the array index from the base address of
+ *	the data array of values.
  *
  * Results:
- *	A standard TCL result.  If the source vector doesn't exist
- *	or the source list is not a valid list of numbers, TCL_ERROR
- *	returned.  Otherwise TCL_OK is returned.
+ *	A standard TCL result.  If the source vector doesn't exist or the
+ *	source list is not a valid list of numbers, TCL_ERROR returned.
+ *	Otherwise TCL_OK is returned.
  *
  *---------------------------------------------------------------------------
  */
@@ -749,8 +756,8 @@ MergeOp(Vector *vPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     double *valuePtr, *valueArr;
     Vector **vPtrPtr;
     
-    /* Allocate an array of vector pointers of each vector to be
-     * merged in the current vector.  */
+    /* Allocate an array of vector pointers of each vector to be merged in the
+     * current vector.  */
     vecArr = Blt_AssertMalloc(sizeof(Vector *) * objc);
     vPtrPtr = vecArr;
 
@@ -830,8 +837,8 @@ MinOp(Vector *vPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *	Normalizes the vector.
  *
  * Results:
- *	A standard TCL result.  If the density is invalid, TCL_ERROR
- *	is returned.  Otherwise TCL_OK is returned.
+ *	A standard TCL result.  If the density is invalid, TCL_ERROR is
+ *	returned.  Otherwise TCL_OK is returned.
  *
  *---------------------------------------------------------------------------
  */
@@ -983,7 +990,7 @@ PopulateOp(Vector *vPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	return TCL_ERROR;
     }
     if (v2Ptr->length == 0) {
-	return TCL_OK;		/* Source vector is empty. */
+	return TCL_OK;			/* Source vector is empty. */
     }
     if (Tcl_GetIntFromObj(interp, objv[3], &density) != TCL_OK) {
 	return TCL_ERROR;
@@ -1027,15 +1034,16 @@ PopulateOp(Vector *vPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * ValueGetOp --
  *
- *	Get the value of the index.  This simulates what the
- *	vector's variable does.
+ *	Get the value of the index.  This simulates what the vector's variable
+ *	does.
  *
  * Results:
- *	A standard TCL result.  If the index is invalid,
- *	interp->result will an error message and TCL_ERROR is returned.
- *	Otherwise interp->result will contain the values.
+ *	A standard TCL result.  If the index is invalid, interp->result will
+ *	an error message and TCL_ERROR is returned.  Otherwise interp->result
+ *	will contain the values.
  *
  *	vecName value get index 
+ *
  *---------------------------------------------------------------------------
  */
 static int
@@ -1094,7 +1102,7 @@ ValueSetOp(Vector *vPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     if (first == SPECIAL_INDEX) {
 	Tcl_AppendResult(interp, "can't set index \"", string, "\"",
 			 (char *)NULL);
-	return TCL_ERROR;	/* Tried to set "min" or "max" */
+	return TCL_ERROR;		/* Tried to set "min" or "max" */
     }
     if (Blt_ExprDoubleFromObj(interp, objv[4], &value) != TCL_OK) {
 	return TCL_ERROR;
@@ -1122,10 +1130,10 @@ ValueSetOp(Vector *vPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *	variable does.
  *
  * Results:
- *	A standard TCL result.  If the index is invalid,
- *	interp->result will an error message and TCL_ERROR is returned.
- *	Otherwise interp->result will contain the values.
- *b
+ *	A standard TCL result.  If the index is invalid, interp->result will
+ *	an error message and TCL_ERROR is returned.  Otherwise interp->result
+ *	will contain the values.
+ *
  *---------------------------------------------------------------------------
  */
 static int
@@ -2365,14 +2373,15 @@ static int
 ExportOp(Vector *vPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 {
     ExportSwitches switches;
-    Tcl_Obj *objPtr;
-    void *array;
-    size_t numBytes, numValues;
+    size_t numValues;
     char *fmt;
     int format;
+    Blt_DBuffer dbuffer;
+    int result;
 
 #define FMT_FLOAT	0
 #define FMT_DOUBLE	1
+    memset(&switches, 0, sizeof(switches));
     switches.from = 0;
     switches.to = vPtr->length - 1;
     switches.empty = Blt_NaN();
@@ -2392,11 +2401,13 @@ ExportOp(Vector *vPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	return TCL_ERROR;
     }
     numValues = switches.to - switches.from + 1;
+    dbuffer = Blt_DBuffer_Create();
     if (format == FMT_DOUBLE) {
 	double *darray;
 	size_t count;
 
-	darray = Blt_AssertMalloc(numValues * sizeof(double));
+	Blt_DBuffer_SetLength(dbuffer, numValues * sizeof(double));
+	darray = (double *)Blt_DBuffer_Bytes(dbuffer);
 	count = 0;
 	if (switches.empty) {
 	    long i;
@@ -2415,13 +2426,13 @@ ExportOp(Vector *vPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 		}
 	    }
 	}
-	array = darray;
-	numBytes = count * sizeof(double);
+	Blt_DBuffer_SetLength(dbuffer, count * sizeof(double));
     } else if (format == FMT_FLOAT) {
 	float *farray;
 	size_t count;
 
-	farray = Blt_AssertMalloc(numValues * sizeof(float));
+	Blt_DBuffer_SetLength(dbuffer, numValues * sizeof(float));
+	farray = (float *)Blt_DBuffer_Bytes(dbuffer);
 	count = 0;
 	if (switches.empty) {
 	    long i;
@@ -2440,13 +2451,35 @@ ExportOp(Vector *vPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 		}
 	    }
 	}
-	array = farray;
-	numBytes = count * sizeof(float);
+	Blt_DBuffer_SetLength(dbuffer, count * sizeof(float));
     }
-    objPtr = Tcl_NewByteArrayObj(array, numBytes);
-    Tcl_SetObjResult(interp, objPtr);
-    Blt_FreeSwitches(exportSwitches, &switches, 0);
-    return TCL_OK;
+    if (switches.fileObjPtr != NULL) {
+	const char *fileName;
+
+	/* Write the image into the designated file. */
+	fileName = Tcl_GetString(switches.fileObjPtr);
+	result = Blt_DBuffer_SaveFile(interp, fileName, dbuffer);
+    } else if (switches.dataObjPtr != NULL) {
+	Tcl_Obj *objPtr;
+
+	/* Write the image into the designated TCL variable. */
+	objPtr = Tcl_ObjSetVar2(interp, switches.dataObjPtr, NULL, 
+		Blt_DBuffer_ByteArrayObj(dbuffer), 0);
+	result = (objPtr == NULL) ? TCL_ERROR : TCL_OK;
+    } else {
+	Tcl_Obj *objPtr;
+
+	/* Return the image as a base64 string in the interpreter result. */
+	result = TCL_ERROR;
+	objPtr = Blt_DBuffer_Base64EncodeToObj(interp, dbuffer);
+	if (objPtr != NULL) {
+	    Tcl_SetObjResult(interp, objPtr);
+	    result = TCL_OK;
+	}
+    }
+    Blt_FreeSwitches(exportSwitches, (char *)&switches, 0);
+    Blt_DBuffer_Destroy(dbuffer);
+    return result;
 }
 
 /*

@@ -3451,7 +3451,6 @@ Blt_Picture_TextOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	} else {
 	    int i;
 
-	    y += fontPtr->ascent;
 	    for (i = 0; i < layoutPtr->numFragments; i++) {
 		TextFragment *fp;
 

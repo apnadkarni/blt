@@ -511,7 +511,8 @@ typedef enum Blt_GradientTypes {
     BLT_GRADIENT_TYPE_DIAGONAL_UP,
     BLT_GRADIENT_TYPE_DIAGONAL_DOWN,
     BLT_GRADIENT_TYPE_RADIAL,
-    BLT_GRADIENT_TYPE_RECTANGULAR
+    BLT_GRADIENT_TYPE_RECTANGULAR,
+    BLT_GRADIENT_TYPE_CONICAL
 } Blt_GradientType;
 
 /*
@@ -548,6 +549,7 @@ typedef struct {
 					 * diagonal. */
     float length;			/* Length of diagonal. */
     float scaleFactor;
+    float angle;			/* Starting angle. */
 } Blt_Gradient;
 
 BLT_EXTERN void Blt_GradientPicture(Blt_Picture picture, Blt_Pixel *highPtr, 

@@ -62,7 +62,7 @@ BLT_EXTERN int Blt_DBuffer_SaveFile(Tcl_Interp *interp, const char *fileName,
 BLT_EXTERN void Blt_DBuffer_AppendByte(Blt_DBuffer buffer, unsigned char byte);
 BLT_EXTERN void Blt_DBuffer_AppendShort(Blt_DBuffer buffer, 
 	unsigned short value);
-BLT_EXTERN void Blt_DBuffer_AppendLong(Blt_DBuffer buffer, unsigned int value);
+BLT_EXTERN void Blt_DBuffer_AppendInt(Blt_DBuffer buffer, unsigned int value);
 BLT_EXTERN Tcl_Obj *Blt_DBuffer_ByteArrayObj(Blt_DBuffer buffer);
 BLT_EXTERN Tcl_Obj *Blt_DBuffer_StringObj(Blt_DBuffer buffer);
 BLT_EXTERN const char *Blt_DBuffer_String(Blt_DBuffer buffer);

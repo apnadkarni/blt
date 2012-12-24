@@ -79,7 +79,7 @@ BltTclIntProcs bltTclIntProcs = {
     Blt_DBuffer_SaveFile, /* 70 */
     Blt_DBuffer_AppendByte, /* 71 */
     Blt_DBuffer_AppendShort, /* 72 */
-    Blt_DBuffer_AppendLong, /* 73 */
+    Blt_DBuffer_AppendInt, /* 73 */
     Blt_DBuffer_ByteArrayObj, /* 74 */
     Blt_DBuffer_StringObj, /* 75 */
     Blt_DBuffer_String, /* 76 */

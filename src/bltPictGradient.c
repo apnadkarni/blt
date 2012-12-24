@@ -1,6 +1,6 @@
 
 /*
- * bltPictGradient.c --
+ * bltPictGrad.c --
  *
  *	Copyright 2004 George A Howlett.
  *
@@ -281,6 +281,67 @@ Blt_GradientPicture(
 		    dp->Green = (unsigned char)(minPtr->Green + t * gRange);
 		    dp->Blue = (unsigned char)(minPtr->Blue + t * bRange);
 		    dp->Alpha = (unsigned char)(t * aRange);
+		}
+		destRowPtr += destPtr->pixelsPerRow;
+	    }
+	}
+	break;
+
+    case BLT_GRADIENT_TYPE_CONICAL:
+	{
+	    double angle;
+	    Blt_Pixel *destRowPtr;
+	    int y;
+	    float cx, cy;
+	    float scaleFactor;
+	    float length, halfLength;
+
+	    destRowPtr = destPtr->bits;
+	    cx = destPtr->width * 0.5;
+	    cy = destPtr->height * 0.5;
+	    length = sqrt(destPtr->width * destPtr->width + 
+			  destPtr->height * destPtr->height);
+	    halfLength = length * 0.5;
+	    scaleFactor = 0.0;
+	    angle = M_PI_2 * 0.25;
+	    if (halfLength > 2) {
+		scaleFactor = 1.0 / (halfLength - 1);
+	    } 
+	    /* Center coordinates. */
+	    for (y = 0; y < destPtr->height; y++) {
+		int x;
+		Blt_Pixel *dp;
+		
+		for (dp = destRowPtr, x = 0; x < destPtr->width; x++, dp++) {
+		    double dx, dy, d;
+		    double t;
+		    /* Translate to the center of the reference window. */
+
+		    dx = x - cx;
+		    dy = y - cy;
+		    if (dx == 0.0) {
+			d = 0.0;
+		    } else {
+			d = cos(atan(dy / dx));
+		    }
+		    d = fabs(fmod(d, 360.0));
+		    /*t = 1.0 - (d * scaleFactor) * (1 / 2 * M_PI); */
+		    fprintf(stderr, "d=%g angle=%g\n", d, atan(dy / dx) *RAD2DEG);
+			t = 1.0 - (d / (M_PI));
+			t = d;
+		    if (jitterPtr->scale > 0.0) {
+			t += Jitter(jitterPtr);
+		    }
+		    if (gradientPtr->scale == BLT_GRADIENT_SCALE_LOG) {
+			t = log10(9.0 * t + 1.0);
+		    } else if (gradientPtr->scale == BLT_GRADIENT_SCALE_ATAN) {
+			t = atan(18.0 * (t-0.05) + 1.0) / M_PI_2;
+		    }
+		    t = JCLAMP(t);
+		    dp->Red   = (unsigned char)(minPtr->Red   + t * rRange);
+		    dp->Green = (unsigned char)(minPtr->Green + t * gRange);
+		    dp->Blue  = (unsigned char)(minPtr->Blue  + t * bRange);
+		    dp->Alpha = 0xFF /*(unsigned char)(t * aRange); */;
 		}
 		destRowPtr += destPtr->pixelsPerRow;
 	    }

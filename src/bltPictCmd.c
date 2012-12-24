@@ -2453,6 +2453,8 @@ GradientTypeSwitchProc(
 	*typePtr = BLT_GRADIENT_TYPE_DIAGONAL_UP;
     } else if ((c == 'd') && (strcmp(string, "downdiagonal") == 0)) {
 	*typePtr = BLT_GRADIENT_TYPE_DIAGONAL_DOWN;
+    } else if ((c == 'c') && (strcmp(string, "conical") == 0)) {
+	*typePtr = BLT_GRADIENT_TYPE_CONICAL;
     } else {
 	Tcl_AppendResult(interp, "unknown gradient type \"", string, "\"",
 			 (char *)NULL);
@@ -3346,14 +3348,13 @@ GradientOp(
     colorSwitch.clientData = imgPtr;
     switches.fg.u32 = 0xFFFFFFFF;
     switches.bg.u32 = 0xFF000000;
-    switches.gradient.type = BLT_GRADIENT_TYPE_VERTICAL;
+    switches.gradient.type  = BLT_GRADIENT_TYPE_VERTICAL;
     switches.gradient.scale = BLT_GRADIENT_SCALE_LINEAR; 
     if (Blt_ParseSwitches(interp, gradientSwitches, objc - 2, objv + 2, 
 	&switches, BLT_SWITCH_DEFAULTS) < 0) {
 	return TCL_ERROR;
     }
     Blt_Jitter_Init(&jitter);
-    jitter.scale = 0.0;
     Blt_GradientPicture(imgPtr->picture, &switches.fg, &switches.bg, 
 			&switches.gradient, &jitter);
     if ((switches.bg.Alpha != 0xFF) || (switches.fg.Alpha != 0xFF)) {

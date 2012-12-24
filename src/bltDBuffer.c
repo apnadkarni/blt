@@ -162,7 +162,7 @@ Blt_DBuffer_AppendShort(DBuffer *destPtr, unsigned short value)
 }
 
 void
-Blt_DBuffer_AppendLong(DBuffer *destPtr, unsigned int value)
+Blt_DBuffer_AppendInt(DBuffer *destPtr, unsigned int value)
 {
     if (Blt_DBuffer_Resize(destPtr, destPtr->length + sizeof(value))) {
 	unsigned char *bp;
@@ -179,7 +179,7 @@ Blt_DBuffer_AppendLong(DBuffer *destPtr, unsigned int value)
 	bp[2] = (value >> 16) & 0xFF;
 	bp[3] = (value >> 24) & 0xFF;
 #endif
-	destPtr->length += 4;
+	destPtr->length += sizeof(value);
     }
 }
 

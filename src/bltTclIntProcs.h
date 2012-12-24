@@ -420,10 +420,10 @@ BLT_EXTERN void		Blt_DBuffer_AppendByte(Blt_DBuffer buffer,
 BLT_EXTERN void		Blt_DBuffer_AppendShort(Blt_DBuffer buffer,
 				unsigned short value);
 #endif
-#ifndef Blt_DBuffer_AppendLong_DECLARED
-#define Blt_DBuffer_AppendLong_DECLARED
+#ifndef Blt_DBuffer_AppendInt_DECLARED
+#define Blt_DBuffer_AppendInt_DECLARED
 /* 73 */
-BLT_EXTERN void		Blt_DBuffer_AppendLong(Blt_DBuffer buffer,
+BLT_EXTERN void		Blt_DBuffer_AppendInt(Blt_DBuffer buffer,
 				unsigned int value);
 #endif
 #ifndef Blt_DBuffer_ByteArrayObj_DECLARED
@@ -721,7 +721,7 @@ typedef struct BltTclIntProcs {
     int (*blt_DBuffer_SaveFile) (Tcl_Interp *interp, const char *fileName, Blt_DBuffer buffer); /* 70 */
     void (*blt_DBuffer_AppendByte) (Blt_DBuffer buffer, unsigned char byte); /* 71 */
     void (*blt_DBuffer_AppendShort) (Blt_DBuffer buffer, unsigned short value); /* 72 */
-    void (*blt_DBuffer_AppendLong) (Blt_DBuffer buffer, unsigned int value); /* 73 */
+    void (*blt_DBuffer_AppendInt) (Blt_DBuffer buffer, unsigned int value); /* 73 */
     Tcl_Obj * (*blt_DBuffer_ByteArrayObj) (Blt_DBuffer buffer); /* 74 */
     Tcl_Obj * (*blt_DBuffer_StringObj) (Blt_DBuffer buffer); /* 75 */
     const char * (*blt_DBuffer_String) (Blt_DBuffer buffer); /* 76 */
@@ -1063,9 +1063,9 @@ extern BltTclIntProcs *bltTclIntProcsPtr;
 #define Blt_DBuffer_AppendShort \
 	(bltTclIntProcsPtr->blt_DBuffer_AppendShort) /* 72 */
 #endif
-#ifndef Blt_DBuffer_AppendLong
-#define Blt_DBuffer_AppendLong \
-	(bltTclIntProcsPtr->blt_DBuffer_AppendLong) /* 73 */
+#ifndef Blt_DBuffer_AppendInt
+#define Blt_DBuffer_AppendInt \
+	(bltTclIntProcsPtr->blt_DBuffer_AppendInt) /* 73 */
 #endif
 #ifndef Blt_DBuffer_ByteArrayObj
 #define Blt_DBuffer_ByteArrayObj \
