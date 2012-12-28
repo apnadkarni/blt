@@ -157,13 +157,13 @@ PaintHorizontalLine(Pict *destPtr, int x1, int x2, int y, Blt_Paintbrush *brushP
 	    tmp = x1, x1 = x2, x2 = tmp;
 	}
 	x1 = MAX(x1, 0);
-	x2 = MIN(x2, destPtr->width - 1);
+	x2 = MIN(x2, destPtr->width);
 	dp   = destPtr->bits + (y * destPtr->pixelsPerRow) + x1;
 	dend = destPtr->bits + (y * destPtr->pixelsPerRow) + x2;
 	if (blend) {
 	    int x;
 
-	    for (x = x1; dp <= dend; dp++, x++) {
+	    for (x = x1; dp < dend; dp++, x++) {
 		Blt_Pixel color;
 
 		color.u32 = Blt_Paintbrush_GetColor(brushPtr, x, y);
@@ -235,6 +235,7 @@ FillVerticalLine(Pict *destPtr, int x, int y1, int y2, Blt_Pixel *colorPtr,
     }
 }
 
+#ifdef notdef
 static void
 PaintThickRoundedRectangle(
     Blt_Picture picture,
@@ -272,7 +273,7 @@ PaintThickRoundedRectangle(
 
 	/* Draw the extra width (not including the radius). */
 	left = xOrigin;
-	right = xOrigin + w - 1;
+	right = xOrigin + w;
 	for (dy = 0; dy < (lineWidth - r); dy++) {
 	    PaintHorizontalLine(picture, left, right, y1 + dy, brushPtr, blend);
 	    PaintHorizontalLine(picture, left, right, y2 - dy, brushPtr, blend);
@@ -284,8 +285,8 @@ PaintThickRoundedRectangle(
 	int mid;
 
 	left = xOrigin;
-	midleft = xOrigin + (lineWidth - 1);
-	right = xOrigin + w - 1;
+	midleft = xOrigin + lineWidth;
+	right = xOrigin + w;
 	midright = right - (lineWidth - 1);
 
 	mid = MAX(r, lineWidth - 1);
@@ -377,7 +378,7 @@ PaintRoundedRectangle(
 	int y;
 
 	left = xOrigin;
-	right = xOrigin + width - 1;
+	right = xOrigin + width;
 	for (y = y1; y <= y2; y++) {
 	    PaintHorizontalLine(picture, left, right, y, brushPtr, blend); 
 	}
@@ -397,6 +398,7 @@ PaintRoundedRectangle(
 	Blt_Free(outer);
     }
 }
+#endif
 
 #ifdef notdef
 static Pict *
@@ -1390,28 +1392,7 @@ PaintCircle(
 }
 
 
-void
-Blt_PaintRectangle(
-    Blt_Picture picture, 
-    int x, int y,		/* Upper left corner of rectangle. */
-    int width, int height,	/* Dimension of rectangle. */
-    int r,			/* Radius of rounded corner. If zero, draw
-				 * square corners. */
-    int lineWidth,		/* Line width of the rectangle.  If zero, then
-				 * draw a solid fill rectangle. */
-    Blt_Paintbrush *brushPtr)
-{
-    if (((lineWidth*2) >= width) || ((lineWidth*2) >= height)) {
-	lineWidth = 0;		/* Paint solid rectangle instead.*/
-    }
-    if (lineWidth == 0) {
-	PaintRoundedRectangle(picture, x, y, width, height, r, brushPtr);
-    } else {
-	PaintThickRoundedRectangle(picture, x, y, width, height, r, 
-		lineWidth, brushPtr);
-    }
-}
-
+#ifdef notdef
 static void
 PaintRectangleAA(
     Blt_Picture picture, 
@@ -1466,55 +1447,27 @@ PaintRectangleAA(
    Blt_FreePicture(big);
    Blt_FreePicture(tmp);
 }
+#endif
 
 static void
-PaintRectangleShadow(
-    Blt_Picture picture, 
-    int x, int y,		/* Upper left corner of rectangle. */
-    int w, int h,		/* Dimension of rectangle. */
-    int r,			/* Radius of rounded corner. If zero, draw
-				 * square corners. */
-    int lineWidth,
-    Blt_Shadow *shadowPtr)
+PaintRectangleShadow(Blt_Picture picture, int x, int y, int w, int h, int r, 
+		     int lineWidth, Blt_Shadow *shadowPtr)
 {
     int dw, dh;
-#ifdef notdef
-    Blt_Picture tmp;
-#endif
     Blt_Picture blur;
     Blt_Paintbrush brush;
 
-    dw = (w + shadowPtr->offset*2);
-    dh = (h + shadowPtr->offset*2);
+    dw = (w + shadowPtr->offset*3);
+    dh = (h + shadowPtr->offset*3);
     blur = Blt_CreatePicture(dw, dh);
     Blt_BlankPicture(blur, 0x0);
     Blt_Paintbrush_Init(&brush);
     Blt_Paintbrush_SetColor(&brush, shadowPtr->color.u32);
-#ifdef notdef
-    /* 
-     * draw the rectangle.
-     * blur into a slightly bigger picture (for blur width).
-     * mask off original rectangle, leaving fringe blur.
-     * blend into destination.
-     */
-    tmp = Blt_CreatePicture(dw, dh);
-    Blt_BlankPicture(tmp, 0x0);
-    color.Alpha = 0xFF;
-    Blt_PaintRectangle(tmp, 0, 0, w, h, r, lineWidth, &color);
-    Blt_CopyPictureBits(blur, tmp, 0, 0, w, h, shadowPtr->offset*2, 
-			shadowPtr->offset*2);
-    Blt_BlurPicture(blur, blur, shadowPtr->offset, 3);
-    color.u32 = 0x00;
-    Blt_MaskPicture(blur, tmp, 0, 0, w, h, 0, 0, &color);
-    Blt_BlendPictures(picture, blur, 0, 0, dw, dh, x, y);
-    Blt_FreePicture(blur);
-#else
     Blt_PaintRectangle(blur, shadowPtr->offset, shadowPtr->offset, w, h, r, 
 		   lineWidth, &brush);
-    Blt_BlurPicture(blur, blur, shadowPtr->offset, 3);
+    Blt_BlurPicture(blur, blur, shadowPtr->offset, 2);
     Blt_BlendPictures(picture, blur, 0, 0, dw, dh, x, y);
     Blt_FreePicture(blur);
-#endif
 }
 
 #define UPPER_LEFT	0
@@ -1531,14 +1484,15 @@ PaintCorner(Pict *destPtr, int x, int y, int r, int lineWidth, int corner,
     int x1, x2, y1, y2, dx, dy;
 
     outer = r;
-    if (lineWidth > 0) {
+    if ((lineWidth > 0) && (lineWidth < r)) {
 	inner = r - lineWidth;
     } else {
 	inner = 0;
     }
     outer2 = r * r;
-    inner2 = inner * inner;
+    inner2 = floor(inner * inner);
     
+    x1 = x2 = y1 = y2 = 0;		/* Suppress compiler warning. */
     switch (corner) {
     case UPPER_LEFT:
 	x1 = 0;
@@ -1547,7 +1501,7 @@ PaintCorner(Pict *destPtr, int x, int y, int r, int lineWidth, int corner,
 	y2 = r;
 	break;
     case UPPER_RIGHT:
-	x1 = r;
+	x1 = r + 1;
 	x2 = r + r;
 	y1 = 0;
 	y2 = r;
@@ -1555,13 +1509,13 @@ PaintCorner(Pict *destPtr, int x, int y, int r, int lineWidth, int corner,
     case LOWER_LEFT:
 	x1 = 0;
 	x2 = r;
-	y1 = r + r;
-	y2 = r;
+	y1 = r + 1;
+	y2 = r + r;
 	break;
     case LOWER_RIGHT:
-	x1 = r;
+	x1 = r + 1;
 	x2 = r + r;
-	y1 = r;
+	y1 = r + 1;
 	y2 = r + r;
 	break;
     }	
@@ -1606,55 +1560,66 @@ PaintCorner(Pict *destPtr, int x, int y, int r, int lineWidth, int corner,
 		Blt_Pixel color;
 		
 		a = UCLAMP(a);
-		color.u32 = Blt_Paintbrush_GetColor(brushPtr, x, y);
+		color.u32 = Blt_Paintbrush_GetColor(brushPtr, x+dx, y+dy);
 		BlendPixel(dp, &color, a);
 	    } else {
 		int t;
 		a = UCLAMP(a);
-		dp->u32 = Blt_Paintbrush_GetColor(brushPtr, x, y);
+		dp->u32 = Blt_Paintbrush_GetColor(brushPtr, x+dx, y+dy);
 		dp->Alpha = imul8x8(a, dp->Alpha, t);
 	    }
 	}
     }
 }
 
-static void
-PaintRectangle(Blt_Picture picture, int x, int y, int w, int h, int r, 
+/* 
+ *	
+ *      ul  xxxxxxxxxxxxxxxxxx ur       Upper section
+ *	    xxxxxxxxxxxxxxxxxx  
+ *      xxxxxxxxxxxxxxxxxxxxxxxxxx      Middle section
+ *      xxxxxxxxxxxxxxxxxxxxxxxxxx 
+ *      xxxxxxxxxxxxxxxxxxxxxxxxxx
+ *          xxxxxxxxxxxxxxxxxx          Lower section
+ *	ll  xxxxxxxxxxxxxxxxxx lr
+ *	
+ */
+void
+Blt_PaintRectangle(Blt_Picture picture, int x, int y, int w, int h, int r, 
 	       int lineWidth, Blt_Paintbrush *brushPtr)
 {
     int blend = 1;
 
-    {
-	int w2, h2;
-
-	/* Radius of each rounded corner can't be bigger than half the width
-	 * or height of the rectangle. */
-	w2 = w / 2;
-	h2 = h / 2;
-	if (r > w2) {
-	    r = w2;
-	}
-	if (r > h2) {
-	    r = h2;
-	}
+    /* If the linewidth exceeds half the height or width of the rectangle,
+     * then paint as a solid rectangle.*/
+    if (((lineWidth*2) >= w) || ((lineWidth*2) >= h)) {
+	lineWidth = 0;
     }
+    /* Radius of each rounded corner can't be bigger than half the width or
+     * height of the rectangle. */
+    if (r > (w / 2)) {
+	r = w / 2;
+    }
+    if (r > (h / 2)) {
+	r = h / 2;
+    }
+
     if (r > 0) {
 	if (lineWidth > 0) {
 	    int x1, x2, x3, x4, y1, y2, dy;
 
 	    /* Thick, rounded rectangle. */
 	    x1 = x + r;
-	    x2 = x + w - r - 1;
+	    x2 = x + w - r;
 	    y1 = y;
-	    y2 = x + h - lineWidth - 1;
+	    y2 = y + h - 1;
 	    for (dy = 0; dy < lineWidth; dy++) {
 		PaintHorizontalLine(picture, x1, x2, y1+dy, brushPtr, blend);
 		PaintHorizontalLine(picture, x1, x2, y2-dy, brushPtr, blend);
 	    }
 	    x1 = x;
-	    x2 = x + r - 1;
-	    x3 = x + w - r - 1;
-	    x4 = x + w - 1;
+	    x2 = x + lineWidth;
+	    x3 = x + w - lineWidth;
+	    x4 = x + w;
 	    for (dy = r; dy < (h - r); dy++) {
 		PaintHorizontalLine(picture, x1, x2, y+dy, brushPtr, blend);
 		PaintHorizontalLine(picture, x3, x4, y+dy, brushPtr, blend);
@@ -1664,35 +1629,37 @@ PaintRectangle(Blt_Picture picture, int x, int y, int w, int h, int r,
 
 	    /* Filled, rounded, rectangle. */
 	    x1 = x + r;
-	    x2 = x + w - r - 1;
-	    y1 = y + r;
+	    x2 = x + w - r;
+	    y1 = y;
 	    y2 = y + h - 1;
 	    for (dy = 0; dy < r; dy++) {
 		PaintHorizontalLine(picture, x1, x2, y1+dy, brushPtr, blend);
 		PaintHorizontalLine(picture, x1, x2, y2-dy, brushPtr, blend);
 	    }
 	    x1 = x;
-	    x2 = x + w - r - 1;
+	    x2 = x + w;
 	    for (dy = r; dy < (h - r); dy++) {
 		PaintHorizontalLine(picture, x1, x2, y+dy, brushPtr, blend);
 	    }
 	}
 	{ 
 	    int x1, y1;
+	    int d;
 
+	    d = r + r;
 	    /* Draw the rounded corners. */
-	    x1 = x;
-	    y1 = y;
-	    PaintCorner(picture, x1, y1, r, lineWidth, 0, brushPtr);
-	    x1 = x + w - r - 1;
-	    y1 = y;
-	    PaintCorner(picture, x1, y1, r, lineWidth, 1, brushPtr);
-	    x1 = x;
-	    y1 = y + h - r - 1;
-	    PaintCorner(picture, x1, y1, r, lineWidth, 2, brushPtr);
-	    x1 = x + w - r - 1;
-	    y1 = y + h - r - 1;
-	    PaintCorner(picture, x1, y1, r, lineWidth, 3, brushPtr);
+	    x1 = x - 1;
+	    y1 = y - 1;
+	    PaintCorner(picture, x1, y1, r + 1, lineWidth, 0, brushPtr);
+	    x1 = x + w - d - 2;
+	    y1 = y - 1;
+	    PaintCorner(picture, x1, y1, r + 1, lineWidth, 1, brushPtr);
+	    x1 = x - 1;
+	    y1 = y + h - d - 2;
+	    PaintCorner(picture, x1, y1, r + 1, lineWidth, 2, brushPtr);
+	    x1 = x + w - d - 2;
+	    y1 = y + h - d - 2;
+	    PaintCorner(picture, x1, y1, r + 1, lineWidth, 3, brushPtr);
 	}
     } else {
 	if (lineWidth > 0) {
@@ -1700,18 +1667,18 @@ PaintRectangle(Blt_Picture picture, int x, int y, int w, int h, int r,
 	    
 	    /* Thick, non-rounded, rectangle.  */
 	    x1 = x;
-	    x2 = x + w - 1;
+	    x2 = x + w;
 	    y1 = y;
-	    y2 = x + h - lineWidth - 1;
+	    y2 = y + h - lineWidth - 1;
 	    for (dy = 0; dy < lineWidth; dy++) {
 		PaintHorizontalLine(picture, x1, x2, y1+dy, brushPtr, blend);
 		PaintHorizontalLine(picture, x1, x2, y2-dy, brushPtr, blend);
 	    }
 	    x1 = x;
-	    x2 = x + r - 1;
-	    x3 = x + w - r - 1;
-	    x4 = x + w - 1;
-	    for (dy = r; dy < (h - r); dy++) {
+	    x2 = x + lineWidth;
+	    x3 = x + w - lineWidth;
+	    x4 = x + w;
+	    for (dy = r; dy < (h - lineWidth); dy++) {
 		PaintHorizontalLine(picture, x1, x2, y+dy, brushPtr, blend);
 		PaintHorizontalLine(picture, x3, x4, y+dy, brushPtr, blend);
 	    }
@@ -1720,7 +1687,7 @@ PaintRectangle(Blt_Picture picture, int x, int y, int w, int h, int r,
 
 	    /* Filled, non-rounded, rectangle. */
 	    x1 = x;
-	    x2 = x + w - 1;
+	    x2 = x + w;
 	    for (dy = 0; dy < h; dy++) {
 		PaintHorizontalLine(picture, x1, x2, y+dy, brushPtr, blend);
 	    }

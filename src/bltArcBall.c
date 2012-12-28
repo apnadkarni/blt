@@ -442,7 +442,7 @@ PointOnSphere(ArcBall *arcPtr, double x, double y, Point3d *p)
         p->x = sx * scale;
         p->y = sy * scale;
         p->z = 0.0;
-    } else {   /* else it's on the inside */
+    } else {				/* else it's on the inside */
         /* Return a vector to a point mapped inside the sphere
          * sqrt(radius squared - length) */
         p->x = sx;
@@ -462,20 +462,20 @@ ClickArcBall(ArcBall *arcPtr, double x, double y)
 static void 
 DragArcBall(ArcBall *arcPtr, double x, double y, Quaternion *q)
 {
-    /* Map the point to the sphere */
+    /* Map the point to the sphere. */
     PointOnSphere(arcPtr, x, y, &arcPtr->drag);
 
-    /* Return the quaternion equivalent to the rotation */
+    /* Return the quaternion equivalent to the rotation. */
     if (q != NULL) {
         Point3d perp;
 
-        /* Compute the vector perpendicular to the begin and end vectors */
+        /* Compute the vector perpendicular to the begin and end vectors. */
         CrossProduct(&arcPtr->click, &arcPtr->drag, &perp);
 
-        /* Compute the length of the perpendicular vector */
+        /* Compute the length of the perpendicular vector. */
         if (Length(&perp) > DBL_EPSILON) {
             /* If its non-zero, we're ok, so return the perpendicular
-             * vector as the transform after all
+             * vector as the transform after all.
              */
             q->x = perp.x;
             q->y = perp.y;

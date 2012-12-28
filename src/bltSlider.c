@@ -3100,17 +3100,18 @@ ComputeLayout(Slider *sliderPtr)
 	int left, right, width, height;
 
 	left = right = sliderPtr->inset + sliderPtr->sliderRadius;
+	width = height = 0;
 	if (sliderPtr->flags & SHOW_ARROWS) {
 	    if (sliderPtr->leftArrow != NULL) {
 		left += Blt_PictureWidth(sliderPtr->leftArrow);
 		if (height < Blt_PictureHeight(sliderPtr->leftArrow)) {
-		    height += Blt_PictureHeight(sliderPtr->leftArrow);
+		    height = Blt_PictureHeight(sliderPtr->leftArrow);
 		}
 	    }
 	    if (sliderPtr->rightArrow != NULL) {
 		right += Blt_PictureWidth(sliderPtr->rightArrow);
 		if (height < Blt_PictureHeight(sliderPtr->leftArrow)) {
-		    height += Blt_PictureHeight(sliderPtr->leftArrow);
+		    height = Blt_PictureHeight(sliderPtr->leftArrow);
 		}
 	    }
 	}
@@ -3144,17 +3145,18 @@ ComputeLayout(Slider *sliderPtr)
 	int top, bottom, width, height;
 
 	top = bottom = sliderPtr->inset + sliderPtr->sliderRadius;
+	width = height = 0;
 	if (sliderPtr->flags & SHOW_ARROWS) {
 	    if (sliderPtr->leftArrow != NULL) {
 		top += Blt_PictureHeight(sliderPtr->leftArrow);
 		if (width < Blt_PictureWidth(sliderPtr->leftArrow)) {
-		    width += Blt_PictureWidth(sliderPtr->leftArrow);
+		    width = Blt_PictureWidth(sliderPtr->leftArrow);
 		}
 	    }
 	    if (sliderPtr->rightArrow != NULL) {
 		bottom += Blt_PictureHeight(sliderPtr->rightArrow);
 		if (width < Blt_PictureWidth(sliderPtr->leftArrow)) {
-		    width += Blt_PictureWidth(sliderPtr->leftArrow);
+		    width = Blt_PictureWidth(sliderPtr->leftArrow);
 		}
 	    }
 	}

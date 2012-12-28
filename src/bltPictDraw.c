@@ -3274,13 +3274,8 @@ Blt_Picture_RectangleOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	PaintRectangleShadow(picture, r.x, r.y, r.w, r.h, switches.radius, 
 		switches.lineWidth, &switches.shadow);
     }
-    if ((switches.antialiased) && (switches.radius > 0)) {
-	PaintRectangleAA(picture, r.x, r.y, r.w, r.h, switches.radius, 
-		switches.lineWidth, switches.brushPtr);
-    } else {
-	Blt_PaintRectangle(picture, r.x, r.y, r.w, r.h, switches.radius, 
-		switches.lineWidth, switches.brushPtr);
-    }
+    Blt_PaintRectangle(picture, r.x, r.y, r.w, r.h, switches.radius, 
+	switches.lineWidth, switches.brushPtr);
     Blt_FreeSwitches(rectangleSwitches, (char *)&switches, 0);
     return TCL_OK;
 }
