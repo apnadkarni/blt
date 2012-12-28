@@ -608,6 +608,7 @@ static Blt_ConfigSpec filterSpecs[] =
     {BLT_CONFIG_SYNONYM, "-fg", "foreground", (char *)NULL, (char *)NULL, 0, 0},
     {BLT_CONFIG_FONT, "-font", "font", "Font", DEF_FILTER_FONT, 
 	Blt_Offset(TableView, filter.font), 0},
+
     {BLT_CONFIG_COLOR, "-foreground", "foreground", "Foreground", 
 	DEF_FILTER_NORMAL_FG, Blt_Offset(TableView, filter.normalFg), 0},
     {BLT_CONFIG_BITMASK, "-hide", "hide", "Hide",

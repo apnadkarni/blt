@@ -680,7 +680,7 @@ PaintCircle4(Pict *destPtr, float cx, float cy, float r, float lineWidth,
     float *squares;
     Blt_Pixel *destRowPtr;
 
-    // Determine some helpful values (singles)
+    /* Determine some helpful values (singles) */
     outer = r;
     if (lineWidth > 0) {
 	inner = r - lineWidth;
@@ -690,7 +690,7 @@ PaintCircle4(Pict *destPtr, float cx, float cy, float r, float lineWidth,
     outer2 = outer * outer;
     inner2 = inner * inner;
 
-    // Determine bounds:
+    /* Determine bounds: */
     x1 = (int)floor(cx - outer);
     if (x1 < 0) {
 	x1 = 0;
@@ -707,12 +707,12 @@ PaintCircle4(Pict *destPtr, float cx, float cy, float r, float lineWidth,
     if (y2 >= destPtr->height) {
 	y2 = destPtr->height;
     }
-    // Optimization run: find squares of X first
+    /* Optimization run: find squares of X first */
     squares = Blt_AssertMalloc(sizeof(float) * (x2 - x1));
     for (i = 0, x = x1; x < x2; x++, i++) {
 	squares[i] = (x - cx) * (x - cx);
     }
-    // Loop through Y values
+    /* Loop through Y values */
     destRowPtr = destPtr->bits + (y1 * destPtr->pixelsPerRow) + x1;
     for (y = y1; y < y2; y++) {
 	Blt_Pixel *dp;
@@ -1517,3 +1517,213 @@ PaintRectangleShadow(
 #endif
 }
 
+#define UPPER_LEFT	0
+#define UPPER_RIGHT	1
+#define LOWER_LEFT	2
+#define LOWER_RIGHT	3
+
+static void
+PaintCorner(Pict *destPtr, int x, int y, int r, int lineWidth, int corner, 
+	    Blt_Paintbrush *brushPtr)
+{
+    int blend = 1;
+    int outer, inner, outer2, inner2;
+    int x1, x2, y1, y2, dx, dy;
+
+    outer = r;
+    if (lineWidth > 0) {
+	inner = r - lineWidth;
+    } else {
+	inner = 0;
+    }
+    outer2 = r * r;
+    inner2 = inner * inner;
+    
+    switch (corner) {
+    case UPPER_LEFT:
+	x1 = 0;
+	x2 = r;
+	y1 = 0;
+	y2 = r;
+	break;
+    case UPPER_RIGHT:
+	x1 = r;
+	x2 = r + r;
+	y1 = 0;
+	y2 = r;
+	break;
+    case LOWER_LEFT:
+	x1 = 0;
+	x2 = r;
+	y1 = r + r;
+	y2 = r;
+	break;
+    case LOWER_RIGHT:
+	x1 = r;
+	x2 = r + r;
+	y1 = r;
+	y2 = r + r;
+	break;
+    }	
+    for (dy = y1; dy < y2; dy++) {
+	float dy2;
+
+	if (((y + dy) < 0) || ((y + dy) >= destPtr->height)) {
+	    continue;
+	}
+	dy2 = (dy - r) * (dy - r);
+	for (dx = x1; dx < x2; dx++) {
+	    float dx2, d2, d;
+	    unsigned int a;
+	    float outerf, innerf;
+	    Blt_Pixel *dp;
+
+	    if (((x + dx) < 0) || ((x + dx) >= destPtr->width)) {
+		continue;
+	    }
+	    dx2 = (dx - r) * (dx - r);
+	    /* Compute distance from circle center to this pixel. */
+	    d2 = dy2 + dx2;
+	    if (d2 > outer2) {
+		continue;
+	    }
+	    if (d2 < inner2) {
+		continue;
+	    }
+	    /* Mix the color.*/
+	    d = sqrt(d2);
+	    outerf = outer - d;
+	    innerf = d - inner;
+	    if (outerf < 1.0) {
+		a = (int)(outerf * 255.0 + 0.5);
+	    } else if ((inner > 0) && (innerf < 1.0)) {
+		a = (int)(innerf * 255.0 + 0.5);
+	    } else {
+		a = 255;
+	    }
+	    dp = Blt_PicturePixel(destPtr, x+dx, y+dy);
+	    if (blend) {
+		Blt_Pixel color;
+		
+		a = UCLAMP(a);
+		color.u32 = Blt_Paintbrush_GetColor(brushPtr, x, y);
+		BlendPixel(dp, &color, a);
+	    } else {
+		int t;
+		a = UCLAMP(a);
+		dp->u32 = Blt_Paintbrush_GetColor(brushPtr, x, y);
+		dp->Alpha = imul8x8(a, dp->Alpha, t);
+	    }
+	}
+    }
+}
+
+static void
+PaintRectangle(Blt_Picture picture, int x, int y, int w, int h, int r, 
+	       int lineWidth, Blt_Paintbrush *brushPtr)
+{
+    int blend = 1;
+
+    {
+	int w2, h2;
+
+	/* Radius of each rounded corner can't be bigger than half the width
+	 * or height of the rectangle. */
+	w2 = w / 2;
+	h2 = h / 2;
+	if (r > w2) {
+	    r = w2;
+	}
+	if (r > h2) {
+	    r = h2;
+	}
+    }
+    if (r > 0) {
+	if (lineWidth > 0) {
+	    int x1, x2, x3, x4, y1, y2, dy;
+
+	    /* Thick, rounded rectangle. */
+	    x1 = x + r;
+	    x2 = x + w - r - 1;
+	    y1 = y;
+	    y2 = x + h - lineWidth - 1;
+	    for (dy = 0; dy < lineWidth; dy++) {
+		PaintHorizontalLine(picture, x1, x2, y1+dy, brushPtr, blend);
+		PaintHorizontalLine(picture, x1, x2, y2-dy, brushPtr, blend);
+	    }
+	    x1 = x;
+	    x2 = x + r - 1;
+	    x3 = x + w - r - 1;
+	    x4 = x + w - 1;
+	    for (dy = r; dy < (h - r); dy++) {
+		PaintHorizontalLine(picture, x1, x2, y+dy, brushPtr, blend);
+		PaintHorizontalLine(picture, x3, x4, y+dy, brushPtr, blend);
+	    }
+	} else {
+	    int x1, x2, y1, y2, dy;
+
+	    /* Filled, rounded, rectangle. */
+	    x1 = x + r;
+	    x2 = x + w - r - 1;
+	    y1 = y + r;
+	    y2 = y + h - 1;
+	    for (dy = 0; dy < r; dy++) {
+		PaintHorizontalLine(picture, x1, x2, y1+dy, brushPtr, blend);
+		PaintHorizontalLine(picture, x1, x2, y2-dy, brushPtr, blend);
+	    }
+	    x1 = x;
+	    x2 = x + w - r - 1;
+	    for (dy = r; dy < (h - r); dy++) {
+		PaintHorizontalLine(picture, x1, x2, y+dy, brushPtr, blend);
+	    }
+	}
+	{ 
+	    int x1, y1;
+
+	    /* Draw the rounded corners. */
+	    x1 = x;
+	    y1 = y;
+	    PaintCorner(picture, x1, y1, r, lineWidth, 0, brushPtr);
+	    x1 = x + w - r - 1;
+	    y1 = y;
+	    PaintCorner(picture, x1, y1, r, lineWidth, 1, brushPtr);
+	    x1 = x;
+	    y1 = y + h - r - 1;
+	    PaintCorner(picture, x1, y1, r, lineWidth, 2, brushPtr);
+	    x1 = x + w - r - 1;
+	    y1 = y + h - r - 1;
+	    PaintCorner(picture, x1, y1, r, lineWidth, 3, brushPtr);
+	}
+    } else {
+	if (lineWidth > 0) {
+	    int x1, x2, x3, x4, y1, y2, dy;
+	    
+	    /* Thick, non-rounded, rectangle.  */
+	    x1 = x;
+	    x2 = x + w - 1;
+	    y1 = y;
+	    y2 = x + h - lineWidth - 1;
+	    for (dy = 0; dy < lineWidth; dy++) {
+		PaintHorizontalLine(picture, x1, x2, y1+dy, brushPtr, blend);
+		PaintHorizontalLine(picture, x1, x2, y2-dy, brushPtr, blend);
+	    }
+	    x1 = x;
+	    x2 = x + r - 1;
+	    x3 = x + w - r - 1;
+	    x4 = x + w - 1;
+	    for (dy = r; dy < (h - r); dy++) {
+		PaintHorizontalLine(picture, x1, x2, y+dy, brushPtr, blend);
+		PaintHorizontalLine(picture, x3, x4, y+dy, brushPtr, blend);
+	    }
+	} else {
+	    int x1, x2, dy;
+
+	    /* Filled, non-rounded, rectangle. */
+	    x1 = x;
+	    x2 = x + w - 1;
+	    for (dy = 0; dy < h; dy++) {
+		PaintHorizontalLine(picture, x1, x2, y+dy, brushPtr, blend);
+	    }
+	}
+    } 
+}
