@@ -254,14 +254,14 @@ Blt_Vec_GetIndex(
     Blt_VectorIndexProc **procPtrPtr)
 {
     char c;
-    int value;
+    int index;
 
     c = string[0];
 
     /* Treat the index "end" like a numeric index.  */
 
     if ((c == 'e') && (strcmp(string, "end") == 0)) {
-	if (vPtr->length < 1) {
+	if ((flags & INDEX_CHECK) && (vPtr->length < 1)) {
 	    if (interp != NULL) {
 		Tcl_AppendResult(interp, "bad index \"end\": vector is empty", 
 				 (char *)NULL);
@@ -284,7 +284,7 @@ Blt_Vec_GetIndex(
 	    return TCL_OK;
 	}
     }
-    if (Tcl_GetInt(interp, (char *)string, &value) != TCL_OK) {
+    if (Tcl_GetInt(interp, (char *)string, &index) != TCL_OK) {
 	long int lvalue;
 	/*   
 	 * Unlike Tcl_GetInt, Tcl_ExprLong needs a valid interpreter, but the
@@ -299,23 +299,23 @@ Blt_Vec_GetIndex(
 	    }
 	    return TCL_ERROR;
 	}
-	value = (int)lvalue;
+	index = (int)lvalue;
     }
     /*
      * Correct the index by the current value of the offset. This makes all
      * the numeric indices non-negative, which is how we distinguish the
      * special non-numeric indices.
      */
-    value -= vPtr->offset;
+    index -= vPtr->offset;
 
-    if ((value < 0) || ((flags & INDEX_CHECK) && (value >= vPtr->length))) {
+    if ((flags & INDEX_CHECK) && ((index < 0) || (index >= vPtr->length))) {
 	if (interp != NULL) {
 	    Tcl_AppendResult(interp, "index \"", string, "\" is out of range", 
 			 (char *)NULL);
 	}
 	return TCL_ERROR;
     }
-    *indexPtr = (int)value;
+    *indexPtr = (int)index;
     return TCL_OK;
 }
 

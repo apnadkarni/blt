@@ -1961,15 +1961,28 @@ RangeOp(Vector *vPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	last = vPtr->length - 1;
     } else if (objc == 4) {
 	if ((Blt_Vec_GetIndex(interp, vPtr, Tcl_GetString(objv[2]), &first, 
-		INDEX_CHECK, (Blt_VectorIndexProc **) NULL) != TCL_OK) ||
+		0, (Blt_VectorIndexProc **) NULL) != TCL_OK) ||
 	    (Blt_Vec_GetIndex(interp, vPtr, Tcl_GetString(objv[3]), &last, 
-		INDEX_CHECK, (Blt_VectorIndexProc **) NULL) != TCL_OK)) {
+		0, (Blt_VectorIndexProc **) NULL) != TCL_OK)) {
+	    return TCL_ERROR;
+	}
+	if (first > vPtr->length) {
+	    Tcl_AppendResult(interp, "bad first index \"", 
+		Tcl_GetString(objv[2]), "\"", (char *)NULL);
+	    return TCL_ERROR;
+	}
+	if (last > vPtr->length) {
+	    Tcl_AppendResult(interp, "bad last index \"", 
+		Tcl_GetString(objv[3]), "\"", (char *)NULL);
 	    return TCL_ERROR;
 	}
     } else {
 	Tcl_AppendResult(interp, "wrong # args: should be \"",
 		Tcl_GetString(objv[0]), " range ?first last?", (char *)NULL);
-	return TCL_ERROR;
+	return TCL_ERROR;	
+    }
+    if (((first == -1) || (last == -1)) && (vPtr->length == 0)) {
+	return TCL_OK;			/* Allow range on empty vector */
     }
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
     if (first > last) {
