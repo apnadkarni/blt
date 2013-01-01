@@ -1,4 +1,61 @@
-/* Axis flags: */
+
+/*
+ * bltSlider.c --
+ *
+ * This module implements a slider widget for the BLT toolkit.
+ *
+ *	Copyright 2012 George A Howlett.
+ *
+ *	Permission is hereby granted, free of charge, to any person obtaining
+ *	a copy of this software and associated documentation files (the
+ *	"Software"), to deal in the Software without restriction, including
+ *	without limitation the rights to use, copy, modify, merge, publish,
+ *	distribute, sublicense, and/or sell copies of the Software, and to
+ *	permit persons to whom the Software is furnished to do so, subject to
+ *	the following conditions:
+ *
+ *	The above copyright notice and this permission notice shall be
+ *	included in all copies or substantial portions of the Software.
+ *
+ *	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ *	EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ *	MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ *	NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+ *	LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+ *	OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+ *	WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
+#define BUILD_BLT_TK_PROCS 1
+#include "bltInt.h"
+
+#ifndef NO_SLIDER
+
+#ifdef HAVE_STDLIB_H
+#  include <stdlib.h>
+#endif /* HAVE_STDLIB_H */
+
+#ifdef HAVE_STRING_H
+#  include <string.h>
+#endif /* HAVE_STRING_H */
+
+#ifdef HAVE_CTYPE_H
+#  include <ctype.h>
+#endif /* HAVE_CTYPE_H */
+
+#include "bltAlloc.h"
+#include "bltMath.h"
+#include "bltChain.h"
+#include "bltHash.h"
+#include "bltFont.h"
+#include "bltBg.h"
+#include "bltImage.h"
+#include "bltPicture.h"
+#include "bltPainter.h"
+#include "bltText.h"
+#include "bltBind.h"
+#include "bltOp.h"
+#include "bltInitCmd.h"
 
 #define MAXTICKS	10001
 
@@ -96,10 +153,10 @@
 #define DEF_TAKE_FOCUS		(char *)NULL
 #define DEF_TITLE_FG		RGB_BLACK
 #define DEF_TITLE_FONT		"{Sans Serif} 10"
-#define DEF_INNER_MIN		"0.0"
-#define DEF_INNER_MAX		"1.0"
-#define DEF_OUTER_MIN		"0.0"
-#define DEF_OUTER_MAX		"1.0"
+#define DEF_MIN			"0.0"
+#define DEF_MAX			"1.0"
+#define DEF_FROM		"0.0"
+#define DEF_TO			"1.0"
 
 
 /*
@@ -124,12 +181,11 @@ typedef struct {
 } TickLabel;
 
 /*
- *---------------------------------------------------------------------------
  *
  * Ticks --
  *
- * 	Structure containing information where the ticks (major or
- *	minor) will be displayed on the graph.
+ * 	Structure containing information where the ticks (major or minor) will
+ * 	be displayed on the slider.
  */
 typedef struct {
     int numTicks;			/* # of ticks on axis */
@@ -140,7 +196,7 @@ typedef struct {
  * TickSweep --
  *
  * 	Structure containing information where the ticks (major or minor)
- * 	will be displayed on the graph.
+ * 	will be displayed on the slider.
  */
 typedef struct {
     double initial;			/* Initial value */
@@ -153,34 +209,37 @@ typedef struct {
 #define LABELOFFSET		(1<<2)
 
 /*
- * Axis --
+ * Slider --
  *
- * 	Structure contains options controlling how the axis will be
- * 	displayed.
+ * 	Structure contains options controlling how the axis will be displayed.
  */
-struct _Axis {
-    SliderObj obj;			/* Must be first field in axis. */
+typedef struct {
+    unsigned int flags;			/* Flags: See below for
+					 * definitions. */
+    Tcl_Interp *interp;			/* Interpreter associated with
+					 * slider. */
+    Tk_Window tkwin;			/* Window that embodies the slider.
+					 * NULL means that the window has been
+					 * destroyed but the data structures
+					 * haven't yet been cleaned up. */
+    Display *display;			/* Display containing widget; used to
+					 * release resources after tkwin has
+					 * already gone away. */
+    Tcl_Command cmdToken;		/* Token for the slider widget
+					 * command. */
+    const char *data;			/* This value isn't used in C code.
+					 * It may be used in TCL bindings to
+					 * associate extra data. */
+    Tk_Cursor cursor;
+    int inset;				/* Sum of focus highlight and 3-D
+					 * border.  Indicates how far to
+					 * offset the slider from outside edge
+					 * of the window. */
+    int borderWidth;			/* Width of the exterior border */
+    int relief;				/* Relief of the exterior border. */
+    Blt_Bg normalBg;			/* 3-D exterior border around the
+					 * outside of the widget. */
 
-    Tcl_Interp *interp;
-    Tk_Window tkwin;
-    Display *display;
-
-    unsigned int flags;		
-
-    Blt_HashEntry *hashPtr;
-
-    /* Fields specific to axes. */
-
-    short int inset;			/* Total width of all borders,
-					 * including traversal highlight and
-					 * 3-D border.  Indicates how much
-					 * interior stuff must be offset from
-					 * outside edges to leave room for
-					 * borders. */
-
-    const char *detail;
-    int logScale;			/* If non-zero, generate log scale
-					 * ticks for the axis. */
     int timeScale;			/* If non-zero, generate time scale
 					 * ticks for the axis. This option is
 					 * overridden by -logscale. */
@@ -208,21 +267,20 @@ struct _Axis {
     int scrollUnits;
 
     /* "From" and "to" values. */
-    double outerMin, outerMax;		/* The outer range of the slider. This
-					 * is the domain values of the
+    double fromValue, toValue;		/* The requested limits of the
 					 * slider. */
 
-    /* Minumum and maximum slider values. */
-    double innerMin, innerMax;		/* The inner range of the slider. This
+    /* Minimum and maximum slider values. */
+    double minValue, maxValue;		/* The inner range of the slider. This
 					 * is the user-defined range of
 					 * values. In single point mode, the
 					 * innerMax equals the innerMin. */
-    char *maxValue;			/* Malloc-ed. Formatted text
+    char *maxValueString;		/* Malloc-ed. Formatted text
 					 * representation of maximum value in
 					 * range. */
     short int maxValWidth, maxValHeight;/* Extents of maximum value formatted
 					 * text string.*/
-    char *minValue;			/* Malloc-ed. Formatted text
+    char *minValueString;		/* Malloc-ed. Formatted text
 					 * representation of minimum value in
 					 * range. */
     short int minValWidth, minValHeight;/* Extents of minimum value formatted
@@ -313,9 +371,9 @@ struct _Axis {
     short int axisLeft, axisRight;
     short int axisTop, axisBottom;	/* Region occupied by the of axis. */
     short int width, height;		/* Extents of axis */
-    short int maxLabelWidth;		/* Maximum width of all ticks
+    short int maxTickLabelWidth;	/* Maximum width of all ticks
 					 * labels. */
-    short int maxLabelHeight;		/* Maximum height of all tick
+    short int maxTickLabelHeight;	/* Maximum height of all tick
 					 * labels. */
     Blt_Bg normalBg;
     Blt_Bg activeBg;
@@ -337,9 +395,7 @@ struct _Axis {
     double screenScale;
     Blt_Palette palette;
     float weight;
-};
-
-BLT_EXTERN void Blt_GetAxisGeometry(Graph *graphPtr, Axis *axisPtr);
+} Slider;
 
 static Blt_OptionParseProc ObjToStateProc;
 static Blt_OptionPrintProc StateToObjProc;
@@ -401,14 +457,14 @@ static Blt_ConfigSpec configSpecs[] =
 	&majorTicksOption},
     {BLT_CONFIG_CUSTOM, "-mode", "mode", "Mode", DEF_MODE, 
 	Blt_Offset(Slider, flags), BLT_CONFIG_DONT_SET_DEFAULT, &modeOption},
-    {BLT_CONFIG_DOUBLE, "-max", "max", "Max", DEF_INNER_MIN, 
-	Blt_Offset(Slider, innerMax), 0},
-    {BLT_CONFIG_DOUBLE, "-min", "min", "Min", DEF_INNER_MAX, 
-	Blt_Offset(Slider, innerMin), 0},
-    {BLT_CONFIG_DOUBLE, "-to", "to", "To", DEF_OUTER_MAX, 
-	Blt_Offset(Slider, outerMax), 0},
-    {BLT_CONFIG_DOUBLE, "-from", "from", "From", DEF_OUTER_MIN, 
-	Blt_Offset(Slider, outerMin), 0},
+    {BLT_CONFIG_DOUBLE, "-max", "max", "Max", DEF_MIN, 
+	Blt_Offset(Slider, maxValue), 0},
+    {BLT_CONFIG_DOUBLE, "-min", "min", "Min", DEF_MAX, 
+	Blt_Offset(Slider, minValue), 0},
+    {BLT_CONFIG_DOUBLE, "-to", "to", "To", DEF_TO, 
+	Blt_Offset(Slider, toValue), 0},
+    {BLT_CONFIG_DOUBLE, "-from", "from", "From", DEF_FROM, 
+	Blt_Offset(Slider, fromValue), 0},
     {BLT_CONFIG_OBJ, "-variable", "variable", "Variable",
 	DEF_VARIABLE, Blt_Offset(Slider, varNameObjPtr), 0},
     {BLT_CONFIG_BACKGROUND, "-troughcolor", "troughColor", "Background",
@@ -524,15 +580,11 @@ static Blt_ConfigSpec configSpecs[] =
 
 /* Forward declarations */
 static void DestroySlider(Axis *axisPtr);
+static Tk_EventProc SliderEventProc;
 static Tcl_FreeProc FreeSlider;
-static int GetAxisByClass(Tcl_Interp *interp, Graph *graphPtr, Tcl_Obj *objPtr,
-	ClassId classId, Axis **axisPtrPtr);
-static void TimeAxis(Axis *axisPtr, double min, double max);
 
-typedef int (GraphAxisProc)(Tcl_Interp *interp, Axis *axisPtr, int objc, 
-	Tcl_Obj *const *objv);
-typedef int (GraphVirtualAxisProc)(Tcl_Interp *interp, Graph *graphPtr, 
-	int objc, Tcl_Obj *const *objv);
+static void TimeAxis(Axis *axisPtr, double min, double max);
+static Tcl_CmdDeleteProc SliderInstDeletedProc;
 
 static void
 FreeAxis(DestroyData data)
@@ -1002,6 +1054,84 @@ TicksToObjProc(
     return listObjPtr;
 }
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * EventuallyRedraw --
+ *
+ *	Tells the Tk dispatcher to call the slider display routine at the next
+ *	idle point.  This request is made only if the window is displayed and
+ *	no other redraw request is pending.
+ *
+ * Results: None.
+ *
+ * Side effects:
+ *	The window is eventually redisplayed.
+ *
+ *---------------------------------------------------------------------------
+ */
+static void
+EventuallyRedraw(Slider *sliderPtr) 
+{
+    if ((sliderPtr->tkwin != NULL) && !(sliderPtr->flags & REDRAW_PENDING)) {
+	Tcl_DoWhenIdle(DisplaySlider, sliderPtr);
+	sliderPtr->flags |= REDRAW_PENDING;
+    }
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * SliderEventProc --
+ *
+ *	This procedure is invoked by the Tk dispatcher for various events on
+ *	sliders.
+ *
+ * Results:
+ *	None.
+ *
+ * Side effects:
+ *	When the window gets deleted, internal structures get cleaned up.
+ *	When it gets exposed, the slider is eventually redisplayed.
+ *
+ *---------------------------------------------------------------------------
+ */
+static void
+SliderEventProc(ClientData clientData, XEvent *eventPtr)
+{
+    Slider *sliderPtr = clientData;
+
+    if (eventPtr->type == Expose) {
+	if (eventPtr->xexpose.count == 0) {
+	    sliderPtr->flags |= REDRAW_WORLD;
+	    EventuallyRedraw(sliderPtr);
+	}
+    } else if ((eventPtr->type == FocusIn) || (eventPtr->type == FocusOut)) {
+	if (eventPtr->xfocus.detail != NotifyInferior) {
+	    if (eventPtr->type == FocusIn) {
+		sliderPtr->flags |= FOCUS;
+	    } else {
+		sliderPtr->flags &= ~FOCUS;
+	    }
+	    sliderPtr->flags |= REDRAW_WORLD;
+	    EventuallyRedraw(sliderPtr);
+	}
+    } else if (eventPtr->type == DestroyNotify) {
+	if (sliderPtr->tkwin != NULL) {
+	    Blt_DeleteWindowInstanceData(sliderPtr->tkwin);
+	    sliderPtr->tkwin = NULL;
+	    Tcl_DeleteCommandFromToken(sliderPtr->interp, sliderPtr->cmdToken);
+	}
+	if (sliderPtr->flags & REDRAW_PENDING) {
+	    Tcl_CancelIdleCall(DisplaySlider, sliderPtr);
+	}
+	Tcl_EventuallyFree(sliderPtr, DestroySlider);
+    } else if (eventPtr->type == ConfigureNotify) {
+	sliderPtr->flags |= (MAP_WORLD | REDRAW_WORLD);
+	EventuallyRedraw(sliderPtr);
+    }
+}
+
 static void
 FreeTickLabels(Blt_Chain chain)
 {
@@ -1030,7 +1160,7 @@ FreeTickLabels(Blt_Chain chain)
  *
  * Side Effects:
  *	Returns a new label in the string character buffer.  The formatted
- *	tick label will be displayed on the graph.
+ *	tick label will be displayed on the slider.
  *
  * -------------------------------------------------------------------------- 
  */
@@ -1094,11 +1224,11 @@ MakeLabel(Axis *axisPtr, double value)
  *
  * InvHMap --
  *
- *	Maps the given screen coordinate back to a graph coordinate.  Called
- *	by the graph locater routine.
+ *	Maps the given screen coordinate back to a slider coordinate.  Called
+ *	by the slider locater routine.
  *
  * Results:
- *	Returns the graph coordinate value at the given window
+ *	Returns the slider coordinate value at the given window
  *	y-coordinate.
  *
  *---------------------------------------------------------------------------
@@ -1124,11 +1254,11 @@ InvHMap(Slider *sliderPtr, double x)
  *
  * InvVMap --
  *
- *	Maps the given screen y-coordinate back to the graph coordinate
- *	value. Called by the graph locater routine.
+ *	Maps the given screen y-coordinate back to the slider coordinate
+ *	value. Called by the slider locater routine.
  *
  * Results:
- *	Returns the graph coordinate value for the given screen
+ *	Returns the slider coordinate value for the given screen
  *	coordinate.
  *
  *---------------------------------------------------------------------------
@@ -1155,7 +1285,7 @@ InvVMap(Slider *sliderPtr, double y)	/* Screen coordinate */
  *
  * HMap --
  *
- *	Map the given graph coordinate value to its axis, returning a window
+ *	Map the given slider coordinate value to its axis, returning a window
  *	position.
  *
  * Results:
@@ -1183,7 +1313,7 @@ HMap(Slider *sliderPtr, double x)
  *
  * VMap --
  *
- *	Map the given graph coordinate value to its axis, returning a window
+ *	Map the given slider coordinate value to its axis, returning a window
  *	position.
  *
  * Results:
@@ -1601,7 +1731,7 @@ SweepTicks(Slider *sliderPtr)
 /*
  *---------------------------------------------------------------------------
  *
- * Blt_ResetAxes --
+ * ResetAxes --
  *
  * Results:
  *	None.
@@ -1609,7 +1739,7 @@ SweepTicks(Slider *sliderPtr)
  *---------------------------------------------------------------------------
  */
 static void
-ResetAxes(Graph *graphPtr)
+ResetAxes(Slider *sliderPtr)
 {
     double min, max;
 
@@ -1800,37 +1930,37 @@ AxisOffsets(Axis *sliderPtr, Margin *marginPtr, int offset, AxisInfo *infoPtr)
     inset = pad + sliderPtr->lineWidth / 2;
     switch (marginPtr->site) {
     case MARGIN_TOP:
-	axisLine = graphPtr->top;
+	axisLine = slider->top;
 	if (sliderPtr->flags & EXTERIOR) {
-	    axisLine -= graphPtr->plotBW + axisPad + sliderPtr->lineWidth / 2;
+	    axisLine -= slider->plotBW + axisPad + sliderPtr->lineWidth / 2;
 	    tickLabel = axisLine - 2;
 	    if (sliderPtr->lineWidth > 0) {
 		tickLabel -= sliderPtr->tickLength;
 	    }
 	} else {
-	    if (graphPtr->plotRelief == TK_RELIEF_SOLID) {
+	    if (slider->plotRelief == TK_RELIEF_SOLID) {
 		axisLine--;
 	    } 
 	    axisLine -= axisPad + sliderPtr->lineWidth / 2;
-	    tickLabel = graphPtr->top -  graphPtr->plotBW - 2;
+	    tickLabel = sliderPtr->top -  sliderPtr->plotBW - 2;
 	}
-	mark = graphPtr->top - offset - pad;
+	mark = sliderPtr->top - offset - pad;
 	sliderPtr->tickAnchor = TK_ANCHOR_S;
 	sliderPtr->left = sliderPtr->screenMin - inset - 2;
 	sliderPtr->right = sliderPtr->screenMin + sliderPtr->screenRange + inset - 1;
-	if (graphPtr->stackAxes) {
+	if (sliderPtr->stackAxes) {
 	    sliderPtr->top = mark - marginPtr->axesOffset;
 	} else {
 	    sliderPtr->top = mark - sliderPtr->height;
 	}
 	sliderPtr->bottom = mark;
 	if (sliderPtr->titleAlternate) {
-	    x = graphPtr->right + AXIS_PAD_TITLE;
+	    x = sliderPtr->right + AXIS_PAD_TITLE;
 	    y = mark - (sliderPtr->height  / 2);
 	    sliderPtr->titleAnchor = TK_ANCHOR_W;
 	} else {
 	    x = (sliderPtr->right + sliderPtr->left) / 2;
-	    if (graphPtr->stackAxes) {
+	    if (sliderPtr->stackAxes) {
 		y = mark - marginPtr->axesOffset + AXIS_PAD_TITLE;
 	    } else {
 		y = mark - sliderPtr->height + AXIS_PAD_TITLE;
@@ -1855,21 +1985,21 @@ AxisOffsets(Axis *sliderPtr, Margin *marginPtr, int offset, AxisInfo *infoPtr)
 	 *                   tick
 	 *		    title
 	 */
-	axisLine = graphPtr->bottom;
-	if (graphPtr->plotRelief == TK_RELIEF_SOLID) {
+	axisLine = sliderPtr->bottom;
+	if (sliderPtr->plotRelief == TK_RELIEF_SOLID) {
 	    axisLine++;
 	} 
 	if (sliderPtr->flags & EXTERIOR) {
-	    axisLine += graphPtr->plotBW + axisPad + sliderPtr->lineWidth / 2;
+	    axisLine += sliderPtr->plotBW + axisPad + sliderPtr->lineWidth / 2;
 	    tickLabel = axisLine + 2;
 	    if (sliderPtr->lineWidth > 0) {
 		tickLabel += sliderPtr->tickLength;
 	    }
 	} else {
 	    axisLine -= axisPad + sliderPtr->lineWidth / 2;
-	    tickLabel = graphPtr->bottom +  graphPtr->plotBW + 2;
+	    tickLabel = sliderPtr->bottom +  sliderPtr->plotBW + 2;
 	}
-	mark = graphPtr->bottom + offset;
+	mark = sliderPtr->bottom + offset;
 	fangle = FMOD(sliderPtr->tickAngle, 90.0f);
 	if (fangle == 0.0) {
 	    sliderPtr->tickAnchor = TK_ANCHOR_N;
@@ -1885,19 +2015,19 @@ AxisOffsets(Axis *sliderPtr, Margin *marginPtr, int offset, AxisInfo *infoPtr)
 	}
 	sliderPtr->left = sliderPtr->screenMin - inset - 2;
 	sliderPtr->right = sliderPtr->screenMin + sliderPtr->screenRange + inset - 1;
-	sliderPtr->top = graphPtr->bottom + labelOffset - t1;
-	if (graphPtr->stackAxes) {
+	sliderPtr->top = sliderPtr->bottom + labelOffset - t1;
+	if (sliderPtr->stackAxes) {
 	    sliderPtr->bottom = mark + marginPtr->axesOffset - 1;
 	} else {
 	    sliderPtr->bottom = mark + sliderPtr->height - 1;
 	}
 	if (sliderPtr->titleAlternate) {
-	    x = graphPtr->right + AXIS_PAD_TITLE;
+	    x = sliderPtr->right + AXIS_PAD_TITLE;
 	    y = mark + (sliderPtr->height / 2);
 	    sliderPtr->titleAnchor = TK_ANCHOR_W; 
 	} else {
 	    x = (sliderPtr->right + sliderPtr->left) / 2;
-	    if (graphPtr->stackAxes) {
+	    if (sliderPtr->stackAxes) {
 		y = mark + marginPtr->axesOffset - AXIS_PAD_TITLE;
 	    } else {
 		y = mark + sliderPtr->height - AXIS_PAD_TITLE;
@@ -1929,7 +2059,7 @@ AxisOffsets(Axis *sliderPtr, Margin *marginPtr, int offset, AxisInfo *infoPtr)
 	 * D = axis line
 	 * E = tick length
 	 * F = tick label 
-	 * G = graph border width
+	 * G = slider border width
 	 * H = highlight thickness
 	 */
 	/* 
@@ -1943,26 +2073,26 @@ AxisOffsets(Axis *sliderPtr, Margin *marginPtr, int offset, AxisInfo *infoPtr)
 	 * D = axis pad
 	 * E = plot border width
 	 * F = tick label 
-	 * G = graph border width
+	 * G = slider border width
 	 * H = highlight thickness
 	 */
-	axisLine = graphPtr->left;
+	axisLine = sliderPtr->left;
 	if (sliderPtr->flags & EXTERIOR) {
-	    axisLine -= graphPtr->plotBW + axisPad + sliderPtr->lineWidth / 2;
+	    axisLine -= sliderdPtr->plotBW + axisPad + sliderPtr->lineWidth / 2;
 	    tickLabel = axisLine - 2;
 	    if (sliderPtr->lineWidth > 0) {
 		tickLabel -= sliderPtr->tickLength;
 	    }
 	} else {
-	    if (graphPtr->plotRelief == TK_RELIEF_SOLID) {
+	    if (sliderPtr->plotRelief == TK_RELIEF_SOLID) {
 		axisLine--;
 	    } 
 	    axisLine += axisPad + sliderPtr->lineWidth / 2;
-	    tickLabel = graphPtr->left - graphPtr->plotBW - 2;
+	    tickLabel = sliderPtr->left - sliderPtr->plotBW - 2;
 	}
-	mark = graphPtr->left - offset;
+	mark = sliderPtr->left - offset;
 	sliderPtr->tickAnchor = TK_ANCHOR_E;
-	if (graphPtr->stackAxes) {
+	if (sliderPtr->stackAxes) {
 	    sliderPtr->left = mark - marginPtr->axesOffset;
 	} else {
 	    sliderPtr->left = mark - sliderPtr->width;
@@ -1972,10 +2102,10 @@ AxisOffsets(Axis *sliderPtr, Margin *marginPtr, int offset, AxisInfo *infoPtr)
 	sliderPtr->bottom = sliderPtr->screenMin + sliderPtr->screenRange + inset - 1;
 	if (sliderPtr->titleAlternate) {
 	    x = mark - (sliderPtr->width / 2);
-	    y = graphPtr->top - AXIS_PAD_TITLE;
+	    y = sliderPtr->top - AXIS_PAD_TITLE;
 	    sliderPtr->titleAnchor = TK_ANCHOR_SW; 
 	} else {
-	    if (graphPtr->stackAxes) {
+	    if (sliderPtr->stackAxes) {
 		x = mark - marginPtr->axesOffset;
 	    } else {
 		x = mark - sliderPtr->width + AXIS_PAD_TITLE;
@@ -1988,25 +2118,25 @@ AxisOffsets(Axis *sliderPtr, Margin *marginPtr, int offset, AxisInfo *infoPtr)
 	break;
 
     case MARGIN_RIGHT:
-	axisLine = graphPtr->right;
-	if (graphPtr->plotRelief == TK_RELIEF_SOLID) {
+	axisLine = sliderPtr->right;
+	if (sliderPtr->plotRelief == TK_RELIEF_SOLID) {
 	    axisLine++;			/* Draw axis line within solid plot
 					 * border. */
 	} 
 	if (sliderPtr->flags & EXTERIOR) {
-	    axisLine += graphPtr->plotBW + axisPad + sliderPtr->lineWidth / 2;
+	    axisLine += sliderPtr->plotBW + axisPad + sliderPtr->lineWidth / 2;
 	    tickLabel = axisLine + 2;
 	    if (sliderPtr->lineWidth > 0) {
 		tickLabel += sliderPtr->tickLength;
 	    }
 	} else {
 	    axisLine -= axisPad + sliderPtr->lineWidth / 2;
-	    tickLabel = graphPtr->right + graphPtr->plotBW + 2;
+	    tickLabel = sliderPtr->right + sliderPtr->plotBW + 2;
 	}
-	mark = graphPtr->right + offset + pad;
+	mark = sliderPtr->right + offset + pad;
 	sliderPtr->tickAnchor = TK_ANCHOR_W;
 	sliderPtr->left = mark;
-	if (graphPtr->stackAxes) {
+	if (sliderPtr->stackAxes) {
 	    sliderPtr->right = mark + marginPtr->axesOffset - 1;
 	} else {
 	    sliderPtr->right = mark + sliderPtr->width - 1;
@@ -2015,10 +2145,10 @@ AxisOffsets(Axis *sliderPtr, Margin *marginPtr, int offset, AxisInfo *infoPtr)
 	sliderPtr->bottom = sliderPtr->screenMin + sliderPtr->screenRange + inset -1;
 	if (sliderPtr->titleAlternate) {
 	    x = mark + (sliderPtr->width / 2);
-	    y = graphPtr->top - AXIS_PAD_TITLE;
+	    y = sliderPtr->top - AXIS_PAD_TITLE;
 	    sliderPtr->titleAnchor = TK_ANCHOR_SE; 
 	} else {
-	    if (graphPtr->stackAxes) {
+	    if (sliderPtr->stackAxes) {
 		x = mark + marginPtr->axesOffset - AXIS_PAD_TITLE;
 	    } else {
 		x = mark + sliderPtr->width - AXIS_PAD_TITLE;
@@ -2204,21 +2334,20 @@ static void
 MapAxis(Axis *sliderPtr, Margin *marginPtr, int offset)
 {
     AxisInfo info;
-    Graph *graphPtr = sliderPtr->obj.graphPtr;
 
     if (sliderPtr->flags & COLORBAR) {
-	sliderPtr->screenMin = graphPtr->vOffset;
-	sliderPtr->height = graphPtr->bottom;
-	sliderPtr->height -= graphPtr->top + Blt_Legend_Height(graphPtr);
-	sliderPtr->screenRange = graphPtr->vRange - Blt_Legend_Height(graphPtr);
+	sliderPtr->screenMin = sliderPtr->vOffset;
+	sliderPtr->height = sliderPtr->bottom;
+	sliderPtr->height -= sliderPtr->top + Blt_Legend_Height(sliderPtr);
+	sliderPtr->screenRange = sliderPtr->vRange - Blt_Legend_Height(sliderPtr);
     } else if (sliderPtr->flags & HORIZONTAL) {
-	sliderPtr->screenMin = graphPtr->hOffset;
-	sliderPtr->width = graphPtr->right - graphPtr->left;
-	sliderPtr->screenRange = graphPtr->hRange;
+	sliderPtr->screenMin = sliderPtr->hOffset;
+	sliderPtr->width = sliderPtr->right - sliderPtr->left;
+	sliderPtr->screenRange = sliderPtr->hRange;
     } else {
-	sliderPtr->screenMin = graphPtr->vOffset;
-	sliderPtr->height = graphPtr->bottom - graphPtr->top;
-	sliderPtr->screenRange = graphPtr->vRange;
+	sliderPtr->screenMin = sliderPtr->vOffset;
+	sliderPtr->height = sliderPtr->bottom - sliderPtr->top;
+	sliderPtr->screenRange = sliderPtr->vRange;
     }
     sliderPtr->screenScale = 1.0 / sliderPtr->screenRange;
     AxisOffsets(sliderPtr, marginPtr, offset, &info);
@@ -2252,24 +2381,23 @@ static void
 MapStackedAxis(Axis *sliderPtr, Margin *marginPtr, float totalWeight)
 {
     AxisInfo info;
-    Graph *graphPtr = sliderPtr->obj.graphPtr;
     unsigned int w, h, n, slice;
     float ratio;
 
-    n = graphPtr->margins[sliderPtr->margin].axes->numLinks;
+    n = sliderPtr->margins[sliderPtr->margin].axes->numLinks;
     if ((n > 1) || (sliderPtr->reqNumMajorTicks <= 0)) {
 	sliderPtr->reqNumMajorTicks = 4;
     }
     ratio = sliderPtr->weight / totalWeight;
     if (sliderPtr->flags & HORIZONTAL) {
-	sliderPtr->screenMin = graphPtr->hOffset;
-	sliderPtr->screenRange = graphPtr->hRange;
-	slice = (int)(graphPtr->hRange * ratio);
+	sliderPtr->screenMin = sliderPtr->hOffset;
+	sliderPtr->screenRange = sliderPtr->hRange;
+	slice = (int)(sliderPtr->hRange * ratio);
 	sliderPtr->width = slice;
     } else {
-	sliderPtr->screenMin = graphPtr->vOffset;
-	sliderPtr->screenRange = graphPtr->vRange;
-	slice = (int)(graphPtr->vRange * ratio);
+	sliderPtr->screenMin = sliderPtr->vOffset;
+	sliderPtr->screenRange = sliderPtr->vRange;
+	slice = (int)(sliderPtr->vRange * ratio);
 	sliderPtr->height = slice;
     }
 #define AXIS_PAD 2
@@ -2448,7 +2576,7 @@ DrawAxis(Slider *sliderPtr, Drawable drawable)
 	} else {
 	    Blt_Ts_SetMaxLength(ts, sliderPtr->width);
 	}
-	Blt_Ts_DrawText(graphPtr->tkwin, drawable, sliderPtr->title, -1, &ts, 
+	Blt_Ts_DrawText(sliderPtr->tkwin, drawable, sliderPtr->title, -1, &ts, 
 		(int)sliderPtr->titlePos.x, (int)sliderPtr->titlePos.y);
     }
     if (sliderPtr->scrollCmdObjPtr != NULL) {
@@ -2498,7 +2626,7 @@ DrawAxis(Slider *sliderPtr, Drawable drawable)
 		sliderPtr->min = EXP10(sliderPtr->min);
 		sliderPtr->max = EXP10(sliderPtr->max);
 	    }
-	    Blt_UpdateScrollbar(graphPtr->interp, sliderPtr->scrollCmdObjPtr,
+	    Blt_UpdateScrollbar(sliderPtr->interp, sliderPtr->scrollCmdObjPtr,
 		(int)viewMin, (int)viewMax, (int)worldWidth);
 	} else {
 	    viewMax = (fract * worldWidth);
@@ -2509,7 +2637,7 @@ DrawAxis(Slider *sliderPtr, Drawable drawable)
 		sliderPtr->min = EXP10(sliderPtr->min);
 		sliderPtr->max = EXP10(sliderPtr->max);
 	    }
-	    Blt_UpdateScrollbar(graphPtr->interp, sliderPtr->scrollCmdObjPtr,
+	    Blt_UpdateScrollbar(sliderPtr->interp, sliderPtr->scrollCmdObjPtr,
 		(int)viewMax, (int)viewMin, (int)worldWidth);
 	}
     }
@@ -2533,7 +2661,7 @@ DrawAxis(Slider *sliderPtr, Drawable drawable)
 
 	    labelPtr = Blt_Chain_GetValue(link);
 	    /* Draw major tick labels */
-	    Blt_DrawText(graphPtr->tkwin, drawable, labelPtr->string, &ts, 
+	    Blt_DrawText(sliderPtr->tkwin, drawable, labelPtr->string, &ts, 
 		(int)labelPtr->anchorPos.x, (int)labelPtr->anchorPos.y);
 	}
     }
@@ -2546,7 +2674,7 @@ DrawAxis(Slider *sliderPtr, Drawable drawable)
 	    gc = sliderPtr->tickGC;
 	}
 	/* Draw the tick marks and axis line. */
-	Blt_DrawSegments2d(graphPtr->display, drawable, gc, sliderPtr->segments, 
+	Blt_DrawSegments2d(sliderPtr->display, drawable, gc, sliderPtr->segments, 
 		sliderPtr->numSegments);
     }
 }
@@ -2580,7 +2708,7 @@ DrawAxis(Slider *sliderPtr, Drawable drawable, int x, int y)
 
 	    labelPtr = Blt_Chain_GetValue(link);
 	    /* Draw major tick labels */
-	    Blt_DrawText(graphPtr->tkwin, drawable, labelPtr->string, &ts, 
+	    Blt_DrawText(sliderPtr->tkwin, drawable, labelPtr->string, &ts, 
 		labelPtr->x, labelPtr->y);
 	}
 	if ((sliderPtr->numSegments > 0) && (sliderPtr->lineWidth > 0)) {	
@@ -2592,7 +2720,7 @@ DrawAxis(Slider *sliderPtr, Drawable drawable, int x, int y)
 		gc = sliderPtr->tickGC;
 	    }
 	    /* Draw the tick marks. */
-	    XDrawSegments(graphPtr->display, drawable, gc, sliderPtr->segments, 
+	    XDrawSegments(sliderPtr->display, drawable, gc, sliderPtr->segments, 
 		sliderPtr->numSegments);
 	}
     }
@@ -2635,7 +2763,7 @@ DrawHorizontalSlider(Slider *sliderPtr, Drawable drawable)
 	}
 	Blt_Ts_SetForeground(ts, sliderPtr->titleFg);
 	Blt_Ts_SetMaxLength(ts, Tk_Width(sliderPtr->tkwin));
-	Blt_Ts_DrawText(graphPtr->tkwin, drawable, sliderPtr->title, -1, &ts, 
+	Blt_Ts_DrawText(sliderPtr->tkwin, drawable, sliderPtr->title, -1, &ts, 
 		(int)sliderPtr->titleX, (int)sliderPtr->titleY);
 	y += sliderPtr->titleHeight;
 	height -= sliderPtr->titleHeight;
@@ -2683,7 +2811,7 @@ DrawHorizontalSlider(Slider *sliderPtr, Drawable drawable)
 
 	    labelPtr = Blt_Chain_GetValue(link);
 	    /* Draw major tick labels */
-	    Blt_DrawText(graphPtr->tkwin, drawable, labelPtr->string, &ts, 
+	    Blt_DrawText(sliderPtr->tkwin, drawable, labelPtr->string, &ts, 
 		labelPtr->x, labelPtr->y);
 	}
 	if ((sliderPtr->numSegments > 0) && (sliderPtr->lineWidth > 0)) {	
@@ -2695,7 +2823,7 @@ DrawHorizontalSlider(Slider *sliderPtr, Drawable drawable)
 		gc = sliderPtr->tickGC;
 	    }
 	    /* Draw the tick marks. */
-	    XDrawSegments(graphPtr->display, drawable, gc, sliderPtr->segments, 
+	    XDrawSegments(sliderPtr->display, drawable, gc, sliderPtr->segments, 
 		sliderPtr->numSegments);
 	}
     }
@@ -2755,13 +2883,13 @@ DrawSlider(Slider *sliderPtr, Drawable drawable)
 	DrawVerticalSlider(sliderPtr);
     }
     /* Draw focus highlight ring. */
-    if (setPtr->highlightWidth > 0) {
+    if (sliderPtr->highlightWidth > 0) {
 	if (sliderPtr->flags & FOCUS) {
 	    Tk_DrawFocusHighlight(comboPtr->tkwin, comboPtr->hightlightGC, 
 		comboPtr->highlightWidth, drawable);
 	} else {
 	    Blt_Bg_DrawFocus(sliderPtr->tkwin, sliderPtr->highlightBg,
-		setPtr->highlightWidth, drawable);
+		sliderPtr->highlightWidth, drawable);
 	}
     }
 }
@@ -2770,19 +2898,17 @@ DrawSlider(Slider *sliderPtr, Drawable drawable)
 static void
 MakeGridLine(Axis *sliderPtr, double value, Segment2d *s)
 {
-    Graph *graphPtr = sliderPtr->obj.graphPtr;
-
     if (sliderPtr->logScale) {
 	value = EXP10(value);
     }
     /* Grid lines run orthogonally to the axis */
     if (sliderPtr->flags & HORIZONTAL) {
-	s->p.y = graphPtr->top;
-	s->q.y = graphPtr->bottom;
+	s->p.y = sliderPtr->top;
+	s->q.y = sliderPtr->bottom;
 	s->p.x = s->q.x = Blt_HMap(sliderPtr, value);
     } else {
-	s->p.x = graphPtr->left;
-	s->q.x = graphPtr->right;
+	s->p.x = sliderPtr->left;
+	s->q.x = sliderPtr->right;
 	s->p.y = s->q.y = Blt_VMap(sliderPtr, value);
     }
 }
@@ -2880,7 +3006,7 @@ MapGridlines(Axis *sliderPtr)
 /*
  *---------------------------------------------------------------------------
  *
- * Blt_GetAxisGeometry --
+ * GetAxisGeometry --
  *
  * Results:
  *	None.
@@ -2905,33 +3031,27 @@ MapGridlines(Axis *sliderPtr)
  * j = plot area 
  *---------------------------------------------------------------------------
  */
-void
-Blt_GetAxisGeometry(Graph *graphPtr, Axis *sliderPtr)
+static void
+GetAxisGeometry(Slider *sliderPtr)
 {
     int y;
 
     FreeTickLabels(sliderPtr->tickLabels);
-    y = 0;
 
-    if ((sliderPtr->flags & EXTERIOR) && 
-	(graphPtr->plotRelief != TK_RELIEF_SOLID)) {
-	/* Leave room for axis baseline and padding */
-	y += sliderPtr->lineWidth + 2;
-    }
+    y = sliderPtr->lineWidth + 2;
 
-    sliderPtr->maxLabelHeight = sliderPtr->maxLabelWidth = 0;
+    sliderPtr->maxTickLabelHeight = sliderPtr->maxTickLabelWidth = 0;
     if (sliderPtr->flags & SHOWTICKS) {
 	unsigned int pad;
 	unsigned int i, numLabels, numTicks;
 
 	SweepTicks(sliderPtr);
-	
 	numTicks = 0;
 	if (sliderPtr->t1Ptr != NULL) {
 	    numTicks = sliderPtr->t1Ptr->numTicks;
 	}
 	assert(numTicks <= MAXTICKS);
-	
+
 	numLabels = 0;
 	for (i = 0; i < numTicks; i++) {
 	    TickLabel *labelPtr;
@@ -2957,6 +3077,7 @@ Blt_GetAxisGeometry(Graph *graphPtr, Axis *sliderPtr)
 
 	    if (sliderPtr->tickAngle != 0.0f) {
 		double rlw, rlh;	/* Rotated label width and height. */
+
 		Blt_GetBoundingBox(labelPtr->width, labelPtr->height, 
 			sliderPtr->tickAngle, &rlw, &rlh, NULL);
 		lw = ROUND(rlw), lh = ROUND(rlh);
@@ -2964,26 +3085,23 @@ Blt_GetAxisGeometry(Graph *graphPtr, Axis *sliderPtr)
 		lw = labelPtr->width;
 		lh = labelPtr->height;
 	    }
-	    if (sliderPtr->maxLabelWidth < lw) {
-		sliderPtr->maxLabelWidth = lw;
+	    if (sliderPtr->maxTickLabelWidth < lw) {
+		sliderPtr->maxTickLabelWidth = lw;
 	    }
-	    if (sliderPtr->maxLabelHeight < lh) {
-		sliderPtr->maxLabelHeight = lh;
+	    if (sliderPtr->maxTickLabelHeight < lh) {
+		sliderPtr->maxTickLabelHeight = lh;
 	    }
 	}
 	assert(numLabels <= numTicks);
 	
-	pad = 0;
-	if (sliderPtr->flags & EXTERIOR) {
-	    /* Because the axis cap style is "CapProjecting", we need to
-	     * account for an extra 1.5 linewidth at the end of each line.  */
-	    pad = ((sliderPtr->lineWidth * 12) / 8);
-	}
+	/* Because the axis cap style is "CapProjecting", we need to account
+	 * for an extra 1.5 linewidth at the end of each line.  */
+	pad = ((sliderPtr->lineWidth * 12) / 8);
 	if (sliderPtr->flags & HORIZONTAL) {
-	    y += sliderPtr->maxLabelHeight + pad;
+	    y += sliderPtr->maxTickLabelHeight + pad;
 	} else {
-	    y += sliderPtr->maxLabelWidth + pad;
-	    if (sliderPtr->maxLabelWidth > 0) {
+	    y += sliderPtr->maxTickLabelWidth + pad;
+	    if (sliderPtr->maxTickLabelWidth > 0) {
 		y += 5;			/* Pad either size of label. */
 	    }  
 	}
@@ -2993,15 +3111,8 @@ Blt_GetAxisGeometry(Graph *graphPtr, Axis *sliderPtr)
 	    y += sliderPtr->tickLength;
 	}
     }
-
     if (sliderPtr->title != NULL) {
-	if (sliderPtr->titleAlternate) {
-	    if (y < sliderPtr->titleHeight) {
-		y = sliderPtr->titleHeight;
-	    }
-	} else {
-	    y += sliderPtr->titleHeight + AXIS_PAD_TITLE;
-	}
+	y += sliderPtr->titleHeight + AXIS_PAD_TITLE;
     }
 
     /* Correct for orientation of the axis. */
@@ -3034,7 +3145,7 @@ GetValueExtents(Slider *sliderPtr, const char *string, int *widthPtr,
 /*
  *---------------------------------------------------------------------------
  *
- * GetGeometry --
+ * ComputeGeometry --
  *
  *	Examines all the axes in the given margin and determines the area
  *	required to display them.
@@ -3186,7 +3297,7 @@ ComputeLayout(Slider *sliderPtr)
 /*
  *---------------------------------------------------------------------------
  *
- * Blt_LayoutGraph --
+ * LayoutSlider --
  *
  *	Calculate the layout of the graph.  Based upon the data, axis limits,
  *	X and Y titles, and title height, determine the cavity left which is
@@ -3266,8 +3377,8 @@ ComputeLayout(Slider *sliderPtr)
  * if reqPlotWidth > 0 : set plot size
  *---------------------------------------------------------------------------
  */
-void
-Blt_LayoutGraph(Graph *graphPtr)
+static void
+LayoutSlider(Slider *sliderPtr)
 {
     int left, right, top, bottom;
     int plotWidth, plotHeight;
@@ -3275,8 +3386,8 @@ Blt_LayoutGraph(Graph *graphPtr)
     int width, height;
     int pad;
 
-    width = graphPtr->width;
-    height = graphPtr->height;
+    width = sliderPtr->width;
+    height = sliderPtr->height;
 
     /* 
      * Step 1:  Compute the amount of space needed to display the axes
@@ -3284,14 +3395,14 @@ Blt_LayoutGraph(Graph *graphPtr)
      *		-leftmargin, -rightmargin, -bottommargin, and -topmargin
      *		graph options, respectively.
      */
-    left   = GetMarginGeometry(graphPtr, &graphPtr->leftMargin);
-    right  = GetMarginGeometry(graphPtr, &graphPtr->rightMargin);
-    top    = GetMarginGeometry(graphPtr, &graphPtr->topMargin);
-    bottom = GetMarginGeometry(graphPtr, &graphPtr->bottomMargin);
+    left   = GetMarginGeometry(sliderPtr, &sliderPtr->leftMargin);
+    right  = GetMarginGeometry(sliderPtr, &sliderPtr->rightMargin);
+    top    = GetMarginGeometry(sliderPtr, &sliderPtr->topMargin);
+    bottom = GetMarginGeometry(sliderPtr, &sliderPtr->bottomMargin);
 
-    pad = graphPtr->bottomMargin.maxAxisLabelWidth;
-    if (pad < graphPtr->topMargin.maxAxisLabelWidth) {
-	pad = graphPtr->topMargin.maxAxisLabelWidth;
+    pad = sliderPtr->bottomMargin.maxAxisLabelWidth;
+    if (pad < sliderPtr->topMargin.maxAxisLabelWidth) {
+	pad = sliderPtr->topMargin.maxAxisLabelWidth;
     }
     pad = pad / 2 + 3;
     if (right < pad) {
@@ -3300,9 +3411,9 @@ Blt_LayoutGraph(Graph *graphPtr)
     if (left < pad) {
 	left = pad;
     }
-    pad = graphPtr->leftMargin.maxAxisLabelHeight;
-    if (pad < graphPtr->rightMargin.maxAxisLabelHeight) {
-	pad = graphPtr->rightMargin.maxAxisLabelHeight;
+    pad = sliderPtr->leftMargin.maxAxisLabelHeight;
+    if (pad < sliderPtr->rightMargin.maxAxisLabelHeight) {
+	pad = sliderPtr->rightMargin.maxAxisLabelHeight;
     }
     pad = pad / 2;
     if (top < pad) {
@@ -3312,26 +3423,26 @@ Blt_LayoutGraph(Graph *graphPtr)
 	bottom = pad;
     }
 
-    if (graphPtr->leftMargin.reqSize > 0) {
-	left = graphPtr->leftMargin.reqSize;
+    if (sliderPtr->leftMargin.reqSize > 0) {
+	left = sliderPtr->leftMargin.reqSize;
     }
-    if (graphPtr->rightMargin.reqSize > 0) {
-	right = graphPtr->rightMargin.reqSize;
+    if (sliderPtr->rightMargin.reqSize > 0) {
+	right = sliderPtr->rightMargin.reqSize;
     }
-   if (graphPtr->topMargin.reqSize > 0) {
-	top = graphPtr->topMargin.reqSize;
+   if (sliderPtr->topMargin.reqSize > 0) {
+	top = sliderPtr->topMargin.reqSize;
     }
-    if (graphPtr->bottomMargin.reqSize > 0) {
-	bottom = graphPtr->bottomMargin.reqSize;
+    if (sliderPtr->bottomMargin.reqSize > 0) {
+	bottom = sliderPtr->bottomMargin.reqSize;
     }
 
     /* 
      * Step 2:  Add the graph title height to the top margin. 
      */
-    if (graphPtr->title != NULL) {
-	top += graphPtr->titleHeight + 6;
+    if (sliderPtr->title != NULL) {
+	top += sliderPtr->titleHeight + 6;
     }
-    inset = (graphPtr->inset + graphPtr->plotBW);
+    inset = (sliderPtr->inset + sliderPtr->plotBW);
     inset2 = 2 * inset;
 
     /* 
@@ -3346,28 +3457,28 @@ Blt_LayoutGraph(Graph *graphPtr)
     if (height == 0) {
 	height = 400;
     }
-    plotWidth  = (graphPtr->reqPlotWidth > 0) ? graphPtr->reqPlotWidth :
+    plotWidth  = (sliderPtr->reqPlotWidth > 0) ? sliderPtr->reqPlotWidth :
 	width - (inset2 + left + right); /* Plot width. */
-    plotHeight = (graphPtr->reqPlotHeight > 0) ? graphPtr->reqPlotHeight : 
+    plotHeight = (sliderPtr->reqPlotHeight > 0) ? sliderPtr->reqPlotHeight : 
 	height - (inset2 + top + bottom); /* Plot height. */
-    Blt_MapLegend(graphPtr, plotWidth, plotHeight);
+    Blt_MapLegend(sliderPtr, plotWidth, plotHeight);
 
     /* 
      * Step 4:  Add the legend to the appropiate margin. 
      */
-    if (!Blt_Legend_IsHidden(graphPtr)) {
-	switch (Blt_Legend_Site(graphPtr)) {
+    if (!Blt_Legend_IsHidden(sliderPtr)) {
+	switch (Blt_Legend_Site(sliderPtr)) {
 	case LEGEND_RIGHT:
-	    right += Blt_Legend_Width(graphPtr) + 2;
+	    right += Blt_Legend_Width(sliderPtr) + 2;
 	    break;
 	case LEGEND_LEFT:
-	    left += Blt_Legend_Width(graphPtr) + 2;
+	    left += Blt_Legend_Width(sliderPtr) + 2;
 	    break;
 	case LEGEND_TOP:
-	    top += Blt_Legend_Height(graphPtr) + 2;
+	    top += Blt_Legend_Height(sliderPtr) + 2;
 	    break;
 	case LEGEND_BOTTOM:
-	    bottom += Blt_Legend_Height(graphPtr) + 2;
+	    bottom += Blt_Legend_Height(sliderPtr) + 2;
 	    break;
 	case LEGEND_XY:
 	case LEGEND_PLOT:
@@ -3377,26 +3488,26 @@ Blt_LayoutGraph(Graph *graphPtr)
 	}
     }
 #ifdef notdef
-    if (graphPtr->colorbarPtr == colormapPtrcolorbar.colormapPtr ) {
-    right += Blt_Colorbar_Geometry(graphPtr, plotWidth, plotHeight);
+    if (sliderPtr->colorbarPtr == colormapPtrcolorbar.colormapPtr ) {
+    right += Blt_Colorbar_Geometry(sliderPtr, plotWidth, plotHeight);
 #endif
     /* 
      * Recompute the plotarea or graph size, now accounting for the legend. 
      */
-    if (graphPtr->reqPlotWidth == 0) {
+    if (sliderPtr->reqPlotWidth == 0) {
 	plotWidth = width  - (inset2 + left + right);
 	if (plotWidth < 1) {
 	    plotWidth = 1;
 	}
     }
-    if (graphPtr->reqPlotHeight == 0) {
+    if (sliderPtr->reqPlotHeight == 0) {
 	plotHeight = height - (inset2 + top + bottom);
 	if (plotHeight < 1) {
 	    plotHeight = 1;
 	}
     }
 #ifdef notdef
-    if (graphPtr->colorbar.site == graphPtr->legend.site) {
+    if (sliderPtr->colorbar.site == sliderPtr->legend.site) {
 	Blt_GetColorbarGeometry(plotWidth, plotHeight);
     } 
 #endif
@@ -3404,8 +3515,8 @@ Blt_LayoutGraph(Graph *graphPtr)
      * Step 5: If necessary, correct for the requested plot area aspect
      *	       ratio.
      */
-    if ((graphPtr->reqPlotWidth == 0) && (graphPtr->reqPlotHeight == 0) && 
-	(graphPtr->aspect > 0.0f)) {
+    if ((sliderPtr->reqPlotWidth == 0) && (sliderPtr->reqPlotHeight == 0) && 
+	(sliderPtr->aspect > 0.0f)) {
 	float ratio;
 
 	/* 
@@ -3413,11 +3524,11 @@ Blt_LayoutGraph(Graph *graphPtr)
 	 * width/height aspect ratio.
 	 */
 	ratio = (float)plotWidth / (float)plotHeight;
-	if (ratio > graphPtr->aspect) {
+	if (ratio > sliderPtr->aspect) {
 	    int sw;
 
 	    /* Shrink the width. */
-	    sw = (int)(plotHeight * graphPtr->aspect);
+	    sw = (int)(plotHeight * sliderPtr->aspect);
 	    if (sw < 1) {
 		sw = 1;
 	    }
@@ -3428,7 +3539,7 @@ Blt_LayoutGraph(Graph *graphPtr)
 	    int sh;
 
 	    /* Shrink the height. */
-	    sh = (int)(plotWidth / graphPtr->aspect);
+	    sh = (int)(plotWidth / sliderPtr->aspect);
 	    if (sh < 1) {
 		sh = 1;
 	    }
@@ -3443,35 +3554,35 @@ Blt_LayoutGraph(Graph *graphPtr)
      *	       displayed in the adjoining margins.  Make sure there's room 
      *	       for the longest axis titles.
      */
-    if (top < graphPtr->leftMargin.axesTitleLength) {
-	top = graphPtr->leftMargin.axesTitleLength;
+    if (top < sliderPtr->leftMargin.axesTitleLength) {
+	top = sliderPtr->leftMargin.axesTitleLength;
     }
-    if (right < graphPtr->bottomMargin.axesTitleLength) {
-	right = graphPtr->bottomMargin.axesTitleLength;
+    if (right < sliderPtr->bottomMargin.axesTitleLength) {
+	right = sliderPtr->bottomMargin.axesTitleLength;
     }
-    if (top < graphPtr->rightMargin.axesTitleLength) {
-	top = graphPtr->rightMargin.axesTitleLength;
+    if (top < sliderPtr->rightMargin.axesTitleLength) {
+	top = sliderPtr->rightMargin.axesTitleLength;
     }
-    if (right < graphPtr->topMargin.axesTitleLength) {
-	right = graphPtr->topMargin.axesTitleLength;
+    if (right < sliderPtr->topMargin.axesTitleLength) {
+	right = sliderPtr->topMargin.axesTitleLength;
     }
 
     /* 
      * Step 7: Override calculated values with requested margin sizes.
      */
-    if (graphPtr->leftMargin.reqSize > 0) {
-	left = graphPtr->leftMargin.reqSize;
+    if (sliderPtr->leftMargin.reqSize > 0) {
+	left = sliderPtr->leftMargin.reqSize;
     }
-    if (graphPtr->rightMargin.reqSize > 0) {
-	right = graphPtr->rightMargin.reqSize;
+    if (sliderPtr->rightMargin.reqSize > 0) {
+	right = sliderPtr->rightMargin.reqSize;
     }
-    if (graphPtr->topMargin.reqSize > 0) {
-	top = graphPtr->topMargin.reqSize;
+    if (sliderPtr->topMargin.reqSize > 0) {
+	top = sliderPtr->topMargin.reqSize;
     }
-    if (graphPtr->bottomMargin.reqSize > 0) {
-	bottom = graphPtr->bottomMargin.reqSize;
+    if (sliderPtr->bottomMargin.reqSize > 0) {
+	bottom = sliderPtr->bottomMargin.reqSize;
     }
-    if (graphPtr->reqPlotWidth > 0) {	
+    if (sliderPtr->reqPlotWidth > 0) {	
 	int w;
 
 	/* 
@@ -3484,21 +3595,21 @@ Blt_LayoutGraph(Graph *graphPtr)
 	    int extra;
 
 	    extra = (width - w) / 2;
-	    if (graphPtr->leftMargin.reqSize == 0) { 
+	    if (sliderPtr->leftMargin.reqSize == 0) { 
 		left += extra;
-		if (graphPtr->rightMargin.reqSize == 0) { 
+		if (sliderPtr->rightMargin.reqSize == 0) { 
 		    right += extra;
 		} else {
 		    left += extra;
 		}
-	    } else if (graphPtr->rightMargin.reqSize == 0) {
+	    } else if (sliderPtr->rightMargin.reqSize == 0) {
 		right += extra + extra;
 	    }
 	} else if (width < w) {
 	    width = w;
 	}
     } 
-    if (graphPtr->reqPlotHeight > 0) {	/* Constrain the plotarea height. */
+    if (sliderPtr->reqPlotHeight > 0) {	/* Constrain the plotarea height. */
 	int h;
 
 	/* 
@@ -3511,52 +3622,52 @@ Blt_LayoutGraph(Graph *graphPtr)
 	    int extra;
 
 	    extra = (height - h) / 2;
-	    if (graphPtr->topMargin.reqSize == 0) { 
+	    if (sliderPtr->topMargin.reqSize == 0) { 
 		top += extra;
-		if (graphPtr->bottomMargin.reqSize == 0) { 
+		if (sliderPtr->bottomMargin.reqSize == 0) { 
 		    bottom += extra;
 		} else {
 		    top += extra;
 		}
-	    } else if (graphPtr->bottomMargin.reqSize == 0) {
+	    } else if (sliderPtr->bottomMargin.reqSize == 0) {
 		bottom += extra + extra;
 	    }
 	} else if (height < h) {
 	    height = h;
 	}
     }	
-    graphPtr->width  = width;
-    graphPtr->height = height;
-    graphPtr->left   = left + inset;
-    graphPtr->top    = top + inset;
-    graphPtr->right  = width - right - inset;
-    graphPtr->bottom = height - bottom - inset;
+    sliderPtr->width  = width;
+    sliderPtr->height = height;
+    sliderPtr->left   = left + inset;
+    sliderPtr->top    = top + inset;
+    sliderPtr->right  = width - right - inset;
+    sliderPtr->bottom = height - bottom - inset;
 
-    graphPtr->leftMargin.width    = left   + graphPtr->inset;
-    graphPtr->rightMargin.width   = right  + graphPtr->inset;
-    graphPtr->topMargin.height    = top    + graphPtr->inset;
-    graphPtr->bottomMargin.height = bottom + graphPtr->inset;
+    sliderPtr->leftMargin.width    = left   + sliderPtr->inset;
+    sliderPtr->rightMargin.width   = right  + sliderPtr->inset;
+    sliderPtr->topMargin.height    = top    + sliderPtr->inset;
+    sliderPtr->bottomMargin.height = bottom + sliderPtr->inset;
 	    
-    graphPtr->vOffset = graphPtr->top + graphPtr->padTop;
-    graphPtr->vRange  = plotHeight - PADDING(graphPtr->yPad);
-    graphPtr->hOffset = graphPtr->left + graphPtr->padLeft;
-    graphPtr->hRange  = plotWidth  - PADDING(graphPtr->xPad);
+    sliderPtr->vOffset = sliderPtr->top + sliderPtr->padTop;
+    sliderPtr->vRange  = plotHeight - PADDING(sliderPtr->yPad);
+    sliderPtr->hOffset = sliderPtr->left + sliderPtr->padLeft;
+    sliderPtr->hRange  = plotWidth  - PADDING(sliderPtr->xPad);
 
-    if (graphPtr->vRange < 1) {
-	graphPtr->vRange = 1;
+    if (sliderPtr->vRange < 1) {
+	sliderPtr->vRange = 1;
     }
-    if (graphPtr->hRange < 1) {
-	graphPtr->hRange = 1;
+    if (sliderPtr->hRange < 1) {
+	sliderPtr->hRange = 1;
     }
-    graphPtr->hScale = 1.0f / (float)graphPtr->hRange;
-    graphPtr->vScale = 1.0f / (float)graphPtr->vRange;
+    sliderPtr->hScale = 1.0f / (float)sliderPtr->hRange;
+    sliderPtr->vScale = 1.0f / (float)sliderPtr->vRange;
 
     /*
      * Calculate the placement of the graph title so it is centered within the
      * space provided for it in the top margin
      */
-    graphPtr->titleY = 3 + graphPtr->inset;
-    graphPtr->titleX = (graphPtr->right + graphPtr->left) / 2;
+    sliderPtr->titleY = 3 + sliderPtr->inset;
+    sliderPtr->titleX = (sliderPtr->right + sliderPtr->left) / 2;
 }
 
 /*
@@ -3578,53 +3689,47 @@ Blt_LayoutGraph(Graph *graphPtr)
 static int
 ConfigureSlider(Axis *sliderPtr)
 {
-    Graph *graphPtr = sliderPtr->obj.graphPtr;
     float angle;
 
-    
-    /* Check the requested axis limits. Can't allow -min to be greater than
-     * -max.  Do this regardless of -checklimits option. We want to always 
-     * detect when the user has zoomed in beyond the precision of the data.*/
-    if (((DEFINED(sliderPtr->reqMin)) && (DEFINED(sliderPtr->reqMax))) &&
-	(sliderPtr->reqMin >= sliderPtr->reqMax)) {
-	char msg[200];
-	Blt_FormatString(msg, 200, 
-		  "impossible axis limits (-min %g >= -max %g) for \"%s\"",
-		  sliderPtr->reqMin, sliderPtr->reqMax, sliderPtr->obj.name);
-	Tcl_AppendResult(graphPtr->interp, msg, (char *)NULL);
-	return TCL_ERROR;
+    /* Determine is the axis is increasing or decreasing. */
+    if (sliderPtr->fromValue > sliderPtr->toValue) {
+	sliderPtr->flags |= DECREASING;
+	sliderPtr->outerMin = sliderPtr->toValue;
+	sliderPtr->outerMax = sliderPtr->fromValue;
+    } else {
+	sliderPtr->flags &= ~DECREASING;
+	sliderPtr->outerMin = sliderPtr->fromValue;
+	sliderPtr->outerMax = sliderPtr->toValue;
     }
-    sliderPtr->scrollMin = sliderPtr->reqScrollMin;
-    sliderPtr->scrollMax = sliderPtr->reqScrollMax;
-    if (sliderPtr->logScale) {
-	if (sliderPtr->flags & CHECK_LIMITS) {
-	    /* Check that the logscale limits are positive.  */
-	    if ((DEFINED(sliderPtr->reqMin)) && (sliderPtr->reqMin <= 0.0)) {
-		Tcl_AppendResult(graphPtr->interp,"bad logscale -min limit \"", 
-			Blt_Dtoa(graphPtr->interp, sliderPtr->reqMin), 
-			"\" for axis \"", sliderPtr->obj.name, "\"", 
-			(char *)NULL);
-		return TCL_ERROR;
-	    }
-	}
-	if ((DEFINED(sliderPtr->scrollMin)) && (sliderPtr->scrollMin <= 0.0)) {
-	    sliderPtr->scrollMin = Blt_NaN();
-	}
-	if ((DEFINED(sliderPtr->scrollMax)) && (sliderPtr->scrollMax <= 0.0)) {
-	    sliderPtr->scrollMax = Blt_NaN();
-	}
+    /* Handle special case of non-positive log values.  */
+    if ((sliderPtr->flags & LOGSCALE) && (sliderPtr->outerMin < 0.0)) {
+	sliderPtr->outerMin = 0.001;
+    }
+    SetSliderRange(&sliderPtr->outerRange, sliderPtr->outerMin, 
+		   sliderPtr->outerMax);
+
+    /* Bound the min and max values to the limits of the axis. */
+    if (sliderPtr->minValue < sliderPtr->outerMin) {
+	sliderPtr->minValue = sliderPtr->outerMin;
+    }
+    if (sliderPtr->maxValue > sliderPtr->outerMax) {
+	sliderPtr->maxValue = sliderPtr->outerMax;
+    }
+    if (sliderPtr->innerMin > sliderPtr->innerMax) {
+	sliderPtr->innerMax = sliderPtr->innerMin;
+    }
+    if (sliderPtr->innerMax < sliderPtr->innerMin) {
+	sliderPtr->innerMin = sliderPtr->innerMax;
     }
     angle = FMOD(sliderPtr->tickAngle, 360.0f);
     if (angle < 0.0f) {
 	angle += 360.0f;
     }
     if (sliderPtr->normalBg != NULL) {
-	Blt_Bg_SetChangedProc(sliderPtr->normalBg, Blt_UpdateGraph, 
-		graphPtr);
+	Blt_Bg_SetChangedProc(sliderPtr->normalBg, UpdateSlider, sliderPtr);
     }
     if (sliderPtr->activeBg != NULL) {
-	Blt_Bg_SetChangedProc(sliderPtr->activeBg, Blt_UpdateGraph, 
-		graphPtr);
+	Blt_Bg_SetChangedProc(sliderPtr->activeBg, UpdateSlider, sliderPtr);
     }
     sliderPtr->tickAngle = angle;
     ResetTextStyles(sliderPtr);
@@ -3633,24 +3738,15 @@ ConfigureSlider(Axis *sliderPtr)
     if (sliderPtr->title != NULL) {
 	unsigned int w, h;
 
-	Blt_GetTextExtents(sliderPtr->titleFont, 0, sliderPtr->title, -1, &w, &h);
+	Blt_GetTextExtents(sliderPtr->titleFont, 0, sliderPtr->title,-1,&w,&h);
 	sliderPtr->titleWidth = (unsigned short int)w;
 	sliderPtr->titleHeight = (unsigned short int)h;
     }
-
-    /* 
-     * Don't bother to check what configuration options have changed.  Almost
-     * every option changes the size of the plotting area (except for -color
-     * and -titlecolor), requiring the graph and its contents to be completely
-     * redrawn.
-     *
-     * Recompute the scale and offset of the axis in case -min, -max options
-     * have changed.
-     */
-    graphPtr->flags |= REDRAW_WORLD;
-    graphPtr->flags |= MAP_WORLD | RESET_AXES | CACHE_DIRTY;
+    ResetAxes(sliderPtr);
+    sliderPtr->flags |= REDRAW_WORLD;
+    sliderPtr->flags |= MAP_WORLD | RESET_AXES;
     sliderPtr->flags |= DIRTY;
-    Blt_EventuallyRedrawGraph(graphPtr);
+    EventuallyRedraw(sliderPtr);
     return TCL_OK;
 }
 
@@ -3667,24 +3763,24 @@ ConfigureSlider(Axis *sliderPtr)
  *
  *---------------------------------------------------------------------------
  */
-static Axis *
-NewAxis(Graph *graphPtr, const char *name, int margin)
+static Slider *
+NewSlider(const char *name, int margin)
 {
     Axis *sliderPtr;
     Blt_HashEntry *hPtr;
     int isNew;
 
     if (name[0] == '-') {
-	Tcl_AppendResult(graphPtr->interp, "name of axis \"", name, 
+	Tcl_AppendResult(sliderPtr->interp, "name of axis \"", name, 
 		"\" can't start with a '-'", (char *)NULL);
 	return NULL;
     }
-    hPtr = Blt_CreateHashEntry(&graphPtr->axes.nameTable, name, &isNew);
+    hPtr = Blt_CreateHashEntry(&sliderPtr->axes.nameTable, name, &isNew);
     if (!isNew) {
 	sliderPtr = Blt_GetHashValue(hPtr);
 	if ((sliderPtr->flags & DELETE_PENDING) == 0) {
-	    Tcl_AppendResult(graphPtr->interp, "axis \"", name,
-		"\" already exists in \"", Tk_PathName(graphPtr->tkwin), "\"",
+	    Tcl_AppendResult(sliderPtr->interp, "axis \"", name,
+		"\" already exists in \"", Tk_PathName(sliderPtr->tkwin), "\"",
 		(char *)NULL);
 	    return NULL;
 	}
@@ -3692,14 +3788,12 @@ NewAxis(Graph *graphPtr, const char *name, int margin)
     } else {
 	sliderPtr = Blt_Calloc(1, sizeof(Axis));
 	if (sliderPtr == NULL) {
-	    Tcl_AppendResult(graphPtr->interp, 
+	    Tcl_AppendResult(sliderPtr->interp, 
 		"can't allocate memory for axis \"", name, "\"", (char *)NULL);
 	    return NULL;
 	}
 	sliderPtr->obj.name = Blt_AssertStrdup(name);
 	sliderPtr->hashPtr = hPtr;
-	Blt_GraphSetObjectClass(&sliderPtr->obj, CID_NONE);
-	sliderPtr->obj.graphPtr = graphPtr;
 	sliderPtr->looseMin = sliderPtr->looseMax = TIGHT;
 	sliderPtr->reqNumMinorTicks = 2;
 	sliderPtr->reqNumMajorTicks = 4 /*10*/;
@@ -3711,10 +3805,10 @@ NewAxis(Graph *graphPtr, const char *name, int margin)
 	sliderPtr->weight = 1.0;
 	sliderPtr->flags = (SHOWTICKS|GRIDMINOR|AUTO_MAJOR|
 			  AUTO_MINOR | EXTERIOR);
-	if (graphPtr->classId == CID_ELEM_BAR) {
+	if (sliderPtr->classId == CID_ELEM_BAR) {
 	    sliderPtr->flags |= GRID;
 	}
-	if ((graphPtr->classId == CID_ELEM_BAR) && 
+	if ((sliderPtr->classId == CID_ELEM_BAR) && 
 	    ((margin == MARGIN_TOP) || (margin == MARGIN_BOTTOM))) {
 	    sliderPtr->reqStep = 1.0;
 	    sliderPtr->reqNumMinorTicks = 0;
@@ -3730,114 +3824,23 @@ NewAxis(Graph *graphPtr, const char *name, int margin)
     return sliderPtr;
 }
 
-static int
-GetAxisFromObj(Tcl_Interp *interp, Graph *graphPtr, Tcl_Obj *objPtr, 
-	       Axis **sliderPtrPtr)
-{
-    Blt_HashEntry *hPtr;
-    const char *name;
-
-    *sliderPtrPtr = NULL;
-    name = Tcl_GetString(objPtr);
-    hPtr = Blt_FindHashEntry(&graphPtr->axes.nameTable, name);
-    if (hPtr != NULL) {
-	Axis *sliderPtr;
-
-	sliderPtr = Blt_GetHashValue(hPtr);
-	if ((sliderPtr->flags & DELETE_PENDING) == 0) {
-	    *sliderPtrPtr = sliderPtr;
-	    return TCL_OK;
-	}
-    }
-    if (interp != NULL) {
-	Tcl_AppendResult(interp, "can't find axis \"", name, "\" in \"", 
-		Tk_PathName(graphPtr->tkwin), "\"", (char *)NULL);
-    }
-    return TCL_ERROR;
-}
-
-static int
-GetAxisByClass(Tcl_Interp *interp, Graph *graphPtr, Tcl_Obj *objPtr,
-	       ClassId classId, Axis **sliderPtrPtr)
-{
-    Axis *sliderPtr;
-
-    if (GetAxisFromObj(interp, graphPtr, objPtr, &sliderPtr) != TCL_OK) {
-	return TCL_ERROR;
-    }
-    if (classId != CID_NONE) {
-	if ((sliderPtr->refCount == 0) || (sliderPtr->obj.classId == CID_NONE)) {
-	    /* Set the axis type on the first use of it. */
-	    Blt_GraphSetObjectClass(&sliderPtr->obj, classId);
-	} else if (sliderPtr->obj.classId != classId) {
-	    if (interp != NULL) {
-  	        Tcl_AppendResult(interp, "axis \"", Tcl_GetString(objPtr),
-		    "\" is already in use on an opposite ", 
-			sliderPtr->obj.className, "-axis", 
-			(char *)NULL);
-	    }
-	    return TCL_ERROR;
-	}
-	sliderPtr->refCount++;
-    }
-    *sliderPtrPtr = sliderPtr;
-    return TCL_OK;
-}
-
-void
-Blt_DestroyAxes(Graph *graphPtr)
-{
-    Blt_HashEntry *hPtr;
-    Blt_HashSearch cursor;
-    int margin;
-    
-    for (hPtr = Blt_FirstHashEntry(&graphPtr->axes.nameTable, &cursor);
-	 hPtr != NULL; hPtr = Blt_NextHashEntry(&cursor)) {
-	Axis *sliderPtr;
-	
-	sliderPtr = Blt_GetHashValue(hPtr);
-	sliderPtr->hashPtr = NULL;
-	DestroyAxis(sliderPtr);
-    }
-    Blt_DeleteHashTable(&graphPtr->axes.nameTable);
-    for (margin = 0; margin < 4; margin++) {
-	Blt_Chain_Destroy(graphPtr->axisChain[margin]);
-    }
-    Blt_DeleteHashTable(&graphPtr->axes.bindTagTable);
-    Blt_Chain_Destroy(graphPtr->axes.displayList);
-}
-
-void
-Blt_ConfigureAxes(Graph *graphPtr)
-{
-    Blt_HashEntry *hPtr;
-    Blt_HashSearch cursor;
-    
-    for (hPtr = Blt_FirstHashEntry(&graphPtr->axes.nameTable, &cursor);
-	 hPtr != NULL; hPtr = Blt_NextHashEntry(&cursor)) {
-	Axis *sliderPtr;
-	
-	sliderPtr = Blt_GetHashValue(hPtr);
-	ConfigureAxis(sliderPtr);
-    }
-}
 
 int
-Blt_DefaultAxes(Graph *graphPtr)
+Blt_DefaultAxes(Graph *sliderPtr)
 {
     int i, margin;
     int flags;
 
-    flags = Blt_GraphType(graphPtr);
+    flags = Blt_GraphType(sliderPtr);
     for (margin = 0; margin < 4; margin++) {
 	Blt_Chain chain;
 	Axis *sliderPtr;
 
 	chain = Blt_Chain_Create();
-	graphPtr->axisChain[margin] = chain;
+	sliderPtr->axisChain[margin] = chain;
 
 	/* Create a default axis for each chain. */
-	sliderPtr = NewAxis(graphPtr, axisNames[margin].name, margin);
+	sliderPtr = NewAxis(sliderPtr, axisNames[margin].name, margin);
 	if (sliderPtr == NULL) {
 	    return TCL_ERROR;
 	}
@@ -3845,7 +3848,7 @@ Blt_DefaultAxes(Graph *graphPtr)
 	sliderPtr->margin = margin;
 	sliderPtr->flags |= USE;
 	Blt_GraphSetObjectClass(&sliderPtr->obj, axisNames[margin].classId);
- 	if (Blt_ConfigureComponentFromObj(graphPtr->interp, graphPtr->tkwin,
+ 	if (Blt_ConfigureComponentFromObj(sliderPtr->interp, sliderPtr->tkwin,
 		sliderPtr->obj.name, "Axis", configSpecs, 0, (Tcl_Obj **)NULL,
 		(char *)sliderPtr, flags) != TCL_OK) {
 	    return TCL_ERROR;
@@ -3860,7 +3863,7 @@ Blt_DefaultAxes(Graph *graphPtr)
     for (i = 4; i < numAxisNames; i++) {
 	Axis *sliderPtr;
 
-	sliderPtr = NewAxis(graphPtr, axisNames[i].name, MARGIN_NONE);
+	sliderPtr = NewAxis(sliderPtr, axisNames[i].name, MARGIN_NONE);
 	if (sliderPtr == NULL) {
 	    return TCL_ERROR;
 	}
@@ -3868,7 +3871,7 @@ Blt_DefaultAxes(Graph *graphPtr)
 	sliderPtr->margin = MARGIN_NONE;
 	sliderPtr->flags |= USE;
 	Blt_GraphSetObjectClass(&sliderPtr->obj, axisNames[i].classId);
- 	if (Blt_ConfigureComponentFromObj(graphPtr->interp, graphPtr->tkwin,
+ 	if (Blt_ConfigureComponentFromObj(sliderPtr->interp, sliderPtr->tkwin,
 		sliderPtr->obj.name, "Axis", configSpecs, 0, (Tcl_Obj **)NULL,
 		(char *)sliderPtr, flags) != TCL_OK) {
 	    return TCL_ERROR;
@@ -3892,7 +3895,7 @@ Blt_DefaultAxes(Graph *graphPtr)
  *	A standard TCL result.
  *
  * Side Effects:
- *	Graph will be redrawn to reflect the new axis attributes.
+ *	Slider will be redrawn to reflect the new axis attributes.
  *
  *---------------------------------------------------------------------------
  */
@@ -4110,7 +4113,6 @@ ViewOp(ClientData clientData, Tcl_Interp *interp, int objc,
        Tcl_Obj *const *objv)
 {
     Slider *sliderPtr = clientData;
-    Graph *graphPtr;
     double axisOffset, axisScale;
     double fract;
     double viewMin, viewMax, worldMin, worldMax;
@@ -4195,17 +4197,17 @@ ViewOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *	A standard TCL result.
  *
  * Side Effects:
- *	Graph will be redrawn to reflect the new axis attributes.
+ *	Sliders will be redrawn to reflect the new axis attributes.
  *
  *---------------------------------------------------------------------------
  */
 static int
-AxisActivateOp(Tcl_Interp *interp, Graph *graphPtr, int objc, 
+AxisActivateOp(Tcl_Interp *interp, Slider *sliderPtr, int objc, 
 	       Tcl_Obj *const *objv)
 {
     Axis *sliderPtr;
 
-    if (GetAxisFromObj(interp, graphPtr, objv[3], &sliderPtr) != TCL_OK) {
+    if (GetAxisFromObj(interp, sliderPtr, objv[3], &sliderPtr) != TCL_OK) {
 	return TCL_ERROR;
     }
     return ActivateOp(interp, sliderPtr, objc, objv);
@@ -4222,7 +4224,7 @@ AxisActivateOp(Tcl_Interp *interp, Graph *graphPtr, int objc,
  */
 /*ARGSUSED*/
 static int
-AxisBindOp(Tcl_Interp *interp, Graph *graphPtr, int objc, 
+AxisBindOp(Tcl_Interp *interp, Graph *sliderPtr, int objc, 
 	      Tcl_Obj *const *objv)
 {
     if (objc == 3) {
@@ -4231,20 +4233,20 @@ AxisBindOp(Tcl_Interp *interp, Graph *graphPtr, int objc,
 	Tcl_Obj *listObjPtr;
 
 	listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
-	for (hPtr = Blt_FirstHashEntry(&graphPtr->axes.bindTagTable, &cursor);
+	for (hPtr = Blt_FirstHashEntry(&sliderPtr->axes.bindTagTable, &cursor);
 	     hPtr != NULL; hPtr = Blt_NextHashEntry(&cursor)) {
 	    const char *tagName;
 	    Tcl_Obj *objPtr;
 
-	    tagName = Blt_GetHashKey(&graphPtr->axes.bindTagTable, hPtr);
+	    tagName = Blt_GetHashKey(&sliderPtr->axes.bindTagTable, hPtr);
 	    objPtr = Tcl_NewStringObj(tagName, -1);
 	    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
 	}
 	Tcl_SetObjResult(interp, listObjPtr);
 	return TCL_OK;
     }
-    return Blt_ConfigureBindingsFromObj(interp, graphPtr->bindTable, 
-	Blt_MakeAxisTag(graphPtr, Tcl_GetString(objv[3])), objc - 4, objv + 4);
+    return Blt_ConfigureBindingsFromObj(interp, sliderPtr->bindTable, 
+	Blt_MakeAxisTag(sliderPtr, Tcl_GetString(objv[3])), objc - 4, objv + 4);
 }
 
 
@@ -4263,11 +4265,11 @@ AxisBindOp(Tcl_Interp *interp, Graph *graphPtr, int objc,
  */
 /* ARGSUSED */
 static int
-AxisCgetOp(Tcl_Interp *interp, Graph *graphPtr, int objc, Tcl_Obj *const *objv)
+AxisCgetOp(Tcl_Interp *interp, Graph *sliderPtr, int objc, Tcl_Obj *const *objv)
 {
     Axis *sliderPtr;
 
-    if (GetAxisFromObj(interp, graphPtr, objv[3], &sliderPtr) != TCL_OK) {
+    if (GetAxisFromObj(interp, sliderPtr, objv[3], &sliderPtr) != TCL_OK) {
 	return TCL_ERROR;
     }
     return CgetOp(interp, sliderPtr, objc - 4, objv + 4);
@@ -4291,7 +4293,7 @@ AxisCgetOp(Tcl_Interp *interp, Graph *graphPtr, int objc, Tcl_Obj *const *objv)
  *---------------------------------------------------------------------------
  */
 static int
-AxisConfigureOp(Tcl_Interp *interp, Graph *graphPtr, int objc, 
+AxisConfigureOp(Tcl_Interp *interp, Graph *sliderPtr, int objc, 
 		Tcl_Obj *const *objv)
 {
     Tcl_Obj *const *options;
@@ -4309,7 +4311,7 @@ AxisConfigureOp(Tcl_Interp *interp, Graph *graphPtr, int objc,
 	if (string[0] == '-') {
 	    break;
 	}
-	if (GetAxisFromObj(interp, graphPtr, objv[i], &sliderPtr) != TCL_OK) {
+	if (GetAxisFromObj(interp, sliderPtr, objv[i], &sliderPtr) != TCL_OK) {
 	    return TCL_ERROR;
 	}
     }
@@ -4320,7 +4322,7 @@ AxisConfigureOp(Tcl_Interp *interp, Graph *graphPtr, int objc,
     for (i = 0; i < numNames; i++) {
 	Axis *sliderPtr;
 
-	if (GetAxisFromObj(interp, graphPtr, objv[i], &sliderPtr) != TCL_OK) {
+	if (GetAxisFromObj(interp, sliderPtr, objv[i], &sliderPtr) != TCL_OK) {
 	    return TCL_ERROR;
 	}
 	if (ConfigureOp(interp, sliderPtr, numOpts, options) != TCL_OK) {
@@ -4349,7 +4351,7 @@ AxisConfigureOp(Tcl_Interp *interp, Graph *graphPtr, int objc,
  */
 /*ARGSUSED*/
 static int
-AxisDeleteOp(Tcl_Interp *interp, Graph *graphPtr, int objc, 
+AxisDeleteOp(Tcl_Interp *interp, Graph *sliderPtr, int objc, 
 	     Tcl_Obj *const *objv)
 {
     int i;
@@ -4357,7 +4359,7 @@ AxisDeleteOp(Tcl_Interp *interp, Graph *graphPtr, int objc,
     for (i = 3; i < objc; i++) {
 	Axis *sliderPtr;
 
-	if (GetAxisFromObj(interp, graphPtr, objv[i], &sliderPtr) != TCL_OK) {
+	if (GetAxisFromObj(interp, sliderPtr, objv[i], &sliderPtr) != TCL_OK) {
 	    return TCL_ERROR;
 	}
 	sliderPtr->flags |= DELETE_PENDING;
@@ -4385,7 +4387,7 @@ AxisDeleteOp(Tcl_Interp *interp, Graph *graphPtr, int objc,
  *---------------------------------------------------------------------------
  */
 static int
-AxisFocusOp(Tcl_Interp *interp, Graph *graphPtr, int objc, Tcl_Obj *const *objv)
+AxisFocusOp(Tcl_Interp *interp, Graph *sliderPtr, int objc, Tcl_Obj *const *objv)
 {
     if (objc > 3) {
 	Axis *sliderPtr;
@@ -4394,20 +4396,20 @@ AxisFocusOp(Tcl_Interp *interp, Graph *graphPtr, int objc, Tcl_Obj *const *objv)
 	sliderPtr = NULL;
 	string = Tcl_GetString(objv[3]);
 	if ((string[0] != '\0') && 
-	    (GetAxisFromObj(interp, graphPtr, objv[3], &sliderPtr) != TCL_OK)) {
+	    (GetAxisFromObj(interp, sliderPtr, objv[3], &sliderPtr) != TCL_OK)) {
 	    return TCL_ERROR;
 	}
-	graphPtr->focusPtr = NULL;
+	sliderPtr->focusPtr = NULL;
 	if ((sliderPtr != NULL) && 
 	    ((sliderPtr->flags & (USE|HIDE)) == USE)) {
-	    graphPtr->focusPtr = sliderPtr;
+	    sliderPtr->focusPtr = sliderPtr;
 	}
-	Blt_SetFocusItem(graphPtr->bindTable, graphPtr->focusPtr, NULL);
+	Blt_SetFocusItem(sliderPtr->bindTable, sliderPtr->focusPtr, NULL);
     }
     /* Return the name of the axis that has focus. */
-    if (graphPtr->focusPtr != NULL) {
+    if (sliderPtr->focusPtr != NULL) {
 	Tcl_SetStringObj(Tcl_GetObjResult(interp), 
-		graphPtr->focusPtr->obj.name, -1);
+		sliderPtr->focusPtr->obj.name, -1);
     }
     return TCL_OK;
 }
@@ -4429,11 +4431,11 @@ AxisFocusOp(Tcl_Interp *interp, Graph *graphPtr, int objc, Tcl_Obj *const *objv)
  */
 /*ARGSUSED*/
 static int
-AxisGetOp(Tcl_Interp *interp, Graph *graphPtr, int objc, Tcl_Obj *const *objv)
+AxisGetOp(Tcl_Interp *interp, Graph *sliderPtr, int objc, Tcl_Obj *const *objv)
 {
     GraphObj *objPtr;
 
-    objPtr = Blt_GetCurrentItem(graphPtr->bindTable);
+    objPtr = Blt_GetCurrentItem(sliderPtr->bindTable);
     /* Report only on axes. */
     if ((objPtr != NULL) && (!objPtr->deleted) &&
 	((objPtr->classId == CID_AXIS_X) || (objPtr->classId == CID_AXIS_Y) || 
@@ -4470,12 +4472,12 @@ AxisGetOp(Tcl_Interp *interp, Graph *graphPtr, int objc, Tcl_Obj *const *objv)
  *---------------------------------------------------------------------------
  */
 static int
-AxisInvTransformOp(Tcl_Interp *interp, Graph *graphPtr, int objc, 
+AxisInvTransformOp(Tcl_Interp *interp, Graph *sliderPtr, int objc, 
 		   Tcl_Obj *const *objv)
 {
     Axis *sliderPtr;
 
-    if (GetAxisFromObj(interp, graphPtr, objv[3], &sliderPtr) != TCL_OK) {
+    if (GetAxisFromObj(interp, sliderPtr, objv[3], &sliderPtr) != TCL_OK) {
 	return TCL_ERROR;
     }
     return InvTransformOp(interp, sliderPtr, objc - 4, objv + 4);
@@ -4496,12 +4498,12 @@ AxisInvTransformOp(Tcl_Interp *interp, Graph *graphPtr, int objc,
  *---------------------------------------------------------------------------
  */
 static int
-AxisLimitsOp(Tcl_Interp *interp, Graph *graphPtr, int objc, 
+AxisLimitsOp(Tcl_Interp *interp, Graph *sliderPtr, int objc, 
 	     Tcl_Obj *const *objv)
 {
     Axis *sliderPtr;
 
-    if (GetAxisFromObj(interp, graphPtr, objv[3], &sliderPtr) != TCL_OK) {
+    if (GetAxisFromObj(interp, sliderPtr, objv[3], &sliderPtr) != TCL_OK) {
 	return TCL_ERROR;
     }
     return LimitsOp(interp, sliderPtr, objc - 4, objv + 4);
@@ -4522,12 +4524,12 @@ AxisLimitsOp(Tcl_Interp *interp, Graph *graphPtr, int objc,
  *---------------------------------------------------------------------------
  */
 static int
-AxisMarginOp(Tcl_Interp *interp, Graph *graphPtr, int objc, 
+AxisMarginOp(Tcl_Interp *interp, Graph *sliderPtr, int objc, 
 	     Tcl_Obj *const *objv)
 {
     Axis *sliderPtr;
 
-    if (GetAxisFromObj(interp, graphPtr, objv[3], &sliderPtr) != TCL_OK) {
+    if (GetAxisFromObj(interp, sliderPtr, objv[3], &sliderPtr) != TCL_OK) {
 	return TCL_ERROR;
     }
     return MarginOp(interp, sliderPtr, objc - 4, objv + 4);
@@ -4549,7 +4551,7 @@ AxisMarginOp(Tcl_Interp *interp, Graph *graphPtr, int objc,
 
 /*ARGSUSED*/
 static int
-AxisNamesOp(Tcl_Interp *interp, Graph *graphPtr, int objc, Tcl_Obj *const *objv)
+AxisNamesOp(Tcl_Interp *interp, Graph *sliderPtr, int objc, Tcl_Obj *const *objv)
 {
     Tcl_Obj *listObjPtr;
 
@@ -4558,7 +4560,7 @@ AxisNamesOp(Tcl_Interp *interp, Graph *graphPtr, int objc, Tcl_Obj *const *objv)
 	Blt_HashEntry *hPtr;
 	Blt_HashSearch cursor;
 
-	for (hPtr = Blt_FirstHashEntry(&graphPtr->axes.nameTable, &cursor);
+	for (hPtr = Blt_FirstHashEntry(&sliderPtr->axes.nameTable, &cursor);
 	     hPtr != NULL; hPtr = Blt_NextHashEntry(&cursor)) {
 	    Axis *sliderPtr;
 
@@ -4573,7 +4575,7 @@ AxisNamesOp(Tcl_Interp *interp, Graph *graphPtr, int objc, Tcl_Obj *const *objv)
 	Blt_HashEntry *hPtr;
 	Blt_HashSearch cursor;
 
-	for (hPtr = Blt_FirstHashEntry(&graphPtr->axes.nameTable, &cursor);
+	for (hPtr = Blt_FirstHashEntry(&sliderPtr->axes.nameTable, &cursor);
 	     hPtr != NULL; hPtr = Blt_NextHashEntry(&cursor)) {
 	    Axis *sliderPtr;
 	    int i;
@@ -4634,7 +4636,7 @@ static Blt_OpSpec virtAxisOps[] = {
 static int numVirtAxisOps = sizeof(virtAxisOps) / sizeof(Blt_OpSpec);
 
 int
-Blt_VirtualAxisOp(Graph *graphPtr, Tcl_Interp *interp, int objc, 
+Blt_VirtualAxisOp(Graph *sliderPtr, Tcl_Interp *interp, int objc, 
 		  Tcl_Obj *const *objv)
 {
     GraphVirtualAxisProc *proc;
@@ -4645,7 +4647,7 @@ Blt_VirtualAxisOp(Graph *graphPtr, Tcl_Interp *interp, int objc,
     if (proc == NULL) {
 	return TCL_ERROR;
     }
-    result = (*proc) (interp, graphPtr, objc, objv);
+    result = (*proc) (interp, sliderPtr, objc, objv);
     return result;
 }
 
@@ -4664,7 +4666,7 @@ static Blt_OpSpec axisOps[] = {
 static int numAxisOps = sizeof(axisOps) / sizeof(Blt_OpSpec);
 
 int
-Blt_AxisOp(Tcl_Interp *interp, Graph *graphPtr, int margin, int objc,
+Blt_AxisOp(Tcl_Interp *interp, Graph *sliderPtr, int margin, int objc,
 	   Tcl_Obj *const *objv)
 {
     int result;
@@ -4679,11 +4681,11 @@ Blt_AxisOp(Tcl_Interp *interp, Graph *graphPtr, int margin, int objc,
 	lastMargin = margin;		/* Set global variable to the margin
 					 * in the argument list. Needed only
 					 * for UseOp. */
-	result = (*proc)(interp, (Axis *)graphPtr, objc - 3, objv + 3);
+	result = (*proc)(interp, (Axis *)sliderPtr, objc - 3, objv + 3);
     } else {
 	Axis *sliderPtr;
 
-	sliderPtr = Blt_GetFirstAxis(graphPtr->margins[margin].axes);
+	sliderPtr = Blt_GetFirstAxis(sliderPtr->margins[margin].axes);
 	if (sliderPtr == NULL) {
 	    return TCL_OK;
 	}
@@ -4705,12 +4707,12 @@ Blt_GetFirstAxis(Blt_Chain chain)
 }
 
 Axis *
-Blt_NearestAxis(Graph *graphPtr, int x, int y)
+Blt_NearestAxis(Graph *sliderPtr, int x, int y)
 {
     Blt_HashEntry *hPtr;
     Blt_HashSearch cursor;
     
-    for (hPtr = Blt_FirstHashEntry(&graphPtr->axes.nameTable, &cursor); 
+    for (hPtr = Blt_FirstHashEntry(&sliderPtr->axes.nameTable, &cursor); 
 	 hPtr != NULL; hPtr = Blt_NextHashEntry(&cursor)) {
 	Axis *sliderPtr;
 
@@ -4776,13 +4778,13 @@ Blt_NearestAxis(Graph *graphPtr, int x, int y)
 }
  
 ClientData
-Blt_MakeAxisTag(Graph *graphPtr, const char *tagName)
+Blt_MakeAxisTag(Graph *sliderPtr, const char *tagName)
 {
     Blt_HashEntry *hPtr;
     int isNew;
 
-    hPtr = Blt_CreateHashEntry(&graphPtr->axes.bindTagTable, tagName, &isNew);
-    return Blt_GetHashKey(&graphPtr->axes.bindTagTable, hPtr);
+    hPtr = Blt_CreateHashEntry(&sliderPtr->axes.bindTagTable, tagName, &isNew);
+    return Blt_GetHashKey(&sliderPtr->axes.bindTagTable, hPtr);
 }
 
 /*
@@ -5052,3 +5054,202 @@ TimeCeil(double max, int unit)
 
 #endif
 
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * SliderInstCmdProc --
+ *
+ *	This procedure is invoked to process the TCL command that
+ *	corresponds to a widget managed by this module.  See the user
+ *	documentation for details on what it does.
+ *
+ * Results:
+ *	A standard TCL result.
+ *
+ * Side effects:
+ *	See the user documentation.
+ *
+ *---------------------------------------------------------------------------
+ */
+static Blt_OpSpec sliderOps[] =
+{
+    {"activate",     1, ActivateOp,     4, 4, "what"},
+    {"bind",         1, BindOp,         3, 6, "sequence command"},
+    {"cget",         2, CgetOp,         5, 5, "option"},
+    {"configure",    2, ConfigureOp,    4, 0, "?option value?..."},
+    {"coords",       2, CoordsOp,       4, 0, "?value?"},
+    {"deactivate",   1, ActivateOp,     4, 4, "what"},
+    {"get",          1, GetOp,          2, 3, "?x y?"},
+    {"identify",     2, IdentifyOp,     4, 4, "x y"},
+    {"invtransform", 2, InvTransformOp, 4, 4, "value"},
+    {"limits",       1, LimitsOp,       3, 3, ""},
+    {"range",        1, RangeOp,        3, 3, ""},
+    {"move",         2, MoveOp,         3, 3, "min|max|both x y"},
+    {"max",          2, MaxOp,          2, 3, "?value?"},
+    {"min",          2, MinOp,          2, 3, "?value?"},
+    {"set",          2, SetOp,          3, 3, "value"},
+    {"transform",    2, TransformOp,    4, 4, "value"},
+    {"view",         1, ViewOp,         4, 7, "?moveto fract? "
+	"?scroll number what?"},
+};
+static int numSliderOps = sizeof(sliderOps) / sizeof(Blt_OpSpec);
+
+static int
+SliderInstCmdProc(ClientData clientData, Tcl_Interp *interp, int objc,
+		  Tcl_Obj *const *objv)
+{
+    Slider *sliderPtr = clientData;
+    Tcl_ObjCmdProc *proc;
+    int result;
+
+    proc = Blt_GetOpFromObj(interp, numSliderOps, sliderOps, BLT_OP_ARG1, 
+	objc, objv, 0);
+    if (proc == NULL) {
+	return TCL_ERROR;
+    }
+    Tcl_Preserve(sliderPtr);
+    result = (*proc) (sliderPtr, interp, objc, objv);
+    Tcl_Release(sliderPtr);
+    return result;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * SliderInstDeletedProc --
+ *
+ *	This procedure is invoked when a widget command is deleted.  If the
+ *	widget isn't already in the process of being destroyed, this command
+ *	destroys it.
+ *
+ * Results:
+ *	None.
+ *
+ * Side effects:
+ *	The widget is destroyed.
+ *
+ *---------------------------------------------------------------------------
+ */
+static void
+SliderInstDeletedProc(ClientData clientData) /* Pointer to widget record. */
+{
+    Slider *sliderPtr = clientData;
+
+    if (sliderPtr->tkwin != NULL) {	/* NULL indicates window has already
+					 * been destroyed. */
+	Tk_Window tkwin;
+
+	tkwin = sliderPtr->tkwin;
+	sliderPtr->tkwin = NULL;
+	Blt_DeleteWindowInstanceData(tkwin);
+	Tk_DestroyWindow(tkwin);
+    }
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * NewSlider --
+ *
+ *	This procedure creates and initializes a new slider widget.
+ *
+ * Results:
+ *	The return value is a pointer to a structure describing the new
+ *	widget.  If an error occurred, then the return value is NULL and an
+ *	error message is left in interp->result.
+ *
+ * Side effects:
+ *	Memory is allocated, a Tk_Window is created, etc.
+ *
+ *---------------------------------------------------------------------------
+ */
+static Slider *
+NewSlider(Tcl_Interp *interp, Tk_Window tkwin)
+{
+    Slider *sliderPtr;
+
+    sliderPtr = Blt_AssertCalloc(1, sizeof(Slider));
+    sliderPtr->tkwin = tkwin;
+    sliderPtr->display = Tk_Display(tkwin);
+    sliderPtr->interp = interp;
+    sliderPtr->borderWidth = 2;
+    sliderPtr->highlightWidth = 2;
+    sliderPtr->relief = TK_RELIEF_FLAT;
+    sliderPtr->flags = RESET_WORLD;
+    Blt_Ts_InitStyle(sliderPtr->titleTextStyle);
+    Blt_Ts_SetAnchor(sliderPtr->titleTextStyle, TK_ANCHOR_N);
+    return sliderPtr;
+}
+
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * SliderCmd --
+ *
+ * 	This procedure is invoked to process the TCL command that corresponds
+ * 	to a widget managed by this module. See the user documentation for
+ * 	details on what it does.
+ *
+ * Results:
+ *	A standard TCL result.
+ *
+ * Side Effects:
+ *	See the user documentation.
+ *
+ *
+ *	blt::tabset pathName ?option value?...
+ *
+ *---------------------------------------------------------------------------
+ */
+/* ARGSUSED */
+static int
+SliderCmd(ClientData clientData, Tcl_Interp *interp, int objc, 
+	  Tcl_Obj *const *objv)	
+{
+    Slider *sliderPtr;
+    Tk_Window tkwin;
+    unsigned int mask;
+    const char *pathName;
+
+    if (objc < 2) {
+	Tcl_AppendResult(interp, "wrong # args: should be \"", 
+		Tcl_GetString(objv[0]), " pathName ?option value?...\"", 
+		(char *)NULL);
+	return TCL_ERROR;
+    }
+    pathName = Tcl_GetString(objv[1]);
+    tkwin = Tk_CreateWindowFromPath(interp, Tk_MainWindow(interp), pathName,
+	(char *)NULL);
+    if (tkwin == NULL) {
+	return TCL_ERROR;
+    }
+    sliderPtr = NewSlider(interp, tkwin);
+    Tk_SetClass(tkwin, "BltSlider");
+    Blt_SetWindowInstanceData(tkwin, sliderPtr);
+    if (Blt_ConfigureWidgetFromObj(interp, sliderPtr->tkwin, configSpecs, 
+	objc - 2, objv + 2, (char *)sliderPtr, 0) != TCL_OK) {
+	return TCL_ERROR;
+    }
+    if (ConfigureSlider(sliderPtr) != TCL_OK) {
+	Tk_DestroyWindow(sliderPtr->tkwin);
+	return TCL_ERROR;
+    }
+    mask = (ExposureMask | StructureNotifyMask | FocusChangeMask);
+    Tk_CreateEventHandler(tkwin, mask, SliderEventProc, sliderPtr);
+    sliderPtr->cmdToken = Tcl_CreateObjCommand(interp, pathName, 
+	SliderInstCmdProc, sliderPtr, SliderInstDeletedProc);
+    Tcl_SetStringObj(Tcl_GetObjResult(interp), pathName, -1);
+    return TCL_OK;
+}
+
+int
+Blt_SliderCmdInitProc(Tcl_Interp *interp)
+{
+    static Blt_CmdSpec cmdSpec = { "slider", SliderCmd };
+
+    return Blt_InitCmd(interp, "::blt", &cmdSpec);
+}
+
+#endif /* NO_SLIDER */

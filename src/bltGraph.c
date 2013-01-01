@@ -893,7 +893,6 @@ DestroyGraph(DestroyData dataPtr)
  *
  *---------------------------------------------------------------------------
  */
-
 static Graph *
 CreateGraph(Tcl_Interp *interp, int objc, Tcl_Obj *const *objv, ClassId classId)
 {

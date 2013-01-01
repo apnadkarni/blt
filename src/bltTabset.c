@@ -7938,7 +7938,6 @@ ComputeLabelOffsets(Tabset *setPtr, Tab *tabPtr)
 
 }
 
-
 static Blt_Picture
 DrawButton(Tabset *setPtr, Tab *tabPtr)
 {
