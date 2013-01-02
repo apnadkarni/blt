@@ -41,6 +41,8 @@ BLT_EXTERN XColor *Blt_Bg_BorderColor(Blt_Bg bg);
 
 BLT_EXTERN Tk_3DBorder Blt_Bg_Border(Blt_Bg bg);
 
+BLT_EXTERN Blt_Paintbrush *Blt_Bg_Paintbrush(Blt_Bg bg);
+
 BLT_EXTERN const char *Blt_Bg_Name(Blt_Bg bg);
 
 BLT_EXTERN void Blt_FreeBg(Blt_Bg bg);

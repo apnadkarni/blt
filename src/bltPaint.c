@@ -1692,4 +1692,3 @@ Blt_Paintbrush_Get(Tcl_Interp *interp, Tcl_Obj *objPtr,
     string = Tcl_GetString(objPtr);
     return Blt_Paintbrush_GetFromString(interp, string, brushPtrPtr);
 }
-

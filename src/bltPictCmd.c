@@ -2598,7 +2598,7 @@ ArithOp(
  *	Resets the picture at its current size to blank (by default 
  *	white, fully opaque) pixels.  
  *
- *		$image blank -color #000000 -region { 0 0 20 20 }
+ *		$image blank #000000 
  * Results:
  *	Returns a standard TCL return value. If an error occured parsing
  *	the pixel.
@@ -2617,13 +2617,25 @@ BlankOp(
     Tcl_Obj *const *objv)		/* Argument objects. */
 {
     PictImage *imgPtr = clientData;
-    Blt_Pixel bg;
+    int w, h;
+    Blt_Paintbrush brush, *brushPtr;
 
-    bg.u32 = 0x00000000;
-    if ((objc == 3) && (Blt_GetPixelFromObj(interp, objv[2], &bg)!= TCL_OK)) {
-	return TCL_ERROR;
+    if (objc == 3) {
+	if (Blt_Paintbrush_Get(interp, objv[2], &brushPtr) != TCL_OK) {
+	    return TCL_ERROR;
+	}
+    } else {
+	Blt_Paintbrush_Init(&brush);
+	Blt_Paintbrush_SetColor(&brush, 0x00000000);
+	brushPtr = &brush;
     }
-    Blt_BlankPicture(imgPtr->picture, bg.u32);
+    w = Blt_PictureWidth(imgPtr->picture);
+    h = Blt_PictureHeight(imgPtr->picture);
+    Blt_Paintbrush_Region(brushPtr, 0, 0, w, h);
+    Blt_PaintRectangle(imgPtr->picture, 0, 0, w, h, 0, 0, brushPtr);
+    if (brushPtr != &brush) {
+	Blt_Paintbrush_Free(brushPtr);
+    }
     Blt_NotifyImageChanged(imgPtr);
     return TCL_OK;
 }

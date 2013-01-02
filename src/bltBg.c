@@ -180,6 +180,8 @@ struct _Pattern {
     Blt_HashTable pictTable;		/* Table of pictures cached for each
 					 * pattern reference. */
     int xOrigin, yOrigin;
+    Blt_Paintbrush brush;		/* Paint brush representing the
+					 * background color. */
 };
 
 typedef struct {
@@ -208,6 +210,8 @@ typedef struct {
     Blt_HashTable pictTable;		/* Table of pictures cached for each
 					 * pattern reference. */
     int xOrigin, yOrigin;
+    Blt_Paintbrush brush;		/* Paint brush representing the
+					 * background color. */
 
     /* Solid pattern specific fields. */
     int alpha;				/* Transparency value. */
@@ -240,10 +244,13 @@ typedef struct {
     Blt_HashTable pictTable;		/* Table of pictures cached for each
 					 * pattern reference. */
     int xOrigin, yOrigin;
+    Blt_Paintbrush brush;		/* Paint brush representing the
+					 * background color. */
 
     /* Tile specific fields. */
     Tk_Image tkImage;			/* Original image (before
 					 * resampling). */
+    Blt_Picture tile;
     Blt_ResampleFilter filter;		/* 1-D image filter to use to when
 					 * resizing the original picture. */
     int alpha;				/* Transparency value. */
@@ -275,6 +282,8 @@ typedef struct {
     Blt_HashTable pictTable;		/* Table of pictures cached for each
 					 * pattern reference. */
     int xOrigin, yOrigin;
+    Blt_Paintbrush brush;		/* Paint brush representing the
+					 * background color. */
 
     /* Gradient pattern specific fields. */
     Blt_Gradient gradient;
@@ -311,6 +320,8 @@ typedef struct {
     Blt_HashTable pictTable;		/* Table of pictures cached for each
 					 * pattern reference. */
     int xOrigin, yOrigin;
+    Blt_Paintbrush brush;		/* Paint brush representing the
+					 * background color. */
 
     /* Texture pattern specific fields. */
     Blt_Pixel low, high;		/* Texture colors. */
@@ -333,6 +344,7 @@ struct _Blt_Bg {
 #define DELETE_PENDING		(1<<0)
 #define BG_CENTER		(1<<2)
 #define BG_SCALE		(1<<3)
+#define FREE_TILE		(1<<4)
 
 typedef struct _Blt_Bg Bg;
 
@@ -549,12 +561,20 @@ Jitter(Blt_Jitter *jitterPtr)
 
 
 static Blt_Picture
-ImageToPicture(TilePattern *patternPtr, int *isFreePtr)
+ImageToPicture(TilePattern *patternPtr)
 {
     Tcl_Interp *interp;
+    Blt_Picture picture;
+    int isNew;
 
     interp = patternPtr->dataPtr->interp;
-    return Blt_GetPictureFromImage(interp, patternPtr->tkImage, isFreePtr);
+    picture = Blt_GetPictureFromImage(interp, patternPtr->tkImage, &isNew);
+    if (isNew) {
+	patternPtr->flags |= FREE_TILE;
+    } else {
+	patternPtr->flags &= ~FREE_TILE;
+    }
+    return picture;
 }
 
 /*
@@ -2076,12 +2096,16 @@ ConfigureSolidPatternProc(Tcl_Interp *interp, Pattern *corePtr, int objc,
 			  Tcl_Obj *const *objv, unsigned int flags)
 {
     SolidPattern *patternPtr = (SolidPattern *)corePtr;
+    Blt_Pixel color;
 
     if (Blt_ConfigureWidgetFromObj(interp, patternPtr->tkwin, 
 	patternPtr->classPtr->configSpecs, objc, objv, (char *)patternPtr, 
 	flags) != TCL_OK) {
 	return TCL_ERROR;
     }
+    color.u32 = Blt_XColorToPixel(Tk_3DBorderColor(patternPtr->border));
+    color.Alpha = patternPtr->alpha;
+    Blt_Paintbrush_SetColor(&patternPtr->brush, color.u32);
     return TCL_OK;
 }
 
@@ -2109,21 +2133,14 @@ DrawSolidRectangleProc(Tk_Window tkwin, Drawable drawable, Pattern *corePtr,
 		     Tk_3DBorderGC(tkwin, patternPtr->border, TK_3D_FLAT_GC),
 		     x, y, w, h);
     } else if (patternPtr->alpha != 0x00) {
-	Blt_Paintbrush paint;
 	Blt_Painter painter;
 	Blt_Picture picture;
-	Blt_Pixel color;
 	
 	picture = Blt_DrawableToPicture(tkwin, drawable, x, y, w, h, 1.0);
 	if (picture == NULL) {
 	    return;			/* Background is obscured. */
 	}
-	Blt_Paintbrush_Init(&paint);
-	Blt_Paintbrush_SetOrigin(&paint, x, y);
-	color.u32 = Blt_XColorToPixel(Tk_3DBorderColor(patternPtr->border));
-	color.Alpha = patternPtr->alpha;
-	Blt_Paintbrush_SetColor(&paint, color.u32);
-	Blt_PaintRectangle(picture, 0, 0, w, h, 0, 0, &paint);
+	Blt_PaintRectangle(picture, 0, 0, w, h, 0, 0, &patternPtr->brush);
 	painter = Blt_GetPainter(tkwin, 1.0);
 	Blt_PaintPicture(painter, drawable, picture, 0, 0, w, h, x, y, 0);
 	Blt_FreePicture(picture);
@@ -2155,10 +2172,8 @@ DrawSolidPolygonProc(Tk_Window tkwin, Drawable drawable, Pattern *corePtr,
 		     Tk_3DBorderGC(tkwin, patternPtr->border, TK_3D_FLAT_GC),
 		     points, n, Complex, CoordModeOrigin);
     } else if (patternPtr->alpha != 0x00) {
-	Blt_Paintbrush paint;
 	Blt_Picture picture;
 	Blt_Painter painter;
-	Blt_Pixel color;
 	int x1, x2, y1, y2;
 	int i;
 	Point2f *vertices;
@@ -2179,11 +2194,7 @@ DrawSolidPolygonProc(Tk_Window tkwin, Drawable drawable, Pattern *corePtr,
 	if (picture == NULL) {
 	    return;			/* Background is obscured. */
 	}
-	color.u32 = Blt_XColorToPixel(Tk_3DBorderColor(patternPtr->border));
-	color.Alpha = patternPtr->alpha;
-	Blt_Paintbrush_Init(&paint);
-	Blt_Paintbrush_SetColor(&paint, color.u32);
-	Blt_PaintPolygon(picture, n, vertices, &paint);
+	Blt_PaintPolygon(picture, n, vertices, &patternPtr->brush);
 	Blt_Free(vertices);
 	painter = Blt_GetPainter(tkwin, 1.0);
 	Blt_PaintPicture(painter, drawable, picture, 0, 0, w, h, x1, y1, 0);
@@ -2226,7 +2237,6 @@ NewSolidPattern(void)
     return (Pattern *)patternPtr;
 }
 
-#ifdef notdef
 /*
  *---------------------------------------------------------------------------
  *
@@ -2240,8 +2250,12 @@ NewSolidPattern(void)
 static void
 DestroyTilePatternProc(Pattern *corePtr)
 {
+    TilePattern *patternPtr = (TilePattern *)corePtr;
+
+    if ((patternPtr->tile != NULL) && (patternPtr->flags & FREE_TILE)) {
+	Blt_FreePicture(patternPtr->tile);
+    }
 }
-#endif
 
 /*
  *---------------------------------------------------------------------------
@@ -2293,8 +2307,6 @@ DrawTileRectangleProc(Tk_Window tkwin, Drawable drawable, Pattern *corePtr,
 	if ((picture == NULL) || 
 	    (Blt_PictureWidth(picture) != refWidth) ||
 	    (Blt_PictureHeight(picture) != refHeight)) {
-	    Blt_Picture original;
-	    int isNew;
 	    
 	    /* 
 	     * Either the size of the reference window has changed or one of
@@ -2309,22 +2321,16 @@ DrawTileRectangleProc(Tk_Window tkwin, Drawable drawable, Pattern *corePtr,
 	    } else {
 		Blt_ResizePicture(picture, refWidth, refHeight);
 	    }
-	    original = ImageToPicture(patternPtr, &isNew);
-	    if (original != NULL) {
-		Blt_ResamplePicture(picture, original, patternPtr->filter, 
-				    patternPtr->filter);
-		if (isNew) {
-		    Blt_FreePicture(original);
-		}
+	    if (patternPtr->tile != NULL) {
+		Blt_ResamplePicture(picture, patternPtr->tile, 
+			patternPtr->filter, patternPtr->filter);
 	    }
 	}
 	painter = Blt_GetPainter(tkwin, 1.0);
 	Blt_PaintPicture(painter, drawable, picture, 0, 0, w, h, x, y, 0);
     } else {
 	Blt_Painter painter;
-	Blt_Picture bg, tile;
-	int isNew;
-	Blt_Paintbrush paint;
+	Blt_Picture bg;
 	int xOffset, yOffset;		/* Starting upper left corner of
 					 * region. */
 
@@ -2337,111 +2343,13 @@ DrawTileRectangleProc(Tk_Window tkwin, Drawable drawable, Pattern *corePtr,
 	    return;			/* Background is obscured. */
 	}
 	GetOffsets(tkwin, corePtr, x, y, &xOffset, &yOffset);
-	tile = ImageToPicture(patternPtr, &isNew);
-	Blt_Paintbrush_Init(&paint);
-	Blt_Paintbrush_SetOrigin(&paint, xOffset, yOffset);
-	paint.alpha = patternPtr->alpha;
-	Blt_Paintbrush_SetTile(&paint, tile);
-	Blt_PaintRectangle(bg, 0, 0, w, h, 0, 0, &paint);
+	Blt_Paintbrush_SetOrigin(&patternPtr->brush, xOffset, yOffset);
+	Blt_PaintRectangle(bg, 0, 0, w, h, 0, 0, &patternPtr->brush);
 	painter = Blt_GetPainter(tkwin, 1.0);
 	Blt_PaintPicture(painter, drawable, bg, 0, 0, w, h, x, y, 0);
 	Blt_FreePicture(bg);
-	if (isNew) {
-	    Blt_FreePicture(tile);
-	}
     }
 }
-
-#ifdef notdef
-/*
- *---------------------------------------------------------------------------
- *
- * DrawTileRectangleProc2 --
- *
- * Results:
- *	None.
- *
- *---------------------------------------------------------------------------
- */
-static void
-DrawTileRectangleProc2(Tk_Window tkwin, Drawable drawable, Pattern *corePtr,
-		       int x, int y, int w, int h)
-{
-    TilePattern *patternPtr = (TilePattern *)corePtr;
-    Blt_Painter painter;
-    Tk_Window refWindow;
-
-    if ((h <= 0) || (w <= 0)) {
-	return;
-    }
-    if (patternPtr->tkImage == NULL) {
-	/* No image so draw solid color background using border. */
-	Tk_Fill3DRectangle(tkwin, drawable, patternPtr->border, x, y, w, h,
-		0, TK_RELIEF_FLAT);
-	return;
-    }
-    if (patternPtr->flags & BG_SCALE) {
-	Blt_Picture picture;
-	int refWidth, refHeight;
-	Blt_HashEntry *hPtr;
-
-	hPtr = NULL;
-	picture = NULL;
-	refWidth = w, refHeight = h;
-	if (patternPtr->reference != REFERENCE_NONE) {
-	    int isNew;
-
-	    /* See if a picture has previously been generated. There will be a
-	     * picture for each reference window. */
-	    hPtr = Blt_CreateHashEntry(&patternPtr->pictTable, 
-		(char *)refWindow, &isNew);
-	    if (!isNew) {
-		picture = Blt_GetHashValue(hPtr);
-	    } 
-	    refWidth = Tk_Width(refWindow);
-	    refHeight = Tk_Height(refWindow);
-	}
-	if ((picture == NULL) || 
-	    (Blt_PictureWidth(picture) != refWidth) ||
-	    (Blt_PictureHeight(picture) != refHeight)) {
-	    Blt_Picture original;
-	    int isNew;
-	    
-	    /* 
-	     * Either the size of the reference window has changed or one of
-	     * the background pattern options has been reset. Resize the
-	     * picture if necessary and regenerate the background.
-	     */
-	    if (picture == NULL) {
-		picture = Blt_CreatePicture(refWidth, refHeight);
-		if (hPtr != NULL) {
-		    Blt_SetHashValue(hPtr, picture);
-		}
-	    } else {
-		Blt_ResizePicture(picture, refWidth, refHeight);
-	    }
-	    original = ImageToPicture(patternPtr, &isNew);
-	    if (original != NULL) {
-		Blt_ResamplePicture(picture, original, patternPtr->filter, 
-				    patternPtr->filter);
-		if (isNew) {
-		    Blt_FreePicture(original);
-		}
-	    }
-	}
-	Blt_PaintPicture(painter, drawable, picture, 0, 0, w, h, x, y, 0);
-    } else {
-	int isNew;
-	Blt_Picture picture;
-	
-	picture = ImageToPicture(patternPtr, &isNew);
-	Tile(tkwin, drawable, corePtr, picture, x, y, w, h);
-	if (isNew) {
-	    Blt_FreePicture(picture);
-	}
-    }
-}
-#endif
 
 /*
  *---------------------------------------------------------------------------
@@ -2460,11 +2368,9 @@ DrawTilePolygonProc(Tk_Window tkwin, Drawable drawable, Pattern *corePtr, int n,
     TilePattern *patternPtr = (TilePattern *)corePtr;
     int xOffset, yOffset;		/* Starting upper left corner of
 					 * region. */
-    Blt_Paintbrush paint;
-    Blt_Picture bg, tile;
+    Blt_Picture bg;
     Blt_Painter painter;
     int i;
-    int isNew;
     int w, h;
     int x1, x2, y1, y2;
     Point2f *vertices;
@@ -2484,21 +2390,14 @@ DrawTilePolygonProc(Tk_Window tkwin, Drawable drawable, Pattern *corePtr, int n,
 	vertices[i].x = (float)(points[i].x - x1);
 	vertices[i].y = (float)(points[i].y - y1);
     }
-    tile = ImageToPicture(patternPtr, &isNew);
     GetReferenceWindow(corePtr, tkwin, &refWidth, &refHeight);
     GetOffsets(tkwin, corePtr, x1, y1, &xOffset, &yOffset);
-    Blt_Paintbrush_Init(&paint);
-    Blt_Paintbrush_SetOrigin(&paint, xOffset, yOffset);
-    paint.alpha = patternPtr->alpha;
-    Blt_Paintbrush_SetTile(&paint, tile);
-    Blt_PaintPolygon(bg, n, vertices, &paint);
+    Blt_Paintbrush_SetOrigin(&patternPtr->brush, xOffset, yOffset);
+    Blt_PaintPolygon(bg, n, vertices, &patternPtr->brush);
     Blt_Free(vertices);
     painter = Blt_GetPainter(tkwin, 1.0);
     Blt_PaintPicture(painter, drawable, bg, 0, 0, w, h, x1, y1, 0);
     Blt_FreePicture(bg);
-    if (isNew) {
-	Blt_FreePicture(tile);
-    }
 }
 
 static int
@@ -2512,13 +2411,19 @@ ConfigureTilePatternProc(Tcl_Interp *interp, Pattern *corePtr, int objc,
 	flags) != TCL_OK) {
 	return TCL_ERROR;
     }
+    if ((patternPtr->tile != NULL) && (patternPtr->flags & FREE_TILE)) {
+	Blt_FreePicture(patternPtr->tile);
+    }
+    patternPtr->tile = ImageToPicture(patternPtr);
+    patternPtr->brush.alpha = patternPtr->alpha;
+    Blt_Paintbrush_SetTile(&patternPtr->brush, patternPtr->tile);
     return TCL_OK;
 }
 
 static PatternClass tilePatternClass = {
     PATTERN_TILE,
     tileConfigSpecs,
-    NULL,				/* DestroyTilePatternProc, */
+    DestroyTilePatternProc,
     ConfigureTilePatternProc,
     DrawTileRectangleProc,		/* DrawRectangleProc */
     DrawTilePolygonProc			/* DrawPolygonProc */
@@ -2586,7 +2491,6 @@ DrawGradientRectangleProc(Tk_Window tkwin, Drawable drawable, Pattern *corePtr,
     Blt_Painter painter;
     Tk_Window refWindow;
     Blt_Picture bg;
-    Blt_Paintbrush paint;
     int xOffset, yOffset;		/* Starting upper left corner of
 					 * region. */
     int refWidth, refHeight;
@@ -2608,123 +2512,12 @@ DrawGradientRectangleProc(Tk_Window tkwin, Drawable drawable, Pattern *corePtr,
     }
     GetOffsets(tkwin, corePtr, x, y, &xOffset, &yOffset);
     InitGradient(patternPtr, refWidth, refHeight);
-    Blt_Paintbrush_Init(&paint);
-    Blt_Paintbrush_SetOrigin(&paint, xOffset, yOffset);
-    paint.alpha = patternPtr->alpha;
-    Blt_Paintbrush_SetColorProc(&paint, GradientColorProc, patternPtr);
-    Blt_PaintRectangle(bg, 0, 0, w, h, 0, 0, &paint);
+    Blt_Paintbrush_SetOrigin(&patternPtr->brush, xOffset, yOffset);
+    Blt_PaintRectangle(bg, 0, 0, w, h, 0, 0, &patternPtr->brush);
     painter = Blt_GetPainter(tkwin, 1.0);
     Blt_PaintPicture(painter, drawable, bg, 0, 0, w, h, x, y, 0);
     Blt_FreePicture(bg);
 }
-
-#ifdef notdef
-/*
- *---------------------------------------------------------------------------
- *
- * DrawGradientRectangleProc2 --
- *
- * Results:
- *	None.
- *
- *---------------------------------------------------------------------------
- */
-static void
-DrawGradientRectangleProc2(Tk_Window tkwin, Drawable drawable, 
-			   Pattern *corePtr, int x, int y, int w, int h)
-{
-    GradientPattern *patternPtr = (GradientPattern *)corePtr;
-    int sx, sy;
-    Tk_Window refWindow;
-    Blt_Picture picture;
-    int refWidth, refHeight;
-    Blt_HashEntry *hPtr;
-
-    if ((h <= 0) || (w <= 0)) {
-	return;
-    }
-    if (patternPtr->reference == REFERENCE_SELF) {
-	refWindow = tkwin;
-    } else if (patternPtr->reference == REFERENCE_TOPLEVEL) {
-	refWindow = Blt_Toplevel(tkwin);
-    } else if (patternPtr->reference == REFERENCE_WINDOW) {
-	refWindow = patternPtr->refWindow;
-    } else if (patternPtr->reference == REFERENCE_NONE) {
-	refWindow = NULL;
-    } else {
-	return;				/* Unknown reference window. */
-    }
-
-    hPtr = NULL;
-    picture = NULL;
-    refWidth = w, refHeight = h;
-    sx = x, sy = y;
-    if (patternPtr->reference != REFERENCE_NONE) {
-	int isNew;
-	    
-	if ((patternPtr->reference == REFERENCE_WINDOW) ||
-	    (patternPtr->reference == REFERENCE_TOPLEVEL)) {
-	    Tk_Window tkwin2;
-	    
-	    tkwin2 = tkwin;
-	    while ((tkwin2 != refWindow) && (tkwin2 != NULL)) {
-		sx += Tk_X(tkwin2) + Tk_Changes(tkwin2)->border_width;
-		sy += Tk_Y(tkwin2) + Tk_Changes(tkwin2)->border_width;
-		tkwin2 = Tk_Parent(tkwin2);
-	    }
-	    if (tkwin2 == NULL) {
-		/* 
-		 * The window associated with the background pattern isn't an
-		 * ancestor of the current window. That means we can't use the
-		 * reference window as a guide to the size of the picture.
-		 * Simply convert to a self reference.
-		 */
-		patternPtr->reference = REFERENCE_SELF;
-		refWindow = tkwin;
-		sx = x, sy = y;	
-	    }
-	}
-	/* See if a picture has previously been generated. There will be a
-	 * picture for each reference window. */
-	hPtr = Blt_CreateHashEntry(&patternPtr->pictTable, (char *)refWindow, 
-		&isNew);
-	if (!isNew) {
-	    picture = Blt_GetHashValue(hPtr);
-	} 
-	refWidth = Tk_Width(refWindow);
-	refHeight = Tk_Height(refWindow);
-    }
-    if (patternPtr->reference == REFERENCE_SELF) {
-	refWidth = Tk_Width(refWindow);
-	refHeight = Tk_Height(refWindow);
-	sx = x, sy = y;
-    }
-    if ((picture == NULL) || 
-	(Blt_PictureWidth(picture) != refWidth) ||
-	(Blt_PictureHeight(picture) != refHeight)) {
-	/* 
-	 * Either the size of the reference window has changed or one of the
-	 * background pattern options has been reset. Resize the picture if
-	 * necessary and regenerate the background.
-	 */
-	if (picture == NULL) {
-	    picture = Blt_CreatePicture(refWidth, refHeight);
-	    if (hPtr != NULL) {
-		Blt_SetHashValue(hPtr, picture);
-	    }
-	} else {
-	    Blt_ResizePicture(picture, refWidth, refHeight);
-	}
-	Blt_GradientPicture(picture, &patternPtr->high, &patternPtr->low, 
-			    &patternPtr->gradient, &patternPtr->jitter);
-    }
-    Tile(tkwin, drawable, corePtr, picture, x, y, w, h);
-#ifdef notdef
-    painter = Blt_GetPainter(tkwin, 1.0);
-    Blt_PaintPicture(painter, drawable, picture, sx, sy, w, h, x, y, 0);
-#endif
-}
-#endif
 
 /*
  *---------------------------------------------------------------------------
@@ -2743,7 +2536,6 @@ DrawGradientPolygonProc(Tk_Window tkwin, Drawable drawable, Pattern *corePtr,
     GradientPattern *patternPtr = (GradientPattern *)corePtr;
     int xOffset, yOffset;		/* Starting upper left corner of
 					 * region. */
-    Blt_Paintbrush paint;
     Blt_Picture bg;
     Blt_Painter painter;
     int i;
@@ -2769,11 +2561,7 @@ DrawGradientPolygonProc(Tk_Window tkwin, Drawable drawable, Pattern *corePtr,
     GetReferenceWindow(corePtr, tkwin, &refWidth, &refHeight);
     InitGradient(patternPtr, refWidth, refHeight);
     GetOffsets(tkwin, corePtr, x1, y1, &xOffset, &yOffset);
-    Blt_Paintbrush_Init(&paint);
-    Blt_Paintbrush_SetOrigin(&paint, xOffset, yOffset);
-    paint.alpha = patternPtr->alpha;
-    Blt_Paintbrush_SetColorProc(&paint, GradientColorProc, patternPtr);
-    Blt_PaintPolygon(bg, n, vertices, &paint);
+    Blt_PaintPolygon(bg, n, vertices, &patternPtr->brush);
     Blt_Free(vertices);
     painter = Blt_GetPainter(tkwin, 1.0);
     Blt_PaintPicture(painter, drawable, bg, 0, 0, w, h, x1, y1, 0);
@@ -2795,6 +2583,9 @@ ConfigureGradientPatternProc(Tcl_Interp *interp, Pattern *corePtr, int objc,
 	patternPtr->low.Alpha = patternPtr->alpha;
 	patternPtr->high.Alpha = patternPtr->alpha;
     }
+    patternPtr->brush.alpha = patternPtr->alpha;
+    Blt_Paintbrush_SetColorProc(&patternPtr->brush, GradientColorProc, 
+	patternPtr);
     return TCL_OK;
 }
 
@@ -2872,7 +2663,6 @@ DrawTextureRectangleProc(Tk_Window tkwin, Drawable drawable, Pattern *corePtr,
     Blt_Painter painter;
     Tk_Window refWindow;
     Blt_Picture dest;
-    Blt_Paintbrush paint;
     int xOffset, yOffset;		/* Starting upper left corner of
 					 * region. */
     int refWidth, refHeight;
@@ -2894,92 +2684,11 @@ DrawTextureRectangleProc(Tk_Window tkwin, Drawable drawable, Pattern *corePtr,
     }
     GetOffsets(tkwin, corePtr, x, y, &xOffset, &yOffset);
     InitTexture(patternPtr, refWidth, refHeight);
-    Blt_Paintbrush_Init(&paint);
-    Blt_Paintbrush_SetOrigin(&paint, xOffset, yOffset);
-    paint.alpha = patternPtr->alpha;
-    Blt_Paintbrush_SetColorProc(&paint, TextureColorProc, patternPtr);
-    Blt_PaintRectangle(dest, 0, 0, w, h, 0, 0, &paint);
+    Blt_PaintRectangle(dest, 0, 0, w, h, 0, 0, &patternPtr->brush);
     painter = Blt_GetPainter(tkwin, 1.0);
     Blt_PaintPicture(painter, drawable, dest, 0, 0, w, h, x, y, 0);
     Blt_FreePicture(dest);
 }
-
-#ifdef notdef
-/*
- *---------------------------------------------------------------------------
- *
- * DrawTextureRectangleProc2 --
- *
- * Results:
- *	None.
- *
- *---------------------------------------------------------------------------
- */
-static void
-DrawTextureRectangleProc2(Tk_Window tkwin, Drawable drawable, 
-			  Pattern *corePtr, int x, int y, int w, int h)
-{
-    Blt_Painter painter;
-    Blt_Picture picture;
-    TexturePattern *patternPtr = (TexturePattern *)corePtr;
-    Tk_Window refWindow;
-    int refWidth, refHeight;
-    Blt_HashEntry *hPtr;
-
-    if ((h <= 0) || (w <= 0)) {
-	return;
-    }
-    if (patternPtr->reference == REFERENCE_SELF) {
-	refWindow = tkwin;
-    } else if (patternPtr->reference == REFERENCE_TOPLEVEL) {
-	refWindow = Blt_Toplevel(tkwin);
-    } else if (patternPtr->reference == REFERENCE_WINDOW) {
-	refWindow = patternPtr->refWindow;
-    } else if (patternPtr->reference == REFERENCE_NONE) {
-	refWindow = NULL;
-    } else {
-	return;				/* Unknown reference window. */
-    }
-    painter = Blt_GetPainter(tkwin, 1.0);
-
-    picture = NULL;
-    refWidth = w, refHeight = h;
-    if (patternPtr->reference != REFERENCE_NONE) {
-	int isNew;
-	    
-	/* See if a picture has previously been generated. There will be a
-	 * picture for each reference window. */
-	hPtr = Blt_CreateHashEntry(&patternPtr->pictTable, (char *)refWindow, 
-				   &isNew);
-	if (!isNew) {
-	    picture = Blt_GetHashValue(hPtr);
-	} 
-	refWidth = Tk_Width(refWindow);
-	refHeight = Tk_Height(refWindow);
-    }
-    if ((picture == NULL) || 
-	(Blt_PictureWidth(picture) != refWidth) ||
-	(Blt_PictureHeight(picture) != refHeight)) {
-	
-	/* 
-	 * Either the size of the reference window has changed or one of the
-	 * background pattern options has been reset. Resize the picture if
-	 * necessary and regenerate the background.
-	 */
-	if (picture == NULL) {
-	    picture = Blt_CreatePicture(refWidth, refHeight);
-	    if (hPtr != NULL) {
-		Blt_SetHashValue(hPtr, picture);
-	    }
-	} else {
-	    Blt_ResizePicture(picture, refWidth, refHeight);
-	}
-	Blt_TexturePicture(picture, &patternPtr->high, &patternPtr->low, 
-		patternPtr->type);
-    }
-    Blt_PaintPicture(painter, drawable, picture, 0, 0, w, h, x, y, 0);
-}
-#endif
 
 /*
  *---------------------------------------------------------------------------
@@ -2998,7 +2707,6 @@ DrawTexturePolygonProc(Tk_Window tkwin, Drawable drawable, Pattern *corePtr,
     TexturePattern *patternPtr = (TexturePattern *)corePtr;
     int xOffset, yOffset;		/* Starting upper left corner of
 					 * region. */
-    Blt_Paintbrush paint;
     Blt_Picture dest;
     Blt_Painter painter;
     int i;
@@ -3024,11 +2732,7 @@ DrawTexturePolygonProc(Tk_Window tkwin, Drawable drawable, Pattern *corePtr,
     GetReferenceWindow(corePtr, tkwin, &refWidth, &refHeight);
     InitTexture(patternPtr, refWidth, refHeight);
     GetOffsets(tkwin, corePtr, x1, y1, &xOffset, &yOffset);
-    Blt_Paintbrush_Init(&paint);
-    Blt_Paintbrush_SetOrigin(&paint, xOffset, yOffset);
-    paint.alpha = patternPtr->alpha;
-    Blt_Paintbrush_SetColorProc(&paint, TextureColorProc, patternPtr);
-    Blt_PaintPolygon(dest, n, vertices, &paint);
+    Blt_PaintPolygon(dest, n, vertices, &patternPtr->brush);
     Blt_Free(vertices);
     painter = Blt_GetPainter(tkwin, 1.0);
     Blt_PaintPicture(painter, drawable, dest, 0, 0, w, h, x1, y1, 0);
@@ -3046,6 +2750,9 @@ ConfigureTexturePatternProc(Tcl_Interp *interp, Pattern *corePtr, int objc,
 	flags) != TCL_OK) {
 	return TCL_ERROR;
     }
+    patternPtr->brush.alpha = patternPtr->alpha;
+    Blt_Paintbrush_SetColorProc(&patternPtr->brush, TextureColorProc, 
+	patternPtr);
     return TCL_OK;
 }
 
@@ -3130,6 +2837,7 @@ CreatePattern(BgPatternInterpData *dataPtr, Tcl_Interp *interp,
     patternPtr->chain = Blt_Chain_Create();
     patternPtr->tkwin = Tk_MainWindow(interp);
     patternPtr->display = Tk_Display(patternPtr->tkwin);
+    Blt_Paintbrush_Init(&patternPtr->brush);
     return patternPtr;
 }
 
@@ -3779,6 +3487,12 @@ Blt_Bg_Border(Bg *bgPtr)
     return bgPtr->corePtr->border;
 }
 
+Blt_Paintbrush *
+Blt_Bg_Paintbrush(Bg *bgPtr)
+{
+    return &bgPtr->corePtr->brush;
+}
+
 /*
  *---------------------------------------------------------------------------
  *
@@ -4071,6 +3785,7 @@ Blt_Bg_SetColorProc(Bg *bgPtr, Blt_BgColorProc *proc, ClientData clientData)
     bgPtr->colorProc = proc;
     bgPtr->clientData = clientData;
 }
+
 
 
 #endif
