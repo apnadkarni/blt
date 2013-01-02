@@ -175,8 +175,8 @@ typedef struct {
  * 	label (anchored at its center).
  */
 typedef struct {
-    Point2d anchorPos;
-    unsigned int width, height;
+    short int x, y;
+    short int width, height;
     char string[1];
 } TickLabel;
 
@@ -371,9 +371,9 @@ typedef struct {
     short int axisLeft, axisRight;
     short int axisTop, axisBottom;	/* Region occupied by the of axis. */
     short int width, height;		/* Extents of axis */
-    short int maxTickLabelWidth;	/* Maximum width of all ticks
+    short int leftTickLabelWidth;	/* Maximum width of all ticks
 					 * labels. */
-    short int maxTickLabelHeight;	/* Maximum height of all tick
+    short int rightTickLabelWidth;	/* Maximum width of all ticks
 					 * labels. */
     Blt_Bg normalBg;
     Blt_Bg activeBg;
@@ -2294,11 +2294,11 @@ MakeSegments(Slider *sliderPtr, AxisInfo *infoPtr)
 	    MakeTick(sliderPtr, t1, infoPtr->t1, infoPtr->axis, &seg);
 	    /* Save tick label X-Y position. */
 	    if (sliderPtr->flags & HORIZONTAL) {
-		labelPtr->anchorPos.x = seg.p.x;
-		labelPtr->anchorPos.y = labelPos;
+		labelPtr->x = seg.p.x;
+		labelPtr->y = labelPos;
 	    } else {
-		labelPtr->anchorPos.x = labelPos;
-		labelPtr->anchorPos.y = seg.p.y;
+		labelPtr->x = labelPos;
+		labelPtr->y = seg.p.y;
 	    }
 	}
     }
@@ -2662,7 +2662,7 @@ DrawAxis(Slider *sliderPtr, Drawable drawable)
 	    labelPtr = Blt_Chain_GetValue(link);
 	    /* Draw major tick labels */
 	    Blt_DrawText(sliderPtr->tkwin, drawable, labelPtr->string, &ts, 
-		(int)labelPtr->anchorPos.x, (int)labelPtr->anchorPos.y);
+		labelPtr->x, labelPtr->y);
 	}
     }
     if ((sliderPtr->numSegments > 0) && (sliderPtr->lineWidth > 0)) {	
@@ -3040,7 +3040,7 @@ GetAxisGeometry(Slider *sliderPtr)
 
     y = sliderPtr->lineWidth + 2;
 
-    sliderPtr->maxTickLabelHeight = sliderPtr->maxTickLabelWidth = 0;
+    sliderPtr->leftTickLabelHeight = sliderPtr->rightTickLabelWidth = 0;
     if (sliderPtr->flags & SHOWTICKS) {
 	unsigned int pad;
 	unsigned int i, numLabels, numTicks;
@@ -3169,6 +3169,7 @@ ComputeGeometry(Slider *sliderPtr)
 {
     int flags;
 
+    sliderPtr->flags &= ~GEOMETRY;
     sliderPtr->inset = sliderPtr->borderWidth + sliderPtr->highlightWidth;
     flags = (SHOW_TICKS | AXIS_GEOMETRY);
     if ((sliderPtr->flags & flags) == flags) {
@@ -3190,9 +3191,6 @@ ComputeGeometry(Slider *sliderPtr)
  *	Examines all the axes in the given margin and determines the area
  *	required to display them.
  *
- *	Note: For multiple axes, the titles are displayed in another
- *	      margin. So we must keep track of the widest title.
- *	
  * Results:
  *	Returns the width or height of the margin, depending if it runs
  *	horizontally along the graph or vertically.
@@ -3202,36 +3200,60 @@ ComputeGeometry(Slider *sliderPtr)
  *	be corrected later (mulitple axes) to adjust for the longest title in
  *	another margin.
  *
+ *	|h|b|a|trough|a|b|h|
+ *	     tick   tick
+ *	|r|length|r| + blur + offset
  *---------------------------------------------------------------------------
  */
 static int
 ComputeLayout(Slider *sliderPtr)
 {
+    sliderPtr->flags &= ~LAYOUT_PENDING;
     if (sliderPtr->flags & HORIZONTAL) {
 	int left, right, width, height;
+	int leftButtonWidth, rightButtonWidth;
 
 	left = right = sliderPtr->inset + sliderPtr->sliderRadius;
 	width = height = 0;
+	leftButtonWidth = rightButtonWidth = 0;
 	if (sliderPtr->flags & SHOW_ARROWS) {
 	    if (sliderPtr->leftArrow != NULL) {
-		left += Blt_PictureWidth(sliderPtr->leftArrow);
+		leftButtonWidth = Blt_PictureWidth(sliderPtr->leftArrow);
 		if (height < Blt_PictureHeight(sliderPtr->leftArrow)) {
 		    height = Blt_PictureHeight(sliderPtr->leftArrow);
 		}
 	    }
 	    if (sliderPtr->rightArrow != NULL) {
-		right += Blt_PictureWidth(sliderPtr->rightArrow);
-		if (height < Blt_PictureHeight(sliderPtr->leftArrow)) {
-		    height = Blt_PictureHeight(sliderPtr->leftArrow);
+		rightButtonWidth = Blt_PictureWidth(sliderPtr->rightArrow);
+		if (height < Blt_PictureHeight(sliderPtr->rightArrow)) {
+		    height = Blt_PictureHeight(sliderPtr->rightArrow);
 		}
 	    }
 	}
+
 	if (height < (sliderPtr->sliderRadius * 2)) {
 	    height = sliderPtr->sliderRadius * 2;
 	}
 	if (sliderPtr->flags & SHOW_TICKS) {
+	    Blt_ChainLink link;
+	    TickLabel *labelPtr;
+
+	    /* First tick. */
+	    link = Blt_Chain_FirstLink(sliderPtr->ticks);
+	    labelPtr = Blt_Chain_GetValue(link);
+	    leftTickLabelWidth = labelPtr->width;
+	    /* Last tick. */
+	    link = Blt_Chain_LastLink(sliderPtr->ticks);
+	    labelPtr = Blt_Chain_GetValue(link);
+	    rightTickLabelWidth = labelPtr->width;
+
 	    height += sliderPtr->axisHeight;
 	}
+
+	sliderPtr->leftOffset = MAX(leftButtonWidth,  leftTickLabelWidth / 2);
+	sliderPtr->rightOffset = MAX(rightButtonWidth, rightTickLabelWidth / 2);
+	left  += sliderPtr->leftOffset;
+	right += sliderPtr->rightOffset;
 	if (sliderPtr->flags & SHOW_VALUES) {
 	    if (sliderPtr->tickAngle != 0.0f) {
 		if (height < sliderPtr->minValHeight) {
@@ -3245,7 +3267,7 @@ ComputeLayout(Slider *sliderPtr)
 	if (sliderPtr->titleObjPtr != NULL) {
 	    height += sliderPtr->titleObjPtr;
 	}
-	width = left + right;
+	width = left + right + sliderPtr->maxTickValueWidth;
 	height += sliderPtr->titleHeight;
 	sliderPtr->troughLength = Tk_Width(sliderPtr->tkwin) - width;
 	sliderPtr->screenMin = left;
@@ -3266,8 +3288,8 @@ ComputeLayout(Slider *sliderPtr)
 	    }
 	    if (sliderPtr->rightArrow != NULL) {
 		bottom += Blt_PictureHeight(sliderPtr->rightArrow);
-		if (width < Blt_PictureWidth(sliderPtr->leftArrow)) {
-		    width = Blt_PictureWidth(sliderPtr->leftArrow);
+		if (width < Blt_PictureWidth(sliderPtr-rightArrow)) {
+		    width = Blt_PictureWidth(sliderPtr->rightArrow);
 		}
 	    }
 	}
@@ -3285,7 +3307,8 @@ ComputeLayout(Slider *sliderPtr)
 		width = sliderPtr->maxValWidth;
 	    }
 	}
-	height = top + bottom + sliderPtr->titleHeight;
+	height = top + bottom + sliderPtr->titleHeight + 
+	    sliderPtr->maxTickLabelHeight;
 	sliderPtr->troughLength = Tk_Height(sliderPtr->tkwin) - height;
 	sliderPtr->screenMin = top;
 	sliderPtr->screenRange = sliderPtr->troughLength;
@@ -5180,6 +5203,146 @@ NewSlider(Tcl_Interp *interp, Tk_Window tkwin)
     Blt_Ts_InitStyle(sliderPtr->titleTextStyle);
     Blt_Ts_SetAnchor(sliderPtr->titleTextStyle, TK_ANCHOR_N);
     return sliderPtr;
+}
+
+
+/* 
+ *
+ * |h|b|lo|r|length|r|ro|b|h|
+ * 
+ * Redraw trough if
+ * 1) widget background color changes.
+ * 2) trough color changes.
+ * 3) hide/show arrow buttons.
+ * 4) radius of min/max controls change.
+ * 5) window width changes.
+ * 6) min/max tick label width changes.
+ */
+static void
+DrawTrough(Slider *sliderPtr, Drawable drawable)
+{
+    int x, y, w, h, r;
+
+#define TROUGH_RADIUS 9
+    r = TROUGH_RADIUS;
+    if (sliderPtr->troughPicture == NULL) {
+	Blt_Picture picture;
+	Blt_Paintbrush brush;
+	int x, y, w, h;
+
+	picture = Blt_CreatePicture(sliderPtr->troughWidth, 
+		sliderPtr->troughHeight);
+	Blt_GetShadowColors(sliderPtr->troughBg, &normal, &light, &dark);
+	Blt_BlankPicture(picture, sliderPtr->normalBg);
+
+	x = y = 3;
+	w = sliderPtr->troughWidth - 6;
+	h = sliderPtr->troughHeight - 6;
+	if (sliderPtr->flags & SHOW_ARROWS) {
+	    x + sliderPtr->arrowWidth;
+	    w -= 2 * sliderPtr->arrowWidth;
+	}
+	Blt_Paintbrush_Init(&brush);
+	/* Light. */
+	Blt_Paintbrush_SetColor(&brush, light);
+	Blt_PaintRectangle(picture, x-1, y-1, sliderPtr->troughWidth,
+			   sliderPtr->troughHeight, r, 0, &brush);
+	/* Dark. */
+	Blt_Paintbrush_SetColor(&brush, dark);
+	Blt_PaintRectangle(picture, x+1, y+1, sliderPtr->troughWidth,
+			   sliderPtr->troughHeight, r, 0, &brush);
+	/* Blur */
+	Blt_BlurPicture(picture, picture, 1, 3);
+	/* Background. */
+	Blt_Paintbrush_SetColor(&brush, normal);
+	Blt_PaintRectangle(picture, x, y, sliderPtr->troughWidth,
+			   sliderPtr->troughHeight, r, 0, &brush);
+	sliderPtr->troughPicture = picture;
+    }
+    x = y = sliderPtr->inset;
+    x += sliderPtr->leftOffset + sliderPtr->radius;
+    y += (Tk_Height(sliderPtr->tkwin) - sliderPtr->troughHeight) / 2;
+    Blt_PaintPicture(sliderPtr->troughPicture, drawable, picture, 0, 0,
+	sliderPtr->troughWidth, sliderPtr->troughHeight, x, y, 0);
+}
+
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * DisplaySlider --
+ *
+ * 	This procedure is invoked to display the widget.
+ *
+ * Results:
+ *	None.
+ *
+ * Side effects:
+ * 	The widget is redisplayed.
+ *
+ *---------------------------------------------------------------------------
+ */
+static void
+DisplaySlider(ClientData clientData)	
+{
+    Slider *sliderPtr = clientData;
+    Pixmap pixmap;
+    int width, height;
+    int redrawAll;
+    
+    redrawAll = sliderPtr->flags & REDRAW_ALL;
+    sliderPtr->flags &= ~(REDRAW_PENDING | REDRAW_ALL);
+    if (sliderPtr->tkwin == NULL) {
+	return;				/* Window has been destroyed. */
+    }
+    if (sliderPtr->flags & GEOMETRY) {
+	ComputeGeometry(sliderPtr);
+    }
+    if (sliderPtr->flags & LAYOUT_PENDING) {
+	ComputeLayout(sliderPtr);
+    }
+    if ((sliderPtr->reqHeight == 0) || (sliderPtr->reqWidth == 0)) {
+	if ((Tk_ReqWidth(sliderPtr->tkwin) != width) ||
+	    (Tk_ReqHeight(sliderPtr->tkwin) != height)) {
+	    Tk_GeometryRequest(sliderPtr->tkwin, width, height);
+	}
+    }
+    if (!Tk_IsMapped(sliderPtr->tkwin)) {
+	return;
+    }
+    width = Tk_Width(sliderPtr->tkwin);
+    height = Tk_Height(sliderPtr->tkwin);
+    if ((width < 1) || (height < 1)) {
+	return;
+    }
+    /* Draw the background. */
+    pixmap = Tk_GetPixmap(sliderPtr->display, Tk_WindowId(sliderPtr->tkwin),
+	width, height, Tk_Depth(sliderPtr->tkwin));
+
+    Blt_Bg_FillRectangle(sliderPtr->tkwin, pixmap, sliderPtr->bg, 0, 0, 
+	width, height, sliderPtr->borderWidth, sliderPtr->relief);
+
+    /* Draw the through. */
+    DrawTrough(sliderPtr, pixmap);
+    /* Draw the  */
+    if (sliderPtr->flags & SHOW_TICKS) {
+	DrawAxis(sliderPtr, pixmap);
+    }
+    if (sliderPtr->flags & SHOW_VALUES) {
+	DrawValues(sliderPtr, pixmap);
+    }
+    if (sliderPtr->flags & SHOW_ARROWS) {
+	DrawArrows(sliderPtr, pixmap);
+    }
+    DrawSliders(sliderPtr, pixmap);
+    /* Draw focus highlight ring. */
+    if ((sliderPtr->highlightWidth > 0) && (sliderPtr->flags & FOCUS)) {
+	Tk_DrawFocusHighlight(sliderPtr->tkwin, sliderPtr->highlightGC, 
+		sliderPtr->highlightWidth, pixmap);
+    }
+    XCopyArea(sliderPtr->display, pixmap, Tk_WindowId(sliderPtr->tkwin),
+	0, 0, width, height, 0, 0);
+    Tk_FreePixmap(sliderPtr->display, pixmap);
 }
 
 
