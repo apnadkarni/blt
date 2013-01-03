@@ -1549,8 +1549,9 @@ Blt_Paintbrush_Region(Blt_Paintbrush *brushPtr, int x, int y, int w, int h)
 }
 
 void 
-Blt_Paintbrush_SetColorProc(Blt_Paintbrush *brushPtr, Blt_Paintbrush_ColorProc *proc, 
-		       ClientData clientData)
+Blt_Paintbrush_SetColorProc(Blt_Paintbrush *brushPtr, 
+			    Blt_Paintbrush_ColorProc *proc, 
+			    ClientData clientData)
 {
     brushPtr->type = BLT_PAINTBRUSH_GRADIENT;
     brushPtr->colorProc = proc;

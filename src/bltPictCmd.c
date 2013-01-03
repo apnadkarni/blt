@@ -436,59 +436,6 @@ static Blt_SwitchCustom blendModeSwitch = {
     BlendingModeSwitchProc, NULL, NULL, (ClientData)0
 };
 
-static Blt_SwitchParseProc GradientTypeSwitchProc;
-static Blt_SwitchCustom gradientTypeSwitch = {
-    GradientTypeSwitchProc, NULL, NULL, (ClientData)0
-};
-
-static Blt_SwitchParseProc GradientScaleSwitchProc;
-static Blt_SwitchCustom gradientScaleSwitch = {
-    GradientScaleSwitchProc, NULL, NULL, (ClientData)0
-};
-
-static Blt_SwitchParseProc JitterSwitchProc;
-static Blt_SwitchCustom jitterSwitch = {
-    JitterSwitchProc, NULL, NULL, (ClientData)0
-};
-
-typedef struct {
-    Blt_Pixel bg, fg;			/* Fg and bg colors. */
-    Blt_Gradient gradient;
-    Blt_Jitter jitter;
-} GradientSwitches;
-
-static Blt_SwitchSpec gradientSwitches[] = 
-{
-    {BLT_SWITCH_CUSTOM, "-high",      "color", (char *)NULL,
-	Blt_Offset(GradientSwitches, fg),             0, 0, &colorSwitch},
-    {BLT_SWITCH_CUSTOM, "-low",       "color", (char *)NULL,
-	Blt_Offset(GradientSwitches, bg),             0, 0, &colorSwitch},
-    {BLT_SWITCH_CUSTOM, "-jitter",   "percent", (char *)NULL,
-        Blt_Offset(GradientSwitches, jitter.range),   0, 0, &jitterSwitch},
-    {BLT_SWITCH_CUSTOM, "-scale",     "scale", (char *)NULL,
-	Blt_Offset(GradientSwitches, gradient.scale), 0, 0, &gradientScaleSwitch},
-    {BLT_SWITCH_CUSTOM, "-type", "type", (char *)NULL,
-	Blt_Offset(GradientSwitches, gradient.type),  0, 0, &gradientTypeSwitch},
-    {BLT_SWITCH_END}
-};
-
-typedef struct {
-    PictRegion region;			/* Area to tile. */
-    int xOrigin;
-    int yOrigin;
-} TileSwitches;
-
-static Blt_SwitchSpec tileSwitches[] = 
-{
-    {BLT_SWITCH_CUSTOM, "-region",  "bbox", (char *)NULL,
-	Blt_Offset(TileSwitches, region), 0, 0, &bboxSwitch},
-    {BLT_SWITCH_INT,    "-xorigin", "x", (char *)NULL,
-	Blt_Offset(TileSwitches, xOrigin),  0},
-    {BLT_SWITCH_INT,    "-yorigin", "y", (char *)NULL,
-	Blt_Offset(TileSwitches, yOrigin),  0},
-    {BLT_SWITCH_END}
-};
-
 typedef struct {
     int invert;				/* Flag. */
     Tcl_Obj *maskObjPtr;
@@ -2210,47 +2157,6 @@ PostScriptProc(
     return TCL_OK;
 }
 
-
-/*
- *---------------------------------------------------------------------------
- *
- * JitterSwitchProc --
- *
- *	Given a string representation of the jitter value (a percentage),
- *	convert it to a number 0..1.
- *
- * Results:
- *	The return value is a standard TCL result.  
- *
- *---------------------------------------------------------------------------
- */
-/*ARGSUSED*/
-static int
-JitterSwitchProc(
-    ClientData clientData,		/* Not used. */
-    Tcl_Interp *interp,			/* Interpreter to send results back
-					 * to */
-    const char *switchName,		/* Not used. */
-    Tcl_Obj *objPtr,			/* String representation */
-    char *record,			/* Structure record */
-    int offset,				/* Offset to field in structure */
-    int flags)				/* Not used. */
-{
-    double *jitterPtr = (double *)(record + offset);
-    double jitter;
-
-    if (Tcl_GetDoubleFromObj(interp, objPtr, &jitter) != TCL_OK) {
-	return TCL_ERROR;
-    }
-    if ((jitter < 0.0) || (jitter > 100.0)) {
-	Tcl_AppendResult(interp, "invalid percent jitter \"", 
-		Tcl_GetString(objPtr), "\" should be 0 to 100", (char *)NULL);
-	return TCL_ERROR;
-    }
-    *jitterPtr = jitter * 0.01;		/* Convert to 0..1 */
-    return TCL_OK;
-}
-
 /*
  *---------------------------------------------------------------------------
  *
@@ -2374,102 +2280,6 @@ BlendingModeSwitchProc(
 	Tcl_AppendResult(interp, "unknown blending mode \"", string, "\": ",
 		"should be normal, mulitply, screen, darken, lighten, ",
 		"or difference", (char *) NULL);
-	return TCL_ERROR;
-    }
-    return TCL_OK;
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * GradientScaleSwitch --
- *
- *	Convert a Tcl_Obj representing a gradient scale.
- *
- * Results:
- *	The return value is a standard TCL result.
- *
- *---------------------------------------------------------------------------
- */
-/*ARGSUSED*/
-static int
-GradientScaleSwitchProc(
-    ClientData clientData,		/* Not used. */
-    Tcl_Interp *interp,			/* Interpreter to send results back
-					 * to */
-    const char *switchName,		/* Not used. */
-    Tcl_Obj *objPtr,			/* String representation */
-    char *record,			/* Structure record */
-    int offset,				/* Offset to field in structure */
-    int flags)				/* Not used. */
-{
-    Blt_GradientScale *scalePtr = (Blt_GradientScale *)(record + offset);
-    const char *string;
-    int length;
-    char c;
-
-    string = Tcl_GetStringFromObj(objPtr, &length);
-    c = string[0];
-    if ((c == 'l') && (strcmp(string, "linear") == 0)) {
-	*scalePtr = BLT_GRADIENT_SCALE_LINEAR;
-    } else if ((c == 'l') && (length > 2) && 
-	       (strncmp(string, "logarithmic", length) == 0)) {
-	*scalePtr = BLT_GRADIENT_SCALE_LOG;
-    } else if ((c == 'a') && (strcmp(string, "atan") == 0)) {
-	*scalePtr = BLT_GRADIENT_SCALE_ATAN;
-    } else {
-	Tcl_AppendResult(interp, "unknown gradient scale \"", string, "\"",
-			 (char *)NULL);
-	return TCL_ERROR;
-    }
-    return TCL_OK;
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * GradientTypeSwitch --
- *
- *	Convert a Tcl_Obj representing a gradient type.
- *
- * Results:
- *	The return value is a standard TCL result.
- *
- *---------------------------------------------------------------------------
- */
-/*ARGSUSED*/
-static int
-GradientTypeSwitchProc(
-    ClientData clientData,		/* Not used. */
-    Tcl_Interp *interp,			/* Interpreter to send results back
-					 * to */
-    const char *switchName,		/* Not used. */
-    Tcl_Obj *objPtr,			/* String representation */
-    char *record,			/* Structure record */
-    int offset,				/* Offset to field in structure */
-    int flags)				/* Not used. */
-{
-    Blt_GradientType *typePtr = (Blt_GradientType *)(record + offset);
-    const char *string;
-    char c;
-
-    string = Tcl_GetString(objPtr);
-    c = string[0];
-    if ((c == 'v') && (strcmp(string, "vertical") == 0)) {
-	*typePtr = BLT_GRADIENT_TYPE_VERTICAL;
-    } else if ((c == 'h') && (strcmp(string, "horizontal") == 0)) {
-	*typePtr = BLT_GRADIENT_TYPE_HORIZONTAL;
-    } else if ((c == 'r') && (strcmp(string, "radial") == 0)) {
-	*typePtr = BLT_GRADIENT_TYPE_RADIAL;
-    } else if ((c == 'u') && (strcmp(string, "updiagonal") == 0)) {
-	*typePtr = BLT_GRADIENT_TYPE_DIAGONAL_UP;
-    } else if ((c == 'd') && (strcmp(string, "downdiagonal") == 0)) {
-	*typePtr = BLT_GRADIENT_TYPE_DIAGONAL_DOWN;
-    } else if ((c == 'c') && (strcmp(string, "conical") == 0)) {
-	*typePtr = BLT_GRADIENT_TYPE_CONICAL;
-    } else {
-	Tcl_AppendResult(interp, "unknown gradient type \"", string, "\"",
-			 (char *)NULL);
 	return TCL_ERROR;
     }
     return TCL_OK;
@@ -3342,53 +3152,6 @@ GetOp(
     }
     return TCL_OK;
 }
-
-/*
- *---------------------------------------------------------------------------
- *
- * GradientOp --
- *
- *	Flips the picture either horizontally or vertically.
- *
- * Results:
- *	Returns a standard TCL return value.  If TCL_OK, the components of the
- *	pixel are returned as a list in the interpreter result.  Otherwise an
- *	error message is returned.
- *
- *---------------------------------------------------------------------------
- */
-static int
-GradientOp(
-    ClientData clientData,		/* Information about picture cmd. */
-    Tcl_Interp *interp,			/* Current interpreter. */
-    int objc,				/* Number of arguments. */
-    Tcl_Obj *const *objv)		/* Argument objects. */
-{
-    PictImage *imgPtr = clientData;
-    GradientSwitches switches;
-    Blt_Jitter jitter;
-
-    memset(&switches, 0, sizeof(switches));
-    colorSwitch.clientData = imgPtr;
-    switches.fg.u32 = 0xFFFFFFFF;
-    switches.bg.u32 = 0xFF000000;
-    switches.gradient.type  = BLT_GRADIENT_TYPE_VERTICAL;
-    switches.gradient.scale = BLT_GRADIENT_SCALE_LINEAR; 
-    if (Blt_ParseSwitches(interp, gradientSwitches, objc - 2, objv + 2, 
-	&switches, BLT_SWITCH_DEFAULTS) < 0) {
-	return TCL_ERROR;
-    }
-    JitterInit(&jitter);
-    Blt_GradientPicture(imgPtr->picture, &switches.fg, &switches.bg, 
-			&switches.gradient, &jitter);
-    if ((switches.bg.Alpha != 0xFF) || (switches.fg.Alpha != 0xFF)) {
-	imgPtr->picture->flags |= BLT_PIC_BLEND;
-    }
-    Blt_AssociateColors(imgPtr->picture);
-    Blt_NotifyImageChanged(imgPtr);
-    return TCL_OK;
-}
-
 
 /*
  *---------------------------------------------------------------------------
@@ -4596,54 +4359,6 @@ SnapOp(
 /*
  *---------------------------------------------------------------------------
  *
- * TileOp --
- *
- * Results:
- *	Returns a standard TCL return value.
- *
- * Side effects:
- *	None.
- *
- *---------------------------------------------------------------------------
- */
-static int
-TileOp(
-    ClientData clientData,		/* Information about picture cmd. */
-    Tcl_Interp *interp,			/* Current interpreter. */
-    int objc,				/* Number of arguments. */
-    Tcl_Obj *const *objv)		/* Argument objects. */
-{
-    PictImage *imgPtr = clientData;
-    Blt_Picture src;
-    TileSwitches switches;
-
-    if (Blt_GetPictureFromObj(interp, objv[2], &src) != TCL_OK) {
-	return TCL_ERROR;
-    }
-    switches.xOrigin = switches.yOrigin = 0;
-    switches.region.x = switches.region.y = 0;
-    switches.region.w = Blt_PictureWidth(imgPtr->picture);
-    switches.region.h = Blt_PictureHeight(imgPtr->picture);
-
-    if (Blt_ParseSwitches(interp, tileSwitches, objc - 3, objv + 3, &switches, 
-	BLT_SWITCH_DEFAULTS) < 0) {
-	return TCL_ERROR;
-    }
-    if (!Blt_AdjustRegionToPicture(imgPtr->picture, &switches.region)) {
-	Tcl_AppendResult(interp, "impossible coordinates for region", 
-			 (char *)NULL);
-	return TCL_ERROR;
-    }
-    Blt_TilePicture(imgPtr->picture, src, switches.xOrigin, switches.yOrigin, 
-            switches.region.x, switches.region.y, switches.region.w,
-	    switches.region.h);
-    Blt_NotifyImageChanged(imgPtr);
-    return TCL_OK;
-}
-
-/*
- *---------------------------------------------------------------------------
- *
  * TranspOp --
  *
  *---------------------------------------------------------------------------
@@ -4741,7 +4456,6 @@ static Blt_OpSpec pictInstOps[] =
     {"flip",      2, FlipOp,      3, 0, "x|y",},
     {"gamma",     2, GammaOp,     3, 3, "value",},
     {"get",       2, GetOp,       4, 4, "x y",},
-    {"gradient",  3, GradientOp,  2, 0, "?switches?",},
     {"greyscale", 3, GreyscaleOp, 3, 3, "src",},
     {"height",    1, HeightOp,    2, 3, "?newHeight?",},
     {"import",    2, ImportOp,    2, 0, "format ?switches?...",},
@@ -4763,7 +4477,6 @@ static Blt_OpSpec pictInstOps[] =
     {"sharpen",   2, SharpenOp,   2, 0, "",},
     {"snap",      2, SnapOp,      3, 0, "window ?switches?",},
     {"subtract",  2, ArithOp,     3, 0, "image|color",},
-    {"tile",      2, TileOp,      3, 0, "image ?switches?",},
     {"transp",    2, TranspOp,    3, 3, "bgcolor",},
     {"width",     1, WidthOp,     2, 3, "?newWidth?",},
     {"xor",       1, ArithOp,     3, 0, "image|color ?switches?",},
