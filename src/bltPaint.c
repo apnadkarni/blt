@@ -956,6 +956,10 @@ TextureColorProc(Blt_Paintbrush *brushPtr, int x, int y)
 	t = RandomNumber(&brushPtr->random);
 	break;
 
+#ifdef notdef
+    case BLT_TEXTURE_TYPE_DIAGONAL:
+	break;
+#endif
     case BLT_TEXTURE_TYPE_STRIPED:
 	t = ((y / 2) & 0x1) ? 0 : 1;
 	break;
