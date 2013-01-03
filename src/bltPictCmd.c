@@ -463,8 +463,8 @@ static Blt_SwitchSpec gradientSwitches[] =
 	Blt_Offset(GradientSwitches, fg),             0, 0, &colorSwitch},
     {BLT_SWITCH_CUSTOM, "-low",       "color", (char *)NULL,
 	Blt_Offset(GradientSwitches, bg),             0, 0, &colorSwitch},
-    {BLT_SWITCH_CUSTOM, "-jitter",   "bool", (char *)NULL,
-	Blt_Offset(GradientSwitches, jitter.scale),   0, 0, &jitterSwitch},
+    {BLT_SWITCH_CUSTOM, "-jitter",   "percent", (char *)NULL,
+        Blt_Offset(GradientSwitches, jitter.range),   0, 0, &jitterSwitch},
     {BLT_SWITCH_CUSTOM, "-scale",     "scale", (char *)NULL,
 	Blt_Offset(GradientSwitches, gradient.scale), 0, 0, &gradientScaleSwitch},
     {BLT_SWITCH_CUSTOM, "-type", "type", (char *)NULL,
@@ -656,38 +656,50 @@ extern Tcl_ObjCmdProc Blt_Picture_TextOp;
  *
  * http://www.shadlen.org/ichbin/random/generators.htm#quick 
  */
-static INLINE void 
-JitterSeed(Blt_Jitter *jitterPtr, unsigned int seed) {
-    jitterPtr->value = seed;
+#define JITTER_SEED	31337
+#define JITTER_A	1099087573U
+#define RANDOM_SCALE    2.3283064370807974e-10
+
+static void 
+RandomSeed(Blt_Random *randomPtr, unsigned int seed) {
+    randomPtr->value = seed;
 }
 
-#define JITTER_SEED	31337
+static void
+RandomInit(Blt_Random *randomPtr) 
+{
+    RandomSeed(randomPtr, JITTER_SEED);
+}
+
+static INLINE double
+RandomNumber(Blt_Random *randomPtr)
+{
+#if (SIZEOF_INT == 8) 
+    /* mask the lower 32 bits on machines where int is a 64-bit quantity */
+    randomPtr->value = ((1099087573  * (randomPtr->value))) & ((unsigned int) 0xffffffff);
+#else
+    /* on machines where int is 32-bits, no need to mask */
+    randomPtr->value = (JITTER_A  * randomPtr->value);
+#endif	/* SIZEOF_INT == 8 */
+    return (double)randomPtr->value * RANDOM_SCALE;
+}
+
 static void
 JitterInit(Blt_Jitter *jitterPtr) 
 {
-    JitterSeed(jitterPtr, JITTER_SEED);
-    jitterPtr->offset = jitterPtr->range * -0.5;
-    jitterPtr->scale  = 1.0 / UINT_MAX * jitterPtr->range;
+    RandomInit(&jitterPtr->random);
+    jitterPtr->range = 0.1;
+    jitterPtr->offset = -0.05;		/* Jitter +/-  */
 }
 
-#define JITTER_A	1099087573	
-
-#if (SIZEOF_INT == 8) 
 static INLINE double 
 Jitter(Blt_Jitter *jitterPtr) 
 {
-    /* Mask the lower 32 bits on machines where int is a 64-bit quantity */
-    jitterPtr->value = (JITTER_A * jitterPtr->value) & 0xffffffffU;
-    return (jitterPtr->value * jitterPtr->scale) + jitterPtr->offset;
+    double t;
+
+    t = RandomNumber(&jitterPtr->random);  /* Returns number 0..1 */
+    return (t * jitterPtr->range) + jitterPtr->offset;
 }
-#else 
-static INLINE double 
-Jitter(Blt_Jitter *jitterPtr) 
-{
-    jitterPtr->value = JITTER_A * jitterPtr->value;
-    return (jitterPtr->value * jitterPtr->scale) + jitterPtr->offset;
-}
-#endif	/* SIZEOF_INT == 8 */
 
 Blt_Picture
 Blt_GetNthPicture(Blt_Chain chain, size_t index)
@@ -2235,7 +2247,7 @@ JitterSwitchProc(
 		Tcl_GetString(objPtr), "\" should be 0 to 100", (char *)NULL);
 	return TCL_ERROR;
     }
-    *jitterPtr = jitter * 0.01;
+    *jitterPtr = jitter * 0.01;		/* Convert to 0..1 */
     return TCL_OK;
 }
 
@@ -3366,7 +3378,7 @@ GradientOp(
 	&switches, BLT_SWITCH_DEFAULTS) < 0) {
 	return TCL_ERROR;
     }
-    Blt_Jitter_Init(&jitter);
+    JitterInit(&jitter);
     Blt_GradientPicture(imgPtr->picture, &switches.fg, &switches.bg, 
 			&switches.gradient, &jitter);
     if ((switches.bg.Alpha != 0xFF) || (switches.fg.Alpha != 0xFF)) {

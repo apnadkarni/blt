@@ -204,13 +204,11 @@ typedef struct {
 typedef unsigned int (*Blt_ColorLookupTable)[33][33];
 
 typedef struct {
-    double offset;
-    double range, scale;
-    unsigned int value;
+    double offset, range;
+    Blt_Random random;
 } Blt_Jitter;
 
 BLT_EXTERN void Blt_Jitter_Init(Blt_Jitter *jitterPtr);
-
 
 typedef struct {
     int side;
@@ -566,7 +564,8 @@ BLT_EXTERN void Blt_GradientPicture(Blt_Picture picture, Blt_Pixel *highPtr,
  */
 typedef enum Blt_TextureTypes {
     BLT_TEXTURE_TYPE_STRIPED,		
-    BLT_TEXTURE_TYPE_CHECKERED
+    BLT_TEXTURE_TYPE_CHECKERED,
+    BLT_TEXTURE_TYPE_RANDOM
 } Blt_TextureType;
 
 BLT_EXTERN void Blt_TexturePicture(Blt_Picture picture, Blt_Pixel *lowPtr, 
@@ -612,6 +611,7 @@ struct _Blt_Paintbrush {
 
     /* Texture-pattern specific fields. */
     Blt_TextureType textureType;
+    Blt_Random random;
 
     /* Texture/gradient specific fields. */
     ClientData clientData;		/* Client data passed to gradient

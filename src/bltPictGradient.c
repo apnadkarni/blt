@@ -37,30 +37,53 @@
 #include "bltPicture.h"
 #include "bltPictInt.h"
 
+/* 
+ * Quick and dirty random number generator. 
+ *
+ * http://www.shadlen.org/ichbin/random/generators.htm#quick 
+ */
+#define JITTER_SEED	31337
+#define JITTER_A	1099087573U
+#define RANDOM_SCALE    2.3283064370807974e-10
+
 static void 
-JitterSeed(Blt_Jitter *jitterPtr, unsigned int seed) {
-    jitterPtr->value = seed;
+RandomSeed(Blt_Random *randomPtr, unsigned int seed) {
+    randomPtr->value = seed;
+}
+
+static void
+RandomInit(Blt_Random *randomPtr) 
+{
+    RandomSeed(randomPtr, JITTER_SEED);
+}
+
+static INLINE double
+RandomNumber(Blt_Random *randomPtr)
+{
+#if (SIZEOF_INT == 8) 
+    /* mask the lower 32 bits on machines where int is a 64-bit quantity */
+    randomPtr->value = ((1099087573  * (randomPtr->value))) & ((unsigned int) 0xffffffff);
+#else
+    /* on machines where int is 32-bits, no need to mask */
+    randomPtr->value = (JITTER_A  * randomPtr->value);
+#endif	/* SIZEOF_INT == 8 */
+    return (double)randomPtr->value * RANDOM_SCALE;
 }
 
 void
 Blt_Jitter_Init(Blt_Jitter *jitterPtr) 
 {
-    JitterSeed(jitterPtr, 31337);
+    RandomInit(&jitterPtr->random);
     jitterPtr->range = 0.1;
-    jitterPtr->offset = -0.05;
-    jitterPtr->scale = 1.0 / UINT_MAX * jitterPtr->range;
+    jitterPtr->offset = -0.05;		/* Jitter +/-  */
 }
 
 static INLINE double 
 Jitter(Blt_Jitter *jitterPtr) {
-#if (SIZEOF_INT == 8) 
-    /* mask the lower 32 bits on machines where int is a 64-bit quantity */
-    jitterPtr->value = ((1099087573  * (jitterPtr->value))) & ((unsigned int) 0xffffffff);
-#else
-    /* on machines where int is 32-bits, no need to mask */
-    jitterPtr->value = (1099087573  * jitterPtr->value);
-#endif	/* SIZEOF_INT == 8 */
-    return (jitterPtr->value * jitterPtr->scale) + jitterPtr->offset;
+    double value;
+
+    value = RandomNumber(&jitterPtr->random);
+    return (value * jitterPtr->range) + jitterPtr->offset;
 }
 
 void
@@ -99,7 +122,7 @@ Blt_GradientPicture(
 		double t;
 		
 		t = (double)x * scaleFactor;
-		if (jitterPtr->scale > 0.0) {
+		if (jitterPtr->range > 0.0) {
 		    t += Jitter(jitterPtr);
 		    t = JCLAMP(t);
 		}
@@ -151,7 +174,7 @@ Blt_GradientPicture(
 		
 		dp = destRowPtr;
 		t = (double)y * scaleFactor;
-		if (jitterPtr->scale > 0.0) {
+		if (jitterPtr->range > 0.0) {
 		    t += Jitter(jitterPtr);
 		    t = JCLAMP(t);
 		}
@@ -216,7 +239,7 @@ Blt_GradientPicture(
 		    
 		    assert(rx >= 0 && rx < length);
 		    t = rx * scaleFactor;
-		    if (jitterPtr->scale > 0.0) {
+		    if (jitterPtr->range > 0.0) {
 			t += Jitter(jitterPtr);
 			t = JCLAMP(t);
 		    }
@@ -268,7 +291,7 @@ Blt_GradientPicture(
 		    dy = y - cy;
 		    d = sqrt(dx * dx + dy * dy);
 		    t = 1.0 - (d * scaleFactor);
-		    if (jitterPtr->scale > 0.0) {
+		    if (jitterPtr->range > 0.0) {
 			t += Jitter(jitterPtr);
 			t = JCLAMP(t);
 		    }
@@ -289,24 +312,13 @@ Blt_GradientPicture(
 
     case BLT_GRADIENT_TYPE_CONICAL:
 	{
-	    double angle;
 	    Blt_Pixel *destRowPtr;
 	    int y;
 	    float cx, cy;
-	    float scaleFactor;
-	    float length, halfLength;
 
 	    destRowPtr = destPtr->bits;
 	    cx = destPtr->width * 0.5;
 	    cy = destPtr->height * 0.5;
-	    length = sqrt(destPtr->width * destPtr->width + 
-			  destPtr->height * destPtr->height);
-	    halfLength = length * 0.5;
-	    scaleFactor = 0.0;
-	    angle = M_PI_2 * 0.25;
-	    if (halfLength > 2) {
-		scaleFactor = 1.0 / (halfLength - 1);
-	    } 
 	    /* Center coordinates. */
 	    for (y = 0; y < destPtr->height; y++) {
 		int x;
@@ -329,7 +341,7 @@ Blt_GradientPicture(
 		    fprintf(stderr, "d=%g angle=%g\n", d, atan(dy / dx) *RAD2DEG);
 			t = 1.0 - (d / (M_PI));
 			t = d;
-		    if (jitterPtr->scale > 0.0) {
+		    if (jitterPtr->range > 0.0) {
 			t += Jitter(jitterPtr);
 		    }
 		    if (gradientPtr->scale == BLT_GRADIENT_SCALE_LOG) {
@@ -374,7 +386,7 @@ Blt_GradientPicture(
 		    }
 		    t = MIN(tx, ty);
 		    t += t;
-		    if (jitterPtr->scale > 0.0) {
+		    if (jitterPtr->range > 0.0) {
 			t += Jitter(jitterPtr);
 			t = JCLAMP(t);
 		    }

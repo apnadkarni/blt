@@ -202,5 +202,9 @@ BLT_EXTERN int finite(double x);
 #endif /* !HAVE_DECL_FINITE */
 #endif /* HAVE_FINITE */
 
+typedef struct {
+    unsigned int value;
+} Blt_Random;
+
 #endif /* BLT_MATH_H */
 

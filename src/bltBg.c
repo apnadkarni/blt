@@ -525,40 +525,49 @@ static void NotifyClients(Pattern *corePtr);
  *
  * http://www.shadlen.org/ichbin/random/generators.htm#quick 
  */
-static INLINE void 
-JitterSeed(Blt_Jitter *jitterPtr, unsigned int seed) {
-    jitterPtr->value = seed;
+#define JITTER_SEED	31337
+#define JITTER_A	1099087573U
+#define RANDOM_SCALE    2.3283064370807974e-10
+
+static void 
+RandomSeed(Blt_Random *randomPtr, unsigned int seed) {
+    randomPtr->value = seed;
 }
 
-#define JITTER_SEED	31337
+static void
+RandomInit(Blt_Random *randomPtr) 
+{
+    RandomSeed(randomPtr, JITTER_SEED);
+}
+
+static INLINE double
+RandomNumber(Blt_Random *randomPtr)
+{
+#if (SIZEOF_INT == 8) 
+    /* mask the lower 32 bits on machines where int is a 64-bit quantity */
+    randomPtr->value = ((1099087573  * (randomPtr->value))) & ((unsigned int) 0xffffffff);
+#else
+    /* on machines where int is 32-bits, no need to mask */
+    randomPtr->value = (JITTER_A  * randomPtr->value);
+#endif	/* SIZEOF_INT == 8 */
+    return (double)randomPtr->value * RANDOM_SCALE;
+}
+
 static void
 JitterInit(Blt_Jitter *jitterPtr) 
 {
-    JitterSeed(jitterPtr, JITTER_SEED);
-    jitterPtr->offset = jitterPtr->range * -0.5;
-    jitterPtr->scale  = 1.0 / UINT_MAX * jitterPtr->range;
+    RandomInit(&jitterPtr->random);
+    jitterPtr->range = 0.1;
+    jitterPtr->offset = -0.05;		/* Jitter +/-  */
 }
 
-#define JITTER_A	1099087573	
-
-#if (SIZEOF_INT == 8) 
 static INLINE double 
-Jitter(Blt_Jitter *jitterPtr) 
-{
-    /* Mask the lower 32 bits on machines where int is a 64-bit quantity */
-    jitterPtr->value = (JITTER_A * jitterPtr->value) & 0xffffffffU;
-    return (jitterPtr->value * jitterPtr->scale) + jitterPtr->offset;
-}
-#else 
-static INLINE double 
-Jitter(Blt_Jitter *jitterPtr) 
-{
-    jitterPtr->value = JITTER_A * jitterPtr->value;
-    return (jitterPtr->value * jitterPtr->scale) + jitterPtr->offset;
-}
-#endif	/* SIZEOF_INT == 8 */
+Jitter(Blt_Jitter *jitterPtr) {
+    double value;
 
-
+    value = RandomNumber(&jitterPtr->random);
+    return (value * jitterPtr->range) + jitterPtr->offset;
+}
 
 static Blt_Picture
 ImageToPicture(TilePattern *patternPtr)
