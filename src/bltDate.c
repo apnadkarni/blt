@@ -1164,7 +1164,7 @@ ExtractTime(DateParser *datePtr)
 	}
     }
  done:
-    /* Look for ampm designation. */
+    /* Look for AMPM designation. */
     if (GetId(tokenPtr) == T_AMPM) {
 	if (datePtr->hour > 12) {
 	    fprintf(stderr, "invalid am/pm, already in 24hr format\n");

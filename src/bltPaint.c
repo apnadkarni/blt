@@ -1470,10 +1470,11 @@ Blt_Paintbrush_SetTexture(Blt_Paintbrush *brushPtr)
 }
 
 void
-Blt_Paintbrush_SetGradient(Blt_Paintbrush *brushPtr)
+Blt_Paintbrush_SetGradient(Blt_Paintbrush *brushPtr, Blt_GradientType type)
 {
     brushPtr->type = BLT_PAINTBRUSH_GRADIENT;
     brushPtr->colorProc = GradientColorProc;
+    brushPtr->gradient.type = type;
 }
 
 void

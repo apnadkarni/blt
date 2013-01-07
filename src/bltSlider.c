@@ -5218,7 +5218,8 @@ NewSlider(Tcl_Interp *interp, Tk_Window tkwin)
  * 6) min/max tick label width changes.
  */
 static void
-DrawTrough(Slider *sliderPtr, Drawable drawable)
+DrawHorizontalTrough(Slider *sliderPtr, Drawable drawable, int x, int y,
+		     int w, int h)
 {
     int x, y, w, h, r;
 
@@ -5276,6 +5277,38 @@ DrawTrough(Slider *sliderPtr, Drawable drawable)
 	sliderPtr->troughWidth, sliderPtr->troughHeight, x, y, 0);
 }
 
+static void
+DrawSliderControl(Slider *sliderPtr, Drawable drawable, int x, int y, int r, 
+		  int minmax)
+{
+    Blt_PaintBrush brush;
+    int light, dark, normal;
+
+    if (sliderPtr->flags & DISABLED) {
+	bg = sliderPtr->disabledSliderBg;
+    } else if (sliderPtr->activeRegionPtr == &sliderPtr->leftArrowRegion) {
+	bg = sliderPtr->activeSliderBg;
+    } else {
+	bg = sliderPtr->normalSliderBg;
+    }
+    Blt_GetShadowColors(bg, &normal, &light, &dark);
+    Blt_Paintbrush_Init(&brush);
+    /* Light. */
+    Blt_Paintbrush_SetColor(&brush, light);
+    Blt_PaintRectangle(picture, x-1, y-1, sliderPtr->troughWidth,
+		       sliderPtr->troughHeight, r, 0, &brush);
+    /* Dark. */
+    Blt_Paintbrush_SetColor(&brush, dark);
+    Blt_PaintRectangle(picture, x-2, y-2, sliderPtr->troughWidth,
+		       sliderPtr->troughHeight, r, 0, &brush);
+    
+    /* Background. */
+    Blt_Paintbrush_SetColors(&brush, light, dark);
+    Blt_Paintbrush_Region(&brush, x, y, w, h);
+    Blt_Paintbrush_SetGradient(&brush, BLT_GRADIENT_TYPE_CONICAL);
+    Blt_PaintRectangle(picture, x, y, sliderPtr->troughWidth,
+		       sliderPtr->troughHeight, r, 0, &brush);
+}
 
 /*
  *---------------------------------------------------------------------------

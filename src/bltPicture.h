@@ -541,7 +541,6 @@ typedef enum Blt_GradientScales {
 typedef struct {
     Blt_GradientType type;		/* Determines the type of gradient. */
     Blt_GradientScale scale;
-    Blt_Pixel low, high;
     float sinTheta, cosTheta;		/* Rotation of diagonal. */
     float xOffset, yOffset;		/* Offset to the center of the
 					 * diagonal. */
@@ -645,7 +644,8 @@ BLT_EXTERN void Blt_Paintbrush_Region(Blt_Paintbrush *brushPtr, int x, int y,
 BLT_EXTERN void Blt_Paintbrush_SetTile(Blt_Paintbrush *brushPtr, 
 	Blt_Picture tile);
 BLT_EXTERN void Blt_Paintbrush_SetTexture(Blt_Paintbrush *brushPtr);
-BLT_EXTERN void Blt_Paintbrush_SetGradient(Blt_Paintbrush *brushPtr);
+BLT_EXTERN void Blt_Paintbrush_SetGradient(Blt_Paintbrush *brushPtr, 
+	Blt_GradientType type);
 BLT_EXTERN void Blt_Paintbrush_SetColor(Blt_Paintbrush *brushPtr, 
 	unsigned int value);
 BLT_EXTERN void Blt_Paintbrush_SetOrigin(Blt_Paintbrush *brushPtr, int x,int y);

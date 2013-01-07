@@ -615,7 +615,8 @@ BLT_EXTERN void		Blt_Paintbrush_SetTexture(Blt_Paintbrush *brushPtr);
 #ifndef Blt_Paintbrush_SetGradient_DECLARED
 #define Blt_Paintbrush_SetGradient_DECLARED
 /* 102 */
-BLT_EXTERN void		Blt_Paintbrush_SetGradient(Blt_Paintbrush *brushPtr);
+BLT_EXTERN void		Blt_Paintbrush_SetGradient(Blt_Paintbrush *brushPtr,
+				Blt_GradientType type);
 #endif
 #ifndef Blt_Paintbrush_SetColor_DECLARED
 #define Blt_Paintbrush_SetColor_DECLARED
@@ -781,7 +782,7 @@ typedef struct BltTkProcs {
     void (*blt_Paintbrush_Region) (Blt_Paintbrush *brushPtr, int x, int y, int w, int h); /* 99 */
     void (*blt_Paintbrush_SetTile) (Blt_Paintbrush *brushPtr, Blt_Picture tile); /* 100 */
     void (*blt_Paintbrush_SetTexture) (Blt_Paintbrush *brushPtr); /* 101 */
-    void (*blt_Paintbrush_SetGradient) (Blt_Paintbrush *brushPtr); /* 102 */
+    void (*blt_Paintbrush_SetGradient) (Blt_Paintbrush *brushPtr, Blt_GradientType type); /* 102 */
     void (*blt_Paintbrush_SetColor) (Blt_Paintbrush *brushPtr, unsigned int value); /* 103 */
     void (*blt_Paintbrush_SetOrigin) (Blt_Paintbrush *brushPtr, int x, int y); /* 104 */
     int (*blt_Paintbrush_GetColor) (Blt_Paintbrush *brushPtr, int x, int y); /* 105 */
