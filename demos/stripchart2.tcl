@@ -153,7 +153,7 @@ proc source_create {name color min max} {
     
     blt::bitmap define pattern1 { {4 4} {01 02 04 08} }
     catch {.sc element delete $name}
-    #set style [blt::bgpattern create solid -bg $color -opacity 90.0]
+    #set style [blt::background create solid -bg $color -opacity 90.0]
     .sc bar create $name \
 	-x $xvname \
 	-y $yvname \

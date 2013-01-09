@@ -17,8 +17,8 @@ if { $visual == "staticgray"  || $visual == "grayscale" } {
 	set file2 ./images/chalk.gif
 	image create picture texture1 -file $file1
 	image create picture texture2 -file $file2
-	set bg1 [blt::bgpattern create tile -image texture1]
-	set bg2 [blt::bgpattern create tile -image texture2]
+	set bg1 [blt::background create tile -image texture1]
+	set bg2 [blt::background create tile -image texture2]
 	option add *htext.foreground black
 	option add *htext.background $bg1
 	option add *htext.selectBackground gold1

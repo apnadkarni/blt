@@ -4,7 +4,7 @@ package require BLT
 source scripts/demo.tcl
 #blt::bltdebug 100
 
-set bg [blt::bgpattern create gradient -low  grey70 -high grey90 \
+set bg [blt::background create gradient -low  grey70 -high grey90 \
 	-type radial -jitter 10 -scale linear -relativeto .]
 
 image create picture label1 -file afm.png

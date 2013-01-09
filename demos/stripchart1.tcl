@@ -163,7 +163,7 @@ proc source_create {name color min max} {
     $wvname append 0
     
     catch {.sc element delete $name}
-    set bg [blt::bgpattern create solid -opacity 50 -color $color] 
+    set bg [blt::background create solid -opacity 50 -color $color] 
     .sc element create $name \
         -areabackground $bg \
 	-x $xvname \

@@ -53,7 +53,7 @@ $graph axis configure y \
     -loose yes
 
 if 1 {
-    set bg [blt::bgpattern create gradient -low grey40 -high grey95 \
+    set bg [blt::background create gradient -low grey40 -high grey95 \
 	-jitter 10 -scale linear -opacity 80]
     blt::palette create red -colors {
 	"white" "red" 

@@ -7,9 +7,9 @@ package require BLT
 
 source scripts/demo.tcl
 
-set normalBg [blt::bgpattern create gradient -low grey60 -high grey90 \
+set normalBg [blt::background create gradient -low grey60 -high grey90 \
 	-jitter 10 -scale linear]
-#set normalBg [blt::bgpattern create texture -type checkered -low grey85 -high grey98]
+#set normalBg [blt::background create texture -type checkered -low grey85 -high grey98]
 
 #set normalBg white
 #set activeBg grey95
@@ -221,9 +221,9 @@ proc UpdateTable { graph p1 p2 how } {
 
 set image1 [image create picture -file bitmaps/sharky.xbm]
 set image2 [image create picture -file images/buckskin.gif]
-set bg1 [blt::bgpattern create solid -color blue -opacity 30]
-set bg2 [blt::bgpattern create solid -color green -opacity 40]
-set bg3 [blt::bgpattern create solid -color pink -opacity 40]
+set bg1 [blt::background create solid -color blue -opacity 30]
+set bg2 [blt::background create solid -color green -opacity 40]
+set bg3 [blt::background create solid -color pink -opacity 40]
 .g element configure line1 -areabackground $bg1 -areaforeground blue 
 #.g element configure line2 -areabackground $bg2
 #.g element configure line3 -areabackground $bg3

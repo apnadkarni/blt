@@ -43,7 +43,7 @@ BLT_EXTERN int Blt_tk_SafeUnload(Tcl_Interp *interp, int flags);
 static Tcl_AppInitProc *cmdProcs[] =
 {
     Blt_AfmCmdInitProc,
-    Blt_BgPatternCmdInitProc,
+    Blt_BackgroundCmdInitProc,
 #ifndef NO_BELL
     Blt_BeepCmdInitProc,
 #endif

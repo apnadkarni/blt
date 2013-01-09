@@ -102,7 +102,7 @@ BLT_EXTERN Tcl_AppInitProc Blt_PanesetCmdInitProc;
 #ifndef NO_TKSCROLLBAR
 BLT_EXTERN Tcl_AppInitProc Blt_ScrollbarCmdInitProc;
 #endif
-BLT_EXTERN Tcl_AppInitProc Blt_BgPatternCmdInitProc;
+BLT_EXTERN Tcl_AppInitProc Blt_BackgroundCmdInitProc;
 BLT_EXTERN Tcl_AppInitProc Blt_DateScanCmdInitProc;
 
 #ifndef NO_TED

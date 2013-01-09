@@ -759,7 +759,7 @@ if { [file exists ../library] } {
     set blt_library ../library
 }
 
-set bg [blt::bgpattern create gradient -low  grey100 -high grey90 \
+set bg [blt::background create gradient -low  grey100 -high grey90 \
 	-jitter 10 -scale log -relativeto toplevel]
 set bg white
 set myIcon ""

@@ -3,8 +3,8 @@
 package require BLT
 source scripts/demo.tcl
 
-set normalBg [blt::bgpattern create texture -high grey95 -low grey90]
-set activeBg [blt::bgpattern create texture -high red1 -low red2]
+set normalBg [blt::background create texture -high grey95 -low grey90]
+set activeBg [blt::background create texture -high red1 -low red2]
 
 #
 # General widget class resource attributes

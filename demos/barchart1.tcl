@@ -33,9 +33,9 @@ proc FormatLabel { w value } {
 
 source scripts/stipples.tcl
 
-set normalBg [blt::bgpattern create gradient \
+set normalBg [blt::background create gradient \
 		  -low white -high grey -relativeto self]
-set normalBg [blt::bgpattern create solid -color lightblue -opacity 50]
+set normalBg [blt::background create solid -color lightblue -opacity 50]
 #set normalBg lightblue
 
 option add *Htext.tileOffset		no
@@ -103,7 +103,7 @@ blt::barchart .bc -plotpadx 10
 #    Label	Foreground	Background	Stipple Pattern
 
 source scripts/stipples.tcl
-set bg [blt::bgpattern create gradient -high orange2 -low yellow2 \
+set bg [blt::background create gradient -high orange2 -low yellow2 \
 	-type horizontal -jitter 10 -scale linear -relativeto toplevel] 
 
 set bitmaps { 

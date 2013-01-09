@@ -110,10 +110,10 @@ set file ./images/jan25_palm3x_L.jpg
 set file ./images/blt98.gif
 set file ./images/folder.gif
 image create picture bgTexture -file $file 
-set style [blt::bgpattern create tile -image bgTexture \
+set style [blt::background create tile -image bgTexture \
 	       -xorigin 0 -yorigin 0 -relativeto self]
 } else {
-set style [blt::bgpattern create gradient -high grey60 -low grey85 \
+set style [blt::background create gradient -high grey60 -low grey85 \
 	       -relativeto self -scale log]
 }
 
@@ -166,7 +166,7 @@ foreach {label yData fg bg stipple bd} $attributes {
 #     set color [format "0xA0%0.2x%0.2x%0.2x" $r $g $b]
 #     puts stderr color=$color
 #     $img blank $color
-    set pat [blt::bgpattern create solid -color $bg -opacity 90.0]
+    set pat [blt::background create solid -color $bg -opacity 90.0]
     .graph element create -label $label -bd $bd -relief raised \
 	-y $yData -x X -outline $fg -fill $pat
 }

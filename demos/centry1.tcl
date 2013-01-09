@@ -11,9 +11,9 @@ set imgData {
 set icon [image create picture -file images/mini-book1.gif]
 #set icon [image create picture -file images/blt98.gif]
 #set image [image create picture -file ~/images.jpeg]
-set activebg [blt::bgpattern create gradient -high  grey70 -low grey85 \
+set activebg [blt::background create gradient -high  grey70 -low grey85 \
 	-jitter 10 -scale log -relativeto self]
-set bg [blt::bgpattern create gradient -high  grey80 -low grey95 \
+set bg [blt::background create gradient -high  grey80 -low grey95 \
 	-jitter 10 -scale log -relativeto self]
 
 set image ""
