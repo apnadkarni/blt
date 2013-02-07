@@ -281,6 +281,10 @@ proc Blt_ZoomStack { g args } {
     }	
 }
 
+proc Blt_ResetZoomStack { g } {
+    blt::Graph::ResetZoomStack $g
+}
+
 proc Blt_PrintKey { g } {
     blt::Graph::PrintKey $g
 }
