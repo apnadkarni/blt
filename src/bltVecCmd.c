@@ -684,6 +684,32 @@ LengthOp(Vector *vPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 /*
  *---------------------------------------------------------------------------
  *
+ * LimitsOp --
+ *
+ *	Returns the minimum and maximum value of the vector.
+ *
+ * Results:
+ *	A standard TCL result. 
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+LimitsOp(VectorObject *vPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+{
+    Blt_VectorUpdateRange(vPtr);
+    Tcl_Obj *listObjPtr;
+
+    listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
+    Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewDoubleObj(vPtr->min));
+    Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewDoubleObj(vPtr->max));
+    Tcl_SetObjResult(interp, listObjPtr);
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
  * MapOp --
  *
  *	Queries or sets the offset of the array index from the base address of
@@ -3397,7 +3423,8 @@ static Blt_OpSpec vectorInstOps[] =
     {"fft",	  2, FFTOp,	  3, 0, "vecName ?switches?",},
     {"indices",   3, IndicesOp,   3, 3, "what",},
     {"inversefft",3, InverseFFTOp,4, 4, "vecName vecName",},
-    {"length",    1, LengthOp,    2, 3, "?newSize?",},
+    {"length",    2, LengthOp,    2, 3, "?newSize?",},
+    {"limits",    2, LimitsOp,    2, 2, "",},
     {"maximum",   2, MaxOp,       2, 2, "",},
     {"merge",     2, MergeOp,     3, 0, "vecName ?vecName...?",},
     {"minimum",   2, MinOp,       2, 2, "",},
