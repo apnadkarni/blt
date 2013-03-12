@@ -500,7 +500,7 @@ Blt_GetLongFromObj(interp, objPtr, longPtr)
     long *longPtr;			/* Place to store converted long
 					 * result. */
 {
-    static Tcl_ObjType *tclStringTypePtr = NULL;
+    static const Tcl_ObjType *tclStringTypePtr = NULL;
 
     if (tclStringTypePtr == NULL) {
 	Tcl_Obj *objPtr;
@@ -589,7 +589,7 @@ int
 Blt_GetDoubleFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, double *valuePtr)
 {
     const char *string;
-    static Tcl_ObjType *tclDoubleTypePtr = NULL;
+    static const Tcl_ObjType *tclDoubleTypePtr = NULL;
 
     if (tclDoubleTypePtr == NULL) {
 	Tcl_Obj *objPtr;

@@ -714,29 +714,37 @@ MathError(
 					 * overflows. */
 {
     if ((errno == EDOM) || (value != value)) {
+	const char *result;
+
 	Tcl_AppendResult(interp, "domain error: argument not in valid range",
-	    (char *)NULL);
-	Tcl_SetErrorCode(interp, "ARITH", "DOMAIN", interp->result,
-	    (char *)NULL);
+			 (char *)NULL);
+	result = Tcl_GetString(Tcl_GetObjResult(interp));
+	Tcl_SetErrorCode(interp, "ARITH", "DOMAIN", result, (char *)NULL);
     } else if ((errno == ERANGE) || IS_INF(value)) {
 	if (value == 0.0) {
+	    const char *result;
+
 	    Tcl_AppendResult(interp, 
 			     "floating-point value too small to represent",
 		(char *)NULL);
-	    Tcl_SetErrorCode(interp, "ARITH", "UNDERFLOW", interp->result,
-		(char *)NULL);
+	    result = Tcl_GetString(Tcl_GetObjResult(interp));
+	    Tcl_SetErrorCode(interp, "ARITH", "UNDERFLOW", result,(char *)NULL);
 	} else {
+	    const char *result;
+
 	    Tcl_AppendResult(interp, 
 			     "floating-point value too large to represent",
 		(char *)NULL);
-	    Tcl_SetErrorCode(interp, "ARITH", "OVERFLOW", interp->result,
-		(char *)NULL);
+	    result = Tcl_GetString(Tcl_GetObjResult(interp));
+	    Tcl_SetErrorCode(interp, "ARITH", "OVERFLOW", result, (char *)NULL);
 	}
     } else {
+	const char *result;
+
 	Tcl_AppendResult(interp, "unknown floating-point error, ",
 		"errno = ", Blt_Itoa(errno), (char *)NULL);
-	Tcl_SetErrorCode(interp, "ARITH", "UNKNOWN", interp->result,
-	    (char *)NULL);
+	result = Tcl_GetString(Tcl_GetObjResult(interp));
+	Tcl_SetErrorCode(interp, "ARITH", "UNKNOWN", result, (char *)NULL);
     }
 }
 

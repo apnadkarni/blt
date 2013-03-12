@@ -140,7 +140,9 @@ Blt_TkInit(Tcl_Interp *interp)	       /* Interpreter to add extra commands */
 {
     Tcl_Namespace *nsPtr;
     Tcl_AppInitProc **p;
+#ifdef USE_BLT_STUBS
     extern BltTkProcs bltTkProcs;
+#endif
     int result;
 
 #ifdef USE_TCL_STUBS

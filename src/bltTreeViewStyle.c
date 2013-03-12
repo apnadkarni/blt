@@ -550,7 +550,7 @@ static void
 FreeIconProc(ClientData clientData, Display *display, char *widgRec, int offset)
 {
     Icon *iconPtr = (Icon *)(widgRec + offset);
-    ColumnStyle *stylePtr = (char *)widgRec;
+    ColumnStyle *stylePtr = (ColumnStyle *)widgRec;
 
     if (*iconPtr != NULL) {
 	TreeView *viewPtr;
@@ -586,7 +586,7 @@ ObjToIconProc(
     int offset,				/* Offset to field in structure */
     int flags)	
 {
-    ColumnStyle *stylePtr = (char *)widgRec;
+    ColumnStyle *stylePtr = (ColumnStyle *)widgRec;
     TreeView *viewPtr;
     Icon *iconPtr = (Icon *)(widgRec + offset);
     Icon icon;

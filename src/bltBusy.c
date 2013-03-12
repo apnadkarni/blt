@@ -1334,55 +1334,6 @@ ActiveOp(
 /*
  *---------------------------------------------------------------------------
  *
- * BusyOp --
- *
- *	Reports the names of all widgets with busy windows attached to them,
- *	matching a given pattern.  If no pattern is given, all busy widgets
- *	are listed.
- *
- * Results:
- *	Returns a TCL list of the names of the widget with busy windows
- *	attached to them, regardless if the widget is currently busy or not.
- *
- *---------------------------------------------------------------------------
- */
-static int
-BusyOp(
-    ClientData clientData,		/* Interpreter-specific data. */
-    Tcl_Interp *interp,			/* Interpreter to report errors to */
-    int objc,
-    Tcl_Obj *const *objv)
-{
-    BusyInterpData *dataPtr = clientData;
-    Blt_HashEntry *hPtr;
-    Blt_HashSearch iter;
-    Tcl_Obj *listObjPtr;
-    const char *pattern;
-
-    listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
-    pattern = (objc > 2) ? Tcl_GetString(objv[2]) : NULL;
-    for (hPtr = Blt_FirstHashEntry(&dataPtr->busyTable, &iter);
-	hPtr != NULL; hPtr = Blt_NextHashEntry(&iter)) {
-	Busy *busyPtr;
-
-	busyPtr = Blt_GetHashValue(hPtr);
-	if ((busyPtr->flags & ACTIVE) == 0) {
-	    continue;
-	}
-	if ((pattern == NULL) || 
-	    (Tcl_StringMatch(Tk_PathName(busyPtr->tkRef), pattern))) {
-	    Tcl_Obj *objPtr;
-	    objPtr = Tcl_NewStringObj(Tk_PathName(busyPtr->tkRef), -1);
-	    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-	}
-    }
-    Tcl_SetObjResult(interp, listObjPtr);
-    return TCL_OK;
-}
-
-/*
- *---------------------------------------------------------------------------
- *
  * CgetOp --
  *
  *---------------------------------------------------------------------------
@@ -1836,8 +1787,8 @@ BusyCmdProc(
 	    return HoldOp(clientData, interp, objc, objv);
 	}
     }
-    proc = Blt_GetOpFromObj(interp, numBusyOps, busyOps, BLT_OP_ARG1, objc, objv,
-	    0);
+    proc = Blt_GetOpFromObj(interp, numBusyOps, busyOps, BLT_OP_ARG1, objc, 
+			    objv, 0);
     if (proc == NULL) {
 	return TCL_ERROR;
     }

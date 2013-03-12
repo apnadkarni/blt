@@ -266,7 +266,9 @@ typedef struct {
 					 * directory entries to search for.*/
     unsigned int mask;			/* Indicates which fields to copy into
 					 * the tree node as data. */
-    const char *pattern;		
+    Tcl_Obj *patternsObjPtr;		/* If non-NULL, is a list of patterns
+					 * to match contents of each
+					 * directory.  */
     unsigned int flags;
 } DirSwitches;
 
@@ -286,6 +288,7 @@ typedef struct {
 
 #define DIR_DEFAULT	(DIR_MTIME|DIR_TYPE|DIR_MODE|DIR_SIZE)
 #define DIR_RECURSE	(1<<11)
+#define DIR_NOCASE	(1<<12)
 
 static Blt_SwitchParseProc FieldsSwitchProc;
 static Blt_SwitchCustom fieldsSwitch = {
@@ -310,8 +313,10 @@ static Blt_SwitchSpec dirSwitches[] =
 	Blt_Offset(DirSwitches, type), 0, TCL_GLOB_TYPE_DIR},
     {BLT_SWITCH_BITMASK, "-link", "", (char *)NULL,
 	Blt_Offset(DirSwitches, type), 0, TCL_GLOB_TYPE_LINK},
-    {BLT_SWITCH_STRING, "-pattern", "string", (char *)NULL,
-	Blt_Offset(DirSwitches, pattern), 0},
+    {BLT_SWITCH_OBJ, "-patterns",     "list", (char *)NULL,
+	Blt_Offset(DirSwitches, patternsObjPtr), 0},
+    {BLT_SWITCH_BITMASK, "-nocase",       "", (char *)NULL,
+        Blt_Offset(DirSwitches, flags), 0, DIR_NOCASE},
     {BLT_SWITCH_BITMASK, "-recurse", "", (char *)NULL,
 	Blt_Offset(DirSwitches, flags), 0, DIR_RECURSE},
     {BLT_SWITCH_END}
@@ -3438,28 +3443,30 @@ static int
 TreeReadDirectory(Tcl_Interp *interp, TreeCmd *cmdPtr, Tcl_Obj *pathObjPtr,
 		  Blt_TreeNode parent, DirSwitches *switchesPtr)
 {
-    const char *pattern;
     Tcl_GlobTypeData readableFiles = {
 	0, TCL_GLOB_PERM_R, NULL, NULL
     };
     Tcl_Obj *listObjPtr;
-    int i, n;
-    Tcl_Obj **items;
+    int i, n, numPatterns, patternFlags;
+    Tcl_Obj **items, **patterns;
 
     readableFiles.type = switchesPtr->type;
     readableFiles.perm = switchesPtr->perm;
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
-    if (switchesPtr->pattern == NULL) {
-	pattern = "*";
-    } else {
-	pattern = switchesPtr->pattern;
+    numPatterns = 0;
+    if (switchesPtr->patternsObjPtr != NULL) {
+	if (Tcl_ListObjGetElements(interp, switchesPtr->patternsObjPtr, 
+				  &numPatterns, &patterns) != TCL_OK) {
+	    return TCL_ERROR;
+	}
     }
-    if (Tcl_FSMatchInDirectory(interp, listObjPtr, pathObjPtr, pattern, 
+    if (Tcl_FSMatchInDirectory(interp, listObjPtr, pathObjPtr, "*", 
 	&readableFiles) != TCL_OK) {
     }
     if (Tcl_ListObjGetElements(interp, listObjPtr, &n, &items) != TCL_OK) {
 	return TCL_OK;
     }
+    patternFlags = (switchesPtr->flags & DIR_NOCASE) ? TCL_MATCH_NOCASE : 0;
     for (i = 0; i < n; i++) {
 	Tcl_StatBuf stat;
 	int length;
@@ -3481,6 +3488,19 @@ TreeReadDirectory(Tcl_Interp *interp, TreeCmd *cmdPtr, Tcl_Obj *pathObjPtr,
 	Tcl_IncrRefCount(objPtr);
 	Tcl_ListObjIndex(NULL, objPtr, length-1, &tailPtr);
 	label = Tcl_GetString(tailPtr);
+	if ((!S_ISDIR(stat.st_mode)) && (numPatterns > 0)) {
+	    int j;
+
+	    for (j = 0; j < numPatterns; j++) {
+		const char *pattern;
+		pattern = Tcl_GetString(patterns[j]);
+		if (Tcl_StringCaseMatch(label, pattern, patternFlags)) {
+		    goto found;
+		}
+	    }
+	    continue;
+	}
+    found:
 	child = Blt_Tree_CreateNode(cmdPtr->tree, parent, label, -1);
 	if (switchesPtr->mask & DIR_SIZE) {
 	    Blt_Tree_SetValue(interp, cmdPtr->tree, child, "size",  

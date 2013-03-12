@@ -1951,11 +1951,11 @@ static int
 CreateProc(
     Tcl_Interp *interp,		        /* Interpreter to report errors back
 					 * to. */
-    char *name,				/* Name to use for image command. */
+    const char *name,			/* Name to use for image command. */
     int objc,				/* # of option arguments. */
     Tcl_Obj *const *objv,		/* Option arguments (doesn't include
 					 * image name or type). */
-    Tk_ImageType *typePtr,		/* Not used. */
+    const Tk_ImageType *typePtr,	/* Not used. */
     Tk_ImageMaster imgToken,		/* Token for image, to be used by us
 					 * in later callbacks. */
     ClientData *clientDataPtr)		/* Store manager's token for image

@@ -43,20 +43,19 @@
 
 #include "bltAlloc.h"
 
-static int StringToPad(ClientData clientData, Tcl_Interp *interp, 
-	Tk_Window tkwin, const char *string, char *widgRec, int offset);
-static char *PadToString(ClientData clientData, Tk_Window tkwin, char *widgRec,
-	int offset, Tcl_FreeProc **freeProcPtr);
+static Tk_OptionParseProc StringToPad;
+static Tk_OptionPrintProc PadToString;
+static Tk_OptionParseProc StringToDistance;
+static Tk_OptionPrintProc DistanceToString;
+
+#ifndef CONST86
+#define CONST86 
+#endif
 
 Tk_CustomOption bltPadOption =
 {
     StringToPad, PadToString, (ClientData)0
 };
-
-static int StringToDistance(ClientData clientData, Tcl_Interp *interp, 
-	Tk_Window tkwin, const char *string, char *widgRec, int flags);
-static char *DistanceToString(ClientData, Tk_Window, char *widgRec, int offset,
-	Tcl_FreeProc **freeProcPtr);
 
 Tk_CustomOption bltDistanceOption =
 {
@@ -150,7 +149,7 @@ StringToDistance(
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
-static char *
+static CONST86 char *
 DistanceToString(
     ClientData clientData,	/* Not used. */
     Tk_Window tkwin,		/* Not used. */
@@ -246,7 +245,7 @@ StringToPad(
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
-static char *
+static CONST86 char *
 PadToString(
     ClientData clientData,	/* Not used. */
     Tk_Window tkwin,		/* Not used. */

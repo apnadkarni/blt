@@ -268,9 +268,8 @@ typedef struct {
     const char *takeFocus;	/* Value of -takefocus option;  not used in
 				 * the C code, but used by keyboard traversal
 				 * scripts.  Malloc'ed, but may be NULL. */
-    const char *command;	/* Command to execute when button is
-				 * invoked; valid for buttons only.
-				 * If not NULL, it's malloc-ed. */
+    Tcl_Obj *cmdObjPtr;			/* Command to execute when button is
+					 * invoked; valid for buttons only. */
     const char *compound;      /* Value of -compound option; specifies whether
 				 * the button should show both an image and
 				 * text, and, if so, how. */
@@ -404,8 +403,8 @@ static Blt_ConfigSpec configSpecs[] =
     {BLT_CONFIG_PIXELS_NNEG, "-borderwidth", "borderWidth", "BorderWidth",
 	DEF_PUSHBUTTON_BORDERWIDTH, Blt_Offset(Button, borderWidth), 
 	PUSH_BUTTON_MASK},
-    {BLT_CONFIG_STRING, "-command", "command", "Command",
-	DEF_BUTTON_COMMAND, Blt_Offset(Button, command),
+    {BLT_CONFIG_OBJ, "-command", "command", "Command",
+	DEF_BUTTON_COMMAND, Blt_Offset(Button, cmdObjPtr),
 	BUTTON_MASK | CHECK_BUTTON_MASK | RADIO_BUTTON_MASK | PUSH_BUTTON_MASK |
         BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_STRING, "-compound", "compound", "Compound",
@@ -1952,8 +1951,8 @@ InvokeButton(Button *butPtr)
 	    return TCL_ERROR;
 	}
     }
-    if ((butPtr->type != TYPE_LABEL) && (butPtr->command != NULL)) {
-	return TkCopyAndGlobalEval(butPtr->interp, (char *)butPtr->command);
+    if ((butPtr->type != TYPE_LABEL) && (butPtr->cmdObjPtr != NULL)) {
+	return Tcl_EvalObjEx(butPtr->interp, butPtr->cmdObjPtr,TCL_EVAL_GLOBAL);
     }
     return TCL_OK;
 }
