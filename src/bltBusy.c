@@ -146,12 +146,12 @@ typedef struct {
 #define DEF_BUSY_DARKEN		"30"
 #define DEF_BUSY_INTERVAL	"0"
 
-static Blt_OptionParseProc ObjToPictImageProc;
-static Blt_OptionPrintProc PictImageToObjProc;
-static Blt_OptionFreeProc FreePictImageProc;
+static Blt_OptionParseProc ObjToImageProc;
+static Blt_OptionPrintProc ImageToObjProc;
+static Blt_OptionFreeProc FreeImageProc;
 static Blt_CustomOption pictImageOption =
 {
-    ObjToPictImageProc, PictImageToObjProc, FreePictImageProc, (ClientData)0
+    ObjToImageProc, ImageToObjProc, FreeImageProc, (ClientData)0
 };
 
 static Blt_ConfigSpec configSpecs[] =
@@ -272,7 +272,7 @@ ImageChangedProc(
 
 /*ARGSUSED*/
 static void
-FreePictImageProc(
+FreeImageProc(
     ClientData clientData,
     Display *display,			/* Not used. */
     char *widgRec,
@@ -295,7 +295,7 @@ FreePictImageProc(
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToPictImageProc --
+ * ObjToImageProc --
  *
  *	Given an image name, get the Tk image associated with it.
  *
@@ -306,7 +306,7 @@ FreePictImageProc(
  */
 /*ARGSUSED*/
 static int
-ObjToPictImageProc(
+ObjToImageProc(
     ClientData clientData,		/* Not used. */
     Tcl_Interp *interp,			/* Interpreter to return results */
     Tk_Window tkwin,			/* Not used. */
@@ -354,7 +354,7 @@ ObjToPictImageProc(
 /*
  *---------------------------------------------------------------------------
  *
- * PictImageToObjProc --
+ * ImageToObjProc --
  *
  *	Convert the image name into a string Tcl_Obj.
  *
@@ -365,7 +365,7 @@ ObjToPictImageProc(
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-PictImageToObjProc(
+ImageToObjProc(
     ClientData clientData,		/* Not used. */
     Tcl_Interp *interp,
     Tk_Window tkwin,			/* Not used. */
@@ -1852,8 +1852,7 @@ DisplayBusy(ClientData clientData)
 
     if (!Tk_IsMapped(tkwin)) {
 	/* The busy window isn't displayed, so don't bother drawing
-	 * anything.  By getting this far, we've at least computed the
-	 * coordinates of the graph's new layout.  */
+	 * anything.  */
 	return;
     }
 
@@ -1882,7 +1881,6 @@ DisplayBusy(ClientData clientData)
 	    ShowBusyWindow(busyPtr);
 	}
     }
-
     /* Create a pixmap the size of the window for double buffering. */
     drawable = Blt_GetPixmap(busyPtr->display, Tk_WindowId(tkwin), 
 	busyPtr->width, busyPtr->height, Tk_Depth(tkwin));

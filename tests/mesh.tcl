@@ -1,3 +1,4 @@
+package require BLT
 
 # Test switches
 #

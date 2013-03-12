@@ -281,6 +281,14 @@ proc Blt_ZoomStack { g args } {
     }	
 }
 
+proc Blt_ResetZoomStack { g } {
+    while { ![blt::Graph::IsEmpty $g] } {
+	blt::Graph::Pop $g
+	after 140
+    }
+    blt::Graph::Pop $g
+}
+
 proc Blt_PrintKey { g } {
     blt::Graph::PrintKey $g
 }
@@ -512,6 +520,13 @@ proc blt::Graph::DestroyTitle { g } {
     if { $_private($g,corner) == "A" } {
 	catch { $g marker delete "zoomTitle" }
     }
+}
+
+proc blt::Graph::IsEmpty { g } {
+    variable _private
+
+    set zoomStack $_private($g,stack)
+    return [expr {[llength $zoomStack] == 0}]
 }
 
 proc blt::Graph::Pop { g } {
