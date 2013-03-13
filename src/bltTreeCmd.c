@@ -3568,7 +3568,6 @@ TreeReadDirectory(Tcl_Interp *interp, TreeCmd *cmdPtr, Tcl_Obj *dirObjPtr,
     Tcl_Obj **objv, **patterns;
 
     readableFiles.perm = switchesPtr->perm;
-
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
     numPatterns = 0;
     if (switchesPtr->patternsObjPtr != NULL) {
@@ -3610,28 +3609,27 @@ TreeReadDirectory(Tcl_Interp *interp, TreeCmd *cmdPtr, Tcl_Obj *dirObjPtr,
 	Tcl_ListObjIndex(NULL, objPtr, numComponents-1, &tailPtr);
 	label = Tcl_GetString(tailPtr);
 
-	if (S_ISDIR(stat.st_mode)) {
-	    /* Create a directory node only if we are recursing. */
-	    if (switchesPtr->flags & DIR_RECURSE) {
-		Tcl_Obj *subDirObjPtr;
-
-		child = Blt_Tree_CreateNode(cmdPtr->tree, parent, label, -1);
-		FillEntryData(interp, cmdPtr->tree, child, &stat, switchesPtr);
-
-		subDirObjPtr = Tcl_DuplicateObj(dirObjPtr);
-		Tcl_IncrRefCount(subDirObjPtr);
-		/* Now recurse into subdirectories. */
-		Tcl_AppendStringsToObj(subDirObjPtr, "/", label, (char *)NULL);
-		if (TreeReadDirectory(interp, cmdPtr, subDirObjPtr, child, 
-			switchesPtr) != TCL_OK) {
-		    Tcl_DecrRefCount(objPtr);
-		    Tcl_DecrRefCount(listObjPtr);
-		    return TCL_ERROR;
-		}
-		Tcl_DecrRefCount(subDirObjPtr);
+	if ((switchesPtr->flags & DIR_RECURSE) && (S_ISDIR(stat.st_mode))) {
+	    /* Create a node for the subdirectory and recursively call this
+	       routine. */
+	    Tcl_Obj *subDirObjPtr;
+	    
+	    child = Blt_Tree_CreateNode(cmdPtr->tree, parent, label, -1);
+	    FillEntryData(interp, cmdPtr->tree, child, &stat, switchesPtr);
+	    
+	    subDirObjPtr = Tcl_DuplicateObj(dirObjPtr);
+	    Tcl_IncrRefCount(subDirObjPtr);
+	    /* Now recurse into subdirectories. */
+	    Tcl_AppendStringsToObj(subDirObjPtr, "/", label, (char *)NULL);
+	    if (TreeReadDirectory(interp, cmdPtr, subDirObjPtr, child, 
+				  switchesPtr) != TCL_OK) {
+		Tcl_DecrRefCount(objPtr);
+		Tcl_DecrRefCount(listObjPtr);
+		return TCL_ERROR;
 	    }
+	    Tcl_DecrRefCount(subDirObjPtr);
 	} else {
-	    /* Match files against patterns. */
+	    /* Match files or subdirectories against patterns. */
 	    if (numPatterns > 0) {
 		int j;
 		
@@ -3645,6 +3643,7 @@ TreeReadDirectory(Tcl_Interp *interp, TreeCmd *cmdPtr, Tcl_Obj *dirObjPtr,
 		}
 		continue;
 	    }
+	    /* Match against type. */
 	found:
 	    child = Blt_Tree_CreateNode(cmdPtr->tree, parent, label, -1);
 	    FillEntryData(interp, cmdPtr->tree, child, &stat, switchesPtr);
