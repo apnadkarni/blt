@@ -3657,30 +3657,31 @@ ImageBoxStyleGeometryProc(Cell *cellPtr, CellStyle *cellStylePtr)
     cellPtr->text = NULL;
     cellPtr->tkImage = NULL;
 
-    if ((colPtr->fmtCmdObjPtr != NULL) && 
-	(blt_table_value_exists(viewPtr->table, rowPtr->row, colPtr->column))) {
+    if (blt_table_value_exists(viewPtr->table, rowPtr->row, colPtr->column)) {
 	Tcl_Obj *objPtr;
 	
 	objPtr = blt_table_get_obj(viewPtr->table, rowPtr->row, colPtr->column);
 	if (objPtr != NULL) {
-	    Tcl_Obj *cmdObjPtr;
-	    int result;
 	    Tcl_Interp *interp;
 
 	    interp = viewPtr->interp;
-	    /* Invoke the format command to return the image and title text
-	     * based upon the value in the cell.  */
-	    cmdObjPtr = Tcl_DuplicateObj(colPtr->fmtCmdObjPtr);  
-	    Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
-	    
-	    Tcl_IncrRefCount(cmdObjPtr);
-	    result = Tcl_EvalObjEx(interp, cmdObjPtr, TCL_EVAL_GLOBAL);
-	    Tcl_DecrRefCount(cmdObjPtr);
-	    if (result != TCL_OK) {
-		Tcl_BackgroundError(interp);
-		return;
+	    if (colPtr->fmtCmdObjPtr != NULL) {
+		int result;
+		Tcl_Obj *cmdObjPtr;
+
+		/* Invoke the format command to return the image and title text
+		 * based upon the value in the cell.  */
+		cmdObjPtr = Tcl_DuplicateObj(colPtr->fmtCmdObjPtr);  
+		Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
+		Tcl_IncrRefCount(cmdObjPtr);
+		result = Tcl_EvalObjEx(interp, cmdObjPtr, TCL_EVAL_GLOBAL);
+		Tcl_DecrRefCount(cmdObjPtr);
+		if (result != TCL_OK) {
+		    Tcl_BackgroundError(interp);
+		    return;
+		}
+		objPtr = Tcl_GetObjResult(interp);
 	    }
-	    objPtr = Tcl_GetObjResult(interp);
 	    if (ParseImageFormat(interp, viewPtr, cellPtr, objPtr) != TCL_OK) {
 		Tcl_BackgroundError(interp);
 		return;
