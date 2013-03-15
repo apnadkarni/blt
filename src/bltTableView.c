@@ -4581,6 +4581,9 @@ DisplayCell(Cell *cellPtr, Drawable drawable, int buffer)
 	dx = x1 - x;
 	dy = y1 - y;
 
+	if ((h < 1) || (w < 1)) {
+	    return;
+	}
 	/* Draw into a pixmap and then copy it into the drawable.  */
 	pixmap = Blt_GetPixmap(viewPtr->display, Tk_WindowId(viewPtr->tkwin), 
 		w, h, Tk_Depth(viewPtr->tkwin));
@@ -6407,7 +6410,8 @@ ColumnSeeOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	return TCL_ERROR;
     }
     if (colPtr == NULL) {
-	fprintf(stderr, "ColumnSee: Column %s is NULL\n", Tcl_GetString(objv[3])); 
+	fprintf(stderr, "ColumnSee: Column %s is NULL\n", 
+		Tcl_GetString(objv[3])); 
 	return TCL_OK;
     }
     x = viewPtr->xOffset;
@@ -7243,12 +7247,12 @@ FocusOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	    return TCL_OK;		/* Can't set focus to hidden or
 					 * disabled cell */
 	}
+	if (cellPtr != viewPtr->focusPtr) {
+	    viewPtr->focusPtr = cellPtr;
+	    EventuallyRedraw(viewPtr);
+	}
+	Blt_SetFocusItem(viewPtr->bindTable, viewPtr->focusPtr, ITEM_CELL);
     }
-    if (cellPtr != viewPtr->focusPtr) {
-	viewPtr->focusPtr = cellPtr;
-	EventuallyRedraw(viewPtr);
-    }
-    Blt_SetFocusItem(viewPtr->bindTable, viewPtr->focusPtr, ITEM_CELL);
     return TCL_OK;
 }
 
@@ -9882,7 +9886,7 @@ XViewOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	    != TCL_OK) {
 	return TCL_ERROR;
     }
-    viewPtr->flags |= SCROLLX | VISIBILITY;
+    viewPtr->flags |= SCROLLX;
     EventuallyRedraw(viewPtr);
     return TCL_OK;
 }
@@ -9916,7 +9920,7 @@ YViewOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	!= TCL_OK) {
 	return TCL_ERROR;
     }
-    viewPtr->flags |= SCROLLY | VISIBILITY;
+    viewPtr->flags |= SCROLLY;
     EventuallyRedraw(viewPtr);
     return TCL_OK;
 }
@@ -10623,7 +10627,7 @@ DisplayTableViewProc(ClientData clientData)
     if (viewPtr->flags & LAYOUT_PENDING) {
 	LayoutTableView(viewPtr);
     }
-    if (viewPtr->flags & VISIBILITY) {
+    if (viewPtr->flags & (SCROLL_PENDING | VISIBILITY)) {
 	/* Determine the visible rows and columns. The can happen when the
 	 * -hide flags changes on a row or column. */
 	ComputeVisibleEntries(viewPtr);

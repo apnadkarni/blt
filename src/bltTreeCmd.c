@@ -1038,6 +1038,8 @@ FieldsSwitchProc(
 	    mask |= DIR_DEV;
 	} else if ((c == 'n') && (strcmp(string, "nlink") == 0)) {
 	    mask |= DIR_NLINK;
+	} else if ((c == 'a') && (strcmp(string, "all") == 0)) {
+	    mask |= DIR_ALL;
 	} else {
 	    Tcl_AppendResult(interp, "unknown field name \"", string, "\"",
 		(char *)NULL);

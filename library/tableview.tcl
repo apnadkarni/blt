@@ -359,7 +359,7 @@ proc blt::TableView::Initialize { w } {
     }
     $w row bind all <ButtonRelease-1> {
 	%W row invoke current
-	%W row configure $blt::TableView::_private(column) \
+	%W row configure $blt::TableView::_private(row) \
 	    -activetitlerelief raised
     }
     # Column filter 
