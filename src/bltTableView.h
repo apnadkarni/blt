@@ -750,12 +750,9 @@ struct _TableView {
 					 * above arrays. */
     long numVisibleRows, numVisibleColumns;
 
-    BLT_TABLE_NOTIFIER rowNotifier;	/* Notifier used to tell the viewer
-					 * that any rows have changed in the
-					 * datatable. */
-    BLT_TABLE_NOTIFIER colNotifier;	/* Notifier used to tell the viewer
-					 * that any columns have changed in
-					 * the datatable. */
+    BLT_TABLE_NOTIFIER notifier;	/* Notifier used to tell the viewer
+					 * that any rows or columns have 
+					 * changed in the datatable. */
     short int rowTitleWidth, rowTitleHeight;
     short int colTitleWidth, colTitleHeight;
     short int colFilterHeight;

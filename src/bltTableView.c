@@ -668,6 +668,10 @@ static int GetRow(Tcl_Interp *interp, TableView *viewPtr, Tcl_Obj *objPtr,
 	Row **rowPtrPtr);
 static int AttachTable(Tcl_Interp *interp, TableView *viewPtr);
 static void RebuildTableView(TableView *viewPtr);
+static void AddColumns(TableView *viewPtr, BLT_TABLE_NOTIFY_EVENT *eventPtr);
+static void AddRows(TableView *viewPtr, BLT_TABLE_NOTIFY_EVENT *eventPtr);
+static void DeleteColumns(TableView *viewPtr, BLT_TABLE_NOTIFY_EVENT *eventPtr);
+static void DeleteRows(TableView *viewPtr, BLT_TABLE_NOTIFY_EVENT *eventPtr);
 
 /*
  *---------------------------------------------------------------------------
@@ -3536,6 +3540,7 @@ ConfigureRow(TableView *viewPtr, Row *rowPtr)
     return TCL_OK;
 }
 
+
 static void
 PrintEventFlags(int type)
 {
@@ -3566,8 +3571,21 @@ TableEventProc(ClientData clientData, BLT_TABLE_NOTIFY_EVENT *eventPtr)
 {
     TableView *viewPtr = clientData; 
 
-    if (eventPtr->type & (TABLE_NOTIFY_DELETE|TABLE_NOTIFY_CREATE)) {
-	RebuildTableView(viewPtr);
+   if (eventPtr->type & (TABLE_NOTIFY_DELETE|TABLE_NOTIFY_CREATE)) {
+       if (eventPtr->type & TABLE_NOTIFY_ROWS_CREATED) {
+	   if (viewPtr->flags & AUTO_ROWS) {
+	       AddRows(viewPtr, eventPtr);
+	   }
+       } else if (eventPtr->type & TABLE_NOTIFY_COLUMNS_CREATED) {
+	   if (viewPtr->flags & AUTO_COLUMNS) {
+	       AddColumns(viewPtr, eventPtr);
+	   }
+       } else if (eventPtr->type & TABLE_NOTIFY_ROWS_DELETED) {
+	   DeleteRows(viewPtr, eventPtr);
+       } else if (eventPtr->type & TABLE_NOTIFY_COLUMNS_DELETED) {
+	   DeleteColumns(viewPtr, eventPtr);
+       }
+       return TCL_OK;
     } 
     if (eventPtr->type & TABLE_NOTIFY_COLUMN_CHANGED) {
 	if (eventPtr->type & TABLE_NOTIFY_RELABEL) {
@@ -3578,6 +3596,7 @@ TableEventProc(ClientData clientData, BLT_TABLE_NOTIFY_EVENT *eventPtr)
 		GetColumnTitleGeometry(viewPtr, colPtr);
 	    }
 	} else if (eventPtr->type & TABLE_NOTIFY_MOVE) {
+	    RebuildTableView(viewPtr);
 	    /* FIXME: handle column moves */
 	}	
     }
@@ -3590,6 +3609,7 @@ TableEventProc(ClientData clientData, BLT_TABLE_NOTIFY_EVENT *eventPtr)
 		GetRowTitleGeometry(viewPtr, rowPtr);
 	    }
 	} else if (eventPtr->type & TABLE_NOTIFY_MOVE) {
+	    RebuildTableView(viewPtr);
 	    /* FIXME: handle row moves */
 	}	
     }
@@ -10485,19 +10505,136 @@ RebuildTableView(TableView *viewPtr)
     EventuallyRedraw(viewPtr);
 }
 
+static void
+DeleteColumns(TableView *viewPtr, BLT_TABLE_NOTIFY_EVENT *eventPtr)
+{
+}
+
+static void
+AddColumns(TableView *viewPtr, BLT_TABLE_NOTIFY_EVENT *eventPtr)
+{
+    Column **columns;
+    long i;
+    unsigned long count, oldNumColumns, newNumColumns;
+    Blt_ChainLink link;
+
+    oldNumColumns = viewPtr->numColumns;
+    newNumColumns = blt_table_num_columns(viewPtr->table);
+    columns = Blt_AssertMalloc(sizeof(Column *) * newNumColumns);
+
+    count = viewPtr->numColumns;
+    for (link = Blt_Chain_FirstLink(eventPtr->columns); link != NULL;
+	 link = Blt_Chain_NextLink(link)) {
+	Blt_HashEntry *hPtr;
+	int isNew;
+	Column *colPtr;
+	BLT_TABLE_COLUMN col;
+
+	col = Blt_Chain_GetValue(link);
+
+	hPtr = Blt_CreateHashEntry(&viewPtr->columnTable, (char *)col, &isNew);
+	assert(isNew);
+	colPtr = CreateColumn(viewPtr, col, hPtr);
+	columns[count] = colPtr;
+	count++;
+    }
+    if (viewPtr->columns != NULL) {
+	Blt_Free(viewPtr->columns);
+    }
+    viewPtr->columns = columns;
+    viewPtr->numColumns = newNumColumns;
+
+    for (i = 0; i < viewPtr->numRows; i++) {
+	CellKey key;
+	long j;
+
+	key.rowPtr = viewPtr->rows[i];
+	for (j = oldNumColumns; j < newNumColumns; j++) {
+	    Cell *cellPtr;
+	    Blt_HashEntry *hPtr;
+	    int isNew;
+
+	    key.colPtr = viewPtr->columns[j];
+	    hPtr = Blt_CreateHashEntry(&viewPtr->cellTable, (char *)&key, 
+		&isNew);
+	    assert(isNew);
+	    cellPtr = NewCell(viewPtr, hPtr);
+	    Blt_SetHashValue(hPtr, cellPtr);
+	}
+    }
+    viewPtr->flags |= LAYOUT_PENDING;
+    EventuallyRedraw(viewPtr);
+}
+
+static void
+DeleteRows(TableView *viewPtr, BLT_TABLE_NOTIFY_EVENT *eventPtr)
+{
+}
+
+static void
+AddRows(TableView *viewPtr, BLT_TABLE_NOTIFY_EVENT *eventPtr)
+{
+    long i;
+    Row **rows;
+    unsigned long count, newNumRows, oldNumRows;
+    Blt_ChainLink link;
+
+    oldNumRows = viewPtr->numRows;
+    newNumRows = blt_table_num_columns(viewPtr->table);
+    rows = Blt_AssertMalloc(sizeof(Row *) * newNumRows);
+
+    count = viewPtr->numRows;
+    for (link = Blt_Chain_FirstLink(eventPtr->rows); link != NULL;
+	 link = Blt_Chain_NextLink(link)) {
+	Blt_HashEntry *hPtr;
+	int isNew;
+	Row *rowPtr;
+	BLT_TABLE_ROW row;
+
+	row = Blt_Chain_GetValue(link);
+
+	hPtr = Blt_CreateHashEntry(&viewPtr->rowTable, (char *)row, &isNew);
+	assert(isNew);
+	rowPtr = CreateRow(viewPtr, row, hPtr);
+	rows[count] = rowPtr;
+	count++;
+    }
+    if (viewPtr->rows != NULL) {
+	Blt_Free(viewPtr->rows);
+    }
+    viewPtr->rows = rows;
+    viewPtr->numRows = newNumRows;
+
+    for (i = 0; i < viewPtr->numColumns; i++) {
+	CellKey key;
+	long j;
+
+	key.colPtr = viewPtr->columns[i];
+	for (j = oldNumRows; j < newNumRows; j++) {
+	    Cell *cellPtr;
+	    Blt_HashEntry *hPtr;
+	    int isNew;
+
+	    key.rowPtr = viewPtr->rows[j];
+	    hPtr = Blt_CreateHashEntry(&viewPtr->cellTable, (char *)&key, 
+		&isNew);
+	    assert(isNew);
+	    cellPtr = NewCell(viewPtr, hPtr);
+	    Blt_SetHashValue(hPtr, cellPtr);
+	}
+    }
+    viewPtr->flags |= LAYOUT_PENDING;
+    EventuallyRedraw(viewPtr);
+}
+
 static int
 AttachTable(Tcl_Interp *interp, TableView *viewPtr)
 {
     long i;
 
     ResetTableView(viewPtr);
-    viewPtr->colNotifier = blt_table_create_column_notifier(interp, 
-	viewPtr->table, TABLE_NOTIFY_ALL, 
-	TABLE_NOTIFY_ALL_EVENTS | TABLE_NOTIFY_WHENIDLE, 
-	TableEventProc, NULL, viewPtr);
-    viewPtr->rowNotifier = blt_table_create_row_notifier(interp, 
-	viewPtr->table, TABLE_NOTIFY_ALL, 
-	TABLE_NOTIFY_ALL_EVENTS | TABLE_NOTIFY_WHENIDLE, 
+    viewPtr->notifier = blt_table_create_notifier(interp, 
+	viewPtr->table, TABLE_NOTIFY_ALL_EVENTS | TABLE_NOTIFY_WHENIDLE, 
 	TableEventProc, NULL, viewPtr);
 
     viewPtr->numRows = viewPtr->numColumns = 0;

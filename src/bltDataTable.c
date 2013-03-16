@@ -116,7 +116,6 @@
 
 #define TABLE_ALLOC_MAX_DOUBLE_SIZE	(1<<16)
 #define TABLE_ALLOC_MAX_CHUNK		(1<<16)
-#define TABLE_NOTIFY_ANY		(NULL)
 
 #define TABLE_KEYS_DIRTY		(1<<0)
 #define TABLE_KEYS_UNIQUE		(1<<1)
@@ -202,8 +201,7 @@ static BLT_TABLE_ROWCOLUMN_CLASS columnClass = {
 
 static Tcl_InterpDeleteProc TableInterpDeleteProc;
 static void DestroyClient(Table *tablePtr);
-static void NotifyClients(Table *tablePtr, Row *rowPtr, Column *colPtr, 
-	unsigned int flags);
+static void NotifyClients(Table *tablePtr, BLT_TABLE_NOTIFY_EVENT *eventPtr);
 
 static void
 FreeRowColumn(RowColumn *rcPtr)
@@ -1602,6 +1600,22 @@ DoNotify(Table *tablePtr, BLT_TABLE_NOTIFY_EVENT *eventPtr)
     }
 }
 
+
+static BLT_TABLE_NOTIFY_EVENT *
+NotifyEvent(Table *tablePtr)
+{
+    static BLT_TABLE_NOTIFY_EVENT event;
+
+    event.type = 0;
+    event.table = tablePtr;
+    event.column = NULL;
+    event.row = NULL;
+    event.columns = NULL;
+    event.rows = NULL;
+    event.interp = tablePtr->interp;
+    return &event;
+}
+
 /*
  *---------------------------------------------------------------------------
  *
@@ -1622,31 +1636,25 @@ DoNotify(Table *tablePtr, BLT_TABLE_NOTIFY_EVENT *eventPtr)
  *---------------------------------------------------------------------------
  */
 static void
-NotifyClients(Table *tablePtr, Row *rowPtr, Column *colPtr, unsigned int flags)
+NotifyClients(Table *tablePtr, BLT_TABLE_NOTIFY_EVENT *eventPtr)
 {
     Blt_ChainLink link, next;
     
     for (link = Blt_Chain_FirstLink(tablePtr->corePtr->clients); link != NULL; 
 	 link = next) {
 	Table *clientPtr;
-	BLT_TABLE_NOTIFY_EVENT event;
 	
 	next = Blt_Chain_NextLink(link);
 	clientPtr = Blt_Chain_GetValue(link);
-	event.type = flags;
-	event.table = tablePtr;
-	event.column = colPtr;
-	event.row = rowPtr;
-	event.interp = tablePtr->interp;
-	event.self = (clientPtr == tablePtr);
-	DoNotify(clientPtr, &event);
+	eventPtr->self = (clientPtr == tablePtr);
+	DoNotify(clientPtr, eventPtr);
     }
 }
 
 /*
  *---------------------------------------------------------------------------
  *
- * TriggerColumnNotifiers --
+ * NotifyColumnChanged --
  *
  *	Traverses the list of event callbacks and checks if one matches the
  *	given event.  A client may trigger an action that causes the table
@@ -1663,24 +1671,60 @@ NotifyClients(Table *tablePtr, Row *rowPtr, Column *colPtr, unsigned int flags)
  *---------------------------------------------------------------------------
  */
 static void
-TriggerColumnNotifiers(Table *tablePtr, Column *colPtr, unsigned int flags)
+NotifyColumnChanged(Table *tablePtr, Column *colPtr, unsigned int flags)
 {
+    BLT_TABLE_NOTIFY_EVENT *eventPtr;
+
+    eventPtr = NotifyEvent(tablePtr);
+    eventPtr->type = flags | TABLE_NOTIFY_COLUMN;
     if (colPtr == NULL) {		/* Indicates to trigger notifications
 					 * for all columns. */
 	for (colPtr = blt_table_first_column(tablePtr); colPtr != NULL;
 	     colPtr = blt_table_next_column(tablePtr, colPtr)) {
-	    NotifyClients(tablePtr, NULL, colPtr, flags | TABLE_NOTIFY_COLUMN);
+	    eventPtr->column = colPtr;
+	    NotifyClients(tablePtr, eventPtr);
 	} 
     } else {
-	NotifyClients(tablePtr, NULL, colPtr, flags | TABLE_NOTIFY_COLUMN);
+	eventPtr->column = colPtr;
+	NotifyClients(tablePtr, eventPtr);
     }
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * NotifyColumnsChanged --
+ *
+ *	Traverses the list of event callbacks and checks if one matches the
+ *	given event.  A client may trigger an action that causes the table
+ *	object to notify it.  This can be prevented by setting the
+ *	TABLE_NOTIFY_FOREIGN_ONLY bit in the event handler.
+ *
+ *	If a matching handler is found, a callback may be called either
+ *	immediately or at the next idle time depending upon the
+ *	TABLE_NOTIFY_WHENIDLE bit.
+ *
+ *	Since a handler routine may trigger yet another call to itself,
+ *	callbacks are ignored while the event handler is executing.
+ *	
+ *---------------------------------------------------------------------------
+ */
+static void
+NotifyColumnsChanged(Table *tablePtr, unsigned int flags, Blt_Chain chain)
+{
+    BLT_TABLE_NOTIFY_EVENT *eventPtr;
+
+    eventPtr = NotifyEvent(tablePtr);
+    eventPtr->type = flags | TABLE_NOTIFY_COLUMN;
+    eventPtr->columns = chain;
+    NotifyClients(tablePtr, eventPtr);
 }
 
 	     
 /*
  *---------------------------------------------------------------------------
  *
- * TriggerRowNotifiers --
+ * NotifyRowChanged --
  *
  *	Traverses the list of event callbacks and checks if one matches the
  *	given event.  A client may trigger an action that causes the table
@@ -1697,17 +1741,53 @@ TriggerColumnNotifiers(Table *tablePtr, Column *colPtr, unsigned int flags)
  *---------------------------------------------------------------------------
  */
 static void
-TriggerRowNotifiers(Table *tablePtr, Row *rowPtr, unsigned int flags)
+NotifyRowChanged(Table *tablePtr, Row *rowPtr, unsigned int flags)
 {
+    BLT_TABLE_NOTIFY_EVENT *eventPtr;
+
+    eventPtr = NotifyEvent(tablePtr);
+    eventPtr->type = flags | TABLE_NOTIFY_ROW;
     if (rowPtr == TABLE_NOTIFY_ALL) {	
 	/* Trigger notifications for all rows. */
 	for (rowPtr = blt_table_first_row(tablePtr); rowPtr != NULL;
 	     rowPtr = blt_table_next_row(tablePtr, rowPtr)) {
-	    NotifyClients(tablePtr, rowPtr, NULL, flags | TABLE_NOTIFY_ROW);
+	    eventPtr->row = rowPtr;
+	    NotifyClients(tablePtr, eventPtr);
 	} 
     } else {
-	NotifyClients(tablePtr, rowPtr, NULL, flags | TABLE_NOTIFY_ROW);
+	eventPtr->row = rowPtr;
+	NotifyClients(tablePtr, eventPtr);
     }
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * NotifyRowsChanged --
+ *
+ *	Traverses the list of event callbacks and checks if one matches the
+ *	given event.  A client may trigger an action that causes the table
+ *	object to notify it.  This can be prevented by setting the
+ *	TABLE_NOTIFY_FOREIGN_ONLY bit in the event handler.
+ *
+ *	If a matching handler is found, a callback may be called either
+ *	immediately or at the next idle time depending upon the
+ *	TABLE_NOTIFY_WHENIDLE bit.
+ *
+ *	Since a handler routine may trigger yet another call to itself,
+ *	callbacks are ignored while the event handler is executing.
+ *	
+ *---------------------------------------------------------------------------
+ */
+static void
+NotifyRowsChanged(Table *tablePtr, unsigned int flags, Blt_Chain chain)
+{
+    BLT_TABLE_NOTIFY_EVENT *eventPtr;
+
+    eventPtr = NotifyEvent(tablePtr);
+    eventPtr->type = flags | TABLE_NOTIFY_ROW;
+    eventPtr->rows = chain;
+    NotifyClients(tablePtr, eventPtr);
 }
 
 /*
@@ -4874,6 +4954,27 @@ blt_table_exists(Tcl_Interp *interp, const char *name)
 }
 
 static Notifier *
+CreateNotifier(Tcl_Interp *interp, Blt_Chain chain, unsigned int mask,
+	BLT_TABLE_NOTIFY_EVENT_PROC *proc, 
+	BLT_TABLE_NOTIFIER_DELETE_PROC *deleteProc, ClientData clientData)
+{
+    Notifier *notifierPtr;
+
+    notifierPtr = Blt_AssertMalloc(sizeof (Notifier));
+    notifierPtr->proc = proc;
+    notifierPtr->deleteProc = deleteProc;
+    notifierPtr->chain = chain;
+    notifierPtr->clientData = clientData;
+    notifierPtr->column = NULL;		/* All columns. */
+    notifierPtr->row = NULL;		/* All rows. */
+    notifierPtr->tag = NULL;		/* No tag. */
+    notifierPtr->flags = mask | TABLE_NOTIFY_COLUMN | TABLE_NOTIFY_ROW;
+    notifierPtr->interp = interp;
+    notifierPtr->link = Blt_Chain_Append(chain, notifierPtr);
+    return notifierPtr;
+}
+
+static Notifier *
 CreateRowNotifier(Tcl_Interp *interp, Blt_Chain chain, unsigned int mask,
 		  Row *rowPtr, const char *tag, BLT_TABLE_NOTIFY_EVENT_PROC *proc,
 		  BLT_TABLE_NOTIFIER_DELETE_PROC *deleteProc, 
@@ -4914,6 +5015,38 @@ CreateColumnNotifier(Tcl_Interp *interp, Blt_Chain chain, unsigned int mask,
     notifierPtr->interp = interp;
     notifierPtr->link = Blt_Chain_Append(chain, notifierPtr);
     return notifierPtr;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * blt_table_create_notifier --
+ *
+ *	Creates an event handler using the following three pieces of
+ *	information: 
+ *		1. C function pointer, 
+ *		2. one-word of data passed on each call, and 
+ *		3. event mask indicating which events are of interest.  
+ *	If an event already exists matching all of the above criteria,
+ *	it is repositioned on the end of the event handler list.  This
+ *	means that it will be the last to fire.
+ *
+ * Results:
+ *      Returns a pointer to the event handler.
+ *
+ * Side Effects:
+ *	Memory for the event handler is possibly allocated.
+ *
+ *---------------------------------------------------------------------------
+ */
+BLT_TABLE_NOTIFIER
+blt_table_create_notifier(Tcl_Interp *interp, Table *tablePtr, 
+			  unsigned int mask, BLT_TABLE_NOTIFY_EVENT_PROC *proc,
+			  BLT_TABLE_NOTIFIER_DELETE_PROC *deletedProc,
+			  ClientData clientData)
+{
+    return CreateNotifier(interp, tablePtr->columnNotifiers, mask,  proc, 
+			  deletedProc, clientData);
 }
 
 /*
@@ -5177,11 +5310,18 @@ int
 blt_table_set_row_label(Tcl_Interp *interp, Table *tablePtr, Row *rowPtr, 
 			const char *label)
 {
+    BLT_TABLE_NOTIFY_EVENT event;
+	
+    event.type = TABLE_NOTIFY_RELABEL;
+    event.column = NULL;
+    event.row = rowPtr;
+    event.rows = NULL;
+    event.columns = NULL;
     if (SetHeaderLabel(interp, &tablePtr->corePtr->rows, (Header *)rowPtr,
 	label) != TCL_OK) {
 	return TCL_ERROR;
     }
-    NotifyClients(tablePtr, rowPtr, TABLE_NOTIFY_ALL, TABLE_NOTIFY_RELABEL);
+    NotifyClients(tablePtr, &event);
     return TCL_OK;
 }
 
@@ -5202,11 +5342,17 @@ int
 blt_table_set_column_label(Tcl_Interp *interp, Table *tablePtr, Column *colPtr, 
 			 const char *label)
 {
+    BLT_TABLE_NOTIFY_EVENT *eventPtr;
+
     if (SetHeaderLabel(interp, &tablePtr->corePtr->columns, (Header *)colPtr,
 	label) != TCL_OK) {
 	return TCL_ERROR;
     }
-    NotifyClients(tablePtr, TABLE_NOTIFY_ALL, colPtr, TABLE_NOTIFY_RELABEL);
+
+    eventPtr = NotifyEvent(tablePtr);
+    eventPtr->type = TABLE_NOTIFY_COLUMNS_RELABEL;
+    eventPtr->column = colPtr;
+    NotifyClients(tablePtr, eventPtr);
     return TCL_OK;
 }
 
@@ -5299,8 +5445,7 @@ blt_table_extend_rows(Tcl_Interp *interp, Table *tablePtr, size_t n, Row **rows)
 	    rows[i] = row;
 	}
     }
-    TriggerColumnNotifiers(tablePtr, TABLE_NOTIFY_ALL, 
-	TABLE_NOTIFY_ROW_CREATED);
+    NotifyColumnsChanged(tablePtr, TABLE_NOTIFY_ROWS_CREATED, chain);
     Blt_Chain_Destroy(chain);
     return TCL_OK;
 }
@@ -5310,8 +5455,8 @@ blt_table_delete_row(Table *tablePtr, Row *rowPtr)
 {
     DeleteHeader(&tablePtr->corePtr->rows, (Header *)rowPtr);
     UnsetRowValues(tablePtr, rowPtr);
-    TriggerColumnNotifiers(tablePtr, TABLE_NOTIFY_ALL,TABLE_NOTIFY_ROW_DELETED);
-    TriggerRowNotifiers(tablePtr, rowPtr, TABLE_NOTIFY_ROW_DELETED);
+    NotifyRowChanged(tablePtr, rowPtr, TABLE_NOTIFY_ROWS_DELETED);
+    NotifyColumnChanged(tablePtr, NULL, TABLE_NOTIFY_COLUMNS_DELETED);
     blt_table_clear_row_tags(tablePtr, rowPtr);
     blt_table_clear_row_traces(tablePtr, rowPtr);
     ClearRowNotifiers(tablePtr, rowPtr);
@@ -5359,7 +5504,7 @@ blt_table_move_row(Tcl_Interp *interp, Table *tablePtr, Row *srcPtr,
 		blt_table_name(tablePtr), "\"", (char *)NULL);
 	return TCL_ERROR;
     }
-    TriggerColumnNotifiers(tablePtr, TABLE_NOTIFY_ALL, TABLE_NOTIFY_ROW_MOVED);
+    NotifyColumnChanged(tablePtr, NULL, TABLE_NOTIFY_ROWS_MOVED);
     return TCL_OK;
 }
 
@@ -5367,7 +5512,7 @@ void
 blt_table_set_row_map(Table *tablePtr, Row **map)
 {
     ReplaceMap(&tablePtr->corePtr->rows, (Header **)map);
-    TriggerColumnNotifiers(tablePtr, TABLE_NOTIFY_ALL, TABLE_NOTIFY_ROW_MOVED);
+    NotifyColumnChanged(tablePtr, NULL, TABLE_NOTIFY_ROWS_MOVED);
 }
 
 void
@@ -5490,8 +5635,8 @@ blt_table_delete_column(Table *tablePtr, Column *colPtr)
 	blt_table_unset_keys(tablePtr);
     }
     UnsetColumnValues(tablePtr, colPtr);
-    TriggerColumnNotifiers(tablePtr, colPtr, TABLE_NOTIFY_COLUMN_DELETED);
-    TriggerRowNotifiers(tablePtr, TABLE_NOTIFY_ALL,TABLE_NOTIFY_COLUMN_DELETED);
+    NotifyColumnChanged(tablePtr, colPtr, TABLE_NOTIFY_COLUMNS_DELETED);
+    NotifyRowChanged(tablePtr, NULL, TABLE_NOTIFY_ROWS_DELETED);
     blt_table_clear_column_traces(tablePtr, colPtr);
     blt_table_clear_column_tags(tablePtr, colPtr);
     ClearColumnNotifiers(tablePtr, colPtr);
@@ -5545,7 +5690,7 @@ blt_table_extend_columns(Tcl_Interp *interp, BLT_TABLE table, size_t n,
 	}
 	colPtr->type = TABLE_COLUMN_TYPE_STRING;
     }
-    TriggerRowNotifiers(table, TABLE_NOTIFY_ALL, TABLE_NOTIFY_COLUMN_CREATED);
+    NotifyRowsChanged(table, TABLE_NOTIFY_COLUMNS_CREATED, chain);
     Blt_Chain_Destroy(chain);
     return TCL_OK;
 }
@@ -5570,7 +5715,7 @@ blt_table_create_column(Tcl_Interp *interp, BLT_TABLE table, const char *label)
 void
 blt_table_set_column_map(Table *tablePtr, Column **map)
 {
-    TriggerRowNotifiers(tablePtr, TABLE_NOTIFY_ALL, TABLE_NOTIFY_COLUMN_MOVED);
+    NotifyRowChanged(tablePtr, NULL, TABLE_NOTIFY_COLUMNS_MOVED);
     ReplaceMap(&tablePtr->corePtr->columns, (Header **)map);
 }
 
@@ -5597,7 +5742,7 @@ blt_table_move_column(Tcl_Interp *interp, Table *tablePtr, Column *srcPtr,
 		blt_table_name(tablePtr), "\"", (char *)NULL);
 	return TCL_ERROR;
     }
-    TriggerRowNotifiers(tablePtr, TABLE_NOTIFY_ALL, TABLE_NOTIFY_COLUMN_MOVED);
+    NotifyRowChanged(tablePtr, NULL, TABLE_NOTIFY_COLUMNS_MOVED);
     return TCL_OK;
 }
 

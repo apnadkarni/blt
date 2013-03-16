@@ -576,8 +576,14 @@ typedef struct {
 					 * generated the event. */
     int type;			        /* Indicates type of event
 					 * received. */
-    BLT_TABLE_ROW row;
-    BLT_TABLE_COLUMN column;
+    BLT_TABLE_ROW row;			/* If non-NULL, specifies the row that
+					 * has changed. */
+    BLT_TABLE_COLUMN column;		/* If non-NULL, specifies the column
+					 * that has changed. */
+    Blt_Chain columns;			/* If non-NULL, specifies multiple
+					 * columns have changed. */
+    Blt_Chain rows;			/* If non-NULL, specifies multiple
+					 * rows have changed. */
 } BLT_TABLE_NOTIFY_EVENT;
 
 typedef int (BLT_TABLE_NOTIFY_EVENT_PROC)(ClientData clientData, 
@@ -607,14 +613,14 @@ typedef struct _BLT_TABLE_NOTIFIER {
 #define TABLE_NOTIFY_RELABEL	    (1<<3)
 #define TABLE_NOTIFY_ROW	    (1<<4)
 #define TABLE_NOTIFY_COLUMN	    (1<<5)
-#define TABLE_NOTIFY_ROW_CREATED    (TABLE_NOTIFY_CREATE|TABLE_NOTIFY_ROW)
-#define TABLE_NOTIFY_ROW_DELETED    (TABLE_NOTIFY_DELETE|TABLE_NOTIFY_ROW)
-#define TABLE_NOTIFY_ROW_RELABEL    (TABLE_NOTIFY_RELABEL|TABLE_NOTIFY_ROW)
-#define TABLE_NOTIFY_ROW_MOVED      (TABLE_NOTIFY_MOVE|TABLE_NOTIFY_ROW)
-#define TABLE_NOTIFY_COLUMN_CREATED (TABLE_NOTIFY_CREATE|TABLE_NOTIFY_COLUMN)
-#define TABLE_NOTIFY_COLUMN_DELETED (TABLE_NOTIFY_DELETE|TABLE_NOTIFY_COLUMN)
-#define TABLE_NOTIFY_COLUMN_RELABEL (TABLE_NOTIFY_RELABEL|TABLE_NOTIFY_COLUMN)
-#define TABLE_NOTIFY_COLUMN_MOVED   (TABLE_NOTIFY_MOVE|TABLE_NOTIFY_COLUMN)
+#define TABLE_NOTIFY_ROWS_CREATED    (TABLE_NOTIFY_CREATE|TABLE_NOTIFY_ROW)
+#define TABLE_NOTIFY_ROWS_DELETED    (TABLE_NOTIFY_DELETE|TABLE_NOTIFY_ROW)
+#define TABLE_NOTIFY_ROWS_RELABEL    (TABLE_NOTIFY_RELABEL|TABLE_NOTIFY_ROW)
+#define TABLE_NOTIFY_ROWS_MOVED      (TABLE_NOTIFY_MOVE|TABLE_NOTIFY_ROW)
+#define TABLE_NOTIFY_COLUMNS_CREATED (TABLE_NOTIFY_CREATE|TABLE_NOTIFY_COLUMN)
+#define TABLE_NOTIFY_COLUMNS_DELETED (TABLE_NOTIFY_DELETE|TABLE_NOTIFY_COLUMN)
+#define TABLE_NOTIFY_COLUMNS_RELABEL (TABLE_NOTIFY_RELABEL|TABLE_NOTIFY_COLUMN)
+#define TABLE_NOTIFY_COLUMNS_MOVED   (TABLE_NOTIFY_MOVE|TABLE_NOTIFY_COLUMN)
 
 #define TABLE_NOTIFY_COLUMN_CHANGED \
 	(TABLE_NOTIFY_CREATE | TABLE_NOTIFY_DELETE | \
@@ -639,6 +645,12 @@ typedef struct _BLT_TABLE_NOTIFIER {
 #define TABLE_NOTIFY_DESTROYED     (1<<14)
 
 #define TABLE_NOTIFY_ALL	   (NULL)
+
+BLT_EXTERN BLT_TABLE_NOTIFIER blt_table_create_notifier(Tcl_Interp *interp, 
+	BLT_TABLE table, unsigned int mask, 
+	BLT_TABLE_NOTIFY_EVENT_PROC *proc, 
+	BLT_TABLE_NOTIFIER_DELETE_PROC *deleteProc,
+	ClientData clientData);
 
 BLT_EXTERN BLT_TABLE_NOTIFIER blt_table_create_row_notifier(Tcl_Interp *interp, 
 	BLT_TABLE table, BLT_TABLE_ROW row, unsigned int mask, 
