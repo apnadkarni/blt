@@ -927,12 +927,6 @@ NotifyIdleProc(ClientData clientData)
     if (result == TCL_ERROR) {
 	Tcl_BackgroundError(notifierPtr->interp);
     }
-    if (notifierPtr->event.rows != NULL) {
-	Blt_Chain_Destroy(notifierPtr->event.rows);
-    }
-    if (notifierPtr->event.columns != NULL) {
-	Blt_Chain_Destroy(notifierPtr->event.columns);
-    }
     Tcl_Release(notifierPtr);
 }
 
@@ -1691,37 +1685,6 @@ NotifyColumnChanged(Table *tablePtr, Column *colPtr, unsigned int flags)
 /*
  *---------------------------------------------------------------------------
  *
- * NotifyColumnsChanged --
- *
- *	Traverses the list of event callbacks and checks if one matches the
- *	given event.  A client may trigger an action that causes the table
- *	object to notify it.  This can be prevented by setting the
- *	TABLE_NOTIFY_FOREIGN_ONLY bit in the event handler.
- *
- *	If a matching handler is found, a callback may be called either
- *	immediately or at the next idle time depending upon the
- *	TABLE_NOTIFY_WHENIDLE bit.
- *
- *	Since a handler routine may trigger yet another call to itself,
- *	callbacks are ignored while the event handler is executing.
- *	
- *---------------------------------------------------------------------------
- */
-static void
-NotifyColumnsChanged(Table *tablePtr, unsigned int flags, Blt_Chain chain)
-{
-    BLT_TABLE_NOTIFY_EVENT event;
-
-    InitNotifyEvent(tablePtr, &event);
-    event.type = flags | TABLE_NOTIFY_COLUMN;
-    event.columns = chain;
-    NotifyClients(tablePtr, &event);
-}
-
-	     
-/*
- *---------------------------------------------------------------------------
- *
  * NotifyRowChanged --
  *
  *	Traverses the list of event callbacks and checks if one matches the
@@ -1756,36 +1719,6 @@ NotifyRowChanged(Table *tablePtr, Row *rowPtr, unsigned int flags)
 	event.row = rowPtr;
 	NotifyClients(tablePtr, &event);
     }
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * NotifyRowsChanged --
- *
- *	Traverses the list of event callbacks and checks if one matches the
- *	given event.  A client may trigger an action that causes the table
- *	object to notify it.  This can be prevented by setting the
- *	TABLE_NOTIFY_FOREIGN_ONLY bit in the event handler.
- *
- *	If a matching handler is found, a callback may be called either
- *	immediately or at the next idle time depending upon the
- *	TABLE_NOTIFY_WHENIDLE bit.
- *
- *	Since a handler routine may trigger yet another call to itself,
- *	callbacks are ignored while the event handler is executing.
- *	
- *---------------------------------------------------------------------------
- */
-static void
-NotifyRowsChanged(Table *tablePtr, unsigned int flags, Blt_Chain chain)
-{
-    BLT_TABLE_NOTIFY_EVENT event;
-
-    InitNotifyEvent(tablePtr, &event);
-    event.type = flags | TABLE_NOTIFY_ROW;
-    event.rows = chain;
-    NotifyClients(tablePtr, &event);
 }
 
 /*
@@ -5310,11 +5243,9 @@ blt_table_set_row_label(Tcl_Interp *interp, Table *tablePtr, Row *rowPtr,
 {
     BLT_TABLE_NOTIFY_EVENT event;
 	
+    InitNotifyEvent(tablePtr, &event);
     event.type = TABLE_NOTIFY_RELABEL;
-    event.column = NULL;
     event.row = rowPtr;
-    event.rows = NULL;
-    event.columns = NULL;
     if (SetHeaderLabel(interp, &tablePtr->corePtr->rows, (Header *)rowPtr,
 	label) != TCL_OK) {
 	return TCL_ERROR;
@@ -5444,7 +5375,7 @@ blt_table_extend_rows(Tcl_Interp *interp, Table *tablePtr, size_t n, Row **rows)
 	}
     }
     assert(Blt_Chain_GetLength(chain) > 0);
-    NotifyRowsChanged(tablePtr, TABLE_NOTIFY_ROWS_CREATED, chain);
+    NotifyRowChanged(tablePtr, NULL, TABLE_NOTIFY_ROWS_CREATED);
     return TCL_OK;
 }
 
@@ -5688,7 +5619,7 @@ blt_table_extend_columns(Tcl_Interp *interp, BLT_TABLE table, size_t n,
 	}
 	colPtr->type = TABLE_COLUMN_TYPE_STRING;
     }
-    NotifyColumnsChanged(table, TABLE_NOTIFY_COLUMNS_CREATED, columns);
+    NotifyColumnChanged(table, NULL, TABLE_NOTIFY_COLUMNS_CREATED);
     return TCL_OK;
 }
 

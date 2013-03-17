@@ -576,14 +576,10 @@ typedef struct {
 					 * generated the event. */
     int type;			        /* Indicates type of event
 					 * received. */
-    BLT_TABLE_ROW row;			/* If non-NULL, specifies the row that
-					 * has changed. */
-    BLT_TABLE_COLUMN column;		/* If non-NULL, specifies the column
-					 * that has changed. */
-    Blt_Chain columns;			/* If non-NULL, specifies multiple
-					 * columns have changed. */
-    Blt_Chain rows;			/* If non-NULL, specifies multiple
-					 * rows have changed. */
+    BLT_TABLE_ROW row;			/* If NULL, indicates all rows
+					 * have changed. */
+    BLT_TABLE_COLUMN column;		/* If NULL, indicates all columns
+					 * have changed. */
 } BLT_TABLE_NOTIFY_EVENT;
 
 typedef int (BLT_TABLE_NOTIFY_EVENT_PROC)(ClientData clientData, 

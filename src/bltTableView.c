@@ -10516,53 +10516,46 @@ AddColumns(TableView *viewPtr, BLT_TABLE_NOTIFY_EVENT *eventPtr)
     Column **columns;
     long i;
     unsigned long count, oldNumColumns, newNumColumns;
-    Blt_ChainLink link;
 
     oldNumColumns = viewPtr->numColumns;
-    newNumColumns = oldNumColumns + Blt_Chain_GetLength(eventPtr->columns);
+    newNumColumns = blt_table_num_columns(viewPtr->table);
     assert(newNumColumns > oldNumColumns);
-    columns = Blt_Realloc(viewPtr->columns, sizeof(Column *) * newNumColumns);
-    if (columns == NULL) {
-	return NULL;
-    }
-    count = oldNumColumns;
-    for (link = Blt_Chain_FirstLink(eventPtr->columns); link != NULL;
-	 link = Blt_Chain_NextLink(link)) {
+    columns = Blt_AssertMalloc(sizeof(Column *) * newNumColumns);
+    count = 0;
+    for (i = 0; i < newNumColumns; i++) {
 	Blt_HashEntry *hPtr;
 	int isNew;
 	Column *colPtr;
 	BLT_TABLE_COLUMN col;
 
-	col = Blt_Chain_GetValue(link);
-
+	col = blt_table_column(viewPtr->table, i);
 	hPtr = Blt_CreateHashEntry(&viewPtr->columnTable, (char *)col, &isNew);
-	assert(isNew);
-	colPtr = CreateColumn(viewPtr, col, hPtr);
+	if (isNew) {
+	    CellKey key;
+	    long j;
+	    
+	    colPtr = CreateColumn(viewPtr, col, hPtr);
+	    key.colPtr = colPtr;
+	    for (j = 0; j < viewPtr->numRows; j++) {
+		Cell *cellPtr;
+		Blt_HashEntry *h2Ptr;
+		int isNew;
+
+		key.colPtr = viewPtr->columns[j];
+		h2Ptr = Blt_CreateHashEntry(&viewPtr->cellTable, (char *)&key, 
+					    &isNew);
+		assert(isNew);
+		cellPtr = NewCell(viewPtr, h2Ptr);
+		Blt_SetHashValue(h2Ptr, cellPtr);
+	    }
+	} else {
+	    colPtr = Blt_GetHashValue(hPtr);
+	}
 	columns[count] = colPtr;
 	count++;
     }
     viewPtr->columns = columns;
     viewPtr->numColumns = newNumColumns;
-    assert(count == newNumColumns);
-
-    for (i = 0; i < viewPtr->numRows; i++) {
-	CellKey key;
-	long j;
-
-	key.rowPtr = viewPtr->rows[i];
-	for (j = oldNumColumns; j < newNumColumns; j++) {
-	    Cell *cellPtr;
-	    Blt_HashEntry *hPtr;
-	    int isNew;
-
-	    key.colPtr = viewPtr->columns[j];
-	    hPtr = Blt_CreateHashEntry(&viewPtr->cellTable, (char *)&key, 
-		&isNew);
-	    assert(isNew);
-	    cellPtr = NewCell(viewPtr, hPtr);
-	    Blt_SetHashValue(hPtr, cellPtr);
-	}
-    }
     viewPtr->flags |= LAYOUT_PENDING;
     EventuallyRedraw(viewPtr);
 }
@@ -10578,53 +10571,47 @@ AddRows(TableView *viewPtr, BLT_TABLE_NOTIFY_EVENT *eventPtr)
     long i;
     Row **rows;
     unsigned long count, newNumRows, oldNumRows;
-    Blt_ChainLink link;
 
     oldNumRows = viewPtr->numRows;
-    newNumRows = oldNumRows + Blt_Chain_GetLength(eventPtr->rows);
+    newNumRows = blt_table_num_rows(viewPtr->table);
     assert(newNumRows > oldNumRows);
-    rows = Blt_Realloc(viewPtr->rows, sizeof(Row *) * newNumRows);
-    if (rows == NULL) {
-	return;
-    }
+    rows = Blt_AssertMalloc(sizeof(Row *) * newNumRows);
+
     count = oldNumRows;
-    for (link = Blt_Chain_FirstLink(eventPtr->rows); link != NULL;
-	 link = Blt_Chain_NextLink(link)) {
+    for (i = 0; i < newNumRows; i++) {
 	Blt_HashEntry *hPtr;
 	int isNew;
 	Row *rowPtr;
 	BLT_TABLE_ROW row;
 
-	row = Blt_Chain_GetValue(link);
-
+	row = blt_table_row(viewPtr->table, i);
 	hPtr = Blt_CreateHashEntry(&viewPtr->rowTable, (char *)row, &isNew);
-	assert(isNew);
-	rowPtr = CreateRow(viewPtr, row, hPtr);
+	if (isNew) {
+	    CellKey key;
+	    long j;
+	    
+	    rowPtr = CreateRow(viewPtr, row, hPtr);
+	    key.rowPtr = rowPtr;
+	    for (j = 0; j < viewPtr->numColumns; j++) {
+		Cell *cellPtr;
+		Blt_HashEntry *h2Ptr;
+		int isNew;
+
+		key.colPtr = viewPtr->columns[j];
+		h2Ptr = Blt_CreateHashEntry(&viewPtr->cellTable, (char *)&key, 
+			&isNew);
+		assert(isNew);
+		cellPtr = NewCell(viewPtr, h2Ptr);
+		Blt_SetHashValue(h2Ptr, cellPtr);
+	    }
+	} else {
+	    rowPtr = Blt_GetHashValue(hPtr);
+	}
 	rows[count] = rowPtr;
 	count++;
     }
     viewPtr->rows = rows;
     viewPtr->numRows = newNumRows;
-    assert(count == newNumRows);
-
-    for (i = 0; i < viewPtr->numColumns; i++) {
-	CellKey key;
-	long j;
-
-	key.colPtr = viewPtr->columns[i];
-	for (j = oldNumRows; j < newNumRows; j++) {
-	    Cell *cellPtr;
-	    Blt_HashEntry *hPtr;
-	    int isNew;
-
-	    key.rowPtr = viewPtr->rows[j];
-	    hPtr = Blt_CreateHashEntry(&viewPtr->cellTable, (char *)&key, 
-		&isNew);
-	    assert(isNew);
-	    cellPtr = NewCell(viewPtr, hPtr);
-	    Blt_SetHashValue(hPtr, cellPtr);
-	}
-    }
     viewPtr->flags |= LAYOUT_PENDING;
     EventuallyRedraw(viewPtr);
 }
@@ -10636,7 +10623,7 @@ AttachTable(Tcl_Interp *interp, TableView *viewPtr)
 
     ResetTableView(viewPtr);
     viewPtr->notifier = blt_table_create_notifier(interp, 
-						  viewPtr->table, TABLE_NOTIFY_ALL_EVENTS /*| TABLE_NOTIFY_WHENIDLE*/, 
+	viewPtr->table, TABLE_NOTIFY_ALL_EVENTS | TABLE_NOTIFY_WHENIDLE, 
 	TableEventProc, NULL, viewPtr);
 
     viewPtr->numRows = viewPtr->numColumns = 0;
