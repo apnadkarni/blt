@@ -753,7 +753,7 @@ TableNotifyProc(ClientData clientData, BLT_TABLE_NOTIFY_EVENT *eventPtr)
     Mesh *meshPtr;
 
     meshPtr = srcPtr->clientData;
-    if (eventPtr->type == TABLE_NOTIFY_COLUMN_DELETED) {
+    if (eventPtr->type == TABLE_NOTIFY_COLUMNS_DELETED) {
 	DestroyDataSource(srcPtr);
 	if (meshPtr->x == srcPtr) {
 	    meshPtr->x = NULL;

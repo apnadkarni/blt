@@ -3572,11 +3572,11 @@ TableEventProc(ClientData clientData, BLT_TABLE_NOTIFY_EVENT *eventPtr)
     TableView *viewPtr = clientData; 
 
    if (eventPtr->type & (TABLE_NOTIFY_DELETE|TABLE_NOTIFY_CREATE)) {
-       if (eventPtr->type & TABLE_NOTIFY_ROWS_CREATED) {
+       if (eventPtr->type == TABLE_NOTIFY_ROWS_CREATED) {
 	   if (viewPtr->flags & AUTO_ROWS) {
 	       AddRows(viewPtr, eventPtr);
 	   }
-       } else if (eventPtr->type & TABLE_NOTIFY_COLUMNS_CREATED) {
+       } else if (eventPtr->type == TABLE_NOTIFY_COLUMNS_CREATED) {
 	   if (viewPtr->flags & AUTO_COLUMNS) {
 	       AddColumns(viewPtr, eventPtr);
 	   }
@@ -10519,10 +10519,13 @@ AddColumns(TableView *viewPtr, BLT_TABLE_NOTIFY_EVENT *eventPtr)
     Blt_ChainLink link;
 
     oldNumColumns = viewPtr->numColumns;
-    newNumColumns = blt_table_num_columns(viewPtr->table);
-    columns = Blt_AssertMalloc(sizeof(Column *) * newNumColumns);
-
-    count = viewPtr->numColumns;
+    newNumColumns = oldNumColumns + Blt_Chain_GetLength(eventPtr->columns);
+    assert(newNumColumns > oldNumColumns);
+    columns = Blt_Realloc(viewPtr->columns, sizeof(Column *) * newNumColumns);
+    if (columns == NULL) {
+	return NULL;
+    }
+    count = oldNumColumns;
     for (link = Blt_Chain_FirstLink(eventPtr->columns); link != NULL;
 	 link = Blt_Chain_NextLink(link)) {
 	Blt_HashEntry *hPtr;
@@ -10538,11 +10541,9 @@ AddColumns(TableView *viewPtr, BLT_TABLE_NOTIFY_EVENT *eventPtr)
 	columns[count] = colPtr;
 	count++;
     }
-    if (viewPtr->columns != NULL) {
-	Blt_Free(viewPtr->columns);
-    }
     viewPtr->columns = columns;
     viewPtr->numColumns = newNumColumns;
+    assert(count == newNumColumns);
 
     for (i = 0; i < viewPtr->numRows; i++) {
 	CellKey key;
@@ -10580,10 +10581,13 @@ AddRows(TableView *viewPtr, BLT_TABLE_NOTIFY_EVENT *eventPtr)
     Blt_ChainLink link;
 
     oldNumRows = viewPtr->numRows;
-    newNumRows = blt_table_num_columns(viewPtr->table);
-    rows = Blt_AssertMalloc(sizeof(Row *) * newNumRows);
-
-    count = viewPtr->numRows;
+    newNumRows = oldNumRows + Blt_Chain_GetLength(eventPtr->rows);
+    assert(newNumRows > oldNumRows);
+    rows = Blt_Realloc(viewPtr->rows, sizeof(Row *) * newNumRows);
+    if (rows == NULL) {
+	return;
+    }
+    count = oldNumRows;
     for (link = Blt_Chain_FirstLink(eventPtr->rows); link != NULL;
 	 link = Blt_Chain_NextLink(link)) {
 	Blt_HashEntry *hPtr;
@@ -10599,11 +10603,9 @@ AddRows(TableView *viewPtr, BLT_TABLE_NOTIFY_EVENT *eventPtr)
 	rows[count] = rowPtr;
 	count++;
     }
-    if (viewPtr->rows != NULL) {
-	Blt_Free(viewPtr->rows);
-    }
     viewPtr->rows = rows;
     viewPtr->numRows = newNumRows;
+    assert(count == newNumRows);
 
     for (i = 0; i < viewPtr->numColumns; i++) {
 	CellKey key;
@@ -10634,7 +10636,7 @@ AttachTable(Tcl_Interp *interp, TableView *viewPtr)
 
     ResetTableView(viewPtr);
     viewPtr->notifier = blt_table_create_notifier(interp, 
-	viewPtr->table, TABLE_NOTIFY_ALL_EVENTS | TABLE_NOTIFY_WHENIDLE, 
+						  viewPtr->table, TABLE_NOTIFY_ALL_EVENTS /*| TABLE_NOTIFY_WHENIDLE*/, 
 	TableEventProc, NULL, viewPtr);
 
     viewPtr->numRows = viewPtr->numColumns = 0;

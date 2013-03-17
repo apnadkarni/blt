@@ -392,7 +392,7 @@ TableNotifyProc(ClientData clientData, BLT_TABLE_NOTIFY_EVENT *eventPtr)
 
     elemPtr = valuesPtr->elemPtr;
     graphPtr = elemPtr->obj.graphPtr;
-    if ((eventPtr->type == TABLE_NOTIFY_COLUMN_DELETED) || 
+    if ((eventPtr->type == TABLE_NOTIFY_COLUMNS_DELETED) || 
 	(FetchTableValues(graphPtr->interp, valuesPtr, 
 		eventPtr->column)) != TCL_OK) {
 	FreeTableSource(valuesPtr);

@@ -922,11 +922,16 @@ NotifyIdleProc(ClientData clientData)
     /* Protect the notifier in case it's deleted by the callback. */
     Tcl_Preserve(notifierPtr);
     notifierPtr->flags |= TABLE_NOTIFY_ACTIVE;
- fprintf(stderr, "calling notifierProc\n");
     result = (*notifierPtr->proc)(notifierPtr->clientData, &notifierPtr->event);
     notifierPtr->flags &= ~TABLE_NOTIFY_ACTIVE;
     if (result == TCL_ERROR) {
 	Tcl_BackgroundError(notifierPtr->interp);
+    }
+    if (notifierPtr->event.rows != NULL) {
+	Blt_Chain_Destroy(notifierPtr->event.rows);
+    }
+    if (notifierPtr->event.columns != NULL) {
+	Blt_Chain_Destroy(notifierPtr->event.columns);
     }
     Tcl_Release(notifierPtr);
 }
@@ -1601,19 +1606,12 @@ DoNotify(Table *tablePtr, BLT_TABLE_NOTIFY_EVENT *eventPtr)
 }
 
 
-static BLT_TABLE_NOTIFY_EVENT *
-NotifyEvent(Table *tablePtr)
+static void
+InitNotifyEvent(Table *tablePtr, BLT_TABLE_NOTIFY_EVENT *eventPtr)
 {
-    static BLT_TABLE_NOTIFY_EVENT event;
-
-    event.type = 0;
-    event.table = tablePtr;
-    event.column = NULL;
-    event.row = NULL;
-    event.columns = NULL;
-    event.rows = NULL;
-    event.interp = tablePtr->interp;
-    return &event;
+    memset(eventPtr, 0, sizeof(BLT_TABLE_NOTIFY_EVENT));
+    eventPtr->table = tablePtr;
+    eventPtr->interp = tablePtr->interp;
 }
 
 /*
@@ -1673,20 +1671,20 @@ NotifyClients(Table *tablePtr, BLT_TABLE_NOTIFY_EVENT *eventPtr)
 static void
 NotifyColumnChanged(Table *tablePtr, Column *colPtr, unsigned int flags)
 {
-    BLT_TABLE_NOTIFY_EVENT *eventPtr;
+    BLT_TABLE_NOTIFY_EVENT event;
 
-    eventPtr = NotifyEvent(tablePtr);
-    eventPtr->type = flags | TABLE_NOTIFY_COLUMN;
+    InitNotifyEvent(tablePtr, &event);
+    event.type = flags | TABLE_NOTIFY_COLUMN;
     if (colPtr == NULL) {		/* Indicates to trigger notifications
 					 * for all columns. */
 	for (colPtr = blt_table_first_column(tablePtr); colPtr != NULL;
 	     colPtr = blt_table_next_column(tablePtr, colPtr)) {
-	    eventPtr->column = colPtr;
-	    NotifyClients(tablePtr, eventPtr);
+	    event.column = colPtr;
+	    NotifyClients(tablePtr, &event);
 	} 
     } else {
-	eventPtr->column = colPtr;
-	NotifyClients(tablePtr, eventPtr);
+	event.column = colPtr;
+	NotifyClients(tablePtr, &event);
     }
 }
 
@@ -1712,12 +1710,12 @@ NotifyColumnChanged(Table *tablePtr, Column *colPtr, unsigned int flags)
 static void
 NotifyColumnsChanged(Table *tablePtr, unsigned int flags, Blt_Chain chain)
 {
-    BLT_TABLE_NOTIFY_EVENT *eventPtr;
+    BLT_TABLE_NOTIFY_EVENT event;
 
-    eventPtr = NotifyEvent(tablePtr);
-    eventPtr->type = flags | TABLE_NOTIFY_COLUMN;
-    eventPtr->columns = chain;
-    NotifyClients(tablePtr, eventPtr);
+    InitNotifyEvent(tablePtr, &event);
+    event.type = flags | TABLE_NOTIFY_COLUMN;
+    event.columns = chain;
+    NotifyClients(tablePtr, &event);
 }
 
 	     
@@ -1743,20 +1741,20 @@ NotifyColumnsChanged(Table *tablePtr, unsigned int flags, Blt_Chain chain)
 static void
 NotifyRowChanged(Table *tablePtr, Row *rowPtr, unsigned int flags)
 {
-    BLT_TABLE_NOTIFY_EVENT *eventPtr;
+    BLT_TABLE_NOTIFY_EVENT event;
 
-    eventPtr = NotifyEvent(tablePtr);
-    eventPtr->type = flags | TABLE_NOTIFY_ROW;
+    InitNotifyEvent(tablePtr, &event);
+    event.type = flags | TABLE_NOTIFY_ROW;
     if (rowPtr == TABLE_NOTIFY_ALL) {	
 	/* Trigger notifications for all rows. */
 	for (rowPtr = blt_table_first_row(tablePtr); rowPtr != NULL;
 	     rowPtr = blt_table_next_row(tablePtr, rowPtr)) {
-	    eventPtr->row = rowPtr;
-	    NotifyClients(tablePtr, eventPtr);
+	    event.row = rowPtr;
+	    NotifyClients(tablePtr, &event);
 	} 
     } else {
-	eventPtr->row = rowPtr;
-	NotifyClients(tablePtr, eventPtr);
+	event.row = rowPtr;
+	NotifyClients(tablePtr, &event);
     }
 }
 
@@ -1782,12 +1780,12 @@ NotifyRowChanged(Table *tablePtr, Row *rowPtr, unsigned int flags)
 static void
 NotifyRowsChanged(Table *tablePtr, unsigned int flags, Blt_Chain chain)
 {
-    BLT_TABLE_NOTIFY_EVENT *eventPtr;
+    BLT_TABLE_NOTIFY_EVENT event;
 
-    eventPtr = NotifyEvent(tablePtr);
-    eventPtr->type = flags | TABLE_NOTIFY_ROW;
-    eventPtr->rows = chain;
-    NotifyClients(tablePtr, eventPtr);
+    InitNotifyEvent(tablePtr, &event);
+    event.type = flags | TABLE_NOTIFY_ROW;
+    event.rows = chain;
+    NotifyClients(tablePtr, &event);
 }
 
 /*
@@ -5342,17 +5340,17 @@ int
 blt_table_set_column_label(Tcl_Interp *interp, Table *tablePtr, Column *colPtr, 
 			 const char *label)
 {
-    BLT_TABLE_NOTIFY_EVENT *eventPtr;
+    BLT_TABLE_NOTIFY_EVENT event;
 
     if (SetHeaderLabel(interp, &tablePtr->corePtr->columns, (Header *)colPtr,
 	label) != TCL_OK) {
 	return TCL_ERROR;
     }
 
-    eventPtr = NotifyEvent(tablePtr);
-    eventPtr->type = TABLE_NOTIFY_COLUMNS_RELABEL;
-    eventPtr->column = colPtr;
-    NotifyClients(tablePtr, eventPtr);
+    InitNotifyEvent(tablePtr, &event);
+    event.type = TABLE_NOTIFY_COLUMNS_RELABEL;
+    event.column = colPtr;
+    NotifyClients(tablePtr, &event);
     return TCL_OK;
 }
 
@@ -5445,8 +5443,8 @@ blt_table_extend_rows(Tcl_Interp *interp, Table *tablePtr, size_t n, Row **rows)
 	    rows[i] = row;
 	}
     }
-    NotifyColumnsChanged(tablePtr, TABLE_NOTIFY_ROWS_CREATED, chain);
-    Blt_Chain_Destroy(chain);
+    assert(Blt_Chain_GetLength(chain) > 0);
+    NotifyRowsChanged(tablePtr, TABLE_NOTIFY_ROWS_CREATED, chain);
     return TCL_OK;
 }
 
@@ -5504,7 +5502,7 @@ blt_table_move_row(Tcl_Interp *interp, Table *tablePtr, Row *srcPtr,
 		blt_table_name(tablePtr), "\"", (char *)NULL);
 	return TCL_ERROR;
     }
-    NotifyColumnChanged(tablePtr, NULL, TABLE_NOTIFY_ROWS_MOVED);
+    NotifyRowChanged(tablePtr, NULL, TABLE_NOTIFY_ROWS_MOVED);
     return TCL_OK;
 }
 
@@ -5512,7 +5510,7 @@ void
 blt_table_set_row_map(Table *tablePtr, Row **map)
 {
     ReplaceMap(&tablePtr->corePtr->rows, (Header **)map);
-    NotifyColumnChanged(tablePtr, NULL, TABLE_NOTIFY_ROWS_MOVED);
+    NotifyRowChanged(tablePtr, NULL, TABLE_NOTIFY_ROWS_MOVED);
 }
 
 void
@@ -5668,19 +5666,19 @@ blt_table_extend_columns(Tcl_Interp *interp, BLT_TABLE table, size_t n,
 			Column **cols)
 {
     size_t i;
-    Blt_Chain chain;
+    Blt_Chain columns;
     Blt_ChainLink link;
 
-    chain = Blt_Chain_Create();
-    if (!ExtendColumns(table, n, chain)) {
+    columns = Blt_Chain_Create();
+    if (!ExtendColumns(table, n, columns)) {
 	if (interp != NULL) {
 	    Tcl_AppendResult(interp, "can't extend table by ", 
 		Blt_Ltoa(n), " columns: out of memory.", (char *)NULL);
 	}
-	Blt_Chain_Destroy(chain);
+	Blt_Chain_Destroy(columns);
 	return TCL_ERROR;
     }
-    for (i = 0, link = Blt_Chain_FirstLink(chain); link != NULL; 
+    for (i = 0, link = Blt_Chain_FirstLink(columns); link != NULL; 
 	 link = Blt_Chain_NextLink(link), i++) {
 	Column *colPtr;
 
@@ -5690,8 +5688,7 @@ blt_table_extend_columns(Tcl_Interp *interp, BLT_TABLE table, size_t n,
 	}
 	colPtr->type = TABLE_COLUMN_TYPE_STRING;
     }
-    NotifyRowsChanged(table, TABLE_NOTIFY_COLUMNS_CREATED, chain);
-    Blt_Chain_Destroy(chain);
+    NotifyColumnsChanged(table, TABLE_NOTIFY_COLUMNS_CREATED, columns);
     return TCL_OK;
 }
 
@@ -5715,7 +5712,7 @@ blt_table_create_column(Tcl_Interp *interp, BLT_TABLE table, const char *label)
 void
 blt_table_set_column_map(Table *tablePtr, Column **map)
 {
-    NotifyRowChanged(tablePtr, NULL, TABLE_NOTIFY_COLUMNS_MOVED);
+    NotifyColumnChanged(tablePtr, NULL, TABLE_NOTIFY_COLUMNS_MOVED);
     ReplaceMap(&tablePtr->corePtr->columns, (Header **)map);
 }
 
@@ -5742,7 +5739,7 @@ blt_table_move_column(Tcl_Interp *interp, Table *tablePtr, Column *srcPtr,
 		blt_table_name(tablePtr), "\"", (char *)NULL);
 	return TCL_ERROR;
     }
-    NotifyRowChanged(tablePtr, NULL, TABLE_NOTIFY_COLUMNS_MOVED);
+    NotifyColumnChanged(tablePtr, NULL, TABLE_NOTIFY_COLUMNS_MOVED);
     return TCL_OK;
 }
 
