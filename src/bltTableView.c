@@ -46,6 +46,16 @@
  *	o -justify period (1.23), comma (1,23), space (1.23 ev)
  *	o color icons for resize cursors
  */
+/*
+ * Known Bugs:
+ *	o Row and column titles sometimes get drawn in the wrong location.
+ *	o Don't handle hidden rows and columns in ComputeVisibility.
+ *	o Too slow loading.  
+ *	o Should be told what rows and columns are being added instead
+ *	  of checking. Make that work with -whenidle.
+ *	o Overallocate row and column arrays so that you don't have to
+ *	  keep allocating a new array everytime.
+ */
 #define BUILD_BLT_TK_PROCS 1
 #include "bltInt.h"
 
@@ -56,7 +66,7 @@
 #endif	/* HAVE_CTYPE_H */
 
 #ifdef HAVE_STDLIB_H
-#  include <stdlib.h>
+#  include <stdlib.h> 
 #endif /* HAVE_STDLIB_H */
 
 #ifdef HAVE_STRING_H
@@ -2231,7 +2241,7 @@ RowTraceProc(ClientData clientData, BLT_TABLE_TRACE_EVENT *eventPtr)
 	viewPtr = rowPtr->viewPtr;
 	rowPtr->flags |= GEOMETRY;
 	viewPtr->flags |= GEOMETRY;
-	EventuallyRedraw(viewPtr);
+	/*EventuallyRedraw(viewPtr);*/
     }
     return TCL_OK;
 }
@@ -2258,7 +2268,7 @@ ColumnTraceProc(ClientData clientData, BLT_TABLE_TRACE_EVENT *eventPtr)
 	viewPtr = colPtr->viewPtr;
         colPtr->flags |= GEOMETRY;
 	viewPtr->flags |= GEOMETRY;
-	EventuallyRedraw(viewPtr);
+	/*EventuallyRedraw(viewPtr);*/
     }
     return TCL_OK;
 }
@@ -2633,6 +2643,7 @@ NearestColumn(TableView *viewPtr, int x, int selectOne)
      */
     x = WORLDX(viewPtr, x);
     lastPtr = NULL;			/* Suppress compiler warning. */
+    /* FIXME: This can be a binary search. */
     for (i = 0; i < viewPtr->numVisibleColumns; i++) {
 	Column *colPtr;
 
@@ -2858,6 +2869,7 @@ NearestRow(TableView *viewPtr, int y, int selectOne)
      * coordinates, convert Y-coordinate from screen to world coordinates too.
      */
     y = WORLDY(viewPtr, y);
+    /* FIXME: This can be a binary search. */
     for (i = 0; i < viewPtr->numVisibleRows; i++) {
 	Row *rowPtr;
 
@@ -10590,8 +10602,8 @@ AddColumns(TableView *viewPtr, BLT_TABLE_NOTIFY_EVENT *eventPtr)
     }
     viewPtr->columns = columns;
     viewPtr->numColumns = newNumColumns;
-    viewPtr->flags |= LAYOUT_PENDING | VISIBILITY;
-    EventuallyRedraw(viewPtr);
+    viewPtr->flags |= LAYOUT_PENDING;
+    /*EventuallyRedraw(viewPtr);*/
 }
 
 static void
@@ -10647,7 +10659,7 @@ AddRows(TableView *viewPtr, BLT_TABLE_NOTIFY_EVENT *eventPtr)
     viewPtr->rows = rows;
     viewPtr->numRows = newNumRows;
     viewPtr->flags |= LAYOUT_PENDING;
-    EventuallyRedraw(viewPtr);
+    /*EventuallyRedraw(viewPtr);*/
 }
 
 static int
