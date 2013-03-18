@@ -132,6 +132,7 @@
 #define DEF_GAP				"3"
 #define DEF_ICON			(char *)NULL
 #define DEF_IMAGEBOX_ACTIVE_RELIEF	"flat"
+#define DEF_IMAGEBOX_BORDERWIDTH	"1"
 #define DEF_IMAGEBOX_COMMAND		(char *)NULL
 #define DEF_IMAGEBOX_CURSOR		(char *)NULL
 #define DEF_IMAGEBOX_FONT		STD_FONT_SMALL
@@ -146,6 +147,7 @@
 #define DEF_SELECT_BG			STD_SELECT_BACKGROUND
 #define DEF_SELECT_FG			STD_SELECT_FOREGROUND
 #define DEF_TEXTBOX_ACTIVE_RELIEF	"flat"
+#define DEF_TEXTBOX_BORDERWIDTH		"1"
 #define DEF_TEXTBOX_COMMAND		(char *)NULL
 #define DEF_TEXTBOX_CURSOR		(char *)NULL
 #define DEF_TEXTBOX_EDIT		"0"
@@ -587,7 +589,13 @@ static Blt_ConfigSpec textBoxStyleSpecs[] =
 	BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_BACKGROUND, "-background", "background", "Background",
         DEF_NORMAL_BG, Blt_Offset(TextBoxStyle, normalBg), 0},
-    {BLT_CONFIG_SYNONYM, "-bg", "background", (char *)NULL, (char *)NULL, 0, 0},
+    {BLT_CONFIG_SYNONYM, "-bd", "borderWidth", (char *)NULL, (char *)NULL, 
+	0, 0},
+    {BLT_CONFIG_SYNONYM, "-bg", "background", (char *)NULL, (char *)NULL, 
+	0, 0},
+    {BLT_CONFIG_PIXELS_NNEG, "-borderwidth", "borderWidth", "BorderWidth",
+	DEF_TEXTBOX_BORDERWIDTH, Blt_Offset(TextBoxStyle, borderWidth),
+	BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_CURSOR, "-cursor", "cursor", "Cursor", DEF_TEXTBOX_CURSOR, 
 	Blt_Offset(TextBoxStyle, cursor), 0},
     {BLT_CONFIG_BACKGROUND, "-disabledbackground", "disabledBackground",
@@ -657,6 +665,8 @@ static Blt_ConfigSpec checkBoxStyleSpecs[] =
 	BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_BACKGROUND, "-background", "background", "Background",
         DEF_NORMAL_BG, Blt_Offset(CheckBoxStyle, normalBg), 0},
+    {BLT_CONFIG_SYNONYM, "-bd", "borderWidth", (char *)NULL, (char *)NULL, 
+	0, 0},
     {BLT_CONFIG_SYNONYM, "-bg", "background", (char *)NULL, (char *)NULL, 
 	0, 0},
     {BLT_CONFIG_PIXELS_NNEG, "-borderwidth", "borderWidth", "BorderWidth",
@@ -848,7 +858,13 @@ static Blt_ConfigSpec imageBoxStyleSpecs[] =
 	BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_BACKGROUND, "-background", "background", "Background",
 	DEF_NORMAL_BG, Blt_Offset(ImageBoxStyle, normalBg), 0},
-    {BLT_CONFIG_SYNONYM, "-bg", "background", (char *)NULL, (char *)NULL, 0, 0},
+    {BLT_CONFIG_SYNONYM, "-bd", "borderWidth", (char *)NULL, (char *)NULL, 
+	0, 0},
+    {BLT_CONFIG_SYNONYM, "-bg", "background", (char *)NULL, (char *)NULL, 
+	0, 0},
+    {BLT_CONFIG_PIXELS_NNEG, "-borderwidth", "borderWidth", "BorderWidth",
+	DEF_IMAGEBOX_BORDERWIDTH, Blt_Offset(ImageBoxStyle, borderWidth),
+	BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_OBJ, "-command", "command", "Command", DEF_IMAGEBOX_COMMAND, 
 	Blt_Offset(ImageBoxStyle, cmdObjPtr), 0},
     {BLT_CONFIG_CURSOR, "-cursor", "cursor", "Cursor", DEF_IMAGEBOX_CURSOR, 
@@ -1824,6 +1840,7 @@ NewTextBoxStyle(TableView *viewPtr, Blt_HashEntry *hPtr)
     stylePtr->hashPtr = hPtr;
     stylePtr->flags = 0;
     stylePtr->refCount = 1;
+    stylePtr->borderWidth = 1;
     Blt_SetHashValue(hPtr, stylePtr);
     Blt_InitHashTable(&stylePtr->table, sizeof(CellKey)/sizeof(int));
     return (CellStyle *)stylePtr;

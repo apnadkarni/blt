@@ -757,8 +757,8 @@ struct _TableView {
     short int colTitleWidth, colTitleHeight;
     short int colFilterHeight;
     int width, height;
-    int worldWidth, worldHeight;	/* Dimensions of world view. */
-    int xOffset, yOffset;		/* Translation between view port and
+    long worldWidth, worldHeight;	/* Dimensions of world view. */
+    long xOffset, yOffset;		/* Translation between view port and
 					 * world origin. */
     Blt_Pool cellPool;			/* Memory pool for cells. */ 
     Blt_Pool rowPool;			/* Memory pool for row headers. */

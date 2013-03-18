@@ -2552,12 +2552,16 @@ GetNextColumn(Column *colPtr)
     TableView *viewPtr = colPtr->viewPtr;
     long i;
 
-    for (i = colPtr->index + 1; i < colPtr->viewPtr->numColumns; i++) {
+    fprintf(stderr, "current column is %d of %d,%d\n", colPtr->index, 
+	    viewPtr->numColumns, blt_table_num_columns(viewPtr->table));
+    for (i = colPtr->index + 1; i < viewPtr->numColumns; i++) {
 	colPtr = viewPtr->columns[i];
 	if ((colPtr->flags & (HIDDEN|DISABLED)) == 0) {
+	    fprintf(stderr, "next column is %d\n", colPtr->index);
 	    return colPtr;
 	}
     }
+    fprintf(stderr, "no next column\n");
     return NULL;
 }
 
@@ -10168,11 +10172,10 @@ LayoutTableView(TableView *viewPtr)
 	if (rowPtr->reqHeight > 0) {
 	    rowPtr->height = rowPtr->reqHeight;
 	}
-	if (rowPtr->flags & HIDDEN) {
-	    continue;			/* Ignore hidden rows. */
-	}
 	rowPtr->worldY = y;
-	y += rowPtr->height;
+	if ((rowPtr->flags & HIDDEN) == 0) {
+	    y += rowPtr->height;
+	}
     }
     viewPtr->worldHeight = y;
 #ifdef notdef
@@ -10188,9 +10191,7 @@ LayoutTableView(TableView *viewPtr)
 	colPtr->flags &= ~GEOMETRY; 	/* Always remove the geometry flag. */
 	colPtr->index = i;		/* Reset the index. */
 	colPtr->width = 0;
-	if (colPtr->flags & HIDDEN) {
-	    continue;			/* Ignore hidden columns. */
-	}
+	colPtr->worldX = x;
 	if (colPtr->reqWidth > 0) {
 	    colPtr->width = colPtr->reqWidth;
 	} else {
@@ -10208,9 +10209,12 @@ LayoutTableView(TableView *viewPtr)
 		colPtr->width = colPtr->reqMax;
 	    }
 	}
-	colPtr->worldX = x;
-	x += colPtr->width;
+	if ((colPtr->flags & HIDDEN) == 0) {
+	    x += colPtr->width;
+	}
     }
+    fprintf(stderr, "Layout: worldWidth=%d numColumns=%d xOffset=%d\n",
+	    viewPtr->worldWidth, viewPtr->numColumns, viewPtr->xOffset);
     viewPtr->worldWidth = x;
     if (viewPtr->worldWidth < VPORTWIDTH(viewPtr)) {
 	AdjustColumns(viewPtr);
@@ -10235,7 +10239,7 @@ LayoutTableView(TableView *viewPtr)
 static void
 ComputeVisibleEntries(TableView *viewPtr)
 {
-    long i;
+    long i, low, high;
     long first, last;
     unsigned int  viewWidth, viewHeight;
     unsigned long numVisibleRows, numVisibleColumns; 
@@ -10247,7 +10251,9 @@ ComputeVisibleEntries(TableView *viewPtr)
     yOffset = Blt_AdjustViewport(viewPtr->yOffset, 
 	viewPtr->worldHeight, VPORTHEIGHT(viewPtr), viewPtr->yScrollUnits, 
 	viewPtr->scrollMode);
-
+    if ((viewPtr->numRows == 0) || (viewPtr->numColumns == 0)) {
+	return;
+    }
     if ((xOffset != viewPtr->xOffset) || (yOffset != viewPtr->yOffset)) {
 	viewPtr->yOffset = yOffset;
 	viewPtr->xOffset = xOffset;
@@ -10257,25 +10263,37 @@ ComputeVisibleEntries(TableView *viewPtr)
 
     first = last = -1;
     numVisibleRows = 0;
-    /* Find the first and last visible rows. */
-    for (i = 0; i < viewPtr->numRows; i++) {
+
+    /* FIXME: Handle hidden rows. */
+    /* Find the row that contains the start of the viewport.  */
+    low = 0; high = viewPtr->numRows - 1;
+    while (low <= high) {
+	long mid;
+	Row *rowPtr;
+
+	mid = (low + high) >> 1;
+	rowPtr = viewPtr->rows[mid];
+	if (viewPtr->yOffset >
+	    (rowPtr->worldY + rowPtr->height + rowPtr->ruleHeight)) {
+	    low = mid + 1;
+	} else if (viewPtr->yOffset < rowPtr->worldY) {
+	    high = mid - 1;
+	} else {
+	    first = mid;
+	    break;
+	}
+    }
+    /* Now look for the last row in the viewport. */
+    for (i = first; i < viewPtr->numRows; i++) {
 	Row *rowPtr;
 
 	rowPtr = viewPtr->rows[i];
 	if (rowPtr->flags & HIDDEN) {
-	    continue;			/* Ignore hidden rows. */
-	}
-	if ((rowPtr->worldY + rowPtr->height + rowPtr->ruleHeight) <= 
-	    viewPtr->yOffset) {
-	    continue;			/* Row ends before the start of the
-					 * viewport. */
+	    continue;
 	}
 	if (rowPtr->worldY >= (viewPtr->yOffset + viewHeight)) {
 	    break;			/* Row starts after the end of the
 					 * viewport. */
-	}
-	if (first == -1) {
-	    first = i;			/* This is the first visible row. */
 	}
 	last = i + 1;
 	numVisibleRows++;
@@ -10301,24 +10319,37 @@ ComputeVisibleEntries(TableView *viewPtr)
     assert(viewPtr->numVisibleRows == numVisibleRows);
     numVisibleColumns = 0;
     first = last = -1;
-    for (i = 0; i < viewPtr->numColumns; i++) {
+    
+    /* FIXME: Handle hidden columns. */
+    /* Find the column that contains the start of the viewport.  */
+    low = 0; high = viewPtr->numColumns - 1;
+    while (low <= high) {
+	long mid;
+	Column *colPtr;
+
+	mid = (low + high) >> 1;
+	colPtr = viewPtr->columns[mid];
+	if (viewPtr->xOffset >
+	    (colPtr->worldX + colPtr->width + colPtr->ruleWidth)) {
+	    low = mid + 1;
+	} else if (viewPtr->xOffset < colPtr->worldX) {
+	    high = mid - 1;
+	} else {
+	    first = mid;
+	    break;
+	}
+    }
+    /* Now look for the last column in the viewport. */
+    for (i = first; i < viewPtr->numColumns; i++) {
 	Column *colPtr;
 
 	colPtr = viewPtr->columns[i];
 	if (colPtr->flags & HIDDEN) {
-	    continue;			/* Ignore hidden columns. */
-	}
-	if ((colPtr->worldX + colPtr->width + colPtr->ruleWidth) <=
-	    viewPtr->xOffset) {
-	    continue;			/* Column ends before the start of the
-					 * viewport. */
+	    continue;
 	}
 	if ((colPtr->worldX) >= (viewPtr->xOffset + viewWidth)) {
 	    break;			/* Column starts after the end of the
 					 * viewport. */
-	}
-	if (first == -1) {
-	    first = i;			/* This is the first visible column. */
 	}
 	last = i + 1;
 	numVisibleColumns++;
@@ -10341,6 +10372,9 @@ ComputeVisibleEntries(TableView *viewPtr)
 	    numVisibleColumns++;
 	}
     }
+    fprintf(stderr, "columns visible first=%d last=%d visible=%d total=%d offset=%d worldWidth=%d\n",
+	    first, last, viewPtr->numVisibleColumns, viewPtr->numColumns,
+	    viewPtr->xOffset,viewPtr->worldWidth);
     assert(viewPtr->numVisibleColumns == numVisibleColumns);
     Blt_PickCurrentItem(viewPtr->bindTable);
     viewPtr->flags |= SCROLL_PENDING;
@@ -10541,7 +10575,7 @@ AddColumns(TableView *viewPtr, BLT_TABLE_NOTIFY_EVENT *eventPtr)
 		Blt_HashEntry *h2Ptr;
 		int isNew;
 
-		key.colPtr = viewPtr->columns[j];
+		key.rowPtr = viewPtr->rows[j];
 		h2Ptr = Blt_CreateHashEntry(&viewPtr->cellTable, (char *)&key, 
 					    &isNew);
 		assert(isNew);
@@ -10556,7 +10590,7 @@ AddColumns(TableView *viewPtr, BLT_TABLE_NOTIFY_EVENT *eventPtr)
     }
     viewPtr->columns = columns;
     viewPtr->numColumns = newNumColumns;
-    viewPtr->flags |= LAYOUT_PENDING;
+    viewPtr->flags |= LAYOUT_PENDING | VISIBILITY;
     EventuallyRedraw(viewPtr);
 }
 
@@ -10818,6 +10852,9 @@ DisplayTableViewProc(ClientData clientData)
 	viewPtr->focusPtr = GetCell(viewPtr, rowPtr, colPtr);
     }
     /* Draw the cells. */
+    fprintf(stderr, "visible rows=%d columns=%d total rows=%d columns=%d\n",
+	    viewPtr->numVisibleRows, viewPtr->numVisibleColumns,
+	    viewPtr->numRows, viewPtr->numColumns);
     for (i = 0; i < viewPtr->numVisibleRows; i++) {
 	long j;
 	Row *rowPtr;

@@ -149,6 +149,7 @@ bind BltTableView <KeyPress-Left> {
     %W see focus
 }
 bind BltTableView <KeyPress-Right> {
+    puts stderr "old focus = [%W index focus], new focus = [%W index right]"
     %W focus right
     %W see focus
 }
