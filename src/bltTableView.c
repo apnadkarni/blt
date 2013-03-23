@@ -659,8 +659,8 @@ static Tk_EventProc TableViewEventProc;
 static Tk_ImageChangedProc IconChangedProc;
 static Tk_SelectionProc SelectionProc;
 
-static void ComputeTableViewGeometry(TableView *viewPtr);
-static void LayoutTableView(TableView *viewPtr);
+static void ComputeGeometry(TableView *viewPtr);
+static void ComputeLayout(TableView *viewPtr);
 static void ComputeVisibleEntries(TableView *viewPtr);
 static int GetColumn(Tcl_Interp *interp, TableView *viewPtr, Tcl_Obj *objPtr, 
 	Column **colPtrPtr);
@@ -3760,12 +3760,12 @@ TableViewPickProc(
 	*hintPtr = NULL;
     }
     if (viewPtr->flags & GEOMETRY) {
-	ComputeTableViewGeometry(viewPtr);
+	ComputeGeometry(viewPtr);
     }	
     if (viewPtr->flags & LAYOUT_PENDING) {
 	/* Can't trust the selected items if rows/columns have been added or
 	 * deleted. So recompute the layout. */
-	LayoutTableView(viewPtr);
+	ComputeLayout(viewPtr);
     }
     if (viewPtr->flags & VISIBILITY) {
 	ComputeVisibleEntries(viewPtr);
@@ -5356,7 +5356,7 @@ BboxOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	 * hidden entries (since they're not visible, they don't have world
 	 * coordinates).
 	 */
-	ComputeTableViewGeometry(viewPtr);
+	ComputeGeometry(viewPtr);
     }
 
     x1 = viewPtr->worldWidth;
@@ -9076,7 +9076,7 @@ SelectionSetOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	 * The layout is dirty.  Recompute it now so that we can use
 	 * view.top and view.bottom for nodes.
 	 */
-	ComputeTableViewGeometry(viewPtr);
+	ComputeGeometry(viewPtr);
     }
     if (GetCellFromObj(interp, viewPtr, objv[3], &cellPtr) != TCL_OK) {
 	return TCL_ERROR;
@@ -10076,7 +10076,7 @@ GetCellGeometry(Cell *cellPtr)
 }
     
 static void
-ComputeTableViewGeometry(TableView *viewPtr)
+ComputeGeometry(TableView *viewPtr)
 {
     Blt_HashEntry *hPtr;
     Blt_HashSearch iter;
@@ -10149,7 +10149,7 @@ ComputeTableViewGeometry(TableView *viewPtr)
 }
 
 static void
-LayoutTableView(TableView *viewPtr)
+ComputeLayout(TableView *viewPtr)
 {
     unsigned long x, y;
     long i;
@@ -10782,10 +10782,10 @@ DisplayTableViewProc(ClientData clientData)
 	SortTableView(viewPtr);	
     }
     if (viewPtr->flags & GEOMETRY) {
-	ComputeTableViewGeometry(viewPtr);
+	ComputeGeometry(viewPtr);
     }	
     if (viewPtr->flags & LAYOUT_PENDING) {
-	LayoutTableView(viewPtr);
+	ComputeLayout(viewPtr);
     }
     if (viewPtr->flags & (SCROLL_PENDING | VISIBILITY)) {
 	/* Determine the visible rows and columns. The can happen when the
