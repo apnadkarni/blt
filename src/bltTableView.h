@@ -134,7 +134,8 @@
 					 * deleted. */
 
 #define POSTED		(1<<11)
-
+#define REDRAW		(1<<12)
+					
 /* These are tableview only flags. */
 #define LAYOUT_PENDING	(1<<13)
 #define REDRAW_PENDING	(1<<14)
@@ -757,8 +758,8 @@ struct _TableView {
     short int colTitleWidth, colTitleHeight;
     short int colFilterHeight;
     int width, height;
-    long worldWidth, worldHeight;	/* Dimensions of world view. */
-    long xOffset, yOffset;		/* Translation between view port and
+    int worldWidth, worldHeight;	/* Dimensions of world view. */
+    int xOffset, yOffset;		/* Translation between view port and
 					 * world origin. */
     Blt_Pool cellPool;			/* Memory pool for cells. */ 
     Blt_Pool rowPool;			/* Memory pool for row headers. */

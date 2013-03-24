@@ -671,7 +671,7 @@ static Tk_SelectionProc SelectionProc;
 
 static void ComputeGeometry(TableView *viewPtr);
 static void ComputeLayout(TableView *viewPtr);
-static void ComputeVisibleEntries(TableView *viewPtr);
+static int ComputeVisibleEntries(TableView *viewPtr);
 static int GetColumn(Tcl_Interp *interp, TableView *viewPtr, Tcl_Obj *objPtr, 
 	Column **colPtrPtr);
 static int GetRow(Tcl_Interp *interp, TableView *viewPtr, Tcl_Obj *objPtr, 
@@ -2239,7 +2239,7 @@ RowTraceProc(ClientData clientData, BLT_TABLE_TRACE_EVENT *eventPtr)
 	TableView *viewPtr;
 
 	viewPtr = rowPtr->viewPtr;
-	rowPtr->flags |= GEOMETRY;
+	rowPtr->flags |= GEOMETRY | REDRAW;
 	viewPtr->flags |= GEOMETRY;
 	/*EventuallyRedraw(viewPtr);*/
     }
@@ -2266,7 +2266,7 @@ ColumnTraceProc(ClientData clientData, BLT_TABLE_TRACE_EVENT *eventPtr)
 	TableView *viewPtr;
 
 	viewPtr = colPtr->viewPtr;
-        colPtr->flags |= GEOMETRY;
+        colPtr->flags |= GEOMETRY | REDRAW;
 	viewPtr->flags |= GEOMETRY;
 	/*EventuallyRedraw(viewPtr);*/
     }
@@ -2434,7 +2434,7 @@ NewRow(TableView *viewPtr, BLT_TABLE_ROW row, Blt_HashEntry *hPtr)
     rowPtr->viewPtr = viewPtr;
     rowPtr->index = -1;
     rowPtr->title = blt_table_row_label(row);
-    rowPtr->flags = GEOMETRY;
+    rowPtr->flags = GEOMETRY | REDRAW;
     rowPtr->weight = 1.0;
     rowPtr->max = SHRT_MAX;
     rowPtr->titleJustify = TK_JUSTIFY_RIGHT;
@@ -2509,7 +2509,7 @@ NewColumn(TableView *viewPtr, BLT_TABLE_COLUMN col, Blt_HashEntry *hPtr)
     colPtr->viewPtr = viewPtr;
     colPtr->index = -1;
     colPtr->title = blt_table_column_label(col);
-    colPtr->flags = GEOMETRY;
+    colPtr->flags = GEOMETRY | REDRAW;
     colPtr->weight = 1.0;
     colPtr->max = SHRT_MAX;
     colPtr->titleJustify = TK_JUSTIFY_CENTER;
@@ -2562,16 +2562,12 @@ GetNextColumn(Column *colPtr)
     TableView *viewPtr = colPtr->viewPtr;
     long i;
 
-    fprintf(stderr, "current column is %d of %d,%d\n", colPtr->index, 
-	    viewPtr->numColumns, blt_table_num_columns(viewPtr->table));
     for (i = colPtr->index + 1; i < viewPtr->numColumns; i++) {
 	colPtr = viewPtr->columns[i];
 	if ((colPtr->flags & (HIDDEN|DISABLED)) == 0) {
-	    fprintf(stderr, "next column is %d\n", colPtr->index);
 	    return colPtr;
 	}
     }
-    fprintf(stderr, "no next column\n");
     return NULL;
 }
 
@@ -10225,8 +10221,6 @@ ComputeLayout(TableView *viewPtr)
 	    x += colPtr->width;
 	}
     }
-    fprintf(stderr, "Layout: worldWidth=%d numColumns=%d xOffset=%d\n",
-	    viewPtr->worldWidth, viewPtr->numColumns, viewPtr->xOffset);
     viewPtr->worldWidth = x;
     if (viewPtr->worldWidth < VPORTWIDTH(viewPtr)) {
 	AdjustColumns(viewPtr);
@@ -10248,10 +10242,11 @@ ComputeLayout(TableView *viewPtr)
 					 * columns. */
 }
 
-static void
+static int
 ComputeVisibleEntries(TableView *viewPtr)
 {
     long i, low, high;
+    int redraw;
     long first, last;
     unsigned int  viewWidth, viewHeight;
     unsigned long numVisibleRows, numVisibleColumns; 
@@ -10264,7 +10259,7 @@ ComputeVisibleEntries(TableView *viewPtr)
 	viewPtr->worldHeight, VPORTHEIGHT(viewPtr), viewPtr->yScrollUnits, 
 	viewPtr->scrollMode);
     if ((viewPtr->numRows == 0) || (viewPtr->numColumns == 0)) {
-	return;
+	return 1;
     }
     if ((xOffset != viewPtr->xOffset) || (yOffset != viewPtr->yOffset)) {
 	viewPtr->yOffset = yOffset;
@@ -10275,6 +10270,8 @@ ComputeVisibleEntries(TableView *viewPtr)
 
     first = last = -1;
     numVisibleRows = 0;
+
+    redraw = FALSE;
 
     /* FIXME: Handle hidden rows. */
     /* Find the row that contains the start of the viewport.  */
@@ -10326,6 +10323,10 @@ ComputeVisibleEntries(TableView *viewPtr)
 	if ((rowPtr->flags & HIDDEN) == 0) {
 	    viewPtr->visibleRows[numVisibleRows] = rowPtr;
 	    numVisibleRows++;
+	    if (rowPtr->flags & REDRAW) {
+		rowPtr->flags &= ~REDRAW;
+		redraw = TRUE;
+	    }
 	}
     }
     assert(viewPtr->numVisibleRows == numVisibleRows);
@@ -10382,14 +10383,16 @@ ComputeVisibleEntries(TableView *viewPtr)
 	if ((colPtr->flags & HIDDEN) == 0) {
 	    viewPtr->visibleColumns[numVisibleColumns] = colPtr;
 	    numVisibleColumns++;
+	    if (colPtr->flags & REDRAW) {
+		colPtr->flags &= ~REDRAW;
+		redraw = TRUE;
+	    }
 	}
     }
-    fprintf(stderr, "columns visible first=%d last=%d visible=%d total=%d offset=%d worldWidth=%d\n",
-	    first, last, viewPtr->numVisibleColumns, viewPtr->numColumns,
-	    viewPtr->xOffset,viewPtr->worldWidth);
     assert(viewPtr->numVisibleColumns == numVisibleColumns);
     Blt_PickCurrentItem(viewPtr->bindTable);
     viewPtr->flags |= SCROLL_PENDING;
+    return redraw;
 }
 
 static void
@@ -10551,6 +10554,68 @@ RebuildTableView(TableView *viewPtr)
     EventuallyRedraw(viewPtr);
 }
 
+
+static void
+AddCellGeometry(TableView *viewPtr, Cell *cellPtr)
+{
+    CellKey *keyPtr;
+    Row *rowPtr;
+    Column *colPtr;
+
+    keyPtr = GetKey(cellPtr);
+    rowPtr = keyPtr->rowPtr;
+    colPtr = keyPtr->colPtr;
+    GetCellGeometry(cellPtr);
+    if (cellPtr->width > colPtr->nomWidth) {
+	colPtr->nomWidth = cellPtr->width;
+    }
+    if (cellPtr->height > rowPtr->nomHeight) {
+	rowPtr->nomHeight = cellPtr->height;
+    }
+}
+
+static void
+AddColumnGeometry(TableView *viewPtr, Column *colPtr)
+{
+    if (colPtr->flags & GEOMETRY) {
+	if (viewPtr->flags & COLUMN_TITLES) {
+	    GetColumnTitleGeometry(viewPtr, colPtr);
+	} else {
+	    colPtr->titleWidth = colPtr->titleHeight = 0;
+	}
+    }
+    colPtr->nomWidth = colPtr->titleWidth;
+    if ((colPtr->flags & HIDDEN) == 0) {
+	if (colPtr->titleHeight > viewPtr->colTitleHeight) {
+	    viewPtr->colTitleHeight = colPtr->titleHeight;
+	}
+    }
+    if (viewPtr->flags & AUTOFILTERS) {
+	GetColumnFilterGeometry(viewPtr);
+    }
+}
+
+static void
+AddRowGeometry(TableView *viewPtr, Row *rowPtr)
+{
+    if (rowPtr->flags & GEOMETRY) {
+	if (viewPtr->flags & ROW_TITLES) {
+	    GetRowTitleGeometry(viewPtr, rowPtr);
+	} else {
+	    rowPtr->titleHeight = rowPtr->titleWidth = 0;
+	}
+    }
+    rowPtr->nomHeight = rowPtr->titleHeight;
+    if ((rowPtr->flags & HIDDEN) == 0) {
+	if (rowPtr->titleWidth > viewPtr->rowTitleWidth) {
+	    viewPtr->rowTitleWidth = rowPtr->titleWidth;
+	}
+    }
+    if (viewPtr->flags & AUTOFILTERS) {
+	GetColumnFilterGeometry(viewPtr);
+    }
+}
+
 static void
 DeleteColumns(TableView *viewPtr, BLT_TABLE_NOTIFY_EVENT *eventPtr)
 {
@@ -10581,6 +10646,7 @@ AddColumns(TableView *viewPtr, BLT_TABLE_NOTIFY_EVENT *eventPtr)
 	    long j;
 	    
 	    colPtr = CreateColumn(viewPtr, col, hPtr);
+	    AddColumnGeometry(viewPtr, colPtr);
 	    key.colPtr = colPtr;
 	    for (j = 0; j < viewPtr->numRows; j++) {
 		Cell *cellPtr;
@@ -10592,6 +10658,7 @@ AddColumns(TableView *viewPtr, BLT_TABLE_NOTIFY_EVENT *eventPtr)
 					    &isNew);
 		assert(isNew);
 		cellPtr = NewCell(viewPtr, h2Ptr);
+		AddCellGeometry(viewPtr, cellPtr);
 		Blt_SetHashValue(h2Ptr, cellPtr);
 	    }
 	} else {
@@ -10602,8 +10669,7 @@ AddColumns(TableView *viewPtr, BLT_TABLE_NOTIFY_EVENT *eventPtr)
     }
     viewPtr->columns = columns;
     viewPtr->numColumns = newNumColumns;
-    viewPtr->flags |= LAYOUT_PENDING;
-    /*EventuallyRedraw(viewPtr);*/
+    EventuallyRedraw(viewPtr);
 }
 
 static void
@@ -10637,6 +10703,7 @@ AddRows(TableView *viewPtr, BLT_TABLE_NOTIFY_EVENT *eventPtr)
 	    long j;
 	    
 	    rowPtr = CreateRow(viewPtr, row, hPtr);
+	    AddRowGeometry(viewPtr, rowPtr);
 	    key.rowPtr = rowPtr;
 	    for (j = 0; j < viewPtr->numColumns; j++) {
 		Cell *cellPtr;
@@ -10648,6 +10715,7 @@ AddRows(TableView *viewPtr, BLT_TABLE_NOTIFY_EVENT *eventPtr)
 			&isNew);
 		assert(isNew);
 		cellPtr = NewCell(viewPtr, h2Ptr);
+		AddCellGeometry(viewPtr, cellPtr);
 		Blt_SetHashValue(h2Ptr, cellPtr);
 	    }
 	} else {
@@ -10658,9 +10726,9 @@ AddRows(TableView *viewPtr, BLT_TABLE_NOTIFY_EVENT *eventPtr)
     }
     viewPtr->rows = rows;
     viewPtr->numRows = newNumRows;
-    viewPtr->flags |= LAYOUT_PENDING;
-    /*EventuallyRedraw(viewPtr);*/
+    EventuallyRedraw(viewPtr);
 }
+
 
 static int
 AttachTable(Tcl_Interp *interp, TableView *viewPtr)
@@ -10780,6 +10848,7 @@ DisplayTableViewProc(ClientData clientData)
     TableView *viewPtr = clientData;
     int reqWidth, reqHeight;
     long i;
+    int redraw;
 
     viewPtr->flags &= ~REDRAW_PENDING;
     if (viewPtr->tkwin == NULL) {
@@ -10799,10 +10868,12 @@ DisplayTableViewProc(ClientData clientData)
     if (viewPtr->flags & LAYOUT_PENDING) {
 	ComputeLayout(viewPtr);
     }
+
+    redraw = TRUE;
     if (viewPtr->flags & (SCROLL_PENDING | VISIBILITY)) {
 	/* Determine the visible rows and columns. The can happen when the
 	 * -hide flags changes on a row or column. */
-	ComputeVisibleEntries(viewPtr);
+	redraw = ComputeVisibleEntries(viewPtr);
     }
     if (viewPtr->flags & SCROLL_PENDING) {
 	int width, height;
@@ -10821,6 +10892,7 @@ DisplayTableViewProc(ClientData clientData)
 		viewPtr->worldHeight);
 	}
 	viewPtr->flags &= ~SCROLL_PENDING;
+	redraw = TRUE;
     }
 
     reqHeight = (viewPtr->reqHeight > 0) ? viewPtr->reqHeight : 
@@ -10834,6 +10906,9 @@ DisplayTableViewProc(ClientData clientData)
 	Tk_GeometryRequest(viewPtr->tkwin, reqWidth, reqHeight);
     }
     if (!Tk_IsMapped(viewPtr->tkwin)) {
+	return;
+    }
+    if (!redraw) {
 	return;
     }
     if ((viewPtr->numVisibleRows == 0) || (viewPtr->numVisibleColumns == 0)){
@@ -10864,9 +10939,6 @@ DisplayTableViewProc(ClientData clientData)
 	viewPtr->focusPtr = GetCell(viewPtr, rowPtr, colPtr);
     }
     /* Draw the cells. */
-    fprintf(stderr, "visible rows=%d columns=%d total rows=%d columns=%d\n",
-	    viewPtr->numVisibleRows, viewPtr->numVisibleColumns,
-	    viewPtr->numRows, viewPtr->numColumns);
     for (i = 0; i < viewPtr->numVisibleRows; i++) {
 	long j;
 	Row *rowPtr;
