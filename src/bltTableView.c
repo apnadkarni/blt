@@ -10669,6 +10669,7 @@ AddColumns(TableView *viewPtr, BLT_TABLE_NOTIFY_EVENT *eventPtr)
     }
     viewPtr->columns = columns;
     viewPtr->numColumns = newNumColumns;
+    viewPtr->flags |= LAYOUT_PENDING;
     EventuallyRedraw(viewPtr);
 }
 
@@ -10726,6 +10727,7 @@ AddRows(TableView *viewPtr, BLT_TABLE_NOTIFY_EVENT *eventPtr)
     }
     viewPtr->rows = rows;
     viewPtr->numRows = newNumRows;
+    viewPtr->flags |= LAYOUT_PENDING;
     EventuallyRedraw(viewPtr);
 }
 
