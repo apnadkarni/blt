@@ -4886,8 +4886,9 @@ blt_table_exists(Tcl_Interp *interp, const char *name)
 
 static Notifier *
 CreateNotifier(Tcl_Interp *interp, Blt_Chain chain, unsigned int mask,
-	BLT_TABLE_NOTIFY_EVENT_PROC *proc, 
-	BLT_TABLE_NOTIFIER_DELETE_PROC *deleteProc, ClientData clientData)
+	       BLT_TABLE_NOTIFY_EVENT_PROC *proc, 
+	       BLT_TABLE_NOTIFIER_DELETE_PROC *deleteProc, 
+	       ClientData clientData)
 {
     Notifier *notifierPtr;
 
@@ -4906,10 +4907,11 @@ CreateNotifier(Tcl_Interp *interp, Blt_Chain chain, unsigned int mask,
 }
 
 static Notifier *
-CreateRowNotifier(Tcl_Interp *interp, Blt_Chain chain, unsigned int mask,
-		  Row *rowPtr, const char *tag, BLT_TABLE_NOTIFY_EVENT_PROC *proc,
-		  BLT_TABLE_NOTIFIER_DELETE_PROC *deleteProc, 
-		  ClientData clientData)
+CreateNotifierForRows(Tcl_Interp *interp, Blt_Chain chain, unsigned int mask,
+		      Row *rowPtr, const char *tag, 
+		      BLT_TABLE_NOTIFY_EVENT_PROC *proc,
+		      BLT_TABLE_NOTIFIER_DELETE_PROC *deleteProc, 
+		      ClientData clientData)
 {
     Notifier *notifierPtr;
 
@@ -4928,7 +4930,7 @@ CreateRowNotifier(Tcl_Interp *interp, Blt_Chain chain, unsigned int mask,
 }
 
 static Notifier *
-CreateColumnNotifier(Tcl_Interp *interp, Blt_Chain chain, unsigned int mask,
+CreateNotifierForColumns(Tcl_Interp *interp, Blt_Chain chain, unsigned int mask,
 	Column *colPtr, const char *tag, BLT_TABLE_NOTIFY_EVENT_PROC *proc,
 	BLT_TABLE_NOTIFIER_DELETE_PROC *deleteProc, ClientData clientData)
 {
@@ -5009,7 +5011,7 @@ blt_table_create_column_notifier(Tcl_Interp *interp, Table *tablePtr,
 			       BLT_TABLE_NOTIFIER_DELETE_PROC *deletedProc,
 			       ClientData clientData)
 {
-    return CreateColumnNotifier(interp, tablePtr->columnNotifiers, mask, 
+    return CreateNotifierForColumns(interp, tablePtr->columnNotifiers, mask, 
 		col, NULL, proc, deletedProc, clientData);
 }
 
@@ -5042,8 +5044,8 @@ blt_table_create_column_tag_notifier(Tcl_Interp *interp, Table *tablePtr,
 				  BLT_TABLE_NOTIFIER_DELETE_PROC *deletedProc,
 				  ClientData clientData)
 {
-    return CreateColumnNotifier(interp, tablePtr->columnNotifiers, mask, NULL, 
-	tag, proc, deletedProc, clientData);
+    return CreateNotifierForColumns(interp, tablePtr->columnNotifiers, mask, 
+	NULL, tag, proc, deletedProc, clientData);
 }
 
 /*
@@ -5075,7 +5077,7 @@ blt_table_create_row_notifier(Tcl_Interp *interp, Table *tablePtr,
 			    BLT_TABLE_NOTIFIER_DELETE_PROC *deletedProc,
 			    ClientData clientData)
 {
-    return CreateRowNotifier(interp, tablePtr->rowNotifiers, mask, row, 
+    return CreateNotifierForRows(interp, tablePtr->rowNotifiers, mask, row, 
 	NULL, proc, deletedProc, clientData);
 }
 
@@ -5108,8 +5110,8 @@ blt_table_create_row_tag_notifier(Tcl_Interp *interp, Table *tablePtr,
 			       BLT_TABLE_NOTIFIER_DELETE_PROC *deletedProc,
 			       ClientData clientData)
 {
-    return CreateRowNotifier(interp, tablePtr->rowNotifiers, mask, NULL, tag, 
-	proc, deletedProc, clientData);
+    return CreateNotifierForRows(interp, tablePtr->rowNotifiers, mask, NULL, 
+	tag, proc, deletedProc, clientData);
 }
 
 /*
@@ -5375,6 +5377,7 @@ blt_table_extend_rows(Tcl_Interp *interp, Table *tablePtr, size_t n, Row **rows)
 	}
     }
     assert(Blt_Chain_GetLength(chain) > 0);
+    Blt_Chain_Destroy(chain);
     NotifyRowChanged(tablePtr, NULL, TABLE_NOTIFY_ROWS_CREATED);
     return TCL_OK;
 }
@@ -5620,6 +5623,7 @@ blt_table_extend_columns(Tcl_Interp *interp, BLT_TABLE table, size_t n,
 	colPtr->type = TABLE_COLUMN_TYPE_STRING;
     }
     NotifyColumnChanged(table, NULL, TABLE_NOTIFY_COLUMNS_CREATED);
+    Blt_Chain_Destroy(chain);
     return TCL_OK;
 }
 
