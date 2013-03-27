@@ -2167,6 +2167,7 @@ Blt_Font_GetFile(Tcl_Interp *interp, Tcl_Obj *objPtr, double *sizePtr)
     FcChar8 *fileName;
     FcPattern *pattern;
     double size;
+    Tcl_Obj *fileObjPtr;
 
     tkwin = Tk_MainWindow(interp);
     if (!font_initialized) {
@@ -2188,12 +2189,13 @@ Blt_Font_GetFile(Tcl_Interp *interp, Tcl_Obj *objPtr, double *sizePtr)
 	size = 12.0;
     }
     result = FcPatternGetString(pattern, FC_FILE, 0, &fileName);
+    fileObjPtr = Tcl_NewStringObj((const char *)fileName, -1);
     FcPatternDestroy(pattern);
     if (result != FcResultMatch) {
 	return NULL;
     }
     *sizePtr = size;
-    return Tcl_NewStringObj((const char *)fileName, -1);
+    return fileObjPtr;
 }
 
 static const char *

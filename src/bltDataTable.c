@@ -5301,7 +5301,7 @@ blt_table_set_column_label(Tcl_Interp *interp, Table *tablePtr, Column *colPtr,
  */
 int
 blt_table_set_column_type(Table *tablePtr, Column *colPtr, 
-			BLT_TABLE_COLUMN_TYPE type)
+			  BLT_TABLE_COLUMN_TYPE type)
 {
     return SetType(tablePtr, colPtr, type);
 }
@@ -5597,28 +5597,28 @@ blt_table_delete_column(Table *tablePtr, Column *colPtr)
  */
 int
 blt_table_extend_columns(Tcl_Interp *interp, BLT_TABLE table, size_t n, 
-			Column **cols)
+			Column **columns)
 {
     size_t i;
-    Blt_Chain columns;
+    Blt_Chain chain;
     Blt_ChainLink link;
 
-    columns = Blt_Chain_Create();
-    if (!ExtendColumns(table, n, columns)) {
+    chain = Blt_Chain_Create();
+    if (!ExtendColumns(table, n, chain)) {
 	if (interp != NULL) {
 	    Tcl_AppendResult(interp, "can't extend table by ", 
 		Blt_Ltoa(n), " columns: out of memory.", (char *)NULL);
 	}
-	Blt_Chain_Destroy(columns);
+	Blt_Chain_Destroy(chain);
 	return TCL_ERROR;
     }
-    for (i = 0, link = Blt_Chain_FirstLink(columns); link != NULL; 
+    for (i = 0, link = Blt_Chain_FirstLink(chain); link != NULL; 
 	 link = Blt_Chain_NextLink(link), i++) {
 	Column *colPtr;
 
 	colPtr = Blt_Chain_GetValue(link);
-	if (cols != NULL) {
-	    cols[i] = colPtr;
+	if (columns != NULL) {
+	    columns[i] = colPtr;
 	}
 	colPtr->type = TABLE_COLUMN_TYPE_STRING;
     }

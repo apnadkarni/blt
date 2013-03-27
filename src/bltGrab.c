@@ -216,17 +216,16 @@ GetGrabEntry(GrabCmdInterpData *dataPtr, Tk_Window tkwin)
  *---------------------------------------------------------------------------
  */
 static void
-PopGrab(Grab *grabPtr)
+PopGrab(GrabCmdInterpData *dataPtr, Grab *grabPtr)
 {
-    GrabCmdInterpData *dataPtr;
-
-    dataPtr = grabPtr->entryPtr->dataPtr;
-    if (grabPtr->entryPtr->tkwin != NULL) {
-	Tk_Ungrab(grabPtr->entryPtr->tkwin);
-    }
-    FreeGrabEntry(grabPtr->entryPtr);
     if (grabPtr->link != NULL) {
 	Blt_Chain_DeleteLink(dataPtr->chain, grabPtr->link);
+    }
+    if (grabPtr->entryPtr != NULL) {
+	if (grabPtr->entryPtr->tkwin != NULL) {
+	    Tk_Ungrab(grabPtr->entryPtr->tkwin);
+	}
+	FreeGrabEntry(grabPtr->entryPtr);
     }
     Blt_Free(grabPtr);
 }
@@ -318,7 +317,7 @@ DumpStack(GrabCmdInterpData *dataPtr)
 
 	next = Blt_Chain_NextLink(link);
 	grabPtr = Blt_Chain_GetValue(link);
-	PopGrab(grabPtr);
+	PopGrab(dataPtr, grabPtr);
     }
     Blt_Chain_Reset(dataPtr->chain);
 }
@@ -353,10 +352,17 @@ PruneDeadInstances(GrabEntry *entryPtr)
 
 	next = Blt_Chain_NextLink(link);
 	grabPtr = Blt_Chain_GetValue(link);
-	if (grabPtr->entryPtr == entryPtr) {
-	    grabPtr->entryPtr->tkwin = NULL;	/* Indicate that window has been
-						 * destroyed. */
-	    FreeGrabEntry(entryPtr);
+	if (grabPtr->entryPtr != entryPtr) {
+	    continue;
+	}
+	grabPtr->entryPtr->tkwin = NULL; /* Indicate the window has been
+					  * destroyed so FreeGrabEntry
+					  * doesn't try to do something with
+					  * it. */
+	FreeGrabEntry(entryPtr);
+	if (grabPtr->link != NULL) {
+	    /* Remove the grab from the stack. */
+	    Blt_Chain_DeleteLink(dataPtr->chain, grabPtr->link);
 	}
     }
 }
@@ -492,8 +498,8 @@ GetGrabCmdInterpData(Tcl_Interp *interp)
  *
  *---------------------------------------------------------------------------
  */
-static void
-FixCurrent(GrabCmdInterpData *dataPtr)
+static int
+FixCurrent(Tcl_Interp *interp, GrabCmdInterpData *dataPtr)
 {
     TkDisplay *dispPtr;
     TkWindow *winPtr;
@@ -511,9 +517,18 @@ FixCurrent(GrabCmdInterpData *dataPtr)
 	/* No currently grabbed window. Verify that the stack is empty.
 	 * Otherwise, dump it. */
 	if (grabPtr != NULL) {
-	    Blt_Warn("no current grab: dumping grab stack (top=%s)\n",
-		     Tk_PathName(grabPtr->entryPtr->tkwin));
-	    DumpStack(dataPtr);
+	    if (grabPtr->entryPtr == NULL) {
+		Tcl_AppendResult(interp, "no current grab: dumping grab stack",
+				 (char *)NULL);
+	    } else {
+		Tcl_AppendResult(interp, 
+				 "no current grab: dumping grab stack: top=\"",
+				 Tk_PathName(grabPtr->entryPtr->tkwin),
+				 "\"", (char *)NULL);
+		DumpStack(dataPtr);
+		return TCL_ERROR;
+	    }
+	    return TCL_OK;
 	}
     } else {
 	Grab *grabPtr;
@@ -524,10 +539,11 @@ FixCurrent(GrabCmdInterpData *dataPtr)
 	    /* Reset the topmost grab into the stack if it isn't ours. */ 
 	    Blt_Warn("current grab %s is not the topmost on grab stack %s\n",
 		     Tk_PathName(tkwin), Tk_PathName(grabPtr->entryPtr->tkwin));
-	    PopGrab(grabPtr);
+	    PopGrab(dataPtr, grabPtr);
 	    PushGrab(dataPtr, tkwin, (dispPtr->grabFlags & GRAB_GLOBAL));
 	}
     }
+    return TCL_OK;
 }
 
 static int
@@ -658,7 +674,7 @@ PopOp(
 	    return TCL_OK;
 	}
     } 
-    PopGrab(grabPtr);
+    PopGrab(dataPtr, grabPtr);
 
     /* Now reset the grab to the top window in the stack.  */
     grabPtr = GetTopGrab(dataPtr);
@@ -729,7 +745,7 @@ ReleaseOp(
     if (grabPtr->entryPtr->tkwin != tkwin) {
 	return TCL_OK;			/* Not currently grabbed. */
     }
-    PopGrab(grabPtr);
+    PopGrab(dataPtr, grabPtr);
     return TCL_OK;
 }
 
@@ -791,7 +807,7 @@ SetOp(
     grabPtr = GetTopGrab(dataPtr);
     if ((grabPtr != NULL) && ((grabPtr->entryPtr->tkwin != tkwin) ||
 	(grabPtr->flags != flag))) {
-	PopGrab(grabPtr);
+	PopGrab(dataPtr, grabPtr);
     }
     return PushGrab(dataPtr, tkwin, flag);
 }
@@ -875,7 +891,9 @@ GrabCmd(
     Tcl_ObjCmdProc *proc;
     GrabCmdInterpData *dataPtr = clientData;
 
-    FixCurrent(dataPtr);
+    if (FixCurrent(interp, dataPtr) != TCL_OK) {
+	return TCL_ERROR;
+    }
     proc = Blt_GetOpFromObj(interp, numGrabOps, grabOps, BLT_OP_ARG1, 
 	objc, objv, 0);
     if (proc == NULL) {
