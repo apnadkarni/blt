@@ -5301,7 +5301,7 @@ blt_table_set_column_label(Tcl_Interp *interp, Table *tablePtr, Column *colPtr,
  */
 int
 blt_table_set_column_type(Table *tablePtr, Column *colPtr, 
-			BLT_TABLE_COLUMN_TYPE type)
+			  BLT_TABLE_COLUMN_TYPE type)
 {
     return SetType(tablePtr, colPtr, type);
 }

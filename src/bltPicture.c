@@ -2381,6 +2381,48 @@ Rotate270(Pict *srcPtr)
     return destPtr;
 }
 
+static void
+GetRotatedSize(int width, int height, float angle, int *rotWidthPtr, 
+	       int *rotHeightPtr)
+{
+    Point2d corner[4];
+    double sinTheta, cosTheta;
+    double radians;
+    double xMax, yMax;
+    int i;
+
+    /* Set the four corners of the rectangle whose center is the origin. */
+    corner[1].x = corner[2].x = (double)width * 0.5;
+    corner[0].x = corner[3].x = -corner[1].x;
+    corner[2].y = corner[3].y = (double)height * 0.5;
+    corner[0].y = corner[1].y = -corner[2].y;
+
+    radians = -angle * DEG2RAD;
+    sinTheta = sin(radians), cosTheta = cos(radians);
+    xMax = yMax = 0.0;
+
+    /* Rotate the four corners and find the maximum X and Y coordinates */
+
+    for (i = 0; i < 4; i++) {
+	double x, y;
+
+	x = (corner[i].x * cosTheta) - (corner[i].y * sinTheta);
+	y = (corner[i].x * sinTheta) + (corner[i].y * cosTheta);
+	if (x > xMax) {
+	    xMax = x;
+	}
+	if (y > yMax) {
+	    yMax = y;
+	}
+    }
+    /*
+     * By symmetry, the width and height of the bounding box are twice the
+     * maximum x and y coordinates.
+     */
+    *rotWidthPtr = ROUND(xMax + xMax);
+    *rotHeightPtr = ROUND(yMax + yMax);
+}
+
 /* 
  *---------------------------------------------------------------------------
  *
@@ -2412,7 +2454,6 @@ RotateByAreaMapping(Pict *srcPtr, float angle, Blt_Pixel *bg)
 {
     int y, wm2, hm2;
     float  sinTheta, cosTheta;
-    double theta, absAngle, alpha, beta, diag;
     Blt_Pixel *destRowPtr;
     Pict *destPtr;
     int rotWidth, rotHeight;
@@ -2420,13 +2461,8 @@ RotateByAreaMapping(Pict *srcPtr, float angle, Blt_Pixel *bg)
 					 * picture. */
 
     /* Find the new dimensions required to hold the image after rotation */
-    theta = atan((double)srcPtr->width / (double)srcPtr->height);
-    absAngle = fabs(angle);
-    alpha = theta - absAngle;
-    beta = theta + absAngle;
-    diag = hypot((double)srcPtr->width, (double)(srcPtr->height));
-    rotWidth = (int)fabs(diag * sin(beta) + 0.5);
-    rotHeight = (int)fabs(diag * cos(alpha) + 0.5);
+    GetRotatedSize(srcPtr->width, srcPtr->height, angle, &rotWidth, 
+		   &rotHeight);
     destPtr = Blt_CreatePicture(rotWidth, rotHeight);
     srcCx = srcPtr->width / 2;
     srcCy = srcPtr->height / 2;
@@ -2596,7 +2632,7 @@ Blt_RotatePicture(Pict *srcPtr, float angle)
     int angleInt;
     Blt_Pixel bg;
 
-    bg.u32 = 0x00000000;
+    bg.u32 = 0xFF000000;
 
     /* Make the angle positive between 0 and 360 degrees. */ 
     angle = FMOD(angle, 360.0f);
