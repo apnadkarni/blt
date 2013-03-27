@@ -3706,6 +3706,11 @@ ImageBoxStyleGeometryProc(Cell *cellPtr, CellStyle *cellStylePtr)
 	}
     }
     iw = ih = pw = ph = tw = th = 0;
+    if (colPtr->index == 299) {
+	fprintf(stderr, "geometry drawing cell %d,%d %dx%d image=%x\n",
+		rowPtr->index, colPtr->index, pw, ph, 
+		cellPtr->tkImage);
+    }
     if (cellPtr->tkImage != NULL) {
 	Tk_SizeOfImage(cellPtr->tkImage, (int *)&pw, (int *)&ph);
     }
@@ -3861,7 +3866,17 @@ ImageBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
 	Tk_RedrawImage(IconBits(stylePtr->icon), 0, 0, iw, ih,drawable, ix, iy);
 	x += iw + gap;
     }
+    if (colPtr->index == 299) {
+	    fprintf(stderr, "drawing cell %d,%d %dx%d image=%x\n",
+		rowPtr->index, colPtr->index, pw, ph, 
+		    cellPtr->tkImage);
+	}
     if (cellPtr->tkImage != NULL) {
+	if (strcmp("image1802", Blt_Image_Name(cellPtr->tkImage)) == 0) {
+	    fprintf(stderr, "drawing cell %d,%d %dx%d image=%s\n",
+		rowPtr->index, colPtr->index, pw, ph, 
+		    Blt_Image_Name(cellPtr->tkImage));
+	}
 	Tk_RedrawImage(cellPtr->tkImage, 0, 0, pw, ph, drawable, px, py);
     }
     if ((stylePtr->flags & SHOW_TEXT) && (cellPtr->text != NULL)) {

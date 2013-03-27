@@ -662,7 +662,7 @@ static Tcl_FreeProc TableViewFreeProc;
 static Tcl_FreeProc RowFreeProc;
 static Tcl_FreeProc ColumnFreeProc;
 static Tcl_FreeProc CellFreeProc;
-static Tcl_IdleProc DisplayTableViewProc;
+static Tcl_IdleProc DisplayProc;
 static Tcl_ObjCmdProc TableViewCmdProc;
 static Tcl_ObjCmdProc TableViewInstObjCmdProc;
 static Tk_EventProc TableViewEventProc;
@@ -671,7 +671,7 @@ static Tk_SelectionProc SelectionProc;
 
 static void ComputeGeometry(TableView *viewPtr);
 static void ComputeLayout(TableView *viewPtr);
-static int ComputeVisibleEntries(TableView *viewPtr);
+static void ComputeVisibleEntries(TableView *viewPtr);
 static int GetColumn(Tcl_Interp *interp, TableView *viewPtr, Tcl_Obj *objPtr, 
 	Column **colPtrPtr);
 static int GetRow(Tcl_Interp *interp, TableView *viewPtr, Tcl_Obj *objPtr, 
@@ -704,14 +704,13 @@ static void DeleteRows(TableView *viewPtr, BLT_TABLE_NOTIFY_EVENT *eventPtr);
  *
  *---------------------------------------------------------------------------
  */
-
 static void
 EventuallyRedraw(TableView *viewPtr)
 {
     if ((viewPtr->tkwin != NULL) && 
 	((viewPtr->flags & (DONT_UPDATE|REDRAW_PENDING)) == 0)) {
-	viewPtr->flags |= REDRAW_PENDING;
-	Tcl_DoWhenIdle(DisplayTableViewProc, viewPtr);
+	viewPtr->flags |= REDRAW_PENDING | REDRAW;
+	Tcl_DoWhenIdle(DisplayProc, viewPtr);
     }
 }
 
@@ -719,6 +718,37 @@ void
 Blt_TableView_EventuallyRedraw(TableView *viewPtr)
 {
     EventuallyRedraw(viewPtr);
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * PossiblyRedraw --
+ *
+ *	Queues a request to redraw the widget at the next idle point.
+ *	A new idle event procedure is queued only if the there's isn't
+ *	one already queued and updates are turned on.
+ *
+ *	The DONT_UPDATE flag lets the user to turn off redrawing the
+ *	tableview while changes are happening to the table itself.
+ *
+ * Results:
+ *	None.
+ *
+ * Side effects:
+ *	Information gets redisplayed.  Right now we don't do selective
+ *	redisplays:  the whole window will be redrawn.
+ *
+ *---------------------------------------------------------------------------
+ */
+static void
+PossiblyRedraw(TableView *viewPtr)
+{
+    if ((viewPtr->tkwin != NULL) && 
+	((viewPtr->flags & (DONT_UPDATE|REDRAW_PENDING)) == 0)) {
+	viewPtr->flags |= REDRAW_PENDING;
+	Tcl_DoWhenIdle(DisplayProc, viewPtr);
+    }
 }
 
 /*
@@ -2238,10 +2268,15 @@ RowTraceProc(ClientData clientData, BLT_TABLE_TRACE_EVENT *eventPtr)
     if (eventPtr->mask & (TABLE_TRACE_WRITES | TABLE_TRACE_UNSETS)) {
 	TableView *viewPtr;
 
+#ifdef notdef
+	if (eventPtr->mask & TABLE_TRACE_CREATES) {
+	    return TCL_OK;
+	}
+#endif
 	viewPtr = rowPtr->viewPtr;
-	rowPtr->flags |= GEOMETRY | REDRAW;
+	rowPtr->flags |= GEOMETRY;
 	viewPtr->flags |= GEOMETRY;
-	/*EventuallyRedraw(viewPtr);*/
+	PossiblyRedraw(viewPtr);
     }
     return TCL_OK;
 }
@@ -2265,10 +2300,15 @@ ColumnTraceProc(ClientData clientData, BLT_TABLE_TRACE_EVENT *eventPtr)
     if (eventPtr->mask & (TABLE_TRACE_WRITES | TABLE_TRACE_UNSETS)) {
 	TableView *viewPtr;
 
+#ifdef notdef
+	if (eventPtr->mask & TABLE_TRACE_CREATES) {
+	    return TCL_OK;
+	}
+#endif
 	viewPtr = colPtr->viewPtr;
-        colPtr->flags |= GEOMETRY | REDRAW;
+        colPtr->flags |= GEOMETRY;
 	viewPtr->flags |= GEOMETRY;
-	/*EventuallyRedraw(viewPtr);*/
+	PossiblyRedraw(viewPtr);
     }
     return TCL_OK;
 }
@@ -3547,7 +3587,7 @@ ConfigureRow(TableView *viewPtr, Row *rowPtr)
     if (Blt_ConfigModified(rowSpecs, "-style", (char *)NULL)) {
 	/* If the style changed, recompute the geometry of the cells. */
 	rowPtr->flags |= GEOMETRY;
-	viewPtr->flags |= GEOMETRY;
+	viewPtr->flags |= GEOMETRY | REDRAW;
     }
     return TCL_OK;
 }
@@ -3775,7 +3815,7 @@ TableViewPickProc(
 	 * deleted. So recompute the layout. */
 	ComputeLayout(viewPtr);
     }
-    if (viewPtr->flags & VISIBILITY) {
+    if (viewPtr->flags & SCROLL_PENDING) {
 	ComputeVisibleEntries(viewPtr);
     }
     if ((viewPtr->numVisibleRows == 0) || (viewPtr->numVisibleColumns == 0)) {
@@ -3988,13 +4028,16 @@ TableViewEventProc(ClientData clientData, XEvent *eventPtr)
 
     if (eventPtr->type == Expose) {
 	if (eventPtr->xexpose.count == 0) {
+	    fprintf(stderr, "Expose: redraw\n");
+	    viewPtr->flags |= SCROLL_PENDING;
 	    EventuallyRedraw(viewPtr);
 	    Blt_PickCurrentItem(viewPtr->bindTable);
 	}
     } else if (eventPtr->type == ConfigureNotify) {
 	/* Size of the viewport has changed. Recompute visibilty. */
-	viewPtr->flags |= VISIBILITY | LAYOUT_PENDING;
+	viewPtr->flags |= LAYOUT_PENDING | SCROLL_PENDING;
 	EventuallyRedraw(viewPtr);
+	fprintf(stderr, "Configure: redraw\n");
     } else if ((eventPtr->type == FocusIn) || (eventPtr->type == FocusOut)) {
 	if (eventPtr->xfocus.detail != NotifyInferior) {
 	    if (eventPtr->type == FocusIn) {
@@ -4002,6 +4045,7 @@ TableViewEventProc(ClientData clientData, XEvent *eventPtr)
 	    } else {
 		viewPtr->flags &= ~FOCUS;
 	    }
+	    fprintf(stderr, "Focus: redraw\n");
 	    EventuallyRedraw(viewPtr);
 	}
     } else if (eventPtr->type == DestroyNotify) {
@@ -4010,7 +4054,7 @@ TableViewEventProc(ClientData clientData, XEvent *eventPtr)
 	    Tcl_DeleteCommandFromToken(viewPtr->interp, viewPtr->cmdToken);
 	}
 	if (viewPtr->flags & REDRAW_PENDING) {
-	    Tcl_CancelIdleCall(DisplayTableViewProc, viewPtr);
+	    Tcl_CancelIdleCall(DisplayProc, viewPtr);
 	}
 	if (viewPtr->flags & SELECT_PENDING) {
 	    Tcl_CancelIdleCall(SelectCommandProc, viewPtr);
@@ -4316,7 +4360,7 @@ ConfigureTableView(Tcl_Interp *interp, TableView *viewPtr)
      */
     if (Blt_ConfigModified(tableSpecs, "-width", "-height", "-hide", 
 			   (char *)NULL)) {
-	viewPtr->flags |= VISIBILITY;
+	viewPtr->flags |= SCROLL_PENDING;
     }
     if (Blt_ConfigModified(tableSpecs, "-font", "-linespacing", (char *)NULL)) {
 	viewPtr->flags |= GEOMETRY;
@@ -4400,7 +4444,7 @@ ConfigureFilters(Tcl_Interp *interp, TableView *viewPtr)
      * These options change the layout of the box.  Mark the widget for update.
      */
     if (Blt_ConfigModified(filterSpecs, "-show", "-hide", (char *)NULL)) {
-	viewPtr->flags |= VISIBILITY;
+	viewPtr->flags |= SCROLL_PENDING;
     }
     if (Blt_ConfigModified(tableSpecs, "-font", (char *)NULL)) {
 	viewPtr->flags |= LAYOUT_PENDING;
@@ -5210,7 +5254,7 @@ ConfigureColumn(TableView *viewPtr, Column *colPtr)
     if (Blt_ConfigModified(columnSpecs, "-style", (char *)NULL)) {
 	/* If the style changed, recompute the geometry of the cells. */
 	colPtr->flags |= GEOMETRY;
-	viewPtr->flags |= GEOMETRY;
+	viewPtr->flags |= GEOMETRY | REDRAW;
     }
     return TCL_OK;
 }
@@ -5744,7 +5788,7 @@ fprintf(stderr, "ColumnConfigure: Column %s is NULL\n", Tcl_GetString(objv[3]));
     if (Blt_ConfigModified(columnSpecs, "-formatcommand", "-style", "-icon",
 			   (char *)NULL)) {
 	colPtr->flags |= GEOMETRY;
-	viewPtr->flags |= GEOMETRY;
+	viewPtr->flags |= GEOMETRY | REDRAW;
     }
     viewPtr->flags |= LAYOUT_PENDING;
     EventuallyRedraw(viewPtr);
@@ -5920,7 +5964,7 @@ ColumnExposeOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	}
 	Blt_Chain_Destroy(chain);
 	if (redraw) {
-	    viewPtr->flags |= VISIBILITY;
+	    viewPtr->flags |= SCROLL_PENDING;
 	    EventuallyRedraw(viewPtr);
 	}
     }
@@ -5981,7 +6025,7 @@ ColumnHideOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	}
 	Blt_Chain_Destroy(chain);
 	if (redraw) {
-	    viewPtr->flags |= VISIBILITY;
+	    viewPtr->flags |= SCROLL_PENDING;
 	    EventuallyRedraw(viewPtr);
 	}
     }
@@ -6301,7 +6345,7 @@ ColumnResizeAnchorOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	return TCL_ERROR;
     } 
     viewPtr->colResizeAnchor = y;
-    viewPtr->flags |= COLUMN_RESIZE;
+    viewPtr->flags |= COLUMN_RESIZE | REDRAW;
     UpdateColumnMark(viewPtr, y);
     return TCL_OK;
 }
@@ -6352,7 +6396,7 @@ ColumnResizeMarkOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (Tcl_GetIntFromObj(interp, objv[4], &y) != TCL_OK) {
 	return TCL_ERROR;
     } 
-    viewPtr->flags |= COLUMN_RESIZE;
+    viewPtr->flags |= COLUMN_RESIZE | REDRAW;
     UpdateColumnMark(viewPtr, y);
     return TCL_OK;
 }
@@ -6516,7 +6560,7 @@ ColumnShowOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	}
 	Blt_Chain_Destroy(chain);
 	if (redraw) {
-	    viewPtr->flags |= VISIBILITY;
+	    viewPtr->flags |= SCROLL_PENDING;
 	    EventuallyRedraw(viewPtr);
 	}
     }
@@ -7991,7 +8035,7 @@ RowExposeOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	}
 	Blt_Chain_Destroy(chain);
 	if (redraw) {
-	    viewPtr->flags |= VISIBILITY;
+	    viewPtr->flags |= SCROLL_PENDING;
 	    EventuallyRedraw(viewPtr);
 	}
     }
@@ -8052,7 +8096,7 @@ RowHideOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	}
 	Blt_Chain_Destroy(chain);
 	if (redraw) {
-	    viewPtr->flags |= VISIBILITY;
+	    viewPtr->flags |= SCROLL_PENDING;
 	    EventuallyRedraw(viewPtr);
 	}
     }
@@ -8602,7 +8646,7 @@ RowShowOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	}
 	Blt_Chain_Destroy(chain);
 	if (redraw) {
-	    viewPtr->flags |= VISIBILITY;
+	    viewPtr->flags |= SCROLL_PENDING;
 	    EventuallyRedraw(viewPtr);
 	}
     }
@@ -8718,7 +8762,7 @@ ScanOp(TableView *viewPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	}
 	viewPtr->xOffset = worldX;
 	viewPtr->yOffset = worldY;
-	viewPtr->flags |= VISIBILITY;
+	viewPtr->flags |= SCROLL_PENDING;
 	EventuallyRedraw(viewPtr);
     }
     return TCL_OK;
@@ -10238,28 +10282,26 @@ ComputeLayout(TableView *viewPtr)
     if (viewPtr->flags & ROW_TITLES) {
 	viewPtr->width += viewPtr->rowTitleWidth;
     }
-    viewPtr->flags |= VISIBILITY;	/* Flag to recompute visible rows and
+    viewPtr->flags |= SCROLL_PENDING;	/* Flag to recompute visible rows and
 					 * columns. */
 }
 
-static int
+static void
 ComputeVisibleEntries(TableView *viewPtr)
 {
     long i, low, high;
-    int redraw;
     long first, last;
     unsigned int  viewWidth, viewHeight;
     unsigned long numVisibleRows, numVisibleColumns; 
     unsigned long xOffset, yOffset;
 
-    viewPtr->flags &= ~VISIBILITY;
     xOffset = Blt_AdjustViewport(viewPtr->xOffset, viewPtr->worldWidth,
 	VPORTWIDTH(viewPtr), viewPtr->xScrollUnits, viewPtr->scrollMode);
     yOffset = Blt_AdjustViewport(viewPtr->yOffset, 
 	viewPtr->worldHeight, VPORTHEIGHT(viewPtr), viewPtr->yScrollUnits, 
 	viewPtr->scrollMode);
     if ((viewPtr->numRows == 0) || (viewPtr->numColumns == 0)) {
-	return 1;
+	return;
     }
     if ((xOffset != viewPtr->xOffset) || (yOffset != viewPtr->yOffset)) {
 	viewPtr->yOffset = yOffset;
@@ -10270,8 +10312,6 @@ ComputeVisibleEntries(TableView *viewPtr)
 
     first = last = -1;
     numVisibleRows = 0;
-
-    redraw = FALSE;
 
     /* FIXME: Handle hidden rows. */
     /* Find the row that contains the start of the viewport.  */
@@ -10325,7 +10365,7 @@ ComputeVisibleEntries(TableView *viewPtr)
 	    numVisibleRows++;
 	    if (rowPtr->flags & REDRAW) {
 		rowPtr->flags &= ~REDRAW;
-		redraw = TRUE;
+		viewPtr->flags |= REDRAW | SCROLL_PENDING;
 	    }
 	}
     }
@@ -10385,14 +10425,11 @@ ComputeVisibleEntries(TableView *viewPtr)
 	    numVisibleColumns++;
 	    if (colPtr->flags & REDRAW) {
 		colPtr->flags &= ~REDRAW;
-		redraw = TRUE;
+		viewPtr->flags |= REDRAW | SCROLL_PENDING;
 	    }
 	}
     }
     assert(viewPtr->numVisibleColumns == numVisibleColumns);
-    Blt_PickCurrentItem(viewPtr->bindTable);
-    viewPtr->flags |= SCROLL_PENDING;
-    return redraw;
 }
 
 static void
@@ -10550,7 +10587,8 @@ RebuildTableView(TableView *viewPtr)
 	    }
 	}
     }
-    viewPtr->flags |= LAYOUT_PENDING;
+    fprintf(stderr, "RebuildTableView: redraw\n");
+    viewPtr->flags |= LAYOUT_PENDING | SCROLL_PENDING;
     EventuallyRedraw(viewPtr);
 }
 
@@ -10670,7 +10708,7 @@ AddColumns(TableView *viewPtr, BLT_TABLE_NOTIFY_EVENT *eventPtr)
     viewPtr->columns = columns;
     viewPtr->numColumns = newNumColumns;
     viewPtr->flags |= LAYOUT_PENDING;
-    EventuallyRedraw(viewPtr);
+    PossiblyRedraw(viewPtr);
 }
 
 static void
@@ -10728,7 +10766,7 @@ AddRows(TableView *viewPtr, BLT_TABLE_NOTIFY_EVENT *eventPtr)
     viewPtr->rows = rows;
     viewPtr->numRows = newNumRows;
     viewPtr->flags |= LAYOUT_PENDING;
-    EventuallyRedraw(viewPtr);
+    PossiblyRedraw(viewPtr);
 }
 
 
@@ -10818,7 +10856,7 @@ AttachTable(Tcl_Interp *interp, TableView *viewPtr)
 /*
  *---------------------------------------------------------------------------
  *
- * DisplayTableViewProc --
+ * DisplayProc --
  *
  * 	This procedure is invoked to display the widget.
  *
@@ -10844,20 +10882,19 @@ AttachTable(Tcl_Interp *interp, TableView *viewPtr)
  *---------------------------------------------------------------------------
  */
 static void
-DisplayTableViewProc(ClientData clientData)
+DisplayProc(ClientData clientData)
 {
     Pixmap drawable; 
     TableView *viewPtr = clientData;
     int reqWidth, reqHeight;
     long i;
-    int redraw;
 
     viewPtr->flags &= ~REDRAW_PENDING;
     if (viewPtr->tkwin == NULL) {
 	return;				/* Window has been destroyed. */
     }
 #ifdef notdef
-    fprintf(stderr, "DisplayTableViewProc %s\n", Tk_PathName(viewPtr->tkwin));
+    fprintf(stderr, "DisplayProc %s\n", Tk_PathName(viewPtr->tkwin));
 #endif
     if (viewPtr->sort.flags & SORT_PENDING) {
 	/* If the table needs resorting do it now before recalculating the
@@ -10870,33 +10907,29 @@ DisplayTableViewProc(ClientData clientData)
     if (viewPtr->flags & LAYOUT_PENDING) {
 	ComputeLayout(viewPtr);
     }
-
-    redraw = TRUE;
-    if (viewPtr->flags & (SCROLL_PENDING | VISIBILITY)) {
-	/* Determine the visible rows and columns. The can happen when the
-	 * -hide flags changes on a row or column. */
-	redraw = ComputeVisibleEntries(viewPtr);
-    }
     if (viewPtr->flags & SCROLL_PENDING) {
 	int width, height;
-	/* Scrolling means that the view port has changed and that the visible
+	/* Scrolling means that the view port has changed or that the visible
 	 * entries need to be recomputed. */
 	width = VPORTWIDTH(viewPtr);
 	height = VPORTHEIGHT(viewPtr);
 	if ((viewPtr->flags & SCROLLX) && (viewPtr->xScrollCmdObjPtr != NULL)) {
+	    /* Tell the x-scrollbar the new sizes. */
 	    Blt_UpdateScrollbar(viewPtr->interp, viewPtr->xScrollCmdObjPtr, 
 		viewPtr->xOffset, viewPtr->xOffset + width, 
 		viewPtr->worldWidth);
 	}
 	if ((viewPtr->flags & SCROLLY) && (viewPtr->yScrollCmdObjPtr != NULL)) {
+	    /* Tell the y-scrollbar the new sizes. */
 	    Blt_UpdateScrollbar(viewPtr->interp, viewPtr->yScrollCmdObjPtr,
 		viewPtr->yOffset, viewPtr->yOffset + height,
 		viewPtr->worldHeight);
 	}
 	viewPtr->flags &= ~SCROLL_PENDING;
-	redraw = TRUE;
+	/* Determine the visible rows and columns. The can happen when the
+	 * -hide flags changes on a row or column. */
+	ComputeVisibleEntries(viewPtr);
     }
-
     reqHeight = (viewPtr->reqHeight > 0) ? viewPtr->reqHeight : 
 	viewPtr->worldHeight + viewPtr->colTitleHeight + 
 	viewPtr->colFilterHeight + 2 * viewPtr->inset + 1;
@@ -10910,9 +10943,12 @@ DisplayTableViewProc(ClientData clientData)
     if (!Tk_IsMapped(viewPtr->tkwin)) {
 	return;
     }
-    if (!redraw) {
+    if ((viewPtr->flags & REDRAW) == 0) {
 	return;
     }
+    viewPtr->flags &= ~REDRAW;
+    fprintf(stderr, "Actually Redrawing table\n");
+    Blt_PickCurrentItem(viewPtr->bindTable);
     if ((viewPtr->numVisibleRows == 0) || (viewPtr->numVisibleColumns == 0)){
 	/* Empty table, draw blank area. */
 	Blt_Bg_FillRectangle(viewPtr->tkwin, Tk_WindowId(viewPtr->tkwin), 
@@ -10999,7 +11035,7 @@ NewTableView(Tcl_Interp *interp, Tk_Window tkwin)
     viewPtr->tkwin = tkwin;
     viewPtr->display = Tk_Display(tkwin);
     viewPtr->interp = interp;
-    viewPtr->flags = GEOMETRY | AUTOCREATE;
+    viewPtr->flags = GEOMETRY | SCROLL_PENDING| AUTOCREATE;
     viewPtr->highlightWidth = 2;
     viewPtr->borderWidth = 2;
     viewPtr->relief = TK_RELIEF_SUNKEN;

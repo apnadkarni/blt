@@ -126,15 +126,14 @@
 #define TEXTALLOC	(1<<7)		/* Indicates that the cell's formatted
 					 * text was alloced and must be
 					 * freed. */
-#define VISIBILITY	(1<<8)
-#define FOCUS		(1<<9)
+#define FOCUS		(1<<8)
+#define REDRAW		(1<<9)
 
 /* Row and column only flags */
 #define DELETED		(1<<10)		/* The row or column has been
 					 * deleted. */
 
 #define POSTED		(1<<11)
-#define REDRAW		(1<<12)
 					
 /* These are tableview only flags. */
 #define LAYOUT_PENDING	(1<<13)
