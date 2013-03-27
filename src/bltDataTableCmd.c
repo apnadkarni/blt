@@ -2010,7 +2010,8 @@ ColumnCopyOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * ColumnJoinOp --
  *
- *	Joins the rows of the source table onto the destination.
+ *	Joins by column the source table onto the destination.  Duplicate
+ *	column labels are allowed.
  * 
  * Results:
  *	A standard TCL result. If the tag or column index is invalid,
@@ -2027,29 +2028,28 @@ static int
 ColumnJoinOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 {
     JoinSwitches switches;
-    BLT_TABLE srcTable;
+    BLT_TABLE src, dst;
     size_t oldWidth, extra;
     int result;
     BLT_TABLE_COLUMN srcCol;
     long i;
-    const char *srcName;
 
     /* Process switches following the column names. */
-    srcName = Tcl_GetString(objv[3]);
-    if (blt_table_open(interp, srcName, &srcTable) != TCL_OK) {
+    if (blt_table_open(interp, Tcl_GetString(objv[3]), &src) != TCL_OK) {
 	return TCL_ERROR;
     }
     switches.flags = 0;
     result = TCL_ERROR;
-    columnIterSwitch.clientData = srcTable;
-    blt_table_iterate_all_columns(srcTable, &switches.ci);
+    dst = cmdPtr->table;
+    columnIterSwitch.clientData = src;
+    blt_table_iterate_all_columns(src, &switches.ci);
     if (Blt_ParseSwitches(interp, joinSwitches, objc - 4, objv + 4, &switches, 
 	BLT_SWITCH_DEFAULTS | JOIN_COLUMN) < 0) {
 	goto error;
     }
-    oldWidth = blt_table_num_columns(cmdPtr->table);
+    oldWidth = blt_table_num_columns(dst);
     extra = switches.ci.numEntries;
-    if (blt_table_extend_columns(interp, cmdPtr->table, extra, NULL) != TCL_OK) {
+    if (blt_table_extend_columns(interp, dst, extra, NULL) != TCL_OK) {
 	goto error;
     }
     i = oldWidth;
@@ -2062,51 +2062,49 @@ ColumnJoinOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 
 	/* Copy the label and the column type. */
 	label = blt_table_column_label(srcCol);
-	dstCol = blt_table_column(cmdPtr->table, i);
+	dstCol = blt_table_column(dst, i);
 	i++;
-	if (blt_table_set_column_label(interp, cmdPtr->table, dstCol, label) 
-	    != TCL_OK) {
+	if (blt_table_set_column_label(interp, dst, dstCol, label) != TCL_OK) {
 	    goto error;
 	}
 	srcType = blt_table_column_type(srcCol);
 	blt_table_set_column_type(cmdPtr->table, dstCol, srcType);
 
-	for (srcRow = blt_table_first_row(srcTable); srcRow != NULL; 
-	     srcRow = blt_table_next_row(srcTable, srcRow)) {
+	for (srcRow = blt_table_first_row(src); srcRow != NULL; 
+	     srcRow = blt_table_next_row(src, srcRow)) {
 	    BLT_TABLE_VALUE value;
 	    BLT_TABLE_ROW dstRow;
 
-	    dstRow = blt_table_get_row_by_label(cmdPtr->table, label);
+	    dstRow = blt_table_get_row_by_label(dst, label);
 	    if (dstRow == NULL) {
 
 		/* If row doesn't exist in destination table, create a new
 		 * row, copying the label. */
 		
-		if (blt_table_extend_columns(interp, cmdPtr->table, 1, &dstCol) 
-		    != TCL_OK) {
+		if (blt_table_extend_columns(interp, dst, 1, &dstCol)
+		    !=TCL_OK) {
 		    goto error;
 		}
-		if (blt_table_set_row_label(interp, cmdPtr->table, dstRow, label) 
+		if (blt_table_set_row_label(interp, dst, dstRow, label) 
 		    != TCL_OK) {
 		    goto error;
 		}
 	    }
-	    value = blt_table_get_value(srcTable, srcRow, srcCol);
+	    value = blt_table_get_value(src, srcRow, srcCol);
 	    if (value == NULL) {
 		continue;
 	    }
-	    if (blt_table_set_value(cmdPtr->table, dstRow, dstCol, value) 
-		!= TCL_OK) {
+	    if (blt_table_set_value(dst, dstRow, dstCol, value) != TCL_OK) {
 		goto error;
 	    }
 	}
 	if ((switches.flags & COPY_NOTAGS) == 0) {
-	    CopyColumnTags(srcTable, cmdPtr->table, srcCol, dstCol);
+	    CopyColumnTags(src, dst, srcCol, dstCol);
 	}
     }
     result = TCL_OK;
  error:
-    blt_table_close(srcTable);
+    blt_table_close(src);
     Blt_FreeSwitches(addSwitches, &switches, JOIN_COLUMN);
     return result;
 }
@@ -2137,7 +2135,7 @@ ColumnDeleteOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     int result;
 
     result = TCL_ERROR;
-    if (blt_table_iterate_column_objv(interp, cmdPtr->table, objc - 3, objv + 3, 
+    if (blt_table_iterate_column_objv(interp, cmdPtr->table, objc - 3, objv + 3,
 	&iter) != TCL_OK) {
 	return TCL_ERROR;
     }
@@ -2180,7 +2178,7 @@ ColumnDupOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     BLT_TABLE table;
     Tcl_Obj *listObjPtr;
     BLT_TABLE_ITERATOR iter;
-    BLT_TABLE_COLUMN src;
+    BLT_TABLE_COLUMN srcCol;
 
     table = cmdPtr->table;
     listObjPtr = NULL;
@@ -2189,20 +2187,21 @@ ColumnDupOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	goto error;
     }
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
-    for (src = blt_table_first_tagged_column(&iter); src != NULL; 
-	 src = blt_table_next_tagged_column(&iter)) {
+    for (srcCol = blt_table_first_tagged_column(&iter); srcCol != NULL; 
+	 srcCol = blt_table_next_tagged_column(&iter)) {
 	long i;
-	BLT_TABLE_COLUMN dest;
+	BLT_TABLE_COLUMN dstCol;
 
-	dest = blt_table_create_column(interp, table,blt_table_column_label(src));
-	if (dest == NULL) {
+	dstCol = blt_table_create_column(interp, table, 
+		blt_table_column_label(srcCol));
+	if (dstCol == NULL) {
 	    goto error;
 	}
-	if (CopyColumn(interp, table, table, src, dest) != TCL_OK) {
+	if (CopyColumn(interp, table, table, srcCol, dstCol) != TCL_OK) {
 	    goto error;
 	}
-	CopyColumnTags(table, table, src, dest);
-	i = blt_table_column_index(dest);
+	CopyColumnTags(table, table, srcCol, dstCol);
+	i = blt_table_column_index(dstCol);
 	Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewLongObj(i));
     }
     blt_table_free_iterator_objv(&iter);

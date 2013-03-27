@@ -261,11 +261,11 @@ UnsetLabel(RowColumn *rcPtr, Header *headerPtr)
  * SetLabel --
  *
  *	Changes the label for the row or column.  Labels aren't necessarily
- *	unique, it's not enforced.  The rationale is that it is convenient
+ *	unique. It's not enforced.  The rationale is that it is convenient
  *	to be able to add rows/columns to a table, and then change the 
  *	labels.  For example, when importing table data from a file,
  *	you can't apriori change the labels.  We could add #n to make the 
- *	label unique, but changing them is a pain.
+ *	label unique, but detecting and changing them is a pain.
  *	
  *
  * Results:
@@ -5349,20 +5349,21 @@ blt_table_value_exists(Table *tablePtr, Row *rowPtr, Column *colPtr)
  *---------------------------------------------------------------------------
  */
 int
-blt_table_extend_rows(Tcl_Interp *interp, Table *tablePtr, size_t n, Row **rows)
+blt_table_extend_rows(Tcl_Interp *interp, Table *tablePtr, size_t numExtra, 
+		      Row **rows)
 {
     long i;
     Blt_Chain chain;
     Blt_ChainLink link;
 
-    if (n == 0) {
+    if (numExtra == 0) {
 	return TCL_OK;
     }
     chain = Blt_Chain_Create();
-    if (!ExtendRows(tablePtr, n, chain)) {
+    if (!ExtendRows(tablePtr, numExtra, chain)) {
 	if (interp != NULL) {
 	    Tcl_AppendResult(interp, "can't extend table by ", 
-		Blt_Ltoa(n), " rows: out of memory.", (char *)NULL);
+		Blt_Ltoa(numExtra), " rows: out of memory.", (char *)NULL);
 	}
 	Blt_Chain_Destroy(chain);
 	return TCL_ERROR;
@@ -5377,8 +5378,8 @@ blt_table_extend_rows(Tcl_Interp *interp, Table *tablePtr, size_t n, Row **rows)
 	}
     }
     assert(Blt_Chain_GetLength(chain) > 0);
-    Blt_Chain_Destroy(chain);
     NotifyRowChanged(tablePtr, NULL, TABLE_NOTIFY_ROWS_CREATED);
+    Blt_Chain_Destroy(chain);
     return TCL_OK;
 }
 
@@ -5596,29 +5597,29 @@ blt_table_delete_column(Table *tablePtr, Column *colPtr)
  *---------------------------------------------------------------------------
  */
 int
-blt_table_extend_columns(Tcl_Interp *interp, BLT_TABLE table, size_t n, 
-			Column **cols)
+blt_table_extend_columns(Tcl_Interp *interp, BLT_TABLE table, size_t numExtra, 
+			Column **columns)
 {
     size_t i;
-    Blt_Chain columns;
+    Blt_Chain chain;
     Blt_ChainLink link;
 
-    columns = Blt_Chain_Create();
-    if (!ExtendColumns(table, n, columns)) {
+    chain = Blt_Chain_Create();
+    if (!ExtendColumns(table, numExtra, chain)) {
 	if (interp != NULL) {
 	    Tcl_AppendResult(interp, "can't extend table by ", 
-		Blt_Ltoa(n), " columns: out of memory.", (char *)NULL);
+		Blt_Ltoa(numExtra), " columns: out of memory.", (char *)NULL);
 	}
-	Blt_Chain_Destroy(columns);
+	Blt_Chain_Destroy(chain);
 	return TCL_ERROR;
     }
-    for (i = 0, link = Blt_Chain_FirstLink(columns); link != NULL; 
+    for (i = 0, link = Blt_Chain_FirstLink(chain); link != NULL; 
 	 link = Blt_Chain_NextLink(link), i++) {
 	Column *colPtr;
 
 	colPtr = Blt_Chain_GetValue(link);
-	if (cols != NULL) {
-	    cols[i] = colPtr;
+	if (columns != NULL) {
+	    columns[i] = colPtr;
 	}
 	colPtr->type = TABLE_COLUMN_TYPE_STRING;
     }
