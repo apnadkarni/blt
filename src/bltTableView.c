@@ -707,9 +707,10 @@ static void DeleteRows(TableView *viewPtr, BLT_TABLE_NOTIFY_EVENT *eventPtr);
 static void
 EventuallyRedraw(TableView *viewPtr)
 {
+    viewPtr->flags |= REDRAW;
     if ((viewPtr->tkwin != NULL) && 
 	((viewPtr->flags & (DONT_UPDATE|REDRAW_PENDING)) == 0)) {
-	viewPtr->flags |= REDRAW_PENDING | REDRAW;
+	viewPtr->flags |= REDRAW_PENDING;
 	Tcl_DoWhenIdle(DisplayProc, viewPtr);
     }
 }
