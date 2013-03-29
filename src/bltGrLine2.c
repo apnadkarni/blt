@@ -2852,20 +2852,20 @@ SmoothElement(LineElement *elemPtr)
 
 	case SMOOTH_QUADRATIC:
 	case SMOOTH_NATURAL:
-	    if (tracePtr->numPoints > 3) {
+	    if (tracePtr->numPoints > 2) {
 		GenerateSpline(tracePtr);
 	    }
 	    break;
 
 	case SMOOTH_QUADRATIC | SMOOTH_PARAMETRIC:
 	case SMOOTH_NATURAL | SMOOTH_PARAMETRIC:
-	    if (tracePtr->numPoints > 3) {
+	    if (tracePtr->numPoints > 2) {
 		GenerateParametricSplineOld(tracePtr);
 	    }
 	    break;
 
 	case SMOOTH_CATROM:
-	    if (tracePtr->numPoints > 3) {
+	    if (tracePtr->numPoints > 2) {
 		GenerateCatromSpline(tracePtr);
 	    }
 	    break;
