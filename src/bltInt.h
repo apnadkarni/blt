@@ -97,6 +97,7 @@
 #endif /* TCL_UTF_MAX */
 
 #include <bltAssert.h>
+#include <bltTypes.h>
 #include "bltTclProcs.h"
 #include "bltTclIntProcs.h"
 #include "bltTkProcs.h"
