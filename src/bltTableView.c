@@ -914,6 +914,7 @@ CompareRows(const void *a, const void *b)
 
     viewPtr = tableViewInstance;
     sortPtr = &viewPtr->sort;
+    result = 0;				/* Suppress compiler warning. */
     for (link = Blt_Chain_FirstLink(sortPtr->order); link != NULL;
 	 link = Blt_Chain_NextLink(link)) {
 	Column *colPtr;
@@ -2398,7 +2399,7 @@ RemoveColumnCells(TableView *viewPtr, Column *colPtr)
     key.colPtr = colPtr;
     for (i = 0; i < viewPtr->numRows; i++) {
 	Blt_HashEntry *hPtr;
-	Column *rowPtr;
+	Row *rowPtr;
 
 	rowPtr = viewPtr->rows[i];
 	key.rowPtr = rowPtr;
@@ -3575,6 +3576,7 @@ ConfigureRow(TableView *viewPtr, Row *rowPtr)
 }
 
 
+#ifdef notdef
 static void
 PrintEventFlags(int type)
 {
@@ -3599,6 +3601,7 @@ PrintEventFlags(int type)
     }
     fprintf(stderr, "\n");
 }
+#endif
 
 static int
 TableEventProc(ClientData clientData, BLT_TABLE_NOTIFY_EVENT *eventPtr)
@@ -5142,6 +5145,7 @@ AdjustColumns(TableView *viewPtr)
     }
 }
 
+#ifdef notdef
 static void
 AdjustRows(TableView *viewPtr)
 {
@@ -5232,6 +5236,7 @@ AdjustRows(TableView *viewPtr)
 	y += rowPtr->height;
     }
 }
+#endif
 
 static int 
 ConfigureColumn(TableView *viewPtr, Column *colPtr)
@@ -5251,53 +5256,6 @@ ConfigureColumn(TableView *viewPtr, Column *colPtr)
 }
 
 
-/* 
- * After any changes to the rows array (rows added, deleted, sorted) the
- * association between the row entries and the row hash table must be fixed.
- */
-static void
-FixRowTable(TableView *viewPtr)
-{
-    BLT_TABLE_ROW row;
-    long i;
-
-    for (i = 0, row = blt_table_first_row(viewPtr->table); row != NULL;  
-	 row = blt_table_next_row(viewPtr->table, row)) {
-	Blt_HashEntry *hPtr;
-
-	hPtr = Blt_FindHashEntry(&viewPtr->rowTable, (char *)row);
-	if (hPtr != NULL) {
-	    Row *rowPtr;
-
-	    rowPtr = Blt_GetHashValue(hPtr);
-	    viewPtr->rows[i] = rowPtr;
-	    rowPtr->index = i;
-	    i++;
-	}
-    }
-}
-
-static void
-FixColumnTable(TableView *viewPtr)
-{
-    BLT_TABLE_COLUMN col;
-    long i;
-
-    for (i = 0, col = blt_table_first_column(viewPtr->table); col != NULL;  
-	 col = blt_table_next_column(viewPtr->table, col)) {
-	Blt_HashEntry *hPtr;
-
-	hPtr = Blt_FindHashEntry(&viewPtr->columnTable, (char *)col);
-	if (hPtr != NULL) {
-	    Column *colPtr;
-
-	    colPtr = Blt_GetHashValue(hPtr);
-	    viewPtr->columns[i] = colPtr;
-	    colPtr->index = i;
-	    i++;
-	}
-    }
-}
 
 static Cell *
 NewCell(TableView *viewPtr, Blt_HashEntry *hashPtr)

@@ -63,7 +63,7 @@ extern int vsnprintf(char *buf, size_t size, const char *fmt, va_list args);
 const char *
 Blt_LastError(void)
 {
-    return sys_errlist[errno];
+    return strerror(errno);
 }
 
 int
