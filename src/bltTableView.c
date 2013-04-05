@@ -10721,12 +10721,12 @@ AddColumns(TableView *viewPtr, BLT_TABLE_NOTIFY_EVENT *eventPtr)
 	    colPtr = CreateColumn(viewPtr, col, hPtr);
 	    AddColumnGeometry(viewPtr, colPtr);
 	    key.colPtr = colPtr;
-	    for (j = 0; j < viewPtr->numColumns; j++) {
+	    for (j = 0; j < viewPtr->numRows; j++) {
 		Cell *cellPtr;
 		Blt_HashEntry *h2Ptr;
 		int isNew;
 
-		key.colPtr = viewPtr->columns[j];
+		key.rowPtr = viewPtr->rows[j];
 		h2Ptr = Blt_CreateHashEntry(&viewPtr->cellTable, (char *)&key, 
 					    &isNew);
 		assert(isNew);
