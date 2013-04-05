@@ -2265,9 +2265,10 @@ static int
 RowTraceProc(ClientData clientData, BLT_TABLE_TRACE_EVENT *eventPtr)
 {
     Row *rowPtr = clientData; 
+    TableView *viewPtr;
 
+    viewPtr = rowPtr->viewPtr;
     if (eventPtr->mask & (TABLE_TRACE_WRITES | TABLE_TRACE_UNSETS)) {
-	TableView *viewPtr;
 
 #ifdef notdef
 	if (eventPtr->mask & TABLE_TRACE_CREATES) {
@@ -2275,8 +2276,8 @@ RowTraceProc(ClientData clientData, BLT_TABLE_TRACE_EVENT *eventPtr)
 	}
 #endif
 	viewPtr = rowPtr->viewPtr;
-	rowPtr->flags |= GEOMETRY;
-	viewPtr->flags |= GEOMETRY;
+	rowPtr->flags |= GEOMETRY | REDRAW;
+	viewPtr->flags |= GEOMETRY | LAYOUT_PENDING;
 	PossiblyRedraw(viewPtr);
     }
     return TCL_OK;
@@ -2307,8 +2308,8 @@ ColumnTraceProc(ClientData clientData, BLT_TABLE_TRACE_EVENT *eventPtr)
 	}
 #endif
 	viewPtr = colPtr->viewPtr;
-        colPtr->flags |= GEOMETRY;
-	viewPtr->flags |= GEOMETRY;
+        colPtr->flags |= GEOMETRY | REDRAW;
+	viewPtr->flags |= GEOMETRY | LAYOUT_PENDING;
 	PossiblyRedraw(viewPtr);
     }
     return TCL_OK;
@@ -2366,69 +2367,49 @@ DestroyCell(Cell *cellPtr)
 static void
 RemoveRowCells(TableView *viewPtr, Row *rowPtr)
 {
-    Blt_ChainLink link;
-    Blt_Chain deleted;
-    Blt_HashEntry *hPtr;
-    Blt_HashSearch iter;
+    CellKey key;
+    long i;
 
-    /* Create a list to hold pointer to all cells associated with the deleted
-     * row. We can't remove them the cell hash table as we are walking the
-     * table. */
-    deleted = Blt_Chain_Create();
-    for (hPtr = Blt_FirstHashEntry(&viewPtr->cellTable, &iter); hPtr != NULL;
-	 hPtr = Blt_NextHashEntry(&iter)) {
-	CellKey *keyPtr;
-	
-	keyPtr = Blt_GetHashKey(&viewPtr->cellTable, hPtr);
-	if (keyPtr->rowPtr == rowPtr) {
+    /* For each column remove the row, column combination in the table. */
+    key.rowPtr = rowPtr;
+    for (i = 0; i < viewPtr->numColumns; i++) {
+	Blt_HashEntry *hPtr;
+	Column *colPtr;
+
+	colPtr = viewPtr->columns[i];
+	key.colPtr = colPtr;
+	hPtr = Blt_FindHashEntry(&viewPtr->cellTable, &key);
+	if (hPtr != NULL) {
 	    Cell *cellPtr;
 
 	    cellPtr = Blt_GetHashValue(hPtr);
-	    Blt_Chain_Append(deleted, cellPtr); /* Mark as to be removed */
+	    DestroyCell(cellPtr);
 	}
     }
-    for (link = Blt_Chain_FirstLink(deleted); link != NULL; 
-	 link = Blt_Chain_NextLink(link)) {
-	Cell *cellPtr;
-	
-	cellPtr = Blt_GetHashValue(hPtr);
-	DestroyCell(cellPtr);
-    }
-    Blt_Chain_Destroy(deleted);
 }
 
 static void
 RemoveColumnCells(TableView *viewPtr, Column *colPtr)
 {
-    Blt_ChainLink link;
-    Blt_Chain deleted;
-    Blt_HashEntry *hPtr;
-    Blt_HashSearch iter;
-    
-    /* Create a list to hold pointer to all cells associated with the deleted
-     * column. We can't remove them the cell hash table as we are walking the
-     * table. */
-    deleted = Blt_Chain_Create();
-    for (hPtr = Blt_FirstHashEntry(&viewPtr->cellTable, &iter); hPtr != NULL;
-	 hPtr = Blt_NextHashEntry(&iter)) {
-	CellKey *keyPtr;
-	
-	keyPtr = Blt_GetHashKey(&viewPtr->cellTable, hPtr);
-	if (keyPtr->colPtr == colPtr) {
+    CellKey key;
+    long i;
+
+    /* For each row remove the row,column combination in the table. */
+    key.colPtr = colPtr;
+    for (i = 0; i < viewPtr->numRows; i++) {
+	Blt_HashEntry *hPtr;
+	Column *rowPtr;
+
+	rowPtr = viewPtr->rows[i];
+	key.rowPtr = rowPtr;
+	hPtr = Blt_FindHashEntry(&viewPtr->cellTable, &key);
+	if (hPtr != NULL) {
 	    Cell *cellPtr;
 
 	    cellPtr = Blt_GetHashValue(hPtr);
-	    Blt_Chain_Append(deleted, cellPtr); /* Mark as to be removed */
+	    DestroyCell(cellPtr);
 	}
     }
-    for (link = Blt_Chain_FirstLink(deleted); link != NULL; 
-	 link = Blt_Chain_NextLink(link)) {
-	Cell *cellPtr;
-	
-	cellPtr = Blt_GetHashValue(hPtr);
-	DestroyCell(cellPtr);
-    }
-    Blt_Chain_Destroy(deleted);
 }
 
 static void
@@ -3817,6 +3798,7 @@ TableViewPickProc(
 	ComputeLayout(viewPtr);
     }
     if (viewPtr->flags & SCROLL_PENDING) {
+	viewPtr->flags &= ~SCROLL_PENDING;
 	ComputeVisibleEntries(viewPtr);
     }
     if ((viewPtr->numVisibleRows == 0) || (viewPtr->numVisibleColumns == 0)) {
@@ -3893,6 +3875,15 @@ ResetTableView(TableView *viewPtr)
 {
     Blt_HashEntry *hPtr;
     Blt_HashSearch iter;
+
+    if (viewPtr->rowNotifier != NULL) {
+	blt_table_delete_notifier(viewPtr->rowNotifier);
+	viewPtr->rowNotifier = NULL;
+    }
+    if (viewPtr->colNotifier != NULL) {
+	blt_table_delete_notifier(viewPtr->colNotifier);
+	viewPtr->colNotifier = NULL;
+    }
 
     /* Free old row, columns, and cells. */
     for (hPtr = Blt_FirstHashEntry(&viewPtr->columnTable, &iter); hPtr != NULL;
@@ -4029,7 +4020,6 @@ TableViewEventProc(ClientData clientData, XEvent *eventPtr)
 
     if (eventPtr->type == Expose) {
 	if (eventPtr->xexpose.count == 0) {
-	    fprintf(stderr, "Expose: redraw\n");
 	    viewPtr->flags |= SCROLL_PENDING;
 	    EventuallyRedraw(viewPtr);
 	    Blt_PickCurrentItem(viewPtr->bindTable);
@@ -4038,7 +4028,6 @@ TableViewEventProc(ClientData clientData, XEvent *eventPtr)
 	/* Size of the viewport has changed. Recompute visibilty. */
 	viewPtr->flags |= LAYOUT_PENDING | SCROLL_PENDING;
 	EventuallyRedraw(viewPtr);
-	fprintf(stderr, "Configure: redraw\n");
     } else if ((eventPtr->type == FocusIn) || (eventPtr->type == FocusOut)) {
 	if (eventPtr->xfocus.detail != NotifyInferior) {
 	    if (eventPtr->type == FocusIn) {
@@ -4046,7 +4035,6 @@ TableViewEventProc(ClientData clientData, XEvent *eventPtr)
 	    } else {
 		viewPtr->flags &= ~FOCUS;
 	    }
-	    fprintf(stderr, "Focus: redraw\n");
 	    EventuallyRedraw(viewPtr);
 	}
     } else if (eventPtr->type == DestroyNotify) {
@@ -5148,7 +5136,9 @@ AdjustColumns(TableView *viewPtr)
 	}
 	colPtr->worldX = x;
 	x += colPtr->width;
+#ifdef notdef
 	fprintf(stderr, "Adjust col %s w=%d\n", colPtr->title, colPtr->width);
+#endif
     }
 }
 
@@ -10290,11 +10280,11 @@ ComputeLayout(TableView *viewPtr)
 static void
 ComputeVisibleEntries(TableView *viewPtr)
 {
-    long i, low, high;
-    long first, last;
     unsigned int  viewWidth, viewHeight;
-    unsigned long numVisibleRows, numVisibleColumns; 
     unsigned long xOffset, yOffset;
+    long numVisibleRows, numVisibleColumns, i, j;
+    long low, high;
+    long first, last;
 
     xOffset = Blt_AdjustViewport(viewPtr->xOffset, viewPtr->worldWidth,
 	VPORTWIDTH(viewPtr), viewPtr->xScrollUnits, viewPtr->scrollMode);
@@ -10302,7 +10292,7 @@ ComputeVisibleEntries(TableView *viewPtr)
 	viewPtr->worldHeight, VPORTHEIGHT(viewPtr), viewPtr->yScrollUnits, 
 	viewPtr->scrollMode);
     if ((viewPtr->numRows == 0) || (viewPtr->numColumns == 0)) {
-	return;
+	/*return;*/
     }
     if ((xOffset != viewPtr->xOffset) || (yOffset != viewPtr->yOffset)) {
 	viewPtr->yOffset = yOffset;
@@ -10311,16 +10301,14 @@ ComputeVisibleEntries(TableView *viewPtr)
     viewWidth = VPORTWIDTH(viewPtr);
     viewHeight = VPORTHEIGHT(viewPtr);
 
-    first = last = -1;
-    numVisibleRows = 0;
-
+    first = 0, last = -1;
     /* FIXME: Handle hidden rows. */
     /* Find the row that contains the start of the viewport.  */
     low = 0; high = viewPtr->numRows - 1;
     while (low <= high) {
 	long mid;
 	Row *rowPtr;
-
+	
 	mid = (low + high) >> 1;
 	rowPtr = viewPtr->rows[mid];
 	if (viewPtr->yOffset >
@@ -10333,10 +10321,11 @@ ComputeVisibleEntries(TableView *viewPtr)
 	    break;
 	}
     }
+    numVisibleRows  = 0;
     /* Now look for the last row in the viewport. */
     for (i = first; i < viewPtr->numRows; i++) {
 	Row *rowPtr;
-
+	    
 	rowPtr = viewPtr->rows[i];
 	if (rowPtr->flags & HIDDEN) {
 	    continue;
@@ -10356,34 +10345,34 @@ ComputeVisibleEntries(TableView *viewPtr)
 	    Blt_AssertCalloc(numVisibleRows + 1, sizeof(Row*));
 	viewPtr->numVisibleRows = numVisibleRows;
     }
-    numVisibleRows = 0;
-    for (i = first; i < last; i++) {
-	Row *rowPtr;
-
-	rowPtr = viewPtr->rows[i];
-	if ((rowPtr->flags & HIDDEN) == 0) {
-	    viewPtr->visibleRows[numVisibleRows] = rowPtr;
-	    numVisibleRows++;
-	    if (rowPtr->flags & REDRAW) {
-		rowPtr->flags &= ~REDRAW;
-		viewPtr->flags |= REDRAW | SCROLL_PENDING;
+    if (viewPtr->numVisibleRows > 0) {
+	for (j = 0, i = first; i < last; i++) {
+	    Row *rowPtr;
+	    
+	    rowPtr = viewPtr->rows[i];
+	    if ((rowPtr->flags & HIDDEN) == 0) {
+		viewPtr->visibleRows[j] = rowPtr;
+		j++;
+		if (rowPtr->flags & REDRAW) {
+		    rowPtr->flags &= ~REDRAW;
+		    viewPtr->flags |= REDRAW | SCROLL_PENDING;
+		}
 	    }
 	}
     }
-    assert(viewPtr->numVisibleRows == numVisibleRows);
+
+    first = 0, last = -1;
     numVisibleColumns = 0;
-    first = last = -1;
-    
     /* FIXME: Handle hidden columns. */
     /* Find the column that contains the start of the viewport.  */
     low = 0; high = viewPtr->numColumns - 1;
     while (low <= high) {
 	long mid;
 	Column *colPtr;
-
+	
 	mid = (low + high) >> 1;
 	colPtr = viewPtr->columns[mid];
-	if (viewPtr->xOffset >
+	if (viewPtr->xOffset > 
 	    (colPtr->worldX + colPtr->width + colPtr->ruleWidth)) {
 	    low = mid + 1;
 	} else if (viewPtr->xOffset < colPtr->worldX) {
@@ -10396,7 +10385,7 @@ ComputeVisibleEntries(TableView *viewPtr)
     /* Now look for the last column in the viewport. */
     for (i = first; i < viewPtr->numColumns; i++) {
 	Column *colPtr;
-
+	
 	colPtr = viewPtr->columns[i];
 	if (colPtr->flags & HIDDEN) {
 	    continue;
@@ -10416,21 +10405,22 @@ ComputeVisibleEntries(TableView *viewPtr)
 	    Blt_AssertCalloc(numVisibleColumns + 1, sizeof(Row*));
 	viewPtr->numVisibleColumns = numVisibleColumns;
     }
-    numVisibleColumns = 0;
-    for (i = first; i < last; i++) {
-	Column *colPtr;
-
-	colPtr = viewPtr->columns[i];
-	if ((colPtr->flags & HIDDEN) == 0) {
-	    viewPtr->visibleColumns[numVisibleColumns] = colPtr;
-	    numVisibleColumns++;
-	    if (colPtr->flags & REDRAW) {
-		colPtr->flags &= ~REDRAW;
-		viewPtr->flags |= REDRAW | SCROLL_PENDING;
+    if (viewPtr->numVisibleColumns > 0) {
+	for (j = 0, i = first; i < last; i++) {
+	    Column *colPtr;
+	    
+	    colPtr = viewPtr->columns[i];
+	    if ((colPtr->flags & HIDDEN) == 0) {
+		viewPtr->visibleColumns[j] = colPtr;
+		j++;
+		if (colPtr->flags & REDRAW) {
+		    colPtr->flags &= ~REDRAW;
+		    viewPtr->flags |= REDRAW | SCROLL_PENDING;
+		}
 	    }
 	}
     }
-    assert(viewPtr->numVisibleColumns == numVisibleColumns);
+    assert(viewPtr->numVisibleColumns <= viewPtr->numColumns);
 }
 
 static void
@@ -10535,7 +10525,9 @@ RebuildTableView(TableView *viewPtr)
 	Cell *cellPtr;
 	
 	cellPtr = Blt_Chain_GetValue(link);
-	Blt_DeleteHashEntry(&viewPtr->cellTable, cellPtr->hashPtr);
+	if (cellPtr->hashPtr != NULL) {
+	    Blt_DeleteHashEntry(&viewPtr->cellTable, cellPtr->hashPtr);
+	}
 	DestroyCell(cellPtr);
     }
     Blt_Chain_Destroy(deleted);
@@ -10588,7 +10580,6 @@ RebuildTableView(TableView *viewPtr)
 	    }
 	}
     }
-    fprintf(stderr, "RebuildTableView: redraw\n");
     viewPtr->flags |= LAYOUT_PENDING | SCROLL_PENDING;
     EventuallyRedraw(viewPtr);
 }
@@ -10658,6 +10649,49 @@ AddRowGeometry(TableView *viewPtr, Row *rowPtr)
 static void
 DeleteColumns(TableView *viewPtr, BLT_TABLE_NOTIFY_EVENT *eventPtr)
 {
+    long i, j, numColumns;
+    BLT_TABLE_COLUMN col;
+    Column **columns;
+
+    /* Step 1: Mark all columns as to be deleted. */
+    for (i = 0; i < viewPtr->numColumns; i++) {
+	Column *colPtr;
+
+	colPtr = viewPtr->columns[i];
+	colPtr->flags |= DELETED;
+    }
+    /* Step 2: Unmark all the columns that still exist in the table. */
+    numColumns = 0;
+    for (col = blt_table_first_column(viewPtr->table); col != NULL;
+	 col = blt_table_next_column(viewPtr->table, col)) {
+	Blt_HashEntry *hPtr;
+	Column *colPtr;
+
+	hPtr = Blt_FindHashEntry(&viewPtr->columnTable, col);
+	assert(hPtr != NULL);
+	colPtr = Blt_GetHashValue(hPtr);
+	colPtr->flags &= ~DELETED;
+	numColumns++;
+    }
+    /* Step 3: Delete the marked columns, first removing all the associated
+     * cells. */
+    columns = Blt_AssertMalloc(sizeof(Column *) * numColumns);
+    for (i = j = 0; i < viewPtr->numColumns; i++) {
+	Column *colPtr;
+
+	colPtr = viewPtr->columns[i];
+	if (colPtr->flags & DELETED) {
+	    RemoveColumnCells(viewPtr, colPtr);
+	    DestroyColumn(colPtr);
+	} else {
+	    columns[j++] = colPtr;
+	}
+    }
+    Blt_Free(viewPtr->columns);
+    viewPtr->columns = columns;
+    viewPtr->numColumns = numColumns;
+    viewPtr->flags |= LAYOUT_PENDING;
+    EventuallyRedraw(viewPtr);
 }
 
 static void
@@ -10687,12 +10721,12 @@ AddColumns(TableView *viewPtr, BLT_TABLE_NOTIFY_EVENT *eventPtr)
 	    colPtr = CreateColumn(viewPtr, col, hPtr);
 	    AddColumnGeometry(viewPtr, colPtr);
 	    key.colPtr = colPtr;
-	    for (j = 0; j < viewPtr->numRows; j++) {
+	    for (j = 0; j < viewPtr->numColumns; j++) {
 		Cell *cellPtr;
 		Blt_HashEntry *h2Ptr;
 		int isNew;
 
-		key.rowPtr = viewPtr->rows[j];
+		key.colPtr = viewPtr->columns[j];
 		h2Ptr = Blt_CreateHashEntry(&viewPtr->cellTable, (char *)&key, 
 					    &isNew);
 		assert(isNew);
@@ -10715,6 +10749,49 @@ AddColumns(TableView *viewPtr, BLT_TABLE_NOTIFY_EVENT *eventPtr)
 static void
 DeleteRows(TableView *viewPtr, BLT_TABLE_NOTIFY_EVENT *eventPtr)
 {
+    long i, j, numRows;
+    BLT_TABLE_ROW row;
+    Row **rows;
+
+    /* Step 1: Mark all rows as to be deleted. */
+    for (i = 0; i < viewPtr->numRows; i++) {
+	Row *rowPtr;
+
+	rowPtr = viewPtr->rows[i];
+	rowPtr->flags |= DELETED;
+    }
+    /* Step 2: Unmark all the rows that still exists in the table. */
+    numRows = 0;
+    for (row = blt_table_first_row(viewPtr->table); row != NULL;
+	 row = blt_table_next_row(viewPtr->table, row)) {
+	Blt_HashEntry *hPtr;
+	Row *rowPtr;
+
+	hPtr = Blt_FindHashEntry(&viewPtr->rowTable, row);
+	assert(hPtr != NULL);
+	rowPtr = Blt_GetHashValue(hPtr);
+	rowPtr->flags &= ~DELETED;
+	numRows++;
+    }
+    /* Step 3: Delete the marked rows, first removing all the associated
+     * cells. */
+    rows = Blt_AssertMalloc(sizeof(Row *) * numRows);
+    for (i = j = 0; i < viewPtr->numRows; i++) {
+	Row *rowPtr;
+
+	rowPtr = viewPtr->rows[i];
+	if (rowPtr->flags & DELETED) {
+	    RemoveRowCells(viewPtr, rowPtr);
+	    DestroyRow(rowPtr);
+	} else {
+	    rows[j++] = rowPtr;
+	}
+    }
+    Blt_Free(viewPtr->rows);
+    viewPtr->rows = rows;
+    viewPtr->numRows = numRows;
+    viewPtr->flags |= LAYOUT_PENDING;
+    EventuallyRedraw(viewPtr);
 }
 
 static void
@@ -10728,8 +10805,7 @@ AddRows(TableView *viewPtr, BLT_TABLE_NOTIFY_EVENT *eventPtr)
     newNumRows = blt_table_num_rows(viewPtr->table);
     assert(newNumRows > oldNumRows);
     rows = Blt_AssertMalloc(sizeof(Row *) * newNumRows);
-
-    count = oldNumRows;
+    count = 0;
     for (i = 0; i < newNumRows; i++) {
 	Blt_HashEntry *hPtr;
 	int isNew;
@@ -10777,10 +10853,12 @@ AttachTable(Tcl_Interp *interp, TableView *viewPtr)
     long i;
 
     ResetTableView(viewPtr);
-    viewPtr->notifier = blt_table_create_notifier(interp, 
-	viewPtr->table, TABLE_NOTIFY_ALL_EVENTS | TABLE_NOTIFY_WHENIDLE, 
+    viewPtr->colNotifier = blt_table_create_column_notifier(interp, 
+	viewPtr->table, NULL, TABLE_NOTIFY_ALL_EVENTS | TABLE_NOTIFY_WHENIDLE, 
 	TableEventProc, NULL, viewPtr);
-
+    viewPtr->rowNotifier = blt_table_create_row_notifier(interp, 
+	viewPtr->table, NULL, TABLE_NOTIFY_ALL_EVENTS | TABLE_NOTIFY_WHENIDLE, 
+	TableEventProc, NULL, viewPtr);
     viewPtr->numRows = viewPtr->numColumns = 0;
     /* Rows. */
     if (viewPtr->flags & AUTO_ROWS) {
@@ -10948,7 +11026,6 @@ DisplayProc(ClientData clientData)
 	return;
     }
     viewPtr->flags &= ~REDRAW;
-    fprintf(stderr, "Actually Redrawing table\n");
     Blt_PickCurrentItem(viewPtr->bindTable);
     if ((viewPtr->numVisibleRows == 0) || (viewPtr->numVisibleColumns == 0)){
 	/* Empty table, draw blank area. */
@@ -10957,7 +11034,6 @@ DisplayProc(ClientData clientData)
 		Tk_Height(viewPtr->tkwin), viewPtr->borderWidth, 
 		viewPtr->relief);
 	DrawOuterBorders(viewPtr, Tk_WindowId(viewPtr->tkwin));
-	return;
     }
 
     drawable = Blt_GetPixmap(viewPtr->display, Tk_WindowId(viewPtr->tkwin), 
@@ -11036,7 +11112,7 @@ NewTableView(Tcl_Interp *interp, Tk_Window tkwin)
     viewPtr->tkwin = tkwin;
     viewPtr->display = Tk_Display(tkwin);
     viewPtr->interp = interp;
-    viewPtr->flags = GEOMETRY | SCROLL_PENDING| AUTOCREATE;
+    viewPtr->flags = GEOMETRY | SCROLL_PENDING | AUTOCREATE;
     viewPtr->highlightWidth = 2;
     viewPtr->borderWidth = 2;
     viewPtr->relief = TK_RELIEF_SUNKEN;

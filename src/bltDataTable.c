@@ -1851,7 +1851,7 @@ CallClientTraces(Table *tablePtr, Table *clientPtr, Row *rowPtr, Column *colPtr,
     }
     for (link = Blt_Chain_FirstLink(chain); link != NULL; link = next) {
 	Trace *tracePtr;
-	int rowMatch, colMatch;
+	int match;
 
 	next = Blt_Chain_NextLink(link);
 	tracePtr = Blt_Chain_GetValue(link);
@@ -1862,23 +1862,23 @@ CallClientTraces(Table *tablePtr, Table *clientPtr, Row *rowPtr, Column *colPtr,
 	    continue;		/* Ignore callbacks that were triggered from
 				 * the active trace handler routine. */
 	}
-	rowMatch = colMatch = FALSE;
+	match = FALSE;
 	if (tracePtr->colTag != NULL) {
 	    if (blt_table_column_has_tag(clientPtr, colPtr, 
 			tracePtr->colTag)) {
-		colMatch++;
+		match++;
 	    }
 	} else if ((tracePtr->column == colPtr) || (tracePtr->column == NULL)) {
-	    colMatch++;
+	    match++;
 	}
 	if (tracePtr->rowTag != NULL) {
 	    if (blt_table_row_has_tag(clientPtr, rowPtr, tracePtr->rowTag)) {
-		rowMatch++;
+		match++;
 	    }
 	} else if ((tracePtr->row == rowPtr) || (tracePtr->row == NULL)) {
-	    rowMatch++;
+	    match++;
 	}
-	if (!rowMatch || !colMatch) {
+	if (!match) {
 	    continue;
 	}
 	if (tracePtr->flags & TABLE_TRACE_WHENIDLE) {
