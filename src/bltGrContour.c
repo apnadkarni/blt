@@ -5109,7 +5109,7 @@ PolylineToPostScript(Blt_Ps ps, Trace *tracePtr, ContourPen *penPtr)
     Blt_Free(points);
 }
 
-
+#ifdef notdef
 /*
  *---------------------------------------------------------------------------
  *
@@ -5193,7 +5193,9 @@ TrianglesToPostScript(Graph *graphPtr, Blt_Ps ps, ContourElement *elemPtr,
     /* Create a clip path from the hull and draw the picture */
     Blt_Ps_DrawPicture(ps, elemPtr->picture, exts.left, exts.top);
 }
+#endif
 
+#ifdef notdef
 /*
  *---------------------------------------------------------------------------
  *
@@ -5222,6 +5224,7 @@ MeshToPostScript(Graph *graphPtr, Blt_Ps ps, ContourElement *elemPtr)
 	HullToPostScript(graphPtr, ps, elemPtr);
     }
 }
+#endif
 
 /*
  *---------------------------------------------------------------------------
@@ -5286,6 +5289,7 @@ SymbolToPostScriptProc(
 }
 
 
+#ifdef notdef
 /*
  *---------------------------------------------------------------------------
  *
@@ -5328,8 +5332,6 @@ IsolineToPostScript(Graph *graphPtr, Blt_Ps ps, ContourElement *elemPtr,
     }
     Blt_Ps_Append(ps, "% end segments\n");
 }
-
-#ifdef notdef
 
 /*
  *---------------------------------------------------------------------------

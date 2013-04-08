@@ -1156,7 +1156,7 @@ ObjToColumnProc(
 	if (col == NULL) {
 	    return TCL_ERROR;
 	}
-	trace = blt_table_set_column_trace(srcPtr->table, col, 
+	trace = blt_table_create_column_trace(srcPtr->table, col, 
 		TABLE_TRACE_WCU, TableTraceProc, NULL, viewPtr);
 	notifier =  blt_table_create_column_notifier(interp, srcPtr->table, col,
 		TABLE_NOTIFY_COLUMN_CHANGED | TABLE_NOTIFY_ROW_CHANGED, 
@@ -1166,7 +1166,7 @@ ObjToColumnProc(
 	if (ciPtr->column != NULL) {
 	    if (ciPtr->trace != NULL) {
 		/* Release traces on this column. */
-		blt_table_delete_trace(ciPtr->trace);
+		blt_table_delete_trace(srcPtr->table, ciPtr->trace);
 	    }
 	}
 	ciPtr->column = col;

@@ -658,7 +658,6 @@ SetScreenSizeOp(ClientData clientData, Tcl_Interp *interp, int objc,
     int sizeNum;
     Rotation current_rotation;
     int majorNum, minorNum, eventBase, errorBase;
-    int version;
 
     display = Tk_Display(tkMain);
     root = Tk_RootWindow(tkMain);
@@ -670,11 +669,6 @@ SetScreenSizeOp(ClientData clientData, Tcl_Interp *interp, int objc,
         !XRRQueryVersion (display, &majorNum, &minorNum)) {
 	Tcl_AppendResult(interp, "RandR extension missing", (char *)NULL);
 	return TCL_ERROR;
-    }
-    if ((majorNum > 1) || ((majorNum == 1) && (minorNum >= 2))) {
-	version = 12;
-    } else if ((majorNum > 1) || ((majorNum == 1) && (minorNum >= 3))) {
-	version = 13;
     }
     fprintf(stderr, "Xrandr version %d.%d\n", majorNum, minorNum);
     resPtr = XRRGetScreenResources(display, root);

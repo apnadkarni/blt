@@ -69,6 +69,7 @@ static int buttonMasks[] =
     Button1Mask, Button2Mask, Button3Mask, Button4Mask, Button5Mask,
 };
 
+#ifdef notdef
 static const char *eventNames[] = {
     "0", "1", 
     "KeyPress",
@@ -106,7 +107,7 @@ static const char *eventNames[] = {
     "MappingNotify",
     "GenericEvent"
 };
-
+#endif
 
 /*
  * How to make drag&drop work?

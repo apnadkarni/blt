@@ -105,11 +105,12 @@ typedef struct _BLT_TABLE_ROWCOLUMN {
 /*
  * BLT_TABLE_CORE --
  *
- *	Structure representing a table object.  A table object may be shared
- *	by more than one client (BLT_TABLE). When a client wants to use a
- *	table object, it is given a token that represents the table.  The
- *	object tracks its clients by its token. When all clients have released
- *	their tokens, the tuple object is automatically destroyed.
+ *	Structure representing a core table object.  A table object may be
+ *	shared by more than one client (BLT_TABLE). When a client wants to use
+ *	a table object, it is given a token that represents the table.  The
+ *	core table object tracks its clients by their tokens.  When all the
+ *	clients of a core table object have released their tokens, the table
+ *	object is automatically destroyed.
  *
  *	The table object is an array of column vectors. Each vector is an
  *	array of BLT_TABLE_VALUE's, representing the data for the column.
@@ -118,7 +119,9 @@ typedef struct _BLT_TABLE_ROWCOLUMN {
  *	length.
  *
  *	Rows and columns are indexed by a map of pointers to headers.  This
- *	map represents the order of the rows or columns.
+ *	map represents the order of the rows or columns, not how the values
+ *	are actually stored.  All clients see the table in the same order,
+ *	it's up to the clients to manage sorting and ordering.
  */
 typedef struct _BLT_TABLE_CORE {
     BLT_TABLE_ROWCOLUMN rows, columns;
@@ -135,18 +138,18 @@ typedef struct _BLT_TABLE_CORE {
 /*
  * BLT_TABLE --
  *
- *	A BLT_TABLE is structure the by which client manages the table at its
- *	core.  It is opaque.  There are accessor functions access its data
- *	members. The client is uniquely identified by a combination of its
- *	name and the originating namespace.  Two table objects in the same
- *	interpreter can have similar names but must reside in different
- *	namespaces.
+ *	A BLT_TABLE is a structure each client has which points to a core
+ *	table object.  It is opaque.  There are accessor functions for its
+ *	data members. The client is uniquely identified by a combination of
+ *	the table name and the originating namespace.  Two table objects in
+ *	the same interpreter can have similar names but must reside in
+ *	different namespaces.
  *
- *	Two or more clients can share the same core table object.  Each client
- *	structure acts as a ticket for the underlying table object.  Clients
- *	can designate notifier routines that are automatically invoked by the
- *	table object whenever the table is changed is specific ways by other
- *	clients.
+ *	Two or more BLT_TABLEs can share the same core table object.  Each
+ *	structure acts as a ticket for the underlying core table object.
+ *	Clients can designate notifier routines that are invoked when the core
+ *	table object is changed is specific ways (especially by other
+ *	clients).
  */
 typedef struct _BLT_TABLE {
     unsigned int magic;			/* Magic value indicating whether a
@@ -177,9 +180,12 @@ typedef struct _BLT_TABLE {
     Blt_HashTable *rowTags;
     Blt_HashTable *columnTags;
 
+    Blt_HashTable traces;		/* Hash table of valid traces */
+
     Blt_Chain readTraces;		/* List of read traces. */
     Blt_Chain writeTraces;		/* List of write, create, unset
 					 * traces. */
+    Blt_HashTable notifiers;		/* Hash table of valid notifiers */
     Blt_Chain columnNotifiers;		/* Chain of event handlers. */
     Blt_Chain rowNotifiers;		/* Chain of event handlers. */
     BLT_TABLE_TAGS tags;
@@ -534,7 +540,15 @@ BLT_EXTERN BLT_TABLE_TRACE blt_table_create_trace(BLT_TABLE table,
 	const char *columnTag, unsigned int mask, BLT_TABLE_TRACE_PROC *proc, 
 	BLT_TABLE_TRACE_DELETE_PROC *deleteProc, ClientData clientData);
 
-BLT_EXTERN BLT_TABLE_TRACE blt_table_set_column_trace(BLT_TABLE table, 
+BLT_EXTERN void blt_table_trace_column(BLT_TABLE table, 
+	BLT_TABLE_COLUMN column, unsigned int mask, BLT_TABLE_TRACE_PROC *proc, 
+	BLT_TABLE_TRACE_DELETE_PROC *deleteProc, ClientData clientData);
+
+BLT_EXTERN void blt_table_trace_row(BLT_TABLE table,
+	BLT_TABLE_ROW row, unsigned int mask, BLT_TABLE_TRACE_PROC *proc, 
+	BLT_TABLE_TRACE_DELETE_PROC *deleteProc, ClientData clientData);
+
+BLT_EXTERN BLT_TABLE_TRACE blt_table_create_column_trace(BLT_TABLE table, 
 	BLT_TABLE_COLUMN column, unsigned int mask, BLT_TABLE_TRACE_PROC *proc, 
 	BLT_TABLE_TRACE_DELETE_PROC *deleteProc, ClientData clientData);
 
@@ -550,7 +564,7 @@ BLT_EXTERN BLT_TABLE_TRACE blt_table_create_row_tag_trace(BLT_TABLE table,
 	const char *tag, unsigned int mask, BLT_TABLE_TRACE_PROC *proc, 
 	BLT_TABLE_TRACE_DELETE_PROC *deleteProc, ClientData clientData);
 
-BLT_EXTERN void blt_table_delete_trace(BLT_TABLE_TRACE trace);
+BLT_EXTERN void blt_table_delete_trace(BLT_TABLE table, BLT_TABLE_TRACE trace);
 
 /*
  * BLT_TABLE_NOTIFY_EVENT --
@@ -672,7 +686,8 @@ BLT_EXTERN BLT_TABLE_NOTIFIER blt_table_create_column_tag_notifier(
 	BLT_TABLE_NOTIFIER_DELETE_PROC *deleteProc, ClientData clientData);
 
 
-BLT_EXTERN void blt_table_delete_notifier(BLT_TABLE_NOTIFIER notifier);
+BLT_EXTERN void blt_table_delete_notifier(BLT_TABLE table, 
+	BLT_TABLE_NOTIFIER notifier);
 
 /*
  * BLT_TABLE_SORT_ORDER --

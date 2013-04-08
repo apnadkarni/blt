@@ -598,6 +598,14 @@ extern Tcl_ObjCmdProc Blt_Picture_PolygonOp;
 extern Tcl_ObjCmdProc Blt_Picture_RectangleOp;
 extern Tcl_ObjCmdProc Blt_Picture_TextOp;
 
+#ifdef notdef
+static Tk_ImageCreateProc CreateProc;
+#endif
+static Tk_ImageGetProc GetInstanceProc;
+static Tk_ImageDisplayProc DisplayProc;
+static Tk_ImageFreeProc FreeInstanceProc;
+static Tk_ImageDeleteProc DeleteProc;
+static Tk_ImagePostscriptProc PostScriptProc;
 /* 
  * Quick and dirty random number generator. 
  *
@@ -1363,6 +1371,7 @@ FilterToObj(
     return Tcl_NewStringObj(Blt_NameOfResampleFilter(filter), -1);
 }
 
+#ifdef notdef
 static Tcl_ObjCmdProc *
 GetPictProc(
     Tcl_Interp *interp,			/* Interpreter to load new format
@@ -1391,6 +1400,7 @@ GetPictProc(
     }
     return procPtr->proc;
 }
+#endif
 
 /*
  *---------------------------------------------------------------------------

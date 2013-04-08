@@ -796,26 +796,19 @@ NewTableObject(void)
 static void
 DestroyTraces(Table *tablePtr)
 {
-    Blt_ChainLink link;
+    Blt_HashEntry *hPtr;
+    Blt_HashSearch iter;
 
-    for (link = Blt_Chain_FirstLink(tablePtr->readTraces); link != NULL; 
-	 link = Blt_Chain_NextLink(link)) {
+    for (hPtr = Blt_FirstHashEntry(&tablePtr->traces, &iter); hPtr != NULL; 
+	 hPtr = Blt_NextHashEntry(&iter)) {
 	Trace *tracePtr;
-	
-	tracePtr = Blt_Chain_GetValue(link);
-	tracePtr->readLink = NULL;
-	blt_table_delete_trace(tracePtr);
+
+	tracePtr = Blt_GetHashValue(hPtr);
+	blt_table_delete_trace(tablePtr, tracePtr);
     }
     Blt_Chain_Destroy(tablePtr->readTraces);
-    for (link = Blt_Chain_FirstLink(tablePtr->writeTraces); link != NULL; 
-	 link = Blt_Chain_NextLink(link)) {
-	Trace *tracePtr;
-	
-	tracePtr = Blt_Chain_GetValue(link);
-	tracePtr->writeLink = NULL;
-	blt_table_delete_trace(tracePtr);
-    }
     Blt_Chain_Destroy(tablePtr->writeTraces);
+    Blt_DeleteHashTable(&tablePtr->traces);
 }
 
 /*
@@ -943,7 +936,7 @@ FreeNotifier(Notifier *notifierPtr)
 }
 
 static void
-DestroyNotifiers(Blt_Chain chain)
+DestroyNotifiers(Table *tablePtr, Blt_Chain chain)
 {
     Blt_ChainLink link;
 
@@ -953,7 +946,7 @@ DestroyNotifiers(Blt_Chain chain)
 
 	notifierPtr = Blt_Chain_GetValue(link);
 	notifierPtr->link = NULL;
-	blt_table_delete_notifier(notifierPtr);
+	blt_table_delete_notifier(tablePtr, notifierPtr);
     }
     Blt_Chain_Destroy(chain);
 }
@@ -1257,8 +1250,8 @@ DestroyClient(Table *tablePtr)
     /* Remove any traces that were set by this client. */
     DestroyTraces(tablePtr);
     /* Also remove all event handlers created by this client. */
-    DestroyNotifiers(tablePtr->rowNotifiers);
-    DestroyNotifiers(tablePtr->columnNotifiers);
+    DestroyNotifiers(tablePtr, tablePtr->rowNotifiers);
+    DestroyNotifiers(tablePtr, tablePtr->columnNotifiers);
     blt_table_unset_keys(tablePtr);
     if (tablePtr->tags != NULL) {
 	blt_table_release_tags(tablePtr);
@@ -1322,7 +1315,6 @@ NewTable(
     tablePtr->columnTags = &tablePtr->tags->columnTable;
 
     tablePtr->clientTablePtr = &dataPtr->clientTable;
-
     /* Table names are not unique.  More than one client may open the same
      * table.  The name remains in use so long as one client is still using
      * the table. This is so other clients can refer to the table, even though
@@ -1341,6 +1333,8 @@ NewTable(
     tablePtr->columnNotifiers = Blt_Chain_Create();
     tablePtr->readTraces = Blt_Chain_Create();
     tablePtr->writeTraces = Blt_Chain_Create();
+    Blt_InitHashTable(&tablePtr->notifiers, BLT_ONE_WORD_KEYS);
+    Blt_InitHashTable(&tablePtr->traces, BLT_ONE_WORD_KEYS);
 
     tablePtr->corePtr = corePtr;
     return tablePtr;
@@ -1479,7 +1473,7 @@ ClearRowNotifiers(Table *tablePtr, Row *rowPtr)
 	next = Blt_Chain_NextLink(link);
 	notifierPtr = Blt_Chain_GetValue(link);
 	if (notifierPtr->row == rowPtr) {
-	    blt_table_delete_notifier(notifierPtr);
+	    blt_table_delete_notifier(tablePtr, notifierPtr);
 	}
     }
 }
@@ -1507,7 +1501,7 @@ ClearColumnNotifiers(Table *tablePtr, Column *colPtr)
 	next = Blt_Chain_NextLink(link);
 	notifierPtr = Blt_Chain_GetValue(link);
 	if (notifierPtr->column == colPtr) {
-	    blt_table_delete_notifier(notifierPtr);
+	    blt_table_delete_notifier(tablePtr, notifierPtr);
 	}
     }
 }
@@ -1744,7 +1738,7 @@ blt_table_clear_row_traces(Table *tablePtr, Row *rowPtr)
 	next = Blt_Chain_NextLink(link);
 	tracePtr = Blt_Chain_GetValue(link);
 	if (tracePtr->row == rowPtr) {
-	    blt_table_delete_trace(tracePtr);
+	    blt_table_delete_trace(tablePtr, tracePtr);
 	}
     }
     for (link = Blt_Chain_FirstLink(tablePtr->writeTraces); link != NULL; 
@@ -1754,7 +1748,7 @@ blt_table_clear_row_traces(Table *tablePtr, Row *rowPtr)
 	next = Blt_Chain_NextLink(link);
 	tracePtr = Blt_Chain_GetValue(link);
 	if (tracePtr->row == rowPtr) {
-	    blt_table_delete_trace(tracePtr);
+	    blt_table_delete_trace(tablePtr, tracePtr);
 	}
     }
 }
@@ -1783,7 +1777,7 @@ blt_table_clear_column_traces(Table *tablePtr, BLT_TABLE_COLUMN column)
 	next = Blt_Chain_NextLink(link);
 	tracePtr = Blt_Chain_GetValue(link);
 	if (tracePtr->column == column) {
-	    blt_table_delete_trace(tracePtr);
+	    blt_table_delete_trace(tablePtr, tracePtr);
 	}
     }
     for (link = Blt_Chain_FirstLink(tablePtr->writeTraces); link != NULL; 
@@ -1793,7 +1787,7 @@ blt_table_clear_column_traces(Table *tablePtr, BLT_TABLE_COLUMN column)
 	next = Blt_Chain_NextLink(link);
 	tracePtr = Blt_Chain_GetValue(link);
 	if (tracePtr->column == column) {
-	    blt_table_delete_trace(tracePtr);
+	    blt_table_delete_trace(tablePtr, tracePtr);
 	}
     }
 }
@@ -3796,20 +3790,11 @@ blt_table_free_iterator_objv(BLT_TABLE_ITERATOR *iterPtr)
 static void
 FreeTrace(Trace *tracePtr)
 {
-    Table *tablePtr;
-
-    tablePtr = tracePtr->table;
     if (tracePtr->rowTag != NULL) {
 	Blt_Free(tracePtr->rowTag);
     }
     if (tracePtr->colTag != NULL) {
 	Blt_Free(tracePtr->colTag);
-    }
-    if (tracePtr->readLink != NULL) {
-	Blt_Chain_DeleteLink(tablePtr->readTraces, tracePtr->readLink);
-    }
-    if (tracePtr->writeLink != NULL) {
-	Blt_Chain_DeleteLink(tablePtr->writeTraces, tracePtr->writeLink);
     }
     Blt_Free(tracePtr);
 }
@@ -3830,8 +3815,15 @@ FreeTrace(Trace *tracePtr)
  *---------------------------------------------------------------------------
  */
 void
-blt_table_delete_trace(Trace *tracePtr)
+blt_table_delete_trace(Table *tablePtr, Trace *tracePtr)
 {
+    Blt_HashEntry *hPtr;
+
+    hPtr = Blt_FindHashEntry(&tablePtr->traces, tracePtr);
+    if (hPtr == NULL) {
+	return;				/* Invalid trace token. */
+    }
+    Blt_DeleteHashEntry(&tablePtr->traces, hPtr);
     if ((tracePtr->flags & TABLE_TRACE_DESTROYED) == 0) {
 	if (tracePtr->deleteProc != NULL) {
 	    (*tracePtr->deleteProc)(tracePtr->clientData);
@@ -3844,8 +3836,16 @@ blt_table_delete_trace(Trace *tracePtr)
 	 * 1) It doesn't let it anything match the trace and 
 	 * 2) marks the trace as invalid. 
 	 */
+	/* Take it out of the list so you can't use it anymore. */
+	if (tracePtr->readLink != NULL) {
+	    Blt_Chain_DeleteLink(tablePtr->readTraces, tracePtr->readLink);
+	    tracePtr->readLink = NULL;
+	}
+	if (tracePtr->writeLink != NULL) {
+	    Blt_Chain_DeleteLink(tablePtr->writeTraces, tracePtr->writeLink);
+	    tracePtr->writeLink = NULL;
+	}
 	tracePtr->flags = TABLE_TRACE_DESTROYED;	
-
 	Tcl_EventuallyFree(tracePtr, (Tcl_FreeProc *)FreeTrace);
     }
 }
@@ -3887,6 +3887,7 @@ blt_table_create_trace(
 					 * the callback is executed. */
 {
     Trace *tracePtr;
+    int isNew;
 
     tracePtr = Blt_Calloc(1, sizeof (Trace));
     if (tracePtr == NULL) {
@@ -3904,14 +3905,36 @@ blt_table_create_trace(
     tracePtr->proc = proc;
     tracePtr->deleteProc = deleteProc;
     tracePtr->clientData = clientData;
-    tracePtr->readLink = Blt_Chain_Append(tablePtr->readTraces, tracePtr);
-    tracePtr->writeLink = Blt_Chain_Append(tablePtr->writeTraces, tracePtr);
+    if (tracePtr->flags & TABLE_TRACE_READS) {
+	tracePtr->readLink = Blt_Chain_Append(tablePtr->readTraces, tracePtr);
+    }
+    if (tracePtr->flags & 
+	(TABLE_TRACE_WRITES | TABLE_TRACE_UNSETS | TABLE_TRACE_CREATES)) {
+	tracePtr->writeLink = Blt_Chain_Append(tablePtr->writeTraces, tracePtr);
+    }
+    Blt_CreateHashEntry(&tablePtr->traces, tracePtr, &isNew);
+    assert(isNew);
     tracePtr->table = tablePtr;
     return tracePtr;
 }
 
+void
+blt_table_trace_column(
+    Table *tablePtr,			/* Table to be traced. */
+    Column *colPtr,			/* Cell in table. */
+    unsigned int flags,			/* Bit mask indicating what actions to
+					 * trace. */
+    BLT_TABLE_TRACE_PROC *proc,	       /* Callback procedure for the trace. */
+    BLT_TABLE_TRACE_DELETE_PROC *deleteProc, 
+    ClientData clientData)		/* One-word of data passed along when
+					 * the callback is executed. */
+{
+    blt_table_create_trace(tablePtr, NULL, colPtr, NULL, NULL, flags,
+			   proc, deleteProc, clientData);
+}
+
 BLT_TABLE_TRACE
-blt_table_set_column_trace(
+blt_table_create_column_trace(
     Table *tablePtr,			/* Table to be traced. */
     Column *colPtr,			/* Cell in table. */
     unsigned int flags,			/* Bit mask indicating what actions to
@@ -3938,6 +3961,22 @@ blt_table_create_column_tag_trace(
 {
     return blt_table_create_trace(tablePtr, NULL, NULL, NULL, colTag, flags,
 		proc, deleteProc, clientData);
+}
+
+void
+blt_table_trace_row(
+    Table *tablePtr,			/* Table to be traced. */
+    Row *rowPtr,			/* Cell in table. */
+    unsigned int flags,			/* Bit mask indicating what actions to
+					 * trace. */
+    BLT_TABLE_TRACE_PROC *proc,	        /* Callback procedure for the
+					 * trace. */
+    BLT_TABLE_TRACE_DELETE_PROC *deleteProc, 
+    ClientData clientData)		/* One-word of data passed along when
+					 * the callback is executed. */
+{
+    blt_table_create_trace(tablePtr, rowPtr, NULL, NULL, NULL, flags,
+	proc, deleteProc, clientData);
 }
 
 BLT_TABLE_TRACE
@@ -5134,7 +5173,7 @@ blt_table_create_row_tag_notifier(Tcl_Interp *interp, Table *tablePtr,
  *---------------------------------------------------------------------------
  */
 void
-blt_table_delete_notifier(Notifier *notifierPtr)
+blt_table_delete_notifier(Table *tablePtr, Notifier *notifierPtr)
 {
     /* Check if notifier is already being deleted. */
     if ((notifierPtr->flags & TABLE_NOTIFY_DESTROYED) == 0) {

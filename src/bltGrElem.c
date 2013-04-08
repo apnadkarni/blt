@@ -345,10 +345,10 @@ FreeTableSource(ElemValues *valuesPtr)
 
     srcPtr = &valuesPtr->tableSource;
     if (srcPtr->trace != NULL) {
-	blt_table_delete_trace(srcPtr->trace);
+	blt_table_delete_trace(srcPtr->table, srcPtr->trace);
     }
     if (srcPtr->notifier != NULL) {
-	blt_table_delete_notifier(srcPtr->notifier);
+	blt_table_delete_notifier(srcPtr->table, srcPtr->notifier);
     }
     if (srcPtr->hashPtr != NULL) {
 	TableClient *clientPtr;
@@ -485,7 +485,7 @@ GetTableData(Tcl_Interp *interp, ElemValues *valuesPtr, const char *tableName,
 	srcPtr->column, TABLE_NOTIFY_WHENIDLE | TABLE_NOTIFY_COLUMN_CHANGED, 
 	TableNotifyProc, 
 	(BLT_TABLE_NOTIFIER_DELETE_PROC *)NULL, valuesPtr);
-    srcPtr->trace = blt_table_set_column_trace(srcPtr->table, srcPtr->column,
+    srcPtr->trace = blt_table_create_column_trace(srcPtr->table, srcPtr->column,
 	(TABLE_TRACE_WHENIDLE | TABLE_TRACE_WCU), TableTraceProc,
 	(BLT_TABLE_TRACE_DELETE_PROC *)NULL, valuesPtr);
     valuesPtr->type = ELEM_SOURCE_TABLE;

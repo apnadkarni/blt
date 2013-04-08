@@ -878,6 +878,7 @@ FileJoin(const char *path1, const char *path2, Tcl_DString *resultPtr)
     return Tcl_DStringValue(resultPtr);
 }
 
+#ifdef notdef
 static int
 FileSplit(const char *path, int length, int *argcPtr, char ***argvPtr)
 {
@@ -930,6 +931,7 @@ FileSplit(const char *path, int length, int *argcPtr, char ***argvPtr)
     *argvPtr = argv;
     return TCL_OK;
 }
+#endif
 
 static int
 PromptUser(Tcl_Interp *interp, SftpCmd *cmdPtr, const char **userPtr, 

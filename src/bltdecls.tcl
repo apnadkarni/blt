@@ -51,12 +51,13 @@ foreach file $files {
     set in [open $file "r"]
     set contents [read $in]
     close $in
-
-    puts $header "\#include \"$file\""
+    set tail [file tail $file]
+    puts $header "\#include \"$tail\""
     set start 0
     while { 1 } {
 	if { ![regexp -indices -start $start $pat $contents match submatch] } {
-	    puts stderr "can't match pattern"
+	    #puts stderr "can't match pattern \"$pat\" in \"$file\""
+	    #puts stderr "start=$start"
 	    break;
 	} else {
 	    set first [lindex $submatch 0]

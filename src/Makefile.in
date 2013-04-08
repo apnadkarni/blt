@@ -632,12 +632,29 @@ $(blt_pict_text_so): bltPictText.o $(blt_libs)
 		$(blt_libs) $(FT2_LIB_SPEC) $(XFT_LIB_SPEC) \
 		$(tcl_lib_spec) $(tk_lib_spec) -lm
 
-BLT_TCL_INT_HEADERS =	bltArrayObj.h bltAssert.h bltDBuffer.h bltInitCmd.h \
-			bltInt.h bltMath.h bltOp.h bltNsUtil.h bltSpline.h \
-			bltSwitch.h bltTclInt.h bltVar.h
+BLT_TCL_INT_HEADERS =	\
+		$(srcdir)/bltDBuffer.h  \
+		$(srcdir)/bltTclInt.h \
+		$(srcdir)/bltArrayObj.h \
+		$(srcdir)/bltAssert.h  \
+		$(srcdir)/bltInitCmd.h \
+		$(srcdir)/bltInt.h \
+		$(srcdir)/bltMath.h \
+		$(srcdir)/bltOp.h \
+		$(srcdir)/bltNsUtil.h \
+		$(srcdir)/bltSpline.h \
+		$(srcdir)/bltSwitch.h \
+		$(srcdir)/bltVar.h
 
-BLT_TCL_HEADERS =	bltAlloc.h bltChain.h bltList.h bltDataTable.h \
-			bltPool.h bltTree.h bltHash.h.in bltVector.h
+BLT_TCL_HEADERS = \
+		$(srcdir)/bltAlloc.h \
+		$(srcdir)/bltChain.h \
+		$(srcdir)/bltList.h \
+		$(srcdir)/bltDataTable.h \
+		$(srcdir)/bltPool.h \
+		$(srcdir)/bltTree.h \
+		$(srcdir)/bltHash.h.in \
+		$(srcdir)/bltVector.h
 
 BLT_TK_INT_HEADERS =	bltTkInt.h bltFont.h bltBg.h bltBind.h bltAfm.h \
 			bltConfig.h bltImage.h bltPainter.h bltPs.h bltText.h
@@ -646,13 +663,18 @@ BLT_TK_HEADERS =	bltPicture.h bltPictFmts.h
 
 build-tcl-stubs:
 	$(RM) bltTclInt.decls bltTcl.decls
-	tclsh bltdecls.tcl -interface bltTclInt -- $(BLT_TCL_INT_HEADERS)
-	tclsh bltdecls.tcl -interface bltTcl -hooks bltTclInt -- \
+	tclsh $(srcdir)/bltdecls.tcl -interface bltTclInt -- \
+		$(BLT_TCL_INT_HEADERS)
+	tclsh $(srcdir)/bltprocs.tcl /tmp bltTclInt.decls
+	tclsh $(srcdir)/bltdecls.tcl -interface bltTcl -hooks bltTclInt -- \
 		$(BLT_TCL_HEADERS)
+	tclsh $(srcdir)/bltprocs.tcl /tmp bltTcl.decls
+
 build-tk-stubs:
 	$(RM) bltTkInt.decls bltTk.decls
-	tclsh bltdecls.tcl -interface bltTkInt -- $(BLT_TK_INT_HEADERS)
-	tclsh bltdecls.tcl -interface bltTk -hooks bltTkInt -- \
+	tclsh $(srcdir)/bltdecls.tcl -interface bltTkInt -- \
+		$(BLT_TK_INT_HEADERS)
+	tclsh $(srcdir)/bltdecls.tcl -interface bltTk -hooks bltTkInt -- \
 		$(BLT_TK_HEADERS)
 
 install: install-demos install-libs install-headers install-packages

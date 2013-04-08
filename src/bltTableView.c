@@ -119,6 +119,7 @@ typedef ClientData (TagProc)(TableView *viewPtr, const char *string);
 #define DEF_ACTIVE_TITLE_FG		STD_ACTIVE_FOREGROUND
 #define DEF_AUTO_CREATE			"0"
 #define DEF_AUTO_FILTERS		"0"
+#define DEF_BACKGROUND			STD_NORMAL_BACKGROUND
 #define DEF_BIND_TAGS			"all"
 #define DEF_BORDERWIDTH			STD_BORDERWIDTH
 #define DEF_COLUMN_ACTIVE_TITLE_RELIEF	"raised"
@@ -331,6 +332,8 @@ static Blt_ConfigSpec tableSpecs[] =
     {BLT_CONFIG_BITMASK, "-autofilters", "autoFilters", "AutoFilters",
 	DEF_AUTO_FILTERS, Blt_Offset(TableView, flags), 
         BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)AUTOFILTERS},
+    {BLT_CONFIG_BACKGROUND, "-background", "background", "Background", 
+	DEF_BACKGROUND, Blt_Offset(TableView, bg), 0},
     {BLT_CONFIG_SYNONYM, "-bd", "borderWidth", (char *)NULL, (char *)NULL, 0,0},
     {BLT_CONFIG_SYNONYM, "-bg", "background", (char *)NULL, (char *)NULL, 0, 0},
     {BLT_CONFIG_PIXELS_NNEG, "-borderwidth", "borderWidth", "BorderWidth",
@@ -2065,13 +2068,17 @@ ObjToTableProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 {
     TableView *viewPtr = (TableView *)widgRec;
     BLT_TABLE *tablePtr = (BLT_TABLE *)(widgRec + offset);
+    BLT_TABLE table;
 
-    if (*tablePtr != NULL) {
-        FreeTableProc(clientData, viewPtr->display, widgRec, offset);
-    }
-    if (blt_table_open(interp, Tcl_GetString(objPtr), tablePtr) != TCL_OK) {
+    if (blt_table_open(interp, Tcl_GetString(objPtr), &table) != TCL_OK) {
 	return TCL_ERROR;
     }
+    if (*tablePtr != NULL) {
+        FreeTableProc(clientData, viewPtr->display, widgRec, offset);
+	viewPtr->rowNotifier = NULL;
+	viewPtr->colNotifier = NULL;
+    }
+    *tablePtr = table;
     viewPtr->flags |= (GEOMETRY | LAYOUT_PENDING);
     EventuallyRedraw(viewPtr);
     return TCL_OK;
@@ -2436,9 +2443,7 @@ DestroyRow(Row *rowPtr)
     if (rowPtr->hashPtr != NULL) {
 	Blt_DeleteHashEntry(&viewPtr->rowTable, rowPtr->hashPtr);
     }
-    if (rowPtr->trace != NULL) {
-	blt_table_delete_trace(rowPtr->trace);
-    }
+    blt_table_clear_row_traces(viewPtr->table, rowPtr->row);
     if ((rowPtr->flags & DELETED) == 0) {
 	RemoveRowCells(viewPtr, rowPtr);
     }
@@ -2450,6 +2455,7 @@ static Row *
 NewRow(TableView *viewPtr, BLT_TABLE_ROW row, Blt_HashEntry *hPtr)
 {
     Row *rowPtr;
+    unsigned int flags;
 
     rowPtr = Blt_Pool_AllocItem(viewPtr->rowPool, sizeof(Row));
     memset(rowPtr, 0, sizeof(Row));
@@ -2462,9 +2468,8 @@ NewRow(TableView *viewPtr, BLT_TABLE_ROW row, Blt_HashEntry *hPtr)
     rowPtr->max = SHRT_MAX;
     rowPtr->titleJustify = TK_JUSTIFY_RIGHT;
     rowPtr->titleRelief = rowPtr->activeTitleRelief = TK_RELIEF_RAISED;
-    rowPtr->trace = blt_table_create_row_trace(viewPtr->table, row, 
-	TABLE_TRACE_FOREIGN_ONLY | TABLE_TRACE_WRITES | TABLE_TRACE_UNSETS, 
-	RowTraceProc, NULL, rowPtr);
+    flags = TABLE_TRACE_FOREIGN_ONLY | TABLE_TRACE_WRITES | TABLE_TRACE_UNSETS;
+    blt_table_trace_row(viewPtr->table, row, flags, RowTraceProc, NULL, rowPtr);
     rowPtr->hashPtr = hPtr;
     Blt_SetHashValue(hPtr, rowPtr);
     return rowPtr;
@@ -2511,9 +2516,7 @@ DestroyColumn(Column *colPtr)
     if (colPtr->hashPtr != NULL) {
 	Blt_DeleteHashEntry(&viewPtr->columnTable, colPtr->hashPtr);
     }
-    if (colPtr->trace != NULL) {
-	blt_table_delete_trace(colPtr->trace);
-    }
+    blt_table_clear_column_traces(viewPtr->table, colPtr->column);
     if ((colPtr->flags & DELETED) == 0) {
 	RemoveColumnCells(viewPtr, colPtr);
     }
@@ -2525,6 +2528,7 @@ static Column *
 NewColumn(TableView *viewPtr, BLT_TABLE_COLUMN col, Blt_HashEntry *hPtr)
 {
     Column *colPtr;
+    unsigned int flags;
 
     colPtr = Blt_Pool_AllocItem(viewPtr->columnPool, sizeof(Column));
     memset(colPtr, 0, sizeof(Column));
@@ -2537,9 +2541,9 @@ NewColumn(TableView *viewPtr, BLT_TABLE_COLUMN col, Blt_HashEntry *hPtr)
     colPtr->max = SHRT_MAX;
     colPtr->titleJustify = TK_JUSTIFY_CENTER;
     colPtr->titleRelief = colPtr->activeTitleRelief = TK_RELIEF_RAISED;
-    colPtr->trace = blt_table_set_column_trace(viewPtr->table, col, 
-	TABLE_TRACE_FOREIGN_ONLY | TABLE_TRACE_WRITES | TABLE_TRACE_UNSETS, 
-	ColumnTraceProc, NULL, colPtr);
+    flags = TABLE_TRACE_FOREIGN_ONLY | TABLE_TRACE_WRITES | TABLE_TRACE_UNSETS;
+    blt_table_trace_column(viewPtr->table, col, flags, ColumnTraceProc, NULL, 
+	colPtr);
     colPtr->hashPtr = hPtr;
     Blt_SetHashValue(hPtr, colPtr);
     return colPtr;
@@ -3879,15 +3883,6 @@ ResetTableView(TableView *viewPtr)
     Blt_HashEntry *hPtr;
     Blt_HashSearch iter;
 
-    if (viewPtr->rowNotifier != NULL) {
-	blt_table_delete_notifier(viewPtr->rowNotifier);
-	viewPtr->rowNotifier = NULL;
-    }
-    if (viewPtr->colNotifier != NULL) {
-	blt_table_delete_notifier(viewPtr->colNotifier);
-	viewPtr->colNotifier = NULL;
-    }
-
     /* Free old row, columns, and cells. */
     for (hPtr = Blt_FirstHashEntry(&viewPtr->columnTable, &iter); hPtr != NULL;
 	 hPtr = Blt_NextHashEntry(&iter)) {
@@ -3930,15 +3925,19 @@ ResetTableView(TableView *viewPtr)
     Blt_InitHashTable(&viewPtr->columnTable, BLT_ONE_WORD_KEYS);
     if (viewPtr->rows != NULL) {
 	Blt_Free(viewPtr->rows);
+	viewPtr->rows = NULL;
     }
     if (viewPtr->columns != NULL) {
 	Blt_Free(viewPtr->columns);
+	viewPtr->columns = NULL;
     }
     if (viewPtr->visibleRows != NULL) {
 	Blt_Free(viewPtr->visibleRows);
+	viewPtr->visibleRows = NULL;
     }
     if (viewPtr->columns != NULL) {
 	Blt_Free(viewPtr->visibleColumns);
+	viewPtr->visibleColumns = NULL;
     }
     viewPtr->numRows = viewPtr->numColumns = 0;
     viewPtr->numVisibleRows = viewPtr->numVisibleColumns = 0;
@@ -3970,6 +3969,8 @@ TableViewFreeProc(DestroyData dataPtr) /* Pointer to the widget record. */
     ResetTableView(viewPtr);
     if (viewPtr->table != NULL) {
 	blt_table_close(viewPtr->table);
+	viewPtr->rowNotifier = NULL;
+	viewPtr->colNotifier = NULL;
 	viewPtr->table = NULL;
     }
     iconOption.clientData = viewPtr;
@@ -5931,7 +5932,7 @@ ColumnExposeOp(ClientData clientData, Tcl_Interp *interp, int objc,
 /*ARGSUSED*/
 static int
 ColumnHideOp(ClientData clientData, Tcl_Interp *interp, int objc,
-	    Tcl_Obj *const *objv)
+	     Tcl_Obj *const *objv)
 {
     TableView *viewPtr = clientData;
 
@@ -6036,6 +6037,10 @@ ColumnInsertOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (col == NULL) {
 	return TCL_ERROR;
     }
+    /* 
+     * Column doesn't have to exist.  We'll add it when the table adds columns.
+     * What to put in the table as a place holder.  
+     */
     hPtr = Blt_CreateHashEntry(&viewPtr->columnTable, (char *)col, &isNew);
     if (!isNew) {
 	Tcl_AppendResult(interp, "a column \"", Tcl_GetString(objv[3]),
@@ -6050,6 +6055,7 @@ ColumnInsertOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	insertPos = viewPtr->numColumns; /* Insert at end of list. */
     }
     colPtr = NewColumn(viewPtr, col, hPtr);
+    colPtr->flags |= STICKY;		/* Don't allow column to be reset. */
     iconOption.clientData = viewPtr;
     uidOption.clientData = viewPtr;
     styleOption.clientData = viewPtr;
@@ -6313,7 +6319,7 @@ ColumnResizeAnchorOp(ClientData clientData, Tcl_Interp *interp, int objc,
 /*ARGSUSED*/
 static int
 ColumnResizeDeactivateOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-		      Tcl_Obj *const *objv)
+			 Tcl_Obj *const *objv)
 {
     TableView *viewPtr = clientData;
 
@@ -6337,7 +6343,7 @@ ColumnResizeDeactivateOp(ClientData clientData, Tcl_Interp *interp, int objc,
 /*ARGSUSED*/
 static int
 ColumnResizeMarkOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-		Tcl_Obj *const *objv)
+		   Tcl_Obj *const *objv)
 {
     TableView *viewPtr = clientData;
     int y;
@@ -6364,7 +6370,7 @@ ColumnResizeMarkOp(ClientData clientData, Tcl_Interp *interp, int objc,
 /*ARGSUSED*/
 static int
 ColumnResizeCurrentOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-	       Tcl_Obj *const *objv)
+		      Tcl_Obj *const *objv)
 {
     TableView *viewPtr = clientData;
 
@@ -6425,7 +6431,7 @@ ColumnResizeOp(ClientData clientData, Tcl_Interp *interp, int objc,
 /*ARGSUSED*/
 static int
 ColumnSeeOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-	 Tcl_Obj *const *objv)
+	    Tcl_Obj *const *objv)
 {
     Column *colPtr;
     TableView *viewPtr = clientData;
@@ -6572,7 +6578,7 @@ ColumnOp(ClientData clientData, Tcl_Interp *interp, int objc,
 /*ARGSUSED*/
 static int
 DeactivateOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-	   Tcl_Obj *const *objv)
+	     Tcl_Obj *const *objv)
 {
     TableView *viewPtr = clientData;
     Cell *activePtr;
@@ -6834,7 +6840,7 @@ fprintf(stderr, "FilterActivate: Column %s is NULL\n", Tcl_GetString(objv[3]));
 /*ARGSUSED*/
 static int
 FilterCgetOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-	   Tcl_Obj *const *objv)
+	     Tcl_Obj *const *objv)
 {
     TableView *viewPtr = clientData;
 
@@ -6862,7 +6868,7 @@ FilterCgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
  */
 static int
 FilterConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-		Tcl_Obj *const *objv)
+		  Tcl_Obj *const *objv)
 {
     TableView *viewPtr = clientData;
 
@@ -7293,7 +7299,7 @@ FocusOp(ClientData clientData, Tcl_Interp *interp, int objc,
 /*ARGSUSED*/
 static int
 GrabOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-	 Tcl_Obj *const *objv)
+       Tcl_Obj *const *objv)
 {
     Cell *cellPtr;
     TableView *viewPtr = clientData;
@@ -7342,7 +7348,7 @@ GrabOp(ClientData clientData, Tcl_Interp *interp, int objc,
 /*ARGSUSED*/
 static int
 HighlightOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-	   Tcl_Obj *const *objv)
+	    Tcl_Obj *const *objv)
 {
     TableView *viewPtr = clientData;
     Cell *cellPtr;
@@ -7383,7 +7389,7 @@ HighlightOp(ClientData clientData, Tcl_Interp *interp, int objc,
 /*ARGSUSED*/
 static int
 IdentifyOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-	Tcl_Obj *const *objv)
+	   Tcl_Obj *const *objv)
 {
     Cell *cellPtr;
     CellKey *keyPtr;
@@ -7435,7 +7441,7 @@ IdentifyOp(ClientData clientData, Tcl_Interp *interp, int objc,
 /*ARGSUSED*/
 static int
 IndexOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-	 Tcl_Obj *const *objv)
+	Tcl_Obj *const *objv)
 {
     Cell *cellPtr;
     CellKey *keyPtr;
@@ -7620,7 +7626,7 @@ IsHiddenOp(ClientData clientData, Tcl_Interp *interp, int objc,
  */
 static int
 PostOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-	     Tcl_Obj *const *objv)
+       Tcl_Obj *const *objv)
 {
     TableView *viewPtr = clientData;
     Row *rowPtr;
@@ -7677,7 +7683,7 @@ PostOp(ClientData clientData, Tcl_Interp *interp, int objc,
 /*ARGSUSED*/
 static int
 RowActivateOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-		 Tcl_Obj *const *objv)
+	      Tcl_Obj *const *objv)
 {
     TableView *viewPtr = clientData;
     Drawable drawable;
@@ -8002,7 +8008,7 @@ RowExposeOp(ClientData clientData, Tcl_Interp *interp, int objc,
 /*ARGSUSED*/
 static int
 RowHideOp(ClientData clientData, Tcl_Interp *interp, int objc,
-	    Tcl_Obj *const *objv)
+	  Tcl_Obj *const *objv)
 {
     TableView *viewPtr = clientData;
 
@@ -8231,7 +8237,7 @@ RowInvokeOp(ClientData clientData, Tcl_Interp *interp, int objc,
 /*ARGSUSED*/
 static int
 RowNamesOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-	      Tcl_Obj *const *objv)
+	   Tcl_Obj *const *objv)
 {
     TableView *viewPtr = clientData;
     Tcl_Obj *listObjPtr;
@@ -8342,7 +8348,7 @@ UpdateRowMark(TableView *viewPtr, int newMark)
 /*ARGSUSED*/
 static int
 RowResizeActivateOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-		 Tcl_Obj *const *objv)
+		    Tcl_Obj *const *objv)
 {
     TableView *viewPtr = clientData;
     Row *rowPtr;
@@ -8552,7 +8558,7 @@ RowSeeOp(ClientData clientData, Tcl_Interp *interp, int objc,
 /*ARGSUSED*/
 static int
 RowShowOp(ClientData clientData, Tcl_Interp *interp, int objc,
-	    Tcl_Obj *const *objv)
+	  Tcl_Obj *const *objv)
 {
     TableView *viewPtr = clientData;
 
@@ -8632,8 +8638,7 @@ static int numRowOps = sizeof(rowOps) / sizeof(Blt_OpSpec);
  *---------------------------------------------------------------------------
  */
 static int
-RowOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-	 Tcl_Obj *const *objv)
+RowOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 {
     Tcl_ObjCmdProc *proc;
 
@@ -9740,8 +9745,7 @@ StyleOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *---------------------------------------------------------------------------
  */
 static int
-TypeOp(TableView *viewPtr, Tcl_Interp *interp, int objc, 
-	   Tcl_Obj *const *objv)
+TypeOp(TableView *viewPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 {
     Cell *cellPtr;
     CellKey *keyPtr;
@@ -9783,7 +9787,7 @@ TypeOp(TableView *viewPtr, Tcl_Interp *interp, int objc,
  */
 static int
 UnpostOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-	       Tcl_Obj *const *objv)
+	 Tcl_Obj *const *objv)
 {
     TableView *viewPtr = clientData;
     Column *colPtr;
@@ -9852,7 +9856,7 @@ UpdatesOp(ClientData clientData, Tcl_Interp *interp, int objc,
 /*ARGSUSED*/
 static int
 WritableOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-	     Tcl_Obj *const *objv)
+	   Tcl_Obj *const *objv)
 {
     Cell *cellPtr;
     TableView *viewPtr = clientData;
@@ -10639,8 +10643,11 @@ DeleteColumns(TableView *viewPtr, BLT_TABLE_NOTIFY_EVENT *eventPtr)
 
 	colPtr = viewPtr->columns[i];
 	if (colPtr->flags & DELETED) {
+	    colPtr->flags &= ~DELETED;
 	    RemoveColumnCells(viewPtr, colPtr);
-	    DestroyColumn(colPtr);
+	    if (viewPtr->flags & AUTO_COLUMNS) {
+		DestroyColumn(colPtr);
+	    }
 	} else {
 	    columns[j++] = colPtr;
 	}
@@ -10739,8 +10746,11 @@ DeleteRows(TableView *viewPtr, BLT_TABLE_NOTIFY_EVENT *eventPtr)
 
 	rowPtr = viewPtr->rows[i];
 	if (rowPtr->flags & DELETED) {
+	    rowPtr->flags &= ~DELETED;
 	    RemoveRowCells(viewPtr, rowPtr);
-	    DestroyRow(rowPtr);
+	    if (viewPtr->flags & AUTO_ROWS) {
+		DestroyRow(rowPtr);
+	    }
 	} else {
 	    rows[j++] = rowPtr;
 	}
@@ -10809,6 +10819,9 @@ static int
 AttachTable(Tcl_Interp *interp, TableView *viewPtr)
 {
     long i;
+
+    /* Try to match the current rows and columns in the view with the
+     * new table names. */
 
     ResetTableView(viewPtr);
     viewPtr->colNotifier = blt_table_create_column_notifier(interp, 
@@ -10988,7 +11001,7 @@ DisplayProc(ClientData clientData)
     if ((viewPtr->numVisibleRows == 0) || (viewPtr->numVisibleColumns == 0)){
 	/* Empty table, draw blank area. */
 	Blt_Bg_FillRectangle(viewPtr->tkwin, Tk_WindowId(viewPtr->tkwin), 
-		viewPtr->colNormalTitleBg, 0, 0, Tk_Width(viewPtr->tkwin), 
+		viewPtr->bg, 0, 0, Tk_Width(viewPtr->tkwin), 
 		Tk_Height(viewPtr->tkwin), viewPtr->borderWidth, 
 		viewPtr->relief);
 	DrawOuterBorders(viewPtr, Tk_WindowId(viewPtr->tkwin));
@@ -10998,7 +11011,7 @@ DisplayProc(ClientData clientData)
 	Tk_Width(viewPtr->tkwin), Tk_Height(viewPtr->tkwin), 
 	Tk_Depth(viewPtr->tkwin));
     Blt_Bg_FillRectangle(viewPtr->tkwin, drawable, 
-	viewPtr->colNormalTitleBg, 0, 0, Tk_Width(viewPtr->tkwin), 
+	viewPtr->bg, 0, 0, Tk_Width(viewPtr->tkwin), 
 	Tk_Height(viewPtr->tkwin), viewPtr->borderWidth, viewPtr->relief);
 
     if ((viewPtr->focusPtr == NULL) && (viewPtr->numVisibleRows > 0) &&

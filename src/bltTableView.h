@@ -134,7 +134,8 @@
 					 * deleted. */
 
 #define POSTED		(1<<11)
-					
+#define STICKY		(1<<12)
+
 /* These are tableview only flags. */
 #define LAYOUT_PENDING	(1<<13)
 #define REDRAW_PENDING	(1<<14)
@@ -365,9 +366,9 @@ struct _CellStyle {
  * Row --
  *
  *	Represents a row in the tableview widget.  It contains the table row
- *	that it really represents and a trace on that row.  It has the
- *	y-coordinate of where this row starts in world coordinates and the
- *	height of the row (maximum height of all the cells in the row).
+ *	that it really represents.  It has the y-coordinate of where this row
+ *	starts in world coordinates and the height of the row (maximum height
+ *	of all the cells in the row).
  */
 struct _Row {
     unsigned int flags;
@@ -413,7 +414,6 @@ struct _Row {
 					 * UID, not a string, because in the
 					 * typical case most rows will have
 					 * the same bindtags. */
-    BLT_TABLE_TRACE trace;		/* Value in this row has changed. */
     BLT_TABLE_ROW row;			/* Row in the datatable this structure
 					 * is associated with. */
     long worldY;			/* Offset of row in world
@@ -426,10 +426,9 @@ struct _Row {
  * Column --
  *
  *	Represents a column in the tableview widget.  It contains the table
- *	column that it really represents and a trace on that column.  It has
- *	the x-coordinate of where this column starts in world coordinates and
- *	the width of the column (maximum width of all the cells in the
- *	column). 
+ *	column that it really represents.  It has the x-coordinate of where
+ *	this column starts in world coordinates and the width of the column
+ *	(maximum width of all the cells in the column).
  *
  *	Columns (different from rows) can be sorted.  There is a sort
  *	command that specify how the column is to be sorted.  This depends
@@ -481,8 +480,6 @@ struct _Column {
 					 * column.  UID, not a string, because
 					 * in the typical case most columns
 					 * will have the same bindtags. */
-    BLT_TABLE_TRACE trace;		/* Value in this column has
-					 * changed. */
     BLT_TABLE_COLUMN column;		/* Column in the datatable this
 					 * structure is associated with. */
     long worldX;			/* Offset of column in world
@@ -816,6 +813,8 @@ struct _TableView {
     Tcl_Obj *rowCmdObjPtr;		/* TCL script to be executed when the
 					 * row is invoked. */
     Blt_BindTable bindTable;		/* Binding information for cells. */
+
+    Blt_Bg bg;				/* Background when there's nothing */
 
     /* Column title attributes. */
     Column *colActiveTitlePtr;		/* Column title currently active. */  

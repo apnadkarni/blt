@@ -1529,7 +1529,7 @@ static void
 FreeNotifierInfo(NotifierInfo *notifyPtr)
 {
     Tcl_DecrRefCount(notifyPtr->cmdObjPtr);
-    blt_table_delete_notifier(notifyPtr->notifier);
+    blt_table_delete_notifier(notifyPtr->cmdPtr->table, notifyPtr->notifier);
     Blt_Free(notifyPtr);
 }
 
@@ -7491,7 +7491,7 @@ TraceDeleteOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	    return TCL_ERROR;
 	}
 	tracePtr = Blt_GetHashValue(hPtr);
-	blt_table_delete_trace(tracePtr->trace);
+	blt_table_delete_trace(cmdPtr->table, tracePtr->trace);
     }
     return TCL_OK;
 }
@@ -8346,7 +8346,7 @@ AttachOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 		TraceInfo *tracePtr;
 
 		tracePtr = Blt_GetHashValue(hPtr);
-		blt_table_delete_trace(tracePtr->trace);
+		blt_table_delete_trace(cmdPtr->table, tracePtr->trace);
 	    }
 	    Blt_DeleteHashTable(&cmdPtr->traceTable);
 	    Blt_InitHashTable(&cmdPtr->traceTable, TCL_STRING_KEYS);
@@ -8473,7 +8473,7 @@ TableInstDeleteProc(ClientData clientData)
 	TraceInfo *tracePtr;
 
 	tracePtr = Blt_GetHashValue(hPtr);
-	blt_table_delete_trace(tracePtr->trace);
+	blt_table_delete_trace(cmdPtr->table, tracePtr->trace);
     }
     Blt_DeleteHashTable(&cmdPtr->traceTable);
     for (hPtr = Blt_FirstHashEntry(&cmdPtr->notifyTable, &iter); hPtr != NULL;
