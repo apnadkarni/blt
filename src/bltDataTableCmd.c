@@ -615,6 +615,7 @@ typedef struct {
     BLT_TABLE_ROW row;			/* Current row. */
     Blt_HashTable varTable;		/* Variable cache. */
     BLT_TABLE_ITERATOR iter;
+    Tcl_Namespace *nsPtr;		/* Old namespace. */
 
     /* Public values */
     Tcl_Obj *emptyValueObjPtr;
@@ -1681,7 +1682,7 @@ ColumnVarResolver(
     long index;
 
     dataPtr = GetTableCmdInterpData(interp);
-    hPtr = Blt_FindHashEntry(&dataPtr->findTable, nsPtr);
+    hPtr = Blt_FindHashEntry(&dataPtr->findTable, interp);
     if (hPtr == NULL) {
 	/* This should never happen.  We can't find data associated with the
 	 * current namespace.  But this routine should never be called unless
@@ -1698,6 +1699,7 @@ ColumnVarResolver(
 	col = blt_table_get_column_by_label(findPtr->table, name);
     }
     if (col == NULL) {
+	Tcl_Var var;
 	/* Variable name doesn't refer to any column. Pass it back to the Tcl
 	 * interpreter and let it resolve it normally. */
 	return TCL_CONTINUE;
@@ -1756,7 +1758,7 @@ FindRows(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr,
 			 name, "\" exists.", (char *)NULL);
 	return TCL_ERROR;
     }
-
+#ifdef notdef
     /* Create a namespace from which to evaluate the expression. */
     nsPtr = Tcl_CreateNamespace(interp, name, NULL, NULL);
     if (nsPtr == NULL) {
@@ -1769,9 +1771,12 @@ FindRows(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr,
 
     /* Make this namespace the current one.  */
     Tcl_PushCallFrame(interp, &frame, nsPtr, /* isProcCallFrame */ FALSE);
+#endif
+    Tcl_AddInterpResolvers(interp, "datatable", (Tcl_ResolveCmdProc*)NULL,
+        ColumnVarResolver, (Tcl_ResolveCompiledVarProc*)NULL);
 
     dataPtr = GetTableCmdInterpData(interp);
-    hPtr = Blt_CreateHashEntry(&dataPtr->findTable, (char *)nsPtr, &isNew);
+    hPtr = Blt_CreateHashEntry(&dataPtr->findTable, (char *)interp, &isNew);
     assert(isNew);
     Blt_SetHashValue(hPtr, findPtr);
 
@@ -1808,8 +1813,14 @@ FindRows(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr,
 	Tcl_SetObjResult(interp, listObjPtr);
     }
     /* Clean up. */
+    if (!Tcl_RemoveInterpResolvers(interp, "datatable")) {
+	Tcl_AppendResult(interp, "can't delete resolver scheme", (char *)NULL);
+	return NULL;
+    }
+#ifdef notdef
     Tcl_PopCallFrame(interp);
     Tcl_DeleteNamespace(nsPtr);
+#endif
     Blt_DeleteHashEntry(&dataPtr->findTable, hPtr);
     Blt_FreeCachedVars(&findPtr->varTable);
     return result;

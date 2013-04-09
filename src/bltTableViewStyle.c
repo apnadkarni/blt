@@ -101,6 +101,7 @@
 #define DEF_CHECKBOX_CHECK_COLOR	STD_INDICATOR_COLOR
 #define DEF_CHECKBOX_COMMAND		(char *)NULL
 #define DEF_CHECKBOX_CURSOR		(char *)NULL
+#define DEF_CHECKBOX_EDIT		"1"
 #define DEF_CHECKBOX_FILL_COLOR		RGB_WHITE
 #define DEF_CHECKBOX_FONT		STD_FONT_SMALL
 #define DEF_CHECKBOX_GAP		"4"
@@ -115,6 +116,7 @@
 #define DEF_COMBOBOX_ARROW_RELIEF	"raised"
 #define DEF_COMBOBOX_BORDERWIDTH	"1"
 #define DEF_COMBOBOX_CURSOR		(char *)NULL
+#define DEF_COMBOBOX_EDIT		"1"
 #define DEF_COMBOBOX_FONT		STD_FONT_NORMAL
 #define DEF_COMBOBOX_ICON_VARIABLE	(char *)NULL
 #define DEF_COMBOBOX_MENU		(char *)NULL
@@ -135,6 +137,7 @@
 #define DEF_IMAGEBOX_BORDERWIDTH	"1"
 #define DEF_IMAGEBOX_COMMAND		(char *)NULL
 #define DEF_IMAGEBOX_CURSOR		(char *)NULL
+#define DEF_IMAGEBOX_EDIT		"0"
 #define DEF_IMAGEBOX_FONT		STD_FONT_SMALL
 #define DEF_IMAGEBOX_RELIEF		"flat"
 #define DEF_IMAGEBOX_SHOW_TEXT		"1"
@@ -690,6 +693,9 @@ static Blt_ConfigSpec checkBoxStyleSpecs[] =
 	(char *)NULL, 0, 0},
     {BLT_CONFIG_SYNONYM, "-fg", "foreground", (char *)NULL, (char *)NULL, 
 	0, 0},
+    {BLT_CONFIG_BITMASK, "-edit", "edit", "Edit", DEF_CHECKBOX_EDIT, 
+	Blt_Offset(CheckBoxStyle, flags), BLT_CONFIG_DONT_SET_DEFAULT,
+	(Blt_CustomOption *)EDIT},
     {BLT_CONFIG_FONT, "-font", "font", "Font", DEF_CHECKBOX_FONT,
 	Blt_Offset(TextBoxStyle, font), 0},
     {BLT_CONFIG_COLOR, "-foreground", "foreground", "Foreground", 
@@ -784,6 +790,9 @@ static Blt_ConfigSpec comboBoxStyleSpecs[] =
 	(char *)NULL, 0, 0},
     {BLT_CONFIG_SYNONYM, "-disabledfg", "disabledForeground", (char *)NULL, 
 	(char *)NULL, 0, 0},
+    {BLT_CONFIG_BITMASK, "-edit", "edit", "Edit", DEF_COMBOBOX_EDIT, 
+	Blt_Offset(ComboBoxStyle, flags), BLT_CONFIG_DONT_SET_DEFAULT,
+	(Blt_CustomOption *)EDIT},
     {BLT_CONFIG_SYNONYM, "-fg", "foreground", (char *)NULL, (char *)NULL, 
 	0, 0},
     {BLT_CONFIG_FONT, "-font", "font", "Font", DEF_COMBOBOX_FONT,
@@ -879,6 +888,9 @@ static Blt_ConfigSpec imageBoxStyleSpecs[] =
 	(char *)NULL, 0, 0},
     {BLT_CONFIG_SYNONYM, "-disabledfg", "disabledForeground", (char *)NULL, 
 	(char *)NULL, 0, 0},
+    {BLT_CONFIG_BITMASK, "-edit", "edit", "Edit", DEF_IMAGEBOX_EDIT, 
+	Blt_Offset(ImageBoxStyle, flags), BLT_CONFIG_DONT_SET_DEFAULT,
+	(Blt_CustomOption *)EDIT},
     {BLT_CONFIG_SYNONYM, "-fg", "foreground", (char *)NULL, (char *)NULL, 
 	0, 0},
     {BLT_CONFIG_FONT, "-font", "font", "Font", DEF_IMAGEBOX_FONT,
@@ -1838,7 +1850,7 @@ NewTextBoxStyle(TableView *viewPtr, Blt_HashEntry *hPtr)
     stylePtr->relief = stylePtr->activeRelief = TK_RELIEF_FLAT;
     stylePtr->name = Blt_GetHashKey(&viewPtr->styleTable, hPtr);
     stylePtr->hashPtr = hPtr;
-    stylePtr->flags = 0;
+    stylePtr->flags = 0;		/*  */
     stylePtr->refCount = 1;
     stylePtr->borderWidth = 1;
     Blt_SetHashValue(hPtr, stylePtr);
