@@ -75,7 +75,11 @@ extern char *		TclpAlloc(unsigned int size);
 extern void		TclpFree(char * ptr);
 /* 81 */
 extern char *		TclpRealloc(char * ptr, unsigned int size);
-
+/* 11 */
+extern void             Tcl_AddInterpResolvers(Tcl_Interp *interp, 
+				const char *name, Tcl_ResolveCmdProc *cmdProc,
+                                Tcl_ResolveVarProc *varProc,
+                                Tcl_ResolveCompiledVarProc *compiledVarProc);
 #if (_TCL_VERSION < _VERSION(8,5,0)) 
 /* 113 */
 extern Tcl_Namespace *	Tcl_CreateNamespace(Tcl_Interp * interp, 
@@ -113,6 +117,9 @@ extern void		Tcl_PopCallFrame(Tcl_Interp* interp);
 extern int		Tcl_PushCallFrame(Tcl_Interp* interp, 
 				Tcl_CallFrame * framePtr, 
 				Tcl_Namespace * nsPtr, int isProcCallFrame);
+/* 130 */
+extern int              Tcl_RemoveInterpResolvers(Tcl_Interp *interp, 
+				const char * name);
 
 /* 131 */
 extern void		Tcl_SetNamespaceResolvers(
@@ -244,7 +251,9 @@ typedef struct TclIntStubs {
     void *tclTeardownNamespace; /* 108 */
     void *tclUpdateReturnInfo;	/* 109 */
     void *reserved110;
-    void *tcl_AddInterpResolvers; /* 111 */
+    void (*tcl_AddInterpResolvers)(Tcl_Interp *interp, const char *name, 
+	Tcl_ResolveCmdProc *cmdProc, Tcl_ResolveVarProc *varProc, 
+	Tcl_ResolveCompiledVarProc *compiledVarProc); /* 111 */
     void *tcl_AppendExportList; /* 112 */
 
     Tcl_Namespace * (*tcl_CreateNamespace)(Tcl_Interp *interp, char *name, 
@@ -283,7 +292,8 @@ typedef struct TclIntStubs {
     int (*tcl_PushCallFrame)(Tcl_Interp *interp, Tcl_CallFrame *framePtr, 
 	Tcl_Namespace *nsPtr, int isProcCallFrame); /* 129 */
 
-    void *tcl_RemoveInterpResolvers; /* 130 */
+    int (*tcl_RemoveInterpResolvers)(Tcl_Interp *interp, 
+	const char *name); /* 130 */
 
     void (*tcl_SetNamespaceResolvers) (Tcl_Namespace *nsPtr, 
 	Tcl_ResolveCmdProc *cmdProc, Tcl_ResolveVarProc *varProc, 

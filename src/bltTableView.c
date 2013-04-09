@@ -95,6 +95,8 @@
 #include "bltText.h"
 #include "bltOp.h"
 
+#define TABLEVIEW_FIND_KEY "BLT TableView Find Command Interface"
+
 #define TITLE_PADX		2
 #define TITLE_PADY		1
 #define FILTER_GAP		3
@@ -323,9 +325,9 @@ static Blt_ConfigSpec tableSpecs[] =
     {BLT_CONFIG_BACKGROUND, "-activerowtitlebackground", 
 	"activeRowTitleBackground", "ActiveTitleBackground", 
 	DEF_ACTIVE_TITLE_BG, Blt_Offset(TableView, rowActiveTitleBg), 0},
-    {BLT_CONFIG_COLOR, "-activerowtitleforeground", "activeRowTitleForeground", 
-	"ActiveTitleForeground", DEF_ACTIVE_TITLE_FG, 
-	Blt_Offset(TableView, rowActiveTitleFg), 0},
+    {BLT_CONFIG_COLOR, "-activerowtitleforeground",
+	"activeRowTitleForeground", "ActiveTitleForeground", 
+	DEF_ACTIVE_TITLE_FG, Blt_Offset(TableView, rowActiveTitleFg), 0},
     {BLT_CONFIG_CUSTOM, "-autocreate", "autoCreate", "AutoCreate",
 	DEF_AUTO_CREATE, Blt_Offset(TableView, flags), 
         BLT_CONFIG_DONT_SET_DEFAULT, &autoCreateOption},
@@ -334,8 +336,10 @@ static Blt_ConfigSpec tableSpecs[] =
         BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)AUTOFILTERS},
     {BLT_CONFIG_BACKGROUND, "-background", "background", "Background", 
 	DEF_BACKGROUND, Blt_Offset(TableView, bg), 0},
-    {BLT_CONFIG_SYNONYM, "-bd", "borderWidth", (char *)NULL, (char *)NULL, 0,0},
-    {BLT_CONFIG_SYNONYM, "-bg", "background", (char *)NULL, (char *)NULL, 0, 0},
+    {BLT_CONFIG_SYNONYM, "-bd", "borderWidth", (char *)NULL, (char *)NULL, 
+	0, 0},
+    {BLT_CONFIG_SYNONYM, "-bg", "background", (char *)NULL, (char *)NULL, 
+	0, 0},
     {BLT_CONFIG_PIXELS_NNEG, "-borderwidth", "borderWidth", "BorderWidth",
 	DEF_BORDERWIDTH, Blt_Offset(TableView, borderWidth), 
 	BLT_CONFIG_DONT_SET_DEFAULT},
@@ -345,7 +349,7 @@ static Blt_ConfigSpec tableSpecs[] =
     {BLT_CONFIG_CURSOR, "-columnresizecursor", "columnResizeCursor", 
         "ResizeCursor", DEF_COLUMN_RESIZE_CURSOR, 
 	Blt_Offset(TableView, colResizeCursor), 0},
-    {BLT_CONFIG_BACKGROUND, "-columntitlebackground", "columnTitleBackground", 
+    {BLT_CONFIG_BACKGROUND, "-columntitlebackground", "columnTitleBackground",
 	"TitleBackground", DEF_COLUMN_NORMAL_TITLE_BG, 
 	Blt_Offset(TableView, colNormalTitleBg), 0},
     {BLT_CONFIG_PIXELS_NNEG, "-columntitleborderwidth", 
@@ -360,7 +364,7 @@ static Blt_ConfigSpec tableSpecs[] =
 	Blt_Offset(TableView, colNormalTitleFg), 0},
     {BLT_CONFIG_ACTIVE_CURSOR, "-cursor", "cursor", "Cursor", (char *)NULL, 
 	Blt_Offset(TableView, cursor), BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_CUSTOM, "-decreasingicon", "decreasingIcon", "DecreasingIcon", 
+    {BLT_CONFIG_CUSTOM, "-decreasingicon", "decreasingIcon","DecreasingIcon", 
 	DEF_SORT_DOWN_ICON, Blt_Offset(TableView, sort.down), 
 	BLT_CONFIG_NULL_OK | BLT_CONFIG_DONT_SET_DEFAULT, &iconOption},
     {BLT_CONFIG_BACKGROUND, "-disabledcolumntitlebackground", 
@@ -376,9 +380,10 @@ static Blt_ConfigSpec tableSpecs[] =
 	"disabledRowTitleForeground", "DisabledTitleForeground", 
 	DEF_DISABLED_TITLE_FG, Blt_Offset(TableView, rowDisabledTitleFg), 0},
     {BLT_CONFIG_BITMASK, "-exportselection", "exportSelection", 
-	"ExportSelection", DEF_EXPORT_SELECTION, Blt_Offset(TableView, flags), 
+	"ExportSelection", DEF_EXPORT_SELECTION, Blt_Offset(TableView, flags),
 	BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)SELECT_EXPORT},
-    {BLT_CONFIG_SYNONYM, "-fg", "foreground", (char *)NULL, (char *)NULL, 0, 0},
+    {BLT_CONFIG_SYNONYM, "-fg", "foreground", (char *)NULL, (char *)NULL, 
+	0, 0},
     {BLT_CONFIG_PIXELS_NNEG, "-height", "height", "Height", DEF_HEIGHT, 
 	Blt_Offset(TableView, reqHeight), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_COLOR, "-highlightbackground", "highlightBackground",
@@ -389,10 +394,10 @@ static Blt_ConfigSpec tableSpecs[] =
     {BLT_CONFIG_PIXELS_NNEG, "-highlightthickness", "highlightThickness",
 	"HighlightThickness", DEF_FOCUS_HIGHLIGHT_WIDTH, 
 	Blt_Offset(TableView, highlightWidth), BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_OBJ, "-rowcommand", "rowCommand", "RowCommand", DEF_ROW_COMMAND,
-	Blt_Offset(TableView, rowCmdObjPtr),
+    {BLT_CONFIG_OBJ, "-rowcommand", "rowCommand", "RowCommand", 
+	DEF_ROW_COMMAND, Blt_Offset(TableView, rowCmdObjPtr),
 	BLT_CONFIG_DONT_SET_DEFAULT | BLT_CONFIG_NULL_OK}, 
-    {BLT_CONFIG_CURSOR, "-rowresizecursor", "rowResizeCursor", "ResizeCursor", 
+    {BLT_CONFIG_CURSOR, "-rowresizecursor", "rowResizeCursor","ResizeCursor", 
 	DEF_ROW_RESIZE_CURSOR, Blt_Offset(TableView, rowResizeCursor), 0},
     {BLT_CONFIG_BACKGROUND, "-rowtitlebackground", "rowTitleBackground", 
 	"TitleBackground", DEF_ROW_NORMAL_TITLE_BG, 
@@ -470,8 +475,9 @@ static Blt_ConfigSpec columnSpecs[] =
     {BLT_CONFIG_CUSTOM, "-filtericon", "filterIcon", "FilterIcon",
 	DEF_FILTER_ICON, Blt_Offset(Column, filterIcon), 
 	BLT_CONFIG_NULL_OK | BLT_CONFIG_DONT_SET_DEFAULT, &iconOption},
-    {BLT_CONFIG_OBJ, "-filtermenu", "filterMenu", "FilterMenu", DEF_FILTER_MENU,
-	Blt_Offset(Column, filterMenuObjPtr), BLT_CONFIG_NULL_OK},
+    {BLT_CONFIG_OBJ, "-filtermenu", "filterMenu", "FilterMenu", 
+	DEF_FILTER_MENU, Blt_Offset(Column, filterMenuObjPtr), 
+	BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_STRING, "-filtertext", "filterText", "FilterText",
 	DEF_FILTER_TEXT, Blt_Offset(Column, filterText), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_OBJ, "-formatcommand", "formatCommand", "FormatCommand", 
@@ -538,15 +544,14 @@ static Blt_ConfigSpec rowSpecs[] =
     {BLT_CONFIG_BITMASK_INVERT, "-edit", "edit", "Edit", DEF_ROW_EDIT, 
 	Blt_Offset(Row, flags), BLT_CONFIG_DONT_SET_DEFAULT, 
 	(Blt_CustomOption *)EDIT},
-    {BLT_CONFIG_PIXELS_NNEG, "-height", "height", "Height",
-	DEF_ROW_HEIGHT, Blt_Offset(Row, reqHeight), 
-	BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_PIXELS_NNEG, "-height", "height", "Height", DEF_ROW_HEIGHT, 
+	Blt_Offset(Row, reqHeight), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_BITMASK, "-hide", "hide", "Hide", DEF_ROW_HIDE, 
 	Blt_Offset(Row, flags), BLT_CONFIG_DONT_SET_DEFAULT, 
 	(Blt_CustomOption *)HIDDEN},
     {BLT_CONFIG_CUSTOM, "-icon", "icon", "icon", DEF_ROW_ICON, 
-	Blt_Offset(Row, icon), BLT_CONFIG_NULL_OK | BLT_CONFIG_DONT_SET_DEFAULT,
-	&iconOption},
+	Blt_Offset(Row, icon), 
+	BLT_CONFIG_NULL_OK | BLT_CONFIG_DONT_SET_DEFAULT, &iconOption},
     {BLT_CONFIG_PIXELS_NNEG, "-max", "max", "Max", DEF_ROW_MAX, 
 	Blt_Offset(Row, reqMax), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_PIXELS_NNEG, "-min", "min", "Min", DEF_ROW_MIN, 
@@ -604,8 +609,10 @@ static Blt_ConfigSpec filterSpecs[] =
 	BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_BACKGROUND, "-background", "background", "Background", 
 	DEF_FILTER_NORMAL_BG, Blt_Offset(TableView, filter.normalBg), 0},
-    {BLT_CONFIG_SYNONYM, "-bd", "borderWidth", (char *)NULL, (char *)NULL, 0,0},
-    {BLT_CONFIG_SYNONYM, "-bg", "background", (char *)NULL, (char *)NULL, 0, 0},
+    {BLT_CONFIG_SYNONYM, "-bd", "borderWidth", (char *)NULL, (char *)NULL, 
+	0, 0},
+    {BLT_CONFIG_SYNONYM, "-bg", "background", (char *)NULL, (char *)NULL, 
+	0, 0},
     {BLT_CONFIG_PIXELS_NNEG, "-borderwidth", "borderWidth", "BorderWidth", 
 	DEF_FILTER_BORDERWIDTH, Blt_Offset(TableView, filter.borderWidth), 
 	BLT_CONFIG_DONT_SET_DEFAULT},
@@ -618,10 +625,10 @@ static Blt_ConfigSpec filterSpecs[] =
     {BLT_CONFIG_COLOR, "-disabledforeground", "disabledForeground", 
 	"DisabledForeground", DEF_FILTER_DISABLED_FG, 
 	Blt_Offset(TableView, filter.disabledFg), 0},
-    {BLT_CONFIG_SYNONYM, "-fg", "foreground", (char *)NULL, (char *)NULL, 0, 0},
+    {BLT_CONFIG_SYNONYM, "-fg", "foreground", (char *)NULL, (char *)NULL, 
+	0, 0},
     {BLT_CONFIG_FONT, "-font", "font", "Font", DEF_FILTER_FONT, 
 	Blt_Offset(TableView, filter.font), 0},
-
     {BLT_CONFIG_COLOR, "-foreground", "foreground", "Foreground", 
 	DEF_FILTER_NORMAL_FG, Blt_Offset(TableView, filter.normalFg), 0},
     {BLT_CONFIG_BITMASK, "-hide", "hide", "Hide",
@@ -6624,7 +6631,7 @@ static Blt_SwitchSpec findSwitches[] =
 };
 
 static int
-ColumnVarResolver(
+ColumnVarResolverProc(
     Tcl_Interp *interp,			/* Current interpreter. */
     const char *name,			/* Variable name being resolved. */
     Tcl_Namespace *nsPtr,		/* Current namespace context. */
@@ -6662,7 +6669,8 @@ ColumnVarResolver(
 	 * interpreter and let it resolve it normally. */
 	return TCL_CONTINUE;
     }
-    valueObjPtr = blt_table_get_obj(switchesPtr->table, switchesPtr->row, col);
+    valueObjPtr = blt_table_get_obj(switchesPtr->table, switchesPtr->row, 
+	col);
     if (valueObjPtr == NULL) {
 	valueObjPtr = switchesPtr->emptyValueObjPtr;
 	if (valueObjPtr == NULL) {
@@ -6695,44 +6703,22 @@ FindRows(Tcl_Interp *interp, TableView *viewPtr, Tcl_Obj *objPtr,
 	 FindSwitches *switchesPtr)
 {
     Blt_HashEntry *hPtr;
-    Tcl_CallFrame frame;
-    Tcl_Namespace *nsPtr;
+     Tcl_Namespace *nsPtr;
     Tcl_Obj *listObjPtr;
-    const char *name;
-    int isNew;
+     int isNew;
     int result = TCL_OK;
     long i;
 
-    name = blt_table_name(viewPtr->table);
-    nsPtr = Tcl_FindNamespace(interp, name, NULL, TCL_GLOBAL_ONLY);
-    if (nsPtr != NULL) {
-	/* This limits us to only one expression evaluated per table at a
-	 * time--no concurrent expressions in the same table.  Otherwise we
-	 * need to generate unique namespace names. That's a bit harder with
-	 * the current TCL namespace API. */
-	Tcl_AppendResult(interp, "can't evaluate expression: namespace \"",
-			 name, "\" exists.", (char *)NULL);
-	return TCL_ERROR;
-    }
+    Tcl_AddInterpResolvers(interp, TABLEVIEW_FIND_KEY, 
+	(Tcl_ResolveCmdProc*)NULL, ColumnVarResolverProc, 
+	(Tcl_ResolveCompiledVarProc*)NULL);
 
     Blt_InitHashTable(&switchesPtr->varTable, BLT_ONE_WORD_KEYS);
-
-    /* Create a namespace from which to evaluate the expression. */
-    nsPtr = Tcl_CreateNamespace(interp, name, NULL, NULL);
-    if (nsPtr == NULL) {
-	return TCL_ERROR;
-    }
-    /* Register our variable resolver in this namespace to link table values
-     * with TCL variables. */
-    Tcl_SetNamespaceResolvers(nsPtr, (Tcl_ResolveCmdProc*)NULL,
-        ColumnVarResolver, (Tcl_ResolveCompiledVarProc*)NULL);
-
-    /* Make this namespace the current one.  */
-    Tcl_PushCallFrame(interp, &frame, nsPtr, /* isProcCallFrame */ FALSE);
 
     if (!initialized) {
 	Blt_InitHashTable(&findTable, BLT_ONE_WORD_KEYS);
     }
+    nsPtr = Tcl_GetCurrentNamespace(interp);
     hPtr = Blt_CreateHashEntry(&findTable, (char *)nsPtr, &isNew);
     assert(isNew);
     Blt_SetHashValue(hPtr, switchesPtr);
@@ -6775,10 +6761,13 @@ FindRows(Tcl_Interp *interp, TableView *viewPtr, Tcl_Obj *objPtr,
 	Tcl_SetObjResult(interp, listObjPtr);
     }
     /* Clean up. */
-    Tcl_PopCallFrame(interp);
-    Tcl_DeleteNamespace(nsPtr);
     Blt_DeleteHashEntry(&findTable, hPtr);
     Blt_FreeCachedVars(&switchesPtr->varTable);
+    if (!Tcl_RemoveInterpResolvers(interp, TABLEVIEW_FIND_KEY)) {
+	Tcl_AppendResult(interp, "can't delete resolver scheme", 
+		(char *)NULL);
+	return TCL_ERROR;
+    }
     return result;
 }
 

@@ -196,6 +196,7 @@
 
 #define BUILD_BLT_TCL_PROCS 1
 #include "bltInt.h"
+#include "tclIntDecls.h"
 
 #ifdef HAVE_STRING_H
 #  include <string.h>
@@ -212,6 +213,7 @@
 #include "tclIntDecls.h"
 
 #define TABLE_THREAD_KEY "BLT DataTable Command Interface"
+#define TABLE_FIND_KEY "BLT DataTable Find Command Interface"
 
 /*
  * TableCmdInterpData --
@@ -1666,7 +1668,7 @@ NotifyProc(ClientData clientData, BLT_TABLE_NOTIFY_EVENT *eventPtr)
 }
 
 static int
-ColumnVarResolver(
+ColumnVarResolverProc(
     Tcl_Interp *interp,			/* Current interpreter. */
     const char *name,			/* Variable name being resolved. */
     Tcl_Namespace *nsPtr,		/* Current namespace context. */
@@ -1676,13 +1678,13 @@ ColumnVarResolver(
 {
     Blt_HashEntry *hPtr;
     BLT_TABLE_COLUMN col;
-    FindSwitches *findPtr;
+    FindSwitches *switchesPtr;
     TableCmdInterpData *dataPtr;
     Tcl_Obj *valueObjPtr;
     long index;
 
     dataPtr = GetTableCmdInterpData(interp);
-    hPtr = Blt_FindHashEntry(&dataPtr->findTable, interp);
+    hPtr = Blt_FindHashEntry(&dataPtr->findTable, nsPtr);
     if (hPtr == NULL) {
 	/* This should never happen.  We can't find data associated with the
 	 * current namespace.  But this routine should never be called unless
@@ -1690,28 +1692,28 @@ ColumnVarResolver(
 	 * resolver. */
 	return TCL_CONTINUE;	
     }
-    findPtr = Blt_GetHashValue(hPtr);
+    switchesPtr = Blt_GetHashValue(hPtr);
 
     /* Look up the column from the variable name given. */
     if (Blt_GetLong((Tcl_Interp *)NULL, (char *)name, &index) == TCL_OK) {
- 	col = blt_table_get_column_by_index(findPtr->table, index);
+ 	col = blt_table_get_column_by_index(switchesPtr->table, index);
     } else {
-	col = blt_table_get_column_by_label(findPtr->table, name);
+	col = blt_table_get_column_by_label(switchesPtr->table, name);
     }
     if (col == NULL) {
-	Tcl_Var var;
 	/* Variable name doesn't refer to any column. Pass it back to the Tcl
 	 * interpreter and let it resolve it normally. */
 	return TCL_CONTINUE;
     }
-    valueObjPtr = blt_table_get_obj(findPtr->table, findPtr->row, col);
+    valueObjPtr = blt_table_get_obj(switchesPtr->table, switchesPtr->row, 
+	col);
     if (valueObjPtr == NULL) {
-	valueObjPtr = findPtr->emptyValueObjPtr;
+	valueObjPtr = switchesPtr->emptyValueObjPtr;
 	if (valueObjPtr == NULL) {
 	    return TCL_CONTINUE;
 	}
     }
-    *varPtr = Blt_GetCachedVar(&findPtr->varTable, name, valueObjPtr);
+    *varPtr = Blt_GetCachedVar(&switchesPtr->varTable, name, valueObjPtr);
     return TCL_OK;
 }
 
@@ -1735,70 +1737,45 @@ EvaluateExpr(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *exprObjPtr,
 
 static int
 FindRows(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr, 
-	 FindSwitches *findPtr)
+	 FindSwitches *switchesPtr)
 {
     Blt_HashEntry *hPtr;
     BLT_TABLE_ROW row;
     TableCmdInterpData *dataPtr;
-    Tcl_CallFrame frame;
     Tcl_Namespace *nsPtr;
     Tcl_Obj *listObjPtr;
-    const char *name;
     int isNew;
     int result = TCL_OK;
 
-    name = blt_table_name(table);
-    nsPtr = Tcl_FindNamespace(interp, name, NULL, TCL_GLOBAL_ONLY);
-    if (nsPtr != NULL) {
-	/* This limits us to only one expression evaluated per table at a
-	 * time--no concurrent expressions in the same table.  Otherwise we
-	 * need to generate unique namespace names. That's a bit harder with
-	 * the current TCL namespace API. */
-	Tcl_AppendResult(interp, "can't evaluate expression: namespace \"",
-			 name, "\" exists.", (char *)NULL);
-	return TCL_ERROR;
-    }
-#ifdef notdef
-    /* Create a namespace from which to evaluate the expression. */
-    nsPtr = Tcl_CreateNamespace(interp, name, NULL, NULL);
-    if (nsPtr == NULL) {
-	return TCL_ERROR;
-    }
-    /* Register our variable resolver in this namespace to link table values
-     * with TCL variables. */
-    Tcl_SetNamespaceResolvers(nsPtr, (Tcl_ResolveCmdProc*)NULL,
-        ColumnVarResolver, (Tcl_ResolveCompiledVarProc*)NULL);
-
-    /* Make this namespace the current one.  */
-    Tcl_PushCallFrame(interp, &frame, nsPtr, /* isProcCallFrame */ FALSE);
-#endif
-    Tcl_AddInterpResolvers(interp, "datatable", (Tcl_ResolveCmdProc*)NULL,
-        ColumnVarResolver, (Tcl_ResolveCompiledVarProc*)NULL);
+    Tcl_AddInterpResolvers(interp, TABLE_FIND_KEY, (Tcl_ResolveCmdProc*)NULL,
+        ColumnVarResolverProc, (Tcl_ResolveCompiledVarProc*)NULL);
 
     dataPtr = GetTableCmdInterpData(interp);
-    hPtr = Blt_CreateHashEntry(&dataPtr->findTable, (char *)interp, &isNew);
+    nsPtr = Tcl_GetCurrentNamespace(interp);
+    hPtr = Blt_CreateHashEntry(&dataPtr->findTable, (char *)nsPtr, &isNew);
     assert(isNew);
-    Blt_SetHashValue(hPtr, findPtr);
+    Blt_SetHashValue(hPtr, switchesPtr);
 
     /* Now process each row, evaluating the expression. */
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
-    for (row = blt_table_first_tagged_row(&findPtr->iter); row != NULL; 
-	 row = blt_table_next_tagged_row(&findPtr->iter)) {
+    for (row = blt_table_first_tagged_row(&switchesPtr->iter); row != NULL; 
+	 row = blt_table_next_tagged_row(&switchesPtr->iter)) {
 	int bool;
 	
-	findPtr->row = row;
+	switchesPtr->row = row;
 	result = EvaluateExpr(interp, table, objPtr, &bool);
 	if (result != TCL_OK) {
 	    break;
 	}
-	if (findPtr->flags & FIND_INVERT) {
+	if (switchesPtr->flags & FIND_INVERT) {
 	    bool = !bool;
 	}
 	if (bool) {
 	    Tcl_Obj *objPtr;
 
-	    if (findPtr->tag != NULL) {
-		result = blt_table_set_row_tag(interp, table, row,findPtr->tag);
+	    if (switchesPtr->tag != NULL) {
+		result = blt_table_set_row_tag(interp, table, row,
+			switchesPtr->tag);
 		if (result != TCL_OK) {
 		    break;
 		}
@@ -1813,16 +1790,13 @@ FindRows(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr,
 	Tcl_SetObjResult(interp, listObjPtr);
     }
     /* Clean up. */
-    if (!Tcl_RemoveInterpResolvers(interp, "datatable")) {
-	Tcl_AppendResult(interp, "can't delete resolver scheme", (char *)NULL);
-	return NULL;
-    }
-#ifdef notdef
-    Tcl_PopCallFrame(interp);
-    Tcl_DeleteNamespace(nsPtr);
-#endif
     Blt_DeleteHashEntry(&dataPtr->findTable, hPtr);
-    Blt_FreeCachedVars(&findPtr->varTable);
+    Blt_FreeCachedVars(&switchesPtr->varTable);
+    if (!Tcl_RemoveInterpResolvers(interp, TABLE_FIND_KEY)) {
+	Tcl_AppendResult(interp, "can't delete resolver scheme", 
+		(char *)NULL);
+	return TCL_ERROR;
+    }
     return result;
 }
 
