@@ -3735,16 +3735,16 @@ AppendTagsProc(Blt_BindTable table, ClientData object, ClientData hint,
 	if (colPtr->bindTags != NULL) {
 	    AddBindTags(viewPtr, tags, colPtr->bindTags, ColumnTag);
 	}
-    } else if (flags & ITEM_ROW_RESIZE) {
+    } else if(flags & ITEM_ROW_RESIZE) {
 	Blt_Chain_Append(tags, RowTag(viewPtr, "Resize"));
-    } else if (flags & ITEM_ROW_TITLE) {
+    } else if(flags & ITEM_ROW_TITLE) {
 	Row *rowPtr = object;
 
 	Blt_Chain_Append(tags, rowPtr);
 	if (rowPtr->bindTags != NULL) {
 	    AddBindTags(viewPtr, tags, rowPtr->bindTags, RowTag);
 	}
-    } else if (flags & ITEM_CELL) {
+    } else if(flags & ITEM_CELL) {
 	Cell *cellPtr = object;
 	CellStyle *stylePtr;
 	CellKey *keyPtr;
@@ -5643,6 +5643,8 @@ fprintf(stderr, "ColumnActivate: Column %s is NULL\n", Tcl_GetString(objv[3]));
  *
  * ColumnBindOp --
  *
+ *	Bind a callback to an event on a column title.
+ *
  *	  .t column bind tag sequence command
  *
  *---------------------------------------------------------------------------
@@ -5707,7 +5709,7 @@ ColumnCgetOp(TableView *viewPtr, Tcl_Interp *interp, int objc,
  * Side effects:
  *	Configuration information, such as text string, colors, font,
  *	etc. get set for viewPtr; old resources get freed, if there
- *	were any.  The hypertext is redisplayed.
+ *	were any.  
  *
  *	.tv column configure col ?option value?
  *---------------------------------------------------------------------------
