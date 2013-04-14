@@ -3394,7 +3394,7 @@ ColumnTagIndicesOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc,
 
     matches = GetColumnTagMatches(interp, cmdPtr->table, objc - 4, objv + 4);
     if (matches == NULL) {
-	return TCL_ERROR;
+	return TCL_OK;
     }
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
     for (j = 0; j < blt_table_num_columns(cmdPtr->table); j++) {
@@ -5486,8 +5486,7 @@ RowTagGetOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 }
 
 static unsigned char *
-GetRowTagMatches(Tcl_Interp *interp, BLT_TABLE table, int objc, 
-		 Tcl_Obj *const *objv)
+GetRowTagMatches(BLT_TABLE table, int objc, Tcl_Obj *const *objv)
 {
     long numRows;
     int i;
@@ -5524,8 +5523,6 @@ GetRowTagMatches(Tcl_Interp *interp, BLT_TABLE table, int objc,
 	}
 	tagTablePtr = blt_table_get_row_tag_table(table, tagName);
 	if (tagTablePtr == NULL) {
-	    Tcl_AppendResult(interp, "unknown row tag \"", tagName, "\"",
-		(char *)NULL);
 	    Blt_Free(matches);
 	    return NULL;
 	}
@@ -5562,9 +5559,9 @@ RowTagIndicesOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     long j;
     unsigned char *matches;
 
-    matches = GetRowTagMatches(interp, cmdPtr->table, objc - 4, objv + 4);
+    matches = GetRowTagMatches(cmdPtr->table, objc - 4, objv + 4);
     if (matches == NULL) {
-	return TCL_ERROR;
+	return TCL_OK;
     }
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
     for (j = 0; j < blt_table_num_rows(cmdPtr->table); j++) {
@@ -5596,9 +5593,9 @@ RowTagLabelsOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     long j;
     unsigned char *matches;
 
-    matches = GetRowTagMatches(interp, cmdPtr->table, objc - 4, objv + 4);
+    matches = GetRowTagMatches(cmdPtr->table, objc - 4, objv + 4);
     if (matches == NULL) {
-	return TCL_ERROR;
+	return TCL_OK;
     }
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
     for (j = 0; j < blt_table_num_rows(cmdPtr->table); j++) {
