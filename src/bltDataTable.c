@@ -1167,6 +1167,33 @@ NewTags(void)
     return tagsPtr;
 }
 
+static void
+InitTags(Table *tablePtr)
+{
+    tablePtr->tags = NewTags();
+    tablePtr->rowTags = &tablePtr->tags->rowTable;
+    tablePtr->columnTags = &tablePtr->tags->columnTable;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * ShareTags --
+ *
+ *---------------------------------------------------------------------------
+ */
+static void
+ShareTags(Table *srcPtr, Table *destPtr)
+{
+    srcPtr->tags->refCount++;
+    if (destPtr->tags != NULL) {
+	blt_table_release_tags(destPtr);
+    }
+    destPtr->tags = srcPtr->tags;
+    destPtr->rowTags = &destPtr->tags->rowTable;
+    destPtr->columnTags = &destPtr->tags->columnTable;
+}
+
 /*
  *---------------------------------------------------------------------------
  *
@@ -1309,10 +1336,8 @@ NewTable(
     /* Add client to table object's list of clients. */
     tablePtr->link = Blt_Chain_Append(corePtr->clients, tablePtr);
 
-    /* By default, use own sets of tags. */
-    tablePtr->tags = NewTags();
-    tablePtr->rowTags = &tablePtr->tags->rowTable;
-    tablePtr->columnTags = &tablePtr->tags->columnTable;
+    /* Create a new set of tags. */
+    InitTags(tablePtr);
 
     tablePtr->clientTablePtr = &dataPtr->clientTable;
     /* Table names are not unique.  More than one client may open the same
@@ -4063,7 +4088,7 @@ blt_table_release_tags(Table *tablePtr)
 /*
  *---------------------------------------------------------------------------
  *
- * BLT_TABLE_TAGSAreShared --
+ * blt_table_tags_are_shared --
  *
  *	Returns whether the tag table is shared with another client.
  *
@@ -4078,6 +4103,35 @@ blt_table_tags_are_shared(Table *tablePtr)
 {
     return (tablePtr->tags->refCount > 1);
 }   
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * blt_table_new_tags --
+ *
+ *	Releases the old tag table (if it exists) and creates a new empty
+ *	tag table.  
+ *
+ * Results:
+ *	None.
+ *
+ * Side Effects:
+ *	Possible frees memory for the old tag table (if no one else is 
+ *	using it) and resets the pointers to the new tag tables.
+ *
+ *---------------------------------------------------------------------------
+ */
+void
+blt_table_new_tags(Table *tablePtr)
+{
+    if (tablePtr->tags != NULL) {
+	blt_table_release_tags(tablePtr);
+    }
+    tablePtr->tags = NewTags();
+    tablePtr->rowTags = &tablePtr->tags->rowTable;
+    tablePtr->columnTags = &tablePtr->tags->columnTable;
+}
+
 
 /*
  *---------------------------------------------------------------------------
@@ -4128,7 +4182,6 @@ blt_table_get_column_tag_table(Table *tablePtr, const char *tagName)
     }
     return Blt_GetHashValue(hPtr);
 }
-
 
 /*
  *---------------------------------------------------------------------------
@@ -4854,6 +4907,9 @@ blt_table_open(
 		"\"", (char *)NULL);
 	return TCL_ERROR;
     }
+    /* By default, share tags with an existing table. Clients can can
+     * blt_table_new_tags to get a new tags table. */
+    ShareTags(tablePtr, newClientPtr);
     *tablePtrPtr = newClientPtr;
     return TCL_OK;
 }

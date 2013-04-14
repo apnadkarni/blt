@@ -684,8 +684,12 @@ static void ComputeLayout(TableView *viewPtr);
 static void ComputeVisibleEntries(TableView *viewPtr);
 static int GetColumn(Tcl_Interp *interp, TableView *viewPtr, Tcl_Obj *objPtr, 
 	Column **colPtrPtr);
+static int GetColumns(Tcl_Interp *interp, TableView *viewPtr, Tcl_Obj *objPtr, 
+	Blt_Chain *columnsPtr);
 static int GetRow(Tcl_Interp *interp, TableView *viewPtr, Tcl_Obj *objPtr, 
 	Row **rowPtrPtr);
+static int GetRows(Tcl_Interp *interp, TableView *viewPtr, Tcl_Obj *objPtr, 
+	Blt_Chain *rowsPtr);
 static int AttachTable(Tcl_Interp *interp, TableView *viewPtr);
 static void RebuildTableView(TableView *viewPtr);
 static void AddColumns(TableView *viewPtr, BLT_TABLE_NOTIFY_EVENT *eventPtr);
@@ -3059,6 +3063,74 @@ GetColumnContainer(TableView *viewPtr, BLT_TABLE_COLUMN col)
     return Blt_GetHashValue(hPtr);
 }
 
+static int
+GetRows(Tcl_Interp *interp, TableView *viewPtr, Tcl_Obj *objPtr, 
+	Blt_Chain *rowsPtr)
+{
+    Blt_Chain chain;
+    Row *rowPtr;
+
+    chain = Blt_Chain_Create();
+    /* First check if it's a row that we know about (to handle special
+     * tableview-specific indices like "focus" or "current").  */
+    if (GetRow(NULL, viewPtr, objPtr, &rowPtr) == TCL_OK) {
+	if (rowPtr != NULL) {
+	    Blt_Chain_Append(chain, rowPtr);
+	}
+    } else {
+	BLT_TABLE_ITERATOR iter;
+	BLT_TABLE_ROW row;
+
+	/* Process the name as a row tag. */
+	if (blt_table_iterate_row(interp, viewPtr->table, objPtr, &iter) 
+	    != TCL_OK){
+	    Blt_Chain_Destroy(chain);
+	    return TCL_ERROR;
+	}
+	/* Append the new rows onto the chain. */
+	for (row = blt_table_first_tagged_row(&iter); row != NULL; 
+	     row = blt_table_next_tagged_row(&iter)) {
+	    Blt_Chain_Append(chain, GetRowContainer(viewPtr, row));
+	}
+    }
+    *rowsPtr = chain;
+    return TCL_OK;
+}
+
+static int
+GetColumns(Tcl_Interp *interp, TableView *viewPtr, Tcl_Obj *objPtr, 
+	   Blt_Chain *columnsPtr)
+{
+    Blt_Chain chain;
+    Column *colPtr;
+
+    chain = Blt_Chain_Create();
+    /* First check if it's a column that we know about (to handle special
+     * tableview-specific indices like "focus" or "current").  */
+    if (GetColumn(NULL, viewPtr, objPtr, &colPtr) == TCL_OK) {
+	if (colPtr != NULL) {
+	    Blt_Chain_Append(chain, colPtr);
+	}
+    } else {
+	BLT_TABLE_ITERATOR iter;
+	BLT_TABLE_COLUMN col;
+
+	/* Process the name as a column tag. */
+	if (blt_table_iterate_column(interp, viewPtr->table, objPtr, &iter) 
+	    != TCL_OK){
+	    Blt_Chain_Destroy(chain);
+	    return TCL_ERROR;
+	}
+	/* Append the new columns onto the chain. */
+	for (col = blt_table_first_tagged_column(&iter); col != NULL; 
+	     col = blt_table_next_tagged_column(&iter)) {
+	    Blt_Chain_Append(chain, GetColumnContainer(viewPtr, col));
+	}
+    }
+    *columnsPtr = chain;
+    return TCL_OK;
+}
+
 static Blt_Chain 
 IterateRowsObjv(Tcl_Interp *interp, TableView *viewPtr, int objc, 
 		Tcl_Obj *const *objv)
@@ -3169,7 +3241,7 @@ GetCell(TableView *viewPtr, Row *rowPtr, Column *colPtr)
 }
 
 static int
-GetCellFromObj(Tcl_Interp *interp, TableView *viewPtr, Tcl_Obj *objPtr, 
+GetCellByIndex(Tcl_Interp *interp, TableView *viewPtr, Tcl_Obj *objPtr, 
 	       Cell **cellPtrPtr)
 {
     char c;
@@ -3192,13 +3264,17 @@ GetCellFromObj(Tcl_Interp *interp, TableView *viewPtr, Tcl_Obj *objPtr,
 		*cellPtrPtr = GetCell(viewPtr, rowPtr, colPtr);
 	    }
 	}
+	return TCL_OK;
     } else if ((c == 'a') && (length > 1) && 
 	       (strncmp(string, "active", length) == 0)) {
 	*cellPtrPtr = viewPtr->activePtr;
+	return TCL_OK;
     } else if ((c == 'f') && (strncmp(string, "focus", length) == 0)) {
 	*cellPtrPtr = viewPtr->focusPtr;
+	return TCL_OK;
     } else if ((c == 'n') && (strncmp(string, "none", length) == 0)) {
 	*cellPtrPtr = NULL;
+	return TCL_OK;
     } else if ((c == 'c') && (strncmp(string, "current", length) == 0)) {
 	TableObj *objPtr;
 
@@ -3211,6 +3287,7 @@ GetCellFromObj(Tcl_Interp *interp, TableView *viewPtr, Tcl_Obj *objPtr,
 		*cellPtrPtr = (Cell *)objPtr;
 	    }
 	}
+	return TCL_OK;
     } else if ((c == 'l') && (strncmp(string, "left", length) == 0)) {
 	if (viewPtr->focusPtr != NULL) {
 	    Column *colPtr;
@@ -3220,8 +3297,10 @@ GetCellFromObj(Tcl_Interp *interp, TableView *viewPtr, Tcl_Obj *objPtr,
 	    colPtr = GetPrevColumn(keyPtr->colPtr);
 	    if (colPtr != NULL) {
 		*cellPtrPtr = GetCell(viewPtr, keyPtr->rowPtr, colPtr);
+
 	    }
 	}
+	return TCL_OK;
     } else if ((c == 'r') && (strncmp(string, "right", length) == 0)) {
 	if (viewPtr->focusPtr != NULL) {
 	    Column *colPtr;
@@ -3233,6 +3312,7 @@ GetCellFromObj(Tcl_Interp *interp, TableView *viewPtr, Tcl_Obj *objPtr,
 		*cellPtrPtr = GetCell(viewPtr, keyPtr->rowPtr, colPtr);
 	    }
 	}
+	return TCL_OK;
     } else if ((c == 'u') && (strncmp(string, "up", length) == 0)) {
 	if (viewPtr->focusPtr != NULL) {
 	    Row *rowPtr;
@@ -3244,6 +3324,7 @@ GetCellFromObj(Tcl_Interp *interp, TableView *viewPtr, Tcl_Obj *objPtr,
 		*cellPtrPtr = GetCell(viewPtr, rowPtr, keyPtr->colPtr);
 	    }
 	}
+	return TCL_OK;
     } else if ((c == 'd') && (strncmp(string, "down", length) == 0)) {
 	if (viewPtr->focusPtr != NULL) {
 	    Row *rowPtr;
@@ -3255,6 +3336,7 @@ GetCellFromObj(Tcl_Interp *interp, TableView *viewPtr, Tcl_Obj *objPtr,
 		*cellPtrPtr = GetCell(viewPtr, rowPtr, keyPtr->colPtr);
 	    }
 	}
+	return TCL_OK;
     } else if ((c == 'm') && (strncmp(string, "mark", length) == 0)) {
 	CellSelection *selectPtr = &viewPtr->selectCells;
 
@@ -3262,6 +3344,7 @@ GetCellFromObj(Tcl_Interp *interp, TableView *viewPtr, Tcl_Obj *objPtr,
 	    *cellPtrPtr = GetCell(viewPtr, selectPtr->markPtr->rowPtr,
 		selectPtr->markPtr->colPtr);
 	}
+	return TCL_OK;
     } else if ((c == 'a') && (length > 1) && 
 	       (strncmp(string, "anchor", length) == 0)) {
 	CellSelection *selectPtr = &viewPtr->selectCells;
@@ -3270,34 +3353,149 @@ GetCellFromObj(Tcl_Interp *interp, TableView *viewPtr, Tcl_Obj *objPtr,
 	    *cellPtrPtr = GetCell(viewPtr, selectPtr->anchorPtr->rowPtr,
 		selectPtr->anchorPtr->colPtr);
 	}
-    } else {
-	int objc;
-	Tcl_Obj **objv;
-	Row *rowPtr;
-	Column *colPtr;
-	/*
-	 * If there are two elements to the cell see if they can be 
-	 * treated as row and column descriptors.
-	 */
-	if (Tcl_ListObjGetElements(interp, objPtr, &objc, &objv) != TCL_OK) {
-	    return TCL_ERROR;
-	}
-	if (objc != 2) {
-	    if (interp != NULL) {
-		Tcl_AppendResult(interp, "wrong # elements in cell index \"",
+	return TCL_OK;
+    } 
+    return TCL_CONTINUE;
+}
+
+
+static int
+GetCellFromObj(Tcl_Interp *interp, TableView *viewPtr, Tcl_Obj *objPtr, 
+	       Cell **cellPtrPtr)
+{
+    int objc;
+    Tcl_Obj **objv;
+    Row *rowPtr;
+    Column *colPtr;
+
+    *cellPtrPtr = NULL;
+    if (GetCellByIndex(interp, viewPtr, objPtr, cellPtrPtr) == TCL_OK) {
+	return TCL_OK;
+    }
+    /*
+     * Pick apart the cell descriptor to get the row and columns.
+     */
+    if (Tcl_ListObjGetElements(interp, objPtr, &objc, &objv) != TCL_OK) {
+	return TCL_ERROR;
+    }
+    if (objc != 2) {
+	if (interp != NULL) {
+	    Tcl_AppendResult(interp, "wrong # elements in cell index \"",
 			     Tcl_GetString(objPtr), "\"", (char *)NULL);
-	    }
-	    return TCL_ERROR;
 	}
-	if ((GetRow(interp, viewPtr, objv[0], &rowPtr) != TCL_OK) ||
-	    (GetColumn(interp, viewPtr, objv[1], &colPtr) != TCL_OK)) {
-	    return TCL_ERROR;
-	}
-	if ((colPtr != NULL) && (rowPtr != NULL)) {
-	    *cellPtrPtr = GetCell(viewPtr, rowPtr, colPtr);
-	}
+	return TCL_ERROR;
+    }
+    if ((GetRow(interp, viewPtr, objv[0], &rowPtr) != TCL_OK) ||
+	(GetColumn(interp, viewPtr, objv[1], &colPtr) != TCL_OK)) {
+	return TCL_ERROR;
+    }
+    if ((colPtr != NULL) && (rowPtr != NULL)) {
+	*cellPtrPtr = GetCell(viewPtr, rowPtr, colPtr);
     }
     return TCL_OK;
+}
+
+static int
+GetCellsFromObj(Tcl_Interp *interp, TableView *viewPtr, Tcl_Obj *objPtr, 
+		Blt_Chain *cellsPtr)
+{
+    Cell *cellPtr;
+    int objc;
+    Tcl_Obj **objv;
+    Blt_Chain rows, columns, cells;
+    Blt_ChainLink link;
+
+    cellPtr = NULL;
+    if (GetCellByIndex(interp, viewPtr, objPtr, &cellPtr) == TCL_OK) {
+	cells = Blt_Chain_Create();
+	Blt_Chain_Append(cells, cellPtr);
+	*cellsPtr = cells;
+	return TCL_OK;
+    }
+    /*
+     * Pick apart the cell descriptor to get the row and columns.
+     */
+    if (Tcl_ListObjGetElements(interp, objPtr, &objc, &objv) != TCL_OK) {
+	return TCL_ERROR;
+    }
+    if (objc != 2) {
+	if (interp != NULL) {
+	    Tcl_AppendResult(interp, "wrong # elements in cell index \"",
+			     Tcl_GetString(objPtr), "\"", (char *)NULL);
+	}
+	return TCL_ERROR;
+    }
+    if (GetRows(interp, viewPtr, objv[0], &rows) != TCL_OK) {
+	return TCL_ERROR;
+    }
+    if (GetColumns(interp, viewPtr, objv[1], &columns) != TCL_OK) {
+	Blt_Chain_Destroy(rows);
+	return TCL_ERROR;
+    }
+    cells = Blt_Chain_Create();
+    for (link = Blt_Chain_FirstLink(rows); link != NULL; 
+	 link = Blt_Chain_NextLink(link)) {
+	Blt_ChainLink link2;
+	Row *rowPtr;
+
+	rowPtr = Blt_Chain_GetValue(link);
+	if (rowPtr == NULL) {
+	    continue;
+	}
+	for (link2 = Blt_Chain_FirstLink(columns); link2 != NULL; 
+	     link2 = Blt_Chain_NextLink(link2)) {
+	    Column *colPtr;
+	    
+	    colPtr = Blt_Chain_GetValue(link2);
+	    if (colPtr == NULL) {
+		continue;
+	    }
+	    cellPtr = GetCell(viewPtr, rowPtr, colPtr);
+	    Blt_Chain_Append(cells, cellPtr);
+	}
+    }
+    Blt_Chain_Destroy(rows);
+    Blt_Chain_Destroy(columns);
+    *cellsPtr = cells;
+    return TCL_OK;
+}
+
+static Blt_Chain 
+IterateCellsObjv(Tcl_Interp *interp, TableView *viewPtr, int objc, 
+		Tcl_Obj *const *objv)
+{
+    Blt_HashTable cellTable;
+    Blt_Chain chain;
+    int i;
+
+    chain = Blt_Chain_Create();
+    Blt_InitHashTableWithPool(&cellTable, BLT_ONE_WORD_KEYS);
+    for (i = 0; i < objc; i++) {
+	Blt_Chain cells;
+	Blt_ChainLink link;
+
+	if (GetCellsFromObj(interp, viewPtr, objv[i], &cells) != TCL_OK) {
+	    Blt_Chain_Destroy(chain);
+	    return NULL;
+	}
+	for (link = Blt_Chain_FirstLink(cells); link != NULL;
+	     link = Blt_Chain_NextLink(link)) {
+	    Cell *cellPtr;
+
+	    cellPtr = Blt_Chain_GetValue(link);
+	    if (cellPtr != NULL) {
+		int isNew;
+
+		Blt_CreateHashEntry(&cellTable, (char *)cellPtr, &isNew);
+		if (isNew) {
+		    Blt_Chain_Append(chain, cellPtr);
+		}
+	    }
+	}
+	Blt_Chain_Destroy(cells);
+    }
+    Blt_DeleteHashTable(&cellTable);
+    return chain;
 }
 
 static CellStyle *
@@ -5700,7 +5898,7 @@ ColumnCgetOp(TableView *viewPtr, Tcl_Interp *interp, int objc,
  *	options database, in order to reconfigure the one of more
  *	entries in the widget.
  *
- *	  .h entryconfigure node node node node option value
+ *	  .tv column configure $col option value
  *
  * Results:
  *	A standard TCL result.  If TCL_ERROR is returned, then
@@ -5719,30 +5917,54 @@ ColumnConfigureOp(TableView *viewPtr, Tcl_Interp *interp, int objc,
 		  Tcl_Obj *const *objv)
 {
     Column *colPtr;
+    Blt_Chain columns;
+    Blt_ChainLink link;
 
     uidOption.clientData = viewPtr;
     iconOption.clientData = viewPtr;
     styleOption.clientData = viewPtr;
-    if (GetColumn(interp, viewPtr, objv[3], &colPtr) != TCL_OK) {
-	return TCL_ERROR;
-    }
-    if (colPtr == NULL) {
-fprintf(stderr, "ColumnConfigure: Column %s is NULL\n", Tcl_GetString(objv[3])); 
-	return TCL_OK;
-    }
-    if (objc == 4) {
-	return Blt_ConfigureInfoFromObj(interp, viewPtr->tkwin, columnSpecs, 
-		(char *)colPtr, (Tcl_Obj *)NULL, 0);
-    } else if (objc == 5) {
-	return Blt_ConfigureInfoFromObj(interp, viewPtr->tkwin, columnSpecs, 
-		(char *)colPtr, objv[4], 0);
-    }
-    if (Blt_ConfigureWidgetFromObj(interp, viewPtr->tkwin, columnSpecs, 
-	objc - 4, objv + 4, (char *)colPtr, BLT_CONFIG_OBJV_ONLY) != TCL_OK) {
-	return TCL_ERROR;
-    }
-    ConfigureColumn(viewPtr, colPtr);
 
+    if ((objc == 4) || (objc == 5)) {
+	/* Must refer to a single if reporting the configuration options. */
+	if (GetColumn(interp, viewPtr, objv[3], &colPtr) != TCL_OK) {
+	    return TCL_ERROR;
+	}
+	if (colPtr == NULL) {
+	    fprintf(stderr, "ColumnConfigure: Column %s is NULL\n", 
+		    Tcl_GetString(objv[3])); 
+	    return TCL_OK;
+	}
+	if (objc == 4) {
+	    return Blt_ConfigureInfoFromObj(interp, viewPtr->tkwin, columnSpecs,
+		(char *)colPtr, (Tcl_Obj *)NULL, 0);
+	} else if (objc == 5) {
+	    return Blt_ConfigureInfoFromObj(interp, viewPtr->tkwin, columnSpecs,
+		(char *)colPtr, objv[4], 0);
+	}
+    }
+    if (GetColumns(interp, viewPtr, objv[3], &columns) != TCL_OK) {
+	return TCL_ERROR;
+    }
+    for (link = Blt_Chain_FirstLink(columns); link != NULL; 
+	 link = Blt_Chain_NextLink(link)) {
+	Column *colPtr;
+
+	colPtr = Blt_Chain_GetValue(link);
+	if (colPtr == NULL) {
+	    fprintf(stderr, "ColumnConfigure: Column %s is NULL\n", 
+		    Tcl_GetString(objv[3])); 
+	    Blt_Chain_Destroy(columns);
+	    return TCL_OK;
+	}
+	if (Blt_ConfigureWidgetFromObj(interp, viewPtr->tkwin, columnSpecs, 
+		objc - 4, objv + 4, (char *)colPtr, BLT_CONFIG_OBJV_ONLY) 
+		!= TCL_OK) {
+	    Blt_Chain_Destroy(columns);
+	    return TCL_ERROR;
+	}
+	ConfigureColumn(viewPtr, colPtr);
+    }
+    Blt_Chain_Destroy(columns);
     /*FIXME: Makes every change redo everything. */
     if (Blt_ConfigModified(columnSpecs, "-formatcommand", "-style", "-icon",
 			   (char *)NULL)) {
@@ -5807,22 +6029,22 @@ ColumnDeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
 {
     TableView *viewPtr = clientData;
     long i, count;
-    Blt_Chain chain;
+    Blt_Chain columns;
     Blt_ChainLink link;
 
     /* Mark all the named columns as deleted. */
-    chain = IterateColumnsObjv(interp, viewPtr, objc - 3, objv + 3);
-    if (chain == NULL) {
+    columns = IterateColumnsObjv(interp, viewPtr, objc - 3, objv + 3);
+    if (columns == NULL) {
 	return TCL_ERROR;
     }
-    for (link = Blt_Chain_FirstLink(chain); link != NULL;
+    for (link = Blt_Chain_FirstLink(columns); link != NULL;
 	 link = Blt_Chain_NextLink(link)) {
 	Column *colPtr;
 
 	colPtr = Blt_Chain_GetValue(link);
 	colPtr->flags |= DELETED;
     }
-    Blt_Chain_Destroy(chain);
+    Blt_Chain_Destroy(columns);
 
     /* Now compress the columns array while freeing the marked columns. */
     count = 0;
@@ -5903,15 +6125,15 @@ ColumnExposeOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	Tcl_SetObjResult(interp, listObjPtr);
     } else {
 	int redraw;
-	Blt_Chain chain;
+	Blt_Chain columns;
 	Blt_ChainLink link;
 	
-	chain = IterateColumnsObjv(interp, viewPtr, objc - 3, objv + 3);
-	if (chain == NULL) {
+	columns = IterateColumnsObjv(interp, viewPtr, objc - 3, objv + 3);
+	if (columns == NULL) {
 	    return TCL_ERROR;
 	}
 	redraw = FALSE;
-	for (link = Blt_Chain_FirstLink(chain); link != NULL; 
+	for (link = Blt_Chain_FirstLink(columns); link != NULL; 
 	     link = Blt_Chain_NextLink(link)) {
 	    Column *colPtr;
 	    
@@ -5921,7 +6143,7 @@ ColumnExposeOp(ClientData clientData, Tcl_Interp *interp, int objc,
 		redraw = TRUE;
 	    }
 	}
-	Blt_Chain_Destroy(chain);
+	Blt_Chain_Destroy(columns);
 	if (redraw) {
 	    viewPtr->flags |= SCROLL_PENDING;
 	    EventuallyRedraw(viewPtr);
@@ -5964,15 +6186,15 @@ ColumnHideOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	Tcl_SetObjResult(interp, listObjPtr);
     } else {
 	int redraw;
-	Blt_Chain chain;
+	Blt_Chain columns;
 	Blt_ChainLink link;
 	
-	chain = IterateColumnsObjv(interp, viewPtr, objc - 3, objv + 3);
-	if (chain == NULL) {
+	columns = IterateColumnsObjv(interp, viewPtr, objc - 3, objv + 3);
+	if (columns == NULL) {
 	    return TCL_ERROR;
 	}
 	redraw = FALSE;
-	for (link = Blt_Chain_FirstLink(chain); link != NULL; 
+	for (link = Blt_Chain_FirstLink(columns); link != NULL; 
 	     link = Blt_Chain_NextLink(link)) {
 	    Column *colPtr;
 	    
@@ -5982,7 +6204,7 @@ ColumnHideOp(ClientData clientData, Tcl_Interp *interp, int objc,
 		redraw = TRUE;
 	    }
 	}
-	Blt_Chain_Destroy(chain);
+	Blt_Chain_Destroy(columns);
 	if (redraw) {
 	    viewPtr->flags |= SCROLL_PENDING;
 	    EventuallyRedraw(viewPtr);
@@ -6470,85 +6692,25 @@ ColumnSeeOp(ClientData clientData, Tcl_Interp *interp, int objc,
     return TCL_OK;
 }
 
-/*
- *---------------------------------------------------------------------------
- *
- * ColumnShowOp --
- *
- *	.tv column show ?row...?
- *---------------------------------------------------------------------------
- */
-/*ARGSUSED*/
-static int
-ColumnShowOp(ClientData clientData, Tcl_Interp *interp, int objc,
-	     Tcl_Obj *const *objv)
-{
-    TableView *viewPtr = clientData;
-
-    if (objc == 3) {
-	long i;
-	Tcl_Obj *listObjPtr;
-
-	listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
-	for (i = 0; i < viewPtr->numColumns; i++) {
-	    Column *colPtr;
-
-	    colPtr = viewPtr->columns[i];
-	    if ((colPtr->flags & HIDDEN) == 0) {
-		Tcl_Obj *objPtr;
-
-		objPtr = Tcl_NewLongObj(blt_table_column_index(colPtr->column));
-		Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-	    }
-	}
-	Tcl_SetObjResult(interp, listObjPtr);
-    } else {
-	int redraw;
-	Blt_Chain chain;
-	Blt_ChainLink link;
-	
-	chain = IterateColumnsObjv(interp, viewPtr, objc - 3, objv + 3);
-	if (chain == NULL) {
-	    return TCL_ERROR;
-	}
-	redraw = FALSE;
-	for (link = Blt_Chain_FirstLink(chain); link != NULL; 
-	     link = Blt_Chain_NextLink(link)) {
-	    Column *colPtr;
-	    
-	    colPtr = Blt_Chain_GetValue(link);
-	    if (colPtr->flags & HIDDEN) {
-		colPtr->flags &= ~HIDDEN;
-		redraw = TRUE;
-	    }
-	}
-	Blt_Chain_Destroy(chain);
-	if (redraw) {
-	    viewPtr->flags |= SCROLL_PENDING;
-	    EventuallyRedraw(viewPtr);
-	}
-    }
-    return TCL_OK;
-}
 
 static Blt_OpSpec columnOps[] = {
-    {"activate",   1, ColumnActivateOp,   4, 4, "col",},
+    {"activate",   1, ColumnActivateOp,   4, 4, "col",}, 
     {"bind",       1, ColumnBindOp,       4, 6, "tagName ?sequence command?",},
-    {"cget",       2, ColumnCgetOp,       5, 5, "col option",},
-    {"configure",  2, ColumnConfigureOp,  4, 0, "col ?option value?...",},
+    {"cget",       2, ColumnCgetOp,       5, 5, "col option",},	
+    {"configure",  2, ColumnConfigureOp,  4, 0, "coltag ?option value?...",}, 
     {"deactivate", 2, ColumnDeactivateOp, 3, 3, "",},
-    {"delete",     2, ColumnDeleteOp,     3, 0, "col...",},
-    {"exists",     3, ColumnExistsOp,     4, 4, "col",},
-    {"expose",     3, ColumnExposeOp,     3, 0, "?col...?",},
-    {"hide",       1, ColumnHideOp,       3, 0, "?col...?",},
-    {"index",      3, ColumnIndexOp,      4, 4, "col",},
-    {"insert",     3, ColumnInsertOp,     5, 0, "col pos ?option value?...",},
-    {"invoke",     3, ColumnInvokeOp,     4, 4, "col",},
+    {"delete",     2, ColumnDeleteOp,     3, 0, "coltag...",}, 
+    {"exists",     3, ColumnExistsOp,     4, 4, "coltag",}, 
+    {"expose",     3, ColumnExposeOp,     3, 0, "?coltag...?",},
+    {"hide",       1, ColumnHideOp,       3, 0, "?coltag...?",},
+    {"index",      3, ColumnIndexOp,      4, 4, "col",}, 
+    {"insert",     3, ColumnInsertOp,     5, 0, "col pos ?option value?...",},  
+    {"invoke",     3, ColumnInvokeOp,     4, 4, "col",},  
     {"names",      2, ColumnNamesOp,      3, 3, "",},
     {"nearest",    2, ColumnNearestOp,    4, 4, "y",},
     {"resize",     1, ColumnResizeOp,     3, 0, "args",},
-    {"see",        2, ColumnSeeOp,        4, 4, "col",},
-    {"show",       2, ColumnShowOp,       3, 0, "?col...?",},
+    {"see",        2, ColumnSeeOp,        4, 4, "col",}, 
+    {"show",       2, ColumnExposeOp,     3, 0, "?coltag...?",},
 };
 static int numColumnOps = sizeof(columnOps) / sizeof(Blt_OpSpec);
 
@@ -8538,67 +8700,6 @@ RowSeeOp(ClientData clientData, Tcl_Interp *interp, int objc,
     return TCL_OK;
 }
 
-/*
- *---------------------------------------------------------------------------
- *
- * RowShowOp --
- *
- *	.tv row show ?row...?
- *---------------------------------------------------------------------------
- */
-/*ARGSUSED*/
-static int
-RowShowOp(ClientData clientData, Tcl_Interp *interp, int objc,
-	  Tcl_Obj *const *objv)
-{
-    TableView *viewPtr = clientData;
-
-    if (objc == 3) {
-	long i;
-	Tcl_Obj *listObjPtr;
-
-	listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
-	for (i = 0; i < viewPtr->numRows; i++) {
-	    Row *rowPtr;
-
-	    rowPtr = viewPtr->rows[i];
-	    if ((rowPtr->flags & HIDDEN) == 0) {
-		Tcl_Obj *objPtr;
-
-		objPtr = Tcl_NewLongObj(blt_table_row_index(rowPtr->row));
-		Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-	    }
-	}
-	Tcl_SetObjResult(interp, listObjPtr);
-    } else {
-	int redraw;
-	Blt_Chain chain;
-	Blt_ChainLink link;
-	
-	chain = IterateRowsObjv(interp, viewPtr, objc - 3, objv + 3);
-	if (chain == NULL) {
-	    return TCL_ERROR;
-	}
-	redraw = FALSE;
-	for (link = Blt_Chain_FirstLink(chain); link != NULL; 
-	     link = Blt_Chain_NextLink(link)) {
-	    Row *rowPtr;
-	    
-	    rowPtr = Blt_Chain_GetValue(link);
-	    if (rowPtr->flags & HIDDEN) {
-		rowPtr->flags &= ~HIDDEN;
-		redraw = TRUE;
-	    }
-	}
-	Blt_Chain_Destroy(chain);
-	if (redraw) {
-	    viewPtr->flags |= SCROLL_PENDING;
-	    EventuallyRedraw(viewPtr);
-	}
-    }
-    return TCL_OK;
-}
-
 static Blt_OpSpec rowOps[] =
 {
     {"activate",   1, RowActivateOp,   4, 4, "row",},
@@ -8617,7 +8718,7 @@ static Blt_OpSpec rowOps[] =
     {"nearest",    2, RowNearestOp,    4, 4, "y",},
     {"resize",     1, RowResizeOp,     3, 0, "args",},
     {"see",        2, RowSeeOp,        4, 4, "row",},
-    {"show",       2, RowShowOp,       3, 0, "?row...?",},
+    {"show",       2, RowExposeOp,     3, 0, "?row...?",},
 };
 static int numRowOps = sizeof(rowOps) / sizeof(Blt_OpSpec);
 
@@ -9343,7 +9444,7 @@ SortOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * StyleApplyOp --
  *
- *	  .t style apply styleName cell 
+ *	  .t style apply styleName cell...
  *
  *---------------------------------------------------------------------------
  */
@@ -9353,47 +9454,43 @@ StyleApplyOp(TableView *viewPtr, Tcl_Interp *interp, int objc,
 	     Tcl_Obj *const *objv)
 {
     CellStyle *stylePtr;
-    int i;
+    Blt_Chain cells;
+    Blt_ChainLink link;
 
     if (GetStyle(interp, viewPtr, objv[3], &stylePtr)  != TCL_OK) {
 	return TCL_ERROR;
     }
-    for (i = 4; i < objc; i++) {
+    cells = IterateCellsObjv(interp, viewPtr, objc - 4, objv + 4);
+    for (link = Blt_Chain_FirstLink(cells); link != NULL;
+	 link = Blt_Chain_NextLink(link)) {
 	Cell *cellPtr;
-	CellKey *keyPtr;
-	int isNew;
 
-	if (GetCellFromObj(interp, viewPtr, objv[i], &cellPtr) != TCL_OK) {
-	    return TCL_ERROR;
-	}
-	if (cellPtr == NULL) {
-	    continue;
-	}
-	keyPtr = GetKey(cellPtr);
-	stylePtr->refCount++;		/* Increment the reference count now
-					 * in case we are reapplying the same
-					 * style. We don't want to accidently
-					 * delete the style we are using by
-					 * letting the reference count go to
-					 * zero.. */
-	if (cellPtr->stylePtr != NULL) {
+	cellPtr = Blt_Chain_GetValue(link);
+	if (cellPtr->stylePtr != stylePtr) {
 	    Blt_HashEntry *hPtr;
+	    CellKey *keyPtr;
+	    int isNew;
 
-	    /* Remove the cell from the style's table of cells. */
-	    hPtr = Blt_FindHashEntry(&stylePtr->table, (char *)keyPtr);
-	    if (hPtr != NULL) {
-		Blt_DeleteHashEntry(&stylePtr->table, hPtr);
+	    keyPtr = GetKey(cellPtr);
+	    if (cellPtr->stylePtr != NULL) {
+		/* Remove the cell from old style's table of cells. */
+		hPtr = Blt_FindHashEntry(&stylePtr->table, (char *)keyPtr);
+		if (hPtr != NULL) {
+		    Blt_DeleteHashEntry(&stylePtr->table, hPtr);
+		}
+		cellPtr->stylePtr->refCount--;
+		if (cellPtr->stylePtr->refCount <= 0) {
+		    (*cellPtr->stylePtr->classPtr->freeProc)(cellPtr->stylePtr);
+		}
 	    }
-	    cellPtr->stylePtr->refCount--;
-	    if (cellPtr->stylePtr->refCount <= 0) {
-		(*stylePtr->classPtr->freeProc)(stylePtr);
-	    }
-	}
-	cellPtr->stylePtr = stylePtr;
-	Blt_CreateHashEntry(&stylePtr->table, (char *)keyPtr, &isNew);
-	cellPtr->flags |= GEOMETRY;	/* Assume that the new style changes
+	    stylePtr->refCount++;	
+	    cellPtr->stylePtr = stylePtr;
+	    Blt_CreateHashEntry(&stylePtr->table, (char *)keyPtr, &isNew);
+	    cellPtr->flags |= GEOMETRY;	/* Assume that the new style changes
 					 * the geometry of the cell. */
+	}
     }
+    Blt_Chain_Destroy(cells);
     return TCL_OK;
 }
 

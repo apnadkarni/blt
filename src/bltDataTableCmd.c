@@ -3189,13 +3189,13 @@ ColumnTagExistsOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc,
     const char *tagName;
     BLT_TABLE table;
 
-    tagName = Tcl_GetString(objv[3]);
+    tagName = Tcl_GetString(objv[4]);
     table = cmdPtr->table;
     bool = (blt_table_get_column_tag_table(table, tagName) != NULL);
-    if (objc == 5) {
+    if (objc == 6) {
 	BLT_TABLE_COLUMN col;
 
-	col = blt_table_get_column(interp, table, objv[4]);
+	col = blt_table_get_column(interp, table, objv[5]);
 	if (col == NULL) {
 	    bool = FALSE;
 	} else {
@@ -5364,12 +5364,12 @@ RowTagExistsOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     int bool;
     const char *tagName;
 
-    tagName = Tcl_GetString(objv[3]);
+    tagName = Tcl_GetString(objv[4]);
     bool = (blt_table_get_row_tag_table(cmdPtr->table, tagName) != NULL);
-    if (objc == 5) {
+    if (objc == 6) {
 	BLT_TABLE_ROW row;
 
-	row = blt_table_get_row(interp, cmdPtr->table, objv[4]);
+	row = blt_table_get_row(interp, cmdPtr->table, objv[5]);
 	if (row == NULL) {
 	    bool = FALSE;
 	} else {

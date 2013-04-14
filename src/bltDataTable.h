@@ -200,6 +200,7 @@ typedef struct _BLT_TABLE {
 } *BLT_TABLE;
 
 BLT_EXTERN void blt_table_release_tags(BLT_TABLE table);
+BLT_EXTERN void blt_table_new_tags(BLT_TABLE table);
 
 BLT_EXTERN int blt_table_exists(Tcl_Interp *interp, const char *name);
 BLT_EXTERN int blt_table_create(Tcl_Interp *interp, const char *name, 
