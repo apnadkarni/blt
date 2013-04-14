@@ -2334,6 +2334,7 @@ DrawTileRectangleProc(Tk_Window tkwin, Drawable drawable,
 	int xOffset, yOffset;		/* Starting upper left corner of
 					 * region. */
 
+	xOffset = yOffset = 0;		/* Suppress compiler warning. */
 	if (corePtr->alpha != 0xFF) {
 	    bg = Blt_DrawableToPicture(tkwin, drawable, x, y, w, h, 1.0);
 	} else {
@@ -2376,6 +2377,7 @@ DrawTilePolygonProc(Tk_Window tkwin, Drawable drawable,
     Point2f *vertices;
     int refWidth, refHeight;
 
+    xOffset = yOffset = 0; 		/* Suppress compiler warning. */
     /* Grab the rectangular background that covers the polygon. */
     GetPolygonBBox(points, n, &x1, &x2, &y1, &y2);
     w = x2 - x1 + 1;
@@ -2495,6 +2497,7 @@ DrawGradientRectangleProc(Tk_Window tkwin, Drawable drawable,
 					 * region. */
     int refWidth, refHeight;
 
+    xOffset = yOffset = 0;		/* Suppress compiler warning. */
     if ((h <= 0) || (w <= 0)) {
 	return;
     }

@@ -4274,20 +4274,8 @@ ConfigureOp(Tabset *setPtr, Tcl_Interp *interp, int objc,
 static int
 DeactivateOp(Tabset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 {
-    Tab *tabPtr;
-    const char *string;
-
-    string = Tcl_GetString(objv[2]);
-    if (string[0] == '\0') {
-	tabPtr = NULL;
-    } else if (GetTabFromObj(interp, setPtr, objv[2], &tabPtr) != TCL_OK) {
-	return TCL_ERROR;
-    }
-    if ((tabPtr != NULL) && (tabPtr->flags & (HIDE|DISABLED))) {
-	tabPtr = NULL;
-    }
-    if (tabPtr != setPtr->activePtr) {
-	setPtr->activePtr = tabPtr;
+    if (setPtr->activePtr != NULL) {
+	setPtr->activePtr = NULL;
 	EventuallyRedraw(setPtr);
     }
     return TCL_OK;
@@ -7480,7 +7468,8 @@ static Blt_OpSpec tabsetOps[] =
     {"cget",        2, CgetOp,	      3, 3, "option",},
     {"close",       2, CloseOp,       3, 3, "tab",},
     {"configure",   2, ConfigureOp,   2, 0, "?option value?...",},
-    {"delete",      2, DeleteOp,      2, 0, "?tab...?",},
+    {"deactivate",  3, DeactivateOp,  2, 2, "",},
+    {"delete",      3, DeleteOp,      2, 0, "?tab...?",},
     {"dockall",     2, DockallOp,     2, 2, "" }, 
     {"exists",      3, ExistsOp,      3, 3, "tab",},
     {"extents",     3, ExtentsOp,     3, 3, "tab",},
