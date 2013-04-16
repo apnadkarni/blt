@@ -41,6 +41,8 @@ typedef enum {
     TABLE_COLUMN_TYPE_TIME, 
 } BLT_TABLE_COLUMN_TYPE;
 
+#define BLT_TABLE_VALUE_LENGTH 16
+#define BLT_TABLE_VALUE_STATIC ((char *)1)
 
 typedef struct _BLT_TABLE_VALUE {
     union {				
@@ -51,8 +53,18 @@ typedef struct _BLT_TABLE_VALUE {
     } datum;				/* Internal representation of data:
 					 * used to speed comparisons, sorting,
 					 * etc. */
-    char *string;			/* String representation of value.  If
-					 * NULL, indicates empty value. */
+    /* 
+     * Time/space tradeoff for values.  If most values are small the win will
+     * be that we don't have to allocate space for each string representation.
+     */
+    const char *string;			/* String representation of value.
+					 * Used first to see if the value is
+					 * empty. The pointer will be NULL.
+					 * If the pointer is equal to
+					 * BLT_TABLE_VALUE_STATIC, this
+					 * indicates to look at staticSpace
+					 * for the value string. */
+    char staticSpace[BLT_TABLE_VALUE_LENGTH];
 } *BLT_TABLE_VALUE;
 
 typedef struct _BLT_TABLE_HEADER {
