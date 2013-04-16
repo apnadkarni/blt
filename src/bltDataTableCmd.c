@@ -5169,8 +5169,9 @@ RowNotifyOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     notifyPtr = Blt_AssertMalloc(sizeof(NotifierInfo));
     notifyPtr->cmdPtr = cmdPtr;
     if (tag == NULL) {
-	notifyPtr->notifier = blt_table_create_row_notifier(interp, cmdPtr->table,
-		row, switches.flags, NotifyProc, NotifierDeleteProc, notifyPtr);
+	notifyPtr->notifier = blt_table_create_row_notifier(interp, 
+		cmdPtr->table, row, switches.flags, NotifyProc, 
+		NotifierDeleteProc, notifyPtr);
     } else {
 	notifyPtr->notifier = blt_table_create_row_tag_notifier(interp, 
 		cmdPtr->table, tag, switches.flags, NotifyProc, 

@@ -5916,7 +5916,6 @@ static int
 ColumnConfigureOp(TableView *viewPtr, Tcl_Interp *interp, int objc, 
 		  Tcl_Obj *const *objv)
 {
-    Column *colPtr;
     Blt_Chain columns;
     Blt_ChainLink link;
 
@@ -5925,6 +5924,8 @@ ColumnConfigureOp(TableView *viewPtr, Tcl_Interp *interp, int objc,
     styleOption.clientData = viewPtr;
 
     if ((objc == 4) || (objc == 5)) {
+	Column *colPtr;
+
 	/* Must refer to a single if reporting the configuration options. */
 	if (GetColumn(interp, viewPtr, objv[3], &colPtr) != TCL_OK) {
 	    return TCL_ERROR;
@@ -5962,15 +5963,15 @@ ColumnConfigureOp(TableView *viewPtr, Tcl_Interp *interp, int objc,
 	    Blt_Chain_Destroy(columns);
 	    return TCL_ERROR;
 	}
+	/*FIXME: Makes every change redo everything. */
+	if (Blt_ConfigModified(columnSpecs, "-formatcommand", "-style", "-icon",
+			       (char *)NULL)) {
+	    colPtr->flags |= GEOMETRY;
+	    viewPtr->flags |= GEOMETRY | REDRAW;
+	}
 	ConfigureColumn(viewPtr, colPtr);
     }
     Blt_Chain_Destroy(columns);
-    /*FIXME: Makes every change redo everything. */
-    if (Blt_ConfigModified(columnSpecs, "-formatcommand", "-style", "-icon",
-			   (char *)NULL)) {
-	colPtr->flags |= GEOMETRY;
-	viewPtr->flags |= GEOMETRY | REDRAW;
-    }
     viewPtr->flags |= LAYOUT_PENDING;
     EventuallyRedraw(viewPtr);
     return TCL_OK;
