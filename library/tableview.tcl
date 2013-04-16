@@ -149,7 +149,6 @@ bind BltTableView <KeyPress-Left> {
     %W see focus
 }
 bind BltTableView <KeyPress-Right> {
-    puts stderr "old focus = [%W index focus], new focus = [%W index right]"
     %W focus right
     %W see focus
 }
@@ -1245,7 +1244,6 @@ proc blt::TableView::ApplyFilters { w } {
     set rows [GetColumnFilterRows $w -1]
     if { [llength $rows] > 0 } {
 	eval $w row hide all
-	puts stderr rows=$rows
 	eval $w row expose $rows
     } else {
 	eval $w row expose all

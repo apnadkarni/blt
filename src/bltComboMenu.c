@@ -1338,15 +1338,15 @@ static void
 FixMenuCoords(ComboMenu *comboPtr, int *xPtr, int *yPtr)
 {
     int x, y, w, h;
-    int screenWidth, screenHeight;
+    int sw, sh;
 
-    Blt_SizeOfScreen(comboPtr->tkwin, &screenWidth, &screenHeight);
+    Blt_SizeOfScreen(comboPtr->tkwin, &sw, &sh);
     x = *xPtr, y = *yPtr;
 
     /* Determine the size of the menu. */
     w = GetWidth(comboPtr);
     h = GetHeight(comboPtr);
-    if ((y + h) > screenHeight) {
+    if ((y + h) > sh) {
 	y -= h;				/* Shift the menu up by the height of
 					 * the menu. */
 	if (comboPtr->flags & DROPDOWN) {
@@ -1357,7 +1357,7 @@ FixMenuCoords(ComboMenu *comboPtr, int *xPtr, int *yPtr)
 	    y = 0;
 	}
     }
-    if ((x + w) > screenWidth) {
+    if ((x + w) > sw) {
 	if (comboPtr->flags & DROPDOWN) {
 	    x = x + comboPtr->butWidth - w; /* Flip the menu anchor to the other
 					 * end of the menu button/entry */
@@ -5164,26 +5164,26 @@ PostOp(ComboMenu *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
      * then again, Tk has other problems with this.
      */
     {
-	int vx, vy, vw, vh;
-	int screenWidth, screenHeight;
+	int rootX, rootY, rootWidth, rootHeight;
+	int sw, sh;
 	Tk_Window parent;
 
 	parent = Tk_Parent(comboPtr->tkwin);
-	Blt_SizeOfScreen(comboPtr->tkwin, &screenWidth, &screenHeight);
-	Tk_GetVRootGeometry(parent, &vx, &vy, &vw, &vh);
-	x += vx;
-	y += vy;
+	Blt_SizeOfScreen(comboPtr->tkwin, &sw, &sh);
+	Tk_GetVRootGeometry(parent, &rootX, &rootY, &rootWidth, &rootHeight);
+	x += rootX;
+	y += rootY;
 	if (x < 0) {
 	    x = 0;
 	}
 	if (y < 0) {
 	    y = 0;
 	}
-	if ((x + comboPtr->width) > screenWidth) {
-	    x = screenWidth - comboPtr->width;
+	if ((x + comboPtr->width) > sw) {
+	    x = sw - comboPtr->width;
 	}
-	if ((y + comboPtr->height) > screenHeight) {
-	    x = screenHeight - comboPtr->height;
+	if ((y + comboPtr->height) > sh) {
+	    y = sh - comboPtr->height;
 	}
 	Tk_MoveToplevelWindow(comboPtr->tkwin, x, y);
 	Tk_MapWindow(comboPtr->tkwin);

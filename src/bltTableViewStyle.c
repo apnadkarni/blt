@@ -357,8 +357,6 @@ typedef struct {
 					 * to format the style is invoked.*/
     /* Checkbox specific fields. */
     int size;				/* Size of the checkbox. */
-    int showValue;			/* If non-zero, display the on/off
-					 * value.  */
     Tcl_Obj *onValueObjPtr;
     Tcl_Obj *offValueObjPtr;
     int lineWidth;			/* Linewidth of the check box. */
@@ -2306,10 +2304,9 @@ NewCheckBoxStyle(TableView *viewPtr, Blt_HashEntry *hPtr)
     stylePtr->gap = 4;
     stylePtr->size = 15;
     stylePtr->lineWidth = 2;
-    stylePtr->showValue = TRUE;
     stylePtr->name = Blt_GetHashKey(&viewPtr->styleTable, hPtr);
     stylePtr->hashPtr = hPtr;
-    stylePtr->flags = EDIT;
+    stylePtr->flags = EDIT | SHOW_VALUES;
     stylePtr->relief = TK_RELIEF_FLAT;
     stylePtr->activeRelief = TK_RELIEF_RAISED;
     stylePtr->borderWidth = 1;
@@ -2516,7 +2513,7 @@ CheckBoxStyleGeometryProc(Cell *cellPtr, CellStyle *cellStylePtr)
 		colPtr->column);
 	}
     }
-    if (stylePtr->showValue) {
+    if (stylePtr->flags & SHOW_VALUES) {
 	TextStyle ts;
 
 	Blt_Ts_InitStyle(ts);
@@ -2704,7 +2701,7 @@ CheckBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
     }
     th = 0;
     gap = 0;
-    if (stylePtr->showValue) {
+    if (stylePtr->flags & SHOW_VALUES) {
 	th = textPtr->height;
 	if (stylePtr->icon != NULL) {
 	    gap = stylePtr->gap;
@@ -2720,7 +2717,7 @@ CheckBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
     if (stylePtr->icon != NULL) {
 	Tk_RedrawImage(IconBits(stylePtr->icon), 0, 0, iw, ih, drawable,ix, iy);
     }
-    if (stylePtr->showValue) {
+    if (stylePtr->flags & SHOW_VALUES) {
 	TextStyle ts;
 	int xMax;
 
