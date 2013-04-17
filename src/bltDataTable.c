@@ -1685,7 +1685,7 @@ NotifyClients(Table *tablePtr, BLT_TABLE_NOTIFY_EVENT *eventPtr)
 	clientPtr = Blt_Chain_GetValue(link);
 	eventPtr->self = (clientPtr == tablePtr);
 	chain = (eventPtr->type & TABLE_NOTIFY_COLUMN) ?
-	    tablePtr->columnNotifiers : tablePtr->rowNotifiers;
+	    clientPtr->columnNotifiers : clientPtr->rowNotifiers;
 	if (Blt_Chain_GetLength(chain) > 0) {
 	    DoNotify(clientPtr, chain, eventPtr);
 	}
