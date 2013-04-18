@@ -4926,8 +4926,8 @@ DrawColumnTitle(TableView *viewPtr, Column *colPtr, Drawable drawable, int x,
 	}
     }
     if (colPtr->icon != NULL) {
-	ih = IconHeight(colPtr->icon);
 	iw = IconWidth(colPtr->icon);
+	ih = IconHeight(colPtr->icon);
     }
     if ((iw > 0) && (colPtr->textWidth > 0)) {
 	igap = TITLE_PADX;
@@ -4957,7 +4957,10 @@ DrawColumnTitle(TableView *viewPtr, Column *colPtr, Drawable drawable, int x,
 
 	/* Center the icon vertically.  We already know the column title is at
 	 * least as tall as the icon. */
-	iy = y + (viewPtr->colTitleHeight - ih) / 2;
+	iy = y;
+	if (colHeight > ih) {
+	    iy += (colHeight - ih) / 2;
+	}
 	Tk_RedrawImage(IconBits(colPtr->icon), 0, 0, iw, ih, drawable, x, iy);
 	x += iw + igap;
     }
@@ -5024,13 +5027,14 @@ DrawRowTitle(TableView *viewPtr, Row *rowPtr, Drawable drawable, int x, int y)
 	/* If there's any room left over, let the last row take it. */
 	h = Tk_Height(viewPtr->tkwin) - y;
     }
-
     /* Clear the title area by drawing the background. */
     Blt_Bg_FillRectangle(viewPtr->tkwin, drawable, bg, x, dy, 
 	viewPtr->rowTitleWidth, h, viewPtr->rowTitleBorderWidth, relief);
 
-    avail = viewPtr->rowTitleWidth - 2 * (viewPtr->rowTitleBorderWidth + TITLE_PADX); 
-    need  = rowPtr->titleWidth     - 2 * (viewPtr->rowTitleBorderWidth + TITLE_PADX);
+    avail = viewPtr->rowTitleWidth - 
+	2 * (viewPtr->rowTitleBorderWidth + TITLE_PADX); 
+    need  = rowPtr->titleWidth     - 
+	2 * (viewPtr->rowTitleBorderWidth + TITLE_PADX);
     x += viewPtr->rowTitleBorderWidth + TITLE_PADX;
     y += viewPtr->rowTitleBorderWidth + TITLE_PADY;
     if (avail > need) {
