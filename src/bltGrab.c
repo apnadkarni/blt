@@ -559,7 +559,7 @@ CurrentOp(
 
     grabPtr = GetTopGrab(dataPtr);
     if (grabPtr == NULL) {
-	return TCL_OK;		/* Stack is empty. */
+	return TCL_OK;			/* Stack is empty. */
     }
     if (objc == 3) {
 	TkDisplay *dispPtr;
@@ -858,7 +858,7 @@ TopOp(
 
     grabPtr = GetTopGrab(dataPtr);
     if (grabPtr == NULL) {
-	return TCL_OK;		/* Stack is empty. */
+	return TCL_OK;			/* Stack is empty. */
     }
     Tcl_SetStringObj(Tcl_GetObjResult(interp), 
 	Tk_PathName(grabPtr->entryPtr->tkwin), -1);
@@ -883,10 +883,11 @@ static int numGrabOps = sizeof(grabOps) / sizeof(Blt_OpSpec);
 
 static int
 GrabCmd(
-    ClientData clientData,	/* Main window associated with interpreter. */
-    Tcl_Interp *interp,		/* Current interpreter. */
-    int objc,			/* Number of arguments. */
-    Tcl_Obj *const *objv)	/* Argument objects. */
+    ClientData clientData,		/* Main window associated with
+					 * interpreter. */
+    Tcl_Interp *interp,			/* Current interpreter. */
+    int objc,				/* # of arguments. */
+    Tcl_Obj *const *objv)		/* Argument objects. */
 {
     Tcl_ObjCmdProc *proc;
     GrabCmdInterpData *dataPtr = clientData;
@@ -904,8 +905,8 @@ GrabCmd(
 	    string = Tcl_GetString(objv[1]);
 	    c = string[0];
 	    if ((c == '.') || ((c == '-') && (strcmp(string, "-global")==0))) {
-		/* Replicate the Tk grab command. Assume that it is a set
-		 * operation. */
+		/* Replicate the Tk grab command syntax. Assume this is a
+		 * "set" operation. */
 		Tcl_ResetResult(interp);
 		return SetOp(clientData, interp, objc, objv);
 	    }
