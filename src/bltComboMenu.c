@@ -5749,6 +5749,44 @@ UnpostOp(ComboMenu *comboPtr, Tcl_Interp *interp, int objc,
     return TCL_OK;
 }
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * ValueOp --
+ *
+ * Results:
+ *	Standard TCL result.
+ *
+ * Side effects:
+ *	Commands may get excecuted; variables may get set; sub-menus may
+ *	get posted.
+ *
+ *	.cm value item 
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+ValueOp(ComboMenu *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+{
+    Item *itemPtr;
+    Tcl_Obj *objPtr;
+
+    if (GetItemFromObj(interp, comboPtr, objv[2], &itemPtr) != TCL_OK) {
+	return TCL_ERROR;
+    }
+    if (itemPtr == NULL) {
+	return TCL_OK;
+    }
+    if (itemPtr->valueObjPtr == NULL) {
+	objPtr = Tcl_NewStringObj(itemPtr->text, -1);
+    } else {
+	objPtr = itemPtr->valueObjPtr;
+    }
+    Tcl_SetObjResult(interp, objPtr);
+    return TCL_OK;
+}
+
+
 static int
 XpositionOp(ComboMenu *comboPtr, Tcl_Interp *interp, int objc, 
 	    Tcl_Obj *const *objv)
@@ -5985,6 +6023,7 @@ static Blt_OpSpec menuOps[] =
     {"style",       2, StyleOp,       2, 0, "op ?args...?",},
     {"type",        1, TypeOp,        3, 3, "item",},
     {"unpost",      1, UnpostOp,      2, 2, "",},
+    {"value",       1, ValueOp,       3, 3, "item",},
     {"xposition",   2, XpositionOp,   3, 3, "item",},
     {"xview",       2, XviewOp,       2, 5, 
 	"?moveto fract? ?scroll number what?",},

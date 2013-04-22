@@ -630,8 +630,7 @@ proc blt::TableView::PostComboBoxMenu { w cell } {
     incr x2 [winfo rootx $w]
     incr y2 [winfo rooty $w]
     $menu post right $x2 $y2 $x1 $y1
-    update
-    blt::grab push $menu
+    blt::grab push $menu 
     bind $menu <Unmap> [list blt::TableView::UnpostComboBoxMenu $w]
 }
 
@@ -643,7 +642,7 @@ proc blt::TableView::PostComboBoxMenu { w cell } {
 #	from the combo menu and sets the corresponding table cell to it.
 #
 proc blt::TableView::ImportFromComboBoxMenu { w cell menu } {
-    set value [$menu item cget active -value]
+    set value [$menu value active]
     set table [$w cget -table]
     if { $table != "" } {
 	foreach { row col } [$w index $cell] break

@@ -299,7 +299,6 @@ proc ::blt::ComboMenu::ButtonPressEvent { menu x y } {
 
     # The button press event did not occur inside of any menu.
     $menu unpost 
-    event generate $menu <<MenuSelect>>
     blt::grab pop $menu
 }
 
@@ -336,8 +335,8 @@ proc ::blt::ComboMenu::ButtonReleaseEvent { menu x y } {
 	} 
 	$m unpost
 	# Pop the grab before invoking the menu item command.
-	event generate $menu <<MenuSelect>>
 	blt::grab pop $menu
+	event generate $menu <<MenuSelect>>
 	$m invoke $item
     }
 
@@ -533,6 +532,5 @@ proc ::blt::ComboMenu::Cancel {} {
 	return
     }
     $m unpost 
-    event generate $m <<MenuSelect>>
     blt::grab pop $m
 }

@@ -1988,16 +1988,17 @@ TextBoxStyleGeometryProc(Cell *cellPtr, CellStyle *cellStylePtr)
     /* Get the actual text to be displayed. If the style has a -formatcommand
      * defined, call it to get the formatted text string. */
     if (colPtr->fmtCmdObjPtr != NULL) {
-	Tcl_Obj *cmdObjPtr, *valueObjPtr;
+	Tcl_Obj *cmdObjPtr, *objPtr;
 	int result;
 	Tcl_Interp *interp;
 	const char *text;
 
 	interp = viewPtr->interp;
-	valueObjPtr = blt_table_get_obj(viewPtr->table, rowPtr->row,
-		colPtr->column);
 	cmdObjPtr = Tcl_DuplicateObj(colPtr->fmtCmdObjPtr);
-	Tcl_ListObjAppendElement(interp, cmdObjPtr, valueObjPtr);
+	objPtr = Tcl_NewLongObj(blt_table_row_index(rowPtr->row));
+	Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
+	objPtr = Tcl_NewLongObj(blt_table_column_index(colPtr->column));
+	Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
 	Tcl_IncrRefCount(cmdObjPtr);
 	result = Tcl_EvalObjEx(interp, cmdObjPtr, TCL_EVAL_GLOBAL);
 	Tcl_DecrRefCount(cmdObjPtr);
@@ -2488,16 +2489,17 @@ CheckBoxStyleGeometryProc(Cell *cellPtr, CellStyle *cellStylePtr)
 
     if (blt_table_value_exists(viewPtr->table, rowPtr->row, colPtr->column)) {
 	if (colPtr->fmtCmdObjPtr != NULL) {
-	    Tcl_Obj *cmdObjPtr, *valueObjPtr;
+	    Tcl_Obj *cmdObjPtr, *objPtr;
 	    int result;
 	    Tcl_Interp *interp;
 	    const char *text;
 	    
 	    interp = viewPtr->interp;
-	    valueObjPtr = blt_table_get_obj(viewPtr->table, rowPtr->row,
-					    colPtr->column);
 	    cmdObjPtr = Tcl_DuplicateObj(colPtr->fmtCmdObjPtr);
-	    Tcl_ListObjAppendElement(interp, cmdObjPtr, valueObjPtr);
+	    objPtr = Tcl_NewLongObj(blt_table_row_index(rowPtr->row));
+	    Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
+	    objPtr = Tcl_NewLongObj(blt_table_column_index(colPtr->column));
+	    Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
 	    Tcl_IncrRefCount(cmdObjPtr);
 	    result = Tcl_EvalObjEx(interp, cmdObjPtr, TCL_EVAL_GLOBAL);
 	    Tcl_DecrRefCount(cmdObjPtr);
@@ -3658,6 +3660,8 @@ ImageBoxStyleGeometryProc(Cell *cellPtr, CellStyle *cellStylePtr)
     Column *colPtr;
     unsigned int iw, ih, pw, ph, tw, th;
     TableView *viewPtr;
+    Tcl_Interp *interp;
+    Tcl_Obj *objPtr;
 
     viewPtr = cellPtr->viewPtr;
     keyPtr = GetKey(cellPtr);
@@ -3683,35 +3687,33 @@ ImageBoxStyleGeometryProc(Cell *cellPtr, CellStyle *cellStylePtr)
     cellPtr->text = NULL;
     cellPtr->tkImage = NULL;
 
-    if (blt_table_value_exists(viewPtr->table, rowPtr->row, colPtr->column)) {
-	Tcl_Obj *objPtr;
-	
+    interp = viewPtr->interp;
+    if (colPtr->fmtCmdObjPtr != NULL) {
+	int result;
+	Tcl_Obj *cmdObjPtr;
+
+	/* Invoke the format command to return the image and title text
+	 * based upon the value in the cell.  */
+	cmdObjPtr = Tcl_DuplicateObj(colPtr->fmtCmdObjPtr);  
+	objPtr = Tcl_NewLongObj(blt_table_row_index(rowPtr->row));
+	Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
+	objPtr = Tcl_NewLongObj(blt_table_column_index(colPtr->column));
+	Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
+	Tcl_IncrRefCount(cmdObjPtr);
+	result = Tcl_EvalObjEx(interp, cmdObjPtr, TCL_EVAL_GLOBAL);
+	Tcl_DecrRefCount(cmdObjPtr);
+	if (result != TCL_OK) {
+	    Tcl_BackgroundError(interp);
+	    return;
+	}
+	objPtr = Tcl_GetObjResult(interp);
+    } else {
 	objPtr = blt_table_get_obj(viewPtr->table, rowPtr->row, colPtr->column);
-	if (objPtr != NULL) {
-	    Tcl_Interp *interp;
-
-	    interp = viewPtr->interp;
-	    if (colPtr->fmtCmdObjPtr != NULL) {
-		int result;
-		Tcl_Obj *cmdObjPtr;
-
-		/* Invoke the format command to return the image and title text
-		 * based upon the value in the cell.  */
-		cmdObjPtr = Tcl_DuplicateObj(colPtr->fmtCmdObjPtr);  
-		Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
-		Tcl_IncrRefCount(cmdObjPtr);
-		result = Tcl_EvalObjEx(interp, cmdObjPtr, TCL_EVAL_GLOBAL);
-		Tcl_DecrRefCount(cmdObjPtr);
-		if (result != TCL_OK) {
-		    Tcl_BackgroundError(interp);
-		    return;
-		}
-		objPtr = Tcl_GetObjResult(interp);
-	    }
-	    if (ParseImageFormat(interp, viewPtr, cellPtr, objPtr) != TCL_OK) {
-		Tcl_BackgroundError(interp);
-		return;
-	    }
+    }
+    if (objPtr != NULL) {
+	if (ParseImageFormat(interp, viewPtr, cellPtr, objPtr) != TCL_OK) {
+	    Tcl_BackgroundError(interp);
+	    return;
 	}
     }
     iw = ih = pw = ph = tw = th = 0;

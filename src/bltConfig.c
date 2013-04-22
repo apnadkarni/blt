@@ -2375,36 +2375,38 @@ Blt_ConfigureComponentFromObj(
     Tk_Window tkwin;
     int result;
     char *tmpName;
-    int isTemporary = FALSE;
+    Tcl_Obj *nameObjPtr;
 
-    tmpName = Blt_AssertStrdup(name);
-
+    nameObjPtr = Tcl_NewStringObj(name, -1);
+    tmpName = Tcl_GetString(nameObjPtr);
     /* Window name can't start with an upper case letter */
     tmpName[0] = tolower(name[0]);
-
+    
     /*
-     * Create component if a child window by the component's name
-     * doesn't already exist.
+     * Create a child window by the component's name. If one already
+     * exists, create a temporary name.
      */
     tkwin = Blt_FindChild(parent, tmpName);
-    if (tkwin == NULL) {
-	tkwin = Tk_CreateWindow(interp, parent, tmpName, (char *)NULL);
-	isTemporary = TRUE;
+    if (tkwin != NULL) {
+	Tcl_AppendToObj(nameObjPtr, "-temp", 5);
     }
+    Tcl_IncrRefCount(nameObjPtr);
+    tmpName = Tcl_GetString(nameObjPtr);
+    tkwin = Tk_CreateWindow(interp, parent, tmpName, (char *)NULL);
     if (tkwin == NULL) {
-	Tcl_AppendResult(interp, "can't find window in \"", 
-			 Tk_PathName(parent), "\"", (char *)NULL);
+	Tcl_AppendResult(interp, "can't create temporary window \"",
+		tmpName, "\" in \"", Tk_PathName(parent), "\"", 
+		(char *)NULL);
+	Tcl_DecrRefCount(nameObjPtr);
 	return TCL_ERROR;
     }
     assert(Tk_Depth(tkwin) == Tk_Depth(parent));
-    Blt_Free(tmpName);
+    Tcl_DecrRefCount(nameObjPtr);
 
     Tk_SetClass(tkwin, className);
-    result = Blt_ConfigureWidgetFromObj(interp, tkwin, sp, objc, objv, widgRec,
-	flags);
-    if (isTemporary) {
-	Tk_DestroyWindow(tkwin);
-    }
+    result = Blt_ConfigureWidgetFromObj(interp, tkwin, sp, objc, objv, 
+	widgRec, flags);
+    Tk_DestroyWindow(tkwin);
     return result;
 }
 
