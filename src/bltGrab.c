@@ -72,6 +72,7 @@ typedef struct {
     Tk_Window tkwin;			/* Main window associated with
 					 * interpreter. */
     Blt_HashTable entryTable;		/* Table of unique grab entries */
+    int debug;
 } GrabCmdInterpData;
 
 /* 
@@ -470,6 +471,7 @@ GetGrabCmdInterpData(Tcl_Interp *interp)
 	Blt_InitHashTable(&dataPtr->entryTable, BLT_ONE_WORD_KEYS);
 	dataPtr->chain = Blt_Chain_Create();
 	dataPtr->tkwin = Tk_MainWindow(interp);
+	dataPtr->debug = 0;
     }
     return dataPtr;
 }
@@ -595,6 +597,25 @@ CurrentOp(
 }
 
 static int
+DebugOp(
+    ClientData clientData,		/* Global data associated with
+					 * interpreter. */
+    Tcl_Interp *interp,			/* Current interpreter. */
+    int objc,				/* Number of arguments. */
+    Tcl_Obj *const *objv)		/* Argument objects. */
+{
+    Grab *grabPtr;
+    GrabCmdInterpData *dataPtr = clientData;
+    int state;
+
+    if (Tcl_GetBooleanFromObj(interp, objv[2], &state) != TCL_OK) {
+	return TCL_ERROR;
+    }
+    dataPtr->debug = state;
+    return TCL_OK;
+}
+
+static int
 EmptyOp(
     ClientData clientData,		/* Global data associated with
 					 * interpreter. */
@@ -654,6 +675,10 @@ PopOp(
     GrabCmdInterpData *dataPtr = clientData;
     Grab *grabPtr;
 
+    if (dataPtr->debug) {
+	fprintf(stderr, "grab pop %s\n", 
+		(objc == 3) ? Tcl_GetString(objv[2]) : "");
+    }
     grabPtr = GetTopGrab(dataPtr);
     if (grabPtr == NULL) {
 	/* Blt_Warn("Popping an empty grab stack\n"); */
@@ -704,6 +729,9 @@ PushOp(
     GrabCmdInterpData *dataPtr = clientData;
 
     pathName = Tcl_GetString(objv[2]);
+    if (dataPtr->debug) {
+	fprintf(stderr, "grab push %s\n", pathName);
+    }
     tkwin = Tk_NameToWindow(interp, pathName, dataPtr->tkwin);
     if (tkwin == NULL) {
 	return TCL_ERROR;
@@ -733,6 +761,9 @@ ReleaseOp(
     const char *pathName;
     Tk_Window tkwin;
 
+    if (dataPtr->debug) {
+	fprintf(stderr, "grab release %s\n", Tcl_GetString(objv[2]));
+    }
     grabPtr = GetTopGrab(dataPtr);
     if (grabPtr == NULL) {
 	return TCL_OK;			/* Stack is empty. */
@@ -800,6 +831,9 @@ SetOp(
 	return TCL_ERROR;
     }
     string = Tcl_GetString(objv[1]);
+    if (dataPtr->debug) {
+	fprintf(stderr, "grab set %s\n", string);
+    }
     tkwin = Tk_NameToWindow(interp, string, dataPtr->tkwin);
     if (tkwin == NULL) {
 	return TCL_ERROR;
@@ -868,6 +902,7 @@ TopOp(
 static Blt_OpSpec grabOps[] =
 {
     {"current",     1, CurrentOp,     2, 3, "?window?",},
+    {"debug",       1, DebugOp,       3, 3, "bool",},
     {"empty",       1, EmptyOp,       2, 2, "",},
     {"list",        1, ListOp,        2, 2, "",},
     {"pop",         2, PopOp,         2, 3, "?window?",},

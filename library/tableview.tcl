@@ -615,7 +615,9 @@ proc blt::TableView::PostComboBoxMenu { w cell } {
     foreach { row col } [$w index $cell] break
     set value [$table get $row $col ""]
     set item [$menu index -value $value]
-    $menu select $item
+    if { $item >= 0 } {
+	$menu select $item
+    }
     $w style configure $style -state posted
     # Watch for <<MenuSelect>> events on the menu.  Set the cell value to the
     # selected value when we get one.
@@ -683,10 +685,7 @@ proc ::blt::TableView::UnpostComboBoxMenu { w } {
 	# Release grab, if any, and restore the previous grab, if there was
 	# one.
 	$menu unpost
-	set grab [blt::grab current]
-	if { $grab != "" } {
-	    blt::grab pop $grab
-	}
+	#blt::grab pop $menu
     }
 }
 
