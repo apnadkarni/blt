@@ -979,16 +979,17 @@ BlendPixel(Blt_Pixel *bgPtr, Blt_Pixel *colorPtr, unsigned char weight)
     int t1;
 
     alpha = imul8x8(colorPtr->Alpha, weight, t1);
-#ifdef notdef
-    fprintf(stderr, "colorAlpha=%d weight=%d, alpha=%d, beta=%d\n",
-	    colorPtr->Alpha, weight, alpha, alpha ^ 0xFF);
-#endif
-    if (alpha == 0xFF) {
+    if ((bgPtr->Alpha == 0x0) || (alpha == 0xFF)) {
 	bgPtr->u32 = colorPtr->u32;
+	bgPtr->Alpha = alpha;
     } else if (alpha != 0x00) {
 	unsigned char beta;
 	int t1, t2;
 
+#ifndef notdef
+    fprintf(stderr, "fgA=%d bgA=%d weight=%d, alpha=%d, beta=%d\n",
+	    colorPtr->Alpha, bgPtr->Alpha, weight, alpha, alpha ^ 0xFF);
+#endif
 	beta = alpha ^ 0xFF;
 	bgPtr->Red   = imul8x8(alpha, colorPtr->Red, t1) + 
 	    imul8x8(beta, bgPtr->Red, t2);
@@ -997,13 +998,14 @@ BlendPixel(Blt_Pixel *bgPtr, Blt_Pixel *colorPtr, unsigned char weight)
 	bgPtr->Blue  = imul8x8(alpha, colorPtr->Blue, t1)  + 
 	    imul8x8(beta, bgPtr->Blue, t2);
 	bgPtr->Alpha = alpha + imul8x8(beta, bgPtr->Alpha, t2);
-#ifdef notdef
+#ifndef notdef
 	fprintf(stderr, "r=%d, g=%d, b=%d, a=%d, alpha=%d\n",
 	       bgPtr->Red, bgPtr->Green, bgPtr->Blue, bgPtr->Alpha, alpha);
 #endif
     }
 }
     
+
 static void INLINE 
 PutPixel2(Pict *destPtr, int x, int y, Blt_Pixel *colorPtr, 
 	  unsigned char weight)  
@@ -3416,7 +3418,7 @@ Blt_Picture_TextOp(ClientData clientData, Tcl_Interp *interp, int objc,
 
 	    extra = 2 * shadowPtr->width;
 	    tmpPtr = Blt_CreatePicture(w + extra, h + extra);
-	    color.u32 = shadowPtr->color.u32;
+	    color.u32 = 0x0;
 	    color.Alpha = 0x0;
 	    Blt_BlankPicture(tmpPtr, color.u32);
 	    Blt_Paintbrush_Init(&brush);
@@ -3431,17 +3433,19 @@ Blt_Picture_TextOp(ClientData clientData, Tcl_Interp *interp, int objc,
 			  switches.kerning, &brush);
 	    }
 	    Blt_BlurPicture(tmpPtr, tmpPtr, shadowPtr->width, 4);
+	    Blt_BlendPictures(destPtr, tmpPtr, 0, 0, tmpPtr->width, 
+		      tmpPtr->height, x, y);
+#ifndef notdef
 	    for (i = 0; i < layoutPtr->numFragments; i++) {
 		TextFragment *fp;
 
 		fp = layoutPtr->fragments + i;
-		PaintText(tmpPtr, fontPtr, fp->text, fp->count, 
-		    fp->x + shadowPtr->width - shadowPtr->offset,
-		    fp->y + shadowPtr->width - shadowPtr->offset, 
+		PaintText(destPtr, fontPtr, fp->text, fp->count, 
+		    x + fp->x + shadowPtr->width - shadowPtr->offset,
+		    y + fp->y + shadowPtr->width - shadowPtr->offset, 
                     switches.kerning, switches.brushPtr);
 	    }
-	    Blt_BlendPictures(destPtr, tmpPtr, 0, 0, tmpPtr->width, 
-		      tmpPtr->height, x, y);
+#endif
 	    Blt_FreePicture(tmpPtr);
 	} else {
 	    int i;

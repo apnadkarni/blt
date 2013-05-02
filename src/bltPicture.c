@@ -437,17 +437,18 @@ Blt_BlankPicture(Pict *destPtr, unsigned int value)
     size_t numPixels;
     
     numPixels = destPtr->height * destPtr->pixelsPerRow;
+    color.u32 = value;
     for (bp = destPtr->bits, bend = bp + numPixels; bp < bend; bp++) {
-	bp->u32 = value;
+	bp->u32 = color.u32;
     }
     destPtr->flags |= BLT_PIC_DIRTY;
     destPtr->flags &= ~(BLT_PIC_BLEND | BLT_PIC_MASK);
-    color.u32 = value;
     if (color.Alpha == 0x00) {
 	destPtr->flags |= BLT_PIC_MASK;
     } else if (color.Alpha != 0xFF) {
 	destPtr->flags |= BLT_PIC_BLEND;
     }
+    destPtr->flags &= ~BLT_PIC_ASSOCIATED_COLORS;
 }
 
 void
@@ -651,6 +652,32 @@ Blt_FadePicture(Pict *pictPtr, int x, int y, int w, int h, int alpha)
     pictPtr->flags |= BLT_PIC_BLEND;
 }
 
+void
+AssociateColor(Blt_Pixel *colorPtr)
+{
+    if ((colorPtr->Alpha != 0xFF) && (colorPtr->Alpha != 0x00)) {
+	int t;
+		    
+	colorPtr->Red   = imul8x8(colorPtr->Alpha, colorPtr->Red, t);
+	colorPtr->Green = imul8x8(colorPtr->Alpha, colorPtr->Green, t);
+	colorPtr->Blue  = imul8x8(colorPtr->Alpha, colorPtr->Blue, t);
+    }
+}
+
+void
+UnassociateColor(Blt_Pixel *colorPtr)
+{
+    /* No conversion necessary if 100% transparent or opaque. */
+    if ((colorPtr->Alpha != 0xFF) && (colorPtr->Alpha != 0x00)) {
+	int bias;
+	
+	bias = colorPtr->Alpha >> 1;
+	colorPtr->Red   = (mul255(colorPtr->Red)   + bias) / colorPtr->Alpha;
+	colorPtr->Green = (mul255(colorPtr->Green) + bias) / colorPtr->Alpha;
+	colorPtr->Blue  = (mul255(colorPtr->Blue)  + bias) / colorPtr->Alpha;
+    }
+}
+
 static void
 AssociateColors(Pict *srcPtr)
 {
@@ -664,14 +691,7 @@ AssociateColors(Pict *srcPtr)
 	    
 	    sp = srcRowPtr;
 	    for (sp = srcRowPtr, send = sp + srcPtr->width; sp < send; sp++) {
-		/* No conversion necessary if 100% transparent or opaque. */
-		if ((sp->Alpha != 0xFF) && (sp->Alpha != 0x00)) {
-		    int t;
-		    
-		    sp->Red   = imul8x8(sp->Alpha, sp->Red, t);
-		    sp->Green = imul8x8(sp->Alpha, sp->Green, t);
-		    sp->Blue  = imul8x8(sp->Alpha, sp->Blue, t);
-		}
+		AssociateColor(sp);
 	    }
 	    srcRowPtr += srcPtr->pixelsPerRow;
 	}
@@ -692,15 +712,7 @@ UnassociateColors(Pict *srcPtr)
 	    
 	    sp = srcRowPtr;
 	    for (sp = srcRowPtr, send = sp + srcPtr->width; sp < send; sp++) {
-		/* No conversion necessary if 100% transparent or opaque. */
-		if ((sp->Alpha != 0xFF) && (sp->Alpha != 0x00)) {
-		    int bias;
-		    
-		    bias = sp->Alpha >> 1;
-		    sp->Red   = (mul255(sp->Red)   + bias) / sp->Alpha;
-		    sp->Green = (mul255(sp->Green) + bias) / sp->Alpha;
-		    sp->Blue  = (mul255(sp->Blue)  + bias) / sp->Alpha;
-		}
+		UnassociateColor(sp);
 	    }
 	    srcRowPtr += srcPtr->pixelsPerRow;
 	}

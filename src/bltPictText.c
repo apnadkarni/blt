@@ -685,17 +685,17 @@ BlendPixel(Blt_Pixel *bgPtr, Blt_Pixel *colorPtr, unsigned char weight)
     int t1;
 
     alpha = imul8x8(colorPtr->Alpha, weight, t1);
-#ifdef notdef
-    fprintf(stderr, "colorAlpha=%d weight=%d, alpha=%d, beta=%d\n",
-	    colorPtr->Alpha, weight, alpha, alpha ^ 0xFF);
-#endif
-    if (alpha == 0xFF) {
+    if ((bgPtr->Alpha == 0x0) || (alpha == 0xFF)) {
 	bgPtr->u32 = colorPtr->u32;
     } else if (alpha != 0x00) {
 	unsigned char beta;
 	int t1, t2;
 
 	beta = alpha ^ 0xFF;
+#ifndef notdef
+    fprintf(stderr, "colorAlpha=%d weight=%d, alpha=%d, beta=%d\n",
+	    colorPtr->Alpha, weight, alpha, alpha ^ 0xFF);
+#endif
 	bgPtr->Red   = imul8x8(alpha, colorPtr->Red, t1) + 
 	    imul8x8(beta, bgPtr->Red, t2);
 	bgPtr->Green = imul8x8(alpha, colorPtr->Green, t1) + 
@@ -703,7 +703,7 @@ BlendPixel(Blt_Pixel *bgPtr, Blt_Pixel *colorPtr, unsigned char weight)
 	bgPtr->Blue  = imul8x8(alpha, colorPtr->Blue, t1)  + 
 	    imul8x8(beta, bgPtr->Blue, t2);
 	bgPtr->Alpha = alpha + imul8x8(beta, bgPtr->Alpha, t2);
-#ifdef notdef
+#ifndef notdef
 	fprintf(stderr, "r=%d, g=%d, b=%d, a=%d, alpha=%d\n",
 	       bgPtr->Red, bgPtr->Green, bgPtr->Blue, bgPtr->Alpha, alpha);
 #endif
@@ -1313,8 +1313,7 @@ TextOp(ClientData clientData, Tcl_Interp *interp, int objc,
 
 	    extra = 2 * shadowPtr->width;
 	    tmpPtr = Blt_CreatePicture(w + extra, h + extra);
-	    color.u32 = shadowPtr->color.u32;
-	    color.Alpha = 0x0;
+	    color.u32 = 0x0;
 	    Blt_BlankPicture(tmpPtr, color.u32);
 	    Blt_Paintbrush_Init(&brush);
 	    Blt_Paintbrush_SetColor(&brush, shadowPtr->color.u32);
@@ -1327,7 +1326,8 @@ TextOp(ClientData clientData, Tcl_Interp *interp, int objc,
 			  fp->y + shadowPtr->width, 
 			  switches.kerning, &brush);
 	    }
-	    Blt_BlurPicture(tmpPtr, tmpPtr, shadowPtr->width, 4);
+	    Blt_BlurPicture(tmpPtr, tmpPtr, shadowPtr->width, 3);
+#ifdef notdef
 	    for (i = 0; i < layoutPtr->numFragments; i++) {
 		TextFragment *fp;
 
@@ -1337,6 +1337,7 @@ TextOp(ClientData clientData, Tcl_Interp *interp, int objc,
 		    fp->y + shadowPtr->width - shadowPtr->offset, 
                     switches.kerning, switches.brushPtr);
 	    }
+#endif
 	    Blt_BlendPictures(destPtr, tmpPtr, 0, 0, tmpPtr->width, 
 		      tmpPtr->height, x, y);
 	    fprintf(stderr, "tmp width=%d height=%d, w=%d h=%d\n",

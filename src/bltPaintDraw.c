@@ -145,8 +145,8 @@ PaintPixel(Pict *destPtr, int x, int y, Blt_Pixel *colorPtr)
 }
 
 static void INLINE
-PaintHorizontalLine(Pict *destPtr, int x1, int x2, int y, Blt_Paintbrush *brushPtr, 
-		    int blend)  
+PaintHorizontalLine(Pict *destPtr, int x1, int x2, int y, 
+		    Blt_Paintbrush *brushPtr, int blend)  
 {
     if ((y >= 0) && (y < destPtr->height)) {
 	Blt_Pixel *dp, *dend;
@@ -754,7 +754,7 @@ PaintCircle4(Pict *destPtr, float cx, float cy, float r, float lineWidth,
 
 		a = UCLAMP(a);
 #ifdef notdef
-		if (dp->Alphas != 0) {
+		if (dp->Alpha != 0) {
 		    a = imul8x8(a, dp->Alpha, t);
 		}
 #endif
@@ -1669,7 +1669,7 @@ Blt_PaintRectangle(Blt_Picture picture, int x, int y, int w, int h, int r,
 	    x1 = x;
 	    x2 = x + w;
 	    y1 = y;
-	    y2 = y + h - lineWidth - 1;
+	    y2 = y + h - lineWidth;
 	    for (dy = 0; dy < lineWidth; dy++) {
 		PaintHorizontalLine(picture, x1, x2, y1+dy, brushPtr, blend);
 		PaintHorizontalLine(picture, x1, x2, y2-dy, brushPtr, blend);
