@@ -986,10 +986,6 @@ BlendPixel(Blt_Pixel *bgPtr, Blt_Pixel *colorPtr, unsigned char weight)
 	unsigned char beta;
 	int t1, t2;
 
-#ifndef notdef
-    fprintf(stderr, "fgA=%d bgA=%d weight=%d, alpha=%d, beta=%d\n",
-	    colorPtr->Alpha, bgPtr->Alpha, weight, alpha, alpha ^ 0xFF);
-#endif
 	beta = alpha ^ 0xFF;
 	bgPtr->Red   = imul8x8(alpha, colorPtr->Red, t1) + 
 	    imul8x8(beta, bgPtr->Red, t2);
@@ -998,10 +994,6 @@ BlendPixel(Blt_Pixel *bgPtr, Blt_Pixel *colorPtr, unsigned char weight)
 	bgPtr->Blue  = imul8x8(alpha, colorPtr->Blue, t1)  + 
 	    imul8x8(beta, bgPtr->Blue, t2);
 	bgPtr->Alpha = alpha + imul8x8(beta, bgPtr->Alpha, t2);
-#ifndef notdef
-	fprintf(stderr, "r=%d, g=%d, b=%d, a=%d, alpha=%d\n",
-	       bgPtr->Red, bgPtr->Green, bgPtr->Blue, bgPtr->Alpha, alpha);
-#endif
     }
 }
     
