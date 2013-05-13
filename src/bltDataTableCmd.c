@@ -623,20 +623,23 @@ typedef struct {
     Tcl_Obj *emptyValueObjPtr;
     const char *tag;
     unsigned int flags;
+    long maxMatches;
 } FindSwitches;
 
 #define FIND_INVERT	(1<<0)
 
 static Blt_SwitchSpec findSwitches[] = 
 {
-    {BLT_SWITCH_CUSTOM, "-rows", "rows", (char *)NULL,
-	Blt_Offset(FindSwitches, iter), 0, 0, &rowIterSwitch},
-    {BLT_SWITCH_OBJ, "-emptyvalue", "string",	(char *)NULL,
-	Blt_Offset(FindSwitches, emptyValueObjPtr), 0},
     {BLT_SWITCH_STRING, "-addtag", "tagName", (char *)NULL,
 	Blt_Offset(FindSwitches, tag), 0},
+    {BLT_SWITCH_LONG_NNEG, "-count", "number", (char *)NULL,
+	Blt_Offset(FindSwitches, maxMatches), 0},
+    {BLT_SWITCH_OBJ,    "-emptyvalue", "string", (char *)NULL,
+	Blt_Offset(FindSwitches, emptyValueObjPtr), 0},
     {BLT_SWITCH_BITMASK, "-invert", "", (char *)NULL,
 	Blt_Offset(FindSwitches, flags), 0, FIND_INVERT},
+    {BLT_SWITCH_CUSTOM, "-rows", "rows", (char *)NULL,
+	Blt_Offset(FindSwitches, iter), 0, 0, &rowIterSwitch},
     {BLT_SWITCH_END}
 };
 
@@ -1745,6 +1748,7 @@ FindRows(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr,
     Tcl_Namespace *nsPtr;
     Tcl_Obj *listObjPtr;
     int isNew;
+    long numMatches;
     int result = TCL_OK;
 
     Tcl_AddInterpResolvers(interp, TABLE_FIND_KEY, (Tcl_ResolveCmdProc*)NULL,
@@ -1758,6 +1762,7 @@ FindRows(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr,
 
     /* Now process each row, evaluating the expression. */
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
+    numMatches = 0;
     for (row = blt_table_first_tagged_row(&switchesPtr->iter); row != NULL; 
 	 row = blt_table_next_tagged_row(&switchesPtr->iter)) {
 	int bool;
@@ -1780,8 +1785,13 @@ FindRows(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr,
 		    break;
 		}
 	    }
+	    numMatches++;
 	    objPtr = Tcl_NewLongObj(blt_table_row_index(row));
 	    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+	    if ((switchesPtr->maxMatches > 0) && 
+		(numMatches >= switchesPtr->maxMatches)) {
+		break;
+	    }
 	}
     }
     if (result != TCL_OK) {

@@ -759,11 +759,11 @@ BlendPictures(Pict *destPtr, Pict *srcPtr, int sx, int sy, int w, int h,
     if (srcPtr->height < h) {
 	h = srcPtr->height;
     }
-    if ((srcPtr->flags & BLT_PIC_ASSOCIATED_COLORS) == 0) {
-	Blt_AssociateColors(srcPtr);
+    if (srcPtr->flags & BLT_PIC_ASSOCIATED_COLORS) {
+	Blt_UnassociateColors(srcPtr);
     }
-    if ((destPtr->flags & BLT_PIC_ASSOCIATED_COLORS) == 0) {
-	Blt_AssociateColors(destPtr);
+    if (destPtr->flags & BLT_PIC_ASSOCIATED_COLORS) {
+	Blt_UnassociateColors(destPtr);
     }
     
     destRowPtr = destPtr->bits + ((dy * destPtr->pixelsPerRow) + dx);
@@ -775,17 +775,18 @@ BlendPictures(Pict *destPtr, Pict *srcPtr, int sx, int sy, int w, int h,
 	sp = srcRowPtr;
 	for (dp = destRowPtr, dend = dp + w; dp < dend; dp++, sp++) {
 	    /* Blend the foreground and background together. */
-	    if (sp->Alpha == 0xFF) {
+	    if ((dp->Alpha == 0x0) || (sp->Alpha == 0xFF)) {
 		dp->u32 = sp->u32;
 	    } else if (sp->Alpha != 0x00) {
-		int beta, t;
+		int alpha, beta, t1, t2;
 		int r, g, b, a;
 
-		beta = sp->Alpha ^ 0xFF; /* beta = 1 - alpha */
-		r = sp->Red   + imul8x8(beta, dp->Red, t);
-		g = sp->Green + imul8x8(beta, dp->Green, t);
-		b = sp->Blue  + imul8x8(beta, dp->Blue, t);
-		a = sp->Alpha + imul8x8(beta, dp->Alpha, t);
+		alpha = sp->Alpha;
+		beta = alpha ^ 0xFF; /* beta = 1 - alpha */
+		r = imul8x8(alpha, sp->Red, t1) + imul8x8(beta, dp->Red, t2);
+		g = imul8x8(alpha, sp->Green, t1) + imul8x8(beta, dp->Green,t2);
+		b = imul8x8(alpha, sp->Blue, t1) + imul8x8(beta, dp->Blue, t2);
+		a = alpha + imul8x8(beta, dp->Alpha, t2);
 		dp->Red   = UCLAMP(r);
 		dp->Green = UCLAMP(g);
 		dp->Blue  = UCLAMP(b);

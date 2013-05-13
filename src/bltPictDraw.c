@@ -979,7 +979,7 @@ BlendPixel(Blt_Pixel *bgPtr, Blt_Pixel *colorPtr, unsigned char weight)
     int t1;
 
     alpha = imul8x8(colorPtr->Alpha, weight, t1);
-    if ((bgPtr->Alpha == 0x0) || (alpha == 0xFF)) {
+    if (alpha == 0xFF) {
 	bgPtr->u32 = colorPtr->u32;
 	bgPtr->Alpha = alpha;
     } else if (alpha != 0x00) {
@@ -3403,6 +3403,7 @@ Blt_Picture_TextOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	h = layoutPtr->height;
 	if ((w > 1) && (h > 1) && (switches.shadow.width > 0)) {
 	    Blt_Pixel color;
+	    Blt_Pixel *dp;
 	    Pict *tmpPtr;
 	    int extra;
 	    Blt_Paintbrush brush;
@@ -3410,7 +3411,7 @@ Blt_Picture_TextOp(ClientData clientData, Tcl_Interp *interp, int objc,
 
 	    extra = 2 * shadowPtr->width;
 	    tmpPtr = Blt_CreatePicture(w + extra, h + extra);
-	    color.u32 = 0x0;
+	    color.u32 = shadowPtr->color.u32;
 	    color.Alpha = 0x0;
 	    Blt_BlankPicture(tmpPtr, color.u32);
 	    Blt_Paintbrush_Init(&brush);
@@ -3424,10 +3425,9 @@ Blt_Picture_TextOp(ClientData clientData, Tcl_Interp *interp, int objc,
 			  fp->y + shadowPtr->width, 
 			  switches.kerning, &brush);
 	    }
-	    Blt_BlurPicture(tmpPtr, tmpPtr, shadowPtr->width, 4);
+	    Blt_BlurPicture(tmpPtr, tmpPtr, shadowPtr->width, 3);
 	    Blt_BlendPictures(destPtr, tmpPtr, 0, 0, tmpPtr->width, 
 		      tmpPtr->height, x, y);
-#ifndef notdef
 	    for (i = 0; i < layoutPtr->numFragments; i++) {
 		TextFragment *fp;
 
@@ -3437,7 +3437,6 @@ Blt_Picture_TextOp(ClientData clientData, Tcl_Interp *interp, int objc,
 		    y + fp->y + shadowPtr->width - shadowPtr->offset, 
                     switches.kerning, switches.brushPtr);
 	    }
-#endif
 	    Blt_FreePicture(tmpPtr);
 	} else {
 	    int i;
