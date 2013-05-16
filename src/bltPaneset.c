@@ -2518,6 +2518,7 @@ NewPane(Tcl_Interp *interp, Paneset *setPtr, const char *name)
     char string[200];
 
     className = NULL;			/* Suppress compiler warning. */
+    object = NULL;			/* Suppress compiler warning. */
     if (setPtr->type == DRAWER) {
 	className = "BltDrawerHandle";
 	object = "drawer";

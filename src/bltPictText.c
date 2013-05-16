@@ -781,8 +781,8 @@ BlitGlyph(Pict *destPtr,
 	    unsigned char *sp;
 	    int x;
 
-	    dp = destRowPtr;
-	    for (x = x1; x < x2; x++, sp++, dp++) {
+	    for (dp = destRowPtr, sp = srcRowPtr, x = x1; x < x2; 
+		 x++, sp++, dp++) {
 		if (*sp != 0x0) {
 		    Blt_Pixel color;
 

@@ -867,6 +867,7 @@ TgaGetColorTable(Tga *tgaPtr)
     default:				/* Unknown pixel format. */
 	TgaError(tgaPtr, "unknown colormap pixel size (%d).", 
 		 tgaPtr->cmBitsPerPixel);
+	return;				/* NOTREACHED */
     }
     if (tgaPtr->cmOffset > 0) {
 	Blt_DBuffer_IncrCursor(tgaPtr->dbuffer, 
@@ -1275,9 +1276,11 @@ TgaPutColorTable(Tga *tgaPtr)
     case 16:				/* 1-5-5-5 RGBA color */
 	TgaError(tgaPtr, "internal error: colormap pixel size (%d)", 
 		 tgaPtr->cmBitsPerPixel);
+	return;				/* NOTREACHED */
     default:				/* Unknown pixel format. */
 	TgaError(tgaPtr, "unknown colormap pixel size (%d)", 
 		 tgaPtr->cmBitsPerPixel);
+	return;				/* NOTREACHED */
     }
     Blt_DBuffer_SetPointer(tgaPtr->dbuffer, dp);
     return;

@@ -1927,6 +1927,7 @@ Blt_CharBbox(
     font = layoutPtr->font;
 
     Blt_Font_GetMetrics(font, &fm);
+    x = 0;
     for (i = 0; i < layoutPtr->numChunks; i++) {
 	if (chunkPtr->numDisplayChars < 0) {
 	    if (index == 0) {

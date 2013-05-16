@@ -388,7 +388,7 @@ Blt_Base85_Encode(Tcl_Interp *interp, const unsigned char *buffer,
     char *dp; 
     int count;
     int length, numBytes;
-    int n, remainder;
+    int remainder;
     const unsigned char *sp, *send;
     char *dest;
 
@@ -430,7 +430,6 @@ Blt_Base85_Encode(Tcl_Interp *interp, const unsigned char *buffer,
 	if (tuple == 0) {
 	    *dp++ = 'z';
 	    count++;
-	    n++;
 	} else {
 	    dp[4] = '!' + (tuple % 85);
 	    tuple /= 85;
@@ -442,12 +441,10 @@ Blt_Base85_Encode(Tcl_Interp *interp, const unsigned char *buffer,
 	    tuple /= 85;
 	    dp[0] = '!' + (tuple % 85);
 	    dp += 5;
-	    n += 5;
 	    count += 5;
 	}
 	if (count > 64) {
 	    *dp++ = '\n';
-	    n++;
 	    count = 0;
 	}
     }
@@ -482,19 +479,16 @@ Blt_Base85_Encode(Tcl_Interp *interp, const unsigned char *buffer,
 	    tuple /= 85;	
 	    if (numBytes > 2) {
 		dp[3] = '!' + (tuple % 85);
-		n++;
 	    }
 	    tuple /= 85;	
 	    if (numBytes > 1) { 
 		dp[2] = '!' + (tuple % 85);
-		n++;
 	    }
 	    tuple /= 85;	
 	    dp[1] = '!' + (tuple % 85);
 	    tuple /= 85;	
 	    dp[0] = '!' + (tuple % 85);
 	    *dp++ = '\n';
-	    n += 3;
 	}
     }
     assert((size_t)(dp - dest) < length);

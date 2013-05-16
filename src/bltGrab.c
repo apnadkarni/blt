@@ -604,7 +604,6 @@ DebugOp(
     int objc,				/* Number of arguments. */
     Tcl_Obj *const *objv)		/* Argument objects. */
 {
-    Grab *grabPtr;
     GrabCmdInterpData *dataPtr = clientData;
     int state;
 
