@@ -1893,7 +1893,7 @@ CallClientTraces(Table *tablePtr, Table *clientPtr, Row *rowPtr, Column *colPtr,
 	    continue;		/* Ignore callbacks that were triggered from
 				 * the active trace handler routine. */
 	}
-	match = FALSE;
+	match = 0;
 	if (tracePtr->colTag != NULL) {
 	    if (blt_table_column_has_tag(clientPtr, colPtr, 
 			tracePtr->colTag)) {
@@ -1909,8 +1909,8 @@ CallClientTraces(Table *tablePtr, Table *clientPtr, Row *rowPtr, Column *colPtr,
 	} else if ((tracePtr->row == rowPtr) || (tracePtr->row == NULL)) {
 	    match++;
 	}
-	if (!match) {
-	    continue;
+	if (match < 2) {
+	    continue;			/* Must match both row and column.  */
 	}
 	if (tracePtr->flags & TABLE_TRACE_WHENIDLE) {
 	    if ((tracePtr->flags & TABLE_TRACE_PENDING) == 0) {

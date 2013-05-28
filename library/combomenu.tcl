@@ -43,12 +43,12 @@ bind BltComboMenu <Motion> {
     blt::ComboMenu::MotionEvent %W %X %Y
 }
 
-bind BltComboMenu <ButtonPress> { 
+bind BltComboMenu <ButtonPress-1> { 
     blt::ComboMenu::trace "blt::ComboMenu %# <ButtonPress-1>  %W"
     blt::ComboMenu::ButtonPressEvent %W %X %Y
 }
 
-bind BltComboMenu <ButtonRelease> { 
+bind BltComboMenu <ButtonRelease-1> { 
     blt::ComboMenu::trace "blt::ComboMenu %# ButtonRelease-1 %W %X,%Y"
     blt::ComboMenu::ButtonReleaseEvent %W %X %Y
 }

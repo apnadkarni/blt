@@ -3777,7 +3777,7 @@ Blt_PaintRadioButton(
     DrawCircle(destPtr, x-1, y-1, r, 0.0, &brush, TRUE);
     Blt_Paintbrush_SetColor(&brush, light);
     DrawCircle(destPtr, x+1, y+1, r, 0.0, &brush, TRUE);
-    Blt_BlurPicture(destPtr, destPtr, 1, 3); 
+    /*Blt_BlurPicture(destPtr, destPtr, 1, 3); */
     Blt_Paintbrush_SetColor(&brush, Blt_XColorToPixel(fillColorPtr));
     DrawCircle(destPtr, x, y, r, 0.0, &brush, TRUE);
     if (on) {
