@@ -440,6 +440,7 @@ ExportCsvProc(BLT_TABLE table, Tcl_Interp *interp, int objc,
     memset(&switches, 0, sizeof(switches));
     switches.separator = Blt_AssertStrdup(",");
     switches.quote = Blt_AssertStrdup("\"");
+    switches.flags = EXPORT_COLUMNLABELS;
     rowIterSwitch.clientData = table;
     columnIterSwitch.clientData = table;
     blt_table_iterate_all_rows(table, &switches.ri);

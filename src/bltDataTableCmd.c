@@ -466,6 +466,8 @@ typedef struct {
 
 #define COPY_NOTAGS	(1<<1)
 #define COPY_LABEL	(1<<3)
+#define COPY_APPEND	(1<<3)
+#define COPY_NEW	(1<<4)
 
 static Blt_SwitchSpec copySwitches[] = 
 {
@@ -473,6 +475,10 @@ static Blt_SwitchSpec copySwitches[] =
 	Blt_Offset(CopySwitches, flags), 0, COPY_NOTAGS},
     {BLT_SWITCH_CUSTOM, "-table", "srcTable", (char *)NULL,
 	Blt_Offset(CopySwitches, table), 0, 0, &tableSwitch},
+    {BLT_SWITCH_BITMASK, "-append", "", (char *)NULL,
+	Blt_Offset(CopySwitches, flags), 0, COPY_APPEND},
+    {BLT_SWITCH_BITMASK, "-new", "", (char *)NULL,
+	Blt_Offset(CopySwitches, flags), 0, COPY_NEW},
     {BLT_SWITCH_END}
 };
 
@@ -1811,63 +1817,102 @@ FindRows(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr,
 }
 
 static int
-CopyColumn(Tcl_Interp *interp, BLT_TABLE srcTable, BLT_TABLE destTable,
-    BLT_TABLE_COLUMN src,		/* Column in the source table. */
-    BLT_TABLE_COLUMN dest)		/* Column in the destination table. */
+AppendColumn(Tcl_Interp *interp, BLT_TABLE src, BLT_TABLE dst,
+    BLT_TABLE_COLUMN srcCol,		/* Column in the source table. */
+    BLT_TABLE_COLUMN dstCol)		/* Column in the dstination table. */
 {
-    long i;
+    long i, j, oldNumRows, need;
 
-    if ((blt_table_same_object(srcTable, destTable)) && (src == dest)) {
-	return TCL_OK;			/* Source and destination are the
-					 * same. */
+    oldNumRows = blt_table_num_rows(src);
+    need = oldNumRows + blt_table_num_rows(dst);
+    if (blt_table_extend_rows(interp, dst, need, NULL) != TCL_OK) {
+	return TCL_ERROR;
     }
-    if (blt_table_num_rows(srcTable) >  blt_table_num_rows(destTable)) {
-	long need;
-
-	need = (blt_table_num_rows(srcTable) - blt_table_num_rows(destTable));
-	if (blt_table_extend_rows(interp, destTable, need, NULL) != TCL_OK) {
-	    return TCL_ERROR;
-	}
-    }
-    blt_table_set_column_type(destTable, dest, blt_table_column_type(src));
-    for (i = 0; i < blt_table_num_rows(srcTable); i++) {
-	BLT_TABLE_ROW row;
+    for (i = 0, j = oldNumRows; i < blt_table_num_rows(src); i++, j++) {
+	BLT_TABLE_ROW srcRow, dstRow;
 	BLT_TABLE_VALUE value;
 
-	row = blt_table_row(srcTable, i);
-	value = blt_table_get_value(srcTable, row, src);
+	srcRow = blt_table_row(src, i);
+	value = blt_table_get_value(src, srcRow, srcCol);
 	if (value == NULL) {
 	    continue;
 	}
-	row = blt_table_row(destTable, i);
-	if (blt_table_set_value(destTable, row, dest, value) != TCL_OK) {
+	dstRow = blt_table_row(dst, j);
+	if (blt_table_set_value(dst, dstRow, dstCol, value) != TCL_OK) {
 	    return TCL_ERROR;
 	}
+    }
+    blt_table_set_column_type(dst, dstCol, blt_table_column_type(dstCol));
+    return TCL_OK;
+}	    
+
+static int
+CopyColumn(Tcl_Interp *interp, BLT_TABLE src, BLT_TABLE dst,
+    BLT_TABLE_COLUMN c1,		/* Column in the source table. */
+    BLT_TABLE_COLUMN c2)		/* Column in the destination table. */
+{
+    long i, srcNumRows, dstNumRows;
+
+    if ((blt_table_same_object(src, dst)) && (c1 == c2)) {
+	return TCL_OK;			/* Source and destination columns are
+					 * the same column in the same
+					 * table. */
+    }
+    srcNumRows = blt_table_num_rows(src);
+    dstNumRows = blt_table_num_rows(dst);
+    if (srcNumRows >  dstNumRows) {
+	long need;
+
+	need = (srcNumRows - dstNumRows);
+	if (blt_table_extend_rows(interp, dst, need, NULL) != TCL_OK) {
+	    return TCL_ERROR;
+	}
+    }
+    blt_table_set_column_type(dst, c2, blt_table_column_type(c1));
+    for (i = 0; i < srcNumRows; i++) {
+	BLT_TABLE_ROW r1, r2;
+	BLT_TABLE_VALUE value;
+
+	r1 = blt_table_row(src, i);
+	value = blt_table_get_value(src, r1, c1);
+	if (value == NULL) {
+	    continue;
+	}
+	r2 = blt_table_row(dst, i);
+	if (blt_table_set_value(dst, r2, c2, value) != TCL_OK) {
+	    return TCL_ERROR;
+	}
+    }
+    for (i = srcNumRows; i < dstNumRows; i++) {
+	BLT_TABLE_ROW r2;
+
+	r2 = blt_table_row(dst, i);
+	blt_table_unset_value(dst, r2, c2);
     }
     return TCL_OK;
 }	    
 
 static void
-CopyColumnTags(BLT_TABLE srcTable, BLT_TABLE destTable,
-	       BLT_TABLE_COLUMN src,	/* Column in the source table. */
-	       BLT_TABLE_COLUMN dest)	/* Column in the destination table. */
+CopyColumnTags(BLT_TABLE src, BLT_TABLE dst,
+    BLT_TABLE_COLUMN c1,	/* Column in the source table. */
+    BLT_TABLE_COLUMN c2)	/* Column in the dstination table. */
 {
     Blt_HashEntry *hPtr;
     Blt_HashSearch iter;
 
     /* Find all tags for with this column index. */
-    for (hPtr = blt_table_first_column_tag(srcTable, &iter); hPtr != NULL; 
+    for (hPtr = blt_table_first_column_tag(src, &iter); hPtr != NULL; 
 	 hPtr = Blt_NextHashEntry(&iter)) {
 	Blt_HashTable *tablePtr;
 	Blt_HashEntry *h2Ptr;
 	
 	tablePtr = Blt_GetHashValue(hPtr);
-	h2Ptr = Blt_FindHashEntry(tablePtr, (char *)src);
+	h2Ptr = Blt_FindHashEntry(tablePtr, (char *)c1);
 	if (h2Ptr != NULL) {
 	    /* We know the tag tables are keyed by strings, so we don't need
 	     * to call Blt_GetHashKey or use the hash table pointer to
 	     * retrieve the key. */
-	    blt_table_set_column_tag(NULL, destTable, dest, hPtr->key.string);
+	    blt_table_set_column_tag(NULL, dst, c2, hPtr->key.string);
 	}
     }
 }	    
@@ -1889,48 +1934,48 @@ ClearTable(BLT_TABLE table)
 }
 
 static int
-CopyColumnLabel(Tcl_Interp *interp, BLT_TABLE srcTable, BLT_TABLE destTable,
-		BLT_TABLE_COLUMN src, BLT_TABLE_COLUMN dest) 
+CopyColumnLabel(Tcl_Interp *interp, BLT_TABLE src, BLT_TABLE dst,
+		BLT_TABLE_COLUMN c1, BLT_TABLE_COLUMN c2) 
 {
     const char *label;
 
-    label = blt_table_column_label(src);
-    if (blt_table_set_column_label(interp, destTable, dest, label) != TCL_OK) {
+    label = blt_table_column_label(c1);
+    if (blt_table_set_column_label(interp, dst, c2, label) != TCL_OK) {
 	return TCL_ERROR;
     }
     return TCL_OK;
 }
 
 static int
-CopyTable(Tcl_Interp *interp, BLT_TABLE srcTable, BLT_TABLE destTable) 
+CopyTable(Tcl_Interp *interp, BLT_TABLE src, BLT_TABLE dst) 
 {
     long i;
     long count;
-    if (blt_table_same_object(srcTable, destTable)) {
+    if (blt_table_same_object(src, dst)) {
 	return TCL_OK;			/* Source and destination are the
-					 * same. */
+					 * same table. */
     }
-    ClearTable(destTable);
-    count = blt_table_num_columns(srcTable) - blt_table_num_columns(destTable);
+    ClearTable(dst);
+    count = blt_table_num_columns(src) - blt_table_num_columns(dst);
     if (count > 0) {
-	blt_table_extend_columns(interp, destTable, count, NULL);
+	blt_table_extend_columns(interp, dst, count, NULL);
     }
-    count = blt_table_num_rows(srcTable) - blt_table_num_rows(destTable);
+    count = blt_table_num_rows(src) - blt_table_num_rows(dst);
     if (count > 0) {
-	blt_table_extend_rows(interp, destTable, count, NULL);
+	blt_table_extend_rows(interp, dst, count, NULL);
     }
-    for (i = 0; i < blt_table_num_columns(srcTable); i++) {
-	BLT_TABLE_COLUMN src, dest;
+    for (i = 0; i < blt_table_num_columns(src); i++) {
+	BLT_TABLE_COLUMN c1, c2;
 
-	src = blt_table_column(srcTable, i);
-	dest = blt_table_column(destTable, i);
-	if (CopyColumn(interp, srcTable, destTable, src, dest) != TCL_OK) {
+	c1 = blt_table_column(src, i);
+	c2 = blt_table_column(dst, i);
+	if (CopyColumn(interp, src, dst, c1, c2) != TCL_OK) {
 	    return TCL_ERROR;
 	}
-	if (CopyColumnLabel(interp, srcTable, destTable, src, dest) != TCL_OK) {
+	if (CopyColumnLabel(interp, src, dst, c1, c2) != TCL_OK) {
 	    return TCL_ERROR;
 	}
-	CopyColumnTags(srcTable, destTable, src, dest);
+	CopyColumnTags(src, dst, c1, c2);
     }
     return TCL_OK;
 }
@@ -1952,17 +1997,20 @@ CopyTable(Tcl_Interp *interp, BLT_TABLE srcTable, BLT_TABLE destTable)
  *	result.
  *
  * Example:
- *	$dest column copy $srccol $destcol ?-table srcTable?
+ *	$dst column copy $srccol $dstcol ?-table srcTable?
+ *
+ *	-append    yes 
+ *	-new	   yes
  *
  *---------------------------------------------------------------------------
  */
 static int
 ColumnCopyOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 {
+    BLT_TABLE src, dst;
+    BLT_TABLE_COLUMN c1, c2;
     CopySwitches switches;
-    BLT_TABLE srcTable, destTable;
     int result;
-    BLT_TABLE_COLUMN src, dest;
 
     /* Process switches following the column names. */
     memset(&switches, 0, sizeof(switches));
@@ -1971,27 +2019,35 @@ ColumnCopyOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	BLT_SWITCH_DEFAULTS) < 0) {
 	goto error;
     }
-    srcTable = destTable = cmdPtr->table;
+    src = dst = cmdPtr->table;
     if (switches.table != NULL) {
-	srcTable = switches.table;
+	src = switches.table;
     }
-    src = blt_table_get_column(interp, srcTable, objv[3]);
-    if (src == NULL) {
+    c1 = blt_table_get_column(interp, src, objv[3]);
+    if (c1 == NULL) {
 	goto error;
     }
-    dest = blt_table_get_column(interp, destTable, objv[4]);
-    if (dest == NULL) {
-	dest = blt_table_create_column(interp, destTable, 
-		Tcl_GetString(objv[4]));
-	if (dest == NULL) {
+    c2 = NULL;
+    if ((switches.flags & COPY_NEW) == 0) {
+	c2 = blt_table_get_column(interp, dst, objv[4]);
+    }
+    if (c2 == NULL) {
+	c2 = blt_table_create_column(interp, dst, Tcl_GetString(objv[4]));
+	if (c2 == NULL) {
 	    goto error;
 	}
     }
-    if (CopyColumn(interp, srcTable, destTable, src, dest) != TCL_OK) {
-	goto error;
+    if (switches.flags & COPY_APPEND) {
+	if (AppendColumn(interp, src, dst, c1, c2) != TCL_OK) {
+	    goto error;
+	}
+    } else {
+	if (CopyColumn(interp, src, dst, c1, c2) != TCL_OK) {
+	    goto error;
+	}
     }
     if ((switches.flags & COPY_NOTAGS) == 0) {
-	CopyColumnTags(srcTable, destTable, src, dest);
+	CopyColumnTags(src, dst, c1, c2);
     }
     result = TCL_OK;
  error:
@@ -2163,7 +2219,7 @@ ColumnDeleteOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *	result.
  *
  * Example:
- *	$dest column dup column... 
+ *	$dst column dup column... 
  *
  *---------------------------------------------------------------------------
  */

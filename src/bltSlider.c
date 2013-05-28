@@ -171,8 +171,8 @@ typedef struct {
 /*
  * TickLabel --
  *
- * 	Structure containing the X-Y screen coordinates of the tick
- * 	label (anchored at its center).
+ * 	Structure containing the X-Y screen coordinates of the tick label
+ * 	(anchored at its center).
  */
 typedef struct {
     short int x, y;
@@ -327,7 +327,7 @@ typedef struct {
 					 * be set by the user or generated
 					 * from the minor sweep below. */
 
-    TickSweep minorSweep, majorSweep;
+    TickSweep minor, major;
 
     int reqNumMajorTicks;		/* Default number of ticks to be
 					 * displayed. */
@@ -1582,11 +1582,11 @@ LogAxis(Slider *sliderPtr, double min, double max)
 	numMajor++;
 	tickMax = max;
     }
-    sliderPtr->majorSweep.step = majorStep;
-    sliderPtr->majorSweep.initial = floor(tickMin);
-    sliderPtr->majorSweep.numSteps = numMajor;
-    sliderPtr->minorSweep.initial = sliderPtr->minorSweep.step = minorStep;
-    sliderPtr->minorSweep.numSteps = numMinor;
+    sliderPtr->major.step = majorStep;
+    sliderPtr->major.initial = floor(tickMin);
+    sliderPtr->major.numSteps = numMajor;
+    sliderPtr->minor.initial = sliderPtr->minor.step = minorStep;
+    sliderPtr->minor.numSteps = numMinor;
     SetSliderRange(&sliderPtr->outerRange, tickMin, tickMax);
 }
 
@@ -1686,9 +1686,9 @@ LinearAxis(Slider *sliderPtr, double min, double max)
 	
 	numTicks = Round((tickMax - tickMin) / step) + 1;
     } 
-    sliderPtr->majorSweep.step = step;
-    sliderPtr->majorSweep.initial = tickMin;
-    sliderPtr->majorSweep.numSteps = numTicks;
+    sliderPtr->major.step = step;
+    sliderPtr->major.initial = tickMin;
+    sliderPtr->major.numSteps = numTicks;
 
     axisMin = min;
     axisMax = max;
@@ -1706,8 +1706,8 @@ LinearAxis(Slider *sliderPtr, double min, double max)
 					 * routine * create minor log-scale
 					 * tick marks.  */
     }
-    sliderPtr->minorSweep.initial = sliderPtr->minorSweep.step = step;
-    sliderPtr->minorSweep.numSteps = numTicks;
+    sliderPtr->minor.initial = sliderPtr->minor.step = step;
+    sliderPtr->minor.numSteps = numTicks;
 }
 
 static void
@@ -1717,13 +1717,13 @@ SweepTicks(Slider *sliderPtr)
 	if (sliderPtr->t1Ptr != NULL) {
 	    Blt_Free(sliderPtr->t1Ptr);
 	}
-	sliderPtr->t1Ptr = GenerateTicks(&sliderPtr->majorSweep);
+	sliderPtr->t1Ptr = GenerateTicks(&sliderPtr->major);
     }
     if (sliderPtr->flags & AUTO_MINOR) {
 	if (sliderPtr->t2Ptr != NULL) {
 	    Blt_Free(sliderPtr->t2Ptr);
 	}
-	sliderPtr->t2Ptr = GenerateTicks(&sliderPtr->minorSweep);
+	sliderPtr->t2Ptr = GenerateTicks(&sliderPtr->minor);
     }
 }
 
@@ -2259,7 +2259,7 @@ MakeSegments(Slider *sliderPtr, AxisInfo *infoPtr)
 	    t1 = sliderPtr->t1Ptr->values[i];
 	    /* Minor ticks */
 	    for (j = 0; j < numMinorTicks; j++) {
-		t2 = t1 + (sliderPtr->majorSweep.step * 
+		t2 = t1 + (sliderPtr->major.step * 
 			   sliderPtr->t2Ptr->values[j]);
 		if (InRange(t2, &sliderPtr->outerRange)) {
 		    MakeTick(sliderPtr, t2, infoPtr->t2, infoPtr->axis, s);
@@ -2283,7 +2283,7 @@ MakeSegments(Slider *sliderPtr, AxisInfo *infoPtr)
 
 	    t1 = sliderPtr->t1Ptr->values[i];
 	    if (sliderPtr->labelOffset) {
-		t1 += sliderPtr->majorSweep.step * 0.5;
+		t1 += sliderPtr->major.step * 0.5;
 	    }
 	    if (!InRange(t1, &sliderPtr->outerRange)) {
 		continue;
@@ -2939,11 +2939,11 @@ MapGridlines(Axis *sliderPtr)
     }
     t1Ptr = sliderPtr->t1Ptr;
     if (t1Ptr == NULL) {
-	t1Ptr = GenerateTicks(&sliderPtr->majorSweep);
+	t1Ptr = GenerateTicks(&sliderPtr->major);
     }
     t2Ptr = sliderPtr->t2Ptr;
     if (t2Ptr == NULL) {
-	t2Ptr = GenerateTicks(&sliderPtr->minorSweep);
+	t2Ptr = GenerateTicks(&sliderPtr->minor);
     }
     needed = t1Ptr->numTicks;
     if (sliderPtr->flags & GRIDMINOR) {
@@ -2979,7 +2979,7 @@ MapGridlines(Axis *sliderPtr)
 	    for (j = 0; j < t2Ptr->numTicks; j++) {
 		double subValue;
 
-		subValue = value + (sliderPtr->majorSweep.step * 
+		subValue = value + (sliderPtr->major.step * 
 				    t2Ptr->values[j]);
 		if (InRange(subValue, &sliderPtr->axisRange)) {
 		    MakeGridLine(sliderPtr, subValue, s2);
@@ -3040,15 +3040,14 @@ GetAxisGeometry(Slider *sliderPtr)
     y = sliderPtr->lineWidth + 2;
 
     sliderPtr->leftTickLabelHeight = sliderPtr->rightTickLabelWidth = 0;
+    sliderPtr->axisWidth = sliderPtr->axisHeight = 0;
     if (sliderPtr->flags & SHOWTICKS) {
 	unsigned int pad;
 	unsigned int i, numLabels, numTicks;
 
 	SweepTicks(sliderPtr);
-	numTicks = 0;
-	if (sliderPtr->t1Ptr != NULL) {
-	    numTicks = sliderPtr->t1Ptr->numTicks;
-	}
+
+	numTicks = (sliderPtr->t1Ptr == NULL) ? 0 : sliderPtr->t1Ptr->numTicks;
 	assert(numTicks <= MAXTICKS);
 
 	numLabels = 0;
@@ -3059,7 +3058,7 @@ GetAxisGeometry(Slider *sliderPtr)
 
 	    x2 = x = sliderPtr->t1Ptr->values[i];
 	    if (sliderPtr->labelOffset) {
-		x2 += sliderPtr->majorSweep.step * 0.5;
+		x2 += sliderPtr->major.step * 0.5;
 	    }
 	    if (!InRange(x2, &sliderPtr->axisRange)) {
 		continue;
@@ -3067,6 +3066,7 @@ GetAxisGeometry(Slider *sliderPtr)
 	    labelPtr = MakeLabel(sliderPtr, x);
 	    Blt_Chain_Append(sliderPtr->tickLabels, labelPtr);
 	    numLabels++;
+
 	    /* 
 	     * Get the dimensions of each tick label.  Remember tick labels
 	     * can be multi-lined and/or rotated.
@@ -3116,9 +3116,9 @@ GetAxisGeometry(Slider *sliderPtr)
 
     /* Correct for orientation of the axis. */
     if (sliderPtr->flags & HORIZONTAL) {
-	sliderPtr->height = y;
+	sliderPtr->axisHeight = y;
     } else {
-	sliderPtr->width = y;
+	sliderPtr->axisWidth = y;
     }
 }
 
@@ -3166,12 +3166,9 @@ GetValueExtents(Slider *sliderPtr, const char *string, int *widthPtr,
 static int
 ComputeGeometry(Slider *sliderPtr)
 {
-    int flags;
-
     sliderPtr->flags &= ~GEOMETRY;
     sliderPtr->inset = sliderPtr->borderWidth + sliderPtr->highlightWidth;
-    flags = (SHOW_TICKS | AXIS_GEOMETRY);
-    if ((sliderPtr->flags & flags) == flags) {
+    if (sliderPtr->flags & AXIS_GEOMETRY) {
 	GetAxisGeometry(sliderPtr);
     }
     if (sliderPtr->flags & SHOW_VALUES) {
@@ -4970,9 +4967,9 @@ TimeAxis(Axis *sliderPtr, double min, double max)
 	
 	numTicks = Round((tickMax - tickMin) / step) + 1;
     } 
-    sliderPtr->majorSweep.step = step;
-    sliderPtr->majorSweep.initial = tickMin;
-    sliderPtr->majorSweep.numSteps = numTicks;
+    sliderPtr->major.step = step;
+    sliderPtr->major.initial = tickMin;
+    sliderPtr->major.numSteps = numTicks;
 
     /*
      * The limits of the axis are either the range of the data ("tight") or at
@@ -5004,8 +5001,8 @@ TimeAxis(Axis *sliderPtr, double min, double max)
 					 * routine * create minor log-scale tick
 					 * marks.  */
     }
-    sliderPtr->minorSweep.initial = sliderPtr->minorSweep.step = step;
-    sliderPtr->minorSweep.numSteps = numTicks;
+    sliderPtr->minor.initial = sliderPtr->minor.step = step;
+    sliderPtr->minor.numSteps = numTicks;
 #endif
 }
 

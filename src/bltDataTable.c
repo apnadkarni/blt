@@ -764,21 +764,21 @@ SetValueFromString(Tcl_Interp *interp, BLT_TABLE_COLUMN_TYPE type,
     default:
 	break;
     }
-    Tcl_GetStringFromObj(objPtr, &length);
-    Tcl_DecrRefCount(objPtr);
+    s = Tcl_GetStringFromObj(objPtr, &length);
     ResetValue(valuePtr);
     if (length >= BLT_TABLE_VALUE_LENGTH) {
-	char *string;
+	char *copy;
 
-	string = Blt_AssertMalloc(length + 1);
-	strncpy(string, s, length);
-	string[length] = '\0';
-	valuePtr->string = string;
+	copy = Blt_AssertMalloc(length + 1);
+	strncpy(copy, s, length);
+	copy[length] = '\0';
+	valuePtr->string = copy;
     } else {
 	strncpy(valuePtr->staticSpace, s, length);
 	valuePtr->staticSpace[length] = '\0';
 	valuePtr->string = BLT_TABLE_VALUE_STATIC;
     }
+    Tcl_DecrRefCount(objPtr);
     return TCL_OK;
 }
 

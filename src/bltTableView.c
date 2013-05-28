@@ -861,12 +861,28 @@ CompareValues(Column *colPtr, const Row *r1Ptr, const Row *r2Ptr)
     double d1, d2;
     int result;
     int sortType;
+    BLT_TABLE_COLUMN col;
+    BLT_TABLE_ROW r1, r2;
 
     viewPtr = colPtr->viewPtr;
+    col = colPtr->column;
+    r1 = r1Ptr->row;
+    r2 = r2Ptr->row;
+
+    /* Check for empty values. */
+    if (!blt_table_value_exists(viewPtr->table, r1, col)) {
+	if (!blt_table_value_exists(viewPtr->table, r2, col)) {
+	    return 0;
+	}
+	return 1;
+    } else if (!blt_table_value_exists(viewPtr->table, r2, col)) {
+	return -1;
+    }
+
     result = 0;
     sortType = colPtr->sortType;
     if (sortType == SORT_AUTO) {
-	switch (blt_table_column_type(colPtr->column)) {
+	switch (blt_table_column_type(col)) {
 	case TABLE_COLUMN_TYPE_STRING:
 	    sortType = SORT_ASCII;	break;
 	case TABLE_COLUMN_TYPE_INT:
@@ -879,23 +895,23 @@ CompareValues(Column *colPtr, const Row *r1Ptr, const Row *r2Ptr)
     }
     switch (sortType) {
     case SORT_ASCII:
-	s1 = blt_table_get_string(viewPtr->table, r1Ptr->row, colPtr->column);
-	s2 = blt_table_get_string(viewPtr->table, r2Ptr->row, colPtr->column);
+	s1 = blt_table_get_string(viewPtr->table, r1, col);
+	s2 = blt_table_get_string(viewPtr->table, r2, col);
 	result = strcmp(s1, s2);
 	break;
     case SORT_DICTIONARY:
-	s1 = blt_table_get_string(viewPtr->table, r1Ptr->row, colPtr->column);
-	s2 = blt_table_get_string(viewPtr->table, r2Ptr->row, colPtr->column);
+	s1 = blt_table_get_string(viewPtr->table, r1, col);
+	s2 = blt_table_get_string(viewPtr->table, r2, col);
 	result = Blt_DictionaryCompare(s1, s2);
 	break;
     case SORT_INTEGER:
-	l1 = blt_table_get_long(viewPtr->table, r1Ptr->row, colPtr->column, 0);
-	l2 = blt_table_get_long(viewPtr->table, r2Ptr->row, colPtr->column, 0);
+	l1 = blt_table_get_long(viewPtr->table, r1, col, 0);
+	l2 = blt_table_get_long(viewPtr->table, r2, col, 0);
 	result = l1 - l2;
 	break;
     case SORT_REAL:
-	d1 = blt_table_get_double(viewPtr->table, r1Ptr->row, colPtr->column);
-	d2 = blt_table_get_double(viewPtr->table, r2Ptr->row, colPtr->column);
+	d1 = blt_table_get_double(viewPtr->table, r1, col);
+	d2 = blt_table_get_double(viewPtr->table, r2, col);
 	result = (d1 > d2) ? 1 : (d1 < d2) ? -1 : 0;
 	break;
     }
@@ -2276,9 +2292,10 @@ FreeUidProc(ClientData clientData, Display *display, char *widgRec, int offset)
  * Results:
  *	Returns TCL_OK.
  *
+ *	Why bother tracing rows?  Just trace columns.
+ *
  *---------------------------------------------------------------------------
  */
-/*ARGSUSED*/
 /*ARGSUSED*/
 static int
 RowTraceProc(ClientData clientData, BLT_TABLE_TRACE_EVENT *eventPtr)
@@ -2480,7 +2497,9 @@ NewRow(TableView *viewPtr, BLT_TABLE_ROW row, Blt_HashEntry *hPtr)
     rowPtr->titleJustify = TK_JUSTIFY_RIGHT;
     rowPtr->titleRelief = rowPtr->activeTitleRelief = TK_RELIEF_RAISED;
     flags = TABLE_TRACE_FOREIGN_ONLY | TABLE_TRACE_WRITES | TABLE_TRACE_UNSETS;
+#ifdef notdef
     blt_table_trace_row(viewPtr->table, row, flags, RowTraceProc, NULL, rowPtr);
+#endif
     rowPtr->hashPtr = hPtr;
     Blt_SetHashValue(hPtr, rowPtr);
     return rowPtr;
@@ -11300,7 +11319,7 @@ TableViewCmdProc(
     if (ConfigureTableView(interp, viewPtr) != TCL_OK) {
 	goto error;
     }
-    ConfigureTableView(interp, viewPtr);
+    /*ConfigureTableView(interp, viewPtr);*/
 
     stylePtr = Blt_TableView_CreateCellStyle(interp, viewPtr, STYLE_TEXTBOX, 
 	"default");
