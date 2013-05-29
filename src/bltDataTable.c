@@ -4012,8 +4012,15 @@ blt_table_trace_row(
     ClientData clientData)		/* One-word of data passed along when
 					 * the callback is executed. */
 {
-    blt_table_create_trace(tablePtr, rowPtr, NULL, NULL, NULL, flags,
-	proc, deleteProc, clientData);
+    blt_table_create_trace(tablePtr, 
+	rowPtr, 			/* Row */
+	(BLT_TABLE_COLUMN)NULL, 	/* Column */
+	(const char *)NULL, 		/* Row tag. */
+	(const char *)NULL, 		/* Column tag. */
+	flags,				/* Flags. */
+	proc, 				/* Callback procedure. */
+	deleteProc, 			/* Delete callback procedure. */
+	clientData);			/* Data passed to callbacks. */
 }
 
 BLT_TABLE_TRACE
@@ -4028,8 +4035,15 @@ blt_table_create_row_trace(
     ClientData clientData)		/* One-word of data passed along when
 					 * the callback is executed. */
 {
-    return blt_table_create_trace(tablePtr, rowPtr, NULL, NULL, NULL, flags,
-		proc, deleteProc, clientData);
+    return blt_table_create_trace(tablePtr, 
+	rowPtr, 
+	(Column *)NULL, 
+	(const char *)NULL, 
+	(const char *)NULL, 
+	flags,
+	proc, 
+	deleteProc, 
+	clientData);
 }
 
 BLT_TABLE_TRACE

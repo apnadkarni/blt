@@ -10920,6 +10920,7 @@ static int
 AttachTable(Tcl_Interp *interp, TableView *viewPtr)
 {
     long i;
+    unsigned int flags;
 
     /* Try to match the current rows and columns in the view with the
      * new table names. */
@@ -11001,6 +11002,11 @@ AttachTable(Tcl_Interp *interp, TableView *viewPtr)
 	    Blt_SetHashValue(hPtr, cellPtr);
 	}
     }
+    flags = TABLE_TRACE_FOREIGN_ONLY | TABLE_TRACE_WRITES | TABLE_TRACE_UNSETS;
+    blt_table_trace_row(viewPtr->table, TABLE_TRACE_ALL_ROWS, flags, 
+	RowTraceProc, NULL, viewPtr);
+    blt_table_trace_column(viewPtr->table, TABLE_TRACE_ALL_COLUMNS, flags, 
+	ColumnTraceProc, NULL, viewPtr);
     return TCL_OK;
 }
 
@@ -11178,7 +11184,6 @@ static TableView *
 NewTableView(Tcl_Interp *interp, Tk_Window tkwin)
 {
     TableView *viewPtr;
-    unsigned int flags;
 
     Tk_SetClass(tkwin, "BltTableView");
     viewPtr = Blt_AssertCalloc(1, sizeof(TableView));
@@ -11217,12 +11222,6 @@ NewTableView(Tcl_Interp *interp, Tk_Window tkwin)
     viewPtr->cellPool   = Blt_Pool_Create(BLT_FIXED_SIZE_ITEMS);
     viewPtr->cmdToken = Tcl_CreateObjCommand(interp, Tk_PathName(tkwin), 
 	TableViewInstObjCmdProc, viewPtr, TableViewInstCmdDeleteProc);
-
-    flags = TABLE_TRACE_FOREIGN_ONLY | TABLE_TRACE_WRITES | TABLE_TRACE_UNSETS;
-    blt_table_trace_row(viewPtr->table, NULL, flags, RowTraceProc, NULL, 
-	viewPtr);
-    blt_table_trace_column(viewPtr->table, NULL, flags, ColumnTraceProc, NULL, 
-	viewPtr);
 
     Blt_SetWindowInstanceData(tkwin, viewPtr);
     Tk_CreateSelHandler(tkwin, XA_PRIMARY, XA_STRING, SelectionProc,
