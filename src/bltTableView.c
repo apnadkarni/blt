@@ -2284,6 +2284,31 @@ FreeUidProc(ClientData clientData, Display *display, char *widgRec, int offset)
     }
 }
 
+static Row *
+GetRowContainer(TableView *viewPtr, BLT_TABLE_ROW row)
+{
+    Blt_HashEntry *hPtr;
+
+    hPtr = Blt_FindHashEntry(&viewPtr->rowTable, (char *)row);
+    if (hPtr == NULL) {
+	return NULL;
+    }
+    return Blt_GetHashValue(hPtr);
+}
+
+
+static Column *
+GetColumnContainer(TableView *viewPtr, BLT_TABLE_COLUMN col)
+{
+    Blt_HashEntry *hPtr;
+
+    hPtr = Blt_FindHashEntry(&viewPtr->columnTable, (char *)col);
+    if (hPtr == NULL) {
+	return NULL;
+    }
+    return Blt_GetHashValue(hPtr);
+}
+
 /*
  *---------------------------------------------------------------------------
  *
@@ -2292,26 +2317,23 @@ FreeUidProc(ClientData clientData, Display *display, char *widgRec, int offset)
  * Results:
  *	Returns TCL_OK.
  *
- *	Why bother tracing rows?  Just trace columns.
- *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
 RowTraceProc(ClientData clientData, BLT_TABLE_TRACE_EVENT *eventPtr)
 {
-    Row *rowPtr = clientData; 
-    TableView *viewPtr;
+    TableView *viewPtr = clientData; 
 
-    viewPtr = rowPtr->viewPtr;
     if (eventPtr->mask & (TABLE_TRACE_WRITES | TABLE_TRACE_UNSETS)) {
+	Row *rowPtr;
 
 #ifdef notdef
 	if (eventPtr->mask & TABLE_TRACE_CREATES) {
 	    return TCL_OK;
 	}
 #endif
-	viewPtr = rowPtr->viewPtr;
+	rowPtr = GetRowContainer(viewPtr, eventPtr->row);
 	rowPtr->flags |= GEOMETRY | REDRAW;
 	viewPtr->flags |= GEOMETRY | LAYOUT_PENDING;
 	PossiblyRedraw(viewPtr);
@@ -2333,18 +2355,18 @@ RowTraceProc(ClientData clientData, BLT_TABLE_TRACE_EVENT *eventPtr)
 static int
 ColumnTraceProc(ClientData clientData, BLT_TABLE_TRACE_EVENT *eventPtr)
 {
-    Column *colPtr = clientData; 
-    
+    TableView *viewPtr = clientData; 
+
     if (eventPtr->mask & (TABLE_TRACE_WRITES | TABLE_TRACE_UNSETS)) {
-	TableView *viewPtr;
+	Column *colPtr;
 
 #ifdef notdef
 	if (eventPtr->mask & TABLE_TRACE_CREATES) {
 	    return TCL_OK;
 	}
 #endif
-	viewPtr = colPtr->viewPtr;
-        colPtr->flags |= GEOMETRY | REDRAW;
+	colPtr = GetColumnContainer(viewPtr, eventPtr->column);
+	colPtr->flags |= GEOMETRY | REDRAW;
 	viewPtr->flags |= GEOMETRY | LAYOUT_PENDING;
 	PossiblyRedraw(viewPtr);
     }
@@ -2483,7 +2505,6 @@ static Row *
 NewRow(TableView *viewPtr, BLT_TABLE_ROW row, Blt_HashEntry *hPtr)
 {
     Row *rowPtr;
-    unsigned int flags;
 
     rowPtr = Blt_Pool_AllocItem(viewPtr->rowPool, sizeof(Row));
     memset(rowPtr, 0, sizeof(Row));
@@ -2496,10 +2517,6 @@ NewRow(TableView *viewPtr, BLT_TABLE_ROW row, Blt_HashEntry *hPtr)
     rowPtr->max = SHRT_MAX;
     rowPtr->titleJustify = TK_JUSTIFY_RIGHT;
     rowPtr->titleRelief = rowPtr->activeTitleRelief = TK_RELIEF_RAISED;
-    flags = TABLE_TRACE_FOREIGN_ONLY | TABLE_TRACE_WRITES | TABLE_TRACE_UNSETS;
-#ifdef notdef
-    blt_table_trace_row(viewPtr->table, row, flags, RowTraceProc, NULL, rowPtr);
-#endif
     rowPtr->hashPtr = hPtr;
     Blt_SetHashValue(hPtr, rowPtr);
     return rowPtr;
@@ -2558,7 +2575,6 @@ static Column *
 NewColumn(TableView *viewPtr, BLT_TABLE_COLUMN col, Blt_HashEntry *hPtr)
 {
     Column *colPtr;
-    unsigned int flags;
 
     colPtr = Blt_Pool_AllocItem(viewPtr->columnPool, sizeof(Column));
     memset(colPtr, 0, sizeof(Column));
@@ -2571,9 +2587,6 @@ NewColumn(TableView *viewPtr, BLT_TABLE_COLUMN col, Blt_HashEntry *hPtr)
     colPtr->max = SHRT_MAX;
     colPtr->titleJustify = TK_JUSTIFY_CENTER;
     colPtr->titleRelief = colPtr->activeTitleRelief = TK_RELIEF_RAISED;
-    flags = TABLE_TRACE_FOREIGN_ONLY | TABLE_TRACE_WRITES | TABLE_TRACE_UNSETS;
-    blt_table_trace_column(viewPtr->table, col, flags, ColumnTraceProc, NULL, 
-	colPtr);
     colPtr->hashPtr = hPtr;
     Blt_SetHashValue(hPtr, colPtr);
     return colPtr;
@@ -3057,30 +3070,6 @@ GetRow(Tcl_Interp *interp, TableView *viewPtr, Tcl_Obj *objPtr, Row **rowPtrPtr)
     return TCL_OK;
 }
 
-static Row *
-GetRowContainer(TableView *viewPtr, BLT_TABLE_ROW row)
-{
-    Blt_HashEntry *hPtr;
-
-    hPtr = Blt_FindHashEntry(&viewPtr->rowTable, (char *)row);
-    if (hPtr == NULL) {
-	return NULL;
-    }
-    return Blt_GetHashValue(hPtr);
-}
-
-
-static Column *
-GetColumnContainer(TableView *viewPtr, BLT_TABLE_COLUMN col)
-{
-    Blt_HashEntry *hPtr;
-
-    hPtr = Blt_FindHashEntry(&viewPtr->columnTable, (char *)col);
-    if (hPtr == NULL) {
-	return NULL;
-    }
-    return Blt_GetHashValue(hPtr);
-}
 
 static int
 GetRows(Tcl_Interp *interp, TableView *viewPtr, Tcl_Obj *objPtr, 
@@ -11189,6 +11178,7 @@ static TableView *
 NewTableView(Tcl_Interp *interp, Tk_Window tkwin)
 {
     TableView *viewPtr;
+    unsigned int flags;
 
     Tk_SetClass(tkwin, "BltTableView");
     viewPtr = Blt_AssertCalloc(1, sizeof(TableView));
@@ -11227,6 +11217,13 @@ NewTableView(Tcl_Interp *interp, Tk_Window tkwin)
     viewPtr->cellPool   = Blt_Pool_Create(BLT_FIXED_SIZE_ITEMS);
     viewPtr->cmdToken = Tcl_CreateObjCommand(interp, Tk_PathName(tkwin), 
 	TableViewInstObjCmdProc, viewPtr, TableViewInstCmdDeleteProc);
+
+    flags = TABLE_TRACE_FOREIGN_ONLY | TABLE_TRACE_WRITES | TABLE_TRACE_UNSETS;
+    blt_table_trace_row(viewPtr->table, NULL, flags, RowTraceProc, NULL, 
+	viewPtr);
+    blt_table_trace_column(viewPtr->table, NULL, flags, ColumnTraceProc, NULL, 
+	viewPtr);
+
     Blt_SetWindowInstanceData(tkwin, viewPtr);
     Tk_CreateSelHandler(tkwin, XA_PRIMARY, XA_STRING, SelectionProc,
 	viewPtr, XA_STRING);
