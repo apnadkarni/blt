@@ -4526,6 +4526,7 @@ PathCreateOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc,
     /* Process switches  */
     memset(&switches, 0, sizeof(switches));
     switches.root = Blt_Tree_RootNode(cmdPtr->tree);
+    switches.separator = Blt_AssertStrdup("/");
     if (Blt_ParseSwitches(interp, pathCreateSwitches, objc - 4, objv + 4, 
 			  &switches, BLT_SWITCH_DEFAULTS) < 0) {
 	return TCL_ERROR;
@@ -4618,6 +4619,7 @@ PathParseOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     nodeSwitch.clientData = cmdPtr->tree;
     memset(&switches, 0, sizeof(switches));
     switches.root = Blt_Tree_RootNode(cmdPtr->tree);
+    switches.separator = Blt_AssertStrdup("/");
     if (Blt_ParseSwitches(interp, pathParseSwitches, objc - 4, objv + 4, 
 	&switches, BLT_SWITCH_DEFAULTS) < 0) {
 	return TCL_ERROR;
@@ -4705,6 +4707,7 @@ PathPrintOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc,
     }
     /* Process switches  */
     memset(&switches, 0, sizeof(switches));
+    switches.separator = Blt_AssertStrdup("/");
     if (Blt_ParseSwitches(interp, pathPrintSwitches, objc - 4, objv + 4, 
 	&switches, BLT_SWITCH_DEFAULTS) < 0) {
 	return TCL_ERROR;

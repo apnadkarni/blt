@@ -2334,7 +2334,9 @@ RowTraceProc(ClientData clientData, BLT_TABLE_TRACE_EVENT *eventPtr)
 	}
 #endif
 	rowPtr = GetRowContainer(viewPtr, eventPtr->row);
-	rowPtr->flags |= GEOMETRY | REDRAW;
+	if (rowPtr != NULL) {
+	    rowPtr->flags |= GEOMETRY | REDRAW;
+	}
 	viewPtr->flags |= GEOMETRY | LAYOUT_PENDING;
 	PossiblyRedraw(viewPtr);
     }
@@ -2366,7 +2368,9 @@ ColumnTraceProc(ClientData clientData, BLT_TABLE_TRACE_EVENT *eventPtr)
 	}
 #endif
 	colPtr = GetColumnContainer(viewPtr, eventPtr->column);
-	colPtr->flags |= GEOMETRY | REDRAW;
+	if (colPtr != NULL) {
+	    colPtr->flags |= GEOMETRY | REDRAW;
+	}
 	viewPtr->flags |= GEOMETRY | LAYOUT_PENDING;
 	PossiblyRedraw(viewPtr);
     }
