@@ -107,48 +107,50 @@ typedef const char *UID;
 					 * to be recomputed. */
 #define REDRAW_PENDING		(1<<1)	/* A redraw request is pending for the
 					 * widget. */
-#define SCROLLX			(1<<2)	/* X-scroll request is pending. */
-#define SCROLLY			(1<<3)	/* Y-scroll request is pending. */
+#define SELECT_PENDING		(1<<2)	/* A "selection" command idle task is
+					 * pending.  */
+#define SCROLLX			(1<<3)	/* X-scroll request is pending. */
+#define SCROLLY			(1<<4)	/* Y-scroll request is pending. */
 /* Both X-scroll and  Y-scroll requests are pending. */
 #define SCROLL_PENDING	(SCROLLX | SCROLLY)
-#define FOCUS			(1<<4)	/* The widget is receiving keyboard
+#define FOCUS			(1<<5)	/* The widget is receiving keyboard
 					 * events.  Draw the focus highlight
 					 * border around the widget. */
-#define DIRTY			(1<<5)	/* The hierarchy has changed. It may
+#define DIRTY			(1<<6)	/* The hierarchy has changed. It may
 					 * invalidate the locations and
 					 * pointers to entries.  The widget
 					 * will need to recompute its
 					 * layout. */
-#define UPDATE			(1<<6)
-#define RESORT			(1<<7)	/* The tree has changed such that the
+#define UPDATE			(1<<7)
+#define RESORT			(1<<8)	/* The tree has changed such that the
 					 * view needs to be resorted.  This
 					 * can happen when an entry is open
 					 * or closed, it's label changes, a
 					 * column value changes, etc. */
-#define SORTED			(1<<8)	/* The view is currently sorted.  This
+#define SORTED			(1<<9)	/* The view is currently sorted.  This
 					 * is used to simply reverse the view
 					 * when the sort -decreasing flag is
 					 * changed. */
-#define SORT_PENDING		(1<<9)		
-#define TV_SORT_AUTO		(1<<10)
-#define REDRAW_BORDERS		(1<<11)	/* The borders of the widget
+#define SORT_PENDING		(1<<10)		
+#define TV_SORT_AUTO		(1<<11)
+#define REDRAW_BORDERS		(1<<12)	/* The borders of the widget
 					 * (highlight ring and 3-D border)
 					 * need to be redrawn. */
-#define REPOPULATE		(1<<12)	/* The tree used to populated the widget
+#define REPOPULATE		(1<<13)	/* The tree used to populated the widget
 					 * has been changed, so generate the 
 					 * associated data structures. */
-#define VIEWPORT		(1<<13)	/* Indicates that the viewport has
+#define VIEWPORT		(1<<14)	/* Indicates that the viewport has
 					 * changed in some way: the size of
 					 * the viewport, the location of the
 					 * viewport, or the contents of the 
 					 * viewport. */
-#define ALLOW_DUPLICATES	(1<<14)	/* When inserting new entries, create
+#define ALLOW_DUPLICATES	(1<<15)	/* When inserting new entries, create
 					 * duplicate entries. */
-#define FILL_ANCESTORS		(1<<15)	/* Automatically create ancestor
+#define FILL_ANCESTORS		(1<<16)	/* Automatically create ancestor
 					 * entries as needed when inserting a
 					 * new entry. */
-#define HIDE_ROOT		(1<<16)	/* Don't display the root entry. */
-#define HIDE_LEAVES		(1<<17)	/* Don't display entries that are
+#define HIDE_ROOT		(1<<17)	/* Don't display the root entry. */
+#define HIDE_LEAVES		(1<<18)	/* Don't display entries that are
 					 * leaves. */
 
 #define TV_NEW_TAGS		(1<<19)
@@ -648,8 +650,6 @@ typedef struct {
 #define SELECT_MASK   (SELECT_SET | SELECT_CLEAR) 
 
 #define SELECT_EXPORT		(1<<2)	/* Export the selection to X11. */
-#define SELECT_PENDING		(1<<3)	/* A "selection" command idle task is
-					 * pending.  */
 #define SELECT_SORTED		(1<<4)	/* Indicates if the entries in the
 					 * selection should be sorted or
 					 * displayed in the order they were
@@ -692,7 +692,7 @@ struct _TreeView {
 					 * tree we are attached to */
     Blt_HashEntry *hashPtr;
 
-    /* TreeView_ specific fields. */ 
+    /* TreeView specific fields. */ 
 
     Tk_Window tkwin;			/* Window that embodies the widget.
 					 * NULL means that the window has been

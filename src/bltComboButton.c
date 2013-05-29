@@ -49,7 +49,7 @@
 #define MENU_EVENT_MASK (ExposureMask|StructureNotifyMask)
 
 #define ARROW_WIDTH	 13
-#define ARROW_HEIGHT 13
+#define ARROW_HEIGHT	13
 
 #define STATE_NORMAL    (0)		/* Draw widget normally. */
 #define STATE_ACTIVE    (1<<0)		/* Widget is currently active. */

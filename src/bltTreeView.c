@@ -1228,7 +1228,7 @@ SelectCmdProc(ClientData clientData)
 {
     TreeView *viewPtr = clientData;
 
-    viewPtr->selection.flags &= ~SELECT_PENDING;
+    viewPtr->flags &= ~SELECT_PENDING;
     Tcl_Preserve(viewPtr);
     if (viewPtr->selection.cmdObjPtr != NULL) {
 	if (Tcl_EvalObjEx(viewPtr->interp, viewPtr->selection.cmdObjPtr, 
@@ -1259,8 +1259,8 @@ SelectCmdProc(ClientData clientData)
 static void
 EventuallyInvokeSelectCmd(TreeView *viewPtr)
 {
-    if (!(viewPtr->selection.flags & SELECT_PENDING)) {
-	viewPtr->selection.flags |= SELECT_PENDING;
+    if ((viewPtr->flags & SELECT_PENDING) == 0) {
+	viewPtr->flags |= SELECT_PENDING;
 	Tcl_DoWhenIdle(SelectCmdProc, viewPtr);
     }
 }
@@ -1268,6 +1268,7 @@ EventuallyInvokeSelectCmd(TreeView *viewPtr)
 static void
 ClearSelection(TreeView *viewPtr)
 {
+    fprintf(stderr, "ClearSelection\n");
     Blt_DeleteHashTable(&viewPtr->selection.table);
     Blt_InitHashTable(&viewPtr->selection.table, BLT_ONE_WORD_KEYS);
     Blt_Chain_Reset(viewPtr->selection.list);
@@ -1390,6 +1391,7 @@ LostSelection(ClientData clientData)
     if ((viewPtr->selection.flags & SELECT_EXPORT) == 0) {
 	return;
     }
+    fprintf(stderr, "LostSelection: ClearSelection\n");
     ClearSelection(viewPtr);
 }
 
@@ -1658,6 +1660,7 @@ FreeTreeProc(ClientData clientData, Display *display, char *widgRec, int offset)
 	 */
 	root = Blt_Tree_RootNode(*treePtr);
 	Blt_Tree_Apply(root, DeleteApplyProc, viewPtr);
+	fprintf(stderr, "FreeTreeProc: ClearSelection\n");
 	ClearSelection(viewPtr);
 	Blt_Tree_Close(*treePtr);
 	*treePtr = NULL;
@@ -5719,15 +5722,12 @@ CreateTreeView(Tcl_Interp *interp, Tcl_Obj *objPtr)
     viewPtr->interp = interp;
     viewPtr->flags = (HIDE_ROOT | SHOW_COLUMN_TITLES | DIRTY | 
 		      LAYOUT_PENDING | REPOPULATE);
-    viewPtr->leader = 0;
     viewPtr->dashes = 1;
     viewPtr->highlightWidth = 2;
     viewPtr->borderWidth = 2;
     viewPtr->relief = TK_RELIEF_SUNKEN;
     viewPtr->scrollMode = BLT_SCROLL_MODE_HIERBOX;
     viewPtr->button.closeRelief = viewPtr->button.openRelief = TK_RELIEF_SOLID;
-    viewPtr->reqWidth = 0;
-    viewPtr->reqHeight = 0;
     viewPtr->xScrollUnits = viewPtr->yScrollUnits = 20;
     viewPtr->lineWidth = 1;
     viewPtr->button.borderWidth = 1;
@@ -5739,6 +5739,7 @@ CreateTreeView(Tcl_Interp *interp, Tcl_Obj *objPtr)
     viewPtr->selection.relief = TK_RELIEF_FLAT;
     viewPtr->selection.mode = SELECT_MODE_SINGLE;
     viewPtr->selection.list = Blt_Chain_Create();
+    viewPtr->selection.flags = 0;
     Blt_InitHashTable(&viewPtr->selection.table, BLT_ONE_WORD_KEYS);
     Blt_InitHashTableWithPool(&viewPtr->entryTable, BLT_ONE_WORD_KEYS);
     Blt_InitHashTable(&viewPtr->columnTable, BLT_ONE_WORD_KEYS);
@@ -5833,6 +5834,12 @@ DestroyTreeView(DestroyData dataPtr)	/* Pointer to the widget record. */
     Button *buttonPtr;
     ColumnStyle *stylePtr;
 
+    if (viewPtr->flags & SELECT_PENDING) {
+	Tcl_CancelIdleCall(SelectCmdProc, viewPtr);
+    }
+    if (viewPtr->flags & REDRAW_PENDING) {
+	Tcl_CancelIdleCall(DisplayTreeView, viewPtr);
+    }
     TeardownEntries(viewPtr);
     if (viewPtr->tree != NULL) {
 	Blt_Tree_Close(viewPtr->tree);
@@ -5946,9 +5953,12 @@ TreeViewEventProc(ClientData clientData, XEvent *eventPtr)
 	    Tcl_DeleteCommandFromToken(viewPtr->interp, viewPtr->cmdToken);
 	}
 	if (viewPtr->flags & REDRAW_PENDING) {
+	    fprintf(stderr, "Canceling DisplayTreeView idle call\n");
 	    Tcl_CancelIdleCall(DisplayTreeView, viewPtr);
 	}
-	if (viewPtr->selection.flags & SELECT_PENDING) {
+	fprintf(stderr, "flags=%x\n", viewPtr->flags);
+	if (viewPtr->flags & SELECT_PENDING) {
+	    fprintf(stderr, "Canceling SelectCmdProc idle call\n");
 	    Tcl_CancelIdleCall(SelectCmdProc, viewPtr);
 	}
 	Tcl_EventuallyFree(viewPtr, DestroyTreeView);
@@ -6147,6 +6157,7 @@ ConfigureTreeView(Tcl_Interp *interp, TreeView *viewPtr)
     if (Blt_ConfigModified(viewSpecs, "-tree", (char *)NULL)) {
 	TeardownEntries(viewPtr);
 	Blt_InitHashTableWithPool(&viewPtr->entryTable, BLT_ONE_WORD_KEYS);
+	fprintf(stderr, "ConfigureTreeView: ClearSelection\n");
 	ClearSelection(viewPtr);
 	if (Blt_Tree_Attach(interp, viewPtr->tree, viewPtr->treeName) 
 	    != TCL_OK) {
@@ -11922,6 +11933,7 @@ SelectionClearallOp(ClientData clientData, Tcl_Interp *interp, int objc,
 {
     TreeView *viewPtr = clientData;
 
+    fprintf(stderr, "SelectionClearAll: ClearSelection\n");
     ClearSelection(viewPtr);
     return TCL_OK;
 }
