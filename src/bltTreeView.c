@@ -1268,7 +1268,6 @@ EventuallyInvokeSelectCmd(TreeView *viewPtr)
 static void
 ClearSelection(TreeView *viewPtr)
 {
-    fprintf(stderr, "ClearSelection\n");
     Blt_DeleteHashTable(&viewPtr->selection.table);
     Blt_InitHashTable(&viewPtr->selection.table, BLT_ONE_WORD_KEYS);
     Blt_Chain_Reset(viewPtr->selection.list);
@@ -1391,7 +1390,6 @@ LostSelection(ClientData clientData)
     if ((viewPtr->selection.flags & SELECT_EXPORT) == 0) {
 	return;
     }
-    fprintf(stderr, "LostSelection: ClearSelection\n");
     ClearSelection(viewPtr);
 }
 
@@ -1660,7 +1658,6 @@ FreeTreeProc(ClientData clientData, Display *display, char *widgRec, int offset)
 	 */
 	root = Blt_Tree_RootNode(*treePtr);
 	Blt_Tree_Apply(root, DeleteApplyProc, viewPtr);
-	fprintf(stderr, "FreeTreeProc: ClearSelection\n");
 	ClearSelection(viewPtr);
 	Blt_Tree_Close(*treePtr);
 	*treePtr = NULL;
@@ -4158,7 +4155,6 @@ SelectEntryApplyProc(TreeView *viewPtr, Entry *entryPtr)
 }
 
 
-
 /*
  *---------------------------------------------------------------------------
  *
@@ -4422,7 +4418,6 @@ DestroyEntry(Entry *entryPtr)
 	viewPtr->selection.markPtr = viewPtr->selection.anchorPtr = NULL;
     }
     DeselectEntry(viewPtr, entryPtr);
-    PruneSelection(viewPtr, entryPtr);
     Blt_DeleteBindings(viewPtr->bindTable, entryPtr);
     if (entryPtr->hashPtr != NULL) {
 	Blt_DeleteHashEntry(&viewPtr->entryTable, entryPtr->hashPtr);
@@ -5948,18 +5943,15 @@ TreeViewEventProc(ClientData clientData, XEvent *eventPtr)
 	    EventuallyRedraw(viewPtr);
 	}
     } else if (eventPtr->type == DestroyNotify) {
+	if (viewPtr->flags & REDRAW_PENDING) {
+	    Tcl_CancelIdleCall(DisplayTreeView, viewPtr);
+	}
+	if (viewPtr->flags & SELECT_PENDING) {
+	    Tcl_CancelIdleCall(SelectCmdProc, viewPtr);
+	}
 	if (viewPtr->tkwin != NULL) {
 	    viewPtr->tkwin = NULL;
 	    Tcl_DeleteCommandFromToken(viewPtr->interp, viewPtr->cmdToken);
-	}
-	if (viewPtr->flags & REDRAW_PENDING) {
-	    fprintf(stderr, "Canceling DisplayTreeView idle call\n");
-	    Tcl_CancelIdleCall(DisplayTreeView, viewPtr);
-	}
-	fprintf(stderr, "flags=%x\n", viewPtr->flags);
-	if (viewPtr->flags & SELECT_PENDING) {
-	    fprintf(stderr, "Canceling SelectCmdProc idle call\n");
-	    Tcl_CancelIdleCall(SelectCmdProc, viewPtr);
 	}
 	Tcl_EventuallyFree(viewPtr, DestroyTreeView);
     }
@@ -6157,7 +6149,6 @@ ConfigureTreeView(Tcl_Interp *interp, TreeView *viewPtr)
     if (Blt_ConfigModified(viewSpecs, "-tree", (char *)NULL)) {
 	TeardownEntries(viewPtr);
 	Blt_InitHashTableWithPool(&viewPtr->entryTable, BLT_ONE_WORD_KEYS);
-	fprintf(stderr, "ConfigureTreeView: ClearSelection\n");
 	ClearSelection(viewPtr);
 	if (Blt_Tree_Attach(interp, viewPtr->tree, viewPtr->treeName) 
 	    != TCL_OK) {
@@ -11933,7 +11924,6 @@ SelectionClearallOp(ClientData clientData, Tcl_Interp *interp, int objc,
 {
     TreeView *viewPtr = clientData;
 
-    fprintf(stderr, "SelectionClearAll: ClearSelection\n");
     ClearSelection(viewPtr);
     return TCL_OK;
 }
