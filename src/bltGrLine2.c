@@ -5288,7 +5288,11 @@ DrawSymbols(
     if (tracePtr->elemPtr->reqMaxSymbols > 0) {
 	tracePtr->drawFlags |= SYMBOL;
     }
-    size = tracePtr->symbolSize;
+    if (tracePtr->elemPtr->scaleSymbols) {
+	size = 	ScaleSymbol(tracePtr->elemPtr, penPtr->symbol.size);
+    } else {
+	size = penPtr->symbol.size;
+    }
     if (size < 3) {
 	if (penPtr->symbol.fillGC != NULL) {
 	    DrawPointSymbols(graphPtr, drawable, tracePtr, penPtr);
@@ -5807,7 +5811,8 @@ SymbolToPostScriptProc(
     Blt_Ps ps,
     Element *basePtr,			/* Line element information */
     double x, double y,			/* Center position of symbol */
-    int size)				/* Size of element */
+    int size)				/* Size of symbol.  May override the
+					 * size configured in the element. */
 {
     LineElement *elemPtr = (LineElement *)basePtr;
     LinePen *penPtr;
