@@ -297,8 +297,6 @@ typedef struct _Trace {
     int numPoints;			/* # of points in the trace. */
     Blt_ChainLink link;
     LinePen *penPtr;
-    int symbolSize;
-    int errorCapWidth;
     unsigned short flags;		/* Flags associated with a trace are
 					 * described blow. */
     unsigned short drawFlags;		/* Flags for individual points and 
@@ -368,7 +366,6 @@ struct _LineElement {
     ElemValues yHigh, yLow;		/* Absolute/asymmetric Y-coordinate
 					 * high/low error values. */
     LinePen builtinPen;
-    int errorCapWidth;			/* Length of cap on error bars */
 
     /* Line smoothing */
     unsigned int reqSmooth;		/* Requested smoothing function to use
@@ -777,9 +774,6 @@ static Blt_ConfigSpec penSpecs[] =
         "ErrorBarLineWidth", DEF_PEN_ERRORBAR_LINEWIDTH, 
 	Blt_Offset(LinePen, errorLineWidth), 
         ALL_PENS | BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_PIXELS_NNEG, "-errorbarcapwidth", "errorBarCapWidth", 
-	"ErrorBarCapWidth", DEF_PEN_ERRORBAR_CAPWIDTH, 
-	Blt_Offset(LinePen, errorCapWidth), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_CUSTOM, "-fill", "fill", "Fill", DEF_PEN_FILL_COLOR, 
 	Blt_Offset(LinePen, symbol.fillColor), BLT_CONFIG_NULL_OK | ALL_PENS, 
 	&bltColorOption},
@@ -3775,8 +3769,11 @@ MapErrorBars(LineElement *elemPtr)
 	link = Blt_Chain_NextLink(link)) {
 	Trace *tracePtr;
 	TracePoint *p;
+	int errorCapWidth;
 
 	tracePtr = Blt_Chain_GetValue(link);
+	errorCapWidth = (tracePtr->penPtr->errorCapWidth > 0) 
+	    ? tracePtr->penPtr->errorCapWidth : tracePtr->penPtr->symbol.size;
 	for (p = tracePtr->head; p != NULL; p = p->next) {
 	    double x, y;
 	    double xHigh, xLow, yHigh, yLow;
@@ -3788,7 +3785,7 @@ MapErrorBars(LineElement *elemPtr)
 	    }
 	    x = elemPtr->x.values[p->index];
 	    y = elemPtr->y.values[p->index];
-	    ec2 = tracePtr->errorCapWidth / 2;
+	    ec2 = errorCapWidth / 2;
 	    if (elemPtr->xHigh.numValues > p->index) {
 		xHigh = elemPtr->xHigh.values[p->index];
 	    } else if (elemPtr->xError.numValues > p->index) {
@@ -4020,9 +4017,7 @@ MapPolyline(LineElement *elemPtr, Trace *tracePtr)
 		newPtr = NewTrace(elemPtr);
 		newPtr->flags |= RECOUNT;
 		newPtr->head = newPtr->tail = q;
-		newPtr->symbolSize = tracePtr->symbolSize;
 		newPtr->penPtr = tracePtr->penPtr;
-		newPtr->errorCapWidth = tracePtr->errorCapWidth;
 		tracePtr = newPtr;
 	    }
 	} else if (q->flags & VISIBLE) {  /* First point in offscreen. */
@@ -4141,9 +4136,6 @@ MapStyles(LineElement *elemPtr)
 	} else {
 	    penPtr = NORMALPEN(elemPtr);
 	}
-	tracePtr->symbolSize = ScaleSymbol(elemPtr, penPtr->symbol.size);
-	tracePtr->errorCapWidth = (penPtr->errorCapWidth > 0) 
-	    ? penPtr->errorCapWidth : tracePtr->symbolSize;
 	tracePtr->penPtr = penPtr;
 
 	for (q = p->next; q != NULL; q = q->next) {
@@ -4173,9 +4165,6 @@ MapStyles(LineElement *elemPtr)
 		tracePtr->flags |= RECOUNT;
 		tracePtr = NewTrace(elemPtr);
 		tracePtr->penPtr = penPtr;
-		tracePtr->symbolSize = ScaleSymbol(elemPtr,penPtr->symbol.size);
-		tracePtr->errorCapWidth = (penPtr->errorCapWidth > 0) 
-		    ? penPtr->errorCapWidth : tracePtr->symbolSize;
 		AppendPoint(tracePtr, q);
 		tracePtr->flags |= RECOUNT;
 	    }
@@ -5747,15 +5736,19 @@ SymbolsToPostScript(Blt_Ps ps, Trace *tracePtr, LinePen *penPtr)
 {
     TracePoint *p;
     double size;
-    static const char *symbolMacros[] =
-    {
+    int symbolSize;
+    static const char *symbolMacros[] = {
 	"Li", "Sq", "Ci", "Di", "Pl", "Cr", "Sp", "Sc", "Tr", "Ar", "Bm", 
 	(char *)NULL,
     };
 
-    GetSymbolPostScriptInfo(ps, tracePtr->elemPtr, penPtr, 
-	    tracePtr->symbolSize);
-    size = (double)tracePtr->symbolSize;
+    if (tracePtr->elemPtr->scaleSymbols) {
+	symbolSize = ScaleSymbol(tracePtr->elemPtr, penPtr->symbol.size);
+    } else {
+	symbolSize = penPtr->symbol.size;
+    }
+    GetSymbolPostScriptInfo(ps, tracePtr->elemPtr, penPtr, symbolSize);
+    size = (double)symbolSize;
     switch (penPtr->symbol.type) {
     case SYMBOL_SQUARE:
     case SYMBOL_CROSS:
