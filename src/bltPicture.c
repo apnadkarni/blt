@@ -741,10 +741,12 @@ BlendPictures(Pict *destPtr, Pict *srcPtr, int sx, int sy, int w, int h,
     }
     if (dx < 0) {
 	w += dx;
+        sx -= dx;
 	dx = 0;
     }
     if (dy < 0) {
 	h += dy;
+	sy -= dy;
 	dy = 0;
     }
     if (destPtr->width < (dx + w)) {

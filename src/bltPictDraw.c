@@ -2919,14 +2919,11 @@ CircleOp2(
     mergePtr = shadow = fill = outline = NULL;
     if (switches.shadow.width > 0) {
 	mergePtr = CircleShadowLayer(r, &switches);
-	fprintf(stderr, "shadow=%dx%d\n", mergePtr->width, mergePtr->height);
     }
     if (switches.fill.u32 != 0) {
 	fill = CircleLayer(r, &switches);
-	fprintf(stderr, "fill=%dx%d\n", fill->width, fill->height);
 	if (mergePtr != NULL) {
 	    MergePictures(mergePtr, fill);
-	    fprintf(stderr, "after merge=%dx%d\n", mergePtr->width, mergePtr->height);
 	    Blt_FreePicture(fill);
 	} else {
 	    mergePtr = fill;
