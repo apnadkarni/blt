@@ -42,12 +42,12 @@ bind BltComboEntry <ButtonPress-1> {
 bind BltComboEntry <ButtonRelease-1> {
     blt::ComboEntry::trace "ComboEntry %W at %X,%Y <ButtonRelease-1> state=[%W cget -state], grab=[blt::grab top]"
     after cancel $blt::ComboEntry::_private(afterId)
-    switch -- [%W identify -root %X %Y] {
+    switch -- [%W identify %x %y]  {
 	"arrow" {
 	    blt::ComboEntry::trace "invoke"
 	    %W invoke
 	}
-	"close"	{
+	"button" {
 	    blt::ComboEntry::trace "button invoke"
 	    %W button invoke
 	}
@@ -672,7 +672,7 @@ bind BltTextEntry <ButtonPress-1> {
 bind BltTextEntry <ButtonRelease-1> {
     blt::ComboEntry::trace "ComboEntry %W at %X,%Y <ButtonRelease-1> state=[%W cget -state]"
     after cancel $blt::ComboEntry::_private(afterId)
-    if { [%W identify -root %X %Y]  == "close" } {
+    if { [%W identify -root %X %Y]  == "button" } {
 	blt::ComboEntry::trace "button invoke"
 	%W button invoke
     }

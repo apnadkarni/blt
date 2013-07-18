@@ -94,7 +94,7 @@ typedef struct {
     Colormap colormap;		/* If not None, identifies a colormap
 				 * allocated for this window, which must be
 				 * freed when the window is deleted. */
-    Blt_Bg normalBg;  /* Structure used to draw 3-D border and
+    Blt_Bg normalBg;		      /* Structure used to draw 3-D border and
 				 * background.  NULL means no background
 				 * or border. */
     int borderWidth;		/* Width of 3-D border (if any). */
@@ -150,10 +150,10 @@ static Blt_ConfigSpec configSpecs[] =
 {
     {BLT_CONFIG_BACKGROUND, "-background", "background", "Background",
 	DEF_FRAME_BACKGROUND, Blt_Offset(Frame, normalBg),
-	BOTH | BLT_CONFIG_COLOR_ONLY | BLT_CONFIG_NULL_OK},
+	BOTH | BLT_CONFIG_COLOR_ONLY},
     {BLT_CONFIG_BACKGROUND, "-background", "background", "Background",
 	DEF_FRAME_BG_MONO, Blt_Offset(Frame, normalBg),
-	BOTH | BLT_CONFIG_MONO_ONLY | BLT_CONFIG_NULL_OK},
+	BOTH | BLT_CONFIG_MONO_ONLY},
     {BLT_CONFIG_SYNONYM, "-bd", "borderWidth", (char *)NULL,
 	(char *)NULL, 0, BOTH},
     {BLT_CONFIG_SYNONYM, "-bg", "background", (char *)NULL,

@@ -9692,6 +9692,30 @@ StyleDeleteOp(TableView *viewPtr, Tcl_Interp *interp, int objc,
 /*
  *---------------------------------------------------------------------------
  *
+ * StyleExistsOp --
+ *
+ *	.tv style exists $name
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+StyleExistsOp(TableView *viewPtr, Tcl_Interp *interp, int objc, 
+	     Tcl_Obj *const *objv)
+{
+    Blt_HashEntry *hPtr;
+    int exists;
+    const char *name;
+
+    name = Tcl_GetString(objv[3]);
+    hPtr = Blt_FindHashEntry(&viewPtr->styleTable, name);
+    exists = (hPtr != NULL);
+    Tcl_SetBooleanObj(Tcl_GetObjResult(interp), exists);
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
  * StyleGetOp --
  *
  * Results:
@@ -9812,6 +9836,7 @@ static Blt_OpSpec styleOps[] = {
     {"configure", 2, StyleConfigureOp, 4, 0, "styleName options...",},
     {"create",    2, StyleCreateOp,    5, 0, "type styleName options...",},
     {"delete",    1, StyleDeleteOp,    3, 0, "styleName...",},
+    {"exists",    1, StyleExistsOp,    4, 4, "styleName",},
     {"get",       1, StyleGetOp,       4, 4, "cell",},
     {"names",     1, StyleNamesOp,     3, 3, "",}, 
     {"type",      1, StyleTypeOp,      4, 4, "styleName",},

@@ -60,8 +60,8 @@
 					 * arrow. */
 #define ARROW_WIDTH	13
 #define ARROW_HEIGHT	13
-#define CLOSE_WIDTH	16
-#define CLOSE_HEIGHT	16
+#define BUTTON_WIDTH	16
+#define BUTTON_HEIGHT	16
 
 #define EVENT_MASK	 (ExposureMask|StructureNotifyMask|FocusChangeMask)
 #define CHILD_EVENT_MASK (ExposureMask|StructureNotifyMask)
@@ -95,14 +95,14 @@
 					 * visible on screen. */
 #define ARROW		 (1<<14)	/* Display the arrow button on the far
 					 * right.*/
-#define CLOSE		 (1<<15)	/* Display the close button on the
+#define CLEARBUTTON	 (1<<15)	/* Display the clear button on the
 					 * right when text has been
 					 * entered. */
 #define ACTIVE_ARROW	 (1<<16)	/* The arrow button is currently
 					   active. */
-#define ACTIVE_CLOSE	 (1<<17)	/* The close button is currently
+#define ACTIVE_CLEAR	 (1<<17)	/* The clear button is currently
 					 * active. */
-#define ACTIVE_MASK	 ((ACTIVE_ARROW)|(ACTIVE_CLOSE))
+#define ACTIVE_MASK	 ((ACTIVE_ARROW)|(ACTIVE_CLEAR))
 
 #define MODIFIED	 (1<<18)	/* The contents of the text of the
 					 * entry have been modified. */
@@ -118,7 +118,7 @@
 #define DEF_ARROW_RELIEF	"raised"
 #define DEF_ARROW_WIDTH		"0"
 #define DEF_CIPHER		"0"
-#define DEF_CLOSE		"0"
+#define DEF_CLEARBUTTON		"0"
 #define DEF_CMD			((char *)NULL)
 #define DEF_CURSOR		((char *)NULL)
 #define DEF_DISABLED_BG		STD_DISABLED_BACKGROUND
@@ -360,7 +360,7 @@ typedef struct  {
 
     Blt_Bg selectBg;
 
-    Button closeButton;
+    Button clearButton;
 
     /*
      * Scanning Information:
@@ -519,12 +519,12 @@ static Blt_ConfigSpec configSpecs[] =
 	Blt_Offset(ComboEntry, flags), 
 	BLT_CONFIG_DONT_SET_DEFAULT | ALL_MASK, 
 	(Blt_CustomOption *)CIPHER},
-    {BLT_CONFIG_BITMASK, "-closebutton", "closeButton", "CloseButton", 
-	DEF_CLOSE, Blt_Offset(ComboEntry, flags), 
+    {BLT_CONFIG_BITMASK, "-clearbutton", "clearButton", "ClearButton", 
+	DEF_CLEARBUTTON, Blt_Offset(ComboEntry, flags), 
 	BLT_CONFIG_DONT_SET_DEFAULT | ALL_MASK, 
-	(Blt_CustomOption *)CLOSE},
-    {BLT_CONFIG_OBJ, "-closecommand", "closeCommand", "CloseCommand", 
-	DEF_BUTTON_COMMAND, Blt_Offset(ComboEntry, closeButton.cmdObjPtr), 
+	(Blt_CustomOption *)CLEARBUTTON},
+    {BLT_CONFIG_OBJ, "-clearcommand", "clearCommand", "ClearCommand", 
+	DEF_BUTTON_COMMAND, Blt_Offset(ComboEntry, clearButton.cmdObjPtr), 
 	BLT_CONFIG_NULL_OK | ALL_MASK },
     {BLT_CONFIG_OBJ, "-command", "command", "Command", 
 	DEF_CMD, Blt_Offset(ComboEntry, cmdObjPtr), 
@@ -652,16 +652,16 @@ static Blt_ConfigSpec configSpecs[] =
 	0, ALL_MASK}
 };
 
-static Tcl_IdleProc DisplayComboEntry;
-static Tcl_IdleProc ComboEntrySelectCmdProc;
-static Tcl_IdleProc ComboEntryInvokeCmdProc;
-static Tcl_FreeProc FreeComboEntryProc;
-static Tk_EventProc ComboEntryEventProc;
-static Tcl_ObjCmdProc ComboEntryInstCmdProc;
 static Tcl_CmdDeleteProc ComboEntryInstCmdDeletedProc;
+static Tcl_FreeProc FreeComboEntryProc;
+static Tcl_IdleProc ComboEntryInvokeCmdProc;
+static Tcl_IdleProc ComboEntrySelectCmdProc;
+static Tcl_IdleProc DisplayComboEntry;
+static Tcl_ObjCmdProc ComboEntryInstCmdProc;
+static Tcl_TimerProc BlinkInsertCursorProc;
+static Tk_EventProc ComboEntryEventProc;
 static Tk_LostSelProc ComboEntryLostSelProc;
 static Tk_SelectionProc ComboEntrySelectionProc;
-static Tcl_TimerProc BlinkInsertCursorProc;
 
 typedef int (ComboEntryCmdProc)(ComboEntry *comboPtr, Tcl_Interp *interp, 
 	int objc, Tcl_Obj *const *objv);
@@ -955,9 +955,9 @@ InsertText(ComboEntry *comboPtr, int offset, int numBytes, const char *insertTex
 static void
 ComputeGeometry(ComboEntry *comboPtr)
 {
-    Button *butPtr = &comboPtr->closeButton;
+    Button *butPtr = &comboPtr->clearButton;
     /* Determine the height of the entry.  It's the maximum height of all it's
-     * components: icon, label, close button, and arrow. */
+     * components: icon, label, clear button, and arrow. */
     comboPtr->iconWidth  = comboPtr->iconHeight  = 0;
     comboPtr->entryWidth = comboPtr->entryHeight = 0;
     comboPtr->textWidth  = comboPtr->textHeight  = 0;
@@ -1025,11 +1025,11 @@ ComputeGeometry(ComboEntry *comboPtr)
 	comboPtr->arrowWidth |= 0x1;
 	comboPtr->width += comboPtr->arrowWidth;
     }
-    if (comboPtr->flags & CLOSE) {
-	Button *butPtr = &comboPtr->closeButton;
+    if (comboPtr->flags & CLEARBUTTON) {
+	Button *butPtr = &comboPtr->clearButton;
 
-	butPtr->height = CLOSE_HEIGHT;
-	butPtr->width = CLOSE_WIDTH;
+	butPtr->height = BUTTON_HEIGHT;
+	butPtr->width = BUTTON_WIDTH;
 	butPtr->width  += 2 * (butPtr->borderWidth + butPtr->pad);
 	butPtr->height += 2 * (butPtr->borderWidth + butPtr->pad);
 	if (butPtr->height > comboPtr->entryHeight) {
@@ -2341,7 +2341,7 @@ ConfigureButton(
     Tcl_Obj *const *objv,
     int flags)
 {
-    Button *butPtr = &comboPtr->closeButton;
+    Button *butPtr = &comboPtr->clearButton;
 
     iconOption.clientData = comboPtr;
     if (Blt_ConfigureWidgetFromObj(interp, comboPtr->tkwin, buttonSpecs, 
@@ -2349,9 +2349,9 @@ ConfigureButton(
 	return TCL_ERROR;
     }
     butPtr->width = butPtr->height = 0;
-    if (comboPtr->flags & CLOSE) {
-	butPtr->width = CLOSE_WIDTH + 2 * butPtr->borderWidth;
-	butPtr->height = CLOSE_HEIGHT + 2 * butPtr->borderWidth;
+    if (comboPtr->flags & CLEARBUTTON) {
+	butPtr->width = BUTTON_WIDTH + 2 * butPtr->borderWidth;
+	butPtr->height = BUTTON_HEIGHT + 2 * butPtr->borderWidth;
     }
     EventuallyRedraw(comboPtr);
     return TCL_OK;
@@ -2485,8 +2485,8 @@ ActivateOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc,
     string = Tcl_GetString(objv[2]);
     old = (comboPtr->flags & ACTIVE_MASK);
     comboPtr->flags &= ~ACTIVE_MASK;
-    if (strcmp(string, "close") == 0) {
-	comboPtr->flags |= ACTIVE_CLOSE;
+    if (strcmp(string, "button") == 0) {
+	comboPtr->flags |= ACTIVE_CLEAR;
     } else if (strcmp(string, "arrow") == 0) {
 	comboPtr->flags |= ACTIVE_ARROW;
     }	
@@ -2534,7 +2534,7 @@ ButtonCgetOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc,
 {
     iconOption.clientData = comboPtr;
     return Blt_ConfigureValueFromObj(interp, comboPtr->tkwin, buttonSpecs,
-	(char *)&comboPtr->closeButton, objv[2], 0);
+	(char *)&comboPtr->clearButton, objv[2], 0);
 }
 
 /*
@@ -2565,10 +2565,10 @@ ButtonConfigureOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc,
     iconOption.clientData = comboPtr;
     if (objc == 2) {
 	return Blt_ConfigureInfoFromObj(interp, comboPtr->tkwin, buttonSpecs,
-	    (char *)&comboPtr->closeButton, (Tcl_Obj *)NULL, 0);
+	    (char *)&comboPtr->clearButton, (Tcl_Obj *)NULL, 0);
     } else if (objc == 3) {
 	return Blt_ConfigureInfoFromObj(interp, comboPtr->tkwin, buttonSpecs,
-	    (char *)&comboPtr->closeButton, objv[2], 0);
+	    (char *)&comboPtr->clearButton, objv[2], 0);
     }
     if (ConfigureButton(interp, comboPtr, objc - 3, objv + 3, 
 		BLT_CONFIG_OBJV_ONLY) != TCL_OK) {
@@ -2598,17 +2598,25 @@ static int
 ButtonInvokeOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc, 
 	       Tcl_Obj *const *objv)
 {
-    if (comboPtr->closeButton.cmdObjPtr != NULL) {
+    if (comboPtr->flags & (READONLY|DISABLED)) {
+	return TCL_OK;			/* Writing is currently disabled. */
+    }
+    if (comboPtr->clearButton.cmdObjPtr != NULL) {
 	Tcl_Obj *cmdObjPtr;
 	int result;
 
-	cmdObjPtr = Tcl_DuplicateObj(comboPtr->closeButton.cmdObjPtr);
+	cmdObjPtr = Tcl_DuplicateObj(comboPtr->clearButton.cmdObjPtr);
 	Tcl_IncrRefCount(cmdObjPtr);
 	result = Tcl_EvalObjEx(interp, cmdObjPtr, TCL_EVAL_GLOBAL);
 	Tcl_DecrRefCount(cmdObjPtr);
 	if (result != TCL_OK) {
 	    return TCL_ERROR;
 	}
+    } else {
+	/* Record the delete for futher redo/undos.  */
+	RecordEdit(comboPtr, DELETE_OP, 0, comboPtr->textLen, comboPtr->text);
+	DeleteText(comboPtr, 0, comboPtr->textLen);
+	FreeRedoRecords(comboPtr);
     }
     return TCL_OK;
 }
@@ -3017,12 +3025,12 @@ IdentifyOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc,
 	    return TCL_OK;
 	}
     }
-    if (comboPtr->flags & CLOSE) {
-	Button *butPtr = &comboPtr->closeButton;
+    if (comboPtr->flags & CLEARBUTTON) {
+	Button *butPtr = &comboPtr->clearButton;
 
 	if ((x >= butPtr->x) && (x < (butPtr->x + butPtr->width)) &&
 	    (y >= butPtr->y) && (y < (butPtr->y + butPtr->height))) {
-	    Tcl_SetObjResult(interp, Tcl_NewStringObj("close", 5));
+	    Tcl_SetObjResult(interp, Tcl_NewStringObj("button", 6));
 	    return TCL_OK;
 	}
     }
@@ -3778,7 +3786,7 @@ FreeComboEntryProc(DestroyData dataPtr)	/* Pointer to the widget record. */
     }
     FreeUndoRecords(comboPtr);
     FreeRedoRecords(comboPtr);
-    DestroyButton(comboPtr, &comboPtr->closeButton);
+    DestroyButton(comboPtr, &comboPtr->clearButton);
     if (comboPtr->screenText != NULL) {
 	Blt_Free(comboPtr->screenText);
     }
@@ -4366,8 +4374,8 @@ DrawComboEntry(ComboEntry *comboPtr, Drawable drawable, int width, int height)
 {
     Blt_Bg bg;
     int x, y, w, h, tx, ty;
-    Button *butPtr = &comboPtr->closeButton;
-    int closeButtonNeeded;
+    Button *butPtr = &comboPtr->clearButton;
+    int buttonNeeded;
 
     /* Background (just inside of focus highlight ring). */
     x = y = comboPtr->inset;
@@ -4379,8 +4387,8 @@ DrawComboEntry(ComboEntry *comboPtr, Drawable drawable, int width, int height)
     if (comboPtr->flags & ARROW) {
 	w -= comboPtr->arrowWidth;
     }
-    closeButtonNeeded = ((comboPtr->flags & CLOSE) && (comboPtr->textLen > 0));
-    if (closeButtonNeeded) {
+    buttonNeeded = ((comboPtr->flags & CLEARBUTTON) && (comboPtr->textLen > 0));
+    if (buttonNeeded) {
 	w -= butPtr->width;
     }
     if (h > comboPtr->entryHeight) {
@@ -4434,9 +4442,9 @@ DrawComboEntry(ComboEntry *comboPtr, Drawable drawable, int width, int height)
     } else {
 	bg = comboPtr->normalBg;
     }
-    /* Close button. */
-    if (closeButtonNeeded) {
-	Button *butPtr = &comboPtr->closeButton;
+    /* Clear button. */
+    if (buttonNeeded) {
+	Button *butPtr = &comboPtr->clearButton;
 	Blt_Picture picture;
 	int bx;
 
@@ -4456,10 +4464,10 @@ DrawComboEntry(ComboEntry *comboPtr, Drawable drawable, int width, int height)
 	if (comboPtr->entryHeight > butPtr->height) {
 	    butPtr->y +=  (comboPtr->entryHeight - butPtr->height) / 2;
 	}
-	if (comboPtr->flags & ACTIVE_CLOSE) {
+	if (comboPtr->flags & ACTIVE_CLEAR) {
 	    if (butPtr->activePicture == NULL) {
-		butPtr->activePicture = Blt_PaintDelete(CLOSE_WIDTH, 
-							CLOSE_HEIGHT, 
+		butPtr->activePicture = Blt_PaintDelete(BUTTON_WIDTH, 
+							BUTTON_HEIGHT, 
 							Blt_Bg_BorderColor(bg),
 							butPtr->activeBg, 
 							butPtr->activeFg, 
@@ -4469,7 +4477,7 @@ DrawComboEntry(ComboEntry *comboPtr, Drawable drawable, int width, int height)
 	} else {
 	    if (butPtr->normalPicture == NULL) {
 		butPtr->normalPicture = 
-			Blt_PaintDelete(CLOSE_WIDTH, CLOSE_HEIGHT, 
+			Blt_PaintDelete(BUTTON_WIDTH, BUTTON_HEIGHT, 
 				Blt_Bg_BorderColor(bg),
 				butPtr->normalBg, butPtr->normalFg, FALSE);
 	    } 

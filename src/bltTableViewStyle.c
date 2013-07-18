@@ -2155,8 +2155,7 @@ TextBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
 	    break;
 	}
     }
-    tx = ty = ix = iy = 0;	/* Suppress compiler warning. */
-    tw = th = iw = ih = 0;
+    tw = th = iw = ih = 0;		/* Suppress compiler warning. */
     gap = 0;
     if (stylePtr->icon != NULL) {
 	iw = IconWidth(stylePtr->icon);
@@ -2170,7 +2169,7 @@ TextBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
 	    gap = stylePtr->gap;
 	}
     }
-    tx = x, ty = y;
+    ix = tx = x, iy = ty = y;
     switch (stylePtr->side) {
     case SIDE_RIGHT:
 	tx = x;
