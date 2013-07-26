@@ -4134,6 +4134,7 @@ ResetTableView(TableView *viewPtr)
 	cellPtr = Blt_GetHashValue(hPtr);
 	DestroyCell(cellPtr);
     }
+    Blt_SetCurrentItem(viewPtr->bindTable, NULL, NULL);
     Blt_DeleteHashTable(&viewPtr->rowTable);
     Blt_DeleteHashTable(&viewPtr->columnTable);
     Blt_DeleteHashTable(&viewPtr->cellTable);
