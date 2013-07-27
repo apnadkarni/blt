@@ -39,10 +39,12 @@ RM =		rm -f
 
 subdirs =	src library man demos 
 
-all:  
-	for i in $(subdirs); do \
-	   $(MAKE) -C $$i all || exit 1 ; \
-	done
+.PHONY: subdirs $(subdirs)
+
+all: $(subdirs)
+
+$(subdirs):  
+	$(MAKE) -C $@ all
 
 install: 
 	for i in $(subdirs); do \
