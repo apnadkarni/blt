@@ -678,10 +678,14 @@ SetScreenSizeOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     sprintf(modeName, "%dx%d", w, h);
     PrintModes(resPtr);
+#ifdef notdef
     strcpy(modeName, "hubzero");
+#endif
     mode = FindMode(resPtr, modeName);
+    PrintModes(resPtr);
     if (mode >= 0) {
 	fprintf(stderr, "found mode %s (%d)\n", modeName, mode);
+#ifdef notdef
 	XRRDeleteOutputMode(display, resPtr->outputs[0], mode);
 	XRRDestroyMode(display, mode);
 	XRRFreeScreenResources(resPtr);
@@ -691,8 +695,8 @@ SetScreenSizeOp(ClientData clientData, Tcl_Interp *interp, int objc,
 			     (char *)NULL);
 	    return TCL_ERROR;
 	}
-    } 
-    PrintModes(resPtr);
+#endif
+    } else { 
     memset(&info, 0, sizeof(info));
     info.width = w;
     info.height = h;
@@ -701,6 +705,7 @@ SetScreenSizeOp(ClientData clientData, Tcl_Interp *interp, int objc,
     mode = XRRCreateMode(display, root, &info);
     if (mode < 0) {
 	return TCL_ERROR;
+    }
     }
     XRRAddOutputMode(display, resPtr->outputs[0], mode);
     XRRFreeScreenResources(resPtr);
