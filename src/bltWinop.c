@@ -651,12 +651,8 @@ SetScreenSizeOp(ClientData clientData, Tcl_Interp *interp, int objc,
     Window root;
     char modeName[200];
     XRRScreenResources *resPtr;
-    XRRScreenConfiguration *configPtr;
-    XRRScreenSize *sizesPtr;
-    XRRModeInfo info;
-    int w, h, i, numSizes;
-    int sizeNum;
-    Rotation current_rotation;
+    XRRScreenConfiguration *screenConfig;
+    int w, h, i;
     int majorNum, minorNum, eventBase, errorBase;
 
     display = Tk_Display(tkMain);
@@ -678,10 +674,10 @@ SetScreenSizeOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     sprintf(modeName, "%dx%d", w, h);
     PrintModes(resPtr);
-    strcpy(modeName, "hubzero");
     mode = FindMode(resPtr, modeName);
     if (mode >= 0) {
 	fprintf(stderr, "found mode %s (%d)\n", modeName, mode);
+#ifdef notdef
 	XRRDeleteOutputMode(display, resPtr->outputs[0], mode);
 	XRRDestroyMode(display, mode);
 	XRRFreeScreenResources(resPtr);
@@ -691,36 +687,53 @@ SetScreenSizeOp(ClientData clientData, Tcl_Interp *interp, int objc,
 			     (char *)NULL);
 	    return TCL_ERROR;
 	}
-    } 
-    PrintModes(resPtr);
-    memset(&info, 0, sizeof(info));
-    info.width = w;
-    info.height = h;
-    info.name = modeName;
-    info.nameLength = strlen(modeName);
-    mode = XRRCreateMode(display, root, &info);
-    if (mode < 0) {
-	return TCL_ERROR;
+#endif
+    } else {
+	XRRModeInfo info;
+
+	memset(&info, 0, sizeof(info));
+	info.width = w;
+	info.height = h;
+	info.name = modeName;
+	info.nameLength = strlen(modeName);
+	mode = XRRCreateMode(display, root, &info);
+	if (mode < 0) {
+	    return TCL_ERROR;
+	}
+	XRRAddOutputMode(display, resPtr->outputs[0], mode);
     }
-    XRRAddOutputMode(display, resPtr->outputs[0], mode);
+    PrintModes(resPtr);
     XRRFreeScreenResources(resPtr);
 
-    configPtr = XRRGetScreenInfo(display, root);
-    if (configPtr == NULL) {
+    screenConfig = XRRGetScreenInfo(display, root);
+    if (screenConfig == NULL) {
 	return TCL_ERROR;
     }
-    sizesPtr = XRRConfigSizes(configPtr, &numSizes);
-    sizeNum = 0;
-    for (i = 0; i < numSizes; i++) {
-	fprintf(stderr, "%dx%d\n",  sizesPtr[i].width, sizesPtr[i].height);
-	if ((sizesPtr[i].width == w) && (sizesPtr[i].height == h)) {
-	    sizeNum = i;
+    {
+	XRRScreenSize *screenSizes;
+	int i, sizeIndex, numSizes;
+	Rotation currentRotation;
+
+	screenSizes = XRRConfigSizes(screenConfig, &numSizes);
+	sizeIndex = 0;
+	for (i = 0; i < numSizes; i++) {
+	    if ((screenSizes[i].width == w) && (screenSizes[i].height == h)) {
+		sizeIndex = i;
+		break;
+	    }
 	}
+	if (i == numSizes) {
+	    XRRFreeScreenConfigInfo(screenConfig);
+	    Tcl_AppendResult(interp, "can't find matching screen configuration",
+			     (char *)NULL);
+	    return TCL_ERROR;
+
+	}
+	XRRConfigRotations(screenConfig, &currentRotation);
+	XRRSetScreenConfig(display, screenConfig, root, (SizeID)sizeIndex, 
+		currentRotation, CurrentTime);
     }
-    XRRConfigRotations(configPtr, &current_rotation);
-    XRRSetScreenConfig(display, configPtr, root, (SizeID)sizeNum, 
-	current_rotation, CurrentTime);
-    XRRFreeScreenConfigInfo(configPtr);
+    XRRFreeScreenConfigInfo(screenConfig);
     return TCL_OK;
 }
 #endif	/* HAVE_RANDR && HAVE_DECL_XRRGETSCREENRESOURCES */
