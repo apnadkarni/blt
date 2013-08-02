@@ -1447,6 +1447,8 @@ ObjToData(
 	const char *string;
 	Blt_Chain chain;
 
+	fmtPtr = NULL;			/* Suppress compiler warning. */
+	chain = NULL;			/* Suppress compiler warning. */
 	numBytes = (size_t)length;
 	dbuffer = Blt_DBuffer_Create();
 	string = (const char *)bytes;
@@ -4704,7 +4706,7 @@ Blt_PictureCmdInitProc(Tcl_Interp *interp)
 
 static Tk_ImageType pictureImageType = {
     (char *)"picture",		
-    CreateProc,
+    CreateProc,				/* Known compiler wanrning */
     GetInstanceProc,		
     DisplayProc,	
     FreeInstanceProc,	
