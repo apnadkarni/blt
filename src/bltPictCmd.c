@@ -1214,7 +1214,7 @@ ObjToFile(
     PictImage *imgPtr = (PictImage *)widgRec;
     const char *fileName;
     Blt_PictFormat *fmtPtr;
-    char *ext;
+    char *extPtr, ext[32];
 
     fileName = Tcl_GetString(objPtr);
     if (fileName[0] == '\0') {
@@ -1231,18 +1231,21 @@ ObjToFile(
     if (Blt_DBuffer_LoadFile(interp, fileName, dbuffer) != TCL_OK) {
 	goto error;
     }
-    ext = NULL;
+    extPtr = NULL;
     if (fileName[0] != '@') {
-	ext = strrchr(fileName, '.');
-	if (ext != NULL) {
-	    ext++;
-	    if (*ext == '\0') {
-		ext = NULL;
+	extPtr = strrchr(fileName, '.');
+	if (extPtr != NULL) {
+	    extPtr++;
+	    if (*extPtr == '\0') {
+		extPtr = NULL;
 	    } 
+	    strncpy(ext, extPtr, 31);
+	    ext[31] = '\0';
 	    Blt_LowerCase(ext);
+	    extPtr = ext;
 	}
     }
-    fmtPtr = QueryExternalFormat(interp, dbuffer, ext);
+    fmtPtr = QueryExternalFormat(interp, dbuffer, extPtr);
     if (fmtPtr == NULL) {
 	Tcl_AppendResult(interp, "\nunknown image file format in \"", fileName, 
 		"\"", (char *)NULL);
