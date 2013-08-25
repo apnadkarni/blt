@@ -6380,10 +6380,11 @@ ColumnInvokeOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	return TCL_OK;
     }
     Tcl_Preserve(viewPtr);
+    /* command pathName colIndex  */
     cmdObjPtr = Tcl_DuplicateObj(cmdObjPtr);  
     objPtr = Tcl_NewStringObj(Tk_PathName(viewPtr->tkwin), -1);
     Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
-    objPtr = Tcl_NewLongObj(blt_table_row_index(colPtr->column));
+    objPtr = Tcl_NewLongObj(blt_table_column_index(colPtr->column));
     Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
     Tcl_IncrRefCount(cmdObjPtr);
     result = Tcl_EvalObjEx(interp, cmdObjPtr, TCL_EVAL_GLOBAL);

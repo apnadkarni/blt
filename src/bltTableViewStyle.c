@@ -1994,6 +1994,7 @@ TextBoxStyleGeometryProc(Cell *cellPtr, CellStyle *cellStylePtr)
 	const char *text;
 
 	interp = viewPtr->interp;
+	/* command rowIndex columnIndex */
 	cmdObjPtr = Tcl_DuplicateObj(colPtr->fmtCmdObjPtr);
 	objPtr = Tcl_NewLongObj(blt_table_row_index(rowPtr->row));
 	Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
@@ -2494,6 +2495,7 @@ CheckBoxStyleGeometryProc(Cell *cellPtr, CellStyle *cellStylePtr)
 	    const char *text;
 	    
 	    interp = viewPtr->interp;
+	    /* command rowIndex columnIndex */
 	    cmdObjPtr = Tcl_DuplicateObj(colPtr->fmtCmdObjPtr);
 	    objPtr = Tcl_NewLongObj(blt_table_row_index(rowPtr->row));
 	    Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
@@ -3693,6 +3695,7 @@ ImageBoxStyleGeometryProc(Cell *cellPtr, CellStyle *cellStylePtr)
 
 	/* Invoke the format command to return the image and title text
 	 * based upon the value in the cell.  */
+	/* command rowIndex columnIndex */
 	cmdObjPtr = Tcl_DuplicateObj(colPtr->fmtCmdObjPtr);  
 	objPtr = Tcl_NewLongObj(blt_table_row_index(rowPtr->row));
 	Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);

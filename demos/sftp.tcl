@@ -74,7 +74,9 @@ proc FixExtIcons { w } {
     }
 }
 
-proc FormatSize { value } {
+proc FormatSize { w row col } {
+    set table [$w cget -table]
+    set value [$table get $row $col]
     if { $value < 1000 } {
 	return $value
     } elseif { $value < 1e6 } {
@@ -86,7 +88,9 @@ proc FormatSize { value } {
     }
 }
 
-proc FormatDate { value } {
+proc FormatDate { w row col } {
+    set table [$w cget -table]
+    set value [$table get $row $col]
     set format "year %Y month %b wknum %U day %j min %M"
     set time [clock seconds]
     array set now [clock format $time -format $format]
@@ -119,7 +123,9 @@ array set modes {
    7    rwx
 }
 
-proc FormatMode { mode } {
+proc FormatMode { w row col } {
+    set table [$w cget -table]
+    set mode [$table get $row $col]
     global modes
     set mode [format %o [expr $mode & 07777]]
     set owner $modes([string index $mode 0])
@@ -137,18 +143,18 @@ $view column configure name \
 $view column configure mtime \
     -style date \
     -title "Modification Time" \
-    -formatcommand FormatDate 
+    -formatcommand [list FormatDate $view]
 $view column configure atime \
     -style date \
     -title "Access Time" \
-    -formatcommand FormatDate 
+    -formatcommand [list FormatDate $view]
 $view style create textbox mode \
     -font "{courier new} 11" \
     -justify right 
 $view column configure mode \
     -style mode \
     -title "Mode" \
-    -formatcommand FormatMode 
+    -formatcommand [list FormatMode $view]
 $view style create textbox longtype \
     -font "Courier 11" \
     -justify left
@@ -160,7 +166,7 @@ $view style create textbox size \
     -justify right
 $view column configure size \
     -style size \
-    -formatcommand FormatSize 
+    -formatcommand [list FormatSize $view]
 
 FixExtIcons $view
 

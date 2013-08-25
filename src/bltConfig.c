@@ -1175,12 +1175,13 @@ DoConfig(
 	case BLT_CONFIG_BITMASK: 
 	    {
 		int bool;
-		unsigned int mask, flags;
+		unsigned long mask;
+		unsigned int flags;
 
 		if (Tcl_GetBooleanFromObj(interp, objPtr, &bool) != TCL_OK) {
 		    return TCL_ERROR;
 		}
-		mask = (unsigned int)sp->customPtr;
+		mask = (unsigned long)sp->customPtr;
 		flags = *(unsigned int *)ptr;
 		flags &= ~mask;
 		if (bool) {
@@ -1193,12 +1194,13 @@ DoConfig(
 	case BLT_CONFIG_BITMASK_INVERT: 
 	    {
 		int bool;
-		unsigned int mask, flags;
+		unsigned long mask;
+		unsigned int flags;
 
 		if (Tcl_GetBooleanFromObj(interp, objPtr, &bool) != TCL_OK) {
 		    return TCL_ERROR;
 		}
-		mask = (unsigned int)sp->customPtr;
+		mask = (unsigned long)sp->customPtr;
 		flags = *(unsigned int *)ptr;
 		flags &= ~mask;
 		if (!bool) {
@@ -1571,22 +1573,24 @@ FormatConfigValue(
 
     case BLT_CONFIG_BITMASK:
 	{
-	    unsigned int flag, mask;
+	    unsigned long mask;
+	    unsigned int flags;
 
-	    mask = (unsigned int)sp->customPtr;
-	    flag = (*(unsigned int *)ptr);
-	    flag &= mask;
-	    return Tcl_NewBooleanObj((flag != 0));
+	    mask = (unsigned long)sp->customPtr;
+	    flags = (*(unsigned int *)ptr);
+	    flags &= mask;
+	    return Tcl_NewBooleanObj((flags != 0));
 	}
 
     case BLT_CONFIG_BITMASK_INVERT:
 	{
-	    unsigned int flag, mask;
+	    unsigned long mask;
+	    unsigned int flags;
 
-	    mask = (unsigned int)sp->customPtr;
-	    flag = (*(unsigned int *)ptr);
-	    flag &= mask;
-	    return Tcl_NewBooleanObj((flag == 0));
+	    mask = (unsigned long)sp->customPtr;
+	    flags = (*(unsigned int *)ptr);
+	    flags &= mask;
+	    return Tcl_NewBooleanObj((flags == 0));
 	}
 
     case BLT_CONFIG_DASHES: 

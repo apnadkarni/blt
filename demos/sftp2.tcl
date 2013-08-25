@@ -8,6 +8,8 @@ puts stderr "before tree"
 puts stderr time=[time {$sftp dirtree ~/indeed $tree}]
 puts stderr "after tree"
 
+puts stderr numentries=[$tree size 0]
+
 set view .ss.view
 
 blt::scrollset .ss \
