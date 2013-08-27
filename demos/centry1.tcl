@@ -1,4 +1,3 @@
-
 package require BLT
 
 set imgData {
@@ -30,13 +29,14 @@ blt::comboentry .e \
     -image $image \
     -iconvariable icon \
     -edit yes \
-    -textwidth 6 \
+    -show \u25CF \
+    -textwidth 46 \
     -menu .e.m \
     -exportselection yes \
     -xscrollcommand { .s set }  \
     -command "Doit" \
-    -closebutton yes \
-    -closecommand { .e delete 0 end } 
+    -clearbutton yes \
+    -clearcommand { .e delete 0 end } 
 
 blt::combobutton .b \
     -textvariable t \

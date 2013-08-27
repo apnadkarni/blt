@@ -80,8 +80,6 @@
 					 * change in its selection. */
 #define INVOKE_PENDING   (1<<6)		/* The widget is scheduled to invoke a
 					 * -command. */
-#define CIPHER		 (1<<7)		/* Don't display the actual text on
-					 * the screen. */
 #define READONLY	 (1<<8)		/* The widget's editting functions
 					 * are disabled. */
 #define EXPORT_SELECTION (1<<9)		/* The selection is exported to the
@@ -95,7 +93,7 @@
 					 * visible on screen. */
 #define ARROW		 (1<<14)	/* Display the arrow button on the far
 					 * right.*/
-#define CLEARBUTTON	 (1<<15)	/* Display the clear button on the
+#define CLRBUTTON	 (1<<15)	/* Display the clear button on the
 					 * right when text has been
 					 * entered. */
 #define ACTIVE_ARROW	 (1<<16)	/* The arrow button is currently
@@ -117,8 +115,8 @@
 #define DEF_ARROW_PAD		"0"
 #define DEF_ARROW_RELIEF	"raised"
 #define DEF_ARROW_WIDTH		"0"
-#define DEF_CIPHER		"0"
-#define DEF_CLEARBUTTON		"0"
+#define DEF_SHOW		(char *)NULL
+#define DEF_CLRBUTTON		"0"
 #define DEF_CMD			((char *)NULL)
 #define DEF_CURSOR		((char *)NULL)
 #define DEF_DISABLED_BG		STD_DISABLED_BACKGROUND
@@ -298,7 +296,7 @@ typedef struct _EditRecord {
     short int type;
     short int insertOffset;
     short int offset;
-    short int textLen;
+    short int numBytes;			/* # of bytes in text string. */
     char text[1];
 } EditRecord;
 
@@ -412,7 +410,7 @@ typedef struct  {
 					 * designated. Its value is overridden
 					 * by the -textvariable option. */
     char *screenText;			/* Text string to be displayed in the
-					 * entry if an image has no been
+					 * entry if an image has not been
 					 * designated. Its value is overridden
 					 * by the -textvariable option. */
     Tcl_Obj *textVarObjPtr;		/* Name of TCL variable.  If non-NULL,
@@ -426,7 +424,8 @@ typedef struct  {
     XColor *textOutFocusColor;
     GC textInFocusGC;
     GC textOutFocusGC;
-    int textLen;			/* # bytes of text. */
+    short int numBytes;			/* # bytes of in actual text string. */
+    short int numScreenBytes;		/* # bytes in displayed text. */
     /*  
      * Arrow Information:
      */
@@ -467,7 +466,7 @@ typedef struct  {
     short int width, height;
 
 
-    short int firstOffset, lastOffset;	/* Byte offset of first and last
+    short int firstNumBytes, lastNumBytes;	/* Byte offset of first and last
 					 * characters visible in viewport. */
     int firstX, lastX;			/* x-coordinates of first and last
 					 * characters visible in viewport. */ 
@@ -480,6 +479,9 @@ typedef struct  {
     int menuAnchor;
     unsigned int flags;
     EditRecord *undoPtr, *redoPtr;
+    const char *cipher;			/* If non-NULL, this is the character
+					 * to display for every character of
+					 * text. */
 } ComboEntry;
 
 static Blt_ConfigSpec configSpecs[] =
@@ -515,14 +517,10 @@ static Blt_ConfigSpec configSpecs[] =
     {BLT_CONFIG_PIXELS_NNEG, "-borderwidth", "borderWidth", "BorderWidth",
 	DEF_BORDERWIDTH, Blt_Offset(ComboEntry, borderWidth), 
 	BLT_CONFIG_DONT_SET_DEFAULT | ALL_MASK},
-    {BLT_CONFIG_BITMASK, "-cipher", "cipher", "Cipher", DEF_CIPHER, 
-	Blt_Offset(ComboEntry, flags), 
-	BLT_CONFIG_DONT_SET_DEFAULT | ALL_MASK, 
-	(Blt_CustomOption *)CIPHER},
     {BLT_CONFIG_BITMASK, "-clearbutton", "clearButton", "ClearButton", 
-	DEF_CLEARBUTTON, Blt_Offset(ComboEntry, flags), 
+	DEF_CLRBUTTON, Blt_Offset(ComboEntry, flags), 
 	BLT_CONFIG_DONT_SET_DEFAULT | ALL_MASK, 
-	(Blt_CustomOption *)CLEARBUTTON},
+	(Blt_CustomOption *)CLRBUTTON},
     {BLT_CONFIG_OBJ, "-clearcommand", "clearCommand", "ClearCommand", 
 	DEF_BUTTON_COMMAND, Blt_Offset(ComboEntry, clearButton.cmdObjPtr), 
 	BLT_CONFIG_NULL_OK | ALL_MASK },
@@ -614,6 +612,8 @@ static Blt_ConfigSpec configSpecs[] =
     {BLT_CONFIG_RELIEF, "-selectrelief", "selectRelief", "Relief",
 	DEF_SELECT_RELIEF, Blt_Offset(ComboEntry, selRelief),
 	BLT_CONFIG_DONT_SET_DEFAULT | ALL_MASK},
+    {BLT_CONFIG_STRING, "-show", "show", "Show", DEF_SHOW, 
+	Blt_Offset(ComboEntry, cipher), BLT_CONFIG_DONT_SET_DEFAULT | ALL_MASK},
     {BLT_CONFIG_CUSTOM, "-state", "state", "State", DEF_STATE, 
 	Blt_Offset(ComboEntry, flags), 
 	BLT_CONFIG_DONT_SET_DEFAULT | ALL_MASK, &stateOption},
@@ -795,7 +795,7 @@ UpdateTextVariable(Tcl_Interp *interp, ComboEntry *comboPtr)
     Tcl_Obj *resultObjPtr, *objPtr;
     const char *varName;
 
-    objPtr = Tcl_NewStringObj(comboPtr->text, comboPtr->textLen);
+    objPtr = Tcl_NewStringObj(comboPtr->text, comboPtr->numBytes);
     varName = Tcl_GetString(comboPtr->textVarObjPtr); 
     Tcl_UntraceVar(interp, varName, TRACE_VAR_FLAGS, TextVarTraceProc,comboPtr);
     Tcl_IncrRefCount(objPtr);
@@ -834,17 +834,17 @@ FreeRedoRecords(ComboEntry *comboPtr)
 }
 
 static void
-RecordEdit(ComboEntry *comboPtr, int type, int offset, int textLen, 
+RecordEdit(ComboEntry *comboPtr, int type, int offset, int numBytes, 
 	   const char *text)
 {
     EditRecord *recPtr;
 
-    recPtr = Blt_AssertMalloc(sizeof(EditRecord) + textLen);
+    recPtr = Blt_AssertMalloc(sizeof(EditRecord) + numBytes);
     recPtr->type = type;
     recPtr->insertOffset = comboPtr->insertOffset;
     recPtr->offset = offset;
-    recPtr->textLen = textLen;
-    memcpy(recPtr->text, text, textLen);
+    recPtr->numBytes = numBytes;
+    memcpy(recPtr->text, text, numBytes);
     recPtr->nextPtr = comboPtr->undoPtr;
     comboPtr->undoPtr = recPtr;
 }
@@ -857,15 +857,27 @@ CleanText(ComboEntry *comboPtr)
     if (comboPtr->screenText != NULL) {
 	Blt_Free(comboPtr->screenText);
     }
-    comboPtr->screenText = Blt_AssertMalloc(comboPtr->textLen + 1);
-    for (p = comboPtr->text, q = comboPtr->screenText, 
-	     pend = p + comboPtr->textLen; p < pend; p++, q++) {
-	if (comboPtr->flags & CIPHER) {
-	    *q = '*';
-	} else if ((*p == '\n') || (*p == '\t')) {
-	    *q = ' ';
-	} else {
-	    *q = *p;
+    if (comboPtr->cipher != NULL) {
+	int i, numChars, charSize, dummy;
+
+	numChars = Tcl_NumUtfChars(comboPtr->text, comboPtr->numBytes);
+	charSize = Tcl_UtfToUniChar(comboPtr->cipher, &dummy);
+	comboPtr->numScreenBytes = numChars * charSize;
+	comboPtr->screenText = Blt_AssertMalloc(comboPtr->numScreenBytes + 1);
+	for (p = comboPtr->screenText, i = 0; i < numChars; i++, p += charSize){
+	    strncpy(p, comboPtr->cipher, charSize);
+	}
+	comboPtr->screenText[comboPtr->numScreenBytes] = '\0';
+    } else {
+	comboPtr->numScreenBytes = comboPtr->numBytes;
+	comboPtr->screenText = Blt_AssertMalloc(comboPtr->numScreenBytes + 1);
+	for (p = comboPtr->text, q = comboPtr->screenText, 
+		 pend = p + comboPtr->numBytes; p < pend; p++, q++) {
+	    if ((*p == '\n') || (*p == '\t')) {
+		*q = ' ';
+	    } else {
+		*q = *p;
+	    }
 	}
     }
 } 
@@ -885,11 +897,11 @@ DeleteText(ComboEntry *comboPtr, int first, int last)
 	    comboPtr->insertOffset = first;
 	}
     }
-    for (i = first, j = last; j < comboPtr->textLen; i++, j++) {
+    for (i = first, j = last; j < comboPtr->numBytes; i++, j++) {
 	comboPtr->text[i] = comboPtr->text[j];
     }
     comboPtr->text[i] = '\0';
-    comboPtr->textLen -= numBytes;
+    comboPtr->numBytes -= numBytes;
     CleanText(comboPtr);
     if (comboPtr->textVarObjPtr != NULL) {
 	UpdateTextVariable(comboPtr->interp, comboPtr);
@@ -899,12 +911,13 @@ DeleteText(ComboEntry *comboPtr, int first, int last)
 }
 
 static int
-InsertText(ComboEntry *comboPtr, int offset, int numBytes, const char *insertText)
+InsertText(ComboEntry *comboPtr, int offset, int numBytes, 
+	   const char *insertText)
 {
     char *text;
 
     /* Create a larger buffer to hold the text. */
-    text = Blt_Malloc(comboPtr->textLen + numBytes);
+    text = Blt_Malloc(comboPtr->numBytes + numBytes);
     if (text == NULL) {
 	return TCL_ERROR;
     }
@@ -912,8 +925,8 @@ InsertText(ComboEntry *comboPtr, int offset, int numBytes, const char *insertTex
     memcpy(text, comboPtr->text, offset);
     memcpy(text + offset, insertText, numBytes);
     memcpy(text + offset + numBytes, comboPtr->text + offset, 
-	   comboPtr->textLen - offset);
-    comboPtr->textLen += numBytes;
+	   comboPtr->numBytes - offset);
+    comboPtr->numBytes += numBytes;
     if (comboPtr->text != emptyString) {
 	Blt_Free(comboPtr->text);
     }
@@ -985,14 +998,14 @@ ComputeGeometry(ComboEntry *comboPtr)
 	unsigned int w, h;
 
 	CleanText(comboPtr);
-	if (comboPtr->textLen == 0) {
+	if (comboPtr->numScreenBytes == 0) {
 	    Blt_FontMetrics fm;
 	    Blt_GetTextExtents(comboPtr->font, 0, "0", 1, &w, &h);
 	    Blt_Font_GetMetrics(comboPtr->font, &fm);
 	    h = fm.linespace;
 	} else {
 	    Blt_GetTextExtents(comboPtr->font, 0, comboPtr->screenText, 
-		comboPtr->textLen, &w, &h);
+		comboPtr->numScreenBytes, &w, &h);
 	}
 	comboPtr->textWidth  = w;
 	comboPtr->textHeight = h + 2 * YPAD;
@@ -1025,7 +1038,7 @@ ComputeGeometry(ComboEntry *comboPtr)
 	comboPtr->arrowWidth |= 0x1;
 	comboPtr->width += comboPtr->arrowWidth;
     }
-    if (comboPtr->flags & CLEARBUTTON) {
+    if (comboPtr->flags & CLRBUTTON) {
 	Button *butPtr = &comboPtr->clearButton;
 
 	butPtr->height = BUTTON_HEIGHT;
@@ -1102,7 +1115,7 @@ SetTextFromObj(ComboEntry *comboPtr, Tcl_Obj *objPtr)
     comboPtr->text = Blt_AssertMalloc(numBytes + 1);
     memcpy(comboPtr->text, string, numBytes);
     comboPtr->text[numBytes] = '\0';
-    comboPtr->textLen = numBytes;
+    comboPtr->numBytes = numBytes;
     CleanText(comboPtr);
     comboPtr->flags |= (ICURSOR | SCROLL_PENDING | LAYOUT_PENDING);
     comboPtr->scrollX = 0;
@@ -1521,7 +1534,7 @@ ComboEntrySelectionProc(
 	if (size > maxBytes) {
 	    size = maxBytes;
 	}
-	memcpy(buffer, comboPtr->text + comboPtr->selFirst + offset, size);
+	memcpy(buffer, comboPtr->screenText + comboPtr->selFirst + offset,size);
 	buffer[size] = '\0';
     }
     return size;
@@ -2077,8 +2090,10 @@ FreeTextProc(ClientData clientData, Display *display, char *widgRec, int offset)
 
     if (comboPtr->text != emptyString) {
 	Blt_Free(comboPtr->text);
+	Blt_Free(comboPtr->screenText);
 	comboPtr->text = emptyString;
-	comboPtr->textLen = 0;
+	comboPtr->screenText = NULL;
+	comboPtr->numScreenBytes = comboPtr->numBytes = 0;
     }
 }
 
@@ -2109,8 +2124,10 @@ ObjToTextProc(
 
     if (comboPtr->text != emptyString) {
 	Blt_Free(comboPtr->text);
+	Blt_Free(comboPtr->screenText);
 	comboPtr->text = emptyString;
-	comboPtr->textLen = 0;
+	comboPtr->screenText = NULL;
+	comboPtr->numScreenBytes = comboPtr->numBytes = 0;
     }
     SetTextFromObj(comboPtr, objPtr);
     if (comboPtr->textVarObjPtr != NULL) {
@@ -2146,7 +2163,7 @@ TextToObjProc(
 {
     ComboEntry *comboPtr = (ComboEntry *)(widgRec);
 
-    return Tcl_NewStringObj(comboPtr->text, comboPtr->textLen);
+    return Tcl_NewStringObj(comboPtr->text, comboPtr->numBytes);
 }
 
 static  int
@@ -2219,16 +2236,18 @@ GetTextOffset(Tcl_Interp *interp, ComboEntry *comboPtr, Tcl_Obj *objPtr,
 	int numBytes, maxChars;
 
 	/* Convert the character index into a byte offset. */
-	if (comboPtr->text == NULL) {
+	if (comboPtr->screenText == NULL) {
 	    *offsetPtr = 0;
 	    return TCL_OK;
 	}
-	numBytes = comboPtr->textLen;
-	maxChars = Tcl_NumUtfChars(comboPtr->text, comboPtr->textLen);
+	numBytes = comboPtr->numScreenBytes;
+	maxChars = Tcl_NumUtfChars(comboPtr->screenText, 
+				   comboPtr->numScreenBytes);
 	if (numChars < 0) {
 	    numBytes = 0;
 	} else if (numChars <= maxChars) {
-	    numBytes = Tcl_UtfAtIndex(comboPtr->text, numChars) - comboPtr->text;
+	    numBytes = Tcl_UtfAtIndex(comboPtr->screenText, numChars) - 
+		comboPtr->screenText;
 	}
 	*offsetPtr = numBytes;
 	return TCL_OK;
@@ -2243,17 +2262,17 @@ GetTextOffset(Tcl_Interp *interp, ComboEntry *comboPtr, Tcl_Obj *objPtr,
 	}
 	*offsetPtr = comboPtr->selAnchor;
     } else if ((c == 'e') && (strcmp(string, "end") == 0)) {
-	*offsetPtr = comboPtr->textLen;
+	*offsetPtr = comboPtr->numScreenBytes;
     } else if ((c == 'i') && (strcmp(string, "insert") == 0)) {
 	*offsetPtr = comboPtr->insertOffset;
     } else if ((c == 'n') && (strcmp(string, "next") == 0)) {
 	offset = comboPtr->insertOffset;
-	if (offset < comboPtr->textLen) {
+	if (offset < comboPtr->numScreenBytes) {
 	    Tcl_UniChar dummy;
 	    int numBytes;
 
-	    numBytes = Tcl_UtfToUniChar(comboPtr->text + comboPtr->insertOffset,
-		&dummy);
+	    numBytes = Tcl_UtfToUniChar(comboPtr->screenText + 
+					comboPtr->insertOffset, &dummy);
 	    offset = comboPtr->insertOffset + numBytes;
 	}
 	*offsetPtr = offset;
@@ -2262,7 +2281,8 @@ GetTextOffset(Tcl_Interp *interp, ComboEntry *comboPtr, Tcl_Obj *objPtr,
 	if (offset > 0) {
 	    int numBytes;
 
-	    numBytes = PrevUtfOffset(comboPtr->text + comboPtr->insertOffset);
+	    numBytes = PrevUtfOffset(comboPtr->screenText + 
+				     comboPtr->insertOffset);
 	    offset = comboPtr->insertOffset - numBytes;
 	}
 	*offsetPtr = offset;
@@ -2279,7 +2299,9 @@ GetTextOffset(Tcl_Interp *interp, ComboEntry *comboPtr, Tcl_Obj *objPtr,
 	x -= comboPtr->inset + comboPtr->iconWidth;
 	x += comboPtr->scrollX;
 	*offsetPtr = Blt_Font_Measure(comboPtr->font, comboPtr->screenText, 
-		comboPtr->textLen, x, TK_PARTIAL_OK|TK_AT_LEAST_ONE, &dummy);
+		comboPtr->numScreenBytes, x, TK_PARTIAL_OK|TK_AT_LEAST_ONE, 
+		&dummy);
+	fprintf(stderr, "offsetPtr = %d\n", *offsetPtr);
     } else {
 	Tcl_AppendResult(interp, "unknown index \"", string, "\"",(char *)NULL);
 	return TCL_ERROR;
@@ -2349,7 +2371,7 @@ ConfigureButton(
 	return TCL_ERROR;
     }
     butPtr->width = butPtr->height = 0;
-    if (comboPtr->flags & CLEARBUTTON) {
+    if (comboPtr->flags & CLRBUTTON) {
 	butPtr->width = BUTTON_WIDTH + 2 * butPtr->borderWidth;
 	butPtr->height = BUTTON_HEIGHT + 2 * butPtr->borderWidth;
     }
@@ -2614,8 +2636,8 @@ ButtonInvokeOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc,
 	}
     } else {
 	/* Record the delete for futher redo/undos.  */
-	RecordEdit(comboPtr, DELETE_OP, 0, comboPtr->textLen, comboPtr->text);
-	DeleteText(comboPtr, 0, comboPtr->textLen);
+	RecordEdit(comboPtr, DELETE_OP, 0, comboPtr->numBytes, comboPtr->text);
+	DeleteText(comboPtr, 0, comboPtr->numBytes);
 	FreeRedoRecords(comboPtr);
     }
     return TCL_OK;
@@ -2716,15 +2738,16 @@ ClosestOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc,
     if (x <= 0) {
 	offset = 0;
     } else if (x >= comboPtr->textWidth) {
-	offset = comboPtr->textLen;
+	offset = comboPtr->numScreenBytes;
     } else {
 	int prev;
 	int dummy, leftEdge, rightEdge, mid;
 
 	offset = Blt_Font_Measure(comboPtr->font, comboPtr->screenText, 
-		comboPtr->textLen, x, TK_PARTIAL_OK|TK_AT_LEAST_ONE, &dummy);
+		comboPtr->numScreenBytes, x, TK_PARTIAL_OK|TK_AT_LEAST_ONE, 
+		&dummy);
 	/* Get the previous character */
-	prev = offset - PrevUtfOffset(comboPtr->text + offset);
+	prev = offset - PrevUtfOffset(comboPtr->screenText + offset);
 	/* Measure the two strings. */
 	rightEdge = Blt_TextWidth(comboPtr->font, comboPtr->screenText, offset);
 	leftEdge = Blt_TextWidth(comboPtr->font, comboPtr->screenText, prev);
@@ -2733,6 +2756,7 @@ ClosestOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc,
 	    offset = prev;
 	}
     }
+    offset = Tcl_NumUtfChars(comboPtr->screenText, offset);
     Tcl_SetIntObj(Tcl_GetObjResult(interp), offset);
     return TCL_OK;
 }
@@ -2861,7 +2885,7 @@ GetOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 {
     Tcl_Obj *objPtr;
 
-    objPtr = Tcl_NewStringObj(comboPtr->text, comboPtr->textLen);
+    objPtr = Tcl_NewStringObj(comboPtr->text, comboPtr->numBytes);
     Tcl_SetObjResult(interp, objPtr);
     return TCL_OK;
 }
@@ -2902,7 +2926,7 @@ IndexOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc,
 	numChars = -1;
     } else {
 	/* Convert the Utf byte offset into an Unicode character index. */
-	numChars = Tcl_NumUtfChars(comboPtr->text, offset);
+	numChars = Tcl_NumUtfChars(comboPtr->screenText, offset);
     }
     Tcl_SetIntObj(Tcl_GetObjResult(interp), numChars);
     return TCL_OK;
@@ -3025,7 +3049,7 @@ IdentifyOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc,
 	    return TCL_OK;
 	}
     }
-    if (comboPtr->flags & CLEARBUTTON) {
+    if (comboPtr->flags & CLRBUTTON) {
 	Button *butPtr = &comboPtr->clearButton;
 
 	if ((x >= butPtr->x) && (x < (butPtr->x + butPtr->width)) &&
@@ -3320,15 +3344,15 @@ SeeOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     if (offset == -1) {
 	return TCL_OK;
     }
-    if ((offset <= comboPtr->firstOffset) || 
-	(offset >= (comboPtr->lastOffset-1))) {
+    if ((offset <= comboPtr->firstNumBytes) || 
+	(offset >= (comboPtr->lastNumBytes - 1))) {
 	int xMax, x;
 
 	x = Blt_TextWidth(comboPtr->font, comboPtr->screenText, offset);
 	xMax = comboPtr->viewWidth - ICWIDTH;
 	if (x >= xMax) {
 	    x -= xMax;
-	    if (offset <= comboPtr->firstOffset) {
+	    if (offset <= comboPtr->firstNumBytes) {
 		x += 9 * xMax / 10;
 	    } else {
 		x += 1 * xMax / 10;
@@ -3620,10 +3644,10 @@ RedoOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 
 	recPtr = comboPtr->redoPtr;
 	if (recPtr->type == INSERT_OP) {
-	    InsertText(comboPtr, recPtr->offset, recPtr->textLen, recPtr->text);
+	    InsertText(comboPtr, recPtr->offset, recPtr->numBytes, recPtr->text);
 	} else if (recPtr->type == DELETE_OP) {
 	    DeleteText(comboPtr, recPtr->offset, 
-		       recPtr->offset + recPtr->textLen);
+		       recPtr->offset + recPtr->numBytes);
 	} else {
 	    Tcl_AppendResult(interp, "unknown record type \"", 
 			     Blt_Itoa(recPtr->type), "\"", (char *)NULL);
@@ -3668,9 +3692,9 @@ UndoOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	recPtr = comboPtr->undoPtr;
 	if (recPtr->type == INSERT_OP) {
 	    DeleteText(comboPtr, recPtr->offset, 
-		       recPtr->offset + recPtr->textLen);
+		       recPtr->offset + recPtr->numBytes);
 	} else if (recPtr->type == DELETE_OP) {
-	    InsertText(comboPtr, recPtr->offset, recPtr->textLen, recPtr->text);
+	    InsertText(comboPtr, recPtr->offset, recPtr->numBytes, recPtr->text);
 	} else {
 	    Tcl_AppendResult(interp, "unknown record type \"", 
 			     Blt_Itoa(recPtr->type), "\"", (char *)NULL);
@@ -3852,7 +3876,7 @@ NewComboEntry(Tcl_Interp *interp, Tk_Window tkwin, int mask)
     comboPtr->scrollUnits = 2;
     comboPtr->selAnchor = comboPtr->selFirst = comboPtr->selLast = -1;
     comboPtr->text = emptyString;
-    comboPtr->textLen = 0;
+    comboPtr->numScreenBytes = comboPtr->numBytes = 0;
     comboPtr->tkwin = tkwin;
     if (mask == COMBO_ENTRY_MASK) {
 	comboPtr->flags |= ARROW;
@@ -4212,6 +4236,7 @@ DrawEntry(ComboEntry *comboPtr, Drawable drawable, int x, int y, int w, int h)
     if (comboPtr->entryHeight > comboPtr->textHeight) {
 	textY += (comboPtr->entryHeight - comboPtr->textHeight) / 2;
     }
+
 #ifdef WIN32
     assert(drawable != None);
 #endif
@@ -4243,15 +4268,15 @@ DrawEntry(ComboEntry *comboPtr, Drawable drawable, int x, int y, int w, int h)
 	int firstX, textWidth;
 
 	/* Find the range of visible characters in both bytes and pixels. */
-	comboPtr->firstOffset = comboPtr->lastOffset = 
+	comboPtr->firstNumBytes = comboPtr->lastNumBytes = 
 	    Blt_Font_Measure(comboPtr->font, comboPtr->screenText, 
-		comboPtr->textLen, comboPtr->scrollX, 0, &firstX);
-	comboPtr->lastOffset +=  Blt_Font_Measure(comboPtr->font, 
-		comboPtr->screenText + comboPtr->firstOffset, 
-		comboPtr->textLen - comboPtr->firstOffset,
+		comboPtr->numScreenBytes, comboPtr->scrollX, 0, &firstX);
+	comboPtr->lastNumBytes +=  Blt_Font_Measure(comboPtr->font, 
+		comboPtr->screenText + comboPtr->firstNumBytes, 
+		comboPtr->numScreenBytes - comboPtr->firstNumBytes,
 		w, TEXT_FLAGS, &textWidth);
-	if (comboPtr->lastOffset < comboPtr->textLen) {
-	    comboPtr->lastOffset++;
+	if (comboPtr->lastNumBytes < comboPtr->numScreenBytes) {
+	    comboPtr->lastNumBytes++;
 	}
 	comboPtr->firstX = firstX;
 	comboPtr->lastX = textWidth + firstX;
@@ -4267,13 +4292,13 @@ DrawEntry(ComboEntry *comboPtr, Drawable drawable, int x, int y, int w, int h)
     insertX = -1;
     if (((comboPtr->flags & (FOCUS|ICURSOR_ON|DISABLED|READONLY)) 
 	 == (FOCUS|ICURSOR_ON)) && (comboPtr->selFirst == -1) && 
-	(comboPtr->insertOffset >= comboPtr->firstOffset) && 
-	(comboPtr->insertOffset <= comboPtr->lastOffset)) {
+	(comboPtr->insertOffset >= comboPtr->firstNumBytes) && 
+	(comboPtr->insertOffset <= comboPtr->lastNumBytes)) {
 	insertX = textX;
-	if (comboPtr->insertOffset > comboPtr->firstOffset) { 
+	if (comboPtr->insertOffset > comboPtr->firstNumBytes) { 
 	    insertX += Blt_TextWidth(comboPtr->font, 
-		comboPtr->screenText + comboPtr->firstOffset, 
-		comboPtr->insertOffset - comboPtr->firstOffset);
+		comboPtr->screenText + comboPtr->firstNumBytes, 
+		comboPtr->insertOffset - comboPtr->firstNumBytes);
 	}
 	if (insertX > (comboPtr->lastX - comboPtr->firstX)) {
 	    insertX = -1;
@@ -4290,28 +4315,28 @@ DrawEntry(ComboEntry *comboPtr, Drawable drawable, int x, int y, int w, int h)
 
     /* Step 1. Draw any text preceding the selection that's still visible in
      *         the viewport. */
-    if (comboPtr->selFirst >= comboPtr->firstOffset) {
+    if (comboPtr->selFirst >= comboPtr->firstNumBytes) {
 	int numPixels, len, numBytes;
 	int selFirst;
 
 	selFirst = comboPtr->selFirst;
-	if (selFirst > comboPtr->lastOffset) {
-	    selFirst = comboPtr->lastOffset;
+	if (selFirst > comboPtr->lastNumBytes) {
+	    selFirst = comboPtr->lastNumBytes;
 	}
-	len = selFirst - comboPtr->firstOffset;
+	len = selFirst - comboPtr->firstNumBytes;
 	numBytes = Blt_Font_Measure(comboPtr->font, 
-		comboPtr->screenText + comboPtr->firstOffset, len, w, 
+		comboPtr->screenText + comboPtr->firstNumBytes, len, w, 
 		TEXT_FLAGS, &numPixels);
 	Blt_Font_Draw(comboPtr->display, pixmap, gc, comboPtr->font, 
 		Tk_Depth(comboPtr->tkwin), 0.0f, 
-		comboPtr->screenText + comboPtr->firstOffset, numBytes, 
+		comboPtr->screenText + comboPtr->firstNumBytes, numBytes, 
 		textX, textY);
 	textX += numPixels;
     }
     /* Step 2. Draw the selection itself, if it's visible in the
      *         viewport. Otherwise step 1 drew as much as we need. */
     if ((comboPtr->selFirst >= 0) && 
-	(comboPtr->selFirst <= comboPtr->lastOffset)) {	
+	(comboPtr->selFirst <= comboPtr->lastNumBytes)) {	
 	Blt_Bg bg;
 	int numBytes, numPixels;
 	int selFirst, selLast;
@@ -4320,12 +4345,12 @@ DrawEntry(ComboEntry *comboPtr, Drawable drawable, int x, int y, int w, int h)
 	 * whether the widget has focus or not. */
 	bg = comboPtr->selectBg;
 	selFirst = comboPtr->selFirst;
-	if (selFirst < comboPtr->firstOffset) {
-	    selFirst = comboPtr->firstOffset;
+	if (selFirst < comboPtr->firstNumBytes) {
+	    selFirst = comboPtr->firstNumBytes;
 	}
 	selLast = comboPtr->selLast;
-	if (selLast > comboPtr->lastOffset) {
-	    selLast = comboPtr->lastOffset;
+	if (selLast > comboPtr->lastNumBytes) {
+	    selLast = comboPtr->lastNumBytes;
 	}
 	numBytes = Blt_Font_Measure(comboPtr->font, 
 		comboPtr->screenText + selFirst, selLast - selFirst, w, 
@@ -4340,16 +4365,16 @@ DrawEntry(ComboEntry *comboPtr, Drawable drawable, int x, int y, int w, int h)
     /* Step 3.  Draw any text following the selection that's visible
      *		in the viewport. In the case of no selection, we draw
      *		the entire text string. */
-    if (comboPtr->selLast < comboPtr->lastOffset) {		
+    if (comboPtr->selLast < comboPtr->lastNumBytes) {		
 	int selLast;
 
 	selLast = comboPtr->selLast;
-	if (selLast < comboPtr->firstOffset) {
-	    selLast = comboPtr->firstOffset;
+	if (selLast < comboPtr->firstNumBytes) {
+	    selLast = comboPtr->firstNumBytes;
 	}
 	Blt_Font_Draw(comboPtr->display, pixmap, gc, comboPtr->font, 
 		Tk_Depth(comboPtr->tkwin), 0.0f, comboPtr->screenText + selLast,
-		comboPtr->lastOffset - selLast, textX, textY);
+		comboPtr->lastNumBytes - selLast, textX, textY);
     }
     /* Draw the insertion cursor, if one is needed. */
     if (insertX >= 0) {
@@ -4387,7 +4412,7 @@ DrawComboEntry(ComboEntry *comboPtr, Drawable drawable, int width, int height)
     if (comboPtr->flags & ARROW) {
 	w -= comboPtr->arrowWidth;
     }
-    buttonNeeded = ((comboPtr->flags & CLEARBUTTON) && (comboPtr->textLen > 0));
+    buttonNeeded = ((comboPtr->flags & CLRBUTTON) && (comboPtr->numBytes > 0));
     if (buttonNeeded) {
 	w -= butPtr->width;
     }
