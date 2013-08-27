@@ -49,7 +49,7 @@ set X {
     1.20000e+00 1.40000e+00 1.60000e+00 1.80000e+00 2.00000e+00 
     2.20000e+00 2.40000e+00 2.60000e+00 2.80000e+00 3.00000e+00 
     3.20000e+00 3.40000e+00 3.60000e+00 3.80000e+00 4.00000e+00 
-    4.20000e+00 4.40000e+00 4.60000e+00 4.80000e+00 5.00000e+00 
+    4.20000e+00 4.40000e+00 4.60000e+00 4.80000e+00 5.00000e+04 
 } 
 
 set Y1 { 
@@ -148,8 +148,9 @@ blt::table configure . c3 r0 r4 r5 -resize none
 
 .g axis configure x \
     -scrollcommand { .xbar set }  \
-    -scrollmax 10 \
-    -scrollmin 2  \
+    -scrollmin -1e+6 \
+    -scrollmax   1e+6 \
+    -logscale yes \
     -activeforeground red3 \
     -activebackground white \
     -title "X ayis" \

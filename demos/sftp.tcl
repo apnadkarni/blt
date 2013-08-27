@@ -1,7 +1,7 @@
 package require BLT
 package require blt_sftp
 
-set sftp [blt::sftp create -host nees.org]
+set sftp [blt::sftp create -host nanohub.org]
 
 set table [blt::datatable create]
 set list "atime name type mtime gid uid mode size longentry"

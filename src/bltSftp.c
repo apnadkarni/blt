@@ -115,18 +115,20 @@
 #define MAXPATHLEN	(1<<12)
 	
 #define DIR_OVERWRITE	(1<<0)
-#define DIR_LISTING	(1<<1)
-#define DIR_LONG	(1<<11)
+#define DIR_DOTFILES	(1<<1)
+#define DIR_IGNORE	(1<<2)
+#define DIR_LISTING	(1<<3)
+#define DIR_LONG	(1<<12)
 
-#define DIR_ATIME	(1<<3)
-#define DIR_GID		(1<<4)
-#define DIR_MODE	(1<<5)
-#define DIR_MTIME	(1<<6)
-#define DIR_NAME	(1<<7)
-#define DIR_SIZE	(1<<8)
-#define DIR_TYPE	(1<<9)
-#define DIR_UID		(1<<10)
-#define DIR_LONGENTRY	(1<<11)
+#define DIR_ATIME	(1<<4)
+#define DIR_GID		(1<<5)
+#define DIR_MODE	(1<<6)
+#define DIR_MTIME	(1<<7)
+#define DIR_NAME	(1<<8)
+#define DIR_SIZE	(1<<9)
+#define DIR_TYPE	(1<<10)
+#define DIR_UID		(1<<11)
+#define DIR_LONGENTRY	(1<<12)
 #define DIR_DEFAULT	(DIR_SIZE|DIR_TYPE|DIR_MTIME|DIR_MODE|DIR_NAME)
 #define DIR_ALL		(DIR_ATIME|DIR_GID|DIR_MODE|DIR_MTIME| \
 			 DIR_NAME|DIR_SIZE|DIR_TYPE|DIR_UID|DIR_LONGENTRY)
@@ -271,6 +273,7 @@ typedef struct {
     const char *match;
     int fileCount;
     BLT_TABLE table;
+    Tcl_Obj *excludeObjPtr;		/* List of excluding patterns. */
 } DirectoryReader;
 
 
@@ -356,15 +359,19 @@ static Blt_SwitchCustom fieldsSwitch = {
 
 static Blt_SwitchSpec dirListSwitches[] = 
 {
-    {BLT_SWITCH_CUSTOM,  "-fields",     "list",    (char *)NULL,
+    {BLT_SWITCH_BOOLEAN,  "-dotfiles", "bool",	  (char *)NULL,
+        Blt_Offset(DirectoryReader, flags), 0, DIR_DOTFILES},
+    {BLT_SWITCH_OBJ,      "-exclude",	"list",		(char *)NULL,
+        Blt_Offset(DirectoryReader, excludeObjPtr), 0},
+    {BLT_SWITCH_CUSTOM,   "-fields",   "list",    (char *)NULL,
         Blt_Offset(DirectoryReader, flags), 0, 0, &fieldsSwitch},
-    {BLT_SWITCH_BOOLEAN, "-listing",  "bool",    (char *)NULL,
+    {BLT_SWITCH_BOOLEAN,  "-listing",  "bool",    (char *)NULL,
 	Blt_Offset(DirectoryReader, flags), 0, DIR_LISTING},
-    {BLT_SWITCH_BOOLEAN, "-long",     "bool",    (char *)NULL,
+    {BLT_SWITCH_BOOLEAN,  "-long",     "bool",    (char *)NULL,
 	Blt_Offset(DirectoryReader, flags), 0, DIR_LONG},
-    {BLT_SWITCH_CUSTOM, "-table",     "name",    (char *)NULL,
+    {BLT_SWITCH_CUSTOM,   "-table",    "name",    (char *)NULL,
         Blt_Offset(DirectoryReader, table), 0, 0, &tableSwitch},
-    {BLT_SWITCH_INT_NNEG, "-timeout", "seconds", (char *)NULL,
+    {BLT_SWITCH_INT_NNEG, "-timeout",  "seconds", (char *)NULL,
 	Blt_Offset(DirectoryReader, timeout), 0},
     {BLT_SWITCH_END}
 };
@@ -442,9 +449,12 @@ typedef struct {
     const char *rootPath;
     int rootOffset;
     unsigned int flags;
-    int timeout;
-    int maxDepth;
+    int timeout;			/* If > 0, timeout reads after this
+					 * amount of milliseconds. */
+    int maxDepth;			/* If > 0, maximum depth to
+					 * recurse. */
     Tcl_Obj *progCmdObjPtr;
+    Tcl_Obj *excludeObjPtr;		/* List of excluding patterns. */
     const char *cancelVarName;
 } TreeWriter;
 
@@ -455,17 +465,21 @@ static Blt_SwitchCustom treeNodeSwitch = {
 
 static Blt_SwitchSpec dirTreeSwitches[] = 
 {
-    {BLT_SWITCH_STRING,    "-cancel",  "varName",  (char *)NULL,
+    {BLT_SWITCH_STRING,   "-cancel",	"varName",	(char *)NULL,
 	Blt_Offset(TreeWriter, cancelVarName), 0},
-    {BLT_SWITCH_INT_NNEG,"-depth",      "number",     (char *)NULL,
+    {BLT_SWITCH_INT_NNEG, "-depth",	"number",	(char *)NULL,
 	Blt_Offset(TreeWriter, maxDepth),       0},
-    {BLT_SWITCH_CUSTOM,  "-fields",     "list",    (char *)NULL,
+    {BLT_SWITCH_BOOLEAN,  "-dotfiles",	"bool",		(char *)NULL,
+        Blt_Offset(TreeWriter, flags), 0, DIR_DOTFILES},
+    {BLT_SWITCH_OBJ,      "-exclude",	"list",		(char *)NULL,
+        Blt_Offset(TreeWriter, excludeObjPtr),	0},
+    {BLT_SWITCH_CUSTOM,   "-fields",	"list",		(char *)NULL,
         Blt_Offset(TreeWriter, flags), 0, 0, &fieldsSwitch},
-    {BLT_SWITCH_BOOLEAN,   "-overwrite",   "bool",    (char *)NULL,
+    {BLT_SWITCH_BOOLEAN,  "-overwrite",	"bool",		(char *)NULL,
 	Blt_Offset(TreeWriter, flags), 0, DIR_OVERWRITE},
-    {BLT_SWITCH_CUSTOM,   "-root",      "node", (char *)NULL,
+    {BLT_SWITCH_CUSTOM,   "-root",      "node",		(char *)NULL,
 	Blt_Offset(TreeWriter, root),  0, 0, &treeNodeSwitch},
-    {BLT_SWITCH_INT_NNEG, "-timeout",   "seconds", (char *)NULL,
+    {BLT_SWITCH_INT_NNEG, "-timeout",   "seconds",	(char *)NULL,
 	Blt_Offset(TreeWriter, timeout),       0},
     {BLT_SWITCH_END}
 };
@@ -1180,7 +1194,6 @@ ReadEntryIntoTree(Tcl_Interp *interp, LIBSSH2_SFTP_HANDLE *handle,
     Tcl_Obj *objPtr;
     Blt_TreeNode node;
     Blt_Tree tree;
-    static int count = 0;
 
     numBytes = libssh2_sftp_readdir_ex(handle, bytes, sizeof(bytes),
 		longentry, sizeof(longentry), &attrs);
@@ -1193,9 +1206,31 @@ ReadEntryIntoTree(Tcl_Interp *interp, LIBSSH2_SFTP_HANDLE *handle,
     if (numBytes == 0) {
 	return TCL_BREAK;		/* End-of-directory. */
     }	
-    if (((bytes[0] == '.') && (bytes[1] == '\0')) || 
-	((bytes[0] == '.') && (bytes[1] == '.') && (bytes[2] == '\0'))) {
-	return TCL_OK;
+    if (bytes[0] == '.') {
+	if ((writerPtr->flags & DIR_DOTFILES) == 0) {
+	    return TCL_OK;		/* Ignore dotfiles. */
+	}
+	if ((bytes[1] == '\0') || ((bytes[1] == '.') && (bytes[2] == '\0'))) {
+	    return TCL_OK;		/* Ignore "." and ".." */
+	}
+    }
+    if (writerPtr->excludeObjPtr != NULL) {
+	int i;
+	Tcl_Obj **objv;
+	int objc;
+
+	if (Tcl_ListObjGetElements(interp, writerPtr->excludeObjPtr, 
+				   &objc, &objv) != TCL_OK) {
+	    return TCL_ERROR;
+	}
+	for (i = 0; i < objc; i++) {
+	    const char *pattern;
+
+	    pattern = Tcl_GetString(objv[i]);
+	    if (Tcl_StringMatch(bytes, pattern)) {
+		return TCL_OK;
+	    }
+	}
     }
     tree = writerPtr->tree;
     if (writerPtr->flags & DIR_OVERWRITE) {
@@ -1303,7 +1338,8 @@ ReadDirectoryIntoTree(Tcl_Interp *interp, Remote *remotePtr, const char *path,
 		RemoteError(remotePtr), (char *)NULL);
 	}
 	libssh2_session_set_blocking(remotePtr->session, TRUE);
-        return TCL_ERROR;
+        return TCL_OK;			/* Ignore errors on remote
+					 * directories.*/
     }
     result = ReadEntryIntoTree(interp, handle, writerPtr, parent);
     while (result == TCL_OK) {
@@ -2603,9 +2639,35 @@ ReadEntryIntoList(DirectoryReader *readerPtr)
 	*readerPtr->donePtr = 1;	/* We're done. */
 	return;
     }	
+    if (bytes[0] == '.') {
+	if ((readerPtr->flags & DIR_DOTFILES) == 0) {
+	    return;			/* Ignore dotfiles. */
+	}
+	if ((bytes[1] == '\0') || ((bytes[1] == '.') && (bytes[2] == '\0'))) {
+	    return;			/* Ignore "." and ".." */
+	}
+    }
     if ((readerPtr->match != NULL) && (strcmp(bytes, readerPtr->match) != 0)) {
 	return;				/* Doesn't match the entry we're
 					 * looking for. */
+    }
+    if (readerPtr->excludeObjPtr != NULL) {
+	int i;
+	Tcl_Obj **objv;
+	int objc;
+
+	if (Tcl_ListObjGetElements(readerPtr->interp, readerPtr->excludeObjPtr, 
+				   &objc, &objv) != TCL_OK) {
+	    return;
+	}
+	for (i = 0; i < objc; i++) {
+	    const char *pattern;
+
+	    pattern = Tcl_GetString(objv[i]);
+	    if (Tcl_StringMatch(bytes, pattern)) {
+		return;
+	    }
+	}
     }
     if (readerPtr->flags & DIR_LISTING) {
 	if (readerPtr->fileCount > 0) {

@@ -1,15 +1,15 @@
 package require BLT
 package require blt_sftp
 
-set sftp [blt::sftp create -host nees.org]
+set sftp [blt::sftp create -host nanohub.org]
 
 set tree [blt::tree create]
 puts stderr "before tree"
-puts stderr time=[time {$sftp dirtree ~/indeed $tree}]
+puts stderr time=[time {$sftp dirtree ~/ $tree }]
 puts stderr "after tree"
 
 puts stderr numentries=[$tree size 0]
-
+$tree sort 0 -recurse -reorder
 set view .ss.view
 
 blt::scrollset .ss \
@@ -19,7 +19,9 @@ blt::scrollset .ss \
 blt::tk::scrollbar .ss.x
 blt::tk::scrollbar .ss.y
 
-blt::treeview $view -tree $tree
+blt::treeview $view -tree $tree \
+	-height 3i
+
 blt::table . \
     0,0 .ss -fill both
 
