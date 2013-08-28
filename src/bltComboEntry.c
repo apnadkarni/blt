@@ -2723,7 +2723,7 @@ static int
 ClosestOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc, 
 	  Tcl_Obj *const *objv)
 {
-    int offset;
+    int offset, index;
     int x;
     
     if (Tcl_GetIntFromObj(interp, objv[2], &x) != TCL_OK) {
@@ -2756,8 +2756,8 @@ ClosestOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc,
 	    offset = prev;
 	}
     }
-    offset = Tcl_NumUtfChars(comboPtr->screenText, offset);
-    Tcl_SetIntObj(Tcl_GetObjResult(interp), offset);
+    index = Tcl_NumUtfChars(comboPtr->screenText, offset);
+    Tcl_SetIntObj(Tcl_GetObjResult(interp), index);
     return TCL_OK;
 }
 
