@@ -48,7 +48,7 @@
 #include "bltOp.h"
 #include "bltInitCmd.h"
 
-#define NumUtfBytes(s, n)	(Tcl_UtfAtIndex(s, n) - s)
+#define CharIndexToByteOffset(s, n)	(Tcl_UtfAtIndex(s, n) - s)
 #define TEXT_ENTRY_MASK		BLT_CONFIG_USER_BIT
 #define COMBO_ENTRY_MASK	BLT_CONFIG_USER_BIT << 1
 #define ALL_MASK		(TEXT_ENTRY_MASK | COMBO_ENTRY_MASK)
@@ -290,15 +290,18 @@ static Blt_ConfigSpec buttonSpecs[] =
 	(char *)NULL, 0, 0}
 };
 
+typedef int CharIndex;
+typedef int ByteOffset;
+
 static char emptyString[] = "";
 
 typedef struct _EditRecord {
     struct _EditRecord *nextPtr;
-    short int type;
-    short int cursorIndex;
-    short int index;
-    short int numBytes;			/* # of bytes in text string. */
-    short int numChars;			/* # of characters in text string. */
+    int type;
+    CharIndex cursorIndex;
+    CharIndex index;
+    int numBytes;			/* # of bytes in text string. */
+    int numChars;			/* # of characters in text string. */
     char text[1];
 } EditRecord;
 
@@ -343,13 +346,13 @@ typedef struct  {
      * The selection is the rectangle that contains selected text.  It is
      * displayed as a solid colored entry with optionally a 3D border.
      */
-    int selAnchor;			/* Fixed end of selection. Used to
+    CharIndex selAnchor;		/* Fixed end of selection. Used to
 					 * extend the selection while
 					 * maintaining the * other end of the
 					 * selection. */
-    short int selFirst;			/* Index of the 1st character in
+    CharIndex selFirst;			/* Index of the 1st character in
 					 * the selection. */
-    short int selLast;			/* Index of the last character
+    CharIndex selLast;			/* Index of the last character
 					 * in the selection. */
     int selRelief;			/* Relief of selected items. Currently
 					 * is always raised. */
@@ -457,9 +460,9 @@ typedef struct  {
 					 * cursor. */
 
     int cursorWidth;			/* Total width of insert cursor. */
-    int cursorOffset;			/* Byte offset of insertion cursor in
+    ByteOffset cursorOffset;		/* Byte offset of insertion cursor in
 					 * the screen text string. */
-    short int cursorIndex;
+    CharIndex cursorIndex;
     int prefTextWidth;			/* Desired width of text, measured in
 					 * average characters. */
     int prefIconWidth;			/* Desired width of icon, measured in
@@ -472,7 +475,7 @@ typedef struct  {
     short int width, height;
 
 
-    short int firstOffset, lastOffset;	/* Byte offset of first and last
+    ByteOffset firstOffset, lastOffset;	/* Byte offset of first and last
 					 * characters visible in viewport. */
     int firstX, lastX;			/* x-coordinates of first and last
 					 * characters visible in viewport. */ 
@@ -619,7 +622,8 @@ static Blt_ConfigSpec configSpecs[] =
 	DEF_SELECT_RELIEF, Blt_Offset(ComboEntry, selRelief),
 	BLT_CONFIG_DONT_SET_DEFAULT | ALL_MASK},
     {BLT_CONFIG_STRING, "-show", "show", "Show", DEF_SHOW, 
-	Blt_Offset(ComboEntry, cipher), BLT_CONFIG_DONT_SET_DEFAULT | ALL_MASK},
+	Blt_Offset(ComboEntry, cipher), 
+        BLT_CONFIG_NULL_OK | BLT_CONFIG_DONT_SET_DEFAULT | ALL_MASK},
     {BLT_CONFIG_CUSTOM, "-state", "state", "State", DEF_STATE, 
 	Blt_Offset(ComboEntry, flags), 
 	BLT_CONFIG_DONT_SET_DEFAULT | ALL_MASK, &stateOption},
@@ -891,13 +895,14 @@ CleanText(ComboEntry *comboPtr)
 } 
 
 static void
-DeleteText(ComboEntry *comboPtr, int firstIndex, int lastIndex)
+DeleteText(ComboEntry *comboPtr, CharIndex firstIndex, CharIndex lastIndex)
 {
-    int first, last;
+    ByteOffset first, last;
     int i, j;
 
+    /* Kill the selection */
     comboPtr->selFirst = comboPtr->selLast = -1;
-    /* Fix the insert cursor index if necessary. */
+    /* Fix the insertion cursor index if necessary. */
     if (comboPtr->cursorIndex >= firstIndex) {
 	if (comboPtr->cursorIndex >= lastIndex) {
 	    comboPtr->cursorIndex -= (lastIndex - firstIndex);
@@ -905,14 +910,15 @@ DeleteText(ComboEntry *comboPtr, int firstIndex, int lastIndex)
 	    comboPtr->cursorIndex = firstIndex;
 	}
     }
+    comboPtr->numChars -= lastIndex - firstIndex;
     /* Remove the requested character range from the actual text */
-    first = NumUtfBytes(comboPtr->text, firstIndex);
-    last  = NumUtfBytes(comboPtr->text, lastIndex);
+    first = CharIndexToByteOffset(comboPtr->text, firstIndex);
+    last  = CharIndexToByteOffset(comboPtr->text, lastIndex);
     for (i = first, j = last; j < comboPtr->numBytes; i++, j++) {
 	comboPtr->text[i] = comboPtr->text[j];
     }
-    comboPtr->text[i] = '\0';
     comboPtr->numBytes -= last - first;
+    comboPtr->text[comboPtr->numBytes] = '\0';
     CleanText(comboPtr);
     if (comboPtr->textVarObjPtr != NULL) {
 	UpdateTextVariable(comboPtr->interp, comboPtr);
@@ -921,11 +927,12 @@ DeleteText(ComboEntry *comboPtr, int firstIndex, int lastIndex)
 }
 
 static int
-InsertText(ComboEntry *comboPtr, int index, int numBytes, 
+InsertText(ComboEntry *comboPtr, CharIndex index, int numBytes, 
 	   const char *insertText)
 {
     char *text;
-    int offset, numChars;
+    ByteOffset offset;
+    int numChars;
 
     /* Create a larger buffer to hold the text. */
     text = Blt_Malloc(comboPtr->numBytes + numBytes);
@@ -934,7 +941,7 @@ InsertText(ComboEntry *comboPtr, int index, int numBytes,
     }
     numChars = Tcl_NumUtfChars(insertText, numBytes);
     /* Copy the old + extra to the new text. */
-    offset = NumUtfBytes(comboPtr->text, index);
+    offset = CharIndexToByteOffset(comboPtr->text, index);
     memcpy(text, comboPtr->text, offset);
     memcpy(text + offset, insertText, numBytes);
     memcpy(text + offset + numBytes, comboPtr->text + offset, 
@@ -1137,7 +1144,8 @@ SetTextFromObj(ComboEntry *comboPtr, Tcl_Obj *objPtr)
     comboPtr->flags |= (ICURSOR | SCROLL_PENDING | LAYOUT_PENDING);
     comboPtr->scrollX = 0;
     comboPtr->selFirst = comboPtr->selLast = -1;
-    comboPtr->cursorIndex = comboPtr->numChars;
+    comboPtr->cursorIndex = comboPtr->numChars = 
+	Tcl_NumUtfChars(comboPtr->text, comboPtr->numBytes);
 }
 
 /*
@@ -1436,9 +1444,9 @@ ComboEntryInvokeCmdProc(ClientData clientData)
  *---------------------------------------------------------------------------
  */
 static int
-SelectText(ComboEntry *comboPtr, int index)
+SelectText(ComboEntry *comboPtr, CharIndex index)
 {
-    int first, last;
+    CharIndex first, last;
 
     /*
      * Grab the selection if we don't own it already.
@@ -1546,10 +1554,10 @@ ComboEntrySelectionProc(
 
     size = 0;
     if (comboPtr->selFirst >= 0) {
-	int first, last;
+	ByteOffset first, last;
 
-	first = NumUtfBytes(comboPtr->screenText,comboPtr->selFirst);
-	last = NumUtfBytes(comboPtr->screenText, comboPtr->selLast);
+	first = CharIndexToByteOffset(comboPtr->screenText,comboPtr->selFirst);
+	last = CharIndexToByteOffset(comboPtr->screenText, comboPtr->selLast);
 	size = last - first - offset;
 	assert(size >= 0);
 	if (size > maxBytes) {
@@ -2247,11 +2255,11 @@ PrevUtfOffset(const char *string)
  */
 static int
 GetTextIndex(Tcl_Interp *interp, ComboEntry *comboPtr, Tcl_Obj *objPtr,
-	     int *indexPtr)
+	     CharIndex *indexPtr)
 {
     char *string;
     char c;
-    int index;
+    CharIndex index;
 
     if (Tcl_GetIntFromObj((Tcl_Interp *)NULL, objPtr, &index) == TCL_OK) {
 	/* Convert the character index into a byte offset. */
@@ -2728,7 +2736,8 @@ static int
 ClosestOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc, 
 	  Tcl_Obj *const *objv)
 {
-    int offset, index;
+    ByteOffset offset;
+    CharIndex index;
     int x;
     
     if (Tcl_GetIntFromObj(interp, objv[2], &x) != TCL_OK) {
@@ -2836,8 +2845,8 @@ static int
 DeleteOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc, 
 	 Tcl_Obj *const *objv)
 {
-    int first, last;
-    int firstOffset, lastOffset;
+    CharIndex first, last;
+    ByteOffset firstOffset, lastOffset;
     const char *text;
 
     if (comboPtr->flags & (READONLY|DISABLED)) {
@@ -2857,8 +2866,8 @@ DeleteOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc,
 	return TCL_OK;
     }
     /* Record the delete for futher redo/undos.  */
-    firstOffset = NumUtfBytes(comboPtr->text, first);
-    lastOffset  = NumUtfBytes(comboPtr->text, last);
+    firstOffset = CharIndexToByteOffset(comboPtr->text, first);
+    lastOffset  = CharIndexToByteOffset(comboPtr->text, last);
     text = comboPtr->text + firstOffset;
     RecordEdit(comboPtr, DELETE_OP, first, text, lastOffset - firstOffset);
     DeleteText(comboPtr, first, last);
@@ -2927,7 +2936,7 @@ static int
 IndexOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc, 
 	Tcl_Obj *const *objv)
 {
-    int index;
+    CharIndex index;
 
     if (GetTextIndex(interp, comboPtr, objv[2], &index) != TCL_OK) {
 	return TCL_ERROR;
@@ -2955,7 +2964,7 @@ static int
 IcursorOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc, 
 	  Tcl_Obj *const *objv)
 {
-    int index;
+    CharIndex index;
 
     if (comboPtr->flags & DISABLED) {
 	return TCL_OK;		/* Widget is currently disabled. */
@@ -3138,7 +3147,7 @@ static int
 InsertOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc, 
 	 Tcl_Obj *const *objv)
 {
-    int index;
+    CharIndex index;
     char *insertText;
     int numBytes;
 
@@ -3337,7 +3346,8 @@ ScanOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 static int
 SeeOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 {
-    int index, offset;
+    CharIndex index;
+    ByteOffset offset;
 
     if (comboPtr->flags & DISABLED) {
 	return TCL_OK;		/* Widget is currently disabled. */
@@ -3348,7 +3358,7 @@ SeeOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     if (index == -1) {
 	return TCL_OK;
     }
-    offset = NumUtfBytes(comboPtr->screenText, index);
+    offset = CharIndexToByteOffset(comboPtr->screenText, index);
     if ((offset <= comboPtr->firstOffset) || 
 	(offset >= (comboPtr->lastOffset - 1))) {
 	int xMax, x;
@@ -3402,7 +3412,7 @@ static int
 SelectionAdjustOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc,
 		  Tcl_Obj *const *objv)
 {
-    int index;
+    CharIndex index;
     int half1, half2;
 
     if (comboPtr->flags & DISABLED) {
@@ -3476,7 +3486,7 @@ static int
 SelectionFromOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc, 
 		Tcl_Obj *const *objv)
 {
-    int index;
+    CharIndex index;
 
     if (comboPtr->flags & DISABLED) {
 	return TCL_OK;		/* Widget is currently disabled. */
@@ -3533,7 +3543,7 @@ static int
 SelectionRangeOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc,
 		 Tcl_Obj *const *objv)
 {
-    int first, last;
+    CharIndex first, last;
 
     if (comboPtr->flags & DISABLED) {
 	return TCL_OK;		/* Widget is currently disabled. */
@@ -3569,7 +3579,7 @@ static int
 SelectionToOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc,
 	      Tcl_Obj *const *objv)
 {
-    int index;
+    CharIndex index;
 
     if (comboPtr->flags & DISABLED) {
 	return TCL_OK;		/* Widget is currently disabled. */
@@ -4205,7 +4215,7 @@ DrawEntry(ComboEntry *comboPtr, Drawable drawable, int x, int y, int w, int h)
     int textX, textY;
     Blt_Bg bg;
     GC gc;
-    int cursorOffset, firstOffset, lastOffset;
+    ByteOffset cursorOffset, firstOffset, lastOffset;
 
 #define TEXT_FLAGS (TK_PARTIAL_OK | TK_AT_LEAST_ONE)
     if ((h < 2) || (w < 2)) {
@@ -4294,7 +4304,8 @@ DrawEntry(ComboEntry *comboPtr, Drawable drawable, int x, int y, int w, int h)
     textX = comboPtr->firstX - comboPtr->scrollX;
 	
     insertX = -1;
-    cursorOffset = NumUtfBytes(comboPtr->screenText, comboPtr->cursorIndex);
+    cursorOffset = CharIndexToByteOffset(comboPtr->screenText, 
+	comboPtr->cursorIndex);
     if (((comboPtr->flags & (FOCUS|ICURSOR_ON|DISABLED|READONLY)) 
 	 == (FOCUS|ICURSOR_ON)) && (comboPtr->selFirst == -1) && 
 	(cursorOffset >= comboPtr->firstOffset) && 
@@ -4320,12 +4331,14 @@ DrawEntry(ComboEntry *comboPtr, Drawable drawable, int x, int y, int w, int h)
 
     /* Step 1. Draw any text preceding the selection that's still visible in
      *         the viewport. */
-    firstOffset = NumUtfBytes(comboPtr->screenText, comboPtr->selFirst);
-    lastOffset  = NumUtfBytes(comboPtr->screenText, comboPtr->selLast);
+    firstOffset = CharIndexToByteOffset(comboPtr->screenText, 
+	comboPtr->selFirst);
+    lastOffset  = CharIndexToByteOffset(comboPtr->screenText, 
+	comboPtr->selLast);
 
     if (firstOffset >= comboPtr->firstOffset) {
 	int numPixels, len, numBytes;
-	int first;
+	ByteOffset first;
 
 	first = firstOffset;
 	if (first > comboPtr->lastOffset) {
@@ -4346,7 +4359,7 @@ DrawEntry(ComboEntry *comboPtr, Drawable drawable, int x, int y, int w, int h)
     if ((firstOffset >= 0) && (firstOffset <= comboPtr->lastOffset)) {	
 	Blt_Bg bg;
 	int numBytes, numPixels;
-	int first, last;
+	ByteOffset first, last;
 
 	/* The background of the selection rectangle is different depending
 	 * whether the widget has focus or not. */
@@ -4373,16 +4386,12 @@ DrawEntry(ComboEntry *comboPtr, Drawable drawable, int x, int y, int w, int h)
      *		in the viewport. In the case of no selection, we draw
      *		the entire text string. */
     if (lastOffset < comboPtr->lastOffset) {		
-	int last;
+	ByteOffset last;
 
 	last = lastOffset;
 	if (last < comboPtr->firstOffset) {
 	    last = comboPtr->firstOffset;
 	}
-	fprintf(stderr, "last=%d, firstOffset=%d lastOffset=%d, comboPtr->firstOffset=%d comboPtr->lastOffset=%d selFirst=%d selLast=%d\n",
-		last, firstOffset, lastOffset, 
-		comboPtr->firstOffset, comboPtr->lastOffset,
-		comboPtr->selFirst, comboPtr->selLast);
 	Blt_Font_Draw(comboPtr->display, pixmap, gc, 
 		comboPtr->font, Tk_Depth(comboPtr->tkwin), 0.0f, 
 		comboPtr->screenText + last,

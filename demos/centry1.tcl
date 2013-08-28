@@ -30,7 +30,6 @@ blt::comboentry .e \
     -iconvariable icon \
     -edit yes \
     -show \u25CF \
-    -show "" \
     -textwidth 16 \
     -menu .e.m \
     -exportselection yes \
