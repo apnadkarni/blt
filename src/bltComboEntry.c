@@ -290,16 +290,22 @@ static Blt_ConfigSpec buttonSpecs[] =
 	(char *)NULL, 0, 0}
 };
 
-typedef int CharIndex;
-typedef int ByteOffset;
+typedef int CharIndex;			/* Character index regardless of
+					 * how many bytes (UTF) are used. */
+typedef int ByteOffset;			/* Offset in bytes from the start of
+					 * the text string.  This may be
+					 * different between the normal text
+					 * and the screen text if -show is
+					 * used. */
 
 static char emptyString[] = "";
 
 typedef struct _EditRecord {
     struct _EditRecord *nextPtr;
     int type;
-    CharIndex cursorIndex;
-    CharIndex index;
+    CharIndex cursorIndex;		/* Current index of the cursor. */
+    CharIndex index;			/* Character index where text was
+					   inserted. */
     int numBytes;			/* # of bytes in text string. */
     int numChars;			/* # of characters in text string. */
     char text[1];
@@ -346,14 +352,15 @@ typedef struct  {
      * The selection is the rectangle that contains selected text.  It is
      * displayed as a solid colored entry with optionally a 3D border.
      */
-    CharIndex selAnchor;		/* Fixed end of selection. Used to
+    CharIndex selAnchor;		/* Character index representing the
+					 * fixed end of selection. Used to
 					 * extend the selection while
-					 * maintaining the * other end of the
+					 * maintaining the other end of the
 					 * selection. */
-    CharIndex selFirst;			/* Index of the 1st character in
-					 * the selection. */
-    CharIndex selLast;			/* Index of the last character
-					 * in the selection. */
+    CharIndex selFirst;			/* Character index of the first
+					 * character in the selection. */
+    CharIndex selLast;			/* Character Index of the last
+					 * character in the selection. */
     int selRelief;			/* Relief of selected items. Currently
 					 * is always raised. */
     int selBW;				/* Border width of a selected text.*/
@@ -414,10 +421,10 @@ typedef struct  {
 					 * entry if an image has no been
 					 * designated. Its value is overridden
 					 * by the -textvariable option. */
-    char *screenText;			/* Text string to be displayed in the
-					 * entry if an image has not been
-					 * designated. Its value is overridden
-					 * by the -textvariable option. */
+    char *screenText;			/* Text string to be displayed on the
+					 * screen.  If the -show option is used
+					 * this string may consist of different
+					 * characters from the above string.*/
     Tcl_Obj *textVarObjPtr;		/* Name of TCL variable.  If non-NULL,
 					 * this variable contains the text
 					 * string to * be displayed in the
@@ -460,9 +467,8 @@ typedef struct  {
 					 * cursor. */
 
     int cursorWidth;			/* Total width of insert cursor. */
-    ByteOffset cursorOffset;		/* Byte offset of insertion cursor in
-					 * the screen text string. */
-    CharIndex cursorIndex;
+    CharIndex cursorIndex;		/* Character index of the insertion
+					 * cursor.  */
     int prefTextWidth;			/* Desired width of text, measured in
 					 * average characters. */
     int prefIconWidth;			/* Desired width of icon, measured in
@@ -3881,7 +3887,6 @@ NewComboEntry(Tcl_Interp *interp, Tk_Window tkwin, int mask)
     comboPtr->flags |= (LAYOUT_PENDING|SCROLL_PENDING|EXPORT_SELECTION);
     comboPtr->highlightWidth = 2;
     comboPtr->cursorOffTime = 300;
-    comboPtr->cursorOffset = 0;
     comboPtr->cursorOnTime = 600;
     comboPtr->interp = interp;
     comboPtr->mask = mask;
@@ -4338,13 +4343,13 @@ DrawEntry(ComboEntry *comboPtr, Drawable drawable, int x, int y, int w, int h)
 
     if (firstOffset >= comboPtr->firstOffset) {
 	int numPixels, len, numBytes;
-	ByteOffset first;
+	ByteOffset offset;
 
-	first = firstOffset;
-	if (first > comboPtr->lastOffset) {
-	    first = comboPtr->lastOffset;
+	offset = firstOffset;
+	if (offset > comboPtr->lastOffset) {
+	    offset = comboPtr->lastOffset;
 	}
-	len = first - comboPtr->firstOffset;
+	len = offset - comboPtr->firstOffset;
 	numBytes = Blt_Font_Measure(comboPtr->font, 
 		comboPtr->screenText + comboPtr->firstOffset, len, w, 
 		TEXT_FLAGS, &numPixels);
@@ -4386,16 +4391,16 @@ DrawEntry(ComboEntry *comboPtr, Drawable drawable, int x, int y, int w, int h)
      *		in the viewport. In the case of no selection, we draw
      *		the entire text string. */
     if (lastOffset < comboPtr->lastOffset) {		
-	ByteOffset last;
+	ByteOffset offset;
 
-	last = lastOffset;
-	if (last < comboPtr->firstOffset) {
-	    last = comboPtr->firstOffset;
+	offset = lastOffset;
+	if (offset < comboPtr->firstOffset) {
+	    offset = comboPtr->firstOffset;
 	}
 	Blt_Font_Draw(comboPtr->display, pixmap, gc, 
 		comboPtr->font, Tk_Depth(comboPtr->tkwin), 0.0f, 
-		comboPtr->screenText + last,
-		comboPtr->lastOffset - last, 
+		comboPtr->screenText + offset,
+		comboPtr->lastOffset - offset, 
 		textX, textY);
     }
     /* Draw the insertion cursor, if one is needed. */
