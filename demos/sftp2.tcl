@@ -1,11 +1,56 @@
 package require BLT
 package require blt_sftp
 
-set sftp [blt::sftp create -host nanohub.org]
+
+proc Cancel {} {
+    global credentials 
+    set credentials ""
+}
+	     
+proc CollectCredentials {} {
+    global credentials 
+    set user [.login.user get]
+    set pass [.login.pass get]
+    set credentials [list $user $pass]
+}
+
+proc GetCredentials { user } {
+    set w [blt::tk::toplevel .login]
+    blt::tk::label $w.user_l -text "User:" 
+    blt::comboentry $w.user \
+	-textwidth 20 \
+	-hidearrow yes
+    $w.user insert 0 $user
+    blt::tk::label $w.pass_l -text "Password:" 
+    blt::comboentry $w.pass \
+	-textwidth 20 \
+	-show \u25CF \
+	-hidearrow yes
+    blt::tk::button $w.cancel -text "Cancel" -command Cancel
+    blt::tk::button $w.ok -text "Ok" -command CollectCredentials
+    global credentials
+    set credentials ""
+    blt::table $w \
+	0,0 $w.user_l -anchor e  \
+	0,1 $w.user -fill x  \
+	1,0 $w.pass_l -anchor e  \
+	1,1 $w.pass -fill x  \
+	2,0 $w.cancel \
+	2,1 $w.ok
+    blt::table configure $w c0 -resize none
+    blt::table configure $w c1 -resize both
+    update
+    tkwait variable credentials
+    destroy $w
+    return $credentials
+}
+    
+
+set sftp [blt::sftp create -host nees.org -user gah -prompt GetCredentials]
 
 set tree [blt::tree create]
 puts stderr "before tree"
-puts stderr time=[time {$sftp dirtree ~/ $tree }]
+puts stderr time=[time {$sftp dirtree ~/indeed $tree }]
 puts stderr "after tree"
 
 puts stderr numentries=[$tree size 0]
@@ -119,7 +164,7 @@ array set modes {
    6    rw-
    7    rwx
 }
-
+    
 proc FormatMode { node mode } {
     global modes
     set mode [format %o [expr $mode & 07777]]

@@ -25,12 +25,13 @@ proc Doit {} {
 
 blt::comboentry .e \
     -textvariable t \
-    -font { arial 10 } \
+    -font { arial 14 } \
     -image $image \
     -iconvariable icon \
     -edit yes \
     -show \u25CF \
-    -textwidth 46 \
+    -show "" \
+    -textwidth 16 \
     -menu .e.m \
     -exportselection yes \
     -xscrollcommand { .s set }  \
