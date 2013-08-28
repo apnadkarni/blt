@@ -952,11 +952,17 @@ PromptUser(Tcl_Interp *interp, Remote *remotePtr, const char **userPtr,
 	   const char **passPtr)
 {
     Tcl_Obj **objv;
-    Tcl_Obj *objPtr;
+    Tcl_Obj *objPtr, *cmdObjPtr;
     int objc;
+    int result;
 
-    if (Tcl_EvalObjEx(interp, remotePtr->promptCmdObjPtr, TCL_EVAL_GLOBAL)
-	!= TCL_OK) {
+    cmdObjPtr = Tcl_DuplicateObj(remotePtr->promptCmdObjPtr);
+    Tcl_ListObjAppendElement(remotePtr->interp, cmdObjPtr, 
+		Tcl_NewStringObj(remotePtr->user, -1));
+    Tcl_IncrRefCount(cmdObjPtr);
+    result = Tcl_EvalObjEx(interp, cmdObjPtr, TCL_EVAL_GLOBAL);
+    Tcl_DecrRefCount(cmdObjPtr);
+    if (result != TCL_OK) {
 	return TCL_ERROR;
     }
     objPtr = Tcl_GetObjResult(interp);
@@ -1630,7 +1636,7 @@ AuthenticateRemote(Tcl_Interp *interp, Remote *remotePtr)
 
 	    user = remotePtr->user;
 	    pass = remotePtr->password;
-	    if (pass == NULL) {
+	    if (pass == NULL || pass[0] == '\0') {
 		if (remotePtr->promptCmdObjPtr != NULL) {
 		    if (PromptUser(interp, remotePtr, &user, &pass) != TCL_OK) {
 			continue;

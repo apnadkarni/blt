@@ -2532,7 +2532,7 @@ FreetypeDrawProc(
 					 * are not stripped out, they will be
 					 * displayed as regular printing
 					 * characters. */
-    int numBytes,				/* # of bytes in string. */
+    int numBytes,			/* # of bytes in string. */
     int x, int y)			/* Coordinates at which to place
 					 * origin of string when drawing. */
 {
@@ -2612,6 +2612,8 @@ FreetypeDrawProc(
 	    charLen = XftUtf8ToUcs4((XftChar8 *)source, &c, numBytes);
 	    if (charLen <= 0) {
 		/* This should not happen, but it can. */
+		fprintf(stderr, "charLen=%d, source=%s, numBytes=%d\n",
+			charLen, source, numBytes);
 		return;
 	    }
 	    source += charLen;
