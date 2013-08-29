@@ -18,23 +18,29 @@ set bg [blt::background create gradient -high  grey80 -low grey95 \
 set image ""
 option add *ComboEntry.takeFocus 1
 
-proc Doit {} {
-    puts stderr grab=[grab current]
-    puts stderr "-command invoked"
+set hideChars 0
+
+proc ToggleHideChars {} {
+    set varName [.cb cget -variable]
+    global $varName
+    set bool [set $varName]
+    if { $bool } {
+	.e configure -show \u25CF 
+    } else {
+	.e configure -show ""
+    }
 }
 
 blt::comboentry .e \
     -textvariable t \
-    -font { arial 14 } \
+    -font { arial 11 } \
     -image $image \
     -iconvariable icon \
     -edit yes \
-    -show \u25CF \
-    -textwidth 16 \
+    -textwidth 22 \
     -menu .e.m \
     -exportselection yes \
     -xscrollcommand { .s set }  \
-    -command "Doit" \
     -clearbutton yes \
     -clearcommand { .e delete 0 end } 
 
@@ -49,9 +55,13 @@ blt::combobutton .b \
     -arrowrelief flat  
 
 blt::tk::scrollbar .s -orient vertical -command { .e xview } 
+blt::tk::checkbutton .cb -text "Hide Characters" -variable hideChars \
+    -command ToggleHideChars
 
 blt::table . \
-    0,0 .e -fill both -cspan 2 -padx 2 -pady 2 
+    1,0 .e -fill both -cspan 2 -padx 2 -pady 2  \
+    0,0 .cb 
+
 
 blt::table configure . c1 -resize shrink
 blt::table configure . r0 -resize shrink

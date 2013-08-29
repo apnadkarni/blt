@@ -131,9 +131,9 @@
 #define DEF_ICON		((char *)NULL)
 #define DEF_ICON_VARIABLE	((char *)NULL)
 #define DEF_IMAGE		((char *)NULL)
-#define DEF_CURSOR_COLOR	STD_NORMAL_FOREGROUND
-#define DEF_CURSOR_OFFTIME	"300"
-#define DEF_CURSOR_ONTIME	"600"
+#define DEF_INSERT_COLOR	STD_NORMAL_FOREGROUND
+#define DEF_INSERT_OFFTIME	"300"
+#define DEF_INSERT_ONTIME	"600"
 #define DEF_JUSTIFY		"left"
 #define DEF_MENU		((char *)NULL)
 #define DEF_MENU_ANCHOR		"sw"
@@ -303,7 +303,7 @@ static char emptyString[] = "";
 typedef struct _EditRecord {
     struct _EditRecord *nextPtr;
     int type;
-    CharIndex cursorIndex;		/* Current index of the cursor. */
+    CharIndex insertIndex;		/* Current index of the cursor. */
     CharIndex index;			/* Character index where text was
 					   inserted. */
     int numBytes;			/* # of bytes in text string. */
@@ -453,21 +453,21 @@ typedef struct  {
     /*
      * Insertion cursor information:
      */
-    GC cursorGC;
-    XColor *cursorColor;		/* Color used to draw vertical bar for
+    GC insertGC;
+    XColor *insertColor;		/* Color used to draw vertical bar for
 					 * insertion cursor. */
-    int cursorOffTime;			/* Time in milliseconds cursor should
+    int insertOffTime;			/* Time in milliseconds cursor should
 					 * spend in "off" state for each
 					 * blink. */
-    int cursorOnTime;			/* Time in milliseconds cursor should
+    int insertOnTime;			/* Time in milliseconds cursor should
 					 * spend in "off" state for each
 					 * blink. */
-    Tcl_TimerToken cursorTimerToken;	/* Handle for a timer event called
+    Tcl_TimerToken insertTimerToken;	/* Handle for a timer event called
 					 * periodically to blink the insertion
 					 * cursor. */
 
-    int cursorWidth;			/* Total width of insert cursor. */
-    CharIndex cursorIndex;		/* Character index of the insertion
+    int insertWidth;			/* Total width of insert cursor. */
+    CharIndex insertIndex;		/* Character index of the insertion
 					 * cursor.  */
     int prefTextWidth;			/* Desired width of text, measured in
 					 * average characters. */
@@ -589,14 +589,14 @@ static Blt_ConfigSpec configSpecs[] =
     {BLT_CONFIG_CUSTOM, "-image", "image", "Image", DEF_IMAGE, 
 	Blt_Offset(ComboEntry, image), BLT_CONFIG_NULL_OK | ALL_MASK, 
 	&iconOption},
-    {BLT_CONFIG_COLOR, "-cursorbackground", "cursorBackground", 
-	"CursorBackground", DEF_CURSOR_COLOR, 
-	Blt_Offset(ComboEntry, cursorColor), ALL_MASK},
-    {BLT_CONFIG_INT, "-cursorofftime", "cursorOffTime", "OffTime",
-	DEF_CURSOR_OFFTIME, Blt_Offset(ComboEntry, cursorOffTime), 
+    {BLT_CONFIG_COLOR, "-insertbackground", "insertBackground", 
+	"InsertBackground", DEF_INSERT_COLOR, 
+	Blt_Offset(ComboEntry, insertColor), ALL_MASK},
+    {BLT_CONFIG_INT, "-insertofftime", "insertOffTime", "OffTime",
+	DEF_INSERT_OFFTIME, Blt_Offset(ComboEntry, insertOffTime), 
 	BLT_CONFIG_DONT_SET_DEFAULT | ALL_MASK},
-    {BLT_CONFIG_INT, "-cursorontime", "cursorOnTime", "OnTime",
-	DEF_CURSOR_ONTIME, Blt_Offset(ComboEntry, cursorOnTime), 
+    {BLT_CONFIG_INT, "-insertontime", "insertOnTime", "OnTime",
+	DEF_INSERT_ONTIME, Blt_Offset(ComboEntry, insertOnTime), 
 	BLT_CONFIG_DONT_SET_DEFAULT | ALL_MASK},
     {BLT_CONFIG_OBJ, "-menu", "menu", "Menu", DEF_MENU, 
 	Blt_Offset(ComboEntry, menuObjPtr), 
@@ -857,7 +857,7 @@ RecordEdit(ComboEntry *comboPtr, int type, int index, const char *text,
 
     recPtr = Blt_AssertMalloc(sizeof(EditRecord) + numBytes);
     recPtr->type = type;
-    recPtr->cursorIndex = comboPtr->cursorIndex;
+    recPtr->insertIndex = comboPtr->insertIndex;
     recPtr->index = index;
     recPtr->numChars = Tcl_NumUtfChars(text, numBytes);
     recPtr->numBytes = numBytes;
@@ -909,11 +909,11 @@ DeleteText(ComboEntry *comboPtr, CharIndex firstIndex, CharIndex lastIndex)
     /* Kill the selection */
     comboPtr->selFirst = comboPtr->selLast = -1;
     /* Fix the insertion cursor index if necessary. */
-    if (comboPtr->cursorIndex >= firstIndex) {
-	if (comboPtr->cursorIndex >= lastIndex) {
-	    comboPtr->cursorIndex -= (lastIndex - firstIndex);
+    if (comboPtr->insertIndex >= firstIndex) {
+	if (comboPtr->insertIndex >= lastIndex) {
+	    comboPtr->insertIndex -= (lastIndex - firstIndex);
 	} else {
-	    comboPtr->cursorIndex = firstIndex;
+	    comboPtr->insertIndex = firstIndex;
 	}
     }
     comboPtr->numChars -= lastIndex - firstIndex;
@@ -961,8 +961,8 @@ InsertText(ComboEntry *comboPtr, CharIndex index, int numBytes,
 
     /* If the cursor index is after the insert index, then move the
      * cursor down by the number of characters inserted. */
-    if (comboPtr->cursorIndex >= index) {
-	comboPtr->cursorIndex += numChars;
+    if (comboPtr->insertIndex >= index) {
+	comboPtr->insertIndex += numChars;
     }
     comboPtr->selFirst = comboPtr->selLast = -1;
     CleanText(comboPtr);
@@ -1150,7 +1150,7 @@ SetTextFromObj(ComboEntry *comboPtr, Tcl_Obj *objPtr)
     comboPtr->flags |= (ICURSOR | SCROLL_PENDING | LAYOUT_PENDING);
     comboPtr->scrollX = 0;
     comboPtr->selFirst = comboPtr->selLast = -1;
-    comboPtr->cursorIndex = comboPtr->numChars = 
+    comboPtr->insertIndex = comboPtr->numChars = 
 	Tcl_NumUtfChars(comboPtr->text, comboPtr->numBytes);
 }
 
@@ -1213,12 +1213,12 @@ BlinkCursor(ComboEntry *comboPtr)
 
     if (comboPtr->flags & ICURSOR_ON) {
 	comboPtr->flags &= ~ICURSOR_ON;
-	time = comboPtr->cursorOffTime;
+	time = comboPtr->insertOffTime;
     } else {
 	comboPtr->flags |= ICURSOR_ON;
-	time = comboPtr->cursorOnTime;
+	time = comboPtr->insertOnTime;
     }
-    comboPtr->cursorTimerToken = Tcl_CreateTimerHandler(time, 
+    comboPtr->insertTimerToken = Tcl_CreateTimerHandler(time, 
 	BlinkCursorTimerProc, comboPtr);
 }
 
@@ -1244,7 +1244,7 @@ BlinkCursorTimerProc(ClientData clientData)
 {
     ComboEntry *comboPtr = clientData;
 
-    if (((comboPtr->flags & FOCUS) == 0)||(comboPtr->cursorOffTime == 0)) {
+    if (((comboPtr->flags & FOCUS) == 0)||(comboPtr->insertOffTime == 0)) {
 	return;
     }
     if (comboPtr->flags & ICURSOR) {
@@ -1291,9 +1291,9 @@ ComboEntryEventProc(ClientData clientData, XEvent *eventPtr)
 	} else {
 	    comboPtr->flags &= ~FOCUS;
 	}
-	if (comboPtr->cursorTimerToken != NULL) {
-	    Tcl_DeleteTimerHandler(comboPtr->cursorTimerToken);
-	    comboPtr->cursorTimerToken = NULL;
+	if (comboPtr->insertTimerToken != NULL) {
+	    Tcl_DeleteTimerHandler(comboPtr->insertTimerToken);
+	    comboPtr->insertTimerToken = NULL;
 	}
 	if ((comboPtr->flags & (FOCUS|ICURSOR|READONLY))==(FOCUS|ICURSOR)) {
 	    if (comboPtr->flags & ICURSOR_ON) {
@@ -1301,7 +1301,7 @@ ComboEntryEventProc(ClientData clientData, XEvent *eventPtr)
 	    } else {
 		comboPtr->flags |= ICURSOR_ON;
 	    }
-	    if (comboPtr->cursorOffTime != 0) {
+	    if (comboPtr->insertOffTime != 0) {
 		BlinkCursor(comboPtr);
 	    }
 	}
@@ -1319,8 +1319,8 @@ ComboEntryEventProc(ClientData clientData, XEvent *eventPtr)
 	if (comboPtr->flags & INVOKE_PENDING) {
 	    Tcl_CancelIdleCall(ComboEntryInvokeCmdProc, comboPtr);
 	}
-	if (comboPtr->cursorTimerToken != NULL) {
-	    Tcl_DeleteTimerHandler(comboPtr->cursorTimerToken);
+	if (comboPtr->insertTimerToken != NULL) {
+	    Tcl_DeleteTimerHandler(comboPtr->insertTimerToken);
 	}
 	Tcl_EventuallyFree(comboPtr, FreeComboEntryProc);
     }
@@ -2292,15 +2292,15 @@ GetTextIndex(Tcl_Interp *interp, ComboEntry *comboPtr, Tcl_Obj *objPtr,
     } else if ((c == 'e') && (strcmp(string, "end") == 0)) {
 	*indexPtr = comboPtr->numChars;
     } else if ((c == 'i') && (strcmp(string, "insert") == 0)) {
-	*indexPtr = comboPtr->cursorIndex;
+	*indexPtr = comboPtr->insertIndex;
     } else if ((c == 'n') && (strcmp(string, "next") == 0)) {
-	index = comboPtr->cursorIndex;
+	index = comboPtr->insertIndex;
 	if (index < comboPtr->numChars) {
 	    index++;
 	}
 	*indexPtr = index;
     } else if ((c == 'p') && (strcmp(string, "previous") == 0)) {
-	index = comboPtr->cursorIndex;
+	index = comboPtr->insertIndex;
 	if (index > 0) {
 	    index--;
 	}
@@ -2486,12 +2486,12 @@ ConfigureComboEntry(Tcl_Interp *interp, ComboEntry *comboPtr, int objc,
 
     /* Insert cursor. */
     gcMask = GCForeground;
-    gcValues.foreground = comboPtr->cursorColor->pixel;
+    gcValues.foreground = comboPtr->insertColor->pixel;
     newGC = Tk_GetGC(comboPtr->tkwin, gcMask, &gcValues);
-    if (comboPtr->cursorGC != NULL) {
-	Tk_FreeGC(comboPtr->display, comboPtr->cursorGC);
+    if (comboPtr->insertGC != NULL) {
+	Tk_FreeGC(comboPtr->display, comboPtr->insertGC);
     }
-    comboPtr->cursorGC = newGC;
+    comboPtr->insertGC = newGC;
     ComputeGeometry(comboPtr);
     return TCL_OK;
 }
@@ -2981,7 +2981,7 @@ IcursorOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc,
     if (index == -1) {
 	return TCL_OK;
     }
-    comboPtr->cursorIndex = index;
+    comboPtr->insertIndex = index;
     comboPtr->flags |= ICURSOR;
     EventuallyRedraw(comboPtr);
     return TCL_OK;
@@ -3674,7 +3674,7 @@ RedoOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 			     Blt_Itoa(recPtr->type), "\"", (char *)NULL);
 	    return TCL_ERROR;
 	}
-	comboPtr->cursorIndex = recPtr->cursorIndex;
+	comboPtr->insertIndex = recPtr->insertIndex;
 	comboPtr->redoPtr = recPtr->nextPtr;
 	recPtr->nextPtr = comboPtr->undoPtr;
 	comboPtr->undoPtr = recPtr;
@@ -3720,7 +3720,7 @@ UndoOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 			     Blt_Itoa(recPtr->type), "\"", (char *)NULL);
 	    return TCL_ERROR;
 	}
-	comboPtr->cursorIndex = recPtr->cursorIndex;
+	comboPtr->insertIndex = recPtr->insertIndex;
 	comboPtr->undoPtr = recPtr->nextPtr;
 	recPtr->nextPtr = comboPtr->redoPtr;
 	comboPtr->redoPtr = recPtr;
@@ -3843,11 +3843,11 @@ FreeComboEntryProc(DestroyData dataPtr)	/* Pointer to the widget record. */
     if (comboPtr->highlightBgGC != NULL) {
 	Tk_FreeGC(comboPtr->display, comboPtr->highlightBgGC);
     }
-    if (comboPtr->cursorGC != NULL) {
-	Tk_FreeGC(comboPtr->display, comboPtr->cursorGC);
+    if (comboPtr->insertGC != NULL) {
+	Tk_FreeGC(comboPtr->display, comboPtr->insertGC);
     }
-    if (comboPtr->cursorTimerToken != NULL) {
-	Tcl_DeleteTimerHandler(comboPtr->cursorTimerToken);
+    if (comboPtr->insertTimerToken != NULL) {
+	Tcl_DeleteTimerHandler(comboPtr->insertTimerToken);
     }
     if (comboPtr->menuWin != NULL) {
 	Tk_DeleteEventHandler(comboPtr->menuWin, CHILD_EVENT_MASK, 
@@ -3858,8 +3858,8 @@ FreeComboEntryProc(DestroyData dataPtr)	/* Pointer to the widget record. */
 	Tk_DeleteEventHandler(comboPtr->tkwin, EVENT_MASK, 
 		ComboEntryEventProc, comboPtr);
     }
-    if (comboPtr->cursorTimerToken != NULL) {
-	Tcl_DeleteTimerHandler(comboPtr->cursorTimerToken);
+    if (comboPtr->insertTimerToken != NULL) {
+	Tcl_DeleteTimerHandler(comboPtr->insertTimerToken);
     }
     Tcl_DeleteCommandFromToken(comboPtr->interp, comboPtr->cmdToken);
     Blt_Free(comboPtr);
@@ -3886,8 +3886,8 @@ NewComboEntry(Tcl_Interp *interp, Tk_Window tkwin, int mask)
     comboPtr->display = Tk_Display(tkwin);
     comboPtr->flags |= (LAYOUT_PENDING|SCROLL_PENDING|EXPORT_SELECTION);
     comboPtr->highlightWidth = 2;
-    comboPtr->cursorOffTime = 300;
-    comboPtr->cursorOnTime = 600;
+    comboPtr->insertOffTime = 300;
+    comboPtr->insertOnTime = 600;
     comboPtr->interp = interp;
     comboPtr->mask = mask;
     comboPtr->menuAnchor = TK_ANCHOR_SW;
@@ -4220,7 +4220,7 @@ DrawEntry(ComboEntry *comboPtr, Drawable drawable, int x, int y, int w, int h)
     int textX, textY;
     Blt_Bg bg;
     GC gc;
-    ByteOffset cursorOffset, firstOffset, lastOffset;
+    ByteOffset insertOffset, firstOffset, lastOffset;
 
 #define TEXT_FLAGS (TK_PARTIAL_OK | TK_AT_LEAST_ONE)
     if ((h < 2) || (w < 2)) {
@@ -4309,17 +4309,17 @@ DrawEntry(ComboEntry *comboPtr, Drawable drawable, int x, int y, int w, int h)
     textX = comboPtr->firstX - comboPtr->scrollX;
 	
     insertX = -1;
-    cursorOffset = CharIndexToByteOffset(comboPtr->screenText, 
-	comboPtr->cursorIndex);
+    insertOffset = CharIndexToByteOffset(comboPtr->screenText, 
+	comboPtr->insertIndex);
     if (((comboPtr->flags & (FOCUS|ICURSOR_ON|DISABLED|READONLY)) 
 	 == (FOCUS|ICURSOR_ON)) && (comboPtr->selFirst == -1) && 
-	(cursorOffset >= comboPtr->firstOffset) && 
-	(cursorOffset <= comboPtr->lastOffset)) {
+	(insertOffset >= comboPtr->firstOffset) && 
+	(insertOffset <= comboPtr->lastOffset)) {
 	insertX = textX;
-	if (cursorOffset > comboPtr->firstOffset) { 
+	if (insertOffset > comboPtr->firstOffset) { 
 	    insertX += Blt_TextWidth(comboPtr->font, 
 		comboPtr->screenText + comboPtr->firstOffset, 
-		cursorOffset - comboPtr->firstOffset);
+		insertOffset - comboPtr->firstOffset);
 	}
 	if (insertX > (comboPtr->lastX - comboPtr->firstX)) {
 	    insertX = -1;
@@ -4409,10 +4409,10 @@ DrawEntry(ComboEntry *comboPtr, Drawable drawable, int x, int y, int w, int h)
 
 	y1 = 1;
 	y2 = h - 2;
-	XDrawLine(comboPtr->display, pixmap, comboPtr->cursorGC, insertX, y1, 
+	XDrawLine(comboPtr->display, pixmap, comboPtr->insertGC, insertX, y1, 
 		insertX, y2);
 #ifdef notdef
-	XDrawLine(comboPtr->display, pixmap, comboPtr->cursorGC, insertX + 1, 
+	XDrawLine(comboPtr->display, pixmap, comboPtr->insertGC, insertX + 1, 
 		y1, insertX + 1, y2);
 #endif
     }
