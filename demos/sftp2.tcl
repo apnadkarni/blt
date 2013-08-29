@@ -1,6 +1,7 @@
 package require BLT
 package require blt_sftp
 
+set status ""
 
 proc Cancel {} {
     global credentials 
@@ -14,7 +15,8 @@ proc CollectCredentials {} {
     set credentials [list $user $pass]
 }
 
-proc GetCredentials { user } {
+proc GetPassword { user } {
+    global status credentials 
     set w [blt::tk::toplevel .login]
     blt::tk::label $w.user_l -text "User:" 
     blt::comboentry $w.user \
@@ -24,19 +26,22 @@ proc GetCredentials { user } {
     blt::tk::label $w.pass_l -text "Password:" 
     blt::comboentry $w.pass \
 	-textwidth 20 \
+	-textvariable ::password \
 	-show \u25CF \
 	-hidearrow yes
     blt::tk::button $w.cancel -text "Cancel" -command Cancel
     blt::tk::button $w.ok -text "Ok" -command CollectCredentials
-    global credentials
+    blt::tk::label $w.status -text $status
+
     set credentials ""
     blt::table $w \
 	0,0 $w.user_l -anchor e  \
 	0,1 $w.user -fill x  \
 	1,0 $w.pass_l -anchor e  \
 	1,1 $w.pass -fill x  \
-	2,0 $w.cancel \
-	2,1 $w.ok
+	2,0 $w.status -fill x -cspan 2 \
+	3,0 $w.cancel \
+	3,1 $w.ok
     blt::table configure $w c0 -resize none
     blt::table configure $w c1 -resize both
     update
@@ -44,9 +49,9 @@ proc GetCredentials { user } {
     destroy $w
     return $credentials
 }
-    
 
-set sftp [blt::sftp create -host nees.org -user gah -prompt GetCredentials]
+set sftp [blt::sftp create -host nees.org -prompt GetPassword -numtries 10]
+
 
 set tree [blt::tree create]
 puts stderr "before tree"
