@@ -3046,8 +3046,8 @@ DrawPage(HText *htPtr, int deltaY) /* Change from previous Y coordinate */
 		XCopyArea(display, pixmap, Tk_WindowId(tkwin), htPtr->drawGC,
 			  0, y, width, lastY - y, 0, y);
 	    }
-	    forceCopy = 0;	/* Reset drawing flag */
-	    lastY = y;		/* Record last Y position */
+	    forceCopy = 0;		/* Reset drawing flag */
+	    lastY = y;			/* Record last Y position */
 	}
 	if ((deltaY < 0) && (lineNum > 0)) {
 	    --lineNum;

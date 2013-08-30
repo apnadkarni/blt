@@ -15,6 +15,17 @@ proc CollectCredentials {} {
     set credentials [list $user $pass]
 }
 
+proc SetChars {} {
+    set varName [.login.hidechars cget -variable]
+    global $varName
+    set bool [set $varName]
+    if { $bool } {
+	.login.pass configure -show ""
+    } else {
+	.login.pass configure 	-show \u25CF 
+    }
+}
+
 proc GetPassword { user } {
     global status credentials 
     set w [blt::tk::toplevel .login]
@@ -29,6 +40,8 @@ proc GetPassword { user } {
 	-textvariable ::password \
 	-show \u25CF \
 	-hidearrow yes
+    blt::tk::checkbutton $w.hidechars -text "Show Characters" \
+	-variable hidechars -command SetChars
     blt::tk::button $w.cancel -text "Cancel" -command Cancel
     blt::tk::button $w.ok -text "Ok" -command CollectCredentials
     blt::tk::label $w.status -text $status
@@ -39,9 +52,10 @@ proc GetPassword { user } {
 	0,1 $w.user -fill x  \
 	1,0 $w.pass_l -anchor e  \
 	1,1 $w.pass -fill x  \
-	2,0 $w.status -fill x -cspan 2 \
-	3,0 $w.cancel \
-	3,1 $w.ok
+	2,1 $w.hidechars -anchor w \
+	3,0 $w.status -fill x -cspan 2 \
+	4,0 $w.cancel \
+	4,1 $w.ok
     blt::table configure $w c0 -resize none
     blt::table configure $w c1 -resize both
     update

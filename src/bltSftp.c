@@ -966,52 +966,48 @@ FileSplit(const char *path, int length, int *argcPtr, char ***argvPtr)
 static int
 PromptUser(Tcl_Interp *interp, Remote *remotePtr)
 {
-    Tcl_Obj *cmdObjPtr;
     int i, result;
     int numAttempts;
-
-    cmdObjPtr = Tcl_DuplicateObj(remotePtr->promptCmdObjPtr);
-    Tcl_ListObjAppendElement(remotePtr->interp, cmdObjPtr, 
-		Tcl_NewStringObj(remotePtr->user, -1));
-    Tcl_IncrRefCount(cmdObjPtr);
+    const char *user, *pass;
 
     numAttempts = remotePtr->numPasswordAttempts;
     if (numAttempts ==  0) {
 	numAttempts = 1000;
     }
     result = TCL_ERROR;			/* Suppress compiler warning. */
+    user = remotePtr->user;
+    pass = remotePtr->password;
     for (i = 0; i < numAttempts; i++) {
-	char *user, *pass;
-	Tcl_Obj *objPtr;
 	Tcl_Obj **objv;
+	Tcl_Obj *cmdObjPtr;
+	Tcl_Obj *objPtr;
 	int objc;
 
+	cmdObjPtr = Tcl_DuplicateObj(remotePtr->promptCmdObjPtr);
+	Tcl_ListObjAppendElement(remotePtr->interp, cmdObjPtr, 
+				 Tcl_NewStringObj(user, -1));
+	Tcl_IncrRefCount(cmdObjPtr);
 	Tcl_SetObjResult(interp, Tcl_NewStringObj("", -1));
 	result = Tcl_EvalObjEx(interp, cmdObjPtr, TCL_EVAL_GLOBAL);
+	Tcl_DecrRefCount(cmdObjPtr);
 	if (result != TCL_OK) {
-	    Tcl_DecrRefCount(cmdObjPtr);
 	    return TCL_ERROR;		/* Error in callback routine */
 	}
 	objPtr = Tcl_GetObjResult(interp);
 	if (Tcl_ListObjGetElements(interp, objPtr, &objc, &objv) != TCL_OK) {
-	    Tcl_DecrRefCount(cmdObjPtr);
 	    return TCL_ERROR;		/* Bad list. */
 	}
 	if (objc == 0) {
-	    Tcl_DecrRefCount(cmdObjPtr);
 	    return TCL_BREAK;		/* User gives up. */
 	}
 	if (objc != 2) {
 	    Tcl_AppendResult(interp, "wrong # of elements for prompt result: ",
 			     "should be \"user password\"", (char *)NULL);
-	    Tcl_DecrRefCount(cmdObjPtr);
 	    return TCL_ERROR;
 	}
 	user = Tcl_GetString(objv[0]);
 	pass = Tcl_GetString(objv[1]);
-	result = libssh2_userauth_password(remotePtr->session, user, pass);
-	if (result == 0) {
-	    Tcl_DecrRefCount(cmdObjPtr);
+	if (libssh2_userauth_password(remotePtr->session, user, pass) == 0) {
 	    if (remotePtr->user != NULL) {
 		Blt_Free(remotePtr->user);
 		remotePtr->user = NULL;
@@ -1028,7 +1024,6 @@ PromptUser(Tcl_Interp *interp, Remote *remotePtr)
 	    return TCL_OK;
 	}
     }
-    Tcl_DecrRefCount(cmdObjPtr);
     Tcl_AppendResult(interp, "password authorization to \"", 
 	remotePtr->host, "\" failed: ", RemoteSessionError(remotePtr), 
 	"\n", (char *)NULL);
