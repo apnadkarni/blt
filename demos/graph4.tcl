@@ -2263,9 +2263,9 @@ $graph element bind all <Leave> {
 
 set table [blt::datatable create]
 $table column extend "x"
-$table import vector "x" 1
+$table import vector "x" 0
 $table column type "x" double
-set col 1
+set col 0
 foreach vector [lsort -dictionary [blt::vector names ::v*]] {
     set name [string trim $vector ::]
     $table column extend $name

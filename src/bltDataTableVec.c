@@ -1,7 +1,7 @@
 
 /*
  *
- * bltDtVec.c --
+ * bltDataTableVec.c --
  *
  *	Copyright 1998-2005 George A Howlett.
  *
@@ -46,15 +46,15 @@ DLLEXPORT extern Tcl_AppInitProc blt_table_vector_safe_init;
  * $table export vector label $vecName label $vecName...
  */
 
-static BLT_TABLE_IMPORT_PROC ImportVecProc;
-static BLT_TABLE_EXPORT_PROC ExportVecProc;
+static BLT_TABLE_IMPORT_PROC ImportVectorProc;
+static BLT_TABLE_EXPORT_PROC ExportVectorProc;
 
 /* 
  * $table export vector -file fileName ?switches...?
  * $table export vector ?switches...?
  */
 static int
-ExportVecProc(BLT_TABLE table, Tcl_Interp *interp, int objc, 
+ExportVectorProc(BLT_TABLE table, Tcl_Interp *interp, int objc, 
 	      Tcl_Obj *const *objv)
 {
     int i;
@@ -104,7 +104,7 @@ ExportVecProc(BLT_TABLE table, Tcl_Interp *interp, int objc,
 /*
  *---------------------------------------------------------------------------
  *
- * ImportVecProc --
+ * ImportVectorProc --
  *
  *	Parses the given command line and calls one of several
  *	export-specific operations.
@@ -118,7 +118,7 @@ ExportVecProc(BLT_TABLE table, Tcl_Interp *interp, int objc,
  *---------------------------------------------------------------------------
  */
 static int
-ImportVecProc(BLT_TABLE table, Tcl_Interp *interp, int objc, 
+ImportVectorProc(BLT_TABLE table, Tcl_Interp *interp, int objc, 
 	      Tcl_Obj *const *objv)
 {
     int i;
@@ -145,10 +145,7 @@ ImportVecProc(BLT_TABLE table, Tcl_Interp *interp, int objc,
 	size = Blt_VecLength(vector);
 	col = blt_table_get_column(NULL, table, objv[i+1]);
 	if (col == NULL) {
-	    const char *label;
-
-	    label = Tcl_GetString(objv[i+1]);
-	    col = blt_table_create_column(interp, table, label);
+	    col = blt_table_get_column(interp, table, objv[i+1]);
 	    if (col == NULL) {
 		return TCL_ERROR;
 	    }
@@ -201,9 +198,9 @@ blt_table_vector_init(Tcl_Interp *interp)
 	return TCL_ERROR;
     }
     return blt_table_register_format(interp,
-        "vector",		/* Name of format. */
-	ImportVecProc,		/* Import procedure. */
-	ExportVecProc);		/* Export procedure. */
+        "vector",			/* Name of format. */
+	ImportVectorProc,		/* Import procedure. */
+	ExportVectorProc);		/* Export procedure. */
 }
 
 int 

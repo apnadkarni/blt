@@ -211,7 +211,7 @@ foreach vector [lsort -dictionary [blt::vector names ::v*]] {
 $table dump -file graph4.tab
 }
 
-blt::LegendSelections $graph
+#blt::LegendSelections $graph
 focus $graph
 toplevel .top
 update
