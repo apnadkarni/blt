@@ -2470,6 +2470,7 @@ BlankOp(
     h = Blt_PictureHeight(imgPtr->picture);
     Blt_Paintbrush_Region(brushPtr, 0, 0, w, h);
     Blt_PaintRectangle(imgPtr->picture, 0, 0, w, h, 0, 0, brushPtr);
+    Blt_ClassifyPicture(imgPtr->picture);
     if (brushPtr != &brush) {
 	Blt_Paintbrush_Free(brushPtr);
     }

@@ -4045,8 +4045,8 @@ GetAxisByClass(Tcl_Interp *interp, Graph *graphPtr, Tcl_Obj *objPtr,
 	    }
 	    return TCL_ERROR;
 	}
-	axisPtr->refCount++;
     }
+    axisPtr->refCount++;
     *axisPtrPtr = axisPtr;
     return TCL_OK;
 }

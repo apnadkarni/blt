@@ -29,11 +29,6 @@ proc FormatLabel { w value } {
 
 set graph .graph
 
-set s1 [image create picture -width 25 -height 25]
-$s1 blank 0x00000000
-$s1 draw circle 12 12 5 -shadow 0 -linewidth 1 \
-	-fill 0x90FF0000 -antialias yes 
-
 set length 2500000
 blt::graph $graph -title "Scatter Plot\n$length points"  -font Arial \
     -plotborderwidth 1 -plotrelief solid  -plotpadx 0 -plotpady 0

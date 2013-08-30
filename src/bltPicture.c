@@ -5900,6 +5900,12 @@ Blt_QueryColors(Pict *srcPtr, Blt_HashTable *tablePtr)
     return numColors;
 }
 
+/*
+ * ClassifyPicture --
+ *
+ *	Check the picture to see if it contain semi or fully transparent
+ *	pixels.  Also check if it is color or greyscale. 
+ */
 void
 Blt_ClassifyPicture(Pict *srcPtr)
 {
@@ -5915,6 +5921,7 @@ Blt_ClassifyPicture(Pict *srcPtr)
 	
 	for (sp = srcRowPtr, send = sp + srcPtr->width; sp < send; sp++) {
 	    if ((sp->Red != sp->Green) || (sp->Green != sp->Blue)) {
+		/* Stop after first non-greyscale pixel. */
 		flags |= BLT_PIC_COLOR;
 		goto checkOpacity;
 	    }
@@ -5928,18 +5935,11 @@ Blt_ClassifyPicture(Pict *srcPtr)
 	Blt_Pixel *sp, *send;
 	
 	for (sp = srcRowPtr, send = sp + srcPtr->width; sp < send; sp++) {
-	    if (sp->Alpha == 0xFF) {
-		opaque = TRUE;
-	    } else if (sp->Alpha == 0x00) {
-		transparent = TRUE;
-	    } else {
+	    if ((sp->Alpha == 0x00) || (sp->Alpha != 0xFF)) {
+		/* Stop after first semi/fully-transparent pixel. */
 		flags |= BLT_PIC_BLEND;
 		goto setFlags;
 	    }
-	}
-	if (opaque && transparent) {
-	    flags |= BLT_PIC_MASK;
-	    goto setFlags;
 	}
 	srcRowPtr += srcPtr->pixelsPerRow;
     }

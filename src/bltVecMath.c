@@ -62,7 +62,8 @@
  *				is returned.
  */
 
-typedef double (ComponentProc)(double value);
+typedef double (ComponentOneArgProc)(double value);
+typedef double (ComponentNoArgsProc)(void);
 typedef int (VectorProc)(Vector *vPtr);
 typedef double (ScalarProc)(Vector *vPtr);
 
@@ -2005,7 +2006,7 @@ ComponentFunc(
     Tcl_Interp *interp,
     Vector *vPtr)
 {
-    ComponentProc *procPtr = (ComponentProc *) clientData;
+    ComponentOneArgProc *procPtr = (ComponentOneArgProc *) clientData;
     int i;
     double *values;
 
@@ -2025,6 +2026,45 @@ ComponentFunc(
     Blt_Vec_Reset(vPtr, values, vPtr->length, vPtr->length, TCL_DYNAMIC);
     return TCL_OK;
 }
+/*
+ *---------------------------------------------------------------------------
+ *
+ * Math Functions --
+ *
+ *	This page contains the procedures that implement all of the built-in
+ *	math functions for expressions.
+ *
+ * Results:
+ *	Each procedure returns TCL_OK if it succeeds and places result
+ *	information at *resultPtr.  If it fails it returns TCL_ERROR and
+ *	leaves an error message in interp->result.
+ *
+ * Side effects:
+ *	None.
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+ComponentNoArgsFunc(
+    ClientData clientData,		/* Contains address of procedure that
+					 * takes one double argument and
+					 * returns a double result. */
+    Tcl_Interp *interp,
+    Vector *vPtr)
+{
+    ComponentNoArgsProc *procPtr = (ComponentNoArgsProc *) clientData;
+    int i;
+    double *values;
+
+    values = Blt_AssertMalloc(sizeof(double) * vPtr->length);
+    memcpy(values, vPtr->valueArr, sizeof(double) * vPtr->length);
+    for(i = vPtr->first; i <= vPtr->last; i++) {
+	values[i] = (*procPtr) ();
+    }
+    Blt_Vec_Reset(vPtr, values, vPtr->length, vPtr->length, TCL_DYNAMIC);
+    return TCL_OK;
+}
+
 
 static int
 ScalarFunc(ClientData clientData, Tcl_Interp *interp, Vector *vPtr)
@@ -2083,7 +2123,7 @@ static MathFunction mathFunctions[] =
     {"q2",	ScalarFunc,    Mean},
     {"q3",	ScalarFunc,    Q3},
     {"prod",	ScalarFunc,    Product},
-    {"random",	ComponentFunc, drand48},
+    {"random",	ComponentNoArgsFunc, drand48},
     {"round",	ComponentFunc, Round},
     {"sdev",	ScalarFunc,    StdDeviation},
     {"sin",	ComponentFunc, sin},

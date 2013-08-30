@@ -69,7 +69,7 @@ for { set level 30 } { $level <= 100 } { incr level 10 } {
     set pen "pen$count"
     set symbol "symbol$count"
     set im [image create picture -width 25 -height 35]
-    $im blank 0x00000000
+    $im blank 
     if 1 {
     $im draw text [lindex $letters $count] 0 0 -color $color \
     	-font "Arial 12" -anchor nw 
@@ -108,7 +108,7 @@ xh expr {x + $pct}
 xl expr {x - $pct}
 
 set s1 [image create picture -width 25 -height 25]
-$s1 blank 0x00000000
+$s1 blank 
 
 $s1 draw circle 11 11 7 -shadow 0 -linewidth 2 \
 	-color 0x90FF0000 -antialias yes 
@@ -126,7 +126,7 @@ $graph element create line3 \
 
 #    -ylow yl -yhigh yh 
 set s2 [image create picture -width 25 -height 25]
-$s2 blank 0x00000000
+$s2 blank 
 
 $s2 draw circle 12 12 7 -shadow 0 -linewidth 2 \
 	-color 0x9000FF00 -antialias yes 
