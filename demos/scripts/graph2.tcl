@@ -68,11 +68,11 @@ for { set level 30 } { $level <= 100 } { incr level 10 } {
     set color [format "#FF0d%0.2x" [expr round($level*2.55)]]
     set pen "pen$count"
     set symbol "symbol$count"
-    set im [image create picture -width 25 -height 35]
-    $im blank 0x00FFFFFF
-    $im draw text [lindex $letters $count] 12 12 -color $color \
+    set img [image create picture -width 25 -height 35]
+    $img blank 0x00FFFFFF
+    $img draw text [lindex $letters $count] 12 12 -color $color \
     	-font "Arial 10" -anchor c 
-    $graph pen create $pen -symbol $im 
+    $graph pen create $pen -symbol @$img 
     set min $max
     set max [expr $max + $step]
     lappend styles "$pen $min $max"
@@ -105,12 +105,12 @@ set pct [expr ($x(max) - $x(min)) * 0.025]
 xh expr {x + $pct}
 xl expr {x - $pct}
 
-set s1 [image create picture -width 25 -height 25]
-$s1 blank 0x00FFFFFF
+set img [image create picture -width 25 -height 25]
+$img blank 0x00FFFFFF
 
-$s1 draw circle 12 12 5 -shadow 0 -linewidth 0 \
+$img draw circle 12 12 5 -shadow 0 -linewidth 0 \
 	-color 0x8FFF0000
-$s1 draw circle 12 12 5 -shadow 0 -linewidth 1.5 \
+$img draw circle 12 12 5 -shadow 0 -linewidth 1.5 \
 	-color 0xFFFF0000
 
 $graph element create line3 \
@@ -118,19 +118,19 @@ $graph element create line3 \
     -fill green \
     -label "cos(x)" \
     -mapx degrees \
-    -symbol $s1 \
+    -symbol @$img \
     -styles $styles \
     -weights w \
     -x x \
     -y cosX  \
 
 #    -ylow yl -yhigh yh 
-set s2 [image create picture -width 25 -height 25]
-$s2 blank 0x00FFFFFF
+set img [image create picture -width 25 -height 25]
+$img blank 0x00FFFFFF
 
-$s2 draw circle 12 12 5 -shadow 0 -linewidth 0 \
+$img draw circle 12 12 5 -shadow 0 -linewidth 0 \
 	-color 0x8F00FF00
-$s2 draw circle 12 12 5 -shadow 0 -linewidth 1.5 \
+$img draw circle 12 12 5 -shadow 0 -linewidth 1.5 \
 	-color 0xFF00FF00
 
 
@@ -142,7 +142,7 @@ $graph element create line1 \
     -label "sin(x)" \
     -mapx degrees \
     -pixels 6m \
-    -symbol $s2 \
+    -symbol @$img \
     -x x \
     -y sinX 
 

@@ -2,7 +2,19 @@
 
 package require BLT
 source scripts/stipples.tcl
+source PrintGraph.tcl
 set visual [winfo screenvisual .]
+
+proc PrintDialog { graph } {
+    if { [winfo exists .p1] } {
+	return
+    }
+    toplevel .p1
+    update
+    PrintGraph .p1.print 
+    pack .p1.print -fill both -expand yes 
+    .p1.print print $graph toolName plotName
+}
 
 if { $visual != "staticgray" && $visual != "grayscale" } {
     option add *Graph3.Button.Background	red
@@ -66,5 +78,5 @@ after 2000 {
 }
 }
 after 2000 {
-    PsDialog $graph
+    PrintDialog $graph
 }

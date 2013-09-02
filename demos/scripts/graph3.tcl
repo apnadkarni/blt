@@ -42,10 +42,10 @@ foreach name { x sinX cosX } {
 x seq -360 360 100
 sinX expr { sin(x*$pi1_2) }
 cosX expr { cos(x*$pi1_2) }
-set s1 [image create picture -width 25 -height 25]
-$s1 blank 0x00000000
+set img [image create picture -width 25 -height 25]
+$img blank 0x00000000
 
-$s1 draw circle 12 12 5 -shadow 0 -linewidth 1 \
+$img draw circle 12 12 5 -shadow 0 -linewidth 0 \
 	-color 0x90FF0000 -antialias yes 
 $graph element create \
     -label "sin(x)" \
@@ -53,22 +53,21 @@ $graph element create \
     -color black \
     -x x \
     -y sinX \
-    -symbol $s1
+    -symbol @$img
 
-set s2 [image create picture -width 25 -height 25]
-$s2 blank 0x00000000
+set img [image create picture -width 25 -height 25]
+$img blank 0x00000000
 
-$s2 draw circle 12 12 5 -shadow 0 -linewidth 1 \
+$img draw circle 12 12 5 -shadow 0 -linewidth 0 \
 	-color 0x900000F0 -antialias yes 
 
-set s2 splus
 $graph element create \
     -label "cos(x)" \
     -color yellow4 \
     -fill yellow \
     -x x \
     -y cosX \
-    -symbol $s2
+    -symbol @$img
 
 Blt_ZoomStack $graph
 Blt_Crosshairs $graph

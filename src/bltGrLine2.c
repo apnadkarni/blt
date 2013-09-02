@@ -40,7 +40,6 @@
 #include "bltBg.h"
 #include "tkDisplay.h"
 #include "bltImage.h"
-#include "bltBitmap.h"
 #include "bltPicture.h"
 #include "bltGraph.h"
 #include "bltGrAxis.h"
@@ -153,18 +152,17 @@ static SmoothingTable smoothingTable[] = {
 
 /* Symbol types for line elements */
 typedef enum {
-    SYMBOL_NONE,
-    SYMBOL_SQUARE,
-    SYMBOL_CIRCLE,
-    SYMBOL_DIAMOND,
-    SYMBOL_PLUS,
-    SYMBOL_CROSS,
-    SYMBOL_SPLUS,
-    SYMBOL_SCROSS,
-    SYMBOL_TRIANGLE,
-    SYMBOL_ARROW,
-    SYMBOL_BITMAP,
-    SYMBOL_IMAGE
+    SYMBOL_NONE,			/*  0 */
+    SYMBOL_SQUARE,			/*  1 */
+    SYMBOL_CIRCLE,			/*  2 */
+    SYMBOL_DIAMOND,			/*  3 */
+    SYMBOL_PLUS,			/*  4 */
+    SYMBOL_CROSS,			/*  5 */
+    SYMBOL_SPLUS,			/*  6 */
+    SYMBOL_SCROSS,			/*  7 */
+    SYMBOL_TRIANGLE,			/*  8 */
+    SYMBOL_ARROW,			/*  9 */
+    SYMBOL_IMAGE			/* 10 */
 } SymbolType;
 
 typedef struct {
@@ -178,7 +176,7 @@ static SymbolTable symbolTable[] = {
     { "circle",	  2, SYMBOL_CIRCLE,	},
     { "cross",	  2, SYMBOL_CROSS,	}, 
     { "diamond",  1, SYMBOL_DIAMOND,	}, 
-    { "image",    1, SYMBOL_IMAGE,	}, 
+    { "image",    0, SYMBOL_IMAGE,	}, 
     { "none",	  1, SYMBOL_NONE,	}, 
     { "plus",	  1, SYMBOL_PLUS,	}, 
     { "scross",	  2, SYMBOL_SCROSS,	}, 
@@ -200,13 +198,6 @@ typedef struct {
     GC fillGC;				/* Fill graphics context */
 
     Tk_Image image;			/* This is used of image symbols.  */
-
-    /* The last two fields are used only for bitmap symbols. */
-    Pixmap bitmap;			/* Bitmap to determine
-					 * foreground/background pixels of the
-					 * symbol */
-    Pixmap mask;			/* Bitmap representing the transparent
-					 * pixels of the symbol */
 } Symbol;
 
 typedef struct {
@@ -880,14 +871,6 @@ DestroySymbol(Display *display, Symbol *symbolPtr)
 	Tk_FreeImage(symbolPtr->image);
 	symbolPtr->image = NULL;
     }
-    if (symbolPtr->bitmap != None) {
-	Tk_FreeBitmap(display, symbolPtr->bitmap);
-	symbolPtr->bitmap = None;
-    }
-    if (symbolPtr->mask != None) {
-	Tk_FreeBitmap(display, symbolPtr->mask);
-	symbolPtr->mask = None;
-    }
     symbolPtr->type = SYMBOL_NONE;
 }
 /*
@@ -958,76 +941,48 @@ ObjToSymbolProc(
 {
     Symbol *symbolPtr = (Symbol *)(widgRec + offset);
     const char *string;
+    SymbolTable *p;
+    int length;
+    char c;
 
-    {
-	int length;
-	SymbolTable *entryPtr;
-	char c;
-
-	string = Tcl_GetStringFromObj(objPtr, &length);
-	if (length == 0) {
-	    DestroySymbol(Tk_Display(tkwin), symbolPtr);
-	    symbolPtr->type = SYMBOL_NONE;
-	    return TCL_OK;
-	}
-	c = string[0];
-	for (entryPtr = symbolTable; entryPtr->name != NULL; entryPtr++) {
-	    if (length < entryPtr->minChars) {
-		continue;
-	    }
-	    if ((c == entryPtr->name[0]) && 
-		(strncmp(string, entryPtr->name, length) == 0)) {
-		DestroySymbol(Tk_Display(tkwin), symbolPtr);
-		symbolPtr->type = entryPtr->type;
-		return TCL_OK;
-	    }
-	}
+    string = Tcl_GetStringFromObj(objPtr, &length);
+    if (length == 0) {
+	/* Empty string means to symbol. */
+	DestroySymbol(Tk_Display(tkwin), symbolPtr);
+	symbolPtr->type = SYMBOL_NONE;
+	return TCL_OK;
     }
-    {
+    c = string[0];
+    if (c == '@') {
 	Tk_Image tkImage;
 	Element *elemPtr = (Element *)widgRec;
 
-	tkImage = Tk_GetImage(interp, tkwin, string, ImageChangedProc, elemPtr);
-	if (tkImage != NULL) {
+	/* Must be an image. */
+	tkImage = Tk_GetImage(interp, tkwin, string+1, ImageChangedProc, 
+		elemPtr);
+	if (tkImage == NULL) {
+	    return TCL_ERROR;
+	}
+	DestroySymbol(Tk_Display(tkwin), symbolPtr);
+	symbolPtr->image = tkImage;
+	symbolPtr->type = SYMBOL_IMAGE;
+	return TCL_OK;
+    }
+
+    for (p = symbolTable; p->name != NULL; p++) {
+	if ((length < p->minChars) || (p->minChars == 0)) {
+	    continue;
+	}
+	if ((c == p->name[0]) && (strncmp(string, p->name, length) == 0)) {
 	    DestroySymbol(Tk_Display(tkwin), symbolPtr);
-	    symbolPtr->image = tkImage;
-	    symbolPtr->type = SYMBOL_IMAGE;
+	    symbolPtr->type = p->type;
 	    return TCL_OK;
 	}
     }
-    {
-	Pixmap bitmap, mask;
-	Tcl_Obj **objv;
-	int objc;
-
-	if ((Tcl_ListObjGetElements(NULL, objPtr, &objc, &objv) != TCL_OK) || 
-	    (objc > 2)) {
-	    goto error;
-	}
-	bitmap = mask = None;
-	if (objc > 0) {
-	    bitmap = Tk_AllocBitmapFromObj((Tcl_Interp *)NULL, tkwin, objv[0]);
-	    if (bitmap == None) {
-		goto error;
-	    }
-	}
-	if (objc > 1) {
-	    mask = Tk_AllocBitmapFromObj((Tcl_Interp *)NULL, tkwin, objv[1]);
-	    if (mask == None) {
-		goto error;
-	    }
-	}
-	DestroySymbol(Tk_Display(tkwin), symbolPtr);
-	symbolPtr->bitmap = bitmap;
-	symbolPtr->mask = mask;
-	symbolPtr->type = SYMBOL_BITMAP;
-	return TCL_OK;
-    }
- error:
-    Tcl_AppendResult(interp, "bad symbol \"", string, 
+    Tcl_AppendResult(interp, "bad symbol type \"", string, 
 	"\": should be \"none\", \"circle\", \"square\", \"diamond\", "
 	"\"plus\", \"cross\", \"splus\", \"scross\", \"triangle\", "
-	"\"arrow\" or the name of a bitmap", (char *)NULL);
+	"\"arrow\" or @imageName ", (char *)NULL);
     return TCL_ERROR;
 }
 
@@ -1054,33 +1009,21 @@ SymbolToObjProc(
     int flags)				/* Not used. */
 {
     Symbol *symbolPtr = (Symbol *)(widgRec + offset);
+    SymbolTable *p;
 
-    if (symbolPtr->type == SYMBOL_BITMAP) {
-	Tcl_Obj *listObjPtr, *objPtr;
-	const char *name;
+    if (symbolPtr->type == SYMBOL_IMAGE) {
+	Tcl_Obj *objPtr;
 
-	listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
-	name = Tk_NameOfBitmap(Tk_Display(tkwin), symbolPtr->bitmap);
-	objPtr = Tcl_NewStringObj(name, -1);
-	Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-	if (symbolPtr->mask == None) {
-	    objPtr = Tcl_NewStringObj("", -1);
-	} else {
-	    name = Tk_NameOfBitmap(Tk_Display(tkwin), symbolPtr->mask);
-	    objPtr = Tcl_NewStringObj(name, -1);
-	}
-	Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-	return listObjPtr;
-    } else {
-	SymbolTable *entryPtr;
-
-	for (entryPtr = symbolTable; entryPtr->name != NULL; entryPtr++) {
-	    if (entryPtr->type == symbolPtr->type) {
-		return Tcl_NewStringObj(entryPtr->name, -1);
-	    }
-	}
-	return Tcl_NewStringObj("?unknown symbol type?", -1);
+	objPtr = Tcl_NewStringObj("@", 1);
+	Tcl_AppendToObj(objPtr, Blt_Image_Name(symbolPtr->image), -1);
+	return objPtr;
     }
+    for (p = symbolTable; p->name != NULL; p++) {
+	if (p->type == symbolPtr->type) {
+	    return Tcl_NewStringObj(p->name, -1);
+	}
+    }
+    return Tcl_NewStringObj("?unknown symbol type?", -1);
 }
 
 /*
@@ -1209,11 +1152,11 @@ ErrorBarsToObjProc(
 static const char *
 NameOfSmooth(unsigned int flags)
 {
-    SmoothingTable *entryPtr;
+    SmoothingTable *smoothPtr;
 
-    for (entryPtr = smoothingTable; entryPtr->name != NULL; entryPtr++) {
-	if (entryPtr->flags == flags) {
-	    return entryPtr->name;
+    for (smoothPtr = smoothingTable; smoothPtr->name != NULL; smoothPtr++) {
+	if (smoothPtr->flags == flags) {
+	    return smoothPtr->name;
 	}
     }
     return "unknown smooth value";
@@ -1246,15 +1189,15 @@ ObjToSmoothProc(
     int flags)				/* Not used. */
 {
     unsigned int *flagsPtr = (unsigned int *)(widgRec + offset);
-    SmoothingTable *entryPtr;
+    SmoothingTable *smoothPtr;
     const char *string;
     char c;
 
     string = Tcl_GetString(objPtr);
     c = string[0];
-    for (entryPtr = smoothingTable; entryPtr->name != NULL; entryPtr++) {
-	if ((c == entryPtr->name[0]) && (strcmp(string, entryPtr->name) == 0)) {
-	    *flagsPtr = entryPtr->flags;
+    for (smoothPtr = smoothingTable; smoothPtr->name != NULL; smoothPtr++) {
+	if ((c == smoothPtr->name[0]) && (strcmp(string,smoothPtr->name)==0)) {
+	    *flagsPtr = smoothPtr->flags;
 	    return TCL_OK;
 	}
     }
@@ -1552,7 +1495,6 @@ ConfigurePenProc(Graph *graphPtr, Pen *basePtr)
 
     /*
      * Set the outline GC for this pen: GCForeground is outline color.
-     * GCBackground is the fill color (only used for bitmap symbols).
      */
     gcMask = (GCLineWidth | GCForeground);
     colorPtr = penPtr->symbol.outlineColor;
@@ -1560,32 +1502,6 @@ ConfigurePenProc(Graph *graphPtr, Pen *basePtr)
 	colorPtr = penPtr->traceColor;
     }
     gcValues.foreground = colorPtr->pixel;
-    if (penPtr->symbol.type == SYMBOL_BITMAP) {
-	colorPtr = penPtr->symbol.fillColor;
-	if (colorPtr == COLOR_DEFAULT) {
-	    colorPtr = penPtr->traceColor;
-	}
-	/*
-	 * Set a clip mask if either
-	 *	1) no background color was designated or
-	 *	2) a masking bitmap was specified.
-	 *
-	 * These aren't necessarily the bitmaps we'll be using for clipping. But
-	 * this makes it unlikely that anyone else will be sharing this GC when
-	 * we set the clip origin (at the time the bitmap is drawn).
-	 */
-	if (colorPtr != NULL) {
-	    gcValues.background = colorPtr->pixel;
-	    gcMask |= GCBackground;
-	    if (penPtr->symbol.mask != None) {
-		gcValues.clip_mask = penPtr->symbol.mask;
-		gcMask |= GCClipMask;
-	    }
-	} else {
-	    gcValues.clip_mask = penPtr->symbol.bitmap;
-	    gcMask |= GCClipMask;
-	}
-    }
     gcValues.line_width = LineWidth(penPtr->symbol.outlineWidth);
     newGC = Tk_GetGC(graphPtr->tkwin, gcMask, &gcValues);
     if (penPtr->symbol.outlineGC != NULL) {
@@ -1692,14 +1608,6 @@ DestroyPenProc(Graph *graphPtr, Pen *basePtr)
     if (penPtr->traceGC != NULL) {
 	Blt_FreePrivateGC(graphPtr->display, penPtr->traceGC);
     }
-    if (penPtr->symbol.bitmap != None) {
-	Tk_FreeBitmap(graphPtr->display, penPtr->symbol.bitmap);
-	penPtr->symbol.bitmap = None;
-    }
-    if (penPtr->symbol.mask != None) {
-	Tk_FreeBitmap(graphPtr->display, penPtr->symbol.mask);
-	penPtr->symbol.mask = None;
-    }
 }
 
 
@@ -1713,7 +1621,6 @@ InitPen(LinePen *penPtr)
     penPtr->configSpecs = penSpecs;
     penPtr->destroyProc = DestroyPenProc;
     penPtr->flags = NORMAL_PEN;
-    penPtr->symbol.bitmap = penPtr->symbol.mask = None;
     penPtr->symbol.outlineColor = penPtr->symbol.fillColor = COLOR_DEFAULT;
     penPtr->symbol.outlineWidth = penPtr->traceWidth = 1;
     penPtr->symbol.type = SYMBOL_CIRCLE;
@@ -3496,7 +3403,6 @@ ConfigureProc(Graph *graphPtr, Element *basePtr)
     }
     /*
      * Set the outline GC for this pen: GCForeground is outline color.
-     * GCBackground is the fill color (only used for bitmap symbols).
      */
     gcMask = 0;
     if (elemPtr->fillFgColor != NULL) {
@@ -5173,65 +5079,6 @@ DrawImageSymbols(Graph *graphPtr, Drawable drawable, Trace *tracePtr,
     }
 }
 
-static void
-DrawBitmapSymbols(Graph *graphPtr, Drawable drawable, Trace *tracePtr, 
-		  LinePen *penPtr, int size)
-{
-    Pixmap bitmap, mask;
-    int w, h, bw, bh;
-    double scale, sx, sy;
-    int dx, dy;
-    TracePoint *p;
-
-    Tk_SizeOfBitmap(graphPtr->display, penPtr->symbol.bitmap, &w, &h);
-    mask = None;
-    
-    /*
-     * Compute the size of the scaled bitmap.  Stretch the bitmap to fit
-     * a nxn bounding box.
-     */
-    sx = (double)size / (double)w;
-    sy = (double)size / (double)h;
-    scale = MIN(sx, sy);
-    bw = (int)(w * scale);
-    bh = (int)(h * scale);
-    
-    XSetClipMask(graphPtr->display, penPtr->symbol.outlineGC, None);
-    if (penPtr->symbol.mask != None) {
-	mask = Blt_ScaleBitmap(graphPtr->tkwin, penPtr->symbol.mask,
-			       w, h, bw, bh);
-	XSetClipMask(graphPtr->display, penPtr->symbol.outlineGC, mask);
-    }
-    bitmap = Blt_ScaleBitmap(graphPtr->tkwin, penPtr->symbol.bitmap, w, h, bw, 
-			     bh);
-    if (penPtr->symbol.fillGC == NULL) {
-	XSetClipMask(graphPtr->display, penPtr->symbol.outlineGC, bitmap);
-    }
-    dx = bw / 2;
-    dy = bh / 2;
-    for (p = tracePtr->head; p != NULL; p = p->next) {
-	int x, y;
-
-	if (!DRAWN(tracePtr, p->flags)) {
-	    continue;
-	}
-	if (!PLAYING(graphPtr, p->index)) {
-	    continue;
-	}
-	x = Round(p->x) - dx;
-	y = Round(p->y) - dy;
-	if ((penPtr->symbol.fillGC == NULL) || (mask !=None)) {
-	    XSetClipOrigin(graphPtr->display, penPtr->symbol.outlineGC, x, y);
-	}
-	XCopyPlane(graphPtr->display, bitmap, drawable, 
-		   penPtr->symbol.outlineGC, 0, 0, bw, bh, x, y, 1);
-    }
-    Tk_FreePixmap(graphPtr->display, bitmap);
-    if (mask != None) {
-	Tk_FreePixmap(graphPtr->display, mask);
-    }
-}
-
 /*
  *---------------------------------------------------------------------------
  *
@@ -5323,9 +5170,6 @@ DrawSymbols(
 	DrawImageSymbols(graphPtr, drawable, tracePtr, penPtr, size);
 	break;
 	
-    case SYMBOL_BITMAP:
-	DrawBitmapSymbols(graphPtr, drawable, tracePtr, penPtr, size);
-	break;
     }
     tracePtr->drawFlags &= ~(KNOT | VISIBLE | SYMBOL);
 }
@@ -5659,45 +5503,13 @@ GetSymbolPostScriptInfo(Blt_Ps ps, LineElement *elemPtr, LinePen *penPtr,
     }
 
     /*
-     * Build a PostScript procedure to draw the symbols.  For bitmaps, paint
-     * both the bitmap and its mask. Otherwise fill and stroke the path formed
-     * already.
+     * Build a PostScript procedure to draw the symbols. Otherwise fill and
+     * stroke the path formed already.
      */
     Blt_Ps_Append(ps, "\n/DrawSymbolProc {\n");
     switch (penPtr->symbol.type) {
     case SYMBOL_NONE:
 	break;				/* Do nothing */
-    case SYMBOL_BITMAP:
-	{
-	    int w, h;
-	    double sx, sy, scale;
-	    Graph *graphPtr = elemPtr->obj.graphPtr;
-
-	    /*
-	     * Compute how much to scale the bitmap.  Don't let the scaled
-	     * bitmap exceed the bounding square for the symbol.
-	     */
-	    Tk_SizeOfBitmap(graphPtr->display, penPtr->symbol.bitmap, &w, &h);
-	    sx = (double)size / (double)w;
-	    sy = (double)size / (double)h;
-	    scale = MIN(sx, sy);
-
-	    if ((penPtr->symbol.mask != None) && (fillColor != NULL)) {
-		Blt_Ps_VarAppend(ps, "\n  % Bitmap mask is \"",
-		    Tk_NameOfBitmap(graphPtr->display, penPtr->symbol.mask),
-		    "\"\n\n  ", (char *)NULL);
-		Blt_Ps_XSetBackground(ps, fillColor);
-		Blt_Ps_DrawBitmap(ps, graphPtr->display, penPtr->symbol.mask, 
-			scale, scale);
-	    }
-	    Blt_Ps_VarAppend(ps, "\n  % Bitmap symbol is \"",
-		Tk_NameOfBitmap(graphPtr->display, penPtr->symbol.bitmap),
-		"\"\n\n  ", (char *)NULL);
-	    Blt_Ps_XSetForeground(ps, outlineColor);
-	    Blt_Ps_DrawBitmap(ps, graphPtr->display, penPtr->symbol.bitmap, 
-		scale, scale);
-	}
-	break;
     default:
 	if (fillColor != NULL) {
 	    Blt_Ps_Append(ps, "  ");
@@ -6319,54 +6131,6 @@ DrawImageSymbol(Graph *graphPtr, Drawable drawable, LinePen *penPtr,
     Tk_RedrawImage(penPtr->symbol.image, 0, 0, w, h, drawable, x, y);
 }
 
-static void
-DrawBitmapSymbol(Graph *graphPtr, Drawable drawable, LinePen *penPtr, 
-		 int x, int y, int size)
-{
-    Pixmap bitmap, mask;
-    int w, h, bw, bh;
-    double scale, sx, sy;
-    int dx, dy;
-
-    Tk_SizeOfBitmap(graphPtr->display, penPtr->symbol.bitmap, &w, &h);
-    mask = None;
-    
-    /*
-     * Compute the size of the scaled bitmap.  Stretch the bitmap to fit
-     * a nxn bounding box.
-     */
-    sx = (double)size / (double)w;
-    sy = (double)size / (double)h;
-    scale = MIN(sx, sy);
-    bw = (int)(w * scale);
-    bh = (int)(h * scale);
-    
-    XSetClipMask(graphPtr->display, penPtr->symbol.outlineGC, None);
-    if (penPtr->symbol.mask != None) {
-	mask = Blt_ScaleBitmap(graphPtr->tkwin, penPtr->symbol.mask, w, h, 
-		bw, bh);
-	XSetClipMask(graphPtr->display, penPtr->symbol.outlineGC, mask);
-    }
-    bitmap = Blt_ScaleBitmap(graphPtr->tkwin, penPtr->symbol.bitmap, w, h, bw, 
-			     bh);
-    if (penPtr->symbol.fillGC == NULL) {
-	XSetClipMask(graphPtr->display, penPtr->symbol.outlineGC, bitmap);
-    }
-    dx = bw / 2;
-    dy = bh / 2;
-    x = x - dx;
-    y = y - dy;
-    if ((penPtr->symbol.fillGC == NULL) || (mask !=None)) {
-	XSetClipOrigin(graphPtr->display, penPtr->symbol.outlineGC, x, y);
-    }
-    XCopyPlane(graphPtr->display, bitmap, drawable, penPtr->symbol.outlineGC, 
-	0, 0, bw, bh, x, y, 1);
-    Tk_FreePixmap(graphPtr->display, bitmap);
-    if (mask != None) {
-	Tk_FreePixmap(graphPtr->display, mask);
-    }
-}
-
 /*
  *---------------------------------------------------------------------------
  *
@@ -6424,10 +6188,6 @@ DrawSymbol(
 	
     case SYMBOL_IMAGE:
 	DrawImageSymbol(graphPtr, drawable, penPtr, x, y, size);
-	break;
-	
-    case SYMBOL_BITMAP:
-	DrawBitmapSymbol(graphPtr, drawable, penPtr, x, y, size);
 	break;
     }
 }
@@ -6586,4 +6346,3 @@ Blt_LineElement2(Graph *graphPtr, ClassId id, Blt_HashEntry *hPtr)
     Blt_SetHashValue(hPtr, elemPtr);
     return (Element *)elemPtr;
 }
-

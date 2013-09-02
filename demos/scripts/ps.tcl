@@ -37,7 +37,6 @@ proc ApplyWhenIdle { } {
     global pageInfo 
 
     set data [$pageInfo(graph) postscript output]
-    puts stderr "landscape= [$pageInfo(graph) postscript cget -landscape]"
     $pageInfo(image) import ps -data $data -crop no
     puts stderr "writing out2.ps"
     $pageInfo(graph) postscript output -file out2.ps
@@ -134,10 +133,12 @@ proc CreateOutline { canvas } {
     if { ![blt::bitmap exists pattern8] } {
 	blt::bitmap define pattern8 { {8 8} {ff 00 ff 00 ff 00 ff 00 } }
     }
-    $canvas create eps $xMin $yMin \
+    set pageInfo(image) [image create picture \
+			     -width [expr $xMax - $xMin] \
+			     -height [expr $yMax - $yMin]]
+    $canvas create image $xMin $yMin -anchor nw \
 	-tags "outline image" \
-	-width [expr $xMax - $xMin] \
-	-height [expr $yMax - $yMin]
+	-image $pageInfo(image)
 
     $canvas bind image <ButtonPress-1>   "StartMove $canvas %x %y"
     $canvas bind image <B1-Motion>       "MoveOutline $canvas %x %y"
@@ -184,9 +185,10 @@ proc CreateOutline { canvas } {
     $canvas raise grip
     $canvas itemconfigure grip -fill red -outline black
 
-    set pageInfo(image) [image create picture]
     set data [$pageInfo(graph) postscript output]
-    $pageInfo(image) import ps -data $data -crop no
+    set tmp [image create picture -data $data]
+    $pageInfo(image) resample $tmp
+    $pageInfo(image) export png -file out.png
     $canvas itemconfigure image -image $pageInfo(image)
     $pageInfo(graph) postscript output out2.ps
 }
@@ -404,7 +406,7 @@ proc ComputePlotGeometry { graph } {
 	set paperHeight [expr $height + $pady]
     }
     set scale 1.0
-    if { [info exists $pageInfo(-maxpect)] && $pageInfo(-maxpect) } {
+    if { [info exists pageInfo(-maxpect)] && $pageInfo(-maxpect) } {
 	set xScale [expr ($paperWidth - $padx) / double($width)]
 	set yScale [expr ($paperHeight - $pady) / double($height)]
 	set scale [expr min($xScale,$yScale)]
@@ -471,7 +473,7 @@ proc PsDialog { graph } {
     foreach { key value } $paperSizes {
 	$menu add -type command -text $key -value $value
     }
-    $menu item configure command -variable pageInfo(paperExtents) \
+    $menu item configure all -variable pageInfo(paperExtents) \
 	-command "SetPaperSize"
     set pageInfo(paperSize) [lindex $paperSizes 0]
     blt::table $top \

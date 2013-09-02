@@ -5,34 +5,34 @@ This widget combines text and other Tk widgets in the same window.
 It is sort of a cross between a read-only text widget and the pack command.
 Any widget can be attached to the hypertext window by the %% 
 set this $htext(widget)
-blt::tile::label $this.lab -text "append " -relief sunken \
+blt::tk::label $this.lab -text "append " -relief sunken \
         -font *-Courier-Bold-R-Normal-*-12-120-*
 $this append $this.lab 
 %% command.
 For example,
 %% message $this.msg -relief sunken -bd 2 -aspect 10000 -font \
  *-Courier-Medium-R-Normal-*-12-* -text {set w $htext(widget)
-blt::tile::label $w.face -bitmap @bitmaps/face.xbm \ 
+blt::tk::label $w.face -bitmap @bitmaps/face.xbm \ 
   -relief sunken -borderwidth 2
 $w append $w.face -padx 2 -pady 0.25i}
 $this append $this.msg \
         -fill both %% added this %%
 global tk_library
-blt::tile::label $this.face \
+blt::tk::label $this.face \
         -bitmap @bitmaps/face.xbm  \
         -relief sunken -borderwidth 2
 $this append $this.face -padx 2 -pady 0.25i 
 %%.
 There can be many types of widgets in the same document.  For example,
 this is a simple %% 
-blt::tile::button $this.but -bg pink -text { button } \
+blt::tk::button $this.but -bg pink -text { button } \
   -command { puts stderr { a stupid message } } 
 $this append $this.but 
 %%. If you click on the button, it prints a stupid message.
 Any Tk widget can be used, including %%
 set whichTile 0
 proc ChangeTile { w } {
-   global whichTile
+   global whichTile bg2 bg1
 
    if { $whichTile } {
         $w configure -bg $bg2
@@ -40,11 +40,11 @@ proc ChangeTile { w } {
 	$w configure -bg $bg1
    }
 }
-blt::tile::checkbutton $this.ckbut -bg lightblue -text { check buttons } \
+blt::tk::checkbutton $this.ckbut -bg lightblue -text { check buttons } \
    -variable whichTile -command "ChangeTile $this" 
 $this append $this.ckbut -justify top
 %%, %%
-blt::tile::radiobutton $this.rdbut -bg mediumseagreen -text { radio buttons } \
+blt::tk::radiobutton $this.rdbut -bg mediumseagreen -text { radio buttons } \
         -command { puts stderr { radio button pressed } } 
 $this append $this.rdbut -justify bottom
 %%, 

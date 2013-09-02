@@ -1271,7 +1271,7 @@ ObjToFile(
     imgPtr->name = Blt_AssertStrdup(fileName);
     imgPtr->flags &= ~IMPORTED_MASK;
     imgPtr->flags |= IMPORTED_FILE;
-    imgPtr->interval = 0;		/* 100 microseconds */
+    imgPtr->interval = 0;
     *picturePtr = imgPtr->picture;
     Blt_DBuffer_Destroy(dbuffer);
     return TCL_OK;

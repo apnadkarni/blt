@@ -312,16 +312,11 @@ proc blt::Graph::DeactivateLegend { g } {
 
 proc blt::Graph::HighlightLegend { g } {
     set elem [$g legend get current]
-    if { $elem != ""  } {
-      set relief [$g element cget $elem -labelrelief]
-      if { $relief == "flat" } {
-	$g element configure $elem -labelrelief raised
-	$g element activate $elem
-      } else {
-	$g element configure $elem -labelrelief flat
+    if { [lsearch [$g element activate] $elem] >= 0 } {
 	$g element deactivate $elem
-      }
-   }
+    } else {
+	$g element activate $elem
+    }
 }
 
 proc blt::Graph::Crosshairs { g {event "Any-Motion"} {state "on"}} {

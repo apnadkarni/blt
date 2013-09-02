@@ -1,7 +1,6 @@
 #!../src/bltwish
 
 package require BLT
-#source scripts/demo.tcl
 
 set visual [winfo screenvisual .] 
 if { $visual == "staticgray"  || $visual == "grayscale" } {

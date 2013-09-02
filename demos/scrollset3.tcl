@@ -133,7 +133,8 @@ foreach col { mtime atime gid } {
 foreach col { nlink mode type ctime uid ino size dev } {
     .ss.t column insert end  $col
 }
-.ss.t column configure uid -relief raised .ss.t column configure mtime -hide no -relief raised
+.ss.t column configure uid -relief raised
+.ss.t column configure mtime -hide no -relief raised
 foreach col { size gid nlink uid ino dev type } {
     .ss.t column configure $col -justify left -edit yes
 }

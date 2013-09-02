@@ -69,9 +69,11 @@ typedef struct {
 } Xbm;
 
 typedef struct {
-    Tcl_Obj *dataObjPtr;
-    Tcl_Obj *fileObjPtr;
-    Blt_Pixel bg, fg;		/* Colors for XBM image format. */
+    Tcl_Obj *dataObjPtr;		/* Bitmap data. */
+    Tcl_Obj *fileObjPtr;		/* Bitmap file. */
+    Tcl_Obj *maskDataObjPtr;		/* Data for mask.  */
+    Tcl_Obj *maskFileObjPtr;		/* File name of mask.  */
+    Blt_Pixel bg, fg;			/* Colors for XBM image format. */
 } XbmImportSwitches;
 
 typedef struct {
@@ -96,6 +98,10 @@ static Blt_SwitchSpec importSwitches[] =
 	Blt_Offset(XbmImportSwitches, fg), 0, 0, &colorSwitch},
     {BLT_SWITCH_OBJ, "-file", "fileName", (char *)NULL,
 	Blt_Offset(XbmImportSwitches, fileObjPtr), 0},
+    {BLT_SWITCH_OBJ, "-maskdata", "data", (char *)NULL,
+	Blt_Offset(XbmImportSwitches, maskDataObjPtr), 0},
+    {BLT_SWITCH_OBJ, "-maskfile", "fileName", (char *)NULL,
+	Blt_Offset(XbmImportSwitches, maskFileObjPtr), 0},
     {BLT_SWITCH_END}
 };
 
@@ -168,27 +174,30 @@ ColorSwitchProc(
 }
 
 static int
-XbmHeader(Blt_DBuffer data, Xbm *xbmPtr)
+XbmHeader(Blt_DBuffer dbuffer, Xbm *xbmPtr)
 {
     unsigned char *line, *next;
+    char *end;
 
     xbmPtr->width = xbmPtr->height = 0;
     xbmPtr->hotX = xbmPtr->hotY = -1;
     xbmPtr->version = 11;
 
-    Blt_DBuffer_Rewind(data);
-    for (line = Blt_DBuffer_Pointer(data); *line != '\0'; line = next) {
+    Blt_DBuffer_Rewind(dbuffer);
+    end = Blt_DBuffer_End(dbuffer);
+    for (line = Blt_DBuffer_Pointer(dbuffer); line < end; line = next) {
 #define XBM_MAX_LINE 1023
 	char substring[XBM_MAX_LINE+1];
 	char *s;
 	int value;
+	char save;
 
 	/* Find the start of the next line */
 	if ((*line == '\n') || (*line == '\r')) {
 	    line++;
 	}
 	next = line;
-	while ((*next != '\r') && (*next != '\n') && (*next != '\0')) {
+	while ((*next != '\r') && (*next != '\n') && (next < end)) {
 	    /* Must be ASCII and can't overrun line buffer. */
 	    if ((*next & !ISASCII(*next)) || (next-line) > XBM_MAX_LINE) {
 		return FALSE;
@@ -196,6 +205,8 @@ XbmHeader(Blt_DBuffer data, Xbm *xbmPtr)
 	    next++;
 	}
 	s = (char *)line;
+	save = *next;
+	*next = '\0';
 	if (*s == '#' && sscanf(s, "#define %s %d", substring,  &value) == 2) {
 	    char *name;
 	    char c;
@@ -224,6 +235,7 @@ XbmHeader(Blt_DBuffer data, Xbm *xbmPtr)
 		    }
 		}
 	    }
+	    *next = save;
 	    continue;
 	} else if (*s == 's' && sscanf(s, "static short %s = {", substring) == 1) {
 	    xbmPtr->version = 10;
@@ -232,12 +244,14 @@ XbmHeader(Blt_DBuffer data, Xbm *xbmPtr)
 	} else if (*s == 's' && sscanf(s, "static char %s = {", substring) == 1) {
 	    xbmPtr->version = 11;
 	} else {
+	    *next = save;
 	    continue;
 	}
+	*next = save;
 	if (*next == '\r') {
 	    next++;
 	}
-	Blt_DBuffer_SetPointer(data, next);
+	Blt_DBuffer_SetPointer(dbuffer, next);
 	return TRUE;
     }
     return FALSE;
@@ -318,17 +332,17 @@ XbmGetHexValue(const char *string, int *valuePtr)
  */
 static int
 XbmBitmapData(
-    Blt_DBuffer data,		/* Data sink to be read from. */
-    int version,		/* X10 or X11. */
-    Blt_Pixel *fgColorPtr,		/* Foreground bitmap color (bit is 1). */
-    Blt_Pixel *bgColorPtr,		/* Background bitmap color (bit is 0). */
-    Picture *destPtr)		/* Picture to be populated from XBM
-				 * image. */
+    Blt_DBuffer data,			/* Data sink to be read from. */
+    int version,			/* X10 or X11. */
+    Blt_Pixel *fg,		        /* Foreground color (1 bit). */
+    Blt_Pixel *bg,		        /* Background color (0 bit). */
+    Picture *destPtr)			/* Picture to be populated from XBM
+					 * image. */
 {
     Blt_Pixel *destRowPtr;
-    char *string;		/* Used to tell strtok that have
-				 * continued processing the same
-				 * string. */
+    char *string;			/* Used to tell strtok that have
+					 * continued processing the same
+					 * string. */
     int y;
 
     destRowPtr = destPtr->bits;
@@ -348,8 +362,7 @@ XbmBitmapData(
 		    return FALSE;
 		}
 		for (i = 0; (x < destPtr->width) && (i < 16); i++, x++) {
-		    dp->u32 = (u16 & (1<<i)) ? 
-			fgColorPtr->u32 : bgColorPtr->u32;
+		    dp->u32 = (u16 & (1<<i)) ? fg->u32 : bg->u32;
 		    dp++;
 		}
 	    }
@@ -363,25 +376,23 @@ XbmBitmapData(
 		    return FALSE;
 		}
 		for (i = 0; (x < destPtr->width) && (i < 8); i++, x++) {
-		    dp->u32 = (u8 & (1<<i)) ? 
-			fgColorPtr->u32 : bgColorPtr->u32;
+		    dp->u32 = (u8 & (1<<i)) ? fg->u32 : bg->u32;
 		    dp++;
 		}
 	    }
 	}
 	destRowPtr += destPtr->pixelsPerRow;
     }
-    if (bgColorPtr->Alpha == 0x00) {	/* Background is 100% transparent. */
-	if (fgColorPtr->Alpha == 0xFF) {
+   if (bg->Alpha == 0x00) {		/* Background is 100% transparent. */
+	if (fg->Alpha == 0xFF) {
 	    destPtr->flags |= BLT_PIC_MASK;
 	} else {
 	    destPtr->flags |= BLT_PIC_BLEND;
 	}
-    } else if (bgColorPtr->Alpha != 0xFF) { /* Partial transparency. */
+    } else if (bg->Alpha != 0xFF) {	/* Background is Semi-transparent. */
 	destPtr->flags |= BLT_PIC_BLEND;
-    } else if (fgColorPtr->Alpha == 0x00) { 
-	/* Background is 100% opaque and foreground is 100%
-	 * transparent. */
+    } else if (fg->Alpha == 0x00) { 
+	/* Background is 100% opaque and foreground is 100% transparent. */
 	destPtr->flags |= BLT_PIC_MASK;
     }
     return TRUE;
@@ -397,7 +408,7 @@ XbmBitmapData(
  * Results:
  *      Returns 1 is the header is XBM and 0 otherwise.  Note that
  *      the validity of the header values is not checked here.  That's
- *	done in Blt_XbmToPicture.
+ *	done in XbmToPicture.
  *
  *---------------------------------------------------------------------------
  */
@@ -424,12 +435,9 @@ IsXbm(Blt_DBuffer data)
  *
  *---------------------------------------------------------------------------
  */
-static Blt_Chain
-XbmToPicture(
-    Tcl_Interp *interp, 
-    const char *fileName,
-    Blt_DBuffer buffer,
-    XbmImportSwitches *switchesPtr)
+static Blt_Picture
+XbmToPicture(Tcl_Interp *interp, const char *fileName, 
+	     Blt_DBuffer buffer, Blt_Pixel *fg, Blt_Pixel *bg)
 {
     Blt_Picture picture;
     Xbm xbm;
@@ -442,8 +450,7 @@ XbmToPicture(
     }
     if ((xbm.width > 0) && (xbm.height > 0)) {
 	picture = Blt_CreatePicture(xbm.width, xbm.height);
-	if (!XbmBitmapData(buffer, xbm.version, &switchesPtr->fg, 
-		&switchesPtr->bg, picture)) { 
+	if (!XbmBitmapData(buffer, xbm.version, fg, bg, picture)) { 
 	    Tcl_AppendResult(interp, "error reading \"", fileName, 
 		"\" invalid XBM data", (char *)NULL);
 	    goto error;
@@ -457,13 +464,7 @@ XbmToPicture(
     }
 
     Blt_DBuffer_Free(buffer);
-    if (picture) {
-	Blt_Chain chain;
-
-	chain = Blt_Chain_Create();
-	Blt_Chain_Append(chain, picture);
-	return chain;
-    }
+    return picture;
  error:
     if (picture) {
 	Blt_FreePicture(picture);
@@ -500,7 +501,7 @@ PictureToXbm(Tcl_Interp *interp, Blt_Picture original, Blt_DBuffer buffer,
     Blt_DBuffer_Format(buffer, "#define picture_width %d\n", srcPtr->width);
     Blt_DBuffer_Format(buffer, "#define picture_height %d\n", srcPtr->height);
     Blt_DBuffer_Format(buffer, "#define picture_x_hot %d\n", srcPtr->width / 2);
-    Blt_DBuffer_Format(buffer, "#define picture_y_hot %d\n", srcPtr->height / 2);
+    Blt_DBuffer_Format(buffer, "#define picture_y_hot %d\n", srcPtr->height/ 2);
     Blt_DBuffer_Format(buffer, "static char picture_bits[] = {\n    ");
     {
 	Blt_Pixel *cp, *srcRowPtr;
@@ -596,11 +597,21 @@ PictureToXbm(Tcl_Interp *interp, Blt_Picture original, Blt_DBuffer buffer,
 static Blt_Chain
 ReadXbm(Tcl_Interp *interp, const char *fileName, Blt_DBuffer buffer)
 {
-    XbmImportSwitches switches;
+    Blt_Picture picture;
+    Blt_Chain chain;
+    Blt_Pixel bg, fg;
 
-    memset(&switches, 0, sizeof(switches));
-    return XbmToPicture(interp, fileName, buffer, &switches);
+    bg.u32 = 0xFF000000;
+    fg.u32 = 0xFFFFFFFF;
+    picture = XbmToPicture(interp, fileName, buffer, &fg, &bg);
+    if (picture == NULL) {
+	return NULL;
+    }
+    chain = Blt_Chain_Create();
+    Blt_Chain_Append(chain, picture);
+    return chain;
 }
+
 
 static Tcl_Obj *
 WriteXbm(Tcl_Interp *interp, Blt_Picture picture)
@@ -624,18 +635,17 @@ WriteXbm(Tcl_Interp *interp, Blt_Picture picture)
 }
 
 static Blt_Chain
-ImportXbm(
-    Tcl_Interp *interp, 
-    int objc,
-    Tcl_Obj *const *objv,
-    const char **fileNamePtr)
+ImportXbm(Tcl_Interp *interp, int objc, Tcl_Obj *const *objv,
+	  const char **fileNamePtr)
 {
-    Blt_Chain chain;
     Blt_DBuffer buffer;
     XbmImportSwitches switches;
     const char *string;
+    Blt_Picture picture, mask;
 
     memset(&switches, 0, sizeof(switches));
+    switches.bg.u32 = 0xFFFFFFFF;
+    switches.fg.u32 = 0xFF000000;
     if (Blt_ParseSwitches(interp, importSwitches, objc - 3, objv + 3, 
 	&switches, BLT_SWITCH_DEFAULTS) < 0) {
 	Blt_FreeSwitches(importSwitches, (char *)&switches, 0);
@@ -647,8 +657,14 @@ ImportXbm(
 	Blt_FreeSwitches(importSwitches, (char *)&switches, 0);
 	return NULL;
     }
+    if ((switches.maskDataObjPtr != NULL) && (switches.maskFileObjPtr!= NULL)) {
+	Tcl_AppendResult(interp, 
+		"more than one import source for the bitmap mask: ",
+		"use only one -maskfile or -maskdata flag.", (char *)NULL);
+	Blt_FreeSwitches(importSwitches, (char *)&switches, 0);
+	return NULL;
+    }
     buffer = Blt_DBuffer_Create();
-    chain = NULL;
     if (switches.dataObjPtr != NULL) {
 	int numBytes;
 
@@ -663,11 +679,56 @@ ImportXbm(
 	}
 	*fileNamePtr = string;
     }
-    chain = XbmToPicture(interp, string, buffer, &switches);
- error:
-    Blt_FreeSwitches(importSwitches, (char *)&switches, 0);
+    picture = XbmToPicture(interp, string, buffer, &switches.fg, &switches.bg);
     Blt_DBuffer_Destroy(buffer);
-    return chain;
+    if (picture == NULL) {
+	goto error;
+    }
+    buffer = NULL;
+    if (switches.maskDataObjPtr != NULL) {
+	int numBytes;
+
+	string = Tcl_GetStringFromObj(switches.maskDataObjPtr, &numBytes);
+	buffer = Blt_DBuffer_Create();
+	Blt_DBuffer_AppendData(buffer, (unsigned char *)string, numBytes);
+    } else if (switches.maskFileObjPtr != NULL) {
+	string = Tcl_GetString(switches.maskFileObjPtr);
+	buffer = Blt_DBuffer_Create();
+	if (Blt_DBuffer_LoadFile(interp, string, buffer) != TCL_OK) {
+	    goto error;
+	}
+    }
+    if (buffer != NULL) {
+	Blt_Pixel fg, bg;
+
+	bg.u32 = 0x00000000;
+	fg.u32 = 0xFFFFFFFF;
+	mask = XbmToPicture(interp, string, buffer, &fg, &bg);
+	if (mask != NULL) {
+	    Blt_ApplyPictureToPicture(picture, mask, 
+				      0, 0, 
+				      Blt_PictureWidth(mask),
+				      Blt_PictureHeight(mask),
+				      0, 0, 
+				      PIC_ARITH_AND);
+	    Blt_FreePicture(mask);
+	}
+	picture->flags |= BLT_PIC_BLEND;
+	Blt_DBuffer_Destroy(buffer);
+    }
+    if (picture != NULL) {
+	Blt_Chain chain;
+
+	chain = Blt_Chain_Create();
+	Blt_Chain_Append(chain, picture);
+	return chain;
+    }
+ error:
+    if (picture != NULL) {
+	Blt_FreePicture(picture);
+    }
+    Blt_FreeSwitches(importSwitches, (char *)&switches, 0);
+    return NULL;
 }
 
 static int
@@ -680,7 +741,7 @@ ExportXbm(Tcl_Interp *interp, unsigned int index, Blt_Chain chain, int objc,
     Blt_Picture picture;
 
     memset(&switches, 0, sizeof(switches));
-    switches.bg.u32 = 0xFFFFFFFF; /* Default bgcolor is white. */
+    switches.bg.u32 = 0xFFFFFFFF;	/* Default bgcolor is white. */
     switches.index = index;
     if (Blt_ParseSwitches(interp, exportSwitches, objc - 3, objv + 3, 
 	&switches, BLT_SWITCH_DEFAULTS) < 0) {

@@ -741,6 +741,7 @@ PictureToPbm(Tcl_Interp *interp, Blt_Picture original, Blt_DBuffer dbuffer,
 	     PbmExportSwitches *switchesPtr)
 {
     Picture *srcPtr;
+    size_t length;
 
     srcPtr = original;
     if (srcPtr->flags & BLT_PIC_MASK) {	
@@ -768,8 +769,10 @@ PictureToPbm(Tcl_Interp *interp, Blt_Picture original, Blt_DBuffer dbuffer,
 	Blt_DBuffer_Format(dbuffer, "P%d\n%d\n%d\n255\n", PPM_RAW, 
 		srcPtr->width, srcPtr->height);
 	bytesPerRow = srcPtr->width * 3;
+	length = Blt_DBuffer_Length(dbuffer);
 	Blt_DBuffer_Extend(dbuffer, srcPtr->height * bytesPerRow);
-	destRowPtr = Blt_DBuffer_End(dbuffer);
+	destRowPtr = Blt_DBuffer_Bytes(dbuffer) + length;
+	length += srcPtr->height * bytesPerRow;
 	srcRowPtr = srcPtr->bits;
 	for (y = 0; y < srcPtr->height; y++) {
 	    Blt_Pixel *sp, *send;
@@ -789,13 +792,15 @@ PictureToPbm(Tcl_Interp *interp, Blt_Picture original, Blt_DBuffer dbuffer,
 	Blt_Pixel *srcRowPtr;
 	int bytesPerRow;
 	int y;
-	unsigned char *destRowPtr;
+	unsigned char *destRowPtr, *d2;
 
 	Blt_DBuffer_Format(dbuffer, "P%d\n%d\n%d\n255\n", PGM_RAW, 
 		srcPtr->width, srcPtr->height);
 	bytesPerRow = srcPtr->width;
+	length = Blt_DBuffer_Length(dbuffer);
 	Blt_DBuffer_Extend(dbuffer, srcPtr->height * bytesPerRow);
-	destRowPtr = Blt_DBuffer_End(dbuffer);
+	destRowPtr = Blt_DBuffer_Bytes(dbuffer) + length;
+	length += srcPtr->height * bytesPerRow;
 	srcRowPtr = srcPtr->bits;
 	for (y = 0; y < srcPtr->height; y++) {
 	    Blt_Pixel *sp, *send;
@@ -810,7 +815,7 @@ PictureToPbm(Tcl_Interp *interp, Blt_Picture original, Blt_DBuffer dbuffer,
 	    srcRowPtr += srcPtr->pixelsPerRow;
 	}
     }
-    Blt_DBuffer_SetLength(dbuffer, Blt_DBuffer_Size(dbuffer));
+    Blt_DBuffer_SetLength(dbuffer, length);
     if (srcPtr != original) {
 	Blt_FreePicture(srcPtr);
     }
