@@ -177,7 +177,7 @@ static int
 XbmHeader(Blt_DBuffer dbuffer, Xbm *xbmPtr)
 {
     unsigned char *line, *next;
-    char *end;
+    unsigned char *end;
 
     xbmPtr->width = xbmPtr->height = 0;
     xbmPtr->hotX = xbmPtr->hotY = -1;
@@ -646,6 +646,7 @@ ImportXbm(Tcl_Interp *interp, int objc, Tcl_Obj *const *objv,
     memset(&switches, 0, sizeof(switches));
     switches.bg.u32 = 0xFFFFFFFF;
     switches.fg.u32 = 0xFF000000;
+    picture = NULL;			/* Suppress compiler warning. */
     if (Blt_ParseSwitches(interp, importSwitches, objc - 3, objv + 3, 
 	&switches, BLT_SWITCH_DEFAULTS) < 0) {
 	Blt_FreeSwitches(importSwitches, (char *)&switches, 0);
@@ -675,7 +676,8 @@ ImportXbm(Tcl_Interp *interp, int objc, Tcl_Obj *const *objv,
     } else {
 	string = Tcl_GetString(switches.fileObjPtr);
 	if (Blt_DBuffer_LoadFile(interp, string, buffer) != TCL_OK) {
-	    goto error;
+	    Blt_FreeSwitches(importSwitches, (char *)&switches, 0);
+	    return NULL;
 	}
 	*fileNamePtr = string;
     }

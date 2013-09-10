@@ -5912,7 +5912,6 @@ Blt_ClassifyPicture(Pict *srcPtr)
     Blt_Pixel *srcRowPtr;
     int y;
     unsigned int flags;
-    int opaque, transparent;
 
     flags = 0;
     srcRowPtr = srcPtr->bits;
@@ -5930,7 +5929,6 @@ Blt_ClassifyPicture(Pict *srcPtr)
     }
  checkOpacity:
     srcRowPtr = srcPtr->bits;
-    opaque = transparent = FALSE;
     for (y = 0; y < srcPtr->height; y++) {
 	Blt_Pixel *sp, *send;
 	
