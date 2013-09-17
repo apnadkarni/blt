@@ -1420,16 +1420,15 @@ int
 Blt_Vec_Duplicate(Vector *destPtr, Vector *srcPtr)
 {
     size_t numBytes;
-    size_t length;
 
     if (destPtr == srcPtr) {
 	/* Copying the same vector. */
     }
-    length = srcPtr->last - srcPtr->first + 1;
-    if (Blt_Vec_ChangeLength(destPtr->interp, destPtr, length) != TCL_OK) {
+    if (Blt_Vec_ChangeLength(destPtr->interp, destPtr, 
+			     srcPtr->length) != TCL_OK) {
 	return TCL_ERROR;
     }
-    numBytes = length * sizeof(double);
+    numBytes = srcPtr->length * sizeof(double);
     memcpy(destPtr->valueArr, srcPtr->valueArr + srcPtr->first, numBytes);
     destPtr->offset = srcPtr->offset;
     return TCL_OK;
