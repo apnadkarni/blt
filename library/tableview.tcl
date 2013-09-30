@@ -979,6 +979,7 @@ proc blt::TableView::MovePage { w where } {
 #	Return		Stop selection toggle of entry currently with focus.
 
 
+if 0 {
 bind BltTableView <KeyPress-Prior> {
     blt::TableView::MovePage %W top
 }
@@ -986,7 +987,7 @@ bind BltTableView <KeyPress-Prior> {
 bind BltTableView <KeyPress-Next> {
     blt::TableView::MovePage %W bottom
 }
-
+}
 bind BltTableView <KeyPress-Home> {
     blt::TableView::MoveFocus %W top
 }
