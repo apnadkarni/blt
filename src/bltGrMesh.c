@@ -1332,39 +1332,46 @@ ComputeMesh(Mesh *meshPtr)
 }
 
 static int 
-ComputeRegularMesh(Mesh *meshPtr)
+ComputeRegularMesh(Mesh *meshPtr, long xNum, long yNum)
 {
-    MeshTriangle *triangles;
-    long numTriangles;
-    long i, count;
-    triangles = NULL;
-    numTriangles = 0;
-    
-    if (meshPtr->numVertices > 0) {
-	/* Compute the convex hull first, this will provide an estimate for
-	 * the boundary vertices and therefore the number of triangles. */
-	if (ConvexHull(meshPtr->interp, meshPtr->numVertices, meshPtr->vertices,
-		       meshPtr) != TCL_OK) {
-	    Tcl_AppendResult(meshPtr->interp, "can't compute convex hull", 
-			     (char *)NULL);
-	    goto error;
-	}
-	/* Determine the number of triangles. */
-	numTriangles = 2 * meshPtr->numVertices;
-	triangles = Blt_Malloc(numTriangles * sizeof(MeshTriangle));
-	if (triangles == NULL) {
-	    Tcl_AppendResult(meshPtr->interp, "can't allocate ", 
-		Blt_Itoa(numTriangles), " triangles", (char *)NULL);
-	    goto error;
-	}
-	numTriangles = Blt_Triangulate(meshPtr->interp, meshPtr->numVertices, 
-		meshPtr->vertices, FALSE, triangles);
-	if (numTriangles == 0) {
-	    Tcl_AppendResult(meshPtr->interp, "error triangulating mesh", 
-			     (char *)NULL);
-	    goto error;
+    long i, x, y, numTriangles, numVertices, count;
+    MeshTriangle *t, *triangles;
+    int *hull;
+
+    assert(xNum > 1);
+    assert(yNum > 1);
+    numTriangles = ((xNum - 1) * 2) * (yNum - 1);
+    triangles = Blt_Malloc(numTriangles * sizeof(MeshTriangle));
+    if (triangles == NULL) {
+	Tcl_AppendResult(meshPtr->interp, "can't allocate ", 
+			 Blt_Itoa(numTriangles), " triangles", (char *)NULL);
+	return TCL_ERROR;
+    }
+    t = triangles;
+    for (y = 0; y < ((yNum - 1) * xNum); y += xNum) {
+	long upper, lower;
+
+	upper = y;
+	lower = y + xNum;
+	for (x = 0; x < (xNum - 1); x++) {
+	    t->a = upper + x, t->b = upper + x + 1, t->c = lower + x;
+	    t++;
+	    t->a = upper + x + 1, t->b = lower + x + 1, t->c = lower + x;
+	    t++;
 	}
     }
+    /* Compute the convex hull. */
+    numVertices = 4;
+    hull = Blt_AssertMalloc(4 * sizeof(int));
+    hull[0] = 0, hull[1] = xNum - 1;
+    hull[2] = (yNum * xNum) - 1;
+    hull[3] = xNum * (yNum - 1);
+    if (meshPtr->hull != NULL) {
+	Blt_Free(meshPtr->hull);
+    }
+    meshPtr->hull = hull;
+    meshPtr->numHullPts = numVertices;
+
     /* Compress the triangle array. This is because there are hidden triangles
      * designated or we over-allocated the initial array of triangles. */
     count = 0;
@@ -1386,11 +1393,6 @@ ComputeRegularMesh(Mesh *meshPtr)
     meshPtr->numTriangles = numTriangles;
     meshPtr->triangles = triangles;
     return TCL_OK;
- error:
-    if (triangles != NULL) {
-	Blt_Free(triangles);
-    }
-    return TCL_ERROR;
 }
 
 static int
@@ -1487,7 +1489,7 @@ RegularMeshConfigureProc(Tcl_Interp *interp, Mesh *meshPtr)
     meshPtr->yMax = yMax;
     meshPtr->vertices = vertices;
     meshPtr->numVertices = numVertices;
-    return ComputeMesh(meshPtr);
+    return ComputeRegularMesh(meshPtr, xNum, yNum);
 }
 
 static int

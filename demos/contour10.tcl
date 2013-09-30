@@ -29135,7 +29135,7 @@ blt::contour .g
 
 .g colormap create mycolormap -palette blue 
 .g element create myexample -values dentalscan -mesh $mesh -colormap mycolormap
-#.g element isoline steps myexample 1 
+.g element isoline steps myexample 6
 .g legend configure -hide yes
 
 proc UpdateColors {} {
@@ -29208,18 +29208,18 @@ set usePalette "blue"
 
 blt::table . \
     0,0 .label -fill x \
-    1,0 .g -fill both -rowspan 9 \
-    1,1 .hull -anchor w -cspan 2 \
-    2,1 .colormap -anchor w -cspan 2\
-    3,1 .isolines -anchor w -cspan 2 \
-    4,1 .edges -anchor w -cspan 2 \
-    5,1 .symbols -anchor w -cspan 2 \
-    6,1 .values -anchor w -cspan 2 \
-    7,1 .interp -anchor w -cspan 2 \
+    1,0 .g -fill both -rowspan 10 \
+    1,1 .hull -anchor w \
+    2,1 .colormap -anchor w \
+    3,1 .isolines -anchor w \
+    4,1 .edges -anchor w  \
+    5,1 .symbols -anchor w \
+    6,1 .values -anchor w  \
+    7,1 .interp -anchor w \
     8,1 .palettesl -anchor w  \
-    8,2 .palettes 
-blt::table configure . r* c1 -resize none
-blt::table configure . r9 -resize both
+    9,1 .palettes -fill x 
+blt::table configure . r* c* -resize none
+blt::table configure . c0 r10 -resize both
 
 foreach key [array names show] {
     set show($key) [.g element cget myexample -display$key]
