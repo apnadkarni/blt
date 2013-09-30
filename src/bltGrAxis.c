@@ -1408,7 +1408,7 @@ Blt_HMap(Axis *axisPtr, double x)
 double
 Blt_VMap(Axis *axisPtr, double y)
 {
-    if ((axisPtr->logScale) && (y != 0.0)) {
+    if ((axisPtr->logScale) && (y > 0.0)) {
 	y = log10(FABS(y));
     }
     /* Map graph coordinate to normalized coordinates [0..1] */
@@ -4271,6 +4271,9 @@ ConfigureOp(Tcl_Interp *interp, Axis *axisPtr, int objc, Tcl_Obj *const *objv)
 		"-tickfont", "-ticklength", "-title", "-titlealternate", 
 		"-titlefont", "titleFont", (char *)NULL)) {
 	    graphPtr->flags |= CACHE_DIRTY;
+	}
+	if (Blt_ConfigModified(configSpecs, "-logscale", (char *)NULL)) {
+	    graphPtr->flags |= MAP_WORLD;
 	}
 	Blt_EventuallyRedrawGraph(graphPtr);
     }

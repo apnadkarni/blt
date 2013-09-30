@@ -309,13 +309,12 @@ AppendVector(Vector *destPtr, Vector *srcPtr)
     size_t oldSize, newSize;
 
     oldSize = destPtr->length;
-    newSize = oldSize + srcPtr->last - srcPtr->first + 1;
+    newSize = oldSize + srcPtr->length;
     if (Blt_Vec_ChangeLength(destPtr->interp, destPtr, newSize) != TCL_OK) {
 	return TCL_ERROR;
     }
     numBytes = (newSize - oldSize) * sizeof(double);
-    memcpy((char *)(destPtr->valueArr + oldSize),
-	(srcPtr->valueArr + srcPtr->first), numBytes);
+    memcpy((char *)(destPtr->valueArr + oldSize), srcPtr->valueArr, numBytes);
     destPtr->notifyFlags |= UPDATE_RANGE;
     return TCL_OK;
 }
@@ -473,7 +472,7 @@ DeleteOp(Vector *vPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	    Blt_Free(unsetArr);
 	    return TCL_ERROR;
 	}
-	for (j = vPtr->first; j <= vPtr->last; j++) {
+	for (j = 0; j < vPtr->length; j++) {
 	    SetBit(j);			/* Mark the element for deletion. */
 	}
     }
@@ -800,7 +799,7 @@ MergeOp(Vector *vPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	    return TCL_ERROR;
 	}
 	/* Check that all the vectors are the same length */
-	length = v2Ptr->last - v2Ptr->first + 1;
+	length = v2Ptr->length;
 	if (refSize < 0) {
 	    refSize = length;
 	} else if (length != refSize) {
@@ -828,7 +827,7 @@ MergeOp(Vector *vPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	Vector **vpp;
 
 	for (vpp = vecArr; *vpp != NULL; vpp++) {
-	    *valuePtr++ = (*vpp)->valueArr[i + (*vpp)->first];
+	    *valuePtr++ = (*vpp)->valueArr[i];
 	}
     }
     Blt_Free(vecArr);
@@ -2548,7 +2547,7 @@ CountOp(Vector *vPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     if ((c == 'e') && (strcmp(string, "empty") == 0)) {
 	int i;
 
-	for (i = vPtr->first; i <= vPtr->last; i++) {
+	for (i = 0; i < vPtr->length; i++) {
 	    if (!FINITE(vPtr->valueArr[i])) {
 		count++;
 	    }
@@ -2556,7 +2555,7 @@ CountOp(Vector *vPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     } else if ((c == 'z') && (strcmp(string, "zero") == 0)) {
 	int i;
 
-	for (i = vPtr->first; i <= vPtr->last; i++) {
+	for (i = 0; i < vPtr->length; i++) {
 	    if (FINITE(vPtr->valueArr[i]) && (vPtr->valueArr[i] == 0.0)) {
 		count++;
 	    }
@@ -2564,7 +2563,7 @@ CountOp(Vector *vPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     } else if ((c == 'n') && (strcmp(string, "nonzero") == 0)) {
 	int i;
 
-	for (i = vPtr->first; i <= vPtr->last; i++) {
+	for (i = 0; i < vPtr->length; i++) {
 	    if (FINITE(vPtr->valueArr[i]) && (vPtr->valueArr[i] != 0.0)) {
 		count++;
 	    }
@@ -2572,7 +2571,7 @@ CountOp(Vector *vPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     } else if ((c == 'n') && (strcmp(string, "nonempty") == 0)) {
 	int i;
 
-	for (i = vPtr->first; i <= vPtr->last; i++) {
+	for (i = 0; i < vPtr->length; i++) {
 	    if (FINITE(vPtr->valueArr[i])) {
 		count++;
 	    }
@@ -2614,7 +2613,7 @@ IndicesOp(Vector *vPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     if ((c == 'e') && (strcmp(string, "empty") == 0)) {
 	int i;
 
-	for (i = vPtr->first; i <= vPtr->last; i++) {
+	for (i = 0; i < vPtr->length; i++) {
 	    if (!FINITE(vPtr->valueArr[i])) {
 		Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewIntObj(i));
 	    }
@@ -2622,7 +2621,7 @@ IndicesOp(Vector *vPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     } else if ((c == 'z') && (strcmp(string, "zero") == 0)) {
 	int i;
 
-	for (i = vPtr->first; i <= vPtr->last; i++) {
+	for (i = 0; i < vPtr->length; i++) {
 	    if (FINITE(vPtr->valueArr[i]) && (vPtr->valueArr[i] == 0.0)) {
 		Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewIntObj(i));
 	    }
@@ -2630,7 +2629,7 @@ IndicesOp(Vector *vPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     } else if ((c == 'n') && (strcmp(string, "nonzero") == 0)) {
 	int i;
 
-	for (i = vPtr->first; i <= vPtr->last; i++) {
+	for (i = 0; i < vPtr->length; i++) {
 	    if (FINITE(vPtr->valueArr[i]) && (vPtr->valueArr[i] != 0.0)) {
 		Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewIntObj(i));
 	    }
@@ -2638,7 +2637,7 @@ IndicesOp(Vector *vPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     } else if ((c == 'n') && (strcmp(string, "nonempty") == 0)) {
 	int i;
 
-	for (i = vPtr->first; i <= vPtr->last; i++) {
+	for (i = 0; i < vPtr->length; i++) {
 	    if (FINITE(vPtr->valueArr[i])) {
 		Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewIntObj(i));
 	    }
@@ -3308,7 +3307,7 @@ ArithOp(Vector *vPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	int j;
 	int length;
 
-	length = v2Ptr->last - v2Ptr->first + 1;
+	length = v2Ptr->length;
 	if (length != vPtr->length) {
 	    Tcl_AppendResult(interp, "vectors \"", Tcl_GetString(objv[0]), 
 		"\" and \"", Tcl_GetString(objv[2]), 
@@ -3319,7 +3318,7 @@ ArithOp(Vector *vPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
 	switch (string[0]) {
 	case '*':
-	    for (i = 0, j = v2Ptr->first; i < vPtr->length; i++, j++) {
+	    for (i = 0, j = 0; i < vPtr->length; i++, j++) {
 		value = vPtr->valueArr[i] * v2Ptr->valueArr[j];
 		Tcl_ListObjAppendElement(interp, listObjPtr,
 			 Tcl_NewDoubleObj(value));
@@ -3327,7 +3326,7 @@ ArithOp(Vector *vPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	    break;
 
 	case '/':
-	    for (i = 0, j = v2Ptr->first; i < vPtr->length; i++, j++) {
+	    for (i = 0, j = 0; i < vPtr->length; i++, j++) {
 		value = vPtr->valueArr[i] / v2Ptr->valueArr[j];
 		Tcl_ListObjAppendElement(interp, listObjPtr,
 			 Tcl_NewDoubleObj(value));
@@ -3335,7 +3334,7 @@ ArithOp(Vector *vPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	    break;
 
 	case '-':
-	    for (i = 0, j = v2Ptr->first; i < vPtr->length; i++, j++) {
+	    for (i = 0, j = 0; i < vPtr->length; i++, j++) {
 		value = vPtr->valueArr[i] - v2Ptr->valueArr[j];
 		Tcl_ListObjAppendElement(interp, listObjPtr,
 			 Tcl_NewDoubleObj(value));
@@ -3343,7 +3342,7 @@ ArithOp(Vector *vPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	    break;
 
 	case '+':
-	    for (i = 0, j = v2Ptr->first; i < vPtr->length; i++, j++) {
+	    for (i = 0, j = 0; i < vPtr->length; i++, j++) {
 		value = vPtr->valueArr[i] + v2Ptr->valueArr[j];
 		Tcl_ListObjAppendElement(interp, listObjPtr,
 			 Tcl_NewDoubleObj(value));

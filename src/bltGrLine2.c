@@ -2153,8 +2153,18 @@ GetScreenPoints(LineElement *elemPtr)
 	Point2d r;
 
 	j = i;
-	while ((j < n) && ((!FINITE(x[j]))||(!FINITE(y[j])))) {
-	    j++;	    /* Skip holes in the data. */
+	while (j < n) {
+	    /* Treat -inf, inf, NaN values as holes in the data. Also
+	     * ignore non-positive values when the axis is log scale. */
+	    if ((!FINITE(x[j]))||(!FINITE(y[j]))) {
+		j++;
+	    } else if (elemPtr->axes.y->logScale & (y[j] <= 0.0)) {
+		j++;			
+	    } else if (elemPtr->axes.x->logScale & (x[j] <= 0.0)) {
+		j++;
+	    } else {
+		break;
+	    }
 	}
 	if (j == n) {
 	    break;

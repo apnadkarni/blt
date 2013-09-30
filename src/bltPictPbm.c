@@ -792,7 +792,7 @@ PictureToPbm(Tcl_Interp *interp, Blt_Picture original, Blt_DBuffer dbuffer,
 	Blt_Pixel *srcRowPtr;
 	int bytesPerRow;
 	int y;
-	unsigned char *destRowPtr, *d2;
+	unsigned char *destRowPtr;
 
 	Blt_DBuffer_Format(dbuffer, "P%d\n%d\n%d\n255\n", PGM_RAW, 
 		srcPtr->width, srcPtr->height);

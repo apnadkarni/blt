@@ -51,6 +51,7 @@
 #include "bltNsUtil.h"
 #include "bltParse.h"
 
+
 /*
  * Three types of math functions:
  *
@@ -237,7 +238,7 @@ Length(Blt_Vector *vectorPtr)
 {
     Vector *vPtr = (Vector *)vectorPtr;
 
-    return (double)(vPtr->last - vPtr->first + 1);
+    return (double)vPtr->length;
 }
 
 double
@@ -265,7 +266,7 @@ Product(Blt_Vector *vectorPtr)
     int i;
 
     prod = 1.0;
-    for(i = vPtr->first; i <= vPtr->last; i++) {
+    for(i = 0; i < vPtr->length; i++) {
 	if (!FINITE(vPtr->valueArr[i])) {
 	    continue;
 	}
@@ -278,25 +279,25 @@ static double
 GetSum(Blt_Vector *vectorPtr, int *nonEmptyPtr)
 {
     Vector *vPtr = (Vector *)vectorPtr;
-    int i, count;
     double sum;
+    int i, count;
 
     /* Kahan summation algorithm */
 
-    for (i = vPtr->first; i <= vPtr->last; i++) {
+    for (i = 0; i < vPtr->length; i++) {
 	if (FINITE(vPtr->valueArr[i])) {
 	    break;
 	}
     }
     sum = 0.0;
     count = 0;
-    if (i <= vPtr->last) {
+    if (i < vPtr->length) {
 	double c;
 	sum = vPtr->valueArr[i];
 	c = 0.0;			/* A running compensation for lost
 					 * low-order bits.*/
 	count = 1;
-	for (/*empty*/; i <= vPtr->last; i++) {
+	for (/*empty*/; i < vPtr->length; i++) {
 	    double y, t;
 	    
 	    if (!FINITE(vPtr->valueArr[i])) {
@@ -345,12 +346,12 @@ Variance(Blt_Vector *vectorPtr)
 {
     Vector *vPtr = (Vector *)vectorPtr;
     double var, mean;
-    int count, i;
+    int i, count;
 
     mean = Mean(vectorPtr);
     var = 0.0;
     count = 0;
-    for(i =  vPtr->first; i <= vPtr->last; i++) {
+    for(i = 0; i < vPtr->length; i++) {
 	double dx;
 
 	if (!FINITE(vPtr->valueArr[i])) {
@@ -375,12 +376,12 @@ Skew(Blt_Vector *vectorPtr)
 {
     Vector *vPtr = (Vector *)vectorPtr;
     double var, skew, mean;
-    int count, i;
+    int i, count;
 
     mean = Mean(vectorPtr);
     var = skew = 0.0;
     count = 0;
-    for(i =  vPtr->first; i <= vPtr->last; i++) {
+    for(i = 0; i < vPtr->length; i++) {
 	double dx, dx2;
 
 	if (!FINITE(vPtr->valueArr[i])) {
@@ -419,12 +420,12 @@ AvgDeviation(Blt_Vector *vectorPtr)
 {
     Vector *vPtr = (Vector *)vectorPtr;
     double avg, mean;
-    int count, i;
+    int i, count;
 
     mean = Mean(vectorPtr);
     avg = 0.0;
     count = 0;
-    for(i =  vPtr->first; i <= vPtr->last; i++) {
+    for(i = 0; i < vPtr->length; i++) {
 	double diff;
 
 	if (!FINITE(vPtr->valueArr[i])) {
@@ -447,12 +448,12 @@ Kurtosis(Blt_Vector *vectorPtr)
 {
     Vector *vPtr = (Vector *)vectorPtr;
     double kurt, var, mean;
-    int count, i;
+    int i, count;
 
     mean = Mean(vectorPtr);
     var = kurt = 0.0;
     count = 0;
-    for(i =  vPtr->first; i <= vPtr->last; i++) {
+    for(i = 0; i < vPtr->length; i++) {
 	double diff, diffsq;
 
 	if (!FINITE(vPtr->valueArr[i])) {
@@ -593,7 +594,7 @@ Norm(Blt_Vector *vector)
 
     min = DBL_MAX;
     max = -DBL_MAX;
-    for (i = vPtr->first; i <= vPtr->last; i++) {
+    for (i = 0; i < vPtr->length; i++) {
 	if (!FINITE(vPtr->valueArr[i])) {
 	    continue;
 	}
@@ -609,7 +610,7 @@ Norm(Blt_Vector *vector)
 	int i;
 
 	range = max - min;
-	for (i = vPtr->first; i <= vPtr->last; i++) {
+	for (i = 0; i < vPtr->length; i++) {
 	    if (FINITE(vPtr->valueArr[i])) {
 		double norm;
 
@@ -628,8 +629,9 @@ Count(Blt_Vector *vector)
     int count;
     int i;
 
+
     count = 0;
-    for (i = vPtr->first; i <= vPtr->last; i++) {
+    for (i = 0; i < vPtr->length; i++) {
 	if (FINITE(vPtr->valueArr[i])) {
 	    count++;
 	}
@@ -646,7 +648,7 @@ Nonzeros(Blt_Vector *vector)
     int i;
 
     count = 0;
-    for (i = vPtr->first; i <= vPtr->last; i++) {
+    for (i = 0; i < vPtr->length; i++) {
 	if ((FINITE(vPtr->valueArr[i])) && (vPtr->valueArr[i] != 0.0)) {
 	    count++;
 	}
@@ -1254,7 +1256,6 @@ NextValue(
 	    /* Process unary operators. */
 	    switch (operator) {
 	    case UNARY_MINUS:
-		/* FIXME: should this be first/last? */
 		for(i = 0; i < vPtr->length; i++) {
 		    if (!FINITE(vPtr->valueArr[i])) {
 			continue;
@@ -1264,7 +1265,6 @@ NextValue(
 		break;
 
 	    case NOT:
-		/* FIXME: should this be first/last? */
 		for(i = 0; i < vPtr->length; i++) {
 		    if (!FINITE(vPtr->valueArr[i])) {
 			continue;
@@ -2012,7 +2012,8 @@ ComponentFunc(
 
     values = Blt_AssertMalloc(sizeof(double) * vPtr->length);
     memcpy(values, vPtr->valueArr, sizeof(double) * vPtr->length);
-    for(i = vPtr->first; i <= vPtr->last; i++) {
+
+    for(i = 0; i < vPtr->length; i++) {
 	if (!FINITE(values[i])) {
 	    continue;			/* There is a hole in vector. */
 	}
@@ -2058,7 +2059,7 @@ ComponentNoArgsFunc(
 
     values = Blt_AssertMalloc(sizeof(double) * vPtr->length);
     memcpy(values, vPtr->valueArr, sizeof(double) * vPtr->length);
-    for(i = vPtr->first; i <= vPtr->last; i++) {
+    for(i = 0; i < vPtr->length; i++) {
 	values[i] = (*procPtr) ();
     }
     Blt_Vec_Reset(vPtr, values, vPtr->length, vPtr->length, TCL_DYNAMIC);
@@ -2257,3 +2258,4 @@ Blt_ExprVector(
     Blt_Vec_Free(value.vPtr);
     return TCL_OK;
 }
+
