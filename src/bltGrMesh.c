@@ -1331,6 +1331,68 @@ ComputeMesh(Mesh *meshPtr)
     return TCL_ERROR;
 }
 
+static int 
+ComputeRegularMesh(Mesh *meshPtr)
+{
+    MeshTriangle *triangles;
+    long numTriangles;
+    long i, count;
+    triangles = NULL;
+    numTriangles = 0;
+    
+    if (meshPtr->numVertices > 0) {
+	/* Compute the convex hull first, this will provide an estimate for
+	 * the boundary vertices and therefore the number of triangles. */
+	if (ConvexHull(meshPtr->interp, meshPtr->numVertices, meshPtr->vertices,
+		       meshPtr) != TCL_OK) {
+	    Tcl_AppendResult(meshPtr->interp, "can't compute convex hull", 
+			     (char *)NULL);
+	    goto error;
+	}
+	/* Determine the number of triangles. */
+	numTriangles = 2 * meshPtr->numVertices;
+	triangles = Blt_Malloc(numTriangles * sizeof(MeshTriangle));
+	if (triangles == NULL) {
+	    Tcl_AppendResult(meshPtr->interp, "can't allocate ", 
+		Blt_Itoa(numTriangles), " triangles", (char *)NULL);
+	    goto error;
+	}
+	numTriangles = Blt_Triangulate(meshPtr->interp, meshPtr->numVertices, 
+		meshPtr->vertices, FALSE, triangles);
+	if (numTriangles == 0) {
+	    Tcl_AppendResult(meshPtr->interp, "error triangulating mesh", 
+			     (char *)NULL);
+	    goto error;
+	}
+    }
+    /* Compress the triangle array. This is because there are hidden triangles
+     * designated or we over-allocated the initial array of triangles. */
+    count = 0;
+    for (i = 0; i < numTriangles; i++) {
+	if (Blt_FindHashEntry(&meshPtr->hideTable, (char *)i)) {
+	    continue;
+	}
+	if (i > count) {
+	    triangles[count] = triangles[i];
+	}
+	count++;
+    }   
+    if (count > 0) {
+	triangles = Blt_Realloc(triangles, count * sizeof(MeshTriangle));
+    }
+    if (meshPtr->triangles != NULL) {
+	Blt_Free(meshPtr->triangles);
+    }
+    meshPtr->numTriangles = numTriangles;
+    meshPtr->triangles = triangles;
+    return TCL_OK;
+ error:
+    if (triangles != NULL) {
+	Blt_Free(triangles);
+    }
+    return TCL_ERROR;
+}
+
 static int
 RegularMeshConfigureProc(Tcl_Interp *interp, Mesh *meshPtr)
 {

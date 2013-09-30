@@ -20,15 +20,8 @@ foreach  i [$y2 values] {
 puts stderr [blt::palette names]
 #.g axis configure z -logscale yes
 
-create palette
-create colormap -axis -min -max -palette 
-.g axis configure -min -max -tick -all of that works.
-.g colorbar window -colormap colormap -min -max -title  -orient vertical \
-    -title title -tickfont -titlefont -hide no
-
-
 set mesh [blt::mesh create regular -y {1 100 100} -x {1 100 100}]
-.g colormap $w create mycolormap -palette blue 
+.g colormap create mycolormap -palette blue 
 .g element create myexample -values $z -mesh $mesh -colormap mycolormap
 .g element isoline steps myexample 10 
 

@@ -1,34 +1,12 @@
 #!../src/bltwish
 
 package require BLT
-source scripts/demo.tcl
-
-proc random {{max 1.0} {min 0.0}} {
-    global randomSeed
-
-    set randomSeed [expr (7141*$randomSeed+54773) % 259200]
-    set num  [expr $randomSeed/259200.0*($max-$min)+$min]
-    return $num
-}
-set randomSeed 14823
-
 
 set graph .graph
-
-source scripts/stipples.tcl
-source scripts/patterns.tcl
-
 
 option add *x.Title			"X Axis"
 option add *y.Title			"Y Axis"
 option add *LineMarker.Foreground	yellow
-
-set visual [winfo screenvisual .] 
-if { $visual != "staticgray" && $visual != "grayscale" } {
-    option add *print.background yellow
-    option add *quit.background red
-    option add *graph.background palegreen
-}
 
 blt::htext .header -text \
 {   This is an example of the barchart widget.  The barchart has 
@@ -42,8 +20,8 @@ blt::htext .header -text \
 
 %% button.  
 }
-blt::barchart $graph 
-$graph xaxis configure -rotate 90 -stepsize 0
+blt::barchart $graph -background white 
+$graph axis configure x -stepsize 0 
 
 blt::htext .footer -text {    Hit the %%
     set im [image create picture -file ./images/stopsign.gif]
@@ -55,20 +33,20 @@ blt::htext .footer -text {    Hit the %%
 %%}
 
 set attributes { 
-    red		bdiagonal1
-    orange	bdiagonal2
-    yellow	fdiagonal1
-    green	fdiagonal2
-    blue	hline1 
-    cyan	hline2
-    magenta	vline1 
-    violetred	vline2
-    purple	crossdiag
-    lightblue 	hobbes	
+    red	
+    orange
+    yellow
+    green
+    blue
+    cyan
+    magenta
+    violetred
+    purple
+    lightblue
 }
 
 set count 0
-foreach { color stipple } $attributes {
+foreach color $attributes {
     $graph pen create pen$count \
 	-fill ${color}1 -outline ${color}4 -relief solid
     lappend styles [list pen$count $count $count]
@@ -77,9 +55,9 @@ foreach { color stipple } $attributes {
 
 blt::vector x y w
 
-x seq 0 1000 400
-y expr random(x)*90.0
-w expr round(y/10.0)%$count
+x seq 0 800 400
+y expr sin(x)*90.0
+w expr round(y*20.0)%$count
 y expr y+10.0
 
 $graph element create data -label {} \

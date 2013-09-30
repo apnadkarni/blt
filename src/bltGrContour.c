@@ -1328,9 +1328,12 @@ ColormapChangedProc(GraphColormap *cmapPtr, ClientData clientData,
     if (flags & COLORMAP_DELETE_NOTIFY) {
 	cmapPtr->palette = NULL;
     }
-    elemPtr->flags |= MAP_ITEM;
     graphPtr = cmapPtr->graphPtr;
+    /* Colormap changed. Don't need to remap the item. */
+#ifdef notdef
+    elemPtr->flags |= MAP_ITEM;
     graphPtr->flags |= CACHE_DIRTY;
+#endif
     Blt_EventuallyRedrawGraph(graphPtr);
 }
 
@@ -4691,7 +4694,8 @@ ConfigureProc(Graph *graphPtr, Element *basePtr)
     if (ConfigurePenProc(graphPtr, (Pen *)elemPtr->builtinPenPtr) != TCL_OK) {
 	return TCL_ERROR;
     }
-    if (Blt_ConfigModified(elemPtr->configSpecs, "-display*", "-*data",
+
+    if (Blt_ConfigModified(elemPtr->configSpecs, "-*data",
 	    "-map*", "-label", "-hide", "-z", "-mesh", (char *)NULL)) {
 	elemPtr->flags |= MAP_ITEM;
     }
