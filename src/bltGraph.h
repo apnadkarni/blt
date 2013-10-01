@@ -572,24 +572,24 @@ struct _Graph {
  *	GRAPH_FOCUS	
  */
 
-#define HIDE			(1<<0) /* 0x0001 */
-#define DELETE_PENDING		(1<<1) /* 0x0002 */
-#define REDRAW_PENDING		(1<<2) /* 0x0004 */
-#define	ACTIVE_PENDING		(1<<3) /* 0x0008 */
-#define	MAP_ITEM		(1<<4) /* 0x0010 */
-#define DIRTY			(1<<5) /* 0x0020 */
-#define ACTIVE			(1<<6) /* 0x0040 */
-#define FOCUS			(1<<7) /* 0x0080 */
+#define HIDE			(1<<0)
+#define DELETE_PENDING		(1<<1)
+#define REDRAW_PENDING		(1<<2)
+#define	ACTIVE_PENDING		(1<<3)
+#define	MAP_ITEM		(1<<4)
+#define DIRTY			(1<<5)
+#define ACTIVE			(1<<6)
+#define FOCUS			(1<<7)
 
-#define	MAP_ALL			(1<<8) /* 0x0100 */
-#define LAYOUT_NEEDED		(1<<9) /* 0x0200 */
-#define RESET_AXES		(1<<10)/* 0x0400 */
-#define	GET_AXIS_GEOMETRY	(1<<11)/* 0x0800 */
+#define	MAP_ALL			(1<<8)
+#define LAYOUT_NEEDED		(1<<9)
+#define RESET_AXES		(1<<10)
+#define	GET_AXIS_GEOMETRY	(1<<11)
 
-#define DRAW_LEGEND		(1<<12)/* 0x1000 */
-#define DRAW_MARGINS		(1<<13)/* 0x2000 */
-#define	CACHE_DIRTY		(1<<14)/* 0x4000 */
-#define REQ_BACKING_STORE	(1<<15)/* 0x8000 */
+#define DRAW_LEGEND		(1<<12)
+#define DRAW_MARGINS		(1<<13)
+#define	CACHE_DIRTY		(1<<14)
+#define REQ_BACKING_STORE	(1<<15)
 #define UNMAP_HIDDEN		(1<<16)
 
 #define	MAP_WORLD		(MAP_ALL|RESET_AXES|GET_AXIS_GEOMETRY)

@@ -131,6 +131,7 @@ static int tkpWinRopModes[] =
 					 * the outer boundary of the mesh. */
 #define EDGES		(1<<15)		/* Draw the edges of the triangular 
 					 * mesh. */
+#define TRIANGLES	(1<<15)		/* Map mesh. */
 #define VALUES		(1<<16)		/* Draw the z-values at the vertices
 					 * of the mesh. */
 #define SYMBOLS		(1<<17)		/* Draw the symbols on top of the
@@ -1216,7 +1217,7 @@ MeshChangedProc(Mesh *meshPtr, ClientData clientData, unsigned int flags)
     if (flags & MESH_DELETE_NOTIFY) {
 	elemPtr->meshPtr = NULL;
     }
-    elemPtr->flags |= MAP_ITEM;
+    elemPtr->flags |= MAP_ITEM | TRIANGLES;
     elemPtr->obj.graphPtr->flags |= CACHE_DIRTY;
     Blt_EventuallyRedrawGraph(elemPtr->obj.graphPtr);
 }
@@ -2112,11 +2113,6 @@ ResetElement(ContourElement *elemPtr)
 	Blt_Chain_Destroy(elemPtr->traces);
 	elemPtr->traces = NULL;
     }
-    if (elemPtr->triangles != NULL) {
-	Blt_Free(elemPtr->triangles);
-	elemPtr->triangles = NULL;
-	elemPtr->numTriangles = 0;
-    }
     if (elemPtr->vertices != NULL) {
 	Blt_Free(elemPtr->vertices);
 	elemPtr->vertices = NULL;
@@ -2261,16 +2257,17 @@ MapEdges(ContourElement *elemPtr)
     Blt_HashTable edgeTable;
     Region2d exts;
     Segment2d *segments;
-    Triangle *t, *tend;
+    long i;
     int count;
 
     /* Use a hash table to generate a list of unique edges.  */
     Blt_InitHashTable(&edgeTable, sizeof(EdgeKey) / sizeof(int));
-    for (t = elemPtr->triangles, tend = t + elemPtr->numTriangles; 
-	 t < tend; t++) {
+    for (i = 0; i < elemPtr->numTriangles; i++) {
+	Triangle *t;
 	int isNew;
 	EdgeKey key;
 
+	t = elemPtr->triangles + i;
 	MakeEdgeKey(&key, t->a, t->b);
 	Blt_CreateHashEntry(&edgeTable, &key, &isNew);
 	MakeEdgeKey(&key, t->b, t->c);
@@ -2442,9 +2439,6 @@ MapMesh(ContourElement *elemPtr)
 
     triangles = Blt_AssertMalloc(sizeof(Triangle) * 
 	elemPtr->meshPtr->numTriangles);
-#ifdef notdef
-    Blt_GraphExtents(elemPtr, &exts);
-#endif
     for (i = 0; i < elemPtr->meshPtr->numTriangles; i++) {
 	MeshTriangle *t;
 
@@ -2455,26 +2449,6 @@ MapMesh(ContourElement *elemPtr)
 	triangles[i].min = MIN3(Az, Bz, Cz);
 	triangles[i].max = MAX3(Az, Bz, Cz);
 	triangles[i].index = i;
-#ifdef notdef
-	fprintf(stderr, "triangle %d a=%d b=%d c=%d a=%.17g b=%.17g c=%.17g min=%.17g, max=%.17g\n", 
-		i, t->a, t->b, t->c, Az, Bz, Cz, triangles[i].min, triangles[i].max);
-#endif
-#ifdef notdef
-	/* Get the triangle's bounding box. */
-	bbox.left   = MIN3(Ax, Bx, Cx);
-	bbox.right  = MAX3(Ax, Bx, Cx);
-	bbox.top    = MIN3(Ay, By, Cy);
-	bbox.bottom = MAX3(Ay, By, Cy);
-
-	/* Do a quick minmax test on the bounding box with the plot area. */
-	if ((bbox.right < exts.left) || (bbox.bottom < exts.top) ||
-	    (bbox.top > exts.bottom) || (bbox.left > exts.right)) {
-	    triangles[i].flags = VISIBLE; /* Triangle isn't visible. */
-	    /* Get z-min, z-max for all visible triangles. */
-	    /* Will generate palette scaled from 0 to 1 of possible colors
-	     * from min to max. */
-	}
-#endif
     }
     /* Next sort the triangles by the current set of field values */
     qsort(triangles, elemPtr->meshPtr->numTriangles, sizeof(Triangle), 
@@ -2484,9 +2458,7 @@ MapMesh(ContourElement *elemPtr)
     }
     elemPtr->triangles = triangles;
     elemPtr->numTriangles = elemPtr->meshPtr->numTriangles;
-    MapEdges(elemPtr);
-    /* Map the convex hull representing the boundary of the mesh. */
-    MapTraces(elemPtr, &elemPtr->traces);
+    elemPtr->flags &= ~TRIANGLES;
 }    
     
 /* Process a Cont triangle  */
@@ -3470,7 +3442,7 @@ DrawMesh(Graph *graphPtr, Drawable drawable, ContourElement *elemPtr)
     if (elemPtr->flags & COLORMAP) {
 	DrawTriangles(graphPtr, drawable, elemPtr, penPtr);
     }
-    if (elemPtr->flags & EDGES) {
+    if ((elemPtr->numWires > 0) && (elemPtr->flags & EDGES)) {
 	DrawEdges(graphPtr, drawable, elemPtr, penPtr);
     }
     if (elemPtr->flags & HULL) {
@@ -4695,9 +4667,12 @@ ConfigureProc(Graph *graphPtr, Element *basePtr)
 	return TCL_ERROR;
     }
 
-    if (Blt_ConfigModified(elemPtr->configSpecs, "-*data",
+    if (Blt_ConfigModified(elemPtr->configSpecs, "-*data", "-displayedges", 
 	    "-map*", "-label", "-hide", "-z", "-mesh", (char *)NULL)) {
 	elemPtr->flags |= MAP_ITEM;
+    }
+    if (Blt_ConfigModified(elemPtr->configSpecs, "-mesh", (char *)NULL)) {
+	elemPtr->flags |= TRIANGLES;
     }
     /* Line segments */
 
@@ -4820,6 +4795,11 @@ DestroyProc(Graph *graphPtr, Element *basePtr)
 	Blt_FreePen((Pen *)elemPtr->activePenPtr);
     }
     ResetElement(elemPtr);
+    if (elemPtr->triangles != NULL) {
+	Blt_Free(elemPtr->triangles);
+	elemPtr->triangles = NULL;
+	elemPtr->numTriangles = 0;
+    }
     DestroyIsoTags(elemPtr);
     DestroyIsolines(elemPtr);
     if (elemPtr->meshGC != NULL) {
@@ -4878,7 +4858,14 @@ MapProc(Graph *graphPtr, Element *basePtr)
 	return;				/* Wrong # of field points */
     }
     GetScreenPoints(elemPtr);
-    MapMesh(elemPtr);
+    if (elemPtr->flags & TRIANGLES) {
+	MapMesh(elemPtr);
+    }
+    if (elemPtr->flags & EDGES) {
+	MapEdges(elemPtr);
+    }
+    /* Map the convex hull representing the boundary of the mesh. */
+    MapTraces(elemPtr, &elemPtr->traces);
 #ifdef notdef
     MapActiveTriangles(elemPtr);
 #endif
