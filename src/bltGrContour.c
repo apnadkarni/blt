@@ -129,9 +129,9 @@ static int tkpWinRopModes[] =
 #define COLORMAP	(1<<13)		/* Fill the triangles of the mesh. */
 #define HULL		(1<<14)		/* Draw the convex hull representing
 					 * the outer boundary of the mesh. */
-#define EDGES		(1<<15)		/* Draw the edges of the triangular 
+#define WIRES		(1<<20)		/* Draw the edges of the triangular 
 					 * mesh. */
-#define TRIANGLES	(1<<15)		/* Map mesh. */
+#define TRIANGLES	(1<<21)		/* Map mesh. */
 #define VALUES		(1<<16)		/* Draw the z-values at the vertices
 					 * of the mesh. */
 #define SYMBOLS		(1<<17)		/* Draw the symbols on top of the
@@ -551,7 +551,7 @@ static Blt_CustomOption colormapOption =
 #define DEF_BACKGROUND		"navyblue"
 #define DEF_COLORMAP		(char *)NULL
 #define DEF_DISPLAY_COLORMAP	"1"
-#define DEF_DISPLAY_EDGES	"1"
+#define DEF_DISPLAY_EDGES	"0"
 #define DEF_DISPLAY_HULL	"1"
 #define DEF_DISPLAY_ISOLINES	"1"
 #define DEF_DISPLAY_SYMBOLS	"0"
@@ -752,7 +752,7 @@ static Blt_ConfigSpec contourSpecs[] =
 	(Blt_CustomOption *)ISOLINES},
     {BLT_CONFIG_BITMASK, "-displayedges", "displayEdges", "DisplayEdges", 
         DEF_DISPLAY_EDGES, Blt_Offset(ContourElement, flags), 
-	BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)EDGES},
+	BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)WIRES},
     {BLT_CONFIG_BITMASK, "-displaysymbols", "displaySymbols", "DisplaySymbols",
 	DEF_DISPLAY_SYMBOLS, Blt_Offset(ContourElement, flags), 
 	BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)SYMBOLS},
@@ -2232,7 +2232,7 @@ CompareTriangles(const void *a, const void *b)
 /*
  *---------------------------------------------------------------------------
  *
- * MapEdges --
+ * MapWires --
  *
  *	Creates an array of the visible (possible clipped) line segments
  *	representing the wireframe of the mesh.  
@@ -2250,7 +2250,7 @@ CompareTriangles(const void *a, const void *b)
  *---------------------------------------------------------------------------
  */
 static void
-MapEdges(ContourElement *elemPtr)
+MapWires(ContourElement *elemPtr)
 {
     Blt_HashEntry *hPtr;
     Blt_HashSearch iter;
@@ -3349,7 +3349,7 @@ DrawTriangles(Graph *graphPtr, Drawable drawable, ContourElement *elemPtr,
 /*
  *---------------------------------------------------------------------------
  *
- * DrawEdges --
+ * DrawWires --
  *
  * 	Draws the segments forming of the mesh grid.
  *
@@ -3359,8 +3359,8 @@ DrawTriangles(Graph *graphPtr, Drawable drawable, ContourElement *elemPtr,
  *---------------------------------------------------------------------------
  */
 static void
-DrawEdges(Graph *graphPtr, Drawable drawable, ContourElement *elemPtr,
-	      ContourPen *penPtr)
+DrawWires(Graph *graphPtr, Drawable drawable, ContourElement *elemPtr,
+	  ContourPen *penPtr)
 {
     XSegment *segments;
     Segment2d *s, *send;
@@ -3442,8 +3442,8 @@ DrawMesh(Graph *graphPtr, Drawable drawable, ContourElement *elemPtr)
     if (elemPtr->flags & COLORMAP) {
 	DrawTriangles(graphPtr, drawable, elemPtr, penPtr);
     }
-    if ((elemPtr->numWires > 0) && (elemPtr->flags & EDGES)) {
-	DrawEdges(graphPtr, drawable, elemPtr, penPtr);
+    if ((elemPtr->numWires > 0) && (elemPtr->flags & WIRES)) {
+	DrawWires(graphPtr, drawable, elemPtr, penPtr);
     }
     if (elemPtr->flags & HULL) {
 	DrawHull(graphPtr, drawable, elemPtr);
@@ -4861,8 +4861,8 @@ MapProc(Graph *graphPtr, Element *basePtr)
     if (elemPtr->flags & TRIANGLES) {
 	MapMesh(elemPtr);
     }
-    if (elemPtr->flags & EDGES) {
-	MapEdges(elemPtr);
+    if (elemPtr->flags & WIRES) {
+	MapWires(elemPtr);
     }
     /* Map the convex hull representing the boundary of the mesh. */
     MapTraces(elemPtr, &elemPtr->traces);
@@ -5130,7 +5130,7 @@ HullToPostScript(Graph *graphPtr, Blt_Ps ps, ContourElement *elemPtr)
 /*
  *---------------------------------------------------------------------------
  *
- * EdgesToPostScript --
+ * WiresToPostScript --
  *
  * 	Draws the segments forming of the mesh grid.
  *
@@ -5140,7 +5140,7 @@ HullToPostScript(Graph *graphPtr, Blt_Ps ps, ContourElement *elemPtr)
  *---------------------------------------------------------------------------
  */
 static void
-EdgesToPostScript(Graph *graphPtr, Blt_Ps ps, ContourElement *elemPtr,
+WiresToPostScript(Graph *graphPtr, Blt_Ps ps, ContourElement *elemPtr,
 		  ContourPen *penPtr)
 {
     Blt_Ps_XSetLineAttributes(ps, elemPtr->meshColor, elemPtr->meshWidth + 2,
@@ -5208,8 +5208,8 @@ MeshToPostScript(Graph *graphPtr, Blt_Ps ps, ContourElement *elemPtr)
     if (elemPtr->flags & COLORMAP) {
 	TrianglesToPostScript(graphPtr, ps, elemPtr, penPtr);
     }
-    if (elemPtr->flags & EDGES) {
-	EdgesToPostScript(graphPtr, ps, elemPtr, penPtr);
+    if (elemPtr->flags & WIRES) {
+	WiresToPostScript(graphPtr, ps, elemPtr, penPtr);
     }
     if (elemPtr->flags & HULL) {
 	HullToPostScript(graphPtr, ps, elemPtr);
@@ -7199,7 +7199,6 @@ Blt_ContourElement(Graph *graphPtr, ClassId classId, Blt_HashEntry *hPtr)
     elemPtr->configSpecs = contourSpecs;
     elemPtr->obj.name = Blt_GetHashKey(&graphPtr->elements.nameTable, hPtr);
     Blt_GraphSetObjectClass(&elemPtr->obj, classId);
-    elemPtr->flags = SCALE_SYMBOL;
     elemPtr->obj.graphPtr = graphPtr;
     /* By default an element's name and label are the same. */
     elemPtr->label = Blt_AssertStrdup(elemPtr->obj.name);
@@ -7211,7 +7210,7 @@ Blt_ContourElement(Graph *graphPtr, ClassId classId, Blt_HashEntry *hPtr)
     elemPtr->penPtr = elemPtr->builtinPenPtr;
     elemPtr->hashPtr = hPtr;
     elemPtr->boundaryPenPtr = &elemPtr->builtinPen;
-    elemPtr->flags |= COLORMAP | ISOLINES | HULL;
+    elemPtr->flags |= COLORMAP | ISOLINES | HULL | TRIANGLES;
     elemPtr->opacity = 100.0;
     Blt_SetHashValue(hPtr, elemPtr);
     Blt_InitHashTable(&elemPtr->isoTable, BLT_STRING_KEYS);
