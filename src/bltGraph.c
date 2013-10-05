@@ -635,7 +635,6 @@ static ClientData
 PickEntry(ClientData clientData, int x, int y, ClientData *contextPtr)
 {
     Graph *graphPtr = clientData;
-    Blt_ChainLink link;
     Element *elemPtr;
     Marker *markerPtr;
     Region2d exts;
@@ -664,31 +663,9 @@ PickEntry(ClientData clientData, int x, int y, ClientData *contextPtr)
     if (markerPtr != NULL) {
 	return markerPtr;		/* Found a marker (-under false). */
     }
-    {
-	ClosestSearch search;
-
-	search.along = SEARCH_BOTH;
-	search.halo = graphPtr->halo;
-	search.index = -1;
-	search.x = x;
-	search.y = y;
-	search.dist = (double)(search.halo + 1);
-	search.mode = SEARCH_AUTO;
-	
-	for (link = Blt_Chain_LastLink(graphPtr->elements.displayList);
-	     link != NULL; link = Blt_Chain_PrevLink(link)) {
-	    elemPtr = Blt_Chain_GetValue(link);
-	    if (elemPtr->flags & (HIDE|MAP_ITEM)) {
-		continue;
-	    }
-	    if (elemPtr->state == STATE_NORMAL) {
-		(*elemPtr->procsPtr->closestProc) (graphPtr, elemPtr, &search);
-	    }
-	}
-	if (search.dist <= (double)search.halo) {
-	    return search.item;		/* Found an element within the minimum
-					 * halo distance. */
-	}
+    elemPtr = Blt_NearestElement(graphPtr, x, y);
+    if (elemPtr != NULL) {
+	return elemPtr;
     }
     markerPtr = Blt_NearestMarker(graphPtr, x, y, TRUE);
     if (markerPtr != NULL) {

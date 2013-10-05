@@ -34,28 +34,31 @@
 #define ELEM_SOURCE_VECTOR	1
 #define ELEM_SOURCE_TABLE	2
 
-#define SEARCH_X	0
-#define SEARCH_Y	1
-#define SEARCH_BOTH	2
+#define SHOW_NONE		0
+#define SHOW_X			1
+#define SHOW_Y			2
+#define SHOW_BOTH		3
 
-#define SHOW_NONE	0
-#define SHOW_X		1
-#define SHOW_Y		2
-#define SHOW_BOTH	3
+#define NEAREST_SEARCH_X	0
+#define NEAREST_SEARCH_Y	1
+#define NEAREST_SEARCH_XY	2
 
-#define SEARCH_POINTS	0	/* Search for closest data point. */
-#define SEARCH_TRACES	1	/* Search for closest point on trace.
-				 * Interpolate the connecting line segments if
-				 * necessary. */
-#define SEARCH_AUTO	2	/* Automatically determine whether to search
-				 * for data points or traces.  Look for traces
-				 * if the linewidth is > 0 and if there is
-				 * more than one data point. */
+#define NEAREST_SEARCH_POINTS	0	/* Search for nearest data point. */
+#define NEAREST_SEARCH_TRACES	1	/* Search for nearest point on trace.
+					 * Interpolate the connecting line
+					 * segments if necessary. */
+#define NEAREST_SEARCH_AUTO	2	/* Automatically determine whether to
+					 * search for data points or traces.
+					 * Look for traces if the linewidth is
+					 * > 0 and if there is more than one
+					 * data point. */
 
-#define	LABEL_ACTIVE 	(1<<9)	/* Non-zero indicates that the element's entry
-				 * in the legend should be drawn in its active
-				 * foreground and background colors. */
-#define SCALE_SYMBOL	(1<<10)
+#define	LABEL_ACTIVE (1<<9)		/* Non-zero indicates that the
+					 * element's entry in the legend
+					 * should be drawn in its active
+					 * foreground and background
+					 * colors. */
+#define SCALE_SYMBOL (1<<10)
 
 #define NUMBEROFPOINTS(e)	MIN((e)->x.numValues, (e)->y.numValues)
 
@@ -113,22 +116,24 @@ typedef struct {
 					 * point can be from the sample window
 					 * coordinate. */
     int mode;				/* Indicates whether to find the
-					 * closest data point or the closest
+					 * nearest data point or the nearest
 					 * point on the trace by interpolating
 					 * the line segments.  Can also be
-					 * SEARCH_AUTO, indicating to choose
-					 * how to search.*/
+					 * NEAREST_SEARCH_AUTO, indicating to
+					 * choose how to search.*/
     int x, y;				/* Screen coordinates of test point */
     int along;				/* Indicates to let search run along a
 					 * particular axis: x, y, or both. */
     int all;				
+
     /* Outputs */
-    void *item;				/* Name of the closest element */
-    Point2d point;			/* Graph coordinates of closest
+    void *item;				/* Pointer to the nearest element or
+					 * isoline. */
+    Point2d point;			/* Graph coordinates of nearest
 					 * point */
-    int index;				/* Index of closest data point */
-    double dist;			/* Distance in screen coordinates */
-} ClosestSearch;
+    int index;				/* Index of nearest data point */
+    double distance, maxDistance;
+} NearestElement;
 
 typedef void (ElementDrawProc) (Graph *graphPtr, Drawable drawable, 
 	Element *elemPtr);
@@ -138,8 +143,8 @@ typedef void (ElementDestroyProc) (Graph *graphPtr, Element *elemPtr);
 typedef int (ElementConfigProc) (Graph *graphPtr, Element *elemPtr);
 typedef void (ElementMapProc) (Graph *graphPtr, Element *elemPtr);
 typedef void (ElementExtentsProc) (Element *elemPtr);
-typedef void (ElementClosestProc) (Graph *graphPtr, Element *elemPtr, 
-	ClosestSearch *searchPtr);
+typedef void (ElementNearestProc) (Graph *graphPtr, Element *elemPtr, 
+	NearestElement *nearestPtr);
 typedef Blt_Chain (ElementFindProc) (Graph *graphPtr, Element *elemPtr, 
 	int x, int y, int r);
 typedef void (ElementDrawSymbolProc) (Graph *graphPtr, Drawable drawable, 
@@ -148,7 +153,7 @@ typedef void (ElementSymbolToPostScriptProc) (Graph *graphPtr,
 	Blt_Ps ps, Element *elemPtr, double x, double y, int symSize);
 
 typedef struct {
-    ElementClosestProc *closestProc;
+    ElementNearestProc *nearestProc;
     ElementConfigProc *configProc;
     ElementDestroyProc *destroyProc;
     ElementDrawProc *drawActiveProc;

@@ -155,8 +155,8 @@ static int tkpWinRopModes[] =
  * .c element create 
  * .c level create name 0 0 -min -max -foreground -linewidth -background -color 
  * .c level configure 
- * .c level closest x y 
- * .c element closest x y 
+ * .c level nearest x y 
+ * .c element nearest x y 
  * .c element level add x y z 
  *
  *  .g element create 
@@ -795,7 +795,7 @@ static Blt_ConfigSpec isolineSpecs[] =
 /* Forward declarations */
 static PenConfigureProc ConfigurePenProc;
 static PenDestroyProc DestroyPenProc;
-static ElementClosestProc ClosestProc;
+static ElementNearestProc NearestProc;
 static ElementConfigProc ConfigureProc;
 static ElementDestroyProc DestroyProc;
 static ElementDrawProc DrawActiveProc;
@@ -1323,7 +1323,9 @@ static void
 ColormapChangedProc(GraphColormap *cmapPtr, ClientData clientData, 
 		    unsigned int flags)
 {
+#ifdef notdef
     ContourElement *elemPtr = clientData;
+#endif
     Graph *graphPtr;
 
     if (flags & COLORMAP_DELETE_NOTIFY) {
@@ -4329,7 +4331,7 @@ DrawIsoline(Graph *graphPtr, Drawable drawable, ContourElement *elemPtr,
     }
 }
 
-/* Closest isoline procedures. */
+/* Nearest isoline procedures. */
 
 static double
 DistanceToLine(
@@ -4364,13 +4366,10 @@ DistanceToLine(
 }
 
 static void
-ClosestPoint(ContourElement *elemPtr, ClosestSearch *s)
+NearestPoint(ContourElement *elemPtr, NearestElement *nearestPtr)
 {
-    double closestDistance;
-    int i, closestIndex;
+    int i;
 
-    closestDistance = s->dist;
-    closestIndex = 0;
     for (i = 0; i < elemPtr->numVertices; i++) {
 	Vertex *v;
 	double d;
@@ -4379,32 +4378,24 @@ ClosestPoint(ContourElement *elemPtr, ClosestSearch *s)
 	if ((v->flags & VISIBLE) == 0) {
 	    continue;
 	}
-	d = hypot(v->x - s->x, v->y - s->y);
-	if (d < closestDistance) {
-	    closestIndex = v->index;
-	    closestDistance = d;
+	d = hypot(v->x - nearestPtr->x, v->y - nearestPtr->y);
+	if (d < nearestPtr->distance) {
+	    nearestPtr->index = v->index;
+	    nearestPtr->distance = d;
 	}
     }
-    if (closestDistance < s->dist) {
-	s->item    = elemPtr;
-	s->dist    = closestDistance;
-	s->index   = closestIndex;
-	s->point.x = elemPtr->vertices[closestIndex].x;
-	s->point.y = elemPtr->vertices[closestIndex].y;
+    if (nearestPtr->distance < nearestPtr->maxDistance) {
+	nearestPtr->item = elemPtr;
+	nearestPtr->point.x = elemPtr->vertices[nearestPtr->index].x;
+	nearestPtr->point.y = elemPtr->vertices[nearestPtr->index].y;
     }
 }
 
 static void
-ClosestSegment(ContourElement *elemPtr, ClosestSearch *s)
+NearestSegment(ContourElement *elemPtr, NearestElement *nearestPtr)
 {
-    Point2d closestPoint;
-    double closestDistance;
-    int closestIndex;
     int i;
 
-    closestIndex = -1;			/* Suppress compiler warning. */
-    closestDistance = s->dist;
-    closestPoint.x = closestPoint.y = 0; /* Suppress compiler warning. */
     for (i = 0; i < elemPtr->numTriangles; i++) {
 	Triangle *t;
 	double d;
@@ -4414,37 +4405,35 @@ ClosestSegment(ContourElement *elemPtr, ClosestSearch *s)
 	/* Compare AB */
 	p1.x = Ax, p1.y = Ay;
 	p2.x = Bx, p2.y = By;
-	d = DistanceToLine(s->x, s->y, &p1, &p2, &b);
-	if (d < closestDistance) {
-	    closestPoint    = b;
-	    closestIndex    = t->a;
-	    closestDistance = d;
+	d = DistanceToLine(nearestPtr->x, nearestPtr->y, &p1, &p2, &b);
+	if (d < nearestPtr->distance) {
+	    nearestPtr->point    = b;
+	    nearestPtr->index    = t->a;
+	    nearestPtr->distance = d;
 	}
 	/* Compare BC */
 	p1.x = Bx, p1.y = By;
 	p2.x = Cx, p2.y = Cy;
-	d = DistanceToLine(s->x, s->y, &p1, &p2, &b);
-	if (d < closestDistance) {
-	    closestPoint    = b;
-	    closestIndex    = t->b;
-	    closestDistance = d;
+	d = DistanceToLine(nearestPtr->x, nearestPtr->y, &p1, &p2, &b);
+	if (d < nearestPtr->distance) {
+	    nearestPtr->point    = b;
+	    nearestPtr->index    = t->b;
+	    nearestPtr->distance = d;
 	}
 	/* Compare CA */
 	p1.x = Cx, p1.y = Cy;
 	p2.x = Ax, p2.y = Ay;
-	d = DistanceToLine(s->x, s->y, &p1, &p2, &b);
-	if (d < closestDistance) {
-	    closestPoint    = b;
-	    closestIndex    = t->c;
-	    closestDistance = d;
+	d = DistanceToLine(nearestPtr->x, nearestPtr->y, &p1, &p2, &b);
+	if (d < nearestPtr->distance) {
+	    nearestPtr->point    = b;
+	    nearestPtr->index    = t->c;
+	    nearestPtr->distance = d;
 	}
     }	
-    if (closestDistance < s->dist) {
-	s->dist = closestDistance;
-	s->item	 = (Element *)elemPtr;
-	s->index = closestIndex;
-	s->point = Blt_InvMap2D(elemPtr->obj.graphPtr, closestPoint.x, 
-		closestPoint.y, &elemPtr->axes);
+    if (nearestPtr->distance < nearestPtr->maxDistance) {
+	nearestPtr->item = elemPtr;
+	nearestPtr->point = Blt_InvMap2D(elemPtr->obj.graphPtr, 
+		nearestPtr->point.x, nearestPtr->point.y, &elemPtr->axes);
     }
 }
 
@@ -4743,30 +4732,28 @@ ExtentsProc(Element *basePtr)
 /*
  *---------------------------------------------------------------------------
  *
- * ClosestProc --
+ * NearestProc --
  *
- *	Find the closest mesh vertex to the specified screen coordinates.
+ *	Find the nearest mesh vertex to the specified screen coordinates.
  *
  * Results:
  *	None.
  *
  * Side Effects:  
  *	The search structure will be willed with the information of the
- *	closest point.
+ *	nearest point.
  *
  *---------------------------------------------------------------------------
  */
 static void
-ClosestProc(Graph *graphPtr, Element *basePtr, ClosestSearch *searchPtr)
+NearestProc(Graph *graphPtr, Element *basePtr, NearestElement *nearestPtr)
 {
     ContourElement *elemPtr = (ContourElement *)basePtr;
-    int mode;
 
-    mode = searchPtr->mode;
-    if (mode == SEARCH_POINTS) {
-	ClosestPoint(elemPtr, searchPtr);
+    if (nearestPtr->mode == NEAREST_SEARCH_POINTS) {
+	NearestPoint(elemPtr, nearestPtr);
     } else {
-	ClosestSegment(elemPtr, searchPtr);
+	NearestSegment(elemPtr, nearestPtr);
     }
 }
 
@@ -5567,14 +5554,14 @@ IsolineCgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * DistanceToIsoline --
  *
- *	Find the closest mesh vertex to the specified screen coordinates.
+ *	Find the nearest mesh vertex to the specified screen coordinates.
  *
  * Results:
  *	None.
  *
  * Side Effects:  
  *	The search structure will be willed with the information of the
- *	closest point.
+ *	nearest point.
  *
  *---------------------------------------------------------------------------
  */
@@ -5614,34 +5601,34 @@ DistanceToIsoline(
 /*
  *---------------------------------------------------------------------------
  *
- * IsolineClosestOp --
+ * IsolineNearestOp --
  *
- *	Find the closest isoline for this element to the given screen
+ *	Find the nearest isoline for this element to the given screen
  *	coordinates.
  *
  * Results:
  *	The return value is a standard TCL result. The interpreter
  *	result will contain a TCL list of the element names.
  *
- *	.g element isoline closest $elem x y ?option value?...
+ *	.g element isoline nearest $elem x y ?option value?...
  *
  *---------------------------------------------------------------------------
  */
 
-static Blt_ConfigSpec closestSpecs[] = {
+static Blt_ConfigSpec nearestSpecs[] = {
     {BLT_CONFIG_PIXELS_NNEG, "-halo", (char *)NULL, (char *)NULL,
-	(char *)NULL, Blt_Offset(ClosestSearch, halo), 0},
+	(char *)NULL, Blt_Offset(NearestElement, halo), 0},
     {BLT_CONFIG_END, (char *)NULL, (char *)NULL, (char *)NULL,
 	(char *)NULL, 0, 0}
 };
 
 static int
-IsolineClosestOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+IsolineNearestOp(ClientData clientData, Tcl_Interp *interp, int objc, 
 		 Tcl_Obj *const *objv)
 {
     Graph *graphPtr = clientData;
     ContourElement *elemPtr;
-    ClosestSearch srch;
+    NearestElement nearest;
     Blt_HashEntry *hPtr;
     Blt_HashSearch iter;
     int x, y;
@@ -5663,14 +5650,14 @@ IsolineClosestOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	Tcl_AppendResult(interp, ": bad window y-coordinate", (char *)NULL);
 	return TCL_ERROR;
     }
-    srch.dist = graphPtr->halo;
-    if (Blt_ConfigureWidgetFromObj(interp, graphPtr->tkwin, closestSpecs, 
-	objc - 7, objv + 7, (char *)&srch, BLT_CONFIG_OBJV_ONLY) != TCL_OK) {
+    memset(&nearest, 0, sizeof(NearestElement));
+    if (Blt_ConfigureWidgetFromObj(interp, graphPtr->tkwin, nearestSpecs, 
+	objc - 7, objv + 7, (char *)&nearest, BLT_CONFIG_OBJV_ONLY) != TCL_OK) {
 	return TCL_ERROR;		/* Error occurred processing an
 					 * option. */
     }
-    srch.dist = (double)(srch.halo + 1);
-    srch.item = NULL;
+    nearest.maxDistance = graphPtr->halo;
+    nearest.distance = nearest.maxDistance + 1;
 
     /* Search all the isolines in the element. */
     for (hPtr = Blt_FirstHashEntry(&elemPtr->isoTable, &iter); hPtr != NULL; 
@@ -5694,23 +5681,23 @@ IsolineClosestOp(ClientData clientData, Tcl_Interp *interp, int objc,
 		p1.x = p->x, p1.y = p->y;
 		p2.x = q->x, p2.y = q->y;
 		d = DistanceToIsoline(x, y, &p1, &p2, &b);
-		if (d < srch.dist) {
-		    srch.point = b;
-		    srch.dist = d;
-		    srch.item = isoPtr;
+		if (d < nearest.distance) {
+		    nearest.point = b;
+		    nearest.distance = d;
+		    nearest.item = isoPtr;
 		}
 		p = q;
 	    }
 	}
     }
-    if (srch.dist < (double)srch.halo) {
+    if (nearest.distance <= nearest.maxDistance) {
 	Tcl_Obj *objPtr, *listObjPtr;	/* Return a list of name value
 					 * pairs. */
 	Isoline *isoPtr;
 
 	listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
 
-	isoPtr = srch.item;
+	isoPtr = nearest.item;
 	/* Name of isoline. */
 	objPtr = Tcl_NewStringObj("name", 4);
 	Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
@@ -5723,22 +5710,22 @@ IsolineClosestOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	objPtr = Tcl_NewDoubleObj(isoPtr->value);
 	Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
 
-	/* X-coordinate of closest point on isoline. */
+	/* X-coordinate of nearest point on isoline. */
 	objPtr = Tcl_NewStringObj("x", 1);
 	Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-	objPtr = Tcl_NewDoubleObj(srch.point.x);
+	objPtr = Tcl_NewDoubleObj(nearest.point.x);
 	Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
 
-	/* Y-coordinate of closest point on isoline. */
+	/* Y-coordinate of nearest point on isoline. */
 	objPtr = Tcl_NewStringObj("y", 1);
 	Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-	objPtr = Tcl_NewDoubleObj(srch.point.y);
+	objPtr = Tcl_NewDoubleObj(nearest.point.y);
 	Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
 
 	/* Distance to from search point. */
 	objPtr = Tcl_NewStringObj("dist", 4);
 	Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-	objPtr = Tcl_NewDoubleObj(srch.dist);
+	objPtr = Tcl_NewDoubleObj(nearest.distance);
 	Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
 
 	Tcl_SetObjResult(interp, listObjPtr);
@@ -6630,13 +6617,13 @@ Blt_IsoTagOp(ClientData clientData, Tcl_Interp *interp, int objc,
 static Blt_OpSpec isolineOps[] = {
     {"activate",  1, IsolineActivateOp, 6, 6, "elem name",},
     {"cget",      2, IsolineCgetOp,     6, 7, "elem name option",},
-    {"closest",   2, IsolineClosestOp,  6, 0, "elem x y ?switches?",},
     {"configure", 2, IsolineConfigureOp,6, 0, "elem name ?option value?...",},
     {"create",    2, IsolineCreateOp,   5, 0, "elem ?name? ?option value?...",},
     {"deactivate",3, IsolineDeactivateOp,5, 5, "elem",},
     {"delete",    3, IsolineDeleteOp,   5, 0, "elem ?name?...",},
     {"exists",    1, IsolineExistsOp,   6, 6, "elem name",},
-    {"names",     1, IsolineNamesOp,    5, 0, "elem ?pattern?...",},
+    {"names",     2, IsolineNamesOp,    5, 0, "elem ?pattern?...",},
+    {"nearest",   2, IsolineNearestOp,  6, 0, "elem x y ?switches?",},
     {"steps",     1, IsolineStepsOp,    6, 0, "elem count",},
 };
 
@@ -7174,7 +7161,7 @@ Blt_CreateContourPen(Graph *graphPtr, ClassId id, Blt_HashEntry *hPtr)
  */
 static ElementProcs contourProcs =
 {
-    ClosestProc,
+    NearestProc,
     ConfigureProc,
     DestroyProc,
     DrawActiveProc,

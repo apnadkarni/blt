@@ -751,6 +751,8 @@ BLT_EXTERN void Blt_UpdateAxisBackgrounds(Graph *graphPtr);
 
 BLT_EXTERN Marker *Blt_NearestMarker(Graph *graphPtr, int x, int y, int under);
 
+BLT_EXTERN Element *Blt_NearestElement(Graph *graphPtr, int x, int y);
+
 BLT_EXTERN Axis *Blt_NearestAxis(Graph *graphPtr, int x, int y);
 
 typedef ClientData (MakeTagProc)(Graph *graphPtr, const char *tagName);

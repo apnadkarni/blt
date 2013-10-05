@@ -435,7 +435,7 @@ static Blt_ConfigSpec barElemConfigSpecs[] = {
 /* Forward declarations */
 static PenConfigureProc ConfigurePenProc;
 static PenDestroyProc DestroyPenProc;
-static ElementClosestProc ClosestProc;
+static ElementNearestProc NearestProc;
 static ElementConfigProc ConfigureProc;
 static ElementDestroyProc DestroyProc;
 static ElementDrawProc DrawActiveProc;
@@ -1035,9 +1035,9 @@ ExtentsProc(Element *basePtr)
 /*
  *---------------------------------------------------------------------------
  *
- * ClosestProc --
+ * NearestProc --
  *
- *	Find the bar segment closest to the window coordinates point
+ *	Find the bar segment nearest to the window coordinates point
  *	specified.
  *
  *	Note:  This does not return the height of the stacked segment
@@ -1050,29 +1050,24 @@ ExtentsProc(Element *basePtr)
  */
 /*ARGSUSED*/
 static void
-ClosestProc(
+NearestProc(
     Graph *graphPtr,			/* Not used. */
     Element *basePtr,			/* Bar element */
-    ClosestSearch *searchPtr)		/* Information about closest point in
+    NearestElement *nearestPtr)		/* Information about nearest point in
 					 * element */
 {
     BarElement *elemPtr = (BarElement *)basePtr;
     XRectangle *bp;
-    double minDist;
-    int imin;
     int i;
 
-    minDist = searchPtr->dist;
-    imin = 0;
-    
     for (bp = elemPtr->bars, i = 0; i < elemPtr->numBars; i++, bp++) {
 	Point2d *pp, *pend;
 	Point2d outline[5];
 	double left, right, top, bottom;
 
-	if (PointInRectangle(bp, searchPtr->x, searchPtr->y)) {
-	    imin = elemPtr->barToData[i];
-	    minDist = 0.0;
+	if (PointInRectangle(bp, nearestPtr->x, nearestPtr->y)) {
+	    nearestPtr->index = elemPtr->barToData[i];
+	    nearestPtr->distance = 0.0;
 	    break;
 	}
 	left = bp->x, top = bp->y;
@@ -1087,7 +1082,7 @@ ClosestProc(
 	    Point2d t;
 	    double dist;
 
-	    t = Blt_GetProjection(searchPtr->x, searchPtr->y, pp, pp + 1);
+	    t = Blt_GetProjection(nearestPtr->x, nearestPtr->y, pp, pp + 1);
 	    if (t.x > right) {
 		t.x = right;
 	    } else if (t.x < left) {
@@ -1098,19 +1093,17 @@ ClosestProc(
 	    } else if (t.y < top) {
 		t.y = top;
 	    }
-	    dist = hypot((t.x - searchPtr->x), (t.y - searchPtr->y));
-	    if (dist < minDist) {
-		minDist = dist;
-		imin = elemPtr->barToData[i];
+	    dist = hypot((t.x - nearestPtr->x), (t.y - nearestPtr->y));
+	    if (dist < nearestPtr->distance) {
+		nearestPtr->distance = dist;
+		nearestPtr->index = elemPtr->barToData[i];
 	    }
 	}
     }
-    if (minDist < searchPtr->dist) {
-	searchPtr->item = elemPtr;
-	searchPtr->dist = minDist;
-	searchPtr->index = imin;
-	searchPtr->point.x = (double)elemPtr->x.values[imin];
-	searchPtr->point.y = (double)elemPtr->y.values[imin];
+    if (nearestPtr->distance < nearestPtr->maxDistance) {
+	nearestPtr->item = elemPtr;
+	nearestPtr->point.x = (double)elemPtr->x.values[nearestPtr->index];
+	nearestPtr->point.y = (double)elemPtr->y.values[nearestPtr->index];
     }
 }
 
@@ -2346,7 +2339,7 @@ DestroyProc(Graph *graphPtr, Element *basePtr)
  */
 
 static ElementProcs barProcs = {
-    ClosestProc,
+    NearestProc,
     ConfigureProc,
     DestroyProc,
     DrawActiveProc,

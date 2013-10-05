@@ -808,7 +808,7 @@ typedef double (DistanceProc)(int x, int y, Point2d *p, Point2d *q, Point2d *t);
 /* Forward declarations */
 static PenConfigureProc ConfigurePenProc;
 static PenDestroyProc DestroyPenProc;
-static ElementClosestProc ClosestProc;
+static ElementNearestProc NearestProc;
 static ElementConfigProc ConfigureProc;
 static ElementDestroyProc DestroyProc;
 static ElementDrawProc DrawActiveProc;
@@ -2822,7 +2822,7 @@ DistanceToLineProc(
 
 static double
 DistanceToXProc(
-    int x, int y,			/* Search X-Y coordinate. */
+    int x, int y,			/* Test X-Y coordinate. */
     Point2d *p, 
     Point2d *q,				/* End points of the line segment. */
     Point2d *t)				/* (out) Point on line segment. */
@@ -2871,7 +2871,7 @@ DistanceToXProc(
 
 static double
 DistanceToYProc(
-    int x, int y,			/* Search X-Y coordinate. */
+    int x, int y,			/* Test X-Y coordinate. */
     Point2d *p, Point2d *q,		/* End points of the line segment. */
     Point2d *t)				/* (out) Point on line segment. */
 {
@@ -2919,32 +2919,27 @@ DistanceToYProc(
 /*
  *---------------------------------------------------------------------------
  *
- * ClosestPoint --
+ * NearestPoint --
  *
  *	Find the element whose data point is closest to the given screen
  *	coordinate.
  *
  * Results:
  *	If a new minimum distance is found, the information regarding
- *	it is returned via searchPtr.
+ *	it is returned via nearestPtr.
  *
  *---------------------------------------------------------------------------
  */
 static int
-ClosestPoint(
+NearestPoint(
     LineElement *elemPtr,		/* Line element to be searched. */
-    ClosestSearch *s)			/* Assorted information related to
-					 * searching for the closest point */
+    NearestElement *nearestPtr)		/* Assorted information related to
+					 * searching for the nearest point */
 {
     Blt_ChainLink link;
-    double closestDistance;
-    int closestIndex;
     Graph *graphPtr;
 
-    closestDistance = s->dist;
-    closestIndex = -1;
     graphPtr = elemPtr->obj.graphPtr;
-
     /*
      * Instead of testing each data point in graph coordinates, look at the
      * points of each trace (mapped screen coordinates). The advantages are
@@ -2967,30 +2962,28 @@ ClosestPoint(
 	    if (!PLAYING(graphPtr, p->index)) {
 		continue;
 	    }
-	    dx = (double)(s->x - p->x);
-	    dy = (double)(s->y - p->y);
-	    if (s->along == SEARCH_BOTH) {
+	    dx = (double)(nearestPtr->x - nearestPtr->x);
+	    dy = (double)(nearestPtr->y - nearestPtr->y);
+	    if (nearestPtr->along == NEAREST_SEARCH_XY) {
 		d = hypot(dx, dy);
-	    } else if (s->along == SEARCH_X) {
+	    } else if (nearestPtr->along == NEAREST_SEARCH_X) {
 		d = dx;
-	    } else if (s->along == SEARCH_Y) {
+	    } else if (nearestPtr->along == NEAREST_SEARCH_Y) {
 		d = dy;
 	    } else {
 		/* This can't happen */
 		continue;
 	    }
-	    if (d < closestDistance) {
-		closestIndex = p->index;
-		closestDistance = d;
+	    if (d < nearestPtr->distance) {
+		nearestPtr->index = p->index;
+		nearestPtr->distance = d;
 	    }
 	}
     }
-    if (closestDistance < s->dist) {
-	s->item    = elemPtr;
-	s->dist    = closestDistance;
-	s->index   = closestIndex;
-	s->point.x = elemPtr->x.values[closestIndex];
-	s->point.y = elemPtr->y.values[closestIndex];
+    if (nearestPtr->distance < nearestPtr->maxDistance) {
+	nearestPtr->item = elemPtr;
+	nearestPtr->point.x = elemPtr->x.values[nearestPtr->index];
+	nearestPtr->point.y = elemPtr->y.values[nearestPtr->index];
 	return TRUE;
     }
     return FALSE;
@@ -2999,7 +2992,7 @@ ClosestPoint(
 /*
  *---------------------------------------------------------------------------
  *
- * ClosestSegment --
+ * NearestSegment --
  *
  *	Find the line segment closest to the given window coordinate in the
  *	element.
@@ -3011,21 +3004,17 @@ ClosestPoint(
  *---------------------------------------------------------------------------
  */
 static int
-ClosestSegment(
+NearestSegment(
     Graph *graphPtr,			/* Graph widget record */
     LineElement *elemPtr,
-    ClosestSearch *s,			/* Info about closest point in
+    NearestElement *nearestPtr,		/* Info about closest point in
 					 * element */
     DistanceProc *distProc)
 {
     Blt_ChainLink link;
-    Point2d closestPoint;
-    double closestDistance;
-    int closestIndex;
 
-    closestIndex = -1;			/* Suppress compiler warning. */
-    closestDistance = s->dist;
-    closestPoint.x = closestPoint.y = 0; /* Suppress compiler warning. */
+    nearestPtr->index = -1;		/* Suppress compiler warning. */
+    nearestPtr->x = nearestPtr->y = 0;	/* Suppress compiler warning. */
     for (link = Blt_Chain_FirstLink(elemPtr->traces); link != NULL;
 	link = Blt_Chain_NextLink(link)) {
 	Trace *tracePtr;
@@ -3041,21 +3030,19 @@ ClosestSegment(
 	    }
 	    p1.x = p->x, p1.y = p->y;
 	    p2.x = q->x, p2.y = q->y;
-	    d = (*distProc)(s->x, s->y, &p1, &p2, &b);
-	    if (d < closestDistance) {
-		closestPoint    = b;
-		closestIndex    = p->index;
-		closestDistance = d;
+	    d = (*distProc)(nearestPtr->x, nearestPtr->y, &p1, &p2, &b);
+	    if (d < nearestPtr->distance) {
+		nearestPtr->point = b;
+		nearestPtr->index = p->index;
+		nearestPtr->distance = d;
 	    }
 	    p = q;
 	}
     }
-    if (closestDistance < s->dist) {
-	s->dist = closestDistance;
-	s->item	 = (Element *)elemPtr;
-	s->index = closestIndex;
-	s->point = Blt_InvMap2D(graphPtr, closestPoint.x, closestPoint.y, 
-				&elemPtr->axes);
+    if (nearestPtr->distance < nearestPtr->maxDistance) {
+	nearestPtr->item	 = (Element *)elemPtr;
+	nearestPtr->point = Blt_InvMap2D(graphPtr, nearestPtr->point.x, 
+					 nearestPtr->point.y, &elemPtr->axes);
 	return TRUE;
     }
     return FALSE;
@@ -3065,7 +3052,7 @@ ClosestSegment(
 /*
  *---------------------------------------------------------------------------
  *
- * ClosestProc --
+ * NearestProc --
  *
  *	Find the closest point or line segment (if interpolated) to the given
  *	window coordinate in the line element.
@@ -3076,37 +3063,37 @@ ClosestSegment(
  *---------------------------------------------------------------------------
  */
 static void
-ClosestProc(Graph *graphPtr, Element *basePtr, ClosestSearch *searchPtr)
+NearestProc(Graph *graphPtr, Element *basePtr, NearestElement *nearestPtr)
 {
     LineElement *elemPtr = (LineElement *)basePtr;
     int mode;
 
-    mode = searchPtr->mode;
-    if (mode == SEARCH_AUTO) {
+    mode = nearestPtr->mode;
+    if (mode == NEAREST_SEARCH_AUTO) {
 	LinePen *penPtr;
 
 	penPtr = NORMALPEN(elemPtr);
-	mode = SEARCH_POINTS;
+	mode = NEAREST_SEARCH_POINTS;
 	if ((NUMBEROFPOINTS(elemPtr) > 1) && (penPtr->traceWidth > 0)) {
-	    mode = SEARCH_TRACES;
+	    mode = NEAREST_SEARCH_TRACES;
 	}
     }
-    if (mode == SEARCH_POINTS) {
-	ClosestPoint(elemPtr, searchPtr);
+    if (mode == NEAREST_SEARCH_POINTS) {
+	NearestPoint(elemPtr, nearestPtr);
     } else {
 	DistanceProc *distProc;
 	int found;
 
-	if (searchPtr->along == SEARCH_X) {
+	if (nearestPtr->along == NEAREST_SEARCH_X) {
 	    distProc = DistanceToXProc;
-	} else if (searchPtr->along == SEARCH_Y) {
+	} else if (nearestPtr->along == NEAREST_SEARCH_Y) {
 	    distProc = DistanceToYProc;
 	} else {
 	    distProc = DistanceToLineProc;
 	}
-	found = ClosestSegment(graphPtr, elemPtr, searchPtr, distProc);
-	if ((!found) && (searchPtr->along != SEARCH_BOTH)) {
-	    ClosestPoint(elemPtr, searchPtr);
+	found = NearestSegment(graphPtr, elemPtr, nearestPtr, distProc);
+	if ((!found) && (nearestPtr->along != NEAREST_SEARCH_XY)) {
+	    NearestPoint(elemPtr, nearestPtr);
 	}
     }
 }
@@ -6311,7 +6298,7 @@ DestroyProc(Graph *graphPtr, Element *basePtr)
 
 static ElementProcs lineProcs =
 {
-    ClosestProc,			/* Finds the closest element/data
+    NearestProc,			/* Finds the closest element/data
 					 * point */
     ConfigureProc,			/* Configures the element. */
     DestroyProc,			/* Destroys the element. */
@@ -6320,7 +6307,7 @@ static ElementProcs lineProcs =
     DrawSymbolProc,			/* Draws the element symbol. */
     ExtentsProc,			/* Find the extents of the element's
 					 * data. */
-    FindProc,				/* Find the points withi the search
+    FindProc,				/* Find the points within the search
 					 * radius. */
     ActiveToPostScriptProc,		/* Prints active element. */
     NormalToPostScriptProc,		/* Prints normal element. */

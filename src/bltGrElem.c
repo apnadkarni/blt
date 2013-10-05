@@ -933,16 +933,16 @@ ObjToAlong(
     int offset,			/* Offset to field in structure */
     int flags)			/* Not used. */
 {
-    int *intPtr = (int *)(widgRec + offset);
+    int *searchPtr = (int *)(widgRec + offset);
     char *string;
 
     string = Tcl_GetString(objPtr);
     if ((string[0] == 'x') && (string[1] == '\0')) {
-	*intPtr = SEARCH_X;
+	*searchPtr = NEAREST_SEARCH_X;
     } else if ((string[0] == 'y') && (string[1] == '\0')) { 
-	*intPtr = SEARCH_Y;
+	*searchPtr = NEAREST_SEARCH_Y;
     } else if ((string[0] == 'b') && (strcmp(string, "both") == 0)) {
-	*intPtr = SEARCH_BOTH;
+	*searchPtr = NEAREST_SEARCH_XY;
     } else {
 	Tcl_AppendResult(interp, "bad along value \"", string, "\"",
 			 (char *)NULL);
@@ -973,17 +973,17 @@ AlongToObj(
     int offset,			/* Offset to field in structure */
     int flags)			/* Not used. */
 {
-    int along = *(int *)(widgRec + offset);
+    int search = *(int *)(widgRec + offset);
     Tcl_Obj *objPtr;
 
-    switch (along) {
-    case SEARCH_X:
+    switch (search) {
+    case NEAREST_SEARCH_X:
 	objPtr = Tcl_NewStringObj("x", 1);
 	break;
-    case SEARCH_Y:
+    case NEAREST_SEARCH_Y:
 	objPtr = Tcl_NewStringObj("y", 1);
 	break;
-    case SEARCH_BOTH:
+    case NEAREST_SEARCH_XY:
 	objPtr = Tcl_NewStringObj("both", 4);
 	break;
     default:
@@ -1476,7 +1476,7 @@ GetElementByName(Tcl_Interp *interp, Graph *graphPtr, const char *name,
  *
  *	 string		Name of element.
  *	 tag		All elements having the tag.
- *	 @x,y		Element closest to the specified X-Y screen coordinates.
+ *	 @x,y		Element nearest to the specified X-Y screen coordinates.
  *	 "active"	All active elements.
  *	 "all"		All elements.
  *	 "current"      Currently selected element.
@@ -2480,13 +2480,13 @@ CgetOp(
 /*
  *---------------------------------------------------------------------------
  *
- * ClosestOp --
+ * NearestOp --
  *
- *	Find the element closest to the specified screen coordinates.
+ *	Find the element nearest to the specified screen coordinates.
  *	Options:
  *	-halo		Consider points only with this maximum distance
  *			from the picked coordinate.
- *	-interpolate	Find closest point along element traces, not just
+ *	-interpolate	Find nearest point along element traces, not just
  *			data points.
  *	-along
  *	-all		Return the elements and points of every point 
@@ -2494,42 +2494,42 @@ CgetOp(
  *
  * Results:
  *	A standard TCL result. If an element could be found within the halo
- *	distance, the interpreter result is "1", otherwise "0".  If a closest
+ *	distance, the interpreter result is "1", otherwise "0".  If a nearest
  *	element exists, the designated TCL array variable will be set with the
  *	following information:
  *
  *	1) the element name,
- *	2) the index of the closest point,
+ *	2) the index of the nearest point,
  *	3) the distance (in screen coordinates) from the picked X-Y
- *	   coordinate and the closest point,
- *	4) the X coordinate (graph coordinate) of the closest point,
+ *	   coordinate and the nearest point,
+ *	4) the X coordinate (graph coordinate) of the nearest point,
  *	5) and the Y-coordinate.
  *
- *	.g element closest x y ?switches? elements
+ *	.g element nearest x y ?switches? ?element...?
  *	
  *---------------------------------------------------------------------------
  */
 
-static Blt_ConfigSpec closestSpecs[] = {
+static Blt_ConfigSpec nearestSpecs[] = {
     {BLT_CONFIG_PIXELS_NNEG, "-halo", (char *)NULL, (char *)NULL,
-	(char *)NULL, Blt_Offset(ClosestSearch, halo), 0},
+	(char *)NULL, Blt_Offset(NearestElement, halo), 0},
     {BLT_CONFIG_BOOLEAN, "-interpolate", (char *)NULL, (char *)NULL,
-	(char *)NULL, Blt_Offset(ClosestSearch, mode), 0 }, 
+	(char *)NULL, Blt_Offset(NearestElement, mode), 0 }, 
     {BLT_CONFIG_CUSTOM, "-along", (char *)NULL, (char *)NULL,
-	(char *)NULL, Blt_Offset(ClosestSearch, along), 0, &alongOption},
+	(char *)NULL, Blt_Offset(NearestElement, along), 0, &alongOption},
     {BLT_CONFIG_END, (char *)NULL, (char *)NULL, (char *)NULL,
 	(char *)NULL, 0, 0}
 };
 
 static int
-ClosestOp(
+NearestOp(
     Graph *graphPtr,			/* Graph widget */
     Tcl_Interp *interp,			/* Interpreter to report results to */
-    int objc,				/* Number of element names */
+    int objc,				/* # of arguments */
     Tcl_Obj *const *objv)		/* List of element names */
 {
     Element *elemPtr;
-    ClosestSearch srch;
+    NearestElement nearest;
     int i, x, y;
     char *string;
 
@@ -2537,11 +2537,11 @@ ClosestOp(
 	Blt_ResetAxes(graphPtr);
     }
     if (Tcl_GetIntFromObj(interp, objv[3], &x) != TCL_OK) {
-	Tcl_AppendResult(interp, ": bad window x-coordinate", (char *)NULL);
+	Tcl_AddErrorInfo(interp, "\n    (bad window x-coordinate)");
 	return TCL_ERROR;
     }
     if (Tcl_GetIntFromObj(interp, objv[4], &y) != TCL_OK) {
-	Tcl_AppendResult(interp, ": bad window y-coordinate", (char *)NULL);
+	Tcl_AddErrorInfo(interp, "\n    (bad window y-coordinate)");
 	return TCL_ERROR;
     }
     for (i = 5; i < objc; i += 2) {	/* Count switches-value pairs */
@@ -2555,15 +2555,15 @@ ClosestOp(
 	i = objc;
     }
 
-    srch.mode = SEARCH_POINTS;
-    srch.halo = graphPtr->halo;
-    srch.index = -1;
-    srch.along = SEARCH_BOTH;
-    srch.x = x;
-    srch.y = y;
+    memset(&nearest, 0, sizeof(NearestElement));
+    nearest.mode = NEAREST_SEARCH_POINTS;
+    nearest.halo = graphPtr->halo;
+    nearest.along = NEAREST_SEARCH_XY;
+    nearest.x = x;
+    nearest.y = y;
 
-    if (Blt_ConfigureWidgetFromObj(interp, graphPtr->tkwin, closestSpecs, i - 5,
-	objv + 5, (char *)&srch, BLT_CONFIG_OBJV_ONLY) != TCL_OK) {
+    if (Blt_ConfigureWidgetFromObj(interp, graphPtr->tkwin, nearestSpecs, i - 5,
+	objv + 5, (char *)&nearest, BLT_CONFIG_OBJV_ONLY) != TCL_OK) {
 	return TCL_ERROR;		/* Error occurred processing an
 					 * option. */
     }
@@ -2573,7 +2573,8 @@ ClosestOp(
 	    i++;			/* Skip "--" */
 	}
     }
-    srch.dist = (double)(srch.halo + 1);
+    nearest.maxDistance = nearest.halo;
+    nearest.distance = nearest.maxDistance + 1;
 
     if (i < objc) {
 	for ( /* empty */ ; i < objc; i++) {
@@ -2591,14 +2592,14 @@ ClosestOp(
 		if (elemPtr->flags & (HIDE|MAP_ITEM)) {
 		    continue;
 		}
-		(*elemPtr->procsPtr->closestProc) (graphPtr, elemPtr, &srch);
+		(*elemPtr->procsPtr->nearestProc) (graphPtr, elemPtr, &nearest);
 	    }
 	}
     } else {
 	Blt_ChainLink link;
 
 	/* 
-	 * Find the closest point from the set of displayed elements,
+	 * Find the nearest point from the set of displayed elements,
 	 * searching the display list from back to front.  That way if the
 	 * points from two different elements overlay each other exactly, the
 	 * last one picked will be the topmost.
@@ -2609,48 +2610,217 @@ ClosestOp(
 	    if (elemPtr->flags & (HIDE|MAP_ITEM)) {
 		continue;
 	    }
-	    (*elemPtr->procsPtr->closestProc)(graphPtr, elemPtr, &srch);
+	    (*elemPtr->procsPtr->nearestProc)(graphPtr, elemPtr, &nearest);
 	}
     }
-    if (srch.dist < (double)srch.halo) {
+    if (nearest.distance <= nearest.maxDistance) {
 	Tcl_Obj *objPtr, *listObjPtr;
 	Element *elemPtr;
 
 	/* Return a list of name value pairs. */
 	listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
 
-	elemPtr = srch.item;
-	/* Name of closest element. */
+	elemPtr = nearest.item;
+	/* Name of nearest element. */
 	objPtr = Tcl_NewStringObj("name", 4);
 	Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
 	objPtr = Tcl_NewStringObj(elemPtr->obj.name, -1); 
 	Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
 
-	/* Index of closest data point in element.  */
+	/* Index of nearest data point in element.  */
 	objPtr = Tcl_NewStringObj("index", 5);
 	Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-	objPtr = Tcl_NewIntObj(srch.index);
+	objPtr = Tcl_NewIntObj(nearest.index);
 	Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
 		
-	/* X-coordindate of closest data point. */
+	/* X-coordindate of nearest data point. */
 	objPtr = Tcl_NewStringObj("x", 1);
 	Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-	objPtr = Tcl_NewDoubleObj(srch.point.x);
+	objPtr = Tcl_NewDoubleObj(nearest.point.x);
 	Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
 
-	/* Y-coordindate of closest data point. */
+	/* Y-coordindate of nearest data point. */
 	objPtr = Tcl_NewStringObj("y", 1);
 	Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-	objPtr = Tcl_NewDoubleObj(srch.point.y);
+	objPtr = Tcl_NewDoubleObj(nearest.point.y);
 	Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
 		
-	/* Distance to search point. */
+	/* Distance to nearest point. */
 	objPtr = Tcl_NewStringObj("dist", 4);
 	Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-	objPtr = Tcl_NewDoubleObj(srch.dist);
+	objPtr = Tcl_NewDoubleObj(nearest.distance);
 	Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
 		
 	Tcl_SetObjResult(interp, listObjPtr);
+    }
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * ClosestOp --
+ *
+ *	Find the element nearest to the specified screen coordinates.
+ *	Options:
+ *	-halo		Consider points only with this maximum distance
+ *			from the picked coordinate.
+ *	-interpolate	Find nearest point along element traces, not just
+ *			data points.
+ *	-along
+ *	-all		Return the elements and points of every point 
+ *			within the halo.
+ *
+ * Results:
+ *	A standard TCL result. If an element could be found within the halo
+ *	distance, the interpreter result is "1", otherwise "0".  If a nearest
+ *	element exists, the designated TCL array variable will be set with the
+ *	following information:
+ *
+ *	1) the element name,
+ *	2) the index of the nearest point,
+ *	3) the distance (in screen coordinates) from the picked X-Y
+ *	   coordinate and the nearest point,
+ *	4) the X coordinate (graph coordinate) of the nearest point,
+ *	5) and the Y-coordinate.
+ *
+ *	.g element closest x y varName ?switches? elements
+ *	
+ *---------------------------------------------------------------------------
+ */
+
+static int
+ClosestOp(
+    Graph *graphPtr,			/* Graph widget */
+    Tcl_Interp *interp,			/* Interpreter to report results to */
+    int objc,				/* # of arguments */
+    Tcl_Obj *const *objv)		/* List of element names */
+{
+    NearestElement nearest;
+    int i, x, y;
+    const char *string;
+    const char *varName;
+
+    if (graphPtr->flags & RESET_AXES) {
+	Blt_ResetAxes(graphPtr);
+    }
+    if (Tcl_GetIntFromObj(interp, objv[3], &x) != TCL_OK) {
+	Tcl_AddErrorInfo(interp, "\n    (bad window x-coordinate)");
+	return TCL_ERROR;
+    }
+    if (Tcl_GetIntFromObj(interp, objv[4], &y) != TCL_OK) {
+	Tcl_AddErrorInfo(interp, "\n    (bad window y-coordinate)");
+	return TCL_ERROR;
+    }
+    varName = Tcl_GetString(objv[5]);
+    for (i = 6; i < objc; i += 2) {	/* Count switches-value pairs */
+	string = Tcl_GetString(objv[i]);
+	if ((string[0] != '-') || 
+	    ((string[1] == '-') && (string[2] == '\0'))) {
+	    break;
+	}
+    }
+    if (i > objc) {
+	i = objc;
+    }
+
+    memset(&nearest, 0, sizeof(NearestElement));
+    nearest.mode = NEAREST_SEARCH_POINTS;
+    nearest.halo = graphPtr->halo;
+    nearest.along = NEAREST_SEARCH_XY;
+    nearest.x = x;
+    nearest.y = y;
+
+    if (Blt_ConfigureWidgetFromObj(interp, graphPtr->tkwin, nearestSpecs, i - 6,
+	objv + 6, (char *)&nearest, BLT_CONFIG_OBJV_ONLY) != TCL_OK) {
+	return TCL_ERROR;		/* Error occurred processing an
+					 * option. */
+    }
+    if (i < objc) {
+	string = Tcl_GetString(objv[i]);
+	if (string[0] == '-') {
+	    i++;			/* Skip "--" */
+	}
+    }
+    nearest.maxDistance = nearest.halo;
+    nearest.distance = nearest.maxDistance + 1;
+
+    if (i < objc) {
+	for ( /* empty */ ; i < objc; i++) {
+	    ElementIterator iter;
+	    Element *elemPtr;
+
+	    if (GetElementIterator(interp, graphPtr, objv[i], &iter) != TCL_OK){
+		return TCL_ERROR;
+	    }
+	    for (elemPtr = FirstTaggedElement(&iter); elemPtr != NULL; 
+		 elemPtr = NextTaggedElement(&iter)) {
+
+		if (IGNORE_ELEMENT(elemPtr)) {
+		    continue;
+		}
+		if (elemPtr->flags & (HIDE|MAP_ITEM)) {
+		    continue;
+		}
+		(*elemPtr->procsPtr->nearestProc) (graphPtr, elemPtr, &nearest);
+	    }
+	}
+    } else {
+	Blt_ChainLink link;
+
+	/* 
+	 * Find the nearest point from the set of displayed elements,
+	 * searching the display list from back to front.  That way if the
+	 * points from two different elements overlay each other exactly, the
+	 * last one picked will be the topmost.
+	 */
+	for (link = Blt_Chain_LastLink(graphPtr->elements.displayList); 
+	     link != NULL; link = Blt_Chain_PrevLink(link)) {
+	    Element *elemPtr;
+
+	    elemPtr = Blt_Chain_GetValue(link);
+	    if (elemPtr->flags & (HIDE|MAP_ITEM)) {
+		continue;
+	    }
+	    (*elemPtr->procsPtr->nearestProc)(graphPtr, elemPtr, &nearest);
+	}
+    }
+
+    if (nearest.distance <= nearest.maxDistance) {
+	Tcl_Obj *objPtr;
+	int flags = TCL_LEAVE_ERR_MSG;
+	Element *elemPtr;
+	/*
+	 *  Return an array of 5 elements
+	 */
+	elemPtr = nearest.item;
+	objPtr = Tcl_NewStringObj(elemPtr->obj.name, -1);
+	if (Tcl_SetVar2Ex(interp, varName, "name", objPtr, flags) == NULL) {
+	    return TCL_ERROR;
+	}
+	objPtr = Tcl_NewIntObj(nearest.index);
+	if (Tcl_SetVar2Ex(interp, varName, "index", objPtr, flags) == NULL) {
+	    return TCL_ERROR;
+	}
+	objPtr = Tcl_NewDoubleObj(nearest.point.x);
+	if (Tcl_SetVar2Ex(interp, varName, "x", objPtr, flags) == NULL) {
+	    return TCL_ERROR;
+	}
+	objPtr = Tcl_NewDoubleObj(nearest.point.y);
+	if (Tcl_SetVar2Ex(interp, varName, "y", objPtr, flags) == NULL) {
+	    return TCL_ERROR;
+	}
+	objPtr = Tcl_NewDoubleObj(nearest.distance);
+	if (Tcl_SetVar2Ex(interp, varName, "dist", objPtr, flags) == NULL) {
+	    return TCL_ERROR;
+	}
+	Tcl_SetBooleanObj(Tcl_GetObjResult(interp), 1);
+    } else {
+	int flags = TCL_LEAVE_ERR_MSG;
+	if (Tcl_SetVar2(interp, varName, "name", "", flags) == NULL) {
+	    return TCL_ERROR;
+	}
+	Tcl_SetBooleanObj(Tcl_GetObjResult(interp), 0);
     }
     return TCL_OK;
 }
@@ -3850,8 +4020,8 @@ static Blt_OpSpec elemOps[] = {
     {"active",     6, ActiveOp,      2, 0, "args",},
     {"bind",       1, BindOp,        3, 6, "elemName sequence command",},
     {"cget",       2, CgetOp,        5, 5, "elemName option",},
-    {"closest",    2, ClosestOp,     5, 0,
-	"x y ?option value?... ?elemName?...",},
+    {"closest",    2, ClosestOp,     6, 0,
+	"x y varName ?option value?... ?elemName?...",},
     {"configure",  2, ConfigureOp,   4, 0,
 	"elemName ?elemName?... ?option value?...",},
     {"create",     2, CreateOp,      4, 0, "elemName ?option value?...",},
@@ -3863,7 +4033,9 @@ static Blt_OpSpec elemOps[] = {
     {"isoline",    4, Blt_IsolineOp, 2, 0, "args...",},
     {"isotag",     4, Blt_IsoTagOp,  2, 0, "args...",},
     {"lower",      1, LowerOp,       3, 0, "?elemName?...",},
-    {"names",      1, NamesOp,       3, 0, "?pattern?...",},
+    {"names",      2, NamesOp,       3, 0, "?pattern?...",},
+    {"nearest",    2, NearestOp,     5, 0,
+	"x y ?option value?... ?elemName?...",},
     {"raise",      1, RaiseOp,       3, 0, "?elemName?...",},
     {"show",       1, ShowOp,        3, 4, "?elemList?",},
     {"tag",        2, TagOp,         2, 0, "args",},
@@ -3957,4 +4129,37 @@ Blt_GraphExtents(void *ptr, Region2d *r)
     r->top    = (double)y->screenMin;
     r->right  = (double)(x->screenMin + x->screenRange);
     r->bottom = (double)(y->screenMin + y->screenRange);
+}
+
+Element *
+Blt_NearestElement(Graph *graphPtr, int x, int y)
+{
+    NearestElement nearest;
+    Blt_ChainLink link;
+
+    memset(&nearest, 0, sizeof(NearestElement));
+    nearest.along = NEAREST_SEARCH_XY;
+    nearest.maxDistance = graphPtr->halo;
+    nearest.distance = nearest.maxDistance + 1;
+    nearest.x = x;
+    nearest.y = y;
+    nearest.mode = NEAREST_SEARCH_AUTO;
+    
+    for (link = Blt_Chain_LastLink(graphPtr->elements.displayList);
+	 link != NULL; link = Blt_Chain_PrevLink(link)) {
+	Element *elemPtr;
+
+	elemPtr = Blt_Chain_GetValue(link);
+	if (elemPtr->flags & (HIDE|MAP_ITEM)) {
+	    continue;
+	}
+	if (elemPtr->state == STATE_NORMAL) {
+	    (*elemPtr->procsPtr->nearestProc) (graphPtr, elemPtr, &nearest);
+	}
+    }
+    if (nearest.distance <= nearest.maxDistance) {
+	return nearest.item;	/* Found an element within the minimum
+				 * halo distance. */
+    }
+    return NULL;
 }
