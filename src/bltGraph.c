@@ -651,7 +651,6 @@ PickEntry(ClientData clientData, int x, int y, ClientData *contextPtr)
 	 * Sample coordinate is in one of the graph margins.  Can only pick an
 	 * axis.
 	 */
-	fprintf(stderr, "pick axis\n");
 	return Blt_NearestAxis(graphPtr, x, y);
     }
     /* 
@@ -662,20 +661,16 @@ PickEntry(ClientData clientData, int x, int y, ClientData *contextPtr)
      */
     markerPtr = Blt_NearestMarker(graphPtr, x, y, FALSE);
     if (markerPtr != NULL) {
-	fprintf(stderr, "pick marker %x\n", markerPtr);
 	return markerPtr;		/* Found a marker (-under false). */
     }
     elemPtr = Blt_NearestElement(graphPtr, x, y);
     if (elemPtr != NULL) {
-	fprintf(stderr, "pick element %s\n", elemPtr->obj.name);
 	return elemPtr;
     }
     markerPtr = Blt_NearestMarker(graphPtr, x, y, TRUE);
     if (markerPtr != NULL) {
-	fprintf(stderr, "pick marker %x\n", markerPtr);
 	return markerPtr;		/* Found a marker (-under true) */
     }
-    fprintf(stderr, "pick nobody\n");
     return NULL;			/* Nothing found. */
 }
 
