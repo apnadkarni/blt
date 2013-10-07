@@ -1068,6 +1068,9 @@ NearestProc(
 	if (PointInRectangle(bp, nearestPtr->x, nearestPtr->y)) {
 	    nearestPtr->index = elemPtr->barToData[i];
 	    nearestPtr->distance = 0.0;
+	    nearestPtr->item = elemPtr;
+	    nearestPtr->point.x = elemPtr->x.values[nearestPtr->index];
+	    nearestPtr->point.y = elemPtr->y.values[nearestPtr->index];
 	    break;
 	}
 	left = bp->x, top = bp->y;
@@ -1080,7 +1083,7 @@ NearestProc(
 
 	for (pp = outline, pend = outline + 4; pp < pend; pp++) {
 	    Point2d t;
-	    double dist;
+	    double d;
 
 	    t = Blt_GetProjection(nearestPtr->x, nearestPtr->y, pp, pp + 1);
 	    if (t.x > right) {
@@ -1093,17 +1096,15 @@ NearestProc(
 	    } else if (t.y < top) {
 		t.y = top;
 	    }
-	    dist = hypot((t.x - nearestPtr->x), (t.y - nearestPtr->y));
-	    if (dist < nearestPtr->distance) {
-		nearestPtr->distance = dist;
+	    d = hypot((t.x - nearestPtr->x), (t.y - nearestPtr->y));
+	    if (d < nearestPtr->distance) {
+		nearestPtr->item = elemPtr;
+		nearestPtr->distance = d;
 		nearestPtr->index = elemPtr->barToData[i];
+		nearestPtr->point.x = elemPtr->x.values[nearestPtr->index];
+		nearestPtr->point.y = elemPtr->y.values[nearestPtr->index];
 	    }
 	}
-    }
-    if (nearestPtr->distance < nearestPtr->maxDistance) {
-	nearestPtr->item = elemPtr;
-	nearestPtr->point.x = (double)elemPtr->x.values[nearestPtr->index];
-	nearestPtr->point.y = (double)elemPtr->y.values[nearestPtr->index];
     }
 }
 

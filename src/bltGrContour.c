@@ -4382,12 +4382,10 @@ NearestPoint(ContourElement *elemPtr, NearestElement *nearestPtr)
 	if (d < nearestPtr->distance) {
 	    nearestPtr->index = v->index;
 	    nearestPtr->distance = d;
+	    nearestPtr->item = elemPtr;
+	    nearestPtr->point.x = elemPtr->vertices[nearestPtr->index].x;
+	    nearestPtr->point.y = elemPtr->vertices[nearestPtr->index].y;
 	}
-    }
-    if (nearestPtr->distance < nearestPtr->maxDistance) {
-	nearestPtr->item = elemPtr;
-	nearestPtr->point.x = elemPtr->vertices[nearestPtr->index].x;
-	nearestPtr->point.y = elemPtr->vertices[nearestPtr->index].y;
     }
 }
 
@@ -4395,7 +4393,9 @@ static void
 NearestSegment(ContourElement *elemPtr, NearestElement *nearestPtr)
 {
     int i;
+    Graph *graphPtr;
 
+    graphPtr = elemPtr->obj.graphPtr;
     for (i = 0; i < elemPtr->numTriangles; i++) {
 	Triangle *t;
 	double d;
@@ -4407,34 +4407,32 @@ NearestSegment(ContourElement *elemPtr, NearestElement *nearestPtr)
 	p2.x = Bx, p2.y = By;
 	d = DistanceToLine(nearestPtr->x, nearestPtr->y, &p1, &p2, &b);
 	if (d < nearestPtr->distance) {
-	    nearestPtr->point    = b;
-	    nearestPtr->index    = t->a;
+	    nearestPtr->index = t->a;
 	    nearestPtr->distance = d;
+	    nearestPtr->item = elemPtr;
+	    nearestPtr->point = Blt_InvMap2D(graphPtr, b.x, b.y,&elemPtr->axes);
 	}
 	/* Compare BC */
 	p1.x = Bx, p1.y = By;
 	p2.x = Cx, p2.y = Cy;
 	d = DistanceToLine(nearestPtr->x, nearestPtr->y, &p1, &p2, &b);
 	if (d < nearestPtr->distance) {
-	    nearestPtr->point    = b;
-	    nearestPtr->index    = t->b;
+	    nearestPtr->index = t->b;
 	    nearestPtr->distance = d;
+	    nearestPtr->item = elemPtr;
+	    nearestPtr->point = Blt_InvMap2D(graphPtr, b.x, b.y,&elemPtr->axes);
 	}
 	/* Compare CA */
 	p1.x = Cx, p1.y = Cy;
 	p2.x = Ax, p2.y = Ay;
 	d = DistanceToLine(nearestPtr->x, nearestPtr->y, &p1, &p2, &b);
 	if (d < nearestPtr->distance) {
-	    nearestPtr->point    = b;
-	    nearestPtr->index    = t->c;
+	    nearestPtr->index = t->c;
 	    nearestPtr->distance = d;
+	    nearestPtr->item = elemPtr;
+	    nearestPtr->point = Blt_InvMap2D(graphPtr, b.x, b.y,&elemPtr->axes);
 	}
     }	
-    if (nearestPtr->distance < nearestPtr->maxDistance) {
-	nearestPtr->item = elemPtr;
-	nearestPtr->point = Blt_InvMap2D(elemPtr->obj.graphPtr, 
-		nearestPtr->point.x, nearestPtr->point.y, &elemPtr->axes);
-    }
 }
 
 /* Contour pen procedures.  */
