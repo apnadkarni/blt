@@ -2930,7 +2930,7 @@ DistanceToYProc(
  *
  *---------------------------------------------------------------------------
  */
-static int
+static void
 NearestPoint(
     LineElement *elemPtr,		/* Line element to be searched. */
     NearestElement *nearestPtr)		/* Assorted information related to
@@ -2962,8 +2962,8 @@ NearestPoint(
 	    if (!PLAYING(graphPtr, p->index)) {
 		continue;
 	    }
-	    dx = (double)(nearestPtr->x - nearestPtr->x);
-	    dy = (double)(nearestPtr->y - nearestPtr->y);
+	    dx = (double)(p->x - nearestPtr->x);
+	    dy = (double)(p->y - nearestPtr->y);
 	    if (nearestPtr->along == NEAREST_SEARCH_XY) {
 		d = hypot(dx, dy);
 	    } else if (nearestPtr->along == NEAREST_SEARCH_X) {
@@ -2976,17 +2976,13 @@ NearestPoint(
 	    }
 	    if (d < nearestPtr->distance) {
 		nearestPtr->index = p->index;
+		nearestPtr->item = elemPtr;
+		nearestPtr->point.x = elemPtr->x.values[nearestPtr->index];
+		nearestPtr->point.y = elemPtr->y.values[nearestPtr->index];
 		nearestPtr->distance = d;
 	    }
 	}
     }
-    if (nearestPtr->distance < nearestPtr->maxDistance) {
-	nearestPtr->item = elemPtr;
-	nearestPtr->point.x = elemPtr->x.values[nearestPtr->index];
-	nearestPtr->point.y = elemPtr->y.values[nearestPtr->index];
-	return TRUE;
-    }
-    return FALSE;
 }
 
 /*
@@ -3003,7 +2999,7 @@ NearestPoint(
  *
  *---------------------------------------------------------------------------
  */
-static int
+static void
 NearestSegment(
     Graph *graphPtr,			/* Graph widget record */
     LineElement *elemPtr,
@@ -3013,8 +3009,6 @@ NearestSegment(
 {
     Blt_ChainLink link;
 
-    nearestPtr->index = -1;		/* Suppress compiler warning. */
-    nearestPtr->x = nearestPtr->y = 0;	/* Suppress compiler warning. */
     for (link = Blt_Chain_FirstLink(elemPtr->traces); link != NULL;
 	link = Blt_Chain_NextLink(link)) {
 	Trace *tracePtr;
@@ -3032,20 +3026,15 @@ NearestSegment(
 	    p2.x = q->x, p2.y = q->y;
 	    d = (*distProc)(nearestPtr->x, nearestPtr->y, &p1, &p2, &b);
 	    if (d < nearestPtr->distance) {
-		nearestPtr->point = b;
 		nearestPtr->index = p->index;
 		nearestPtr->distance = d;
+		nearestPtr->item = elemPtr;
+		nearestPtr->point = Blt_InvMap2D(graphPtr, b.x, b.y, 
+			&elemPtr->axes);
 	    }
 	    p = q;
 	}
     }
-    if (nearestPtr->distance < nearestPtr->maxDistance) {
-	nearestPtr->item	 = (Element *)elemPtr;
-	nearestPtr->point = Blt_InvMap2D(graphPtr, nearestPtr->point.x, 
-					 nearestPtr->point.y, &elemPtr->axes);
-	return TRUE;
-    }
-    return FALSE;
 }
 
 
@@ -3091,7 +3080,8 @@ NearestProc(Graph *graphPtr, Element *basePtr, NearestElement *nearestPtr)
 	} else {
 	    distProc = DistanceToLineProc;
 	}
-	found = NearestSegment(graphPtr, elemPtr, nearestPtr, distProc);
+	NearestSegment(graphPtr, elemPtr, nearestPtr, distProc);
+	found = (nearestPtr->distance <= nearestPtr->maxDistance);
 	if ((!found) && (nearestPtr->along != NEAREST_SEARCH_XY)) {
 	    NearestPoint(elemPtr, nearestPtr);
 	}
@@ -3620,7 +3610,7 @@ ReducePoints(MapInfo *mapPtr, double tolerance)
     simple    = Blt_AssertMalloc(tracePtr->numPoints * sizeof(int));
     map	      = Blt_AssertMalloc(tracePtr->numPoints * sizeof(int));
     screenPts = Blt_AssertMalloc(tracePtr->numPoints * sizeof(Point2d));
-    np = Blt_SimplifyLine(origPts, 0, tracePtr->nScreenPts - 1, 
+    np = Blt_SimplifyLine(origPts, 0, tracePtr->numScreenPts - 1, 
 	tolerance, simple);
     for (i = 0; i < np; i++) {
 	int k;
@@ -3630,8 +3620,8 @@ ReducePoints(MapInfo *mapPtr, double tolerance)
 	map[i] = mapPtr->map[k];
     }
 #ifdef notdef
-    if (np < mapPtr->nScreenPts) {
-	fprintf(stderr, "reduced from %d to %d\n", mapPtr->nScreenPts, np);
+    if (np < mapPtr->numScreenPts) {
+	fprintf(stderr, "reduced from %d to %d\n", mapPtr->numScreenPts, np);
     }
 #endif
     Blt_Free(mapPtr->screenPts);
@@ -3639,7 +3629,7 @@ ReducePoints(MapInfo *mapPtr, double tolerance)
     Blt_Free(simple);
     mapPtr->screenPts = screenPts;
     mapPtr->map = map;
-    mapPtr->nScreenPts = np;
+    mapPtr->numScreenPts = np;
 }
 #endif
 

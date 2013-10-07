@@ -1657,20 +1657,7 @@ int
 Blt_GetElement(Tcl_Interp *interp, Graph *graphPtr, Tcl_Obj *objPtr, 
 	       Element **elemPtrPtr)
 {
-    Blt_HashEntry *hPtr;
-    char *name;
-
-    name = Tcl_GetString(objPtr);
-    hPtr = Blt_FindHashEntry(&graphPtr->elements.nameTable, name);
-    if (hPtr == NULL) {
-	if (interp != NULL) {
- 	    Tcl_AppendResult(interp, "can't find element \"", name,
-		"\" in \"", Tk_PathName(graphPtr->tkwin), "\"", (char *)NULL);
-	}
-	return TCL_ERROR;
-    }
-    *elemPtrPtr = Blt_GetHashValue(hPtr);
-    return TCL_OK;
+    return GetElementFromObj(interp, graphPtr, objPtr, elemPtrPtr);
 }
 
 /*
@@ -2785,7 +2772,6 @@ ClosestOp(
 	    (*elemPtr->procsPtr->nearestProc)(graphPtr, elemPtr, &nearest);
 	}
     }
-
     if (nearest.distance <= nearest.maxDistance) {
 	Tcl_Obj *objPtr;
 	int flags = TCL_LEAVE_ERR_MSG;
@@ -4153,9 +4139,7 @@ Blt_NearestElement(Graph *graphPtr, int x, int y)
 	if (elemPtr->flags & (HIDE|MAP_ITEM)) {
 	    continue;
 	}
-	if (elemPtr->state == STATE_NORMAL) {
-	    (*elemPtr->procsPtr->nearestProc) (graphPtr, elemPtr, &nearest);
-	}
+	(*elemPtr->procsPtr->nearestProc) (graphPtr, elemPtr, &nearest);
     }
     if (nearest.distance <= nearest.maxDistance) {
 	return nearest.item;	/* Found an element within the minimum

@@ -191,16 +191,14 @@ blt::table configure . c3 r0 r4 r5 -resize none
 
 .g pen configure "activeLine" \
     -showvalues y
-.g configure -halo 50
 .g element bind all <Enter> {
-    eval %W legend deactivate *
-    %W legend activate [%W element get current]
+    %W legend activate current
+}
+.g element bind all <Leave> {
+    %W legend deactivate
 }
 .g configure -plotpady { 0 0 } 
 
-.g element bind all <Leave> {
-    %W legend deactivate *
-}
 .g axis bind all <Enter> {
     set axis [%W axis get current]
     %W axis activate $axis
@@ -986,3 +984,4 @@ blt::table $t \
 GraphOptions $t.tb
 AxisOptions $t.tb
 LegendOptions $t.tb
+Blt_ClosestPoint .g

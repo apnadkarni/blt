@@ -258,7 +258,6 @@ proc blt::Graph::MoveFocus { w elem } {
 proc Blt_ActiveLegend { g } {
     $g legend bind all <Enter> [list blt::Graph::ActivateLegend $g ]
     $g legend bind all <Leave> [list blt::Graph::DeactivateLegend $g]
-    $g legend bind all <ButtonPress-1> [list blt::Graph::HighlightLegend $g]
 }
 
 proc Blt_Crosshairs { g } {
@@ -302,21 +301,10 @@ proc Blt_ClosestPoint { g } {
 #
 
 proc blt::Graph::ActivateLegend { g } {
-    set elem [$g legend get current]
-    $g legend activate $elem
+    $g legend activate current
 }
 proc blt::Graph::DeactivateLegend { g } {
-    set elem [$g legend get current]
-    $g legend deactivate $elem
-}
-
-proc blt::Graph::HighlightLegend { g } {
-    set elem [$g legend get current]
-    if { [lsearch [$g element activate] $elem] >= 0 } {
-	$g element deactivate $elem
-    } else {
-	$g element activate $elem
-    }
+    $g legend deactivate
 }
 
 proc blt::Graph::Crosshairs { g {event "Any-Motion"} {state "on"}} {
@@ -366,9 +354,8 @@ proc blt::Graph::RemoveBindTag { widget tag } {
 }
 
 proc blt::Graph::FindElement { g x y } {
-    array set info [$g element closest $x $y -interpolate yes]
-    if { ![info exists info(name)] } {
-	beep
+    if { ![$g element closest $x $y info -interpolate yes] } {
+	blt::beep
 	return
     }
     # --------------------------------------------------------------

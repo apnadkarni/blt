@@ -165,6 +165,8 @@ struct _Legend {
 					 * pick. */
     Element *selLastPtr;		/* Last element selected in current
 					 * pick. */
+    Element *activePtr;			/* Element whose label is active in the
+					 * legend. */
     int cursorOn;			/* Indicates if the cursor is
 					 * displayed. */
     int onTime, offTime;		/* Time in milliseconds to wait before
@@ -383,19 +385,19 @@ BLT_EXTERN Tcl_ObjCmdProc Blt_GraphInstCmdProc;
 static void
 LegendChangedProc(ClientData clientData) 
 {
-    Legend *legPtr = clientData;
+    Legend *legdPtr = clientData;
 
-    legPtr->flags &= ~CHANGE_PENDING;
-    if (legPtr->cmdObjPtr != NULL) {
+    legdPtr->flags &= ~CHANGE_PENDING;
+    if (legdPtr->cmdObjPtr != NULL) {
 	Tcl_Interp *interp;
 
-	Tcl_Preserve(legPtr);
-	interp = legPtr->graphPtr->interp;
-	if (Tcl_EvalObjEx(interp, legPtr->cmdObjPtr, TCL_EVAL_GLOBAL) 
+	Tcl_Preserve(legdPtr);
+	interp = legdPtr->graphPtr->interp;
+	if (Tcl_EvalObjEx(interp, legdPtr->cmdObjPtr, TCL_EVAL_GLOBAL) 
 	    != TCL_OK) {
 	    Tcl_BackgroundError(interp);
 	}
-	Tcl_Release(legPtr);
+	Tcl_Release(legdPtr);
     }
 }
 
@@ -417,11 +419,11 @@ LegendChangedProc(ClientData clientData)
  *---------------------------------------------------------------------------
  */
 static void
-EventuallyInvokeChangeCmd(Legend *legPtr)
+EventuallyInvokeChangeCmd(Legend *legdPtr)
 {
-    if ((legPtr->flags & CHANGE_PENDING) == 0) {
-	legPtr->flags |= CHANGE_PENDING;
-	Tcl_DoWhenIdle(LegendChangedProc, legPtr);
+    if ((legdPtr->flags & CHANGE_PENDING) == 0) {
+	legdPtr->flags |= CHANGE_PENDING;
+	Tcl_DoWhenIdle(LegendChangedProc, legdPtr);
     }
 }
 
@@ -444,14 +446,14 @@ EventuallyInvokeChangeCmd(Legend *legPtr)
 void
 Blt_Legend_EventuallyRedraw(Graph *graphPtr) 
 {
-    Legend *legPtr = graphPtr->legend;
+    Legend *legdPtr = graphPtr->legend;
 
-    if (legPtr->cmdObjPtr != NULL) {
-	EventuallyInvokeChangeCmd(legPtr);
+    if (legdPtr->cmdObjPtr != NULL) {
+	EventuallyInvokeChangeCmd(legdPtr);
     }
-    if ((legPtr->tkwin != NULL) && !(legPtr->flags & REDRAW_PENDING)) {
-	Tcl_DoWhenIdle(DisplayLegend, legPtr);
-	legPtr->flags |= REDRAW_PENDING;
+    if ((legdPtr->tkwin != NULL) && !(legdPtr->flags & REDRAW_PENDING)) {
+	Tcl_DoWhenIdle(DisplayLegend, legdPtr);
+	legdPtr->flags |= REDRAW_PENDING;
     }
 }
 
@@ -475,19 +477,19 @@ Blt_Legend_EventuallyRedraw(Graph *graphPtr)
 static void
 SelectCmdProc(ClientData clientData) 
 {
-    Legend *legPtr = clientData;
+    Legend *legdPtr = clientData;
 
-    legPtr->flags &= ~SELECT_PENDING;
-    if (legPtr->selCmdObjPtr != NULL) {
+    legdPtr->flags &= ~SELECT_PENDING;
+    if (legdPtr->selCmdObjPtr != NULL) {
 	Tcl_Interp *interp;
 
-	Tcl_Preserve(legPtr);
-	interp = legPtr->graphPtr->interp;
-	if (Tcl_EvalObjEx(interp, legPtr->selCmdObjPtr, TCL_EVAL_GLOBAL) 
+	Tcl_Preserve(legdPtr);
+	interp = legdPtr->graphPtr->interp;
+	if (Tcl_EvalObjEx(interp, legdPtr->selCmdObjPtr, TCL_EVAL_GLOBAL) 
 	    != TCL_OK) {
 	    Tcl_BackgroundError(interp);
 	}
-	Tcl_Release(legPtr);
+	Tcl_Release(legdPtr);
     }
 }
 
@@ -509,23 +511,23 @@ SelectCmdProc(ClientData clientData)
  *---------------------------------------------------------------------------
  */
 static void
-EventuallyInvokeSelectCmd(Legend *legPtr)
+EventuallyInvokeSelectCmd(Legend *legdPtr)
 {
-    if ((legPtr->flags & SELECT_PENDING) == 0) {
-	legPtr->flags |= SELECT_PENDING;
-	Tcl_DoWhenIdle(SelectCmdProc, legPtr);
+    if ((legdPtr->flags & SELECT_PENDING) == 0) {
+	legdPtr->flags |= SELECT_PENDING;
+	Tcl_DoWhenIdle(SelectCmdProc, legdPtr);
     }
 }
 
 static void
-ClearSelection(Legend *legPtr)
+ClearSelection(Legend *legdPtr)
 {
-    Blt_DeleteHashTable(&legPtr->selTable);
-    Blt_InitHashTable(&legPtr->selTable, BLT_ONE_WORD_KEYS);
-    Blt_Chain_Reset(legPtr->selected);
-    Blt_Legend_EventuallyRedraw(legPtr->graphPtr);
-    if (legPtr->selCmdObjPtr != NULL) {
-	EventuallyInvokeSelectCmd(legPtr);
+    Blt_DeleteHashTable(&legdPtr->selTable);
+    Blt_InitHashTable(&legdPtr->selTable, BLT_ONE_WORD_KEYS);
+    Blt_Chain_Reset(legdPtr->selected);
+    Blt_Legend_EventuallyRedraw(legdPtr->graphPtr);
+    if (legdPtr->selCmdObjPtr != NULL) {
+	EventuallyInvokeSelectCmd(legdPtr);
     }
 }
 
@@ -550,10 +552,10 @@ ClearSelection(Legend *legPtr)
 static void
 LostSelectionProc(ClientData clientData)
 {
-    Legend *legPtr = clientData;
+    Legend *legdPtr = clientData;
 
-    if (legPtr->flags & SELECT_EXPORT) {
-	ClearSelection(legPtr);
+    if (legdPtr->flags & SELECT_EXPORT) {
+	ClearSelection(legdPtr);
     }
 }
 
@@ -578,9 +580,9 @@ static void
 LegendEventProc(ClientData clientData, XEvent *eventPtr)
 {
     Graph *graphPtr = clientData;
-    Legend *legPtr;
+    Legend *legdPtr;
 
-    legPtr = graphPtr->legend;
+    legdPtr = graphPtr->legend;
     if (eventPtr->type == Expose) {
 	if (eventPtr->xexpose.count == 0) {
 	    Blt_Legend_EventuallyRedraw(graphPtr);
@@ -590,42 +592,42 @@ LegendEventProc(ClientData clientData, XEvent *eventPtr)
 	    return;
 	}
 	if (eventPtr->type == FocusIn) {
-	    legPtr->flags |= FOCUS;
+	    legdPtr->flags |= FOCUS;
 	} else {
-	    legPtr->flags &= ~FOCUS;
+	    legdPtr->flags &= ~FOCUS;
 	}
-	Tcl_DeleteTimerHandler(legPtr->timerToken);
-	if ((legPtr->flags & (FOCUS|ACTIVE)) == (FOCUS|ACTIVE)) {
-	    legPtr->cursorOn = TRUE;
-	    if (legPtr->offTime != 0) {
-		legPtr->timerToken = Tcl_CreateTimerHandler(
-			legPtr->onTime, BlinkCursorProc, graphPtr);
+	Tcl_DeleteTimerHandler(legdPtr->timerToken);
+	if ((legdPtr->flags & (FOCUS|ACTIVE)) == (FOCUS|ACTIVE)) {
+	    legdPtr->cursorOn = TRUE;
+	    if (legdPtr->offTime != 0) {
+		legdPtr->timerToken = Tcl_CreateTimerHandler(
+			legdPtr->onTime, BlinkCursorProc, graphPtr);
 	    }
 	} else {
-	    legPtr->cursorOn = FALSE;
-	    legPtr->timerToken = (Tcl_TimerToken)NULL;
+	    legdPtr->cursorOn = FALSE;
+	    legdPtr->timerToken = (Tcl_TimerToken)NULL;
 	}
 	Blt_Legend_EventuallyRedraw(graphPtr);
     } else if (eventPtr->type == DestroyNotify) {
-	Graph *graphPtr = legPtr->graphPtr;
+	Graph *graphPtr = legdPtr->graphPtr;
 
-	if (legPtr->site == LEGEND_WINDOW) {
-	    Blt_DeleteWindowInstanceData(legPtr->tkwin);
-	    if (legPtr->cmdToken != NULL) {
+	if (legdPtr->site == LEGEND_WINDOW) {
+	    Blt_DeleteWindowInstanceData(legdPtr->tkwin);
+	    if (legdPtr->cmdToken != NULL) {
 		Tcl_DeleteCommandFromToken(graphPtr->interp, 
-					   legPtr->cmdToken);
-		legPtr->cmdToken = NULL;
+					   legdPtr->cmdToken);
+		legdPtr->cmdToken = NULL;
 	    }
-	    legPtr->tkwin = graphPtr->tkwin;
+	    legdPtr->tkwin = graphPtr->tkwin;
 	}
-	if (legPtr->flags & REDRAW_PENDING) {
-	    Tcl_CancelIdleCall(DisplayLegend, legPtr);
-	    legPtr->flags &= ~REDRAW_PENDING;
+	if (legdPtr->flags & REDRAW_PENDING) {
+	    Tcl_CancelIdleCall(DisplayLegend, legdPtr);
+	    legdPtr->flags &= ~REDRAW_PENDING;
 	}
-	legPtr->site = LEGEND_RIGHT;
-	legPtr->flags |= HIDE;
+	legdPtr->site = LEGEND_RIGHT;
+	legdPtr->flags |= HIDE;
 	graphPtr->flags |= (MAP_WORLD | REDRAW_WORLD);
-	Blt_MoveBindingTable(legPtr->bindTable, graphPtr->tkwin);
+	Blt_MoveBindingTable(legdPtr->bindTable, graphPtr->tkwin);
 	Blt_EventuallyRedrawGraph(graphPtr);
     } else if (eventPtr->type == ConfigureNotify) {
 	Blt_Legend_EventuallyRedraw(graphPtr);
@@ -633,30 +635,30 @@ LegendEventProc(ClientData clientData, XEvent *eventPtr)
 }
 
 static int
-CreateLegendWindow(Tcl_Interp *interp, Legend *legPtr, const char *pathName)
+CreateLegendWindow(Tcl_Interp *interp, Legend *legdPtr, const char *pathName)
 {
     Graph *graphPtr;
     Tk_Window tkwin;
 
-    graphPtr = legPtr->graphPtr;
+    graphPtr = legdPtr->graphPtr;
     tkwin = Tk_CreateWindowFromPath(interp, graphPtr->tkwin, pathName, NULL);
     if (tkwin == NULL) {
 	return TCL_ERROR;
     }
-    Blt_SetWindowInstanceData(tkwin, legPtr);
+    Blt_SetWindowInstanceData(tkwin, legdPtr);
     Tk_CreateEventHandler(tkwin, ExposureMask | StructureNotifyMask,
 	  LegendEventProc, graphPtr);
     /* Move the legend's binding table to the new window. */
-    Blt_MoveBindingTable(legPtr->bindTable, tkwin);
-    if (legPtr->tkwin != graphPtr->tkwin) {
-	Tk_DestroyWindow(legPtr->tkwin);
+    Blt_MoveBindingTable(legdPtr->bindTable, tkwin);
+    if (legdPtr->tkwin != graphPtr->tkwin) {
+	Tk_DestroyWindow(legdPtr->tkwin);
     }
     /* Create a command by the same name as the legend window so that Legend
      * bindings can use %W interchangably.  */
-    legPtr->cmdToken = Tcl_CreateObjCommand(interp, pathName, 
+    legdPtr->cmdToken = Tcl_CreateObjCommand(interp, pathName, 
 	Blt_GraphInstCmdProc, graphPtr, NULL);
-    legPtr->tkwin = tkwin;
-    legPtr->site = LEGEND_WINDOW;
+    legdPtr->tkwin = tkwin;
+    legdPtr->site = LEGEND_WINDOW;
     return TCL_OK;
 }
 
@@ -687,26 +689,26 @@ ObjToPosition(
     int flags)				/* Not used. */
 {
     Graph *graphPtr;
-    Legend *legPtr = (Legend *)widgRec;
+    Legend *legdPtr = (Legend *)widgRec;
     char c;
     int length;
     const char *string;
 
-    graphPtr = legPtr->graphPtr;
+    graphPtr = legdPtr->graphPtr;
     string = Tcl_GetStringFromObj(objPtr, &length);
     c = string[0];
     if (c == '\0') {
-	legPtr->site = LEGEND_RIGHT;
+	legdPtr->site = LEGEND_RIGHT;
     } else if ((c == 'l') && (strncmp(string, "leftmargin", length) == 0)) {
-	legPtr->site = LEGEND_LEFT;
+	legdPtr->site = LEGEND_LEFT;
     } else if ((c == 'r') && (strncmp(string, "rightmargin", length) == 0)) {
-	legPtr->site = LEGEND_RIGHT;
+	legdPtr->site = LEGEND_RIGHT;
     } else if ((c == 't') && (strncmp(string, "topmargin", length) == 0)) {
-	legPtr->site = LEGEND_TOP;
+	legdPtr->site = LEGEND_TOP;
     } else if ((c == 'b') && (strncmp(string, "bottommargin", length) == 0)) {
-	legPtr->site = LEGEND_BOTTOM;
+	legdPtr->site = LEGEND_BOTTOM;
     } else if ((c == 'p') && (strncmp(string, "plotarea", length) == 0)) {
-	legPtr->site = LEGEND_PLOT;
+	legdPtr->site = LEGEND_PLOT;
     } else if (c == '@') {
 	char *comma;
 	long x, y;
@@ -726,11 +728,11 @@ ObjToPosition(
 	if (!result) {
 	    return TCL_ERROR;
 	}
-	legPtr->xReq = (short int)x;
-	legPtr->yReq = (short int)y;
-	legPtr->site = LEGEND_XY;
+	legdPtr->xReq = (short int)x;
+	legdPtr->yReq = (short int)y;
+	legdPtr->site = LEGEND_XY;
     } else if (c == '.') {
-	if (CreateLegendWindow(interp, legPtr, string) != TCL_OK) {
+	if (CreateLegendWindow(interp, legdPtr, string) != TCL_OK) {
 	    return TCL_ERROR;
 	}
 	Blt_Legend_EventuallyRedraw(graphPtr);
@@ -767,10 +769,10 @@ PositionToObj(
     int offset,				/* Not used. */
     int flags)				/* Not used. */
 {
-    Legend *legPtr = (Legend *)widgRec;
+    Legend *legdPtr = (Legend *)widgRec;
     Tcl_Obj *objPtr;
 
-    switch (legPtr->site) {
+    switch (legdPtr->site) {
     case LEGEND_LEFT:
 	objPtr = Tcl_NewStringObj("leftmargin", -1);
 	break;
@@ -792,14 +794,14 @@ PositionToObj(
 	break;
 
     case LEGEND_WINDOW:
-	objPtr = Tcl_NewStringObj(Tk_PathName(legPtr->tkwin), -1);
+	objPtr = Tcl_NewStringObj(Tk_PathName(legdPtr->tkwin), -1);
 	break;
 
     case LEGEND_XY:
 	{
 	    char string[200];
 
-	    Blt_FormatString(string, 200, "@%d,%d", legPtr->xReq, legPtr->yReq);
+	    Blt_FormatString(string, 200, "@%d,%d", legdPtr->xReq, legdPtr->yReq);
 	    objPtr = Tcl_NewStringObj(string, -1);
 	}
     default:
@@ -887,14 +889,14 @@ SelectmodeToObj(
 
 
 static void
-SetLegendOrigin(Legend *legPtr)
+SetLegendOrigin(Legend *legdPtr)
 {
     Graph *graphPtr;
     int x, y, w, h;
 
-    graphPtr = legPtr->graphPtr;
+    graphPtr = legdPtr->graphPtr;
     x = y = w = h = 0;			/* Suppress compiler warning. */
-    switch (legPtr->site) {
+    switch (legdPtr->site) {
     case LEGEND_RIGHT:
 	w = graphPtr->rightMargin.width - graphPtr->rightMargin.axesOffset;
 	h = graphPtr->bottom - graphPtr->top;
@@ -937,10 +939,10 @@ SetLegendOrigin(Legend *legPtr)
 	break;
 
     case LEGEND_XY:
-	w = legPtr->width;
-	h = legPtr->height;
-	x = legPtr->xReq;
-	y = legPtr->yReq;
+	w = legdPtr->width;
+	h = legdPtr->height;
+	x = legdPtr->xReq;
+	y = legdPtr->yReq;
 	if (x < 0) {
 	    x += graphPtr->width;
 	}
@@ -950,130 +952,130 @@ SetLegendOrigin(Legend *legPtr)
 	break;
 
     case LEGEND_WINDOW:
-	legPtr->anchor = TK_ANCHOR_NW;
-	legPtr->x = legPtr->y = 0;
+	legdPtr->anchor = TK_ANCHOR_NW;
+	legdPtr->x = legdPtr->y = 0;
 	return;
     }
 
-    switch (legPtr->anchor) {
+    switch (legdPtr->anchor) {
     case TK_ANCHOR_NW:			/* Upper left corner */
 	break;
     case TK_ANCHOR_W:			/* Left center */
-	if (h > legPtr->height) {
-	    y += (h - legPtr->height) / 2;
+	if (h > legdPtr->height) {
+	    y += (h - legdPtr->height) / 2;
 	}
 	break;
     case TK_ANCHOR_SW:			/* Lower left corner */
-	if (h > legPtr->height) {
-	    y += (h - legPtr->height);
+	if (h > legdPtr->height) {
+	    y += (h - legdPtr->height);
 	}
 	break;
     case TK_ANCHOR_N:			/* Top center */
-	if (w > legPtr->width) {
-	    x += (w - legPtr->width) / 2;
+	if (w > legdPtr->width) {
+	    x += (w - legdPtr->width) / 2;
 	}
 	break;
     case TK_ANCHOR_CENTER:		/* Center */
-	if (h > legPtr->height) {
-	    y += (h - legPtr->height) / 2;
+	if (h > legdPtr->height) {
+	    y += (h - legdPtr->height) / 2;
 	}
-	if (w > legPtr->width) {
-	    x += (w - legPtr->width) / 2;
+	if (w > legdPtr->width) {
+	    x += (w - legdPtr->width) / 2;
 	}
 	break;
     case TK_ANCHOR_S:			/* Bottom center */
-	if (w > legPtr->width) {
-	    x += (w - legPtr->width) / 2;
+	if (w > legdPtr->width) {
+	    x += (w - legdPtr->width) / 2;
 	}
-	if (h > legPtr->height) {
-	    y += (h - legPtr->height);
+	if (h > legdPtr->height) {
+	    y += (h - legdPtr->height);
 	}
 	break;
     case TK_ANCHOR_NE:			/* Upper right corner */
-	if (w > legPtr->width) {
-	    x += w - legPtr->width;
+	if (w > legdPtr->width) {
+	    x += w - legdPtr->width;
 	}
 	break;
     case TK_ANCHOR_E:			/* Right center */
-	if (w > legPtr->width) {
-	    x += w - legPtr->width;
+	if (w > legdPtr->width) {
+	    x += w - legdPtr->width;
 	}
-	if (h > legPtr->height) {
-	    y += (h - legPtr->height) / 2;
+	if (h > legdPtr->height) {
+	    y += (h - legdPtr->height) / 2;
 	}
 	break;
     case TK_ANCHOR_SE:		/* Lower right corner */
-	if (w > legPtr->width) {
-	    x += w - legPtr->width;
+	if (w > legdPtr->width) {
+	    x += w - legdPtr->width;
 	}
-	if (h > legPtr->height) {
-	    y += (h - legPtr->height);
+	if (h > legdPtr->height) {
+	    y += (h - legdPtr->height);
 	}
 	break;
     }
-    legPtr->x = x + legPtr->padLeft;
-    legPtr->y = y + legPtr->padTop;
+    legdPtr->x = x + legdPtr->padLeft;
+    legdPtr->y = y + legdPtr->padTop;
 }
 
 static int
-EntryIsSelected(Legend *legPtr, Element *elemPtr)
+EntryIsSelected(Legend *legdPtr, Element *elemPtr)
 {
     Blt_HashEntry *hPtr;
 
-    hPtr = Blt_FindHashEntry(&legPtr->selTable, (char *)elemPtr);
+    hPtr = Blt_FindHashEntry(&legdPtr->selTable, (char *)elemPtr);
     return (hPtr != NULL);
 }
 
 static void
-SelectElement(Legend *legPtr, Element *elemPtr)
+SelectElement(Legend *legdPtr, Element *elemPtr)
 {
     int isNew;
     Blt_HashEntry *hPtr;
 
-    hPtr = Blt_CreateHashEntry(&legPtr->selTable, (char *)elemPtr,&isNew);
+    hPtr = Blt_CreateHashEntry(&legdPtr->selTable, (char *)elemPtr,&isNew);
     if (isNew) {
 	Blt_ChainLink link;
 
-	link = Blt_Chain_Append(legPtr->selected, elemPtr);
+	link = Blt_Chain_Append(legdPtr->selected, elemPtr);
 	Blt_SetHashValue(hPtr, link);
     }
 }
 
 static void
-DeselectElement(Legend *legPtr, Element *elemPtr)
+DeselectElement(Legend *legdPtr, Element *elemPtr)
 {
     Blt_HashEntry *hPtr;
 
-    hPtr = Blt_FindHashEntry(&legPtr->selTable, (char *)elemPtr);
+    hPtr = Blt_FindHashEntry(&legdPtr->selTable, (char *)elemPtr);
     if (hPtr != NULL) {
 	Blt_ChainLink link;
 
 	link = Blt_GetHashValue(hPtr);
-	Blt_Chain_DeleteLink(legPtr->selected, link);
-	Blt_DeleteHashEntry(&legPtr->selTable, hPtr);
+	Blt_Chain_DeleteLink(legdPtr->selected, link);
+	Blt_DeleteHashEntry(&legdPtr->selTable, hPtr);
     }
 }
 
 static void
-SelectEntry(Legend *legPtr, Element *elemPtr)
+SelectEntry(Legend *legdPtr, Element *elemPtr)
 {
     Blt_HashEntry *hPtr;
 
-    switch (legPtr->flags & SELECT_MASK) {
+    switch (legdPtr->flags & SELECT_MASK) {
     case SELECT_CLEAR:
-	DeselectElement(legPtr, elemPtr);
+	DeselectElement(legdPtr, elemPtr);
 	break;
 
     case SELECT_SET:
-	SelectElement(legPtr, elemPtr);
+	SelectElement(legdPtr, elemPtr);
 	break;
 
     case SELECT_TOGGLE:
-	hPtr = Blt_FindHashEntry(&legPtr->selTable, (char *)elemPtr);
+	hPtr = Blt_FindHashEntry(&legdPtr->selTable, (char *)elemPtr);
 	if (hPtr != NULL) {
-	    DeselectElement(legPtr, elemPtr);
+	    DeselectElement(legdPtr, elemPtr);
 	} else {
-	    SelectElement(legPtr, elemPtr);
+	    SelectElement(legdPtr, elemPtr);
 	}
 	break;
     }
@@ -1081,19 +1083,19 @@ SelectEntry(Legend *legPtr, Element *elemPtr)
 
 #ifdef notdef
 static Element *
-PointerToElement(Legend *legPtr, int x, int y)
+PointerToElement(Legend *legdPtr, int x, int y)
 {
-    Graph *graphPtr = legPtr->graphPtr;
+    Graph *graphPtr = legdPtr->graphPtr;
     int w, h;
     int n;
 
-    w = legPtr->width;
-    h = legPtr->height;
+    w = legdPtr->width;
+    h = legdPtr->height;
 
-    x -= legPtr->x + legPtr->borderWidth;
-    y -= legPtr->y + legPtr->borderWidth;
-    w -= 2 * legPtr->borderWidth + PADDING(legPtr->xPad);
-    h -= 2 * legPtr->borderWidth + PADDING(legPtr->yPad);
+    x -= legdPtr->x + legdPtr->borderWidth;
+    y -= legdPtr->y + legdPtr->borderWidth;
+    w -= 2 * legdPtr->borderWidth + PADDING(legdPtr->xPad);
+    h -= 2 * legdPtr->borderWidth + PADDING(legdPtr->yPad);
 
     if ((x < 0) || (x >= w) || (y < 0) || (y >= h)) {
 	return NULL;
@@ -1103,11 +1105,11 @@ PointerToElement(Legend *legPtr, int x, int y)
     {
 	int row, column;
 
-	row    = y / legPtr->entryHeight;
-	column = x / legPtr->entryWidth;
-	n = (column * legPtr->numRows) + row;
+	row    = y / legdPtr->entryHeight;
+	column = x / legdPtr->entryWidth;
+	n = (column * legdPtr->numRows) + row;
     }
-    if (n < legPtr->numEntries) {
+    if (n < legdPtr->numEntries) {
 	Blt_ChainLink link;
 	int count;
 
@@ -1137,20 +1139,20 @@ static ClientData
 PickEntryProc(ClientData clientData, int x, int y, ClientData *contextPtr)
 {
     Graph *graphPtr = clientData;
-    Legend *legPtr;
+    Legend *legdPtr;
     int w, h;
 
-    legPtr = graphPtr->legend;
-    w = legPtr->width;
-    h = legPtr->height;
+    legdPtr = graphPtr->legend;
+    w = legdPtr->width;
+    h = legdPtr->height;
 
-    if (legPtr->titleHeight > 0) {
-	y -= legPtr->titleHeight + legPtr->yPad.side1;
+    if (legdPtr->titleHeight > 0) {
+	y -= legdPtr->titleHeight + legdPtr->yPad.side1;
     }
-    x -= legPtr->x + legPtr->borderWidth;
-    y -= legPtr->y + legPtr->borderWidth;
-    w -= 2 * legPtr->borderWidth + PADDING(legPtr->xPad);
-    h -= 2 * legPtr->borderWidth + PADDING(legPtr->yPad);
+    x -= legdPtr->x + legdPtr->borderWidth;
+    y -= legdPtr->y + legdPtr->borderWidth;
+    w -= 2 * legdPtr->borderWidth + PADDING(legdPtr->xPad);
+    h -= 2 * legdPtr->borderWidth + PADDING(legdPtr->yPad);
 
     if ((x >= 0) && (x < w) && (y >= 0) && (y < h)) {
 	int row, column;
@@ -1159,10 +1161,10 @@ PickEntryProc(ClientData clientData, int x, int y, ClientData *contextPtr)
 	/*
 	 * It's in the bounding box, so compute the index.
 	 */
-	row    = y / legPtr->entryHeight;
-	column = x / legPtr->entryWidth;
-	n = (column * legPtr->numRows) + row;
-	if (n < legPtr->numEntries) {
+	row    = y / legdPtr->entryHeight;
+	column = x / legdPtr->entryWidth;
+	n = (column * legdPtr->numRows) + row;
+	if (n < legdPtr->numEntries) {
 	    Blt_ChainLink link;
 	    int count;
 
@@ -1224,7 +1226,7 @@ Blt_MapLegend(
 					 * to draw the legend. Will calculate
 					 * # of rows from this. */
 {
-    Legend *legPtr = graphPtr->legend;
+    Legend *legdPtr = graphPtr->legend;
     Blt_ChainLink link;
     int numRows, numColumns, numEntries;
     int legendWidth, legendHeight;
@@ -1234,21 +1236,21 @@ Blt_MapLegend(
     unsigned int tw, th;
 
     /* Initialize legend values to default (no legend displayed) */
-    legPtr->entryWidth = legPtr->entryHeight = 0;
-    legPtr->numRows = legPtr->numColumns = legPtr->numEntries = 0;
-    legPtr->height = legPtr->width = 0;
+    legdPtr->entryWidth = legdPtr->entryHeight = 0;
+    legdPtr->numRows = legdPtr->numColumns = legdPtr->numEntries = 0;
+    legdPtr->height = legdPtr->width = 0;
 
-    if (legPtr->site == LEGEND_WINDOW) {
-	if (Tk_Width(legPtr->tkwin) > 1) {
-	    plotWidth = Tk_Width(legPtr->tkwin);
+    if (legdPtr->site == LEGEND_WINDOW) {
+	if (Tk_Width(legdPtr->tkwin) > 1) {
+	    plotWidth = Tk_Width(legdPtr->tkwin);
 	}
-	if (Tk_Height(legPtr->tkwin) > 1) {
-	    plotHeight = Tk_Height(legPtr->tkwin);
+	if (Tk_Height(legdPtr->tkwin) > 1) {
+	    plotHeight = Tk_Height(legdPtr->tkwin);
 	}
     }
-    Blt_Ts_GetExtents(&legPtr->titleStyle, legPtr->title, &tw, &th);
-    legPtr->titleWidth = tw;
-    legPtr->titleHeight = th;
+    Blt_Ts_GetExtents(&legdPtr->titleStyle, legdPtr->title, &tw, &th);
+    legdPtr->titleWidth = tw;
+    legdPtr->titleHeight = th;
     /*   
      * Count the number of legend entries and determine the widest and tallest
      * label.  The number of entries would normally be the number of elements,
@@ -1265,7 +1267,7 @@ Blt_MapLegend(
 	if (elemPtr->label == NULL) {
 	    continue;			/* Element has no legend entry. */
 	}
-	Blt_Ts_GetExtents(&legPtr->style, elemPtr->label, &w, &h);
+	Blt_Ts_GetExtents(&legdPtr->style, elemPtr->label, &w, &h);
 	if (maxWidth < w) {
 	    maxWidth = w;
 	}
@@ -1279,21 +1281,21 @@ Blt_MapLegend(
     }
 
 
-    Blt_Font_GetMetrics(legPtr->style.font, &fontMetrics);
+    Blt_Font_GetMetrics(legdPtr->style.font, &fontMetrics);
     symbolWidth = 2 * fontMetrics.ascent;
 
-    maxWidth += 2 * legPtr->entryBW + PADDING(legPtr->ixPad) +
+    maxWidth += 2 * legdPtr->entryBW + PADDING(legdPtr->ixPad) +
 	+ symbolWidth + 3 * LABEL_PAD;
 
-    maxHeight += 2 * legPtr->entryBW + PADDING(legPtr->iyPad);
+    maxHeight += 2 * legdPtr->entryBW + PADDING(legdPtr->iyPad);
 
     maxWidth |= 0x01;
     maxHeight |= 0x01;
 
     legendWidth  = plotWidth;
     legendHeight = plotHeight;
-    legendWidth  -= 2 * legPtr->borderWidth + PADDING(legPtr->xPad);
-    legendHeight -= 2 * legPtr->borderWidth + PADDING(legPtr->yPad);
+    legendWidth  -= 2 * legdPtr->borderWidth + PADDING(legdPtr->xPad);
+    legendHeight -= 2 * legdPtr->borderWidth + PADDING(legdPtr->yPad);
 
     /*
      * The number of rows and columns is computed as one of the following:
@@ -1304,15 +1306,15 @@ Blt_MapLegend(
      *	neither set			Compute rows and columns from
      *					size of plot.  
      */
-    if (legPtr->reqRows > 0) {
-	numRows = MIN(legPtr->reqRows, numEntries); 
-	if (legPtr->reqColumns > 0) {
-	    numColumns = MIN(legPtr->reqColumns, numEntries);
+    if (legdPtr->reqRows > 0) {
+	numRows = MIN(legdPtr->reqRows, numEntries); 
+	if (legdPtr->reqColumns > 0) {
+	    numColumns = MIN(legdPtr->reqColumns, numEntries);
 	} else {
 	    numColumns = ((numEntries - 1) / numRows) + 1; /* Only -rows. */
 	}
-    } else if (legPtr->reqColumns > 0) { /* Only -columns. */
-	numColumns = MIN(legPtr->reqColumns, numEntries);
+    } else if (legdPtr->reqColumns > 0) { /* Only -columns. */
+	numColumns = MIN(legdPtr->reqColumns, numEntries);
 	numRows = ((numEntries - 1) / numColumns) + 1;
     } else {			
 	/* Compute # of rows and columns from the legend size. */
@@ -1327,7 +1329,7 @@ Blt_MapLegend(
 	if (numRows > numEntries) {
 	    numRows = numEntries;
 	} 
-	switch (legPtr->site) {
+	switch (legdPtr->site) {
 	case LEGEND_TOP:
 	case LEGEND_BOTTOM:
 	    numRows    = ((numEntries - 1) / numColumns) + 1;
@@ -1347,22 +1349,22 @@ Blt_MapLegend(
     }
 
     legendHeight = (numRows * maxHeight);
-    if (legPtr->titleHeight > 0) {
-	legendHeight += legPtr->titleHeight + legPtr->yPad.side1;
+    if (legdPtr->titleHeight > 0) {
+	legendHeight += legdPtr->titleHeight + legdPtr->yPad.side1;
     }
     legendWidth = numColumns * maxWidth;
-    if (legendWidth < legPtr->titleWidth) {
-	legendWidth = legPtr->titleWidth;
+    if (legendWidth < legdPtr->titleWidth) {
+	legendWidth = legdPtr->titleWidth;
     }
-    legPtr->width = legendWidth + 2 * legPtr->borderWidth + 
-	PADDING(legPtr->xPad);
-    legPtr->height = legendHeight + 2 * legPtr->borderWidth + 
-	PADDING(legPtr->yPad);
-    legPtr->numRows     = numRows;
-    legPtr->numColumns  = numColumns;
-    legPtr->numEntries  = numEntries;
-    legPtr->entryHeight = maxHeight;
-    legPtr->entryWidth  = maxWidth;
+    legdPtr->width = legendWidth + 2 * legdPtr->borderWidth + 
+	PADDING(legdPtr->xPad);
+    legdPtr->height = legendHeight + 2 * legdPtr->borderWidth + 
+	PADDING(legdPtr->yPad);
+    legdPtr->numRows     = numRows;
+    legdPtr->numColumns  = numColumns;
+    legdPtr->numEntries  = numEntries;
+    legdPtr->entryHeight = maxHeight;
+    legdPtr->entryWidth  = maxWidth;
 
     {
 	int row, col, count;
@@ -1383,10 +1385,10 @@ Blt_MapLegend(
 	    }
 	}
     }
-    if ((legPtr->site == LEGEND_WINDOW) &&
-	((Tk_ReqWidth(legPtr->tkwin) != legPtr->width) ||
-	 (Tk_ReqHeight(legPtr->tkwin) != legPtr->height))) {
-	Tk_GeometryRequest(legPtr->tkwin,legPtr->width,legPtr->height);
+    if ((legdPtr->site == LEGEND_WINDOW) &&
+	((Tk_ReqWidth(legdPtr->tkwin) != legdPtr->width) ||
+	 (Tk_ReqHeight(legdPtr->tkwin) != legdPtr->height))) {
+	Tk_GeometryRequest(legdPtr->tkwin,legdPtr->width,legdPtr->height);
     }
 }
 
@@ -1396,7 +1398,7 @@ Blt_DrawLegend(Graph *graphPtr, Drawable drawable)
     Blt_Bg bg;
     Blt_ChainLink link;
     Blt_FontMetrics fontMetrics;
-    Legend *legPtr = graphPtr->legend;
+    Legend *legdPtr = graphPtr->legend;
     Pixmap pixmap;
     Tk_Window tkwin;
     int count;
@@ -1404,27 +1406,27 @@ Blt_DrawLegend(Graph *graphPtr, Drawable drawable)
     int x, y, w, h;
     int xLabel, yStart, xSymbol, ySymbol;
 
-    if ((legPtr->flags & HIDE) || (legPtr->numEntries == 0)) {
+    if ((legdPtr->flags & HIDE) || (legdPtr->numEntries == 0)) {
 	return;
     }
-    SetLegendOrigin(legPtr);
-    graphPtr = legPtr->graphPtr;
-    tkwin = legPtr->tkwin;
-    if (legPtr->site == LEGEND_WINDOW) {
+    SetLegendOrigin(legdPtr);
+    graphPtr = legdPtr->graphPtr;
+    tkwin = legdPtr->tkwin;
+    if (legdPtr->site == LEGEND_WINDOW) {
 	w = Tk_Width(tkwin);
 	h = Tk_Height(tkwin);
     } else {
-	w = legPtr->width;
-	h = legPtr->height;
+	w = legdPtr->width;
+	h = legdPtr->height;
     }
 
     pixmap = Blt_GetPixmap(graphPtr->display, Tk_WindowId(tkwin), w, h, 
 	Tk_Depth(tkwin));
 
-    if (legPtr->normalBg != NULL) {
-	Blt_Bg_FillRectangle(tkwin, pixmap, legPtr->normalBg, 0, 0, 
+    if (legdPtr->normalBg != NULL) {
+	Blt_Bg_FillRectangle(tkwin, pixmap, legdPtr->normalBg, 0, 0, 
 		w, h, 0, TK_RELIEF_FLAT);
-    } else if (legPtr->site & LEGEND_PLOTAREA_MASK) {
+    } else if (legdPtr->site & LEGEND_PLOTAREA_MASK) {
 	/* 
 	 * Legend background is transparent and is positioned over the the
 	 * plot area.  Either copy the part of the background from the backing
@@ -1433,7 +1435,7 @@ Blt_DrawLegend(Graph *graphPtr, Drawable drawable)
 	 */
 	if (graphPtr->cache != None) {
 	    XCopyArea(graphPtr->display, graphPtr->cache, pixmap, 
-		graphPtr->drawGC, legPtr->x, legPtr->y, w, h, 0, 0);
+		graphPtr->drawGC, legdPtr->x, legdPtr->y, w, h, 0, 0);
         } else {
 	    Blt_Bg_FillRectangle(tkwin, pixmap, graphPtr->plotBg, 0, 0, 
 		w, h, TK_RELIEF_FLAT, 0);
@@ -1445,26 +1447,26 @@ Blt_DrawLegend(Graph *graphPtr, Drawable drawable)
 	 */
 	Blt_Bg_GetOrigin(graphPtr->normalBg, &x0, &y0);
 	Blt_Bg_SetOrigin(graphPtr->tkwin, graphPtr->normalBg, 
-		x0 - legPtr->x, y0 - legPtr->y);
+		x0 - legdPtr->x, y0 - legdPtr->y);
 	Blt_Bg_FillRectangle(tkwin, pixmap, graphPtr->normalBg, 0, 0, 
 		w, h, 0, TK_RELIEF_FLAT);
 	Blt_Bg_SetOrigin(tkwin, graphPtr->normalBg, x0, y0);
     }
-    Blt_Font_GetMetrics(legPtr->style.font, &fontMetrics);
+    Blt_Font_GetMetrics(legdPtr->style.font, &fontMetrics);
 
     symbolSize = fontMetrics.ascent;
-    xMid = symbolSize + 1 + legPtr->entryBW;
-    yMid = (symbolSize / 2) + 1 + legPtr->entryBW;
-    xLabel = 2 * symbolSize + legPtr->entryBW + 
-	legPtr->ixPad.side1 + 2 * LABEL_PAD;
-    ySymbol = yMid + legPtr->iyPad.side1; 
+    xMid = symbolSize + 1 + legdPtr->entryBW;
+    yMid = (symbolSize / 2) + 1 + legdPtr->entryBW;
+    xLabel = 2 * symbolSize + legdPtr->entryBW + 
+	legdPtr->ixPad.side1 + 2 * LABEL_PAD;
+    ySymbol = yMid + legdPtr->iyPad.side1; 
     xSymbol = xMid + LABEL_PAD;
 
-    x = legPtr->padLeft + legPtr->borderWidth;
-    y = legPtr->padTop + legPtr->borderWidth;
-    Blt_DrawText(tkwin, pixmap, legPtr->title, &legPtr->titleStyle, x, y);
-    if (legPtr->titleHeight > 0) {
-	y += legPtr->titleHeight + legPtr->yPad.side1;
+    x = legdPtr->padLeft + legdPtr->borderWidth;
+    y = legdPtr->padTop + legdPtr->borderWidth;
+    Blt_DrawText(tkwin, pixmap, legdPtr->title, &legdPtr->titleStyle, x, y);
+    if (legdPtr->titleHeight > 0) {
+	y += legdPtr->titleHeight + legdPtr->yPad.side1;
     }
     count = 0;
     yStart = y;
@@ -1477,91 +1479,91 @@ Blt_DrawLegend(Graph *graphPtr, Drawable drawable)
 	if (elemPtr->label == NULL) {
 	    continue;			/* Skip this entry */
 	}
-	isSelected = EntryIsSelected(legPtr, elemPtr);
-	if (elemPtr->flags & LABEL_ACTIVE) {
+	isSelected = EntryIsSelected(legdPtr, elemPtr);
+	if (elemPtr == legdPtr->activePtr) {
 	    int x0, y0;
 
-	    Blt_Bg_GetOrigin(legPtr->activeBg, &x0, &y0);
-	    Blt_Bg_SetOrigin(tkwin, legPtr->activeBg, 
-		x0 - legPtr->x, y0 - legPtr->y);
-	    Blt_Ts_SetForeground(legPtr->style, legPtr->activeFgColor);
-	    Blt_Bg_FillRectangle(tkwin, pixmap, legPtr->activeBg, x, y, 
-		legPtr->entryWidth, legPtr->entryHeight, 
-		legPtr->entryBW, legPtr->activeRelief);
-	    Blt_Bg_SetOrigin(tkwin, legPtr->activeBg, x0, y0);
+	    Blt_Bg_GetOrigin(legdPtr->activeBg, &x0, &y0);
+	    Blt_Bg_SetOrigin(tkwin, legdPtr->activeBg, 
+		x0 - legdPtr->x, y0 - legdPtr->y);
+	    Blt_Ts_SetForeground(legdPtr->style, legdPtr->activeFgColor);
+	    Blt_Bg_FillRectangle(tkwin, pixmap, legdPtr->activeBg, x, y, 
+		legdPtr->entryWidth, legdPtr->entryHeight, 
+		legdPtr->entryBW, legdPtr->activeRelief);
+	    Blt_Bg_SetOrigin(tkwin, legdPtr->activeBg, x0, y0);
 	} else if (isSelected) {
 	    int x0, y0;
 	    Blt_Bg bg;
 	    XColor *fg;
 
-	    fg = (legPtr->flags & FOCUS) ?
-		legPtr->selInFocusFgColor : legPtr->selOutFocusFgColor;
-	    bg = (legPtr->flags & FOCUS) ?
-		    legPtr->selInFocusBg : legPtr->selOutFocusBg;
+	    fg = (legdPtr->flags & FOCUS) ?
+		legdPtr->selInFocusFgColor : legdPtr->selOutFocusFgColor;
+	    bg = (legdPtr->flags & FOCUS) ?
+		    legdPtr->selInFocusBg : legdPtr->selOutFocusBg;
 	    Blt_Bg_GetOrigin(bg, &x0, &y0);
-	    Blt_Bg_SetOrigin(tkwin, bg, x0 - legPtr->x, y0 - legPtr->y);
-	    Blt_Ts_SetForeground(legPtr->style, fg);
+	    Blt_Bg_SetOrigin(tkwin, bg, x0 - legdPtr->x, y0 - legdPtr->y);
+	    Blt_Ts_SetForeground(legdPtr->style, fg);
 	    Blt_Bg_FillRectangle(tkwin, pixmap, bg, x, y, 
-		legPtr->entryWidth, legPtr->entryHeight, 
-		legPtr->selBW, legPtr->selRelief);
+		legdPtr->entryWidth, legdPtr->entryHeight, 
+		legdPtr->selBW, legdPtr->selRelief);
 	    Blt_Bg_SetOrigin(tkwin, bg, x0, y0);
 	} else {
-	    Blt_Ts_SetForeground(legPtr->style, legPtr->fgColor);
+	    Blt_Ts_SetForeground(legdPtr->style, legdPtr->fgColor);
 	    if (elemPtr->legendRelief != TK_RELIEF_FLAT) {
 		Blt_Bg_FillRectangle(tkwin, pixmap, graphPtr->normalBg, 
-			x, y, legPtr->entryWidth, 
-			legPtr->entryHeight, legPtr->entryBW, 
+			x, y, legdPtr->entryWidth, 
+			legdPtr->entryHeight, legdPtr->entryBW, 
 			elemPtr->legendRelief);
 	    }
 	}
 	(*elemPtr->procsPtr->drawSymbolProc) (graphPtr, pixmap, elemPtr,
 		x + xSymbol, y + ySymbol, symbolSize);
-	Blt_DrawText(tkwin, pixmap, elemPtr->label, &legPtr->style, 
+	Blt_DrawText(tkwin, pixmap, elemPtr->label, &legdPtr->style, 
 		x + xLabel, 
-		y + legPtr->entryBW + legPtr->iyPad.side1);
+		y + legdPtr->entryBW + legdPtr->iyPad.side1);
 	count++;
-	if (legPtr->focusPtr == elemPtr) { /* Focus outline */
+	if (legdPtr->focusPtr == elemPtr) { /* Focus outline */
 	    if (isSelected) {
 		XColor *color;
 
-		color = (legPtr->flags & FOCUS) ?
-		    legPtr->selInFocusFgColor :
-		    legPtr->selOutFocusFgColor;
-		XSetForeground(graphPtr->display, legPtr->focusGC, 
+		color = (legdPtr->flags & FOCUS) ?
+		    legdPtr->selInFocusFgColor :
+		    legdPtr->selOutFocusFgColor;
+		XSetForeground(graphPtr->display, legdPtr->focusGC, 
 			       color->pixel);
 	    }
-	    XDrawRectangle(graphPtr->display, pixmap, legPtr->focusGC, 
-		x + 1, y + 1, legPtr->entryWidth - 3, 
-		legPtr->entryHeight - 3);
+	    XDrawRectangle(graphPtr->display, pixmap, legdPtr->focusGC, 
+		x + 1, y + 1, legdPtr->entryWidth - 3, 
+		legdPtr->entryHeight - 3);
 	    if (isSelected) {
-		XSetForeground(graphPtr->display, legPtr->focusGC, 
-			legPtr->focusColor->pixel);
+		XSetForeground(graphPtr->display, legdPtr->focusGC, 
+			legdPtr->focusColor->pixel);
 	    }
 	}
 	/* Check when to move to the next column */
-	if ((count % legPtr->numRows) > 0) {
-	    y += legPtr->entryHeight;
+	if ((count % legdPtr->numRows) > 0) {
+	    y += legdPtr->entryHeight;
 	} else {
-	    x += legPtr->entryWidth;
+	    x += legdPtr->entryWidth;
 	    y = yStart;
 	}
     }
     /*
      * Draw the border and/or background of the legend.
      */
-    bg = legPtr->normalBg;
+    bg = legdPtr->normalBg;
     if (bg == NULL) {
 	bg = graphPtr->normalBg;
     }
     /* Disable crosshairs before redisplaying to the screen */
-    if (legPtr->site & LEGEND_PLOTAREA_MASK) {
+    if (legdPtr->site & LEGEND_PLOTAREA_MASK) {
 	Blt_DisableCrosshairs(graphPtr);
     }
     Blt_Bg_DrawRectangle(tkwin, pixmap, bg, 0, 0, w, h, 
-	legPtr->borderWidth, legPtr->relief);
+	legdPtr->borderWidth, legdPtr->relief);
     XCopyArea(graphPtr->display, pixmap, drawable, graphPtr->drawGC, 0, 0, w, h,
-	legPtr->x, legPtr->y);
-    if (legPtr->site & LEGEND_PLOTAREA_MASK) {
+	legdPtr->x, legdPtr->y);
+    if (legdPtr->site & LEGEND_PLOTAREA_MASK) {
 	Blt_EnableCrosshairs(graphPtr);
     }
     Tk_FreePixmap(graphPtr->display, pixmap);
@@ -1578,7 +1580,7 @@ Blt_DrawLegend(Graph *graphPtr, Drawable drawable)
 void
 Blt_LegendToPostScript(Graph *graphPtr, Blt_Ps ps)
 {
-    Legend *legPtr = graphPtr->legend;
+    Legend *legdPtr = graphPtr->legend;
     double x, y, yStart;
     int xLabel, xSymbol, ySymbol;
     int count;
@@ -1587,48 +1589,48 @@ Blt_LegendToPostScript(Graph *graphPtr, Blt_Ps ps)
     int width, height;
     Blt_FontMetrics fontMetrics;
 
-    if ((legPtr->flags & HIDE) || (legPtr->numEntries == 0)) {
+    if ((legdPtr->flags & HIDE) || (legdPtr->numEntries == 0)) {
 	return;
     }
-    SetLegendOrigin(legPtr);
+    SetLegendOrigin(legdPtr);
 
-    x = legPtr->x, y = legPtr->y;
-    width = legPtr->width - PADDING(legPtr->xPad);
-    height = legPtr->height - PADDING(legPtr->yPad);
+    x = legdPtr->x, y = legdPtr->y;
+    width = legdPtr->width - PADDING(legdPtr->xPad);
+    height = legdPtr->height - PADDING(legdPtr->yPad);
 
     Blt_Ps_Append(ps, "% Legend\n");
-    graphPtr = legPtr->graphPtr;
+    graphPtr = legdPtr->graphPtr;
     if (graphPtr->pageSetup->flags & PS_DECORATIONS) {
-	if (legPtr->normalBg != NULL) {
+	if (legdPtr->normalBg != NULL) {
 	    Tk_3DBorder border;
 
-	    border = Blt_Bg_Border(legPtr->normalBg);
+	    border = Blt_Bg_Border(legdPtr->normalBg);
 	    Blt_Ps_Fill3DRectangle(ps, border, x, y, width, height, 
-		legPtr->borderWidth, legPtr->relief);
+		legdPtr->borderWidth, legdPtr->relief);
 	} else {
 	    Tk_3DBorder border;
 
 	    border = Blt_Bg_Border(graphPtr->normalBg);
 	    Blt_Ps_Draw3DRectangle(ps, border, x, y, width, height, 
-		legPtr->borderWidth, legPtr->relief);
+		legdPtr->borderWidth, legdPtr->relief);
 	}
     } else {
 	Blt_Ps_SetClearBackground(ps);
 	Blt_Ps_XFillRectangle(ps, x, y, width, height);
     }
-    Blt_Font_GetMetrics(legPtr->style.font, &fontMetrics);
+    Blt_Font_GetMetrics(legdPtr->style.font, &fontMetrics);
     symbolSize = fontMetrics.ascent;
-    xMid = symbolSize + 1 + legPtr->entryBW;
-    yMid = (symbolSize / 2) + 1 + legPtr->entryBW;
-    xLabel = 2 * symbolSize + legPtr->entryBW + legPtr->ixPad.side1 + 5;
-    xSymbol = xMid + legPtr->ixPad.side1;
-    ySymbol = yMid + legPtr->iyPad.side1;
+    xMid = symbolSize + 1 + legdPtr->entryBW;
+    yMid = (symbolSize / 2) + 1 + legdPtr->entryBW;
+    xLabel = 2 * symbolSize + legdPtr->entryBW + legdPtr->ixPad.side1 + 5;
+    xSymbol = xMid + legdPtr->ixPad.side1;
+    ySymbol = yMid + legdPtr->iyPad.side1;
 
-    x += legPtr->borderWidth;
-    y += legPtr->borderWidth;
-    Blt_Ps_DrawText(ps, legPtr->title, &legPtr->titleStyle, x, y);
-    if (legPtr->titleHeight > 0) {
-	y += legPtr->titleHeight + legPtr->yPad.side1;
+    x += legdPtr->borderWidth;
+    y += legdPtr->borderWidth;
+    Blt_Ps_DrawText(ps, legdPtr->title, &legdPtr->titleStyle, x, y);
+    if (legdPtr->titleHeight > 0) {
+	y += legdPtr->titleHeight + legdPtr->yPad.side1;
     }
 
     count = 0;
@@ -1641,34 +1643,34 @@ Blt_LegendToPostScript(Graph *graphPtr, Blt_Ps ps)
 	if (elemPtr->label == NULL) {
 	    continue;			/* Skip this label */
 	}
-	if (elemPtr->flags & LABEL_ACTIVE) {
+	if (elemPtr == legdPtr->activePtr) {
 	    Tk_3DBorder border;
 	    
-	    border = Blt_Bg_Border(legPtr->activeBg);
-	    Blt_Ts_SetForeground(legPtr->style, legPtr->activeFgColor);
-	    Blt_Ps_Fill3DRectangle(ps, border, x, y, legPtr->entryWidth, 
-		legPtr->entryHeight, legPtr->entryBW, 
-		legPtr->activeRelief);
+	    border = Blt_Bg_Border(legdPtr->activeBg);
+	    Blt_Ts_SetForeground(legdPtr->style, legdPtr->activeFgColor);
+	    Blt_Ps_Fill3DRectangle(ps, border, x, y, legdPtr->entryWidth, 
+		legdPtr->entryHeight, legdPtr->entryBW, 
+		legdPtr->activeRelief);
 	} else {
-	    Blt_Ts_SetForeground(legPtr->style, legPtr->fgColor);
+	    Blt_Ts_SetForeground(legdPtr->style, legdPtr->fgColor);
 	    if (elemPtr->legendRelief != TK_RELIEF_FLAT) {
 		Tk_3DBorder border;
 
 		border = Blt_Bg_Border(graphPtr->normalBg);
-		Blt_Ps_Draw3DRectangle(ps, border, x, y, legPtr->entryWidth,
-			legPtr->entryHeight, legPtr->entryBW, 
+		Blt_Ps_Draw3DRectangle(ps, border, x, y, legdPtr->entryWidth,
+			legdPtr->entryHeight, legdPtr->entryBW, 
 			elemPtr->legendRelief);
 	    }
 	}
 	(*elemPtr->procsPtr->printSymbolProc) (graphPtr, ps, elemPtr, 
 		x + xSymbol, y + ySymbol, symbolSize);
-	Blt_Ps_DrawText(ps, elemPtr->label, &legPtr->style, 
-		x + xLabel, y + legPtr->entryBW + legPtr->iyPad.side1);
+	Blt_Ps_DrawText(ps, elemPtr->label, &legdPtr->style, 
+		x + xLabel, y + legdPtr->entryBW + legdPtr->iyPad.side1);
 	count++;
-	if ((count % legPtr->numRows) > 0) {
-	    y += legPtr->entryHeight;
+	if ((count % legdPtr->numRows) > 0) {
+	    y += legdPtr->entryHeight;
 	} else {
-	    x += legPtr->entryWidth;
+	    x += legdPtr->entryWidth;
 	    y = yStart;
 	}
     }
@@ -1684,25 +1686,25 @@ Blt_LegendToPostScript(Graph *graphPtr, Blt_Ps ps)
 static void
 DisplayLegend(ClientData clientData)
 {
-    Legend *legPtr = clientData;
+    Legend *legdPtr = clientData;
     Graph *graphPtr;
 
-    legPtr->flags &= ~REDRAW_PENDING;
-    if (legPtr->tkwin == NULL) {
+    legdPtr->flags &= ~REDRAW_PENDING;
+    if (legdPtr->tkwin == NULL) {
 	return;				/* Window has been destroyed. */
     }
-    graphPtr = legPtr->graphPtr;
-    if (legPtr->site == LEGEND_WINDOW) {
+    graphPtr = legdPtr->graphPtr;
+    if (legdPtr->site == LEGEND_WINDOW) {
 	int w, h;
 
-	w = Tk_Width(legPtr->tkwin);
-	h = Tk_Height(legPtr->tkwin);
-	if ((w != legPtr->width) || (h != legPtr->height)) {
+	w = Tk_Width(legdPtr->tkwin);
+	h = Tk_Height(legdPtr->tkwin);
+	if ((w != legdPtr->width) || (h != legdPtr->height)) {
 	    Blt_MapLegend(graphPtr, w, h);
 	}
     }
-    if (Tk_IsMapped(legPtr->tkwin)) {
-	Blt_DrawLegend(graphPtr, Tk_WindowId(legPtr->tkwin));
+    if (Tk_IsMapped(legdPtr->tkwin)) {
+	Blt_DrawLegend(graphPtr, Tk_WindowId(legdPtr->tkwin));
     }
 }
 
@@ -1727,26 +1729,26 @@ Blt_ConfigureLegend(Graph *graphPtr)
     GC newGC;
     XGCValues gcValues;
     unsigned long gcMask;
-    Legend *legPtr;
+    Legend *legdPtr;
 
-    legPtr = graphPtr->legend;
+    legdPtr = graphPtr->legend;
     /* GC for active label. Dashed outline. */
     gcMask = GCForeground | GCLineStyle;
-    gcValues.foreground = legPtr->focusColor->pixel;
-    gcValues.line_style = (LineIsDashed(legPtr->focusDashes))
+    gcValues.foreground = legdPtr->focusColor->pixel;
+    gcValues.line_style = (LineIsDashed(legdPtr->focusDashes))
 	? LineOnOffDash : LineSolid;
-    newGC = Blt_GetPrivateGC(legPtr->tkwin, gcMask, &gcValues);
-    if (LineIsDashed(legPtr->focusDashes)) {
-	legPtr->focusDashes.offset = 2;
-	Blt_SetDashes(graphPtr->display, newGC, &legPtr->focusDashes);
+    newGC = Blt_GetPrivateGC(legdPtr->tkwin, gcMask, &gcValues);
+    if (LineIsDashed(legdPtr->focusDashes)) {
+	legdPtr->focusDashes.offset = 2;
+	Blt_SetDashes(graphPtr->display, newGC, &legdPtr->focusDashes);
     }
-    if (legPtr->focusGC != NULL) {
-	Blt_FreePrivateGC(graphPtr->display, legPtr->focusGC);
+    if (legdPtr->focusGC != NULL) {
+	Blt_FreePrivateGC(graphPtr->display, legdPtr->focusGC);
     }
-    legPtr->focusGC = newGC;
+    legdPtr->focusGC = newGC;
     
-    if (legPtr->cmdObjPtr != NULL) {
-	EventuallyInvokeChangeCmd(legPtr);
+    if (legdPtr->cmdObjPtr != NULL) {
+	EventuallyInvokeChangeCmd(legdPtr);
     }
     /*
      *  Update the layout of the graph (and redraw the elements) if any of
@@ -1764,7 +1766,7 @@ Blt_ConfigureLegend(Graph *graphPtr)
      *  position, also indicate that a new layout is needed.
      *
      */
-    if (legPtr->site == LEGEND_WINDOW) {
+    if (legdPtr->site == LEGEND_WINDOW) {
 	Blt_Legend_EventuallyRedraw(graphPtr);
     } else if (Blt_ConfigModified(configSpecs, "-*border*", "-*pad?",
 	"-hide", "-font", "-rows", (char *)NULL)) {
@@ -1790,42 +1792,42 @@ Blt_ConfigureLegend(Graph *graphPtr)
 void
 Blt_DestroyLegend(Graph *graphPtr)
 {
-    Legend *legPtr = graphPtr->legend;
+    Legend *legdPtr = graphPtr->legend;
 
     if (graphPtr->legend == NULL) {
 	return;
     }
 
-    Blt_FreeOptions(configSpecs, (char *)legPtr, graphPtr->display, 0);
-    Blt_Ts_FreeStyle(graphPtr->display, &legPtr->style);
-    Blt_Ts_FreeStyle(graphPtr->display, &legPtr->titleStyle);
-    Blt_DestroyBindingTable(legPtr->bindTable);
+    Blt_FreeOptions(configSpecs, (char *)legdPtr, graphPtr->display, 0);
+    Blt_Ts_FreeStyle(graphPtr->display, &legdPtr->style);
+    Blt_Ts_FreeStyle(graphPtr->display, &legdPtr->titleStyle);
+    Blt_DestroyBindingTable(legdPtr->bindTable);
     
-    if (legPtr->focusGC != NULL) {
-	Blt_FreePrivateGC(graphPtr->display, legPtr->focusGC);
+    if (legdPtr->focusGC != NULL) {
+	Blt_FreePrivateGC(graphPtr->display, legdPtr->focusGC);
     }
-    if (legPtr->timerToken != NULL) {
-	Tcl_DeleteTimerHandler(legPtr->timerToken);
+    if (legdPtr->timerToken != NULL) {
+	Tcl_DeleteTimerHandler(legdPtr->timerToken);
     }
-    if (legPtr->tkwin != NULL) {
-	Tk_DeleteSelHandler(legPtr->tkwin, XA_PRIMARY, XA_STRING);
+    if (legdPtr->tkwin != NULL) {
+	Tk_DeleteSelHandler(legdPtr->tkwin, XA_PRIMARY, XA_STRING);
     }
-    if (legPtr->selected != NULL) {
-	Blt_Chain_Destroy(legPtr->selected);
+    if (legdPtr->selected != NULL) {
+	Blt_Chain_Destroy(legdPtr->selected);
     }
-    if (legPtr->site == LEGEND_WINDOW) {
+    if (legdPtr->site == LEGEND_WINDOW) {
 	Tk_Window tkwin;
 	
 	/* The graph may be in the process of being torn down */
-	if (legPtr->cmdToken != NULL) {
-	    Tcl_DeleteCommandFromToken(graphPtr->interp, legPtr->cmdToken);
+	if (legdPtr->cmdToken != NULL) {
+	    Tcl_DeleteCommandFromToken(graphPtr->interp, legdPtr->cmdToken);
 	}
-	if (legPtr->flags & REDRAW_PENDING) {
-	    Tcl_CancelIdleCall(DisplayLegend, legPtr);
-	    legPtr->flags &= ~REDRAW_PENDING;
+	if (legdPtr->flags & REDRAW_PENDING) {
+	    Tcl_CancelIdleCall(DisplayLegend, legdPtr);
+	    legdPtr->flags &= ~REDRAW_PENDING;
 	}
-	tkwin = legPtr->tkwin;
-	legPtr->tkwin = NULL;
+	tkwin = legdPtr->tkwin;
+	legdPtr->tkwin = NULL;
 	if (tkwin != NULL) {
 	    Tk_DeleteEventHandler(tkwin, ExposureMask | StructureNotifyMask,
 		LegendEventProc, graphPtr);
@@ -1833,7 +1835,7 @@ Blt_DestroyLegend(Graph *graphPtr)
 	    Tk_DestroyWindow(tkwin);
 	}
     }
-    Blt_Free(legPtr);
+    Blt_Free(legdPtr);
 }
 
 /*
@@ -1852,44 +1854,44 @@ Blt_DestroyLegend(Graph *graphPtr)
 int
 Blt_CreateLegend(Graph *graphPtr)
 {
-    Legend *legPtr;
+    Legend *legdPtr;
 
-    legPtr = Blt_AssertCalloc(1, sizeof(Legend));
-    graphPtr->legend = legPtr;
-    legPtr->graphPtr = graphPtr;
-    legPtr->tkwin = graphPtr->tkwin;
-    legPtr->xReq = legPtr->yReq = -SHRT_MAX;
-    legPtr->relief = TK_RELIEF_SUNKEN;
-    legPtr->activeRelief = TK_RELIEF_FLAT;
-    legPtr->entryBW = 2;
-    legPtr->borderWidth = 2;
-    legPtr->ixPad.side1 = legPtr->ixPad.side2 = 1;
-    legPtr->iyPad.side1 = legPtr->iyPad.side2 = 1;
-    legPtr->xPad.side1  = legPtr->xPad.side2  = 1;
-    legPtr->yPad.side1  = legPtr->yPad.side2  = 1;
-    legPtr->anchor = TK_ANCHOR_N;
-    legPtr->site = LEGEND_RIGHT;
-    legPtr->selMode = SELECT_MODE_MULTIPLE;
-    Blt_Ts_InitStyle(legPtr->style);
-    Blt_Ts_InitStyle(legPtr->titleStyle);
-    legPtr->style.justify = TK_JUSTIFY_LEFT;
-    legPtr->style.anchor = TK_ANCHOR_NW;
-    legPtr->titleStyle.justify = TK_JUSTIFY_LEFT;
-    legPtr->titleStyle.anchor = TK_ANCHOR_NW;
-    legPtr->bindTable = Blt_CreateBindingTable(graphPtr->interp,
+    legdPtr = Blt_AssertCalloc(1, sizeof(Legend));
+    graphPtr->legend = legdPtr;
+    legdPtr->graphPtr = graphPtr;
+    legdPtr->tkwin = graphPtr->tkwin;
+    legdPtr->xReq = legdPtr->yReq = -SHRT_MAX;
+    legdPtr->relief = TK_RELIEF_SUNKEN;
+    legdPtr->activeRelief = TK_RELIEF_FLAT;
+    legdPtr->entryBW = 2;
+    legdPtr->borderWidth = 2;
+    legdPtr->ixPad.side1 = legdPtr->ixPad.side2 = 1;
+    legdPtr->iyPad.side1 = legdPtr->iyPad.side2 = 1;
+    legdPtr->xPad.side1  = legdPtr->xPad.side2  = 1;
+    legdPtr->yPad.side1  = legdPtr->yPad.side2  = 1;
+    legdPtr->anchor = TK_ANCHOR_N;
+    legdPtr->site = LEGEND_RIGHT;
+    legdPtr->selMode = SELECT_MODE_MULTIPLE;
+    Blt_Ts_InitStyle(legdPtr->style);
+    Blt_Ts_InitStyle(legdPtr->titleStyle);
+    legdPtr->style.justify = TK_JUSTIFY_LEFT;
+    legdPtr->style.anchor = TK_ANCHOR_NW;
+    legdPtr->titleStyle.justify = TK_JUSTIFY_LEFT;
+    legdPtr->titleStyle.anchor = TK_ANCHOR_NW;
+    legdPtr->bindTable = Blt_CreateBindingTable(graphPtr->interp,
 	graphPtr->tkwin, graphPtr, PickEntryProc, Blt_GraphTags);
 
-    Blt_InitHashTable(&legPtr->selTable, BLT_ONE_WORD_KEYS);
-    legPtr->selected = Blt_Chain_Create();
-    Tk_CreateSelHandler(legPtr->tkwin, XA_PRIMARY, XA_STRING, 
-	SelectionProc, legPtr, XA_STRING);
-    legPtr->selRelief = TK_RELIEF_FLAT;
-    legPtr->selBW = 1;
-    legPtr->onTime = 600;
-    legPtr->offTime = 300;
+    Blt_InitHashTable(&legdPtr->selTable, BLT_ONE_WORD_KEYS);
+    legdPtr->selected = Blt_Chain_Create();
+    Tk_CreateSelHandler(legdPtr->tkwin, XA_PRIMARY, XA_STRING, 
+	SelectionProc, legdPtr, XA_STRING);
+    legdPtr->selRelief = TK_RELIEF_FLAT;
+    legdPtr->selBW = 1;
+    legdPtr->onTime = 600;
+    legdPtr->offTime = 300;
     if (Blt_ConfigureComponentFromObj(graphPtr->interp, graphPtr->tkwin,
 	    "legend", "Legend", configSpecs, 0, (Tcl_Obj **)NULL,
-	    (char *)legPtr, 0) != TCL_OK) {
+	    (char *)legdPtr, 0) != TCL_OK) {
 	return TCL_ERROR;
     }
     Blt_ConfigureLegend(graphPtr);
@@ -2041,50 +2043,50 @@ static int
 GetElementFromObj(Graph *graphPtr, Tcl_Obj *objPtr, Element **elemPtrPtr)
 {
     Element *elemPtr;
-    Legend *legPtr;
+    Legend *legdPtr;
     Tcl_Interp *interp;
     char c;
     const char *string;
 
-    legPtr = graphPtr->legend;
+    legdPtr = graphPtr->legend;
     interp = graphPtr->interp;
     string = Tcl_GetString(objPtr);
     c = string[0];
     elemPtr = NULL;
 
     if ((c == 'a') && (strcmp(string, "anchor") == 0)) {
-	elemPtr = legPtr->selAnchorPtr;
+	elemPtr = legdPtr->selAnchorPtr;
     } else if ((c == 'c') && (strcmp(string, "current") == 0)) {
 	GraphObj *objPtr;
 
-	objPtr = Blt_GetCurrentItem(legPtr->bindTable);
+	objPtr = Blt_GetCurrentItem(legdPtr->bindTable);
 	if ((objPtr != NULL) && (!objPtr->deleted)) {
 	    elemPtr = (Element *)objPtr;
 	}
     } else if ((c == 'f') && (strcmp(string, "first") == 0)) {
 	elemPtr = GetFirstElement(graphPtr);
     } else if ((c == 'f') && (strcmp(string, "focus") == 0)) {
-	elemPtr = legPtr->focusPtr;
+	elemPtr = legdPtr->focusPtr;
     } else if ((c == 'l') && (strcmp(string, "last") == 0)) {
 	elemPtr = GetLastElement(graphPtr);
     } else if ((c == 'e') && (strcmp(string, "end") == 0)) {
 	elemPtr = GetLastElement(graphPtr);
     } else if ((c == 'n') && (strcmp(string, "next.row") == 0)) {
-	elemPtr = GetNextRow(graphPtr, legPtr->focusPtr);
+	elemPtr = GetNextRow(graphPtr, legdPtr->focusPtr);
     } else if ((c == 'n') && (strcmp(string, "next.column") == 0)) {
-	elemPtr = GetNextColumn(graphPtr, legPtr->focusPtr);
+	elemPtr = GetNextColumn(graphPtr, legdPtr->focusPtr);
     } else if ((c == 'p') && (strcmp(string, "previous.row") == 0)) {
-	elemPtr = GetPreviousRow(graphPtr, legPtr->focusPtr);
+	elemPtr = GetPreviousRow(graphPtr, legdPtr->focusPtr);
     } else if ((c == 'p') && (strcmp(string, "previous.column") == 0)) {
-	elemPtr = GetPreviousColumn(graphPtr, legPtr->focusPtr);
+	elemPtr = GetPreviousColumn(graphPtr, legdPtr->focusPtr);
     } else if ((c == 's') && (strcmp(string, "sel.first") == 0)) {
-	elemPtr = legPtr->selFirstPtr;
+	elemPtr = legdPtr->selFirstPtr;
     } else if ((c == 's') && (strcmp(string, "sel.last") == 0)) {
-	elemPtr = legPtr->selLastPtr;
+	elemPtr = legdPtr->selLastPtr;
     } else if (c == '@') {
 	int x, y;
 
-	if (Blt_GetXY(interp, legPtr->tkwin, string, &x, &y) != TCL_OK) {
+	if (Blt_GetXY(interp, legdPtr->tkwin, string, &x, &y) != TCL_OK) {
 	    return TCL_ERROR;
 	}
 	elemPtr = (Element *)PickEntryProc(graphPtr, x, y, NULL);
@@ -2119,7 +2121,7 @@ GetElementFromObj(Graph *graphPtr, Tcl_Obj *objPtr, Element **elemPtrPtr)
  *---------------------------------------------------------------------------
  */
 static int
-SelectRange(Legend *legPtr, Element *fromPtr, Element *toPtr)
+SelectRange(Legend *legdPtr, Element *fromPtr, Element *toPtr)
 {
 
     if (Blt_Chain_IsBefore(fromPtr->link, toPtr->link)) {
@@ -2130,7 +2132,7 @@ SelectRange(Legend *legPtr, Element *fromPtr, Element *toPtr)
 	    Element *elemPtr;
 	    
 	    elemPtr = Blt_Chain_GetValue(link);
-	    SelectEntry(legPtr, elemPtr);
+	    SelectEntry(legdPtr, elemPtr);
 	    if (link == toPtr->link) {
 		break;
 	    }
@@ -2143,7 +2145,7 @@ SelectRange(Legend *legPtr, Element *fromPtr, Element *toPtr)
 	    Element *elemPtr;
 	    
 	    elemPtr = Blt_Chain_GetValue(link);
-	    SelectEntry(legPtr, elemPtr);
+	    SelectEntry(legdPtr, elemPtr);
 	    if (link == toPtr->link) {
 		break;
 	    }
@@ -2171,32 +2173,32 @@ SelectRange(Legend *legPtr, Element *fromPtr, Element *toPtr)
  *---------------------------------------------------------------------------
  */
 static int
-SelectText(Legend *legPtr, Element *elemPtr)
+SelectText(Legend *legdPtr, Element *elemPtr)
 {
     Element *firstPtr, *lastPtr;
-    Graph *graphPtr = legPtr->graphPtr;
+    Graph *graphPtr = legdPtr->graphPtr;
 
     /* Grab the selection if we don't own it already. */
-    if ((legPtr->flags&SELECT_EXPORT) && (legPtr->selFirstPtr == NULL)) {
-	Tk_OwnSelection(legPtr->tkwin, XA_PRIMARY, LostSelectionProc, 
-		legPtr);
+    if ((legdPtr->flags&SELECT_EXPORT) && (legdPtr->selFirstPtr == NULL)) {
+	Tk_OwnSelection(legdPtr->tkwin, XA_PRIMARY, LostSelectionProc, 
+		legdPtr);
     }
     /* If the anchor hasn't been set, assume the beginning of the legend. */
-    if (legPtr->selAnchorPtr == NULL) {
-	legPtr->selAnchorPtr = GetFirstElement(graphPtr);
+    if (legdPtr->selAnchorPtr == NULL) {
+	legdPtr->selAnchorPtr = GetFirstElement(graphPtr);
     }
-    if (legPtr->selAnchorPtr != elemPtr) {
-	firstPtr = legPtr->selAnchorPtr;
+    if (legdPtr->selAnchorPtr != elemPtr) {
+	firstPtr = legdPtr->selAnchorPtr;
 	lastPtr = elemPtr;
     } else {
 	firstPtr = elemPtr;
-	lastPtr = legPtr->selAnchorPtr;
+	lastPtr = legdPtr->selAnchorPtr;
     }
-    if ((legPtr->selFirstPtr != firstPtr) || 
-	(legPtr->selLastPtr != lastPtr)) {
-	legPtr->selFirstPtr = firstPtr;
-	legPtr->selLastPtr = lastPtr;
-	SelectRange(legPtr, firstPtr, lastPtr);
+    if ((legdPtr->selFirstPtr != firstPtr) || 
+	(legdPtr->selLastPtr != lastPtr)) {
+	legdPtr->selFirstPtr = firstPtr;
+	legdPtr->selLastPtr = lastPtr;
+	SelectRange(legdPtr, firstPtr, lastPtr);
 	Blt_Legend_EventuallyRedraw(graphPtr);
     }
     return TCL_OK;
@@ -2208,86 +2210,45 @@ SelectText(Legend *legPtr, Element *elemPtr)
  *
  * ActivateOp --
  *
- * 	Activates a particular label in the legend.
+ * 	Activates a one label in the legend.
  *
  * Results:
  *	A standard TCL result.
  *
  * Side Effects:
- *	Graph will be redrawn to reflect the new legend attributes.
+ *	Graph will be redrawn.
+ *
+ *	.g legend activate $elem
  *
  *---------------------------------------------------------------------------
  */
 static int
 ActivateOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 {
-    Legend *legPtr = graphPtr->legend;
-    unsigned int active, redraw;
-    const char *string;
-    int i;
+    Legend *legdPtr = graphPtr->legend;
 
-    string = Tcl_GetString(objv[2]);
-    active = (string[0] == 'a') ? LABEL_ACTIVE : 0;
-    redraw = FALSE;
-    for (i = 3; i < objc; i++) {
-	Blt_ChainLink link;
-	const char *pattern;
+    if (objc == 4) {
+	Element *elemPtr;
 
-	pattern = Tcl_GetString(objv[i]);
-	for (link = Blt_Chain_FirstLink(graphPtr->elements.displayList); 
-	     link != NULL; link = Blt_Chain_NextLink(link)) {
-	    Element *elemPtr;
-	
-	    elemPtr = Blt_Chain_GetValue(link);
-	    if (Tcl_StringMatch(elemPtr->obj.name, pattern)) {
-		if (active) {
-		    if ((elemPtr->flags & LABEL_ACTIVE) == 0) {
-			elemPtr->flags |= LABEL_ACTIVE;
-			redraw = TRUE;
-		    }
+	if (Blt_GetElement(interp, graphPtr, objv[3], &elemPtr) != TCL_OK) {
+	    return TCL_ERROR;
+	}
+	if ((elemPtr != NULL) && (elemPtr != legdPtr->activePtr)) {
+	    legdPtr->activePtr = elemPtr;
+	    if ((legdPtr->flags & HIDE) == 0) {
+		if ((legdPtr->site != LEGEND_WINDOW) && 
+		    (graphPtr->flags & REDRAW_PENDING)) {
+		    graphPtr->flags |= CACHE_DIRTY;
+		    graphPtr->flags |= REDRAW_WORLD; /* Redraw entire graph. */
 		} else {
-		    if (elemPtr->flags & LABEL_ACTIVE) {
-			elemPtr->flags &= ~LABEL_ACTIVE;
-			redraw = TRUE;
-		    }
+		    Blt_Legend_EventuallyRedraw(graphPtr);
 		}
 	    }
 	}
     }
-    if ((redraw) && ((legPtr->flags & HIDE) == 0)) {
-	/*
-	 * See if how much we need to draw. If the graph is already scheduled
-	 * for a redraw, just make sure the right flags are set.  Otherwise
-	 * redraw only the legend: it's either in an external window or it's
-	 * the only thing that need updating.
-	 */
-	if ((legPtr->site != LEGEND_WINDOW) && 
-	    (graphPtr->flags & REDRAW_PENDING)) {
-	    graphPtr->flags |= CACHE_DIRTY;
-	    graphPtr->flags |= REDRAW_WORLD; /* Redraw entire graph. */
-	} else {
-	    Blt_Legend_EventuallyRedraw(graphPtr);
-	}
-    }
-    {
-	Blt_ChainLink link;
-	Tcl_Obj *listObjPtr;
-	
-	listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
-	/* List active elements in stacking order. */
-	for (link = Blt_Chain_FirstLink(graphPtr->elements.displayList); 
-	     link != NULL; link = Blt_Chain_NextLink(link)) {
-	    Element *elemPtr;
-
-	    elemPtr = Blt_Chain_GetValue(link);
-	    if (elemPtr->flags & LABEL_ACTIVE) {
-		Tcl_Obj *objPtr;
-
-		objPtr = Tcl_NewStringObj(elemPtr->obj.name, -1);
-		Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-	    }
-	}
-	Tcl_SetObjResult(interp, listObjPtr);
+    if (legdPtr->activePtr != NULL) {
+	Tcl_SetStringObj(Tcl_GetObjResult(interp), 
+			 legdPtr->activePtr->obj.name, -1);
     }
     return TCL_OK;
 }
@@ -2370,18 +2331,18 @@ static int
 ConfigureOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 {
     int flags = BLT_CONFIG_OBJV_ONLY;
-    Legend *legPtr;
+    Legend *legdPtr;
 
-    legPtr = graphPtr->legend;
+    legdPtr = graphPtr->legend;
     if (objc == 3) {
 	return Blt_ConfigureInfoFromObj(interp, graphPtr->tkwin, configSpecs,
-		(char *)legPtr, (Tcl_Obj *)NULL, flags);
+		(char *)legdPtr, (Tcl_Obj *)NULL, flags);
     } else if (objc == 4) {
 	return Blt_ConfigureInfoFromObj(interp, graphPtr->tkwin, configSpecs,
-		(char *)legPtr, objv[3], flags);
+		(char *)legdPtr, objv[3], flags);
     }
     if (Blt_ConfigureWidgetFromObj(interp, graphPtr->tkwin, configSpecs, 
-		objc - 3, objv + 3, (char *)legPtr, flags) != TCL_OK) {
+		objc - 3, objv + 3, (char *)legdPtr, flags) != TCL_OK) {
 	return TCL_ERROR;
     }
     Blt_ConfigureLegend(graphPtr);
@@ -2394,14 +2355,14 @@ static int
 CurselectionOp(Graph *graphPtr, Tcl_Interp *interp, int objc, 
 	       Tcl_Obj *const *objv)
 {
-    Legend *legPtr = graphPtr->legend;
+    Legend *legdPtr = graphPtr->legend;
     Tcl_Obj *listObjPtr;
 
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
-    if (legPtr->flags & SELECT_SORTED) {
+    if (legdPtr->flags & SELECT_SORTED) {
 	Blt_ChainLink link;
 
-	for (link = Blt_Chain_FirstLink(legPtr->selected); link != NULL;
+	for (link = Blt_Chain_FirstLink(legdPtr->selected); link != NULL;
 	     link = Blt_Chain_NextLink(link)) {
 	    Element *elemPtr;
 	    Tcl_Obj *objPtr;
@@ -2420,7 +2381,7 @@ CurselectionOp(Graph *graphPtr, Tcl_Interp *interp, int objc,
 
 	    elemPtr = Blt_Chain_GetValue(link);
 
-	    if (EntryIsSelected(legPtr, elemPtr)) {
+	    if (EntryIsSelected(legdPtr, elemPtr)) {
 		Tcl_Obj *objPtr;
 
 		objPtr = Tcl_NewStringObj(elemPtr->obj.name, -1);
@@ -2432,11 +2393,49 @@ CurselectionOp(Graph *graphPtr, Tcl_Interp *interp, int objc,
     return TCL_OK;
 }
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * DeactivateOp --
+ *
+ * 	Deactivates all labels in the legend.
+ *
+ * Results:
+ *	A standard TCL result.
+ *
+ * Side Effects:
+ *	Graph will be redrawn.
+ *
+ *	.g legend deactivate 
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+DeactivateOp(Graph *graphPtr, Tcl_Interp *interp, int objc, 
+	     Tcl_Obj *const *objv)
+{
+    Legend *legdPtr = graphPtr->legend;
+
+    if (legdPtr->activePtr != NULL) {
+	legdPtr->activePtr = NULL;
+	if ((legdPtr->flags & HIDE) == 0) {
+	    if ((legdPtr->site != LEGEND_WINDOW) && 
+		(graphPtr->flags & REDRAW_PENDING)) {
+		graphPtr->flags |= CACHE_DIRTY;
+		graphPtr->flags |= REDRAW_WORLD; /* Redraw entire graph. */
+	    } else {
+		Blt_Legend_EventuallyRedraw(graphPtr);
+	    }
+	}
+    }
+    return TCL_OK;
+}
+
 /*ARGSUSED*/
 static int
 FocusOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 {
-    Legend *legPtr = graphPtr->legend;
+    Legend *legdPtr = graphPtr->legend;
 
     if (objc == 4) {
 	Element *elemPtr;
@@ -2444,18 +2443,18 @@ FocusOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	if (GetElementFromObj(graphPtr, objv[3], &elemPtr) != TCL_OK) {
 	    return TCL_ERROR;
 	}
-	if ((elemPtr != NULL) && (elemPtr != legPtr->focusPtr)) {
+	if ((elemPtr != NULL) && (elemPtr != legdPtr->focusPtr)) {
 	    /* Changing focus can only affect the visible entries.  The entry
 	     * layout stays the same. */
-	    legPtr->focusPtr = elemPtr;
+	    legdPtr->focusPtr = elemPtr;
 	}
-	Blt_SetFocusItem(legPtr->bindTable, legPtr->focusPtr, 
+	Blt_SetFocusItem(legdPtr->bindTable, legdPtr->focusPtr, 
 			 CID_LEGEND_ENTRY);
 	Blt_Legend_EventuallyRedraw(graphPtr);
     }
-    if (legPtr->focusPtr != NULL) {
+    if (legdPtr->focusPtr != NULL) {
 	Tcl_SetStringObj(Tcl_GetObjResult(interp), 
-		legPtr->focusPtr->obj.name, -1);
+		legdPtr->focusPtr->obj.name, -1);
     }
     return TCL_OK;
 }
@@ -2482,9 +2481,9 @@ FocusOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 static int
 GetOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 {
-    Legend *legPtr = graphPtr->legend;
+    Legend *legdPtr = graphPtr->legend;
 
-    if (((legPtr->flags & HIDE) == 0) && (legPtr->numEntries > 0)) {
+    if (((legdPtr->flags & HIDE) == 0) && (legdPtr->numEntries > 0)) {
 	Element *elemPtr;
 
 	if (GetElementFromObj(graphPtr, objv[3], &elemPtr) != TCL_OK) {
@@ -2525,7 +2524,7 @@ IconOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 {
     Blt_Picture picture;
     Element *elemPtr;
-    Legend *legPtr = graphPtr->legend;
+    Legend *legdPtr = graphPtr->legend;
     Pixmap pixmap;
     Blt_FontMetrics fontMetrics;
     Tk_PhotoHandle photo;
@@ -2548,10 +2547,10 @@ IconOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     } else {
 	return TCL_ERROR;
     }
-    Blt_Font_GetMetrics(legPtr->style.font, &fontMetrics);
+    Blt_Font_GetMetrics(legdPtr->style.font, &fontMetrics);
     s = fontMetrics.ascent;
-    h = s + PADDING(legPtr->iyPad) + 1;
-    w = s + s + 1 + PADDING(legPtr->ixPad);
+    h = s + PADDING(legdPtr->iyPad) + 1;
+    w = s + s + 1 + PADDING(legdPtr->ixPad);
     x = (w / 2);
     y = (h / 2);
     
@@ -2624,7 +2623,7 @@ static int
 SelectionAnchorOp(Graph *graphPtr, Tcl_Interp *interp, int objc, 
 		  Tcl_Obj *const *objv)
 {
-    Legend *legPtr = graphPtr->legend;
+    Legend *legdPtr = graphPtr->legend;
     Element *elemPtr;
 
     if (GetElementFromObj(graphPtr, objv[4], &elemPtr) != TCL_OK) {
@@ -2632,8 +2631,8 @@ SelectionAnchorOp(Graph *graphPtr, Tcl_Interp *interp, int objc,
     }
     /* Set both the anchor and the mark. Indicates that a single entry
      * is selected. */
-    legPtr->selAnchorPtr = elemPtr;
-    legPtr->selMarkPtr = NULL;
+    legdPtr->selAnchorPtr = elemPtr;
+    legdPtr->selMarkPtr = NULL;
     if (elemPtr != NULL) {
 	Tcl_SetStringObj(Tcl_GetObjResult(interp), elemPtr->obj.name, -1);
     }
@@ -2662,9 +2661,9 @@ static int
 SelectionClearallOp(Graph *graphPtr, Tcl_Interp *interp, int objc,
 		    Tcl_Obj *const *objv)
 {
-    Legend *legPtr = graphPtr->legend;
+    Legend *legdPtr = graphPtr->legend;
 
-    ClearSelection(legPtr);
+    ClearSelection(legdPtr);
     return TCL_OK;
 }
 
@@ -2689,14 +2688,14 @@ static int
 SelectionIncludesOp(Graph *graphPtr, Tcl_Interp *interp, int objc,
 		    Tcl_Obj *const *objv)
 {
-    Legend *legPtr = graphPtr->legend;
+    Legend *legdPtr = graphPtr->legend;
     Element *elemPtr;
     int bool;
 
     if (GetElementFromObj(graphPtr, objv[4], &elemPtr) != TCL_OK) {
 	return TCL_ERROR;
     }
-    bool = EntryIsSelected(legPtr, elemPtr);
+    bool = EntryIsSelected(legdPtr, elemPtr);
     Tcl_SetBooleanObj(Tcl_GetObjResult(interp), bool);
     return TCL_OK;
 }
@@ -2724,41 +2723,41 @@ static int
 SelectionMarkOp(Graph *graphPtr, Tcl_Interp *interp, int objc,
 		Tcl_Obj *const *objv)
 {
-    Legend *legPtr = graphPtr->legend;
+    Legend *legdPtr = graphPtr->legend;
     Element *elemPtr;
 
     if (GetElementFromObj(graphPtr, objv[4], &elemPtr) != TCL_OK) {
 	return TCL_ERROR;
     }
-    if (legPtr->selAnchorPtr == NULL) {
+    if (legdPtr->selAnchorPtr == NULL) {
 	Tcl_AppendResult(interp, "selection anchor must be set first", 
 		 (char *)NULL);
 	return TCL_ERROR;
     }
-    if (legPtr->selMarkPtr != elemPtr) {
+    if (legdPtr->selMarkPtr != elemPtr) {
 	Blt_ChainLink link, next;
 
 	/* Deselect entry from the list all the way back to the anchor. */
-	for (link = Blt_Chain_LastLink(legPtr->selected); link != NULL; 
+	for (link = Blt_Chain_LastLink(legdPtr->selected); link != NULL; 
 	     link = next) {
 	    Element *selectPtr;
 
 	    next = Blt_Chain_PrevLink(link);
 	    selectPtr = Blt_Chain_GetValue(link);
-	    if (selectPtr == legPtr->selAnchorPtr) {
+	    if (selectPtr == legdPtr->selAnchorPtr) {
 		break;
 	    }
-	    DeselectElement(legPtr, selectPtr);
+	    DeselectElement(legdPtr, selectPtr);
 	}
-	legPtr->flags &= ~SELECT_MASK;
-	legPtr->flags |= SELECT_SET;
-	SelectRange(legPtr, legPtr->selAnchorPtr, elemPtr);
+	legdPtr->flags &= ~SELECT_MASK;
+	legdPtr->flags |= SELECT_SET;
+	SelectRange(legdPtr, legdPtr->selAnchorPtr, elemPtr);
 	Tcl_SetStringObj(Tcl_GetObjResult(interp), elemPtr->obj.name, -1);
-	legPtr->selMarkPtr = elemPtr;
+	legdPtr->selMarkPtr = elemPtr;
 
 	Blt_Legend_EventuallyRedraw(graphPtr);
-	if (legPtr->selCmdObjPtr != NULL) {
-	    EventuallyInvokeSelectCmd(legPtr);
+	if (legdPtr->selCmdObjPtr != NULL) {
+	    EventuallyInvokeSelectCmd(legdPtr);
 	}
     }
     return TCL_OK;
@@ -2782,10 +2781,10 @@ static int
 SelectionPresentOp(Graph *graphPtr, Tcl_Interp *interp, int objc,
 		   Tcl_Obj *const *objv)
 {
-    Legend *legPtr = graphPtr->legend;
+    Legend *legdPtr = graphPtr->legend;
     int bool;
 
-    bool = (Blt_Chain_GetLength(legPtr->selected) > 0);
+    bool = (Blt_Chain_GetLength(legdPtr->selected) > 0);
     Tcl_SetBooleanObj(Tcl_GetObjResult(interp), bool);
     return TCL_OK;
 }
@@ -2814,27 +2813,27 @@ static int
 SelectionSetOp(Graph *graphPtr, Tcl_Interp *interp, int objc, 
 	       Tcl_Obj *const *objv)
 {
-    Legend *legPtr = graphPtr->legend;
+    Legend *legdPtr = graphPtr->legend;
     Element *firstPtr, *lastPtr;
     const char *string;
 
-    legPtr->flags &= ~SELECT_MASK;
+    legdPtr->flags &= ~SELECT_MASK;
     string = Tcl_GetString(objv[3]);
     switch (string[0]) {
     case 's':
-	legPtr->flags |= SELECT_SET;
+	legdPtr->flags |= SELECT_SET;
 	break;
     case 'c':
-	legPtr->flags |= SELECT_CLEAR;
+	legdPtr->flags |= SELECT_CLEAR;
 	break;
     case 't':
-	legPtr->flags |= SELECT_TOGGLE;
+	legdPtr->flags |= SELECT_TOGGLE;
 	break;
     }
     if (GetElementFromObj(graphPtr, objv[4], &firstPtr) != TCL_OK) {
 	return TCL_ERROR;
     }
-    if ((firstPtr->flags & HIDE) && ((legPtr->flags & SELECT_CLEAR)==0)) {
+    if ((firstPtr->flags & HIDE) && ((legdPtr->flags & SELECT_CLEAR)==0)) {
 	Tcl_AppendResult(interp, "can't select hidden node \"", 
 		Tcl_GetString(objv[4]), "\"", (char *)NULL);
 	return TCL_ERROR;
@@ -2845,29 +2844,29 @@ SelectionSetOp(Graph *graphPtr, Tcl_Interp *interp, int objc,
 	    return TCL_ERROR;
 	}
 	if ((lastPtr->flags & HIDE) && 
-	    ((legPtr->flags & SELECT_CLEAR) == 0)) {
+	    ((legdPtr->flags & SELECT_CLEAR) == 0)) {
 	    Tcl_AppendResult(interp, "can't select hidden node \"", 
 		     Tcl_GetString(objv[5]), "\"", (char *)NULL);
 	    return TCL_ERROR;
 	}
     }
     if (firstPtr == lastPtr) {
-	SelectEntry(legPtr, firstPtr);
+	SelectEntry(legdPtr, firstPtr);
     } else {
-	SelectRange(legPtr, firstPtr, lastPtr);
+	SelectRange(legdPtr, firstPtr, lastPtr);
     }
     /* Set both the anchor and the mark. Indicates that a single entry is
      * selected. */
-    if (legPtr->selAnchorPtr == NULL) {
-	legPtr->selAnchorPtr = firstPtr;
+    if (legdPtr->selAnchorPtr == NULL) {
+	legdPtr->selAnchorPtr = firstPtr;
     }
-    if (legPtr->flags & SELECT_EXPORT) {
-	Tk_OwnSelection(legPtr->tkwin, XA_PRIMARY, LostSelectionProc, 
-			legPtr);
+    if (legdPtr->flags & SELECT_EXPORT) {
+	Tk_OwnSelection(legdPtr->tkwin, XA_PRIMARY, LostSelectionProc, 
+			legdPtr);
     }
     Blt_Legend_EventuallyRedraw(graphPtr);
-    if (legPtr->selCmdObjPtr != NULL) {
-	EventuallyInvokeSelectCmd(legPtr);
+    if (legdPtr->selCmdObjPtr != NULL) {
+	EventuallyInvokeSelectCmd(legdPtr);
     }
     return TCL_OK;
 }
@@ -2934,12 +2933,12 @@ SelectionOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 
 static Blt_OpSpec legendOps[] =
 {
-    {"activate",     1, ActivateOp,      3, 0, "?pattern?...",},
+    {"activate",     1, ActivateOp,      3, 4, "?elem?",},
     {"bind",         1, BindOp,          3, 6, "elem sequence command",},
     {"cget",         2, CgetOp,          4, 4, "option",},
     {"configure",    2, ConfigureOp,     3, 0, "?option value?...",},
     {"curselection", 2, CurselectionOp,  3, 3, "",},
-    {"deactivate",   1, ActivateOp,      3, 0, "?pattern?...",},
+    {"deactivate",   1, DeactivateOp,    3, 3, "",},
     {"focus",        1, FocusOp,         4, 4, "elem",},
     {"get",          1, GetOp,           4, 4, "elem",},
     {"icon",         1, IconOp,          5, 5, "elem image",},
@@ -3040,19 +3039,19 @@ SelectionProc(
 					 * buffer, not including terminating
 					 * NULL character. */
 {
-    Legend *legPtr = clientData;
+    Legend *legdPtr = clientData;
     int numBytes;
     Tcl_DString ds;
 
-    if ((legPtr->flags & SELECT_EXPORT) == 0) {
+    if ((legdPtr->flags & SELECT_EXPORT) == 0) {
 	return -1;
     }
     /* Retrieve the names of the selected entries. */
     Tcl_DStringInit(&ds);
-    if (legPtr->flags & SELECT_SORTED) {
+    if (legdPtr->flags & SELECT_SORTED) {
 	Blt_ChainLink link;
 
-	for (link = Blt_Chain_FirstLink(legPtr->selected); 
+	for (link = Blt_Chain_FirstLink(legdPtr->selected); 
 	     link != NULL; link = Blt_Chain_NextLink(link)) {
 	    Element *elemPtr;
 
@@ -3064,14 +3063,14 @@ SelectionProc(
 	Blt_ChainLink link;
 	Graph *graphPtr;
 
-	graphPtr = legPtr->graphPtr;
+	graphPtr = legdPtr->graphPtr;
 	/* List of selected entries is in stacking order. */
 	for (link = Blt_Chain_FirstLink(graphPtr->elements.displayList);
 	     link != NULL; link = Blt_Chain_NextLink(link)) {
 	    Element *elemPtr;
 	    
 	    elemPtr = Blt_Chain_GetValue(link);
-	    if (EntryIsSelected(legPtr, elemPtr)) {
+	    if (EntryIsSelected(legdPtr, elemPtr)) {
 		Tcl_DStringAppend(&ds, elemPtr->obj.name, -1);
 		Tcl_DStringAppend(&ds, "\n", -1);
 	    }
@@ -3106,18 +3105,18 @@ static void
 BlinkCursorProc(ClientData clientData)
 {
     Graph *graphPtr = clientData;
-    Legend *legPtr;
+    Legend *legdPtr;
 
-    legPtr = graphPtr->legend;
-    if (!(legPtr->flags & FOCUS) || (legPtr->offTime == 0)) {
+    legdPtr = graphPtr->legend;
+    if (!(legdPtr->flags & FOCUS) || (legdPtr->offTime == 0)) {
 	return;
     }
-    if (legPtr->flags & ACTIVE) {
+    if (legdPtr->flags & ACTIVE) {
 	int time;
 
-	legPtr->cursorOn ^= 1;
-	time = (legPtr->cursorOn) ? legPtr->onTime : legPtr->offTime;
-	legPtr->timerToken = Tcl_CreateTimerHandler(time, BlinkCursorProc, 
+	legdPtr->cursorOn ^= 1;
+	time = (legdPtr->cursorOn) ? legdPtr->onTime : legdPtr->offTime;
+	legdPtr->timerToken = Tcl_CreateTimerHandler(time, BlinkCursorProc, 
 		graphPtr);
 	Blt_Legend_EventuallyRedraw(graphPtr);
     }
