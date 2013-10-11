@@ -210,6 +210,7 @@ typedef struct _Blt_Picture Picture;
 #  include <ctype.h>
 #endif /* HAVE_CTYPE_H */
 
+#ifdef notdef
 /*
  *---------------------------------------------------------------------------
  *
@@ -246,6 +247,7 @@ ColorSwitchProc(
     }
     return TCL_OK;
 }
+#endif
 
 static void
 AddComments(Blt_Ps ps, const char **comments)
@@ -637,6 +639,10 @@ PbmToPicture(Tcl_Interp *interp, Blt_DBuffer dbuffer)
     case PPM_RAW:			/* P6 */
 	pbm.bitsPerPixel = 24;
 	break;
+    default:
+	Tcl_AppendResult(interp, "unknown PBM version \"", Blt_Itoa(version),
+			 "\"", (char *)NULL);
+	return NULL;
     }
     if (!isspace(bp[2])) {
 	Tcl_AppendResult(interp, "no white space after version in pbm header.", 
