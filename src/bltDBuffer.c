@@ -485,3 +485,109 @@ Blt_DBuffer_Base64EncodeToObj(
 {
     return Blt_Base64_EncodeToObj(interp, srcPtr->bytes, srcPtr->length);
 }
+
+int 
+Blt_DBuffer_Base85Encode(Tcl_Interp *interp, Buffer *destPtr, 
+			 const unsigned char *buffer, size_t bufsize) 
+{
+    char *dp; 
+    int count;
+    int length, numBytes;
+    int remainder;
+    const unsigned char *sp, *send;
+    char *dest;
+
+    /*
+     * Compute worst-case length of buffer needed for encoding.  That is 5
+     * characters per 4 bytes.  The actual size can be smaller, depending upon
+     * the number of 0 tuples ('z' bytes).
+     */
+    length = ((bufsize + 3) / 4) * 5;	/* 5 characters per 4 bytes. */
+    length++;				/* NUL byte. */
+
+    dest = Blt_DBuffer_Extend(length);
+    if (dest == NULL) {
+	Tcl_AppendResult(interp, "can't allocate \"", Blt_Itoa(length), 
+		"\" bytes for buffer", (char *)NULL);
+	return -1;
+    }
+    remainder = bufsize % 4;
+    send = buffer + (bufsize - remainder);
+    dp = dest;
+    for (sp = buffer; sp < send; sp += 4) {
+	unsigned int tuple;
+	
+	tuple = 0;
+#ifdef WORDS_BIGENDIAN
+	tuple |= (sp[3] << 24);
+	tuple |= (sp[2] << 16); 
+	tuple |= (sp[1] <<  8);
+	tuple |= sp[0];
+#else 
+	tuple |= (sp[0] << 24);
+	tuple |= (sp[1] << 16); 
+	tuple |= (sp[2] <<  8);
+	tuple |= sp[3];
+#endif
+	if (tuple == 0) {
+	    *dp++ = 'z';
+	    count++;
+	} else {
+	    dp[4] = '!' + (tuple % 85);
+	    tuple /= 85;
+	    dp[3] = '!' + (tuple % 85);
+	    tuple /= 85;
+	    dp[2] = '!' + (tuple % 85);
+	    tuple /= 85;
+	    dp[1] = '!' + (tuple % 85);
+	    tuple /= 85;
+	    dp[0] = '!' + (tuple % 85);
+	    dp += 5;
+	}
+    }
+    
+    {
+	unsigned int tuple;
+
+	/* Handle remaining bytes (0-3). */
+	numBytes = (bufsize & 0x3);
+	sp -= numBytes;
+	tuple = 0;
+	switch (numBytes) {
+#ifdef WORDS_BIGENDIAN
+	case 3:
+	    tuple |= (sp[2] <<  8);
+	case 2:
+	    tuple |= (sp[1] << 16); 
+	case 1:
+	    tuple |= (sp[0] << 24);
+#else
+	case 3:
+	    tuple |= (sp[2] << 24);
+	case 2:
+	    tuple |= (sp[1] << 16); 
+	case 1:
+	    tuple |= (sp[0] <<  8);
+#endif
+	default:
+	    break;
+	}
+	if (numBytes > 0) {
+	    tuple /= 85;	
+	    if (numBytes > 2) {
+		dp[3] = '!' + (tuple % 85);
+	    }
+	    tuple /= 85;	
+	    if (numBytes > 1) { 
+		dp[2] = '!' + (tuple % 85);
+	    }
+	    tuple /= 85;	
+	    dp[1] = '!' + (tuple % 85);
+	    tuple /= 85;	
+	    dp[0] = '!' + (tuple % 85);
+	}
+    }
+    assert((size_t)(dp - dest) < length);
+    *dp = '\0';
+    return dp - dest;
+}
