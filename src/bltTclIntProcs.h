@@ -26,7 +26,7 @@ BLT_EXTERN void		Blt_DBuffer_VarAppend(Blt_DBuffer buffer, ...);
 #ifndef Blt_DBuffer_Format_DECLARED
 #define Blt_DBuffer_Format_DECLARED
 /* 2 */
-BLT_EXTERN void		Blt_DBuffer_Format(Blt_DBuffer buffer,
+BLT_EXTERN int		Blt_DBuffer_Format(Blt_DBuffer buffer,
 				const char *fmt, ...);
 #endif
 #ifndef Blt_DBuffer_Init_DECLARED
@@ -650,7 +650,7 @@ typedef struct BltTclIntProcs {
 
     void *reserved0;
     void (*blt_DBuffer_VarAppend) (Blt_DBuffer buffer, ...); /* 1 */
-    void (*blt_DBuffer_Format) (Blt_DBuffer buffer, const char *fmt, ...); /* 2 */
+    int (*blt_DBuffer_Format) (Blt_DBuffer buffer, const char *fmt, ...); /* 2 */
     void (*blt_DBuffer_Init) (Blt_DBuffer buffer); /* 3 */
     void (*blt_DBuffer_Free) (Blt_DBuffer buffer); /* 4 */
     unsigned char * (*blt_DBuffer_Extend) (Blt_DBuffer buffer, size_t extra); /* 5 */

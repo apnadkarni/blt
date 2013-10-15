@@ -141,7 +141,7 @@ struct _Blt_Chain;
 #define Blt_PictureIsMasked(p)  ((p)->flags &  BLT_PIC_MASK) 
 #define Blt_PictureIsBlended(p) ((p)->flags &  BLT_PIC_BLEND)
 #define Blt_PictureIsColor(p)   ((p)->flags &  BLT_PIC_COLOR)
-#define Blt_PictureIsGreyscale(p)   (!Blt_IsColorPicture(p))
+#define Blt_PictureIsGreyscale(p)   (!Blt_PictureIsColor(p))
 
 typedef enum PictureArithOps {
     PIC_ARITH_ADD,

@@ -253,7 +253,7 @@ Blt_DBuffer_VarAppend(DBuffer *srcPtr, ...)
     va_end(args);
 }
 
-void
+int
 Blt_DBuffer_Format(DBuffer *srcPtr, const char *fmt, ...)
 {
     char string[BUFSIZ+4];
@@ -266,7 +266,9 @@ Blt_DBuffer_Format(DBuffer *srcPtr, const char *fmt, ...)
 	strcat(string, "...");
     }
     va_end(args);
-    Blt_DBuffer_AppendData(srcPtr, (unsigned char *)string, strlen(string));
+    length = strlen(string);
+    Blt_DBuffer_AppendData(srcPtr, (unsigned char *)string, length);
+    return length;
 }
 
 #include <sys/types.h>
@@ -487,15 +489,15 @@ Blt_DBuffer_Base64EncodeToObj(
 }
 
 int 
-Blt_DBuffer_Base85Encode(Tcl_Interp *interp, Buffer *destPtr, 
-			 const unsigned char *buffer, size_t bufsize) 
+Blt_DBuffer_Base85Encode(Tcl_Interp *interp, DBuffer *destPtr, 
+		const unsigned char *buffer, size_t bufsize) 
 {
-    char *dp; 
+    unsigned char *dp; 
     int count;
     int length, numBytes;
     int remainder;
     const unsigned char *sp, *send;
-    char *dest;
+    unsigned char *destBytes;
 
     /*
      * Compute worst-case length of buffer needed for encoding.  That is 5
@@ -505,15 +507,15 @@ Blt_DBuffer_Base85Encode(Tcl_Interp *interp, Buffer *destPtr,
     length = ((bufsize + 3) / 4) * 5;	/* 5 characters per 4 bytes. */
     length++;				/* NUL byte. */
 
-    dest = Blt_DBuffer_Extend(length);
-    if (dest == NULL) {
+    destBytes = Blt_DBuffer_Extend(destPtr, length);
+    if (destBytes == NULL) {
 	Tcl_AppendResult(interp, "can't allocate \"", Blt_Itoa(length), 
 		"\" bytes for buffer", (char *)NULL);
 	return -1;
     }
     remainder = bufsize % 4;
     send = buffer + (bufsize - remainder);
-    dp = dest;
+    dp = destBytes;
     for (sp = buffer; sp < send; sp += 4) {
 	unsigned int tuple;
 	
@@ -587,7 +589,7 @@ Blt_DBuffer_Base85Encode(Tcl_Interp *interp, Buffer *destPtr,
 	    dp[0] = '!' + (tuple % 85);
 	}
     }
-    assert((size_t)(dp - dest) < length);
+    assert((size_t)(dp - destBytes) < length);
     *dp = '\0';
-    return dp - dest;
+    return dp - destBytes;
 }

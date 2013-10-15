@@ -1605,7 +1605,7 @@ WriteIco(Tcl_Interp *interp, Blt_Picture picture)
 
     /* Default export switch settings. */
     memset(&switches, 0, sizeof(switches));
-    switches.bg.u32 = 0xFFFFFFFF; /* white */
+    switches.bg.u32 = 0xFFFFFFFF;	/* white */
 
     dbuffer = Blt_DBuffer_Create();
     objPtr = NULL;

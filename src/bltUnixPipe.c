@@ -698,27 +698,32 @@ FileForRedirect(
  */
 int
 Blt_CreatePipeline(
-    Tcl_Interp *interp,		/* Interpreter to use for error reporting. */
-    int objc,			/* Number of entries in objv. */
-    Tcl_Obj *const *objv,	/* Array of strings describing commands in
-				 * pipeline plus I/O redirection with <, <<,
-				 * >, etc.  Objv[objc] must be NULL. */
-    Blt_Pid **pidArrayPtr,	/* (out) Word at *pidArrayPtr gets filled in
-				 * with address of array of pids for processes
-				 * in pipeline (first pid is first process in
-				 * pipeline). */
-    int *stdinPipePtr,		/* (out) If non-NULL, input to the pipeline
-				 * comes from a pipe (unless overridden by
-				 * redirection in the command).  The file id
-				 * with which to write to this pipe is stored
-				 * at *stdinPipePtr.  NULL means command
-				 * specified its own input source. */
-    int *stdoutPipePtr,		/* (out) If non-NULL, output to the pipeline
-				 * goes to a pipe, unless overriden by
-				 * redirection in the command.  The file id
-				 * with which to read frome this pipe is
-				 * stored at *stdoutPipePtr.  NULL means
-				 * command specified its own output sink. */
+    Tcl_Interp *interp,			/* Interpreter to use for error
+					 * reporting. */
+    int objc,				/* Number of entries in objv. */
+    Tcl_Obj *const *objv,		/* Array of strings describing
+					 * commands in pipeline plus I/O
+					 * redirection * with <, <<, >, etc.
+					 * Objv[objc] must be * NULL. */
+    Blt_Pid **pidArrayPtr,		/* (out) Word at *pidArrayPtr gets
+					 * filled in with address of array of
+					 * pids for processes in pipeline
+					 * (first pid is first process in
+					 * pipeline). */
+    int *stdinPipePtr,			/* (out) If non-NULL, input to the
+					 * pipeline comes from a pipe (unless
+					 * overridden by redirection in the
+					 * command).  The file id with which
+					 * to write to this pipe is stored at
+					 * *stdinPipePtr.  NULL means command
+					 * specified its own input source. */
+    int *stdoutPipePtr,			/* (out) If non-NULL, output to the
+					 * pipeline goes to a pipe, unless
+					 * overriden by redirection in the
+					 * command.  The file id with which to
+					 * read frome this pipe is stored at
+					 * *stdoutPipePtr.  NULL means command
+					 * specified its own output sink. */
     int *stderrPipePtr)			/* (out) If non-NULL, all stderr
 					 * output from the pipeline will go to
 					 * a temporary file created here, and

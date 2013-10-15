@@ -31,6 +31,16 @@
 #include "bltInt.h"
 #include <unistd.h>
 
+#ifdef HAVE_STDLIB_H
+#  include <stdlib.h>
+#endif /* HAVE_STDLIB_H */
+#ifdef HAVE_TIME_H
+#  include <time.h>
+#endif /* HAVE_TIME_H */
+#ifdef HAVE_SYS_TIME_H
+#include <sys/time.h>
+#endif
+
 #ifdef HAVE_STRING_H
 #  include <string.h>
 #endif /* HAVE_STRING_H */
@@ -46,6 +56,7 @@
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <bltSwitch.h>
+#include <bltChain.h>
 #include "bltPictFmts.h"
 #include "bltPs.h"
 #include "bltWait.h"
@@ -74,6 +85,13 @@ enum PbmVersions {
     PPM_RAW				/* 24/48 bits per pixel */
 };
     
+typedef struct {
+    unsigned int *xref;			/* Array of object numbers. */
+    int numObjects;			/* # of slots in above array. */
+    Blt_DBuffer dbuffer;		/* Holds output (PDF file). */
+    int numImages;			/* # of images in PDF file. */
+    int current;			/* Current object number. */
+} Pdf;
     
 #ifdef notdef
 static const char *pbmFormat[] = {
@@ -114,7 +132,7 @@ typedef struct {
     Blt_DBuffer dbuffer;
 } Pbm;
 
-#ifdef notdef
+
 static Blt_SwitchParseProc ColorSwitchProc;
 static Blt_SwitchCustom colorSwitch = {
     ColorSwitchProc, NULL, NULL, (ClientData)0
@@ -129,9 +147,7 @@ static Blt_SwitchParseProc PadSwitchProc;
 static Blt_SwitchCustom padSwitch = {
     PadSwitchProc, NULL, NULL, (ClientData)0
 };
-#endif
 
-#ifdef notdef
 static Blt_SwitchSpec exportSwitches[] = 
 {
     {BLT_SWITCH_CUSTOM,  "-bg",		"color", (char *)NULL,
@@ -164,7 +180,6 @@ static Blt_SwitchSpec exportSwitches[] =
 	Blt_Offset(PdfExportSwitches, index), 0},
     {BLT_SWITCH_END}
 };
-#endif
 
 static Blt_SwitchSpec importSwitches[] =
 {
@@ -210,7 +225,10 @@ typedef struct _Blt_Picture Picture;
 #  include <ctype.h>
 #endif /* HAVE_CTYPE_H */
 
-#ifdef notdef
+/*#ifdef WIN32*/
+extern char *strptime(const char *buf, const char *fmt, struct tm *tm);
+/*#endif*/
+
 /*
  *---------------------------------------------------------------------------
  *
@@ -247,20 +265,6 @@ ColorSwitchProc(
     }
     return TCL_OK;
 }
-#endif
-
-static void
-AddComments(Blt_Ps ps, const char **comments)
-{
-    const char **p;
-
-    for (p = comments; *p != NULL; p += 2) {
-	if (*(p+1) == NULL) {
-	    break;
-	}
-	Blt_Ps_Format(ps, "%% %s: %s\n", *p, *(p+1));
-    }
-}
 
 /*
  * Parse the lines that define the dimensions of the bitmap, plus the first
@@ -290,7 +294,6 @@ AddComments(Blt_Ps ps, const char **comments)
 #endif /* HAVE_SYS_TIME_H */
 #endif /* TIME_WITH_SYS_TIME */
 
-#ifdef notdef
 /*
  *--------------------------------------------------------------------------
  *
@@ -349,92 +352,6 @@ PadSwitchProc(
     Blt_Pad *padPtr = (Blt_Pad *)(record + offset);
     
     return Blt_Ps_GetPadFromObj(interp, objPtr, padPtr);
-}
-#endif
-
-/*
- * --------------------------------------------------------------------------
- *
- * PostScriptPreamble --
- *
- *    	The PostScript preamble calculates the needed translation and scaling
- *    	to make image coordinates compatible with PostScript.
- *
- * --------------------------------------------------------------------------
- */
-static int
-PostScriptPreamble(
-    Tcl_Interp *interp,
-    Picture *srcPtr,
-    PdfExportSwitches *switchesPtr,
-    Blt_Ps ps)
-{
-    PageSetup *setupPtr = &switchesPtr->setup;
-    time_t ticks;
-    char date[200];		/* Hold the date string from ctime() */
-    const char *version;
-    char *newline;
-
-    Blt_Ps_Append(ps, "%!PS-Adobe-3.0 EPSF-3.0\n");
-
-    /* The "BoundingBox" comment is required for EPS files. */
-    Blt_Ps_Format(ps, "%%%%BoundingBox: %d %d %d %d\n",
-	setupPtr->left, setupPtr->paperHeight - setupPtr->top,
-	setupPtr->right, setupPtr->paperHeight - setupPtr->bottom);
-    Blt_Ps_Append(ps, "%%Pages: 0\n");
-
-    version = Tcl_GetVar(interp, "blt_version", TCL_GLOBAL_ONLY);
-    if (version == NULL) {
-	version = "???";
-    }
-    Blt_Ps_Format(ps, "%%%%Creator: (BLT %s Picture)\n", version);
-
-    ticks = time((time_t *) NULL);
-    strcpy(date, ctime(&ticks));
-    newline = date + strlen(date) - 1;
-    if (*newline == '\n') {
-	*newline = '\0';
-    }
-    Blt_Ps_Format(ps, "%%%%CreationDate: (%s)\n", date);
-    Blt_Ps_Append(ps, "%%DocumentData: Clean7Bit\n");
-    if (setupPtr->flags & PS_LANDSCAPE) {
-	Blt_Ps_Append(ps, "%%Orientation: Landscape\n");
-    } else {
-	Blt_Ps_Append(ps, "%%Orientation: Portrait\n");
-    }
-    AddComments(ps, setupPtr->comments);
-    Blt_Ps_Append(ps, "%%EndComments\n\n");
-    Blt_Ps_Append(ps, "%%BeginProlog\n");
-    Blt_Ps_Append(ps, "%%EndProlog\n");
-    Blt_Ps_Append(ps, "%%BeginSetup\n");
-    Blt_Ps_Append(ps, "gsave\n");
-    /*
-     * Set the conversion from PostScript to X11 coordinates.  Scale pica to
-     * pixels and flip the y-axis (the origin is the upperleft corner).
-     */
-    Blt_Ps_VarAppend(ps,
-	"% Transform coordinate system to use X11 coordinates\n"
-	"% 1. Flip y-axis over by reversing the scale,\n", (char *)NULL);
-    Blt_Ps_Append(ps, "1 -1 scale\n");
-    Blt_Ps_VarAppend(ps, 
-	"% 2. Translate the origin to the other side of the page,\n"
-	"%    making the origin the upper left corner\n", (char *)NULL);
-    Blt_Ps_Format(ps, "0 %d translate\n\n", -setupPtr->paperHeight);
-    Blt_Ps_VarAppend(ps, "% User defined page layout\n\n",
-	"% Set color level\n", (char *)NULL);
-    Blt_Ps_Format(ps, "%% Set origin\n%d %d translate\n\n",
-		  setupPtr->left, setupPtr->bottom);
-    if (setupPtr->flags & PS_LANDSCAPE) {
-	Blt_Ps_Format(ps,
-	    "%% Landscape orientation\n0 %g translate\n-90 rotate\n",
-	    ((double)srcPtr->width * setupPtr->scale));
-    }
-    if (setupPtr->scale != 1.0f) {
-	Blt_Ps_Append(ps, "\n% Setting picture scale factor\n");
-	Blt_Ps_Format(ps, " %g %g scale\n", setupPtr->scale, setupPtr->scale);
-    }
-    Blt_Ps_Append(ps, "\n%%EndSetup\n\n");
-    return TCL_OK;
 }
 
 static char *
@@ -1014,47 +931,338 @@ PdfToPicture(Tcl_Interp *interp, const char *fileName, Blt_DBuffer dbuffer,
     return chain;
 }
 
-static int
-PictureToPdf(Tcl_Interp *interp, Blt_Picture original, Blt_Ps ps,
-	     PdfExportSwitches *switchesPtr)
+static Pdf *
+NewPdf(Blt_Chain chain)
+{
+    Pdf *pdfPtr;
+
+    pdfPtr = Blt_AssertCalloc(1, sizeof(Pdf));
+    pdfPtr->numImages = Blt_Chain_GetLength(chain);
+    pdfPtr->numObjects = (pdfPtr->numImages * 6) + 4;
+    pdfPtr->xref = Blt_AssertCalloc(pdfPtr->numObjects+1, sizeof(int));
+    pdfPtr->dbuffer = Blt_DBuffer_Create();
+    pdfPtr->current = 4;
+    return pdfPtr;
+}
+
+static void
+FreePdf(Pdf *pdfPtr)
+{
+    Blt_Free(pdfPtr->xref);
+    Blt_DBuffer_Destroy(pdfPtr->dbuffer);
+    Blt_Free(pdfPtr);
+}
+
+/*
+ * image object 0
+ * LENGTH stream object 1
+ * PAGE object 2
+ * TRANS object 3 /Contents
+ * PAGES	numObjects - 2
+ * CATALOG	numObjects - 1
+ * INFO		numObjects 
+ * XREF		0
+ */
+
+#define CATALOG_OBJECT	 1
+#define INFO_OBJECT	 2
+#define PAGES_OBJECT	 3
+#define XREF_OBJECT	 4
+
+#define OFF_PAGE	 0
+#define OFF_RESOURCES	 1
+#define OFF_IMAGE	 2
+#define OFF_IMAGE_LENGTH 3
+#define OFF_PAINT	 4
+#define OFF_PAINT_LENGTH 5
+
+static int 
+PictureToPdf(Tcl_Interp *interp, Blt_Picture original, Pdf *pdfPtr, 
+	      PdfExportSwitches *switchesPtr)
 {
     Picture *srcPtr;
-    int w, h;
+    unsigned char *data;
+    int count;
+    const char *colorSpace;
+    int numComponents;
+    size_t length;
+    PageSetup *setupPtr = &switchesPtr->setup;
 
     srcPtr = original;
-    w = srcPtr->width, h = srcPtr->height;
-    Blt_Ps_ComputeBoundingBox(&switchesPtr->setup, w, h);
-    if (PostScriptPreamble(interp, srcPtr, switchesPtr, ps) != TCL_OK) {
-	return TCL_ERROR;
-    }
+    Blt_Ps_ComputeBoundingBox(&switchesPtr->setup, srcPtr->width, 
+			      srcPtr->height);
+    pdfPtr->xref[pdfPtr->current + OFF_PAGE] = 
+	Blt_DBuffer_Length(pdfPtr->dbuffer);
+    
+    /* Page object. */
+    Blt_DBuffer_Format(pdfPtr->dbuffer, 
+		       "%d 0 obj\n" 
+		       "  <<\n" 
+		       "    /Type /Page\n"
+		       "    /Parent %d 0 R\n"
+		       "    /Resources %d 0 R\n"
+		       "    /MediaBox [ 0 0 %d %d ]\n"
+		       "    /Contents %d 0 R\n"
+                       "  >>\n"
+		       "endobj\n", 
+		       pdfPtr->current + OFF_PAGE, 
+		       PAGES_OBJECT,
+		       pdfPtr->current + OFF_RESOURCES,
+		       switchesPtr->setup.reqPaperWidth, 
+		       switchesPtr->setup.reqPaperHeight,
+		       pdfPtr->current + OFF_IMAGE);
+
+    pdfPtr->xref[pdfPtr->current + OFF_RESOURCES] = 
+	Blt_DBuffer_Length(pdfPtr->dbuffer);
+    /* Resource dictionary */
+    Blt_DBuffer_Format(pdfPtr->dbuffer, 
+		       "%d 0 obj\n" 
+		       "  <<\n" 
+		       "    /ProcSet [ /PDF /ImageC /ImageB ]\n"
+		       "    /XObject << /Im%d %d 0 R >>\n"
+		       "  >>\n"
+		       "endobj\n", 
+		       pdfPtr->current + OFF_RESOURCES,
+		       pdfPtr->numImages, 
+		       pdfPtr->current + OFF_IMAGE);
+    
     Blt_ClassifyPicture(srcPtr); 
     if (!Blt_PictureIsOpaque(srcPtr)) {
 	Blt_Picture background;
-
+	
 	background = Blt_CreatePicture(srcPtr->width, srcPtr->height);
 	Blt_BlankPicture(background, switchesPtr->bg.u32);
 	Blt_BlendPictures(background, srcPtr, 0, 0, srcPtr->width, 
-		srcPtr->height, 0, 0);
+			  srcPtr->height, 0, 0);
 	srcPtr = background;
     }
     if (srcPtr->flags & BLT_PIC_ASSOCIATED_COLORS) {
 	Blt_UnassociateColors(srcPtr);
     }
-    Blt_Ps_Rectangle(ps, 0, 0, srcPtr->width, srcPtr->height);
-    Blt_Ps_Append(ps, "gsave clip\n\n");
-    Blt_Ps_DrawPicture(ps, srcPtr, 0, 0);
-    Blt_Ps_VarAppend(ps, "\n",
-	"% Unset clipping\n",
-	"grestore\n\n", (char *)NULL);
-    Blt_Ps_VarAppend(ps,
-	"showpage\n",
-	"%Trailer\n",
-	"grestore\n",
-	"end\n",
-	"%EOF\n", (char *)NULL);
+    if (Blt_PictureIsGreyscale(srcPtr)) {
+	colorSpace = "DeviceGrey";
+	numComponents = 1;
+    } else {
+	colorSpace = "DeviceRGB";
+	numComponents = 3;
+    }
+
+    /* Transfer image data to buffer. */
+    data = Blt_AssertMalloc(srcPtr->width * srcPtr->height * numComponents);
+    if (Blt_PictureIsGreyscale(srcPtr)) {
+	Blt_Pixel *srcRowPtr;
+	int y;
+
+	srcRowPtr = srcPtr->bits;
+	count = 0;
+	for (y = 0; y < srcPtr->height; y++) {
+	    Blt_Pixel *sp, *send;
+
+	    for (sp = srcRowPtr, send = sp + srcPtr->width; sp < send; sp++) {
+		data[count] = sp->Red;
+		count++;
+	    }
+	    srcRowPtr += srcPtr->pixelsPerRow;
+	}
+    } else {
+	Blt_Pixel *srcRowPtr;
+	int y;
+
+	srcRowPtr = srcPtr->bits;
+	count = 0;
+	for (y = 0; y < srcPtr->height; y++) {
+	    Blt_Pixel *sp, *send;
+
+	    for (sp = srcRowPtr, send = sp + srcPtr->width; sp < send; sp++) {
+		data[count] = sp->Red;
+		data[count+1] = sp->Green;
+		data[count+2] = sp->Blue;
+		count += 3;
+	    }
+	    srcRowPtr += srcPtr->pixelsPerRow;
+	}
+    }
+    Blt_Free(data);
+
+    /* Image object */
+    pdfPtr->xref[pdfPtr->current + OFF_IMAGE] = 
+	Blt_DBuffer_Length(pdfPtr->dbuffer);
+    Blt_DBuffer_Format(pdfPtr->dbuffer, 
+		       "%d 0 obj\n"
+		       "  <<\n"
+		       "    /Type /XObject\n"
+		       "    /Subtype /Image\n"
+		       "    /Width %d\n"
+		       "    /Height %d\n"
+		       "    /ColorSpace /%s\n"
+		       "    /BitsPerComponent 8\n"
+		       "    /Filter /ASCII85Decode\n"
+		       "    /Name /Im%d\n"
+		       "    /Length %d 0 R\n" 
+		       "  >>\n",
+ 		       pdfPtr->current + OFF_IMAGE, 
+		       srcPtr->width, srcPtr->height, colorSpace, 
+		       pdfPtr->numImages,
+		       pdfPtr->current + OFF_IMAGE_LENGTH);
+    Blt_DBuffer_VarAppend(pdfPtr->dbuffer, "stream\n", (char *)NULL);
+    length = Blt_DBuffer_Base85Encode(interp, pdfPtr->dbuffer, data, count);
+    Blt_DBuffer_VarAppend(pdfPtr->dbuffer, 
+			  "endstream\n", 
+			  "endobj\n", (char *)NULL);
+
+    /* Length of image stream object. */
+    pdfPtr->xref[pdfPtr->current + OFF_IMAGE_LENGTH] = 
+	Blt_DBuffer_Length(pdfPtr->dbuffer);
+    Blt_DBuffer_Format(pdfPtr->dbuffer, 
+		       "%d 0 obj\n" 
+		       "  %d\n"
+		       "endobj\n", 
+		       pdfPtr->current + OFF_IMAGE_LENGTH,
+		       length);
+
+    /* Paint object.  */
+    pdfPtr->xref[pdfPtr->current + OFF_PAINT] = 
+	Blt_DBuffer_Length(pdfPtr->dbuffer);
+    Blt_DBuffer_Format(pdfPtr->dbuffer, 
+		      "%d 0 obj\n"
+		      "  <<\n"
+		      "    /Length %d\n"
+		      "  >>\n"
+		      "stream\n",
+		      pdfPtr->current + OFF_PAINT,
+		      pdfPtr->current + OFF_PAINT_LENGTH);
+    length = Blt_DBuffer_Format(pdfPtr->dbuffer, 
+				" q\n" 
+				"   %f 0 0 %f %f %f cm\n"
+				"   /Im%d Do\n"
+				" Q", 
+ 				setupPtr->scale, setupPtr->scale, 
+ 				setupPtr->left, setupPtr->top, 
+				pdfPtr->numImages);
+    Blt_DBuffer_VarAppend(pdfPtr->dbuffer, 
+			  "endstream\n"
+			  "endobj\n", (char *)NULL);
+    /* Length of paint stream. */
+    pdfPtr->xref[pdfPtr->current + OFF_PAINT_LENGTH] = 
+	Blt_DBuffer_Length(pdfPtr->dbuffer);
+    Blt_DBuffer_Format(pdfPtr->dbuffer, 
+		       "%d 0 obj\n" 
+		       "  %d\n"
+		       "endobj\n", 
+		       pdfPtr->current + OFF_PAINT_LENGTH,
+		       length);
+
     if (srcPtr != original) {
 	Blt_Free(srcPtr);
     }
+    return TCL_OK;
+}
+
+static int 
+PicturesToPdf(Tcl_Interp *interp, Blt_Chain chain, Pdf *pdfPtr, 
+	      PdfExportSwitches *switchesPtr)
+{
+    Blt_ChainLink link;
+    time_t ticks;
+    char date[200];
+    struct tm *tmPtr;
+    const char *version;
+    int i;
+
+    Blt_DBuffer_VarAppend(pdfPtr->dbuffer, 
+			  "%PDF-1.4\n",
+			  (char *)NULL);
+
+    version = Tcl_GetVar(interp, "blt_version", TCL_GLOBAL_ONLY);
+    if (version == NULL) {
+	version = "???";
+    }
+    ticks = time((time_t *) NULL);
+    tmPtr = localtime(&ticks);
+    strptime(date, "D:%Y%m%d%H%M%S", tmPtr);
+
+    /* Catalog object */
+    pdfPtr->xref[CATALOG_OBJECT] = Blt_DBuffer_Length(pdfPtr->dbuffer);
+    Blt_DBuffer_Format(pdfPtr->dbuffer, 
+		       "%d 0 obj\n"
+		       "  <<\n"
+		       "    /Type /Catalog\n"
+		       "    /Pages %d 0 R\n"
+		       "  >>\n"
+		       "endobj\n", 
+		       CATALOG_OBJECT, PAGES_OBJECT);
+
+    /* Information object */
+    pdfPtr->xref[INFO_OBJECT] = Blt_DBuffer_Length(pdfPtr->dbuffer);
+    Blt_DBuffer_Format(pdfPtr->dbuffer,
+		       "%d 0 obj\n"
+		       "  <<\n"
+		       "    /CreationDate (%s)\n"
+		       "    /Producer (BLT %s Picture)\n"
+		       "  >>\n"
+		       "endobj\n", 
+		       INFO_OBJECT, 
+		       date, 
+		       version);
+
+    /* Pages object */
+    pdfPtr->xref[PAGES_OBJECT] = Blt_DBuffer_Length(pdfPtr->dbuffer);
+    Blt_DBuffer_Format(pdfPtr->dbuffer, 
+		       "%d 0 obj\n"
+		       "  <<\n"
+		       "    /Type /Pages\n"
+		       "    /Kids [\n",
+		       PAGES_OBJECT); 
+    pdfPtr->numImages = Blt_Chain_GetLength(chain);
+    for (i = 0; i < pdfPtr->numImages; i += 6) {
+	Blt_DBuffer_Format(pdfPtr->dbuffer,
+			   "      %d 0 R\n", 
+			   i + 4);
+    }
+    Blt_DBuffer_Format(pdfPtr->dbuffer,
+		       "    ]\n"
+		       "    /Count %d\n"
+		       "  >>\n"
+		       "endobj\n", 
+		       pdfPtr->numImages);
+
+    for (link = Blt_Chain_FirstLink(chain); link != NULL; 
+	 link = Blt_Chain_NextLink(link)) {
+	Picture *srcPtr;
+
+	srcPtr = Blt_Chain_GetValue(link);
+	if (PictureToPdf(interp, srcPtr, pdfPtr, switchesPtr) != TCL_OK) {
+	    return TCL_ERROR;
+	}
+    }
+    /* Xref */
+    pdfPtr->xref[XREF_OBJECT] = Blt_DBuffer_Length(pdfPtr->dbuffer);
+    Blt_DBuffer_Format(pdfPtr->dbuffer,
+		       "xref\n"
+		       "0 %d\n"
+		       "0000000000 65535 f\n",
+		       pdfPtr->numObjects);
+    for (i = 1; i < pdfPtr->numObjects; i++) {
+	Blt_DBuffer_Format(pdfPtr->dbuffer,
+			   "%010ld 00000 n\n", 
+			   pdfPtr->xref[i]);
+    }
+
+    /* Trailer */
+    Blt_DBuffer_Format(pdfPtr->dbuffer,
+		       "trailer\n"
+		       "  <<\n"
+		       "    /Size %d\n"
+		       "    /Root %d 0 R\n"
+		       "    /Info %d 0 R\n"
+		       "  >>\n"
+		       "startxref\n"
+		       "%ld\n"
+		       "%%%%EOF\n", 
+		       pdfPtr->numObjects - 1, 
+		       CATALOG_OBJECT, 
+		       INFO_OBJECT,
+		       pdfPtr->xref[XREF_OBJECT]);
     return TCL_OK;
 }
 
@@ -1084,14 +1292,13 @@ ReadPdf(Tcl_Interp *interp, const char *fileName, Blt_DBuffer dbuffer)
     return chain;
 }
 
-#ifdef notdef
 static Tcl_Obj *
 WritePdf(Tcl_Interp *interp, Blt_Picture picture)
 {
-    Blt_Ps ps;
+    Pdf *pdfPtr;
     PdfExportSwitches switches;
     Tcl_Obj *objPtr;
-    int result;
+    Blt_Chain chain;
 
     /* Default export switch settings. */
     memset(&switches, 0, sizeof(switches));
@@ -1105,21 +1312,17 @@ WritePdf(Tcl_Interp *interp, Blt_Picture picture)
     switches.setup.yPad.side2 = 72;
     switches.setup.flags = 0;
 
-    ps = Blt_Ps_Create(interp, &switches.setup);
-    result = PictureToPdf(interp, picture, ps, &switches);
+    chain = Blt_Chain_Create();
+    Blt_Chain_Append(chain, picture);
     objPtr = NULL;
-    if (result == TCL_OK) {
-	const char *string;
-	int length;
-
-	string = Blt_Ps_GetValue(ps, &length);
-	objPtr = Tcl_NewStringObj(string, length);
+    pdfPtr = NewPdf(chain);
+    if (PicturesToPdf(interp, chain, pdfPtr, &switches) == TCL_OK) {
+	objPtr = Blt_DBuffer_Base64EncodeToObj(interp, pdfPtr->dbuffer);
     }
-    Blt_FreeSwitches(exportSwitches, (char *)&switches, 0);
-    Blt_Ps_Free(ps);
+    Blt_Chain_Destroy(chain);
+    FreePdf(pdfPtr);
     return objPtr;
 }
-#endif
 
 static Blt_Chain
 ImportPdf(Tcl_Interp *interp, int objc, Tcl_Obj *const *objv, 
@@ -1164,16 +1367,15 @@ ImportPdf(Tcl_Interp *interp, int objc, Tcl_Obj *const *objv,
     return chain;
 }
 
-#ifdef notdef
 static int
 ExportPdf(Tcl_Interp *interp, unsigned int index, Blt_Chain chain, int objc, 
 	  Tcl_Obj *const *objv)
 {
     PdfExportSwitches switches;
-    Blt_Ps pdf;
+    Pdf *pdfPtr;
     int result;
-    Blt_Picture picture;
 
+    result = TCL_ERROR;
     memset(&switches, 0, sizeof(switches));
     switches.bg.u32 = 0xFFFFFFFF; /* Default bgcolor is white. */
     switches.setup.reqPaperHeight = 792; /* 11 inches */
@@ -1195,47 +1397,41 @@ ExportPdf(Tcl_Interp *interp, unsigned int index, Blt_Chain chain, int objc,
 	Blt_FreeSwitches(exportSwitches, (char *)&switches, 0);
 	return TCL_ERROR;
     }
-    picture = Blt_GetNthPicture(chain, switches.index);
-    if (picture == NULL) {
-	Tcl_AppendResult(interp, "no picture at index ", 
-		Blt_Itoa(switches.index), (char *)NULL);
-	Blt_FreeSwitches(exportSwitches, (char *)&switches, 0);
-	return TCL_ERROR;
-    }
-    pdf = Blt_Ps_Create(interp, &switches.setup);
-    result = PictureToPdf(interp, picture, pdf, &switches);
-    if (result != TCL_OK) {
+    pdfPtr = NewPdf(chain);
+    if (PicturesToPdf(interp, chain, pdfPtr, &switches) != TCL_OK) {
 	Tcl_AppendResult(interp, "can't convert \"", 
 		Tcl_GetString(objv[2]), "\"", (char *)NULL);
 	goto error;
     }
+    fprintf(stderr, "dbuffer size=%d\n", Blt_DBuffer_Length(pdfPtr->dbuffer));
     if (switches.fileObjPtr != NULL) {
 	char *fileName;
 
 	fileName = Tcl_GetString(switches.fileObjPtr);
-	result = Blt_Ps_SaveFile(interp, pdf, fileName);
+	fprintf(stderr, "writing out %s\n", fileName);
+	result = Blt_DBuffer_SaveFile(interp, fileName, pdfPtr->dbuffer);
     } else if (switches.dataObjPtr != NULL) {
 	Tcl_Obj *objPtr;
-	int length;
-	const char *string;
 
-	string = Blt_Ps_GetValue(pdf, &length);
-	objPtr = Tcl_NewStringObj(string, length);
-	objPtr = Tcl_ObjSetVar2(interp, switches.dataObjPtr, NULL, objPtr, 0);
+	objPtr = Blt_DBuffer_ByteArrayObj(pdfPtr->dbuffer);
 	result = (objPtr == NULL) ? TCL_ERROR : TCL_OK;
+	if (objPtr != NULL) {
+	    Tcl_SetObjResult(interp, objPtr);
+	}
     } else {
-	const char *string;
-	int length;
+	Tcl_Obj *objPtr;
 
-	string = Blt_Ps_GetValue(pdf, &length);
-	Tcl_SetStringObj(Tcl_GetObjResult(interp), string, length);
+	objPtr = Blt_DBuffer_Base64EncodeToObj(interp, pdfPtr->dbuffer);
+	result = (objPtr == NULL) ? TCL_ERROR : TCL_OK;
+	if (objPtr != NULL) {
+	    Tcl_SetObjResult(interp, objPtr);
+	}
     }  
  error:
     Blt_FreeSwitches(exportSwitches, (char *)&switches, 0);
-    Blt_Ps_Free(pdf);
+    FreePdf(pdfPtr);
     return result;
 }
-#endif
 
 int 
 Blt_PicturePdfInit(Tcl_Interp *interp)
@@ -1262,10 +1458,10 @@ Blt_PicturePdfInit(Tcl_Interp *interp)
     return Blt_PictureRegisterFormat(interp,
 	"pdf",				/* Name of format. */
 	IsPdf,				/* Discovery routine. */
-	ReadPdf,			/* Import format procedure. */
-	NULL,				/* Export format procedure. */
-	ImportPdf,			/* Import format procedure. */
-	NULL);				/* Export format procedure. */
+	ReadPdf,			/* Read procedure. */
+	WritePdf,			/* Write procedure. */
+	ImportPdf,			/* Import procedure. */
+	ExportPdf);			/* Export procedure. */
 }
 
 int 

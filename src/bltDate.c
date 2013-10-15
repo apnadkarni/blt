@@ -76,7 +76,7 @@ static const char *tokenNames[] = {
     "month", "wday", "yday", "day", "year", "week",
     "hours", "seconds", "minutes", "ampm", 
     "tz_std", "tz_dst", 
-    "/", "-", ",", ":", "+", ".",
+    "/", "-", ",", ":", "+", ".", "'",
     "number", "iso6", "iso7", "iso8", 
     "unknown"
 };
@@ -86,7 +86,7 @@ typedef enum TokenSerialNumbers {
     T_MONTH, T_WDAY, T_YDAY, T_MDAY, T_YEAR, T_WEEK,
     T_HOUR, T_SECOND, T_MINUTE, T_AMPM,
     T_STD, T_DST,
-    T_SLASH, T_DASH, T_COMMA, T_COLON, T_PLUS, T_DOT,
+    T_SLASH, T_DASH, T_COMMA, T_COLON, T_PLUS, T_DOT, T_QUOTE,
     T_NUMBER, T_ISO6, T_ISO7, T_ISO8, T_UNKNOWN,
 } TokenNumber;
 
@@ -642,6 +642,9 @@ ProcessToken(DateParser *datePtr, TokenNumber *idPtr)
     } else if (*p == '+') {
 	id = T_PLUS;
 	p++;
+    } else if (*p == '\'') {
+	id = T_QUOTE;
+	p++;
     } else if (*p == ':') {
 	id = T_COLON;
 	p++;
@@ -775,7 +778,7 @@ GetTz(Token *tokenPtr, time_t *mPtr)
     if (GetId(tokenPtr) == T_DASH) {
 	sign = -1;
     }
-    /* Verify the next token after the +/- is a number.  */
+    /* Verify the next token after the +/-/' is a number.  */
     tokenPtr = NextToken(tokenPtr);
     if (GetId(tokenPtr) != T_NUMBER) {
 	return NULL;
@@ -1519,7 +1522,7 @@ ConvertToSeconds(DateParser *datePtr, double *timePtr)
  * Timezone
  *
  *	timezone
- *	-+1234
+ *	'-+1234
  *	a-z	
  */
 
@@ -1689,7 +1692,7 @@ ConvertToSeconds(DateParser *datePtr, double *timePtr)
 	dd-mon-yy		25-Dec-05 
 	dd-mon-yyyy 
 
-
+	D:yyyymmddhhmmss+'HHMM
  */
 
 /* 

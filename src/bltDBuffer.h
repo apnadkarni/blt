@@ -41,7 +41,7 @@ typedef struct _Blt_DBuffer {
 
 BLT_EXTERN void Blt_DBuffer_VarAppend(Blt_DBuffer buffer, ...);
 
-BLT_EXTERN void Blt_DBuffer_Format(Blt_DBuffer buffer, const char *fmt, ...);
+BLT_EXTERN int Blt_DBuffer_Format(Blt_DBuffer buffer, const char *fmt, ...);
 
 BLT_EXTERN void Blt_DBuffer_Init(Blt_DBuffer buffer);
 BLT_EXTERN void Blt_DBuffer_Free(Blt_DBuffer buffer);
@@ -92,5 +92,7 @@ BLT_EXTERN const char *Blt_DBuffer_Base64Encode(Tcl_Interp *interp,
 	Blt_DBuffer buffer);
 BLT_EXTERN Tcl_Obj *Blt_DBuffer_Base64EncodeToObj(Tcl_Interp *interp, 
 	Blt_DBuffer buffer);
+BLT_EXTERN int Blt_DBuffer_Base85Encode(Tcl_Interp *interp, Blt_DBuffer buffer, 
+	const unsigned char *bytes, size_t numBytes);
 
 #endif /*_BLT_DBUFFER_H*/
