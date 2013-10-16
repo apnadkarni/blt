@@ -471,14 +471,6 @@ Blt_DBuffer_Base64Decode(Tcl_Interp *interp, const char *string, size_t length,
     return TCL_OK;
 }
 
-const char *
-Blt_DBuffer_Base64Encode(
-    Tcl_Interp *interp,			/* Interpreter to report errors to. */
-    DBuffer *srcPtr)			/* Input binary buffer. */
-{
-    return Blt_Base64_Encode(interp, srcPtr->bytes, srcPtr->length);
-}
-
 
 Tcl_Obj *
 Blt_DBuffer_Base64EncodeToObj(
@@ -488,24 +480,14 @@ Blt_DBuffer_Base64EncodeToObj(
     return Blt_Base64_EncodeToObj(interp, srcPtr->bytes, srcPtr->length);
 }
 
-int 
-Blt_DBuffer_Base85Encode(Tcl_Interp *interp, DBuffer *destPtr, 
-		const unsigned char *buffer, size_t bufsize) 
+int
+Blt_DBuffer_AppendBase64(Tcl_Interp *interp, DBuffer *destPtr, 
+			 const unsigned char *buffer, size_t bufsize) 
 {
-    unsigned char *dp; 
-    size_t oldLength, count, length, numBytes;
-    int remainder;
-    const unsigned char *sp, *send;
+    size_t oldLength, numBytes, length;
     unsigned char *destBytes;
 
-    /*
-     * Compute worst-case length of buffer needed for encoding.  That is 5
-     * characters per 4 bytes.  The actual size can be smaller, depending upon
-     * the number of 0 tuples ('z' bytes).
-     */
-    length = ((bufsize + 3) / 4) * 5;	/* 5 characters per 4 bytes. */
-    length++;				/* NUL byte. */
-
+    length = Blt_Base64_MaxBufferLength(bufsize);
     oldLength = Blt_DBuffer_Length(destPtr);
     destBytes = Blt_DBuffer_Extend(destPtr, length);
     if (destBytes == NULL) {
@@ -513,88 +495,30 @@ Blt_DBuffer_Base85Encode(Tcl_Interp *interp, DBuffer *destPtr,
 		"\" bytes for buffer", (char *)NULL);
 	return -1;
     }
-    remainder = bufsize % 4;
-    send = buffer + (bufsize - remainder);
-    dp = destBytes;
-    count = 0;
-    for (sp = buffer; sp < send; sp += 4) {
-	unsigned int tuple;
-	
-	tuple = 0;
-#ifdef WORDS_BIGENDIAN
-	tuple |= (sp[3] << 24);
-	tuple |= (sp[2] << 16); 
-	tuple |= (sp[1] <<  8);
-	tuple |= sp[0];
-#else 
-	tuple |= (sp[0] << 24);
-	tuple |= (sp[1] << 16); 
-	tuple |= (sp[2] <<  8);
-	tuple |= sp[3];
-#endif
-	if (tuple == 0) {
-	    *dp++ = 'z';
-	    count++;
-	} else {
-	    dp[4] = '!' + (tuple % 85);
-	    tuple /= 85;
-	    dp[3] = '!' + (tuple % 85);
-	    tuple /= 85;
-	    dp[2] = '!' + (tuple % 85);
-	    tuple /= 85;
-	    dp[1] = '!' + (tuple % 85);
-	    tuple /= 85;
-	    dp[0] = '!' + (tuple % 85);
-	    dp += 5;
-	    count += 5;
-	}
-    }
-    
-    {
-	unsigned int tuple;
+    numBytes = Blt_Base64_Encode(interp, buffer, bufsize, destBytes);
+    assert(numBytes < length);
+    Blt_DBuffer_SetLength(destPtr, oldLength + numBytes);
+    return numBytes;
+}
 
-	/* Handle remaining bytes (0-3). */
-	numBytes = (bufsize & 0x3);
-	sp -= numBytes;
-	tuple = 0;
-	switch (numBytes) {
-#ifdef WORDS_BIGENDIAN
-	case 3:
-	    tuple |= (sp[2] <<  8);
-	case 2:
-	    tuple |= (sp[1] << 16); 
-	case 1:
-	    tuple |= (sp[0] << 24);
-#else
-	case 3:
-	    tuple |= (sp[2] << 24);
-	case 2:
-	    tuple |= (sp[1] << 16); 
-	case 1:
-	    tuple |= (sp[0] <<  8);
-#endif
-	default:
-	    break;
-	}
-	if (numBytes > 0) {
-	    tuple /= 85;	
-	    if (numBytes > 2) {
-		dp[3] = '!' + (tuple % 85);
-		count++;
-	    }
-	    tuple /= 85;	
-	    if (numBytes > 1) { 
-		dp[2] = '!' + (tuple % 85);
-		count++;
-	    }
-	    tuple /= 85;	
-	    dp[1] = '!' + (tuple % 85);
-	    tuple /= 85;	
-	    dp[0] = '!' + (tuple % 85);
-	    count += 2;
-	}
+
+int 
+Blt_DBuffer_AppendBase85(Tcl_Interp *interp, DBuffer *destPtr, 
+			 const unsigned char *buffer, size_t bufsize) 
+{
+    size_t oldLength, numBytes, length;
+    unsigned char *destBytes;
+
+    length = Blt_Base85_MaxBufferLength(bufsize);
+    oldLength = Blt_DBuffer_Length(destPtr);
+    destBytes = Blt_DBuffer_Extend(destPtr, length);
+    if (destBytes == NULL) {
+	Tcl_AppendResult(interp, "can't allocate \"", Blt_Itoa(length), 
+		"\" bytes for buffer", (char *)NULL);
+	return -1;
     }
-    assert(count < length);
-    Blt_DBuffer_SetLength(destPtr, oldLength + count);
-    return count;
+    numBytes = Blt_Base85_Encode(interp, buffer, bufsize, destBytes);
+    assert(numBytes < length);
+    Blt_DBuffer_SetLength(destPtr, oldLength + numBytes);
+    return numBytes;
 }

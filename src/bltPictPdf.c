@@ -1201,7 +1201,7 @@ PictureToPdf(Tcl_Interp *interp, Blt_Picture original, Pdf *pdfPtr,
 		       srcPtr->width, srcPtr->height, colorSpace, 
 		       OBJ_IMAGE_LENGTH);
     Blt_DBuffer_VarAppend(pdfPtr->dbuffer, "stream\n", (char *)NULL);
-    length = Blt_DBuffer_Base85Encode(interp, pdfPtr->dbuffer, data, count);
+    length = Blt_DBuffer_AppendBase85(interp, pdfPtr->dbuffer, data, count);
     Blt_DBuffer_VarAppend(pdfPtr->dbuffer, 
 			  "\n"
 			  "endstream\n", 

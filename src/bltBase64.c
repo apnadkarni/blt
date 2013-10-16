@@ -203,215 +203,120 @@ Blt_Base64_Decode(Tcl_Interp *interp, const char *string, size_t *lengthPtr)
     return buffer;
 }
 
-const char *
-Blt_Base64_Encode(Tcl_Interp *interp, const unsigned char *buffer, 
-		  size_t bufsize) 
+size_t 
+Blt_Base64_MaxBufferLength(size_t bufsize)
 {
-    char *dest, *dp;
-    int count, remainder;
     size_t length;
-    const unsigned char *sp, *send;
 
     /* Compute worst-case length. */
     length = (((bufsize + 1) * 4) + 2) / 3; 
     length += (length + 59) / 60;	/* Add space for newlines. */
     length++;				/* NUL byte */
-
-    dest = Blt_Malloc(sizeof(char) * length);
-    if (dest == NULL) {
-	Tcl_AppendResult(interp, "can't allocate \"", Blt_Itoa(length), 
-		"\" bytes for buffer", (char *)NULL);
-	return NULL;
-    }
-    count = 0;
-    remainder = bufsize % 3;
-    send = buffer + (bufsize - remainder);
-    dp = dest;
-    for (sp = buffer; sp < send; sp += 3) {
-	int a, b, c, d;
-
-	/*
-	 * in:        0        1        2
-	 *       |76543210|76543210|76543210|
-	 *        ------.......-------......
-	 * out:     a      b      c     d
-	 */
-	/* a = [xx765432] */
-	a = sp[0] >> 2;
-	/* b = [xx10xxxx] | [xxxx7654]  */
-	b = ((sp[0] & 0x03) << 4) | ((sp[1] & 0xF0) >> 4);
-	/* c = [xx3210xx] | [xxxxxx76]  */
-	c = ((sp[1] & 0x0F) << 2) | ((sp[2] & 0xC0) >> 6);
-	/* d = [xx543210]  */
-	d = (sp[2] & 0x3F);
-
-	dp[0] = encode64[a];
-	dp[1] = encode64[b];
-	dp[2] = encode64[c];
-	dp[3] = encode64[d];
-
-	dp += 4;
-	count += 4;
-	if (count > 60) {
-	    *dp++ = '\n';
-	    count = 0;
-	}
-    }
-
-    if (remainder > 0) {
-	int a, b, c;
-
-	/* 
-	 * Handle the two cases where the input buffer doesn't end on a 3-byte
-	 * boundary.
-	 */
-	if (remainder == 2) {
-	    a = sp[0] >> 2;
-	    b = ((sp[0] & 0x03) << 4) | ((sp[1] & 0xF0) >> 4);
-	    c = ((sp[1] & 0x0F) << 2);
-	    dp[0] = encode64[a];
-	    dp[1] = encode64[b];
-	    dp[2] = encode64[c];
-	    dp[3] = '=';
-	} else if (remainder == 1) {
-	    a = sp[0] >> 2;
-	    b = ((sp[0] & 0x03) << 4);
-	    dp[0] = encode64[a];
-	    dp[1] = encode64[b];
-	    dp[2] = dp[3] = '=';
-	}
-	dp += 4;
-	count += 4;
-	if (count > 60) {
-	    *dp++ = '\n';
-	}
-    }
-    assert((size_t)(dp - dest) < length);
-    *dp = '\0';
-    return dest;
+    return length;
 }
 
-Tcl_Obj *
-Blt_Base64_EncodeToObj(Tcl_Interp *interp, const unsigned char *buffer, 
-		       size_t bufsize) 
+size_t 
+Blt_Base85_MaxBufferLength(size_t bufsize)
 {
-    Tcl_Obj *objPtr;
-    char *dest, *dp;
-    int count, remainder;
     size_t length;
-    const unsigned char *sp, *send;
-
-    /* Compute worst-case length. */
-    length = (((bufsize + 1) * 4) + 2) / 3; 
-    length += (length + 59) / 60;	/* Add space for newlines. */
-    length++;				/* NUL byte */
-
-    dest = Blt_Malloc(sizeof(char) * length);
-    if (dest == NULL) {
-	Tcl_AppendResult(interp, "can't allocate \"", Blt_Itoa(length), 
-		"\" bytes for buffer", (char *)NULL);
-	return NULL;
-    }
-    count = 0;
-    remainder = bufsize % 3;
-    send = buffer + (bufsize - remainder);
-    dp = dest;
-    for (sp = buffer; sp < send; sp += 3) {
-	int a, b, c, d;
-
-	/*
-	 * in:        0        1        2
-	 *       |76543210|76543210|76543210|
-	 *        ------.......-------......
-	 * out:     a      b      c     d
-	 */
-	/* a = [xx765432] */
-	a = sp[0] >> 2;
-	/* b = [xx10xxxx] | [xxxx7654]  */
-	b = ((sp[0] & 0x03) << 4) | ((sp[1] & 0xF0) >> 4);
-	/* c = [xx3210xx] | [xxxxxx76]  */
-	c = ((sp[1] & 0x0F) << 2) | ((sp[2] & 0xC0) >> 6);
-	/* d = [xx543210]  */
-	d = (sp[2] & 0x3F);
-
-	dp[0] = encode64[a];
-	dp[1] = encode64[b];
-	dp[2] = encode64[c];
-	dp[3] = encode64[d];
-
-	dp += 4;
-	count += 4;
-	if (count > 60) {
-	    *dp++ = '\n';
-	    count = 0;
-	}
-    }
-
-    if (remainder > 0) {
-	int a, b, c;
-
-	/* 
-	 * Handle the two cases where the input buffer doesn't end on a 3-byte
-	 * boundary.
-	 */
-	if (remainder == 2) {
-	    a = sp[0] >> 2;
-	    b = ((sp[0] & 0x03) << 4) | ((sp[1] & 0xF0) >> 4);
-	    c = ((sp[1] & 0x0F) << 2);
-	    dp[0] = encode64[a];
-	    dp[1] = encode64[b];
-	    dp[2] = encode64[c];
-	    dp[3] = '=';
-	} else if (remainder == 1) {
-	    a = sp[0] >> 2;
-	    b = ((sp[0] & 0x03) << 4);
-	    dp[0] = encode64[a];
-	    dp[1] = encode64[b];
-	    dp[2] = dp[3] = '=';
-	}
-	dp += 4;
-	count += 4;
-	if (count > 60) {
-	    *dp++ = '\n';
-	}
-    }
-    assert((size_t)(dp - dest) < length);
-    objPtr = Tcl_NewStringObj(dest, dp - dest);
-    Blt_Free(dest);
-    return objPtr;
-}
-
-const char *
-Blt_Base85_Encode(Tcl_Interp *interp, const unsigned char *buffer, 
-		  size_t bufsize) 
-{
-    char *dp; 
-    int count;
-    int length, numBytes;
-    int remainder;
-    const unsigned char *sp, *send;
-    char *dest;
-
     /*
-     * Compute worst-case length of buffer needed for encoding. 
-     * That is 5 characters per 4 bytes.  There are newlines every
-     * 65 characters. The actual size can be smaller, depending upon
+     * Compute worst-case length of buffer needed for encoding.  That is 5
+     * characters per 4 bytes.  The actual size can be smaller, depending upon
      * the number of 0 tuples ('z' bytes).
      */
     length = ((bufsize + 3) / 4) * 5;	/* 5 characters per 4 bytes. */
-    length += (length + 64) / 65;	/* # of newlines. */
     length++;				/* NUL byte. */
+    return length;
+}
 
-    dest = Blt_Malloc(sizeof(char) * length);
-    if (dest == NULL) {
-	Tcl_AppendResult(interp, "can't allocate \"", Blt_Itoa(length), 
-		"\" bytes for buffer", (char *)NULL);
-	return NULL;
-    }
+size_t
+Blt_Base64_Encode(Tcl_Interp *interp, const unsigned char *buffer, 
+		  size_t bufsize, unsigned char *destBytes) 
+{
+    unsigned char *dp;
+    int count, remainder;
+    const unsigned char *sp, *send;
+
     count = 0;
-    remainder = bufsize % 4;
+    remainder = bufsize % 3;
     send = buffer + (bufsize - remainder);
-    dp = dest;
+    dp = destBytes;
+    for (sp = buffer; sp < send; sp += 3) {
+	int a, b, c, d;
+
+	/*
+	 * in:        0        1        2
+	 *       |76543210|76543210|76543210|
+	 *        ------.......-------......
+	 * out:     a      b      c     d
+	 */
+	/* a = [xx765432] */
+	a = sp[0] >> 2;
+	/* b = [xx10xxxx] | [xxxx7654]  */
+	b = ((sp[0] & 0x03) << 4) | ((sp[1] & 0xF0) >> 4);
+	/* c = [xx3210xx] | [xxxxxx76]  */
+	c = ((sp[1] & 0x0F) << 2) | ((sp[2] & 0xC0) >> 6);
+	/* d = [xx543210]  */
+	d = (sp[2] & 0x3F);
+
+	dp[0] = encode64[a];
+	dp[1] = encode64[b];
+	dp[2] = encode64[c];
+	dp[3] = encode64[d];
+
+	dp += 4;
+	count += 4;
+	if (count > 60) {
+	    *dp++ = '\n';
+	    count = 0;
+	}
+    }
+
+    if (remainder > 0) {
+	int a, b, c;
+
+	/* 
+	 * Handle the two cases where the input buffer doesn't end on a 3-byte
+	 * boundary.
+	 */
+	if (remainder == 2) {
+	    a = sp[0] >> 2;
+	    b = ((sp[0] & 0x03) << 4) | ((sp[1] & 0xF0) >> 4);
+	    c = ((sp[1] & 0x0F) << 2);
+	    dp[0] = encode64[a];
+	    dp[1] = encode64[b];
+	    dp[2] = encode64[c];
+	    dp[3] = '=';
+	} else if (remainder == 1) {
+	    a = sp[0] >> 2;
+	    b = ((sp[0] & 0x03) << 4);
+	    dp[0] = encode64[a];
+	    dp[1] = encode64[b];
+	    dp[2] = dp[3] = '=';
+	}
+	dp += 4;
+	count += 4;
+	if (count > 60) {
+	    *dp++ = '\n';
+	}
+    }
+    return (dp - destBytes);
+}
+
+size_t 
+Blt_Base85_Encode(Tcl_Interp *interp, const unsigned char *buffer, 
+		  size_t bufsize, unsigned char *destBytes) 
+{
+    unsigned char *dp; 
+    size_t count, length, numBytes;
+    int remainder;
+    const unsigned char *sp, *send;
+
+    length = Blt_Base85_MaxBufferLength(bufsize);
+    remainder = length % 4;
+    send = buffer + (bufsize - remainder);
+    dp = destBytes;
+    count = 0;
     for (sp = buffer; sp < send; sp += 4) {
 	unsigned int tuple;
 	
@@ -442,10 +347,6 @@ Blt_Base85_Encode(Tcl_Interp *interp, const unsigned char *buffer,
 	    dp[0] = '!' + (tuple % 85);
 	    dp += 5;
 	    count += 5;
-	}
-	if (count > 64) {
-	    *dp++ = '\n';
-	    count = 0;
 	}
     }
     
@@ -479,21 +380,44 @@ Blt_Base85_Encode(Tcl_Interp *interp, const unsigned char *buffer,
 	    tuple /= 85;	
 	    if (numBytes > 2) {
 		dp[3] = '!' + (tuple % 85);
+		count++;
 	    }
 	    tuple /= 85;	
 	    if (numBytes > 1) { 
 		dp[2] = '!' + (tuple % 85);
+		count++;
 	    }
 	    tuple /= 85;	
 	    dp[1] = '!' + (tuple % 85);
 	    tuple /= 85;	
 	    dp[0] = '!' + (tuple % 85);
-	    *dp++ = '\n';
+	    count += 2;
 	}
     }
-    assert((size_t)(dp - dest) < length);
-    *dp = '\0';
-    return dest;
+    assert(count <= length);
+    return count;
+}
+
+Tcl_Obj *
+Blt_Base64_EncodeToObj(Tcl_Interp *interp, const unsigned char *buffer, 
+		       size_t bufsize) 
+{
+    Tcl_Obj *objPtr;
+    unsigned char *destBytes;
+    size_t count, length;
+
+    length = Blt_Base64_MaxBufferLength(bufsize);
+    destBytes = Blt_Malloc(sizeof(char) * length);
+    if (destBytes == NULL) {
+	Tcl_AppendResult(interp, "can't allocate \"", Blt_Itoa(length), 
+		"\" bytes for buffer", (char *)NULL);
+	return NULL;
+    }
+    count = Blt_Base64_Encode(interp, buffer, bufsize, destBytes);
+    assert(count <= length);
+    objPtr = Tcl_NewStringObj((char *)destBytes, count);
+    Blt_Free(destBytes);
+    return objPtr;
 }
 
 const char *
@@ -537,7 +461,7 @@ Blt_Base16_Encode(Tcl_Interp *interp, const unsigned char *buffer,
 	    }
 	}
 	*dp++ = '\0';
-	assert((size_t)(dp - dest) < length);
+	assert((dp - dest) <= length);
     }
     return dest;
 }
@@ -634,4 +558,5 @@ Blt_Base64CmdInitProc(Tcl_Interp *interp)
 
     return Blt_InitCmd(interp, "::blt", &cmdSpec);
 }
+
 
