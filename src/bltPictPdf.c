@@ -29,12 +29,12 @@
  */
 
 /* TODO:
- *	o fix margin padding, default should be 0.
+ *	o fix margin padding, default should be 0.  (translate)
+ *	o handle -maxpect flag.	(Scale)
  *	x fix date.
  *	x only write one image on one page.
- *      o test greyscale images.
- *	o add softmask for alpha channel.
- *	o handle -maxpect flag.
+ *      x test greyscale images.
+ *	x add softmask for alpha channel.
  */
 #include "bltInt.h"
 #include <unistd.h>
@@ -935,13 +935,15 @@ enum PdfObjects {
     OBJ_PAGES,
     OBJ_PAGE,
     OBJ_RESOURCES,
-    OBJ_PAINT,
-    OBJ_PAINT_LENGTH,
+    OBJ_CONTENT,
+    OBJ_CONTENT_LENGTH,
     OBJ_IMAGE,
     OBJ_IMAGE_LENGTH,
+    OBJ_SOFTMASK,
+    OBJ_SOFTMASK_LENGTH,
 };
 
-#define OBJ_LAST	OBJ_IMAGE_LENGTH
+#define MAX_NUM_OBJS	OBJ_SOFTMASK_LENGTH
 
 static Pdf *
 NewPdf()
@@ -949,8 +951,8 @@ NewPdf()
     Pdf *pdfPtr;
 
     pdfPtr = Blt_AssertCalloc(1, sizeof(Pdf));
-    pdfPtr->numObjects = OBJ_LAST+1;
-    pdfPtr->xref = Blt_AssertCalloc(pdfPtr->numObjects, sizeof(int));
+    pdfPtr->xref = Blt_AssertCalloc(MAX_NUM_OBJS, sizeof(int));
+    pdfPtr->numObjects = OBJ_IMAGE_LENGTH;
     pdfPtr->dbuffer = Blt_DBuffer_Create();
     return pdfPtr;
 }
@@ -1006,7 +1008,7 @@ PictureToPdf(Tcl_Interp *interp, Blt_Picture original, Pdf *pdfPtr,
     size_t offset;
     struct tm *tmPtr;
     time_t ticks;
-    unsigned char *data;
+    unsigned char *imgData;
 
     srcPtr = original;
     Blt_DBuffer_VarAppend(pdfPtr->dbuffer, 
@@ -1081,7 +1083,7 @@ PictureToPdf(Tcl_Interp *interp, Blt_Picture original, Pdf *pdfPtr,
 		       OBJ_RESOURCES,
 		       setupPtr->right - setupPtr->left, 
 		       setupPtr->top - setupPtr->bottom,
-		       OBJ_PAINT);
+		       OBJ_CONTENT);
 
     SetXRefOffset(pdfPtr, OBJ_RESOURCES);
     /* Resource dictionary */
@@ -1095,19 +1097,20 @@ PictureToPdf(Tcl_Interp *interp, Blt_Picture original, Pdf *pdfPtr,
 		       OBJ_RESOURCES,
 		       OBJ_IMAGE);
     
-    /* Paint object.  */
-    SetXRefOffset(pdfPtr, OBJ_PAINT);
+    /* Content object.  */
+    SetXRefOffset(pdfPtr, OBJ_CONTENT);
     Blt_DBuffer_Format(pdfPtr->dbuffer, 
 		       "%d 0 obj\n"
 		       "  <<\n"
 		       "    /Length %d 0 R\n"
 		       "  >>\n"
 		       "stream\n",
-		       OBJ_PAINT,
-		       OBJ_PAINT_LENGTH);
+		       OBJ_CONTENT,
+		       OBJ_CONTENT_LENGTH);
     length = Blt_DBuffer_Format(pdfPtr->dbuffer, 
 				" q\n" 
-				"   %d 0 0 %d 0 0 cm\n"
+				"   1 0 0 1 0 0 cm\n"  /* Translate */
+				"   %d 0 0 %d 0 0 cm\n"	 /* Scale */
 				"   /Im1 Do\n"
 				" Q\n", 
 				setupPtr->right - setupPtr->left, 
@@ -1116,16 +1119,17 @@ PictureToPdf(Tcl_Interp *interp, Blt_Picture original, Pdf *pdfPtr,
 			  "endstream\n"
 			  "endobj\n", (char *)NULL);
 
-    /* Length of paint stream. */
-    SetXRefOffset(pdfPtr, OBJ_PAINT_LENGTH);
+    /* Length of content stream. */
+    SetXRefOffset(pdfPtr, OBJ_CONTENT_LENGTH);
     Blt_DBuffer_Format(pdfPtr->dbuffer, 
 		       "%d 0 obj\n" 
 		       "  %ld\n"
 		       "endobj\n", 
-		       OBJ_PAINT_LENGTH,
+		       OBJ_CONTENT_LENGTH,
 		       length);
 
     Blt_ClassifyPicture(srcPtr);
+#ifdef notdef
     if (!Blt_PictureIsOpaque(srcPtr)) {
 	Blt_Picture background;
 	
@@ -1135,11 +1139,12 @@ PictureToPdf(Tcl_Interp *interp, Blt_Picture original, Pdf *pdfPtr,
 			  srcPtr->height, 0, 0);
 	srcPtr = background;
     }
+#endif
     if (srcPtr->flags & BLT_PIC_ASSOCIATED_COLORS) {
 	Blt_UnassociateColors(srcPtr);
     }
     if (Blt_PictureIsGreyscale(srcPtr)) {
-	colorSpace = "DeviceGrey";
+	colorSpace = "DeviceGray";
 	numComponents = 1;
     } else {
 	colorSpace = "DeviceRGB";
@@ -1147,7 +1152,7 @@ PictureToPdf(Tcl_Interp *interp, Blt_Picture original, Pdf *pdfPtr,
     }
 
     /* Transfer image data to buffer. */
-    data = Blt_AssertMalloc(srcPtr->width * srcPtr->height * numComponents);
+    imgData = Blt_AssertMalloc(srcPtr->width * srcPtr->height * numComponents);
     if (Blt_PictureIsGreyscale(srcPtr)) {
 	Blt_Pixel *srcRowPtr;
 	int y;
@@ -1158,7 +1163,7 @@ PictureToPdf(Tcl_Interp *interp, Blt_Picture original, Pdf *pdfPtr,
 	    Blt_Pixel *sp, *send;
 
 	    for (sp = srcRowPtr, send = sp + srcPtr->width; sp < send; sp++) {
-		data[count] = sp->Red;
+		imgData[count] = sp->Red;
 		count++;
 	    }
 	    srcRowPtr += srcPtr->pixelsPerRow;
@@ -1173,9 +1178,9 @@ PictureToPdf(Tcl_Interp *interp, Blt_Picture original, Pdf *pdfPtr,
 	    Blt_Pixel *sp, *send;
 
 	    for (sp = srcRowPtr, send = sp + srcPtr->width; sp < send; sp++) {
-		data[count] = sp->Red;
-		data[count+1] = sp->Green;
-		data[count+2] = sp->Blue;
+		imgData[count] = sp->Red;
+		imgData[count+1] = sp->Green;
+		imgData[count+2] = sp->Blue;
 		count += 3;
 	    }
 	    srcRowPtr += srcPtr->pixelsPerRow;
@@ -1193,15 +1198,24 @@ PictureToPdf(Tcl_Interp *interp, Blt_Picture original, Pdf *pdfPtr,
 		       "    /Height %d\n"
 		       "    /ColorSpace /%s\n"
 		       "    /BitsPerComponent 8\n"
-		       "    /Filter /ASCII85Decode\n"
+		       "    /Filter /ASCII85Decode\n",
+		       OBJ_IMAGE, 
+		       srcPtr->width, srcPtr->height, colorSpace);
+    
+    if (!Blt_PictureIsOpaque(srcPtr)) {
+	Blt_DBuffer_Format(pdfPtr->dbuffer, 
+			   "    /SMask %d 0 R\n",
+			   OBJ_SOFTMASK);
+    }
+    Blt_DBuffer_Format(pdfPtr->dbuffer, 
 		       "    /Name /Im1\n"
 		       "    /Length %d 0 R\n" 
 		       "  >>\n",
- 		       OBJ_IMAGE, 
-		       srcPtr->width, srcPtr->height, colorSpace, 
 		       OBJ_IMAGE_LENGTH);
+    
     Blt_DBuffer_VarAppend(pdfPtr->dbuffer, "stream\n", (char *)NULL);
-    length = Blt_DBuffer_AppendBase85(interp, pdfPtr->dbuffer, data, count);
+    length = Blt_DBuffer_AppendBase85(interp, pdfPtr->dbuffer, imgData, 
+	srcPtr->width * srcPtr->height * numComponents);
     Blt_DBuffer_VarAppend(pdfPtr->dbuffer, 
 			  "\n"
 			  "endstream\n", 
@@ -1215,8 +1229,60 @@ PictureToPdf(Tcl_Interp *interp, Blt_Picture original, Pdf *pdfPtr,
 		       "endobj\n", 
 		       OBJ_IMAGE_LENGTH,
 		       length);
+    Blt_Free(imgData);
 
-    Blt_Free(data);
+    if (!Blt_PictureIsOpaque(srcPtr)) {
+	unsigned char *maskData, *dp;
+	Blt_Pixel *srcRowPtr;
+	int y;
+
+	maskData = Blt_AssertMalloc(srcPtr->width * srcPtr->height);
+	srcRowPtr = srcPtr->bits;
+	dp = maskData;
+	for (y = 0; y < srcPtr->height; y++) {
+	    Blt_Pixel *sp, *send;
+
+	    for (sp = srcRowPtr, send = sp + srcPtr->width; sp < send; sp++) {
+		*dp++ = sp->Alpha;
+	    }
+	    srcRowPtr += srcPtr->pixelsPerRow;
+	}
+	/* Softmask object */
+	SetXRefOffset(pdfPtr, OBJ_SOFTMASK);
+	Blt_DBuffer_Format(pdfPtr->dbuffer, 
+			   "%d 0 obj\n"
+			   "  <<\n"
+			   "    /Type /XObject\n"
+			   "    /Subtype /Image\n"
+			   "    /Width %d\n"
+			   "    /Height %d\n"
+			   "    /ColorSpace /DeviceGray\n"
+			   "    /BitsPerComponent 8\n"
+			   "    /Filter /ASCII85Decode\n"
+			   "    /Length %d 0 R\n" 
+			   "  >>\n",
+			   OBJ_SOFTMASK, 
+			   srcPtr->width, srcPtr->height, 
+			   OBJ_SOFTMASK_LENGTH);
+	Blt_DBuffer_VarAppend(pdfPtr->dbuffer, "stream\n", (char *)NULL);
+	length = Blt_DBuffer_AppendBase85(interp, pdfPtr->dbuffer, maskData,
+		srcPtr->width * srcPtr->height);
+	Blt_DBuffer_VarAppend(pdfPtr->dbuffer, 
+			      "\n"
+			      "endstream\n", 
+			      "endobj\n", (char *)NULL);
+
+	/* Length of softmask stream object. */
+	SetXRefOffset(pdfPtr, OBJ_SOFTMASK_LENGTH);
+	Blt_DBuffer_Format(pdfPtr->dbuffer, 
+			   "%d 0 obj\n" 
+			   "  %ld\n"
+			   "endobj\n", 
+			   OBJ_SOFTMASK_LENGTH,
+			   length);
+	Blt_Free(maskData);
+	pdfPtr->numObjects = OBJ_SOFTMASK_LENGTH;
+    }
 
     /* Xref */
     offset = Blt_DBuffer_Length(pdfPtr->dbuffer);
@@ -1224,11 +1290,11 @@ PictureToPdf(Tcl_Interp *interp, Blt_Picture original, Pdf *pdfPtr,
 		       "xref\n"
 		       "0 %d\n"
 		       "0000000000 65535 f \n",
-		       pdfPtr->numObjects);
-    for (i = OBJ_CATALOG; i <= OBJ_IMAGE_LENGTH; i++) {
+		       pdfPtr->numObjects + 1);
+    for (i = 0; i < pdfPtr->numObjects; i++) {
 	Blt_DBuffer_Format(pdfPtr->dbuffer,
 			   "%010ld 00000 n \n", 
-			   pdfPtr->xref[i-1]);
+			   pdfPtr->xref[i]);
     }
 
     /* Trailer */
@@ -1242,7 +1308,7 @@ PictureToPdf(Tcl_Interp *interp, Blt_Picture original, Pdf *pdfPtr,
 		       "startxref\n"
 		       "%ld\n"
 		       "%%%%EOF\n", 
-		       pdfPtr->numObjects,
+		       pdfPtr->numObjects + 1,
 		       OBJ_CATALOG, 
 		       OBJ_INFO,
 		       offset);
@@ -1364,7 +1430,6 @@ ExportPdf(Tcl_Interp *interp, unsigned int index, Blt_Chain chain, int objc,
     switches.bg.u32 = 0xFFFFFFFF; /* Default bgcolor is white. */
     switches.setup.reqPaperHeight = 792; /* 11 inches */
     switches.setup.reqPaperWidth = 612; /* 8.5 inches */
-    switches.setup.level = 1;
     switches.setup.xPad.side1 = 72;
     switches.setup.xPad.side2 = 72;
     switches.setup.yPad.side1 = 72;
