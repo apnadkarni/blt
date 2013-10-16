@@ -931,17 +931,30 @@ PdfToPicture(Tcl_Interp *interp, const char *fileName, Blt_DBuffer dbuffer,
     return chain;
 }
 
+enum PdfObjects {
+    OBJ_NULL,    
+    OBJ_CATALOG,
+    OBJ_INFO,
+    OBJ_PAGES,
+    OBJ_PAGE,
+    OBJ_RESOURCES,
+    OBJ_PAINT,
+    OBJ_PAINT_LENGTH,
+    OBJ_IMAGE,
+    OBJ_IMAGE_LENGTH,
+};
+
+#define OBJ_LAST	OBJ_IMAGE_LENGTH
+
 static Pdf *
-NewPdf(Blt_Chain chain)
+NewPdf()
 {
     Pdf *pdfPtr;
 
     pdfPtr = Blt_AssertCalloc(1, sizeof(Pdf));
-    pdfPtr->numImages = Blt_Chain_GetLength(chain);
-    pdfPtr->numObjects = (pdfPtr->numImages * 6) + 4;
-    pdfPtr->xref = Blt_AssertCalloc(pdfPtr->numObjects+1, sizeof(int));
+    pdfPtr->numObjects = OBJ_LAST+1;
+    pdfPtr->xref = Blt_AssertCalloc(pdfPtr->numObjects, sizeof(int));
     pdfPtr->dbuffer = Blt_DBuffer_Create();
-    pdfPtr->current = 4;
     return pdfPtr;
 }
 
@@ -977,36 +990,84 @@ AddComments(Pdf *pdfPtr, const char **comments)
  * XREF		0
  */
 
-#define CATALOG_OBJECT	 1
-#define INFO_OBJECT	 2
-#define PAGES_OBJECT	 3
-#define XREF_OBJECT	 4
-#define START		 5
-#define OFF_PAGE	 0
-#define OFF_RESOURCES	 1
-#define OFF_PAINT	 2
-#define OFF_PAINT_LENGTH 3
-#define OFF_IMAGE	 4
-#define OFF_IMAGE_LENGTH 5
+#define SetXRefOffset(p,id) \
+    ((p)->xref[(id) - 1] = Blt_DBuffer_Length((p)->dbuffer));
 
 static int 
 PictureToPdf(Tcl_Interp *interp, Blt_Picture original, Pdf *pdfPtr, 
 	      PdfExportSwitches *switchesPtr)
 {
+    PageSetup *setupPtr = &switchesPtr->setup;
     Picture *srcPtr;
-    unsigned char *data;
-    int count;
+    char date[200];
     const char *colorSpace;
+    const char *version;
+    int count;
+    int i;
     int numComponents;
     size_t length;
-    PageSetup *setupPtr = &switchesPtr->setup;
+    size_t offset;
+    struct tm *tmPtr;
+    time_t ticks;
+    unsigned char *data;
 
     srcPtr = original;
+    Blt_DBuffer_VarAppend(pdfPtr->dbuffer, 
+			  "%PDF-1.4\n",
+			  (char *)NULL);
+
+    if (setupPtr->comments != NULL) {
+	AddComments(pdfPtr, setupPtr->comments);
+    }
+
+    version = Tcl_GetVar(interp, "blt_version", TCL_GLOBAL_ONLY);
+    if (version == NULL) {
+	version = "???";
+    }
+    ticks = time((time_t *) NULL);
+    tmPtr = gmtime(&ticks);
+    strftime(date, 200, "D:%Y%m%d%H%M%SZ", tmPtr);
+
+    /* Catalog object */
+    SetXRefOffset(pdfPtr, OBJ_CATALOG);
+    Blt_DBuffer_Format(pdfPtr->dbuffer, 
+		       "%d 0 obj\n"
+		       "  <<\n"
+		       "    /Type /Catalog\n"
+		       "    /Pages %d 0 R\n"
+		       "  >>\n"
+		       "endobj\n", 
+		       OBJ_CATALOG, OBJ_PAGES);
+
+    /* Information object */
+    SetXRefOffset(pdfPtr, OBJ_INFO);
+    Blt_DBuffer_Format(pdfPtr->dbuffer,
+		       "%d 0 obj\n"
+		       "  <<\n"
+		       "    /CreationDate (%s)\n"
+		       "    /Producer (BLT %s Picture)\n"
+		       "  >>\n"
+		       "endobj\n", 
+		       OBJ_INFO, 
+		       date, 
+		       version);
+
+    /* Pages object */
+    SetXRefOffset(pdfPtr, OBJ_PAGES);
+    Blt_DBuffer_Format(pdfPtr->dbuffer, 
+		       "%d 0 obj\n"
+		       "  <<\n"
+		       "    /Type /Pages\n"
+		       "    /Kids [ %d 0 R ]\n"
+		       "    /Count 1\n"
+		       "  >>\n"
+		       "endobj\n", 
+		       OBJ_PAGES,
+		       OBJ_PAGE); 
+
     Blt_Ps_ComputeBoundingBox(setupPtr, srcPtr->width, srcPtr->height);
 
-    pdfPtr->xref[pdfPtr->current + OFF_PAGE] = 
-	Blt_DBuffer_Length(pdfPtr->dbuffer);
-    
+    SetXRefOffset(pdfPtr, OBJ_PAGE);
     /* Page object. */
     Blt_DBuffer_Format(pdfPtr->dbuffer, 
 		       "%d 0 obj\n" 
@@ -1018,58 +1079,53 @@ PictureToPdf(Tcl_Interp *interp, Blt_Picture original, Pdf *pdfPtr,
 		       "    /Contents %d 0 R\n"
                        "  >>\n"
 		       "endobj\n", 
-		       pdfPtr->current + OFF_PAGE, 
-		       PAGES_OBJECT,
-		       pdfPtr->current + OFF_RESOURCES,
+		       OBJ_PAGE, 
+		       OBJ_PAGES,
+		       OBJ_RESOURCES,
 		       setupPtr->right - setupPtr->left, 
 		       setupPtr->top - setupPtr->bottom,
-		       pdfPtr->current + OFF_PAINT);
+		       OBJ_PAINT);
 
-    pdfPtr->xref[pdfPtr->current + OFF_RESOURCES] = 
-	Blt_DBuffer_Length(pdfPtr->dbuffer);
+    SetXRefOffset(pdfPtr, OBJ_RESOURCES);
     /* Resource dictionary */
     Blt_DBuffer_Format(pdfPtr->dbuffer, 
 		       "%d 0 obj\n" 
 		       "  <<\n" 
 		       "    /ProcSet [ /PDF /ImageC /ImageB ]\n"
-		       "    /XObject << /Im%d %d 0 R >>\n"
+		       "    /XObject << /Im1 %d 0 R >>\n"
 		       "  >>\n"
 		       "endobj\n", 
-		       pdfPtr->current + OFF_RESOURCES,
-		       pdfPtr->numImages, 
-		       pdfPtr->current + OFF_IMAGE);
+		       OBJ_RESOURCES,
+		       OBJ_IMAGE);
     
     /* Paint object.  */
-    pdfPtr->xref[pdfPtr->current + OFF_PAINT] = 
-	Blt_DBuffer_Length(pdfPtr->dbuffer);
+    SetXRefOffset(pdfPtr, OBJ_PAINT);
     Blt_DBuffer_Format(pdfPtr->dbuffer, 
-		      "%d 0 obj\n"
-		      "  <<\n"
-		      "    /Length %d 0 R\n"
-		      "  >>\n"
-		      "stream\n",
-		      pdfPtr->current + OFF_PAINT,
-		      pdfPtr->current + OFF_PAINT_LENGTH);
+		       "%d 0 obj\n"
+		       "  <<\n"
+		       "    /Length %d 0 R\n"
+		       "  >>\n"
+		       "stream\n",
+		       OBJ_PAINT,
+		       OBJ_PAINT_LENGTH);
     length = Blt_DBuffer_Format(pdfPtr->dbuffer, 
 				" q\n" 
 				"   %d 0 0 %d 0 0 cm\n"
-				"   /Im%d Do\n"
+				"   /Im1 Do\n"
 				" Q\n", 
 				setupPtr->right - setupPtr->left, 
-				setupPtr->top - setupPtr->bottom,
-				pdfPtr->numImages);
+				setupPtr->top - setupPtr->bottom);
     Blt_DBuffer_VarAppend(pdfPtr->dbuffer, 
 			  "endstream\n"
 			  "endobj\n", (char *)NULL);
 
     /* Length of paint stream. */
-    pdfPtr->xref[pdfPtr->current + OFF_PAINT_LENGTH] = 
-	Blt_DBuffer_Length(pdfPtr->dbuffer);
+    SetXRefOffset(pdfPtr, OBJ_PAINT_LENGTH);
     Blt_DBuffer_Format(pdfPtr->dbuffer, 
 		       "%d 0 obj\n" 
 		       "  %ld\n"
 		       "endobj\n", 
-		       pdfPtr->current + OFF_PAINT_LENGTH,
+		       OBJ_PAINT_LENGTH,
 		       length);
 
     Blt_ClassifyPicture(srcPtr);
@@ -1130,8 +1186,7 @@ PictureToPdf(Tcl_Interp *interp, Blt_Picture original, Pdf *pdfPtr,
     }
 
     /* Image object */
-    pdfPtr->xref[pdfPtr->current + OFF_IMAGE] = 
-	Blt_DBuffer_Length(pdfPtr->dbuffer);
+    SetXRefOffset(pdfPtr, OBJ_IMAGE);
     Blt_DBuffer_Format(pdfPtr->dbuffer, 
 		       "%d 0 obj\n"
 		       "  <<\n"
@@ -1142,13 +1197,12 @@ PictureToPdf(Tcl_Interp *interp, Blt_Picture original, Pdf *pdfPtr,
 		       "    /ColorSpace /%s\n"
 		       "    /BitsPerComponent 8\n"
 		       "    /Filter /ASCII85Decode\n"
-		       "    /Name /Im%d\n"
+		       "    /Name /Im1\n"
 		       "    /Length %d 0 R\n" 
 		       "  >>\n",
- 		       pdfPtr->current + OFF_IMAGE, 
+ 		       OBJ_IMAGE, 
 		       srcPtr->width, srcPtr->height, colorSpace, 
-		       pdfPtr->numImages,
-		       pdfPtr->current + OFF_IMAGE_LENGTH);
+		       OBJ_IMAGE_LENGTH);
     Blt_DBuffer_VarAppend(pdfPtr->dbuffer, "stream\n", (char *)NULL);
     length = Blt_DBuffer_Base85Encode(interp, pdfPtr->dbuffer, data, count);
     Blt_DBuffer_VarAppend(pdfPtr->dbuffer, 
@@ -1157,105 +1211,16 @@ PictureToPdf(Tcl_Interp *interp, Blt_Picture original, Pdf *pdfPtr,
 			  "endobj\n", (char *)NULL);
 
     /* Length of image stream object. */
-    pdfPtr->xref[pdfPtr->current + OFF_IMAGE_LENGTH] = 
-	Blt_DBuffer_Length(pdfPtr->dbuffer);
+    SetXRefOffset(pdfPtr, OBJ_IMAGE_LENGTH);
     Blt_DBuffer_Format(pdfPtr->dbuffer, 
 		       "%d 0 obj\n" 
 		       "  %ld\n"
 		       "endobj\n", 
-		       pdfPtr->current + OFF_IMAGE_LENGTH,
+		       OBJ_IMAGE_LENGTH,
 		       length);
 
     Blt_Free(data);
 
-    if (srcPtr != original) {
-	Blt_Free(srcPtr);
-    }
-    return TCL_OK;
-}
-
-static int 
-PicturesToPdf(Tcl_Interp *interp, Blt_Chain chain, Pdf *pdfPtr, 
-	      PdfExportSwitches *switchesPtr)
-{
-    Blt_ChainLink link;
-    time_t ticks;
-    char date[200];
-    struct tm *tmPtr;
-    const char *version;
-    int i;
-    size_t offset;
-
-    Blt_DBuffer_VarAppend(pdfPtr->dbuffer, 
-			  "%PDF-1.4\n",
-			  (char *)NULL);
-
-    if (switchesPtr->setup.comments != NULL) {
-	AddComments(pdfPtr, switchesPtr->setup.comments);
-    }
-
-    version = Tcl_GetVar(interp, "blt_version", TCL_GLOBAL_ONLY);
-    if (version == NULL) {
-	version = "???";
-    }
-    ticks = time((time_t *) NULL);
-    tmPtr = localtime(&ticks);
-    strftime(date, 200, "D:%Y%m%d%H%M%S", tmPtr);
-
-    /* Catalog object */
-    pdfPtr->xref[CATALOG_OBJECT] = Blt_DBuffer_Length(pdfPtr->dbuffer);
-    Blt_DBuffer_Format(pdfPtr->dbuffer, 
-		       "%d 0 obj\n"
-		       "  <<\n"
-		       "    /Type /Catalog\n"
-		       "    /Pages %d 0 R\n"
-		       "  >>\n"
-		       "endobj\n", 
-		       CATALOG_OBJECT, PAGES_OBJECT);
-
-    /* Information object */
-    pdfPtr->xref[INFO_OBJECT] = Blt_DBuffer_Length(pdfPtr->dbuffer);
-    Blt_DBuffer_Format(pdfPtr->dbuffer,
-		       "%d 0 obj\n"
-		       "  <<\n"
-		       "    /CreationDate (%s)\n"
-		       "    /Producer (BLT %s Picture)\n"
-		       "  >>\n"
-		       "endobj\n", 
-		       INFO_OBJECT, 
-		       date, 
-		       version);
-
-    /* Pages object */
-    pdfPtr->xref[PAGES_OBJECT] = Blt_DBuffer_Length(pdfPtr->dbuffer);
-    Blt_DBuffer_Format(pdfPtr->dbuffer, 
-		       "%d 0 obj\n"
-		       "  <<\n"
-		       "    /Type /Pages\n"
-		       "    /Kids [\n",
-		       PAGES_OBJECT); 
-    pdfPtr->numImages = Blt_Chain_GetLength(chain);
-    for (i = 0; i < pdfPtr->numImages; i += 6) {
-	Blt_DBuffer_Format(pdfPtr->dbuffer,
-			   "      %d 0 R\n", 
-			   i + 4);
-    }
-    Blt_DBuffer_Format(pdfPtr->dbuffer,
-		       "    ]\n"
-		       "    /Count %d\n"
-		       "  >>\n"
-		       "endobj\n", 
-		       pdfPtr->numImages);
-
-    for (link = Blt_Chain_FirstLink(chain); link != NULL; 
-	 link = Blt_Chain_NextLink(link)) {
-	Picture *srcPtr;
-
-	srcPtr = Blt_Chain_GetValue(link);
-	if (PictureToPdf(interp, srcPtr, pdfPtr, switchesPtr) != TCL_OK) {
-	    return TCL_ERROR;
-	}
-    }
     /* Xref */
     offset = Blt_DBuffer_Length(pdfPtr->dbuffer);
     Blt_DBuffer_Format(pdfPtr->dbuffer,
@@ -1263,10 +1228,10 @@ PicturesToPdf(Tcl_Interp *interp, Blt_Chain chain, Pdf *pdfPtr,
 		       "0 %d\n"
 		       "0000000000 65535 f \n",
 		       pdfPtr->numObjects);
-    for (i = 1; i < pdfPtr->numObjects; i++) {
+    for (i = OBJ_CATALOG; i <= OBJ_IMAGE_LENGTH; i++) {
 	Blt_DBuffer_Format(pdfPtr->dbuffer,
 			   "%010ld 00000 n \n", 
-			   pdfPtr->xref[i]);
+			   pdfPtr->xref[i-1]);
     }
 
     /* Trailer */
@@ -1280,10 +1245,14 @@ PicturesToPdf(Tcl_Interp *interp, Blt_Chain chain, Pdf *pdfPtr,
 		       "startxref\n"
 		       "%ld\n"
 		       "%%%%EOF\n", 
-		       pdfPtr->numObjects - 1, 
-		       CATALOG_OBJECT, 
-		       INFO_OBJECT,
+		       pdfPtr->numObjects,
+		       OBJ_CATALOG, 
+		       OBJ_INFO,
 		       offset);
+
+    if (srcPtr != original) {
+	Blt_Free(srcPtr);
+    }
     return TCL_OK;
 }
 
@@ -1319,7 +1288,6 @@ WritePdf(Tcl_Interp *interp, Blt_Picture picture)
     Pdf *pdfPtr;
     PdfExportSwitches switches;
     Tcl_Obj *objPtr;
-    Blt_Chain chain;
 
     /* Default export switch settings. */
     memset(&switches, 0, sizeof(switches));
@@ -1333,14 +1301,11 @@ WritePdf(Tcl_Interp *interp, Blt_Picture picture)
     switches.setup.yPad.side2 = 72;
     switches.setup.flags = 0;
 
-    chain = Blt_Chain_Create();
-    Blt_Chain_Append(chain, picture);
     objPtr = NULL;
-    pdfPtr = NewPdf(chain);
-    if (PicturesToPdf(interp, chain, pdfPtr, &switches) == TCL_OK) {
+    pdfPtr = NewPdf();
+    if (PictureToPdf(interp, picture, pdfPtr, &switches) == TCL_OK) {
 	objPtr = Blt_DBuffer_Base64EncodeToObj(interp, pdfPtr->dbuffer);
     }
-    Blt_Chain_Destroy(chain);
     FreePdf(pdfPtr);
     return objPtr;
 }
@@ -1395,6 +1360,7 @@ ExportPdf(Tcl_Interp *interp, unsigned int index, Blt_Chain chain, int objc,
     PdfExportSwitches switches;
     Pdf *pdfPtr;
     int result;
+    Blt_Picture picture;
 
     result = TCL_ERROR;
     memset(&switches, 0, sizeof(switches));
@@ -1418,8 +1384,9 @@ ExportPdf(Tcl_Interp *interp, unsigned int index, Blt_Chain chain, int objc,
 	Blt_FreeSwitches(exportSwitches, (char *)&switches, 0);
 	return TCL_ERROR;
     }
-    pdfPtr = NewPdf(chain);
-    if (PicturesToPdf(interp, chain, pdfPtr, &switches) != TCL_OK) {
+    picture = Blt_GetNthPicture(chain, switches.index);
+    pdfPtr = NewPdf();
+    if (PictureToPdf(interp, picture, pdfPtr, &switches) != TCL_OK) {
 	Tcl_AppendResult(interp, "can't convert \"", 
 		Tcl_GetString(objv[2]), "\"", (char *)NULL);
 	goto error;

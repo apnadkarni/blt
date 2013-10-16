@@ -4041,10 +4041,10 @@ GetEntryFromObj2(TreeView *viewPtr, Tcl_Obj *objPtr, Entry **entryPtrPtr)
 	if (node != NULL) {
 	    *entryPtrPtr = NodeToEntry(viewPtr, node);
 	}
-	return TCL_OK;		/* Node Id. */
+	return TCL_OK;			/* Node Id. */
     }
     if (GetEntryFromSpecialId(viewPtr, string, entryPtrPtr) == TCL_OK) {
-	return TCL_OK;		/* Special Id. */
+	return TCL_OK;			/* Special Id. */
     }
     if (GetTagIter(viewPtr, string, &iter) != TCL_OK) {
 	return TCL_ERROR;
@@ -4055,7 +4055,7 @@ GetEntryFromObj2(TreeView *viewPtr, Tcl_Obj *objPtr, Entry **entryPtrPtr)
 	return TCL_ERROR;
     }
     *entryPtrPtr = iter.entryPtr;
-    return TCL_OK;		/* Singleton tag. */
+    return TCL_OK;			/* Singleton tag. */
 }
 
 static int
