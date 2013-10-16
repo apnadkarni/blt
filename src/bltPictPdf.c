@@ -28,6 +28,14 @@
  *
  */
 
+/* TODO:
+ *	fix margin padding, default should be 0.
+ *	fix date.
+ *	only write one image on one page.
+ *      test greyscale images.
+ *	add softmask for alpha channel.
+ *	handle -maxpect flag.
+ */
 #include "bltInt.h"
 #include <unistd.h>
 
@@ -156,14 +164,6 @@ static Blt_SwitchSpec exportSwitches[] =
 	Blt_Offset(PdfExportSwitches, dataObjPtr),  0},
     {BLT_SWITCH_OBJ,     "-file",	"fileName", (char *)NULL,
 	Blt_Offset(PdfExportSwitches, fileObjPtr),  0},
-    {BLT_SWITCH_BITMASK, "-center",	"", (char *)NULL,
-	Blt_Offset(PdfExportSwitches, setup.flags), 0, PS_CENTER},
-    {BLT_SWITCH_BITMASK, "-greyscale",	"", (char *)NULL,
-	Blt_Offset(PdfExportSwitches, setup.flags), 0, PS_GREYSCALE},
-    {BLT_SWITCH_BITMASK, "-landscape",	"", (char *)NULL,
-	Blt_Offset(PdfExportSwitches, setup.flags), 0, PS_LANDSCAPE},
-    {BLT_SWITCH_INT_POS, "-level",	"pdflevel", (char *)NULL,
-	Blt_Offset(PdfExportSwitches, setup.level), 0},
     {BLT_SWITCH_BITMASK, "-maxpect",	"", (char *)NULL,
 	Blt_Offset(PdfExportSwitches, setup.flags), 0, PS_MAXPECT},
     {BLT_SWITCH_CUSTOM,  "-padx",	"pad", (char *)NULL,
@@ -1152,7 +1152,8 @@ PictureToPdf(Tcl_Interp *interp, Blt_Picture original, Pdf *pdfPtr,
     Blt_DBuffer_VarAppend(pdfPtr->dbuffer, "stream\n", (char *)NULL);
     length = Blt_DBuffer_Base85Encode(interp, pdfPtr->dbuffer, data, count);
     Blt_DBuffer_VarAppend(pdfPtr->dbuffer, 
-			  "\nendstream\n", 
+			  "\n"
+			  "endstream\n", 
 			  "endobj\n", (char *)NULL);
 
     /* Length of image stream object. */
