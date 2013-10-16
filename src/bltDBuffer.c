@@ -493,8 +493,7 @@ Blt_DBuffer_Base85Encode(Tcl_Interp *interp, DBuffer *destPtr,
 		const unsigned char *buffer, size_t bufsize) 
 {
     unsigned char *dp; 
-    int count;
-    int length, numBytes;
+    size_t oldLength, count, length, numBytes;
     int remainder;
     const unsigned char *sp, *send;
     unsigned char *destBytes;
@@ -507,6 +506,7 @@ Blt_DBuffer_Base85Encode(Tcl_Interp *interp, DBuffer *destPtr,
     length = ((bufsize + 3) / 4) * 5;	/* 5 characters per 4 bytes. */
     length++;				/* NUL byte. */
 
+    oldLength = Blt_DBuffer_Length(destPtr);
     destBytes = Blt_DBuffer_Extend(destPtr, length);
     if (destBytes == NULL) {
 	Tcl_AppendResult(interp, "can't allocate \"", Blt_Itoa(length), 
@@ -516,6 +516,7 @@ Blt_DBuffer_Base85Encode(Tcl_Interp *interp, DBuffer *destPtr,
     remainder = bufsize % 4;
     send = buffer + (bufsize - remainder);
     dp = destBytes;
+    count = 0;
     for (sp = buffer; sp < send; sp += 4) {
 	unsigned int tuple;
 	
@@ -545,6 +546,7 @@ Blt_DBuffer_Base85Encode(Tcl_Interp *interp, DBuffer *destPtr,
 	    tuple /= 85;
 	    dp[0] = '!' + (tuple % 85);
 	    dp += 5;
+	    count += 5;
 	}
     }
     
@@ -578,18 +580,21 @@ Blt_DBuffer_Base85Encode(Tcl_Interp *interp, DBuffer *destPtr,
 	    tuple /= 85;	
 	    if (numBytes > 2) {
 		dp[3] = '!' + (tuple % 85);
+		count++;
 	    }
 	    tuple /= 85;	
 	    if (numBytes > 1) { 
 		dp[2] = '!' + (tuple % 85);
+		count++;
 	    }
 	    tuple /= 85;	
 	    dp[1] = '!' + (tuple % 85);
 	    tuple /= 85;	
 	    dp[0] = '!' + (tuple % 85);
+	    count += 2;
 	}
     }
-    assert((size_t)(dp - destBytes) < length);
-    *dp = '\0';
-    return dp - destBytes;
+    assert(count < length);
+    Blt_DBuffer_SetLength(destPtr, oldLength + count);
+    return count;
 }
