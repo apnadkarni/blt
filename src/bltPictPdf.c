@@ -29,12 +29,12 @@
  */
 
 /* TODO:
- *	fix margin padding, default should be 0.
- *	fix date.
- *	only write one image on one page.
- *      test greyscale images.
- *	add softmask for alpha channel.
- *	handle -maxpect flag.
+ *	o fix margin padding, default should be 0.
+ *	x fix date.
+ *	x only write one image on one page.
+ *      o test greyscale images.
+ *	o add softmask for alpha channel.
+ *	o handle -maxpect flag.
  */
 #include "bltInt.h"
 #include <unistd.h>
@@ -77,7 +77,6 @@ extern Tcl_AppInitProc Blt_PicturePdfInit;
 #define MIN(a,b)	(((a)<(b))?(a):(b))
 
 #define div257(t)	(((t)+((t)>>8))>>8)
-#define SetBit(x)	destRowPtr[(x>>3)] |= (0x80 >>(x&7))
 #define GetBit(x)	 srcRowPtr[(x>>3)] &  (0x80 >> (x&7))
 
 #define MAXCOLORS       256
@@ -97,8 +96,6 @@ typedef struct {
     unsigned int *xref;			/* Array of object numbers. */
     int numObjects;			/* # of slots in above array. */
     Blt_DBuffer dbuffer;		/* Holds output (PDF file). */
-    int numImages;			/* # of images in PDF file. */
-    int current;			/* Current object number. */
 } Pdf;
     
 #ifdef notdef
