@@ -9909,6 +9909,7 @@ EntryCgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
     TreeView *viewPtr = clientData;
     Entry *entryPtr;
 
+    entryPtr = NULL;			/* Suppress compiler warning. */
     if (GetEntry(viewPtr, objv[3], &entryPtr) != TCL_OK) {
 	return TCL_ERROR;
     }
@@ -10005,6 +10006,7 @@ EntryIsBeforeOp(ClientData clientData, Tcl_Interp *interp, int objc,
     Entry *e1Ptr, *e2Ptr;
     int bool;
 
+    e1Ptr = e2Ptr = NULL;		/* Suppress compiler warning. */
     if ((GetEntry(viewPtr, objv[3], &e1Ptr) != TCL_OK) ||
 	(GetEntry(viewPtr, objv[4], &e2Ptr) != TCL_OK)) {
 	return TCL_ERROR;
@@ -10030,6 +10032,7 @@ EntryIsExposedOp(ClientData clientData, Tcl_Interp *interp, int objc,
     Entry *entryPtr;
     int bool;
 
+    entryPtr = NULL;			/* Suppress compiler warning. */
     if (GetEntry(viewPtr, objv[3], &entryPtr) != TCL_OK) {
 	return TCL_ERROR;
     }
@@ -10055,6 +10058,7 @@ EntryIsHiddenOp(ClientData clientData, Tcl_Interp *interp, int objc,
     Entry *entryPtr;
     int bool;
 
+    entryPtr = NULL;			/* Suppress compiler warning. */
     if (GetEntry(viewPtr, objv[3], &entryPtr) != TCL_OK) {
 	return TCL_ERROR;
     }
@@ -10080,6 +10084,7 @@ EntryIsOpenOp(ClientData clientData, Tcl_Interp *interp, int objc,
     Entry *entryPtr;
     int bool;
 
+    entryPtr = NULL;			/* Suppress compiler warning. */
     if (GetEntry(viewPtr, objv[3], &entryPtr) != TCL_OK) {
 	return TCL_ERROR;
     }
@@ -10108,6 +10113,7 @@ EntryChildrenOp(ClientData clientData, Tcl_Interp *interp, int objc,
     ChildrenSwitches switches;
     Entry *entryPtr;
 
+    parentPtr = NULL;			/* Suppress compiler warning. */
     if (GetEntry(viewPtr, objv[3], &parentPtr) != TCL_OK) {
 	return TCL_ERROR;
     }
@@ -10148,6 +10154,7 @@ EntryDegreeOp(ClientData clientData, Tcl_Interp *interp, int objc,
     Entry *parentPtr, *entryPtr;
     long count;
 
+    parentPtr = NULL;			/* Suppress compiler warning. */
     if (GetEntry(viewPtr, objv[3], &parentPtr) != TCL_OK) {
 	return TCL_ERROR;
     }
@@ -10175,6 +10182,7 @@ EntryDeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
     TreeView *viewPtr = clientData;
     Entry *entryPtr;
 
+    entryPtr = NULL;			/* Suppress compiler warning. */
     if (GetEntry(viewPtr, objv[3], &entryPtr) != TCL_OK) {
 	return TCL_ERROR;
     }
@@ -10280,6 +10288,7 @@ EntrySizeOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	    Tcl_GetString(objv[0]), " entry open node\"", (char *)NULL);
 	return TCL_ERROR;
     }
+    entryPtr = NULL;			/* Suppress compiler warning. */
     if (GetEntry(viewPtr, objv[3], &entryPtr) != TCL_OK) {
 	return TCL_ERROR;
     }
@@ -11394,6 +11403,7 @@ MoveOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	    "\": should be into, before, or after", (char *)NULL);
 	return TCL_ERROR;
     }
+    destPtr = NULL;			/* Suppress compiler warning. */
     if (GetEntry(viewPtr, objv[4], &destPtr) != TCL_OK) {
 	return TCL_ERROR;
     }
@@ -11610,6 +11620,7 @@ RangeOp(ClientData clientData, Tcl_Interp *interp, int objc,
     char *string;
 
     mask = 0;
+    lastPtr = firstPtr = NULL;		/* Suppress compiler warning. */
     string = Tcl_GetStringFromObj(objv[2], &length);
     if ((string[0] == '-') && (length > 1) && 
 	(strncmp(string, "-open", length) == 0)) {
@@ -12502,6 +12513,7 @@ StyleActivateOp(ClientData clientData, Tcl_Interp *interp, int objc,
     Value *valuePtr;
 
     oldValuePtr = viewPtr->activeValuePtr;
+    entryPtr = NULL;			/* Suppress compiler warning. */
     if (GetEntry(viewPtr, objv[3], &entryPtr) != TCL_OK) {
 	return TCL_ERROR;
     }

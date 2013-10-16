@@ -650,6 +650,9 @@ PbmToPicture(Tcl_Interp *interp, Blt_DBuffer dbuffer)
     case PPM_RAW:			/* P6 */
 	pbm.bitsPerPixel = 24;
 	break;
+    default:
+	Tcl_AppendResult(interp, "unknown ppm format", (char *)NULL);
+	return NULL;
     }
     if (!isspace(bp[2])) {
 	Tcl_AppendResult(interp, "no white space after version in pbm header.", 
