@@ -1519,6 +1519,79 @@ DeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
     return TCL_OK;
 }    
 
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * DrawOp --
+ *
+ *	Draws the palette onto a picture.
+ *
+ * Results:
+ *	The return value is a standard TCL result. The interpreter
+ *	result will contain a TCL list of the element names.
+ *
+ *	blt::palette draw $name $picture
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+DrawOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+       Tcl_Obj *const *objv)
+{
+    PaletteCmdInterpData *dataPtr = clientData;
+    PaletteCmd *cmdPtr;
+    Blt_Picture picture;
+    int w, h;
+
+    if (GetPaletteCmdFromObj(interp, dataPtr, objv[2], &cmdPtr) != TCL_OK) {
+	return TCL_ERROR;		/* Can't find named palette. */
+    }
+    if (Blt_GetPictureFromObj(interp, objv[3], &picture) != TCL_OK) {
+	return TCL_ERROR;
+    }
+    w = Blt_PictureWidth(picture);
+    h = Blt_PictureHeight(picture);
+    if (w > h) {
+	int x;
+
+	for (x = 0; x < w; x++) {
+	    double value;
+	    int y;
+	    Blt_Pixel color;
+
+	    value = ((double)x / (double)(w-1));
+	    Interpolate(cmdPtr, value, &color);
+	    /* Draw band. */
+	    for (y = 0; y < h; y++) {
+		Blt_Pixel *dp;
+
+		dp = Blt_PicturePixel(picture, x, y);
+		dp->u32 = color.u32;
+	    }
+	}
+    } else {
+	int y;
+
+	for (y = 0; y < h; y++) {
+	    int x;
+	    double value;
+	    Blt_Pixel color;
+
+	    value = ((double)h / (double)(h-1));
+	    Interpolate(cmdPtr, value, &color);
+	    /* Draw band. */
+	    for (x = 0; x < w; x++) {
+		Blt_Pixel *dp;
+
+		dp = Blt_PicturePixel(picture, x, y);
+		dp->u32 = color.u32;
+	    }
+	}
+    }
+    return TCL_OK;
+}
+
 /*
  *---------------------------------------------------------------------------
  *
@@ -1685,6 +1758,7 @@ NamesOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *	blt::palette exists $name
  *	blt::palette names ?pattern?
  *	blt::palette interpolate $name $value
+ *	blt::palette draw $name $picture
  *	blt::palette ranges $name
  *
  *---------------------------------------------------------------------------
@@ -1693,7 +1767,8 @@ static Blt_OpSpec paletteOps[] = {
     {"cget",        2, CgetOp,        4, 4, "name option",},
     {"configure",   2, ConfigureOp,   3, 0, "name ?option value?...",},
     {"create",      2, CreateOp,      2, 0, "?name? ?option value?...",},
-    {"delete",      1, DeleteOp,      2, 0, "?name?...",},
+    {"delete",      2, DeleteOp,      2, 0, "?name?...",},
+    {"draw",        2, DrawOp,        4, 4, "name picture",},
     {"exists",      1, ExistsOp,      3, 3, "name",},
     {"interpolate", 1, InterpolateOp, 4, 0, "name value ?switches?",},
     {"names",       1, NamesOp,       2, 0, "?pattern?...",},

@@ -509,7 +509,6 @@ NamesOp(ClientData clientData, Tcl_Interp *interp, int objc,
     return TCL_OK;
 }
 
-
 void
 Blt_DestroyColormaps(Graph *graphPtr)
 {
@@ -617,3 +616,4 @@ Blt_ColormapOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     return (*proc) (clientData, interp, objc, objv);
 }
+

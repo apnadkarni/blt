@@ -545,6 +545,85 @@ DupOp(Vector *vPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     return TCL_OK;
 }
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * FrequencyOp --
+ *
+ *	Fills the destination vector with the frequency counts from the 
+ *	source vector.
+ *
+ * Results:
+ *	A standard TCL result.  If a new vector can't be created,
+ *      or and existing vector resized, TCL_ERROR is returned.
+ *
+ *	$v frequency $x 10 
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+FrequencyOp(Vector *destPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+{
+    Vector *srcPtr;
+    const char *name;
+    double range;
+    int i, numBins;
+    Blt_HashTable freqTable;
+    Blt_HashEntry *hPtr;
+    Blt_HashSearch iter;
+
+    name = Tcl_GetString(objv[2]);
+    if (Blt_Vec_LookupName(destPtr->dataPtr, name, &srcPtr) != TCL_OK) {
+	return TCL_ERROR;
+    }
+    if (Tcl_GetIntFromObj(interp, objv[3], &numBins) != TCL_OK) {
+	return TCL_ERROR;
+    }
+    if (numBins < 1) {
+	Tcl_AppendResult(interp, "bad number of bins \"", 
+			 Tcl_GetString(objv[3]), "\"", (char *)NULL);
+	return TCL_ERROR;
+    }
+    if (Blt_Vec_ChangeLength(destPtr->interp, destPtr, numBins) != TCL_OK) {
+	return TCL_ERROR;
+    }
+    for (i = 0; i < numBins; i++) {
+	destPtr->valueArr[i] = 0.0;
+    }
+    Blt_InitHashTable(&freqTable, BLT_ONE_WORD_KEYS);
+    range = srcPtr->max - srcPtr->min;
+    for (i = 0; i < srcPtr->length; i++) {
+	double value, norm;
+	int isNew;
+	long bin;
+	Blt_HashEntry *hPtr;
+	size_t count;
+
+	value = srcPtr->valueArr[i];
+	norm = (value - srcPtr->min) / range;
+	bin = (int)round(norm * (numBins - 1));
+	hPtr = Blt_CreateHashEntry(&freqTable, (char *)bin, &isNew);
+	if (isNew) {
+	    count = 1;
+	} else {
+	    count = (long)Blt_GetHashValue(hPtr);
+	    count++;
+	}
+	Blt_SetHashValue(hPtr, count);
+    }				     
+    for (i = 0, hPtr = Blt_FirstHashEntry(&freqTable, &iter); hPtr != NULL;
+	 hPtr = Blt_NextHashEntry(&iter), i++) {
+	long count;
+	
+	count = (long)Blt_GetHashValue(hPtr);
+	destPtr->valueArr[i] = (double)count;
+    }
+    Blt_DeleteHashTable(&freqTable);
+    Blt_Vec_FlushCache(destPtr);
+    Blt_Vec_UpdateClients(destPtr);
+    return TCL_OK;
+}
 
 /* spinellia@acm.org START */
 
@@ -3421,6 +3500,7 @@ static Blt_OpSpec vectorInstOps[] =
     {"export",    4, ExportOp,    3, 0, "format ?switches?",},
     {"expr",      4, InstExprOp,  3, 3, "expression",},
     {"fft",	  2, FFTOp,	  3, 0, "vecName ?switches?",},
+    {"frequency", 2, FrequencyOp, 4, 4, "vecName numBins",},
     {"indices",   3, IndicesOp,   3, 3, "what",},
     {"inversefft",3, InverseFFTOp,4, 4, "vecName vecName",},
     {"length",    2, LengthOp,    2, 3, "?newSize?",},
@@ -3596,3 +3676,5 @@ Blt_Vec_VarTrace(ClientData clientData, Tcl_Interp *interp, const char *part1,
     message[MAX_ERR_MSG] = '\0';
     return message;
 }
+
+

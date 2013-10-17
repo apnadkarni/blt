@@ -192,6 +192,7 @@ typedef struct {
     GraphSegments xeb, yeb;
 
     int errorBarCapWidth;		/* Length of cap on error bars */
+    GraphColormap *colormapPtr;
 } BarElement;
 
 BLT_EXTERN Blt_CustomOption bltBarPenOption;
@@ -212,10 +213,20 @@ static Blt_OptionPrintProc PenColorsToObj;
 static Blt_CustomOption penColorsOption = {
     ObjToPenColors, PenColorsToObj, NULL, (ClientData)0
 };
+
+static Blt_OptionFreeProc FreeColormapProc;
+static Blt_OptionParseProc ObjToColormapProc;
+static Blt_OptionPrintProc ColormapToObjProc;
+static Blt_CustomOption colormapOption =
+{
+    ObjToColormapProc, ColormapToObjProc, FreeColormapProc, (ClientData)0
+};
+
 #define DEF_ACTIVE_PEN		"activeBar"
 #define DEF_AXIS_X		"x"
 #define DEF_AXIS_Y		"y"
 #define DEF_BORDERWIDTH		"2"
+#define DEF_COLORMAP		(char *)NULL
 #define DEF_ERRORBAR_LINE_WIDTH	"1"
 #define DEF_ERRORBAR_CAP_WIDTH	"1"
 #define DEF_HIDE		"no"
@@ -373,6 +384,8 @@ static Blt_ConfigSpec barElemConfigSpecs[] = {
 	Blt_Offset(BarElement, axes.y), 0, &bltYAxisOption},
     {BLT_CONFIG_SYNONYM, "-outline", "foreground", (char *)NULL,
 	(char *)NULL, 0, 0},
+    {BLT_CONFIG_CUSTOM, "-colormap", "colormap", "Colormap", DEF_COLORMAP, 
+	Blt_Offset(BarElement, colormapPtr), 0, &colormapOption},
     {BLT_CONFIG_CUSTOM, "-pen", "pen", "Pen", (char *)NULL, 
 	Blt_Offset(BarElement, normalPenPtr), BLT_CONFIG_NULL_OK, 
 	&bltBarPenOption},
@@ -650,6 +663,136 @@ PenColorsToObj(
 
     return Tcl_NewStringObj(Tk_NameOfColor(penPtr->errorBarColor), -1);
 }
+
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * ColormapChangedProc
+ *
+ *
+ * Results:
+ *	None.
+ *
+ *---------------------------------------------------------------------------
+ */
+/* ARGSUSED */
+static void
+ColormapChangedProc(GraphColormap *cmapPtr, ClientData clientData, 
+		    unsigned int flags)
+{
+    BarElement *elemPtr = clientData;
+    Graph *graphPtr;
+
+    if (flags & COLORMAP_DELETE_NOTIFY) {
+	cmapPtr->palette = NULL;
+    }
+    elemPtr->flags |= MAP_ITEM;
+    graphPtr = cmapPtr->graphPtr;
+    graphPtr->flags |= CACHE_DIRTY;
+    Blt_EventuallyRedrawGraph(graphPtr);
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * FreeColormapProc --
+ *
+ *	Releases the colormap.  The notifier for the colormap component is
+ *	deleted.
+ *
+ * Results:
+ *	The return value is a standard TCL result.  The colormap token is
+ *	written into the widget record.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static void
+FreeColormapProc(ClientData clientData, Display *display, char *widgRec,
+		 int offset)
+{
+    GraphColormap **cmapPtrPtr = (GraphColormap **)(widgRec + offset);
+    BarElement *elemPtr = (BarElement *)widgRec;
+    
+    Blt_Colormap_DeleteNotifier(*cmapPtrPtr, elemPtr);
+    *cmapPtrPtr = NULL;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * ObjToColormapProc --
+ *
+ *	Convert the string representation of a colormap into its token.
+ *
+ * Results:
+ *	The return value is a standard TCL result.  The colormap token is
+ *	written into the widget record.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+ObjToColormapProc(
+    ClientData clientData,		/* Not used. */
+    Tcl_Interp *interp,			/* Interpreter to send results back
+					 * to */
+    Tk_Window tkwin,			/* Not used. */
+    Tcl_Obj *objPtr,			/* String representing symbol type */
+    char *widgRec,			/* Element information record */
+    int offset,				/* Offset to field in structure */
+    int flags)				/* Not used. */
+{
+    GraphColormap **cmapPtrPtr = (GraphColormap **)(widgRec + offset);
+    BarElement *elemPtr = (BarElement *)widgRec;
+    const char *string;
+    
+    string = Tcl_GetString(objPtr);
+    if ((string == NULL) || (string[0] == '\0')) {
+	FreeColormapProc(clientData, Tk_Display(tkwin), widgRec, offset);
+	return TCL_OK;
+    }
+    if (Blt_Colormap_Get(interp, elemPtr->obj.graphPtr, objPtr, cmapPtrPtr) 
+	!= TCL_OK) {
+	return TCL_ERROR;
+    }
+    if (*cmapPtrPtr != NULL) {
+	Blt_Colormap_CreateNotifier(*cmapPtrPtr, ColormapChangedProc, elemPtr);
+    }
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * ColormapToObjProc --
+ *
+ *	Convert the colormap token into a string.
+ *
+ * Results:
+ *	The string representing the colormap is returned.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static Tcl_Obj *
+ColormapToObjProc(
+    ClientData clientData,		/* Not used. */
+    Tcl_Interp *interp,
+    Tk_Window tkwin,
+    char *widgRec,			/* Element information record */
+    int offset,				/* Offset to field in structure */
+    int flags)				/* Not used. */
+{
+    GraphColormap *cmapPtr = *(GraphColormap **)(widgRec + offset);
+
+    if (cmapPtr == NULL) {
+	return Tcl_NewStringObj("", -1);
+    } 
+    return Tcl_NewStringObj(cmapPtr->name, -1);
+}
+
 
 /* 
  * Zero out the style's number of bars and errorbars. 
@@ -1800,6 +1943,69 @@ DrawSymbolProc(Graph *graphPtr, Drawable drawable, Element *basePtr,
     }
 }
 
+static int
+GradientColorProc(Blt_Paintbrush *brushPtr, int x, int y)
+{
+    Blt_Pixel color;
+    Graph *graphPtr;
+    BarElement *elemPtr = brushPtr->clientData;
+    GraphColormap *cmapPtr;
+    double value;
+    Point2d point;
+
+    graphPtr = elemPtr->obj.graphPtr;
+    cmapPtr = elemPtr->colormapPtr;
+    point = Blt_InvMap2D(graphPtr, x, y, &elemPtr->axes);
+    if (cmapPtr->axisPtr == elemPtr->axes.y) {
+	value = point.y;
+    } else if (cmapPtr->axisPtr == elemPtr->axes.x) {
+	value = point.x;
+    } else {
+	return 0x0;
+    }
+    color.u32 = Blt_Palette_GetColorFromAbsoluteValue(brushPtr->palette, value,
+	cmapPtr->min, cmapPtr->max);
+    return color.u32;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * DrawGradientRectangle --
+ *
+ * Results:
+ *	None.
+ *
+ *---------------------------------------------------------------------------
+ */
+static void
+DrawGradientRectangle(Graph *graphPtr, Drawable drawable, BarElement *elemPtr, 
+		      XRectangle *rectPtr)
+{
+    Blt_Paintbrush brush;
+    Blt_Picture bg;
+    Blt_Painter painter;
+
+    if (elemPtr->colormapPtr->palette == NULL) {
+	return;				/* No palette defined. */
+    }
+    bg = Blt_DrawableToPicture(graphPtr->tkwin, drawable, rectPtr->x, 
+	rectPtr->y, rectPtr->width, rectPtr->height, 1.0);
+    if (bg == NULL) {
+	return;				/* Background is obscured. */
+    }
+    Blt_Colormap_Init(elemPtr->colormapPtr);
+    Blt_Paintbrush_Init(&brush);
+    Blt_Paintbrush_SetOrigin(&brush, -rectPtr->x, -rectPtr->y); 
+    Blt_Paintbrush_SetPalette(&brush, elemPtr->colormapPtr->palette);
+    Blt_Paintbrush_SetColorProc(&brush, GradientColorProc, elemPtr);
+    Blt_PaintRectangle(bg, 0, 0, rectPtr->width, rectPtr->height, 0, 0, &brush);
+    painter = Blt_GetPainter(graphPtr->tkwin, 1.0);
+    Blt_PaintPicture(painter, drawable, bg, 0, 0, rectPtr->width, 
+		     rectPtr->height, rectPtr->x, rectPtr->y, 0);
+    Blt_FreePicture(bg);
+}
+
 /*
  *---------------------------------------------------------------------------
  *
@@ -1814,7 +2020,7 @@ DrawSymbolProc(Graph *graphPtr, Drawable drawable, Element *basePtr,
  */
 static void
 DrawSegments(Graph *graphPtr, Drawable drawable, BarPen *penPtr,
-	     XRectangle *bars, int numBars)
+	     BarElement *elemPtr, XRectangle *bars, int numBars)
 {
     TkRegion rgn;
 
@@ -1844,7 +2050,9 @@ DrawSegments(Graph *graphPtr, Drawable drawable, BarPen *penPtr,
 	    TkSetRegion(graphPtr->display, penPtr->outlineGC, rgn);
 	}
 	for (rp = bars, rend = rp + numBars; rp < rend; rp++) {
-	    if (penPtr->stipple != None) {
+	    if (elemPtr->colormapPtr != NULL) {
+		DrawGradientRectangle(graphPtr, drawable, elemPtr, rp);
+	    } else if (penPtr->stipple != None) {
 		XFillRectangle(graphPtr->display, drawable, penPtr->fillGC, 
 			       rp->x, rp->y, rp->width, rp->height);
 	    } else {
@@ -1971,7 +2179,7 @@ DrawNormalProc(Graph *graphPtr, Drawable drawable, Element *basePtr)
 	stylePtr = Blt_Chain_GetValue(link);
 	penPtr = stylePtr->penPtr;
 	if (stylePtr->numBars > 0) {
-	    DrawSegments(graphPtr, drawable, penPtr, stylePtr->bars,
+	    DrawSegments(graphPtr, drawable, penPtr, elemPtr, stylePtr->bars,
 		stylePtr->numBars);
 	}
 	if ((stylePtr->xeb.length > 0) && (penPtr->errorBarShow & SHOW_X)) {
@@ -2020,15 +2228,15 @@ DrawActiveProc(Graph *graphPtr, Drawable drawable, Element *basePtr)
 	    if (elemPtr->flags & ACTIVE_PENDING) {
 		MapActive(elemPtr);
 	    }
-	    DrawSegments(graphPtr, drawable, penPtr, elemPtr->activeRects, 
-			 elemPtr->numActive);
+	    DrawSegments(graphPtr, drawable, penPtr, elemPtr, 
+			 elemPtr->activeRects, elemPtr->numActive);
 	    if (penPtr->valueShow != SHOW_NONE) {
 		DrawValues(graphPtr, drawable, elemPtr, penPtr, 
 			elemPtr->activeRects, elemPtr->numActive, 
 			elemPtr->activeToData);
 	    }
 	} else if (elemPtr->numActiveIndices < 0) {
-	    DrawSegments(graphPtr, drawable, penPtr, elemPtr->bars, 
+	    DrawSegments(graphPtr, drawable, penPtr, elemPtr, elemPtr->bars, 
 			 elemPtr->numBars);
 	    if (penPtr->valueShow != SHOW_NONE) {
 		DrawValues(graphPtr, drawable, elemPtr, penPtr, 

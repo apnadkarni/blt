@@ -29133,7 +29133,8 @@ dentalscan set {
 }
 blt::contour .g
 
-.g colormap create mycolormap -palette blue 
+set palette spectral
+.g colormap create mycolormap -palette $palette
 .g element create myexample -values dentalscan -mesh $mesh -colormap mycolormap
 .g element isoline steps myexample 6
 .g legend configure -hide yes
@@ -29149,7 +29150,7 @@ proc UpdateColors {} {
 proc FixPalette {} {
     global usePalette
     .g colormap configure mycolormap -palette $usePalette
-    puts stderr "time=[time update]"
+    .g2 colormap configure mycolormap -palette $usePalette
 }
 
 proc Fix { what } {
@@ -29204,7 +29205,7 @@ foreach pal [blt::palette names] {
     lappend palettes $pal
 }
 .palettes.menu listadd $palettes -command FixPalette
-set usePalette "blue"
+set usePalette $palette
 
 blt::table . \
     0,0 .label -fill x \
@@ -29218,11 +29219,31 @@ blt::table . \
     7,1 .interp -anchor w \
     8,1 .palettesl -anchor w  \
     9,1 .palettes -fill x 
-blt::table configure . r* c* -resize none
-blt::table configure . c0 r10 -resize both
 
 foreach key [array names show] {
     set show($key) [.g element cget myexample -display$key]
 }
 
 Blt_ZoomStack .g
+
+set numBins 512
+set freq [blt::vector create]
+$freq frequency dentalscan $numBins
+set x [blt::vector create]
+$x seq [dentalscan min] [dentalscan max] [$freq length] 
+
+set w [expr ([dentalscan max] - [dentalscan min]) / $numBins]
+blt::barchart .g2 -barwidth $w  -height 1i
+.g2 axis configure x -stepsize 0 
+.g2 axis configure y -logscale yes -grid no -subdivisions 0
+.g2 colormap create mycolormap -palette $palette -axis x 
+#-min [dentalscan min] -max [dentalscan max]
+.g2 element create hist -x $x -y $freq -relief flat -colormap mycolormap \
+    -outline ""
+.g2 legend configure -hide yes
+Blt_ZoomStack .g2
+
+blt::table . \
+    11,0 .g2 -fill both 
+blt::table configure . r* c* -resize none
+blt::table configure . c0 r10 r11 -resize both

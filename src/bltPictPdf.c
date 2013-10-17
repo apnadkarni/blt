@@ -161,16 +161,6 @@ static Blt_SwitchSpec exportSwitches[] =
 	Blt_Offset(PdfExportSwitches, dataObjPtr),  0},
     {BLT_SWITCH_OBJ,     "-file",	"fileName", (char *)NULL,
 	Blt_Offset(PdfExportSwitches, fileObjPtr),  0},
-    {BLT_SWITCH_BITMASK, "-maxpect",	"", (char *)NULL,
-	Blt_Offset(PdfExportSwitches, setup.flags), 0, PS_MAXPECT},
-    {BLT_SWITCH_CUSTOM,  "-padx",	"pad", (char *)NULL,
-	Blt_Offset(PdfExportSwitches, setup.xPad),  0, 0, &padSwitch},
-    {BLT_SWITCH_CUSTOM,  "-pady",	"pad", (char *)NULL,
-	Blt_Offset(PdfExportSwitches, setup.yPad),  0, 0, &padSwitch},
-    {BLT_SWITCH_CUSTOM,  "-paperheight","pica", (char *)NULL,
-	Blt_Offset(PdfExportSwitches, setup.reqPaperHeight), 0, 0, &picaSwitch},
-    {BLT_SWITCH_CUSTOM,  "-paperwidth", "pica", (char *)NULL,
-	Blt_Offset(PdfExportSwitches, setup.reqPaperWidth), 0, 0, &picaSwitch},
     {BLT_SWITCH_LIST,    "-comments", "{key value...}", (char *)NULL,
 	Blt_Offset(PdfExportSwitches, setup.comments), BLT_SWITCH_NULL_OK},
     {BLT_SWITCH_INT_NNEG, "-index", "int", (char *)NULL,
@@ -999,13 +989,9 @@ PictureToPdf(Tcl_Interp *interp, Blt_Picture original, Pdf *pdfPtr,
     PageSetup *setupPtr = &switchesPtr->setup;
     Picture *srcPtr;
     char date[200];
-    const char *colorSpace;
-    const char *version;
-    int count;
-    int i;
-    int numComponents;
-    size_t length;
-    size_t offset;
+    const char *colorSpace, *version;
+    int i, numComponents;
+    size_t length, offset;
     struct tm *tmPtr;
     time_t ticks;
     unsigned char *imgData;
@@ -1156,32 +1142,33 @@ PictureToPdf(Tcl_Interp *interp, Blt_Picture original, Pdf *pdfPtr,
     if (Blt_PictureIsGreyscale(srcPtr)) {
 	Blt_Pixel *srcRowPtr;
 	int y;
+	unsigned char *dp;
 
 	srcRowPtr = srcPtr->bits;
-	count = 0;
+	dp = imgData;
 	for (y = 0; y < srcPtr->height; y++) {
 	    Blt_Pixel *sp, *send;
 
 	    for (sp = srcRowPtr, send = sp + srcPtr->width; sp < send; sp++) {
-		imgData[count] = sp->Red;
-		count++;
+		*dp++ = sp->Red;
 	    }
 	    srcRowPtr += srcPtr->pixelsPerRow;
 	}
     } else {
 	Blt_Pixel *srcRowPtr;
+	unsigned char *dp;
 	int y;
 
 	srcRowPtr = srcPtr->bits;
-	count = 0;
+	dp = imgData;
 	for (y = 0; y < srcPtr->height; y++) {
 	    Blt_Pixel *sp, *send;
 
 	    for (sp = srcRowPtr, send = sp + srcPtr->width; sp < send; sp++) {
-		imgData[count] = sp->Red;
-		imgData[count+1] = sp->Green;
-		imgData[count+2] = sp->Blue;
-		count += 3;
+		dp[0] = sp->Red;
+		dp[1] = sp->Green;
+		dp[2] = sp->Blue;
+		dp += 3;
 	    }
 	    srcRowPtr += srcPtr->pixelsPerRow;
 	}
@@ -1355,14 +1342,6 @@ WritePdf(Tcl_Interp *interp, Blt_Picture picture)
     /* Default export switch settings. */
     memset(&switches, 0, sizeof(switches));
     switches.bg.u32 = 0xFFFFFFFF; /* Default bgcolor is white. */
-    switches.setup.reqPaperHeight = 792; /* 11 inches */
-    switches.setup.reqPaperWidth = 612; /* 8.5 inches */
-    switches.setup.level = 1;
-    switches.setup.xPad.side1 = 72;
-    switches.setup.xPad.side2 = 72;
-    switches.setup.yPad.side1 = 72;
-    switches.setup.yPad.side2 = 72;
-    switches.setup.flags = 0;
 
     objPtr = NULL;
     pdfPtr = NewPdf();
@@ -1428,13 +1407,6 @@ ExportPdf(Tcl_Interp *interp, unsigned int index, Blt_Chain chain, int objc,
     result = TCL_ERROR;
     memset(&switches, 0, sizeof(switches));
     switches.bg.u32 = 0xFFFFFFFF; /* Default bgcolor is white. */
-    switches.setup.reqPaperHeight = 792; /* 11 inches */
-    switches.setup.reqPaperWidth = 612; /* 8.5 inches */
-    switches.setup.xPad.side1 = 72;
-    switches.setup.xPad.side2 = 72;
-    switches.setup.yPad.side1 = 72;
-    switches.setup.yPad.side2 = 72;
-    switches.setup.flags = 0;
     if (Blt_ParseSwitches(interp, exportSwitches, objc - 3, objv + 3, 
 	&switches, BLT_SWITCH_DEFAULTS) < 0) {
 	Blt_FreeSwitches(exportSwitches, (char *)&switches, 0);
