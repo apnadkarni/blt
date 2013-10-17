@@ -1461,13 +1461,7 @@ ObjToData(
 	    Blt_DBuffer_AppendData(dbuffer, bytes, numBytes);
 	}
 #ifdef notdef
-	{
-	    FILE *f;
-	    
-	    f = fopen("junk.unk", "w");
-	    fwrite(Blt_DBuffer_Bytes(dbuffer), 1, Blt_DBuffer_Length(dbuffer), f);
-	    fclose(f);
-	}
+	Blt_DBuffer_SaveFile(interp, "junk.unk", dbuffer);
 #endif
 	fmtPtr = QueryExternalFormat(interp, dbuffer, NULL);
 	if (fmtPtr == NULL) {
@@ -2497,7 +2491,7 @@ BlendOp(
     BlendSwitches switches;
     Blt_Picture fg, bg, tmp;
     PictImage *imgPtr = clientData;
-    Blt_Picture dest;
+    Blt_Picture dst;
 
     if ((Blt_GetPictureFromObj(interp, objv[2], &bg) != TCL_OK) ||
 	(Blt_GetPictureFromObj(interp, objv[3], &fg) != TCL_OK)) {
@@ -2514,17 +2508,17 @@ BlendOp(
 	&switches, BLT_SWITCH_DEFAULTS) < 0) {
 	return TCL_ERROR;
     }
-    dest = PictureFromPictImage(imgPtr);
+    dst = PictureFromPictImage(imgPtr);
     tmp = NULL;
-    if (dest == fg) {
+    if (dst == fg) {
 	fg = tmp = Blt_ClonePicture(fg);
     }
-    if (dest != bg) {
-	Blt_ResizePicture(dest, Blt_PictureWidth(bg), Blt_PictureHeight(bg));
-	Blt_CopyPictureBits(dest, bg, 0, 0, 
+    if (dst != bg) {
+	Blt_ResizePicture(dst, Blt_PictureWidth(bg), Blt_PictureHeight(bg));
+	Blt_CopyPictureBits(dst, bg, 0, 0, 
 			    Blt_PictureWidth(bg), Blt_PictureHeight(bg), 0, 0);
     }
-    Blt_BlendPictures(dest, fg, 
+    Blt_BlendPictures(dst, fg, 
 		      switches.from.x, switches.from.y, 
 		      switches.from.w, switches.from.h, 
 		      switches.to.x, switches.to.y);
@@ -2551,7 +2545,7 @@ Blend2Op(
     int objc,				/* Not used. */
     Tcl_Obj *const *objv)
 {
-    Blt_Picture fg, bg, dest;
+    Blt_Picture fg, bg, dst;
     BlendSwitches switches;
     PictImage *imgPtr = clientData;
 
@@ -2564,11 +2558,11 @@ Blend2Op(
 	&switches, BLT_SWITCH_DEFAULTS) < 0) {
 	return TCL_ERROR;
     }
-    dest = PictureFromPictImage(imgPtr);
-    Blt_ResizePicture(dest, Blt_PictureWidth(bg), Blt_PictureHeight(bg));
-    Blt_CopyPictureBits(dest, bg, 0, 0, Blt_PictureWidth(bg), 
+    dst = PictureFromPictImage(imgPtr);
+    Blt_ResizePicture(dst, Blt_PictureWidth(bg), Blt_PictureHeight(bg));
+    Blt_CopyPictureBits(dst, bg, 0, 0, Blt_PictureWidth(bg), 
 	Blt_PictureHeight(bg), 0, 0);
-    Blt_BlendPicturesByMode(dest, fg, switches.mode); 
+    Blt_BlendPicturesByMode(dst, fg, switches.mode); 
     Blt_NotifyImageChanged(imgPtr);
     return TCL_OK;
 }
@@ -2589,7 +2583,7 @@ BlurOp(
     int objc,				/* Not used. */
     Tcl_Obj *const *objv)
 {
-    Blt_Picture src, dest;
+    Blt_Picture src, dst;
     PictImage *imgPtr;
     int r;				/* Radius of the blur. */
 
@@ -2605,8 +2599,8 @@ BlurOp(
 	return TCL_ERROR;
     }
     imgPtr = clientData;
-    dest = PictureFromPictImage(imgPtr);
-    Blt_BlurPicture(dest, src, r, 3);
+    dst = PictureFromPictImage(imgPtr);
+    Blt_BlurPicture(dst, src, r, 3);
     Blt_NotifyImageChanged(imgPtr);
     return TCL_OK;
 }
@@ -2716,8 +2710,8 @@ ConvolveOp(
 	switches.hFilter = switches.vFilter = switches.filter;
     }
 #ifdef notdef
-    dest = PictureFromPictImage(imgPtr);
-    Blt_ConvolvePicture(dest, src, switches.vFilter, switches.hFilter);
+    dst = PictureFromPictImage(imgPtr);
+    Blt_ConvolvePicture(dst, src, switches.vFilter, switches.hFilter);
 #endif
     Blt_NotifyImageChanged(imgPtr);
     return TCL_OK;
@@ -2743,7 +2737,7 @@ CopyOp(
     int objc,				/* Number of arguments. */
     Tcl_Obj *const *objv)		/* Argument objects. */
 {
-    Blt_Picture src, dest;
+    Blt_Picture src, dst;
     CopySwitches switches;
     PictImage *imgPtr;
 
@@ -2766,17 +2760,17 @@ CopyOp(
 	return TCL_OK;			/* Region is not inside of source. */
     }
     imgPtr = clientData;
-    dest = PictureFromPictImage(imgPtr);
-    if (!Blt_AdjustRegionToPicture(dest, &switches.to)) {
+    dst = PictureFromPictImage(imgPtr);
+    if (!Blt_AdjustRegionToPicture(dst, &switches.to)) {
 	return TCL_OK;			/* Region is not inside of
 					 * destination. */
     }
     if (switches.blend) {
-	Blt_BlendPictures(dest, src, switches.from.x, 
+	Blt_BlendPictures(dst, src, switches.from.x, 
 		switches.from.y, switches.from.w, switches.from.h,
 		switches.to.x, switches.to.y);
     } else {
-	Blt_CopyPictureBits(dest, src, switches.from.x, 
+	Blt_CopyPictureBits(dst, src, switches.from.x, 
 		switches.from.y, switches.from.w, switches.from.h,
 		switches.to.x, switches.to.y);
     }
@@ -2805,7 +2799,7 @@ CropOp(
     Tcl_Obj *const *objv)		/* Argument objects. */
 {
     PictRegion region;
-    Blt_Picture src, dest;
+    Blt_Picture src, dst;
     PictImage *imgPtr;
 
     if (Blt_GetBBoxFromObjv(interp, objc - 2, objv + 2, &region) != TCL_OK) {
@@ -2818,9 +2812,9 @@ CropOp(
 			 (char *)NULL);
 	return TCL_ERROR;
     }
-    dest = Blt_CreatePicture(region.w, region.h);
-    Blt_CopyPictureBits(dest, src, region.x, region.y, region.w, region.h, 0,0);
-    ReplacePicture(imgPtr, dest);
+    dst = Blt_CreatePicture(region.w, region.h);
+    Blt_CopyPictureBits(dst, src, region.x, region.y, region.w, region.h, 0,0);
+    ReplacePicture(imgPtr, dst);
     Blt_NotifyImageChanged(imgPtr);
     return TCL_OK;
 }
@@ -3185,14 +3179,14 @@ GreyscaleOp(
     int objc,				/* Not used. */
     Tcl_Obj *const *objv)
 {
-    Blt_Picture src, dest;
+    Blt_Picture src, dst;
     PictImage *imgPtr = clientData;
 
     if (Blt_GetPictureFromObj(interp, objv[2], &src) != TCL_OK) {
 	return TCL_ERROR;
     }
-    dest = Blt_GreyscalePicture(src);
-    ReplacePicture(imgPtr, dest);
+    dst = Blt_GreyscalePicture(src);
+    ReplacePicture(imgPtr, dst);
     Blt_NotifyImageChanged(imgPtr);
     return TCL_OK;
 }
@@ -3534,13 +3528,13 @@ ListAppendOp(ClientData clientData, Tcl_Interp *interp, int objc,
     int i;
 
     for (i = 3; i < objc; i++) {
-	Blt_Picture src, dest;
+	Blt_Picture src, dst;
 
 	if (Blt_GetPictureFromObj(interp, objv[i], &src) != TCL_OK) {
 	    return TCL_ERROR;
 	}
-	dest = Blt_ClonePicture(src);
-	Blt_Chain_Append(imgPtr->chain, dest);
+	dst = Blt_ClonePicture(src);
+	Blt_Chain_Append(imgPtr->chain, dst);
     }
     return TCL_OK;
 }
@@ -3752,39 +3746,39 @@ ListReplaceOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     if (head != NULL) {
 	for (i = 5; i < objc; i++) {
-	    Blt_Picture src, dest;
+	    Blt_Picture src, dst;
 
 	    if (Blt_GetPictureFromObj(interp, objv[i], &src) != TCL_OK) {
 		return TCL_ERROR;
 	    }
-	    dest = Blt_ClonePicture(src);
+	    dst = Blt_ClonePicture(src);
 	    link = Blt_Chain_NewLink();
-	    Blt_Chain_SetValue(link, dest);
+	    Blt_Chain_SetValue(link, dst);
 	    Blt_Chain_LinkAfter(imgPtr->chain, link, head);
 	    head = link;
 	}
     } else if (tail != NULL) {
 	for (i = 5; i < objc; i++) {
-	    Blt_Picture src, dest;
+	    Blt_Picture src, dst;
 
 	    if (Blt_GetPictureFromObj(interp, objv[i], &src) != TCL_OK) {
 		return TCL_ERROR;
 	    }
-	    dest = Blt_ClonePicture(src);
+	    dst = Blt_ClonePicture(src);
 	    link = Blt_Chain_NewLink();
-	    Blt_Chain_SetValue(link, dest);
+	    Blt_Chain_SetValue(link, dst);
 	    Blt_Chain_LinkBefore(imgPtr->chain, link, tail);
 	}
     } else {
 	assert(Blt_Chain_GetLength(imgPtr->chain) == 0);
 	for (i = 5; i < objc; i++) {
-	    Blt_Picture src, dest;
+	    Blt_Picture src, dst;
 
 	    if (Blt_GetPictureFromObj(interp, objv[i], &src) != TCL_OK) {
 		return TCL_ERROR;
 	    }
-	    dest = Blt_ClonePicture(src);
-	    Blt_Chain_Append(imgPtr->chain, dest);
+	    dst = Blt_ClonePicture(src);
+	    Blt_Chain_Append(imgPtr->chain, dst);
 	}
     }	
     imgPtr->index = 0;
@@ -4173,6 +4167,7 @@ ResampleOp(
  *
  * RotateOp --
  *
+ *	$img rotate $src 90 
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
@@ -4183,7 +4178,7 @@ RotateOp(
     int objc,			/* Not used. */
     Tcl_Obj *const *objv)
 {
-    Blt_Picture src, dest;
+    Blt_Picture src, dst;
     PictImage *imgPtr = clientData;
     double angle;
 
@@ -4198,8 +4193,8 @@ RotateOp(
 	    return TCL_ERROR;
 	}
     }
-    dest = Blt_RotatePicture(src, (float)angle);
-    ReplacePicture(imgPtr, dest);
+    dst = Blt_RotatePicture(src, (float)angle);
+    ReplacePicture(imgPtr, dst);
     Blt_NotifyImageChanged(imgPtr);
     return TCL_OK;
 }
