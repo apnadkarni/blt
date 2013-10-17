@@ -614,10 +614,11 @@ FrequencyOp(Vector *destPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     }				     
     for (i = 0, hPtr = Blt_FirstHashEntry(&freqTable, &iter); hPtr != NULL;
 	 hPtr = Blt_NextHashEntry(&iter), i++) {
-	long count;
+	long count, index;
 	
 	count = (long)Blt_GetHashValue(hPtr);
-	destPtr->valueArr[i] = (double)count;
+	index = (long)Blt_GetHashKey(&freqTable, hPtr);
+	destPtr->valueArr[index] = (double)count;
     }
     Blt_DeleteHashTable(&freqTable);
     Blt_Vec_FlushCache(destPtr);

@@ -29226,13 +29226,17 @@ foreach key [array names show] {
 
 Blt_ZoomStack .g
 
-set numBins 512
+set numBins 256
+set min [dentalscan min]
+set max [dentalscan max]
 set freq [blt::vector create]
+# Get a histogram of the dental scan values
 $freq frequency dentalscan $numBins
+set w [expr ($max - $min) / double($numBins)]
+# Compute the location for the bins within the range of values
 set x [blt::vector create]
-$x seq [dentalscan min] [dentalscan max] [$freq length] 
+$x seq [expr $min + ($w * 0.5)] [expr $max - ($w - 0.5)] $numBins
 
-set w [expr ([dentalscan max] - [dentalscan min]) / $numBins]
 blt::barchart .g2 -barwidth $w  -height 1i
 .g2 axis configure x -stepsize 0 
 .g2 axis configure y -logscale yes -grid no -subdivisions 0

@@ -1028,7 +1028,7 @@ ExtentsProc(Element *basePtr)
 {
     BarElement *elemPtr = (BarElement *)basePtr;
     Graph *graphPtr;
-    double middle;
+    double barWidth, middle;
     int numPoints;
     Region2d exts;
 
@@ -1040,7 +1040,10 @@ ExtentsProc(Element *basePtr)
     if (numPoints < 1) {
 	return;				/* No data points */
     }
-    middle = 0.5;
+    barWidth = (elemPtr->barWidth > 0.0f) 
+	? elemPtr->barWidth : graphPtr->barWidth;
+
+    middle = barWidth * 0.5;
     exts.left = elemPtr->x.min - middle;
     exts.right = elemPtr->x.max + middle;
 
@@ -1678,8 +1681,7 @@ MapProc(Graph *graphPtr, Element *basePtr)
     if (numPoints < 1) {
 	return;				/* No data points */
     }
-    barWidth = graphPtr->barWidth;
-    barWidth = (elemPtr->barWidth > 0.0f) 
+    barWidth = (elemPtr->barWidth > 0.0) 
 	? elemPtr->barWidth : graphPtr->barWidth;
     baseline = (elemPtr->axes.y->logScale) ? 0.0 : graphPtr->baseline;
     barOffset = barWidth * 0.5;
