@@ -64,7 +64,13 @@
 #include <stdio.h>
 
 #if defined(__GNUC__) && defined(HAVE_X86) && defined(__OPTIMIZE__)
-#  define HAVE_X86_ASM
+#  define GCC_VERSION \
+    ((__GNUC__)*10000+(__GNUC_MINOR__)*100+(__GNUC_PATCHLEVEL__))
+#  if (GCC_VERSION == 40801)
+#    warning("Disabling MMX because of GCC version")
+#else
+#    define HAVE_X86_ASM
+#  endif
 #endif
 
 #undef MIN
