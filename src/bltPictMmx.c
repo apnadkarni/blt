@@ -746,6 +746,12 @@ ZoomVertically(Pict *destPtr, Pict *srcPtr, ResampleFilter *filterPtr)
 	    Blt_Pixel *sp;
 
 	    sp = srcColumnPtr + (splPtr->start * srcPtr->pixelsPerRow);
+#ifdef notdef
+	    fprintf(stderr, "*dp(%x)=%x\n", dp, dp->u32);
+	    fprintf(stderr, "*sp(%x)=%x\n", sp, sp->u32);
+	    fprintf(stderr, "*splPtr(%x) weight=%x, wend=%x\n", 
+		    splPtr, splPtr->weights, splPtr->wend);
+#endif
 	    asm volatile (
 		/* Clear the accumulator mm5. */
                  "pxor %%mm5, %%mm5	    #  mm5 = 0\n\n" 
@@ -812,15 +818,57 @@ ZoomHorizontally(
     Pict *srcPtr, 
     ResampleFilter *filterPtr)
 {
+	Sample *splPtr;
     Sample *samples, *send;
     int y;
     Blt_Pixel *srcRowPtr, *destRowPtr;
-    int bytesPerSample;		/* Size of sample. */
+    int bytesPerSample;			/* Size of sample. */
 
     /* Pre-calculate filter contributions for each column. */
     bytesPerSample = Blt_ComputeWeights(srcPtr->width, destPtr->width, 
 	filterPtr, &samples);
     send = (Sample *)((char *)samples + (destPtr->width * bytesPerSample));
+
+#ifdef notdef
+    for (splPtr = samples; splPtr < send; 
+	 splPtr = (Sample *)((char *)splPtr + bytesPerSample)) {
+	Blt_Pixel *sp;
+
+	fprintf(stderr, "splPtr=%x, start=%d weights=%x wend=%x\n",
+		splPtr, splPtr->start, splPtr->weights, splPtr->wend);
+	sp = srcRowPtr + splPtr->start;
+    }
+
+    srcRowPtr = srcPtr->bits;
+    for (y = 0; y < srcPtr->height; y++) {
+	Blt_Pixel *sp;
+	int x;
+ 
+	sp = srcRowPtr;
+	for (x = 0; x < srcPtr->width; x++) {
+ 	    fprintf(stderr, "sp[%d,%d]=%x\n", x, y, sp->u32);
+	    sp++;
+	}
+	srcRowPtr += srcPtr->pixelsPerRow;
+    }
+    srcRowPtr = destPtr->bits;
+    for (y = 0; y < destPtr->height; y++) {
+	Blt_Pixel *dp;
+	int x;
+
+	dp = srcRowPtr;
+	for (x = 0; x < destPtr->pixelsPerRow; x++) {
+	    dp->u32 = 0xFFFFFFFF;
+	    fprintf(stderr, "dp(%x)[%d,%d]=%x\n", dp, x, y, dp->u32);
+	    dp++;
+	}
+	srcRowPtr += destPtr->pixelsPerRow;
+    }
+
+    fprintf(stderr, "destPtr w=%d h=%d bits=%x pixelsPerRows=%d\n", 
+	    destPtr->width,
+	    destPtr->height, destPtr->bits, destPtr->pixelsPerRow);
+#endif
 
     /* Apply filter to each column. */
     srcRowPtr = srcPtr->bits;
@@ -840,9 +888,15 @@ ZoomHorizontally(
 	dp = destRowPtr;
 	for (splPtr = samples; splPtr < send; 
 	     splPtr = (Sample *)((char *)splPtr + bytesPerSample)) {
-
 	    Blt_Pixel *sp;
+
 	    sp = srcRowPtr + splPtr->start;
+#ifdef notdef
+	    fprintf(stderr, "*dp(%x)=%x\n", dp, dp->u32);
+	    fprintf(stderr, "*sp(%x)=%x\n", sp, sp->u32);
+	    fprintf(stderr, "*splPtr(%x) weight=%x, wend=%x\n", 
+		    splPtr, splPtr->weights, splPtr->wend);
+#endif
 	    asm volatile (
 		/* Clear the accumulator mm5. */
                  "pxor %%mm5, %%mm5        #  mm5 = 0\n\n" 

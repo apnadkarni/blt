@@ -29131,7 +29131,7 @@ dentalscan set {
 -885 -994 -1021 -1008 -980 -1024 -961 -840 -902 
 -953 
 }
-blt::contour .g
+blt::contour .g -highlightthickness 0
 
 set palette spectral
 .g colormap create mycolormap -palette $palette
@@ -29237,11 +29237,10 @@ set w [expr ($max - $min) / double($numBins)]
 set x [blt::vector create]
 $x seq [expr $min + ($w * 0.5)] [expr $max - ($w - 0.5)] $numBins
 
-blt::barchart .g2 -barwidth $w  -height 1i
+blt::barchart .g2 -barwidth $w  -height 1i -highlightthickness 0
 .g2 axis configure x -stepsize 0 
 .g2 axis configure y -logscale yes -grid no -subdivisions 0
 .g2 colormap create mycolormap -palette $palette -axis x 
-#-min [dentalscan min] -max [dentalscan max]
 .g2 element create hist -x $x -y $freq -relief flat -colormap mycolormap \
     -outline ""
 .g2 legend configure -hide yes
@@ -29249,5 +29248,6 @@ Blt_ZoomStack .g2
 
 blt::table . \
     11,0 .g2 -fill both 
+
 blt::table configure . r* c* -resize none
 blt::table configure . c0 r10 r11 -resize both

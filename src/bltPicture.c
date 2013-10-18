@@ -293,7 +293,7 @@ Blt_CreatePicture(int w, int h)
     destPtr->height = h;
     destPtr->flags  = BLT_PIC_DIRTY;
     destPtr->delay = 0;
-
+    destPtr->reserved = 0;
     /* Over-allocate a buffer so that we can align it (if needed) to a 16-byte
      * boundary. */
     size = (pixelsPerRow * h * sizeof(Blt_Pixel)) + ALIGNMENT;
