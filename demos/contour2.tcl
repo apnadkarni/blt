@@ -1,30 +1,19 @@
 package require BLT
 set data {}
-set X {}
-set Y {}
-set Z {}
-set n 1000
-for { set i 0 } { $i < $n } { incr i } {
-    set x [expr rand()*10.0]
-    set y [expr rand()*10.0]
-    lappend X $x
-    lappend Y $y
-    lappend Z [expr abs(sin($x*$y/70))]
-}
-set N 10
-set values {}
-for {set i 0} {$i < $N} {incr i} {
-    set z [expr 1.0*$i/$N]
-    lappend values $z
-}
+set numPoints 1000
+set numIsolines 10
+set xv [blt::vector create -length $numPoints]
+set yv [blt::vector create -length $numPoints]
+set zv [blt::vector create -length $numPoints]
+$xv expr {random($xv)*10.0}
+$yv expr {random($yv)*10.0}
+$zv expr {abs(sin($xv*$yv/70.0))}
 
-option add *Pixels 5
-option add *Fill  red
 blt::contour .g
-set mesh [blt::mesh create cloud -x $X -y $Y]
+set mesh [blt::mesh create cloud -x $xv -y $yv]
 .g colormap create rainbow -palette rainbow -min 0.0 -max 1.0 -axis z
-.g element create sine -values $Z -mesh $mesh -colormap rainbow
-.g element isoline steps sine $N
+.g element create sine -values $zv -mesh $mesh -colormap rainbow
+.g element isoline steps sine $numIsolines
 
 proc UpdateColors {} {
     global usePaletteColors
@@ -51,7 +40,6 @@ proc Fix { what } {
 	}
 	.g element configure sine -color $color
     }
-    puts stderr ".g element configure sine -display$what $bool"
     .g element configure sine -display$what $bool
 }
 

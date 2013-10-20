@@ -293,7 +293,7 @@ GetOpacityFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, Blt_Pixel *pixelPtr)
 	return TCL_ERROR;
     }
     pixelPtr->u32 = 0;
-    pixelPtr->Alpha = (int)((value * 255.0) + 0.5);
+    pixelPtr->Alpha = (int)(value * 255.0);
     return TCL_OK;
 }
 
@@ -328,9 +328,9 @@ GetRGBFromObj(Tcl_Interp *interp, Tcl_Obj *const *objv, Blt_Pixel *colorPtr)
     } else if (b > 1.0) {
 	b = 1.0;
     }
-    color.Red = (int)((r * 255.0) + 0.5);
-    color.Green = (int)((g * 255.0) + 0.5);
-    color.Blue = (int)((b * 255.0) + 0.5);
+    color.Red   = (int)(r * 255.0);
+    color.Green = (int)(g * 255.0);
+    color.Blue  = (int)(b * 255.0);
     color.Alpha = 0xFF;
     colorPtr->u32 = color.u32;
     return TCL_OK;
@@ -1212,7 +1212,7 @@ ColorLerp(Blt_PaletteEntry *entryPtr, double t)
     int alpha, beta, t1, t2;
     int r, g, b, a;
 
-    a = (int)(t * 255.0 + 0.5);
+    a = (int)(t * 255.0);
     alpha = CLAMP(a);
     if (alpha == 0xFF) {
 	return entryPtr->high.u32;
@@ -1242,7 +1242,7 @@ OpacityLerp(Blt_PaletteEntry *entryPtr, double t)
     int alpha, beta, t1, t2;
     int a;
 
-    a = (int)(t * 255.0 + 0.5);
+    a = (int)(t * 255.0);
     alpha = CLAMP(a);
     if (alpha == 0xFF) {
 	return entryPtr->high.Alpha;

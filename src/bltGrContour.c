@@ -4689,7 +4689,7 @@ ConfigureProc(Graph *graphPtr, Element *basePtr)
     if (Blt_ConfigModified(elemPtr->configSpecs, "-values", "-mesh", 
 		(char *)NULL)) {
 	graphPtr->flags |= RESET_WORLD;
-	elemPtr->flags |= MAP_ITEM;
+	elemPtr->flags |= MAP_ITEM | TRIANGLES;
     }
     return TCL_OK;
 }

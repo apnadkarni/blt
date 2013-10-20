@@ -1,15 +1,31 @@
 package require BLT
 blt::contour .g
 
+set palette spectral
+
+# All the data fits the same grid: a uniform rectangular grid 68x37
+set xGridSize 68
+set yGridSize 37
+
+# Create a table and load the data file (csv) into it.
 set table [blt::datatable create]
 $table import csv -file nplsms.csv
+
+# The first row of the csv contains the column labels.
 set labels [$table row values 0]
 $table column labels $labels
 $table row delete 0
+# The rest of the table contains all numbers.
 $table column type all double
+
+# Get the max and max of the 1nd column
 set allmin [$table min 1]
 set allmax [$table max 1]
-set mesh [blt::mesh create regular -y {1 37 37} -x {1 68 68}]
+
+set mesh [blt::mesh create regular \
+	-x [list 1 $xGridSize $xGridSize] \
+	-y [list 1 $yGridSize $yGridSize]] 
+
 for { set col 2 } { $col < [$table numcolumns] } { incr col } {
     set min [$table min $col]
     set max [$table max $col]
@@ -20,7 +36,7 @@ for { set col 2 } { $col < [$table numcolumns] } { incr col } {
 	set allmax $max
     }
 }
-.g colormap create nanohub -palette nanohub -min $allmin -max $allmax
+.g colormap create nanohub -palette $palette -min $allmin -max $allmax
 .g element create sine \
 	-values [list $table 1] \
 	-mesh $mesh \

@@ -1,17 +1,17 @@
 
 package require BLT
-blt::contour .g
 
+set palette blue
 set pi2 [expr 3.14159265358979323846 * 2]
 
-set x [blt::vector create \#auto]
-set y [blt::vector create \#auto]
+set x [blt::vector create]
+set y [blt::vector create]
 $x seq -2 2 100
 $y seq -2 3 100
-set x2 [blt::vector create \#auto]
-$x2 expr $x*$x
-set y2 [blt::vector create \#auto]
-$y2 expr $y*$y
+set x2 [blt::vector create]
+$x2 expr { $x * $x }
+set y2 [blt::vector create]
+$y2 expr { $y * $y }
 set e 2.7182818284590452354
 set z {}
 foreach  i [$y2 values] {
@@ -20,32 +20,31 @@ foreach  i [$y2 values] {
     }
 }
 	
-puts stderr [blt::palette names]
-#.g axis configure z -logscale yes
-
+blt::contour .g -highlightthickness 0
 set mesh [blt::mesh create irregular -y $x -x $y]
-.g colormap create cmap -palette blue 
-.g element create banana -values $z -mesh $mesh -colormap cmap
-.g element isoline steps banana 10 
+.g colormap create cmap -palette $palette 
+.g element create myContour -values $z -mesh $mesh -colormap cmap
+.g element isoline steps myContour 10 
+.g legend configure -hide yes
+
 proc UpdateColors {} {
      global usePaletteColors
      if { $usePaletteColors } {
-        .g element configure banana -color palette -fill palette
+        .g element configure myContour -color palette -fill palette
     } else {
-        .g element configure banana -color black -fill red
+        .g element configure myContour -color black -fill red
     }
 }
 proc FixPalette {} {
-    global usePalette
-    .g element configure cmap -palette $usePalette
+    global palette
+    .g colormap configure cmap -palette $palette
 }
 
 proc Fix { what } {
     global show
 
     set bool $show($what)
-    puts stderr ".g element configure banana -display$what $bool"
-    .g element configure banana -display$what $bool
+    .g element configure myContour -display$what $bool
 }
 
 array set show {
@@ -74,7 +73,7 @@ blt::tk::label .label -text ""
 blt::tk::checkbutton .interp -text "Use palette colors" \
     -variable usePaletteColors -command "UpdateColors"
 blt::combobutton .palettes \
-    -textvariable usePalette \
+    -textvariable palette \
     -relief sunken \
     -background white \
     -arrowon yes \
@@ -82,10 +81,13 @@ blt::combobutton .palettes \
 blt::tk::label .palettesl -text "Palettes" 
 blt::combomenu .palettes.menu \
     -background white \
-    -textvariable usePalette 
+    -textvariable palette 
 
-.palettes.menu listadd [blt::palette names] -command FixPalette
-set usePalette "blue"
+foreach pal [blt::palette names] {
+    set pal [string trim $pal ::]
+    lappend palettes $pal
+}
+.palettes.menu listadd $palettes -command FixPalette
 
 blt::table . \
     0,0 .label -fill x \
@@ -103,7 +105,7 @@ blt::table configure . r* c1 -resize none
 blt::table configure . r9 -resize both
 
 foreach key [array names show] {
-    set show($key) [.g element cget banana -display$key]
+    set show($key) [.g element cget myContour -display$key]
 }
 
 Blt_ZoomStack .g

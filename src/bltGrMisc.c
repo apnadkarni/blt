@@ -802,6 +802,204 @@ Blt_HSVToXColor(HSV *hsvPtr, XColor *colorPtr)
 	break;
     }
 }
+
+static void
+RGBToHSV(float *rgb, float *hsv)
+{
+    double max, min, range;
+
+    /* Find the minimum and maximum RGB intensities */
+    max = MAX3(rgb[0], rgb[1], rgb[2]);
+    min = MIN3(rgb[0], rgb[1], rgb[2]);
+
+    hsv[2] = max / 65535.0;
+    hsv[0] = hsv[1] = 0.0;
+
+    range = (max - min);
+    if (max != min) {
+	hsv[1] = range / max;
+    }
+    if (hsv[1] > 0.0) {
+	double red, green, blue;
+
+	/* Normalize the RGB values */
+	red = (double)(max - rgb[0]) / range;
+	green = (double)(max - colorPtr->green) / range;
+	blue = (double)(max - colorPtr->blue) / range;
+
+	if (rgb[0] == max) {
+	    hsv[0] = (rgb[2] - rgb[1]);
+	} else if (colorPtr->green == max) {
+	    hsv[0] = 2 + (rgb[0] - rgb[2]);
+	} else if (colorPtr->blue == max) {
+	    hsv[0] = 4 + (rgb[1] - rgb[0]);
+	}
+	hsv[0] *= 60.0;
+    } else {
+	hsv[1] = 0.5;
+    }
+    if (hsv[0] < 0.0) {
+	hsv[0] += 360.0;
+    }
+}
+
+static void
+RGBtoXYZ(float *rgb, float *xyz)
+{
+    float r, g, b;
+								 
+    r = rgb[0], g = rgb[1], b = rgb[2];
+    if (r <= 0.04045) {
+	r = r / 12.;
+    } else {
+	r = pow((r+0.055) / 1.055, 2.4);
+    }
+    if (g <= 0.04045) {
+	g = g / 12.;
+    } else {
+	g = pow((g+0.055) / 1.055, 2.4);
+    }
+    if (b <= 0.04045) {
+	b = b / 12.;
+    } else {
+	b = pow((b+0.055)/1.055, 2.4);
+    }
+    xyz[0] =  0.436052025 * r + 0.385081593 * g + 0.143087414 * b;
+    xyz[1] =  0.222491598 * r + 0.71688606  * g + 0.060621486 * b;
+    xyz[2] =  0.013929122 * r + 0.097097002 * g + 0.71418547  * b;
+} 
+
+static void
+XYZtoRGB(float *xyz, float *rgb)
+{
+    rgb[0] =  3.240479 * xyz[0] - 1.53715  * xyz[1] - 0.498535 * xyz[2];
+    rgb[1] = -0.969256 * xyz[0] + 1.875991 * xyz[1] + 0.041556 * xyz[2];
+    rgb[2] =  0.055648 * xyz[0] - 0.204043 * xyz[1] + 1.057311 * xyz[2];
+}
+
+static INLINE double
+ComputeLAB(float x) 
+{ 
+    double k, eps;
+    double fx;
+
+    k   = 24389.0 / 27.0;
+    eps = 216.0 / 24389.0;
+    return (x > eps) ? cbrt(x) : ((k * x + 16.0) / 116.0);
+}
+
+static void 
+XYZtoLAB(float *xyz, float *lab) 
+{
+    double x, y, z;
+    
+    x = ComputeLAB(xyz[0] / 0.964221);	/* reference white D50 */
+    y = ComputeLAB(xyz[1]);
+    z = ComputeLAB(xyz[2] / 0.825211);
+
+    lab[0] = 2.55 * ((116.0 * y) - 16);
+    lab[1] = 500.0 * (x-y); 
+    lab[2] = 200.0 * (y-z);       
+} 
+
+void 
+XYZToLUV(float *xyz, float *luv) 
+{
+    double u, v, uref, vref, yr, L;
+#define EPS	(216.0 /24389.0)
+#define K	(24389.0/27.0);
+#define XREF	0.964221.0		/* Reference white D50 */
+#define YREF	1.0
+#define ZREF	0.825211
+    
+    u = 4 * xyz[0] / (xyz[0] + (15.0 * xyz[1]) + (3.0 * xyz[2]));
+    v = 9 * xyz[1] / (xyz[0] + (15.0 * xyz[1]) + (3.0 * xyz[2]));
+    
+    uref = 4 * XREF / (XREF + (15.0 * YREF) + (3.0 * ZREF));
+    vref = 9 * YREF / (XREF + (15.0 * YREF) + (3.0 * ZREF));
+    
+    yr = xyz[1] / YR;
+    
+    if (yr > EPS) {
+	L = (116.0 * cbrt(YREF) - 16);
+    } else {
+	L = K * YREF;
+    }
+    luv[0] = 2.55 * L;
+    luv[1] = 13 * L * (u - uref);
+    luv[2] = 13 * L * (v - vref);
+}
+
+static void 
+RGBToLAB(float *rgb, float *lab) 
+{
+    float xyz[3];
+
+    RBGToXYZ(rgb, xyz);
+    XYZToLAB(xyz, lab);
+} 
+
+static void 
+RGBToLUV(float *rgb, float *luv) 
+{
+    float xyz[3];
+
+    RBGToXYZ(rgb, xyz);
+    XYZToLUV(xyz, luv);
+} 
+
+void
+Blt_PixelToXYZ(Blt_Pixel *pixelPtr, float *xyz)
+{
+    float rgb[3];
+
+    rgb[0] = pixelPtr->Red / 255.0;		
+    rgb[1] = pixelPtr->Green / 255.0;
+    rgb[2] = pixelPtr->Blue /255.0;
+    RGBtoXYZ(rgb, xyz);
+}
+
+
+void 
+rgb2luv(int R, int G, int B, int []luv) 
+{
+    float rf, gf, bf;
+    float r, g, b, X_, Y_, Z_, X, Y, Z, fx, fy, fz, xr, yr, zr;
+    float L;
+    float eps = 216.f/24389.f;
+    float k = 24389.f/27.f;
+    
+    float Xr = 0.964221f;  // reference white D50
+    float Yr = 1.0f;
+    float Zr = 0.825211f;
+    
+    RGBToXYZ(r, g, b, &xyz);
+    XYZToLUV(&xyz, luvPtr);
+    
+    // XYZ to Luv
+    
+    float u, v, u_, v_, ur_, vr_;
+    
+    u_ = 4 *X / (X + 15*Y + 3*Z);
+    v_ = 9*Y / (X + 15*Y + 3*Z);
+    
+    ur_ = 4*Xr / (Xr + 15*Yr + 3*Zr);
+    vr_ = 9*Yr / (Xr + 15*Yr + 3*Zr);
+    
+    yr = Y/Yr;
+    
+    if ( yr > eps )
+	L =  (float) (116*Math.pow(yr, 1/3.) - 16);
+    else
+	L = k * yr;
+    
+    u = 13*L*(u_ -ur_);
+    v = 13*L*(v_ -vr_);
+    
+    ciePtr->l = (2.55*L + .5);
+    ciePtr->u = u; 
+    ciePtr->v = v;        
+}
 #endif
 
 /*

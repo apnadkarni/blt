@@ -1,32 +1,23 @@
 
 package require BLT
 
-blt::mesh create regular "exgrid-0-0.4" \
-    -x "1.2145224 3.4495224 208" -y "0 34.209 64"
-blt::mesh create regular "exgrid-0.05-0.4" \
-    -x "1.2142221 3.4492221 208" -y "0 34.209 64"
-blt::mesh create regular "exgrid-0.1-0.4" \
-    -x "1.2141615 3.4491615 208" -y "0 34.209 64"
-blt::mesh create regular "exgrid-0.15-0.4" \
-    -x "1.2141758 3.4491758 208" -y "0 34.209 64"
-blt::mesh create regular "exgrid-0.2-0.4" \
-    -x "1.2141744 3.4491744 208" -y "0 34.209 64"
-blt::mesh create regular "exgrid-0.25-0.4" \
-    -x "1.2141709 3.4491709 208" -y "0 34.209 64"
-blt::mesh create regular "exgrid-0.3-0.4" \
-    -x "1.2141671 3.4491671 208" -y "0 34.209 64"
-blt::mesh create regular "exgrid-0.35-0.4" \
-    -x "1.2141646 3.4491646 208" -y "0 34.209 64"
-blt::mesh create regular "exgrid-0.4-0.4" \
-    -x "1.2141631 3.4491631 208" -y "0 34.209 64"
-blt::mesh create regular "exgrid-0.45-0.4" \
-    -x "1.2141516 3.4541516 208" -y "0 34.209 64"
-blt::mesh create regular "exgrid-0.5-0.4" \
-    -x "1.2141562 3.4491562 208" -y "0 34.209 64"
-blt::mesh create regular "exgrid-0.55-0.4" \
-    -x "1.2141699 3.4491699 208" -y "0 34.209 64"
-blt::mesh create regular "exgrid-0.6-0.4" \
-    -x "1.2142394 3.4492394 208" -y "0 34.209 64"
+set palette greyscale
+
+set meshes {
+    "exgrid-0-0.4"	"1.2145224 3.4495224 208"	"0 34.209 64"
+    "exgrid-0.05-0.4"   "1.2142221 3.4492221 208"	"0 34.209 64"
+    "exgrid-0.1-0.4"	"1.2141615 3.4491615 208"	"0 34.209 64"
+    "exgrid-0.15-0.4"	"1.2141758 3.4491758 208"	"0 34.209 64"
+    "exgrid-0.2-0.4"	"1.2141744 3.4491744 208"	"0 34.209 64"
+    "exgrid-0.25-0.4"	"1.2141709 3.4491709 208"	"0 34.209 64"
+    "exgrid-0.3-0.4"	"1.2141671 3.4491671 208"	"0 34.209 64"
+    "exgrid-0.35-0.4"	"1.2141646 3.4491646 208"	"0 34.209 64"
+    "exgrid-0.4-0.4"	"1.2141631 3.4491631 208"	"0 34.209 64"
+    "exgrid-0.45-0.4"	"1.2141516 3.4541516 208"	"0 34.209 64"
+    "exgrid-0.5-0.4"	"1.2141562 3.4491562 208"	"0 34.209 64"
+    "exgrid-0.55-0.4"	"1.2141699 3.4491699 208"	"0 34.209 64"
+    "exgrid-0.6-0.4"	"1.2142394 3.4492394 208"	"0 34.209 64"
+}
 
 array set plots {
     "Density of states at Vg=0 and Vd=0.4"    exgrid-0-0.4
@@ -44,6 +35,10 @@ array set plots {
     "Density of states at Vg=0.6 and Vd=0.4"  exgrid-0.6-0.4
 }
 
+foreach { name x y } $meshes {
+    blt::mesh create regular $name -x $x -y $y
+}
+
 set table [blt::datatable create]
 $table import csv -file omw.csv
 set labels [$table row values 0]
@@ -52,16 +47,18 @@ $table row delete 0
 $table column type all double
 set count 0
 
-blt::contour .g
-.g colormap create greyscale -palette greyscale
-.g element create test -color blue -colormap greyscale
-.g element isoline steps test 10 
+blt::contour .g -highlightthickness 0
+.g colormap create myColormap -palette $palette
+.g element create myContour -color blue -colormap myColormap
+.g element isoline steps myContour 10 
+.g legend configure -hide yes
+
 proc UpdateColors {} {
      global usePaletteColors 
      if { $usePaletteColors } {
-        .g element configure test -color palette -fill palette
+        .g element configure myContour -color palette -fill palette
     } else {
-        .g element configure test -color black -fill red
+        .g element configure myContour -color black -fill red
     }
 }
 
@@ -74,8 +71,7 @@ proc Fix { what } {
     global show elem
 
     set bool $show($what)
-    puts stderr ".g element configure banana -display$what $bool"
-    .g element configure test -display$what $bool
+    .g element configure myContour -display$what $bool
 }
 
 array set show {
@@ -119,13 +115,13 @@ blt::table . \
 blt::table configure . r* c1 -resize none
 blt::table configure . r9 -resize both
 foreach key [array names show] {
-    set show($key) [.g element cget test -display$key]
+    set show($key) [.g element cget myContour -display$key]
 }
 
 proc NextPlot { column } {
     global table plots
     set label [$table column label $column]
-    .g element configure test -values [list $table $column] \
+    .g element configure myContour -values [list $table $column] \
 	-mesh $plots($label)
     .label configure -text "$label"
     incr column

@@ -137,7 +137,7 @@ static Blt_SwitchSpec createSwitches[] =
 	Blt_Offset(CreateSwitches, watchUnset), 0},
     {BLT_SWITCH_BOOLEAN, "-flush", "bool", (char *)NULL,
 	Blt_Offset(CreateSwitches, flush), 0},
-    {BLT_SWITCH_INT_POS, "-size", "length", (char *)NULL,
+    {BLT_SWITCH_INT_POS, "-length", "length", (char *)NULL,
 	Blt_Offset(CreateSwitches, size), 0},
     {BLT_SWITCH_END}
 };

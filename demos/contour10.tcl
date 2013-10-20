@@ -1,5 +1,5 @@
 package require BLT
-set mesh [blt::mesh create regular regular -x "0 512 512" -y "0 512 512"]
+
 blt::vector create dentalscan
 dentalscan set {
 575 502 144 -434 -979 -1024 -1024 -1024 -931 
@@ -29131,34 +29131,35 @@ dentalscan set {
 -885 -994 -1021 -1008 -980 -1024 -961 -840 -902 
 -953 
 }
+
+set mesh [blt::mesh create regular regular -x "0 512 512" -y "0 512 512"]
+
 blt::contour .g -highlightthickness 0
 
 set palette spectral
-.g colormap create mycolormap -palette $palette
-.g element create myexample -values dentalscan -mesh $mesh -colormap mycolormap
-.g element isoline steps myexample 6
+.g colormap create myColormap -palette $palette
+.g element create myContour -values dentalscan -mesh $mesh -colormap myColormap
+.g element isoline steps myContour 6
 .g legend configure -hide yes
 
 proc UpdateColors {} {
      global usePaletteColors
      if { $usePaletteColors } {
-        .g element configure myexample -color palette -fill palette
+        .g element configure myContour -color palette -fill palette
     } else {
-        .g element configure myexample -color black -fill red
+        .g element configure myContour -color black -fill red
     }
 }
 proc FixPalette {} {
     global usePalette
-    .g colormap configure mycolormap -palette $usePalette
-    .g2 colormap configure mycolormap -palette $usePalette
+    .g colormap configure myColormap -palette $usePalette
+    .g2 colormap configure myColormap -palette $usePalette
 }
 
 proc Fix { what } {
     global show
-
     set bool $show($what)
-    puts stderr ".g element configure myexample -display$what $bool"
-    .g element configure myexample -display$what $bool
+    .g element configure myContour -display$what $bool
 }
 
 array set show {
@@ -29204,7 +29205,7 @@ foreach pal [blt::palette names] {
     set pal [string trim $pal ::]
     lappend palettes $pal
 }
-.palettes.menu listadd $palettes -command FixPalette
+.palettes.menu listadd [lsort $palettes] -command FixPalette
 set usePalette $palette
 
 blt::table . \
@@ -29221,7 +29222,7 @@ blt::table . \
     9,1 .palettes -fill x 
 
 foreach key [array names show] {
-    set show($key) [.g element cget myexample -display$key]
+    set show($key) [.g element cget myContour -display$key]
 }
 
 Blt_ZoomStack .g
@@ -29240,8 +29241,8 @@ $x seq [expr $min + ($w * 0.5)] [expr $max - ($w - 0.5)] $numBins
 blt::barchart .g2 -barwidth $w  -height 1i -highlightthickness 0
 .g2 axis configure x -stepsize 0 
 .g2 axis configure y -logscale yes -grid no -subdivisions 0
-.g2 colormap create mycolormap -palette $palette -axis x 
-.g2 element create hist -x $x -y $freq -relief flat -colormap mycolormap \
+.g2 colormap create myColormap -palette $palette -axis x 
+.g2 element create hist -x $x -y $freq -relief flat -colormap myColormap \
     -outline ""
 .g2 legend configure -hide yes
 Blt_ZoomStack .g2

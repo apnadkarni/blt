@@ -1,5 +1,5 @@
 package require BLT
-blt::mesh create regular regular -x "1 10000 50" -y "1 10000 50"
+blt::mesh create regular regular -x " 0 50 50" -y "0 50 50"
 blt::vector create particle
 blt::vector create substrate
 substrate set {
@@ -1029,7 +1029,6 @@ foreach key { hull values symbols isolines colormap symbols edges } {
 
 proc SetOpacity {} {
     set current [.g legend get current]
-    puts current=$current
     if { $current == "particle" } {
 	.g element configure particle -opacity 100.0 
 	.g element configure substrate -opacity 50.0 
@@ -1047,7 +1046,6 @@ proc SetOpacity {} {
 proc Fix { what } {
     global show elem
     set bool $show($what)
-    puts stderr ".g element configure $elem -display$what $bool"
     .g element configure $elem -display$what $bool
 }
 

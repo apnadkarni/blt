@@ -3969,7 +3969,7 @@ NewAxis(Graph *graphPtr, const char *name, int margin)
 	axisPtr->obj.graphPtr = graphPtr;
 	axisPtr->looseMin = axisPtr->looseMax = TIGHT;
 	axisPtr->reqNumMinorTicks = 2;
-	axisPtr->reqNumMajorTicks = 4 /*10*/;
+	axisPtr->reqNumMajorTicks = 10;
 	axisPtr->margin = MARGIN_NONE;
 	axisPtr->tickLength = 8;
 	axisPtr->scrollUnits = 10;
