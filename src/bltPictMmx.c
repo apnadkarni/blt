@@ -1,5 +1,4 @@
-
-
+/* -*- mode: c; c-basic-offset: 4; indent-tabs-mode: nil -*- */
 /*
  * bltPictMMX.c --
  *
@@ -7,13 +6,13 @@
  *
  *	Copyright 1997-2004 George A Howlett.
  *
- *	Permission is hereby granted, free of charge, to any person obtaining
- *	a copy of this software and associated documentation files (the
- *	"Software"), to deal in the Software without restriction, including
- *	without limitation the rights to use, copy, modify, merge, publish,
- *	distribute, sublicense, and/or sell copies of the Software, and to
- *	permit persons to whom the Software is furnished to do so, subject to
- *	the following conditions:
+ *	Permission is hereby granted, free of charge, to any person
+ *	obtaining a copy of this software and associated documentation
+ *	files (the "Software"), to deal in the Software without
+ *	restriction, including without limitation the rights to use, copy,
+ *	modify, merge, publish, distribute, sublicense, and/or sell copies
+ *	of the Software, and to permit persons to whom the Software is
+ *	furnished to do so, subject to the following conditions:
  *
  *	The above copyright notice and this permission notice shall be
  *	included in all copies or substantial portions of the Software.
@@ -21,10 +20,11 @@
  *	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  *	EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  *	MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- *	NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
- *	LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
- *	OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
- *	WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *	NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+ *	BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ *	ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ *	CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ *	SOFTWARE.
  */
 
 #define BUILD_BLT_TK_PROCS 1
@@ -61,8 +61,8 @@ static Blt_CopyPictureBitsProc CopyPictureBits;
 static Blt_PictureProcs mmxPictureProcs = {
     ApplyPictureToPicture,
     ApplyScalarToPicture,
-    NULL,				/* ApplyPictureToPictureWithMask, */
-    NULL,				/* ApplyScalarToPictureWithMask, */
+    NULL,			       /* ApplyPictureToPictureWithMask, */
+    NULL,			       /* ApplyScalarToPictureWithMask, */
     TentHorizontally,
     TentVertically,
     ZoomHorizontally,
@@ -113,8 +113,8 @@ SelectPixels(
 
 		/* We want to test (S >= L) && (S <= H). Since the operands
 		 * are all unsigned, pcmp* ops are out.  Instead use
-		 * saturated, unsigned subtraction.  ((L psub S) == 0) is the
-		 * same as (S >= L) */
+		 * saturated, unsigned subtraction.  ((L psub S) == 0) is
+		 * the same as (S >= L) */
 
 		"psubusb %%mm3, %%mm0	# mm0 = L - S\n\t"
 		"movq %%mm3, %%mm1	# mm1 = S\n\t"
@@ -718,7 +718,7 @@ ZoomVertically(Pict *destPtr, Pict *srcPtr, ResampleFilter *filterPtr)
 {
     Sample *samples, *send;
     int x;
-    int bytesPerSample;		/* Size of sample. */
+    int bytesPerSample;			/* Size of sample. */
     long bytesPerRow;
 
     /* Pre-calculate filter contributions for each row. */
@@ -1079,13 +1079,16 @@ TentHorizontally(Pict *destPtr, Pict *srcPtr)
 
 static void
 BlendPictures(
-    Pict *destPtr,		/* (in/out) Background picture. Composite
-				 * overwrites region in background. */
-    Pict *srcPtr,		/* Foreground picture. */
-    int sx, int sy,		/* Origin of foreground region in source. */
-    int w, int h,		/* Dimension of area to be blended. */
-    int dx, int dy)		/* Origin of background region in
-				 * destination. */
+    Pict *destPtr,			/* (in/out) Background picture.
+					 * Composite overwrites region in
+					 * background. */
+    Pict *srcPtr,			/* Foreground picture. */
+    int sx, int sy,			/* Origin of foreground region in
+					 * source. */
+    int w, int h,		        /* Dimension of area to be
+					 * blended. */
+    int dx, int dy)			/* Origin of background region in
+					 * destination. */
 {
     Blt_Pixel *srcRowPtr, *destRowPtr;
     int y;
@@ -1126,17 +1129,16 @@ BlendPictures(
 		 *      dest = fg + (beta * bg);
 		 * for all RGBA components at once. 
 		 *
-		 * Packing unsigned with saturation performs the
-		 * necessary clamping without the branch misprediction
-		 * penalty.
+		 * Packing unsigned with saturation performs the necessary
+		 * clamping without the branch misprediction penalty.
 		 *
 		 * FIXME: 
-		 *     Check if it's faster to do the blend calcution
-		 *     all the time (even when alpha is 0 or
-		 *     255). There's a good probability that the
-		 *     majority of pixels are opaque (interior) or
-		 *     completely transparent (exterior).  Only the
-		 *     edge pixels would require blending.
+		 *     Check if it's faster to do the blend calcution all
+		 *     the time (even when alpha is 0 or 255). There's a
+		 *     good probability that the majority of pixels are
+		 *     opaque (interior) or completely transparent
+		 *     (exterior).  Only the edge pixels would require
+		 *     blending.
 		 */
   	        asm volatile (
 		    /* 
@@ -1371,7 +1373,7 @@ ConvolvePictureHorizontally(Pict *destPtr, Pict *srcPtr,
 #endif
 
 static void
-AssociateColors(Pict *srcPtr) /* (in/out) picture */
+AssociateColors(Pict *srcPtr)		/* (in/out) picture */
 {
     Blt_Pixel *srcRowPtr;
     int y;
@@ -1549,9 +1551,8 @@ UnassociateColors(Pict *srcPtr)		/* (in/out) picture */
 	     * for all RGBA components at once. 
 	     *
 	     * C = (Ca * ia) + bias >> 16 
-	     * Packing unsigned with saturation performs the
-	     * necessary clamping without the branch misprediction
-	     * penalty.
+	     * Packing unsigned with saturation performs the necessary
+	     * clamping without the branch misprediction penalty.
 	     */
 	    alpha = sp->Alpha;
 	    asm volatile (
@@ -1595,8 +1596,8 @@ UnassociateColors(Pict *srcPtr)		/* (in/out) picture */
  *
  *	Creates a copy of the given picture using SSE xmm registers.  
  * 
- *	FIXME: This is broken since it uses an double-world aligned quad word
- *	move instruction.
+ *	FIXME: This is broken since it uses an double-world aligned quad
+ *	word move instruction.
  *	
  * Results: 
  *	None.
@@ -1669,8 +1670,8 @@ BoxCarVertically(Pict *destPtr, Pict *srcPtr, size_t r)
      */
     /* Apply filter to each row. */
 
-    /* Create mask for alpha component.  We'll use this mask to make sure we
-     * don't change the alpha component of a pixel.  */
+    /* Create mask for alpha component.  We'll use this mask to make sure
+     * we don't change the alpha component of a pixel.  */
     mask.u32 = 0;
     mask.Alpha = 0xFF;
     asm volatile (
@@ -1899,8 +1900,8 @@ x86HaveCpuId(void)
     unsigned int ecx;
 
     asm volatile (
-	/* See if ID instruction is supported. Save a copy of
-	 * EFLAGS in eax and ecx */
+	/* See if ID instruction is supported. Save a copy of EFLAGS in eax
+	 * and ecx */
 #ifdef __amd64__
 	"pushq %%rbx\n\t"
 #else 

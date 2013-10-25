@@ -1,4 +1,4 @@
-
+/* -*- mode: c; c-basic-offset: 4; indent-tabs-mode: nil -*- */
 /*
  * bltPicture.h --
  *
@@ -161,17 +161,17 @@ typedef struct {
 } PictureCoordinate;
 
 typedef enum BlendingModes {
-    BLT_BLEND_NORMAL,		/* C = F */
-    BLT_BLEND_MULTIPLY,		/* C = F * B */
-    BLT_BLEND_SCREEN,		/* C = 1 - (1 - F * B */
-    BLT_BLEND_DARKEN,		/* C = min(F,B) */
-    BLT_BLEND_LIGHTEN,		/* C = max(F,B) */
-    BLT_BLEND_DIFFERENCE,	/* C = |F - B| */
+    BLT_BLEND_NORMAL,			/* C = F */
+    BLT_BLEND_MULTIPLY,			/* C = F * B */
+    BLT_BLEND_SCREEN,			/* C = 1 - (1 - F * B */
+    BLT_BLEND_DARKEN,			/* C = min(F,B) */
+    BLT_BLEND_LIGHTEN,			/* C = max(F,B) */
+    BLT_BLEND_DIFFERENCE,		/* C = |F - B| */
     BLT_BLEND_HARDLIGHT,
     BLT_BLEND_SOFTLIGHT,
-    BLT_BLEND_COLORDODGE,	/* C = B / (1 - F) */ 
-    BLT_BLEND_COLORBURN,	/* C = (1 - B) / F */
-    BLT_BLEND_OVERLAY,		/* C = B * (F + (2 * F) * (1 - B)) */
+    BLT_BLEND_COLORDODGE,		/* C = B / (1 - F) */ 
+    BLT_BLEND_COLORBURN,		/* C = (1 - B) / F */
+    BLT_BLEND_OVERLAY,			/* C = B*(F + (2*F)*(1-B)) */
 } Blt_BlendingMode;
 
 BLT_EXTERN Blt_ResampleFilter bltBoxFilter; /* The ubiquitous box filter */

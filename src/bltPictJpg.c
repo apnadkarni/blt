@@ -1,19 +1,19 @@
-
+/* -*- mode: c; c-basic-offset: 4; indent-tabs-mode: nil -*- */
 /*
  * bltPictJpg.c --
  *
- * This module implements JPEG file format conversion routines for the picture
- * image type in the BLT toolkit.
+ * This module implements JPEG file format conversion routines for the
+ * picture image type in the BLT toolkit.
  *
  *	Copyright 2003-2005 George A Howlett.
  *
- *	Permission is hereby granted, free of charge, to any person obtaining
- *	a copy of this software and associated documentation files (the
- *	"Software"), to deal in the Software without restriction, including
- *	without limitation the rights to use, copy, modify, merge, publish,
- *	distribute, sublicense, and/or sell copies of the Software, and to
- *	permit persons to whom the Software is furnished to do so, subject to
- *	the following conditions:
+ *	Permission is hereby granted, free of charge, to any person
+ *	obtaining a copy of this software and associated documentation
+ *	files (the "Software"), to deal in the Software without
+ *	restriction, including without limitation the rights to use, copy,
+ *	modify, merge, publish, distribute, sublicense, and/or sell copies
+ *	of the Software, and to permit persons to whom the Software is
+ *	furnished to do so, subject to the following conditions:
  *
  *	The above copyright notice and this permission notice shall be
  *	included in all copies or substantial portions of the Software.
@@ -21,35 +21,37 @@
  *	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  *	EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  *	MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- *	NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
- *	LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
- *	OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
- *	WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *	NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+ *	BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ *	ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ *	CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ *	SOFTWARE.
  *
  * The JPEG reader/writer is adapted from jdatasrc.c and jdatadst.c in the
  * Independent JPEG Group (version 6b) library distribution.
  *
  *	The authors make NO WARRANTY or representation, either express or
  *	implied, with respect to this software, its quality, accuracy,
- *	merchantability, or fitness for a particular purpose.  This software
- *	is provided "AS IS", and you, its user, assume the entire risk as to
- *	its quality and accuracy.
+ *	merchantability, or fitness for a particular purpose.  This
+ *	software is provided "AS IS", and you, its user, assume the entire
+ *	risk as to its quality and accuracy.
  *
- *	This software is copyright (C) 1991-1998, Thomas G. Lane.  All Rights
- *	Reserved except as specified below.
+ *	This software is copyright (C) 1991-1998, Thomas G. Lane.  All
+ *	Rights Reserved except as specified below.
  *
- *	Permission is hereby granted to use, copy, modify, and distribute this
- *	software (or portions thereof) for any purpose, without fee, subject
- *	to these conditions: (1) If any part of the source code for this
- *	software is distributed, then this README file must be included, with
- *	this copyright and no-warranty notice unaltered; and any additions,
- *	deletions, or changes to the original files must be clearly indicated
- *	in accompanying documentation.  (2) If only executable code is
- *	distributed, then the accompanying documentation must state that "this
- *	software is based in part on the work of the Independent JPEG Group".
- *	(3) Permission for use of this software is granted only if the user
- *	accepts full responsibility for any undesirable consequences; the
- *	authors accept NO LIABILITY for damages of any kind.
+ *	Permission is hereby granted to use, copy, modify, and distribute
+ *	this software (or portions thereof) for any purpose, without fee,
+ *	subject to these conditions: (1) If any part of the source code for
+ *	this software is distributed, then this README file must be
+ *	included, with this copyright and no-warranty notice unaltered; and
+ *	any additions, deletions, or changes to the original files must be
+ *	clearly indicated in accompanying documentation.  (2) If only
+ *	executable code is distributed, then the accompanying documentation
+ *	must state that "this software is based in part on the work of the
+ *	Independent JPEG Group".  (3) Permission for use of this software
+ *	is granted only if the user accepts full responsibility for any
+ *	undesirable consequences; the authors accept NO LIABILITY for
+ *	damages of any kind.
  *
  */
 
@@ -87,10 +89,10 @@ typedef struct _Blt_Picture Picture;
 typedef struct {
     Tcl_Obj *dataObjPtr;
     Tcl_Obj *fileObjPtr;
-    int quality;		/* Value 0..100 */
-    int smoothing;		/* Value 0..100 */
-    int compress;		/* Value 0..N */
-    int flags;			/* Flag. */
+    int quality;			/* Value 0..100 */
+    int smoothing;			/* Value 0..100 */
+    int compress;			/* Value 0..N */
+    int flags;				/* Flag. */
     Blt_Pixel bg;
     int index;
 } JpgExportSwitches;
@@ -137,22 +139,23 @@ static Blt_SwitchSpec importSwitches[] =
     {BLT_SWITCH_END}
 };
 
-#define JPG_BUF_SIZE  4096	/* choose an efficiently fwrite'able size */
+#define JPG_BUF_SIZE  4096	       /* Choose an efficiently fwrite'able
+					* size */
 
 typedef struct {
-    struct jpeg_source_mgr pub;	/* public fields */
+    struct jpeg_source_mgr pub;		/* Public fields */
 
-    Blt_DBuffer dBuffer;	/* Collects the converted data. */
+    Blt_DBuffer dBuffer;		/* Collects the converted data. */
 } JpgReader;
 
 typedef struct {
-    struct jpeg_destination_mgr pub; /* public fields */
-    Blt_DBuffer dBuffer;	/* Target stream */
-    JOCTET *bytes;		/* start of buffer */
+    struct jpeg_destination_mgr pub;	/* Public fields */
+    Blt_DBuffer dBuffer;		/* Target stream */
+    JOCTET *bytes;			/* Start of buffer */
 } JpgWriter;
 
 typedef struct {
-    struct jpeg_error_mgr pub;	/* "public" fields */
+    struct jpeg_error_mgr pub;		/* "Public" fields */
     jmp_buf jmpbuf;
     Tcl_DString ds;
 } JpgErrorHandler;
@@ -264,14 +267,14 @@ JpgSetSourceFromBuffer(j_decompress_ptr commPtr, Blt_DBuffer buffer)
 {
     JpgReader *readerPtr;
     
-    /* The source object is made permanent so that a series of JPEG images can
-     * be read from the same file by calling jpeg_stdio_src only before the
-     * first one.  (If we discarded the buffer at the end of one image, we'd
-     * likely lose the start of the next one.)  This makes it unsafe to use
-     * this manager and a different source manager serially with the same JPEG
-     * object.  Caveat programmer.
+    /* The source object is made permanent so that a series of JPEG images
+     * can be read from the same file by calling jpeg_stdio_src only before
+     * the first one.  (If we discarded the buffer at the end of one image,
+     * we'd likely lose the start of the next one.)  This makes it unsafe
+     * to use this manager and a different source manager serially with the
+     * same JPEG object.  Caveat programmer.
      */
-    if (commPtr->src == NULL) {	/* first time for this JPEG object? */
+    if (commPtr->src == NULL) {	     /* First time for this JPEG object? */
 	commPtr->src = (struct jpeg_source_mgr *)
 	    (*commPtr->mem->alloc_small) ((j_common_ptr)commPtr, 
 		JPOOL_PERMANENT, sizeof(JpgReader));
@@ -332,11 +335,12 @@ JpgSetDestinationToBuffer(j_compress_ptr commPtr, Blt_DBuffer buffer)
 {
     JpgWriter *writerPtr;
     
-    /* The destination object is made permanent so that multiple JPEG images
-     * can be written to the same file without re-executing jpeg_stdio_dest.
-     * This makes it dangerous to use this manager and a different destination
-     * manager serially with the same JPEG object, because their private
-     * object sizes may be different.  Caveat programmer.
+    /* The destination object is made permanent so that multiple JPEG
+     * images can be written to the same file without re-executing
+     * jpeg_stdio_dest.  This makes it dangerous to use this manager and a
+     * different destination manager serially with the same JPEG object,
+     * because their private object sizes may be different.  Caveat
+     * programmer.
      */
     if (commPtr->dest == NULL) {	/* first time for this JPEG object? */
 	commPtr->dest = (struct jpeg_destination_mgr *)
@@ -359,8 +363,8 @@ JpgSetDestinationToBuffer(j_compress_ptr commPtr, Blt_DBuffer buffer)
  *
  * Results:
  *      Returns 1 is the header is JPG and 0 otherwise.  Note that the
- *      validity of the header contents is not checked here.  That's done in
- *      Blt_JpgToPicture.
+ *      validity of the header contents is not checked here.  That's done
+ *      in Blt_JpgToPicture.
  *
  *---------------------------------------------------------------------------
  */
@@ -530,9 +534,10 @@ JpgToPicture(
  *      Writes a JPEG format image to the provided dynamic buffer.
  *
  * Results:
- *      A standard TCL result.  If an error occured, TCL_ERROR is returned and
- *      an error message will be place in the interpreter result. Otherwise,
- *      the dynamic buffer will contain the binary output of the image.
+ *      A standard TCL result.  If an error occured, TCL_ERROR is returned
+ *      and an error message will be place in the interpreter
+ *      result. Otherwise, the dynamic buffer will contain the binary
+ *      output of the image.
  *
  * Side Effects:
  *	Memory is allocated for the dynamic buffer.
@@ -601,8 +606,8 @@ PictureToJpg(
     if (srcPtr->flags & BLT_PIC_ASSOCIATED_COLORS) {
 	Blt_Picture unassoc;
 	/* 
-	 * The picture has an alpha burned into the components.
-	 * Create a temporary copy removing pre-multiplied alphas.
+	 * The picture has an alpha burned into the components.  Create a
+	 * temporary copy removing pre-multiplied alphas.
 	 */ 
 	unassoc = Blt_ClonePicture(srcPtr);
 	Blt_UnassociateColors(unassoc);
@@ -613,17 +618,17 @@ PictureToJpg(
     }
     Blt_QueryColors(srcPtr, (Blt_HashTable *)NULL);
     if (Blt_PictureIsColor(srcPtr)) {
-	cinfo.input_components = 3; /* # of color components per pixel */
-	cinfo.in_color_space = JCS_RGB;	/* colorspace of input image */
+	cinfo.input_components = 3;   /* # of color components per pixel */
+	cinfo.in_color_space = JCS_RGB;	/* Colorspace of input image */
     } else {
-	cinfo.input_components = 1; /* # of color components per pixel */
-	cinfo.in_color_space = JCS_GRAYSCALE; /* colorspace of input image */
+	cinfo.input_components = 1;   /* # of color components per pixel */
+	cinfo.in_color_space = JCS_GRAYSCALE; /* Colorspace of input image */
     }	
     jpeg_set_defaults(&cinfo);
 
     /* 
-     * Now you can set any non-default parameters you wish to.  Here we just
-     * illustrate the use of quality (quantization table) scaling:
+     * Now you can set any non-default parameters you wish to.  Here we
+     * just illustrate the use of quality (quantization table) scaling:
      */
 
     /* limit to baseline-JPEG values */
@@ -725,8 +730,8 @@ WriteJpg(Tcl_Interp *interp, Blt_Picture picture)
     memset(&switches, 0, sizeof(switches));
     switches.quality = 100;
     switches.smoothing = 0;
-    switches.flags = 0;		/* No progressive or compression. */
-    switches.bg.u32 = 0xFFFFFFFF; /* white */
+    switches.flags = 0;		       /* No progressive or compression. */
+    switches.bg.u32 = 0xFFFFFFFF;      /* White */
 
     objPtr = NULL;
     dbuffer = Blt_DBuffer_Create();
@@ -803,8 +808,8 @@ ExportJpg(Tcl_Interp *interp, unsigned int index, Blt_Chain chain, int objc,
     memset(&switches, 0, sizeof(switches));
     switches.quality = 100;
     switches.smoothing = 0;
-    switches.flags = 0;		/* No progressive or compression. */
-    switches.bg.u32 = 0xFFFFFFFF; /* white */
+    switches.flags = 0;		       /* No progressive or compression. */
+    switches.bg.u32 = 0xFFFFFFFF;      /* White */
     switches.index = index;
 
     if (Blt_ParseSwitches(interp, exportSwitches, objc - 3, objv + 3, 
@@ -826,12 +831,12 @@ ExportJpg(Tcl_Interp *interp, unsigned int index, Blt_Chain chain, int objc,
 	return TCL_ERROR;
     }
     if (switches.quality == 0) {
-	switches.quality = 100; /* Default quality setting. */
+	switches.quality = 100;		/* Default quality setting. */
     } else if (switches.quality > 100) {
-	switches.quality = 100; /* Maximum quality setting. */
+	switches.quality = 100;		/* Maximum quality setting. */
     }
     if (switches.smoothing > 100) {
-	switches.smoothing = 100; /* Maximum smoothing setting. */
+	switches.smoothing = 100;	/* Maximum smoothing setting. */
     }
 
     dbuffer = Blt_DBuffer_Create();
@@ -899,12 +904,12 @@ Blt_PictureJpgInit(Tcl_Interp *interp)
 	return TCL_ERROR;
     }
     return Blt_PictureRegisterFormat(interp,
-        "jpg",			/* Name of format. */
-	IsJpg,			/* Format discovery procedure. */
-	ReadJpg,		/* Read format procedure. */
-	WriteJpg,		/* Write format procedure. */
-	ImportJpg,		/* Import format procedure. */
-	ExportJpg);		/* Export format procedure. */
+        "jpg",				/* Name of format. */
+	IsJpg,				/* Format discovery procedure. */
+	ReadJpg,			/* Read format procedure. */
+	WriteJpg,			/* Write format procedure. */
+	ImportJpg,			/* Import format procedure. */
+	ExportJpg);			/* Export format procedure. */
 }
 
 int 

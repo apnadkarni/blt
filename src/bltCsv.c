@@ -1,4 +1,4 @@
-
+/* -*- mode: c; c-basic-offset: 4; indent-tabs-mode: nil -*- */
 /*
  * bltCsv.c --
  *
@@ -9,24 +9,22 @@
  *	Permission is hereby granted, free of charge, to any person
  *	obtaining a copy of this software and associated documentation
  *	files (the "Software"), to deal in the Software without
- *	restriction, including without limitation the rights to use,
- *	copy, modify, merge, publish, distribute, sublicense, and/or
- *	sell copies of the Software, and to permit persons to whom the
- *	Software is furnished to do so, subject to the following
- *	conditions:
+ *	restriction, including without limitation the rights to use, copy,
+ *	modify, merge, publish, distribute, sublicense, and/or sell copies
+ *	of the Software, and to permit persons to whom the Software is
+ *	furnished to do so, subject to the following conditions:
  *
  *	The above copyright notice and this permission notice shall be
- *	included in all copies or substantial portions of the
- *	Software.
+ *	included in all copies or substantial portions of the Software.
  *
- *	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY
- *	KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
- *	WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
- *	PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS
- *	OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR
- *	OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
- *	OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
- *	SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ *	EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ *	MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ *	NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+ *	BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ *	ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ *	CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ *	SOFTWARE.
  */
 
 #define BUILD_BLT_TCL_PROCS 1
@@ -68,8 +66,8 @@ ParseCsvChannel(Tcl_Interp *interp, Tcl_Channel channel)
 	    case '\t':
 	    case ' ':
 		/* 
-		 * Add whitespace only if it's not leading or we're inside of
-		 * quotes or a path.
+		 * Add whitespace only if it's not leading or we're inside
+		 * of quotes or a path.
 		 */
 		if ((fp != field) || (inQuotes) || (isPath)) {
 		    *fp++ = *bp; 
@@ -79,7 +77,7 @@ ParseCsvChannel(Tcl_Interp *interp, Tcl_Channel channel)
 	    case '\\':
 		/* 
 		 * Handle special case CSV files that allow unquoted paths.
-		 * Example:  ...,\this\path " should\have been\quoted\,...
+		 * Example: ...,\this\path " should\have been\quoted\,...
 		 */
 		if (fp == field) {
 		    isPath = TRUE; 
@@ -121,8 +119,8 @@ ParseCsvChannel(Tcl_Interp *interp, Tcl_Channel channel)
 			*fp++ = *bp;	/* Copy the comma or newline. */
 			break;
 		    }    
-		    /* "last" points to the character after the last character
-		     * in the field. */
+		    /* "last" points to the character after the last
+		     * character in the field. */
 		    last = fp;	
 
 		    /* Remove trailing spaces only if the field wasn't
@@ -173,10 +171,11 @@ ParseCsvChannel(Tcl_Interp *interp, Tcl_Channel channel)
 	}
 	if (numBytes < 1) {
 	    /* 
-	     * We're reached the end of input. But there may not have been a
-	     * final newline to trigger the final appends. So check if 1) a
-	     * last field is still needs appending the the last record and if
-	     * 2) a last record is still needs appending to the list.
+	     * We're reached the end of input. But there may not have been
+	     * a final newline to trigger the final appends. So check if 1)
+	     * a last field is still needs appending the the last record
+	     * and if 2) a last record is still needs appending to the
+	     * list.
 	     */
 	    if (fp != field) {
 		char *last;
@@ -235,8 +234,8 @@ ParseCsvData(Tcl_Interp *interp, Tcl_Obj *objPtr)
 	    case '\t':
 	    case ' ':
 		/* 
-		 * Add whitespace only if it's not leading or we're inside of
-		 * quotes or a path.
+		 * Add whitespace only if it's not leading or we're inside
+		 * of quotes or a path.
 		 */
 		if ((fp != field) || (inQuotes) || (isPath)) {
 		    *fp++ = *bp; 
@@ -335,10 +334,10 @@ ParseCsvData(Tcl_Interp *interp, Tcl_Obj *objPtr)
 	}
 
 	/* 
-	 * We're reached the end of input. But there may not have been a final
-	 * newline to trigger the final appends. So check if 1) a last field
-	 * is still needs appending the the last record and if 2) a last
-	 * record is still needs appending to the list.
+	 * We're reached the end of input. But there may not have been a
+	 * final newline to trigger the final appends. So check if 1) a
+	 * last field is still needs appending the the last record and if
+	 * 2) a last record is still needs appending to the list.
 	 */
 	if (fp != field) {
 	    char *last;
