@@ -336,7 +336,7 @@ BLT_EXTERN void Blt_ZoomHorizontally(Blt_Picture dest, Blt_Picture src,
 	Blt_ResampleFilter filter);
 BLT_EXTERN void Blt_ZoomVertically(Blt_Picture dest, Blt_Picture src, 
 	Blt_ResampleFilter filter);
-BLT_EXTERN void Blt_BlendPictures(Blt_Picture dest, Blt_Picture src, 
+BLT_EXTERN void Blt_BlendRegion(Blt_Picture dest, Blt_Picture src, 
 	int sx, int sy, int w, int h, int dx, int dy);
 
 BLT_EXTERN void Blt_BlendPicturesByMode(Blt_Picture dest, Blt_Picture src, 

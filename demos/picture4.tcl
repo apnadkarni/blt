@@ -14,7 +14,7 @@ $bg blank white
 
 set n 500
 puts stderr [time {
-    blt::vector create points -size $n
+    blt::vector create points -length $n
     points random
     points expr { round(points * 512) + 30 }
 }]

@@ -289,10 +289,10 @@ BLT_EXTERN void		Blt_ZoomHorizontally(Blt_Picture dest,
 BLT_EXTERN void		Blt_ZoomVertically(Blt_Picture dest, Blt_Picture src,
 				Blt_ResampleFilter filter);
 #endif
-#ifndef Blt_BlendPictures_DECLARED
-#define Blt_BlendPictures_DECLARED
+#ifndef Blt_BlendRegion_DECLARED
+#define Blt_BlendRegion_DECLARED
 /* 49 */
-BLT_EXTERN void		Blt_BlendPictures(Blt_Picture dest, Blt_Picture src,
+BLT_EXTERN void		Blt_BlendRegion(Blt_Picture dest, Blt_Picture src,
 				int sx, int sy, int w, int h, int dx, int dy);
 #endif
 #ifndef Blt_BlendPicturesByMode_DECLARED
@@ -729,7 +729,7 @@ typedef struct BltTkProcs {
     void (*blt_TentVertically) (Blt_Picture dest, Blt_Picture src); /* 46 */
     void (*blt_ZoomHorizontally) (Blt_Picture dest, Blt_Picture src, Blt_ResampleFilter filter); /* 47 */
     void (*blt_ZoomVertically) (Blt_Picture dest, Blt_Picture src, Blt_ResampleFilter filter); /* 48 */
-    void (*blt_BlendPictures) (Blt_Picture dest, Blt_Picture src, int sx, int sy, int w, int h, int dx, int dy); /* 49 */
+    void (*blt_BlendRegion) (Blt_Picture dest, Blt_Picture src, int sx, int sy, int w, int h, int dx, int dy); /* 49 */
     void (*blt_BlendPicturesByMode) (Blt_Picture dest, Blt_Picture src, Blt_BlendingMode mode); /* 50 */
     void (*blt_FadePicture) (Blt_Picture picture, int x, int y, int w, int h, int alpha); /* 51 */
     void (*blt_CopyPictureBits) (Blt_Picture dest, Blt_Picture src, int sx, int sy, int w, int h, int dx, int dy); /* 52 */
@@ -1000,9 +1000,9 @@ extern BltTkProcs *bltTkProcsPtr;
 #define Blt_ZoomVertically \
 	(bltTkProcsPtr->blt_ZoomVertically) /* 48 */
 #endif
-#ifndef Blt_BlendPictures
-#define Blt_BlendPictures \
-	(bltTkProcsPtr->blt_BlendPictures) /* 49 */
+#ifndef Blt_BlendRegion
+#define Blt_BlendRegion \
+	(bltTkProcsPtr->blt_BlendRegion) /* 49 */
 #endif
 #ifndef Blt_BlendPicturesByMode
 #define Blt_BlendPicturesByMode \

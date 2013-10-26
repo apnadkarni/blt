@@ -1364,7 +1364,7 @@ PaintEllipseAA(
 	Blt_FreePicture(big);
 	Blt_ApplyColorToPicture(tmp, colorPtr);
 	/* Replace the bounding box in the original with the new. */
-	Blt_BlendPictures(picture, tmp, 0, 0, region.w, region.h, 
+	Blt_BlendRegion(picture, tmp, 0, 0, region.w, region.h, 
 		region.x, region.y);
 	Blt_FreePicture(tmp);
     }
@@ -1443,7 +1443,7 @@ PaintRectangleAA(
    Blt_ResamplePicture(tmp, big, bltBoxFilter, bltBoxFilter);
 	
    /* Replace the bounding box in the original with the new. */
-   Blt_BlendPictures(picture, tmp, 0, 0, w+offset, h+offset, x, y);
+   Blt_BlendRegion(picture, tmp, 0, 0, w+offset, h+offset, x, y);
    Blt_FreePicture(big);
    Blt_FreePicture(tmp);
 }
@@ -1466,7 +1466,7 @@ PaintRectangleShadow(Blt_Picture picture, int x, int y, int w, int h, int r,
     Blt_PaintRectangle(blur, shadowPtr->offset, shadowPtr->offset, w, h, r, 
 		   lineWidth, &brush);
     Blt_BlurPicture(blur, blur, shadowPtr->offset, 2);
-    Blt_BlendPictures(picture, blur, 0, 0, dw, dh, x, y);
+    Blt_BlendRegion(picture, blur, 0, 0, dw, dh, x, y);
     Blt_FreePicture(blur);
 }
 

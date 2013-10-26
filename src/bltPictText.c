@@ -1280,8 +1280,8 @@ TextOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	    Blt_FreePicture(tmp);
 	    Blt_TranslateAnchor(x, y, rotPtr->width, rotPtr->height, 
 		switches.anchor, &x, &y);
-	    Blt_BlendPictures(destPtr, rotPtr, 0, 0, 
-		rotPtr->width, rotPtr->height, x, y);
+	    Blt_BlendRegion(destPtr, rotPtr, 0, 0, rotPtr->width, 
+			    rotPtr->height, x, y);
 	    Blt_FreePicture(rotPtr);
 	}
 	Blt_Free(layoutPtr);
@@ -1331,8 +1331,8 @@ TextOp(ClientData clientData, Tcl_Interp *interp, int objc,
                     switches.kerning, switches.brushPtr);
 	    }
 #endif
-	    Blt_BlendPictures(destPtr, tmpPtr, 0, 0, tmpPtr->width, 
-		      tmpPtr->height, x, y);
+	    Blt_BlendRegion(destPtr, tmpPtr, 0, 0, tmpPtr->width, 
+			    tmpPtr->height, x, y);
 	    fprintf(stderr, "tmp width=%d height=%d, w=%d h=%d\n",
 		    tmpPtr->width, tmpPtr->height, w, h);
 	    Blt_FreePicture(tmpPtr);

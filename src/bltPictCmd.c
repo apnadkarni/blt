@@ -2154,7 +2154,7 @@ PostScriptProc(
 	if (bg == NULL) {
 	    return TCL_ERROR;
 	}
-	Blt_BlendPictures(bg, imgPtr->picture, 0, 0, w, h, 0, 0);
+	Blt_BlendRegion(bg, imgPtr->picture, 0, 0, w, h, 0, 0);
 
 	memset(&setup, 0, sizeof(setup));
 	ps = Blt_Ps_Create(interp, &setup);
@@ -2518,10 +2518,9 @@ BlendOp(
 	Blt_CopyPictureBits(dst, bg, 0, 0, 
 			    Blt_PictureWidth(bg), Blt_PictureHeight(bg), 0, 0);
     }
-    Blt_BlendPictures(dst, fg, 
-		      switches.from.x, switches.from.y, 
-		      switches.from.w, switches.from.h, 
-		      switches.to.x, switches.to.y);
+    Blt_BlendRegion(dst, fg, switches.from.x, switches.from.y, 
+		    switches.from.w, switches.from.h, 
+		    switches.to.x, switches.to.y);
     if (tmp != NULL) {
 	Blt_FreePicture(tmp);
     }
@@ -2766,7 +2765,7 @@ CopyOp(
 					 * destination. */
     }
     if (switches.blend) {
-	Blt_BlendPictures(dst, src, switches.from.x, 
+	Blt_BlendRegion(dst, src, switches.from.x, 
 		switches.from.y, switches.from.w, switches.from.h,
 		switches.to.x, switches.to.y);
     } else {
@@ -4044,8 +4043,8 @@ ReflectOp(
 	tmpPtr = destPtr;
 	destPtr = Blt_CreatePicture(destPtr->width, destPtr->height);
 	Blt_BlankPicture(destPtr, switches.bgColor.u32);
-	Blt_BlendPictures(destPtr, tmpPtr, 0, 0, destPtr->width, 
-			  destPtr->height, 0, 0);
+	Blt_BlendRegion(destPtr, tmpPtr, 0, 0, destPtr->width, destPtr->height,
+			0, 0);
 	Blt_FreePicture(tmpPtr);
     }
     tmpPtr = destPtr;

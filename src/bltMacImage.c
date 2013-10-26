@@ -1116,7 +1116,7 @@ DrawableToPicture(
     Painter *painterPtr,
     Drawable drawable,
     int x, int y,
-    int width, int height)	/* Dimension of the drawable. */
+    int w, int height)	/* Dimension of the drawable. */
 {
     CGrafPtr saveWorld;
     GDHandle saveDevice;
@@ -1124,14 +1124,14 @@ DrawableToPicture(
     Picture *destPtr;
 
     srcPort = TkMacOSXGetDrawablePort(drawable);
-    destPtr = Blt_CreatePicture(width, height);
+    destPtr = Blt_CreatePicture(w, height);
     {
 	Rect srcRect, destRect;
         MacDrawable dstDraw = (MacDrawable)drawable;
         PixMap pm;
       
-	SetRect(&srcRect, x, y, x + width, y + height);
-        SetRect(&destRect, 0, 0, width, height);
+	SetRect(&srcRect, x, y, x + w, y + height);
+        SetRect(&destRect, 0, 0, w, height);
 
 	GetGWorld(&saveWorld, &saveDevice);
 	SetGWorld(srcPort, NULL);
@@ -1139,7 +1139,7 @@ DrawableToPicture(
 	TkMacOSXSetUpClippingRgn(drawable);
 
 	pm.bounds.left = pm.bounds.top = 0;
-	pm.bounds.right = (short)width;
+	pm.bounds.right = (short)w;
 	pm.bounds.bottom = (short)height;
 
 	pm.pixelType = RGBDirect;
@@ -1192,7 +1192,7 @@ Blt_WindowToPicture(
     Drawable drawable,
     int x, int y,		/* Offset of image from the drawable's
 				 * origin. */
-    int width, int height,	/* Dimension of the image.  Image must
+    int w, int height,	/* Dimension of the image.  Image must
 				 * be completely contained by the
 				 * drawable. */
     double gamma)
@@ -1201,7 +1201,7 @@ Blt_WindowToPicture(
     Blt_Picture picture;
 
     painter = Blt_GetPainterFromDrawable(display, drawable, gamma);
-    picture =  DrawableToPicture(painter, drawable, x, y, width, height);
+    picture =  DrawableToPicture(painter, drawable, x, y, w, height);
     Blt_FreePainter(painter);
     return picture;
 }
@@ -1226,7 +1226,7 @@ Blt_DrawableToPicture(
     Drawable drawable,
     int x, int y,		/* Offset of image from the drawable's
 				 * origin. */
-    int width, int height,	/* Dimension of the image.  Image must
+    int w, int height,	/* Dimension of the image.  Image must
 				 * be completely contained by the
 				 * drawable. */
     double gamma)
@@ -1235,7 +1235,7 @@ Blt_DrawableToPicture(
     Blt_Picture picture;
 
     painter = Blt_GetPainter(tkwin, gamma);
-    picture =  DrawableToPicture(painter, drawable, x, y, width, height);
+    picture =  DrawableToPicture(painter, drawable, x, y, w, height);
     Blt_FreePainter(painter);
     return picture;
 }
@@ -2140,10 +2140,9 @@ Blt_JPEGToPicture(interp, fileName)
 
     /*  
      * After finish_decompress, we can close the input file.  Here we
-     * postpone it until after no more JPEG errors are possible, so as
-     * to simplify the setjmp error logic above.  (Actually, I don't
-     * think that jpeg_destroy can do an error exit, but why assume
-     * anything...)  
+     * postpone it until after no more JPEG errors are possible, so as to
+     * simplify the setjmp error logic above.  (Actually, I don't think
+     * that jpeg_destroy can do an error exit, but why assume anything...)
      */
     fclose(f);
 
@@ -2192,13 +2191,13 @@ PaintPicture(
     Painter *painterPtr,
     Drawable drawable,
     Picture *srcPtr,
-    int srcX, int srcY,		/* Coordinates of region in the
-				 * picture. */
-    int width, int height,	/* Dimension of the region.  Region
-				 * cannot extend beyond the end of the
-				 * picture. */
-    int destX, int destY,	/* Coordinates of region in the
-				 * drawable.  */
+    int sx, int sy,			/* Coordinates of region in the
+					 * picture. */
+    int width, int height,		/* Dimension of the region.  Region
+					 * cannot extend beyond the end of
+					 * the picture. */
+    int dx, int dy,			/* Coordinates of region in the
+					 * drawable.  */
     unsigned int flags)
 {
     CGrafPtr saveWorld;
@@ -2220,12 +2219,12 @@ PaintPicture(
         MacDrawable dstDraw = (MacDrawable)drawable;
         PixMap pm;
       
-	SetRect(&srcRect, srcX, srcY, srcX + width, srcY + height);
+	SetRect(&srcRect, sx, sy, sx + width, sy + height);
         SetRect(&destRect, 
-	    destX + dstDraw->xOffset, 
-	    destY + dstDraw->yOffset, 
-            destX + width + dstDraw->xOffset, 
-	    destY + height + dstDraw->yOffset);
+	    dx + dstDraw->xOffset, 
+	    dy + dstDraw->yOffset, 
+            dx + width + dstDraw->xOffset, 
+	    dy + height + dstDraw->yOffset);
 
 	GetGWorld(&saveWorld, &saveDevice);
 	SetGWorld(destPort, NULL);
@@ -2237,14 +2236,14 @@ PaintPicture(
 	pm.bounds.bottom = (short)height;
 
 	pm.pixelType = RGBDirect;
-	pm.pmVersion = baseAddr32; /* 32bit clean */
+	pm.pmVersion = baseAddr32;	/* 32bit clean */
 
 	pm.packType = pm.packSize = 0;
 	pm.hRes = pm.vRes = 0x00480000; /* 72 dpi */
 
 	pm.pixelSize = sizeof(Blt_Pixel) * 8; /* Bits per pixel. */
-	pm.cmpCount = 3;	/* 3 components for direct. */
-	pm.cmpSize = 8;		/* 8 bits per component. */
+	pm.cmpCount = 3;		/* 3 components for direct. */
+	pm.cmpSize = 8;			/* 8 bits per component. */
 
 	pm.pixelFormat = k32ARGBPixelFormat;
 	pm.pmTable = NULL;
@@ -2253,8 +2252,8 @@ PaintPicture(
 	pm.baseAddr = (Ptr)srcPtr->bits;
 	pm.rowBytes = srcPtr->pixelsPerRow * sizeof(Blt_Pixel);
 
-	pm.rowBytes |= 0x8000;	   /* Indicates structure a PixMap,
-				    * not a BitMap.  */
+	pm.rowBytes |= 0x8000;		/* Indicates structure a PixMap,
+					 * not a BitMap.  */
 	
 	CopyBits((BitMap *)&pm, 
 		 GetPortBitMapForCopyBits(destPort), 
@@ -2272,18 +2271,18 @@ PaintPicture(
  *
  * PaintPictureWithBlend --
  *
- *	Blends and paints the picture with the given drawable. The
- *	region of the picture is specified and the coordinates where
- *	in the destination drawable is the image to be displayed.
+ *	Blends and paints the picture with the given drawable. The region
+ *	of the picture is specified and the coordinates where in the
+ *	destination drawable is the image to be displayed.
  *
- *	The background is snapped from the drawable and converted into
- *	a picture.  This picture is then blended with the current
- *	picture (the background always assumed to be 100% opaque).
+ *	The background is snapped from the drawable and converted into a
+ *	picture.  This picture is then blended with the current picture
+ *	(the background always assumed to be 100% opaque).
  * 
  * Results:
- *	Returns TRUE is the picture was successfully display,
- *	Otherwise FALSE is returned.  This may happen if the
- *	background can not be obtained from the drawable.
+ *	Returns TRUE is the picture was successfully display, Otherwise
+ *	FALSE is returned.  This may happen if the background can not be
+ *	obtained from the drawable.
  *
  *---------------------------------------------------------------------------
  */
@@ -2292,35 +2291,35 @@ PaintPictureWithBlend(
     Painter *painterPtr,
     Drawable drawable,
     Blt_Picture fg,
-    int x, int y,		/* Coordinates of region in the
-				 * picture. */
-    int width, int height,	/* Dimension of the region.  Region
-				 * cannot extend beyond the end of the
-				 * picture. */
-    int destX, int destY,	/* Coordinates of region in the
-				 * drawable.  */
+    int x, int y,			/* Coordinates of region in the
+					 * picture. */
+    int width, int height,		/* Dimension of the region.  Region
+					 * cannot extend beyond the end of
+					 * the picture. */
+    int dx, int dy,			/* Coordinates of region in the
+					 * drawable.  */
     unsigned int flags)
 {
     Blt_Picture bg;
 
-    if (destX < 0) {
-	width += destX;
-	destX = 0;
+    if (dx < 0) {
+	width += dx;
+	dx = 0;
     } 
-    if (destY < 0) {
-	height += destY;
-	destY = 0;
+    if (dy < 0) {
+	height += dy;
+	dy = 0;
     }
     if ((width < 0) || (height < 0)) {
 	return FALSE;
     }
-    bg = DrawableToPicture(painterPtr, drawable, destX, destY, width, height);
+    bg = DrawableToPicture(painterPtr, drawable, dx, dy, width, height);
     if (bg == NULL) {
 	return FALSE;
     }
-    Blt_BlendPictures(bg, fg, x, y, bg->width, bg->height, 0, 0);
-    PaintPicture(painterPtr, drawable, bg, 0, 0, bg->width, bg->height, destX, 
-	destY, flags);
+    Blt_BlendRegion(bg, fg, x, y, bg->width, bg->height, 0, 0);
+    PaintPicture(painterPtr, drawable, bg, 0, 0, bg->width, bg->height, dx, dy,
+		 flags);
     Blt_FreePicture(bg);
     return TRUE;
 }
@@ -2331,19 +2330,19 @@ Blt_PaintPicture(
     Blt_Painter painter,
     Drawable drawable,
     Blt_Picture picture,
-    int x, int y,		/* Coordinates of region in the
-				 * picture. */
-    int width, int height,	/* Dimension of the region.  Region
-				 * cannot extend beyond the end of the
-				 * picture. */
-    int destX, int destY,	/* Coordinates of region in the
-				 * drawable.  */
+    int x, int y,			/* Coordinates of region in the
+					 * picture. */
+    int width, int height,		/* Dimension of the region.  Region
+					 * cannot extend beyond the end of
+					 * the picture. */
+    int dx, int dy,			/* Coordinates of region in the
+					 * drawable.  */
     unsigned int flags)
 {
     if ((picture == NULL) || (x >= Blt_PictureWidth(picture)) || 
 	(y >= Blt_PictureHeight(picture))) {
-	/* Nothing to draw. The region offset starts beyond the end of
-	 * the picture. */
+	/* Nothing to draw. The region offset starts beyond the end of the
+	 * picture. */
 	return TRUE;	
     }
     if ((width + x) > Blt_PictureWidth(picture)) {
@@ -2357,10 +2356,10 @@ Blt_PaintPicture(
     }
     if (Blt_IsOpaquePicture(picture)) {
 	return PaintPicture(painter, drawable, picture, x, y, width, height, 
-		destX, destY, flags);
+			    dx, dy, flags);
     } else {
 	return PaintPictureWithBlend(painter, drawable, picture, x, y, 
-		width, height, destX, destY, flags);
+				     width, height, dx, dy, flags);
     }
 }
 
@@ -2370,28 +2369,28 @@ Blt_PaintPictureWithBlend(
     Blt_Painter painter,
     Drawable drawable,
     Blt_Picture picture,
-    int x, int y,		/* Coordinates of region in the
-				 * picture. */
-    int width, int height,	/* Dimension of the region.  Region
-				 * cannot extend beyond the end of the
-				 * picture. */
-    int destX, int destY,	/* Coordinates of region in the
-				 * drawable.  */
-    unsigned int flags)		/* Indicates whether to dither the
-				 * picture before displaying. */
+    int x, int y,			/* Coordinates of region in the
+					 * picture. */
+    int width, int height,		/* Dimension of the region.  Region
+					 * cannot extend beyond the end of
+					 * the picture. */
+    int dx, int dy,			/* Coordinates of region in the
+					 * drawable.  */
+    unsigned int flags)			/* Indicates whether to dither the
+					 * picture before displaying. */
 {
     assert((x >= 0) && (y >= 0));
-    /* assert((destX >= 0) && (destY >= 0)); */
+    /* assert((dx >= 0) && (dy >= 0)); */
     assert((width >= 0) && (height >= 0));
 
     if ((x >= Blt_PictureWidth(picture)) || (y >= Blt_PictureHeight(picture))){
-	/* Nothing to draw. The region offset starts beyond the end of
-	 * the picture. */	
+	/* Nothing to draw. The region offset starts beyond the end of the
+	 * picture. */	
 	return TRUE;
     }
     /* 
-     * Check that the region defined does not extend beyond the end of
-     * the picture.
+     * Check that the region defined does not extend beyond the end of the
+     * picture.
      *
      * Clip the end of the region if it is too big.
      */
@@ -2402,7 +2401,7 @@ Blt_PaintPictureWithBlend(
 	height = Blt_PictureHeight(picture) - y;
     }
     return PaintPictureWithBlend(painter, drawable, picture, x, y, width,
-	height, destX, destY, flags);
+	height, dx, dy, flags);
 }
 
 

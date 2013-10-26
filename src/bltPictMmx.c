@@ -41,6 +41,22 @@
 
 #ifdef HAVE_X86_ASM
 
+#define FEATURE_MMX                (1L << 23)
+#define FEATURE_MMXEXT             (1L << 24)
+#define FEATURE_3DNOW              (1L << 31)
+#define FEATURE_SSE                (1L << 25)
+#define FEATURE_SSE2               (1L << 26)
+#define FEATURE_SSSE3              (1L << 41)
+#define FEATURE_SSE41              (1L << 51)
+#define FEATURE_SSE42              (1L << 52)
+
+struct cpuid {
+    unsigned int eax;
+    unsigned int ebx;
+    unsigned int ecx;
+    unsigned int edx;
+};
+
 static Blt_ApplyPictureToPictureProc ApplyPictureToPicture;
 static Blt_ApplyScalarToPictureProc  ApplyScalarToPicture;
 #ifdef notdef
@@ -51,7 +67,7 @@ static Blt_TentHorizontallyProc TentHorizontally;
 static Blt_TentVerticallyProc TentVertically;
 static Blt_ZoomHorizontallyProc ZoomHorizontally;
 static Blt_ZoomVerticallyProc ZoomVertically;
-static Blt_BlendPicturesProc BlendPictures;
+static Blt_BlendRegionProc BlendRegion;
 static Blt_SelectPixelsProc SelectPixels;
 static Blt_AssociateColorsProc AssociateColors;
 static Blt_UnassociateColorsProc UnassociateColors;
@@ -67,7 +83,7 @@ static Blt_PictureProcs mmxPictureProcs = {
     TentVertically,
     ZoomHorizontally,
     ZoomVertically,
-    BlendPictures,
+    BlendRegion,
     SelectPixels,
     AssociateColors,
     UnassociateColors,
@@ -75,6 +91,13 @@ static Blt_PictureProcs mmxPictureProcs = {
 };
 #endif
 
+/* 
+ * sR sG sB sA 
+ * dA dA dA dA 
+ * dR sG dB dA
+ * sA sA sA sA 
+ *
+ */
 static void
 SelectPixels(
     Pict *destPtr,
@@ -1078,7 +1101,7 @@ TentHorizontally(Pict *destPtr, Pict *srcPtr)
 }
 
 static void
-BlendPictures(
+BlendRegion(
     Pict *destPtr,			/* (in/out) Background picture.
 					 * Composite overwrites region in
 					 * background. */
@@ -1471,7 +1494,7 @@ AssociateColors(Pict *srcPtr)		/* (in/out) picture */
 	     * Small wins:  
 	     *
 	     * We can compute 
-	     *      dest = (fg * alpha) + (beta * bg);
+	     *      dest = (src * alpha);
 	     * for all RGBA components at once. 
 	     *
 	     * Packing unsigned with saturation performs the necessary
@@ -1838,6 +1861,74 @@ BoxCarHorizontally(Pict *destPtr, Pict *srcPtr, size_t r)
 
 
 #ifdef notdef
+static void
+BlendPictures(Pict *destPtr, Pict *srcPtr)
+{
+    int y;
+    Blt_Pixel *destRowPtr, *srcRowPtr;
+
+    destRowPtr = destPtr->bits, srcRowPtr = srcPtr->bits;
+    for (y = 0; y < srcPtr->height; y++) {
+	Blt_Pixel *dp, *sp, *send;
+
+	dp = destRowPtr;
+	for (sp = srcRowPtr, send = sp + srcPtr->width; sp < send; sp += 4) {
+
+            uint32_t dummy __attribute__((unused));
+
+            asm volatile (
+		"0:				\n"
+
+		"movdqa (%%esi), %%xmm0\n\t"	/* 4 foreground pixels */
+		"movdqa 16(%%esi), %%xmm4\n\t"	/* 4 foreground pixels */
+		"movhlps %%xmm0, %%xmm1\n\t"
+		"movhlps %%xmm4, %%xmm5\n\t"
+
+		"pmovzxbw %%xmm0, %%xmm2	\n"	// components
+		"pmovzxbw %%xmm1, %%xmm3	\n"
+		"pmovzxbw %%xmm4, %%xmm6	\n"	// components
+		"pmovzxbw %%xmm5, %%xmm7	\n"
+
+		"pshufb populate_alpha, %%xmm0	\n"	// alpha
+		"pshufb populate_alpha, %%xmm1	\n"
+		"pshufb populate_alpha, %%xmm4	\n"	// alpha
+		"pshufb populate_alpha, %%xmm5	\n"
+
+		"pmulhuw %%xmm2, %%xmm0		\n"
+		"pmulhuw %%xmm3, %%xmm1		\n"
+		"pmulhuw %%xmm6, %%xmm4		\n"
+		"pmulhuw %%xmm7, %%xmm5		\n"
+
+		"movdqa   (%%edi), %%xmm2	\n"
+		"movdqa 16(%%edi), %%xmm6	\n"
+
+		"packuswb %%xmm1, %%xmm0	\n"
+		"packuswb %%xmm5, %%xmm4	\n"
+
+		"paddusb %%xmm2, %%xmm0		\n"
+		"paddusb %%xmm6, %%xmm4		\n"
+		"movdqa  %%xmm0, (%%edi)	\n"
+		"movdqa  %%xmm4, 16(%%edi)	\n"
+
+		"addl $32, %%esi		\n"
+		"addl $32, %%edi		\n"
+		"subl  $1, %%ecx		\n"
+		"jnz   0b			\n"
+
+
+		: "=D" (dummy),
+		  "=S" (dummy),
+		  "=c" (dummy)
+		: "D" (background),
+		  "S" (foreground),
+		  "c" (count/8)
+		: "memory"
+		
+	);
+        }
+    }
+}
+
 /* 
  *---------------------------------------------------------------------------
  *
@@ -1895,7 +1986,7 @@ BlankPicture(Pict *destPtr, unsigned int colorValue)
 #endif
 
 static int
-x86HaveCpuId(void)
+HaveCpuId(void)
 {
     unsigned int ecx;
 
@@ -1946,38 +2037,48 @@ x86HaveCpuId(void)
 }
 
 static int
-x86GetCpuVersion(char *version)
+cpuid(int eax, struct cpuid *resultPtr)
 {
-    unsigned int ebx, ecx, edx;
-
-    if (!x86HaveCpuId()) {
-	return 0;
+    if (!HaveCpuId()) {
+        return 0;
     }
     asm volatile (
-	/* See if ID instruction is supported. Save a copy of
-	 * EFLAGS in eax and ecx */
-
-	/* Get standard CPUID information, and go to a specific vendor
-	 * section */
+#ifdef notdef
 #ifdef __amd64__
-	"pushq %%rbx\n\t" 
+	"pushq %%rbx\n\t"	
 #else 
-	"push %%ebx\n\t" 
+	"push %%ebx\n\t"	
 #endif
-	"xor %%eax, %%eax\n\t"
+#endif
+	"movl %0, %%eax\n\t"
 	"cpuid\n\t"
-	"movl %%ebx, %0\n\n\t"	
+#ifdef notdef
 #ifdef __amd64__
-	"popq %%rbx\n\n\t"	
+	"popq %%rbx\n\t"	
 #else 
-	"pop %%ebx\n\n\t"	
+	"pop %%ebx\n\t"	
 #endif
-	: "=a" (ebx), "=d" (edx), "=c" (ecx)
-	: /* no input */
-	);
-    memcpy (version,   &ebx, 4);
-    memcpy (version+4, &edx, 4);
-    memcpy (version+8, &ecx, 4);
+#endif
+        : "=a" (resultPtr->eax),
+          "=b" (resultPtr->ebx),
+          "=c" (resultPtr->ecx),
+          "=d" (resultPtr->edx)
+        : "a" (eax)
+        : "memory");
+    return 1;
+}
+
+static int
+CpuVersion(char *version)
+{
+    struct cpuid result;
+
+    if (!cpuid(0, &result)) {
+        return 0;
+    }
+    memcpy (version,   &result.ebx, 4);
+    memcpy (version+4, &result.edx, 4);
+    memcpy (version+8, &result.ecx, 4);
     version[12] = '\0';
 #ifdef notdef
     fprintf(stderr, "version=%s\n", version);
@@ -1985,156 +2086,77 @@ x86GetCpuVersion(char *version)
     return 1;
 }
 
-static unsigned int
-x86GetCpuFlags(void)
+static unsigned long
+CpuFlags(void)
 {
-    unsigned int edx;
+    struct cpuid result;
+    unsigned long flags;
 
-    asm volatile (
-	/* Get the CPUID flags (eax=1). */
-#ifdef __amd64__
-	"pushq %%rbx\n\t"	
+    if (!cpuid(1, &result)) {
+        return 0L;
+    }
+#if (SIZEOF_LONG == 8) 
+    flags = (((unsigned long)result.ecx) << 32) | result.edx;    
 #else 
-	"push %%ebx\n\t"	
+    flags = result.edx;
 #endif
-	"movl $1, %%eax\n\t"
-	"cpuid\n\t"
-#ifdef __amd64__
-	"popq %%rbx\n\t"	
-#else 
-	"pop %%ebx\n\t"	
-#endif
-	: "=d" (edx));
-    return edx;
+    return flags;
 }
-
-#define CPU_FEATURE_NONE  (0)
-#define CPU_FEATURE_MMX   (1<<0)
-#define CPU_FEATURE_SSE   (1<<1)
-#define CPU_FEATURE_SSE2  (1<<2)
-#define CPU_FEATURE_3DNOW (1<<3)
-
-#define CPU_FEATURE_AMD_MMXEXT     (1 << 22)
-#define CPU_FEATURE_AMD_3DNOW      (1 << 31)
-#define CPU_FEATURE_CENTAUR_3DNOW  (1 << 31)
-#define CPU_FEATURE_CENTAUR_MMX    (1 << 23)
-#define CPU_FEATURE_CENTAUR_MMXEXT (1 << 24)
-#define CPU_FEATURE_CYRIX_MMX      (1 << 23)
-#define CPU_FEATURE_CYRIX_MMXEXT   (1 << 24)
-#define CPU_FEATURE_INTEL_MMX      (1 << 23)
-#define CPU_FEATURE_INTEL_SSE      (1 << 25)
-#define CPU_FEATURE_INTEL_SSE2     (1 << 26)
-#define CPU_FEATURE_AMD_MMX        (1 << 23)
-#define CPU_FEATURE_AMD_SSE        (1 << 25)
-#define CPU_FEATURE_AMD_SSE2       (1 << 26)
 
 static void
-PrintFeatures(Tcl_Interp *interp, unsigned int features)
-{
-    if (features & CPU_FEATURE_MMX) {
-	Tcl_AppendElement(interp, "mmx");
-    }
-    if (features & CPU_FEATURE_SSE) {
-	Tcl_AppendElement(interp, "sse");
-    }
-    if (features & CPU_FEATURE_SSE2) {
-	Tcl_AppendElement(interp, "sse2");
-    }
-    if (features & CPU_FEATURE_3DNOW) {
-	Tcl_AppendElement(interp, "3dnow");
-    }
-    if (features & CPU_FEATURE_AMD_MMXEXT) {
-	Tcl_AppendElement(interp, "amd_mmxext");
-    }
-    if (features & CPU_FEATURE_AMD_3DNOW) {
-	Tcl_AppendElement(interp, "amd_mmxext");
-    }
-    if (features & CPU_FEATURE_CENTAUR_3DNOW) {
-	Tcl_AppendElement(interp, "amd_mmxext");
-    }
-    if (features & CPU_FEATURE_CENTAUR_MMX) {
-	Tcl_AppendElement(interp, "amd_mmxext");
-    }
-    if (features & CPU_FEATURE_CENTAUR_MMXEXT) {
-	Tcl_AppendElement(interp, "amd_mmxext");
-    }
-    if (features & CPU_FEATURE_CYRIX_MMX) {
-	Tcl_AppendElement(interp, "cyrix_mmx");
-    }	
-    if (features & CPU_FEATURE_CYRIX_MMXEXT) {
-	Tcl_AppendElement(interp, "cyrix_mmxext");
-    }
-    if (features & CPU_FEATURE_INTEL_MMX) {
-	Tcl_AppendElement(interp, "intel_mmx");
-    }
-    if (features & CPU_FEATURE_INTEL_SSE) {
-	Tcl_AppendElement(interp, "intel_sse");
-    }
-    if (features & CPU_FEATURE_INTEL_SSE2) {
-	Tcl_AppendElement(interp, "intel_sse2");
-    }
-    if (features & CPU_FEATURE_AMD_MMX) {
-	Tcl_AppendElement(interp, "amd_mmax");
-    }
-    if (features & CPU_FEATURE_AMD_SSE) {
-	Tcl_AppendElement(interp, "amd_sse");
-    }
-    if (features & CPU_FEATURE_AMD_SSE2) {
-	Tcl_AppendElement(interp, "amd_sse2");
-    }
-}
-
-static int
-x86CpuFeatures(void)
+PrintFeatures(Tcl_Interp *interp, unsigned long flags)
 {
     char version[13];
-    unsigned int flags, featureFlags;
+    Tcl_Obj *objPtr, *listObjPtr;
 
-    featureFlags = CPU_FEATURE_NONE;
-    if (!x86GetCpuVersion(version)) {
-	return featureFlags;
+    listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
+    CpuVersion(version);
+    objPtr = Tcl_NewStringObj(version, 12);
+    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+    Tcl_AppendElement(interp, version);
+    if (flags & FEATURE_MMX) {
+	objPtr = Tcl_NewStringObj("mmx", 3);
+        Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
     }
-    if (strcmp(version, "GenuineIntel") == 0) {
-	flags = x86GetCpuFlags();
-	if (flags & CPU_FEATURE_INTEL_MMX) {
-	    featureFlags |= CPU_FEATURE_MMX;
-	} 
-	if (flags & CPU_FEATURE_INTEL_SSE) {
-	    featureFlags |= CPU_FEATURE_SSE;
-	}
-	if (flags & CPU_FEATURE_INTEL_SSE2) {
-	    featureFlags |= CPU_FEATURE_SSE2;
-	}
-    } else if (strcmp(version, "AuthenticAMD") == 0) {
-	flags = x86GetCpuFlags();
-	if (flags & CPU_FEATURE_AMD_MMX) {
-	    featureFlags |= CPU_FEATURE_MMX;
-	}
-	if (flags & CPU_FEATURE_AMD_SSE) {
-	    featureFlags |= CPU_FEATURE_SSE;
-	}
-	if (flags & CPU_FEATURE_AMD_SSE2) {
-	    featureFlags |= CPU_FEATURE_SSE2;
-	}
-	if (flags & CPU_FEATURE_AMD_3DNOW) {
-	    featureFlags |= CPU_FEATURE_3DNOW;
-	}
-    } else if (strcmp(version, "CyrixInstead") == 0) {
-	flags = x86GetCpuFlags();
-	if (flags & CPU_FEATURE_CYRIX_MMX) {
-	    featureFlags |= CPU_FEATURE_MMX;
-	} 
-    } 
-    return featureFlags;
+    if (flags & FEATURE_MMXEXT) {
+	objPtr = Tcl_NewStringObj("mmxext", 6);
+        Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+    }
+    if (flags & FEATURE_3DNOW) {
+	objPtr = Tcl_NewStringObj("3dnow", 5);
+        Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+    }
+    if (flags & FEATURE_SSE) {
+	objPtr = Tcl_NewStringObj("sse", 3);
+        Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+    }
+    if (flags & FEATURE_SSE2) {
+	objPtr = Tcl_NewStringObj("sse2", 4);
+        Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+    }
+    if (flags & FEATURE_SSSE3) {
+	objPtr = Tcl_NewStringObj("ssse3", 5);
+        Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+    }
+    if (flags & FEATURE_SSE41) {
+	objPtr = Tcl_NewStringObj("sse4.1", 6);
+        Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+    }
+    if (flags & FEATURE_SSE42) {
+	objPtr = Tcl_NewStringObj("sse4.2", 6);
+        Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+    }
+    Tcl_SetVar2Ex(interp, "blt::cpu_info", NULL, listObjPtr, 
+                  TCL_GLOBAL_ONLY);
 }
 
 int
-Blt_CpuFeatures(Tcl_Interp *interp, int *featuresPtr)
+Blt_CpuFeatures(Tcl_Interp *interp, unsigned long *flagsPtr)
 {
-    unsigned int features;
+    unsigned long flags;
 
-    features = x86CpuFeatures();
-    if (features & CPU_FEATURE_MMX) {
+    flags = CpuFlags();
+    if (flags & FEATURE_MMX) {
 #ifdef notdef
 	bltPictProcsPtr = &mmxPictureProcs;
 #else 
@@ -2145,12 +2167,12 @@ Blt_CpuFeatures(Tcl_Interp *interp, int *featuresPtr)
 	bltPictProcsPtr->zoomHorizontallyProc = ZoomHorizontally;
 	bltPictProcsPtr->zoomVerticallyProc = ZoomVertically;
 #ifdef notdef
-	bltPictProcsPtr->blendPicturesProc = BlendPictures;
+	bltPictProcsPtr->blendRegionProc = BlendRegion;
 #endif
 	bltPictProcsPtr->associateColorsProc = AssociateColors;
 	bltPictProcsPtr->selectPixelsProc = SelectPixels;
 #ifdef notdef
-	if (features & CPU_FEATURE_SSE) {
+	if (flags & FEATURE_SSE) {
 	    /*
 	      bltPictProcsPtr->copyPictureBitsProc = CopyPictureBits;
 	    */
@@ -2158,11 +2180,11 @@ Blt_CpuFeatures(Tcl_Interp *interp, int *featuresPtr)
 #endif
 #endif
     }
-    if (featuresPtr != NULL) {
-	*featuresPtr = features;
+    if (flagsPtr != NULL) {
+	*flagsPtr = flags;
     }
     if (interp != NULL) {
-	PrintFeatures(interp, features);
+	PrintFeatures(interp, flags);
     }
     return TCL_OK;
 }
@@ -2170,10 +2192,10 @@ Blt_CpuFeatures(Tcl_Interp *interp, int *featuresPtr)
 #else 
 
 int
-Blt_CpuFeatures(Tcl_Interp *interp, int *featuresPtr)
+Blt_CpuFeatures(Tcl_Interp *interp, unsigned long *flagsPtr)
 {
-    if (featuresPtr != NULL) {
-	*featuresPtr = 0;
+    if (flagsPtr != NULL) {
+	*flagsPtr = 0L;
     }
     return TCL_OK;
 }

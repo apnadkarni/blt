@@ -1,4 +1,4 @@
-
+/* -*- mode: c; c-basic-offset: 4; indent-tabs-mode: nil -*- */
 /*
  * bltPicture.c --
  *
@@ -7,13 +7,13 @@
  *
  *	Copyright 1997-2004 George A Howlett.
  *
- *	Permission is hereby granted, free of charge, to any person obtaining
- *	a copy of this software and associated documentation files (the
- *	"Software"), to deal in the Software without restriction, including
- *	without limitation the rights to use, copy, modify, merge, publish,
- *	distribute, sublicense, and/or sell copies of the Software, and to
- *	permit persons to whom the Software is furnished to do so, subject to
- *	the following conditions:
+ *	Permission is hereby granted, free of charge, to any person
+ *	obtaining a copy of this software and associated documentation
+ *	files (the "Software"), to deal in the Software without
+ *	restriction, including without limitation the rights to use, copy,
+ *	modify, merge, publish, distribute, sublicense, and/or sell copies
+ *	of the Software, and to permit persons to whom the Software is
+ *	furnished to do so, subject to the following conditions:
  *
  *	The above copyright notice and this permission notice shall be
  *	included in all copies or substantial portions of the Software.
@@ -21,10 +21,11 @@
  *	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  *	EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  *	MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- *	NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
- *	LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
- *	OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
- *	WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *	NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+ *	BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ *	ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ *	CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ *	SOFTWARE.
  */
 
 #define BUILD_BLT_TK_PROCS 1
@@ -89,7 +90,7 @@ static Blt_TentHorizontallyProc TentHorizontally;
 static Blt_TentVerticallyProc TentVertically;
 static Blt_ZoomHorizontallyProc ZoomHorizontally;
 static Blt_ZoomVerticallyProc ZoomVertically;
-static Blt_BlendPicturesProc BlendPictures;
+static Blt_BlendRegionProc BlendRegion;
 static Blt_SelectPixelsProc SelectPixels;
 static Blt_AssociateColorsProc AssociateColors;
 static Blt_UnassociateColorsProc UnassociateColors;
@@ -104,7 +105,7 @@ static Blt_PictureProcs stdPictureProcs = {
     TentVertically,
     ZoomHorizontally,
     ZoomVertically,
-    BlendPictures,
+    BlendRegion,
     SelectPixels,
     AssociateColors,
     UnassociateColors,
@@ -174,14 +175,14 @@ Blt_ZoomVertically(Blt_Picture dest, Blt_Picture src, Blt_ResampleFilter filter)
 }
 
 void 
-Blt_BlendPictures(Blt_Picture dest, Blt_Picture src, int x, int y, int w, int h,
+Blt_BlendRegion(Blt_Picture dest, Blt_Picture src, int x, int y, int w, int h,
 		  int dx, int dy)
 {
-    (*bltPictProcsPtr->blendPicturesProc)(dest, src, x, y, w, h, dx, dy);
+    (*bltPictProcsPtr->blendRegionProc)(dest, src, x, y, w, h, dx, dy);
 }
 
 void 
-Blt_SelectPixels(Blt_Picture dest, Blt_Picture src, Blt_Pixel *lowPtr , 
+Blt_SelectPixels(Blt_Picture dest, Blt_Picture src, Blt_Pixel *lowPtr, 
 		 Blt_Pixel *highPtr)
 {
     (*bltPictProcsPtr->selectPixelsProc)(dest, src, lowPtr, highPtr);
@@ -262,8 +263,8 @@ Jitter(Blt_Jitter *jitterPtr) {
  *
  *      Allocates a picture of a designated height and width.
  *
- *	This routine will be augmented with other types of information such as
- *	a color table, etc.
+ *	This routine will be augmented with other types of information such
+ *	as a color table, etc.
  *
  * Results:
  *      Returns the new color pict.
@@ -294,8 +295,8 @@ Blt_CreatePicture(int w, int h)
     destPtr->flags  = BLT_PIC_DIRTY;
     destPtr->delay = 0;
     destPtr->reserved = 0;
-    /* Over-allocate a buffer so that we can align it (if needed) to a 16-byte
-     * boundary. */
+    /* Over-allocate a buffer so that we can align it (if needed) to a
+     * 16-byte boundary. */
     size = (pixelsPerRow * h * sizeof(Blt_Pixel)) + ALIGNMENT;
     buffer = Blt_AssertCalloc(1, size);
     ptr = (ptrdiff_t)buffer;
@@ -394,8 +395,8 @@ Blt_AdjustPictureSize(Pict *srcPtr, int w, int h)
 	Blt_Pixel *bits;
 
 	/* 
-	 * Be careful. There's a bunch of picture routines that assume an even
-	 * number of pixels per row.
+	 * Be careful. There's a bunch of picture routines that assume an
+	 * even number of pixels per row.
 	 */
 	pixelsPerRow = (w + 3) & ~3;	/* Align each row on a 16-byte
 					 * boundary. */
@@ -595,8 +596,9 @@ Blt_GreyscalePicture(Pict *srcPtr)
     int y;
 
     /*
-     * We can use scaled integers (20-bit fraction) to compute the luminosity
-     * with reasonable accuracy considering it's stored in an 8-bit result.
+     * We can use scaled integers (20-bit fraction) to compute the
+     * luminosity with reasonable accuracy considering it's stored in an
+     * 8-bit result.
      */
 #define YR	223002		/* 0.212671 */
 #define YG	749900		/* 0.715160 */
@@ -730,8 +732,8 @@ UnassociateColors(Pict *srcPtr)
  */  
 
 static void
-BlendPictures(Pict *destPtr, Pict *srcPtr, int sx, int sy, int w, int h,
-	      int dx, int dy)
+BlendRegion(Pict *destPtr, Pict *srcPtr, int sx, int sy, int w, int h,
+	    int dx, int dy)
 {
     Blt_Pixel *srcRowPtr, *destRowPtr;
     int y;
@@ -761,11 +763,11 @@ BlendPictures(Pict *destPtr, Pict *srcPtr, int sx, int sy, int w, int h,
     if (srcPtr->height < h) {
 	h = srcPtr->height;
     }
-    if (srcPtr->flags & BLT_PIC_ASSOCIATED_COLORS) {
-	Blt_UnassociateColors(srcPtr);
+    if ((srcPtr->flags & BLT_PIC_ASSOCIATED_COLORS) == 0) {
+	Blt_AssociateColors(srcPtr);
     }
-    if (destPtr->flags & BLT_PIC_ASSOCIATED_COLORS) {
-	Blt_UnassociateColors(destPtr);
+    if ((destPtr->flags & BLT_PIC_ASSOCIATED_COLORS) == 0) {
+	Blt_AssociateColors(destPtr);
     }
     
     destRowPtr = destPtr->bits + ((dy * destPtr->pixelsPerRow) + dx);
@@ -785,10 +787,10 @@ BlendPictures(Pict *destPtr, Pict *srcPtr, int sx, int sy, int w, int h,
 
 		alpha = sp->Alpha;
 		beta = alpha ^ 0xFF; /* beta = 1 - alpha */
-		r = imul8x8(alpha, sp->Red, t1) + imul8x8(beta, dp->Red, t2);
-		g = imul8x8(alpha, sp->Green, t1) + imul8x8(beta, dp->Green,t2);
-		b = imul8x8(alpha, sp->Blue, t1) + imul8x8(beta, dp->Blue, t2);
-		a = alpha + imul8x8(beta, dp->Alpha, t2);
+		r = sp->Red   + imul8x8(beta, dp->Red, t2);
+		g = sp->Green + imul8x8(beta, dp->Green,t2);
+		b = sp->Blue  + imul8x8(beta, dp->Blue, t2);
+		a = alpha     + imul8x8(beta, dp->Alpha, t2);
 		dp->Red   = UCLAMP(r);
 		dp->Green = UCLAMP(g);
 		dp->Blue  = UCLAMP(b);
@@ -801,15 +803,16 @@ BlendPictures(Pict *destPtr, Pict *srcPtr, int sx, int sy, int w, int h,
 }
 
 static void
-BlendPictureArea2(
+BlendRegionArea2(
     Pict *destPtr,			/* (in/out) Background picture.
-					 * Composite overwrites region in 
+					 * Composite overwrites region in
 					 * background. */
     Pict *srcPtr,			/* Foreground picture. */
     Blt_BlendingMode mode,		/* Blend mode. */
     int sx, int sy,			/* Origin of foreground region in
 					 * source. */
-    int w, int h,			/* Dimension of region to be blended. */
+    int w, int h,			/* Dimension of region to be
+					   blended. */
     int dx, int dy)			/* Origin of background region in
 					 * destination. */
 {
@@ -1015,7 +1018,7 @@ BlendPictureArea2(
 void
 Blt_BlendPicturesByMode(Pict *destPtr, Pict *srcPtr, Blt_BlendingMode mode)
 {
-    BlendPictureArea2(destPtr, srcPtr, mode, 0, 0, srcPtr->width, 
+    BlendRegionArea2(destPtr, srcPtr, mode, 0, 0, srcPtr->width, 
 	srcPtr->height, 0, 0);
 }
 
@@ -1053,8 +1056,8 @@ ByteToAsciiHex(unsigned char byte, char *string)
  *	component) output.  With 3 components, we assume the "colorimage"
  *	operator is available.
  *
- *	Note: The picture is converted from bottom to top, to conform
- *	      with the PostScript coordinate system.
+ *	Note: The picture is converted from bottom to top, to conform with
+ *	      the PostScript coordinate system.
  *
  * Results:
  *	The PostScript data comprising the picture is written into the dynamic
@@ -1118,12 +1121,12 @@ Blt_PictureToDBuffer(Pict *srcPtr, int numComponents)
  *	component) output.  With 3 components, we assume the "colorimage"
  *	operator is available.
  *
- *	Note: The picture is converted from bottom to top, to conform
- *	      with the PostScript coordinate system.
+ *	Note: The picture is converted from bottom to top, to conform with
+ *	      the PostScript coordinate system.
  *
  * Results:
- *	The PostScript data comprising the picture is written
- *	into the dynamic string.
+ *	The PostScript data comprising the picture is written into the
+ *	dynamic string.
  *
  *---------------------------------------------------------------------------
  */
@@ -1131,14 +1134,15 @@ int
 Blt_PictureToPsData(
     Pict *srcPtr,			/* Picture to be represented in
 					 * PostScript. */
-    int numComponents,			/* # of color components (1 or 3).  If
-					 * it's 1, we only look at red for
-					 * color information. */
+    int numComponents,			/* # of color components (1 or 3).
+					 * If it's 1, we only look at red
+					 * for color information. */
     Tcl_DString *resultPtr,		/* (out) Holds the generated
 					 * postscript */
-    const char *prefix)			/* Indicates how to prefix the start of
-					 * each line of output. This is normally
-					 * used for PostScript previews, where
+    const char *prefix)			/* Indicates how to prefix the
+					 * start of each line of
+					 * output. This is normally used
+					 * for PostScript previews, where
 					 * each line is * comment "% ". */
 {
     int count, numLines;
@@ -1321,8 +1325,8 @@ BesselFilter(double x)
 {
     /*
      * See Pratt "Digital Image Processing" p. 97 for Bessel functions
-     * zeros are at approx x=1.2197, 2.2331, 3.2383, 4.2411, 5.2428, 6.2439,
-     * 7.2448, 8.2454
+     * zeros are at approx x=1.2197, 2.2331, 3.2383, 4.2411, 5.2428,
+     * 6.2439, 7.2448, 8.2454
      */
 #ifdef __BORLANDC__
     return 0.0;
@@ -1469,10 +1473,10 @@ Blt_NameOfResampleFilter(ResampleFilter *filterPtr)
  *      Finds a 1-D filter associated by the given filter name.
  *
  * Results:
- *      A standard TCL result.  Returns TCL_OK is the filter was found.  The
- *      filter information (proc and support) is returned via
- *      filterPtrPtr. Otherwise TCL_ERROR is returned and an error message is
- *      left in interp->result.
+ *      A standard TCL result.  Returns TCL_OK is the filter was found.
+ *      The filter information (proc and support) is returned via
+ *      filterPtrPtr. Otherwise TCL_ERROR is returned and an error message
+ *      is left in interp->result.
  *
  *---------------------------------------------------------------------------
  */
@@ -1792,12 +1796,11 @@ ZoomHorizontally(Pict *destPtr, Pict *srcPtr, Blt_ResampleFilter filter)
  *
  * Blt_ResamplePicture --
  *
- *      Resamples a given picture using 1-D filters and returns a new picture
- *      of the designated size.
+ *      Resamples a given picture using 1-D filters and returns a new
+ *      picture of the designated size.
  *
  * Results:
- *      Returns the resampled picture. The original picture
- *	is left intact.
+ *      Returns the resampled picture. The original picture is left intact.
  *
  *---------------------------------------------------------------------------
  */
@@ -1808,10 +1811,18 @@ Blt_ResamplePicture(Pict *destPtr, Pict *srcPtr, Blt_ResampleFilter hFilter,
     Pict *tmpPtr;
 
     tmpPtr = Blt_CreatePicture(destPtr->width, srcPtr->height);
+    if ((srcPtr->flags & (BLT_PIC_BLEND | BLT_PIC_ASSOCIATED_COLORS)) == 
+	BLT_PIC_BLEND) {
+	Blt_AssociateColors(srcPtr);
+    }
+    if ((destPtr->flags & (BLT_PIC_BLEND | BLT_PIC_ASSOCIATED_COLORS)) == 
+	BLT_PIC_BLEND) {
+	Blt_AssociateColors(destPtr);
+    }
 
     /* 
-     * It's usually faster to zoom vertically last.  This has to do with the
-     * fact that pictures are stored in contiguous rows.
+     * It's usually faster to zoom vertically last.  This has to do with
+     * the fact that pictures are stored in contiguous rows.
      */
     Blt_ZoomHorizontally(tmpPtr, srcPtr, hFilter);
     Blt_ZoomVertically(destPtr, tmpPtr, vFilter);
@@ -1827,7 +1838,8 @@ FillScaleTables(
     int ax, int ay,			/* Origin of requested area. */
     int aw, int ah,			/* Dimension of requested area. */
     int dw, int destHeight,		/* Desired new dimension. */
-    int *mapX, int *mapY)		/* (out) Resulting mapping tables. */
+    int *mapX, int *mapY)		/* (out) Resulting mapping
+					   tables. */
 {
     int left, right, top, bottom;
     double xScale, yScale;
@@ -1867,9 +1879,9 @@ FillScaleTables(
  *
  * Blt_ScalePicture --
  *
- *	Scales the region of the source picture to the size requested.  This
- *	routine performs raw scaling of the image and unlike Blt_ResamplePhoto
- *	does not do any filtering.
+ *	Scales the region of the source picture to the size requested.
+ *	This routine performs raw scaling of the image and unlike
+ *	Blt_ResamplePhoto does not do any filtering.
  *
  *          src picture
  *      +===================+
@@ -1899,10 +1911,11 @@ FillScaleTables(
 Blt_Picture
 Blt_ScalePicture(
     Pict *srcPtr,			/* Source picture to be scaled. */
-    int sx, int sy,			/* Area of source picture to scaled. */
+    int sx, int sy,			/* Area of source picture to
+					 * scaled. */
     int sw, int sh,
-    int reqWidth, int reqHeight)	/* Requested dimensions of the scaled
-					 * picture. */
+    int reqWidth, int reqHeight)	/* Requested dimensions of the
+					 * scaled picture. */
 {
     Pict *destPtr;
     Blt_Pixel *destRowPtr;
@@ -1942,22 +1955,25 @@ Blt_ScalePicture(
  *
  * Blt_ScalePictureArea --
  *
- *	Scales the region of the source picture to the size of the destination
- *	image.  This routine performs raw scaling of the image and unlike
- *	Blt_ResamplePhoto does not perform any antialiasing.
+ *	Scales the region of the source picture to the size of the
+ *	destination image.  This routine performs raw scaling of the image
+ *	and unlike Blt_ResamplePhoto does not perform any antialiasing.
  *
  * Results:
- *      Returns the new resized picture.  The original picture is left intact.
+ *      Returns the new resized picture.  The original picture is left
+ *      intact.
  *
  *---------------------------------------------------------------------------
  */
 Blt_Picture
 Blt_ScalePictureArea(
     Pict *srcPtr,			/* Source picture to be scaled. */
-    int ax, int ay,			/* Origin of area in source picture. */
-    int aw, int ah,			/* Dimension of area to be scaled. */
-    int dw, int dh)			/* Dimensions of the destination scaled
-					   image. */
+    int ax, int ay,			/* Origin of area in source
+					   picture. */
+    int aw, int ah,			/* Dimension of area to be
+					   scaled. */
+    int dw, int dh)			/* Dimensions of the destination
+					   scaled image. */
 {
     Pict *destPtr;
     Blt_Pixel *srcRowPtr, *destRowPtr;
@@ -2031,10 +2047,11 @@ static void
 ShearY(
     Pict *destPtr, 
     Pict *srcPtr,
-    int y,				/* Designates the row to be sheared */
-    int offset,				/* Difference between of.  Note: don't
-					 * assume that offset is always
-					 * positive.  */
+    int y,				/* Designates the row to be
+					   sheared */
+    int offset,				/* Difference between of.  Note:
+					 * don't assume that offset is
+					 * always positive.  */
     double frac,
     Blt_Pixel *bg)
 {
@@ -2193,10 +2210,10 @@ ShearX(
  * Rotate45 --
  *
  *	Rotates an image by a given angle.  The angle must be in the range
- *	-45.0 to 45.0 inclusive.  Anti-aliasing filtering is performed on two
- *	adjacent pixels, so the angle can't be so great as to force a sheared
- *	pixel to occupy 3 destination pixels.  Performs a three shear rotation
- *	described below.
+ *	-45.0 to 45.0 inclusive.  Anti-aliasing filtering is performed on
+ *	two adjacent pixels, so the angle can't be so great as to force a
+ *	sheared pixel to occupy 3 destination pixels.  Performs a three
+ *	shear rotation described below.
  *
  *	Reference: Alan W. Paeth, "A Fast Algorithm for General Raster
  *		   Rotation", Graphics Gems, pp 179-195.  
@@ -2285,8 +2302,9 @@ Rotate45(Pict *srcPtr, float angle, Blt_Pixel *bg)
  *
  * Rotate90 --
  *
- *	Rotates the given picture by 90 degrees.  This is part of the special
- *	case right-angle rotations that do not create subpixel aliasing.
+ *	Rotates the given picture by 90 degrees.  This is part of the
+ *	special case right-angle rotations that do not create subpixel
+ *	aliasing.
  *
  * Results:  
  *	Returns a newly allocated, rotated picture.
@@ -2324,8 +2342,9 @@ Rotate90(Pict *srcPtr)
  *
  * Rotate180 --
  *
- *	Rotates the given picture by 180 degrees.  This is one of the special
- *	case orthogonal rotations that do not create subpixel aliasing.
+ *	Rotates the given picture by 180 degrees.  This is one of the
+ *	special case orthogonal rotations that do not create subpixel
+ *	aliasing.
  *
  * Results:  
  *	Returns a newly allocated, rotated picture.
@@ -2363,8 +2382,9 @@ Rotate180(Pict *srcPtr)
  *
  * Rotate270 --
  *
- *	Rotates the given picture by 270 degrees.  This is part of the special
- *	case right-angle rotations that do not create subpixel aliasing.
+ *	Rotates the given picture by 270 degrees.  This is part of the
+ *	special case right-angle rotations that do not create subpixel
+ *	aliasing.
  *
  * Results:  
  *	Returns a newly allocated, rotated picture.
@@ -2448,9 +2468,9 @@ GetRotatedSize(int width, int height, float angle, int *rotWidthPtr,
  * Results:  
  *	Returns a newly allocated, rotated picture.
  *
- *	Copyright (C) 2001 Leptonica.  All rights reserved.  This software is
- *	distributed in the hope that it will be useful, but with NO WARRANTY
- *	OF ANY KIND.
+ *	Copyright (C) 2001 Leptonica.  All rights reserved.  This software
+ *	is distributed in the hope that it will be useful, but with NO
+ *	WARRANTY OF ANY KIND.
  *
  *	No author or distributor accepts responsibility to anyone for the
  *	consequences of using this software, or for whether it serves any
@@ -2458,9 +2478,9 @@ GetRotatedSize(int width, int height, float angle, int *rotWidthPtr,
  *	writing.  Everyone is granted permission to copy, modify and
  *	redistribute this source code, for commercial or non-commercial
  *	purposes, with the following restrictions: (1) the origin of this
- *	source code must not be misrepresented; (2) modified versions must be
- *	plainly marked as such; and (3) this notice may not be removed or
- *	altered from any source or modified source distribution.
+ *	source code must not be misrepresented; (2) modified versions must
+ *	be plainly marked as such; and (3) this notice may not be removed
+ *	or altered from any source or modified source distribution.
  *
  * -------------------------------------------------------------------------- 
  */
@@ -2472,8 +2492,8 @@ RotateByAreaMapping(Pict *srcPtr, float angle, Blt_Pixel *bg)
     Blt_Pixel *destRowPtr;
     Pict *destPtr;
     int rotWidth, rotHeight;
-    int srcCx, srcCy, destCx, destCy;	/* Centers of source and destination
-					 * picture. */
+    int srcCx, srcCy, destCx, destCy;	/* Centers of source and
+					 * destination picture. */
 
     /* Find the new dimensions required to hold the image after rotation */
     GetRotatedSize(srcPtr->width, srcPtr->height, angle, &rotWidth, 
@@ -2588,9 +2608,9 @@ Blt_RotatePictureByShear(Pict *srcPtr, float angle)
 	angle -= 360.0;
     }
     /* 
-     * If necessary, create a temporary image that's rotated by a right-angle.
-     * We'll then rotate this picture between -45 to 45 degrees to arrive at
-     * its final angle.
+     * If necessary, create a temporary image that's rotated by a
+     * right-angle.  We'll then rotate this picture between -45 to 45
+     * degrees to arrive at its final angle.
      */
     switch (quadrant) {
     case ROTATE_270:			/* 270 degrees */
@@ -3107,8 +3127,8 @@ enum ColorDirections { RED, GREEN, BLUE };
 #define B1	(cubePtr->b1)
 
 typedef struct {
-    int r0, r1;				/* min, max values: min exclusive max
-					 * inclusive */
+    int r0, r1;				/* min, max values: min exclusive
+					 * max inclusive */
     int g0, g1;
     int b0, b1;
     int vol;
@@ -3117,14 +3137,15 @@ typedef struct {
 /*
  *---------------------------------------------------------------------------
  *
- * Histogram is in elements 1..HISTSIZE along each axis, element 0 is for base
- * or marginal value NB: these must start out 0!
+ * Histogram is in elements 1..HISTSIZE along each axis, element 0 is for
+ * base or marginal value NB: these must start out 0!
  * 
  *---------------------------------------------------------------------------
  */
 typedef struct {
     long int wt[33][33][33];		/* # pixels in voxel */
-    long int mR[33][33][33];		/* Sum over voxel of red pixel values */
+    long int mR[33][33][33];		/* Sum over voxel of red pixel
+					   values */
     long int mG[33][33][33];		/* Sum over voxel of green pixel
 					 * values */
     long int mB[33][33][33];		/* Sum over voxel of blue pixel
@@ -3187,7 +3208,8 @@ Hist3d(PictStats *s, Pict *srcPtr)
  *	m2[r][g][b] = sum over voxel of c^2*P(c)
  * 
  *  Actually each of these should be divided by 'size' to give the usual
- *  interpretation of P() as ranging from 0 to 1, but we needn't do that here.
+ *  interpretation of P() as ranging from 0 to 1, but we needn't do that
+ *  here.
  * 
  *---------------------------------------------------------------------------
  */
@@ -3195,8 +3217,8 @@ Hist3d(PictStats *s, Pict *srcPtr)
 /*
  *---------------------------------------------------------------------------
  * 
- *     We now convert histogram into moments so that we can rapidly calculate
- *     the sums of the above quantities over any desired box.
+ *     We now convert histogram into moments so that we can rapidly
+ *     calculate the sums of the above quantities over any desired box.
  * 
  *---------------------------------------------------------------------------
  */
@@ -3266,14 +3288,15 @@ Vol(Cube *cubePtr, long int m[33][33][33])
  * 
  * Bottom -- 
  *
- *	The next two routines allow a slightly more efficient calculation of
- *	Vol() for a proposed subbox of a given box.  The sum of Top() and
- *	Bottom() is the Vol() of a subbox split in the given direction and
- *	with the specified new upper bound.
+ *	The next two routines allow a slightly more efficient calculation
+ *	of Vol() for a proposed subbox of a given box.  The sum of Top()
+ *	and Bottom() is the Vol() of a subbox split in the given direction
+ *	and with the specified new upper bound.
  *
  *---------------------------------------------------------------------------
  */
-/* Compute part of Vol(cubePtr, mmt) that doesn't depend on r1, g1, or b1 */
+/* Compute part of Vol(cubePtr, mmt) that doesn't depend on r1, g1, or
+ * b1 */
 /* (depending on dir) */
 static long int
 Bottom(
@@ -3297,8 +3320,8 @@ Bottom(
  *
  * Top --
  *
- *	Compute remainder of Vol(cubePtr, mmt), substituting pos for r1, g1,
- *	or b1 (depending on dir).
+ *	Compute remainder of Vol(cubePtr, mmt), substituting pos for r1,
+ *	g1, or b1 (depending on dir).
  *
  *---------------------------------------------------------------------------
  */
@@ -3326,8 +3349,8 @@ Top(Cube *cubePtr, enum ColorDirections dir, int pos, long int m[33][33][33])
  * 
  * Var --
  *
- *	Compute the weighted variance of a box NB: as with the raw statistics,
- *	this is really the (variance * size)
+ *	Compute the weighted variance of a box NB: as with the raw
+ *	statistics, this is really the (variance * size)
  *
  *---------------------------------------------------------------------------
  */
@@ -3355,8 +3378,8 @@ Var(Cube *cubePtr, PictStats *s)
  *	We want to minimize the sum of the variances of two subboxes.  The
  *	sum(c^2) terms can be ignored since their sum over both subboxes is
  *	the same (the sum for the whole box) no matter where we split.  The
- *	remaining terms have a minus sign in the variance formula, so we drop
- *	the minus sign and MAXIMIZE the sum of the two terms.
+ *	remaining terms have a minus sign in the variance formula, so we
+ *	drop the minus sign and MAXIMIZE the sum of the two terms.
  *
  *---------------------------------------------------------------------------
  */
@@ -3621,13 +3644,14 @@ Blt_MapColors(Pict *destPtr, Pict *srcPtr, Blt_ColorLookupTable clut)
  *		wu@csd.uwo.ca
  *
  *		Greedy orthogonal bipartition of RGB space for variance
- *		minimization aided by inclusion-exclusion tricks.  For speed
- *		no nearest neighbor search is done. Slightly better
+ *		minimization aided by inclusion-exclusion tricks.  For
+ *		speed no nearest neighbor search is done. Slightly better
  *		performance can be expected by more sophisticated but more
  *		expensive versions.
  *
  *		The author thanks Tom Lane at Tom_Lane@G.GP.CS.CMU.EDU for
- *		much of additional documentation and a cure to a previous bug.
+ *		much of additional documentation and a cure to a previous
+ *		bug.
  *
  *		Free to distribute, comments and suggestions are appreciated.
  *
@@ -3677,15 +3701,17 @@ Blt_QuantizePicture(Pict *srcPtr, int numReqColors)
  *		wu@csd.uwo.ca
  *
  *		Greedy orthogonal bipartition of RGB space for variance
- *		minimization aided by inclusion-exclusion tricks.  For speed
- *		no nearest neighbor search is done. Slightly better
+ *		minimization aided by inclusion-exclusion tricks.  For
+ *		speed no nearest neighbor search is done. Slightly better
  *		performance can be expected by more sophisticated but more
  *		expensive versions.
  *
  *		The author thanks Tom Lane at Tom_Lane@G.GP.CS.CMU.EDU for
- *		much of additional documentation and a cure to a previous bug.
+ *		much of additional documentation and a cure to a previous
+ *		bug.
  *
- *		Free to distribute, comments and suggestions are appreciated.
+ *		Free to distribute, comments and suggestions are
+ *		appreciated.
  *
  *---------------------------------------------------------------------------
  */
@@ -3780,7 +3806,7 @@ CopyPictureBits(Pict *destPtr, Pict *srcPtr, int x, int y, int w, int h,
 	int *sp, *dp;
 
 	sp = srcRowPtr, dp = destRowPtr;
-	n = (width + 7) / 8;      /* count > 0 assumed */
+	n = (width + 7) / 8;		/* count > 0 assumed */
 	switch (width & 0x07) {
 	case 0:        do {  *dp++ = *sp++;
 	case 7:              *dp++ = *sp++;
@@ -4190,8 +4216,8 @@ ShiftCarryBuffers(double (**cl0)[3], double (**cl1)[3], int width)
  *		University of Montreal, http://www.iro.umontreal.ca/~ostrom/
  *
  * Results:
- *	A new picture is allocated, dithered and returned. Returns NULL only
- *	if memory can't be allocated for the dithered picture.
+ *	A new picture is allocated, dithered and returned. Returns NULL
+ *	only if memory can't be allocated for the dithered picture.
  *
  *---------------------------------------------------------------------------
  */
@@ -4278,8 +4304,8 @@ BoxX(Pict *destPtr, Pict *srcPtr)
     destRowPtr = destPtr->bits;
     for (y = 0; y < srcPtr->height; y++) {
 	Blt_Pixel *dp, *send;
-	Blt_Pixel *lp, *cp, *rp;	/* Pointers to left, center, and right
-					 * pixels.  */
+	Blt_Pixel *lp, *cp, *rp;	/* Pointers to left, center, and
+					 * right pixels.  */
 	Blt_Pixel hold;
 	double r, g, b, a;
 
@@ -5179,7 +5205,8 @@ Blt_TentFilterPicture(Pict *destPtr, Pict *srcPtr)
 
 static unsigned int
 ComputeWeights(
-    unsigned int sw, unsigned int dw,	/* Source and destination widths. */
+    unsigned int sw, unsigned int dw,	/* Source and destination
+					 * widths. */
     ResampleFilter *filterPtr,
     Sample **samplePtrPtr)
 {
@@ -5295,15 +5322,15 @@ CreateNeighborhoodMap(unsigned int size, unsigned int radius)
     map = Blt_AssertMalloc(sizeof(unsigned int) * newSize);
     p = map;
     for (i = 0; i < radius; i++, p++) {
-	*p = 0;				/* Before the picture. Replicate the
-					 * first pixel. */  
+	*p = 0;				/* Before the picture. Replicate
+					 * the first pixel. */  
     }
     for (i = 0; i < size; i++, p++) {
 	*p = i;		
     }
     for (i = 0; i < radius; i++, p++) {
-	*p = size - 1;		      /* After the picture. Replicate the last
-				       * pixel */
+	*p = size - 1;		      /* After the picture. Replicate the
+				       * last pixel */
     }
     return map;
 }
@@ -5410,8 +5437,8 @@ ConvolveHorizontally(Pict *destPtr, Pict *srcPtr, TableFilter *filterPtr)
  *
  * Blt_ConvolvePicture --
  *
- *      Resamples a given picture using 1-D filters and returns a new picture
- *      of the designated size.
+ *      Resamples a given picture using 1-D filters and returns a new
+ *      picture of the designated size.
  *
  * Results:
  *      Returns the resampled picture. The original picture is left intact.
@@ -5518,8 +5545,8 @@ BoxCarHorizontally(Pict *destPtr, Pict *srcPtr, unsigned int radius)
 	int x;
 	int r, g, b, a;
 	
-	/* Prime the pump. Get sums for each component for the first (fwidth)
-	 * pixels in the column. */
+	/* Prime the pump. Get sums for each component for the first
+	 * (fwidth) pixels in the column. */
 	r = g = b = a = 0;
 	for (x = 0; x < fwidth - 1; x++) {
 	    Blt_Pixel *sp;
@@ -5570,15 +5597,15 @@ BoxCarHorizontally(Pict *destPtr, Pict *srcPtr, unsigned int radius)
  *
  * Blt_BlurPicture --
  *
- *      Blurs a picture using a series of 1-D box filters.  The width of the
- *      box filter is a parameter. The source picture is blurred and stored in
- *      the destination picture.
+ *      Blurs a picture using a series of 1-D box filters.  The width of
+ *      the box filter is a parameter. The source picture is blurred and
+ *      stored in the destination picture.
  *
  * Results:
  *      None. 
  * Side Effects: 
- *	The original picture is left intact.  The destination picture contains
- *	the blurred image.
+ *	The original picture is left intact.  The destination picture
+ *	contains the blurred image.
  *
  *---------------------------------------------------------------------------
  */
@@ -5647,14 +5674,15 @@ Blt_SharpenPicture(Pict *destPtr, Pict *srcPtr)
  *
  * Blt_TilePicture --
  *
- *      Tiles the designated region in the destination picture with the source
- *      picture.
+ *      Tiles the designated region in the destination picture with the
+ *      source picture.
  *	
- *	Please note that it is the responsibility of the caller to verify the
- *	region is valid (i.e. wholly contained by the destination picture).
+ *	Please note that it is the responsibility of the caller to verify
+ *	the region is valid (i.e. wholly contained by the destination
+ *	picture).
  *
  * Results:
- *      The destination picture is tiled. The original picture * is left
+ *      The destination picture is tiled. The original picture is left
  *      intact.
  *
  *---------------------------------------------------------------------------
@@ -5664,15 +5692,15 @@ Blt_TilePicture(
     Pict *destPtr,			/* Picture to be tiled. */
     Pict *srcPtr,			/* Picture used as the tile. */
     int xOrigin, int yOrigin,		/* Tile origin. */
-    int x, int y, int w, int h)		/* Region of destination picture to be
-					 * tiled. */
+    int x, int y, int w, int h)		/* Region of destination picture to
+					 * be tiled. */
 {
     int startX, startY;			/* Starting upper left corner of
 					 * region. */
     int delta;
 
-    /* Compute the starting x and y offsets of the tile from the coordinates
-     * of the origin. */
+    /* Compute the starting x and y offsets of the tile from the
+     * coordinates of the origin. */
     startX = x;
     if (x < xOrigin) {
 	delta = (xOrigin - x) % srcPtr->width;
@@ -5747,7 +5775,7 @@ Blt_TilePicture(
 		fprintf(stder, "drawing pattern (%d,%d,%d,%d) at %d,%d\n",
 			sx, sy, tw, th, dx, dy);
 #endif
-		Blt_BlendPictures(destPtr, srcPtr, sx, sy, tw, th, dx, dy);
+		Blt_BlendRegion(destPtr, srcPtr, sx, sy, tw, th, dx, dy);
 	    }
 	}
     }
@@ -5914,7 +5942,7 @@ Blt_QueryColors(Pict *srcPtr, Blt_HashTable *tablePtr)
  * ClassifyPicture --
  *
  *	Check the picture to see if it contain semi or fully transparent
- *	pixels.  Also check if it is color or greyscale. 
+ *	pixels.  Also check if it is color or greyscale.
  */
 void
 Blt_ClassifyPicture(Pict *srcPtr)
@@ -5980,14 +6008,15 @@ Blt_MaskPicture(Pict *destPtr, Pict *srcPtr, int x, int y, int w, int h,
 
 #ifdef notdef
 static int 
-BitWidth (unsigned int n)	/* find "bit-width" needed to represent N */
+BitWidth (unsigned int n)		/* Find "bit-width" needed to
+					   represent N. */
 {
     int width;
     
     width = 0;				/* Initially, no bits needed to
 					 * represent N */
-    while (n != 0) {			/* loop 'til N has been whittled down
-					 * to 0 */
+    while (n != 0) {			/* loop 'til N has been whittled
+					 * down to 0 */
 	n >>= 1;			/* Shift N right 1 bit (NB: N is
 					   unsigned) */
 	width++;			/* and remember how wide N is */
@@ -6163,9 +6192,9 @@ SolveMatrix(float a[8][8], float b[8])
  *              &vc   (<return> vector of coefficients of transform)
  *      Return: 0 if OK; 1 on error
  *
- *  We have a set of 8 equations, describing the projective
- *  transformation that takes 4 points (ptas) into 4 other
- *  points (ptad).  These equations are:
+ *  We have a set of 8 equations, describing the projective transformation
+ *  that takes 4 points (ptas) into 4 other points (ptad).  These equations
+ *  are:
  *
  *          x1' = (c[0]*x1 + c[1]*y1 + c[2]) / (c[6]*x1 + c[7]*y1 + 1)
  *          y1' = (c[3]*x1 + c[4]*y1 + c[5]) / (c[6]*x1 + c[7]*y1 + 1)
@@ -6418,4 +6447,3 @@ Blt_SubtractColor(Pict *srcPtr, Blt_Pixel *colorPtr)
 	srcRowPtr += srcPtr->pixelsPerRow;
     }
 }    
-

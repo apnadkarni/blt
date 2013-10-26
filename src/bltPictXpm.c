@@ -392,7 +392,7 @@ PictureToXpm(Tcl_Interp *interp, Blt_Picture original, Blt_DBuffer buffer,
 	white.u32 = 0xFFFFFFFF;
 	black.u32 = 0x01000000;
 	Blt_SelectPixels(mask, srcPtr, &black, &white);
-	Blt_BlendPictures(background, srcPtr, 0, 0, srcPtr->width, 
+	Blt_BlendRegion(background, srcPtr, 0, 0, srcPtr->width, 
 		srcPtr->height, 0, 0);
 
 	/* Put back the mask by and-ing the pictures together */
