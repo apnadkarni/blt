@@ -457,8 +457,8 @@ SnapBackground(Busy *busyPtr)
 	    color.u32 = 0x0;
 	    color.Alpha = (delta < 0) ? 0 : (delta > 255) ? 255 : delta;
 	    Blt_BlankPicture(fg, color.u32);
-	    Blt_BlendPictures(picture, fg, 0, 0, busyPtr->width, 
-			      busyPtr->height, 0, 0);
+	    Blt_BlendRegion(picture, fg, 0, 0, busyPtr->width, busyPtr->height,
+			    0, 0);
 	    Blt_FreePicture(fg);
 	} else if (busyPtr->darken < 0) {
 	    int delta;
@@ -470,8 +470,8 @@ SnapBackground(Busy *busyPtr)
 	    color.Red = color.Green = color.Blue = 0xFF;
 	    color.Alpha = (delta < 0) ? 0 : (delta > 255) ? 255 : delta;
 	    Blt_BlankPicture(fg, color.u32);
-	    Blt_BlendPictures(picture, fg, 0, 0, busyPtr->width, 
-			      busyPtr->height, 0, 0);
+	    Blt_BlendRegion(picture, fg, 0, 0, busyPtr->width, busyPtr->height,
+		 0, 0);
 	    Blt_FreePicture(fg);
 	}	    
     }
@@ -1916,7 +1916,7 @@ DisplayBusy(ClientData clientData)
 	    y = (busyPtr->height - h) / 2;
 	    assert(x >= 0 && y >= 0);
 	    copy = Blt_ClonePicture(busyPtr->snapshot);
-	    Blt_BlendPictures(copy, busyPtr->layer, 0, 0, w, h, x, y);
+	    Blt_BlendRegion(copy, busyPtr->layer, 0, 0, w, h, x, y);
 	}
 	Blt_PaintPicture(painter, drawable, copy, 0, 0, busyPtr->width, 
 		busyPtr->height, 0, 0, 0);

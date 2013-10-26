@@ -1302,7 +1302,7 @@ PaintPictureWithBlend(
     if (bg == NULL) {
 	return FALSE;
     }
-    Blt_BlendPictures(bg, fg, x, y, bg->width, bg->height, 0, 0);
+    Blt_BlendRegion(bg, fg, x, y, bg->width, bg->height, 0, 0);
     PaintPicture(painterPtr, drawable, bg, 0, 0, bg->width, bg->height, destX, 
 	destY, flags);
     Blt_FreePicture(bg);

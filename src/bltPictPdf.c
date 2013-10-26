@@ -1123,8 +1123,8 @@ PictureToPdf(Tcl_Interp *interp, Blt_Picture original, Pdf *pdfPtr,
 	
 	background = Blt_CreatePicture(srcPtr->width, srcPtr->height);
 	Blt_BlankPicture(background, switchesPtr->bg.u32);
-	Blt_BlendPictures(background, srcPtr, 0, 0, srcPtr->width, 
-			  srcPtr->height, 0, 0);
+	Blt_BlendRegion(background, srcPtr, 0, 0, srcPtr->width, srcPtr->height,
+                        0, 0);
 	srcPtr = background;
     }
 #endif

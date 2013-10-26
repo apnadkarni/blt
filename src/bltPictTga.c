@@ -1525,7 +1525,7 @@ PictureToTga(Tcl_Interp *interp, Blt_Picture original, Blt_DBuffer dbuffer,
 	    /* Blend picture with solid color background. */
 	    background = Blt_CreatePicture(srcPtr->width, srcPtr->height);
 	    Blt_BlankPicture(background, writerPtr->bg.u32); 
-	    Blt_BlendPictures(background, srcPtr, 0, 0, srcPtr->width, 
+	    Blt_BlendRegion(background, srcPtr, 0, 0, srcPtr->width, 
 		srcPtr->height, 0, 0);
 	    if (srcPtr != original) {
 		Blt_FreePicture(srcPtr);

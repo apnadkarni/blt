@@ -2046,7 +2046,7 @@ PaintTextShadow(
     PaintText(blur, interp, string, x+offset/2, y+offset/2, 
 	      switchPtr->brushPtr);
     Blt_BlurPicture(blur, blur, offset, 3);
-    Blt_BlendPictures(picture, blur, 0, 0, w, h, x+offset/2, y+offset/2);
+    Blt_BlendRegion(picture, blur, 0, 0, w, h, x+offset/2, y+offset/2);
     Blt_FreePicture(blur);
 }
 #endif
@@ -2204,12 +2204,12 @@ BrushHorizontalLine(Pict *destPtr, int x1, int x2, int y,
 #include <stdio.h>
 #include <math.h>
 
-typedef struct {			/* A polygon edge */
-    double x;				/* x coordinate of edge's intersection
-					 * with current scanline */
-    double dx;				/* change in x with respect to y */
-    int i;				/* edge number: edge i goes from pt[i]
-					 * to pt[i+1] */
+typedef struct {		     /* A polygon edge */
+    double x;			     /* x coordinate of edge's intersection
+				      * with current scanline */
+    double dx;			     /* change in x with respect to y */
+    int i;			     /* edge number: edge i goes from pt[i]
+				      * to pt[i+1] */
 } ActiveEdge;
 
 typedef struct {
@@ -2237,7 +2237,8 @@ CompareActive(const void *a, const void *b)
 }
 
 static void
-cdelete(AET *tablePtr, int i)		/* Remove edge i from active list */
+cdelete(AET *tablePtr, int i)		/* Remove edge i from active
+					 * list */
 {
     int j;
 
@@ -2245,8 +2246,8 @@ cdelete(AET *tablePtr, int i)		/* Remove edge i from active list */
 	/*empty*/
     }
     if (j >= tablePtr->numActive) {
-	return;				/* Edge not in active list; happens at
-					 * win->y0*/
+	return;				/* Edge not in active list; happens
+					 * at win->y0*/
     }
     tablePtr->numActive--;
 
@@ -2451,8 +2452,8 @@ PaintPolygonAA(Pict *destPtr, size_t numVertices, Point2f *vertices,
     Blt_ResamplePicture(tmp, big, bltBoxFilter, bltBoxFilter);
     Blt_FreePicture(big);
     /* Replace the bounding box in the original with the new. */
-    Blt_BlendPictures(destPtr, tmp, 0, 0, w, h, (int)floor(regionPtr->left)-1, 
-		      (int)floor(regionPtr->top)-1);
+    Blt_BlendRegion(destPtr, tmp, 0, 0, w, h, (int)floor(regionPtr->left)-1, 
+		    (int)floor(regionPtr->top)-1);
     Blt_FreePicture(tmp);
 }
 
@@ -2506,7 +2507,7 @@ PaintPolygonShadow(Pict *destPtr, size_t numVertices, Point2f *vertices,
     Blt_BlurPicture(blur, blur, shadowPtr->width, 3);
     Blt_MaskPicture(blur, tmp, 0, 0, w, h, 0, 0, &shadowPtr->color);
     Blt_FreePicture(tmp);
-    Blt_BlendPictures(destPtr, blur, 0, 0, w, h, x1, y1);
+    Blt_BlendRegion(destPtr, blur, 0, 0, w, h, x1, y1);
     Blt_FreePicture(blur);
 }
 
@@ -2521,11 +2522,11 @@ PaintPolygonAA2(Pict *destPtr, size_t numVertices, Point2f *vertices,
      * Get the minimum size region to draw both a supersized polygon and
      * shadow.
      *
-     * Draw the shadow and then the polygon. Everything is 4x bigger including
-     * the shadow offset.  This is a much bigger blur.
+     * Draw the shadow and then the polygon. Everything is 4x bigger
+     * including the shadow offset.  This is a much bigger blur.
      * 
-     * Resample the image back down to 1/4 the size and blend it into 
-     * the destination picture.
+     * Resample the image back down to 1/4 the size and blend it into the
+     * destination picture.
      */
     big = Blt_CreatePicture(destPtr->width * 4, destPtr->height * 4);
     TranslatePolygon(numVertices, vertices, 0.0f, 0.0f, 4.0f);
@@ -2538,7 +2539,7 @@ PaintPolygonAA2(Pict *destPtr, size_t numVertices, Point2f *vertices,
     tmp = Blt_CreatePicture(destPtr->width, destPtr->height);
     Blt_ResamplePicture(tmp, big, bltBoxFilter, bltBoxFilter);
     Blt_FreePicture(big);
-    Blt_BlendPictures(destPtr, tmp, 0, 0, destPtr->width, destPtr->height, 0,0);
+    Blt_BlendRegion(destPtr, tmp, 0, 0, destPtr->width, destPtr->height, 0,0);
     Blt_FreePicture(tmp);
 }
 
@@ -2562,8 +2563,8 @@ DrawCircle2(Blt_Picture picture, int x, int y, int radius,
 	w = h = r + r;
 	offset = switchesPtr->shadow.offset * numSamples;
 
-	/* Scale the region forming the bounding box of the ellipse into a new
-	 * picture. The bounding box is scaled by *nSamples* times. */
+	/* Scale the region forming the bounding box of the ellipse into a
+	 * new picture. The bounding box is scaled by *nSamples* times. */
 	bigPtr = Blt_CreatePicture(w+(1+offset)*nSamples,h+(1+offset)*nSamples);
 
 	cx = bigPtr->width / 2;
@@ -2586,7 +2587,7 @@ DrawCircle2(Blt_Picture picture, int x, int y, int radius,
 	    w = h = radius + radius + (1 + offset) * 2;
 	    tmpPtr = Blt_CreatePicture(w, h);
 	    Blt_ResamplePicture(tmpPtr, bigPtr, bltBoxFilter, bltBoxFilter);
-	    Blt_BlendPictures(picture, tmpPtr, 0, 0, w, h, x-w/2+offset, 
+	    Blt_BlendRegion(picture, tmpPtr, 0, 0, w, h, x-w/2+offset, 
 		y-h/2+offset);
 	    Blt_BlankPicture(bigPtr, 0x0);
 	    Blt_FreePicture(tmpPtr);
@@ -2612,8 +2613,7 @@ DrawCircle2(Blt_Picture picture, int x, int y, int radius,
 	Blt_FreePicture(bigPtr);
 	/*Blt_ApplyColorToPicture(tmpPtr, &switchesPtr->color); */
 #ifdef notdef
-	Blt_BlendPictures(picture, tmpPtr, 0, 0, w, h, x-w/2+offset, 
-			  y-h/2+offset);
+	Blt_BlendRegion(picture, tmpPtr, 0, 0, w, h, x-w/2+offset,y-h/2+offset);
 #endif
 	{
 	    int yy;
@@ -2635,7 +2635,7 @@ DrawCircle2(Blt_Picture picture, int x, int y, int radius,
 	    }
 	}	    
 #ifndef notdef
-	Blt_BlendPictures(picture, tmpPtr, 0, 0, w, h, x-w/2, y-h/2);
+	Blt_BlendRegion(picture, tmpPtr, 0, 0, w, h, x-w/2, y-h/2);
 #else
 	Blt_CopyPictureBits(picture, tmpPtr, 0, 0, w, h, x-w/2, y-h/2);
 #endif
@@ -2651,8 +2651,8 @@ DrawCircle2(Blt_Picture picture, int x, int y, int radius,
 	r = radius;
 	offset = switchesPtr->shadow.offset;
 
-	/* Scale the region forming the bounding box of the ellipse into a new
-	 * picture. The bounding box is scaled by *nSamples* times. */
+	/* Scale the region forming the bounding box of the ellipse into a
+	 * new picture. The bounding box is scaled by *nSamples* times. */
 	blurPtr = Blt_CreatePicture(w+(offset*4), h+(offset*4));
 	cx = blurPtr->width / 2;
 	cy = blurPtr->height / 2;
@@ -2687,8 +2687,8 @@ DrawCircle2(Blt_Picture picture, int x, int y, int radius,
 	if (y < 0) {
 	    y = 0;
 	}
-	Blt_BlendPictures(picture, blurPtr, 0, 0, blurPtr->width, 
-			  blurPtr->height, x, y);
+	Blt_BlendRegion(picture, blurPtr, 0, 0, blurPtr->width, blurPtr->height,
+			x, y);
 	Blt_FreePicture(blurPtr);
     } else {
 	int r;
@@ -2735,9 +2735,9 @@ DrawCircleShadow(Blt_Picture picture, int x, int y, float radius,
 		 TRUE);
     if (blend) {
 	Blt_BlurPicture(tmpPtr, tmpPtr, shadowPtr->width, 4);
-	Blt_BlendPictures(picture, tmpPtr, 0, 0, w, h, 
-			  x - radius - shadowPtr->offset,
-			  y - radius - shadowPtr->offset);
+	Blt_BlendRegion(picture, tmpPtr, 0, 0, w, h, 
+			x - radius - shadowPtr->offset,
+			y - radius - shadowPtr->offset);
     } else {
 	Blt_CopyPictureBits(picture, tmpPtr, 0, 0, w, h, 
 			  x - radius - shadowPtr->offset,
@@ -2938,8 +2938,8 @@ CircleOp2(
 	    mergePtr = outline;
 	}
     }
-    Blt_BlendPictures(picture, mergePtr, 0, 0, mergePtr->width, 
-	mergePtr->height, x-r, y-r);
+    Blt_BlendRegion(picture, mergePtr, 0, 0, mergePtr->width, mergePtr->height,
+		    x-r, y-r);
     Blt_FreePicture(mergePtr);
     Blt_FreeSwitches(circleSwitches, (char *)&switches, 0);
     return TCL_OK;
@@ -3381,8 +3381,8 @@ Blt_Picture_TextOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	    Blt_FreePicture(tmp);
 	    Blt_TranslateAnchor(x, y, rotPtr->width, rotPtr->height, 
 		switches.anchor, &x, &y);
-	    Blt_BlendPictures(destPtr, rotPtr, 0, 0, 
-		rotPtr->width, rotPtr->height, x, y);
+	    Blt_BlendRegion(destPtr, rotPtr, 0, 0, rotPtr->width, 
+			    rotPtr->height, x, y);
 	    Blt_FreePicture(rotPtr);
 	}
 	Blt_Free(layoutPtr);
@@ -3423,8 +3423,8 @@ Blt_Picture_TextOp(ClientData clientData, Tcl_Interp *interp, int objc,
 			  switches.kerning, &brush);
 	    }
 	    Blt_BlurPicture(tmpPtr, tmpPtr, shadowPtr->width, 3);
-	    Blt_BlendPictures(destPtr, tmpPtr, 0, 0, tmpPtr->width, 
-		      tmpPtr->height, x, y);
+	    Blt_BlendRegion(destPtr, tmpPtr, 0, 0, tmpPtr->width, 
+			    tmpPtr->height, x, y);
 	    for (i = 0; i < layoutPtr->numFragments; i++) {
 		TextFragment *fp;
 

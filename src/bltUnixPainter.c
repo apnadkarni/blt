@@ -1,34 +1,35 @@
-
+/* -*- mode: c; c-basic-offset: 4; indent-tabs-mode: nil -*- */
 /*
  * bltUnixPainter.c --
  *
- * This module implements X11-specific image processing procedures for the BLT
- * toolkit.
+ * This module implements X11-specific image processing procedures for the
+ * BLT toolkit.
  *
  *	Copyright (c) 1998 George A Howlett.
  *
- *	Permission is hereby granted, free of charge, to any person obtaining a
- *	copy of this software and associated documentation files (the
- *	"Software"), to deal in the Software without restriction, including
- *	without limitation the rights to use, copy, modify, merge, publish,
- *	distribute, sublicense, and/or sell copies of the Software, and to
- *	permit persons to whom the Software is furnished to do so, subject to
- *	the following conditions:
+ *	Permission is hereby granted, free of charge, to any person
+ *	obtaining a copy of this software and associated documentation
+ *	files (the "Software"), to deal in the Software without
+ *	restriction, including without limitation the rights to use, copy,
+ *	modify, merge, publish, distribute, sublicense, and/or sell copies
+ *	of the Software, and to permit persons to whom the Software is
+ *	furnished to do so, subject to the following conditions:
  *
- *	The above copyright notice and this permission notice shall be included
- *	in all copies or substantial portions of the Software.
+ *	The above copyright notice and this permission notice shall be
+ *	included in all copies or substantial portions of the Software.
  *
- *	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
- *	OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ *	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ *	EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  *	MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- *	NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
- *	LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
- *	OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
- *	WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *	NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+ *	BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ *	ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ *	CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ *	SOFTWARE.
  *
- * The color allocation routines are adapted from tkImgPhoto.c of the Tk library
- * distrubution.  The photo image type was designed and implemented by Paul
- * Mackerras.
+ * The color allocation routines are adapted from tkImgPhoto.c of the Tk
+ * library distrubution.  The photo image type was designed and implemented
+ * by Paul Mackerras.
  *
  *	Copyright (c) 1987-1993 The Regents of the University of California.
  *
@@ -71,26 +72,28 @@ static int initialized = 0;
  * PainterKey --
  *
  * This structure represents the key used to uniquely identify painters.  A
- * painter is specified by a combination of display, visual, colormap, depth,
- * and monitor gamma value.
+ * painter is specified by a combination of display, visual, colormap,
+ * depth, and monitor gamma value.
  */
 typedef struct {
     Display *display;			/* Display of painter. Used to free
 					 * colors allocated. */
-    Visual *visualPtr;			/* Visual information for the class of
-					 * windows displaying the image. */
+    Visual *visualPtr;			/* Visual information for the class
+					 * of windows displaying the
+					 * image. */
     Colormap colormap;			/* Colormap used.  This may be the
-					 * default colormap, or an allocated
-					 * private map. */
+					 * default colormap, or an
+					 * allocated private map. */
     int depth;				/* Pixel depth of the display. */
     float gamma;			/* Gamma correction value for the
 					 * monitor. */
 } PainterKey;
 
 
-#define GC_PRIVATE	1		/* Indicates if the GC in the painter
-					 * was shared (allocated by Tk_GetGC) or
-					 * private (by XCreateGC). */
+#define GC_PRIVATE	1		/* Indicates if the GC in the
+					 * painter was shared (allocated by
+					 * Tk_GetGC) or private (by
+					 * XCreateGC). */
 
 static Tcl_FreeProc FreePainter;
 
@@ -99,16 +102,16 @@ static Tcl_FreeProc FreePainter;
  *
  * FindShift --
  *
- *	Returns the position of the least significant (low) bit in the given
- *	mask.
+ *	Returns the position of the least significant (low) bit in the
+ *	given mask.
  *
  *	For TrueColor and DirectColor visuals, a pixel value is formed by
- *	OR-ing the red, green, and blue colormap indices into a single 32-bit
- *	word.  The visual's color masks tell you where in the word the indices
- *	are supposed to be.  The masks contain bits only where the index is
- *	found.  By counting the leading zeros in the mask, we know how many
- *	bits to shift to the individual red, green, and blue values to form a
- *	pixel.
+ *	OR-ing the red, green, and blue colormap indices into a single
+ *	32-bit word.  The visual's color masks tell you where in the word
+ *	the indices are supposed to be.  The masks contain bits only where
+ *	the index is found.  By counting the leading zeros in the mask, we
+ *	know how many bits to shift to the individual red, green, and blue
+ *	values to form a pixel.
  *
  * Results:
  *      The number of the least significant bit.
@@ -116,7 +119,7 @@ static Tcl_FreeProc FreePainter;
  *---------------------------------------------------------------------------
  */
 static int
-FindShift(unsigned int mask)	/* 32-bit word */
+FindShift(unsigned int mask)		/* 32-bit word */
 {
     int bit;
 
@@ -143,7 +146,7 @@ FindShift(unsigned int mask)	/* 32-bit word */
  *---------------------------------------------------------------------------
  */
 static int
-CountBits(unsigned long mask)	/* 32  1-bit tallies */
+CountBits(unsigned long mask)		/* 32  1-bit tallies */
 {
     /* 16  2-bit tallies */
     mask = (mask & 0x55555555) + ((mask >> 1) & (0x55555555));  
@@ -163,13 +166,13 @@ CountBits(unsigned long mask)	/* 32  1-bit tallies */
  *
  * ComputeGammaTables --
  *
- *	Initializes both the power and inverse power tables for the painter with
- *	a given gamma value.  These tables are used to/from map linear RGB
- *	values to/from non-linear monitor intensities.
+ *	Initializes both the power and inverse power tables for the painter
+ *	with a given gamma value.  These tables are used to/from map linear
+ *	RGB values to/from non-linear monitor intensities.
  *	
  * Results:
- *      The *gammaTable* and *igammaTable* arrays are filled out to
- *      contain the mapped values.
+ *      The *gammaTable* and *igammaTable* arrays are filled out to contain
+ *      the mapped values.
  *
  *---------------------------------------------------------------------------
  */
@@ -198,9 +201,9 @@ ComputeGammaTables(Painter *p)
  * QueryPalette --
  *
  *	Queries the X display server for the colors currently used in the
- *	colormap.  These values will then be used to map screen pixels back to
- *	RGB values (see Blt_DrawableToPicture). The queried non-linear color
- *	intensities are reverse mapped back to to linear RGB values.
+ *	colormap.  These values will then be used to map screen pixels back
+ *	to RGB values (see Blt_DrawableToPicture). The queried non-linear
+ *	color intensities are reverse mapped back to to linear RGB values.
  *	
  * Results:
  *      The *palette* array is filled in with the RGB color values of the
@@ -291,10 +294,10 @@ QueryPalette(Painter *p, Blt_Pixel *palette)
  *
  * ColorRamp --
  *
- *	Computes a smooth color ramp based upon the number of colors available
- *	for each color component.  It returns an array of the desired colors
- *	(XColor structures).  The screen gamma is factored into the desired
- *	colors.
+ *	Computes a smooth color ramp based upon the number of colors
+ *	available for each color component.  It returns an array of the
+ *	desired colors (XColor structures).  The screen gamma is factored
+ *	into the desired colors.
  *	
  * Results:
  *      Returns the number of colors desired.  The *colors* array is filled
@@ -417,13 +420,13 @@ ColorRamp(Painter *p, XColor *colors)
  *
  * AllocateColors --
  *
- *	Individually allocates each of the desired colors (as specified by the
- *	*colors* array).  If a color can't be allocated the desired colors
- *	allocated to that point as released, the number of component
+ *	Individually allocates each of the desired colors (as specified by
+ *	the *colors* array).  If a color can't be allocated the desired
+ *	colors allocated to that point as released, the number of component
  *	intensities is reduced, and 0 is returned.
  *
- *	For TrueColor visuals, we don't need to allocate colors at all, since
- *	we can compute them directly.
+ *	For TrueColor visuals, we don't need to allocate colors at all,
+ *	since we can compute them directly.
  *	
  * Results:
  *      Returns 1 if all desired colors were allocated successfully.  If
@@ -450,14 +453,15 @@ AllocateColors(Painter *p, XColor *colors, int numColors)
 	    g = ((cp->green >> 8) >> p->gAdjust);
 	    b = ((cp->blue >> 8) >> p->bAdjust);
 
-	    /* Shift each color into the proper location of the pixel index. */
+	    /* Shift each color into the proper location of the pixel
+	     * index. */
 	    r = (r << p->rShift) & p->rMask;
 	    g = (g << p->gShift) & p->gMask;
 	    b = (b << p->bShift) & p->bMask;
 	    cp->pixel = (r | g | b);
 	}
-	p->numPixels = 0;	      /* This will indicate that we didn't use
-				       * XAllocColor to obtain pixel
+	p->numPixels = 0;	      /* This will indicate that we didn't
+				       * use XAllocColor to obtain pixel
 				       * values. */
 	return TRUE;
     } else {
@@ -508,14 +512,15 @@ AllocateColors(Painter *p, XColor *colors, int numColors)
  *
  *	1) Map 8-bit RGB values to the bits of the pixel.  Each component
  *	   contains a portion of the pixel value.  For mapped visuals
- *	   (pseudocolor, staticcolor, grayscale, and staticgray) this pixel 
- *	   value will be translated to the actual pixel used by the display.
+ *	   (pseudocolor, staticcolor, grayscale, and staticgray) this pixel
+ *	   value will be translated to the actual pixel used by the
+ *	   display.
  *
- *	2) Map 8-bit RGB values to the actual color values used.  The
- *	   color ramp generated may be only a subset of the possible
- *	   color values.  The resulting palette is used in dithering the
- *	   image, using the error between the desired picture RGB value
- *	   and the actual value used.
+ *	2) Map 8-bit RGB values to the actual color values used.  The color
+ *	   ramp generated may be only a subset of the possible color
+ *	   values.  The resulting palette is used in dithering the image,
+ *	   using the error between the desired picture RGB value and the
+ *	   actual value used.
  *
  * Results:
  *	Color palette and pixel maps are filled in.
@@ -585,8 +590,8 @@ FillPalette(Painter *p, XColor *colors, int numColors)
  * AllocatePalette --
  *
  *	This procedure allocates the colors required by a color table, and
- *	sets up the fields in the color table data structure which are used in
- *	dithering.
+ *	sets up the fields in the color table data structure which are used
+ *	in dithering.
  *
  *	This routine essentially mimics what is done in tkImgPhoto.c.  It's
  *	purpose is to allocate exactly the same color ramp as the photo
@@ -597,14 +602,15 @@ FillPalette(Painter *p, XColor *colors, int numColors)
  *	None.
  *
  * Side effects:
- *	Colors are allocated from the X server.  The color palette and pixel
- *	indices are updated.
+ *	Colors are allocated from the X server.  The color palette and
+ *	pixel indices are updated.
  *
  *---------------------------------------------------------------------------
  */
 static void
-AllocatePalette(Painter *p)		/* Pointer to the color table requiring
-					 * colors to be allocated. */
+AllocatePalette(Painter *p)		/* Pointer to the color table
+					 * requiring colors to be
+					 * allocated. */
 {
     XColor colors[256];
     int numColors;
@@ -656,21 +662,23 @@ AllocatePalette(Painter *p)		/* Pointer to the color table requiring
     }
 
     /*
-     * Each time around this loop, we reduce the number of colors we're trying
-     * to allocate until we succeed in allocating all of the colors we need.
+     * Each time around this loop, we reduce the number of colors we're
+     * trying to allocate until we succeed in allocating all of the colors
+     * we need.
      */
     for (;;) {
 	/*
-	 * If we are using 1 bit/pixel, we don't need to allocate any colors (we
-	 * just use the foreground and background colors in the GC).
+	 * If we are using 1 bit/pixel, we don't need to allocate any
+	 * colors (we just use the foreground and background colors in the
+	 * GC).
 	 */
 	if ((p->isMonochrome) && (p->numRed <= 2)) {
 	    p->flags |= BLACK_AND_WHITE;
 	    /* return; */
 	}
 	/*
-	 * Calculate the RGB values of a color ramp, given the some number of
-	 * red, green, blue intensities available.
+	 * Calculate the RGB values of a color ramp, given the some number
+	 * of red, green, blue intensities available.
 	 */
 	numColors = ColorRamp(p, colors);
 
@@ -686,10 +694,10 @@ AllocatePalette(Painter *p)		/* Pointer to the color table requiring
 		/* p->mono = TRUE; */
 	    } else {
 		/*
-		 * Reduce the number of shades of each primary to about 3/4 of
-		 * the previous value.  This will reduce the total number of
-		 * colors required to less than half (27/64) the previous value
-		 * for PseudoColor displays.
+		 * Reduce the number of shades of each primary to about 3/4
+		 * of the previous value.  This will reduce the total
+		 * number of colors required to less than half (27/64) the
+		 * previous value for PseudoColor displays.
 		 */
 		p->numRed = (p->numRed * 3 + 2) / 4;
 		p->numGreen = (p->numGreen * 3 + 2) / 4;
@@ -708,9 +716,9 @@ AllocatePalette(Painter *p)		/* Pointer to the color table requiring
  *
  * NewPainter --
  *
- *	Creates a new painter to be used to paint pictures. Painters are keyed
- *	by the combination of display, colormap, visual, depth, and gamma value
- *	used.
+ *	Creates a new painter to be used to paint pictures. Painters are
+ *	keyed by the combination of display, colormap, visual, depth, and
+ *	gamma value used.
  *
  * Results:
  *      A pointer to the new painter is returned.
@@ -771,10 +779,11 @@ NewPainter(PainterKey *keyPtr)
  * FreePainter --
  *
  *	Called when the TCL interpreter is idle, this routine frees the
- *	painter. Painters are reference counted. Only when no clients are using
- *	the painter (the count is zero) is the painter actually freed.  By
- *	deferring its deletion, this allows client code to call Blt_GetPainter
- *	after Blt_FreePainter without incurring a performance penalty.
+ *	painter. Painters are reference counted. Only when no clients are
+ *	using the painter (the count is zero) is the painter actually
+ *	freed.  By deferring its deletion, this allows client code to call
+ *	Blt_GetPainter after Blt_FreePainter without incurring a
+ *	performance penalty.
  *
  *---------------------------------------------------------------------------
  */
@@ -805,17 +814,18 @@ FreePainter(DestroyData data)
  *
  * GetPainter --
  *
- *	Attempts to retrieve a painter for a particular combination of display,
- *	colormap, visual, depth, and gamma value.  If no specific painter
- *	exists, then one is created.
+ *	Attempts to retrieve a painter for a particular combination of
+ *	display, colormap, visual, depth, and gamma value.  If no specific
+ *	painter exists, then one is created.
  *
  * Results:
  *      A pointer to the new painter is returned.
  *
  * Side Effects:
- *	If no current painter exists, a new painter is added to the hash table
- *	of painters.  Otherwise, the current painter's reference count is
- *	incremented indicated how many clients are using the painter.
+ *	If no current painter exists, a new painter is added to the hash
+ *	table of painters.  Otherwise, the current painter's reference
+ *	count is incremented indicated how many clients are using the
+ *	painter.
  *
  *---------------------------------------------------------------------------
  */
@@ -861,8 +871,8 @@ GetPainter(
  * PaintXImage --
  *
  *	Draw the given XImage. If the size of the image exceeds the maximum
- *	request size of the X11 protocol, the image is drawn using XPutImage in
- *	multiples of rows that fit within the limit.
+ *	request size of the X11 protocol, the image is drawn using
+ *	XPutImage in multiples of rows that fit within the limit.
  *
  *---------------------------------------------------------------------------
  */
@@ -896,8 +906,9 @@ PaintXImage(Painter *p, Drawable drawable, XImage *imgPtr, int sx, int sy,
  *
  * XGetImageErrorProc --
  *
- *	Error handling routine for the XGetImage request below. Sets the flag
- *	passed via *clientData* to TCL_ERROR indicating an error occurred.
+ *	Error handling routine for the XGetImage request below. Sets the
+ *	flag passed via *clientData* to TCL_ERROR indicating an error
+ *	occurred.
  *
  *---------------------------------------------------------------------------
  */
@@ -905,7 +916,7 @@ PaintXImage(Painter *p, Drawable drawable, XImage *imgPtr, int sx, int sy,
 static int
 XGetImageErrorProc(
     ClientData clientData, 
-    XErrorEvent *errEventPtr)	/* Not used. */
+    XErrorEvent *errEventPtr)		/* Not used. */
 {
     int *errorPtr = clientData;
 
@@ -918,9 +929,9 @@ XGetImageErrorProc(
  *
  * DrawableToXImage --
  *
- *	Attempts to snap the image from the drawable into an XImage structure
- *	(using XGetImage).  This may fail is the coordinates of the region in
- *	the drawable are obscured.
+ *	Attempts to snap the image from the drawable into an XImage
+ *	structure (using XGetImage).  This may fail is the coordinates of
+ *	the region in the drawable are obscured.
  *
  * Results:
  *	Returns a pointer to the XImage if successful. Otherwise NULL is
@@ -958,12 +969,12 @@ DrawableToXImage(
  *
  * DrawableToPicture --
  *
- *      Takes a snapshot of an X drawable (pixmap or window) and converts it
- *      to a picture.
+ *      Takes a snapshot of an X drawable (pixmap or window) and converts
+ *      it to a picture.
  *
  * Results:
- *      Returns a picture of the drawable.  If an error occurred (a portion of
- *      the region specified is obscured), then NULL is returned.
+ *      Returns a picture of the drawable.  If an error occurred (a portion
+ *      of the region specified is obscured), then NULL is returned.
  *
  *---------------------------------------------------------------------------
  */
@@ -973,9 +984,10 @@ DrawableToPicture(
     Drawable drawable,
     int x, int y,			/* Coordinates of region in source
 					 * drawable. */
-    int w, int h)			/* Dimension of the region in the source
-					 * drawable. Region must be completely
-					 * contained by the drawable. */
+    int w, int h)			/* Dimension of the region in the
+					 * source drawable. Region must be
+					 * completely contained by the
+					 * drawable. */
 {
     Blt_Pixel *destRowPtr;
     Blt_Pixel palette[256];
@@ -989,10 +1001,13 @@ DrawableToPicture(
 	int dw, dh;
 
 	/* 
-	 * Failed to acquire an XImage from the drawable. The drawable may be
-	 * partially obscured or too small for the requested area.  Try it
-	 * again, after fixing the area with the dimensions of the drawable.
+	 * Failed to acquire an XImage from the drawable. The drawable may
+	 * be partially obscured or too small for the requested area.  Try
+	 * it again, after fixing the area with the dimensions of the
+	 * drawable.
 	 */
+	/* FIXME: This only handles the case if the right/bottom is
+	 * obscurred.  Try this from the PaintPictureWithBlend. */
 	if (Blt_GetWindowRegion(p->display, drawable, (int *)NULL, (int *)NULL,
 		&dw, &dh) == TCL_OK) {
 	    if ((x + w) > dw) {
@@ -1055,7 +1070,8 @@ DrawableToPicture(
 		    pixel = ((sp[0] << shift[0]) | (sp[1] << shift[1]) |
 			     (sp[2] << shift[2]) | (sp[3] << shift[3]));
 		    
-		    /* Convert the pixel to RGB, correcting for input gamma. */
+		    /* Convert the pixel to RGB, correcting for input
+		     * gamma. */
 		    r = ((pixel & p->rMask) >> p->rShift);
 		    g = ((pixel & p->gMask) >> p->gShift);
 		    b = ((pixel & p->bMask) >> p->bShift);
@@ -1084,7 +1100,8 @@ DrawableToPicture(
 		    pixel = ((sp[0] << shift[1]) | (sp[1] << shift[2]) |
 			     (sp[2] << shift[3]));
 		    
-		    /* Convert the pixel to RGB, correcting for input gamma. */
+		    /* Convert the pixel to RGB, correcting for input
+		     * gamma. */
 		    r = ((pixel & p->rMask) >> p->rShift);
 		    g = ((pixel & p->gMask) >> p->gShift);
 		    b = ((pixel & p->bMask) >> p->bShift);
@@ -1112,7 +1129,8 @@ DrawableToPicture(
 		    /* Get the next pixel from the image. */
 		    pixel = ((sp[0] << shift[2]) | (sp[1] << shift[3]));
 
-		    /* Convert the pixel to RGB, correcting for input gamma. */
+		    /* Convert the pixel to RGB, correcting for input
+		     * gamma. */
 		    r = ((pixel & p->rMask) >> p->rShift);
 		    g = ((pixel & p->gMask) >> p->gShift);
 		    b = ((pixel & p->bMask) >> p->bShift);
@@ -1140,7 +1158,8 @@ DrawableToPicture(
 		    /* Get the next pixel from the image. */
 		    pixel = (*sp << shift[3]);
 
-		    /* Convert the pixel to RGB, correcting for input gamma. */
+		    /* Convert the pixel to RGB, correcting for input
+		     * gamma. */
 		    r = ((pixel & p->rMask) >> p->rShift);
 		    g = ((pixel & p->gMask) >> p->gShift);
 		    b = ((pixel & p->bMask) >> p->bShift);
@@ -1208,17 +1227,17 @@ DrawableToPicture(
  *
  * PaintPicture --
  *
- *	Paints the picture to the given drawable. The region of the picture is
- *	specified and the coordinates where in the destination drawable is the
- *	image to be displayed.
+ *	Paints the picture to the given drawable. The region of the picture
+ *	is specified and the coordinates where in the destination drawable
+ *	is the image to be displayed.
  *
  *	The image may be dithered depending upon the bit set in the flags
  *	parameter: 0 no dithering, 1 for dithering.
  * 
  * Results:
- *	Returns TRUE is the picture was successfully displayed.  Otherwise FALSE
- *	is returned if the particular combination visual and image depth is not
- *	handled.
+ *	Returns TRUE is the picture was successfully displayed.  Otherwise
+ *	FALSE is returned if the particular combination visual and image
+ *	depth is not handled.
  *
  *---------------------------------------------------------------------------
  */
@@ -1227,13 +1246,13 @@ PaintPicture(
     Painter *p,
     Drawable drawable,
     Pict *srcPtr,
-    int sx, int sy,		/* Coordinates of region in the
-				 * picture. */
-    int w, int h,		/* Dimension of the source region.
-				 * Area cannot extend beyond the end
-				 * of the picture. */
-    int dx, int dy,		/* Coordinates of destination region
-				 * in the drawable.  */
+    int sx, int sy,			/* Coordinates of region in the
+					 * picture. */
+    int w, int h,			/* Dimension of the source region.
+					 * Area cannot extend beyond the
+					 * end of the picture. */
+    int dx, int dy,		        /* Coordinates of destination
+					 * region in the drawable.  */
     unsigned int flags)
 {
 #ifdef WORD_BIGENDIAN
@@ -1264,8 +1283,8 @@ PaintPicture(
     assert(imgPtr);
 
     /* 
-     * Set the byte order to the platform's native byte order. We'll let Xlib
-     * handle byte swapping.
+     * Set the byte order to the platform's native byte order. We'll let
+     * Xlib handle byte swapping.
      */
     imgPtr->byte_order = nativeByteOrder;
     imgPtr->data = Blt_AssertMalloc(sizeof(Blt_Pixel) * w * h);
@@ -1277,8 +1296,8 @@ PaintPicture(
     switch (p->visualPtr->class) {
     case TrueColor:
 
-	/* Directly compute the pixel 8, 16, 24, or 32 bit values from the RGB
-	 * components. */
+	/* Directly compute the pixel 8, 16, 24, or 32 bit values from the
+	 * RGB components. */
 
 	switch (imgPtr->bits_per_pixel) {
 	case 32:
@@ -1527,18 +1546,18 @@ PaintPicture(
  *
  * PaintPictureWithBlend --
  *
- *	Blends and paints the picture in the given drawable. The region of the
- *	picture is specified and the coordinates where in the destination
- *	drawable is the image to be displayed.
+ *	Blends and paints the picture in the given drawable. The region of
+ *	the picture is specified and the coordinates where in the
+ *	destination drawable is the image to be displayed.
  *
  *	The background is snapped from the drawable and converted into a
- *	picture.  This picture is then blended with the current picture (the
- *	background always assumed to be 100% opaque).
+ *	picture.  This picture is then blended with the current picture
+ *	(the background always assumed to be 100% opaque).
  * 
  * Results:
- *	Returns TRUE is the picture was successfully display, Otherwise FALSE is
- *	returned.  This may happen if the background can not be obtained from
- *	the drawable.
+ *	Returns TRUE is the picture was successfully display, Otherwise
+ *	FALSE is returned.  This may happen if the background can not be
+ *	obtained from the drawable.
  *
  *---------------------------------------------------------------------------
  */
@@ -1547,13 +1566,13 @@ PaintPictureWithBlend(
     Painter *p,
     Drawable drawable,
     Blt_Picture fg,
-    int x, int y,			/* Coordinates of source region in the
-					 * picture. */
+    int x, int y,			/* Coordinates of source region in
+					 * the picture. */
     int w, int h,			/* Dimension of the source region.
-					 * Region cannot extend beyond the end
-					 * of the picture. */
-    int dx, int dy,			/* Coordinates of destination region in
-					 * the drawable.  */
+					 * Region cannot extend beyond the
+					 * end of the picture. */
+    int dx, int dy,			/* Coordinates of destination
+					 * region in the drawable.  */
     unsigned int flags)
 {
     Pict *bgPtr;
@@ -1584,8 +1603,9 @@ PaintPictureWithBlend(
 	return FALSE;
     }
     /* Dimension of source region may be adjusted by the actual size of the
-     * drawable.  This is reflected in the size of the background picture. */
-    Blt_BlendPictures(bgPtr, fg, x, y, bgPtr->width, bgPtr->height, 0, 0);
+     * drawable.  This is reflected in the size of the background
+     * picture. */
+    Blt_BlendRegion(bgPtr, fg, x, y, bgPtr->width, bgPtr->height, 0, 0);
     PaintPicture(p, drawable, bgPtr, 0, 0, bgPtr->width, bgPtr->height, dx, dy,
 		 flags);
     Blt_FreePicture(bgPtr);
@@ -1597,8 +1617,8 @@ PaintPictureWithBlend(
  *
  * Blt_DrawableToPicture --
  *
- *      Takes a snapshot of an X drawable (pixmap or window) and converts it
- *      to a picture.
+ *      Takes a snapshot of an X drawable (pixmap or window) and converts
+ *      it to a picture.
  *
  * Results:
  *      Returns a picture of the drawable.  If an error occurred, NULL is
@@ -1610,11 +1630,11 @@ Blt_Picture
 Blt_DrawableToPicture(
     Tk_Window tkwin,
     Drawable drawable,
-    int x, int y,			/* Offset of image from the drawable's
-					 * origin. */
-    int w, int h,			/* Dimension of the image.  Image must
-					 * be completely contained by the
-					 * drawable. */
+    int x, int y,			/* Offset of image from the
+					 * drawable's origin. */
+    int w, int h,			/* Dimension of the image.  Image
+					 * must be completely contained by
+					 * the drawable. */
     float gamma)
 {
     Blt_Painter painter;
@@ -1631,11 +1651,11 @@ Blt_DrawableToPicture(
  *
  * Blt_WindowToPicture --
  *
- *      Takes a snapshot of an X drawable (pixmap or window) and converts it
- *      to a picture.
+ *      Takes a snapshot of an X drawable (pixmap or window) and converts
+ *      it to a picture.
  *
- *	This routine is used to snap foreign (non-Tk) windows. For pixmaps and
- *	Tk windows, Blt_DrawableToPicture is preferred.
+ *	This routine is used to snap foreign (non-Tk) windows. For pixmaps
+ *	and Tk windows, Blt_DrawableToPicture is preferred.
  *
  * Results:
  *      Returns a picture of the drawable.  If an error occurred, NULL is
@@ -1647,11 +1667,11 @@ Blt_Picture
 Blt_WindowToPicture(
     Display *display,
     Drawable drawable,
-    int x, int y,			/* Offset of image from the drawable's
-					 * origin. */
-    int w, int h,			/* Dimension of the image.  Image must
-					 * be completely contained by the
-					 * drawable. */
+    int x, int y,			/* Offset of image from the
+					 * drawable's origin. */
+    int w, int h,			/* Dimension of the image.  Image
+					 * must be completely contained by
+					 * the drawable. */
     float gamma)
 {
     Blt_Painter painter;
@@ -1668,8 +1688,9 @@ Blt_PaintPicture(
     Blt_Painter painter,
     Drawable drawable,
     Blt_Picture picture,
-    int x, int y,			/* Starting coordinates of subregion in
-					 * the picture to be painted. */
+    int x, int y,			/* Starting coordinates of
+					 * subregion in the picture to be
+					 * painted. */
     int w, int h,			/* Dimension of the subregion.  */
     int dx, int dy,			/* Coordinates of region in the
 					 * drawable.  */
@@ -1774,8 +1795,8 @@ Blt_PaintPictureWithBlend(
     int x, int y,			/* Coordinates of region in the
 					 * picture. */
     int w, int h,			/* Dimension of the region.  Area
-					 * cannot extend beyond the end of the
-					 * picture. */
+					 * cannot extend beyond the end of
+					 * the picture. */
     int dx, int dy,			/* Coordinates of region in the
 					 * drawable.  */
     unsigned int flags)			/* Indicates whether to dither the
@@ -1952,8 +1973,9 @@ Blt_GetPainter(Tk_Window tkwin, float gamma)
  *
  * Blt_FreePainter --
  *
- *	Frees the painter. Painters are reference counted. Only when no clients
- *	are using the painter (the count is zero) is the painter actually freed.
+ *	Frees the painter. Painters are reference counted. Only when no
+ *	clients are using the painter (the count is zero) is the painter
+ *	actually freed.
  *
  *---------------------------------------------------------------------------
  */
