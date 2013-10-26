@@ -1233,6 +1233,34 @@ ColorLerp(Blt_PaletteEntry *entryPtr, double t)
     color.Green = CLAMP(g);
     color.Blue  = CLAMP(b);
     color.Alpha = CLAMP(a);
+    color.Alpha = 0xFF;
+    return color.u32;
+}
+
+static unsigned int
+ColorLerp2(Blt_PaletteEntry *entryPtr, double t)
+{
+    Blt_Pixel color;
+    double alpha, beta;
+    int r, g, b, a;
+
+    if (t >= 1.0) {
+	return entryPtr->high.u32;
+    } else if (t <= 0.0) {
+	return entryPtr->low.u32;
+    }
+    alpha = t;
+    beta = 1.0 - t;
+    r = (int)((entryPtr->low.Red * beta) + (entryPtr->high.Red * alpha));
+    g = (int)((entryPtr->low.Green * beta) + (entryPtr->high.Green * alpha));
+    b = (int)((entryPtr->low.Blue * beta) + (entryPtr->high.Blue * alpha));
+    a = 255;
+
+    color.Red   = CLAMP(r);
+    color.Green = CLAMP(g);
+    color.Blue  = CLAMP(b);
+    color.Alpha = CLAMP(a);
+    color.Alpha = 0xFF;
     return color.u32;
 }
 
@@ -1304,7 +1332,7 @@ fprintf(stderr, "testing: relValue=%.15g, relMin=%.15g, relMax=%.15g\n",
 	    
 	    t = (relValue - entryPtr->min.relValue) / 
 		(entryPtr->max.relValue - entryPtr->min.relValue);
-	    color.u32 = ColorLerp(entryPtr, t);
+	    color.u32 = ColorLerp2(entryPtr, t);
 	    found = TRUE;
 	    break;
 	}

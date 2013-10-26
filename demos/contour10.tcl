@@ -29238,7 +29238,8 @@ set w [expr ($max - $min) / double($numBins)]
 set x [blt::vector create]
 $x seq [expr $min + ($w * 0.5)] [expr $max - ($w - 0.5)] $numBins
 
-blt::barchart .g2 -barwidth $w  -height 1i -highlightthickness 0
+blt::barchart .g2 \
+    -barwidth $w  -height 1i -highlightthickness 0
 .g2 axis configure x -stepsize 0 
 .g2 axis configure y -logscale yes -grid no -subdivisions 0
 .g2 colormap create myColormap -palette $palette -axis x 

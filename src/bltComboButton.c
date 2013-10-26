@@ -1990,7 +1990,8 @@ DrawComboButton(ComboButton *comboPtr, Drawable drawable)
     if (comboPtr->flags & ARROW) {
 	XColor *color;
 
-	x += XPAD;
+	/*  */
+	x = Tk_Width(comboPtr->tkwin) - XPAD -  comboPtr->inset - comboPtr->arrowWidth;
 	y = comboPtr->inset;
 	if (h > comboPtr->arrowHeight) {
 	    y += (h - comboPtr->arrowHeight) / 2;

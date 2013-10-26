@@ -102,7 +102,7 @@ struct _Blt_ResampleFilter {
  *
  *---------------------------------------------------------------------------
  */
-struct _BLT_TABLEFilter {
+struct _Blt_TableFilter {
     float scale;
     int numWeights;			/* Width of 1-D filter */
     int weights[1];
