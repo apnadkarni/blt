@@ -2204,12 +2204,12 @@ BrushHorizontalLine(Pict *destPtr, int x1, int x2, int y,
 #include <stdio.h>
 #include <math.h>
 
-typedef struct {			/* A polygon edge */
-    double x;				/* x coordinate of edge's intersection
-					 * with current scanline */
-    double dx;				/* change in x with respect to y */
-    int i;				/* edge number: edge i goes from pt[i]
-					 * to pt[i+1] */
+typedef struct {		     /* A polygon edge */
+    double x;			     /* x coordinate of edge's intersection
+				      * with current scanline */
+    double dx;			     /* change in x with respect to y */
+    int i;			     /* edge number: edge i goes from pt[i]
+				      * to pt[i+1] */
 } ActiveEdge;
 
 typedef struct {
@@ -2237,7 +2237,8 @@ CompareActive(const void *a, const void *b)
 }
 
 static void
-cdelete(AET *tablePtr, int i)		/* Remove edge i from active list */
+cdelete(AET *tablePtr, int i)		/* Remove edge i from active
+					 * list */
 {
     int j;
 
@@ -2245,8 +2246,8 @@ cdelete(AET *tablePtr, int i)		/* Remove edge i from active list */
 	/*empty*/
     }
     if (j >= tablePtr->numActive) {
-	return;				/* Edge not in active list; happens at
-					 * win->y0*/
+	return;				/* Edge not in active list; happens
+					 * at win->y0*/
     }
     tablePtr->numActive--;
 
@@ -2521,11 +2522,11 @@ PaintPolygonAA2(Pict *destPtr, size_t numVertices, Point2f *vertices,
      * Get the minimum size region to draw both a supersized polygon and
      * shadow.
      *
-     * Draw the shadow and then the polygon. Everything is 4x bigger including
-     * the shadow offset.  This is a much bigger blur.
+     * Draw the shadow and then the polygon. Everything is 4x bigger
+     * including the shadow offset.  This is a much bigger blur.
      * 
-     * Resample the image back down to 1/4 the size and blend it into 
-     * the destination picture.
+     * Resample the image back down to 1/4 the size and blend it into the
+     * destination picture.
      */
     big = Blt_CreatePicture(destPtr->width * 4, destPtr->height * 4);
     TranslatePolygon(numVertices, vertices, 0.0f, 0.0f, 4.0f);
