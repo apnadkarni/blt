@@ -163,7 +163,7 @@ typedef struct {
 
 typedef struct _Blt_Picture Pict;
 typedef struct _Blt_ResampleFilter ResampleFilter;
-typedef struct _BLT_TABLEFilter TableFilter;
+typedef struct _Blt_TableFilter TableFilter;
 
 BLT_EXTERN unsigned int Blt_ComputeWeights(unsigned int sw, unsigned int dw, 
 	ResampleFilter *filterPtr, Sample **samplePtrPtr);

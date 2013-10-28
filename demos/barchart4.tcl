@@ -55,7 +55,7 @@ foreach color $attributes {
 
 blt::vector x y w
 
-x seq 0 800 400
+x linspace 0 800 400
 y expr sin(x)*90.0
 w expr round(y*20.0)%$count
 y expr y+10.0

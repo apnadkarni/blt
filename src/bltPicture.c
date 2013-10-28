@@ -630,6 +630,16 @@ Blt_GreyscalePicture(Pict *srcPtr)
     return destPtr;
 }
 
+/*
+ * A* = (A - da)
+ * r * A*
+ *
+ * r * A 
+ * (r * A)/A * A*
+ * (r * A)/A * (A - da)
+ * r/A * (A - da)
+ * rA - (r*da)/ A
+ */
 void 
 Blt_FadePicture(Pict *pictPtr, int x, int y, int w, int h, int alpha)
 {
@@ -654,7 +664,7 @@ Blt_FadePicture(Pict *pictPtr, int x, int y, int w, int h, int alpha)
     pictPtr->flags |= BLT_PIC_BLEND;
 }
 
-void
+static void
 AssociateColor(Blt_Pixel *colorPtr)
 {
     if ((colorPtr->Alpha != 0xFF) && (colorPtr->Alpha != 0x00)) {
@@ -666,7 +676,7 @@ AssociateColor(Blt_Pixel *colorPtr)
     }
 }
 
-void
+static void
 UnassociateColor(Blt_Pixel *colorPtr)
 {
     /* No conversion necessary if 100% transparent or opaque. */
@@ -782,7 +792,7 @@ BlendRegion(Pict *destPtr, Pict *srcPtr, int sx, int sy, int w, int h,
 	    if ((dp->Alpha == 0x0) || (sp->Alpha == 0xFF)) {
 		dp->u32 = sp->u32;
 	    } else if (sp->Alpha != 0x00) {
-		int alpha, beta, t1, t2;
+		int alpha, beta, t2;
 		int r, g, b, a;
 
 		alpha = sp->Alpha;
@@ -5339,7 +5349,8 @@ static void
 ConvolveVertically(Pict *destPtr, Pict *srcPtr, TableFilter *filterPtr)
 {
     int x;
-    unsigned *map, mapSize;
+    unsigned int *map;
+    size_t mapSize;
     int fscale;
 
     map = CreateNeighborhoodMap(srcPtr->height, filterPtr->numWeights / 2);

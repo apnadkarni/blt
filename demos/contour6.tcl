@@ -4,8 +4,8 @@ set palette greyscale
 
 set x [blt::vector create]
 set y [blt::vector create]
-$x seq 0 1 100
-$y seq 0 1 100
+$x linspace 0 1 100
+$y linspace 0 1 100
 
 set x2 [blt::vector create]
 $x2 expr { $x * $x }

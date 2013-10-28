@@ -1,4 +1,4 @@
-
+/* -*- mode: c; c-basic-offset: 4; indent-tabs-mode: nil -*- */
 /*
  * bltVecCmd.c --
  *
@@ -2870,20 +2870,78 @@ RandomOp(Vector *vPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 /*
  *---------------------------------------------------------------------------
  *
- * SeqOp --
+ * SequenceOp --
  *
  *	Generates a sequence of values in the vector.
  *
  * Results:
  *	A standard TCL result.
  *
+ *	$v sequence start stop ?step?
+ *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
-SeqOp(Vector *vPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+SequenceOp(Vector *vPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 {
-    int n;
+    const char *string;
+    double start, stop, step;
+    int i, numSteps;
+
+    if (Blt_ExprDoubleFromObj(interp, objv[2], &start) != TCL_OK) {
+	return TCL_ERROR;
+    }
+    string = Tcl_GetString(objv[3]);
+    step = 1.0;
+    numSteps = 0;
+    if ((string[0] == 'e') && (strcmp(string, "end") == 0)) {
+	numSteps = vPtr->length;
+    } else if (Blt_ExprDoubleFromObj(interp, objv[3], &stop) != TCL_OK) {
+	return TCL_ERROR;
+    }
+    step = 1.0;				/* By default, increment is 1.0 */
+    if ((objc > 4) && 
+	(Blt_ExprDoubleFromObj(interp, objv[4], &step) != TCL_OK)) {
+	return TCL_ERROR;
+    }
+    if (numSteps == 0) {
+	numSteps = (int)((stop - start) / step) + 1;
+    }
+    if (numSteps > 0) {
+	if (Blt_Vec_SetLength(interp, vPtr, numSteps) != TCL_OK) {
+	    return TCL_ERROR;
+	}
+	for (i = 0; i < numSteps; i++) {
+	    vPtr->valueArr[i] = start + (step * (double)i);
+	}
+	if (vPtr->flush) {
+	    Blt_Vec_FlushCache(vPtr);
+	}
+	Blt_Vec_UpdateClients(vPtr);
+    }
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * LinspaceOp --
+ *
+ *	Generate linearly spaced values.
+ *
+ * Results:
+ *	A standard TCL result.
+ *
+ *	$v linspace first last ?numSteps?
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+LinspaceOp(Vector *vPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+{
+    int numSteps;
     double start, stop;
     
     if (Blt_ExprDoubleFromObj(interp, objv[2], &start) != TCL_OK) {
@@ -2892,19 +2950,22 @@ SeqOp(Vector *vPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     if (Blt_ExprDoubleFromObj(interp, objv[3], &stop) != TCL_OK) {
 	return TCL_ERROR;
     }
-    n = vPtr->length;
-    if ((objc > 4) && (Blt_ExprIntFromObj(interp, objv[4], &n) != TCL_OK)) {
+    numSteps = vPtr->length;		/* By default, generate one step
+					 * per element in the vector. */
+    if ((objc > 4) && 
+	(Blt_ExprIntFromObj(interp, objv[4], &numSteps) != TCL_OK)) {
 	return TCL_ERROR;
     }
-    if (n > 1) {
+    if (numSteps > 1) {			/* Silently ignore non-positive
+					 * numSteps */
 	int i;
 	double step;
 
-	if (Blt_Vec_SetLength(interp, vPtr, n) != TCL_OK) {
+	if (Blt_Vec_SetLength(interp, vPtr, numSteps) != TCL_OK) {
 	    return TCL_ERROR;
 	}
-	step = (stop - start) / (double)(n - 1);
-	for (i = 0; i < n; i++) { 
+	step = (stop - start) / (double)(numSteps - 1);
+	for (i = 0; i < numSteps; i++) { 
 	    vPtr->valueArr[i] = start + (step * i);
 	}
 	if (vPtr->flush) {
@@ -3505,7 +3566,8 @@ static Blt_OpSpec vectorInstOps[] =
     {"indices",   3, IndicesOp,   3, 3, "what",},
     {"inversefft",3, InverseFFTOp,4, 4, "vecName vecName",},
     {"length",    2, LengthOp,    2, 3, "?newSize?",},
-    {"limits",    2, LimitsOp,    2, 2, "",},
+    {"limits",    3, LimitsOp,    2, 2, "",},
+    {"linspace",  3, LinspaceOp, 4, 5, "first last ?numSteps?",},
     {"maximum",   2, MaxOp,       2, 2, "",},
     {"merge",     2, MergeOp,     3, 0, "vecName ?vecName...?",},
     {"minimum",   2, MinOp,       2, 2, "",},
@@ -3517,7 +3579,7 @@ static Blt_OpSpec vectorInstOps[] =
     {"random",    4, RandomOp,    2, 3, "?seed?",},	/*Deprecated*/
     {"range",     4, RangeOp,     2, 4, "first last",},
     {"search",    3, SearchOp,    3, 5, "?-value? value ?value?",},
-    {"sequence",  3, SeqOp,       4, 5, "begin end ?length?",},
+    {"sequence",  3, SequenceOp,  4, 5, "start stop ?step?",},
     {"set",       3, SetOp,       3, 3, "list",},
     {"simplify",  2, SimplifyOp,  2, 2, },
     {"sort",      2, SortOp,      2, 0, "?switches? ?vecName...?",},

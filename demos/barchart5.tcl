@@ -42,7 +42,7 @@ blt::htext .htext -text \
 set tcl_precision 15
 blt::vector create x
 blt::vector create y
-x seq -5.0 5.0 50
+x linspace -5.0 5.0 50
 y expr sin(x)
 set barWidth 0.19
 

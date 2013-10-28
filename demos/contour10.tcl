@@ -29236,7 +29236,7 @@ $freq frequency dentalscan $numBins
 set w [expr ($max - $min) / double($numBins)]
 # Compute the location for the bins within the range of values
 set x [blt::vector create]
-$x seq [expr $min + ($w * 0.5)] [expr $max - ($w - 0.5)] $numBins
+$x linspace [expr $min + ($w * 0.5)] [expr $max - ($w - 0.5)] $numBins
 
 blt::barchart .g2 \
     -barwidth $w  -height 1i -highlightthickness 0

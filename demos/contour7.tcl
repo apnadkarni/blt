@@ -4,8 +4,8 @@ package require BLT
 set palette blue
 set x [blt::vector create]
 set y [blt::vector create]
-$x seq -2 2 100
-$y seq -2 3 100
+$x linspace -2 2 100
+$y linspace -2 3 100
 set x2 [blt::vector create]
 $x2 expr { $x* $x }
 set y2 [blt::vector create]

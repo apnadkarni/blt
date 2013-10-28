@@ -42,7 +42,7 @@ set attributes {
 }
 
 set x [blt::vector create]
-$x seq 0 1 20
+$x linspace 0 1 20
 set count 0
 foreach {label symbol fill color} $attributes {
     set y [blt::vector create]
