@@ -66,7 +66,7 @@
 
 #define CLAMP(c)	((((c) < 0.0) ? 0.0 : ((c) > 255.0) ? 255.0 : (c)))
 
-#define imul8x8(a,b,t)	((t) = (a)*(b)+128,(((t)+((t)>>8))>>8))
+#define imul8x8(a,b,t) ((t) = (a)*(b)+128,(((t)+((t)>>8))>>8))
 
 static Blt_ResampleFilterProc DefaultFilter;
 static Blt_ResampleFilterProc BellFilter;

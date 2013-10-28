@@ -39,7 +39,7 @@
  *    grab set ?-global? window
  *    grab status window
  *
- * Addition operations.
+ * Add stack operations.
  *    grab push window ?-global?
  *    grab pop ?window? 
  *    grab list 

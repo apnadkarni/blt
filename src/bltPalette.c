@@ -1333,7 +1333,7 @@ fprintf(stderr, "testing: relValue=%.15g, relMin=%.15g, relMax=%.15g\n",
 	    
 	    t = (relValue - entryPtr->min.relValue) / 
 		(entryPtr->max.relValue - entryPtr->min.relValue);
-	    color.u32 = ColorLerp2(entryPtr, t);
+	    color.u32 = ColorLerp(entryPtr, t);
 	    found = TRUE;
 	    break;
 	}

@@ -48,7 +48,6 @@
 #include "bltBg.h"
 #include "bltOp.h"
 #include "bltImage.h"
-#include "bltBitmap.h"
 #include "bltPicture.h"
 #include "bltPainter.h"
 #include "tkDisplay.h"
@@ -180,38 +179,40 @@ typedef struct _Blt_Picture Pict;
  * Vertex -- 
  *
  *	Represents a vertex of a triangle in the mesh. It contains the
- *	converted screen coordinates of the point and an index back into the
- *	array of field values (z) and x and y coordinate arrays.  It also
- *	contains the associated interpolated color for this point.
+ *	converted screen coordinates of the point and an index back into
+ *	the array of field values (z) and x and y coordinate arrays.  It
+ *	also contains the associated interpolated color for this point.
  */
 typedef struct {
-    int index;				/* Index to the array of values (also
-					 * original x and y coordinates). */
+    int index;				/* Index to the array of values
+					 * (also original x and y
+					 * coordinates). */
     unsigned int flags;			/* Flags for vertex. */
-    float x, y, z;			/* Screen coordinates of this point in
-					 * the mesh and it's normalized [0..1]
-					 * value. */
+    float x, y, z;			/* Screen coordinates of this point
+					 * in the mesh and it's normalized
+					 * [0..1] value. */
     Blt_Pixel color;			/* Color at this vertex. */
 }  Vertex;
 
 typedef struct {
-    int a, b, c;			/* Indices of the vectices that 
+    int a, b, c;			/* Indices of the vectices that
 					 * form the triangle. */
-    float min, max;			/* Minimum and maximum field values,
-					 * used to sort the triangles. */
+    float min, max;			/* Minimum and maximum field
+					 * values, used to sort the
+					 * triangles. */
     unsigned int flags;
     int index;
 } Triangle;
 
 typedef struct {
-    int a, b; 				/* Indices of the vertices that form
-					 * the edge. */
+    int a, b; 				/* Indices of the vertices that
+					 * form the edge. */
     int64_t A, B, C;			/* Coefficents of edge equation. */
 } Edge;
 
 typedef struct {
-    int a, b; 				/* Indices of the vertices that form
-					 * the edge. */
+    int a, b; 				/* Indices of the vertices that
+					 * form the edge. */
 } EdgeKey;
 
 typedef struct {
@@ -229,8 +230,8 @@ typedef struct _TracePoint {
     float x, y;				/* Screen coordinate of the
 					 * interpolated point. */
     int index;
-    unsigned int flags;			/* Flags associated with a point are
-					 * described below. */
+    unsigned int flags;			/* Flags associated with a point
+					 * are described below. */
 } TracePoint;
 
 /* 
@@ -239,15 +240,17 @@ typedef struct _TracePoint {
  *	Represents an individual line segment of a isoline. 
  */
 typedef struct _TraceSegment {
-    struct _TraceSegment *next;		/* Pointer to next point in trace. */
-    float x1, y1, x2, y2;		/* Screen coordinate of the point. */
-    int index;				/* Index of this coordinate pointing
-					 * back to the raw world values in the
-					 * individual data arrays. This index
-					 * is replicated for generated
-					 * values. */
-    unsigned int flags;			/* Flags associated with a segment are
-					 * described below. */
+    struct _TraceSegment *next;		/* Points to next point in
+                                         * trace. */
+    float x1, y1, x2, y2;		/* Screen coordinate of the
+                                         * point. */
+    int index;				/* Index of this coordinate
+					 * pointing back to the raw world
+					 * values in the individual data
+					 * arrays. This index is replicated
+					 * for generated values. */
+    unsigned int flags;			/* Flags associated with a segment
+					 * are described below. */
 } TraceSegment;
 
 /* 
@@ -260,29 +263,29 @@ typedef struct {
     ContourElement *elemPtr;
     TracePoint *head, *tail;
     int numPoints;			/* # of points in the trace. */
-    Blt_ChainLink link;			/* Pointer of this entry in the chain
-					 * of traces. */
+    Blt_ChainLink link;			/* Pointer of this entry in the
+					 * chain of traces. */
     ContourPen *penPtr;
-    unsigned short flags;		/* Flags associated with a trace are
-					 * described blow. */
-    unsigned short drawFlags;		/* Flags for individual points and 
-					 * segments when drawing the trace. */
+    unsigned short flags;		/* Flags associated with a trace
+					 * are described blow. */
+    unsigned short drawFlags;		/* Flags for individual points and
+					 * segments when drawing the
+					 * trace. */
 } Trace;
 
 /* Symbol types for isolines. */
 typedef enum {
-    SYMBOL_NONE,
-    SYMBOL_SQUARE,
-    SYMBOL_CIRCLE,
-    SYMBOL_DIAMOND,
-    SYMBOL_PLUS,
-    SYMBOL_CROSS,
-    SYMBOL_SPLUS,
-    SYMBOL_SCROSS,
-    SYMBOL_TRIANGLE,
-    SYMBOL_ARROW,
-    SYMBOL_BITMAP,
-    SYMBOL_IMAGE
+    SYMBOL_NONE,			/*  0 */
+    SYMBOL_SQUARE,			/*  1 */
+    SYMBOL_CIRCLE,			/*  2 */
+    SYMBOL_DIAMOND,			/*  3 */
+    SYMBOL_PLUS,			/*  4 */
+    SYMBOL_CROSS,			/*  5 */
+    SYMBOL_SPLUS,			/*  6 */
+    SYMBOL_SCROSS,			/*  7 */
+    SYMBOL_TRIANGLE,			/*  8 */
+    SYMBOL_ARROW,			/*  9 */
+    SYMBOL_IMAGE			/* 10 */
 } SymbolType;
 
 typedef struct {
@@ -291,9 +294,27 @@ typedef struct {
     SymbolType type;
 } SymbolTable;
 
+
+static SymbolTable symbolTable[] = {
+    { "arrow",	  1, SYMBOL_ARROW,	},
+    { "circle",	  2, SYMBOL_CIRCLE,	},
+    { "cross",	  2, SYMBOL_CROSS,	}, 
+    { "diamond",  1, SYMBOL_DIAMOND,	}, 
+    { "image",    0, SYMBOL_IMAGE,	}, 
+    { "none",	  1, SYMBOL_NONE,	}, 
+    { "plus",	  1, SYMBOL_PLUS,	}, 
+    { "scross",	  2, SYMBOL_SCROSS,	}, 
+    { "splus",	  2, SYMBOL_SPLUS,	}, 
+    { "square",	  2, SYMBOL_SQUARE,	}, 
+    { "triangle", 1, SYMBOL_TRIANGLE,	}, 
+    { NULL,       0, 0			}, 
+};
+
 typedef struct {
-    SymbolType type;			/* Type of symbol to be drawn/printed */
-    int size;				/* Requested size of symbol in pixels */
+    SymbolType type;			/* Type of symbol to be
+                                         * drawn/printed */
+    int size;				/* Requested size of symbol in
+                                         * pixels. */
     XColor *outlineColor;		/* Outline color */
     int outlineWidth;			/* Width of the outline */
     GC outlineGC;			/* Outline graphics context */
@@ -304,19 +325,23 @@ typedef struct {
 
     /* The last two fields are used only for bitmap symbols. */
     Pixmap bitmap;			/* Bitmap to determine
-					 * foreground/background pixels of the
+					 * foreground/background pixels of
+					 * the symbol */
+    Pixmap mask;			/* Bitmap representing the
+					 * transparent pixels of the
 					 * symbol */
-    Pixmap mask;			/* Bitmap representing the transparent
-					 * pixels of the symbol */
 } Symbol;
 
 typedef struct {
     GraphObj obj;
-    ContourElement *elemPtr;		/* Element this isoline belongs to. */
+    ContourElement *elemPtr;		/* Element this isoline belongs
+                                           to. */
     unsigned int flags;
-    const char *label;			/* Label to be displayed for isoline. */
-    double reqValue;			/* Requested isoline value.  Could be
-					 * either absolute or relative. */
+    const char *label;			/* Label to be displayed for
+                                           isoline. */
+    double reqValue;			/* Requested isoline value.  Could
+					 * be either absolute or
+					 * relative. */
     double reqMin, reqMax;
 
     Blt_HashEntry *hashPtr;
@@ -338,15 +363,15 @@ typedef struct {
 /* ACTIVE		(1<<6) */
 
 struct _ContourPen {
-    const char *name;			/* Pen style identifier.  If NULL pen
-					 * was statically allocated. */
+    const char *name;			/* Pen style identifier.  If NULL
+					 * pen was statically allocated. */
     ClassId classId;			/* Type of pen */
-    const char *typeId;			/* String token identifying the type of
-					 * pen */
+    const char *typeId;			/* String token identifying the
+					 * type of pen */
     unsigned int flags;			/* Indicates if the pen element is
 					 * active or normal */
-    int refCount;			/* Reference count for elements using
-					 * this pen. */
+    int refCount;			/* Reference count for elements
+					 * using this pen. */
     Blt_HashEntry *hashPtr;
 
     Blt_ConfigSpec *configSpecs;	/* Configuration specifications */
@@ -369,9 +394,9 @@ struct _ContourPen {
 					 * drawn, only symbols. */
 
     /* Show value attributes. */
-    unsigned int valueFlags;		/* Indicates whether to display text
-					 * of the data value.  Values are x,
-					 * y, both, or none. */
+    unsigned int valueFlags;		/* Indicates whether to display
+					 * text of the data value.  Values
+					 * are x, y, both, or none. */
     const char *valueFormat;		/* A printf format string. */
     TextStyle valueStyle;		/* Text attributes (color, font,
 					 * rotation, etc.) of the value. */
@@ -385,22 +410,23 @@ struct _ContourElement {
     /* Fields specific to elements. */
     Blt_ChainLink link;			/* Element's link in display list. */
     const char *label;			/* Label displayed in legend. There
-					 * may be sub-labels for each contour
-					 * range/value. */
+					 * may be sub-labels for each
+					 * contour range/value. */
     unsigned short row, col;		/* Position of the entry in the
 					 * legend. */
     int legendRelief;			/* Relief of label in legend. */
     Axis2d axes;			/* X-axis and Y-axis mapping the
 					 * element */
     ElemValues z, dummy1, w;		/* Contains array of floating point
-					 * graph coordinate values. Also holds
-					 * min/max and the number of
+					 * graph coordinate values. Also
+					 * holds min/max and the number of
 					 * coordinates */
     Blt_HashTable activeTable;		/* Table of indices which indicate
-					 * which data points are active (drawn
-					 * with "active" colors). */
-    int numActiveIndices;		/* # of active data points.  Special
-					 * case: if numActiveIndices < 0 and the
+					 * which data points are active
+					 * (drawn with "active" colors). */
+    int numActiveIndices;		/* # of active data points.
+					 * Special case: if
+					 * numActiveIndices < 0 and the
 					 * active bit is set in "flags",
 					 * then all data * points are drawn
 					 * active. */
@@ -411,13 +437,13 @@ struct _ContourElement {
     ContourPen *builtinPenPtr;
     Blt_Chain dummy2;			/* Placeholder: Palette of pens. */
 
-    int scaleSymbols;			/* If non-zero, the symbols will scale
-					 * in size as the graph is zoomed
-					 * in/out.  */
+    int scaleSymbols;			/* If non-zero, the symbols will
+					 * scale in size as the graph is
+					 * zoomed in/out.  */
 
-    double xRange, yRange;		/* Initial X-axis and Y-axis ranges:
-					 * used to scale the size of element's
-					 * symbol. */
+    double xRange, yRange;		/* Initial X-axis and Y-axis
+					 * ranges: used to scale the size
+					 * of element's symbol. */
     int state;
 
     ContourPen builtinPen;
@@ -492,15 +518,15 @@ typedef struct _IsolineIterator {
 					 *               tag or index.
 					 */
 
-    Isoline *startPtr;			/* Starting item.  Starting point of
-					 * search, saved if iterator is reused.
-					 * Used for ITER_ALL and ITER_SINGLE
-					 * searches. */
+    Isoline *startPtr;			/* Starting item.  Starting point
+					 * of search, saved if iterator is
+					 * reused.  Used for ITER_ALL and
+					 * ITER_SINGLE searches. */
     Isoline *endPtr;			/* Ending item (inclusive). */
     Isoline *nextPtr;			/* Next item. */
 					/* For tag-based searches. */
-    const char *tagName;		/* If non-NULL, is the tag that we are
-					 * currently iterating over. */
+    const char *tagName;		/* If non-NULL, is the tag that we
+					 * are currently iterating over. */
     Blt_HashTable *tablePtr;		/* Pointer to tag hash table. */
     Blt_HashSearch cursor;		/* Search iterator for tag hash
 					 * table. */
@@ -815,21 +841,6 @@ static void DrawTriangle(ContourElement *elemPtr, Blt_Picture picture,
 static int ComputeColorBarGeometry(Graph *graphPtr, ContourElement *elemPtr, 
 				   int width, int height);
 
-/* Table of symbol names. */
-static SymbolTable symbolTable[] = {
-    { "arrow",	  1, SYMBOL_ARROW,	},
-    { "circle",	  2, SYMBOL_CIRCLE,	},
-    { "cross",	  2, SYMBOL_CROSS,	}, 
-    { "diamond",  1, SYMBOL_DIAMOND,	}, 
-    { "image",    1, SYMBOL_IMAGE,	}, 
-    { "none",	  1, SYMBOL_NONE,	}, 
-    { "plus",	  1, SYMBOL_PLUS,	}, 
-    { "scross",	  2, SYMBOL_SCROSS,	}, 
-    { "splus",	  2, SYMBOL_SPLUS,	}, 
-    { "square",	  2, SYMBOL_SQUARE,	}, 
-    { "triangle", 1, SYMBOL_TRIANGLE,	}, 
-    { NULL,       0, 0			}, 
-};
 
 static int 
 GetContourElement(Tcl_Interp *interp, Graph *graphPtr, Tcl_Obj *objPtr, 
@@ -1048,7 +1059,7 @@ FreeSymbolProc(
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToSymbol --
+ * ObjToSymbolProc --
  *
  *	Convert the string representation of a line style or symbol name into
  *	its numeric form.
@@ -1063,8 +1074,7 @@ FreeSymbolProc(
 static int
 ObjToSymbolProc(
     ClientData clientData,		/* Not used. */
-    Tcl_Interp *interp,			/* Interpreter to send results back
-					 * to */
+    Tcl_Interp *interp,			/* Interpreter to report results */
     Tk_Window tkwin,			/* Not used. */
     Tcl_Obj *objPtr,			/* String representing symbol type */
     char *widgRec,			/* Element information record */
@@ -1073,83 +1083,55 @@ ObjToSymbolProc(
 {
     Symbol *symbolPtr = (Symbol *)(widgRec + offset);
     const char *string;
+    SymbolTable *p;
+    int length;
+    char c;
 
-    {
-	int length;
-	SymbolTable *entryPtr;
-	char c;
-
-	string = Tcl_GetStringFromObj(objPtr, &length);
-	if (length == 0) {
-	    DestroySymbol(Tk_Display(tkwin), symbolPtr);
-	    symbolPtr->type = SYMBOL_NONE;
-	    return TCL_OK;
-	}
-	c = string[0];
-	for (entryPtr = symbolTable; entryPtr->name != NULL; entryPtr++) {
-	    if (length < entryPtr->minChars) {
-		continue;
-	    }
-	    if ((c == entryPtr->name[0]) && 
-		(strncmp(string, entryPtr->name, length) == 0)) {
-		DestroySymbol(Tk_Display(tkwin), symbolPtr);
-		symbolPtr->type = entryPtr->type;
-		return TCL_OK;
-	    }
-	}
+    string = Tcl_GetStringFromObj(objPtr, &length);
+    if (length == 0) {
+	/* Empty string means to symbol. */
+	DestroySymbol(Tk_Display(tkwin), symbolPtr);
+	symbolPtr->type = SYMBOL_NONE;
+	return TCL_OK;
     }
-    {
+    c = string[0];
+    if (c == '@') {
 	Tk_Image tkImage;
 	Element *elemPtr = (Element *)widgRec;
 
-	tkImage = Tk_GetImage(interp, tkwin, string, ImageChangedProc, elemPtr);
-	if (tkImage != NULL) {
+	/* Must be an image. */
+	tkImage = Tk_GetImage(interp, tkwin, string+1, ImageChangedProc, 
+		elemPtr);
+	if (tkImage == NULL) {
+	    return TCL_ERROR;
+	}
+	DestroySymbol(Tk_Display(tkwin), symbolPtr);
+	symbolPtr->image = tkImage;
+	symbolPtr->type = SYMBOL_IMAGE;
+	return TCL_OK;
+    }
+
+    for (p = symbolTable; p->name != NULL; p++) {
+	if ((length < p->minChars) || (p->minChars == 0)) {
+	    continue;
+	}
+	if ((c == p->name[0]) && (strncmp(string, p->name, length) == 0)) {
 	    DestroySymbol(Tk_Display(tkwin), symbolPtr);
-	    symbolPtr->image = tkImage;
-	    symbolPtr->type = SYMBOL_IMAGE;
+	    symbolPtr->type = p->type;
 	    return TCL_OK;
 	}
     }
-    {
-	Pixmap bitmap, mask;
-	Tcl_Obj **objv;
-	int objc;
-
-	if ((Tcl_ListObjGetElements(NULL, objPtr, &objc, &objv) != TCL_OK) || 
-	    (objc > 2)) {
-	    goto error;
-	}
-	bitmap = mask = None;
-	if (objc > 0) {
-	    bitmap = Tk_AllocBitmapFromObj((Tcl_Interp *)NULL, tkwin, objv[0]);
-	    if (bitmap == None) {
-		goto error;
-	    }
-	}
-	if (objc > 1) {
-	    mask = Tk_AllocBitmapFromObj((Tcl_Interp *)NULL, tkwin, objv[1]);
-	    if (mask == None) {
-		goto error;
-	    }
-	}
-	DestroySymbol(Tk_Display(tkwin), symbolPtr);
-	symbolPtr->bitmap = bitmap;
-	symbolPtr->mask = mask;
-	symbolPtr->type = SYMBOL_BITMAP;
-	return TCL_OK;
-    }
- error:
-    Tcl_AppendResult(interp, "bad symbol \"", string, 
+    Tcl_AppendResult(interp, "bad symbol type \"", string, 
 	"\": should be \"none\", \"circle\", \"square\", \"diamond\", "
 	"\"plus\", \"cross\", \"splus\", \"scross\", \"triangle\", "
-	"\"arrow\" or the name of a bitmap", (char *)NULL);
+	"\"arrow\" or @imageName ", (char *)NULL);
     return TCL_ERROR;
 }
 
 /*
  *---------------------------------------------------------------------------
  *
- * SymbolToObj --
+ * SymbolToObjProc --
  *
  *	Convert the symbol value into a string.
  *
@@ -1169,33 +1151,21 @@ SymbolToObjProc(
     int flags)				/* Not used. */
 {
     Symbol *symbolPtr = (Symbol *)(widgRec + offset);
+    SymbolTable *p;
 
-    if (symbolPtr->type == SYMBOL_BITMAP) {
-	Tcl_Obj *listObjPtr, *objPtr;
-	const char *name;
+    if (symbolPtr->type == SYMBOL_IMAGE) {
+	Tcl_Obj *objPtr;
 
-	listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
-	name = Tk_NameOfBitmap(Tk_Display(tkwin), symbolPtr->bitmap);
-	objPtr = Tcl_NewStringObj(name, -1);
-	Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-	if (symbolPtr->mask == None) {
-	    objPtr = Tcl_NewStringObj("", -1);
-	} else {
-	    name = Tk_NameOfBitmap(Tk_Display(tkwin), symbolPtr->mask);
-	    objPtr = Tcl_NewStringObj(name, -1);
-	}
-	Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-	return listObjPtr;
-    } else {
-	SymbolTable *entryPtr;
-
-	for (entryPtr = symbolTable; entryPtr->name != NULL; entryPtr++) {
-	    if (entryPtr->type == symbolPtr->type) {
-		return Tcl_NewStringObj(entryPtr->name, -1);
-	    }
-	}
-	return Tcl_NewStringObj("?unknown symbol type?", -1);
+	objPtr = Tcl_NewStringObj("@", 1);
+	Tcl_AppendToObj(objPtr, Blt_Image_Name(symbolPtr->image), -1);
+	return objPtr;
     }
+    for (p = symbolTable; p->name != NULL; p++) {
+	if (p->type == symbolPtr->type) {
+	    return Tcl_NewStringObj(p->name, -1);
+	}
+    }
+    return Tcl_NewStringObj("?unknown symbol type?", -1);
 }
 
 /*
@@ -1324,9 +1294,7 @@ static void
 ColormapChangedProc(GraphColormap *cmapPtr, ClientData clientData, 
 		    unsigned int flags)
 {
-#ifdef notdef
     ContourElement *elemPtr = clientData;
-#endif
     Graph *graphPtr;
 
     if (flags & COLORMAP_DELETE_NOTIFY) {
@@ -1334,8 +1302,8 @@ ColormapChangedProc(GraphColormap *cmapPtr, ClientData clientData,
     }
     graphPtr = cmapPtr->graphPtr;
     /* Colormap changed. Don't need to remap the item. */
+      elemPtr->flags |= MAP_ITEM;
 #ifdef notdef
-    elemPtr->flags |= MAP_ITEM;
     graphPtr->flags |= CACHE_DIRTY;
 #endif
     Blt_EventuallyRedrawGraph(graphPtr);
@@ -1371,8 +1339,8 @@ FreeColormapProc(ClientData clientData, Display *display, char *widgRec,
 static int
 ObjToColormapProc(
     ClientData clientData,		/* Not used. */
-    Tcl_Interp *interp,			/* Interpreter to send results back
-					 * to */
+    Tcl_Interp *interp,			/* Interpreter where to report
+                                         * results. */
     Tk_Window tkwin,			/* Not used. */
     Tcl_Obj *objPtr,			/* String representing symbol type */
     char *widgRec,			/* Element information record */
@@ -2238,11 +2206,11 @@ CompareTriangles(const void *a, const void *b)
  * MapWires --
  *
  *	Creates an array of the visible (possible clipped) line segments
- *	representing the wireframe of the mesh.  
+ *	representing the wireframe of the mesh.
  *
  *	This can be called only after 1) the screen coordinates of vertices
- *	has been computed and 2) the mesh has been mapped, creating the array
- *	of triangle.
+ *	has been computed and 2) the mesh has been mapped, creating the
+ *	array of triangle.
  *	
  * Results:
  *	None.
@@ -2260,15 +2228,15 @@ MapWires(ContourElement *elemPtr)
     Blt_HashTable edgeTable;
     Region2d exts;
     Segment2d *segments;
-    long i;
+    int i;
     int count;
 
     /* Use a hash table to generate a list of unique edges.  */
     Blt_InitHashTable(&edgeTable, sizeof(EdgeKey) / sizeof(int));
     for (i = 0; i < elemPtr->numTriangles; i++) {
+	EdgeKey key;
 	Triangle *t;
 	int isNew;
-	EdgeKey key;
 
 	t = elemPtr->triangles + i;
 	MakeEdgeKey(&key, t->a, t->b);
@@ -2311,9 +2279,9 @@ MapWires(ContourElement *elemPtr)
  * MapTrace --
  *
  *	Adjust the trace by testing each segment of the trace to the graph
- *	area.  If the segment is totally off screen, remove it from the trace.
- *	If one end point is off screen, replace it with the clipped point.
- *	Create new traces as necessary.
+ *	area.  If the segment is totally off screen, remove it from the
+ *	trace.  If one end point is off screen, replace it with the clipped
+ *	point.  Create new traces as necessary.
  *	
  * Results:
  *	None.
@@ -2345,15 +2313,16 @@ MapTrace(ContourElement *elemPtr, Blt_Chain *tracesPtr, Trace *tracePtr)
 		TracePoint *t;
 		Trace *newPtr;
 
-		/* Last point is off screen.  Add the clipped end the current
-		 * trace. */
+		/* Last point is off screen.  Add the clipped end the
+		 * current trace. */
 		t = NewPoint(elemPtr, p2.x, p2.y, p->index);
 		t->flags = VISIBLE;
 		tracePtr->flags |= RECOUNT;
 		tracePtr->tail = t;
 		p->next = t;		/* Point t terminates the trace. */
 
-		/* Create a new trace and attach the current chain to it. */
+		/* Create a new trace and attach the current chain to
+                 * it. */
 		newPtr = NewTrace(tracesPtr);
 		newPtr->elemPtr = elemPtr;
 		newPtr->flags |= RECOUNT;
@@ -2421,10 +2390,10 @@ MapTraces(ContourElement *elemPtr, Blt_Chain *tracesPtr)
  *
  * MapMesh --
  *
- *	Creates an array of the triangles representing the mesh converted to
- *	screen coordinates.  The range of field values among the three
- *	vertices of the triangle is computed.  This is used later to sort the
- *	triangles.
+ *	Creates an array of the triangles representing the mesh converted
+ *	to screen coordinates.  The range of field values among the three
+ *	vertices of the triangle is computed.  This is used later to sort
+ *	the triangles.
  *
  * Results:
  *	None.
@@ -2629,7 +2598,8 @@ ProcessTriangle(ContourElement *elemPtr, Triangle *t, Isoline *isoPtr)
 		}
 	    }
 	} else {
-	    /* Can't happen. Must have two interpolated points or vertices. */
+	    /* Can't happen. Must have two interpolated points or
+             * vertices. */
 	}
     } else {
 #ifndef notdef
@@ -2662,9 +2632,9 @@ ProcessTriangle(ContourElement *elemPtr, Triangle *t, Isoline *isoPtr)
 static void
 MapIsoline(Isoline *isoPtr)
 {
-    Triangle *t, *tend;
-    ContourElement *elemPtr;
     AxisRange *rangePtr;
+    ContourElement *elemPtr;
+    int i;
 
     elemPtr = isoPtr->elemPtr;
     rangePtr = &elemPtr->zAxisPtr->axisRange;
@@ -2685,9 +2655,11 @@ MapIsoline(Isoline *isoPtr)
     /* Process the isoline, computing its line segments looking at all
      * relevant triangles in the mesh. */
     Blt_InitHashTable(&isoPtr->pointTable, sizeof(PointKey) / sizeof(int));
-    for (t = elemPtr->triangles, tend = t+elemPtr->numTriangles; t < tend; t++){
+    for (i = 0; i < elemPtr->numTriangles; i++) {
 	double norm, range;
+        Triangle *t;
 
+        t = elemPtr->triangles + i;
 	range = t->max - t->min;
 	if (fabs(range) < DBL_EPSILON) {
 	    continue;			/* All three vertices have the same 
@@ -2714,8 +2686,9 @@ MapIsoline(Isoline *isoPtr)
  *	are drawn after circles are filled.  This is speed tradeoff: drawn
  *	many circles at once, or drawn one symbol at a time.
  *
- *	Symbols are only drawn at the knots of the trace (i.e. original points,
- *	not generated).  The "play" function can limit what circles are drawn.
+ *	Symbols are only drawn at the knots of the trace (i.e. original
+ *	points, not generated).  The "play" function can limit what circles
+ *	are drawn.
  *
  */
 static void
@@ -2765,8 +2738,9 @@ DrawCircleSymbol(Graph *graphPtr, Drawable drawable, ContourPen *penPtr,
  *	are drawn after circles are filled.  This is speed tradeoff: draw
  *	many circles at once, or drawn one symbol at a time.
  *
- *	Symbols are only drawn at the knots of the trace (i.e. original points,
- *	not generated).  The "play" function can limit what circles are drawn.
+ *	Symbols are only drawn at the knots of the trace (i.e. original
+ *	points, not generated).  The "play" function can limit what circles
+ *	are drawn.
  *
  */
 static void
@@ -2796,8 +2770,9 @@ DrawCircleSymbol(Graph *graphPtr, Drawable drawable, ContourPen *penPtr,
  *	are drawn after squares are filled.  This is speed tradeoff: draw
  *	many squares at once, or drawn one symbol at a time.
  *
- *	Symbols are only drawn at the knots of the trace (i.e. original points,
- *	not generated).  The "play" function can limit what squares are drawn.
+ *	Symbols are only drawn at the knots of the trace (i.e. original
+ *	points, not generated).  The "play" function can limit what squares
+ *	are drawn.
  *
  */
 static void
@@ -3024,54 +2999,6 @@ DrawImageSymbol(Graph *graphPtr, Drawable drawable, ContourPen *penPtr,
     Tk_RedrawImage(penPtr->symbol.image, 0, 0, w, h, drawable, x, y);
 }
 
-static void
-DrawBitmapSymbol(Graph *graphPtr, Drawable drawable, ContourPen *penPtr, 
-		 int x, int y, int size)
-{
-    Pixmap bitmap, mask;
-    int w, h, bw, bh;
-    double scale, sx, sy;
-    int dx, dy;
-
-    Tk_SizeOfBitmap(graphPtr->display, penPtr->symbol.bitmap, &w, &h);
-    mask = None;
-    
-    /*
-     * Compute the size of the scaled bitmap.  Stretch the bitmap to fit
-     * a nxn bounding box.
-     */
-    sx = (double)size / (double)w;
-    sy = (double)size / (double)h;
-    scale = MIN(sx, sy);
-    bw = (int)(w * scale);
-    bh = (int)(h * scale);
-    
-    XSetClipMask(graphPtr->display, penPtr->symbol.outlineGC, None);
-    if (penPtr->symbol.mask != None) {
-	mask = Blt_ScaleBitmap(graphPtr->tkwin, penPtr->symbol.mask, w, h, 
-		bw, bh);
-	XSetClipMask(graphPtr->display, penPtr->symbol.outlineGC, mask);
-    }
-    bitmap = Blt_ScaleBitmap(graphPtr->tkwin, penPtr->symbol.bitmap, w, h, bw, 
-			     bh);
-    if (penPtr->symbol.fillGC == NULL) {
-	XSetClipMask(graphPtr->display, penPtr->symbol.outlineGC, bitmap);
-    }
-    dx = bw / 2;
-    dy = bh / 2;
-    x = x - dx;
-    y = y - dy;
-    if ((penPtr->symbol.fillGC == NULL) || (mask !=None)) {
-	XSetClipOrigin(graphPtr->display, penPtr->symbol.outlineGC, x, y);
-    }
-    XCopyPlane(graphPtr->display, bitmap, drawable, penPtr->symbol.outlineGC, 
-	0, 0, bw, bh, x, y, 1);
-    Tk_FreePixmap(graphPtr->display, bitmap);
-    if (mask != None) {
-	Tk_FreePixmap(graphPtr->display, mask);
-    }
-}
-
 /*
  *---------------------------------------------------------------------------
  *
@@ -3129,10 +3056,6 @@ DrawSymbol(
 	
     case SYMBOL_IMAGE:
 	DrawImageSymbol(graphPtr, drawable, penPtr, x, y, size);
-	break;
-	
-    case SYMBOL_BITMAP:
-	DrawBitmapSymbol(graphPtr, drawable, penPtr, x, y, size);
 	break;
     }
 }
@@ -3323,7 +3246,7 @@ DrawTriangles(Graph *graphPtr, Drawable drawable, ContourElement *elemPtr,
 	      ContourPen *penPtr)
 {
     Region2d exts;
-    Triangle *t, *tend;
+    int i;
     int x, y, w, h;
 
     Blt_GraphExtents(elemPtr, &exts);
@@ -3335,9 +3258,8 @@ DrawTriangles(Graph *graphPtr, Drawable drawable, ContourElement *elemPtr,
     elemPtr->picture = Blt_CreatePicture(w, h);
     Blt_BlankPicture(elemPtr->picture, 0x0);
     x = exts.left, y = exts.top;
-    for (t = elemPtr->triangles, tend = t + elemPtr->numTriangles; 
-	 t < tend; t++) {
-	DrawTriangle(elemPtr, elemPtr->picture, t, x, y);
+    for (i = 0; i < elemPtr->numTriangles; i++) {
+	DrawTriangle(elemPtr, elemPtr->picture, elemPtr->triangles + i, x, y);
     }
     if (InRange(elemPtr->opacity, 0.0, 100.0)) {
 	int alpha;
@@ -3987,62 +3909,6 @@ DrawImageSymbols(Graph *graphPtr, Drawable drawable, Trace *tracePtr,
     }
 }
 
-static void
-DrawBitmapSymbols(Graph *graphPtr, Drawable drawable, Trace *tracePtr, 
-		  ContourPen *penPtr, int size)
-{
-    Pixmap bitmap, mask;
-    int w, h, bw, bh;
-    double scale, sx, sy;
-    int dx, dy;
-    TracePoint *p;
-
-    Tk_SizeOfBitmap(graphPtr->display, penPtr->symbol.bitmap, &w, &h);
-    mask = None;
-    
-    /*
-     * Compute the size of the scaled bitmap.  Stretch the bitmap to fit
-     * a nxn bounding box.
-     */
-    sx = (double)size / (double)w;
-    sy = (double)size / (double)h;
-    scale = MIN(sx, sy);
-    bw = (int)(w * scale);
-    bh = (int)(h * scale);
-    
-    XSetClipMask(graphPtr->display, penPtr->symbol.outlineGC, None);
-    if (penPtr->symbol.mask != None) {
-	mask = Blt_ScaleBitmap(graphPtr->tkwin, penPtr->symbol.mask,
-			       w, h, bw, bh);
-	XSetClipMask(graphPtr->display, penPtr->symbol.outlineGC, mask);
-    }
-    bitmap = Blt_ScaleBitmap(graphPtr->tkwin, penPtr->symbol.bitmap, w, h, bw, 
-			     bh);
-    if (penPtr->symbol.fillGC == NULL) {
-	XSetClipMask(graphPtr->display, penPtr->symbol.outlineGC, bitmap);
-    }
-    dx = bw / 2;
-    dy = bh / 2;
-    for (p = tracePtr->head; p != NULL; p = p->next) {
-	int x, y;
-
-	if (!DRAWN(tracePtr, p->flags)) {
-	    continue;
-	}
-	x = Round((double)p->x) - dx;
-	y = Round((double)p->y) - dy;
-	if ((penPtr->symbol.fillGC == NULL) || (mask !=None)) {
-	    XSetClipOrigin(graphPtr->display, penPtr->symbol.outlineGC, x, y);
-	}
-	XCopyPlane(graphPtr->display, bitmap, drawable, 
-		   penPtr->symbol.outlineGC, 0, 0, bw, bh, x, y, 1);
-    }
-    Tk_FreePixmap(graphPtr->display, bitmap);
-    if (mask != None) {
-	Tk_FreePixmap(graphPtr->display, mask);
-    }
-}
-
 /*
  *---------------------------------------------------------------------------
  *
@@ -4177,9 +4043,6 @@ DrawSymbols(Graph *graphPtr, Drawable drawable, Isoline *isoPtr,
 	DrawImageSymbols(graphPtr, drawable, tracePtr, penPtr, size);
 	break;
 	
-    case SYMBOL_BITMAP:
-	DrawBitmapSymbols(graphPtr, drawable, tracePtr, penPtr, size);
-	break;
     }
  done:
     if (colorPtr != NULL) {
@@ -4398,9 +4261,9 @@ NearestSegment(ContourElement *elemPtr, NearestElement *nearestPtr)
 
     graphPtr = elemPtr->obj.graphPtr;
     for (i = 0; i < elemPtr->numTriangles; i++) {
+	Point2d p1, p2, b;
 	Triangle *t;
 	double d;
-	Point2d p1, p2, b;
 
 	t = elemPtr->triangles + i;
 	/* Compare AB */
@@ -4498,31 +4361,6 @@ ConfigurePenProc(Graph *graphPtr, Pen *basePtr)
     colorPtr = penPtr->symbol.outlineColor;
     color = (ISALIASED(colorPtr)) ? defColor : colorPtr->pixel;
     gcValues.foreground = color;
-    if (penPtr->symbol.type == SYMBOL_BITMAP) {
-	/*
-	 * Set a clip mask if either
-	 *	1) no background color was designated or
-	 *	2) a masking bitmap was specified.
-	 *
-	 * These aren't necessarily the bitmaps we'll be using for
-	 * clipping. But this makes it unlikely that anyone else will be
-	 * sharing this GC when we set the clip origin (at the time the bitmap
-	 * is drawn).
-	 */
-	colorPtr = penPtr->symbol.fillColor;
-	if (colorPtr != NULL) {
-	    color = (ISALIASED(colorPtr)) ? defColor : colorPtr->pixel;
-	    gcValues.background = color;
-	    gcMask |= GCBackground;
-	    if (penPtr->symbol.mask != None) {
-		gcValues.clip_mask = penPtr->symbol.mask;
-		gcMask |= GCClipMask;
-	    }
-	} else {
-	    gcValues.clip_mask = penPtr->symbol.bitmap;
-	    gcMask |= GCClipMask;
-	}
-    }
     gcValues.line_width = LineWidth(penPtr->symbol.outlineWidth);
     newGC = Blt_GetPrivateGC(graphPtr->tkwin, gcMask, &gcValues);
     if (penPtr->symbol.outlineGC != NULL) {
@@ -4997,41 +4835,7 @@ GetSymbolPostScriptInfo(Blt_Ps ps, ContourElement *elemPtr, ContourPen *penPtr,
      * already.
      */
     Blt_Ps_Append(ps, "\n/DrawSymbolProc {\n");
-    switch (penPtr->symbol.type) {
-    case SYMBOL_NONE:
-	break;				/* Do nothing */
-    case SYMBOL_BITMAP:
-	{
-	    int w, h;
-	    double sx, sy, scale;
-	    Graph *graphPtr = elemPtr->obj.graphPtr;
-
-	    /*
-	     * Compute how much to scale the bitmap.  Don't let the scaled
-	     * bitmap exceed the bounding square for the symbol.
-	     */
-	    Tk_SizeOfBitmap(graphPtr->display, penPtr->symbol.bitmap, &w, &h);
-	    sx = (double)size / (double)w;
-	    sy = (double)size / (double)h;
-	    scale = MIN(sx, sy);
-
-	    if ((penPtr->symbol.mask != None) && (fillColor != NULL)) {
-		Blt_Ps_VarAppend(ps, "\n  % Bitmap mask is \"",
-		    Tk_NameOfBitmap(graphPtr->display, penPtr->symbol.mask),
-		    "\"\n\n  ", (char *)NULL);
-		Blt_Ps_XSetBackground(ps, fillColor);
-		Blt_Ps_DrawBitmap(ps, graphPtr->display, penPtr->symbol.mask, 
-			scale, scale);
-	    }
-	    Blt_Ps_VarAppend(ps, "\n  % Bitmap symbol is \"",
-		Tk_NameOfBitmap(graphPtr->display, penPtr->symbol.bitmap),
-		"\"\n\n  ", (char *)NULL);
-	    Blt_Ps_XSetForeground(ps, outlineColor);
-	    Blt_Ps_DrawBitmap(ps, graphPtr->display, penPtr->symbol.bitmap, 
-		scale, scale);
-	}
-	break;
-    default:
+    if (penPtr->symbol.type != SYMBOL_NONE) {
 	if (fillColor != NULL) {
 	    Blt_Ps_Append(ps, "  ");
 	    Blt_Ps_XSetBackground(ps, fillColor);
@@ -5042,7 +4846,6 @@ GetSymbolPostScriptInfo(Blt_Ps ps, ContourElement *elemPtr, ContourPen *penPtr,
 	    Blt_Ps_XSetForeground(ps, outlineColor);
 	    Blt_Ps_Append(ps, "  stroke\n");
 	}
-	break;
     }
     Blt_Ps_Append(ps, "} def\n\n");
 }
@@ -5153,19 +4956,19 @@ TrianglesToPostScript(Graph *graphPtr, Blt_Ps ps, ContourElement *elemPtr,
     Region2d exts;
     Triangle *t, *tend;
     int x, y, w, h;
+    int i;
 
     Blt_GraphExtents(elemPtr, &exts);
-    w = (exts.right - exts.left) + 1;
-    h = (exts.bottom - exts.top) + 1;
+    w = (exts.right  - exts.left) + 1;
+    h = (exts.bottom - exts.top)  + 1;
     if (elemPtr->picture != NULL) {
 	Blt_FreePicture(elemPtr->picture);
     }
     elemPtr->picture = Blt_CreatePicture(w, h);
     Blt_BlankPicture(elemPtr->picture, 0x0);
     x = exts.left, y = exts.top;
-    for (t = elemPtr->triangles, tend = t + elemPtr->numTriangles; 
-	 t < tend; t++) {
-	DrawTriangle(elemPtr, elemPtr->picture, t, x, y);
+    for (i = 0; i < elemPtr->numTriangles; i++) {
+	DrawTriangle(elemPtr, elemPtr->picture, elemPtr->triangles + i, x, y);
     }
     /* Create a clip path from the hull and draw the picture */
     Blt_Ps_DrawPicture(ps, elemPtr->picture, exts.left, exts.top);
