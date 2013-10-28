@@ -1,3 +1,4 @@
+/* -*- mode: c; c-basic-offset: 4; indent-tabs-mode: nil -*- */
 
 BLT_EXTERN Pixmap Blt_PhotoImageMask(Tk_Window tkwin, Tk_PhotoImageBlock src);
 

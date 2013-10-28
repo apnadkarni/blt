@@ -1,3 +1,4 @@
+/* -*- mode: c; c-basic-offset: 4; indent-tabs-mode: nil -*- */
 #ifndef BLT_POOL_H
 #define BLT_POOL_H
 

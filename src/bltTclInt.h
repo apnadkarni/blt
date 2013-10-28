@@ -1,3 +1,4 @@
+/* -*- mode: c; c-basic-offset: 4; indent-tabs-mode: nil -*- */
 /* -*- mode: c; c-basic-offset: 4; fill-column: 78; column-indent: 40 -*- */
 /*
  * bltTclInt.h --

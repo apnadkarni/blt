@@ -1,3 +1,4 @@
+/* -*- mode: c; c-basic-offset: 4; indent-tabs-mode: nil -*- */
 
 /*
  * Ported from NetBSD to Windows by Ron Koenderink, 2007

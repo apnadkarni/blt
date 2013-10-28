@@ -1,3 +1,4 @@
+/* -*- mode: c; c-basic-offset: 4; indent-tabs-mode: nil -*- */
 #include "bltTkInt.h"
 #include "bltFont.h"
 #include "bltBg.h"

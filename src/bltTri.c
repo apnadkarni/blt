@@ -1,3 +1,4 @@
+/* -*- mode: c; c-basic-offset: 4; indent-tabs-mode: nil -*- */
 
 #define BUILD_BLT_TK_PROCS 1
 #include "bltInt.h"

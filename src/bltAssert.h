@@ -1,3 +1,4 @@
+/* -*- mode: c; c-basic-offset: 4; indent-tabs-mode: nil -*- */
 #ifndef _BLT_ASSERT_H
 #define _BLT_ASSERT_H
 

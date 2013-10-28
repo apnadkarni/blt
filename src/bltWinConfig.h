@@ -1,3 +1,4 @@
+/* -*- mode: c; c-basic-offset: 4; indent-tabs-mode: nil -*- */
 #ifndef _BLT_WIN_CONFIG_H
 #define _BLT_WIN_CONFIG_H
 /* src/bltConfig.h.  Generated automatically by configure.  */
