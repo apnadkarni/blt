@@ -3350,6 +3350,7 @@ FindOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     }
     Blt_FreeSwitches(findSwitches, (char *)&switches, 0);
     if (result == TCL_ERROR) {
+        Tcl_DecrRefCount(switches.listObjPtr);
 	return TCL_ERROR;
     }
     Tcl_SetObjResult(interp, switches.listObjPtr);
