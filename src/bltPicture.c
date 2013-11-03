@@ -6458,3 +6458,111 @@ Blt_SubtractColor(Pict *srcPtr, Blt_Pixel *colorPtr)
 	srcRowPtr += srcPtr->pixelsPerRow;
     }
 }    
+#ifdef notdef
+static void
+Blt_EmbossPicture(
+    Pict *destPtr,
+    Pict *srcPtr,                       /* Source picture treated as
+                                         * alphamap. */
+    double azimuth, double elevation,	/* Light source direction */
+    unsigned short width45,             /* Filter width */
+    Pict *bgPtr)                        /* Background (optional)  */
+{
+    long Nx, Ny, Nz, Lx, Ly, Lz, Nz2, NzLz, NdotL;
+    unsigned char *s1, *s2, *s3, shade, background;
+    int x, y;
+
+#define pixelScale 255.9
+
+    /* Convert degrees to radians. */
+    azimuth *= DEG2RAD;
+    elevation *= DEG2RAD;
+
+    /*
+     * Compute the light vector from the input parameters.  Normalize the
+     * length to pixelScale for fast shading calculation.
+     */
+    Lx = cos(azimuth) * cos(elevation) * pixelScale;
+    Ly = sin(azimuth) * cos(elevation) * pixelScale;
+    Lz = sin(elevation) * pixelScale;
+
+    /*
+     * Constant z component of image surface normal - this depends on the
+     * image slope we wish to associate with an angle of 45 degrees, which
+     * depends on the width of the filter used to produce the source image.
+     */
+    Nz = (6 * 255) / width45;
+    Nz2 = Nz * Nz;
+    NzLz = Nz * Lz;
+
+    /* Optimization for vertical normals: L.[0 0 1] */
+    background = Lz;
+    
+    /* Mung pixels, avoiding edge pixels */
+
+    /* Skip the top row. */
+    destRowPtr = destPtr->bits + destPtr->pixelsPerRow;
+    srcRowPtr = srcPtr->bits;
+    if (texture) {
+        texture += destPtr->width * 3;
+    }
+    for (y = 1; y < (destPtr->height - 2); y++) {
+        Blt_Pixel *dp;
+
+	s1 = srcRowPtr + 1;
+	s2 = s1 + xSize;
+	s3 = s2 + xSize;
+	dst += 3;
+	if (texture) {
+            texture += 3;
+        }
+
+        dp = destRowPtr;
+	for (x = 1; x < destPtr->width-1; x++, s1++, s2++, s3++) {
+            unsigned int   offset = (y * stride) + x;
+            Blt_Pixel *s1     = srcRowPtr + x;
+            Blt_Pixel *s2     = s1 + srcPtr->pixelsPerRow;
+            Blt_Pixel *s3     = s2 + srcPtr->pixelsPerRow;
+            unsigned char  shade  = 0;
+
+	    /*
+	     * Compute the normal from the bump map. the type of the
+	     * expression before the cast is compiler dependent. In some
+	     * cases the sum is unsigned, in others it is signed. Ergo,
+	     * cast to signed.
+	     */
+	    Nx = (int)(s1[-1].Alpha + s2[-1].Alpha + 
+                       s3[-1].Alpha - s1[1].Alpha  - 
+                       s2[1].Alpha  - s3[1].Alpha);
+	    Ny = (int)(s3[-1].Alpha + s3[0].Alpha  + 
+                       s3[1].Alpha  - s1[-1].Alpha - 
+                       s1[0].Alpha - s1[1].Alpha);
+
+	    /* Shade with distant light source. */
+	    if ((Nx == 0) && (Ny == 0)) {
+		shade = background;
+            } else {
+                NdotL = (Nx*Lx + Ny*Ly + NzLz);
+                if (NdotL < 0) {
+                    shade = 0;
+                } else {
+                    shade = NdotL / sqrt(Nx*Nx + Ny*Ny + Nz2);
+                }
+            }
+	    /* Do something with the shading result. */
+	    if (bgPtr != NULL) {
+		dp->Red = (*bgp->Red * shade) >> 8;
+		dp->Green = (*bgp->Green * shade) >> 8;
+		dp->Blue = (*bgp->Blue * shade) >> 8;
+                dp->Alpha = 0xFF;
+	    } else {
+		dp->Red = dp->Green = dp->Blue = shade;
+                dp->Alpha = 0xFF;
+	    }
+	}
+        srcRowPtr  += srcPtr->pixelsPerRow;
+        destRowPtr += destPtr->pixelsPerRow;
+        bgRowPtr += bgPtr->pixelsPerRow;
+    }
+}
+#endif
