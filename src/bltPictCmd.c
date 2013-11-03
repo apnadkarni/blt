@@ -162,7 +162,6 @@ static Blt_HashTable procTable;
  */
 #define DEF_ANGLE		"0.0"
 #define DEF_MAXPECT		"0"
-#define DEF_AUTOSCALE		"0"
 #define DEF_CACHE		"0"
 #define DEF_DITHER		"0"
 #define DEF_DATA		(char *)NULL
@@ -193,9 +192,6 @@ static Blt_HashTable procTable;
 					 * discarded. */
 #define DITHER			(1<<10) /* Dither the picture before
 					 * drawing. */
-#define AUTOSCALE		(1<<11) /* Automatically scale the picture
-					 * from a saved original picture when
-					 * the size of the picture changes. */
 #define SHARPEN			(1<<12) /* Sharpen the image. */
 
 /*
@@ -243,7 +239,6 @@ typedef struct _Blt_PictureImage {
 					 * These dimensions may or may not be
 					 * used, depending upon the -maxpect
 					 * option. */
-    Blt_Picture original;
     Blt_ResampleFilter filter;		/* 1D Filter to use when the picture
 					 * is resampled (resized). The same
 					 * filter is applied both horizontally
@@ -383,9 +378,6 @@ static Blt_CustomOption windowOption =
 
 static Blt_ConfigSpec configSpecs[] =
 {
-    {BLT_CONFIG_BITMASK, "-autoscale", (char *)NULL, (char *)NULL, 
-	DEF_AUTOSCALE, Blt_Offset(PictImage, flags), 
-	BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)AUTOSCALE},
     {BLT_CONFIG_CUSTOM, "-data", (char *)NULL, (char *)NULL, DEF_DATA, 
 	Blt_Offset(PictImage, picture), 0, &dataOption},
     {BLT_CONFIG_BITMASK, "-dither", (char *)NULL, (char *)NULL, 
@@ -1882,15 +1874,6 @@ ConfigureImage(Tcl_Interp *interp, PictImage *imgPtr, int objc,
 	h = (imgPtr->reqHeight == 0) ? 16 : imgPtr->reqHeight;
 	ReplacePicture(imgPtr, Blt_CreatePicture(w, h));
     }
-    if (Blt_ConfigModified(configSpecs, "-autoscale", (char *)NULL)) {
-	if (imgPtr->original != NULL) {
-	    Blt_FreePicture(imgPtr->original);
-	    imgPtr->original = NULL;
-	}
-	if ((imgPtr->flags & AUTOSCALE) && (imgPtr->picture != NULL)) {
-	    imgPtr->original = Blt_ClonePicture(imgPtr->picture);
-	}
-    }
     if (imgPtr->angle != 0.0) {
 	Blt_Picture rotate;
 
@@ -1915,23 +1898,7 @@ ConfigureImage(Tcl_Interp *interp, PictImage *imgPtr, int objc,
     }	    
     if ((Blt_PictureWidth(imgPtr->picture) != w) || 
 	(Blt_PictureHeight(imgPtr->picture) != h)) {
-	if (imgPtr->flags & AUTOSCALE) { 
-	    Blt_Picture resize;
-
-	    /* Scale the picture */
-	    if (imgPtr->filter == NULL) {
-		resize = Blt_ScalePicture(imgPtr->original, 0, 0,
-			Blt_PictureWidth(imgPtr->original), 
-			Blt_PictureHeight(imgPtr->original), w, h);
-	    } else {
-		resize = Blt_CreatePicture(w, h);
-		Blt_ResamplePicture(resize, imgPtr->original, imgPtr->filter, 
-			imgPtr->filter);
-	    }	
-	    ReplacePicture(imgPtr, resize);
-	} else {
-	    Blt_ResizePicture(imgPtr->picture, w, h);
-	}
+        Blt_ResizePicture(imgPtr->picture, w, h);
     }
     if (imgPtr->flags & SHARPEN) {
 	Blt_SharpenPicture(imgPtr->picture, imgPtr->picture);
