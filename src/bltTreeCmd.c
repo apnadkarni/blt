@@ -3350,6 +3350,7 @@ FindOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     }
     Blt_FreeSwitches(findSwitches, (char *)&switches, 0);
     if (result == TCL_ERROR) {
+        Tcl_DecrRefCount(switches.listObjPtr);
 	return TCL_ERROR;
     }
     Tcl_SetObjResult(interp, switches.listObjPtr);
@@ -3616,7 +3617,8 @@ TreeReadDirectory(Tcl_Interp *interp, TreeCmd *cmdPtr, Tcl_Obj *dirObjPtr,
 	    /* Create a node for the subdirectory and recursively call this
 	       routine. */
 	    Tcl_Obj *subDirObjPtr;
-	    
+            int result;
+
 	    child = Blt_Tree_CreateNode(cmdPtr->tree, parent, label, -1);
 	    FillEntryData(interp, cmdPtr->tree, child, &stat, switchesPtr);
 	    
@@ -3624,13 +3626,14 @@ TreeReadDirectory(Tcl_Interp *interp, TreeCmd *cmdPtr, Tcl_Obj *dirObjPtr,
 	    Tcl_IncrRefCount(subDirObjPtr);
 	    /* Now recurse into subdirectories. */
 	    Tcl_AppendStringsToObj(subDirObjPtr, "/", label, (char *)NULL);
-	    if (TreeReadDirectory(interp, cmdPtr, subDirObjPtr, child, 
-				  switchesPtr) != TCL_OK) {
+	    result = TreeReadDirectory(interp, cmdPtr, subDirObjPtr, child, 
+                                       switchesPtr);
+	    Tcl_DecrRefCount(subDirObjPtr);
+            if (result != TCL_OK) {
 		Tcl_DecrRefCount(objPtr);
 		Tcl_DecrRefCount(listObjPtr);
 		return TCL_ERROR;
 	    }
-	    Tcl_DecrRefCount(subDirObjPtr);
 	} else {
 	    /* Match files or subdirectories against patterns. */
 	    if (numPatterns > 0) {
@@ -3644,6 +3647,7 @@ TreeReadDirectory(Tcl_Interp *interp, TreeCmd *cmdPtr, Tcl_Obj *dirObjPtr,
 			goto found;
 		    }
 		}
+                Tcl_DecrRefCount(objPtr);
 		continue;
 	    }
 	    /* Match against type. */
