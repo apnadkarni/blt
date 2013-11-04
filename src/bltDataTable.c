@@ -1,5 +1,4 @@
 /* -*- mode: c; c-basic-offset: 4; indent-tabs-mode: nil -*- */
-
 /*
  *
  * bltDataTable.c --
@@ -44,7 +43,6 @@
 #include <bltNsUtil.h>
 #include <bltArrayObj.h>
 #include <bltDataTable.h>
-
 
 /*
  * Row and Column Information Structures
@@ -3893,14 +3891,14 @@ blt_table_delete_trace(Table *tablePtr, Trace *tracePtr)
  *
  * blt_table_create_trace --
  *
- *	Creates a trace for one or more rows/columns in the table based upon
- *	the given criteria.  Whenever a matching action occurs in the table
- *	object, the specified procedure is executed.  
+ *	Creates a trace for one or more rows/columns in the table based
+ *	upon the given criteria.  Whenever a matching action occurs in the
+ *	table object, the specified procedure is executed.
  *
- *	The trace may be put into 1 or 2 callback lists: one for read traces
- *	and another for write, create, and/or unset traces.  This is done
- *	to improve performance on reads.  We only examine the list of 
- *	read traces, which in most cases will me empty.  
+ *	The trace may be put into 1 or 2 callback lists: one for read
+ *	traces and another for write, create, and/or unset traces.  This is
+ *	done to improve performance on reads.  We only examine the list of
+ *	read traces, which in most cases will me empty.
  *
  * Results:
  *	Returns a token for the trace.
@@ -3917,12 +3915,14 @@ blt_table_create_trace(
     Column *colPtr,			/* Cell in table. */
     const char *rowTag, 
     const char *colTag,
-    unsigned int flags,			/* Bit mask indicating what actions to
-					 * trace. */
-    BLT_TABLE_TRACE_PROC *proc,	        /* Callback procedure for the trace. */
+    unsigned int flags,			/* Bit mask indicating what actions
+					 * to trace. */
+    BLT_TABLE_TRACE_PROC *proc,	        /* Callback procedure for the
+                                         * trace. */
     BLT_TABLE_TRACE_DELETE_PROC *deleteProc, 
-    ClientData clientData)		/* One-word of data passed along when
-					 * the callback is executed. */
+    ClientData clientData)		/* One-word of data passed along
+					 * when the callback is
+					 * executed. */
 {
     Blt_HashEntry *hPtr;
     Trace *tracePtr;
@@ -3962,12 +3962,14 @@ void
 blt_table_trace_column(
     Table *tablePtr,			/* Table to be traced. */
     Column *colPtr,			/* Cell in table. */
-    unsigned int flags,			/* Bit mask indicating what actions to
-					 * trace. */
-    BLT_TABLE_TRACE_PROC *proc,	       /* Callback procedure for the trace. */
+    unsigned int flags,			/* Bit mask indicating what actions
+					 * to trace. */
+    BLT_TABLE_TRACE_PROC *proc,	       /* Callback procedure for the
+                                        * trace. */
     BLT_TABLE_TRACE_DELETE_PROC *deleteProc, 
-    ClientData clientData)		/* One-word of data passed along when
-					 * the callback is executed. */
+    ClientData clientData)		/* One-word of data passed along
+					 * when the callback is
+					 * executed. */
 {
     blt_table_create_trace(tablePtr, NULL, colPtr, NULL, NULL, flags,
 			   proc, deleteProc, clientData);
@@ -3977,12 +3979,14 @@ BLT_TABLE_TRACE
 blt_table_create_column_trace(
     Table *tablePtr,			/* Table to be traced. */
     Column *colPtr,			/* Cell in table. */
-    unsigned int flags,			/* Bit mask indicating what actions to
-					 * trace. */
-    BLT_TABLE_TRACE_PROC *proc,	       /* Callback procedure for the trace. */
+    unsigned int flags,			/* Bit mask indicating what actions
+					 * to trace. */
+    BLT_TABLE_TRACE_PROC *proc,	        /* Callback procedure for the
+                                         * trace. */
     BLT_TABLE_TRACE_DELETE_PROC *deleteProc, 
-    ClientData clientData)		/* One-word of data passed along when
-					 * the callback is executed. */
+    ClientData clientData)		/* One-word of data passed along
+					 * when the callback is
+					 * executed. */
 {
     return blt_table_create_trace(tablePtr, NULL, colPtr, NULL, NULL, flags,
 		proc, deleteProc, clientData);
@@ -3992,12 +3996,14 @@ BLT_TABLE_TRACE
 blt_table_create_column_tag_trace(
     Table *tablePtr,			/* Table to be traced. */
     const char *colTag,			/* Cell in table. */
-    unsigned int flags,			/* Bit mask indicating what actions to
-					 * trace. */
-    BLT_TABLE_TRACE_PROC *proc,	       /* Callback procedure for the trace. */
+    unsigned int flags,			/* Bit mask indicating what actions
+					 * to trace. */
+    BLT_TABLE_TRACE_PROC *proc,	        /* Callback procedure for the
+                                         * trace. */
     BLT_TABLE_TRACE_DELETE_PROC *deleteProc, 
-    ClientData clientData)		/* One-word of data passed along when
-					 * the callback is executed. */
+    ClientData clientData)		/* One-word of data passed along
+					 * when the callback is
+					 * executed. */
 {
     return blt_table_create_trace(tablePtr, NULL, NULL, NULL, colTag, flags,
 		proc, deleteProc, clientData);

@@ -2309,6 +2309,35 @@ GetColumnContainer(TableView *viewPtr, BLT_TABLE_COLUMN col)
     return Blt_GetHashValue(hPtr);
 }
 
+static INLINE long
+GetLastVisibleColumnIndex(TableView *viewPtr)
+{
+    long index;
+    index = -1;
+    if (viewPtr->numVisibleColumns > 0) {
+        Column *colPtr;
+
+        colPtr = viewPtr->visibleColumns[viewPtr->numVisibleColumns - 1];
+        index = colPtr->index;
+    }
+    return index;
+}
+
+static INLINE long
+GetLastVisibleRowIndex(TableView *viewPtr)
+{
+    long index;
+
+    index = -1;
+    if (viewPtr->numVisibleRows > 0) {
+        Row *rowPtr;
+
+        rowPtr = viewPtr->visibleRows[viewPtr->numVisibleRows - 1];
+        index = rowPtr->index;
+    }
+    return index;
+}
+
 /*
  *---------------------------------------------------------------------------
  *
@@ -2328,12 +2357,16 @@ RowTraceProc(ClientData clientData, BLT_TABLE_TRACE_EVENT *eventPtr)
     if (eventPtr->mask & (TABLE_TRACE_WRITES | TABLE_TRACE_UNSETS)) {
 	Row *rowPtr;
 
-#ifdef notdef
-	if (eventPtr->mask & TABLE_TRACE_CREATES) {
-	    return TCL_OK;
-	}
-#endif
 	rowPtr = GetRowContainer(viewPtr, eventPtr->row);
+#ifndef notdef
+        /* Check if the event's row or column occur outside of the range of
+         * visible cells. */
+	colPtr = GetColumnContainer(viewPtr, eventPtr->column);
+        if ((rowPtr->index > GetLastVisibleRowIndex(viewPtr)) ||
+            (colPtr->index > GetLastVisibleColumnIndex(viewPtr))) {
+            return TCL_OK;
+        }
+#endif
 	if (rowPtr != NULL) {
 	    rowPtr->flags |= GEOMETRY | REDRAW;
 	}
