@@ -2058,10 +2058,10 @@ CreateTreeCmd(ClientData clientData, Tcl_Interp *interp, const char *name)
 	Tcl_SetStringObj(Tcl_GetObjResult(interp), (char *)name, -1);
 	Tcl_DStringFree(&ds);
 	/* 
-	 * Since we store the TCL command and notifier information
-	 * on the client side, we need to also cleanup when we see a 
-	 * delete event.  So just register a callback for all tree events 
-	 * to catch anything we need to know about.
+	 * Since we store the TCL command and notifier information on the
+	 * client side, we need to also cleanup when we see a delete event.
+	 * So just register a callback for all tree events to catch
+	 * anything we need to know about.
 	 */
 	Blt_Tree_CreateEventHandler(cmdPtr->tree, TREE_NOTIFY_ALL, 
 	     TreeEventProc, cmdPtr);

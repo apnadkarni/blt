@@ -279,19 +279,19 @@ typedef struct _Blt_PictureImage {
  *
  *	Represents the visual context of a cache entry. type.  It contains
  *	information specific to the visual context (combination of display,
- *	visual, depth, colormap, and gamma).  It is used as a hash table key
- *	for cache entries of picture images.  The same picture may be
+ *	visual, depth, colormap, and gamma).  It is used as a hash table
+ *	key for cache entries of picture images.  The same picture may be
  *	displayed in more than one visual context.
  */
 typedef struct {
-    Display *display;			/* Display where the picture will be
-					 * drawn. Used to free colors
+    Display *display;			/* Display where the picture will
+					 * be drawn. Used to free colors
 					 * allocated by the painter. */
     Visual *visualPtr;			/* Visual information of window
 					 * displaying the image. */
     Colormap colormap;			/* Colormap used.  This may be the
-					 * default colormap, or an allocated
-					 * private map. */
+					 * default colormap, or an
+					 * allocated private map. */
     int depth;				/* Depth of the display. */
     unsigned int index;			/* Index of the picture in the
 					 * list. */
@@ -302,38 +302,39 @@ typedef struct {
 /*
  * PictInstances -- 
  *
- *	PictInstances (image instances in the Tk parlance) represent a picture
- *	image in some specific combination of visual, display, colormap,
- *	depth, and output gamma.  Cache entries are stored by each picture
- *	image.
+ *	PictInstances (image instances in the Tk parlance) represent a
+ *	picture image in some specific combination of visual, display,
+ *	colormap, depth, and output gamma.  Cache entries are stored by
+ *	each picture image.
  *
  *	The purpose is to 
  *		1) allocate and hold the painter-specific to the isual and 
  *		2) provide caching of XImage's (drawn pictures) into pixmaps.  
  *
- *	The caching feature is enabled only for 100% opaque pictures.  If the
- *	picture must be blended with the current background, there is no
- *	guarantee (between redraws) that the background will not have changed.
- *	This feature is widget specific. There's no simple way to detect when
- *	the pixmap must be redrawn. In general, we should rely on the widget
- *	itself to perform its own caching of complex scenes.
+ *	The caching feature is enabled only for 100% opaque pictures.  If
+ *	the picture must be blended with the current background, there is
+ *	no guarantee (between redraws) that the background will not have
+ *	changed.  This feature is widget specific. There's no simple way to
+ *	detect when the pixmap must be redrawn. In general, we should rely
+ *	on the widget itself to perform its own caching of complex scenes.
  */
 typedef struct {
     Blt_PictureImage image;		/* The picture image represented by
 					 * this entry. */
     Blt_Painter painter;		/* The painter allocated for this
-					 * particular combination of visual,
-					 * display, colormap, depth, and
-					 * gamma. */
-    Display *display;			/* Used to free the pixmap below when
-					 * the entry is destroyed. */
+					 * particular combination of
+					 * visual, display, colormap,
+					 * depth, and gamma. */
+    Display *display;			/* Used to free the pixmap below
+					 * when the entry is destroyed. */
     Blt_HashEntry *hashPtr;		/* These two fields allow the cache */
     Blt_HashTable *tablePtr;		/* entry to be deleted from the
 					 * picture image's table of
 					 * entries. */
-    Pixmap pixmap;			/* If non-NULL, is a cached pixmap of
-					 * the picture. It's recreated each
-					 * time the * picture changes. */
+    Pixmap pixmap;			/* If non-NULL, is a cached pixmap
+					 * of the picture. It's recreated
+					 * each time the * picture
+					 * changes. */
     int refCount;			/* This entry may be shared by all
 					 * clients displaying this picture
 					 * image with the same painter. */
