@@ -3714,7 +3714,12 @@ ImageBoxStyleGeometryProc(Cell *cellPtr, CellStyle *cellStylePtr)
 	objPtr = blt_table_get_obj(viewPtr->table, rowPtr->row, colPtr->column);
     }
     if (objPtr != NULL) {
-	if (ParseImageFormat(interp, viewPtr, cellPtr, objPtr) != TCL_OK) {
+        int result;
+
+        Tcl_IncrRefCount(objPtr);
+	result = ParseImageFormat(interp, viewPtr, cellPtr, objPtr);
+        Tcl_DecrRefCount(objPtr);
+        if (result != TCL_OK) {
 	    Tcl_BackgroundError(interp);
 	    return;
 	}

@@ -261,20 +261,22 @@ typedef struct {
     Display *display;			/* Display of this background.*/
     unsigned int flags;			/* See definitions below. */
     Blt_HashEntry *hashPtr;		/* Link to original client. */
-    Blt_Chain chain;			/* List of background tokens.  Used to
-					 * register callbacks for each client
-					 * of the background. */
-    Blt_ChainLink link;			/* Background token that is associated
-					 * with the background creation
-					 * "background create...". */
+    Blt_Chain chain;			/* List of background tokens.  Used
+					 * to register callbacks for each
+					 * client of the background. */
+    Blt_ChainLink link;			/* Background token that is
+					 * associated with the background
+					 * creation "background
+					 * create...". */
     Tk_3DBorder border;			/* 3D Border.  May be used for all
 					 * background types. */
-    Tk_Window refWindow;		/* Refer to coordinates in this window
-					 * when determining the tile/gradient
-					 * origin. */
-    ReferenceType reference;		/* "self", "toplevel", or "window". */
-    Blt_HashTable pictTable;		/* Table of pictures cached for each
-					 * background reference. */
+    Tk_Window refWindow;		/* Refer to coordinates in this
+					 * window when determining the
+					 * tile/gradient origin. */
+    ReferenceType reference;		/* "self", "toplevel", or
+                                           "window". */
+    Blt_HashTable pictTable;		/* Table of pictures cached for
+					 * each background reference. */
     int xOrigin, yOrigin;
     Blt_Paintbrush brush;		/* Paint brush representing the
 					 * background color. */
@@ -297,20 +299,22 @@ typedef struct {
     Display *display;			/* Display of this background. */
     unsigned int flags;			/* See definitions below. */
     Blt_HashEntry *hashPtr;		/* Link to original client. */
-    Blt_Chain chain;			/* List of background tokens.  Used to
-					 * register callbacks for each client
-					 * of the background. */
-    Blt_ChainLink link;			/* Background token that is associated
-					 * with the background creation
-					 * "background create...". */
+    Blt_Chain chain;			/* List of background tokens.  Used
+					 * to register callbacks for each
+					 * client of the background. */
+    Blt_ChainLink link;			/* Background token that is
+					 * associated with the background
+					 * creation "background
+					 * create...". */
     Tk_3DBorder border;			/* 3D Border.  May be used for all
 					 * background types. */
-    Tk_Window refWindow;		/* Refer to coordinates in this window
-					 * when determining the tile/gradient
-					 * origin. */
-    ReferenceType reference;		/* "self", "toplevel", or "window". */
-    Blt_HashTable pictTable;		/* Table of pictures cached for each
-					 * background reference. */
+    Tk_Window refWindow;		/* Refer to coordinates in this
+					 * window when determining the
+					 * tile/gradient origin. */
+    ReferenceType reference;		/* "self", "toplevel", or
+                                           "window". */
+    Blt_HashTable pictTable;		/* Table of pictures cached for
+					 * each background reference. */
     int xOrigin, yOrigin;
     Blt_Paintbrush brush;		/* Paint brush representing the
 					 * background color. */
@@ -1884,7 +1888,8 @@ Intersect(a1Ptr, a2Ptr, b1Ptr, b2Ptr, iPtr)
  *
  * Draw3DPolygon --
  *
- *	Draw a border with 3-D appearance around the edge of a given polygon.
+ *	Draw a border with 3-D appearance around the edge of a given
+ *	polygon.
  *
  * Results:
  *	None.
@@ -1892,8 +1897,8 @@ Intersect(a1Ptr, a2Ptr, b1Ptr, b2Ptr, iPtr)
  * Side effects:
  *	Information is drawn in "drawable" in the form of a 3-D border
  *	borderWidth units width wide on the left of the trajectory given by
- *	pointPtr and n (or -borderWidth units wide on the right side,
- *	if borderWidth is negative).
+ *	pointPtr and n (or -borderWidth units wide on the right side, if
+ *	borderWidth is negative).
  *
  *--------------------------------------------------------------
  */
@@ -1905,17 +1910,19 @@ Draw3DPolygon(
     Drawable drawable,			/* X window or pixmap in which to
 					 * draw. */
     Tk_3DBorder border,			/* Token for border to draw. */
-    XPoint *points,			/* Array of points describing polygon.
-					 * All points must be absolute
-					 * (CoordModeOrigin). */
+    XPoint *points,			/* Array of points describing
+					 * polygon.  All points must be
+					 * absolute (CoordModeOrigin). */
     int n,				/* Number of points at *points. */
     int borderWidth,			/* Width of border, measured in
-					 * pixels to the left of the polygon's
-					 * trajectory.   May be negative. */
+					 * pixels to the left of the
+					 * polygon's trajectory.  May be
+					 * negative. */
     int leftRelief)			/* TK_RELIEF_RAISED or
-					 * TK_RELIEF_SUNKEN: indicates how 
-					 * stuff to left of trajectory looks 
-					 * relative to stuff on right. */
+					 * TK_RELIEF_SUNKEN: indicates how
+					 * stuff to left of trajectory
+					 * looks relative to stuff on
+					 * right. */
 {
     XPoint poly[4], b1, b2, newB1, newB2;
     XPoint perp, c, shift1, shift2;	/* Used for handling parallel lines. */
@@ -1975,12 +1982,12 @@ Draw3DPolygon(
      */
 
     /*
-     * The above situation doesn't first come into existence until two points
-     * have been processed; the first two points are used to "prime the pump",
-     * so some parts of the processing are ommitted for these points.  The
-     * variable "pointsSeen" keeps track of the priming process; it has to be
-     * separate from i in order to be able to ignore duplicate points in the
-     * polygon.
+     * The above situation doesn't first come into existence until two
+     * points have been processed; the first two points are used to "prime
+     * the pump", so some parts of the processing are ommitted for these
+     * points.  The variable "pointsSeen" keeps track of the priming
+     * process; it has to be separate from i in order to be able to ignore
+     * duplicate points in the polygon.
      */
     pointsSeen = 0;
     for (i = -2, p = points + (n-2), q = p+1; i < n; i++, p = q, q++) {
@@ -2017,10 +2024,10 @@ Draw3DPolygon(
 	     *              --*--------*----c
 	     *              newB1    newB2
 	     *
-	     * Instead of using x and *p for poly[2] and poly[3], as
-	     * in the original diagram, use a and b as above.  Then instead
-	     * of using x and *p for the new poly[0] and poly[1], use
-	     * b and c as above.
+	     * Instead of using x and *p for poly[2] and poly[3], as in the
+	     * original diagram, use a and b as above.  Then instead of
+	     * using x and *p for the new poly[0] and poly[1], use b and c
+	     * as above.
 	     *
 	     * Do the computation in three stages:
 	     * 1. Compute a point "perp" such that the line p-perp
@@ -3252,13 +3259,13 @@ Blt_BackgroundCmdInitProc(Tcl_Interp *interp)
  *
  * Blt_GetBg
  *
- *	Creates a new background from the given description.  The background
- *	structure returned is a token for the client to use the background.
- *	If the background isn't a solid background (i.e. a solid color that
- *	Tk_Get3DBorder will accept) then the background must already exist.
- *	Solid backgrounds are the exception to this rule.  This lets
- *	"-background #ffffff" work without already having allocated a
- *	background "#ffffff".
+ *	Creates a new background from the given description.  The
+ *	background structure returned is a token for the client to use the
+ *	background.  If the background isn't a solid background (i.e. a
+ *	solid color that Tk_Get3DBorder will accept) then the background
+ *	must already exist.  Solid backgrounds are the exception to this
+ *	rule.  This lets "-background #ffffff" work without already having
+ *	allocated a background "#ffffff".
  *
  * Results:
  *	Returns a background token.
@@ -3300,7 +3307,10 @@ Blt_GetBg(Tcl_Interp *interp, Tk_Window tkwin, const char *name)
 	    Tk_Free3DBorder(border);
 	    goto error;			/* Can't allocate new background. */
 	}
-	corePtr->border = border;
+        if (corePtr->border != NULL) {
+	    Tk_Free3DBorder(corePtr->border);
+        }
+        corePtr->border = border;
 	corePtr->hashPtr = hPtr;
 	corePtr->name = Blt_GetHashKey(&dataPtr->instTable, hPtr);
 	corePtr->link = NULL;

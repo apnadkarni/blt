@@ -3615,7 +3615,7 @@ TreeReadDirectory(Tcl_Interp *interp, TreeCmd *cmdPtr, Tcl_Obj *dirObjPtr,
 
 	if ((switchesPtr->flags & DIR_RECURSE) && (S_ISDIR(stat.st_mode))) {
 	    /* Create a node for the subdirectory and recursively call this
-	       routine. */
+             * routine. */
 	    Tcl_Obj *subDirObjPtr;
             int result;
 
@@ -3627,7 +3627,7 @@ TreeReadDirectory(Tcl_Interp *interp, TreeCmd *cmdPtr, Tcl_Obj *dirObjPtr,
 	    /* Now recurse into subdirectories. */
 	    Tcl_AppendStringsToObj(subDirObjPtr, "/", label, (char *)NULL);
 	    result = TreeReadDirectory(interp, cmdPtr, subDirObjPtr, child, 
-                                       switchesPtr);
+                switchesPtr);
 	    Tcl_DecrRefCount(subDirObjPtr);
             if (result != TCL_OK) {
 		Tcl_DecrRefCount(objPtr);
@@ -3676,6 +3676,7 @@ DirOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 {
     Blt_TreeNode parent;
     DirSwitches switches;
+    int result;
 
     if (GetNodeFromObj(interp, cmdPtr->tree, objv[2], &parent) != TCL_OK) {
 	return TCL_ERROR;
@@ -3688,7 +3689,9 @@ DirOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     if (switches.mask == 0) {
 	switches.mask = DIR_DEFAULT;
     }
-    return TreeReadDirectory(interp, cmdPtr, objv[3], parent, &switches);
+    result = TreeReadDirectory(interp, cmdPtr, objv[3], parent, &switches);
+    Blt_FreeSwitches(dirSwitches, (char *)&switches, 0);
+    return result;
 }
 
 
@@ -3714,7 +3717,7 @@ ImportOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	Blt_HashSearch iter;
 
 	for (hPtr = Blt_FirstHashEntry(&dataPtr->fmtTable, &iter); 
-	     hPtr != NULL; hPtr = Blt_NextHashEntry(&iter)) {
+             hPtr != NULL; hPtr = Blt_NextHashEntry(&iter)) {
 	    fmtPtr = Blt_GetHashValue(hPtr);
 	    if (fmtPtr->importProc != NULL) {
 		Tcl_AppendElement(interp, fmtPtr->name);

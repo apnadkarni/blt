@@ -1827,8 +1827,8 @@ FreeInstanceProc(
 static void
 DeleteProc(
     ClientData clientData)		/* Pointer to picture image master
-					 * structure for image.  Must not have
-					 * any more instances. */
+					 * structure for image.  Must not
+					 * have any more instances. */
 {
     Blt_HashEntry *hPtr;
     Blt_HashSearch iter;
@@ -1852,6 +1852,9 @@ DeleteProc(
     imgPtr->imgToken = NULL;
     if (imgPtr->cmdToken != NULL) {
 	Tcl_DeleteCommandFromToken(imgPtr->interp, imgPtr->cmdToken);
+    }
+    if (imgPtr->name != NULL) {
+	Blt_Free(imgPtr->name);
     }
     Blt_DeleteHashTable(&imgPtr->cacheTable);
     Blt_FreeOptions(configSpecs, (char *)imgPtr, imgPtr->display, 0);
@@ -3280,6 +3283,7 @@ ImportOp(
     imgPtr->flags &= ~IMPORTED_MASK;
     if (imgPtr->name != NULL) {
 	Blt_Free(imgPtr->name);
+        imgPtr->name = NULL;
     }
     if (fileName == NULL) {
 	imgPtr->name = NULL;

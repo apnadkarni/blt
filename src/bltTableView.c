@@ -7,13 +7,13 @@
  *
  *	Copyright 1998-2004 George A Howlett.
  *
- *	Permission is hereby granted, free of charge, to any person obtaining
- *	a copy of this software and associated documentation files (the
- *	"Software"), to deal in the Software without restriction, including
- *	without limitation the rights to use, copy, modify, merge, publish,
- *	distribute, sublicense, and/or sell copies of the Software, and to
- *	permit persons to whom the Software is furnished to do so, subject to
- *	the following conditions:
+ *	Permission is hereby granted, free of charge, to any person
+ *	obtaining a copy of this software and associated documentation
+ *	files (the "Software"), to deal in the Software without
+ *	restriction, including without limitation the rights to use, copy,
+ *	modify, merge, publish, distribute, sublicense, and/or sell copies
+ *	of the Software, and to permit persons to whom the Software is
+ *	furnished to do so, subject to the following conditions:
  *
  *	The above copyright notice and this permission notice shall be
  *	included in all copies or substantial portions of the Software.
@@ -21,10 +21,11 @@
  *	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  *	EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  *	MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- *	NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
- *	LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
- *	OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
- *	WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *	NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+ *	BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ *	ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ *	CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ *	SOFTWARE.
  */
 
 /* 
@@ -703,9 +704,9 @@ static void DeleteRows(TableView *viewPtr, BLT_TABLE_NOTIFY_EVENT *eventPtr);
  *
  * EventuallyRedraw --
  *
- *	Queues a request to redraw the widget at the next idle point.
- *	A new idle event procedure is queued only if the there's isn't
- *	one already queued and updates are turned on.
+ *	Queues a request to redraw the widget at the next idle point.  A
+ *	new idle event procedure is queued only if the there's isn't one
+ *	already queued and updates are turned on.
  *
  *	The DONT_UPDATE flag lets the user to turn off redrawing the
  *	tableview while changes are happening to the table itself.
@@ -741,9 +742,9 @@ Blt_TableView_EventuallyRedraw(TableView *viewPtr)
  *
  * PossiblyRedraw --
  *
- *	Queues a request to redraw the widget at the next idle point.
- *	A new idle event procedure is queued only if the there's isn't
- *	one already queued and updates are turned on.
+ *	Queues a request to redraw the widget at the next idle point.  A
+ *	new idle event procedure is queued only if the there's isn't one
+ *	already queued and updates are turned on.
  *
  *	The DONT_UPDATE flag lets the user to turn off redrawing the
  *	tableview while changes are happening to the table itself.
@@ -772,9 +773,10 @@ PossiblyRedraw(TableView *viewPtr)
  *
  * SelectCommandProc --
  *
- *      Invoked at the next idle point whenever the current selection changes.
- *      Executes some application-specific code in the -selectcommand option.
- *      This provides a way for applications to handle selection changes.
+ *      Invoked at the next idle point whenever the current selection
+ *      changes.  Executes some application-specific code in the
+ *      -selectcommand option.  This provides a way for applications to
+ *      handle selection changes.
  *
  * Results:
  *      None.
@@ -1024,8 +1026,8 @@ SortTableView(TableView *viewPtr)
 	    return;
 	}
 	/* 
-	 * The view is already sorted but in the wrong direction.  Reverse the
-	 * entries in the array.
+	 * The view is already sorted but in the wrong direction.  Reverse
+	 * the entries in the array.
 	 */
  	for (first = 0, last = viewPtr->numRows - 1; last > first; 
 	     first++, last--) {
@@ -1125,8 +1127,8 @@ GetUid(TableView *viewPtr, const char *string)
  * FreeUid --
  *
  *	Releases the uid.  Uids are reference counted, so only when the
- *	reference count is zero (i.e. no one else is using the string) is the
- *	entry removed from the hash table.
+ *	reference count is zero (i.e. no one else is using the string) is
+ *	the entry removed from the hash table.
  *
  * Results:
  *	None.
@@ -1384,13 +1386,12 @@ ColumnTitleToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  *
  * ObjToSortColumnProc --
  *
- *	Convert the string reprsenting a column, to its numeric
- *	form.
+ *	Convert the string reprsenting a column, to its numeric form.
  *
  * Results:
  *	If the string is successfully converted, TCL_OK is returned.
- *	Otherwise, TCL_ERROR is returned and an error message is left
- *	in interpreter's result field.
+ *	Otherwise, TCL_ERROR is returned and an error message is left in
+ *	interpreter's result field.
  *
  *---------------------------------------------------------------------------
  */
@@ -1452,8 +1453,7 @@ FreeSortOrderProc(ClientData clientData, Display *display, char *widgRec,
  *
  * ObjToSortOrderProc --
  *
- *	Convert the string reprsenting a column, to its numeric
- *	form.
+ *	Convert the string reprsenting a column, to its numeric form.
  *
  * Results:
  *	If the string is successfully converted, TCL_OK is returned.
@@ -1828,8 +1828,7 @@ ScrollModeToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  *
  * ObjToSelectModeProc --
  *
- *	Convert the string reprsenting a scroll mode, to its numeric
- *	form.
+ *	Convert the string reprsenting a scroll mode, to its numeric form.
  *
  * Results:
  *	If the string is successfully converted, TCL_OK is returned.
@@ -2012,9 +2011,9 @@ ObjToStyleProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 	if (GetStyle(interp, viewPtr, objPtr, &stylePtr) != TCL_OK) {
 	    return TCL_ERROR;
 	}
-	stylePtr->refCount++;		/* Important: Increment the reference
-					 * count to indicate that we are using
-					 * this style. */
+	stylePtr->refCount++;		/* Increment the reference count to
+					 * indicate that we are using this
+					 * style. */
     }
     viewPtr->flags |= (LAYOUT_PENDING | GEOMETRY);
     if (*stylePtrPtr != NULL) {
@@ -2710,7 +2709,8 @@ NearestColumn(TableView *viewPtr, int x, int selectOne)
     }
     /*
      * Since the entry positions were previously computed in world
-     * coordinates, convert x-coordinate from screen to world coordinates too.
+     * coordinates, convert x-coordinate from screen to world coordinates
+     * too.
      */
     x = WORLDX(viewPtr, x);
     lastPtr = NULL;			/* Suppress compiler warning. */
@@ -2937,7 +2937,8 @@ NearestRow(TableView *viewPtr, int y, int selectOne)
     lastPtr = NULL;			/* Suppress compiler warning. */
     /*
      * Since the entry positions were previously computed in world
-     * coordinates, convert Y-coordinate from screen to world coordinates too.
+     * coordinates, convert Y-coordinate from screen to world coordinates
+     * too.
      */
     y = WORLDY(viewPtr, y);
     /* FIXME: This can be a binary search. */
@@ -4154,7 +4155,7 @@ ResetTableView(TableView *viewPtr)
 	Blt_Free(viewPtr->visibleRows);
 	viewPtr->visibleRows = NULL;
     }
-    if (viewPtr->columns != NULL) {
+    if (viewPtr->visibleColumns != NULL) {
 	Blt_Free(viewPtr->visibleColumns);
 	viewPtr->visibleColumns = NULL;
     }
@@ -6325,7 +6326,9 @@ ColumnInsertOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	       (viewPtr->numColumns - insertPos) * sizeof(Column *));
     }	
     viewPtr->numColumns++;
-    Blt_Free(viewPtr->columns);
+    if (viewPtr->columns != NULL) {
+        Blt_Free(viewPtr->columns);
+    }
     viewPtr->columns = columns;
     key.colPtr = colPtr;
     for (i = 0; i < viewPtr->numRows; i++) {
@@ -8319,7 +8322,9 @@ RowInsertOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	       (viewPtr->numRows - insertPos) * sizeof(Row *));
     }	
     EventuallyRedraw(viewPtr);
-    Blt_Free(viewPtr->rows);
+    if (viewPtr->rows != NULL) {
+        Blt_Free(viewPtr->rows);
+    }
     viewPtr->rows = rows;
     key.rowPtr = rowPtr;
     for (i = 0; i < viewPtr->numColumns; i++) {
@@ -10648,13 +10653,13 @@ RebuildTableView(TableView *viewPtr)
     if (viewPtr->columns != NULL) {
 	Blt_Free(viewPtr->columns);
     }
+    viewPtr->columns = columns;
+    viewPtr->numColumns = numColumns;
     if (viewPtr->rows != NULL) {
 	Blt_Free(viewPtr->rows);
     }
-    viewPtr->rows = rows;
     viewPtr->numRows = numRows;
-    viewPtr->columns = columns;
-    viewPtr->numColumns = numColumns;
+    viewPtr->rows = rows;
     /* Step 5. Create cells */
     for (i = 0; i < viewPtr->numRows; i++) {
 	CellKey key;
@@ -10785,7 +10790,9 @@ DeleteColumns(TableView *viewPtr, BLT_TABLE_NOTIFY_EVENT *eventPtr)
 	    columns[j++] = colPtr;
 	}
     }
-    Blt_Free(viewPtr->columns);
+    if (viewPtr->columns != NULL) {
+        Blt_Free(viewPtr->columns);
+    }
     viewPtr->columns = columns;
     viewPtr->numColumns = numColumns;
     viewPtr->flags |= LAYOUT_PENDING;
@@ -10838,6 +10845,9 @@ AddColumns(TableView *viewPtr, BLT_TABLE_NOTIFY_EVENT *eventPtr)
 	columns[count] = colPtr;
 	count++;
     }
+    if (viewPtr->columns != NULL) {
+        Blt_Free(viewPtr->columns);
+    }
     viewPtr->columns = columns;
     viewPtr->numColumns = newNumColumns;
     viewPtr->flags |= LAYOUT_PENDING;
@@ -10888,7 +10898,9 @@ DeleteRows(TableView *viewPtr, BLT_TABLE_NOTIFY_EVENT *eventPtr)
 	    rows[j++] = rowPtr;
 	}
     }
-    Blt_Free(viewPtr->rows);
+    if (viewPtr->rows != NULL) {
+        Blt_Free(viewPtr->rows);
+    }
     viewPtr->rows = rows;
     viewPtr->numRows = numRows;
     viewPtr->flags |= LAYOUT_PENDING;
@@ -10941,6 +10953,9 @@ AddRows(TableView *viewPtr, BLT_TABLE_NOTIFY_EVENT *eventPtr)
 	rows[count] = rowPtr;
 	count++;
     }
+    if (viewPtr->rows != NULL) {
+        Blt_Free(viewPtr->rows);
+    }
     viewPtr->rows = rows;
     viewPtr->numRows = newNumRows;
     viewPtr->flags |= LAYOUT_PENDING;
@@ -10954,8 +10969,8 @@ AttachTable(Tcl_Interp *interp, TableView *viewPtr)
     long i;
     unsigned int flags;
 
-    /* Try to match the current rows and columns in the view with the
-     * new table names. */
+    /* Try to match the current rows and columns in the view with the new
+     * table names. */
 
     ResetTableView(viewPtr);
     viewPtr->colNotifier = blt_table_create_column_notifier(interp, 
@@ -11049,9 +11064,9 @@ AttachTable(Tcl_Interp *interp, TableView *viewPtr)
  *
  * 	This procedure is invoked to display the widget.
  *
- *      Recompute the layout of the text if necessary. This is necessary if the
- *      world coordinate system has changed.  Specifically, the following may
- *      have occurred:
+ *      Recompute the layout of the text if necessary. This is necessary if
+ *      the world coordinate system has changed.  Specifically, the
+ *      following may have occurred:
  *
  *	  1.  a text attribute has changed (font, linespacing, etc.).
  *	  2.  an entry's option changed, possibly resizing the entry.
@@ -11059,8 +11074,9 @@ AttachTable(Tcl_Interp *interp, TableView *viewPtr)
  *      This is deferred to the display routine since potentially many of
  *      these may occur.
  *
- *	Set the vertical and horizontal scrollbars.  This is done here since the
- *	window width and height are needed for the scrollbar calculations.
+ *	Set the vertical and horizontal scrollbars.  This is done here
+ *	since the window width and height are needed for the scrollbar
+ *	calculations.
  *
  * Results:
  *	None.
@@ -11098,8 +11114,9 @@ DisplayProc(ClientData clientData)
     }
     if (viewPtr->flags & SCROLL_PENDING) {
 	int width, height;
-	/* Scrolling means that the view port has changed or that the visible
-	 * entries need to be recomputed. */
+
+	/* Scrolling means that the view port has changed or that the
+	 * visible entries need to be recomputed. */
 	width = VPORTWIDTH(viewPtr);
 	height = VPORTHEIGHT(viewPtr);
 	if ((viewPtr->flags & SCROLLX) && (viewPtr->xScrollCmdObjPtr != NULL)) {
@@ -11222,7 +11239,7 @@ NewTableView(Tcl_Interp *interp, Tk_Window tkwin)
     viewPtr->tkwin = tkwin;
     viewPtr->display = Tk_Display(tkwin);
     viewPtr->interp = interp;
-    viewPtr->flags = GEOMETRY | SCROLL_PENDING | AUTOCREATE;
+    viewPtr->flags = GEOMETRY | SCROLL_PENDING | LAYOUT_PENDING | AUTOCREATE;
     viewPtr->highlightWidth = 2;
     viewPtr->borderWidth = 2;
     viewPtr->relief = TK_RELIEF_SUNKEN;
@@ -11269,9 +11286,9 @@ NewTableView(Tcl_Interp *interp, Tk_Window tkwin)
  *
  * TableViewCmdProc --
  *
- * 	This procedure is invoked to process the TCL command that corresponds to
- * 	a widget managed by this module. See the user documentation for details
- * 	on what it does.
+ * 	This procedure is invoked to process the TCL command that
+ * 	corresponds to a widget managed by this module. See the user
+ * 	documentation for details on what it does.
  *
  * Results:
  *	A standard TCL result.
@@ -11305,17 +11322,18 @@ TableViewCmdProc(
 	return TCL_ERROR;
     }
     /*
-     * Invoke a procedure to initialize various bindings on tableview entries.
-     * If the procedure doesn't already exist, source it from
-     * "$blt_library/tableview.tcl".  We deferred sourcing the file until now
-     * so that the variable $blt_library could be set within a script.
+     * Invoke a procedure to initialize various bindings on tableview
+     * entries.  If the procedure doesn't already exist, source it from
+     * "$blt_library/tableview.tcl".  We deferred sourcing the file until
+     * now so that the variable $blt_library could be set within a script.
      */
     if (!Blt_CommandExists(interp, "::blt::TableView::Initialize")) {
 	if (Tcl_GlobalEval(interp, 
 		"source [file join $blt_library tableview.tcl]") != TCL_OK) {
 	    char info[200];
 
-	    Blt_FormatString(info, 200, "\n    (while loading bindings for %.50s)", 
+	    Blt_FormatString(info, 200, 
+                             "\n    (while loading bindings for %.50s)", 
 		    Tcl_GetString(objv[0]));
 	    Tcl_AddErrorInfo(interp, info);
 	    return TCL_ERROR;
@@ -11329,9 +11347,9 @@ TableViewCmdProc(
     }
     viewPtr = NewTableView(interp, tkwin);
     /* 
-     * Initialize the widget's configuration options here. The options need to
-     * be set first, so that entry, column, and style components can use them
-     * for their own GCs.
+     * Initialize the widget's configuration options here. The options need
+     * to be set first, so that entry, column, and style components can use
+     * them for their own GCs.
      */
     iconOption.clientData = viewPtr;
     styleOption.clientData = viewPtr;
@@ -11341,13 +11359,13 @@ TableViewCmdProc(
 	goto error;
     }
     /* 
-     * Rebuild the widget's GC and other resources that are predicated by the
-     * widget's configuration options.  Do the same for the default column.
+     * Rebuild the widget's GC and other resources that are predicated by
+     * the widget's configuration options.  Do the same for the default
+     * column.
      */
     if (ConfigureTableView(interp, viewPtr) != TCL_OK) {
 	goto error;
     }
-    /*ConfigureTableView(interp, viewPtr);*/
 
     stylePtr = Blt_TableView_CreateCellStyle(interp, viewPtr, STYLE_TEXTBOX, 
 	"default");

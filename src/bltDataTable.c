@@ -3924,6 +3924,7 @@ blt_table_create_trace(
     ClientData clientData)		/* One-word of data passed along when
 					 * the callback is executed. */
 {
+    Blt_HashEntry *hPtr;
     Trace *tracePtr;
     int isNew;
 
@@ -3950,7 +3951,8 @@ blt_table_create_trace(
 	(TABLE_TRACE_WRITES | TABLE_TRACE_UNSETS | TABLE_TRACE_CREATES)) {
 	tracePtr->writeLink = Blt_Chain_Append(tablePtr->writeTraces, tracePtr);
     }
-    Blt_CreateHashEntry(&tablePtr->traces, tracePtr, &isNew);
+    hPtr = Blt_CreateHashEntry(&tablePtr->traces, tracePtr, &isNew);
+    Tcl_SetHashValue(hPtr, tracePtr);
     assert(isNew);
     tracePtr->table = tablePtr;
     return tracePtr;

@@ -2146,7 +2146,7 @@ PrintFeatures(Tcl_Interp *interp, unsigned long flags)
 	objPtr = Tcl_NewStringObj("sse4.2", 6);
         Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
     }
-    Tcl_SetVar2Ex(interp, "blt::cpu_info", NULL, listObjPtr, 
+    Tcl_SetVar2Ex(interp, "::blt::cpu_info", NULL, listObjPtr, 
                   TCL_GLOBAL_ONLY);
 }
 

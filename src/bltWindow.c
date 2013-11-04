@@ -3,32 +3,29 @@
 /*
  * bltWindow.c --
  *
- * This module implements additional window functions for the BLT
- * toolkit.
+ * This module implements additional window functions for the BLT toolkit.
  *
  *	Copyright 1991-2004 George A Howlett.
  *
  *	Permission is hereby granted, free of charge, to any person
  *	obtaining a copy of this software and associated documentation
  *	files (the "Software"), to deal in the Software without
- *	restriction, including without limitation the rights to use,
- *	copy, modify, merge, publish, distribute, sublicense, and/or
- *	sell copies of the Software, and to permit persons to whom the
- *	Software is furnished to do so, subject to the following
- *	conditions:
+ *	restriction, including without limitation the rights to use, copy,
+ *	modify, merge, publish, distribute, sublicense, and/or sell copies
+ *	of the Software, and to permit persons to whom the Software is
+ *	furnished to do so, subject to the following conditions:
  *
  *	The above copyright notice and this permission notice shall be
- *	included in all copies or substantial portions of the
- *	Software.
+ *	included in all copies or substantial portions of the Software.
  *
- *	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY
- *	KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
- *	WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
- *	PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS
- *	OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR
- *	OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
- *	OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
- *	SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ *	EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ *	MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ *	NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+ *	BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ *	ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ *	CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ *	SOFTWARE.
  */
 
 #define BUILD_BLT_TK_PROCS 1
@@ -47,21 +44,6 @@
 #include "bltAlloc.h"
 #include "bltHash.h"
 #include "tkDisplay.h"
-
-/* 
- * Cache drawable information.
- *
- * There are specific times when we need information about the drawable
- * that is not available via the normal argument passing.  For example,
- * XFT font rendering requires that the correct depth XftDraw be used.
- * If we create a painter from a drawable, we need to know its depth,
- * colormap, and visual also.
- * 
- * We can usually get this information using XGetWindowAttributes at
- * the cost of a round-trip to the X server.  Instead we'll cache it
- * in a hash table.  We don't have to cache every window. We need to
- * watch destroy events and freeing pixmaps.
- */
 
 typedef struct {
     Display *display;
@@ -176,12 +158,12 @@ Blt_FreeDrawableAttribs(Display *display, Drawable drawable)
  *      Performs a linear search for the named child window in a given
  *	parent window.
  *
- *	This can be done via Tcl, but not through Tk's C API.  It's 
- *	simple enough, if you peek into the Tk_Window structure.
+ *	This can be done via Tcl, but not through Tk's C API.  It's simple
+ *	enough, if you peek into the Tk_Window structure.
  *
  * Results:
- *      The child Tk_Window. If the named child can't be found, NULL
- *	is returned.
+ *      The child Tk_Window. If the named child can't be found, NULL is
+ *	returned.
  *
  *---------------------------------------------------------------------------
  */
@@ -210,12 +192,12 @@ Blt_FindChild(Tk_Window parent, char *name)
  *      Performs a linear search for the named child window in a given
  *	parent window.
  *
- *	This can be done via Tcl, but not through Tk's C API.  It's 
- *	simple enough, if you peek into the Tk_Window structure.
+ *	This can be done via Tcl, but not through Tk's C API.  It's simple
+ *	enough, if you peek into the Tk_Window structure.
  *
  * Results:
- *      The child Tk_Window. If the named child can't be found, NULL
- *	is returned.
+ *      The child Tk_Window. If the named child can't be found, NULL is
+ *	returned.
  *
  *---------------------------------------------------------------------------
  */
@@ -235,12 +217,12 @@ Blt_FirstChild(Tk_Window parent)
  *      Performs a linear search for the named child window in a given
  *	parent window.
  *
- *	This can be done via Tcl, but not through Tk's C API.  It's 
- *	simple enough, if you peek into the Tk_Window structure.
+ *	This can be done via Tcl, but not through Tk's C API.  It's simple
+ *	enough, if you peek into the Tk_Window structure.
  *
  * Results:
- *      The child Tk_Window. If the named child can't be found, NULL
- *	is returned.
+ *      The child Tk_Window. If the named child can't be found, NULL is
+ *	returned.
  *
  *---------------------------------------------------------------------------
  */
@@ -262,8 +244,7 @@ Blt_NextChild(Tk_Window tkwin)
  *
  * UnlinkWindow --
  *
- *	This procedure removes a window from the childList of its
- *	parent.
+ *	This procedure removes a window from the childList of its parent.
  *
  * Results:
  *	None.
@@ -303,15 +284,15 @@ UnlinkWindow(TkWindow *winPtr)
  *
  * Blt_RelinkWindow --
  *
- *	Relinks a window into a new parent.  The window is unlinked
- *	from its original parent's child list and added onto the end
- *	of the new parent's list.
+ *	Relinks a window into a new parent.  The window is unlinked from
+ *	its original parent's child list and added onto the end of the new
+ *	parent's list.
  *
- *	FIXME:  If the window has focus, the focus should be moved
- *		to an ancestor.  Otherwise, Tk becomes confused 
- *		about which Toplevel turns on focus for the window. 
- *		Right now this is done at the TCL layer.  For example,
- *		see blt::CreateTearoff in tabset.tcl.
+ *	FIXME: If the window has focus, the focus should be moved to an
+ *             ancestor.  Otherwise, Tk becomes confused about which
+ *             Toplevel turns on focus for the window.  Right now this is
+ *             done at the TCL layer.  For example, see blt::CreateTearoff
+ *             in tabset.tcl.
  *
  * Results:
  *	None.
@@ -356,15 +337,15 @@ Blt_RelinkWindow(
  *
  * Blt_RelinkWindow --
  *
- *	Relinks a window into a new parent.  The window is unlinked
- *	from its original parent's child list and added onto the end
- *	of the new parent's list.
+ *	Relinks a window into a new parent.  The window is unlinked from
+ *	its original parent's child list and added onto the end of the new
+ *	parent's list.
  *
- *	FIXME:  If the window has focus, the focus should be moved
- *		to an ancestor.  Otherwise, Tk becomes confused 
- *		about which Toplevel turns on focus for the window. 
- *		Right now this is done at the TCL layer.  For example,
- *		see blt::CreateTearoff in tabset.tcl.
+ *	FIXME:  If the window has focus, the focus should be moved to an
+ *              ancestor.  Otherwise, Tk becomes confused about which
+ *              Toplevel turns on focus for the window.  Right now this is
+ *              done at the TCL layer.  For example, see blt::CreateTearoff
+ *              in tabset.tcl.
  *
  * Results:
  *	None.
@@ -393,7 +374,8 @@ Blt_RelinkWindow2(
     parentWinPtr = (TkWindow *)newParent;
 
     winPtr->flags &= ~TK_REPARENTED;
-    UnlinkWindow(winPtr);	/* Remove the window from its parent's list */
+    UnlinkWindow(winPtr);	/* Remove the window from its parent's
+                                 * list */
 
     /* Append the window onto the end of the parent's list of children */
     winPtr->parentPtr = parentWinPtr;
@@ -408,7 +390,7 @@ Blt_RelinkWindow2(
 }
 
 void
-Blt_UnlinkWindow(Tk_Window tkwin) /* Child window to be linked. */
+Blt_UnlinkWindow(Tk_Window tkwin)       /* Child window to be linked. */
 {
     TkWindow *winPtr;
     Window root;
@@ -421,7 +403,8 @@ Blt_UnlinkWindow(Tk_Window tkwin) /* Child window to be linked. */
     winPtr = (TkWindow *)tkwin;
     winPtr->flags &= ~TK_REPARENTED;
 #ifdef notdef
-    UnlinkWindow(winPtr);	/* Remove the window from its parent's list */
+    UnlinkWindow(winPtr);               /* Remove the window from its
+                                         * parent's list */
 #endif
 }
 #endif
@@ -431,8 +414,8 @@ Blt_UnlinkWindow(Tk_Window tkwin) /* Child window to be linked. */
  *
  * Blt_Toplevel --
  *
- *      Climbs up the widget hierarchy to find the top level window of
- *      the window given.
+ *      Climbs up the widget hierarchy to find the top level window of the
+ *      window given.
  *
  * Results:
  *      Returns the Tk_Window of the toplevel widget.
@@ -536,7 +519,7 @@ Blt_DeleteWindowInstanceData(Tk_Window tkwin)
 #include <X11/Xproto.h>
 #include <X11/extensions/randr.h>
 #include <X11/extensions/Xrandr.h>
-#include <X11/extensions/Xrender.h>	/* we share subpixel information */
+#include <X11/extensions/Xrender.h>	/* We share subpixel information */
 
 typedef struct {
     int major, minor;			/* XRandR version numbers. */
