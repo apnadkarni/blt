@@ -664,8 +664,8 @@ Blt_FadePicture(Pict *pictPtr, int x, int y, int w, int h, int alpha)
     pictPtr->flags |= BLT_PIC_BLEND;
 }
 
-static void
-AssociateColor(Blt_Pixel *colorPtr)
+void
+Blt_AssociateColor(Blt_Pixel *colorPtr)
 {
     if ((colorPtr->Alpha != 0xFF) && (colorPtr->Alpha != 0x00)) {
 	int t;
@@ -676,8 +676,8 @@ AssociateColor(Blt_Pixel *colorPtr)
     }
 }
 
-static void
-UnassociateColor(Blt_Pixel *colorPtr)
+void
+Blt_UnassociateColor(Blt_Pixel *colorPtr)
 {
     /* No conversion necessary if 100% transparent or opaque. */
     if ((colorPtr->Alpha != 0xFF) && (colorPtr->Alpha != 0x00)) {
@@ -703,7 +703,7 @@ AssociateColors(Pict *srcPtr)
 	    
 	    sp = srcRowPtr;
 	    for (sp = srcRowPtr, send = sp + srcPtr->width; sp < send; sp++) {
-		AssociateColor(sp);
+		Blt_AssociateColor(sp);
 	    }
 	    srcRowPtr += srcPtr->pixelsPerRow;
 	}
@@ -724,7 +724,7 @@ UnassociateColors(Pict *srcPtr)
 	    
 	    sp = srcRowPtr;
 	    for (sp = srcRowPtr, send = sp + srcPtr->width; sp < send; sp++) {
-		UnassociateColor(sp);
+		Blt_UnassociateColor(sp);
 	    }
 	    srcRowPtr += srcPtr->pixelsPerRow;
 	}
@@ -6458,19 +6458,19 @@ Blt_SubtractColor(Pict *srcPtr, Blt_Pixel *colorPtr)
 	srcRowPtr += srcPtr->pixelsPerRow;
     }
 }    
-#ifdef notdef
-static void
+#ifndef notdef
+Blt_Picture
 Blt_EmbossPicture(
-    Pict *destPtr,
     Pict *srcPtr,                       /* Source picture treated as
                                          * alphamap. */
     double azimuth, double elevation,	/* Light source direction */
-    unsigned short width45,             /* Filter width */
-    Pict *bgPtr)                        /* Background (optional)  */
+    unsigned short width45)             /* Filter width */
 {
     long Nx, Ny, Nz, Lx, Ly, Lz, Nz2, NzLz, NdotL;
-    unsigned char *s1, *s2, *s3, shade, background;
-    int x, y;
+    unsigned char background;
+    int y;
+    Pict *destPtr;
+    Blt_Pixel *srcRowPtr, *destRowPtr;
 
 #define pixelScale 255.9
 
@@ -6498,28 +6498,18 @@ Blt_EmbossPicture(
     /* Optimization for vertical normals: L.[0 0 1] */
     background = Lz;
     
+    destPtr = Blt_CreatePicture(srcPtr->width, srcPtr->height);
     /* Mung pixels, avoiding edge pixels */
 
     /* Skip the top row. */
     destRowPtr = destPtr->bits + destPtr->pixelsPerRow;
     srcRowPtr = srcPtr->bits;
-    if (texture) {
-        texture += destPtr->width * 3;
-    }
     for (y = 1; y < (destPtr->height - 2); y++) {
         Blt_Pixel *dp;
-
-	s1 = srcRowPtr + 1;
-	s2 = s1 + xSize;
-	s3 = s2 + xSize;
-	dst += 3;
-	if (texture) {
-            texture += 3;
-        }
+        int x;
 
         dp = destRowPtr;
-	for (x = 1; x < destPtr->width-1; x++, s1++, s2++, s3++) {
-            unsigned int   offset = (y * stride) + x;
+	for (x = 1; x < (destPtr->width-1); x++, dp++) {
             Blt_Pixel *s1     = srcRowPtr + x;
             Blt_Pixel *s2     = s1 + srcPtr->pixelsPerRow;
             Blt_Pixel *s3     = s2 + srcPtr->pixelsPerRow;
@@ -6550,19 +6540,13 @@ Blt_EmbossPicture(
                 }
             }
 	    /* Do something with the shading result. */
-	    if (bgPtr != NULL) {
-		dp->Red = (*bgp->Red * shade) >> 8;
-		dp->Green = (*bgp->Green * shade) >> 8;
-		dp->Blue = (*bgp->Blue * shade) >> 8;
-                dp->Alpha = 0xFF;
-	    } else {
-		dp->Red = dp->Green = dp->Blue = shade;
-                dp->Alpha = 0xFF;
-	    }
+            dp->Red = dp->Green = dp->Blue = shade;
+            dp->Alpha = 0xFF;
 	}
         srcRowPtr  += srcPtr->pixelsPerRow;
         destRowPtr += destPtr->pixelsPerRow;
-        bgRowPtr += bgPtr->pixelsPerRow;
     }
+    destPtr->flags |= BLT_PIC_BLEND;
+    return destPtr;
 }
 #endif

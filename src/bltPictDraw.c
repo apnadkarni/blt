@@ -1,5 +1,4 @@
 /* -*- mode: c; c-basic-offset: 4; indent-tabs-mode: nil -*- */
-
 /*
  * bltPictDraw.c --
  *
@@ -988,12 +987,9 @@ BlendPixel(Blt_Pixel *bgPtr, Blt_Pixel *colorPtr, unsigned char weight)
 	int t1, t2;
 
 	beta = alpha ^ 0xFF;
-	bgPtr->Red   = imul8x8(alpha, colorPtr->Red, t1) + 
-	    imul8x8(beta, bgPtr->Red, t2);
-	bgPtr->Green = imul8x8(alpha, colorPtr->Green, t1) + 
-	    imul8x8(beta, bgPtr->Green, t2);
-	bgPtr->Blue  = imul8x8(alpha, colorPtr->Blue, t1)  + 
-	    imul8x8(beta, bgPtr->Blue, t2);
+	bgPtr->Red   = colorPtr->Red + imul8x8(beta, bgPtr->Red, t2);
+	bgPtr->Green = colorPtr->Green + imul8x8(beta, bgPtr->Green, t2);
+	bgPtr->Blue  = colorPtr->Blue + imul8x8(beta, bgPtr->Blue, t2);
 	bgPtr->Alpha = alpha + imul8x8(beta, bgPtr->Alpha, t2);
     }
 }
@@ -3339,8 +3335,8 @@ Blt_Picture_TextOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (fontPtr == NULL) {
 	return TCL_ERROR;
     }
-    if (destPtr->flags & BLT_PIC_ASSOCIATED_COLORS) {
-	Blt_UnassociateColors(destPtr);
+    if ((destPtr->flags & BLT_PIC_ASSOCIATED_COLORS) == 0) {
+	Blt_AssociateColors(destPtr);
     }
     if (switches.angle != 0.0) {
 	TextStyle ts;

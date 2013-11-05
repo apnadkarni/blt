@@ -657,4 +657,7 @@ BLT_EXTERN void Blt_PaintPolygon(Blt_Picture picture, int n, Point2f *vertices,
 	Blt_Paintbrush *brushPtr);
 #endif
 
+BLT_EXTERN Blt_Picture Blt_EmbossPicture(Blt_Picture picture, double azimuth, 
+        double elevation, unsigned short width45);
+
 #endif /*_BLT_PICTURE_H*/

@@ -1589,6 +1589,7 @@ Blt_Paintbrush_GetColor(Blt_Paintbrush *brushPtr, int x, int y)
 	pixelPtr = Blt_PicturePixel(brushPtr->tile, x, y);
 	color.u32 = pixelPtr->u32;
 	color.Alpha = brushPtr->alpha;
+        Blt_AssociateColor(&color);
 	return color.u32;
     case BLT_PAINTBRUSH_TEXTURE:
     case BLT_PAINTBRUSH_GRADIENT:
