@@ -665,6 +665,17 @@ Blt_FadePicture(Pict *pictPtr, int x, int y, int w, int h, int alpha)
 }
 
 void
+Blt_FadeColor(Blt_Pixel *colorPtr, unsigned int alpha)
+{
+    int t;
+
+    colorPtr->Red   = imul8x8(colorPtr->Red, alpha, t);
+    colorPtr->Green = imul8x8(colorPtr->Green, alpha, t);
+    colorPtr->Blue  = imul8x8(colorPtr->Blue, alpha, t);
+    colorPtr->Alpha = imul8x8(colorPtr->Alpha, alpha, t);
+}
+
+void
 Blt_AssociateColor(Blt_Pixel *colorPtr)
 {
     if ((colorPtr->Alpha != 0xFF) && (colorPtr->Alpha != 0x00)) {

@@ -113,12 +113,13 @@ static const char *paintbrushTypes[] = {
 };
 
 typedef struct {
-    Blt_HashTable instTable;		/* Hash table of paintbrush structures
-					 * keyed by the name. */
-    Tcl_Interp *interp;			/* Interpreter associated with this set
-					 * of background paints. */
-    int nextId;				/* Serial number of the identifier to be
-					 * used for next paintbrush created.  */
+    Blt_HashTable instTable;		/* Hash table of paintbrush
+					 * structures keyed by the name. */
+    Tcl_Interp *interp;			/* Interpreter associated with this
+					 * set of background paints. */
+    int nextId;				/* Serial number of the identifier
+					 * to be used for next paintbrush
+					 * created.  */
 } PaintbrushCmdInterpData;
 
 typedef struct {
@@ -128,23 +129,29 @@ typedef struct {
 					 * table. */
     const char *name;			/* Name of paintbrush. Points to
 					 * hashtable key. */
-    int refCount;			/* # of clients using this brush.  If
-					 * zero, this brush can be deleted. */
+    int refCount;			/* # of clients using this brush.
+					 * If zero, this brush can be
+					 * deleted. */
     PaintbrushCmdInterpData *dataPtr;	/* Pointer to interpreter-specific
 					 * data. */
     Blt_ConfigSpec *configSpecs;	/* Configuration specifications for 
 					 * this type of brush.  */
-    Tk_Window tkwin;			/* Main window. Used to query background
-					 * pattern options. */
-    Display *display;			/* Display of this paintbrush. Used to
-					 * free switches. */
+    Tk_Window tkwin;			/* Main window. Used to query
+					 * background pattern options. */
+    Display *display;			/* Display of this paintbrush. Used
+					 * to free switches. */
     unsigned int flags;			/* See definitions below. */
     Tk_Image tkImage;			/* Tk image used for tiling (tile
 					 * brushes only). */
 } PaintbrushCmd;
 
-
-#define FREE_PICTURE		(1<<0)
+#define FREE_PICTURE		(1<<0)  /* Indicates we need to free the
+                                         * temporary picture (associated
+                                         * with the Tk image to be tiled)
+                                         * when the picture is no longer in
+                                         * use.  This happens when the
+                                         * picture is converted from a Tk
+                                         * photo image. */
 
 #define DEF_OPACITY		"100.0"
 #define DEF_ORIGIN_X		"0"
@@ -350,6 +357,9 @@ ImageChangedProc(
 	Blt_FreePicture(cmdPtr->brush.tile);
     }
     cmdPtr->brush.tile = ImageToPicture(cmdPtr, &isNew);
+    if (Blt_PictureIsAssociated(cmdPtr->brush.tile)) {
+        Blt_UnassociateColors(cmdPtr->brush.tile);
+    }
     if (isNew) {
 	cmdPtr->flags |= FREE_PICTURE;
     } else {
@@ -1138,6 +1148,9 @@ ConfigurePaintbrushCmd(Tcl_Interp *interp, PaintbrushCmd *cmdPtr, int objc,
 	    Blt_FreePicture(cmdPtr->brush.tile);
 	}
 	cmdPtr->brush.tile = ImageToPicture(cmdPtr, &isNew);
+        if (Blt_PictureIsAssociated(cmdPtr->brush.tile)) {
+            Blt_UnassociateColors(cmdPtr->brush.tile);
+        }
 	if (isNew) {
 	    cmdPtr->flags |= FREE_PICTURE;
 	} else {
@@ -1454,6 +1467,9 @@ Blt_Paintbrush_SetTile(Blt_Paintbrush *brushPtr, Blt_Picture picture)
 {
     brushPtr->type = BLT_PAINTBRUSH_TILE;
     brushPtr->tile = picture;
+    if (Blt_PictureIsAssociated(brushPtr->tile)) {
+        Blt_UnassociateColors(brushPtr->tile);
+    }
 }
 
 void 
@@ -1461,6 +1477,7 @@ Blt_Paintbrush_SetColor(Blt_Paintbrush *brushPtr, unsigned int value)
 {
     brushPtr->type = BLT_PAINTBRUSH_SOLID;
     brushPtr->solidColor.u32 = value;
+    Blt_AssociateColor(&brushPtr->solidColor);
 }
 
 void
@@ -1564,8 +1581,26 @@ Blt_Paintbrush_SetColorProc(Blt_Paintbrush *brushPtr,
     brushPtr->clientData = clientData;
 }
 
+/* 
+ */
+/*
+ *---------------------------------------------------------------------------
+ *
+ * Blt_Paintbrush_GetAssociatedColor --
+ *
+ *      Gets the color from the paint brush at the given x,y coordinate.
+ *      For texture, gradient, and tile brushes, the coordinate is used to
+ *      compute the color.  The return color is always associated
+ *      (premultiplied).
+ *
+ * Results:
+ *	Returns the color at the current x,y coordinate.  The color
+ *      is always associated. 
+ *
+ *---------------------------------------------------------------------------
+ */
 int
-Blt_Paintbrush_GetColor(Blt_Paintbrush *brushPtr, int x, int y)
+Blt_Paintbrush_GetAssociatedColor(Blt_Paintbrush *brushPtr, int x, int y)
 {
     Blt_Pixel *pixelPtr;
     Blt_Pixel color;
@@ -1587,6 +1622,8 @@ Blt_Paintbrush_GetColor(Blt_Paintbrush *brushPtr, int x, int y)
 	    y = -y;
 	}
 	pixelPtr = Blt_PicturePixel(brushPtr->tile, x, y);
+        /* Pixel of tile is unassociated so that we can override the
+         * opacity. */
 	color.u32 = pixelPtr->u32;
 	color.Alpha = brushPtr->alpha;
         Blt_AssociateColor(&color);
@@ -1594,19 +1631,22 @@ Blt_Paintbrush_GetColor(Blt_Paintbrush *brushPtr, int x, int y)
     case BLT_PAINTBRUSH_TEXTURE:
     case BLT_PAINTBRUSH_GRADIENT:
 	if (brushPtr->colorProc == NULL) {
-	    return brushPtr->solidColor.u32;
-	}
-	/* Factor in the gradient origin when computing the pixel. */
-	x = (x - brushPtr->xOrigin);
-	if (x < 0) {
-	    x = -x;
-	}
-	y = (y - brushPtr->yOrigin);
-	if (y < 0) {
-	    y = -y;
-	}
-	/* Need window or object width/height to compute color value. */
-	return (*brushPtr->colorProc)(brushPtr, x, y);
+            return brushPtr->solidColor.u32;
+	} 
+        /* Factor in the gradient origin when computing the pixel. */
+        x = (x - brushPtr->xOrigin);
+        if (x < 0) {
+            x = -x;
+        }
+        y = (y - brushPtr->yOrigin);
+        if (y < 0) {
+            y = -y;
+        }
+        /* Need window or object width/height to compute color value. */
+        color.u32 = (*brushPtr->colorProc)(brushPtr, x, y);
+        /* Texture and gradient colors are always associated. */
+        Blt_AssociateColor(&color);
+        return color.u32;
     }
     return 0;
 }
@@ -1676,6 +1716,7 @@ Blt_Paintbrush_GetFromString(Tcl_Interp *interp, const char *string,
 	    goto error;			/* Can't allocate new color. */
 	}
 	cmdPtr->brush.solidColor.u32 = color.u32;
+        Blt_AssociateColor(&cmdPtr->brush.solidColor);
 	cmdPtr->refCount = 1;
 	cmdPtr->hashPtr = hPtr;
 	cmdPtr->name = Blt_GetHashKey(&dataPtr->instTable, hPtr);
