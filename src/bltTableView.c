@@ -2358,19 +2358,18 @@ RowTraceProc(ClientData clientData, BLT_TABLE_TRACE_EVENT *eventPtr)
 	Row *rowPtr;
 
 	rowPtr = GetRowContainer(viewPtr, eventPtr->row);
-#ifndef notdef
-        /* Check if the event's row or column occur outside of the range of
-         * visible cells. */
-	colPtr = GetColumnContainer(viewPtr, eventPtr->column);
-        if ((rowPtr->index > GetLastVisibleRowIndex(viewPtr)) ||
-            (colPtr->index > GetLastVisibleColumnIndex(viewPtr))) {
-            return TCL_OK;
-        }
-#endif
 	if (rowPtr != NULL) {
 	    rowPtr->flags |= GEOMETRY | REDRAW;
 	}
 	viewPtr->flags |= GEOMETRY | LAYOUT_PENDING;
+        /* Check if the event's row or column occur outside of the range of
+         * visible cells. */
+        if ((blt_table_row_index(eventPtr->row) > 
+             GetLastVisibleRowIndex(viewPtr)) ||
+            (blt_table_column_index(eventPtr->column) > 
+             GetLastVisibleColumnIndex(viewPtr))) {
+            return TCL_OK;
+        }
 	PossiblyRedraw(viewPtr);
     }
     return TCL_OK;
@@ -2395,16 +2394,19 @@ ColumnTraceProc(ClientData clientData, BLT_TABLE_TRACE_EVENT *eventPtr)
     if (eventPtr->mask & (TABLE_TRACE_WRITES | TABLE_TRACE_UNSETS)) {
 	Column *colPtr;
 
-#ifdef notdef
-	if (eventPtr->mask & TABLE_TRACE_CREATES) {
-	    return TCL_OK;
-	}
-#endif
 	colPtr = GetColumnContainer(viewPtr, eventPtr->column);
 	if (colPtr != NULL) {
 	    colPtr->flags |= GEOMETRY | REDRAW;
 	}
 	viewPtr->flags |= GEOMETRY | LAYOUT_PENDING;
+        /* Check if the event's row or column occur outside of the range of
+         * visible cells. */
+        if ((blt_table_row_index(eventPtr->row) > 
+             GetLastVisibleRowIndex(viewPtr)) ||
+            (blt_table_column_index(eventPtr->column) > 
+             GetLastVisibleColumnIndex(viewPtr))) {
+            return TCL_OK;
+        }
 	PossiblyRedraw(viewPtr);
     }
     return TCL_OK;
