@@ -744,6 +744,9 @@ UnassociateColors(Pict *srcPtr)
 }
 
 /*
+ * BlendRegion --
+ *
+ *      Converts pictures to use associated colors is not already.
  *
  *  x,y------+
  *   |       |
@@ -751,7 +754,6 @@ UnassociateColors(Pict *srcPtr)
  *   |  |    |            |
  *   |  |    |            |
  */  
-
 static void
 BlendRegion(Pict *destPtr, Pict *srcPtr, int sx, int sy, int w, int h,
 	    int dx, int dy)
@@ -784,6 +786,7 @@ BlendRegion(Pict *destPtr, Pict *srcPtr, int sx, int sy, int w, int h,
     if (srcPtr->height < h) {
 	h = srcPtr->height;
     }
+    /* Convert the pictures to use associated colors if not already. */
     if ((srcPtr->flags & BLT_PIC_ASSOCIATED_COLORS) == 0) {
 	Blt_AssociateColors(srcPtr);
     }
@@ -803,15 +806,15 @@ BlendRegion(Pict *destPtr, Pict *srcPtr, int sx, int sy, int w, int h,
 	    if ((dp->Alpha == 0x0) || (sp->Alpha == 0xFF)) {
 		dp->u32 = sp->u32;
 	    } else if (sp->Alpha != 0x00) {
-		int alpha, beta, t2;
+		int alpha, beta, t;
 		int r, g, b, a;
 
 		alpha = sp->Alpha;
 		beta = alpha ^ 0xFF; /* beta = 1 - alpha */
-		r = sp->Red   + imul8x8(beta, dp->Red, t2);
-		g = sp->Green + imul8x8(beta, dp->Green,t2);
-		b = sp->Blue  + imul8x8(beta, dp->Blue, t2);
-		a = alpha     + imul8x8(beta, dp->Alpha, t2);
+		r = sp->Red   + imul8x8(beta, dp->Red, t);
+		g = sp->Green + imul8x8(beta, dp->Green,t);
+		b = sp->Blue  + imul8x8(beta, dp->Blue, t);
+		a = alpha     + imul8x8(beta, dp->Alpha, t);
 		dp->Red   = UCLAMP(r);
 		dp->Green = UCLAMP(g);
 		dp->Blue  = UCLAMP(b);

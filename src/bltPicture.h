@@ -307,7 +307,7 @@ BLT_EXTERN const char *Blt_NameOfResampleFilter(Blt_ResampleFilter filter);
 
 BLT_EXTERN void Blt_AssociateColor(Blt_Pixel *colorPtr);
 
-BLT_EXTERN void Blt_UnassociateColor(Blt_Picture *colorPtr);
+BLT_EXTERN void Blt_UnassociateColor(Blt_Pixel *colorPtr);
 
 BLT_EXTERN void Blt_AssociateColors(Blt_Picture picture);
 
