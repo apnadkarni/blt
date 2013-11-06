@@ -35,7 +35,7 @@
 #define FONT_BOLD	(1<<1)
 
 typedef struct _Blt_Font *Blt_Font;
-typedef struct Blt_FontClass_ Blt_FontClass;
+typedef struct _Blt_FontClass Blt_FontClass;
 
 typedef struct {
     int ascent;				/* The amount in pixels that the
@@ -85,7 +85,7 @@ typedef void (Blt_Font_UnderlineProc)(Display *display, Drawable drawable,
 	GC gc, Blt_Font font, const char *text, int textLen, int x, int y, 
 	int first, int last, int xMax);
 
-struct Blt_FontClass_ {
+struct _Blt_FontClass {
     int type;				/* Indicates the type of font used. */
     Blt_Font_CanRotateProc *canRotateProc;
     Blt_Font_DrawProc *drawProc;

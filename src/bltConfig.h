@@ -44,7 +44,7 @@ typedef Tcl_Obj *(Blt_OptionPrintProc)(ClientData clientData,
 typedef void (Blt_OptionFreeProc)(ClientData clientData, Display *display, 
 	char *widgRec, int offset);
 
-typedef struct Blt_CustomOption {
+typedef struct _Blt_CustomOption {
     Blt_OptionParseProc *parseProc;	/* Procedure to call to parse
 					 * an option and store it in
 					 * converted form. */

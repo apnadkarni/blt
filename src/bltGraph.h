@@ -1,17 +1,16 @@
 /* -*- mode: c; c-basic-offset: 4; indent-tabs-mode: nil -*- */
-
 /*
  * bltGraph.h --
  *
  *	Copyright 1993-2004 George A Howlett.
  *
- *	Permission is hereby granted, free of charge, to any person obtaining
- *	a copy of this software and associated documentation files (the
- *	"Software"), to deal in the Software without restriction, including
- *	without limitation the rights to use, copy, modify, merge, publish,
- *	distribute, sublicense, and/or sell copies of the Software, and to
- *	permit persons to whom the Software is furnished to do so, subject to
- *	the following conditions:
+ *	Permission is hereby granted, free of charge, to any person
+ *	obtaining a copy of this software and associated documentation
+ *	files (the "Software"), to deal in the Software without
+ *	restriction, including without limitation the rights to use, copy,
+ *	modify, merge, publish, distribute, sublicense, and/or sell copies
+ *	of the Software, and to permit persons to whom the Software is
+ *	furnished to do so, subject to the following conditions:
  *
  *	The above copyright notice and this permission notice shall be
  *	included in all copies or substantial portions of the Software.
@@ -19,10 +18,11 @@
  *	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  *	EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  *	MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- *	NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
- *	LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
- *	OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
- *	WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *	NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+ *	BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ *	ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ *	CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ *	SOFTWARE.
  */
 
 #ifndef _BLT_GRAPH_H
@@ -67,26 +67,23 @@ typedef struct {
 					 * deleted. */
 } GraphObj;
 
-#define MARKER_UNDER	1	/* Draw markers designated to lie underneath
-				 * elements, grids, legend, etc. */
-#define MARKER_ABOVE	0	/* Draw markers designated to rest above
-				 * elements, grids, legend, etc. */
+#define MARKER_UNDER	1               /* Draw markers designated to lie
+                                         * underneath elements, grids,
+                                         * legend, etc. */
+#define MARKER_ABOVE	0               /* Draw markers designated to rest
+                                         * above elements, grids, legend,
+                                         * etc. */
+#define PADX		2               /* Padding between labels/titles */
+#define PADY    	2               /* Padding between labels */
 
-#define PADX		2	/* Padding between labels/titles */
-#define PADY    	2	/* Padding between labels */
-
-#define MINIMUM_MARGIN	20	/* Minimum margin size */
+#define MINIMUM_MARGIN	20              /* Minimum margin size */
 
 
 #define BOUND(x, lo, hi)	 \
 	(((x) > (hi)) ? (hi) : ((x) < (lo)) ? (lo) : (x))
 
 /*
- *---------------------------------------------------------------------------
- *
  * 	Graph component structure definitions
- *
- *---------------------------------------------------------------------------
  */
 #define PointInGraph(g,x,y) \
 	(((x) <= (g)->right) && ((x) >= (g)->left) && \
@@ -125,44 +122,38 @@ typedef struct {
 } GraphPoints;
 
 /*
- *---------------------------------------------------------------------------
- *
  * Axis2d --
  *
  *	The pair of axes mapping a point onto the graph.
- *
- *---------------------------------------------------------------------------
  */
 typedef struct {
     Axis *x, *y;
 } Axis2d;
 
 /*
- *---------------------------------------------------------------------------
- *
  * BarGroup --
  *
  *	Represents a sets of bars with the same abscissa. This structure is
- *	used to track the display of the bars in the group.  
+ *	used to track the display of the bars in the group.
  *
- *	Each unique abscissa has at least one group.  Groups can be
- *	defined by the bar element's -group option.  Multiple groups are
- *	needed when you are displaying/comparing similar sets of data (same
+ *	Each unique abscissa has at least one group.  Groups can be defined
+ *	by the bar element's -group option.  Multiple groups are needed
+ *	when you are displaying/comparing similar sets of data (same
  *	abscissas) but belong to a separate group.
- *	
- *---------------------------------------------------------------------------
  */
 typedef struct {
     int numSegments;			/* Number of occurrences of
 					 * x-coordinate */
     Axis2d axes;			/* The axes associated with this
-					 * group. (mapped to the x-value) */
-    float sum;				/* Sum of the ordinates (y-coorinate) of
-					 * each duplicate abscissa. Used to
-					 * determine height of stacked bars. */
-    int count;				/* Current number of bars seen.  Used to
-					 * position of the next bar in the
-					 * group. */
+					 * group. (mapped to the
+					 * x-value) */
+    float sum;				/* Sum of the ordinates
+					 * (y-coorinate) of each duplicate
+					 * abscissa. Used to determine
+					 * height of stacked bars. */
+    int count;				/* Current number of bars seen.
+					 * Used to position of the next bar
+					 * in the group. */
     float lastY;			/* y-cooridinate position of the
 					 * last bar seen. */
     size_t index;			/* Order of group in set (an unique
@@ -171,14 +162,11 @@ typedef struct {
 } BarGroup;
 
 /*
- *---------------------------------------------------------------------------
- *
  * SetKey --
  *
  *	Key for hash table of set of bars.  The bar set is defined by
  *	coordinates with the same abscissa (x-coordinate).
  *
- *---------------------------------------------------------------------------
  */
 typedef struct {
     float value;			/* Duplicated abscissa */
@@ -188,24 +176,25 @@ typedef struct {
 /*
  * BarModes --
  *
- *	Bar elements are displayed according to their x-y coordinates.  If two
- *	bars have the same abscissa (x-coordinate), the bar segments will be
- *	drawn according to one of the following modes:
+ *	Bar elements are displayed according to their x-y coordinates.  If
+ *	two bars have the same abscissa (x-coordinate), the bar segments
+ *	will be drawn according to one of the following modes:
  */
-
 typedef enum BarModes {
-    BARS_INFRONT,			/* Each successive bar in a group is
-					 * drawn in front of the previous. */
-    BARS_STACKED,			/* Each successive bar in a group is
-					 * drawn stacked on top of the previous
-					 * bar. */
-    BARS_ALIGNED,			/* Each successive bar in a group is
-					 * drawn aligned side-by-side to the
-					 * previous from right-to-left. */
-    BARS_OVERLAP			/* Like "aligned", each successive bar
-					 * in a group is drawn from
-					 * right-to-left. The bars will overlap
-					 * each other by ~50%. */
+    BARS_INFRONT,			/* Each successive bar in a group
+					 * is drawn in front of the
+					 * previous. */
+    BARS_STACKED,			/* Each successive bar in a group
+					 * is drawn stacked on top of the
+					 * previous bar. */
+    BARS_ALIGNED,			/* Each successive bar in a group
+					 * is drawn aligned side-by-side to
+					 * the previous from
+					 * right-to-left. */
+    BARS_OVERLAP			/* Like "aligned", each successive
+					 * bar in a group is drawn from
+					 * right-to-left. The bars will
+					 * overlap each other by ~50%. */
 } BarMode;
 
 typedef struct _Pen Pen;
@@ -216,15 +205,15 @@ typedef int (PenConfigureProc)(Graph *graphPtr, Pen *penPtr);
 typedef void (PenDestroyProc)(Graph *graphPtr, Pen *penPtr);
 
 struct _Pen {
-    const char *name;			/* Pen style identifier.  If NULL pen
-					 * was statically allocated. */
+    const char *name;			/* Pen style identifier.  If NULL
+					 * pen was statically allocated. */
     ClassId classId;			/* Type of pen. */
-    const char *typeId;			/* String token identifying the type of
-					 * pen. */
+    const char *typeId;			/* String token identifying the
+					 * type of pen. */
     unsigned int flags;			/* Indicates if the pen element is
 					 * active or normal. */
-    int refCount;			/* Reference count for elements using
-					 * this pen. */
+    int refCount;			/* Reference count for elements
+					 * using this pen. */
     Blt_HashEntry *hashPtr;
 
     Blt_ConfigSpec *configSpecs;	/* Configuration specifications */
@@ -238,52 +227,55 @@ struct _Pen {
 /*
  * Playback --
  *
- *	Contains the line segments positions and graphics context used
- *	to simulate play (by XORing) on the graph.
+ *	Contains the line segments positions and graphics context used to
+ *	simulate play (by XORing) on the graph.
  *
  */
 typedef struct {
     int first, last;			/* The two time points defining the
-					 * section of points to be displayed.
-					 * -1 indicates to use the default
-					 * value.   */
+					 * section of points to be
+					 * displayed.  -1 indicates to use
+					 * the default value.  */
     int t1, t2;
     unsigned int flags;
     int direction;			/* Direction of the playback. */
-    int interval;			/* Interval to delay before next 
+    int interval;			/* Interval to delay before next
 					 * graph. */
     int enabled;
     int offset;				/* Current location of playback. */
-    Tcl_TimerToken timerToken;		/* Token for timer handler which polls
-					 * for the exit status of each
-					 * sub-process. If zero, there's no
-					 * timer handler queued. */
+    Tcl_TimerToken timerToken;		/* Token for timer handler which
+					 * polls for the exit status of
+					 * each sub-process. If zero,
+					 * there's no timer handler
+					 * queued. */
 } Playback;
 
 /*
  * GraphColormap --
  *
- *	Contains the line segments positions and graphics context used
- *	to simulate play (by XORing) on the graph.
+ *	Contains the line segments positions and graphics context used to
+ *	simulate play (by XORing) on the graph.
  *
  */
 typedef struct {
     const char *name;
     Blt_HashEntry *hashPtr;
     Graph *graphPtr;			/* Parent graph. */
-    Blt_Palette palette;		/* Color palette to map colors to. */
-    Axis *axisPtr;			/* Axis to use for colormap range.  By
-					 * default, the colormap range is the
-					 * range of values for all elements
-					 * mapped to this axis. */
+    Blt_Palette palette;		/* Color palette to map colors
+                                           to. */
+    Axis *axisPtr;			/* Axis to use for colormap range.
+					 * By default, the colormap range
+					 * is the range of values for all
+					 * elements mapped to this axis. */
     double reqMin, reqMax;		/* Requested limits of the
 					 * colormap. These override the
 					 * computed limits of the axis
 					 * above. */
     double min, max;			/* Limits of the colormap */
     Blt_HashTable notifierTable;	/* Table of registered client
-					 * callbacks to be made whenever the
-					 * colormap changes or is deleted. */
+					 * callbacks to be made whenever
+					 * the colormap changes or is
+					 * deleted. */
 } GraphColormap;
 
 typedef void (GraphColormapNotifyProc) (GraphColormap *cmapPtr, 
@@ -291,7 +283,6 @@ typedef void (GraphColormapNotifyProc) (GraphColormap *cmapPtr,
 
 #define COLORMAP_CHANGE_NOTIFY	(1<<0)
 #define COLORMAP_DELETE_NOTIFY	(1<<1)
-
 
 /*
  *---------------------------------------------------------------------------
@@ -309,22 +300,26 @@ typedef struct {
     short int width, height;		/* Dimensions of the margin */
     short int axesOffset;
     short int axesTitleLength;		/* Width of the widest title to be
-					 * shown.  Multiple titles are displayed
-					 * in another margin. This is the
-					 * minimum space requirement. */
+					 * shown.  Multiple titles are
+					 * displayed in another
+					 * margin. This is the minimum
+					 * space requirement. */
     short int maxAxisLabelWidth;	/* Maximum width of all axis tick
 					 * labels in this margin. */
     short int maxAxisLabelHeight;	/* Maximum height of all axis tick
 					 * labels in this margin. */
     unsigned int numAxes;		/* # of axes to be displayed */
-    Blt_Chain axes;			/* Axes associated with this margin */
-    const char *varName;		/* If non-NULL, name of variable to be
-					 * updated when the margin size
+    Blt_Chain axes;			/* Axes associated with this
+                                           margin */
+    const char *varName;		/* If non-NULL, name of variable to
+					 * be updated when the margin size
 					 * changes */
     int reqSize;			/* Requested size of margin */
-    int site;				/* Indicates where margin is located:
-					 * left, right, top, or bottom. */
-    int offset;				/* Offset of next axis in margin. */
+    int site;				/* Indicates where margin is
+					 * located: left, right, top, or
+					 * bottom. */
+    int offset;				/* Offset of next axis in
+                                         * margin. */
 } Margin;
 
 #define MARGIN_NONE	-1
@@ -348,33 +343,36 @@ typedef struct {
  *---------------------------------------------------------------------------
  */
 struct _Graph {
-    unsigned int flags;			/* Flags;  see below for definitions. */
-    Tcl_Interp *interp;			/* Interpreter associated with graph */
+    unsigned int flags;			/* Flags; see below for
+                                         * definitions. */
+    Tcl_Interp *interp;			/* Interpreter associated with
+                                         * graph */
     Tk_Window tkwin;			/* Window that embodies the graph.
-					 * NULL means that the window has been
-					 * destroyed but the data structures
-					 * haven't yet been cleaned up. */
-    Display *display;			/* Display containing widget; used to
-					 * release resources after tkwin has
-					 * already gone away. */
+					 * NULL means that the window has
+					 * been destroyed but the data
+					 * structures haven't yet been
+					 * cleaned up. */
+    Display *display;			/* Display containing widget; used
+					 * to release resources after tkwin
+					 * has already gone away. */
     Tcl_Command cmdToken;		/* Token for graph's widget command. */
     const char *data;			/* This value isn't used in C code.
-					 * It may be used in TCL bindings to
-					 * associate extra data. */
+					 * It may be used in TCL bindings
+					 * to associate extra data. */
     Tk_Cursor cursor;
     int inset;				/* Sum of focus highlight and 3-D
 					 * border.  Indicates how far to
-					 * offset the graph from outside edge
-					 * of the window. */
+					 * offset the graph from outside
+					 * edge of the window. */
     int borderWidth;			/* Width of the exterior border */
     int relief;				/* Relief of the exterior border. */
     Blt_Bg normalBg;			/* 3-D border used to delineate the
 					 * plot surface and outer edge of
 					 * window. */
     int highlightWidth;			/* Width in pixels of highlight to
-					 * draw around widget when it has the
-					 * focus.  <= 0 means don't draw a
-					 * highlight. */
+					 * draw around widget when it has
+					 * the focus.  <= 0 means don't
+					 * draw a highlight. */
     XColor *highlightBgColor;		/* Color for drawing traversal
 					 * highlight area when highlight is
 					 * off. */
@@ -387,15 +385,18 @@ struct _Graph {
 					 * etc.*/
     
     const char *takeFocus;		/* Not used in C code, indicates if
-					 * widget should be included in focus
-					 * traversal. */
-    Axis *focusPtr;			/* The axis that currently has focus. */
+					 * widget should be included in
+					 * focus traversal. */
+    Axis *focusPtr;			/* The axis that currently has
+                                         * focus. */
     
-    int reqWidth, reqHeight;		/* Requested size of graph window */
-    int reqPlotWidth, reqPlotHeight;	/* Requested size of plot area. Zero
-					 * means to adjust the dimension
-					 * according to the available space
-					 * left in the window. */
+    int reqWidth, reqHeight;		/* Requested size of graph
+                                         * window */
+    int reqPlotWidth, reqPlotHeight;	/* Requested size of plot
+					 * area. Zero means to adjust the
+					 * dimension according to the
+					 * available space left in the
+					 * window. */
     int width, height;			/* Actual size (in pixels) of graph
 					 * window or PostScript page. */
     Blt_HashTable penTable;		/* Table of pens */
@@ -406,34 +407,41 @@ struct _Graph {
 	Blt_HashTable tagTable;		/* Table of tags. */
     } elements, markers, axes;
 
-    Blt_HashTable dataTables;		/* Hash table of datatable clients. */
+    Blt_HashTable dataTables;		/* Hash table of datatable
+                                         * clients. */
     ClassId classId;			/* Default element type */
     Blt_BindTable bindTable;
     int nextMarkerId;			/* Tracks next marker identifier
 					 * available */
     Blt_Chain axisChain[4];		/* Chain of axes for each of the
-					 * margins.  They're separate from the
-					 * margin structures to make it easier
-					 * to invert the X-Y axes by simply
-					 * switching chain pointers. */
+					 * margins.  They're separate from
+					 * the margin structures to make it
+					 * easier to invert the X-Y axes by
+					 * simply switching chain
+					 * pointers. */
     Margin margins[4];
-    PageSetup *pageSetup;		/* Page layout options: see bltGrPS.c */
+    PageSetup *pageSetup;		/* Page layout options: see
+                                         * bltGrPS.c */
     Legend *legend;			/* Legend information: see
 					 * bltGrLegd.c */
     Crosshairs *crosshairs;		/* Crosshairs information: see
 					 * bltGrHairs.c */
     int halo;				/* Maximum distance allowed between
-					 * points when searching for a point */
-    int inverted;			/* If non-zero, indicates the x and y
-					 * axis positions should be inverted. */
+					 * points when searching for a
+					 * point */
+    int inverted;			/* If non-zero, indicates the x and
+					 * y axis positions should be
+					 * inverted. */
     int stackAxes;			/* If non-zero, indicates to stack
-					 * mulitple axes in a margin, rather
-					 * than layering them one on top of
-					 * another. */
-    GC drawGC;				/* GC for drawing on the margins. This
-					 * includes the axis lines */  
+					 * mulitple axes in a margin,
+					 * rather than layering them one on
+					 * top of another. */
+    GC drawGC;				/* GC for drawing on the
+					 * margins. This includes the axis
+					 * lines */  
     int plotBW;				/* Width of interior 3-D border. */
-    int plotRelief;			/* 3-d effect: TK_RELIEF_RAISED etc. */
+    int plotRelief;			/* 3-d effect: TK_RELIEF_RAISED
+                                         * etc. */
     Blt_Bg plotBg;			/* Color of plotting surface */
 
     /* If non-zero, force plot to conform to aspect ratio W/H */
@@ -443,14 +451,15 @@ struct _Graph {
     short int top, bottom;	
 
     Blt_Pad xPad;			/* Vertical padding for plotarea */
-    int vRange, vOffset;		/* Vertical axis range and offset from
-					 * the left side of the graph
-					 * window. Used to transform coordinates
-					 * to vertical axes. */
+    int vRange, vOffset;		/* Vertical axis range and offset
+					 * from the left side of the graph
+					 * window. Used to transform
+					 * coordinates to vertical axes. */
     Blt_Pad yPad;			/* Horizontal padding for plotarea */
-    int hRange, hOffset;		/* Horizontal axis range and offset from
-					 * the top of the graph window. Used to
-					 * transform horizontal axes */
+    int hRange, hOffset;		/* Horizontal axis range and offset
+					 * from the top of the graph
+					 * window. Used to transform
+					 * horizontal axes */
     float vScale, hScale;
 
     int doubleBuffer;			/* If non-zero, draw the graph into a
@@ -459,15 +468,16 @@ struct _Graph {
 					 * drawing them into a pixmap */
     Pixmap cache;			/* Pixmap used to cache elements
 					 * displayed.  If *backingStore* is
-					 * non-zero, each element is drawn into
-					 * this pixmap before it is copied onto
-					 * the screen.  The pixmap then acts as
-					 * a cache (only the pixmap is
-					 * redisplayed if the none of elements
-					 * have changed). This is done so that
-					 * markers can be redrawn quickly over
-					 * elements without redrawing each
-					 * element. */
+					 * non-zero, each element is drawn
+					 * into this pixmap before it is
+					 * copied onto the screen.  The
+					 * pixmap then acts as a cache
+					 * (only the pixmap is redisplayed
+					 * if the none of elements have
+					 * changed). This is done so that
+					 * markers can be redrawn quickly
+					 * over elements without redrawing
+					 * each element. */
     short int cacheWidth, cacheHeight;	/* Size of element backing store
 					 * pixmap. */
 
@@ -480,26 +490,28 @@ struct _Graph {
      * Barchart-specific information
      */
     float baseline;			/* Baseline from bar chart.  */
-    float barWidth;			/* Default width of each bar in graph
-					 * units.  The default width is 1.0
-					 * units. */
-    BarMode mode;			/* Mode describing how to display bars
-					 * with the same x-coordinates. Mode can
-					 * be "stacked", "aligned", "overlap",
+    float barWidth;			/* Default width of each bar in
+					 * graph units.  The default width
+					 * is 1.0 units. */
+    BarMode mode;			/* Mode describing how to display
+					 * bars with the same
+					 * x-coordinates. Mode can be
+					 * "stacked", "aligned", "overlap",
 					 * or "infront" */
-    BarGroup *barGroups;		/* Contains information about duplicate
-					 * x-values in bar elements (malloc-ed).
-					 * This information can also be accessed
+    BarGroup *barGroups;		/* Contains information about
+					 * duplicate x-values in bar
+					 * elements (malloc-ed).  This
+					 * information can also be accessed
 					 * by the group hash table */
-    int numBarGroups;			/* # of entries in barGroups array.  If 
-					 * zero, indicates nothing special
-					 * needs to be * done for "stack" or
-					 * "align" modes */
+    int numBarGroups;			/* # of entries in barGroups array.
+					 * If zero, indicates nothing
+					 * special needs to be * done for
+					 * "stack" or "align" modes */
     Blt_HashTable setTable;		/* Table managing sets of bars with
-					 * the same abscissas. The bars in a
-					 * set may be displayed is various
-					 * ways: aligned, overlap, infront, or
-					 * stacked. */
+					 * the same abscissas. The bars in
+					 * a set may be displayed is
+					 * various ways: aligned, overlap,
+					 * infront, or stacked. */
     int maxSetSize;
     const char *dataCmd;		/* New data callback? */
 
@@ -516,37 +528,37 @@ struct _Graph {
  *
  * 	All kinds of state information kept here.  All these things happen
  * 	when the window is available to draw into (DisplayGraph). Need the
- * 	window width and height before we can calculate graph layout (i.e. the
- * 	screen coordinates of the axes, elements, titles, etc). But we want to
- * 	do this only when we have to, not every time the graph is redrawn.
+ * 	window width and height before we can calculate graph layout
+ * 	(i.e. the screen coordinates of the axes, elements, titles,
+ * 	etc). But we want to do this only when we have to, not every time
+ * 	the graph is redrawn.
  *
  *	Same goes for maintaining a pixmap to double buffer graph elements.
  *	Need to mark when the pixmap needs to updated.
  *
  *
- *	MAP_ITEM		Indicates that the element/marker/axis
- *				configuration has changed such that
- *				its layout of the item (i.e. its
- *				position in the graph window) needs
- *				to be recalculated.
+ *	MAP_ITEM                Indicates that the element/marker/axis 
+ *                              configuration has changed such that its
+ *				layout of the item (i.e. its position in
+ *				the graph window) needs to be recalculated.
  *
  *	MAP_ALL			Indicates that the layout of the axes and 
- *				all elements and markers and the graph need 
+ *				all elements and markers and the graph need
  *				to be recalculated. Otherwise, the layout
  *				of only those markers and elements that
- *				have changed will be reset. 
+ *				have changed will be reset.
  *
  *	GET_AXIS_GEOMETRY	Indicates that the size of the axes needs 
  *				to be recalculated. 
  *
  *	RESET_AXES		Flag to call to Blt_ResetAxes routine.  
  *				This routine recalculates the scale offset
- *				(used for mapping coordinates) of each axis.
- *				If an axis limit has changed, then it sets 
- *				flags to re-layout and redraw the entire 
- *				graph.  This needs to happend before the axis
- *				can compute transformations between graph and 
- *				screen coordinates. 
+ *				(used for mapping coordinates) of each
+ *				axis.  If an axis limit has changed, then
+ *				it sets flags to re-layout and redraw the
+ *				entire graph.  This needs to happend before
+ *				the axis can compute transformations
+ *				between graph and screen coordinates.
  *
  *	LAYOUT_NEEDED		
  *
@@ -557,9 +569,9 @@ struct _Graph {
  *				already been queued to redraw this window. 
  *
  *	DRAW_LEGEND		Non-zero means redraw the legend. If this is 
- *				the only DRAW_* flag, the legend display 
- *				routine is called instead of the graph 
- *				display routine. 
+ *				the only DRAW_* flag, the legend display
+ *				routine is called instead of the graph
+ *				display routine.
  *
  *	DRAW_MARGINS		Indicates that the margins bordering 
  *				the plotting area need to be redrawn. 
@@ -575,16 +587,43 @@ struct _Graph {
 
 #define HIDE			(1<<0)
 #define DELETE_PENDING		(1<<1)
-#define REDRAW_PENDING		(1<<2)
+#define REDRAW_PENDING		(1<<2)  /* Indicates a DoWhenIdle handler
+                                         * has already been queued to
+                                         * redraw this window.  */
+
 #define	ACTIVE_PENDING		(1<<3)
-#define	MAP_ITEM		(1<<4)
+#define	MAP_ITEM		(1<<4)  /* Indicates that the
+                                         * element/marker/axis
+                                         * configuration has changed such
+                                         * that its layout of the item
+                                         * (i.e. its position in the graph
+                                         * window) needs to be
+                                         * recalculated. */
 #define DIRTY			(1<<5)
 #define ACTIVE			(1<<6)
 #define FOCUS			(1<<7)
 
-#define	MAP_ALL			(1<<8)
+#define	MAP_ALL			(1<<8)  /* Indicates that the layout of the
+                                         * axes and all elements and
+                                         * markers and the graph need to be
+                                         * recalculated. Otherwise, the
+                                         * layout of only those markers and
+                                         * elements that have changed will
+                                         * be reset. */
+
 #define LAYOUT_NEEDED		(1<<9)
-#define RESET_AXES		(1<<10)
+#define RESET_AXES		(1<<10) /* Flag to call to Blt_ResetAxes
+                                         * routine.  This routine
+                                         * recalculates the scale offset
+                                         * (used for mapping coordinates)
+                                         * of each axis.  If an axis limit
+                                         * has changed, then it sets flags
+                                         * to re-layout and redraw the
+                                         * entire graph.  This needs to
+                                         * happend before the axis can
+                                         * compute transformations between
+                                         * graph and screen coordinates. */
+
 #define	GET_AXIS_GEOMETRY	(1<<11)
 
 #define DRAW_LEGEND		(1<<12)
