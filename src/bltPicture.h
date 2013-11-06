@@ -485,11 +485,11 @@ BLT_EXTERN int Blt_Palette_GetFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr,
 	Blt_Palette *palPtr);
 BLT_EXTERN int Blt_Palette_GetFromString(Tcl_Interp *interp, const char *string,
 	Blt_Palette *palPtr);
-BLT_EXTERN int Blt_Palette_GetColorFromAbsoluteValue(Blt_Palette palette, 
+BLT_EXTERN int Blt_Palette_GetAssociatedColorFromAbsoluteValue(Blt_Palette palette, 
 	double absValue, double rangeMin, double rangeMax);
 BLT_EXTERN void Blt_Palette_SetRange(Blt_Palette palette, double min, 
 	double max);
-BLT_EXTERN int Blt_Palette_GetColor(Blt_Palette palette, double relValue);
+BLT_EXTERN int Blt_Palette_GetAssociatedColor(Blt_Palette palette, double relValue);
 BLT_EXTERN void Blt_Palette_CreateNotifier(Blt_Palette palette, 
 	Blt_Palette_NotifyProc *proc, ClientData clientData);
 BLT_EXTERN void Blt_Palette_DeleteNotifier(Blt_Palette palette, 

@@ -1,5 +1,4 @@
 /* -*- mode: c; c-basic-offset: 4; indent-tabs-mode: nil -*- */
-
 /*
  * bltPaint.c --
  *
@@ -262,8 +261,8 @@ static Blt_ConfigSpec textureConfigSpecs[] =
     {BLT_CONFIG_PIX32, "-high", "high", "High", DEF_GRADIENT_HIGH,
         Blt_Offset(PaintbrushCmd, brush.high), 0},
     {BLT_CONFIG_CUSTOM, "-jitter", "jitter", "Jitter", DEF_TEXTURE_JITTER, 
-	Blt_Offset(PaintbrushCmd, brush.jitter.range), BLT_CONFIG_DONT_SET_DEFAULT, 
-	&jitterOption},
+	Blt_Offset(PaintbrushCmd, brush.jitter.range), 
+        BLT_CONFIG_DONT_SET_DEFAULT, &jitterOption},
     {BLT_CONFIG_PIX32, "-low", "low", "Low", DEF_GRADIENT_LOW,
         Blt_Offset(PaintbrushCmd, brush.low), 0},
     {BLT_CONFIG_CUSTOM, "-opacity", "opacity", "Opacity", DEF_OPACITY, 
@@ -939,7 +938,7 @@ GradientColorProc(Blt_Paintbrush *brushPtr, int x, int y)
 	t = atan(18.0 * (t-0.05) + 1.0) / M_PI_2;
     } 
     if (brushPtr->palette != NULL) {
-	return Blt_Palette_GetColor(brushPtr->palette, t);
+	return Blt_Palette_GetAssociatedColor(brushPtr->palette, t);
     }
     color.Red   = (unsigned char)
 	(brushPtr->low.Red   + t * brushPtr->rRange);
@@ -1496,7 +1495,8 @@ Blt_Paintbrush_SetGradient(Blt_Paintbrush *brushPtr, Blt_GradientType type)
 }
 
 void
-Blt_Paintbrush_SetColors(Blt_Paintbrush *brushPtr, Blt_Pixel *lowPtr, Blt_Pixel *highPtr)
+Blt_Paintbrush_SetColors(Blt_Paintbrush *brushPtr, Blt_Pixel *lowPtr, 
+                         Blt_Pixel *highPtr)
 {
     brushPtr->low.u32 = lowPtr->u32;
     brushPtr->high.u32 = highPtr->u32;

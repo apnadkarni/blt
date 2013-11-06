@@ -466,8 +466,8 @@ static Blt_ConfigSpec gradientConfigSpecs[] =
     {BLT_CONFIG_PIX32, "-high", "high", "High", DEF_GRADIENT_HIGH,
         Blt_Offset(GradientBackground, high), 0},
     {BLT_CONFIG_CUSTOM, "-jitter", "jitter", "Jitter", DEF_GRADIENT_JITTER, 
-	Blt_Offset(GradientBackground, jitter.range), BLT_CONFIG_DONT_SET_DEFAULT, 
-	&jitterOption},
+	Blt_Offset(GradientBackground, jitter.range), 
+        BLT_CONFIG_DONT_SET_DEFAULT, &jitterOption},
     {BLT_CONFIG_PIX32, "-low", "low", "Low", DEF_GRADIENT_LOW,
         Blt_Offset(GradientBackground, low), 0},
     {BLT_CONFIG_CUSTOM, "-opacity", "opacity", "Opacity", "100.0", 
@@ -497,8 +497,8 @@ static Blt_ConfigSpec textureConfigSpecs[] =
     {BLT_CONFIG_PIX32, "-high", "high", "High", DEF_GRADIENT_HIGH,
         Blt_Offset(TextureBackground, high), 0},
     {BLT_CONFIG_CUSTOM, "-jitter", "jitter", "Jitter", DEF_TEXTURE_JITTER, 
-	Blt_Offset(TextureBackground, jitter.range), BLT_CONFIG_DONT_SET_DEFAULT, 
-	&jitterOption},
+	Blt_Offset(TextureBackground, jitter.range), 
+        BLT_CONFIG_DONT_SET_DEFAULT, &jitterOption},
     {BLT_CONFIG_PIX32, "-low", "low", "Low", DEF_GRADIENT_LOW,
         Blt_Offset(TextureBackground, low), 0},
     {BLT_CONFIG_CUSTOM, "-opacity", "opacity", "Opacity", "100.0", 
@@ -1262,7 +1262,7 @@ GradientColorProc(Blt_Paintbrush *paintPtr, int x, int y)
 	t = atan(18.0 * (t-0.05) + 1.0) / M_PI_2;
     } 
     if (corePtr->palette != NULL) {
-	return Blt_Palette_GetColor(corePtr->palette, t);
+	return Blt_Palette_GetAssociatedColor(corePtr->palette, t);
     }
     color.Red   = (unsigned char)
 	(corePtr->low.Red   + t * corePtr->rRange);
@@ -1272,6 +1272,7 @@ GradientColorProc(Blt_Paintbrush *paintPtr, int x, int y)
 	(corePtr->low.Blue  + t * corePtr->bRange);
     color.Alpha = (unsigned char)
 	(corePtr->low.Alpha + t * corePtr->aRange);
+    Blt_AssociateColor(&color);
     return color.u32;
 }
 
@@ -1310,6 +1311,7 @@ TextureColorProc(Blt_Paintbrush *paintPtr, int x, int y)
 	(corePtr->low.Blue  + t * corePtr->bRange);
     color.Alpha = (unsigned char)
 	(corePtr->low.Alpha + t * corePtr->aRange);
+    Blt_AssociateColor(&color);
     return color.u32;
 }
 
@@ -2302,8 +2304,8 @@ DrawTileRectangleProc(Tk_Window tkwin, Drawable drawable,
 	if (corePtr->reference != REFERENCE_NONE) {
 	    int isNew;
 
-	    /* See if a picture has previously been generated. There will be a
-	     * picture for each reference window. */
+	    /* See if a picture has previously been generated. There will
+	     * be a picture for each reference window. */
 	    hPtr = Blt_CreateHashEntry(&corePtr->pictTable, 
 		(char *)corePtr->refWindow, &isNew);
 	    if (!isNew) {
@@ -2317,9 +2319,9 @@ DrawTileRectangleProc(Tk_Window tkwin, Drawable drawable,
 	    (Blt_PictureHeight(picture) != refHeight)) {
 	    
 	    /* 
-	     * Either the size of the reference window has changed or one of
-	     * the background options has been reset. Resize the picture if
-	     * necessary and regenerate the background.
+	     * Either the size of the reference window has changed or one
+	     * of the background options has been reset. Resize the picture
+	     * if necessary and regenerate the background.
 	     */
 	    if (picture == NULL) {
 		picture = Blt_CreatePicture(refWidth, refHeight);
@@ -2519,7 +2521,7 @@ DrawGradientRectangleProc(Tk_Window tkwin, Drawable drawable,
 	bg = Blt_CreatePicture(w, h);
     }
     if (bg == NULL) {
-	return;			/* Background is obscured. */
+	return;                         /* Background is obscured. */
     }
     GetOffsets(tkwin, basePtr, x, y, &xOffset, &yOffset);
     InitGradient(corePtr, refWidth, refHeight);
@@ -2764,8 +2766,7 @@ ConfigureTextureBackgroundProc(Tcl_Interp *interp, BackgroundObject *basePtr,
 	return TCL_ERROR;
     }
     corePtr->brush.alpha = corePtr->alpha;
-    Blt_Paintbrush_SetColorProc(&corePtr->brush, TextureColorProc, 
-	corePtr);
+    Blt_Paintbrush_SetColorProc(&corePtr->brush, TextureColorProc, corePtr);
     return TCL_OK;
 }
 
@@ -2888,15 +2889,14 @@ DestroyBackgroundObject(BackgroundObject *corePtr)
     Blt_Free(corePtr);
 }
 
-
 /*
  *---------------------------------------------------------------------------
  *
  * DestroyBackground --
  *
- *	Removes the client from the servers's list of clients and memory used
- *	by the client token is released.  When the last client is deleted, the
- *	server is also removed.
+ *	Removes the client from the servers's list of clients and memory
+ *	used by the client token is released.  When the last client is
+ *	deleted, the server is also removed.
  *
  * Results:
  *	None.
@@ -3369,8 +3369,8 @@ Blt_GetBgFromObj(Tcl_Interp *interp, Tk_Window tkwin, Tcl_Obj *objPtr)
 /*LINTLIBRARY*/
 void
 Blt_Bg_SetChangedProc(
-    Bg *bgPtr,				/* Background with which to register
-					 * callback. */
+    Bg *bgPtr,				/* Background with which to
+					 * register callback. */
     Blt_Bg_ChangedProc *notifyProc,	/* Function to call when background
 					 * has changed. NULL indicates to
 					 * unset the callback.*/
@@ -3409,8 +3409,8 @@ Blt_FreeBg(Bg *bgPtr)
  *
  * Blt_Bg_GetOrigin
  *
- *	Returns the coordinates of the origin of the background 
- *	referenced by the token.
+ *	Returns the coordinates of the origin of the background referenced
+ *	by the token.
  *
  * Results:
  *	Returns the coordinates of the origin.
@@ -3471,8 +3471,7 @@ Blt_Bg_Name(Bg *bgPtr)
  *
  * Blt_Bg_BorderColor
  *
- *	Returns the border color of the background referenced by the
- *	token.
+ *	Returns the border color of the background referenced by the token.
  *
  * Results:
  *	Returns the XColor representing the border color of the background.

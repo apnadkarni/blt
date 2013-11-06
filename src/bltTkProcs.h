@@ -491,10 +491,10 @@ BLT_EXTERN int		Blt_Palette_GetFromObj(Tcl_Interp *interp,
 BLT_EXTERN int		Blt_Palette_GetFromString(Tcl_Interp *interp,
 				const char *string, Blt_Palette *palPtr);
 #endif
-#ifndef Blt_Palette_GetColorFromAbsoluteValue_DECLARED
-#define Blt_Palette_GetColorFromAbsoluteValue_DECLARED
+#ifndef Blt_Palette_GetAssociatedColorFromAbsoluteValue_DECLARED
+#define Blt_Palette_GetAssociatedColorFromAbsoluteValue_DECLARED
 /* 82 */
-BLT_EXTERN int		Blt_Palette_GetColorFromAbsoluteValue(
+BLT_EXTERN int		Blt_Palette_GetAssociatedColorFromAbsoluteValue(
 				Blt_Palette palette, double absValue,
 				double rangeMin, double rangeMax);
 #endif
@@ -504,10 +504,10 @@ BLT_EXTERN int		Blt_Palette_GetColorFromAbsoluteValue(
 BLT_EXTERN void		Blt_Palette_SetRange(Blt_Palette palette, double min,
 				double max);
 #endif
-#ifndef Blt_Palette_GetColor_DECLARED
-#define Blt_Palette_GetColor_DECLARED
+#ifndef Blt_Palette_GetAssociatedColor_DECLARED
+#define Blt_Palette_GetAssociatedColor_DECLARED
 /* 84 */
-BLT_EXTERN int		Blt_Palette_GetColor(Blt_Palette palette,
+BLT_EXTERN int		Blt_Palette_GetAssociatedColor(Blt_Palette palette,
 				double relValue);
 #endif
 #ifndef Blt_Palette_CreateNotifier_DECLARED
@@ -1133,16 +1133,16 @@ extern BltTkProcs *bltTkProcsPtr;
 #define Blt_Palette_GetFromString \
 	(bltTkProcsPtr->blt_Palette_GetFromString) /* 81 */
 #endif
-#ifndef Blt_Palette_GetColorFromAbsoluteValue
-#define Blt_Palette_GetColorFromAbsoluteValue \
+#ifndef Blt_Palette_GetAssociatedColorFromAbsoluteValue
+#define Blt_Palette_GetAssociatedColorFromAbsoluteValue \
 	(bltTkProcsPtr->blt_Palette_GetColorFromAbsoluteValue) /* 82 */
 #endif
 #ifndef Blt_Palette_SetRange
 #define Blt_Palette_SetRange \
 	(bltTkProcsPtr->blt_Palette_SetRange) /* 83 */
 #endif
-#ifndef Blt_Palette_GetColor
-#define Blt_Palette_GetColor \
+#ifndef Blt_Palette_GetAssociatedColor
+#define Blt_Palette_GetAssociatedColor \
 	(bltTkProcsPtr->blt_Palette_GetColor) /* 84 */
 #endif
 #ifndef Blt_Palette_CreateNotifier

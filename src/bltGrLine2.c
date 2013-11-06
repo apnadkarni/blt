@@ -4156,7 +4156,7 @@ GradientColorProc(Blt_Paintbrush *brushPtr, int x, int y)
     } else {
 	return 0x0;
     }
-    color.u32 = Blt_Palette_GetColorFromAbsoluteValue(brushPtr->palette, value,
+    color.u32 = Blt_Palette_GetAssociatedColorFromAbsoluteValue(brushPtr->palette, value,
 	cmapPtr->min, cmapPtr->max);
     return color.u32;
 }
