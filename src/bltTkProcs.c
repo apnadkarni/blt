@@ -117,7 +117,7 @@ BltTkProcs bltTkProcs = {
     Blt_Paintbrush_SetGradient, /* 102 */
     Blt_Paintbrush_SetColor, /* 103 */
     Blt_Paintbrush_SetOrigin, /* 104 */
-    Blt_Paintbrush_GetColor, /* 105 */
+    Blt_Paintbrush_GetAssociatedColor, /* 105 */
     Blt_PaintRectangle, /* 106 */
     Blt_PaintPolygon, /* 107 */
     Blt_PictureRegisterFormat, /* 108 */

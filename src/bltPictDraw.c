@@ -1,5 +1,4 @@
 /* -*- mode: c; c-basic-offset: 4; indent-tabs-mode: nil -*- */
-
 /*
  * bltPictDraw.c --
  *
@@ -974,28 +973,16 @@ VertLine(Pict *destPtr, int x, int y1, int y2, Blt_Pixel *colorPtr)
 }
 
 static INLINE void
-BlendPixel(Blt_Pixel *bgPtr, Blt_Pixel *colorPtr, unsigned char weight)
+BlendPixel(Blt_Pixel *bgPtr, Blt_Pixel *colorPtr)
 {
-    unsigned char alpha;
-    int t1;
+    unsigned char beta;
+    int t;
 
-    alpha = imul8x8(colorPtr->Alpha, weight, t1);
-    if (alpha == 0xFF) {
-	bgPtr->u32 = colorPtr->u32;
-	bgPtr->Alpha = alpha;
-    } else if (alpha != 0x00) {
-	unsigned char beta;
-	int t1, t2;
-
-	beta = alpha ^ 0xFF;
-	bgPtr->Red   = imul8x8(alpha, colorPtr->Red, t1) + 
-	    imul8x8(beta, bgPtr->Red, t2);
-	bgPtr->Green = imul8x8(alpha, colorPtr->Green, t1) + 
-	    imul8x8(beta, bgPtr->Green, t2);
-	bgPtr->Blue  = imul8x8(alpha, colorPtr->Blue, t1)  + 
-	    imul8x8(beta, bgPtr->Blue, t2);
-	bgPtr->Alpha = alpha + imul8x8(beta, bgPtr->Alpha, t2);
-    }
+    beta = colorPtr->Alpha ^ 0xFF;
+    bgPtr->Red   = colorPtr->Red   + imul8x8(beta, bgPtr->Red, t);
+    bgPtr->Green = colorPtr->Green + imul8x8(beta, bgPtr->Green, t);
+    bgPtr->Blue  = colorPtr->Blue  + imul8x8(beta, bgPtr->Blue, t);
+    bgPtr->Alpha = colorPtr->Alpha + imul8x8(beta, bgPtr->Alpha, t);
 }
     
 
@@ -1003,11 +990,12 @@ static void INLINE
 PutPixel2(Pict *destPtr, int x, int y, Blt_Pixel *colorPtr, 
 	  unsigned char weight)  
 {
+    Blt_FadeColor(colorPtr, weight);
     if ((x >= 0) && (x < destPtr->width) && (y >= 0) && (y < destPtr->height)) {
 	Blt_Pixel *dp;
 
 	dp = Blt_PicturePixel(destPtr, x, y);
-	BlendPixel(dp, colorPtr, weight);
+	BlendPixel(dp, colorPtr);
     }
 }
 
@@ -1490,8 +1478,9 @@ BlitGlyph(Pict *destPtr,
 		if (pixel != 0x0) {
 		    Blt_Pixel color;
 
-		    color.u32 = Blt_Paintbrush_GetColor(brushPtr, x, y);
-		    BlendPixel(dp, &color, 0xFF);
+		    color.u32 = Blt_Paintbrush_GetAssociatedColor(brushPtr, 
+                        x, y);
+		    BlendPixel(dp, &color);
 		}
 	    }
 	    srcRowPtr += slot->bitmap.pitch;
@@ -1514,8 +1503,10 @@ BlitGlyph(Pict *destPtr,
 		if (*sp != 0x0) {
 		    Blt_Pixel color;
 
-		    color.u32 = Blt_Paintbrush_GetColor(brushPtr, x, y);
-		    BlendPixel(dp, &color, *sp);
+		    color.u32 = Blt_Paintbrush_GetAssociatedColor(brushPtr, 
+                        x, y);
+                    Blt_FadeColor(&color, *sp);
+		    BlendPixel(dp, &color);
 		}
 	    }
 	    srcRowPtr += slot->bitmap.pitch;
@@ -1598,7 +1589,8 @@ CopyGrayGlyph(
 		    int t;
 		    Blt_Pixel color;
 
-		    color.u32 = Blt_Paintbrush_GetColor(brushPtr, x, y);
+		    color.u32 = Blt_Paintbrush_GetAssociatedColor(brushPtr, 
+                        x, y);
 		    color.Alpha = imul8x8(*sp, color.Alpha, t);
 		    dp->u32 = color.u32;
 		}
@@ -1682,8 +1674,10 @@ PaintGrayGlyph(
 		if (*sp != 0x0) {
 		    Blt_Pixel color;
 
-		    color.u32 = Blt_Paintbrush_GetColor(brushPtr, x, y);
-		    BlendPixel(dp, &color, *sp);
+		    color.u32 = Blt_Paintbrush_GetAssociatedColor(brushPtr, 
+                        x, y);
+                    Blt_FadeColor(&color, *sp);
+		    BlendPixel(dp, &color);
 		}
 	    }
 	    srcRowPtr += slot->bitmap.pitch;
@@ -1759,7 +1753,7 @@ CopyMonoGlyph(Pict *destPtr, FT_GlyphSlot slot, int xx, int yy,
 
 		pixel = srcRowPtr[x >> 3] & (1 << (7 - (x & 0x7)));
 		if (pixel != 0x0) {
-		    dp->u32 = Blt_Paintbrush_GetColor(brushPtr, x, y);
+		    dp->u32 = Blt_Paintbrush_GetAssociatedColor(brushPtr, x, y);
 		}
 	    }
 	    srcRowPtr += slot->bitmap.pitch;
@@ -2085,7 +2079,7 @@ xPaintArc(Pict *destPtr, int x1, int y1, int x2, int y2, int lineWidth,
 	double z;
 	double d, q;
 	unsigned char a;
-
+        Blt_Pixel color;
 	y++;
 	z = sqrt(r2 - (y * y));
 	d = floor(z) - z;
@@ -2095,10 +2089,14 @@ xPaintArc(Pict *destPtr, int x1, int y1, int x2, int y2, int lineWidth,
 	dp = Blt_PicturePixel(destPtr, x + xoff, y + yoff);
 	q = FABS(d * 255.0);
 	a = (unsigned int)CLAMP(q);
-	BlendPixel(dp, colorPtr, a);
+        color.u32 = colorPtr->u32;
+        Blt_FadeColor(&color, a);
+	BlendPixel(dp, &color);
 	dp--;			/* x - 1 */
 	a = (unsigned int)CLAMP(255.0 - q);
-	BlendPixel(dp, colorPtr, a);
+        color.u32 = colorPtr->u32;
+        Blt_FadeColor(&color, a);
+	BlendPixel(dp, &color);
 	t = d;
 	x1++;
 	if (fill) {
@@ -2150,7 +2148,7 @@ BlendLine(Pict *destPtr, int x1, int x2, int y, Blt_Pixel *colorPtr)
     destRowPtr = destPtr->bits + (destPtr->pixelsPerRow * y) + x1;
     length = x2 - x1 + 1;
     for (dp = destRowPtr, dend = dp + length; dp < dend; dp++) {
-	BlendPixel(dp, colorPtr, 0xFF);
+	BlendPixel(dp, colorPtr);
     }
 }
 
@@ -2170,8 +2168,8 @@ BrushHorizontalLine(Pict *destPtr, int x1, int x2, int y,
     for (x = x1; x <= x2; x++, dp++) {
 	Blt_Pixel color;
 
-	color.u32 = Blt_Paintbrush_GetColor(brushPtr, x, y);
-	BlendPixel(dp, &color, 0xFF);
+	color.u32 = Blt_Paintbrush_GetAssociatedColor(brushPtr, x, y);
+	BlendPixel(dp, &color);
     }
 }
 
@@ -3339,8 +3337,8 @@ Blt_Picture_TextOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (fontPtr == NULL) {
 	return TCL_ERROR;
     }
-    if (destPtr->flags & BLT_PIC_ASSOCIATED_COLORS) {
-	Blt_UnassociateColors(destPtr);
+    if ((destPtr->flags & BLT_PIC_ASSOCIATED_COLORS) == 0) {
+	Blt_AssociateColors(destPtr);
     }
     if (switches.angle != 0.0) {
 	TextStyle ts;

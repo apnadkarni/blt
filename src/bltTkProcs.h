@@ -631,10 +631,10 @@ BLT_EXTERN void		Blt_Paintbrush_SetColor(Blt_Paintbrush *brushPtr,
 BLT_EXTERN void		Blt_Paintbrush_SetOrigin(Blt_Paintbrush *brushPtr,
 				int x, int y);
 #endif
-#ifndef Blt_Paintbrush_GetColor_DECLARED
-#define Blt_Paintbrush_GetColor_DECLARED
+#ifndef Blt_Paintbrush_GetAssociatedColor_DECLARED
+#define Blt_Paintbrush_GetAssociatedColor_DECLARED
 /* 105 */
-BLT_EXTERN int		Blt_Paintbrush_GetColor(Blt_Paintbrush *brushPtr,
+BLT_EXTERN int		Blt_Paintbrush_GetAssociatedColor(Blt_Paintbrush *brushPtr,
 				int x, int y);
 #endif
 #ifndef Blt_PaintRectangle_DECLARED
@@ -786,7 +786,7 @@ typedef struct BltTkProcs {
     void (*blt_Paintbrush_SetGradient) (Blt_Paintbrush *brushPtr, Blt_GradientType type); /* 102 */
     void (*blt_Paintbrush_SetColor) (Blt_Paintbrush *brushPtr, unsigned int value); /* 103 */
     void (*blt_Paintbrush_SetOrigin) (Blt_Paintbrush *brushPtr, int x, int y); /* 104 */
-    int (*blt_Paintbrush_GetColor) (Blt_Paintbrush *brushPtr, int x, int y); /* 105 */
+    int (*blt_Paintbrush_GetAssociatedColor) (Blt_Paintbrush *brushPtr, int x, int y); /* 105 */
     void (*blt_PaintRectangle) (Blt_Picture picture, int x, int y, int w, int h, int dx, int dy, Blt_Paintbrush *brushPtr); /* 106 */
     void (*blt_PaintPolygon) (Blt_Picture picture, int n, Point2f *vertices, Blt_Paintbrush *brushPtr); /* 107 */
     int (*blt_PictureRegisterFormat) (Tcl_Interp *interp, const char *name, Blt_PictureIsFmtProc *isFmtProc, Blt_PictureReadDataProc *readProc, Blt_PictureWriteDataProc *writeProc, Blt_PictureImportProc *importProc, Blt_PictureExportProc *exportProc); /* 108 */
@@ -1225,9 +1225,9 @@ extern BltTkProcs *bltTkProcsPtr;
 #define Blt_Paintbrush_SetOrigin \
 	(bltTkProcsPtr->blt_Paintbrush_SetOrigin) /* 104 */
 #endif
-#ifndef Blt_Paintbrush_GetColor
-#define Blt_Paintbrush_GetColor \
-	(bltTkProcsPtr->blt_Paintbrush_GetColor) /* 105 */
+#ifndef Blt_Paintbrush_GetAssociatedColor
+#define Blt_Paintbrush_GetAssociatedColor \
+	(bltTkProcsPtr->blt_Paintbrush_GetAssociatedColor) /* 105 */
 #endif
 #ifndef Blt_PaintRectangle
 #define Blt_PaintRectangle \
