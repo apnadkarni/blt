@@ -1,20 +1,19 @@
 /* -*- mode: c; c-basic-offset: 4; indent-tabs-mode: nil -*- */
-
 /*
  * bltPictPng.c --
  *
- * This module implements PNG file format conversion routines for the picture
- * image type in the BLT toolkit.
+ * This module implements PNG file format conversion routines for the
+ * picture image type in the BLT toolkit.
  *
  *	Copyright 2003-2005 George A Howlett.
  *
- *	Permission is hereby granted, free of charge, to any person obtaining
- *	a copy of this software and associated documentation files (the
- *	"Software"), to deal in the Software without restriction, including
- *	without limitation the rights to use, copy, modify, merge, publish,
- *	distribute, sublicense, and/or sell copies of the Software, and to
- *	permit persons to whom the Software is furnished to do so, subject to
- *	the following conditions:
+ *	Permission is hereby granted, free of charge, to any person
+ *	obtaining a copy of this software and associated documentation
+ *	files (the "Software"), to deal in the Software without
+ *	restriction, including without limitation the rights to use, copy,
+ *	modify, merge, publish, distribute, sublicense, and/or sell copies
+ *	of the Software, and to permit persons to whom the Software is
+ *	furnished to do so, subject to the following conditions:
  *
  *	The above copyright notice and this permission notice shall be
  *	included in all copies or substantial portions of the Software.
@@ -22,10 +21,11 @@
  *	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  *	EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  *	MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- *	NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
- *	LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
- *	OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
- *	WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *	NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+ *	BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ *	ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ *	CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ *	SOFTWARE.
  *
  */
 
@@ -202,7 +202,7 @@ PngAddText(Tcl_Interp *interp, png_struct *pngPtr, png_info *infoPtr,
  * Results:
  *      Returns 1 is the header is PNG and 0 otherwise.  Note that only the
  *      signature is compared and the validity of the image contents is not
- *      checked here.  That's done in Blt_PngToPicture.
+ *      checked here.  That's done in PngToPicture.
  *
  *---------------------------------------------------------------------------
  */
@@ -229,8 +229,8 @@ IsPng(Blt_DBuffer dbuffer)
  *      Reads a PNG file and converts it into a picture.
  *
  * Results:
- *      The picture is returned.  If an error occured, such as the designated
- *      file could not be opened, NULL is returned.
+ *      The picture is returned.  If an error occured, such as the
+ *      designated file could not be opened, NULL is returned.
  *
  *---------------------------------------------------------------------------
  */
@@ -303,6 +303,9 @@ PngToPicture(Tcl_Interp *interp, const char *fileName, Blt_DBuffer dbuffer,
     if ((numChannels == 4) || (numChannels == 3)) {
 	destPtr->flags |= BLT_PIC_COLOR;
     }
+    /*  Set associated colors flag.  Fixed, if necessary, below. */
+    destPtr->flags |= BLT_PIC_ASSOCIATED_COLORS;
+
     {
 	unsigned int y;
 	Blt_Pixel *destRowPtr;
@@ -381,6 +384,9 @@ PngToPicture(Tcl_Interp *interp, const char *fileName, Blt_DBuffer dbuffer,
 	    break;
 	}
     }
+    if (colorType & PNG_COLOR_MASK_ALPHA) {
+	Blt_AssociateColors(destPtr);
+    }
 
  bad:
     png_destroy_read_struct(&png, &info, (png_infop *)NULL);
@@ -413,9 +419,10 @@ PngToPicture(Tcl_Interp *interp, const char *fileName, Blt_DBuffer dbuffer,
  *      Writes a PNG format image to the provided data buffer.
  *
  * Results:
- *      A standard TCL result.  If an error occured, TCL_ERROR is returned and
- *      an error message will be place in the interpreter result. Otherwise,
- *      the data buffer will contain the binary output of the image.
+ *      A standard TCL result.  If an error occured, TCL_ERROR is returned
+ *      and an error message will be place in the interpreter
+ *      result. Otherwise, the data buffer will contain the binary output
+ *      of the image.
  *
  * Side Effects:
  *	Memory is allocated for the data buffer.
@@ -524,7 +531,7 @@ PictureToPng(Tcl_Interp *interp, Blt_Picture picture, Blt_DBuffer dbuffer,
 	    }
 	    break;
 	    
-	case 3:			/* RGB, 100% opaque image.  */
+        case 3:                         /* RGB, 100% opaque image.  */
 	    for (y = 0; y < srcPtr->height; y++) {
 		Blt_Pixel *sp, *send;
 		unsigned char *dp;
@@ -542,234 +549,236 @@ PictureToPng(Tcl_Interp *interp, Blt_Picture picture, Blt_DBuffer dbuffer,
 	    }
 	    break;
 	    
-	case 2:			/* Greyscale with alpha component.  */
-	    for (y = 0; y < srcPtr->height; y++) {
-		Blt_Pixel *sp, *send;
-		unsigned char *dp;
-		
-		dp = destRowPtr;
-		for (sp = srcRowPtr, send = sp + srcPtr->width; sp<send; sp++) {
-		    dp[0] = sp->Red;
-		    dp[1] = sp->Alpha;
-		    dp += 2;
-		}
-		rowArray[y] = destRowPtr;
-		destRowPtr += bytesPerRow;
-		srcRowPtr += srcPtr->pixelsPerRow;
-	    }
-	    break;
-	    
-	case 1:			/* Greyscale, 100% opaque image.  */
-	    for (y = 0; y < srcPtr->height; y++) {
-		Blt_Pixel *sp, *send;
-		unsigned char *dp;
-		
-		dp = destRowPtr;
-		for (sp = srcRowPtr, send = sp + srcPtr->width; sp<send; sp++) {
-		    *dp++ = sp->Red;
-		}
-		rowArray[y] = destRowPtr;
-		destRowPtr += bytesPerRow;
-		srcRowPtr += srcPtr->pixelsPerRow;
-	    }
-	    break;
-	}
-	png_write_image(png, rowArray);
-	png_write_end(png, NULL);
+	case 2:                         /* Greyscale with alpha
+                                         * component.  */
+             for (y = 0; y < srcPtr->height; y++) {
+                 Blt_Pixel *sp, *send;
+                 unsigned char *dp;
 
-	Blt_Free(destBuffer);
-	Blt_Free(rowArray);
-    }
- bad:
-    png_destroy_write_struct(&png, &info);
-    if (message.numWarnings > 0) {
-	Tcl_SetErrorCode(interp, "PICTURE", "PNG_WRITE_WARNINGS", 
-		Tcl_DStringValue(&message.errors), (char *)NULL);
-    } else {
-	Tcl_SetErrorCode(interp, "NONE", (char *)NULL);
-    }
-    Tcl_DStringFree(&message.warnings);
-    if (message.numErrors > 0) {
-	Tcl_DStringResult(interp, &message.errors);
-	return TCL_ERROR;
-    } 
-    Tcl_DStringFree(&message.errors);
-    return TCL_OK;
-}
+                 dp = destRowPtr;
+                 for (sp = srcRowPtr, send = sp + srcPtr->width; sp<send; sp++) {
+                     dp[0] = sp->Red;
+                     dp[1] = sp->Alpha;
+                     dp += 2;
+                 }
+                 rowArray[y] = destRowPtr;
+                 destRowPtr += bytesPerRow;
+                 srcRowPtr += srcPtr->pixelsPerRow;
+             }
+             break;
 
-static Blt_Chain
-ReadPng(Tcl_Interp *interp, const char *fileName, Blt_DBuffer dbuffer)
-{
-    PngImportSwitches switches;
+         case 1:			/* Greyscale, 100% opaque
+                                         * image.  */
+             for (y = 0; y < srcPtr->height; y++) {
+                 Blt_Pixel *sp, *send;
+                 unsigned char *dp;
 
-    memset(&switches, 0, sizeof(switches));
-    return PngToPicture(interp, fileName, dbuffer, &switches);
-}
+                 dp = destRowPtr;
+                 for (sp = srcRowPtr, send = sp + srcPtr->width; sp<send; sp++) {
+                     *dp++ = sp->Red;
+                 }
+                 rowArray[y] = destRowPtr;
+                 destRowPtr += bytesPerRow;
+                 srcRowPtr += srcPtr->pixelsPerRow;
+             }
+             break;
+         }
+         png_write_image(png, rowArray);
+         png_write_end(png, NULL);
 
-static Tcl_Obj *
-WritePng(Tcl_Interp *interp, Blt_Picture picture)
-{
-    Blt_DBuffer dbuffer;
-    PngExportSwitches switches;
-    Tcl_Obj *objPtr;
+         Blt_Free(destBuffer);
+         Blt_Free(rowArray);
+     }
+  bad:
+     png_destroy_write_struct(&png, &info);
+     if (message.numWarnings > 0) {
+         Tcl_SetErrorCode(interp, "PICTURE", "PNG_WRITE_WARNINGS", 
+                 Tcl_DStringValue(&message.errors), (char *)NULL);
+     } else {
+         Tcl_SetErrorCode(interp, "NONE", (char *)NULL);
+     }
+     Tcl_DStringFree(&message.warnings);
+     if (message.numErrors > 0) {
+         Tcl_DStringResult(interp, &message.errors);
+         return TCL_ERROR;
+     } 
+     Tcl_DStringFree(&message.errors);
+     return TCL_OK;
+ }
 
-    /* Default export switch settings. */
-    memset(&switches, 0, sizeof(switches));
+ static Blt_Chain
+ ReadPng(Tcl_Interp *interp, const char *fileName, Blt_DBuffer dbuffer)
+ {
+     PngImportSwitches switches;
 
-    objPtr = NULL;
-    dbuffer = Blt_DBuffer_Create();
-    if (PictureToPng(interp, picture, dbuffer, &switches) == TCL_OK) {
-	objPtr = Blt_DBuffer_Base64EncodeToObj(interp, dbuffer);
-    }
-    Blt_DBuffer_Destroy(dbuffer);
-    return objPtr;
-}
+     memset(&switches, 0, sizeof(switches));
+     return PngToPicture(interp, fileName, dbuffer, &switches);
+ }
 
-static Blt_Chain
-ImportPng(Tcl_Interp *interp, int objc, Tcl_Obj *const *objv, 
-	  const char **fileNamePtr)
-{
-    Blt_Chain chain;
-    Blt_DBuffer dbuffer;
-    PngImportSwitches switches;
-    const char *string;
+ static Tcl_Obj *
+ WritePng(Tcl_Interp *interp, Blt_Picture picture)
+ {
+     Blt_DBuffer dbuffer;
+     PngExportSwitches switches;
+     Tcl_Obj *objPtr;
 
-    memset(&switches, 0, sizeof(switches));
-    if (Blt_ParseSwitches(interp, importSwitches, objc - 3, objv + 3, 
-	&switches, BLT_SWITCH_DEFAULTS) < 0) {
-	Blt_FreeSwitches(importSwitches, (char *)&switches, 0);
-	return NULL;
-    }
-    if ((switches.dataObjPtr != NULL) && (switches.fileObjPtr != NULL)) {
-	Tcl_AppendResult(interp, "more than one import source: ",
-		"use only one -file or -data flag.", (char *)NULL);
-	Blt_FreeSwitches(importSwitches, (char *)&switches, 0);
-	return NULL;
-    }
-    dbuffer = Blt_DBuffer_Create();
-    chain = NULL;
-    if (switches.dataObjPtr != NULL) {
-	unsigned char *bytes;
-	int numBytes;
+     /* Default export switch settings. */
+     memset(&switches, 0, sizeof(switches));
 
-	bytes = Tcl_GetByteArrayFromObj(switches.dataObjPtr, &numBytes);
-	string = (const char *)bytes;
-	if (Blt_IsBase64(string, numBytes)) {
-	    if (Blt_DBuffer_Base64Decode(interp, string, numBytes, dbuffer) 
-		!= TCL_OK) {
-		goto error;
-	    }
-	} else {
-	    Blt_DBuffer_AppendData(dbuffer, bytes, numBytes);
-	} 
-	string = "data buffer";
-	*fileNamePtr = NULL;
-    } else {
-	string = Tcl_GetString(switches.fileObjPtr);
-	*fileNamePtr = string;
-	if (Blt_DBuffer_LoadFile(interp, string, dbuffer) != TCL_OK) {
-	    goto error;
-	}
-    }
-    chain = PngToPicture(interp, string, dbuffer, &switches);
- error:
-    Blt_FreeSwitches(importSwitches, (char *)&switches, 0);
-    Blt_DBuffer_Destroy(dbuffer);
-    return chain;
-}
+     objPtr = NULL;
+     dbuffer = Blt_DBuffer_Create();
+     if (PictureToPng(interp, picture, dbuffer, &switches) == TCL_OK) {
+         objPtr = Blt_DBuffer_Base64EncodeToObj(interp, dbuffer);
+     }
+     Blt_DBuffer_Destroy(dbuffer);
+     return objPtr;
+ }
 
-static int
-ExportPng(Tcl_Interp *interp, unsigned int index, Blt_Chain chain, int objc, 
-	  Tcl_Obj *const *objv)
-{
-    PngExportSwitches switches;
-    Blt_DBuffer dbuffer;
-    int result;
-    Blt_Picture picture;
+ static Blt_Chain
+ ImportPng(Tcl_Interp *interp, int objc, Tcl_Obj *const *objv, 
+           const char **fileNamePtr)
+ {
+     Blt_Chain chain;
+     Blt_DBuffer dbuffer;
+     PngImportSwitches switches;
+     const char *string;
 
-    /* Default export switch settings. */
-    memset(&switches, 0, sizeof(switches));
-    switches.index = index;
-    if (Blt_ParseSwitches(interp, exportSwitches, objc - 3, objv + 3, 
-	&switches, BLT_SWITCH_DEFAULTS) < 0) {
-	Blt_FreeSwitches(exportSwitches, (char *)&switches, 0);
-	return TCL_ERROR;
-    }
-    if ((switches.dataObjPtr != NULL) && (switches.fileObjPtr != NULL)) {
-	Tcl_AppendResult(interp, "more than one export destination: ",
-		"use only one -file or -data flag.", (char *)NULL);
-	Blt_FreeSwitches(exportSwitches, (char *)&switches, 0);
-	return TCL_ERROR;
-    }
-    picture = Blt_GetNthPicture(chain, switches.index);
-    if (picture == NULL) {
-	Tcl_AppendResult(interp, "no picture at index ", 
-		Blt_Itoa(switches.index), (char *)NULL);
-	Blt_FreeSwitches(exportSwitches, (char *)&switches, 0);
-	return TCL_ERROR;
-    }
-    dbuffer = Blt_DBuffer_Create();
-    result = PictureToPng(interp, picture, dbuffer, &switches);
-    if (result != TCL_OK) {
-	Tcl_AppendResult(interp, "can't convert \"", 
-		Tcl_GetString(objv[2]), "\"", (char *)NULL);
-	goto error;
-    }
+     memset(&switches, 0, sizeof(switches));
+     if (Blt_ParseSwitches(interp, importSwitches, objc - 3, objv + 3, 
+         &switches, BLT_SWITCH_DEFAULTS) < 0) {
+         Blt_FreeSwitches(importSwitches, (char *)&switches, 0);
+         return NULL;
+     }
+     if ((switches.dataObjPtr != NULL) && (switches.fileObjPtr != NULL)) {
+         Tcl_AppendResult(interp, "more than one import source: ",
+                 "use only one -file or -data flag.", (char *)NULL);
+         Blt_FreeSwitches(importSwitches, (char *)&switches, 0);
+         return NULL;
+     }
+     dbuffer = Blt_DBuffer_Create();
+     chain = NULL;
+     if (switches.dataObjPtr != NULL) {
+         unsigned char *bytes;
+         int numBytes;
 
-    /* Write the PNG data to file or convert it to a base64 string. */
-    if (switches.fileObjPtr != NULL) {
-	char *fileName;
+         bytes = Tcl_GetByteArrayFromObj(switches.dataObjPtr, &numBytes);
+         string = (const char *)bytes;
+         if (Blt_IsBase64(string, numBytes)) {
+             if (Blt_DBuffer_Base64Decode(interp, string, numBytes, dbuffer) 
+                 != TCL_OK) {
+                 goto error;
+             }
+         } else {
+             Blt_DBuffer_AppendData(dbuffer, bytes, numBytes);
+         } 
+         string = "data buffer";
+         *fileNamePtr = NULL;
+     } else {
+         string = Tcl_GetString(switches.fileObjPtr);
+         *fileNamePtr = string;
+         if (Blt_DBuffer_LoadFile(interp, string, dbuffer) != TCL_OK) {
+             goto error;
+         }
+     }
+     chain = PngToPicture(interp, string, dbuffer, &switches);
+  error:
+     Blt_FreeSwitches(importSwitches, (char *)&switches, 0);
+     Blt_DBuffer_Destroy(dbuffer);
+     return chain;
+ }
 
-	fileName = Tcl_GetString(switches.fileObjPtr);
-	result = Blt_DBuffer_SaveFile(interp, fileName, dbuffer);
-    } else if (switches.dataObjPtr != NULL) {
-	Tcl_Obj *objPtr;
+ static int
+ ExportPng(Tcl_Interp *interp, unsigned int index, Blt_Chain chain, int objc, 
+           Tcl_Obj *const *objv)
+ {
+     PngExportSwitches switches;
+     Blt_DBuffer dbuffer;
+     int result;
+     Blt_Picture picture;
 
-	objPtr = Tcl_ObjSetVar2(interp, switches.dataObjPtr, NULL, 
-		Blt_DBuffer_ByteArrayObj(dbuffer), 0);
-	result = (objPtr == NULL) ? TCL_ERROR : TCL_OK;
-    } else {
-	Tcl_Obj *objPtr;
+     /* Default export switch settings. */
+     memset(&switches, 0, sizeof(switches));
+     switches.index = index;
+     if (Blt_ParseSwitches(interp, exportSwitches, objc - 3, objv + 3, 
+         &switches, BLT_SWITCH_DEFAULTS) < 0) {
+         Blt_FreeSwitches(exportSwitches, (char *)&switches, 0);
+         return TCL_ERROR;
+     }
+     if ((switches.dataObjPtr != NULL) && (switches.fileObjPtr != NULL)) {
+         Tcl_AppendResult(interp, "more than one export destination: ",
+                 "use only one -file or -data flag.", (char *)NULL);
+         Blt_FreeSwitches(exportSwitches, (char *)&switches, 0);
+         return TCL_ERROR;
+     }
+     picture = Blt_GetNthPicture(chain, switches.index);
+     if (picture == NULL) {
+         Tcl_AppendResult(interp, "no picture at index ", 
+                 Blt_Itoa(switches.index), (char *)NULL);
+         Blt_FreeSwitches(exportSwitches, (char *)&switches, 0);
+         return TCL_ERROR;
+     }
+     dbuffer = Blt_DBuffer_Create();
+     result = PictureToPng(interp, picture, dbuffer, &switches);
+     if (result != TCL_OK) {
+         Tcl_AppendResult(interp, "can't convert \"", 
+                 Tcl_GetString(objv[2]), "\"", (char *)NULL);
+         goto error;
+     }
 
-	result = TCL_ERROR;
-	objPtr = Blt_DBuffer_Base64EncodeToObj(interp, dbuffer);
-	if (objPtr != NULL) {
-	    Tcl_SetObjResult(interp, objPtr);
-	    result = TCL_OK;
-	}
-    }
- error:
-    Blt_FreeSwitches(exportSwitches, (char *)&switches, 0);
-    Blt_DBuffer_Destroy(dbuffer);
-    return result;
-}
+     /* Write the PNG data to file or convert it to a base64 string. */
+     if (switches.fileObjPtr != NULL) {
+         char *fileName;
+
+         fileName = Tcl_GetString(switches.fileObjPtr);
+         result = Blt_DBuffer_SaveFile(interp, fileName, dbuffer);
+     } else if (switches.dataObjPtr != NULL) {
+         Tcl_Obj *objPtr;
+
+         objPtr = Tcl_ObjSetVar2(interp, switches.dataObjPtr, NULL, 
+                 Blt_DBuffer_ByteArrayObj(dbuffer), 0);
+         result = (objPtr == NULL) ? TCL_ERROR : TCL_OK;
+     } else {
+         Tcl_Obj *objPtr;
+
+         result = TCL_ERROR;
+         objPtr = Blt_DBuffer_Base64EncodeToObj(interp, dbuffer);
+         if (objPtr != NULL) {
+             Tcl_SetObjResult(interp, objPtr);
+             result = TCL_OK;
+         }
+     }
+  error:
+     Blt_FreeSwitches(exportSwitches, (char *)&switches, 0);
+     Blt_DBuffer_Destroy(dbuffer);
+     return result;
+ }
 
 
-int 
-Blt_PicturePngInit(Tcl_Interp *interp)
-{
-#ifdef USE_TCL_STUBS
-    if (Tcl_InitStubs(interp, TCL_VERSION_COMPILED, PKG_ANY) == NULL) {
-	return TCL_ERROR;
-    };
-#endif
-#ifdef USE_BLT_STUBS
-    if (Blt_InitTclStubs(interp, BLT_VERSION, PKG_EXACT) == NULL) {
-	return TCL_ERROR;
-    };
-    if (Blt_InitTkStubs(interp, BLT_VERSION, PKG_EXACT) == NULL) {
-	return TCL_ERROR;
-    };
-#endif    
-    if (Tcl_PkgRequire(interp, "blt_tcl", BLT_VERSION, PKG_EXACT) == NULL) {
-	return TCL_ERROR;
-    }
-    if (Tcl_PkgRequire(interp, "blt_tk", BLT_VERSION, PKG_EXACT) == NULL) {
-	return TCL_ERROR;
-    }
-    if (Tcl_PkgProvide(interp, "blt_picture_png", BLT_VERSION) != TCL_OK) {
-	return TCL_ERROR;
-    }
+ int 
+ Blt_PicturePngInit(Tcl_Interp *interp)
+ {
+ #ifdef USE_TCL_STUBS
+     if (Tcl_InitStubs(interp, TCL_VERSION_COMPILED, PKG_ANY) == NULL) {
+         return TCL_ERROR;
+     };
+ #endif
+ #ifdef USE_BLT_STUBS
+     if (Blt_InitTclStubs(interp, BLT_VERSION, PKG_EXACT) == NULL) {
+         return TCL_ERROR;
+     };
+     if (Blt_InitTkStubs(interp, BLT_VERSION, PKG_EXACT) == NULL) {
+         return TCL_ERROR;
+     };
+ #endif    
+     if (Tcl_PkgRequire(interp, "blt_tcl", BLT_VERSION, PKG_EXACT) == NULL) {
+         return TCL_ERROR;
+     }
+     if (Tcl_PkgRequire(interp, "blt_tk", BLT_VERSION, PKG_EXACT) == NULL) {
+         return TCL_ERROR;
+     }
+     if (Tcl_PkgProvide(interp, "blt_picture_png", BLT_VERSION) != TCL_OK) {
+         return TCL_ERROR;
+     }
     return Blt_PictureRegisterFormat(interp,
         "png",			/* Name of format. */
 	IsPng,			/* Format discovery procedure. */

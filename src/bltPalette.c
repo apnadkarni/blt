@@ -1,5 +1,4 @@
 /* -*- mode: c; c-basic-offset: 4; indent-tabs-mode: nil -*- */
-
 /*
  * bltPalette.c --
  *
@@ -8,13 +7,13 @@
  *
  *	Copyright 2011 George A Howlett.
  *
- *	Permission is hereby granted, free of charge, to any person obtaining
- *	a copy of this software and associated documentation files (the
- *	"Software"), to deal in the Software without restriction, including
- *	without limitation the rights to use, copy, modify, merge, publish,
- *	distribute, sublicense, and/or sell copies of the Software, and to
- *	permit persons to whom the Software is furnished to do so, subject to
- *	the following conditions:
+ *	Permission is hereby granted, free of charge, to any person
+ *	obtaining a copy of this software and associated documentation
+ *	files (the "Software"), to deal in the Software without
+ *	restriction, including without limitation the rights to use, copy,
+ *	modify, merge, publish, distribute, sublicense, and/or sell copies
+ *	of the Software, and to permit persons to whom the Software is
+ *	furnished to do so, subject to the following conditions:
  *
  *	The above copyright notice and this permission notice shall be
  *	included in all copies or substantial portions of the Software.
@@ -22,10 +21,11 @@
  *	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  *	EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  *	MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- *	NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
- *	LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
- *	OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
- *	WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *	NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+ *	BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ *	ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ *	CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ *	SOFTWARE.
  */
 
 #define BUILD_BLT_TK_PROCS 1
@@ -51,14 +51,14 @@
 /*
  * PaletteCmdInterpData --
  *
- *	Structure containing global data, used on a interpreter by interpreter
- *	basis.
+ *	Structure containing global data, used on a interpreter by
+ *	interpreter basis.
  *
- *	This structure holds the hash table of instances of datatable commands
- *	associated with a particular interpreter.
+ *	This structure holds the hash table of instances of datatable
+ *	commands associated with a particular interpreter.
  */
 typedef struct {
-    Blt_HashTable paletteTable;		/* Tracks tables in use. */
+    Blt_HashTable paletteTable;		/* Tracks palettes in use. */
     Tcl_Interp *interp;
     int nextPaletteCmdId;
 } PaletteCmdInterpData;
@@ -76,8 +76,9 @@ typedef struct {
 					 * palette. */
     Blt_HashEntry *hashPtr;		/* Pointer to this entry in palette
 					 * hash table.  */
-    Blt_HashTable notifierTable;	/* Table of notifications registered
-					 * by clients of the palette. */
+    Blt_HashTable notifierTable;	/* Table of notifications
+					 * registered by clients of the
+					 * palette. */
     int opacity;			/* Overall opacity adjustment. */
 } PaletteCmd;
 
@@ -442,6 +443,7 @@ GetColorPoint(Tcl_Interp *interp, Tcl_Obj *objPtr, Blt_PalettePoint *pointPtr,
     if (Blt_GetPixelFromObj(interp, objv[1], colorPtr) != TCL_OK) {
 	return TCL_ERROR;
     }
+    Blt_AssociateColor(colorPtr);
     return TCL_OK;
 }
 
@@ -1252,10 +1254,16 @@ ColorLerp2(Blt_PaletteEntry *entryPtr, double t)
     }
     alpha = t;
     beta = 1.0 - t;
+    r = (int)(entryPtr->high.Red - entryPtr->low.Red) * t + entryPtr->low.Red;
+    g = (int)(entryPtr->high.Green - entryPtr->low.Green) * t + entryPtr->low.Green;
+    b = (int)(entryPtr->high.Blue - entryPtr->low.Blue) * t + entryPtr->low.Blue;
+    a = (int)(entryPtr->high.Alpha - entryPtr->low.Alpha) * t + entryPtr->low.Alpha;
+#ifdef notdef
     r = (int)((entryPtr->low.Red * beta) + (entryPtr->high.Red * alpha));
     g = (int)((entryPtr->low.Green * beta) + (entryPtr->high.Green * alpha));
     b = (int)((entryPtr->low.Blue * beta) + (entryPtr->high.Blue * alpha));
     a = 255;
+#endif
 
     color.Red   = CLAMP(r);
     color.Green = CLAMP(g);
@@ -1349,10 +1357,12 @@ fprintf(stderr, "testing: relValue=%.15g, relMin=%.15g, relMax=%.15g\n",
 	 entryPtr < endPtr; entryPtr++) {
 	if (InRange(relValue, entryPtr->min.relValue, entryPtr->max.relValue)) {
 	    double t;
-	    
+            unsigned int alpha;
+
 	    t = (relValue - entryPtr->min.relValue) / 
 		(entryPtr->max.relValue - entryPtr->min.relValue);
-	    color.Alpha = OpacityLerp(entryPtr, t);
+	    alpha = OpacityLerp(entryPtr, t);
+            Blt_FadeColor(&color, alpha);
 	    break;
 	}
     }
@@ -1940,33 +1950,33 @@ Blt_Palette_SetRange(Blt_Palette palette, double rangeMin, double rangeMax)
 }
 
 int
-Blt_Palette_GetColorFromAbsoluteValue(Blt_Palette palette, double absValue, 
-			      double rangeMin, double rangeMax)
+Blt_Palette_GetAssociatedColorFromAbsoluteValue(
+    Blt_Palette palette, 
+    double absValue, 
+    double rangeMin, double rangeMax)
 {
     Blt_Pixel color;
     PaletteCmd *cmdPtr = (PaletteCmd *)palette;
     double relValue;
-    int t;
 
     relValue = (absValue - rangeMin) / (rangeMax - rangeMin);
     if (!Interpolate(cmdPtr, relValue, &color)) {
 	color.u32 = 0x00;
     } 
-    color.Alpha = imul8x8(color.Alpha, cmdPtr->alpha, t);
+    Blt_FadeColor(&color, cmdPtr->alpha);
     return color.u32;
 }
 
 int
-Blt_Palette_GetColor(Blt_Palette palette, double relValue)
+Blt_Palette_GetAssociatedColor(Blt_Palette palette, double relValue)
 {
     Blt_Pixel color;
     PaletteCmd *cmdPtr = (PaletteCmd *)palette;
-    int t;
 
     if (!Interpolate(cmdPtr, relValue, &color)) {
 	color.u32 = 0x00;
     } 
-    color.Alpha = imul8x8(color.Alpha, cmdPtr->alpha, t);
+    Blt_FadeColor(&color, cmdPtr->alpha);
     return color.u32;
 }
 

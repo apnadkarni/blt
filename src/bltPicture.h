@@ -142,6 +142,7 @@ struct _Blt_Chain;
 #define Blt_PictureIsBlended(p) ((p)->flags &  BLT_PIC_BLEND)
 #define Blt_PictureIsColor(p)   ((p)->flags &  BLT_PIC_COLOR)
 #define Blt_PictureIsGreyscale(p)   (!Blt_PictureIsColor(p))
+#define Blt_PictureIsAssociated(p) ((p)->flags &  BLT_PIC_ASSOCIATED_COLORS)
 
 typedef enum PictureArithOps {
     PIC_ARITH_ADD,
@@ -303,6 +304,10 @@ BLT_EXTERN int Blt_GetResampleFilterFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr,
 	Blt_ResampleFilter *filterPtr);
 
 BLT_EXTERN const char *Blt_NameOfResampleFilter(Blt_ResampleFilter filter);
+
+BLT_EXTERN void Blt_AssociateColor(Blt_Pixel *colorPtr);
+
+BLT_EXTERN void Blt_UnassociateColor(Blt_Pixel *colorPtr);
 
 BLT_EXTERN void Blt_AssociateColors(Blt_Picture picture);
 
@@ -480,11 +485,11 @@ BLT_EXTERN int Blt_Palette_GetFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr,
 	Blt_Palette *palPtr);
 BLT_EXTERN int Blt_Palette_GetFromString(Tcl_Interp *interp, const char *string,
 	Blt_Palette *palPtr);
-BLT_EXTERN int Blt_Palette_GetColorFromAbsoluteValue(Blt_Palette palette, 
+BLT_EXTERN int Blt_Palette_GetAssociatedColorFromAbsoluteValue(Blt_Palette palette, 
 	double absValue, double rangeMin, double rangeMax);
 BLT_EXTERN void Blt_Palette_SetRange(Blt_Palette palette, double min, 
 	double max);
-BLT_EXTERN int Blt_Palette_GetColor(Blt_Palette palette, double relValue);
+BLT_EXTERN int Blt_Palette_GetAssociatedColor(Blt_Palette palette, double relValue);
 BLT_EXTERN void Blt_Palette_CreateNotifier(Blt_Palette palette, 
 	Blt_Palette_NotifyProc *proc, ClientData clientData);
 BLT_EXTERN void Blt_Palette_DeleteNotifier(Blt_Palette palette, 
@@ -649,12 +654,16 @@ BLT_EXTERN void Blt_Paintbrush_SetGradient(Blt_Paintbrush *brushPtr,
 BLT_EXTERN void Blt_Paintbrush_SetColor(Blt_Paintbrush *brushPtr, 
 	unsigned int value);
 BLT_EXTERN void Blt_Paintbrush_SetOrigin(Blt_Paintbrush *brushPtr, int x,int y);
-BLT_EXTERN int Blt_Paintbrush_GetColor(Blt_Paintbrush *brushPtr, int x, int y);
+BLT_EXTERN int Blt_Paintbrush_GetAssociatedColor(Blt_Paintbrush *brushPtr, int x, int y);
 BLT_EXTERN void Blt_PaintRectangle(Blt_Picture picture, int x, int y, int w, 
 	int h, int dx, int dy, Blt_Paintbrush *brushPtr);
 #ifdef _BLT_INT_H
 BLT_EXTERN void Blt_PaintPolygon(Blt_Picture picture, int n, Point2f *vertices,
 	Blt_Paintbrush *brushPtr);
 #endif
+
+BLT_EXTERN Blt_Picture Blt_EmbossPicture(Blt_Picture picture, double azimuth, 
+        double elevation, unsigned short width45);
+BLT_EXTERN void Blt_FadeColor(Blt_Pixel *colorPtr, unsigned int alpha);
 
 #endif /*_BLT_PICTURE_H*/

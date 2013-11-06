@@ -2910,6 +2910,49 @@ DupOp(
 /*
  *---------------------------------------------------------------------------
  *
+ * EmbossOp --
+ *
+ *	Emboss the picture.
+ *
+ * Results:
+ *	Returns a standard TCL return value.  If TCL_OK, the components of the
+ *	pixel are returned as a list in the interpreter result.  Otherwise an
+ *	error message is returned.
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+EmbossOp(
+    ClientData clientData,		/* Information about picture cmd. */
+    Tcl_Interp *interp,			/* Current interpreter. */
+    int objc,				/* Not used. */
+    Tcl_Obj *const *objv)		/* Argument objects. */
+{
+    Blt_Picture src, dst;
+    PictImage *imgPtr = clientData;
+    double azimuth, elevation;
+
+    if (Blt_GetPictureFromObj(interp, objv[2], &src) != TCL_OK) {
+	return TCL_ERROR;
+    }
+    azimuth = 30.0;
+    elevation = 30.0;
+    if (objc == 5) {
+        if ((Tcl_GetDoubleFromObj(interp, objv[3], &azimuth) != TCL_OK) ||
+            (Tcl_GetDoubleFromObj(interp, objv[4], &elevation) != TCL_OK)) {
+            return TCL_ERROR;
+        }
+    }
+    fprintf(stderr, "azimuth=%g elevation=%f\n", azimuth, elevation);
+    dst = Blt_EmbossPicture(src, azimuth, elevation, 1.0);
+    ReplacePicture(imgPtr, dst);
+    Blt_NotifyImageChanged(imgPtr);
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
  * ExportOp --
  *
  * Results:
@@ -4434,7 +4477,8 @@ static Blt_OpSpec pictInstOps[] =
     {"crop",      2, CropOp,      2, 0, "bbox",},
     {"draw",      2, DrawOp,	  2, 0, "?args?",},
     {"dup",       2, DupOp,       2, 0, "?switches?",},
-    {"export",    1, ExportOp,    2, 0, "format ?switches?...",},
+    {"emboss",    2, EmbossOp,    3, 5, "src",},
+    {"export",    2, ExportOp,    2, 0, "format ?switches?...",},
     {"fade",      2, FadeOp,      4, 4, "src factor",},
     {"flip",      2, FlipOp,      3, 0, "x|y",},
     {"gamma",     2, GammaOp,     3, 3, "value",},

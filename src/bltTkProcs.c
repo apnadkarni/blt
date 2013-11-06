@@ -94,9 +94,9 @@ BltTkProcs bltTkProcs = {
     Blt_Shadow_Set, /* 79 */
     Blt_Palette_GetFromObj, /* 80 */
     Blt_Palette_GetFromString, /* 81 */
-    Blt_Palette_GetColorFromAbsoluteValue, /* 82 */
+    Blt_Palette_GetAssociatedColorFromAbsoluteValue, /* 82 */
     Blt_Palette_SetRange, /* 83 */
-    Blt_Palette_GetColor, /* 84 */
+    Blt_Palette_GetAssociatedColor, /* 84 */
     Blt_Palette_CreateNotifier, /* 85 */
     Blt_Palette_DeleteNotifier, /* 86 */
     Blt_Palette_Name, /* 87 */
@@ -117,7 +117,7 @@ BltTkProcs bltTkProcs = {
     Blt_Paintbrush_SetGradient, /* 102 */
     Blt_Paintbrush_SetColor, /* 103 */
     Blt_Paintbrush_SetOrigin, /* 104 */
-    Blt_Paintbrush_GetColor, /* 105 */
+    Blt_Paintbrush_GetAssociatedColor, /* 105 */
     Blt_PaintRectangle, /* 106 */
     Blt_PaintPolygon, /* 107 */
     Blt_PictureRegisterFormat, /* 108 */

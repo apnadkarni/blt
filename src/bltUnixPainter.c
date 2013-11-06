@@ -1,5 +1,4 @@
 /* -*- mode: c; c-basic-offset: 4; indent-tabs-mode: nil -*- */
-/* -*- mode: c; c-basic-offset: 4; indent-tabs-mode: nil -*- */
 /*
  * bltUnixPainter.c --
  *
@@ -72,9 +71,9 @@ static int initialized = 0;
 /*
  * PainterKey --
  *
- * This structure represents the key used to uniquely identify painters.  A
- * painter is specified by a combination of display, visual, colormap,
- * depth, and monitor gamma value.
+ *      This structure represents the key used to uniquely identify
+ *      painters.  A painter is specified by a combination of display,
+ *      visual, colormap, depth, and monitor gamma value.
  */
 typedef struct {
     Display *display;			/* Display of painter. Used to free
@@ -1219,6 +1218,8 @@ DrawableToPicture(
 	break;
     }
     XDestroyImage(imgPtr);
+    /* Opaque image, set associate colors flag.  */
+    destPtr->flags |= BLT_PIC_ASSOCIATED_COLORS;
     return destPtr;
 }
 
@@ -1556,7 +1557,7 @@ PaintPicture(
  *	(the background always assumed to be 100% opaque).
  * 
  * Results:
- *	Returns TRUE is the picture was successfully display, Otherwise
+ *	Returns TRUE is the picture was successfully displayed.  Otherwise
  *	FALSE is returned.  This may happen if the background can not be
  *	obtained from the drawable.
  *

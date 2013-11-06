@@ -1,5 +1,4 @@
 /* -*- mode: c; c-basic-offset: 4; indent-tabs-mode: nil -*- */
-
 /*
  * bltGrBar.c --
  *
@@ -7,13 +6,13 @@
  *
  *	Copyright 1993-2004 George A Howlett.
  *
- *	Permission is hereby granted, free of charge, to any person obtaining
- *	a copy of this software and associated documentation files (the
- *	"Software"), to deal in the Software without restriction, including
- *	without limitation the rights to use, copy, modify, merge, publish,
- *	distribute, sublicense, and/or sell copies of the Software, and to
- *	permit persons to whom the Software is furnished to do so, subject to
- *	the following conditions:
+ *	Permission is hereby granted, free of charge, to any person
+ *	obtaining a copy of this software and associated documentation
+ *	files (the "Software"), to deal in the Software without
+ *	restriction, including without limitation the rights to use, copy,
+ *	modify, merge, publish, distribute, sublicense, and/or sell copies
+ *	of the Software, and to permit persons to whom the Software is
+ *	furnished to do so, subject to the following conditions:
  *
  *	The above copyright notice and this permission notice shall be
  *	included in all copies or substantial portions of the Software.
@@ -21,10 +20,11 @@
  *	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  *	EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  *	MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- *	NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
- *	LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
- *	OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
- *	WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *	NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+ *	BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ *	ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ *	CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ *	SOFTWARE.
  */
 
 #define BUILD_BLT_TK_PROCS 1
@@ -58,15 +58,15 @@ typedef struct {
 } Bar;
 
 typedef struct {
-    const char *name;			/* Pen style identifier.  If NULL, pen
-					 * was statically allocated. */
+    const char *name;			/* Pen style identifier.  If NULL,
+					 * pen was statically allocated. */
     ClassId classId;			/* Type of pen */
-    const char *typeId;			/* String token identifying the type of
-					 * pen */
+    const char *typeId;			/* String token identifying the
+					 * type of pen */
     unsigned int flags;			/* Indicates if the pen element is
 					 * active or normal */
-    int refCount;			/* Reference count for elements using
-					 * this pen. */
+    int refCount;			/* Reference count for elements
+					 * using this pen. */
     Blt_HashEntry *hashPtr;
     Blt_ConfigSpec *configSpecs;	/* Configuration specifications */
     PenConfigureProc *configProc;
@@ -87,7 +87,8 @@ typedef struct {
 
     /* Error bar attributes. */
     int errorBarShow;			/* Describes which error bars to
-					 * display: none, x, y, or * both. */
+					 * display: none, x, y, or *
+					 * both. */
 
     int errorBarLineWidth;		/* Width of the error bar segments. */
 
@@ -97,8 +98,9 @@ typedef struct {
     GC errorBarGC;			/* Error bar graphics context. */
 
     /* Show value attributes. */
-    int valueShow;			/* Indicates whether to display data
-					 * value.  Values are x, y, or none. */
+    int valueShow;			/* Indicates whether to display
+					 * data value.  Values are x, y, or
+					 * none. */
 
     const char *valueFormat;		/* A printf format string. */
     TextStyle valueStyle;		/* Text attributes (color, font,
@@ -111,16 +113,17 @@ typedef struct {
 					 * valid. */
     BarPen *penPtr;			/* Pen to use. */
 
-    XRectangle *bars;			/* Indicates starting location in bar
-					 * array for this pen. */
-    int numBars;				/* # of bar segments for this pen. */
+    XRectangle *bars;			/* Indicates starting location in
+					 * bar array for this pen. */
+    int numBars;                        /* # of bar segments in above
+                                         * array. */
 
     GraphSegments xeb, yeb;		/* X and Y error bars. */
 
-    int symbolSize;			/* Size of the pen's symbol scaled to
-					 * the current graph size. */
-    int errorBarCapWidth;		/* Length of the cap ends on each error
-					 * bar. */
+    int symbolSize;			/* Size of the pen's symbol scaled
+					 * to the current graph size. */
+    int errorBarCapWidth;		/* Length of the cap ends on each
+					 * error bar. */
 
 } BarStyle;
 
@@ -175,15 +178,14 @@ typedef struct {
 					* segments of the element. */
     int *activeToData;
     XRectangle *activeRects;
-
-    int numBars;				/* # of visible bar segments for
+    int numBars;                        /* # of visible bar segments for
 					 * element */
     int numActive;
-
     int xPad;				/* Spacing on either side of bar */
-
-    ElemValues xError;			/* Relative/symmetric X error values. */
-    ElemValues yError;			/* Relative/symmetric Y error values. */
+    ElemValues xError;			/* Relative/symmetric X error
+                                         * values. */
+    ElemValues yError;			/* Relative/symmetric Y error
+                                         * values. */
     ElemValues xHigh, xLow;		/* Absolute/asymmetric X-coordinate
 					 * high/low error values. */
     ElemValues yHigh, yLow;		/* Absolute/asymmetric Y-coordinate
@@ -960,8 +962,8 @@ CheckStacks(Graph *graphPtr, Axis2d *pairPtr, double *minPtr, double *maxPtr)
 	 gp < gend; gp++) {
 	if ((gp->axes.x == pairPtr->x) && (gp->axes.y == pairPtr->y)) {
 	    /*
-	     * Check if any of the y-values (because of stacking) are greater
-	     * than the current limits of the graph.
+	     * Check if any of the y-values (because of stacking) are
+	     * greater than the current limits of the graph.
 	     */
 	    if (gp->sum < 0.0f) {
 		if (*minPtr > gp->sum) {
@@ -986,12 +988,12 @@ CheckStacks(Graph *graphPtr, Axis2d *pairPtr, double *minPtr, double *maxPtr)
  *	Blt_ConfigureWidget.
  *
  * Results:
- *	The return value is a standard TCL result.  If TCL_ERROR is returned,
- *	then interp->result contains an error message.
+ *	The return value is a standard TCL result.  If TCL_ERROR is
+ *	returned, then interp->result contains an error message.
  *
  * Side effects:
- *	Configuration information such as bar foreground/background color and
- *	stipple etc. get set in a new GC.
+ *	Configuration information such as bar foreground/background color
+ *	and stipple etc. get set in a new GC.
  *
  *---------------------------------------------------------------------------
  */
@@ -1007,7 +1009,8 @@ ConfigureProc(Graph *graphPtr, Element *basePtr)
 	return TCL_ERROR;
     }
     /*
-     * Point to the static normal pen if no external pens have been selected.
+     * Point to the static normal pen if no external pens have been
+     * selected.
      */
     link = Blt_Chain_FirstLink(elemPtr->styles);
     if (link == NULL) {
@@ -1093,8 +1096,8 @@ ExtentsProc(Element *basePtr)
 	    x = elemPtr->x.values[i] - elemPtr->xError.values[i];
 	    if (elemPtr->axes.x->logScale) {
 		if (x < 0.0) {
-		    x = -x;		/* Mirror negative values, instead of
-					 * ignoring them. */
+		    x = -x;		/* Mirror negative values, instead
+					 * of ignoring them. */
 		}
 		if ((x > DBL_MIN) && (x < exts.left)) {
 		    exts.left = x;
@@ -1136,8 +1139,8 @@ ExtentsProc(Element *basePtr)
 	    y = elemPtr->y.values[i] - elemPtr->yError.values[i];
 	    if (elemPtr->axes.y->logScale) {
 		if (y < 0.0) {
-		    y = -y;		/* Mirror negative values, instead of
-					 * ignoring them. */
+		    y = -y;		/* Mirror negative values, instead
+					 * of ignoring them. */
 		}
 		if ((y > DBL_MIN) && (y < exts.left)) {
 		    exts.top = y;
@@ -1200,8 +1203,8 @@ static void
 NearestProc(
     Graph *graphPtr,			/* Not used. */
     Element *basePtr,			/* Bar element */
-    NearestElement *nearestPtr)		/* Information about nearest point in
-					 * element */
+    NearestElement *nearestPtr)		/* Information about nearest point
+					 * in element */
 {
     BarElement *elemPtr = (BarElement *)basePtr;
     XRectangle *bp;
@@ -1490,8 +1493,8 @@ ResetElement(BarElement *elemPtr)
  *
  * Blt_MapErrorBars --
  *
- *	Creates two arrays of points and pen indices, filled with the screen
- *	coordinates of the visible
+ *	Creates two arrays of points and pen indices, filled with the
+ *	screen coordinates of the visible
  *
  * Results:
  *	None.
@@ -1652,13 +1655,14 @@ MapErrorBars(Graph *graphPtr, BarElement *elemPtr, BarStyle **dataToStyle)
  *	None.
  *
  * Notes:
- *	A bar can have multiple segments (more than one x,y pairs).  In this
- *	case, the bar can be represented as either a set of non-contiguous
- *	bars or a single multi-segmented (stacked) bar.
+ *	A bar can have multiple segments (more than one x,y pairs).  In
+ *	this case, the bar can be represented as either a set of
+ *	non-contiguous bars or a single multi-segmented (stacked) bar.
  *
- *	The x-axis layout for a barchart may be presented in one of two ways.
- *	If abscissas are used, the bars are placed at those coordinates.
- *	Otherwise, the range will represent the number of values.
+ *	The x-axis layout for a barchart may be presented in one of two
+ *	ways.  If abscissas are used, the bars are placed at those
+ *	coordinates.  Otherwise, the range will represent the number of
+ *	values.
  *
  *---------------------------------------------------------------------------
  */
@@ -1670,7 +1674,8 @@ MapProc(Graph *graphPtr, Element *basePtr)
     double *x, *y;
     double barWidth, barOffset;
     double baseline, ybot;
-    int *barToData;			/* Maps bars to data point indices */
+    int *barToData;			/* Maps bars to data point
+                                         * indices */
     int invertBar;
     int numPoints, count;
     XRectangle *rp, *bars;
@@ -1688,8 +1693,8 @@ MapProc(Graph *graphPtr, Element *basePtr)
     barOffset = barWidth * 0.5;
 
     /*
-     * Create an array of bars representing the screen coordinates of all the
-     * segments in the bar.
+     * Create an array of bars representing the screen coordinates of all
+     * the segments in the bar.
      */
     bars = Blt_AssertCalloc(numPoints, sizeof(XRectangle));
     barToData = Blt_AssertCalloc(numPoints, sizeof(int));
@@ -1698,7 +1703,8 @@ MapProc(Graph *graphPtr, Element *basePtr)
     count = 0;
     for (rp = bars, i = 0; i < numPoints; i++) {
 	Point2d c1, c2;			/* Two opposite corners of the
-					 * rectangle in graph coordinates. */
+					 * rectangle in graph
+					 * coordinates. */
 	double dx, dy;
 	int height;
 	double right, left, top, bottom;
@@ -1714,8 +1720,8 @@ MapProc(Graph *graphPtr, Element *basePtr)
 	c2.y = baseline;
 
 	/*
-	 * If the mode is "aligned" or "stacked" we need to adjust the x or y
-	 * coordinates of the two corners.
+	 * If the mode is "aligned" or "stacked" we need to adjust the x or
+	 * y coordinates of the two corners.
 	 */
 
 	if ((graphPtr->numBarGroups > 0) && (graphPtr->mode != BARS_INFRONT) && 
@@ -1787,7 +1793,7 @@ MapProc(Graph *graphPtr, Element *basePtr)
 	    invertBar = TRUE;
 	}
 	/*
-	 * Get the two corners of the bar segment and compute the rectangle
+	 * Get the two corners of the bar segment and compute the rectangle.
 	 */
 	ybot = c2.y;
 	c1 = Blt_Map2D(graphPtr, c1.x, c1.y, &elemPtr->axes);
@@ -1819,8 +1825,8 @@ MapProc(Graph *graphPtr, Element *basePtr)
 	    left = top = 0;
 	    bottom = right = 10000;
 	    /* Shouldn't really have a call to Tk_Width or Tk_Height in
-	     * mapping routine.  We only want to clamp the bar segment to the
-	     * size of the window if we're actually mapped onscreen. */
+	     * mapping routine.  We only want to clamp the bar segment to
+	     * the size of the window if we're actually mapped onscreen. */
 	    if (Tk_Height(graphPtr->tkwin) > 1) {
 		bottom = Tk_Height(graphPtr->tkwin);
 	    }
@@ -1853,8 +1859,9 @@ MapProc(Graph *graphPtr, Element *basePtr)
 	if (rp->height < 1) {
 	    rp->height = 1;
 	}
-	barToData[count] = i;		/* Save the data index corresponding to
-					 * the rectangle */
+	barToData[count] = i;		/* Save the data index
+					 * corresponding to the
+					 * rectangle */
 	count++;
 	rp++;
     }
@@ -1900,15 +1907,16 @@ MapProc(Graph *graphPtr, Element *basePtr)
  *
  * DrawSymbolProc --
  *
- * 	Draw a symbol centered at the given x,y window coordinate based upon
- * 	the element symbol type and size.
+ * 	Draw a symbol centered at the given x,y window coordinate based
+ * 	upon the element symbol type and size.
  *
  * Results:
  *	None.
  *
  * Problems:
  *	Most notable is the round-off errors generated when calculating the
- *	centered position of the symbol.  
+ *	centered position of the symbol.
+ *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
@@ -1966,8 +1974,8 @@ GradientColorProc(Blt_Paintbrush *brushPtr, int x, int y)
     } else {
 	return 0x0;
     }
-    color.u32 = Blt_Palette_GetColorFromAbsoluteValue(brushPtr->palette, value,
-	cmapPtr->min, cmapPtr->max);
+    color.u32 = Blt_Palette_GetAssociatedColorFromAbsoluteValue(
+        brushPtr->palette, value, cmapPtr->min, cmapPtr->max);
     return color.u32;
 }
 
@@ -2152,8 +2160,8 @@ DrawValues(Graph *graphPtr, Drawable drawable, BarElement *elemPtr,
  * DrawNormalProc --
  *
  *	Draws the rectangle representing the bar element.  If the relief
- *	option is set to "raised" or "sunken" and the bar borderwidth is set
- *	(borderwidth > 0), a 3D border is drawn around the bar.
+ *	option is set to "raised" or "sunken" and the bar borderwidth is
+ *	set (borderwidth > 0), a 3D border is drawn around the bar.
  *
  *	Don't draw bars that aren't visible (i.e. within the limits of the
  *	axis).
@@ -2208,8 +2216,9 @@ DrawNormalProc(Graph *graphPtr, Drawable drawable, Element *basePtr)
  * DrawActiveProc --
  *
  *	Draws bars representing the active segments of the bar element.  If
- *	the -relief option is set (other than "flat") and the borderwidth is
- *	greater than 0, a 3D border is drawn around the each bar segment.
+ *	the -relief option is set (other than "flat") and the borderwidth
+ *	is greater than 0, a 3D border is drawn around the each bar
+ *	segment.
  *
  * Results:
  *	None.
@@ -2254,8 +2263,8 @@ DrawActiveProc(Graph *graphPtr, Drawable drawable, Element *basePtr)
  *
  * SymbolToPostScript --
  *
- * 	Draw a symbol centered at the given x,y window coordinate based upon
- * 	the element symbol type and size.
+ * 	Draw a symbol centered at the given x,y window coordinate based
+ * 	upon the element symbol type and size.
  *
  * Results:
  *	None.
@@ -2283,8 +2292,8 @@ SymbolToPostScriptProc(
 	return;
     }
     /*
-     * Build a PostScript procedure to draw the fill and outline of the symbol
-     * after the path of the symbol shape has been formed
+     * Build a PostScript procedure to draw the fill and outline of the
+     * symbol after the path of the symbol shape has been formed.
      */
     Blt_Ps_Append(ps, "\n"
 		  "/DrawSymbolProc {\n"
@@ -2402,8 +2411,8 @@ ValuesToPostScript(Graph *graphPtr, Blt_Ps ps, BarElement *elemPtr,
  * ActiveToPostScript --
  *
  *	Similar to the NormalToPostScript procedure, generates PostScript
- *	commands to display the bars representing the active bar segments of
- *	the element.
+ *	commands to display the bars representing the active bar segments
+ *	of the element.
  *
  * Results:
  *	None.
@@ -2558,8 +2567,8 @@ static ElementProcs barProcs = {
     DrawNormalProc,
     DrawSymbolProc,
     ExtentsProc,
-    NULL,				/* Find the points within the search
-					 * radius. */
+    NULL,				/* Find the points within the
+					 * search radius. */
     ActiveToPostScriptProc,
     NormalToPostScriptProc,
     SymbolToPostScriptProc,
@@ -2596,9 +2605,10 @@ Blt_BarElement(Graph *graphPtr, Blt_HashEntry *hPtr)
  * Blt_InitSetTable --
  *
  *	Generate a table of abscissa frequencies.  Duplicate x-coordinates
- *	(depending upon the bar drawing mode) indicate that something special
- *	should be done with each bar segment mapped to the same abscissa
- *	(i.e. it should be stacked, aligned, or overlay-ed with other segments)
+ *	(depending upon the bar drawing mode) indicate that something
+ *	special should be done with each bar segment mapped to the same
+ *	abscissa (i.e. it should be stacked, aligned, or overlay-ed with
+ *	other segments)
  *
  * Results:
  *	None.
@@ -2619,8 +2629,8 @@ Blt_InitSetTable(Graph *graphPtr)
     Blt_HashSearch iter;
 
     /*
-     * Free resources associated with a previous frequency table. This includes
-     * the array of frequency information and the table itself
+     * Free resources associated with a previous frequency table. This
+     * includes the array of frequency information and the table itself
      */
     Blt_DestroySets(graphPtr);
     if (graphPtr->mode == BARS_INFRONT) {
@@ -2630,9 +2640,9 @@ Blt_InitSetTable(Graph *graphPtr)
     Blt_InitHashTable(&graphPtr->setTable, sizeof(SetKey) / sizeof(int));
 
     /*
-     * Initialize a hash table and fill it with unique abscissas.  Keep track
-     * of the frequency of each x-coordinate and how many abscissas have
-     * duplicate mappings.
+     * Initialize a hash table and fill it with unique abscissas.  Keep
+     * track of the frequency of each x-coordinate and how many abscissas
+     * have duplicate mappings.
      */
     Blt_InitHashTable(&setTable, sizeof(SetKey) / sizeof(int));
     numSegs = numStacks = 0;
@@ -2740,13 +2750,13 @@ Blt_InitSetTable(Graph *graphPtr)
  *
  * Blt_ComputeStacks --
  *
- *	Determine the height of each stack of bar segments.  A stack is created
- *	by designating two or more points with the same abscissa.  Each ordinate
- *	defines the height of a segment in the stack.  This procedure simply
- *	looks at all the data points summing the heights of each stacked
- *	segment. The sum is saved in the frequency information table.  This
- *	value will be used to calculate the y-axis limits (data limits aren't
- *	sufficient).
+ *	Determine the height of each stack of bar segments.  A stack is
+ *	created by designating two or more points with the same abscissa.
+ *	Each ordinate defines the height of a segment in the stack.  This
+ *	procedure simply looks at all the data points summing the heights
+ *	of each stacked segment. The sum is saved in the frequency
+ *	information table.  This value will be used to calculate the y-axis
+ *	limits (data limits aren't sufficient).
  *
  * Results:
  *	None.

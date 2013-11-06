@@ -126,10 +126,10 @@ MixPaint(Blt_Pixel *bp, Blt_Pixel *colorPtr)
 	/* beta = 1 - alpha */
 	alpha = colorPtr->Alpha;
 	beta = colorPtr->Alpha ^ 0xFF; 
-	r = imul8x8(alpha, colorPtr->Red, u)   + imul8x8(beta, bp->Red, t);
-	g = imul8x8(alpha, colorPtr->Green, u) + imul8x8(beta, bp->Green, t);
-	b = imul8x8(alpha, colorPtr->Blue, u)  + imul8x8(beta, bp->Blue, t);
-	a = imul8x8(alpha, colorPtr->Alpha, u) + imul8x8(beta, bp->Alpha, t);
+	r = colorPtr->Red   + imul8x8(beta, bp->Red, t);
+	g = colorPtr->Green + imul8x8(beta, bp->Green, t);
+	b = colorPtr->Blue  + imul8x8(beta, bp->Blue, t);
+	a = colorPtr->Alpha + imul8x8(beta, bp->Alpha, t);
 	bp->Red = (r > 255) ? 255 : ((r < 0) ? 0 : r);
 	bp->Green = (g > 255) ? 255 : ((g < 0) ? 0 : g);
 	bp->Blue = (b > 255) ? 255 : ((b < 0) ? 0 : b);
@@ -167,14 +167,14 @@ PaintHorizontalLine(Pict *destPtr, int x1, int x2, int y,
 	    for (x = x1; dp < dend; dp++, x++) {
 		Blt_Pixel color;
 
-		color.u32 = Blt_Paintbrush_GetColor(brushPtr, x, y);
+		color.u32 = Blt_Paintbrush_GetAssociatedColor(brushPtr, x, y);
 		MixPaint(dp, &color);
 	    }
 	} else {
 	    int x;
 
 	    for (x = x1; dp < dend; dp++, x++) {
-		dp->u32 = Blt_Paintbrush_GetColor(brushPtr, x, y);
+		dp->u32 = Blt_Paintbrush_GetAssociatedColor(brushPtr, x, y);
 	    }
 	}
     }
@@ -759,12 +759,15 @@ PaintCircle4(Pict *destPtr, float cx, float cy, float r, float lineWidth,
 		    a = imul8x8(a, dp->Alpha, t);
 		}
 #endif
-		color.u32 = Blt_Paintbrush_GetColor(brushPtr, x, y);
-		BlendPixel(dp, &color, a);
+		color.u32 = Blt_Paintbrush_GetAssociatedColor(brushPtr, x, y);
+                Blt_FadeColor(&color, a);
+		BlendPixel(dp, &color);
 	    } else {
 		int t;
+                /* FIXME: This is overriding the alpha of a premultipled
+                 * color. */
 		a = UCLAMP(a);
-		dp->u32 = Blt_Paintbrush_GetColor(brushPtr, x, y);
+		dp->u32 = Blt_Paintbrush_GetAssociatedColor(brushPtr, x, y);
 		dp->Alpha = imul8x8(a, dp->Alpha, t);
 	    }
 	}
@@ -1018,10 +1021,12 @@ PaintArc(Pict *destPtr, int x1, int y1, int x2, int y2, int lineWidth,
 	dp = Blt_PicturePixel(destPtr, x + xoff, y + yoff);
 	q = FABS(d * 255.0);
 	a = (unsigned int)CLAMP(q);
-	BlendPixel(dp, colorPtr, a);
+        Blt_FadeColor(colorPtr, a);
+	BlendPixel(dp, colorPtr);
 	dp--;			/* x - 1 */
 	a = (unsigned int)CLAMP(255.0 - q);
-	BlendPixel(dp, colorPtr, a);
+        Blt_FadeColor(colorPtr, a);
+	BlendPixel(dp, colorPtr);
 	t = d;
 	x1++;
 	if (fill) {
@@ -1561,12 +1566,16 @@ PaintCorner(Pict *destPtr, int x, int y, int r, int lineWidth, int corner,
 		Blt_Pixel color;
 		
 		a = UCLAMP(a);
-		color.u32 = Blt_Paintbrush_GetColor(brushPtr, x+dx, y+dy);
-		BlendPixel(dp, &color, a);
+		color.u32 = Blt_Paintbrush_GetAssociatedColor(brushPtr, 
+                        x+dx, y+dy);
+                Blt_FadeColor(&color, a);
+		BlendPixel(dp, &color);
 	    } else {
 		int t;
 		a = UCLAMP(a);
-		dp->u32 = Blt_Paintbrush_GetColor(brushPtr, x+dx, y+dy);
+		dp->u32 = Blt_Paintbrush_GetAssociatedColor(brushPtr, 
+                        x+dx, y+dy);
+                /* FIXME: Override alpha of color of premultipled color. */
 		dp->Alpha = imul8x8(a, dp->Alpha, t);
 	    }
 	}

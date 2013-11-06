@@ -1,20 +1,19 @@
 /* -*- mode: c; c-basic-offset: 4; indent-tabs-mode: nil -*- */
-
 /*
  * bltPictTga.c --
  *
- * This module implements Targa file format conversion routines for the picture
- * image type in the BLT toolkit.
+ * This module implements Targa file format conversion routines for the
+ * picture image type in the BLT toolkit.
  *
  *	Copyright 2011 George A Howlett.
  *
- *	Permission is hereby granted, free of charge, to any person obtaining
- *	a copy of this software and associated documentation files (the
- *	"Software"), to deal in the Software without restriction, including
- *	without limitation the rights to use, copy, modify, merge, publish,
- *	distribute, sublicense, and/or sell copies of the Software, and to
- *	permit persons to whom the Software is furnished to do so, subject to
- *	the following conditions:
+ *	Permission is hereby granted, free of charge, to any person
+ *	obtaining a copy of this software and associated documentation
+ *	files (the "Software"), to deal in the Software without
+ *	restriction, including without limitation the rights to use, copy,
+ *	modify, merge, publish, distribute, sublicense, and/or sell copies
+ *	of the Software, and to permit persons to whom the Software is
+ *	furnished to do so, subject to the following conditions:
  *
  *	The above copyright notice and this permission notice shall be
  *	included in all copies or substantial portions of the Software.
@@ -22,10 +21,11 @@
  *	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  *	EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  *	MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- *	NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
- *	LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
- *	OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
- *	WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *	NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+ *	BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ *	ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ *	CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ *	SOFTWARE.
  *
  */
 
@@ -125,18 +125,19 @@ typedef struct _Blt_Picture Pict;
 #define TGA_TYPE_PSEUDOCOLOR	1	/* Color-mapped image */
 #define TGA_TYPE_TRUECOLOR	2	/* RGB image */
 #define TGA_TYPE_GREYSCALE	3	/* Monochrome image. */
-#define TGA_TYPE_COMP		32	/* Compressed color-mapped data, using
-					 * Huffman, Delta, and runlength
-					 * encoding. */
-#define TGA_TYPE_COMP4		33	/* Compressed color-mapped data, using
-					 * Huffman, Delta, and RLE.  4-pass
-					 * quadtree- type process. */
+#define TGA_TYPE_COMP		32	/* Compressed color-mapped data,
+					 * using Huffman, Delta, and
+					 * runlength encoding. */
+#define TGA_TYPE_COMP4		33	/* Compressed color-mapped data,
+					 * using Huffman, Delta, and RLE.
+					 * 4-pass quadtree- type
+					 * process. */
 #define TGA_RLE			8	/* If bit is set in image type,
 					 * indicates image is run length
 					 * encoded. */
 
-#define PKT_RLE			0x80	/* Indicates this packet is run length
-					 * encoded. */
+#define PKT_RLE			0x80	/* Indicates this packet is run
+					 * length encoded. */
 
 #define NO_INTERLEAVE     0 
 #define INTERLEAVE	  1
@@ -172,12 +173,13 @@ typedef struct {
     int flags;				/* Flag. */
     Blt_Pixel bg;
     int index;
-    const char *label;			/* Label to be displayed as the id of
-					 * the image. */
+    const char *label;			/* Label to be displayed as the id
+					 * of the image. */
     const char *comments;		/* Comments to be displayed as the
 					 * extension of the image. */
     const char *author;			/* Author of the image. */
-    const char *software;		/* Software used to create image. */
+    const char *software;		/* Software used to create
+                                         * image. */
 } TgaWriter;
 
 #define EXPORT_ALPHA	(1<<0)		/* Export the alpha channel. */
@@ -254,13 +256,13 @@ struct _Tga {
     const char *name;			/* Name of file. */
     int version;			/* Either 1 or 2. */
     unsigned int numBytesId;		/* Size of image ID below */
-    int isRle;				/* Indicates if the image is runlength
-					 * encoded. */
-    int colorMapExists;			/* Color map type: 
-					 * 0 = no color map.
-					 * 1 = 256 entry palette. */
+    int isRle;				/* Indicates if the image is
+					 * runlength encoded. */
+    int colorMapExists;			/* Color map type: 0 = no color
+					 * map.  1 = 256 entry palette. */
     int imageType;			/* Image type code */
-    int cmOffset;			/* Index of first color map entry. */
+    int cmOffset;			/* Index of first color map
+                                           entry. */
     int cmNumEntries;			/* # of color map entries. */
     int cmBitsPerPixel;			/* Bits per pixel of color map
 					 * entries. */
@@ -269,7 +271,8 @@ struct _Tga {
     int yOrigin;			/* Y coordinate of the lower left
 					 * corner of the image. */
     int width;				/* Width of the image in pixels. */
-    int height;				/* Height of the image in pixels. */
+    int height;				/* Height of the image in
+                                         * pixels. */
     int bitsPerPixel;			/* Bytes per pixel. */
     unsigned int attributes;		/* Flags:
 					 * 0-3 : Number of attribute bits
@@ -287,20 +290,21 @@ struct _Tga {
     int numAlphaBits;
     int originBits;
     int interleaveBits;
-    int extOffset;			/* Offset of extension from beginning
-					 * of the file. */
-    int devOffset;			/* Offset of developer area from 
+    int extOffset;			/* Offset of extension from
+					 * beginning of the file. */
+    int devOffset;			/* Offset of developer area from
 					 * beginning of the file. */
     Blt_DBuffer dbuffer;
     Blt_Pixel palette[MAXCOLORS];
     char *id;
 
-    int pktIsRle;			/* Indicates if the current packet is
-					 * raw or run length encoded. */
-    int pktCount;			/* Current count of raw or run length 
-					 * encoded packets. */
-    Blt_Pixel pktRep;			/* Current pixel being replicated for
-					 * run length encoded packets. */
+    int pktIsRle;			/* Indicates if the current packet
+					 * is raw or run length encoded. */
+    int pktCount;			/* Current count of raw or run
+					 * length encoded packets. */
+    Blt_Pixel pktRep;			/* Current pixel being replicated
+					 * for run length encoded
+					 * packets. */
     unsigned char *bp;			/* Current pointer. */
     int bytesLeft;			/* Bytes left in image stream. */
     TgaGetPixelProc *getProc;
@@ -1138,7 +1142,13 @@ TgaToPicture(Tcl_Interp *interp, const char *fileName, Blt_DBuffer dbuffer,
     picture = NULL;
     if ((tga.width > 0) && (tga.height > 0)) {
 	picture = TgaGetImageData(&tga);
+        if ((tga.bitsPerPixel == 16) || (tga.bitsPerPixel == 32)) {
+            Blt_AssociateColors(picture);
+        }
+        /* Set associated colors flag.  */
+        picture->flags |= BLT_PIC_ASSOCIATED_COLORS;
     }
+
     if (tga.numWarnings > 0) {
 	Tcl_SetErrorCode(interp, "PICTURE", "TGA_READ_WARNINGS", 
 		Tcl_DStringValue(&tga.warnings), (char *)NULL);
