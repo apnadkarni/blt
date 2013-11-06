@@ -1,5 +1,4 @@
 /* -*- mode: c; c-basic-offset: 4; indent-tabs-mode: nil -*- */
-
 /*
  * bltGrContour.c --
  *
@@ -7,13 +6,13 @@
  *
  *	Copyright 2011 George A Howlett.
  *
- *	Permission is hereby granted, free of charge, to any person obtaining
- *	a copy of this software and associated documentation files (the
- *	"Software"), to deal in the Software without restriction, including
- *	without limitation the rights to use, copy, modify, merge, publish,
- *	distribute, sublicense, and/or sell copies of the Software, and to
- *	permit persons to whom the Software is furnished to do so, subject to
- *	the following conditions:
+ *	Permission is hereby granted, free of charge, to any person
+ *	obtaining a copy of this software and associated documentation
+ *	files (the "Software"), to deal in the Software without
+ *	restriction, including without limitation the rights to use, copy,
+ *	modify, merge, publish, distribute, sublicense, and/or sell copies
+ *	of the Software, and to permit persons to whom the Software is
+ *	furnished to do so, subject to the following conditions:
  *
  *	The above copyright notice and this permission notice shall be
  *	included in all copies or substantial portions of the Software.
@@ -21,10 +20,11 @@
  *	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  *	EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  *	MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- *	NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
- *	LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
- *	OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
- *	WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *	NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+ *	BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ *	ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ *	CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ *	SOFTWARE.
  */
 
 #define BUILD_BLT_TK_PROCS 1
@@ -116,24 +116,26 @@ static int tkpWinRopModes[] =
 
 /* Flags for trace's point and segments. */
 #define VISIBLE		(1<<0)		/* Point is on visible on screen. */
-#define KNOT		(1<<1)		/* Point is a knot, original data 
+#define KNOT		(1<<1)		/* Point is a knot, original data
 					 * point. */
 #define SYMBOL		(1<<2)		/* Point is designated to have a
 					 * symbol. This is only used when
 					 * reqMaxSymbols is non-zero. */
-#define ACTIVE_POINT	(1<<3)		/* Point is active. This is only used
-					 * when numActivePoints is greater than
-					 * zero. */
+#define ACTIVE_POINT	(1<<3)		/* Point is active. This is only
+					 * used when numActivePoints is
+					 * greater than zero. */
 #define ISOLINES	(1<<12)		/* Draw the isolines on top of the
 					 * mesh. */
-#define COLORMAP	(1<<13)		/* Fill the triangles of the mesh. */
-#define HULL		(1<<14)		/* Draw the convex hull representing
-					 * the outer boundary of the mesh. */
-#define WIRES		(1<<20)		/* Draw the edges of the triangular 
+#define COLORMAP	(1<<13)		/* Fill the triangles of the
+                                         * mesh. */
+#define HULL		(1<<14)		/* Draw the convex hull
+					 * representing the outer boundary
+					 * of the mesh. */
+#define WIRES		(1<<20)		/* Draw the edges of the triangular
 					 * mesh. */
 #define TRIANGLES	(1<<21)		/* Map mesh. */
-#define VALUES		(1<<16)		/* Draw the z-values at the vertices
-					 * of the mesh. */
+#define VALUES		(1<<16)		/* Draw the z-values at the
+					 * vertices of the mesh. */
 #define SYMBOLS		(1<<17)		/* Draw the symbols on top of the
 					 * mesh. */
 
@@ -335,10 +337,10 @@ typedef struct {
 typedef struct {
     GraphObj obj;
     ContourElement *elemPtr;		/* Element this isoline belongs
-                                           to. */
+                                         * to. */
     unsigned int flags;
     const char *label;			/* Label to be displayed for
-                                           isoline. */
+                                         * isoline. */
     double reqValue;			/* Requested isoline value.  Could
 					 * be either absolute or
 					 * relative. */

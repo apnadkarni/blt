@@ -364,7 +364,7 @@ JpgSetDestinationToBuffer(j_compress_ptr commPtr, Blt_DBuffer buffer)
  * Results:
  *      Returns 1 is the header is JPG and 0 otherwise.  Note that the
  *      validity of the header contents is not checked here.  That's done
- *      in Blt_JpgToPicture.
+ *      in JpgToPicture.
  *
  *---------------------------------------------------------------------------
  */
@@ -522,6 +522,8 @@ JpgToPicture(
     }
     Tcl_DStringFree(&error.ds);
     chain = Blt_Chain_Create();
+    /* Opaque image, set associate colors flag.  */
+    destPtr->flags |= BLT_PIC_ASSOCIATED_COLORS;
     Blt_Chain_Append(chain, destPtr);
     return chain;
 }

@@ -58,7 +58,7 @@
  *	commands associated with a particular interpreter.
  */
 typedef struct {
-    Blt_HashTable paletteTable;		/* Tracks tables in use. */
+    Blt_HashTable paletteTable;		/* Tracks palettes in use. */
     Tcl_Interp *interp;
     int nextPaletteCmdId;
 } PaletteCmdInterpData;
@@ -1254,10 +1254,16 @@ ColorLerp2(Blt_PaletteEntry *entryPtr, double t)
     }
     alpha = t;
     beta = 1.0 - t;
+    r = (int)(entryPtr->high.Red - entryPtr->low.Red) * t + entryPtr->low.Red;
+    g = (int)(entryPtr->high.Green - entryPtr->low.Green) * t + entryPtr->low.Green;
+    b = (int)(entryPtr->high.Blue - entryPtr->low.Blue) * t + entryPtr->low.Blue;
+    a = (int)(entryPtr->high.Alpha - entryPtr->low.Alpha) * t + entryPtr->low.Alpha;
+#ifdef notdef
     r = (int)((entryPtr->low.Red * beta) + (entryPtr->high.Red * alpha));
     g = (int)((entryPtr->low.Green * beta) + (entryPtr->high.Green * alpha));
     b = (int)((entryPtr->low.Blue * beta) + (entryPtr->high.Blue * alpha));
     a = 255;
+#endif
 
     color.Red   = CLAMP(r);
     color.Green = CLAMP(g);
@@ -1351,10 +1357,12 @@ fprintf(stderr, "testing: relValue=%.15g, relMin=%.15g, relMax=%.15g\n",
 	 entryPtr < endPtr; entryPtr++) {
 	if (InRange(relValue, entryPtr->min.relValue, entryPtr->max.relValue)) {
 	    double t;
-	    
+            unsigned int alpha;
+
 	    t = (relValue - entryPtr->min.relValue) / 
 		(entryPtr->max.relValue - entryPtr->min.relValue);
-	    color.Alpha = OpacityLerp(entryPtr, t);
+	    alpha = OpacityLerp(entryPtr, t);
+            Blt_FadeColor(&color, alpha);
 	    break;
 	}
     }
