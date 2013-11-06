@@ -87,8 +87,7 @@ typedef struct {
 
     /* Error bar attributes. */
     int errorBarShow;			/* Describes which error bars to
-					 * display: none, x, y, or *
-					 * both. */
+					 * display: none, x, y, or both. */
 
     int errorBarLineWidth;		/* Width of the error bar segments. */
 
@@ -141,17 +140,19 @@ typedef struct {
     Axis2d axes;			/* X-axis and Y-axis mapping the
 					 * element */
     ElemValues x, y, w;			/* Contains array of floating point
-					 * graph coordinate values. Also holds
-					 * min/max and the number of
+					 * graph coordinate values. Also
+					 * holds min/max and the number of
 					 * coordinates */
     Blt_HashTable activeTable;		/* Table of indices which indicate
-					 * which data points are active (drawn
-					 * * with "active" colors). */
+					 * which data points are active
+					 * (drawn * with "active"
+					 * colors). */
     int numActiveIndices;		/* Number of active data points.
-					 * Special case: if numActiveIndices < 0
-					 * and the active bit is set in
-					 * "flags", then all data * points are
-					 * drawn active. */
+					 * Special case: if
+					 * numActiveIndices < 0 and the
+					 * active bit is set in "flags",
+					 * then all data * points are drawn
+					 * active. */
     ElementProcs *procsPtr;
     Blt_ConfigSpec *configSpecs;	/* Configuration specifications. */
     BarPen *activePenPtr;		/* Standard Pens */
@@ -160,12 +161,12 @@ typedef struct {
     Blt_Chain styles;			/* Palette of pens. */
 
     /* Symbol scaling */
-    int scaleSymbols;			/* If non-zero, the symbols will scale
-					 * in size as the graph is zoomed
-					 * in/out.  */
-    double xRange, yRange;		/* Initial X-axis and Y-axis ranges:
-					 * used to scale the size of element's
-					 * symbol. */
+    int scaleSymbols;			/* If non-zero, the symbols will
+					 * scale in size as the graph is
+					 * zoomed in/out.  */
+    double xRange, yRange;		/* Initial X-axis and Y-axis
+					 * ranges: used to scale the size
+					 * of element's symbol. */
     int state;
 
     /* Fields specific to the barchart element */
@@ -174,8 +175,9 @@ typedef struct {
     const char *groupName;
 
     int *barToData;
-    XRectangle *bars;		       /* Array of rectangles comprising the bar
-					* segments of the element. */
+    XRectangle *bars;                   /* Array of rectangles comprising
+                                         * the bar segments of the
+                                         * element. */
     int *activeToData;
     XRectangle *activeRects;
     int numBars;                        /* # of visible bar segments for
@@ -1675,7 +1677,7 @@ MapProc(Graph *graphPtr, Element *basePtr)
     double barWidth, barOffset;
     double baseline, ybot;
     int *barToData;			/* Maps bars to data point
-                                         * indices */
+                                         * indices. */
     int invertBar;
     int numPoints, count;
     XRectangle *rp, *bars;
@@ -1685,7 +1687,7 @@ MapProc(Graph *graphPtr, Element *basePtr)
     ResetElement(elemPtr);
     numPoints = NUMBEROFPOINTS(elemPtr);
     if (numPoints < 1) {
-	return;				/* No data points */
+	return;				/* No data points. */
     }
     barWidth = (elemPtr->barWidth > 0.0) 
 	? elemPtr->barWidth : graphPtr->barWidth;
@@ -1712,7 +1714,7 @@ MapProc(Graph *graphPtr, Element *basePtr)
 	if (((x[i] - barWidth) > elemPtr->axes.x->axisRange.max) ||
 	    ((x[i] + barWidth) < elemPtr->axes.x->axisRange.min)) {
 	    continue;			/* Abscissa is out of range of the
-					 * x-axis */
+					 * x-axis. */
 	}
 	c1.x = x[i] - barOffset;
 	c1.y = y[i];
@@ -1957,12 +1959,12 @@ DrawSymbolProc(Graph *graphPtr, Drawable drawable, Element *basePtr,
 static int
 GradientColorProc(Blt_Paintbrush *brushPtr, int x, int y)
 {
+    BarElement *elemPtr = brushPtr->clientData;
     Blt_Pixel color;
     Graph *graphPtr;
-    BarElement *elemPtr = brushPtr->clientData;
     GraphColormap *cmapPtr;
-    double value;
     Point2d point;
+    double value;
 
     graphPtr = elemPtr->obj.graphPtr;
     cmapPtr = elemPtr->colormapPtr;
