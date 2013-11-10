@@ -4137,7 +4137,7 @@ MapProc(Graph *graphPtr, Element *basePtr)
 
 
 static int
-GradientColorProc(Blt_Paintbrush *brushPtr, int x, int y)
+GradientColorProc(Blt_PaintBrush *brushPtr, int x, int y)
 {
     Blt_Pixel color;
     Graph *graphPtr;
@@ -4213,7 +4213,7 @@ static void
 DrawGradientPolygon(Graph *graphPtr, Drawable drawable, LineElement *elemPtr, 
 		    int n, XPoint *points)
 {
-    Blt_Paintbrush brush;
+    Blt_PaintBrush brush;
     Blt_Picture bg;
     Blt_Painter painter;
     int i;
@@ -4242,10 +4242,10 @@ DrawGradientPolygon(Graph *graphPtr, Drawable drawable, LineElement *elemPtr,
 	vertices[i].y = (float)(points[i].y - y1);
     }
     Blt_Colormap_Init(elemPtr->colormapPtr);
-    Blt_Paintbrush_Init(&brush);
-    Blt_Paintbrush_SetOrigin(&brush, -x1, -y1);
-    Blt_Paintbrush_SetPalette(&brush, elemPtr->colormapPtr->palette);
-    Blt_Paintbrush_SetColorProc(&brush, GradientColorProc, elemPtr);
+    Blt_PaintBrush_Init(&brush);
+    Blt_PaintBrush_SetOrigin(&brush, -x1, -y1);
+    Blt_PaintBrush_SetPalette(&brush, elemPtr->colormapPtr->palette);
+    Blt_PaintBrush_SetColorProc(&brush, GradientColorProc, elemPtr);
     Blt_PaintPolygon(bg, n, vertices, &brush);
     Blt_Free(vertices);
     painter = Blt_GetPainter(graphPtr->tkwin, 1.0);

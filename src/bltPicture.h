@@ -575,29 +575,29 @@ typedef enum Blt_TextureTypes {
 BLT_EXTERN void Blt_TexturePicture(Blt_Picture picture, Blt_Pixel *lowPtr, 
 	Blt_Pixel *highPtr, Blt_TextureType type);
 
-typedef struct _Blt_Paintbrush Blt_Paintbrush;
+typedef struct _Blt_PaintBrush Blt_PaintBrush;
 
-typedef int (Blt_Paintbrush_ColorProc)(Blt_Paintbrush *brushPtr, int x, int y);
+typedef int (Blt_PaintBrush_ColorProc)(Blt_PaintBrush *brushPtr, int x, int y);
 
-typedef enum Blt_PaintbrushTypes {
+typedef enum Blt_PaintBrushTypes {
     BLT_PAINTBRUSH_SOLID,
     BLT_PAINTBRUSH_TEXTURE,
     BLT_PAINTBRUSH_GRADIENT,
     BLT_PAINTBRUSH_TILE
-} Blt_PaintbrushType;
+} Blt_PaintBrushType;
 
 /*
  *---------------------------------------------------------------------------
  *
- * Blt_Paintbrush --
+ * Blt_PaintBrush --
  *
  *      Represents either a solid color, gradient, tile, or texture.  
  *	Used to paint basic geometric objects.
  *
  *---------------------------------------------------------------------------
  */
-struct _Blt_Paintbrush {
-    Blt_PaintbrushType type;		/* Type of paintbrush:
+struct _Blt_PaintBrush {
+    Blt_PaintBrushType type;		/* Type of paintbrush:
     					 * BLT_PAINTBRUSH_SOLID,
     					 * BLT_PAINTBRUSH_TILE,
     					 * BLT_PAINTBRUSH_GRADIENT, * or
@@ -628,38 +628,38 @@ struct _Blt_Paintbrush {
     Blt_Jitter jitter;
     int xOrigin, yOrigin;		/* Offset of tile, gradient from 
 					 * top of window. */
-    Blt_Paintbrush_ColorProc *colorProc;
+    Blt_PaintBrush_ColorProc *colorProc;
     int blend;
 };
 
-BLT_EXTERN void Blt_Paintbrush_Init(Blt_Paintbrush *brushPtr);
-BLT_EXTERN void Blt_Paintbrush_Free(Blt_Paintbrush *brushPtr);
-BLT_EXTERN int Blt_Paintbrush_Get(Tcl_Interp *interp, Tcl_Obj *objPtr, 
-	Blt_Paintbrush **brushPtrPtr);
-BLT_EXTERN int Blt_Paintbrush_GetFromString(Tcl_Interp *interp, 
-	const char *string, Blt_Paintbrush **brushPtrPtr);
-BLT_EXTERN void Blt_Paintbrush_SetPalette(Blt_Paintbrush *brushPtr, 
+BLT_EXTERN void Blt_PaintBrush_Init(Blt_PaintBrush *brushPtr);
+BLT_EXTERN void Blt_PaintBrush_Free(Blt_PaintBrush *brushPtr);
+BLT_EXTERN int Blt_PaintBrush_Get(Tcl_Interp *interp, Tcl_Obj *objPtr, 
+	Blt_PaintBrush **brushPtrPtr);
+BLT_EXTERN int Blt_PaintBrush_GetFromString(Tcl_Interp *interp, 
+	const char *string, Blt_PaintBrush **brushPtrPtr);
+BLT_EXTERN void Blt_PaintBrush_SetPalette(Blt_PaintBrush *brushPtr, 
 	Blt_Palette palette);
-BLT_EXTERN void Blt_Paintbrush_SetColorProc(Blt_Paintbrush *brushPtr, 
-	Blt_Paintbrush_ColorProc *proc, ClientData clientData);
-BLT_EXTERN void Blt_Paintbrush_SetColors(Blt_Paintbrush *brushPtr, 
+BLT_EXTERN void Blt_PaintBrush_SetColorProc(Blt_PaintBrush *brushPtr, 
+	Blt_PaintBrush_ColorProc *proc, ClientData clientData);
+BLT_EXTERN void Blt_PaintBrush_SetColors(Blt_PaintBrush *brushPtr, 
 	Blt_Pixel *lowPtr, Blt_Pixel *highPtr);
-BLT_EXTERN void Blt_Paintbrush_Region(Blt_Paintbrush *brushPtr, int x, int y, 
+BLT_EXTERN void Blt_PaintBrush_Region(Blt_PaintBrush *brushPtr, int x, int y, 
 	int w, 	int h);
-BLT_EXTERN void Blt_Paintbrush_SetTile(Blt_Paintbrush *brushPtr, 
+BLT_EXTERN void Blt_PaintBrush_SetTile(Blt_PaintBrush *brushPtr, 
 	Blt_Picture tile);
-BLT_EXTERN void Blt_Paintbrush_SetTexture(Blt_Paintbrush *brushPtr);
-BLT_EXTERN void Blt_Paintbrush_SetGradient(Blt_Paintbrush *brushPtr, 
+BLT_EXTERN void Blt_PaintBrush_SetTexture(Blt_PaintBrush *brushPtr);
+BLT_EXTERN void Blt_PaintBrush_SetGradient(Blt_PaintBrush *brushPtr, 
 	Blt_GradientType type);
-BLT_EXTERN void Blt_Paintbrush_SetColor(Blt_Paintbrush *brushPtr, 
+BLT_EXTERN void Blt_PaintBrush_SetColor(Blt_PaintBrush *brushPtr, 
 	unsigned int value);
-BLT_EXTERN void Blt_Paintbrush_SetOrigin(Blt_Paintbrush *brushPtr, int x,int y);
-BLT_EXTERN int Blt_Paintbrush_GetAssociatedColor(Blt_Paintbrush *brushPtr, int x, int y);
+BLT_EXTERN void Blt_PaintBrush_SetOrigin(Blt_PaintBrush *brushPtr, int x,int y);
+BLT_EXTERN int Blt_PaintBrush_GetAssociatedColor(Blt_PaintBrush *brushPtr, int x, int y);
 BLT_EXTERN void Blt_PaintRectangle(Blt_Picture picture, int x, int y, int w, 
-	int h, int dx, int dy, Blt_Paintbrush *brushPtr);
+	int h, int dx, int dy, Blt_PaintBrush *brushPtr);
 #ifdef _BLT_INT_H
 BLT_EXTERN void Blt_PaintPolygon(Blt_Picture picture, int n, Point2f *vertices,
-	Blt_Paintbrush *brushPtr);
+	Blt_PaintBrush *brushPtr);
 #endif
 
 BLT_EXTERN Blt_Picture Blt_EmbossPicture(Blt_Picture picture, double azimuth, 

@@ -128,7 +128,7 @@ static Tcl_AppInitProc *cmdProcs[] =
 #ifndef NO_ARCBALL
     Blt_ArcBallCmdInitProc,
 #endif
-    Blt_PaintbrushCmdInitProc,
+    Blt_PaintBrushCmdInitProc,
 #ifndef NO_KIOSK
     Blt_KioskCmdInitProc,
 #endif

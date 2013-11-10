@@ -1,19 +1,19 @@
 /* -*- mode: c; c-basic-offset: 4; indent-tabs-mode: nil -*- */
-
 /*
  * bltPictText.c --
  *
- * This module implements text drawing for picture images in the BLT toolkit.
+ * This module implements text drawing for picture images in the BLT
+ * toolkit.
  *
  *	Copyright 1997-2004 George A Howlett.
  *
- *	Permission is hereby granted, free of charge, to any person obtaining
- *	a copy of this software and associated documentation files (the
- *	"Software"), to deal in the Software without restriction, including
- *	without limitation the rights to use, copy, modify, merge, publish,
- *	distribute, sublicense, and/or sell copies of the Software, and to
- *	permit persons to whom the Software is furnished to do so, subject to
- *	the following conditions:
+ *	Permission is hereby granted, free of charge, to any person
+ *	obtaining a copy of this software and associated documentation
+ *	files (the "Software"), to deal in the Software without
+ *	restriction, including without limitation the rights to use, copy,
+ *	modify, merge, publish, distribute, sublicense, and/or sell copies
+ *	of the Software, and to permit persons to whom the Software is
+ *	furnished to do so, subject to the following conditions:
  *
  *	The above copyright notice and this permission notice shall be
  *	included in all copies or substantial portions of the Software.
@@ -21,10 +21,11 @@
  *	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  *	EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  *	MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- *	NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
- *	LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
- *	OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
- *	WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *	NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+ *	BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ *	ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ *	CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ *	SOFTWARE.
  */
 
 #include "bltInt.h"
@@ -87,8 +88,8 @@ static FT_Library ftLibrary;
  */
 typedef struct {
     FT_Face face;			/* Type face of font */
-    FT_Matrix matrix;			/* Rotation matrix for font. Used for
-					* rotated fonts. */
+    FT_Matrix matrix;			/* Rotation matrix for font. Used
+					* for rotated fonts. */
 #ifdef HAVE_XFT
     XftFont *xftFont;			/* Xft font handle used to get face
 					 * from Xft font. */
@@ -119,25 +120,26 @@ static Blt_SwitchCustom justifySwitch = {
     JustifySwitch, NULL, NULL, (ClientData)0
 };
 
-static Blt_SwitchParseProc ObjToPaintbrushProc;
-static Blt_SwitchFreeProc PaintbrushFreeProc;
+static Blt_SwitchParseProc ObjToPaintBrushProc;
+static Blt_SwitchFreeProc PaintBrushFreeProc;
 static Blt_SwitchCustom paintbrushSwitch =
 {
-    ObjToPaintbrushProc, NULL, PaintbrushFreeProc, (ClientData)0,
+    ObjToPaintBrushProc, NULL, PaintBrushFreeProc, (ClientData)0,
 };
 
 typedef struct {
-    int kerning;			/* Indicates whether to kern text. */
-    Blt_Paintbrush *brushPtr;		/* Color of text. */
+    int kerning;			/* Indicates whether to kern
+                                           text. */
+    Blt_PaintBrush *brushPtr;		/* Color of text. */
     Blt_Shadow shadow;			/*  */
     int fontSize;			/* Size of requested font. */
-    Tcl_Obj *fontObjPtr;		/* Requested font.  If the name of the
-					 * font starts with a '@' sign, this
-					 * is the path to a font file.
+    Tcl_Obj *fontObjPtr;		/* Requested font.  If the name of
+					 * the font starts with a '@' sign,
+					 * this is the path to a font file.
 					 * Otherwise this is the name of
-					 * font. We will use the font handling
-					 * routines to get a corresponding
-					 * face. */
+					 * font. We will use the font
+					 * handling routines to get a
+					 * corresponding face. */
     int justify;
     Tk_Anchor anchor;
     float angle;
@@ -169,21 +171,20 @@ DLLEXPORT extern Tcl_AppInitProc Blt_picture_text_Init;
 
 /*ARGSUSED*/
 static void
-PaintbrushFreeProc(ClientData clientData, char *record, int offset, int flags)
+PaintBrushFreeProc(ClientData clientData, char *record, int offset, int flags)
 {
-    Blt_Paintbrush **brushPtrPtr = (Blt_Paintbrush **)(record + offset);
+    Blt_PaintBrush **brushPtrPtr = (Blt_PaintBrush **)(record + offset);
 
     if (*brushPtrPtr != NULL) {
-	Blt_Paintbrush_Free(*brushPtrPtr);
+	Blt_PaintBrush_Free(*brushPtrPtr);
 	*brushPtrPtr = NULL;
     }
 }
 
-
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToPaintbrushProc --
+ * ObjToPaintBrushProc --
  *
  *	Convert a Tcl_Obj representing a paint brush.
  *
@@ -194,7 +195,7 @@ PaintbrushFreeProc(ClientData clientData, char *record, int offset, int flags)
  */
 /*ARGSUSED*/
 static int
-ObjToPaintbrushProc(
+ObjToPaintBrushProc(
     ClientData clientData,		/* Not used. */
     Tcl_Interp *interp,			/* Interpreter to send results. */
     const char *switchName,		/* Not used. */
@@ -203,14 +204,14 @@ ObjToPaintbrushProc(
     int offset,				/* Offset to field in structure */
     int flags)	
 {
-    Blt_Paintbrush **brushPtrPtr = (Blt_Paintbrush **)(record + offset);
-    Blt_Paintbrush *brushPtr;
+    Blt_PaintBrush **brushPtrPtr = (Blt_PaintBrush **)(record + offset);
+    Blt_PaintBrush *brushPtr;
 
-    if (Blt_Paintbrush_Get(interp, objPtr, &brushPtr) != TCL_OK) {
+    if (Blt_PaintBrush_Get(interp, objPtr, &brushPtr) != TCL_OK) {
 	return TCL_ERROR;
     }
     if (*brushPtrPtr != NULL) {
-	Blt_Paintbrush_Free(*brushPtrPtr);
+	Blt_PaintBrush_Free(*brushPtrPtr);
     }
     *brushPtrPtr = brushPtr;
     return TCL_OK;
@@ -476,7 +477,8 @@ CreateSimpleTextLayout(TextFont *fontPtr, const char *text, int textLen,
 	    maxHeight += lineHeight;
 	    fp++;
 	    numFrags++;
-	    start = p + 1;		/* Start the text on the next line */
+	    start = p + 1;		/* Start the text on the next
+                                         * line */
 	    count = 0;			/* Reset to indicate the start of a
 					 * new line */
 	    continue;
@@ -680,7 +682,7 @@ GetTextWidth(TextFont *fontPtr, const char *string, size_t length, int kerning)
 }
 
 static INLINE void
-BlendPixel(Blt_Pixel *bgPtr, Blt_Pixel *colorPtr)
+BlendPixels(Blt_Pixel *bgPtr, Blt_Pixel *colorPtr)
 {
     unsigned char beta;
     int t;
@@ -698,7 +700,7 @@ BlitGlyph(Pict *destPtr,
     FT_GlyphSlot slot, 
     int dx, int dy,
     int xx, int yy,
-    Blt_Paintbrush *brushPtr)
+    Blt_PaintBrush *brushPtr)
 {
     int x1, y1, x2, y2;
 #ifdef notdef
@@ -752,9 +754,9 @@ BlitGlyph(Pict *destPtr,
 		if (pixel != 0x0) {
 		    Blt_Pixel color;
 
-		    color.u32 = Blt_Paintbrush_GetAssociatedColor(brushPtr, 
+		    color.u32 = Blt_PaintBrush_GetAssociatedColor(brushPtr, 
                         x, y);
-		    BlendPixel(dp, &color);
+		    BlendPixels(dp, &color);
 		}
 	    }
 	    srcRowPtr += slot->bitmap.pitch;
@@ -777,10 +779,10 @@ BlitGlyph(Pict *destPtr,
 		if (*sp != 0x0) {
 		    Blt_Pixel color;
 
-		    color.u32 = Blt_Paintbrush_GetAssociatedColor(brushPtr, 
+		    color.u32 = Blt_PaintBrush_GetAssociatedColor(brushPtr, 
                         x, y);
                     Blt_FadeColor(&color, *sp);
-		    BlendPixel(dp, &color);
+		    BlendPixels(dp, &color);
 		}
 	    }
 	    srcRowPtr += slot->bitmap.pitch;
@@ -791,7 +793,7 @@ BlitGlyph(Pict *destPtr,
 
 static void
 CopyGrayGlyph(Pict *destPtr, FT_GlyphSlot slot, int xx, int yy, 
-	      Blt_Paintbrush *brushPtr)
+	      Blt_PaintBrush *brushPtr)
 {
     int x1, y1, x2, y2;
 
@@ -847,7 +849,7 @@ CopyGrayGlyph(Pict *destPtr, FT_GlyphSlot slot, int xx, int yy,
 		if (*sp != 0x0) {
 		    Blt_Pixel color;
 
-		    color.u32 = Blt_Paintbrush_GetAssociatedColor(brushPtr, 
+		    color.u32 = Blt_PaintBrush_GetAssociatedColor(brushPtr, 
                         x, y);
                     Blt_FadeColor(&color, *sp);
 		    dp->u32 = color.u32;
@@ -861,7 +863,7 @@ CopyGrayGlyph(Pict *destPtr, FT_GlyphSlot slot, int xx, int yy,
 
 static void
 PaintGrayGlyph(Pict *destPtr, FT_GlyphSlot slot, int xx, int yy, 
-	       Blt_Paintbrush *brushPtr)
+	       Blt_PaintBrush *brushPtr)
 {
     int x1, y1, x2, y2;
 
@@ -917,10 +919,10 @@ PaintGrayGlyph(Pict *destPtr, FT_GlyphSlot slot, int xx, int yy,
 		if (*sp != 0x0) {
 		    Blt_Pixel color;
 
-		    color.u32 = Blt_Paintbrush_GetAssociatedColor(brushPtr, 
+		    color.u32 = Blt_PaintBrush_GetAssociatedColor(brushPtr, 
                         x, y);
                     Blt_FadeColor(&color, *sp);
-		    BlendPixel(dp, &color);
+		    BlendPixels(dp, &color);
 		}
 	    }
 	    srcRowPtr += slot->bitmap.pitch;
@@ -931,7 +933,7 @@ PaintGrayGlyph(Pict *destPtr, FT_GlyphSlot slot, int xx, int yy,
 
 static void
 CopyMonoGlyph(Pict *destPtr, FT_GlyphSlot slot, int xx, int yy,
-	  Blt_Paintbrush *brushPtr)
+	  Blt_PaintBrush *brushPtr)
 {
     int x1, y1, x2, y2;
 
@@ -985,7 +987,7 @@ CopyMonoGlyph(Pict *destPtr, FT_GlyphSlot slot, int xx, int yy,
 
 		pixel = srcRowPtr[x >> 3] & (1 << (7 - (x & 0x7)));
 		if (pixel != 0x0) {
-		    dp->u32 = Blt_Paintbrush_GetAssociatedColor(brushPtr, x, y);
+		    dp->u32 = Blt_PaintBrush_GetAssociatedColor(brushPtr, x, y);
 		}
 	    }
 	    srcRowPtr += slot->bitmap.pitch;
@@ -1103,7 +1105,7 @@ CloseFont(TextFont *fontPtr)
 
 static int
 PaintText(Pict *destPtr, TextFont *fontPtr, const char *string,
-	  size_t length, int x, int y, int kerning, Blt_Paintbrush *brushPtr)
+	  size_t length, int x, int y, int kerning, Blt_PaintBrush *brushPtr)
 {
     FT_Error ftError;
     int h;
@@ -1213,7 +1215,7 @@ TextOp(ClientData clientData, Tcl_Interp *interp, int objc,
     switches.anchor = TK_ANCHOR_NW;
     switches.angle = 0.0;
     Blt_Shadow_Set(&switches.shadow, 0, 0, 0x0, 0xA0);
-    if (Blt_Paintbrush_GetFromString(interp, "black", &switches.brushPtr) 
+    if (Blt_PaintBrush_GetFromString(interp, "black", &switches.brushPtr) 
 	!= TCL_OK) {
 	return TCL_ERROR;
     }
@@ -1296,15 +1298,15 @@ TextOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	    Blt_Pixel color;
 	    Pict *tmpPtr;
 	    int extra;
-	    Blt_Paintbrush brush;
+	    Blt_PaintBrush brush;
 	    int i;
 
 	    extra = 2 * shadowPtr->width;
 	    tmpPtr = Blt_CreatePicture(w + extra, h + extra);
 	    color.u32 = 0x0;
 	    Blt_BlankPicture(tmpPtr, color.u32);
-	    Blt_Paintbrush_Init(&brush);
-	    Blt_Paintbrush_SetColor(&brush, shadowPtr->color.u32);
+	    Blt_PaintBrush_Init(&brush);
+	    Blt_PaintBrush_SetColor(&brush, shadowPtr->color.u32);
 	    for (i = 0; i < layoutPtr->numFragments; i++) {
 		TextFragment *fp;
 

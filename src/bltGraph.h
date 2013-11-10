@@ -843,7 +843,7 @@ BLT_EXTERN void Blt_Colormap_CreateNotifier(GraphColormap *cmapPtr,
 BLT_EXTERN void Blt_Colormap_DeleteNotifier(GraphColormap *cmapPtr, 
 	ClientData clientData);
 
-#define Blt_Colormap_GetColor(c, x) \
+#define Blt_Colormap_GetAssociatedColor(c, x) \
     (((c)->palette != NULL) ? Blt_Palette_GetAssociatedColor((c)->palette, x): 0x0);
 
 BLT_EXTERN void Blt_DestroyColormaps(Graph *graphPtr);

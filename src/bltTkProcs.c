@@ -104,20 +104,20 @@ BltTkProcs bltTkProcs = {
     Blt_Palette_Free, /* 89 */
     Blt_GradientPicture, /* 90 */
     Blt_TexturePicture, /* 91 */
-    Blt_Paintbrush_Init, /* 92 */
-    Blt_Paintbrush_Free, /* 93 */
-    Blt_Paintbrush_Get, /* 94 */
-    Blt_Paintbrush_GetFromString, /* 95 */
-    Blt_Paintbrush_SetPalette, /* 96 */
-    Blt_Paintbrush_SetColorProc, /* 97 */
-    Blt_Paintbrush_SetColors, /* 98 */
-    Blt_Paintbrush_Region, /* 99 */
-    Blt_Paintbrush_SetTile, /* 100 */
-    Blt_Paintbrush_SetTexture, /* 101 */
-    Blt_Paintbrush_SetGradient, /* 102 */
-    Blt_Paintbrush_SetColor, /* 103 */
-    Blt_Paintbrush_SetOrigin, /* 104 */
-    Blt_Paintbrush_GetAssociatedColor, /* 105 */
+    Blt_PaintBrush_Init, /* 92 */
+    Blt_PaintBrush_Free, /* 93 */
+    Blt_PaintBrush_Get, /* 94 */
+    Blt_PaintBrush_GetFromString, /* 95 */
+    Blt_PaintBrush_SetPalette, /* 96 */
+    Blt_PaintBrush_SetColorProc, /* 97 */
+    Blt_PaintBrush_SetColors, /* 98 */
+    Blt_PaintBrush_Region, /* 99 */
+    Blt_PaintBrush_SetTile, /* 100 */
+    Blt_PaintBrush_SetTexture, /* 101 */
+    Blt_PaintBrush_SetGradient, /* 102 */
+    Blt_PaintBrush_SetColor, /* 103 */
+    Blt_PaintBrush_SetOrigin, /* 104 */
+    Blt_PaintBrush_GetAssociatedColor, /* 105 */
     Blt_PaintRectangle, /* 106 */
     Blt_PaintPolygon, /* 107 */
     Blt_PictureRegisterFormat, /* 108 */

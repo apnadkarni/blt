@@ -19,8 +19,8 @@ set width [image width $src]
 set height [image height $src]
 set filter sinc
 
-option add *Label.font *helvetica*10*
-option add *Label.background white
+option add *BltTkLabel.background white
+option add *BltTkRadiobutton.background white
 label .l0 -image $src
 label .header0 -text "$width x $height"
 label .footer0 -text "100%"
@@ -29,9 +29,10 @@ set iw $width
 set ih $height
 set dest [image create picture -width $iw -height $ih]
 $dest resample $src -filter $filter
-label .header -text "$iw x $ih"
-label .footer -text "$filter"
-label .l1 -image $dest
+blt::tk::label .header1 -text "Original Image" 
+blt::tk::label .header2 -text "Filtered Image"
+blt::tk::label .footer -text "$filter"
+blt::tk::label .l1 -image $dest
 set filters {
     "bell"    
     "bessel"  
@@ -39,10 +40,10 @@ set filters {
     "bspline" 
     "catrom"  
     "default" 
-    "dummy"   
     "gauss8"  
     "gaussian"
     "gi"	
+    "gi8"
     "lanczos3"
     "mitchell"
     "none"    
@@ -58,17 +59,19 @@ proc Doit { filter } {
 }
 
 set i 0
-frame .f 
+frame .f -bg white
 foreach f $filters {
-    radiobutton .f.$f -variable filter -value $f -text $f \
-	-command "Doit $f"
+    blt::tk::radiobutton .f.$f -variable filter -value $f -text $f \
+	-command "Doit $f" -highlightbackground white
     blt::table .f $i,0 .f.$f -anchor w
     incr i
 }
 blt::table . \
    0,0 .f -rspan 3 \
-   0,1 .header \
+   0,1 .header1 \
+   0,2 .header2 \
    1,1 .l0 1,2 .l1 \
-   2,1 .footer
+   2,1 .footer -cspan 2
 
-
+blt::table configure . r* -resize none
+blt::table configure . r1 -resize both

@@ -1924,14 +1924,19 @@ PictureToGif(Tcl_Interp *interp, Blt_Picture original, Blt_DBuffer dbuffer,
     if ((srcPtr->width < 1) || (srcPtr->height < 1)) {
 	return TCL_OK;
     }
+    if (srcPtr->flags & BLT_PIC_ASSOCIATED_COLORS) {
+	Blt_UnassociateColors(srcPtr);
+    }
     numColors = Blt_QueryColors(srcPtr, (Blt_HashTable *)NULL);
     maxColors = 256;
-    if (Blt_PictureIsMasked(srcPtr)) {
-	if (readerPtr->flags & EXPORT_BLEND) {	
+    if (!Blt_PictureIsOpaque(srcPtr)) {
+	if (Blt_PictureIsBlended(srcPtr)) {
 	    Blt_Picture background;
 	    
 	    /* Blend picture with solid color background. */
 	    background = Blt_CreatePicture(srcPtr->width, srcPtr->height);
+            readerPtr->bg.Alpha = 0xFF; /* Background color must be
+                                         * solid. */
 	    Blt_BlankPicture(background, readerPtr->bg.u32); 
 	    Blt_BlendRegion(background, srcPtr, 0, 0, srcPtr->width, 
 			    srcPtr->height, 0, 0);
@@ -1940,9 +1945,9 @@ PictureToGif(Tcl_Interp *interp, Blt_Picture original, Blt_DBuffer dbuffer,
 	    }
 	    srcPtr = background;
 	    numColors = Blt_QueryColors(srcPtr, (Blt_HashTable *)NULL);
-	} else if (numColors >= 256) {
-	    maxColors--;
-	}
+	} else {
+            maxColors--;
+        }
     }
     if (numColors > maxColors) {
 	Blt_Picture quant;
@@ -2214,6 +2219,7 @@ WriteGif(Tcl_Interp *interp, Blt_Picture picture)
 
     /* Default export switch settings. */
     memset(&switches, 0, sizeof(switches));
+    switches.bg.u32 = 0xFFFFFFFF;
     dbuffer = Blt_DBuffer_Create();
     objPtr = NULL;
     if (PictureToGif(interp, picture, dbuffer, &switches) != TCL_OK) {
@@ -2295,6 +2301,7 @@ ExportGif(Tcl_Interp *interp, unsigned int index, Blt_Chain chain, int objc,
     memset(&switches, 0, sizeof(switches));
     switches.index = index;
     switches.delay = 20;
+    switches.bg.u32 = 0xFFFFFFFF;
     if (Blt_ParseSwitches(interp, exportSwitches, objc - 3, objv + 3, 
 	&switches, BLT_SWITCH_DEFAULTS) < 0) {
 	Blt_FreeSwitches(exportSwitches, (char *)&switches, 0);

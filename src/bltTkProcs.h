@@ -553,88 +553,88 @@ BLT_EXTERN void		Blt_TexturePicture(Blt_Picture picture,
 				Blt_Pixel *lowPtr, Blt_Pixel *highPtr,
 				Blt_TextureType type);
 #endif
-#ifndef Blt_Paintbrush_Init_DECLARED
-#define Blt_Paintbrush_Init_DECLARED
+#ifndef Blt_PaintBrush_Init_DECLARED
+#define Blt_PaintBrush_Init_DECLARED
 /* 92 */
-BLT_EXTERN void		Blt_Paintbrush_Init(Blt_Paintbrush *brushPtr);
+BLT_EXTERN void		Blt_PaintBrush_Init(Blt_PaintBrush *brushPtr);
 #endif
-#ifndef Blt_Paintbrush_Free_DECLARED
-#define Blt_Paintbrush_Free_DECLARED
+#ifndef Blt_PaintBrush_Free_DECLARED
+#define Blt_PaintBrush_Free_DECLARED
 /* 93 */
-BLT_EXTERN void		Blt_Paintbrush_Free(Blt_Paintbrush *brushPtr);
+BLT_EXTERN void		Blt_PaintBrush_Free(Blt_PaintBrush *brushPtr);
 #endif
-#ifndef Blt_Paintbrush_Get_DECLARED
-#define Blt_Paintbrush_Get_DECLARED
+#ifndef Blt_PaintBrush_Get_DECLARED
+#define Blt_PaintBrush_Get_DECLARED
 /* 94 */
-BLT_EXTERN int		Blt_Paintbrush_Get(Tcl_Interp *interp,
+BLT_EXTERN int		Blt_PaintBrush_Get(Tcl_Interp *interp,
 				Tcl_Obj *objPtr,
-				Blt_Paintbrush **brushPtrPtr);
+				Blt_PaintBrush **brushPtrPtr);
 #endif
-#ifndef Blt_Paintbrush_GetFromString_DECLARED
-#define Blt_Paintbrush_GetFromString_DECLARED
+#ifndef Blt_PaintBrush_GetFromString_DECLARED
+#define Blt_PaintBrush_GetFromString_DECLARED
 /* 95 */
-BLT_EXTERN int		Blt_Paintbrush_GetFromString(Tcl_Interp *interp,
+BLT_EXTERN int		Blt_PaintBrush_GetFromString(Tcl_Interp *interp,
 				const char *string,
-				Blt_Paintbrush **brushPtrPtr);
+				Blt_PaintBrush **brushPtrPtr);
 #endif
-#ifndef Blt_Paintbrush_SetPalette_DECLARED
-#define Blt_Paintbrush_SetPalette_DECLARED
+#ifndef Blt_PaintBrush_SetPalette_DECLARED
+#define Blt_PaintBrush_SetPalette_DECLARED
 /* 96 */
-BLT_EXTERN void		Blt_Paintbrush_SetPalette(Blt_Paintbrush *brushPtr,
+BLT_EXTERN void		Blt_PaintBrush_SetPalette(Blt_PaintBrush *brushPtr,
 				Blt_Palette palette);
 #endif
-#ifndef Blt_Paintbrush_SetColorProc_DECLARED
-#define Blt_Paintbrush_SetColorProc_DECLARED
+#ifndef Blt_PaintBrush_SetColorProc_DECLARED
+#define Blt_PaintBrush_SetColorProc_DECLARED
 /* 97 */
-BLT_EXTERN void		Blt_Paintbrush_SetColorProc(Blt_Paintbrush *brushPtr,
-				Blt_Paintbrush_ColorProc *proc,
+BLT_EXTERN void		Blt_PaintBrush_SetColorProc(Blt_PaintBrush *brushPtr,
+				Blt_PaintBrush_ColorProc *proc,
 				ClientData clientData);
 #endif
-#ifndef Blt_Paintbrush_SetColors_DECLARED
-#define Blt_Paintbrush_SetColors_DECLARED
+#ifndef Blt_PaintBrush_SetColors_DECLARED
+#define Blt_PaintBrush_SetColors_DECLARED
 /* 98 */
-BLT_EXTERN void		Blt_Paintbrush_SetColors(Blt_Paintbrush *brushPtr,
+BLT_EXTERN void		Blt_PaintBrush_SetColors(Blt_PaintBrush *brushPtr,
 				Blt_Pixel *lowPtr, Blt_Pixel *highPtr);
 #endif
-#ifndef Blt_Paintbrush_Region_DECLARED
-#define Blt_Paintbrush_Region_DECLARED
+#ifndef Blt_PaintBrush_Region_DECLARED
+#define Blt_PaintBrush_Region_DECLARED
 /* 99 */
-BLT_EXTERN void		Blt_Paintbrush_Region(Blt_Paintbrush *brushPtr,
+BLT_EXTERN void		Blt_PaintBrush_Region(Blt_PaintBrush *brushPtr,
 				int x, int y, int w, int h);
 #endif
-#ifndef Blt_Paintbrush_SetTile_DECLARED
-#define Blt_Paintbrush_SetTile_DECLARED
+#ifndef Blt_PaintBrush_SetTile_DECLARED
+#define Blt_PaintBrush_SetTile_DECLARED
 /* 100 */
-BLT_EXTERN void		Blt_Paintbrush_SetTile(Blt_Paintbrush *brushPtr,
+BLT_EXTERN void		Blt_PaintBrush_SetTile(Blt_PaintBrush *brushPtr,
 				Blt_Picture tile);
 #endif
-#ifndef Blt_Paintbrush_SetTexture_DECLARED
-#define Blt_Paintbrush_SetTexture_DECLARED
+#ifndef Blt_PaintBrush_SetTexture_DECLARED
+#define Blt_PaintBrush_SetTexture_DECLARED
 /* 101 */
-BLT_EXTERN void		Blt_Paintbrush_SetTexture(Blt_Paintbrush *brushPtr);
+BLT_EXTERN void		Blt_PaintBrush_SetTexture(Blt_PaintBrush *brushPtr);
 #endif
-#ifndef Blt_Paintbrush_SetGradient_DECLARED
-#define Blt_Paintbrush_SetGradient_DECLARED
+#ifndef Blt_PaintBrush_SetGradient_DECLARED
+#define Blt_PaintBrush_SetGradient_DECLARED
 /* 102 */
-BLT_EXTERN void		Blt_Paintbrush_SetGradient(Blt_Paintbrush *brushPtr,
+BLT_EXTERN void		Blt_PaintBrush_SetGradient(Blt_PaintBrush *brushPtr,
 				Blt_GradientType type);
 #endif
-#ifndef Blt_Paintbrush_SetColor_DECLARED
-#define Blt_Paintbrush_SetColor_DECLARED
+#ifndef Blt_PaintBrush_SetColor_DECLARED
+#define Blt_PaintBrush_SetColor_DECLARED
 /* 103 */
-BLT_EXTERN void		Blt_Paintbrush_SetColor(Blt_Paintbrush *brushPtr,
+BLT_EXTERN void		Blt_PaintBrush_SetColor(Blt_PaintBrush *brushPtr,
 				unsigned int value);
 #endif
-#ifndef Blt_Paintbrush_SetOrigin_DECLARED
-#define Blt_Paintbrush_SetOrigin_DECLARED
+#ifndef Blt_PaintBrush_SetOrigin_DECLARED
+#define Blt_PaintBrush_SetOrigin_DECLARED
 /* 104 */
-BLT_EXTERN void		Blt_Paintbrush_SetOrigin(Blt_Paintbrush *brushPtr,
+BLT_EXTERN void		Blt_PaintBrush_SetOrigin(Blt_PaintBrush *brushPtr,
 				int x, int y);
 #endif
-#ifndef Blt_Paintbrush_GetAssociatedColor_DECLARED
-#define Blt_Paintbrush_GetAssociatedColor_DECLARED
+#ifndef Blt_PaintBrush_GetAssociatedColor_DECLARED
+#define Blt_PaintBrush_GetAssociatedColor_DECLARED
 /* 105 */
-BLT_EXTERN int		Blt_Paintbrush_GetAssociatedColor(Blt_Paintbrush *brushPtr,
+BLT_EXTERN int		Blt_PaintBrush_GetAssociatedColor(Blt_PaintBrush *brushPtr,
 				int x, int y);
 #endif
 #ifndef Blt_PaintRectangle_DECLARED
@@ -642,13 +642,13 @@ BLT_EXTERN int		Blt_Paintbrush_GetAssociatedColor(Blt_Paintbrush *brushPtr,
 /* 106 */
 BLT_EXTERN void		Blt_PaintRectangle(Blt_Picture picture, int x, int y,
 				int w, int h, int dx, int dy,
-				Blt_Paintbrush *brushPtr);
+				Blt_PaintBrush *brushPtr);
 #endif
 #ifndef Blt_PaintPolygon_DECLARED
 #define Blt_PaintPolygon_DECLARED
 /* 107 */
 BLT_EXTERN void		Blt_PaintPolygon(Blt_Picture picture, int n,
-				Point2f *vertices, Blt_Paintbrush *brushPtr);
+				Point2f *vertices, Blt_PaintBrush *brushPtr);
 #endif
 #ifndef Blt_PictureRegisterFormat_DECLARED
 #define Blt_PictureRegisterFormat_DECLARED
@@ -763,9 +763,9 @@ typedef struct BltTkProcs {
     void (*blt_Shadow_Set) (Blt_Shadow *sPtr, int width, int offset, int color, int alpha); /* 79 */
     int (*blt_Palette_GetFromObj) (Tcl_Interp *interp, Tcl_Obj *objPtr, Blt_Palette *palPtr); /* 80 */
     int (*blt_Palette_GetFromString) (Tcl_Interp *interp, const char *string, Blt_Palette *palPtr); /* 81 */
-    int (*blt_Palette_GetColorFromAbsoluteValue) (Blt_Palette palette, double absValue, double rangeMin, double rangeMax); /* 82 */
+    int (*blt_Palette_GetAssociatedColorFromAbsoluteValue) (Blt_Palette palette, double absValue, double rangeMin, double rangeMax); /* 82 */
     void (*blt_Palette_SetRange) (Blt_Palette palette, double min, double max); /* 83 */
-    int (*blt_Palette_GetColor) (Blt_Palette palette, double relValue); /* 84 */
+    int (*blt_Palette_GetAssociatedColor) (Blt_Palette palette, double relValue); /* 84 */
     void (*blt_Palette_CreateNotifier) (Blt_Palette palette, Blt_Palette_NotifyProc *proc, ClientData clientData); /* 85 */
     void (*blt_Palette_DeleteNotifier) (Blt_Palette palette, ClientData clientData); /* 86 */
     const char * (*blt_Palette_Name) (Blt_Palette palette); /* 87 */
@@ -773,22 +773,22 @@ typedef struct BltTkProcs {
     void (*blt_Palette_Free) (Blt_Palette palette); /* 89 */
     void (*blt_GradientPicture) (Blt_Picture picture, Blt_Pixel *highPtr, Blt_Pixel *lowPtr, Blt_Gradient *gradientPtr, Blt_Jitter *jitterPtr); /* 90 */
     void (*blt_TexturePicture) (Blt_Picture picture, Blt_Pixel *lowPtr, Blt_Pixel *highPtr, Blt_TextureType type); /* 91 */
-    void (*blt_Paintbrush_Init) (Blt_Paintbrush *brushPtr); /* 92 */
-    void (*blt_Paintbrush_Free) (Blt_Paintbrush *brushPtr); /* 93 */
-    int (*blt_Paintbrush_Get) (Tcl_Interp *interp, Tcl_Obj *objPtr, Blt_Paintbrush **brushPtrPtr); /* 94 */
-    int (*blt_Paintbrush_GetFromString) (Tcl_Interp *interp, const char *string, Blt_Paintbrush **brushPtrPtr); /* 95 */
-    void (*blt_Paintbrush_SetPalette) (Blt_Paintbrush *brushPtr, Blt_Palette palette); /* 96 */
-    void (*blt_Paintbrush_SetColorProc) (Blt_Paintbrush *brushPtr, Blt_Paintbrush_ColorProc *proc, ClientData clientData); /* 97 */
-    void (*blt_Paintbrush_SetColors) (Blt_Paintbrush *brushPtr, Blt_Pixel *lowPtr, Blt_Pixel *highPtr); /* 98 */
-    void (*blt_Paintbrush_Region) (Blt_Paintbrush *brushPtr, int x, int y, int w, int h); /* 99 */
-    void (*blt_Paintbrush_SetTile) (Blt_Paintbrush *brushPtr, Blt_Picture tile); /* 100 */
-    void (*blt_Paintbrush_SetTexture) (Blt_Paintbrush *brushPtr); /* 101 */
-    void (*blt_Paintbrush_SetGradient) (Blt_Paintbrush *brushPtr, Blt_GradientType type); /* 102 */
-    void (*blt_Paintbrush_SetColor) (Blt_Paintbrush *brushPtr, unsigned int value); /* 103 */
-    void (*blt_Paintbrush_SetOrigin) (Blt_Paintbrush *brushPtr, int x, int y); /* 104 */
-    int (*blt_Paintbrush_GetAssociatedColor) (Blt_Paintbrush *brushPtr, int x, int y); /* 105 */
-    void (*blt_PaintRectangle) (Blt_Picture picture, int x, int y, int w, int h, int dx, int dy, Blt_Paintbrush *brushPtr); /* 106 */
-    void (*blt_PaintPolygon) (Blt_Picture picture, int n, Point2f *vertices, Blt_Paintbrush *brushPtr); /* 107 */
+    void (*blt_PaintBrush_Init) (Blt_PaintBrush *brushPtr); /* 92 */
+    void (*blt_PaintBrush_Free) (Blt_PaintBrush *brushPtr); /* 93 */
+    int (*blt_PaintBrush_Get) (Tcl_Interp *interp, Tcl_Obj *objPtr, Blt_PaintBrush **brushPtrPtr); /* 94 */
+    int (*blt_PaintBrush_GetFromString) (Tcl_Interp *interp, const char *string, Blt_PaintBrush **brushPtrPtr); /* 95 */
+    void (*blt_PaintBrush_SetPalette) (Blt_PaintBrush *brushPtr, Blt_Palette palette); /* 96 */
+    void (*blt_PaintBrush_SetColorProc) (Blt_PaintBrush *brushPtr, Blt_PaintBrush_ColorProc *proc, ClientData clientData); /* 97 */
+    void (*blt_PaintBrush_SetColors) (Blt_PaintBrush *brushPtr, Blt_Pixel *lowPtr, Blt_Pixel *highPtr); /* 98 */
+    void (*blt_PaintBrush_Region) (Blt_PaintBrush *brushPtr, int x, int y, int w, int h); /* 99 */
+    void (*blt_PaintBrush_SetTile) (Blt_PaintBrush *brushPtr, Blt_Picture tile); /* 100 */
+    void (*blt_PaintBrush_SetTexture) (Blt_PaintBrush *brushPtr); /* 101 */
+    void (*blt_PaintBrush_SetGradient) (Blt_PaintBrush *brushPtr, Blt_GradientType type); /* 102 */
+    void (*blt_PaintBrush_SetColor) (Blt_PaintBrush *brushPtr, unsigned int value); /* 103 */
+    void (*blt_PaintBrush_SetOrigin) (Blt_PaintBrush *brushPtr, int x, int y); /* 104 */
+    int (*blt_PaintBrush_GetAssociatedColor) (Blt_PaintBrush *brushPtr, int x, int y); /* 105 */
+    void (*blt_PaintRectangle) (Blt_Picture picture, int x, int y, int w, int h, int dx, int dy, Blt_PaintBrush *brushPtr); /* 106 */
+    void (*blt_PaintPolygon) (Blt_Picture picture, int n, Point2f *vertices, Blt_PaintBrush *brushPtr); /* 107 */
     int (*blt_PictureRegisterFormat) (Tcl_Interp *interp, const char *name, Blt_PictureIsFmtProc *isFmtProc, Blt_PictureReadDataProc *readProc, Blt_PictureWriteDataProc *writeProc, Blt_PictureImportProc *importProc, Blt_PictureExportProc *exportProc); /* 108 */
     Blt_Picture (*blt_GetNthPicture) (Blt_Chain chain, size_t index); /* 109 */
     Blt_PictFormat * (*blt_FindPictureFormat) (Tcl_Interp *interp, const char *ext); /* 110 */
@@ -1135,7 +1135,7 @@ extern BltTkProcs *bltTkProcsPtr;
 #endif
 #ifndef Blt_Palette_GetAssociatedColorFromAbsoluteValue
 #define Blt_Palette_GetAssociatedColorFromAbsoluteValue \
-	(bltTkProcsPtr->blt_Palette_GetColorFromAbsoluteValue) /* 82 */
+	(bltTkProcsPtr->blt_Palette_GetAssociatedColorFromAbsoluteValue) /* 82 */
 #endif
 #ifndef Blt_Palette_SetRange
 #define Blt_Palette_SetRange \
@@ -1143,7 +1143,7 @@ extern BltTkProcs *bltTkProcsPtr;
 #endif
 #ifndef Blt_Palette_GetAssociatedColor
 #define Blt_Palette_GetAssociatedColor \
-	(bltTkProcsPtr->blt_Palette_GetColor) /* 84 */
+	(bltTkProcsPtr->blt_Palette_GetAssociatedColor) /* 84 */
 #endif
 #ifndef Blt_Palette_CreateNotifier
 #define Blt_Palette_CreateNotifier \
@@ -1173,61 +1173,61 @@ extern BltTkProcs *bltTkProcsPtr;
 #define Blt_TexturePicture \
 	(bltTkProcsPtr->blt_TexturePicture) /* 91 */
 #endif
-#ifndef Blt_Paintbrush_Init
-#define Blt_Paintbrush_Init \
-	(bltTkProcsPtr->blt_Paintbrush_Init) /* 92 */
+#ifndef Blt_PaintBrush_Init
+#define Blt_PaintBrush_Init \
+	(bltTkProcsPtr->blt_PaintBrush_Init) /* 92 */
 #endif
-#ifndef Blt_Paintbrush_Free
-#define Blt_Paintbrush_Free \
-	(bltTkProcsPtr->blt_Paintbrush_Free) /* 93 */
+#ifndef Blt_PaintBrush_Free
+#define Blt_PaintBrush_Free \
+	(bltTkProcsPtr->blt_PaintBrush_Free) /* 93 */
 #endif
-#ifndef Blt_Paintbrush_Get
-#define Blt_Paintbrush_Get \
-	(bltTkProcsPtr->blt_Paintbrush_Get) /* 94 */
+#ifndef Blt_PaintBrush_Get
+#define Blt_PaintBrush_Get \
+	(bltTkProcsPtr->blt_PaintBrush_Get) /* 94 */
 #endif
-#ifndef Blt_Paintbrush_GetFromString
-#define Blt_Paintbrush_GetFromString \
-	(bltTkProcsPtr->blt_Paintbrush_GetFromString) /* 95 */
+#ifndef Blt_PaintBrush_GetFromString
+#define Blt_PaintBrush_GetFromString \
+	(bltTkProcsPtr->blt_PaintBrush_GetFromString) /* 95 */
 #endif
-#ifndef Blt_Paintbrush_SetPalette
-#define Blt_Paintbrush_SetPalette \
-	(bltTkProcsPtr->blt_Paintbrush_SetPalette) /* 96 */
+#ifndef Blt_PaintBrush_SetPalette
+#define Blt_PaintBrush_SetPalette \
+	(bltTkProcsPtr->blt_PaintBrush_SetPalette) /* 96 */
 #endif
-#ifndef Blt_Paintbrush_SetColorProc
-#define Blt_Paintbrush_SetColorProc \
-	(bltTkProcsPtr->blt_Paintbrush_SetColorProc) /* 97 */
+#ifndef Blt_PaintBrush_SetColorProc
+#define Blt_PaintBrush_SetColorProc \
+	(bltTkProcsPtr->blt_PaintBrush_SetColorProc) /* 97 */
 #endif
-#ifndef Blt_Paintbrush_SetColors
-#define Blt_Paintbrush_SetColors \
-	(bltTkProcsPtr->blt_Paintbrush_SetColors) /* 98 */
+#ifndef Blt_PaintBrush_SetColors
+#define Blt_PaintBrush_SetColors \
+	(bltTkProcsPtr->blt_PaintBrush_SetColors) /* 98 */
 #endif
-#ifndef Blt_Paintbrush_Region
-#define Blt_Paintbrush_Region \
-	(bltTkProcsPtr->blt_Paintbrush_Region) /* 99 */
+#ifndef Blt_PaintBrush_Region
+#define Blt_PaintBrush_Region \
+	(bltTkProcsPtr->blt_PaintBrush_Region) /* 99 */
 #endif
-#ifndef Blt_Paintbrush_SetTile
-#define Blt_Paintbrush_SetTile \
-	(bltTkProcsPtr->blt_Paintbrush_SetTile) /* 100 */
+#ifndef Blt_PaintBrush_SetTile
+#define Blt_PaintBrush_SetTile \
+	(bltTkProcsPtr->blt_PaintBrush_SetTile) /* 100 */
 #endif
-#ifndef Blt_Paintbrush_SetTexture
-#define Blt_Paintbrush_SetTexture \
-	(bltTkProcsPtr->blt_Paintbrush_SetTexture) /* 101 */
+#ifndef Blt_PaintBrush_SetTexture
+#define Blt_PaintBrush_SetTexture \
+	(bltTkProcsPtr->blt_PaintBrush_SetTexture) /* 101 */
 #endif
-#ifndef Blt_Paintbrush_SetGradient
-#define Blt_Paintbrush_SetGradient \
-	(bltTkProcsPtr->blt_Paintbrush_SetGradient) /* 102 */
+#ifndef Blt_PaintBrush_SetGradient
+#define Blt_PaintBrush_SetGradient \
+	(bltTkProcsPtr->blt_PaintBrush_SetGradient) /* 102 */
 #endif
-#ifndef Blt_Paintbrush_SetColor
-#define Blt_Paintbrush_SetColor \
-	(bltTkProcsPtr->blt_Paintbrush_SetColor) /* 103 */
+#ifndef Blt_PaintBrush_SetColor
+#define Blt_PaintBrush_SetColor \
+	(bltTkProcsPtr->blt_PaintBrush_SetColor) /* 103 */
 #endif
-#ifndef Blt_Paintbrush_SetOrigin
-#define Blt_Paintbrush_SetOrigin \
-	(bltTkProcsPtr->blt_Paintbrush_SetOrigin) /* 104 */
+#ifndef Blt_PaintBrush_SetOrigin
+#define Blt_PaintBrush_SetOrigin \
+	(bltTkProcsPtr->blt_PaintBrush_SetOrigin) /* 104 */
 #endif
-#ifndef Blt_Paintbrush_GetAssociatedColor
-#define Blt_Paintbrush_GetAssociatedColor \
-	(bltTkProcsPtr->blt_Paintbrush_GetAssociatedColor) /* 105 */
+#ifndef Blt_PaintBrush_GetAssociatedColor
+#define Blt_PaintBrush_GetAssociatedColor \
+	(bltTkProcsPtr->blt_PaintBrush_GetAssociatedColor) /* 105 */
 #endif
 #ifndef Blt_PaintRectangle
 #define Blt_PaintRectangle \

@@ -2160,7 +2160,7 @@ GetScreenPoints(ContourElement *elemPtr)
 	/* Map graph coordinate to normalized coordinates [0..1] */
 	v->z = z;
 	if (elemPtr->colormapPtr != NULL) {
-	    v->color.u32 = Blt_Colormap_GetColor(elemPtr->colormapPtr, v->z);
+	    v->color.u32 = Blt_Colormap_GetAssociatedColor(elemPtr->colormapPtr, v->z);
 	}
     }
     elemPtr->vertices = vertices;
@@ -2649,7 +2649,7 @@ MapIsoline(Isoline *isoPtr)
 	isoPtr->value = isoPtr->reqValue;
     }
     if (elemPtr->colormapPtr != NULL) {
-        isoPtr->paletteColor.u32 = Blt_Colormap_GetColor(elemPtr->colormapPtr, 
+        isoPtr->paletteColor.u32 = Blt_Colormap_GetAssociatedColor(elemPtr->colormapPtr, 
 		isoPtr->value);
     } else {
 	isoPtr->paletteColor.u32 = 0xFF000000;
@@ -6698,7 +6698,7 @@ DrawTriangle(ContourElement *elemPtr, Pict *destPtr, Triangle *t, int xoff,
 		if (cz < t->min) {
 		    cz = t->min;
 		}
-		dp->u32 = Blt_Colormap_GetColor(elemPtr->colormapPtr, cz);
+		dp->u32 = Blt_Colormap_GetAssociatedColor(elemPtr->colormapPtr, cz);
 #ifdef notdef
 		fprintf(stderr, "z=%.17g color=(%d %d %d %d)\n",
 			cz, dp->Red, dp->Green, dp->Blue, dp->Alpha);
@@ -6910,7 +6910,7 @@ DrawTriangle(ContourElement *elemPtr, Pict *destPtr, Triangle *t, int xoff,
 		if (cz < t->min) {
 		    cz = t->min;
 		}
-		dp->u32 = Blt_Colormap_GetColor(elemPtr->colormapPtr, cz);
+		dp->u32 = Blt_Colormap_GetAssociatedColor(elemPtr->colormapPtr, cz);
 #ifdef notdef
 		fprintf(stderr, "z=%.17g color=(%d %d %d %d)\n",
 			cz, dp->Red, dp->Green, dp->Blue, dp->Alpha);

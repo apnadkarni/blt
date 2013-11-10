@@ -235,10 +235,7 @@ typedef struct _Blt_PictureImage {
     float angle;			/* Angle in degrees to rotate the
 					 * image. */
     int reqWidth, reqHeight;		/* User-requested size of picture. The
-					 * picture is scaled accordingly.
-					 * These dimensions may or may not be
-					 * used, depending upon the -maxpect
-					 * option. */
+					 * picture is scaled accordingly. */
     Blt_ResampleFilter filter;		/* 1D Filter to use when the picture
 					 * is resampled (resized). The same
 					 * filter is applied both horizontally
@@ -394,9 +391,6 @@ static Blt_ConfigSpec configSpecs[] =
 	DEF_HEIGHT, Blt_Offset(PictImage, reqHeight), 0},
     {BLT_CONFIG_CUSTOM, "-image", (char *)NULL, (char *)NULL, DEF_IMAGE,
 	Blt_Offset(PictImage, picture), 0, &imageOption},
-    {BLT_CONFIG_BITMASK, "-maxpect", (char *)NULL, (char *)NULL, 
-	DEF_MAXPECT, Blt_Offset(PictImage, flags),
-	BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)MAXPECT},
     {BLT_CONFIG_FLOAT, "-rotate", (char *)NULL, (char *)NULL, 
 	DEF_ANGLE, Blt_Offset(PictImage, angle), 
 	BLT_CONFIG_DONT_SET_DEFAULT},
@@ -2421,24 +2415,24 @@ BlankOp(
 {
     PictImage *imgPtr = clientData;
     int w, h;
-    Blt_Paintbrush brush, *brushPtr;
+    Blt_PaintBrush brush, *brushPtr;
 
     if (objc == 3) {
-	if (Blt_Paintbrush_Get(interp, objv[2], &brushPtr) != TCL_OK) {
+	if (Blt_PaintBrush_Get(interp, objv[2], &brushPtr) != TCL_OK) {
 	    return TCL_ERROR;
 	}
     } else {
-	Blt_Paintbrush_Init(&brush);
-	Blt_Paintbrush_SetColor(&brush, 0x00000000);
+	Blt_PaintBrush_Init(&brush);
+	Blt_PaintBrush_SetColor(&brush, 0x00000000);
 	brushPtr = &brush;
     }
     w = Blt_PictureWidth(imgPtr->picture);
     h = Blt_PictureHeight(imgPtr->picture);
-    Blt_Paintbrush_Region(brushPtr, 0, 0, w, h);
+    Blt_PaintBrush_Region(brushPtr, 0, 0, w, h);
     Blt_PaintRectangle(imgPtr->picture, 0, 0, w, h, 0, 0, brushPtr);
     Blt_ClassifyPicture(imgPtr->picture);
     if (brushPtr != &brush) {
-	Blt_Paintbrush_Free(brushPtr);
+	Blt_PaintBrush_Free(brushPtr);
     }
     Blt_NotifyImageChanged(imgPtr);
     return TCL_OK;

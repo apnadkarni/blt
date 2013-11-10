@@ -180,7 +180,7 @@ struct _Background {
     Blt_HashTable pictTable;		/* Table of pictures cached for each
 					 * background reference. */
     int xOrigin, yOrigin;
-    Blt_Paintbrush brush;		/* Paint brush representing the
+    Blt_PaintBrush brush;		/* Paint brush representing the
 					 * background color. */
 };
 
@@ -208,7 +208,7 @@ typedef struct {
     Blt_HashTable pictTable;		/* Table of pictures cached for each
 					 * background reference. */
     int xOrigin, yOrigin;
-    Blt_Paintbrush brush;		/* Paint brush representing the
+    Blt_PaintBrush brush;		/* Paint brush representing the
 					 * background color. */
 
     /* Solid background specific fields. */
@@ -240,7 +240,7 @@ typedef struct {
     Blt_HashTable pictTable;		/* Table of pictures cached for each
 					 * background reference. */
     int xOrigin, yOrigin;
-    Blt_Paintbrush brush;		/* Paint brush representing the
+    Blt_PaintBrush brush;		/* Paint brush representing the
 					 * background color. */
 
     /* Tile specific fields. */
@@ -278,7 +278,7 @@ typedef struct {
     Blt_HashTable pictTable;		/* Table of pictures cached for
 					 * each background reference. */
     int xOrigin, yOrigin;
-    Blt_Paintbrush brush;		/* Paint brush representing the
+    Blt_PaintBrush brush;		/* Paint brush representing the
 					 * background color. */
 
     /* Gradient background specific fields. */
@@ -316,7 +316,7 @@ typedef struct {
     Blt_HashTable pictTable;		/* Table of pictures cached for
 					 * each background reference. */
     int xOrigin, yOrigin;
-    Blt_Paintbrush brush;		/* Paint brush representing the
+    Blt_PaintBrush brush;		/* Paint brush representing the
 					 * background color. */
 
     /* Texture background specific fields. */
@@ -1208,7 +1208,7 @@ TextureTypeToObjProc(
 }
 
 static int
-GradientColorProc(Blt_Paintbrush *paintPtr, int x, int y)
+GradientColorProc(Blt_PaintBrush *paintPtr, int x, int y)
 {
     double t;
     Blt_Pixel color;
@@ -1264,20 +1264,16 @@ GradientColorProc(Blt_Paintbrush *paintPtr, int x, int y)
     if (corePtr->palette != NULL) {
 	return Blt_Palette_GetAssociatedColor(corePtr->palette, t);
     }
-    color.Red   = (unsigned char)
-	(corePtr->low.Red   + t * corePtr->rRange);
-    color.Green = (unsigned char)
-	(corePtr->low.Green + t * corePtr->gRange);
-    color.Blue  = (unsigned char)
-	(corePtr->low.Blue  + t * corePtr->bRange);
-    color.Alpha = (unsigned char)
-	(corePtr->low.Alpha + t * corePtr->aRange);
+    color.Red   = (unsigned char)(corePtr->low.Red   + t * corePtr->rRange);
+    color.Green = (unsigned char)(corePtr->low.Green + t * corePtr->gRange);
+    color.Blue  = (unsigned char)(corePtr->low.Blue  + t * corePtr->bRange);
+    color.Alpha = (unsigned char)(corePtr->low.Alpha + t * corePtr->aRange);
     Blt_AssociateColor(&color);
     return color.u32;
 }
 
 static int
-TextureColorProc(Blt_Paintbrush *paintPtr, int x, int y)
+TextureColorProc(Blt_PaintBrush *paintPtr, int x, int y)
 {
     double t;
     Blt_Pixel color;
@@ -1303,14 +1299,10 @@ TextureColorProc(Blt_Paintbrush *paintPtr, int x, int y)
 	t += Jitter(&corePtr->jitter);
 	t = JCLAMP(t);
     }
-    color.Red   = (unsigned char)
-	(corePtr->low.Red   + t * corePtr->rRange);
-    color.Green = (unsigned char)
-	(corePtr->low.Green + t * corePtr->gRange);
-    color.Blue  = (unsigned char)
-	(corePtr->low.Blue  + t * corePtr->bRange);
-    color.Alpha = (unsigned char)
-	(corePtr->low.Alpha + t * corePtr->aRange);
+    color.Red   = (unsigned char)(corePtr->low.Red   + t * corePtr->rRange);
+    color.Green = (unsigned char)(corePtr->low.Green + t * corePtr->gRange);
+    color.Blue  = (unsigned char)(corePtr->low.Blue  + t * corePtr->bRange);
+    color.Alpha = (unsigned char)(corePtr->low.Alpha + t * corePtr->aRange);
     Blt_AssociateColor(&color);
     return color.u32;
 }
@@ -1424,10 +1416,10 @@ GetOffsets(Tk_Window tkwin, BackgroundObject *corePtr, int x, int y,
 	}
 	if (tkwin2 == NULL) {
 	    /* 
-	     * The window associated with the background isn't an ancestor of
-	     * the current window. That means we can't use the reference
-	     * window as a guide to the size of the picture.  Simply convert
-	     * to a self reference.
+	     * The window associated with the background isn't an ancestor
+	     * of the current window. That means we can't use the reference
+	     * window as a guide to the size of the picture.  Simply
+	     * convert to a self reference.
 	     */
 	    corePtr->reference = REFERENCE_SELF;
 	    refWindow = tkwin;
@@ -1569,10 +1561,10 @@ GetTileOffsets(Tk_Window tkwin, BackgroundObject *corePtr, Blt_Picture picture,
 	}
 	if (tkwin2 == NULL) {
 	    /* 
-	     * The window associated with the background isn't an ancestor of
-	     * the current window. That means we can't use the reference
-	     * window as a guide to the size of the picture.  Simply convert
-	     * to a self reference.
+	     * The window associated with the background isn't an ancestor
+	     * of the current window. That means we can't use the reference
+	     * window as a guide to the size of the picture.  Simply
+	     * convert to a self reference.
 	     */
 	    corePtr->reference = REFERENCE_SELF;
 	    refWindow = tkwin;
@@ -1613,8 +1605,8 @@ Tile(
     Drawable drawable,
     BackgroundObject *corePtr,
     Blt_Picture picture,		/* Picture used as the tile. */
-    int x, int y, int w, int h)		/* Region of destination picture to be
-					 * tiled. */
+    int x, int y, int w, int h)		/* Region of destination picture to
+					 * be tiled. */
 {
     Blt_Painter painter;
     int xOffset, yOffset;		/* Starting upper left corner of
@@ -1725,11 +1717,12 @@ GetPolygonBBox(XPoint *points, int n, int *leftPtr, int *rightPtr, int *topPtr,
  *      Copyright (c) 1990-1994 The Regents of the University of California.
  *      Copyright (c) 1994-1997 Sun Microsystems, Inc.
  *
- *      See the file "license.terms" for information on usage and redistribution
- *      of this file, and for a DISCLAIMER OF ALL WARRANTIES.
+ *      See the file "license.terms" for information on usage and
+ *      redistribution of this file, and for a DISCLAIMER OF ALL
+ *      WARRANTIES.
  *
- *  They fix a problem in the Intersect procedure when the polygon is big (e.q
- *  1600x1200).  The computation overflows the 32-bit integers used.
+ *  They fix a problem in the Intersect procedure when the polygon is big
+ *  (e.q 1600x1200).  The computation overflows the 32-bit integers used.
  */
 
 /*
@@ -1752,24 +1745,24 @@ static void
 ShiftLine(
     XPoint *p,				/* First point on line. */
     XPoint *q,				/* Second point on line. */
-    int distance,			/* New line is to be this many units
-					 * to the left of original line, when
-					 * looking from p1 to p2.  May be
-					 * negative. */
-    XPoint *r)				/* Store coords of point on new line
-					 * here. */
+    int distance,			/* New line is to be this many
+					 * units to the left of original
+					 * line, when looking from p1 to
+					 * p2.  May be negative. */
+    XPoint *r)				/* Store coords of point on new
+					 * line here. */
 {
     int dx, dy, dxNeg, dyNeg;
 
     /*
-     * The table below is used for a quick approximation in computing the new
-     * point.  An index into the table is 128 times the slope of the original
-     * line (the slope must always be between 0 and 1).  The value of the
-     * table entry is 128 times the amount to displace the new line in y for
-     * each unit of perpendicular distance.  In other words, the table maps
-     * from the tangent of an angle to the inverse of its cosine.  If the
-     * slope of the original line is greater than 1, then the displacement is
-     * done in x rather than in y.
+     * The table below is used for a quick approximation in computing the
+     * new point.  An index into the table is 128 times the slope of the
+     * original line (the slope must always be between 0 and 1).  The value
+     * of the table entry is 128 times the amount to displace the new line
+     * in y for each unit of perpendicular distance.  In other words, the
+     * table maps from the tangent of an angle to the inverse of its
+     * cosine.  If the slope of the original line is greater than 1, then
+     * the displacement is done in x rather than in y.
      */
     static int shiftTable[129];
 
@@ -1827,9 +1820,9 @@ ShiftLine(
  *	Find the intersection point between two lines.
  *
  * Results:
- *	Under normal conditions 0 is returned and the point at *iPtr is filled
- *	in with the intersection between the two lines.  If the two lines are
- *	parallel, then -1 is returned and *iPtr isn't modified.
+ *	Under normal conditions 0 is returned and the point at *iPtr is
+ *	filled in with the intersection between the two lines.  If the two
+ *	lines are parallel, then -1 is returned and *iPtr isn't modified.
  *
  * Side effects:
  *	None.
@@ -1848,8 +1841,8 @@ Intersect(a1Ptr, a2Ptr, b1Ptr, b2Ptr, iPtr)
 
     /*
      * The code below is just a straightforward manipulation of two
-     * equations of the form y = (x-x1)*(y2-y1)/(x2-x1) + y1 to solve
-     * for the x-coordinate of intersection, then the y-coordinate.
+     * equations of the form y = (x-x1)*(y2-y1)/(x2-x1) + y1 to solve for
+     * the x-coordinate of intersection, then the y-coordinate.
      */
 
     dxadyb = (a2Ptr->x - a1Ptr->x)*(b2Ptr->y - b1Ptr->y);
@@ -2115,7 +2108,7 @@ ConfigureSolidBackgroundProc(Tcl_Interp *interp, BackgroundObject *basePtr,
     }
     color.u32 = Blt_XColorToPixel(Tk_3DBorderColor(corePtr->border));
     color.Alpha = corePtr->alpha;
-    Blt_Paintbrush_SetColor(&corePtr->brush, color.u32);
+    Blt_PaintBrush_SetColor(&corePtr->brush, color.u32);
     return TCL_OK;
 }
 
@@ -2354,7 +2347,7 @@ DrawTileRectangleProc(Tk_Window tkwin, Drawable drawable,
 	    return;			/* Background is obscured. */
 	}
 	GetOffsets(tkwin, basePtr, x, y, &xOffset, &yOffset);
-	Blt_Paintbrush_SetOrigin(&corePtr->brush, xOffset, yOffset);
+	Blt_PaintBrush_SetOrigin(&corePtr->brush, xOffset, yOffset);
 	Blt_PaintRectangle(bg, 0, 0, w, h, 0, 0, &corePtr->brush);
 	painter = Blt_GetPainter(tkwin, 1.0);
 	Blt_PaintPicture(painter, drawable, bg, 0, 0, w, h, x, y, 0);
@@ -2404,7 +2397,7 @@ DrawTilePolygonProc(Tk_Window tkwin, Drawable drawable,
     }
     GetReferenceWindow(basePtr, tkwin, &refWidth, &refHeight);
     GetOffsets(tkwin, basePtr, x1, y1, &xOffset, &yOffset);
-    Blt_Paintbrush_SetOrigin(&corePtr->brush, xOffset, yOffset);
+    Blt_PaintBrush_SetOrigin(&corePtr->brush, xOffset, yOffset);
     Blt_PaintPolygon(bg, n, vertices, &corePtr->brush);
     Blt_Free(vertices);
     painter = Blt_GetPainter(tkwin, 1.0);
@@ -2428,7 +2421,7 @@ ConfigureTileBackgroundProc(Tcl_Interp *interp, BackgroundObject *basePtr,
     }
     corePtr->tile = ImageToPicture(corePtr);
     corePtr->brush.alpha = corePtr->alpha;
-    Blt_Paintbrush_SetTile(&corePtr->brush, corePtr->tile);
+    Blt_PaintBrush_SetTile(&corePtr->brush, corePtr->tile);
     return TCL_OK;
 }
 
@@ -2525,7 +2518,7 @@ DrawGradientRectangleProc(Tk_Window tkwin, Drawable drawable,
     }
     GetOffsets(tkwin, basePtr, x, y, &xOffset, &yOffset);
     InitGradient(corePtr, refWidth, refHeight);
-    Blt_Paintbrush_SetOrigin(&corePtr->brush, xOffset, yOffset);
+    Blt_PaintBrush_SetOrigin(&corePtr->brush, xOffset, yOffset);
     Blt_PaintRectangle(bg, 0, 0, w, h, 0, 0, &corePtr->brush);
     painter = Blt_GetPainter(tkwin, 1.0);
     Blt_PaintPicture(painter, drawable, bg, 0, 0, w, h, x, y, 0);
@@ -2598,7 +2591,7 @@ ConfigureGradientBackgroundProc(Tcl_Interp *interp, BackgroundObject *basePtr,
 	corePtr->high.Alpha = corePtr->alpha;
     }
     corePtr->brush.alpha = corePtr->alpha;
-    Blt_Paintbrush_SetColorProc(&corePtr->brush, GradientColorProc, 
+    Blt_PaintBrush_SetColorProc(&corePtr->brush, GradientColorProc, 
 	corePtr);
     return TCL_OK;
 }
@@ -2766,7 +2759,7 @@ ConfigureTextureBackgroundProc(Tcl_Interp *interp, BackgroundObject *basePtr,
 	return TCL_ERROR;
     }
     corePtr->brush.alpha = corePtr->alpha;
-    Blt_Paintbrush_SetColorProc(&corePtr->brush, TextureColorProc, corePtr);
+    Blt_PaintBrush_SetColorProc(&corePtr->brush, TextureColorProc, corePtr);
     return TCL_OK;
 }
 
@@ -2850,7 +2843,7 @@ CreateBackground(BackgroundInterpData *dataPtr, Tcl_Interp *interp,
     corePtr->chain = Blt_Chain_Create();
     corePtr->tkwin = Tk_MainWindow(interp);
     corePtr->display = Tk_Display(corePtr->tkwin);
-    Blt_Paintbrush_Init(&corePtr->brush);
+    Blt_PaintBrush_Init(&corePtr->brush);
     return corePtr;
 }
 
@@ -3502,8 +3495,8 @@ Blt_Bg_Border(Bg *bgPtr)
     return bgPtr->corePtr->border;
 }
 
-Blt_Paintbrush *
-Blt_Bg_Paintbrush(Bg *bgPtr)
+Blt_PaintBrush *
+Blt_Bg_PaintBrush(Bg *bgPtr)
 {
     return &bgPtr->corePtr->brush;
 }

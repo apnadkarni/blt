@@ -1482,6 +1482,7 @@ Blt_ResampleFilter bltBoxFilter = &(resampleFilters[2]);
 Blt_ResampleFilter bltMitchellFilter = &(resampleFilters[11]);
 Blt_ResampleFilter bltBellFilter = &(resampleFilters[0]);
 Blt_ResampleFilter bltTentFilter = &(resampleFilters[16]);
+Blt_ResampleFilter bltGaussianFilter = &(resampleFilters[9]);
 
 const char *
 Blt_NameOfResampleFilter(ResampleFilter *filterPtr)
@@ -2441,8 +2442,7 @@ Rotate270(Pict *srcPtr)
 }
 
 static void
-GetRotatedSize(int width, int height, float angle, int *rotWidthPtr, 
-	       int *rotHeightPtr)
+GetRotatedSize(int w, int h, float angle, int *rotWidthPtr, int *rotHeightPtr)
 {
     Point2d corner[4];
     double sinTheta, cosTheta;
@@ -2450,10 +2450,15 @@ GetRotatedSize(int width, int height, float angle, int *rotWidthPtr,
     double xMax, yMax;
     int i;
 
-    /* Set the four corners of the rectangle whose center is the origin. */
-    corner[1].x = corner[2].x = (double)width * 0.5;
+    
+    /* Set the four corners of the rectangle whose center is the origin. 
+     *  0---1
+     *  |   |
+     *  3---2
+    */
+    corner[1].x = corner[2].x = (double)w * 0.5;
     corner[0].x = corner[3].x = -corner[1].x;
-    corner[2].y = corner[3].y = (double)height * 0.5;
+    corner[2].y = corner[3].y = (double)h * 0.5;
     corner[0].y = corner[1].y = -corner[2].y;
 
     radians = -angle * DEG2RAD;
@@ -2691,38 +2696,28 @@ Blt_RotatePicture(Pict *srcPtr, float angle)
     int angleInt, quadrant;
     Blt_Pixel bg;
 
-    bg.u32 = 0xFF000000;
+    bg.u32 = 0x00000000;
 
     /* Make the angle positive between 0 and 360 degrees. */ 
     angle = FMOD(angle, 360.0f);
     if (angle < 0.0) {
 	angle += 360.0;
     }
-    quadrant = ROTATE_0;
-    if ((angle > 45.0) && (angle <= 135.0)) {
-        quadrant = ROTATE_90;
-    } else if ((angle > 135.0) && (angle <= 225.0)) { 
-        quadrant = ROTATE_180;
-    } else if ((angle > 225.0) && (angle <= 315.0)) { 
-        quadrant = ROTATE_270;
-    } else if (angle > 315.0) {
-	quadrant = ROTATE_0;
-    }
     /* 
      * Handle the easy cases.
      */
     angleInt = (int)angle;
     if ((angle - angleInt) < 0.05) {
-	switch (quadrant) {
-	case ROTATE_270:		/* 270 degrees */
+	switch (angleInt) {
+	case 270:                       /* 270 degrees */
 	    return Rotate270(srcPtr);
 	    break;
 	    
-	case ROTATE_90:			/* 90 degrees */
+	case 90:			/* 90 degrees */
 	    return Rotate90(srcPtr);
 	    break;
 	    
-	case ROTATE_180:		/* 180 degrees */
+	case 180:                       /* 180 degrees */
 	    return Rotate180(srcPtr);
 	    break;
 	    
@@ -2734,8 +2729,8 @@ Blt_RotatePicture(Pict *srcPtr, float angle)
 	    break;
 	}
     }
-    angle *= DEG2RAD;
     destPtr = RotateByAreaMapping(srcPtr, -angle, &bg);
+    destPtr->flags |= BLT_PIC_BLEND;
     return destPtr;
 }
 
@@ -5643,12 +5638,16 @@ Blt_BlurPicture(Pict *destPtr, Pict *srcPtr, int radius, int numPasses)
     if (srcPtr != destPtr) {
 	Blt_ResizePicture(destPtr, srcPtr->width, srcPtr->height);
     }
-    if (srcPtr->flags & BLT_PIC_ASSOCIATED_COLORS) {
-	Blt_UnassociateColors(srcPtr);
+    if ((srcPtr->flags & BLT_PIC_ASSOCIATED_COLORS) == 0) {
+	Blt_AssociateColors(srcPtr);
     }
     if (radius < 1) {
 	return;
     }
+#ifndef notdef
+    Blt_ResamplePicture(destPtr, srcPtr, bltGaussianFilter, bltGaussianFilter);
+    return;
+#endif
     tmpPtr = Blt_CreatePicture(srcPtr->width, srcPtr->height);
     for (i = 0; i < numPasses; i++) {
 	BoxCarHorizontally(tmpPtr, srcPtr, radius);
