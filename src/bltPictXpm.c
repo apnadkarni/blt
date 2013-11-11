@@ -381,7 +381,7 @@ PictureToXpm(Tcl_Interp *interp, Blt_Picture original, Blt_DBuffer buffer,
     bgColorPtr = &switchesPtr->bg;
 
     srcPtr = original;
-    if (Blt_PictureIsBlended(srcPtr)) {
+    if (Blt_Picture_IsBlended(srcPtr)) {
 	Blt_Picture background, mask;
 	Blt_Pixel black, white;
 
@@ -403,7 +403,7 @@ PictureToXpm(Tcl_Interp *interp, Blt_Picture original, Blt_DBuffer buffer,
 	}
 	srcPtr = background;
     }
-    if (Blt_PictureFlags(srcPtr) & BLT_PIC_ASSOCIATED_COLORS) {
+    if (Blt_Picture_Flags(srcPtr) & BLT_PIC_ASSOCIATED_COLORS) {
 	Blt_Picture unassoc;
 
 	/* 
@@ -429,7 +429,7 @@ PictureToXpm(Tcl_Interp *interp, Blt_Picture original, Blt_DBuffer buffer,
     }
     Blt_InitHashTable(&colorTable, BLT_ONE_WORD_KEYS);
     numColors = Blt_QueryColors(srcPtr, &colorTable);
-    if (Blt_PictureIsMasked(srcPtr)) {
+    if (Blt_Picture_IsMasked(srcPtr)) {
 	numColors++;
     }
     /* Header. */
@@ -460,7 +460,7 @@ PictureToXpm(Tcl_Interp *interp, Blt_Picture original, Blt_DBuffer buffer,
 	Blt_HashEntry *hPtr;
 	Blt_HashSearch cursor;
 
-	colorkey = (Blt_PictureIsColor(srcPtr)) ? "c" : "m";
+	colorkey = (Blt_Picture_IsColor(srcPtr)) ? "c" : "m";
 	i = 0;
 	Blt_DBuffer_Format(buffer, "    ");
 	for (hPtr = Blt_FirstHashEntry(&colorTable, &cursor); hPtr != NULL;
@@ -480,7 +480,7 @@ PictureToXpm(Tcl_Interp *interp, Blt_Picture original, Blt_DBuffer buffer,
 		Blt_DBuffer_Format(buffer, "\n    ");
 	    }
 	}
-	if (Blt_PictureIsMasked(srcPtr)) {
+	if (Blt_Picture_IsMasked(srcPtr)) {
 	    i++;
 	    Blt_DBuffer_Format(buffer, "\"");
 	    Blt_DBuffer_Format(buffer, fmt, i);

@@ -2684,8 +2684,8 @@ DrawAxis(Slider *sliderPtr, Drawable drawable, int x, int y)
 {
     /* Trough */
     Blt_PaintPicture(sliderPtr->painter, drawable, sliderPtr->trough, 0, 0, 
-		     Blt_PictureWidth(sliderPtr->trough),
-		     Blt_PictureHeight(sliderPtr->trough),
+		     Blt_Picture_Width(sliderPtr->trough),
+		     Blt_Picture_Height(sliderPtr->trough),
 		     x, y);
 
     if (sliderPtr->flags & SHOWTICKS) {
@@ -2773,22 +2773,22 @@ DrawHorizontalSlider(Slider *sliderPtr, Drawable drawable)
 	int iy;
 	
 	iy = y;
-	if (Blt_PictureHeight(sliderPtr->leftArrow) < height) {
-	    iy += (height - Blt_PictureHeight(sliderPtr->leftArrow)) / 2;
+	if (Blt_Picture_Height(sliderPtr->leftArrow) < height) {
+	    iy += (height - Blt_Picture_Height(sliderPtr->leftArrow)) / 2;
 	}
 	Blt_PaintPicture(sliderPtr->painter, drawable, sliderPtr->leftArrow,
 			 0, 0, 
-			 Blt_PictureWidth(sliderPtr->leftArrow),
-			 Blt_PictureHeight(sliderPtr->leftArrow),
+			 Blt_Picture_Width(sliderPtr->leftArrow),
+			 Blt_Picture_Height(sliderPtr->leftArrow),
 			 x, iy);
-	x += Blt_PictureWidth(sliderPtr->leftArrow);
+	x += Blt_Picture_Width(sliderPtr->leftArrow);
     }
     x += sliderPtr->sliderRadius;
 
     /* Trough */
     Blt_PaintPicture(sliderPtr->painter, drawable, sliderPtr->trough, 0, 0, 
-		     Blt_PictureWidth(sliderPtr->trough),
-		     Blt_PictureHeight(sliderPtr->trough),
+		     Blt_Picture_Width(sliderPtr->trough),
+		     Blt_Picture_Height(sliderPtr->trough),
 		     x, y);
 
     if (sliderPtr->flags & SHOWTICKS) {
@@ -2833,15 +2833,15 @@ DrawHorizontalSlider(Slider *sliderPtr, Drawable drawable)
 	int iy;
 	
 	iy = y;
-	if (Blt_PictureHeight(sliderPtr->rightArrow) < height) {
-	    iy += (height - Blt_PictureHeight(sliderPtr->rightArrow)) / 2;
+	if (Blt_Picture_Height(sliderPtr->rightArrow) < height) {
+	    iy += (height - Blt_Picture_Height(sliderPtr->rightArrow)) / 2;
 	}
 	Blt_PaintPicture(sliderPtr->painter, drawable, sliderPtr->rightArrow,
 			 0, 0, 
-			 Blt_PictureWidth(sliderPtr->rightArrow),
-			 Blt_PictureHeight(sliderPtr->rightArrow),
+			 Blt_Picture_Width(sliderPtr->rightArrow),
+			 Blt_Picture_Height(sliderPtr->rightArrow),
 			 x, iy);
-	x += Blt_PictureWidth(sliderPtr->rightArrow);
+	x += Blt_Picture_Width(sliderPtr->rightArrow);
     }
     /* Minimum. */
     if (sliderPtr->mode == MODE_RANGE) {
@@ -3215,15 +3215,15 @@ ComputeLayout(Slider *sliderPtr)
 	leftButtonWidth = rightButtonWidth = 0;
 	if (sliderPtr->flags & SHOW_ARROWS) {
 	    if (sliderPtr->leftArrow != NULL) {
-		leftButtonWidth = Blt_PictureWidth(sliderPtr->leftArrow);
-		if (height < Blt_PictureHeight(sliderPtr->leftArrow)) {
-		    height = Blt_PictureHeight(sliderPtr->leftArrow);
+		leftButtonWidth = Blt_Picture_Width(sliderPtr->leftArrow);
+		if (height < Blt_Picture_Height(sliderPtr->leftArrow)) {
+		    height = Blt_Picture_Height(sliderPtr->leftArrow);
 		}
 	    }
 	    if (sliderPtr->rightArrow != NULL) {
-		rightButtonWidth = Blt_PictureWidth(sliderPtr->rightArrow);
-		if (height < Blt_PictureHeight(sliderPtr->rightArrow)) {
-		    height = Blt_PictureHeight(sliderPtr->rightArrow);
+		rightButtonWidth = Blt_Picture_Width(sliderPtr->rightArrow);
+		if (height < Blt_Picture_Height(sliderPtr->rightArrow)) {
+		    height = Blt_Picture_Height(sliderPtr->rightArrow);
 		}
 	    }
 	}
@@ -3278,15 +3278,15 @@ ComputeLayout(Slider *sliderPtr)
 	width = height = 0;
 	if (sliderPtr->flags & SHOW_ARROWS) {
 	    if (sliderPtr->leftArrow != NULL) {
-		top += Blt_PictureHeight(sliderPtr->leftArrow);
-		if (width < Blt_PictureWidth(sliderPtr->leftArrow)) {
-		    width = Blt_PictureWidth(sliderPtr->leftArrow);
+		top += Blt_Picture_Height(sliderPtr->leftArrow);
+		if (width < Blt_Picture_Width(sliderPtr->leftArrow)) {
+		    width = Blt_Picture_Width(sliderPtr->leftArrow);
 		}
 	    }
 	    if (sliderPtr->rightArrow != NULL) {
-		bottom += Blt_PictureHeight(sliderPtr->rightArrow);
-		if (width < Blt_PictureWidth(sliderPtr-rightArrow)) {
-		    width = Blt_PictureWidth(sliderPtr->rightArrow);
+		bottom += Blt_Picture_Height(sliderPtr->rightArrow);
+		if (width < Blt_Picture_Width(sliderPtr-rightArrow)) {
+		    width = Blt_Picture_Width(sliderPtr->rightArrow);
 		}
 	    }
 	}

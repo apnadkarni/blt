@@ -356,7 +356,7 @@ ImageChangedProc(
 	Blt_FreePicture(cmdPtr->brush.tile);
     }
     cmdPtr->brush.tile = ImageToPicture(cmdPtr, &isNew);
-    if (Blt_PictureIsAssociated(cmdPtr->brush.tile)) {
+    if (Blt_Picture_IsAssociated(cmdPtr->brush.tile)) {
         Blt_UnassociateColors(cmdPtr->brush.tile);
     }
     if (isNew) {
@@ -1147,7 +1147,7 @@ ConfigurePaintBrushCmd(Tcl_Interp *interp, PaintBrushCmd *cmdPtr, int objc,
 	    Blt_FreePicture(cmdPtr->brush.tile);
 	}
 	cmdPtr->brush.tile = ImageToPicture(cmdPtr, &isNew);
-        if (Blt_PictureIsAssociated(cmdPtr->brush.tile)) {
+        if (Blt_Picture_IsAssociated(cmdPtr->brush.tile)) {
             Blt_UnassociateColors(cmdPtr->brush.tile);
         }
 	if (isNew) {
@@ -1466,7 +1466,7 @@ Blt_PaintBrush_SetTile(Blt_PaintBrush *brushPtr, Blt_Picture picture)
 {
     brushPtr->type = BLT_PAINTBRUSH_TILE;
     brushPtr->tile = picture;
-    if (Blt_PictureIsAssociated(brushPtr->tile)) {
+    if (Blt_Picture_IsAssociated(brushPtr->tile)) {
         Blt_UnassociateColors(brushPtr->tile);
     }
 }
@@ -1613,15 +1613,15 @@ Blt_PaintBrush_GetAssociatedColor(Blt_PaintBrush *brushPtr, int x, int y)
 	    return brushPtr->solidColor.u32;
 	}
 	/* Factor in the tile origin when computing the pixel in the tile. */
-	x = (x - brushPtr->xOrigin) % Blt_PictureWidth(brushPtr->tile);
+	x = (x - brushPtr->xOrigin) % Blt_Picture_Width(brushPtr->tile);
 	if (x < 0) {
 	    x = -x;
 	}
-	y = (y - brushPtr->yOrigin) % Blt_PictureHeight(brushPtr->tile);
+	y = (y - brushPtr->yOrigin) % Blt_Picture_Height(brushPtr->tile);
 	if (y < 0) {
 	    y = -y;
 	}
-	pixelPtr = Blt_PicturePixel(brushPtr->tile, x, y);
+	pixelPtr = Blt_Picture_Pixel(brushPtr->tile, x, y);
         /* Pixel of tile is unassociated so that we can override the
          * opacity. */
 	color.u32 = pixelPtr->u32;

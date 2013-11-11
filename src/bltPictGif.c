@@ -1158,7 +1158,7 @@ GifCreatePictureFromData(Blt_DBuffer dbuffer, Gif *gifPtr)
 	while ((v = LzwReadByte(&lzw)) >= 0) {
 	    Blt_Pixel *dp;
 	    
-	    dp = Blt_PicturePixel(destPtr, x + xOffset, y + yOffset);
+	    dp = Blt_Picture_Pixel(destPtr, x + xOffset, y + yOffset);
 	    dp->u32 = colormap[v].u32;
 	    if (v == gifPtr->transparentColorIndex) {
 		dp->Alpha = 0x0;
@@ -1929,8 +1929,8 @@ PictureToGif(Tcl_Interp *interp, Blt_Picture original, Blt_DBuffer dbuffer,
     }
     numColors = Blt_QueryColors(srcPtr, (Blt_HashTable *)NULL);
     maxColors = 256;
-    if (!Blt_PictureIsOpaque(srcPtr)) {
-	if (Blt_PictureIsBlended(srcPtr)) {
+    if (!Blt_Picture_IsOpaque(srcPtr)) {
+	if (Blt_Picture_IsBlended(srcPtr)) {
 	    Blt_Picture background;
 	    
 	    /* Blend picture with solid color background. */
@@ -1960,7 +1960,7 @@ PictureToGif(Tcl_Interp *interp, Blt_Picture original, Blt_DBuffer dbuffer,
     }
     Blt_InitHashTable(&colorTable, BLT_ONE_WORD_KEYS);
     numColors = Blt_QueryColors(srcPtr, &colorTable);
-    isMasked = Blt_PictureIsMasked(srcPtr);
+    isMasked = Blt_Picture_IsMasked(srcPtr);
     bitsPerPixel = GetLog2(numColors - 1);
     /* 
      * 6			Header
@@ -2056,8 +2056,8 @@ PicturesToAnimatedGif(Tcl_Interp *interp, Blt_Chain chain, Blt_DBuffer dbuffer,
      * Step 1:  Load the pictures into the array.  Determine what the
      *	        maximum picture width and height are.
      */
-    screenWidth = Blt_PictureWidth(fp->original);
-    screenHeight = Blt_PictureHeight(fp->original);
+    screenWidth = Blt_Picture_Width(fp->original);
+    screenHeight = Blt_Picture_Height(fp->original);
     for (fp = frames, link = Blt_Chain_FirstLink(chain); link != NULL; 
 	 link = Blt_Chain_NextLink(link), fp++) {
 	Pict *srcPtr;

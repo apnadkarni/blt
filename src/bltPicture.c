@@ -2693,7 +2693,7 @@ Blt_Picture
 Blt_RotatePicture(Pict *srcPtr, float angle)
 {
     Pict *destPtr;
-    int angleInt, quadrant;
+    int angleInt;
     Blt_Pixel bg;
 
     bg.u32 = 0x00000000;
@@ -5663,7 +5663,7 @@ Blt_BlurPictureOld(Blt_Picture pict)
 {
     Blt_Picture tmp;
 
-    tmp = Blt_CreatePicture(Blt_PictureWidth(pict), Blt_PictureHeight(pict));
+    tmp = Blt_CreatePicture(Blt_Picture_Width(pict), Blt_Picture_Height(pict));
     BoxX(tmp, pict), BoxY(pict, tmp);
     BoxX(tmp, pict), BoxY(pict, tmp); 
     BoxX(tmp, pict), BoxY(pict, tmp);
@@ -5687,8 +5687,8 @@ Blt_SharpenPicture(Pict *destPtr, Pict *srcPtr)
     Blt_SubtractPictures(tmp, blur);
     Blt_AddPictures(tmp, srcPtr);
     Blt_FreePicture(blur);
-    Blt_CopyPictureBits(destPtr, tmp, 0, 0, Blt_PictureWidth(tmp),
-	Blt_PictureHeight(tmp), 0, 0);
+    Blt_CopyPictureBits(destPtr, tmp, 0, 0, Blt_Picture_Width(tmp),
+	Blt_Picture_Height(tmp), 0, 0);
     Blt_FreePicture(tmp);
 }
 

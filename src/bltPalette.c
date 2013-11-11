@@ -1241,39 +1241,6 @@ ColorLerp(Blt_PaletteEntry *entryPtr, double t)
 }
 
 static unsigned int
-ColorLerp2(Blt_PaletteEntry *entryPtr, double t)
-{
-    Blt_Pixel color;
-    double alpha, beta;
-    int r, g, b, a;
-
-    if (t >= 1.0) {
-	return entryPtr->high.u32;
-    } else if (t <= 0.0) {
-	return entryPtr->low.u32;
-    }
-    alpha = t;
-    beta = 1.0 - t;
-    r = (int)(entryPtr->high.Red - entryPtr->low.Red) * t + entryPtr->low.Red;
-    g = (int)(entryPtr->high.Green - entryPtr->low.Green) * t + entryPtr->low.Green;
-    b = (int)(entryPtr->high.Blue - entryPtr->low.Blue) * t + entryPtr->low.Blue;
-    a = (int)(entryPtr->high.Alpha - entryPtr->low.Alpha) * t + entryPtr->low.Alpha;
-#ifdef notdef
-    r = (int)((entryPtr->low.Red * beta) + (entryPtr->high.Red * alpha));
-    g = (int)((entryPtr->low.Green * beta) + (entryPtr->high.Green * alpha));
-    b = (int)((entryPtr->low.Blue * beta) + (entryPtr->high.Blue * alpha));
-    a = 255;
-#endif
-
-    color.Red   = CLAMP(r);
-    color.Green = CLAMP(g);
-    color.Blue  = CLAMP(b);
-    color.Alpha = CLAMP(a);
-    color.Alpha = 0xFF;
-    return color.u32;
-}
-
-static unsigned int
 OpacityLerp(Blt_PaletteEntry *entryPtr, double t)
 {
     int alpha, beta, t1, t2;
@@ -1589,8 +1556,8 @@ DrawOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (Blt_GetPictureFromObj(interp, objv[3], &picture) != TCL_OK) {
 	return TCL_ERROR;
     }
-    w = Blt_PictureWidth(picture);
-    h = Blt_PictureHeight(picture);
+    w = Blt_Picture_Width(picture);
+    h = Blt_Picture_Height(picture);
     if (w > h) {
 	int x;
 
@@ -1605,7 +1572,7 @@ DrawOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	    for (y = 0; y < h; y++) {
 		Blt_Pixel *dp;
 
-		dp = Blt_PicturePixel(picture, x, y);
+		dp = Blt_Picture_Pixel(picture, x, y);
 		dp->u32 = color.u32;
 	    }
 	}
@@ -1623,7 +1590,7 @@ DrawOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	    for (x = 0; x < w; x++) {
 		Blt_Pixel *dp;
 
-		dp = Blt_PicturePixel(picture, x, y);
+		dp = Blt_Picture_Pixel(picture, x, y);
 		dp->u32 = color.u32;
 	    }
 	}

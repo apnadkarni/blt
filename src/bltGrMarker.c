@@ -2548,8 +2548,8 @@ MapImageProc(Marker *markerPtr)
     graphPtr = markerPtr->obj.graphPtr;
     c1 = MapPoint(markerPtr->worldPts, &markerPtr->axes);
 
-    imPtr->width = srcWidth = Blt_PictureWidth(imPtr->picture);
-    imPtr->height = srcHeight = Blt_PictureHeight(imPtr->picture);
+    imPtr->width = srcWidth = Blt_Picture_Width(imPtr->picture);
+    imPtr->height = srcHeight = Blt_Picture_Height(imPtr->picture);
 
     if ((srcWidth == 0) || (srcHeight == 0)) {
 	markerPtr->clipped = TRUE;

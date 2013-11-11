@@ -460,22 +460,22 @@ PictureToPng(Tcl_Interp *interp, Blt_Picture picture, Blt_DBuffer dbuffer,
 
     png_set_compression_level(png, Z_BEST_COMPRESSION);
     Blt_QueryColors(picture, (Blt_HashTable *)NULL);
-    if (Blt_PictureIsColor(picture)) {
+    if (Blt_Picture_IsColor(picture)) {
 	numChannels = 3;
 	colorType = PNG_COLOR_TYPE_RGB;
     } else {
 	numChannels = 1;
 	colorType = PNG_COLOR_TYPE_GRAY;
     }
-    if (!Blt_PictureIsOpaque(picture)) {
+    if (!Blt_Picture_IsOpaque(picture)) {
 	numChannels++;
 	colorType |= PNG_COLOR_MASK_ALPHA;
     }
     bitsPerPixel = 8;
 
     png_set_IHDR(png, info, 
-	Blt_PictureWidth(picture),    /* Width */
-	Blt_PictureHeight(picture),   /* Height */
+	Blt_Picture_Width(picture),    /* Width */
+	Blt_Picture_Height(picture),   /* Height */
 	bitsPerPixel, 		      /* Bits per pixel. */
 	colorType, 		      /* Color type: RGB or GRAY */
 	PNG_INTERLACE_NONE, 	      /* Interlace */

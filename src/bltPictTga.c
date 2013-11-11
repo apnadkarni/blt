@@ -1530,7 +1530,7 @@ PictureToTga(Tcl_Interp *interp, Blt_Picture original, Blt_DBuffer dbuffer,
     } else {
 	tga.numAlphaBits = 0;
 	/* Blend the picture with a background if there is transparency. */
-	if (!Blt_PictureIsOpaque(srcPtr)) {	
+	if (!Blt_Picture_IsOpaque(srcPtr)) {	
 	    Blt_Picture background;
 
 	    /* Blend picture with solid color background. */

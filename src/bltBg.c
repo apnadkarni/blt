@@ -1574,8 +1574,8 @@ GetTileOffsets(Tk_Window tkwin, BackgroundObject *corePtr, Blt_Picture picture,
 
     x0 = corePtr->xOrigin;
     y0 = corePtr->yOrigin;
-    tw = Blt_PictureWidth(picture);
-    th = Blt_PictureHeight(picture);
+    tw = Blt_Picture_Width(picture);
+    th = Blt_Picture_Height(picture);
 
     /* Compute the starting x and y offsets of the tile/gradient from the
      * coordinates of the origin. */
@@ -1614,8 +1614,8 @@ Tile(
     int tileWidth, tileHeight;		/* Tile dimensions. */
     int right, bottom, left, top;
 
-    tileWidth = Blt_PictureWidth(picture);
-    tileHeight = Blt_PictureHeight(picture);
+    tileWidth = Blt_Picture_Width(picture);
+    tileHeight = Blt_Picture_Height(picture);
     GetTileOffsets(tkwin, corePtr, picture, x, y, &xOffset, &yOffset);
 
 #ifdef notdef
@@ -2308,8 +2308,8 @@ DrawTileRectangleProc(Tk_Window tkwin, Drawable drawable,
 	    refHeight = Tk_Height(corePtr->refWindow);
 	}
 	if ((picture == NULL) || 
-	    (Blt_PictureWidth(picture) != refWidth) ||
-	    (Blt_PictureHeight(picture) != refHeight)) {
+	    (Blt_Picture_Width(picture) != refWidth) ||
+	    (Blt_Picture_Height(picture) != refHeight)) {
 	    
 	    /* 
 	     * Either the size of the reference window has changed or one

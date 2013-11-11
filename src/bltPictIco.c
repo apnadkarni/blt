@@ -1193,7 +1193,7 @@ IcoWriteImageData(Tcl_Interp *interp, Blt_Picture original, Blt_DBuffer dbuffer,
     numColors = Blt_QueryColors(srcPtr, (Blt_HashTable *)NULL);
     format = BI_RGB;
     infoHeaderSize = SIZEOF_BITMAPV3HEADER;
-    if (Blt_PictureIsOpaque(srcPtr)) {
+    if (Blt_Picture_IsOpaque(srcPtr)) {
 	if (numColors <= 256) {
 	    bitsPerPixel = 8;
 	    Blt_InitHashTable(&colorTable, BLT_ONE_WORD_KEYS);
@@ -1404,7 +1404,7 @@ PictureToIco(Tcl_Interp *interp, Blt_Picture original, Blt_DBuffer dbuffer,
 			 (char *)NULL);
 	return TCL_ERROR;
     }
-    if ((!Blt_PictureIsOpaque(srcPtr)) && 
+    if ((!Blt_Picture_IsOpaque(srcPtr)) && 
 	((switchesPtr->flags & EXPORT_ALPHA) == 0)) {
 	Blt_Picture background;
 	    
@@ -1527,7 +1527,7 @@ PicturesToIco(Tcl_Interp *interp, Blt_Chain chain, Blt_DBuffer dbuffer,
 	size_t numColors, numPlanes;
 
 	srcPtr = original = Blt_Chain_GetValue(link);
-	if ((!Blt_PictureIsOpaque(srcPtr)) && 
+	if ((!Blt_Picture_IsOpaque(srcPtr)) && 
 	    ((switchesPtr->flags & EXPORT_ALPHA) == 0)) {
 	    Blt_Picture background;
 	    

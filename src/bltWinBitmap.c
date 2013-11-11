@@ -125,12 +125,12 @@ Blt_PictureMask(
     int destWidth, destHeight;
     unsigned char *destBits;
 
-    destWidth = Blt_PictureWidth(pict);
-    destHeight = Blt_PictureHeight(pict);
+    destWidth = Blt_Picture_Width(pict);
+    destHeight = Blt_Picture_Height(pict);
     destBytesPerRow = ((destWidth + 31) & ~31) / 8;
     destBits = Blt_AssertCalloc(destHeight, destBytesPerRow);
     count = 0;
-    sp = Blt_PictureBits(pict);
+    sp = Blt_Picture_Bits(pict);
     for (y = 0; y < destHeight; y++) {
 	for (x = 0; x < destWidth; x++) {
 	    if (sp->Alpha == 0x00) {
@@ -145,8 +145,8 @@ Blt_PictureMask(
 	BITMAP bm;
 
 	bm.bmType = 0;
-	bm.bmWidth = Blt_PictureWidth(pict);
-	bm.bmHeight = Blt_PictureHeight(pict);
+	bm.bmWidth = Blt_Picture_Width(pict);
+	bm.bmHeight = Blt_Picture_Height(pict);
 	bm.bmWidthBytes = destBytesPerRow;
 	bm.bmPlanes = 1;
 	bm.bmBitsPixel = 1;

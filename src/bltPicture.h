@@ -4,13 +4,13 @@
  *
  *	Copyright 2004 George A Howlett.
  *
- *	Permission is hereby granted, free of charge, to any person obtaining
- *	a copy of this software and associated documentation files (the
- *	"Software"), to deal in the Software without restriction, including
- *	without limitation the rights to use, copy, modify, merge, publish,
- *	distribute, sublicense, and/or sell copies of the Software, and to
- *	permit persons to whom the Software is furnished to do so, subject to
- *	the following conditions:
+ *	Permission is hereby granted, free of charge, to any person
+ *	obtaining a copy of this software and associated documentation
+ *	files (the "Software"), to deal in the Software without
+ *	restriction, including without limitation the rights to use, copy,
+ *	modify, merge, publish, distribute, sublicense, and/or sell copies
+ *	of the Software, and to permit persons to whom the Software is
+ *	furnished to do so, subject to the following conditions:
  *
  *	The above copyright notice and this permission notice shall be
  *	included in all copies or substantial portions of the Software.
@@ -18,10 +18,11 @@
  *	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  *	EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  *	MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- *	NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
- *	LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
- *	OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
- *	WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *	NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+ *	BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ *	ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ *	CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ *	SOFTWARE.
  */
 
 #ifndef _BLT_PICTURE_H
@@ -69,9 +70,9 @@ struct _Blt_Ps;
  * Blt_Picture --
  *
  *      The structure below represents a picture.  Each pixel occupies a
- *      32-bit word of memory: one byte for each of the red, green, and blue
- *      color intensities, and another for alpha-channel image compositing
- *      (e.g. transparency).
+ *      32-bit word of memory: one byte for each of the red, green, and
+ *      blue color intensities, and another for alpha-channel image
+ *      compositing (e.g. transparency).
  *
  *---------------------------------------------------------------------------
  */
@@ -83,27 +84,29 @@ struct _Blt_Picture {
     short int reserved;
     void *buffer;			/* Unaligned (malloc'ed) memory for
 					 * pixels. */
-    Blt_Pixel *bits;			/* Array of pixels containing the RGBA
-					 * values. Points into buffer array.*/
+    Blt_Pixel *bits;			/* Array of pixels containing the
+					 * RGBA values. Points into buffer
+					 * array.*/
 };
 
-#define BLT_PIC_COLOR  (1<<0)		/* Indicates if color or greyscale. */
+#define BLT_PIC_COLOR  (1<<0)		/* Indicates if color or
+                                         * greyscale. */
 #define BLT_PIC_BLEND  (1<<1)		/* Picture has partial opaque
 					 * pixels. */
 #define BLT_PIC_MASK   (1<<2)		/* Pixels are either 100% opaque or
-					 * transparent. The separate BLEND and
-					 * MASK flags are so that don't
+					 * transparent. The separate BLEND
+					 * and MASK flags are so that don't
 					 * premultiply alphas for masks. */
 
 #define BLT_PIC_ASSOCIATED_COLORS (1<<3)/* Indicates if RGB components have
 					 * been premultiplied by their
 					 * alphas. */
 
-#define BLT_PIC_DIRTY (1<<4)		/* Indicates that the picture contents
-					 * have changed. Cached items may need
-					 * to be * refreshed. For example, may
-					 * need to * premultiply alphas
-					 * again. */ 
+#define BLT_PIC_DIRTY (1<<4)		/* Indicates that the picture
+					 * contents have changed. Cached
+					 * items may need to be
+					 * refreshed. For example, may need
+					 * to premultiply alphas again. */ 
 
 #define BLT_PAINTER_DITHER		(1<<10)
 
@@ -127,22 +130,22 @@ struct _Blt_Chain;
  * access its members.
  */
 
-#define Blt_PictureBits(p)	((p)->bits)
-#define Blt_PictureFlags(p)	((p)->flags)
-#define Blt_PictureHeight(p)	((p)->height)
-#define Blt_PicturePixel(p,x,y) ((p)->bits + ((p)->pixelsPerRow * (y)) + (x))
-#define Blt_PictureWidth(p)	((p)->width)
-#define Blt_PictureStride(p)	((p)->pixelsPerRow)
-#define Blt_PictureDelay(p)	((p)->delay)
+#define Blt_Picture_Bits(p)	 ((p)->bits)
+#define Blt_Picture_Flags(p)	 ((p)->flags)
+#define Blt_Picture_Height(p)	 ((p)->height)
+#define Blt_Picture_Pixel(p,x,y) ((p)->bits + ((p)->pixelsPerRow * (y)) + (x))
+#define Blt_Picture_Width(p)	 ((p)->width)
+#define Blt_Picture_Stride(p)	 ((p)->pixelsPerRow)
+#define Blt_Picture_Delay(p)	 ((p)->delay)
 
-#define Blt_PictureIsDirty(p)	((p)->flags & BLT_PIC_DIRTY)
-#define Blt_PictureIsOpaque(p)	\
+#define Blt_Picture_IsDirty(p)	((p)->flags & BLT_PIC_DIRTY)
+#define Blt_Picture_IsOpaque(p)	\
 	(((p)->flags & (BLT_PIC_BLEND | BLT_PIC_MASK)) == 0)
-#define Blt_PictureIsMasked(p)  ((p)->flags &  BLT_PIC_MASK) 
-#define Blt_PictureIsBlended(p) ((p)->flags &  BLT_PIC_BLEND)
-#define Blt_PictureIsColor(p)   ((p)->flags &  BLT_PIC_COLOR)
-#define Blt_PictureIsGreyscale(p)   (!Blt_PictureIsColor(p))
-#define Blt_PictureIsAssociated(p) ((p)->flags &  BLT_PIC_ASSOCIATED_COLORS)
+#define Blt_Picture_IsMasked(p)  ((p)->flags &  BLT_PIC_MASK) 
+#define Blt_Picture_IsBlended(p) ((p)->flags &  BLT_PIC_BLEND)
+#define Blt_Picture_IsColor(p)   ((p)->flags &  BLT_PIC_COLOR)
+#define Blt_Picture_IsGreyscale(p)   (!Blt_Picture_IsColor(p))
+#define Blt_Picture_IsAssociated(p) ((p)->flags &  BLT_PIC_ASSOCIATED_COLORS)
 
 typedef enum PictureArithOps {
     PIC_ARITH_ADD,
@@ -436,8 +439,9 @@ BLT_EXTERN void Blt_Shadow_Set(Blt_Shadow *sPtr, int width, int offset,
  */
 typedef struct {
     double value;
-    int isAbsolute;			/* Indicates if the value is relative
-					 * (percent) or an absolute value. */
+    int isAbsolute;			/* Indicates if the value is
+					 * relative (percent) or an
+					 * absolute value. */
     double relValue;
 } Blt_PalettePoint;
 
@@ -446,8 +450,8 @@ typedef struct {
  *
  * Blt_PaletteEntry --
  *
- *      Represents an interval in the palette.  The interval is represented 
- *	by its minimum and maximum values and the low and high colors to 
+ *      Represents an interval in the palette.  The interval is represented
+ *	by its minimum and maximum values and the low and high colors to
  *	interpolate between.
  *
  *---------------------------------------------------------------------------
@@ -462,9 +466,9 @@ typedef struct {
  *
  * Blt_Palette --
  *
- *      Represents a gradient color palette.  The color palette is made
- *	up of an array of palette entries.  There can also be an array
- *	opacity entries.  
+ *      Represents a gradient color palette.  The color palette is made up
+ *	of an array of palette entries.  There can also be an array opacity
+ *	entries.
  *
  *---------------------------------------------------------------------------
  */
@@ -591,8 +595,8 @@ typedef enum Blt_PaintBrushTypes {
  *
  * Blt_PaintBrush --
  *
- *      Represents either a solid color, gradient, tile, or texture.  
- *	Used to paint basic geometric objects.
+ *      Represents either a solid color, gradient, tile, or texture.  Used
+ *	to paint basic geometric objects.
  *
  *---------------------------------------------------------------------------
  */
@@ -626,7 +630,7 @@ struct _Blt_PaintBrush {
     Blt_Palette palette;		/* If non-NULL, palette to use for
 					 * gradients. */
     Blt_Jitter jitter;
-    int xOrigin, yOrigin;		/* Offset of tile, gradient from 
+    int xOrigin, yOrigin;		/* Offset of tile, gradient from
 					 * top of window. */
     Blt_PaintBrush_ColorProc *colorProc;
     int blend;

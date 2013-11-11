@@ -143,7 +143,7 @@ static void INLINE
 PaintPixel(Pict *destPtr, int x, int y, Blt_Pixel *colorPtr) 
 {
     if ((x >= 0) && (x < destPtr->width) && (y >= 0) && (y < destPtr->height)) {
-	BlendPixels(Blt_PicturePixel(destPtr, x, y), colorPtr);
+	BlendPixels(Blt_Picture_Pixel(destPtr, x, y), colorPtr);
     }
 }
 
@@ -648,7 +648,7 @@ PaintArc(Pict *destPtr, int x1, int y1, int x2, int y2, int lineWidth,
     yoff = y1;
     x = radius;
     y = 0;
-    dp = Blt_PicturePixel(destPtr, x + xoff - 1, y + yoff);
+    dp = Blt_Picture_Pixel(destPtr, x + xoff - 1, y + yoff);
     dp->u32 = colorPtr->u32;
     r2 = radius * radius;
     if (fill) {
@@ -666,7 +666,7 @@ PaintArc(Pict *destPtr, int x1, int y1, int x2, int y2, int lineWidth,
 	if (d < t) {
 	    x--;
 	}
-	dp = Blt_PicturePixel(destPtr, x + xoff, y + yoff);
+	dp = Blt_Picture_Pixel(destPtr, x + xoff, y + yoff);
 	q = FABS(d * 255.0);
 	a = (unsigned int)CLAMP(q);
         Blt_FadeColor(colorPtr, a);
@@ -1210,7 +1210,7 @@ PaintCorner(Pict *destPtr, int x, int y, int r, int lineWidth, int corner,
 	    } else {
 		a = 255;
 	    }
-	    dp = Blt_PicturePixel(destPtr, x+dx, y+dy);
+	    dp = Blt_Picture_Pixel(destPtr, x+dx, y+dy);
 	    if (blend) {
 		Blt_Pixel color;
 		
@@ -1220,7 +1220,6 @@ PaintCorner(Pict *destPtr, int x, int y, int r, int lineWidth, int corner,
                 Blt_FadeColor(&color, a);
 		BlendPixels(dp, &color);
 	    } else {
-		int t;
 		a = UCLAMP(a);
 		dp->u32 = Blt_PaintBrush_GetAssociatedColor(brushPtr, 
                         x+dx, y+dy);

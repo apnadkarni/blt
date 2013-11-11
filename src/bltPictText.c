@@ -741,7 +741,7 @@ BlitGlyph(Pict *destPtr,
 	int y;
 
 	srcRowPtr = slot->bitmap.buffer + (y1 * slot->bitmap.pitch);
-	destRowPtr = Blt_PicturePixel(destPtr, xx, yy);
+	destRowPtr = Blt_Picture_Pixel(destPtr, xx, yy);
 	for (y = y1; y < y2; y++) {
 	    Blt_Pixel *dp;
 	    int x;
@@ -768,7 +768,7 @@ BlitGlyph(Pict *destPtr,
 	int y;
 
 	srcRowPtr = slot->bitmap.buffer + ((y1 * slot->bitmap.pitch) + x1);
-	destRowPtr = Blt_PicturePixel(destPtr, dx, dy);
+	destRowPtr = Blt_Picture_Pixel(destPtr, dx, dy);
 	for (y = y1; y < y2; y++) {
 	    Blt_Pixel *dp;
 	    unsigned char *sp;
@@ -837,7 +837,7 @@ CopyGrayGlyph(Pict *destPtr, FT_GlyphSlot slot, int xx, int yy,
 	int y;
 
 	srcRowPtr = slot->bitmap.buffer + ((y1 * slot->bitmap.pitch) + x1);
-	destRowPtr = Blt_PicturePixel(destPtr, xx, yy);
+	destRowPtr = Blt_Picture_Pixel(destPtr, xx, yy);
 	for (y = y1; y < y2; y++) {
 	    Blt_Pixel *dp;
 	    unsigned char *sp;
@@ -907,7 +907,7 @@ PaintGrayGlyph(Pict *destPtr, FT_GlyphSlot slot, int xx, int yy,
 	int y;
 
 	srcRowPtr = slot->bitmap.buffer + ((y1 * slot->bitmap.pitch) + x1);
-	destRowPtr = Blt_PicturePixel(destPtr, xx, yy);
+	destRowPtr = Blt_Picture_Pixel(destPtr, xx, yy);
 	for (y = y1; y < y2; y++) {
 	    Blt_Pixel *dp;
 	    unsigned char *sp;
@@ -976,7 +976,7 @@ CopyMonoGlyph(Pict *destPtr, FT_GlyphSlot slot, int xx, int yy,
 	int y;
 
 	srcRowPtr = slot->bitmap.buffer + (y1 * slot->bitmap.pitch);
-	destRowPtr = Blt_PicturePixel(destPtr, xx, yy);
+	destRowPtr = Blt_Picture_Pixel(destPtr, xx, yy);
 	for (y = y1; y < y2; y++) {
 	    Blt_Pixel *dp;
 	    int x;

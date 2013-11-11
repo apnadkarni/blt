@@ -1157,8 +1157,8 @@ Blt_Ps_DrawPicture(PostScript *psPtr, Blt_Picture picture, double x, double y)
     int w, h;
     Blt_DBuffer dBuffer;
 
-    w = Blt_PictureWidth(picture);
-    h = Blt_PictureHeight(picture);
+    w = Blt_Picture_Width(picture);
+    h = Blt_Picture_Height(picture);
     Blt_Ps_Format(psPtr, 
 	"gsave\n"
 	"/DeviceRGB setcolorspace\n"

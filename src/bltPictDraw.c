@@ -912,7 +912,7 @@ PutPixel(Pict *destPtr, int x, int y, Blt_Pixel *colorPtr)
     if ((x >= 0) && (x < destPtr->width) && (y >= 0) && (y < destPtr->height)) {
 	Blt_Pixel *dp;
 
-	dp = Blt_PicturePixel(destPtr, x, y);
+	dp = Blt_Picture_Pixel(destPtr, x, y);
 	dp->u32 = colorPtr->u32; 
     }
 }
@@ -994,7 +994,7 @@ PutPixel2(Pict *destPtr, int x, int y, Blt_Pixel *colorPtr,
     if ((x >= 0) && (x < destPtr->width) && (y >= 0) && (y < destPtr->height)) {
 	Blt_Pixel *dp;
 
-	dp = Blt_PicturePixel(destPtr, x, y);
+	dp = Blt_Picture_Pixel(destPtr, x, y);
     }
 }
 
@@ -1041,7 +1041,7 @@ PaintLineSegment(
     if (dx == dy) {			/* Diagonal line. */
 	Blt_Pixel *dp;
 
-	dp = Blt_PicturePixel(destPtr, x1, y1);
+	dp = Blt_Picture_Pixel(destPtr, x1, y1);
 	while(dy-- > 0) {
 	    dp += destPtr->pixelsPerRow + xDir;
 	    dp->u32 = colorPtr->u32;
@@ -1140,7 +1140,7 @@ PaintLineSegment2(
     if (dx == dy) {			/* Diagonal line. */
 	Blt_Pixel *dp;
 
-	dp = Blt_PicturePixel(destPtr, x1, y1);
+	dp = Blt_Picture_Pixel(destPtr, x1, y1);
 	while(dy-- > 0) {
 	    dp += destPtr->pixelsPerRow + xDir;
 	    dp->u32 = interior.u32;
@@ -1167,7 +1167,7 @@ PaintLineSegment2(
 		x1 += xDir;
 		error &= 0xFFFF;
 	    }
-	    dp = Blt_PicturePixel(destPtr, x1, y1);
+	    dp = Blt_Picture_Pixel(destPtr, x1, y1);
 	    weight = (unsigned char)(error >> 8);
 	    x = x1;
 	    if (x >= 0) {
@@ -1203,7 +1203,7 @@ PaintLineSegment2(
 		y1++;
 		error &= 0xFFFF;
 	    }
-	    dp = Blt_PicturePixel(destPtr, x1, y1);
+	    dp = Blt_Picture_Pixel(destPtr, x1, y1);
 	    weight = (unsigned char)(error >> 8);
 	    y = y1;
 	    if (y >= 0) {
@@ -1464,7 +1464,7 @@ BlitGlyph(Pict *destPtr,
 	int y;
 
 	srcRowPtr = slot->bitmap.buffer + (y1 * slot->bitmap.pitch);
-	destRowPtr = Blt_PicturePixel(destPtr, xx, yy);
+	destRowPtr = Blt_Picture_Pixel(destPtr, xx, yy);
 	for (y = y1; y < y2; y++) {
 	    Blt_Pixel *dp;
 	    int x;
@@ -1491,7 +1491,7 @@ BlitGlyph(Pict *destPtr,
 	int y;
 
 	srcRowPtr = slot->bitmap.buffer + ((y1 * slot->bitmap.pitch) + x1);
-	destRowPtr = Blt_PicturePixel(destPtr, dx, dy);
+	destRowPtr = Blt_Picture_Pixel(destPtr, dx, dy);
 	for (y = y1; y < y2; y++) {
 	    Blt_Pixel *dp;
 	    unsigned char *sp;
@@ -1575,7 +1575,7 @@ CopyGrayGlyph(
 	int y;
 
 	srcRowPtr = slot->bitmap.buffer + ((y1 * slot->bitmap.pitch) + x1);
-	destRowPtr = Blt_PicturePixel(destPtr, xx, yy);
+	destRowPtr = Blt_Picture_Pixel(destPtr, xx, yy);
 	for (y = y1; y < y2; y++) {
 	    Blt_Pixel *dp;
 	    unsigned char *sp;
@@ -1661,7 +1661,7 @@ PaintGrayGlyph(
 	int y;
 
 	srcRowPtr = slot->bitmap.buffer + ((y1 * slot->bitmap.pitch) + x1);
-	destRowPtr = Blt_PicturePixel(destPtr, xx, yy);
+	destRowPtr = Blt_Picture_Pixel(destPtr, xx, yy);
 	for (y = y1; y < y2; y++) {
 	    Blt_Pixel *dp;
 	    unsigned char *sp;
@@ -1741,7 +1741,7 @@ CopyMonoGlyph(Pict *destPtr, FT_GlyphSlot slot, int xx, int yy,
 	int y;
 
 	srcRowPtr = slot->bitmap.buffer + (y1 * slot->bitmap.pitch);
-	destRowPtr = Blt_PicturePixel(destPtr, xx, yy);
+	destRowPtr = Blt_Picture_Pixel(destPtr, xx, yy);
 	for (y = y1; y < y2; y++) {
 	    Blt_Pixel *dp;
 	    int x;
@@ -2067,7 +2067,7 @@ xPaintArc(Pict *destPtr, int x1, int y1, int x2, int y2, int lineWidth,
     yoff = y1;
     x = radius;
     y = 0;
-    dp = Blt_PicturePixel(destPtr, x + xoff - 1, y + yoff);
+    dp = Blt_Picture_Pixel(destPtr, x + xoff - 1, y + yoff);
     dp->u32 = colorPtr->u32;
     r2 = radius * radius;
     if (fill) {
@@ -2085,7 +2085,7 @@ xPaintArc(Pict *destPtr, int x1, int y1, int x2, int y2, int lineWidth,
 	if (d < t) {
 	    x--;
 	}
-	dp = Blt_PicturePixel(destPtr, x + xoff, y + yoff);
+	dp = Blt_Picture_Pixel(destPtr, x + xoff, y + yoff);
 	q = FABS(d * 255.0);
 	a = (unsigned int)CLAMP(q);
         color.u32 = colorPtr->u32;
@@ -2623,11 +2623,11 @@ DrawCircle2(Blt_Picture picture, int x, int y, int radius,
 	    int yy;
 	    Blt_Pixel *destRowPtr;
 
-	    destRowPtr = Blt_PictureBits(tmpPtr);
-	    for (yy = 0; yy < Blt_PictureHeight(tmpPtr); yy++) {
+	    destRowPtr = Blt_Picture_Bits(tmpPtr);
+	    for (yy = 0; yy < Blt_Picture_Height(tmpPtr); yy++) {
 		Blt_Pixel *dp, *dend;
 
-		for (dp = destRowPtr, dend = dp + Blt_PictureWidth(tmpPtr); 
+		for (dp = destRowPtr, dend = dp + Blt_Picture_Width(tmpPtr); 
 		     dp < dend; dp++) {
 		    if (dp->Alpha != 0x00) {
 			dp->Red = switchesPtr->color.Red;
@@ -2635,7 +2635,7 @@ DrawCircle2(Blt_Picture picture, int x, int y, int radius,
 			dp->Blue = switchesPtr->color.color;
 		    }
 		}
-		destRowPtr += Blt_PictureStride(tmpPtr);
+		destRowPtr += Blt_Picture_Stride(tmpPtr);
 	    }
 	}	    
 #ifndef notdef
@@ -3404,7 +3404,6 @@ Blt_Picture_TextOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	h = layoutPtr->height;
 	if ((w > 1) && (h > 1) && (switches.shadow.width > 0)) {
 	    Blt_Pixel color;
-	    Blt_Pixel *dp;
 	    Pict *tmpPtr;
 	    int extra;
 	    Blt_PaintBrush brush;
@@ -3477,9 +3476,9 @@ Polyline2(Pict *destPtr, int x1, int y1, int x2, int y2, Blt_Pixel *colorPtr)
     }
 
     /* First and last Pixels always get Set: */
-    dp = Blt_PicturePixel(destPtr, x1, y1);
+    dp = Blt_Picture_Pixel(destPtr, x1, y1);
     dp->u32 = colorPtr->u32;
-    dp = Blt_PicturePixel(destPtr, x2, y2);
+    dp = Blt_Picture_Pixel(destPtr, x2, y2);
     dp->u32 = colorPtr->u32;
 
     dx = x2 - x1;
@@ -3494,7 +3493,7 @@ Polyline2(Pict *destPtr, int x1, int y1, int x2, int y2, Blt_Pixel *colorPtr)
     if (dx == 0) {		/*  Vertical line */
 	Blt_Pixel *dp;
 
-	dp = Blt_PicturePixel(destPtr, x1, y1);
+	dp = Blt_Picture_Pixel(destPtr, x1, y1);
 	while (dy-- > 0) {
 	    dp += destPtr->pixelsPerRow;
 	    dp->u32 = colorPtr->u32;
@@ -3504,7 +3503,7 @@ Polyline2(Pict *destPtr, int x1, int y1, int x2, int y2, Blt_Pixel *colorPtr)
     if (dy == 0) {		/* Horizontal line */
 	Blt_Pixel *dp;
 
-	dp = Blt_PicturePixel(destPtr, x1, y1);
+	dp = Blt_Picture_Pixel(destPtr, x1, y1);
 	while(dx-- > 0) {
 	    dp += xDir;
 	    dp->u32 = colorPtr->u32;
@@ -3514,7 +3513,7 @@ Polyline2(Pict *destPtr, int x1, int y1, int x2, int y2, Blt_Pixel *colorPtr)
     if (dx == dy) {		/* Diagonal line. */
 	Blt_Pixel *dp;
 
-	dp = Blt_PicturePixel(destPtr, x1, y1);
+	dp = Blt_Picture_Pixel(destPtr, x1, y1);
 	while(dy-- > 0) {
 	    dp += destPtr->pixelsPerRow + xDir;
 	    dp->u32 = colorPtr->u32;
@@ -3541,7 +3540,7 @@ Polyline2(Pict *destPtr, int x1, int y1, int x2, int y2, Blt_Pixel *colorPtr)
 		x1 += xDir;
 		error &= 0xFFFF;
 	    }
-	    dp = Blt_PicturePixel(destPtr, x1, y1);
+	    dp = Blt_Picture_Pixel(destPtr, x1, y1);
 	    weight = (unsigned char)(error >> 8);
 	    x = x1;
 	    if (x >= 0) {
@@ -3571,7 +3570,7 @@ Polyline2(Pict *destPtr, int x1, int y1, int x2, int y2, Blt_Pixel *colorPtr)
 		y1++;
 		error &= 0xFFFF;
 	    }
-	    dp = Blt_PicturePixel(destPtr, x1, y1);
+	    dp = Blt_Picture_Pixel(destPtr, x1, y1);
 	    weight = (unsigned char)(error >> 8);
 	    y = y1;
 	    if (y >= 0) {

@@ -2579,7 +2579,7 @@ IconOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	bg.Blue  = colorPtr->blue >> 8;
 	bg.Alpha = 0xFF;
 	
-	destRowPtr = Blt_PictureBits(picture);
+	destRowPtr = Blt_Picture_Bits(picture);
 	for (y = 0; y < h; y++) {
 	    Blt_Pixel *dp, *dend;
 
@@ -2588,7 +2588,7 @@ IconOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 		    dp->Alpha = 0x0;
 		}
 	    }
-	    destRowPtr += Blt_PictureStride(picture);
+	    destRowPtr += Blt_Picture_Stride(picture);
 	}
     }
     Blt_ClassifyPicture(picture);

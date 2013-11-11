@@ -554,11 +554,11 @@ PictureToTif(Tcl_Interp *interp, Blt_Picture picture, Blt_DBuffer dbuffer,
 	return TCL_ERROR;
     }
     Blt_QueryColors(srcPtr, (Blt_HashTable *)NULL);
-    if (Blt_PictureIsColor(srcPtr)) {
-	samplesPerPixel = (Blt_PictureIsOpaque(srcPtr)) ? 3 : 4;
+    if (Blt_Picture_IsColor(srcPtr)) {
+	samplesPerPixel = (Blt_Picture_IsOpaque(srcPtr)) ? 3 : 4;
 	photometric = PHOTOMETRIC_RGB;
     } else {
-	if (!Blt_PictureIsOpaque(srcPtr)) {
+	if (!Blt_Picture_IsOpaque(srcPtr)) {
 	    Blt_Picture background;
 	    /* Blend picture with solid color background. */
 	    background = Blt_CreatePicture(srcPtr->width, srcPtr->height);

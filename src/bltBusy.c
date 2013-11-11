@@ -1896,8 +1896,8 @@ DisplayBusy(ClientData clientData)
 	if (busyPtr->layer != NULL) {
 	    int x, y, w, h;
 
-	    w = Blt_PictureWidth(busyPtr->layer);
-	    h = Blt_PictureHeight(busyPtr->layer);
+	    w = Blt_Picture_Width(busyPtr->layer);
+	    h = Blt_Picture_Height(busyPtr->layer);
 	    x = (busyPtr->width - w) / 2;
 	    y = (busyPtr->height - h) / 2;
 	    assert(x >= 0 && y >= 0);
@@ -1911,8 +1911,8 @@ DisplayBusy(ClientData clientData)
 	if (busyPtr->layer != NULL) {
 	    int x, y, w, h;
 
-	    w = Blt_PictureWidth(busyPtr->layer);
-	    h = Blt_PictureHeight(busyPtr->layer);
+	    w = Blt_Picture_Width(busyPtr->layer);
+	    h = Blt_Picture_Height(busyPtr->layer);
 	    x = (busyPtr->width - w) / 2;
 	    y = (busyPtr->height - h) / 2;
 	    assert(x >= 0 && y >= 0);

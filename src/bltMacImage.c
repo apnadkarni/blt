@@ -1318,12 +1318,12 @@ Blt_PictureMask(
     int destWidth, destHeight;
     unsigned char *destBits;
 
-    destWidth = Blt_PictureWidth(pict);
-    destHeight = Blt_PictureHeight(pict);
+    destWidth = Blt_Picture_Width(pict);
+    destHeight = Blt_Picture_Height(pict);
     destBytesPerRow = ((destWidth + 31) & ~31) / 8;
     destBits = Blt_AssertCalloc(destHeight, destBytesPerRow);
     count = 0;
-    sp = Blt_PictureBits(pict);
+    sp = Blt_Picture_Bits(pict);
     for (y = 0; y < destHeight; y++) {
 	for (x = 0; x < destWidth; x++) {
 	    if (sp->Alpha == 0x00) {
@@ -1338,8 +1338,8 @@ Blt_PictureMask(
 	BITMAP bm;
 
 	bm.bmType = 0;
-	bm.bmWidth = Blt_PictureWidth(pict);
-	bm.bmHeight = Blt_PictureHeight(pict);
+	bm.bmWidth = Blt_Picture_Width(pict);
+	bm.bmHeight = Blt_Picture_Height(pict);
 	bm.bmWidthBytes = destBytesPerRow;
 	bm.bmPlanes = 1;
 	bm.bmBitsPixel = 1;
@@ -1964,7 +1964,7 @@ Blt_JPEGToPicture(interp, fileName)
 
     pict = Blt_CreatePicture(jpgProps.JPGWidth, jpgProps.JPGHeight);
 
-    jpgProps.DIBBytes = (BYTE *)Blt_PictureBits(pict);
+    jpgProps.DIBBytes = (BYTE *)Blt_Picture_Bits(pict);
     if (ijlRead(&jpgProps, IJL_JFILE_READWHOLEIMAGE) != IJL_OK) {
 	Tcl_AppendResult(interp, "can't read image data from \"", fileName,
 		 "\"", (char *)NULL);
@@ -2107,7 +2107,7 @@ Blt_JPEGToPicture(interp, fileName)
     readBuffer = (*jpg.mem->alloc_sarray) ((j_common_ptr)&jpg, JPOOL_IMAGE, 
 	row_stride, 1);
     pict = Blt_CreatePicture(pictWidth, pictHeight);
-    dp = Blt_PictureBits(pict);
+    dp = Blt_Picture_Bits(pict);
 
     if (jpg.output_components == 1) {
 	while (jpg.output_scanline < pictHeight) {
@@ -2340,17 +2340,17 @@ Blt_PaintPicture(
 					 * drawable.  */
     unsigned int flags)
 {
-    if ((picture == NULL) || (x >= Blt_PictureWidth(picture)) || 
-	(y >= Blt_PictureHeight(picture))) {
+    if ((picture == NULL) || (x >= Blt_Picture_Width(picture)) || 
+	(y >= Blt_Picture_Height(picture))) {
 	/* Nothing to draw. The region offset starts beyond the end of the
 	 * picture. */
 	return TRUE;	
     }
-    if ((width + x) > Blt_PictureWidth(picture)) {
-	width = Blt_PictureWidth(picture) - x;
+    if ((width + x) > Blt_Picture_Width(picture)) {
+	width = Blt_Picture_Width(picture) - x;
     }
-    if ((height + y) > Blt_PictureHeight(picture)) {
-	height = Blt_PictureHeight(picture) - y;
+    if ((height + y) > Blt_Picture_Height(picture)) {
+	height = Blt_Picture_Height(picture) - y;
     }
     if ((width <= 0) || (height <= 0)) {
 	return TRUE;
@@ -2384,7 +2384,7 @@ Blt_PaintPictureWithBlend(
     /* assert((dx >= 0) && (dy >= 0)); */
     assert((width >= 0) && (height >= 0));
 
-    if ((x >= Blt_PictureWidth(picture)) || (y >= Blt_PictureHeight(picture))){
+    if ((x >= Blt_Picture_Width(picture)) || (y >= Blt_Picture_Height(picture))){
 	/* Nothing to draw. The region offset starts beyond the end of the
 	 * picture. */	
 	return TRUE;
@@ -2395,11 +2395,11 @@ Blt_PaintPictureWithBlend(
      *
      * Clip the end of the region if it is too big.
      */
-    if ((width + x) > Blt_PictureWidth(picture)) {
-	width = Blt_PictureWidth(picture) - x;
+    if ((width + x) > Blt_Picture_Width(picture)) {
+	width = Blt_Picture_Width(picture) - x;
     }
-    if ((height + y) > Blt_PictureHeight(picture)) {
-	height = Blt_PictureHeight(picture) - y;
+    if ((height + y) > Blt_Picture_Height(picture)) {
+	height = Blt_Picture_Height(picture) - y;
     }
     return PaintPictureWithBlend(painter, drawable, picture, x, y, width,
 	height, dx, dy, flags);

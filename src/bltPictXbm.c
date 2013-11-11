@@ -521,7 +521,7 @@ PictureToXbm(Tcl_Interp *interp, Blt_Picture original, Blt_DBuffer buffer,
 
 	/* Remove any transparent pixels by blending into a solid
 	 * white background. */
-	if (!Blt_PictureIsOpaque(srcPtr)) {
+	if (!Blt_Picture_IsOpaque(srcPtr)) {
 	    Blt_Picture background;
 
 	    /* Blend picture with solid color background. */
@@ -710,8 +710,8 @@ ImportXbm(Tcl_Interp *interp, int objc, Tcl_Obj *const *objv,
 	if (mask != NULL) {
 	    Blt_ApplyPictureToPicture(picture, mask, 
 				      0, 0, 
-				      Blt_PictureWidth(mask),
-				      Blt_PictureHeight(mask),
+				      Blt_Picture_Width(mask),
+				      Blt_Picture_Height(mask),
 				      0, 0, 
 				      PIC_ARITH_AND);
 	    Blt_FreePicture(mask);

@@ -1118,7 +1118,7 @@ PictureToPdf(Tcl_Interp *interp, Blt_Picture original, Pdf *pdfPtr,
 
     Blt_ClassifyPicture(srcPtr);
 #ifdef notdef
-    if (!Blt_PictureIsOpaque(srcPtr)) {
+    if (!Blt_Picture_IsOpaque(srcPtr)) {
 	Blt_Picture background;
 	
 	background = Blt_CreatePicture(srcPtr->width, srcPtr->height);
@@ -1131,7 +1131,7 @@ PictureToPdf(Tcl_Interp *interp, Blt_Picture original, Pdf *pdfPtr,
     if (srcPtr->flags & BLT_PIC_ASSOCIATED_COLORS) {
 	Blt_UnassociateColors(srcPtr);
     }
-    if (Blt_PictureIsGreyscale(srcPtr)) {
+    if (Blt_Picture_IsGreyscale(srcPtr)) {
 	colorSpace = "DeviceGray";
 	numComponents = 1;
     } else {
@@ -1141,7 +1141,7 @@ PictureToPdf(Tcl_Interp *interp, Blt_Picture original, Pdf *pdfPtr,
 
     /* Transfer image data to buffer. */
     imgData = Blt_AssertMalloc(srcPtr->width * srcPtr->height * numComponents);
-    if (Blt_PictureIsGreyscale(srcPtr)) {
+    if (Blt_Picture_IsGreyscale(srcPtr)) {
 	Blt_Pixel *srcRowPtr;
 	int y;
 	unsigned char *dp;
@@ -1191,7 +1191,7 @@ PictureToPdf(Tcl_Interp *interp, Blt_Picture original, Pdf *pdfPtr,
 		       OBJ_IMAGE, 
 		       srcPtr->width, srcPtr->height, colorSpace);
     
-    if (!Blt_PictureIsOpaque(srcPtr)) {
+    if (!Blt_Picture_IsOpaque(srcPtr)) {
 	Blt_DBuffer_Format(pdfPtr->dbuffer, 
 			   "    /SMask %d 0 R\n",
 			   OBJ_SOFTMASK);
@@ -1220,7 +1220,7 @@ PictureToPdf(Tcl_Interp *interp, Blt_Picture original, Pdf *pdfPtr,
 		       length);
     Blt_Free(imgData);
 
-    if (!Blt_PictureIsOpaque(srcPtr)) {
+    if (!Blt_Picture_IsOpaque(srcPtr)) {
 	unsigned char *maskData, *dp;
 	Blt_Pixel *srcRowPtr;
 	int y;

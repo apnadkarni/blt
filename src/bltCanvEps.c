@@ -565,8 +565,8 @@ ReadEPSI(EpsItem *itemPtr, ParseInfo *piPtr)
 	Blt_Pixel *destRowPtr;
 	int y;
 
-	destRowPtr = Blt_PictureBits(picture) + 
-	    (height - 1) * Blt_PictureStride(picture);
+	destRowPtr = Blt_Picture_Bits(picture) + 
+	    (height - 1) * Blt_Picture_Stride(picture);
 	for (y = height - 1; y >= 0; y--) {
 	    Blt_Pixel *dp;
 	    int x;
@@ -586,13 +586,13 @@ ReadEPSI(EpsItem *itemPtr, ParseInfo *piPtr)
 		dp->Red = dp->Green = dp->Blue = ~byte;
 		dp->Alpha = ALPHA_OPAQUE;
 	    }
-	    destRowPtr -= Blt_PictureStride(picture);
+	    destRowPtr -= Blt_Picture_Stride(picture);
 	}
     } else if (bitsPerPixel == 1) {
 	Blt_Pixel *destRowPtr;
 	int y;
 
-	destRowPtr = Blt_PictureBits(picture);
+	destRowPtr = Blt_Picture_Bits(picture);
 	for (y = 0; y < height; y++) {
 	    Blt_Pixel *dp, *dend;
 	    int bit;
@@ -619,7 +619,7 @@ ReadEPSI(EpsItem *itemPtr, ParseInfo *piPtr)
 		}
 		bit++;
 	    }
-	    destRowPtr += Blt_PictureStride(picture);
+	    destRowPtr += Blt_Picture_Stride(picture);
 	}
     } else {
 	Blt_Warn("unknown EPSI bitsPerPixel (%d)\n", bitsPerPixel);
@@ -627,8 +627,8 @@ ReadEPSI(EpsItem *itemPtr, ParseInfo *piPtr)
   done:
     itemPtr->original = picture;
     itemPtr->origFromPicture = FALSE;
-    itemPtr->lastWidth = Blt_PictureWidth(picture);
-    itemPtr->lastHeight = Blt_PictureHeight(picture);
+    itemPtr->lastWidth = Blt_Picture_Width(picture);
+    itemPtr->lastHeight = Blt_Picture_Height(picture);
     itemPtr->lastLine = piPtr->lineNumber + 1;
     return;
 
@@ -859,7 +859,7 @@ ReadTiffPreview(EpsItem *itemPtr)
     TIFFGetField(itemPtr->tiffPtr, TIFFTAG_IMAGEWIDTH, &width);
     TIFFGetField(itemPtr->tiffPtr, TIFFTAG_IMAGELENGTH, &height);
     picture = Blt_CreatePicture(width, height);
-    dataPtr = Blt_PictureBits(picture);
+    dataPtr = Blt_Picture_Bits(picture);
     if (!TIFFReadRGBAImage(itemPtr->tiffPtr, width, height, dataPtr, 0)) {
 	Blt_FreePicture(picture);
 	return;
@@ -1418,13 +1418,13 @@ DisplayProc(
 	if ((itemPtr->lastWidth != w) || (itemPtr->lastHeight != h)) {
 	    if (itemPtr->quick) {
 		picture = Blt_ScalePicture(itemPtr->original, 0, 0,
-			Blt_PictureWidth(itemPtr->original),
-			Blt_PictureHeight(itemPtr->original), w, h);
+			Blt_Picture_Width(itemPtr->original),
+			Blt_Picture_Height(itemPtr->original), w, h);
 	    } else {
 #ifdef notdef
 		fprintf(stderr, "orig=%dx%d new=width=%dx%d last=%dx%d\n", 
-			Blt_PictureWidth(itemPtr->original),
-			Blt_PictureHeight(itemPtr->original),
+			Blt_Picture_Width(itemPtr->original),
+			Blt_Picture_Height(itemPtr->original),
 			w, h,
 			itemPtr->lastWidth, itemPtr->lastHeight);
 #endif
@@ -1500,8 +1500,8 @@ DisplayProc(
 	    Blt_Picture fade;
 
 	    fade = Blt_ClonePicture(picture);
-	    Blt_FadePicture(fade, 0, 0, Blt_PictureWidth(fade), 
-		Blt_PictureHeight(fade), 150);
+	    Blt_FadePicture(fade, 0, 0, Blt_Picture_Width(fade), 
+		Blt_Picture_Height(fade), 150);
 	    Blt_PaintPicture(itemPtr->painter, drawable, fade, 
 		(int)p.left, (int)p.top, (int)(p.right - p.left), 
 		(int)(p.bottom - p.top), destX, destY, FALSE);

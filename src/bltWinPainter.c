@@ -799,8 +799,8 @@ Blt_PaintPicture(
      *                      +---------+
      */			        
     if ((picture == NULL) || 
-	(ax >= Blt_PictureWidth(picture)) || 
-	(ay >= Blt_PictureHeight(picture))) {
+	(ax >= Blt_Picture_Width(picture)) || 
+	(ay >= Blt_Picture_Height(picture))) {
 	return TRUE;	
     }
     /* 
@@ -841,11 +841,11 @@ Blt_PaintPicture(
      *                                                    
      * Clip the end of the area if it's too big.
      */
-    if ((aw + ax) > Blt_PictureWidth(picture)) {
-	aw = Blt_PictureWidth(picture) - ax;
+    if ((aw + ax) > Blt_Picture_Width(picture)) {
+	aw = Blt_Picture_Width(picture) - ax;
     }
-    if ((ah + ay) > Blt_PictureHeight(picture)) {
-	ah = Blt_PictureHeight(picture) - ay;
+    if ((ah + ay) > Blt_Picture_Height(picture)) {
+	ah = Blt_Picture_Height(picture) - ay;
     }
     /* Check that there's still something to paint. */
     if ((aw <= 0) || (ah <= 0)) {
@@ -859,7 +859,7 @@ Blt_PaintPicture(
 	y = 0;
     }
 #endif
-    if (Blt_PictureIsOpaque(picture)) {
+    if (Blt_Picture_IsOpaque(picture)) {
 	return PaintPicture(painter, drawable, picture, ax, ay, 
 		aw, ah, x, y, flags);
     } else {
@@ -897,8 +897,8 @@ Blt_PaintPictureWithBlend(
      *			 w
      */
     if ((picture == NULL) || 
-	(x >= Blt_PictureWidth(picture)) || 
-	(y >= Blt_PictureHeight(picture)) ||
+	(x >= Blt_Picture_Width(picture)) || 
+	(y >= Blt_Picture_Height(picture)) ||
 	((x + w) <= 0) || ((y + h) <= 0)) {
 	return TRUE;	
     }
@@ -943,11 +943,11 @@ Blt_PaintPictureWithBlend(
      *                                                    
      * Clip the end of the area if it's too big.
      */
-    if ((x + w) > Blt_PictureWidth(picture)) {
-	w = Blt_PictureWidth(picture) - x;
+    if ((x + w) > Blt_Picture_Width(picture)) {
+	w = Blt_Picture_Width(picture) - x;
     }
-    if ((y + h) > Blt_PictureHeight(picture)) {
-	h = Blt_PictureHeight(picture) - y;
+    if ((y + h) > Blt_Picture_Height(picture)) {
+	h = Blt_Picture_Height(picture) - y;
     }
     if (dx < 0) {
 	dx = 0;

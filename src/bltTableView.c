@@ -2823,14 +2823,6 @@ GetColumnByIndex(TableView *viewPtr, const char *string, Column **colPtrPtr)
 	}
     } else if ((c == 'n') && (strcmp(string, "none") == 0)) {
 	colPtr = NULL;
-    } else if ((c == 'v') && (strcmp(string, "view.top") == 0)) {
-	if (viewPtr->numVisibleRows > 0) {
-	    colPtr = viewPtr->visibleRows[0];
-	}
-    } else if ((c == 'v') && (strcmp(string, "view.bottom") == 0)) {
-	if (viewPtr->numVisibleRows > 0) {
-	    colPtr = viewPtr->visibleRows[viewPtr->numVisibleRows-1];
-	} 
     } else if ((c == 'v') && (strcmp(string, "view.left") == 0)) {
 	if (viewPtr->numVisibleColumns > 0) {
 	    colPtr = viewPtr->visibleColumns[0];

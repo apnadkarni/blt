@@ -1718,8 +1718,8 @@ Blt_PaintPicture(
      */
     x1 = x, y1 = y, x2 = x + w, y2 = y1 + h;
     if ((picture == NULL) || 
-	(x1 >= Blt_PictureWidth(picture))  || (x2 <= 0) ||
-	(y1 >= Blt_PictureHeight(picture)) || (y2 <= 0)) {
+	(x1 >= Blt_Picture_Width(picture))  || (x2 <= 0) ||
+	(y1 >= Blt_Picture_Height(picture)) || (y2 <= 0)) {
 	return TRUE;	
     }
     if (dx < 0) {			
@@ -1770,17 +1770,17 @@ Blt_PaintPicture(
      *                                                    
      * Clip the end of the area if it's too big.
      */
-    if ((x2 - x1) > Blt_PictureWidth(picture)) {
-	x2 = x1 + Blt_PictureWidth(picture);
+    if ((x2 - x1) > Blt_Picture_Width(picture)) {
+	x2 = x1 + Blt_Picture_Width(picture);
     }
-    if ((y2 - y1) > Blt_PictureHeight(picture)) {
-	y2 = y1 + Blt_PictureHeight(picture);
+    if ((y2 - y1) > Blt_Picture_Height(picture)) {
+	y2 = y1 + Blt_Picture_Height(picture);
     }
     /* Check that there's still something to paint. */
     if (((x2 - x1) <= 0) || ((y2 - y1) <= 0)) {
 	return TRUE;
     }
-    if (Blt_PictureIsOpaque(picture)) {
+    if (Blt_Picture_IsOpaque(picture)) {
 	return PaintPicture(painter, drawable, picture, x1, y1, x2 - x1, 
 			    y2 - y1, dx, dy, flags);
     } else {
@@ -1824,8 +1824,8 @@ Blt_PaintPictureWithBlend(
      */
     x1 = x, y1 = y, x2 = x + w, y2 = y1 + h;
     if ((picture == NULL) || 
-	(x1 >= Blt_PictureWidth(picture))  || (x2 <= 0) ||
-	(y1 >= Blt_PictureHeight(picture)) || (y2 <= 0)) {
+	(x1 >= Blt_Picture_Width(picture))  || (x2 <= 0) ||
+	(y1 >= Blt_Picture_Height(picture)) || (y2 <= 0)) {
 	return TRUE;	
     }
     if (dx < 0) {			
@@ -1876,11 +1876,11 @@ Blt_PaintPictureWithBlend(
      *                                                    
      * Clip the end of the area if it's too big.
      */
-    if ((x2 - x1) > Blt_PictureWidth(picture)) {
-	x2 = x1 + Blt_PictureWidth(picture);
+    if ((x2 - x1) > Blt_Picture_Width(picture)) {
+	x2 = x1 + Blt_Picture_Width(picture);
     }
-    if ((y2 - y1) > Blt_PictureHeight(picture)) {
-	y2 = y1 + Blt_PictureHeight(picture);
+    if ((y2 - y1) > Blt_Picture_Height(picture)) {
+	y2 = y1 + Blt_Picture_Height(picture);
     }
     /* Check that there's still something to paint. */
     if (((x2 - x1) <= 0) || ((y2 - y1) <= 0)) {

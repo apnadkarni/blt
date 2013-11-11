@@ -1034,7 +1034,7 @@ BmpRleImageData(Blt_DBuffer dbuffer, Bmp *bmpPtr)
 			/* The run is always padded to an even number of bytes
 			 * (16-bit boundary). This loop relies on the fact
 			 * that picture data is also padded. */
-			dp = Blt_PicturePixel(destPtr, x, y);
+			dp = Blt_Picture_Pixel(destPtr, x, y);
 			for (i = 0; i < count; i += 2) {
 			    dp->u32 = bmpPtr->colorTable[sp[0]].u32;
 			    dp++;
@@ -1049,7 +1049,7 @@ BmpRleImageData(Blt_DBuffer dbuffer, Bmp *bmpPtr)
 		int i;
 		Blt_Pixel *dp;
 
-		dp = Blt_PicturePixel(destPtr, x, y);
+		dp = Blt_Picture_Pixel(destPtr, x, y);
 		for (i = 0; (x < w) && (i < count); i++, x++) {
 		    dp->u32 = bmpPtr->colorTable[index].u32;
 		    dp++;
@@ -1095,7 +1095,7 @@ BmpRleImageData(Blt_DBuffer dbuffer, Bmp *bmpPtr)
 			unsigned char *send;
 
 			count = index;
-			dp = Blt_PicturePixel(destPtr, x, y);
+			dp = Blt_Picture_Pixel(destPtr, x, y);
 			/* The run may be padded up to 12 bits. */
 			send = sp + ((count + 3) / 4) * 2;
 
@@ -1127,7 +1127,7 @@ BmpRleImageData(Blt_DBuffer dbuffer, Bmp *bmpPtr)
 
 		c1 = bmpPtr->colorTable[(index >> 4) & 0x0F].u32;
 		c2 =  bmpPtr->colorTable[index & 0x0F].u32;
-		dp = Blt_PicturePixel(destPtr, x, y);
+		dp = Blt_Picture_Pixel(destPtr, x, y);
 		for (i = 0; (x < w) && (i < count); i++, x++) {
 		    dp->u32 = (i & 0x1) ? c2 : c1;
 		    dp++;
@@ -1270,7 +1270,7 @@ PictureToBmp(Tcl_Interp *interp, Blt_Picture original, Blt_DBuffer dbuffer,
 	numColors = 0;
 	infoHeaderSize = SIZEOF_BITMAPV4HEADER;
     } else {
-	if (!Blt_PictureIsOpaque(srcPtr)) {	
+	if (!Blt_Picture_IsOpaque(srcPtr)) {	
 	    Blt_Picture background;
 
 	    /* Blend picture with solid color background. */

@@ -1046,7 +1046,7 @@ PictureToPs(Tcl_Interp *interp, Blt_Picture original, Blt_Ps ps,
 	return TCL_ERROR;
     }
     Blt_ClassifyPicture(srcPtr); 
-    if (!Blt_PictureIsOpaque(srcPtr)) {
+    if (!Blt_Picture_IsOpaque(srcPtr)) {
 	Blt_Picture background;
 
 	background = Blt_CreatePicture(srcPtr->width, srcPtr->height);

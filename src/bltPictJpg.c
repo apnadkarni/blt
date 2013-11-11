@@ -592,7 +592,7 @@ PictureToJpg(
     cinfo.image_width = srcPtr->width;
     cinfo.image_height = srcPtr->height;
 
-    if (!Blt_PictureIsOpaque(srcPtr)) {
+    if (!Blt_Picture_IsOpaque(srcPtr)) {
 	Blt_Picture background;
 
 	/* Blend picture with solid color background. */
@@ -619,7 +619,7 @@ PictureToJpg(
 	srcPtr = unassoc;
     }
     Blt_QueryColors(srcPtr, (Blt_HashTable *)NULL);
-    if (Blt_PictureIsColor(srcPtr)) {
+    if (Blt_Picture_IsColor(srcPtr)) {
 	cinfo.input_components = 3;   /* # of color components per pixel */
 	cinfo.in_color_space = JCS_RGB;	/* Colorspace of input image */
     } else {
