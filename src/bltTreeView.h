@@ -1,17 +1,16 @@
 /* -*- mode: c; c-basic-offset: 4; indent-tabs-mode: nil -*- */
-
 /*
  * bltTreeView.h --
  *
  *	Copyright 1998-2004 George A Howlett.
  *
- *	Permission is hereby granted, free of charge, to any person obtaining
- *	a copy of this software and associated documentation files (the
- *	"Software"), to deal in the Software without restriction, including
- *	without limitation the rights to use, copy, modify, merge, publish,
- *	distribute, sublicense, and/or sell copies of the Software, and to
- *	permit persons to whom the Software is furnished to do so, subject to
- *	the following conditions:
+ *	Permission is hereby granted, free of charge, to any person
+ *	obtaining a copy of this software and associated documentation
+ *	files (the "Software"), to deal in the Software without
+ *	restriction, including without limitation the rights to use, copy,
+ *	modify, merge, publish, distribute, sublicense, and/or sell copies
+ *	of the Software, and to permit persons to whom the Software is
+ *	furnished to do so, subject to the following conditions:
  *
  *	The above copyright notice and this permission notice shall be
  *	included in all copies or substantial portions of the Software.
@@ -19,10 +18,11 @@
  *	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  *	EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  *	MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- *	NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
- *	LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
- *	OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
- *	WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *	NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+ *	BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ *	ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ *	CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ *	SOFTWARE.
  */
 
 /*
@@ -52,6 +52,7 @@
 #define ITEM_ENTRY_BUTTON	(ClientData)1
 #define ITEM_COLUMN_TITLE	(ClientData)2
 #define ITEM_COLUMN_RULE	(ClientData)3
+#define ITEM_CELL       	(ClientData)4
 #define ITEM_STYLE		(ClientData)0x10004
 
 #define TITLE_PADX	2
@@ -77,8 +78,8 @@
 typedef const char *UID;
 
 /*
- * The macro below is used to modify a "char" value (e.g. by casting it to an
- * unsigned character) so that it can be used safely with macros such as
+ * The macro below is used to modify a "char" value (e.g. by casting it to
+ * an unsigned character) so that it can be used safely with macros such as
  * isspace.
  */
 #define UCHAR(c)	((unsigned char) (c))
@@ -106,8 +107,8 @@ typedef const char *UID;
  */
 #define LAYOUT_PENDING		(1<<0)	/* The layout of the hierarchy needs
 					 * to be recomputed. */
-#define REDRAW_PENDING		(1<<1)	/* A redraw request is pending for the
-					 * widget. */
+#define REDRAW_PENDING		(1<<1)	/* A redraw request is pending for
+					 * the widget. */
 #define SELECT_PENDING		(1<<2)	/* A "selection" command idle task is
 					 * pending.  */
 #define SCROLLX			(1<<3)	/* X-scroll request is pending. */
@@ -115,41 +116,44 @@ typedef const char *UID;
 /* Both X-scroll and  Y-scroll requests are pending. */
 #define SCROLL_PENDING	(SCROLLX | SCROLLY)
 #define FOCUS			(1<<5)	/* The widget is receiving keyboard
-					 * events.  Draw the focus highlight
-					 * border around the widget. */
-#define DIRTY			(1<<6)	/* The hierarchy has changed. It may
-					 * invalidate the locations and
+					 * events.  Draw the focus
+					 * highlight border around the
+					 * widget. */
+#define DIRTY			(1<<6)	/* The hierarchy has changed. It
+					 * may invalidate the locations and
 					 * pointers to entries.  The widget
 					 * will need to recompute its
 					 * layout. */
 #define UPDATE			(1<<7)
-#define RESORT			(1<<8)	/* The tree has changed such that the
-					 * view needs to be resorted.  This
-					 * can happen when an entry is open
-					 * or closed, it's label changes, a
-					 * column value changes, etc. */
-#define SORTED			(1<<9)	/* The view is currently sorted.  This
-					 * is used to simply reverse the view
-					 * when the sort -decreasing flag is
-					 * changed. */
+#define RESORT			(1<<8)	/* The tree has changed such that
+					 * the view needs to be resorted.
+					 * This can happen when an entry is
+					 * open or closed, it's label
+					 * changes, a column value changes,
+					 * etc. */
+#define SORTED			(1<<9)	/* The view is currently sorted.
+					 * This is used to simply reverse
+					 * the view when the sort
+					 * -decreasing flag is changed. */
 #define SORT_PENDING		(1<<10)		
 #define TV_SORT_AUTO		(1<<11)
 #define REDRAW_BORDERS		(1<<12)	/* The borders of the widget
 					 * (highlight ring and 3-D border)
 					 * need to be redrawn. */
-#define REPOPULATE		(1<<13)	/* The tree used to populated the widget
-					 * has been changed, so generate the 
-					 * associated data structures. */
+#define REPOPULATE		(1<<13)	/* The tree used to populated the
+					 * widget has been changed, so
+					 * generate the associated data
+					 * structures. */
 #define VIEWPORT		(1<<14)	/* Indicates that the viewport has
 					 * changed in some way: the size of
-					 * the viewport, the location of the
-					 * viewport, or the contents of the 
-					 * viewport. */
-#define ALLOW_DUPLICATES	(1<<15)	/* When inserting new entries, create
-					 * duplicate entries. */
+					 * the viewport, the location of
+					 * the viewport, or the contents of
+					 * the viewport. */
+#define ALLOW_DUPLICATES	(1<<15)	/* When inserting new entries,
+					 * create duplicate entries. */
 #define FILL_ANCESTORS		(1<<16)	/* Automatically create ancestor
-					 * entries as needed when inserting a
-					 * new entry. */
+					 * entries as needed when inserting
+					 * a new entry. */
 #define HIDE_ROOT		(1<<17)	/* Don't display the root entry. */
 #define HIDE_LEAVES		(1<<18)	/* Don't display entries that are
 					 * leaves. */
@@ -220,26 +224,28 @@ typedef struct {
 /*
  * Icon --
  *
- *	Since instances of the same Tk image can be displayed in
- *	different windows with possibly different color palettes, Tk
- *	internally stores each instance in a linked list.  But if
- *	the instances are used in the same widget and therefore use
- *	the same color palette, this adds a lot of overhead,
- *	especially when deleting instances from the linked list.
+ *	Since instances of the same Tk image can be displayed in different
+ *	windows with possibly different color palettes, Tk internally
+ *	stores each instance in a linked list.  But if the instances are
+ *	used in the same widget and therefore use the same color palette,
+ *	this adds a lot of overhead, especially when deleting instances
+ *	from the linked list.
  *
- *	For the treeview widget, we never need more than a single
- *	instance of an image, regardless of how many times it's used.
- *	Cache the image, maintaining a reference count for each
- *	image used in the widget.  It's likely that the treeview
- *	widget will use many instances of the same image (for example
- *	the open/close icons).
+ *	For the treeview widget, we never need more than a single instance
+ *	of an image, regardless of how many times it's used.  Cache the
+ *	image, maintaining a reference count for each image used in the
+ *	widget.  It's likely that the treeview widget will use many
+ *	instances of the same image (for example the open/close icons).
  */
 
 typedef struct _Icon {
     Tk_Image tkImage;			/* The Tk image being cached. */
-    int refCount;			/* Reference count for this image. */
-    short int width, height;		/* Dimensions of the cached image. */
-    Blt_HashEntry *hashPtr;		/* Hash table pointer to the image. */
+    int refCount;			/* Reference count for this
+                                         * image. */
+    short int width, height;		/* Dimensions of the cached
+                                         * image. */
+    Blt_HashEntry *hashPtr;		/* Hash table pointer to the
+                                         * image. */
 } *Icon;
 
 #define TreeView_IconHeight(icon)	((icon)->height)
@@ -255,8 +261,8 @@ typedef enum SortTypes {
 /*
  * Column --
  *
- *	A column describes how to display a field of data in the tree.  It may
- *	display a title that you can bind to. It may display a rule for
+ *	A column describes how to display a field of data in the tree.  It
+ *	may display a title that you can bind to. It may display a rule for
  *	resizing the column.  Columns may be hidden, and have attributes
  *	(foreground color, background color, font, etc) that override those
  *	designated globally for the treeview widget.
@@ -269,23 +275,26 @@ struct _Column {
     Blt_HashEntry *hashPtr;
     Blt_TreeKey key;			/* Data cell identifier for current
 					 * tree. */
-    int index;				/* Position of column in list.  Used
-					 * to indicate the first and last
-					 * columns. */
+    int index;				/* Position of column in list.
+					 * Used to indicate the first and
+					 * last columns. */
     UID tagsUid;			/* List of binding tags for this
-					 * entry.  UID, not a string, because
-					 * in the typical case most columns
-					 * will have the same bindtags. */
+					 * entry.  UID, not a string,
+					 * because in the typical case most
+					 * columns will have the same
+					 * bindtags. */
 
     /* Title-related information */
-    const char *text;			/* Text displayed in column heading as
-					 * its title. By default, this is the
-					 * same as the data cell name. */
+    const char *text;			/* Text displayed in column heading
+					 * as its title. By default, this
+					 * is the same as the data cell
+					 * name. */
     short int textWidth, textHeight;	/* Dimensions of title text. */
     Blt_Font titleFont;			/* Font to draw title in. */
-    XColor *titleFgColor;		/* Foreground color of text displayed
-					 * in the heading */
-    Blt_Bg titleBg;			/* Background color of the heading. */
+    XColor *titleFgColor;		/* Foreground color of text
+					 * displayed in the heading */
+    Blt_Bg titleBg;			/* Background color of the
+                                         * heading. */
     GC titleGC;
     XColor *activeTitleFgColor;		/* Foreground color of the heading
 					 * when the column is activated.*/
@@ -293,9 +302,9 @@ struct _Column {
 
     int titleBW;
     int titleRelief;
-    Tk_Justify titleJustify;		/* Indicates how the text and/or icon
-					 * is justified within the column
-					 * title. */  
+    Tk_Justify titleJustify;		/* Indicates how the text and/or
+					 * icon is justified within the
+					 * column title. */  
     GC activeTitleGC;
     short int titleWidth, titleHeight;
 
@@ -303,8 +312,9 @@ struct _Column {
     Tcl_Obj *cmdObjPtr;			/* TCL script to be executed by the
 					 * column's "invoke" operation. */
     Tcl_Obj *sortCmdObjPtr;		/* TCL script used to compare two
-					 * columns. This overrides the global
-					 * command for this column. */
+					 * columns. This overrides the
+					 * global command for this
+					 * column. */
     short int arrowWidth, arrowHeight;	/* Dimension of the sort direction
 					 * arrow. */
     Icon sortUp, sortDown;
@@ -317,28 +327,30 @@ struct _Column {
     int reqMin, reqMax;			/* Requested bounds on the width of
 					 * column.  Does not include any
 					 * padding or the borderwidth of
-					 * column.  If non-zero, overrides the
-					 * computed width of the column. */
+					 * column.  If non-zero, overrides
+					 * the computed width of the
+					 * column. */
     int reqWidth;			/* User-requested width of
 					 * column. Does not include any
 					 * padding or the borderwidth of
-					 * column.  If non-zero, overrides the
-					 * computed column width. */
+					 * column.  If non-zero, overrides
+					 * the computed column width. */
     int maxWidth;			/* Width of the widest entry in the
 					 * column. */
-    int worldX;				/* Starting world x-coordinate of the
-					 * column. */
+    int worldX;				/* Starting world x-coordinate of
+					 * the column. */
     double weight;			/* Growth factor for column.  Zero
-					 * indicates that the column can not
-					 * be resized. */
+					 * indicates that the column can
+					 * not be resized. */
     int width;				/* Computed width of column. */
     ColumnStyle *stylePtr;		/* Default style for column. */
     int borderWidth;			/* Border width of the column. */
     int relief;				/* Relief of the column. */
-    Blt_Pad pad;			/* Horizontal padding on either side
-					 * of the column. */
-    Tk_Justify justify;			/* Indicates how the text or icon is
-					 * justified within the column. */
+    Blt_Pad pad;			/* Horizontal padding on either
+					 * side of the column. */
+    Tk_Justify justify;			/* Indicates how the text or icon
+					 * is justified within the
+					 * column. */
     Blt_ChainLink link;
     int ruleLineWidth;
     Blt_Dashes ruleDashes;
@@ -351,22 +363,25 @@ struct _Column {
 #define COLUMN_HIDDEN		(1<<1)
 
 struct _ColumnStyle {
-    int refCount;			/* Usage reference count.  A reference
-					 * count of zero indicates that the
-					 * style may be freed. */
-    unsigned int flags;			/* Bit field containing both the style
-					 * type and various flags. */
-    TreeView *viewPtr;			
+    int refCount;			/* Usage reference count.  A
+					 * reference count of zero
+					 * indicates that the style may be
+					 * freed. */
+    unsigned int flags;			/* Bit field containing both the
+					 * style type and various flags. */
     const char *name;			/* Instance name. */
-    ColumnStyleClass *classPtr;		/* Contains class-specific information
-					 * such as configuration
-					 * specifications and * configure,
-					 * draw, etc. routines. */
+    ColumnStyleClass *classPtr;		/* Contains class-specific
+					 * information such as
+					 * configuration specifications and
+					 * configure, draw, layout
+					 * etc. routines. */
     Blt_HashEntry *hashPtr;		/* If non-NULL, points to the hash
-					 * table entry for the style.  A style
-					 * that's been deleted, but still in
-					 * use (non-zero reference count)
-					 * will have no hash table entry. */
+					 * table entry for the style.  A
+					 * style that's been deleted, but
+					 * still in use (non-zero reference
+					 * count) will have no hash table
+					 * entry. */
+    TreeView *viewPtr;			
     Blt_ChainLink link;			/* If non-NULL, pointer of the
 					 * style in a list of all newly
 					 * created styles. */
@@ -377,26 +392,28 @@ struct _ColumnStyle {
     int gap;				/* # pixels gap between icon and
 					 * text. */
     Blt_Font font;
-    XColor *fgColor;			/* Normal foreground color of cell. */
-    XColor *highlightFgColor;		/* Foreground color of cell when
+    XColor *normalFg;			/* Normal foreground color of
+                                         * cell. */
+    XColor *highlightFg;		/* Foreground color of cell when
 					 * highlighted. */
-    XColor *activeFgColor;		/* Foreground color of cell when
+    XColor *activeFg;                   /* Foreground color of cell when
 					 * active. */
-    XColor *selFgColor;			/* Foreground color of a selected
+    XColor *selectFg;			/* Foreground color of a selected
 					 * cell. If non-NULL, overrides
 					 * default foreground color
 					 * specification. */
-    Blt_Bg bg;				/* Normal background color of cell. */
+    Blt_Bg normalBg;                    /* Normal background color of
+                                         * cell. */
     Blt_Bg highlightBg;			/* Background color of cell when
 					 * highlighted. */
     Blt_Bg activeBg;			/* Background color of cell when
 					 * active. */
-    Blt_Bg selBg;			/* Background color of a selected
-					 * cell.  If non-NULL, overrides the
-					 * default background * color
+    Blt_Bg selectBg;			/* Background color of a selected
+					 * cell.  If non-NULL, overrides
+					 * the default background * color
 					 * specification. */
     Tcl_Obj *validateCmdObjPtr;
-    GC gc;
+    GC normalGC;
     GC highlightGC;
     GC activeGC;
     Blt_TreeKey key;			/* Actual data resides in this tree
@@ -424,8 +441,8 @@ typedef int (ColumnStyleEditProc)(Entry *entryPtr, Column *colPtr,
 	ColumnStyle *stylePtr);
 typedef void (ColumnStyleFreeProc)(ColumnStyle *stylePtr);
 typedef void (ColumnStyleGeometryProc)(ColumnStyle *stylePtr, Value *valuePtr);
-typedef int (ColumnStyleIdentifyProc)(Entry *entryPtr, Value *valuePtr, 
-	ColumnStyle *stylePtr, int x, int y);
+typedef const char * (ColumnStyleIdentifyProc)(Entry *entryPtr, 
+        Value *valuePtr, ColumnStyle *stylePtr, int x, int y);
 typedef int (ColumnStylePostProc)(Tcl_Interp *interp, Entry *entryPtr,
 	Column *colPtr, ColumnStyle *stylePtr);
 typedef int (ColumnStyleUnpostProc)(Tcl_Interp *interp, Entry *entryPtr,
@@ -586,8 +603,8 @@ struct _Entry {
  *	an border. It has both "active" and "normal" colors.
  */
 typedef struct {
-    XColor *fgColor;			/* Foreground color. */
-    Blt_Bg bg;				/* Background color. */
+    XColor *normalFg;			/* Foreground color. */
+    Blt_Bg normalBg;				/* Background color. */
     XColor *activeFgColor;		/* Active foreground color. */
     Blt_Bg activeBg;			/* Active background color. */
     GC normalGC;
@@ -623,7 +640,8 @@ typedef struct {
     int borderWidth;			/* Border width of a selected entry.*/
     int	mode;				/* Selection style: "single" or
 					 * "multiple".  */
-    XColor *fgColor;			/* Text color of a selected entry. */
+    XColor *fg;                         /* Text color of a selected
+                                         * entry. */
     Blt_Bg bg;
     Entry *anchorPtr;			/* Fixed end of selection (i.e. entry
 					 * at which selection was started.) */
@@ -636,8 +654,9 @@ typedef struct {
     Blt_Chain list;			/* Chain of currently selected
 					 * entries.  Contains the same
 					 * information as the above hash
-					 * table, but maintains the order in
-					 * which entries are selected. */
+					 * table, but maintains the order
+					 * in which entries are
+					 * selected. */
 } Selection;
 
 #define SELECT_MODE_SINGLE	(1<<0)
@@ -722,8 +741,8 @@ struct _TreeView {
 					 * from outside edges to leave room
 					 * for borders. */
     Blt_Font font;
-    XColor *fgColor;
-    Blt_Bg bg;				/* 3D border surrounding the window
+    XColor *normalFg;
+    Blt_Bg normalBg;                    /* 3D border surrounding the window
 					 * (viewport). */
     Blt_Bg altBg;
     int borderWidth;			/* Width of 3D border. */
@@ -798,6 +817,8 @@ struct _TreeView {
     Entry *fromPtr;
 
     Value *activeValuePtr;		/* Last active value. */ 
+
+    Value *postPtr;                     /* Points to posted value. */
 
     int xScrollUnits, yScrollUnits;	/* # of pixels per scroll unit. */
 

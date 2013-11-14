@@ -957,8 +957,6 @@ IsMappedWithoutOverride(Display *display, Window id)
 	    (attrs.override_redirect != True));
 }
 
-
-
 /*
  *---------------------------------------------------------------------------
  *
@@ -993,9 +991,9 @@ FakeMapRequest(Window id)
  * ManageExistingWindows -- 
  *
  *	Manage all the existing children of the root window.  Reparent the
- *	window by placing it a container and call the designed procedure to 
- *	decorated the frame.  Ignore the kiosk window which acts as the root
- *	window.
+ *	window by placing it a container and call the designed procedure to
+ *	decorated the frame.  Ignore the kiosk window which acts as the
+ *	root window.
  */
 static void
 ManageExistingWindows(Kiosk *kioskPtr)
@@ -1003,8 +1001,8 @@ ManageExistingWindows(Kiosk *kioskPtr)
     Window root, parent, *children;
     unsigned int i, numChildren;
 
-    /* Handle all existing windows. This probably includes the kiosk
-     * window itself. */
+    /* Handle all existing windows. This probably includes the kiosk window
+     * itself. */
     XQueryTree(kioskPtr->display, kioskPtr->root, &root, &parent, &children, 
 	       &numChildren);
     for (i = 0; i < numChildren; i++) {
@@ -1132,13 +1130,13 @@ CgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
  * 	option database, in order to configure (or reconfigure) the widget.
  *
  * Results:
- *	A standard TCL result.  If TCL_ERROR is returned, then interp->result
- *	contains an error message.
+ *	A standard TCL result.  If TCL_ERROR is returned, then
+ *	interp->result contains an error message.
  *
  * Side Effects:
- *	Configuration information, such as text string, colors, font, etc. get
- *	set for contPtr; old resources get freed, if there were any.  The
- *	widget is redisplayed.
+ *	Configuration information, such as text string, colors, font,
+ *	etc. get set for contPtr; old resources get freed, if there were
+ *	any.  The widget is redisplayed.
  *
  *
  *	kiosk configure toplevel option value 

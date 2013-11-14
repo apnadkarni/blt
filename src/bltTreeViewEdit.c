@@ -1,4 +1,31 @@
 /* -*- mode: c; c-basic-offset: 4; indent-tabs-mode: nil -*- */
+/*
+ * bltTvEdit.c --
+ *
+ * This module implements an hierarchy widget for the BLT toolkit.
+ *
+ *	Copyright 1998-2004 George A Howlett.
+ *
+ *	Permission is hereby granted, free of charge, to any person
+ *	obtaining a copy of this software and associated documentation
+ *	files (the "Software"), to deal in the Software without
+ *	restriction, including without limitation the rights to use, copy,
+ *	modify, merge, publish, distribute, sublicense, and/or sell copies
+ *	of the Software, and to permit persons to whom the Software is
+ *	furnished to do so, subject to the following conditions:
+ *
+ *	The above copyright notice and this permission notice shall be
+ *	included in all copies or substantial portions of the Software.
+ *
+ *	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ *	EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ *	MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ *	NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+ *	BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ *	ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ *	CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ *	SOFTWARE.
+ */
 
 /*
   Remember row,column where string was acquired.
@@ -12,36 +39,6 @@
   SetFg
   SetFont
   SetButton  
- */
-
-/*
- * bltTvEdit.c --
- *
- * This module implements an hierarchy widget for the BLT toolkit.
- *
- *	Copyright 1998-2004 George A Howlett.
- *
- *	Permission is hereby granted, free of charge, to any person
- *	obtaining a copy of this software and associated documentation
- *	files (the "Software"), to deal in the Software without
- *	restriction, including without limitation the rights to use,
- *	copy, modify, merge, publish, distribute, sublicense, and/or
- *	sell copies of the Software, and to permit persons to whom the
- *	Software is furnished to do so, subject to the following
- *	conditions:
- *
- *	The above copyright notice and this permission notice shall be
- *	included in all copies or substantial portions of the
- *	Software.
- *
- *	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY
- *	KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
- *	WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
- *	PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS
- *	OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR
- *	OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
- *	OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
- *	SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
 #define BUILD_BLT_TK_PROCS 1
@@ -76,18 +73,17 @@ static Tcl_ObjCmdProc TextboxCmd;
 /*
  * Textbox --
  *
- *	This structure is shared by entries when their labels are
- *	edited via the keyboard.  It maintains the location of the
- *	insertion cursor and the text selection for the editted entry.
- *	The structure is shared since we need only one.  The "focus"
- *	entry should be the only entry receiving KeyPress/KeyRelease
- *	events at any time.  Information from the previously editted
- *	entry is overwritten.
+ *	This structure is shared by entries when their labels are edited
+ *	via the keyboard.  It maintains the location of the insertion
+ *	cursor and the text selection for the editted entry.  The structure
+ *	is shared since we need only one.  The "focus" entry should be the
+ *	only entry receiving KeyPress/KeyRelease events at any time.
+ *	Information from the previously editted entry is overwritten.
  *
- *	Note that all the indices internally are in terms of bytes,
- *	not characters.  This is because UTF-8 strings may encode a
- *	single character into a multi-byte sequence.  To find the
- *	respective character position
+ *	Note that all the indices internally are in terms of bytes, not
+ *	characters.  This is because UTF-8 strings may encode a single
+ *	character into a multi-byte sequence.  To find the respective
+ *	character position
  *
  *		n = Tcl_NumUtfChars(string, index);
  *
@@ -96,107 +92,127 @@ static Tcl_ObjCmdProc TextboxCmd;
 typedef struct {
 
     /*
-     * This is a SNAFU in the Tk API.  It assumes that only an official
-     * Tk "toplevel" widget will ever become a toplevel window (i.e. a
-     * window whose parent is the root window).  Because under Win32,
-     * Tk tries to use the widget record associated with the TopLevel
-     * as a Tk frame widget, to read its menu name.  What this means
-     * is that any widget that's going to be a toplevel, must also look
-     * like a frame. Therefore we've copied the frame widget structure
-     * fields into the token.
+     * This is a SNAFU in the Tk API.  It assumes that only an official Tk
+     * "toplevel" widget will ever become a toplevel window (i.e. a window
+     * whose parent is the root window).  Because under Win32, Tk tries to
+     * use the widget record associated with the TopLevel as a Tk frame
+     * widget, to read its menu name.  What this means is that any widget
+     * that's going to be a toplevel, must also look like a
+     * frame. Therefore we've copied the frame widget structure fields into
+     * the token.
      */
 
-    Tk_Window tkwin;		/* Window that embodies the frame.  NULL
-				 * means that the window has been destroyed
-				 * but the data structures haven't yet been
-				 * cleaned up. */
-    Display *display;		/* Display containing widget.  Used, among
-				 * other things, so that resources can be
-				 * freed even after tkwin has gone away. */
-    Tcl_Interp *interp;		/* Interpreter associated with widget.  Used
-				 * to delete widget command. */
-    Tcl_Command widgetCmd;	/* Token for frame's widget command. */
-    char *className;		/* Class name for widget (from configuration
-				 * option).  Malloc-ed. */
-    int mask;			/* Either FRAME or TOPLEVEL;  used to select
-				 * which configuration options are valid for
-				 * widget. */
-    char *screenName;		/* Screen on which widget is created.  Non-null
-				 * only for top-levels.  Malloc-ed, may be
-				 * NULL. */
-    char *visualName;		/* Textual description of visual for window,
-				 * from -visual option.  Malloc-ed, may be
-				 * NULL. */
-    char *colormapName;		/* Textual description of colormap for window,
-				 * from -colormap option.  Malloc-ed, may be
-				 * NULL. */
-    char *menuName;		/* Textual description of menu to use for
-				 * menubar. Malloc-ed, may be NULL. */
-    Colormap colormap;		/* If not None, identifies a colormap
-				 * allocated for this window, which must be
-				 * freed when the window is deleted. */
-    Tk_3DBorder border;		/* Structure used to draw 3-D border and
-				 * background.  NULL means no background
-				 * or border. */
-    int borderWidth;		/* Width of 3-D border (if any). */
-    int relief;			/* 3-d effect: TK_RELIEF_RAISED etc. */
-    int highlightWidth;		/* Width in pixels of highlight to draw
-				 * around widget when it has the focus.
-				 * 0 means don't draw a highlight. */
-    XColor *highlightBgColorPtr;
-				/* Color for drawing traversal highlight
-				 * area when highlight is off. */
-    XColor *highlightColorPtr;	/* Color for drawing traversal highlight. */
-    int width;			/* Width to request for window.  <= 0 means
-				 * don't request any size. */
-    int height;			/* Height to request for window.  <= 0 means
-				 * don't request any size. */
-    Tk_Cursor cursor;		/* Current cursor for window, or None. */
-    char *takeFocus;		/* Value of -takefocus option;  not used in
-				 * the C code, but used by keyboard traversal
-				 * scripts.  Malloc'ed, but may be NULL. */
-    int isContainer;		/* 1 means this window is a container, 0 means
-				 * that it isn't. */
-    char *useThis;		/* If the window is embedded, this points to
-				 * the name of the window in which it is
-				 * embedded (malloc'ed).  For non-embedded
-				 * windows this is NULL. */
-    int flags;			/* Various flags;  see below for
-				 * definitions. */
+    Tk_Window tkwin;                    /* Window that embodies the frame.
+                                         * NULL means that the window has
+                                         * been destroyed but the data
+                                         * structures haven't yet been
+                                         * cleaned up. */
+    Display *display;                   /* Display containing widget.
+                                         * Used, among other things, so
+                                         * that resources can be freed even
+                                         * after tkwin has gone away. */
+    Tcl_Interp *interp;                 /* Interpreter associated with
+                                         * widget.  Used to delete widget
+                                         * command. */
+    Tcl_Command widgetCmd;              /* Token for frame's widget
+                                         * command. */
+    char *className;                    /* Class name for widget (from
+                                         * configuration option).
+                                         * Malloc-ed. */
+    int mask;                           /* Either FRAME or TOPLEVEL; used
+                                         * to select which configuration
+                                         * options are valid for widget. */
+    char *screenName;                   /* Screen on which widget is
+                                         * created.  Non-null only for
+                                         * top-levels.  Malloc-ed, may be
+                                         * NULL. */
+    char *visualName;                   /* Textual description of visual
+                                         * for window, from -visual option.
+                                         * Malloc-ed, may be NULL. */
+    char *colormapName;                 /* Textual description of colormap
+                                         * for window, from -colormap
+                                         * option.  Malloc-ed, may be
+                                         * NULL. */
+    char *menuName;                     /* Textual description of menu to
+                                         * use for menubar. Malloc-ed, may
+                                         * be NULL. */
+    Colormap colormap;                  /* If not None, identifies a
+                                         * colormap allocated for this
+                                         * window, which must be freed when
+                                         * the window is deleted. */
+    Tk_3DBorder border;                 /* Structure used to draw 3-D
+                                         * border and background.  NULL
+                                         * means no background or
+                                         * border. */
+    int borderWidth;                    /* Width of 3-D border (if any). */
+    int relief;                         /* 3-d effect: TK_RELIEF_RAISED etc. */
+    int highlightWidth;                 /* Width in pixels of highlight to
+                                         * draw around widget when it has
+                                         * the focus.  0 means don't draw a
+                                         * highlight. */
+    int width;                          /* Width to request for window.  <=
+                                         * 0 means don't request any
+                                         * size. */
+    int height;                         /* Height to request for window.
+                                         * <= 0 means don't request any
+                                         * size. */
+    Tk_Cursor cursor;                   /* Current cursor for window, or
+                                         * None. */
+    char *takeFocus;                    /* Value of -takefocus option; not
+                                         * used in the C code, but used by
+                                         * keyboard traversal scripts.
+                                         * Malloc'ed, but may be NULL. */
+    int isContainer;                    /* 1 means this window is a
+                                         * container, 0 means that it
+                                         * isn't. */
+    char *useThis;                      /* If the window is embedded, this
+                                         * points to the name of the window
+                                         * in which it is embedded
+                                         * (malloc'ed).  For non-embedded
+                                         * windows this is NULL. */
+    int flags;                          /* Various flags; see below for
+                                         * definitions. */
 
     /* Textbox-specific fields */
     TreeView *viewPtr;
-    int x, y;			/* Position of window. */
+    int x, y;                           /* Position of window. */
 
-    int active;			/* Indicates that the frame is active. */
+    int active;                         /* Indicates that the frame is
+                                         * active. */
     int exportSelection;
 
-    int insertPos;		/* Position of the cursor within the
-				 * array of bytes of the entry's label. */
+    int insertPos;                      /* Position of the cursor within
+                                         * the array of bytes of the
+                                         * entry's label. */
 
-    int cursorX, cursorY;	/* Position of the insertion cursor in the
-				 * textbox window. */
-    short int cursorWidth;	/* Size of the insertion cursor symbol. */
+    int cursorX, cursorY;               /* Position of the insertion cursor
+                                         * in the textbox window. */
+    short int cursorWidth;              /* Size of the insertion cursor
+                                         *    symbol. */
     short int cursorHeight;
 
-    int selAnchor;		/* Fixed end of selection. Used to extend
-				 * the selection while maintaining the
-				 * other end of the selection. */
-    int selFirst;		/* Position of the first character in the
-				 * selection. */
-    int selLast;		/* Position of the last character in the
-				 * selection. */
+    int selAnchor;                      /* Fixed end of selection. Used to
+                                         * extend the selection while
+                                         * maintaining the other end of the
+                                         * selection. */
+    int selFirst;                       /* Position of the first character
+                                         * in the selection. */
+    int selLast;                        /* Position of the last character
+                                         * in the selection. */
 
-    int cursorOn;		/* Indicates if the cursor is displayed. */
-    int onTime, offTime;	/* Time in milliseconds to wait before
-				 * changing the cursor from off-to-on
-				 * and on-to-off. Setting offTime to 0 makes
-				 * the cursor steady. */
-    Tcl_TimerToken timerToken;	/* Handle for a timer event called periodically
-				 * to blink the cursor. */
+    int cursorOn;                       /* Indicates if the cursor is
+                                         * displayed. */
+    int onTime, offTime;                /* Time in milliseconds to wait
+                                         * before changing the cursor from
+                                         * off-to-on and on-to-off. Setting
+                                         * offTime to 0 makes the cursor
+                                         * steady. */
+    Tcl_TimerToken timerToken;          /* Handle for a timer event called
+                                         * periodically to blink the
+                                         * cursor. */
     /* Data-specific fields. */
-    Entry *entryPtr;	/* Selected entry */
-    Column *columnPtr;	/* Column of entry to be edited */
+    Entry *entryPtr;                    /* Selected entry */
+    Column *columnPtr;                  /* Column of entry to be edited */
     ColumnStyle *stylePtr;
     Icon icon;
     int gap;
@@ -208,7 +224,8 @@ typedef struct {
     Tk_3DBorder selBorder;
     int selRelief;
     int selBW;
-    XColor *selFgColor;		/* Text color of a selected entry. */
+    XColor *selFgColor;                 /* Text color of a selected
+                                         * entry. */
     int buttonBW;
     Tk_3DBorder buttonBorder;
     int buttonRelief;
@@ -361,15 +378,15 @@ GetEntryIcon(TreeView *viewPtr, Entry *entryPtr)
  *
  * BlinkCursorProc --
  *
- *	This procedure is called as a timer handler to blink the
- *	insertion cursor off and on.
+ *	This procedure is called as a timer handler to blink the insertion
+ *	cursor off and on.
  *
  * Results:
  *	None.
  *
  * Side effects:
- *	The cursor gets turned on or off, redisplay gets invoked,
- *	and this procedure reschedules itself.
+ *	The cursor gets turned on or off, redisplay gets invoked, and this
+ *	procedure reschedules itself.
  *
  *---------------------------------------------------------------------------
  */
@@ -396,15 +413,15 @@ BlinkCursorProc(ClientData clientData)
  *
  * TextboxEventProc --
  *
- * 	This procedure is invoked by the Tk dispatcher for various
- * 	events on treeview widgets.
+ * 	This procedure is invoked by the Tk dispatcher for various events
+ * 	on treeview widgets.
  *
  * Results:
  *	None.
  *
  * Side effects:
- *	When the window gets deleted, internal structures get
- *	cleaned up.  When it gets exposed, it is redisplayed.
+ *	When the window gets deleted, internal structures get cleaned up.
+ *	When it gets exposed, it is redisplayed.
  *
  *---------------------------------------------------------------------------
  */
@@ -460,15 +477,15 @@ TextboxEventProc(ClientData clientData, XEvent *eventPtr)
  *
  * TextboxLostSelectionProc --
  *
- *	This procedure is called back by Tk when the selection is
- *	grabbed away from a Text widget.
+ *	This procedure is called back by Tk when the selection is grabbed
+ *	away from a Text widget.
  *
  * Results:
  *	None.
  *
  * Side effects:
- *	The existing selection is unhighlighted, and the window is
- *	marked as not containing a selection.
+ *	The existing selection is unhighlighted, and the window is marked
+ *	as not containing a selection.
  *
  *---------------------------------------------------------------------------
  */
@@ -671,14 +688,14 @@ InsertText(Textbox *tbPtr, char *insertText, int insertPos, int numBytes)
     } else if (insertPos == 0) {/* Prepend */
 	Blt_FormatString(newText, newSize, "%s%s", insertText, oldText);
     } else {			/* Insert into existing. */
-	Blt_FormatString(newText, newSize, "%.*s%s%s", insertPos, oldText, insertText,
-		oldText + insertPos);
+	Blt_FormatString(newText, newSize, "%.*s%s%s", insertPos, oldText, 
+                         insertText, oldText + insertPos);
     }
 
     /* 
-     * All indices from the start of the insertion to the end of the
-     * string need to be updated.  Simply move the indices down by the
-     * number of characters added.  
+     * All indices from the start of the insertion to the end of the string
+     * need to be updated.  Simply move the indices down by the number of
+     * characters added.
      */
     if (tbPtr->selFirst >= insertPos) {
 	tbPtr->selFirst += numBytes;
@@ -709,8 +726,8 @@ DeleteText(Textbox *tbPtr, int firstPos, int lastPos)
     if (firstPos > lastPos) {
 	return TCL_OK;
     }
-    lastPos++;			/* Now is the position after the last
-				 * character. */
+    lastPos++;                          /* Now is the position after the
+                                         * last character. */
 
     numBytes = lastPos - firstPos;
     oldSize = strlen(oldText) + 1;
@@ -755,7 +772,7 @@ DeleteText(Textbox *tbPtr, int firstPos, int lastPos)
     }
     if (tbPtr->selLast <= tbPtr->selFirst) {
 	tbPtr->selFirst = tbPtr->selLast = -1; /* Cut away the entire
-						    * selection. */ 
+                                                * selection. */ 
     }
     if (tbPtr->selAnchor >= firstPos) {
 	if (tbPtr->selAnchor >= lastPos) {
@@ -832,7 +849,7 @@ AcquireText(TreeView *viewPtr, Textbox *tbPtr, Entry *entryPtr,
     
     tbPtr->gap = stylePtr->gap;
     tbPtr->string = Blt_AssertStrdup(string);
-    tbPtr->gc = stylePtr->gc;
+    tbPtr->gc = stylePtr->normalGC;
     tbPtr->font = stylePtr->font;
     tbPtr->selFirst = tbPtr->selLast = -1;
     UpdateLayout(tbPtr);
@@ -847,15 +864,15 @@ AcquireText(TreeView *viewPtr, Textbox *tbPtr, Entry *entryPtr,
  *
  * GetIndexFromObj --
  *
- *	Parse an index into an entry and return either its value
- *	or an error.
+ *	Parse an index into an entry and return either its value or an
+ *	error.
  *
  * Results:
- *	A standard TCL result.  If all went well, then *indexPtr is
- *	filled in with the character index (into entryPtr) corresponding to
- *	string.  The index value is guaranteed to lie between 0 and
- *	the number of characters in the string, inclusive.  If an
- *	error occurs then an error message is left in the interp's result.
+ *	A standard TCL result.  If all went well, then *indexPtr is filled
+ *	in with the character index (into entryPtr) corresponding to
+ *	string.  The index value is guaranteed to lie between 0 and the
+ *	number of characters in the string, inclusive.  If an error occurs
+ *	then an error message is left in the interp's result.
  *
  * Side effects:
  *	None.
@@ -943,8 +960,8 @@ GetIndexFromObj(Tcl_Interp *interp, Textbox *tbPtr, Tcl_Obj *objPtr,
  *
  * SelectText --
  *
- *	Modify the selection by moving its un-anchored end.  This
- *	could make the selection either larger or smaller.
+ *	Modify the selection by moving its un-anchored end.  This could
+ *	make the selection either larger or smaller.
  *
  * Results:
  *	None.
@@ -990,15 +1007,15 @@ SelectText(Textbox *tbPtr, int textPos)
  *
  * TextboxSelectionProc --
  *
- *	This procedure is called back by Tk when the selection is
- *	requested by someone.  It returns part or all of the selection
- *	in a buffer provided by the caller.
+ *	This procedure is called back by Tk when the selection is requested
+ *	by someone.  It returns part or all of the selection in a buffer
+ *	provided by the caller.
  *
  * Results:
- *	The return value is the number of non-NULL bytes stored at
- *	buffer.  Buffer is filled (or partially filled) with a
- *	NUL-terminated string containing part or all of the
- *	selection, as given by offset and maxBytes.
+ *	The return value is the number of non-NULL bytes stored at buffer.
+ *	Buffer is filled (or partially filled) with a NUL-terminated string
+ *	containing part or all of the selection, as given by offset and
+ *	maxBytes.
  *
  * Side effects:
  *	None.
@@ -1007,14 +1024,14 @@ SelectText(Textbox *tbPtr, int textPos)
  */
 static int
 TextboxSelectionProc(
-    ClientData clientData,	/* Information about the widget. */
-    int offset,			/* Offset within selection of first
-				 * character to be returned. */
-    char *buffer,		/* Location in which to place
-				 * selection. */
-    int maxBytes)		/* Maximum number of bytes to place
-				 * at buffer, not including terminating
-				 * NULL character. */
+    ClientData clientData,              /* Information about the widget. */
+    int offset,                         /* Offset within selection of first
+                                         * character to be returned. */
+    char *buffer,                       /* Location in which to place
+                                         * selection. */
+    int maxBytes)                       /* Maximum number of bytes to place
+                                         * at buffer, not including
+                                         * terminating NULL character. */
 {
     Textbox *tbPtr = clientData;
     int size;
@@ -1239,13 +1256,14 @@ DisplayTextbox(ClientData clientData)
 	selLength = (selEnd - selStart);
 	x1 = x;
 
-	if (selStart > leftPos) { /* Normal text preceding the selection */
+	if (selStart > leftPos) {       /* Normal text preceding the
+                                         * selection */
 	    numChars = (selStart - leftPos);
 	    Blt_Font_Measure(font, tbPtr->string + leftPos, numChars, 10000, 
 		DEF_TEXT_FLAGS, &x1);
 	    x1 += x;
 	}
-	if (selLength > 0) {	/* The selection itself */
+	if (selLength > 0) {            /* The selection itself */
 	    int width;
 
 	    Blt_Font_Measure(font, fragPtr->text + selStart, selLength, 10000, 
@@ -1328,9 +1346,9 @@ CgetOp(Textbox *tbPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * ConfigureOp --
  *
- * 	This procedure is called to process a list of configuration
- *	options database, in order to reconfigure the one of more
- *	entries in the widget.
+ * 	This procedure is called to process a list of configuration options
+ *	database, in order to reconfigure the one of more entries in the
+ *	widget.
  *
  *	  .c configure option value
  *
@@ -1340,8 +1358,8 @@ CgetOp(Textbox *tbPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * Side effects:
  *	Configuration information, such as text string, colors, font,
- *	etc. get set for viewPtr; old resources get freed, if there
- *	were any.  The hypertext is redisplayed.
+ *	etc. get set for viewPtr; old resources get freed, if there were
+ *	any.  The hypertext is redisplayed.
  *
  *---------------------------------------------------------------------------
  */
@@ -1451,8 +1469,8 @@ IcursorOp(Textbox *tbPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * IndexOp --
  *
- *	Returns the numeric index of the given string. Indices can be
- *	one of the following:
+ *	Returns the numeric index of the given string. Indices can be one
+ *	of the following:
  *
  *	"anchor"	Selection anchor.
  *	"end"		End of the label.
@@ -1463,9 +1481,9 @@ IcursorOp(Textbox *tbPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *	number		Returns the same number.
  *
  * Results:
- *	A standard TCL result.  If the argument does not represent a
- *	valid label index, then TCL_ERROR is returned and the interpreter
- *	result will contain an error message.
+ *	A standard TCL result.  If the argument does not represent a valid
+ *	label index, then TCL_ERROR is returned and the interpreter result
+ *	will contain an error message.
  *
  *---------------------------------------------------------------------------
  */
@@ -1498,8 +1516,8 @@ IndexOp(Textbox *tbPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *	None.
  *
  * Side effects:
- *	New information gets added to tbPtr;  it will be redisplayed
- *	soon, but not necessarily immediately.
+ *	New information gets added to tbPtr; it will be redisplayed soon,
+ *	but not necessarily immediately.
  *
  *---------------------------------------------------------------------------
  */
@@ -1518,7 +1536,8 @@ InsertOp(Textbox *tbPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	return TCL_ERROR;
     }
     string = Tcl_GetStringFromObj(objv[3], &extra);
-    if (extra == 0) {	/* Nothing to insert. Move the cursor anyways. */
+    if (extra == 0) {                   /* Nothing to insert. Move the
+                                         * cursor anyways. */
 	tbPtr->insertPos = insertPos;
     } else {
 	InsertText(tbPtr, string, insertPos, extra);
@@ -1626,11 +1645,10 @@ static Blt_OpSpec selectionOps[] =
 static int numSelectionOps = sizeof(selectionOps) / sizeof(Blt_OpSpec);
 
 /*
- *	This procedure handles the individual options for text
- *	selections.  The selected text is designated by start and end
- *	indices into the text pool.  The selected segment has both a
- *	anchored and unanchored ends.  The following selection
- *	operations are implemented:
+ *	This procedure handles the individual options for text selections.
+ *	The selected text is designated by start and end indices into the
+ *	text pool.  The selected segment has both a anchored and unanchored
+ *	ends.  The following selection operations are implemented:
  *
  *	  "adjust"	- resets either the first or last index
  *			  of the selection.

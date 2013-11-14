@@ -1,5 +1,4 @@
 /* -*- mode: c; c-basic-offset: 4; indent-tabs-mode: nil -*- */
-
 /*
  * bltTreeView.c --
  *
@@ -350,7 +349,7 @@ static Blt_ConfigSpec buttonSpecs[] =
 	DEF_BUTTON_ACTIVE_FOREGROUND, 
 	Blt_Offset(TreeView, button.activeFgColor), 0},
     {BLT_CONFIG_BACKGROUND, "-background", "background", "Background",
-	DEF_BUTTON_NORMAL_BACKGROUND, Blt_Offset(TreeView, button.bg), 0},
+	DEF_BUTTON_NORMAL_BACKGROUND, Blt_Offset(TreeView, button.normalBg), 0},
     {BLT_CONFIG_SYNONYM, "-bd", "borderWidth", (char *)NULL, (char *)NULL, 0,0},
     {BLT_CONFIG_SYNONYM, "-bg", "background", (char *)NULL, (char *)NULL, 0, 0},
     {BLT_CONFIG_PIXELS_NNEG, "-borderwidth", "borderWidth", "BorderWidth",
@@ -361,7 +360,7 @@ static Blt_ConfigSpec buttonSpecs[] =
 	BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_SYNONYM, "-fg", "foreground", (char *)NULL, (char *)NULL, 0, 0},
     {BLT_CONFIG_COLOR, "-foreground", "foreground", "Foreground",
-	DEF_BUTTON_NORMAL_FOREGROUND, Blt_Offset(TreeView, button.fgColor), 0},
+	DEF_BUTTON_NORMAL_FOREGROUND, Blt_Offset(TreeView, button.normalFg), 0},
     {BLT_CONFIG_CUSTOM, "-images", "images", "Icons", (char *)NULL, 
 	Blt_Offset(TreeView, button.icons), BLT_CONFIG_NULL_OK, &iconsOption},
     {BLT_CONFIG_RELIEF, "-openrelief", "openRelief", "Relief",
@@ -419,7 +418,7 @@ static Blt_ConfigSpec viewSpecs[] =
 	DEF_MAKE_PATH, Blt_Offset(TreeView, flags), 
 	BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)FILL_ANCESTORS},
     {BLT_CONFIG_BACKGROUND, "-background", "background", "Background",
-	DEF_BACKGROUND, Blt_Offset(TreeView, bg), 0},
+	DEF_BACKGROUND, Blt_Offset(TreeView, normalBg), 0},
     {BLT_CONFIG_SYNONYM, "-bd", "borderWidth", (char *)NULL, (char *)NULL, 0,0},
     {BLT_CONFIG_SYNONYM, "-bg", "background", (char *)NULL, (char *)NULL, 0, 0},
     {BLT_CONFIG_PIXELS_NNEG, "-borderwidth", "borderWidth", "BorderWidth",
@@ -458,9 +457,9 @@ static Blt_ConfigSpec viewSpecs[] =
     {BLT_CONFIG_FONT, "-font", "font", "Font", DEF_FONT, 
 	Blt_Offset(TreeView, font), 0},
     {BLT_CONFIG_COLOR, "-foreground", "foreground", "Foreground", 
-	DEF_TEXT_COLOR, Blt_Offset(TreeView, fgColor), BLT_CONFIG_COLOR_ONLY},
+	DEF_TEXT_COLOR, Blt_Offset(TreeView, normalFg), BLT_CONFIG_COLOR_ONLY},
     {BLT_CONFIG_COLOR, "-foreground", "foreground", "Foreground", 
-	DEF_TEXT_MONO, Blt_Offset(TreeView, fgColor), BLT_CONFIG_MONO_ONLY},
+	DEF_TEXT_MONO, Blt_Offset(TreeView, normalFg), BLT_CONFIG_MONO_ONLY},
     {BLT_CONFIG_PIXELS_NNEG, "-height", "height", "Height", DEF_HEIGHT, 
 	Blt_Offset(TreeView, reqHeight), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_BITMASK, "-hideleaves", "hideLeaves", "HideLeaves",
@@ -513,7 +512,7 @@ static Blt_ConfigSpec viewSpecs[] =
 	(char *)NULL, Blt_Offset(TreeView, selection.cmdObjPtr), 
 	BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_COLOR, "-selectforeground", "selectForeground", "Background",
-	DEF_SELECT_FOREGROUND, Blt_Offset(TreeView, selection.fgColor), 0},
+	DEF_SELECT_FOREGROUND, Blt_Offset(TreeView, selection.fg), 0},
     {BLT_CONFIG_CUSTOM, "-selectmode", "selectMode", "SelectMode",
 	DEF_SELECT_MODE, Blt_Offset(TreeView, selection.mode), 
 	BLT_CONFIG_DONT_SET_DEFAULT, &selectmodeOption},
@@ -2209,10 +2208,10 @@ GetStyleBackground(Column *colPtr)
     stylePtr = colPtr->stylePtr;
     if (stylePtr != NULL) {
 	bg = (stylePtr->flags & STYLE_HIGHLIGHT) ? 
-	    stylePtr->highlightBg : stylePtr->bg;
+	    stylePtr->highlightBg : stylePtr->normalBg;
     }
     if (bg == NULL) {
-	bg = colPtr->viewPtr->bg;
+	bg = colPtr->viewPtr->normalBg;
     }
     return bg;
 }
@@ -2235,10 +2234,10 @@ GetStyleForeground(Column *colPtr)
     ColumnStyle *stylePtr;
 
     stylePtr = colPtr->stylePtr;
-    if ((stylePtr != NULL) && (stylePtr->fgColor != NULL)) {
-	return stylePtr->fgColor;
+    if ((stylePtr != NULL) && (stylePtr->normalFg != NULL)) {
+	return stylePtr->normalFg;
     }
-    return colPtr->viewPtr->fgColor;
+    return colPtr->viewPtr->normalFg;
 }
 
 static void
@@ -4239,7 +4238,7 @@ ConfigureEntry(TreeView *viewPtr, Entry *entryPtr, int objc,
 	if (font == NULL) {
 	    font = GetStyleFont(&viewPtr->treeColumn);
 	}
-	colorPtr = CHOOSE(viewPtr->fgColor, entryPtr->color);
+	colorPtr = CHOOSE(viewPtr->normalFg, entryPtr->color);
 	gcMask = GCForeground | GCFont;
 	gcValues.foreground = colorPtr->pixel;
 	gcValues.font = Blt_Font_Id(font);
@@ -4335,7 +4334,7 @@ ConfigureButtons(TreeView *viewPtr)
     unsigned long gcMask;
 
     gcMask = GCForeground;
-    gcValues.foreground = buttonPtr->fgColor->pixel;
+    gcValues.foreground = buttonPtr->normalFg->pixel;
     newGC = Tk_GetGC(viewPtr->tkwin, gcMask, &gcValues);
     if (buttonPtr->normalGC != NULL) {
 	Tk_FreeGC(viewPtr->display, buttonPtr->normalGC);
@@ -6128,7 +6127,7 @@ ConfigureTreeView(Tcl_Interp *interp, TreeView *viewPtr)
      * GC for selection. Dashed outline.
      */
     gcMask = GCForeground | GCLineStyle;
-    gcValues.foreground = viewPtr->selection.fgColor->pixel;
+    gcValues.foreground = viewPtr->selection.fg->pixel;
     gcValues.line_style = (LineIsDashed(viewPtr->focusDashes))
 	? LineOnOffDash : LineSolid;
     newGC = Blt_GetPrivateGC(viewPtr->tkwin, gcMask, &gcValues);
@@ -7217,7 +7216,7 @@ DrawButton(
     int width, height;
 
     bg = (entryPtr == viewPtr->activeBtnPtr) 
-	? buttonPtr->activeBg : buttonPtr->bg;
+	? buttonPtr->activeBg : buttonPtr->normalBg;
     relief = (entryPtr->flags & ENTRY_CLOSED) 
 	? buttonPtr->closeRelief : buttonPtr->openRelief;
     if (relief == TK_RELIEF_SOLID) {
@@ -7388,7 +7387,7 @@ DrawLabel(
 	if (isSelected) {
 	    XColor *color;
 
-	    color = viewPtr->selection.fgColor;
+	    color = viewPtr->selection.fg;
 	    XSetForeground(viewPtr->display, viewPtr->focusGC, color->pixel);
 	}
 	if (width > maxLength) {
@@ -7422,7 +7421,7 @@ DrawLabel(
 	    font = GetStyleFont(&viewPtr->treeColumn);
 	}
 	if (isSelected) {
-	    color = viewPtr->selection.fgColor;
+	    color = viewPtr->selection.fg;
 	} else if (entryPtr->color != NULL) {
 	    color = entryPtr->color;
 	} else {
@@ -7520,10 +7519,10 @@ DisplayValue(TreeView *viewPtr, Entry *entryPtr, Value *valuePtr)
 	(!EntryIsSelected(viewPtr, entryPtr))) {
 	bg = GetStyleBackground(colPtr);
     } else {
-	bg = CHOOSE(viewPtr->selection.bg, stylePtr->selBg);
+	bg = CHOOSE(viewPtr->selection.bg, stylePtr->selectBg);
     }
     /*FIXME*/
-    /* bg = CHOOSE(viewPtr->selBg, stylePtr->selBg);  */
+    /* bg = CHOOSE(viewPtr->selectBg, stylePtr->selectBg);  */
     overlap = FALSE;
     /* Clip the drawable if necessary */
     sx = sy = 0;
@@ -7758,10 +7757,10 @@ DrawColumnTitle(TreeView *viewPtr, Column *colPtr, Drawable drawable,
 	fg = colPtr->titleFgColor;
     }
     if (bg == NULL) {
-	bg = viewPtr->bg;
+	bg = viewPtr->normalBg;
     }
     if (fg == NULL) {
-	fg = viewPtr->fgColor;
+	fg = viewPtr->normalFg;
     }
     /* Clear the title area by drawing the background. */
     Blt_Bg_FillRectangle(viewPtr->tkwin, drawable, bg, dx, y, dw, 
@@ -8028,7 +8027,7 @@ DrawOuterBorders(TreeView *viewPtr, Drawable drawable)
 {
     /* Draw 3D border just inside of the focus highlight ring. */
     if (viewPtr->borderWidth > 0) {
-	Blt_Bg_DrawRectangle(viewPtr->tkwin, drawable, viewPtr->bg,
+	Blt_Bg_DrawRectangle(viewPtr->tkwin, drawable, viewPtr->normalBg,
 	    viewPtr->highlightWidth, viewPtr->highlightWidth,
 	    Tk_Width(viewPtr->tkwin) - 2 * viewPtr->highlightWidth,
 	    Tk_Height(viewPtr->tkwin) - 2 * viewPtr->highlightWidth,
@@ -8210,7 +8209,7 @@ DisplayTreeView(ClientData clientData)	/* Information about widget. */
 	count++;
     }
     if (count == 0) {
-	Blt_Bg_FillRectangle(viewPtr->tkwin, drawable, viewPtr->bg, 0, 0, 
+	Blt_Bg_FillRectangle(viewPtr->tkwin, drawable, viewPtr->normalBg, 0, 0, 
 		Tk_Width(viewPtr->tkwin), Tk_Height(viewPtr->tkwin), 
 		viewPtr->borderWidth, viewPtr->relief);
     }
