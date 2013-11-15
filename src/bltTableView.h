@@ -205,8 +205,10 @@ typedef struct _Icon {
     Tk_Image tkImage;			/* The Tk image being cached. */
     Blt_HashEntry *hashPtr;	        /* Pointer to this entry in the
 					 * image cache hash table. */
-    int refCount;			/* Reference count for this image. */
-    short int width, height;		/* Dimensions of the cached image. */
+    int refCount;			/* Reference count for this
+                                         * image. */
+    short int width, height;		/* Dimensions of the cached
+                                         * image. */
 } *Icon;
 
 #define IconHeight(icon)	((icon)->height)

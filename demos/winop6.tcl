@@ -34,7 +34,7 @@ set bg [image create picture -width $width -height $height]
 set brush [blt::paintbrush create gradient \
 		-high yellow  \
 		-low black  \
-		-jitter 10 \
+		-jitter 2 \
 		-scale log]
 $bg draw rectangle 0 0 $width $height -color $brush
 $bg blend $bg $l1 

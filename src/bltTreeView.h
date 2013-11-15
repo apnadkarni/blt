@@ -195,13 +195,14 @@ typedef const char *UID;
 #define STYLE_USER		(1<<6)
 
 #define STYLE_EDITABLE		(1<<10)
+#define STYLE_POSTED		(1<<11)
 
 typedef struct _Column Column;
 typedef struct _Combobox Combobox;
 typedef struct _Entry Entry;
 typedef struct _TreeView TreeView;
-typedef struct _ColumnStyleClass ColumnStyleClass;
-typedef struct _ColumnStyle ColumnStyle;
+typedef struct _ValueStyleClass ValueStyleClass;
+typedef struct _ValueStyle ValueStyle;
 
 typedef int (CompareProc)(Tcl_Interp *interp, const char *name, 
 	const char *pattern);
@@ -239,19 +240,20 @@ typedef struct {
  */
 
 typedef struct _Icon {
+    TreeView *viewPtr;			/* Widget using this icon. */
     Tk_Image tkImage;			/* The Tk image being cached. */
+    Blt_HashEntry *hashPtr;		/* Hash table pointer to the
+                                         * image. */
     int refCount;			/* Reference count for this
                                          * image. */
     short int width, height;		/* Dimensions of the cached
                                          * image. */
-    Blt_HashEntry *hashPtr;		/* Hash table pointer to the
-                                         * image. */
 } *Icon;
 
-#define TreeView_IconHeight(icon)	((icon)->height)
-#define TreeView_IconWidth(icon)	((icon)->width)
-#define TreeView_IconBits(icon)		((icon)->tkImage)
-#define TreeView_IconName(icon)		(Blt_Image_Name((icon)->tkImage))
+#define IconHeight(icon)	((icon)->height)
+#define IconWidth(icon)         ((icon)->width)
+#define IconBits(icon)		((icon)->tkImage)
+#define IconName(icon)		(Blt_Image_Name((icon)->tkImage))
 
 typedef enum SortTypes { 
     SORT_DICTIONARY, SORT_ASCII, SORT_INTEGER, 
@@ -343,7 +345,7 @@ struct _Column {
 					 * indicates that the column can
 					 * not be resized. */
     int width;				/* Computed width of column. */
-    ColumnStyle *stylePtr;		/* Default style for column. */
+    ValueStyle *stylePtr;		/* Default style for column. */
     int borderWidth;			/* Border width of the column. */
     int relief;				/* Relief of the column. */
     Blt_Pad pad;			/* Horizontal padding on either
@@ -362,7 +364,7 @@ struct _Column {
 #define COLUMN_DIRTY		(1<<0)
 #define COLUMN_HIDDEN		(1<<1)
 
-struct _ColumnStyle {
+struct _ValueStyle {
     int refCount;			/* Usage reference count.  A
 					 * reference count of zero
 					 * indicates that the style may be
@@ -370,7 +372,7 @@ struct _ColumnStyle {
     unsigned int flags;			/* Bit field containing both the
 					 * style type and various flags. */
     const char *name;			/* Instance name. */
-    ColumnStyleClass *classPtr;		/* Contains class-specific
+    ValueStyleClass *classPtr;		/* Contains class-specific
 					 * information such as
 					 * configuration specifications and
 					 * configure, draw, layout
@@ -392,30 +394,36 @@ struct _ColumnStyle {
     int gap;				/* # pixels gap between icon and
 					 * text. */
     Blt_Font font;
-    XColor *normalFg;			/* Normal foreground color of
-                                         * cell. */
-    XColor *highlightFg;		/* Foreground color of cell when
-					 * highlighted. */
     XColor *activeFg;                   /* Foreground color of cell when
 					 * active. */
+    XColor *disableFg;                  /* Foreground color of cell when
+					 * disabled. */
+    XColor *highlightFg;		/* Foreground color of cell when
+					 * highlighted. */
+    XColor *normalFg;			/* Normal foreground color of
+                                         * cell. */
     XColor *selectFg;			/* Foreground color of a selected
 					 * cell. If non-NULL, overrides
 					 * default foreground color
 					 * specification. */
-    Blt_Bg normalBg;                    /* Normal background color of
-                                         * cell. */
-    Blt_Bg highlightBg;			/* Background color of cell when
-					 * highlighted. */
+    Blt_Bg altBg;
     Blt_Bg activeBg;			/* Background color of cell when
 					 * active. */
+    Blt_Bg disableBg;                   /* Background color of cell when
+                                         * disabled. */
+    Blt_Bg highlightBg;			/* Background color of cell when
+					 * highlighted. */
+    Blt_Bg normalBg;                    /* Normal background color of
+                                         * cell. */
     Blt_Bg selectBg;			/* Background color of a selected
 					 * cell.  If non-NULL, overrides
 					 * the default background * color
 					 * specification. */
     Tcl_Obj *validateCmdObjPtr;
-    GC normalGC;
-    GC highlightGC;
     GC activeGC;
+    GC disableGC;
+    GC highlightGC;
+    GC normalGC;
     Blt_TreeKey key;			/* Actual data resides in this tree
 					   value. */
     Tcl_Obj *cmdObjPtr;
@@ -423,10 +431,12 @@ struct _ColumnStyle {
 };
 
 typedef struct _Value {
-    Column *columnPtr;			/* Column in which the value is
+    Entry *entryPtr;                    /* Entry where the value is
+                                         * located. */
+    Column *columnPtr;			/* Column where the value is
 					 * located. */
     unsigned int width, height;		/* Dimensions of value. */
-    ColumnStyle *stylePtr;		/* Style information for cell
+    ValueStyle *stylePtr;		/* Style information for cell
 					 * displaying value. */
     const char *fmtString;		/* Raw text string. */
     TextLayout *textPtr;		/* Processes string to be
@@ -434,21 +444,20 @@ typedef struct _Value {
     struct _Value *nextPtr;
 } Value;
 
-typedef void (ColumnStyleConfigureProc)(ColumnStyle *stylePtr);
-typedef void (ColumnStyleDrawProc)(Entry *entryPtr, Value *valuePtr, 
-	Drawable drawable, ColumnStyle *stylePtr, int x, int y);
-typedef int (ColumnStyleEditProc)(Entry *entryPtr, Column *colPtr, 
-	ColumnStyle *stylePtr);
-typedef void (ColumnStyleFreeProc)(ColumnStyle *stylePtr);
-typedef void (ColumnStyleGeometryProc)(ColumnStyle *stylePtr, Value *valuePtr);
-typedef const char * (ColumnStyleIdentifyProc)(Entry *entryPtr, 
-        Value *valuePtr, ColumnStyle *stylePtr, int x, int y);
-typedef int (ColumnStylePostProc)(Tcl_Interp *interp, Entry *entryPtr,
-	Column *colPtr, ColumnStyle *stylePtr);
-typedef int (ColumnStyleUnpostProc)(Tcl_Interp *interp, Entry *entryPtr,
-	Column *colPtr, ColumnStyle *stylePtr);
+typedef void (ValueStyleConfigureProc)(ValueStyle *stylePtr);
+typedef void (ValueStyleDrawProc)(Value *valuePtr, Drawable drawable, 
+        ValueStyle *stylePtr, int x, int y);
+typedef int (ValueStyleEditProc)(Value *valuePtr, ValueStyle *stylePtr);
+typedef void (ValueStyleFreeProc)(ValueStyle *stylePtr);
+typedef void (ValueStyleGeometryProc)(ValueStyle *stylePtr, Value *valuePtr);
+typedef const char * (ValueStyleIdentifyProc)(Value *valuePtr, 
+        ValueStyle *stylePtr, int x, int y);
+typedef int (ValueStylePostProc)(Tcl_Interp *interp, Value *valuePtr,
+        ValueStyle *stylePtr);
+typedef int (ValueStyleUnpostProc)(Tcl_Interp *interp, Value *valuePtr,
+        ValueStyle *stylePtr);
 
-struct _ColumnStyleClass {
+struct _ValueStyleClass {
     const char *type;			/* Name of style class type. */
     const char *className;		/* Class name of the style. This is
 					 * used as the class name of the
@@ -456,33 +465,33 @@ struct _ColumnStyleClass {
 					 * bindings. */
     Blt_ConfigSpec *specsPtr;		/* Style configuration
 					 * specifications */
-    ColumnStyleConfigureProc *configProc; /* Sets the GCs for style. */
-    ColumnStyleGeometryProc *geomProc;	/* Measures the area needed for the
+    ValueStyleConfigureProc *configProc; /* Sets the GCs for style. */
+    ValueStyleGeometryProc *geomProc;	/* Measures the area needed for the
 					 * value with this style. */
-    ColumnStyleDrawProc *drawProc;	/* Draw the value in it's style. */
-    ColumnStyleIdentifyProc *identProc;	/* Routine to pick the style's button.
+    ValueStyleDrawProc *drawProc;	/* Draw the value in it's style. */
+    ValueStyleIdentifyProc *identProc;	/* Routine to pick the style's button.
 					 * Indicates if the mouse pointer is
 					 * over the * style's button (if it
 					 * has one). */
-    ColumnStyleEditProc *editProc;	/* Routine to edit the style's
+    ValueStyleEditProc *editProc;	/* Routine to edit the style's
 					 * value. */
-    ColumnStyleFreeProc *freeProc;	/* Routine to free the style's
+    ValueStyleFreeProc *freeProc;	/* Routine to free the style's
 					 * resources. */
-    ColumnStylePostProc *postProc;	/* Routine to pick the style's button.
+    ValueStylePostProc *postProc;	/* Routine to pick the style's button.
 					 * Indicates if the mouse pointer is
 					 * over the * style's button (if it
 					 * has one). */
-    ColumnStyleUnpostProc *unpostProc;	/* Routine to pick the style's button.
+    ValueStyleUnpostProc *unpostProc;	/* Routine to pick the style's button.
 					 * Indicates if the mouse pointer is
 					 * over the * style's button (if it
 					 * has one). */
 };
 
-BLT_EXTERN ColumnStyle *Blt_TreeView_CreateTextBoxStyle(TreeView *viewPtr, 
+BLT_EXTERN ValueStyle *Blt_TreeView_CreateTextBoxStyle(TreeView *viewPtr, 
 	Blt_HashEntry *hPtr);
-BLT_EXTERN ColumnStyle *Blt_TreeView_CreateCheckBoxStyle(TreeView *viewPtr, 
+BLT_EXTERN ValueStyle *Blt_TreeView_CreateCheckBoxStyle(TreeView *viewPtr, 
 	Blt_HashEntry *hPtr);
-BLT_EXTERN ColumnStyle *Blt_TreeView_CreateComboBoxStyle(TreeView *viewPtr, 
+BLT_EXTERN ValueStyle *Blt_TreeView_CreateComboBoxStyle(TreeView *viewPtr, 
 	Blt_HashEntry *hPtr);
 
 /*
@@ -888,7 +897,7 @@ struct _TreeView {
     Blt_HashTable buttonTagTable;
     Blt_HashTable columnTagTable;
     Blt_HashTable styleTagTable;
-    ColumnStyle *stylePtr;		/* Default style for text cells */
+    ValueStyle *stylePtr;		/* Default style for text cells */
     Column treeColumn;
     Column *colActivePtr; 
     Column *colActiveTitlePtr;		/* Column title currently active. */
@@ -934,10 +943,10 @@ BLT_EXTERN void Blt_TreeView_DestroySort(TreeView *viewPtr);
 
 BLT_EXTERN Icon Blt_TreeView_GetEntryIcon(TreeView *viewPtr, Entry *entryPtr);
 BLT_EXTERN int Blt_TreeView_GetStyle(Tcl_Interp *interp, TreeView *viewPtr, 
-	const char *styleName, ColumnStyle **stylePtrPtr);
+	const char *styleName, ValueStyle **stylePtrPtr);
 BLT_EXTERN void Blt_TreeView_FreeStyle(TreeView *viewPtr, 
-	ColumnStyle *stylePtr);
-BLT_EXTERN ColumnStyle *Blt_TreeView_CreateStyle(Tcl_Interp *interp, 
+	ValueStyle *stylePtr);
+BLT_EXTERN ValueStyle *Blt_TreeView_CreateStyle(Tcl_Interp *interp, 
 	TreeView *viewPtr, int type, const char *styleName, int objc, 
 	Tcl_Obj *const *objv);
 BLT_EXTERN int Blt_TreeView_CreateTextbox(TreeView *viewPtr, Entry *entryPtr, 

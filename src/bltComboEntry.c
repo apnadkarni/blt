@@ -7,13 +7,13 @@
  *
  *	Copyright 2006 George A Howlett.
  *
- *	Permission is hereby granted, free of charge, to any person obtaining
- *	a copy of this software and associated documentation files (the
- *	"Software"), to deal in the Software without restriction, including
- *	without limitation the rights to use, copy, modify, merge, publish,
- *	distribute, sublicense, and/or sell copies of the Software, and to
- *	permit persons to whom the Software is furnished to do so, subject to
- *	the following conditions:
+ *	Permission is hereby granted, free of charge, to any person
+ *	obtaining a copy of this software and associated documentation
+ *	files (the "Software"), to deal in the Software without
+ *	restriction, including without limitation the rights to use, copy,
+ *	modify, merge, publish, distribute, sublicense, and/or sell copies
+ *	of the Software, and to permit persons to whom the Software is
+ *	furnished to do so, subject to the following conditions:
  *
  *	The above copyright notice and this permission notice shall be
  *	included in all copies or substantial portions of the Software.
@@ -21,10 +21,11 @@
  *	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  *	EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  *	MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- *	NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
- *	LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
- *	OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
- *	WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *	NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+ *	BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ *	ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ *	CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ *	SOFTWARE.
  */
 
 #define BUILD_BLT_TK_PROCS 1
@@ -209,20 +210,21 @@ static Blt_CustomOption stateOption = {
  * Icon --
  *
  *	Since instances of the same Tk image can be displayed in different
- *	windows with possibly different color palettes, Tk internally stores
- *	each instance in a linked list.  But if the instances are used in the
- *	same widget and therefore use the same color palette, this adds a lot
- *	of overhead, especially when deleting instances from the linked list.
+ *	windows with possibly different color palettes, Tk internally
+ *	stores each instance in a linked list.  But if the instances are
+ *	used in the same widget and therefore use the same color palette,
+ *	this adds a lot of overhead, especially when deleting instances
+ *	from the linked list.
  *
- *	For the comboentry widget, we never need more than a single instance
- *	of an image, regardless of how many times it's used.  Cache the image,
- *	maintaining a reference count for each image used in the widget.  It's
- *	likely that the comboview widget will use many instances of the same
- *	image.
+ *	For the comboentry widget, we never need more than a single
+ *	instance of an image, regardless of how many times it's used.
+ *	Cache the image, maintaining a reference count for each image used
+ *	in the widget.  It's likely that the comboview widget will use many
+ *	instances of the same image.
  */
 
 typedef struct _Icon {
-    Tk_Image tkImage;			/* The Tk image being cached. */
+    Tk_Image tkImage;			/* Tk image being cached. */
     short int width, height;		/* Dimensions of the cached image. */
 } *Icon;
 

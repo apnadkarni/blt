@@ -1173,19 +1173,14 @@ Blt_Ts_DrawLayout(
 	 * (disabled) text.
 	 */
 	DrawStandardLayout(tkwin, drawable, stylePtr, layoutPtr, x, y);
-	return;
+    } else if (Blt_Font_CanRotate(stylePtr->font, angle)) {
+	Blt_DrawTextWithRotatedFont(tkwin, drawable, angle, stylePtr, 
+                layoutPtr, x, y);
+    } else {
+        stylePtr->angle = (float)angle;
+        Blt_DrawTextWithRotatedBitmap(tkwin, drawable, angle, stylePtr, 
+                layoutPtr, x, y);
     }
-    if (Blt_Font_CanRotate(stylePtr->font, angle)) {
-	if (Blt_DrawTextWithRotatedFont(tkwin, drawable, angle, stylePtr, 
-		layoutPtr, x, y)) {
-	    goto done;			/* Success. */
-	}
-    }
-    /*Fallthru*/
-    stylePtr->angle = (float)angle;
-    Blt_DrawTextWithRotatedBitmap(tkwin, drawable, angle, stylePtr, layoutPtr,
-		x, y);
- done:
     Blt_Font_SetClipRegion(stylePtr->font, NULL);
 }
 

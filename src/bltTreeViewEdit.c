@@ -213,7 +213,7 @@ typedef struct {
     /* Data-specific fields. */
     Entry *entryPtr;                    /* Selected entry */
     Column *columnPtr;                  /* Column of entry to be edited */
-    ColumnStyle *stylePtr;
+    ValueStyle *stylePtr;
     Icon icon;
     int gap;
     char *string;
@@ -599,7 +599,7 @@ IndexToPointer(Textbox *tbPtr)
     sum = 0;
     x = y = tbPtr->borderWidth;
     if (tbPtr->icon != NULL) {
-	x += TreeView_IconWidth(tbPtr->icon) + 2 * tbPtr->gap;
+	x += IconWidth(tbPtr->icon) + 2 * tbPtr->gap;
     }
     fragPtr = textPtr->fragments;
     for (i = 0; i <= maxLines; i++) {
@@ -634,8 +634,8 @@ UpdateLayout(Textbox *tbPtr)
     viewPtr = tbPtr->viewPtr;
     offset = gap = iw = ih = 0;
     if (tbPtr->icon != NULL) {
-	iw = TreeView_IconWidth(tbPtr->icon) + 4;
-	ih = TreeView_IconHeight(tbPtr->icon);
+	iw = IconWidth(tbPtr->icon) + 4;
+	ih = IconHeight(tbPtr->icon);
 	gap = tbPtr->gap;
     }
 
@@ -798,7 +798,7 @@ static int
 AcquireText(TreeView *viewPtr, Textbox *tbPtr, Entry *entryPtr, 
 	    Column *columnPtr)
 {
-    ColumnStyle *stylePtr;
+    ValueStyle *stylePtr;
     int x, y;
     const char *string;
     Icon icon;
@@ -1206,12 +1206,12 @@ DisplayTextbox(ClientData clientData)
 #endif
 
     if (tbPtr->icon != NULL) {
-	y += (tbPtr->height - TreeView_IconHeight(tbPtr->icon)) / 2;
-	Tk_RedrawImage(TreeView_IconBits(tbPtr->icon), 0, 0, 
-		       TreeView_IconWidth(tbPtr->icon), 
-		       TreeView_IconHeight(tbPtr->icon), 
+	y += (tbPtr->height - IconHeight(tbPtr->icon)) / 2;
+	Tk_RedrawImage(IconBits(tbPtr->icon), 0, 0, 
+		       IconWidth(tbPtr->icon), 
+		       IconHeight(tbPtr->icon), 
 		       drawable, x, y);
-	x += TreeView_IconWidth(tbPtr->icon) + tbPtr->gap;
+	x += IconWidth(tbPtr->icon) + tbPtr->gap;
     }
     
     font = CHOOSE(viewPtr->font, tbPtr->font);

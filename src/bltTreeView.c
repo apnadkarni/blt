@@ -729,6 +729,24 @@ EventuallyRedraw(TreeView *viewPtr)
     }
 }
 
+void
+Blt_TreeView_EventuallyRedraw(TreeView *viewPtr)
+{
+    EventuallyRedraw(viewPtr);
+}
+
+static ValueStyle *
+GetCurrentStyle(TreeView *viewPtr, Column *colPtr, Value *valuePtr)
+{
+    if ((valuePtr != NULL) && (valuePtr->stylePtr != NULL)) {
+	return valuePtr->stylePtr;
+    }
+    if ((colPtr != NULL) && (colPtr->stylePtr != NULL)) {
+	return colPtr->stylePtr;
+    }
+    return viewPtr->stylePtr;
+}
+
 static Entry *
 NodeToEntry(TreeView *viewPtr, Blt_TreeNode node)
 {
@@ -1193,6 +1211,7 @@ AddValue(Entry *entryPtr, Column *colPtr)
 	    /* Add a new value only if a data entry exists. */
 	    valuePtr = Blt_Pool_AllocItem(entryPtr->viewPtr->valuePool, 
 			 sizeof(Value));
+            valuePtr->entryPtr = entryPtr;
 	    valuePtr->columnPtr = colPtr;
 	    valuePtr->nextPtr = entryPtr->values;
 	    valuePtr->textPtr = NULL;
@@ -1342,7 +1361,7 @@ SelectEntry(TreeView *viewPtr, Entry *entryPtr)
     if ((viewPtr->iconVarObjPtr != NULL) && (icon != NULL)) {
 	Tcl_Obj *objPtr;
 	
-	objPtr = Tcl_NewStringObj(TreeView_IconName(icon), -1);
+	objPtr = Tcl_NewStringObj(IconName(icon), -1);
 	if (Tcl_ObjSetVar2(viewPtr->interp, viewPtr->iconVarObjPtr, NULL, 
 		objPtr, TCL_GLOBAL_ONLY|TCL_LEAVE_ERR_MSG) == NULL) {
 	    return;
@@ -2157,7 +2176,7 @@ FreeLabel(ClientData clientData, Display *display, char *widgRec, int offset)
     }
 }
 
-static ColumnStyle *
+static ValueStyle *
 FindStyle(Tcl_Interp *interp, TreeView *viewPtr, const char *styleName)
 {
     Blt_HashEntry *hPtr;
@@ -2175,9 +2194,9 @@ FindStyle(Tcl_Interp *interp, TreeView *viewPtr, const char *styleName)
 
 static int
 GetStyle(Tcl_Interp *interp, TreeView *viewPtr, const char *name, 
-	 ColumnStyle **stylePtrPtr)
+	 ValueStyle **stylePtrPtr)
 {
-    ColumnStyle *stylePtr;
+    ValueStyle *stylePtr;
 
     stylePtr = FindStyle(interp, viewPtr, name);
     if (stylePtr == NULL) {
@@ -2191,7 +2210,7 @@ GetStyle(Tcl_Interp *interp, TreeView *viewPtr, const char *name,
 #ifdef notdef
 int
 GetStyleFromObj(Tcl_Interp *interp, TreeView *viewPtr, 
-			     Tcl_Obj *objPtr, ColumnStyle **stylePtrPtr)
+			     Tcl_Obj *objPtr, ValueStyle **stylePtrPtr)
 {
     return GetStyle(interp, viewPtr, Tcl_GetString(objPtr), 
 				 stylePtrPtr);
@@ -2201,7 +2220,7 @@ GetStyleFromObj(Tcl_Interp *interp, TreeView *viewPtr,
 static INLINE Blt_Bg
 GetStyleBackground(Column *colPtr)
 { 
-    ColumnStyle *stylePtr;
+    ValueStyle *stylePtr;
     Blt_Bg bg;
 
     bg = NULL;
@@ -2219,7 +2238,7 @@ GetStyleBackground(Column *colPtr)
 static INLINE Blt_Font
 GetStyleFont(Column *colPtr)
 {
-    ColumnStyle *stylePtr;
+    ValueStyle *stylePtr;
 
     stylePtr = colPtr->stylePtr;
     if ((stylePtr != NULL) && (stylePtr->font != NULL)) {
@@ -2231,7 +2250,7 @@ GetStyleFont(Column *colPtr)
 static INLINE XColor *
 GetStyleForeground(Column *colPtr)
 {
-    ColumnStyle *stylePtr;
+    ValueStyle *stylePtr;
 
     stylePtr = colPtr->stylePtr;
     if ((stylePtr != NULL) && (stylePtr->normalFg != NULL)) {
@@ -2241,7 +2260,7 @@ GetStyleForeground(Column *colPtr)
 }
 
 static void
-FreeStyle(ColumnStyle *stylePtr)
+FreeStyle(ValueStyle *stylePtr)
 {
     stylePtr->refCount--;
     /* Remove the style from the hash table so that it's name can be used.*/
@@ -2265,7 +2284,7 @@ FreeStyle(ColumnStyle *stylePtr)
     } 
 }
 
-static ColumnStyle *
+static ValueStyle *
 CreateStyle(Tcl_Interp *interp,
      TreeView *viewPtr,			/* Blt_TreeView_ widget. */
      int type,				/* Type of style: either
@@ -2278,7 +2297,7 @@ CreateStyle(Tcl_Interp *interp,
 {    
     Blt_HashEntry *hPtr;
     int isNew;
-    ColumnStyle *stylePtr;
+    ValueStyle *stylePtr;
     
     hPtr = Blt_CreateHashEntry(&viewPtr->styleTable, styleName, &isNew);
     if (!isNew) {
@@ -2358,7 +2377,7 @@ ObjToStyles(
     viewPtr = entryPtr->viewPtr;
     for (i = 0; i < objc; i += 2) {
 	Value *valuePtr;
-	ColumnStyle *stylePtr;
+	ValueStyle *stylePtr;
 	Column *colPtr;
 	const char *string;
 	
@@ -2536,8 +2555,8 @@ IconChangedProc(
     EventuallyRedraw(viewPtr);
 }
 
-Icon
-Blt_TreeView_GetIcon(TreeView *viewPtr, const char *iconName)
+static Icon
+GetIcon(TreeView *viewPtr, const char *iconName)
 {
     Blt_HashEntry *hPtr;
     int isNew;
@@ -2548,8 +2567,8 @@ Blt_TreeView_GetIcon(TreeView *viewPtr, const char *iconName)
 	Tk_Image tkImage;
 	int width, height;
 
-	tkImage = Tk_GetImage(viewPtr->interp, viewPtr->tkwin, (char *)iconName, 
-		IconChangedProc, viewPtr);
+	tkImage = Tk_GetImage(viewPtr->interp, viewPtr->tkwin, 
+                (char *)iconName, IconChangedProc, viewPtr);
 	if (tkImage == NULL) {
 	    Blt_DeleteHashEntry(&viewPtr->iconTable, hPtr);
 	    return NULL;
@@ -2557,6 +2576,7 @@ Blt_TreeView_GetIcon(TreeView *viewPtr, const char *iconName)
 	Tk_SizeOfImage(tkImage, &width, &height);
 	iconPtr = Blt_AssertMalloc(sizeof(struct _Icon));
 	iconPtr->tkImage = tkImage;
+        iconPtr->viewPtr = viewPtr;
 	iconPtr->hashPtr = hPtr;
 	iconPtr->refCount = 1;
 	iconPtr->width = width;
@@ -2569,13 +2589,16 @@ Blt_TreeView_GetIcon(TreeView *viewPtr, const char *iconName)
     return iconPtr;
 }
 
-void
-Blt_TreeView_FreeIcon(TreeView *viewPtr, Icon icon)
+static void
+FreeIcon(Icon icon)
 {
     struct _Icon *iconPtr = icon;
 
     iconPtr->refCount--;
     if (iconPtr->refCount == 0) {
+        TreeView *viewPtr;
+
+        viewPtr = iconPtr->viewPtr;
 	Blt_DeleteHashEntry(&viewPtr->iconTable, iconPtr->hashPtr);
 	Tk_FreeImage(iconPtr->tkImage);
 	Blt_Free(iconPtr);
@@ -2607,10 +2630,9 @@ FreeIconsProc(ClientData clientData, Display *display, char *widgRec,
 
     if (*iconsPtr != NULL) {
 	Icon *ip;
-	TreeView *viewPtr = clientData;
 
 	for (ip = *iconsPtr; *ip != NULL; ip++) {
-	    Blt_TreeView_FreeIcon(viewPtr, *ip);
+	    FreeIcon(*ip);
 	}
 	Blt_Free(*iconsPtr);
 	*iconsPtr = NULL;
@@ -2661,7 +2683,7 @@ ObjToIconsProc(
 	
 	icons = Blt_AssertMalloc(sizeof(Icon *) * (objc + 1));
 	for (i = 0; i < objc; i++) {
-	    icons[i] = Blt_TreeView_GetIcon(viewPtr, Tcl_GetString(objv[i]));
+	    icons[i] = GetIcon(viewPtr, Tcl_GetString(objv[i]));
 	    if (icons[i] == NULL) {
 		result = TCL_ERROR;
 		break;
@@ -2717,15 +2739,14 @@ IconsToObjProc(
 static void
 FreeIconProc(
     ClientData clientData,
-    Display *display,		/* Not used. */
+    Display *display,                   /* Not used. */
     char *widgRec,
     int offset)
 {
     Icon *iconPtr = (Icon *)(widgRec + offset);
-    TreeView *viewPtr = clientData;
 
     if (*iconPtr != NULL) {
-	Blt_TreeView_FreeIcon(viewPtr, *iconPtr);
+	FreeIcon(*iconPtr);
 	*iconPtr = NULL;
     }
 }
@@ -2747,7 +2768,9 @@ FreeIconProc(
 /*ARGSUSED*/
 static int
 ObjToIconProc(
-    ClientData clientData,		/* Not used. */
+    ClientData clientData,		/* Pointer to the tree view
+                                         * widget. Must be initialized before
+                                         * calls to ConfigureWidget, etc.*/
     Tcl_Interp *interp,			/* Interpreter to report results */
     Tk_Window tkwin,			/* Not used. */
     Tcl_Obj *objPtr,			/* Tcl_Obj representing the value. */
@@ -2764,13 +2787,13 @@ ObjToIconProc(
     string = Tcl_GetStringFromObj(objPtr, &length);
     icon = NULL;
     if (length > 0) {
-	icon = Blt_TreeView_GetIcon(viewPtr, string);
+	icon = GetIcon(viewPtr, string);
 	if (icon == NULL) {
 	    return TCL_ERROR;
 	}
     }
     if (*iconPtr != NULL) {
-	Blt_TreeView_FreeIcon(viewPtr, *iconPtr);
+	FreeIcon(*iconPtr);
     }
     *iconPtr = icon;
     return TCL_OK;
@@ -3171,7 +3194,7 @@ static void
 FreeStyleProc(ClientData clientData, Display *display, char *widgRec, 
 	      int offset)
 {
-    ColumnStyle **stylePtrPtr = (ColumnStyle **)(widgRec + offset);
+    ValueStyle **stylePtrPtr = (ValueStyle **)(widgRec + offset);
 
     if (*stylePtrPtr != NULL) {
 	FreeStyle(*stylePtrPtr);
@@ -3205,8 +3228,8 @@ ObjToStyleProc(
     int flags)	
 {
     TreeView *viewPtr = clientData;
-    ColumnStyle **stylePtrPtr = (ColumnStyle **)(widgRec + offset);
-    ColumnStyle *stylePtr;
+    ValueStyle **stylePtrPtr = (ValueStyle **)(widgRec + offset);
+    ValueStyle *stylePtr;
     const char *string;
 
     stylePtr = NULL;
@@ -3243,7 +3266,7 @@ StyleToObjProc(
     int offset,			/* Offset to field in structure */
     int flags)	
 {
-    ColumnStyle *stylePtr = *(ColumnStyle **)(widgRec + offset);
+    ValueStyle *stylePtr = *(ValueStyle **)(widgRec + offset);
 
     if (stylePtr == NULL) {
 	return Tcl_NewStringObj("", -1);
@@ -4263,7 +4286,7 @@ Blt_TreeView_SetEntryValue(Tcl_Interp *interp, TreeView *viewPtr,
 			   Entry *entryPtr, Column *colPtr, const char *value)
 {
     int valid;
-    ColumnStyle *stylePtr;
+    ValueStyle *stylePtr;
 
     valid = TRUE;
     stylePtr = NULL;
@@ -4359,8 +4382,8 @@ ConfigureButtons(TreeView *viewPtr)
 	    if (buttonPtr->icons[i] == NULL) {
 		break;
 	    }
-	    width = TreeView_IconWidth(buttonPtr->icons[i]);
-	    height = TreeView_IconWidth(buttonPtr->icons[i]);
+	    width = IconWidth(buttonPtr->icons[i]);
+	    height = IconWidth(buttonPtr->icons[i]);
 	    if (buttonPtr->width < width) {
 		buttonPtr->width = width;
 	    }
@@ -4723,11 +4746,12 @@ FormatValue(Entry *entryPtr, Value *valuePtr)
 
 
 static void
-GetValueSize(Entry *entryPtr, Value *valuePtr, ColumnStyle *stylePtr)
+GetValueSize(Entry *entryPtr, Value *valuePtr, ValueStyle *stylePtr)
 {
     valuePtr->width = valuePtr->height = 0;
     FormatValue(entryPtr, valuePtr);
-    stylePtr = CHOOSESTYLE(entryPtr->viewPtr, valuePtr->columnPtr, valuePtr);
+    stylePtr = GetCurrentStyle(entryPtr->viewPtr, valuePtr->columnPtr, 
+                               valuePtr);
     /* Measure the text string. */
     (*stylePtr->classPtr->geomProc)(stylePtr, valuePtr);
 }
@@ -4741,10 +4765,11 @@ GetRowExtents(Entry *entryPtr, int *widthPtr, int *heightPtr)
     width = height = 0;
     for (valuePtr = entryPtr->values; valuePtr != NULL; 
 	 valuePtr = valuePtr->nextPtr) {
-	ColumnStyle *stylePtr;
+	ValueStyle *stylePtr;
 	int valueWidth;			/* Width of individual value.  */
 
-	stylePtr = CHOOSESTYLE(entryPtr->viewPtr, valuePtr->columnPtr,valuePtr);
+	stylePtr = GetCurrentStyle(entryPtr->viewPtr, valuePtr->columnPtr, 
+                                   valuePtr);
 	if ((entryPtr->flags & ENTRY_DIRTY) || (stylePtr->flags & STYLE_DIRTY)){
 	    GetValueSize(entryPtr, valuePtr, stylePtr);
 	}
@@ -4865,9 +4890,10 @@ AppendTagsProc(
 	    Value *valuePtr = hint;
 
 	    if (valuePtr != NULL) {
-		ColumnStyle *stylePtr = valuePtr->stylePtr;
+		ValueStyle *stylePtr = valuePtr->stylePtr;
 
-		stylePtr = CHOOSESTYLE(viewPtr, valuePtr->columnPtr, valuePtr);
+		stylePtr = GetCurrentStyle(viewPtr, valuePtr->columnPtr, 
+                                           valuePtr);
 		Blt_Chain_Append(tags, 
 	            EntryTag(viewPtr, stylePtr->name));
 		Blt_Chain_Append(tags, 
@@ -4930,12 +4956,12 @@ PickItem(
 
 	    valuePtr = Blt_TreeView_FindValue(entryPtr, colPtr);
 	    if (valuePtr != NULL) {
-		ColumnStyle *stylePtr;
+		ValueStyle *stylePtr;
 	
-		stylePtr = CHOOSESTYLE(viewPtr, colPtr, valuePtr);
+		stylePtr = GetCurrentStyle(viewPtr, colPtr, valuePtr);
 		if ((stylePtr->classPtr->identProc == NULL) ||
-		    ((*stylePtr->classPtr->identProc)(entryPtr, valuePtr, 
-			stylePtr, x, y))) {
+		    ((*stylePtr->classPtr->identProc)
+                     (valuePtr, stylePtr, x, y))) {
 		    *hintPtr = valuePtr;
 		} 
 	    }
@@ -4982,11 +5008,11 @@ GetEntryExtents(TreeView *viewPtr, Entry *entryPtr)
 		if (icons[i] == NULL) {
 		    break;
 		}
-		if (entryPtr->iconWidth < TreeView_IconWidth(icons[i])) {
-		    entryPtr->iconWidth = TreeView_IconWidth(icons[i]);
+		if (entryPtr->iconWidth < IconWidth(icons[i])) {
+		    entryPtr->iconWidth = IconWidth(icons[i]);
 		}
-		if (entryPtr->iconHeight < TreeView_IconHeight(icons[i])) {
-		    entryPtr->iconHeight = TreeView_IconHeight(icons[i]);
+		if (entryPtr->iconHeight < IconHeight(icons[i])) {
+		    entryPtr->iconHeight = IconHeight(icons[i]);
 		}
 	    }
 	    entryPtr->iconWidth  += 2 * ICON_PADX;
@@ -5115,8 +5141,8 @@ ConfigureColumn(TreeView *viewPtr, Column *colPtr)
 
     iw = ih = 0;
     if (colPtr->titleIcon != NULL) {
-	iw = TreeView_IconWidth(colPtr->titleIcon);
-	ih = TreeView_IconHeight(colPtr->titleIcon);
+	iw = IconWidth(colPtr->titleIcon);
+	ih = IconHeight(colPtr->titleIcon);
 	colPtr->titleWidth += iw;
     }
     tw = th = 0;
@@ -5134,10 +5160,10 @@ ConfigureColumn(TreeView *viewPtr, Column *colPtr)
 	}
     }
     if ((colPtr->sortUp != NULL) && (colPtr->sortDown != NULL)) {
-	aw = MAX(TreeView_IconWidth(colPtr->sortUp), 
-		 TreeView_IconWidth(colPtr->sortDown));
-	ah = MAX(TreeView_IconHeight(colPtr->sortUp), 
-		 TreeView_IconHeight(colPtr->sortDown));
+	aw = MAX(IconWidth(colPtr->sortUp), 
+		 IconWidth(colPtr->sortDown));
+	ah = MAX(IconHeight(colPtr->sortUp), 
+		 IconHeight(colPtr->sortDown));
     } else {
 	aw = ah = 17;
     }
@@ -5827,7 +5853,7 @@ DestroyTreeView(DestroyData dataPtr)	/* Pointer to the widget record. */
     Blt_ChainLink link;
     TreeView *viewPtr = (TreeView *)dataPtr;
     Button *buttonPtr;
-    ColumnStyle *stylePtr;
+    ValueStyle *stylePtr;
 
     if (viewPtr->flags & SELECT_PENDING) {
 	Tcl_CancelIdleCall(SelectCmdProc, viewPtr);
@@ -6217,7 +6243,7 @@ ConfigureTreeView(Tcl_Interp *interp, TreeView *viewPtr)
 }
 
 static void
-ConfigureStyle(TreeView *viewPtr, ColumnStyle *stylePtr)
+ConfigureStyle(TreeView *viewPtr, ValueStyle *stylePtr)
 {
     (*stylePtr->classPtr->configProc)(stylePtr);
     stylePtr->flags |= STYLE_DIRTY;
@@ -7239,7 +7265,7 @@ DrawButton(
 	}
     }
     if (icon != NULL) {			/* Icon or rectangle? */
-	Tk_RedrawImage(TreeView_IconBits(icon), 0, 0, width, height, 
+	Tk_RedrawImage(IconBits(icon), 0, 0, width, height, 
 		drawable, x, y);
     } else {
 	int top, bottom, left, right;
@@ -7329,8 +7355,8 @@ DrawImage(
 	level = DEPTH(viewPtr, entryPtr->node);
 	entryHeight = MAX3(entryPtr->lineHeight, entryPtr->iconHeight, 
 		viewPtr->button.height);
-	height = TreeView_IconHeight(icon);
-	width = TreeView_IconWidth(icon);
+	height = IconHeight(icon);
+	width = IconWidth(icon);
 	if (viewPtr->flatView) {
 	    x += (ICONWIDTH(0) - width) / 2;
 	} else {
@@ -7349,7 +7375,7 @@ DrawImage(
 	} else if (bottom >= maxY) {
 	    height = maxY - y;
 	}
-	Tk_RedrawImage(TreeView_IconBits(icon), 0, top, width, height, 
+	Tk_RedrawImage(IconBits(icon), 0, top, width, height, 
 		drawable, x, y);
     } 
     return (icon != NULL);
@@ -7460,16 +7486,14 @@ DrawLabel(
 static void
 DrawValue(
     TreeView *viewPtr,			/* Widget record. */
-    Entry *entryPtr,			/* Node of entry to be drawn. */
     Value *valuePtr,
     Drawable drawable,			/* Pixmap or window to draw into. */
     int x, int y)
 {
-    ColumnStyle *stylePtr;
+    ValueStyle *stylePtr;
 
-    stylePtr = CHOOSESTYLE(viewPtr, valuePtr->columnPtr, valuePtr);
-    (*stylePtr->classPtr->drawProc)(entryPtr, valuePtr, drawable, stylePtr, 
-	x, y);
+    stylePtr = GetCurrentStyle(viewPtr, valuePtr->columnPtr, valuePtr);
+    (*stylePtr->classPtr->drawProc)(valuePtr, drawable, stylePtr, x, y);
 }
 
 static void
@@ -7480,7 +7504,7 @@ DisplayValue(TreeView *viewPtr, Entry *entryPtr, Value *valuePtr)
     int pixWidth, pixHeight;
     int x1, x2, y1, y2;
     Column *colPtr;
-    ColumnStyle *stylePtr;
+    ValueStyle *stylePtr;
     Blt_Bg bg;
     int overlap;
 
@@ -7554,7 +7578,7 @@ DisplayValue(TreeView *viewPtr, Entry *entryPtr, Value *valuePtr)
 		pixWidth, pixHeight, Tk_Depth(viewPtr->tkwin));
 	Blt_Bg_FillRectangle(viewPtr->tkwin, drawable, bg, 0, 0, 
 		pixWidth, pixHeight, 0, TK_RELIEF_FLAT);
-	DrawValue(viewPtr, entryPtr, valuePtr, drawable, sx, sy);
+	DrawValue(viewPtr, valuePtr, drawable, sx, sy);
 	XCopyArea(viewPtr->display, drawable, Tk_WindowId(viewPtr->tkwin), 
 		  viewPtr->lineGC, 0, 0, pixWidth, pixHeight, x, y+1);
 	Tk_FreePixmap(viewPtr->display, drawable);
@@ -7564,7 +7588,7 @@ DisplayValue(TreeView *viewPtr, Entry *entryPtr, Value *valuePtr)
 	drawable = Tk_WindowId(viewPtr->tkwin);
 	Blt_Bg_FillRectangle(viewPtr->tkwin, drawable, bg, x, y+1, w, h, 
 		0, TK_RELIEF_FLAT);
-	DrawValue(viewPtr, entryPtr, valuePtr, drawable, x, y);
+	DrawValue(viewPtr, valuePtr, drawable, x, y);
     }
 }
 
@@ -7790,8 +7814,8 @@ DrawColumnTitle(TreeView *viewPtr, Column *colPtr, Drawable drawable,
     if (colPtr->titleIcon != NULL) {
 	int ix, iy, iw, ih, gap;
 
-	ih = TreeView_IconHeight(colPtr->titleIcon);
-	iw = TreeView_IconWidth(colPtr->titleIcon);
+	ih = IconHeight(colPtr->titleIcon);
+	iw = IconWidth(colPtr->titleIcon);
 	ix = x;
 	/* Center the icon vertically.  We already know the column title is at
 	 * least as tall as the icon. */
@@ -7799,7 +7823,7 @@ DrawColumnTitle(TreeView *viewPtr, Column *colPtr, Drawable drawable,
         if (colHeight > ih) {
 	    iy += (colHeight - ih) / 2;
 	}
-	Tk_RedrawImage(TreeView_IconBits(colPtr->titleIcon), 0, 0, iw, ih, 
+	Tk_RedrawImage(IconBits(colPtr->titleIcon), 0, 0, iw, ih, 
 		drawable, ix, iy);
 	gap = (colPtr->textWidth > 0) ? TITLE_PADX : 0;
 	x += iw + gap;
@@ -7838,10 +7862,10 @@ DrawColumnTitle(TreeView *viewPtr, Column *colPtr, Drawable drawable,
 	    ay += (colHeight - colPtr->arrowHeight) / 2;
 	}
 	if ((sortPtr->decreasing) && (colPtr->sortUp != NULL)) {
-	    Tk_RedrawImage(TreeView_IconBits(colPtr->sortUp), 0, 0, aw, ah, 
+	    Tk_RedrawImage(IconBits(colPtr->sortUp), 0, 0, aw, ah, 
 		drawable, ax, ay);
 	} else if (colPtr->sortDown != NULL) {
-	    Tk_RedrawImage(TreeView_IconBits(colPtr->sortDown), 0, 0, aw, ah, 
+	    Tk_RedrawImage(IconBits(colPtr->sortDown), 0, 0, aw, ah, 
 		drawable, ax, ay);
 	} else {
 	    Blt_DrawArrow(viewPtr->display, drawable, fg, ax, ay, aw, ah, 
@@ -8186,8 +8210,8 @@ DisplayTreeView(ClientData clientData)	/* Information about widget. */
 		/* Check if there's a corresponding value in the entry. */
 		vp = Blt_TreeView_FindValue(*epp, colPtr);
 		if (vp != NULL) {
-		    DrawValue(viewPtr, *epp, vp, drawable, 
-			x + colPtr->pad.side1, SCREENY(viewPtr,(*epp)->worldY));
+		    DrawValue(viewPtr, vp, drawable, x + colPtr->pad.side1, 
+                        SCREENY(viewPtr,(*epp)->worldY));
 		}
 	    }
 	} else {
@@ -9809,36 +9833,36 @@ EditOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	worldX = WORLDX(viewPtr, x);
 	for (link = Blt_Chain_FirstLink(viewPtr->columns); link != NULL; 
 	     link = Blt_Chain_NextLink(link)) {
-	    Column *columnPtr;
+	    Column *colPtr;
 
-	    columnPtr = Blt_Chain_GetValue(link);
-	    if (columnPtr->flags & COLUMN_READONLY) {
+	    colPtr = Blt_Chain_GetValue(link);
+	    if (colPtr->flags & COLUMN_READONLY) {
 		continue;		/* Column isn't editable. */
 	    }
-	    if ((worldX >= columnPtr->worldX) && 
-		(worldX < (columnPtr->worldX + columnPtr->width))) {
-		ColumnStyle *stylePtr;
+	    if ((worldX >= colPtr->worldX) && 
+		(worldX < (colPtr->worldX + colPtr->width))) {
+		ValueStyle *stylePtr;
+                Value *valuePtr;
 	
 		stylePtr = NULL;
-		if (columnPtr != &viewPtr->treeColumn) {
-		    Value *valuePtr;
-		
-		    valuePtr = Blt_TreeView_FindValue(entryPtr, columnPtr);
-		    if (valuePtr == NULL) {
-			continue;
-		    }
-		    stylePtr = valuePtr->stylePtr;
-		} 
+		if (colPtr == &viewPtr->treeColumn) {
+                    continue;           /* This is the tree column.  */
+                }
+                valuePtr = Blt_TreeView_FindValue(entryPtr, colPtr);
+                if (valuePtr == NULL) {
+                    continue;           /* No value at entry, column. */
+                }
+                stylePtr = valuePtr->stylePtr;
 		if (stylePtr == NULL) {
-		    stylePtr = columnPtr->stylePtr;
+		    stylePtr = colPtr->stylePtr;
 		}
-		if ((columnPtr->flags & COLUMN_READONLY) || 
+		if ((colPtr->flags & COLUMN_READONLY) || 
 		     (stylePtr->classPtr->editProc == NULL)) {
-		    continue;
+		    continue;           /* Column isn't editable. */
 		}
 		if (!isTest) {
-		    if ((*stylePtr->classPtr->editProc)(entryPtr, columnPtr, 
-			stylePtr) != TCL_OK) {
+		    if ((*stylePtr->classPtr->editProc)(valuePtr, stylePtr) 
+                        != TCL_OK) {
 			return TCL_ERROR;
 		    }
 		    EventuallyRedraw(viewPtr);
@@ -9929,13 +9953,13 @@ EntryCgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *	  .h entryconfigure node node node node option value
  *
  * Results:
- *	A standard TCL result.  If TCL_ERROR is returned, then interp->result
- *	contains an error message.
+ *	A standard TCL result.  If TCL_ERROR is returned, then
+ *	interp->result contains an error message.
  *
  * Side effects:
- *	Configuration information, such as text string, colors, font, etc. get
- *	set for viewPtr; old resources get freed, if there were any.  The
- *	hypertext is redisplayed.
+ *	Configuration information, such as text string, colors, font,
+ *	etc. get set for viewPtr; old resources get freed, if there were
+ *	any.  The hypertext is redisplayed.
  *
  *---------------------------------------------------------------------------
  */
@@ -9959,9 +9983,9 @@ EntryConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	    break;
 	}
     }
-    numIds = i;			/* # of tags or ids specified */
-    configObjc = objc - i;	/* # of options specified */
-    configObjv = objv + i;	/* Start of options in objv  */
+    numIds = i;                         /* # of tags or ids specified */
+    configObjc = objc - i;              /* # of options specified */
+    configObjv = objv + i;              /* Start of options in objv  */
 
     iconsOption.clientData = viewPtr;
     uidOption.clientData = viewPtr;
@@ -11516,8 +11540,8 @@ NearestOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	    int iconX, iconY;
 	    
 	    entryHeight = MAX(entryPtr->iconHeight, viewPtr->button.height);
-	    iconHeight = TreeView_IconHeight(icon);
-	    iconWidth = TreeView_IconWidth(icon);
+	    iconHeight = IconHeight(icon);
+	    iconWidth = IconWidth(icon);
 	    iconX = entryPtr->worldX + ICONWIDTH(depth);
 	    iconY = entryPtr->worldY;
 	    if (viewPtr->flatView) {
@@ -11596,6 +11620,74 @@ OpenOp(ClientData clientData, Tcl_Interp *interp, int objc,
     /*FIXME: This is only for flattened entries.  */
     viewPtr->flags |= (LAYOUT_PENDING | DIRTY /*| RESORT */);
     EventuallyRedraw(viewPtr);
+    return TCL_OK;
+}
+
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * PostOp --
+ *
+ *	Posts the menu associated with the designated cell.
+ *
+ * Results:
+ *	Standard TCL result.
+ *
+ * Side effects:
+ *	Commands may get excecuted; variables may get set; sub-menus may
+ *	get posted.
+ *
+ *	.view post entry column
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+PostOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+       Tcl_Obj *const *objv)
+{
+    TreeView *viewPtr = clientData;
+    Entry *entryPtr;
+    Column *colPtr;
+    ValueStyle *stylePtr;
+    Value *valuePtr;
+
+    if (objc == 2) {
+	Tcl_Obj *listObjPtr;
+
+	listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
+	if (viewPtr->postPtr != NULL) {
+	    Tcl_Obj *objPtr;
+
+	    colPtr = viewPtr->postPtr->columnPtr;
+	    entryPtr = viewPtr->postPtr->entryPtr;
+            objPtr = Tcl_NewLongObj(Blt_Tree_NodeId(entryPtr->node));
+	    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+	    objPtr = Tcl_NewStringObj(colPtr->key, -1);
+	    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+	}
+	Tcl_SetObjResult(interp, listObjPtr);
+	return TCL_OK;
+    }
+    entryPtr = NULL;			/* Suppress compiler warning. */
+    if (GetEntry(viewPtr, objv[3], &entryPtr) != TCL_OK) {
+	return TCL_ERROR;
+    }
+    if (GetColumn(interp, viewPtr, objv[4], &colPtr) != TCL_OK) {
+	return TCL_ERROR;
+    }
+    if ((colPtr == NULL) || (entryPtr == NULL)) {
+	valuePtr = NULL;
+    } else {
+	valuePtr = Blt_TreeView_FindValue(entryPtr, colPtr);
+    }
+    if (valuePtr == NULL) {
+	return TCL_OK;
+    }
+    stylePtr = GetCurrentStyle(viewPtr, colPtr, valuePtr);
+    if (stylePtr->classPtr->postProc != NULL) {
+	return (*stylePtr->classPtr->postProc)(interp, valuePtr, stylePtr);
+    }
     return TCL_OK;
 }
 
@@ -12562,7 +12654,7 @@ StyleCgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	    Tcl_Obj *const *objv)
 {
     TreeView *viewPtr = clientData;
-    ColumnStyle *stylePtr;
+    ValueStyle *stylePtr;
 
     stylePtr = FindStyle(interp, viewPtr, Tcl_GetString(objv[3]));
     if (stylePtr == NULL) {
@@ -12587,7 +12679,7 @@ StyleCheckBoxOp(ClientData clientData, Tcl_Interp *interp, int objc,
 		Tcl_Obj *const *objv)
 {
     TreeView *viewPtr = clientData;
-    ColumnStyle *stylePtr;
+    ValueStyle *stylePtr;
 
     stylePtr = CreateStyle(interp, viewPtr, STYLE_CHECKBOX, 
 	Tcl_GetString(objv[3]), objc - 4, objv + 4);
@@ -12615,7 +12707,7 @@ StyleComboBoxOp(ClientData clientData, Tcl_Interp *interp, int objc,
 		Tcl_Obj *const *objv)
 {
     TreeView *viewPtr = clientData;
-    ColumnStyle *stylePtr;
+    ValueStyle *stylePtr;
 
     stylePtr = CreateStyle(interp, viewPtr, STYLE_COMBOBOX, 
 	Tcl_GetString(objv[3]), objc - 4, objv + 4);
@@ -12653,7 +12745,7 @@ StyleConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
 		 Tcl_Obj *const *objv)
 {
     TreeView *viewPtr = clientData;
-    ColumnStyle *stylePtr;
+    ValueStyle *stylePtr;
 
     stylePtr = FindStyle(interp, viewPtr, Tcl_GetString(objv[3]));
     if (stylePtr == NULL) {
@@ -12694,7 +12786,7 @@ static int
 StyleCreateOp(TreeView *viewPtr, Tcl_Interp *interp, int objc, 
 	      Tcl_Obj *const *objv)
 {
-    ColumnStyle *stylePtr;
+    ValueStyle *stylePtr;
     char c;
     const char *string;
     int type, length;
@@ -12787,7 +12879,7 @@ StyleForgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	      Tcl_Obj *const *objv)
 {
     TreeView *viewPtr = clientData;
-    ColumnStyle *stylePtr;
+    ValueStyle *stylePtr;
     int i;
 
     for (i = 3; i < objc; i++) {
@@ -12831,7 +12923,7 @@ StyleHighlightOp(ClientData clientData, Tcl_Interp *interp, int objc,
 		 Tcl_Obj *const *objv)
 {
     TreeView *viewPtr = clientData;
-    ColumnStyle *stylePtr;
+    ValueStyle *stylePtr;
     int bool, oldBool;
 
     stylePtr = FindStyle(interp, viewPtr, Tcl_GetString(objv[3]));
@@ -12876,7 +12968,7 @@ StyleNamesOp(ClientData clientData, Tcl_Interp *interp, int objc,
     Blt_HashEntry *hPtr;
     Blt_HashSearch cursor;
     Tcl_Obj *listObjPtr, *objPtr;
-    ColumnStyle *stylePtr;
+    ValueStyle *stylePtr;
 
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
     for (hPtr = Blt_FirstHashEntry(&viewPtr->styleTable, &cursor); hPtr != NULL;
@@ -12910,7 +13002,7 @@ StyleSetOp(ClientData clientData, Tcl_Interp *interp, int objc,
 {
     TreeView *viewPtr = clientData;
     Blt_TreeKey key;
-    ColumnStyle *stylePtr;
+    ValueStyle *stylePtr;
     int i;
 
     stylePtr = FindStyle(interp, viewPtr, Tcl_GetString(objv[3]));
@@ -12932,7 +13024,7 @@ StyleSetOp(ClientData clientData, Tcl_Interp *interp, int objc,
 
 	    for (vp = entryPtr->values; vp != NULL; vp = vp->nextPtr) {
 		if (vp->columnPtr->key == key) {
-		    ColumnStyle *oldStylePtr;
+		    ValueStyle *oldStylePtr;
 
 		    stylePtr->refCount++;
 		    oldStylePtr = vp->stylePtr;
@@ -12964,7 +13056,7 @@ StyleTextBoxOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	       Tcl_Obj *const *objv)
 {
     TreeView *viewPtr = clientData;
-    ColumnStyle *stylePtr;
+    ValueStyle *stylePtr;
 
     stylePtr = CreateStyle(interp, viewPtr, STYLE_TEXTBOX, 
 	Tcl_GetString(objv[3]), objc - 4, objv + 4);
@@ -12999,7 +13091,7 @@ StyleUnsetOp(ClientData clientData, Tcl_Interp *interp, int objc,
 {
     TreeView *viewPtr = clientData;
     Blt_TreeKey key;
-    ColumnStyle *stylePtr;
+    ValueStyle *stylePtr;
     int i;
 
     stylePtr = FindStyle(interp, viewPtr, Tcl_GetString(objv[3]));
