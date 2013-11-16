@@ -102,10 +102,25 @@ typedef const char *UID;
 
 #define DEPTH(h, n)	(((h)->flatView) ? 0 : Blt_Tree_NodeDepth(n))
 
-#define DISABLED                (1<<0)
-#define HIDDEN                  (1<<1)
-#define HIGHLIGHT               (1<<2)
-#define POSTED                  (1<<3)
+/* View flags. */
+#define FOCUS			(1<<5)	/* The widget is receiving keyboard
+					 * events.  Draw the focus
+					 * highlight border around the
+					 * widget. */
+/* Column, row, or cell flags. */
+#define DISABLED                (1<<0)  /* Cell is disabled. */
+#define HIDDEN                  (1<<1)  /* Cell is hidden. */
+#define GEOMETRY		(1<<6)	/* Cell geometry needs to be
+                                         * recompute. */
+#define HIGHLIGHT               (1<<7)  /* Cell is highlighted. */
+/* Column or row specific flags. */
+#define EDIT    		(1<<10)
+
+/* Cell related flags */
+#define STYLE_LAYOUT		(1<<3)
+#define STYLE_USER		(1<<6)
+#define POSTED                  (1<<11)
+#define TEXTALLOC               (1<<10)
 
 /*
  *  Internal treeview widget flags:
@@ -190,10 +205,12 @@ typedef const char *UID;
 
 #define COLUMN_RULE_PICKED	(1<<1)
 
-#define STYLE_TEXTBOX		(0)
-#define STYLE_COMBOBOX		(1)
-#define STYLE_CHECKBOX		(2)
-#define STYLE_TYPE		0x3
+enum Styles {
+    STYLE_TEXTBOX,
+    STYLE_COMBOBOX,
+    STYLE_CHECKBOX,
+    STYLE_IMAGEBOX
+};
 
 #define STYLE_LAYOUT		(1<<3)
 #define STYLE_DIRTY		(1<<4)
@@ -430,24 +447,41 @@ struct _CellStyle {
     GC disableGC;
     GC highlightGC;
     GC normalGC;
+    GC selectGC;
+    Tk_Justify justify;			/* Indicates how the text or icon is
+					 * justified within the column. */
+    int borderWidth;			/* Width of outer border surrounding
+					 * the entire box. */
+    int relief, activeRelief;		/* Relief of outer border. */
+    Tcl_Obj *cmdObjPtr;
     Blt_TreeKey key;			/* Actual data resides in this tree
 					   cell. */
-    Tcl_Obj *cmdObjPtr;
 
 };
 
 typedef struct _Cell {
+    TreeView *viewPtr;
+    unsigned int flags;                 /* Flags for cell.*/
     Entry *entryPtr;                    /* Entry where the cell is
                                          * located. */
     Column *colPtr;			/* Column where the cell is
 					 * located. */
-    unsigned short width, height;       /* Dimensions of cell. */
-    unsigned int flags;                 /* Flags for cell.*/
-    CellStyle *stylePtr;		/* Style information for cell
-					 * displaying cell. */
-    const char *fmtString;		/* Raw text string. */
-    TextLayout *textPtr;		/* Processes string to be
-					 * displayed .*/
+    const char *text;                   /* If non-NULL, represents the
+                                         * (possibly) formatted text
+                                         * string. May point to tree's
+                                         * Tcl_obj value directly. */
+    Tk_Image tkImage;			/* If non-NULL, represents a
+					 * Tk_Image image of the cell
+					 * value. */
+    CellStyle *stylePtr;		/* If non-NULL, indicates an
+					 * overriding style for this
+					 * specific cell. */
+    unsigned short width, height;	/* Dimension of cell contents. This
+					 * may include the style's
+					 * borderwidth, but not the row or
+					 * column borderwidth or
+					 * padding.  */
+    unsigned short textWidth, textHeight;
     struct _Cell *nextPtr;
 } Cell;
 
@@ -456,7 +490,7 @@ typedef void (CellStyleDrawProc)(Cell *cellPtr, Drawable drawable,
         CellStyle *stylePtr, int x, int y);
 typedef int (CellStyleEditProc)(Cell *cellPtr, CellStyle *stylePtr);
 typedef void (CellStyleFreeProc)(CellStyle *stylePtr);
-typedef void (CellStyleGeometryProc)(CellStyle *stylePtr, Cell *cellPtr);
+typedef void (CellStyleGeometryProc)(Cell *cellPtr, CellStyle *cellStylePtr);
 typedef const char * (CellStyleIdentifyProc)(Cell *cellPtr, 
         CellStyle *stylePtr, int x, int y);
 typedef int (CellStylePostProc)(Tcl_Interp *interp, Cell *cellPtr,
@@ -470,7 +504,7 @@ struct _CellStyleClass {
 					 * used as the class name of the
 					 * treeview component for event
 					 * bindings. */
-    Blt_ConfigSpec *specsPtr;		/* Style configuration
+    Blt_ConfigSpec *specs;		/* Style configuration
 					 * specifications */
     CellStyleConfigureProc *configProc; /* Sets the GCs for style. */
     CellStyleGeometryProc *geomProc;	/* Measures the area needed for the
@@ -833,6 +867,7 @@ struct _TreeView {
     Entry *fromPtr;
 
     Cell *activeCellPtr;		/* Last active cell. */ 
+    Cell *focusCellPtr;                 /* Last active cell. */ 
 
     Cell *postPtr;                     /* Points to posted cell. */
 
@@ -939,12 +974,11 @@ struct _TreeView {
 };
 
 BLT_EXTERN Cell *Blt_TreeView_FindCell(Entry *entryPtr, Column *colPtr);
+
 BLT_EXTERN int Blt_TreeView_TextOp(TreeView *viewPtr, Tcl_Interp *interp, 
 	int objc, Tcl_Obj *const *objv);
 
 BLT_EXTERN void Blt_TreeView_DestroySort(TreeView *viewPtr);
-
-BLT_EXTERN Icon Blt_TreeView_GetEntryIcon(TreeView *viewPtr, Entry *entryPtr);
 
 BLT_EXTERN int Blt_TreeView_SetEntryValue(Tcl_Interp *interp, TreeView *viewPtr,
 	Entry *entryPtr, Column *colPtr, const char *string);
@@ -954,6 +988,7 @@ BLT_EXTERN void Blt_TreeView_EventuallyRedraw(TreeView *viewPtr);
 BLT_EXTERN CellStyle *Blt_TreeView_CreateStyle(Tcl_Interp *interp,
         TreeView *viewPtr, int type, const char *styleName, int objc, 
         Tcl_Obj *const *objv);
+
 
 #define CHOOSE(default, override)	\
 	(((override) == NULL) ? (default) : (override))

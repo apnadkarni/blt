@@ -262,7 +262,7 @@ proc blt::TreeView::Initialize { w } {
 	if { [%W cget -selectmode] == "multiple" } {
 	    %W selection anchor current
 	} else {
-	    %W invoke current
+	    %W entry invoke current
 	}
     }
 
@@ -391,6 +391,28 @@ proc blt::TreeView::Initialize { w } {
 # 	    break
 # 	}
 #     }
+    # CheckBoxStyle
+    if 0 {
+    $w bind CheckBoxStyle <Enter> { 
+	%W activate current 
+    }
+    $w bind CheckBoxStyle <Leave> { 
+	%W deactivate 
+    }
+    $w bind CheckBoxStyle <ButtonPress-1> { 
+	if { [%W writable active] } {
+	    blt::TreeView::ToggleValue %W active
+	} else {
+	    blt::TreeView::SetSelectionAnchor %W current
+	}
+    }
+    $w bind CheckBoxStyle <B1-Motion> { 
+	break
+    }
+    $w bind CheckBoxStyle <ButtonRelease-1> { 
+	%W invoke current
+    }
+    }
     $w bind CheckBoxStyle <Enter> { 
 	if { [%W column cget current -edit] } {
 	    %W style activate current current
@@ -473,6 +495,37 @@ proc blt::TreeView::AutoScroll { w } {
 	$w selection mark $index
     }
     set _private(afterId) [after 50 blt::TreeView::AutoScroll $w]
+}
+
+#
+# ToggleValue --
+#
+#	Toggles the value at the location of the cell requesting it.  This
+#	is called only for checkbox style cells. The value is pulled from
+#	the table and compared against the style's on value.  If its the
+#	"on" value, set the cell value in the table to its "off" value.
+#
+proc blt::TreeView::ToggleValue { w cell } {
+    set style [$w style get $cell]
+    set off [$w style cget $style -offvalue]
+    set on  [$w style cget $style -onvalue]
+
+    # Get the cell's current value and set the tree node field to that.
+    set table [$w cget -table]
+    foreach { node key } [$w index $cell] break
+    set value [$tree get $node $key ""]
+    if { [string compare $value $on] == 0 } {
+	set value $off
+    } else {
+	set value $on
+    }
+    set tree [$w cget -tree]
+    if { $tree != "" } {
+	foreach { node key } [$w index $cell] break
+	$tree set $node $key $value
+    }
+    # Execute the callback associated with the style
+    $w invoke $cell
 }
 
 proc blt::TreeView::SetSelectionAnchor { w tagOrId } {

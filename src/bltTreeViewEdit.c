@@ -824,7 +824,7 @@ AcquireText(TreeView *viewPtr, Textbox *tbPtr, Entry *entryPtr, Column *colPtr)
 	y = SCREENY(viewPtr, entryPtr->worldY);
 	stylePtr = colPtr->stylePtr;
 	cellPtr = Blt_TreeView_FindCell(entryPtr, colPtr);
-	string = cellPtr->fmtString;
+	string = cellPtr->text;
 	if (cellPtr->stylePtr != NULL) {
 	    stylePtr = cellPtr->stylePtr;
 	}
