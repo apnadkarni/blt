@@ -8878,7 +8878,7 @@ ScanOp(TableView *viewPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * SeeOp --
  *
- *	Implements the quick scan.
+ *	Changes to view to encompass the specified cell.
  *
  *	.t see cell
  *

@@ -262,7 +262,7 @@ proc blt::TreeView::Initialize { w } {
 	if { [%W cget -selectmode] == "multiple" } {
 	    %W selection anchor current
 	} else {
-	    %W invoke current
+	    %W entry invoke current
 	}
     }
 
@@ -380,48 +380,58 @@ proc blt::TreeView::Initialize { w } {
 	%W column invoke active
 	%W column configure active -titlerelief raised
     }
-#     $w bind TextBoxStyle <ButtonPress-3> { 
-# 	if { [%W edit -root -test %X %Y] } {
-# 	    break
-# 	}
-#     }
-#     $w bind TextBoxStyle <ButtonRelease-3> { 
-# 	if { [%W edit -root -test %X %Y] } {
-# 	    blt::TreeView::EditColumn %W %X %Y
-# 	    break
-# 	}
-#     }
+
+    # TextBoxStyle
+    $w bind TextBoxStyle <Enter> { 
+	%W cell activate current 
+    }
+    $w bind TextBoxStyle <Leave> { 
+	%W cell deactivate 
+    }
+    $w bind TextBoxStyle <ButtonPress-1> { 
+	if { ![%W cell writable active] } {
+	    blt::TreeView::SetSelectionAnchorFromCell %W active
+	}
+    }
+    $w bind TextBoxStyle <B1-Motion> { 
+	set blt::TreeView::_private(x) %x
+	set blt::TreeView::_private(y) %y
+	set index [%W nearest %x %y]
+	set blt::TreeView::_private(scroll) 1
+	if { [%W cget -selectmode] == "multiple" } {
+	    %W selection mark $index
+	} else {
+	    blt::TreeView::SetSelectionAnchor %W $index
+	}
+    }
+
+    # CheckBoxStyle
     $w bind CheckBoxStyle <Enter> { 
-	if { [%W column cget current -edit] } {
-	    %W style activate current current
-	} 
+	%W cell activate current 
     }
     $w bind CheckBoxStyle <Leave> { 
-	%W style deactivate
+	%W cell deactivate 
     }
     $w bind CheckBoxStyle <ButtonPress-1> { 
-	if { [%W column cget current -edit] } {
-	    break
+	if { ![%W cell writable active] } {
+	    blt::TreeView::SetSelectionAnchorFromCell %W active
 	}
     }
     $w bind CheckBoxStyle <B1-Motion> { 
-	if { [%W column cget current -edit] } {
-	    break
-	}
+	break
     }
     $w bind CheckBoxStyle <ButtonRelease-1> { 
-	if { [%W edit -root -test %X %Y] } {
-	    %W edit -root %X %Y
-	    break
+	if { [%W cell writable active] } {
+	    blt::TreeView::ToggleValue %W active
 	}
     }
+
+    # ComboBoxStyle
     $w bind ComboBoxStyle <Enter> { 
-	if { [%W column cget current -edit] } {
-	    %W style activate current current
-	} 
+	%W cell activate current 
     }
     $w bind ComboBoxStyle <Leave> { 
-	%W style deactivate
+	%W cell deactivate 
     }
     $w bind ComboBoxStyle <ButtonPress-1> { 
 	if { [%W column cget current -edit] } {
@@ -433,6 +443,14 @@ proc blt::TreeView::Initialize { w } {
 	    %W edit -root %X %Y
 	    break
 	}
+    }
+
+    # ImageBoxStyle
+    $w bind ImageBoxStyle <Enter> { 
+	%W cell activate current 
+    }
+    $w bind ImageBoxStyle <Leave> { 
+	%W cell deactivate 
     }
 }
 
@@ -473,6 +491,39 @@ proc blt::TreeView::AutoScroll { w } {
 	$w selection mark $index
     }
     set _private(afterId) [after 50 blt::TreeView::AutoScroll $w]
+}
+
+#
+# ToggleValue --
+#
+#	Toggles the value at the location of the cell requesting it.  This
+#	is called only for checkbox style cells. The value is pulled from
+#	the table and compared against the style's on value.  If its the
+#	"on" value, set the cell value in the table to its "off" value.
+#
+proc blt::TreeView::ToggleValue { w cell } {
+    set style [$w cell style $cell]
+    set off [$w style cget $style -offvalue]
+    set on  [$w style cget $style -onvalue]
+    # Get the cell's current value and set the tree node field to that.
+    set tree [$w cget -tree]
+    foreach { node key } [$w cell index $cell] break
+    set value [$tree get $node $key ""]
+    if { [string compare $value $on] == 0 } {
+	set value $off
+    } else {
+	set value $on
+    }
+    if { $tree != "" } {
+	$tree set $node $key $value
+    }
+    # Execute the callback associated with the style
+    $w cell invoke $cell
+}
+
+proc blt::TreeView::SetSelectionAnchorFromCell { w cell } {
+    foreach { node col } [$w cell index $cell] break
+    SetSelectionAnchor $w $node
 }
 
 proc blt::TreeView::SetSelectionAnchor { w tagOrId } {

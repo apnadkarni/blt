@@ -278,7 +278,6 @@ typedef struct {
     int borderWidth;			/* Width of outer border
 					 * surrounding the entire box. */
     int relief, activeRelief;		/* Relief of outer border. */
-
     Tcl_Obj *cmdObjPtr;			/* If non-NULL, TCL procedure
 					 * called to format the style is
 					 * invoked.*/
@@ -597,9 +596,6 @@ static Blt_ConfigSpec textBoxStyleSpecs[] =
     {BLT_CONFIG_BACKGROUND, "-activebackground", "activeBackground", 
 	"ActiveBackground", DEF_ACTIVE_BG, 
 	Blt_Offset(TextBoxStyle, activeBg), 0},
-    {BLT_CONFIG_RELIEF, "-activerelief", "activeRelief", "ActiveRelief", 
-	DEF_TEXTBOX_ACTIVE_RELIEF, Blt_Offset(TextBoxStyle, activeRelief), 
-	BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_SYNONYM, "-activebg", "activeBackground", 
 	(char *)NULL, (char *)NULL, 0, 0},
     {BLT_CONFIG_SYNONYM, "-activefg", "activeFackground", 
@@ -607,6 +603,9 @@ static Blt_ConfigSpec textBoxStyleSpecs[] =
     {BLT_CONFIG_COLOR, "-activeforeground", "activeForeground", 
 	"ActiveForeground", DEF_ACTIVE_FG, 
 	Blt_Offset(TextBoxStyle, activeFg), 0},
+    {BLT_CONFIG_RELIEF, "-activerelief", "activeRelief", "ActiveRelief", 
+	DEF_TEXTBOX_ACTIVE_RELIEF, Blt_Offset(TextBoxStyle, activeRelief), 
+	BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_SYNONYM, "-altbg", "alternateBackground", (char *)NULL,
 	(char *)NULL, 0, 0},
     {BLT_CONFIG_BACKGROUND, "-alternatebackground", "alternateBackground", 
@@ -1899,8 +1898,8 @@ NewTextBoxStyle(TableView *viewPtr, Blt_HashEntry *hPtr)
 static void
 TextBoxStyleConfigureProc(TableView *viewPtr, CellStyle *cellStylePtr)
 {
-    TextBoxStyle *stylePtr = (TextBoxStyle *)cellStylePtr;
     GC newGC;
+    TextBoxStyle *stylePtr = (TextBoxStyle *)cellStylePtr;
     XGCValues gcValues;
     unsigned long gcMask;
 
@@ -1960,10 +1959,10 @@ TextBoxStyleConfigureProc(TableView *viewPtr, CellStyle *cellStylePtr)
  *
  * TextBoxStyleGeometryProc --
  *
- *	Determines the space requirements for the "textbox" given the value to
- *	be displayed.  Depending upon whether an icon or text is displayed and
- *	their relative placements, this routine computes the space needed for
- *	the text entry.
+ *	Determines the space requirements for the "textbox" given the value
+ *	to be displayed.  Depending upon whether an icon or text is
+ *	displayed and their relative placements, this routine computes the
+ *	space needed for the text entry.
  *
  * Results:
  *	None.
@@ -1986,8 +1985,8 @@ TextBoxStyleGeometryProc(Cell *cellPtr, CellStyle *cellStylePtr)
     TableView *viewPtr;
 
     viewPtr = cellPtr->viewPtr;
-    cellPtr->flags &= ~GEOMETRY;	/* Remove the geometry flag from the
-					 * cell. */
+    cellPtr->flags &= ~GEOMETRY;                /* Remove the geometry flag
+                                                 * from the cell. */
     keyPtr = GetKey(cellPtr);
     rowPtr = keyPtr->rowPtr;
     colPtr = keyPtr->colPtr;
@@ -2090,17 +2089,17 @@ static void
 TextBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
 		     int x, int y)
 {
-    TextBoxStyle *stylePtr = (TextBoxStyle *)cellStylePtr;
-    int ix, iy, iw, ih;
-    int tx, ty, tw, th;
-    int gap, colWidth, rowHeight, cellWidth, cellHeight;
     Blt_Bg bg;
-    GC gc;
     CellKey *keyPtr;
-    Row *rowPtr;
     Column *colPtr;
-    int relief;
+    GC gc;
+    Row *rowPtr;
     TableView *viewPtr;
+    TextBoxStyle *stylePtr = (TextBoxStyle *)cellStylePtr;
+    int gap, colWidth, rowHeight, cellWidth, cellHeight;
+    int ix, iy, iw, ih;
+    int relief;
+    int tx, ty, tw, th;
 
     viewPtr = cellPtr->viewPtr;
     keyPtr = GetKey(cellPtr);
@@ -2666,7 +2665,7 @@ CheckBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
     x += CELL_PADX;
     y += CELL_PADY;
     cellHeight = cellPtr->height - 2 * (stylePtr->borderWidth + CELL_PADY) - 3;
-    cellWidth = cellPtr->width - 2 * (stylePtr->borderWidth + CELL_PADX) - 3;
+    cellWidth =  cellPtr->width  - 2 * (stylePtr->borderWidth + CELL_PADX) - 3;
 
     /* Justify (x) and center (y) the contents of the cell. */
     if (rowHeight > cellHeight) {

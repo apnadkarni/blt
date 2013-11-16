@@ -1,76 +1,76 @@
 /* -*- mode: c; c-basic-offset: 4; indent-tabs-mode: nil -*- */
-
 /* 
  * bltConfig.c --
  *
  * This file contains a Tcl_Obj based replacement for the widget
  * configuration functions in Tk.
  *
- *	Copyright (c) 1990-1994 The Regents of the University of California.
- *	Copyright (c) 1994-1997 Sun Microsystems, Inc.
+ *	Copyright (c) 1990-1994 The Regents of the University of
+ *	California.  Copyright (c) 1994-1997 Sun Microsystems, Inc.
  *
- *	See the file "license.terms" for information on usage and redistribution
- *	of this file, and for a DISCLAIMER OF ALL WARRANTIES.
+ *	See the file "license.terms" for information on usage and
+ *	redistribution of this file, and for a DISCLAIMER OF ALL
+ *	WARRANTIES.
  *
  *	Copyright 2003-2004 George A Howlett.
  *
  *	Permission is hereby granted, free of charge, to any person
  *	obtaining a copy of this software and associated documentation
  *	files (the "Software"), to deal in the Software without
- *	restriction, including without limitation the rights to use,
- *	copy, modify, merge, publish, distribute, sublicense, and/or
- *	sell copies of the Software, and to permit persons to whom the
- *	Software is furnished to do so, subject to the following
- *	conditions:
+ *	restriction, including without limitation the rights to use, copy,
+ *	modify, merge, publish, distribute, sublicense, and/or sell copies
+ *	of the Software, and to permit persons to whom the Software is
+ *	furnished to do so, subject to the following conditions:
  *
  *	The above copyright notice and this permission notice shall be
- *	included in all copies or substantial portions of the
- *	Software.
+ *	included in all copies or substantial portions of the Software.
  *
- *	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY
- *	KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
- *	WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
- *	PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS
- *	OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR
- *	OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
- *	OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
- *	SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ *	EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ *	MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ *	NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+ *	BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ *	ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ *	CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ *	SOFTWARE.
  */
 
 /*
  * This is a Tcl_Obj based replacement for the widget configuration
- * functions in Tk.  
+ * functions in Tk.
  *
  * What not use the new Tk_Option interface?
  *
- *	There were design changes in the new Tk_Option interface that
- *	make it unwieldy.  
+ *   There were design changes in the new Tk_Option interface that make it
+ *   a bit unwieldy.
  *
- *	o You have to dynamically allocate, store, and deallocate
- *	  your option table.  
- *      o The Tk_FreeConfigOptions routine requires a tkwin argument.
- *	  Unfortunately, most widgets save the display pointer and 
- *	  de-reference their tkwin when the window is destroyed.  
- *	o There's no TK_CONFIG_CUSTOM functionality.  This means that
- *	  save special options must be saved as strings by 
- *	  Tk_ConfigureWidget and processed later, thus losing the 
- *	  benefits of Tcl_Objs.  It also make error handling 
- *	  problematic, since you don't pick up certain errors like 
+ *   o You have to dynamically allocate, store, and deallocate your option
+ *     table. The old Tk_ConfigureSpecs table is static.
+
+ *   o The Tk_FreeConfigOptions routine requires a tkwin argument.
+ *     Unfortunately, most widgets save the display pointer and
+ *     de-reference their tkwin when the window is destroyed.
+ *
+ *   o There's no TK_CONFIG_CUSTOM functionality.  This means that 
+ *     special options must be saved as strings by Tk_ConfigureWidget and
+ *     processed later, thus losing the benefits of Tcl_Objs.  It also make
+ *     error handling problematic, since you don't pick up certain errors
+ *     like
  *	  
  *	    .widget configure -myoption bad -myoption good
  *        
- *	  You will never see the first "bad" value.
- *	o Especially compared to the former Tk_ConfigureWidget calls,
- *	  the new interface is overly complex.  If there was a big
- *	  performance win, it might be worth the effort.  But let's 
- *	  face it, this biggest wins are in processing custom options
- *	  values with thousands of elements.  Most common resources 
- *	  (font, color, etc) have string tokens anyways.
+ *     You will never see the first "bad" value.
  *
- *	On the other hand, the replacement functions in this file fell
- *	into place quite easily both from the aspect of API writer and
- *	user.  The biggest benefit is that you don't need to change lots
- *	of working code just to get the benefits of Tcl_Objs.
+ *   o Especially compared to the former Tk_ConfigureWidget calls, the new
+ *     interface seems overly complex.  If there was a big performance win, it
+ *     might be worth the effort.  But let's face it, this biggest wins are
+ *     in processing custom options values with thousands of elements.
+ *     Most common resources (font, color, etc) have string tokens anyways.
+ *
+ *  On the other hand, the replacement functions in this file fell into
+ *  place quite easily both from the aspect of API writer and user.  The
+ *  biggest benefit is that you don't need to change lots of working code
+ *  just to get the benefits of Tcl_Objs.
  * 
  */
 
@@ -111,9 +111,9 @@
  *	Return a Tk_Anchor value based on the value of the objPtr.
  *
  * Results:
- *	The return value is a standard TCL result. If an error occurs during
- *	conversion, an error message is left in the interpreter's result
- *	unless "interp" is NULL.
+ *	The return value is a standard TCL result. If an error occurs
+ *	during conversion, an error message is left in the interpreter's
+ *	result unless "interp" is NULL.
  *
  * Side effects:
  *	The object gets converted by Tcl_GetIndexFromObj.
@@ -122,12 +122,12 @@
  */
 int
 Tk_GetAnchorFromObj(
-    Tcl_Interp *interp,		/* Used for error reporting. */
-    Tcl_Obj *objPtr,		/* The object we are trying to get the 
-				 * value from. */
-    Tk_Anchor *anchorPtr)	/* Where to place the Tk_Anchor that
-				 * corresponds to the string value of
-				 * objPtr. */
+    Tcl_Interp *interp,                 /* Used for error reporting. */
+    Tcl_Obj *objPtr,                    /* The object we are trying to get
+                                         * the value from. */
+    Tk_Anchor *anchorPtr)               /* Where to place the Tk_Anchor
+                                         * that corresponds to the string
+                                         * value of objPtr. */
 {
     return Tk_GetAnchor(interp, Tcl_GetString(objPtr), anchorPtr);
 }
@@ -140,9 +140,9 @@ Tk_GetAnchorFromObj(
  *	Return a Tk_Justify value based on the value of the objPtr.
  *
  * Results:
- *	The return value is a standard TCL result. If an error occurs during
- *	conversion, an error message is left in the interpreter's result
- *	unless "interp" is NULL.
+ *	The return value is a standard TCL result. If an error occurs
+ *	during conversion, an error message is left in the interpreter's
+ *	result unless "interp" is NULL.
  *
  * Side effects:
  *	The object gets converted by Tcl_GetIndexFromObj.
@@ -151,12 +151,12 @@ Tk_GetAnchorFromObj(
  */
 int
 Tk_GetJustifyFromObj(
-    Tcl_Interp *interp,		/* Used for error reporting. */
-    Tcl_Obj *objPtr,		/* The object we are trying to get the 
-				 * value from. */
-    Tk_Justify *justifyPtr)	/* Where to place the Tk_Justify that
-				 * corresponds to the string value of
-				 * objPtr. */
+    Tcl_Interp *interp,                 /* Used for error reporting. */
+    Tcl_Obj *objPtr,                    /* The object we are trying to get
+                                         * the value from. */
+    Tk_Justify *justifyPtr)             /* Where to place the Tk_Justify
+                                         * that corresponds to the string
+                                         * value of objPtr. */
 {
     return Tk_GetJustify(interp, Tcl_GetString(objPtr), justifyPtr);
 }
@@ -168,9 +168,9 @@ Tk_GetJustifyFromObj(
  *	Return an integer value based on the value of the objPtr.
  *
  * Results:
- *	The return value is a standard TCL result. If an error occurs during
- *	conversion, an error message is left in the interpreter's result
- *	unless "interp" is NULL.
+ *	The return value is a standard TCL result. If an error occurs
+ *	during conversion, an error message is left in the interpreter's
+ *	result unless "interp" is NULL.
  *
  * Side effects:
  *	The object gets converted by Tcl_GetIndexFromObj.
@@ -179,10 +179,10 @@ Tk_GetJustifyFromObj(
  */
 int
 Tk_GetReliefFromObj(
-    Tcl_Interp *interp,		/* Used for error reporting. */
-    Tcl_Obj *objPtr,		/* The object we are trying to get the 
-				 * value from. */
-    int *reliefPtr)		/* Where to place the answer. */
+    Tcl_Interp *interp,                 /* Used for error reporting. */
+    Tcl_Obj *objPtr,                    /* The object we are trying to get
+                                         * the value from. */
+    int *reliefPtr)                     /* Where to place the answer. */
 {
     return Tk_GetRelief(interp, Tcl_GetString(objPtr), reliefPtr);
 }
@@ -193,30 +193,31 @@ Tk_GetReliefFromObj(
  *
  * Tk_Alloc3DBorderFromObj --
  *
- *	Given a Tcl_Obj *, map the value to a corresponding
- *	Tk_3DBorder structure based on the tkwin given.
+ *	Given a Tcl_Obj *, map the value to a corresponding Tk_3DBorder
+ *	structure based on the tkwin given.
  *
  * Results:
- *	The return value is a token for a data structure describing a
- *	3-D border.  This token may be passed to procedures such as
- *	Blt_Draw3DRectangle and Tk_Free3DBorder.  If an error prevented
- *	the border from being created then NULL is returned and an error
+ *	The return value is a token for a data structure describing a 3-D
+ *	border.  This token may be passed to procedures such as
+ *	Blt_Draw3DRectangle and Tk_Free3DBorder.  If an error prevented the
+ *	border from being created then NULL is returned and an error
  *	message will be left in the interp's result.
  *
  * Side effects:
  *	The border is added to an internal database with a reference
- *	count. For each call to this procedure, there should eventually
- *	be a call to FreeBorderObjProc so that the database is
- *	cleaned up when borders aren't in use anymore.
+ *	count. For each call to this procedure, there should eventually be
+ *	a call to FreeBorderObjProc so that the database is cleaned up when
+ *	borders aren't in use anymore.
  *
  *---------------------------------------------------------------------------
  */
 Tk_3DBorder
 Tk_Alloc3DBorderFromObj(
-    Tcl_Interp *interp,		/* Interp for error results. */
-    Tk_Window tkwin,		/* Need the screen the border is used on.*/
-    Tcl_Obj *objPtr)		/* Object giving name of color for window
-				 * background. */
+    Tcl_Interp *interp,                 /* Interp for error results. */
+    Tk_Window tkwin,                    /* Need the screen the border is
+                                         * used on.*/
+    Tcl_Obj *objPtr)                    /* Object giving name of color for
+                                         * window background. */
 {
     return Tk_Get3DBorder(interp, tkwin, Tcl_GetString(objPtr));
 }
@@ -225,32 +226,34 @@ Tk_Alloc3DBorderFromObj(
  *
  * Tk_AllocBitmapFromObj --
  *
- *	Given a Tcl_Obj *, map the value to a corresponding
- *	Pixmap structure based on the tkwin given.
+ *	Given a Tcl_Obj *, map the value to a corresponding Pixmap
+ *	structure based on the tkwin given.
  *
  * Results:
- *	The return value is the X identifer for the desired bitmap
- *	(i.e. a Pixmap with a single plane), unless string couldn't be
- *	parsed correctly.  In this case, None is returned and an error
- *	message is left in the interp's result.  The caller should never
- *	modify the bitmap that is returned, and should eventually call
+ *	The return value is the X identifer for the desired bitmap (i.e. a
+ *	Pixmap with a single plane), unless string couldn't be parsed
+ *	correctly.  In this case, None is returned and an error message is
+ *	left in the interp's result.  The caller should never modify the
+ *	bitmap that is returned, and should eventually call
  *	Tk_FreeBitmapFromObj when the bitmap is no longer needed.
  *
  * Side effects:
  *	The bitmap is added to an internal database with a reference count.
  *	For each call to this procedure, there should eventually be a call
- *	to Tk_FreeBitmapFromObj, so that the database can be cleaned up 
+ *	to Tk_FreeBitmapFromObj, so that the database can be cleaned up
  *	when bitmaps aren't needed anymore.
  *
  *---------------------------------------------------------------------------
  */
 Pixmap
 Tk_AllocBitmapFromObj(
-    Tcl_Interp *interp,		/* Interp for error results. This may 
-				 * be NULL. */
-    Tk_Window tkwin,		/* Need the screen the bitmap is used on.*/
-    Tcl_Obj *objPtr)		/* Object describing bitmap; see manual
-				 * entry for legal syntax of string value. */
+    Tcl_Interp *interp,                 /* Interp for error results. This
+                                         * may be NULL. */
+    Tk_Window tkwin,                    /* Need the screen the bitmap is
+                                         * used on.*/
+    Tcl_Obj *objPtr)                    /* Object describing bitmap; see
+                                         * manual entry for legal syntax of
+                                         * string value. */
 {
     return Tk_GetBitmap(interp, tkwin, Tcl_GetString(objPtr));
 }

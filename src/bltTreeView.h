@@ -48,11 +48,13 @@
 #include "bltBind.h"
 #include "bltBg.h"
 
-#define ITEM_ENTRY		(ClientData)0
-#define ITEM_ENTRY_BUTTON	(ClientData)1
-#define ITEM_COLUMN_TITLE	(ClientData)2
-#define ITEM_COLUMN_RULE	(ClientData)3
-#define ITEM_CELL       	(ClientData)4
+#define ITEM_NONE               0
+#define ITEM_ENTRY		(1<<0)
+#define ITEM_ENTRY_BUTTON	(1<<1)
+#define ITEM_COLUMN             (1<<2)
+#define ITEM_COLUMN_TITLE	(1<<3)
+#define ITEM_COLUMN_RULE	(1<<4)
+#define ITEM_CELL       	(1<<5)
 #define ITEM_STYLE		(ClientData)0x10004
 
 #define TITLE_PADX	2
@@ -102,106 +104,104 @@ typedef const char *UID;
 
 #define DEPTH(h, n)	(((h)->flatView) ? 0 : Blt_Tree_NodeDepth(n))
 
-#define DISABLED                (1<<0)
-#define HIDDEN                  (1<<1)
-#define HIGHLIGHT               (1<<2)
-#define POSTED                  (1<<3)
+/* Shared flags. */
+#define DISABLED                (1<<0)  /* Draw cell as disabled. */
+#define HIDDEN                  (1<<1)  /* Don't draw cell. */
+#define GEOMETRY		(1<<2)	/* Cell/tree geometry needs to be
+                                         * recomputed. */
+#define FOCUS   		(1<<3)	/* Cell/entry has focus. */
+#define DELETED                 (1<<4)  /* Object has been deleted.  */
+#define HIGHLIGHT               (1<<5)  /* Cell is highlighted. */
+#define EDITABLE		(1<<6)  /* Cell/entry value can be changed. */
 
 /*
- *  Internal treeview widget flags:
+ *  Internal treeview widget-specific flags:
  */
-#define LAYOUT_PENDING		(1<<0)	/* The layout of the hierarchy needs
+#define LAYOUT_PENDING		(1<<8)	/* The layout of the hierarchy needs
 					 * to be recomputed. */
-#define REDRAW_PENDING		(1<<1)	/* A redraw request is pending for
+#define REDRAW_PENDING		(1<<9)	/* A redraw request is pending for
 					 * the widget. */
-#define SELECT_PENDING		(1<<2)	/* A "selection" command idle task is
+#define SELECT_PENDING		(1<<10)	/* A "selection" command idle task is
 					 * pending.  */
-#define SCROLLX			(1<<3)	/* X-scroll request is pending. */
-#define SCROLLY			(1<<4)	/* Y-scroll request is pending. */
+#define SCROLLX			(1<<11)	/* X-scroll request is pending. */
+#define SCROLLY			(1<<12)	/* Y-scroll request is pending. */
+
 /* Both X-scroll and  Y-scroll requests are pending. */
 #define SCROLL_PENDING	(SCROLLX | SCROLLY)
 
-#define FOCUS			(1<<5)	/* The widget is receiving keyboard
-					 * events.  Draw the focus
-					 * highlight border around the
-					 * widget. */
-#define DIRTY			(1<<6)	/* The hierarchy has changed. It
+#define DIRTY                   (1<<14)	/* The hierarchy has changed. It
 					 * may invalidate the locations and
 					 * pointers to entries.  The widget
 					 * will need to recompute its
 					 * layout. */
-#define UPDATE			(1<<7)
-#define RESORT			(1<<8)	/* The tree has changed such that
+#define UPDATE                  (1<<15)
+#define RESORT                  (1<<16) /* The tree has changed such that
 					 * the view needs to be resorted.
 					 * This can happen when an entry is
 					 * open or closed, it's label
 					 * changes, a column value changes,
 					 * etc. */
-#define SORTED			(1<<9)	/* The view is currently sorted.
+#define SORTED                  (1<<17)	/* The view is currently sorted.
 					 * This is used to simply reverse
 					 * the view when the sort
 					 * -decreasing flag is changed. */
-#define SORT_PENDING		(1<<10)		
-#define TV_SORT_AUTO		(1<<11)
-#define REDRAW_BORDERS		(1<<12)	/* The borders of the widget
+#define SORT_PENDING		(1<<18)		
+#define TV_SORT_AUTO		(1<<19)
+#define REDRAW_BORDERS		(1<<20)	/* The borders of the widget
 					 * (highlight ring and 3-D border)
 					 * need to be redrawn. */
-#define REPOPULATE		(1<<13)	/* The tree used to populated the
+#define REPOPULATE		(1<<21)	/* The tree used to populated the
 					 * widget has been changed, so
 					 * generate the associated data
 					 * structures. */
-#define VIEWPORT		(1<<14)	/* Indicates that the viewport has
-					 * changed in some way: the size of
-					 * the viewport, the location of
-					 * the viewport, or the contents of
-					 * the viewport. */
-#define ALLOW_DUPLICATES	(1<<15)	/* When inserting new entries,
+#define ALLOW_DUPLICATES	(1<<22)	/* When inserting new entries,
 					 * create duplicate entries. */
-#define FILL_ANCESTORS		(1<<16)	/* Automatically create ancestor
+#define FILL_ANCESTORS		(1<<23)	/* Automatically create ancestor
 					 * entries as needed when inserting
 					 * a new entry. */
-#define HIDE_ROOT		(1<<17)	/* Don't display the root entry. */
-#define HIDE_LEAVES		(1<<18)	/* Don't display entries that are
+#define HIDE_ROOT		(1<<24)	/* Don't display the root entry. */
+#define HIDE_LEAVES		(1<<25)	/* Don't display entries that are
 					 * leaves. */
 
-#define TV_NEW_TAGS		(1<<19)
-#define TV_HIGHLIGHT_CELLS	(1<<20)
-#define DONT_UPDATE		(1<<21)
+#define TV_NEW_TAGS		(1<<26)
+#define DONT_UPDATE		(1<<27)
 
-#define COLUMN_READONLY		(1<<23)
-#define RULE_ACTIVE_COLUMN	(1<<24)
-#define COLUMN_RULE_NEEDED	(1<<25)
-#define SHOW_COLUMN_TITLES	(1<<26)	/* Indicates whether to draw titles
+#define RULE_ACTIVE_COLUMN	(1<<28)
+#define COLUMN_RULE_NEEDED	(1<<29)
+#define SHOW_COLUMN_TITLES	(1<<30)	/* Indicates whether to draw titles
 					 * over each column. */
+/* Column flags. */
+#define COLUMN_READONLY		(1<<8)
+
+/* Entry flags */
+#define ENTRY_SELECTED		(1<<8)
+#define ENTRY_CLOSED		(1<<9)
+#define ENTRY_HIDE		(1<<10)
+#define ENTRY_MASK		(ENTRY_CLOSED | ENTRY_HIDE)
+#define ENTRY_BUTTON            (1<<11)
+#define ENTRY_REDRAW		(1<<12) /* Not really used. */
+#define ENTRY_AUTO_BUTTON	(1<<13)
+#define ENTRY_REQUEST_BUTTON	(1<<14)
+#define ENTRY_BUTTON_MASK	(ENTRY_AUTO_BUTTON | ENTRY_REQUEST_BUTTON)
+
+/* Cell flags */
+#define TEXTALLOC               (1<<8)
+
+/* Cell related flags */
 
 #define TV_ITEM_COLUMN	1
 #define TV_ITEM_RULE	2
 
+enum Styles {
+    STYLE_TEXTBOX,
+    STYLE_COMBOBOX,
+    STYLE_CHECKBOX,
+    STYLE_IMAGEBOX
+};
 
-#define BUTTON_AUTO		(1<<8)
-#define BUTTON_SHOW		(1<<9)
-#define BUTTON_MASK		(BUTTON_AUTO | BUTTON_SHOW)
-
-
-#define ENTRY_EDITABLE		(1<<10)
-#define ENTRY_SELECTED		(1<<11)
-
-#define DELETED			(1<<12)
-
-#define COLUMN_RULE_PICKED	(1<<1)
-
-#define STYLE_TEXTBOX		(0)
-#define STYLE_COMBOBOX		(1)
-#define STYLE_CHECKBOX		(2)
-#define STYLE_TYPE		0x3
-
-#define STYLE_LAYOUT		(1<<3)
-#define STYLE_DIRTY		(1<<4)
-#define STYLE_HIGHLIGHT		(1<<5)
-#define STYLE_USER		(1<<6)
-
-#define STYLE_EDITABLE		(1<<10)
-#define STYLE_POSTED		(1<<11)
+#define STYLE_LAYOUT		(1<<8)
+#define STYLE_DIRTY		(1<<9)
+#define STYLE_USER		(1<<10)
 
 typedef struct _Column Column;
 typedef struct _Combobox Combobox;
@@ -332,6 +332,7 @@ struct _Column {
 					 * invoked. */
     int max;				/* Maximum space allowed for
 					 * column. */
+    int ruleWidth;
     int reqMin, reqMax;			/* Requested bounds on the width of
 					 * column.  Does not include any
 					 * padding or the borderwidth of
@@ -367,9 +368,6 @@ struct _Column {
     SortType sortType;
 };
 
-#define COLUMN_DIRTY		(1<<0)
-#define COLUMN_HIDDEN		(1<<1)
-
 struct _CellStyle {
     int refCount;			/* Usage reference count.  A
 					 * reference count of zero
@@ -389,7 +387,8 @@ struct _CellStyle {
 					 * still in use (non-zero reference
 					 * count) will have no hash table
 					 * entry. */
-    TreeView *viewPtr;			
+    TreeView *viewPtr;                  /* Treeview widget containing this 
+                                         * style. */
     Blt_ChainLink link;			/* If non-NULL, pointer of the
 					 * style in a list of all newly
 					 * created styles. */
@@ -425,29 +424,51 @@ struct _CellStyle {
 					 * cell.  If non-NULL, overrides
 					 * the default background * color
 					 * specification. */
-    Tcl_Obj *validateCmdObjPtr;
-    GC activeGC;
-    GC disableGC;
-    GC highlightGC;
-    GC normalGC;
+     GC activeGC;			/* Graphics context of active
+                                         * text. */
+    GC disableGC;			/* Graphics context of disabled
+                                         * text. */
+    GC highlightGC;			/* Graphics context of highlighted
+					 * text. */
+    GC normalGC;			/* Graphics context of normal
+                                         * text. */
+    GC selectGC;			/* Graphics context of selected
+					 * text. */
+    Tk_Justify justify;			/* Indicates how the text or icon
+					 * is justified within the
+					 * column. */
+    int borderWidth;			/* Width of outer border surrounding
+					 * the entire box. */
+    int relief, activeRelief;		/* Relief of outer border. */
+    Tcl_Obj *fmtCmdObjPtr;
     Blt_TreeKey key;			/* Actual data resides in this tree
 					   cell. */
-    Tcl_Obj *cmdObjPtr;
 
 };
 
 typedef struct _Cell {
+    TreeView *viewPtr;
+    unsigned int flags;                 /* Flags for cell.*/
     Entry *entryPtr;                    /* Entry where the cell is
                                          * located. */
     Column *colPtr;			/* Column where the cell is
 					 * located. */
-    unsigned short width, height;       /* Dimensions of cell. */
-    unsigned int flags;                 /* Flags for cell.*/
-    CellStyle *stylePtr;		/* Style information for cell
-					 * displaying cell. */
-    const char *fmtString;		/* Raw text string. */
-    TextLayout *textPtr;		/* Processes string to be
-					 * displayed .*/
+    const char *text;                   /* If non-NULL, represents the
+                                         * (possibly) formatted text
+                                         * string. May point to tree's
+                                         * Tcl_obj value directly. */
+    Tk_Image tkImage;			/* If non-NULL, represents a
+					 * Tk_Image image of the cell
+					 * value. */
+    CellStyle *stylePtr;		/* If non-NULL, indicates an
+					 * overriding style for this
+					 * specific cell. */
+    unsigned short width, height;	/* Dimension of cell contents. This
+					 * may include the style's
+					 * borderwidth, but not the row or
+					 * column borderwidth or
+					 * padding.  */
+    unsigned short textWidth, textHeight;
     struct _Cell *nextPtr;
 } Cell;
 
@@ -456,7 +477,7 @@ typedef void (CellStyleDrawProc)(Cell *cellPtr, Drawable drawable,
         CellStyle *stylePtr, int x, int y);
 typedef int (CellStyleEditProc)(Cell *cellPtr, CellStyle *stylePtr);
 typedef void (CellStyleFreeProc)(CellStyle *stylePtr);
-typedef void (CellStyleGeometryProc)(CellStyle *stylePtr, Cell *cellPtr);
+typedef void (CellStyleGeometryProc)(Cell *cellPtr, CellStyle *cellStylePtr);
 typedef const char * (CellStyleIdentifyProc)(Cell *cellPtr, 
         CellStyle *stylePtr, int x, int y);
 typedef int (CellStylePostProc)(Tcl_Interp *interp, Cell *cellPtr,
@@ -470,7 +491,7 @@ struct _CellStyleClass {
 					 * used as the class name of the
 					 * treeview component for event
 					 * bindings. */
-    Blt_ConfigSpec *specsPtr;		/* Style configuration
+    Blt_ConfigSpec *specs;		/* Style configuration
 					 * specifications */
     CellStyleConfigureProc *configProc; /* Sets the GCs for style. */
     CellStyleGeometryProc *geomProc;	/* Measures the area needed for the
@@ -533,6 +554,8 @@ struct _Entry {
 					 * are opened or closed. They override
 					 * those specified globally. */
     Tcl_Obj *cmdObjPtr;
+
+    int ruleHeight;
     /*
      * Button information:
      */
@@ -578,38 +601,6 @@ struct _Entry {
 					 * Non-NULL only if there are cell
 					 * entries. */
 };
-
-/*
- *---------------------------------------------------------------------------
- *
- *  Internal entry flags:
- *
- *	ENTRY_HAS_BUTTON	Indicates that a button needs to be
- *				drawn for this entry.
- *
- *	ENTRY_CLOSED		Indicates that the entry is closed and
- *				its subentries are not displayed.
- *
- *	ENTRY_HIDE		Indicates that the entry is hidden (i.e.
- *				can not be viewed by opening or scrolling).
- *
- *	BUTTON_AUTO
- *	BUTTON_SHOW
- *	BUTTON_MASK
- *
- *---------------------------------------------------------------------------
- */
-#define ENTRY_CLOSED		(1<<0)
-#define ENTRY_HIDE		(1<<1)
-#define ENTRY_NOT_LEAF		(1<<2)
-#define ENTRY_MASK		(ENTRY_CLOSED | ENTRY_HIDE)
-
-#define ENTRY_HAS_BUTTON	(1<<3)
-#define ENTRY_ICON		(1<<4)
-#define ENTRY_REDRAW		(1<<5)
-#define ENTRY_LAYOUT_PENDING	(1<<6)
-#define ENTRY_DATA_CHANGED	(1<<7)
-#define ENTRY_DIRTY		(ENTRY_DATA_CHANGED | ENTRY_LAYOUT_PENDING)
 
 /*
  * Button --
@@ -833,6 +824,7 @@ struct _TreeView {
     Entry *fromPtr;
 
     Cell *activeCellPtr;		/* Last active cell. */ 
+    Cell *focusCellPtr;                 /* Last active cell. */ 
 
     Cell *postPtr;                     /* Points to posted cell. */
 
@@ -939,12 +931,11 @@ struct _TreeView {
 };
 
 BLT_EXTERN Cell *Blt_TreeView_FindCell(Entry *entryPtr, Column *colPtr);
+
 BLT_EXTERN int Blt_TreeView_TextOp(TreeView *viewPtr, Tcl_Interp *interp, 
 	int objc, Tcl_Obj *const *objv);
 
 BLT_EXTERN void Blt_TreeView_DestroySort(TreeView *viewPtr);
-
-BLT_EXTERN Icon Blt_TreeView_GetEntryIcon(TreeView *viewPtr, Entry *entryPtr);
 
 BLT_EXTERN int Blt_TreeView_SetEntryValue(Tcl_Interp *interp, TreeView *viewPtr,
 	Entry *entryPtr, Column *colPtr, const char *string);
@@ -954,6 +945,7 @@ BLT_EXTERN void Blt_TreeView_EventuallyRedraw(TreeView *viewPtr);
 BLT_EXTERN CellStyle *Blt_TreeView_CreateStyle(Tcl_Interp *interp,
         TreeView *viewPtr, int type, const char *styleName, int objc, 
         Tcl_Obj *const *objv);
+
 
 #define CHOOSE(default, override)	\
 	(((override) == NULL) ? (default) : (override))

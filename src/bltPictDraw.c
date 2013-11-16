@@ -3634,6 +3634,7 @@ Blt_PaintCheckbox(int w, int h, XColor *fillColorPtr, XColor *outlineColorPtr,
 	Blt_PaintBrush_SetColor(&brush, Blt_XColorToPixel(checkColorPtr));
 	PaintPolygonAA2(destPtr, 7, points, &r, &brush, &shadow);
     }
+    destPtr->flags |= BLT_PIC_BLEND | BLT_PIC_ASSOCIATED_COLORS;
     return destPtr;
 }
 

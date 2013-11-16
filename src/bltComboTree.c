@@ -249,7 +249,6 @@ typedef const char *UID;
 #define STYLE_CHECKBOX		(2)
 #define STYLE_TYPE		0x3
 
-#define STYLE_LAYOUT		(1<<3)
 #define STYLE_DIRTY		(1<<4)
 #define STYLE_HIGHLIGHT		(1<<5)
 #define STYLE_USER		(1<<6)

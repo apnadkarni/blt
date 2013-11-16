@@ -126,17 +126,16 @@ set count 0
 Find $tree root $top
 puts "$count entries"
 
-
 $treeview style checkbox check \
-    -onvalue 100 -offvalue "50" \
-    -showvalue yes 
+    -onvalue "file" -offvalue "directory" \
+    -showvalue yes
 
 $treeview style combobox combo  \
     -icon ::blt::TreeView::openIcon \
-    -arrowrelief flat -arrowborderwidth 0
+    -arrowrelief flat -arrowborderwidth 0 
 
 $treeview column configure uid -style combo 
-$treeview column configure gid -style check
+$treeview column configure type -style check
 
 wm protocol . WM_DELETE_WINDOW { destroy . }
 

@@ -1,5 +1,4 @@
 /* -*- mode: c; c-basic-offset: 4; indent-tabs-mode: nil -*- */
-
 /*
  * bltScrollset.c --
  *
@@ -7,13 +6,13 @@
  *
  *	Copyright 2006 George A Howlett.
  *
- *	Permission is hereby granted, free of charge, to any person obtaining
- *	a copy of this software and associated documentation files (the
- *	"Software"), to deal in the Software without restriction, including
- *	without limitation the rights to use, copy, modify, merge, publish,
- *	distribute, sublicense, and/or sell copies of the Software, and to
- *	permit persons to whom the Software is furnished to do so, subject to
- *	the following conditions:
+ *	Permission is hereby granted, free of charge, to any person
+ *	obtaining a copy of this software and associated documentation
+ *	files (the "Software"), to deal in the Software without
+ *	restriction, including without limitation the rights to use, copy,
+ *	modify, merge, publish, distribute, sublicense, and/or sell copies
+ *	of the Software, and to permit persons to whom the Software is
+ *	furnished to do so, subject to the following conditions:
  *
  *	The above copyright notice and this permission notice shall be
  *	included in all copies or substantial portions of the Software.
@@ -21,10 +20,11 @@
  *	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  *	EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  *	MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- *	NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
- *	LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
- *	OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
- *	WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *	NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+ *	BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ *	ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ *	CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ *	SOFTWARE.
  */
 
 #define BUILD_BLT_TK_PROCS 1
@@ -100,9 +100,10 @@
 /*
  * Limits --
  *
- * 	Defines the bounding of a size (width or height) in the table.  It may
- * 	be related to the partition, entry, or table size.  The widget pointers
- * 	are used to associate sizes with the requested size of other widgets.
+ * 	Defines the bounding of a size (width or height) in the table.  It
+ * 	may be related to the partition, entry, or table size.  The widget
+ * 	pointers are used to associate sizes with the requested size of
+ * 	other widgets.
  */
 
 typedef struct {
@@ -115,11 +116,11 @@ typedef struct {
 
 typedef struct {
     /*
-     * This works around a bug in the Tk API.  Under under Win32, Tk tries to
-     * read the widget record of toplevel windows (TopLevel or Frame widget), to
-     * get its menu name field.  What this means is that we must carefully
-     * arrange the fields of this widget so that the menuName field is at the
-     * same offset in the structure.
+     * This works around a bug in the Tk API.  Under under Win32, Tk tries
+     * to read the widget record of toplevel windows (TopLevel or Frame
+     * widget), to get its menu name field.  What this means is that we
+     * must carefully arrange the fields of this widget so that the
+     * menuName field is at the same offset in the structure.
      */
 
     Tk_Window tkwin;			/* Window that embodies the frame.
