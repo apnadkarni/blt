@@ -212,8 +212,8 @@ typedef struct {
                                          * cursor. */
     /* Data-specific fields. */
     Entry *entryPtr;                    /* Selected entry */
-    Column *columnPtr;                  /* Column of entry to be edited */
-    ValueStyle *stylePtr;
+    Column *colPtr;                     /* Column of entry to be edited */
+    CellStyle *stylePtr;
     Icon icon;
     int gap;
     char *string;
@@ -651,15 +651,15 @@ UpdateLayout(Textbox *tbPtr)
 
     width = iw + textPtr->width + gap * 2;
     height = MAX(ih, textPtr->height);
-    if ((tbPtr->columnPtr == &viewPtr->treeColumn) && (!viewPtr->flatView)) {
+    if ((tbPtr->colPtr == &viewPtr->treeColumn) && (!viewPtr->flatView)) {
 	int level;
 	
 	level = DEPTH(viewPtr, tbPtr->entryPtr->node);
 	offset = -(ICONWIDTH(level) + 2);
     }
 
-    if (width <= (tbPtr->columnPtr->width + offset)) {
-	width = (tbPtr->columnPtr->width + offset);
+    if (width <= (tbPtr->colPtr->width + offset)) {
+	width = (tbPtr->colPtr->width + offset);
     } 
     if (height < tbPtr->entryPtr->height) {
 	height = tbPtr->entryPtr->height;
@@ -795,15 +795,14 @@ DeleteText(Textbox *tbPtr, int firstPos, int lastPos)
 }
 
 static int
-AcquireText(TreeView *viewPtr, Textbox *tbPtr, Entry *entryPtr, 
-	    Column *columnPtr)
+AcquireText(TreeView *viewPtr, Textbox *tbPtr, Entry *entryPtr, Column *colPtr)
 {
-    ValueStyle *stylePtr;
+    CellStyle *stylePtr;
     int x, y;
     const char *string;
     Icon icon;
 
-    if (columnPtr == &viewPtr->treeColumn) {
+    if (colPtr == &viewPtr->treeColumn) {
 	int level;
 
 	level = DEPTH(viewPtr, entryPtr->node);
@@ -816,18 +815,18 @@ AcquireText(TreeView *viewPtr, Textbox *tbPtr, Entry *entryPtr,
 	    x += ICONWIDTH(level);
 	}
 	string = GETLABEL(entryPtr);
-	stylePtr = columnPtr->stylePtr;
+	stylePtr = colPtr->stylePtr;
 	icon = GetEntryIcon(viewPtr, entryPtr);
     } else {
-	Value *valuePtr;
+	Cell *cellPtr;
 
-	x = SCREENX(viewPtr, columnPtr->worldX);
+	x = SCREENX(viewPtr, colPtr->worldX);
 	y = SCREENY(viewPtr, entryPtr->worldY);
-	stylePtr = columnPtr->stylePtr;
-	valuePtr = Blt_TreeView_FindValue(entryPtr, columnPtr);
-	string = valuePtr->fmtString;
-	if (valuePtr->stylePtr != NULL) {
-	    stylePtr = valuePtr->stylePtr;
+	stylePtr = colPtr->stylePtr;
+	cellPtr = Blt_TreeView_FindCell(entryPtr, colPtr);
+	string = cellPtr->fmtString;
+	if (cellPtr->stylePtr != NULL) {
+	    stylePtr = cellPtr->stylePtr;
 	}
 	icon = stylePtr->icon;
     }
@@ -843,7 +842,7 @@ AcquireText(TreeView *viewPtr, Textbox *tbPtr, Entry *entryPtr,
     }
     tbPtr->icon = icon;
     tbPtr->entryPtr = entryPtr;
-    tbPtr->columnPtr = columnPtr;
+    tbPtr->colPtr = colPtr;
     tbPtr->x = x - tbPtr->borderWidth;
     tbPtr->y = y - tbPtr->borderWidth;
     
@@ -1102,8 +1101,7 @@ ConfigureTextbox(Textbox *tbPtr)
 }
 
 int
-Blt_TreeView_CreateTextbox(TreeView *viewPtr, Entry *entryPtr, 
-			   Column *columnPtr)
+Blt_TreeView_CreateTextbox(TreeView *viewPtr, Entry *entryPtr, Column *colPtr)
 {
     Tk_Window tkwin;
     Textbox *tbPtr;
@@ -1151,7 +1149,7 @@ Blt_TreeView_CreateTextbox(TreeView *viewPtr, Entry *entryPtr,
 	Tk_DestroyWindow(tkwin);
 	return TCL_ERROR;
     }
-    AcquireText(viewPtr, tbPtr, entryPtr, columnPtr);
+    AcquireText(viewPtr, tbPtr, entryPtr, colPtr);
     tbPtr->insertPos = strlen(tbPtr->string);
     
     Tk_MoveResizeWindow(tkwin, tbPtr->x, tbPtr->y, tbPtr->width, tbPtr->height);
@@ -1185,7 +1183,7 @@ DisplayTextbox(ClientData clientData)
     if (!Tk_IsMapped(tbPtr->tkwin)) {
 	return;
     }
-    if (tbPtr->columnPtr == NULL) {
+    if (tbPtr->colPtr == NULL) {
 	return;
     }
     drawable = Blt_GetPixmap(tbPtr->display, Tk_WindowId(tbPtr->tkwin), 
@@ -1313,7 +1311,7 @@ ApplyOp(Textbox *tbPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     int result;
 
     result = Blt_TreeView_SetEntryValue(interp, tbPtr->viewPtr, tbPtr->entryPtr,
-	tbPtr->columnPtr, tbPtr->string);
+	tbPtr->colPtr, tbPtr->string);
     Tk_DestroyWindow(tbPtr->tkwin);
     return result;
 }
@@ -1455,7 +1453,7 @@ IcursorOp(Textbox *tbPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     if (GetIndexFromObj(interp, tbPtr, objv[2], &textPos) != TCL_OK) {
 	return TCL_ERROR;
     }
-    if (tbPtr->columnPtr != NULL) {
+    if (tbPtr->colPtr != NULL) {
 	tbPtr->insertPos = textPos;
 	IndexToPointer(tbPtr);
 	EventuallyRedraw(tbPtr);
@@ -1496,7 +1494,7 @@ IndexOp(Textbox *tbPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     if (GetIndexFromObj(interp, tbPtr, objv[2], &textPos) != TCL_OK) {
 	return TCL_ERROR;
     }
-    if ((tbPtr->columnPtr != NULL) && (tbPtr->string != NULL)) {
+    if ((tbPtr->colPtr != NULL) && (tbPtr->string != NULL)) {
 	int numChars;
 
 	numChars = Tcl_NumUtfChars(tbPtr->string, textPos);
