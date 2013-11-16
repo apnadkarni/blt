@@ -1,20 +1,19 @@
 /* -*- mode: c; c-basic-offset: 4; indent-tabs-mode: nil -*- */
-
 /*
  * bltDBuffer.c --
  *
- * This module implements a dynamic buffer for the BLT toolkit.  This differs
- * from Tcl_DString's in that it handles binary data.
+ * This module implements a dynamic buffer for the BLT toolkit.  This
+ * differs from Tcl_DString's in that it handles binary data.
  *
  *	Copyright 1991-2004 George A Howlett.
  *
- *	Permission is hereby granted, free of charge, to any person obtaining
- *	a copy of this software and associated documentation files (the
- *	"Software"), to deal in the Software without restriction, including
- *	without limitation the rights to use, copy, modify, merge, publish,
- *	distribute, sublicense, and/or sell copies of the Software, and to
- *	permit persons to whom the Software is furnished to do so, subject to
- *	the following conditions:
+ *	Permission is hereby granted, free of charge, to any person
+ *	obtaining a copy of this software and associated documentation
+ *	files (the "Software"), to deal in the Software without
+ *	restriction, including without limitation the rights to use, copy,
+ *	modify, merge, publish, distribute, sublicense, and/or sell copies
+ *	of the Software, and to permit persons to whom the Software is
+ *	furnished to do so, subject to the following conditions:
  *
  *	The above copyright notice and this permission notice shall be
  *	included in all copies or substantial portions of the Software.
@@ -22,10 +21,11 @@
  *	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  *	EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  *	MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- *	NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
- *	LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
- *	OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
- *	WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *	NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+ *	BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ *	ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ *	CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ *	SOFTWARE.
  */
 #define BUILD_BLT_TCL_PROCS 1
 #include "bltInt.h"
@@ -85,8 +85,8 @@ Blt_DBuffer_Resize(DBuffer *srcPtr, size_t newSize)
 	size = srcPtr->chunk; 
 
 	/* 
-	 * Double the buffer size until we have enough room or hit 1M.  After
-	 * 1M, increase by multiples of 1M.
+	 * Double the buffer size until we have enough room or hit 1M.
+	 * After 1M, increase by multiples of 1M.
 	 */
 	while ((size <= wanted) && (size < (1<<20))) {
 	    size += size;
@@ -205,8 +205,8 @@ Blt_DBuffer_StringObj(DBuffer *srcPtr)
 /* 
  * Blt_DBuffer_String --
  *	
- *	Returns a string representing the current buffer.  A NUL value
- *	is set in the byte beyond the end of the buffer.
+ *	Returns a string representing the current buffer.  A NUL value is
+ *	set in the byte beyond the end of the buffer.
  */
 const char *
 Blt_DBuffer_String(DBuffer *srcPtr)
@@ -332,9 +332,9 @@ Blt_DBuffer_LoadFile(
     if (fileName[0] == '@') { 
 	int mode;
 
-	/* If the file name starts with a '@', then it represents the name of
-	 * a previously opened channel.  Verify that the channel was opened
-	 * for reading. */
+	/* If the file name starts with a '@', then it represents the name
+	 * of a previously opened channel.  Verify that the channel was
+	 * opened for reading. */
 	fileName++;
 	channel = Tcl_GetChannel(interp, fileName, &mode);
 	if ((mode & TCL_READABLE) == 0) {

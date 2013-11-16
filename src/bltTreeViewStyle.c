@@ -52,8 +52,8 @@
 #define STYLE_GAP		2
 #define ARROW_WIDTH		13
 
-#define TEXT_VAR_TRACED	(1<<16)
-#define ICON_VAR_TRACED	(1<<17)
+#define TEXT_VAR_TRACED         (1<<16)
+#define ICON_VAR_TRACED         (1<<17)
 #define TRACE_VAR_FLAGS		(TCL_GLOBAL_ONLY|TCL_TRACE_WRITES|\
 				 TCL_TRACE_UNSETS)
 
@@ -69,9 +69,9 @@
 #define DEF_ICON			(char *)NULL
 #define DEF_JUSTIFY			"center"
 #ifdef WIN32
-#define DEF_ACTIVE_BG	RGB_GREY85
+#define DEF_ACTIVE_BG                   RGB_GREY85
 #else
-#define DEF_ACTIVE_BG	RGB_GREY95
+#define DEF_ACTIVE_BG                   RGB_GREY95
 #endif
 
 #ifdef WIN32
@@ -154,7 +154,7 @@ typedef struct {
     unsigned int flags;			/* Bit field containing both the
 					 * style type and various flags. */
     const char *name;			/* Instance name. */
-    ValueStyleClass *classPtr;		/* Contains class-specific
+    CellStyleClass *classPtr;		/* Contains class-specific
 					 * information such as
 					 * configuration specifications and
 					 * configure, draw, layout
@@ -207,7 +207,7 @@ typedef struct {
     GC highlightGC;
     GC normalGC;
     Blt_TreeKey key;			/* Actual data resides in this tree
-					   value. */
+					   cell. */
     Tcl_Obj *cmdObjPtr;
 
     /* TextBox-specific fields */
@@ -286,7 +286,7 @@ typedef struct {
     unsigned int flags;			/* Bit field containing both the
 					 * style type and various flags. */
     const char *name;			/* Instance name. */
-    ValueStyleClass *classPtr;		/* Contains class-specific
+    CellStyleClass *classPtr;		/* Contains class-specific
 					 * information such as
 					 * configuration specifications and
 					 * configure, draw, layout
@@ -339,7 +339,7 @@ typedef struct {
     GC highlightGC;
     GC normalGC;
     Blt_TreeKey key;			/* Actual data resides in this tree
-					   value. */
+					   cell. */
     Tcl_Obj *cmdObjPtr;
 
     /* Checkbox specific fields. */
@@ -447,7 +447,7 @@ typedef struct {
     unsigned int flags;			/* Bit field containing both the
 					 * style type and various flags. */
     const char *name;			/* Instance name. */
-    ValueStyleClass *classPtr;		/* Contains class-specific
+    CellStyleClass *classPtr;		/* Contains class-specific
 					 * information such as
 					 * configuration specifications and
 					 * configure, draw, layout
@@ -500,7 +500,7 @@ typedef struct {
     GC highlightGC;
     GC normalGC;
     Blt_TreeKey key;			/* Actual data resides in this tree
-					   value. */
+					   cell. */
     Tcl_Obj *cmdObjPtr;
 
     /* ComboBox-specific fields */
@@ -659,24 +659,24 @@ static Blt_ConfigSpec comboBoxStyleSpecs[] =
 	(char *)NULL, 0, 0}
 };
 
-static ValueStyleConfigureProc CheckBoxStyleConfigureProc;
-static ValueStyleConfigureProc ComboBoxStyleConfigureProc;
-static ValueStyleConfigureProc TextBoxStyleConfigureProc;
-static ValueStyleDrawProc CheckBoxStyleDrawProc;
-static ValueStyleDrawProc ComboBoxStyleDrawProc;
-static ValueStyleDrawProc TextBoxStyleDrawProc;
-static ValueStyleEditProc CheckBoxStyleEditProc;
-static ValueStyleEditProc ComboBoxStyleEditProc;
-static ValueStyleEditProc TextBoxStyleEditProc;
-static ValueStyleFreeProc CheckBoxStyleFreeProc;
-static ValueStyleFreeProc ComboBoxStyleFreeProc;
-static ValueStyleFreeProc TextBoxStyleFreeProc;
-static ValueStyleGeometryProc CheckBoxStyleGeometryProc;
-static ValueStyleGeometryProc ComboBoxStyleGeometryProc;
-static ValueStyleGeometryProc TextBoxStyleGeometryProc;
-static ValueStyleIdentifyProc ComboBoxStyleIdentifyProc;
-static ValueStylePostProc ComboBoxStylePostProc;
-static ValueStyleUnpostProc ComboBoxStyleUnpostProc;
+static CellStyleConfigureProc CheckBoxStyleConfigureProc;
+static CellStyleConfigureProc ComboBoxStyleConfigureProc;
+static CellStyleConfigureProc TextBoxStyleConfigureProc;
+static CellStyleDrawProc CheckBoxStyleDrawProc;
+static CellStyleDrawProc ComboBoxStyleDrawProc;
+static CellStyleDrawProc TextBoxStyleDrawProc;
+static CellStyleEditProc CheckBoxStyleEditProc;
+static CellStyleEditProc ComboBoxStyleEditProc;
+static CellStyleEditProc TextBoxStyleEditProc;
+static CellStyleFreeProc CheckBoxStyleFreeProc;
+static CellStyleFreeProc ComboBoxStyleFreeProc;
+static CellStyleFreeProc TextBoxStyleFreeProc;
+static CellStyleGeometryProc CheckBoxStyleGeometryProc;
+static CellStyleGeometryProc ComboBoxStyleGeometryProc;
+static CellStyleGeometryProc TextBoxStyleGeometryProc;
+static CellStyleIdentifyProc ComboBoxStyleIdentifyProc;
+static CellStylePostProc ComboBoxStylePostProc;
+static CellStyleUnpostProc ComboBoxStyleUnpostProc;
 
 
 static int
@@ -691,7 +691,7 @@ EntryIsSelected(TreeView *viewPtr, Entry *entryPtr)
 static INLINE XColor *
 GetStyleForeground(Column *colPtr)
 {
-    ValueStyle *stylePtr;
+    CellStyle *stylePtr;
 
     stylePtr = colPtr->stylePtr;
     if ((stylePtr != NULL) && (stylePtr->normalFg != NULL)) {
@@ -771,7 +771,7 @@ static void
 IconChangedProc(ClientData clientData, int x, int y, int width, int height,
 		int imageWidth, int imageHeight)	
 {
-    ValueStyle *stylePtr = clientData;
+    CellStyle *stylePtr = clientData;
     TreeView *viewPtr;
 
     viewPtr = stylePtr->viewPtr;
@@ -779,7 +779,7 @@ IconChangedProc(ClientData clientData, int x, int y, int width, int height,
 }
 
 static Icon
-GetIcon(ValueStyle *stylePtr, const char *iconName)
+GetIcon(CellStyle *stylePtr, const char *iconName)
 {
     Blt_HashEntry *hPtr;
     int isNew;
@@ -900,7 +900,7 @@ ObjToIconProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 	      Tcl_Obj *objPtr, char *widgRec, int offset, int flags)	
 {
     Icon *iconPtr = (Icon *)(widgRec + offset);
-    ValueStyle *stylePtr = (ValueStyle *)widgRec;
+    CellStyle *stylePtr = (CellStyle *)widgRec;
     Icon icon;
     int length;
     const char *string;
@@ -1067,7 +1067,7 @@ IconVarTraceProc(
 	if (valueObjPtr == NULL) {
 	    return GetInterpResult(interp);
 	}
-	icon = GetIcon((ValueStyle *)stylePtr, Tcl_GetString(valueObjPtr));
+	icon = GetIcon((CellStyle *)stylePtr, Tcl_GetString(valueObjPtr));
 	if (icon == NULL) {
 	    return GetInterpResult(interp);
 	}
@@ -1146,7 +1146,7 @@ ObjToIconVarProc(
     if (valueObjPtr != NULL) {
 	Icon icon;
 
-	icon = GetIcon((ValueStyle *)stylePtr, Tcl_GetString(valueObjPtr));
+	icon = GetIcon((CellStyle *)stylePtr, Tcl_GetString(valueObjPtr));
 	if (icon == NULL) {
 	    return TCL_ERROR;
 	}
@@ -1460,7 +1460,7 @@ TextToObjProc(
     return Tcl_NewStringObj(stylePtr->text, stylePtr->textLen);
 }
 
-static ValueStyleClass textBoxClass = {
+static CellStyleClass textBoxClass = {
     "textbox",
     "TextBoxStyle",
     textBoxSpecs,
@@ -1474,7 +1474,7 @@ static ValueStyleClass textBoxClass = {
     NULL				/* unpostProc */
 };
 
-static ValueStyleClass checkBoxClass = {
+static CellStyleClass checkBoxClass = {
     "checkbox",
     "CheckBoxStyle",
     checkBoxSpecs,
@@ -1488,7 +1488,7 @@ static ValueStyleClass checkBoxClass = {
     NULL				/* unpostProc */
 };
 
-static ValueStyleClass comboBoxClass = {
+static CellStyleClass comboBoxClass = {
     "combobox", 
     "ComboBoxStyle", 
     comboBoxStyleSpecs,
@@ -1505,7 +1505,7 @@ static ValueStyleClass comboBoxClass = {
 /*
  *---------------------------------------------------------------------------
  *
- * Blt_TreeView_CreateTextBoxStyle --
+ * NewTextBoxStyle --
  *
  *	Creates a "textbox" style.
  *
@@ -1514,8 +1514,8 @@ static ValueStyleClass comboBoxClass = {
  *
  *---------------------------------------------------------------------------
  */
-ValueStyle *
-Blt_TreeView_CreateTextBoxStyle(TreeView *viewPtr, Blt_HashEntry *hPtr)
+static CellStyle *
+NewTextBoxStyle(TreeView *viewPtr, Blt_HashEntry *hPtr)
 {
     TextBoxStyle *stylePtr;
 
@@ -1530,7 +1530,7 @@ Blt_TreeView_CreateTextBoxStyle(TreeView *viewPtr, Blt_HashEntry *hPtr)
     stylePtr->refCount = 1;
     stylePtr->viewPtr = viewPtr;
     Blt_SetHashValue(hPtr, stylePtr);
-    return (ValueStyle *)stylePtr;
+    return (CellStyle *)stylePtr;
 }
 
 /*
@@ -1550,10 +1550,10 @@ Blt_TreeView_CreateTextBoxStyle(TreeView *viewPtr, Blt_HashEntry *hPtr)
  *---------------------------------------------------------------------------
  */
 static void
-TextBoxStyleConfigureProc(ValueStyle *valueStylePtr)
+TextBoxStyleConfigureProc(CellStyle *cellStylePtr)
 {
     GC newGC;
-    TextBoxStyle *stylePtr = (TextBoxStyle *)valueStylePtr;
+    TextBoxStyle *stylePtr = (TextBoxStyle *)cellStylePtr;
     TreeView *viewPtr;
     XGCValues gcValues;
     unsigned long gcMask;
@@ -1593,7 +1593,7 @@ TextBoxStyleConfigureProc(ValueStyle *valueStylePtr)
  *
  * TextBoxStyleGeometryProc --
  *
- *	Determines the space requirements for the "textbox" given the value to
+ *	Determines the space requirements for the "textbox" given the cell to
  *	be displayed.  Depending upon whether an icon or text is displayed and
  *	their relative placements, this routine computes the space needed for
  *	the text entry.
@@ -1602,15 +1602,15 @@ TextBoxStyleConfigureProc(ValueStyle *valueStylePtr)
  *	None.
  *
  * Side Effects:
- *	The width and height fields of *valuePtr* are set with the computed
+ *	The width and height fields of *cellPtr* are set with the computed
  *	dimensions.
  *
  *---------------------------------------------------------------------------
  */
 static void
-TextBoxStyleGeometryProc(ValueStyle *valueStylePtr, Value *valuePtr)
+TextBoxStyleGeometryProc(CellStyle *cellStylePtr, Cell *cellPtr)
 {
-    TextBoxStyle *stylePtr = (TextBoxStyle *)valueStylePtr;
+    TextBoxStyle *stylePtr = (TextBoxStyle *)cellStylePtr;
     TreeView *viewPtr;
     int gap;
     int iconWidth, iconHeight;
@@ -1619,37 +1619,37 @@ TextBoxStyleGeometryProc(ValueStyle *valueStylePtr, Value *valuePtr)
     viewPtr = stylePtr->viewPtr;
     textWidth = textHeight = 0;
     iconWidth = iconHeight = 0;
-    valuePtr->width = valuePtr->height = 0;
+    cellPtr->width = cellPtr->height = 0;
 
     if (stylePtr->icon != NULL) {
 	iconWidth = IconWidth(stylePtr->icon);
 	iconHeight = IconHeight(stylePtr->icon);
     } 
-    if (valuePtr->textPtr != NULL) {
-	Blt_Free(valuePtr->textPtr);
-	valuePtr->textPtr = NULL;
+    if (cellPtr->textPtr != NULL) {
+	Blt_Free(cellPtr->textPtr);
+	cellPtr->textPtr = NULL;
     }
-    if (valuePtr->fmtString != NULL) {	/* New string defined. */
+    if (cellPtr->fmtString != NULL) {	/* New string defined. */
 	TextStyle ts;
 
 	Blt_Ts_InitStyle(ts);
 	Blt_Ts_SetFont(ts, CHOOSE(viewPtr->font, stylePtr->font));
-	valuePtr->textPtr = Blt_Ts_CreateLayout(valuePtr->fmtString, -1, &ts);
+	cellPtr->textPtr = Blt_Ts_CreateLayout(cellPtr->fmtString, -1, &ts);
     } 
     gap = 0;
-    if (valuePtr->textPtr != NULL) {
-	textWidth = valuePtr->textPtr->width;
-	textHeight = valuePtr->textPtr->height;
+    if (cellPtr->textPtr != NULL) {
+	textWidth = cellPtr->textPtr->width;
+	textHeight = cellPtr->textPtr->height;
 	if (stylePtr->icon != NULL) {
 	    gap = stylePtr->gap;
 	}
     }
     if (stylePtr->side & (SIDE_TOP | SIDE_BOTTOM)) {
-	valuePtr->width = MAX(textWidth, iconWidth);
-	valuePtr->height = iconHeight + gap + textHeight;
+	cellPtr->width = MAX(textWidth, iconWidth);
+	cellPtr->height = iconHeight + gap + textHeight;
     } else {
-	valuePtr->width = iconWidth + gap + textWidth;
-	valuePtr->height = MAX(textHeight, iconHeight);
+	cellPtr->width = iconWidth + gap + textWidth;
+	cellPtr->height = MAX(textHeight, iconHeight);
     }
 }
 
@@ -1658,24 +1658,24 @@ TextBoxStyleGeometryProc(ValueStyle *valueStylePtr, Value *valuePtr)
  *
  * TextBoxStyleDrawProc --
  *
- *	Draws the "textbox" given the screen coordinates and the value to be
+ *	Draws the "textbox" given the screen coordinates and the cell to be
  *	displayed.
  *
  * Results:
  *	None.
  *
  * Side Effects:
- *	The textbox value is drawn.
+ *	The textbox cell is drawn.
  *
  *---------------------------------------------------------------------------
  */
 static void
-TextBoxStyleDrawProc(Value *valuePtr, Drawable drawable, 
-                     ValueStyle *valueStylePtr, int x, int y)
+TextBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, 
+                     CellStyle *cellStylePtr, int x, int y)
 {
     Blt_Bg bg;
     Column *colPtr;
-    TextBoxStyle *stylePtr = (TextBoxStyle *)valueStylePtr;
+    TextBoxStyle *stylePtr = (TextBoxStyle *)cellStylePtr;
     TreeView *viewPtr;
     XColor *fg;
     int gap, columnWidth;
@@ -1684,8 +1684,8 @@ TextBoxStyleDrawProc(Value *valuePtr, Drawable drawable,
     Entry *entryPtr;
 
     viewPtr = stylePtr->viewPtr;
-    colPtr = valuePtr->columnPtr;
-    entryPtr = valuePtr->entryPtr;
+    colPtr = cellPtr->colPtr;
+    entryPtr = cellPtr->entryPtr;
     if (stylePtr->flags & STYLE_HIGHLIGHT) {
 	bg = stylePtr->highlightBg;
 	fg = stylePtr->highlightFg;
@@ -1716,13 +1716,13 @@ TextBoxStyleDrawProc(Value *valuePtr, Drawable drawable,
 
     columnWidth = colPtr->width - 
 	(2 * colPtr->borderWidth + PADDING(colPtr->pad));
-    if (columnWidth > valuePtr->width) {
+    if (columnWidth > cellPtr->width) {
 	switch(colPtr->justify) {
 	case TK_JUSTIFY_RIGHT:
-	    x += (columnWidth - valuePtr->width);
+	    x += (columnWidth - cellPtr->width);
 	    break;
 	case TK_JUSTIFY_CENTER:
-	    x += (columnWidth - valuePtr->width) / 2;
+	    x += (columnWidth - cellPtr->width) / 2;
 	    break;
 	case TK_JUSTIFY_LEFT:
 	    break;
@@ -1737,12 +1737,12 @@ TextBoxStyleDrawProc(Value *valuePtr, Drawable drawable,
 	iconHeight = IconHeight(stylePtr->icon);
     }
     textWidth = textHeight = 0;
-    if (valuePtr->textPtr != NULL) {
-	textWidth = valuePtr->textPtr->width;
-	textHeight = valuePtr->textPtr->height;
+    if (cellPtr->textPtr != NULL) {
+	textWidth = cellPtr->textPtr->width;
+	textHeight = cellPtr->textPtr->height;
     }
     gap = 0;
-    if ((stylePtr->icon != NULL) && (valuePtr->textPtr != NULL)) {
+    if ((stylePtr->icon != NULL) && (cellPtr->textPtr != NULL)) {
 	gap = stylePtr->gap;
     }
     switch (stylePtr->side) {
@@ -1775,7 +1775,7 @@ TextBoxStyleDrawProc(Value *valuePtr, Drawable drawable,
 	Tk_RedrawImage(IconBits(stylePtr->icon), 0, 0, iconWidth, 
 		       iconHeight, drawable, iconX, iconY);
     }
-    if (valuePtr->textPtr != NULL) {
+    if (cellPtr->textPtr != NULL) {
 	TextStyle ts;
 	XColor *color;
 	Blt_Font font;
@@ -1798,7 +1798,7 @@ TextBoxStyleDrawProc(Value *valuePtr, Drawable drawable,
 	Blt_Ts_SetForeground(ts, color);
 	xMax = colPtr->width - colPtr->titleBW - colPtr->pad.side2;
 	Blt_Ts_SetMaxLength(ts, xMax);
-	Blt_Ts_DrawLayout(viewPtr->tkwin, drawable, valuePtr->textPtr, &ts, 
+	Blt_Ts_DrawLayout(viewPtr->tkwin, drawable, cellPtr->textPtr, &ts, 
 		textX, textY);
     }
     stylePtr->flags &= ~STYLE_DIRTY;
@@ -1815,19 +1815,19 @@ TextBoxStyleDrawProc(Value *valuePtr, Drawable drawable,
  *	None.
  *
  * Side Effects:
- *	The checkbox value is drawn.
+ *	The checkbox cell is drawn.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
-TextBoxStyleEditProc(Value *valuePtr, ValueStyle *stylePtr)
+TextBoxStyleEditProc(Cell *cellPtr, CellStyle *stylePtr)
 {
     TreeView *viewPtr;
 
     viewPtr = stylePtr->viewPtr;
-    return Blt_TreeView_CreateTextbox(viewPtr, valuePtr->entryPtr, 
-                                      valuePtr->columnPtr);
+    return Blt_TreeView_CreateTextbox(viewPtr, cellPtr->entryPtr, 
+                                      cellPtr->colPtr);
 }
 
 
@@ -1850,9 +1850,9 @@ TextBoxStyleEditProc(Value *valuePtr, ValueStyle *stylePtr)
  *---------------------------------------------------------------------------
  */
 static void
-TextBoxStyleFreeProc(ValueStyle *valueStylePtr)
+TextBoxStyleFreeProc(CellStyle *cellStylePtr)
 {
-    TextBoxStyle *stylePtr = (TextBoxStyle *)valueStylePtr;
+    TextBoxStyle *stylePtr = (TextBoxStyle *)cellStylePtr;
     TreeView *viewPtr;
 
     viewPtr = stylePtr->viewPtr;
@@ -1874,7 +1874,7 @@ TextBoxStyleFreeProc(ValueStyle *valueStylePtr)
 /*
  *---------------------------------------------------------------------------
  *
- * Blt_TreeView_CreateCheckBoxStyle --
+ * NewCheckBoxStyle --
  *
  *	Creates a "checkbox" style.
  *
@@ -1883,8 +1883,8 @@ TextBoxStyleFreeProc(ValueStyle *valueStylePtr)
  *
  *---------------------------------------------------------------------------
  */
-ValueStyle *
-Blt_TreeView_CreateCheckBoxStyle(TreeView *viewPtr, Blt_HashEntry *hPtr)
+static CellStyle *
+NewCheckBoxStyle(TreeView *viewPtr, Blt_HashEntry *hPtr)
 {
     CheckBoxStyle *stylePtr;
 
@@ -1901,7 +1901,7 @@ Blt_TreeView_CreateCheckBoxStyle(TreeView *viewPtr, Blt_HashEntry *hPtr)
     stylePtr->refCount = 1;
     stylePtr->viewPtr = viewPtr;
     Blt_SetHashValue(hPtr, stylePtr);
-    return (ValueStyle *)stylePtr;
+    return (CellStyle *)stylePtr;
 }
 
 /*
@@ -1921,9 +1921,9 @@ Blt_TreeView_CreateCheckBoxStyle(TreeView *viewPtr, Blt_HashEntry *hPtr)
  *---------------------------------------------------------------------------
  */
 static void
-CheckBoxStyleConfigureProc(ValueStyle *valueStylePtr)
+CheckBoxStyleConfigureProc(CellStyle *cellStylePtr)
 {
-    CheckBoxStyle *stylePtr = (CheckBoxStyle *)valueStylePtr;
+    CheckBoxStyle *stylePtr = (CheckBoxStyle *)cellStylePtr;
     GC newGC;
     TreeView *viewPtr;
     XColor *bgColor;
@@ -1981,15 +1981,15 @@ CheckBoxStyleConfigureProc(ValueStyle *valueStylePtr)
  *---------------------------------------------------------------------------
  */
 static void
-CheckBoxStyleGeometryProc(ValueStyle *valueStylePtr, Value *valuePtr)
+CheckBoxStyleGeometryProc(CellStyle *cellStylePtr, Cell *cellPtr)
 {
-    CheckBoxStyle *stylePtr = (CheckBoxStyle *)valueStylePtr;
+    CheckBoxStyle *stylePtr = (CheckBoxStyle *)cellStylePtr;
     TreeView *viewPtr;
     unsigned int bw, bh, iw, ih, tw, th, gap;
 
     viewPtr = stylePtr->viewPtr;
     bw = bh = ODD(stylePtr->size);
-    valuePtr->width = valuePtr->height = 0;
+    cellPtr->width = cellPtr->height = 0;
     iw = ih = 0;
     if (stylePtr->icon != NULL) {
 	iw = IconWidth(stylePtr->icon);
@@ -2012,10 +2012,10 @@ CheckBoxStyleGeometryProc(ValueStyle *valueStylePtr, Value *valuePtr)
 	Blt_Ts_InitStyle(ts);
 	Blt_Ts_SetFont(ts, CHOOSE(viewPtr->font, stylePtr->font));
 	string = (stylePtr->onValue != NULL) ? stylePtr->onValue : 
-	    valuePtr->fmtString;
+	    cellPtr->fmtString;
 	stylePtr->onPtr = Blt_Ts_CreateLayout(string, -1, &ts);
 	string = (stylePtr->offValue != NULL) ? stylePtr->offValue : 
-	    valuePtr->fmtString;
+	    cellPtr->fmtString;
 	stylePtr->offPtr = Blt_Ts_CreateLayout(string, -1, &ts);
 	tw = MAX(stylePtr->offPtr->width, stylePtr->onPtr->width);
 	th = MAX(stylePtr->offPtr->height, stylePtr->onPtr->height);
@@ -2023,8 +2023,8 @@ CheckBoxStyleGeometryProc(ValueStyle *valueStylePtr, Value *valuePtr)
 	    gap = stylePtr->gap;
 	}
     }
-    valuePtr->width = stylePtr->gap * 2 + bw + iw + gap + tw;
-    valuePtr->height = MAX3(bh, th, ih) | 0x1;
+    cellPtr->width = stylePtr->gap * 2 + bw + iw + gap + tw;
+    cellPtr->height = MAX3(bh, th, ih) | 0x1;
 }
 
 /*
@@ -2033,23 +2033,23 @@ CheckBoxStyleGeometryProc(ValueStyle *valueStylePtr, Value *valuePtr)
  * CheckBoxStyleDrawProc --
  *
  *	Draws the "checkbox" given the screen coordinates and the
- *	value to be displayed.  
+ *	cell to be displayed.  
  *
  * Results:
  *	None.
  *
  * Side Effects:
- *	The checkbox value is drawn.
+ *	The checkbox cell is drawn.
  *
  *---------------------------------------------------------------------------
  */
 static void
-CheckBoxStyleDrawProc(Value *valuePtr, Drawable drawable, 
-		      ValueStyle *valueStylePtr, int x, int y)
+CheckBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, 
+		      CellStyle *cellStylePtr, int x, int y)
 {
     Blt_Bg bg;
     Blt_Font font;
-    CheckBoxStyle *stylePtr = (CheckBoxStyle *)valueStylePtr;
+    CheckBoxStyle *stylePtr = (CheckBoxStyle *)cellStylePtr;
     Column *colPtr;
     TextLayout *textPtr;
     TreeView *viewPtr;
@@ -2064,11 +2064,11 @@ CheckBoxStyleDrawProc(Value *valuePtr, Drawable drawable,
 
     viewPtr = stylePtr->viewPtr;
     font = CHOOSE(viewPtr->font, stylePtr->font);
-    colPtr = valuePtr->columnPtr;
-    entryPtr = valuePtr->entryPtr;
+    colPtr = cellPtr->colPtr;
+    entryPtr = cellPtr->entryPtr;
     borderWidth = 0;
     relief = TK_RELIEF_FLAT;
-    if (valuePtr == viewPtr->activeValuePtr) {
+    if (cellPtr == viewPtr->activeCellPtr) {
 	bg = stylePtr->activeBg;
 	fg = stylePtr->activeFg;
 	borderWidth = 1;
@@ -2102,20 +2102,20 @@ CheckBoxStyleDrawProc(Value *valuePtr, Drawable drawable,
     Blt_Bg_FillRectangle(viewPtr->tkwin, drawable, bg, x, y+1, 
 	columnWidth, entryPtr->height - 2, borderWidth, relief);
 
-    if (columnWidth > valuePtr->width) {
+    if (columnWidth > cellPtr->width) {
 	switch(colPtr->justify) {
 	case TK_JUSTIFY_RIGHT:
-	    x += (columnWidth - valuePtr->width);
+	    x += (columnWidth - cellPtr->width);
 	    break;
 	case TK_JUSTIFY_CENTER:
-	    x += (columnWidth - valuePtr->width) / 2;
+	    x += (columnWidth - cellPtr->width) / 2;
 	    break;
 	case TK_JUSTIFY_LEFT:
 	    break;
 	}
     }
 
-    bool = (strcmp(valuePtr->fmtString, stylePtr->onValue) == 0);
+    bool = (strcmp(cellPtr->fmtString, stylePtr->onValue) == 0);
     textPtr = (bool) ? stylePtr->onPtr : stylePtr->offPtr;
 
     /*
@@ -2220,21 +2220,21 @@ CheckBoxStyleDrawProc(Value *valuePtr, Drawable drawable,
  *	None.
  *
  * Side Effects:
- *	The checkbox value is drawn.
+ *	The checkbox cell is drawn.
  *
  *---------------------------------------------------------------------------
  */
 static int
-CheckBoxStyleEditProc(Value *valuePtr, ValueStyle *valueStylePtr)
+CheckBoxStyleEditProc(Cell *cellPtr, CellStyle *cellStylePtr)
 {
-    CheckBoxStyle *stylePtr = (CheckBoxStyle *)valueStylePtr;
+    CheckBoxStyle *stylePtr = (CheckBoxStyle *)cellStylePtr;
     Tcl_Obj *objPtr;
     TreeView *viewPtr;
     Entry *entryPtr;
     Column *colPtr;
 
-    entryPtr = valuePtr->entryPtr;
-    colPtr = valuePtr->columnPtr;
+    entryPtr = cellPtr->entryPtr;
+    colPtr = cellPtr->colPtr;
     viewPtr = stylePtr->viewPtr;
     if (Blt_Tree_GetValueByKey(viewPtr->interp, viewPtr->tree, entryPtr->node, 
 	colPtr->key, &objPtr) != TCL_OK) {
@@ -2287,9 +2287,9 @@ CheckBoxStyleEditProc(Value *valuePtr, ValueStyle *valueStylePtr)
  *---------------------------------------------------------------------------
  */
 static void
-CheckBoxStyleFreeProc(ValueStyle *valueStylePtr)
+CheckBoxStyleFreeProc(CellStyle *cellStylePtr)
 {
-    CheckBoxStyle *stylePtr = (CheckBoxStyle *)valueStylePtr;
+    CheckBoxStyle *stylePtr = (CheckBoxStyle *)cellStylePtr;
     TreeView *viewPtr;
 
     viewPtr = stylePtr->viewPtr;
@@ -2325,7 +2325,7 @@ CheckBoxStyleFreeProc(ValueStyle *valueStylePtr)
 /*
  *---------------------------------------------------------------------------
  *
- * Blt_TreeView_CreateComboBoxStyle --
+ * NewComboBoxStyle --
  *
  *	Creates a "combobox" style.
  *
@@ -2334,8 +2334,8 @@ CheckBoxStyleFreeProc(ValueStyle *valueStylePtr)
  *
  *---------------------------------------------------------------------------
  */
-ValueStyle *
-Blt_TreeView_CreateComboBoxStyle(TreeView *viewPtr, Blt_HashEntry *hPtr)
+static CellStyle *
+NewComboBoxStyle(TreeView *viewPtr, Blt_HashEntry *hPtr)
 {
     ComboBoxStyle *stylePtr;
 
@@ -2353,7 +2353,7 @@ Blt_TreeView_CreateComboBoxStyle(TreeView *viewPtr, Blt_HashEntry *hPtr)
     stylePtr->refCount = 1;
     stylePtr->viewPtr = viewPtr;
     Blt_SetHashValue(hPtr, stylePtr);
-    return (ValueStyle *)stylePtr;
+    return (CellStyle *)stylePtr;
 }
 
 /*
@@ -2373,9 +2373,9 @@ Blt_TreeView_CreateComboBoxStyle(TreeView *viewPtr, Blt_HashEntry *hPtr)
  *---------------------------------------------------------------------------
  */
 static void
-ComboBoxStyleConfigureProc(ValueStyle *valueStylePtr)
+ComboBoxStyleConfigureProc(CellStyle *cellStylePtr)
 {
-    ComboBoxStyle *stylePtr = (ComboBoxStyle *)valueStylePtr;
+    ComboBoxStyle *stylePtr = (ComboBoxStyle *)cellStylePtr;
     GC newGC;
     TreeView *viewPtr;
     XColor *bgColor;
@@ -2483,10 +2483,10 @@ GetComboMenuGeometry(Tcl_Interp *interp, TreeView *viewPtr,
  *---------------------------------------------------------------------------
  */
 static void
-ComboBoxStyleGeometryProc(ValueStyle *valueStylePtr, Value *valuePtr)
+ComboBoxStyleGeometryProc(CellStyle *cellStylePtr, Cell *cellPtr)
 {
     Blt_Font font;
-    ComboBoxStyle *stylePtr = (ComboBoxStyle *)valueStylePtr;
+    ComboBoxStyle *stylePtr = (ComboBoxStyle *)cellStylePtr;
     TreeView *viewPtr;
     int gap;
     int iconWidth, iconHeight;
@@ -2495,39 +2495,209 @@ ComboBoxStyleGeometryProc(ValueStyle *valueStylePtr, Value *valuePtr)
     viewPtr = stylePtr->viewPtr;
     textWidth = textHeight = 0;
     iconWidth = iconHeight = 0;
-    valuePtr->width = valuePtr->height = 0;
+    cellPtr->width = cellPtr->height = 0;
 
     if (stylePtr->icon != NULL) {
 	iconWidth = IconWidth(stylePtr->icon);
 	iconHeight = IconHeight(stylePtr->icon);
     } 
-    if (valuePtr->textPtr != NULL) {
-	Blt_Free(valuePtr->textPtr);
-	valuePtr->textPtr = NULL;
+    if (cellPtr->textPtr != NULL) {
+	Blt_Free(cellPtr->textPtr);
+	cellPtr->textPtr = NULL;
     }
     font = CHOOSE(viewPtr->font, stylePtr->font);
-    if (valuePtr->fmtString != NULL) {	/* New string defined. */
+    if (cellPtr->fmtString != NULL) {	/* New string defined. */
 	TextStyle ts;
 
 	Blt_Ts_InitStyle(ts);
 	Blt_Ts_SetFont(ts, font);
-	valuePtr->textPtr = Blt_Ts_CreateLayout(valuePtr->fmtString, -1, &ts);
+	cellPtr->textPtr = Blt_Ts_CreateLayout(cellPtr->fmtString, -1, &ts);
     } 
     gap = 0;
-    if (valuePtr->textPtr != NULL) {
-	textWidth = valuePtr->textPtr->width;
-	textHeight = valuePtr->textPtr->height;
+    if (cellPtr->textPtr != NULL) {
+	textWidth = cellPtr->textPtr->width;
+	textHeight = cellPtr->textPtr->height;
 	if (stylePtr->icon != NULL) {
 	    gap = stylePtr->gap;
 	}
     }
     stylePtr->arrowWidth = Blt_TextWidth(font, "0", 1);
     stylePtr->arrowWidth += 2 * stylePtr->arrowBW;
-    valuePtr->width = 2 * stylePtr->borderWidth + iconWidth + 4 * gap + 
+    cellPtr->width = 2 * stylePtr->borderWidth + iconWidth + 4 * gap + 
 	stylePtr->arrowWidth + textWidth;
-    valuePtr->height = MAX(textHeight, iconHeight) + 2 * stylePtr->borderWidth;
+    cellPtr->height = MAX(textHeight, iconHeight) + 2 * stylePtr->borderWidth;
 }
 
+#ifdef notdef
+/*
+ *---------------------------------------------------------------------------
+ *
+ * ComboBoxStyleDrawProc --
+ *
+ *	Draws the "combobox" given the screen coordinates and the
+ *	cell to be displayed.  
+ *
+ * Results:
+ *	None.
+ *
+ * Side Effects:
+ *	The combobox cell is drawn.
+ *
+ *      +-----------------+	
+ *	||Icon| |text| |v||	
+ *      +--------------+--+
+ *  
+ *---------------------------------------------------------------------------
+ */
+static void
+ComboBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
+		      int x, int y)
+{
+    Blt_Bg bg;
+    CellKey *keyPtr;
+    Column *colPtr;
+    ComboBoxStyle *stylePtr = (ComboBoxStyle *)cellStylePtr;
+    GC gc;
+    Row *rowPtr;
+    int ix, iy, tx, ty;
+    unsigned int gap, colWidth, rowHeight, cellWidth, cellHeight;
+    unsigned int iw, ih, th;
+    int relief;
+    XColor *fg;
+    TableView *viewPtr;
+
+    viewPtr = cellPtr->viewPtr;
+    keyPtr = GetKey(cellPtr);
+    rowPtr = keyPtr->rowPtr;
+    colPtr = keyPtr->colPtr;
+
+    relief = stylePtr->relief;
+    if ((entryPtr->flags|colPtr->flags|cellPtr->flags) & SELECTED) { 
+	bg = stylePtr->selectBg;
+	gc = stylePtr->selectGC;
+	fg = stylePtr->selectFg;
+    } else if ((entryPtr->flags|colPtr->flags|cellPtr->flags) & DISABLED) {
+	/* Disabled */
+	bg = stylePtr->disableBg;
+	gc = stylePtr->disableGC;
+	fg = stylePtr->disableFg;
+    } else if ((rowPtr->flags|colPtr->flags|cellPtr->flags) & HIGHLIGHT) { 
+	/* Highlighted */
+	bg = GetHighlightBg((CellStyle *)stylePtr, rowPtr);
+	gc = stylePtr->highlightGC;
+	fg = stylePtr->highlightFg;
+    } else {				/* Normal */
+	bg = stylePtr->normalBg;
+	if ((stylePtr->altBg != NULL) && (rowPtr->visibleIndex & 0x1)) {
+	    bg = stylePtr->altBg;
+	}
+	gc = stylePtr->normalGC;
+	fg = stylePtr->normalFg;
+    }
+    rowHeight = rowPtr->height;
+    colWidth  = colPtr->width;
+
+    /* Draw background. */
+    Blt_Bg_FillRectangle(viewPtr->tkwin, drawable, bg, x, y, colWidth,
+	rowHeight, stylePtr->borderWidth, stylePtr->relief);
+
+    rowHeight -= 2 * stylePtr->borderWidth + 3;
+    colWidth  -= 2 * stylePtr->borderWidth + 3;
+    x += stylePtr->borderWidth + 1;
+    y += stylePtr->borderWidth + 1;
+    /* Draw the focus ring if this cell has focus. */
+    if ((viewPtr->flags & FOCUS) && (viewPtr->focusPtr == cellPtr)) {
+	XDrawRectangle(viewPtr->display, drawable, gc, x, y, colWidth, 
+		       rowHeight);
+    }
+    x += CELL_PADX;
+    y += CELL_PADY;
+    cellHeight = cellPtr->height - 2 * (stylePtr->borderWidth + CELL_PADY) - 3;
+    cellWidth =  cellPtr->width  - 2 * (stylePtr->borderWidth + CELL_PADX) - 3;
+
+    /* Justify (x) and center (y) the contents of the cell. */
+    if (rowHeight > cellHeight) {
+	y += (rowHeight - cellHeight) / 2;
+    }
+    if (colWidth > cellWidth) {
+	switch(stylePtr->justify) {
+	case TK_JUSTIFY_RIGHT:
+	    x += (colWidth - cellWidth);
+	    break;
+	case TK_JUSTIFY_CENTER:
+	    x += (colWidth - cellWidth) / 2;
+	    break;
+	case TK_JUSTIFY_LEFT:
+	    break;
+	}
+    }
+
+#ifdef notdef
+    tx = ty = ix = iy = 0;	/* Suppress compiler warning. */
+#endif
+    iw = ih = 0;
+    if (stylePtr->icon != NULL) {
+	iw = IconWidth(stylePtr->icon);
+	ih = IconHeight(stylePtr->icon);
+    }
+    th = 0;
+    if (cellPtr->text != NULL) {
+	/* FIXME: */
+	th = cellHeight;
+    }
+    gap = 0;
+    if ((stylePtr->icon != NULL) && (cellPtr->text != NULL)) {
+	gap = stylePtr->gap;
+    }
+
+    ix = x + gap;
+    iy = y + (cellHeight - ih) / 2;
+    tx = ix + iw + gap;
+    ty = y + (cellHeight - th) / 2;
+
+    if (stylePtr->icon != NULL) {
+	Tk_RedrawImage(IconBits(stylePtr->icon), 0, 0, iw, ih, drawable, ix,iy);
+    }
+    if (cellPtr->text != NULL) {
+	TextStyle ts;
+	int xMax;
+	TextLayout *textPtr;
+	
+	Blt_Ts_InitStyle(ts);
+	Blt_Ts_SetFont(ts, stylePtr->font);
+	Blt_Ts_SetGC(ts, gc);
+	xMax = SCREENX(viewPtr, colPtr->worldX) + colWidth - 
+	    stylePtr->arrowWidth;
+	Blt_Ts_SetMaxLength(ts, xMax - tx);
+	textPtr = Blt_Ts_CreateLayout(cellPtr->text, -1, &ts);
+	Blt_Ts_DrawLayout(viewPtr->tkwin, drawable, textPtr, &ts, tx, ty);
+	if (viewPtr->activePtr == cellPtr) {
+	    Blt_Ts_UnderlineLayout(viewPtr->tkwin, drawable, textPtr,&ts,tx,ty);
+	}
+	Blt_Free(textPtr);
+    }
+    if ((stylePtr->flags & EDIT) && (viewPtr->activePtr == cellPtr)) {
+	int ax, ay;
+	unsigned int aw, ah;
+
+	aw = stylePtr->arrowWidth + (2 * stylePtr->arrowBW);
+	ah = cellHeight /* - (2 * stylePtr->gap)*/;
+	ax = x + colWidth - aw - stylePtr->gap;
+	ay = y;
+
+	bg = stylePtr->activeBg;
+	fg = stylePtr->activeFg;
+	relief = (stylePtr->flags & POSTED) ? 
+	    stylePtr->postedRelief : stylePtr->activeRelief;
+	Blt_Bg_FillRectangle(viewPtr->tkwin, drawable, bg, ax, ay, aw, ah, 
+		stylePtr->arrowBW, relief);
+	aw -= 2 * stylePtr->borderWidth;
+	ax += stylePtr->borderWidth;
+	Blt_DrawArrow(viewPtr->display, drawable, fg, ax, ay, aw, ah, 
+		stylePtr->arrowBW, ARROW_DOWN);
+    }
+}
+#endif
 
 /*
  *---------------------------------------------------------------------------
@@ -2535,23 +2705,23 @@ ComboBoxStyleGeometryProc(ValueStyle *valueStylePtr, Value *valuePtr)
  * ComboBoxStyleDrawProc --
  *
  *	Draws the "combobox" given the screen coordinates and the
- *	value to be displayed.  
+ *	cell to be displayed.  
  *
  * Results:
  *	None.
  *
  * Side Effects:
- *	The combobox value is drawn.
+ *	The combobox cell is drawn.
  *
  *---------------------------------------------------------------------------
  */
 static void
-ComboBoxStyleDrawProc(Value *valuePtr, Drawable drawable, 
-		      ValueStyle *valueStylePtr, int x, int y)
+ComboBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, 
+		      CellStyle *cellStylePtr, int x, int y)
 {
     Blt_Bg bg;
     Column *colPtr;
-    ComboBoxStyle *stylePtr = (ComboBoxStyle *)valueStylePtr;
+    ComboBoxStyle *stylePtr = (ComboBoxStyle *)cellStylePtr;
     TreeView *viewPtr;
     XColor *fg;
     int arrowX, arrowY;
@@ -2565,9 +2735,9 @@ ComboBoxStyleDrawProc(Value *valuePtr, Drawable drawable,
     viewPtr = stylePtr->viewPtr;
     borderWidth = 0;
     relief = TK_RELIEF_FLAT;
-    colPtr = valuePtr->columnPtr;
-    entryPtr = valuePtr->entryPtr;
-    if (valuePtr == viewPtr->activeValuePtr) {
+    colPtr = cellPtr->colPtr;
+    entryPtr = cellPtr->entryPtr;
+    if (cellPtr == viewPtr->activeCellPtr) {
 	bg = stylePtr->activeBg;
 	fg = stylePtr->activeFg;
 	borderWidth = 1;
@@ -2589,42 +2759,40 @@ ComboBoxStyleDrawProc(Value *valuePtr, Drawable drawable,
     }
 
     columnWidth = colPtr->width - PADDING(colPtr->pad);
-    /* if (valuePtr == viewPtr->activeValuePtr) */ {
-	/*
-	 * Draw the active or normal background color over the entire label
-	 * area.  This includes both the tab's text and image.  The rectangle
-	 * should be 2 pixels wider/taller than this area. So if the label
-	 * consists of just an image, we get an halo around the image when the
-	 * tab is active.
-	 */
-	if (EntryIsSelected(viewPtr, entryPtr)) {
-	    if (stylePtr->selectBg != NULL) {
-		bg = stylePtr->selectBg;
-	    } else {
-		bg = viewPtr->selection.bg;
-	    }
-	    Blt_Bg_FillRectangle(viewPtr->tkwin, drawable, bg, x, y+1, 
-		columnWidth, entryPtr->height - 2, borderWidth, relief);
-	} else {
-	    Blt_Bg_FillRectangle(viewPtr->tkwin, drawable, bg, x, y+1, 
-		columnWidth, entryPtr->height - 2, borderWidth, relief);
-	}
-    }   
+    /*
+     * Draw the active or normal background color over the entire label
+     * area.  This includes both the tab's text and image.  The
+     * rectangle should be 2 pixels wider/taller than this area. So if
+     * the label consists of just an image, we get an halo around the
+     * image when the tab is active.
+     */
+    if (EntryIsSelected(viewPtr, entryPtr)) {
+        if (stylePtr->selectBg != NULL) {
+            bg = stylePtr->selectBg;
+        } else {
+            bg = viewPtr->selection.bg;
+        }
+        Blt_Bg_FillRectangle(viewPtr->tkwin, drawable, bg, x, y+1, 
+                columnWidth, entryPtr->height - 2, borderWidth, relief);
+    } else {
+        Blt_Bg_FillRectangle(viewPtr->tkwin, drawable, bg, x, y+1, 
+                columnWidth, entryPtr->height - 2, borderWidth, relief);
+    }
     if (EntryIsSelected(viewPtr, entryPtr)) {
 	fg = viewPtr->selection.fg;
     }
     arrowX = x + colPtr->width;
-    arrowX -= colPtr->pad.side2 + stylePtr->borderWidth  + stylePtr->arrowWidth + 
-	stylePtr->gap;
+    arrowX -= colPtr->pad.side2 + stylePtr->borderWidth  + 
+        stylePtr->arrowWidth + stylePtr->gap;
     arrowY = y;
 
-    if (columnWidth > valuePtr->width) {
+    if (columnWidth > cellPtr->width) {
 	switch(colPtr->justify) {
 	case TK_JUSTIFY_RIGHT:
-	    x += (columnWidth - valuePtr->width);
+	    x += (columnWidth - cellPtr->width);
 	    break;
 	case TK_JUSTIFY_CENTER:
-	    x += (columnWidth - valuePtr->width) / 2;
+	    x += (columnWidth - cellPtr->width) / 2;
 	    break;
 	case TK_JUSTIFY_LEFT:
 	    break;
@@ -2641,11 +2809,11 @@ ComboBoxStyleDrawProc(Value *valuePtr, Drawable drawable,
 	iconHeight = IconHeight(stylePtr->icon);
     }
     textHeight = 0;
-    if (valuePtr->textPtr != NULL) {
-	textHeight = valuePtr->textPtr->height;
+    if (cellPtr->textPtr != NULL) {
+	textHeight = cellPtr->textPtr->height;
     }
     gap = 0;
-    if ((stylePtr->icon != NULL) && (valuePtr->textPtr != NULL)) {
+    if ((stylePtr->icon != NULL) && (cellPtr->textPtr != NULL)) {
 	gap = stylePtr->gap;
     }
 
@@ -2658,7 +2826,7 @@ ComboBoxStyleDrawProc(Value *valuePtr, Drawable drawable,
 	Tk_RedrawImage(IconBits(stylePtr->icon), 0, 0, iconWidth, 
 	       iconHeight, drawable, iconX, iconY);
     }
-    if (valuePtr->textPtr != NULL) {
+    if (cellPtr->textPtr != NULL) {
 	TextStyle ts;
 	XColor *color;
 	Blt_Font font;
@@ -2678,10 +2846,10 @@ ComboBoxStyleDrawProc(Value *valuePtr, Drawable drawable,
 	xMax = SCREENX(viewPtr, colPtr->worldX) + colPtr->width - 
 	    colPtr->titleBW - colPtr->pad.side2 - stylePtr->arrowWidth;
 	Blt_Ts_SetMaxLength(ts, xMax - textX);
-	Blt_Ts_DrawLayout(viewPtr->tkwin, drawable, valuePtr->textPtr, &ts, 
+	Blt_Ts_DrawLayout(viewPtr->tkwin, drawable, cellPtr->textPtr, &ts, 
 		textX, textY);
     }
-    if (valuePtr == viewPtr->activeValuePtr) {
+    if (cellPtr == viewPtr->activeCellPtr) {
 	bg = stylePtr->activeBg;
     } else {
 	bg = colPtr->titleBg;
@@ -2711,19 +2879,19 @@ ComboBoxStyleDrawProc(Value *valuePtr, Drawable drawable,
  *	None.
  *
  * Side Effects:
- *	The checkbox value is drawn.
+ *	The checkbox cell is drawn.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
-ComboBoxStyleEditProc(Value *valuePtr, ValueStyle *valueStylePtr)
+ComboBoxStyleEditProc(Cell *cellPtr, CellStyle *cellStylePtr)
 {
     TreeView *viewPtr;
 
-    viewPtr = valueStylePtr->viewPtr;
-    return Blt_TreeView_CreateTextbox(viewPtr, valuePtr->entryPtr, 
-                                      valuePtr->columnPtr);
+    viewPtr = cellStylePtr->viewPtr;
+    return Blt_TreeView_CreateTextbox(viewPtr, cellPtr->entryPtr, 
+                                      cellPtr->colPtr);
 }
 
 /*
@@ -2731,27 +2899,27 @@ ComboBoxStyleEditProc(Value *valuePtr, ValueStyle *valueStylePtr)
  *
  * ComboBoxStyleIdentifyProc --
  *
- *	Draws the "combobox" given the screen coordinates and the value to
+ *	Draws the "combobox" given the screen coordinates and the cell to
  *	be displayed.
  *
  * Results:
  *	None.
  *
  * Side Effects:
- *	The checkbox value is drawn.
+ *	The checkbox cell is drawn.
  *
  *---------------------------------------------------------------------------
  */
 static const char *
-ComboBoxStyleIdentifyProc(Value *valuePtr, ValueStyle *valueStylePtr, 
+ComboBoxStyleIdentifyProc(Cell *cellPtr, CellStyle *cellStylePtr, 
                           int x, int y)
 {
-    ComboBoxStyle *stylePtr = (ComboBoxStyle *)valueStylePtr;
+    ComboBoxStyle *stylePtr = (ComboBoxStyle *)cellStylePtr;
     int ax;
     unsigned int aw;
     Column *colPtr;
 
-    colPtr = valuePtr->columnPtr;
+    colPtr = cellPtr->colPtr;
     aw = stylePtr->arrowWidth + (2 * stylePtr->arrowBW);
     ax = colPtr->width - stylePtr->borderWidth - aw - stylePtr->gap;
     if ((x >= 0) && (x < ax)) {
@@ -2780,10 +2948,10 @@ ComboBoxStyleIdentifyProc(Value *valuePtr, ValueStyle *valueStylePtr,
  *---------------------------------------------------------------------------
  */
 static int
-ComboBoxStylePostProc(Tcl_Interp *interp, Value *valuePtr, 
-                      ValueStyle *valueStylePtr)
+ComboBoxStylePostProc(Tcl_Interp *interp, Cell *cellPtr, 
+                      CellStyle *cellStylePtr)
 {
-    ComboBoxStyle *stylePtr = (ComboBoxStyle *)valueStylePtr;
+    ComboBoxStyle *stylePtr = (ComboBoxStyle *)cellStylePtr;
     const char *menuName;
     Tk_Window tkwin;
     TreeView *viewPtr;
@@ -2826,8 +2994,8 @@ ComboBoxStylePostProc(Tcl_Interp *interp, Value *valuePtr,
         Column *colPtr;
         Entry *entryPtr;
 
-        colPtr = valuePtr->columnPtr;
-        entryPtr = valuePtr->entryPtr;
+        colPtr = cellPtr->colPtr;
+        entryPtr = cellPtr->entryPtr;
 	Tk_GetRootCoords(viewPtr->tkwin, &rootX, &rootY);
 	x1 = SCREENX(viewPtr, colPtr->worldX) + rootX;
 	x2 = x1 + colPtr->width;
@@ -2848,7 +3016,7 @@ ComboBoxStylePostProc(Tcl_Interp *interp, Value *valuePtr,
 	Tcl_DecrRefCount(cmdObjPtr);
 	if (result == TCL_OK) {
             
-	    viewPtr->postPtr = valuePtr;
+	    viewPtr->postPtr = cellPtr;
 	    Blt_SetCurrentItem(viewPtr->bindTable, viewPtr->postPtr, ITEM_CELL);
 	}
 	return result;
@@ -2873,22 +3041,19 @@ ComboBoxStylePostProc(Tcl_Interp *interp, Value *valuePtr,
  *---------------------------------------------------------------------------
  */
 static int
-ComboBoxStyleUnpostProc(Tcl_Interp *interp, Value *value, 
-                        ValueStyle *valueStylePtr)
+ComboBoxStyleUnpostProc(Tcl_Interp *interp, Cell *cellPtr, 
+                        CellStyle *cellStylePtr)
 {
-    ComboBoxStyle *stylePtr = (ComboBoxStyle *)valueStylePtr;
+    ComboBoxStyle *stylePtr = (ComboBoxStyle *)cellStylePtr;
     const char *menuName;
     Tk_Window tkwin;
     TreeView *viewPtr;
 
-    viewPtr = stylePtr->viewPtr;
     if (stylePtr->menuObjPtr == NULL) {
 	return TCL_OK;
     }
+    viewPtr = stylePtr->viewPtr;
     viewPtr->postPtr = NULL;
-#ifdef notdef
-    assert(((colPtr->flags|rowPtr->flags) & (HIDDEN|DISABLED)) == 0);
-#endif
     menuName = Tcl_GetString(stylePtr->menuObjPtr);
     tkwin = Tk_NameToWindow(interp, menuName, viewPtr->tkwin);
     if (tkwin == NULL) {
@@ -2912,10 +3077,10 @@ ComboBoxStyleUnpostProc(Tcl_Interp *interp, Value *value,
  *
  * ComboBoxStyleFreeProc --
  *
- *	Releases resources allocated for the combobox. The resources freed by
- *	this routine are specific only to the "combobox".  Other resources
- *	(common to all styles) are freed in the Blt_TreeView_FreeStyle
- *	routine.
+ *	Releases resources allocated for the combobox. The resources freed
+ *	by this routine are specific only to the "combobox".  Other
+ *	resources (common to all styles) are freed in the
+ *	Blt_TreeView_FreeStyle routine.
  *
  * Results:
  *	None.
@@ -2926,9 +3091,9 @@ ComboBoxStyleUnpostProc(Tcl_Interp *interp, Value *value,
  *---------------------------------------------------------------------------
  */
 static void
-ComboBoxStyleFreeProc(ValueStyle *valueStylePtr)
+ComboBoxStyleFreeProc(CellStyle *cellStylePtr)
 {
-    ComboBoxStyle *stylePtr = (ComboBoxStyle *)valueStylePtr;
+    ComboBoxStyle *stylePtr = (ComboBoxStyle *)cellStylePtr;
     TreeView *viewPtr;
 
     viewPtr = stylePtr->viewPtr;
@@ -2946,5 +3111,48 @@ ComboBoxStyleFreeProc(ValueStyle *valueStylePtr)
     }
 }
 
+CellStyle *
+Blt_TreeView_CreateStyle(Tcl_Interp *interp,
+     TreeView *viewPtr,			/* Blt_TreeView_ widget. */
+     int type,				/* Type of style: either
+					 * STYLE_TEXTBOX,
+					 * STYLE_COMBOBOX, or
+					 * STYLE_CHECKBOX */
+    const char *styleName,		/* Name of the new style. */
+    int objc,
+    Tcl_Obj *const *objv)
+{    
+    Blt_HashEntry *hPtr;
+    int isNew;
+    CellStyle *stylePtr;
+    
+    hPtr = Blt_CreateHashEntry(&viewPtr->styleTable, styleName, &isNew);
+    if (!isNew) {
+	if (interp != NULL) {
+	    Tcl_AppendResult(interp, "cell style \"", styleName, 
+			     "\" already exists", (char *)NULL);
+	}
+	return NULL;
+    }
+    /* Create the new marker based upon the given type */
+    switch (type) {
+    case STYLE_TEXTBOX:
+	stylePtr = NewTextBoxStyle(viewPtr, hPtr);      break;
+    case STYLE_COMBOBOX:
+	stylePtr = NewComboBoxStyle(viewPtr, hPtr);     break;
+    case STYLE_CHECKBOX:
+	stylePtr = NewCheckBoxStyle(viewPtr, hPtr);     break;
+    default:
+	return NULL;
+    }
+    iconOption.clientData = viewPtr;
+    if (Blt_ConfigureComponentFromObj(interp, viewPtr->tkwin, styleName, 
+	stylePtr->classPtr->className, stylePtr->classPtr->specsPtr, 
+	objc, objv, (char *)stylePtr, 0) != TCL_OK) {
+	(*stylePtr->classPtr->freeProc)(stylePtr);
+	return NULL;
+    }
+    return stylePtr;
+}
 
 #endif /*TREEVIEW*/

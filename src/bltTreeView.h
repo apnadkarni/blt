@@ -102,6 +102,11 @@ typedef const char *UID;
 
 #define DEPTH(h, n)	(((h)->flatView) ? 0 : Blt_Tree_NodeDepth(n))
 
+#define DISABLED                (1<<0)
+#define HIDDEN                  (1<<1)
+#define HIGHLIGHT               (1<<2)
+#define POSTED                  (1<<3)
+
 /*
  *  Internal treeview widget flags:
  */
@@ -115,6 +120,7 @@ typedef const char *UID;
 #define SCROLLY			(1<<4)	/* Y-scroll request is pending. */
 /* Both X-scroll and  Y-scroll requests are pending. */
 #define SCROLL_PENDING	(SCROLLX | SCROLLY)
+
 #define FOCUS			(1<<5)	/* The widget is receiving keyboard
 					 * events.  Draw the focus
 					 * highlight border around the
@@ -201,8 +207,8 @@ typedef struct _Column Column;
 typedef struct _Combobox Combobox;
 typedef struct _Entry Entry;
 typedef struct _TreeView TreeView;
-typedef struct _ValueStyleClass ValueStyleClass;
-typedef struct _ValueStyle ValueStyle;
+typedef struct _CellStyleClass CellStyleClass;
+typedef struct _CellStyle CellStyle;
 
 typedef int (CompareProc)(Tcl_Interp *interp, const char *name, 
 	const char *pattern);
@@ -345,7 +351,7 @@ struct _Column {
 					 * indicates that the column can
 					 * not be resized. */
     int width;				/* Computed width of column. */
-    ValueStyle *stylePtr;		/* Default style for column. */
+    CellStyle *stylePtr;		/* Default style for column. */
     int borderWidth;			/* Border width of the column. */
     int relief;				/* Relief of the column. */
     Blt_Pad pad;			/* Horizontal padding on either
@@ -364,7 +370,7 @@ struct _Column {
 #define COLUMN_DIRTY		(1<<0)
 #define COLUMN_HIDDEN		(1<<1)
 
-struct _ValueStyle {
+struct _CellStyle {
     int refCount;			/* Usage reference count.  A
 					 * reference count of zero
 					 * indicates that the style may be
@@ -372,7 +378,7 @@ struct _ValueStyle {
     unsigned int flags;			/* Bit field containing both the
 					 * style type and various flags. */
     const char *name;			/* Instance name. */
-    ValueStyleClass *classPtr;		/* Contains class-specific
+    CellStyleClass *classPtr;		/* Contains class-specific
 					 * information such as
 					 * configuration specifications and
 					 * configure, draw, layout
@@ -425,39 +431,40 @@ struct _ValueStyle {
     GC highlightGC;
     GC normalGC;
     Blt_TreeKey key;			/* Actual data resides in this tree
-					   value. */
+					   cell. */
     Tcl_Obj *cmdObjPtr;
 
 };
 
-typedef struct _Value {
-    Entry *entryPtr;                    /* Entry where the value is
+typedef struct _Cell {
+    Entry *entryPtr;                    /* Entry where the cell is
                                          * located. */
-    Column *columnPtr;			/* Column where the value is
+    Column *colPtr;			/* Column where the cell is
 					 * located. */
-    unsigned int width, height;		/* Dimensions of value. */
-    ValueStyle *stylePtr;		/* Style information for cell
-					 * displaying value. */
+    unsigned short width, height;       /* Dimensions of cell. */
+    unsigned int flags;                 /* Flags for cell.*/
+    CellStyle *stylePtr;		/* Style information for cell
+					 * displaying cell. */
     const char *fmtString;		/* Raw text string. */
     TextLayout *textPtr;		/* Processes string to be
 					 * displayed .*/
-    struct _Value *nextPtr;
-} Value;
+    struct _Cell *nextPtr;
+} Cell;
 
-typedef void (ValueStyleConfigureProc)(ValueStyle *stylePtr);
-typedef void (ValueStyleDrawProc)(Value *valuePtr, Drawable drawable, 
-        ValueStyle *stylePtr, int x, int y);
-typedef int (ValueStyleEditProc)(Value *valuePtr, ValueStyle *stylePtr);
-typedef void (ValueStyleFreeProc)(ValueStyle *stylePtr);
-typedef void (ValueStyleGeometryProc)(ValueStyle *stylePtr, Value *valuePtr);
-typedef const char * (ValueStyleIdentifyProc)(Value *valuePtr, 
-        ValueStyle *stylePtr, int x, int y);
-typedef int (ValueStylePostProc)(Tcl_Interp *interp, Value *valuePtr,
-        ValueStyle *stylePtr);
-typedef int (ValueStyleUnpostProc)(Tcl_Interp *interp, Value *valuePtr,
-        ValueStyle *stylePtr);
+typedef void (CellStyleConfigureProc)(CellStyle *stylePtr);
+typedef void (CellStyleDrawProc)(Cell *cellPtr, Drawable drawable, 
+        CellStyle *stylePtr, int x, int y);
+typedef int (CellStyleEditProc)(Cell *cellPtr, CellStyle *stylePtr);
+typedef void (CellStyleFreeProc)(CellStyle *stylePtr);
+typedef void (CellStyleGeometryProc)(CellStyle *stylePtr, Cell *cellPtr);
+typedef const char * (CellStyleIdentifyProc)(Cell *cellPtr, 
+        CellStyle *stylePtr, int x, int y);
+typedef int (CellStylePostProc)(Tcl_Interp *interp, Cell *cellPtr,
+        CellStyle *stylePtr);
+typedef int (CellStyleUnpostProc)(Tcl_Interp *interp, Cell *cellPtr,
+        CellStyle *stylePtr);
 
-struct _ValueStyleClass {
+struct _CellStyleClass {
     const char *type;			/* Name of style class type. */
     const char *className;		/* Class name of the style. This is
 					 * used as the class name of the
@@ -465,33 +472,33 @@ struct _ValueStyleClass {
 					 * bindings. */
     Blt_ConfigSpec *specsPtr;		/* Style configuration
 					 * specifications */
-    ValueStyleConfigureProc *configProc; /* Sets the GCs for style. */
-    ValueStyleGeometryProc *geomProc;	/* Measures the area needed for the
-					 * value with this style. */
-    ValueStyleDrawProc *drawProc;	/* Draw the value in it's style. */
-    ValueStyleIdentifyProc *identProc;	/* Routine to pick the style's button.
+    CellStyleConfigureProc *configProc; /* Sets the GCs for style. */
+    CellStyleGeometryProc *geomProc;	/* Measures the area needed for the
+					 * cell with this style. */
+    CellStyleDrawProc *drawProc;	/* Draw the cell in it's style. */
+    CellStyleIdentifyProc *identProc;	/* Routine to pick the style's button.
 					 * Indicates if the mouse pointer is
 					 * over the * style's button (if it
 					 * has one). */
-    ValueStyleEditProc *editProc;	/* Routine to edit the style's
-					 * value. */
-    ValueStyleFreeProc *freeProc;	/* Routine to free the style's
+    CellStyleEditProc *editProc;	/* Routine to edit the style's
+					 * cell. */
+    CellStyleFreeProc *freeProc;	/* Routine to free the style's
 					 * resources. */
-    ValueStylePostProc *postProc;	/* Routine to pick the style's button.
+    CellStylePostProc *postProc;	/* Routine to pick the style's button.
 					 * Indicates if the mouse pointer is
 					 * over the * style's button (if it
 					 * has one). */
-    ValueStyleUnpostProc *unpostProc;	/* Routine to pick the style's button.
+    CellStyleUnpostProc *unpostProc;	/* Routine to pick the style's button.
 					 * Indicates if the mouse pointer is
 					 * over the * style's button (if it
 					 * has one). */
 };
 
-BLT_EXTERN ValueStyle *Blt_TreeView_CreateTextBoxStyle(TreeView *viewPtr, 
+BLT_EXTERN CellStyle *Blt_TreeView_CreateTextBoxStyle(TreeView *viewPtr, 
 	Blt_HashEntry *hPtr);
-BLT_EXTERN ValueStyle *Blt_TreeView_CreateCheckBoxStyle(TreeView *viewPtr, 
+BLT_EXTERN CellStyle *Blt_TreeView_CreateCheckBoxStyle(TreeView *viewPtr, 
 	Blt_HashEntry *hPtr);
-BLT_EXTERN ValueStyle *Blt_TreeView_CreateComboBoxStyle(TreeView *viewPtr, 
+BLT_EXTERN CellStyle *Blt_TreeView_CreateComboBoxStyle(TreeView *viewPtr, 
 	Blt_HashEntry *hPtr);
 
 /*
@@ -566,9 +573,9 @@ struct _Entry {
 					 * overrides default text color
 					 * specification. */
     GC gc;
-    Value *values;			/* List of column-related information
-					 * for each data value in the node.
-					 * Non-NULL only if there are value
+    Cell *cells;			/* List of column-related information
+					 * for each data cell in the node.
+					 * Non-NULL only if there are cell
 					 * entries. */
 };
 
@@ -825,9 +832,9 @@ struct _TreeView {
 
     Entry *fromPtr;
 
-    Value *activeValuePtr;		/* Last active value. */ 
+    Cell *activeCellPtr;		/* Last active cell. */ 
 
-    Value *postPtr;                     /* Points to posted value. */
+    Cell *postPtr;                     /* Points to posted cell. */
 
     int xScrollUnits, yScrollUnits;	/* # of pixels per scroll unit. */
 
@@ -897,7 +904,7 @@ struct _TreeView {
     Blt_HashTable buttonTagTable;
     Blt_HashTable columnTagTable;
     Blt_HashTable styleTagTable;
-    ValueStyle *stylePtr;		/* Default style for text cells */
+    CellStyle *stylePtr;		/* Default style for text cells */
     Column treeColumn;
     Column *colActivePtr; 
     Column *colActiveTitlePtr;		/* Column title currently active. */
@@ -928,31 +935,25 @@ struct _TreeView {
     short int ruleAnchor, ruleMark;
 
     Blt_Pool entryPool;
-    Blt_Pool valuePool;
+    Blt_Pool cellPool;
 };
 
-BLT_EXTERN void Blt_TreeView_FreeIcon(TreeView *viewPtr, Icon icon);
-BLT_EXTERN Icon Blt_TreeView_GetIcon(TreeView *viewPtr, const char *iconName);
-BLT_EXTERN Value *Blt_TreeView_FindValue(Entry *entryPtr, Column *colPtr);
+BLT_EXTERN Cell *Blt_TreeView_FindCell(Entry *entryPtr, Column *colPtr);
 BLT_EXTERN int Blt_TreeView_TextOp(TreeView *viewPtr, Tcl_Interp *interp, 
 	int objc, Tcl_Obj *const *objv);
-BLT_EXTERN int Blt_TreeView_CreateCombobox(TreeView *viewPtr, Entry *entryPtr, 
-	Column *colPtr);
 
 BLT_EXTERN void Blt_TreeView_DestroySort(TreeView *viewPtr);
 
 BLT_EXTERN Icon Blt_TreeView_GetEntryIcon(TreeView *viewPtr, Entry *entryPtr);
-BLT_EXTERN int Blt_TreeView_GetStyle(Tcl_Interp *interp, TreeView *viewPtr, 
-	const char *styleName, ValueStyle **stylePtrPtr);
-BLT_EXTERN void Blt_TreeView_FreeStyle(TreeView *viewPtr, 
-	ValueStyle *stylePtr);
-BLT_EXTERN ValueStyle *Blt_TreeView_CreateStyle(Tcl_Interp *interp, 
-	TreeView *viewPtr, int type, const char *styleName, int objc, 
-	Tcl_Obj *const *objv);
-BLT_EXTERN int Blt_TreeView_CreateTextbox(TreeView *viewPtr, Entry *entryPtr, 
-	Column *colPtr);
+
 BLT_EXTERN int Blt_TreeView_SetEntryValue(Tcl_Interp *interp, TreeView *viewPtr,
-	Entry *entryPtr, Column *columnPtr, const char *string);
+	Entry *entryPtr, Column *colPtr, const char *string);
+
+BLT_EXTERN void Blt_TreeView_EventuallyRedraw(TreeView *viewPtr);
+
+BLT_EXTERN CellStyle *Blt_TreeView_CreateStyle(Tcl_Interp *interp,
+        TreeView *viewPtr, int type, const char *styleName, int objc, 
+        Tcl_Obj *const *objv);
 
 #define CHOOSE(default, override)	\
 	(((override) == NULL) ? (default) : (override))

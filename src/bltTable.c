@@ -2052,12 +2052,12 @@ BinEntry(Table *tablePtr, TableEntry *tePtr)
  *
  * Results:
  *	Returns a standard TCL result.  If TCL_OK is returned, the row and
- *	column numbers are returned via rowPtr and columnPtr respectively.
+ *	column numbers are returned via rowPtr and colPtr respectively.
  *
  *---------------------------------------------------------------------------
  */
 static int
-ParseIndex(Tcl_Interp *interp, const char *string, int *rowPtr, int *columnPtr)
+ParseIndex(Tcl_Interp *interp, const char *string, int *rowPtr, int *colPtr)
 {
     char *comma;
     long row, column;
@@ -2089,7 +2089,7 @@ ParseIndex(Tcl_Interp *interp, const char *string, int *rowPtr, int *columnPtr)
 	return TCL_ERROR;
     }
     *rowPtr = (int)row;
-    *columnPtr = (int)column;
+    *colPtr = (int)column;
     return TCL_OK;
 }
 
@@ -2302,18 +2302,18 @@ BuildTable(
  *	Returns a standard TCL result.  If no error occurred, TCL_OK is
  *	returned.  *RowPtr* will return the row index.  *ColumnPtr* will
  *	return the column index.  If the row or column index is not
- *	applicable, -1 is returned via *rowPtr* or *columnPtr*.
+ *	applicable, -1 is returned via *rowPtr* or *colPtr*.
  *
  *---------------------------------------------------------------------------
  */
 static int
-ParseItem(Table *tablePtr, const char *string, int *rowPtr, int *columnPtr)
+ParseItem(Table *tablePtr, const char *string, int *rowPtr, int *colPtr)
 {
     char c;
     long partNum;
 
     c = tolower(string[0]);
-    *rowPtr = *columnPtr = -1;
+    *rowPtr = *colPtr = -1;
     if (c == 'r') {
 	if (Tcl_ExprLong(tablePtr->interp, string + 1, &partNum) != TCL_OK) {
 	    return TCL_ERROR;
@@ -2333,14 +2333,13 @@ ParseItem(Table *tablePtr, const char *string, int *rowPtr, int *columnPtr)
 		"\" is out of range", (char *)NULL);
 	    return TCL_ERROR;
 	}
-	*columnPtr = (int)partNum;
+	*colPtr = (int)partNum;
     } else {
-	if (ParseIndex(tablePtr->interp, string,
-		rowPtr, columnPtr) != TCL_OK) {
+	if (ParseIndex(tablePtr->interp, string, rowPtr, colPtr) != TCL_OK) {
 	    return TCL_ERROR;	/* Invalid row,column index */
 	}
 	if ((*rowPtr < 0) || (*rowPtr >= tablePtr->numRows) ||
-	    (*columnPtr < 0) || (*columnPtr >= tablePtr->numColumns)) {
+	    (*colPtr < 0) || (*colPtr >= tablePtr->numColumns)) {
 	    Tcl_AppendResult(tablePtr->interp, "index \"", string,
 		"\" is out of range", (char *)NULL);
 	    return TCL_ERROR;
@@ -3773,11 +3772,11 @@ ArrangeTable(ClientData clientData)
     }
     for (link = Blt_Chain_FirstLink(tablePtr->cols.chain); link != NULL; 
 	 link = Blt_Chain_NextLink(link)) {
-	RowColumn *columnPtr;
+	RowColumn *colPtr;
 
-	columnPtr = Blt_Chain_GetValue(link);
-	columnPtr->offset = offset + tablePtr->cols.ePad;
-	offset += columnPtr->size;
+	colPtr = Blt_Chain_GetValue(link);
+	colPtr->offset = offset + tablePtr->cols.ePad;
+	offset += colPtr->size;
     }
 
     offset = Tk_InternalBorderWidth(tablePtr->tkwin) + tablePtr->padTop +
@@ -4679,7 +4678,7 @@ static int
 LocateOp(TableInterpData *dataPtr, Tcl_Interp *interp, int objc, 
 	 Tcl_Obj *const *objv)
 {
-    RowColumn *rowPtr, *columnPtr;
+    RowColumn *rowPtr, *colPtr;
     Table *tablePtr;
     Tcl_Obj *listObjPtr;
     int x, y;
@@ -4699,14 +4698,14 @@ LocateOp(TableInterpData *dataPtr, Tcl_Interp *interp, int objc,
     if (rowPtr == NULL) {
 	return TCL_OK;
     }
-    columnPtr = RowColumnSearch(&tablePtr->cols, x);
-    if (columnPtr == NULL) {
+    colPtr = RowColumnSearch(&tablePtr->cols, x);
+    if (colPtr == NULL) {
 	return TCL_OK;
     }
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
     Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewIntObj(rowPtr->index));
     Tcl_ListObjAppendElement(interp, listObjPtr, 
-		Tcl_NewIntObj(columnPtr->index));
+		Tcl_NewIntObj(colPtr->index));
     Tcl_SetObjResult(interp, listObjPtr);
     return TCL_OK;
 }

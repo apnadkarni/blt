@@ -399,7 +399,7 @@ static Blt_ConfigSpec entrySpecs[] =
     {BLT_CONFIG_OBJ, "-opencommand", (char *)NULL, (char *)NULL, 
 	(char *)NULL, Blt_Offset(Entry, openCmdObjPtr), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_CUSTOM, "-styles", (char *)NULL, (char *)NULL, 
-	(char *)NULL, Blt_Offset(Entry, values), BLT_CONFIG_NULL_OK, 
+	(char *)NULL, Blt_Offset(Entry, cells), BLT_CONFIG_NULL_OK, 
 	&stylesOption},
     {BLT_CONFIG_END, NULL, NULL, NULL, NULL, 0, 0}
 };
@@ -735,11 +735,11 @@ Blt_TreeView_EventuallyRedraw(TreeView *viewPtr)
     EventuallyRedraw(viewPtr);
 }
 
-static ValueStyle *
-GetCurrentStyle(TreeView *viewPtr, Column *colPtr, Value *valuePtr)
+static CellStyle *
+GetCurrentStyle(TreeView *viewPtr, Column *colPtr, Cell *cellPtr)
 {
-    if ((valuePtr != NULL) && (valuePtr->stylePtr != NULL)) {
-	return valuePtr->stylePtr;
+    if ((cellPtr != NULL) && (cellPtr->stylePtr != NULL)) {
+	return cellPtr->stylePtr;
     }
     if ((colPtr != NULL) && (colPtr->stylePtr != NULL)) {
 	return colPtr->stylePtr;
@@ -952,13 +952,13 @@ PrevEntry(Entry *entryPtr, unsigned int mask)
  *
  * NextEntry --
  *
- *	Returns the "next" node in relation to the given node.  The next node
- *	(in depth-first order) is either the first child of the given node the
- *	next sibling if the node has no children (the node is a leaf).  If the
- *	given node is the last sibling, then try it's parent next sibling.
- *	Continue until we either find a next sibling for some ancestor or we
- *	reach the root node.  In this case the current node is the last node
- *	in the tree.
+ *	Returns the "next" node in relation to the given node.  The next
+ *	node (in depth-first order) is either the first child of the given
+ *	node the next sibling if the node has no children (the node is a
+ *	leaf).  If the given node is the last sibling, then try it's parent
+ *	next sibling.  Continue until we either find a next sibling for
+ *	some ancestor or we reach the root node.  In this case the current
+ *	node is the last node in the tree.
  *
  *---------------------------------------------------------------------------
  */
@@ -979,8 +979,8 @@ NextEntry(Entry *entryPtr, unsigned int mask)
 	}
     }
     /* 
-     * Back up until to a level where we can pick a "next sibling".  For the
-     * last entry we'll thread our way back to the root.
+     * Back up until to a level where we can pick a "next sibling".  For
+     * the last entry we'll thread our way back to the root.
      */
     while (entryPtr != viewPtr->rootPtr) {
 	nextPtr = NextSibling(entryPtr, mask);
@@ -996,7 +996,8 @@ static const char *
 GetEntryPath(TreeView *viewPtr, Entry *entryPtr, int checkEntryLabel, 
 	    Tcl_DString *resultPtr)
 {
-    const char **names;		       /* Used the stack the component names. */
+    const char **names;                 /* Used the stack the component
+                                         * names. */
     const char *staticSpace[64+2];
     int level;
     int i;
@@ -1064,8 +1065,8 @@ PercentSubst(TreeView *viewPtr, Entry *entryPtr, Tcl_Obj *cmdObjPtr)
 
     objPtr = Tcl_NewStringObj("", 0);
     /*
-     * Get the full path name of the node, in case we need to substitute for
-     * it.
+     * Get the full path name of the node, in case we need to substitute
+     * for it.
      */
     Tcl_DStringInit(&ds);
     fullName = GetEntryPath(viewPtr, entryPtr, TRUE, &ds);
@@ -1080,19 +1081,19 @@ PercentSubst(TreeView *viewPtr, Entry *entryPtr, Tcl_Obj *cmdObjPtr)
 		Tcl_AppendToObj(objPtr, last, p - last);
 	    }
 	    switch (*(p + 1)) {
-	    case '%':		/* Percent sign */
+	    case '%':                   /* Percent sign */
 		string = "%";
 		break;
-	    case 'W':		/* Widget name */
+	    case 'W':                   /* Widget name */
 		string = Tk_PathName(viewPtr->tkwin);
 		break;
-	    case 'P':		/* Full pathname */
+	    case 'P':                   /* Full pathname */
 		string = fullName;
 		break;
-	    case 'p':		/* Name of the node */
+	    case 'p':                   /* Name of the node */
 		string = GETLABEL(entryPtr);
 		break;
-	    case '#':		/* Node identifier */
+	    case '#':                   /* Node identifier */
 		string = Blt_Tree_NodeIdAscii(entryPtr->node);
 		break;
 	    default:
@@ -1145,8 +1146,8 @@ OpenEntry(TreeView *viewPtr, Entry *entryPtr)
 
     /*
      * If there's a "open" command proc specified for the entry, use that
-     * instead of the more general "open" proc for the entire treeview.
-     * Be careful because the "open" command may perform an update.
+     * instead of the more general "open" proc for the entire treeview.  Be
+     * careful because the "open" command may perform an update.
      */
     cmdObjPtr = CHOOSE(viewPtr->openCmdObjPtr, entryPtr->openCmdObjPtr);
     if (cmdObjPtr != NULL) {
@@ -1177,8 +1178,8 @@ CloseEntry(TreeView *viewPtr, Entry *entryPtr)
     viewPtr->flags |= LAYOUT_PENDING;
 
     /*
-     * Invoke the entry's "close" command, if there is one. Otherwise try the
-     * treeview's global "close" command.
+     * Invoke the entry's "close" command, if there is one. Otherwise try
+     * the treeview's global "close" command.
      */
     cmdObjPtr = CHOOSE(viewPtr->closeCmdObjPtr, entryPtr->closeCmdObjPtr);
     if (cmdObjPtr != NULL) {
@@ -1200,25 +1201,26 @@ CloseEntry(TreeView *viewPtr, Entry *entryPtr)
 
 
 static void
-AddValue(Entry *entryPtr, Column *colPtr)
+AddCell(Entry *entryPtr, Column *colPtr)
 {
-    if (Blt_TreeView_FindValue(entryPtr, colPtr) == NULL) {
+    if (Blt_TreeView_FindCell(entryPtr, colPtr) == NULL) {
 	Tcl_Obj *objPtr;
 
 	if (GetData(entryPtr, colPtr->key, &objPtr) == TCL_OK) {
-	    Value *valuePtr;
+	    Cell *cellPtr;
 
-	    /* Add a new value only if a data entry exists. */
-	    valuePtr = Blt_Pool_AllocItem(entryPtr->viewPtr->valuePool, 
-			 sizeof(Value));
-            valuePtr->entryPtr = entryPtr;
-	    valuePtr->columnPtr = colPtr;
-	    valuePtr->nextPtr = entryPtr->values;
-	    valuePtr->textPtr = NULL;
-	    valuePtr->width = valuePtr->height = 0;
-	    valuePtr->stylePtr = NULL;
-	    valuePtr->fmtString = NULL;
-	    entryPtr->values = valuePtr;
+	    /* Add a new cell only if a data entry exists. */
+	    cellPtr = Blt_Pool_AllocItem(entryPtr->viewPtr->cellPool, 
+                sizeof(Cell));
+            cellPtr->flags = 0;
+            cellPtr->entryPtr = entryPtr;
+	    cellPtr->colPtr = colPtr;
+	    cellPtr->nextPtr = entryPtr->cells;
+	    cellPtr->textPtr = NULL;
+	    cellPtr->width = cellPtr->height = 0;
+	    cellPtr->stylePtr = NULL;
+	    cellPtr->fmtString = NULL;
+	    entryPtr->cells = cellPtr;
 	}
     }
     entryPtr->viewPtr->flags |= (LAYOUT_PENDING | DIRTY);
@@ -1230,9 +1232,10 @@ AddValue(Entry *entryPtr, Column *colPtr)
  *
  * SelectCmdProc --
  *
- *      Invoked at the next idle point whenever the current selection changes.
- *      Executes some application-specific code in the -selectcommand option.
- *      This provides a way for applications to handle selection changes.
+ *      Invoked at the next idle point whenever the current selection
+ *      changes.  Executes some application-specific code in the
+ *      -selectcommand option.  This provides a way for applications to
+ *      handle selection changes.
  *
  * Results:
  *      None.
@@ -1396,8 +1399,8 @@ DeselectEntry(TreeView *viewPtr, Entry *entryPtr)
  *	None.
  *
  * Side effects:
- *	The existing selection is unhighlighted, and the window is
- *	marked as not containing a selection.
+ *	The existing selection is unhighlighted, and the window is marked
+ *	as not containing a selection.
  *
  *---------------------------------------------------------------------------
  */
@@ -1418,8 +1421,8 @@ LostSelection(ClientData clientData)
  * SelectRange --
  *
  *	Sets the selection flag for a range of nodes.  The range is
- *	determined by two pointers which designate the first/last
- *	nodes of the range.
+ *	determined by two pointers which designate the first/last nodes of
+ *	the range.
  *
  * Results:
  *	Always returns TCL_OK.
@@ -1481,9 +1484,9 @@ GetCurrentColumn(TreeView *viewPtr)
 	    return NULL;
 	}
     } else if (hint >= ITEM_STYLE) {
-	Value *valuePtr = hint;
+	Cell *cellPtr = hint;
 	
-	colPtr = valuePtr->columnPtr;
+	colPtr = cellPtr->colPtr;
     }
     return colPtr;
 }
@@ -1589,12 +1592,12 @@ TraceColumns(TreeView *viewPtr)
 	colPtr = Blt_Chain_GetValue(link);
 	Blt_Tree_CreateTrace(
 		viewPtr->tree, 
-		NULL		/* Node */, 
-		colPtr->key	/* Key pattern */, 
-		NULL		/* Tag */,
+		NULL                        /* Node */, 
+		colPtr->key                 /* Key pattern */, 
+		NULL                        /* Tag */,
 	        TREE_TRACE_FOREIGN_ONLY|TREE_TRACE_WRITES|TREE_TRACE_UNSETS, 
-	        TreeTraceProc	/* Callback routine */, 
-		viewPtr		/* Client data */);
+	        TreeTraceProc               /* Callback routine */, 
+		viewPtr                     /* Client data */);
     }
 }
 
@@ -1637,8 +1640,8 @@ GetUid(TreeView *viewPtr, const char *string)
  * FreeUid --
  *
  *	Releases the uid.  Uids are reference counted, so only when the
- *	reference count is zero (i.e. no one else is using the string) is the
- *	entry removed from the hash table.
+ *	reference count is zero (i.e. no one else is using the string) is
+ *	the entry removed from the hash table.
  *
  * Results:
  *	None.
@@ -1688,13 +1691,13 @@ FreeTreeProc(ClientData clientData, Display *display, char *widgRec, int offset)
  *
  * ObjToTreeProc --
  *
- *	Convert the string representing the name of a tree object 
- *	into a tree token.
+ *	Convert the string representing the name of a tree object into a
+ *	tree token.
  *
  * Results:
  *	If the string is successfully converted, TCL_OK is returned.
- *	Otherwise, TCL_ERROR is returned and an error message is left
- *	in interpreter's result field.
+ *	Otherwise, TCL_ERROR is returned and an error message is left in
+ *	interpreter's result field.
  *
  *---------------------------------------------------------------------------
  */
@@ -1702,13 +1705,14 @@ FreeTreeProc(ClientData clientData, Display *display, char *widgRec, int offset)
 static int
 ObjToTreeProc(
     ClientData clientData,		  /* Not used. */
-    Tcl_Interp *interp,		          /* Interpreter to send results back
-					   * to */
+    Tcl_Interp *interp,		          /* Interpreter to send results
+					   * back to */
     Tk_Window tkwin,			  /* Not used. */
     Tcl_Obj *objPtr,		          /* Tcl_Obj representing the new
 					   * value. */  
     char *widgRec,
-    int offset,				  /* Offset to field in structure */
+    int offset,				  /* Offset to field in
+                                           * structure */
     int flags)	
 {
     Blt_Tree tree = *(Blt_Tree *)(widgRec + offset);
@@ -1754,25 +1758,25 @@ TreeToObjProc(
  *
  * ObjToScrollmode --
  *
- *	Convert the string reprsenting a scroll mode, to its numeric
- *	form.
+ *	Convert the string reprsenting a scroll mode, to its numeric form.
  *
  * Results:
  *	If the string is successfully converted, TCL_OK is returned.
- *	Otherwise, TCL_ERROR is returned and an error message is left
- *	in interpreter's result field.
+ *	Otherwise, TCL_ERROR is returned and an error message is left in
+ *	interpreter's result field.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
 ObjToScrollmode(
-    ClientData clientData,	/* Not used. */
-    Tcl_Interp *interp,		/* Interpreter to send results back to */
-    Tk_Window tkwin,		/* Not used. */
-    Tcl_Obj *objPtr,		/* New legend position string */
+    ClientData clientData,              /* Not used. */
+    Tcl_Interp *interp,                 /* Interpreter to send results back
+                                         * to */
+    Tk_Window tkwin,                    /* Not used. */
+    Tcl_Obj *objPtr,                    /* New legend position string */
     char *widgRec,
-    int offset,			/* Offset to field in structure */
+    int offset,                         /* Offset to field in structure */
     int flags)	
 {
     char *string;
@@ -1809,11 +1813,11 @@ ObjToScrollmode(
 /*ARGSUSED*/
 static Tcl_Obj *
 ScrollmodeToObj(
-    ClientData clientData,	/* Not used. */
+    ClientData clientData,              /* Not used. */
     Tcl_Interp *interp,
-    Tk_Window tkwin,		/* Not used. */
+    Tk_Window tkwin,                    /* Not used. */
     char *widgRec,
-    int offset,			/* Offset to field in structure */
+    int offset,                         /* Offset to field in structure */
     int flags)	
 {
     int mode = *(int *)(widgRec + offset);
@@ -1835,13 +1839,12 @@ ScrollmodeToObj(
  *
  * ObjToSelectmode --
  *
- *	Convert the string reprsenting a scroll mode, to its numeric
- *	form.
+ *	Convert the string reprsenting a scroll mode, to its numeric form.
  *
  * Results:
  *	If the string is successfully converted, TCL_OK is returned.
- *	Otherwise, TCL_ERROR is returned and an error message is left
- *	in interpreter's result field.
+ *	Otherwise, TCL_ERROR is returned and an error message is left in
+ *	interpreter's result field.
  *
  *---------------------------------------------------------------------------
  */
@@ -2176,7 +2179,7 @@ FreeLabel(ClientData clientData, Display *display, char *widgRec, int offset)
     }
 }
 
-static ValueStyle *
+static CellStyle *
 FindStyle(Tcl_Interp *interp, TreeView *viewPtr, const char *styleName)
 {
     Blt_HashEntry *hPtr;
@@ -2194,9 +2197,9 @@ FindStyle(Tcl_Interp *interp, TreeView *viewPtr, const char *styleName)
 
 static int
 GetStyle(Tcl_Interp *interp, TreeView *viewPtr, const char *name, 
-	 ValueStyle **stylePtrPtr)
+	 CellStyle **stylePtrPtr)
 {
-    ValueStyle *stylePtr;
+    CellStyle *stylePtr;
 
     stylePtr = FindStyle(interp, viewPtr, name);
     if (stylePtr == NULL) {
@@ -2209,18 +2212,17 @@ GetStyle(Tcl_Interp *interp, TreeView *viewPtr, const char *name,
 
 #ifdef notdef
 int
-GetStyleFromObj(Tcl_Interp *interp, TreeView *viewPtr, 
-			     Tcl_Obj *objPtr, ValueStyle **stylePtrPtr)
+GetStyleFromObj(Tcl_Interp *interp, TreeView *viewPtr, Tcl_Obj *objPtr, 
+                CellStyle **stylePtrPtr)
 {
-    return GetStyle(interp, viewPtr, Tcl_GetString(objPtr), 
-				 stylePtrPtr);
+    return GetStyle(interp, viewPtr, Tcl_GetString(objPtr), stylePtrPtr);
 }
 #endif
 
 static INLINE Blt_Bg
 GetStyleBackground(Column *colPtr)
 { 
-    ValueStyle *stylePtr;
+    CellStyle *stylePtr;
     Blt_Bg bg;
 
     bg = NULL;
@@ -2238,7 +2240,7 @@ GetStyleBackground(Column *colPtr)
 static INLINE Blt_Font
 GetStyleFont(Column *colPtr)
 {
-    ValueStyle *stylePtr;
+    CellStyle *stylePtr;
 
     stylePtr = colPtr->stylePtr;
     if ((stylePtr != NULL) && (stylePtr->font != NULL)) {
@@ -2250,7 +2252,7 @@ GetStyleFont(Column *colPtr)
 static INLINE XColor *
 GetStyleForeground(Column *colPtr)
 {
-    ValueStyle *stylePtr;
+    CellStyle *stylePtr;
 
     stylePtr = colPtr->stylePtr;
     if ((stylePtr != NULL) && (stylePtr->normalFg != NULL)) {
@@ -2260,7 +2262,7 @@ GetStyleForeground(Column *colPtr)
 }
 
 static void
-FreeStyle(ValueStyle *stylePtr)
+FreeStyle(CellStyle *stylePtr)
 {
     stylePtr->refCount--;
     /* Remove the style from the hash table so that it's name can be used.*/
@@ -2283,54 +2285,6 @@ FreeStyle(ValueStyle *stylePtr)
 	Blt_Free(stylePtr);
     } 
 }
-
-static ValueStyle *
-CreateStyle(Tcl_Interp *interp,
-     TreeView *viewPtr,			/* Blt_TreeView_ widget. */
-     int type,				/* Type of style: either
-					 * STYLE_TEXTBOX,
-					 * STYLE_COMBOBOX, or
-					 * STYLE_CHECKBOX */
-    const char *styleName,		/* Name of the new style. */
-    int objc,
-    Tcl_Obj *const *objv)
-{    
-    Blt_HashEntry *hPtr;
-    int isNew;
-    ValueStyle *stylePtr;
-    
-    hPtr = Blt_CreateHashEntry(&viewPtr->styleTable, styleName, &isNew);
-    if (!isNew) {
-	if (interp != NULL) {
-	    Tcl_AppendResult(interp, "cell style \"", styleName, 
-			     "\" already exists", (char *)NULL);
-	}
-	return NULL;
-    }
-    /* Create the new marker based upon the given type */
-    switch (type) {
-    case STYLE_TEXTBOX:
-	stylePtr = Blt_TreeView_CreateTextBoxStyle(viewPtr, hPtr);
-	break;
-    case STYLE_COMBOBOX:
-	stylePtr = Blt_TreeView_CreateComboBoxStyle(viewPtr, hPtr);
-	break;
-    case STYLE_CHECKBOX:
-	stylePtr = Blt_TreeView_CreateCheckBoxStyle(viewPtr, hPtr);
-	break;
-    default:
-	return NULL;
-    }
-    iconOption.clientData = viewPtr;
-    if (Blt_ConfigureComponentFromObj(interp, viewPtr->tkwin, styleName, 
-	stylePtr->classPtr->className, stylePtr->classPtr->specsPtr, 
-	objc, objv, (char *)stylePtr, 0) != TCL_OK) {
-	FreeStyle(stylePtr);
-	return NULL;
-    }
-    return stylePtr;
-}
-
 
 /*
  *---------------------------------------------------------------------------
@@ -2376,16 +2330,16 @@ ObjToStyles(
     }
     viewPtr = entryPtr->viewPtr;
     for (i = 0; i < objc; i += 2) {
-	Value *valuePtr;
-	ValueStyle *stylePtr;
+	Cell *cellPtr;
+	CellStyle *stylePtr;
 	Column *colPtr;
 	const char *string;
 	
 	if (GetColumn(interp, viewPtr, objv[i], &colPtr)!=TCL_OK) {
 	    return TCL_ERROR;
 	}
-	valuePtr = Blt_TreeView_FindValue(entryPtr, colPtr);
-	if (valuePtr == NULL) {
+	cellPtr = Blt_TreeView_FindCell(entryPtr, colPtr);
+	if (cellPtr == NULL) {
 	    return TCL_ERROR;
 	}
 	string = Tcl_GetString(objv[i+1]);
@@ -2394,10 +2348,10 @@ ObjToStyles(
 		&stylePtr) != TCL_OK)) {
 	    return TCL_ERROR;			/* No data ??? */
 	}
-	if (valuePtr->stylePtr != NULL) {
-	    FreeStyle(valuePtr->stylePtr);
+	if (cellPtr->stylePtr != NULL) {
+	    FreeStyle(cellPtr->stylePtr);
 	}
-	valuePtr->stylePtr = stylePtr;
+	cellPtr->stylePtr = stylePtr;
     }
     return TCL_OK;
 }
@@ -2423,18 +2377,20 @@ StylesToObj(
     int flags)	
 {
     Entry *entryPtr = (Entry *)widgRec;
-    Value *vp;
+    Cell *cellPtr;
     Tcl_Obj *listObjPtr;
 
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
-    for (vp = entryPtr->values; vp != NULL; vp = vp->nextPtr) {
+    for (cellPtr = entryPtr->cells; cellPtr != NULL; 
+         cellPtr = cellPtr->nextPtr) {
 	const char *styleName;
+        Tcl_Obj *objPtr;
 
-	Tcl_ListObjAppendElement(interp, listObjPtr, 
-				 Tcl_NewStringObj(vp->columnPtr->key, -1));
-	styleName = (vp->stylePtr != NULL) ? vp->stylePtr->name : "";
-	Tcl_ListObjAppendElement(interp, listObjPtr, 
-				 Tcl_NewStringObj(styleName, -1));
+        objPtr = Tcl_NewStringObj(cellPtr->colPtr->key, -1);
+	Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+	styleName = (cellPtr->stylePtr != NULL) ? cellPtr->stylePtr->name : "";
+        objPtr = Tcl_NewStringObj(styleName, -1); 
+	Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
     }
     return listObjPtr;
 }
@@ -2897,11 +2853,11 @@ ObjToEnum(
 /*ARGSUSED*/
 static Tcl_Obj *
 EnumToObj(
-    ClientData clientData,	/* List of strings. */
+    ClientData clientData,              /* List of strings. */
     Tcl_Interp *interp,
-    Tk_Window tkwin,		/* Not used. */
-    char *widgRec,		/* Widget record */
-    int offset,			/* Offset to field in structure */
+    Tk_Window tkwin,                    /* Not used. */
+    char *widgRec,                      /* Widget record */
+    int offset,                         /* Offset to field in structure */
     int flags)	
 {
     int value = *(int *)(widgRec + offset);
@@ -2924,13 +2880,12 @@ EnumToObj(
  *
  * ObjToSortMarkProc --
  *
- *	Convert the string reprsenting a column, to its numeric
- *	form.
+ *	Convert the string reprsenting a column, to its numeric form.
  *
  * Results:
  *	If the string is successfully converted, TCL_OK is returned.
- *	Otherwise, TCL_ERROR is returned and an error message is left
- *	in interpreter's result field.
+ *	Otherwise, TCL_ERROR is returned and an error message is left in
+ *	interpreter's result field.
  *
  *---------------------------------------------------------------------------
  */
@@ -2974,11 +2929,11 @@ ObjToSortMarkProc(
 /*ARGSUSED*/
 static Tcl_Obj *
 SortMarkToObjProc(
-    ClientData clientData,	/* Not used. */
+    ClientData clientData,              /* Not used. */
     Tcl_Interp *interp,
-    Tk_Window tkwin,		/* Not used. */
+    Tk_Window tkwin,                    /* Not used. */
     char *widgRec,
-    int offset,			/* Offset to field in structure */
+    int offset,                         /* Offset to field in structure */
     int flags)	
 {
     Column *colPtr = *(Column **)(widgRec + offset);
@@ -2993,7 +2948,7 @@ SortMarkToObjProc(
 /*ARGSUSED*/
 static void
 FreeSortColumnsProc(ClientData clientData, Display *display, char *widgRec, 
-		  int offset)
+                    int offset)
 {
     Blt_Chain *chainPtr = (Blt_Chain *)(widgRec + offset);
 
@@ -3008,8 +2963,7 @@ FreeSortColumnsProc(ClientData clientData, Display *display, char *widgRec,
  *
  * ObjToSortColumnsProc --
  *
- *	Convert the string reprsenting a column, to its numeric
- *	form.
+ *	Convert the string reprsenting a column, to its numeric form.
  *
  * Results:
  *	If the string is successfully converted, TCL_OK is returned.
@@ -3064,7 +3018,7 @@ ObjToSortColumnsProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*ARGSUSED*/
 static Tcl_Obj *
 SortColumnsToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-		   char *widgRec, int offset, int flags)	
+                     char *widgRec, int offset, int flags)	
 {
     Blt_Chain chain = *(Blt_Chain *)(widgRec + offset);
     Blt_ChainLink link;
@@ -3089,25 +3043,26 @@ SortColumnsToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  *
  * ObjToData --
  *
- *	Convert the string reprsenting a scroll mode, to its numeric
- *	form.
+ *	Convert the string reprsenting a scroll mode, to its numeric form.
  *
  * Results:
  *	If the string is successfully converted, TCL_OK is returned.
- *	Otherwise, TCL_ERROR is returned and an error message is left
- *	in interpreter's result field.
+ *	Otherwise, TCL_ERROR is returned and an error message is left in
+ *	interpreter's result field.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
 ObjToData(
-    ClientData clientData,	/* Node of entry. */
-    Tcl_Interp *interp,		/* Interpreter to send results back to */
-    Tk_Window tkwin,		/* Not used. */
-    Tcl_Obj *objPtr,		/* Tcl_Obj representing new data. */
+    ClientData clientData,              /* Node of entry. */
+    Tcl_Interp *interp,                 /* Interpreter to send results back
+                                         * to */
+    Tk_Window tkwin,                    /* Not used. */
+    Tcl_Obj *objPtr,                    /* Tcl_Obj representing new
+                                         * data. */
     char *widgRec,
-    int offset,			/* Offset to field in structure */
+    int offset,                         /* Offset to field in structure */
     int flags)	
 {
     Tcl_Obj **objv;
@@ -3145,7 +3100,7 @@ ObjToData(
 		entryPtr->node, colPtr->key, objv[i + 1]) != TCL_OK) {
 	    return TCL_ERROR;
 	}
-	AddValue(entryPtr, colPtr);
+	AddCell(entryPtr, colPtr);
     }
     return TCL_OK;
 }
@@ -3172,15 +3127,15 @@ DataToObj(
 {
     Tcl_Obj *listObjPtr, *objPtr;
     Entry *entryPtr = (Entry *)widgRec;
-    Value *valuePtr;
+    Cell *cellPtr;
 
     /* Add the key-value pairs to a new Tcl_Obj */
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
-    for (valuePtr = entryPtr->values; valuePtr != NULL; 
-	valuePtr = valuePtr->nextPtr) {
-	objPtr = Tcl_NewStringObj(valuePtr->columnPtr->key, -1);
+    for (cellPtr = entryPtr->cells; cellPtr != NULL; 
+         cellPtr = cellPtr->nextPtr) {
+	objPtr = Tcl_NewStringObj(cellPtr->colPtr->key, -1);
 	Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-	if (GetData(entryPtr, valuePtr->columnPtr->key, &objPtr) != TCL_OK) {
+	if (GetData(entryPtr, cellPtr->colPtr->key, &objPtr) != TCL_OK) {
 	    objPtr = Tcl_NewStringObj("", -1);
 	    Tcl_IncrRefCount(objPtr);
 	} 
@@ -3194,7 +3149,7 @@ static void
 FreeStyleProc(ClientData clientData, Display *display, char *widgRec, 
 	      int offset)
 {
-    ValueStyle **stylePtrPtr = (ValueStyle **)(widgRec + offset);
+    CellStyle **stylePtrPtr = (CellStyle **)(widgRec + offset);
 
     if (*stylePtrPtr != NULL) {
 	FreeStyle(*stylePtrPtr);
@@ -3219,24 +3174,26 @@ FreeStyleProc(ClientData clientData, Display *display, char *widgRec,
 /*ARGSUSED*/
 static int
 ObjToStyleProc(
-    ClientData clientData,	/* Not used. */
-    Tcl_Interp *interp,		/* Interpreter to send results back to */
-    Tk_Window tkwin,		/* Not used. */
-    Tcl_Obj *objPtr,		/* Tcl_Obj representing the new value. */
+    ClientData clientData,              /* Not used. */
+    Tcl_Interp *interp,                 /* Interpreter to send results back
+                                         * to */
+    Tk_Window tkwin,                    /* Not used. */
+    Tcl_Obj *objPtr,                    /* Tcl_Obj representing the new
+                                         * value. */
     char *widgRec,
-    int offset,			/* Offset to field in structure */
+    int offset,                         /* Offset to field in structure */
     int flags)	
 {
     TreeView *viewPtr = clientData;
-    ValueStyle **stylePtrPtr = (ValueStyle **)(widgRec + offset);
-    ValueStyle *stylePtr;
+    CellStyle **stylePtrPtr = (CellStyle **)(widgRec + offset);
+    CellStyle *stylePtr;
     const char *string;
 
     stylePtr = NULL;
     string = Tcl_GetString(objPtr);
     if ((string != NULL) && (string[0] != '\0')) {
-	if (GetStyle(interp, viewPtr, Tcl_GetString(objPtr), 
-				  &stylePtr) != TCL_OK) {
+	if (GetStyle(interp, viewPtr, Tcl_GetString(objPtr), &stylePtr) 
+            != TCL_OK) {
 	    return TCL_ERROR;
 	}
 	stylePtr->flags |= STYLE_DIRTY;
@@ -3266,7 +3223,7 @@ StyleToObjProc(
     int offset,			/* Offset to field in structure */
     int flags)	
 {
-    ValueStyle *stylePtr = *(ValueStyle **)(widgRec + offset);
+    CellStyle *stylePtr = *(CellStyle **)(widgRec + offset);
 
     if (stylePtr == NULL) {
 	return Tcl_NewStringObj("", -1);
@@ -3296,8 +3253,8 @@ Apply(
 	     node = next) {
 	    next = Blt_Tree_NextSibling(node);
 	    /* 
-	     * Get the next child before calling Apply recursively.
-	     * This is because the apply callback may delete the node and its
+	     * Get the next child before calling Apply recursively.  This
+	     * is because the apply callback may delete the node and its
 	     * link.
 	     */
 	    childPtr = NodeToEntry(viewPtr, node);
@@ -3495,10 +3452,10 @@ MapAncestors(TreeView *viewPtr, Entry *entryPtr)
  *
  * MapAncestorsApplyProc --
  *
- *	If a node in mapped, then all its ancestors must be mapped also.  This
- *	routine traverses upwards and maps each unmapped ancestor.  It's
- *	assumed that for any mapped ancestor, all it's ancestors will already
- *	be mapped too.
+ *	If a node in mapped, then all its ancestors must be mapped also.
+ *	This routine traverses upwards and maps each unmapped ancestor.
+ *	It's assumed that for any mapped ancestor, all it's ancestors will
+ *	already be mapped too.
  *
  * Results:
  *	Always returns TCL_OK.
@@ -3526,21 +3483,21 @@ MapAncestorsApplyProc(TreeView *viewPtr, Entry *entryPtr)
  *
  * FindPath --
  *
- *	Finds the node designated by the given path.  Each path component is
- *	searched for as the tree is traversed.
+ *	Finds the node designated by the given path.  Each path component
+ *	is searched for as the tree is traversed.
  *
- *	A leading character string is trimmed off the path if it matches the
- *	one designated (see the -trimleft option).
+ *	A leading character string is trimmed off the path if it matches
+ *	the one designated (see the -trimleft option).
  *
  *	If no separator is designated (see the -separator configuration
  *	option), the path is considered a TCL list.  Otherwise the each
- *	component of the path is separated by a character string.  Leading and
- *	trailing separators are ignored.  Multiple separators are treated as
- *	one.
+ *	component of the path is separated by a character string.  Leading
+ *	and trailing separators are ignored.  Multiple separators are
+ *	treated as one.
  *
  * Results:
- *	Returns the pointer to the designated node.  If any component can't be
- *	found, NULL is returned.
+ *	Returns the pointer to the designated node.  If any component can't
+ *	be found, NULL is returned.
  *
  *---------------------------------------------------------------------------
  */
@@ -3618,8 +3575,8 @@ FindPath(TreeView *viewPtr, Entry *rootPtr, const char *path)
  *	viewport.
  *
  * Results:
- *	Returns the pointer to the closest node.  If no node is visible (nodes
- *	may be hidden), NULL is returned.
+ *	Returns the pointer to the closest node.  If no node is visible
+ *	(nodes may be hidden), NULL is returned.
  *
  *---------------------------------------------------------------------------
  */
@@ -3642,7 +3599,8 @@ NearestEntry(TreeView *viewPtr, int x, int y, int selectOne)
     }
     /*
      * Since the entry positions were previously computed in world
-     * coordinates, convert Y-coordinate from screen to world coordinates too.
+     * coordinates, convert Y-coordinate from screen to world coordinates
+     * too.
      */
     y = WORLDY(viewPtr, y);
     lastPtr = viewPtr->visibleArr[0];
@@ -3651,8 +3609,8 @@ NearestEntry(TreeView *viewPtr, int x, int y, int selectOne)
 
 	entryPtr = *p;
 	/*
-	 * If the start of the next entry starts beyond the point, use the last
-	 * entry.
+	 * If the start of the next entry starts beyond the point, use the
+	 * last entry.
 	 */
 	if (entryPtr->worldY > y) {
 	    return (selectOne) ? entryPtr : NULL;
@@ -3686,7 +3644,8 @@ GetEntryFromSpecialId(TreeView *viewPtr, const char *string,
     if (c == '@') {
 	int x, y;
 
-	if (Blt_GetXY(viewPtr->interp, viewPtr->tkwin, string, &x, &y) == TCL_OK) {
+	if (Blt_GetXY(viewPtr->interp, viewPtr->tkwin, string, &x, &y) 
+            == TCL_OK) {
 	    *entryPtrPtr = NearestEntry(viewPtr, x, y, TRUE);
 	}
     } else if ((c == 'b') && (strcmp(string, "bottom") == 0)) {
@@ -3840,7 +3799,7 @@ GetEntryFromSpecialId(TreeView *viewPtr, const char *string,
 }
 
 static int
-GetTagIter(TreeView *viewPtr, char *tagName, TagIterator *iterPtr)
+GetTagIter(TreeView *viewPtr, const char *tagName, TagIterator *iterPtr)
 {
     
     iterPtr->tagType = TAG_RESERVED | TAG_SINGLE;
@@ -3870,8 +3829,9 @@ GetTagIter(TreeView *viewPtr, char *tagName, TagIterator *iterPtr)
 	    }
 	}  else {
 	    iterPtr->tagType = TAG_UNKNOWN;
-	    Tcl_AppendResult(viewPtr->interp, "can't find tag or id \"", tagName, 
-		"\" in \"", Tk_PathName(viewPtr->tkwin), "\"", (char *)NULL);
+	    Tcl_AppendResult(viewPtr->interp, "can't find tag or id \"", 
+                tagName, "\" in \"", Tk_PathName(viewPtr->tkwin), "\"", 
+                (char *)NULL);
 	    return TCL_ERROR;
 	}
     }
@@ -3948,10 +3908,9 @@ FirstTaggedEntry(TagIterator *iterPtr)
 }
 
 static int
-GetEntryIterator(TreeView *viewPtr, Tcl_Obj *objPtr, 
-			 TagIterator *iterPtr)
+GetEntryIterator(TreeView *viewPtr, Tcl_Obj *objPtr, TagIterator *iterPtr)
 {
-    char *tagName;
+    const char *tagName;
     Entry *entryPtr;
     long inode;
 
@@ -4012,8 +3971,8 @@ NextTaggedEntry(TagIterator *iterPtr)
  *
  * GetEntryFromObj2 --
  *
- *	Converts a string into node pointer.  The string may be in one of the
- *	following forms:
+ *	Converts a string into node pointer.  The string may be in one of
+ *	the following forms:
  *
  *	    NNN			- inode.
  *	    "active"		- Currently active node.
@@ -4039,8 +3998,9 @@ NextTaggedEntry(TagIterator *iterPtr)
  *
  * Results:
  *	If the string is successfully converted, TCL_OK is returned.  The
- *	pointer to the node is returned via nodePtr.  Otherwise, TCL_ERROR is
- *	returned and an error message is left in interpreter's result field.
+ *	pointer to the node is returned via nodePtr.  Otherwise, TCL_ERROR
+ *	is returned and an error message is left in interpreter's result
+ *	field.
  *
  *---------------------------------------------------------------------------
  */
@@ -4097,8 +4057,9 @@ GetEntryFromObj(TreeView *viewPtr, Tcl_Obj *objPtr, Entry **entryPtrPtr)
  *
  * Results:
  *	If the string is successfully converted, TCL_OK is returned.  The
- *	pointer to the node is returned via nodePtr.  Otherwise, TCL_ERROR is
- *	returned and an error message is left in interpreter's result field.
+ *	pointer to the node is returned via nodePtr.  Otherwise, TCL_ERROR
+ *	is returned and an error message is left in interpreter's result
+ *	field.
  *
  *---------------------------------------------------------------------------
  */
@@ -4204,8 +4165,8 @@ PruneSelection(TreeView *viewPtr, Entry *rootPtr)
     int changed;
 
     /* 
-     * Check if any of the currently selected entries are a descendant of of
-     * the current root entry.  Deselect the entry and indicate that the
+     * Check if any of the currently selected entries are a descendant of
+     * of the current root entry.  Deselect the entry and indicate that the
      * treeview widget needs to be redrawn.
      */
     changed = FALSE;
@@ -4242,12 +4203,12 @@ ConfigureEntry(TreeView *viewPtr, Entry *entryPtr, int objc,
 	return TCL_ERROR;
     }
     /* 
-     * Check if there are values that need to be added 
+     * Check if there are cells that need to be added 
      */
     for(link = Blt_Chain_FirstLink(viewPtr->columns); link != NULL;
 	link = Blt_Chain_NextLink(link)) {
 	colPtr = Blt_Chain_GetValue(link);
-	AddValue(entryPtr, colPtr);
+	AddCell(entryPtr, colPtr);
     }
 
     newGC = NULL;
@@ -4283,19 +4244,19 @@ ConfigureEntry(TreeView *viewPtr, Entry *entryPtr, int objc,
 
 int
 Blt_TreeView_SetEntryValue(Tcl_Interp *interp, TreeView *viewPtr, 
-			   Entry *entryPtr, Column *colPtr, const char *value)
+                           Entry *entryPtr, Column *colPtr, const char *value)
 {
     int valid;
-    ValueStyle *stylePtr;
+    CellStyle *stylePtr;
 
     valid = TRUE;
     stylePtr = NULL;
     if (colPtr != &viewPtr->treeColumn) {
-	Value *valuePtr;
+	Cell *cellPtr;
 
-	valuePtr = Blt_TreeView_FindValue(entryPtr, colPtr);
-	if (valuePtr != NULL) {
-	    stylePtr = valuePtr->stylePtr;
+	cellPtr = Blt_TreeView_FindCell(entryPtr, colPtr);
+	if (cellPtr != NULL) {
+	    stylePtr = cellPtr->stylePtr;
 	}
     }
     if (stylePtr == NULL) {
@@ -4398,14 +4359,14 @@ ConfigureButtons(TreeView *viewPtr)
 
 
 static void
-DestroyValue(TreeView *viewPtr, Value *valuePtr)
+DestroyCell(TreeView *viewPtr, Cell *cellPtr)
 {
-    if (valuePtr->stylePtr != NULL) {
-	FreeStyle(valuePtr->stylePtr);
+    if (cellPtr->stylePtr != NULL) {
+	FreeStyle(cellPtr->stylePtr);
     }
-    if (valuePtr->textPtr != NULL) {
-	Blt_Free(valuePtr->textPtr);
-	valuePtr->textPtr = NULL;
+    if (cellPtr->textPtr != NULL) {
+	Blt_Free(cellPtr->textPtr);
+	cellPtr->textPtr = NULL;
     }
 }
 
@@ -4459,23 +4420,23 @@ DestroyEntry(Entry *entryPtr)
 	viewPtr->rootPtr = NodeToEntry(viewPtr,root);
     }
     if (!Blt_Tree_TagTableIsShared(viewPtr->tree)) {
-	/* Don't clear tags unless this client is the only one using
-	 * the tag table.*/
+	/* Don't clear tags unless this client is the only one using the
+	 * tag table.*/
 	Blt_Tree_ClearTags(viewPtr->tree, entryPtr->node);
     }
     if (entryPtr->gc != NULL) {
 	Tk_FreeGC(viewPtr->display, entryPtr->gc);
     }
-    /* Delete the chain of data values from the entry. */
-    if (entryPtr->values != NULL) {
-	Value *valuePtr, *nextPtr;
+    /* Delete the chain of data cells from the entry. */
+    if (entryPtr->cells != NULL) {
+	Cell *cellPtr, *nextPtr;
 	
-	for (valuePtr = entryPtr->values; valuePtr != NULL; 
-	     valuePtr = nextPtr) {
-	    nextPtr = valuePtr->nextPtr;
-	    DestroyValue(viewPtr, valuePtr);
+	for (cellPtr = entryPtr->cells; cellPtr != NULL; 
+	     cellPtr = nextPtr) {
+	    nextPtr = cellPtr->nextPtr;
+	    DestroyCell(viewPtr, cellPtr);
 	}
-	entryPtr->values = NULL;
+	entryPtr->cells = NULL;
     }
     if (entryPtr->fullName != NULL) {
 	Blt_Free(entryPtr->fullName);
@@ -4495,8 +4456,9 @@ DestroyEntry(Entry *entryPtr)
  *
  * CreateEntry --
  *
- *	This procedure is called by the Tree object when a node is created and
- *	inserted into the tree.  It adds a new treeview entry field to the node.
+ *	This procedure is called by the Tree object when a node is created
+ *	and inserted into the tree.  It adds a new treeview entry field to
+ *	the node.
  *
  * Results:
  *	Returns the entry.
@@ -4555,8 +4517,8 @@ DeleteApplyProc(Blt_TreeNode node, ClientData clientData, int order)
 {
     TreeView *viewPtr = clientData;
     /* 
-     * Unsetting the tree value triggers a call back to destroy the entry and
-     * also releases the Tcl_Obj that contains it.
+     * Unsetting the tree value triggers a call back to destroy the entry
+     * and also releases the Tcl_Obj that contains it.
      */
     return Blt_Tree_UnsetValueByKey(viewPtr->interp, viewPtr->tree, node, 
 	viewPtr->treeColumn.key);
@@ -4608,14 +4570,15 @@ TreeEventProc(ClientData clientData, Blt_TreeNotifyEvent *eventPtr)
     return TCL_OK;
 }
 
-Value *
-Blt_TreeView_FindValue(Entry *entryPtr, Column *colPtr)
+Cell *
+Blt_TreeView_FindCell(Entry *entryPtr, Column *colPtr)
 {
-    Value *vp;
+    Cell *cellPtr;
 
-    for (vp = entryPtr->values; vp != NULL; vp = vp->nextPtr) {
-	if (vp->columnPtr == colPtr) {
-	    return vp;
+    for (cellPtr = entryPtr->cells; cellPtr != NULL; 
+         cellPtr = cellPtr->nextPtr) {
+	if (cellPtr->colPtr == colPtr) {
+	    return cellPtr;
 	}
     }
     return NULL;
@@ -4628,12 +4591,12 @@ Blt_TreeView_FindValue(Entry *entryPtr, Column *colPtr)
  * TreeTraceProc --
  *
  *	Mirrors the individual values of the tree object (they must also be
- *	listed in the widget's columns chain). This is because it must track and
- *	save the sizes of each individual data entry, rather than re-computing
- *	all the sizes each time the widget is redrawn.
+ *	listed in the widget's columns chain). This is because it must
+ *	track and save the sizes of each individual data entry, rather than
+ *	re-computing all the sizes each time the widget is redrawn.
  *
- *	This procedure is called by the Tree object when a node data value is
- *	set unset.
+ *	This procedure is called by the Tree object when a node data value
+ *	is set unset.
  *
  * Results:
  *	Returns TCL_OK.
@@ -4645,15 +4608,17 @@ static int
 TreeTraceProc(
     ClientData clientData,
     Tcl_Interp *interp,
-    Blt_TreeNode node,			/* Node that has just been updated. */
-    Blt_TreeKey key,			/* Key of value that's been updated. */
+    Blt_TreeNode node,			/* Node that has just been
+                                         * updated. */
+    Blt_TreeKey key,			/* Key of value that's been
+                                         * updated. */
     unsigned int flags)
 {
     Blt_HashEntry *hPtr;
     TreeView *viewPtr = clientData; 
     Column *colPtr;
     Entry *entryPtr;
-    Value *valuePtr, *nextPtr, *lastPtr;
+    Cell *cellPtr, *nextPtr, *lastPtr;
     
     hPtr = Blt_FindHashEntry(&viewPtr->entryTable, (char *)node);
     if (hPtr == NULL) {
@@ -4670,7 +4635,7 @@ TreeTraceProc(
 	}
 	colPtr = Blt_GetHashValue(hPtr);
 	if (colPtr != &viewPtr->treeColumn) {
-	    AddValue(entryPtr, colPtr);
+	    AddCell(entryPtr, colPtr);
 	}
 	entryPtr->flags |= ENTRY_DIRTY;
 	EventuallyRedraw(viewPtr);
@@ -4679,12 +4644,12 @@ TreeTraceProc(
 
     case TREE_TRACE_UNSETS:
 	lastPtr = NULL;
-	for(valuePtr = entryPtr->values; valuePtr != NULL; valuePtr = nextPtr) {
-	    nextPtr = valuePtr->nextPtr;
-	    if (valuePtr->columnPtr->key == key) { 
-		DestroyValue(viewPtr, valuePtr);
+	for(cellPtr = entryPtr->cells; cellPtr != NULL; cellPtr = nextPtr) {
+	    nextPtr = cellPtr->nextPtr;
+	    if (cellPtr->colPtr->key == key) { 
+		DestroyCell(viewPtr, cellPtr);
 		if (lastPtr == NULL) {
-		    entryPtr->values = nextPtr;
+		    entryPtr->cells = nextPtr;
 		} else {
 		    lastPtr->nextPtr = nextPtr;
 		}
@@ -4693,7 +4658,7 @@ TreeTraceProc(
 		viewPtr->flags |= (LAYOUT_PENDING | DIRTY);
 		break;
 	    }
-	    lastPtr = valuePtr;
+	    lastPtr = cellPtr;
 	}		
 	break;
 
@@ -4704,20 +4669,20 @@ TreeTraceProc(
 }
 
 static void
-FormatValue(Entry *entryPtr, Value *valuePtr)
+FormatCell(Entry *entryPtr, Cell *cellPtr)
 {
     Column *colPtr;
     Tcl_Obj *resultObjPtr;
     Tcl_Obj *valueObjPtr;
 
-    colPtr = valuePtr->columnPtr;
+    colPtr = cellPtr->colPtr;
     if (GetData(entryPtr, colPtr->key, &valueObjPtr) != TCL_OK) {
 	return;				/* No data ??? */
     }
-    if (valuePtr->fmtString != NULL) {
-	Blt_Free(valuePtr->fmtString);
+    if (cellPtr->fmtString != NULL) {
+	Blt_Free(cellPtr->fmtString);
     }
-    valuePtr->fmtString = NULL;
+    cellPtr->fmtString = NULL;
     if (valueObjPtr == NULL) {
 	return;
     }
@@ -4741,43 +4706,43 @@ FormatValue(Entry *entryPtr, Value *valuePtr)
     } else {
 	resultObjPtr = valueObjPtr;
     }
-    valuePtr->fmtString = Blt_Strdup(Tcl_GetString(resultObjPtr));
+    cellPtr->fmtString = Blt_Strdup(Tcl_GetString(resultObjPtr));
 }
 
 
 static void
-GetValueSize(Entry *entryPtr, Value *valuePtr, ValueStyle *stylePtr)
+GetCellSize(Entry *entryPtr, Cell *cellPtr, CellStyle *stylePtr)
 {
-    valuePtr->width = valuePtr->height = 0;
-    FormatValue(entryPtr, valuePtr);
-    stylePtr = GetCurrentStyle(entryPtr->viewPtr, valuePtr->columnPtr, 
-                               valuePtr);
+    cellPtr->width = cellPtr->height = 0;
+    FormatCell(entryPtr, cellPtr);
+    stylePtr = GetCurrentStyle(entryPtr->viewPtr, cellPtr->colPtr, 
+                               cellPtr);
     /* Measure the text string. */
-    (*stylePtr->classPtr->geomProc)(stylePtr, valuePtr);
+    (*stylePtr->classPtr->geomProc)(stylePtr, cellPtr);
 }
 
 static void
 GetRowExtents(Entry *entryPtr, int *widthPtr, int *heightPtr)
 {
-    Value *valuePtr;
+    Cell *cellPtr;
     int width, height;			/* Compute dimensions of row. */
 
     width = height = 0;
-    for (valuePtr = entryPtr->values; valuePtr != NULL; 
-	 valuePtr = valuePtr->nextPtr) {
-	ValueStyle *stylePtr;
-	int valueWidth;			/* Width of individual value.  */
+    for (cellPtr = entryPtr->cells; cellPtr != NULL; 
+	 cellPtr = cellPtr->nextPtr) {
+	CellStyle *stylePtr;
+	int cellWidth;			/* Width of individual cell.  */
 
-	stylePtr = GetCurrentStyle(entryPtr->viewPtr, valuePtr->columnPtr, 
-                                   valuePtr);
+	stylePtr = GetCurrentStyle(entryPtr->viewPtr, cellPtr->colPtr, 
+                                   cellPtr);
 	if ((entryPtr->flags & ENTRY_DIRTY) || (stylePtr->flags & STYLE_DIRTY)){
-	    GetValueSize(entryPtr, valuePtr, stylePtr);
+	    GetCellSize(entryPtr, cellPtr, stylePtr);
 	}
-	if (valuePtr->height > height) {
-	    height = valuePtr->height;
+	if (cellPtr->height > height) {
+	    height = cellPtr->height;
 	}
-	valueWidth = valuePtr->width;
-	width += valueWidth;
+	cellWidth = cellPtr->width;
+	width += cellWidth;
     }	    
     *widthPtr = width;
     *heightPtr = height;
@@ -4887,17 +4852,17 @@ AppendTagsProc(
 	    Blt_Chain_Append(tags, EntryTag(viewPtr, "Entry"));
 	    Blt_Chain_Append(tags, EntryTag(viewPtr, "all"));
 	} else {
-	    Value *valuePtr = hint;
+	    Cell *cellPtr = hint;
 
-	    if (valuePtr != NULL) {
-		ValueStyle *stylePtr = valuePtr->stylePtr;
+	    if (cellPtr != NULL) {
+		CellStyle *stylePtr = cellPtr->stylePtr;
 
-		stylePtr = GetCurrentStyle(viewPtr, valuePtr->columnPtr, 
-                                           valuePtr);
+		stylePtr = GetCurrentStyle(viewPtr, cellPtr->colPtr, 
+                                           cellPtr);
 		Blt_Chain_Append(tags, 
 	            EntryTag(viewPtr, stylePtr->name));
 		Blt_Chain_Append(tags, 
-		    EntryTag(viewPtr, valuePtr->columnPtr->key));
+		    EntryTag(viewPtr, cellPtr->colPtr->key));
 		Blt_Chain_Append(tags, 
 		    EntryTag(viewPtr, 
 			stylePtr->classPtr->className));
@@ -4952,17 +4917,17 @@ PickItem(
     if (hintPtr != NULL) {
 	*hintPtr = ITEM_ENTRY;
 	if (colPtr != NULL) {
-	    Value *valuePtr;
+	    Cell *cellPtr;
 
-	    valuePtr = Blt_TreeView_FindValue(entryPtr, colPtr);
-	    if (valuePtr != NULL) {
-		ValueStyle *stylePtr;
+	    cellPtr = Blt_TreeView_FindCell(entryPtr, colPtr);
+	    if (cellPtr != NULL) {
+		CellStyle *stylePtr;
 	
-		stylePtr = GetCurrentStyle(viewPtr, colPtr, valuePtr);
+		stylePtr = GetCurrentStyle(viewPtr, colPtr, cellPtr);
 		if ((stylePtr->classPtr->identProc == NULL) ||
 		    ((*stylePtr->classPtr->identProc)
-                     (valuePtr, stylePtr, x, y))) {
-		    *hintPtr = valuePtr;
+                     (cellPtr, stylePtr, x, y))) {
+		    *hintPtr = cellPtr;
 		} 
 	    }
 	}
@@ -5775,7 +5740,7 @@ CreateTreeView(Tcl_Interp *interp, Tcl_Obj *objPtr)
     Blt_InitHashTable(&viewPtr->styleTagTable, BLT_STRING_KEYS);
 
     viewPtr->entryPool = Blt_Pool_Create(BLT_FIXED_SIZE_ITEMS);
-    viewPtr->valuePool = Blt_Pool_Create(BLT_FIXED_SIZE_ITEMS);
+    viewPtr->cellPool = Blt_Pool_Create(BLT_FIXED_SIZE_ITEMS);
     Blt_SetWindowInstanceData(tkwin, viewPtr);
     viewPtr->cmdToken = Tcl_CreateObjCommand(interp,Tk_PathName(viewPtr->tkwin),
 	TreeViewInstCmdProc, viewPtr, TreeViewInstCmdDeleteProc);
@@ -5788,8 +5753,8 @@ CreateTreeView(Tcl_Interp *interp, Tcl_Obj *objPtr)
      * Create a default style. This must exist before we can create the
      * treeview column.
      */  
-    viewPtr->stylePtr = CreateStyle(interp, viewPtr, STYLE_TEXTBOX, "text", 
-	0, (Tcl_Obj **)NULL);
+    viewPtr->stylePtr = Blt_TreeView_CreateStyle(interp, viewPtr, 
+        STYLE_TEXTBOX, "text", 0, (Tcl_Obj **)NULL);
     if (viewPtr->stylePtr == NULL) {
 	return NULL;
     }
@@ -5853,7 +5818,7 @@ DestroyTreeView(DestroyData dataPtr)	/* Pointer to the widget record. */
     Blt_ChainLink link;
     TreeView *viewPtr = (TreeView *)dataPtr;
     Button *buttonPtr;
-    ValueStyle *stylePtr;
+    CellStyle *stylePtr;
 
     if (viewPtr->flags & SELECT_PENDING) {
 	Tcl_CancelIdleCall(SelectCmdProc, viewPtr);
@@ -5924,7 +5889,7 @@ DestroyTreeView(DestroyData dataPtr)	/* Pointer to the widget record. */
     Blt_DeleteHashTable(&viewPtr->selection.table);
     Blt_DeleteHashTable(&viewPtr->uidTable);
     Blt_Pool_Destroy(viewPtr->entryPool);
-    Blt_Pool_Destroy(viewPtr->valuePool);
+    Blt_Pool_Destroy(viewPtr->cellPool);
     DumpIconTable(viewPtr);
     Blt_Free(viewPtr);
 }
@@ -6243,7 +6208,7 @@ ConfigureTreeView(Tcl_Interp *interp, TreeView *viewPtr)
 }
 
 static void
-ConfigureStyle(TreeView *viewPtr, ValueStyle *stylePtr)
+ConfigureStyle(TreeView *viewPtr, CellStyle *stylePtr)
 {
     (*stylePtr->classPtr->configProc)(stylePtr);
     stylePtr->flags |= STYLE_DIRTY;
@@ -6790,7 +6755,7 @@ ComputeLayout(TreeView *viewPtr)
     Blt_ChainLink link;
     Column *colPtr;
     Entry *entryPtr;
-    Value *valuePtr;
+    Cell *cellPtr;
 
     if (viewPtr->flatView) {
 	ComputeFlatLayout(viewPtr);
@@ -6817,15 +6782,15 @@ ComputeLayout(TreeView *viewPtr)
     viewPtr->treeColumn.maxWidth = viewPtr->treeWidth;
 
     /* 
-     * Look at all open entries and their values.  Determine the column widths
-     * by tracking the maximum width value in each column.
+     * Look at all open entries and their cells.  Determine the column widths
+     * by tracking the maximum width cell in each column.
      */
     for (entryPtr = viewPtr->rootPtr; entryPtr != NULL; 
 	 entryPtr = NextEntry(entryPtr, ENTRY_MASK)) {
-	for (valuePtr = entryPtr->values; valuePtr != NULL; 
-	     valuePtr = valuePtr->nextPtr) {
-	    if (valuePtr->columnPtr->maxWidth < valuePtr->width) {
-		valuePtr->columnPtr->maxWidth = valuePtr->width;
+	for (cellPtr = entryPtr->cells; cellPtr != NULL; 
+	     cellPtr = cellPtr->nextPtr) {
+	    if (cellPtr->colPtr->maxWidth < cellPtr->width) {
+		cellPtr->colPtr->maxWidth = cellPtr->width;
 	    }
 	}	    
     }
@@ -7471,9 +7436,9 @@ DrawLabel(
 /*
  *---------------------------------------------------------------------------
  *
- * DrawValue --
+ * DrawCell --
  *
- * 	Draws a column value for the given entry.  
+ * 	Draws a column cell for the given entry.  
  *
  * Results:
  *	None.
@@ -7484,36 +7449,36 @@ DrawLabel(
  *---------------------------------------------------------------------------
  */
 static void
-DrawValue(
+DrawCell(
     TreeView *viewPtr,			/* Widget record. */
-    Value *valuePtr,
+    Cell *cellPtr,
     Drawable drawable,			/* Pixmap or window to draw into. */
     int x, int y)
 {
-    ValueStyle *stylePtr;
+    CellStyle *stylePtr;
 
-    stylePtr = GetCurrentStyle(viewPtr, valuePtr->columnPtr, valuePtr);
-    (*stylePtr->classPtr->drawProc)(valuePtr, drawable, stylePtr, x, y);
+    stylePtr = GetCurrentStyle(viewPtr, cellPtr->colPtr, cellPtr);
+    (*stylePtr->classPtr->drawProc)(cellPtr, drawable, stylePtr, x, y);
 }
 
 static void
-DisplayValue(TreeView *viewPtr, Entry *entryPtr, Value *valuePtr)
+DisplayCell(TreeView *viewPtr, Entry *entryPtr, Cell *cellPtr)
 {
     int sx, sy, x, y;
     int w, h;
     int pixWidth, pixHeight;
     int x1, x2, y1, y2;
     Column *colPtr;
-    ValueStyle *stylePtr;
+    CellStyle *stylePtr;
     Blt_Bg bg;
     int overlap;
 
-    stylePtr = valuePtr->stylePtr;
+    stylePtr = cellPtr->stylePtr;
     if (stylePtr == NULL) {
-	stylePtr = valuePtr->columnPtr->stylePtr;
+	stylePtr = cellPtr->colPtr->stylePtr;
     }
     if (stylePtr->cursor != None) {
-	if (valuePtr == viewPtr->activeValuePtr) {
+	if (cellPtr == viewPtr->activeCellPtr) {
 	    Tk_DefineCursor(viewPtr->tkwin, stylePtr->cursor);
 	} else {
 	    if (viewPtr->cursor != None) {
@@ -7523,11 +7488,11 @@ DisplayValue(TreeView *viewPtr, Entry *entryPtr, Value *valuePtr)
 	    }
 	}
     }
-    colPtr = valuePtr->columnPtr;
+    colPtr = cellPtr->colPtr;
     x = SCREENX(viewPtr, colPtr->worldX) + colPtr->pad.side1;
     y = SCREENY(viewPtr, entryPtr->worldY);
     h = entryPtr->height - 2;
-    w = valuePtr->columnPtr->width - PADDING(colPtr->pad);
+    w = cellPtr->colPtr->width - PADDING(colPtr->pad);
 
     y1 = viewPtr->titleHeight + viewPtr->inset;
     y2 = Tk_Height(viewPtr->tkwin) - viewPtr->inset;
@@ -7535,11 +7500,11 @@ DisplayValue(TreeView *viewPtr, Entry *entryPtr, Value *valuePtr)
     x2 = Tk_Width(viewPtr->tkwin) - viewPtr->inset;
 
     if (((x + w) < x1) || (x > x2) || ((y + h) < y1) || (y > y2)) {
-	return;				/* Value is entirely clipped. */
+	return;				/* Cell is entirely clipped. */
     }
 
-    /* Draw the background of the value. */
-    if ((valuePtr == viewPtr->activeValuePtr) ||
+    /* Draw the background of the cell. */
+    if ((cellPtr == viewPtr->activeCellPtr) ||
 	(!EntryIsSelected(viewPtr, entryPtr))) {
 	bg = GetStyleBackground(colPtr);
     } else {
@@ -7578,7 +7543,7 @@ DisplayValue(TreeView *viewPtr, Entry *entryPtr, Value *valuePtr)
 		pixWidth, pixHeight, Tk_Depth(viewPtr->tkwin));
 	Blt_Bg_FillRectangle(viewPtr->tkwin, drawable, bg, 0, 0, 
 		pixWidth, pixHeight, 0, TK_RELIEF_FLAT);
-	DrawValue(viewPtr, valuePtr, drawable, sx, sy);
+	DrawCell(viewPtr, cellPtr, drawable, sx, sy);
 	XCopyArea(viewPtr->display, drawable, Tk_WindowId(viewPtr->tkwin), 
 		  viewPtr->lineGC, 0, 0, pixWidth, pixHeight, x, y+1);
 	Tk_FreePixmap(viewPtr->display, drawable);
@@ -7588,7 +7553,7 @@ DisplayValue(TreeView *viewPtr, Entry *entryPtr, Value *valuePtr)
 	drawable = Tk_WindowId(viewPtr->tkwin);
 	Blt_Bg_FillRectangle(viewPtr->tkwin, drawable, bg, x, y+1, w, h, 
 		0, TK_RELIEF_FLAT);
-	DrawValue(viewPtr, valuePtr, drawable, x, y);
+	DrawCell(viewPtr, cellPtr, drawable, x, y);
     }
 }
 
@@ -8205,12 +8170,12 @@ DisplayTreeView(ClientData clientData)	/* Information about widget. */
 	    Entry **epp;
 	    
 	    for (epp = viewPtr->visibleArr; *epp != NULL; epp++) {
-		Value *vp;
+		Cell *cellPtr;
 		
-		/* Check if there's a corresponding value in the entry. */
-		vp = Blt_TreeView_FindValue(*epp, colPtr);
-		if (vp != NULL) {
-		    DrawValue(viewPtr, vp, drawable, x + colPtr->pad.side1, 
+		/* Check if there's a corresponding cell in the entry. */
+		cellPtr = Blt_TreeView_FindCell(*epp, colPtr);
+		if (cellPtr != NULL) {
+		    DrawCell(viewPtr, cellPtr, drawable, x + colPtr->pad.side1, 
                         SCREENY(viewPtr,(*epp)->worldY));
 		}
 	    }
@@ -8350,11 +8315,11 @@ DisplayButton(TreeView *viewPtr, Entry *entryPtr)
 
     if (((dx + width) < left) || (dx > right) ||
 	((dy + height) < top) || (dy > bottom)) {
-	return;			/* Value is clipped. */
+	return;			/* Cell is clipped. */
     }
     drawable = Blt_GetPixmap(viewPtr->display, Tk_WindowId(viewPtr->tkwin), 
 	width, height, Tk_Depth(viewPtr->tkwin));
-    /* Draw the background of the value. */
+    /* Draw the background of the cell. */
     DrawButton(viewPtr, entryPtr, drawable, 0, 0);
 
     /* Clip the drawable if necessary */
@@ -9040,26 +9005,26 @@ ColumnDeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	    continue;			/* Can't delete the treeView column,
 					 * so just ignore the request. */
 	}
-	/* Traverse the tree deleting values associated with the column.  */
+	/* Traverse the tree deleting cells associated with the column.  */
 	for (entryPtr = viewPtr->rootPtr; entryPtr != NULL;
 	    entryPtr = NextEntry(entryPtr, 0)) {
 	    if (entryPtr != NULL) {
-		Value *valuePtr, *lastPtr, *nextPtr;
+		Cell *cellPtr, *lastPtr, *nextPtr;
 		
 		lastPtr = NULL;
-		for (valuePtr = entryPtr->values; valuePtr != NULL; 
-		     valuePtr = nextPtr) {
-		    nextPtr = valuePtr->nextPtr;
-		    if (valuePtr->columnPtr == colPtr) {
-			DestroyValue(viewPtr, valuePtr);
+		for (cellPtr = entryPtr->cells; cellPtr != NULL; 
+		     cellPtr = nextPtr) {
+		    nextPtr = cellPtr->nextPtr;
+		    if (cellPtr->colPtr == colPtr) {
+			DestroyCell(viewPtr, cellPtr);
 			if (lastPtr == NULL) {
-			    entryPtr->values = nextPtr;
+			    entryPtr->cells = nextPtr;
 			} else {
 			    lastPtr->nextPtr = nextPtr;
 			}
 			break;
 		    }
-		    lastPtr = valuePtr;
+		    lastPtr = cellPtr;
 		}
 	    }
 	}
@@ -9178,7 +9143,7 @@ ColumnInsertOp(ClientData clientData, Tcl_Interp *interp, int objc,
      */
     for(entryPtr = viewPtr->rootPtr; entryPtr != NULL;
 	entryPtr = NextEntry(entryPtr, 0)) {
-	AddValue(entryPtr, colPtr);
+	AddCell(entryPtr, colPtr);
     }
     TraceColumn(viewPtr, colPtr);
     EventuallyRedraw(viewPtr);
@@ -9841,18 +9806,18 @@ EditOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	    }
 	    if ((worldX >= colPtr->worldX) && 
 		(worldX < (colPtr->worldX + colPtr->width))) {
-		ValueStyle *stylePtr;
-                Value *valuePtr;
+		CellStyle *stylePtr;
+                Cell *cellPtr;
 	
 		stylePtr = NULL;
 		if (colPtr == &viewPtr->treeColumn) {
                     continue;           /* This is the tree column.  */
                 }
-                valuePtr = Blt_TreeView_FindValue(entryPtr, colPtr);
-                if (valuePtr == NULL) {
-                    continue;           /* No value at entry, column. */
+                cellPtr = Blt_TreeView_FindCell(entryPtr, colPtr);
+                if (cellPtr == NULL) {
+                    continue;           /* No cell at entry, column. */
                 }
-                stylePtr = valuePtr->stylePtr;
+                stylePtr = cellPtr->stylePtr;
 		if (stylePtr == NULL) {
 		    stylePtr = colPtr->stylePtr;
 		}
@@ -9861,7 +9826,7 @@ EditOp(ClientData clientData, Tcl_Interp *interp, int objc,
 		    continue;           /* Column isn't editable. */
 		}
 		if (!isTest) {
-		    if ((*stylePtr->classPtr->editProc)(valuePtr, stylePtr) 
+		    if ((*stylePtr->classPtr->editProc)(cellPtr, stylePtr) 
                         != TCL_OK) {
 			return TCL_ERROR;
 		    }
@@ -10213,6 +10178,7 @@ EntryDeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (objc == 5) {
 	long entryPos;
 	Blt_TreeNode node;
+
 	/*
 	 * Delete a single child node from a hierarchy specified by its
 	 * numeric position.
@@ -10284,9 +10250,10 @@ EntryDeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *	Counts the number of entries at this node.
  *
  * Results:
- *	A standard TCL result.  If an error occurred TCL_ERROR is returned and
- *	interp->result will contain an error message.  Otherwise, TCL_OK is
- *	returned and interp->result contains the number of entries.
+ *	A standard TCL result.  If an error occurred TCL_ERROR is returned
+ *	and interp->result will contain an error message.  Otherwise,
+ *	TCL_OK is returned and interp->result contains the number of
+ *	entries.
  *
  *---------------------------------------------------------------------------
  */
@@ -10413,8 +10380,8 @@ RegexpCompare(Tcl_Interp *interp, const char *name, const char *pattern)
  *	Find one or more nodes based upon the pattern provided.
  *
  * Results:
- *	A standard TCL result.  The interpreter result will contain a list of
- *	the node serial identifiers.
+ *	A standard TCL result.  The interpreter result will contain a list
+ *	of the node serial identifiers.
  *
  *---------------------------------------------------------------------------
  */
@@ -10429,7 +10396,8 @@ FindOp(ClientData clientData, Tcl_Interp *interp, int objc,
     int length;
     CompareProc *compareProc;
     IterProc *nextProc;
-    int invertMatch;		/* normal search mode (matching entries) */
+    int invertMatch;                    /* Normal search mode (matching
+                                         * entries) */
     char *namePattern, *fullPattern;
     int i;
     int result;
@@ -10588,7 +10556,7 @@ FindOp(ClientData clientData, Tcl_Interp *interp, int objc,
     numMatches = 0;
 
     /*
-     * Step 3:	Search through the tree and look for nodes that match the
+     * Step 3:  Search through the tree and look for nodes that match the
      *		current pattern specifications.  Save the name of each of
      *		the matching nodes.
      */
@@ -10648,8 +10616,8 @@ FindOp(ClientData clientData, Tcl_Interp *interp, int objc,
 		goto error;
 	    }
 	}
-	/* A NULL node reference in an entry indicates that the entry
-	 * was deleted, but its memory not released yet. */
+	/* A NULL node reference in an entry indicates that the entry was
+	 * deleted, but its memory not released yet. */
 	if (entryPtr->node != NULL) {
 	    /* Finally, save the matching node name. */
 	    objPtr = NodeToObj(entryPtr->node);
@@ -10690,12 +10658,13 @@ FindOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * GetOp --
  *
- *	Converts one or more node identifiers to its path component.  The path
- *	may be either the single entry name or the full path of the entry.
+ *	Converts one or more node identifiers to its path component.  The
+ *	path may be either the single entry name or the full path of the
+ *	entry.
  *
  * Results:
- *	A standard TCL result.  The interpreter result will contain a list of
- *	the convert names.
+ *	A standard TCL result.  The interpreter result will contain a list
+ *	of the convert names.
  *
  *---------------------------------------------------------------------------
  */
@@ -10757,9 +10726,9 @@ GetOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * SearchAndApplyToTree --
  *
- *	Searches through the current tree and applies a procedure to matching
- *	nodes.  The search specification is taken from the following
- *	command-line arguments:
+ *	Searches through the current tree and applies a procedure to
+ *	matching nodes.  The search specification is taken from the
+ *	following command-line arguments:
  *
  *      ?-exact? ?-glob? ?-regexp? ?-nonmatching?
  *      ?-data string?
@@ -10769,10 +10738,10 @@ GetOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *      ?inode...?
  *
  * Results:
- *	A standard TCL result.  If the result is valid, and if the nonmatchPtr
- *	is specified, it returns a boolean value indicating whether or not the
- *	search was inverted.  This is needed to fix things properly for the
- *	"hide nonmatching" case.
+ *	A standard TCL result.  If the result is valid, and if the
+ *	nonmatchPtr is specified, it returns a boolean value indicating
+ *	whether or not the search was inverted.  This is needed to fix
+ *	things properly for the "hide nonmatching" case.
  *
  *---------------------------------------------------------------------------
  */
@@ -10873,8 +10842,9 @@ SearchAndApplyToTree(TreeView *viewPtr, Tcl_Interp *interp, int objc,
     if ((namePattern != NULL) || (fullPattern != NULL) ||
 	(Blt_List_GetLength(options) > 0)) {
 	/*
-	 * Search through the tree and look for nodes that match the current
-	 * spec.  Apply the input procedure to each of the matching nodes.
+	 * Search through the tree and look for nodes that match the
+	 * current spec.  Apply the input procedure to each of the matching
+	 * nodes.
 	 */
 	for (entryPtr = viewPtr->rootPtr; entryPtr != NULL; 
 	     entryPtr = NextEntry(entryPtr, 0)) {
@@ -10984,9 +10954,9 @@ FixSelectionsApplyProc(TreeView *viewPtr, Entry *entryPtr)
  *
  * HideOp --
  *
- *	Hides one or more nodes.  Nodes can be specified by their inode, or by
- *	matching a name or data value pattern.  By default, the patterns are
- *	matched exactly.  They can also be matched using glob-style and
+ *	Hides one or more nodes.  Nodes can be specified by their inode, or
+ *	by matching a name or data value pattern.  By default, the patterns
+ *	are matched exactly.  They can also be matched using glob-style and
  *	regular expression rules.
  *
  * Results:
@@ -11010,15 +10980,16 @@ HideOp(ClientData clientData, Tcl_Interp *interp, int objc,
     /*
      * If this was an inverted search, scan back through the tree and make
      * sure that the parents for all visible nodes are also visible.  After
-     * all, if a node is supposed to be visible, its parent can't be hidden.
+     * all, if a node is supposed to be visible, its parent can't be
+     * hidden.
      */
     if (nonmatching) {
 	Apply(viewPtr, viewPtr->rootPtr, MapAncestorsApplyProc, 0);
     }
     /*
      * Make sure that selections are cleared from any hidden nodes.  This
-     * wasn't done earlier--we had to delay it until we fixed the visibility
-     * status for the parents.
+     * wasn't done earlier--we had to delay it until we fixed the
+     * visibility status for the parents.
      */
     Apply(viewPtr, viewPtr->rootPtr, FixSelectionsApplyProc, 0);
 
@@ -11033,10 +11004,10 @@ HideOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * ShowOp --
  *
- *	Mark one or more nodes to be exposed.  Nodes can be specified by their
- *	inode, or by matching a name or data value pattern.  By default, the
- *	patterns are matched exactly.  They can also be matched using
- *	glob-style and regular expression rules.
+ *	Mark one or more nodes to be exposed.  Nodes can be specified by
+ *	their inode, or by matching a name or data value pattern.  By
+ *	default, the patterns are matched exactly.  They can also be
+ *	matched using glob-style and regular expression rules.
  *
  * Results:
  *	A standard TCL result.
@@ -11062,13 +11033,13 @@ ShowOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * IndexOp --
  *
- *	Converts one of more words representing indices of the entries in the
- *	treeview widget to their respective serial identifiers.
+ *	Converts one of more words representing indices of the entries in
+ *	the treeview widget to their respective serial identifiers.
  *
  * Results:
- *	A standard TCL result.  Interp->result will contain the identifier of
- *	each inode found. If an inode could not be found, then the serial
- *	identifier will be the empty string.
+ *	A standard TCL result.  Interp->result will contain the identifier
+ *	of each inode found. If an inode could not be found, then the
+ *	serial identifier will be the empty string.
  *
  *---------------------------------------------------------------------------
  */
@@ -11290,16 +11261,15 @@ InsertOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * DeleteOp --
  *
- *	Deletes nodes from the hierarchy. Deletes one or more entries (except
- *	root). In all cases, nodes are removed recursively.
+ *	Deletes nodes from the hierarchy. Deletes one or more entries
+ *	(except root). In all cases, nodes are removed recursively.
  *
- *	Note: There's no need to explicitly clean up Entry structures 
- *	      or request a redraw of the widget. When a node is 
- *	      deleted in the tree, all of the Tcl_Objs representing
- *	      the various data fields are also removed.  The treeview 
- *	      widget store the Entry structure in a data field. So it's
- *	      automatically cleaned up when FreeEntryInternalRep is
- *	      called.
+ *	Note: There's no need to explicitly clean up Entry structures or
+ *	      request a redraw of the widget. When a node is deleted in the
+ *	      tree, all of the Tcl_Objs representing the various data
+ *	      fields are also removed.  The treeview widget store the Entry
+ *	      structure in a data field. So it's automatically cleaned up
+ *	      when FreeEntryInternalRep is called.
  *
  *---------------------------------------------------------------------------
  */
@@ -11649,8 +11619,8 @@ PostOp(ClientData clientData, Tcl_Interp *interp, int objc,
     TreeView *viewPtr = clientData;
     Entry *entryPtr;
     Column *colPtr;
-    ValueStyle *stylePtr;
-    Value *valuePtr;
+    CellStyle *stylePtr;
+    Cell *cellPtr;
 
     if (objc == 2) {
 	Tcl_Obj *listObjPtr;
@@ -11659,7 +11629,7 @@ PostOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	if (viewPtr->postPtr != NULL) {
 	    Tcl_Obj *objPtr;
 
-	    colPtr = viewPtr->postPtr->columnPtr;
+	    colPtr = viewPtr->postPtr->colPtr;
 	    entryPtr = viewPtr->postPtr->entryPtr;
             objPtr = Tcl_NewLongObj(Blt_Tree_NodeId(entryPtr->node));
 	    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
@@ -11677,16 +11647,16 @@ PostOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	return TCL_ERROR;
     }
     if ((colPtr == NULL) || (entryPtr == NULL)) {
-	valuePtr = NULL;
+	cellPtr = NULL;
     } else {
-	valuePtr = Blt_TreeView_FindValue(entryPtr, colPtr);
+	cellPtr = Blt_TreeView_FindCell(entryPtr, colPtr);
     }
-    if (valuePtr == NULL) {
+    if (cellPtr == NULL) {
 	return TCL_OK;
     }
-    stylePtr = GetCurrentStyle(viewPtr, colPtr, valuePtr);
+    stylePtr = GetCurrentStyle(viewPtr, colPtr, cellPtr);
     if (stylePtr->classPtr->postProc != NULL) {
-	return (*stylePtr->classPtr->postProc)(interp, valuePtr, stylePtr);
+	return (*stylePtr->classPtr->postProc)(interp, cellPtr, stylePtr);
     }
     return TCL_OK;
 }
@@ -11883,8 +11853,8 @@ SeeOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     if (entryPtr->flags & ENTRY_HIDE) {
 	/*
 	 * If the entry wasn't previously exposed, its world coordinates
-	 * aren't likely to be valid.  So re-compute the layout before we try
-	 * to see the viewport to the entry's location.
+	 * aren't likely to be valid.  So re-compute the layout before we
+	 * try to see the viewport to the entry's location.
 	 */
 	MapAncestors(viewPtr, entryPtr);
 	viewPtr->flags |= (LAYOUT_PENDING | DIRTY);
@@ -12074,8 +12044,8 @@ SelectionIncludesOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  *	Sets the selection mark to the element given by a index.  The
  *	selection anchor is the end of the selection that is movable while
- *	dragging out a selection with the mouse.  The index "mark" may be used
- *	to refer to the anchor element.
+ *	dragging out a selection with the mouse.  The index "mark" may be
+ *	used to refer to the anchor element.
  *
  * Results:
  *	None.
@@ -12279,8 +12249,9 @@ SelectionSetOp(ClientData clientData, Tcl_Interp *interp, int objc,
  * SelectionOp --
  *
  *	This procedure handles the individual options for text selections.
- *	The selected text is designated by start and end indices into the text
- *	pool.  The selected segment has both a anchored and unanchored ends.
+ *	The selected text is designated by start and end indices into the
+ *	text pool.  The selected segment has both a anchored and unanchored
+ *	ends.
  *
  * Results:
  *	None.
@@ -12369,9 +12340,9 @@ SortCgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * SortConfigureOp --
  *
- * 	This procedure is called to process a list of configuration
- *	options database, in order to reconfigure the one of more
- *	entries in the widget.
+ * 	This procedure is called to process a list of configuration options
+ *	database, in order to reconfigure the one of more entries in the
+ *	widget.
  *
  *	  .h sort configure option value
  *
@@ -12381,8 +12352,8 @@ SortCgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * Side effects:
  *	Configuration information, such as text string, colors, font,
- *	etc. get set for viewPtr; old resources get freed, if there
- *	were any.  The hypertext is redisplayed.
+ *	etc. get set for viewPtr; old resources get freed, if there were
+ *	any.  The hypertext is redisplayed.
  *
  *---------------------------------------------------------------------------
  */
@@ -12537,15 +12508,14 @@ SortOnceOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * SortOp --
  *
- *	Comparison routine (used by qsort) to sort a chain of subnodes.
- *	A simple string comparison is performed on each node name.
+ *	Comparison routine (used by qsort) to sort a chain of subnodes.  A
+ *	simple string comparison is performed on each node name.
  *
  *	.h sort auto
  *	.h sort once root -recurse root
  *
  * Results:
- *	1 is the first is greater, -1 is the second is greater, 0
- *	if equal.
+ *	1 is the first is greater, -1 is the second is greater, 0 if equal.
  *
  *---------------------------------------------------------------------------
  */
@@ -12599,12 +12569,12 @@ StyleActivateOp(ClientData clientData, Tcl_Interp *interp, int objc,
 		Tcl_Obj *const *objv)
 {
     TreeView *viewPtr = clientData;
-    Value *oldValuePtr;
+    Cell *oldCellPtr;
     Column *colPtr;
     Entry *entryPtr;
-    Value *valuePtr;
+    Cell *cellPtr;
 
-    oldValuePtr = viewPtr->activeValuePtr;
+    oldCellPtr = viewPtr->activeCellPtr;
     entryPtr = NULL;			/* Suppress compiler warning. */
     if (GetEntry(viewPtr, objv[3], &entryPtr) != TCL_OK) {
 	return TCL_ERROR;
@@ -12613,26 +12583,26 @@ StyleActivateOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	return TCL_ERROR;
     }
     if ((colPtr == NULL) || (entryPtr == NULL)) {
-	valuePtr = NULL;
+	cellPtr = NULL;
     } else {
-	valuePtr = Blt_TreeView_FindValue(entryPtr, colPtr);
+	cellPtr = Blt_TreeView_FindCell(entryPtr, colPtr);
     }
-    if (valuePtr != oldValuePtr) {
-	if (oldValuePtr != NULL) {
-	    /* Deactivate old value */
-	    DisplayValue(viewPtr, entryPtr, oldValuePtr);
+    if (cellPtr != oldCellPtr) {
+	if (oldCellPtr != NULL) {
+	    /* Deactivate old cell */
+	    DisplayCell(viewPtr, entryPtr, oldCellPtr);
 	}
-	if (valuePtr == NULL) {
+	if (cellPtr == NULL) {
 	    /* Mark as deactivate */
 	    viewPtr->activePtr = NULL;
 	    viewPtr->colActivePtr = NULL;
-	    viewPtr->activeValuePtr = NULL;
+	    viewPtr->activeCellPtr = NULL;
 	} else {
-	    /* Activate new value. */
+	    /* Activate new cell. */
 	    viewPtr->activePtr = entryPtr;
 	    viewPtr->colActivePtr = colPtr;
-	    viewPtr->activeValuePtr = valuePtr;
-	    DisplayValue(viewPtr, entryPtr, valuePtr);
+	    viewPtr->activeCellPtr = cellPtr;
+	    DisplayCell(viewPtr, entryPtr, cellPtr);
 	}
     }
     return TCL_OK;
@@ -12654,7 +12624,7 @@ StyleCgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	    Tcl_Obj *const *objv)
 {
     TreeView *viewPtr = clientData;
-    ValueStyle *stylePtr;
+    CellStyle *stylePtr;
 
     stylePtr = FindStyle(interp, viewPtr, Tcl_GetString(objv[3]));
     if (stylePtr == NULL) {
@@ -12679,9 +12649,9 @@ StyleCheckBoxOp(ClientData clientData, Tcl_Interp *interp, int objc,
 		Tcl_Obj *const *objv)
 {
     TreeView *viewPtr = clientData;
-    ValueStyle *stylePtr;
+    CellStyle *stylePtr;
 
-    stylePtr = CreateStyle(interp, viewPtr, STYLE_CHECKBOX, 
+    stylePtr = Blt_TreeView_CreateStyle(interp, viewPtr, STYLE_CHECKBOX, 
 	Tcl_GetString(objv[3]), objc - 4, objv + 4);
     if (stylePtr == NULL) {
 	return TCL_ERROR;
@@ -12707,9 +12677,9 @@ StyleComboBoxOp(ClientData clientData, Tcl_Interp *interp, int objc,
 		Tcl_Obj *const *objv)
 {
     TreeView *viewPtr = clientData;
-    ValueStyle *stylePtr;
+    CellStyle *stylePtr;
 
-    stylePtr = CreateStyle(interp, viewPtr, STYLE_COMBOBOX, 
+    stylePtr = Blt_TreeView_CreateStyle(interp, viewPtr, STYLE_COMBOBOX, 
 	Tcl_GetString(objv[3]), objc - 4, objv + 4);
     if (stylePtr == NULL) {
 	return TCL_ERROR;
@@ -12735,8 +12705,9 @@ StyleComboBoxOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *	contains an error message.
  *
  * Side effects:
- *	Configuration information, such as text string, colors, font, etc. get
- *	set for stylePtr; old resources get freed, if there were any.
+ *	Configuration information, such as text string, colors, font,
+ *	etc. get set for stylePtr; old resources get freed, if there were
+ *	any.
  *
  *---------------------------------------------------------------------------
  */
@@ -12745,7 +12716,7 @@ StyleConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
 		 Tcl_Obj *const *objv)
 {
     TreeView *viewPtr = clientData;
-    ValueStyle *stylePtr;
+    CellStyle *stylePtr;
 
     stylePtr = FindStyle(interp, viewPtr, Tcl_GetString(objv[3]));
     if (stylePtr == NULL) {
@@ -12786,7 +12757,7 @@ static int
 StyleCreateOp(TreeView *viewPtr, Tcl_Interp *interp, int objc, 
 	      Tcl_Obj *const *objv)
 {
-    ValueStyle *stylePtr;
+    CellStyle *stylePtr;
     char c;
     const char *string;
     int type, length;
@@ -12813,7 +12784,8 @@ StyleCreateOp(TreeView *viewPtr, Tcl_Interp *interp, int objc,
     }
     string = Tcl_GetString(objv[4]);
     iconOption.clientData = viewPtr;
-    stylePtr = CreateStyle(interp, viewPtr, type, string, objc - 5, objv + 5);
+    stylePtr = Blt_TreeView_CreateStyle(interp, viewPtr, type, string, 
+        objc - 5, objv + 5);
     if (stylePtr == NULL) {
 	return TCL_ERROR;
     }
@@ -12834,8 +12806,8 @@ StyleCreateOp(TreeView *viewPtr, Tcl_Interp *interp, int objc,
  *	  .t style deactivate 
  *
  * Results:
- *	A standard TCL result.  If TCL_ERROR is returned, then interp->result
- *	contains an error message.
+ *	A standard TCL result.  If TCL_ERROR is returned, then
+ *	interp->result contains an error message.
  *
  *---------------------------------------------------------------------------
  */
@@ -12845,12 +12817,12 @@ StyleDeactivateOp(ClientData clientData, Tcl_Interp *interp, int objc,
 		Tcl_Obj *const *objv)
 {
     TreeView *viewPtr = clientData;
-    Value *oldValuePtr;
+    Cell *oldCellPtr;
 
-    oldValuePtr = viewPtr->activeValuePtr;
-    viewPtr->activeValuePtr = NULL;
-    if ((oldValuePtr != NULL)  && (viewPtr->activePtr != NULL)) {
-	DisplayValue(viewPtr, viewPtr->activePtr, oldValuePtr);
+    oldCellPtr = viewPtr->activeCellPtr;
+    viewPtr->activeCellPtr = NULL;
+    if ((oldCellPtr != NULL)  && (viewPtr->activePtr != NULL)) {
+	DisplayCell(viewPtr, viewPtr->activePtr, oldCellPtr);
     }
     return TCL_OK;
 }
@@ -12861,16 +12833,16 @@ StyleDeactivateOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * StyleForgetOp --
  *
- * 	Eliminates one or more style names.  A style still may be in use after
- * 	its name has been officially removed.  Only its hash table entry is
- * 	removed.  The style itself remains until its reference count returns
- * 	to zero (i.e. no one else is using it).
+ * 	Eliminates one or more style names.  A style still may be in use
+ * 	after its name has been officially removed.  Only its hash table
+ * 	entry is removed.  The style itself remains until its reference
+ * 	count returns to zero (i.e. no one else is using it).
  *
  *	  .t style forget "styleName"...
  *
  * Results:
- *	A standard TCL result.  If TCL_ERROR is returned, then interp->result
- *	contains an error message.
+ *	A standard TCL result.  If TCL_ERROR is returned, then
+ *	interp->result contains an error message.
  *
  *---------------------------------------------------------------------------
  */
@@ -12879,7 +12851,7 @@ StyleForgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	      Tcl_Obj *const *objv)
 {
     TreeView *viewPtr = clientData;
-    ValueStyle *stylePtr;
+    CellStyle *stylePtr;
     int i;
 
     for (i = 3; i < objc; i++) {
@@ -12888,9 +12860,9 @@ StyleForgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	    return TCL_ERROR;
 	}
 	/* 
-	 * Removing the style from the hash tables frees up the style
-	 * name again.  The style itself may not be removed until it's
-	 * been released by everything using it.
+	 * Removing the style from the hash tables frees up the style name
+	 * again.  The style itself may not be removed until it's been
+	 * released by everything using it.
 	 */
 	if (stylePtr->hashPtr != NULL) {
 	    Blt_DeleteHashEntry(&viewPtr->styleTable, stylePtr->hashPtr);
@@ -12923,7 +12895,7 @@ StyleHighlightOp(ClientData clientData, Tcl_Interp *interp, int objc,
 		 Tcl_Obj *const *objv)
 {
     TreeView *viewPtr = clientData;
-    ValueStyle *stylePtr;
+    CellStyle *stylePtr;
     int bool, oldBool;
 
     stylePtr = FindStyle(interp, viewPtr, Tcl_GetString(objv[3]));
@@ -12968,7 +12940,7 @@ StyleNamesOp(ClientData clientData, Tcl_Interp *interp, int objc,
     Blt_HashEntry *hPtr;
     Blt_HashSearch cursor;
     Tcl_Obj *listObjPtr, *objPtr;
-    ValueStyle *stylePtr;
+    CellStyle *stylePtr;
 
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
     for (hPtr = Blt_FirstHashEntry(&viewPtr->styleTable, &cursor); hPtr != NULL;
@@ -13002,7 +12974,7 @@ StyleSetOp(ClientData clientData, Tcl_Interp *interp, int objc,
 {
     TreeView *viewPtr = clientData;
     Blt_TreeKey key;
-    ValueStyle *stylePtr;
+    CellStyle *stylePtr;
     int i;
 
     stylePtr = FindStyle(interp, viewPtr, Tcl_GetString(objv[3]));
@@ -13020,15 +12992,16 @@ StyleSetOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	}
 	for (entryPtr = FirstTaggedEntry(&iter); entryPtr != NULL; 
 	     entryPtr = NextTaggedEntry(&iter)) {
-	    Value *vp;
+	    Cell *cellPtr;
 
-	    for (vp = entryPtr->values; vp != NULL; vp = vp->nextPtr) {
-		if (vp->columnPtr->key == key) {
-		    ValueStyle *oldStylePtr;
+	    for (cellPtr = entryPtr->cells; cellPtr != NULL; 
+                 cellPtr = cellPtr->nextPtr) {
+		if (cellPtr->colPtr->key == key) {
+		    CellStyle *oldStylePtr;
 
 		    stylePtr->refCount++;
-		    oldStylePtr = vp->stylePtr;
-		    vp->stylePtr = stylePtr;
+		    oldStylePtr = cellPtr->stylePtr;
+		    cellPtr->stylePtr = stylePtr;
 		    if (oldStylePtr != NULL) {
 			FreeStyle(oldStylePtr);
 		    }
@@ -13056,9 +13029,9 @@ StyleTextBoxOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	       Tcl_Obj *const *objv)
 {
     TreeView *viewPtr = clientData;
-    ValueStyle *stylePtr;
+    CellStyle *stylePtr;
 
-    stylePtr = CreateStyle(interp, viewPtr, STYLE_TEXTBOX, 
+    stylePtr = Blt_TreeView_CreateStyle(interp, viewPtr, STYLE_TEXTBOX, 
 	Tcl_GetString(objv[3]), objc - 4, objv + 4);
     if (stylePtr == NULL) {
 	return TCL_ERROR;
@@ -13074,8 +13047,8 @@ StyleTextBoxOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * StyleUnsetOp --
  *
- * 	Removes a style for a given key for all the ids given.
- *	The cell's style is returned to its default state.
+ * 	Removes a style for a given key for all the ids given.  The cell's
+ *	style is returned to its default state.
  *
  *	  .t style unset styleName key node...
  *
@@ -13091,7 +13064,7 @@ StyleUnsetOp(ClientData clientData, Tcl_Interp *interp, int objc,
 {
     TreeView *viewPtr = clientData;
     Blt_TreeKey key;
-    ValueStyle *stylePtr;
+    CellStyle *stylePtr;
     int i;
 
     stylePtr = FindStyle(interp, viewPtr, Tcl_GetString(objv[3]));
@@ -13109,14 +13082,14 @@ StyleUnsetOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	}
 	for (entryPtr = FirstTaggedEntry(&iter); entryPtr != NULL; 
 	     entryPtr = NextTaggedEntry(&iter)) {
-	    Value *valuePtr;
+	    Cell *cellPtr;
 
-	    for (valuePtr = entryPtr->values; valuePtr != NULL; 
-		 valuePtr = valuePtr->nextPtr) {
-		if (valuePtr->columnPtr->key == key) {
-		    if (valuePtr->stylePtr != NULL) {
-			FreeStyle(valuePtr->stylePtr);
-			valuePtr->stylePtr = NULL;
+	    for (cellPtr = entryPtr->cells; cellPtr != NULL; 
+		 cellPtr = cellPtr->nextPtr) {
+		if (cellPtr->colPtr->key == key) {
+		    if (cellPtr->stylePtr != NULL) {
+			FreeStyle(cellPtr->stylePtr);
+			cellPtr->stylePtr = NULL;
 		    }
 		    break;
 		}
@@ -13532,8 +13505,8 @@ XViewOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	Tcl_Obj *listObjPtr;
 
 	/*
-	 * Note that we are bounding the fractions between 0.0 and 1.0
-	 * to support the "canvas"-style of scrolling.
+	 * Note that we are bounding the fractions between 0.0 and 1.0 to
+	 * support the "canvas"-style of scrolling.
 	 */
 	listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
 	fract = (double)viewPtr->xOffset / worldWidth;
@@ -13632,6 +13605,7 @@ static Blt_OpSpec viewOps[] =
     {"nearest",      1, NearestOp,       4, 5, "x y ?varName?",}, 
     {"open",         1, OpenOp,          2, 0, "?-recurse? tagOrId...",}, 
     {"range",        1, RangeOp,         4, 5, "?-open? tagOrId tagOrId",},
+    {"post",         1, PostOp,          2, 3, "?cell?",},
     {"scan",         2, ScanOp,          5, 5, "dragto|mark x y",},
     {"see",          3, SeeOp,           3, 0, "?-anchor anchor? tagOrId",},
     {"selection",    3, SelectionOp,     2, 0, "oper args",},
@@ -13673,9 +13647,9 @@ TreeViewInstCmdProc(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * TreeViewCmd --
  *
- * 	This procedure is invoked to process the TCL command that corresponds to
- * 	a widget managed by this module. See the user documentation for details
- * 	on what it does.
+ * 	This procedure is invoked to process the TCL command that
+ * 	corresponds to a widget managed by this module. See the user
+ * 	documentation for details on what it does.
  *
  * Results:
  *	A standard TCL result.
@@ -13711,10 +13685,10 @@ TreeViewCmdProc(
     }
 
     /*
-     * Invoke a procedure to initialize various bindings on treeview entries.
-     * If the procedure doesn't already exist, source it from
-     * "$blt_library/treeview.tcl".  We deferred sourcing the file until now so
-     * that the variable $blt_library could be set within a script.
+     * Invoke a procedure to initialize various bindings on treeview
+     * entries.  If the procedure doesn't already exist, source it from
+     * "$blt_library/treeview.tcl".  We deferred sourcing the file until
+     * now so that the variable $blt_library could be set within a script.
      */
     if (!Blt_CommandExists(interp, "::blt::TreeView::Initialize")) {
 	if (Tcl_GlobalEval(interp, 
@@ -13728,9 +13702,9 @@ TreeViewCmdProc(
 	}
     }
     /* 
-     * Initialize the widget's configuration options here. The options need to
-     * be set first, so that entry, column, and style components can use them
-     * for their own GCs.
+     * Initialize the widget's configuration options here. The options need
+     * to be set first, so that entry, column, and style components can use
+     * them for their own GCs.
      */
     iconsOption.clientData = viewPtr;
     treeOption.clientData = viewPtr;
@@ -13745,8 +13719,9 @@ TreeViewCmdProc(
     }
 
     /* 
-     * Rebuild the widget's GC and other resources that are predicated by the
-     * widget's configuration options.  Do the same for the default column.
+     * Rebuild the widget's GC and other resources that are predicated by
+     * the widget's configuration options.  Do the same for the default
+     * column.
      */
     if (ConfigureTreeView(interp, viewPtr) != TCL_OK) {
 	goto error;
@@ -13763,10 +13738,10 @@ TreeViewCmdProc(
     ConfigureStyle(viewPtr, viewPtr->stylePtr);
 
     /*
-     * Invoke a procedure to initialize various bindings on treeview entries.
-     * If the procedure doesn't already exist, source it from
-     * "$blt_library/treeview.tcl".  We deferred sourcing the file until now
-     * so that the variable $blt_library could be set within a script.
+     * Invoke a procedure to initialize various bindings on treeview
+     * entries.  If the procedure doesn't already exist, source it from
+     * "$blt_library/treeview.tcl".  We deferred sourcing the file until
+     * now so that the variable $blt_library could be set within a script.
      */
     initObjv[0] = Tcl_NewStringObj("::blt::TreeView::Initialize", -1);
     initObjv[1] = objv[1];

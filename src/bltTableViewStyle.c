@@ -1,5 +1,4 @@
 /* -*- mode: c; c-basic-offset: 4; indent-tabs-mode: nil -*- */
-
 /*
  * bltTableViewStyle.c --
  *
@@ -7,13 +6,13 @@
  *
  *	Copyright 1998-2008 George A Howlett.
  *
- *	Permission is hereby granted, free of charge, to any person obtaining
- *	a copy of this software and associated documentation files (the
- *	"Software"), to deal in the Software without restriction, including
- *	without limitation the rights to use, copy, modify, merge, publish,
- *	distribute, sublicense, and/or sell copies of the Software, and to
- *	permit persons to whom the Software is furnished to do so, subject to
- *	the following conditions:
+ *	Permission is hereby granted, free of charge, to any person
+ *	obtaining a copy of this software and associated documentation
+ *	files (the "Software"), to deal in the Software without
+ *	restriction, including without limitation the rights to use, copy,
+ *	modify, merge, publish, distribute, sublicense, and/or sell copies
+ *	of the Software, and to permit persons to whom the Software is
+ *	furnished to do so, subject to the following conditions:
  *
  *	The above copyright notice and this permission notice shall be
  *	included in all copies or substantial portions of the Software.
@@ -21,10 +20,11 @@
  *	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  *	EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  *	MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- *	NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
- *	LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
- *	OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
- *	WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *	NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+ *	BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ *	ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ *	CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ *	SOFTWARE.
  */
 
 #define BUILD_BLT_TK_PROCS 1
@@ -79,8 +79,8 @@
 
 #define STATE_MASK	(POSTED|NORMAL)
 
-#define TEXT_VAR_TRACED	(1<<16)
-#define ICON_VAR_TRACED	(1<<17)
+#define TEXT_VAR_TRACED         (1<<16)
+#define ICON_VAR_TRACED         (1<<17)
 #define TRACE_VAR_FLAGS		(TCL_GLOBAL_ONLY|TCL_TRACE_WRITES|\
 				 TCL_TRACE_UNSETS)
 
@@ -196,36 +196,38 @@ static Blt_CustomOption textOption = {
 
 
 /* 
- * Styles are the settings and attributes for cells.  They are separate 
- * from cells themselves for efficency sake.  Typically there will be 
- * many more cells than different ways to display them.  
+ * Styles are the settings and attributes for cells.  They are separate
+ * from cells themselves for efficency sake.  Typically there will be many
+ * more cells than different ways to display them.
  */
  
 /* 
  * TextBoxStyle --
  *
  *	Treats the cell as a plain text box that can be edited (via a popup
- *	text editor widget).  The text box consists of an option icon, and a
- *	text string.  The icon may be to the left or right of the text.
+ *	text editor widget).  The text box consists of an option icon, and
+ *	a text string.  The icon may be to the left or right of the text.
  */
 typedef struct {
-    int refCount;			/* Usage reference count.  A reference
-					 * count of zero indicates that the
-					 * style is no longer used and may be
-					 * freed. */
+    int refCount;			/* Usage reference count.  A
+					 * reference count of zero
+					 * indicates that the style is no
+					 * longer used and may be freed. */
     unsigned int flags;			/* Bit fields containing various
 					 * flags. */
     const char *name;			/* Instance name. */
-    CellStyleClass *classPtr;		/* Contains class-specific information
-					 * such as configuration
-					 * specifications and routines how to
-					 * configure, draw, layout, etc the
-					 * cell according to the style. */
+    CellStyleClass *classPtr;		/* Contains class-specific
+					 * information such as
+					 * configuration specifications and
+					 * routines how to configure, draw,
+					 * layout, etc the cell according
+					 * to the style. */
     Blt_HashEntry *hashPtr;		/* If non-NULL, points to the hash
-					 * table entry for the style.  A style
-					 * that's been deleted, but still in
-					 * use (non-zero reference count) will
-					 * have no hash table entry. */
+					 * table entry for the style.  A
+					 * style that's been deleted, but
+					 * still in use (non-zero reference
+					 * count) will have no hash table
+					 * entry. */
     Blt_HashTable table;		/* Table of cells that have this
 					 * style. We use this to mark the
 					 * cells dirty when the style
@@ -239,44 +241,51 @@ typedef struct {
 					 * text. */
     Blt_Font font;
     XColor *normalFg;			/* Normal color of the text. */
-    XColor *activeFg;			/* Color of the text when the cell is
-					 * active. */
-    XColor *disableFg;			/* Color of the text when the cell is
-					 * disabled. */
-    XColor *highlightFg;		/* Color of the text when the cell is
-					 * highlighted. */
-    XColor *selectFg;			/* Color of the text when the cell is
-					 * selected. */
-    Blt_Bg normalBg;			/* Normal background color of cell. */
-    Blt_Bg activeBg;			/* Background color when the cell is
-					 * active. Textboxes are usually never
-					 * active. */
-    Blt_Bg altBg;			/* Alternative normal background. */
-    Blt_Bg disableBg;			/* Background color when the cell is
-					 * disabled. */
-    Blt_Bg highlightBg;			/* Background color when the cell is 
-					 * highlighted. */
-    Blt_Bg selectBg;			/* Background color when the cell is 
-					 * selected. */
-    GC normalGC;			/* Graphics context of normal text. */
-    GC activeGC;			/* Graphics context of active text. */
-    GC disableGC;			/* Graphics context of disabled text. */
+    XColor *activeFg;			/* Color of the text when the cell
+					 * is active. */
+    XColor *disableFg;			/* Color of the text when the cell
+					 * is disabled. */
+    XColor *highlightFg;		/* Color of the text when the cell
+					 * is highlighted. */
+    XColor *selectFg;			/* Color of the text when the cell
+					 * is selected. */
+    Blt_Bg normalBg;			/* Normal background color of
+                                         * cell. */
+    Blt_Bg activeBg;			/* Background color when the cell
+					 * is active. Textboxes are usually
+					 * never active. */
+    Blt_Bg altBg;			/* Alternative normal
+                                         * background. */
+    Blt_Bg disableBg;			/* Background color when the cell
+					 * is disabled. */
+    Blt_Bg highlightBg;			/* Background color when the cell
+					 * is highlighted. */
+    Blt_Bg selectBg;			/* Background color when the cell
+					 * is selected. */
+    GC normalGC;			/* Graphics context of normal
+                                         * text. */
+    GC activeGC;			/* Graphics context of active
+                                         * text. */
+    GC disableGC;			/* Graphics context of disabled
+                                         * text. */
     GC highlightGC;			/* Graphics context of highlighted
 					 * text. */
     GC selectGC;			/* Graphics context of selected
 					 * text. */
-    Tk_Justify justify;			/* Indicates how the text or icon is
-					 * justified within the column. */
-    int borderWidth;			/* Width of outer border surrounding
-					 * the entire box. */
+    Tk_Justify justify;			/* Indicates how the text or icon
+					 * is justified within the
+					 * column. */
+    int borderWidth;			/* Width of outer border
+					 * surrounding the entire box. */
     int relief, activeRelief;		/* Relief of outer border. */
 
-    Tcl_Obj *cmdObjPtr;			/* If non-NULL, TCL procedure called
-					 * to format the style is invoked.*/
+    Tcl_Obj *cmdObjPtr;			/* If non-NULL, TCL procedure
+					 * called to format the style is
+					 * invoked.*/
     /* TextBox-specific fields */
-    Tcl_Obj *editCmdObjPtr;		/* If non-NULL, TCL procedure called
-					 * to allow the user to edit the text
-					 * string. */
+    Tcl_Obj *editCmdObjPtr;		/* If non-NULL, TCL procedure
+					 * called to allow the user to edit
+					 * the text string. */
     int side;
 } TextBoxStyle;
 
@@ -284,31 +293,34 @@ typedef struct {
  * CheckBoxStyle --
  *
  *	Treats the cell as a check box that can possibly be edited (via a
- *	builtin check button).  The check box consists of the check indicator
- *	(a box with or without a check), an option icon, and an optional text
- *	string or image.  The icon may be to the left or right of the text.
- *	The check is always on the left.
+ *	builtin check button).  The check box consists of the check
+ *	indicator (a box with or without a check), an option icon, and an
+ *	optional text string or image.  The icon may be to the left or
+ *	right of the text.  The check is always on the left.
  *
- *	When the check button is pressed, the table value associated with the
- *	cell is toggled.  The on/off values may be specified, but default to
- *	1/0.
+ *	When the check button is pressed, the table value associated with
+ *	the cell is toggled.  The on/off values may be specified, but
+ *	default to 1/0.
  */
 typedef struct {
-    int refCount;			/* Usage reference count.  A reference
-					 * count of zero indicates that the
-					 * style may be freed. */
-    unsigned int flags;			/* Bit field containing both the style
-					 * type and various flags. */
+    int refCount;			/* Usage reference count.  A
+					 * reference count of zero
+					 * indicates that the style may be
+					 * freed. */
+    unsigned int flags;			/* Bit field containing both the
+					 * style type and various flags. */
     const char *name;			/* Instance name. */
-    CellStyleClass *classPtr;		/* Contains class-specific information
-					 * such as configuration
-					 * specifications and configure, draw,
-					 * layout, etc. routines. */
+    CellStyleClass *classPtr;		/* Contains class-specific
+					 * information such as
+					 * configuration specifications and
+					 * configure, draw, layout,
+					 * etc. routines. */
     Blt_HashEntry *hashPtr;		/* If non-NULL, points to the hash
-					 * table entry for the style.  A style
-					 * that's been deleted, but still in
-					 * use (non-zero reference count) will
-					 * have no hash table entry. */
+					 * table entry for the style.  A
+					 * style that's been deleted, but
+					 * still in use (non-zero reference
+					 * count) will have no hash table
+					 * entry. */
     Blt_HashTable table;		/* Table of cells that have this
 					 * style. We use this to mark the
 					 * cells dirty when the style
@@ -322,40 +334,47 @@ typedef struct {
 					 * text. */
     Blt_Font font;
     XColor *normalFg;			/* Normal color of the text. */
-    XColor *activeFg;			/* Color of the text when the cell is
-					 * active. */
-    XColor *disableFg;			/* Color of the text when the cell is
-					 * disabled. */
-    XColor *highlightFg;		/* Color of the text when the cell is
-					 * highlighted. */
-    XColor *selectFg;			/* Color of the text when the cell is
-					 * selected. */
-    Blt_Bg normalBg;			/* Normal background color of cell. */
-    Blt_Bg activeBg;			/* Background color when the cell is
-					 * active. Textboxes are usually never
-					 * active. */
-    Blt_Bg altBg;			/* Alternative normal background. */
-    Blt_Bg disableBg;			/* Background color when the cell is
-					 * disabled. */
-    Blt_Bg highlightBg;			/* Background color when the cell is 
-					 * highlighted. */
-    Blt_Bg selectBg;			/* Background color when the cell is 
-					 * selected. */
-    GC normalGC;			/* Graphics context of normal text. */
-    GC activeGC;			/* Graphics context of active text. */
-    GC disableGC;			/* Graphics context of disabled text. */
+    XColor *activeFg;			/* Color of the text when the cell
+					 * is active. */
+    XColor *disableFg;			/* Color of the text when the cell
+					 * is disabled. */
+    XColor *highlightFg;		/* Color of the text when the cell
+					 * is highlighted. */
+    XColor *selectFg;			/* Color of the text when the cell
+					 * is selected. */
+    Blt_Bg normalBg;			/* Normal background color of
+                                         * cell. */
+    Blt_Bg activeBg;			/* Background color when the cell
+					 * is active. Textboxes are usually
+					 * never active. */
+    Blt_Bg altBg;			/* Alternative normal
+                                         * background. */
+    Blt_Bg disableBg;			/* Background color when the cell
+					 * is disabled. */
+    Blt_Bg highlightBg;			/* Background color when the cell
+					 * is highlighted. */
+    Blt_Bg selectBg;			/* Background color when the cell
+					 * is selected. */
+    GC normalGC;			/* Graphics context of normal
+                                         * text. */
+    GC activeGC;			/* Graphics context of active
+                                         * text. */
+    GC disableGC;			/* Graphics context of disabled
+                                         * text. */
     GC highlightGC;			/* Graphics context of highlighted
 					 * text. */
     GC selectGC;			/* Graphics context of selected
 					 * text. */
-    Tk_Justify justify;			/* Indicates how the text or icon is
-					 * justified within the column. */
-    int borderWidth;			/* Width of outer border surrounding
-					 * the entire box. */
+    Tk_Justify justify;			/* Indicates how the text or icon
+					 * is justified within the
+					 * column. */
+    int borderWidth;			/* Width of outer border
+					 * surrounding the entire box. */
     int relief, activeRelief;		/* Relief of outer border. */
 
-    Tcl_Obj *cmdObjPtr;			/* If non-NULL, TCL procedure called
-					 * to format the style is invoked.*/
+    Tcl_Obj *cmdObjPtr;			/* If non-NULL, TCL procedure
+					 * called to format the style is
+					 * invoked.*/
     /* Checkbox specific fields. */
     int size;				/* Size of the checkbox. */
     Tcl_Obj *onValueObjPtr;
@@ -377,31 +396,35 @@ typedef struct {
 /* 
  * ComboBoxStyle --
  *
- *	Treats the cell as a combo box button that can possibly be edited (via
- *	an external combo menu).  The combo box consists of an option icon, a
- *	text string, and an arrow button.  The icon is always to the left of
- *	the text.  The arrow is always to the right.
+ *	Treats the cell as a combo box button that can possibly be edited
+ *	(via an external combo menu).  The combo box consists of an option
+ *	icon, a text string, and an arrow button.  The icon is always to
+ *	the left of the text.  The arrow is always to the right.
  *
- *	When the combo button is pressed, a combo menu is posed, and the table
- *	value associated with the cell is set to the selected menu value.  The
- *	user can not edit values, only menu current items can be used.
+ *	When the combo button is pressed, a combo menu is posed, and the
+ *	table value associated with the cell is set to the selected menu
+ *	value.  The user can not edit values, only menu current items can
+ *	be used.
  */
 typedef struct {
-    int refCount;			/* Usage reference count.  A reference
-					 * count of zero indicates that the
-					 * style may be freed. */
-    unsigned int flags;			/* Bit field containing both the style
-					 * type and various flags. */
+    int refCount;			/* Usage reference count.  A
+					 * reference count of zero
+					 * indicates that the style may be
+					 * freed. */
+    unsigned int flags;			/* Bit field containing both the
+					 * style type and various flags. */
     const char *name;			/* Instance name. */
-    CellStyleClass *classPtr;		/* Contains class-specific information
-					 * such as configuration
-					 * specifications and configure, draw,
-					 * layout, etc. routines. */
+    CellStyleClass *classPtr;		/* Contains class-specific
+					 * information such as
+					 * configuration specifications and
+					 * configure, draw, layout,
+					 * etc. routines. */
     Blt_HashEntry *hashPtr;		/* If non-NULL, points to the hash
-					 * table entry for the style.  A style
-					 * that's been deleted, but still in
-					 * use (non-zero reference count) will
-					 * have no hash table entry. */
+					 * table entry for the style.  A
+					 * style that's been deleted, but
+					 * still in use (non-zero reference
+					 * count) will have no hash table
+					 * entry. */
     Blt_HashTable table;		/* Table of cells that have this
 					 * style. We use this to mark the
 					 * cells dirty when the style
@@ -417,8 +440,8 @@ typedef struct {
     XColor *normalFg;			/* Normal color of the text. */
     XColor *activeFg;			/* Color of the text when the cell is
 					 * active. */
-    XColor *disableFg;			/* Color of the text when the cell is
-					 * disabled. */
+    XColor *disableFg;			/* Color of the text when the cell
+					 * is disabled. */
     XColor *highlightFg;		/* Color of the text when the cell is
 					 * highlighted. */
     XColor *selectFg;			/* Color of the text when the cell is

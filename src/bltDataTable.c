@@ -4396,7 +4396,7 @@ blt_table_set_row_tag(Tcl_Interp *interp, Table *tablePtr, Row *rowPtr,
  *---------------------------------------------------------------------------
  */
 int
-blt_table_set_column_tag(Tcl_Interp *interp, Table *tablePtr, Column *columnPtr, 
+blt_table_set_column_tag(Tcl_Interp *interp, Table *tablePtr, Column *colPtr, 
 		       const char *tagName)
 {
     Blt_HashEntry *hPtr;
@@ -4443,10 +4443,10 @@ blt_table_set_column_tag(Tcl_Interp *interp, Table *tablePtr, Column *columnPtr,
     } else {
 	tagTablePtr = Blt_GetHashValue(hPtr);
     }
-    if (columnPtr != NULL) {
-	hPtr = Blt_CreateHashEntry(tagTablePtr, (char *)columnPtr, &isNew);
+    if (colPtr != NULL) {
+	hPtr = Blt_CreateHashEntry(tagTablePtr, (char *)colPtr, &isNew);
 	if (isNew) {
-	    Blt_SetHashValue(hPtr, columnPtr);
+	    Blt_SetHashValue(hPtr, colPtr);
 	}
     }
     return TCL_OK;
@@ -6011,10 +6011,10 @@ FreePrimaryKeys(Table *tablePtr)
     
     for (link = Blt_Chain_FirstLink(tablePtr->primaryKeys); link != NULL;
 	 link = Blt_Chain_NextLink(link)) {
-	Column *columnPtr;
+	Column *colPtr;
 	
-	columnPtr = Blt_Chain_GetValue(link);
-	columnPtr->flags &= ~TABLE_COLUMN_PRIMARY_KEY;
+	colPtr = Blt_Chain_GetValue(link);
+	colPtr->flags &= ~TABLE_COLUMN_PRIMARY_KEY;
     }
     Blt_Chain_Destroy(tablePtr->primaryKeys);
     tablePtr->primaryKeys = NULL;
@@ -6070,10 +6070,10 @@ blt_table_set_keys(Table *tablePtr, Blt_Chain primaryKeys, int unique)
      * need to be regenerated. */
     for (link = Blt_Chain_FirstLink(tablePtr->primaryKeys); link != NULL; 
 	 link = Blt_Chain_NextLink(link)) {
-	Column *columnPtr;
+	Column *colPtr;
 	
-	columnPtr = Blt_Chain_GetValue(link);
-	columnPtr->flags |= TABLE_COLUMN_PRIMARY_KEY;
+	colPtr = Blt_Chain_GetValue(link);
+	colPtr->flags |= TABLE_COLUMN_PRIMARY_KEY;
     }
     tablePtr->flags |= TABLE_KEYS_DIRTY;
     if (unique) {
