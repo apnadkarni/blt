@@ -2047,6 +2047,9 @@ TextBoxStyleGeometryProc(Cell *cellPtr, CellStyle *cellStylePtr)
 	cellPtr->width  += iw + gap + tw;
 	cellPtr->height += MAX(th, ih);
     }
+    cellPtr->textWidth = tw;
+    cellPtr->textHeight = th;
+    cellPtr->flags &= ~GEOMETRY;
 }
 
 /*
@@ -2514,6 +2517,7 @@ CheckBoxStyleGeometryProc(Cell *cellPtr, CellStyle *cellStylePtr)
 	TextStyle ts;
 	const char *string;
 
+        FormatCell(cellPtr);
 	Blt_Ts_InitStyle(ts);
 	Blt_Ts_SetFont(ts, CHOOSE(viewPtr->font, stylePtr->font));
         string = Tcl_GetString(stylePtr->onValueObjPtr);

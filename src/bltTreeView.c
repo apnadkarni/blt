@@ -4403,24 +4403,6 @@ Blt_TreeView_SetEntryValue(Tcl_Interp *interp, TreeView *viewPtr,
     if (stylePtr == NULL) {
 	stylePtr = colPtr->stylePtr;
     }
-    if (stylePtr->validateCmdObjPtr != NULL) {
-	Tcl_Obj *cmdObjPtr, *objPtr;
-	int result;
-
-	cmdObjPtr= PercentSubst(viewPtr, entryPtr, stylePtr->validateCmdObjPtr);
-	objPtr = Tcl_NewStringObj(value, -1);
-	Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
-	Tcl_IncrRefCount(cmdObjPtr);
-	Tcl_Preserve(entryPtr);
-	result = Tcl_EvalObjEx(viewPtr->interp, cmdObjPtr, TCL_EVAL_GLOBAL);
-	Tcl_Release(entryPtr);
-	Tcl_DecrRefCount(cmdObjPtr);
-	if (result == TCL_OK) {
-	    value = Tcl_GetString(Tcl_GetObjResult(interp));
-	} else {
-	    valid = FALSE;
-	}
-    }
     if (valid) {
 	if (colPtr == &viewPtr->treeColumn) {
 	    if (entryPtr->labelUid != NULL) {
@@ -8431,6 +8413,53 @@ DisplayButton(TreeView *viewPtr, Entry *entryPtr)
 /*
  *---------------------------------------------------------------------------
  *
+ * ActivateOp --
+ *
+ * 	Turns on highlighting for a particular cell.  Only one cell
+ *      can be active at a time.
+ *
+ * Results:
+ *	A standard TCL result.  If TCL_ERROR is returned, then interp->result
+ *	contains an error message.
+ *
+ *      .view activate cell
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+ActivateOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+           Tcl_Obj *const *objv)
+{
+    TreeView *viewPtr = clientData;
+    Cell *cellPtr, *lastActiveCellPtr;
+
+    lastActiveCellPtr = viewPtr->activeCellPtr;
+    cellPtr = NULL;			/* Suppress compiler warning. */
+    if (GetCellFromObj(interp, viewPtr, objv[3], &cellPtr) != TCL_OK) {
+	return TCL_ERROR;
+    }
+    if (cellPtr != lastActiveCellPtr) {
+	if (lastActiveCellPtr != NULL) { /* Deactivate old cell */
+	    DisplayCell(viewPtr, lastActiveCellPtr);
+	}
+	if (cellPtr == NULL) {          /* Deactivate all cells. */
+	    viewPtr->activePtr = NULL;
+	    viewPtr->colActivePtr = NULL;
+	    viewPtr->activeCellPtr = NULL;
+	} else {                        /* Activate new cell. */
+	    viewPtr->activePtr = cellPtr->entryPtr;
+	    viewPtr->colActivePtr = cellPtr->colPtr;
+	    viewPtr->activeCellPtr = cellPtr;
+	    DisplayCell(viewPtr, cellPtr);
+	}
+    }
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
  * BindOp --
  *
  *	  .t bind tagOrId sequence command
@@ -9082,12 +9111,12 @@ CellInvokeOp(ClientData clientData, Tcl_Interp *interp, int objc,
         return TCL_ERROR;
     }
     stylePtr = GetCurrentStyle(viewPtr, cellPtr->colPtr, cellPtr);
-    if (stylePtr->cmdObjPtr != NULL) {
+    if (stylePtr->fmtCmdObjPtr != NULL) {
         int result;
         Tcl_Obj *cmdObjPtr, *objPtr;
 	
         /* Invoke command command cell. */
-        cmdObjPtr = Tcl_DuplicateObj(stylePtr->cmdObjPtr);
+        cmdObjPtr = Tcl_DuplicateObj(stylePtr->fmtCmdObjPtr);
         objPtr = CellToIndexObj(interp, cellPtr);
         Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
         Tcl_IncrRefCount(cmdObjPtr);
@@ -14353,6 +14382,7 @@ YViewOp(ClientData clientData, Tcl_Interp *interp, int objc,
  */
 static Blt_OpSpec viewOps[] =
 {
+    {"activate",     1, ActivateOp,      3, 3, "cell"},
     {"bbox",         2, BboxOp,          3, 0, "tagOrId...",}, 
     {"bind",         2, BindOp,          3, 5, "tagName ?sequence command?",}, 
     {"button",       2, ButtonOp,        2, 0, "args",},
