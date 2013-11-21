@@ -113,14 +113,14 @@
 #define DEF_TEXTBOX_RELIEF              "flat"
 #define DEF_TEXTBOX_BORDERWIDTH	"1"
 #define DEF_TEXTBOX_EDITABLE		"0"
-#define DEF_TEXTBOX_FONT		STD_FONT_NORMAL
+#define DEF_TEXTBOX_FONT		(char *)NULL
 
 #define DEF_CHECKBOX_ACTIVE_RELIEF	"raised"
 #define DEF_CHECKBOX_BOX_COLOR		(char *)NULL
 #define DEF_CHECKBOX_CHECK_COLOR	"red"
 #define DEF_CHECKBOX_BORDERWIDTH	"1"
 #define DEF_CHECKBOX_EDITABLE		"1"
-#define DEF_CHECKBOX_FONT		STD_FONT_SMALL
+#define DEF_CHECKBOX_FONT		(char *)NULL
 #define DEF_CHECKBOX_COMMAND		(char *)NULL
 #define DEF_CHECKBOX_FILL_COLOR		(char *)NULL
 #define DEF_CHECKBOX_GAP		"4"
@@ -142,7 +142,7 @@
 #define DEF_COMBOBOX_BORDERWIDTH	"1"
 #define DEF_COMBOBOX_CURSOR		(char *)NULL
 #define DEF_COMBOBOX_EDITABLE		"1"
-#define DEF_COMBOBOX_FONT		STD_FONT_NORMAL
+#define DEF_COMBOBOX_FONT		(char *)NULL
 #define DEF_COMBOBOX_ICON_VARIABLE	(char *)NULL
 #define DEF_COMBOBOX_MENU		(char *)NULL
 #define DEF_COMBOBOX_POSTED_RELIEF	"sunken"
@@ -156,7 +156,7 @@
 #define DEF_IMAGEBOX_COMMAND		(char *)NULL
 #define DEF_IMAGEBOX_CURSOR		(char *)NULL
 #define DEF_IMAGEBOX_EDITABLE		"0"
-#define DEF_IMAGEBOX_FONT		STD_FONT_SMALL
+#define DEF_IMAGEBOX_FONT		(char *)NULL
 #define DEF_IMAGEBOX_RELIEF		"flat"
 #define DEF_IMAGEBOX_SHOW_TEXT		"1"
 #define DEF_IMAGEBOX_SIDE		"left"
@@ -590,9 +590,11 @@ static Blt_ConfigSpec textBoxStyleSpecs[] =
     {BLT_CONFIG_SYNONYM, "-altbg", "alternateBackground", (char *)NULL,
 	(char *)NULL, 0, 0},
     {BLT_CONFIG_BACKGROUND, "-alternatebackground", "alternateBackground", 
-	"Background", DEF_ALT_BG, Blt_Offset(TextBoxStyle, altBg), 0},
+	"Background", DEF_ALT_BG, Blt_Offset(TextBoxStyle, altBg), 
+        BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_BACKGROUND, "-background", "background", "Background",
-        DEF_NORMAL_BG, Blt_Offset(TextBoxStyle, normalBg), 0},
+        DEF_NORMAL_BG, Blt_Offset(TextBoxStyle, normalBg), 
+        BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_SYNONYM, "-bd", "borderWidth", (char *)NULL, (char *)NULL, 
 	0, 0},
     {BLT_CONFIG_SYNONYM, "-bg", "background", (char *)NULL, (char *)NULL, 0, 0},
@@ -619,7 +621,7 @@ static Blt_ConfigSpec textBoxStyleSpecs[] =
     {BLT_CONFIG_SYNONYM, "-fg", "foreground", (char *)NULL, (char *)NULL, 
 	0, 0},
     {BLT_CONFIG_FONT, "-font", "font", "Font", DEF_TEXTBOX_FONT, 
-	Blt_Offset(TextBoxStyle, font), 0},
+	Blt_Offset(TextBoxStyle, font), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_COLOR, "-foreground", "foreground", "Foreground", 
         DEF_NORMAL_FG, Blt_Offset(TextBoxStyle, normalFg), 0},
     {BLT_CONFIG_PIXELS_NNEG, "-gap", "gap", "Gap", DEF_GAP, 
@@ -670,9 +672,10 @@ static Blt_ConfigSpec checkBoxStyleSpecs[] =
     {BLT_CONFIG_SYNONYM, "-altbg", "alternateBackground", (char *)NULL,
 	(char *)NULL, 0, 0},
     {BLT_CONFIG_BACKGROUND, "-alternatebackground", "alternateBackground", 
-	"Background", DEF_ALT_BG, Blt_Offset(CheckBoxStyle, altBg), 0},
+	"Background", DEF_ALT_BG, Blt_Offset(CheckBoxStyle, altBg), 
+        BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_BACKGROUND, "-background", "background", "Background",
-	DEF_NORMAL_BG, Blt_Offset(CheckBoxStyle, normalBg), 0},
+        DEF_NORMAL_BG, Blt_Offset(CheckBoxStyle, normalBg), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_SYNONYM, "-bd", "borderWidth", (char *)NULL, (char *)NULL, 
 	0, 0},
     {BLT_CONFIG_SYNONYM, "-bg", "background", (char *)NULL, (char *)NULL, 
@@ -702,7 +705,7 @@ static Blt_ConfigSpec checkBoxStyleSpecs[] =
     {BLT_CONFIG_SYNONYM, "-fg", "foreground", (char *)NULL, (char *)NULL, 
 	0, 0},
     {BLT_CONFIG_FONT, "-font", "font", "Font", DEF_CHECKBOX_FONT, 
-	Blt_Offset(CheckBoxStyle, font), 0},
+        Blt_Offset(CheckBoxStyle, font), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_COLOR, "-foreground", "foreground", "Foreground", 
         DEF_NORMAL_FG, Blt_Offset(CheckBoxStyle, normalFg), 0},
     {BLT_CONFIG_PIXELS_NNEG, "-gap", "gap", "Gap", DEF_CHECKBOX_GAP, 
@@ -771,7 +774,8 @@ static Blt_ConfigSpec comboBoxStyleSpecs[] =
     {BLT_CONFIG_SYNONYM, "-altbg", "alternateBackground", (char *)NULL,
 	(char *)NULL, 0, 0},
     {BLT_CONFIG_BACKGROUND, "-alternatebackground", "alternateBackground", 
-	"Background", DEF_ALT_BG, Blt_Offset(ComboBoxStyle, altBg), 0},
+	"Background", DEF_ALT_BG, Blt_Offset(ComboBoxStyle, altBg), 
+        BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_RELIEF, "-arrowrelief", "arrowRelief", "ArrowRelief",
 	DEF_COMBOBOX_ARROW_RELIEF, Blt_Offset(ComboBoxStyle, arrowRelief),
 	BLT_CONFIG_DONT_SET_DEFAULT},
@@ -779,7 +783,7 @@ static Blt_ConfigSpec comboBoxStyleSpecs[] =
 	"ArrowBorderWidth", DEF_COMBOBOX_ARROW_BORDERWIDTH, 
 	Blt_Offset(ComboBoxStyle, arrowBW), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_BACKGROUND, "-background", "background", "Background",
-        DEF_NORMAL_BG, Blt_Offset(ComboBoxStyle, normalBg), 0},
+        DEF_NORMAL_BG, Blt_Offset(ComboBoxStyle, normalBg), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_SYNONYM, "-bd", "borderWidth", (char *)NULL, (char *)NULL, 0, 
 	0},
     {BLT_CONFIG_SYNONYM, "-bg", "background", (char *)NULL, (char *)NULL, 0, 0},
@@ -804,7 +808,7 @@ static Blt_ConfigSpec comboBoxStyleSpecs[] =
     {BLT_CONFIG_SYNONYM, "-fg", "foreground", (char *)NULL, (char *)NULL, 
 	0, 0},
     {BLT_CONFIG_FONT, "-font", "font", "Font", DEF_COMBOBOX_FONT, 
-	Blt_Offset(ComboBoxStyle, font), 0},
+	Blt_Offset(ComboBoxStyle, font), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_COLOR, "-foreground", "foreground", "Foreground",
 	DEF_NORMAL_FG, Blt_Offset(ComboBoxStyle, normalFg), 0},
     {BLT_CONFIG_PIXELS_NNEG, "-gap", "gap", "Gap", DEF_GAP, 
@@ -872,9 +876,10 @@ static Blt_ConfigSpec imageBoxStyleSpecs[] =
     {BLT_CONFIG_SYNONYM, "-altbg", "alternateBackground", (char *)NULL,
 	(char *)NULL, 0, 0},
     {BLT_CONFIG_BACKGROUND, "-alternatebackground", "alternateBackground", 
-	"Background", DEF_ALT_BG, Blt_Offset(ImageBoxStyle, altBg), 0},
+	"Background", DEF_ALT_BG, Blt_Offset(ImageBoxStyle, altBg), 
+        BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_BACKGROUND, "-background", "background", "Background",
-	DEF_NORMAL_BG, Blt_Offset(ImageBoxStyle, normalBg), 0},
+	DEF_NORMAL_BG, Blt_Offset(ImageBoxStyle, normalBg), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_SYNONYM, "-bd", "borderWidth", (char *)NULL, (char *)NULL, 
 	0, 0},
     {BLT_CONFIG_SYNONYM, "-bg", "background", (char *)NULL, (char *)NULL, 
@@ -902,7 +907,7 @@ static Blt_ConfigSpec imageBoxStyleSpecs[] =
     {BLT_CONFIG_SYNONYM, "-fg", "foreground", (char *)NULL, (char *)NULL, 
 	0, 0},
     {BLT_CONFIG_FONT, "-font", "font", "Font", DEF_IMAGEBOX_FONT,
-	Blt_Offset(ImageBoxStyle, font), 0},
+	Blt_Offset(ImageBoxStyle, font), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_COLOR, "-foreground", "foreground", "Foreground", 
 	DEF_NORMAL_FG, Blt_Offset(ImageBoxStyle, normalFg), 0},
     {BLT_CONFIG_PIXELS_NNEG, "-gap", "gap", "Gap", DEF_GAP, 
@@ -1033,7 +1038,6 @@ FormatCell(Cell *cellPtr)
     }
     return NULL;
 }
-
 
 static int
 UpdateTextVariable(Tcl_Interp *interp, ComboBoxStyle *stylePtr) 
@@ -1922,7 +1926,7 @@ TextBoxStyleConfigureProc(CellStyle *cellStylePtr)
 
     gcMask = GCForeground | GCFont | GCDashList | GCLineWidth | GCLineStyle;
     gcValues.dashes = 1;
-    gcValues.font = Blt_Font_Id(stylePtr->font);
+    gcValues.font = Blt_Font_Id(CHOOSE(viewPtr->font, stylePtr->font));
     gcValues.line_width = 0;
     gcValues.line_style = LineOnOffDash;
 
@@ -2235,7 +2239,7 @@ TextBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
 	TextLayout *textPtr;
 
 	Blt_Ts_InitStyle(ts);
-	Blt_Ts_SetFont(ts, stylePtr->font);
+	Blt_Ts_SetFont(ts, CHOOSE(viewPtr->font, stylePtr->font));
 	Blt_Ts_SetGC(ts, gc);
 	xMax = colWidth - iw - gap;
 	Blt_Ts_SetMaxLength(ts, xMax);
@@ -2385,7 +2389,7 @@ CheckBoxStyleConfigureProc(CellStyle *cellStylePtr)
 
     gcMask = GCForeground | GCFont | GCDashList | GCLineWidth | GCLineStyle;
     gcValues.dashes = 1;
-    gcValues.font = Blt_Font_Id(stylePtr->font);
+    gcValues.font = Blt_Font_Id(CHOOSE(viewPtr->font, stylePtr->font));
     gcValues.line_width = 0;
     gcValues.line_style = LineOnOffDash;
 
@@ -2602,10 +2606,11 @@ CheckBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
 	gc = stylePtr->highlightGC;
     } else {
 	/* Normal */
-	bg = stylePtr->normalBg;
-	if ((stylePtr->altBg != NULL) && (cellPtr->entryPtr->flatIndex & 0x1)) {
-	    bg = stylePtr->altBg;
-	}
+        if (entryPtr->flatIndex & 0x1) {
+            bg = CHOOSE(viewPtr->altBg, stylePtr->altBg);
+        } else {
+            bg = CHOOSE(viewPtr->normalBg, stylePtr->normalBg);
+        }            
 	gc = stylePtr->normalGC;
     }
 
@@ -2725,7 +2730,7 @@ CheckBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
 	int xMax;
 
 	Blt_Ts_InitStyle(ts);
-	Blt_Ts_SetFont(ts, stylePtr->font);
+	Blt_Ts_SetFont(ts, CHOOSE(viewPtr->font, stylePtr->font));
 	Blt_Ts_SetGC(ts, gc);
 	xMax = colWidth - iw - bw - gap - stylePtr->gap;
 	Blt_Ts_SetMaxLength(ts, xMax);
@@ -2923,7 +2928,7 @@ GetComboMenuGeometry(Tcl_Interp *interp, TreeView *viewPtr,
 	unsigned int tw, th;
 
 	Blt_Ts_InitStyle(ts);
-	Blt_Ts_SetFont(ts, stylePtr->font);
+	Blt_Ts_SetFont(ts, CHOOSE(viewPtr->font, stylePtr->font));
 	text = Tcl_GetString(objv[i]);
 	Blt_Ts_GetExtents(&ts, text, &tw, &th);
 	if (maxWidth < tw) {
@@ -2983,7 +2988,7 @@ ComboBoxStyleGeometryProc(Cell *cellPtr, CellStyle *cellStylePtr)
 	TextStyle ts;
 
 	Blt_Ts_InitStyle(ts);
-	Blt_Ts_SetFont(ts, font);
+	Blt_Ts_SetFont(ts, CHOOSE(viewPtr->font, stylePtr->font));
 	Blt_Ts_GetExtents(&ts, cellPtr->text, &tw, &th);
     }
     if (stylePtr->icon != NULL) {
@@ -3068,10 +3073,11 @@ ComboBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
 	gc = stylePtr->highlightGC;
 	fg = stylePtr->highlightFg;
     } else {				/* Normal */
-	bg = stylePtr->normalBg;
-	if ((stylePtr->altBg != NULL) && (rowPtr->visibleIndex & 0x1)) {
-	    bg = stylePtr->altBg;
-	}
+        if (entryPtr->flatIndex & 0x1) {
+            bg = CHOOSE(viewPtr->altBg, stylePtr->altBg);
+        } else {
+            bg = CHOOSE(viewPtr->normalBg, stylePtr->normalBg);
+        }            
 	gc = stylePtr->normalGC;
 	fg = stylePtr->normalFg;
     }
@@ -3145,7 +3151,7 @@ ComboBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
 	TextLayout *textPtr;
 	
 	Blt_Ts_InitStyle(ts);
-	Blt_Ts_SetFont(ts, stylePtr->font);
+	Blt_Ts_SetFont(ts, CHOOSE(viewPtr->font, stylePtr->font));
 	Blt_Ts_SetGC(ts, gc);
 	xMax = SCREENX(viewPtr, colPtr->worldX) + colWidth - 
 	    stylePtr->arrowWidth;
@@ -3653,7 +3659,7 @@ ImageBoxStyleConfigureProc(CellStyle *cellStylePtr)
     viewPtr = stylePtr->viewPtr;
     gcMask = GCForeground | GCFont | GCDashList | GCLineWidth | GCLineStyle;
     gcValues.dashes = 1;
-    gcValues.font = Blt_Font_Id(stylePtr->font);
+    gcValues.font = Blt_Font_Id(CHOOSE(viewPtr->font, stylePtr->font));
     gcValues.line_width = 0;
     gcValues.line_style = LineOnOffDash;
 
@@ -3804,7 +3810,7 @@ ImageBoxStyleGeometryProc(Cell *cellPtr, CellStyle *cellStylePtr)
 	TextStyle ts;
 
 	Blt_Ts_InitStyle(ts);
-	Blt_Ts_SetFont(ts, stylePtr->font);
+	Blt_Ts_SetFont(ts, CHOOSE(viewPtr->font, stylePtr->font));
 	Blt_Ts_GetExtents(&ts, cellPtr->text, &tw, &th);
 	cellPtr->height += th;
 	if (cellPtr->tkImage != NULL) {
@@ -3956,7 +3962,7 @@ ImageBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
 	ty = y + ph + gap;
 	tx = x;
 	Blt_Ts_InitStyle(ts);
-	Blt_Ts_SetFont(ts, stylePtr->font);
+	Blt_Ts_SetFont(ts, CHOOSE(viewPtr->font, stylePtr->font));
 	Blt_Ts_SetGC(ts, gc);
 	xMax = colWidth - iw - gap;
 	Blt_Ts_SetMaxLength(ts, xMax);
