@@ -2561,7 +2561,6 @@ CheckBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
                       int x, int y)
 {
     Blt_Bg bg;
-    Blt_Font font;
     CheckBoxStyle *stylePtr = (CheckBoxStyle *)cellStylePtr;
     Column *colPtr;
     TextLayout *textPtr;
@@ -2576,7 +2575,6 @@ CheckBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
     GC gc;
 
     viewPtr = stylePtr->viewPtr;
-    font = CHOOSE(viewPtr->font, stylePtr->font);
     colPtr = cellPtr->colPtr;
     entryPtr = cellPtr->entryPtr;
     relief = stylePtr->relief;
@@ -2628,7 +2626,7 @@ CheckBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
     y += stylePtr->borderWidth;
 
     /* Draw the focus ring if this cell has focus. */
-    if ((viewPtr->flags & FOCUS) && (viewPtr->focusPtr == cellPtr)) {
+    if ((viewPtr->flags & FOCUS) && (viewPtr->focusCellPtr == cellPtr)) {
 	XDrawRectangle(viewPtr->display, drawable, gc, x+1, y+1, colWidth, 
 		       rowHeight);
     }
@@ -2823,10 +2821,10 @@ NewComboBoxStyle(TreeView *viewPtr, Blt_HashEntry *hPtr)
     stylePtr->classPtr = &comboBoxClass;
     stylePtr->gap = STYLE_GAP;
     stylePtr->arrowRelief = TK_RELIEF_RAISED;
+    stylePtr->postedRelief = TK_RELIEF_SUNKEN;
     stylePtr->relief = stylePtr->activeRelief = TK_RELIEF_FLAT;
     stylePtr->arrowBW = 1;
     stylePtr->borderWidth = 1;
-    stylePtr->relief = stylePtr->activeRelief = TK_RELIEF_FLAT;
     stylePtr->name = Blt_GetHashKey(&viewPtr->styleTable, hPtr);
     stylePtr->hashPtr = hPtr;
     stylePtr->link = NULL;
@@ -2949,10 +2947,10 @@ GetComboMenuGeometry(Tcl_Interp *interp, TreeView *viewPtr,
  *
  * ComboBoxStyleGeometryProc --
  *
- *	Determines the space requirements for the "combobox" given the value
- *	to be displayed.  Depending upon whether an icon or text is displayed
- *	and their relative placements, this routine computes the space needed
- *	for the text entry.
+ *	Determines the space requirements for the "combobox" given the
+ *	value to be displayed.  Depending upon whether an icon or text is
+ *	displayed and their relative placements, this routine computes the
+ *	space needed for the text entry.
  *
  * Results:
  *	None.
@@ -2969,18 +2967,31 @@ ComboBoxStyleGeometryProc(Cell *cellPtr, CellStyle *cellStylePtr)
     ComboBoxStyle *stylePtr = (ComboBoxStyle *)cellStylePtr;
     TreeView *viewPtr;
     int gap;
-    unsigned int iw, ih, tw, th;
+    unsigned int iw, ih, tw, th, ah, aw;
+    Column *colPtr;
+    Entry *rowPtr;
     Blt_Font font;
+    Blt_FontMetrics fm;
 
     viewPtr = stylePtr->viewPtr;
+    cellPtr->flags &= ~GEOMETRY;	/* Remove the dirty flag from the
+					 * cell. */
+    rowPtr = cellPtr->entryPtr;
+    colPtr = cellPtr->colPtr;
+
     tw = th = iw = ih = 0;
-    gap = 0;
-    cellPtr->width = cellPtr->height = 0;
-    cellPtr->textWidth = cellPtr->textHeight = 0;
+    cellPtr->width = cellPtr->height = 2 * (stylePtr->borderWidth + FOCUS_PAD);
+    cellPtr->width  += 2 * CELL_PADX;
+    cellPtr->height += 2 * CELL_PADY;
+    cellPtr->width  += colPtr->ruleWidth;
+    cellPtr->height += rowPtr->ruleHeight;
 
-    font = CHOOSE(viewPtr->font, stylePtr->font);
     FormatCell(cellPtr);
-
+    if (stylePtr->icon != NULL) {
+	iw = IconWidth(stylePtr->icon);
+	ih = IconHeight(stylePtr->icon);
+    } 
+    gap = 0;
     /* We don't know if the menu changed.  Do this once for the style. */
     if (stylePtr->menuObjPtr != NULL) {
 	GetComboMenuGeometry(viewPtr->interp, viewPtr, stylePtr, &tw, &th);
@@ -2990,44 +3001,34 @@ ComboBoxStyleGeometryProc(Cell *cellPtr, CellStyle *cellStylePtr)
 	Blt_Ts_InitStyle(ts);
 	Blt_Ts_SetFont(ts, CHOOSE(viewPtr->font, stylePtr->font));
 	Blt_Ts_GetExtents(&ts, cellPtr->text, &tw, &th);
-    }
-    if (stylePtr->icon != NULL) {
-	iw = IconWidth(stylePtr->icon);
-	ih = IconHeight(stylePtr->icon);
-    } 
-    if (cellPtr->text != NULL) {	/* New string defined. */
 	if (stylePtr->icon != NULL) {
 	    gap = stylePtr->gap;
 	}
-    } 
-    stylePtr->arrowWidth = Blt_TextWidth(font, "0", 1);
-    stylePtr->arrowWidth += 2 * stylePtr->arrowBW;
-    cellPtr->width = 2 * stylePtr->borderWidth + iw + 4 * gap + 
-	stylePtr->arrowWidth + tw;
-    cellPtr->height = MAX(th, ih) + 2 * stylePtr->borderWidth;
-    cellPtr->textWidth  = tw;
+    }
+    cellPtr->textWidth = tw;
     cellPtr->textHeight = th;
-    cellPtr->width += 2 * CELL_PADX;
-    cellPtr->height += 2 * CELL_PADY;
-    cellPtr->width += cellPtr->colPtr->ruleWidth;
-    cellPtr->height += cellPtr->entryPtr->ruleHeight;
-    cellPtr->flags &= ~GEOMETRY;
+
+    font = CHOOSE(viewPtr->font, stylePtr->font);
+    Blt_Font_GetMetrics(font, &fm);
+    stylePtr->arrowWidth = fm.ascent;
+    aw = ah = 2 * (stylePtr->arrowBW + 1) + stylePtr->arrowWidth;
+    cellPtr->width  += iw + 2 * gap + aw + tw;
+    cellPtr->height += MAX3(th, ih, ah);
 }
 
-#ifdef notdef
 /*
  *---------------------------------------------------------------------------
  *
  * ComboBoxStyleDrawProc --
  *
- *	Draws the "combobox" given the screen coordinates and the
- *	cell to be displayed.  
+ *	Draws the "combobox" given the screen coordinates and the value to
+ *	be displayed.
  *
  * Results:
  *	None.
  *
  * Side Effects:
- *	The combobox cell is drawn.
+ *	The combobox value is drawn.
  *
  *      +-----------------+	
  *	||Icon| |text| |v||	
@@ -3036,50 +3037,51 @@ ComboBoxStyleGeometryProc(Cell *cellPtr, CellStyle *cellStylePtr)
  *---------------------------------------------------------------------------
  */
 static void
-ComboBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
-		      int x, int y)
+ComboBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, 
+		      CellStyle *cellStylePtr, int x, int y)
 {
     Blt_Bg bg;
-    CellKey *keyPtr;
     Column *colPtr;
     ComboBoxStyle *stylePtr = (ComboBoxStyle *)cellStylePtr;
     GC gc;
-    Row *rowPtr;
+    Entry *rowPtr;
     int ix, iy, tx, ty;
     unsigned int gap, colWidth, rowHeight, cellWidth, cellHeight;
-    unsigned int iw, ih, th;
+    unsigned int iw, ih, th, tw;
     int relief;
     XColor *fg;
     TreeView *viewPtr;
 
-    viewPtr = cellPtr->viewPtr;
-    keyPtr = GetKey(cellPtr);
-    rowPtr = keyPtr->rowPtr;
-    colPtr = keyPtr->colPtr;
+    viewPtr = stylePtr->viewPtr;
+    rowPtr = cellPtr->entryPtr;
+    colPtr = cellPtr->colPtr;
 
     relief = stylePtr->relief;
-    if ((entryPtr->flags|colPtr->flags|cellPtr->flags) & DISABLED) {
+    if ((cellPtr->flags|rowPtr->flags|colPtr->flags) & DISABLED) {
 	/* Disabled */
 	bg = stylePtr->disableBg;
-	gc = stylePtr->disableGC;
-	fg = stylePtr->disableFg;
-    } else if ((entryPtr->flags|colPtr->flags|cellPtr->flags) & SELECTED) { 
-	bg = stylePtr->selectBg;
-	gc = stylePtr->selectGC;
-	fg = stylePtr->selectFg;
-    } else if ((rowPtr->flags|colPtr->flags|cellPtr->flags) & HIGHLIGHT) { 
-	/* Highlighted */
-	bg = GetHighlightBg((CellStyle *)stylePtr, rowPtr);
-	gc = stylePtr->highlightGC;
-	fg = stylePtr->highlightFg;
-    } else {				/* Normal */
-        if (entryPtr->flatIndex & 0x1) {
+        gc = stylePtr->disableGC;
+    } else if (EntryIsSelected(viewPtr, rowPtr)) {
+        /* Selected */
+	bg = CHOOSE(viewPtr->selection.bg, stylePtr->selectBg);
+        gc = stylePtr->selectGC;
+    } else if (viewPtr->activeCellPtr == cellPtr) {
+        /* Active */
+        bg = stylePtr->activeBg;
+        relief = stylePtr->activeRelief;
+        gc = stylePtr->activeGC;
+    } else if ((cellPtr->flags|rowPtr->flags|colPtr->flags) & HIGHLIGHT) {
+        /* Highlight */
+	bg = stylePtr->highlightBg;
+        gc = stylePtr->highlightGC;
+    } else {
+        /* Normal */
+        if (rowPtr->flatIndex & 0x1) {
             bg = CHOOSE(viewPtr->altBg, stylePtr->altBg);
         } else {
             bg = CHOOSE(viewPtr->normalBg, stylePtr->normalBg);
         }            
-	gc = stylePtr->normalGC;
-	fg = stylePtr->normalFg;
+        gc = stylePtr->normalGC;
     }
     rowHeight = rowPtr->height;
     colWidth  = colPtr->width;
@@ -3088,19 +3090,25 @@ ComboBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
     Blt_Bg_FillRectangle(viewPtr->tkwin, drawable, bg, x, y, colWidth,
 	rowHeight, stylePtr->borderWidth, stylePtr->relief);
 
-    rowHeight -= 2 * stylePtr->borderWidth + 3;
-    colWidth  -= 2 * stylePtr->borderWidth + 3;
-    x += stylePtr->borderWidth + 1;
-    y += stylePtr->borderWidth + 1;
+    rowHeight -= 2 * (stylePtr->borderWidth + FOCUS_PAD);
+    colWidth  -= 2 * (stylePtr->borderWidth + FOCUS_PAD);
+
+    x += stylePtr->borderWidth;
+    y += stylePtr->borderWidth;
     /* Draw the focus ring if this cell has focus. */
     if ((viewPtr->flags & FOCUS) && (viewPtr->focusCellPtr == cellPtr)) {
-	XDrawRectangle(viewPtr->display, drawable, gc, x, y, colWidth, 
+	XDrawRectangle(viewPtr->display, drawable, gc, x+1, y+1, colWidth, 
 		       rowHeight);
     }
     x += CELL_PADX;
     y += CELL_PADY;
-    cellHeight = cellPtr->height - 2 * (stylePtr->borderWidth + CELL_PADY) - 3;
-    cellWidth =  cellPtr->width  - 2 * (stylePtr->borderWidth + CELL_PADX) - 3;
+    rowHeight -= 2 * CELL_PADY;
+    colWidth  -= 2 * CELL_PADX;
+
+    cellHeight = cellPtr->height - 
+        2 * (stylePtr->borderWidth + CELL_PADY + FOCUS_PAD);
+    cellWidth  = cellPtr->width  - 
+        2 * (stylePtr->borderWidth + CELL_PADX + FOCUS_PAD);
 
     /* Justify (x) and center (y) the contents of the cell. */
     if (rowHeight > cellHeight) {
@@ -3118,29 +3126,29 @@ ComboBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
 	    break;
 	}
     }
-
-#ifdef notdef
-    tx = ty = ix = iy = 0;	/* Suppress compiler warning. */
-#endif
-    iw = ih = 0;
+    tw = th = iw = ih = 0;		/* Suppress compiler warning. */
+    gap = 0;
     if (stylePtr->icon != NULL) {
 	iw = IconWidth(stylePtr->icon);
 	ih = IconHeight(stylePtr->icon);
     }
-    th = 0;
     if (cellPtr->text != NULL) {
-	/* FIXME: */
-	th = cellHeight;
+	tw = cellPtr->textWidth;
+	th = cellPtr->textHeight;
+	tw = cellWidth - iw;
+	if (stylePtr->icon != NULL) {
+	    gap = stylePtr->gap;
+	}
+    }    
+    ix = tx = x, iy = ty = y;
+    if (cellHeight > ih) {
+        iy += (cellHeight - ih) / 2;
     }
-    gap = 0;
-    if ((stylePtr->icon != NULL) && (cellPtr->text != NULL)) {
-	gap = stylePtr->gap;
+    if (cellHeight > th) {
+        ty += (cellHeight - th) / 2;
     }
-
-    ix = x + gap;
-    iy = y + (cellHeight - ih) / 2;
+    ix += gap;
     tx = ix + iw + gap;
-    ty = y + (cellHeight - th) / 2;
 
     if (stylePtr->icon != NULL) {
 	Tk_RedrawImage(IconBits(stylePtr->icon), 0, 0, iw, ih, drawable, ix,iy);
@@ -3158,12 +3166,12 @@ ComboBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
 	Blt_Ts_SetMaxLength(ts, xMax - tx);
 	textPtr = Blt_Ts_CreateLayout(cellPtr->text, -1, &ts);
 	Blt_Ts_DrawLayout(viewPtr->tkwin, drawable, textPtr, &ts, tx, ty);
-	if (viewPtr->activePtr == cellPtr) {
+	if (viewPtr->activeCellPtr == cellPtr) {
 	    Blt_Ts_UnderlineLayout(viewPtr->tkwin, drawable, textPtr,&ts,tx,ty);
 	}
 	Blt_Free(textPtr);
     }
-    if ((stylePtr->flags & EDITABLE) && (viewPtr->activePtr == cellPtr)) {
+    if ((stylePtr->flags & EDITABLE) && (viewPtr->activeCellPtr == cellPtr)) {
 	int ax, ay;
 	unsigned int aw, ah;
 
@@ -3174,180 +3182,15 @@ ComboBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
 
 	bg = stylePtr->activeBg;
 	fg = stylePtr->activeFg;
-	relief = (viewPtr->postPtr == cellPtr) ? 
-	    stylePtr->postedRelief : stylePtr->activeRelief;
+	relief = (stylePtr->flags & POSTED) ? 
+	    stylePtr->postedRelief : stylePtr->arrowRelief;
 	Blt_Bg_FillRectangle(viewPtr->tkwin, drawable, bg, ax, ay, aw, ah, 
-		stylePtr->arrowBW, relief);
+		stylePtr->arrowBW+1, relief);
 	aw -= 2 * stylePtr->borderWidth;
 	ax += stylePtr->borderWidth;
 	Blt_DrawArrow(viewPtr->display, drawable, fg, ax, ay, aw, ah, 
 		stylePtr->arrowBW, ARROW_DOWN);
     }
-}
-#endif
-
-/*
- *---------------------------------------------------------------------------
- *
- * ComboBoxStyleDrawProc --
- *
- *	Draws the "combobox" given the screen coordinates and the
- *	cell to be displayed.  
- *
- * Results:
- *	None.
- *
- * Side Effects:
- *	The combobox cell is drawn.
- *
- *---------------------------------------------------------------------------
- */
-static void
-ComboBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, 
-		      CellStyle *cellStylePtr, int x, int y)
-{
-    Blt_Bg bg;
-    Column *colPtr;
-    ComboBoxStyle *stylePtr = (ComboBoxStyle *)cellStylePtr;
-    TreeView *viewPtr;
-    XColor *fg;
-    int arrowX, arrowY;
-    int borderWidth;
-    int gap, colWidth;
-    int ix, iy, iw, ih;
-    int relief;
-    int tx, ty, th;
-    Entry *entryPtr;
-
-    viewPtr = stylePtr->viewPtr;
-    borderWidth = 0;
-    relief = TK_RELIEF_FLAT;
-    colPtr = cellPtr->colPtr;
-    entryPtr = cellPtr->entryPtr;
-    if (cellPtr == viewPtr->activeCellPtr) {
-	bg = stylePtr->activeBg;
-	fg = stylePtr->activeFg;
-	borderWidth = 1;
-	relief = TK_RELIEF_RAISED;
-    } else if ((cellPtr->flags|entryPtr->flags|colPtr->flags) & HIGHLIGHT) {
-	bg = stylePtr->highlightBg;
-	fg = stylePtr->highlightFg;
-    } else {
-	/* If a background was specified, override the current background.
-	 * Otherwise, use the standard background taking into consideration if
-	 * its the odd or even color. */
-        if (entryPtr->flatIndex & 0x1) {
-            bg = CHOOSE(viewPtr->altBg, stylePtr->altBg);
-        } else {
-            bg = CHOOSE(viewPtr->normalBg, stylePtr->normalBg);
-        }
-	fg = GetStyleForeground(colPtr);
-    }
-
-    colWidth = colPtr->width - PADDING(colPtr->pad);
-    /*
-     * Draw the active or normal background color over the entire label
-     * area.  This includes both the tab's text and image.  The
-     * rectangle should be 2 pixels wider/taller than this area. So if
-     * the label consists of just an image, we get an halo around the
-     * image when the tab is active.
-     */
-    if (EntryIsSelected(viewPtr, entryPtr)) {
-        if (stylePtr->selectBg != NULL) {
-            bg = stylePtr->selectBg;
-        } else {
-            bg = viewPtr->selection.bg;
-        }
-        Blt_Bg_FillRectangle(viewPtr->tkwin, drawable, bg, x, y+1, 
-                colWidth, entryPtr->height - 2, borderWidth, relief);
-    } else {
-        Blt_Bg_FillRectangle(viewPtr->tkwin, drawable, bg, x, y+1, 
-                colWidth, entryPtr->height - 2, borderWidth, relief);
-    }
-    if (EntryIsSelected(viewPtr, entryPtr)) {
-	fg = viewPtr->selection.fg;
-    }
-    arrowX = x + colPtr->width;
-    arrowX -= colPtr->pad.side2 + stylePtr->borderWidth  + 
-        stylePtr->arrowWidth + stylePtr->gap;
-    arrowY = y;
-
-    if (colWidth > cellPtr->width) {
-	switch(colPtr->justify) {
-	case TK_JUSTIFY_RIGHT:
-	    x += (colWidth - cellPtr->width);
-	    break;
-	case TK_JUSTIFY_CENTER:
-	    x += (colWidth - cellPtr->width) / 2;
-	    break;
-	case TK_JUSTIFY_LEFT:
-	    break;
-	}
-    }
-
-#ifdef notdef
-    tx = ty = ix = iy = 0;	/* Suppress compiler warning. */
-#endif
-    
-    iw = ih = 0;
-    if (stylePtr->icon != NULL) {
-	iw = IconWidth(stylePtr->icon);
-	ih = IconHeight(stylePtr->icon);
-    }
-    th = cellPtr->textHeight;
-    gap = 0;
-    if ((stylePtr->icon != NULL) && (cellPtr->text != NULL)) {
-	gap = stylePtr->gap;
-    }
-
-    ix = x + gap;
-    iy = y + (entryPtr->height - ih) / 2;
-    tx = ix + iw + gap;
-    ty = y + (entryPtr->height - th) / 2;
-
-    if (stylePtr->icon != NULL) {
-	Tk_RedrawImage(IconBits(stylePtr->icon), 0, 0, iw, ih, drawable, 
-                ix, iy);
-    }
-    if (cellPtr->text != NULL) {
-	TextStyle ts;
-	XColor *color;
-	Blt_Font font;
-	int xMax;
-	
-	font = CHOOSE(viewPtr->font, stylePtr->font);
-	if (EntryIsSelected(viewPtr, entryPtr)) {
-	    color = CHOOSE(viewPtr->selection.fg, stylePtr->selectFg);
-	} else if (entryPtr->color != NULL) {
-	    color = entryPtr->color;
-	} else {
-	    color = fg;
-	}
-	Blt_Ts_InitStyle(ts);
-	Blt_Ts_SetFont(ts, font);
-	Blt_Ts_SetForeground(ts, color);
-	xMax = SCREENX(viewPtr, colPtr->worldX) + colPtr->width - 
-	    colPtr->titleBW - colPtr->pad.side2 - stylePtr->arrowWidth;
-	Blt_Ts_SetMaxLength(ts, xMax - tx);
-        Blt_DrawText(viewPtr->tkwin, drawable, cellPtr->text, &ts, tx, ty);
-    }
-    if (cellPtr == viewPtr->activeCellPtr) {
-	bg = stylePtr->activeBg;
-    } else {
-	bg = colPtr->titleBg;
-#ifdef notdef
-	bg = CHOOSE(viewPtr->bg, stylePtr->normalBg);
-#endif
-    }
-#ifdef notdef
-    Blt_Bg_FillRectangle(viewPtr->tkwin, drawable, bg, arrowX, 
-	arrowY + stylePtr->borderWidth, stylePtr->arrowWidth, 
-	entryPtr->height - 2 * stylePtr->borderWidth, stylePtr->arrowBW, 
-	stylePtr->arrowRelief); 
-#endif
-    Blt_DrawArrow(viewPtr->display, drawable, fg, arrowX, arrowY - 1, 
-	stylePtr->arrowWidth, entryPtr->height, stylePtr->arrowBW, ARROW_DOWN);
-    stylePtr->flags &= ~STYLE_DIRTY;
 }
 
 /*
