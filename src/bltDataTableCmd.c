@@ -2373,14 +2373,14 @@ ColumnExtendOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     BLT_TABLE table;
     Tcl_Obj *listObjPtr;
     BLT_TABLE_COLUMN *cols;
-    long i, n;
+    long i;
     int addLabels;
+    int n;
 
     table = cmdPtr->table;
     if (objc == 3) {
 	return TCL_OK;
     }
-    n = 0;
     addLabels = FALSE;
     if (objc == 4) {
 	long lcount;
@@ -4707,7 +4707,6 @@ RowGetOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	    } else {
 		objPtr = Tcl_NewLongObj(blt_table_column_index(col));
 	    }
-	    objPtr = Tcl_NewLongObj(blt_table_column_index(col));
 	    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
 	    objPtr = blt_table_get_obj(table, row, col);
 	    if (objPtr == NULL) {

@@ -4378,7 +4378,6 @@ ConfigurePenProc(Graph *graphPtr, Pen *basePtr)
     if (colorPtr != NULL) {
 	color = (ISALIASED(colorPtr)) ? defColor : colorPtr->pixel;
 	gcValues.foreground = color;
-	newGC = Tk_GetGC(graphPtr->tkwin, gcMask, &gcValues);
     }
     newGC = Blt_GetPrivateGC(graphPtr->tkwin, gcMask, &gcValues);
     if (penPtr->symbol.fillGC != NULL) {

@@ -4962,7 +4962,6 @@ PickItem(
     Entry *entryPtr;
     Column *colPtr;
     ClientData hint;
-    unsigned long flags;
 
     if (hintPtr != NULL) {
 	*hintPtr = NULL;
@@ -4975,7 +4974,7 @@ PickItem(
 	} 
 	ComputeVisibleEntries(viewPtr);
     }
-    flags = ITEM_NONE;
+    hint = NULL;                        /* Suppress compiler warning. */
     colPtr = NearestColumn(viewPtr, x, y, &hint);
     if (colPtr == NULL) {
         return NULL;                     /* No nearest column. We're not
@@ -4995,6 +4994,8 @@ PickItem(
     x = WORLDX(viewPtr, x);
     y = WORLDY(viewPtr, y);
     if (colPtr == &viewPtr->treeColumn) {
+        unsigned long flags;
+
 #ifdef notdef
         fprintf(stderr, "column is tree column\n");
 #endif
@@ -5341,8 +5342,8 @@ InitColumn(TreeView *viewPtr, Column *colPtr, const char *name,
     colPtr->text = Blt_AssertStrdup(defTitle);
     colPtr->justify = TK_JUSTIFY_CENTER;
     colPtr->relief = TK_RELIEF_FLAT;
-    colPtr->borderWidth = 1;
-    colPtr->pad.side1 = colPtr->pad.side2 = 2;
+    colPtr->borderWidth = 0;
+    colPtr->pad.side1 = colPtr->pad.side2 = 0;
     colPtr->state = STATE_NORMAL;
     colPtr->weight = 1.0;
     colPtr->ruleLineWidth = 1;
@@ -7569,10 +7570,10 @@ DisplayCell(TreeView *viewPtr, Cell *cellPtr)
     }
     colPtr = cellPtr->colPtr;
     entryPtr = cellPtr->entryPtr;
-    x = SCREENX(viewPtr, colPtr->worldX) + colPtr->pad.side1;
+    x = SCREENX(viewPtr, colPtr->worldX);
     y = SCREENY(viewPtr, entryPtr->worldY);
-    h = entryPtr->height - 2;
-    w = cellPtr->colPtr->width - PADDING(colPtr->pad);
+    h = entryPtr->height;
+    w = cellPtr->colPtr->width;
 
     /* Visible area for cells. */
     y1 = viewPtr->titleHeight + viewPtr->inset;
@@ -8242,7 +8243,7 @@ DisplayTreeView(ClientData clientData)	/* Information about widget. */
 		/* Check if there's a corresponding cell in the entry. */
 		cellPtr = GetCell(*epp, colPtr);
 		if (cellPtr != NULL) {
-		    DrawCell(viewPtr, cellPtr, drawable, x + colPtr->pad.side1, 
+		    DrawCell(viewPtr, cellPtr, drawable, x, 
                         SCREENY(viewPtr,(*epp)->worldY));
 		}
 	    }
@@ -8253,6 +8254,7 @@ DisplayTreeView(ClientData clientData)	/* Information about widget. */
 		DrawTreeView(viewPtr, drawable, x);
 	    }
 	}
+#ifdef notdef
  	if (colPtr->relief != TK_RELIEF_FLAT) {
 	    Blt_Bg bg;
 
@@ -8262,6 +8264,7 @@ DisplayTreeView(ClientData clientData)	/* Information about widget. */
 		colPtr->width, Tk_Height(viewPtr->tkwin), 
 		colPtr->borderWidth, colPtr->relief);
 	}
+#endif
 	count++;
     }
     if (count == 0) {
@@ -9940,6 +9943,7 @@ ColumnNearestOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	}
 	checkTitle = TRUE;
     }
+    hint = 0;                           /* Suppress compiler warning. */
     colPtr = NearestColumn(viewPtr, x, y, &hint);
     if ((checkTitle) && (hint == NULL)) {
 	colPtr = NULL;
@@ -10541,7 +10545,7 @@ EntryConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
 /*ARGSUSED*/
 static int
 EntryIndexOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-	Tcl_Obj *const *objv)
+             Tcl_Obj *const *objv)
 {
     TreeView *viewPtr = clientData;
     Entry *entryPtr;

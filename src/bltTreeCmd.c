@@ -2599,24 +2599,26 @@ ApplyOp(
 static int
 AncestorOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 {
-    long d1, d2, minDepth;
-    long i;
-    Blt_TreeNode ancestor, node1, node2;
+    long i, d1, d2, minDepth;
+    Blt_TreeNode node1, node2;
 
     if ((GetNodeFromObj(interp, cmdPtr->tree, objv[2], &node1) != TCL_OK) ||
 	(GetNodeFromObj(interp, cmdPtr->tree, objv[3], &node2) != TCL_OK)) {
 	return TCL_ERROR;
     }
     if (node1 == node2) {
-	ancestor = node1;
-	goto done;
+        Tcl_SetLongObj(Tcl_GetObjResult(interp), Blt_Tree_NodeId(node1));
+        return TCL_OK;
     }
     d1 = Blt_Tree_NodeDepth(node1);
     d2 = Blt_Tree_NodeDepth(node2);
     minDepth = MIN(d1, d2);
     if (minDepth == 0) {		/* One of the nodes is root. */
+        Blt_TreeNode ancestor;
+
 	ancestor = Blt_Tree_RootNode(cmdPtr->tree);
-	goto done;
+        Tcl_SetLongObj(Tcl_GetObjResult(interp), Blt_Tree_NodeId(ancestor));
+        return TCL_OK;
     }
     /* 
      * Traverse back from the deepest node, until the both nodes are at the
@@ -2626,15 +2628,15 @@ AncestorOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	node1 = Blt_Tree_ParentNode(node1);
     }
     if (node1 == node2) {
-	ancestor = node2;
-	goto done;
+        Tcl_SetLongObj(Tcl_GetObjResult(interp), Blt_Tree_NodeId(node2));
+        return TCL_OK;
     }
     for (i = d2; i > minDepth; i--) {
 	node2 = Blt_Tree_ParentNode(node2);
     }
     if (node2 == node1) {
-	ancestor = node1;
-	goto done;
+        Tcl_SetLongObj(Tcl_GetObjResult(interp), Blt_Tree_NodeId(node1));
+        return TCL_OK;
     }
 
     /* 
@@ -2647,15 +2649,12 @@ AncestorOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	node1 = Blt_Tree_ParentNode(node1);
 	node2 = Blt_Tree_ParentNode(node2);
 	if (node1 == node2) {
-	    ancestor = node2;
-	    goto done;
+            Tcl_SetLongObj(Tcl_GetObjResult(interp), Blt_Tree_NodeId(node2));
+            return TCL_OK;
 	}
     }
     Tcl_AppendResult(interp, "unknown ancestor", (char *)NULL);
     return TCL_ERROR;
- done:
-    Tcl_SetLongObj(Tcl_GetObjResult(interp), Blt_Tree_NodeId(ancestor));
-    return TCL_OK;
 }
 
 /*
@@ -3757,10 +3756,8 @@ IndexOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 {
     Blt_TreeNode node;
     long inode;
-    char *string;
 
     inode = -1;
-    string = Tcl_GetString(objv[2]);
     if (GetNodeFromObj(interp, cmdPtr->tree, objv[2], &node) == TCL_OK) {
 	if (node != NULL) {
 	    inode = Blt_Tree_NodeId(node);
@@ -3777,6 +3774,8 @@ IndexOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	/* Start from the root and verify each path component. */
 	parent = Blt_Tree_RootNode(cmdPtr->tree);
 	for (i = 0; i < pathc; i++) {
+            const char *string;
+
 	    string = Tcl_GetString(pathv[i]);
 	    if (string[0] == '\0') {
 		continue;	/* Skip null separators. */
@@ -6198,7 +6197,6 @@ SortOp(
 	if (switches.flags & SORT_RECURSE) {
 	    Blt_TreeNode node, *p;
 
-	    p = nodeArr;
 	    for(p = nodeArr, node = top; node != NULL; 
 		node = Blt_Tree_NextNode(top, node)) {
 		*p++ = node;

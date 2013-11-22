@@ -4628,7 +4628,6 @@ Blt_Tree_RestoreFromFile(
     restore.treePtr = treePtr;
 
     argv = NULL;
-    result = TCL_ERROR;		
     for (;;) {
 	result = ReadDumpRecord(interp, channel, &argc, &argv, &restore);
 	if (result != TCL_OK) {
@@ -4704,7 +4703,6 @@ Blt_Tree_Restore(
     restore.treePtr = treePtr;
     restore.rootPtr = rootPtr;
     restore.flags = flags;
-    result = TCL_ERROR;
     for (;;) {
 	const char **argv;
 	int argc;

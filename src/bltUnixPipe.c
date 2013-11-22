@@ -990,7 +990,7 @@ Blt_CreatePipeline(
     pids = Blt_AssertMalloc(cmdCount * sizeof(int));
     curFd[0] = fd[0];
 
-    lastArg = 0;		/* Suppress compiler warning */
+    lastArg = 0;                        /* Suppress compiler warning */
     for (i = 0; i < objc; i = lastArg + 1) {
 	int joinThisError;
 	int pid;

@@ -93,6 +93,9 @@ blt::scrollset .ss \
 blt::tk::scrollbar .ss.x
 blt::tk::scrollbar .ss.y
 
+option add *BltTreeView.Entry.RuleHeight 1
+option add *BltTreeView.Column.ruleWidth 1
+
 blt::treeview $treeview \
     -width 0 \
     -height 4i \
@@ -102,11 +105,11 @@ blt::treeview $treeview \
 
 $treeview column configure treeView -text "name"  -edit yes \
     -sorttype dictionary 
-$treeview column insert 0 mtime -sorttype integer -formatcommand FormatDate
+$treeview column insert 0 mtime -sorttype integer -formatcommand FormatDate 
 $treeview column insert 0 atime -sorttype integer -formatcommand FormatDate
 $treeview column insert 0 gid -sorttype integer
 $treeview column insert end mode -sorttype integer -formatcommand FormatMode 
-$treeview column insert end type -sorttype dictionary 
+$treeview column insert end type -sorttype dictionary
 $treeview column insert end ctime -sorttype integer -formatcommand FormatDate
 $treeview column insert end uid -sorttype integer 
 $treeview column insert end size -sorttype integer -formatcommand FormatSize \
@@ -128,13 +131,12 @@ puts "$count entries"
 
 $treeview style checkbox check \
     -onvalue "file" -offvalue "directory" \
-    -showvalue yes 
+    -showvalue yes  -activebackground lightblue3 -boxcolor black
 
 $treeview style combobox combo  \
-    -icon ::blt::TreeView::openIcon \
-    -arrowrelief flat -arrowborderwidth 0 
+    -icon ::blt::TreeView::openIcon 
 
-$treeview column configure uid -style combo 
+#$treeview column configure uid -style combo 
 $treeview column configure type -style check
 
 wm protocol . WM_DELETE_WINDOW { destroy . }
