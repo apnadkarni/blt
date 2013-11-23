@@ -131,12 +131,12 @@ puts "$count entries"
 
 $treeview style checkbox check \
     -onvalue "file" -offvalue "directory" \
-    -showvalue yes  -activebackground lightblue3 -boxcolor black
+    -showvalue yes
 
 $treeview style combobox combo  \
     -icon ::blt::TreeView::openIcon 
 
-#$treeview column configure uid -style combo 
+$treeview column configure uid -style combo 
 $treeview column configure type -style check
 
 wm protocol . WM_DELETE_WINDOW { destroy . }

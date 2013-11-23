@@ -2130,12 +2130,12 @@ TextBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
 
     /* Draw Rule */
     if (rowPtr->ruleHeight > 0) {
-	XFillRectangle(viewPtr->display, drawable, gc, x, y + rowHeight, 
-		colWidth, rowPtr->ruleHeight);
+	XFillRectangle(viewPtr->display, drawable, rowPtr->ruleGC, 
+                x, y + rowHeight, colWidth, rowPtr->ruleHeight);
     }
     if (colPtr->ruleWidth > 0) {
-	XFillRectangle(viewPtr->display, drawable, gc, x + colWidth, y, 
-                colPtr->ruleWidth, rowHeight);
+	XFillRectangle(viewPtr->display, drawable, colPtr->ruleGC, 
+                x + colWidth, y, colPtr->ruleWidth, rowHeight);
     }
     rowHeight -= 2 * stylePtr->borderWidth;
     colWidth  -= 2 * stylePtr->borderWidth - PADDING(colPtr->pad);
@@ -2624,12 +2624,12 @@ CheckBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
 
     /* Draw Rule */
     if (rowPtr->ruleHeight > 0) {
-	XFillRectangle(viewPtr->display, drawable, gc, x, y + rowHeight, 
-                colWidth, rowPtr->ruleHeight);
+	XFillRectangle(viewPtr->display, drawable, rowPtr->ruleGC, 
+                x, y + rowHeight, colWidth, rowPtr->ruleHeight);
     }
     if (colPtr->ruleWidth > 0) {
-	XFillRectangle(viewPtr->display, drawable, gc, x + colWidth, y, 
-                colPtr->ruleWidth, rowHeight);
+	XFillRectangle(viewPtr->display, drawable, colPtr->ruleGC, 
+                x + colWidth, y, colPtr->ruleWidth, rowHeight);
     }
     rowHeight -= 2 * stylePtr->borderWidth;
     colWidth  -= 2 * stylePtr->borderWidth - PADDING(colPtr->pad);
@@ -2642,8 +2642,6 @@ CheckBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
 	XDrawRectangle(viewPtr->display, drawable, gc, x+2, y+2, colWidth - 5, 
 		       rowHeight - 4);
     }
-	XDrawRectangle(viewPtr->display, drawable, gc, x+2, y+2, colWidth - 5, 
-		       rowHeight - 4);
     x += CELL_PADX + FOCUS_PAD;
     y += CELL_PADY + FOCUS_PAD;
     rowHeight -= 2 * (FOCUS_PAD + CELL_PADY);
@@ -3113,12 +3111,12 @@ ComboBoxStyleDrawProc(Cell *cellPtr, Drawable drawable,
 
     /* Draw Rule */
     if (rowPtr->ruleHeight > 0) {
-	XFillRectangle(viewPtr->display, drawable, gc, x, y + rowHeight, 
-                colWidth, rowPtr->ruleHeight);
+	XFillRectangle(viewPtr->display, drawable, rowPtr->ruleGC, 
+                x, y + rowHeight, colWidth, rowPtr->ruleHeight);
     }
     if (colPtr->ruleWidth > 0) {
-	XFillRectangle(viewPtr->display, drawable, gc, x + colWidth, y, 
-                colPtr->ruleWidth, rowHeight);
+	XFillRectangle(viewPtr->display, drawable, colPtr->ruleGC, 
+                x + colWidth, y, colPtr->ruleWidth, rowHeight);
     }
 
     rowHeight -= 2 * stylePtr->borderWidth;
@@ -3783,13 +3781,13 @@ ImageBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
 
     /* Draw Rule */
     if (rowPtr->ruleHeight > 0) {
-	XFillRectangle(viewPtr->display, drawable, gc, x, 
-                       y + rowHeight - rowPtr->ruleHeight, 
+	XFillRectangle(viewPtr->display, drawable, rowPtr->ruleGC, 
+                x, y + rowHeight - rowPtr->ruleHeight, 
 		colWidth, rowPtr->ruleHeight);
 	rowHeight -= rowPtr->ruleHeight;
     }
     if (colPtr->ruleWidth > 0) {
-	XFillRectangle(viewPtr->display, drawable, gc, 
+	XFillRectangle(viewPtr->display, drawable, colPtr->ruleGC, 
                        x + colWidth - colPtr->ruleWidth, y, 
                        colPtr->ruleWidth, rowHeight);
 	colWidth -= colPtr->ruleWidth;

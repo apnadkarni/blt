@@ -363,9 +363,11 @@ struct _Column {
     Blt_ChainLink link;
     int ruleLineWidth;
     Blt_Dashes ruleDashes;
-    GC ruleGC;
     Tcl_Obj *fmtCmdPtr;
     SortType sortType;
+    GC activeRuleGC;
+    XColor *ruleColor;			/* Color of the column's rule. */
+    GC ruleGC;                          /* Graphics context of the rule. */
 };
 
 struct _CellStyle {
@@ -424,7 +426,7 @@ struct _CellStyle {
 					 * cell.  If non-NULL, overrides
 					 * the default background * color
 					 * specification. */
-     GC activeGC;			/* Graphics context of active
+    GC activeGC;			/* Graphics context of active
                                          * text. */
     GC disableGC;			/* Graphics context of disabled
                                          * text. */
@@ -600,6 +602,8 @@ struct _Entry {
 					 * for each data cell in the node.
 					 * Non-NULL only if there are cell
 					 * entries. */
+    XColor *ruleColor;			/* Color of the entry's rule. */
+    GC ruleGC;                          /* Graphics context of the rule. */
 };
 
 /*
@@ -611,7 +615,7 @@ struct _Entry {
  */
 typedef struct {
     XColor *normalFg;			/* Foreground color. */
-    Blt_Bg normalBg;				/* Background color. */
+    Blt_Bg normalBg;                    /* Background color. */
     XColor *activeFgColor;		/* Active foreground color. */
     Blt_Bg activeBg;			/* Active background color. */
     GC normalGC;
@@ -751,6 +755,7 @@ struct _TreeView {
     XColor *normalFg;
     Blt_Bg normalBg;                    /* 3D border surrounding the window
 					 * (viewport). */
+
     Blt_Bg altBg;
     int borderWidth;			/* Width of 3D border. */
     int relief;				/* 3D border relief. */
