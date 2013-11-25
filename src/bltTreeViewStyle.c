@@ -87,7 +87,7 @@
 #define DEF_DISABLE_FG			RGB_GREY85
 #define DEF_FOCUS_COLOR			"black"
 #define DEF_FOCUS_DASHES		"dot"
-#define DEF_GAP				"3"
+#define DEF_GAP				"2"
 #define DEF_HIGHLIGHT_BG                STD_NORMAL_BACKGROUND
 #define DEF_HIGHLIGHT_FG                STD_NORMAL_FOREGROUND
 #define DEF_SELECT_BG			STD_SELECT_BACKGROUND
@@ -123,7 +123,7 @@
 #define DEF_CHECKBOX_FONT		(char *)NULL
 #define DEF_CHECKBOX_COMMAND		(char *)NULL
 #define DEF_CHECKBOX_FILL_COLOR		(char *)NULL
-#define DEF_CHECKBOX_GAP		"4"
+#define DEF_CHECKBOX_GAP		"2"
 #define DEF_CHECKBOX_LINEWIDTH		"2"
 #define DEF_CHECKBOX_OFFVALUE		"0"
 #define DEF_CHECKBOX_ONVALUE		"1"
@@ -761,14 +761,14 @@ static Blt_ConfigSpec comboBoxStyleSpecs[] =
 {
     {BLT_CONFIG_BACKGROUND, "-activebackground", "activeBackground", 
 	"ActiveBackground", DEF_ACTIVE_BG, 
-	Blt_Offset(ComboBoxStyle, activeBg), 0},
+        Blt_Offset(ComboBoxStyle, activeBg), 0},
     {BLT_CONFIG_SYNONYM, "-activebg", "activeBackground", (char *)NULL, 
 	(char *)NULL, 0, 0},
     {BLT_CONFIG_SYNONYM, "-activefg", "activeFackground", (char *)NULL, 
 	(char *)NULL, 0, 0},
     {BLT_CONFIG_COLOR, "-activeforeground", "activeForeground", 
 	"ActiveForeground", DEF_ACTIVE_FG, 
-	Blt_Offset(ComboBoxStyle, activeFg), 0},
+        Blt_Offset(ComboBoxStyle, activeFg), 0},
     {BLT_CONFIG_RELIEF, "-activerelief", "activeRelief", "ActiveRelief", 
 	DEF_COMBOBOX_ACTIVE_RELIEF, Blt_Offset(ComboBoxStyle, activeRelief), 
 	BLT_CONFIG_DONT_SET_DEFAULT},
@@ -782,7 +782,8 @@ static Blt_ConfigSpec comboBoxStyleSpecs[] =
 	BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_PIXELS_NNEG, "-arrowborderwidth", "arrowBorderWidth", 
 	"ArrowBorderWidth", DEF_COMBOBOX_ARROW_BORDERWIDTH, 
-	Blt_Offset(ComboBoxStyle, arrowBorderWidth), BLT_CONFIG_DONT_SET_DEFAULT},
+	Blt_Offset(ComboBoxStyle, arrowBorderWidth), 
+        BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_BACKGROUND, "-background", "background", "Background",
         DEF_NORMAL_BG, Blt_Offset(ComboBoxStyle, normalBg), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_SYNONYM, "-bd", "borderWidth", (char *)NULL, (char *)NULL, 0, 
@@ -961,6 +962,7 @@ static CellStyleGeometryProc ComboBoxStyleGeometryProc;
 static CellStyleGeometryProc ImageBoxStyleGeometryProc;
 static CellStyleGeometryProc TextBoxStyleGeometryProc;
 static CellStyleIdentifyProc ComboBoxStyleIdentifyProc;
+static CellStyleIdentifyProc CheckBoxStyleIdentifyProc;
 static CellStylePostProc ComboBoxStylePostProc;
 static CellStyleUnpostProc ComboBoxStyleUnpostProc;
 
@@ -1830,7 +1832,7 @@ static CellStyleClass checkBoxStyleClass = {
     CheckBoxStyleConfigureProc,
     CheckBoxStyleGeometryProc,
     CheckBoxStyleDrawProc,
-    NULL,				/* identProc */
+    CheckBoxStyleIdentifyProc,          
     NULL,                               /* editProc */
     CheckBoxStyleFreeProc,
     NULL,				/* postProc */
@@ -2759,12 +2761,47 @@ CheckBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
 /*
  *---------------------------------------------------------------------------
  *
+ * ComboBoxStyleIdentifyProc --
+ *
+ *	Draws the "combobox" given the screen coordinates and the cell to
+ *	be displayed.
+ *
+ * Results:
+ *	None.
+ *
+ * Side Effects:
+ *	The checkbox cell is drawn.
+ *
+ *---------------------------------------------------------------------------
+ */
+static const char *
+CheckBoxStyleIdentifyProc(Cell *cellPtr, CellStyle *cellStylePtr, 
+                          int x, int y)
+{
+    CheckBoxStyle *stylePtr = (CheckBoxStyle *)cellStylePtr;
+    int tx;
+    unsigned int bw;
+    Column *colPtr;
+
+    colPtr = cellPtr->colPtr;
+    bw = ODD(stylePtr->size);
+    tx = stylePtr->borderWidth + FOCUS_PAD + CELL_PADX + 
+        colPtr->pad.side1 + bw + stylePtr->gap;
+    if ((x >= 0) && (x < tx)) {
+	return "button";
+    }
+    return "text";
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
  * CheckBoxStyleFreeProc --
  *
- *	Releases resources allocated for the checkbox. The resources freed by
- *	this routine are specific only to the "checkbox".  Other resources
- *	(common to all styles) are freed in the Blt_TreeView_FreeStyle
- *	routine.
+ *	Releases resources allocated for the checkbox. The resources freed
+ *	by this routine are specific only to the "checkbox".  Other
+ *	resources (common to all styles) are freed in the
+ *	Blt_TreeView_FreeStyle routine.
  *
  * Results:
  *	None.
@@ -2878,12 +2915,14 @@ ComboBoxStyleConfigureProc(CellStyle *cellStylePtr)
     unsigned long gcMask;
 
     viewPtr = stylePtr->viewPtr;
-    gcValues.font = Blt_Font_Id(CHOOSE(viewPtr->font, stylePtr->font));
-    bgColor = Blt_Bg_BorderColor(CHOOSE(viewPtr->normalBg, stylePtr->normalBg));
-    gcMask = GCForeground | GCBackground | GCFont;
 
-    /* Normal foreground */
-    gcValues.background = bgColor->pixel;
+    gcMask = GCForeground | GCFont | GCDashList | GCLineWidth | GCLineStyle;
+    gcValues.dashes = 1;
+    gcValues.font = Blt_Font_Id(CHOOSE(viewPtr->font, stylePtr->font));
+    gcValues.line_width = 0;
+    gcValues.line_style = LineOnOffDash;
+
+    /* Normal text. */
     gcValues.foreground = CHOOSE(viewPtr->normalFg, stylePtr->normalFg)->pixel;
     newGC = Tk_GetGC(viewPtr->tkwin, gcMask, &gcValues);
     if (stylePtr->normalGC != NULL) {
@@ -2891,8 +2930,23 @@ ComboBoxStyleConfigureProc(CellStyle *cellStylePtr)
     }
     stylePtr->normalGC = newGC;
 
-    /* Highlight foreground */
-    gcValues.background = Blt_Bg_BorderColor(stylePtr->highlightBg)->pixel;
+    /* Active text. */
+    gcValues.foreground = stylePtr->activeFg->pixel;
+    newGC = Tk_GetGC(viewPtr->tkwin, gcMask, &gcValues);
+    if (stylePtr->activeGC != NULL) {
+	Tk_FreeGC(viewPtr->display, stylePtr->activeGC);
+    }
+    stylePtr->activeGC = newGC;
+
+    /* Disabled text. */
+    gcValues.foreground = stylePtr->disableFg->pixel;
+    newGC = Tk_GetGC(viewPtr->tkwin, gcMask, &gcValues);
+    if (stylePtr->disableGC != NULL) {
+	Tk_FreeGC(viewPtr->display, stylePtr->disableGC);
+    }
+    stylePtr->disableGC = newGC;
+
+    /* Highlight text. */
     gcValues.foreground = stylePtr->highlightFg->pixel;
     newGC = Tk_GetGC(viewPtr->tkwin, gcMask, &gcValues);
     if (stylePtr->highlightGC != NULL) {
@@ -2900,14 +2954,14 @@ ComboBoxStyleConfigureProc(CellStyle *cellStylePtr)
     }
     stylePtr->highlightGC = newGC;
 
-    /* Active foreground */
-    gcValues.background = Blt_Bg_BorderColor(stylePtr->activeBg)->pixel;
-    gcValues.foreground = stylePtr->activeFg->pixel;
+    /* Selected text. */
+    gcValues.foreground = stylePtr->selectFg->pixel;
     newGC = Tk_GetGC(viewPtr->tkwin, gcMask, &gcValues);
-    if (stylePtr->activeGC != NULL) {
-	Tk_FreeGC(viewPtr->display, stylePtr->activeGC);
+    if (stylePtr->selectGC != NULL) {
+	Tk_FreeGC(viewPtr->display, stylePtr->selectGC);
     }
-    stylePtr->activeGC = newGC;
+    stylePtr->selectGC = newGC;
+
     stylePtr->flags |= STYLE_DIRTY;
 }
 
@@ -2975,6 +3029,11 @@ GetComboMenuGeometry(Tcl_Interp *interp, TreeView *viewPtr,
  *	The width and height fields of *valuePtr* are set with the computed
  *	dimensions.
  *
+ *      |b|p|f|x|i|g|t|g|a|x|f|p|b|
+ *      +-----------------+	
+ *	||Icon| |text| |v||	
+ *      +--------------+--+
+ *  
  *---------------------------------------------------------------------------
  */
 static void
@@ -3030,7 +3089,7 @@ ComboBoxStyleGeometryProc(Cell *cellPtr, CellStyle *cellStylePtr)
     aw = ah = (2 * stylePtr->arrowBorderWidth) + stylePtr->arrowWidth;
     aw += 2 * 1;
     ah += 2 * 1;
-    cellPtr->width  += iw + 2 * gap + aw + tw;
+    cellPtr->width  += iw + 2 * stylePtr->gap + aw + tw;
     cellPtr->height += MAX3(th, ih, ah);
 }
 
@@ -3073,7 +3132,6 @@ ComboBoxStyleDrawProc(Cell *cellPtr, Drawable drawable,
     viewPtr = stylePtr->viewPtr;
     rowPtr = cellPtr->entryPtr;
     colPtr = cellPtr->colPtr;
-
     relief = stylePtr->relief;
     if ((cellPtr->flags|rowPtr->flags|colPtr->flags) & DISABLED) {
 	/* Disabled */
@@ -3130,6 +3188,8 @@ ComboBoxStyleDrawProc(Cell *cellPtr, Drawable drawable,
 	XDrawRectangle(viewPtr->display, drawable, gc, x+2, y+2, colWidth - 5, 
 		       rowHeight - 4);
     }
+	XDrawRectangle(viewPtr->display, drawable, gc, x+2, y+2, colWidth - 5, 
+		       rowHeight - 4);
     x += CELL_PADX + FOCUS_PAD;
     y += CELL_PADY + FOCUS_PAD;
     rowHeight -= 2 * (FOCUS_PAD + CELL_PADY);
@@ -3175,11 +3235,10 @@ ComboBoxStyleDrawProc(Cell *cellPtr, Drawable drawable,
     if (rowHeight > ih) {
         iy += (rowHeight - ih) / 2;
     }
-    if (cellHeight > th) {
+    if (rowHeight > th) {
         ty += (rowHeight - th) / 2;
     }
-    ix += gap;
-    tx = ix + iw + gap;
+    tx = ix + gap + iw;
 
     if (stylePtr->icon != NULL) {
 	Tk_RedrawImage(IconBits(stylePtr->icon), 0, 0, iw, ih, drawable, ix,iy);
@@ -3193,7 +3252,7 @@ ComboBoxStyleDrawProc(Cell *cellPtr, Drawable drawable,
 	Blt_Ts_SetFont(ts, CHOOSE(viewPtr->font, stylePtr->font));
 	Blt_Ts_SetGC(ts, gc);
 	xMax = SCREENX(viewPtr, colPtr->worldX) + colWidth - 
-	    stylePtr->arrowWidth;
+            stylePtr->arrowWidth;
 	Blt_Ts_SetMaxLength(ts, xMax - tx);
 	textPtr = Blt_Ts_CreateLayout(cellPtr->text, -1, &ts);
 	Blt_Ts_DrawLayout(viewPtr->tkwin, drawable, textPtr, &ts, tx, ty);

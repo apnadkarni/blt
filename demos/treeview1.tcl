@@ -133,8 +133,21 @@ $treeview style checkbox check \
     -onvalue "file" -offvalue "directory" \
     -showvalue yes
 
-$treeview style combobox combo  \
-    -icon ::blt::TreeView::openIcon 
+$treeview style create combobox combo \
+    -menu $treeview.menu \
+    -textvariable textVar \
+    -iconvariable iconVar 
+blt::combomenu $treeview.menu  \
+    -restrictwidth min \
+    -textvariable textVar \
+    -iconvariable iconVar \
+    -yscrollbar $treeview.menu.ybar \
+    -xscrollbar $treeview.menu.xbar
+blt::tk::scrollbar $treeview.menu.xbar 
+blt::tk::scrollbar $treeview.menu.ybar
+
+$treeview.menu add -text directory -value directory
+$treeview.menu add -text file -value file
 
 $treeview column configure uid -style combo 
 $treeview column configure type -style check

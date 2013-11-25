@@ -186,6 +186,8 @@ typedef const char *UID;
 
 /* Cell flags */
 #define TEXTALLOC               (1<<8)
+#define POSTED                  (1<<9)
+#define CELL_FLAGS_MASK         (DISABLED|POSTED)
 
 /* Cell related flags */
 

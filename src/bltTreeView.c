@@ -297,6 +297,11 @@ static Blt_CustomOption labelOption = {
     ObjToLabel, LabelToObj, FreeLabel, NULL,
 };
 
+static Blt_OptionParseProc ObjToStateProc;
+static Blt_OptionPrintProc StateToObjProc;
+static Blt_CustomOption stateOption = {
+    ObjToStateProc, StateToObjProc, NULL, (ClientData)0
+};
 static Blt_OptionParseProc ObjToStyles;
 static Blt_OptionPrintProc StylesToObj;
 static Blt_CustomOption stylesOption = {
@@ -380,8 +385,9 @@ static Blt_ConfigSpec buttonSpecs[] =
 
 static Blt_ConfigSpec cellSpecs[] =
 {
-    {BLT_CONFIG_STATE, "-state", "state", "State", DEF_CELL_STATE, 
-	Blt_Offset(Cell, flags), BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_CUSTOM, "-state", "state", "State", DEF_CELL_STATE, 
+	Blt_Offset(Cell, flags), BLT_CONFIG_DONT_SET_DEFAULT, 
+	&stateOption},
     {BLT_CONFIG_CUSTOM, "-style", "style", "Style", DEF_CELL_STYLE, 
 	Blt_Offset(Cell, stylePtr), BLT_CONFIG_NULL_OK, &styleOption},
     {BLT_CONFIG_END, NULL, NULL, NULL, NULL, 0, 0}
@@ -2843,7 +2849,6 @@ IconToObjProc(
     }
 }
 
-
 /*
  *---------------------------------------------------------------------------
  *
@@ -3287,6 +3292,90 @@ StyleToObjProc(
     } else {
 	return Tcl_NewStringObj(stylePtr->name, -1);
     }
+}
+
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * ObjToStateProc --
+ *
+ *	Converts the string representing a state into a bitflag.
+ *
+ * Results:
+ *	The return value is a standard TCL result.  The state flags are
+ *	updated.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+ObjToStateProc(
+    ClientData clientData,		/* Not used. */
+    Tcl_Interp *interp,			/* Interpreter to report
+                                         * results. */
+    Tk_Window tkwin,			/* Not used. */
+    Tcl_Obj *objPtr,			/* String representing state. */
+    char *widgRec,			/* Widget record */
+    int offset,				/* Offset to field in structure */
+    int flags)	
+{
+    unsigned int *flagsPtr = (unsigned int *)(widgRec + offset);
+    const char *string;
+    char c;
+    int length, mask;
+
+    string = Tcl_GetStringFromObj(objPtr, &length);
+    c = string[0];
+    if ((c == 'n') && (strncmp(string, "normal", length) == 0)) {
+	mask = 0;
+    } else if ((c == 'p') && (strncmp(string, "disabled", length) == 0)) {
+	mask = DISABLED;
+    } else if ((c == 'p') && (strncmp(string, "posted", length) == 0)) {
+	mask = POSTED;
+    } else {
+	Tcl_AppendResult(interp, "unknown state \"", string, 
+	    "\": should be disabled, posted, or normal.", (char *)NULL);
+	return TCL_ERROR;
+    }
+    *flagsPtr &= ~CELL_FLAGS_MASK;
+    *flagsPtr |= mask;
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * StateToObjProc --
+ *
+ *	Return the name of the style.
+ *
+ * Results:
+ *	The name representing the style is returned.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static Tcl_Obj *
+StateToObjProc(
+    ClientData clientData,		/* Not used. */
+    Tcl_Interp *interp,
+    Tk_Window tkwin,			/* Not used. */
+    char *widgRec,			/* Widget information record */
+    int offset,				/* Offset to field in structure */
+    int flags)	
+{
+    unsigned int state = *(unsigned int *)(widgRec + offset);
+    const char *string;
+
+    if (state & DISABLED) {
+	string = "disabled";
+    } else if (state & POSTED) {
+	string = "posted";
+    } else {
+	string = "normal";
+    }
+    return Tcl_NewStringObj(string, -1);
 }
 
 static int
@@ -8925,7 +9014,7 @@ CellBboxOp(ClientData clientData, Tcl_Interp *interp, int objc,
     y1 = viewPtr->worldHeight;
     x2 = y2 = 0;
 
-    screen = FALSE;
+    screen = TRUE;
     string = Tcl_GetString(objv[2]);
     if ((string[0] == '-') && (strcmp(string, "-screen") == 0)) {
 	screen = TRUE;
@@ -8962,8 +9051,8 @@ CellBboxOp(ClientData clientData, Tcl_Interp *interp, int objc,
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
     Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewIntObj(x1));
     Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewIntObj(y1));
-    Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewIntObj(x2 - x1 + 1));
-    Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewIntObj(y2 - y1 + 1));
+    Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewIntObj(x2));
+    Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewIntObj(y2));
     Tcl_SetObjResult(interp, listObjPtr);
     return TCL_OK;
 }
@@ -9108,6 +9197,56 @@ CellFocusOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     viewPtr->focusCellPtr = cellPtr;
     EventuallyRedraw(viewPtr);
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * CellIdentifyOp --
+ *
+ *	.t cell identify cell x y 
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+CellIdentifyOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+	   Tcl_Obj *const *objv)
+{
+    Cell *cellPtr;
+    CellStyle *stylePtr;
+    Column *colPtr;
+    Entry *rowPtr;
+    TreeView *viewPtr = clientData;
+    const char *string;
+    int x, y, rootX, rootY;
+
+    if (GetCellFromObj(interp, viewPtr, objv[3], &cellPtr) != TCL_OK) {
+	return TCL_ERROR;
+    }
+    if (cellPtr == NULL) {
+	return TCL_OK;
+    }
+    if ((Tcl_GetIntFromObj(interp, objv[4], &x) != TCL_OK) ||
+	(Tcl_GetIntFromObj(interp, objv[5], &y) != TCL_OK)) {
+	return TCL_ERROR;
+    }
+    colPtr = cellPtr->colPtr;
+    rowPtr = cellPtr->entryPtr;
+    /* Convert from root coordinates to window-local coordinates to
+     * cell-local coordinates */
+    Tk_GetRootCoords(viewPtr->tkwin, &rootX, &rootY);
+    x -= rootX + SCREENX(viewPtr, colPtr->worldX);
+    y -= rootY + SCREENY(viewPtr, rowPtr->worldY);
+    string = NULL;
+    stylePtr = GetCurrentStyle(viewPtr, colPtr, cellPtr);
+    if (stylePtr->classPtr->identProc != NULL) {
+	string = (*stylePtr->classPtr->identProc)(cellPtr, stylePtr, x, y);
+    }
+    if (string != NULL) {
+	Tcl_SetStringObj(Tcl_GetObjResult(interp), string, -1);
+    }
     return TCL_OK;
 }
 
@@ -9330,6 +9469,7 @@ static Blt_OpSpec cellOps[] =
     {"configure",  2, CellConfigureOp,   4, 0, "cell ?option value?...",},
     {"deactivate", 1, CellDeactivateOp,  3, 3, "",},
     {"focus",      2, CellFocusOp,       4, 0, "?cell?",},
+    {"identify",   2, CellIdentifyOp,    6, 6, "cell x y",},
     {"index",      3, CellIndexOp,       4, 4, "cell",},
     {"invoke",     3, CellInvokeOp,      4, 4, "cell",},
     {"see",        3, CellSeeOp,         4, 4, "cell",},
@@ -12369,7 +12509,7 @@ OpenOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *	Commands may get excecuted; variables may get set; sub-menus may
  *	get posted.
  *
- *	.view post entry column
+ *	.view cell post cell
  *
  *---------------------------------------------------------------------------
  */

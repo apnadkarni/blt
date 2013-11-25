@@ -3386,15 +3386,16 @@ ComboBoxStylePostProc(Tcl_Interp *interp, Cell *cellPtr,CellStyle *cellStylePtr)
     colPtr = keyPtr->colPtr;
     rowPtr = keyPtr->rowPtr;
     if (viewPtr->postPtr != NULL) {
-	return TCL_OK;		       /* Another filter's menu is currently
-					* posted. */
+	return TCL_OK;		       /* Another filter's menu is
+					* currently posted. */
     }
     if ((rowPtr->flags|colPtr->flags) & (DISABLED|HIDDEN)) {
-	return TCL_OK;		       /* Menu is in a row or column that is
-					* hidden or disabled. */
+	return TCL_OK;		       /* Menu is in a row or column that
+					* is hidden or disabled. */
     }
     if (stylePtr->menuObjPtr == NULL) {
-	return TCL_OK;			/* No menu associated with filter. */
+	return TCL_OK;			/* No menu associated with
+                                         * filter. */
     }
     menuName = Tcl_GetString(stylePtr->menuObjPtr);
     tkwin = Tk_NameToWindow(interp, menuName, viewPtr->tkwin);
