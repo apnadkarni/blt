@@ -6,13 +6,13 @@
  *
  *	Copyright 1998-2004 George A Howlett.
  *
- *	Permission is hereby granted, free of charge, to any person obtaining
- *	a copy of this software and associated documentation files (the
- *	"Software"), to deal in the Software without restriction, including
- *	without limitation the rights to use, copy, modify, merge, publish,
- *	distribute, sublicense, and/or sell copies of the Software, and to
- *	permit persons to whom the Software is furnished to do so, subject to
- *	the following conditions:
+ *	Permission is hereby granted, free of charge, to any person
+ *	obtaining a copy of this software and associated documentation
+ *	files (the "Software"), to deal in the Software without
+ *	restriction, including without limitation the rights to use, copy,
+ *	modify, merge, publish, distribute, sublicense, and/or sell copies
+ *	of the Software, and to permit persons to whom the Software is
+ *	furnished to do so, subject to the following conditions:
  *
  *	The above copyright notice and this permission notice shall be
  *	included in all copies or substantial portions of the Software.
@@ -20,20 +20,21 @@
  *	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  *	EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  *	MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- *	NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
- *	LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
- *	OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
- *	WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *	NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+ *	BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ *	ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ *	CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ *	SOFTWARE.
  */
 
 /*
  * TODO:
  *
  * BUGS:
- *   1.  "open" operation should change scroll offset so that as many
- *	 new entries (up to half a screen) can be seen.
- *   2.  "open" needs to adjust the scrolloffset so that the same entry
- *	 is seen at the same place.
+ *   1.  "open" operation should change scroll offset so that as many new
+ *	 entries (up to half a screen) can be seen.
+ *   2.  "open" needs to adjust the scrolloffset so that the same entry is
+ *	 seen at the same place.
  */
 
 #define BUILD_BLT_TK_PROCS 1
@@ -198,8 +199,9 @@
 #define DEF_NORMAL_FG_MONO	STD_ACTIVE_FG_MONO
 #define DEF_RELIEF		"sunken"
 #define DEF_RESIZE_CURSOR	"arrow"
-#define DEF_RULE_HEIGHT			"0"
-#define DEF_RULE_WIDTH			"0"
+#define DEF_RULE_HEIGHT         "0"
+#define DEF_RULE_WIDTH          "1"
+#define DEF_RULE_COLOR		STD_NORMAL_BACKGROUND
 #define DEF_SCROLL_INCREMENT	"20"
 #define DEF_SCROLL_MODE		"hierbox"
 #define DEF_SELECT_BACKGROUND 	STD_SELECT_BACKGROUND 
@@ -295,6 +297,11 @@ static Blt_CustomOption labelOption = {
     ObjToLabel, LabelToObj, FreeLabel, NULL,
 };
 
+static Blt_OptionParseProc ObjToStateProc;
+static Blt_OptionPrintProc StateToObjProc;
+static Blt_CustomOption stateOption = {
+    ObjToStateProc, StateToObjProc, NULL, (ClientData)0
+};
 static Blt_OptionParseProc ObjToStyles;
 static Blt_OptionPrintProc StylesToObj;
 static Blt_CustomOption stylesOption = {
@@ -378,8 +385,9 @@ static Blt_ConfigSpec buttonSpecs[] =
 
 static Blt_ConfigSpec cellSpecs[] =
 {
-    {BLT_CONFIG_STATE, "-state", "state", "State", DEF_CELL_STATE, 
-	Blt_Offset(Cell, flags), BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_CUSTOM, "-state", "state", "State", DEF_CELL_STATE, 
+	Blt_Offset(Cell, flags), BLT_CONFIG_DONT_SET_DEFAULT, 
+	&stateOption},
     {BLT_CONFIG_CUSTOM, "-style", "style", "Style", DEF_CELL_STYLE, 
 	Blt_Offset(Cell, stylePtr), BLT_CONFIG_NULL_OK, &styleOption},
     {BLT_CONFIG_END, NULL, NULL, NULL, NULL, 0, 0}
@@ -411,6 +419,8 @@ static Blt_ConfigSpec entrySpecs[] =
 	Blt_Offset(Entry, labelUid), 0, &labelOption},
     {BLT_CONFIG_OBJ, "-opencommand", (char *)NULL, (char *)NULL, 
 	(char *)NULL, Blt_Offset(Entry, openCmdObjPtr), BLT_CONFIG_NULL_OK},
+    {BLT_CONFIG_COLOR, "-rulecolor", "ruleColor", "RuleColor", DEF_RULE_COLOR,
+	 Blt_Offset(Entry, ruleColor), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_PIXELS_NNEG, "-ruleheight", "ruleHeight", "RuleHeight",
         DEF_RULE_HEIGHT, Blt_Offset(Entry, ruleHeight), 
 	BLT_CONFIG_DONT_SET_DEFAULT},
@@ -623,6 +633,8 @@ static Blt_ConfigSpec columnSpecs[] =
     {BLT_CONFIG_DASHES, "-ruledashes", "ruleDashes", "RuleDashes",
 	DEF_COLUMN_RULE_DASHES, Blt_Offset(Column, ruleDashes),
 	BLT_CONFIG_NULL_OK},
+    {BLT_CONFIG_COLOR, "-rulecolor", "ruleColor", "RuleColor", DEF_RULE_COLOR,
+	 Blt_Offset(Column, ruleColor), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_PIXELS_NNEG, "-rulewidth", "ruleWidth", "RuleWidth",
         DEF_RULE_WIDTH, Blt_Offset(Column, ruleWidth), 
 	BLT_CONFIG_DONT_SET_DEFAULT},
@@ -2837,7 +2849,6 @@ IconToObjProc(
     }
 }
 
-
 /*
  *---------------------------------------------------------------------------
  *
@@ -3281,6 +3292,90 @@ StyleToObjProc(
     } else {
 	return Tcl_NewStringObj(stylePtr->name, -1);
     }
+}
+
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * ObjToStateProc --
+ *
+ *	Converts the string representing a state into a bitflag.
+ *
+ * Results:
+ *	The return value is a standard TCL result.  The state flags are
+ *	updated.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+ObjToStateProc(
+    ClientData clientData,		/* Not used. */
+    Tcl_Interp *interp,			/* Interpreter to report
+                                         * results. */
+    Tk_Window tkwin,			/* Not used. */
+    Tcl_Obj *objPtr,			/* String representing state. */
+    char *widgRec,			/* Widget record */
+    int offset,				/* Offset to field in structure */
+    int flags)	
+{
+    unsigned int *flagsPtr = (unsigned int *)(widgRec + offset);
+    const char *string;
+    char c;
+    int length, mask;
+
+    string = Tcl_GetStringFromObj(objPtr, &length);
+    c = string[0];
+    if ((c == 'n') && (strncmp(string, "normal", length) == 0)) {
+	mask = 0;
+    } else if ((c == 'p') && (strncmp(string, "disabled", length) == 0)) {
+	mask = DISABLED;
+    } else if ((c == 'p') && (strncmp(string, "posted", length) == 0)) {
+	mask = POSTED;
+    } else {
+	Tcl_AppendResult(interp, "unknown state \"", string, 
+	    "\": should be disabled, posted, or normal.", (char *)NULL);
+	return TCL_ERROR;
+    }
+    *flagsPtr &= ~CELL_FLAGS_MASK;
+    *flagsPtr |= mask;
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * StateToObjProc --
+ *
+ *	Return the name of the style.
+ *
+ * Results:
+ *	The name representing the style is returned.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static Tcl_Obj *
+StateToObjProc(
+    ClientData clientData,		/* Not used. */
+    Tcl_Interp *interp,
+    Tk_Window tkwin,			/* Not used. */
+    char *widgRec,			/* Widget information record */
+    int offset,				/* Offset to field in structure */
+    int flags)	
+{
+    unsigned int state = *(unsigned int *)(widgRec + offset);
+    const char *string;
+
+    if (state & DISABLED) {
+	string = "disabled";
+    } else if (state & POSTED) {
+	string = "posted";
+    } else {
+	string = "normal";
+    }
+    return Tcl_NewStringObj(string, -1);
 }
 
 static int
@@ -4336,6 +4431,8 @@ ConfigureEntry(TreeView *viewPtr, Entry *entryPtr, int objc,
     GC newGC;
     Blt_ChainLink link;
     Column *colPtr;
+    XGCValues gcValues;
+    unsigned long gcMask;
 
     iconsOption.clientData = viewPtr;
     uidOption.clientData = viewPtr;
@@ -4357,8 +4454,6 @@ ConfigureEntry(TreeView *viewPtr, Entry *entryPtr, int objc,
     if ((entryPtr->font != NULL) || (entryPtr->color != NULL)) {
 	Blt_Font font;
 	XColor *colorPtr;
-	XGCValues gcValues;
-	unsigned long gcMask;
 
 	font = entryPtr->font;
 	if (font == NULL) {
@@ -4373,8 +4468,18 @@ ConfigureEntry(TreeView *viewPtr, Entry *entryPtr, int objc,
     if (entryPtr->gc != NULL) {
 	Tk_FreeGC(viewPtr->display, entryPtr->gc);
     }
-    /* Assume all changes require a new layout. */
     entryPtr->gc = newGC;
+
+    /* Rule GC */
+    gcMask = GCForeground;
+    gcValues.foreground = entryPtr->ruleColor->pixel;
+    newGC = Tk_GetGC(viewPtr->tkwin, gcMask, &gcValues);
+    if (entryPtr->ruleGC != NULL) {
+	Tk_FreeGC(viewPtr->display, entryPtr->ruleGC);
+    }
+    entryPtr->ruleGC = newGC;
+
+    /* Assume all changes require a new layout. */
     if (Blt_ConfigModified(entrySpecs, "-font", (char *)NULL)) {
 	viewPtr->flags |= UPDATE;
     }
@@ -4962,7 +5067,6 @@ PickItem(
     Entry *entryPtr;
     Column *colPtr;
     ClientData hint;
-    unsigned long flags;
 
     if (hintPtr != NULL) {
 	*hintPtr = NULL;
@@ -4975,7 +5079,7 @@ PickItem(
 	} 
 	ComputeVisibleEntries(viewPtr);
     }
-    flags = ITEM_NONE;
+    hint = NULL;                        /* Suppress compiler warning. */
     colPtr = NearestColumn(viewPtr, x, y, &hint);
     if (colPtr == NULL) {
         return NULL;                     /* No nearest column. We're not
@@ -4995,6 +5099,8 @@ PickItem(
     x = WORLDX(viewPtr, x);
     y = WORLDY(viewPtr, y);
     if (colPtr == &viewPtr->treeColumn) {
+        unsigned long flags;
+
 #ifdef notdef
         fprintf(stderr, "column is tree column\n");
 #endif
@@ -5188,6 +5294,14 @@ ConfigureColumn(TreeView *viewPtr, Column *colPtr)
     }
     colPtr->activeTitleGC = newGC;
 
+    /* Rule GC */
+    gcValues.foreground = colPtr->ruleColor->pixel;
+    newGC = Tk_GetGC(viewPtr->tkwin, gcMask, &gcValues);
+    if (colPtr->ruleGC != NULL) {
+	Tk_FreeGC(viewPtr->display, colPtr->ruleGC);
+    }
+    colPtr->ruleGC = newGC;
+
     colPtr->titleWidth = 2 * TITLE_PADX;
     colPtr->titleHeight = 2 * TITLE_PADY;
 
@@ -5226,10 +5340,10 @@ ConfigureColumn(TreeView *viewPtr, Column *colPtr)
     gcMask = (GCFunction | GCLineWidth | GCLineStyle | GCForeground);
 
     /* 
-     * If the rule is active, turn it off (i.e. draw again to erase
-     * it) before changing the GC.  If the color changes, we won't be
-     * able to erase the old line, since it will no longer be
-     * correctly XOR-ed with the background.
+     * If the rule is active, turn it off (i.e. draw again to erase it)
+     * before changing the GC.  If the color changes, we won't be able to
+     * erase the old line, since it will no longer be correctly XOR-ed with
+     * the background.
      */
     drawable = Tk_WindowId(viewPtr->tkwin);
     ruleDrawn = ((viewPtr->flags & RULE_ACTIVE_COLUMN) &&
@@ -5254,10 +5368,10 @@ ConfigureColumn(TreeView *viewPtr, Column *colPtr)
     if (LineIsDashed(colPtr->ruleDashes)) {
 	Blt_SetDashes(viewPtr->display, newGC, &colPtr->ruleDashes);
     }
-    if (colPtr->ruleGC != NULL) {
-	Blt_FreePrivateGC(viewPtr->display, colPtr->ruleGC);
+    if (colPtr->activeRuleGC != NULL) {
+	Blt_FreePrivateGC(viewPtr->display, colPtr->activeRuleGC);
     }
-    colPtr->ruleGC = newGC;
+    colPtr->activeRuleGC = newGC;
     if (ruleDrawn) {
 	DrawRule(viewPtr, colPtr, drawable);
     }
@@ -5294,6 +5408,9 @@ DestroyColumn(Column *colPtr)
     }
     if (colPtr->ruleGC != NULL) {
 	Blt_FreePrivateGC(viewPtr->display, colPtr->ruleGC);
+    }
+    if (colPtr->activeRuleGC != NULL) {
+	Blt_FreePrivateGC(viewPtr->display, colPtr->activeRuleGC);
     }
     hPtr = Blt_FindHashEntry(&viewPtr->columnTable, colPtr->key);
     if (hPtr != NULL) {
@@ -5341,8 +5458,8 @@ InitColumn(TreeView *viewPtr, Column *colPtr, const char *name,
     colPtr->text = Blt_AssertStrdup(defTitle);
     colPtr->justify = TK_JUSTIFY_CENTER;
     colPtr->relief = TK_RELIEF_FLAT;
-    colPtr->borderWidth = 1;
-    colPtr->pad.side1 = colPtr->pad.side2 = 2;
+    colPtr->borderWidth = 0;
+    colPtr->pad.side1 = colPtr->pad.side2 = 0;
     colPtr->state = STATE_NORMAL;
     colPtr->weight = 1.0;
     colPtr->ruleLineWidth = 1;
@@ -5722,8 +5839,8 @@ SortFlatView(TreeView *viewPtr)
 	}
 
 	/* 
-	 * The view is already sorted but in the wrong direction. 
-	 * Reverse the entries in the array.
+	 * The view is already sorted but in the wrong direction.  Reverse
+	 * the entries in the array.
 	 */
  	for (first = 0, last = viewPtr->numEntries - 1; last > first; 
 	     first++, last--) {
@@ -6040,9 +6157,9 @@ TreeViewEventProc(ClientData clientData, XEvent *eventPtr)
  *
  * SelectionProc --
  *
- *	This procedure is called back by Tk when the selection is requested by
- *	someone.  It returns part or all of the selection in a buffer provided
- *	by the caller.
+ *	This procedure is called back by Tk when the selection is requested
+ *	by someone.  It returns part or all of the selection in a buffer
+ *	provided by the caller.
  *
  * Results:
  *	The return value is the number of non-NULL bytes stored at buffer.
@@ -6062,9 +6179,9 @@ SelectionProc(
 					 * character to be returned. */
     char *buffer,			/* Location in which to place
 					 * selection. */
-    int maxBytes)			/* Maximum number of bytes to place at
-					 * buffer, not including terminating
-					 * NULL character. */
+    int maxBytes)			/* Maximum number of bytes to place
+					 * at buffer, not including
+					 * terminating NULL character. */
 {
     Tcl_DString ds;
     TreeView *viewPtr = clientData;
@@ -6109,8 +6226,8 @@ SelectionProc(
  * TreeViewInstCmdDeleteProc --
  *
  *	This procedure is invoked when a widget command is deleted.  If the
- *	widget isn't already in the process of being destroyed, this command
- *	destroys it.
+ *	widget isn't already in the process of being destroyed, this
+ *	command destroys it.
  *
  * Results:
  *	None.
@@ -6126,10 +6243,10 @@ TreeViewInstCmdDeleteProc(ClientData clientData)
     TreeView *viewPtr = clientData;
 
     /*
-     * This procedure could be invoked either because the window was destroyed
-     * and the command was then deleted (in which case tkwin is NULL) or
-     * because the command was deleted, and then this procedure destroys the
-     * widget.
+     * This procedure could be invoked either because the window was
+     * destroyed and the command was then deleted (in which case tkwin is
+     * NULL) or because the command was deleted, and then this procedure
+     * destroys the widget.
      */
     if (viewPtr->tkwin != NULL) {
 	Tk_Window tkwin;
@@ -6149,13 +6266,13 @@ TreeViewInstCmdDeleteProc(ClientData clientData)
  *	widget.
  *
  * Results:
- *	The return value is a standard TCL result.  If TCL_ERROR is returned,
- *	then interp->result contains an error message.
+ *	The return value is a standard TCL result.  If TCL_ERROR is
+ *	returned, then interp->result contains an error message.
  *
  * Side effects:
- *	Configuration information, such as text string, colors, font, etc. get
- *	set for viewPtr; old resources get freed, if there were any.  The widget
- *	is redisplayed.
+ *	Configuration information, such as text string, colors, font,
+ *	etc. get set for viewPtr; old resources get freed, if there were
+ *	any.  The widget is redisplayed.
  *
  *---------------------------------------------------------------------------
  */
@@ -6243,8 +6360,8 @@ ConfigureTreeView(Tcl_Interp *interp, TreeView *viewPtr)
     }
     /*
      * If the tree view was changed, mark all the nodes dirty (we'll be
-     * switching back to either the full path name or the label) and free the
-     * array representing the flattened view of the tree.
+     * switching back to either the full path name or the label) and free
+     * the array representing the flattened view of the tree.
      */
     if (Blt_ConfigModified(viewSpecs, "-hideleaves", "-flat", (char *)NULL)) {
 	Entry *entryPtr;
@@ -7231,7 +7348,7 @@ DrawRule(
 
     y1 = viewPtr->titleHeight + viewPtr->inset;
     y2 = Tk_Height(viewPtr->tkwin) - viewPtr->inset;
-    XDrawLine(viewPtr->display, drawable, colPtr->ruleGC, x, y1, x, y2);
+    XDrawLine(viewPtr->display, drawable, colPtr->activeRuleGC, x, y1, x, y2);
     viewPtr->flags = TOGGLE(viewPtr->flags, RULE_ACTIVE_COLUMN);
 }
 
@@ -7463,8 +7580,9 @@ DrawLabel(
 	    XSetForeground(viewPtr->display, viewPtr->focusGC, color->pixel);
 	}
 	if (width > maxLength) {
-	    width = maxLength | 0x1;	/* Width has to be odd for the dots in
-					 * the focus rectangle to align. */
+	    width = maxLength | 0x1;	/* Width has to be odd for the dots
+					 * in the focus rectangle to
+					 * align. */
 	}
         if (rgn != NULL) {
             TkSetRegion(viewPtr->display, viewPtr->focusGC, rgn);
@@ -7569,10 +7687,10 @@ DisplayCell(TreeView *viewPtr, Cell *cellPtr)
     }
     colPtr = cellPtr->colPtr;
     entryPtr = cellPtr->entryPtr;
-    x = SCREENX(viewPtr, colPtr->worldX) + colPtr->pad.side1;
+    x = SCREENX(viewPtr, colPtr->worldX);
     y = SCREENY(viewPtr, entryPtr->worldY);
-    h = entryPtr->height - 2;
-    w = cellPtr->colPtr->width - PADDING(colPtr->pad);
+    h = entryPtr->height;
+    w = cellPtr->colPtr->width;
 
     /* Visible area for cells. */
     y1 = viewPtr->titleHeight + viewPtr->inset;
@@ -7741,8 +7859,9 @@ DrawFlatEntry(
 static void
 DrawTreeEntry(
     TreeView *viewPtr,			/* Widget record. */
-    Entry *entryPtr,		/* Entry to be drawn. */
-    Drawable drawable)			/* Pixmap or window to draw into. */
+    Entry *entryPtr,                    /* Entry to be drawn. */
+    Drawable drawable)                  /* Pixmap or window to draw
+                                         * into. */
 {
     Button *buttonPtr = &viewPtr->button;
     int level;
@@ -7763,9 +7882,9 @@ DrawTreeEntry(
 
     if ((entryPtr->flags & ENTRY_BUTTON) && (entryPtr != viewPtr->rootPtr)){
 	/*
-	 * Except for the root, draw a button for every entry that needs one.
-	 * The displayed button can be either an icon (Tk image) or a line
-	 * drawing (rectangle with plus or minus sign).
+	 * Except for the root, draw a button for every entry that needs
+	 * one.  The displayed button can be either an icon (Tk image) or a
+	 * line drawing (rectangle with plus or minus sign).
 	 */
 	DrawButton(viewPtr, entryPtr, drawable, x + entryPtr->buttonX, 
 		y + entryPtr->buttonY);
@@ -7981,29 +8100,52 @@ DrawColumnTitles(TreeView *viewPtr, Drawable drawable)
 }
 
 static void
-DrawNormalBackground(TreeView *viewPtr, Drawable drawable, int x, int w, 
+DrawEntryBackgrounds(TreeView *viewPtr, Drawable drawable, int x, int w, 
 		     Column *colPtr)
 {
-    Blt_Bg bg;
+    Blt_Bg normalBg;
+    Entry **entryPtrPtr;
 
-    bg = GetStyleBackground(colPtr);
+    normalBg = GetStyleBackground(colPtr);
+
     /* This also fills the background where there are no entries. */
-    Blt_Bg_FillRectangle(viewPtr->tkwin, drawable, bg, x, 0, w, 
+    Blt_Bg_FillRectangle(viewPtr->tkwin, drawable, normalBg, x, 0, w, 
 	Tk_Height(viewPtr->tkwin), 0, TK_RELIEF_FLAT);
-    if (viewPtr->altBg != NULL) {
-	Entry **epp;
 
- 	for (epp = viewPtr->visibleArr; *epp != NULL; epp++) {
-	    if ((*epp)->flatIndex & 0x1) {
-		int y;
+    for (entryPtrPtr = viewPtr->visibleArr; *entryPtrPtr != NULL; 
+         entryPtrPtr++) {
+        GC gc;
+        Blt_Bg bg;
+        int y, rowHeight;
+        Entry *rowPtr;
 
-		y = SCREENY(viewPtr, (*epp)->worldY);
-		Blt_Bg_FillRectangle(viewPtr->tkwin, drawable, 
-			viewPtr->altBg, x, y, w, (*epp)->height, 
-			viewPtr->selection.borderWidth, 
-			viewPtr->selection.relief);
-	    }
-	}
+        rowPtr = *entryPtrPtr;
+        gc = viewPtr->focusGC;
+        bg = normalBg;
+	if (EntryIsSelected(viewPtr, rowPtr)) {
+            bg = viewPtr->selection.bg;
+            gc = viewPtr->selection.gc;
+        } else if ((viewPtr->altBg != NULL) && (rowPtr->flatIndex & 0x1)) {
+            bg = viewPtr->altBg;
+        } else {
+            bg = normalBg;
+        }
+        rowHeight = rowPtr->height;
+        y = SCREENY(viewPtr, rowPtr->worldY);
+        Blt_Bg_FillRectangle(viewPtr->tkwin, drawable, bg, x, y,
+                w, rowHeight, viewPtr->selection.borderWidth, 
+                viewPtr->selection.relief);
+        /* Draw Rule */
+        if (colPtr->ruleWidth > 0) {
+            XFillRectangle(viewPtr->display, drawable, colPtr->ruleGC, 
+                           x + w - colPtr->ruleWidth, y, 
+                           colPtr->ruleWidth, rowHeight);
+        }
+        if (rowPtr->ruleHeight > 0) {
+            XFillRectangle(viewPtr->display, drawable, rowPtr->ruleGC, 
+                           x, y + rowHeight - rowPtr->ruleHeight,
+                           w, rowPtr->ruleHeight);
+        }
     }
 }
 
@@ -8231,8 +8373,7 @@ DisplayTreeView(ClientData clientData)	/* Information about widget. */
 					 * beyond the right edge. */
 	}
 	/* Clear the column background. */
-	DrawNormalBackground(viewPtr, drawable, x, colPtr->width, colPtr);
-	DrawSelectionBackground(viewPtr, drawable, x, colPtr->width);
+	DrawEntryBackgrounds(viewPtr, drawable, x, colPtr->width, colPtr);
 	if (colPtr != &viewPtr->treeColumn) {
 	    Entry **epp;
 	    
@@ -8242,7 +8383,7 @@ DisplayTreeView(ClientData clientData)	/* Information about widget. */
 		/* Check if there's a corresponding cell in the entry. */
 		cellPtr = GetCell(*epp, colPtr);
 		if (cellPtr != NULL) {
-		    DrawCell(viewPtr, cellPtr, drawable, x + colPtr->pad.side1, 
+		    DrawCell(viewPtr, cellPtr, drawable, x, 
                         SCREENY(viewPtr,(*epp)->worldY));
 		}
 	    }
@@ -8253,6 +8394,7 @@ DisplayTreeView(ClientData clientData)	/* Information about widget. */
 		DrawTreeView(viewPtr, drawable, x);
 	    }
 	}
+#ifdef notdef
  	if (colPtr->relief != TK_RELIEF_FLAT) {
 	    Blt_Bg bg;
 
@@ -8262,6 +8404,7 @@ DisplayTreeView(ClientData clientData)	/* Information about widget. */
 		colPtr->width, Tk_Height(viewPtr->tkwin), 
 		colPtr->borderWidth, colPtr->relief);
 	}
+#endif
 	count++;
     }
     if (count == 0) {
@@ -8297,15 +8440,15 @@ DisplayLabel(TreeView *viewPtr, Entry *entryPtr,
     int level;
     int y2, y1, x1, x2;
     int x, y, xMax, w, h;
+    Column *colPtr;
 
     x = SCREENX(viewPtr, entryPtr->worldX);
+    colPtr = &viewPtr->treeColumn;
     y = SCREENY(viewPtr, entryPtr->worldY);
     h = entryPtr->height - 1;
-    w = viewPtr->treeColumn.width - 
-	(entryPtr->worldX - viewPtr->treeColumn.worldX);
-    xMax = SCREENX(viewPtr, viewPtr->treeColumn.worldX) + 
-	viewPtr->treeColumn.width - viewPtr->treeColumn.titleBW - 
-	viewPtr->treeColumn.pad.side2;
+    w = colPtr->width - (entryPtr->worldX - colPtr->worldX);
+    xMax = SCREENX(viewPtr, colPtr->worldX) + colPtr->width - 
+        colPtr->titleBW - colPtr->pad.side2;
 
     icon = GetEntryIcon(viewPtr, entryPtr);
     if (viewPtr->flatView) {
@@ -8351,8 +8494,9 @@ DisplayLabel(TreeView *viewPtr, Entry *entryPtr,
 
     /* Clear the entry label background. */
     Blt_Bg_SetClipRegion(viewPtr->tkwin, bg, rgn);
-    Blt_Bg_FillRectangle(viewPtr->tkwin, drawable, bg, x, y, w, h, 0, 
-	TK_RELIEF_FLAT);
+    Blt_Bg_FillRectangle(viewPtr->tkwin, drawable, bg, x, y, 
+                w - colPtr->ruleWidth, h - entryPtr->ruleHeight, 0, 
+                TK_RELIEF_FLAT);
     Blt_Bg_UnsetClipRegion(viewPtr->tkwin, bg);
     DrawLabel(viewPtr, entryPtr, drawable, x, y, xMax - x, rgn);
     TkDestroyRegion(rgn);
@@ -8870,7 +9014,7 @@ CellBboxOp(ClientData clientData, Tcl_Interp *interp, int objc,
     y1 = viewPtr->worldHeight;
     x2 = y2 = 0;
 
-    screen = FALSE;
+    screen = TRUE;
     string = Tcl_GetString(objv[2]);
     if ((string[0] == '-') && (strcmp(string, "-screen") == 0)) {
 	screen = TRUE;
@@ -8907,8 +9051,8 @@ CellBboxOp(ClientData clientData, Tcl_Interp *interp, int objc,
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
     Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewIntObj(x1));
     Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewIntObj(y1));
-    Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewIntObj(x2 - x1 + 1));
-    Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewIntObj(y2 - y1 + 1));
+    Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewIntObj(x2));
+    Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewIntObj(y2));
     Tcl_SetObjResult(interp, listObjPtr);
     return TCL_OK;
 }
@@ -9053,6 +9197,56 @@ CellFocusOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     viewPtr->focusCellPtr = cellPtr;
     EventuallyRedraw(viewPtr);
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * CellIdentifyOp --
+ *
+ *	.t cell identify cell x y 
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+CellIdentifyOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+	   Tcl_Obj *const *objv)
+{
+    Cell *cellPtr;
+    CellStyle *stylePtr;
+    Column *colPtr;
+    Entry *rowPtr;
+    TreeView *viewPtr = clientData;
+    const char *string;
+    int x, y, rootX, rootY;
+
+    if (GetCellFromObj(interp, viewPtr, objv[3], &cellPtr) != TCL_OK) {
+	return TCL_ERROR;
+    }
+    if (cellPtr == NULL) {
+	return TCL_OK;
+    }
+    if ((Tcl_GetIntFromObj(interp, objv[4], &x) != TCL_OK) ||
+	(Tcl_GetIntFromObj(interp, objv[5], &y) != TCL_OK)) {
+	return TCL_ERROR;
+    }
+    colPtr = cellPtr->colPtr;
+    rowPtr = cellPtr->entryPtr;
+    /* Convert from root coordinates to window-local coordinates to
+     * cell-local coordinates */
+    Tk_GetRootCoords(viewPtr->tkwin, &rootX, &rootY);
+    x -= rootX + SCREENX(viewPtr, colPtr->worldX);
+    y -= rootY + SCREENY(viewPtr, rowPtr->worldY);
+    string = NULL;
+    stylePtr = GetCurrentStyle(viewPtr, colPtr, cellPtr);
+    if (stylePtr->classPtr->identProc != NULL) {
+	string = (*stylePtr->classPtr->identProc)(cellPtr, stylePtr, x, y);
+    }
+    if (string != NULL) {
+	Tcl_SetStringObj(Tcl_GetObjResult(interp), string, -1);
+    }
     return TCL_OK;
 }
 
@@ -9275,6 +9469,7 @@ static Blt_OpSpec cellOps[] =
     {"configure",  2, CellConfigureOp,   4, 0, "cell ?option value?...",},
     {"deactivate", 1, CellDeactivateOp,  3, 3, "",},
     {"focus",      2, CellFocusOp,       4, 0, "?cell?",},
+    {"identify",   2, CellIdentifyOp,    6, 6, "cell x y",},
     {"index",      3, CellIndexOp,       4, 4, "cell",},
     {"invoke",     3, CellInvokeOp,      4, 4, "cell",},
     {"see",        3, CellSeeOp,         4, 4, "cell",},
@@ -9940,6 +10135,7 @@ ColumnNearestOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	}
 	checkTitle = TRUE;
     }
+    hint = 0;                           /* Suppress compiler warning. */
     colPtr = NearestColumn(viewPtr, x, y, &hint);
     if ((checkTitle) && (hint == NULL)) {
 	colPtr = NULL;
@@ -10541,7 +10737,7 @@ EntryConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
 /*ARGSUSED*/
 static int
 EntryIndexOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-	Tcl_Obj *const *objv)
+             Tcl_Obj *const *objv)
 {
     TreeView *viewPtr = clientData;
     Entry *entryPtr;
@@ -10615,7 +10811,7 @@ EntryInvokeOp(ClientData clientData, Tcl_Interp *interp, int objc,
     Entry *entryPtr;
     int i;
 
-    for (i = 2; i < objc; i++) {
+    for (i = 3; i < objc; i++) {
 	if (GetEntryIterator(viewPtr, objv[i], &iter) != TCL_OK) {
 	    return TCL_ERROR;
 	}
@@ -12313,7 +12509,7 @@ OpenOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *	Commands may get excecuted; variables may get set; sub-menus may
  *	get posted.
  *
- *	.view post entry column
+ *	.view cell post cell
  *
  *---------------------------------------------------------------------------
  */

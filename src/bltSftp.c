@@ -967,7 +967,7 @@ FileSplit(const char *path, int length, int *argcPtr, char ***argvPtr)
 static int
 PromptUser(Tcl_Interp *interp, Remote *remotePtr)
 {
-    int i, result;
+    int i;
     int numAttempts;
     const char *user, *pass;
 
@@ -975,7 +975,6 @@ PromptUser(Tcl_Interp *interp, Remote *remotePtr)
     if (numAttempts ==  0) {
 	numAttempts = 1000;
     }
-    result = TCL_ERROR;			/* Suppress compiler warning. */
     user = remotePtr->user;
     pass = remotePtr->password;
     for (i = 0; i < numAttempts; i++) {
@@ -983,6 +982,7 @@ PromptUser(Tcl_Interp *interp, Remote *remotePtr)
 	Tcl_Obj *cmdObjPtr;
 	Tcl_Obj *objPtr;
 	int objc;
+        int result;
 
 	cmdObjPtr = Tcl_DuplicateObj(remotePtr->promptCmdObjPtr);
 	Tcl_ListObjAppendElement(remotePtr->interp, cmdObjPtr, 
@@ -2753,12 +2753,10 @@ GetRemoteFile(Tcl_Interp *interp, const char *path, int length,
 	      FileReader *readerPtr)
 {
     LIBSSH2_SFTP_HANDLE *handle;
-    int result;
     int done;
     Remote *remotePtr = readerPtr->remotePtr;
     Tcl_Time time;
 
-    result = TCL_ERROR;
     libssh2_session_set_blocking(remotePtr->session, FALSE);
     do {
         handle = libssh2_sftp_open_ex(remotePtr->sftp, path, length,
@@ -2802,10 +2800,9 @@ GetRemoteFile(Tcl_Interp *interp, const char *path, int length,
 		CancelRemoteReadVarProc, readerPtr);
 	remotePtr->flags &= ~READ_TRACED;
     }
-    result = (done == 1) ? TCL_OK : TCL_ERROR;
     libssh2_session_set_blocking(remotePtr->session, TRUE);
     libssh2_sftp_close(readerPtr->handle);
-    return result;
+    return (done == 1) ? TCL_OK : TCL_ERROR;
 }
 
 static int
@@ -2894,11 +2891,9 @@ ReadDirectoryIntoList(Tcl_Interp *interp, const char *path, int length,
 		      DirectoryReader *readerPtr)
 {
     LIBSSH2_SFTP_HANDLE *handle;
-    int result;
     int done;
     Remote *remotePtr = readerPtr->remotePtr;
 
-    result = TCL_ERROR;
     libssh2_session_set_blocking(remotePtr->session, FALSE);
     do {
         handle = libssh2_sftp_open_ex(remotePtr->sftp, path, length,
@@ -2927,10 +2922,9 @@ ReadDirectoryIntoList(Tcl_Interp *interp, const char *path, int length,
 	ReadEntryIntoList(readerPtr);
 	Tcl_DoOneEvent(TCL_DONT_WAIT); 
     }
-    result = (done == 1) ? TCL_OK : TCL_ERROR;
     libssh2_session_set_blocking(remotePtr->session, TRUE);
     libssh2_sftp_closedir(readerPtr->handle);
-    return result;
+    return (done == 1) ? TCL_OK : TCL_ERROR;
 }
 
 /*

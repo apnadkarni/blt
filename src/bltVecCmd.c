@@ -1529,7 +1529,6 @@ FormatLong(Tcl_Interp *interp, double d, FormatParser *parserPtr)
     }
     objPtr = Tcl_NewObj();
     parserPtr->flags |= FMT_ALLOCSEGMENT;
-    limit = INT_MAX;
     Tcl_IncrRefCount(objPtr);
     
     if ((parserPtr->flags & (FMT_ISNEGATIVE | FMT_PLUS | FMT_SPACE)) && 
@@ -1537,19 +1536,16 @@ FormatLong(Tcl_Interp *interp, double d, FormatParser *parserPtr)
 	Tcl_AppendToObj(objPtr, 
 			((parserPtr->flags & FMT_ISNEGATIVE) ? "-" : 
 			 (parserPtr->flags & FMT_PLUS) ? "+" : " "), 1);
-	limit -= 1;
     }
     if (parserPtr->flags & FMT_HASH) {
 	switch (parserPtr->ch) {
 	case 'o':
 	    Tcl_AppendToObj(objPtr, "0", 1);
-	    limit -= 1;
 	    parserPtr->precision--;
 	    break;
 	case 'x':
 	case 'X':
 	    Tcl_AppendToObj(objPtr, "0x", 2);
-	    limit -= 2;
 	    break;
 	}
     }
@@ -1902,7 +1898,6 @@ AppendFormatToObj(Tcl_Interp *interp, Tcl_Obj *appendObjPtr, const char *format,
 	}
 	Tcl_AppendToObj(appendObjPtr, span, numBytes);
 	limit -= numBytes;
-	numBytes = 0;
     }
     *offsetPtr = offset + count;
     return TCL_OK;
@@ -2019,6 +2014,11 @@ PrintOp(Vector *vPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 
     fmt = Tcl_GetString(objv[2]);
     ParseFormat(fmt, &argc, &argv);
+    if (argc == 0) {
+        Tcl_AppendResult(interp, "format \"", fmt, "\" contains no specifiers", 
+                         (char *)NULL);
+        return TCL_ERROR;
+    }
     if (Blt_ParseSwitches(interp, printSwitches, objc - 3, objv + 3, &switches,
 	BLT_SWITCH_DEFAULTS) < 0) {
 	return TCL_ERROR;
@@ -2895,6 +2895,7 @@ SequenceOp(Vector *vPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     }
     string = Tcl_GetString(objv[3]);
     step = 1.0;
+    stop = 0.0;                         /* Suppress compiler warning. */
     numSteps = 0;
     if ((string[0] == 'e') && (strcmp(string, "end") == 0)) {
 	numSteps = vPtr->length;
@@ -3323,7 +3324,6 @@ SortOp(Vector *vPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	    }
 	}
 	sortLength = count;
-	numBytes = sortLength * sizeof(double);
     }
     if (objc == 2) {
 	Tcl_Obj *listObjPtr;

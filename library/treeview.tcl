@@ -19,21 +19,20 @@
 # ----------------------------------------------------------------------
 #
 # Permission to use, copy, modify, and distribute this software and its
-# documentation for any purpose and without fee is hereby granted,
-# provided that the above copyright notice appear in all copies and that
-# both that the copyright notice and warranty disclaimer appear in
-# supporting documentation, and that the names of Lucent Technologies
-# any of their entities not be used in advertising or publicity
-# pertaining to distribution of the software without specific, written
-# prior permission.
+# documentation for any purpose and without fee is hereby granted, provided
+# that the above copyright notice appear in all copies and that both that
+# the copyright notice and warranty disclaimer appear in supporting
+# documentation, and that the names of Lucent Technologies any of their
+# entities not be used in advertising or publicity pertaining to
+# distribution of the software without specific, written prior permission.
 #
 # Lucent Technologies disclaims all warranties with regard to this
 # software, including all implied warranties of merchantability and
-# fitness.  In no event shall Lucent be liable for any special, indirect
-# or consequential damages or any damages whatsoever resulting from loss
-# of use, data or profits, whether in an action of contract, negligence
-# or other tortuous action, arising out of or in connection with the use
-# or performance of this software.
+# fitness.  In no event shall Lucent be liable for any special, indirect or
+# consequential damages or any damages whatsoever resulting from loss of
+# use, data or profits, whether in an action of contract, negligence or
+# other tortuous action, arising out of or in connection with the use or
+# performance of this software.
 #
 # ======================================================================
 
@@ -171,16 +170,16 @@ if { $tcl_platform(platform) == "windows" } {
 	[list @$blt_library/treeview.xbm $blt_library/treeview_m.xbm black white]
 }
 
-# ----------------------------------------------------------------------
+# ----------------------------------------------------------------------------
 #
 # Initialize --
 #
-#	Invoked by internally by Treeview_Init routine.  Initializes
-#	the default bindings for the treeview widget entries.  These
-#	are local to the widget, so they can't be set through the
-#	widget's class bind tags.
+#	Invoked by internally by Treeview_Init routine.  Initializes the
+#	default bindings for the treeview widget entries.  These are local
+#	to the widget, so they can't be set through the widget's class bind
+#	tags.
 #
-# ----------------------------------------------------------------------
+# ----------------------------------------------------------------------------
 proc blt::TreeView::Initialize { w } {
     variable _private
     #
@@ -238,7 +237,7 @@ proc blt::TreeView::Initialize { w } {
     # B1-Motion
     #
     #	For "multiple" mode only.  Saves the current location of the
-    #	pointer for auto-scrolling.  Resets the selection mark.  
+    #	pointer for auto-scrolling.  Resets the selection mark.
     #
     $w bind Entry <B1-Motion> { 
 	set blt::TreeView::_private(x) %x
@@ -413,35 +412,82 @@ proc blt::TreeView::Initialize { w } {
 	%W cell deactivate 
     }
     $w bind CheckBoxStyle <ButtonPress-1> { 
-	if { ![%W cell writable active] } {
+	if { [%W cell writable active]  && 
+	     [%W cell identify active %X %Y] == "button" } {
+	    blt::TreeView::ToggleValue %W active
+	} else {
 	    blt::TreeView::SetSelectionAnchorFromCell %W active
 	}
     }
     $w bind CheckBoxStyle <B1-Motion> { 
 	break
     }
-    $w bind CheckBoxStyle <ButtonRelease-1> { 
-	if { [%W cell writable active] } {
-	    blt::TreeView::ToggleValue %W active
+    $w bind CheckBoxStyle <B1-Motion> { 
+	set blt::TreeView::_private(x) %x
+	set blt::TreeView::_private(y) %y
+	set index [%W nearest %x %y]
+	set blt::TreeView::_private(scroll) 1
+	if { [%W cget -selectmode] == "multiple" } {
+	    %W selection mark $index
+	} else {
+	    blt::TreeView::SetSelectionAnchor %W $index
 	}
     }
 
     # ComboBoxStyle
     $w bind ComboBoxStyle <Enter> { 
-	%W cell activate current 
-    }
-    $w bind ComboBoxStyle <Leave> { 
-	%W cell deactivate 
-    }
-    $w bind ComboBoxStyle <ButtonPress-1> { 
-	if { [%W column cget current -edit] } {
-	    break
+	set style [%W cell style current]
+	if { [%W cell cget current -state] != "posted" } {
+	    %W cell activate current 
 	}
     }
+    $w bind ComboBoxStyle <Leave> { 
+	set style [%W cell style current]
+	if { [%W cell cget current -state] != "posted" } {
+	    %W cell deactivate 
+	}
+    }
+    $w bind ComboBoxStyle <ButtonPress-1> { 
+	set blt::TreeView::_private(activeSelection) 0
+	if { [%W cell identify current %X %Y] == "button" } {
+	    blt::TreeView::PostComboBoxMenu %W current
+	} else {
+	    blt::TreeView::SetSelectionAnchorFromCell %W active
+	}
+    }
+    $w bind ComboBoxStyle <B1-Motion> { 
+	set style [%W cell style current]
+	if { [%W cell cget current -state] != "posted" } {
+	    set blt::TreeView::_private(x) %x
+	    set blt::TreeView::_private(y) %y
+	    set cell [%W index @%x,%y]
+	    set blt::TreeView::_private(scroll) 1
+	    if { $cell != "" } {
+		if { $blt::TreeView::_private(activeSelection) } {
+		    %W selection mark $cell
+		} else {
+		    blt::TreeView::SetSelectionAnchorFromCell %W active
+		}
+	    }
+	}
+	break
+    }
+    # We only get <ButtonRelease> events that are generated by the
+    # combomenu because of the grab on the combomenu window.  The combomenu
+    # will get all normal <ButtonRelease> events.
+    #
+    # If the pointer is inside of the active cell, this is the click-click
+    # method of selecting a menu item.  So wait for the next ButtonRelease
+    # event.
+    #
+    # Otherwise unpost the menu.  The user clicked either on the menu
+    # (selected an item) or outside the menu (canceling the operation).
     $w bind ComboBoxStyle <ButtonRelease-1> { 
-	if { [%W edit -root -test %X %Y] } {
-	    %W edit -root %X %Y
-	    break
+	after cancel $blt::TreeView::_private(afterId)
+	set blt::TreeView::_private(afterId) -1
+	set blt::TreeView::_private(scroll) 0
+	if { $blt::TreeView::_private(activeSelection) } {
+	    %W selection mark @%x,%y
 	}
     }
 
@@ -454,13 +500,119 @@ proc blt::TreeView::Initialize { w } {
     }
 }
 
+#
+# PostComboBoxMenu --
+#
+#	Posts the combo menu at the location of the cell requesting it.
+#	The menu is selected to the current cell value and we bind to the
+#	menu's <<MenuSelect>> event to know if a menu item was selected.
+#
+#	The most important part is that we set a grab on the menu.  This
+#	will force <ButtonRelease> events to be interpreted by the combo
+#	menu instead of the tableview widget.
+#
+proc blt::TreeView::PostComboBoxMenu { w cell } {
+    variable _private
+
+    set style [$w cell style $cell]
+    set menu [$w style cget $style -menu]
+    if { $menu == "" } {
+	puts stderr "no menu specified"
+	return;				# No menu specified.
+    }
+    # Get the current value of the cell and select the corresponding menu
+    # item.
+    set tree [$w cget -tree]
+    foreach { row col } [$w cell index $cell] break
+    set value [$tree get $row $col ""]
+    puts stderr "row=$row col=$col value=$value"
+    set item [$menu index -value $value]
+    puts stderr "item=$item row=$row col=$col value=$value"
+    if { $item >= 0 } {
+	$menu select $item
+    }
+    $w cell configure $cell -state posted
+    # Watch for <<MenuSelect>> events on the menu.  Set the cell value to
+    # the selected value when we get one.
+    set _private(posting) [$w cell index $cell]
+    bind $menu <<MenuSelect>> \
+	[list blt::TreeView::ImportFromComboMenu $w $_private(posting) $menu]
+
+    # Post the combo menu at the bottom of the cell.
+    $w cell post $cell 
+    foreach { x1 y1 x2 y2 } [$w cell bbox $cell] break
+    incr x1 [winfo rootx $w]
+    incr y1 [winfo rooty $w]
+    incr x2 [winfo rootx $w]
+    incr y2 [winfo rooty $w]
+    $menu post right $x2 $y2 $x1 $y1
+    blt::grab push $menu 
+    bind $menu <Unmap> [list blt::TreeView::UnpostComboBoxMenu $w]
+}
+
+#
+# ImportFromComboMenu --
+#
+#	This is called whenever a menu item is selected (via the
+#	<<MenuSelect>> event generated by the combomenu).  Gets the
+#	currently selected value from the combo menu and sets the
+#	corresponding table cell to it.
+#
+proc blt::TreeView::ImportFromComboMenu { w cell menu } {
+    set value [$menu value active]
+    puts stderr "active value is $value"
+    set tree [$w cget -tree]
+    if { $tree != "" } {
+	foreach { row col } [$w cell index $cell] break
+	$tree set $row $col $value
+    }
+    # Execute the callback associated with the style
+    $w cell invoke $cell
+}
+
+#
+# UnpostComboBoxMenu --
+#
+#	Unposts the combobox menu.  Note that the current value set in
+#	the cell style is not propagated to the table here.  This is done
+#	via a <<MenuSelect>> event.  We don't know if we're unposting
+#	the menu because a menu item was selected or if the user clicked
+#	outside of the menu to cancel the operation.
+#
+proc ::blt::TreeView::UnpostComboBoxMenu { w } {
+    variable _private
+
+    puts stderr "UnpostComboBoxMenu: $w"
+    # Restore focus right away (otherwise X will take focus away when the
+    # menu is unmapped and under some window managers (e.g. olvwm) we'll
+    # lose the focus completely).
+    catch { focus $_private(focus) }
+    set _private(focus) ""
+    set cell $_private(posting)
+    set _private(posting) none
+    # This causes the cell in the table to be set to the current
+    # value in the combo style.
+    set style [$w cell style $cell]
+    set menu [$w style cget $style -menu]
+    if { [info exists _private(cursor)] } {
+	$w style configure $style -cursor $_private(cursor)
+    }
+    $w cell configure $cell -state normal
+    if { $menu != "" } {
+	# Release grab, if any, and restore the previous grab, if there was
+	# one.
+	$menu unpost
+	#blt::grab pop $menu
+    }
+}
+
 # ----------------------------------------------------------------------
 #
 # AutoScroll --
 #
-#	Invoked when the user is selecting elements in a treeview
-#	widget and drags the mouse pointer outside of the widget.
-#	Scrolls the view in the direction of the pointer.
+#	Invoked when the user is selecting elements in a treeview widget
+#	and drags the mouse pointer outside of the widget.  Scrolls the
+#	view in the direction of the pointer.
 #
 # ----------------------------------------------------------------------
 proc blt::TreeView::AutoScroll { w } {
@@ -498,7 +650,7 @@ proc blt::TreeView::AutoScroll { w } {
 #
 #	Toggles the value at the location of the cell requesting it.  This
 #	is called only for checkbox style cells. The value is pulled from
-#	the table and compared against the style's on value.  If its the
+#	the tree and compared against the style's on value.  If its the
 #	"on" value, set the cell value in the table to its "off" value.
 #
 proc blt::TreeView::ToggleValue { w cell } {
@@ -539,8 +691,8 @@ proc blt::TreeView::SetSelectionAnchor { w tagOrId } {
 #
 # MoveFocus --
 #
-#	Invoked by KeyPress bindings.  Moves the active selection to
-#	the entry <where>, which is an index such as "up", "down",
+#	Invoked by KeyPress bindings.  Moves the active selection to the
+#	entry <where>, which is an index such as "up", "down",
 #	"prevsibling", "nextsibling", etc.
 #
 # ----------------------------------------------------------------------
@@ -558,16 +710,15 @@ proc blt::TreeView::MoveFocus { w tagOrId } {
 #
 # MovePage --
 #
-#	Invoked by KeyPress bindings.  Pages the current view up or
-#	down.  The <where> argument should be either "top" or
-#	"bottom".
+#	Invoked by KeyPress bindings.  Pages the current view up or down.
+#	The <where> argument should be either "top" or "bottom".
 #
 # ----------------------------------------------------------------------
 proc blt::TreeView::MovePage { w where } {
 
-    # If the focus is already at the top/bottom of the window, we want
-    # to scroll a page. It's really one page minus an entry because we
-    # want to see the last entry on the next/last page.
+    # If the focus is already at the top/bottom of the window, we want to
+    # scroll a page. It's really one page minus an entry because we want to
+    # see the last entry on the next/last page.
     if { [$w index focus] == [$w index view.$where] } {
         if {$where == "top"} {
 	    $w yview scroll -1 pages
@@ -579,8 +730,8 @@ proc blt::TreeView::MovePage { w where } {
     }
     update
 
-    # Adjust the entry focus and the view.  Also activate the entry.
-    # just in case the mouse point is not in the widget.
+    # Adjust the entry focus and the view.  Also activate the entry.  just
+    # in case the mouse point is not in the widget.
     $w entry highlight view.$where
     $w focus view.$where
     $w see view.$where
@@ -594,8 +745,8 @@ proc blt::TreeView::MovePage { w where } {
 #
 # NextMatch --
 #
-#	Invoked by KeyPress bindings.  Searches for an entry that
-#	starts with the letter <char> and makes that entry active.
+#	Invoked by KeyPress bindings.  Searches for an entry that starts
+#	with the letter <char> and makes that entry active.
 #
 # ----------------------------------------------------------------------
 proc blt::TreeView::NextMatch { w key } {
@@ -629,10 +780,9 @@ proc blt::TreeView::NextMatch { w key } {
 #
 # InsertText --
 #
-#	Inserts a text string into an entry at the insertion cursor.  
-#	If there is a selection in the entry, and it covers the point 
-#	of the insertion cursor, then delete the selection before 
-#	inserting.
+#	Inserts a text string into an entry at the insertion cursor.  If
+#	there is a selection in the entry, and it covers the point of the
+#	insertion cursor, then delete the selection before inserting.
 #
 # Arguments:
 #	w 	Widget where to insert the text.
@@ -656,10 +806,10 @@ proc blt::TreeView::InsertText { w text } {
 #
 #	This procedure implements the "transpose" function for entry
 #	widgets.  It tranposes the characters on either side of the
-#	insertion cursor, unless the cursor is at the end of the line.
-#	In this case it transposes the two characters to the left of
-#	the cursor.  In either case, the cursor ends up to the right
-#	of the transposed characters.
+#	insertion cursor, unless the cursor is at the end of the line.  In
+#	this case it transposes the two characters to the left of the
+#	cursor.  In either case, the cursor ends up to the right of the
+#	transposed characters.
 #
 # Arguments:
 #	w 	The entry window.
@@ -683,8 +833,8 @@ proc blt::TreeView::Transpose { w } {
 #
 # GetSelection --
 #
-#	Returns the selected text of the entry with respect to the
-#	-show option.
+#	Returns the selected text of the entry with respect to the -show
+#	option.
 #
 # Arguments:
 #	w          Entry window from which the text to get
@@ -723,9 +873,9 @@ proc blt::TreeView::EditColumn { w x y } {
 #
 # SortColumn --
 #
-#	This is called when the column title button is pressed to sort
-#	the table according to this column.  Clicking again will change
-#	the order of the sort (increasing or decreasing).
+#	This is called when the column title button is pressed to sort the
+#	table according to this column.  Clicking again will change the
+#	order of the sort (increasing or decreasing).
 #
 proc blt::TreeView::SortColumn { w col } {
     set old [$w sort cget -mark]

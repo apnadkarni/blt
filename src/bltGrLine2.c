@@ -2421,7 +2421,6 @@ GenerateParametricSplineOld(Trace *tracePtr)
 	goto error;
     }
 	
-    count = 0;
     for (i = 0, p = tracePtr->head, q = p->next; q != NULL; q = q->next, i++) {
 	Point2d p1, p2;
 	double dp, dq;

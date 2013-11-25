@@ -802,9 +802,12 @@ PositionToObj(
 	{
 	    char string[200];
 
-	    Blt_FormatString(string, 200, "@%d,%d", legdPtr->xReq, legdPtr->yReq);
+	    Blt_FormatString(string, 200, "@%d,%d", legdPtr->xReq, 
+                             legdPtr->yReq);
 	    objPtr = Tcl_NewStringObj(string, -1);
 	}
+        break;
+
     default:
 	objPtr = Tcl_NewStringObj("unknown legend position", -1);
     }

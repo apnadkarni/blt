@@ -502,6 +502,7 @@ ExtendHeaders(RowColumn *rcPtr, long n, Blt_Chain chain)
      * the table as requested.
      */
     link = Blt_Chain_FirstLink(rcPtr->freeList);
+    assert(link != NULL);
     nextIndex = rcPtr->numUsed; 
     for (i = 0; i < n; i++) {
 	Blt_ChainLink next;
@@ -1249,6 +1250,7 @@ FindClientInNamespace(InterpData *dataPtr, Blt_ObjectName *namePtr)
     }
     chain = Blt_GetHashValue(hPtr);
     link = Blt_Chain_FirstLink(chain);
+    assert(link != NULL);
     return Blt_Chain_GetValue(link);
 }
 
@@ -5535,6 +5537,7 @@ blt_table_create_row(Tcl_Interp *interp, BLT_TABLE table, const char *label)
 {
     Row *rowPtr;
 
+    rowPtr = NULL;                      /* Suppress compiler warning. */
     if (blt_table_extend_rows(interp, table, 1, &rowPtr) != TCL_OK) {
 	return NULL;
     }
@@ -5766,11 +5769,12 @@ blt_table_create_column(Tcl_Interp *interp, BLT_TABLE table, const char *label)
 {
     Column *colPtr;
 
+    colPtr = NULL;                      /* Suppress compiler warning. */
     if (blt_table_extend_columns(interp, table, 1, &colPtr) != TCL_OK) {
 	return NULL;
     }
     if (label != NULL) {
-	if (blt_table_set_column_label(interp, table, colPtr, label) != TCL_OK) {
+	if (blt_table_set_column_label(interp, table, colPtr, label)!=TCL_OK) {
 	    blt_table_delete_column(table, colPtr);
 	    return NULL;
 	}
@@ -5853,8 +5857,8 @@ blt_table_restore(Tcl_Interp *interp, BLT_TABLE table, char *data,
     restore.numRows = blt_table_num_rows(table);
     Blt_InitHashTableWithPool(&restore.rowIndices, BLT_ONE_WORD_KEYS);
     Blt_InitHashTableWithPool(&restore.colIndices, BLT_ONE_WORD_KEYS);
-    result = TCL_ERROR;		
     /* Read dump information */
+    result = TCL_ERROR;
     for (;;) {
 	char c1, c2;
 
@@ -5960,8 +5964,8 @@ blt_table_file_restore(Tcl_Interp *interp, BLT_TABLE table, const char *fileName
     Blt_InitHashTableWithPool(&restore.rowIndices, BLT_ONE_WORD_KEYS);
     Blt_InitHashTableWithPool(&restore.colIndices, BLT_ONE_WORD_KEYS);
 
+    result = TCL_ERROR;
     /* Process dump information record by record. */
-    result = TCL_ERROR;		
     for (;;) {
 	char c1, c2;
 
@@ -6151,11 +6155,9 @@ MakeKeyTables(Tcl_Interp *interp, Table *tablePtr)
 	    if (isNew) {
 		Blt_SetHashValue(hPtr, rowPtr);
 	    } else if (tablePtr->flags & TABLE_KEYS_UNIQUE) {
-		BLT_TABLE_ROW dupRow;
-		
-		dupRow = Blt_GetHashValue(hPtr);
 		if (interp != NULL) {
-
+                    BLT_TABLE_ROW dupRow;
+	
 		    dupRow = Blt_GetHashValue(hPtr);
 		    Tcl_AppendResult(interp, "primary keys are not unique:",
 			"rows \"", blt_table_row_label(dupRow), "\" and \"",
@@ -6163,7 +6165,7 @@ MakeKeyTables(Tcl_Interp *interp, Table *tablePtr)
 			"\" have the same keys.", (char *)NULL);
 		}
 		blt_table_unset_keys(tablePtr);
-		return TCL_ERROR; /* Bail out. Keys aren't unique. */
+		return TCL_ERROR;       /* Bail out. Keys aren't unique. */
 	    }
 	}
     }

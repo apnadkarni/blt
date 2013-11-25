@@ -1080,8 +1080,7 @@ Blt_DeleteHashEntry(Blt_HashTable *tablePtr, Blt_HashEntry *entryPtr)
 	for (prevPtr = *bucketPtr; /*empty*/; prevPtr = prevPtr->nextPtr) {
 	    if (prevPtr == NULL) {
 		Blt_Panic("malformed bucket chain in Blt_DeleteHashEntry");
-	    }
-	    if (prevPtr->nextPtr == entryPtr) {
+	    } else if (prevPtr->nextPtr == entryPtr) {
 		prevPtr->nextPtr = entryPtr->nextPtr;
 		break;
 	    }

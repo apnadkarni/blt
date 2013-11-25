@@ -304,8 +304,6 @@ PngToPicture(Tcl_Interp *interp, const char *fileName, Blt_DBuffer dbuffer,
 	destPtr->flags |= BLT_PIC_COLOR;
     }
     /*  Set associated colors flag.  Fixed, if necessary, below. */
-    destPtr->flags |= BLT_PIC_ASSOCIATED_COLORS;
-
     {
 	unsigned int y;
 	Blt_Pixel *destRowPtr;
@@ -386,8 +384,9 @@ PngToPicture(Tcl_Interp *interp, const char *fileName, Blt_DBuffer dbuffer,
     }
     if (colorType & PNG_COLOR_MASK_ALPHA) {
 	Blt_AssociateColors(destPtr);
+    } else {
+        destPtr->flags |= BLT_PIC_ASSOCIATED_COLORS;
     }
-
  bad:
     png_destroy_read_struct(&png, &info, (png_infop *)NULL);
     if (message.numWarnings > 0) {

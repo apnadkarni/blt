@@ -1543,7 +1543,6 @@ OldVectorCreate(
      * Handle switches to the vector command and collect the vector name
      * arguments into an array.
      */
-    count = 0;
     vPtr = NULL;
     for (i = argStart; i < objc; i++) {
 	char *string;

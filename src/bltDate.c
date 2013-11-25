@@ -683,7 +683,6 @@ ProcessToken(DateParser *datePtr, TokenNumber *idPtr)
 	char name[BUFSIZ];
 	int i;
 	
-	i = 0;
 	for (i = 0; ((isalpha(*p)) || (*p == '.')) && (i < 200); p++) {
 	    if (*p != '.') {
 		name[i] = *p;
