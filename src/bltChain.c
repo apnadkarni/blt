@@ -439,7 +439,6 @@ Blt_Chain_GetNthLink(Chain *chainPtr, long position)
 	    ChainLink *linkPtr;
 	    int i;
 
-	    linkPtr = chainPtr->head;
 	    for (i = 0, linkPtr = chainPtr->head; linkPtr != NULL; 
 		 linkPtr = linkPtr->next, i++) {
 		if (i == position) {
