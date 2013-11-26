@@ -455,6 +455,13 @@ proc blt::TreeView::Initialize { w } {
 	    blt::TreeView::SetSelectionAnchorFromCell %W active
 	}
     }
+    $w bind CheckBoxStyle <Motion> { 
+	if { [%W cell identify current %X %Y] == "button" } {
+	    #%W cell activate current
+	} else {
+	    #%W cell deactivate 
+	}
+    }
     $w bind ComboBoxStyle <B1-Motion> { 
 	set style [%W cell style current]
 	if { [%W cell cget current -state] != "posted" } {

@@ -57,7 +57,7 @@
 #define ITEM_CELL       	(1<<5)
 #define ITEM_STYLE		(ClientData)0x10004
 
-#define TITLE_PADX	2
+#define TITLE_PADX	5
 #define TITLE_PADY	1
 
 #if HAVE_UTF
