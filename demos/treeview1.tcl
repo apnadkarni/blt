@@ -131,7 +131,7 @@ puts "$count entries"
 
 $treeview style checkbox check \
     -onvalue "file" -offvalue "directory" \
-    -showvalue yes
+    -showvalue yes 
 
 $treeview style create combobox combo \
     -menu $treeview.menu \
