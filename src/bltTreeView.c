@@ -342,9 +342,8 @@ static Blt_OptionPrintProc StyleToObjProc;
 static Blt_OptionFreeProc FreeStyleProc;
 static Blt_CustomOption styleOption =
 {
-    /* Contains a pointer to the widget that's currently being
-     * configured.  This is used in the custom configuration parse
-     * routine for icons.  */
+    /* Contains a pointer to the widget that's currently being configured.
+     * This is used in the custom configuration parse proc for icons.  */
     ObjToStyleProc, StyleToObjProc, FreeStyleProc, NULL,
 };
 
@@ -700,7 +699,6 @@ static Blt_ConfigSpec sortSpecs[] =
 	(char *)NULL, 0, 0}
 };
 
-
 typedef struct {
     int mask;
 } ChildrenSwitches;
@@ -710,7 +708,6 @@ static Blt_SwitchSpec childrenSwitches[] = {
 	Blt_Offset(ChildrenSwitches, mask), 0, ENTRY_MASK},
     {BLT_SWITCH_END}
 };
-
 
 /* Forward Declarations */
 static Blt_BindAppendTagsProc AppendTagsProc;
@@ -5313,8 +5310,9 @@ ConfigureColumn(TreeView *viewPtr, Column *colPtr)
     }
     colPtr->ruleGC = newGC;
 
-    colPtr->titleWidth = 2 * TITLE_PADX;
-    colPtr->titleHeight = 2 * TITLE_PADY;
+    colPtr->titleWidth  = 2 * (colPtr->borderWidth + TITLE_PADX) + 
+        PADDING(colPtr->pad);
+    colPtr->titleHeight = 2 * (colPtr->borderWidth + TITLE_PADY);
 
     iw = ih = 0;
     if (colPtr->titleIcon != NULL) {
@@ -5418,7 +5416,7 @@ DestroyColumn(Column *colPtr)
 	Tk_FreeGC(viewPtr->display, colPtr->titleGC);
     }
     if (colPtr->ruleGC != NULL) {
-	Blt_FreePrivateGC(viewPtr->display, colPtr->ruleGC);
+	Tk_FreeGC(viewPtr->display, colPtr->ruleGC);
     }
     if (colPtr->activeRuleGC != NULL) {
 	Blt_FreePrivateGC(viewPtr->display, colPtr->activeRuleGC);
@@ -6787,8 +6785,8 @@ ComputeTreeLayout(TreeView *viewPtr)
      *		   in on pass 2.
      */
     index = 0;
-    for (link = Blt_Chain_FirstLink(viewPtr->columns); 
-         link != NULL; link = Blt_Chain_NextLink(link)) {
+    for (link = Blt_Chain_FirstLink(viewPtr->columns); link != NULL; 
+         link = Blt_Chain_NextLink(link)) {
         Column *colPtr;
         
         colPtr = Blt_Chain_GetValue(link);
@@ -6899,8 +6897,8 @@ LayoutColumns(TreeView *viewPtr)
     Blt_ChainLink link;
     int sum;
 
-    /* The width of the widget (in world coordinates) is the sum of the column
-     * widths. */
+    /* The width of the widget (in world coordinates) is the sum of the
+     * column widths. */
 
     viewPtr->worldWidth = viewPtr->titleHeight = 0;
     sum = 0;
@@ -6928,7 +6926,7 @@ LayoutColumns(TreeView *viewPtr)
 	    colPtr->width = MAX(colPtr->titleWidth, colWidth);
 	    /* Check that the width stays within any constraints that have
 	     * been set. */
-	    if ((colPtr->reqMin > 0) && (colPtr->reqMin > colPtr->width)) {
+ 	    if ((colPtr->reqMin > 0) && (colPtr->reqMin > colPtr->width)) {
 		colPtr->width = colPtr->reqMin;
 	    }
 	    if ((colPtr->reqMax > 0) && (colPtr->reqMax < colPtr->width)) {
@@ -6974,8 +6972,9 @@ LayoutColumns(TreeView *viewPtr)
  *
  * ComputeLayout --
  *
- *	Recompute the layout when entries are opened/closed, inserted/deleted,
- *	or when text attributes change (such as font, linespacing).
+ *	Recompute the layout when entries are opened/closed,
+ *	inserted/deleted, or when text attributes change (such as font,
+ *	linespacing).
  *
  * Results:
  *	None.
@@ -7000,9 +6999,9 @@ ComputeLayout(TreeView *viewPtr)
 	ComputeTreeLayout(viewPtr);
     }
     /*
-     * Determine the width of each column based upon the entries that as open
-     * (not hidden).  The widest entry in a column determines the width of that
-     * column.
+     * Determine the width of each column based upon the entries that as
+     * open (not hidden).  The widest entry in a column determines the
+     * width of that column.
      */
     /* Initialize the columns. */
     for (link = Blt_Chain_FirstLink(viewPtr->columns); 
@@ -7018,8 +7017,8 @@ ComputeLayout(TreeView *viewPtr)
     viewPtr->treeColumn.maxWidth = viewPtr->treeWidth;
 
     /* 
-     * Look at all open entries and their cells.  Determine the column widths
-     * by tracking the maximum width cell in each column.
+     * Look at all open entries and their cells.  Determine the column
+     * widths by tracking the maximum width cell in each column.
      */
     for (entryPtr = viewPtr->rootPtr; entryPtr != NULL; 
 	 entryPtr = NextEntry(entryPtr, ENTRY_MASK)) {
@@ -7120,8 +7119,7 @@ ComputeVisibleEntries(TreeView *viewPtr)
 	if (viewPtr->visibleArr != NULL) {
 	    Blt_Free(viewPtr->visibleArr);
 	}
-	viewPtr->visibleArr = Blt_AssertCalloc(numSlots + 1, 
-					       sizeof(Entry *));
+	viewPtr->visibleArr = Blt_AssertCalloc(numSlots + 1, sizeof(Entry *));
     }
     viewPtr->numVisible = 0;
     viewPtr->visibleArr[numSlots] = viewPtr->visibleArr[0] = NULL;
@@ -7133,8 +7131,8 @@ ComputeVisibleEntries(TreeView *viewPtr)
     if (viewPtr->flatView) {
 	Entry **epp;
 
-	/* Find the starting entry visible in the viewport. It can't be hidden
-	 * or any of it's ancestors closed. */
+	/* Find the starting entry visible in the viewport. It can't be
+	 * hidden or any of it's ancestors closed. */
     again:
 	for (epp = viewPtr->flatArr; *epp != NULL; epp++) {
 	    if (((*epp)->worldY + (*epp)->height) > viewPtr->yOffset) {
@@ -7142,9 +7140,9 @@ ComputeVisibleEntries(TreeView *viewPtr)
 	    }
 	}	    
 	/*
-	 * If we can't find the starting node, then the view must be scrolled
-	 * down, but some nodes were deleted.  Reset the view back to the top
-	 * and try again.
+	 * If we can't find the starting node, then the view must be
+	 * scrolled down, but some nodes were deleted.  Reset the view back
+	 * to the top and try again.
 	 */
 	if (*epp == NULL) {
 	    if (viewPtr->yOffset == 0) {
@@ -7205,8 +7203,8 @@ ComputeVisibleEntries(TreeView *viewPtr)
 	    int level;
 
 	    /*
-	     * Compute and save the entry's X-coordinate now that we know the
-	     * maximum level offset for the entire widget.
+	     * Compute and save the entry's X-coordinate now that we know
+	     * the maximum level offset for the entire widget.
 	     */
 	    level = DEPTH(viewPtr, ep->node);
 	    ep->worldX = LEVELX(level) + viewPtr->treeColumn.worldX;
@@ -7223,11 +7221,10 @@ ComputeVisibleEntries(TreeView *viewPtr)
 	viewPtr->visibleArr[viewPtr->numVisible] = NULL;
     }
     /*
-     * Note:	It's assumed that the view port always starts at or
-     *		over an entry.  Check that a change in the hierarchy
-     *		(e.g. closing a node) hasn't left the viewport beyond
-     *		the last entry.  If so, adjust the viewport to start
-     *		on the last entry.
+     * Note: It's assumed that the view port always starts at or over an
+     *       entry.  Check that a change in the hierarchy (e.g. closing a
+     *       node) hasn't left the viewport beyond the last entry.  If so,
+     *       adjust the viewport to start on the last entry.
      */
     if (viewPtr->xOffset > (viewPtr->worldWidth - viewPtr->xScrollUnits)) {
 	viewPtr->xOffset = viewPtr->worldWidth - viewPtr->xScrollUnits;
@@ -7253,10 +7250,10 @@ ComputeVisibleEntries(TreeView *viewPtr)
  *
  * DrawLines --
  *
- * 	Draws vertical lines for the ancestor nodes.  While the entry of the
- * 	ancestor may not be visible, its vertical line segment does extent
- * 	into the viewport.  So walk back up the hierarchy drawing lines
- * 	until we get to the root.
+ * 	Draws vertical lines for the ancestor nodes.  While the entry of
+ * 	the ancestor may not be visible, its vertical line segment does
+ * 	extent into the viewport.  So walk back up the hierarchy drawing
+ * 	lines until we get to the root.
  *
  * Results:
  *	None.
@@ -7269,13 +7266,15 @@ ComputeVisibleEntries(TreeView *viewPtr)
 static void
 DrawLines(
     TreeView *viewPtr,			/* Widget record containing the
-					 * attribute information for buttons. */
+					 * attribute information for
+					 * buttons. */
     GC gc,
-    Drawable drawable)			/* Pixmap or window to draw into. */
+    Drawable drawable)			/* Pixmap or window to draw
+                                         * into. */
 {
     Entry **epp;
     Button *buttonPtr;
-    Entry *entryPtr;		/* Entry to be drawn. */
+    Entry *entryPtr;                    /* Entry to be drawn. */
 
     entryPtr = viewPtr->visibleArr[0];
     while (entryPtr != viewPtr->rootPtr) {
@@ -7308,8 +7307,8 @@ DrawLines(
 		Entry *nextPtr;
 		int h;
 
-		/* If the root node is hidden, go to the next entry to start
-		 * the vertical line. */
+		/* If the root node is hidden, go to the next entry to
+		 * start the vertical line. */
 		nextPtr = NextEntry(viewPtr->rootPtr, ENTRY_MASK);
 		h = MAX3(nextPtr->lineHeight, nextPtr->iconHeight, 
 			 viewPtr->button.height);
@@ -7319,8 +7318,8 @@ DrawLines(
 	     * Clip the line's Y-coordinates at the viewport's borders.
 	     */
 	    if (ay < 0) {
-		ay &= 0x1;		/* Make sure the dotted line starts on
-					 * the same even/odd pixel. */
+		ay &= 0x1;		/* Make sure the dotted line starts
+					 * on the same even/odd pixel. */
 	    }
 	    if (by > Tk_Height(viewPtr->tkwin)) {
 		by = Tk_Height(viewPtr->tkwin);
@@ -7372,9 +7371,11 @@ DrawLines(
 static void
 DrawRule(
     TreeView *viewPtr,			/* Widget record containing the
-					 * attribute information for rules. */
+					 * attribute information for
+					 * rules. */
     Column *colPtr,
-    Drawable drawable)			/* Pixmap or window to draw into. */
+    Drawable drawable)			/* Pixmap or window to draw
+                                         * into. */
 {
     int x, y1, y2;
 
@@ -7392,16 +7393,16 @@ DrawRule(
  *
  * DrawButton --
  *
- * 	Draws a button for the given entry. The button is drawn centered in the
- * 	region immediately to the left of the origin of the entry (computed in
- * 	the layout routines). The height and width of the button were previously
- * 	calculated from the average row height.
+ * 	Draws a button for the given entry. The button is drawn centered in
+ * 	the region immediately to the left of the origin of the entry
+ * 	(computed in the layout routines). The height and width of the
+ * 	button were previously calculated from the average row height.
  *
- *		button height = entry height - (2 * some arbitrary padding).
- *		button width = button height.
+ *         button height = entry height - (2 * some arbitrary padding).
+ *         button width = button height.
  *
- *	The button may have a border.  The symbol (either a plus or minus) is
- *	slight smaller than the width or height minus the border.
+ *	The button may have a border.  The symbol (either a plus or minus)
+ *	is slight smaller than the width or height minus the border.
  *
  *	    x,y origin of entry
  *
@@ -7428,9 +7429,11 @@ DrawRule(
 static void
 DrawButton(
     TreeView *viewPtr,			/* Widget record containing the
-					 * attribute information for buttons. */
+					 * attribute information for
+					 * buttons. */
     Entry *entryPtr,			/* Entry. */
-    Drawable drawable,			/* Pixmap or window to draw into. */
+    Drawable drawable,			/* Pixmap or window to draw
+                                         * into. */
     int x, int y)
 {
     Blt_Bg bg;
@@ -7535,7 +7538,8 @@ DrawImage(
 					 * attribute information for
 					 * buttons. */
     Entry *entryPtr,			/* Entry to display. */
-    Drawable drawable,			/* Pixmap or window to draw into. */
+    Drawable drawable,			/* Pixmap or window to draw
+                                         * into. */
     int x, int y)
 {
     Icon icon;
@@ -7583,7 +7587,8 @@ static int
 DrawLabel(
     TreeView *viewPtr,			/* Widget record. */
     Entry *entryPtr,			/* Entry attribute information. */
-    Drawable drawable,			/* Pixmap or window to draw into. */
+    Drawable drawable,			/* Pixmap or window to draw
+                                         * into. */
     int x, int y,
     int maxLength,
     TkRegion rgn)			
@@ -8139,7 +8144,7 @@ DrawEntryBackgrounds(TreeView *viewPtr, Drawable drawable, int x, int w,
 		     Column *colPtr)
 {
     Blt_Bg normalBg;
-    Entry **entryPtrPtr;
+    long i;
 
     normalBg = GetStyleBackground(colPtr);
 
@@ -8147,13 +8152,12 @@ DrawEntryBackgrounds(TreeView *viewPtr, Drawable drawable, int x, int w,
     Blt_Bg_FillRectangle(viewPtr->tkwin, drawable, normalBg, x, 0, w, 
 	Tk_Height(viewPtr->tkwin), 0, TK_RELIEF_FLAT);
 
-    for (entryPtrPtr = viewPtr->visibleArr; *entryPtrPtr != NULL; 
-         entryPtrPtr++) {
+    for (i = 0; i < viewPtr->numVisible; i++) {
         Blt_Bg bg;
         int y, rowHeight;
         Entry *rowPtr;
 
-        rowPtr = *entryPtrPtr;
+        rowPtr = viewPtr->visibleArr[i];
         bg = normalBg;
 	if (EntryIsSelected(viewPtr, rowPtr)) {
             bg = viewPtr->selection.bg;
@@ -8182,16 +8186,18 @@ DrawEntryBackgrounds(TreeView *viewPtr, Drawable drawable, int x, int w,
 }
 
 static void
-DrawTreeView(TreeView *viewPtr, Drawable drawable, int x)
+DrawTree(TreeView *viewPtr, Drawable drawable, int x)
 {
-    Entry **epp;
-    int count;
+    long i, count;
 
     count = 0;
-    for (epp = viewPtr->visibleArr; *epp != NULL; epp++) {
-	(*epp)->flags &= ~ENTRY_SELECTED;
-	if (EntryIsSelected(viewPtr, *epp)) {
-	    (*epp)->flags |= ENTRY_SELECTED;
+    for (i = 0; i < viewPtr->numVisible; i++) {
+        Entry *entryPtr;
+
+        entryPtr = viewPtr->visibleArr[i];
+	entryPtr->flags &= ~ENTRY_SELECTED;
+	if (EntryIsSelected(viewPtr, entryPtr)) {
+	    entryPtr->flags |= ENTRY_SELECTED;
 	    count++;
 	}
     }
@@ -8202,14 +8208,17 @@ DrawTreeView(TreeView *viewPtr, Drawable drawable, int x)
 	    TkRegion rgn;
 
 	    rgn = TkCreateRegion();
-	    for (epp = viewPtr->visibleArr; *epp != NULL; epp++) {
-		if ((*epp)->flags & ENTRY_SELECTED) {
+	    for (i = 0; i < viewPtr->numVisible; i++) {
+                Entry *entryPtr;
+
+                entryPtr = viewPtr->visibleArr[i];
+		if (entryPtr->flags & ENTRY_SELECTED) {
 		    XRectangle r;
 
 		    r.x = 0;
-		    r.y = SCREENY(viewPtr, (*epp)->worldY);
+		    r.y = SCREENY(viewPtr, entryPtr->worldY);
 		    r.width = Tk_Width(viewPtr->tkwin);
-		    r.height = (*epp)->height;
+		    r.height = entryPtr->height;
 		    TkUnionRectWithRegion(&r, rgn, rgn);
 		}
 	    }
@@ -8219,8 +8228,8 @@ DrawTreeView(TreeView *viewPtr, Drawable drawable, int x)
 	    TkDestroyRegion(rgn);
 	}
     }
-    for (epp = viewPtr->visibleArr; *epp != NULL; epp++) {
-	DrawTreeEntry(viewPtr, *epp, drawable);
+    for (i = 0; i < viewPtr->numVisible; i++) {
+	DrawTreeEntry(viewPtr, viewPtr->visibleArr[i], drawable);
     }
 }
 
@@ -8228,10 +8237,10 @@ DrawTreeView(TreeView *viewPtr, Drawable drawable, int x)
 static void
 DrawFlatView(TreeView *viewPtr, Drawable drawable, int x)
 {
-    Entry **epp;
+    long i;
 
-    for (epp = viewPtr->visibleArr; *epp != NULL; epp++) {
-	DrawFlatEntry(viewPtr, *epp, drawable);
+    for (i = 0; i < viewPtr->numVisible; i++) {
+	DrawFlatEntry(viewPtr, viewPtr->visibleArr[i], drawable);
     }
 }
 
@@ -8316,17 +8325,17 @@ DisplayTreeView(ClientData clientData)	/* Information about widget. */
 	ComputeVisibleEntries(viewPtr);
     }
     if (viewPtr->flags & SCROLL_PENDING) {
-	int width, height;
+	int w, h;
 
-	width = VPORTWIDTH(viewPtr);
-	height = VPORTHEIGHT(viewPtr);
+	w = VPORTWIDTH(viewPtr);
+	h = VPORTHEIGHT(viewPtr);
 	if ((viewPtr->flags & SCROLLX) && (viewPtr->xScrollCmdObjPtr != NULL)) {
 	    Blt_UpdateScrollbar(viewPtr->interp, viewPtr->xScrollCmdObjPtr, 
-		viewPtr->xOffset, viewPtr->xOffset + width, viewPtr->worldWidth);
+		viewPtr->xOffset, viewPtr->xOffset + w, viewPtr->worldWidth);
 	}
 	if ((viewPtr->flags & SCROLLY) && (viewPtr->yScrollCmdObjPtr != NULL)) {
 	    Blt_UpdateScrollbar(viewPtr->interp, viewPtr->yScrollCmdObjPtr,
-		viewPtr->yOffset, viewPtr->yOffset+height, viewPtr->worldHeight);
+		viewPtr->yOffset, viewPtr->yOffset + h, viewPtr->worldHeight);
 	}
 	viewPtr->flags &= ~SCROLL_PENDING;
     }
@@ -8403,7 +8412,7 @@ DisplayTreeView(ClientData clientData)	/* Information about widget. */
 	    if (viewPtr->flatView) {
 		DrawFlatView(viewPtr, drawable, x);
 	    } else {
-		DrawTreeView(viewPtr, drawable, x);
+		DrawTree(viewPtr, drawable, x);
 	    }
 	}
 #ifdef notdef
@@ -8594,6 +8603,9 @@ ActivateOp(ClientData clientData, Tcl_Interp *interp, int objc,
     cellPtr = NULL;			/* Suppress compiler warning. */
     if (GetCellFromObj(interp, viewPtr, objv[3], &cellPtr) != TCL_OK) {
 	return TCL_ERROR;
+    }
+    if (cellPtr == NULL) {
+        return TCL_OK;
     }
     if (cellPtr != lastActiveCellPtr) {
 	if (lastActiveCellPtr != NULL) { /* Deactivate old cell */
@@ -8975,6 +8987,9 @@ CellActivateOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (GetCellFromObj(interp, viewPtr, objv[3], &cellPtr) != TCL_OK) {
 	return TCL_ERROR;
     }
+    if (cellPtr == NULL) {
+        return TCL_OK;
+    }
     viewPtr->activeCellPtr = NULL;
     if (cellPtr != lastActiveCellPtr) {
         viewPtr->activeCellPtr = cellPtr;
@@ -9030,6 +9045,9 @@ CellBboxOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (GetCellFromObj(interp, viewPtr, objv[3], &cellPtr) != TCL_OK) {
 	return TCL_ERROR;
     }
+    if (cellPtr == NULL) {
+        return TCL_OK;
+    }
     x1 = cellPtr->colPtr->worldX;
     x2 = cellPtr->colPtr->worldX + cellPtr->colPtr->width;
     y1 = cellPtr->entryPtr->worldY;
@@ -9083,6 +9101,9 @@ CellCgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (GetCellFromObj(interp, viewPtr, objv[3], &cellPtr) != TCL_OK) {
 	return TCL_ERROR;
     }
+    if (cellPtr == NULL) {
+        return TCL_OK;
+    }
     return Blt_ConfigureValueFromObj(interp, viewPtr->tkwin, cellSpecs,
 	(char *)cellPtr, objv[4], 0);
 }
@@ -9116,6 +9137,9 @@ CellConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
 
     if (GetCellFromObj(interp, viewPtr, objv[3], &cellPtr) != TCL_OK) {
 	return TCL_ERROR;
+    }
+    if (cellPtr == NULL) {
+        return TCL_OK;
     }
     if (objc == 4) {
 	return Blt_ConfigureInfoFromObj(interp, viewPtr->tkwin, 
@@ -9201,6 +9225,9 @@ CellFocusOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (GetCellFromObj(interp, viewPtr, objv[3], &cellPtr) != TCL_OK) {
 	return TCL_ERROR;
     }
+    if (cellPtr == NULL) {
+        return TCL_OK;
+    }
     viewPtr->focusCellPtr = cellPtr;
     EventuallyRedraw(viewPtr);
     return TCL_OK;
@@ -9285,6 +9312,9 @@ CellIndexOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (GetCellFromObj(interp, viewPtr, objv[3], &cellPtr) != TCL_OK) {
 	return TCL_ERROR;
     }
+    if (cellPtr == NULL) {
+        return TCL_OK;
+    }
     objPtr = CellToIndexObj(interp, cellPtr);
     Tcl_SetObjResult(interp, objPtr);
     return TCL_OK;
@@ -9309,6 +9339,9 @@ CellInvokeOp(ClientData clientData, Tcl_Interp *interp, int objc,
 
     if (GetCellFromObj(interp, viewPtr, objv[3], &cellPtr) != TCL_OK) {
         return TCL_ERROR;
+    }
+    if (cellPtr == NULL) {
+        return TCL_OK;
     }
     stylePtr = GetCurrentStyle(viewPtr, cellPtr->colPtr, cellPtr);
     if (stylePtr->fmtCmdObjPtr != NULL) {
@@ -9388,11 +9421,11 @@ CellSeeOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     if (x != viewPtr->xOffset) {
 	viewPtr->xOffset = x;
-	viewPtr->flags |= SCROLLX;
+	viewPtr->flags |= SCROLLX | VISIBILITY;
     }
     if (y != viewPtr->yOffset) {
 	viewPtr->yOffset = y;
-	viewPtr->flags |= SCROLLY;
+	viewPtr->flags |= SCROLLY | VISIBILITY;
     }
     EventuallyRedraw(viewPtr);
     return TCL_OK;
@@ -9419,6 +9452,9 @@ CellStyleOp(ClientData clientData, Tcl_Interp *interp, int objc,
     cellPtr = NULL;			/* Suppress compiler warning. */
     if (GetCellFromObj(interp, viewPtr, objv[3], &cellPtr) != TCL_OK) {
 	return TCL_ERROR;
+    }
+    if (cellPtr == NULL) {
+        return TCL_OK;
     }
     stylePtr = GetCurrentStyle(viewPtr, cellPtr->colPtr, cellPtr);
     Tcl_SetStringObj(Tcl_GetObjResult(interp), stylePtr->name, -1);
@@ -12821,9 +12857,13 @@ SelectionMarkOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	return TCL_ERROR;
     }
     if (viewPtr->selection.anchorPtr == NULL) {
+#ifdef notdef
 	Tcl_AppendResult(interp, "selection anchor must be set first", 
 		 (char *)NULL);
 	return TCL_ERROR;
+#else
+        return TCL_OK;
+#endif
     }
     if (viewPtr->selection.markPtr != entryPtr) {
 	Blt_ChainLink link, next;
@@ -13727,6 +13767,9 @@ StyleGetOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (GetCellFromObj(interp, viewPtr, objv[3], &cellPtr) != TCL_OK) {
 	return TCL_ERROR;
     }
+    if (cellPtr == NULL) {
+        return TCL_OK;
+    }
     stylePtr = GetCurrentStyle(viewPtr, cellPtr->colPtr, cellPtr);
     Tcl_SetStringObj(Tcl_GetObjResult(interp), stylePtr->name, -1);
     return TCL_OK;
@@ -14333,7 +14376,7 @@ XViewOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	    != TCL_OK) {
 	return TCL_ERROR;
     }
-    viewPtr->flags |= SCROLLX;
+    viewPtr->flags |= SCROLLX | VISIBILITY;
     EventuallyRedraw(viewPtr);
     return TCL_OK;
 }
@@ -14367,7 +14410,7 @@ YViewOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	!= TCL_OK) {
 	return TCL_ERROR;
     }
-    viewPtr->flags |= SCROLL_PENDING;
+    viewPtr->flags |= SCROLLY | VISIBILITY;
     EventuallyRedraw(viewPtr);
     return TCL_OK;
 }

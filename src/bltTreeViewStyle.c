@@ -74,12 +74,12 @@
  */
 
 /* Style-specific flags. */
-#define SHOW_VALUE              (1<<10)
-#define SHOW_TEXT               (1<<11)
-#define TEXT_VAR_TRACED         (1<<16)
-#define ICON_VAR_TRACED         (1<<17)
-#define TRACE_VAR_FLAGS		(TCL_GLOBAL_ONLY|TCL_TRACE_WRITES|\
-				 TCL_TRACE_UNSETS)
+#define SHOW_VALUE                      (1<<10)
+#define SHOW_TEXT                       (1<<11)
+#define TEXT_VAR_TRACED                 (1<<16)
+#define ICON_VAR_TRACED                 (1<<17)
+#define TRACE_VAR_FLAGS                 (TCL_GLOBAL_ONLY|TCL_TRACE_WRITES|\
+                                                TCL_TRACE_UNSETS)
 
 #define DEF_ACTIVE_FG			STD_ACTIVE_FOREGROUND
 #define DEF_ALT_BG			RGB_GREY97
@@ -138,7 +138,9 @@
 
 #define DEF_COMBOBOX_ACTIVE_RELIEF	"flat"
 #define DEF_COMBOBOX_ARROW_BORDERWIDTH	"2"
-#define DEF_COMBOBOX_ARROW_RELIEF	"raised"
+#define DEF_COMBOBOX_ACTIVE_ARROW_BG    RGB_GREY95
+#define DEF_COMBOBOX_ARROW_BG           STD_NORMAL_BACKGROUND
+#define DEF_COMBOBOX_ARROW_RELIEF	"solid"
 #define DEF_COMBOBOX_BORDERWIDTH	"1"
 #define DEF_COMBOBOX_CURSOR		(char *)NULL
 #define DEF_COMBOBOX_EDITABLE		"1"
@@ -346,10 +348,11 @@ typedef struct {
     GC highlightGC;
     GC normalGC;
     GC selectGC;
-    Tk_Justify justify;			/* Indicates how the text or icon is
-					 * justified within the column. */
-    int borderWidth;			/* Width of outer border surrounding
-					 * the entire box. */
+    Tk_Justify justify;			/* Indicates how the text or icon
+					 * is justified within the
+					 * column. */
+    int borderWidth;			/* Width of outer border
+					 * surrounding the entire box. */
     int relief, activeRelief;		/* Relief of outer border. */
     Tcl_Obj *cmdObjPtr;
     Blt_TreeKey key;			/* Actual data resides in this tree
@@ -441,7 +444,7 @@ typedef struct {
     Tcl_Obj *cmdObjPtr;
 
     Blt_TreeKey key;			/* Actual data resides in this tree
-					   cell. */
+                                         * cell. */
 
     /* ComboBox-specific fields */
 
@@ -493,6 +496,8 @@ typedef struct {
     int arrowPad;
     int arrowRelief;
     int reqArrowWidth;
+    Blt_Bg arrowBg;
+    Blt_Bg activeArrowBg;
     const char dummy1[2000];
     int arrow;
 } ComboBoxStyle;
@@ -576,7 +581,7 @@ typedef struct {
 static Blt_ConfigSpec textBoxStyleSpecs[] =
 {
     {BLT_CONFIG_BACKGROUND, "-activebackground", "activeBackground", 
-	"ActiveBackground", DEF_ACTIVE_BG, 
+	"ActiveBackground", DEF_NORMAL_BG, 
 	Blt_Offset(TextBoxStyle, activeBg), 0},
     {BLT_CONFIG_SYNONYM, "-activebg", "activeBackground", (char *)NULL, 
 	(char *)NULL, 0, 0},
@@ -658,7 +663,7 @@ static Blt_ConfigSpec textBoxStyleSpecs[] =
 static Blt_ConfigSpec checkBoxStyleSpecs[] =
 {
     {BLT_CONFIG_BACKGROUND, "-activebackground", "activeBackground", 
-	"ActiveBackground", DEF_ACTIVE_BG, 
+	"ActiveBackground", DEF_NORMAL_BG, 
 	Blt_Offset(CheckBoxStyle, activeBg), 0},
     {BLT_CONFIG_SYNONYM, "-activebg", "activeBackground", 
 	(char *)NULL, (char *)NULL, 0, 0},
@@ -759,8 +764,11 @@ static Blt_ConfigSpec checkBoxStyleSpecs[] =
 
 static Blt_ConfigSpec comboBoxStyleSpecs[] =
 {
+    {BLT_CONFIG_BACKGROUND, "-activearrowbackground", "activeArrowBackground", 
+	"ActiveArrowBackground", DEF_COMBOBOX_ACTIVE_ARROW_BG, 
+        Blt_Offset(ComboBoxStyle, activeArrowBg), 0},
     {BLT_CONFIG_BACKGROUND, "-activebackground", "activeBackground", 
-	"ActiveBackground", DEF_ACTIVE_BG, 
+	"ActiveBackground", DEF_NORMAL_BG, 
         Blt_Offset(ComboBoxStyle, activeBg), 0},
     {BLT_CONFIG_SYNONYM, "-activebg", "activeBackground", (char *)NULL, 
 	(char *)NULL, 0, 0},
@@ -780,6 +788,9 @@ static Blt_ConfigSpec comboBoxStyleSpecs[] =
     {BLT_CONFIG_RELIEF, "-arrowrelief", "arrowRelief", "ArrowRelief",
 	DEF_COMBOBOX_ARROW_RELIEF, Blt_Offset(ComboBoxStyle, arrowRelief),
 	BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_BACKGROUND, "-arrowbackground", "arrowBackground", 
+	"ArrowBackground", DEF_COMBOBOX_ARROW_BG, 
+        Blt_Offset(ComboBoxStyle, arrowBg), 0},
     {BLT_CONFIG_PIXELS_NNEG, "-arrowborderwidth", "arrowBorderWidth", 
 	"ArrowBorderWidth", DEF_COMBOBOX_ARROW_BORDERWIDTH, 
 	Blt_Offset(ComboBoxStyle, arrowBorderWidth), 
@@ -863,7 +874,7 @@ static Blt_ConfigSpec comboBoxStyleSpecs[] =
 static Blt_ConfigSpec imageBoxStyleSpecs[] =
 {
     {BLT_CONFIG_BACKGROUND, "-activebackground", "activeBackground", 
-	"ActiveBackground", DEF_ACTIVE_BG, 
+	"ActiveBackground", DEF_NORMAL_BG, 
 	Blt_Offset(ImageBoxStyle, activeBg), 0},
     {BLT_CONFIG_SYNONYM, "-activebg", "activeBackground", 
 	(char *)NULL, (char *)NULL, 0, 0},
@@ -963,6 +974,16 @@ static CellStyleIdentifyProc ComboBoxStyleIdentifyProc;
 static CellStyleIdentifyProc CheckBoxStyleIdentifyProc;
 
 
+static int
+RowSelected(Entry *entryPtr)
+{
+    Blt_HashEntry *hPtr;
+    TreeView *viewPtr;
+
+    viewPtr = entryPtr->viewPtr;
+    hPtr = Blt_FindHashEntry(&viewPtr->selection.table, (char *)entryPtr);
+    return (hPtr != NULL);
+}
 
 /* 
  * PropagateStyleChanges --
@@ -2069,15 +2090,10 @@ TextBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
 	/* Disabled */
 	bg = stylePtr->disableBg;
         gc = stylePtr->disableGC;
-    } else if (rowPtr->flags & ENTRY_SELECTED) {
+    } else if (RowSelected(rowPtr)) {
         /* Selected */
 	bg = CHOOSE(viewPtr->selection.bg, stylePtr->selectBg);
         gc = stylePtr->selectGC;
-    } else if (viewPtr->activeCellPtr == cellPtr) {
-        /* Active */
-        bg = stylePtr->activeBg;
-        relief = stylePtr->activeRelief;
-        gc = stylePtr->activeGC;
     } else if ((cellPtr->flags|rowPtr->flags|colPtr->flags) & HIGHLIGHT) {
         /* Highlight */
 	bg = stylePtr->highlightBg;
@@ -2536,7 +2552,7 @@ CheckBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
 	/* Disabled */
 	bg = stylePtr->disableBg;
 	gc = stylePtr->disableGC;
-    } else if (rowPtr->flags & ENTRY_SELECTED) {
+    } else if (RowSelected(rowPtr)) {
 	/* Selected */
 	bg = stylePtr->selectBg;
 	gc = stylePtr->selectGC;
@@ -2819,10 +2835,10 @@ NewComboBoxStyle(TreeView *viewPtr, Blt_HashEntry *hPtr)
     stylePtr = Blt_AssertCalloc(1, sizeof(ComboBoxStyle));
     stylePtr->classPtr = &comboBoxClass;
     stylePtr->gap = STYLE_GAP;
-    stylePtr->arrowRelief = TK_RELIEF_RAISED;
+    stylePtr->arrowRelief = TK_RELIEF_SOLID;
     stylePtr->postedRelief = TK_RELIEF_SUNKEN;
     stylePtr->relief = stylePtr->activeRelief = TK_RELIEF_FLAT;
-    stylePtr->arrowBorderWidth = 2;
+    stylePtr->arrowBorderWidth = 1;
     stylePtr->borderWidth = 1;
     stylePtr->name = Blt_GetHashKey(&viewPtr->styleTable, hPtr);
     stylePtr->hashPtr = hPtr;
@@ -3032,7 +3048,7 @@ ComboBoxStyleGeometryProc(Cell *cellPtr, CellStyle *cellStylePtr)
 
     font = CHOOSE(viewPtr->font, stylePtr->font);
     Blt_Font_GetMetrics(font, &fm);
-    stylePtr->arrowWidth = fm.ascent;
+    stylePtr->arrowWidth = fm.ascent - 2;
     aw = ah = (2 * stylePtr->arrowBorderWidth) + stylePtr->arrowWidth;
     aw += 2 * 1;
     ah += 2 * 1;
@@ -3084,15 +3100,10 @@ ComboBoxStyleDrawProc(Cell *cellPtr, Drawable drawable,
 	/* Disabled */
 	bg = stylePtr->disableBg;
         gc = stylePtr->disableGC;
-    } else if (rowPtr->flags & ENTRY_SELECTED) {
+    } else if (RowSelected(rowPtr)) {
         /* Selected */
 	bg = CHOOSE(viewPtr->selection.bg, stylePtr->selectBg);
         gc = stylePtr->selectGC;
-    } else if (viewPtr->activeCellPtr == cellPtr) {
-        /* Active */
-        bg = stylePtr->activeBg;
-        relief = stylePtr->activeRelief;
-        gc = stylePtr->activeGC;
     } else if ((cellPtr->flags|rowPtr->flags|colPtr->flags) & HIGHLIGHT) {
         /* Highlight */
 	bg = stylePtr->highlightBg;
@@ -3207,7 +3218,7 @@ ComboBoxStyleDrawProc(Cell *cellPtr, Drawable drawable,
 	}
 	Blt_Free(textPtr);
     }
-    if ((stylePtr->flags & EDITABLE) && (1 || viewPtr->activeCellPtr == cellPtr)) {
+    if ((stylePtr->flags & EDITABLE) && (viewPtr->activeCellPtr == cellPtr)) {
 	int ax, ay;
 	unsigned int aw, ah;
 
@@ -3219,12 +3230,13 @@ ComboBoxStyleDrawProc(Cell *cellPtr, Drawable drawable,
         if (rowHeight > ah) {
             ay += (cellHeight - ah) / 2;
         }
-	bg = stylePtr->activeBg;
 	fg = stylePtr->activeFg;
-	relief = (viewPtr->postPtr != cellPtr) ? 
+        bg = (viewPtr->activeCellPtr == cellPtr) ? 
+            stylePtr->activeArrowBg : stylePtr->activeBg;
+        relief = (viewPtr->postPtr == cellPtr) ? 
 	    stylePtr->postedRelief : stylePtr->arrowRelief;
 	Blt_Bg_FillRectangle(viewPtr->tkwin, drawable, bg, ax, ay, aw, ah, 
-		stylePtr->arrowBorderWidth+1, TK_RELIEF_RAISED);
+		stylePtr->arrowBorderWidth, relief);
 	aw -= 2 * stylePtr->arrowBorderWidth;
 	ax += stylePtr->arrowBorderWidth;
 	Blt_DrawArrow(viewPtr->display, drawable, fg, ax, ay, aw, ah, 
@@ -3586,15 +3598,10 @@ ImageBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
 	/* Disabled */
 	bg = stylePtr->disableBg;
 	gc = stylePtr->disableGC;
-    } else if (rowPtr->flags & ENTRY_SELECTED) { 
+    } else if (RowSelected(rowPtr)) { 
         /* Selected */
 	bg = stylePtr->selectBg;
 	gc = stylePtr->selectGC;
-    } else if ((stylePtr->flags & EDITABLE) && (viewPtr->activeCellPtr == cellPtr)) {
-	/* Active */
-	bg = stylePtr->activeBg;
-	gc = stylePtr->activeGC;
-	relief = stylePtr->activeRelief;
     } else if ((rowPtr->flags|colPtr->flags|cellPtr->flags) & HIGHLIGHT) { 
 	/* Highlighted */
 	bg = stylePtr->highlightBg;
