@@ -962,28 +962,13 @@ static CellStyleGeometryProc TextBoxStyleGeometryProc;
 static CellStyleIdentifyProc ComboBoxStyleIdentifyProc;
 static CellStyleIdentifyProc CheckBoxStyleIdentifyProc;
 
-static INLINE int
-EntryIsSelected(TreeView *viewPtr, Entry *entryPtr)
-{
-    Blt_HashEntry *hPtr;
-
-    hPtr = Blt_FindHashEntry(&viewPtr->selection.table, (char *)entryPtr);
-    return (hPtr != NULL);
-}
-
-static INLINE XColor *
-GetStyleForeground(Column *colPtr)
-{
-    CellStyle *stylePtr;
-
-    stylePtr = colPtr->stylePtr;
-    if ((stylePtr != NULL) && (stylePtr->normalFg != NULL)) {
-	return stylePtr->normalFg;
-    }
-    return colPtr->viewPtr->normalFg;
-}
 
 
+/* 
+ * PropagateStyleChanges --
+ *
+ *
+ */
 static Tcl_Obj *
 FormatCell(Cell *cellPtr)
 {
@@ -2084,7 +2069,7 @@ TextBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
 	/* Disabled */
 	bg = stylePtr->disableBg;
         gc = stylePtr->disableGC;
-    } else if (EntryIsSelected(viewPtr, rowPtr)) {
+    } else if (rowPtr->flags & ENTRY_SELECTED) {
         /* Selected */
 	bg = CHOOSE(viewPtr->selection.bg, stylePtr->selectBg);
         gc = stylePtr->selectGC;
@@ -2538,7 +2523,7 @@ CheckBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
     int relief;
     int gap, colWidth, rowHeight, cellHeight, cellWidth;
     int ix, iy, iw, ih;
-    int tx, ty, th, tw;
+    int tx, ty, th;
     int bx, by, bw, bh;
     Entry *rowPtr;
     GC gc;
@@ -2551,7 +2536,7 @@ CheckBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
 	/* Disabled */
 	bg = stylePtr->disableBg;
 	gc = stylePtr->disableGC;
-    } else if (EntryIsSelected(viewPtr, rowPtr)) {
+    } else if (rowPtr->flags & ENTRY_SELECTED) {
 	/* Selected */
 	bg = stylePtr->selectBg;
 	gc = stylePtr->selectGC;
@@ -2631,7 +2616,7 @@ CheckBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
 	    break;
 	}
     }
-    tw = th = iw = ih = 0;		/* Suppress compiler warning. */
+    th = iw = ih = 0;                   /* Suppress compiler warning. */
     gap = 0;
     if (stylePtr->icon != NULL) {
 	iw = IconWidth(stylePtr->icon);
@@ -2871,7 +2856,6 @@ ComboBoxStyleConfigureProc(CellStyle *cellStylePtr)
     ComboBoxStyle *stylePtr = (ComboBoxStyle *)cellStylePtr;
     GC newGC;
     TreeView *viewPtr;
-    XColor *bgColor;
     XGCValues gcValues;
     unsigned long gcMask;
 
@@ -3002,12 +2986,12 @@ ComboBoxStyleGeometryProc(Cell *cellPtr, CellStyle *cellStylePtr)
 {
     ComboBoxStyle *stylePtr = (ComboBoxStyle *)cellStylePtr;
     TreeView *viewPtr;
-    int gap;
     unsigned int iw, ih, tw, th, ah, aw;
     Column *colPtr;
     Entry *rowPtr;
     Blt_Font font;
     Blt_FontMetrics fm;
+    int gap;
 
     viewPtr = stylePtr->viewPtr;
     cellPtr->flags &= ~GEOMETRY;	/* Remove the dirty flag from the
@@ -3052,7 +3036,7 @@ ComboBoxStyleGeometryProc(Cell *cellPtr, CellStyle *cellStylePtr)
     aw = ah = (2 * stylePtr->arrowBorderWidth) + stylePtr->arrowWidth;
     aw += 2 * 1;
     ah += 2 * 1;
-    cellPtr->width  += iw + 2 * stylePtr->gap + aw + tw;
+    cellPtr->width  += iw + 2 * gap + aw + tw;
     cellPtr->height += MAX3(th, ih, ah);
 }
 
@@ -3087,7 +3071,7 @@ ComboBoxStyleDrawProc(Cell *cellPtr, Drawable drawable,
     Entry *rowPtr;
     int ix, iy, tx, ty;
     unsigned int gap, colWidth, rowHeight, cellWidth, cellHeight;
-    unsigned int iw, ih, th, tw;
+    unsigned int iw, ih, th;
     int relief;
     XColor *fg;
     TreeView *viewPtr;
@@ -3100,7 +3084,7 @@ ComboBoxStyleDrawProc(Cell *cellPtr, Drawable drawable,
 	/* Disabled */
 	bg = stylePtr->disableBg;
         gc = stylePtr->disableGC;
-    } else if (EntryIsSelected(viewPtr, rowPtr)) {
+    } else if (rowPtr->flags & ENTRY_SELECTED) {
         /* Selected */
 	bg = CHOOSE(viewPtr->selection.bg, stylePtr->selectBg);
         gc = stylePtr->selectGC;
@@ -3128,7 +3112,7 @@ ComboBoxStyleDrawProc(Cell *cellPtr, Drawable drawable,
 
     /* Draw background. */
     Blt_Bg_FillRectangle(viewPtr->tkwin, drawable, bg, x, y, colWidth,
-        rowHeight, stylePtr->borderWidth, stylePtr->relief);
+        rowHeight, stylePtr->borderWidth, relief);
 
     /* Draw Rule */
     if (rowPtr->ruleHeight > 0) {
@@ -3151,8 +3135,6 @@ ComboBoxStyleDrawProc(Cell *cellPtr, Drawable drawable,
 	XDrawRectangle(viewPtr->display, drawable, gc, x+2, y+2, colWidth - 5, 
 		       rowHeight - 4);
     }
-	XDrawRectangle(viewPtr->display, drawable, gc, x+2, y+2, colWidth - 5, 
-		       rowHeight - 4);
     x += CELL_PADX + FOCUS_PAD;
     y += CELL_PADY + FOCUS_PAD;
     rowHeight -= 2 * (FOCUS_PAD + CELL_PADY);
@@ -3180,16 +3162,14 @@ ComboBoxStyleDrawProc(Cell *cellPtr, Drawable drawable,
 	    break;
 	}
     }
-    tw = th = iw = ih = 0;		/* Suppress compiler warning. */
+    th = iw = ih = 0;                   /* Suppress compiler warning. */
     gap = 0;
     if (stylePtr->icon != NULL) {
 	iw = IconWidth(stylePtr->icon);
 	ih = IconHeight(stylePtr->icon);
     }
     if (cellPtr->dataObjPtr != NULL) {
-	tw = cellPtr->textWidth;
 	th = cellPtr->textHeight;
-	tw = cellWidth - iw;
 	if (stylePtr->icon != NULL) {
 	    gap = stylePtr->gap;
 	}
@@ -3518,7 +3498,7 @@ ImageBoxStyleGeometryProc(Cell *cellPtr, CellStyle *cellStylePtr)
     cellPtr->width += 2 * CELL_PADX;
     cellPtr->height += 2 * CELL_PADY;
     cellPtr->width += colPtr->ruleWidth + PADDING(colPtr->pad);
-    cellPtr->height += cellPtr->entryPtr->ruleHeight;
+    cellPtr->height += rowPtr->ruleHeight;
 
     interp = viewPtr->interp;
     objPtr = FormatCell(viewPtr->postPtr);
@@ -3606,7 +3586,8 @@ ImageBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
 	/* Disabled */
 	bg = stylePtr->disableBg;
 	gc = stylePtr->disableGC;
-    } else if (EntryIsSelected(viewPtr, rowPtr)) { /* Selected */
+    } else if (rowPtr->flags & ENTRY_SELECTED) { 
+        /* Selected */
 	bg = stylePtr->selectBg;
 	gc = stylePtr->selectGC;
     } else if ((stylePtr->flags & EDITABLE) && (viewPtr->activeCellPtr == cellPtr)) {

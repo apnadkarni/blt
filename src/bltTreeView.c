@@ -6428,6 +6428,31 @@ ConfigureStyle(TreeView *viewPtr, CellStyle *stylePtr)
     EventuallyRedraw(viewPtr);
 }
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * ReconfigureStyles --
+ *
+ *      A global widget resource (such as -font, -focusdashes, -foreground,
+ *      -selectforeground, etc) has changed.  This resource could be used
+ *      in a style's GCs.  Reconfigure each style to update the GCs.
+ *
+ *---------------------------------------------------------------------------
+ */
+static void
+ReconfigureStyles(TreeView *viewPtr)
+{
+    Blt_HashEntry *hPtr;
+    Blt_HashSearch iter;
+
+    for (hPtr = Blt_FirstHashEntry(&viewPtr->styleTable, &iter); hPtr != NULL;
+         hPtr = Blt_NextHashEntry(&iter)) {
+        CellStyle *stylePtr;
+
+        stylePtr = Blt_GetHashValue(hPtr);
+        (*stylePtr->classPtr->configProc)(stylePtr);
+    }
+}
 
 /*
  *---------------------------------------------------------------------------
