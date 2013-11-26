@@ -57,7 +57,7 @@
 #define ITEM_CELL       	(1<<5)
 #define ITEM_STYLE		(ClientData)0x10004
 
-#define TITLE_PADX	2
+#define TITLE_PADX	5
 #define TITLE_PADY	1
 
 #if HAVE_UTF
@@ -107,7 +107,7 @@ typedef const char *UID;
 /* Shared flags. */
 #define DISABLED                (1<<0)  /* Draw cell as disabled. */
 #define HIDDEN                  (1<<1)  /* Don't draw cell. */
-#define GEOMETRY		(1<<2)	/* Cell/tree geometry needs to be
+#define GEOMETRY		(1<<2)	/* Cell/entry/tree geometry needs to be
                                          * recomputed. */
 #define FOCUS   		(1<<3)	/* Cell/entry has focus. */
 #define DELETED                 (1<<4)  /* Object has been deleted.  */
@@ -117,8 +117,17 @@ typedef const char *UID;
 /*
  *  Internal treeview widget-specific flags:
  */
-#define LAYOUT_PENDING		(1<<8)	/* The layout of the hierarchy needs
-					 * to be recomputed. */
+#define VISIBILITY              (1<<7) /* The visible rows and columns need
+                                         * to be recomputed.  Scrolling does
+                                         * this. Layout changes to this. */
+#define LAYOUT_PENDING		(1<<8)	/* The layout of the hierarchy
+					 * needs to be recomputed.  The
+					 * hierarchy has changed. It may
+					 * invalidate the locations and
+					 * pointers to entries.  The widget
+					 * will need to recompute its
+					 * layout. */
+
 #define REDRAW_PENDING		(1<<9)	/* A redraw request is pending for
 					 * the widget. */
 #define SELECT_PENDING		(1<<10)	/* A "selection" command idle task is
@@ -129,11 +138,6 @@ typedef const char *UID;
 /* Both X-scroll and  Y-scroll requests are pending. */
 #define SCROLL_PENDING	(SCROLLX | SCROLLY)
 
-#define DIRTY                   (1<<14)	/* The hierarchy has changed. It
-					 * may invalidate the locations and
-					 * pointers to entries.  The widget
-					 * will need to recompute its
-					 * layout. */
 #define UPDATE                  (1<<15)
 #define RESORT                  (1<<16) /* The tree has changed such that
 					 * the view needs to be resorted.
@@ -457,7 +461,7 @@ typedef struct _Cell {
                                          * located. */
     Column *colPtr;			/* Column where the cell is
 					 * located. */
-    const char *text;                   /* If non-NULL, represents the
+    Tcl_Obj *dataObjPtr;                /* If non-NULL, represents the
                                          * (possibly) formatted text
                                          * string. May point to tree's
                                          * Tcl_obj value directly. */
@@ -479,15 +483,10 @@ typedef struct _Cell {
 typedef void (CellStyleConfigureProc)(CellStyle *stylePtr);
 typedef void (CellStyleDrawProc)(Cell *cellPtr, Drawable drawable, 
         CellStyle *stylePtr, int x, int y);
-typedef int (CellStyleEditProc)(Cell *cellPtr, CellStyle *stylePtr);
 typedef void (CellStyleFreeProc)(CellStyle *stylePtr);
 typedef void (CellStyleGeometryProc)(Cell *cellPtr, CellStyle *cellStylePtr);
 typedef const char * (CellStyleIdentifyProc)(Cell *cellPtr, 
         CellStyle *stylePtr, int x, int y);
-typedef int (CellStylePostProc)(Tcl_Interp *interp, Cell *cellPtr,
-        CellStyle *stylePtr);
-typedef int (CellStyleUnpostProc)(Tcl_Interp *interp, Cell *cellPtr,
-        CellStyle *stylePtr);
 
 struct _CellStyleClass {
     const char *type;			/* Name of style class type. */
@@ -505,18 +504,8 @@ struct _CellStyleClass {
 					 * Indicates if the mouse pointer is
 					 * over the * style's button (if it
 					 * has one). */
-    CellStyleEditProc *editProc;	/* Routine to edit the style's
-					 * cell. */
     CellStyleFreeProc *freeProc;	/* Routine to free the style's
 					 * resources. */
-    CellStylePostProc *postProc;	/* Routine to pick the style's button.
-					 * Indicates if the mouse pointer is
-					 * over the * style's button (if it
-					 * has one). */
-    CellStyleUnpostProc *unpostProc;	/* Routine to pick the style's button.
-					 * Indicates if the mouse pointer is
-					 * over the * style's button (if it
-					 * has one). */
 };
 
 BLT_EXTERN CellStyle *Blt_TreeView_CreateTextBoxStyle(TreeView *viewPtr, 

@@ -2615,6 +2615,7 @@ FreetypeDrawProc(
 		/* This should not happen, but it can. */
 		fprintf(stderr, "charLen=%d, source=%s, numBytes=%d\n",
 			charLen, source, numBytes);
+                abort();
 		return;
 	    }
 	    source += charLen;

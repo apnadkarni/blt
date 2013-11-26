@@ -455,6 +455,13 @@ proc blt::TreeView::Initialize { w } {
 	    blt::TreeView::SetSelectionAnchorFromCell %W active
 	}
     }
+    $w bind CheckBoxStyle <Motion> { 
+	if { [%W cell identify current %X %Y] == "button" } {
+	    #%W cell activate current
+	} else {
+	    #%W cell deactivate 
+	}
+    }
     $w bind ComboBoxStyle <B1-Motion> { 
 	set style [%W cell style current]
 	if { [%W cell cget current -state] != "posted" } {
@@ -525,9 +532,7 @@ proc blt::TreeView::PostComboBoxMenu { w cell } {
     set tree [$w cget -tree]
     foreach { row col } [$w cell index $cell] break
     set value [$tree get $row $col ""]
-    puts stderr "row=$row col=$col value=$value"
     set item [$menu index -value $value]
-    puts stderr "item=$item row=$row col=$col value=$value"
     if { $item >= 0 } {
 	$menu select $item
     }
@@ -539,7 +544,6 @@ proc blt::TreeView::PostComboBoxMenu { w cell } {
 	[list blt::TreeView::ImportFromComboMenu $w $_private(posting) $menu]
 
     # Post the combo menu at the bottom of the cell.
-    $w cell post $cell 
     foreach { x1 y1 x2 y2 } [$w cell bbox $cell] break
     incr x1 [winfo rootx $w]
     incr y1 [winfo rooty $w]
@@ -560,7 +564,6 @@ proc blt::TreeView::PostComboBoxMenu { w cell } {
 #
 proc blt::TreeView::ImportFromComboMenu { w cell menu } {
     set value [$menu value active]
-    puts stderr "active value is $value"
     set tree [$w cget -tree]
     if { $tree != "" } {
 	foreach { row col } [$w cell index $cell] break
@@ -582,7 +585,6 @@ proc blt::TreeView::ImportFromComboMenu { w cell menu } {
 proc ::blt::TreeView::UnpostComboBoxMenu { w } {
     variable _private
 
-    puts stderr "UnpostComboBoxMenu: $w"
     # Restore focus right away (otherwise X will take focus away when the
     # menu is unmapped and under some window managers (e.g. olvwm) we'll
     # lose the focus completely).
@@ -590,8 +592,8 @@ proc ::blt::TreeView::UnpostComboBoxMenu { w } {
     set _private(focus) ""
     set cell $_private(posting)
     set _private(posting) none
-    # This causes the cell in the table to be set to the current
-    # value in the combo style.
+    # This causes the cell in the table to be set to the current value in
+    # the combo style.
     set style [$w cell style $cell]
     set menu [$w style cget $style -menu]
     if { [info exists _private(cursor)] } {
@@ -1048,338 +1050,6 @@ if {[string equal "x11" [tk windowingsystem]]} {
 } else {
     bind BltTreeView <MouseWheel> {
 	%W yview scroll [expr {- (%D / 120) * 4}] units
-    }
-}
-
-
-#
-# Differences between id "current" and operation nearest.
-#
-#	set index [$w index current]
-#	set index [$w nearest $x $y]
-#
-#	o Nearest gives you the closest entry.
-#	o current is "" if
-#	   1) the pointer isn't over an entry.
-#	   2) the pointer is over a open/close button.
-#	   3) 
-#
-
-#
-#  Edit mode assignments
-#
-#	ButtonPress-3   Enables/disables edit mode on entry.  Sets focus to 
-#			entry.
-#
-#  KeyPress
-#
-#	Left		Move insertion position to previous.
-#	Right		Move insertion position to next.
-#	Up		Move insertion position up one line.
-#	Down		Move insertion position down one line.
-#	Return		End edit mode.
-#	Shift-Return	Line feed.
-#	Home		Move to first position.
-#	End		Move to last position.
-#	ASCII char	Insert character left of insertion point.
-#	Del		Delete character right of insertion point.
-#	Delete		Delete character left of insertion point.
-#	Ctrl-X		Cut
-#	Ctrl-V		Copy
-#	Ctrl-P		Paste
-#	
-#  KeyRelease
-#
-#	ButtonPress-1	Start selection if in entry, otherwise clear selection.
-#	B1-Motion	Extend/reduce selection.
-#	ButtonRelease-1 End selection if in entry, otherwise use last
-#			selection.
-#	B1-Enter	Disabled.
-#	B1-Leave	Disabled.
-#	ButtonPress-2	Same as above.
-#	B2-Motion	Same as above.
-#	ButtonRelease-2	Same as above.
-#	
-#
-
-
-# Standard Motif bindings:
-
-bind BltTreeViewEditor <ButtonPress-1> {
-    %W icursor @%x,%y
-    %W selection clear
-}
-
-bind BltTreeViewEditor <Left> {
-    %W icursor last
-    %W selection clear
-}
-
-bind BltTreeViewEditor <Right> {
-    %W icursor next
-    %W selection clear
-}
-
-bind BltTreeViewEditor <Shift-Left> {
-    set new [expr {[%W index insert] - 1}]
-    if {![%W selection present]} {
-	%W selection from insert
-	%W selection to $new
-    } else {
-	%W selection adjust $new
-    }
-    %W icursor $new
-}
-
-bind BltTreeViewEditor <Shift-Right> {
-    set new [expr {[%W index insert] + 1}]
-    if {![%W selection present]} {
-	%W selection from insert
-	%W selection to $new
-    } else {
-	%W selection adjust $new
-    }
-    %W icursor $new
-}
-
-bind BltTreeViewEditor <Home> {
-    %W icursor 0
-    %W selection clear
-}
-bind BltTreeViewEditor <Shift-Home> {
-    set new 0
-    if {![%W selection present]} {
-	%W selection from insert
-	%W selection to $new
-    } else {
-	%W selection adjust $new
-    }
-    %W icursor $new
-}
-bind BltTreeViewEditor <End> {
-    %W icursor end
-    %W selection clear
-}
-bind BltTreeViewEditor <Shift-End> {
-    set new end
-    if {![%W selection present]} {
-	%W selection from insert
-	%W selection to $new
-    } else {
-	%W selection adjust $new
-    }
-    %W icursor $new
-}
-
-bind BltTreeViewEditor <Delete> {
-    if { [%W selection present]} {
-	%W delete sel.first sel.last
-    } else {
-	%W delete insert
-    }
-}
-
-bind BltTreeViewEditor <BackSpace> {
-    if { [%W selection present] } {
-	%W delete sel.first sel.last
-    } else {
-	set index [expr [%W index insert] - 1]
-	if { $index >= 0 } {
-	    %W delete $index $index
-	}
-    }
-}
-
-bind BltTreeViewEditor <Control-space> {
-    %W selection from insert
-}
-
-bind BltTreeViewEditor <Select> {
-    %W selection from insert
-}
-
-bind BltTreeViewEditor <Control-Shift-space> {
-    %W selection adjust insert
-}
-
-bind BltTreeViewEditor <Shift-Select> {
-    %W selection adjust insert
-}
-
-bind BltTreeViewEditor <Control-slash> {
-    %W selection range 0 end
-}
-
-bind BltTreeViewEditor <Control-backslash> {
-    %W selection clear
-}
-
-bind BltTreeViewEditor <KeyPress> {
-    blt::TreeView::InsertText %W %A
-}
-
-# Ignore all Alt, Meta, and Control keypresses unless explicitly bound.
-# Otherwise, if a widget binding for one of these is defined, the
-# <KeyPress> class binding will also fire and insert the character,
-# which is wrong.  Ditto for Escape, Return, and Tab.
-
-bind BltTreeViewEditor <Alt-KeyPress> {
-    # nothing
-}
-
-bind BltTreeViewEditor <Meta-KeyPress> {
-    # nothing
-}
-
-bind BltTreeViewEditor <Control-KeyPress> {
-    # nothing
-}
-
-bind BltTreeViewEditor <Escape> { 
-    %W cancel 
-}
-
-bind BltTreeViewEditor <Return> { 
-    %W apply 
-}
-
-bind BltTreeViewEditor <Shift-Return> {
-    blt::TreeView::InsertText %W "\n"
-}
-
-bind BltTreeViewEditor <KP_Enter> {
-    # nothing
-}
-
-bind BltTreeViewEditor <Tab> {
-    # nothing
-}
-
-if {![string compare $tcl_platform(platform) "macintosh"]} {
-    bind BltTreeViewEditor <Command-KeyPress> {
-	# nothing
-    }
-}
-
-# On Windows, paste is done using Shift-Insert.  Shift-Insert already
-# generates the <<Paste>> event, so we don't need to do anything here.
-if { [string compare $tcl_platform(platform) "windows"] != 0 } {
-    bind BltTreeViewEditor <Insert> {
-	catch {blt::TreeView::InsertText %W [selection get -displayof %W]}
-    }
-}
-
-# Additional emacs-like bindings:
-bind BltTreeViewEditor <ButtonRelease-3> {
-    set parent [winfo parent %W]
-    %W cancel
-}
-
-bind BltTreeViewEditor <Control-a> {
-    %W icursor 0
-    %W selection clear
-}
-
-bind BltTreeViewEditor <Control-b> {
-    %W icursor [expr {[%W index insert] - 1}]
-    %W selection clear
-}
-
-bind BltTreeViewEditor <Control-d> {
-    %W delete insert
-}
-
-bind BltTreeViewEditor <Control-e> {
-    %W icursor end
-    %W selection clear
-}
-
-bind BltTreeViewEditor <Control-f> {
-    %W icursor [expr {[%W index insert] + 1}]
-    %W selection clear
-}
-
-bind BltTreeViewEditor <Control-h> {
-    if {[%W selection present]} {
-	%W delete sel.first sel.last
-    } else {
-	set index [expr [%W index insert] - 1]
-	if { $index >= 0 } {
-	    %W delete $index $index
-	}
-    }
-}
-
-bind BltTreeViewEditor <Control-k> {
-    %W delete insert end
-}
-
-if 0 {
-    bind BltTreeViewEditor <Control-t> {
-	blt::TreeView::Transpose %W
-    }
-    bind BltTreeViewEditor <Meta-b> {
-	%W icursor [blt::TreeView::PreviousWord %W insert]
-	%W selection clear
-    }
-    bind BltTreeViewEditor <Meta-d> {
-	%W delete insert [blt::TreeView::NextWord %W insert]
-    }
-    bind BltTreeViewEditor <Meta-f> {
-	%W icursor [blt::TreeView::NextWord %W insert]
-	%W selection clear
-    }
-    bind BltTreeViewEditor <Meta-BackSpace> {
-	%W delete [blt::TreeView::PreviousWord %W insert] insert
-    }
-    bind BltTreeViewEditor <Meta-Delete> {
-	%W delete [blt::TreeView::PreviousWord %W insert] insert
-    }
-    # tkEntryNextWord -- Returns the index of the next word position
-    # after a given position in the entry.  The next word is platform
-    # dependent and may be either the next end-of-word position or the
-    # next start-of-word position after the next end-of-word position.
-    #
-    # Arguments:
-    # w -		The entry window in which the cursor is to move.
-    # start -	Position at which to start search.
-    
-    if {![string compare $tcl_platform(platform) "windows"]}  {
-	proc blt::TreeView::NextWord {w start} {
-	    set pos [tcl_endOfWord [$w get] [$w index $start]]
-	    if {$pos >= 0} {
-		set pos [tcl_startOfNextWord [$w get] $pos]
-	    }
-	    if {$pos < 0} {
-		return end
-	    }
-	    return $pos
-	}
-    } else {
-	proc blt::TreeView::NextWord {w start} {
-	    set pos [tcl_endOfWord [$w get] [$w index $start]]
-	    if {$pos < 0} {
-		return end
-	    }
-	    return $pos
-	}
-    }
-    
-    # PreviousWord --
-    #
-    # Returns the index of the previous word position before a given
-    # position in the entry.
-    #
-    # Arguments:
-    # w -		The entry window in which the cursor is to move.
-    # start -	Position at which to start search.
-    
-    proc blt::TreeView::PreviousWord {w start} {
-	set pos [tcl_startOfPreviousWord [$w get] [$w index $start]]
-	if {$pos < 0} {
-	    return 0
-	}
-	return $pos
     }
 }
 
