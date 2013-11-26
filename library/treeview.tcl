@@ -525,9 +525,7 @@ proc blt::TreeView::PostComboBoxMenu { w cell } {
     set tree [$w cget -tree]
     foreach { row col } [$w cell index $cell] break
     set value [$tree get $row $col ""]
-    puts stderr "row=$row col=$col value=$value"
     set item [$menu index -value $value]
-    puts stderr "item=$item row=$row col=$col value=$value"
     if { $item >= 0 } {
 	$menu select $item
     }
@@ -539,7 +537,6 @@ proc blt::TreeView::PostComboBoxMenu { w cell } {
 	[list blt::TreeView::ImportFromComboMenu $w $_private(posting) $menu]
 
     # Post the combo menu at the bottom of the cell.
-    $w cell post $cell 
     foreach { x1 y1 x2 y2 } [$w cell bbox $cell] break
     incr x1 [winfo rootx $w]
     incr y1 [winfo rooty $w]
@@ -560,7 +557,6 @@ proc blt::TreeView::PostComboBoxMenu { w cell } {
 #
 proc blt::TreeView::ImportFromComboMenu { w cell menu } {
     set value [$menu value active]
-    puts stderr "active value is $value"
     set tree [$w cget -tree]
     if { $tree != "" } {
 	foreach { row col } [$w cell index $cell] break
@@ -582,7 +578,6 @@ proc blt::TreeView::ImportFromComboMenu { w cell menu } {
 proc ::blt::TreeView::UnpostComboBoxMenu { w } {
     variable _private
 
-    puts stderr "UnpostComboBoxMenu: $w"
     # Restore focus right away (otherwise X will take focus away when the
     # menu is unmapped and under some window managers (e.g. olvwm) we'll
     # lose the focus completely).
