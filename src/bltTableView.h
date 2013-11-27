@@ -39,6 +39,8 @@
 #ifndef _BLT_TABLEVIEW_H
 #define _BLT_TABLEVIEW_H
 
+#define ODD(x)			((x) | 0x01)
+
 #define GetKey(c) \
     ((CellKey *)Blt_GetHashKey(&(c)->viewPtr->cellTable, (c)->hashPtr))
 
@@ -415,6 +417,8 @@ struct _Row {
 					 * coordinates. from the top of the
 					 * table. */
     Blt_ChainLink link;
+    XColor *ruleColor;			/* Color of the column's rule. */
+    GC ruleGC;                          /* Graphics context of the rule. */
 };
 
 /*
@@ -500,6 +504,10 @@ struct _Column {
     Tcl_Obj *filterMenuObjPtr;		/* Name of menu attached to this
 					 * column to filter row values. */
     Tcl_Obj *filterDataObjPtr;
+    Blt_Pad pad;			/* Horizontal padding on either
+					 * side of the column. */
+    XColor *ruleColor;			/* Color of the column's rule. */
+    GC ruleGC;                          /* Graphics context of the rule. */
 };
 
 /*

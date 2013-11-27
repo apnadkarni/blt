@@ -136,6 +136,7 @@ typedef ClientData (TagProc)(TableView *viewPtr, const char *string);
 #define DEF_COLUMN_NORMAL_TITLE_BG	STD_NORMAL_BACKGROUND
 #define DEF_COLUMN_NORMAL_TITLE_FG	STD_NORMAL_FOREGROUND
 #define DEF_COLUMN_RESIZE_CURSOR	"arrow"
+#define DEF_COLUMN_PAD			"2"
 #define DEF_COLUMN_SHOW			"yes"
 #define DEF_COLUMN_STATE		"normal"
 #define DEF_COLUMN_STYLE		(char *)NULL
@@ -196,6 +197,7 @@ typedef ClientData (TagProc)(TableView *viewPtr, const char *string);
 #define DEF_RULE_DASHES			"dot"
 #define DEF_RULE_HEIGHT			"0"
 #define DEF_RULE_WIDTH			"0"
+#define DEF_RULE_COLOR                  STD_NORMAL_BACKGROUND
 #define DEF_SCROLL_INCREMENT		"20"
 #define DEF_SCROLL_MODE			"hierbox"
 #define DEF_SELECT_MODE			"single"
@@ -500,6 +502,8 @@ static Blt_ConfigSpec columnSpecs[] =
     {BLT_CONFIG_BITMASK_INVERT, "-show", "show", "Show", DEF_COLUMN_SHOW, 
 	Blt_Offset(Column, flags), BLT_CONFIG_DONT_SET_DEFAULT,
 	(Blt_CustomOption *)HIDDEN},
+    {BLT_CONFIG_COLOR, "-rulecolor", "ruleColor", "RuleColor", DEF_RULE_COLOR,
+	 Blt_Offset(Column, ruleColor), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_PIXELS_NNEG, "-rulewidth", "ruleWidth", "RuleWidth",
         DEF_RULE_WIDTH, Blt_Offset(Column, ruleWidth), 
 	BLT_CONFIG_DONT_SET_DEFAULT},
@@ -2622,12 +2626,84 @@ NewColumn(TableView *viewPtr, BLT_TABLE_COLUMN col, Blt_HashEntry *hPtr)
     colPtr->title = blt_table_column_label(col);
     colPtr->flags = GEOMETRY | REDRAW;
     colPtr->weight = 1.0;
+    colPtr->ruleWidth = 1;
+    colPtr->pad.side1 = colPtr->pad.side2 = 0;
     colPtr->max = SHRT_MAX;
     colPtr->titleJustify = TK_JUSTIFY_CENTER;
     colPtr->titleRelief = colPtr->activeTitleRelief = TK_RELIEF_RAISED;
     colPtr->hashPtr = hPtr;
     Blt_SetHashValue(hPtr, colPtr);
     return colPtr;
+}
+
+static void
+GetColumnTitleGeometry(TableView *viewPtr, Column *colPtr)
+{
+    unsigned int aw, ah, iw, ih, tw, th;
+
+    colPtr->titleWidth = 2 * (viewPtr->colTitleBorderWidth + TITLE_PADX);
+    colPtr->titleHeight = 2 * (viewPtr->colTitleBorderWidth + TITLE_PADY);
+
+    aw = ah = tw = th = iw = ih = 0;
+    if (colPtr->icon != NULL) {
+	iw = IconWidth(colPtr->icon);
+	ih = IconHeight(colPtr->icon);
+	colPtr->titleWidth += iw;
+    }
+    if ((viewPtr->sort.up != NULL) && (viewPtr->sort.down != NULL)) {
+	aw = MAX(IconWidth(viewPtr->sort.up), IconWidth(viewPtr->sort.down));
+	ah = MAX(IconHeight(viewPtr->sort.up), IconHeight(viewPtr->sort.down));
+    } else {
+	aw = ah = 17;
+    }
+    colPtr->titleWidth += aw + TITLE_PADX;
+    if ((colPtr->flags & TEXTALLOC) == 0) {
+	colPtr->title = blt_table_column_label(colPtr->column);
+    }
+    if (colPtr->title != NULL) {
+	TextStyle ts;
+
+	Blt_Ts_InitStyle(ts);
+	Blt_Ts_SetFont(ts, viewPtr->colTitleFont);
+	Blt_Ts_GetExtents(&ts, colPtr->title,  &tw, &th);
+	colPtr->textWidth = tw;
+	colPtr->textHeight = th;
+	colPtr->titleWidth += tw;
+	if (colPtr->icon != NULL) {
+	    colPtr->titleWidth += TITLE_PADX;
+	}
+    }
+    colPtr->titleHeight += MAX3(ih, th, ah);
+}
+
+static int 
+ConfigureColumn(TableView *viewPtr, Column *colPtr)
+{
+    GC newGC;
+    XGCValues gcValues;
+    unsigned long gcMask;
+
+    /* Rule GC */
+    gcMask = GCForeground;
+    gcValues.foreground = colPtr->ruleColor->pixel;
+    newGC = Tk_GetGC(viewPtr->tkwin, gcMask, &gcValues);
+    if (colPtr->ruleGC != NULL) {
+	Tk_FreeGC(viewPtr->display, colPtr->ruleGC);
+    }
+    colPtr->ruleGC = newGC;
+
+    if (Blt_ConfigModified(columnSpecs, "-font", "-title", "-hide", "-icon", 
+	"-arrowwidth", "-borderwidth", (char *)NULL)) {
+	if (viewPtr->flags & COLUMN_TITLES) {
+	    GetColumnTitleGeometry(viewPtr, colPtr);
+	} 
+    }
+    if (Blt_ConfigModified(columnSpecs, "-style", (char *)NULL)) {
+	/* If the style changed, recompute the geometry of the cells. */
+	colPtr->flags |= GEOMETRY;
+	viewPtr->flags |= GEOMETRY | REDRAW;
+    }
+    return TCL_OK;
 }
 
 static Column *
@@ -2645,6 +2721,7 @@ CreateColumn(TableView *viewPtr, BLT_TABLE_COLUMN col, Blt_HashEntry *hPtr)
 	DestroyColumn(colPtr);
 	return NULL;
     }
+    ConfigureColumn(viewPtr, colPtr);
     return colPtr;
 }
 
@@ -3721,45 +3798,6 @@ GetRowTitleGeometry(TableView *viewPtr, Row *rowPtr)
     rowPtr->titleWidth += tw + gap + iw;
 }
 
-static void
-GetColumnTitleGeometry(TableView *viewPtr, Column *colPtr)
-{
-    unsigned int aw, ah, iw, ih, tw, th;
-
-    colPtr->titleWidth = 2 * (viewPtr->colTitleBorderWidth + TITLE_PADX);
-    colPtr->titleHeight = 2 * (viewPtr->colTitleBorderWidth + TITLE_PADY);
-
-    aw = ah = tw = th = iw = ih = 0;
-    if (colPtr->icon != NULL) {
-	iw = IconWidth(colPtr->icon);
-	ih = IconHeight(colPtr->icon);
-	colPtr->titleWidth += iw;
-    }
-    if ((viewPtr->sort.up != NULL) && (viewPtr->sort.down != NULL)) {
-	aw = MAX(IconWidth(viewPtr->sort.up), IconWidth(viewPtr->sort.down));
-	ah = MAX(IconHeight(viewPtr->sort.up), IconHeight(viewPtr->sort.down));
-    } else {
-	aw = ah = 17;
-    }
-    colPtr->titleWidth += aw + TITLE_PADX;
-    if ((colPtr->flags & TEXTALLOC) == 0) {
-	colPtr->title = blt_table_column_label(colPtr->column);
-    }
-    if (colPtr->title != NULL) {
-	TextStyle ts;
-
-	Blt_Ts_InitStyle(ts);
-	Blt_Ts_SetFont(ts, viewPtr->colTitleFont);
-	Blt_Ts_GetExtents(&ts, colPtr->title,  &tw, &th);
-	colPtr->textWidth = tw;
-	colPtr->textHeight = th;
-	colPtr->titleWidth += tw;
-	if (colPtr->icon != NULL) {
-	    colPtr->titleWidth += TITLE_PADX;
-	}
-    }
-    colPtr->titleHeight += MAX3(ih, th, ah);
-}
 
 /*
  * GetColumnFilterGeometry -- 
@@ -3818,6 +3856,19 @@ GetColumnFilterGeometry(TableView *viewPtr)
 static int 
 ConfigureRow(TableView *viewPtr, Row *rowPtr) 
 {
+    GC newGC;
+    XGCValues gcValues;
+    unsigned long gcMask;
+
+    /* Rule GC */
+    gcMask = GCForeground;
+    gcValues.foreground = rowPtr->ruleColor->pixel;
+    newGC = Tk_GetGC(viewPtr->tkwin, gcMask, &gcValues);
+    if (rowPtr->ruleGC != NULL) {
+	Tk_FreeGC(viewPtr->display, rowPtr->ruleGC);
+    }
+    rowPtr->ruleGC = newGC;
+
     if (Blt_ConfigModified(rowSpecs, "-titlefont", "-title", "-hide", "-icon", 
 	"-show", "-borderwidth", (char *)NULL)) {
 	if (viewPtr->flags & ROW_TITLES) {
@@ -5497,22 +5548,6 @@ AdjustRows(TableView *viewPtr)
 }
 #endif
 
-static int 
-ConfigureColumn(TableView *viewPtr, Column *colPtr)
-{
-    if (Blt_ConfigModified(columnSpecs, "-font", "-title", "-hide", "-icon", 
-	"-arrowwidth", "-borderwidth", (char *)NULL)) {
-	if (viewPtr->flags & COLUMN_TITLES) {
-	    GetColumnTitleGeometry(viewPtr, colPtr);
-	} 
-    }
-    if (Blt_ConfigModified(columnSpecs, "-style", (char *)NULL)) {
-	/* If the style changed, recompute the geometry of the cells. */
-	colPtr->flags |= GEOMETRY;
-	viewPtr->flags |= GEOMETRY | REDRAW;
-    }
-    return TCL_OK;
-}
 
 
 
@@ -10365,7 +10400,8 @@ ComputeLayout(TableView *viewPtr)
 	Column *colPtr;
 
 	colPtr = viewPtr->columns[i];
-	colPtr->flags &= ~GEOMETRY; 	/* Always remove the geometry flag. */
+	colPtr->flags &= ~GEOMETRY; 	/* Always remove the geometry
+                                         * flag. */
 	colPtr->index = i;		/* Reset the index. */
 	colPtr->width = 0;
 	colPtr->worldX = x;
@@ -10373,12 +10409,6 @@ ComputeLayout(TableView *viewPtr)
 	    colPtr->width = colPtr->reqWidth;
 	} else {
 	    colPtr->width = colPtr->nomWidth;
-#ifdef notdef
-	    colPtr->width |= 0x1;	/* Make the width of the column
-					 * odd. This means that the dotted
-					 * focus rectangle will have dots on
-					 * the corners.  */
-#endif
 	    if ((colPtr->reqMin > 0) && (colPtr->reqMin > colPtr->width)) {
 		colPtr->width = colPtr->reqMin;
 	    }
@@ -10407,8 +10437,8 @@ ComputeLayout(TableView *viewPtr)
     if (viewPtr->flags & ROW_TITLES) {
 	viewPtr->width += viewPtr->rowTitleWidth;
     }
-    viewPtr->flags |= SCROLL_PENDING;	/* Flag to recompute visible rows and
-					 * columns. */
+    viewPtr->flags |= SCROLL_PENDING;	/* Flag to recompute visible rows
+					 * and columns. */
 }
 
 static void
@@ -10446,7 +10476,7 @@ ComputeVisibleEntries(TableView *viewPtr)
 	mid = (low + high) >> 1;
 	rowPtr = viewPtr->rows[mid];
 	if (viewPtr->yOffset >
-	    (rowPtr->worldY + rowPtr->height + rowPtr->ruleHeight)) {
+	    (rowPtr->worldY + rowPtr->height)) {
 	    low = mid + 1;
 	} else if (viewPtr->yOffset < rowPtr->worldY) {
 	    high = mid - 1;

@@ -131,18 +131,18 @@ puts "$count entries"
 
 $treeview style checkbox check \
     -onvalue "file" -offvalue "directory" \
-    -showvalue yes 
+    -showvalue yes
 
 $treeview style create combobox combo \
     -menu $treeview.menu \
     -textvariable textVar \
-    -iconvariable iconVar 
+    -iconvariable iconVar
 blt::combomenu $treeview.menu  \
     -restrictwidth min \
     -textvariable textVar \
     -iconvariable iconVar \
     -yscrollbar $treeview.menu.ybar \
-    -xscrollbar $treeview.menu.xbar
+    -xscrollbar $treeview.menu.xbar 
 blt::tk::scrollbar $treeview.menu.xbar 
 blt::tk::scrollbar $treeview.menu.ybar
 

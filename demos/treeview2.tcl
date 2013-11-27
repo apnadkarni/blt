@@ -91,8 +91,8 @@ proc OpenNode  { tree node parent top } {
 	global spinner 
 	blt::busy hold .ss.t -opaque 1 -darken 50 
 	update
-	puts stderr find=[time {Find $tree $node $top/$parent}]
-	puts stderr update=[time update]
+	Find $tree $node $top/$parent
+	update
 	blt::busy release .ss.t
     }
 }
@@ -141,19 +141,9 @@ focus .ss.t
 
 puts "$count entries"
 
-#$tree find root -glob *.c -addtag "c_files"
-#$tree find root -glob *.h -addtag "header_files"
-#$tree find root -glob *.tcl -addtag "tcl_files"
-
-#.ss.t entry configure "c_files" -foreground green4
-#.ss.t entry configure "header_files" -foreground cyan4
-#.ss.t entry configure "tcl_files" -foreground red4 
-
 .ss.t column bind all <ButtonRelease-3> {
     %W configure -flat no
 }
-
-#.ss.t style configure text -background #F8fbF8 -selectbackground #D8fbD8 
 
 .ss.t style checkbox check \
     -onvalue 30 -offvalue "50" \

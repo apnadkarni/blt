@@ -76,6 +76,8 @@
 /* Style-specific flags. */
 #define SHOW_VALUE                      (1<<10)
 #define SHOW_TEXT                       (1<<11)
+#define ACTIVE_COLORS                   (1<<12)
+#define UNDERLINE_ACTIVE                (1<<13)
 #define TEXT_VAR_TRACED                 (1<<16)
 #define ICON_VAR_TRACED                 (1<<17)
 #define TRACE_VAR_FLAGS                 (TCL_GLOBAL_ONLY|TCL_TRACE_WRITES|\
@@ -114,6 +116,16 @@
 #define DEF_TEXTBOX_BORDERWIDTH	"1"
 #define DEF_TEXTBOX_EDITABLE		"0"
 #define DEF_TEXTBOX_FONT		(char *)NULL
+
+#define DEF_CHECKBOX_ACTIVE_COLORS	"0"
+#define DEF_IMAGEBOX_ACTIVE_COLORS	"0"
+#define DEF_TEXTBOX_ACTIVE_COLORS       "0"
+#define DEF_COMBOBOX_ACTIVE_COLORS      "0"
+
+#define DEF_CHECKBOX_UNDERLINE_ACTIVE	"1"
+#define DEF_IMAGEBOX_UNDERLINE_ACTIVE	"1"
+#define DEF_TEXTBOX_UNDERLINE_ACTIVE    "1"
+#define DEF_COMBOBOX_UNDERLINE_ACTIVE   "1"
 
 #define DEF_CHECKBOX_ACTIVE_RELIEF	"raised"
 #define DEF_CHECKBOX_BOX_COLOR		(char *)NULL
@@ -581,11 +593,14 @@ typedef struct {
 static Blt_ConfigSpec textBoxStyleSpecs[] =
 {
     {BLT_CONFIG_BACKGROUND, "-activebackground", "activeBackground", 
-	"ActiveBackground", DEF_NORMAL_BG, 
+	"ActiveBackground", DEF_ACTIVE_BG, 
 	Blt_Offset(TextBoxStyle, activeBg), 0},
     {BLT_CONFIG_SYNONYM, "-activebg", "activeBackground", (char *)NULL, 
 	(char *)NULL, 0, 0},
-    {BLT_CONFIG_SYNONYM, "-activefg", "activeFackground", (char *)NULL, 
+    {BLT_CONFIG_BITMASK, "-activecolors", "activeColors", "ActiveColors", 
+        DEF_TEXTBOX_ACTIVE_COLORS, Blt_Offset(TextBoxStyle, flags), 
+        BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)ACTIVE_COLORS},
+    {BLT_CONFIG_SYNONYM, "-activefg", "activeForeground", (char *)NULL, 
 	(char *)NULL, 0, 0},
     {BLT_CONFIG_COLOR, "-activeforeground", "activeForeground", 
 	"ActiveForeground", DEF_ACTIVE_FG, 
@@ -656,6 +671,10 @@ static Blt_ConfigSpec textBoxStyleSpecs[] =
 	DEF_SELECT_FG, Blt_Offset(TextBoxStyle, selectFg), 0},
     {BLT_CONFIG_SIDE, "-side", "side", "side", DEF_TEXTBOX_SIDE, 
 	Blt_Offset(TextBoxStyle, side), BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_BITMASK, "-underlineactive", "underlineActive", 
+        "UnderlineActive", DEF_TEXTBOX_UNDERLINE_ACTIVE, 
+        Blt_Offset(TextBoxStyle, flags), BLT_CONFIG_DONT_SET_DEFAULT, 
+        (Blt_CustomOption *)UNDERLINE_ACTIVE},
     {BLT_CONFIG_END, (char *)NULL, (char *)NULL, (char *)NULL, (char *)NULL, 
 	0, 0}
 };
@@ -663,12 +682,15 @@ static Blt_ConfigSpec textBoxStyleSpecs[] =
 static Blt_ConfigSpec checkBoxStyleSpecs[] =
 {
     {BLT_CONFIG_BACKGROUND, "-activebackground", "activeBackground", 
-	"ActiveBackground", DEF_NORMAL_BG, 
+	"ActiveBackground", DEF_ACTIVE_BG, 
 	Blt_Offset(CheckBoxStyle, activeBg), 0},
     {BLT_CONFIG_SYNONYM, "-activebg", "activeBackground", 
 	(char *)NULL, (char *)NULL, 0, 0},
-    {BLT_CONFIG_SYNONYM, "-activefg", "activeFackground", 
-	(char *)NULL, (char *)NULL, 0, 0},
+    {BLT_CONFIG_BITMASK, "-activecolors", "activeColors", "ActiveColors", 
+        DEF_CHECKBOX_ACTIVE_COLORS, Blt_Offset(CheckBoxStyle, flags), 
+        BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)ACTIVE_COLORS},
+    {BLT_CONFIG_SYNONYM, "-activefg", "activeForeground", (char *)NULL, 
+        (char *)NULL, 0, 0},
     {BLT_CONFIG_COLOR, "-activeforeground", "activeForeground", 
 	"ActiveForeground", DEF_ACTIVE_FG, 
 	Blt_Offset(CheckBoxStyle, activeFg), 0},
@@ -758,6 +780,10 @@ static Blt_ConfigSpec checkBoxStyleSpecs[] =
     {BLT_CONFIG_BITMASK, "-showvalue", "showValue", "ShowValue",
 	DEF_CHECKBOX_SHOWVALUE, Blt_Offset(CheckBoxStyle, flags), 
         BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)SHOW_VALUE},    
+    {BLT_CONFIG_BITMASK, "-underlineactive", "underlineActive", 
+        "UnderlineActive", DEF_CHECKBOX_UNDERLINE_ACTIVE, 
+        Blt_Offset(CheckBoxStyle, flags), BLT_CONFIG_DONT_SET_DEFAULT, 
+        (Blt_CustomOption *)UNDERLINE_ACTIVE},
     {BLT_CONFIG_END, (char *)NULL, (char *)NULL, (char *)NULL,
 	(char *)NULL, 0, 0}
 };
@@ -768,11 +794,14 @@ static Blt_ConfigSpec comboBoxStyleSpecs[] =
 	"ActiveArrowBackground", DEF_COMBOBOX_ACTIVE_ARROW_BG, 
         Blt_Offset(ComboBoxStyle, activeArrowBg), 0},
     {BLT_CONFIG_BACKGROUND, "-activebackground", "activeBackground", 
-	"ActiveBackground", DEF_NORMAL_BG, 
+	"ActiveBackground", DEF_ACTIVE_BG, 
         Blt_Offset(ComboBoxStyle, activeBg), 0},
     {BLT_CONFIG_SYNONYM, "-activebg", "activeBackground", (char *)NULL, 
 	(char *)NULL, 0, 0},
-    {BLT_CONFIG_SYNONYM, "-activefg", "activeFackground", (char *)NULL, 
+    {BLT_CONFIG_BITMASK, "-activecolors", "activeColors", "ActiveColors", 
+        DEF_COMBOBOX_ACTIVE_COLORS, Blt_Offset(ComboBoxStyle, flags), 
+        BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)ACTIVE_COLORS},
+    {BLT_CONFIG_SYNONYM, "-activefg", "activeForeground", (char *)NULL, 
 	(char *)NULL, 0, 0},
     {BLT_CONFIG_COLOR, "-activeforeground", "activeForeground", 
 	"ActiveForeground", DEF_ACTIVE_FG, 
@@ -867,6 +896,10 @@ static Blt_ConfigSpec comboBoxStyleSpecs[] =
     {BLT_CONFIG_CUSTOM, "-textvariable", "textVariable", "TextVariable", 
 	DEF_COMBOBOX_TEXT_VARIABLE, Blt_Offset(ComboBoxStyle, textVarObjPtr), 
         BLT_CONFIG_NULL_OK, &textVarOption},
+    {BLT_CONFIG_BITMASK, "-underlineactive", "underlineActive", 
+        "UnderlineActive", DEF_COMBOBOX_UNDERLINE_ACTIVE, 
+        Blt_Offset(ComboBoxStyle, flags), BLT_CONFIG_DONT_SET_DEFAULT, 
+        (Blt_CustomOption *)UNDERLINE_ACTIVE},
     {BLT_CONFIG_END, (char *)NULL, (char *)NULL, (char *)NULL,
 	(char *)NULL, 0, 0}
 };
@@ -874,12 +907,15 @@ static Blt_ConfigSpec comboBoxStyleSpecs[] =
 static Blt_ConfigSpec imageBoxStyleSpecs[] =
 {
     {BLT_CONFIG_BACKGROUND, "-activebackground", "activeBackground", 
-	"ActiveBackground", DEF_NORMAL_BG, 
+	"ActiveBackground", DEF_ACTIVE_BG, 
 	Blt_Offset(ImageBoxStyle, activeBg), 0},
     {BLT_CONFIG_SYNONYM, "-activebg", "activeBackground", 
 	(char *)NULL, (char *)NULL, 0, 0},
     {BLT_CONFIG_SYNONYM, "-activefg", "activeFackground", 
 	(char *)NULL, (char *)NULL, 0, 0},
+    {BLT_CONFIG_BITMASK, "-activecolors", "activeColors", "ActiveColors", 
+        DEF_IMAGEBOX_ACTIVE_COLORS, Blt_Offset(ImageBoxStyle, flags), 
+        BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)ACTIVE_COLORS},
     {BLT_CONFIG_COLOR, "-activeforeground", "activeForeground", 
 	"ActiveForeground", DEF_ACTIVE_FG, 
 	Blt_Offset(ImageBoxStyle, activeFg), 0},
@@ -950,6 +986,10 @@ static Blt_ConfigSpec imageBoxStyleSpecs[] =
 	BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)SHOW_TEXT},
     {BLT_CONFIG_SIDE, "-side", "side", "side", DEF_IMAGEBOX_SIDE, 
 	Blt_Offset(ImageBoxStyle, side), BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_BITMASK, "-underlineactive", "underlineActive", 
+        "UnderlineActive", DEF_IMAGEBOX_UNDERLINE_ACTIVE, 
+        Blt_Offset(ImageBoxStyle, flags), BLT_CONFIG_DONT_SET_DEFAULT, 
+        (Blt_CustomOption *)UNDERLINE_ACTIVE},
     {BLT_CONFIG_END, (char *)NULL, (char *)NULL, (char *)NULL, (char *)NULL, 
 	0, 0}
 };
@@ -985,11 +1025,59 @@ RowSelected(Entry *entryPtr)
     return (hPtr != NULL);
 }
 
+static INLINE CellStyle *
+GetCurrentStyle(TreeView *viewPtr, Column *colPtr, Cell *cellPtr)
+{
+    if ((cellPtr != NULL) && (cellPtr->stylePtr != NULL)) {
+	return cellPtr->stylePtr;
+    }
+    if ((colPtr != NULL) && (colPtr->stylePtr != NULL)) {
+	return colPtr->stylePtr;
+    }
+    return viewPtr->stylePtr;
+}
+
 /* 
+ *---------------------------------------------------------------------------
+ *
  * PropagateStyleChanges --
  *
+ *      Mark the cells using this style so that their geometry will be
+ *      recomputed.  When a style causes the cell to change its size
+ *      (usually by changing the font), we need to tell the widget which
+ *      cells to re-measure.  This routine check which cells are currently
+ *      using this style and marks them.
  *
+ *---------------------------------------------------------------------------
  */
+static void
+PropagateStyleChanges(CellStyle *cellStylePtr)
+{
+    Blt_HashEntry *hPtr;
+    Blt_HashSearch iter;
+    TreeView *viewPtr;
+
+    viewPtr = cellStylePtr->viewPtr;
+    for (hPtr = Blt_FirstHashEntry(&viewPtr->entryTable, &iter); hPtr != NULL;
+         hPtr = Blt_NextHashEntry(&iter)) {
+        Entry *entryPtr;
+        Cell *cellPtr;
+
+        entryPtr = Blt_GetHashValue(hPtr);
+        for (cellPtr = entryPtr->cells; cellPtr != NULL; 
+             cellPtr = cellPtr->nextPtr) {
+            CellStyle *stylePtr;
+
+            stylePtr = GetCurrentStyle(viewPtr, cellPtr->colPtr, cellPtr);
+            if (stylePtr == cellStylePtr) {
+                cellPtr->flags |= GEOMETRY;
+                entryPtr->flags |= GEOMETRY;
+                viewPtr->flags |= LAYOUT_PENDING;
+            }
+        }
+    }
+}
+            
 static Tcl_Obj *
 FormatCell(Cell *cellPtr)
 {
@@ -1880,7 +1968,7 @@ NewTextBoxStyle(TreeView *viewPtr, Blt_HashEntry *hPtr)
     stylePtr->relief = stylePtr->activeRelief = TK_RELIEF_FLAT;
     stylePtr->name = Blt_GetHashKey(&viewPtr->styleTable, hPtr);
     stylePtr->hashPtr = hPtr;
-    stylePtr->flags = 0;
+    stylePtr->flags = UNDERLINE_ACTIVE;
     stylePtr->refCount = 1;
     stylePtr->borderWidth = 1;
     stylePtr->link = NULL;
@@ -1963,7 +2051,7 @@ TextBoxStyleConfigureProc(CellStyle *cellStylePtr)
 
     if (Blt_ConfigModified(stylePtr->classPtr->specs, "-font", (char *)NULL)) {
         /* Font sizes can change the size of the cell. */
-        stylePtr->flags |= STYLE_DIRTY;
+        PropagateStyleChanges(cellStylePtr);
     }
 }
 
@@ -2002,11 +2090,9 @@ TextBoxStyleGeometryProc(Cell *cellPtr, CellStyle *cellStylePtr)
     TextBoxStyle *stylePtr = (TextBoxStyle *)cellStylePtr;
     TreeView *viewPtr;
     int gap;
-    unsigned int iw, ih;
-    unsigned int tw, th;
+    unsigned int iw, ih, tw, th;
     Entry *rowPtr;
     Column *colPtr;
-
 
     viewPtr = stylePtr->viewPtr;
     cellPtr->flags &= ~GEOMETRY;        /* Remove the geometry flag from
@@ -2090,6 +2176,12 @@ TextBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
 	/* Disabled */
 	bg = stylePtr->disableBg;
         gc = stylePtr->disableGC;
+    } else if ((stylePtr->flags & ACTIVE_COLORS) && 
+               (viewPtr->activeCellPtr == cellPtr)) {
+	/* Active */
+	bg = stylePtr->activeBg;
+	gc = stylePtr->activeGC;
+	relief = stylePtr->activeRelief;
     } else if (RowSelected(rowPtr)) {
         /* Selected */
 	bg = CHOOSE(viewPtr->selection.bg, stylePtr->selectBg);
@@ -2184,7 +2276,7 @@ TextBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
 	    ty = y + (rowHeight - th) / 2;
 	}
 	ix = tx + tw + gap;
-	if (cellHeight > ih) {
+	if (rowHeight > ih) {
 	    iy = y + (rowHeight - ih) / 2;
 	}
 	break;
@@ -2194,28 +2286,28 @@ TextBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
 	    iy = y + (rowHeight - ih) / 2;
 	}
 	tx = ix + iw + gap;
-	if (cellHeight > th) {
+	if (rowHeight > th) {
 	    ty = y + (rowHeight - th) / 2;
 	}
 	break;
     case SIDE_TOP:
 	iy = y;
-	if (cellWidth > iw) {
-	    ix = x + (cellWidth - iw) / 2;
+	if (colWidth > iw) {
+	    ix = x + (colWidth - iw) / 2;
 	}
 	ty = iy + ih + gap;
-	if (cellWidth > tw) {
-	    tx = x + (cellWidth - tw) / 2;
+	if (colWidth > tw) {
+	    tx = x + (colWidth - tw) / 2;
 	}
 	break;
     case SIDE_BOTTOM:
 	ty = y;
-	if (cellWidth > tw) {
-	    tx = x + (cellWidth - tw) / 2;
+	if (colWidth > tw) {
+	    tx = x + (colWidth - tw) / 2;
 	}
 	iy = ty + th + gap;
-	if (cellWidth > iw) {
-	    ix = x + (cellWidth - iw) / 2;
+	if (colWidth > iw) {
+	    ix = x + (colWidth - iw) / 2;
 	}
 	break;
     }
@@ -2237,7 +2329,8 @@ TextBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
 	Blt_Ts_SetMaxLength(ts, xMax);
 	textPtr = Blt_Ts_CreateLayout(string, length, &ts);
 	Blt_Ts_DrawLayout(viewPtr->tkwin, drawable, textPtr, &ts, tx, ty);
-	if (viewPtr->activeCellPtr == cellPtr) {
+	if ((stylePtr->flags & UNDERLINE_ACTIVE) && 
+            (viewPtr->activeCellPtr == cellPtr)) {
 	    Blt_Ts_UnderlineLayout(viewPtr->tkwin, drawable, textPtr,&ts,tx,ty);
 	}
 	Blt_Free(textPtr);
@@ -2316,7 +2409,7 @@ NewCheckBoxStyle(TreeView *viewPtr, Blt_HashEntry *hPtr)
     stylePtr->lineWidth = 2;
     stylePtr->name = Blt_GetHashKey(&viewPtr->styleTable, hPtr);
     stylePtr->hashPtr = hPtr;
-    stylePtr->flags = SHOW_VALUE | EDITABLE;
+    stylePtr->flags = SHOW_VALUE | EDITABLE | UNDERLINE_ACTIVE;
     stylePtr->relief = TK_RELIEF_FLAT;
     stylePtr->activeRelief = TK_RELIEF_FLAT;
     stylePtr->borderWidth = 1;
@@ -2425,7 +2518,8 @@ CheckBoxStyleConfigureProc(CellStyle *cellStylePtr)
     } 
     if ((stylePtr->flags & SHOW_VALUE) && 
 	(Blt_ConfigModified(stylePtr->classPtr->specs, "-font", (char *)NULL))){
-        stylePtr->flags |= STYLE_DIRTY;
+        /* Font sizes can change the size of the cell. */
+        PropagateStyleChanges(cellStylePtr);
     }
 }
 
@@ -2552,6 +2646,12 @@ CheckBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
 	/* Disabled */
 	bg = stylePtr->disableBg;
 	gc = stylePtr->disableGC;
+    } else if ((stylePtr->flags & ACTIVE_COLORS) && 
+               (viewPtr->activeCellPtr == cellPtr)) {
+	/* Active */
+	bg = stylePtr->activeBg;
+	gc = stylePtr->activeGC;
+	relief = stylePtr->activeRelief;
     } else if (RowSelected(rowPtr)) {
 	/* Selected */
 	bg = stylePtr->selectBg;
@@ -2559,11 +2659,6 @@ CheckBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
         if (viewPtr->activeCellPtr == cellPtr) {
             relief = stylePtr->activeRelief;
         }
-    } else if (viewPtr->activeCellPtr == cellPtr) {
-	/* Active */
-	bg = stylePtr->activeBg;
-	gc = stylePtr->activeGC;
-	relief = stylePtr->activeRelief;
     } else if ((cellPtr->flags|rowPtr->flags|colPtr->flags) & HIGHLIGHT) {
 	/* Highlighted */
 	bg = stylePtr->highlightBg;
@@ -2634,10 +2729,6 @@ CheckBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
     }
     th = iw = ih = 0;                   /* Suppress compiler warning. */
     gap = 0;
-    if (stylePtr->icon != NULL) {
-	iw = IconWidth(stylePtr->icon);
-	ih = IconHeight(stylePtr->icon);
-    }
 
     if (cellPtr->dataObjPtr == NULL) {
 	bool = 0;
@@ -2713,7 +2804,8 @@ CheckBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
 	xMax = colWidth - iw - bw - gap - stylePtr->gap;
 	Blt_Ts_SetMaxLength(ts, xMax);
 	Blt_Ts_DrawLayout(viewPtr->tkwin, drawable, textPtr, &ts, tx, ty);
-	if (viewPtr->activeCellPtr == cellPtr) {
+	if ((stylePtr->flags & UNDERLINE_ACTIVE) && 
+            (viewPtr->activeCellPtr == cellPtr)) {
 	    Blt_Ts_UnderlineLayout(viewPtr->tkwin, drawable, textPtr,&ts,tx,ty);
 	}
     }
@@ -2843,7 +2935,7 @@ NewComboBoxStyle(TreeView *viewPtr, Blt_HashEntry *hPtr)
     stylePtr->name = Blt_GetHashKey(&viewPtr->styleTable, hPtr);
     stylePtr->hashPtr = hPtr;
     stylePtr->link = NULL;
-    stylePtr->flags = EDITABLE;
+    stylePtr->flags = EDITABLE | UNDERLINE_ACTIVE;
     stylePtr->refCount = 1;
     stylePtr->viewPtr = viewPtr;
     Blt_SetHashValue(hPtr, stylePtr);
@@ -2923,7 +3015,10 @@ ComboBoxStyleConfigureProc(CellStyle *cellStylePtr)
     }
     stylePtr->selectGC = newGC;
 
-    stylePtr->flags |= STYLE_DIRTY;
+    if (Blt_ConfigModified(stylePtr->classPtr->specs, "-font", (char *)NULL)) {
+        /* Font sizes can change the size of the cell. */
+        PropagateStyleChanges(cellStylePtr);
+    }
 }
 
 static int
@@ -3100,6 +3195,12 @@ ComboBoxStyleDrawProc(Cell *cellPtr, Drawable drawable,
 	/* Disabled */
 	bg = stylePtr->disableBg;
         gc = stylePtr->disableGC;
+    } else if ((stylePtr->flags & ACTIVE_COLORS) && 
+               (viewPtr->activeCellPtr == cellPtr)) {
+	/* Active */
+	bg = stylePtr->activeBg;
+	gc = stylePtr->activeGC;
+	relief = stylePtr->activeRelief;
     } else if (RowSelected(rowPtr)) {
         /* Selected */
 	bg = CHOOSE(viewPtr->selection.bg, stylePtr->selectBg);
@@ -3213,7 +3314,8 @@ ComboBoxStyleDrawProc(Cell *cellPtr, Drawable drawable,
 	Blt_Ts_SetMaxLength(ts, xMax - tx);
 	textPtr = Blt_Ts_CreateLayout(string, length, &ts);
 	Blt_Ts_DrawLayout(viewPtr->tkwin, drawable, textPtr, &ts, tx, ty);
-	if (viewPtr->activeCellPtr == cellPtr) {
+	if ((stylePtr->flags & UNDERLINE_ACTIVE) && 
+            (viewPtr->activeCellPtr == cellPtr)) {
 	    Blt_Ts_UnderlineLayout(viewPtr->tkwin, drawable, textPtr,&ts,tx,ty);
 	}
 	Blt_Free(textPtr);
@@ -3348,7 +3450,7 @@ NewImageBoxStyle(TreeView *viewPtr, Blt_HashEntry *hPtr)
     stylePtr->relief = stylePtr->activeRelief = TK_RELIEF_FLAT;
     stylePtr->name = Blt_GetHashKey(&viewPtr->styleTable, hPtr);
     stylePtr->hashPtr = hPtr;
-    stylePtr->flags = SHOW_TEXT;
+    stylePtr->flags = SHOW_TEXT | UNDERLINE_ACTIVE;
     stylePtr->refCount = 1;
     Blt_SetHashValue(hPtr, stylePtr);
     return stylePtr;
@@ -3425,6 +3527,12 @@ ImageBoxStyleConfigureProc(CellStyle *cellStylePtr)
 	Tk_FreeGC(viewPtr->display, stylePtr->highlightGC);
     }
     stylePtr->highlightGC = newGC;
+
+    if ((stylePtr->flags & SHOW_TEXT) && 
+        (Blt_ConfigModified(stylePtr->classPtr->specs, "-font", (char *)NULL))){
+        /* Font sizes can change the size of the cell. */
+        PropagateStyleChanges(cellStylePtr);
+    }
 }
 
 static int
@@ -3598,6 +3706,12 @@ ImageBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
 	/* Disabled */
 	bg = stylePtr->disableBg;
 	gc = stylePtr->disableGC;
+    } else if ((stylePtr->flags & ACTIVE_COLORS) && 
+               (viewPtr->activeCellPtr == cellPtr)) {
+	/* Active */
+	bg = stylePtr->activeBg;
+	gc = stylePtr->activeGC;
+	relief = stylePtr->activeRelief;
     } else if (RowSelected(rowPtr)) { 
         /* Selected */
 	bg = stylePtr->selectBg;
@@ -3655,6 +3769,7 @@ ImageBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
     /* Justify (x) and center (y) the contents of the cell. */
     if (rowHeight > cellHeight) {
 	y += (rowHeight - cellHeight) / 2;
+        rowHeight = cellHeight;
     }
     if (colWidth > cellWidth) {
 	switch(stylePtr->justify) {
@@ -3712,7 +3827,8 @@ ImageBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
 	Blt_Ts_SetMaxLength(ts, xMax);
 	textPtr = Blt_Ts_CreateLayout(string, length, &ts);
 	Blt_Ts_DrawLayout(viewPtr->tkwin, drawable, textPtr, &ts, tx, ty);
-	if (viewPtr->activeCellPtr == cellPtr) {
+	if ((stylePtr->flags & UNDERLINE_ACTIVE) && 
+            (viewPtr->activeCellPtr == cellPtr)) {
 	    Blt_Ts_UnderlineLayout(viewPtr->tkwin, drawable, textPtr,&ts,tx,ty);
 	}
 	Blt_Free(textPtr);

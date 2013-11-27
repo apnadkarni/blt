@@ -14,6 +14,7 @@ blt::scrollset .ss \
 blt::tk::scrollbar .ss.x
 blt::tk::scrollbar .ss.y
 
+
 blt::tableview $view -table $table -titles both -selectmode multiple \
     -autofilters yes 
 blt::table . \

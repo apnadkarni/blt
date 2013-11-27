@@ -145,7 +145,7 @@
 #define DEF_COLUMN_PAD			"2"
 #define DEF_COLUMN_RELIEF		"flat"
 #define DEF_COLUMN_STATE		"normal"
-#define DEF_COLUMN_STYLE		"text"
+#define DEF_COLUMN_STYLE		"default"
 #define DEF_COLUMN_TITLE_BACKGROUND	STD_NORMAL_BACKGROUND
 #define DEF_COLUMN_TITLE_BORDERWIDTH	STD_BORDERWIDTH
 #define DEF_COLUMN_TITLE_FONT		STD_FONT_NORMAL
@@ -5966,7 +5966,7 @@ CreateTreeView(Tcl_Interp *interp, Tcl_Obj *objPtr)
      * treeview column.
      */  
     viewPtr->stylePtr = Blt_TreeView_CreateStyle(interp, viewPtr, 
-        STYLE_TEXTBOX, "text", 0, (Tcl_Obj **)NULL);
+        STYLE_TEXTBOX, "default", 0, (Tcl_Obj **)NULL);
     if (viewPtr->stylePtr == NULL) {
 	return NULL;
     }

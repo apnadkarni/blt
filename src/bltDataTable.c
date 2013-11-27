@@ -2072,7 +2072,7 @@ CompareDictionaryRows(ClientData clientData, Column *colPtr, Row *rowPtr1,
     } else if (IsEmpty(valuePtr2)) {
 	return -1;
     }
-    return Blt_DictionaryCompare(valuePtr2->string, valuePtr2->string);
+    return Blt_DictionaryCompare(GetString(valuePtr2), GetString(valuePtr2));
 }
 
 static int
@@ -2105,8 +2105,8 @@ CompareFrequencyRows(ClientData clientData, Column *colPtr, Row *rowPtr1,
     } else if (IsEmpty(valuePtr2)) {
 	return -1;
     }
-    hPtr1 = Blt_FindHashEntry(&sortData.freqTable, valuePtr1->string);
-    hPtr2 = Blt_FindHashEntry(&sortData.freqTable, valuePtr2->string);
+    hPtr1 = Blt_FindHashEntry(&sortData.freqTable, GetString(valuePtr1));
+    hPtr2 = Blt_FindHashEntry(&sortData.freqTable, GetString(valuePtr2));
     f1 = (long)Blt_GetHashValue(hPtr1);
     f2 = (long)Blt_GetHashValue(hPtr2);
     return f1 - f2;
@@ -2140,7 +2140,7 @@ CompareAsciiRows(ClientData clientData, Column *colPtr, Row *rowPtr1,
     } else if (IsEmpty(valuePtr2)) {
 	return -1;
     }
-    return strcmp(valuePtr1->string, valuePtr2->string);
+    return strcmp(GetString(valuePtr1), GetString(valuePtr2));
 }
 
 static int
