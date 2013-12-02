@@ -3138,10 +3138,9 @@ ComboBoxStyleGeometryProc(Cell *cellPtr, CellStyle *cellStylePtr)
     cellPtr->flags &= ~GEOMETRY;	/* Remove the dirty flag from the
 					 * cell. */
     tw = th = iw = ih = 0;
-    cellPtr->width = cellPtr->height = 2 * (stylePtr->borderWidth + FOCUS_PAD);
-    cellPtr->width  += 2 * CELL_PADX;
-    cellPtr->height += 2 * CELL_PADY;
-    cellPtr->width  += colPtr->ruleWidth + PADDING(colPtr->pad);
+    cellPtr->width = 2 * (stylePtr->borderWidth + FOCUS_PAD + CELL_PADX);
+    cellPtr->height = 2 * (stylePtr->borderWidth + FOCUS_PAD + CELL_PADY);
+    cellPtr->width += colPtr->ruleWidth + PADDING(colPtr->pad);
     cellPtr->height += rowPtr->ruleHeight;
 
     FreeCell(cellPtr);
@@ -3745,7 +3744,7 @@ ParseImageFormat(Tcl_Interp *interp, TableView *viewPtr, Cell *cellPtr,
     if (tkImage == NULL) {
 	return TCL_ERROR;
     }
-    FreeCell(cellPtr);
+    cellPtr->tkImage = tkImage;
     if (objc == 2) {
 	cellPtr->text = Blt_Strdup(Tcl_GetString(objv[1]));
 	cellPtr->flags |= TEXTALLOC;
@@ -3795,10 +3794,11 @@ ImageBoxStyleGeometryProc(Cell *cellPtr, CellStyle *cellStylePtr)
     cellPtr->flags &= ~GEOMETRY;	/* Remove the dirty flag from the
 					 * cell. */
     pw = ph = iw = ih = tw = th = 0;
+
     cellPtr->width = cellPtr->height = 2 * (stylePtr->borderWidth + FOCUS_PAD);
-    cellPtr->width += 2 * CELL_PADX;
+    cellPtr->width  += 2 * CELL_PADX;
     cellPtr->height += 2 * CELL_PADY;
-    cellPtr->width += colPtr->ruleWidth;
+    cellPtr->width  += colPtr->ruleWidth + PADDING(colPtr->pad);
     cellPtr->height += rowPtr->ruleHeight;
 
     FreeCell(cellPtr);
@@ -3906,11 +3906,7 @@ ImageBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
     colPtr = keyPtr->colPtr;
 
     relief = stylePtr->relief;
-    if ((rowPtr->flags|colPtr->flags|cellPtr->flags) & SELECTED) { 
-	/* Selected */
-	bg = stylePtr->selectBg;
-	gc = stylePtr->selectGC;
-    } else if ((rowPtr->flags|colPtr->flags|cellPtr->flags) & DISABLED) {
+    if ((rowPtr->flags|colPtr->flags|cellPtr->flags) & DISABLED) {
 	/* Disabled */
 	bg = stylePtr->disableBg;
 	gc = stylePtr->disableGC;
@@ -3920,6 +3916,10 @@ ImageBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
 	bg = stylePtr->activeBg;
 	gc = stylePtr->activeGC;
 	relief = stylePtr->activeRelief;
+    } else if ((rowPtr->flags|colPtr->flags|cellPtr->flags) & SELECTED) { 
+	/* Selected */
+	bg = stylePtr->selectBg;
+	gc = stylePtr->selectGC;
     } else if ((rowPtr->flags|colPtr->flags|cellPtr->flags) & HIGHLIGHT) { 
 	/* Highlighted */
 	bg = GetHighlightBg((CellStyle *)stylePtr, rowPtr);
@@ -3933,26 +3933,43 @@ ImageBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
 	gc = stylePtr->normalGC;
     }
 
-    rowHeight = rowPtr->height;
-    colWidth  = colPtr->width;
+    rowHeight = rowPtr->height - rowPtr->ruleHeight;
+    colWidth  = colPtr->width - colPtr->ruleWidth;
 
     /* Draw background. */
     Blt_Bg_FillRectangle(viewPtr->tkwin, drawable, bg, x, y, colWidth,
 	rowHeight, stylePtr->borderWidth, relief);
 
-    rowHeight -= 2 * stylePtr->borderWidth + 3;
-    colWidth  -= 2 * stylePtr->borderWidth + 3;
-    x += stylePtr->borderWidth + 1;
-    y += stylePtr->borderWidth + 1;
+    /* Draw Rule */
+    if (rowPtr->ruleHeight > 0) {
+	XFillRectangle(viewPtr->display, drawable, rowPtr->ruleGC, 
+                x, y + rowHeight, colWidth, rowPtr->ruleHeight);
+    }
+    if (colPtr->ruleWidth > 0) {
+	XFillRectangle(viewPtr->display, drawable, colPtr->ruleGC, 
+                x + colWidth, y, colPtr->ruleWidth, rowHeight);
+    }
+    rowHeight -= 2 * stylePtr->borderWidth;
+    colWidth  -= 2 * stylePtr->borderWidth - PADDING(colPtr->pad);
+
+    x += stylePtr->borderWidth + colPtr->pad.side1;
+    y += stylePtr->borderWidth;
+
     /* Draw the focus ring if this cell has focus. */
     if ((viewPtr->flags & FOCUS) && (viewPtr->focusPtr == cellPtr)) {
-	XDrawRectangle(viewPtr->display, drawable, gc, x, y, colWidth, 
-		       rowHeight);
+	XDrawRectangle(viewPtr->display, drawable, gc, x+2, y+2, colWidth - 5, 
+		       rowHeight - 4);
     }
-    x += CELL_PADX;
-    y += CELL_PADY;
-    cellHeight = cellPtr->height - 2 * (stylePtr->borderWidth + CELL_PADY) - 3;
-    cellWidth = cellPtr->width - 2 * (stylePtr->borderWidth + CELL_PADX) - 3;
+
+    x += CELL_PADX + FOCUS_PAD;
+    y += CELL_PADY + FOCUS_PAD;
+    rowHeight -= 2 * (FOCUS_PAD + CELL_PADY);
+    colWidth  -= 2 * (FOCUS_PAD + CELL_PADX);
+
+    cellHeight = cellPtr->height - 
+        2 * (stylePtr->borderWidth + CELL_PADY + FOCUS_PAD);
+    cellWidth  = cellPtr->width  - PADDING(colPtr->pad) - 
+        2 * (stylePtr->borderWidth + CELL_PADX + FOCUS_PAD);
 
     /* Justify (x) and center (y) the contents of the cell. */
     if (rowHeight > cellHeight) {
@@ -3988,9 +4005,15 @@ ImageBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
 	gap = stylePtr->gap;
     }
     ix = x + gap;
-    iy = y + (cellHeight - ih) / 2;
+    iy = y;
+    if (rowHeight > ih) {
+        iy += (rowHeight - ih) / 2;
+    }
     px = ix + iw + gap;
     py = y;
+    if (rowHeight > ph) {
+        py += (rowHeight - ph) / 2;
+    }
     if (stylePtr->icon != NULL) {
 	Tk_RedrawImage(IconBits(stylePtr->icon), 0, 0, iw, ih,drawable, ix, iy);
 	x += iw + gap;

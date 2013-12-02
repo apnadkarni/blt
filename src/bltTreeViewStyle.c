@@ -3145,7 +3145,7 @@ ComboBoxStyleGeometryProc(Cell *cellPtr, CellStyle *cellStylePtr)
     Blt_Font_GetMetrics(font, &fm);
     stylePtr->arrowWidth = fm.ascent - 2;
     aw = ah = (2 * stylePtr->arrowBorderWidth) + stylePtr->arrowWidth;
-    aw += 2 * 1;
+     aw += 2 * 1;
     ah += 2 * 1;
     cellPtr->width  += iw + 2 * gap + aw + tw;
     cellPtr->height += MAX3(th, ih, ah);
