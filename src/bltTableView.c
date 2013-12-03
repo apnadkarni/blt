@@ -118,6 +118,9 @@
 
 typedef ClientData (TagProc)(TableView *viewPtr, const char *string);
 
+#define DEF_CELL_STATE			"normal"
+#define DEF_CELL_STYLE			(char *)NULL
+
 #define DEF_ACTIVE_TITLE_BG		STD_ACTIVE_BACKGROUND
 #define DEF_ACTIVE_TITLE_FG		STD_ACTIVE_FOREGROUND
 #define DEF_AUTO_CREATE			"0"
@@ -532,6 +535,16 @@ static Blt_ConfigSpec columnSpecs[] =
 	Blt_Offset(Column, reqWidth), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_END, (char *)NULL, (char *)NULL, (char *)NULL,
 	(char *)NULL, 0, 0}
+};
+
+static Blt_ConfigSpec cellSpecs[] =
+{
+    {BLT_CONFIG_CUSTOM, "-state", "state", "State", DEF_CELL_STATE, 
+	Blt_Offset(Cell, flags), BLT_CONFIG_DONT_SET_DEFAULT, 
+	&stateOption},
+    {BLT_CONFIG_CUSTOM, "-style", "style", "Style", DEF_CELL_STYLE, 
+	Blt_Offset(Cell, stylePtr), BLT_CONFIG_NULL_OK, &styleOption},
+    {BLT_CONFIG_END, NULL, NULL, NULL, NULL, 0, 0}
 };
 
 static Blt_ConfigSpec rowSpecs[] =
@@ -4104,8 +4117,8 @@ TableViewPickProc(
 	ComputeGeometry(viewPtr);
     }	
     if (viewPtr->flags & LAYOUT_PENDING) {
-	/* Can't trust the selected items if rows/columns have been added or
-	 * deleted. So recompute the layout. */
+	/* Can't trust the selected items if rows/columns have been added
+	 * or deleted. So recompute the layout. */
 	ComputeLayout(viewPtr);
     }
     if (viewPtr->flags & SCROLL_PENDING) {
@@ -5745,6 +5758,663 @@ BindOp(TableView *viewPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	 objc - 3, objv + 3);
 }
 
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * CellActivateOp --
+ *
+ * 	Turns on highlighting for a particular cell.  Only one cell
+ *      can be active at a time.
+ *
+ * Results:
+ *	A standard TCL result.  If TCL_ERROR is returned, then interp->result
+ *	contains an error message.
+ *
+ *      .view cell activate ?cell?
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+CellActivateOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+               Tcl_Obj *const *objv)
+{
+    TableView *viewPtr = clientData;
+    Cell *cellPtr, *activePtr;
+
+    if (viewPtr->table == NULL) {
+	Tcl_AppendResult(interp, "no data table to view.", (char *)NULL);
+	return TCL_ERROR;
+    }
+    if (GetCellFromObj(interp, viewPtr, objv[3], &cellPtr) != TCL_OK) {
+	return TCL_ERROR;
+    }
+    if (cellPtr == NULL) {
+	return TCL_OK;
+    }
+    activePtr = viewPtr->activePtr;
+    viewPtr->activePtr = cellPtr;
+    /* If we aren't already queued to redraw the widget, try to directly draw
+     * into window. */
+    if ((viewPtr->flags & REDRAW_PENDING) == 0) {
+	Drawable drawable;
+
+	drawable = Tk_WindowId(viewPtr->tkwin);
+	if (activePtr != NULL) {
+	    DisplayCell(activePtr, drawable, TRUE);
+	}
+	DisplayCell(cellPtr, drawable, TRUE);
+    }
+    return TCL_OK;
+}
+
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * CellBboxOp --
+ *
+ *      .view cell bbox $cell
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+CellBboxOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+       Tcl_Obj *const *objv)
+{
+    TableView *viewPtr = clientData;
+    int i;
+    int x1, y1, x2, y2;
+    Tcl_Obj *listObjPtr;
+
+    if (viewPtr->table == NULL) {
+	Tcl_AppendResult(interp, "no data table to view.", (char *)NULL);
+	return TCL_ERROR;
+    }
+    if (viewPtr->flags & (LAYOUT_PENDING|GEOMETRY)) {
+	/*
+	 * The layout is dirty.  Recompute it now, before we use the world
+	 * dimensions.  But remember that the "bbox" operation isn't valid for
+	 * hidden entries (since they're not visible, they don't have world
+	 * coordinates).
+	 */
+	ComputeGeometry(viewPtr);
+    }
+
+    x1 = viewPtr->worldWidth;
+    y1 = viewPtr->worldHeight;
+    x2 = y2 = 0;
+    for (i = 3; i < objc; i++) {
+	Cell *cellPtr;
+	CellKey *keyPtr;
+	Column *colPtr;
+	Row *rowPtr;
+
+	if (GetCellFromObj(interp, viewPtr, objv[i], &cellPtr)  != TCL_OK) {
+	    return TCL_ERROR;
+	}
+	if (cellPtr == NULL) {
+	    continue;
+	}
+	keyPtr = GetKey(cellPtr);
+	rowPtr = keyPtr->rowPtr;
+	colPtr = keyPtr->colPtr;
+	if (x1 > colPtr->worldX) {
+	    x1 = colPtr->worldX;
+	}
+	if ((colPtr->worldX + colPtr->width) > x2) {
+	    x2 = colPtr->worldX + colPtr->width;
+	}
+	if (y1 > rowPtr->worldY) {
+	    y1 = rowPtr->worldY;
+	}
+	if ((rowPtr->worldY + rowPtr->height) > y2) {
+	    y2 = rowPtr->worldY + rowPtr->height;
+	}
+    }
+    {
+	int w, h;
+
+	w = VPORTWIDTH(viewPtr);
+	h = VPORTHEIGHT(viewPtr);
+	/*
+	 * Do a min-max text for the intersection of the viewport and the
+	 * computed bounding box.  If there is no intersection, return the
+	 * empty string.
+	 */
+	if ((x2 < viewPtr->xOffset) || (y2 < viewPtr->yOffset) ||
+	    (x1 >= (viewPtr->xOffset + w)) || (y1 >= (viewPtr->yOffset + h))) {
+	    return TCL_OK;
+	}
+	x1 = SCREENX(viewPtr, x1);
+	y1 = SCREENY(viewPtr, y1);
+	x2 = SCREENX(viewPtr, x2);
+	y2 = SCREENY(viewPtr, y2);
+    }
+
+    listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
+    Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewIntObj(x1));
+    Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewIntObj(y1));
+    Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewIntObj(x2));
+    Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewIntObj(y2));
+    Tcl_SetObjResult(interp, listObjPtr);
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * CellCgetOp --
+ *
+ *      .view cell cget $cell option 
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+CellCgetOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+       Tcl_Obj *const *objv)
+{
+    TableView *viewPtr = clientData;
+    Cell *cellPtr;
+
+    if (GetCellFromObj(interp, viewPtr, objv[3], &cellPtr) != TCL_OK) {
+	return TCL_ERROR;
+    }
+    if (cellPtr == NULL) {
+        return TCL_OK;
+    }
+    return Blt_ConfigureValueFromObj(interp, viewPtr->tkwin, cellSpecs,
+	(char *)cellPtr, objv[4], 0);
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * CellConfigureOp --
+ *
+ * 	This procedure is called to process an objv/objc list, plus the Tk
+ * 	option database, in order to configure (or reconfigure) the widget.
+ *
+ * Results:
+ *	A standard TCL result.  If TCL_ERROR is returned, then
+ *	interp->result contains an error message.
+ *
+ * Side effects:
+ *	Configuration information, such as text string, colors, font,
+ *	etc. get set for viewPtr; old resources get freed, if there were
+ *	any.  The widget is redisplayed.
+ *
+ *      .view cell configure $cell ?option value?
+ *---------------------------------------------------------------------------
+ */
+static int
+CellConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+                Tcl_Obj *const *objv)
+{
+    TableView *viewPtr = clientData;
+    Cell *cellPtr;
+
+    if (GetCellFromObj(interp, viewPtr, objv[3], &cellPtr) != TCL_OK) {
+	return TCL_ERROR;
+    }
+    if (cellPtr == NULL) {
+        return TCL_OK;
+    }
+    if (objc == 4) {
+	return Blt_ConfigureInfoFromObj(interp, viewPtr->tkwin, 
+		cellSpecs, (char *)cellPtr, (Tcl_Obj *)NULL, 0);
+    } else if (objc == 5) {
+	return Blt_ConfigureInfoFromObj(interp, viewPtr->tkwin, 
+		cellSpecs, (char *)cellPtr, objv[4], 0);
+    } 
+    iconOption.clientData = viewPtr;
+    tableOption.clientData = viewPtr;
+    if (Blt_ConfigureWidgetFromObj(interp, viewPtr->tkwin, cellSpecs, 
+	objc - 4, objv + 4, (char *)cellPtr, BLT_CONFIG_OBJV_ONLY) != TCL_OK) {
+	return TCL_ERROR;
+    }
+    EventuallyRedraw(viewPtr);
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * CellDeactivateOp --
+ *
+ * 	Deactivates all cells.
+ *
+ * Results:
+ *	A standard TCL result.  If TCL_ERROR is returned, then
+ *	interp->result contains an error message.
+ *
+ *	  .view deactivate 
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+CellDeactivateOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+                 Tcl_Obj *const *objv)
+{
+    TableView *viewPtr = clientData;
+    Cell *activePtr;
+
+    activePtr = viewPtr->activePtr;
+    viewPtr->activePtr = NULL;
+    /* If we aren't already queued to redraw the widget, try to directly
+     * draw into window. */
+    if ((viewPtr->flags & REDRAW_PENDING) == 0) {
+	if (activePtr != NULL) {
+	    Drawable drawable;
+
+	    drawable = Tk_WindowId(viewPtr->tkwin);
+	    DisplayCell(activePtr, drawable, TRUE);
+	}
+    }
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * CellFocusOp --
+ *
+ * 	Gets or sets focus on a cell.
+ *
+ * Results:
+ *	A standard TCL result.  If TCL_ERROR is returned, then
+ *	interp->result contains an error message.
+ *
+ *	  .view cell focus ?cell?
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+CellFocusOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+            Tcl_Obj *const *objv)
+{
+    TableView *viewPtr = clientData;
+    Cell *cellPtr;
+
+    if (objc == 3) {
+	Tcl_Obj *listObjPtr;
+
+	listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
+	if (viewPtr->focusPtr != NULL) {
+	    CellKey *keyPtr;
+	    Column *colPtr;
+	    Row *rowPtr;
+	    Tcl_Obj *objPtr;
+
+	    keyPtr = GetKey(viewPtr->focusPtr);
+	    rowPtr = keyPtr->rowPtr;
+	    colPtr = keyPtr->colPtr;
+	    objPtr = Tcl_NewLongObj(blt_table_row_index(rowPtr->row));
+	    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+	    objPtr = Tcl_NewLongObj(blt_table_column_index(colPtr->column));
+	    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+	}
+	Tcl_SetObjResult(interp, listObjPtr);
+	return TCL_OK;
+    }
+    if (GetCellFromObj(interp, viewPtr, objv[3], &cellPtr) != TCL_OK) {
+	return TCL_ERROR;
+    }
+    if (cellPtr != NULL) {
+	CellKey *keyPtr;
+	Row *rowPtr;
+	Column *colPtr;
+
+	keyPtr = GetKey(cellPtr);
+	rowPtr = keyPtr->rowPtr;
+	colPtr = keyPtr->colPtr;
+	if ((rowPtr->flags|colPtr->flags) & (HIDDEN|DISABLED)) {
+	    return TCL_OK;		/* Can't set focus to hidden or
+					 * disabled cell */
+	}
+	if (cellPtr != viewPtr->focusPtr) {
+	    viewPtr->focusPtr = cellPtr;
+	    EventuallyRedraw(viewPtr);
+	}
+	Blt_SetFocusItem(viewPtr->bindTable, viewPtr->focusPtr, ITEM_CELL);
+    }
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * CellIdentifyOp --
+ *
+ *	.t cell identify cell x y 
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+CellIdentifyOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+	   Tcl_Obj *const *objv)
+{
+    Cell *cellPtr;
+    CellKey *keyPtr;
+    CellStyle *stylePtr;
+    Column *colPtr;
+    Row *rowPtr;
+    TableView *viewPtr = clientData;
+    const char *string;
+    int x, y, rootX, rootY;
+
+    if (GetCellFromObj(interp, viewPtr, objv[3], &cellPtr) != TCL_OK) {
+	return TCL_ERROR;
+    }
+    if (cellPtr == NULL) {
+	return TCL_OK;
+    }
+    if ((Tcl_GetIntFromObj(interp, objv[4], &x) != TCL_OK) ||
+	(Tcl_GetIntFromObj(interp, objv[5], &y) != TCL_OK)) {
+	return TCL_ERROR;
+    }
+    keyPtr = GetKey(cellPtr);
+    colPtr = keyPtr->colPtr;
+    rowPtr = keyPtr->rowPtr;
+    /* Convert from root coordinates to window-local coordinates to cell-local
+     * coordinates */
+    Tk_GetRootCoords(viewPtr->tkwin, &rootX, &rootY);
+    x -= rootX + SCREENX(viewPtr, colPtr->worldX);
+    y -= rootY + SCREENY(viewPtr, rowPtr->worldY);
+    string = NULL;
+    stylePtr = GetCurrentStyle(viewPtr, rowPtr, colPtr, cellPtr);
+    if (stylePtr->classPtr->identProc != NULL) {
+	string = (*stylePtr->classPtr->identProc)(cellPtr, stylePtr, x, y);
+    }
+    if (string != NULL) {
+	Tcl_SetStringObj(Tcl_GetObjResult(interp), string, -1);
+    }
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * CellIndexOp --
+ *
+ *	Converts the string representing a cell index into their respective
+ *      "node field" identifiers.
+ *
+ * Results: 
+ *      A standard TCL result.  Interp->result will contain the identifier
+ *	of each inode found. If an inode could not be found, then the
+ *	serial identifier will be the empty string.
+ *
+ *      .view cell index $cell
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+CellIndexOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+	Tcl_Obj *const *objv)
+{
+    Cell *cellPtr;
+    CellKey *keyPtr;
+    Column *colPtr;
+    Row *rowPtr;
+    TableView *viewPtr = clientData;
+    Tcl_Obj *listObjPtr, *objPtr;
+
+    if ((GetCellFromObj(NULL, viewPtr, objv[3], &cellPtr) != TCL_OK) ||
+	(cellPtr == NULL)) {
+	return TCL_OK;
+    }
+    keyPtr = GetKey(cellPtr);
+    colPtr = keyPtr->colPtr;
+    rowPtr = keyPtr->rowPtr;
+    listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
+    objPtr = Tcl_NewLongObj(blt_table_row_index(rowPtr->row));
+    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+    objPtr = Tcl_NewLongObj(blt_table_column_index(colPtr->column));
+    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+    Tcl_SetObjResult(interp, listObjPtr);
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * CellInvokeOp --
+ *
+ *      .view cell invoke $cell
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+CellInvokeOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+             Tcl_Obj *const *objv)
+{
+    TableView *viewPtr = clientData;
+    Row *rowPtr;
+    Column *colPtr;
+    Cell *cellPtr;
+    CellStyle *stylePtr;
+    CellKey *keyPtr;
+
+    if (GetCellFromObj(interp, viewPtr, objv[3], &cellPtr) != TCL_OK) {
+	return TCL_ERROR;
+    }
+    if (cellPtr == NULL) {
+	return TCL_OK;
+    }
+    keyPtr = GetKey(cellPtr);
+    colPtr = keyPtr->colPtr;
+    rowPtr = keyPtr->rowPtr;
+    stylePtr = GetCurrentStyle(viewPtr, rowPtr, colPtr, cellPtr);
+    if (stylePtr->cmdObjPtr != NULL) {
+	int result;
+	Tcl_Obj *cmdObjPtr, *objPtr;
+
+	cmdObjPtr = Tcl_DuplicateObj(stylePtr->cmdObjPtr);
+	objPtr = Tcl_NewLongObj(blt_table_row_index(rowPtr->row));
+	Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
+	objPtr = Tcl_NewLongObj(blt_table_column_index(colPtr->column));
+	Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
+	Tcl_IncrRefCount(cmdObjPtr);
+	Tcl_Preserve(cellPtr);
+	result = Tcl_EvalObjEx(interp, cmdObjPtr, TCL_EVAL_GLOBAL);
+	Tcl_Release(cellPtr);
+	Tcl_DecrRefCount(cmdObjPtr);
+	if (result != TCL_OK) {
+	    return TCL_ERROR;
+	}
+    } 
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * CellSeeOp --
+ *
+ *      .view cell see $cell
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+CellSeeOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+          Tcl_Obj *const *objv)
+{
+    Cell *cellPtr;
+    CellKey *keyPtr;
+    Column *colPtr;
+    Row *rowPtr;
+    TableView *viewPtr = clientData;
+    long x, y;
+    int viewWidth, viewHeight;
+
+    if (GetCellFromObj(interp, viewPtr, objv[2], &cellPtr) != TCL_OK) {
+	return TCL_ERROR;
+    }
+    if (cellPtr == NULL) {
+	return TCL_OK;
+    }
+    keyPtr = GetKey(cellPtr);
+    colPtr = keyPtr->colPtr;
+    rowPtr = keyPtr->rowPtr;
+    viewWidth = VPORTWIDTH(viewPtr);
+    viewHeight = VPORTHEIGHT(viewPtr);
+    y = viewPtr->yOffset;
+    x = viewPtr->xOffset;
+    if (rowPtr->worldY < y) {
+	y = rowPtr->worldY;
+    } else if ((rowPtr->worldY + rowPtr->height) > (y + viewHeight)) {
+	y = rowPtr->worldY + rowPtr->height - viewHeight;
+    }
+    if (colPtr->worldX < x) {
+	x = colPtr->worldX;
+    } else if ((colPtr->worldX + colPtr->width) > (x + viewWidth)) {
+	x = colPtr->worldX + colPtr->width - viewWidth;
+    }
+    if (x < 0) {
+	x = 0;
+    }
+    if (y < 0) {
+	y = 0;
+    }
+    if (x != viewPtr->xOffset) {
+	viewPtr->xOffset = x;
+	viewPtr->flags |= SCROLLX;
+    }
+    if (y != viewPtr->yOffset) {
+	viewPtr->yOffset = y;
+	viewPtr->flags |= SCROLLY;
+    }
+    EventuallyRedraw(viewPtr);
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * CellStyleOp --
+ *
+ *      .view cell style $cell
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+CellStyleOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+	    Tcl_Obj *const *objv)
+{
+    TableView *viewPtr = clientData;
+    CellStyle *stylePtr;
+    Cell *cellPtr;
+    CellKey *keyPtr;
+
+    cellPtr = NULL;			/* Suppress compiler warning. */
+    if (GetCellFromObj(interp, viewPtr, objv[3], &cellPtr) != TCL_OK) {
+	return TCL_ERROR;
+    }
+    if (cellPtr == NULL) {
+        return TCL_OK;
+    }
+    keyPtr = GetKey(cellPtr);
+    stylePtr = GetCurrentStyle(viewPtr, keyPtr->rowPtr, keyPtr->colPtr, 
+                cellPtr);
+    Tcl_SetStringObj(Tcl_GetObjResult(interp), stylePtr->name, -1);
+    return TCL_OK;
+}
+
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * CellWritableOp --
+ *
+ *	  .view cell writable $cell
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+CellWritableOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+               Tcl_Obj *const *objv)
+{
+    Cell *cellPtr;
+    TableView *viewPtr = clientData;
+    int state;
+
+    if (GetCellFromObj(interp, viewPtr, objv[3], &cellPtr) != TCL_OK) {
+	return TCL_ERROR;
+    }
+    state = FALSE;
+    if (cellPtr != NULL) {
+	CellKey *keyPtr;
+	CellStyle *stylePtr;
+	Column *colPtr;
+	Row *rowPtr;
+
+	keyPtr = GetKey(cellPtr);
+	colPtr = keyPtr->colPtr;
+	rowPtr = keyPtr->rowPtr;
+	stylePtr = GetCurrentStyle(viewPtr, rowPtr, colPtr, cellPtr);
+	
+	state = (stylePtr->flags & EDIT);
+    }
+    Tcl_SetBooleanObj(Tcl_GetObjResult(interp), state);
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * CellOp --
+ *
+ *	This procedure handles cell operations.
+ *
+ * Results:
+ *	A standard TCL result.
+ *
+ *---------------------------------------------------------------------------
+ */
+static Blt_OpSpec cellOps[] =
+{
+    {"activate",   1, CellActivateOp,    3, 4, "?cell?",},
+    {"bbox",       1, CellBboxOp,        4, 4, "cell",},
+    {"cget",       2, CellCgetOp,        5, 5, "cell option",},
+    {"configure",  2, CellConfigureOp,   4, 0, "cell ?option value?...",},
+    {"deactivate", 1, CellDeactivateOp,  3, 3, "",},
+    {"focus",      2, CellFocusOp,       4, 0, "?cell?",},
+    {"identify",   2, CellIdentifyOp,    6, 6, "cell x y",},
+    {"index",      3, CellIndexOp,       4, 4, "cell",},
+    {"invoke",     3, CellInvokeOp,      4, 4, "cell",},
+    {"see",        3, CellSeeOp,         4, 4, "cell",},
+    {"style",      3, CellStyleOp,       4, 4, "cell",},
+    {"writable",   3, CellWritableOp,    4, 4, "cell",},
+};
+static int numCellOps = sizeof(cellOps) / sizeof(Blt_OpSpec);
+
+static int
+CellOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+	Tcl_Obj *const *objv)
+{
+    Tcl_ObjCmdProc *proc;
+    int result;
+
+    proc = Blt_GetOpFromObj(interp, numCellOps, cellOps, BLT_OP_ARG2, objc, 
+	objv, 0);
+    if (proc == NULL) {
+	return TCL_ERROR;
+    }
+    result = (*proc) (clientData, interp, objc, objv);
+    return result;
+}
+
+
 /*
  *---------------------------------------------------------------------------
  *
@@ -6334,7 +7004,7 @@ ColumnIndexOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * ColumnInsertOp --
  *
- *	Add new columns to the tree.
+ *	Add new columns to the table.
  *
  *	.tv column insert position name ?option values?
  *---------------------------------------------------------------------------
@@ -9580,8 +10250,9 @@ StyleApplyOp(TableView *viewPtr, Tcl_Interp *interp, int objc,
 	    stylePtr->refCount++;	
 	    cellPtr->stylePtr = stylePtr;
 	    Blt_CreateHashEntry(&stylePtr->table, (char *)keyPtr, &isNew);
-	    cellPtr->flags |= GEOMETRY;	/* Assume that the new style changes
-					 * the geometry of the cell. */
+	    cellPtr->flags |= GEOMETRY;	/* Assume that the new style
+					 * changes the geometry of the
+					 * cell. */
 	}
     }
     Blt_Chain_Destroy(cells);
@@ -10292,14 +10963,18 @@ ComputeGeometry(TableView *viewPtr)
 {
     Blt_HashEntry *hPtr;
     Blt_HashSearch iter;
+    long i;
  
-    viewPtr->flags &= ~GEOMETRY;
+    viewPtr->flags &= ~GEOMETRY;        
     viewPtr->rowTitleWidth = viewPtr->colTitleHeight = 0;
-    for (hPtr = Blt_FirstHashEntry(&viewPtr->columnTable, &iter); hPtr != NULL;
-	 hPtr = Blt_NextHashEntry(&iter)) {
+
+    /* Step 1. Set the initial size of the row or column by computing its
+     *         title size. Get the geometry of hidden rows and columns so
+     *         that it doesn't cost to show/hide them. */
+    for (i = 0; i < viewPtr->numColumns; i++) {
 	Column *colPtr;
 
-	colPtr = Blt_GetHashValue(hPtr);
+	colPtr = viewPtr->columns[i];
 	if (colPtr->flags & GEOMETRY) {
 	    if (viewPtr->flags & COLUMN_TITLES) {
 		GetColumnTitleGeometry(viewPtr, colPtr);
@@ -10314,11 +10989,10 @@ ComputeGeometry(TableView *viewPtr)
 	    }
 	}
     }
-    for (hPtr = Blt_FirstHashEntry(&viewPtr->rowTable, &iter); hPtr != NULL;
-	 hPtr = Blt_NextHashEntry(&iter)) {
+    for (i = 0; i < viewPtr->numRows; i++) {
 	Row *rowPtr;
 
-	rowPtr = Blt_GetHashValue(hPtr);
+	rowPtr = viewPtr->rows[i];
 	if (rowPtr->flags & GEOMETRY) {
 	    if (viewPtr->flags & ROW_TITLES) {
 		GetRowTitleGeometry(viewPtr, rowPtr);
@@ -10333,6 +11007,9 @@ ComputeGeometry(TableView *viewPtr)
 	    }
 	}
     }
+    /* Step 2: Get the dimensions each cell (recomputing the geometry as
+     *         needed) and compute the tallest/widest cell in each
+     *         row/column. */
     for (hPtr = Blt_FirstHashEntry(&viewPtr->cellTable, &iter); hPtr != NULL;
 	 hPtr = Blt_NextHashEntry(&iter)) {
 	CellKey *keyPtr;
@@ -10372,15 +11049,10 @@ ComputeLayout(TableView *viewPtr)
 	Row *rowPtr;
 
 	rowPtr = viewPtr->rows[i];
-	rowPtr->flags &= ~GEOMETRY;	/* Always remove the geometry flag. */
+	rowPtr->flags &= ~GEOMETRY;	/* Always remove the geometry
+                                         * flag. */
 	rowPtr->index = i;		/* Reset the index. */
 	rowPtr->height = rowPtr->nomHeight;
-#ifdef notdef
-	rowPtr->height |= 0x1;		/* Make the height of the row
-					 * odd. This means that the dotted
-					 * focus rectangle will have dots on
-					 * the corners.  */
-#endif
 	if (rowPtr->reqHeight > 0) {
 	    rowPtr->height = rowPtr->reqHeight;
 	}

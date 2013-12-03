@@ -1089,7 +1089,7 @@ GetHighlightBg(CellStyle *stylePtr, Row *rowPtr)
 /*
  *---------------------------------------------------------------------------
  *
- * PropagateDirtyFlags --
+ * PropagateGeometryFlags --
  *
  *	Sets the dirty flag on all the row, columns, and cells using this
  *	style.  This is because the style changed such that the geometry
@@ -1099,7 +1099,7 @@ GetHighlightBg(CellStyle *stylePtr, Row *rowPtr)
  *---------------------------------------------------------------------------
  */
 static void
-PropagateDirtyFlags(TableView *viewPtr, CellStyle *stylePtr)
+PropagateGeometryFlags(TableView *viewPtr, CellStyle *stylePtr)
 {
     Blt_HashEntry *hPtr;
     Blt_HashSearch iter;
@@ -1183,7 +1183,6 @@ SetTextFromObj(ComboBoxStyle *stylePtr, Tcl_Obj *objPtr)
     stylePtr->text = Blt_AssertMalloc(numBytes + 1);
     strncpy((char *)stylePtr->text, string, numBytes);
     stylePtr->textLen = numBytes;
-    stylePtr->flags |= LAYOUT_PENDING;
 }
 
 /*
@@ -1209,7 +1208,7 @@ IconChangedProc(ClientData clientData, int x, int y, int width, int height,
 
     viewPtr = stylePtr->viewPtr;
     viewPtr->flags |= GEOMETRY;
-    PropagateDirtyFlags(viewPtr, stylePtr);
+    PropagateGeometryFlags(viewPtr, stylePtr);
 }
 
 static Icon
@@ -1428,20 +1427,20 @@ TextVarTraceProc(
 	return NULL;
     }
     if (flags & TCL_TRACE_WRITES) {
-	Tcl_Obj *valueObjPtr;
+	Tcl_Obj *objPtr;
 
 	/*
-	 * Update the combobutton's text with the value of the variable,
-	 * unless the widget already has that value (this happens when the
+	 * Update the style's text with the value of the variable, unless
+	 * the widget already has that value (this happens when the
 	 * variable changes value because we changed it because someone
 	 * typed in the entry).
 	 */
-	valueObjPtr = Tcl_ObjGetVar2(interp, stylePtr->textVarObjPtr, NULL, 
+	objPtr = Tcl_ObjGetVar2(interp, stylePtr->textVarObjPtr, NULL, 
 		TCL_GLOBAL_ONLY | TCL_LEAVE_ERR_MSG);
-	if (valueObjPtr == NULL) {
+	if (objPtr == NULL) {
 	    return GetInterpResult(interp);
 	} else {
-	    SetTextFromObj(stylePtr, valueObjPtr);
+	    SetTextFromObj(stylePtr, objPtr);
 	}
     }
     return NULL;
@@ -1492,18 +1491,18 @@ IconVarTraceProc(
     }
     if (flags & TCL_TRACE_WRITES) {
 	Icon icon;
-	Tcl_Obj *valueObjPtr;
+	Tcl_Obj *objPtr;
 
 	/*
-	 * Update the combobutton's icon with the image whose name is
-	 * stored in the variable.
+	 * Update the style's icon with the image whose name is stored in
+	 * the variable.
 	 */
-	valueObjPtr = Tcl_ObjGetVar2(interp, stylePtr->iconVarObjPtr, NULL, 
+	objPtr = Tcl_ObjGetVar2(interp, stylePtr->iconVarObjPtr, NULL, 
 		TCL_GLOBAL_ONLY | TCL_LEAVE_ERR_MSG);
-	if (valueObjPtr == NULL) {
+	if (objPtr == NULL) {
 	    return GetInterpResult(interp);
 	}
-	icon = GetIcon((CellStyle *)stylePtr, Tcl_GetString(valueObjPtr));
+	icon = GetIcon((CellStyle *)stylePtr, Tcl_GetString(objPtr));
 	if (icon == NULL) {
 	    return GetInterpResult(interp);
 	}
@@ -1998,7 +1997,7 @@ TextBoxStyleConfigureProc(TableView *viewPtr, CellStyle *cellStylePtr)
     stylePtr->highlightGC = newGC;
 
     if (Blt_ConfigModified(stylePtr->classPtr->specs, "-font", (char *)NULL)) {
-	PropagateDirtyFlags(viewPtr, (CellStyle *)stylePtr);
+	PropagateGeometryFlags(viewPtr, (CellStyle *)stylePtr);
     }
 }
 
@@ -2200,7 +2199,7 @@ TextBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
     /* Draw the focus ring if this cell has focus. */
     if ((viewPtr->flags & FOCUS) && (viewPtr->focusPtr == cellPtr)) {
 	XDrawRectangle(viewPtr->display, drawable, gc, x+2, y+2, colWidth - 5, 
-		       rowHeight - 4);
+		       rowHeight - 5);
     }
     x += CELL_PADX + FOCUS_PAD;
     y += CELL_PADY + FOCUS_PAD;
@@ -2510,7 +2509,7 @@ CheckBoxStyleConfigureProc(TableView *viewPtr, CellStyle *cellStylePtr)
     }
     if ((stylePtr->flags & SHOW_VALUES) && 
 	(Blt_ConfigModified(stylePtr->classPtr->specs, "-font", (char *)NULL))){
-	PropagateDirtyFlags(viewPtr, (CellStyle *)stylePtr);
+	PropagateGeometryFlags(viewPtr, (CellStyle *)stylePtr);
     }
 }
 
@@ -2714,7 +2713,7 @@ CheckBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
     /* Draw the focus ring if this cell has focus. */
     if ((viewPtr->flags & FOCUS) && (viewPtr->focusPtr == cellPtr)) {
 	XDrawRectangle(viewPtr->display, drawable, gc, x+2, y+2, colWidth - 5, 
-		       rowHeight - 4);
+		       rowHeight - 5);
     }
     x += CELL_PADX + FOCUS_PAD;
     y += CELL_PADY + FOCUS_PAD;
@@ -3047,7 +3046,7 @@ ComboBoxStyleConfigureProc(TableView *viewPtr, CellStyle *cellStylePtr)
     stylePtr->highlightGC = newGC;
 
     if (Blt_ConfigModified(stylePtr->classPtr->specs, "-font", (char *)NULL)) {
-	PropagateDirtyFlags(viewPtr, (CellStyle *)stylePtr);
+	PropagateGeometryFlags(viewPtr, (CellStyle *)stylePtr);
     }
 }
 
@@ -3274,7 +3273,7 @@ ComboBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
     /* Draw the focus ring if this cell has focus. */
     if ((viewPtr->flags & FOCUS) && (viewPtr->focusPtr == cellPtr)) {
 	XDrawRectangle(viewPtr->display, drawable, gc, x+2, y+2, colWidth - 5, 
-		       rowHeight - 4);
+		       rowHeight - 5);
     }
     x += CELL_PADX + FOCUS_PAD;
     y += CELL_PADY + FOCUS_PAD;
@@ -3717,7 +3716,7 @@ ImageBoxStyleConfigureProc(TableView *viewPtr, CellStyle *cellStylePtr)
     stylePtr->highlightGC = newGC;
 
     if (Blt_ConfigModified(stylePtr->classPtr->specs, "-font", (char *)NULL)) {
-	PropagateDirtyFlags(viewPtr, (CellStyle *)stylePtr);
+	PropagateGeometryFlags(viewPtr, (CellStyle *)stylePtr);
     }
 }
 
@@ -3958,7 +3957,7 @@ ImageBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
     /* Draw the focus ring if this cell has focus. */
     if ((viewPtr->flags & FOCUS) && (viewPtr->focusPtr == cellPtr)) {
 	XDrawRectangle(viewPtr->display, drawable, gc, x+2, y+2, colWidth - 5, 
-		       rowHeight - 4);
+		       rowHeight - 5);
     }
 
     x += CELL_PADX + FOCUS_PAD;

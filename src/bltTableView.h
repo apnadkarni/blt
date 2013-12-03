@@ -77,13 +77,12 @@
  * what cells were affected. The dirty flags are propagated to affected
  * cells.
  */
-#define GEOMETRY	(1<<0)		/* A cell has changed its size
-					 * (either by a change of data or
-					 * style).  The affects the row and
-					 * column that contain the cell.
-					 * Recompute the geometry for cells
-					 * in this row or column. */
-#define POSITION	(1<<1)
+#define GEOMETRY	(1<<0)		/* Forces the geometry of the
+                                         * cell/row/column/view to be
+                                         * recomputed.  */
+#define VISIBILITY	(1<<1)          /* Indicates that the visibility
+                                         * of the cells in the widget need
+                                         * to be recomputed. */
 #define HIDDEN		(1<<2)		/* The row or column is hidden. No
 					 * geometry is computed for cells in
 					 * hidden rows and columns. */
@@ -109,7 +108,15 @@
 					 * formatted text was alloced and
 					 * must be freed. */
 #define FOCUS		(1<<8)
-#define REDRAW		(1<<9)
+#define REDRAW		(1<<9)          /* Indicates the widget needs to be
+                                         * redrawn. Some changes may occur
+                                         * to cells that are off-screen and
+                                         * don't affect the cells that are
+                                         * on screen (e.g. adding columns
+                                         * or rows). Don't redraw the table
+                                         * unless there are cells in the
+                                         * visible portion that need to be
+                                         * redrawn. */
 
 /* Row and column only flags */
 #define DELETED		(1<<10)		/* The row or column has been
