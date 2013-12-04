@@ -86,8 +86,6 @@
 #define TRACE_VAR_FLAGS		(TCL_GLOBAL_ONLY|TCL_TRACE_WRITES|\
 				 TCL_TRACE_UNSETS)
 
-
-
 #ifdef WIN32
 #define DEF_ACTIVE_BG			RGB_GREY85
 #define DEF_CURSOR			"arrow"
@@ -2097,11 +2095,17 @@ TextBoxStyleGeometryProc(Cell *cellPtr, CellStyle *cellStylePtr)
 	}
     } 
     if (stylePtr->side & (SIDE_TOP | SIDE_BOTTOM)) {
-	cellPtr->width  += ODD(MAX(tw, iw));
-	cellPtr->height += ODD(ih + gap + th);
+	cellPtr->width  += MAX(tw, iw);
+	cellPtr->height += ih + gap + th;
     } else {
-	cellPtr->width  += ODD(iw + gap + tw);
-	cellPtr->height += ODD(MAX(th, ih));
+	cellPtr->width  += iw + gap + tw;
+	cellPtr->height += MAX(th, ih);
+    }
+    if (!ODD(colPtr->ruleWidth)) {
+        cellPtr->width  = ODD(cellPtr->width);
+    }
+    if (!ODD(rowPtr->ruleHeight)) {
+        cellPtr->height = ODD(cellPtr->height);
     }
     cellPtr->textWidth = tw;
     cellPtr->textHeight = th;
@@ -2199,7 +2203,7 @@ TextBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
     /* Draw the focus ring if this cell has focus. */
     if ((viewPtr->flags & FOCUS) && (viewPtr->focusPtr == cellPtr)) {
 	XDrawRectangle(viewPtr->display, drawable, gc, x+2, y+2, colWidth - 5, 
-		       rowHeight - 5);
+		       rowHeight - 4);
     }
     x += CELL_PADX + FOCUS_PAD;
     y += CELL_PADY + FOCUS_PAD;
@@ -2616,6 +2620,8 @@ CheckBoxStyleGeometryProc(Cell *cellPtr, CellStyle *cellStylePtr)
     }
     cellPtr->width  += stylePtr->gap + bw + iw + gap + tw;
     cellPtr->height += MAX3(bh, th, ih) | 0x1;
+    cellPtr->width  = ODD(cellPtr->width);
+    cellPtr->height = ODD(cellPtr->height);
 }
 
 /*
@@ -2713,7 +2719,7 @@ CheckBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
     /* Draw the focus ring if this cell has focus. */
     if ((viewPtr->flags & FOCUS) && (viewPtr->focusPtr == cellPtr)) {
 	XDrawRectangle(viewPtr->display, drawable, gc, x+2, y+2, colWidth - 5, 
-		       rowHeight - 5);
+		       rowHeight - 4);
     }
     x += CELL_PADX + FOCUS_PAD;
     y += CELL_PADY + FOCUS_PAD;
@@ -3173,6 +3179,8 @@ ComboBoxStyleGeometryProc(Cell *cellPtr, CellStyle *cellStylePtr)
     ah += 2 * 1;
     cellPtr->width  += iw + gap + aw + tw;
     cellPtr->height += MAX3(th, ih, ah);
+    cellPtr->width  = ODD(cellPtr->width);
+    cellPtr->height = ODD(cellPtr->height);
 }
 
 /*
@@ -3273,7 +3281,7 @@ ComboBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
     /* Draw the focus ring if this cell has focus. */
     if ((viewPtr->flags & FOCUS) && (viewPtr->focusPtr == cellPtr)) {
 	XDrawRectangle(viewPtr->display, drawable, gc, x+2, y+2, colWidth - 5, 
-		       rowHeight - 5);
+		       rowHeight - 4);
     }
     x += CELL_PADX + FOCUS_PAD;
     y += CELL_PADY + FOCUS_PAD;
@@ -3860,6 +3868,8 @@ ImageBoxStyleGeometryProc(Cell *cellPtr, CellStyle *cellStylePtr)
     if (stylePtr->icon != NULL) {
 	cellPtr->width += stylePtr->gap;
     }
+    cellPtr->width  = ODD(cellPtr->width);
+    cellPtr->height = ODD(cellPtr->height);
 }
 
 /*
@@ -3957,7 +3967,7 @@ ImageBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
     /* Draw the focus ring if this cell has focus. */
     if ((viewPtr->flags & FOCUS) && (viewPtr->focusPtr == cellPtr)) {
 	XDrawRectangle(viewPtr->display, drawable, gc, x+2, y+2, colWidth - 5, 
-		       rowHeight - 5);
+		       rowHeight - 4);
     }
 
     x += CELL_PADX + FOCUS_PAD;

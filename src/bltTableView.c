@@ -5956,7 +5956,7 @@ CellConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
 {
     TableView *viewPtr = clientData;
     Cell *cellPtr;
-    Cell *oldStylePtr;
+    CellStyle *oldStylePtr;
 
     if (GetCellFromObj(interp, viewPtr, objv[3], &cellPtr) != TCL_OK) {
 	return TCL_ERROR;
@@ -5984,10 +5984,15 @@ CellConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
 
 	keyPtr = GetKey(cellPtr);
         if (cellPtr->stylePtr != NULL) {
+            int isNew;
+
             cellPtr->stylePtr->refCount++;	
-	    Blt_CreateHashEntry(&stylePtr->table, (char *)keyPtr, &isNew);
+	    Blt_CreateHashEntry(&cellPtr->stylePtr->table, (char *)keyPtr, 
+                &isNew);
         }
         if (oldStylePtr != NULL) {
+            Blt_HashEntry *hPtr;
+
             /* Remove the cell from old style's table of cells. */
             oldStylePtr->refCount--;
             hPtr = Blt_FindHashEntry(&oldStylePtr->table, (char *)keyPtr);
