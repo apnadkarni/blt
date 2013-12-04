@@ -5956,6 +5956,7 @@ CellConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
 {
     TableView *viewPtr = clientData;
     Cell *cellPtr;
+    Cell *oldStylePtr;
 
     if (GetCellFromObj(interp, viewPtr, objv[3], &cellPtr) != TCL_OK) {
 	return TCL_ERROR;
@@ -5972,9 +5973,34 @@ CellConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
     } 
     iconOption.clientData = viewPtr;
     tableOption.clientData = viewPtr;
+    oldStylePtr = cellPtr->stylePtr;
     if (Blt_ConfigureWidgetFromObj(interp, viewPtr->tkwin, cellSpecs, 
 	objc - 4, objv + 4, (char *)cellPtr, BLT_CONFIG_OBJV_ONLY) != TCL_OK) {
 	return TCL_ERROR;
+    }
+    if ((Blt_ConfigModified(cellSpecs, "-style", (char *)NULL)) &&
+        (oldStylePtr != cellPtr->stylePtr)) {
+        CellKey *keyPtr;
+
+	keyPtr = GetKey(cellPtr);
+        if (cellPtr->stylePtr != NULL) {
+            cellPtr->stylePtr->refCount++;	
+	    Blt_CreateHashEntry(&stylePtr->table, (char *)keyPtr, &isNew);
+        }
+        if (oldStylePtr != NULL) {
+            /* Remove the cell from old style's table of cells. */
+            oldStylePtr->refCount--;
+            hPtr = Blt_FindHashEntry(&oldStylePtr->table, (char *)keyPtr);
+            if (hPtr != NULL) {
+                Blt_DeleteHashEntry(&oldStylePtr->table, hPtr);
+            }
+            if (oldStylePtr->refCount <= 0) {
+                (*oldStylePtr->classPtr->freeProc)(oldStylePtr);
+            }
+        }
+        cellPtr->flags |= GEOMETRY;	/* Assume that the new style
+					 * changes the geometry of the
+					 * cell. */
     }
     EventuallyRedraw(viewPtr);
     return TCL_OK;
