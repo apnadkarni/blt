@@ -10840,6 +10840,7 @@ static Blt_OpSpec viewOps[] =
     {"activate",     1, ActivateOp,      3, 3, "cell"},
     {"bbox",         2, BboxOp,          3, 0, "cell ?cell...?",}, 
     {"bind",         2, BindOp,          3, 5, "cell ?sequence command?",}, 
+    {"cell",         2, CellOp,          2, 0, "args",}, 
     {"cget",         2, CgetOp,          3, 3, "option",}, 
     {"column",       3, ColumnOp,	 2, 0, "oper args",}, 
     {"configure",    3, ConfigureOp,     2, 0, "?option value?...",},
