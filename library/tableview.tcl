@@ -501,28 +501,25 @@ proc blt::TableView::Initialize { w } {
     }
     # ComboBoxStyle
     $w bind ComboBoxStyle <Enter> { 
-	set style [%W style get current]
-	if { [%W style cget $style -state] != "posted" } {
-	    %W activate current 
+	if { [%W style cget [%W cell style current] -state] != "posted" } {
+	    %W cell activate current 
 	}
     }
     $w bind ComboBoxStyle <Leave> { 
-	set style [%W style get current]
-	if { [%W style cget $style -state] != "posted" } {
-	    %W deactivate 
+	if { [%W style cget [%W cell style current] -state] != "posted" } {
+	    %W cell deactivate 
 	}
     }
     $w bind ComboBoxStyle <ButtonPress-1> { 
 	set blt::TableView::_private(activeSelection) 0
-	if { [%W identify current %X %Y] == "button" } {
+	if { [%W cell identify current %X %Y] == "button" } {
 	    blt::TableView::PostComboBoxMenu %W current
 	} else {
 	    blt::TableView::SetSelectionAnchor %W current
 	}
     }
     $w bind ComboBoxStyle <B1-Motion> { 
-	set style [%W style get current]
-	if { [%W style cget $style -state] != "posted" } {
+	if { [%W style cget [%W cell style current] -state] != "posted" } {
 	    set blt::TableView::_private(x) %x
 	    set blt::TableView::_private(y) %y
 	    set cell [%W index @%x,%y]
@@ -557,10 +554,10 @@ proc blt::TableView::Initialize { w } {
     }
     # ImageBoxStyle
     $w bind ImageBoxStyle <Enter> { 
-	%W activate current 
+	%W cell activate current 
     }
     $w bind ImageBoxStyle <Leave> { 
-	%W deactivate 
+	%W cell deactivate 
     }
     $w bind ImageBoxStyle <ButtonPress-1> { 	
 	blt::TableView::SetSelectionAnchor %W current
@@ -605,8 +602,8 @@ proc blt::TableView::Initialize { w } {
 proc blt::TableView::PostComboBoxMenu { w cell } {
     variable _private
 
-    set style [$w style get $cell]
-    set menu [$w style cget $style -menu]
+    set style [$w cell style $cell]
+    set menu  [$w style cget $style -menu]
     if { $menu == "" } {
 	puts stderr "no menu specified"
 	return;				# No menu specified.
@@ -619,7 +616,7 @@ proc blt::TableView::PostComboBoxMenu { w cell } {
     if { $item >= 0 } {
 	$menu select $item
     }
-    $w style configure $style -state posted
+    $w cell configure $cell -state "posted"
     # Watch for <<MenuSelect>> events on the menu.  Set the cell value to the
     # selected value when we get one.
     set _private(posting) [$w index $cell]
@@ -652,7 +649,7 @@ proc blt::TableView::ImportFromComboBoxMenu { w cell menu } {
 	$table set $row $col $value
     }
     # Execute the callback associated with the style
-    $w invoke $cell
+    $w cell invoke $cell
 }
 
 #
@@ -676,12 +673,12 @@ proc ::blt::TableView::UnpostComboBoxMenu { w } {
     set _private(posting) none
     # This causes the cell in the table to be set to the current
     # value in the combo style.
-    set style [$w style get $cell]
-    set menu [$w style cget $style -menu]
+    set style [$w cell style $cell]
+    set menu  [$w style cget $style -menu]
     if { [info exists _private(cursor)] } {
 	$w style configure $style -cursor $_private(cursor)
     }
-    $w style configure $style -state normal
+    $w cell configure $cell -state normal
     if { $menu != "" } {
 	# Release grab, if any, and restore the previous grab, if there was
 	# one.
@@ -703,7 +700,7 @@ proc ::blt::TableView::UnpostComboBoxMenu { w } {
 #	by the editor instead of the tableview widget.
 #
 proc blt::TableView::PostEditor { w cell } {
-    set style [$w style get $cell]
+    set style [$w cell style $cell]
     set editor [$w style cget $style -editor]
     if { $editor == "" } {
 	return;				# No editor specified.
@@ -744,8 +741,8 @@ proc blt::TableView::ImportFromEditor { w cell editor } {
 	foreach { row col } [$w index $cell] break
 	$table set $row $col $value
     }
-    # Execute the callback associated with the style
-    $w invoke $cell
+    # Execute the callback associated with the cell
+    $w cell invoke $cell
 }
 
 #
@@ -772,8 +769,9 @@ proc ::blt::TableView::UnpostEditor { w cell } {
 
     # This causes the cell in the table to be set to the current
     # value in the text style.
-    set style [$w style get $cell]
+    set style  [$w cell style $cell]
     set editor [$w style cget $style -editor]
+    $w cell configure $cell -state normal
     set _private(posting) none
     if { [info exists _private(cursor)] } {
 	$w style configure $style -cursor $_private(cursor)
@@ -797,9 +795,9 @@ proc ::blt::TableView::UnpostEditor { w cell } {
 #	value, set the cell value in the table to its "off" value.
 #
 proc blt::TableView::ToggleValue { w cell } {
-    set style [$w style get $cell]
-    set off [$w style cget $style -offvalue]
-    set on [$w style cget $style -onvalue]
+    set style [$w cell style $cell]
+    set off   [$w style cget $style -offvalue]
+    set on    [$w style cget $style -onvalue]
 
     # Get the current value of the cell and select the corresponding menu item.
     set table [$w cget -table]
@@ -815,8 +813,8 @@ proc blt::TableView::ToggleValue { w cell } {
 	foreach { row col } [$w index $cell] break
 	$table set $row $col $value
     }
-    # Execute the callback associated with the style
-    $w invoke $cell
+    # Execute the callback associated with the cell
+    $w cell invoke $cell
 }
 
 # ----------------------------------------------------------------------

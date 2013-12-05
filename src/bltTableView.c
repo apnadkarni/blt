@@ -291,6 +291,12 @@ static Blt_CustomOption stateOption = {
     ObjToStateProc, StateToObjProc, NULL, (ClientData)0
 };
 
+static Blt_OptionParseProc ObjToCellStateProc;
+static Blt_OptionPrintProc CellStateToObjProc;
+static Blt_CustomOption cellStateOption = {
+    ObjToCellStateProc, CellStateToObjProc, NULL, (ClientData)0
+};
+
 static Blt_OptionParseProc ObjToStyleProc;
 static Blt_OptionPrintProc StyleToObjProc;
 static Blt_OptionFreeProc FreeStyleProc;
@@ -541,7 +547,7 @@ static Blt_ConfigSpec cellSpecs[] =
 {
     {BLT_CONFIG_CUSTOM, "-state", "state", "State", DEF_CELL_STATE, 
 	Blt_Offset(Cell, flags), BLT_CONFIG_DONT_SET_DEFAULT, 
-	&stateOption},
+	&cellStateOption},
     {BLT_CONFIG_CUSTOM, "-style", "style", "Style", DEF_CELL_STYLE, 
 	Blt_Offset(Cell, stylePtr), BLT_CONFIG_NULL_OK, &styleOption},
     {BLT_CONFIG_END, NULL, NULL, NULL, NULL, 0, 0}
@@ -1976,6 +1982,104 @@ StateToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 	return Tcl_NewStringObj("highlighted", 11);
     } 
     return Tcl_NewStringObj("normal", 6);
+}
+
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * ObjToCellStateProc --
+ *
+ *	Converts the string representing a cell state into a bitflag.
+ *
+ * Results:
+ *	The return value is a standard TCL result.  The state flags are
+ *	updated.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+ObjToCellStateProc(
+    ClientData clientData,		/* Not used. */
+    Tcl_Interp *interp,			/* Interpreter to report
+                                         * results. */
+    Tk_Window tkwin,			/* Not used. */
+    Tcl_Obj *objPtr,			/* String representing state. */
+    char *widgRec,			/* Widget record */
+    int offset,				/* Offset to field in structure */
+    int flags)	
+{
+    Cell *cellPtr = (Cell *)widgRec;
+    unsigned int *flagsPtr = (unsigned int *)(widgRec + offset);
+    const char *string;
+    char c;
+    int length, mask;
+
+    string = Tcl_GetStringFromObj(objPtr, &length);
+    c = string[0];
+    if ((c == 'n') && (strncmp(string, "normal", length) == 0)) {
+	mask = 0;
+        if (cellPtr == cellPtr->viewPtr->postPtr) {
+            cellPtr->viewPtr->postPtr = NULL;
+        }
+    } else if ((c == 'p') && (strncmp(string, "disabled", length) == 0)) {
+	mask = DISABLED;
+    } else if ((c == 'h') && (strncmp(string, "highlighted", length) == 0)) {
+	mask = HIGHLIGHT;
+    } else if ((c == 'p') && (strncmp(string, "posted", length) == 0)) {
+	mask = POSTED;
+    } else {
+	Tcl_AppendResult(interp, "unknown state \"", string, 
+	    "\": should be disabled, posted, or normal.", (char *)NULL);
+	return TCL_ERROR;
+    }
+    if (cellPtr == cellPtr->viewPtr->postPtr) {
+        cellPtr->viewPtr->postPtr = NULL;
+    }
+    if (mask & POSTED) {
+            cellPtr->viewPtr->postPtr = cellPtr;
+    }        
+    *flagsPtr &= ~CELL_FLAGS_MASK;
+    *flagsPtr |= mask;
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * CellStateToObjProc --
+ *
+ *	Return the name of the style.
+ *
+ * Results:
+ *	The name representing the style is returned.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static Tcl_Obj *
+CellStateToObjProc(
+    ClientData clientData,		/* Not used. */
+    Tcl_Interp *interp,
+    Tk_Window tkwin,			/* Not used. */
+    char *widgRec,			/* Widget information record */
+    int offset,				/* Offset to field in structure */
+    int flags)	
+{
+    unsigned int state = *(unsigned int *)(widgRec + offset);
+    const char *string;
+
+    if (state & DISABLED) {
+	string = "disabled";
+    } else if (state & POSTED) {
+	string = "posted";
+    } else if (state & HIGHLIGHT) {
+	string = "highlighted";
+    } else {
+	string = "normal";
+    }
+    return Tcl_NewStringObj(string, -1);
 }
 
 /*ARGSUSED*/
@@ -8551,70 +8655,6 @@ IsHiddenOp(ClientData clientData, Tcl_Interp *interp, int objc,
     return TCL_OK;
 }
 
-
-/*
- *---------------------------------------------------------------------------
- *
- * PostOp --
- *
- *	Posts the menu associated with the designated cell.
- *
- * Results:
- *	Standard TCL result.
- *
- * Side effects:
- *	Commands may get excecuted; variables may get set; sub-menus may
- *	get posted.
- *
- *	.view post cell
- *
- *---------------------------------------------------------------------------
- */
-static int
-PostOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-       Tcl_Obj *const *objv)
-{
-    TableView *viewPtr = clientData;
-    Row *rowPtr;
-    Column *colPtr;
-    Cell *cellPtr;
-    CellStyle *stylePtr;
-    CellKey *keyPtr;
-
-    if (objc == 2) {
-	Tcl_Obj *listObjPtr;
-
-	listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
-	if (viewPtr->postPtr != NULL) {
-	    Tcl_Obj *objPtr;
-
-	    keyPtr = GetKey(viewPtr->postPtr);
-	    colPtr = keyPtr->colPtr;
-	    rowPtr = keyPtr->rowPtr;
-	    objPtr = Tcl_NewLongObj(blt_table_row_index(rowPtr->row));
-	    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-	    objPtr = Tcl_NewLongObj(blt_table_column_index(colPtr->column));
-	    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-	}
-	Tcl_SetObjResult(interp, listObjPtr);
-	return TCL_OK;
-    }
-    if (GetCellFromObj(interp, viewPtr, objv[2], &cellPtr) != TCL_OK) {
-	return TCL_ERROR;
-    }
-    if (cellPtr == NULL) {
-	return TCL_OK;
-    }
-    keyPtr = GetKey(cellPtr);
-    colPtr = keyPtr->colPtr;
-    rowPtr = keyPtr->rowPtr;
-    stylePtr = GetCurrentStyle(viewPtr, rowPtr, colPtr, cellPtr);
-    if (stylePtr->classPtr->postProc != NULL) {
-	return (*stylePtr->classPtr->postProc)(interp, cellPtr, stylePtr);
-    }
-    return TCL_OK;
-}
-
 /*
  *---------------------------------------------------------------------------
  *
@@ -10681,46 +10721,6 @@ TypeOp(TableView *viewPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 /*
  *---------------------------------------------------------------------------
  *
- * UnpostOp --
- *
- * Results:
- *	Standard TCL result.
- *
- * Side effects:
- *	Commands may get excecuted; variables may get set; sub-menus may
- *	get posted.
- *
- *  .view filter unpost
- *
- *---------------------------------------------------------------------------
- */
-static int
-UnpostOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-	 Tcl_Obj *const *objv)
-{
-    TableView *viewPtr = clientData;
-    Column *colPtr;
-    Row *rowPtr;
-    CellStyle *stylePtr;
-    CellKey *keyPtr;
-
-    if (viewPtr->postPtr == NULL) {
-	return TCL_OK;
-    }
-    keyPtr = GetKey(viewPtr->postPtr);
-    colPtr = keyPtr->colPtr;
-    rowPtr = keyPtr->rowPtr;
-    stylePtr = GetCurrentStyle(viewPtr, rowPtr, colPtr, viewPtr->postPtr);
-    if (stylePtr->classPtr->postProc != NULL) {
-	return (*stylePtr->classPtr->unpostProc)(interp, viewPtr->postPtr, 
-		stylePtr);
-    }
-    return TCL_OK;
-}
-
-/*
- *---------------------------------------------------------------------------
- *
  * UpdatesOp --
  *
  *	.tv updates false
@@ -10887,7 +10887,6 @@ static Blt_OpSpec viewOps[] =
     {"inside",       3, InsideOp,        5, 5, "cell x y",}, 
     {"invoke",       3, InvokeOp,        3, 3, "cell",}, 
     {"ishidden",     2, IsHiddenOp,      3, 3, "cell",},
-    {"post",         1, PostOp,          2, 3, "?cell?",},
     {"row",          1, RowOp,		 2, 0, "oper args",}, 
     {"scan",         2, ScanOp,          5, 5, "dragto|mark x y",},
     {"see",          3, SeeOp,           3, 3, "cell",},
@@ -10896,7 +10895,6 @@ static Blt_OpSpec viewOps[] =
     {"style",        2, StyleOp,         2, 0, "args",},
     {"type",         1, TypeOp,          3, 3, "cell",},
     {"unhighlight",  3, HighlightOp,     3, 3, "cell",}, 
-    {"unpost",       3, UnpostOp,        2, 2, "",},
     {"updates",      2, UpdatesOp,       2, 3, "?bool?",},
     {"writable",     1, WritableOp,      3, 3, "cell",},
     {"xview",        1, XViewOp,         2, 5, "?moveto fract? ?scroll number what?",},

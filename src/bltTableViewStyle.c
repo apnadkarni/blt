@@ -997,8 +997,6 @@ static CellStyleGeometryProc TextBoxStyleGeometryProc;
 static CellStyleIdentifyProc CheckBoxStyleIdentifyProc;
 #endif
 static CellStyleIdentifyProc ComboBoxStyleIdentifyProc;
-static CellStylePostProc ComboBoxStylePostProc;
-static CellStyleUnpostProc ComboBoxStyleUnpostProc;
 
 /* TextBoxStyle */
 static CellStyleClass textBoxStyleClass = {
@@ -1010,8 +1008,6 @@ static CellStyleClass textBoxStyleClass = {
     TextBoxStyleDrawProc,
     NULL,				/* identProc */
     TextBoxStyleFreeProc,
-    NULL,				/* postProc */
-    NULL,				/* unpostProc */
 };
 
 /* CheckBoxStyle */
@@ -1024,8 +1020,6 @@ static CellStyleClass checkBoxStyleClass = {
     CheckBoxStyleDrawProc,
     NULL,				/* identProc */
     CheckBoxStyleFreeProc,
-    NULL,				/* postProc */
-    NULL,				/* unpostProc */
 };
 
 /* ComboBoxStyle */
@@ -1038,8 +1032,6 @@ static CellStyleClass comboBoxStyleClass = {
     ComboBoxStyleDrawProc,
     ComboBoxStyleIdentifyProc,
     ComboBoxStyleFreeProc,
-    ComboBoxStylePostProc,
-    ComboBoxStyleUnpostProc,
 };
 
 /* ImageBoxStyle */
@@ -1052,8 +1044,6 @@ static CellStyleClass imageBoxStyleClass = {
     ImageBoxStyleDrawProc,
     NULL,				/* identProc */
     ImageBoxStyleFreeProc,
-    NULL,				/* postProc */
-    NULL,				/* unpostProc */
 };
 
 static void
@@ -3370,7 +3360,7 @@ ComboBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
 
 	bg = stylePtr->activeBg;
 	fg = stylePtr->activeFg;
-	relief = (stylePtr->flags & POSTED) ? 
+	relief = (cellPtr->flags & POSTED) ? 
 	    stylePtr->postedRelief : stylePtr->activeRelief;
 	Blt_Bg_FillRectangle(viewPtr->tkwin, drawable, bg, ax, ay, aw, ah, 
 		stylePtr->arrowBW, relief);
@@ -3461,164 +3451,6 @@ ComboBoxStyleFreeProc(CellStyle *cellStylePtr)
 	Tk_FreeGC(viewPtr->display, stylePtr->normalGC);
     }
     Blt_Free(stylePtr);
-}
-
-
-/*
- *---------------------------------------------------------------------------
- *
- * ComboBoxStylePostProc --
- *
- *	Posts the menu associated with the designated cell.
- *
- * Results:
- *	Standard TCL result.
- *
- * Side effects:
- *	Commands may get excecuted; variables may get set; sub-menus may
- *	get posted.
- *
- *	.view filter post col
- *
- *---------------------------------------------------------------------------
- */
-static int
-ComboBoxStylePostProc(Tcl_Interp *interp, Cell *cellPtr,CellStyle *cellStylePtr)
-{
-    ComboBoxStyle *stylePtr = (ComboBoxStyle *)cellStylePtr;
-    Row *rowPtr;
-    Column *colPtr;
-    CellKey *keyPtr;
-    const char *menuName;
-    Tk_Window tkwin;
-    TableView *viewPtr;
-
-    viewPtr = cellPtr->viewPtr;
-    keyPtr = GetKey(cellPtr);
-    colPtr = keyPtr->colPtr;
-    rowPtr = keyPtr->rowPtr;
-    if (viewPtr->postPtr != NULL) {
-	return TCL_OK;		       /* Another filter's menu is
-					* currently posted. */
-    }
-    if ((rowPtr->flags|colPtr->flags) & (DISABLED|HIDDEN)) {
-	return TCL_OK;		       /* Menu is in a row or column that
-					* is hidden or disabled. */
-    }
-    if (stylePtr->menuObjPtr == NULL) {
-	return TCL_OK;			/* No menu associated with
-                                         * filter. */
-    }
-    menuName = Tcl_GetString(stylePtr->menuObjPtr);
-    tkwin = Tk_NameToWindow(interp, menuName, viewPtr->tkwin);
-    if (tkwin == NULL) {
-	return TCL_ERROR;
-    }
-    if (Tk_Parent(tkwin) != viewPtr->tkwin) {
-	Tcl_AppendResult(interp, "can't post \"", Tk_PathName(tkwin), 
-		"\": it isn't a descendant of ", Tk_PathName(viewPtr->tkwin),
-		(char *)NULL);
-	return TCL_ERROR;
-    }
-    if (stylePtr->postCmdObjPtr != NULL) {
-	int result;
-
-	Tcl_Preserve(viewPtr);
-	result = Tcl_EvalObjEx(interp, stylePtr->postCmdObjPtr, 
-		TCL_EVAL_GLOBAL);
-	Tcl_Release(viewPtr);
-	if (result != TCL_OK) {
-	    return TCL_ERROR;
-	}
-    }
-    {
-	Tcl_Obj *cmdObjPtr;
-	int result;
-	int x1, y1, x2, y2;
-	int rootX, rootY;
-
-	Tk_GetRootCoords(viewPtr->tkwin, &rootX, &rootY);
-	x1 = SCREENX(viewPtr, colPtr->worldX) + rootX;
-	x2 = x1 + colPtr->width;
-	y1 = SCREENY(viewPtr, rowPtr->worldY) + rootY;
-	y2 = y1 + rowPtr->height;
-	cmdObjPtr = Tcl_DuplicateObj(stylePtr->menuObjPtr);
-	Tcl_ListObjAppendElement(interp, cmdObjPtr, Tcl_NewStringObj("post",4));
-	Tcl_ListObjAppendElement(interp, cmdObjPtr,
-		Tcl_NewStringObj("right", 5));
-	Tcl_ListObjAppendElement(interp, cmdObjPtr, Tcl_NewIntObj(x2));
-	Tcl_ListObjAppendElement(interp, cmdObjPtr, Tcl_NewIntObj(y2));
-	Tcl_ListObjAppendElement(interp, cmdObjPtr, Tcl_NewIntObj(x1));
-	Tcl_ListObjAppendElement(interp, cmdObjPtr, Tcl_NewIntObj(y1));
-	Tcl_IncrRefCount(cmdObjPtr);
-	Tcl_Preserve(viewPtr);
-	result = Tcl_EvalObjEx(interp, cmdObjPtr, TCL_EVAL_GLOBAL);
-	Tcl_Release(viewPtr);
-	Tcl_DecrRefCount(cmdObjPtr);
-	if (result == TCL_OK) {
-	    viewPtr->postPtr = cellPtr;
-	    Blt_SetCurrentItem(viewPtr->bindTable, viewPtr->postPtr, ITEM_CELL);
-	}
-	return result;
-    }
-    return TCL_OK;
-}
-
-
-/*
- *---------------------------------------------------------------------------
- *
- * ComboBoxStyleUnpostProc --
- *
- * Results:
- *	Standard TCL result.
- *
- * Side effects:
- *	Commands may get excecuted; variables may get set; sub-menus may
- *	get posted.
- *
- *  .view filter unpost
- *
- *---------------------------------------------------------------------------
- */
-static int
-ComboBoxStyleUnpostProc(Tcl_Interp *interp, Cell *cellPtr, 
-			CellStyle *cellStylePtr)
-{
-    ComboBoxStyle *stylePtr = (ComboBoxStyle *)cellStylePtr;
-    const char *menuName;
-    Tk_Window tkwin;
-    Column *colPtr;
-    Row *rowPtr;
-    CellKey *keyPtr;
-    TableView *viewPtr;
-
-    viewPtr = cellPtr->viewPtr;
-    keyPtr = GetKey(cellPtr);
-    colPtr = keyPtr->colPtr;
-    rowPtr = keyPtr->rowPtr;
-    if (stylePtr->menuObjPtr == NULL) {
-	return TCL_OK;
-    }
-    viewPtr->postPtr = NULL;
-    assert(((colPtr->flags|rowPtr->flags) & (HIDDEN|DISABLED)) == 0);
-
-    menuName = Tcl_GetString(stylePtr->menuObjPtr);
-    tkwin = Tk_NameToWindow(interp, menuName, viewPtr->tkwin);
-    if (tkwin == NULL) {
-	return TCL_ERROR;
-    }
-    if (Tk_Parent(tkwin) != viewPtr->tkwin) {
-	Tcl_AppendResult(interp, "can't unpost \"", Tk_PathName(tkwin), 
-		"\": it isn't a descendant of ", 
-		Tk_PathName(viewPtr->tkwin), (char *)NULL);
-	return TCL_ERROR;
-    }
-    Blt_UnmapToplevelWindow(tkwin);
-    if (Tk_IsMapped(tkwin)) {
-	Tk_UnmapWindow(tkwin);
-    }
-    return TCL_OK;
 }
 
 /*

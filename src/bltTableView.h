@@ -185,6 +185,8 @@
 
 #define SHOW_VALUES	  (1<<20)
 
+#define CELL_FLAGS_MASK         (DISABLED|POSTED|HIGHLIGHT)
+
 typedef enum CellStyleTypes {
     STYLE_TEXTBOX, STYLE_CHECKBOX, STYLE_COMBOBOX, STYLE_IMAGEBOX
 } CellStyleType;
@@ -232,10 +234,6 @@ typedef void (CellStyleFreeProc)(CellStyle *stylePtr);
 typedef void (CellStyleGeometryProc)(Cell *cellPtr, CellStyle *stylePtr);
 typedef const char *(CellStyleIdentifyProc)(Cell *cellPtr, CellStyle *stylePtr,
 	int x, int y);
-typedef int (CellStylePostProc)(Tcl_Interp *interp, Cell *cellPtr, 
-	CellStyle *stylePtr);
-typedef int (CellStyleUnpostProc)(Tcl_Interp *interp, Cell *cellPtr, 
-	CellStyle *stylePtr);
 
 typedef struct _TableObj {
     unsigned int flags;			/* Flags of the object. DELETE
@@ -271,14 +269,6 @@ struct _CellStyleClass {
 					 * button (if it has one). */
     CellStyleFreeProc *freeProc;	/* Routine to free the style's
 					 * resources. */
-    CellStylePostProc *postProc;	/* Routine to pick the style's
-					 * button.  Indicates if the mouse
-					 * pointer is over the * style's
-					 * button (if it has one). */
-    CellStyleUnpostProc *unpostProc;	/* Routine to pick the style's
-					 * button.  Indicates if the mouse
-					 * pointer is over the * style's
-					 * button (if it has one). */
 };
 
 /*
