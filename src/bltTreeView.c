@@ -72,7 +72,7 @@
 #define BUTTON_IPAD		1
 #define BUTTON_SIZE		7
 #define COLUMN_PAD		2
-#define FOCUS_WIDTH		1
+#define FOCUS_PAD		3
 #define ICON_PADX		2
 #define ICON_PADY		1
 #define INSET_PAD		0
@@ -5118,13 +5118,13 @@ PickItem(
 	flags = ITEM_ENTRY;
 	if (entryPtr->flags & ENTRY_BUTTON) {
 	    Button *buttonPtr = &viewPtr->button;
-	    int left, right, top, bottom;
+	    int x1, x2, y1, y2;
 	    
-	    left = entryPtr->worldX + entryPtr->buttonX - BUTTON_PAD;
-	    right = left + buttonPtr->width + 2 * BUTTON_PAD;
-	    top = entryPtr->worldY + entryPtr->buttonY - BUTTON_PAD;
-	    bottom = top + buttonPtr->height + 2 * BUTTON_PAD;
-	    if ((x >= left) && (x < right) && (y >= top) && (y < bottom)) {
+	    x1 = entryPtr->worldX + entryPtr->buttonX - BUTTON_PAD;
+	    x2 = x1 + buttonPtr->width + 2 * BUTTON_PAD;
+	    y1 = entryPtr->worldY + entryPtr->buttonY - BUTTON_PAD;
+	    y2 = y1 + buttonPtr->height + 2 * BUTTON_PAD;
+	    if ((x >= x1) && (x < x2) && (y >= y1) && (y < y2)) {
 		flags |= ITEM_ENTRY_BUTTON;
 	    }
 	}
@@ -5153,12 +5153,8 @@ ComputeEntryGeometry(TreeView *viewPtr, Entry *entryPtr)
 {
     int entryWidth, entryHeight;
     int width, height;
+    Column *colPtr = &viewPtr->treeColumn;
 
-    /*
-     * FIXME: Use of DIRTY flag inconsistent.  When does it
-     *	      mean "dirty entry"? When does it mean "dirty column"?
-     *	      Does it matter? probably
-     */
     if ((entryPtr->flags & GEOMETRY) || (viewPtr->flags & UPDATE)) {
 	Blt_Font font;
 	Blt_FontMetrics fontMetrics;
@@ -5203,7 +5199,7 @@ ComputeEntryGeometry(TreeView *viewPtr, Entry *entryPtr)
 	
 	Blt_Font_GetMetrics(font, &fontMetrics);
 	entryPtr->lineHeight = fontMetrics.linespace;
-	entryPtr->lineHeight += 2 * (FOCUS_WIDTH + LABEL_PADY + 
+	entryPtr->lineHeight += 2 * (FOCUS_PAD + LABEL_PADY + 
 		viewPtr->selection.borderWidth) + viewPtr->leader;
 
 	label = GETLABEL(entryPtr);
@@ -5228,8 +5224,8 @@ ComputeEntryGeometry(TreeView *viewPtr, Entry *entryPtr)
 	    width = entryPtr->textPtr->width;
 	    height = entryPtr->textPtr->height;
 	}
-	width  += 2 * (FOCUS_WIDTH+LABEL_PADX+viewPtr->selection.borderWidth);
-	height += 2 * (FOCUS_WIDTH+LABEL_PADY+viewPtr->selection.borderWidth);
+	width  += 2 * (FOCUS_PAD+LABEL_PADX+viewPtr->selection.borderWidth);
+	height += 2 * (FOCUS_PAD+LABEL_PADY+viewPtr->selection.borderWidth);
 	width = ODD(width);
 	if (entryPtr->reqHeight > height) {
 	    height = entryPtr->reqHeight;
@@ -5256,8 +5252,9 @@ ComputeEntryGeometry(TreeView *viewPtr, Entry *entryPtr)
     if (entryHeight < height) {
 	entryHeight = height;
     }
-    entryPtr->width = entryWidth + COLUMN_PAD;
-    entryPtr->height = entryHeight + viewPtr->leader;
+    entryPtr->width = entryWidth + PADDING(colPtr->pad) + 2 * LABEL_PADX;
+    entryPtr->height = entryHeight + viewPtr->leader + 2 * LABEL_PADY + 
+        entryPtr->ruleHeight;
 
     /*
      * Force the height of the entry to an even number. This is to make the
@@ -7627,8 +7624,8 @@ DrawLabel(
         if (rgn != NULL) {
             TkSetRegion(viewPtr->display, viewPtr->focusGC, rgn);
         }	
-	XDrawRectangle(viewPtr->display, drawable, viewPtr->focusGC, x, y+1, 
-		       width - 1, height - 3);
+	XDrawRectangle(viewPtr->display, drawable, viewPtr->focusGC, 
+                x + 2, y + 2, width - 4, height - 4);
 	if (isSelected) {
 	    XSetForeground(viewPtr->display, viewPtr->focusGC, 
 		viewPtr->focusColor->pixel);
@@ -7637,8 +7634,8 @@ DrawLabel(
             XSetClipMask(viewPtr->display, viewPtr->focusGC, None);
         }	
     }
-    x += FOCUS_WIDTH + LABEL_PADX + viewPtr->selection.borderWidth;
-    y += FOCUS_WIDTH + LABEL_PADY + viewPtr->selection.borderWidth;
+    x += FOCUS_PAD + LABEL_PADX + viewPtr->selection.borderWidth;
+    y += FOCUS_PAD + LABEL_PADY + viewPtr->selection.borderWidth;
 
     label = GETLABEL(entryPtr);
     if ((label[0] != '\0') && (maxLength > 0)) {
