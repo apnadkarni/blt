@@ -103,7 +103,7 @@ blt::treeview $treeview \
     -separator / \
     -tree $tree  -font "Arial 10"
 
-$treeview column configure treeView -text "name"  -edit yes \
+$treeview column configure treeView -text "name" -edit yes \
     -sorttype dictionary 
 $treeview column insert 0 mtime -sorttype integer -formatcommand FormatDate 
 $treeview column insert 0 atime -sorttype integer -formatcommand FormatDate

@@ -1,17 +1,16 @@
 /* -*- mode: c; c-basic-offset: 4; indent-tabs-mode: nil -*- */
-
 /*
  * bltTree.c --
  *
  *	Copyright 1998-2004 George A Howlett.
  *
- *	Permission is hereby granted, free of charge, to any person obtaining
- *	a copy of this software and associated documentation files (the
- *	"Software"), to deal in the Software without restriction, including
- *	without limitation the rights to use, copy, modify, merge, publish,
- *	distribute, sublicense, and/or sell copies of the Software, and to
- *	permit persons to whom the Software is furnished to do so, subject to
- *	the following conditions:
+ *	Permission is hereby granted, free of charge, to any person
+ *	obtaining a copy of this software and associated documentation
+ *	files (the "Software"), to deal in the Software without
+ *	restriction, including without limitation the rights to use, copy,
+ *	modify, merge, publish, distribute, sublicense, and/or sell copies
+ *	of the Software, and to permit persons to whom the Software is
+ *	furnished to do so, subject to the following conditions:
  *
  *	The above copyright notice and this permission notice shall be
  *	included in all copies or substantial portions of the Software.
@@ -19,10 +18,11 @@
  *	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  *	EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  *	MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- *	NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
- *	LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
- *	OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
- *	WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *	NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+ *	BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ *	ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ *	CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ *	SOFTWARE.
  */
 
 #define BUILD_BLT_TCL_PROCS 1
@@ -62,14 +62,15 @@ typedef struct _Blt_TreeValue Value;
  * Blt_TreeValue --
  *
  *	A tree node may have zero or more data fields or values that are
- *	represented by these container structures.  Each data field has both
- *	the name of the field (Blt_TreeKey) and its data (Tcl_Obj).  Values
- *	are private or public.  Private values are only be seen by the tree
- *	client that created the field.
+ *	represented by these container structures.  Each data field has
+ *	both the name of the field (Blt_TreeKey) and its data (Tcl_Obj).
+ *	Values are private or public.  Private values are only be seen by
+ *	the tree client that created the field.
  * 
- *	Values are organized in two ways. They are stored in a linked list in
- *	order that they were created.  In addition, they may be placed into a
- *	hash table when the number of values reaches a high-water mark.
+ *	Values are organized in two ways. They are stored in a linked list
+ *	in order that they were created.  In addition, they may be placed
+ *	into a hash table when the number of values reaches a high-water
+ *	mark.
  *
  */
 struct _Blt_TreeValue {
@@ -114,10 +115,10 @@ static Value *TreeNextValue(Blt_TreeKeyIterator *iterPtr);
  */
 #define REBUILD_MULTIPLIER  3
 #define START_LOGSIZE       5		/* Initial hash table size is 32. */
-#define NODE_HIGH_WATER	    10		/* Start a hash table when a node has
-					 * this many child nodes. */
-#define VALUE_HIGH_WATER    10		/* Start a hash table when a node has
-					 * this many values. */
+#define NODE_HIGH_WATER	    10		/* Start a hash table when a node
+					 * has this many child nodes. */
+#define VALUE_HIGH_WATER    10		/* Start a hash table when a node
+					 * has this many values. */
 #define VALUE_LOW_WATER	    (VALUE_HIGH_WATER << 1)
 #define NODE_LOW_WATER	    (NODE_HIGH_WATER << 1)
 
@@ -129,8 +130,8 @@ static Blt_Hash HashOneWord(uint64_t mask, unsigned int downshift,
 #else 
 
 /*
- * The following macro takes a preliminary integer hash value and produces an
- * index into a hash tables bucket list.  The idea is to make it so that
+ * The following macro takes a preliminary integer hash value and produces
+ * an index into a hash tables bucket list.  The idea is to make it so that
  * preliminary values that are arbitrarily similar will end up in different
  * buckets.  The hash function was taken from a random-number generator.
  */
@@ -142,14 +143,14 @@ static Blt_Hash HashOneWord(uint64_t mask, unsigned int downshift,
 #define DOWNSHIFT_START		(BITSPERWORD - 2) 
 
 /*
- * The hash table below is used to keep track of all the Blt_TreeKeys created
- * so far.
+ * The hash table below is used to keep track of all the Blt_TreeKeys
+ * created so far.
  */
 typedef struct _Blt_TreeInterpData {
     Tcl_Interp *interp;
     Blt_HashTable treeTable;		/* Table of trees. */
-    Blt_HashTable keyTable;		/* Table of string keys, shared among
-					 * all the trees within an
+    Blt_HashTable keyTable;		/* Table of string keys, shared
+					 * among all the trees within an
 					 * interpreter. */
     unsigned int nextId;		/* Identifier used to generate
 					 * automatic tree names. */
@@ -176,8 +177,10 @@ typedef struct {
     /* Private fields */
     const char *withTag;
     Tree *treePtr;
-    Blt_ChainLink readLink;		/* Pointer to list of read traces. */
-    Blt_ChainLink writeLink;		/* Pointer to list of write traces. */
+    Blt_ChainLink readLink;		/* Pointer to list of read
+                                         * traces. */
+    Blt_ChainLink writeLink;		/* Pointer to list of write
+                                         * traces. */
     Blt_HashTable idleTable;		/* Table of do-when-idle event
 					 * callbacks. */
     Tcl_Interp *interp;
@@ -199,9 +202,9 @@ typedef struct {
  * Blt_Tree_GetInterpData --
  *
  *	Creates or retrieves data associated with tree data objects for a
- *	particular thread.  We're using Tcl_GetAssocData rather than the Tcl
- *	thread routines so BLT can work with pre-8.0 TCL versions that don't
- *	have thread support.
+ *	particular thread.  We're using Tcl_GetAssocData rather than the
+ *	Tcl thread routines so BLT can work with pre-8.0 TCL versions that
+ *	don't have thread support.
  *
  * Results:
  *	Returns a pointer to the tree interpreter data.
@@ -268,13 +271,13 @@ NextClient(Tree *treePtr)
  *
  * NewNode --
  *
- *	Creates a new node in the tree without installing it.  The number of
- *	nodes in the tree is incremented and a unique serial number is
+ *	Creates a new node in the tree without installing it.  The number
+ *	of nodes in the tree is incremented and a unique serial number is
  *	generated for the node.
  *
- *	Also, all nodes have a label.  If no label was provided (name is NULL)
- *	then automatically generate one in the form "nodeN" where N is the
- *	serial number of the node.
+ *	Also, all nodes have a label.  If no label was provided (name is
+ *	NULL) then automatically generate one in the form "nodeN" where N
+ *	is the serial number of the node.
  *
  * Results:
  *	Returns a pointer to the new node.
@@ -372,20 +375,19 @@ ResetDepths(Node *parentPtr, long depth)
  * RebuildNodeTable --
  *
  *	This procedure is invoked when the ratio of entries to hash buckets
- *	becomes too large.  It creates a new table with a larger bucket array
- *	and moves all of the entries into the new table.
+ *	becomes too large.  It creates a new table with a larger bucket
+ *	array and moves all of the entries into the new table.
  *
  * Results:
  *	None.
  *
  * Side effects:
- *	Memory gets reallocated and entries get re-hashed to new
- *	buckets.
+ *	Memory gets reallocated and entries get re-hashed to new buckets.
  *
  *---------------------------------------------------------------------------
  */
 static void
-RebuildNodeTable(Node *parentPtr) /* Table to enlarge. */
+RebuildNodeTable(Node *parentPtr)       /* Table to enlarge. */
 {
     Node **bp, **bend;
     unsigned int downshift;
@@ -3294,32 +3296,32 @@ Blt_Tree_IsAncestor(Node *n1Ptr, Node *n2Ptr)
  */
 int
 Blt_Tree_SortNode(Tree *treePtr, Node *parentPtr, 
-		  Blt_TreeCompareNodesProc *proc)
+                  Blt_TreeCompareNodesProc *proc)
 {
-    Node **nodes;
-    int numNodes;
-    Node *childPtr, **npp;
+    Node **nodes, *childPtr;
+    long numNodes, i;
 
     numNodes = parentPtr->numChildren;
     if (numNodes < 2) {
 	return TCL_OK;
     }
-    nodes = Blt_Malloc((numNodes + 1) * sizeof(Node *));
+    nodes = Blt_Malloc(numNodes * sizeof(Node *));
     if (nodes == NULL) {
 	Tcl_AppendResult(treePtr->interp, "can't allocate sorting array.", 
 	(char *)NULL);
-	return TCL_ERROR;	/* Out of memory. */
+	return TCL_ERROR;               /* Out of memory. */
     }
-    for (npp = nodes, childPtr = parentPtr->first; childPtr != NULL; 
-	 childPtr = childPtr->next, npp++) {
-	*npp = childPtr;
+    for (i = 0, childPtr = parentPtr->first; childPtr != NULL; 
+         childPtr = childPtr->next, i++) {
+	nodes[i] = childPtr;
     }
-    *npp = NULL;
-
     qsort(nodes, numNodes, sizeof(Node *), (QSortCompareProc *)proc);
-    for (npp = nodes; *npp != NULL; npp++) {
-	UnlinkNode(*npp);
-	LinkBefore(parentPtr, *npp, (Blt_TreeNode)NULL);
+    for (i = 0; i < numNodes; i++) {
+        Node *nodePtr;
+
+        nodePtr = nodes[i];
+	UnlinkNode(nodePtr);
+	LinkBefore(parentPtr, nodePtr, (Blt_TreeNode)NULL);
     }
     Blt_Free(nodes);
     NotifyClients(treePtr, parentPtr->corePtr, parentPtr, TREE_NOTIFY_SORT);

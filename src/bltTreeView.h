@@ -100,7 +100,7 @@ typedef const char *UID;
 	(Tk_Height((h)->tkwin) - (h)->titleHeight - 2 * (h)->inset)
 
 #define ICONWIDTH(d)	(viewPtr->levelInfo[(d)].iconWidth)
-#define LEVELX(d)	(viewPtr->levelInfo[(d)].x)
+#define LEVELOFFSET(d)	(viewPtr->levelInfo[(d)].offset)
 
 #define DEPTH(h, n)	(((h)->flatView) ? 0 : Blt_Tree_NodeDepth(n))
 
@@ -450,7 +450,7 @@ struct _CellStyle {
     int relief, activeRelief;		/* Relief of outer border. */
     Tcl_Obj *fmtCmdObjPtr;
     Blt_TreeKey key;			/* Actual data resides in this tree
-					   cell. */
+                                         * cell. */
 
 };
 
@@ -500,10 +500,10 @@ struct _CellStyleClass {
     CellStyleGeometryProc *geomProc;	/* Measures the area needed for the
 					 * cell with this style. */
     CellStyleDrawProc *drawProc;	/* Draw the cell in it's style. */
-    CellStyleIdentifyProc *identProc;	/* Routine to pick the style's button.
-					 * Indicates if the mouse pointer is
-					 * over the * style's button (if it
-					 * has one). */
+    CellStyleIdentifyProc *identProc;	/* Routine to pick the style's
+					 * button.  Indicates if the mouse
+					 * pointer is over the * style's
+					 * button (if it has one). */
     CellStyleFreeProc *freeProc;	/* Routine to free the style's
 					 * resources. */
 };
@@ -529,80 +529,85 @@ struct _Entry {
 					 * fields see below. */
     Blt_HashEntry *hashPtr;
     Blt_TreeNode node;			/* Node containing entry */
-    int worldX, worldY;			/* X-Y position in world coordinates
-					 * where the entry is positioned. */
+    int worldX, worldY;			/* X-Y position in world
+					 * coordinates where the entry is
+					 * positioned. */
     size_t width, height;		/* Dimensions of the entry. This
-					 * includes the size of its columns. */
+					 * includes the size of its
+					 * columns. */
     int reqHeight;			/* Requested height of the entry.
 					 * Overrides computed height. */
     int vertLineLength;			/* Length of the vertical line
 					 * segment. */
     short int lineHeight;		/* Height of first line of text. */
     UID tagsUid;			/* List of binding tags for this
-					 * entry. UID, not a string, because
-					 * in the typical case most entries
-					 * will have the same bindtags. */
+					 * entry. UID, not a string,
+					 * because in the typical case most
+					 * entries will have the same
+					 * bindtags. */
     Tcl_Obj *openCmdObjPtr;
-    Tcl_Obj *closeCmdObjPtr;		/* TCL commands to invoke when entries
-					 * are opened or closed. They override
-					 * those specified globally. */
+    Tcl_Obj *closeCmdObjPtr;		/* TCL commands to invoke when
+					 * entries are opened or
+					 * closed. They override those
+					 * specified globally. */
     Tcl_Obj *cmdObjPtr;
 
-    int ruleHeight;
     /*
      * Button information:
      */
     short int buttonX, buttonY;		/* X-Y coordinate offsets from to
-					 * upper left corner of the entry to
-					 * the upper-left corner of the
+					 * upper left corner of the entry
+					 * to the upper-left corner of the
 					 * button.  Used to pick the button
 					 * quickly */
+
+    int ruleHeight;
     short int iconWidth, iconHeight; 	/* Maximum dimensions for icons and
 					 * buttons for this entry. This is
-					 * used to align the button, icon, and
-					 * text. */
-    Icon *icons;			/* Tk images displayed for the entry.
-					 * The first image is the icon
-					 * displayed to the left of the
-					 * entry's label. The second is icon
-					 * displayed when entry is "open". */
-    Icon *activeIcons;			/* Tk images displayed for the entry.
-					 * The first image is the icon
-					 * displayed to the left of the
-					 * entry's label. The second * is icon
-					 * displayed when entry is "open". */
+					 * used to align the button, icon,
+					 * and text. */
+    Icon *icons;			/* Tk images displayed for the
+					 * entry.  The first image is the
+					 * icon displayed to the left of
+					 * the entry's label. The second is
+					 * icon displayed when entry is
+					 * "open". */
+    Icon *activeIcons;			/* Tk images displayed for the
+					 * entry.  The first image is the
+					 * icon displayed to the left of
+					 * the entry's label. The second *
+					 * is icon displayed when entry is
+					 * "open". */
     /*
      * Label information:
      */
-    TextLayout *textPtr;
+    short int textWidth, textHeight;
     short int labelWidth;
     short int labelHeight;
     UID labelUid;			/* Text displayed right of the
 					 * icon. */
+    const char *fullName;
+    int flatIndex;			/* Used to navigate to next/last
+					 * entry when the view is flat. */
+    Tcl_Obj *dataObjPtr;		/* Pre-fetched data for sorting */
+    Cell *cells;			/* List of cells representing data
+                                         * fields for this entry. */
+    XColor *ruleColor;			/* Color of the entry's rule. */
+    GC ruleGC;                          /* Graphics context of the rule. */
     Blt_Font font;			/* Font of label. Overrides global
 					 * font specification. */
-    const char *fullName;
-    int flatIndex;			/* Used to navigate to next/last entry
-					 * when the view is flat. */
-    Tcl_Obj *dataObjPtr;		/* pre-fetched data for sorting */
     XColor *color;			/* Color of label. If non-NULL,
 					 * overrides default text color
 					 * specification. */
     GC gc;
-    Cell *cells;			/* List of column-related information
-					 * for each data cell in the node.
-					 * Non-NULL only if there are cell
-					 * entries. */
-    XColor *ruleColor;			/* Color of the entry's rule. */
-    GC ruleGC;                          /* Graphics context of the rule. */
 };
 
 /*
  * Button --
  *
- *	A button is the open/close indicator at the far left of the entry.  It
- *	is displayed as a plus or minus in a solid colored box with optionally
- *	an border. It has both "active" and "normal" colors.
+ *	A button is the open/close indicator at the far left of the entry.
+ *	It is displayed as a plus or minus in a solid colored box with
+ *	optionally an border. It has both "active" and "normal" colors.
  */
 typedef struct {
     XColor *normalFg;			/* Foreground color. */
@@ -623,34 +628,38 @@ typedef struct {
  *
  */
 typedef struct {
-    int x;
-    int iconWidth;
-    int labelWidth;
+    int offset;                         /* Offset of x. */
+    short int iconWidth;
+    short int labelWidth;
 } LevelInfo;
 
 /*
  * Selection Information:
  *
- * The selection is the rectangle that contains a selected entry.  There
- * may be many selected entries.  It is displayed as a solid colored box
- * with optionally a 3D border.
+ *      The selection is the rectangle that contains a selected entry.
+ *      There may be many selected entries.  It is displayed as a solid
+ *      colored box with optionally a 3D border.
  */
 typedef struct {
     unsigned int flags;
-    int relief;				/* Relief of selected items. Currently
-					 * is always raised. */
-    int borderWidth;			/* Border width of a selected entry.*/
+    int relief;				/* Relief of selected
+					 * items. Currently is always
+					 * raised. */
+    int borderWidth;			/* Border width of a selected
+                                         * entry.*/
     int	mode;				/* Selection style: "single" or
 					 * "multiple".  */
     XColor *fg;                         /* Text color of a selected
                                          * entry. */
     Blt_Bg bg;
-    Entry *anchorPtr;			/* Fixed end of selection (i.e. entry
-					 * at which selection was started.) */
+    Entry *anchorPtr;			/* Fixed end of selection
+					 * (i.e. entry at which selection
+					 * was started.) */
     Entry *markPtr;
     GC gc;
-    Tcl_Obj *cmdObjPtr;			/* TCL script that's invoked whenever
-					 * the selection changes. */
+    Tcl_Obj *cmdObjPtr;			/* TCL script that's invoked
+					 * whenever the selection
+					 * changes. */
     Blt_HashTable table;		/* Hash table of currently selected
 					 * entries. */
     Blt_Chain list;			/* Chain of currently selected
@@ -667,9 +676,9 @@ typedef struct {
 #define SELECT_CLEAR		(1<<0)	/* Clear selection flag of entry. */
 #define SELECT_SET		(1<<1)	/* Set selection flag of entry. */
 /* Toggle selection flag * of entry. */
-#define SELECT_TOGGLE (SELECT_SET | SELECT_CLEAR) 
+#define SELECT_TOGGLE           (SELECT_SET | SELECT_CLEAR) 
 /* Mask of selection set/clear/toggle flags.*/
-#define SELECT_MASK   (SELECT_SET | SELECT_CLEAR) 
+#define SELECT_MASK             (SELECT_SET | SELECT_CLEAR) 
 
 #define SELECT_EXPORT		(1<<2)	/* Export the selection to X11. */
 #define SELECT_SORTED		(1<<4)	/* Indicates if the entries in the
@@ -679,8 +688,8 @@ typedef struct {
 
 typedef struct {
     Tcl_Obj *cmdObjPtr;			/* Sort command. */
-    int decreasing;			/* Indicates entries should be sorted
-					 * in decreasing order. */
+    int decreasing;			/* Indicates entries should be
+					 * sorted in decreasing order. */
     int viewIsDecreasing;		/* Current sorting direction */
     Column *markPtr;			/* Column to mark as sorted. */
     Blt_Chain order;			/* Order of columns in sorting. */
@@ -693,12 +702,13 @@ typedef struct {
  *	or more entries.
  *
  *	Entries are positioned in "world" coordinates, referring to the
- *	virtual treeview.  Coordinate 0,0 is the upper-left corner of the root
- *	entry and the bottom is the end of the last entry.  The widget's Tk
- *	window acts as view port into this virtual space. The treeview's
- *	xOffset and yOffset fields specify the location of the view port in
- *	the virtual world.  Scrolling the viewport is therefore simply
- *	changing the xOffset and/or yOffset fields and redrawing.
+ *	virtual treeview.  Coordinate 0,0 is the upper-left corner of the
+ *	root entry and the bottom is the end of the last entry.  The
+ *	widget's Tk window acts as view port into this virtual space. The
+ *	treeview's xOffset and yOffset fields specify the location of the
+ *	view port in the virtual world.  Scrolling the viewport is
+ *	therefore simply changing the xOffset and/or yOffset fields and
+ *	redrawing.
  *
  *	Note that world coordinates are integers, not signed short integers
  *	like X11 screen coordinates.  It's very easy to create a hierarchy
@@ -706,9 +716,8 @@ typedef struct {
  */
 struct _TreeView {
     Tcl_Interp *interp;
-
-    Tcl_Command cmdToken;		/* Token for widget's TCL command. */
-
+    Tcl_Command cmdToken;		/* Token for widget's TCL
+                                         * command. */
     Blt_Tree tree;			/* Token holding internal tree. */
     const char *treeName;		/* In non-NULL, is the name of the
 					 * tree we are attached to */
@@ -717,43 +726,44 @@ struct _TreeView {
     /* TreeView specific fields. */ 
 
     Tk_Window tkwin;			/* Window that embodies the widget.
-					 * NULL means that the window has been
-					 * destroyed but the data structures
-					 * haven't yet been cleaned up.*/
+					 * NULL means that the window has
+					 * been destroyed but the data
+					 * structures haven't yet been
+					 * cleaned up.*/
 
-    Display *display;			/* Display containing widget; needed,
-					 * among other things, to release
-					 * resources * after tkwin has already
-					 * gone away. */
+    Display *display;			/* Display containing widget;
+					 * needed, among other things, to
+					 * release resources * after tkwin
+					 * has already gone away. */
 
-    Blt_HashTable entryTable;		/* Table of entry information, keyed
-					 * by the node pointer. */
+    Blt_HashTable entryTable;		/* Table of entry information,
+					 * keyed by the node pointer. */
 
     Blt_HashTable columnTable;		/* Table of column information. */
-    Blt_Chain columns;			/* Chain of columns. Same as the hash
-					 * table above but maintains the order
-					 * in which columns are displayed. */
+    Blt_Chain columns;			/* Chain of columns. Same as the
+					 * hash table above but maintains
+					 * the order in which columns are
+					 * displayed. */
 
     unsigned int flags;			/* For bitfield definitions, see
 					 * below */
     int inset;				/* Total width of all borders,
-					 * including traversal highlight and
-					 * 3-D border.  Indicates how much
-					 * interior stuff must be offset
-					 * from outside edges to leave room
-					 * for borders. */
+					 * including traversal highlight
+					 * and 3-D border.  Indicates how
+					 * much interior stuff must be
+					 * offset from outside edges to
+					 * leave room for borders. */
     Blt_Font font;
     XColor *normalFg;
     Blt_Bg normalBg;                    /* 3D border surrounding the window
 					 * (viewport). */
-
     Blt_Bg altBg;
     int borderWidth;			/* Width of 3D border. */
     int relief;				/* 3D border relief. */
     int highlightWidth;			/* Width in pixels of highlight to
-					 * draw around widget when it has the
-					 * focus.  <= 0 means don't draw a
-					 * highlight. */
+					 * draw around widget when it has
+					 * the focus.  <= 0 means don't
+					 * draw a highlight. */
     XColor *highlightBgColor;		/* Color for drawing traversal
 					 * highlight area when highlight is
 					 * off. */
@@ -775,63 +785,46 @@ struct _TreeView {
      * Button Information:
      *
      * The button is the open/close indicator at the far left of the entry.
-     * It is usually displayed as a plus or minus in a solid colored box with
-     * optionally an border. It has both "active" and "normal" colors.
+     * It is usually displayed as a plus or minus in a solid colored box
+     * with optionally an border. It has both "active" and "normal" colors.
      */
     Button button;
 
     /*
      * Selection Information:
      *
-     * The selection is the rectangle that contains a selected entry.  There
-     * may be many selected entries.  It is displayed as a solid colored box
-     * with optionally a 3D border.
+     * The selection is the rectangle that contains a selected entry.
+     * There may be many selected entries.  It is displayed as a solid
+     * colored box with optionally a 3D border.
      */
-    Selection selection;
-
+    Selection sel;
     int leader;				/* Number of pixels padding between
 					 * entries. */
-
     Tk_Cursor cursor;			/* X Cursor */
-
     Tk_Cursor resizeCursor;		/* Resize Cursor */
-
-    int reqWidth, reqHeight;	       /* Requested dimensions of the treeview
-					* widget's window. */
-
-    GC lineGC;				/* GC for drawing dotted line between
-					 * entries. */
-
+    int reqWidth, reqHeight;            /* Requested dimensions of the
+                                         * treeview widget's window. */
+    GC lineGC;				/* GC for drawing dotted line
+					 * between entries. */
     XColor *focusColor;
-
     Blt_Dashes focusDashes;		/* Dash on-off value. */
-
     GC focusGC;				/* Graphics context for the active
 					 * label. */
-
     Tk_Window comboWin;		
-
     Entry *activePtr;			/* Last active entry. */ 
-
     Entry *focusPtr;			/* Entry that currently has focus. */
-
     Entry *activeBtnPtr;		/* Pointer to last active button */
-
     Entry *fromPtr;
-
     Cell *activeCellPtr;		/* Last active cell. */ 
     Cell *focusCellPtr;                 /* Last active cell. */ 
-
-    Cell *postPtr;                     /* Points to posted cell. */
-
+    Cell *postPtr;                      /* Points to posted cell. */
     int xScrollUnits, yScrollUnits;	/* # of pixels per scroll unit. */
 
     /* Command strings to control horizontal and vertical scrollbars. */
     Tcl_Obj *xScrollCmdObjPtr, *yScrollCmdObjPtr;
-
-    int scrollMode;			/* Selects mode of scrolling: either
-					 * BLT_SCROLL_MODE_HIERBOX, 
-					 * BLT_SCROLL_MODE_LISTBOX, or 
+    int scrollMode;			/* Selects mode of scrolling:
+					 * either BLT_SCROLL_MODE_HIERBOX,
+					 * BLT_SCROLL_MODE_LISTBOX, or
 					 * BLT_SCROLL_MODE_CANVAS. */
     /*
      * Total size of all "open" entries. This represents the range of world
@@ -839,8 +832,8 @@ struct _TreeView {
      */
     int worldWidth, worldHeight;
 
-    int xOffset, yOffset;		/* Translation between view port and
-					 * world origin. */
+    int xOffset, yOffset;		/* Translation between view port
+					 * and world origin. */
     short int minHeight;		/* Minimum entry height. Used to to
 					 * compute what the y-scroll unit
 					 * should * be. */
@@ -851,8 +844,8 @@ struct _TreeView {
     /* Scanning information: */
     int scanAnchorX, scanAnchorY;	/* Scan anchor in screen
 					 * coordinates. */
-    int scanX, scanY;			/* X-Y world coordinate where the scan
-					 * started. */
+    int scanX, scanY;			/* X-Y world coordinate where the
+					 * scan started. */
 
     Blt_HashTable iconTable;		/* Table of Tk images */
     Blt_HashTable uidTable;		/* Table of strings. */
@@ -860,33 +853,38 @@ struct _TreeView {
     Blt_Chain userStyles;		/* List of user-created styles. */
     Entry *rootPtr;			/* Root entry of tree. */
     Entry **visibleArr;			/* Array of visible entries. */
-    int numVisible;			/* # of entries in the visible array. */
+    int numVisible;			/* # of entries in the visible
+                                         * array. */
     int numEntries;			/* # of entries in tree. */
     int treeWidth;			/* Computed width of the tree. */
 
     int buttonFlags;			/* Global button indicator for all
-					 * entries.  This may be overridden by
-					 * the entry's -button option. */
+					 * entries.  This may be overridden
+					 * by the entry's -button
+					 * option. */
     Tcl_Obj *openCmdObjPtr;
-    Tcl_Obj *closeCmdObjPtr;		/* TCL commands to invoke when entries
-					 * are opened or closed. */
+    Tcl_Obj *closeCmdObjPtr;		/* TCL commands to invoke when
+					 * entries are opened or closed. */
     Tcl_Obj *entryCmdObjPtr;		/* TCL script to be executed by the
 					 * an entry "invoke" operation. */
-    Icon *icons;			/* Tk images displayed for the entry.
-					 * The first image is the icon
-					 * displayed to the left of the
-					 * entry's label. The second is icon
-					 * displayed when entry is "open". */
-    Icon *activeIcons;			/* Tk images displayed for the entry.
-					 * The first image is the icon
-					 * displayed to the left of the
-					 * entry's label. The second is icon
-					 * displayed when entry is "open". */
+    Icon *icons;			/* Tk images displayed for the
+					 * entry.  The first image is the
+					 * icon displayed to the left of
+					 * the entry's label. The second is
+					 * icon displayed when entry is
+					 * "open". */
+    Icon *activeIcons;			/* Tk images displayed for the
+					 * entry.  The first image is the
+					 * icon displayed to the left of
+					 * the entry's label. The second is
+					 * icon displayed when entry is
+					 * "open". */
     const char *takeFocus;
 
     ClientData clientData;
 
-    Blt_BindTable bindTable;		/* Binding information for entries. */
+    Blt_BindTable bindTable;		/* Binding information for
+                                         * entries. */
 
     Blt_HashTable entryTagTable;
     Blt_HashTable buttonTagTable;
@@ -898,26 +896,28 @@ struct _TreeView {
     Column *colActiveTitlePtr;		/* Column title currently active. */
     Column *colResizePtr;		/* Column that is being resized. */
     size_t depth;
-    int flatView;			/* Indicates if the view of the tree
-					 * has been flattened. */
+    int flatView;			/* Indicates if the view of the
+					 * tree has been flattened. */
     Entry **flatArr;			/* Flattened array of entries. */
-    SortInfo sortInfo;			/* Information about sorting the tree.*/
+    SortInfo sort;			/* Information about sorting the
+                                         * tree.*/
 
-    Tcl_Obj *iconVarObjPtr;		/* Name of TCL variable.  If non-NULL,
-					 * this variable will be set to the
-					 * name of the Tk image representing
-					 * the icon of the selected item.  */
-    Tcl_Obj *textVarObjPtr;		/* Name of TCL variable.  If non-NULL,
-					 * this variable will be set to the
-					 * text string of the label of the
-					 * selected item. */
-    Tcl_Obj *colCmdObjPtr;		/* TCL script to be executed when the
-					 * column is invoked. */
+    Tcl_Obj *iconVarObjPtr;		/* Name of TCL variable.  If
+					 * non-NULL, this variable will be
+					 * set to the name of the Tk image
+					 * representing the icon of the
+					 * selected item.  */
+    Tcl_Obj *textVarObjPtr;		/* Name of TCL variable.  If
+					 * non-NULL, this variable will be
+					 * set to the text string of the
+					 * label of the selected item. */
+    Tcl_Obj *colCmdObjPtr;		/* TCL script to be executed when
+					 * the column is invoked. */
 #ifdef notdef
     Pixmap drawable;			/* Pixmap used to cache the entries
-					 * displayed.  The pixmap is saved so
-					 * that only selected elements can be
-					 * drawn quicky. */
+					 * displayed.  The pixmap is saved
+					 * so that only selected elements
+					 * can be drawn quicky. */
     short int drawWidth, drawHeight;
 #endif
     short int ruleAnchor, ruleMark;

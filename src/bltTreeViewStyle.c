@@ -1021,7 +1021,7 @@ RowSelected(Entry *entryPtr)
     TreeView *viewPtr;
 
     viewPtr = entryPtr->viewPtr;
-    hPtr = Blt_FindHashEntry(&viewPtr->selection.table, (char *)entryPtr);
+    hPtr = Blt_FindHashEntry(&viewPtr->sel.table, (char *)entryPtr);
     return (hPtr != NULL);
 }
 
@@ -2184,7 +2184,7 @@ TextBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
 	relief = stylePtr->activeRelief;
     } else if (RowSelected(rowPtr)) {
         /* Selected */
-	bg = CHOOSE(viewPtr->selection.bg, stylePtr->selectBg);
+	bg = CHOOSE(viewPtr->sel.bg, stylePtr->selectBg);
         gc = stylePtr->selectGC;
     } else if ((cellPtr->flags|rowPtr->flags|colPtr->flags) & HIGHLIGHT) {
         /* Highlight */
@@ -3203,7 +3203,7 @@ ComboBoxStyleDrawProc(Cell *cellPtr, Drawable drawable,
 	relief = stylePtr->activeRelief;
     } else if (RowSelected(rowPtr)) {
         /* Selected */
-	bg = CHOOSE(viewPtr->selection.bg, stylePtr->selectBg);
+	bg = CHOOSE(viewPtr->sel.bg, stylePtr->selectBg);
         gc = stylePtr->selectGC;
     } else if ((cellPtr->flags|rowPtr->flags|colPtr->flags) & HIGHLIGHT) {
         /* Highlight */
