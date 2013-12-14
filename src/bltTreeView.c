@@ -103,17 +103,16 @@
 #define TAG_MULTIPLE		(1<<4)
 #define TAG_ALL			(1<<5)
 
-
 #define NodeToObj(n)		Tcl_NewLongObj(Blt_Tree_NodeId(n))
 
-#define DEF_BUTTON_ACTIVE_BACKGROUND	RGB_WHITE
+#define DEF_BUTTON_ACTIVE_BG	RGB_WHITE
 #define DEF_BUTTON_ACTIVE_BG_MONO	STD_ACTIVE_BG_MONO
 #define DEF_BUTTON_ACTIVE_FOREGROUND	STD_ACTIVE_FOREGROUND
 #define DEF_BUTTON_ACTIVE_FG_MONO	STD_ACTIVE_FG_MONO
 #define DEF_BUTTON_BORDERWIDTH		"1"
 #define DEF_BUTTON_CLOSE_RELIEF		"solid"
 #define DEF_BUTTON_OPEN_RELIEF		"solid"
-#define DEF_BUTTON_NORMAL_BACKGROUND	RGB_WHITE
+#define DEF_BUTTON_NORMAL_BG	RGB_WHITE
 #define DEF_BUTTON_NORMAL_BG_MONO	STD_NORMAL_BG_MONO
 #define DEF_BUTTON_NORMAL_FOREGROUND	STD_NORMAL_FOREGROUND
 #define DEF_BUTTON_NORMAL_FG_MONO	STD_NORMAL_FG_MONO
@@ -129,7 +128,7 @@
 #endif
 #define DEF_COLUMN_ACTIVE_TITLE_FG	STD_ACTIVE_FOREGROUND
 #define DEF_COLUMN_ARROWWIDTH		"0"
-#define DEF_COLUMN_BACKGROUND		(char *)NULL
+#define DEF_COLUMN_BG		(char *)NULL
 #define DEF_COLUMN_BIND_TAGS		"all"
 #define DEF_COLUMN_BORDERWIDTH		STD_BORDERWIDTH
 #define DEF_COLUMN_COLOR		RGB_BLACK
@@ -146,7 +145,7 @@
 #define DEF_COLUMN_RELIEF		"flat"
 #define DEF_COLUMN_STATE		"normal"
 #define DEF_COLUMN_STYLE		"default"
-#define DEF_COLUMN_TITLE_BACKGROUND	STD_NORMAL_BACKGROUND
+#define DEF_COLUMN_TITLE_BG	STD_NORMAL_BACKGROUND
 #define DEF_COLUMN_TITLE_BORDERWIDTH	STD_BORDERWIDTH
 #define DEF_COLUMN_TITLE_FONT		STD_FONT_NORMAL
 #define DEF_COLUMN_TITLE_FOREGROUND	STD_NORMAL_FOREGROUND
@@ -166,8 +165,8 @@
 #define DEF_ACTIVE_FOREGROUND	RBG_BLACK
 #define DEF_ACTIVE_RELIEF	"flat"
 #define DEF_ALLOW_DUPLICATES	"yes"
-#define DEF_BACKGROUND		RGB_WHITE
-#define DEF_ALT_BACKGROUND	RGB_GREY97
+#define DEF_BG                  RGB_WHITE
+#define DEF_ALT_BG              RGB_GREY97
 #define DEF_BORDERWIDTH		STD_BORDERWIDTH
 #define DEF_BUTTON		"auto"
 #define DEF_COLUMNCOMMAND	((char *)NULL)
@@ -184,7 +183,7 @@
 #define DEF_HEIGHT		"400"
 #define DEF_HIDE_LEAVES		"no"
 #define DEF_HIDE_ROOT		"yes"
-#define DEF_FOCUS_HIGHLIGHT_BACKGROUND	STD_NORMAL_BACKGROUND
+#define DEF_FOCUS_HIGHLIGHT_BG	STD_NORMAL_BACKGROUND
 #define DEF_FOCUS_HIGHLIGHT_COLOR	RGB_BLACK
 #define DEF_FOCUS_HIGHLIGHT_WIDTH	"2"
 #define DEF_ICONVARIABLE	((char *)NULL)
@@ -195,7 +194,7 @@
 #define DEF_LINEWIDTH		"1"
 #define DEF_MAKE_PATH		"no"
 #define DEF_NEW_TAGS		"no"
-#define DEF_NORMAL_BACKGROUND 	STD_NORMAL_BACKGROUND
+#define DEF_NORMAL_BG 	STD_NORMAL_BACKGROUND
 #define DEF_NORMAL_FG_MONO	STD_ACTIVE_FG_MONO
 #define DEF_RELIEF		"sunken"
 #define DEF_RESIZE_CURSOR	"arrow"
@@ -204,7 +203,7 @@
 #define DEF_RULE_COLOR		STD_NORMAL_BACKGROUND
 #define DEF_SCROLL_INCREMENT	"20"
 #define DEF_SCROLL_MODE		"hierbox"
-#define DEF_SELECT_BACKGROUND 	STD_SELECT_BACKGROUND 
+#define DEF_SELECT_BG 	STD_SELECT_BACKGROUND 
 #define DEF_SELECT_BG_MONO  	STD_SELECT_BG_MONO
 #define DEF_SELECT_BORDERWIDTH	"1"
 #define DEF_SELECT_FOREGROUND 	STD_SELECT_FOREGROUND
@@ -350,8 +349,8 @@ static Blt_CustomOption styleOption =
 static Blt_ConfigSpec buttonSpecs[] =
 {
     {BLT_CONFIG_BACKGROUND, "-activebackground", "activeBackground", 
-	"Background", DEF_BUTTON_ACTIVE_BACKGROUND, 
-	Blt_Offset(TreeView, button.activeBg), 0},
+	"Background", DEF_BUTTON_ACTIVE_BG, 
+        Blt_Offset(TreeView, button.activeBg), 0},
     {BLT_CONFIG_SYNONYM, "-activebg", "activeBackground", (char *)NULL, 
 	(char *)NULL, 0, 0},
     {BLT_CONFIG_SYNONYM, "-activefg", "activeForeground", (char *)NULL, 
@@ -360,7 +359,7 @@ static Blt_ConfigSpec buttonSpecs[] =
 	DEF_BUTTON_ACTIVE_FOREGROUND, 
 	Blt_Offset(TreeView, button.activeFgColor), 0},
     {BLT_CONFIG_BACKGROUND, "-background", "background", "Background",
-	DEF_BUTTON_NORMAL_BACKGROUND, Blt_Offset(TreeView, button.normalBg), 0},
+	DEF_BUTTON_NORMAL_BG, Blt_Offset(TreeView, button.normalBg), 0},
     {BLT_CONFIG_SYNONYM, "-bd", "borderWidth", (char *)NULL, (char *)NULL, 0,0},
     {BLT_CONFIG_SYNONYM, "-bg", "background", (char *)NULL, (char *)NULL, 0, 0},
     {BLT_CONFIG_PIXELS_NNEG, "-borderwidth", "borderWidth", "BorderWidth",
@@ -437,13 +436,12 @@ static Blt_ConfigSpec viewSpecs[] =
     {BLT_CONFIG_SYNONYM, "-altbg", "alternateBackground", (char *)NULL,
 	(char *)NULL, 0, 0},
     {BLT_CONFIG_BACKGROUND, "-alternatebackground", "alternateBackground", 
-	"AlternateBackground", DEF_ALT_BACKGROUND, Blt_Offset(TreeView, altBg), 
-	0},
+	"AlternateBackground", DEF_ALT_BG, Blt_Offset(TreeView, altBg), 0},
     {BLT_CONFIG_BITMASK, "-autocreate", "autoCreate", "AutoCreate", 
 	DEF_MAKE_PATH, Blt_Offset(TreeView, flags), 
 	BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)FILL_ANCESTORS},
     {BLT_CONFIG_BACKGROUND, "-background", "background", "Background",
-	DEF_BACKGROUND, Blt_Offset(TreeView, normalBg), 0},
+	DEF_BG, Blt_Offset(TreeView, normalBg), 0},
     {BLT_CONFIG_SYNONYM, "-bd", "borderWidth", (char *)NULL, (char *)NULL, 0,0},
     {BLT_CONFIG_SYNONYM, "-bg", "background", (char *)NULL, (char *)NULL, 0, 0},
     {BLT_CONFIG_PIXELS_NNEG, "-borderwidth", "borderWidth", "BorderWidth",
@@ -494,7 +492,7 @@ static Blt_ConfigSpec viewSpecs[] =
 	Blt_Offset(TreeView, flags), BLT_CONFIG_DONT_SET_DEFAULT, 
 	(Blt_CustomOption *)HIDE_ROOT},
     {BLT_CONFIG_COLOR, "-highlightbackground", "highlightBackground",
-	"HighlightBackground", DEF_FOCUS_HIGHLIGHT_BACKGROUND, 
+	"HighlightBackground", DEF_FOCUS_HIGHLIGHT_BG, 
         Blt_Offset(TreeView, highlightBgColor), 0},
     {BLT_CONFIG_COLOR, "-highlightcolor", "highlightColor", "HighlightColor",
 	DEF_FOCUS_HIGHLIGHT_COLOR, Blt_Offset(TreeView, highlightColor), 0},
@@ -527,8 +525,7 @@ static Blt_ConfigSpec viewSpecs[] =
 	DEF_SCROLL_MODE, Blt_Offset(TreeView, scrollMode),
 	BLT_CONFIG_DONT_SET_DEFAULT, &scrollmodeOption},
     {BLT_CONFIG_BACKGROUND, "-selectbackground", "selectBackground", 
-	"Foreground", DEF_SELECT_BACKGROUND, Blt_Offset(TreeView, sel.bg),
-	0},
+	"Foreground", DEF_SELECT_BG, Blt_Offset(TreeView, sel.bg), 0},
     {BLT_CONFIG_PIXELS_NNEG, "-selectborderwidth", "selectBorderWidth", 
 	"BorderWidth", DEF_SELECT_BORDERWIDTH, 
 	Blt_Offset(TreeView, sel.borderWidth), 
@@ -655,8 +652,7 @@ static Blt_ConfigSpec columnSpecs[] =
     {BLT_CONFIG_STRING, "-title", "title", "Title", (char *)NULL, 
 	Blt_Offset(Column, text), 0},
     {BLT_CONFIG_BACKGROUND, "-titlebackground", "titleBackground", 
-	"TitleBackground", DEF_COLUMN_TITLE_BACKGROUND, 
-	Blt_Offset(Column, titleBg), 0},
+	"TitleBackground", DEF_COLUMN_TITLE_BG, Blt_Offset(Column, titleBg), 0},
     {BLT_CONFIG_PIXELS_NNEG, "-titleborderwidth", "titleBorderWidth", 
 	"TitleBorderWidth", DEF_COLUMN_TITLE_BORDERWIDTH, 
 	Blt_Offset(Column, titleBW), BLT_CONFIG_DONT_SET_DEFAULT},
@@ -7153,7 +7149,8 @@ ComputeLayout(TreeView *viewPtr)
      * open (not hidden).  The widest entry in a column determines the
      * width of that column.
      */
-    /* Initialize the columns. */
+
+    /* Reset the column sizes to 0. */
     for (link = Blt_Chain_FirstLink(viewPtr->columns); 
 	 link != NULL; link = Blt_Chain_NextLink(link)) {
 	colPtr = Blt_Chain_GetValue(link);
