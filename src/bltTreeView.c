@@ -90,6 +90,8 @@
 #define GetData(entryPtr, key, objPtrPtr) \
 	Blt_Tree_GetValueByKey((Tcl_Interp *)NULL, (entryPtr)->viewPtr->tree, \
 	      (entryPtr)->node, key, objPtrPtr)
+#define IsClosed(entryPtr)      (entryPtr->flags & ENTRY_CLOSED)
+#define IsOpen(entryPtr)        (!IsClosed(entryPtr))
 
 #define DEF_ICON_WIDTH		16
 #define DEF_ICON_HEIGHT		16
@@ -1175,7 +1177,7 @@ OpenEntry(TreeView *viewPtr, Entry *entryPtr)
 {
     Tcl_Obj *cmdObjPtr;
 
-    if ((entryPtr->flags & ENTRY_CLOSED) == 0) {
+    if (IsOpen(entryPtr)) {
 	return TCL_OK;			/* Entry is already open. */
     }
     entryPtr->flags &= ~ENTRY_CLOSED;
@@ -1208,7 +1210,7 @@ CloseEntry(TreeView *viewPtr, Entry *entryPtr)
 {
     Tcl_Obj *cmdObjPtr;
 
-    if (entryPtr->flags & ENTRY_CLOSED) {
+    if (IsClosed(entryPtr->flags)) {
 	return TCL_OK;			/* Entry is already closed. */
     }
     entryPtr->flags |= ENTRY_CLOSED;
@@ -1387,7 +1389,7 @@ GetEntryIcon(TreeView *viewPtr, Entry *entryPtr)
     icon = NULL;
     if (icons != NULL) {		/* Selected or normal icon? */
 	icon = icons[0];
-	if (((entryPtr->flags & ENTRY_CLOSED) == 0) && (icons[1] != NULL)) {
+	if ((IsOpen(entryPtr)) && (icons[1] != NULL)) {
 	    icon = icons[1];
 	}
     }
@@ -4553,48 +4555,48 @@ static void
 ConfigureButtons(TreeView *viewPtr)
 {
     GC newGC;
-    Button *buttonPtr = &viewPtr->button;
+    Button *butPtr = &viewPtr->button;
     XGCValues gcValues;
     unsigned long gcMask;
 
     gcMask = GCForeground;
-    gcValues.foreground = buttonPtr->normalFg->pixel;
+    gcValues.foreground = butPtr->normalFg->pixel;
     newGC = Tk_GetGC(viewPtr->tkwin, gcMask, &gcValues);
-    if (buttonPtr->normalGC != NULL) {
-	Tk_FreeGC(viewPtr->display, buttonPtr->normalGC);
+    if (butPtr->normalGC != NULL) {
+	Tk_FreeGC(viewPtr->display, butPtr->normalGC);
     }
-    buttonPtr->normalGC = newGC;
+    butPtr->normalGC = newGC;
 
     gcMask = GCForeground;
-    gcValues.foreground = buttonPtr->activeFgColor->pixel;
+    gcValues.foreground = butPtr->activeFgColor->pixel;
     newGC = Tk_GetGC(viewPtr->tkwin, gcMask, &gcValues);
-    if (buttonPtr->activeGC != NULL) {
-	Tk_FreeGC(viewPtr->display, buttonPtr->activeGC);
+    if (butPtr->activeGC != NULL) {
+	Tk_FreeGC(viewPtr->display, butPtr->activeGC);
     }
-    buttonPtr->activeGC = newGC;
+    butPtr->activeGC = newGC;
 
-    buttonPtr->width = buttonPtr->height = ODD(buttonPtr->reqSize);
-    if (buttonPtr->icons != NULL) {
+    butPtr->width = butPtr->height = ODD(butPtr->reqSize);
+    if (butPtr->icons != NULL) {
 	int i;
 
 	for (i = 0; i < 2; i++) {
 	    int width, height;
 
-	    if (buttonPtr->icons[i] == NULL) {
+	    if (butPtr->icons[i] == NULL) {
 		break;
 	    }
-	    width = IconWidth(buttonPtr->icons[i]);
-	    height = IconWidth(buttonPtr->icons[i]);
-	    if (buttonPtr->width < width) {
-		buttonPtr->width = width;
+	    width = IconWidth(butPtr->icons[i]);
+	    height = IconWidth(butPtr->icons[i]);
+	    if (butPtr->width < width) {
+		butPtr->width = width;
 	    }
-	    if (buttonPtr->height < height) {
-		buttonPtr->height = height;
+	    if (butPtr->height < height) {
+		butPtr->height = height;
 	    }
 	}
     }
-    buttonPtr->width  += 2 * buttonPtr->borderWidth;
-    buttonPtr->height += 2 * buttonPtr->borderWidth;
+    butPtr->width  += 2 * butPtr->borderWidth;
+    butPtr->height += 2 * butPtr->borderWidth;
 }
 
 
@@ -5108,13 +5110,13 @@ PickItem(
 #endif
 	flags = ITEM_ENTRY;
 	if (entryPtr->flags & ENTRY_BUTTON) {
-	    Button *buttonPtr = &viewPtr->button;
+	    Button *butPtr = &viewPtr->button;
 	    int x1, x2, y1, y2;
 	    
 	    x1 = entryPtr->worldX + entryPtr->buttonX - BUTTON_PAD;
-	    x2 = x1 + buttonPtr->width + 2 * BUTTON_PAD;
+	    x2 = x1 + butPtr->width + 2 * BUTTON_PAD;
 	    y1 = entryPtr->worldY + entryPtr->buttonY - BUTTON_PAD;
-	    y2 = y1 + buttonPtr->height + 2 * BUTTON_PAD;
+	    y2 = y1 + butPtr->height + 2 * BUTTON_PAD;
 	    if ((x >= x1) && (x < x2) && (y >= y1) && (y < y2)) {
 		flags |= ITEM_ENTRY_BUTTON;
 	    }
@@ -6159,7 +6161,7 @@ DestroyTreeView(DestroyData dataPtr)	/* Pointer to the widget record. */
 {
     Blt_ChainLink link;
     TreeView *viewPtr = (TreeView *)dataPtr;
-    Button *buttonPtr;
+    Button *butPtr;
     CellStyle *stylePtr;
 
     if (viewPtr->flags & SELECT_PENDING) {
@@ -6198,12 +6200,12 @@ DestroyTreeView(DestroyData dataPtr)	/* Pointer to the widget record. */
     if (viewPtr->levelInfo != NULL) {
 	Blt_Free(viewPtr->levelInfo);
     }
-    buttonPtr = &viewPtr->button;
-    if (buttonPtr->activeGC != NULL) {
-	Tk_FreeGC(viewPtr->display, buttonPtr->activeGC);
+    butPtr = &viewPtr->button;
+    if (butPtr->activeGC != NULL) {
+	Tk_FreeGC(viewPtr->display, butPtr->activeGC);
     }
-    if (buttonPtr->normalGC != NULL) {
-	Tk_FreeGC(viewPtr->display, buttonPtr->normalGC);
+    if (butPtr->normalGC != NULL) {
+	Tk_FreeGC(viewPtr->display, butPtr->normalGC);
     }
     if (viewPtr->stylePtr != NULL) {
 	FreeStyle(viewPtr->stylePtr);
@@ -6613,7 +6615,6 @@ ResetCoordinates(TreeView *viewPtr, Entry *entryPtr, int *yPtr, long *indexPtr)
 
     entryPtr->worldY = -1;
     entryPtr->vertLineLength = -1;
-    entryPtr->worldY = -1;
     if ((entryPtr != viewPtr->rootPtr) && (EntryIsHidden(entryPtr))) {
 	return;				/* If the entry is hidden, then do
 					 * nothing. */
@@ -6626,16 +6627,21 @@ ResetCoordinates(TreeView *viewPtr, Entry *entryPtr, int *yPtr, long *indexPtr)
     entryPtr->flatIndex = *indexPtr;
     (*indexPtr)++;
     depth = DEPTH(viewPtr, entryPtr->node) + 1;
+    /* Track the widest label and icon in the widget.  */
     if (viewPtr->levelInfo[depth].labelWidth < entryPtr->labelWidth) {
 	viewPtr->levelInfo[depth].labelWidth = entryPtr->labelWidth;
     }
     if (viewPtr->levelInfo[depth].iconWidth < entryPtr->iconWidth) {
 	viewPtr->levelInfo[depth].iconWidth = entryPtr->iconWidth;
     }
+    /* The icon width needs to be odd so that the dot patterns of the
+     * vertical and horizontal lines match up. */
     viewPtr->levelInfo[depth].iconWidth |= 0x01;
-    if ((entryPtr->flags & ENTRY_CLOSED) == 0) {
+
+    if (IsOpen(entryPtr)) {
 	Entry *bottomPtr, *childPtr;
 
+        /* Recursively handle each child of this node. */
 	bottomPtr = entryPtr;
 	for (childPtr = FirstChild(entryPtr, ENTRY_HIDE); childPtr != NULL; 
 	     childPtr = NextSibling(childPtr, ENTRY_HIDE)){
@@ -6816,14 +6822,14 @@ ComputeFlatLayout(TreeView *viewPtr)
 
     /* Collect the extents of the entries in the flat view. */
     viewPtr->depth = 0;
-    viewPtr->minHeight = SHRT_MAX;
+    viewPtr->minRowHeight = SHRT_MAX;
     for (p = viewPtr->flatArr; *p != NULL; p++) {
         entryPtr = *p;
         if ((viewPtr->flags|entryPtr->flags) & GEOMETRY) {
             ComputeEntryGeometry(viewPtr, entryPtr);
         }
-        if (viewPtr->minHeight > entryPtr->height) {
-            viewPtr->minHeight = entryPtr->height;
+        if (viewPtr->minRowHeight > entryPtr->height) {
+            viewPtr->minRowHeight = entryPtr->height;
         }
         entryPtr->flags &= ~ENTRY_BUTTON;
     }
@@ -6940,34 +6946,38 @@ ComputeTreeLayout(TreeView *viewPtr)
         colPtr->index = index;
         index++;
     }
-    viewPtr->minHeight = SHRT_MAX;
+    /* Get the maximum depth of the tree.  We'll use this to allocate slots
+     * in the level information array. */
+    viewPtr->minRowHeight = SHRT_MAX;
     viewPtr->depth = 0;
 
     for (entryPtr = viewPtr->rootPtr; entryPtr != NULL; 
          entryPtr = NextEntry(entryPtr, 0)){
+        size_t depth;
+
         if ((viewPtr->flags|entryPtr->flags) & GEOMETRY) {
             ComputeEntryGeometry(viewPtr, entryPtr);
         }
-        if (viewPtr->minHeight > entryPtr->height) {
-            viewPtr->minHeight = entryPtr->height;
+        if (viewPtr->minRowHeight > entryPtr->height) {
+            viewPtr->minRowHeight = entryPtr->height;
         }
-        /* 
-         * Determine if the entry should display a button (indicating that
-         * it has children) and mark the entry accordingly.
-         */
+        /* Set the flag that indicates if the entry needs a button drawn.
+         * This is determined from either the ENTRY_REQUEST_BUTTON flag, or
+         * the ENTRY_AUTO_BUTTON flag and the node has children. */
         entryPtr->flags &= ~ENTRY_BUTTON;
-        if (entryPtr->flags & ENTRY_REQUEST_BUTTON) {
+        if ((entryPtr->flags & ENTRY_REQUEST_BUTTON) ||
+            ((entryPtr->flags & ENTRY_AUTO_BUTTON) &&
+             (FirstChild(entryPtr, ENTRY_HIDE) != NULL))) {
             entryPtr->flags |= ENTRY_BUTTON;
-        } else if (entryPtr->flags & ENTRY_AUTO_BUTTON) {
-            if (FirstChild(entryPtr, ENTRY_HIDE) != NULL) {
-                entryPtr->flags |= ENTRY_BUTTON;
-            }
         }
-        /* Determine the depth of the tree. */
-        if (viewPtr->depth < DEPTH(viewPtr, entryPtr->node)) {
-            viewPtr->depth = DEPTH(viewPtr, entryPtr->node);
+        depth = DEPTH(viewPtr, entryPtr->node);
+        /* Track the overall depth of the tree. */
+        if (viewPtr->depth < depth) {
+            viewPtr->depth = depth;
         }
     }
+
+
     if (viewPtr->levelInfo != NULL) {
         Blt_Free(viewPtr->levelInfo);
     }
@@ -7261,7 +7271,7 @@ ComputeVisibleEntries(TreeView *viewPtr)
     height = VPORTHEIGHT(viewPtr);
 
     /* Allocate worst case number of slots for entry array. */
-    numSlots = (height / viewPtr->minHeight) + 3;
+    numSlots = (height / viewPtr->minRowHeight) + 3;
     if (numSlots != viewPtr->numVisible) {
 	if (viewPtr->visibleArr != NULL) {
 	    Blt_Free(viewPtr->visibleArr);
@@ -7420,7 +7430,7 @@ DrawLines(
                                          * into. */
 {
     Entry **epp;
-    Button *buttonPtr;
+    Button *butPtr;
     Entry *entryPtr;                    /* Entry to be drawn. */
 
     entryPtr = viewPtr->visibleArr[0];
@@ -7477,7 +7487,7 @@ DrawLines(
 	    }
 	}
     }
-    buttonPtr = &viewPtr->button;
+    butPtr = &viewPtr->button;
     for (epp = viewPtr->visibleArr; *epp != NULL; epp++) {
 	int x, y, w, h;
 	int buttonY, level;
@@ -7489,12 +7499,12 @@ DrawLines(
 	y = SCREENY(viewPtr, entryPtr->worldY);
 	level = DEPTH(viewPtr, entryPtr->node);
 	w = ICONWIDTH(level);
-	h = MAX3(entryPtr->lineHeight, entryPtr->iconHeight, buttonPtr->height);
-	entryPtr->buttonX = (w - buttonPtr->width) / 2;
-	entryPtr->buttonY = (h - buttonPtr->height) / 2;
+	h = MAX3(entryPtr->lineHeight, entryPtr->iconHeight, butPtr->height);
+	entryPtr->buttonX = (w - butPtr->width) / 2;
+	entryPtr->buttonY = (h - butPtr->height) / 2;
 	buttonY = y + entryPtr->buttonY;
 	x1 = x + (w / 2);
-	y1 = buttonY + (buttonPtr->height / 2);
+	y1 = buttonY + (butPtr->height / 2);
 	x2 = x1 + (ICONWIDTH(level) + ICONWIDTH(level + 1)) / 2;
 	if (Blt_Tree_ParentNode(entryPtr->node) != NULL) {
 	    /*
@@ -7504,8 +7514,7 @@ DrawLines(
 	    y1 |= 0x1;
 	    XDrawLine(viewPtr->display, drawable, gc, x1, y1, x2, y1);
 	}
-	if (((entryPtr->flags & ENTRY_CLOSED) == 0) && 
-	    (entryPtr->vertLineLength > 0)) {
+	if ((IsOpen(entryPtr)) && (entryPtr->vertLineLength > 0)) {
 	    y2 = y1 + entryPtr->vertLineLength;
 	    if (y2 > Tk_Height(viewPtr->tkwin)) {
 		y2 = Tk_Height(viewPtr->tkwin); /* Clip line at window border.*/
@@ -7584,32 +7593,30 @@ DrawButton(
     int x, int y)
 {
     Blt_Bg bg;
-    Button *buttonPtr = &viewPtr->button;
+    Button *butPtr = &viewPtr->button;
     Icon icon;
     int relief;
     int width, height;
 
     bg = (entryPtr == viewPtr->activeBtnPtr) 
-	? buttonPtr->activeBg : buttonPtr->normalBg;
-    relief = (entryPtr->flags & ENTRY_CLOSED) 
-	? buttonPtr->closeRelief : buttonPtr->openRelief;
+	? butPtr->activeBg : butPtr->normalBg;
+    relief = (IsClosed(entryPtr)) ? butPtr->closeRelief : butPtr->openRelief;
     if (relief == TK_RELIEF_SOLID) {
 	relief = TK_RELIEF_FLAT;
     }
-    Blt_Bg_FillRectangle(viewPtr->tkwin, drawable, bg, x, y, buttonPtr->width, 
-	buttonPtr->height, buttonPtr->borderWidth, relief);
+    Blt_Bg_FillRectangle(viewPtr->tkwin, drawable, bg, x, y, butPtr->width, 
+	butPtr->height, butPtr->borderWidth, relief);
 
-    x += buttonPtr->borderWidth;
-    y += buttonPtr->borderWidth;
-    width  = buttonPtr->width  - (2 * buttonPtr->borderWidth);
-    height = buttonPtr->height - (2 * buttonPtr->borderWidth);
+    x += butPtr->borderWidth;
+    y += butPtr->borderWidth;
+    width  = butPtr->width  - (2 * butPtr->borderWidth);
+    height = butPtr->height - (2 * butPtr->borderWidth);
 
     icon = NULL;
-    if (buttonPtr->icons != NULL) {	/* Open or close button icon? */
-	icon = buttonPtr->icons[0];
-	if (((entryPtr->flags & ENTRY_CLOSED) == 0) && 
-	    (buttonPtr->icons[1] != NULL)) {
-	    icon = buttonPtr->icons[1];
+    if (butPtr->icons != NULL) {	/* Open or close button icon? */
+	icon = butPtr->icons[0];
+	if (((IsOpen(entryPtr)) && (butPtr->icons[1] != NULL)) {
+	    icon = butPtr->icons[1];
 	}
     }
     if (icon != NULL) {			/* Icon or rectangle? */
@@ -7622,14 +7629,14 @@ DrawButton(
 	GC gc;
 
 	gc = (entryPtr == viewPtr->activeBtnPtr)
-	    ? buttonPtr->activeGC : buttonPtr->normalGC;
+	    ? butPtr->activeGC : butPtr->normalGC;
 	if (relief == TK_RELIEF_FLAT) {
 	    /* Draw the box outline */
 
-	    left = x - buttonPtr->borderWidth;
-	    top = y - buttonPtr->borderWidth;
-	    right = left + buttonPtr->width - 1;
-	    bottom = top + buttonPtr->height - 1;
+	    left = x - butPtr->borderWidth;
+	    top = y - butPtr->borderWidth;
+	    right = left + butPtr->width - 1;
+	    bottom = top + butPtr->height - 1;
 
 	    segments[0].x1 = left;
 	    segments[0].x2 = right;
@@ -7662,8 +7669,8 @@ DrawButton(
 #endif
 
 	count = 5;
-	if (entryPtr->flags & ENTRY_CLOSED) { /* Draw the vertical line for
-					       * the plus. */
+	if (IsClosed(entryPtr)) {       /* Draw the vertical line for
+                                         * the plus. */
 	    top = y + BUTTON_IPAD;
 	    bottom = y + height - BUTTON_IPAD;
 	    segments[5].y1 = top;
@@ -8055,7 +8062,7 @@ DrawTreeEntry(
     Drawable drawable)                  /* Pixmap or window to draw
                                          * into. */
 {
-    Button *buttonPtr = &viewPtr->button;
+    Button *butPtr = &viewPtr->button;
     int level;
     int width, height;
     int x, y, xMax;
@@ -8067,10 +8074,10 @@ DrawTreeEntry(
     level = DEPTH(viewPtr, entryPtr->node);
     width = ICONWIDTH(level);
     height = MAX3(entryPtr->lineHeight, entryPtr->iconHeight, 
-	buttonPtr->height);
+	butPtr->height);
 
-    entryPtr->buttonX = (width - buttonPtr->width) / 2;
-    entryPtr->buttonY = (height - buttonPtr->height) / 2;
+    entryPtr->buttonX = (width - butPtr->width) / 2;
+    entryPtr->buttonY = (height - butPtr->height) / 2;
 
     if ((entryPtr->flags & ENTRY_BUTTON) && (entryPtr != viewPtr->rootPtr)){
 	/*
@@ -11043,7 +11050,7 @@ EntryIsOpenOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (GetEntry(viewPtr, objv[3], &entryPtr) != TCL_OK) {
 	return TCL_ERROR;
     }
-    bool = ((entryPtr->flags & ENTRY_CLOSED) == 0);
+    bool = IsOpen(entryPtr);
     Tcl_SetBooleanObj(Tcl_GetObjResult(interp), bool);
     return TCL_OK;
 }
@@ -12454,7 +12461,7 @@ NearestOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	  Tcl_Obj *const *objv)
 {
     TreeView *viewPtr = clientData;
-    Button *buttonPtr = &viewPtr->button;
+    Button *butPtr = &viewPtr->button;
     int x, y;                           /* Screen coordinates of the test
                                          * point. */
     Entry *entryPtr;
@@ -12505,8 +12512,8 @@ NearestOp(ClientData clientData, Tcl_Interp *interp, int objc,
 
 	    bx = entryPtr->worldX + entryPtr->buttonX;
 	    by = entryPtr->worldY + entryPtr->buttonY;
-	    if ((x >= bx) && (x < (bx + buttonPtr->width)) &&
-		(y >= by) && (y < (by + buttonPtr->height))) {
+	    if ((x >= bx) && (x < (bx + butPtr->width)) &&
+		(y >= by) && (y < (by + butPtr->height))) {
 		where = "button";
 		goto done;
 	    }
@@ -14411,7 +14418,7 @@ ToggleOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	if (entryPtr == NULL) {
 	    return TCL_OK;
 	}
-	if (entryPtr->flags & ENTRY_CLOSED) {
+	if (IsClosed(entryPtr)) {
 	    result = OpenEntry(viewPtr, entryPtr);
 	} else {
 	    PruneSelection(viewPtr, viewPtr->focusPtr);
