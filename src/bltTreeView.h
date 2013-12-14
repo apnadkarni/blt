@@ -834,7 +834,7 @@ struct _TreeView {
 
     int xOffset, yOffset;		/* Translation between view port
 					 * and world origin. */
-    short int minHeight;		/* Minimum entry height. Used to to
+    short int minRowHeight;		/* Minimum entry height. Used to to
 					 * compute what the y-scroll unit
 					 * should * be. */
     short int titleHeight;		/* Height of column titles. */
