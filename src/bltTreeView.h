@@ -535,6 +535,9 @@ struct _Entry {
     size_t width, height;		/* Dimensions of the entry. This
 					 * includes the size of its
 					 * columns. */
+    short int rowHeight;
+    short int colWidth;
+    Blt_Pad rowPad;
     int reqHeight;			/* Requested height of the entry.
 					 * Overrides computed height. */
     int vertLineLength;			/* Length of the vertical line
@@ -642,11 +645,6 @@ typedef struct {
  */
 typedef struct {
     unsigned int flags;
-    int relief;				/* Relief of selected
-					 * items. Currently is always
-					 * raised. */
-    int borderWidth;			/* Border width of a selected
-                                         * entry.*/
     int	mode;				/* Selection style: "single" or
 					 * "multiple".  */
     XColor *fg;                         /* Text color of a selected
@@ -852,8 +850,8 @@ struct _TreeView {
     Blt_HashTable styleTable;		/* Table of cell styles. */
     Blt_Chain userStyles;		/* List of user-created styles. */
     Entry *rootPtr;			/* Root entry of tree. */
-    Entry **visibleArr;			/* Array of visible entries. */
-    int numVisible;			/* # of entries in the visible
+    Entry **visibleEntries;             /* Array of visible entries. */
+    int numVisibleEntries;              /* # of entries in the visible
                                          * array. */
     int numEntries;			/* # of entries in tree. */
     int treeWidth;			/* Computed width of the tree. */
