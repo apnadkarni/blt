@@ -5290,7 +5290,7 @@ ComputeEntryGeometry(TreeView *viewPtr, Entry *entryPtr)
 
     if ((entryPtr->flags & GEOMETRY) || (viewPtr->flags & UPDATE)) {
 	Blt_Font font;
-	Blt_FontMetrics fontMetrics;
+	Blt_FontMetrics fm;
 	Icon *icons;
 	const char *label;
 
@@ -5315,8 +5315,8 @@ ComputeEntryGeometry(TreeView *viewPtr, Entry *entryPtr)
 	    Blt_Free(entryPtr->fullName);
 	    entryPtr->fullName = NULL;
 	}
-	Blt_Font_GetMetrics(font, &fontMetrics);
-	entryPtr->lineHeight = fontMetrics.linespace;
+	Blt_Font_GetMetrics(font, &fm);
+	entryPtr->lineHeight = fm.linespace;
 	entryPtr->lineHeight += 2 * (FOCUS_PAD + LABEL_PADY) + viewPtr->leader;
 
 	label = GETLABEL(entryPtr);
@@ -6631,6 +6631,81 @@ ResetCoordinates(TreeView *viewPtr, Entry *entryPtr, int *yPtr, long *indexPtr)
     }
 }
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * GetTreeCoordinates --
+ *
+ *	Determines the maximum height of all visible entries.
+ *
+ *	1. Sets the worldY coordinate for all mapped/open entries.
+ *	2. Determines if entry needs a button.
+ *	3. Collects the minimum height of open/mapped entries. (Do for all
+ *	   entries upon insert).
+ *	4. Figures out horizontal extent of each entry (will be width of 
+ *	   tree view column).
+ *	5. Collects maximum icon size for each level.
+ *	6. The height of its vertical line
+ *
+ * Results:
+ *	Returns 1 if beyond the last visible entry, 0 otherwise.
+ *
+ * Side effects:
+ *	The array of visible nodes is filled.
+ *
+ *---------------------------------------------------------------------------
+ */
+static void
+GetTreeCoordinates(TreeView *viewPtr, Entry *entryPtr, int *yPtr, 
+                   long *indexPtr)
+{
+    int depth, h;
+    LevelInfo *levelPtr;
+
+    entryPtr->worldY = -1;
+    entryPtr->vertLineLength = -1;
+    if ((entryPtr != viewPtr->rootPtr) && (EntryIsHidden(entryPtr))) {
+	return;				/* If the entry is hidden, then do
+					 * nothing. */
+    }
+    entryPtr->worldY = *yPtr;
+    Blt_GetFontMetrics(entryPtr->font, &fm);
+    h = MAX3(entryPtr->iconHeight, viewPtr->button.height);
+    entryPtr->vertLineLength = -(*yPtr + (h / 2));
+
+    *yPtr += entryPtr->height;
+    entryPtr->flatIndex = *indexPtr;
+    (*indexPtr)++;
+
+    depth = DEPTH(viewPtr, entryPtr->node) + 1;
+    levelPtr = viewPtr->levelInfo + depth;
+
+    /* Track the widest label and icon in the widget.  */
+    if (levelPtr->labelWidth < entryPtr->labelWidth) {
+	levelPtr->labelWidth = entryPtr->labelWidth;
+    }
+    if (levelPtr->iconWidth < entryPtr->iconWidth) {
+	levelPtr->iconWidth = entryPtr->iconWidth;
+    }
+    /* The icon width needs to be odd so that the dot patterns of the
+     * vertical and horizontal lines match up. */
+    levelPtr->iconWidth |= 0x01;
+
+    if (IsOpen(entryPtr)) {
+	Entry *bottomPtr, *childPtr;
+
+        /* Recursively handle each child of this node. */
+	bottomPtr = entryPtr;
+	for (childPtr = FirstChild(entryPtr, ENTRY_HIDE); childPtr != NULL; 
+	     childPtr = NextSibling(childPtr, ENTRY_HIDE)){
+	    GetTreeCoordinates(viewPtr, childPtr, yPtr, indexPtr);
+	    bottomPtr = childPtr;
+	}
+	h = MAX(bottomPtr->iconHeight, viewPtr->button.height);
+	entryPtr->vertLineLength += bottomPtr->worldY + (h / 2);
+    }
+}
+
 static void
 AdjustColumns(TreeView *viewPtr)
 {
@@ -6935,6 +7010,14 @@ ComputeTreeLayout(TreeView *viewPtr)
         if ((viewPtr->flags|entryPtr->flags) & GEOMETRY) {
             ComputeEntryGeometry(viewPtr, entryPtr);
         }
+#ifdef notdef
+        /* 
+         * Compute the entry height.
+         */
+        SizeOfIcons(icons, &iw, &ih);
+        h = MAX3(viewPtr->button.height, ih, entryPtr->textHeight) + 
+            PADDING(entryPtr->pad) + (2 * ENTRY_PADY) + entryPtr->ruleHeight;
+#endif
         if (viewPtr->minRowHeight > entryPtr->height) {
             viewPtr->minRowHeight = entryPtr->height;
         }
@@ -6953,7 +7036,6 @@ ComputeTreeLayout(TreeView *viewPtr)
             viewPtr->depth = depth;
         }
     }
-
 
     if (viewPtr->levelInfo != NULL) {
         Blt_Free(viewPtr->levelInfo);
