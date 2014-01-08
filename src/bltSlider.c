@@ -1,5 +1,4 @@
 /* -*- mode: c; c-basic-offset: 4; indent-tabs-mode: nil -*- */
-
 /*
  * bltSlider.c --
  *
@@ -7,13 +6,13 @@
  *
  *	Copyright 2012 George A Howlett.
  *
- *	Permission is hereby granted, free of charge, to any person obtaining
- *	a copy of this software and associated documentation files (the
- *	"Software"), to deal in the Software without restriction, including
- *	without limitation the rights to use, copy, modify, merge, publish,
- *	distribute, sublicense, and/or sell copies of the Software, and to
- *	permit persons to whom the Software is furnished to do so, subject to
- *	the following conditions:
+ *	Permission is hereby granted, free of charge, to any person
+ *	obtaining a copy of this software and associated documentation
+ *	files (the "Software"), to deal in the Software without
+ *	restriction, including without limitation the rights to use, copy,
+ *	modify, merge, publish, distribute, sublicense, and/or sell copies
+ *	of the Software, and to permit persons to whom the Software is
+ *	furnished to do so, subject to the following conditions:
  *
  *	The above copyright notice and this permission notice shall be
  *	included in all copies or substantial portions of the Software.
@@ -21,10 +20,11 @@
  *	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  *	EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  *	MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- *	NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
- *	LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
- *	OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
- *	WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *	NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+ *	BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ *	ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ *	CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ *	SOFTWARE.
  */
 
 #define BUILD_BLT_TK_PROCS 1
@@ -83,7 +83,8 @@
 #define STATE_MASK	(STATE_NORMAL|STATE_DISABLED|STATE_ACTIVE)
 #define DECREASING	(1<<8)		/* Axis is decreasing */
 
-#define SIDE_TOP	(1<<9)		/* Axis is at the top of the widget. */
+#define SIDE_TOP	(1<<9)		/* Axis is at the top of the
+                                         * widget. */
 #define SIDE_BOTTOM	(1<<9)		/* Axis is at the bottom. */
 #define SIDE_LEFT	(1<<9)		/* Axis is on the left side. */
 #define SIDE_RIGHT	(1<<9)		/* Axis is on the right side. */
@@ -99,8 +100,8 @@
 #define TIMESCALE	(1<<14)
 #define AXIS_GEOMETRY	(1<<14)		/* Axis geometry needs to be
 					 * recomputed because the "from"
-					 * and/or "to" value of the slider has
-					 * changed. */
+					 * and/or "to" value of the slider
+					 * has changed. */
 
 /*
 -activesliderbackground
@@ -185,12 +186,13 @@ typedef struct {
  *
  * Ticks --
  *
- * 	Structure containing information where the ticks (major or minor) will
- * 	be displayed on the slider.
+ * 	Structure containing information where the ticks (major or minor)
+ * 	will be displayed on the slider.
  */
 typedef struct {
     int numTicks;			/* # of ticks on axis */
-    double values[1];		       /* Array of tick values (malloc-ed). */
+    double values[1];                   /* Array of tick values
+                                         * (malloc-ed). */
 } Ticks;
 
 /*
@@ -220,50 +222,52 @@ typedef struct {
     Tcl_Interp *interp;			/* Interpreter associated with
 					 * slider. */
     Tk_Window tkwin;			/* Window that embodies the slider.
-					 * NULL means that the window has been
-					 * destroyed but the data structures
-					 * haven't yet been cleaned up. */
-    Display *display;			/* Display containing widget; used to
-					 * release resources after tkwin has
-					 * already gone away. */
+					 * NULL means that the window has
+					 * been destroyed but the data
+					 * structures haven't yet been
+					 * cleaned up. */
+    Display *display;			/* Display containing widget; used
+					 * to release resources after tkwin
+					 * has already gone away. */
     Tcl_Command cmdToken;		/* Token for the slider widget
 					 * command. */
     const char *data;			/* This value isn't used in C code.
-					 * It may be used in TCL bindings to
-					 * associate extra data. */
+					 * It may be used in TCL bindings
+					 * to associate extra data. */
     Tk_Cursor cursor;
     int inset;				/* Sum of focus highlight and 3-D
 					 * border.  Indicates how far to
-					 * offset the slider from outside edge
-					 * of the window. */
+					 * offset the slider from outside
+					 * edge of the window. */
     int borderWidth;			/* Width of the exterior border */
     int relief;				/* Relief of the exterior border. */
     Blt_Bg normalBg;			/* 3-D exterior border around the
 					 * outside of the widget. */
 
     int timeScale;			/* If non-zero, generate time scale
-					 * ticks for the axis. This option is
-					 * overridden by -logscale. */
-    int decreasing;			/* If non-zero, display the range of
-					 * values on the axis in descending
-					 * order, from high to low. */
+					 * ticks for the axis. This option
+					 * is overridden by -logscale. */
+    int decreasing;			/* If non-zero, display the range
+					 * of values on the axis in
+					 * descending order, from high to
+					 * low. */
     const char *title;			/* Title of the axis. */
     Point2d titlePos;			/* Position of the title */
     int lineWidth;			/* Width of lines representing axis
-					 * (including ticks).  If zero, then
-					 * no axis lines or ticks are
+					 * (including ticks).  If zero,
+					 * then no axis lines or ticks are
 					 * drawn. */
-    double windowSize;			/* Size of a sliding window of values
-					 * used to scale the axis
+    double windowSize;			/* Size of a sliding window of
+					 * values used to scale the axis
 					 * automatically as new data values
 					 * are added. The axis will always
-					 * display the latest values in this
-					 * range. */
+					 * display the latest values in
+					 * this range. */
     double shiftBy;			/* Shift maximum by this interval. */
     int tickLength;			/* Length of major ticks in pixels */
     Tcl_Obj *fmtCmdObjPtr;		/* Specifies a TCL command, to be
-					 * invoked by the axis whenever it has
-					 * to generate tick labels. */
+					 * invoked by the axis whenever it
+					 * has to generate tick labels. */
     Tcl_Obj *scrollCmdObjPtr;
     int scrollUnits;
 
@@ -272,20 +276,21 @@ typedef struct {
 					 * slider. */
 
     /* Minimum and maximum slider values. */
-    double minValue, maxValue;		/* The inner range of the slider. This
-					 * is the user-defined range of
-					 * values. In single point mode, the
-					 * innerMax equals the innerMin. */
+    double minValue, maxValue;		/* The inner range of the
+					 * slider. This is the user-defined
+					 * range of values. In single point
+					 * mode, the innerMax equals the
+					 * innerMin. */
     char *maxValueString;		/* Malloc-ed. Formatted text
-					 * representation of maximum value in
-					 * range. */
-    short int maxValWidth, maxValHeight;/* Extents of maximum value formatted
-					 * text string.*/
+					 * representation of maximum value
+					 * in range. */
+    short int maxValWidth, maxValHeight;/* Extents of maximum value
+					 * formatted text string.*/
     char *minValueString;		/* Malloc-ed. Formatted text
-					 * representation of minimum value in
-					 * range. */
-    short int minValWidth, minValHeight;/* Extents of minimum value formatted
-					 * text string. */
+					 * representation of minimum value
+					 * in range. */
+    short int minValWidth, minValHeight;/* Extents of minimum value
+					 * formatted text string. */
     /* Title */
     const char *title;			/* Title of the axis. */
     short int titleWidth, titleHeight;	/* Extents of title string. */
@@ -298,16 +303,17 @@ typedef struct {
 
     double reqScrollMin, reqScrollMax;
 
-    double scrollMin, scrollMax;	/* Defines the scrolling reqion of the
-					 * axis.  Normally the region is
-					 * determined from the data limits. If
-					 * specified, these values override
-					 * the data-range. */
+    double scrollMin, scrollMax;	/* Defines the scrolling reqion of
+					 * the axis.  Normally the region
+					 * is determined from the data
+					 * limits. If specified, these
+					 * values override the
+					 * data-range. */
 
     SliderRange valueRange;		/* Range of data values of elements
-					 * mapped to this axis. This is used
-					 * to auto-scale the axis in "tight"
-					 * mode. */
+					 * mapped to this axis. This is
+					 * used to auto-scale the axis in
+					 * "tight" mode. */
     SliderRange outerRange;		/* Smallest and largest major tick
 					 * values for the axis.  The tick
 					 * values lie outside the range of
@@ -316,38 +322,42 @@ typedef struct {
 					 * mode. */
     double prevMin, prevMax;
     double reqStep;			/* If > 0.0, overrides the computed
-					 * major tick interval.  Otherwise a
-					 * stepsize is automatically
-					 * calculated, based upon the range of
-					 * elements mapped to the axis. The
-					 * default value is 0.0. */
-    Ticks *t1Ptr;			/* Array of major tick positions. May
-					 * be set by the user or generated
-					 * from the major sweep below. */
-    Ticks *t2Ptr;			/* Array of minor tick positions. May
-					 * be set by the user or generated
-					 * from the minor sweep below. */
+					 * major tick interval.  Otherwise
+					 * a stepsize is automatically
+					 * calculated, based upon the range
+					 * of elements mapped to the
+					 * axis. The default value is
+					 * 0.0. */
+    Ticks *t1Ptr;			/* Array of major tick
+					 * positions. May be set by the
+					 * user or generated from the major
+					 * sweep below. */
+    Ticks *t2Ptr;			/* Array of minor tick
+					 * positions. May be set by the
+					 * user or generated from the minor
+					 * sweep below. */
 
     TickSweep minor, major;
 
     int reqNumMajorTicks;		/* Default number of ticks to be
 					 * displayed. */
     int reqNumMinorTicks;		/* If non-zero, represents the
-					 * requested the number of minor ticks
-					 * to be uniformally displayed along
-					 * each major tick. */
+					 * requested the number of minor
+					 * ticks to be uniformally
+					 * displayed along each major
+					 * tick. */
     int labelOffset;			/* If non-zero, indicates that the
-					 * tick label should be offset to sit
-					 * in the middle of the next
+					 * tick label should be offset to
+					 * sit in the middle of the next
 					 * interval. */
 
     /*
      * Focus highlight ring
      */
     int highlightWidth;			/* Width in pixels of highlight to
-					 * draw around widget when it has the
-					 * focus.  <= 0 means don't draw a
-					 * highlight. */
+					 * draw around widget when it has
+					 * the focus.  <= 0 means don't
+					 * draw a highlight. */
     XColor *highlightBg;		/* Color for drawing traversal
 					 * highlight area when highlight is
 					 * off. */
@@ -359,18 +369,19 @@ typedef struct {
 
     /* The following fields are specific to logical axes */
     Blt_Chain chain;
-    Segment2d *segments;		/* Array of line segments representing
-					 * the major and minor ticks, but also
-					 * the * axis line itself. The segment
-					 * coordinates * are relative to the
-					 * axis. */
-    int numSegments;			/* Number of segments in the above
+    Segment2d *segments;		/* Array of line segments
+					 * representing the major and minor
+					 * ticks, but also the axis line
+					 * itself. The segment coordinates
+					 * are relative to the axis. */
+    int numSegments;			/* # of segments in the above
 					 * array. */
-    Blt_Chain tickLabels;		/* Contains major tick label strings
-					 * and their offsets along the
-					 * axis. */
+    Blt_Chain tickLabels;		/* Contains major tick label
+					 * strings and their offsets along
+					 * the axis. */
     short int axisLeft, axisRight;
-    short int axisTop, axisBottom;	/* Region occupied by the of axis. */
+    short int axisTop, axisBottom;	/* Region occupied by the of
+                                         * axis. */
     short int width, height;		/* Extents of axis */
     short int leftTickLabelWidth;	/* Maximum width of all ticks
 					 * labels. */
@@ -388,8 +399,8 @@ typedef struct {
     Blt_Font tickFont;
     Tk_Anchor tickAnchor;
     XColor *tickFg;
-    GC tickGC;				/* Graphics context for axis and tick
-					 * labels */
+    GC tickGC;				/* Graphics context for axis and
+					 * tick labels */
     GC activeTickGC;
 
     double titleAngle;	
@@ -625,9 +636,9 @@ SetSliderRange(AxisRange *rangePtr, double min, double max)
  *	Determines if a value lies within a given range.
  *
  *	The value is normalized and compared against the interval [0..1],
- *	where 0.0 is the minimum and 1.0 is the maximum.  DBL_EPSILON is the
- *	smallest number that can be represented on the host machine, such that
- *	(1.0 + epsilon) != 1.0.
+ *	where 0.0 is the minimum and 1.0 is the maximum.  DBL_EPSILON is
+ *	the smallest number that can be represented on the host machine,
+ *	such that (1.0 + epsilon) != 1.0.
  *
  *	Please note, *max* can't equal *min*.
  *
@@ -749,8 +760,8 @@ StateToObjProc(
  *	form.
  *
  * Results:
- *	The return value is a standard TCL result.  The symbol type is written
- *	into the widget record.
+ *	The return value is a standard TCL result.  The symbol type is
+ *	written into the widget record.
  *
  *---------------------------------------------------------------------------
  */
@@ -790,8 +801,8 @@ ObjToHighProc(
  *	form.
  *
  * Results:
- *	The return value is a standard TCL result.  The symbol type is written
- *	into the widget record.
+ *	The return value is a standard TCL result.  The symbol type is
+ *	written into the widget record.
  *
  *---------------------------------------------------------------------------
  */
@@ -832,8 +843,8 @@ ObjToLowProc(
  *	form.
  *
  * Results:
- *	The return value is a standard TCL result.  The symbol type is written
- *	into the widget record.
+ *	The return value is a standard TCL result.  The symbol type is
+ *	written into the widget record.
  *
  *---------------------------------------------------------------------------
  */
@@ -873,8 +884,8 @@ ObjToHighProc(
  *	form.
  *
  * Results:
- *	The return value is a standard TCL result.  The symbol type is written
- *	into the widget record.
+ *	The return value is a standard TCL result.  The symbol type is
+ *	written into the widget record.
  *
  *---------------------------------------------------------------------------
  */
@@ -1059,9 +1070,9 @@ TicksToObjProc(
  *
  * EventuallyRedraw --
  *
- *	Tells the Tk dispatcher to call the slider display routine at the next
- *	idle point.  This request is made only if the window is displayed and
- *	no other redraw request is pending.
+ *	Tells the Tk dispatcher to call the slider display routine at the
+ *	next idle point.  This request is made only if the window is
+ *	displayed and no other redraw request is pending.
  *
  * Results: None.
  *
@@ -1084,8 +1095,8 @@ EventuallyRedraw(Slider *sliderPtr)
  *
  * SliderEventProc --
  *
- *	This procedure is invoked by the Tk dispatcher for various events on
- *	sliders.
+ *	This procedure is invoked by the Tk dispatcher for various events
+ *	on sliders.
  *
  * Results:
  *	None.
@@ -1224,8 +1235,8 @@ MakeLabel(Axis *axisPtr, double value)
  *
  * InvHMap --
  *
- *	Maps the given screen coordinate back to a slider coordinate.  Called
- *	by the slider locater routine.
+ *	Maps the given screen coordinate back to a slider coordinate.
+ *	Called by the slider locater routine.
  *
  * Results:
  *	Returns the slider coordinate value at the given window
@@ -1313,12 +1324,12 @@ HMap(Slider *sliderPtr, double x)
  *
  * VMap --
  *
- *	Map the given slider coordinate value to its axis, returning a window
- *	position.
+ *	Map the given slider coordinate value to its axis, returning a
+ *	window position.
  *
  * Results:
- *	Returns a double precision number representing the window coordinate
- *	position on the given axis.
+ *	Returns a double precision number representing the window
+ *	coordinate position on the given axis.
  *
  *---------------------------------------------------------------------------
  */
@@ -1381,8 +1392,8 @@ FixAxisRanges(Slider *sliderPtr)
  *---------------------------------------------------------------------------
  */
 static double
-NiceNum(double x, int round)		/* If non-zero, round. Otherwise take
-					 * ceiling of value. */
+NiceNum(double x, int round)		/* If non-zero, round. Otherwise
+					 * take ceiling of value. */
 {
     double expt;			/* Exponent of x */
     double frac;			/* Fractional part of x */
@@ -1470,22 +1481,23 @@ GenerateTicks(TickSweep *sweepPtr)
  * 	that value represents the smallest(min)/largest(max) value in the
  * 	displayed range of values.
  *
- * 	Both manual and automatic scaling are affected by the step used.  By
- * 	default, the step is the largest power of ten to divide the range in
- * 	more than one piece.
+ * 	Both manual and automatic scaling are affected by the step used.
+ * 	By default, the step is the largest power of ten to divide the
+ * 	range in more than one piece.
  *
  *	Automatic scaling:
- *	Find the smallest number of units which contain the range of values.
- *	The minimum and maximum major tick values will be represent the
- *	range of values for the axis. This greatest number of major ticks
- *	possible is 10.
+ *	Find the smallest number of units which contain the range of
+ *	values.  The minimum and maximum major tick values will be
+ *	represent the range of values for the axis. This greatest number of
+ *	major ticks possible is 10.
  *
  * 	Manual scaling:
  *   	Make the minimum and maximum data values the represent the range of
- *   	the values for the axis.  The minimum and maximum major ticks will be
- *   	inclusive of this range.  This provides the largest area for plotting
- *   	and the expected results when the axis min and max values have be set
- *   	by the user (.e.g zooming).  The maximum number of major ticks is 20.
+ *   	the values for the axis.  The minimum and maximum major ticks will
+ *   	be inclusive of this range.  This provides the largest area for
+ *   	plotting and the expected results when the axis min and max values
+ *   	have be set by the user (.e.g zooming).  The maximum number of
+ *   	major ticks is 20.
  *
  *   	For log scale, there's the possibility that the minimum and
  *   	maximum data values are the same magnitude.  To represent the
@@ -1553,7 +1565,7 @@ LogAxis(Slider *sliderPtr, double min, double max)
 	
 	if (range > 10) {
 	    /* There are too many decades to display a major tick at every
-	     * decade.  Instead, treat the axis as a linear scale.  */
+	     * decade.  Instead, treat the axis as a linear scale. */
 	    range = NiceNum(range, 0);
 	    majorStep = NiceNum(range / sliderPtr->reqNumMajorTicks, 1);
 	    tickMin = UFLOOR(tickMin, majorStep);
@@ -1574,9 +1586,9 @@ LogAxis(Slider *sliderPtr, double min, double max)
 	    
 	    minorStep = 0.0;		/* This is a special hack to pass
 					 * information to the GenerateTicks
-					 * routine. An interval of 0.0 tells 1)
-					 * this is a minor sweep and 2) the axis
-					 * is log scale. */
+					 * routine. An interval of 0.0
+					 * tells 1) this is a minor sweep
+					 * and 2) the axis is log scale. */
 	    numMinor = 10;
 	}
 	tickMin = min;
@@ -1598,19 +1610,18 @@ LogAxis(Slider *sliderPtr, double min, double max)
  *
  * 	Determine the units of a linear scaled axis.
  *
- *	The axis limits are either the range of the data values mapped
- *	to the axis (autoscaled), or the values specified by the -min
- *	and -max options (manual).
+ *	The axis limits are either the range of the data values mapped to
+ *	the axis (autoscaled), or the values specified by the -min and -max
+ *	options (manual).
  *
- *	If autoscaled, the smallest and largest major ticks will
- *	encompass the range of data values.  If the -loose option is
- *	selected, the next outer ticks are choosen.  If tight, the
- *	ticks are at or inside of the data limits are used.
+ *	If autoscaled, the smallest and largest major ticks will encompass
+ *	the range of data values.  If the -loose option is selected, the
+ *	next outer ticks are choosen.  If tight, the ticks are at or inside
+ *	of the data limits are used.
  *
- * 	If manually set, the ticks are at or inside the data limits
- * 	are used.  This makes sense for zooming.  You want the
- * 	selected range to represent the next limit, not something a
- * 	bit bigger.
+ * 	If manually set, the ticks are at or inside the data limits are
+ * 	used.  This makes sense for zooming.  You want the selected range
+ * 	to represent the next limit, not something a bit bigger.
  *
  *	Note: I added an "always" value to the -loose option to force
  *	      the manually selected axes to be loose. It's probably
@@ -1670,8 +1681,9 @@ LinearAxis(Slider *sliderPtr, double min, double max)
 	range = max - min;
 	/* Calculate the major tick stepping. */
 	if (sliderPtr->reqStep > 0.0) {
-	    /* An interval was designated by the user.  Keep scaling it until
-	     * it fits comfortably within the current range of the axis.  */
+	    /* An interval was designated by the user.  Keep scaling it
+	     * until it fits comfortably within the current range of the
+	     * axis.  */
 	    step = sliderPtr->reqStep;
 	    while ((2 * step) >= range) {
 		step *= 0.5;
@@ -1702,10 +1714,10 @@ LinearAxis(Slider *sliderPtr, double min, double max)
 	step = 1.0 / (numTicks + 1);
     } else {
 	numTicks = 0;			/* No minor ticks. */
-	step = 0.5;			/* Don't set the minor tick interval
-					 * to 0.0. It makes the GenerateTicks
-					 * routine * create minor log-scale
-					 * tick marks.  */
+	step = 0.5;			/* Don't set the minor tick
+					 * interval to 0.0. It makes the
+					 * GenerateTicks routine * create
+					 * minor log-scale tick marks.  */
     }
     sliderPtr->minor.initial = sliderPtr->minor.step = step;
     sliderPtr->minor.numSteps = numTicks;
@@ -1764,16 +1776,16 @@ ResetAxes(Slider *sliderPtr)
  * ResetTextStyles --
  *
  *	Configures axis attributes (font, line width, label, etc) and
- *	allocates a new (possibly shared) graphics context.  Line cap style is
- *	projecting.  This is for the problem of when a tick sits directly at
- *	the end point of the axis.
+ *	allocates a new (possibly shared) graphics context.  Line cap style
+ *	is projecting.  This is for the problem of when a tick sits
+ *	directly at the end point of the axis.
  *
  * Results:
  *	The return value is a standard TCL result.
  *
  * Side Effects:
- *	Axis resources are allocated (GC, font). Axis layout is deferred until
- *	the height and width of the window are known.
+ *	Axis resources are allocated (GC, font). Axis layout is deferred
+ *	until the height and width of the window are known.
  *
  *---------------------------------------------------------------------------
  */
@@ -1846,8 +1858,8 @@ ResetTextStyles(Slider *sliderPtr)
  *	None.
  *
  * Side effects:
- *	Resources (font, color, gc, labels, etc.) associated with the axis are
- *	deallocated.
+ *	Resources (font, color, gc, labels, etc.) associated with the axis
+ *	are deallocated.
  *
  *---------------------------------------------------------------------------
  */
@@ -1885,8 +1897,8 @@ DestroySlider(Slider *sliderPtr)
  *
  * AxisOffsets --
  *
- *	Determines the sites of the axis, major and minor ticks, and title of
- *	the axis.
+ *	Determines the sites of the axis, major and minor ticks, and title
+ *	of the axis.
  *
  * Results:
  *	None.
@@ -1898,7 +1910,8 @@ AxisOffsets(Axis *sliderPtr, Margin *marginPtr, int offset, AxisInfo *infoPtr)
 {
     int pad;				/* Offset of axis from interior
 					 * region. This includes a possible
-					 * border and the axis line width. */
+					 * border and the axis line
+					 * width. */
     int axisLine;
     int t1, t2, labelOffset;
     int tickLabel, axisPad;
@@ -1924,8 +1937,8 @@ AxisOffsets(Axis *sliderPtr, Margin *marginPtr, int offset, AxisInfo *infoPtr)
     pad = 1;
     pad = 0;				/* FIXME: test */
     /*
-     * Pre-calculate the x-coordinate positions of the axis, tick labels, and
-     * the individual major and minor ticks.
+     * Pre-calculate the x-coordinate positions of the axis, tick labels,
+     * and the individual major and minor ticks.
      */
     inset = pad + sliderPtr->lineWidth / 2;
     switch (marginPtr->site) {
@@ -2313,9 +2326,9 @@ MakeSegments(Slider *sliderPtr, AxisInfo *infoPtr)
  * MapAxis --
  *
  *	Pre-calculates positions of the axis, ticks, and labels (to be used
- *	later when displaying the axis).  Calculates the values for each major
- *	and minor tick and checks to see if they are in range (the outer ticks
- *	may be outside of the range of plotted values).
+ *	later when displaying the axis).  Calculates the values for each
+ *	major and minor tick and checks to see if they are in range (the
+ *	outer ticks may be outside of the range of plotted values).
  *
  *	Line segments for the minor and major ticks are saved into one
  *	XSegment array so that they can be drawn by a single XDrawSegments
@@ -2360,13 +2373,13 @@ MapAxis(Axis *sliderPtr, Margin *marginPtr, int offset)
  * MapStackedAxis --
  *
  *	Pre-calculates positions of the axis, ticks, and labels (to be used
- *	later when displaying the axis).  Calculates the values for each major
- *	and minor tick and checks to see if they are in range (the outer ticks
- *	may be outside of the range of plotted values).
+ *	later when displaying the axis).  Calculates the values for each
+ *	major and minor tick and checks to see if they are in range (the
+ *	outer ticks may be outside of the range of plotted values).
  *
- *	Line segments for the minor and major ticks are saved into one XSegment
- *	array so that they can be drawn by a single XDrawSegments call. The
- *	positions of the tick labels are also computed and saved.
+ *	Line segments for the minor and major ticks are saved into one
+ *	XSegment array so that they can be drawn by a single XDrawSegments
+ *	call. The positions of the tick labels are also computed and saved.
  *
  * Results:
  *	None.
@@ -2417,8 +2430,8 @@ MapStackedAxis(Axis *sliderPtr, Margin *marginPtr, float totalWeight)
  *
  * AdjustViewport --
  *
- *	Adjusts the offsets of the viewport according to the scroll mode.  This
- *	is to accommodate both "listbox" and "canvas" style scrolling.
+ *	Adjusts the offsets of the viewport according to the scroll mode.
+ *	This is to accommodate both "listbox" and "canvas" style scrolling.
  *
  *	"canvas"	The viewport scrolls within the range of world
  *			coordinates.  This way the viewport always displays
@@ -2442,7 +2455,8 @@ static double
 AdjustViewport(double offset, double windowSize)
 {
     /*
-     * Canvas-style scrolling allows the world to be scrolled within the window.
+     * Canvas-style scrolling allows the world to be scrolled within the
+     * window.
      */
     if (windowSize > 1.0) {
 	if (windowSize < (1.0 - offset)) {
@@ -2919,8 +2933,8 @@ MakeGridLine(Axis *sliderPtr, double value, Segment2d *s)
  * MapGridlines --
  *
  *	Assembles the grid lines associated with an axis. Generates tick
- *	positions if necessary (this happens when the axis is not a logical axis
- *	too).
+ *	positions if necessary (this happens when the axis is not a logical
+ *	axis too).
  *
  * Results:
  *	None.
@@ -3158,9 +3172,9 @@ GetValueExtents(Slider *sliderPtr, const char *string, int *widthPtr,
  *	horizontally along the graph or vertically.
  *
  * Side Effects:
- *	The area width and height set in the margin.  Note again that this may
- *	be corrected later (mulitple axes) to adjust for the longest title in
- *	another margin.
+ *	The area width and height set in the margin.  Note again that this
+ *	may be corrected later (mulitple axes) to adjust for the longest
+ *	title in another margin.
  *
  *---------------------------------------------------------------------------
  */
@@ -3179,6 +3193,363 @@ ComputeGeometry(Slider *sliderPtr)
 		&sliderPtr->maxValWidth, &sliderPtr->maxValHeight);
     }
 }
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * ComputeHorizonatalLayout --
+ *
+ *      |h|b|g|arr|g|min|slot|max|g|arr|g|b|h|
+ *      |h|b||g|min|slot|max|g|b|h|
+ *
+ *      highlight thickness
+ *      borderwidth
+ *      gap
+ *      min/max text height
+ *      gap
+ *      min/max/nom icon height
+ *      tick length
+ *      gap
+ *      tick text height
+ *      gap
+ *      borderwidth
+ *      higlight thickness
+ *---------------------------------------------------------------------------
+ */
+static int
+ComputeHorizontalLayout(Slider *sliderPtr)
+{
+    int left, right, width, height;
+    int leftButtonWidth, rightButtonWidth;
+    sliderPtr->flags &= ~LAYOUT_PENDING;
+
+    sliderPtr->inset = sliderPtr->borderWidth + sliderPtr->highlightThickness;
+    left = right = 0;
+    left  = 2 * sliderPtr->inset + PADX;
+    right = 2 * sliderPtr->inset + PADX;
+
+    law = raw = lah = rah = 0;
+    h = 0;
+    if (sliderPtr->flags & SHOW_ARROWS) {
+        if (sliderPtr->leftArrow != NULL) {
+            law = Blt_Picture_Width(sliderPtr->leftArrow);
+            lah = Blt_Picture_Height(sliderPtr->leftArrow);
+            if (h < lah) {
+                h = lah;
+            }
+            left += law + PADX;
+        }
+        if (sliderPtr->rightArrow != NULL) {
+            rbw = Blt_Picture_Width(sliderPtr->rightArrow);
+            rbh = Blt_Picture_Height(sliderPtr->leftArrow);
+            if (h < rbh) {
+                h = rbh;
+            }
+            right += raw + PADX;
+        }
+    }
+    ih1 = ih2 = ih3 = ICON_HEIGHT;
+    iw1 = iw2 = iw3 = ICON_WIDTH;
+    if (sliderPtr->minIcon != NULL) {
+        ih1 = Blt_Picture_Height(sliderPtr->minIcon);
+        iw1 = Blt_Picture_Width(sliderPtr->minIcon);
+    }
+    if (sliderPtr->maxIcon != NULL) {
+        ih2 = Blt_Picture_Height(sliderPtr->maxIcon);
+        iw2 = Blt_Picture_Width(sliderPtr->maxIcon);
+    }
+    if (sliderPtr->nomIcon != NULL) {
+        ih3 = Blt_Picture_Height(sliderPtr->nomIcon);
+        iw3 = Blt_Picture_Width(sliderPtr->nomIcon);
+    }
+    ih = MAX3(ih1, ih2, ih2);
+    iw = MAX3(iw1, iw2, iw3);
+
+    throughLength = Tk_Width(sliderPtr->tkwin) - right - left - iw;
+    left += miw
+
+    if (h < (sliderPtr->sliderRadius * 2)) {
+        h = sliderPtr->sliderRadius * 2;
+    }
+    if (sliderPtr->flags & SHOW_TICKS) {
+        Blt_ChainLink link;
+        TickLabel *labelPtr;
+
+	    /* First tick. */
+	    link = Blt_Chain_FirstLink(sliderPtr->ticks);
+	    labelPtr = Blt_Chain_GetValue(link);
+	    leftTickLabelWidth = labelPtr->width;
+	    /* Last tick. */
+	    link = Blt_Chain_LastLink(sliderPtr->ticks);
+	    labelPtr = Blt_Chain_GetValue(link);
+	    rightTickLabelWidth = labelPtr->width;
+
+	    height += sliderPtr->axisHeight;
+	}
+
+	sliderPtr->leftOffset = MAX(leftButtonWidth,  leftTickLabelWidth / 2);
+	sliderPtr->rightOffset = MAX(rightButtonWidth, rightTickLabelWidth / 2);
+	left  += sliderPtr->leftOffset;
+	right += sliderPtr->rightOffset;
+	if (sliderPtr->flags & SHOW_VALUES) {
+	    if (sliderPtr->tickAngle != 0.0f) {
+		if (height < sliderPtr->minValHeight) {
+		    height = sliderPtr->minValHeight;
+		}
+		if (height < sliderPtr->maxValHeight) {
+		    height = sliderPtr->maxValHeight;
+		}
+	    }
+	}
+	if (sliderPtr->titleObjPtr != NULL) {
+	    height += sliderPtr->titleObjPtr;
+	}
+	width = left + right + sliderPtr->maxTickValueWidth;
+	height += sliderPtr->titleHeight;
+	sliderPtr->troughLength = Tk_Width(sliderPtr->tkwin) - width;
+	sliderPtr->screenMin = left;
+	sliderPtr->screenRange = sliderPtr->troughLength;
+	sliderPtr->normalHeight = height;
+	sliderPtr->normalWidth = width;
+    } else if (sliderPtr->flags & VERTICAL) {
+	int top, bottom, width, height;
+
+	top = bottom = sliderPtr->inset + sliderPtr->sliderRadius;
+	width = height = 0;
+	if (sliderPtr->flags & SHOW_ARROWS) {
+	    if (sliderPtr->leftArrow != NULL) {
+		top += Blt_Picture_Height(sliderPtr->leftArrow);
+		if (width < Blt_Picture_Width(sliderPtr->leftArrow)) {
+		    width = Blt_Picture_Width(sliderPtr->leftArrow);
+		}
+	    }
+	    if (sliderPtr->rightArrow != NULL) {
+		bottom += Blt_Picture_Height(sliderPtr->rightArrow);
+		if (width < Blt_Picture_Width(sliderPtr-rightArrow)) {
+		    width = Blt_Picture_Width(sliderPtr->rightArrow);
+		}
+	    }
+	}
+	if (width < (sliderPtr->sliderRadius * 2)) {
+	    width = sliderPtr->sliderRadius * 2;
+	}
+	if (sliderPtr->flags & SHOW_TICKS) {
+	    width += sliderPtr->axisWidth;
+	}
+	if (sliderPtr->flags & SHOW_VALUES) {
+	    if (width < sliderPtr->minValWidth) {
+		width = sliderPtr->minValWidth;
+	    }
+	    if (width < sliderPtr->maxValWidth) {
+		width = sliderPtr->maxValWidth;
+	    }
+	}
+	height = top + bottom + sliderPtr->titleHeight + 
+	    sliderPtr->maxTickLabelHeight;
+	sliderPtr->troughLength = Tk_Height(sliderPtr->tkwin) - height;
+	sliderPtr->screenMin = top;
+	sliderPtr->screenRange = sliderPtr->troughLength;
+	sliderPtr->normalWidth = width;
+	sliderPtr->normalHeight = height;
+    }
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * DrawHorizonatalLayout --
+ *
+ *      |h|b|g|arr|g|min|slot|max|g|arr|g|b|h|
+ *      |h|b||g|min|slot|max|g|b|h|
+ *
+ *      highlight thickness
+ *      borderwidth
+ *      gap
+ *      min/max text height
+ *      gap
+ *      min/max/nom icon height
+ *      tick length
+ *      gap
+ *      tick text height
+ *      gap
+ *      borderwidth
+ *      higlight thickness
+ *---------------------------------------------------------------------------
+ */
+static int
+DrawHorizontalSlider(Slider *sliderPtr)
+{
+    int left, right, width, height;
+    int leftButtonWidth, rightButtonWidth;
+    sliderPtr->flags &= ~LAYOUT_PENDING;
+
+    width = Tk_Width(sliderPtr->width);
+    height = Tk_Height(sliderPtr->height);
+
+    width  -= 2 * (sliderPtr->inset + PADX);
+    height -= 2 * (sliderPtr->inset + PADX);
+
+    left = right = 0;
+    left  = 2 * sliderPtr->inset + PADX;
+    right = 2 * sliderPtr->inset + PADX;
+
+    law = raw = lah = rah = 0;
+    h = 0;
+    if (sliderPtr->flags & SHOW_ARROWS) {
+        ax = x, ay = y;
+        if (sliderPtr->leftArrow != NULL) {
+            aw = Blt_Picture_Width(sliderPtr->leftArrow);
+            ah = Blt_Picture_Height(sliderPtr->leftArrow);
+            if (h > ah) {
+                ay += (h - ah) / 2;
+            }
+            Tk_RedrawImage(IconBits(sliderPtr->leftArrow), 0, 0, aw, ah, 
+                           drawable, ax, ay);
+            x += aw + PADX;
+        }
+        ax = width, ay = y;
+        if (sliderPtr->rightArrow != NULL) {
+            aw = Blt_Picture_Width(sliderPtr->rightArrow);
+            ah = Blt_Picture_Height(sliderPtr->rightArrow);
+            if (h > ah) {
+                ay += (h - ah) / 2;
+            }
+            ax -= aw + PADX;
+            Tk_RedrawImage(IconBits(sliderPtr->rightArrow), 0, 0, aw, ah, 
+                           drawable, ax, ay);
+        }
+    }
+    ih1 = ih2 = ih3 = ICON_HEIGHT;
+    iw1 = iw2 = iw3 = ICON_WIDTH;
+    if (sliderPtr->minIcon != NULL) {
+        ih1 = Blt_Picture_Height(sliderPtr->minIcon);
+        iw1 = Blt_Picture_Width(sliderPtr->minIcon);
+    }
+    if (sliderPtr->maxIcon != NULL) {
+        ih2 = Blt_Picture_Height(sliderPtr->maxIcon);
+        iw2 = Blt_Picture_Width(sliderPtr->maxIcon);
+    }
+    if (sliderPtr->nomIcon != NULL) {
+        ih3 = Blt_Picture_Height(sliderPtr->nomIcon);
+        iw3 = Blt_Picture_Width(sliderPtr->nomIcon);
+    }
+    ih = MAX3(ih1, ih2, ih2);
+    iw = MAX3(iw1, iw2, iw3);
+
+    x1 = x; x2 = x + th;
+    DrawTrough(sliderPtr, drawable, x1, x2, y);
+    throughLength = Tk_Width(sliderPtr->tkwin) - right - left - iw;
+    left += miw
+
+    if (h < (sliderPtr->sliderRadius * 2)) {
+        h = sliderPtr->sliderRadius * 2;
+    }
+    if (sliderPtr->flags & SHOW_TICKS) {
+        Blt_ChainLink link;
+        TickLabel *labelPtr;
+
+	    /* First tick. */
+	    link = Blt_Chain_FirstLink(sliderPtr->ticks);
+	    labelPtr = Blt_Chain_GetValue(link);
+	    leftTickLabelWidth = labelPtr->width;
+	    /* Last tick. */
+	    link = Blt_Chain_LastLink(sliderPtr->ticks);
+	    labelPtr = Blt_Chain_GetValue(link);
+	    rightTickLabelWidth = labelPtr->width;
+
+	    height += sliderPtr->axisHeight;
+	}
+
+	sliderPtr->leftOffset = MAX(leftButtonWidth,  leftTickLabelWidth / 2);
+	sliderPtr->rightOffset = MAX(rightButtonWidth, rightTickLabelWidth / 2);
+	left  += sliderPtr->leftOffset;
+	right += sliderPtr->rightOffset;
+	if (sliderPtr->flags & SHOW_VALUES) {
+	    if (sliderPtr->tickAngle != 0.0f) {
+		if (height < sliderPtr->minValHeight) {
+		    height = sliderPtr->minValHeight;
+		}
+		if (height < sliderPtr->maxValHeight) {
+		    height = sliderPtr->maxValHeight;
+		}
+	    }
+	}
+	if (sliderPtr->titleObjPtr != NULL) {
+	    height += sliderPtr->titleObjPtr;
+	}
+	width = left + right + sliderPtr->maxTickValueWidth;
+	height += sliderPtr->titleHeight;
+	sliderPtr->troughLength = Tk_Width(sliderPtr->tkwin) - width;
+	sliderPtr->screenMin = left;
+	sliderPtr->screenRange = sliderPtr->troughLength;
+	sliderPtr->normalHeight = height;
+	sliderPtr->normalWidth = width;
+    } else if (sliderPtr->flags & VERTICAL) {
+	int top, bottom, width, height;
+
+	top = bottom = sliderPtr->inset + sliderPtr->sliderRadius;
+	width = height = 0;
+	if (sliderPtr->flags & SHOW_ARROWS) {
+	    if (sliderPtr->leftArrow != NULL) {
+		top += Blt_Picture_Height(sliderPtr->leftArrow);
+		if (width < Blt_Picture_Width(sliderPtr->leftArrow)) {
+		    width = Blt_Picture_Width(sliderPtr->leftArrow);
+		}
+	    }
+	    if (sliderPtr->rightArrow != NULL) {
+		bottom += Blt_Picture_Height(sliderPtr->rightArrow);
+		if (width < Blt_Picture_Width(sliderPtr-rightArrow)) {
+		    width = Blt_Picture_Width(sliderPtr->rightArrow);
+		}
+	    }
+	}
+	if (width < (sliderPtr->sliderRadius * 2)) {
+	    width = sliderPtr->sliderRadius * 2;
+	}
+	if (sliderPtr->flags & SHOW_TICKS) {
+	    width += sliderPtr->axisWidth;
+	}
+	if (sliderPtr->flags & SHOW_VALUES) {
+	    if (width < sliderPtr->minValWidth) {
+		width = sliderPtr->minValWidth;
+	    }
+	    if (width < sliderPtr->maxValWidth) {
+		width = sliderPtr->maxValWidth;
+	    }
+	}
+	height = top + bottom + sliderPtr->titleHeight + 
+	    sliderPtr->maxTickLabelHeight;
+	sliderPtr->troughLength = Tk_Height(sliderPtr->tkwin) - height;
+	sliderPtr->screenMin = top;
+	sliderPtr->screenRange = sliderPtr->troughLength;
+	sliderPtr->normalWidth = width;
+	sliderPtr->normalHeight = height;
+    }
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * ComputeVerticalLayout --
+ *
+ *      |h|b|g|tw|g|icon width|tl|g|text|g|b|h|
+ *      |h|b|g|arr|g|min|slot|max|g|arr|g|b|h|
+ *      |h|b||g|min|slot|max|g|b|h|
+ *
+ *      highlight thickness
+ *      borderwidth
+ *      gap
+ *      min/max text height
+ *      gap
+ *      min/max/nom icon height
+ *      tick length
+ *      gap
+ *      tick text height
+ *      gap
+ *      borderwidth
+ *      higlight thickness
+ *---------------------------------------------------------------------------
+ */
 
 /*
  *---------------------------------------------------------------------------
