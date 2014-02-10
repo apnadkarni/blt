@@ -5678,12 +5678,14 @@ Blt_SharpenPicture(Pict *destPtr, Pict *srcPtr)
     Blt_Picture blur, tmp;
     
     blur = Blt_CreatePicture(srcPtr->width, srcPtr->height);
-    Blt_BlurPicture(blur, srcPtr, 4, 3);
+    Blt_BlurPicture(blur, srcPtr, 4, 4);
     /* 
      * tmp = src - blur;
      * dest = src + tmp
      */
     tmp = Blt_ClonePicture(srcPtr);
+    Blt_MultiplyPixels(tmp, 1.5);
+    Blt_MultiplyPixels(blur, 0.5);
     Blt_SubtractPictures(tmp, blur);
     Blt_AddPictures(tmp, srcPtr);
     Blt_FreePicture(blur);

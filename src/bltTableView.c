@@ -32,6 +32,7 @@
  *	o -autocreate rows|columns|both|none for new table
  *	x Focus ring on cells.
  *	x Rules for row/columns (-rulewidth > 0)
+ *      o Dashes for row/column rules.
  *	o -span for rows/columns titles 
  *	o Printing PS/PDF 
  *	x Underline text for active cells.
@@ -197,10 +198,8 @@ typedef ClientData (TagProc)(TableView *viewPtr, const char *string);
 #define DEF_ROW_TITLE_JUSTIFY		"center"
 #define DEF_ROW_TITLE_RELIEF		"raised"
 #define DEF_ROW_WEIGHT			"1.0"
-#define DEF_RULE_DASHES			"dot"
 #define DEF_RULE_HEIGHT			"0"
 #define DEF_RULE_WIDTH			"0"
-#define DEF_RULE_COLOR                  STD_NORMAL_BACKGROUND
 #define DEF_SCROLL_INCREMENT		"20"
 #define DEF_SCROLL_MODE			"hierbox"
 #define DEF_SELECT_MODE			"single"
@@ -511,8 +510,6 @@ static Blt_ConfigSpec columnSpecs[] =
     {BLT_CONFIG_BITMASK_INVERT, "-show", "show", "Show", DEF_COLUMN_SHOW, 
 	Blt_Offset(Column, flags), BLT_CONFIG_DONT_SET_DEFAULT,
 	(Blt_CustomOption *)HIDDEN},
-    {BLT_CONFIG_COLOR, "-rulecolor", "ruleColor", "RuleColor", DEF_RULE_COLOR,
-	 Blt_Offset(Column, ruleColor), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_PIXELS_NNEG, "-rulewidth", "ruleWidth", "RuleWidth",
         DEF_RULE_WIDTH, Blt_Offset(Column, ruleWidth), 
 	BLT_CONFIG_DONT_SET_DEFAULT},
@@ -2796,19 +2793,6 @@ GetColumnTitleGeometry(TableView *viewPtr, Column *colPtr)
 static int 
 ConfigureColumn(TableView *viewPtr, Column *colPtr)
 {
-    GC newGC;
-    XGCValues gcValues;
-    unsigned long gcMask;
-
-    /* Rule GC */
-    gcMask = GCForeground;
-    gcValues.foreground = colPtr->ruleColor->pixel;
-    newGC = Tk_GetGC(viewPtr->tkwin, gcMask, &gcValues);
-    if (colPtr->ruleGC != NULL) {
-	Tk_FreeGC(viewPtr->display, colPtr->ruleGC);
-    }
-    colPtr->ruleGC = newGC;
-
     if (Blt_ConfigModified(columnSpecs, "-font", "-title", "-hide", "-icon", 
 	"-arrowwidth", "-borderwidth", (char *)NULL)) {
 	if (viewPtr->flags & COLUMN_TITLES) {
@@ -3973,19 +3957,6 @@ GetColumnFilterGeometry(TableView *viewPtr)
 static int 
 ConfigureRow(TableView *viewPtr, Row *rowPtr) 
 {
-    GC newGC;
-    XGCValues gcValues;
-    unsigned long gcMask;
-
-    /* Rule GC */
-    gcMask = GCForeground;
-    gcValues.foreground = rowPtr->ruleColor->pixel;
-    newGC = Tk_GetGC(viewPtr->tkwin, gcMask, &gcValues);
-    if (rowPtr->ruleGC != NULL) {
-	Tk_FreeGC(viewPtr->display, rowPtr->ruleGC);
-    }
-    rowPtr->ruleGC = newGC;
-
     if (Blt_ConfigModified(rowSpecs, "-titlefont", "-title", "-hide", "-icon", 
 	"-show", "-borderwidth", (char *)NULL)) {
 	if (viewPtr->flags & ROW_TITLES) {

@@ -148,6 +148,8 @@
 #define DEF_NORMAL_FG			STD_NORMAL_FOREGROUND
 #define DEF_HIGHLIGHT_BG		(char *)NULL
 #define DEF_HIGHLIGHT_FG		RGB_RED3
+#define DEF_RULE_DASHES			"dot"
+#define DEF_RULE_COLOR                  STD_NORMAL_BACKGROUND
 #define DEF_SELECT_BG			STD_SELECT_BACKGROUND
 #define DEF_SELECT_FG			STD_SELECT_FOREGROUND
 #define DEF_TEXTBOX_ACTIVE_RELIEF	"flat"
@@ -290,6 +292,12 @@ typedef struct {
     Tcl_Obj *cmdObjPtr;			/* If non-NULL, TCL procedure
 					 * called to format the style is
 					 * invoked.*/
+    XColor *rowRuleColor;		/* Color of the row's rule. */
+    GC rowRuleGC;                       /* Graphics context of the row's
+                                         * rule. */
+    XColor *colRuleColor;		/* Color of the row's rule. */
+    GC colRuleGC;                       /* Graphics context of the row's
+                                         * rule. */
     /* TextBox-specific fields */
     Tcl_Obj *editCmdObjPtr;		/* If non-NULL, TCL procedure
 					 * called to allow the user to edit
@@ -383,6 +391,12 @@ typedef struct {
     Tcl_Obj *cmdObjPtr;			/* If non-NULL, TCL procedure
 					 * called to format the style is
 					 * invoked.*/
+    XColor *rowRuleColor;		/* Color of the row's rule. */
+    GC rowRuleGC;                       /* Graphics context of the row's
+                                         * rule. */
+    XColor *colRuleColor;		/* Color of the row's rule. */
+    GC colRuleGC;                       /* Graphics context of the row's
+                                         * rule. */
     /* Checkbox specific fields. */
     int size;				/* Size of the checkbox. */
     Tcl_Obj *onValueObjPtr;
@@ -484,6 +498,12 @@ typedef struct {
     Tcl_Obj *cmdObjPtr;			/* If non-NULL, TCL procedure
 					 * called to format the style is
 					 * invoked.*/
+    XColor *rowRuleColor;		/* Color of the row's rule. */
+    GC rowRuleGC;                       /* Graphics context of the row's
+                                         * rule. */
+    XColor *colRuleColor;		/* Color of the row's rule. */
+    GC colRuleGC;                       /* Graphics context of the row's
+                                         * rule. */
     /* ComboBox-specific fields */
     int scrollWidth;
     /*  */
@@ -604,6 +624,12 @@ typedef struct {
     int relief, activeRelief;		/* Relief of outer border. */
     Tcl_Obj *cmdObjPtr;			/* If non-NULL, TCL procedure called
 					 * to format the style is invoked.*/
+    XColor *rowRuleColor;		/* Color of the row's rule. */
+    GC rowRuleGC;                       /* Graphics context of the row's
+                                         * rule. */
+    XColor *colRuleColor;		/* Color of the row's rule. */
+    GC colRuleGC;                       /* Graphics context of the row's
+                                         * rule. */
     /* ImageBox-specific fields */
     int side;				/* Position the text (top or bottom)
 					 * in relation to the image.  */
@@ -641,6 +667,8 @@ static Blt_ConfigSpec textBoxStyleSpecs[] =
     {BLT_CONFIG_PIXELS_NNEG, "-borderwidth", "borderWidth", "BorderWidth",
 	DEF_TEXTBOX_BORDERWIDTH, Blt_Offset(TextBoxStyle, borderWidth),
 	BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_COLOR, "-columnrulecolor", "columnRuleColor", "ColumnRuleColor",
+        DEF_RULE_COLOR, Blt_Offset(TextBoxStyle, colRuleColor), 0},
     {BLT_CONFIG_CURSOR, "-cursor", "cursor", "Cursor", DEF_TEXTBOX_CURSOR, 
 	Blt_Offset(TextBoxStyle, cursor), 0},
     {BLT_CONFIG_BACKGROUND, "-disabledbackground", "disabledBackground",
@@ -678,6 +706,8 @@ static Blt_ConfigSpec textBoxStyleSpecs[] =
 	Blt_Offset(TextBoxStyle, icon), BLT_CONFIG_NULL_OK, &iconOption},
     {BLT_CONFIG_JUSTIFY, "-justify", "justify", "Justify", DEF_JUSTIFY, 
 	Blt_Offset(TextBoxStyle, justify), BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_COLOR, "-rowrulecolor", "rowRuleColor", "RowRuleColor", 
+        DEF_RULE_COLOR, Blt_Offset(TextBoxStyle, rowRuleColor), 0},
     {BLT_CONFIG_BACKGROUND, "-selectbackground", "selectBackground", 
 	"Foreground", DEF_SELECT_BG, Blt_Offset(TextBoxStyle, selectBg), 0},
     {BLT_CONFIG_COLOR, "-selectforeground", "selectForeground", "Background",
@@ -722,6 +752,8 @@ static Blt_ConfigSpec checkBoxStyleSpecs[] =
 	BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_PIXELS_POS, "-boxsize", "boxSize", "BoxSize", DEF_CHECKBOX_SIZE,
 	Blt_Offset(CheckBoxStyle, size), BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_COLOR, "-columnrulecolor", "columnRuleColor", "ColumnRuleColor",
+        DEF_RULE_COLOR, Blt_Offset(CheckBoxStyle, colRuleColor), 0},
     {BLT_CONFIG_OBJ, "-command", "command", "Command", DEF_CHECKBOX_COMMAND, 
         Blt_Offset(CheckBoxStyle, cmdObjPtr), 0},
     {BLT_CONFIG_CURSOR, "-cursor", "cursor", "Cursor", DEF_CHECKBOX_CURSOR, 
@@ -778,6 +810,8 @@ static Blt_ConfigSpec checkBoxStyleSpecs[] =
     {BLT_CONFIG_OBJ, "-onvalue", "onValue", "OnValue",
 	DEF_CHECKBOX_ONVALUE, Blt_Offset(CheckBoxStyle, onValueObjPtr), 
 	BLT_CONFIG_NULL_OK},
+    {BLT_CONFIG_COLOR, "-rowrulecolor", "rowRuleColor", "RowRuleColor", 
+        DEF_RULE_COLOR, Blt_Offset(CheckBoxStyle, rowRuleColor), 0},
     {BLT_CONFIG_BACKGROUND, "-selectbackground", "selectBackground", 
 	"Foreground", DEF_SELECT_BG, Blt_Offset(CheckBoxStyle, selectBg), 0},
     {BLT_CONFIG_COLOR, "-selectforeground", "selectForeground", "Background",
@@ -826,6 +860,8 @@ static Blt_ConfigSpec comboBoxStyleSpecs[] =
     {BLT_CONFIG_PIXELS_NNEG, "-borderwidth", "borderWidth", "BorderWidth",
 	DEF_COMBOBOX_BORDERWIDTH, Blt_Offset(ComboBoxStyle, borderWidth),
 	BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_COLOR, "-columnrulecolor", "columnRuleColor", "ColumnRuleColor",
+        DEF_RULE_COLOR, Blt_Offset(ComboBoxStyle, colRuleColor), 0},
     {BLT_CONFIG_CURSOR, "-cursor", "cursor", "Cursor", DEF_COMBOBOX_CURSOR, 
 	Blt_Offset(ComboBoxStyle, cursor), 0},
     {BLT_CONFIG_BACKGROUND, "-disabledbackground", "disabledBackground",
@@ -876,6 +912,8 @@ static Blt_ConfigSpec comboBoxStyleSpecs[] =
 	BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_RELIEF, "-relief", "relief", "Relief", DEF_COMBOBOX_RELIEF, 
 	Blt_Offset(ComboBoxStyle, relief), BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_COLOR, "-rowrulecolor", "rowRuleColor", "RowRuleColor", 
+        DEF_RULE_COLOR, Blt_Offset(ComboBoxStyle, rowRuleColor), 0},
     {BLT_CONFIG_BACKGROUND, "-selectbackground", "selectBackground", 
 	"Foreground", DEF_SELECT_BG, Blt_Offset(ComboBoxStyle, selectBg), 0},
     {BLT_CONFIG_COLOR, "-selectforeground", "selectForeground", "Background",
@@ -925,6 +963,8 @@ static Blt_ConfigSpec imageBoxStyleSpecs[] =
     {BLT_CONFIG_PIXELS_NNEG, "-borderwidth", "borderWidth", "BorderWidth",
 	DEF_IMAGEBOX_BORDERWIDTH, Blt_Offset(ImageBoxStyle, borderWidth),
 	BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_COLOR, "-columnrulecolor", "columnRuleColor", "ColumnRuleColor",
+        DEF_RULE_COLOR, Blt_Offset(ImageBoxStyle, colRuleColor), 0},
     {BLT_CONFIG_OBJ, "-command", "command", "Command", DEF_IMAGEBOX_COMMAND, 
 	Blt_Offset(ImageBoxStyle, cmdObjPtr), 0},
     {BLT_CONFIG_CURSOR, "-cursor", "cursor", "Cursor", DEF_IMAGEBOX_CURSOR, 
@@ -964,6 +1004,8 @@ static Blt_ConfigSpec imageBoxStyleSpecs[] =
 	Blt_Offset(ImageBoxStyle, icon), BLT_CONFIG_NULL_OK, &iconOption},
     {BLT_CONFIG_JUSTIFY, "-justify", "justify", "Justify", DEF_JUSTIFY, 
 	Blt_Offset(ImageBoxStyle, justify), BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_COLOR, "-rowrulecolor", "rowRuleColor", "RowRuleColor", 
+        DEF_RULE_COLOR, Blt_Offset(ImageBoxStyle, rowRuleColor), 0},
     {BLT_CONFIG_BACKGROUND, "-selectbackground", "selectBackground", 
 	"Foreground", DEF_SELECT_BG, Blt_Offset(ImageBoxStyle, selectBg), 0},
     {BLT_CONFIG_COLOR, "-selectforeground", "selectForeground", "Background",
@@ -1984,6 +2026,24 @@ TextBoxStyleConfigureProc(TableView *viewPtr, CellStyle *cellStylePtr)
     }
     stylePtr->highlightGC = newGC;
 
+    /* Row Rule GC */
+    gcMask = GCForeground;
+    gcValues.foreground = stylePtr->rowRuleColor->pixel;
+    newGC = Tk_GetGC(viewPtr->tkwin, gcMask, &gcValues);
+    if (stylePtr->rowRuleGC != NULL) {
+	Tk_FreeGC(viewPtr->display, stylePtr->rowRuleGC);
+    }
+    stylePtr->rowRuleGC = newGC;
+
+    /* Column Rule GC */
+    gcMask = GCForeground;
+    gcValues.foreground = stylePtr->colRuleColor->pixel;
+    newGC = Tk_GetGC(viewPtr->tkwin, gcMask, &gcValues);
+    if (stylePtr->colRuleGC != NULL) {
+	Tk_FreeGC(viewPtr->display, stylePtr->colRuleGC);
+    }
+    stylePtr->colRuleGC = newGC;
+
     if (Blt_ConfigModified(stylePtr->classPtr->specs, "-font", (char *)NULL)) {
 	PropagateGeometryFlags(viewPtr, (CellStyle *)stylePtr);
     }
@@ -2177,11 +2237,11 @@ TextBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
 
     /* Draw Rule */
     if (rowPtr->ruleHeight > 0) {
-	XFillRectangle(viewPtr->display, drawable, rowPtr->ruleGC, 
+	XFillRectangle(viewPtr->display, drawable, stylePtr->rowRuleGC, 
                 x, y + rowHeight, colWidth, rowPtr->ruleHeight);
     }
     if (colPtr->ruleWidth > 0) {
-	XFillRectangle(viewPtr->display, drawable, colPtr->ruleGC, 
+	XFillRectangle(viewPtr->display, drawable, stylePtr->colRuleGC, 
                 x + colWidth, y, colPtr->ruleWidth, rowHeight);
     }
     rowHeight -= 2 * stylePtr->borderWidth;
@@ -2450,6 +2510,24 @@ CheckBoxStyleConfigureProc(TableView *viewPtr, CellStyle *cellStylePtr)
     }
     stylePtr->highlightGC = newGC;
 
+    /* Row Rule GC */
+    gcMask = GCForeground;
+    gcValues.foreground = stylePtr->rowRuleColor->pixel;
+    newGC = Tk_GetGC(viewPtr->tkwin, gcMask, &gcValues);
+    if (stylePtr->rowRuleGC != NULL) {
+	Tk_FreeGC(viewPtr->display, stylePtr->rowRuleGC);
+    }
+    stylePtr->rowRuleGC = newGC;
+
+    /* Column Rule GC */
+    gcMask = GCForeground;
+    gcValues.foreground = stylePtr->colRuleColor->pixel;
+    newGC = Tk_GetGC(viewPtr->tkwin, gcMask, &gcValues);
+    if (stylePtr->colRuleGC != NULL) {
+	Tk_FreeGC(viewPtr->display, stylePtr->colRuleGC);
+    }
+    stylePtr->colRuleGC = newGC;
+
     if (Blt_ConfigModified(stylePtr->classPtr->specs, "-boxsize", 
 		(char *)NULL)) {
 	if (stylePtr->selectedBox != NULL) {
@@ -2693,11 +2771,11 @@ CheckBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
 
     /* Draw Rule */
     if (rowPtr->ruleHeight > 0) {
-	XFillRectangle(viewPtr->display, drawable, rowPtr->ruleGC, 
+	XFillRectangle(viewPtr->display, drawable, stylePtr->rowRuleGC, 
                 x, y + rowHeight, colWidth, rowPtr->ruleHeight);
     }
     if (colPtr->ruleWidth > 0) {
-	XFillRectangle(viewPtr->display, drawable, colPtr->ruleGC, 
+	XFillRectangle(viewPtr->display, drawable, stylePtr->colRuleGC, 
                 x + colWidth, y, colPtr->ruleWidth, rowHeight);
     }
     rowHeight -= 2 * stylePtr->borderWidth;
@@ -3041,6 +3119,24 @@ ComboBoxStyleConfigureProc(TableView *viewPtr, CellStyle *cellStylePtr)
     }
     stylePtr->highlightGC = newGC;
 
+    /* Row Rule GC */
+    gcMask = GCForeground;
+    gcValues.foreground = stylePtr->rowRuleColor->pixel;
+    newGC = Tk_GetGC(viewPtr->tkwin, gcMask, &gcValues);
+    if (stylePtr->rowRuleGC != NULL) {
+	Tk_FreeGC(viewPtr->display, stylePtr->rowRuleGC);
+    }
+    stylePtr->rowRuleGC = newGC;
+
+    /* Column Rule GC */
+    gcMask = GCForeground;
+    gcValues.foreground = stylePtr->colRuleColor->pixel;
+    newGC = Tk_GetGC(viewPtr->tkwin, gcMask, &gcValues);
+    if (stylePtr->colRuleGC != NULL) {
+	Tk_FreeGC(viewPtr->display, stylePtr->colRuleGC);
+    }
+    stylePtr->colRuleGC = newGC;
+
     if (Blt_ConfigModified(stylePtr->classPtr->specs, "-font", (char *)NULL)) {
 	PropagateGeometryFlags(viewPtr, (CellStyle *)stylePtr);
     }
@@ -3254,11 +3350,11 @@ ComboBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
 
     /* Draw Rule */
     if (rowPtr->ruleHeight > 0) {
-	XFillRectangle(viewPtr->display, drawable, rowPtr->ruleGC, 
+	XFillRectangle(viewPtr->display, drawable, stylePtr->rowRuleGC, 
                 x, y + rowHeight, colWidth, rowPtr->ruleHeight);
     }
     if (colPtr->ruleWidth > 0) {
-	XFillRectangle(viewPtr->display, drawable, colPtr->ruleGC, 
+	XFillRectangle(viewPtr->display, drawable, stylePtr->colRuleGC, 
                 x + colWidth, y, colPtr->ruleWidth, rowHeight);
     }
 
@@ -3555,6 +3651,24 @@ ImageBoxStyleConfigureProc(TableView *viewPtr, CellStyle *cellStylePtr)
     }
     stylePtr->highlightGC = newGC;
 
+    /* Row Rule GC */
+    gcMask = GCForeground;
+    gcValues.foreground = stylePtr->rowRuleColor->pixel;
+    newGC = Tk_GetGC(viewPtr->tkwin, gcMask, &gcValues);
+    if (stylePtr->rowRuleGC != NULL) {
+	Tk_FreeGC(viewPtr->display, stylePtr->rowRuleGC);
+    }
+    stylePtr->rowRuleGC = newGC;
+
+    /* Column Rule GC */
+    gcMask = GCForeground;
+    gcValues.foreground = stylePtr->colRuleColor->pixel;
+    newGC = Tk_GetGC(viewPtr->tkwin, gcMask, &gcValues);
+    if (stylePtr->colRuleGC != NULL) {
+	Tk_FreeGC(viewPtr->display, stylePtr->colRuleGC);
+    }
+    stylePtr->colRuleGC = newGC;
+
     if (Blt_ConfigModified(stylePtr->classPtr->specs, "-font", (char *)NULL)) {
 	PropagateGeometryFlags(viewPtr, (CellStyle *)stylePtr);
     }
@@ -3783,11 +3897,11 @@ ImageBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
 
     /* Draw Rule */
     if (rowPtr->ruleHeight > 0) {
-	XFillRectangle(viewPtr->display, drawable, rowPtr->ruleGC, 
+	XFillRectangle(viewPtr->display, drawable, stylePtr->rowRuleGC, 
                 x, y + rowHeight, colWidth, rowPtr->ruleHeight);
     }
     if (colPtr->ruleWidth > 0) {
-	XFillRectangle(viewPtr->display, drawable, colPtr->ruleGC, 
+	XFillRectangle(viewPtr->display, drawable, stylePtr->colRuleGC, 
                 x + colWidth, y, colPtr->ruleWidth, rowHeight);
     }
     rowHeight -= 2 * stylePtr->borderWidth;

@@ -354,6 +354,12 @@ struct _CellStyle {
     Tcl_Obj *cmdObjPtr;			/* If non-NULL, TCL procedure
 					 * called to format the style is
 					 * invoked.*/
+    XColor *rowRuleColor;		/* Color of the row's rule. */
+    GC rowRuleGC;                       /* Graphics context of the row's
+                                         * rule. */
+    XColor *colRuleColor;		/* Color of the row's rule. */
+    GC colRuleGC;                       /* Graphics context of the row's
+                                         * rule. */
 };
 
 /*
@@ -414,8 +420,6 @@ struct _Row {
 					 * coordinates. from the top of the
 					 * table. */
     Blt_ChainLink link;
-    XColor *ruleColor;			/* Color of the column's rule. */
-    GC ruleGC;                          /* Graphics context of the rule. */
 };
 
 /*
@@ -503,8 +507,6 @@ struct _Column {
     Tcl_Obj *filterDataObjPtr;
     Blt_Pad pad;			/* Horizontal padding on either
 					 * side of the column. */
-    XColor *ruleColor;			/* Color of the column's rule. */
-    GC ruleGC;                          /* Graphics context of the rule. */
 };
 
 /*
