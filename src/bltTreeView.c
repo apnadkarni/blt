@@ -3817,6 +3817,7 @@ GetEntryFromSpecialId(TreeView *viewPtr, const char *string,
 		entryPtr = NextEntry(entryPtr, ENTRY_MASK);
 	    }
 	}
+
     } else if ((c == 'e') && (strcmp(string, "end") == 0)) {
 	entryPtr = LastEntry(viewPtr, viewPtr->rootPtr, ENTRY_MASK);
     } else if ((c == 'a') && (strcmp(string, "anchor") == 0)) {
@@ -6631,6 +6632,7 @@ ResetCoordinates(TreeView *viewPtr, Entry *entryPtr, int *yPtr, long *indexPtr)
     }
 }
 
+#ifdef notdef
 /*
  *---------------------------------------------------------------------------
  *
@@ -6705,6 +6707,7 @@ GetTreeCoordinates(TreeView *viewPtr, Entry *entryPtr, int *yPtr,
 	entryPtr->vertLineLength += bottomPtr->worldY + (h / 2);
     }
 }
+#endif
 
 static void
 AdjustColumns(TreeView *viewPtr)
@@ -6835,12 +6838,11 @@ ComputeFlatLayout(TreeView *viewPtr)
     }
 
     /* If the view needs to be resorted, free the old view. */
-    if ((viewPtr->flags & (GEOMETRY|RESORT|SORT_PENDING|TV_SORT_AUTO)) && 
+    if ((viewPtr->flags & (LAYOUT_PENDING|GEOMETRY|RESORT|SORT_PENDING|TV_SORT_AUTO)) && 
         (viewPtr->flatArr != NULL)) {
         Blt_Free(viewPtr->flatArr);
         viewPtr->flatArr = NULL;
     }
-
     /* Recreate the flat view of all the open and not-hidden entries. */
     if (viewPtr->flatArr == NULL) {
         count = 0;
@@ -9997,7 +9999,7 @@ ChrootOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	if (GetEntryFromObj(interp, viewPtr, objv[2], &entryPtr) != TCL_OK) {
 	    return TCL_ERROR;
 	}
-	viewPtr->flags |= (LAYOUT_PENDING | REPOPULATE);
+	viewPtr->flags |= LAYOUT_PENDING;
 	viewPtr->rootPtr = entryPtr;
 	EventuallyRedraw(viewPtr);
     }
@@ -11560,8 +11562,8 @@ static Blt_OpSpec entryOps[] =
     /*focus*/
     /*hide*/
     {"highlight", 1, EntryActivateOp,  4, 4, "tagOrId",},
-    /*index*/
-    {"invoke",    2, EntryInvokeOp,    4, 4, "tagOrId",},
+    {"index",     3, EntryIndexOp,     4, 7, "?-at tagOrId? ?-path? string",},
+    {"invoke",    3, EntryInvokeOp,    4, 4, "tagOrId",},
     {"isbefore",  3, EntryIsBeforeOp,  5, 5, "tagOrId tagOrId",},
     {"isexposed", 3, EntryIsExposedOp, 4, 4, "tagOrId",},
     {"ishidden",  3, EntryIsHiddenOp,  4, 4, "tagOrId",},
