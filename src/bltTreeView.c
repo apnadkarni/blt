@@ -7462,7 +7462,6 @@ ComputeVisibleEntries(TreeView *viewPtr)
     return TCL_OK;
 }
 
-
 /*
  *---------------------------------------------------------------------------
  *
@@ -8746,13 +8745,14 @@ DisplayTreeView(ClientData clientData)	/* Information about widget. */
 #endif
     if (viewPtr->flags & LAYOUT_PENDING) {
 	/* Recompute the layout when entries are opened/closed,
-	 * inserted/deleted, or when text attributes change (such as font,
-	 * linespacing). */
+	 * inserted/deleted, hidden/shown or when text attributes change
+	 * (such as font, linespacing). */
         ComputeLayout(viewPtr);
     } 
     if (viewPtr->flags & VISIBILITY) {
 	ComputeVisibleEntries(viewPtr);
     }
+
     if (viewPtr->flags & SCROLL_PENDING) {
 	int w, h;
 
@@ -12275,7 +12275,7 @@ HideOp(ClientData clientData, Tcl_Interp *interp, int objc,
     Apply(viewPtr, viewPtr->rootPtr, FixSelectionsApplyProc, 0);
 
     /* Hiding an entry only effects the visible nodes. */
-    viewPtr->flags |= VISIBILITY;
+    viewPtr->flags |= LAYOUT_PENDING;
     EventuallyRedraw(viewPtr);
     return TCL_OK;
 }
@@ -12304,7 +12304,7 @@ ShowOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	    (int *)NULL) != TCL_OK) {
 	return TCL_ERROR;
     }
-    viewPtr->flags |= VISIBILITY;
+    viewPtr->flags |= LAYOUT_PENDING;
     EventuallyRedraw(viewPtr);
     return TCL_OK;
 }
