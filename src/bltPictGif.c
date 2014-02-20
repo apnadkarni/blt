@@ -2060,7 +2060,10 @@ PicturesToAnimatedGif(Tcl_Interp *interp, Blt_Chain chain, Blt_DBuffer dbuffer,
     if (numFrames == 0) {
 	return TCL_ERROR;
     }
-    frames = Blt_AssertCalloc(numFrames, sizeof(Frame));
+    frames = Blt_Calloc(numFrames, sizeof(Frame));
+    if (frames == NULL) {
+        GifError("can't allocates %d frames for animated file", numFrames);
+    }
     link = Blt_Chain_FirstLink(chain);
     fp = frames;
     fp->original = Blt_Chain_GetValue(link);
