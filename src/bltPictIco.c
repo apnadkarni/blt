@@ -41,6 +41,13 @@
 
 #include <setjmp.h>
 
+#undef assert
+#ifdef __STDC__
+#  define assert(EX) (void)((EX) || (IcoAssert(#EX, __FILE__, __LINE__), 0))
+#else
+#  define assert(EX) (void)((EX) || (IcoAssert("EX", __FILE__, __LINE__), 0))
+#endif /* __STDC__ */
+
 typedef struct _Blt_Picture Picture;
 
 #define TRUE 	1
@@ -307,6 +314,13 @@ IcoWarning(const char *fmt, ...)
     Tcl_DStringAppend(&icoMessagePtr->warnings, string, -1);
     va_end(args);
     icoMessagePtr->numWarnings++;
+}
+
+static void
+IcoAssert(const char *testExpr, const char *fileName, int lineNumber)
+{
+    IcoError("line %d of %s: Assert \"%s\" failed\n", lineNumber, fileName, 
+             testExpr);
 }
 
 static INLINE unsigned int

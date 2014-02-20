@@ -1,5 +1,4 @@
 /* -*- mode: c; c-basic-offset: 4; indent-tabs-mode: nil -*- */
-
 /*
  * bltPictGif.c --
  *
@@ -106,6 +105,13 @@
 #endif
 
 #include <setjmp.h>
+
+#undef assert
+#ifdef __STDC__
+#  define assert(EX) (void)((EX) || (GifAssert(#EX, __FILE__, __LINE__), 0))
+#else
+#  define assert(EX) (void)((EX) || (GifAssert("EX", __FILE__, __LINE__), 0))
+#endif /* __STDC__ */
 
 typedef struct _Blt_Picture Pict;
 
@@ -325,6 +331,13 @@ GifWarning(const char *fmt, ...)
     Tcl_DStringAppend(&gifMessagePtr->warnings, string, -1);
     va_end(args);
     gifMessagePtr->numWarnings++;
+}
+
+static void
+GifAssert(const char *testExpr, const char *fileName, int lineNumber)
+{
+    GifError("line %d of %s: Assert \"%s\" failed\n", lineNumber, fileName, 
+             testExpr);
 }
 
 /*

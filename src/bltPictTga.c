@@ -369,12 +369,15 @@ ColorSwitchProc(
 static struct tm *
 localtime_r(const time_t *timePtr, struct tm *resultPtr)
 {
-    struct tm *tmPtr;
+    if (resultPtr != NULL) {
+        struct tm *tmPtr;
 
-    assert(resultPtr);
-    tmPtr = localtime(timePtr);
-    assert(tmPtr);
-    memcpy(resultPtr, tmPtr, sizeof(struct tm));
+        tmPtr = localtime(timePtr);
+        if (tmPtr == NULL) {
+            return NULL;
+        }
+        memcpy(resultPtr, tmPtr, sizeof(struct tm));
+    }
     return resultPtr;
 }
 #endif	/* WIN32 */
@@ -541,7 +544,11 @@ TgaGet16BitTrueColorPixelProc(Tga *tgaPtr)
     color.Green = (pixel & 0x03e0) >> 2;
     color.Red   = (pixel & 0x7c00) >> 7;
     if (tgaPtr->numAlphaBits > 0) {
-	assert(tgaPtr->numAlphaBits == 1);
+	if (tgaPtr->numAlphaBits != 1) {
+            TgaError(tgaPtr, 
+                     "number of alpha bits must be 1, not %d for 16-bit image", 
+                     tgaPtr->numAlphaBits);
+        }
 	color.Alpha = (pixel & 0x8000) ? ALPHA_TRANSPARENT : ALPHA_OPAQUE;
     } else {
 	color.Alpha = ALPHA_OPAQUE;
@@ -620,7 +627,10 @@ TgaGetRLEPixel(Tga *tgaPtr)
 	    tgaPtr->pktRep.u32 = (*tgaPtr->getProc)(tgaPtr);
 	}
 	tgaPtr->pktCount++;		/* The count is the lower 7 bits + 1. */
-	assert(tgaPtr->pktCount >= 0 && tgaPtr->pktCount <= 128);
+	if (tgaPtr->pktCount < 0 || tgaPtr->pktCount > 128) {
+            TgaError(tgaPtr, "invalid packet count %d, must be 0..128",
+                     tgaPtr->pktCount);
+        }
     }
     tgaPtr->pktCount--;
     if (tgaPtr->pktIsRle) {
@@ -700,7 +710,11 @@ TgaGetId(Tga *tgaPtr)
     if (tgaPtr->numBytesId > 0) {
 	unsigned char *bp;
 
-	tgaPtr->id = Blt_AssertMalloc(tgaPtr->numBytesId + 1);
+	tgaPtr->id = Blt_Malloc(tgaPtr->numBytesId + 1);
+        if (tgaPtr->id == NULL) {
+            TgaError(tgaPtr, "can't allocate id of %d bytes", 
+                     tgaPtr->numBytesId + 1);
+        }
 	bp = Blt_DBuffer_Pointer(tgaPtr->dbuffer);
 	strncpy((char *)tgaPtr->id, (char *)bp, tgaPtr->numBytesId);
 	tgaPtr->id[tgaPtr->numBytesId] = '\0';
@@ -1246,9 +1260,13 @@ TgaPut8BitPseudoColorPixelProc(Tga *tgaPtr, Blt_Pixel *sp)
 
     pixel = (unsigned long)sp->u32;
     hPtr = Blt_FindHashEntry(&tgaPtr->colorTable, (char *)pixel);
-    assert(hPtr != NULL);
+    if (hPtr == NULL) {
+        TgaError(tgaPtr, "can't find 8-bit pixel %lu in colortable", pixel);
+    }
     index = (unsigned long)Blt_GetHashValue(hPtr);
-    assert(index < tgaPtr->cmNumEntries);
+    if (index >= tgaPtr->cmNumEntries) {
+        TgaError(tgaPtr, "invalid index %d for 8-bit pixel %lu", index, pixel);
+    }
     Blt_DBuffer_AppendByte(tgaPtr->dbuffer, index);
 }
 

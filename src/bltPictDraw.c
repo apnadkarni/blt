@@ -995,6 +995,7 @@ PutPixel2(Pict *destPtr, int x, int y, Blt_Pixel *colorPtr,
 	Blt_Pixel *dp;
 
 	dp = Blt_Picture_Pixel(destPtr, x, y);
+        BlendPixels(dp, colorPtr);
     }
 }
 

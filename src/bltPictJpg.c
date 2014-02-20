@@ -248,9 +248,18 @@ JpgSkipInputData(j_decompress_ptr commPtr, long numBytes)
     if (numBytes > 0) {
 	JpgReader *readerPtr = (JpgReader *)commPtr->src; 
 
-	assert((readerPtr->pub.next_input_byte + numBytes) < 
+	if ((readerPtr->pub.next_input_byte + numBytes) >= 
 	    (Blt_DBuffer_Bytes(readerPtr->dBuffer) + 
-	     Blt_DBuffer_Length(readerPtr->dBuffer)));
+             Blt_DBuffer_Length(readerPtr->dBuffer))) {
+            char mesg[200];
+            JpgErrorHandler *errorPtr = (JpgErrorHandler *)commPtr->err;
+            
+            sprintf(mesg, "short buffer: wanted %lu bytes, bytes left is %lu",
+                    numBytes, Blt_DBuffer_Length(readerPtr->dBuffer));
+            Tcl_DStringAppend(&errorPtr->ds, " ", -1);
+            Tcl_DStringAppend(&errorPtr->ds, mesg, -1);
+            ERREXIT(commPtr, 10);
+        }
 	readerPtr->pub.next_input_byte += (size_t)numBytes;
 	readerPtr->pub.bytes_in_buffer -= (size_t)numBytes;
     }

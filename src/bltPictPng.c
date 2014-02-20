@@ -107,7 +107,7 @@ DLLEXPORT extern Tcl_AppInitProc Blt_PicturePngInit;
 DLLEXPORT extern Tcl_AppInitProc Blt_PicturePngSafeInit;
 
 static void
-PngError(png_struct *pngPtr, const char *mesg)
+PngErrorProc(png_struct *pngPtr, const char *mesg)
 {
     PngMessage *mesgPtr;
 
@@ -117,7 +117,7 @@ PngError(png_struct *pngPtr, const char *mesg)
 }
 
 static void
-PngWarning(png_struct *pngPtr, const char *mesg)
+PngWarningProc(png_struct *pngPtr, const char *mesg)
 {
     PngMessage *mesgPtr;
 
@@ -254,8 +254,8 @@ PngToPicture(Tcl_Interp *interp, const char *fileName, Blt_DBuffer dbuffer,
     Tcl_DStringAppend(&message.errors, "error reading \"", -1);
     Tcl_DStringAppend(&message.errors, fileName, -1);
     Tcl_DStringAppend(&message.errors, "\": ", -1);
-    png = png_create_read_struct(PNG_LIBPNG_VER_STRING, &message, PngError, 
-	PngWarning);
+    png = png_create_read_struct(PNG_LIBPNG_VER_STRING, &message, PngErrorProc, 
+	PngWarningProc);
     if (png == NULL) {
 	return NULL;
     }
@@ -297,7 +297,6 @@ PngToPicture(Tcl_Interp *interp, const char *fileName, Blt_DBuffer dbuffer,
 
     destPtr = Blt_CreatePicture(width, height);
     if (colorType & PNG_COLOR_MASK_ALPHA) {
-	assert((numChannels == 4) || (numChannels == 2));
 	destPtr->flags |= BLT_PIC_BLEND;
     }
     if ((numChannels == 4) || (numChannels == 3)) {
@@ -442,8 +441,8 @@ PictureToPng(Tcl_Interp *interp, Blt_Picture picture, Blt_DBuffer dbuffer,
     message.numErrors = message.numWarnings = 0;
 
     Tcl_DStringAppend(&message.errors, "error writing PNG output: ", -1);
-    png = png_create_write_struct(PNG_LIBPNG_VER_STRING, &message, PngError, 
-	PngWarning);
+    png = png_create_write_struct(PNG_LIBPNG_VER_STRING, &message, PngErrorProc,
+	PngWarningProc);
     if (png == NULL) {
 	return TCL_ERROR;
     }

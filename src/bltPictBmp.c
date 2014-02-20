@@ -41,6 +41,13 @@
 
 #include <setjmp.h>
 
+#undef assert
+#ifdef __STDC__
+#  define assert(EX) (void)((EX) || (BmpAssert(#EX, __FILE__, __LINE__), 0))
+#else
+#  define assert(EX) (void)((EX) || (BmpAssert("EX", __FILE__, __LINE__), 0))
+#endif /* __STDC__ */
+
 typedef struct _Blt_Picture Picture;
 
 #define TRUE 	1
@@ -299,6 +306,13 @@ BmpWarning(const char *fmt, ...)
     Tcl_DStringAppend(&bmpMessagePtr->warnings, string, -1);
     va_end(args);
     bmpMessagePtr->numWarnings++;
+}
+
+static void
+BmpAssert(const char *testExpr, const char *fileName, int lineNumber)
+{
+    BmpError("line %d of %s: Assert \"%s\" failed\n", lineNumber, fileName, 
+             testExpr);
 }
 
 static INLINE unsigned int
