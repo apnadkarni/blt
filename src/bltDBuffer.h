@@ -89,11 +89,10 @@ BLT_EXTERN const char *Blt_DBuffer_String(Blt_DBuffer buffer);
 
 BLT_EXTERN int Blt_DBuffer_Base64Decode(Tcl_Interp *interp, 
 	const char *string, size_t length, Blt_DBuffer buffer);
-BLT_EXTERN Tcl_Obj *Blt_DBuffer_Base64EncodeToObj(Tcl_Interp *interp, 
-	Blt_DBuffer buffer);
-BLT_EXTERN int Blt_DBuffer_AppendBase85(Tcl_Interp *interp, Blt_DBuffer buffer, 
-	const unsigned char *bytes, size_t numBytes);
-BLT_EXTERN int Blt_DBuffer_AppendBase64(Tcl_Interp *interp, Blt_DBuffer buffer, 
-	const unsigned char *bytes, size_t numBytes);
+BLT_EXTERN Tcl_Obj *Blt_DBuffer_Base64EncodeToObj(Blt_DBuffer buffer);
+BLT_EXTERN int Blt_DBuffer_AppendBase85(Blt_DBuffer buffer, 
+        const unsigned char *bytes, size_t numBytes);
+BLT_EXTERN int Blt_DBuffer_AppendBase64(Blt_DBuffer buffer, 
+        const unsigned char *bytes, size_t numBytes);
 
 #endif /*_BLT_DBUFFER_H*/

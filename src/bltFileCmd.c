@@ -272,7 +272,7 @@ Base64Op(ClientData clientData, Tcl_Interp *interp, int objc,
 	    Tcl_Obj *objPtr;
 
 	    bp = Tcl_GetByteArrayFromObj(objv[3], &length);
-	    objPtr = Blt_Base64_EncodeToObj(interp, bp, length);
+	    objPtr = Blt_Base64_EncodeToObj(bp, length);
 	    if (objPtr == NULL) {
 		return TCL_ERROR;
 	    }

@@ -1203,8 +1203,9 @@ PictureToPdf(Tcl_Interp *interp, Blt_Picture original, Pdf *pdfPtr,
 		       OBJ_IMAGE_LENGTH);
     
     Blt_DBuffer_VarAppend(pdfPtr->dbuffer, "stream\n", (char *)NULL);
-    length = Blt_DBuffer_AppendBase85(interp, pdfPtr->dbuffer, imgData, 
+    Blt_DBuffer_AppendBase85(pdfPtr->dbuffer, imgData, 
 	srcPtr->width * srcPtr->height * numComponents);
+    length = Blt_DBuffer_Length(pdfPtr->dbuffer);
     Blt_DBuffer_VarAppend(pdfPtr->dbuffer, 
 			  "\n"
 			  "endstream\n", 
@@ -1254,8 +1255,9 @@ PictureToPdf(Tcl_Interp *interp, Blt_Picture original, Pdf *pdfPtr,
 			   srcPtr->width, srcPtr->height, 
 			   OBJ_SOFTMASK_LENGTH);
 	Blt_DBuffer_VarAppend(pdfPtr->dbuffer, "stream\n", (char *)NULL);
-	length = Blt_DBuffer_AppendBase85(interp, pdfPtr->dbuffer, maskData,
+	Blt_DBuffer_AppendBase85(pdfPtr->dbuffer, maskData,
 		srcPtr->width * srcPtr->height);
+        length = Blt_DBuffer_Length(pdfPtr->dbuffer);
 	Blt_DBuffer_VarAppend(pdfPtr->dbuffer, 
 			      "\n"
 			      "endstream\n", 
@@ -1348,7 +1350,7 @@ WritePdf(Tcl_Interp *interp, Blt_Picture picture)
     objPtr = NULL;
     pdfPtr = NewPdf();
     if (PictureToPdf(interp, picture, pdfPtr, &switches) == TCL_OK) {
-	objPtr = Blt_DBuffer_Base64EncodeToObj(interp, pdfPtr->dbuffer);
+	objPtr = Blt_DBuffer_Base64EncodeToObj(pdfPtr->dbuffer);
     }
     FreePdf(pdfPtr);
     return objPtr;
@@ -1444,7 +1446,7 @@ ExportPdf(Tcl_Interp *interp, unsigned int index, Blt_Chain chain, int objc,
     } else {
 	Tcl_Obj *objPtr;
 
-	objPtr = Blt_DBuffer_Base64EncodeToObj(interp, pdfPtr->dbuffer);
+	objPtr = Blt_DBuffer_Base64EncodeToObj(pdfPtr->dbuffer);
 	result = (objPtr == NULL) ? TCL_ERROR : TCL_OK;
 	if (objPtr != NULL) {
 	    Tcl_SetObjResult(interp, objPtr);

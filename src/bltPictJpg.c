@@ -747,7 +747,7 @@ WriteJpg(Tcl_Interp *interp, Blt_Picture picture)
     objPtr = NULL;
     dbuffer = Blt_DBuffer_Create();
     if (PictureToJpg(interp, picture, dbuffer, &switches) == TCL_OK) {
-	objPtr = Blt_DBuffer_Base64EncodeToObj(interp, dbuffer);
+	objPtr = Blt_DBuffer_Base64EncodeToObj(dbuffer);
     }
     Blt_DBuffer_Destroy(dbuffer);
     return objPtr;
@@ -876,7 +876,7 @@ ExportJpg(Tcl_Interp *interp, unsigned int index, Blt_Chain chain, int objc,
 
 	/* Return the image as a base64 string in the interpreter result. */
 	result = TCL_ERROR;
-	objPtr = Blt_DBuffer_Base64EncodeToObj(interp, dbuffer);
+	objPtr = Blt_DBuffer_Base64EncodeToObj(dbuffer);
 	if (objPtr != NULL) {
 	    Tcl_SetObjResult(interp, objPtr);
 	    result = TCL_OK;

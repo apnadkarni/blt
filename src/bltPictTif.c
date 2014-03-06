@@ -707,7 +707,7 @@ WriteTif(Tcl_Interp *interp, Blt_Picture picture)
     dbuffer = Blt_DBuffer_Create();
     objPtr = NULL;
     if (PictureToTif(interp, picture, dbuffer, &switches) == TCL_OK) {
-	objPtr = Blt_DBuffer_Base64EncodeToObj(interp, dbuffer);
+	objPtr = Blt_DBuffer_Base64EncodeToObj(dbuffer);
     }
     Blt_DBuffer_Destroy(dbuffer);
     return objPtr;
@@ -820,7 +820,7 @@ ExportTif(Tcl_Interp *interp, unsigned int index, Blt_Chain chain, int objc,
 	Tcl_Obj *objPtr;
 
 	result = TCL_ERROR;
-	objPtr = Blt_DBuffer_Base64EncodeToObj(interp, dbuffer);
+	objPtr = Blt_DBuffer_Base64EncodeToObj(dbuffer);
 	if (objPtr != NULL) {
 	    Tcl_SetObjResult(interp, objPtr);
 	    result = TCL_OK;

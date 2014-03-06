@@ -1625,7 +1625,7 @@ WriteIco(Tcl_Interp *interp, Blt_Picture picture)
     dbuffer = Blt_DBuffer_Create();
     objPtr = NULL;
     if (PictureToIco(interp, picture, dbuffer, &switches) == TCL_OK) {
-	objPtr = Blt_DBuffer_Base64EncodeToObj(interp, dbuffer);
+	objPtr = Blt_DBuffer_Base64EncodeToObj(dbuffer);
     }
     return objPtr;
 }
@@ -1740,7 +1740,7 @@ ExportIco(Tcl_Interp *interp, unsigned int index, Blt_Chain chain,
 
 	/* Return the image as a base64 string in the interpreter result. */
 	result = TCL_ERROR;
-	objPtr = Blt_DBuffer_Base64EncodeToObj(interp, dbuffer);
+	objPtr = Blt_DBuffer_Base64EncodeToObj(dbuffer);
 	if (objPtr != NULL) {
 	    Tcl_SetObjResult(interp, objPtr);
 	    result = TCL_OK;

@@ -231,8 +231,8 @@ Blt_Base85_MaxBufferLength(size_t bufsize)
 }
 
 size_t
-Blt_Base64_Encode(Tcl_Interp *interp, const unsigned char *buffer, 
-		  size_t bufsize, unsigned char *destBytes) 
+Blt_Base64_Encode(const unsigned char *buffer, size_t bufsize, 
+                  unsigned char *destBytes) 
 {
     unsigned char *dp;
     int count, remainder;
@@ -305,8 +305,8 @@ Blt_Base64_Encode(Tcl_Interp *interp, const unsigned char *buffer,
 }
 
 size_t 
-Blt_Base85_Encode(Tcl_Interp *interp, const unsigned char *buffer, 
-		  size_t bufsize, unsigned char *destBytes) 
+Blt_Base85_Encode(const unsigned char *buffer, size_t bufsize, 
+                  unsigned char *destBytes) 
 {
     unsigned char *dp; 
     size_t count, length, numBytes;
@@ -400,8 +400,7 @@ Blt_Base85_Encode(Tcl_Interp *interp, const unsigned char *buffer,
 }
 
 Tcl_Obj *
-Blt_Base64_EncodeToObj(Tcl_Interp *interp, const unsigned char *buffer, 
-		       size_t bufsize) 
+Blt_Base64_EncodeToObj(const unsigned char *buffer, size_t bufsize) 
 {
     Tcl_Obj *objPtr;
     unsigned char *destBytes;
@@ -410,11 +409,9 @@ Blt_Base64_EncodeToObj(Tcl_Interp *interp, const unsigned char *buffer,
     length = Blt_Base64_MaxBufferLength(bufsize);
     destBytes = Blt_Malloc(sizeof(char) * length);
     if (destBytes == NULL) {
-	Tcl_AppendResult(interp, "can't allocate \"", Blt_Itoa(length), 
-		"\" bytes for buffer", (char *)NULL);
 	return NULL;
     }
-    count = Blt_Base64_Encode(interp, buffer, bufsize, destBytes);
+    count = Blt_Base64_Encode(buffer, bufsize, destBytes);
     assert(count <= length);
     objPtr = Tcl_NewStringObj((char *)destBytes, count);
     Blt_Free(destBytes);
@@ -422,8 +419,7 @@ Blt_Base64_EncodeToObj(Tcl_Interp *interp, const unsigned char *buffer,
 }
 
 const char *
-Blt_Base16_Encode(Tcl_Interp *interp, const unsigned char *buffer, 
-		  size_t bufsize) 
+Blt_Base16_Encode(const unsigned char *buffer, size_t bufsize) 
 {
     static char hexDigits[] = "0123456789ABCDEF";
     int length;
@@ -439,8 +435,6 @@ Blt_Base16_Encode(Tcl_Interp *interp, const unsigned char *buffer,
 
     dest = Blt_Malloc(sizeof(char) * length);
     if (dest == NULL) {
-	Tcl_AppendResult(interp, "can't allocate \"", Blt_Itoa(length), 
-		"\" bytes for buffer", (char *)NULL);
 	return NULL;
     }
     {
@@ -509,7 +503,7 @@ Base64Cmd(ClientData clientData, Tcl_Interp *interp, int objc,
 	    Tcl_Obj *objPtr;
 
 	    bp = Tcl_GetByteArrayFromObj(objv[2], &length);
-	    objPtr = Blt_Base64_EncodeToObj(interp, bp, length);
+	    objPtr = Blt_Base64_EncodeToObj(bp, length);
 	    if (objPtr == NULL) {
 		return TCL_ERROR;
 	    }
@@ -555,7 +549,7 @@ Blt_Base64_DecodeToObj(Tcl_Interp *interp, const char *string, size_t length)
 int
 Blt_Base64CmdInitProc(Tcl_Interp *interp)
 {
-    static Blt_CmdSpec cmdSpec = { "base64", Base64Cmd, };
+    static Blt_CmdSpec cmdSpec = { "base64", Base64Cmd, 0, 0 };
 
     return Blt_InitCmd(interp, "::blt", &cmdSpec);
 }

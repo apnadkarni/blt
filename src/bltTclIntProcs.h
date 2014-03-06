@@ -133,21 +133,18 @@ BLT_EXTERN int		Blt_DBuffer_Base64Decode(Tcl_Interp *interp,
 #ifndef Blt_DBuffer_Base64EncodeToObj_DECLARED
 #define Blt_DBuffer_Base64EncodeToObj_DECLARED
 /* 21 */
-BLT_EXTERN Tcl_Obj *	Blt_DBuffer_Base64EncodeToObj(Tcl_Interp *interp,
-				Blt_DBuffer buffer);
+BLT_EXTERN Tcl_Obj *	Blt_DBuffer_Base64EncodeToObj(Blt_DBuffer buffer);
 #endif
 #ifndef Blt_DBuffer_AppendBase85_DECLARED
 #define Blt_DBuffer_AppendBase85_DECLARED
 /* 22 */
-BLT_EXTERN int		Blt_DBuffer_AppendBase85(Tcl_Interp *interp,
-				Blt_DBuffer buffer,
+BLT_EXTERN int		Blt_DBuffer_AppendBase85(Blt_DBuffer buffer,
 				const unsigned char *bytes, size_t numBytes);
 #endif
 #ifndef Blt_DBuffer_AppendBase64_DECLARED
 #define Blt_DBuffer_AppendBase64_DECLARED
 /* 23 */
-BLT_EXTERN int		Blt_DBuffer_AppendBase64(Tcl_Interp *interp,
-				Blt_DBuffer buffer,
+BLT_EXTERN int		Blt_DBuffer_AppendBase64(Blt_DBuffer buffer,
 				const unsigned char *bytes, size_t numBytes);
 #endif
 #ifndef Blt_Malloc_DECLARED
@@ -319,8 +316,8 @@ BLT_EXTERN Tcl_Obj *	Blt_Base64_DecodeToObj(Tcl_Interp *interp,
 #ifndef Blt_Base64_EncodeToObj_DECLARED
 #define Blt_Base64_EncodeToObj_DECLARED
 /* 54 */
-BLT_EXTERN Tcl_Obj *	Blt_Base64_EncodeToObj(Tcl_Interp *interp,
-				const unsigned char *buffer, size_t bufsize);
+BLT_EXTERN Tcl_Obj *	Blt_Base64_EncodeToObj(const unsigned char *buffer, 
+                                size_t bufsize);
 #endif
 #ifndef Blt_Base64_MaxBufferLength_DECLARED
 #define Blt_Base64_MaxBufferLength_DECLARED
@@ -330,9 +327,8 @@ BLT_EXTERN size_t	Blt_Base64_MaxBufferLength(size_t bufsize);
 #ifndef Blt_Base64_Encode_DECLARED
 #define Blt_Base64_Encode_DECLARED
 /* 56 */
-BLT_EXTERN size_t	Blt_Base64_Encode(Tcl_Interp *interp,
-				const unsigned char *buffer, size_t bufsize,
-				unsigned char *destBytes);
+BLT_EXTERN size_t	Blt_Base64_Encode(const unsigned char *buffer, 
+                                size_t bufsize, unsigned char *destBytes);
 #endif
 #ifndef Blt_Base85_MaxBufferLength_DECLARED
 #define Blt_Base85_MaxBufferLength_DECLARED
@@ -342,15 +338,14 @@ BLT_EXTERN size_t	Blt_Base85_MaxBufferLength(size_t bufsize);
 #ifndef Blt_Base85_Encode_DECLARED
 #define Blt_Base85_Encode_DECLARED
 /* 58 */
-BLT_EXTERN size_t	Blt_Base85_Encode(Tcl_Interp *interp,
-				const unsigned char *buffer, size_t bufsize,
-				unsigned char *destBytes);
+BLT_EXTERN size_t	Blt_Base85_Encode(const unsigned char *buffer, 
+                                size_t bufsize, unsigned char *destBytes);
 #endif
 #ifndef Blt_Base16_Encode_DECLARED
 #define Blt_Base16_Encode_DECLARED
 /* 59 */
-BLT_EXTERN const char *	 Blt_Base16_Encode(Tcl_Interp *interp,
-				const unsigned char *buffer, size_t bufsize);
+BLT_EXTERN const char *	 Blt_Base16_Encode(const unsigned char *buffer, 
+                                size_t bufsize);
 #endif
 #ifndef Blt_IsBase64_DECLARED
 #define Blt_IsBase64_DECLARED
@@ -690,9 +685,9 @@ typedef struct BltTclIntProcs {
     Tcl_Obj * (*blt_DBuffer_StringObj) (Blt_DBuffer buffer); /* 18 */
     const char * (*blt_DBuffer_String) (Blt_DBuffer buffer); /* 19 */
     int (*blt_DBuffer_Base64Decode) (Tcl_Interp *interp, const char *string, size_t length, Blt_DBuffer buffer); /* 20 */
-    Tcl_Obj * (*blt_DBuffer_Base64EncodeToObj) (Tcl_Interp *interp, Blt_DBuffer buffer); /* 21 */
-    int (*blt_DBuffer_AppendBase85) (Tcl_Interp *interp, Blt_DBuffer buffer, const unsigned char *bytes, size_t numBytes); /* 22 */
-    int (*blt_DBuffer_AppendBase64) (Tcl_Interp *interp, Blt_DBuffer buffer, const unsigned char *bytes, size_t numBytes); /* 23 */
+    Tcl_Obj * (*blt_DBuffer_Base64EncodeToObj) (Blt_DBuffer buffer); /* 21 */
+    int (*blt_DBuffer_AppendBase85) (Blt_DBuffer buffer, const unsigned char *bytes, size_t numBytes); /* 22 */
+    int (*blt_DBuffer_AppendBase64) (Blt_DBuffer buffer, const unsigned char *bytes, size_t numBytes); /* 23 */
     VOID * (*blt_Malloc) (size_t size); /* 24 */
     VOID * (*blt_Realloc) (VOID *ptr, size_t size); /* 25 */
     void (*blt_Free) (const VOID *ptr); /* 26 */
@@ -723,12 +718,12 @@ typedef struct BltTclIntProcs {
     unsigned char * (*blt_Base64_Decode) (Tcl_Interp *interp, const char *string, size_t *lengthPtr); /* 51 */
     Blt_DBuffer (*blt_Base64_DecodeToBuffer) (Tcl_Interp *interp, const char *string, size_t length); /* 52 */
     Tcl_Obj * (*blt_Base64_DecodeToObj) (Tcl_Interp *interp, const char *string, size_t length); /* 53 */
-    Tcl_Obj * (*blt_Base64_EncodeToObj) (Tcl_Interp *interp, const unsigned char *buffer, size_t bufsize); /* 54 */
+    Tcl_Obj * (*blt_Base64_EncodeToObj) (const unsigned char *buffer, size_t bufsize); /* 54 */
     size_t (*blt_Base64_MaxBufferLength) (size_t bufsize); /* 55 */
-    size_t (*blt_Base64_Encode) (Tcl_Interp *interp, const unsigned char *buffer, size_t bufsize, unsigned char *destBytes); /* 56 */
+    size_t (*blt_Base64_Encode) (const unsigned char *buffer, size_t bufsize, unsigned char *destBytes); /* 56 */
     size_t (*blt_Base85_MaxBufferLength) (size_t bufsize); /* 57 */
-    size_t (*blt_Base85_Encode) (Tcl_Interp *interp, const unsigned char *buffer, size_t bufsize, unsigned char *destBytes); /* 58 */
-    const char * (*blt_Base16_Encode) (Tcl_Interp *interp, const unsigned char *buffer, size_t bufsize); /* 59 */
+    size_t (*blt_Base85_Encode) (const unsigned char *buffer, size_t bufsize, unsigned char *destBytes); /* 58 */
+    const char * (*blt_Base16_Encode) (const unsigned char *buffer, size_t bufsize); /* 59 */
     int (*blt_IsBase64) (const char *buf, size_t length); /* 60 */
     int (*blt_GetDoubleFromString) (Tcl_Interp *interp, const char *s, double *valuePtr); /* 61 */
     int (*blt_GetDoubleFromObj) (Tcl_Interp *interp, Tcl_Obj *objPtr, double *valuePtr); /* 62 */

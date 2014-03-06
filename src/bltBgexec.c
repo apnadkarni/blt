@@ -300,18 +300,20 @@ typedef struct {
     unsigned char *bytes;		/* Stores pipeline output (malloc-ed):
 					 * Initially points to static
 					 * storage */
-    int size;				/* Size of dynamically allocated
+    size_t size;                        /* Size of dynamically allocated
 					 * buffer. */
 
-    int fill;				/* # of bytes read into the
+    size_t fill;                        /* # of bytes read into the
 					 * buffer. Marks the current fill
 					 * point of the buffer. */
 
-    int mark;				/* # of bytes translated (cooked). */
-    int lastMark;			/* # of bytes as of the last read. This
-					 * indicates the start of the new data
-					 * in the buffer since the last time
-					 * the "update" variable was set. */
+    size_t mark;                        /* # of bytes translated
+                                         * (cooked). */
+    size_t lastMark;                    /* # of bytes as of the last
+                                         * read. This indicates the start
+                                         * of the new data in the buffer
+                                         * since the last time the "update"
+                                         * variable was set. */
     unsigned char staticSpace[DEF_BUFFER_SIZE];	/* Static space */
 
 } Sink;
@@ -565,9 +567,9 @@ FreeEncodingProc(ClientData clientData, char *record, int offset, int flags)
  *---------------------------------------------------------------------------
  */
 static void
-GetSinkData(Sink *sinkPtr, unsigned char **dataPtr, int *lengthPtr)
+GetSinkData(Sink *sinkPtr, unsigned char **dataPtr, size_t *lengthPtr)
 {
-    int length;
+    size_t length;
 
     sinkPtr->bytes[sinkPtr->mark] = '\0';
     length = sinkPtr->mark;
@@ -670,7 +672,7 @@ ResetSink(Sink *sinkPtr)
 { 
     if ((sinkPtr->flags & SINK_BUFFERED) && 
 	(sinkPtr->fill > sinkPtr->lastMark)) {
-	int i, j;
+	size_t i, j;
 
 	/* There may be bytes remaining in the buffer, awaiting another read
 	 * before we see the next newline.  So move the bytes to the front of
@@ -879,7 +881,7 @@ CloseSink(Tcl_Interp *interp, Sink *sinkPtr)
 #endif
 	if (sinkPtr->doneVar != NULL) {
 	    unsigned char *data;
-	    int length;
+	    size_t length;
 	    /* 
 	     * If data is to be collected, set the "done" variable with the
 	     * contents of the buffer.
@@ -1944,7 +1946,7 @@ BgexecCmdProc(
 	if ((bgPtr->flags & IGNOREEXITCODE) || (exitCode == 0)) {
 	    if (bgPtr->out.doneVar == NULL) {
 		unsigned char *data;
-		int length;
+		size_t length;
 		
 		/* Return the output of the pipeline. */
 		GetSinkData(&bgPtr->out, &data, &length);

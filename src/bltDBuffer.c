@@ -475,15 +475,14 @@ Blt_DBuffer_Base64Decode(Tcl_Interp *interp, const char *string, size_t length,
 
 Tcl_Obj *
 Blt_DBuffer_Base64EncodeToObj(
-    Tcl_Interp *interp,			/* Interpreter to report errors to. */
     DBuffer *srcPtr)			/* Input binary buffer. */
 {
-    return Blt_Base64_EncodeToObj(interp, srcPtr->bytes, srcPtr->length);
+    return Blt_Base64_EncodeToObj(srcPtr->bytes, srcPtr->length);
 }
 
 int
-Blt_DBuffer_AppendBase64(Tcl_Interp *interp, DBuffer *destPtr, 
-			 const unsigned char *buffer, size_t bufsize) 
+Blt_DBuffer_AppendBase64(DBuffer *destPtr, const unsigned char *buffer, 
+        size_t bufsize) 
 {
     size_t oldLength, numBytes, length;
     unsigned char *destBytes;
@@ -492,20 +491,18 @@ Blt_DBuffer_AppendBase64(Tcl_Interp *interp, DBuffer *destPtr,
     oldLength = Blt_DBuffer_Length(destPtr);
     destBytes = Blt_DBuffer_Extend(destPtr, length);
     if (destBytes == NULL) {
-	Tcl_AppendResult(interp, "can't allocate \"", Blt_Itoa(length), 
-		"\" bytes for buffer", (char *)NULL);
-	return -1;
+	return FALSE;
     }
-    numBytes = Blt_Base64_Encode(interp, buffer, bufsize, destBytes);
+    numBytes = Blt_Base64_Encode(buffer, bufsize, destBytes);
     assert(numBytes < length);
     Blt_DBuffer_SetLength(destPtr, oldLength + numBytes);
-    return numBytes;
+    return TRUE;
 }
 
 
 int 
-Blt_DBuffer_AppendBase85(Tcl_Interp *interp, DBuffer *destPtr, 
-			 const unsigned char *buffer, size_t bufsize) 
+Blt_DBuffer_AppendBase85(DBuffer *destPtr, const unsigned char *buffer, 
+        size_t bufsize) 
 {
     size_t oldLength, numBytes, length;
     unsigned char *destBytes;
@@ -514,12 +511,10 @@ Blt_DBuffer_AppendBase85(Tcl_Interp *interp, DBuffer *destPtr,
     oldLength = Blt_DBuffer_Length(destPtr);
     destBytes = Blt_DBuffer_Extend(destPtr, length);
     if (destBytes == NULL) {
-	Tcl_AppendResult(interp, "can't allocate \"", Blt_Itoa(length), 
-		"\" bytes for buffer", (char *)NULL);
-	return -1;
+	return FALSE;
     }
-    numBytes = Blt_Base85_Encode(interp, buffer, bufsize, destBytes);
+    numBytes = Blt_Base85_Encode(buffer, bufsize, destBytes);
     assert(numBytes < length);
     Blt_DBuffer_SetLength(destPtr, oldLength + numBytes);
-    return numBytes;
+    return TRUE;
 }

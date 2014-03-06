@@ -626,7 +626,7 @@ PictureToPng(Tcl_Interp *interp, Blt_Picture picture, Blt_DBuffer dbuffer,
      objPtr = NULL;
      dbuffer = Blt_DBuffer_Create();
      if (PictureToPng(interp, picture, dbuffer, &switches) == TCL_OK) {
-         objPtr = Blt_DBuffer_Base64EncodeToObj(interp, dbuffer);
+         objPtr = Blt_DBuffer_Base64EncodeToObj(dbuffer);
      }
      Blt_DBuffer_Destroy(dbuffer);
      return objPtr;
@@ -739,7 +739,7 @@ PictureToPng(Tcl_Interp *interp, Blt_Picture picture, Blt_DBuffer dbuffer,
          Tcl_Obj *objPtr;
 
          result = TCL_ERROR;
-         objPtr = Blt_DBuffer_Base64EncodeToObj(interp, dbuffer);
+         objPtr = Blt_DBuffer_Base64EncodeToObj(dbuffer);
          if (objPtr != NULL) {
              Tcl_SetObjResult(interp, objPtr);
              result = TCL_OK;

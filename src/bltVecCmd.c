@@ -1516,7 +1516,7 @@ FormatLong(Tcl_Interp *interp, double d, FormatParser *parserPtr)
 	}
     } else if (parserPtr->flags & FMT_SHORT) {
 	s = (unsigned short int)d;
-	if (s < 0) {
+	if (d < 0) {
 	    parserPtr->flags |= FMT_ISNEGATIVE;
 	}
     } else {
@@ -2589,7 +2589,7 @@ ExportOp(Vector *vPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 
 	/* Return the image as a base64 string in the interpreter result. */
 	result = TCL_ERROR;
-	objPtr = Blt_DBuffer_Base64EncodeToObj(interp, dbuffer);
+	objPtr = Blt_DBuffer_Base64EncodeToObj(dbuffer);
 	if (objPtr != NULL) {
 	    Tcl_SetObjResult(interp, objPtr);
 	    result = TCL_OK;
@@ -2736,8 +2736,8 @@ IndicesOp(Vector *vPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * SearchOp --
  *
- *	Searches for a value in the vector. Returns the indices of all vector
- *	elements matching a particular value.
+ *	Searches for a value in the vector. Returns the indices of all
+ *	vector elements matching a particular value.
  *
  * Results:
  *	Always returns TCL_OK.  interp->result will contain a list of the
@@ -2804,8 +2804,8 @@ SearchOp(Vector *vPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * OffsetOp --
  *
- *	Queries or sets the offset of the array index from the base address of
- *	the data array of values.
+ *	Queries or sets the offset of the array index from the base address
+ *	of the data array of values.
  *
  * Results:
  *	A standard TCL result.  If the source vector doesn't exist or the
@@ -3155,8 +3155,9 @@ static Vector **sortVectors;		/* Pointer to the array of values
 					 * currently being sorted. */
 static int numSortVectors;
 static int sortDecreasing;		/* Indicates the ordering of the
-					 * sort. If non-zero, the vectors are
-					 * sorted in decreasing order. */
+					 * sort. If non-zero, the vectors
+					 * are sorted in decreasing
+					 * order. */
 
 static int
 CompareVectors(void *a, void *b)
@@ -3184,13 +3185,13 @@ CompareVectors(void *a, void *b)
  *
  * Blt_Vec_SortMap --
  *
- *	Returns an array of indices that represents the sorted mapping of the
- *	original vector.
+ *	Returns an array of indices that represents the sorted mapping of
+ *	the original vector.
  *
  * Results:
  *	A standard TCL result.  If any of the auxiliary vectors are a
- *	different size than the sorted vector object, TCL_ERROR is returned.
- *	Otherwise TCL_OK is returned.
+ *	different size than the sorted vector object, TCL_ERROR is
+ *	returned.  Otherwise TCL_OK is returned.
  *
  * Side Effects:
  *	The vectors are sorted.
@@ -3308,7 +3309,7 @@ SortOp(Vector *vPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	return TCL_ERROR;
     }
     if (switches.flags & SORT_UNIQUE) {
-	int count;
+	size_t count, i;
 
 	count = 1;
 	for (i = 1; i < sortLength; i++) {
@@ -3328,6 +3329,8 @@ SortOp(Vector *vPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 
 	listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
 	if (switches.flags & SORT_INDICES) {
+            size_t i;
+
 	    for (i = 0; i < sortLength; i++) {
 		Tcl_Obj *objPtr;
 		
@@ -3335,6 +3338,8 @@ SortOp(Vector *vPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 		Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
 	    }
 	} else {
+            size_t i;
+
 	    for (i = 0; i < sortLength; i++) {
 		Tcl_Obj *objPtr;
 		
@@ -3355,11 +3360,11 @@ SortOp(Vector *vPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     numBytes = sizeof(double) * vPtr->length;
     copy = Blt_AssertMalloc(numBytes);
 
-    /* Now sort the designated vectors according to the sort map.  The vectors
-     * must be the same size as the map though.  */
+    /* Now sort the designated vectors according to the sort map.  The
+     * vectors must be the same size as the map though.  */
     result = TCL_ERROR;
     for (i = 2; i < objc; i++) {
-	int j;
+	size_t j;
 	const char *name;
 
 	name = Tcl_GetString(objv[i]);
@@ -3367,7 +3372,7 @@ SortOp(Vector *vPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	    goto error;
 	}
 	memcpy((char *)copy, (char *)v2Ptr->valueArr, numBytes);
-	if (sortLength != v2Ptr->length) {
+	if (sortLength != (size_t)v2Ptr->length) {
 	    Blt_Vec_SetLength(interp, v2Ptr, sortLength);
 	}
 	for (j = 0; j < sortLength; j++) {

@@ -4613,6 +4613,16 @@ DestroyCell(TreeView *viewPtr, Cell *cellPtr)
     if (cellPtr->stylePtr != NULL) {
 	FreeStyle(cellPtr->stylePtr);
     }
+    /* Fix pointers to destroyed cell. */
+    if (viewPtr->activeCellPtr == cellPtr) {
+        viewPtr->activeCellPtr = NULL;
+    }
+    if (viewPtr->focusCellPtr == cellPtr) {
+        viewPtr->focusCellPtr = NULL;
+    }
+    if (viewPtr->postPtr == cellPtr) {
+        viewPtr->postPtr = NULL;
+    }
     if (cellPtr->dataObjPtr != NULL) {
         Tcl_DecrRefCount(cellPtr->dataObjPtr);
 	cellPtr->dataObjPtr = NULL;
@@ -4637,19 +4647,22 @@ DestroyEntry(Entry *entryPtr)
     entryPtr->flags |= DELETED;		/* Mark the entry as destroyed. */
 
     viewPtr = entryPtr->viewPtr;
-    if (entryPtr == viewPtr->activePtr) {
+
+    /* Fix pointers to destroyed entry. */
+    if (viewPtr->activePtr == entryPtr) {
 	viewPtr->activePtr = ParentEntry(entryPtr);
     }
-    if (entryPtr == viewPtr->activeBtnPtr) {
+    if (viewPtr->activeBtnPtr == entryPtr) {
 	viewPtr->activeBtnPtr = NULL;
     }
-    if (entryPtr == viewPtr->focusPtr) {
+    if (viewPtr->focusPtr == entryPtr) {
 	viewPtr->focusPtr = ParentEntry(entryPtr);
 	Blt_SetFocusItem(viewPtr->bindTable, viewPtr->focusPtr, ITEM_ENTRY);
     }
-    if (entryPtr == viewPtr->sel.anchorPtr) {
+    if (viewPtr->sel.anchorPtr = entryPtr) {
 	viewPtr->sel.markPtr = viewPtr->sel.anchorPtr = NULL;
     }
+
     DeselectEntry(viewPtr, entryPtr);
     Blt_DeleteBindings(viewPtr->bindTable, entryPtr);
     if (entryPtr->hashPtr != NULL) {
@@ -5524,6 +5537,17 @@ DestroyColumn(Column *colPtr)
     uidOption.clientData = viewPtr;
     iconOption.clientData = viewPtr;
     styleOption.clientData = viewPtr;
+
+    /* Fix pointers to destroyed column. */
+    if (viewPtr->colActiveTitlePtr == colPtr) {
+        viewPtr->colActiveTitlePtr = NULL;
+    }
+    if (viewPtr->colActivePtr == colPtr) {
+        viewPtr->colActivePtr = NULL;
+    }
+    if (viewPtr->colResizePtr == colPtr) {
+        viewPtr->colResizePtr = NULL;
+    }
     Blt_FreeOptions(columnSpecs, (char *)colPtr, viewPtr->display, 0);
     if (colPtr->titleGC != NULL) {
 	Tk_FreeGC(viewPtr->display, colPtr->titleGC);
@@ -10322,6 +10346,7 @@ ColumnDeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
 		}
 	    }
 	}
+        Blt_SetCurrentItem(viewPtr->bindTable, NULL, NULL);
 	DestroyColumn(colPtr);
     }
     /* Deleting a column may affect the height of an entry. */
@@ -14081,6 +14106,10 @@ StyleForgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	if (stylePtr == NULL) {
 	    return TCL_ERROR;
 	}
+        if (viewPtr->stylePtr == stylePtr) {
+            continue;                   /* Can't delete the default
+                                         * style. */
+        }
 	/* 
 	 * Removing the style from the hash tables frees up the style name
 	 * again.  The style itself may not be removed until it's been
