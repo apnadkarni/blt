@@ -466,16 +466,8 @@ AllocateColors(Painter *p, XColor *colors, int numColors)
 	cp = colors;
 	for (i = 0; i < numColors; i++) {
 	    if (!XAllocColor(p->display, p->colormap, cp)){
-#ifdef notdef
-		fprintf(stderr, "can't allocate color #%d: r=%x g=%x b=%x\n", 
-			i, cp->red, cp->green, cp->blue);
-#endif
 		break;
 	    }
-#ifdef notdef
-	    fprintf(stderr, "picture: allocated r=%x g=%x b=%x\n",
-		colors[i].red, colors[i].green, colors[i].blue);
-#endif
 	    p->pixels[i] = cp->pixel;
 	    cp++;
 	}

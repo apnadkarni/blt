@@ -1085,7 +1085,7 @@ static void
 EventuallyRedraw(Slider *sliderPtr) 
 {
     if ((sliderPtr->tkwin != NULL) && !(sliderPtr->flags & REDRAW_PENDING)) {
-	Tcl_DoWhenIdle(DisplaySlider, sliderPtr);
+	Tcl_DoWhenIdle(DisplayProc, sliderPtr);
 	sliderPtr->flags |= REDRAW_PENDING;
     }
 }
@@ -1134,7 +1134,7 @@ SliderEventProc(ClientData clientData, XEvent *eventPtr)
 	    Tcl_DeleteCommandFromToken(sliderPtr->interp, sliderPtr->cmdToken);
 	}
 	if (sliderPtr->flags & REDRAW_PENDING) {
-	    Tcl_CancelIdleCall(DisplaySlider, sliderPtr);
+	    Tcl_CancelIdleCall(DisplayProc, sliderPtr);
 	}
 	Tcl_EventuallyFree(sliderPtr, DestroySlider);
     } else if (eventPtr->type == ConfigureNotify) {
@@ -3352,6 +3352,11 @@ ComputeHorizontalLayout(Slider *sliderPtr)
 	sliderPtr->normalWidth = width;
 	sliderPtr->normalHeight = height;
     }
+}
+
+DrawHorizontalTrough(Slider *sliderPtr, Drawable drawable)
+{
+    
 }
 
 /*
@@ -5682,7 +5687,7 @@ DrawSliderControl(Slider *sliderPtr, Drawable drawable, int x, int y, int r,
 /*
  *---------------------------------------------------------------------------
  *
- * DisplaySlider --
+ * DisplayProc --
  *
  * 	This procedure is invoked to display the widget.
  *
@@ -5695,7 +5700,7 @@ DrawSliderControl(Slider *sliderPtr, Drawable drawable, int x, int y, int r,
  *---------------------------------------------------------------------------
  */
 static void
-DisplaySlider(ClientData clientData)	
+DisplayProc(ClientData clientData)	
 {
     Slider *sliderPtr = clientData;
     Pixmap pixmap;

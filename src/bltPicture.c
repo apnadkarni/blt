@@ -292,13 +292,13 @@ Blt_CreatePicture(int w, int h)
     destPtr->pixelsPerRow = pixelsPerRow;
     destPtr->width  = w;
     destPtr->height = h;
-    destPtr->flags  = BLT_PIC_DIRTY;
+    destPtr->flags  = BLT_PIC_DIRTY| BLT_PIC_ASSOCIATED_COLORS;
     destPtr->delay = 0;
     destPtr->reserved = 0;
     /* Over-allocate a buffer so that we can align it (if needed) to a
      * 16-byte boundary. */
     size = (pixelsPerRow * h * sizeof(Blt_Pixel)) + ALIGNMENT;
-    buffer = Blt_AssertCalloc(1, size);
+    buffer = Blt_AssertCalloc(1, size); /* All zeros. */
     ptr = (ptrdiff_t)buffer;
     destPtr->bits = (Blt_Pixel *)(ptr + (ptr & (ALIGNMENT-1)));
     destPtr->buffer = buffer;
@@ -5917,13 +5917,15 @@ Blt_QueryColors(Pict *srcPtr, Blt_HashTable *tablePtr)
     int y;
     int numColors;
     unsigned int flags;
+    int isAssociated;
 
     flags = 0;
     if (tablePtr == NULL) {
 	Blt_InitHashTable(&colorTable, BLT_ONE_WORD_KEYS);
 	tablePtr = &colorTable;
     }
-    if (srcPtr->flags & BLT_PIC_ASSOCIATED_COLORS) {
+    isAssociated = (srcPtr->flags & BLT_PIC_ASSOCIATED_COLORS);
+    if (isAssociated) {
 	Blt_UnassociateColors(srcPtr);
     }
     srcRowPtr = srcPtr->bits;
@@ -5959,6 +5961,9 @@ Blt_QueryColors(Pict *srcPtr, Blt_HashTable *tablePtr)
     numColors = tablePtr->numEntries;
     if (tablePtr == &colorTable) {
 	Blt_DeleteHashTable(&colorTable);
+    }
+    if (isAssociated) {
+	Blt_AssociateColors(srcPtr);
     }
     srcPtr->flags |= flags;
     return numColors;
@@ -6000,12 +6005,14 @@ Blt_ClassifyPicture(Pict *srcPtr)
 	    if ((sp->Alpha == 0x00) || (sp->Alpha != 0xFF)) {
 		/* Stop after first semi/fully-transparent pixel. */
 		flags |= BLT_PIC_BLEND;
+                fprintf(stderr, "Classify: found alpha=%x\n", sp->Alpha);
 		goto setFlags;
 	    }
 	}
 	srcRowPtr += srcPtr->pixelsPerRow;
     }
  setFlags:
+    srcPtr->flags &= ~(BLT_PIC_BLEND | BLT_PIC_MASK | BLT_PIC_COLOR);
     srcPtr->flags |= flags;
 }
 

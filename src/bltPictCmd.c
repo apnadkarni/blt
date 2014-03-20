@@ -964,9 +964,6 @@ Blt_FindPictureFormat(
     }
 
     fmtPtr = Blt_GetHashValue(hPtr);
-#ifdef notdef
-    fprintf(stderr, "trying %s\n", fmtPtr->name);
-#endif
     if ((fmtPtr->flags & FMT_LOADED) == 0) {
 	LoadPackage(interp, ext);
     }
@@ -1009,9 +1006,6 @@ QueryExternalFormat(
 	    Blt_PictFormat *fmtPtr;
 
 	    fmtPtr = Blt_GetHashValue(hPtr);
-#ifdef notdef
-	    fprintf(stderr, "trying %s\n", fmtPtr->name);
-#endif
 	    if ((fmtPtr->flags & FMT_LOADED) == 0) {
 		LoadPackage(interp, ext);
 	    }
@@ -1394,9 +1388,6 @@ GetPictProc(
 	return NULL;
     }
     procPtr = Blt_GetHashValue(hPtr);
-#ifdef notdef
-    fprintf(stderr, "trying %s\n", procPtr->name);
-#endif
     if (procPtr->proc == NULL) {
 	LoadPackage(interp, name);
     }
@@ -2450,6 +2441,7 @@ BlankOp(
     int objc,				/* Number of arguments. */
     Tcl_Obj *const *objv)		/* Argument objects. */
 {
+    Pict *destPtr;
     PictImage *imgPtr = clientData;
     int w, h;
     Blt_PaintBrush brush, *brushPtr;
@@ -2463,11 +2455,12 @@ BlankOp(
 	Blt_PaintBrush_SetColor(&brush, 0x00000000);
 	brushPtr = &brush;
     }
-    w = Blt_Picture_Width(imgPtr->picture);
-    h = Blt_Picture_Height(imgPtr->picture);
+    destPtr = imgPtr->picture;
+    w = Blt_Picture_Width(destPtr);
+    h = Blt_Picture_Height(destPtr);
     Blt_PaintBrush_Region(brushPtr, 0, 0, w, h);
-    Blt_PaintRectangle(imgPtr->picture, 0, 0, w, h, 0, 0, brushPtr);
-    Blt_ClassifyPicture(imgPtr->picture);
+    Blt_PaintRectangle(destPtr, 0, 0, w, h, 0, 0, brushPtr);
+    destPtr->flags |= BLT_PIC_ASSOCIATED_COLORS;
     if (brushPtr != &brush) {
 	Blt_PaintBrush_Free(brushPtr);
     }
@@ -2974,7 +2967,6 @@ EmbossOp(
             return TCL_ERROR;
         }
     }
-    fprintf(stderr, "azimuth=%g elevation=%f\n", azimuth, elevation);
     dst = Blt_EmbossPicture(src, azimuth, elevation, 1.0);
     ReplacePicture(imgPtr, dst);
     Blt_NotifyImageChanged(imgPtr);
@@ -3400,8 +3392,11 @@ InfoOp(
     int numColors, state;
     const char *string;
     Tcl_Obj *listObjPtr, *objPtr;
+    Pict *srcPtr;
 
-    numColors = Blt_QueryColors(imgPtr->picture, (Blt_HashTable *)NULL);
+    srcPtr = PictureFromPictImage(imgPtr);
+    Blt_ClassifyPicture(srcPtr);
+    numColors = Blt_QueryColors(srcPtr, (Blt_HashTable *)NULL);
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
 
     objPtr = Tcl_NewStringObj("colors", -1);
@@ -3409,44 +3404,32 @@ InfoOp(
     objPtr = Tcl_NewIntObj(numColors);
     Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
 
-    objPtr = Tcl_NewStringObj("type", -1);
+    objPtr = Tcl_NewStringObj("isassociated", -1);
     Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-    string = Blt_Picture_IsColor(imgPtr->picture) ? "color" : "greyscale";
-    objPtr = Tcl_NewStringObj(string, -1);
-    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-
-    objPtr = Tcl_NewStringObj("opaque", -1);
-    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-    state = Blt_Picture_IsOpaque(imgPtr->picture);
+    state = srcPtr->flags & BLT_PIC_ASSOCIATED_COLORS;
     objPtr = Tcl_NewBooleanObj(state);
     Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
 
-    objPtr = Tcl_NewStringObj("associated", -1);
+    objPtr = Tcl_NewStringObj("isgreyscale", -1);
     Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-    state = Blt_Picture_IsAssociated(imgPtr->picture);
+    state = Blt_Picture_IsGreyscale(srcPtr);
     objPtr = Tcl_NewBooleanObj(state);
     Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
 
-    objPtr = Tcl_NewStringObj("opacity", -1);
+    objPtr = Tcl_NewStringObj("isopaque", -1);
     Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-    if (Blt_Picture_IsBlended(imgPtr->picture)) {
-	string = "blended";
-    } else if (Blt_Picture_IsMasked(imgPtr->picture)) {
-	string = "masked";
-    } else {
-	string = "full";
-    }
-    objPtr = Tcl_NewStringObj(string, -1);
+    state = Blt_Picture_IsOpaque(srcPtr);
+    objPtr = Tcl_NewBooleanObj(state);
     Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
 
     objPtr = Tcl_NewStringObj("width", -1);
     Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-    objPtr = Tcl_NewIntObj(Blt_Picture_Width(imgPtr->picture));
+    objPtr = Tcl_NewIntObj(Blt_Picture_Width(srcPtr));
     Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
     
     objPtr = Tcl_NewStringObj("height", -1);
     Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-    objPtr = Tcl_NewIntObj(Blt_Picture_Height(imgPtr->picture));
+    objPtr = Tcl_NewIntObj(Blt_Picture_Height(srcPtr));
     Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
 
     objPtr = Tcl_NewStringObj("count", -1);
@@ -3459,10 +3442,10 @@ InfoOp(
     objPtr = Tcl_NewIntObj(imgPtr->index);
     Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
 
-    objPtr = Tcl_NewStringObj("read-format", -1);
+    objPtr = Tcl_NewStringObj("format", -1);
     Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
     objPtr = Tcl_NewStringObj((imgPtr->fmtPtr != NULL) ? 
-	imgPtr->fmtPtr->name : "???", -1);
+	imgPtr->fmtPtr->name : "none", -1);
     Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
 
     Tcl_SetObjResult(interp, listObjPtr);

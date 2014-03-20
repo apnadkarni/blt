@@ -1299,10 +1299,6 @@ Interpolate(PaletteCmd *cmdPtr, double relValue, Blt_Pixel *colorPtr)
     color.u32 = 0x00;			/* Default to empty. */
     for (entryPtr = cmdPtr->colors, endPtr = entryPtr + cmdPtr->numColors; 
 	 entryPtr < endPtr; entryPtr++) {
-#ifdef notdef
-fprintf(stderr, "testing: relValue=%.15g, relMin=%.15g, relMax=%.15g\n", 
-	relValue, entryPtr->min.relValue, entryPtr->max.relValue);
-#endif
 	if (InRange(relValue, entryPtr->min.relValue, entryPtr->max.relValue)) {
 	    double t;
 	    

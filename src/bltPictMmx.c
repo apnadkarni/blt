@@ -2168,8 +2168,8 @@ Blt_CpuFeatures(Tcl_Interp *interp, unsigned long *flagsPtr)
 	bltPictProcsPtr->zoomVerticallyProc = ZoomVertically;
 #ifdef notdef
 	bltPictProcsPtr->blendRegionProc = BlendRegion;
-#endif
 	bltPictProcsPtr->associateColorsProc = AssociateColors;
+#endif
 	bltPictProcsPtr->selectPixelsProc = SelectPixels;
 #ifdef notdef
 	if (flags & FEATURE_SSE) {

@@ -1626,11 +1626,6 @@ PaintGrayGlyph(
 	    (slot->format >> 8) & 0xFF, 
 	    (slot->format & 0xFF));
 #endif
-    if ((xx >= destPtr->width) || ((xx + slot->bitmap.width) <= 0) ||
-	(yy >= destPtr->height) || ((yy + slot->bitmap.rows) <= 0)) {
-	return;				/* No portion of the glyph is visible
-					 * in the picture. */
-    }
 
     /* By default, set the region to cover the entire glyph */
     x1 = y1 = 0;
@@ -1677,7 +1672,7 @@ PaintGrayGlyph(
 		    color.u32 = Blt_PaintBrush_GetAssociatedColor(brushPtr, 
                         x, y);
                     Blt_FadeColor(&color, *sp);
-		    BlendPixels(dp, &color);
+                    BlendPixels(dp, &color);
 		}
 	    }
 	    srcRowPtr += slot->bitmap.pitch;
@@ -1914,9 +1909,6 @@ PaintText(
     int yy;
     int previous;
 
-    if (destPtr->flags & BLT_PIC_ASSOCIATED_COLORS) {
-	Blt_UnassociateColors(destPtr);
-    }
 #ifdef notdef
     fprintf(stderr, 
 	    "num_faces=%d\n"
@@ -1998,8 +1990,17 @@ PaintText(
 #ifdef notdef
 	    fprintf(stderr, "h=%d, slot->bitmap_top=%d\n", h, slot->bitmap_top);
 #endif
-	    PaintGrayGlyph(destPtr, slot, slot->bitmap_left, 
-			   h - slot->bitmap_top, brushPtr);
+            {
+                int xx, yy;
+
+                xx = slot->bitmap_left;
+                yy = h - slot->bitmap_top;
+                if ((xx < destPtr->width) && ((xx + slot->bitmap.width) >= 0) &&
+                    (yy < destPtr->height) && ((yy + slot->bitmap.rows) >= 0)) {
+                    PaintGrayGlyph(destPtr, slot, slot->bitmap_left, 
+                                   h - slot->bitmap_top, brushPtr);
+                }
+            }
 	case FT_PIXEL_MODE_GRAY2:
 	case FT_PIXEL_MODE_GRAY4:
 	    break;
@@ -3343,9 +3344,11 @@ Blt_Picture_TextOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (fontPtr == NULL) {
 	return TCL_ERROR;
     }
+#ifdef notdef
     if ((destPtr->flags & BLT_PIC_ASSOCIATED_COLORS) == 0) {
 	Blt_AssociateColors(destPtr);
     }
+#endif
     if (switches.angle != 0.0) {
 	TextStyle ts;
 	TextLayout *layoutPtr;
