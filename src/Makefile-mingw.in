@@ -305,7 +305,6 @@ GRAPH_OBJS =		bltGrAxis.o \
 			bltGraph.o 
 
 TREEVIEW_OBJS =		bltTreeView.o \
-			bltTreeViewEdit.o \
 			bltTreeViewStyle.o 
 
 TABLEVIEW_OBJS =	bltTableView.o \

@@ -450,7 +450,10 @@ BmpHeaderInfo(Blt_DBuffer dbuffer, Bmp *bmpPtr)
     case SIZEOF_BITMAPV5HEADER:
 	break;
     default:
-	BmpError("unknown BMP bitmap header (size=%d).", bmpPtr->bmih.biSize);
+	BmpError("invalid BMP bitmap header size '%d' (should be %d, %d, %d, %d, or %d).", 
+                 bmpPtr->bmih.biSize, SIZEOF_BITMAPOS2V1HEADER, 
+                 SIZEOF_BITMAPOS2V2HEADER, SIZEOF_BITMAPV3HEADER, 
+                 SIZEOF_BITMAPV4HEADER, SIZEOF_BITMAPV5HEADER);
     }
     if (bmpPtr->bmih.biSize == SIZEOF_BITMAPOS2V1HEADER) {
 	bmpPtr->bmih.biWidth         = (int)BmpGetShort(bp + OFF_OSV1_WIDTH);

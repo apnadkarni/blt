@@ -280,8 +280,6 @@ GRAPH_OBJS =		bltGrAxis.o \
 TREEVIEW_OBJS =		bltTreeView.o \
 			bltTreeViewStyle.o 
 
-#			bltTreeViewEdit.o 
-
 TABLEVIEW_OBJS =	bltTableView.o \
 			bltTableViewStyle.o 
 

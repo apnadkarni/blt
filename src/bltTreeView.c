@@ -2327,28 +2327,39 @@ GetStyleForeground(Column *colPtr)
 }
 
 static void
+DestroyStyle(CellStyle *stylePtr)
+{
+    TreeView *viewPtr;
+
+    viewPtr = stylePtr->viewPtr;
+    iconOption.clientData = viewPtr;
+    Blt_FreeOptions(stylePtr->classPtr->specs, (char *)stylePtr, 
+                    viewPtr->display, 0);
+    (*stylePtr->classPtr->freeProc)(stylePtr); 
+    /* 
+     * Removing the style from the hash tables frees up the style name
+     * again.  The style itself may not be removed until it's been released
+     * by everything using it.
+     */
+    if (stylePtr->hashPtr != NULL) {
+        Blt_DeleteHashEntry(&viewPtr->styleTable, stylePtr->hashPtr);
+        stylePtr->hashPtr = NULL;
+    } 
+    if (stylePtr->link != NULL) {
+        /* Only user-generated styles will be in the list. */
+        Blt_Chain_DeleteLink(viewPtr->userStyles, stylePtr->link);
+    }
+    Blt_Free(stylePtr);
+}
+
+static void
 FreeStyle(CellStyle *stylePtr)
 {
     stylePtr->refCount--;
-    /* Remove the style from the hash table so that it's name can be used.*/
     /* If no cell is using the style, remove it.*/
     if (stylePtr->refCount <= 0) {
-	TreeView *viewPtr;
-
-	viewPtr = stylePtr->viewPtr;
-	iconOption.clientData = viewPtr;
-	Blt_FreeOptions(stylePtr->classPtr->specs, (char *)stylePtr, 
-		viewPtr->display, 0);
-	(*stylePtr->classPtr->freeProc)(stylePtr); 
-	if (stylePtr->hashPtr != NULL) {
-	    Blt_DeleteHashEntry(&viewPtr->styleTable, stylePtr->hashPtr);
-	} 
-	if (stylePtr->link != NULL) {
-	    /* Only user-generated styles will be in the list. */
-	    Blt_Chain_DeleteLink(viewPtr->userStyles, stylePtr->link);
-	}
-	Blt_Free(stylePtr);
-    } 
+        DestroyStyle(stylePtr);
+    }
 }
 
 /*
@@ -4623,6 +4634,7 @@ DestroyCell(TreeView *viewPtr, Cell *cellPtr)
     if (viewPtr->postPtr == cellPtr) {
         viewPtr->postPtr = NULL;
     }
+
     if (cellPtr->dataObjPtr != NULL) {
         Tcl_DecrRefCount(cellPtr->dataObjPtr);
 	cellPtr->dataObjPtr = NULL;
@@ -7768,7 +7780,7 @@ DrawButton(
 
 
 static void
-DrawIcon(
+DrawEntryIcon(
     TreeView *viewPtr,			/* Widget record containing the
 					 * attribute information for
 					 * buttons. */
@@ -7813,7 +7825,7 @@ DrawIcon(
 
 
 static int
-DrawLabel(
+DrawEntryLabel(
     TreeView *viewPtr,			/* Widget record. */
     Entry *entryPtr,			/* Entry attribute information. */
     Drawable drawable,			/* Pixmap or window to draw
@@ -7908,7 +7920,7 @@ DrawLabel(
 }
 
 static void
-DrawLabel2(
+DrawEntryLabel2(
     TreeView *viewPtr,			/* Widget record. */
     Entry *entryPtr,			/* Entry attribute information. */
     Drawable drawable,			/* Pixmap or window to draw
@@ -8176,7 +8188,7 @@ DrawFlatEntry(
     y = SCREENY(viewPtr, entryPtr->worldY);
     icon = GetEntryIcon(viewPtr, entryPtr);
     if (icon != NULL) {
-        DrawIcon(viewPtr, entryPtr, icon, drawable, x, y);
+        DrawEntryIcon(viewPtr, entryPtr, icon, drawable, x, y);
     } else {
 	x -= (DEF_ICON_WIDTH * 2) / 3;
     }
@@ -8186,7 +8198,7 @@ DrawFlatEntry(
     xMax = SCREENX(viewPtr, viewPtr->treeColumn.worldX) + 
 	viewPtr->treeColumn.width - viewPtr->treeColumn.titleBW - 
 	viewPtr->treeColumn.pad.side2;
-    DrawLabel(viewPtr, entryPtr, drawable, x, y, xMax - x, NULL);
+    DrawEntryLabel(viewPtr, entryPtr, drawable, x, y, xMax - x, NULL);
 }
 
 /*
@@ -8265,7 +8277,7 @@ DrawEntryInHierarchy(TreeView *viewPtr, Entry *entryPtr, Drawable drawable)
 
     icon = GetEntryIcon(viewPtr, entryPtr);
     if (icon != NULL) {
-        DrawIcon(viewPtr, entryPtr, icon, drawable, x, y);
+        DrawEntryIcon(viewPtr, entryPtr, icon, drawable, x, y);
     } else {
 	x -= (DEF_ICON_WIDTH * 2) / 3;
     }
@@ -8275,7 +8287,7 @@ DrawEntryInHierarchy(TreeView *viewPtr, Entry *entryPtr, Drawable drawable)
     xMax = SCREENX(viewPtr, viewPtr->treeColumn.worldX) + 
 	viewPtr->treeColumn.width - viewPtr->treeColumn.titleBW - 
 	viewPtr->treeColumn.pad.side2;
-    DrawLabel(viewPtr, entryPtr, drawable, x, y, xMax - x, NULL);
+    DrawEntryLabel(viewPtr, entryPtr, drawable, x, y, xMax - x, NULL);
 }
 
 /*
@@ -8394,7 +8406,7 @@ DrawEntryInHierarchy2(TreeView *viewPtr, Entry *entryPtr, Drawable drawable)
         y += (h1 - entryPtr->textHeight) / 2;
     }
     /* Draw text/image. */
-    DrawLabel(viewPtr, entryPtr, drawable, x, y, colWidth, NULL);
+    DrawEntryLabel(viewPtr, entryPtr, drawable, x, y, colWidth, NULL);
 }
 
 static void
@@ -8970,7 +8982,7 @@ DisplayLabel(TreeView *viewPtr, Entry *entryPtr, Drawable drawable)
                 w - colPtr->ruleWidth, h - entryPtr->ruleHeight, 0, 
                 TK_RELIEF_FLAT);
     Blt_Bg_UnsetClipRegion(viewPtr->tkwin, bg);
-    DrawLabel(viewPtr, entryPtr, drawable, x, y, xMax - x, rgn);
+    DrawEntryLabel(viewPtr, entryPtr, drawable, x, y, xMax - x, rgn);
     TkDestroyRegion(rgn);
     return 1;
 }

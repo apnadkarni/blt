@@ -358,20 +358,20 @@ typedef struct {
 #define KEEPNEWLINE	(1<<0)		/* Indicates to set TCL output
 					 * variables with trailing newlines
 					 * intact */
-#define LINEBUFFERED	(1<<1)		/* Indicates to provide data to update
-					 * variable and update proc on a
-					 * line-by-line * basis. */
+#define LINEBUFFERED	(1<<1)		/* Indicates to provide data to
+					 * update variable and update proc
+					 * on a line-by-line * basis. */
 #define IGNOREEXITCODE	(1<<2)		/* Don't check for 0 exit status of
 					 * the pipeline.  */
-#define TRACED		(1<<3)		/* Indicates that the status variable
-					 * is currently being traced. */
+#define TRACED		(1<<3)		/* Indicates that the status
+					 * variable is currently being
+					 * traced. */
 #define DETACHED	(1<<4)		/* Indicates that the pipeline is
-					 * detached from standard I/O, running
-					 * in the background. */
-#define DONTKILL	(1<<6)		/* Indicates that the pipeline is
-					 * detached from standard I/O, running
-					 * in the background and should not be
-					 * signaled on exit. */
+					 * detached from standard I/O,
+					 * running in the background. */
+#define DONTKILL	(1<<6)		/* Indicates that the detached
+					 * pipeline should not be signaled
+					 * on exit. */
 
 static Blt_SwitchParseProc ObjToSignalProc;
 static Blt_SwitchCustom killSignalSwitch =
@@ -398,28 +398,28 @@ static Blt_SwitchSpec switchSpecs[] =
          Blt_Offset(Bgexec, err.echo),	    0},
     {BLT_SWITCH_STRING,  "-error",		"variable", (char *)NULL,
 	Blt_Offset(Bgexec, err.doneVar),    0},
-    {BLT_SWITCH_STRING,  "-update",		"variable", (char *)NULL,
-	 Blt_Offset(Bgexec, out.updateVar), 0},
-    {BLT_SWITCH_STRING,  "-output",		"variable", (char *)NULL,
-	Blt_Offset(Bgexec, out.doneVar),    0},
+    {BLT_SWITCH_BOOLEAN, "-ignoreexitcode",	"bool", (char *)NULL,
+	Blt_Offset(Bgexec, flags),	    0, IGNOREEXITCODE},
+    {BLT_SWITCH_BOOLEAN, "-keepnewline",	"bool", (char *)NULL,
+	Blt_Offset(Bgexec, flags),	    0, KEEPNEWLINE}, 
+    {BLT_SWITCH_CUSTOM,  "-killsignal",		"signal", (char *)NULL,
+	Blt_Offset(Bgexec, signalNum),      0, 0, &killSignalSwitch},
     {BLT_SWITCH_STRING,  "-lasterror",		"variable", (char *)NULL,
 	Blt_Offset(Bgexec, err.updateVar),  0},
     {BLT_SWITCH_STRING,  "-lastoutput",		"variable", (char *)NULL,
 	Blt_Offset(Bgexec, out.updateVar),  0},
+    {BLT_SWITCH_BOOLEAN, "-linebuffered",	"bool", (char *)NULL,
+	Blt_Offset(Bgexec, flags),	    0, LINEBUFFERED},
     {BLT_SWITCH_OBJ,     "-onerror",		"command", (char *)NULL,
 	Blt_Offset(Bgexec, err.cmdObjPtr),  0},
     {BLT_SWITCH_OBJ,     "-onoutput",		"command", (char *)NULL,
 	Blt_Offset(Bgexec, out.cmdObjPtr),  0},
-    {BLT_SWITCH_BOOLEAN, "-keepnewline",	"bool", (char *)NULL,
-	Blt_Offset(Bgexec, flags),	    0, KEEPNEWLINE}, 
-    {BLT_SWITCH_INT,	 "-check",		"interval", (char *)NULL,
+    {BLT_SWITCH_STRING,  "-output",		"variable", (char *)NULL,
+	Blt_Offset(Bgexec, out.doneVar),    0},
+    {BLT_SWITCH_INT,	 "-poll",		"interval", (char *)NULL,
 	Blt_Offset(Bgexec, interval),       0},
-    {BLT_SWITCH_CUSTOM,  "-killsignal",		"signal", (char *)NULL,
-	Blt_Offset(Bgexec, signalNum),      0, 0, &killSignalSwitch},
-    {BLT_SWITCH_BOOLEAN, "-linebuffered",	"bool", (char *)NULL,
-	Blt_Offset(Bgexec, flags),	    0, LINEBUFFERED},
-    {BLT_SWITCH_BOOLEAN, "-ignoreexitcode",	"bool", (char *)NULL,
-	Blt_Offset(Bgexec, flags),	    0, IGNOREEXITCODE},
+    {BLT_SWITCH_STRING,  "-update",		"variable", (char *)NULL,
+	 Blt_Offset(Bgexec, out.updateVar), 0},
     {BLT_SWITCH_END}
 };
 
@@ -661,9 +661,9 @@ NextLine(Sink *sinkPtr, int *lengthPtr)
  * ResetSink --
  *
  *	Removes the bytes already processed from the buffer, possibly
- *	resetting it to empty.  This used when we don't care about keeping all
- *	the data collected from the channel (no -output flag and the process
- *	is detached).
+ *	resetting it to empty.  This used when we don't care about keeping
+ *	all the data collected from the channel (no -output flag and the
+ *	process is detached).
  *
  *---------------------------------------------------------------------------
  */
@@ -674,9 +674,9 @@ ResetSink(Sink *sinkPtr)
 	(sinkPtr->fill > sinkPtr->lastMark)) {
 	size_t i, j;
 
-	/* There may be bytes remaining in the buffer, awaiting another read
-	 * before we see the next newline.  So move the bytes to the front of
-	 * the array. */
+	/* There may be bytes remaining in the buffer, awaiting another
+	 * read before we see the next newline.  So move the bytes to the
+	 * front of the array. */
 
  	for (i = 0, j = sinkPtr->lastMark; j < sinkPtr->fill; i++, j++) {
 	    sinkPtr->bytes[i] = sinkPtr->bytes[j];
