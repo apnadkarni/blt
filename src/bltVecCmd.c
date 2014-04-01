@@ -1494,8 +1494,8 @@ FormatLong(Tcl_Interp *interp, double d, FormatParser *parserPtr)
 {
     int64_t ll;
     long l;
-    unsigned short s;
     Tcl_Obj *objPtr;
+    unsigned short s;
     char spec[2*TCL_INTEGER_SPACE + 9];
     char *p;
     int length;

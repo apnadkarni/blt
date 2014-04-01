@@ -163,6 +163,7 @@ typedef struct {
 					 * notify ids back to their Notifier
 					 * records. */
     Blt_Chain notifiers;
+    Tcl_Obj *defPathSepObjPtr;          /* Path separator. */
 } TreeCmd;
 
 typedef struct {
@@ -620,7 +621,7 @@ static Blt_SwitchSpec positionSwitches[] =
 
 typedef struct {
     unsigned int flags;			/* Parse flags. */
-    const char *separator;		/* Path separator. */
+    Tcl_Obj *pathSepObjPtr;             /* Path separator. */
     Blt_TreeNode root;			/* Starting node of path. */
 } PathCreateSwitches;
 
@@ -632,25 +633,25 @@ static Blt_SwitchSpec pathCreateSwitches[] =
 	Blt_Offset(PathCreateSwitches, flags), 0, PATH_NOCOMPLAIN},
     {BLT_SWITCH_BITMASK, "-parents", "", (char *)NULL,
 	Blt_Offset(PathCreateSwitches, flags), 0, PATH_PARENTS},
-    {BLT_SWITCH_STRING, "-separator", "char", (char *)NULL,
-	Blt_Offset(PathCreateSwitches, separator), 0}, 
+    {BLT_SWITCH_OBJ, "-separator", "char", (char *)NULL,
+	Blt_Offset(PathCreateSwitches, pathSepObjPtr), 0}, 
     {BLT_SWITCH_END}
 };
 
 typedef struct {
-    const char *separator;		/* Path separator. */
+    Tcl_Obj *pathSepObjPtr;		/* Path separator. */
 } PathPrintSwitches;
 
 static Blt_SwitchSpec pathPrintSwitches[] = 
 {
-    {BLT_SWITCH_STRING, "-separator", "char", (char *)NULL,
-	Blt_Offset(PathPrintSwitches, separator), 0}, 
+    {BLT_SWITCH_OBJ, "-separator", "char", (char *)NULL,
+	Blt_Offset(PathPrintSwitches, pathSepObjPtr), 0}, 
     {BLT_SWITCH_END}
 };
 
 typedef struct {
     unsigned int flags;			/* Parse flags. */
-    const char *separator;		/* Path separator. */
+    Tcl_Obj *pathSepObjPtr;             /* Path separator. */
     Blt_TreeNode root;			/* Starting node of path. */
 } PathParseSwitches;
 
@@ -660,8 +661,8 @@ static Blt_SwitchSpec pathParseSwitches[] =
         Blt_Offset(PathParseSwitches, root),  0, 0, &nodeSwitch},
     {BLT_SWITCH_BITMASK, "-nocomplain", "", (char *)NULL,
 	Blt_Offset(PathParseSwitches, flags), 0, PATH_NOCOMPLAIN},
-    {BLT_SWITCH_STRING, "-separator", "char", (char *)NULL,
-	Blt_Offset(PathParseSwitches, separator), 0}, 
+    {BLT_SWITCH_OBJ, "-separator", "char", (char *)NULL,
+	Blt_Offset(PathParseSwitches, pathSepObjPtr), 0}, 
     {BLT_SWITCH_END}
 };
 
@@ -1628,7 +1629,7 @@ SkipSeparators(const char *path, const char *separator, int length)
  *---------------------------------------------------------------------------
  */
 static int
-SplitPath(Tcl_Interp *interp, const char *path, const char *separator, 
+SplitPath(Tcl_Interp *interp, const char *path, Tcl_Obj *pathSepObjPtr, 
 	  int *argcPtr, const char ***argvPtr)
 {
     int skipLen, pathLen;
@@ -1637,16 +1638,18 @@ SplitPath(Tcl_Interp *interp, const char *path, const char *separator,
     const char **components;
     char *p;
     char *sp;
+    const char *pathSeparator;
 
-    if ((separator == NULL) || (*separator == '\0')) {
+    if ((pathSepObjPtr == NULL) || 
+        ((Tcl_GetString(pathSepObjPtr))[0] == '\0')) {
 	if (Tcl_SplitList(interp, path, argcPtr, argvPtr) != TCL_OK) {
 	    return TCL_ERROR;
 	}
 	return TCL_OK;
     }
+    pathSeparator = Tcl_GetStringFromObj(pathSepObjPtr, &skipLen);
     pathLen = strlen(path);
-    skipLen = strlen(separator);
-    path = SkipSeparators(path, separator, skipLen);
+    path = SkipSeparators(path, pathSeparator, skipLen);
     depth = pathLen / skipLen;
 
     listSize = (depth + 1) * sizeof(char *);
@@ -1655,11 +1658,11 @@ SplitPath(Tcl_Interp *interp, const char *path, const char *separator,
     strcpy(p, path);
 
     depth = 0;
-    for (sp = strstr(p, separator); ((*p != '\0') && (sp != NULL)); 
-	 sp = strstr(p, separator)) {
+    for (sp = strstr(p, pathSeparator); ((*p != '\0') && (sp != NULL)); 
+	 sp = strstr(p, pathSeparator)) {
 	*sp = '\0';
 	components[depth++] = p;
-	p = (char *)SkipSeparators(sp + skipLen, separator, skipLen);
+	p = (char *)SkipSeparators(sp + skipLen, pathSeparator, skipLen);
     }
     if (*p != '\0') {
 	components[depth++] = p;
@@ -4533,14 +4536,17 @@ PathCreateOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc,
     /* Process switches  */
     memset(&switches, 0, sizeof(switches));
     switches.root = Blt_Tree_RootNode(cmdPtr->tree);
-    switches.separator = Blt_AssertStrdup("/");
+    switches.pathSepObjPtr = cmdPtr->defPathSepObjPtr;
+    if (switches.pathSepObjPtr != NULL) {
+        Tcl_IncrRefCount(switches.pathSepObjPtr);
+    }
     if (Blt_ParseSwitches(interp, pathCreateSwitches, objc - 4, objv + 4, 
 			  &switches, BLT_SWITCH_DEFAULTS) < 0) {
 	return TCL_ERROR;
     }
     parent = switches.root;
     path = Tcl_GetString(objv[3]);
-    result = SplitPath(interp, path, switches.separator, &argc, &argv);
+    result = SplitPath(interp, path, switches.pathSepObjPtr, &argc, &argv);
     Blt_FreeSwitches(pathCreateSwitches, (char *)&switches, 0);
     if (argc == 0) {
 	goto done;
@@ -4626,13 +4632,16 @@ PathParseOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     nodeSwitch.clientData = cmdPtr->tree;
     memset(&switches, 0, sizeof(switches));
     switches.root = Blt_Tree_RootNode(cmdPtr->tree);
-    switches.separator = Blt_AssertStrdup("/");
+    switches.pathSepObjPtr = cmdPtr->defPathSepObjPtr;
+    if (switches.pathSepObjPtr != NULL) {
+        Tcl_IncrRefCount(switches.pathSepObjPtr);
+    }
     if (Blt_ParseSwitches(interp, pathParseSwitches, objc - 4, objv + 4, 
 	&switches, BLT_SWITCH_DEFAULTS) < 0) {
 	return TCL_ERROR;
     }
     path = Tcl_GetString(objv[3]);
-    result = SplitPath(interp, path, switches.separator, &argc, &argv);
+    result = SplitPath(interp, path, switches.pathSepObjPtr, &argc, &argv);
     Blt_FreeSwitches(pathParseSwitches, (char *)&switches, 0);
     if (argc == 0) {
         inode = Blt_Tree_NodeId(switches.root);
@@ -4708,13 +4717,17 @@ PathPrintOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc,
     int flags;
     Tcl_DString ds;
     PathPrintSwitches switches;
+    const char *pathSeparator;
 
     if (GetNodeFromObj(interp, cmdPtr->tree, objv[3], &node) != TCL_OK) {
 	return TCL_ERROR;
     }
     /* Process switches  */
     memset(&switches, 0, sizeof(switches));
-    switches.separator = Blt_AssertStrdup("/");
+    switches.pathSepObjPtr = cmdPtr->defPathSepObjPtr;
+    if (switches.pathSepObjPtr != NULL) {
+        Tcl_IncrRefCount(switches.pathSepObjPtr);
+    }
     if (Blt_ParseSwitches(interp, pathPrintSwitches, objc - 4, objv + 4, 
 	&switches, BLT_SWITCH_DEFAULTS) < 0) {
 	return TCL_ERROR;
@@ -4722,14 +4735,47 @@ PathPrintOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc,
     Tcl_DStringInit(&ds);
     root = Blt_Tree_RootNode(cmdPtr->tree);
     flags = 0;
-    if (switches.separator != NULL) {
+    pathSeparator = NULL;
+    if (switches.pathSepObjPtr != NULL) {
 	flags = TREE_INCLUDE_ROOT;
+        pathSeparator = Tcl_GetString(switches.pathSepObjPtr);
     }
-    Blt_Tree_NodeRelativePath(root, node, switches.separator, flags, &ds);
+    Blt_Tree_NodeRelativePath(root, node, pathSeparator, flags, &ds);
     Tcl_DStringResult(interp, &ds);
     Blt_FreeSwitches(pathPrintSwitches, (char *)&switches, 0);
     return TCL_OK;
 }
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * PathSeparatorOp --
+ *
+ *      Defines the default separator for path operations.
+ *
+ *	$tree path separator value
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+PathSeparatorOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, 
+	     Tcl_Obj *const *objv)
+{
+    int length;
+
+    if (cmdPtr->defPathSepObjPtr != NULL) {
+        Tcl_DecrRefCount(cmdPtr->defPathSepObjPtr);
+        cmdPtr->defPathSepObjPtr = NULL;
+    }
+    Tcl_GetStringFromObj(objv[3], &length);
+    if (length > 0) {
+        cmdPtr->defPathSepObjPtr = objv[3];
+        Tcl_IncrRefCount(cmdPtr->defPathSepObjPtr);
+    }
+    return TCL_OK;
+}
+
 
 
 /*
@@ -4745,9 +4791,10 @@ PathPrintOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc,
  */
 static Blt_OpSpec pathOps[] =
 {
-    {"create", 1, PathCreateOp, 4, 0, "path ?switches?",},
-    {"parse",  2, PathParseOp,  4, 0, "path ?switches?",},
-    {"print",  2, PathPrintOp,  4, 0, "node ?switches?",},
+    {"create",     1, PathCreateOp,     4, 0, "path ?switches?",},
+    {"parse",      2, PathParseOp,      4, 0, "path ?switches?",},
+    {"print",      2, PathPrintOp,      4, 0, "node ?switches?",},
+    {"separator",  1, PathSeparatorOp,  4, 4, "value",},
 };
 
 static int numPathOps = sizeof(pathOps) / sizeof(Blt_OpSpec);
@@ -6399,6 +6446,9 @@ TreeInstDeleteProc(ClientData clientData)
     Blt_Chain_Destroy(cmdPtr->notifiers);
     Blt_DeleteHashTable(&cmdPtr->notifyTable);
     Blt_DeleteHashTable(&cmdPtr->traceTable);
+    if (cmdPtr->defPathSepObjPtr != NULL) {
+        Tcl_DecrRefCount(cmdPtr->defPathSepObjPtr);
+    }
     Blt_Free(cmdPtr);
 }
 

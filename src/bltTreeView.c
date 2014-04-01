@@ -4671,7 +4671,7 @@ DestroyEntry(Entry *entryPtr)
 	viewPtr->focusPtr = ParentEntry(entryPtr);
 	Blt_SetFocusItem(viewPtr->bindTable, viewPtr->focusPtr, ITEM_ENTRY);
     }
-    if (viewPtr->sel.anchorPtr = entryPtr) {
+    if (viewPtr->sel.anchorPtr == entryPtr) {
 	viewPtr->sel.markPtr = viewPtr->sel.anchorPtr = NULL;
     }
 

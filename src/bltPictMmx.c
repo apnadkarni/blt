@@ -39,6 +39,15 @@
 #include "bltPicture.h"
 #include "bltPictInt.h"
 
+#if defined(__GNUC__) && defined(HAVE_X86) && defined(__OPTIMIZE__)
+#  define GCC_VERSION \
+    ((__GNUC__)*10000+(__GNUC_MINOR__)*100+(__GNUC_PATCHLEVEL__))
+#  if ((GCC_VERSION >= 40801) && (GCC_VERSION < 40900))
+#    warning("Disabling MMX because of GCC version")
+/*#    undef HAVE_X86_ASM*/
+#  endif
+#endif
+
 #ifdef HAVE_X86_ASM
 
 #define FEATURE_MMX                (1L << 23)
