@@ -109,6 +109,9 @@
 /* Define to 1 if you have the <inttypes.h> header file. */
 #undef HAVE_INTTYPES_H
 
+/* Define to 1 if you have the <ioctl.h> header file. */
+#undef HAVE_IOCTL_H
+
 /* Define to 1 if you have the `isastream' function. */
 #undef HAVE_ISASTREAM
 
@@ -249,6 +252,9 @@
 
 /* Define to 1 if you have the `strtolower' function. */
 #undef HAVE_STRTOLOWER
+
+/* Define to 1 if you have the <sys/ioctl.h> header file. */
+#undef HAVE_SYS_IOCTL_H
 
 /* Define to 1 if you have the <sys/param.h> header file. */
 #undef HAVE_SYS_PARAM_H

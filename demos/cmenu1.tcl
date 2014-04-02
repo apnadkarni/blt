@@ -30,7 +30,7 @@ blt::comboentry .e \
     -menuanchor se \
     -exportselection yes \
     -xscrollcommand { .s set }  \
-    -closebutton yes 
+    -clearbutton yes 
 	
 #    -bg $bg 
 

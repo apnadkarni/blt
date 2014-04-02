@@ -362,6 +362,11 @@ extern TclIntStubs *tclIntStubsPtr;
 	(tclIntStubsPtr->tclpRealloc) /* 81 */
 #endif
 
+#ifndef Tcl_AddInterpResolvers
+#define Tcl_AddInterpResolvers \
+	(tclIntStubsPtr->tcl_AddInterpResolvers) /* 111 */
+#endif
+
 #ifndef Tcl_CreateNamespace
 #define Tcl_CreateNamespace \
 	(tclIntStubsPtr->tcl_CreateNamespace) /* 113 */
@@ -410,6 +415,11 @@ extern TclIntStubs *tclIntStubsPtr;
 #ifndef Tcl_PushCallFrame
 #define Tcl_PushCallFrame \
 	(tclIntStubsPtr->tcl_PushCallFrame) /* 129 */
+#endif
+
+#ifndef Tcl_RemoveInterpResolvers
+#define Tcl_RemoveInterpResolvers \
+	(tclIntStubsPtr->tcl_RemoveInterpResolvers) /* 130 */
 #endif
 
 #ifndef Tcl_SetNamespaceResolvers

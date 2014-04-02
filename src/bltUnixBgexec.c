@@ -51,6 +51,10 @@
 #  include <signal.h>
 #endif	/* HAVE_SIGNAL_H */
 
+#ifdef HAVE_IOCTL_H
+#  include <ioctl.h>
+#endif	/* HAVE_IOCTL_H */
+
 #ifdef HAVE_SYS_IOCTL_H
 #  include <sys/ioctl.h>
 #endif	/* HAVE_SYS_IOCTL_H */
@@ -1951,9 +1955,11 @@ CheckPipeline(Bgexec *execPtr, Tcl_Obj **objPtrPtr)
     const char *mesg;
     int code;
     int i;
-    int numLeft;				/* # of processes still not reaped */
+    int numLeft;                        /* # of processes still not
+                                         * reaped */
     unsigned int lastPid;
 
+    mesg = NULL;                        /* Suppress compiler warning. */
     interp = execPtr->interp;
     lastPid = (unsigned int)-1;
     *((int *)&waitStatus) = 0;
@@ -2051,6 +2057,7 @@ CheckSession(Bgexec *execPtr, Tcl_Obj **objPtrPtr)
     int code;
     int pid;
 
+    mesg = NULL;                        /* Suppress compiler warning. */
     interp = execPtr->interp;
     *((int *)&waitStatus) = 0;
     pid = waitpid(execPtr->sid, (int *)&waitStatus, WNOHANG);
@@ -2137,11 +2144,13 @@ TimerProc(ClientData clientData)
     Tcl_Obj *resultObjPtr;
     int code;
 
+    resultObjPtr = NULL;                /* Suppress compiler warning.  */
     if (execPtr->sid > 0) {
 	code = CheckSession(execPtr, &resultObjPtr);
     } else {
 	code = CheckPipeline(execPtr, &resultObjPtr);
     }
+    assert(resultObjPtr != NULL);
     if (code < 0) {
 	/* Keep polling for the status of the children that are left */
 	return;

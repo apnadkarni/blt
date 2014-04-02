@@ -1595,10 +1595,12 @@ TimerProc(ClientData clientData)
     const char *mesg;
     int code;
     int i;
-    int numLeft;				/* # of processes still not reaped */
+    int numLeft;                        /* # of processes still not
+                                         * reaped. */
     unsigned int lastPid;
 
     interp = bgPtr->interp;
+    mesg = NULL;                        /* Suppress compiler warning.  */
     lastPid = (unsigned int)-1;
     *((int *)&waitStatus) = 0;
     *((int *)&lastStatus) = 0;
@@ -1612,11 +1614,11 @@ TimerProc(ClientData clientData)
 #else
 	pid = waitpid(bgPtr->procIds[i].pid, (int *)&waitStatus, WNOHANG);
 #endif
-	if (pid == 0) {			/* Process has not terminated yet */
+	if (pid == 0) {			/* Process has not terminated yet. */
 	    if (numLeft < i) {
 		bgPtr->procIds[numLeft] = bgPtr->procIds[i];
 	    }
-	    numLeft++;			/* Count the # of processes left */
+	    numLeft++;			/* Count the # of processes left. */
 	} else if (pid != -1) {
 	    /*
 	     * Save the status information associated with the subprocess.

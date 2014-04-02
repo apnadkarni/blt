@@ -1892,6 +1892,7 @@ CreateOp(ClientData clientData, Tcl_Interp *interp, int objc,
     Tcl_DString ds;
     int type;
 
+    meshPtr = NULL;                     /* Suppress compiler warning. */
     string = Tcl_GetString(objv[2]);
     c = string[0];
     length = strlen(string);

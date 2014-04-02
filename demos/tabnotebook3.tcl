@@ -207,17 +207,17 @@ blt::combomenu .scrolltabs.m -textvariable text(-scrolltabs)
     -command { .ts configure -scrolltabs $config(-scrolltabs) }
 .scrolltabs.m select 1
 
-blt::tk::label .closebutton_l -text "-closebutton" 
-blt::combobutton .closebutton -textvariable text(-closebutton) \
-    -menu .closebutton.m 
-blt::combomenu .closebutton.m -textvariable text(-closebutton)
-.closebutton.m add -type radiobutton -text [.ts cget -closebutton]
-.closebutton.m add -type separator
-.closebutton.m add -type radiobutton -text "No" -value "0" 
-.closebutton.m add -type radiobutton -text "Yes" -value "1" 
-.closebutton.m item configure all -variable config(-closebutton) \
-    -command { .ts configure -closebutton $config(-closebutton) }
-.closebutton.m select 0
+blt::tk::label .clearbutton_l -text "-clearbutton" 
+blt::combobutton .clearbutton -textvariable text(-clearbutton) \
+    -menu .clearbutton.m 
+blt::combomenu .clearbutton.m -textvariable text(-clearbutton)
+.clearbutton.m add -type radiobutton -text [.ts cget -clearbutton]
+.clearbutton.m add -type separator
+.clearbutton.m add -type radiobutton -text "No" -value "0" 
+.clearbutton.m add -type radiobutton -text "Yes" -value "1" 
+.clearbutton.m item configure all -variable config(-clearbutton) \
+    -command { .ts configure -clearbutton $config(-clearbutton) }
+.clearbutton.m select 0
 
 if 0 {
 blt::tk::label .showsingletab_l -text "-showsingletab" 
@@ -560,8 +560,8 @@ blt::table . \
     .selectpady          19,2 -fill x \
     .side_l              20,1 -anchor e \
     .side                20,2 -fill x \
-    .closebutton_l       21,1 -anchor e \
-    .closebutton         21,2 -fill x \
+    .clearbutton_l       21,1 -anchor e \
+    .clearbutton         21,2 -fill x \
     .slant_l             23,1 -anchor e \
     .slant               23,2 -fill x \
     .tabwidth_l          24,1 -anchor e \

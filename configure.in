@@ -421,6 +421,7 @@ AC_CHECK_HEADERS(winsock2.h)
 AC_CHECK_HEADERS(sys/socket.h)
 AC_CHECK_HEADERS(netinet/in.h)
 AC_CHECK_HEADERS(arpa/inet.h)
+AC_CHECK_HEADERS(ioctl.h sys/ioctl.h)
 
 AC_CHECK_FUNCS(posix_openpt ptsname getpt grantpt unlockpt isastream setsid)
 AC_CHECK_FUNCS(tcflush openpty)

@@ -44,7 +44,7 @@
     ((__GNUC__)*10000+(__GNUC_MINOR__)*100+(__GNUC_PATCHLEVEL__))
 #  if ((GCC_VERSION >= 40801) && (GCC_VERSION < 40900))
 #    warning("Disabling MMX because of GCC version")
-/*#    undef HAVE_X86_ASM*/
+#    undef HAVE_X86_ASM
 #  endif
 #endif
 

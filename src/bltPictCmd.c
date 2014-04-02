@@ -3390,7 +3390,6 @@ InfoOp(
 {
     PictImage *imgPtr = clientData;
     int numColors, state;
-    const char *string;
     Tcl_Obj *listObjPtr, *objPtr;
     Pict *srcPtr;
 
@@ -3399,53 +3398,53 @@ InfoOp(
     numColors = Blt_QueryColors(srcPtr, (Blt_HashTable *)NULL);
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
 
-    objPtr = Tcl_NewStringObj("colors", -1);
+    objPtr = Tcl_NewStringObj("colors", 6);
     Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
     objPtr = Tcl_NewIntObj(numColors);
     Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
 
-    objPtr = Tcl_NewStringObj("isassociated", -1);
+    objPtr = Tcl_NewStringObj("isassociated", 12);
     Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
     state = srcPtr->flags & BLT_PIC_ASSOCIATED_COLORS;
     objPtr = Tcl_NewBooleanObj(state);
     Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
 
-    objPtr = Tcl_NewStringObj("isgreyscale", -1);
+    objPtr = Tcl_NewStringObj("isgreyscale", 11);
     Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
     state = Blt_Picture_IsGreyscale(srcPtr);
     objPtr = Tcl_NewBooleanObj(state);
     Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
 
-    objPtr = Tcl_NewStringObj("isopaque", -1);
+    objPtr = Tcl_NewStringObj("isopaque", 8);
     Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
     state = Blt_Picture_IsOpaque(srcPtr);
     objPtr = Tcl_NewBooleanObj(state);
     Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
 
-    objPtr = Tcl_NewStringObj("width", -1);
+    objPtr = Tcl_NewStringObj("width", 5);
     Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
     objPtr = Tcl_NewIntObj(Blt_Picture_Width(srcPtr));
     Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
     
-    objPtr = Tcl_NewStringObj("height", -1);
+    objPtr = Tcl_NewStringObj("height", 6);
     Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
     objPtr = Tcl_NewIntObj(Blt_Picture_Height(srcPtr));
     Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
 
-    objPtr = Tcl_NewStringObj("count", -1);
+    objPtr = Tcl_NewStringObj("count", 5);
     Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
     objPtr = Tcl_NewIntObj(Blt_Chain_GetLength(imgPtr->chain));
     Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
 
-    objPtr = Tcl_NewStringObj("index", -1);
+    objPtr = Tcl_NewStringObj("index", 5);
     Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
     objPtr = Tcl_NewIntObj(imgPtr->index);
     Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
 
-    objPtr = Tcl_NewStringObj("format", -1);
+    objPtr = Tcl_NewStringObj("format", 6);
     Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
     objPtr = Tcl_NewStringObj((imgPtr->fmtPtr != NULL) ? 
-	imgPtr->fmtPtr->name : "none", -1);
+	imgPtr->fmtPtr->name : "none", 4);
     Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
 
     Tcl_SetObjResult(interp, listObjPtr);

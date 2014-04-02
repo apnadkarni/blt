@@ -816,9 +816,9 @@ SetOp(
     if (strcmp(string, "set") == 0) {
 	objc--, objv++;			/* Skip over the "set" */
     }
+    flag = GRAB_LOCAL; 
     if (objc > 0) {
 	string = Tcl_GetString(objv[1]);
-	flag = GRAB_LOCAL;
 	if (strcmp(string, "-global") == 0) {
 	    flag = GRAB_GLOBAL;
 	    objc--, objv++;		/* Skip over the "-global" flag. */

@@ -1400,6 +1400,9 @@ SelectEntry(TreeView *viewPtr, Entry *entryPtr)
     const char *label;
     Selection *selectPtr = &viewPtr->sel;
 
+    if ((viewPtr->flags & HIDE_ROOT) && (entryPtr == viewPtr->rootPtr)) {
+        return;
+    }
     hPtr = Blt_CreateHashEntry(&selectPtr->table, (char *)entryPtr, &isNew);
     if (isNew) {
 	Blt_ChainLink link;
@@ -4374,6 +4377,9 @@ SelectEntryApplyProc(TreeView *viewPtr, Entry *entryPtr)
 {
     Blt_HashEntry *hPtr;
 
+    if ((viewPtr->flags & HIDE_ROOT) && (entryPtr == viewPtr->rootPtr)) {
+        return TCL_OK;
+    }
     switch (viewPtr->sel.flags & SELECT_MASK) {
     case SELECT_CLEAR:
 	DeselectEntry(viewPtr, entryPtr);
@@ -13401,6 +13407,7 @@ SelectionPresentOp(ClientData clientData, Tcl_Interp *interp, int objc,
  * Side effects:
  *	The selection changes.
  *
+ * $w selection set first last 
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
