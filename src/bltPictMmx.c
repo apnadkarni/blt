@@ -2052,24 +2052,20 @@ cpuid(int eax, struct cpuid *resultPtr)
         return 0;
     }
     asm volatile (
-#ifdef notdef
-#ifdef __amd64__
-	"pushq %%rbx\n\t"	
-#else 
+#if defined(__i386__) 
 	"push %%ebx\n\t"	
-#endif
 #endif
 	"movl %0, %%eax\n\t"
 	"cpuid\n\t"
-#ifdef notdef
-#ifdef __amd64__
-	"popq %%rbx\n\t"	
-#else 
+#if defined(__i386__) 
 	"pop %%ebx\n\t"	
 #endif
-#endif
         : "=a" (resultPtr->eax),
+#if defined(__i386__) && defined(__PIC__)
+          "=r" (resultPtr->ebx),
+#else
           "=b" (resultPtr->ebx),
+#endif
           "=c" (resultPtr->ecx),
           "=d" (resultPtr->edx)
         : "a" (eax)
