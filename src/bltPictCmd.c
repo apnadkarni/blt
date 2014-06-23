@@ -2460,7 +2460,7 @@ BlankOp(
     h = Blt_Picture_Height(destPtr);
     Blt_PaintBrush_Region(brushPtr, 0, 0, w, h);
     Blt_PaintRectangle(destPtr, 0, 0, w, h, 0, 0, brushPtr);
-    destPtr->flags |= BLT_PIC_ASSOCIATED_COLORS;
+    destPtr->flags |= BLT_PIC_BLEND | BLT_PIC_ASSOCIATED_COLORS;
     if (brushPtr != &brush) {
 	Blt_PaintBrush_Free(brushPtr);
     }

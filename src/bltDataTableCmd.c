@@ -1,18 +1,17 @@
 /* -*- mode: c; c-basic-offset: 4; indent-tabs-mode: nil -*- */
-
 /*
  *
  * bltDataTableCmd.c --
  *
  *	Copyright 1998-2005 George A Howlett.
  *
- *	Permission is hereby granted, free of charge, to any person obtaining
- *	a copy of this software and associated documentation files (the
- *	"Software"), to deal in the Software without restriction, including
- *	without limitation the rights to use, copy, modify, merge, publish,
- *	distribute, sublicense, and/or sell copies of the Software, and to
- *	permit persons to whom the Software is furnished to do so, subject to
- *	the following conditions:
+ *	Permission is hereby granted, free of charge, to any person
+ *	obtaining a copy of this software and associated documentation
+ *	files (the "Software"), to deal in the Software without
+ *	restriction, including without limitation the rights to use, copy,
+ *	modify, merge, publish, distribute, sublicense, and/or sell copies
+ *	of the Software, and to permit persons to whom the Software is
+ *	furnished to do so, subject to the following conditions:
  *
  *	The above copyright notice and this permission notice shall be
  *	included in all copies or substantial portions of the Software.
@@ -20,10 +19,11 @@
  *	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  *	EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  *	MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- *	NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
- *	LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
- *	OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
- *	WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *	NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+ *	BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ *	ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ *	CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ *	SOFTWARE.
  */
 
 /*
@@ -242,9 +242,9 @@ typedef struct {
  *
  *	This structure acts as a shell for a table object.  A table object
  *	maybe shared by more than one client.  This shell provides Tcl
- *	commands to access and change values as well as the structure of the
- *	table itself.  It manages the traces and notifier events that it
- *	creates, providing a TCL interface to those facilities. It also
+ *	commands to access and change values as well as the structure of
+ *	the table itself.  It manages the traces and notifier events that
+ *	it creates, providing a TCL interface to those facilities. It also
  *	provides a user-selectable value for empty-cell values.
  */
 typedef struct {
@@ -252,27 +252,28 @@ typedef struct {
 					 * associated with. */
     BLT_TABLE table;			/* Handle representing the client
 					 * table. */
-    Tcl_Command cmdToken;		/* Token for TCL command representing
-					 * this table. */
-    const char *emptyValue;		/* String representing an empty value in
-					 * the table. */
-    Blt_HashTable *tablePtr;		/* Pointer to hash table containing a
-					 * pointer to this structure.  Used to
-					 * delete * this table entry from the
+    Tcl_Command cmdToken;		/* Token for TCL command
+					 * representing this table. */
+    const char *emptyValue;		/* String representing an empty
+					 * value in the table. */
+    Blt_HashTable *tablePtr;		/* Pointer to hash table containing
+					 * a pointer to this structure.
+					 * Used to delete * this table
+					 * entry from the table. */
+    Blt_HashEntry *hPtr;		/* Pointer to the hash table entry
+					 * for this table in the
+					 * interpreter specific hash
 					 * table. */
-    Blt_HashEntry *hPtr;		/* Pointer to the hash table entry for
-					 * this table in the interpreter
-					 * specific hash table. */
     int nextTraceId;			/* Used to generate trace id
 					 * strings.  */
-    Blt_HashTable traceTable;		/* Table of active traces. Maps trace
-					 * ids back to their TraceInfo
-					 * records. */
+    Blt_HashTable traceTable;		/* Table of active traces. Maps
+					 * trace ids back to their
+					 * TraceInfo records. */
     int nextNotifyId;			/* Used to generate notify id
 					 * strings. */
     Blt_HashTable notifyTable;		/* Table of event handlers. Maps
-					 * notify ids back to their NotifyInfo
-					 * records. */
+					 * notify ids back to their
+					 * NotifyInfo records. */
 } Cmd;
 
 typedef struct {

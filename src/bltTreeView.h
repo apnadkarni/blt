@@ -369,7 +369,7 @@ struct _Column {
     Blt_ChainLink link;
     int ruleLineWidth;
     Blt_Dashes ruleDashes;
-    Tcl_Obj *fmtCmdPtr;
+    Tcl_Obj *fmtCmdObjPtr;
     SortType sortType;
     GC activeRuleGC;
     XColor *ruleColor;			/* Color of the column's rule. */
@@ -448,10 +448,11 @@ struct _CellStyle {
     int borderWidth;			/* Width of outer border surrounding
 					 * the entire box. */
     int relief, activeRelief;		/* Relief of outer border. */
-    Tcl_Obj *fmtCmdObjPtr;
+    Tcl_Obj *fmtCmdObjPtr;              /* If non-NULL, command called to
+                                         * format the cell. */
     Blt_TreeKey key;			/* Actual data resides in this tree
                                          * cell. */
-
+    Tcl_Obj *cmdObjPtr;                 /* Command associated with cell. */
 };
 
 typedef struct _Cell {
@@ -589,7 +590,7 @@ struct _Entry {
     short int labelHeight;
     UID labelUid;			/* Text displayed right of the
 					 * icon. */
-    const char *fullName;
+    const char *pathName;               /* If non-NULL, path name generated. */
     int flatIndex;			/* Used to navigate to next/last
 					 * entry when the view is flat. */
     Tcl_Obj *dataObjPtr;		/* Pre-fetched data for sorting */

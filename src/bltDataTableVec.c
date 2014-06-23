@@ -146,7 +146,8 @@ ImportVectorProc(BLT_TABLE table, Tcl_Interp *interp, int objc,
 	size = Blt_VecLength(vector);
 	col = blt_table_get_column(NULL, table, objv[i+1]);
 	if (col == NULL) {
-	    col = blt_table_get_column(interp, table, objv[i+1]);
+	    col = blt_table_create_column(interp, table, 
+                Tcl_GetString(objv[i+1]));
 	    if (col == NULL) {
 		return TCL_ERROR;
 	    }

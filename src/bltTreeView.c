@@ -602,7 +602,7 @@ static Blt_ConfigSpec columnSpecs[] =
 	(char *)NULL, Blt_Offset(Column, sortDown), 
 	BLT_CONFIG_NULL_OK | BLT_CONFIG_DONT_SET_DEFAULT, &iconOption},
     {BLT_CONFIG_OBJ, "-formatcommand", "formatCommand", "FormatCommand",
-	(char *)NULL, Blt_Offset(Column, fmtCmdPtr), 
+	(char *)NULL, Blt_Offset(Column, fmtCmdObjPtr), 
 	BLT_CONFIG_NULL_OK}, 
     {BLT_CONFIG_BITMASK, "-hide", "hide", "Hide", DEF_COLUMN_HIDE, 
 	Blt_Offset(Column, flags), BLT_CONFIG_DONT_SET_DEFAULT, 
@@ -1027,8 +1027,8 @@ NextEntry(Entry *entryPtr, unsigned int mask)
 }
 
 static const char *
-GetEntryPath(TreeView *viewPtr, Entry *entryPtr, int checkEntryLabel, 
-	    Tcl_DString *resultPtr)
+GetPathFromEntry(TreeView *viewPtr, Entry *entryPtr, int checkEntryLabel, 
+                 Tcl_DString *resultPtr)
 {
     const char **names;                 /* Used the stack the component
                                          * names. */
@@ -1085,6 +1085,29 @@ GetEntryPath(TreeView *viewPtr, Entry *entryPtr, int checkEntryLabel,
     return Tcl_DStringValue(resultPtr);
 }
 
+static void
+FreeEntryPath(Entry *entryPtr)
+{
+    if (entryPtr->pathName != NULL) {
+        Blt_Free(entryPtr->pathName);
+    }
+    entryPtr->pathName = NULL;
+}
+
+static const char *
+GetEntryPath(TreeView *viewPtr, Entry *entryPtr)
+{
+    if (entryPtr->pathName == NULL) {
+        Tcl_DString ds;
+
+        Tcl_DStringInit(&ds);
+        GetPathFromEntry(viewPtr, entryPtr, TRUE, &ds);
+        entryPtr->pathName = Blt_AssertStrdup(Tcl_DStringValue(&ds));
+        Tcl_DStringFree(&ds);
+    }
+    return entryPtr->pathName;
+}
+
 /*
  * Preprocess the command string for percent substitution.
  */
@@ -1092,18 +1115,10 @@ static Tcl_Obj *
 PercentSubst(TreeView *viewPtr, Entry *entryPtr, Tcl_Obj *cmdObjPtr)
 {
     const char *last, *p;
-    const char *fullName;
-    Tcl_DString ds;
     const char *string;
     Tcl_Obj *objPtr;
 
     objPtr = Tcl_NewStringObj("", 0);
-    /*
-     * Get the full path name of the node, in case we need to substitute
-     * for it.
-     */
-    Tcl_DStringInit(&ds);
-    fullName = GetEntryPath(viewPtr, entryPtr, TRUE, &ds);
     /* Append the widget name and the node .t 0 */
     string = Tcl_GetString(cmdObjPtr);
     for (last = p = string; *p != '\0'; p++) {
@@ -1122,7 +1137,7 @@ PercentSubst(TreeView *viewPtr, Entry *entryPtr, Tcl_Obj *cmdObjPtr)
 		string = Tk_PathName(viewPtr->tkwin);
 		break;
 	    case 'P':                   /* Full pathname */
-		string = fullName;
+		string = GetEntryPath(viewPtr, entryPtr);
 		break;
 	    case 'p':                   /* Name of the node */
 		string = GETLABEL(entryPtr);
@@ -1163,8 +1178,7 @@ PercentSubst(TreeView *viewPtr, Entry *entryPtr, Tcl_Obj *cmdObjPtr)
     if (p > last) {
 	Tcl_AppendToObj(objPtr, last, p-last);
     }
-    Tcl_DStringFree(&ds);
-    return objPtr;
+     return objPtr;
 }
 
 static int
@@ -3724,7 +3738,7 @@ FindPath(TreeView *viewPtr, Entry *rootPtr, const char *path)
     {
 	Tcl_DString ds;
 
-	GetEntryPath(viewPtr, entryPtr, FALSE, &ds);
+	GetPathFromEntry(viewPtr, entryPtr, FALSE, &ds);
 	Tcl_AppendResult(viewPtr->interp, "can't find node \"", name,
 		 "\" in parent node \"", Tcl_DStringValue(&ds), "\"", 
 		(char *)NULL);
@@ -4718,9 +4732,7 @@ DestroyEntry(Entry *entryPtr)
 	}
 	entryPtr->cells = NULL;
     }
-    if (entryPtr->fullName != NULL) {
-	Blt_Free(entryPtr->fullName);
-    }
+    FreeEntryPath(entryPtr);
     Tcl_EventuallyFree(entryPtr, FreeEntryProc);
 }
 
@@ -5237,10 +5249,7 @@ ComputeEntryGeometry(TreeView *viewPtr, Entry *entryPtr)
     if (font == NULL) {
         font = GetStyleFont(colPtr);
     }
-    if (entryPtr->fullName != NULL) {
-        Blt_Free(entryPtr->fullName);
-        entryPtr->fullName = NULL;
-    }
+    FreeEntryPath(entryPtr);
     Blt_Font_GetMetrics(font, &fm);
     th = fm.linespace;
     label = GETLABEL(entryPtr);
@@ -5252,12 +5261,7 @@ ComputeEntryGeometry(TreeView *viewPtr, Entry *entryPtr)
         Blt_Ts_InitStyle(ts);
         Blt_Ts_SetFont(ts, font);
         if (viewPtr->flatView) {
-            Tcl_DString ds;
-            
-            GetEntryPath(viewPtr, entryPtr, TRUE, &ds);
-            entryPtr->fullName = Blt_AssertStrdup(Tcl_DStringValue(&ds));
-            Tcl_DStringFree(&ds);
-            Blt_Ts_GetExtents(&ts, entryPtr->fullName, &tw, &th);
+            Blt_Ts_GetExtents(&ts, GetEntryPath(viewPtr, entryPtr), &tw, &th);
         } else {
             Blt_Ts_GetExtents(&ts, label, &tw, &th);
         }
@@ -5343,10 +5347,7 @@ ComputeEntryGeometry(TreeView *viewPtr, Entry *entryPtr)
 	if (font == NULL) {
 	    font = GetStyleFont(&viewPtr->treeColumn);
 	}
-	if (entryPtr->fullName != NULL) {
-	    Blt_Free(entryPtr->fullName);
-	    entryPtr->fullName = NULL;
-	}
+        FreeEntryPath(entryPtr);
 	Blt_Font_GetMetrics(font, &fm);
 	entryPtr->lineHeight = fm.linespace;
 	entryPtr->lineHeight += 2 * (FOCUS_PAD + LABEL_PADY) + viewPtr->leader;
@@ -5360,12 +5361,7 @@ ComputeEntryGeometry(TreeView *viewPtr, Entry *entryPtr)
 	    Blt_Ts_InitStyle(ts);
 	    Blt_Ts_SetFont(ts, font);
 	    if (viewPtr->flatView) {
-		Tcl_DString ds;
-
-		GetEntryPath(viewPtr, entryPtr, TRUE, &ds);
-		entryPtr->fullName = Blt_AssertStrdup(Tcl_DStringValue(&ds));
-		Tcl_DStringFree(&ds);
-                label = entryPtr->fullName;
+                label = GetEntryPath(viewPtr, entryPtr);
 	    }
             Blt_Ts_GetExtents(&ts, label, &tw, &th);
 	}
@@ -5691,9 +5687,9 @@ InvokeCompare(Column *colPtr, Entry *e1, Entry *e2, Tcl_Obj *cmdPtr)
     Tcl_ListObjAppendElement(viewPtr->interp, cmdObjPtr, objPtr);
 	     
     if (viewPtr->flatView) {
-	objPtr = Tcl_NewStringObj(e1->fullName, -1);
+	objPtr = Tcl_NewStringObj(GetEntryPath(viewPtr, e1), -1);
 	Tcl_ListObjAppendElement(viewPtr->interp, cmdObjPtr, objPtr);
-	objPtr = Tcl_NewStringObj(e2->fullName, -1);
+	objPtr = Tcl_NewStringObj(GetEntryPath(viewPtr, e2), -1);
 	Tcl_ListObjAppendElement(viewPtr->interp, cmdObjPtr, objPtr);
     } else {
 	objPtr = Tcl_NewStringObj(GETLABEL(e1), -1);
@@ -5827,22 +5823,6 @@ CompareEntries(const void *a, const void *b)
     int result;
 
     viewPtr = e1->viewPtr;
-    if (e1->fullName == NULL) {
-	Tcl_DString ds;
-	
-	Tcl_DStringInit(&ds);
-	GetEntryPath(viewPtr, e1, TRUE, &ds);
-	e1->fullName = Blt_AssertStrdup(Tcl_DStringValue(&ds));
-	Tcl_DStringFree(&ds);
-    }
-    if (e2->fullName == NULL) {
-	Tcl_DString ds;
-	
-	Tcl_DStringInit(&ds);
-	GetEntryPath(viewPtr, e2, TRUE, &ds);
-	e2->fullName = Blt_AssertStrdup(Tcl_DStringValue(&ds));
-	Tcl_DStringFree(&ds);
-    }
     result = 0;
 
     for (link = Blt_Chain_FirstLink(viewPtr->sort.order); link != NULL;
@@ -5873,8 +5853,8 @@ CompareEntries(const void *a, const void *b)
 		const char *s1, *s2;
 
 		if (viewPtr->flatView) {
-		    s1 = e1->fullName;
-		    s2 = e2->fullName;
+		    s1 = GetEntryPath(viewPtr, e1);
+		    s2 = GetEntryPath(viewPtr, e2);
 		} else {
 		    s1 = GETLABEL(e1);
 		    s2 = GETLABEL(e2);
@@ -5918,7 +5898,7 @@ CompareEntries(const void *a, const void *b)
 	}
     }
     if (result == 0) {
-	result = strcmp(e1->fullName, e2->fullName);
+	result = strcmp(GetEntryPath(viewPtr, e1), GetEntryPath(viewPtr, e2));
     }
     if (viewPtr->sort.decreasing) {
 	return -result;
@@ -7912,7 +7892,8 @@ DrawEntryLabel(
 	Blt_Ts_SetMaxLength(ts, maxLength);
 
         if (viewPtr->flatView) {
-            textPtr = Blt_Ts_CreateLayout(entryPtr->fullName, -1, &ts);
+            textPtr = Blt_Ts_CreateLayout(GetEntryPath(viewPtr, entryPtr), 
+                        -1, &ts);
         } else {
             textPtr = Blt_Ts_CreateLayout(label, -1, &ts);
         }
@@ -8009,7 +7990,8 @@ DrawEntryLabel2(
 	Blt_Ts_SetMaxLength(ts, maxLength);
 
         if (viewPtr->flatView) {
-            textPtr = Blt_Ts_CreateLayout(entryPtr->fullName, -1, &ts);
+            textPtr = Blt_Ts_CreateLayout(GetEntryPath(viewPtr, entryPtr), 
+                                          -1, &ts);
         } else {
             textPtr = Blt_Ts_CreateLayout(label, -1, &ts);
         }
@@ -9813,12 +9795,13 @@ CellInvokeOp(ClientData clientData, Tcl_Interp *interp, int objc,
         return TCL_OK;
     }
     stylePtr = GetCurrentStyle(viewPtr, cellPtr->colPtr, cellPtr);
-    if (stylePtr->fmtCmdObjPtr != NULL) {
+    if (stylePtr->cmdObjPtr != NULL) {
         int result;
         Tcl_Obj *cmdObjPtr, *objPtr;
 	
         /* Invoke command command cell. */
-        cmdObjPtr = Tcl_DuplicateObj(stylePtr->fmtCmdObjPtr);
+        cmdObjPtr = Tcl_DuplicateObj(stylePtr->cmdObjPtr);
+        /* Add index of the cell */
         objPtr = CellToIndexObj(interp, cellPtr);
         Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
         Tcl_IncrRefCount(cmdObjPtr);
@@ -11858,7 +11841,7 @@ FindOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	if (fullPattern != NULL) {
 	    Tcl_DString ds;
 
-	    GetEntryPath(viewPtr, entryPtr, FALSE, &ds);
+	    GetPathFromEntry(viewPtr, entryPtr, FALSE, &ds);
 	    result = (*compareProc) (interp, Tcl_DStringValue(&ds),fullPattern);
 	    Tcl_DStringFree(&ds);
 	    if (result == invertMatch) {
@@ -12026,7 +12009,7 @@ GetOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	    count++;
 	    if (entryPtr->node != NULL) {
 		if (useFullName) {
-		    GetEntryPath(viewPtr, entryPtr, FALSE, &d2);
+		    GetPathFromEntry(viewPtr, entryPtr, FALSE, &d2);
 		} else {
 		    Tcl_DStringAppend(&d2,Blt_Tree_NodeLabel(entryPtr->node),-1);
 		}
@@ -12182,7 +12165,7 @@ SearchAndApplyToTree(TreeView *viewPtr, Tcl_Interp *interp, int objc,
 	    if (fullPattern != NULL) {
 		Tcl_DString ds;
 
-		GetEntryPath(viewPtr, entryPtr, FALSE, &ds);
+		GetPathFromEntry(viewPtr, entryPtr, FALSE, &ds);
 		result = (*compareProc) (interp, Tcl_DStringValue(&ds), 
 			fullPattern);
 		Tcl_DStringFree(&ds);
@@ -12733,7 +12716,7 @@ MoveOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	    Tcl_DString ds;
 	    const char *path;
 
-	    path = GetEntryPath(viewPtr, srcPtr, 1, &ds);
+	    path = GetPathFromEntry(viewPtr, srcPtr, 1, &ds);
 	    Tcl_AppendResult(interp, "can't move node: \"", path, 
 			"\" is an ancestor of \"", Tcl_GetString(objv[4]), 
 			"\"", (char *)NULL);

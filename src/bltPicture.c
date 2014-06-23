@@ -678,7 +678,10 @@ Blt_FadeColor(Blt_Pixel *colorPtr, unsigned int alpha)
 void
 Blt_AssociateColor(Blt_Pixel *colorPtr)
 {
+#ifdef notdef
     if ((colorPtr->Alpha != 0xFF) && (colorPtr->Alpha != 0x00)) {
+#endif
+    if (colorPtr->Alpha != 0xFF) {
 	int t;
 		    
 	colorPtr->Red   = imul8x8(colorPtr->Alpha, colorPtr->Red, t);

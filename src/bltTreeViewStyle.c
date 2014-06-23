@@ -292,6 +292,7 @@ typedef struct {
 					 * invoked.*/
     Blt_TreeKey key;			/* Actual data resides in this tree
 					   cell. */
+    Tcl_Obj *cmdObjPtr;
     /* TextBox-specific fields */
     Tcl_Obj *editCmdObjPtr;		/* If non-NULL, TCL procedure
 					 * called to allow the user to edit
@@ -366,10 +367,12 @@ typedef struct {
     int borderWidth;			/* Width of outer border
 					 * surrounding the entire box. */
     int relief, activeRelief;		/* Relief of outer border. */
-    Tcl_Obj *cmdObjPtr;
+    Tcl_Obj *fmtCmdObjPtr;		/* If non-NULL, TCL procedure
+					 * called to format the style is
+					 * invoked.*/
     Blt_TreeKey key;			/* Actual data resides in this tree
 					   cell. */
-
+    Tcl_Obj *cmdObjPtr;
     /* Checkbox specific fields. */
     int size;				/* Size of the checkbox. */
     Tcl_Obj *onValueObjPtr;
@@ -453,10 +456,12 @@ typedef struct {
     int borderWidth;			/* Width of outer border surrounding
 					 * the entire box. */
     int relief, activeRelief;		/* Relief of outer border. */
-    Tcl_Obj *cmdObjPtr;
-
+    Tcl_Obj *fmtCmdObjPtr;		/* If non-NULL, TCL procedure
+					 * called to format the style is
+					 * invoked.*/
     Blt_TreeKey key;			/* Actual data resides in this tree
-                                         * cell. */
+					   cell. */
+    Tcl_Obj *cmdObjPtr;
 
     /* ComboBox-specific fields */
 
@@ -1079,10 +1084,10 @@ PropagateStyleChanges(CellStyle *cellStylePtr)
 }
             
 static Tcl_Obj *
-FormatCell(Cell *cellPtr)
+FormatCell(CellStyle *stylePtr, Cell *cellPtr)
 {
     Column *colPtr;
-    Tcl_Obj *valueObjPtr;
+    Tcl_Obj *valueObjPtr, *fmtCmdObjPtr;;
     Entry *rowPtr;
 
     if (cellPtr->dataObjPtr != NULL) {
@@ -1101,18 +1106,27 @@ FormatCell(Cell *cellPtr)
     if (valueObjPtr == NULL) {
 	return NULL;
     }
-    if (colPtr->fmtCmdPtr  != NULL) {
+    if (stylePtr->fmtCmdObjPtr != NULL) {
+        fmtCmdObjPtr = stylePtr->fmtCmdObjPtr;
+    } else if (colPtr->fmtCmdObjPtr != NULL) {
+        fmtCmdObjPtr = colPtr->fmtCmdObjPtr;
+    } else {
+        fmtCmdObjPtr = NULL;
+    }
+    if (fmtCmdObjPtr != NULL) {
 	Tcl_Interp *interp = rowPtr->viewPtr->interp;
-	Tcl_Obj *cmdObjPtr, *objPtr;
+	Tcl_Obj *fmtCmdObjPtr, *objPtr;
 	int result;
-
-	cmdObjPtr = Tcl_DuplicateObj(colPtr->fmtCmdPtr);
+        
+	fmtCmdObjPtr = Tcl_DuplicateObj(colPtr->fmtCmdObjPtr);
 	objPtr = Tcl_NewLongObj(Blt_Tree_NodeId(rowPtr->node));
-	Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
-	Tcl_ListObjAppendElement(interp, cmdObjPtr, valueObjPtr);
-	Tcl_IncrRefCount(cmdObjPtr);
-	result = Tcl_EvalObjEx(interp, cmdObjPtr, TCL_EVAL_GLOBAL);
-	Tcl_DecrRefCount(cmdObjPtr);
+        /* Add the node Id */
+	Tcl_ListObjAppendElement(interp, fmtCmdObjPtr, objPtr);
+        /* And the cell value. */
+	Tcl_ListObjAppendElement(interp, fmtCmdObjPtr, valueObjPtr);
+	Tcl_IncrRefCount(fmtCmdObjPtr);
+	result = Tcl_EvalObjEx(interp, fmtCmdObjPtr, TCL_EVAL_GLOBAL);
+	Tcl_DecrRefCount(fmtCmdObjPtr);
 	if (result != TCL_OK) {
 	    Tcl_BackgroundError(interp);
 	    return NULL;
@@ -1139,7 +1153,7 @@ UpdateTextVariable(Tcl_Interp *interp, ComboBoxStyle *stylePtr)
     if (viewPtr->postPtr != NULL) {
         Tcl_Obj *resultObjPtr, *objPtr;
 
-        objPtr = FormatCell(viewPtr->postPtr);
+        objPtr = FormatCell((CellStyle *)stylePtr, viewPtr->postPtr);
         Tcl_IncrRefCount(objPtr);
         resultObjPtr = Tcl_ObjSetVar2(interp, stylePtr->textVarObjPtr, NULL, 
                 objPtr, TCL_GLOBAL_ONLY | TCL_LEAVE_ERR_MSG);
@@ -2104,7 +2118,7 @@ TextBoxStyleGeometryProc(Cell *cellPtr, CellStyle *cellStylePtr)
     cellPtr->height = 2 * (stylePtr->borderWidth + CELL_PADY + FOCUS_PAD);
     cellPtr->width  += colPtr->ruleWidth + PADDING(colPtr->pad);
     cellPtr->height += rowPtr->ruleHeight;
-    FormatCell(cellPtr);
+    FormatCell(cellStylePtr, cellPtr);
     /* Now compute the geometry. */
     tw = th = iw = ih = 0;
     gap = 0;
@@ -2578,14 +2592,14 @@ CheckBoxStyleGeometryProc(Cell *cellPtr, CellStyle *cellStylePtr)
 	Blt_Free(stylePtr->offPtr);
 	stylePtr->offPtr = NULL;
     }
-    FormatCell(cellPtr);
+    FormatCell(cellStylePtr, cellPtr);
     gap = 0;
     cellPtr->textWidth = cellPtr->textHeight =  0;
     if (stylePtr->flags & SHOW_VALUE) {
 	TextStyle ts;
 	const char *string;
 
-        FormatCell(cellPtr);
+        FormatCell(cellStylePtr, cellPtr);
 	Blt_Ts_InitStyle(ts);
 	Blt_Ts_SetFont(ts, CHOOSE(viewPtr->font, stylePtr->font));
         string = Tcl_GetString(stylePtr->onValueObjPtr);
@@ -3117,7 +3131,7 @@ ComboBoxStyleGeometryProc(Cell *cellPtr, CellStyle *cellStylePtr)
     cellPtr->width  += colPtr->ruleWidth + PADDING(colPtr->pad);
     cellPtr->height += rowPtr->ruleHeight;
 
-    FormatCell(cellPtr);
+    FormatCell(cellStylePtr, cellPtr);
     if (stylePtr->icon != NULL) {
 	iw = IconWidth(stylePtr->icon);
 	ih = IconHeight(stylePtr->icon);
@@ -3621,7 +3635,7 @@ ImageBoxStyleGeometryProc(Cell *cellPtr, CellStyle *cellStylePtr)
     cellPtr->height += rowPtr->ruleHeight;
 
     interp = viewPtr->interp;
-    objPtr = FormatCell(viewPtr->postPtr);
+    objPtr = FormatCell(cellStylePtr, viewPtr->postPtr);
     if (objPtr != NULL) {
         int result;
 

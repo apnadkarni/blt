@@ -64,6 +64,7 @@ set step 0.2
 
 set letters { A B C D E F G H I J K L }
 set count 0
+toplevel .top
 for { set level 30 } { $level <= 100 } { incr level 10 } {
     set color [format "#FF0d%0.2x" [expr round($level*2.55)]]
     set pen "pen$count"
@@ -72,6 +73,8 @@ for { set level 30 } { $level <= 100 } { incr level 10 } {
     $img blank 0x00FFFFFF
     $img draw text [lindex $letters $count] 12 12 -color $color \
     	-font "Arial 10" -anchor c 
+    label .top.l$level -image $img 
+    pack .top.l$level
     $graph pen create $pen -symbol @$img 
     set min $max
     set max [expr $max + $step]

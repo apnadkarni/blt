@@ -3039,8 +3039,8 @@ ExistsOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *	The return value is a standard TCL result.  The interpreter result
  *	will contain "1" or "0".
  *
- *	.g element find $elem rectangle {x1 y1 x2 y2}
- *	.g element find $elem circle {x y r}
+ *	.g element find $elem x1 y1 x2 y2
+ *	.g element find $elem xCenter yCenter radius
  *
  *---------------------------------------------------------------------------
  */

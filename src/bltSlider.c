@@ -2743,7 +2743,7 @@ DrawAxis(Slider *sliderPtr, Drawable drawable, int x, int y)
 /*
  *---------------------------------------------------------------------------
  *
- * DrawHorizontalSlider --
+ * DrawHorizontalAxis --
  *
  *	Draws the axis, ticks, and labels onto the canvas.
  *
@@ -2759,7 +2759,7 @@ DrawAxis(Slider *sliderPtr, Drawable drawable, int x, int y)
  *---------------------------------------------------------------------------
  */
 static void
-DrawHorizontalSlider(Slider *sliderPtr, Drawable drawable)
+DrawHorizontalAxis(Slider *sliderPtr, Drawable drawable)
 {
     height = Tk_Height(sliderPtr->tkwin) - 2 * sliderPtr->insert;
     x = y = sliderPtr->inset;
@@ -2873,41 +2873,6 @@ DrawHorizontalSlider(Slider *sliderPtr, Drawable drawable)
 	DrawMaxValue(sliderPtr, drawable, x, y);
     }
 }
-
-static void
-DrawSlider(Slider *sliderPtr, Drawable drawable)
-{
-    Blt_Bg bg;
-
-    if (sliderPtr->state & STATE_DISABLED) {
-	bg = sliderPtr->disabledBg;
-    } else if (sliderPtr->state & STATE_ACTIVE) {
-	bg = sliderPtr->activeBg;
-    } else {
-	bg = sliderPtr->normalBg;
-    }
-    Blt_Bg_FillRectangle(sliderPtr->tkwin, drawable, bg, 
-	sliderPtr->inset, sliderPtr->inset, 
-		Tk_Width(sliderPtr->tkwin) - sliderPtr->inset, 
-		Tk_Height(sliderPtr->tkwin) - sliderPtr->inset, 
-		sliderPtr->borderWidth, sliderPtr->relief);
-    if (sliderPtr->flags & HORIZONTAL) {
-	DrawHorizontalSlider(sliderPtr);
-    } else if (sliderPtr->flags & VERTICAL) {
-	DrawVerticalSlider(sliderPtr);
-    }
-    /* Draw focus highlight ring. */
-    if (sliderPtr->highlightWidth > 0) {
-	if (sliderPtr->flags & FOCUS) {
-	    Tk_DrawFocusHighlight(comboPtr->tkwin, comboPtr->hightlightGC, 
-		comboPtr->highlightWidth, drawable);
-	} else {
-	    Blt_Bg_DrawFocus(sliderPtr->tkwin, sliderPtr->highlightBg,
-		sliderPtr->highlightWidth, drawable);
-	}
-    }
-}
-
 
 static void
 MakeGridLine(Axis *sliderPtr, double value, Segment2d *s)
@@ -3356,7 +3321,31 @@ ComputeHorizontalLayout(Slider *sliderPtr)
 
 DrawHorizontalTrough(Slider *sliderPtr, Drawable drawable)
 {
+    int x, y, w, h;
+
+    y = sliderPtr->valueHeight + PAD;
+    x = sliderPtr->leftArrowWidth + PAD;
+    w = Tk_Width(sliderPtr->tkwin) - 
+        (sliderPtr->leftArrowWidth + sliderPtr->rightArrowHeight + 
+         2 * sliderPtr->inset + 2 * PAD);
+    h = MAX3(sliderPtr->troughHeight, sliderPtr->leftControlHeight, 
+            sliderPtr->rightControlHeight);
     
+        (sliderPtr->valueHeight + PAD + sliderPtr->axisHeight + PAD +
+         2 * sliderPtr->inset);
+    r = 8;
+    Blt_PaintRectangle(sliderPtr->painter, sliderPtr->trough, 
+                       w, slidePtr->throughHeight + 3);
+    brushPtr = Blt_Bg_PaintBrush(sliderPtr->bgnormalBg);
+    Blt_PaintBrush_SetOrigin(brushPtr, -x, -y);
+    Blt_PaintRectangle(picture, 0, 0, sliderPtr->troughWidth,
+		sliderPtr->troughHeight, 0, 0, brushPtr);
+
+    Blt_PaintPicture(sliderPtr->painter, drawable, sliderPtr->trough, 0, 0, 
+		     sliderPtBlt_Picture_Width(sliderPtr->trough),
+		     Blt_Picture_Height(sliderPtr->trough),
+		     x, y);
+
 }
 
 /*
@@ -5684,6 +5673,45 @@ DrawSliderControl(Slider *sliderPtr, Drawable drawable, int x, int y, int r,
 		       sliderPtr->troughHeight, r, 0, &brush);
 }
 
+static void
+DrawHorizonalSlider(Slider *sliderPtr, Drawable drawable) 
+{
+    Blt_PaintBrush brush;
+    int light, dark, normal;
+
+    DrawHorizontalTrough(sliderPtr, pixmap);
+    if (sliderPtr->flags & SHOW_TICKS) {
+	DrawHorizontalAxis(sliderPtr, pixmap);
+    }
+    if (sliderPtr->flags & SHOW_VALUES) {
+	DrawValues(sliderPtr, pixmap);
+    }
+    if (sliderPtr->flags & SHOW_ARROWS) {
+	DrawArrows(sliderPtr, pixmap);
+    }
+    DrawSliders(sliderPtr, pixmap);
+    
+}
+
+static void
+DrawVerticalSlider(Slider *sliderPtr, Drawable drawable) 
+{
+    DrawVerticalTrough(sliderPtr, pixmap);
+
+    /* Draw the  */
+    if (sliderPtr->flags & SHOW_TICKS) {
+	DrawAxis(sliderPtr, pixmap);
+    }
+    if (sliderPtr->flags & SHOW_VALUES) {
+	DrawValues(sliderPtr, pixmap);
+    }
+    if (sliderPtr->flags & SHOW_ARROWS) {
+	DrawArrows(sliderPtr, pixmap);
+    }
+    DrawSliders(sliderPtr, pixmap);
+    
+}
+
 /*
  *---------------------------------------------------------------------------
  *
@@ -5716,7 +5744,11 @@ DisplayProc(ClientData clientData)
 	ComputeGeometry(sliderPtr);
     }
     if (sliderPtr->flags & LAYOUT_PENDING) {
-	ComputeLayout(sliderPtr);
+        if (sliderPtr->flags & HORIZONTAL) {
+            ComputeHorizontalLayout(sliderPtr);
+        } else {
+            ComputeVerticalLayout(sliderPtr);
+        }
     }
     if ((sliderPtr->reqHeight == 0) || (sliderPtr->reqWidth == 0)) {
 	if ((Tk_ReqWidth(sliderPtr->tkwin) != width) ||
@@ -5727,31 +5759,25 @@ DisplayProc(ClientData clientData)
     if (!Tk_IsMapped(sliderPtr->tkwin)) {
 	return;
     }
-    width = Tk_Width(sliderPtr->tkwin);
-    height = Tk_Height(sliderPtr->tkwin);
-    if ((width < 1) || (height < 1)) {
+    w = Tk_Width(sliderPtr->tkwin);
+    h = Tk_Height(sliderPtr->tkwin);
+    if ((w < 1) || (h < 1)) {
 	return;
     }
-    /* Draw the background. */
-    pixmap = Tk_GetPixmap(sliderPtr->display, Tk_WindowId(sliderPtr->tkwin),
-	width, height, Tk_Depth(sliderPtr->tkwin));
 
+    pixmap = Tk_GetPixmap(sliderPtr->display, Tk_WindowId(sliderPtr->tkwin),
+	w, h, Tk_Depth(sliderPtr->tkwin));
+
+    /* Draw the background. */
     Blt_Bg_FillRectangle(sliderPtr->tkwin, pixmap, sliderPtr->bg, 0, 0, 
-	width, height, sliderPtr->borderWidth, sliderPtr->relief);
+	w, h, sliderPtr->borderWidth, sliderPtr->relief);
 
     /* Draw the through. */
-    DrawTrough(sliderPtr, pixmap);
-    /* Draw the  */
-    if (sliderPtr->flags & SHOW_TICKS) {
-	DrawAxis(sliderPtr, pixmap);
+    if (sliderPtr->flags & HORIZONTAL) {
+        DrawHorizontalSlider(sliderPtr, pixamp);
+    } else {
+        DrawVerticalSlider(sliderPtr, pixamp);
     }
-    if (sliderPtr->flags & SHOW_VALUES) {
-	DrawValues(sliderPtr, pixmap);
-    }
-    if (sliderPtr->flags & SHOW_ARROWS) {
-	DrawArrows(sliderPtr, pixmap);
-    }
-    DrawSliders(sliderPtr, pixmap);
     /* Draw focus highlight ring. */
     if ((sliderPtr->highlightWidth > 0) && (sliderPtr->flags & FOCUS)) {
 	Tk_DrawFocusHighlight(sliderPtr->tkwin, sliderPtr->highlightGC, 
