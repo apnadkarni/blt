@@ -1,5 +1,4 @@
 /* -*- mode: c; c-basic-offset: 4; indent-tabs-mode: nil -*- */
-
 /*
  *
  * bltTreeCmd.c --
@@ -4762,16 +4761,22 @@ static int
 PathSeparatorOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, 
 	     Tcl_Obj *const *objv)
 {
-    int length;
+    if (objc == 4) { 
+        int length;
 
-    if (cmdPtr->defPathSepObjPtr != NULL) {
-        Tcl_DecrRefCount(cmdPtr->defPathSepObjPtr);
-        cmdPtr->defPathSepObjPtr = NULL;
+        if (cmdPtr->defPathSepObjPtr != NULL) {
+            Tcl_DecrRefCount(cmdPtr->defPathSepObjPtr);
+            cmdPtr->defPathSepObjPtr = NULL;
+        }
+        Tcl_GetStringFromObj(objv[3], &length);
+        if (length > 0) {
+            cmdPtr->defPathSepObjPtr = objv[3];
+            Tcl_IncrRefCount(cmdPtr->defPathSepObjPtr);
+        }
     }
-    Tcl_GetStringFromObj(objv[3], &length);
-    if (length > 0) {
-        cmdPtr->defPathSepObjPtr = objv[3];
+    if (cmdPtr->defPathSepObjPtr != NULL) {
         Tcl_IncrRefCount(cmdPtr->defPathSepObjPtr);
+        Tcl_SetObjResult(interp, cmdPtr->defPathSepObjPtr);
     }
     return TCL_OK;
 }
@@ -4786,7 +4791,7 @@ PathSeparatorOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc,
  *   $tree path parse $path -from node -separator / 
  *   $tree path print $node -separator /
  *   $tree path create $path -parents -from node -separator /
- *
+ *   $tree path separator ?string?
  *---------------------------------------------------------------------------
  */
 static Blt_OpSpec pathOps[] =
@@ -4794,7 +4799,7 @@ static Blt_OpSpec pathOps[] =
     {"create",     1, PathCreateOp,     4, 0, "path ?switches?",},
     {"parse",      2, PathParseOp,      4, 0, "path ?switches?",},
     {"print",      2, PathPrintOp,      4, 0, "node ?switches?",},
-    {"separator",  1, PathSeparatorOp,  4, 4, "value",},
+    {"separator",  1, PathSeparatorOp,  3, 4, "?string?",},
 };
 
 static int numPathOps = sizeof(pathOps) / sizeof(Blt_OpSpec);

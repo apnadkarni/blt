@@ -1086,7 +1086,7 @@ GetPathFromEntry(TreeView *viewPtr, Entry *entryPtr, int checkEntryLabel,
 }
 
 static void
-FreeEntryPath(Entry *entryPtr)
+FreePath(Entry *entryPtr)
 {
     if (entryPtr->pathName != NULL) {
         Blt_Free(entryPtr->pathName);
@@ -1095,7 +1095,7 @@ FreeEntryPath(Entry *entryPtr)
 }
 
 static const char *
-GetEntryPath(TreeView *viewPtr, Entry *entryPtr)
+GetPath(TreeView *viewPtr, Entry *entryPtr)
 {
     if (entryPtr->pathName == NULL) {
         Tcl_DString ds;
@@ -1137,7 +1137,7 @@ PercentSubst(TreeView *viewPtr, Entry *entryPtr, Tcl_Obj *cmdObjPtr)
 		string = Tk_PathName(viewPtr->tkwin);
 		break;
 	    case 'P':                   /* Full pathname */
-		string = GetEntryPath(viewPtr, entryPtr);
+		string = GetPath(viewPtr, entryPtr);
 		break;
 	    case 'p':                   /* Name of the node */
 		string = GETLABEL(entryPtr);
@@ -4732,7 +4732,7 @@ DestroyEntry(Entry *entryPtr)
 	}
 	entryPtr->cells = NULL;
     }
-    FreeEntryPath(entryPtr);
+    FreePath(entryPtr);
     Tcl_EventuallyFree(entryPtr, FreeEntryProc);
 }
 
@@ -5249,7 +5249,7 @@ ComputeEntryGeometry(TreeView *viewPtr, Entry *entryPtr)
     if (font == NULL) {
         font = GetStyleFont(colPtr);
     }
-    FreeEntryPath(entryPtr);
+    FreePath(entryPtr);
     Blt_Font_GetMetrics(font, &fm);
     th = fm.linespace;
     label = GETLABEL(entryPtr);
@@ -5261,7 +5261,7 @@ ComputeEntryGeometry(TreeView *viewPtr, Entry *entryPtr)
         Blt_Ts_InitStyle(ts);
         Blt_Ts_SetFont(ts, font);
         if (viewPtr->flatView) {
-            Blt_Ts_GetExtents(&ts, GetEntryPath(viewPtr, entryPtr), &tw, &th);
+            Blt_Ts_GetExtents(&ts, GetPath(viewPtr, entryPtr), &tw, &th);
         } else {
             Blt_Ts_GetExtents(&ts, label, &tw, &th);
         }
@@ -5347,7 +5347,7 @@ ComputeEntryGeometry(TreeView *viewPtr, Entry *entryPtr)
 	if (font == NULL) {
 	    font = GetStyleFont(&viewPtr->treeColumn);
 	}
-        FreeEntryPath(entryPtr);
+        FreePath(entryPtr);
 	Blt_Font_GetMetrics(font, &fm);
 	entryPtr->lineHeight = fm.linespace;
 	entryPtr->lineHeight += 2 * (FOCUS_PAD + LABEL_PADY) + viewPtr->leader;
@@ -5361,7 +5361,7 @@ ComputeEntryGeometry(TreeView *viewPtr, Entry *entryPtr)
 	    Blt_Ts_InitStyle(ts);
 	    Blt_Ts_SetFont(ts, font);
 	    if (viewPtr->flatView) {
-                label = GetEntryPath(viewPtr, entryPtr);
+                label = GetPath(viewPtr, entryPtr);
 	    }
             Blt_Ts_GetExtents(&ts, label, &tw, &th);
 	}
@@ -5687,9 +5687,9 @@ InvokeCompare(Column *colPtr, Entry *e1, Entry *e2, Tcl_Obj *cmdPtr)
     Tcl_ListObjAppendElement(viewPtr->interp, cmdObjPtr, objPtr);
 	     
     if (viewPtr->flatView) {
-	objPtr = Tcl_NewStringObj(GetEntryPath(viewPtr, e1), -1);
+	objPtr = Tcl_NewStringObj(GetPath(viewPtr, e1), -1);
 	Tcl_ListObjAppendElement(viewPtr->interp, cmdObjPtr, objPtr);
-	objPtr = Tcl_NewStringObj(GetEntryPath(viewPtr, e2), -1);
+	objPtr = Tcl_NewStringObj(GetPath(viewPtr, e2), -1);
 	Tcl_ListObjAppendElement(viewPtr->interp, cmdObjPtr, objPtr);
     } else {
 	objPtr = Tcl_NewStringObj(GETLABEL(e1), -1);
@@ -5853,8 +5853,8 @@ CompareEntries(const void *a, const void *b)
 		const char *s1, *s2;
 
 		if (viewPtr->flatView) {
-		    s1 = GetEntryPath(viewPtr, e1);
-		    s2 = GetEntryPath(viewPtr, e2);
+		    s1 = GetPath(viewPtr, e1);
+		    s2 = GetPath(viewPtr, e2);
 		} else {
 		    s1 = GETLABEL(e1);
 		    s2 = GETLABEL(e2);
@@ -5898,7 +5898,7 @@ CompareEntries(const void *a, const void *b)
 	}
     }
     if (result == 0) {
-	result = strcmp(GetEntryPath(viewPtr, e1), GetEntryPath(viewPtr, e2));
+	result = strcmp(GetPath(viewPtr, e1), GetPath(viewPtr, e2));
     }
     if (viewPtr->sort.decreasing) {
 	return -result;
@@ -7892,8 +7892,7 @@ DrawEntryLabel(
 	Blt_Ts_SetMaxLength(ts, maxLength);
 
         if (viewPtr->flatView) {
-            textPtr = Blt_Ts_CreateLayout(GetEntryPath(viewPtr, entryPtr), 
-                        -1, &ts);
+            textPtr = Blt_Ts_CreateLayout(GetPath(viewPtr, entryPtr), -1, &ts);
         } else {
             textPtr = Blt_Ts_CreateLayout(label, -1, &ts);
         }
@@ -7990,8 +7989,7 @@ DrawEntryLabel2(
 	Blt_Ts_SetMaxLength(ts, maxLength);
 
         if (viewPtr->flatView) {
-            textPtr = Blt_Ts_CreateLayout(GetEntryPath(viewPtr, entryPtr), 
-                                          -1, &ts);
+            textPtr = Blt_Ts_CreateLayout(GetPath(viewPtr, entryPtr), -1, &ts);
         } else {
             textPtr = Blt_Ts_CreateLayout(label, -1, &ts);
         }
@@ -12011,7 +12009,8 @@ GetOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 		if (useFullName) {
 		    GetPathFromEntry(viewPtr, entryPtr, FALSE, &d2);
 		} else {
-		    Tcl_DStringAppend(&d2,Blt_Tree_NodeLabel(entryPtr->node),-1);
+		    Tcl_DStringAppend(&d2, Blt_Tree_NodeLabel(entryPtr->node),
+                        -1);
 		}
 		Tcl_DStringAppendElement(&d1, Tcl_DStringValue(&d2));
 	    }

@@ -473,7 +473,8 @@ $(bltwish): $(blt_a) $(blt_stub_a)  $(srcdir)/bltUnixMain.c
 		-DSTATIC_PKGS -DTCLLIBPATH=\"$(TCLLIBPATH)\" \
 		$(srcdir)/bltUnixMain.c \
 		$(blt_a) $(blt_stub_a) \
-		$(tk_lib_spec) $(tcl_lib_spec) $(TCL_LIB_SPEC) \
+		$(tk_lib_spec) $(TK_LIB_SPEC) \
+		$(tcl_lib_spec) $(TCL_LIB_SPEC) \
 		$(BLT_TK_LIBS) $(BLT_TCL_LIBS) $(EXTRA_X_LIBS) 
 
 $(bltsh): $(blt_a) $(blt_stub_a) $(srcdir)/bltUnixMain.c

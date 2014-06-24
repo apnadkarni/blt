@@ -938,7 +938,11 @@ elif test "${blt_with_tcl_lib_dir}" = "yes" ; then
   do
     if test -r "$libname" ; then
       TCL_LIB_DIR="${TCL_EXEC_PREFIX}/lib"
-      TCL_LIB_SPEC="-L${TCL_LIB_DIR} -ltcl${TCL_LIB_VERSION}"
+      if test "${TCL_LIB_DIR}" = "/usr/lib" ; then
+        TCL_LIB_SPEC="-ltcl${TCL_LIB_VERSION}"
+      else 
+        TCL_LIB_SPEC="-L${TCL_LIB_DIR} -ltcl${TCL_LIB_VERSION}"
+      fi	 
       break
     fi
   done
@@ -951,7 +955,11 @@ else
   do
     if test -r "$libname" ; then
       TCL_LIB_DIR="${blt_with_tcl_lib_dir}"
-      TCL_LIB_SPEC="-L${TCL_LIB_DIR} -ltcl${TCL_LIB_VERSION}"
+      if test "${TCL_LIB_DIR}" = "/usr/lib" ; then
+        TCL_LIB_SPEC="-ltcl${TCL_LIB_VERSION}"
+      else 
+        TCL_LIB_SPEC="-L${TCL_LIB_DIR} -ltcl${TCL_LIB_VERSION}"
+      fi	 
       break
     fi
   done
@@ -971,7 +979,11 @@ elif test "${blt_with_tk_lib_dir}" = "yes" ; then
   do
     if test -r "$libname" ; then
       TK_LIB_DIR="${TK_EXEC_PREFIX}/lib"
-      TK_LIB_SPEC="-L${TK_LIB_DIR} -ltk${TK_LIB_VERSION}"
+      if test "${TK_LIB_DIR}" = "/usr/lib" ; then
+        TK_LIB_SPEC="-ltk${TK_LIB_VERSION}"
+      else 
+        TK_LIB_SPEC="-L${TK_LIB_DIR} -ltk${TK_LIB_VERSION}"
+      fi	 
       break
     fi
   done
@@ -984,7 +996,11 @@ else
   do
     if test -r "$libname" ; then
       TK_LIB_DIR="${blt_with_tk_lib_dir}"
-      TK_LIB_SPEC="-L${TK_LIB_DIR} -ltk${TK_LIB_VERSION}"
+      if test "${TK_LIB_DIR}" = "/usr/lib" ; then
+        TK_LIB_SPEC="-ltk${TK_LIB_VERSION}"
+      else 
+        TK_LIB_SPEC="-L${TK_LIB_DIR} -ltk${TK_LIB_VERSION}"
+      fi	 
       break
     fi
   done
@@ -1641,9 +1657,17 @@ if test "${blt_enable_stubs}" = "yes" ; then
   AC_DEFINE_UNQUOTED([USE_TCL_STUBS], [1], [Define if Tcl stubs are used.])
   AC_DEFINE_UNQUOTED([USE_TK_STUBS],  [1], [Define if Tk stubs are used.])
   AC_DEFINE_UNQUOTED([USE_BLT_STUBS], [1], [Define if BLT stubs are used.])
-  TCL_STUBS_SPEC="-L${TCL_LIB_DIR} -ltclstub${TCL_LIB_VERSION}"
+  if test "${TCL_LIB_DIR}" = "/usr/lib" ; then
+    TCL_STUBS_SPEC="-ltclstub${TCL_LIB_VERSION}"
+  else 
+    TCL_STUBS_SPEC="-L${TCL_LIB_DIR} -ltclstub${TCL_LIB_VERSION}"
+  fi	 
   AC_SUBST(TCL_STUBS_SPEC)
-  TK_STUBS_SPEC="-L${TK_LIB_DIR} -ltkstub${TK_LIB_VERSION}"
+  if test "${TK_LIB_DIR}" = "/usr/lib" ; then
+    TK_STUBS_SPEC="-ltkstub${TK_LIB_VERSION}"
+  else 
+    TK_STUBS_SPEC="-L${TK_LIB_DIR} -ltkstub${TK_LIB_VERSION}"
+  fi	 
   AC_SUBST(TK_STUBS_SPEC)
   BLT_STUBS_ENABLED=1
   AC_SUBST(BLT_STUBS_ENABLED)
