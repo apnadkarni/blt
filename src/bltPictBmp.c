@@ -826,6 +826,7 @@ BmpRgbImageData(Blt_DBuffer dbuffer, Bmp *bmpPtr)
 	}
 	break;
     }
+    destPtr->flags &= ~BLT_PIC_UNINITIALIZED;
     return destPtr;
 }
 
@@ -988,6 +989,7 @@ BmpBitfieldImageData(Blt_DBuffer dbuffer, Bmp *bmpPtr)
 	/* The image may or may not be transparent. Check */
 	Blt_ClassifyPicture(destPtr);
     }
+    destPtr->flags &= ~BLT_PIC_UNINITIALIZED;
     return destPtr;
 }
 
@@ -1153,6 +1155,7 @@ BmpRleImageData(Blt_DBuffer dbuffer, Bmp *bmpPtr)
 	}
     }
  done:
+    destPtr->flags &= ~BLT_PIC_UNINITIALIZED;
     return destPtr;
 }
 

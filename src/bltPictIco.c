@@ -784,6 +784,7 @@ IcoRgbImageData(Blt_DBuffer dbuffer, Ico *icoPtr)
 	srcRowPtr += maskBytesPerRow;
     }
     Blt_ClassifyPicture(destPtr);
+    destPtr->flags &= ~BLT_PIC_UNINITIALIZED;
     return destPtr;
 }
 
@@ -962,6 +963,7 @@ IcoBitfieldImageData(Blt_DBuffer dbuffer, Ico *icoPtr)
 	srcRowPtr += maskBytesPerRow;
     }
     Blt_ClassifyPicture(destPtr);
+    destPtr->flags &= ~BLT_PIC_UNINITIALIZED;
     return destPtr;
 }
 

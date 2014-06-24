@@ -1225,6 +1225,7 @@ GifCreatePictureFromData(Blt_DBuffer dbuffer, Gif *gifPtr)
 	GifWarning("too much input data, ignoring extra...");
     }
     LzwTermDecompressor(&lzw);
+    destPtr->flags &= ~BLT_PIC_UNINITIALIZED;
     return destPtr;
 }
 

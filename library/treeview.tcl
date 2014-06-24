@@ -343,10 +343,6 @@ proc blt::TreeView::Initialize { w } {
 	# do nothing
     }
 
-    $w bind Entry <ButtonRelease-3> { 
-	blt::TreeView::EditColumn %W %X %Y
-    }
-
     $w column bind all <Enter> {
 	%W column activate current
     }
@@ -850,26 +846,6 @@ proc blt::TreeView::GetSelection { w } {
 	regsub -all . $text [string index [$w cget -show] 0] text
     }
     return $text
-}
-
-proc blt::TreeView::EditColumn { w x y } {
-    $w see current
-    if { [winfo exists $w.edit] } {
-	destroy $w.edit
-	return
-    }
-    if { ![$w edit -root -test $x $y] } {
-	return
-    }
-    $w edit -root $x $y
-    update
-    if { [winfo exists $w.edit] } {
-	focus $w.edit
-	$w.edit selection range 0 end
-	blt::grab push $w.edit
-	tkwait window $w.edit
-	blt::grab pop $w.edit
-    }
 }
 
 #

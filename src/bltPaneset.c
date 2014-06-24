@@ -1,5 +1,4 @@
 /* -*- mode: c; c-basic-offset: 4; indent-tabs-mode: nil -*- */
-
 /*
  * bltPaneset.c --
  *
@@ -70,11 +69,13 @@
  * The following are the adjustment modes for the paneset widget.
  */
 typedef enum AdjustModes {
-    MODE_SLINKY,			/* Adjust all panes when resizing */
-    MODE_GIVETAKE,			/* Adjust panes to immediate left/right
-					 * or top/bottom of active handle. */
-    MODE_SPREADSHEET,			/* Adjust only the left pane and the
-					 * last pane. */
+    MODE_SLINKY,			/* Adjust all panes when
+                                         * resizing */
+    MODE_GIVETAKE,			/* Adjust panes to immediate
+					 * left/right or top/bottom of
+					 * active handle. */
+    MODE_SPREADSHEET,			/* Adjust only the left pane and
+					 * the last pane. */
 } AdjustMode;
 
 typedef struct _Paneset Paneset;
@@ -148,66 +149,71 @@ typedef int (HandleCmdProc)(Pane *panePtr, Tcl_Interp *interp, int objc,
  * Paneset structure
  *
  *	The paneset is a set of windows (panes) that may be resized in one
- *	dimension (horizontally or vertically).  How the panes are resized is
- *	dependent upon the paneset's bearing and the adjustment mode in place.
+ *	dimension (horizontally or vertically).  How the panes are resized
+ *	is dependent upon the paneset's bearing and the adjustment mode in
+ *	place.
  *
- *	The bearing is the position of the handle last moved.  By default it's
- *	the last handle.  The position is the just outside of the handle. So
- *	if the window starting at 100 has a width of 200 and the handle size
- *	is 10, the bearing is 310.
+ *	The bearing is the position of the handle last moved.  By default
+ *	it's the last handle.  The position is the just outside of the
+ *	handle. So if the window starting at 100 has a width of 200 and the
+ *	handle size is 10, the bearing is 310.
  *
- *	The bearing divides the panes into two. Each side is resized 
+ *	The bearing divides the panes into two. Each side is resized
  *	according to the adjustment mode.
  *
  *	givetake	The panes immediately to the left and right of 
  *			the bearing are grown/shrunk.
  *	slinky		All the panes on either side of the bearing are
  *			grown/shrunk.
- *	spreadsheet     The pane to the left of the bearing and the last
- *			pane on the right side are grown/shrunk.  Intervening
+ *	spreadsheet     The pane to the left of the bearing and the last pane
+ *			on the right side are grown/shrunk.  Intervening
  *			panes are unaffected.
  */
 
 struct _Paneset {
-    int flags;				/* See the flags definitions below. */
-    int type;				/* Type of widget: PANESET, DRAWER, or
-					 * FILMSTRIP. */
+    int flags;				/* See the flags definitions
+                                         * below. */
+    int type;				/* Type of widget: PANESET, DRAWER,
+					 * or FILMSTRIP. */
     Display *display;			/* Display of the widget. */
     Tk_Window tkwin;			/* The container window into which
-					 * other widgets are arranged. For the
-					 * paneset and filmstrip, this window
-					 * is created.  For the drawer we use
-					 * an existing window. */
+					 * other widgets are arranged. For
+					 * the paneset and filmstrip, this
+					 * window is created.  For the
+					 * drawer we use an existing
+					 * window. */
     Tcl_Interp *interp;			/* Interpreter associated with all
 					 * widgets and handles. */
-    Tcl_Command cmdToken;		/* Command token associated with this
-					 * widget. For panesets and filmstrips
-					 * this is the path name of the window
-					 * created. For drawers, this is a
-					 * generated name. */
+    Tcl_Command cmdToken;		/* Command token associated with
+					 * this widget. For panesets and
+					 * filmstrips this is the path name
+					 * of the window created. For
+					 * drawers, this is a generated
+					 * name. */
     char *name;				/* The generated name of the drawer
 					 * or the pathname of the window
 					 * created (panesets and
 					 * filmstrips). */
     AdjustMode mode;			/* Panesets only: Mode to use to
-					   resize panes when the user adjusts
-					   a handle. */
+					   resize panes when the user
+					   adjusts a handle. */
     int highlightThickness;		/* Width in pixels of highlight to
-					 * draw around the handle when it has
-					 * the focus.  <= 0 means don't draw a
-					 * highlight. */
+					 * draw around the handle when it
+					 * has the focus.  <= 0 means don't
+					 * draw a highlight. */
     int normalWidth;			/* Normal dimensions of the paneset */
     int normalHeight;
-    int reqWidth, reqHeight;		/* Constraints on the paneset's normal
-					 * width and height. Overrides the
-					 * requested width of the window. */
+    int reqWidth, reqHeight;		/* Constraints on the paneset's
+					 * normal width and
+					 * height. Overrides the requested
+					 * width of the window. */
 
     Tk_Cursor defVertCursor;		/* Default vertical X cursor */
     Tk_Cursor defHorzCursor;		/* Default horizontal X cursor */
 
     short int width, height;		/* Requested size of the widget. */
 
-    Blt_Bg bg;			/* 3D border surrounding the window
+    Blt_Bg bg;                          /* 3D border surrounding the window
 					 * (viewport). */
     /*
      * Scrolling information (filmstrip only):
@@ -245,20 +251,21 @@ struct _Paneset {
     int handleAnchor;			/* Last known location of handle
 					 * during a move. */
 
-    Blt_Chain chain;			/* List of panes/drawers. In paneset
-					 * and filmstrip widgets, describes
-					 * the order of the panes in the
-					 * widget. In the drawer widget,
-					 * represents the stacking order of
-					 * the drawers. */
+    Blt_Chain chain;			/* List of panes/drawers. In
+					 * paneset and filmstrip widgets,
+					 * describes the order of the panes
+					 * in the widget. In the drawer
+					 * widget, represents the stacking
+					 * order of the drawers. */
 
     Blt_HashTable paneTable;		/* Table of panes.  Serves as a
 					 * directory to look up panes from
 					 * windows. */
     Blt_HashTable tagTable;		/* Table of tags. */
-    Pane *activePtr;			/* Indicates the pane with the active
-					 * handle. */
-    Pane *anchorPtr;			/* Pane that is currently anchored */
+    Pane *activePtr;			/* Indicates the pane with the
+					 * active handle. */
+    Pane *anchorPtr;			/* Pane that is currently
+                                         * anchored */
     int bearing;			/* Location of the split (paneset).
 					 * the drawer (drawer). */
     Tcl_Obj *cmdObjPtr;			/* Command to invoke when the "invoke"
@@ -276,21 +283,25 @@ struct _Paneset {
  */
 #define REDRAW_PENDING  (1<<0)		/* A redraw request is pending. */
 #define LAYOUT_PENDING 	(1<<1)		/* Get the requested sizes of the
-					 * widgets before expanding/shrinking
-					 * the size of the container.  It's
-					 * necessary to recompute the layout
-					 * every time a pane is added,
-					 * reconfigured, or deleted, but not
-					 * when the container is resized. */
+					 * widgets before
+					 * expanding/shrinking the size of
+					 * the container.  It's necessary
+					 * to recompute the layout every
+					 * time a pane is added,
+					 * reconfigured, or deleted, but
+					 * not when the container is
+					 * resized. */
 #define SCROLL_PENDING 	(1<<2)		/* Get the requested sizes of the
-					 * widgets before expanding/shrinking
-					 * the size of the container.  It's
-					 * necessary to recompute the layout
-					 * every time a pane is added,
-					 * reconfigured, or deleted, but not
-					 * when the container is resized. */
+					 * widgets before
+					 * expanding/shrinking the size of
+					 * the container.  It's necessary
+					 * to recompute the layout every
+					 * time a pane is added,
+					 * reconfigured, or deleted, but
+					 * not when the container is
+					 * resized. */
 #define ANIMATE		(1<<3)		/* Animate pane moves and drawer
-					 * open/closes  */
+					 * open/closes */
 
 #define FOCUS		(1<<6)
 
@@ -718,7 +729,7 @@ typedef struct _Iterator {
  * Forward declarations
  */
 static Tcl_FreeProc PanesetFreeProc;
-static Tcl_IdleProc DisplayPaneset;
+static Tcl_IdleProc DisplayProc;
 static Tcl_IdleProc DisplayHandle;
 static Tcl_ObjCmdProc PanesetCmd;
 static Tcl_ObjCmdProc DrawersetCmd;
@@ -1000,7 +1011,7 @@ EventuallyRedraw(Paneset *setPtr)
 {
     if ((setPtr->flags & REDRAW_PENDING) == 0) {
 	setPtr->flags |= REDRAW_PENDING;
-	Tcl_DoWhenIdle(DisplayPaneset, setPtr);
+	Tcl_DoWhenIdle(DisplayProc, setPtr);
     }
 }
 
@@ -1824,7 +1835,7 @@ PanesetEventProc(ClientData clientData, XEvent *eventPtr)
 	    Tcl_DeleteCommandFromToken(setPtr->interp, setPtr->cmdToken);
 	}
 	if (setPtr->flags & REDRAW_PENDING) {
-	    Tcl_CancelIdleCall(DisplayPaneset, setPtr);
+	    Tcl_CancelIdleCall(DisplayProc, setPtr);
 	}
 	Tcl_EventuallyFree(setPtr, PanesetFreeProc);
     } else if (eventPtr->type == ConfigureNotify) {
@@ -4697,6 +4708,18 @@ ComputeGeometry(Paneset *setPtr)
 	}
     }
     setPtr->flags &= ~LAYOUT_PENDING;
+    /* Override computed layout with requested width/height */
+    if (setPtr->reqWidth > 0) {
+	setPtr->normalWidth = setPtr->reqWidth;
+    }
+    if (setPtr->reqHeight > 0) {
+	setPtr->normalHeight = setPtr->reqHeight;
+    }
+    if ((setPtr->normalWidth != Tk_ReqWidth(setPtr->tkwin)) ||
+        (setPtr->normalHeight != Tk_ReqHeight(setPtr->tkwin))) {
+        Tk_GeometryRequest(setPtr->tkwin, setPtr->normalWidth,
+                           setPtr->normalHeight);
+    }
 }
 
 static void
@@ -7384,7 +7407,7 @@ Blt_PanesetCmdInitProc(Tcl_Interp *interp)
 /*
  *---------------------------------------------------------------------------
  *
- * DisplayPaneset --
+ * DisplayProc --
  *
  *
  * Results:
@@ -7396,36 +7419,21 @@ Blt_PanesetCmdInitProc(Tcl_Interp *interp)
  *---------------------------------------------------------------------------
  */
 static void
-DisplayPaneset(ClientData clientData)
+DisplayProc(ClientData clientData)
 {
     Paneset *setPtr = clientData;
 
     setPtr->flags &= ~REDRAW_PENDING;
 #if TRACE
-    fprintf(stderr, "DisplayPaneset(%s)\n", Tk_PathName(setPtr->tkwin));
+    fprintf(stderr, "DisplayProc(%s)\n", Tk_PathName(setPtr->tkwin));
 #endif
     if (setPtr->flags & LAYOUT_PENDING) {
 	ComputeGeometry(setPtr);
     }
-    if (setPtr->reqWidth > 0) {
-	setPtr->normalWidth = setPtr->reqWidth;
-    }
-    if (setPtr->reqHeight > 0) {
-	setPtr->normalHeight = setPtr->reqHeight;
-    }
-    if (setPtr->type & (FILMSTRIP|PANESET)) {
-	if ((setPtr->normalWidth != Tk_ReqWidth(setPtr->tkwin)) ||
-	    (setPtr->normalHeight != Tk_ReqHeight(setPtr->tkwin))) {
-	    Tk_GeometryRequest(setPtr->tkwin, setPtr->normalWidth,
-			       setPtr->normalHeight);
-	    EventuallyRedraw(setPtr);
-	    return;
-	}
-    }
     if ((Tk_Width(setPtr->tkwin) <= 1) || (Tk_Height(setPtr->tkwin) <=1)) {
 	/* Don't bother computing the layout until the size of the window is
 	 * something reasonable. */
-	return;
+        return;
     }
     if (!Tk_IsMapped(setPtr->tkwin)) {
 	/* The paneset's window isn't displayed, so don't bother drawing
@@ -7433,7 +7441,6 @@ DisplayPaneset(ClientData clientData)
 	 * coordinates of the new layout.  */
 	return;
     }
-    
     if ((setPtr->type == FILMSTRIP) && (setPtr->flags & SCROLL_PENDING)) {
 	int width;
 
@@ -7450,11 +7457,9 @@ DisplayPaneset(ClientData clientData)
     }
     setPtr->numVisible = Blt_Chain_GetLength(setPtr->chain);
     if (setPtr->type & (FILMSTRIP|PANESET)) {
-#ifndef notdef
 	Blt_Bg_FillRectangle(setPtr->tkwin, Tk_WindowId(setPtr->tkwin), 
 		setPtr->bg, 0, 0, Tk_Width(setPtr->tkwin), 
 		Tk_Height(setPtr->tkwin), 0, TK_RELIEF_FLAT);
-#endif
 	if (setPtr->numVisible > 0) {
 	    if (ISVERT(setPtr)) {
 		VerticalPanes(setPtr);

@@ -530,7 +530,7 @@ PbmImage(Pbm *pbmPtr)
     const char *type;
     size_t size, want;
     unsigned char *start;
-    Blt_Picture picture;
+    Picture *destPtr;
 
     size = Blt_DBuffer_BytesLeft(pbmPtr->dbuffer);
     start = Blt_DBuffer_Pointer(pbmPtr->dbuffer);
@@ -614,13 +614,14 @@ PbmImage(Pbm *pbmPtr)
 		 Blt_DBuffer_BytesLeft(pbmPtr->dbuffer));
     }	    
     if (pbmPtr->isRaw) {
-	picture = PbmRawData(pbmPtr);
+	destPtr = PbmRawData(pbmPtr);
 	Blt_DBuffer_SetPointer(pbmPtr->dbuffer, pbmPtr->data + 
 			       (pbmPtr->height * pbmPtr->bytesPerRow));
     } else {
-	picture = PbmPlainData(pbmPtr);
+	destPtr = PbmPlainData(pbmPtr);
     }
-    return picture;
+    destPtr->flags &= ~BLT_PIC_UNINITIALIZED;
+    return destPtr;
 }
 
 

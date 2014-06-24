@@ -2542,11 +2542,6 @@ GetSpan(PartitionInfo *piPtr, TableEntry *tePtr)
      */
     rcPtr->pad.side2 = 0;
     spaceUsed -= (startPtr->pad.side1 + rcPtr->pad.side2 + piPtr->ePad);
-#ifdef notdef
-    if (strcmp(Tk_Name(tePtr->tkwin), "ss") == 0) {
-	fprintf(stderr, "index=%d spaceUsed=%d\n", rcPtr->index, spaceUsed);
-    }
-#endif
     return spaceUsed;
 }
 
@@ -2610,12 +2605,6 @@ GrowSpan(
     RowColumn *startPtr;	/* Starting (column/row) partition  */
     int span;			/* Number of partitions in the span */
 
-#ifdef notdef
-    if (strcmp(Tk_Name(tablePtr->tkwin), "fs") == 0) {
-	fprintf(stderr, "GrowSpan %s %s growth=%d\n", 
-		Tk_Name(tablePtr->tkwin), Tk_Name(tePtr->tkwin), growth);
-    }
-#endif
     if (piPtr->type == rowUid) {
 	startPtr = tePtr->row.rcPtr;
 	span = tePtr->row.span;
@@ -2668,12 +2657,6 @@ GrowSpan(
 		rcPtr->minSpan = span;
 		rcPtr->control = tePtr;
 	    }
-#ifdef notdef
-    if (strcmp(Tk_Name(tablePtr->tkwin), "fs") == 0) {
-	fprintf(stderr, "GrowSpan pass1 %s %s size=%d\n", 
-		Tk_Name(tablePtr->tkwin), Tk_Name(tePtr->tkwin), rcPtr->size);
-    }
-#endif
 	    link = Blt_Chain_NextLink(link);
 	}
     }
@@ -2718,12 +2701,6 @@ GrowSpan(
 		}
 		rcPtr->control = tePtr;
 	    }
-#ifdef notdef
-    if (strcmp(Tk_Name(tablePtr->tkwin), "fs") == 0) {
-	fprintf(stderr, "GrowSpan pass2 %s %s size=%d\n", 
-		Tk_Name(tablePtr->tkwin), Tk_Name(tePtr->tkwin), rcPtr->size);
-    }
-#endif
 	    link = Blt_Chain_NextLink(link);
 	}
     }
@@ -2776,12 +2753,6 @@ GrowSpan(
 		rcPtr->nom = rcPtr->size;
 		rcPtr->control = tePtr;
 	    }
-#ifdef notdef
-    if (strcmp(Tk_Name(tablePtr->tkwin), "fs") == 0) {
-	fprintf(stderr, "GrowSpan pass3 %s %s size=%d\n", 
-		Tk_Name(tablePtr->tkwin), Tk_Name(tePtr->tkwin), rcPtr->size);
-    }
-#endif
 	}
     }
 }
@@ -3240,12 +3211,6 @@ SetNominalSizes(Table *tablePtr, PartitionInfo *piPtr)
 	    }
 	    rcPtr->nom = size;
 	}
-#ifdef notdef
-	if (strcmp(Tk_Name(tablePtr->tkwin), "fs") == 0) {
-	    fprintf(stderr, "SetNominalSizes %s: %s %d min=%d max=%d nom=%d, size=%d total=%d\n",
-		    Tk_Name(tablePtr->tkwin), piPtr->type, rcPtr->index, rcPtr->min, rcPtr->max, rcPtr->nom, rcPtr->size, total);
-	}
-#endif
  	total += rcPtr->nom;
     }
     return total;
@@ -3404,12 +3369,6 @@ LayoutPartitions(Table *tablePtr)
 	    if (needed > used) {
 		GrowSpan(tablePtr, piPtr, tePtr, needed - used);
 	    }
-#ifdef notdef
-    if (strcmp(Tk_Name(tePtr->tkwin), "ss") == 0) {
-	fprintf(stderr, "pass1 %s used=%d needed=%d\n", Tk_Name(tePtr->tkwin),
-		used, needed);
-    }
-#endif
 	}
     }
     LockPartitions(&tablePtr->rows);
@@ -3438,28 +3397,12 @@ LayoutPartitions(Table *tablePtr)
 	    if (needed > used) {
 		GrowSpan(tablePtr, piPtr, tePtr, needed - used);
 	    }
-#ifdef notdef
-    if (strcmp(Tk_Name(tePtr->tkwin), "ss") == 0) {
-	fprintf(stderr, "pass2 %s used=%d needed=%d\n", Tk_Name(tePtr->tkwin),
-		used, needed);
-    }
-#endif
 	}
     }
     total = SetNominalSizes(tablePtr, piPtr);
     tablePtr->normal.height = GetBoundedHeight(total, &tablePtr->reqHeight) +
 	PADDING(tablePtr->yPad) +
 	2 * (tablePtr->eTablePad + Tk_InternalBorderWidth(tablePtr->tkwin));
-
-#ifdef notdef
-    if (strcmp(Tk_Name(tablePtr->tkwin), "fs") == 0) {
-    fprintf(stderr, "%s normal height=%d\n",
-	Tk_PathName(tablePtr->tkwin), tablePtr->normal.height);
-    fprintf(stderr, "total=%d boundedheight=%d reqHeight=%d normal=%d\n",
-	    total, GetBoundedHeight(total, &tablePtr->reqHeight),
-	    tablePtr->reqHeight.nom, tablePtr->normal.height);
-    }
-#endif
 }
 
 /*
@@ -3524,6 +3467,10 @@ ArrangeEntries(Table *tablePtr)		/* Table widget structure */
 	 * container.
 	 */
 	if ((x >= xMax) || (y >= yMax)) {
+#ifdef notdef
+ fprintf(stderr, "arrange entries: unmapping window %s %d>=%d %d>=%d\n", 
+         Tk_PathName(tePtr->tkwin), x, xMax, y, yMax);
+#endif
 	    if (Tk_IsMapped(tePtr->tkwin)) {
 		if (Tk_Parent(tePtr->tkwin) != tablePtr->tkwin) {
 		    Tk_UnmaintainGeometry(tePtr->tkwin, tablePtr->tkwin);
@@ -3607,11 +3554,9 @@ ArrangeEntries(Table *tablePtr)		/* Table widget structure */
 	tePtr->y = y;
 
 #ifdef notdef
-		if (strcmp(Tk_Name(tePtr->tkwin), "fs") == 0) {
-		fprintf(stderr, "ArrangeEntries: %s rw=%d rh=%d w=%d h=%d\n",
-			Tk_PathName(tePtr->tkwin), Tk_ReqWidth(tePtr->tkwin),
-			Tk_ReqHeight(tePtr->tkwin), winWidth, winHeight);
-		}
+        fprintf(stderr, "ArrangeEntries: %s rw=%d rh=%d w=%d h=%d\n",
+                Tk_PathName(tePtr->tkwin), Tk_ReqWidth(tePtr->tkwin),
+                Tk_ReqHeight(tePtr->tkwin), winWidth, winHeight);
 #endif
 	if (tablePtr->tkwin != Tk_Parent(tePtr->tkwin)) {
 	    Tk_MaintainGeometry(tePtr->tkwin, tablePtr->tkwin, x, y,
@@ -3621,11 +3566,9 @@ ArrangeEntries(Table *tablePtr)		/* Table widget structure */
 		(winWidth != Tk_Width(tePtr->tkwin)) ||
 		(winHeight != Tk_Height(tePtr->tkwin))) {
 #ifdef notdef
-		if (strcmp(Tk_Name(tePtr->tkwin), "fs") == 0) {
 		fprintf(stderr, "ArrangeEntries: %s rw=%d rh=%d w=%d h=%d\n",
 			Tk_PathName(tePtr->tkwin), Tk_ReqWidth(tePtr->tkwin),
 			Tk_ReqHeight(tePtr->tkwin), winWidth, winHeight);
-		}
 #endif
 		Tk_MoveResizeWindow(tePtr->tkwin, x, y, winWidth, winHeight);
 	    }
@@ -3732,22 +3675,8 @@ ArrangeTable(ClientData clientData)
     delta = tablePtr->container.height - height;
     if (delta != 0) {
 	if (delta > 0) {
-#ifdef notdef
-    if (strcmp(Tk_Name(tablePtr->tkwin), "fs") == 0) {
-	fprintf(stderr, "GrowPartiions %s delta=%d container=%d rh=%d h=%d\n", 
-		Tk_Name(tablePtr->tkwin), delta, tablePtr->container.height, 
-		Tk_ReqHeight(tablePtr->tkwin), height);
-    }
-#endif
 	    GrowPartitions(&tablePtr->rows, delta);
 	} else {
-#ifdef notdef
-    if (strcmp(Tk_Name(tablePtr->tkwin), "fs") == 0) {
-	fprintf(stderr, "ShrinkPartiions %s delta=%d container=%d rh=%d h=%d\n", 
-		Tk_Name(tablePtr->tkwin), delta, tablePtr->container.height, 
-		Tk_ReqHeight(tablePtr->tkwin), height);
-    }
-#endif
 	    ShrinkPartitions(&tablePtr->rows, delta);
 	}
 	height = GetTotalSpan(&tablePtr->rows) + yPad;

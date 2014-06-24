@@ -504,6 +504,7 @@ PbmRawData(Pbm *pbmPtr)
     }
     Blt_DBuffer_SetPointer(pbmPtr->dbuffer, pbmPtr->data + 
 			   (pbmPtr->height * pbmPtr->bytesPerRow));
+    destPtr->flags &= ~BLT_PIC_UNINITIALIZED;
     return destPtr;
 }
 

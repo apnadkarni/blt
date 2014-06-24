@@ -440,18 +440,18 @@ static Blt_Picture
 XbmToPicture(Tcl_Interp *interp, const char *fileName, 
 	     Blt_DBuffer buffer, Blt_Pixel *fg, Blt_Pixel *bg)
 {
-    Blt_Picture picture;
+    Picture *destPtr;
     Xbm xbm;
 
-    picture = NULL;
+    destPtr = NULL;
     if (!XbmHeader(buffer, &xbm)) {
 	    Tcl_AppendResult(interp, "error reading \"", fileName, 
 		"\" invalid XBM header", (char *)NULL);
 	    goto error;
     }
     if ((xbm.width > 0) && (xbm.height > 0)) {
-	picture = Blt_CreatePicture(xbm.width, xbm.height);
-	if (!XbmBitmapData(buffer, xbm.version, fg, bg, picture)) { 
+	destPtr = Blt_CreatePicture(xbm.width, xbm.height);
+	if (!XbmBitmapData(buffer, xbm.version, fg, bg, destPtr)) { 
 	    Tcl_AppendResult(interp, "error reading \"", fileName, 
 		"\" invalid XBM data", (char *)NULL);
 	    goto error;
@@ -465,10 +465,11 @@ XbmToPicture(Tcl_Interp *interp, const char *fileName,
     }
 
     Blt_DBuffer_Free(buffer);
-    return picture;
+    destPtr->flags &= ~BLT_PIC_UNINITIALIZED;
+    return destPtr;
  error:
-    if (picture) {
-	Blt_FreePicture(picture);
+    if (destPtr) {
+	Blt_FreePicture(destPtr);
     }
     Blt_DBuffer_Free(buffer);
     return NULL;

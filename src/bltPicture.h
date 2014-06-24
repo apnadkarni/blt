@@ -108,6 +108,10 @@ struct _Blt_Picture {
 					 * refreshed. For example, may need
 					 * to premultiply alphas again. */ 
 
+#define BLT_PIC_UNINITIALIZED (1<<5)    /* Indicates that the contents of
+                                         * the picture haven't been
+                                         * initialized yet. */
+
 #define BLT_PAINTER_DITHER		(1<<10)
 
 #define BLT_PAINTER_BLEND_MASK		(0x0F)

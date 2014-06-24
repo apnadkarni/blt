@@ -276,25 +276,27 @@ PngToPicture(Tcl_Interp *interp, const char *fileName, Blt_DBuffer dbuffer,
 
     png_read_png(png, info, transform, (void *)NULL);
 
+    {
 #ifdef notdef
-    bitDepth =  png_get_bit_depth(png, info);
-    filter =    png_get_filter_type(png, info);
-    interlace = png_get_interlace_type(png, info);
-#endif
-    colorType = png_get_color_type(png, info);
-    height =    png_get_image_height(png, info);
-    numChannels = png_get_channels(png, info);
-    width =     png_get_image_width(png, info);
-    
-#ifdef notdef
-    fprintf(stderr, "%s: %dx%d, bit_depth=%d, channels=%d, interlace=%d\n",
-	    fileName, width, height, bitDepth, numChannels, interlace);
-    fprintf(stderr, "colortype= %s %s %s \n",
-	    (colorType & 1) ? "palette" : "",
-	    (colorType & 2) ? "color"   : "",
-	    (colorType & 4) ? "alpha"   : "");
-#endif
+        int bitDepth, interlace;
 
+        bitDepth =  png_get_bit_depth(png, info);
+        interlace = png_get_interlace_type(png, info);
+#endif
+        colorType = png_get_color_type(png, info);
+        height =    png_get_image_height(png, info);
+        numChannels = png_get_channels(png, info);
+        width =     png_get_image_width(png, info);
+        
+#ifdef notdef
+        fprintf(stderr, "%s: %dx%d, bit_depth=%d, channels=%d, interlace=%d\n",
+                fileName, width, height, bitDepth, numChannels, interlace);
+        fprintf(stderr, "colortype= %s %s %s \n",
+                (colorType & 1) ? "palette" : "",
+                (colorType & 2) ? "color"   : "",
+                (colorType & 4) ? "alpha"   : "");
+#endif
+    }
     destPtr = Blt_CreatePicture(width, height);
     if (colorType & PNG_COLOR_MASK_ALPHA) {
 	destPtr->flags |= BLT_PIC_BLEND;
@@ -386,6 +388,7 @@ PngToPicture(Tcl_Interp *interp, const char *fileName, Blt_DBuffer dbuffer,
     } else {
         destPtr->flags |= BLT_PIC_ASSOCIATED_COLORS;
     }
+    destPtr->flags &= ~BLT_PIC_UNINITIALIZED;
  bad:
     png_destroy_read_struct(&png, &info, (png_infop *)NULL);
     if (message.numWarnings > 0) {

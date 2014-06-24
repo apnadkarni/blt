@@ -315,6 +315,7 @@ TifReadImage(Tcl_Interp *interp, TIFF *tifPtr, Blt_Chain chain)
 	destRowPtr -= destPtr->pixelsPerRow;
     }
     Blt_Chain_Append(chain, destPtr);
+    destPtr->flags &= ~BLT_PIC_UNINITIALIZED;
     return TCL_OK;
 }
 

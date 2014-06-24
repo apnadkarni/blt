@@ -389,6 +389,7 @@ Blt_PhotoToPicture(Tk_PhotoHandle photo) /* Source photo to convert. */
 	    destRowPtr += destPtr->pixelsPerRow;
         }
     } 
+    destPtr->flags &= ~BLT_PIC_UNINITIALIZED;
     return destPtr;
 }
 

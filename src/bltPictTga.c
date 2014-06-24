@@ -987,6 +987,7 @@ TgaGetImageData(Tga *tgaPtr)
 	}
 	break;
     }
+    destPtr->flags &= ~BLT_PIC_UNINITIALIZED;
     return destPtr;
 }
 

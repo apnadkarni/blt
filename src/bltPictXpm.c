@@ -338,6 +338,7 @@ XpmToPicture(Tcl_Interp *interp, const char *fileName, Blt_DBuffer buffer,
     if (destPtr != NULL) {
 	Blt_Chain chain;
 
+        destPtr->flags &= ~BLT_PIC_UNINITIALIZED;
 	chain = Blt_Chain_Create();
 	Blt_Chain_Append(chain, destPtr);
 	return chain;

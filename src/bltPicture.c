@@ -292,7 +292,7 @@ Blt_CreatePicture(int w, int h)
     destPtr->pixelsPerRow = pixelsPerRow;
     destPtr->width  = w;
     destPtr->height = h;
-    destPtr->flags  = BLT_PIC_DIRTY| BLT_PIC_ASSOCIATED_COLORS;
+    destPtr->flags  = BLT_PIC_UNINITIALIZED;
     destPtr->delay = 0;
     destPtr->reserved = 0;
     /* Over-allocate a buffer so that we can align it (if needed) to a
@@ -6008,7 +6008,6 @@ Blt_ClassifyPicture(Pict *srcPtr)
 	    if ((sp->Alpha == 0x00) || (sp->Alpha != 0xFF)) {
 		/* Stop after first semi/fully-transparent pixel. */
 		flags |= BLT_PIC_BLEND;
-                fprintf(stderr, "Classify: found alpha=%x\n", sp->Alpha);
 		goto setFlags;
 	    }
 	}

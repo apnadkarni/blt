@@ -1820,6 +1820,9 @@ DrawScrollset(Scrollset *setPtr)
 	 * then unmap it.
 	 */
 	if ((setPtr->slaveWidth < 1) || (setPtr->slaveHeight < 1)) {
+ fprintf(stderr, "Drawscrollset slave=%s sw=%d sh=%d\n",
+ Tk_PathName(setPtr->slave), setPtr->slaveWidth,
+ setPtr->slaveHeight);
 	    if (Tk_IsMapped(setPtr->slave)) {
 		if (setPtr->tkwin != Tk_Parent(setPtr->slave)) {
 		    Tk_UnmaintainGeometry(setPtr->slave, setPtr->tkwin);
@@ -1972,11 +1975,13 @@ DisplayScrollset(ClientData clientData)
 	Tk_GeometryRequest(setPtr->tkwin, reqWidth, reqHeight);
     }
 
+#ifdef notdef
     if ((Tk_Width(setPtr->tkwin) <= 1) || (Tk_Height(setPtr->tkwin) <= 1)){
 	/* Don't bother computing the layout until the window size is
 	 * something reasonable. */
 	return;
     }
+#endif
     if (setPtr->flags & LAYOUT_PENDING) {
 	ComputeSlaveGeometry(setPtr);
     }

@@ -3639,8 +3639,10 @@ TabsetEventProc(ClientData clientData, XEvent *eventPtr)
     case FocusOut:
 	if (eventPtr->xfocus.detail != NotifyInferior) {
 	    if (eventPtr->type == FocusIn) {
+                fprintf(stderr, "focus set for %s\n", Tk_PathName(setPtr->tkwin));
 		setPtr->flags |= FOCUS;
 	    } else {
+                fprintf(stderr, "focus unset for %s\n", Tk_PathName(setPtr->tkwin));
 		setPtr->flags &= ~FOCUS;
 	    }
 	    EventuallyRedraw(setPtr);

@@ -534,6 +534,7 @@ JpgToPicture(
     /* Opaque image, set associate colors flag.  */
     destPtr->flags |= BLT_PIC_ASSOCIATED_COLORS;
     Blt_Chain_Append(chain, destPtr);
+    destPtr->flags &= ~BLT_PIC_UNINITIALIZED;
     return chain;
 }
 
