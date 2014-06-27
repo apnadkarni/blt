@@ -1,5 +1,4 @@
 /* -*- mode: c; c-basic-offset: 4; indent-tabs-mode: nil -*- */
-
 /*
  * bltArcBall.c --
  *
@@ -7,13 +6,13 @@
  *
  *	Copyright 1993-2011 George A Howlett.
  *
- *	Permission is hereby granted, free of charge, to any person obtaining
- *	a copy of this software and associated documentation files (the
- *	"Software"), to deal in the Software without restriction, including
- *	without limitation the rights to use, copy, modify, merge, publish,
- *	distribute, sublicense, and/or sell copies of the Software, and to
- *	permit persons to whom the Software is furnished to do so, subject to
- *	the following conditions:
+ *	Permission is hereby granted, free of charge, to any person
+ *	obtaining a copy of this software and associated documentation
+ *	files (the "Software"), to deal in the Software without
+ *	restriction, including without limitation the rights to use, copy,
+ *	modify, merge, publish, distribute, sublicense, and/or sell copies
+ *	of the Software, and to permit persons to whom the Software is
+ *	furnished to do so, subject to the following conditions:
  *
  *	The above copyright notice and this permission notice shall be
  *	included in all copies or substantial portions of the Software.
@@ -21,10 +20,11 @@
  *	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  *	EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  *	MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- *	NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
- *	LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
- *	OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
- *	WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *	NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+ *	BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ *	ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ *	CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ *	SOFTWARE.
  */
 
 #define BUILD_BLT_TK_PROCS 1
@@ -254,11 +254,12 @@ MatrixToQuaternion(HMatrix A, Quaternion *q)
 {
     double trace;
 
-   /* This algorithm avoids near-zero divides by looking for a large component
-    * - first w, then x, y, or z.  When the trace is greater than zero, |w| is
-    * greater than 1/2, which is as small as a largest component can be.
-    * Otherwise, the largest diagonal entry corresponds to the largest of |x|,
-    * |y|, or |z|, one of which must be larger than |w|, and at least 1/2. */
+   /* This algorithm avoids near-zero divides by looking for a large
+    * component - first w, then x, y, or z.  When the trace is greater than
+    * zero, |w| is greater than 1/2, which is as small as a largest
+    * component can be.  Otherwise, the largest diagonal entry corresponds
+    * to the largest of |x|, |y|, or |z|, one of which must be larger than
+    * |w|, and at least 1/2. */
 
     trace = A[0][0] + A[1][1] + A[2][2]; 
     if (trace >= 0.0) {		
@@ -349,9 +350,9 @@ QuaternionToMatrix(Quaternion* q, HMatrix A)
  *	Most TCL commands (like Tcl_GetCmdInfo) look only at the global
  *	namespace.
  *
- *	Tcl_GetCommandInfo will get us the objClientData field that should be
- *	a cmdPtr.  We can verify that by searching our hashtable of cmdPtr
- *	addresses.
+ *	Tcl_GetCommandInfo will get us the objClientData field that should
+ *	be a cmdPtr.  We can verify that by searching our hashtable of
+ *	cmdPtr addresses.
  *
  * Results:
  *	A pointer to the arcball command.  It's up to the calling routines to
@@ -476,8 +477,7 @@ DragArcBall(ArcBall *arcPtr, double x, double y, Quaternion *q)
         /* Compute the length of the perpendicular vector. */
         if (Length(&perp) > DBL_EPSILON) {
             /* If its non-zero, we're ok, so return the perpendicular
-             * vector as the transform after all.
-             */
+             * vector as the transform after all. */
             q->x = perp.x;
             q->y = perp.y;
             q->z = perp.z;

@@ -1,5 +1,4 @@
 /* -*- mode: c; c-basic-offset: 4; indent-tabs-mode: nil -*- */
-
 /*
  * bltGraph.c --
  *
@@ -9,13 +8,13 @@
  *
  *	Copyright 1991-2004 George A Howlett.
  *
- *	Permission is hereby granted, free of charge, to any person obtaining
- *	a copy of this software and associated documentation files (the
- *	"Software"), to deal in the Software without restriction, including
- *	without limitation the rights to use, copy, modify, merge, publish,
- *	distribute, sublicense, and/or sell copies of the Software, and to
- *	permit persons to whom the Software is furnished to do so, subject to
- *	the following conditions:
+ *	Permission is hereby granted, free of charge, to any person
+ *	obtaining a copy of this software and associated documentation
+ *	files (the "Software"), to deal in the Software without
+ *	restriction, including without limitation the rights to use, copy,
+ *	modify, merge, publish, distribute, sublicense, and/or sell copies
+ *	of the Software, and to permit persons to whom the Software is
+ *	furnished to do so, subject to the following conditions:
  *
  *	The above copyright notice and this permission notice shall be
  *	included in all copies or substantial portions of the Software.
@@ -23,10 +22,11 @@
  *	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  *	EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  *	MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- *	NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
- *	LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
- *	OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
- *	WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *	NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+ *	BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ *	ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ *	CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ *	SOFTWARE.
  */
 
 /*
@@ -79,9 +79,9 @@ typedef int (GraphCmdProc)(Graph *graphPtr, Tcl_Interp *interp, int objc,
  *	option add *X.title "X Axis Title" widgetDefault
  *	.g marker bind BitmapMarker <Enter> { ... }
  *
- * The option database trick is performed by creating a temporary window when
- * an object is initially configured.  The class name of the temporary window
- * will be from the list below.
+ * The option database trick is performed by creating a temporary window
+ * when an object is initially configured.  The class name of the temporary
+ * window will be from the list below.
  */
 static const char *objectClassNames[] = {
     "unknown",
@@ -300,9 +300,9 @@ static Tcl_CmdDeleteProc GraphInstCmdDeleteProc;
  *
  * Blt_UpdateGraph --
  *
- *	Tells the Tk dispatcher to call the graph display routine at the next
- *	idle point.  This request is made only if the window is displayed and
- *	no other redraw request is pending.
+ *	Tells the Tk dispatcher to call the graph display routine at the
+ *	next idle point.  This request is made only if the window is
+ *	displayed and no other redraw request is pending.
  *
  * Results: None.
  *
@@ -328,9 +328,9 @@ Blt_UpdateGraph(ClientData clientData)
  *
  * Blt_EventuallyRedrawGraph --
  *
- *	Tells the Tk dispatcher to call the graph display routine at the next
- *	idle point.  This request is made only if the window is displayed and
- *	no other redraw request is pending.
+ *	Tells the Tk dispatcher to call the graph display routine at the
+ *	next idle point.  This request is made only if the window is
+ *	displayed and no other redraw request is pending.
  *
  * Results: None.
  *
@@ -369,8 +369,8 @@ Blt_GraphSetObjectClass(GraphObj *graphObjPtr, ClassId classId)
  *
  * GraphEventProc --
  *
- *	This procedure is invoked by the Tk dispatcher for various events on
- *	graphs.
+ *	This procedure is invoked by the Tk dispatcher for various events
+ *	on graphs.
  *
  * Results:
  *	None.
@@ -423,8 +423,8 @@ GraphEventProc(ClientData clientData, XEvent *eventPtr)
  * GraphInstCmdDeleteProc --
  *
  *	This procedure is invoked when a widget command is deleted.  If the
- *	widget isn't already in the process of being destroyed, this command
- *	destroys it.
+ *	widget isn't already in the process of being destroyed, this
+ *	command destroys it.
  *
  * Results:
  *	None.
@@ -439,8 +439,8 @@ GraphInstCmdDeleteProc(ClientData clientData) /* Pointer to widget record. */
 {
     Graph *graphPtr = clientData;
 
-    if (graphPtr->tkwin != NULL) {	/* NULL indicates window has already
-					 * been destroyed. */
+    if (graphPtr->tkwin != NULL) {	/* NULL indicates window has
+					 * already been destroyed. */
 	Tk_Window tkwin;
 
 	tkwin = graphPtr->tkwin;
@@ -502,19 +502,19 @@ InitPens(Graph *graphPtr)
  * Blt_GraphTags --
  *
  *	Sets the binding tags for a graph obj. This routine is called by Tk
- *	when an event occurs in the graph.  It fills an array of pointers with
- *	bind tag addresses.
+ *	when an event occurs in the graph.  It fills an array of pointers
+ *	with bind tag addresses.
  *
- *	The object addresses are strings hashed in one of two tag tables: one
- *	for elements and the another for markers.  Note that there's only one
- *	binding table for elements and markers.  [We don't want to trigger
- *	both a marker and element bind command for the same event.]  But we
- *	don't want a marker and element with the same tag name to activate the
- *	others bindings. A tag "all" for markers should mean all markers, not
- *	all markers and elements.  As a result, element and marker tags are
- *	stored in separate hash tables, which means we can't generate the same
- *	tag address for both an elements and marker, even if they have the
- *	same name.
+ *	The object addresses are strings hashed in one of two tag tables:
+ *	one for elements and the another for markers.  Note that there's
+ *	only one binding table for elements and markers.  [We don't want to
+ *	trigger both a marker and element bind command for the same event.]
+ *	But we don't want a marker and element with the same tag name to
+ *	activate the others bindings. A tag "all" for markers should mean
+ *	all markers, not all markers and elements.  As a result, element
+ *	and marker tags are stored in separate hash tables, which means we
+ *	can't generate the same tag address for both an elements and
+ *	marker, even if they have the same name.
  *
  * Results:
  *	None.
@@ -522,7 +522,8 @@ InitPens(Graph *graphPtr)
  * Side effects:
  *	This information will be used by the binding code in bltUtil.c to
  *	determine what graph objects match the current event.  The tags are
- *	placed in tagArr and *nTagsPtr is set with the number of tags found.
+ *	placed in tagArr and *nTagsPtr is set with the number of tags
+ *	found.
  *
  *---------------------------------------------------------------------------
  */
@@ -541,9 +542,9 @@ Blt_GraphTags(
     graphPtr = (Graph *)Blt_GetBindingData(table);
 
     /* 
-     * All graph objects (markers, elements, axes, etc) have the same starting
-     * fields in their structures, such as "classId", "name", "className", and
-     * "tags".
+     * All graph objects (markers, elements, axes, etc) have the same
+     * starting fields in their structures, such as "classId", "name",
+     * "className", and "tags".
      */
     objPtr = object;
     if (objPtr->deleted) {
@@ -600,16 +601,17 @@ Blt_GraphTags(
  *	graph. This data structure is used to clip the points and line
  *	segments of the line element.
  *
- *	The clip region is the plotting area plus such arbitrary extra space.
- *	The reason we clip with a bounding box larger than the plot area is so
- *	that symbols will be drawn even if their center point isn't in the
- *	plotting area.
+ *	The clip region is the plotting area plus such arbitrary extra
+ *	space.  The reason we clip with a bounding box larger than the plot
+ *	area is so that symbols will be drawn even if their center point
+ *	isn't in the plotting area.
  *
  * Results:
  *	None.
  *
  * Side Effects:
- *	The bounding box is filled with the dimensions of the plotting area.
+ *	The bounding box is filled with the dimensions of the plotting
+ *	area.
  *
  *---------------------------------------------------------------------------
  */
@@ -626,10 +628,10 @@ GraphExtents(Graph *graphPtr, Region2d *regionPtr)
 
 
 /*
- *	Find the closest point from the set of displayed elements, searching
- *	the display list from back to front.  That way, if the points from
- *	two different elements overlay each other exactly, the one that's on
- *	top (visible) is picked.
+ *	Find the closest point from the set of displayed elements,
+ *	searching the display list from back to front.  That way, if the
+ *	points from two different elements overlay each other exactly, the
+ *	one that's on top (visible) is picked.
  */
 /*ARGSUSED*/
 static ClientData
@@ -641,16 +643,16 @@ PickEntry(ClientData clientData, int x, int y, ClientData *contextPtr)
     Region2d exts;
 
     if (graphPtr->flags & MAP_ALL) {
-	return NULL;			/* Don't pick anything until the next
-					 * redraw occurs. */
+	return NULL;			/* Don't pick anything until the
+					 * next redraw occurs. */
     }
     GraphExtents(graphPtr, &exts);
 
     if ((x >= exts.right) || (x < exts.left) || 
 	(y >= exts.bottom) || (y < exts.top)) {
 	/* 
-	 * Sample coordinate is in one of the graph margins.  Can only pick an
-	 * axis.
+	 * Sample coordinate is in one of the graph margins.  Can only pick
+	 * an axis.
 	 */
 	return Blt_NearestAxis(graphPtr, x, y);
     }
@@ -686,9 +688,9 @@ PickEntry(ClientData clientData, int x, int y, ClientData *contextPtr)
  *	None.
  *
  * Side effects:
- *	Configuration information, such as text string, colors, font, etc. get
- *	set for graphPtr; old resources get freed, if there were any.  The
- *	graph is redisplayed.
+ *	Configuration information, such as text string, colors, font,
+ *	etc. get set for graphPtr; old resources get freed, if there were
+ *	any.  The graph is redisplayed.
  *
  *---------------------------------------------------------------------------
  */
@@ -700,7 +702,8 @@ ConfigureGraph(Graph *graphPtr)
     XGCValues gcValues;
     unsigned long gcMask;
 
-    /* Don't allow negative bar widths. Reset to an arbitrary value (0.1) */
+    /* Don't allow negative bar widths. Reset to an arbitrary value
+     * (0.1) */
     if (graphPtr->barWidth <= 0.0f) {
 	graphPtr->barWidth = 0.8f;
     }
@@ -722,8 +725,8 @@ ConfigureGraph(Graph *graphPtr)
     }
 
     /*
-     * Create GCs for interior and exterior regions, and a background GC for
-     * clearing the margins with XFillRectangle
+     * Create GCs for interior and exterior regions, and a background GC
+     * for clearing the margins with XFillRectangle
      */
 
     /* Margin GC */
@@ -749,8 +752,8 @@ ConfigureGraph(Graph *graphPtr)
     if (Blt_ConfigModified(configSpecs, "-invertxy", (char *)NULL)) {
 
 	/*
-	 * If the -inverted option changed, we need to readjust the pointers
-	 * to the axes and recompute the their scales.
+	 * If the -inverted option changed, we need to readjust the
+	 * pointers to the axes and recompute the their scales.
 	 */
 
 	AdjustAxisPointers(graphPtr);
@@ -771,9 +774,9 @@ ConfigureGraph(Graph *graphPtr)
     Blt_ConfigureCrosshairs(graphPtr);
 
     /*
-     *  Update the layout of the graph (and redraw the elements) if any of the
-     *  following graph options which affect the size of * the plotting area
-     *  has changed.
+     *  Update the layout of the graph (and redraw the elements) if any of
+     *  the following graph options which affect the size of the plotting
+     *  area has changed.
      *
      *	    -aspect
      *      -borderwidth, -plotborderwidth
@@ -802,8 +805,8 @@ ConfigureGraph(Graph *graphPtr)
  * DestroyGraph --
  *
  *	This procedure is invoked by Tcl_EventuallyFree or Tcl_Release to
- *	clean up the internal structure of a graph at a safe time (when no-one
- *	is using it anymore).
+ *	clean up the internal structure of a graph at a safe time (when
+ *	no-one is using it anymore).
  *
  * Results:
  *	None.
@@ -822,10 +825,10 @@ DestroyGraph(DestroyData dataPtr)
     /*
      * Destroy the individual components of the graph: elements, markers,
      * axes, legend, display lists etc.  Be careful to remove them in
-     * order. For example, axes are used by elements and markers, so they have
-     * to be removed after the markers and elements. Same it true with the
-     * legend and pens (they use elements), so can't be removed until the
-     * elements are destroyed.
+     * order. For example, axes are used by elements and markers, so they
+     * have to be removed after the markers and elements. Same it true with
+     * the legend and pens (they use elements), so can't be removed until
+     * the elements are destroyed.
      */
     Blt_DestroyElements(graphPtr);	/* Destroy elements before colormaps. */
     Blt_DestroyColormaps(graphPtr);	/* Destroy colormaps before axes. */
@@ -1170,12 +1173,12 @@ topmargin, bottommargin, plotarea, or legend", (char *)NULL);
  *
  * InsideOp --
  *
- *	Returns true of false whether the given point is inside the plotting
- *	area (defined by left,bottom right, top).
+ *	Returns true of false whether the given point is inside the
+ *	plotting area (defined by left,bottom right, top).
  *
  * Results:
- *	Always returns TCL_OK.  interp->result will contain the boolean string
- *	representation.
+ *	Always returns TCL_OK.  interp->result will contain the boolean
+ *	string representation.
  *
  *---------------------------------------------------------------------------
  */
@@ -1208,10 +1211,10 @@ InsideOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *	corresponding with the given window X and Y coordinate positions.
  *
  * Results:
- *	Returns a standard TCL result.  If an error occurred while parsing the
- *	window positions, TCL_ERROR is returned, and interp->result will
- *	contain the error message.  Otherwise interp->result will contain a
- *	TCL list of the x and y coordinates.
+ *	Returns a standard TCL result.  If an error occurred while parsing
+ *	the window positions, TCL_ERROR is returned, and interp->result
+ *	will contain the error message.  Otherwise interp->result will
+ *	contain a TCL list of the x and y coordinates.
  *
  *---------------------------------------------------------------------------
  */
@@ -1232,9 +1235,10 @@ InvtransformOp(Graph *graphPtr, Tcl_Interp *interp, int objc,
     if (graphPtr->flags & RESET_AXES) {
 	Blt_ResetAxes(graphPtr);
     }
-    /* Perform the reverse transformation, converting from window coordinates
-     * to graph data coordinates.  Note that the point is always mapped to the
-     * bottom and left axes (which may not be what the user wants).  */
+    /* Perform the reverse transformation, converting from window
+     * coordinates to graph data coordinates.  Note that the point is
+     * always mapped to the bottom and left axes (which may not be what the
+     * user wants).  */
 
     /*  Pick the first pair of axes */
     axes.x = Blt_GetFirstAxis(graphPtr->axisChain[0]);
@@ -1253,14 +1257,14 @@ InvtransformOp(Graph *graphPtr, Tcl_Interp *interp, int objc,
  *
  * TransformOp --
  *
- *	This procedure returns a list of the window coordinates corresponding
- *	with the given graph x and y coordinates.
+ *	This procedure returns a list of the window coordinates
+ *	corresponding with the given graph x and y coordinates.
  *
  * Results:
  *	Returns a standard TCL result.  interp->result contains the list of
- *	the graph coordinates. If an error occurred while parsing the window
- *	positions, TCL_ERROR is returned, then interp->result will contain an
- *	error message.
+ *	the graph coordinates. If an error occurred while parsing the
+ *	window positions, TCL_ERROR is returned, then interp->result will
+ *	contain an error message.
  *
  *---------------------------------------------------------------------------
  */
@@ -1281,9 +1285,9 @@ TransformOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	Blt_ResetAxes(graphPtr);
     }
     /*
-     * Perform the transformation from window to graph coordinates.  Note that
-     * the points are always mapped onto the bottom and left axes (which may
-     * not be the what the user wants).
+     * Perform the transformation from window to graph coordinates.  Note
+     * that the points are always mapped onto the bottom and left axes
+     * (which may not be the what the user wants).
      */
     axes.x = Blt_GetFirstAxis(graphPtr->axisChain[0]);
     axes.y = Blt_GetFirstAxis(graphPtr->axisChain[1]);
@@ -1356,9 +1360,9 @@ Print1Op(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	}
     }
     /*  
-     * This is a taken from Blt_SnapPhoto.  The difference is that here we're
-     * using the DIBSection directly, without converting the section into a
-     * Picture.
+     * This is a taken from Blt_SnapPhoto.  The difference is that here
+     * we're using the DIBSection directly, without converting the section
+     * into a Picture.
      */
     ZeroMemory(&info, sizeof(info));
     info.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
@@ -1373,8 +1377,8 @@ Print1Op(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     TkWinReleaseDrawableDC(Tk_WindowId(graphPtr->tkwin), hDC, &state);
     
     /*
-     * Create our own drawable by hand using the DIB we just created.  We'll
-     * then draw into it using the standard drawing functions.
+     * Create our own drawable by hand using the DIB we just created.
+     * We'll then draw into it using the standard drawing functions.
      */
     bd.type = TWD_BITMAP;
     bd.handle = hBitmap;
@@ -1386,9 +1390,9 @@ Print1Op(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     Blt_DrawGraph(graphPtr, (Drawable)&bd);
 
     /*
-     * Now that the DIB contains the image of the graph, get the the data bits
-     * and write them to the printer device, stretching the image to the fit
-     * the printer's resolution.
+     * Now that the DIB contains the image of the graph, get the the data
+     * bits and write them to the printer device, stretching the image to
+     * the fit the printer's resolution.
      */
     result = TCL_ERROR;
     if (GetObject(hBitmap, sizeof(DIBSECTION), &ds) == 0) {
@@ -1514,7 +1518,8 @@ Print2Op(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 static int
 ObjToFormat(
     ClientData clientData,		/* Not used.*/
-    Tcl_Interp *interp,			/* Interpreter to send results back to */
+    Tcl_Interp *interp,			/* Interpreter to send results back
+                                         * to */
     const char *switchName,		/* Not used. */
     Tcl_Obj *objPtr,			/* String representation */
     char *record,			/* Structure record */
@@ -1648,10 +1653,10 @@ CreateAPMetaFile(Tcl_Interp *interp, HANDLE hMetaFile, HDC hDC,
  *	Snaps a picture of the graph and stores it in the specified image.
  *
  * Results:
- *	Returns a standard TCL result.  interp->result contains
- *	the list of the graph coordinates. If an error occurred
- *	while parsing the window positions, TCL_ERROR is returned,
- *	then interp->result will contain an error message.
+ *	Returns a standard TCL result.  interp->result contains the list of
+ *	the graph coordinates. If an error occurred while parsing the
+ *	window positions, TCL_ERROR is returned, then interp->result will
+ *	contain an error message.
  *
  *---------------------------------------------------------------------------
  */
@@ -1692,7 +1697,8 @@ SnapOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     if (switches.height < 2) {
 	switches.width = Tk_ReqHeight(graphPtr->tkwin);
     }
-    /* Always re-compute the layout of the graph before snapping the picture. */
+    /* Always re-compute the layout of the graph before snapping the
+     * picture. */
     graphPtr->width = switches.width;
     graphPtr->height = switches.height;
     Blt_MapGraph(graphPtr);
@@ -2004,9 +2010,9 @@ ContourCmd(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * DrawMargins --
  *
- * 	Draws the exterior region of the graph (axes, ticks, titles, etc) 
- * 	onto a pixmap. The interior region is defined by the given rectangle
- * 	structure.
+ * 	Draws the exterior region of the graph (axes, ticks, titles, etc)
+ * 	onto a pixmap. The interior region is defined by the given
+ * 	rectangle structure.
  *
  *	---------------------------------
  *      |                               |
@@ -2113,9 +2119,9 @@ DrawMargins(Graph *graphPtr, Drawable drawable)
  * DrawPlotRegion --
  *
  *	Draws the contents of the plotting area.  This consists of the
- *	elements, markers (draw under elements), axis limits, and possibly the
- *	legend.  Typically, the output will be cached into a backing store
- *	pixmap, so that redraws can occur quickly.
+ *	elements, markers (draw under elements), axis limits, and possibly
+ *	the legend.  Typically, the output will be cached into a backing
+ *	store pixmap, so that redraws can occur quickly.
  *
  * Results:
  *	None.
@@ -2156,9 +2162,9 @@ DrawPlotRegion(Graph *graphPtr, Drawable drawable)
  * DrawPlot --
  *
  *	Draws the contents of the plotting area.  This consists of the
- *	elements, markers (draw under elements), axis limits, and possibly the
- *	legend.  Typically, the output will be cached into a backing store
- *	pixmap, so that redraws can occur quickly.
+ *	elements, markers (draw under elements), axis limits, and possibly
+ *	the legend.  Typically, the output will be cached into a backing
+ *	store pixmap, so that redraws can occur quickly.
  *
  * Results:
  *	None.
@@ -2304,8 +2310,8 @@ DisplayGraph(ClientData clientData)
     fprintf(stderr, "Calling DisplayGraph(%s)\n", Tk_PathName(tkwin));
 #endif
     if ((Tk_Width(tkwin) <= 1) || (Tk_Height(tkwin) <= 1)) {
-	/* Don't bother computing the layout until the size of the window is
-	 * something reasonable. */
+	/* Don't bother computing the layout until the size of the window
+	 * is something reasonable. */
 	return;
     }
     graphPtr->width = Tk_Width(tkwin);

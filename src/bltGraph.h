@@ -355,7 +355,8 @@ struct _Graph {
     Display *display;			/* Display containing widget; used
 					 * to release resources after tkwin
 					 * has already gone away. */
-    Tcl_Command cmdToken;		/* Token for graph's widget command. */
+    Tcl_Command cmdToken;		/* Token for graph's widget
+                                         * command. */
     const char *data;			/* This value isn't used in C code.
 					 * It may be used in TCL bindings
 					 * to associate extra data. */
@@ -551,14 +552,14 @@ struct _Graph {
  *	GET_AXIS_GEOMETRY	Indicates that the size of the axes needs 
  *				to be recalculated. 
  *
- *	RESET_AXES		Flag to call to Blt_ResetAxes routine.  
- *				This routine recalculates the scale offset
- *				(used for mapping coordinates) of each
- *				axis.  If an axis limit has changed, then
- *				it sets flags to re-layout and redraw the
- *				entire graph.  This needs to happend before
- *				the axis can compute transformations
- *				between graph and screen coordinates.
+ *	RESET_AXES Flag to call to Blt_ResetAxes routine.  This routine
+ *				recalculates the scale offset (used for
+ *				mapping coordinates) of each axis.  If an
+ *				axis limit has changed, then it sets flags
+ *				to re-layout and redraw the entire graph.
+ *				This needs to happend before the axis can
+ *				compute transformations between graph and
+ *				screen coordinates.
  *
  *	LAYOUT_NEEDED		
  *

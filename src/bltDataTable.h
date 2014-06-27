@@ -4,13 +4,13 @@
  *
  *	Copyright 1998-2004 George A. Howlett.
  *
- *	Permission is hereby granted, free of charge, to any person obtaining
- *	a copy of this software and associated documentation files (the
- *	"Software"), to deal in the Software without restriction, including
- *	without limitation the rights to use, copy, modify, merge, publish,
- *	distribute, sublicense, and/or sell copies of the Software, and to
- *	permit persons to whom the Software is furnished to do so, subject to
- *	the following conditions:
+ *	Permission is hereby granted, free of charge, to any person
+ *	obtaining a copy of this software and associated documentation
+ *	files (the "Software"), to deal in the Software without
+ *	restriction, including without limitation the rights to use, copy,
+ *	modify, merge, publish, distribute, sublicense, and/or sell copies
+ *	of the Software, and to permit persons to whom the Software is
+ *	furnished to do so, subject to the following conditions:
  *
  *	The above copyright notice and this permission notice shall be
  *	included in all copies or substantial portions of the Software.
@@ -18,10 +18,11 @@
  *	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  *	EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  *	MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- *	NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
- *	LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
- *	OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
- *	WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *	NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+ *	BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ *	ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ *	CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ *	SOFTWARE.
  */
 
 #ifndef _BLT_DATATABLE_H
@@ -51,17 +52,18 @@ typedef struct _BLT_TABLE_VALUE {
 	Tcl_WideInt w;
 	void *ptr;
     } datum;				/* Internal representation of data:
-					 * used to speed comparisons, sorting,
-					 * etc. */
+					 * used to speed comparisons,
+					 * sorting, etc. */
     /* 
-     * Time/space tradeoff for values.  If most values are small the win will
-     * be that we don't have to allocate space for each string representation.
+     * Time/space tradeoff for values.  If most values are small the win
+     * will be that we don't have to allocate space for each string
+     * representation.
      */
     const char *string;			/* String representation of value.
-					 * Used first to see if the value is
-					 * empty. The pointer will be NULL.
-					 * If the pointer is equal to
-					 * BLT_TABLE_VALUE_STATIC, this
+					 * Used first to see if the value
+					 * is empty. The pointer will be
+					 * NULL.  If the pointer is equal
+					 * to BLT_TABLE_VALUE_STATIC, this
 					 * indicates to look at staticSpace
 					 * for the value string. */
     char staticSpace[BLT_TABLE_VALUE_LENGTH];
@@ -69,21 +71,24 @@ typedef struct _BLT_TABLE_VALUE {
 
 typedef struct _BLT_TABLE_HEADER {
     const char *label;			/* Label of row or column. */
-    long index;				/* Reverse lookup offset-to-index. */
+    long index;				/* Reverse lookup
+                                         * offset-to-index. */
     long offset;
     unsigned int flags;
 } *BLT_TABLE_HEADER;
 
 typedef struct _BLT_TABLE_ROW {
     const char *label;			/* Label of row or column. */
-    long index;				/* Reverse lookup offset-to-index. */
+    long index;				/* Reverse lookup
+                                         * offset-to-index. */
     long offset;
     unsigned int flags;
 } *BLT_TABLE_ROW;
 
 typedef struct _BLT_TABLE_COLUMN {
     const char *label;			/* Label of row or column. */
-    long index;				/* Reverse lookup offset-to-index. */
+    long index;				/* Reverse lookup
+                                         * offset-to-index. */
     long offset;
     unsigned short flags;
     BLT_TABLE_COLUMN_TYPE type;
@@ -103,14 +108,14 @@ typedef struct _BLT_TABLE_ROWCOLUMN {
     BLT_TABLE_ROWCOLUMN_CLASS *classPtr;
     Blt_Pool headerPool;
     long numAllocated;			/* Length of allocated header array
-					 * below. May exceed the number of row
-					 * or column headers used. */
+					 * below. May exceed the number of
+					 * row or column headers used. */
     long numUsed;
     BLT_TABLE_HEADER *map;		/* Array of row or column headers. */
     Blt_Chain freeList;			/* Tracks free row or column
-					 * headers.  */
-    Blt_HashTable labelTable;		/* Hash table of labels. Maps labels
-					 * to table offsets. */
+					 * headers. */
+    Blt_HashTable labelTable;		/* Hash table of labels. Maps
+					 * labels to table offsets. */
     long nextId;			/* Used to generate default labels. */
 } BLT_TABLE_ROWCOLUMN;
 
@@ -118,17 +123,17 @@ typedef struct _BLT_TABLE_ROWCOLUMN {
  * BLT_TABLE_CORE --
  *
  *	Structure representing a core table object.  A table object may be
- *	shared by more than one client (BLT_TABLE). When a client wants to use
- *	a table object, it is given a token that represents the table.  The
- *	core table object tracks its clients by their tokens.  When all the
- *	clients of a core table object have released their tokens, the table
- *	object is automatically destroyed.
+ *	shared by more than one client (BLT_TABLE). When a client wants to
+ *	use a table object, it is given a token that represents the table.
+ *	The core table object tracks its clients by their tokens.  When all
+ *	the clients of a core table object have released their tokens, the
+ *	table object is automatically destroyed.
  *
  *	The table object is an array of column vectors. Each vector is an
  *	array of BLT_TABLE_VALUE's, representing the data for the column.
- *	Empty row entries are designated by 0 length values.  Column vectors
- *	are allocated when needed.  Every column in the table has the same
- *	length.
+ *	Empty row entries are designated by 0 length values.  Column
+ *	vectors are allocated when needed.  Every column in the table has
+ *	the same length.
  *
  *	Rows and columns are indexed by a map of pointers to headers.  This
  *	map represents the order of the rows or columns, not how the values
@@ -142,8 +147,8 @@ typedef struct _BLT_TABLE_CORE {
 					 * below. */
     Blt_Chain clients;			/* List of clients using this table */
     unsigned long mtime, ctime;
-    unsigned int notifyFlags;		/* Notification flags. See definitions
-					 * below. */
+    unsigned int notifyFlags;		/* Notification flags. See
+					 * definitions below. */
     int notifyHold;
 } BLT_TABLE_CORE;
 
@@ -159,8 +164,8 @@ typedef struct _BLT_TABLE_CORE {
  *
  *	Two or more BLT_TABLEs can share the same core table object.  Each
  *	structure acts as a ticket for the underlying core table object.
- *	Clients can designate notifier routines that are invoked when the core
- *	table object is changed is specific ways (especially by other
+ *	Clients can designate notifier routines that are invoked when the
+ *	core table object is changed is specific ways (especially by other
  *	clients).
  */
 typedef struct _BLT_TABLE {
@@ -169,12 +174,14 @@ typedef struct _BLT_TABLE {
 					 * datatable token or not. */
     const char *name;			/* Fully namespace-qualified name of
 					 * the client. */
-    BLT_TABLE_CORE *corePtr;		/* Pointer to the structure containing
-					 * the master information about the
-					 * table used by the client.  If NULL,
-					 * this indicates that the table has
-					 * been destroyed (but as of yet, this
-					 * client hasn't recognized it). */
+    BLT_TABLE_CORE *corePtr;		/* Pointer to the structure
+					 * containing the master
+					 * information about the table used
+					 * by the client.  If NULL, this
+					 * indicates that the table has
+					 * been destroyed (but as of yet,
+					 * this client hasn't recognized
+					 * it). */
     Tcl_Interp *interp;
     Blt_HashTable *clientTablePtr;	/* Interpreter-specific global hash
 					 * table of all datatable clients.
@@ -183,7 +190,8 @@ typedef struct _BLT_TABLE {
 					 * datatable. */
     Blt_HashEntry *hPtr;		/* This client's entry into a list
 					 * stored in the above
-					 * interpreter-specific hash table. */
+					 * interpreter-specific hash
+					 * table. */
     Blt_ChainLink link;			/* Pointer into the core server's
 					 * chain of clients. */
     Blt_ChainLink link2;		/* Pointer into the list of clients
@@ -356,17 +364,16 @@ BLT_EXTERN BLT_TABLE_ROWCOLUMN_SPEC blt_table_column_spec(BLT_TABLE table,
  *
  *	Structure representing a trace used by a client of the table.
  *
- *	Table rows and columns may be tagged with strings.  A row may
- *	have many tags.  The same tag may be used for many rows.  Tags
- *	are used and stored by clients of a table.  Tags can also be
- *	shared between clients of the same table.
+ *	Table rows and columns may be tagged with strings.  A row may have
+ *	many tags.  The same tag may be used for many rows.  Tags are used
+ *	and stored by clients of a table.  Tags can also be shared between
+ *	clients of the same table.
  *	
- *	Both rowTable and columnTable are hash tables keyed by the
- *	physical row or column location in the table respectively.
- *	This is not the same as the client's view (the order of rows
- *	or columns as seen by the client).  This is so that clients
- *	(which may have different views) can share tags without
- *	sharing the same view.
+ *	Both rowTable and columnTable are hash tables keyed by the physical
+ *	row or column location in the table respectively.  This is not the
+ *	same as the client's view (the order of rows or columns as seen by
+ *	the client).  This is so that clients (which may have different
+ *	views) can share tags without sharing the same view.
  */
 
 
@@ -383,26 +390,27 @@ typedef struct _BLT_TABLE_ITERATOR {
     BLT_TABLE table;			/* Table that we're iterating over. */
 
     BLT_TABLE_ITERATOR_TYPE type;	/* Type of iteration:
-					 * TABLE_ITERATOR_TAG by row or column
-					 * tag.  TABLE_ITERATOR_ALL by every
-					 * row or column.
-					 * TABLE_ITERATOR_INDEX single item:
-					 * either label or index.
+					 * TABLE_ITERATOR_TAG by row or
+					 * column tag.  TABLE_ITERATOR_ALL
+					 * by every row or column.
+					 * TABLE_ITERATOR_INDEX single
+					 * item: either label or index.
 					 * TABLE_ITERATOR_RANGE over a
 					 * consecutive range of indices.
 					 * TABLE_ITERATOR_CHAIN over an
-					 * expanded, non-overlapping list of
-					 * tags, labels, and indices.
+					 * expanded, non-overlapping list
+					 * of tags, labels, and indices.
 					 */
 
     const char *tagName;		/* Used by notification routines to
 					 * determine if a tag is being
 					 * used. */
-    long start;				/* Starting index.  Starting point of
-					 * search, saved if iterator is
+    long start;				/* Starting index.  Starting point
+					 * of search, saved if iterator is
 					 * reused.  Used for
 					 * TABLE_ITERATOR_ALL and
-					 * TABLE_ITERATOR_INDEX searches. */
+					 * TABLE_ITERATOR_INDEX
+					 * searches. */
     long end;				/* Ending index (inclusive). */
 
     long next;				/* Next index. */
@@ -414,9 +422,9 @@ typedef struct _BLT_TABLE_ITERATOR {
     Blt_HashSearch cursor;		/* Iterator for tag hash table. */
 
     /* For chain-based searches (multiple tags). */
-    Blt_Chain chain;			/* This chain, unlike the above hash
-					 * table must be freed after its
-					 * use. */
+    Blt_Chain chain;			/* This chain, unlike the above
+					 * hash table must be freed after
+					 * its use. */
     Blt_ChainLink link;			/* Search iterator for chain. */
 } BLT_TABLE_ITERATOR;
 
@@ -464,20 +472,20 @@ BLT_EXTERN int blt_table_list_columns(Tcl_Interp *interp, BLT_TABLE table,
  *	the table.
  *
  *	Table rows and columns may be tagged with strings.  A row may have
- *	many tags.  The same tag may be used for many rows.  Tags are used and
- *	stored by clients of a table.  Tags can also be shared between clients
- *	of the same table.
+ *	many tags.  The same tag may be used for many rows.  Tags are used
+ *	and stored by clients of a table.  Tags can also be shared between
+ *	clients of the same table.
  *	
  *	Both rowTable and columnTable are hash tables keyed by the physical
  *	row or column location in the table respectively.  This is not the
- *	same as the client's view (the order of rows or columns as seen by the
- *	client).  This is so that clients (which may have different views) can
- *	share tags without sharing the same view.
+ *	same as the client's view (the order of rows or columns as seen by
+ *	the client).  This is so that clients (which may have different
+ *	views) can share tags without sharing the same view.
  */
 typedef struct {
     Tcl_Interp *interp;			/* Interpreter to report to */
-    BLT_TABLE table;			/* Table object client that received
-					 * the event. */
+    BLT_TABLE table;			/* Table object client that
+					 * received the event. */
     BLT_TABLE_ROW row;			/* Matching row and column. */
     BLT_TABLE_COLUMN column;
     unsigned int mask;			/* Type of event received. */
@@ -494,15 +502,15 @@ typedef void (BLT_TABLE_TRACE_DELETE_PROC)(ClientData clientData);
  *	Structure representing a trace used by a client of the table.
  *
  *	Table rows and columns may be tagged with strings.  A row may have
- *	many tags.  The same tag may be used for many rows.  Tags are used and
- *	stored by clients of a table.  Tags can also be shared between clients
- *	of the same table.
+ *	many tags.  The same tag may be used for many rows.  Tags are used
+ *	and stored by clients of a table.  Tags can also be shared between
+ *	clients of the same table.
  *	
  *	Both rowTable and columnTable are hash tables keyed by the physical
  *	row or column location in the table respectively.  This is not the
- *	same as the client's view (the order of rows or columns as seen by the
- *	client).  This is so that clients (which may have different views) can
- *	share tags without sharing the same view.
+ *	same as the client's view (the order of rows or columns as seen by
+ *	the client).  This is so that clients (which may have different
+ *	views) can share tags without sharing the same view.
  */
 typedef struct _BLT_TABLE_TRACE {
     unsigned int flags;
@@ -514,10 +522,11 @@ typedef struct _BLT_TABLE_TRACE {
     BLT_TABLE_TRACE_DELETE_PROC *deleteProc;
     ClientData clientData;
     BLT_TABLE table;
-    Blt_ChainLink readLink;		/* Pointer to this entry in a list of
-					 * read traces */
-    Blt_ChainLink writeLink;		/* Pointer to this entry in a list of
-					 * write, create, or unset traces. */
+    Blt_ChainLink readLink;		/* Pointer to this entry in a list
+					 * of read traces */
+    Blt_ChainLink writeLink;		/* Pointer to this entry in a list
+					 * of write, create, or unset
+					 * traces. */
 } *BLT_TABLE_TRACE;
 
 
@@ -587,26 +596,26 @@ BLT_EXTERN void blt_table_delete_trace(BLT_TABLE table, BLT_TABLE_TRACE trace);
  *	Structure representing a trace used by a client of the table.
  *
  *	Table rows and columns may be tagged with strings.  A row may have
- *	many tags.  The same tag may be used for many rows.  Tags are used and
- *	stored by clients of a table.  Tags can also be shared between clients
- *	of the same table.
+ *	many tags.  The same tag may be used for many rows.  Tags are used
+ *	and stored by clients of a table.  Tags can also be shared between
+ *	clients of the same table.
  *	
  *	Both rowTable and columnTable are hash tables keyed by the physical
  *	row or column location in the table respectively.  This is not the
- *	same as the client's view (the order of rows or columns as seen by the
- *	client).  This is so that clients (which may have different views) can
- *	share tags without sharing the same view.
+ *	same as the client's view (the order of rows or columns as seen by
+ *	the client).  This is so that clients (which may have different
+ *	views) can share tags without sharing the same view.
  */
 typedef struct {
     Tcl_Interp *interp;			/* Interpreter to report results. */
-    BLT_TABLE table;			/* Table object client that received
-					 * the event. */
+    BLT_TABLE table;			/* Table object client that
+					 * received the event. */
     int self;				/* Indicates if this table client
 					 * generated the event. */
     int type;			        /* Indicates type of event
 					 * received. */
-    BLT_TABLE_ROW row;			/* If NULL, indicates all rows
-					 * have changed. */
+    BLT_TABLE_ROW row;			/* If NULL, indicates all rows have
+					 * changed. */
     BLT_TABLE_COLUMN column;		/* If NULL, indicates all columns
 					 * have changed. */
 } BLT_TABLE_NOTIFY_EVENT;
@@ -712,15 +721,17 @@ typedef int (BLT_TABLE_COMPARE_PROC)(ClientData clientData,
 	BLT_TABLE_COLUMN col, BLT_TABLE_ROW row1, BLT_TABLE_ROW row2);
 
 typedef struct {
-    int type;				/* Type of sort to be performed: see
-					 * flags below. */
-    BLT_TABLE_COMPARE_PROC *cmpProc;	/* Procedures to be called to compare
-					 * two rows in same column. */
-    BLT_TABLE_COMPARE_PROC *userProc;	/* Procedures to be called to compare
-					 * two entries in the same row or
+    int type;				/* Type of sort to be performed:
+					 * see flags below. */
+    BLT_TABLE_COMPARE_PROC *cmpProc;	/* Procedures to be called to
+					 * compare two rows in same
 					 * column. */
-    ClientData clientData;		/* One word of data passed to the sort
-					 * comparison procedure above. */
+    BLT_TABLE_COMPARE_PROC *userProc;	/* Procedures to be called to
+					 * compare two entries in the same
+					 * row or column. */
+    ClientData clientData;		/* One word of data passed to the
+					 * sort comparison procedure
+					 * above. */
     BLT_TABLE_COLUMN column;		/* Column to be compared. */
 } BLT_TABLE_SORT_ORDER;
 

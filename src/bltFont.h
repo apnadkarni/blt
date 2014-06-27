@@ -1,5 +1,4 @@
 /* -*- mode: c; c-basic-offset: 4; indent-tabs-mode: nil -*- */
-
 /*
  * bltFont.h --
  *
@@ -8,24 +7,22 @@
  *	Permission is hereby granted, free of charge, to any person
  *	obtaining a copy of this software and associated documentation
  *	files (the "Software"), to deal in the Software without
- *	restriction, including without limitation the rights to use,
- *	copy, modify, merge, publish, distribute, sublicense, and/or
- *	sell copies of the Software, and to permit persons to whom the
- *	Software is furnished to do so, subject to the following
- *	conditions:
+ *	restriction, including without limitation the rights to use, copy,
+ *	modify, merge, publish, distribute, sublicense, and/or sell copies
+ *	of the Software, and to permit persons to whom the Software is
+ *	furnished to do so, subject to the following conditions:
  *
  *	The above copyright notice and this permission notice shall be
- *	included in all copies or substantial portions of the
- *	Software.
+ *	included in all copies or substantial portions of the Software.
  *
- *	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY
- *	KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
- *	WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
- *	PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS
- *	OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR
- *	OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
- *	OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
- *	SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ *	EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ *	MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ *	NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+ *	BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ *	ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ *	CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ *	SOFTWARE.
  */
 
 #ifndef _BLT_FONT_H
@@ -39,29 +36,30 @@ typedef struct _Blt_FontClass Blt_FontClass;
 
 typedef struct {
     int ascent;				/* The amount in pixels that the
-					 * tallest letter sticks up above the
+					 * tallest letter sticks up above
+					 * the baseline, plus any extra
+					 * blank space added by the
+					 * designer of the font. */
+    int descent;			/* The largest amount in pixels
+					 * that any letter sticks below the
 					 * baseline, plus any extra blank
-					 * space added by the designer of the
-					 * font. */
-    int descent;			/* The largest amount in pixels that
-					 * any letter sticks below the
-					 * baseline, plus any extra blank
-					 * space added by the designer of the
-					 * font. */
-    int linespace;			/* The sum of the ascent and descent.
-					 * How far apart two lines of text in
-					 * the same font should be placed so
-					 * that none of the characters in one
-					 * line overlap any of the characters
-					 * in the other line. */
+					 * space added by the designer of
+					 * the font. */
+    int linespace;			/* The sum of the ascent and
+					 * descent.  How far apart two
+					 * lines of text in the same font
+					 * should be placed so that none of
+					 * the characters in one line
+					 * overlap any of the characters in
+					 * the other line. */
     int tabWidth;			/* Width of tabs in this font
 					 * (pixels). */
-    int	underlinePos;			/* Offset from baseline to origin of
-					 * underline bar (used for drawing
-					 * underlines on a non-underlined
-					 * font). */
-    int underlineHeight;		/* Height of underline bar (used for
+    int	underlinePos;			/* Offset from baseline to origin
+					 * of underline bar (used for
 					 * drawing underlines on a
+					 * non-underlined font). */
+    int underlineHeight;		/* Height of underline bar (used
+					 * for drawing underlines on a
 					 * non-underlined font). */
 } Blt_FontMetrics;
 

@@ -1,17 +1,16 @@
 /* -*- mode: c; c-basic-offset: 4; indent-tabs-mode: nil -*- */
-
 /* 
  * bltConfig.h --
  *
  *	Copyright 1993-2004 George A Howlett.
  *
- *	Permission is hereby granted, free of charge, to any person obtaining
- *	a copy of this software and associated documentation files (the
- *	"Software"), to deal in the Software without restriction, including
- *	without limitation the rights to use, copy, modify, merge, publish,
- *	distribute, sublicense, and/or sell copies of the Software, and to
- *	permit persons to whom the Software is furnished to do so, subject to
- *	the following conditions:
+ *	Permission is hereby granted, free of charge, to any person
+ *	obtaining a copy of this software and associated documentation
+ *	files (the "Software"), to deal in the Software without
+ *	restriction, including without limitation the rights to use, copy,
+ *	modify, merge, publish, distribute, sublicense, and/or sell copies
+ *	of the Software, and to permit persons to whom the Software is
+ *	furnished to do so, subject to the following conditions:
  *
  *	The above copyright notice and this permission notice shall be
  *	included in all copies or substantial portions of the Software.
@@ -19,10 +18,11 @@
  *	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  *	EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  *	MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- *	NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
- *	LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
- *	OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
- *	WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *	NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+ *	BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ *	ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ *	CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ *	SOFTWARE.
  */
 
 #ifndef BLT_CONFIG_H
@@ -45,66 +45,66 @@ typedef void (Blt_OptionFreeProc)(ClientData clientData, Display *display,
 	char *widgRec, int offset);
 
 typedef struct _Blt_CustomOption {
-    Blt_OptionParseProc *parseProc;	/* Procedure to call to parse
-					 * an option and store it in
-					 * converted form. */
+    Blt_OptionParseProc *parseProc;	/* Procedure to call to parse an
+					 * option and store it in converted
+					 * form. */
 
-    Blt_OptionPrintProc *printProc;	/* Procedure to return a
-					 * Tcl_Obj representing an
-					 * existing option value. */
+    Blt_OptionPrintProc *printProc;	/* Procedure to return a Tcl_Obj
+					 * representing an existing option
+					 * value. */
 
     Blt_OptionFreeProc *freeProc;	/* Procedure used to free the
 					 * value. */
 
-    ClientData clientData;		/* Arbitrary one-word value
-					 * used by option parser:
-					 * passed to parseProc and
-					 * printProc. */
+    ClientData clientData;		/* Arbitrary one-word value used by
+					 * option parser: passed to
+					 * parseProc and printProc. */
 } Blt_CustomOption;
 
 /*
  * Structure used to specify information for Tk_ConfigureWidget.  Each
- * structure gives complete information for one option, including
- * how the option is specified on the command line, where it appears
- * in the option database, etc.
+ * structure gives complete information for one option, including how the
+ * option is specified on the command line, where it appears in the option
+ * database, etc.
  */
 
 typedef struct {
-    int type;			/* Type of option, such as
-				 * BLT_CONFIG_COLOR; see definitions
-				 * below.  Last option in table must
-				 * have type BLT_CONFIG_END. */
+    int type;                           /* Type of option, such as
+                                         * BLT_CONFIG_COLOR; see
+                                         * definitions below.  Last option
+                                         * in table must have type
+                                         * BLT_CONFIG_END. */
 
-    const char *switchName;	/* Switch used to specify option in
-				 * argv.  NULL means this spec is part
-				 * of a group. */
+    const char *switchName;             /* Switch used to specify option in
+                                         * argv.  NULL means this spec is
+                                         * part of a group. */
 
-    Tk_Uid dbName;		/* Name for option in option
-				 * database. */
+    Tk_Uid dbName;                      /* Name for option in option
+                                         * database. */
 
-    Tk_Uid dbClass;		/* Class for option in database. */
+    Tk_Uid dbClass;                     /* Class for option in database. */
 
-    Tk_Uid defValue;		/* Default value for option if not
-				 * specified in command line or
-				 * database. */
+    Tk_Uid defValue;                    /* Default value for option if not
+                                         * specified in command line or
+                                         * database. */
 
-    int offset;			/* Where in widget record to store
-				 * value; use Blt_Offset macro to
-				 * generate values for this. */
+    int offset;                         /* Where in widget record to store
+                                         * value; use Blt_Offset macro to
+                                         * generate values for this. */
 
-    int specFlags;		/* Any combination of the values
-				 * defined below; other bits are used
-				 * internally by tkConfig.c. */
+    int specFlags;                      /* Any combination of the values
+                                         * defined below; other bits are used
+                                         * internally by tkConfig.c. */
 
-    Blt_CustomOption *customPtr; /* If type is BLT_CONFIG_CUSTOM then
-				 * this is a pointer to info about how
-				 * to parse and print the option.
-				 * Otherwise it is irrelevant. */
+    Blt_CustomOption *customPtr;       /* If type is BLT_CONFIG_CUSTOM then
+                                        * this is a pointer to info about how
+                                        * to parse and print the option.
+                                        * Otherwise it is irrelevant. */
 } Blt_ConfigSpec;
 
 /*
- * Type values for Blt_ConfigSpec structures.  See the user
- * documentation for details.
+ * Type values for Blt_ConfigSpec structures.  See the user documentation
+ * for details.
  */
 typedef enum {
     BLT_CONFIG_ACTIVE_CURSOR, 
@@ -164,9 +164,9 @@ typedef enum {
 
 /*
  * Possible flag values for Blt_ConfigSpec structures.  Any bits at or
- * above BLT_CONFIG_USER_BIT may be used by clients for selecting
- * certain entries.  Before changing any values here, coordinate with
- * tkOldConfig.c (internal-use-only flags are defined there).
+ * above BLT_CONFIG_USER_BIT may be used by clients for selecting certain
+ * entries.  Before changing any values here, coordinate with tkOldConfig.c
+ * (internal-use-only flags are defined there).
  */
 /*
  * Values for "flags" field of Blt_ConfigSpec structures.  Be sure to
@@ -197,9 +197,9 @@ typedef enum {
  *
  * 	Specifies vertical and horizontal padding.
  *
- *	Padding can be specified on a per side basis.  The fields
- *	side1 and side2 refer to the opposite sides, either
- *	horizontally or vertically.
+ *	Padding can be specified on a per side basis.  The fields side1 and
+ *	side2 refer to the opposite sides, either horizontally or
+ *	vertically.
  *
  *		side1	side2
  *              -----   -----
@@ -238,12 +238,13 @@ typedef struct {
  * Resize --
  *
  *	These flags indicate in what ways each partition in a table can be
- *	resized from its default dimensions.  The normal size of a row/column
- *	is the minimum amount of space needed to hold the widgets that span
- *	it.  The table may then be stretched or shrunk depending if the
- *	container is larger or smaller than the table. This can occur if 1)
- *	the user resizes the toplevel widget, or 2) the container is in turn
- *	packed into a larger widget and the "fill" option is set.
+ *	resized from its default dimensions.  The normal size of a
+ *	row/column is the minimum amount of space needed to hold the
+ *	widgets that span it.  The table may then be stretched or shrunk
+ *	depending if the container is larger or smaller than the
+ *	table. This can occur if 1) the user resizes the toplevel widget,
+ *	or 2) the container is in turn packed into a larger widget and the
+ *	"fill" option is set.
  *
  * 	  RESIZE_NONE 	  - No resizing from normal size.
  *	  RESIZE_EXPAND   - Do not allow the size to decrease.
@@ -282,13 +283,13 @@ typedef struct {
 /*
  * Blt_Limits --
  *
- * 	Defines the bounding of a size (width or height) in the paneset.  It may
- * 	be related to the widget, pane or paneset size.
+ * 	Defines the bounding of a size (width or height) in the paneset.
+ * 	It may be related to the widget, pane or paneset size.
  */
 typedef struct {
-    int flags;				/* Flags indicate whether using default
-					 * values for limits or not. See flags
-					 * below. */
+    int flags;				/* Flags indicate whether using
+					 * default values for limits or
+					 * not. See flags below. */
     int max, min;			/* Values for respective limits. */
     int nom;				/* Nominal starting value. */
 } Blt_Limits;
@@ -299,9 +300,9 @@ typedef struct {
 
 #define LIMITS_MIN	0		/* Default minimum limit  */
 #define LIMITS_MAX	SHRT_MAX	/* Default maximum limit */
-#define LIMITS_NOM	-1000		/* Default nomimal value.  Indicates
-					 * if a pane has received any space
-					 * yet */
+#define LIMITS_NOM	-1000		/* Default nomimal value.
+					 * Indicates if a pane has received
+					 * any space yet */
 
 BLT_EXTERN void Blt_SetDashes (Display *display, GC gc, Blt_Dashes *dashesPtr);
 

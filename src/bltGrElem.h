@@ -1,17 +1,16 @@
 /* -*- mode: c; c-basic-offset: 4; indent-tabs-mode: nil -*- */
-
 /*
  * bltGrElem.h --
  *
  *	Copyright 1993-2004 George A Howlett.
  *
- *	Permission is hereby granted, free of charge, to any person obtaining
- *	a copy of this software and associated documentation files (the
- *	"Software"), to deal in the Software without restriction, including
- *	without limitation the rights to use, copy, modify, merge, publish,
- *	distribute, sublicense, and/or sell copies of the Software, and to
- *	permit persons to whom the Software is furnished to do so, subject to
- *	the following conditions:
+ *	Permission is hereby granted, free of charge, to any person
+ *	obtaining a copy of this software and associated documentation
+ *	files (the "Software"), to deal in the Software without
+ *	restriction, including without limitation the rights to use, copy,
+ *	modify, merge, publish, distribute, sublicense, and/or sell copies
+ *	of the Software, and to permit persons to whom the Software is
+ *	furnished to do so, subject to the following conditions:
  *
  *	The above copyright notice and this permission notice shall be
  *	included in all copies or substantial portions of the Software.
@@ -19,10 +18,11 @@
  *	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  *	EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  *	MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- *	NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
- *	LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
- *	OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
- *	WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *	NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+ *	BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ *	ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ *	CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ *	SOFTWARE.
  */
 
 #ifndef _BLT_GR_ELEM_H
@@ -48,11 +48,11 @@
 #define NEAREST_SEARCH_TRACES	1	/* Search for nearest point on trace.
 					 * Interpolate the connecting line
 					 * segments if necessary. */
-#define NEAREST_SEARCH_AUTO	2	/* Automatically determine whether to
-					 * search for data points or traces.
-					 * Look for traces if the linewidth is
-					 * > 0 and if there is more than one
-					 * data point. */
+#define NEAREST_SEARCH_AUTO	2	/* Automatically determine whether
+					 * to search for data points or
+					 * traces.  Look for traces if the
+					 * linewidth is > 0 and if there is
+					 * more than one data point. */
 
 #define	LABEL_ACTIVE (1<<9)		/* Non-zero indicates that the
 					 * element's entry in the legend
@@ -99,37 +99,43 @@ typedef struct {
  * distinguishes it among the list of all elements.
  */
 typedef struct {
-    Weight weight;		/* Weight range where this pen is valid. */
-    Pen *penPtr;		/* Pen to use. */
+    Weight weight;                      /* Weight range where this pen is
+                                         * valid. */
+    Pen *penPtr;                        /* Pen to use. */
 } PenStyle;
 
 
 typedef struct {
-    XColor *color;		/* Color of error bar */
-    int lineWidth;		/* Width of the error bar segments. */
+    XColor *color;                      /* Color of error bar */
+    int lineWidth;                      /* Width of the error bar
+                                         * segments. */
     GC gc;
-    int show;			/* Flags for errorbars: none, x, y, or both */
+    int show;                           /* Flags for errorbars: none, x, y,
+                                         * or both */
 } ErrorBarAttributes;
 
 typedef struct {
     /* Inputs */
-    int halo;				/* Maximal screen distance a candidate
-					 * point can be from the sample window
-					 * coordinate. */
+    int halo;				/* Maximal screen distance a
+					 * candidate point can be from the
+					 * sample window coordinate. */
     int mode;				/* Indicates whether to find the
-					 * nearest data point or the nearest
-					 * point on the trace by interpolating
-					 * the line segments.  Can also be
-					 * NEAREST_SEARCH_AUTO, indicating to
-					 * choose how to search.*/
-    int x, y;				/* Screen coordinates of test point */
-    int along;				/* Indicates to let search run along a
-					 * particular axis: x, y, or both. */
+					 * nearest data point or the
+					 * nearest point on the trace by
+					 * interpolating the line segments.
+					 * Can also be NEAREST_SEARCH_AUTO,
+					 * indicating to choose how to
+					 * search.*/
+    int x, y;				/* Screen coordinates of test
+                                         * point */
+    int along;				/* Indicates to let search run
+					 * along a particular axis: x, y,
+					 * or both. */
     int all;				
 
     /* Outputs */
-    void *item;				/* Pointer to the nearest element or
-					 * isoline. */
+    void *item;				/* Pointer to the nearest element
+					 * or isoline. */
     Point2d point;			/* Graph coordinates of nearest
 					 * point */
     int index;				/* Index of nearest data point */
@@ -175,28 +181,30 @@ typedef struct {
 typedef struct {
     BLT_TABLE table;			/* Data table. */ 
     BLT_TABLE_COLUMN column;		/* Column of data used. */
-    BLT_TABLE_NOTIFIER notifier;		/* Notifier used for column destroy
+    BLT_TABLE_NOTIFIER notifier;        /* Notifier used for column destroy
 					 * event. */
     BLT_TABLE_TRACE trace;		/* Trace used for column
 					 * (set/get/unset). */
     Blt_HashEntry *hashPtr;		/* Pointer to the entry of the data
 					 * source in graph's hash table of
 					 * datatables. One graph may use
-					 * multiple columns from the same data
-					 * table. */
+					 * multiple columns from the same
+					 * data table. */
 } TableDataSource;
 
 /* 
- * The data structure below contains information pertaining to a line vector.
- * It consists of an array of floating point data values and for convenience,
- * the number and minimum/maximum values.
+ * The data structure below contains information pertaining to a line
+ * vector.  It consists of an array of floating point data values and for
+ * convenience, the number and minimum/maximum values.
  */
 typedef struct {
-    int type;				/* Selects the type of data populating
-					 * this vector: ELEM_SOURCE_VECTOR, *
+    int type;				/* Selects the type of data
+					 * populating this vector:
+					 * ELEM_SOURCE_VECTOR, *
 					 * ELEM_SOURCE_TABLE, or
 					 * ELEM_SOURCE_VALUES */
-    Element *elemPtr;			/* Element associated with vector. */
+    Element *elemPtr;			/* Element associated with
+                                         * vector. */
     union {
 	TableDataSource tableSource;
 	VectorDataSource vectorSource;
@@ -209,12 +217,14 @@ typedef struct {
 
 
 struct _Element {
-    GraphObj obj;			/* Must be first field in element. */
+    GraphObj obj;                       /* Must be first field in
+                                         * element. */
     unsigned int flags;		
     Blt_HashEntry *hashPtr;
 
     /* Fields specific to elements. */
-    Blt_ChainLink link;			/* Element's link in display list. */
+    Blt_ChainLink link;			/* Element's link in display
+                                         * list. */
     const char *label;			/* Label displayed in legend */
     unsigned short row, col;		/* Position of the entry in the
 					 * legend. */
@@ -222,18 +232,18 @@ struct _Element {
     Axis2d axes;			/* X-axis and Y-axis mapping the
 					 * element */
     ElemValues x, y, w;			/* Contains array of floating point
-					 * graph coordinate values. Also holds
-					 * min/max and the number of
+					 * graph coordinate values. Also
+					 * holds min/max and the number of
 					 * coordinates */
-    Blt_HashTable activeTable;		/* Table of indices which
-					 * indicate which data points are
-					 * active (drawn with "active"
-					 * colors). */
+    Blt_HashTable activeTable;		/* Table of indices which indicate
+					 * which data points are active
+					 * (drawn with "active" colors). */
     int numActiveIndices;		/* Number of active data points.
-					 * Special case: if numActiveIndices < 0
-					 * and the active bit is set in
-					 * "flags", then all data points are
-					 * drawn active. */
+					 * Special case: if
+					 * numActiveIndices < 0 and the
+					 * active bit is set in "flags",
+					 * then all data points are drawn
+					 * active. */
     ElementProcs *procsPtr;
     Blt_ConfigSpec *configSpecs;	/* Configuration specifications. */
     Pen *activePenPtr;			/* Standard Pens */
@@ -242,12 +252,12 @@ struct _Element {
     Blt_Chain styles;			/* Palette of pens. */
 
     /* Symbol scaling */
-    int scaleSymbols;			/* If non-zero, the symbols will scale
-					 * in size as the graph is zoomed
-					 * in/out.  */
-    double xRange, yRange;		/* Initial X-axis and Y-axis ranges:
-					 * used to scale the size of element's
-					 * symbol. */
+    int scaleSymbols;			/* If non-zero, the symbols will
+					 * scale in size as the graph is
+					 * zoomed in/out.  */
+    double xRange, yRange;		/* Initial X-axis and Y-axis
+					 * ranges: used to scale the size
+					 * of element's symbol. */
     int state;
 };
 

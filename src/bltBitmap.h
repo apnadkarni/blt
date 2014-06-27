@@ -2,8 +2,8 @@
 
 BLT_EXTERN Pixmap Blt_PhotoImageMask(Tk_Window tkwin, Tk_PhotoImageBlock src);
 
-BLT_EXTERN Pixmap Blt_ScaleBitmap(Tk_Window tkwin, Pixmap srcBitmap, int srcWidth, 
-	int srcHeight, int destWidth, int destHeight);
+BLT_EXTERN Pixmap Blt_ScaleBitmap(Tk_Window tkwin, Pixmap srcBitmap, 
+        int srcWidth, int srcHeight, int destWidth, int destHeight);
 
 BLT_EXTERN Pixmap Blt_RotateBitmap(Tk_Window tkwin, Pixmap srcBitmap, 
 	int srcWidth, int srcHeight, float angle, int *destWidthPtr, 
