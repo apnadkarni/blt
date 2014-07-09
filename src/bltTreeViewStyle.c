@@ -187,8 +187,7 @@
 #define DEF_RADIOBOX_FILL_COLOR		"white"
 #define DEF_RADIOBOX_GAP		"2"
 #define DEF_RADIOBOX_LINEWIDTH		"2"
-#define DEF_RADIOBOX_OFFVALUE		"0"
-#define DEF_RADIOBOX_ONVALUE		"1"
+#define DEF_RADIOBOX_VALUE		"1"
 #define DEF_RADIOBOX_RELIEF		"flat"
 #define DEF_RADIOBOX_SHOWVALUE		"yes"
 #define DEF_RADIOBOX_SIZE		"11"
@@ -693,7 +692,7 @@ typedef struct {
 
     /* Radiobox specific fields. */
     int size;				/* Size of the checkbox. */
-    Tcl_Obj *onValueObjPtr;
+    Tcl_Obj *valueObjPtr;
     Tcl_Obj *offValueObjPtr;
     int lineWidth;			/* Linewidth of the surrounding
 					 * box. */
@@ -701,12 +700,9 @@ typedef struct {
     XColor *fillColor;			/* Fill color (white) */
     XColor *checkColor;			/* Check color (red). */
 
-    TextLayout *onPtr, *offPtr;
-    
+    int state;
+
     Blt_Painter painter;
-    Blt_Picture selectedBox;
-    Blt_Picture normalBox;
-    Blt_Picture disabledBox;
 } RadioBoxStyle;
 
 static Blt_ConfigSpec checkBoxStyleSpecs[] =
@@ -1109,10 +1105,8 @@ static Blt_ConfigSpec radioBoxStyleSpecs[] =
 	BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_COLOR, "-fillcolor", "fillColor", "FillColor", 
         DEF_RADIOBOX_FILL_COLOR, Blt_Offset(RadioBoxStyle, fillColor), 0},
-    {BLT_CONFIG_OBJ, "-offvalue", "offValue", "OffValue", 
-	DEF_RADIOBOX_OFFVALUE, Blt_Offset(RadioBoxStyle, offValueObjPtr), 0},
-    {BLT_CONFIG_OBJ, "-onvalue", "onValue", "OnValue", 
-        DEF_RADIOBOX_ONVALUE, Blt_Offset(RadioBoxStyle, onValueObjPtr), 0},
+    {BLT_CONFIG_OBJ, "-value", "value", "Value", 
+	DEF_RADIOBOX_VALUE, Blt_Offset(RadioBoxStyle, valueObjPtr), 0},
     {BLT_CONFIG_STRING, "-key", "key", "key", (char *)NULL, 
 	Blt_Offset(RadioBoxStyle, key), BLT_CONFIG_NULL_OK, 0},
     {BLT_CONFIG_RELIEF, "-relief", "relief", "Relief", DEF_RADIOBOX_RELIEF, 
@@ -4268,47 +4262,6 @@ RadioBoxStyleConfigureProc(CellStyle *cellStylePtr)
     }
     stylePtr->selectedGC = newGC;
 
-    if (Blt_ConfigModified(stylePtr->classPtr->specs, "-boxsize", 
-		(char *)NULL)) {
-	if (stylePtr->selectedBox != NULL) {
-	    Blt_FreePicture(stylePtr->selectedBox);
-	    stylePtr->selectedBox = NULL;
-	}
-	if (stylePtr->normalBox != NULL) {
-	    Blt_FreePicture(stylePtr->normalBox);
-	    stylePtr->normalBox = NULL;
-	}
-    }
-    if (stylePtr->disabledBox == NULL) {
-	unsigned int bw, bh;
-
-	bw = bh = stylePtr->size | 0x1;
-	stylePtr->disabledBox = Blt_PaintRadioButton(bw, bh, 
-                stylePtr->disabledBg, stylePtr->fillColor, 
-                stylePtr->checkColor, TRUE);
-    } 
-    if (stylePtr->selectedBox == NULL) {
-	unsigned int bw, bh;
-
-	bw = bh = stylePtr->size | 0x1;
-	stylePtr->selectedBox = Blt_PaintRadioButton(bw, bh, 
-                stylePtr->selectedBg, stylePtr->fillColor, 
-                stylePtr->checkColor, TRUE);
-    } 
-    if (stylePtr->normalBox == NULL) {
-	unsigned int bw, bh;
-        Blt_Bg bg;
-
-        /* Normal */
-        if (rowPtr->flatIndex & 0x1) {
-            bg = CHOOSE(viewPtr->altBg, stylePtr->altBg);
-        } else {
-            bg = CHOOSE(viewPtr->normalBg, stylePtr->normalBg);
-        }            
-	bw = bh = stylePtr->size | 0x1;
-	stylePtr->normalBox = Blt_PaintRadioButton(bw, bh, bg,
-		stylePtr->fillColor, stylePtr->checkColor, FALSE);
-    } 
     if ((stylePtr->flags & SHOW_VALUE) && 
 	(Blt_ConfigModified(stylePtr->classPtr->specs, "-font", (char *)NULL))){
         /* Font sizes can change the size of the cell. */
@@ -4363,30 +4316,19 @@ RadioBoxStyleGeometryProc(Cell *cellPtr, CellStyle *cellStylePtr)
 	iw = IconWidth(stylePtr->icon);
 	ih = IconHeight(stylePtr->icon);
     } 
-    if (stylePtr->onPtr != NULL) {
-	Blt_Free(stylePtr->onPtr);
-	stylePtr->onPtr = NULL;
-    }
-    if (stylePtr->offPtr != NULL) {
-	Blt_Free(stylePtr->offPtr);
-	stylePtr->offPtr = NULL;
-    }
     FormatCell(cellStylePtr, cellPtr);
     gap = 0;
     cellPtr->textWidth = cellPtr->textHeight =  0;
     if (stylePtr->flags & SHOW_VALUE) {
 	TextStyle ts;
 	const char *string;
+        unsigned int tw, th;
 
         FormatCell(cellStylePtr, cellPtr);
+        string = Tcl_GetString(cellPtr->dataObjPtr);
 	Blt_Ts_InitStyle(ts);
 	Blt_Ts_SetFont(ts, CHOOSE(viewPtr->font, stylePtr->font));
-        string = Tcl_GetString(stylePtr->onValueObjPtr);
-	stylePtr->onPtr = Blt_Ts_CreateLayout(string, -1, &ts);
-        string = Tcl_GetString(stylePtr->offValueObjPtr);
-	stylePtr->offPtr = Blt_Ts_CreateLayout(string, -1, &ts);
-	tw = MAX(stylePtr->offPtr->width, stylePtr->onPtr->width);
-	th = MAX(stylePtr->offPtr->height, stylePtr->onPtr->height);
+	Blt_Ts_GetExtents(&ts, string, &tw, &th);
 	if (stylePtr->icon != NULL) {
 	    gap = stylePtr->gap;
 	}
@@ -4402,8 +4344,8 @@ RadioBoxStyleGeometryProc(Cell *cellPtr, CellStyle *cellStylePtr)
  *
  * RadioBoxStyleDrawProc --
  *
- *	Draws the "radiobox" given the screen coordinates and the
- *	cell to be displayed.  
+ *	Draws the "radiobox" given the screen coordinates and the cell to
+ *	be displayed.
  *
  * Results:
  *	None.
@@ -4420,7 +4362,6 @@ RadioBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
     Blt_Bg bg;
     RadioBoxStyle *stylePtr = (RadioBoxStyle *)cellStylePtr;
     Column *colPtr;
-    TextLayout *textPtr;
     TreeView *viewPtr;
     int bool;
     int relief;
@@ -4524,15 +4465,19 @@ RadioBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
     gap = 0;
 
     if (cellPtr->dataObjPtr == NULL) {
-	bool = 0;
+        int i1, i2;
+
+        i1 = Blt_Tree_NodeId(rowPtr->node);
+        if (Tcl_GetIntFromObj(NULL, stylePtr->valueObjPtr, &i2) != TCL_OK) {
+        }
+	bool = (i1 == i2);
     } else {
 	const char *s1, *s2;
 
-	s1 = Tcl_GetString(stylePtr->onValueObjPtr);
+	s1 = Tcl_GetString(stylePtr->valueObjPtr);
         s2 = Tcl_GetString(cellPtr->dataObjPtr);
 	bool = (strcmp(s1, s2) == 0);
     }
-    textPtr = (bool) ? stylePtr->onPtr : stylePtr->offPtr;
 
     /*
      * Draw the box and check. 
@@ -4555,8 +4500,11 @@ RadioBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
     }
     {
 	Blt_Picture picture;
-	
-	picture = (bool) ? stylePtr->selectedBox : stylePtr->normalBox;
+	unsigned int bw, bh;
+
+	bw = bh = stylePtr->size | 0x1;
+	picture = Blt_PaintRadioButton(bw, bh, bg,
+		stylePtr->fillColor, stylePtr->checkColor, bool);
 	if (stylePtr->painter == NULL) {
 	    stylePtr->painter = Blt_GetPainter(viewPtr->tkwin, 1.0);
 	}
@@ -4571,7 +4519,7 @@ RadioBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
     th = 0;
     gap = 0;
     if (stylePtr->flags & SHOW_VALUE) {
-	th = textPtr->height;
+	th = cellPtr->textHeight;
 	if (stylePtr->icon != NULL) {
 	    gap = stylePtr->gap;
 	}
@@ -4587,20 +4535,26 @@ RadioBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
 	Tk_RedrawImage(IconBits(stylePtr->icon), 0, 0, iw, 
 		       ih, drawable, ix, iy);
     }
-    if ((stylePtr->flags & SHOW_VALUE) && (textPtr != NULL)) {
+    if (stylePtr->flags & SHOW_VALUE) {
 	TextStyle ts;
 	int xMax;
+        const char *string;
+        int length;
+	TextLayout *textPtr;
 
+        string = Tcl_GetStringFromObj(cellPtr->dataObjPtr, &length);
 	Blt_Ts_InitStyle(ts);
 	Blt_Ts_SetFont(ts, CHOOSE(viewPtr->font, stylePtr->font));
 	Blt_Ts_SetGC(ts, gc);
 	xMax = colWidth - iw - bw - gap - stylePtr->gap;
 	Blt_Ts_SetMaxLength(ts, xMax);
+	textPtr = Blt_Ts_CreateLayout(string, length, &ts);
 	Blt_Ts_DrawLayout(viewPtr->tkwin, drawable, textPtr, &ts, tx, ty);
 	if ((stylePtr->flags & UNDERLINE_ACTIVE) && 
             (viewPtr->activeCellPtr == cellPtr)) {
 	    Blt_Ts_UnderlineLayout(viewPtr->tkwin, drawable, textPtr,&ts,tx,ty);
 	}
+        Blt_Free(textPtr);
     }
     stylePtr->flags &= ~STYLE_DIRTY;
 }
@@ -4667,21 +4621,6 @@ RadioBoxStyleFreeProc(CellStyle *cellStylePtr)
     viewPtr = stylePtr->viewPtr;
     if (stylePtr->icon != NULL) {
 	FreeIcon(stylePtr->icon);
-    }
-    if (stylePtr->offPtr != NULL) {
-	Blt_Free(stylePtr->offPtr);
-    }
-    if (stylePtr->onPtr != NULL) {
-	Blt_Free(stylePtr->onPtr);
-    }
-    if (stylePtr->selectedBox != NULL) {
-	Blt_FreePicture(stylePtr->selectedBox);
-    }
-    if (stylePtr->normalBox != NULL) {
-	Blt_FreePicture(stylePtr->normalBox);
-    }
-    if (stylePtr->disabledBox != NULL) {
-	Blt_FreePicture(stylePtr->disabledBox);
     }
     if (stylePtr->selectedGC != NULL) {
 	Tk_FreeGC(viewPtr->display, stylePtr->selectedGC);
