@@ -84,7 +84,7 @@
                                                 TCL_TRACE_UNSETS)
 
 #define DEF_ACTIVE_FG			STD_ACTIVE_FOREGROUND
-#define DEF_ALT_BG			RGB_GREY97
+#define DEF_ALT_BG			(char *)NULL
 #define DEF_DISABLE_BG			RGB_GREY97
 #define DEF_DISABLE_FG			RGB_GREY85
 #define DEF_FOCUS_COLOR			"black"
@@ -92,17 +92,13 @@
 #define DEF_GAP				"2"
 #define DEF_HIGHLIGHT_BG                STD_NORMAL_BACKGROUND
 #define DEF_HIGHLIGHT_FG                STD_NORMAL_FOREGROUND
-#define DEF_SELECT_BG			STD_SELECT_BACKGROUND
+#define DEF_SELECT_BG			(char *)NULL
 #define DEF_SELECT_FG			STD_SELECT_FOREGROUND
 #define DEF_ICON			(char *)NULL
 #define DEF_JUSTIFY			"center"
-#define DEF_NORMAL_BG			RGB_WHITE
+#define DEF_NORMAL_BG			(char *)NULL
 #define DEF_NORMAL_FG			STD_NORMAL_FOREGROUND
-#ifdef WIN32
-#define DEF_ACTIVE_BG                   RGB_GREY85
-#else
-#define DEF_ACTIVE_BG                   RGB_GREY95
-#endif
+#define DEF_ACTIVE_BG                   (char *)NULL
 
 #ifdef WIN32
 #define DEF_TEXTBOX_CURSOR		"arrow"
@@ -190,7 +186,7 @@
 #define DEF_RADIOBOX_VALUE		"1"
 #define DEF_RADIOBOX_RELIEF		"flat"
 #define DEF_RADIOBOX_SHOWVALUE		"yes"
-#define DEF_RADIOBOX_SIZE		"11"
+#define DEF_RADIOBOX_SIZE		"17"
 #ifdef WIN32
 #define DEF_RADIOBOX_CURSOR		"arrow"
 #else
@@ -283,7 +279,7 @@ typedef struct {
                                          * background. */
     Blt_Bg activeBg;			/* Background color of cell when
 					 * active. */
-    Blt_Bg disabledBg;                   /* Background color of cell when
+    Blt_Bg disabledBg;                  /* Background color of cell when
                                          * disabled. */
     Blt_Bg highlightBg;			/* Background color of cell when
 					 * highlighted. */
@@ -368,7 +364,7 @@ typedef struct {
     Blt_Bg altBg;
     Blt_Bg activeBg;			/* Background color of cell when
 					 * active. */
-    Blt_Bg disabledBg;                   /* Background color of cell when
+    Blt_Bg disabledBg;                  /* Background color of cell when
                                          * disabled. */
     Blt_Bg highlightBg;			/* Background color of cell when
 					 * highlighted. */
@@ -458,7 +454,7 @@ typedef struct {
     Blt_Bg altBg;
     Blt_Bg activeBg;			/* Background color of cell when
 					 * active. */
-    Blt_Bg disabledBg;                   /* Background color of cell when
+    Blt_Bg disabledBg;                  /* Background color of cell when
                                          * disabled. */
     Blt_Bg highlightBg;			/* Background color of cell when
 					 * highlighted. */
@@ -586,7 +582,7 @@ typedef struct {
     Blt_Bg altBg;
     Blt_Bg activeBg;			/* Background color of cell when
 					 * active. */
-    Blt_Bg disabledBg;                   /* Background color of cell when
+    Blt_Bg disabledBg;                  /* Background color of cell when
                                          * disabled. */
     Blt_Bg highlightBg;			/* Background color of cell when
 					 * highlighted. */
@@ -662,7 +658,7 @@ typedef struct {
     Blt_Bg altBg;
     Blt_Bg activeBg;			/* Background color of cell when
 					 * active. */
-    Blt_Bg disabledBg;                   /* Background color of cell when
+    Blt_Bg disabledBg;                  /* Background color of cell when
                                          * disabled. */
     Blt_Bg highlightBg;			/* Background color of cell when
 					 * highlighted. */
@@ -691,7 +687,7 @@ typedef struct {
     Tcl_Obj *cmdObjPtr;
 
     /* Radiobox specific fields. */
-    int size;				/* Size of the checkbox. */
+    int size;				/* Size of the radiobutton. */
     Tcl_Obj *valueObjPtr;
     Tcl_Obj *offValueObjPtr;
     int lineWidth;			/* Linewidth of the surrounding
@@ -709,7 +705,7 @@ static Blt_ConfigSpec checkBoxStyleSpecs[] =
 {
     {BLT_CONFIG_BACKGROUND, "-activebackground", "activeBackground", 
 	"ActiveBackground", DEF_ACTIVE_BG, 
-	Blt_Offset(CheckBoxStyle, activeBg), 0},
+	Blt_Offset(CheckBoxStyle, activeBg), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_SYNONYM, "-activebg", "activeBackground", 
 	(char *)NULL, (char *)NULL, 0, 0},
     {BLT_CONFIG_BITMASK, "-activecolors", "activeColors", "ActiveColors", 
@@ -745,7 +741,7 @@ static Blt_ConfigSpec checkBoxStyleSpecs[] =
 	Blt_Offset(CheckBoxStyle, cursor), 0},
     {BLT_CONFIG_BACKGROUND, "-disabledbackground", "disabledBackground",
 	"DisabledBackground", DEF_DISABLE_BG, 
-        Blt_Offset(CheckBoxStyle, disabledBg), BLT_CONFIG_COLOR_ONLY},
+        Blt_Offset(CheckBoxStyle, disabledBg), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_COLOR, "-disabledforeground", "disabledForeground", 
        "DisabledForeground", DEF_DISABLE_FG, 
 	Blt_Offset(CheckBoxStyle, disableFg), 0},
@@ -821,7 +817,7 @@ static Blt_ConfigSpec comboBoxStyleSpecs[] =
         Blt_Offset(ComboBoxStyle, activeArrowBg), 0},
     {BLT_CONFIG_BACKGROUND, "-activebackground", "activeBackground", 
 	"ActiveBackground", DEF_ACTIVE_BG, 
-        Blt_Offset(ComboBoxStyle, activeBg), 0},
+        Blt_Offset(ComboBoxStyle, activeBg), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_SYNONYM, "-activebg", "activeBackground", (char *)NULL, 
 	(char *)NULL, 0, 0},
     {BLT_CONFIG_BITMASK, "-activecolors", "activeColors", "ActiveColors", 
@@ -862,7 +858,7 @@ static Blt_ConfigSpec comboBoxStyleSpecs[] =
 	Blt_Offset(ComboBoxStyle, cursor), 0},
     {BLT_CONFIG_BACKGROUND, "-disabledbackground", "disabledBackground",
 	"DisabledBackground", DEF_DISABLE_BG, 
-        Blt_Offset(ComboBoxStyle, disabledBg), BLT_CONFIG_COLOR_ONLY},
+        Blt_Offset(ComboBoxStyle, disabledBg), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_COLOR, "-disabledforeground", "disabledForeground", 
        "DisabledForeground", DEF_DISABLE_FG, 
 	Blt_Offset(ComboBoxStyle, disableFg), 0},
@@ -934,7 +930,7 @@ static Blt_ConfigSpec imageBoxStyleSpecs[] =
 {
     {BLT_CONFIG_BACKGROUND, "-activebackground", "activeBackground", 
 	"ActiveBackground", DEF_ACTIVE_BG, 
-	Blt_Offset(ImageBoxStyle, activeBg), 0},
+	Blt_Offset(ImageBoxStyle, activeBg), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_SYNONYM, "-activebg", "activeBackground", 
 	(char *)NULL, (char *)NULL, 0, 0},
     {BLT_CONFIG_SYNONYM, "-activefg", "activeFackground", 
@@ -968,7 +964,7 @@ static Blt_ConfigSpec imageBoxStyleSpecs[] =
 	Blt_Offset(ImageBoxStyle, cursor), 0},
     {BLT_CONFIG_BACKGROUND, "-disabledbackground", "disabledBackground",
 	"DisabledBackground", DEF_DISABLE_BG, 
-        Blt_Offset(ImageBoxStyle, disabledBg), BLT_CONFIG_COLOR_ONLY},
+        Blt_Offset(ImageBoxStyle, disabledBg), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_COLOR, "-disabledforeground", "disabledForeground", 
        "DisabledForeground", DEF_DISABLE_FG, 
 	Blt_Offset(ImageBoxStyle, disableFg), 0},
@@ -1024,7 +1020,7 @@ static Blt_ConfigSpec radioBoxStyleSpecs[] =
 {
     {BLT_CONFIG_BACKGROUND, "-activebackground", "activeBackground", 
 	"ActiveBackground", DEF_ACTIVE_BG, 
-	Blt_Offset(RadioBoxStyle, activeBg), 0},
+	Blt_Offset(RadioBoxStyle, activeBg), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_SYNONYM, "-activebg", "activeBackground", 
 	(char *)NULL, (char *)NULL, 0, 0},
     {BLT_CONFIG_BITMASK, "-activecolors", "activeColors", "ActiveColors", 
@@ -1060,7 +1056,7 @@ static Blt_ConfigSpec radioBoxStyleSpecs[] =
 	Blt_Offset(RadioBoxStyle, cursor), 0},
     {BLT_CONFIG_BACKGROUND, "-disabledbackground", "disabledBackground",
 	"DisabledBackground", DEF_DISABLE_BG, 
-        Blt_Offset(RadioBoxStyle, disabledBg), BLT_CONFIG_COLOR_ONLY},
+        Blt_Offset(RadioBoxStyle, disabledBg), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_COLOR, "-disabledforeground", "disabledForeground", 
        "DisabledForeground", DEF_DISABLE_FG, 
 	Blt_Offset(RadioBoxStyle, disableFg), 0},
@@ -1130,7 +1126,7 @@ static Blt_ConfigSpec textBoxStyleSpecs[] =
 {
     {BLT_CONFIG_BACKGROUND, "-activebackground", "activeBackground", 
 	"ActiveBackground", DEF_ACTIVE_BG, 
-	Blt_Offset(TextBoxStyle, activeBg), 0},
+	Blt_Offset(TextBoxStyle, activeBg), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_SYNONYM, "-activebg", "activeBackground", (char *)NULL, 
 	(char *)NULL, 0, 0},
     {BLT_CONFIG_BITMASK, "-activecolors", "activeColors", "ActiveColors", 
@@ -1164,7 +1160,7 @@ static Blt_ConfigSpec textBoxStyleSpecs[] =
 	Blt_Offset(TextBoxStyle, cursor), 0},
     {BLT_CONFIG_BACKGROUND, "-disabledbackground", "disabledBackground",
 	"DisabledBackground", DEF_DISABLE_BG, 
-        Blt_Offset(TextBoxStyle, disabledBg), 0},
+        Blt_Offset(TextBoxStyle, disabledBg), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_COLOR, "-disabledforeground", "disabledForeground", 
        "DisabledForeground", DEF_DISABLE_FG, 
 	Blt_Offset(TextBoxStyle, disableFg), 0},
@@ -2419,17 +2415,17 @@ TextBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
     relief = stylePtr->relief;
     if ((cellPtr->flags|rowPtr->flags|colPtr->flags) & DISABLED) {
 	/* Disabled */
-	bg = stylePtr->disabledBg;
+        bg = CHOOSE(viewPtr->disabledBg, stylePtr->disabledBg);
         gc = stylePtr->disabledGC;
     } else if ((stylePtr->flags & ACTIVE_COLORS) && 
                (viewPtr->activeCellPtr == cellPtr)) {
 	/* Active */
-	bg = stylePtr->activeBg;
+        bg = CHOOSE(viewPtr->activeBg, stylePtr->activeBg);
 	gc = stylePtr->activeGC;
 	relief = stylePtr->activeRelief;
     } else if (RowSelected(rowPtr)) {
         /* Selected */
-	bg = CHOOSE(viewPtr->sel.bg, stylePtr->selectedBg);
+	bg = CHOOSE(viewPtr->selectedBg, stylePtr->selectedBg);
         gc = stylePtr->selectedGC;
     } else if ((cellPtr->flags|rowPtr->flags|colPtr->flags) & HIGHLIGHT) {
         /* Highlight */
@@ -2889,17 +2885,17 @@ CheckBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
     relief = stylePtr->relief;
     if ((cellPtr->flags|rowPtr->flags|colPtr->flags) & DISABLED) {
 	/* Disabled */
-	bg = stylePtr->disabledBg;
+        bg = CHOOSE(viewPtr->disabledBg, stylePtr->disabledBg);
 	gc = stylePtr->disabledGC;
     } else if ((stylePtr->flags & ACTIVE_COLORS) && 
                (viewPtr->activeCellPtr == cellPtr)) {
 	/* Active */
-	bg = stylePtr->activeBg;
+        bg = CHOOSE(viewPtr->activeBg, stylePtr->activeBg);
 	gc = stylePtr->activeGC;
 	relief = stylePtr->activeRelief;
     } else if (RowSelected(rowPtr)) {
 	/* Selected */
-	bg = stylePtr->selectedBg;
+	bg = CHOOSE(viewPtr->selectedBg, stylePtr->selectedBg);
 	gc = stylePtr->selectedGC;
         if (viewPtr->activeCellPtr == cellPtr) {
             relief = stylePtr->activeRelief;
@@ -3438,17 +3434,17 @@ ComboBoxStyleDrawProc(Cell *cellPtr, Drawable drawable,
     relief = stylePtr->relief;
     if ((cellPtr->flags|rowPtr->flags|colPtr->flags) & DISABLED) {
 	/* Disabled */
-	bg = stylePtr->disabledBg;
+        bg = CHOOSE(viewPtr->disabledBg, stylePtr->disabledBg);
         gc = stylePtr->disabledGC;
     } else if ((stylePtr->flags & ACTIVE_COLORS) && 
                (viewPtr->activeCellPtr == cellPtr)) {
 	/* Active */
-	bg = stylePtr->activeBg;
+        bg = CHOOSE(viewPtr->activeBg, stylePtr->activeBg);
 	gc = stylePtr->activeGC;
 	relief = stylePtr->activeRelief;
     } else if (RowSelected(rowPtr)) {
         /* Selected */
-	bg = CHOOSE(viewPtr->sel.bg, stylePtr->selectedBg);
+	bg = CHOOSE(viewPtr->selectedBg, stylePtr->selectedBg);
         gc = stylePtr->selectedGC;
     } else if ((cellPtr->flags|rowPtr->flags|colPtr->flags) & HIGHLIGHT) {
         /* Highlight */
@@ -3579,7 +3575,8 @@ ComboBoxStyleDrawProc(Cell *cellPtr, Drawable drawable,
         }
 	fg = stylePtr->activeFg;
         bg = (viewPtr->activeCellPtr == cellPtr) ? 
-            stylePtr->activeArrowBg : stylePtr->activeBg;
+            stylePtr->activeArrowBg : 
+            CHOOSE(viewPtr->activeBg, stylePtr->activeBg);
         relief = (viewPtr->postPtr == cellPtr) ? 
 	    stylePtr->postedRelief : stylePtr->arrowRelief;
 	Blt_Bg_FillRectangle(viewPtr->tkwin, drawable, bg, ax, ay, aw, ah, 
@@ -3949,17 +3946,17 @@ ImageBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
     relief = stylePtr->relief;
     if ((rowPtr->flags|colPtr->flags|cellPtr->flags) & DISABLED) {
 	/* Disabled */
-	bg = stylePtr->disabledBg;
+        bg = CHOOSE(viewPtr->disabledBg, stylePtr->disabledBg);
 	gc = stylePtr->disabledGC;
     } else if ((stylePtr->flags & ACTIVE_COLORS) && 
                (viewPtr->activeCellPtr == cellPtr)) {
 	/* Active */
-	bg = stylePtr->activeBg;
+        bg = CHOOSE(viewPtr->activeBg, stylePtr->activeBg);
 	gc = stylePtr->activeGC;
 	relief = stylePtr->activeRelief;
     } else if (RowSelected(rowPtr)) { 
         /* Selected */
-	bg = stylePtr->selectedBg;
+	bg = CHOOSE(viewPtr->selectedBg, stylePtr->selectedBg);
 	gc = stylePtr->selectedGC;
     } else if ((rowPtr->flags|colPtr->flags|cellPtr->flags) & HIGHLIGHT) { 
 	/* Highlighted */
@@ -4378,17 +4375,17 @@ RadioBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
     relief = stylePtr->relief;
     if ((cellPtr->flags|rowPtr->flags|colPtr->flags) & DISABLED) {
 	/* Disabled */
-	bg = stylePtr->disabledBg;
+        bg = CHOOSE(viewPtr->disabledBg, stylePtr->disabledBg);
 	gc = stylePtr->disabledGC;
     } else if ((stylePtr->flags & ACTIVE_COLORS) && 
                (viewPtr->activeCellPtr == cellPtr)) {
 	/* Active */
-	bg = stylePtr->activeBg;
+        bg = CHOOSE(viewPtr->activeBg, stylePtr->activeBg);
 	gc = stylePtr->activeGC;
 	relief = stylePtr->activeRelief;
     } else if (RowSelected(rowPtr)) {
 	/* Selected */
-	bg = stylePtr->selectedBg;
+	bg = CHOOSE(viewPtr->selectedBg, stylePtr->selectedBg);
 	gc = stylePtr->selectedGC;
         if (viewPtr->activeCellPtr == cellPtr) {
             relief = stylePtr->activeRelief;

@@ -126,6 +126,13 @@
 #define DEF_CELL_STYLE			(char *)NULL
 
 #ifdef WIN32
+#define DEF_ACTIVE_BG                   RGB_GREY85
+#else
+#define DEF_ACTIVE_BG                   RGB_GREY95
+#endif
+#define DEF_DISABLE_BG			RGB_GREY97
+
+#ifdef WIN32
 #define DEF_COLUMN_ACTIVE_TITLE_BG	RGB_GREY85
 #else
 #define DEF_COLUMN_ACTIVE_TITLE_BG	RGB_GREY90
@@ -434,6 +441,8 @@ static Blt_ConfigSpec entrySpecs[] =
 
 static Blt_ConfigSpec viewSpecs[] =
 {
+    {BLT_CONFIG_BACKGROUND, "-activebackground", "activeBackground", 
+	"ActiveBackground", DEF_ACTIVE_BG, Blt_Offset(TreeView, activeBg), 0},
     {BLT_CONFIG_BITMASK, "-allowduplicates", "allowDuplicates", 
 	"AllowDuplicates", DEF_ALLOW_DUPLICATES, Blt_Offset(TreeView, flags),
 	BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)ALLOW_DUPLICATES},
@@ -463,6 +472,9 @@ static Blt_ConfigSpec viewSpecs[] =
 	BLT_CONFIG_DONT_SET_DEFAULT | BLT_CONFIG_NULL_OK}, 
     {BLT_CONFIG_DASHES, "-dashes", "dashes", "Dashes", 	DEF_DASHES, 
 	Blt_Offset(TreeView, dashes), BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_BACKGROUND, "-disabledbackground", "disabledBackground", 
+	"DisabledBackground", DEF_DISABLE_BG, 
+        Blt_Offset(TreeView, disabledBg), 0},
     {BLT_CONFIG_OBJ, "-entrycommand", "entryCommand", "EntryCommand",
 	(char *)NULL, Blt_Offset(TreeView, entryCmdObjPtr), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_BITMASK, "-exportselection", "exportSelection",
@@ -529,12 +541,12 @@ static Blt_ConfigSpec viewSpecs[] =
 	DEF_SCROLL_MODE, Blt_Offset(TreeView, scrollMode),
 	BLT_CONFIG_DONT_SET_DEFAULT, &scrollmodeOption},
     {BLT_CONFIG_BACKGROUND, "-selectbackground", "selectBackground", 
-	"Foreground", DEF_SELECT_BG, Blt_Offset(TreeView, sel.bg), 0},
+	"Foreground", DEF_SELECT_BG, Blt_Offset(TreeView, selectedBg), 0},
     {BLT_CONFIG_OBJ, "-selectcommand", "selectCommand", "SelectCommand",
 	(char *)NULL, Blt_Offset(TreeView, sel.cmdObjPtr), 
 	BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_COLOR, "-selectforeground", "selectForeground", "Background",
-	DEF_SELECT_FOREGROUND, Blt_Offset(TreeView, sel.fg), 0},
+	DEF_SELECT_FOREGROUND, Blt_Offset(TreeView, selectedFg), 0},
     {BLT_CONFIG_CUSTOM, "-selectmode", "selectMode", "SelectMode",
 	DEF_SELECT_MODE, Blt_Offset(TreeView, sel.mode), 
 	BLT_CONFIG_DONT_SET_DEFAULT, &selectmodeOption},
@@ -6188,8 +6200,8 @@ DestroyTreeView(DestroyData dataPtr)	/* Pointer to the widget record. */
     if (viewPtr->focusGC != NULL) {
 	Blt_FreePrivateGC(viewPtr->display, viewPtr->focusGC);
     }
-    if (viewPtr->sel.gc != NULL) {
-	Blt_FreePrivateGC(viewPtr->display, viewPtr->sel.gc);
+    if (viewPtr->selectedGC != NULL) {
+	Blt_FreePrivateGC(viewPtr->display, viewPtr->selectedGC);
     }
     if (viewPtr->visibleEntries != NULL) {
 	Blt_Free(viewPtr->visibleEntries);
@@ -6462,7 +6474,7 @@ ConfigureTreeView(Tcl_Interp *interp, TreeView *viewPtr)
      * GC for selection. Dashed outline.
      */
     gcMask = GCForeground | GCLineStyle;
-    gcValues.foreground = viewPtr->sel.fg->pixel;
+    gcValues.foreground = viewPtr->selectedFg->pixel;
     gcValues.line_style = (LineIsDashed(viewPtr->focusDashes))
 	? LineOnOffDash : LineSolid;
     newGC = Blt_GetPrivateGC(viewPtr->tkwin, gcMask, &gcValues);
@@ -6470,10 +6482,10 @@ ConfigureTreeView(Tcl_Interp *interp, TreeView *viewPtr)
 	viewPtr->focusDashes.offset = 2;
 	Blt_SetDashes(viewPtr->display, newGC, &viewPtr->focusDashes);
     }
-    if (viewPtr->sel.gc != NULL) {
-	Blt_FreePrivateGC(viewPtr->display, viewPtr->sel.gc);
+    if (viewPtr->selectedGC != NULL) {
+	Blt_FreePrivateGC(viewPtr->display, viewPtr->selectedGC);
     }
-    viewPtr->sel.gc = newGC;
+    viewPtr->selectedGC = newGC;
 
     ConfigureButtons(viewPtr);
     viewPtr->inset = viewPtr->highlightWidth + viewPtr->borderWidth + INSET_PAD;
@@ -6694,7 +6706,7 @@ GetTreeCoordinates(TreeView *viewPtr, Entry *entryPtr, int *yPtr,
     }
     entryPtr->worldY = *yPtr;
     Blt_GetFontMetrics(entryPtr->font, &fm);
-    h = MAX3(entryPtr->iconHeight, viewPtr->button.height);
+    h = MAX(entryPtr->iconHeight, viewPtr->button.height);
     entryPtr->vertLineLength = -(*yPtr + (h / 2));
 
     *yPtr += entryPtr->height;
@@ -7781,32 +7793,35 @@ DrawEntryIcon(
     int maxY;
     int top, bottom;
     int topInset, botInset;
-    int width, height;
+    int iw, ih;
     
     level = DEPTH(viewPtr, entryPtr->node);
     entryHeight = MAX3(entryPtr->lineHeight, entryPtr->iconHeight, 
                        viewPtr->button.height);
-    height = IconHeight(icon);
-    width = IconWidth(icon);
+    entryHeight = entryPtr->height;
+    ih = IconHeight(icon);
+    iw = IconWidth(icon);
     if (viewPtr->flatView) {
-        x += (ICONWIDTH(0) - width) / 2;
+        x += (ICONWIDTH(0) - iw) / 2;
     } else {
-        x += (ICONWIDTH(level + 1) - width) / 2;
+        x += (ICONWIDTH(level + 1) - iw) / 2;
     }	    
-    y += (entryHeight - height) / 2;
+    if (entryHeight > ih) {
+        y += (entryHeight - ih) / 2;
+    }
     botInset = viewPtr->inset - INSET_PAD;
     topInset = viewPtr->titleHeight + viewPtr->inset;
     maxY = Tk_Height(viewPtr->tkwin) - botInset;
     top = 0;
-    bottom = y + height;
+    bottom = y + ih;
     if (y < topInset) {
-        height += y - topInset;
+        ih += y - topInset;
         top = -y + topInset;
         y = topInset;
     } else if (bottom >= maxY) {
-        height = maxY - y;
+        ih = maxY - y;
     }
-    Tk_RedrawImage(IconBits(icon), 0, top, width, height, drawable, x, y);
+    Tk_RedrawImage(IconBits(icon), 0, top, iw, ih, drawable, x, y);
 } 
 
 
@@ -7843,7 +7858,7 @@ DrawEntryLabel(
 	if (isSelected) {
 	    XColor *color;
 
-	    color = viewPtr->sel.fg;
+	    color = viewPtr->selectedFg;
 	    XSetForeground(viewPtr->display, viewPtr->focusGC, color->pixel);
 	}
 	if (width > maxLength) {
@@ -7878,7 +7893,7 @@ DrawEntryLabel(
 	    font = GetStyleFont(&viewPtr->treeColumn);
 	}
 	if (isSelected) {
-	    color = viewPtr->sel.fg;
+	    color = viewPtr->selectedFg;
 	} else if (entryPtr->color != NULL) {
 	    color = entryPtr->color;
 	} else {
@@ -7939,7 +7954,7 @@ DrawEntryLabel2(
 	if (isSelected) {
 	    XColor *color;
 
-	    color = viewPtr->sel.fg;
+	    color = viewPtr->selectedFg;
 	    XSetForeground(viewPtr->display, viewPtr->focusGC, color->pixel);
 	}
 	if (colWidth > maxLength) {
@@ -7975,7 +7990,7 @@ DrawEntryLabel2(
 	    font = GetStyleFont(&viewPtr->treeColumn);
 	}
 	if (isSelected) {
-	    color = viewPtr->sel.fg;
+	    color = viewPtr->selectedFg;
 	} else if (entryPtr->color != NULL) {
 	    color = entryPtr->color;
 	} else {
@@ -8075,10 +8090,10 @@ DisplayCell(TreeView *viewPtr, Cell *cellPtr)
 	(!EntryIsSelected(viewPtr, entryPtr))) {
 	bg = GetStyleBackground(colPtr);
     } else {
-	bg = CHOOSE(viewPtr->sel.bg, stylePtr->selectBg);
+	bg = CHOOSE(viewPtr->selectedBg, stylePtr->selectedBg);
     }
     /*FIXME*/
-    /* bg = CHOOSE(viewPtr->selectBg, stylePtr->selectBg);  */
+    /* bg = CHOOSE(viewPtr->selectedBg, stylePtr->selectedBg);  */
     {
 	Drawable drawable;
         int pw, ph, px, py;
@@ -8611,7 +8626,7 @@ DrawEntryBackgrounds(TreeView *viewPtr, Drawable drawable, int x, int w,
         rowPtr = viewPtr->visibleEntries[i];
         bg = normalBg;
 	if (EntryIsSelected(viewPtr, rowPtr)) {
-            bg = viewPtr->sel.bg;
+            bg = viewPtr->selectedBg;
         } else if ((viewPtr->altBg != NULL) && (rowPtr->flatIndex & 0x1)) {
             bg = viewPtr->altBg;
         } else {
@@ -8672,9 +8687,9 @@ DrawTree(TreeView *viewPtr, Drawable drawable, int x)
 		    TkUnionRectWithRegion(&r, rgn, rgn);
 		}
 	    }
-	    TkSetRegion(viewPtr->display, viewPtr->sel.gc, rgn);
-	    DrawLines(viewPtr, viewPtr->sel.gc, drawable);
-	    XSetClipMask(viewPtr->display, viewPtr->sel.gc, None);
+	    TkSetRegion(viewPtr->display, viewPtr->selectedGC, rgn);
+	    DrawLines(viewPtr, viewPtr->selectedGC, drawable);
+	    XSetClipMask(viewPtr->display, viewPtr->selectedGC, None);
 	    TkDestroyRegion(rgn);
 	}
     }
@@ -8938,7 +8953,7 @@ DisplayLabel(TreeView *viewPtr, Entry *entryPtr, Drawable drawable)
 	}
     }
     if (EntryIsSelected(viewPtr, entryPtr)) {
-	bg = viewPtr->sel.bg;
+	bg = viewPtr->selectedBg;
     } else {
 	bg = GetStyleBackground(&viewPtr->treeColumn);
 	if ((viewPtr->altBg != NULL) && (entryPtr->flatIndex & 0x1))  {

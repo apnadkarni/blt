@@ -1,5 +1,4 @@
 /* -*- mode: c; c-basic-offset: 4; indent-tabs-mode: nil -*- */
-
 /*
  * bltBg.c --
  *
@@ -7,13 +6,13 @@
  *
  *	Copyright 1995-2004 George A Howlett.
  *
- *	Permission is hereby granted, free of charge, to any person obtaining
- *	a copy of this software and associated documentation files (the
- *	"Software"), to deal in the Software without restriction, including
- *	without limitation the rights to use, copy, modify, merge, publish,
- *	distribute, sublicense, and/or sell copies of the Software, and to
- *	permit persons to whom the Software is furnished to do so, subject to
- *	the following conditions:
+ *	Permission is hereby granted, free of charge, to any person
+ *	obtaining a copy of this software and associated documentation
+ *	files (the "Software"), to deal in the Software without
+ *	restriction, including without limitation the rights to use, copy,
+ *	modify, merge, publish, distribute, sublicense, and/or sell copies
+ *	of the Software, and to permit persons to whom the Software is
+ *	furnished to do so, subject to the following conditions:
  *
  *	The above copyright notice and this permission notice shall be
  *	included in all copies or substantial portions of the Software.
@@ -21,10 +20,11 @@
  *	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  *	EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  *	MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- *	NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
- *	LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
- *	OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
- *	WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *	NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+ *	BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ *	ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ *	CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ *	SOFTWARE.
  */
 
 #define BUILD_BLT_TK_PROCS 1
@@ -137,23 +137,21 @@ typedef struct {
 
 typedef struct _Background BackgroundObject;
 
-typedef void (DestroyBackgroundProc)(BackgroundObject *corePtr);
-typedef int (ConfigureBackgroundProc)(Tcl_Interp *interp, 
-	BackgroundObject *corePtr, int objc, Tcl_Obj *const *objv, 
-	unsigned int flags);
-typedef void (DrawRectangleProc)(Tk_Window tkwin, Drawable drawable, 
+typedef void (BackgroundDestroyProc)(BackgroundObject *corePtr);
+typedef int (BackgroundConfigureProc)(BackgroundObject *corePtr);
+typedef void (BackgroundDrawRectangleProc)(Tk_Window tkwin, Drawable drawable, 
 	BackgroundObject *corePtr, int x, int y, int w, int h);
-typedef void (DrawPolygonProc)(Tk_Window tkwin, Drawable drawable, 
+typedef void (BackgroundDrawPolygonProc)(Tk_Window tkwin, Drawable drawable, 
 	BackgroundObject *corePtr, int numPoints, XPoint *points);
 
 typedef struct {
     BackgroundType type;		/* Type of background: solid, tile,
 					 * texture, or gradient. */
     Blt_ConfigSpec *configSpecs;
-    DestroyBackgroundProc *destroyProc;
-    ConfigureBackgroundProc *configProc;
-    DrawRectangleProc *drawRectangleProc;
-    DrawPolygonProc *drawPolygonProc;
+    BackgroundDestroyProc *destroyProc;
+    BackgroundConfigureProc *configProc;
+    BackgroundDrawRectangleProc *drawRectangleProc;
+    BackgroundDrawPolygonProc *drawPolygonProc;
 } BackgroundClass;
 
 struct _Background {
@@ -2081,7 +2079,7 @@ Draw3DPolygon(
 /*
  *---------------------------------------------------------------------------
  *
- * DestroySolidBackgroundProc --
+ * SolidBackgroundDestroyProc --
  *
  * Results:
  *	None.
@@ -2089,23 +2087,17 @@ Draw3DPolygon(
  *---------------------------------------------------------------------------
  */
 static void
-DestroySolidBackgroundProc(BackgroundObject *corePtr)
+SolidBackgroundDestroyProc(BackgroundObject *corePtr)
 {
 }
 #endif
 
 static int
-ConfigureSolidBackgroundProc(Tcl_Interp *interp, BackgroundObject *basePtr, 
-			     int objc, Tcl_Obj *const *objv, unsigned int flags)
+SolidBackgroundConfigureProc(BackgroundObject *basePtr)
 {
     SolidBackground *corePtr = (SolidBackground *)basePtr;
     Blt_Pixel color;
 
-    if (Blt_ConfigureWidgetFromObj(interp, corePtr->tkwin, 
-	corePtr->classPtr->configSpecs, objc, objv, (char *)corePtr, 
-	flags) != TCL_OK) {
-	return TCL_ERROR;
-    }
     color.u32 = Blt_XColorToPixel(Tk_3DBorderColor(corePtr->border));
     color.Alpha = corePtr->alpha;
     Blt_PaintBrush_SetColor(&corePtr->brush, color.u32);
@@ -2115,7 +2107,7 @@ ConfigureSolidBackgroundProc(Tcl_Interp *interp, BackgroundObject *basePtr,
 /*
  *---------------------------------------------------------------------------
  *
- * DrawSolidRectangle --
+ * SolidBackgroundDrawRectangle --
  *
  * Results:
  *	None.
@@ -2123,8 +2115,9 @@ ConfigureSolidBackgroundProc(Tcl_Interp *interp, BackgroundObject *basePtr,
  *---------------------------------------------------------------------------
  */
 static void
-DrawSolidRectangleProc(Tk_Window tkwin, Drawable drawable, 
-		       BackgroundObject *basePtr, int x, int y, int w, int h)
+SolidBackgroundDrawRectangleProc(Tk_Window tkwin, Drawable drawable, 
+                                 BackgroundObject *basePtr, int x, int y, 
+                                 int w, int h)
 {
     SolidBackground *corePtr = (SolidBackground *)basePtr;
 
@@ -2153,7 +2146,7 @@ DrawSolidRectangleProc(Tk_Window tkwin, Drawable drawable,
 /*
  *---------------------------------------------------------------------------
  *
- * DrawSolidPolygonProc --
+ * SolidBackgroundDrawPolygonProc --
  *
  *	Draw a single color filled polygon.  If the color is completely
  *	opaque, we use the standard XFillPolygon routine.  If the 
@@ -2165,8 +2158,8 @@ DrawSolidRectangleProc(Tk_Window tkwin, Drawable drawable,
  *---------------------------------------------------------------------------
  */
 static void
-DrawSolidPolygonProc(Tk_Window tkwin, Drawable drawable, 
-		     BackgroundObject *basePtr, int n, XPoint *points)
+SolidBackgroundDrawPolygonProc(Tk_Window tkwin, Drawable drawable, 
+                               BackgroundObject *basePtr, int n, XPoint *points)
 {
     SolidBackground *corePtr = (SolidBackground *)basePtr;
 
@@ -2208,10 +2201,10 @@ DrawSolidPolygonProc(Tk_Window tkwin, Drawable drawable,
 static BackgroundClass solidBackgroundClass = {
     BACKGROUND_SOLID,
     solidConfigSpecs,
-    NULL,				/* DestroySolidBackgroundProc */
-    ConfigureSolidBackgroundProc,
-    DrawSolidRectangleProc,
-    DrawSolidPolygonProc
+    NULL,				/* SolidBackgroundDestroyProc */
+    SolidBackgroundConfigureProc,
+    SolidBackgroundDrawRectangleProc,
+    SolidBackgroundDrawPolygonProc
 };
 
 /*
@@ -2406,16 +2399,10 @@ DrawTilePolygonProc(Tk_Window tkwin, Drawable drawable,
 }
 
 static int
-ConfigureTileBackgroundProc(Tcl_Interp *interp, BackgroundObject *basePtr, 
-			    int objc, Tcl_Obj *const *objv, unsigned int flags)
+ConfigureTileBackgroundProc(BackgroundObject *basePtr) 
 {
     TileBackground *corePtr = (TileBackground *)basePtr;
 
-    if (Blt_ConfigureWidgetFromObj(interp, corePtr->tkwin, 
-	corePtr->classPtr->configSpecs, objc, objv, (char *)corePtr, 
-	flags) != TCL_OK) {
-	return TCL_ERROR;
-    }
     if ((corePtr->tile != NULL) && (corePtr->flags & FREE_TILE)) {
 	Blt_FreePicture(corePtr->tile);
     }
@@ -2575,17 +2562,10 @@ DrawGradientPolygonProc(Tk_Window tkwin, Drawable drawable,
 }
 
 static int
-ConfigureGradientBackgroundProc(Tcl_Interp *interp, BackgroundObject *basePtr, 
-				int objc, Tcl_Obj *const *objv, 
-				unsigned int flags)
+ConfigureGradientBackgroundProc(BackgroundObject *basePtr)
 {
     GradientBackground *corePtr = (GradientBackground *)basePtr;
 
-    if (Blt_ConfigureWidgetFromObj(interp, corePtr->tkwin, 
-	corePtr->classPtr->configSpecs, objc, objv, (char *)corePtr, 
-	flags) != TCL_OK) {
-	return TCL_ERROR;
-    }
     if (corePtr->alpha != 0xFF) {
 	corePtr->low.Alpha = corePtr->alpha;
 	corePtr->high.Alpha = corePtr->alpha;
@@ -2747,17 +2727,10 @@ DrawTexturePolygonProc(Tk_Window tkwin, Drawable drawable,
 }
 
 static int
-ConfigureTextureBackgroundProc(Tcl_Interp *interp, BackgroundObject *basePtr, 
-			       int objc, Tcl_Obj *const *objv, 
-			       unsigned int flags)
+ConfigureTextureBackgroundProc(BackgroundObject *basePtr)
 {
     TextureBackground *corePtr = (TextureBackground *)basePtr;
 
-    if (Blt_ConfigureWidgetFromObj(interp, corePtr->tkwin, 
-	corePtr->classPtr->configSpecs, objc, objv, (char *)corePtr, 
-	flags) != TCL_OK) {
-	return TCL_ERROR;
-    }
     corePtr->brush.alpha = corePtr->alpha;
     Blt_PaintBrush_SetColorProc(&corePtr->brush, TextureColorProc, corePtr);
     return TCL_OK;
@@ -2797,6 +2770,41 @@ NewTextureBackground()
     corePtr->reference = REFERENCE_TOPLEVEL;
     corePtr->alpha = 0xFF;
     return (BackgroundObject *)corePtr;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * DestroyBackgroundObject --
+ *
+ *	Removes the client from the servers's list of clients and memory used
+ *	by the client token is released.  When the last client is deleted, the
+ *	server is also removed.
+ *
+ * Results:
+ *	None.
+ *
+ *---------------------------------------------------------------------------
+ */
+static void
+DestroyBackgroundObject(BackgroundObject *corePtr)
+{
+    Blt_FreeOptions(corePtr->classPtr->configSpecs, (char *)corePtr, 
+	corePtr->display, 0);
+    if (corePtr->classPtr->destroyProc != NULL) {
+	(*corePtr->classPtr->destroyProc)(corePtr);
+    }
+    if (corePtr->border != NULL) {
+	Tk_Free3DBorder(corePtr->border);
+    }
+    if (corePtr->hashPtr != NULL) {
+	Blt_DeleteHashEntry(&corePtr->dataPtr->instTable, 
+		corePtr->hashPtr);
+    }
+    ClearCache(corePtr);
+    Blt_Chain_Destroy(corePtr->chain);
+    Blt_DeleteHashTable(&corePtr->pictTable);
+    Blt_Free(corePtr);
 }
 
 /*
@@ -2847,40 +2855,6 @@ CreateBackground(BackgroundInterpData *dataPtr, Tcl_Interp *interp,
     return corePtr;
 }
 
-/*
- *---------------------------------------------------------------------------
- *
- * DestroyBackgroundObject --
- *
- *	Removes the client from the servers's list of clients and memory used
- *	by the client token is released.  When the last client is deleted, the
- *	server is also removed.
- *
- * Results:
- *	None.
- *
- *---------------------------------------------------------------------------
- */
-static void
-DestroyBackgroundObject(BackgroundObject *corePtr)
-{
-    Blt_FreeOptions(corePtr->classPtr->configSpecs, (char *)corePtr, 
-	corePtr->display, 0);
-    if (corePtr->classPtr->destroyProc != NULL) {
-	(*corePtr->classPtr->destroyProc)(corePtr);
-    }
-    if (corePtr->border != NULL) {
-	Tk_Free3DBorder(corePtr->border);
-    }
-    if (corePtr->hashPtr != NULL) {
-	Blt_DeleteHashEntry(&corePtr->dataPtr->instTable, 
-		corePtr->hashPtr);
-    }
-    ClearCache(corePtr);
-    Blt_Chain_Destroy(corePtr->chain);
-    Blt_DeleteHashTable(&corePtr->pictTable);
-    Blt_Free(corePtr);
-}
 
 /*
  *---------------------------------------------------------------------------
@@ -2957,15 +2931,13 @@ CreateOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (corePtr == NULL) {
 	return TCL_ERROR;
     }
-    if ((*corePtr->classPtr->configProc)(interp, corePtr, objc - 3, objv + 3, 
-	0) != TCL_OK) {
+    if (Blt_ConfigureWidgetFromObj(interp, corePtr->tkwin, 
+	corePtr->classPtr->configSpecs, objc - 3, objv + 3, (char *)corePtr, 
+        0) != TCL_OK) {
 	DestroyBackgroundObject(corePtr);
 	return TCL_ERROR;
     }
-    /* Create the container for the background. */
-    bgPtr = Blt_Calloc(1, sizeof(Bg));
-    if (bgPtr == NULL) {
-	Tcl_AppendResult(interp, "can't allocate background.", (char *)NULL);
+    if ((*corePtr->classPtr->configProc)(corePtr) != TCL_OK) {
 	DestroyBackgroundObject(corePtr);
 	return TCL_ERROR;
     }
@@ -2984,6 +2956,13 @@ CreateOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	Blt_SetHashValue(hPtr, corePtr);
 	corePtr->hashPtr = hPtr;
 	corePtr->name = Blt_GetHashKey(&dataPtr->instTable, hPtr);
+    }
+    /* Create the container for the background. */
+    bgPtr = Blt_Calloc(1, sizeof(Bg));
+    if (bgPtr == NULL) {
+	Tcl_AppendResult(interp, "can't allocate background.", (char *)NULL);
+	DestroyBackgroundObject(corePtr);
+	return TCL_ERROR;
     }
 
     /* Add the container to the background object's list of clients. */
@@ -3035,10 +3014,14 @@ ConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
 		corePtr->classPtr->configSpecs, (char *)corePtr, objv[3], 
 		flags);
     } else {
-	if ((*corePtr->classPtr->configProc)(interp, corePtr, 
-		objc-3, objv+3, flags) != TCL_OK) {
-	    return TCL_ERROR;
-	}
+        if (Blt_ConfigureWidgetFromObj(interp, corePtr->tkwin, 
+                corePtr->classPtr->configSpecs, objc - 3, objv + 3, 
+                (char *)corePtr, flags) != TCL_OK) {
+            return TCL_ERROR;
+        }
+        if ((*corePtr->classPtr->configProc)(corePtr) != TCL_OK) {
+            return TCL_ERROR;
+        }
 	ClearCache(corePtr);
 	NotifyClients(corePtr);
 	return TCL_OK;
@@ -3300,14 +3283,18 @@ Blt_GetBg(Tcl_Interp *interp, Tk_Window tkwin, const char *name)
 	    Tk_Free3DBorder(border);
 	    goto error;			/* Can't allocate new background. */
 	}
-        if (corePtr->border != NULL) {
-	    Tk_Free3DBorder(corePtr->border);
-        }
         corePtr->border = border;
 	corePtr->hashPtr = hPtr;
 	corePtr->name = Blt_GetHashKey(&dataPtr->instTable, hPtr);
 	corePtr->link = NULL;
 	Blt_SetHashValue(hPtr, corePtr);
+        /* The tricky part here is that we don't look at configure options
+         * because we already created the border for the solid
+         * backrground. */
+        if ((*corePtr->classPtr->configProc)(corePtr) != TCL_OK) {
+            DestroyBackgroundObject(corePtr);
+            goto error;
+        }
     } else {
 	corePtr = Blt_GetHashValue(hPtr);
 	assert(corePtr != NULL);

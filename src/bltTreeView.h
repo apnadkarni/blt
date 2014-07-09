@@ -410,38 +410,38 @@ struct _CellStyle {
     Blt_Font font;
     XColor *activeFg;                   /* Foreground color of cell when
 					 * active. */
-    XColor *disableFg;                  /* Foreground color of cell when
+    XColor *disabledFg;                 /* Foreground color of cell when
 					 * disabled. */
     XColor *highlightFg;		/* Foreground color of cell when
 					 * highlighted. */
     XColor *normalFg;			/* Normal foreground color of
                                          * cell. */
-    XColor *selectFg;			/* Foreground color of a selected
+    XColor *selectedFg;			/* Foreground color of a selected
 					 * cell. If non-NULL, overrides
 					 * default foreground color
 					 * specification. */
     Blt_Bg altBg;
     Blt_Bg activeBg;			/* Background color of cell when
 					 * active. */
-    Blt_Bg disableBg;                   /* Background color of cell when
+    Blt_Bg disabledBg;                  /* Background color of cell when
                                          * disabled. */
     Blt_Bg highlightBg;			/* Background color of cell when
 					 * highlighted. */
     Blt_Bg normalBg;                    /* Normal background color of
                                          * cell. */
-    Blt_Bg selectBg;			/* Background color of a selected
+    Blt_Bg selectedBg;			/* Background color of a selected
 					 * cell.  If non-NULL, overrides
 					 * the default background * color
 					 * specification. */
     GC activeGC;			/* Graphics context of active
                                          * text. */
-    GC disableGC;			/* Graphics context of disabled
+    GC disabledGC;			/* Graphics context of disabled
                                          * text. */
     GC highlightGC;			/* Graphics context of highlighted
 					 * text. */
     GC normalGC;			/* Graphics context of normal
                                          * text. */
-    GC selectGC;			/* Graphics context of selected
+    GC selectedGC;			/* Graphics context of selected
 					 * text. */
     Tk_Justify justify;			/* Indicates how the text or icon
 					 * is justified within the
@@ -649,14 +649,10 @@ typedef struct {
     unsigned int flags;
     int	mode;				/* Selection style: "single" or
 					 * "multiple".  */
-    XColor *fg;                         /* Text color of a selected
-                                         * entry. */
-    Blt_Bg bg;
     Entry *anchorPtr;			/* Fixed end of selection
 					 * (i.e. entry at which selection
 					 * was started.) */
     Entry *markPtr;
-    GC gc;
     Tcl_Obj *cmdObjPtr;			/* TCL script that's invoked
 					 * whenever the selection
 					 * changes. */
@@ -755,9 +751,23 @@ struct _TreeView {
 					 * leave room for borders. */
     Blt_Font font;
     XColor *normalFg;
-    Blt_Bg normalBg;                    /* 3D border surrounding the window
-					 * (viewport). */
+    XColor *selectedFg;			/* Foreground color of a selected
+					 * cell. If non-NULL, overrides
+					 * default foreground color
+					 * specification. */
     Blt_Bg altBg;
+    Blt_Bg activeBg;			/* Background color of cell when
+					 * active. */
+    Blt_Bg disabledBg;                  /* Background color of cell when
+                                         * disabled. */
+    Blt_Bg highlightBg;			/* Background color of cell when
+					 * highlighted. */
+    Blt_Bg normalBg;                    /* Normal background color of
+                                         * cell. */
+    Blt_Bg selectedBg;			/* Background color of a selected
+					 * cell.  If non-NULL, overrides
+					 * the default background * color
+					 * specification. */
     int borderWidth;			/* Width of 3D border. */
     int relief;				/* 3D border relief. */
     int highlightWidth;			/* Width in pixels of highlight to
@@ -804,7 +814,9 @@ struct _TreeView {
     Tk_Cursor resizeCursor;		/* Resize Cursor */
     int reqWidth, reqHeight;            /* Requested dimensions of the
                                          * treeview widget's window. */
-    GC lineGC;				/* GC for drawing dotted line
+    GC selectedGC;                      /* Graphics context for the
+					 * selection text. */
+    GC lineGC;				/* GC for drawing dotted lines
 					 * between entries. */
     XColor *focusColor;
     Blt_Dashes focusDashes;		/* Dash on-off value. */

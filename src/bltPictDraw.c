@@ -3764,20 +3764,25 @@ Blt_PaintRadioButton(
 {
     Pict *destPtr;
     int x, y, r;
-    Blt_PaintBrush brush;
+    Blt_PaintBrush brush, *brushPtr;
     unsigned int normal, light, dark;
 
+    destPtr = Blt_CreatePicture(w, h);
+    w = Blt_Picture_Width(destPtr);
+    h = Blt_Picture_Height(destPtr);
+
     /* Process switches  */
-    Blt_PaintBrush_Init(&brush);
-    Blt_PaintBrush_SetColor(&brush, Blt_XColorToPixel(fillColorPtr));
+    brushPtr = Blt_Bg_PaintBrush(bg);
+    /* Blt_PaintBrush_Region(brushPtr, 0, 0, w, h);  */
+    Blt_PaintRectangle(destPtr, 0, 0, w, h, 0, 0, brushPtr);
+
     GetShadowColors(bg, &normal, &light, &dark);
     w &= ~1;
-    destPtr = Blt_CreatePicture(w, h);
-    Blt_BlankPicture(destPtr, normal);
     x = w / 2 + 1;
     y = h / 2 + 1;
     w -= 4, h -= 4;
     r = (w+1) / 2;
+    Blt_PaintBrush_Init(&brush);
     Blt_PaintBrush_SetColor(&brush, dark);
     DrawCircle(destPtr, x-1, y-1, r, 0.0, &brush, TRUE);
     Blt_PaintBrush_SetColor(&brush, light);
