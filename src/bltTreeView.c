@@ -7855,7 +7855,7 @@ DrawEntryLabel(
             TkSetRegion(viewPtr->display, viewPtr->focusGC, rgn);
         }	
 	XDrawRectangle(viewPtr->display, drawable, viewPtr->focusGC, 
-                x + 2, y + 2, width - 4, height - 4);
+                x + 1, y + 1, width - 3, height - 3);
 	if (isSelected) {
 	    XSetForeground(viewPtr->display, viewPtr->focusGC, 
 		viewPtr->focusColor->pixel);
@@ -7866,7 +7866,6 @@ DrawEntryLabel(
     }
     x += FOCUS_PAD + LABEL_PADX;
     y += FOCUS_PAD + LABEL_PADY;
-
     label = GETLABEL(entryPtr);
     if ((label[0] != '\0') && (maxLength > 0)) {
 	Blt_Font font;
@@ -14024,9 +14023,11 @@ StyleCreateOp(TreeView *viewPtr, Tcl_Interp *interp, int objc,
 	type = STYLE_COMBOBOX;
     } else if ((c == 'i') && (strncmp(string, "imagebox", length) == 0)) {
 	type = STYLE_IMAGEBOX;
+    } else if ((c == 'r') && (strncmp(string, "radiobox", length) == 0)) {
+	type = STYLE_RADIOBOX;
     } else {
 	Tcl_AppendResult(interp, "unknown style type \"", string, 
-		"\": should be textbox, checkbox, combobox, or imagebox.", 
+        "\": should be textbox, checkbox, combobox, radiobox, or imagebox.", 
 		(char *)NULL);
 	return TCL_ERROR;
     }
@@ -14327,6 +14328,38 @@ StyleTextBoxOp(ClientData clientData, Tcl_Interp *interp, int objc,
 /*
  *---------------------------------------------------------------------------
  *
+ * StyleTypeOp --
+ *
+ * 	Returns the type of the style.
+ *
+ *	  .t style type styleName
+ *
+ * Results:
+ *	A standard TCL result.  If the styleName exists, the type is 
+ *      returned as a string. If TCL_ERROR is returned, then interp->result
+ *	contains an error message.
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+StyleTypeOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+	   Tcl_Obj *const *objv)
+{
+    TreeView *viewPtr = clientData;
+    CellStyle *stylePtr;
+
+    stylePtr = FindStyle(interp, viewPtr, Tcl_GetString(objv[3]));
+    if (stylePtr == NULL) {
+	return TCL_ERROR;
+    }
+    Tcl_SetStringObj(Tcl_GetObjResult(interp), stylePtr->classPtr->className, 
+        -1);
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
  * StyleUnsetOp --
  *
  * 	Removes a style for a given key for all the ids given.  The cell's
@@ -14416,7 +14449,8 @@ static Blt_OpSpec styleOps[] = {
     {"highlight",   1, StyleHighlightOp,   5, 5, "styleName boolean",},
     {"names",       1, StyleNamesOp,       3, 3, "",}, 
     {"set",         1, StyleSetOp,         6, 6, "key styleName tagOrId...",},
-    {"textbox",     1, StyleTextBoxOp,     4, 0, "styleName options...",},
+    {"textbox",     2, StyleTextBoxOp,     4, 0, "styleName options...",},
+    {"type",        2, StyleTypeOp,        4, 4, "styleName",}, 
     {"unset",       1, StyleUnsetOp,       5, 5, "key tagOrId",},
 };
 

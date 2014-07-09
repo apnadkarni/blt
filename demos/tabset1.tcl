@@ -17,7 +17,7 @@ blt::tabset .t \
     -outerborderwidth 0 \
     -highlightthickness 0 \
     -scrollcommand { .s set } \
-    -clearbutton yes \
+    -closebutton yes \
     -width 3i
 
 .t add First \
