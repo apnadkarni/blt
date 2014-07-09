@@ -28,6 +28,9 @@ for { set i 0 } { $i < 10 } { incr i } {
     set x(:) [expr $i*50.0+10.0]
 }
 
+set img [image create picture hobbes]
+$img import xbm  -file bitmaps/hobbes.xbm -maskfile bitmaps/hobbes_mask.xbm 
+
 set attributes {
     none	"None"		red	red4		y0
     circle	"Circle"	yellow	yellow4		y2
@@ -37,9 +40,8 @@ set attributes {
     splus	"Splus"		Purple	purple4		y7
     scross	"Scross"	red	red4		y8
     square	"Square"	orange	orange4		y1
-    triangle	"Triangle"	blue	blue4		y4
-    "@bitmaps/hobbes.xbm @bitmaps/hobbes_mask.xbm"
-		"Bitmap"	yellow	black		y5
+    triangle	"Triangle"	blue	blue4		y4 
+    "@hobbes"   "@image"	white	black 		y5
 }
 
 set count 0

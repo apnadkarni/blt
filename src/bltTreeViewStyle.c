@@ -121,11 +121,13 @@
 #define DEF_IMAGEBOX_ACTIVE_COLORS	"0"
 #define DEF_TEXTBOX_ACTIVE_COLORS       "0"
 #define DEF_COMBOBOX_ACTIVE_COLORS      "0"
+#define DEF_RADIOBOX_ACTIVE_COLORS	"0"
 
 #define DEF_CHECKBOX_UNDERLINE_ACTIVE	"1"
 #define DEF_IMAGEBOX_UNDERLINE_ACTIVE	"1"
 #define DEF_TEXTBOX_UNDERLINE_ACTIVE    "1"
 #define DEF_COMBOBOX_UNDERLINE_ACTIVE   "1"
+#define DEF_RADIOBOX_UNDERLINE_ACTIVE	"1"
 
 #define DEF_CHECKBOX_ACTIVE_RELIEF	"raised"
 #define DEF_CHECKBOX_BOX_COLOR		(char *)NULL
@@ -174,6 +176,27 @@
 #define DEF_IMAGEBOX_RELIEF		"flat"
 #define DEF_IMAGEBOX_SHOW_TEXT		"1"
 #define DEF_IMAGEBOX_SIDE		"left"
+
+#define DEF_RADIOBOX_ACTIVE_RELIEF	"raised"
+#define DEF_RADIOBOX_BOX_COLOR		(char *)NULL
+#define DEF_RADIOBOX_INDICATOR_COLOR	"red"
+#define DEF_RADIOBOX_BORDERWIDTH	"1"
+#define DEF_RADIOBOX_EDITABLE		"1"
+#define DEF_RADIOBOX_FONT		(char *)NULL
+#define DEF_RADIOBOX_COMMAND		(char *)NULL
+#define DEF_RADIOBOX_FILL_COLOR		"white"
+#define DEF_RADIOBOX_GAP		"2"
+#define DEF_RADIOBOX_LINEWIDTH		"2"
+#define DEF_RADIOBOX_OFFVALUE		"0"
+#define DEF_RADIOBOX_ONVALUE		"1"
+#define DEF_RADIOBOX_RELIEF		"flat"
+#define DEF_RADIOBOX_SHOWVALUE		"yes"
+#define DEF_RADIOBOX_SIZE		"11"
+#ifdef WIN32
+#define DEF_RADIOBOX_CURSOR		"arrow"
+#else
+#define DEF_RADIOBOX_CURSOR		"hand2"
+#endif /*WIN32*/
 
 static Blt_OptionParseProc ObjToIconProc;
 static Blt_OptionPrintProc IconToObjProc;
@@ -253,7 +276,7 @@ typedef struct {
 					 * highlighted. */
     XColor *normalFg;			/* Normal foreground color of
                                          * cell. */
-    XColor *selectFg;			/* Foreground color of a selected
+    XColor *selectedFg;			/* Foreground color of a selected
 					 * cell. If non-NULL, overrides
 					 * default foreground color
 					 * specification. */
@@ -261,25 +284,25 @@ typedef struct {
                                          * background. */
     Blt_Bg activeBg;			/* Background color of cell when
 					 * active. */
-    Blt_Bg disableBg;                   /* Background color of cell when
+    Blt_Bg disabledBg;                   /* Background color of cell when
                                          * disabled. */
     Blt_Bg highlightBg;			/* Background color of cell when
 					 * highlighted. */
     Blt_Bg normalBg;                    /* Normal background color of
                                          * cell. */
-    Blt_Bg selectBg;			/* Background color of a selected
+    Blt_Bg selectedBg;			/* Background color of a selected
 					 * cell.  If non-NULL, overrides
 					 * the default background * color
 					 * specification. */
     GC activeGC;			/* Graphics context of active
                                          * text. */
-    GC disableGC;			/* Graphics context of disabled
+    GC disabledGC;			/* Graphics context of disabled
                                          * text. */
     GC highlightGC;			/* Graphics context of highlighted
 					 * text. */
     GC normalGC;			/* Graphics context of normal
                                          * text. */
-    GC selectGC;			/* Graphics context of selected
+    GC selectedGC;			/* Graphics context of selected
 					 * text. */
     Tk_Justify justify;			/* Indicates how the text or icon
 					 * is justified within the
@@ -339,28 +362,28 @@ typedef struct {
 					 * highlighted. */
     XColor *normalFg;			/* Normal foreground color of
                                          * cell. */
-    XColor *selectFg;			/* Foreground color of a selected
+    XColor *selectedFg;			/* Foreground color of a selected
 					 * cell. If non-NULL, overrides
 					 * default foreground color
 					 * specification. */
     Blt_Bg altBg;
     Blt_Bg activeBg;			/* Background color of cell when
 					 * active. */
-    Blt_Bg disableBg;                   /* Background color of cell when
+    Blt_Bg disabledBg;                   /* Background color of cell when
                                          * disabled. */
     Blt_Bg highlightBg;			/* Background color of cell when
 					 * highlighted. */
     Blt_Bg normalBg;                    /* Normal background color of
                                          * cell. */
-    Blt_Bg selectBg;			/* Background color of a selected
+    Blt_Bg selectedBg;			/* Background color of a selected
 					 * cell.  If non-NULL, overrides
 					 * the default background * color
 					 * specification. */
     GC activeGC;
-    GC disableGC;
+    GC disabledGC;
     GC highlightGC;
     GC normalGC;
-    GC selectGC;
+    GC selectedGC;
     Tk_Justify justify;			/* Indicates how the text or icon
 					 * is justified within the
 					 * column. */
@@ -429,28 +452,28 @@ typedef struct {
 					 * highlighted. */
     XColor *normalFg;			/* Normal foreground color of
                                          * cell. */
-    XColor *selectFg;			/* Foreground color of a selected
+    XColor *selectedFg;			/* Foreground color of a selected
 					 * cell. If non-NULL, overrides
 					 * default foreground color
 					 * specification. */
     Blt_Bg altBg;
     Blt_Bg activeBg;			/* Background color of cell when
 					 * active. */
-    Blt_Bg disableBg;                   /* Background color of cell when
+    Blt_Bg disabledBg;                   /* Background color of cell when
                                          * disabled. */
     Blt_Bg highlightBg;			/* Background color of cell when
 					 * highlighted. */
     Blt_Bg normalBg;                    /* Normal background color of
                                          * cell. */
-    Blt_Bg selectBg;			/* Background color of a selected
+    Blt_Bg selectedBg;			/* Background color of a selected
 					 * cell.  If non-NULL, overrides
 					 * the default background * color
 					 * specification. */
     GC activeGC;
-    GC disableGC;
+    GC disabledGC;
     GC highlightGC;
     GC normalGC;
-    GC selectGC;
+    GC selectedGC;
     Tk_Justify justify;			/* Indicates how the text or icon is
 					 * justified within the column. */
     int borderWidth;			/* Width of outer border surrounding
@@ -557,28 +580,28 @@ typedef struct {
 					 * highlighted. */
     XColor *normalFg;			/* Normal foreground color of
                                          * cell. */
-    XColor *selectFg;			/* Foreground color of a selected
+    XColor *selectedFg;			/* Foreground color of a selected
 					 * cell. If non-NULL, overrides
 					 * default foreground color
 					 * specification. */
     Blt_Bg altBg;
     Blt_Bg activeBg;			/* Background color of cell when
 					 * active. */
-    Blt_Bg disableBg;                   /* Background color of cell when
+    Blt_Bg disabledBg;                   /* Background color of cell when
                                          * disabled. */
     Blt_Bg highlightBg;			/* Background color of cell when
 					 * highlighted. */
     Blt_Bg normalBg;                    /* Normal background color of
                                          * cell. */
-    Blt_Bg selectBg;			/* Background color of a selected
+    Blt_Bg selectedBg;			/* Background color of a selected
 					 * cell.  If non-NULL, overrides
 					 * the default background * color
 					 * specification. */
     GC activeGC;
-    GC disableGC;
+    GC disabledGC;
     GC highlightGC;
     GC normalGC;
-    GC selectGC;
+    GC selectedGC;
     int borderWidth;			/* Width of outer border
 					 * surrounding the entire box. */
     Tk_Justify justify;			/* Indicates how the text or icon
@@ -595,94 +618,96 @@ typedef struct {
 					 * image.  */
 } ImageBoxStyle;
 
-static Blt_ConfigSpec textBoxStyleSpecs[] =
-{
-    {BLT_CONFIG_BACKGROUND, "-activebackground", "activeBackground", 
-	"ActiveBackground", DEF_ACTIVE_BG, 
-	Blt_Offset(TextBoxStyle, activeBg), 0},
-    {BLT_CONFIG_SYNONYM, "-activebg", "activeBackground", (char *)NULL, 
-	(char *)NULL, 0, 0},
-    {BLT_CONFIG_BITMASK, "-activecolors", "activeColors", "ActiveColors", 
-        DEF_TEXTBOX_ACTIVE_COLORS, Blt_Offset(TextBoxStyle, flags), 
-        BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)ACTIVE_COLORS},
-    {BLT_CONFIG_SYNONYM, "-activefg", "activeForeground", (char *)NULL, 
-	(char *)NULL, 0, 0},
-    {BLT_CONFIG_COLOR, "-activeforeground", "activeForeground", 
-	"ActiveForeground", DEF_ACTIVE_FG, 
-	Blt_Offset(TextBoxStyle, activeFg), 0},
-    {BLT_CONFIG_RELIEF, "-activerelief", "activeRelief", "ActiveRelief", 
-	DEF_TEXTBOX_ACTIVE_RELIEF, Blt_Offset(TextBoxStyle, activeRelief), 
-	BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_SYNONYM, "-altbg", "alternateBackground", (char *)NULL,
-	(char *)NULL, 0, 0},
-    {BLT_CONFIG_BACKGROUND, "-alternatebackground", "alternateBackground", 
-	"Background", DEF_ALT_BG, Blt_Offset(TextBoxStyle, altBg), 
-        BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_BACKGROUND, "-background", "background", "Background",
-        DEF_NORMAL_BG, Blt_Offset(TextBoxStyle, normalBg), 
-        BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_SYNONYM, "-bd", "borderWidth", (char *)NULL, (char *)NULL, 
-	0, 0},
-    {BLT_CONFIG_SYNONYM, "-bg", "background", (char *)NULL, (char *)NULL, 0, 0},
-    {BLT_CONFIG_PIXELS_NNEG, "-borderwidth", "borderWidth", "BorderWidth",
-	DEF_TEXTBOX_BORDERWIDTH, Blt_Offset(TextBoxStyle, borderWidth),
-	BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_OBJ, "-command", "command", "Command", DEF_TEXTBOX_COMMAND, 
-	Blt_Offset(TextBoxStyle, fmtCmdObjPtr), 0},
-    {BLT_CONFIG_CURSOR, "-cursor", "cursor", "Cursor", DEF_TEXTBOX_CURSOR, 
-	Blt_Offset(TextBoxStyle, cursor), 0},
-    {BLT_CONFIG_BACKGROUND, "-disabledbackground", "disabledBackground",
-	"DisabledBackground", DEF_DISABLE_BG, 
-        Blt_Offset(TextBoxStyle, disableBg), 0},
-    {BLT_CONFIG_COLOR, "-disabledforeground", "disabledForeground", 
-       "DisabledForeground", DEF_DISABLE_FG, 
-	Blt_Offset(TextBoxStyle, disableFg), 0},
-    {BLT_CONFIG_SYNONYM, "-disabledbg", "disabledBackground", (char *)NULL, 
-	(char *)NULL, 0, 0},
-    {BLT_CONFIG_SYNONYM, "-disabledfg", "disabledForeground", (char *)NULL, 
-	(char *)NULL, 0, 0},
-    {BLT_CONFIG_BITMASK, "-edit", "edit", "Edit", DEF_TEXTBOX_EDITABLE, 
-	Blt_Offset(TextBoxStyle, flags), BLT_CONFIG_DONT_SET_DEFAULT,
-	(Blt_CustomOption *)EDITABLE},
-    {BLT_CONFIG_SYNONYM, "-fg", "foreground", (char *)NULL, (char *)NULL, 
-	0, 0},
-    {BLT_CONFIG_FONT, "-font", "font", "Font", DEF_TEXTBOX_FONT, 
-	Blt_Offset(TextBoxStyle, font), BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_COLOR, "-foreground", "foreground", "Foreground", 
-        DEF_NORMAL_FG, Blt_Offset(TextBoxStyle, normalFg), 0},
-    {BLT_CONFIG_PIXELS_NNEG, "-gap", "gap", "Gap", DEF_GAP, 
-	Blt_Offset(TextBoxStyle, gap), BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_BACKGROUND, "-highlightbackground", "highlightBackground",
-	"HighlightBackground", DEF_HIGHLIGHT_BG, 
-        Blt_Offset(TextBoxStyle, highlightBg), BLT_CONFIG_COLOR_ONLY},
-    {BLT_CONFIG_SYNONYM, "-highlightbg", "highlightBackground", (char *)NULL, 
-	(char *)NULL, 0, 0},
-    {BLT_CONFIG_SYNONYM, "-highlightfg", "highlightForeground", (char *)NULL, 
-	(char *)NULL, 0, 0},
-    {BLT_CONFIG_COLOR, "-highlightforeground", "highlightForeground", 
-	"HighlightForeground", DEF_HIGHLIGHT_FG, 
-	Blt_Offset(TextBoxStyle, highlightFg), 0},
-    {BLT_CONFIG_CUSTOM, "-icon", "icon", "Icon", (char *)NULL, 
-	Blt_Offset(TextBoxStyle, icon), BLT_CONFIG_NULL_OK, &iconOption},
-    {BLT_CONFIG_STRING, "-key", "key", "key", 	(char *)NULL, 
-	Blt_Offset(TextBoxStyle, key), BLT_CONFIG_NULL_OK, 0},
-    {BLT_CONFIG_JUSTIFY, "-justify", "justify", "Justify", DEF_JUSTIFY, 
-	Blt_Offset(TextBoxStyle, justify), BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_RELIEF, "-relief", "relief", "Relief", DEF_TEXTBOX_RELIEF, 
-	Blt_Offset(TextBoxStyle, relief), BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_BACKGROUND, "-selectbackground", "selectBackground", 
-	"Foreground", DEF_SELECT_BG, Blt_Offset(TextBoxStyle, selectBg), 0},
-    {BLT_CONFIG_COLOR, "-selectforeground", "selectForeground", "Background",
-	DEF_SELECT_FG, Blt_Offset(TextBoxStyle, selectFg), 0},
-    {BLT_CONFIG_SIDE, "-side", "side", "side", DEF_TEXTBOX_SIDE, 
-	Blt_Offset(TextBoxStyle, side), BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_BITMASK, "-underlineactive", "underlineActive", 
-        "UnderlineActive", DEF_TEXTBOX_UNDERLINE_ACTIVE, 
-        Blt_Offset(TextBoxStyle, flags), BLT_CONFIG_DONT_SET_DEFAULT, 
-        (Blt_CustomOption *)UNDERLINE_ACTIVE},
-    {BLT_CONFIG_END, (char *)NULL, (char *)NULL, (char *)NULL, (char *)NULL, 
-	0, 0}
-};
+typedef struct {
+    int refCount;			/* Usage reference count.  A
+					 * reference count of zero
+					 * indicates that the style may be
+					 * freed. */
+    unsigned int flags;			/* Bit field containing both the
+					 * style type and various flags. */
+    const char *name;			/* Instance name. */
+    CellStyleClass *classPtr;		/* Contains class-specific
+					 * information such as
+					 * configuration specifications and
+					 * configure, draw, layout
+					 * etc. routines. */
+    Blt_HashEntry *hashPtr;		/* If non-NULL, points to the hash
+					 * table entry for the style.  A
+					 * style that's been deleted, but
+					 * still in use (non-zero reference
+					 * count) will have no hash table
+					 * entry. */
+    TreeView *viewPtr;			
+    Blt_ChainLink link;			/* If non-NULL, pointer of the
+					 * style in a list of all newly
+					 * created styles. */
+    /* General style fields. */
+    Tk_Cursor cursor;			/* X Cursor */
+    Icon icon;				/* If non-NULL, is a Tk_Image to be
+					 * drawn in the cell. */
+    int gap;				/* # pixels gap between icon and
+					 * text. */
+    Blt_Font font;
+    XColor *activeFg;                   /* Foreground color of cell when
+					 * active. */
+    XColor *disableFg;                  /* Foreground color of cell when
+					 * disabled. */
+    XColor *highlightFg;		/* Foreground color of cell when
+					 * highlighted. */
+    XColor *normalFg;			/* Normal foreground color of
+                                         * cell. */
+    XColor *selectedFg;			/* Foreground color of a selected
+					 * cell. If non-NULL, overrides
+					 * default foreground color
+					 * specification. */
+    Blt_Bg altBg;
+    Blt_Bg activeBg;			/* Background color of cell when
+					 * active. */
+    Blt_Bg disabledBg;                   /* Background color of cell when
+                                         * disabled. */
+    Blt_Bg highlightBg;			/* Background color of cell when
+					 * highlighted. */
+    Blt_Bg normalBg;                    /* Normal background color of
+                                         * cell. */
+    Blt_Bg selectedBg;			/* Background color of a selected
+					 * cell.  If non-NULL, overrides
+					 * the default background * color
+					 * specification. */
+    GC activeGC;
+    GC disabledGC;
+    GC highlightGC;
+    GC normalGC;
+    GC selectedGC;
+    Tk_Justify justify;			/* Indicates how the text or icon
+					 * is justified within the
+					 * column. */
+    int borderWidth;			/* Width of outer border
+					 * surrounding the entire box. */
+    int relief, activeRelief;		/* Relief of outer border. */
+    Tcl_Obj *fmtCmdObjPtr;		/* If non-NULL, TCL procedure
+					 * called to format the style is
+					 * invoked.*/
+    Blt_TreeKey key;			/* Actual data resides in this tree
+					   cell. */
+    Tcl_Obj *cmdObjPtr;
+
+    /* Radiobox specific fields. */
+    int size;				/* Size of the checkbox. */
+    Tcl_Obj *onValueObjPtr;
+    Tcl_Obj *offValueObjPtr;
+    int lineWidth;			/* Linewidth of the surrounding
+					 * box. */
+    XColor *boxColor;			/* Rectangle (box) color (grey). */
+    XColor *fillColor;			/* Fill color (white) */
+    XColor *checkColor;			/* Check color (red). */
+
+    TextLayout *onPtr, *offPtr;
+    
+    Blt_Painter painter;
+    Blt_Picture selectedBox;
+    Blt_Picture normalBox;
+    Blt_Picture disabledBox;
+} RadioBoxStyle;
 
 static Blt_ConfigSpec checkBoxStyleSpecs[] =
 {
@@ -724,7 +749,7 @@ static Blt_ConfigSpec checkBoxStyleSpecs[] =
 	Blt_Offset(CheckBoxStyle, cursor), 0},
     {BLT_CONFIG_BACKGROUND, "-disabledbackground", "disabledBackground",
 	"DisabledBackground", DEF_DISABLE_BG, 
-        Blt_Offset(CheckBoxStyle, disableBg), BLT_CONFIG_COLOR_ONLY},
+        Blt_Offset(CheckBoxStyle, disabledBg), BLT_CONFIG_COLOR_ONLY},
     {BLT_CONFIG_COLOR, "-disabledforeground", "disabledForeground", 
        "DisabledForeground", DEF_DISABLE_FG, 
 	Blt_Offset(CheckBoxStyle, disableFg), 0},
@@ -779,9 +804,9 @@ static Blt_ConfigSpec checkBoxStyleSpecs[] =
     {BLT_CONFIG_RELIEF, "-relief", "relief", "Relief", DEF_CHECKBOX_RELIEF, 
 	Blt_Offset(CheckBoxStyle, relief), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_BACKGROUND, "-selectbackground", "selectBackground", 
-	"Foreground", DEF_SELECT_BG, Blt_Offset(CheckBoxStyle, selectBg), 0},
+	"Foreground", DEF_SELECT_BG, Blt_Offset(CheckBoxStyle, selectedBg), 0},
     {BLT_CONFIG_COLOR, "-selectforeground", "selectForeground", "Background",
-	DEF_SELECT_FG, Blt_Offset(CheckBoxStyle, selectFg), 0},
+	DEF_SELECT_FG, Blt_Offset(CheckBoxStyle, selectedFg), 0},
     {BLT_CONFIG_BITMASK, "-showvalue", "showValue", "ShowValue",
 	DEF_CHECKBOX_SHOWVALUE, Blt_Offset(CheckBoxStyle, flags), 
         BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)SHOW_VALUE},    
@@ -841,7 +866,7 @@ static Blt_ConfigSpec comboBoxStyleSpecs[] =
 	Blt_Offset(ComboBoxStyle, cursor), 0},
     {BLT_CONFIG_BACKGROUND, "-disabledbackground", "disabledBackground",
 	"DisabledBackground", DEF_DISABLE_BG, 
-        Blt_Offset(ComboBoxStyle, disableBg), BLT_CONFIG_COLOR_ONLY},
+        Blt_Offset(ComboBoxStyle, disabledBg), BLT_CONFIG_COLOR_ONLY},
     {BLT_CONFIG_COLOR, "-disabledforeground", "disabledForeground", 
        "DisabledForeground", DEF_DISABLE_FG, 
 	Blt_Offset(ComboBoxStyle, disableFg), 0},
@@ -890,9 +915,9 @@ static Blt_ConfigSpec comboBoxStyleSpecs[] =
     {BLT_CONFIG_RELIEF, "-relief", "relief", "Relief", DEF_COMBOBOX_RELIEF, 
 	Blt_Offset(ComboBoxStyle, relief), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_BACKGROUND, "-selectbackground", "selectBackground", 
-	"Foreground", DEF_SELECT_BG, Blt_Offset(ComboBoxStyle, selectBg), 0},
+	"Foreground", DEF_SELECT_BG, Blt_Offset(ComboBoxStyle, selectedBg), 0},
     {BLT_CONFIG_COLOR, "-selectforeground", "selectForeground", "Background",
-	DEF_SELECT_FG, Blt_Offset(ComboBoxStyle, selectFg), 0},
+	DEF_SELECT_FG, Blt_Offset(ComboBoxStyle, selectedFg), 0},
     {BLT_CONFIG_CUSTOM, "-state", "state", "State", DEF_COMBOBOX_STATE, 
 	Blt_Offset(ComboBoxStyle, flags), BLT_CONFIG_DONT_SET_DEFAULT, 
 	&stateOption},
@@ -947,7 +972,7 @@ static Blt_ConfigSpec imageBoxStyleSpecs[] =
 	Blt_Offset(ImageBoxStyle, cursor), 0},
     {BLT_CONFIG_BACKGROUND, "-disabledbackground", "disabledBackground",
 	"DisabledBackground", DEF_DISABLE_BG, 
-        Blt_Offset(ImageBoxStyle, disableBg), BLT_CONFIG_COLOR_ONLY},
+        Blt_Offset(ImageBoxStyle, disabledBg), BLT_CONFIG_COLOR_ONLY},
     {BLT_CONFIG_COLOR, "-disabledforeground", "disabledForeground", 
        "DisabledForeground", DEF_DISABLE_FG, 
 	Blt_Offset(ImageBoxStyle, disableFg), 0},
@@ -983,9 +1008,9 @@ static Blt_ConfigSpec imageBoxStyleSpecs[] =
     {BLT_CONFIG_RELIEF, "-relief", "relief", "Relief", DEF_IMAGEBOX_RELIEF, 
 	Blt_Offset(ImageBoxStyle, relief), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_BACKGROUND, "-selectbackground", "selectBackground", 
-	"Foreground", DEF_SELECT_BG, Blt_Offset(ImageBoxStyle, selectBg), 0},
+	"Foreground", DEF_SELECT_BG, Blt_Offset(ImageBoxStyle, selectedBg), 0},
     {BLT_CONFIG_COLOR, "-selectforeground", "selectForeground", "Background",
-	DEF_SELECT_FG, Blt_Offset(ImageBoxStyle, selectFg), 0},
+	DEF_SELECT_FG, Blt_Offset(ImageBoxStyle, selectedFg), 0},
     {BLT_CONFIG_BITMASK, "-showtext", "showText", "ShowText", 
 	DEF_IMAGEBOX_SHOW_TEXT, Blt_Offset(ImageBoxStyle, flags), 
 	BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)SHOW_TEXT},
@@ -999,25 +1024,226 @@ static Blt_ConfigSpec imageBoxStyleSpecs[] =
 	0, 0}
 };
 
+static Blt_ConfigSpec radioBoxStyleSpecs[] =
+{
+    {BLT_CONFIG_BACKGROUND, "-activebackground", "activeBackground", 
+	"ActiveBackground", DEF_ACTIVE_BG, 
+	Blt_Offset(RadioBoxStyle, activeBg), 0},
+    {BLT_CONFIG_SYNONYM, "-activebg", "activeBackground", 
+	(char *)NULL, (char *)NULL, 0, 0},
+    {BLT_CONFIG_BITMASK, "-activecolors", "activeColors", "ActiveColors", 
+        DEF_RADIOBOX_ACTIVE_COLORS, Blt_Offset(RadioBoxStyle, flags), 
+        BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)ACTIVE_COLORS},
+    {BLT_CONFIG_SYNONYM, "-activefg", "activeForeground", (char *)NULL, 
+        (char *)NULL, 0, 0},
+    {BLT_CONFIG_COLOR, "-activeforeground", "activeForeground", 
+	"ActiveForeground", DEF_ACTIVE_FG, 
+	Blt_Offset(RadioBoxStyle, activeFg), 0},
+    {BLT_CONFIG_RELIEF, "-activerelief", "activeRelief", "ActiveRelief", 
+	DEF_RADIOBOX_ACTIVE_RELIEF, Blt_Offset(RadioBoxStyle, activeRelief), 
+	BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_SYNONYM, "-altbg", "alternateBackground", (char *)NULL,
+	(char *)NULL, 0, 0},
+    {BLT_CONFIG_BACKGROUND, "-alternatebackground", "alternateBackground", 
+	"Background", DEF_ALT_BG, Blt_Offset(RadioBoxStyle, altBg), 
+        BLT_CONFIG_NULL_OK},
+    {BLT_CONFIG_BACKGROUND, "-background", "background", "Background",
+        DEF_NORMAL_BG, Blt_Offset(RadioBoxStyle, normalBg), BLT_CONFIG_NULL_OK},
+    {BLT_CONFIG_SYNONYM, "-bd", "borderWidth", (char *)NULL, (char *)NULL, 
+	0, 0},
+    {BLT_CONFIG_SYNONYM, "-bg", "background", (char *)NULL, (char *)NULL, 
+	0, 0},
+    {BLT_CONFIG_PIXELS_NNEG, "-borderwidth", "borderWidth", "BorderWidth",
+	DEF_RADIOBOX_BORDERWIDTH, Blt_Offset(RadioBoxStyle, borderWidth),
+	BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_PIXELS_POS, "-boxsize", "boxSize", "BoxSize", DEF_RADIOBOX_SIZE,
+	Blt_Offset(RadioBoxStyle, size), BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_OBJ, "-command", "command", "Command", DEF_RADIOBOX_COMMAND, 
+        Blt_Offset(RadioBoxStyle, cmdObjPtr), 0},
+    {BLT_CONFIG_CURSOR, "-cursor", "cursor", "Cursor", DEF_RADIOBOX_CURSOR, 
+	Blt_Offset(RadioBoxStyle, cursor), 0},
+    {BLT_CONFIG_BACKGROUND, "-disabledbackground", "disabledBackground",
+	"DisabledBackground", DEF_DISABLE_BG, 
+        Blt_Offset(RadioBoxStyle, disabledBg), BLT_CONFIG_COLOR_ONLY},
+    {BLT_CONFIG_COLOR, "-disabledforeground", "disabledForeground", 
+       "DisabledForeground", DEF_DISABLE_FG, 
+	Blt_Offset(RadioBoxStyle, disableFg), 0},
+    {BLT_CONFIG_SYNONYM, "-disabledbg", "disabledBackground", (char *)NULL, 
+	(char *)NULL, 0, 0},
+    {BLT_CONFIG_SYNONYM, "-disabledfg", "disabledForeground", (char *)NULL, 
+	(char *)NULL, 0, 0},
+    {BLT_CONFIG_BITMASK, "-edit", "edit", "Edit", DEF_RADIOBOX_EDITABLE, 
+	Blt_Offset(RadioBoxStyle, flags), BLT_CONFIG_DONT_SET_DEFAULT,
+	(Blt_CustomOption *)EDITABLE},
+    {BLT_CONFIG_SYNONYM, "-fg", "foreground", (char *)NULL, (char *)NULL, 
+	0, 0},
+    {BLT_CONFIG_FONT, "-font", "font", "Font", DEF_RADIOBOX_FONT, 
+        Blt_Offset(RadioBoxStyle, font), BLT_CONFIG_NULL_OK},
+    {BLT_CONFIG_COLOR, "-foreground", "foreground", "Foreground", 
+        DEF_NORMAL_FG, Blt_Offset(RadioBoxStyle, normalFg), 0},
+    {BLT_CONFIG_PIXELS_NNEG, "-gap", "gap", "Gap", DEF_RADIOBOX_GAP, 
+	Blt_Offset(RadioBoxStyle, gap), BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_BACKGROUND, "-highlightbackground", "highlightBackground",
+	"HighlightBackground", DEF_HIGHLIGHT_BG, 
+        Blt_Offset(RadioBoxStyle, highlightBg), BLT_CONFIG_COLOR_ONLY},
+    {BLT_CONFIG_COLOR, "-highlightforeground", "highlightForeground", 
+	"HighlightForeground", DEF_HIGHLIGHT_FG, 
+	 Blt_Offset(RadioBoxStyle, highlightFg), 0},
+    {BLT_CONFIG_SYNONYM, "-highlightbg", "highlightBackground", (char *)NULL, 
+	(char *)NULL, 0, 0},
+    {BLT_CONFIG_SYNONYM, "-highlightfg", "highlightForeground", (char *)NULL, 
+	(char *)NULL, 0, 0},
+    {BLT_CONFIG_CUSTOM, "-icon", "icon", "Icon", (char *)NULL, 
+	Blt_Offset(RadioBoxStyle, icon), BLT_CONFIG_NULL_OK, &iconOption},
+    {BLT_CONFIG_STRING, "-key", "key", "key", (char *)NULL, 
+	Blt_Offset(RadioBoxStyle, key), BLT_CONFIG_NULL_OK, 0},
+    {BLT_CONFIG_JUSTIFY, "-justify", "justify", "Justify", DEF_JUSTIFY, 
+	Blt_Offset(RadioBoxStyle, justify), BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_PIXELS_NNEG, "-linewidth", "lineWidth", "LineWidth",
+	DEF_RADIOBOX_LINEWIDTH, Blt_Offset(RadioBoxStyle, lineWidth),
+	BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_COLOR, "-checkcolor", "checkColor", "CheckColor", 
+	DEF_RADIOBOX_INDICATOR_COLOR, Blt_Offset(RadioBoxStyle, checkColor), 0},
+    {BLT_CONFIG_COLOR, "-boxcolor", "boxColor", "BoxColor", 
+	DEF_RADIOBOX_BOX_COLOR, Blt_Offset(RadioBoxStyle, boxColor), 
+	BLT_CONFIG_NULL_OK},
+    {BLT_CONFIG_COLOR, "-fillcolor", "fillColor", "FillColor", 
+        DEF_RADIOBOX_FILL_COLOR, Blt_Offset(RadioBoxStyle, fillColor), 0},
+    {BLT_CONFIG_OBJ, "-offvalue", "offValue", "OffValue", 
+	DEF_RADIOBOX_OFFVALUE, Blt_Offset(RadioBoxStyle, offValueObjPtr), 0},
+    {BLT_CONFIG_OBJ, "-onvalue", "onValue", "OnValue", 
+        DEF_RADIOBOX_ONVALUE, Blt_Offset(RadioBoxStyle, onValueObjPtr), 0},
+    {BLT_CONFIG_STRING, "-key", "key", "key", (char *)NULL, 
+	Blt_Offset(RadioBoxStyle, key), BLT_CONFIG_NULL_OK, 0},
+    {BLT_CONFIG_RELIEF, "-relief", "relief", "Relief", DEF_RADIOBOX_RELIEF, 
+	Blt_Offset(RadioBoxStyle, relief), BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_BACKGROUND, "-selectbackground", "selectBackground", 
+	"Foreground", DEF_SELECT_BG, Blt_Offset(RadioBoxStyle, selectedBg), 0},
+    {BLT_CONFIG_COLOR, "-selectforeground", "selectForeground", "Background",
+	DEF_SELECT_FG, Blt_Offset(RadioBoxStyle, selectedFg), 0},
+    {BLT_CONFIG_BITMASK, "-showvalue", "showValue", "ShowValue",
+	DEF_RADIOBOX_SHOWVALUE, Blt_Offset(RadioBoxStyle, flags), 
+        BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)SHOW_VALUE},    
+    {BLT_CONFIG_BITMASK, "-underlineactive", "underlineActive", 
+        "UnderlineActive", DEF_RADIOBOX_UNDERLINE_ACTIVE, 
+        Blt_Offset(RadioBoxStyle, flags), BLT_CONFIG_DONT_SET_DEFAULT, 
+        (Blt_CustomOption *)UNDERLINE_ACTIVE},
+    {BLT_CONFIG_END, (char *)NULL, (char *)NULL, (char *)NULL,
+	(char *)NULL, 0, 0}
+};
+
+static Blt_ConfigSpec textBoxStyleSpecs[] =
+{
+    {BLT_CONFIG_BACKGROUND, "-activebackground", "activeBackground", 
+	"ActiveBackground", DEF_ACTIVE_BG, 
+	Blt_Offset(TextBoxStyle, activeBg), 0},
+    {BLT_CONFIG_SYNONYM, "-activebg", "activeBackground", (char *)NULL, 
+	(char *)NULL, 0, 0},
+    {BLT_CONFIG_BITMASK, "-activecolors", "activeColors", "ActiveColors", 
+        DEF_TEXTBOX_ACTIVE_COLORS, Blt_Offset(TextBoxStyle, flags), 
+        BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)ACTIVE_COLORS},
+    {BLT_CONFIG_SYNONYM, "-activefg", "activeForeground", (char *)NULL, 
+	(char *)NULL, 0, 0},
+    {BLT_CONFIG_COLOR, "-activeforeground", "activeForeground", 
+	"ActiveForeground", DEF_ACTIVE_FG, 
+	Blt_Offset(TextBoxStyle, activeFg), 0},
+    {BLT_CONFIG_RELIEF, "-activerelief", "activeRelief", "ActiveRelief", 
+	DEF_TEXTBOX_ACTIVE_RELIEF, Blt_Offset(TextBoxStyle, activeRelief), 
+	BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_SYNONYM, "-altbg", "alternateBackground", (char *)NULL,
+	(char *)NULL, 0, 0},
+    {BLT_CONFIG_BACKGROUND, "-alternatebackground", "alternateBackground", 
+	"Background", DEF_ALT_BG, Blt_Offset(TextBoxStyle, altBg), 
+        BLT_CONFIG_NULL_OK},
+    {BLT_CONFIG_BACKGROUND, "-background", "background", "Background",
+        DEF_NORMAL_BG, Blt_Offset(TextBoxStyle, normalBg), 
+        BLT_CONFIG_NULL_OK},
+    {BLT_CONFIG_SYNONYM, "-bd", "borderWidth", (char *)NULL, (char *)NULL, 
+	0, 0},
+    {BLT_CONFIG_SYNONYM, "-bg", "background", (char *)NULL, (char *)NULL, 0, 0},
+    {BLT_CONFIG_PIXELS_NNEG, "-borderwidth", "borderWidth", "BorderWidth",
+	DEF_TEXTBOX_BORDERWIDTH, Blt_Offset(TextBoxStyle, borderWidth),
+	BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_OBJ, "-command", "command", "Command", DEF_TEXTBOX_COMMAND, 
+	Blt_Offset(TextBoxStyle, fmtCmdObjPtr), 0},
+    {BLT_CONFIG_CURSOR, "-cursor", "cursor", "Cursor", DEF_TEXTBOX_CURSOR, 
+	Blt_Offset(TextBoxStyle, cursor), 0},
+    {BLT_CONFIG_BACKGROUND, "-disabledbackground", "disabledBackground",
+	"DisabledBackground", DEF_DISABLE_BG, 
+        Blt_Offset(TextBoxStyle, disabledBg), 0},
+    {BLT_CONFIG_COLOR, "-disabledforeground", "disabledForeground", 
+       "DisabledForeground", DEF_DISABLE_FG, 
+	Blt_Offset(TextBoxStyle, disableFg), 0},
+    {BLT_CONFIG_SYNONYM, "-disabledbg", "disabledBackground", (char *)NULL, 
+	(char *)NULL, 0, 0},
+    {BLT_CONFIG_SYNONYM, "-disabledfg", "disabledForeground", (char *)NULL, 
+	(char *)NULL, 0, 0},
+    {BLT_CONFIG_BITMASK, "-edit", "edit", "Edit", DEF_TEXTBOX_EDITABLE, 
+	Blt_Offset(TextBoxStyle, flags), BLT_CONFIG_DONT_SET_DEFAULT,
+	(Blt_CustomOption *)EDITABLE},
+    {BLT_CONFIG_SYNONYM, "-fg", "foreground", (char *)NULL, (char *)NULL, 
+	0, 0},
+    {BLT_CONFIG_FONT, "-font", "font", "Font", DEF_TEXTBOX_FONT, 
+	Blt_Offset(TextBoxStyle, font), BLT_CONFIG_NULL_OK},
+    {BLT_CONFIG_COLOR, "-foreground", "foreground", "Foreground", 
+        DEF_NORMAL_FG, Blt_Offset(TextBoxStyle, normalFg), 0},
+    {BLT_CONFIG_PIXELS_NNEG, "-gap", "gap", "Gap", DEF_GAP, 
+	Blt_Offset(TextBoxStyle, gap), BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_BACKGROUND, "-highlightbackground", "highlightBackground",
+	"HighlightBackground", DEF_HIGHLIGHT_BG, 
+        Blt_Offset(TextBoxStyle, highlightBg), BLT_CONFIG_COLOR_ONLY},
+    {BLT_CONFIG_SYNONYM, "-highlightbg", "highlightBackground", (char *)NULL, 
+	(char *)NULL, 0, 0},
+    {BLT_CONFIG_SYNONYM, "-highlightfg", "highlightForeground", (char *)NULL, 
+	(char *)NULL, 0, 0},
+    {BLT_CONFIG_COLOR, "-highlightforeground", "highlightForeground", 
+	"HighlightForeground", DEF_HIGHLIGHT_FG, 
+	Blt_Offset(TextBoxStyle, highlightFg), 0},
+    {BLT_CONFIG_CUSTOM, "-icon", "icon", "Icon", (char *)NULL, 
+	Blt_Offset(TextBoxStyle, icon), BLT_CONFIG_NULL_OK, &iconOption},
+    {BLT_CONFIG_STRING, "-key", "key", "key", 	(char *)NULL, 
+	Blt_Offset(TextBoxStyle, key), BLT_CONFIG_NULL_OK, 0},
+    {BLT_CONFIG_JUSTIFY, "-justify", "justify", "Justify", DEF_JUSTIFY, 
+	Blt_Offset(TextBoxStyle, justify), BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_RELIEF, "-relief", "relief", "Relief", DEF_TEXTBOX_RELIEF, 
+	Blt_Offset(TextBoxStyle, relief), BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_BACKGROUND, "-selectbackground", "selectBackground", 
+	"Foreground", DEF_SELECT_BG, Blt_Offset(TextBoxStyle, selectedBg), 0},
+    {BLT_CONFIG_COLOR, "-selectforeground", "selectForeground", "Background",
+	DEF_SELECT_FG, Blt_Offset(TextBoxStyle, selectedFg), 0},
+    {BLT_CONFIG_SIDE, "-side", "side", "side", DEF_TEXTBOX_SIDE, 
+	Blt_Offset(TextBoxStyle, side), BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_BITMASK, "-underlineactive", "underlineActive", 
+        "UnderlineActive", DEF_TEXTBOX_UNDERLINE_ACTIVE, 
+        Blt_Offset(TextBoxStyle, flags), BLT_CONFIG_DONT_SET_DEFAULT, 
+        (Blt_CustomOption *)UNDERLINE_ACTIVE},
+    {BLT_CONFIG_END, (char *)NULL, (char *)NULL, (char *)NULL, (char *)NULL, 
+	0, 0}
+};
+
 static CellStyleConfigureProc CheckBoxStyleConfigureProc;
 static CellStyleConfigureProc ComboBoxStyleConfigureProc;
 static CellStyleConfigureProc ImageBoxStyleConfigureProc;
+static CellStyleConfigureProc RadioBoxStyleConfigureProc;
 static CellStyleConfigureProc TextBoxStyleConfigureProc;
 static CellStyleDrawProc CheckBoxStyleDrawProc;
 static CellStyleDrawProc ComboBoxStyleDrawProc;
 static CellStyleDrawProc ImageBoxStyleDrawProc;
+static CellStyleDrawProc RadioBoxStyleDrawProc;
 static CellStyleDrawProc TextBoxStyleDrawProc;
 static CellStyleFreeProc CheckBoxStyleFreeProc;
 static CellStyleFreeProc ComboBoxStyleFreeProc;
 static CellStyleFreeProc ImageBoxStyleFreeProc;
+static CellStyleFreeProc RadioBoxStyleFreeProc;
 static CellStyleFreeProc TextBoxStyleFreeProc;
 static CellStyleGeometryProc CheckBoxStyleGeometryProc;
 static CellStyleGeometryProc ComboBoxStyleGeometryProc;
 static CellStyleGeometryProc ImageBoxStyleGeometryProc;
+static CellStyleGeometryProc RadioBoxStyleGeometryProc;
 static CellStyleGeometryProc TextBoxStyleGeometryProc;
-static CellStyleIdentifyProc ComboBoxStyleIdentifyProc;
 static CellStyleIdentifyProc CheckBoxStyleIdentifyProc;
-
+static CellStyleIdentifyProc ComboBoxStyleIdentifyProc;
+static CellStyleIdentifyProc RadioBoxStyleIdentifyProc;
 
 static int
 RowSelected(Entry *entryPtr)
@@ -1957,6 +2183,17 @@ static CellStyleClass imageBoxStyleClass = {
     ImageBoxStyleFreeProc,
 };
 
+static CellStyleClass radioBoxStyleClass = {
+    "radiobox",
+    "RadioBoxStyle",
+    radioBoxStyleSpecs,
+    RadioBoxStyleConfigureProc,
+    RadioBoxStyleGeometryProc,
+    RadioBoxStyleDrawProc,
+    RadioBoxStyleIdentifyProc,          
+    RadioBoxStyleFreeProc,
+};
+
 /*
  *---------------------------------------------------------------------------
  *
@@ -2034,18 +2271,18 @@ TextBoxStyleConfigureProc(CellStyle *cellStylePtr)
     /* Disabled text. */
     gcValues.foreground = stylePtr->disableFg->pixel;
     newGC = Tk_GetGC(viewPtr->tkwin, gcMask, &gcValues);
-    if (stylePtr->disableGC != NULL) {
-	Tk_FreeGC(viewPtr->display, stylePtr->disableGC);
+    if (stylePtr->disabledGC != NULL) {
+	Tk_FreeGC(viewPtr->display, stylePtr->disabledGC);
     }
-    stylePtr->disableGC = newGC;
+    stylePtr->disabledGC = newGC;
 
     /* Selected text. */
-    gcValues.foreground = stylePtr->selectFg->pixel;
+    gcValues.foreground = stylePtr->selectedFg->pixel;
     newGC = Tk_GetGC(viewPtr->tkwin, gcMask, &gcValues);
-    if (stylePtr->selectGC != NULL) {
-	Tk_FreeGC(viewPtr->display, stylePtr->selectGC);
+    if (stylePtr->selectedGC != NULL) {
+	Tk_FreeGC(viewPtr->display, stylePtr->selectedGC);
     }
-    stylePtr->selectGC = newGC;
+    stylePtr->selectedGC = newGC;
 
     /* Active text. */
     gcValues.foreground = stylePtr->activeFg->pixel;
@@ -2188,8 +2425,8 @@ TextBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
     relief = stylePtr->relief;
     if ((cellPtr->flags|rowPtr->flags|colPtr->flags) & DISABLED) {
 	/* Disabled */
-	bg = stylePtr->disableBg;
-        gc = stylePtr->disableGC;
+	bg = stylePtr->disabledBg;
+        gc = stylePtr->disabledGC;
     } else if ((stylePtr->flags & ACTIVE_COLORS) && 
                (viewPtr->activeCellPtr == cellPtr)) {
 	/* Active */
@@ -2198,8 +2435,8 @@ TextBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
 	relief = stylePtr->activeRelief;
     } else if (RowSelected(rowPtr)) {
         /* Selected */
-	bg = CHOOSE(viewPtr->sel.bg, stylePtr->selectBg);
-        gc = stylePtr->selectGC;
+	bg = CHOOSE(viewPtr->sel.bg, stylePtr->selectedBg);
+        gc = stylePtr->selectedGC;
     } else if ((cellPtr->flags|rowPtr->flags|colPtr->flags) & HIGHLIGHT) {
         /* Highlight */
 	bg = stylePtr->highlightBg;
@@ -2380,14 +2617,14 @@ TextBoxStyleFreeProc(CellStyle *cellStylePtr)
     if (stylePtr->icon != NULL) {
 	FreeIcon(stylePtr->icon);
     }
-    if (stylePtr->selectGC != NULL) {
-	Tk_FreeGC(viewPtr->display, stylePtr->selectGC);
+    if (stylePtr->selectedGC != NULL) {
+	Tk_FreeGC(viewPtr->display, stylePtr->selectedGC);
     }
     if (stylePtr->highlightGC != NULL) {
 	Tk_FreeGC(viewPtr->display, stylePtr->highlightGC);
     }
-    if (stylePtr->disableGC != NULL) {
-	Tk_FreeGC(viewPtr->display, stylePtr->disableGC);
+    if (stylePtr->disabledGC != NULL) {
+	Tk_FreeGC(viewPtr->display, stylePtr->disabledGC);
     }
     if (stylePtr->activeGC != NULL) {
 	Tk_FreeGC(viewPtr->display, stylePtr->activeGC);
@@ -2484,10 +2721,10 @@ CheckBoxStyleConfigureProc(CellStyle *cellStylePtr)
     /* Disabled text. */
     gcValues.foreground = stylePtr->disableFg->pixel;
     newGC = Tk_GetGC(viewPtr->tkwin, gcMask, &gcValues);
-    if (stylePtr->disableGC != NULL) {
-	Tk_FreeGC(viewPtr->display, stylePtr->disableGC);
+    if (stylePtr->disabledGC != NULL) {
+	Tk_FreeGC(viewPtr->display, stylePtr->disabledGC);
     }
-    stylePtr->disableGC = newGC;
+    stylePtr->disabledGC = newGC;
 
     /* Highlight text. */
     gcValues.foreground = stylePtr->highlightFg->pixel;
@@ -2498,12 +2735,12 @@ CheckBoxStyleConfigureProc(CellStyle *cellStylePtr)
     stylePtr->highlightGC = newGC;
 
     /* Selected text. */
-    gcValues.foreground = stylePtr->selectFg->pixel;
+    gcValues.foreground = stylePtr->selectedFg->pixel;
     newGC = Tk_GetGC(viewPtr->tkwin, gcMask, &gcValues);
-    if (stylePtr->selectGC != NULL) {
-	Tk_FreeGC(viewPtr->display, stylePtr->selectGC);
+    if (stylePtr->selectedGC != NULL) {
+	Tk_FreeGC(viewPtr->display, stylePtr->selectedGC);
     }
-    stylePtr->selectGC = newGC;
+    stylePtr->selectedGC = newGC;
 
     if (Blt_ConfigModified(stylePtr->classPtr->specs, "-boxsize", 
 		(char *)NULL)) {
@@ -2658,8 +2895,8 @@ CheckBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
     relief = stylePtr->relief;
     if ((cellPtr->flags|rowPtr->flags|colPtr->flags) & DISABLED) {
 	/* Disabled */
-	bg = stylePtr->disableBg;
-	gc = stylePtr->disableGC;
+	bg = stylePtr->disabledBg;
+	gc = stylePtr->disabledGC;
     } else if ((stylePtr->flags & ACTIVE_COLORS) && 
                (viewPtr->activeCellPtr == cellPtr)) {
 	/* Active */
@@ -2668,8 +2905,8 @@ CheckBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
 	relief = stylePtr->activeRelief;
     } else if (RowSelected(rowPtr)) {
 	/* Selected */
-	bg = stylePtr->selectBg;
-	gc = stylePtr->selectGC;
+	bg = stylePtr->selectedBg;
+	gc = stylePtr->selectedGC;
         if (viewPtr->activeCellPtr == cellPtr) {
             relief = stylePtr->activeRelief;
         }
@@ -2904,14 +3141,14 @@ CheckBoxStyleFreeProc(CellStyle *cellStylePtr)
     if (stylePtr->disabledBox != NULL) {
 	Blt_FreePicture(stylePtr->disabledBox);
     }
-    if (stylePtr->selectGC != NULL) {
-	Tk_FreeGC(viewPtr->display, stylePtr->selectGC);
+    if (stylePtr->selectedGC != NULL) {
+	Tk_FreeGC(viewPtr->display, stylePtr->selectedGC);
     }
     if (stylePtr->highlightGC != NULL) {
 	Tk_FreeGC(viewPtr->display, stylePtr->highlightGC);
     }
-    if (stylePtr->disableGC != NULL) {
-	Tk_FreeGC(viewPtr->display, stylePtr->disableGC);
+    if (stylePtr->disabledGC != NULL) {
+	Tk_FreeGC(viewPtr->display, stylePtr->disabledGC);
     }
     if (stylePtr->activeGC != NULL) {
 	Tk_FreeGC(viewPtr->display, stylePtr->activeGC);
@@ -3008,10 +3245,10 @@ ComboBoxStyleConfigureProc(CellStyle *cellStylePtr)
     /* Disabled text. */
     gcValues.foreground = stylePtr->disableFg->pixel;
     newGC = Tk_GetGC(viewPtr->tkwin, gcMask, &gcValues);
-    if (stylePtr->disableGC != NULL) {
-	Tk_FreeGC(viewPtr->display, stylePtr->disableGC);
+    if (stylePtr->disabledGC != NULL) {
+	Tk_FreeGC(viewPtr->display, stylePtr->disabledGC);
     }
-    stylePtr->disableGC = newGC;
+    stylePtr->disabledGC = newGC;
 
     /* Highlight text. */
     gcValues.foreground = stylePtr->highlightFg->pixel;
@@ -3022,12 +3259,12 @@ ComboBoxStyleConfigureProc(CellStyle *cellStylePtr)
     stylePtr->highlightGC = newGC;
 
     /* Selected text. */
-    gcValues.foreground = stylePtr->selectFg->pixel;
+    gcValues.foreground = stylePtr->selectedFg->pixel;
     newGC = Tk_GetGC(viewPtr->tkwin, gcMask, &gcValues);
-    if (stylePtr->selectGC != NULL) {
-	Tk_FreeGC(viewPtr->display, stylePtr->selectGC);
+    if (stylePtr->selectedGC != NULL) {
+	Tk_FreeGC(viewPtr->display, stylePtr->selectedGC);
     }
-    stylePtr->selectGC = newGC;
+    stylePtr->selectedGC = newGC;
 
     if (Blt_ConfigModified(stylePtr->classPtr->specs, "-font", (char *)NULL)) {
         /* Font sizes can change the size of the cell. */
@@ -3207,8 +3444,8 @@ ComboBoxStyleDrawProc(Cell *cellPtr, Drawable drawable,
     relief = stylePtr->relief;
     if ((cellPtr->flags|rowPtr->flags|colPtr->flags) & DISABLED) {
 	/* Disabled */
-	bg = stylePtr->disableBg;
-        gc = stylePtr->disableGC;
+	bg = stylePtr->disabledBg;
+        gc = stylePtr->disabledGC;
     } else if ((stylePtr->flags & ACTIVE_COLORS) && 
                (viewPtr->activeCellPtr == cellPtr)) {
 	/* Active */
@@ -3217,8 +3454,8 @@ ComboBoxStyleDrawProc(Cell *cellPtr, Drawable drawable,
 	relief = stylePtr->activeRelief;
     } else if (RowSelected(rowPtr)) {
         /* Selected */
-	bg = CHOOSE(viewPtr->sel.bg, stylePtr->selectBg);
-        gc = stylePtr->selectGC;
+	bg = CHOOSE(viewPtr->sel.bg, stylePtr->selectedBg);
+        gc = stylePtr->selectedGC;
     } else if ((cellPtr->flags|rowPtr->flags|colPtr->flags) & HIGHLIGHT) {
         /* Highlight */
 	bg = stylePtr->highlightBg;
@@ -3422,14 +3659,14 @@ ComboBoxStyleFreeProc(CellStyle *cellStylePtr)
     if (stylePtr->icon != NULL) {
 	FreeIcon(stylePtr->icon);
     }
-    if (stylePtr->selectGC != NULL) {
-	Tk_FreeGC(viewPtr->display, stylePtr->selectGC);
+    if (stylePtr->selectedGC != NULL) {
+	Tk_FreeGC(viewPtr->display, stylePtr->selectedGC);
     }
     if (stylePtr->highlightGC != NULL) {
 	Tk_FreeGC(viewPtr->display, stylePtr->highlightGC);
     }
-    if (stylePtr->disableGC != NULL) {
-	Tk_FreeGC(viewPtr->display, stylePtr->disableGC);
+    if (stylePtr->disabledGC != NULL) {
+	Tk_FreeGC(viewPtr->display, stylePtr->disabledGC);
     }
     if (stylePtr->activeGC != NULL) {
 	Tk_FreeGC(viewPtr->display, stylePtr->activeGC);
@@ -3513,18 +3750,18 @@ ImageBoxStyleConfigureProc(CellStyle *cellStylePtr)
     /* Disabled text. */
     gcValues.foreground = stylePtr->disableFg->pixel;
     newGC = Tk_GetGC(viewPtr->tkwin, gcMask, &gcValues);
-    if (stylePtr->disableGC != NULL) {
-	Tk_FreeGC(viewPtr->display, stylePtr->disableGC);
+    if (stylePtr->disabledGC != NULL) {
+	Tk_FreeGC(viewPtr->display, stylePtr->disabledGC);
     }
-    stylePtr->disableGC = newGC;
+    stylePtr->disabledGC = newGC;
 
     /* Selected text. */
-    gcValues.foreground = stylePtr->selectFg->pixel;
+    gcValues.foreground = stylePtr->selectedFg->pixel;
     newGC = Tk_GetGC(viewPtr->tkwin, gcMask, &gcValues);
-    if (stylePtr->selectGC != NULL) {
-	Tk_FreeGC(viewPtr->display, stylePtr->selectGC);
+    if (stylePtr->selectedGC != NULL) {
+	Tk_FreeGC(viewPtr->display, stylePtr->selectedGC);
     }
-    stylePtr->selectGC = newGC;
+    stylePtr->selectedGC = newGC;
 
     /* Active text. */
     gcValues.foreground = stylePtr->activeFg->pixel;
@@ -3718,8 +3955,8 @@ ImageBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
     relief = stylePtr->relief;
     if ((rowPtr->flags|colPtr->flags|cellPtr->flags) & DISABLED) {
 	/* Disabled */
-	bg = stylePtr->disableBg;
-	gc = stylePtr->disableGC;
+	bg = stylePtr->disabledBg;
+	gc = stylePtr->disabledGC;
     } else if ((stylePtr->flags & ACTIVE_COLORS) && 
                (viewPtr->activeCellPtr == cellPtr)) {
 	/* Active */
@@ -3728,8 +3965,8 @@ ImageBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
 	relief = stylePtr->activeRelief;
     } else if (RowSelected(rowPtr)) { 
         /* Selected */
-	bg = stylePtr->selectBg;
-	gc = stylePtr->selectGC;
+	bg = stylePtr->selectedBg;
+	gc = stylePtr->selectedGC;
     } else if ((rowPtr->flags|colPtr->flags|cellPtr->flags) & HIGHLIGHT) { 
 	/* Highlighted */
 	bg = stylePtr->highlightBg;
@@ -3905,14 +4142,14 @@ ImageBoxStyleFreeProc(CellStyle *cellStylePtr)
     if (stylePtr->hashPtr != NULL) {
 	Blt_DeleteHashEntry(&viewPtr->styleTable, stylePtr->hashPtr);
     } 
-    if (stylePtr->selectGC != NULL) {
-	Tk_FreeGC(viewPtr->display, stylePtr->selectGC);
+    if (stylePtr->selectedGC != NULL) {
+	Tk_FreeGC(viewPtr->display, stylePtr->selectedGC);
     }
     if (stylePtr->highlightGC != NULL) {
 	Tk_FreeGC(viewPtr->display, stylePtr->highlightGC);
     }
-    if (stylePtr->disableGC != NULL) {
-	Tk_FreeGC(viewPtr->display, stylePtr->disableGC);
+    if (stylePtr->disabledGC != NULL) {
+	Tk_FreeGC(viewPtr->display, stylePtr->disabledGC);
     }
     if (stylePtr->activeGC != NULL) {
 	Tk_FreeGC(viewPtr->display, stylePtr->activeGC);
@@ -3923,13 +4160,553 @@ ImageBoxStyleFreeProc(CellStyle *cellStylePtr)
     Blt_Free(stylePtr);
 }
 
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * NewRadioBoxStyle --
+ *
+ *	Creates a "radiobox" style.
+ *
+ * Results:
+ *	A pointer to the new style structure.
+ *
+ *---------------------------------------------------------------------------
+ */
+static RadioBoxStyle *
+NewRadioBoxStyle(TreeView *viewPtr, Blt_HashEntry *hPtr)
+{
+    RadioBoxStyle *stylePtr;
+
+    stylePtr = Blt_AssertCalloc(1, sizeof(RadioBoxStyle));
+    stylePtr->classPtr = &radioBoxStyleClass;
+    stylePtr->viewPtr = viewPtr;
+    stylePtr->gap = 4;
+    stylePtr->size = 15;
+    stylePtr->lineWidth = 2;
+    stylePtr->name = Blt_GetHashKey(&viewPtr->styleTable, hPtr);
+    stylePtr->hashPtr = hPtr;
+    stylePtr->flags = SHOW_VALUE | EDITABLE | UNDERLINE_ACTIVE;
+    stylePtr->relief = TK_RELIEF_FLAT;
+    stylePtr->activeRelief = TK_RELIEF_FLAT;
+    stylePtr->borderWidth = 1;
+    stylePtr->refCount = 1;
+    Blt_SetHashValue(hPtr, stylePtr);
+    return stylePtr;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * RadioBoxStyleConfigureProc --
+ *
+ *	Configures a "radiobox" style.  This routine performs generates the
+ *	GCs required for a checkbox style.
+ *
+ * Results:
+ *	None.
+ *
+ * Side Effects:
+ *	GCs are created for the style.
+ *
+ *---------------------------------------------------------------------------
+ */
+static void
+RadioBoxStyleConfigureProc(CellStyle *cellStylePtr)
+{
+    RadioBoxStyle *stylePtr = (RadioBoxStyle *)cellStylePtr;
+    GC newGC;
+    TreeView *viewPtr;
+    XGCValues gcValues;
+    unsigned long gcMask;
+
+    viewPtr = stylePtr->viewPtr;
+
+    gcMask = GCForeground | GCFont | GCDashList | GCLineWidth | GCLineStyle;
+    gcValues.dashes = 1;
+    gcValues.font = Blt_Font_Id(CHOOSE(viewPtr->font, stylePtr->font));
+    gcValues.line_width = 0;
+    gcValues.line_style = LineOnOffDash;
+
+    /* Normal text. */
+    gcValues.foreground = CHOOSE(viewPtr->normalFg, stylePtr->normalFg)->pixel;
+    newGC = Tk_GetGC(viewPtr->tkwin, gcMask, &gcValues);
+    if (stylePtr->normalGC != NULL) {
+	Tk_FreeGC(viewPtr->display, stylePtr->normalGC);
+    }
+    stylePtr->normalGC = newGC;
+
+    /* Active text. */
+    gcValues.foreground = stylePtr->activeFg->pixel;
+    newGC = Tk_GetGC(viewPtr->tkwin, gcMask, &gcValues);
+    if (stylePtr->activeGC != NULL) {
+	Tk_FreeGC(viewPtr->display, stylePtr->activeGC);
+    }
+    stylePtr->activeGC = newGC;
+
+    /* Disabled text. */
+    gcValues.foreground = stylePtr->disableFg->pixel;
+    newGC = Tk_GetGC(viewPtr->tkwin, gcMask, &gcValues);
+    if (stylePtr->disabledGC != NULL) {
+	Tk_FreeGC(viewPtr->display, stylePtr->disabledGC);
+    }
+    stylePtr->disabledGC = newGC;
+
+    /* Highlight text. */
+    gcValues.foreground = stylePtr->highlightFg->pixel;
+    newGC = Tk_GetGC(viewPtr->tkwin, gcMask, &gcValues);
+    if (stylePtr->highlightGC != NULL) {
+	Tk_FreeGC(viewPtr->display, stylePtr->highlightGC);
+    }
+    stylePtr->highlightGC = newGC;
+
+    /* Selected text. */
+    gcValues.foreground = stylePtr->selectedFg->pixel;
+    newGC = Tk_GetGC(viewPtr->tkwin, gcMask, &gcValues);
+    if (stylePtr->selectedGC != NULL) {
+	Tk_FreeGC(viewPtr->display, stylePtr->selectedGC);
+    }
+    stylePtr->selectedGC = newGC;
+
+    if (Blt_ConfigModified(stylePtr->classPtr->specs, "-boxsize", 
+		(char *)NULL)) {
+	if (stylePtr->selectedBox != NULL) {
+	    Blt_FreePicture(stylePtr->selectedBox);
+	    stylePtr->selectedBox = NULL;
+	}
+	if (stylePtr->normalBox != NULL) {
+	    Blt_FreePicture(stylePtr->normalBox);
+	    stylePtr->normalBox = NULL;
+	}
+    }
+    if (stylePtr->disabledBox == NULL) {
+	unsigned int bw, bh;
+
+	bw = bh = stylePtr->size | 0x1;
+	stylePtr->disabledBox = Blt_PaintRadioButton(bw, bh, 
+                stylePtr->disabledBg, stylePtr->fillColor, 
+                stylePtr->checkColor, TRUE);
+    } 
+    if (stylePtr->selectedBox == NULL) {
+	unsigned int bw, bh;
+
+	bw = bh = stylePtr->size | 0x1;
+	stylePtr->selectedBox = Blt_PaintRadioButton(bw, bh, 
+                stylePtr->selectedBg, stylePtr->fillColor, 
+                stylePtr->checkColor, TRUE);
+    } 
+    if (stylePtr->normalBox == NULL) {
+	unsigned int bw, bh;
+        Blt_Bg bg;
+
+        /* Normal */
+        if (rowPtr->flatIndex & 0x1) {
+            bg = CHOOSE(viewPtr->altBg, stylePtr->altBg);
+        } else {
+            bg = CHOOSE(viewPtr->normalBg, stylePtr->normalBg);
+        }            
+	bw = bh = stylePtr->size | 0x1;
+	stylePtr->normalBox = Blt_PaintRadioButton(bw, bh, bg,
+		stylePtr->fillColor, stylePtr->checkColor, FALSE);
+    } 
+    if ((stylePtr->flags & SHOW_VALUE) && 
+	(Blt_ConfigModified(stylePtr->classPtr->specs, "-font", (char *)NULL))){
+        /* Font sizes can change the size of the cell. */
+        PropagateStyleChanges(cellStylePtr);
+    }
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * RadioBoxStyleGeometryProc --
+ *
+ *	Determines the space requirements for the "radiobox" given the
+ *	value to be displayed.  Depending upon whether an icon or text is
+ *	displayed and their relative placements, this routine computes the
+ *	space needed for the text entry.
+ *
+ * Results:
+ *	None.
+ *
+ * Side Effects:
+ *	The width and height fields of *valuePtr* are set with the computed
+ *	dimensions.
+ *
+ *---------------------------------------------------------------------------
+ */
+static void
+RadioBoxStyleGeometryProc(Cell *cellPtr, CellStyle *cellStylePtr)
+{
+    RadioBoxStyle *stylePtr = (RadioBoxStyle *)cellStylePtr;
+    unsigned int bw, bh, iw, ih, tw, th, gap;
+    TreeView *viewPtr;
+    Entry *rowPtr;
+    Column *colPtr;
+
+
+    viewPtr = stylePtr->viewPtr;
+    cellPtr->flags &= ~GEOMETRY;        /* Remove the geometry flag from
+                                         * the cell. */
+    rowPtr = cellPtr->entryPtr;
+    colPtr = cellPtr->colPtr;
+
+    bw = bh = ODD(stylePtr->size);
+    tw = th = iw = ih = 0;
+
+    cellPtr->width = 2 * (stylePtr->borderWidth + FOCUS_PAD + CELL_PADX);
+    cellPtr->height = 2 * (stylePtr->borderWidth + FOCUS_PAD + CELL_PADY);
+    cellPtr->width += colPtr->ruleWidth + PADDING(colPtr->pad);
+    cellPtr->height += rowPtr->ruleHeight;
+
+    if (stylePtr->icon != NULL) {
+	iw = IconWidth(stylePtr->icon);
+	ih = IconHeight(stylePtr->icon);
+    } 
+    if (stylePtr->onPtr != NULL) {
+	Blt_Free(stylePtr->onPtr);
+	stylePtr->onPtr = NULL;
+    }
+    if (stylePtr->offPtr != NULL) {
+	Blt_Free(stylePtr->offPtr);
+	stylePtr->offPtr = NULL;
+    }
+    FormatCell(cellStylePtr, cellPtr);
+    gap = 0;
+    cellPtr->textWidth = cellPtr->textHeight =  0;
+    if (stylePtr->flags & SHOW_VALUE) {
+	TextStyle ts;
+	const char *string;
+
+        FormatCell(cellStylePtr, cellPtr);
+	Blt_Ts_InitStyle(ts);
+	Blt_Ts_SetFont(ts, CHOOSE(viewPtr->font, stylePtr->font));
+        string = Tcl_GetString(stylePtr->onValueObjPtr);
+	stylePtr->onPtr = Blt_Ts_CreateLayout(string, -1, &ts);
+        string = Tcl_GetString(stylePtr->offValueObjPtr);
+	stylePtr->offPtr = Blt_Ts_CreateLayout(string, -1, &ts);
+	tw = MAX(stylePtr->offPtr->width, stylePtr->onPtr->width);
+	th = MAX(stylePtr->offPtr->height, stylePtr->onPtr->height);
+	if (stylePtr->icon != NULL) {
+	    gap = stylePtr->gap;
+	}
+        cellPtr->textWidth = tw;
+        cellPtr->textHeight = th;
+    }
+    cellPtr->width += stylePtr->gap + bw + iw + gap + tw;
+    cellPtr->height += MAX3(bh, th, ih);
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * RadioBoxStyleDrawProc --
+ *
+ *	Draws the "radiobox" given the screen coordinates and the
+ *	cell to be displayed.  
+ *
+ * Results:
+ *	None.
+ *
+ * Side Effects:
+ *	The checkbox cell is drawn.
+ *
+ *---------------------------------------------------------------------------
+ */
+static void
+RadioBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
+                      int x, int y)
+{
+    Blt_Bg bg;
+    RadioBoxStyle *stylePtr = (RadioBoxStyle *)cellStylePtr;
+    Column *colPtr;
+    TextLayout *textPtr;
+    TreeView *viewPtr;
+    int bool;
+    int relief;
+    int gap, colWidth, rowHeight, cellHeight, cellWidth;
+    int ix, iy, iw, ih;
+    int tx, ty, th;
+    int bx, by, bw, bh;
+    Entry *rowPtr;
+    GC gc;
+
+    viewPtr = stylePtr->viewPtr;
+    colPtr = cellPtr->colPtr;
+    rowPtr = cellPtr->entryPtr;
+    relief = stylePtr->relief;
+    if ((cellPtr->flags|rowPtr->flags|colPtr->flags) & DISABLED) {
+	/* Disabled */
+	bg = stylePtr->disabledBg;
+	gc = stylePtr->disabledGC;
+    } else if ((stylePtr->flags & ACTIVE_COLORS) && 
+               (viewPtr->activeCellPtr == cellPtr)) {
+	/* Active */
+	bg = stylePtr->activeBg;
+	gc = stylePtr->activeGC;
+	relief = stylePtr->activeRelief;
+    } else if (RowSelected(rowPtr)) {
+	/* Selected */
+	bg = stylePtr->selectedBg;
+	gc = stylePtr->selectedGC;
+        if (viewPtr->activeCellPtr == cellPtr) {
+            relief = stylePtr->activeRelief;
+        }
+    } else if ((cellPtr->flags|rowPtr->flags|colPtr->flags) & HIGHLIGHT) {
+	/* Highlighted */
+	bg = stylePtr->highlightBg;
+	gc = stylePtr->highlightGC;
+    } else {
+	/* Normal */
+        if (rowPtr->flatIndex & 0x1) {
+            bg = CHOOSE(viewPtr->altBg, stylePtr->altBg);
+        } else {
+            bg = CHOOSE(viewPtr->normalBg, stylePtr->normalBg);
+        }            
+	gc = stylePtr->normalGC;
+    }
+
+    rowHeight = rowPtr->height - rowPtr->ruleHeight;
+    colWidth  = colPtr->width - colPtr->ruleWidth;
+
+    /* Draw background. */
+    Blt_Bg_FillRectangle(viewPtr->tkwin, drawable, bg, x, y, 
+                colWidth, rowHeight, stylePtr->borderWidth, relief);
+
+    /* Draw Rule */
+    if (rowPtr->ruleHeight > 0) {
+	XFillRectangle(viewPtr->display, drawable, rowPtr->ruleGC, 
+                x, y + rowHeight, colWidth, rowPtr->ruleHeight);
+    }
+    if (colPtr->ruleWidth > 0) {
+	XFillRectangle(viewPtr->display, drawable, colPtr->ruleGC, 
+                x + colWidth, y, colPtr->ruleWidth, rowHeight);
+    }
+    rowHeight -= 2 * stylePtr->borderWidth;
+    colWidth  -= 2 * stylePtr->borderWidth - PADDING(colPtr->pad);
+
+    x += stylePtr->borderWidth + colPtr->pad.side1;
+    y += stylePtr->borderWidth;
+
+    /* Draw the focus ring if this cell has focus. */
+    if ((viewPtr->flags & FOCUS) && (viewPtr->focusCellPtr == cellPtr)) {
+	XDrawRectangle(viewPtr->display, drawable, gc, x+2, y+2, colWidth - 5, 
+		       rowHeight - 4);
+    }
+    x += CELL_PADX + FOCUS_PAD;
+    y += CELL_PADY + FOCUS_PAD;
+    rowHeight -= 2 * (FOCUS_PAD + CELL_PADY);
+    colWidth  -= 2 * (FOCUS_PAD + CELL_PADX);
+
+    cellHeight = cellPtr->height - 
+        2 * (stylePtr->borderWidth + CELL_PADY + FOCUS_PAD);
+    cellWidth =  cellPtr->width  - PADDING(colPtr->pad) - 
+        2 * (stylePtr->borderWidth + CELL_PADX + FOCUS_PAD);
+
+    /* Justify (x) and center (y) the contents of the cell. */
+    if (rowHeight > cellHeight) {
+	y += (rowHeight - cellHeight) / 2;
+        rowHeight = cellHeight;
+    }
+    if (colWidth > cellWidth) {
+	switch(stylePtr->justify) {
+	case TK_JUSTIFY_RIGHT:
+	    x += (colWidth - cellWidth);
+	    break;
+	case TK_JUSTIFY_CENTER:
+	    x += (colWidth - cellWidth) / 2;
+	    break;
+	case TK_JUSTIFY_LEFT:
+	    break;
+	}
+    }
+    th = iw = ih = 0;                   /* Suppress compiler warning. */
+    gap = 0;
+
+    if (cellPtr->dataObjPtr == NULL) {
+	bool = 0;
+    } else {
+	const char *s1, *s2;
+
+	s1 = Tcl_GetString(stylePtr->onValueObjPtr);
+        s2 = Tcl_GetString(cellPtr->dataObjPtr);
+	bool = (strcmp(s1, s2) == 0);
+    }
+    textPtr = (bool) ? stylePtr->onPtr : stylePtr->offPtr;
+
+    /*
+     * Draw the box and check. 
+     *
+     *		+-----------+
+     *		|           |
+     *		|         * |
+     *          |        *  |
+     *          | *     *   |
+     *          |  *   *    |
+     *          |   * *     |
+     *		|    *      |
+     *		+-----------+
+     */
+    bw = bh = ODD(stylePtr->size);
+    bx = x;
+    by = y;
+    if (rowHeight > bh) {
+        by += (rowHeight - bh) / 2;
+    }
+    {
+	Blt_Picture picture;
+	
+	picture = (bool) ? stylePtr->selectedBox : stylePtr->normalBox;
+	if (stylePtr->painter == NULL) {
+	    stylePtr->painter = Blt_GetPainter(viewPtr->tkwin, 1.0);
+	}
+	Blt_PaintPicture(stylePtr->painter, drawable, picture, 0, 0, 
+		bw, bh, bx, by, 0);
+    }
+    iw = ih = 0;
+    if (stylePtr->icon != NULL) {
+	iw = IconWidth(stylePtr->icon);
+	ih = IconHeight(stylePtr->icon);
+    }
+    th = 0;
+    gap = 0;
+    if (stylePtr->flags & SHOW_VALUE) {
+	th = textPtr->height;
+	if (stylePtr->icon != NULL) {
+	    gap = stylePtr->gap;
+	}
+    }
+    x = bx + bw + stylePtr->gap;
+
+    /* The icon sits to the left of the text. */
+    ix = x;
+    iy = y + (rowHeight - ih) / 2;
+    tx = ix + iw + gap;
+    ty = y + (rowHeight - th) / 2;
+    if (stylePtr->icon != NULL) {
+	Tk_RedrawImage(IconBits(stylePtr->icon), 0, 0, iw, 
+		       ih, drawable, ix, iy);
+    }
+    if ((stylePtr->flags & SHOW_VALUE) && (textPtr != NULL)) {
+	TextStyle ts;
+	int xMax;
+
+	Blt_Ts_InitStyle(ts);
+	Blt_Ts_SetFont(ts, CHOOSE(viewPtr->font, stylePtr->font));
+	Blt_Ts_SetGC(ts, gc);
+	xMax = colWidth - iw - bw - gap - stylePtr->gap;
+	Blt_Ts_SetMaxLength(ts, xMax);
+	Blt_Ts_DrawLayout(viewPtr->tkwin, drawable, textPtr, &ts, tx, ty);
+	if ((stylePtr->flags & UNDERLINE_ACTIVE) && 
+            (viewPtr->activeCellPtr == cellPtr)) {
+	    Blt_Ts_UnderlineLayout(viewPtr->tkwin, drawable, textPtr,&ts,tx,ty);
+	}
+    }
+    stylePtr->flags &= ~STYLE_DIRTY;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * ComboBoxStyleIdentifyProc --
+ *
+ *	Draws the "combobox" given the screen coordinates and the cell to
+ *	be displayed.
+ *
+ * Results:
+ *	None.
+ *
+ * Side Effects:
+ *	The checkbox cell is drawn.
+ *
+ *---------------------------------------------------------------------------
+ */
+static const char *
+RadioBoxStyleIdentifyProc(Cell *cellPtr, CellStyle *cellStylePtr, 
+                          int x, int y)
+{
+    RadioBoxStyle *stylePtr = (RadioBoxStyle *)cellStylePtr;
+    int tx;
+    unsigned int bw;
+    Column *colPtr;
+
+    colPtr = cellPtr->colPtr;
+    bw = ODD(stylePtr->size);
+    tx = stylePtr->borderWidth + FOCUS_PAD + CELL_PADX + 
+        colPtr->pad.side1 + bw + stylePtr->gap;
+    if ((x >= 0) && (x < tx)) {
+	return "button";
+    }
+    return "text";
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * RadioBoxStyleFreeProc --
+ *
+ *	Releases resources allocated for the checkbox. The resources freed
+ *	by this routine are specific only to the "radiobox".  Other
+ *	resources (common to all styles) are freed in the
+ *	Blt_TreeView_FreeStyle routine.
+ *
+ * Results:
+ *	None.
+ *
+ * Side Effects:
+ *	GCs allocated for the checkbox are freed.
+ *
+ *---------------------------------------------------------------------------
+ */
+static void
+RadioBoxStyleFreeProc(CellStyle *cellStylePtr)
+{
+    RadioBoxStyle *stylePtr = (RadioBoxStyle *)cellStylePtr;
+    TreeView *viewPtr;
+
+    viewPtr = stylePtr->viewPtr;
+    if (stylePtr->icon != NULL) {
+	FreeIcon(stylePtr->icon);
+    }
+    if (stylePtr->offPtr != NULL) {
+	Blt_Free(stylePtr->offPtr);
+    }
+    if (stylePtr->onPtr != NULL) {
+	Blt_Free(stylePtr->onPtr);
+    }
+    if (stylePtr->selectedBox != NULL) {
+	Blt_FreePicture(stylePtr->selectedBox);
+    }
+    if (stylePtr->normalBox != NULL) {
+	Blt_FreePicture(stylePtr->normalBox);
+    }
+    if (stylePtr->disabledBox != NULL) {
+	Blt_FreePicture(stylePtr->disabledBox);
+    }
+    if (stylePtr->selectedGC != NULL) {
+	Tk_FreeGC(viewPtr->display, stylePtr->selectedGC);
+    }
+    if (stylePtr->highlightGC != NULL) {
+	Tk_FreeGC(viewPtr->display, stylePtr->highlightGC);
+    }
+    if (stylePtr->disabledGC != NULL) {
+	Tk_FreeGC(viewPtr->display, stylePtr->disabledGC);
+    }
+    if (stylePtr->activeGC != NULL) {
+	Tk_FreeGC(viewPtr->display, stylePtr->activeGC);
+    }
+    if (stylePtr->normalGC != NULL) {
+	Tk_FreeGC(viewPtr->display, stylePtr->normalGC);
+    }
+}
+
 CellStyle *
 Blt_TreeView_CreateStyle(
     Tcl_Interp *interp,
     TreeView *viewPtr,			/* Blt_TreeView_ widget. */
     int type,				/* Type of style: either
-					 * STYLE_TEXTBOX,
-					 * STYLE_COMBOBOX, or
+					 * STYLE_TEXTBOX, STYLE_COMBOBOX,
+					 * STYLE_RADIOBOX, or
 					 * STYLE_CHECKBOX */
     const char *styleName,		/* Name of the new style. */
     int objc,
@@ -3957,6 +4734,8 @@ Blt_TreeView_CreateStyle(
 	stylePtr = (CellStyle *)NewCheckBoxStyle(viewPtr, hPtr);     break;
     case STYLE_IMAGEBOX:
 	stylePtr = (CellStyle *)NewImageBoxStyle(viewPtr, hPtr);     break;
+    case STYLE_RADIOBOX:
+	stylePtr = (CellStyle *)NewRadioBoxStyle(viewPtr, hPtr);     break;
     default:
 	return NULL;
     }

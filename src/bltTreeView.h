@@ -199,10 +199,11 @@ typedef const char *UID;
 #define TV_ITEM_RULE	2
 
 enum Styles {
-    STYLE_TEXTBOX,
-    STYLE_COMBOBOX,
     STYLE_CHECKBOX,
-    STYLE_IMAGEBOX
+    STYLE_COMBOBOX,
+    STYLE_IMAGEBOX,
+    STYLE_RADIOBOX,
+    STYLE_TEXTBOX
 };
 
 #define STYLE_LAYOUT		(1<<8)

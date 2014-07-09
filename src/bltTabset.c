@@ -1,5 +1,4 @@
 /* -*- mode: c; c-basic-offset: 4; indent-tabs-mode: nil -*- */
-
 /*
  * bltTabset.c --
  *
@@ -8141,10 +8140,10 @@ DrawLabel(Tabset *setPtr, Tab *tabPtr, Drawable drawable)
 	maxLength = rPtr->w + xSelPad;
 	if ((setPtr->quad == ROTATE_0) || (setPtr->quad == ROTATE_180)) {
 	    XDrawRectangle(setPtr->display, drawable, stylePtr->activeGC,
-		x + rPtr->x - 1, y + rPtr->y, maxLength + 1, rPtr->h);
+		x + rPtr->x - 1, y + rPtr->y, maxLength+1, rPtr->h+1);
 	} else {
 	    XDrawRectangle(setPtr->display, drawable, stylePtr->activeGC,
-		x + rPtr->x, y + rPtr->y - 1, maxLength, rPtr->h + 1);
+		x + rPtr->x, y + rPtr->y - 1, maxLength-1, rPtr->h + 1);
 	}
     }
 }
