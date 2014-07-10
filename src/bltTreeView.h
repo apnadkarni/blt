@@ -202,7 +202,7 @@ enum Styles {
     STYLE_CHECKBOX,
     STYLE_COMBOBOX,
     STYLE_IMAGEBOX,
-    STYLE_RADIOBOX,
+    STYLE_RADIOBUTTON,
     STYLE_TEXTBOX
 };
 
@@ -666,8 +666,9 @@ typedef struct {
 					 * selected. */
 } Selection;
 
-#define SELECT_MODE_SINGLE	(1<<0)
-#define SELECT_MODE_MULTIPLE	(1<<1)
+#define SELECT_MODE_NONE	(0)
+#define SELECT_MODE_SINGLE	(1)
+#define SELECT_MODE_MULTIPLE	(2)
 
 #define SELECT_CLEAR		(1<<0)	/* Clear selection flag of entry. */
 #define SELECT_SET		(1<<1)	/* Set selection flag of entry. */

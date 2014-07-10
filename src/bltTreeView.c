@@ -205,7 +205,7 @@
 #define DEF_LINEWIDTH		"1"
 #define DEF_MAKE_PATH		"no"
 #define DEF_NEW_TAGS		"no"
-#define DEF_NORMAL_BG 	STD_NORMAL_BACKGROUND
+#define DEF_NORMAL_BG           STD_NORMAL_BACKGROUND
 #define DEF_NORMAL_FG_MONO	STD_ACTIVE_FG_MONO
 #define DEF_RELIEF		"sunken"
 #define DEF_RESIZE_CURSOR	"arrow"
@@ -214,7 +214,7 @@
 #define DEF_RULE_COLOR		STD_NORMAL_BACKGROUND
 #define DEF_SCROLL_INCREMENT	"20"
 #define DEF_SCROLL_MODE		"hierbox"
-#define DEF_SELECT_BG 	STD_SELECT_BACKGROUND 
+#define DEF_SELECT_BG           STD_SELECT_BACKGROUND 
 #define DEF_SELECT_BG_MONO  	STD_SELECT_BG_MONO
 #define DEF_SELECT_BORDERWIDTH	"1"
 #define DEF_SELECT_FOREGROUND 	STD_SELECT_FOREGROUND
@@ -1967,9 +1967,12 @@ ObjToSelectmode(
 	*modePtr = SELECT_MODE_MULTIPLE;
     } else if ((c == 'a') && (strcmp(string, "active") == 0)) {
 	*modePtr = SELECT_MODE_SINGLE;
+    } else if ((c == 'n') && (strcmp(string, "none") == 0)) {
+	*modePtr = SELECT_MODE_NONE;
     } else {
 	Tcl_AppendResult(interp, "bad select mode \"", string,
-	    "\": should be \"single\" or \"multiple\"", (char *)NULL);
+                         "\": should be \"single\", \"multiple\", or \"none\"",
+                         (char *)NULL);
 	return TCL_ERROR;
     }
     return TCL_OK;
@@ -1998,10 +2001,12 @@ SelectmodeToObj(
     int mode = *(int *)(widgRec + offset);
 
     switch (mode) {
+    case SELECT_MODE_NONE:
+	return Tcl_NewStringObj("none", 4);
     case SELECT_MODE_SINGLE:
-	return Tcl_NewStringObj("single", -1);
+	return Tcl_NewStringObj("single", 6);
     case SELECT_MODE_MULTIPLE:
-	return Tcl_NewStringObj("multiple", -1);
+	return Tcl_NewStringObj("multiple", 8);
     default:
 	return Tcl_NewStringObj("unknown scroll mode", -1);
     }
@@ -2492,7 +2497,7 @@ StylesToObj(
         Tcl_Obj *objPtr;
 
         objPtr = Tcl_NewStringObj(cellPtr->colPtr->key, -1);
-	Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+        Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
 	styleName = (cellPtr->stylePtr != NULL) ? cellPtr->stylePtr->name : "";
         objPtr = Tcl_NewStringObj(styleName, -1); 
 	Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
@@ -8100,8 +8105,10 @@ DisplayCell(TreeView *viewPtr, Cell *cellPtr)
 
 	drawable = Blt_GetPixmap(viewPtr->display, Tk_WindowId(viewPtr->tkwin), 
 		w, h, Tk_Depth(viewPtr->tkwin)); 
+        Blt_Bg_SetOrigin(viewPtr->tkwin, bg, x, y);
         Blt_Bg_FillRectangle(viewPtr->tkwin, drawable, bg, 0, 0, 
 		w, h, 0, TK_RELIEF_FLAT);
+        Blt_Bg_SetOrigin(viewPtr->tkwin, bg, 0, 0);
 	DrawCell(viewPtr, cellPtr, drawable, 0, 0);
 
         px = py = 0;
@@ -13872,6 +13879,54 @@ StyleActivateOp(ClientData clientData, Tcl_Interp *interp, int objc,
     return TCL_OK;
 }
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * StyleCellsOp --
+ *
+ *	  .t style cells "styleName" 
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+StyleCellsOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+		Tcl_Obj *const *objv)
+{
+    Blt_HashEntry *hPtr;
+    Blt_HashSearch iter;
+    TreeView *viewPtr = clientData;
+    Tcl_Obj *listObjPtr;
+    CellStyle *stylePtr;
+
+    stylePtr = FindStyle(interp, viewPtr, Tcl_GetString(objv[3]));
+    if (stylePtr == NULL) {
+	return TCL_ERROR;
+    }
+    viewPtr = stylePtr->viewPtr;
+    listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
+    for (hPtr = Blt_FirstHashEntry(&viewPtr->entryTable, &iter); hPtr != NULL;
+         hPtr = Blt_NextHashEntry(&iter)) {
+        Entry *entryPtr;
+        Cell *cellPtr;
+
+        entryPtr = Blt_GetHashValue(hPtr);
+        for (cellPtr = entryPtr->cells; cellPtr != NULL; 
+             cellPtr = cellPtr->nextPtr) {
+            CellStyle *currentPtr;
+
+            currentPtr = GetCurrentStyle(viewPtr, cellPtr->colPtr, cellPtr);
+            if (currentPtr == stylePtr) {
+                Tcl_Obj *objPtr;
+
+                objPtr = CellToIndexObj(interp, cellPtr);
+                Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+            }
+        }
+    }
+    Tcl_SetObjResult(interp, listObjPtr);
+    return TCL_OK;
+}
 
 /*
  *---------------------------------------------------------------------------
@@ -14038,11 +14093,11 @@ StyleCreateOp(TreeView *viewPtr, Tcl_Interp *interp, int objc,
 	type = STYLE_COMBOBOX;
     } else if ((c == 'i') && (strncmp(string, "imagebox", length) == 0)) {
 	type = STYLE_IMAGEBOX;
-    } else if ((c == 'r') && (strncmp(string, "radiobox", length) == 0)) {
-	type = STYLE_RADIOBOX;
+    } else if ((c == 'r') && (strncmp(string, "radiobutton", length) == 0)) {
+	type = STYLE_RADIOBUTTON;
     } else {
 	Tcl_AppendResult(interp, "unknown style type \"", string, 
-        "\": should be textbox, checkbox, combobox, radiobox, or imagebox.", 
+        "\": should be textbox, checkbox, combobox, radiobutton, or imagebox.", 
 		(char *)NULL);
 	return TCL_ERROR;
     }
@@ -14453,6 +14508,7 @@ StyleUnsetOp(ClientData clientData, Tcl_Interp *interp, int objc,
  */
 static Blt_OpSpec styleOps[] = {
     {"activate",    1, StyleActivateOp,    5, 5, "entry column",},
+    {"cells",       2, StyleCellsOp,       4, 4, "styleName",}, 
     {"cget",        2, StyleCgetOp,        5, 5, "styleName option",},
     {"checkbox",    2, StyleCheckBoxOp,    4, 0, "styleName options...",},
     {"combobox",    3, StyleComboBoxOp,    4, 0, "styleName options...",},

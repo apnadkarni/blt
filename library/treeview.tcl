@@ -244,10 +244,13 @@ proc blt::TreeView::Initialize { w } {
 	set blt::TreeView::_private(y) %y
 	set index [%W nearest %x %y]
 	set blt::TreeView::_private(scroll) 1
-	if { [%W cget -selectmode] == "multiple" } {
-	    %W selection mark $index
-	} else {
-	    blt::TreeView::SetSelectionAnchor %W $index
+	switch -- [%W cget -selectmode] {
+	    "multiple" {
+		%W selection mark $index
+	    }
+	    "single" {
+		blt::TreeView::SetSelectionAnchor %W $index
+	    }
 	}
     }
 
@@ -258,10 +261,13 @@ proc blt::TreeView::Initialize { w } {
 	after cancel $blt::TreeView::_private(afterId)
 	set blt::TreeView::_private(afterId) -1
 	set blt::TreeView::_private(scroll) 0
-	if { [%W cget -selectmode] == "multiple" } {
-	    %W selection anchor current
-	} else {
-	    %W entry invoke current
+	switch -- [%W cget -selectmode] {
+	    "multiple" {
+		%W selection anchor current
+	    } 
+	    "single" {
+		%W entry invoke current
+	    }
 	}
     }
 
@@ -279,7 +285,7 @@ proc blt::TreeView::Initialize { w } {
 	    set index [%W index anchor]
 	    %W selection clearall
 	    %W selection set $index current
-	} else {
+	} elseif { [%W cget -selectmode] == "single" } {
 	    blt::TreeView::SetSelectionAnchor %W current
 	}
     }
@@ -301,12 +307,15 @@ proc blt::TreeView::Initialize { w } {
     #	For "multiple" mode only.  
     #
     $w bind Entry <Control-ButtonPress-1> { 
-	if { [%W cget -selectmode] == "multiple" } {
-	    set index [%W index current]
-	    %W selection toggle $index
-	    %W selection anchor $index
-	} else {
-	    blt::TreeView::SetSelectionAnchor %W current
+	switch -- [%W cget -selectmode] {
+	    "multiple" {
+		set index [%W index current]
+		%W selection toggle $index
+		%W selection anchor $index
+	    }
+	    "single" {
+		blt::TreeView::SetSelectionAnchor %W current
+	    }
 	}
     }
     $w bind Entry <Control-Double-ButtonPress-1> {
@@ -332,7 +341,7 @@ proc blt::TreeView::Initialize { w } {
 		%W selection clear anchor current
 		%W selection set current
 	    }
-	} else {
+	} elseif { [%W cget -selectmode] == "single" } {
 	    blt::TreeView::SetSelectionAnchor %W current
 	}
     }
@@ -393,10 +402,13 @@ proc blt::TreeView::Initialize { w } {
 	set blt::TreeView::_private(y) %y
 	set index [%W nearest %x %y]
 	set blt::TreeView::_private(scroll) 1
-	if { [%W cget -selectmode] == "multiple" } {
-	    %W selection mark $index
-	} else {
-	    blt::TreeView::SetSelectionAnchor %W $index
+	switch -- [%W cget -selectmode] {
+	    "multiple" {
+		%W selection mark $index
+	    } 
+	    "single" {
+		blt::TreeView::SetSelectionAnchor %W $index
+	    }
 	}
     }
 
@@ -423,10 +435,13 @@ proc blt::TreeView::Initialize { w } {
 	set blt::TreeView::_private(y) %y
 	set index [%W nearest %x %y]
 	set blt::TreeView::_private(scroll) 1
-	if { [%W cget -selectmode] == "multiple" } {
-	    %W selection mark $index
-	} else {
-	    blt::TreeView::SetSelectionAnchor %W $index
+	switch -- [%W cget -selectmode] {
+	    "multiple" {
+		%W selection mark $index
+	    } 
+	    "single" {
+		blt::TreeView::SetSelectionAnchor %W $index
+	    }
 	}
     }
 
@@ -500,6 +515,22 @@ proc blt::TreeView::Initialize { w } {
     }
     $w bind ImageBoxStyle <Leave> { 
 	%W cell deactivate 
+    }
+
+    # RadioButtonStyle
+    $w bind RadioButtonStyle <Enter> { 
+	%W cell activate current 
+    }
+    $w bind RadioButtonStyle <Leave> { 
+	%W cell deactivate 
+    }
+    $w bind RadioButtonStyle <ButtonPress-1> { 
+	if { [%W cell writable active] } {
+	    blt::TreeView::SetRadioValue %W active
+	}
+    }
+    $w bind RadioButtonStyle <B1-Motion> { 
+	break
     }
 }
 
@@ -635,10 +666,13 @@ proc blt::TreeView::AutoScroll { w } {
     } else {
 	set neighbor $index
     }
-    if { [$w cget -selectmode] == "single" } {
-	SetSelectionAnchor $w $neighbor
-    } else {
-	$w selection mark $index
+    switch -- [$w cget -selectmode] {
+	"single" {
+	    SetSelectionAnchor $w $neighbor
+	}
+	"multiple" {
+	    $w selection mark $index
+	}
     }
     set _private(afterId) [after 50 blt::TreeView::AutoScroll $w]
 }
@@ -671,6 +705,31 @@ proc blt::TreeView::ToggleValue { w cell } {
     $w cell invoke $cell
 }
 
+#
+# SetRadioValue --
+#
+#	Toggles the value at the location of the cell requesting it.  This
+#	is called only for checkbox style cells. The value is pulled from
+#	the tree and compared against the style's on value.  If its the
+#	"on" value, set the cell value in the table to its "off" value.
+#
+proc blt::TreeView::SetRadioValue { w cell } {
+    set style [$w cell style $cell]
+    set on [$w style cget $style -onvalue]
+    set off [$w style cget $style -offvalue]
+
+    # Get the cell's current value and set the tree node field to that.
+    set tree [$w cget -tree]
+    foreach { node key } [$w cell index $cell] break
+    foreach c [$w style cells $style] {
+	foreach { n k } $c break
+	$tree set $n $k $off
+    }
+    $tree set $node $key $on
+    # Execute the callback associated with the style
+    $w cell invoke $cell
+}
+
 proc blt::TreeView::SetSelectionAnchorFromCell { w cell } {
     foreach { node col } [$w cell index $cell] break
     SetSelectionAnchor $w $node
@@ -681,8 +740,10 @@ proc blt::TreeView::SetSelectionAnchor { w tagOrId } {
     $w selection clearall
     $w see $index
     $w focus $index
-    $w selection set $index
-    $w selection anchor $index
+    if { [$w cget -selectmode] != "none" } {
+	$w selection set $index
+	$w selection anchor $index
+    }
 }
 
 # ----------------------------------------------------------------------
@@ -970,15 +1031,18 @@ bind BltTreeView <KeyPress-Right> {
 }
 
 bind BltTreeView <KeyPress-space> {
-    if { [%W cget -selectmode] == "single" } {
-	if { [%W selection includes focus] } {
-	    %W selection clearall
-	} else {
-	    %W selection clearall
-	    %W selection set focus
+    switch -- [%W cget -selectmode] {
+	"single" {
+	    if { [%W selection includes focus] } {
+		%W selection clearall
+	    } else {
+		%W selection clearall
+		%W selection set focus
+	    }
 	}
-    } else {
-	%W selection toggle focus
+	"multiple" {
+	    %W selection toggle focus
+	}
     }
     set blt::TreeView::_private(space) on
 }

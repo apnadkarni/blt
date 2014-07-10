@@ -117,13 +117,13 @@
 #define DEF_IMAGEBOX_ACTIVE_COLORS	"0"
 #define DEF_TEXTBOX_ACTIVE_COLORS       "0"
 #define DEF_COMBOBOX_ACTIVE_COLORS      "0"
-#define DEF_RADIOBOX_ACTIVE_COLORS	"0"
+#define DEF_RADIOBUTTON_ACTIVE_COLORS	"0"
 
 #define DEF_CHECKBOX_UNDERLINE_ACTIVE	"1"
 #define DEF_IMAGEBOX_UNDERLINE_ACTIVE	"1"
 #define DEF_TEXTBOX_UNDERLINE_ACTIVE    "1"
 #define DEF_COMBOBOX_UNDERLINE_ACTIVE   "1"
-#define DEF_RADIOBOX_UNDERLINE_ACTIVE	"1"
+#define DEF_RADIOBUTTON_UNDERLINE_ACTIVE	"1"
 
 #define DEF_CHECKBOX_ACTIVE_RELIEF	"raised"
 #define DEF_CHECKBOX_BOX_COLOR		(char *)NULL
@@ -173,24 +173,25 @@
 #define DEF_IMAGEBOX_SHOW_TEXT		"1"
 #define DEF_IMAGEBOX_SIDE		"left"
 
-#define DEF_RADIOBOX_ACTIVE_RELIEF	"raised"
-#define DEF_RADIOBOX_BOX_COLOR		(char *)NULL
-#define DEF_RADIOBOX_INDICATOR_COLOR	"red"
-#define DEF_RADIOBOX_BORDERWIDTH	"1"
-#define DEF_RADIOBOX_EDITABLE		"1"
-#define DEF_RADIOBOX_FONT		(char *)NULL
-#define DEF_RADIOBOX_COMMAND		(char *)NULL
-#define DEF_RADIOBOX_FILL_COLOR		"white"
-#define DEF_RADIOBOX_GAP		"2"
-#define DEF_RADIOBOX_LINEWIDTH		"2"
-#define DEF_RADIOBOX_VALUE		"1"
-#define DEF_RADIOBOX_RELIEF		"flat"
-#define DEF_RADIOBOX_SHOWVALUE		"yes"
-#define DEF_RADIOBOX_SIZE		"17"
+#define DEF_RADIOBUTTON_ACTIVE_RELIEF	"raised"
+#define DEF_RADIOBUTTON_BOX_COLOR       (char *)NULL
+#define DEF_RADIOBUTTON_INDICATOR_COLOR	"red"
+#define DEF_RADIOBUTTON_BORDERWIDTH	"1"
+#define DEF_RADIOBUTTON_EDITABLE        "1"
+#define DEF_RADIOBUTTON_FONT		(char *)NULL
+#define DEF_RADIOBUTTON_COMMAND		(char *)NULL
+#define DEF_RADIOBUTTON_FILL_COLOR      "white"
+#define DEF_RADIOBUTTON_GAP		"2"
+#define DEF_RADIOBUTTON_LINEWIDTH       "2"
+#define DEF_RADIOBUTTON_ONVALUE		"1"
+#define DEF_RADIOBUTTON_OFFVALUE        "0"
+#define DEF_RADIOBUTTON_RELIEF		"flat"
+#define DEF_RADIOBUTTON_SHOWVALUE       "yes"
+#define DEF_RADIOBUTTON_SIZE		"17"
 #ifdef WIN32
-#define DEF_RADIOBOX_CURSOR		"arrow"
+#define DEF_RADIOBUTTON_CURSOR		"arrow"
 #else
-#define DEF_RADIOBOX_CURSOR		"hand2"
+#define DEF_RADIOBUTTON_CURSOR		"hand2"
 #endif /*WIN32*/
 
 static Blt_OptionParseProc ObjToIconProc;
@@ -686,9 +687,9 @@ typedef struct {
 					   cell. */
     Tcl_Obj *cmdObjPtr;
 
-    /* Radiobox specific fields. */
+    /* Radiobutton specific fields. */
     int size;				/* Size of the radiobutton. */
-    Tcl_Obj *valueObjPtr;
+    Tcl_Obj *onValueObjPtr;
     Tcl_Obj *offValueObjPtr;
     int lineWidth;			/* Linewidth of the surrounding
 					 * box. */
@@ -699,7 +700,7 @@ typedef struct {
     int state;
 
     Blt_Painter painter;
-} RadioBoxStyle;
+} RadioButtonStyle;
 
 static Blt_ConfigSpec checkBoxStyleSpecs[] =
 {
@@ -1016,107 +1017,113 @@ static Blt_ConfigSpec imageBoxStyleSpecs[] =
 	0, 0}
 };
 
-static Blt_ConfigSpec radioBoxStyleSpecs[] =
+static Blt_ConfigSpec radioButtonStyleSpecs[] =
 {
     {BLT_CONFIG_BACKGROUND, "-activebackground", "activeBackground", 
 	"ActiveBackground", DEF_ACTIVE_BG, 
-	Blt_Offset(RadioBoxStyle, activeBg), BLT_CONFIG_NULL_OK},
+	Blt_Offset(RadioButtonStyle, activeBg), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_SYNONYM, "-activebg", "activeBackground", 
 	(char *)NULL, (char *)NULL, 0, 0},
     {BLT_CONFIG_BITMASK, "-activecolors", "activeColors", "ActiveColors", 
-        DEF_RADIOBOX_ACTIVE_COLORS, Blt_Offset(RadioBoxStyle, flags), 
+        DEF_RADIOBUTTON_ACTIVE_COLORS, Blt_Offset(RadioButtonStyle, flags), 
         BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)ACTIVE_COLORS},
     {BLT_CONFIG_SYNONYM, "-activefg", "activeForeground", (char *)NULL, 
         (char *)NULL, 0, 0},
     {BLT_CONFIG_COLOR, "-activeforeground", "activeForeground", 
 	"ActiveForeground", DEF_ACTIVE_FG, 
-	Blt_Offset(RadioBoxStyle, activeFg), 0},
+	Blt_Offset(RadioButtonStyle, activeFg), 0},
     {BLT_CONFIG_RELIEF, "-activerelief", "activeRelief", "ActiveRelief", 
-	DEF_RADIOBOX_ACTIVE_RELIEF, Blt_Offset(RadioBoxStyle, activeRelief), 
+	DEF_RADIOBUTTON_ACTIVE_RELIEF, Blt_Offset(RadioButtonStyle, activeRelief), 
 	BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_SYNONYM, "-altbg", "alternateBackground", (char *)NULL,
 	(char *)NULL, 0, 0},
     {BLT_CONFIG_BACKGROUND, "-alternatebackground", "alternateBackground", 
-	"Background", DEF_ALT_BG, Blt_Offset(RadioBoxStyle, altBg), 
+	"Background", DEF_ALT_BG, Blt_Offset(RadioButtonStyle, altBg), 
         BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_BACKGROUND, "-background", "background", "Background",
-        DEF_NORMAL_BG, Blt_Offset(RadioBoxStyle, normalBg), BLT_CONFIG_NULL_OK},
+        DEF_NORMAL_BG, Blt_Offset(RadioButtonStyle, normalBg), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_SYNONYM, "-bd", "borderWidth", (char *)NULL, (char *)NULL, 
 	0, 0},
     {BLT_CONFIG_SYNONYM, "-bg", "background", (char *)NULL, (char *)NULL, 
 	0, 0},
     {BLT_CONFIG_PIXELS_NNEG, "-borderwidth", "borderWidth", "BorderWidth",
-	DEF_RADIOBOX_BORDERWIDTH, Blt_Offset(RadioBoxStyle, borderWidth),
+	DEF_RADIOBUTTON_BORDERWIDTH, Blt_Offset(RadioButtonStyle, borderWidth),
 	BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_PIXELS_POS, "-boxsize", "boxSize", "BoxSize", DEF_RADIOBOX_SIZE,
-	Blt_Offset(RadioBoxStyle, size), BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_OBJ, "-command", "command", "Command", DEF_RADIOBOX_COMMAND, 
-        Blt_Offset(RadioBoxStyle, cmdObjPtr), 0},
-    {BLT_CONFIG_CURSOR, "-cursor", "cursor", "Cursor", DEF_RADIOBOX_CURSOR, 
-	Blt_Offset(RadioBoxStyle, cursor), 0},
+    {BLT_CONFIG_PIXELS_POS, "-boxsize", "boxSize", "BoxSize", 
+        DEF_RADIOBUTTON_SIZE, Blt_Offset(RadioButtonStyle, size), 
+        BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_OBJ, "-command", "command", "Command", DEF_RADIOBUTTON_COMMAND, 
+        Blt_Offset(RadioButtonStyle, cmdObjPtr), 0},
+    {BLT_CONFIG_CURSOR, "-cursor", "cursor", "Cursor", DEF_RADIOBUTTON_CURSOR, 
+	Blt_Offset(RadioButtonStyle, cursor), 0},
     {BLT_CONFIG_BACKGROUND, "-disabledbackground", "disabledBackground",
 	"DisabledBackground", DEF_DISABLE_BG, 
-        Blt_Offset(RadioBoxStyle, disabledBg), BLT_CONFIG_NULL_OK},
+        Blt_Offset(RadioButtonStyle, disabledBg), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_COLOR, "-disabledforeground", "disabledForeground", 
        "DisabledForeground", DEF_DISABLE_FG, 
-	Blt_Offset(RadioBoxStyle, disableFg), 0},
+	Blt_Offset(RadioButtonStyle, disableFg), 0},
     {BLT_CONFIG_SYNONYM, "-disabledbg", "disabledBackground", (char *)NULL, 
 	(char *)NULL, 0, 0},
     {BLT_CONFIG_SYNONYM, "-disabledfg", "disabledForeground", (char *)NULL, 
 	(char *)NULL, 0, 0},
-    {BLT_CONFIG_BITMASK, "-edit", "edit", "Edit", DEF_RADIOBOX_EDITABLE, 
-	Blt_Offset(RadioBoxStyle, flags), BLT_CONFIG_DONT_SET_DEFAULT,
+    {BLT_CONFIG_BITMASK, "-edit", "edit", "Edit", DEF_RADIOBUTTON_EDITABLE, 
+	Blt_Offset(RadioButtonStyle, flags), BLT_CONFIG_DONT_SET_DEFAULT,
 	(Blt_CustomOption *)EDITABLE},
     {BLT_CONFIG_SYNONYM, "-fg", "foreground", (char *)NULL, (char *)NULL, 
 	0, 0},
-    {BLT_CONFIG_FONT, "-font", "font", "Font", DEF_RADIOBOX_FONT, 
-        Blt_Offset(RadioBoxStyle, font), BLT_CONFIG_NULL_OK},
+    {BLT_CONFIG_FONT, "-font", "font", "Font", DEF_RADIOBUTTON_FONT, 
+        Blt_Offset(RadioButtonStyle, font), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_COLOR, "-foreground", "foreground", "Foreground", 
-        DEF_NORMAL_FG, Blt_Offset(RadioBoxStyle, normalFg), 0},
-    {BLT_CONFIG_PIXELS_NNEG, "-gap", "gap", "Gap", DEF_RADIOBOX_GAP, 
-	Blt_Offset(RadioBoxStyle, gap), BLT_CONFIG_DONT_SET_DEFAULT},
+        DEF_NORMAL_FG, Blt_Offset(RadioButtonStyle, normalFg), 0},
+    {BLT_CONFIG_PIXELS_NNEG, "-gap", "gap", "Gap", DEF_RADIOBUTTON_GAP, 
+	Blt_Offset(RadioButtonStyle, gap), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_BACKGROUND, "-highlightbackground", "highlightBackground",
 	"HighlightBackground", DEF_HIGHLIGHT_BG, 
-        Blt_Offset(RadioBoxStyle, highlightBg), BLT_CONFIG_COLOR_ONLY},
+        Blt_Offset(RadioButtonStyle, highlightBg), BLT_CONFIG_COLOR_ONLY},
     {BLT_CONFIG_COLOR, "-highlightforeground", "highlightForeground", 
 	"HighlightForeground", DEF_HIGHLIGHT_FG, 
-	 Blt_Offset(RadioBoxStyle, highlightFg), 0},
+	 Blt_Offset(RadioButtonStyle, highlightFg), 0},
     {BLT_CONFIG_SYNONYM, "-highlightbg", "highlightBackground", (char *)NULL, 
 	(char *)NULL, 0, 0},
     {BLT_CONFIG_SYNONYM, "-highlightfg", "highlightForeground", (char *)NULL, 
 	(char *)NULL, 0, 0},
     {BLT_CONFIG_CUSTOM, "-icon", "icon", "Icon", (char *)NULL, 
-	Blt_Offset(RadioBoxStyle, icon), BLT_CONFIG_NULL_OK, &iconOption},
+	Blt_Offset(RadioButtonStyle, icon), BLT_CONFIG_NULL_OK, &iconOption},
     {BLT_CONFIG_STRING, "-key", "key", "key", (char *)NULL, 
-	Blt_Offset(RadioBoxStyle, key), BLT_CONFIG_NULL_OK, 0},
+	Blt_Offset(RadioButtonStyle, key), BLT_CONFIG_NULL_OK, 0},
     {BLT_CONFIG_JUSTIFY, "-justify", "justify", "Justify", DEF_JUSTIFY, 
-	Blt_Offset(RadioBoxStyle, justify), BLT_CONFIG_DONT_SET_DEFAULT},
+	Blt_Offset(RadioButtonStyle, justify), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_PIXELS_NNEG, "-linewidth", "lineWidth", "LineWidth",
-	DEF_RADIOBOX_LINEWIDTH, Blt_Offset(RadioBoxStyle, lineWidth),
+	DEF_RADIOBUTTON_LINEWIDTH, Blt_Offset(RadioButtonStyle, lineWidth),
 	BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_COLOR, "-checkcolor", "checkColor", "CheckColor", 
-	DEF_RADIOBOX_INDICATOR_COLOR, Blt_Offset(RadioBoxStyle, checkColor), 0},
+	DEF_RADIOBUTTON_INDICATOR_COLOR, Blt_Offset(RadioButtonStyle, 
+        checkColor), 0},
     {BLT_CONFIG_COLOR, "-boxcolor", "boxColor", "BoxColor", 
-	DEF_RADIOBOX_BOX_COLOR, Blt_Offset(RadioBoxStyle, boxColor), 
+	DEF_RADIOBUTTON_BOX_COLOR, Blt_Offset(RadioButtonStyle, boxColor), 
 	BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_COLOR, "-fillcolor", "fillColor", "FillColor", 
-        DEF_RADIOBOX_FILL_COLOR, Blt_Offset(RadioBoxStyle, fillColor), 0},
-    {BLT_CONFIG_OBJ, "-value", "value", "Value", 
-	DEF_RADIOBOX_VALUE, Blt_Offset(RadioBoxStyle, valueObjPtr), 0},
+        DEF_RADIOBUTTON_FILL_COLOR, Blt_Offset(RadioButtonStyle, fillColor), 0},
     {BLT_CONFIG_STRING, "-key", "key", "key", (char *)NULL, 
-	Blt_Offset(RadioBoxStyle, key), BLT_CONFIG_NULL_OK, 0},
-    {BLT_CONFIG_RELIEF, "-relief", "relief", "Relief", DEF_RADIOBOX_RELIEF, 
-	Blt_Offset(RadioBoxStyle, relief), BLT_CONFIG_DONT_SET_DEFAULT},
+	Blt_Offset(RadioButtonStyle, key), BLT_CONFIG_NULL_OK, 0},
+    {BLT_CONFIG_OBJ, "-offvalue", "offValue", "OffValue", 
+	DEF_RADIOBUTTON_OFFVALUE, Blt_Offset(RadioButtonStyle, offValueObjPtr),
+        0},
+    {BLT_CONFIG_OBJ, "-onvalue", "onValue", "OnValue", DEF_RADIOBUTTON_ONVALUE,
+        Blt_Offset(RadioButtonStyle, onValueObjPtr), 0},
+    {BLT_CONFIG_RELIEF, "-relief", "relief", "Relief", DEF_RADIOBUTTON_RELIEF, 
+	Blt_Offset(RadioButtonStyle, relief), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_BACKGROUND, "-selectbackground", "selectBackground", 
-	"Foreground", DEF_SELECT_BG, Blt_Offset(RadioBoxStyle, selectedBg), 0},
+	"Foreground", DEF_SELECT_BG, Blt_Offset(RadioButtonStyle, selectedBg), 
+        0},
     {BLT_CONFIG_COLOR, "-selectforeground", "selectForeground", "Background",
-	DEF_SELECT_FG, Blt_Offset(RadioBoxStyle, selectedFg), 0},
+	DEF_SELECT_FG, Blt_Offset(RadioButtonStyle, selectedFg), 0},
     {BLT_CONFIG_BITMASK, "-showvalue", "showValue", "ShowValue",
-	DEF_RADIOBOX_SHOWVALUE, Blt_Offset(RadioBoxStyle, flags), 
+	DEF_RADIOBUTTON_SHOWVALUE, Blt_Offset(RadioButtonStyle, flags), 
         BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)SHOW_VALUE},    
     {BLT_CONFIG_BITMASK, "-underlineactive", "underlineActive", 
-        "UnderlineActive", DEF_RADIOBOX_UNDERLINE_ACTIVE, 
-        Blt_Offset(RadioBoxStyle, flags), BLT_CONFIG_DONT_SET_DEFAULT, 
+        "UnderlineActive", DEF_RADIOBUTTON_UNDERLINE_ACTIVE, 
+        Blt_Offset(RadioButtonStyle, flags), BLT_CONFIG_DONT_SET_DEFAULT, 
         (Blt_CustomOption *)UNDERLINE_ACTIVE},
     {BLT_CONFIG_END, (char *)NULL, (char *)NULL, (char *)NULL,
 	(char *)NULL, 0, 0}
@@ -1214,26 +1221,26 @@ static Blt_ConfigSpec textBoxStyleSpecs[] =
 static CellStyleConfigureProc CheckBoxStyleConfigureProc;
 static CellStyleConfigureProc ComboBoxStyleConfigureProc;
 static CellStyleConfigureProc ImageBoxStyleConfigureProc;
-static CellStyleConfigureProc RadioBoxStyleConfigureProc;
+static CellStyleConfigureProc RadioButtonStyleConfigureProc;
 static CellStyleConfigureProc TextBoxStyleConfigureProc;
 static CellStyleDrawProc CheckBoxStyleDrawProc;
 static CellStyleDrawProc ComboBoxStyleDrawProc;
 static CellStyleDrawProc ImageBoxStyleDrawProc;
-static CellStyleDrawProc RadioBoxStyleDrawProc;
+static CellStyleDrawProc RadioButtonStyleDrawProc;
 static CellStyleDrawProc TextBoxStyleDrawProc;
 static CellStyleFreeProc CheckBoxStyleFreeProc;
 static CellStyleFreeProc ComboBoxStyleFreeProc;
 static CellStyleFreeProc ImageBoxStyleFreeProc;
-static CellStyleFreeProc RadioBoxStyleFreeProc;
+static CellStyleFreeProc RadioButtonStyleFreeProc;
 static CellStyleFreeProc TextBoxStyleFreeProc;
 static CellStyleGeometryProc CheckBoxStyleGeometryProc;
 static CellStyleGeometryProc ComboBoxStyleGeometryProc;
 static CellStyleGeometryProc ImageBoxStyleGeometryProc;
-static CellStyleGeometryProc RadioBoxStyleGeometryProc;
+static CellStyleGeometryProc RadioButtonStyleGeometryProc;
 static CellStyleGeometryProc TextBoxStyleGeometryProc;
 static CellStyleIdentifyProc CheckBoxStyleIdentifyProc;
 static CellStyleIdentifyProc ComboBoxStyleIdentifyProc;
-static CellStyleIdentifyProc RadioBoxStyleIdentifyProc;
+static CellStyleIdentifyProc RadioButtonStyleIdentifyProc;
 
 static int
 RowSelected(Entry *entryPtr)
@@ -2173,15 +2180,15 @@ static CellStyleClass imageBoxStyleClass = {
     ImageBoxStyleFreeProc,
 };
 
-static CellStyleClass radioBoxStyleClass = {
-    "radiobox",
-    "RadioBoxStyle",
-    radioBoxStyleSpecs,
-    RadioBoxStyleConfigureProc,
-    RadioBoxStyleGeometryProc,
-    RadioBoxStyleDrawProc,
-    RadioBoxStyleIdentifyProc,          
-    RadioBoxStyleFreeProc,
+static CellStyleClass radioButtonStyleClass = {
+    "radiobutton",
+    "RadioButtonStyle",
+    radioButtonStyleSpecs,
+    RadioButtonStyleConfigureProc,
+    RadioButtonStyleGeometryProc,
+    RadioButtonStyleDrawProc,
+    RadioButtonStyleIdentifyProc,          
+    RadioButtonStyleFreeProc,
 };
 
 /*
@@ -2623,7 +2630,6 @@ TextBoxStyleFreeProc(CellStyle *cellStylePtr)
 	Tk_FreeGC(viewPtr->display, stylePtr->normalGC);
     }
 }
-
 
 /*
  *---------------------------------------------------------------------------
@@ -4155,22 +4161,22 @@ ImageBoxStyleFreeProc(CellStyle *cellStylePtr)
 /*
  *---------------------------------------------------------------------------
  *
- * NewRadioBoxStyle --
+ * NewRadioButtonStyle --
  *
- *	Creates a "radiobox" style.
+ *	Creates a "radiobutton" style.
  *
  * Results:
  *	A pointer to the new style structure.
  *
  *---------------------------------------------------------------------------
  */
-static RadioBoxStyle *
-NewRadioBoxStyle(TreeView *viewPtr, Blt_HashEntry *hPtr)
+static RadioButtonStyle *
+NewRadioButtonStyle(TreeView *viewPtr, Blt_HashEntry *hPtr)
 {
-    RadioBoxStyle *stylePtr;
+    RadioButtonStyle *stylePtr;
 
-    stylePtr = Blt_AssertCalloc(1, sizeof(RadioBoxStyle));
-    stylePtr->classPtr = &radioBoxStyleClass;
+    stylePtr = Blt_AssertCalloc(1, sizeof(RadioButtonStyle));
+    stylePtr->classPtr = &radioButtonStyleClass;
     stylePtr->viewPtr = viewPtr;
     stylePtr->gap = 4;
     stylePtr->size = 15;
@@ -4189,9 +4195,9 @@ NewRadioBoxStyle(TreeView *viewPtr, Blt_HashEntry *hPtr)
 /*
  *---------------------------------------------------------------------------
  *
- * RadioBoxStyleConfigureProc --
+ * RadioButtonStyleConfigureProc --
  *
- *	Configures a "radiobox" style.  This routine performs generates the
+ *	Configures a "radiobutton" style.  This routine performs generates the
  *	GCs required for a checkbox style.
  *
  * Results:
@@ -4203,9 +4209,9 @@ NewRadioBoxStyle(TreeView *viewPtr, Blt_HashEntry *hPtr)
  *---------------------------------------------------------------------------
  */
 static void
-RadioBoxStyleConfigureProc(CellStyle *cellStylePtr)
+RadioButtonStyleConfigureProc(CellStyle *cellStylePtr)
 {
-    RadioBoxStyle *stylePtr = (RadioBoxStyle *)cellStylePtr;
+    RadioButtonStyle *stylePtr = (RadioButtonStyle *)cellStylePtr;
     GC newGC;
     TreeView *viewPtr;
     XGCValues gcValues;
@@ -4269,9 +4275,9 @@ RadioBoxStyleConfigureProc(CellStyle *cellStylePtr)
 /*
  *---------------------------------------------------------------------------
  *
- * RadioBoxStyleGeometryProc --
+ * RadioButtonStyleGeometryProc --
  *
- *	Determines the space requirements for the "radiobox" given the
+ *	Determines the space requirements for the "radiobutton" given the
  *	value to be displayed.  Depending upon whether an icon or text is
  *	displayed and their relative placements, this routine computes the
  *	space needed for the text entry.
@@ -4286,9 +4292,9 @@ RadioBoxStyleConfigureProc(CellStyle *cellStylePtr)
  *---------------------------------------------------------------------------
  */
 static void
-RadioBoxStyleGeometryProc(Cell *cellPtr, CellStyle *cellStylePtr)
+RadioButtonStyleGeometryProc(Cell *cellPtr, CellStyle *cellStylePtr)
 {
-    RadioBoxStyle *stylePtr = (RadioBoxStyle *)cellStylePtr;
+    RadioButtonStyle *stylePtr = (RadioButtonStyle *)cellStylePtr;
     unsigned int bw, bh, iw, ih, tw, th, gap;
     TreeView *viewPtr;
     Entry *rowPtr;
@@ -4339,9 +4345,9 @@ RadioBoxStyleGeometryProc(Cell *cellPtr, CellStyle *cellStylePtr)
 /*
  *---------------------------------------------------------------------------
  *
- * RadioBoxStyleDrawProc --
+ * RadioButtonStyleDrawProc --
  *
- *	Draws the "radiobox" given the screen coordinates and the cell to
+ *	Draws the "radiobutton" given the screen coordinates and the cell to
  *	be displayed.
  *
  * Results:
@@ -4353,11 +4359,11 @@ RadioBoxStyleGeometryProc(Cell *cellPtr, CellStyle *cellStylePtr)
  *---------------------------------------------------------------------------
  */
 static void
-RadioBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
+RadioButtonStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
                       int x, int y)
 {
     Blt_Bg bg;
-    RadioBoxStyle *stylePtr = (RadioBoxStyle *)cellStylePtr;
+    RadioButtonStyle *stylePtr = (RadioButtonStyle *)cellStylePtr;
     Column *colPtr;
     TreeView *viewPtr;
     int bool;
@@ -4461,17 +4467,17 @@ RadioBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
     th = iw = ih = 0;                   /* Suppress compiler warning. */
     gap = 0;
 
+    bool = 0;
     if (cellPtr->dataObjPtr == NULL) {
-        int i1, i2;
+        int value;
 
-        i1 = Blt_Tree_NodeId(rowPtr->node);
-        if (Tcl_GetIntFromObj(NULL, stylePtr->valueObjPtr, &i2) != TCL_OK) {
+        if (Tcl_GetIntFromObj(NULL, cellPtr->dataObjPtr, &value) == TCL_OK) {
+            bool = value;
         }
-	bool = (i1 == i2);
     } else {
 	const char *s1, *s2;
 
-	s1 = Tcl_GetString(stylePtr->valueObjPtr);
+	s1 = Tcl_GetString(stylePtr->onValueObjPtr);
         s2 = Tcl_GetString(cellPtr->dataObjPtr);
 	bool = (strcmp(s1, s2) == 0);
     }
@@ -4573,10 +4579,10 @@ RadioBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
  *---------------------------------------------------------------------------
  */
 static const char *
-RadioBoxStyleIdentifyProc(Cell *cellPtr, CellStyle *cellStylePtr, 
+RadioButtonStyleIdentifyProc(Cell *cellPtr, CellStyle *cellStylePtr, 
                           int x, int y)
 {
-    RadioBoxStyle *stylePtr = (RadioBoxStyle *)cellStylePtr;
+    RadioButtonStyle *stylePtr = (RadioButtonStyle *)cellStylePtr;
     int tx;
     unsigned int bw;
     Column *colPtr;
@@ -4594,10 +4600,10 @@ RadioBoxStyleIdentifyProc(Cell *cellPtr, CellStyle *cellStylePtr,
 /*
  *---------------------------------------------------------------------------
  *
- * RadioBoxStyleFreeProc --
+ * RadioButtonStyleFreeProc --
  *
  *	Releases resources allocated for the checkbox. The resources freed
- *	by this routine are specific only to the "radiobox".  Other
+ *	by this routine are specific only to the "radiobutton".  Other
  *	resources (common to all styles) are freed in the
  *	Blt_TreeView_FreeStyle routine.
  *
@@ -4610,9 +4616,9 @@ RadioBoxStyleIdentifyProc(Cell *cellPtr, CellStyle *cellStylePtr,
  *---------------------------------------------------------------------------
  */
 static void
-RadioBoxStyleFreeProc(CellStyle *cellStylePtr)
+RadioButtonStyleFreeProc(CellStyle *cellStylePtr)
 {
-    RadioBoxStyle *stylePtr = (RadioBoxStyle *)cellStylePtr;
+    RadioButtonStyle *stylePtr = (RadioButtonStyle *)cellStylePtr;
     TreeView *viewPtr;
 
     viewPtr = stylePtr->viewPtr;
@@ -4642,7 +4648,7 @@ Blt_TreeView_CreateStyle(
     TreeView *viewPtr,			/* Blt_TreeView_ widget. */
     int type,				/* Type of style: either
 					 * STYLE_TEXTBOX, STYLE_COMBOBOX,
-					 * STYLE_RADIOBOX, or
+					 * STYLE_RADIOBUTTON, or
 					 * STYLE_CHECKBOX */
     const char *styleName,		/* Name of the new style. */
     int objc,
@@ -4670,8 +4676,8 @@ Blt_TreeView_CreateStyle(
 	stylePtr = (CellStyle *)NewCheckBoxStyle(viewPtr, hPtr);     break;
     case STYLE_IMAGEBOX:
 	stylePtr = (CellStyle *)NewImageBoxStyle(viewPtr, hPtr);     break;
-    case STYLE_RADIOBOX:
-	stylePtr = (CellStyle *)NewRadioBoxStyle(viewPtr, hPtr);     break;
+    case STYLE_RADIOBUTTON:
+	stylePtr = (CellStyle *)NewRadioButtonStyle(viewPtr, hPtr);     break;
     default:
 	return NULL;
     }
