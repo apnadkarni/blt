@@ -725,7 +725,7 @@ static Tcl_CmdDeleteProc TreeViewInstCmdDeleteProc;
 static Tcl_FreeProc DestroyTreeView;
 static Tcl_FreeProc FreeColumn;
 static Tcl_FreeProc FreeEntryProc;
-static Tcl_IdleProc DisplayTreeView;
+static Tcl_IdleProc DisplayProc;
 static Tcl_ObjCmdProc TreeViewInstCmdProc;
 static Tcl_ObjCmdProc TreeViewCmdProc;
 static Tk_EventProc TreeViewEventProc;
@@ -758,7 +758,7 @@ EventuallyRedraw(TreeView *viewPtr)
     if ((viewPtr->tkwin != NULL) && ((viewPtr->flags & REDRAW_PENDING) == 0) &&
 	((viewPtr->flags & DONT_UPDATE) == 0)) {
 	viewPtr->flags |= REDRAW_PENDING;
-	Tcl_DoWhenIdle(DisplayTreeView, viewPtr);
+	Tcl_DoWhenIdle(DisplayProc, viewPtr);
     }
 }
 
@@ -6185,7 +6185,7 @@ DestroyTreeView(DestroyData dataPtr)	/* Pointer to the widget record. */
 	Tcl_CancelIdleCall(SelectCmdProc, viewPtr);
     }
     if (viewPtr->flags & REDRAW_PENDING) {
-	Tcl_CancelIdleCall(DisplayTreeView, viewPtr);
+	Tcl_CancelIdleCall(DisplayProc, viewPtr);
     }
     TeardownEntries(viewPtr);
     if (viewPtr->tree != NULL) {
@@ -6296,7 +6296,7 @@ TreeViewEventProc(ClientData clientData, XEvent *eventPtr)
 	}
     } else if (eventPtr->type == DestroyNotify) {
 	if (viewPtr->flags & REDRAW_PENDING) {
-	    Tcl_CancelIdleCall(DisplayTreeView, viewPtr);
+	    Tcl_CancelIdleCall(DisplayProc, viewPtr);
 	}
 	if (viewPtr->flags & SELECT_PENDING) {
 	    Tcl_CancelIdleCall(SelectCmdProc, viewPtr);
@@ -8744,7 +8744,7 @@ DrawOuterBorders(TreeView *viewPtr, Drawable drawable)
 /*
  *---------------------------------------------------------------------------
  *
- * DisplayTreeView --
+ * DisplayProc --
  *
  * 	This procedure is invoked to display the widget.
  *
@@ -8771,7 +8771,7 @@ DrawOuterBorders(TreeView *viewPtr, Drawable drawable)
  *---------------------------------------------------------------------------
  */
 static void
-DisplayTreeView(ClientData clientData)	/* Information about widget. */
+DisplayProc(ClientData clientData)	/* Information about widget. */
 {
     Blt_ChainLink link;
     Pixmap drawable; 
@@ -8784,7 +8784,7 @@ DisplayTreeView(ClientData clientData)	/* Information about widget. */
 	return;				/* Window has been destroyed. */
     }
 #ifdef notdef
-    fprintf(stderr, "DisplayTreeView %s\n", Tk_PathName(viewPtr->tkwin));
+    fprintf(stderr, "DisplayProc %s\n", Tk_PathName(viewPtr->tkwin));
 #endif
     if (viewPtr->flags & LAYOUT_PENDING) {
 	/* Recompute the layout when entries are opened/closed,

@@ -139,7 +139,7 @@
 #define DEF_CHECKBOX_ONVALUE		"1"
 #define DEF_CHECKBOX_RELIEF		"flat"
 #define DEF_CHECKBOX_SHOWVALUE		"yes"
-#define DEF_CHECKBOX_SIZE		"11"
+#define DEF_CHECKBOX_SIZE		"15"
 #ifdef WIN32
 #define DEF_CHECKBOX_CURSOR		"arrow"
 #else
@@ -187,7 +187,7 @@
 #define DEF_RADIOBUTTON_OFFVALUE        "0"
 #define DEF_RADIOBUTTON_RELIEF		"flat"
 #define DEF_RADIOBUTTON_SHOWVALUE       "yes"
-#define DEF_RADIOBUTTON_SIZE		"17"
+#define DEF_RADIOBUTTON_SIZE		"15"
 #ifdef WIN32
 #define DEF_RADIOBUTTON_CURSOR		"arrow"
 #else
@@ -4310,9 +4310,9 @@ RadioButtonStyleGeometryProc(Cell *cellPtr, CellStyle *cellStylePtr)
     bw = bh = ODD(stylePtr->size);
     tw = th = iw = ih = 0;
 
-    cellPtr->width = 2 * (stylePtr->borderWidth + FOCUS_PAD + CELL_PADX);
+    cellPtr->width  = 2 * (stylePtr->borderWidth + FOCUS_PAD + CELL_PADX);
     cellPtr->height = 2 * (stylePtr->borderWidth + FOCUS_PAD + CELL_PADY);
-    cellPtr->width += colPtr->ruleWidth + PADDING(colPtr->pad);
+    cellPtr->width  += colPtr->ruleWidth + PADDING(colPtr->pad);
     cellPtr->height += rowPtr->ruleHeight;
 
     if (stylePtr->icon != NULL) {
@@ -4505,7 +4505,7 @@ RadioButtonStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStyleP
 	Blt_Picture picture;
 	unsigned int bw, bh;
 
-	bw = bh = stylePtr->size | 0x1;
+        bw = bh = ODD(stylePtr->size) + 2;
 	picture = Blt_PaintRadioButton(bw, bh, bg,
 		stylePtr->fillColor, stylePtr->checkColor, bool);
 	if (stylePtr->painter == NULL) {
