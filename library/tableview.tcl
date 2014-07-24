@@ -1113,14 +1113,15 @@ proc blt::TableView::BuildFiltersMenu { w col } {
     set table [$w cget -table]
     set list {}
     set rows [GetColumnFilterRows $w $col]
-    set values [$table sort -columns $col -unique -values -rows $rows]
     if { $fmtcmd == "" } {
+	set values [$table sort -columns $col -values -unique -rows $rows]
 	$menu listadd $values \
 		-command  [list blt::TableView::SetFilter $w $col]
     } else {
-	foreach value $values {
-	    set fmt [eval $fmtcmd [list $value]]
-	    $menu add -text $fmt -value $value \
+	foreach row [$table sort -columns $col -unique -rows $rows] {
+	    set fmtvalue [eval $fmtcmd $row $col]
+	    set value [$table get $row $col]
+	    $menu add -text $fmtvalue -value $value \
 		-command  [list blt::TableView::SetFilter $w $col]
 	}
     }

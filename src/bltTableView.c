@@ -165,12 +165,12 @@ typedef ClientData (TagProc)(TableView *viewPtr, const char *string);
 #define DEF_FILTER_FONT			STD_FONT_NORMAL
 #define DEF_FILTER_ICON			(char *)NULL
 #define DEF_FILTER_MENU			(char *)NULL
-#define DEF_FILTER_NORMAL_BG		STD_NORMAL_BACKGROUND
+#define DEF_FILTER_NORMAL_BG		RGB_WHITE
 #define DEF_FILTER_NORMAL_FG		RGB_BLACK
 #define DEF_FILTER_SELECT_BG		STD_SELECT_BACKGROUND
 #define DEF_FILTER_SELECT_FG		STD_SELECT_FOREGROUND
 #define DEF_FILTER_SELECT_RELIEF	"sunken"
-#define DEF_FILTER_RELIEF		"sunken"
+#define DEF_FILTER_RELIEF		"solid"
 #define DEF_FILTER_SHOW			"yes"
 #define DEF_FILTER_STATE		"normal"
 #define DEF_FILTER_TEXT			""
@@ -906,7 +906,7 @@ CompareValues(Column *colPtr, const Row *r1Ptr, const Row *r2Ptr)
     if (sortType == SORT_AUTO) {
 	switch (blt_table_column_type(col)) {
 	case TABLE_COLUMN_TYPE_STRING:
-	    sortType = SORT_ASCII;	break;
+	    sortType = SORT_DICTIONARY;	break;
 	case TABLE_COLUMN_TYPE_INT:
 	    sortType = SORT_INTEGER;	break;
 	case TABLE_COLUMN_TYPE_DOUBLE:
@@ -2790,6 +2790,62 @@ GetColumnTitleGeometry(TableView *viewPtr, Column *colPtr)
     colPtr->titleHeight += MAX3(ih, th, ah);
 }
 
+
+/*
+ * GetColumnFiltersGeometry -- 
+ *
+ *      +---------------------------+	
+ *	|b|x|icon|x|text|x|arrow|x|b|	
+ *      +---------------------------+
+ *
+ * b = filter borderwidth
+ * x = padx 
+ */
+static void
+GetColumnFiltersGeometry(TableView *viewPtr)
+{
+    unsigned int ah;
+    int i;
+    FilterInfo *filterPtr;
+
+    filterPtr = &viewPtr->filter;
+    viewPtr->colFilterHeight = 0;
+    viewPtr->arrowWidth = ah = Blt_TextWidth(filterPtr->font, "0", 1) + 
+	2 * (filterPtr->borderWidth + 1);
+    for (i = 0; i < viewPtr->numColumns; i++) {
+	Column *colPtr;
+	unsigned int tw, th, ih, iw;
+
+	colPtr = viewPtr->columns[i];
+	tw = th = ih = iw = 0;
+	if (colPtr->filterIcon != NULL) {
+	    ih = IconHeight(colPtr->filterIcon);
+	    iw = IconWidth(colPtr->filterIcon);
+	}
+	if (colPtr->filterText != NULL) {
+	    TextStyle ts;
+	    
+	    Blt_Ts_InitStyle(ts);
+	    Blt_Ts_SetFont(ts, filterPtr->font);
+	    Blt_Ts_GetExtents(&ts, colPtr->filterText, &tw, &th);
+	    colPtr->filterTextWidth = tw;
+	    colPtr->filterTextHeight = th;
+	} else {
+	    Blt_FontMetrics fm;
+
+	    Blt_Font_GetMetrics(filterPtr->font, &fm);
+	    th = fm.linespace;
+            colPtr->filterTextWidth = 0, colPtr->filterTextHeight = th;
+	}
+	
+	colPtr->filterHeight = MAX3(ah, th, ih);
+	if (viewPtr->colFilterHeight < colPtr->filterHeight) {
+	    viewPtr->colFilterHeight = colPtr->filterHeight;
+	}
+    }
+    viewPtr->colFilterHeight += 2 * (filterPtr->borderWidth + TITLE_PADY + 1);
+}
+
 static int 
 ConfigureColumn(TableView *viewPtr, Column *colPtr)
 {
@@ -2798,6 +2854,9 @@ ConfigureColumn(TableView *viewPtr, Column *colPtr)
 	if (viewPtr->flags & COLUMN_TITLES) {
 	    GetColumnTitleGeometry(viewPtr, colPtr);
 	} 
+    }
+    if (Blt_ConfigModified(columnSpecs, "-filtertext", (char *)NULL)) {
+	GetColumnFiltersGeometry(viewPtr);
     }
     if (Blt_ConfigModified(columnSpecs, "-style", (char *)NULL)) {
 	/* If the style changed, recompute the geometry of the cells. */
@@ -3900,60 +3959,6 @@ GetRowTitleGeometry(TableView *viewPtr, Row *rowPtr)
 }
 
 
-/*
- * GetColumnFilterGeometry -- 
- *
- *      +---------------------------+	
- *	|b|x|icon|x|text|x|arrow|x|b|	
- *      +---------------------------+
- *
- * b = filter borderwidth
- * x = padx 
- */
-static void
-GetColumnFilterGeometry(TableView *viewPtr)
-{
-    unsigned int ah;
-    int i;
-    FilterInfo *filterPtr;
-
-    filterPtr = &viewPtr->filter;
-    viewPtr->colFilterHeight = 0;
-    viewPtr->arrowWidth = ah = Blt_TextWidth(filterPtr->font, "0", 1) + 
-	2 * (filterPtr->borderWidth + 1);
-    for (i = 0; i < viewPtr->numColumns; i++) {
-	Column *colPtr;
-	unsigned int tw, th, ih, iw;
-
-	colPtr = viewPtr->columns[i];
-	tw = th = ih = iw = 0;
-	if (colPtr->filterIcon != NULL) {
-	    ih = IconHeight(colPtr->filterIcon);
-	    iw = IconWidth(colPtr->filterIcon);
-	}
-	if (colPtr->filterText != NULL) {
-	    TextStyle ts;
-	    
-	    Blt_Ts_InitStyle(ts);
-	    Blt_Ts_SetFont(ts, filterPtr->font);
-	    Blt_Ts_GetExtents(&ts, colPtr->filterText, &tw, &th);
-	    colPtr->filterTextWidth = tw;
-	    colPtr->filterTextHeight = th;
-	} else {
-	    Blt_FontMetrics fm;
-
-	    Blt_Font_GetMetrics(filterPtr->font, &fm);
-	    th = fm.linespace;
-	}
-	
-	colPtr->filterHeight = MAX3(ah, th, ih);
-	if (viewPtr->colFilterHeight < colPtr->filterHeight) {
-	    viewPtr->colFilterHeight = colPtr->filterHeight;
-	}
-    }
-    viewPtr->colFilterHeight += 2 * (filterPtr->borderWidth + TITLE_PADY + 1);
-}
-
 static int 
 ConfigureRow(TableView *viewPtr, Row *rowPtr) 
 {
@@ -4865,7 +4870,7 @@ static void
 DrawColumnFilter(TableView *viewPtr, Column *colPtr, Drawable drawable, 
 		 int x, int y)
 {
-    Blt_Bg bg;
+    Blt_Bg bg, filterBg;
     GC gc;
     unsigned int colWidth, rowHeight, filterWidth, filterHeight;
     int relief;
@@ -4878,26 +4883,27 @@ DrawColumnFilter(TableView *viewPtr, Column *colPtr, Drawable drawable,
     }
     relief = filterPtr->relief;
     if (colPtr->flags & DISABLED) {	/* Disabled  */
-	bg = filterPtr->disabledBg;
+	filterBg = bg = filterPtr->disabledBg;
 	gc = filterPtr->disabledGC;
 	fg = filterPtr->disabledFg;
     } else if (colPtr == filterPtr->postPtr) {	 /* Selected */
-	bg = filterPtr->selectBg;
+	filterBg = bg = filterPtr->selectBg;
 	gc = filterPtr->selectGC;
 	relief = filterPtr->selectRelief;
 	fg = filterPtr->selectFg;
     } else if (colPtr == filterPtr->activePtr) {  /* Active */
+        filterBg = filterPtr->normalBg;
 	bg = filterPtr->activeBg;
 	gc = filterPtr->activeGC;
 	relief = filterPtr->activeRelief;
 	fg = filterPtr->activeFg;
     } else if (colPtr->flags & FILTERHIGHLIGHT) { /* Highlighted */
-	bg = filterPtr->highlightBg;
+	filterBg = bg = filterPtr->highlightBg;
 	gc = filterPtr->highlightGC;
 	fg = filterPtr->highlightFg;
 	relief = TK_RELIEF_FLAT;
     } else {				/* Normal */
-	bg = filterPtr->normalBg;
+	filterBg = bg = filterPtr->normalBg;
 	gc = filterPtr->normalGC;
 	fg = filterPtr->normalFg;
 	relief = TK_RELIEF_FLAT;
@@ -4912,13 +4918,13 @@ DrawColumnFilter(TableView *viewPtr, Column *colPtr, Drawable drawable,
     y += filterPtr->outerBorderWidth;
     colWidth -= 2 * filterPtr->outerBorderWidth;
     rowHeight -= 2 * filterPtr->outerBorderWidth;
-    Blt_Bg_FillRectangle(viewPtr->tkwin, drawable, bg, x, y, colWidth,
+    Blt_Bg_FillRectangle(viewPtr->tkwin, drawable, filterBg, x, y, colWidth,
 	rowHeight, filterPtr->borderWidth, filterPtr->relief);
     rowHeight -= 2 * (filterPtr->borderWidth + TITLE_PADY);
     colWidth  -= 2 * (filterPtr->borderWidth + TITLE_PADX);
     x += filterPtr->borderWidth + TITLE_PADX;
     y += filterPtr->borderWidth + TITLE_PADY;
-    filterHeight = colPtr->filterHeight;
+    filterHeight = rowHeight;
     filterWidth = colPtr->width - 
 	2 * (filterPtr->borderWidth + TITLE_PADX);
     /* Justify (x) and center (y) the contents of the cell. */
@@ -4974,7 +4980,7 @@ DrawColumnFilter(TableView *viewPtr, Column *colPtr, Drawable drawable,
 
 	aw = viewPtr->arrowWidth + (2 * filterPtr->borderWidth);
 	ah = filterHeight;
-	ax = x + filterWidth - aw;
+	ax = x + filterWidth - aw - 1;
 	ay = y;
 	Blt_Bg_FillRectangle(viewPtr->tkwin, drawable, bg, ax, ay, aw, ah, 
 		filterPtr->borderWidth, relief);
@@ -11033,7 +11039,7 @@ ComputeGeometry(TableView *viewPtr)
 	}
     }
     if (viewPtr->flags & AUTOFILTERS) {
-	GetColumnFilterGeometry(viewPtr);
+	GetColumnFiltersGeometry(viewPtr);
     }
     viewPtr->flags |= LAYOUT_PENDING;
 }
@@ -11458,7 +11464,7 @@ AddColumnGeometry(TableView *viewPtr, Column *colPtr)
 	}
     }
     if (viewPtr->flags & AUTOFILTERS) {
-	GetColumnFilterGeometry(viewPtr);
+	GetColumnFiltersGeometry(viewPtr);
     }
 }
 
@@ -11479,7 +11485,7 @@ AddRowGeometry(TableView *viewPtr, Row *rowPtr)
 	}
     }
     if (viewPtr->flags & AUTOFILTERS) {
-	GetColumnFilterGeometry(viewPtr);
+	GetColumnFiltersGeometry(viewPtr);
     }
 }
 
@@ -11986,9 +11992,9 @@ NewTableView(Tcl_Interp *interp, Tk_Window tkwin)
     viewPtr->selectRows.list = Blt_Chain_Create();
     viewPtr->reqWidth = viewPtr->reqHeight = 400;
     viewPtr->colTitleBorderWidth = viewPtr->rowTitleBorderWidth = 2;
-    viewPtr->filter.borderWidth = 2;
+    viewPtr->filter.borderWidth = 1;
     viewPtr->filter.outerBorderWidth = 1;
-    viewPtr->filter.relief = TK_RELIEF_SUNKEN;
+    viewPtr->filter.relief = TK_RELIEF_SOLID;
     viewPtr->filter.selectRelief = TK_RELIEF_SUNKEN;
     viewPtr->filter.activeRelief = TK_RELIEF_RAISED;
     viewPtr->bindTable = Blt_CreateBindingTable(interp, tkwin, viewPtr, 
