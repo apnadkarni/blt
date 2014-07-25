@@ -70,6 +70,9 @@ static Tcl_AppInitProc *cmdProcs[] =
 #ifndef NO_DRAGDROP
     Blt_DragDropCmdInitProc,
 #endif
+#ifndef NO_DRAWERSET
+    Blt_DrawersetCmdInitProc,
+#endif
     Blt_GrabCmdInitProc,
 #ifndef NO_GRAPH
     Blt_GraphCmdInitProc,

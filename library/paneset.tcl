@@ -12,42 +12,42 @@ namespace eval blt {
 
 bind BltPanesetSash <Enter> { 
     if { !$blt::Paneset::_private(buttonPressed) } { 
-	%W activate 
+	[winfo parent %W] handle activate %W
     } 
 } 
 
 bind BltPanesetSash <Leave> { 
     if { !$blt::Paneset::_private(buttonPressed) } { 
-	%W deactivate
+	[winfo parent %W] handle deactivate
     } 
 }
 
 bind BltPanesetSash <KeyPress-Left> { 
-    %W move -10 0 
+    [winfo parent %W] handle move %W -10 0 
 }
 
 bind BltPanesetSash <KeyPress-Right> { 
-    %W move 10  0 
+    [winfo parent %W] handle move %W 10  0 
 }
 
 bind BltPanesetSash <KeyPress-Up> { 
-    %W move 0 -10 
+    [winfo parent %W] handle move %W 0 -10 
 }
 
 bind BltPanesetSash <KeyPress-Down> { 
-    %W move 0 10 
+    [winfo parent %W] handle move %W 0 10 
 }
 
 bind BltPanesetSash <ButtonPress-1> { 
     set blt::Paneset::_private(buttonPressed) 1
-    %W anchor %X %Y 
+    [winfo parent %W] handle anchor %W %X %Y 
 }
 
 bind BltPanesetSash <B1-Motion> { 
-    %W mark %X %Y 
+    [winfo parent %W] handle mark %W %X %Y 
 }
 
 bind BltPanesetSash <ButtonRelease-1> { 
     set blt::Paneset::_private(buttonPressed) 0
-    %W set %X %Y 
+    [winfo parent %W] handle set %W %X %Y 
 }

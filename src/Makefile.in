@@ -380,6 +380,7 @@ BLT_TK_SO_OBJS =	$(GRAPH_OBJS) \
 			bltContainer.o \
 			bltCutbuffer.o \
 			bltDragdrop.o \
+			bltDrawerset.o \
 			bltGrab.o \
 			bltHtext.o \
 			bltImage.o \

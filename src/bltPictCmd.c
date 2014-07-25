@@ -457,7 +457,7 @@ typedef struct {
 
 static Blt_SwitchSpec dupSwitches[] = 
 {
-    {BLT_SWITCH_CUSTOM, "-region", "bbox", (char *)NULL,
+    {BLT_SWITCH_CUSTOM, "-bbox", "bbox", (char *)NULL,
 	Blt_Offset(DupSwitches, from), 0, 0, &bboxSwitch},
     {BLT_SWITCH_END}
 };
@@ -572,7 +572,7 @@ typedef struct {
 
 static Blt_SwitchSpec snapSwitches[] = 
 {
-    {BLT_SWITCH_CUSTOM,  "-region", "bbox", (char *)NULL,
+    {BLT_SWITCH_CUSTOM,  "-bbox", "bbox", (char *)NULL,
 	Blt_Offset(SnapSwitches, from), 0, 0, &bboxSwitch},
     {BLT_SWITCH_BITMASK, "-raise",  "", (char *)NULL,
 	Blt_Offset(SnapSwitches, raise),  0, TRUE},
@@ -4301,7 +4301,7 @@ SharpenOp(
  * Side effects:
  *	None.
  *
- *   $pict snap window -region {x y w h} -raise 
+ *   $pict snap window -bbox {x y w h} -raise 
  *
  *---------------------------------------------------------------------------
  */
@@ -4324,10 +4324,36 @@ SnapOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	classUid = Tk_Class(tkwin);
     }
     if ((classUid != NULL) && (strcmp(classUid, "Canvas") == 0)) {
+        int w, h;
+
+        w = Tk_Width(tkwin);
+        h = Tk_Height(tkwin);
+        switches.from.x = switches.from.y = 0;
+        switches.from.w = w;
+        switches.from.h = h;
+        if (Blt_ParseSwitches(interp, snapSwitches, objc - 3, objv + 3, 
+                              &switches, BLT_SWITCH_DEFAULTS) < 0) {
+            return TCL_ERROR;
+        }
+        if ((switches.from.w + switches.from.x) > w) {
+            switches.from.w = (w - switches.from.x);
+        }
+        if ((switches.from.h + switches.from.y) > h) {
+            switches.from.h = (h - switches.from.y);
+        }
 	picture = Blt_CanvasToPicture(interp, string, imgPtr->gamma);
+        if (Blt_SwitchChanged(snapSwitches, "-bbox", (char *)NULL)) {
+            Blt_Picture dst;
+
+            dst = Blt_CreatePicture(switches.from.w, switches.from.h);
+            Blt_CopyPictureBits(dst, picture, switches.from.x, switches.from.y, 
+                switches.from.w, switches.from.h, 0, 0);
+            Blt_FreePicture(picture);
+            picture = dst;
+        }
     } else {
-	int w, h;
 	Window window;
+        int w, h;
 
 	if (Blt_GetWindowFromObj(interp, objv[2], &window) != TCL_OK) {
 	    return TCL_ERROR;
@@ -4338,22 +4364,22 @@ SnapOp(ClientData clientData, Tcl_Interp *interp, int objc,
 		Tcl_GetString(objv[2]), "\"", (char *)NULL);
 	    return TCL_ERROR;
 	}
-	switches.from.x = switches.from.y = 0;
-	switches.from.w = w;
-	switches.from.h = h;
-	if (Blt_ParseSwitches(interp, snapSwitches, objc - 3, objv + 3, 
-		&switches, BLT_SWITCH_DEFAULTS) < 0) {
-	    return TCL_ERROR;
-	}
-	if ((switches.from.w + switches.from.x) > w) {
-	    switches.from.w = (w - switches.from.x);
-	}
-	if ((switches.from.h + switches.from.y) > h) {
-	    switches.from.h = (h - switches.from.y);
-	}
-	if (switches.raise) {
-	    XRaiseWindow(imgPtr->display, window);
-	}
+        switches.from.x = switches.from.y = 0;
+        switches.from.w = w;
+        switches.from.h = h;
+        if (Blt_ParseSwitches(interp, snapSwitches, objc - 3, objv + 3, 
+                              &switches, BLT_SWITCH_DEFAULTS) < 0) {
+            return TCL_ERROR;
+        }
+        if ((switches.from.w + switches.from.x) > w) {
+            switches.from.w = (w - switches.from.x);
+        }
+        if ((switches.from.h + switches.from.y) > h) {
+            switches.from.h = (h - switches.from.y);
+        }
+        if (switches.raise) {
+            XRaiseWindow(imgPtr->display, window);
+        }
 	/* Depth, visual, colormap */
 	picture = Blt_WindowToPicture(imgPtr->display, window, 
 		switches.from.x, switches.from.y, switches.from.w, 

@@ -52,6 +52,9 @@ BLT_EXTERN Tcl_AppInitProc Blt_CutbufferCmdInitProc;
 #ifndef NO_DRAGDROP
 BLT_EXTERN Tcl_AppInitProc Blt_DragDropCmdInitProc;
 #endif
+#ifndef NO_DRAWERSET
+BLT_EXTERN Tcl_AppInitProc Blt_DrawersetCmdInitProc;
+#endif
 #ifndef NO_DND
 BLT_EXTERN Tcl_AppInitProc Blt_DndCmdInitProc;
 #endif

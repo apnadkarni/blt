@@ -4982,7 +4982,7 @@ DrawColumnFilter(TableView *viewPtr, Column *colPtr, Drawable drawable,
 	ah = filterHeight;
 	ax = x + filterWidth - aw - 1;
 	ay = y;
-	Blt_Bg_FillRectangle(viewPtr->tkwin, drawable, bg, ax, ay, aw, ah, 
+	Blt_Bg_FillRectangle(viewPtr->tkwin, drawable, bg, ax - 1, ay, aw, ah, 
 		filterPtr->borderWidth, relief);
 	aw -= 2 * filterPtr->borderWidth;
 	ax += filterPtr->borderWidth;

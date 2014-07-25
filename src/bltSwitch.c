@@ -886,7 +886,7 @@ Blt_FreeSwitches(
 /*
  *---------------------------------------------------------------------------
  *
- * Blt_SwitchModified --
+ * Blt_SwitchChanged --
  *
  *      Given the configuration specifications and one or more switch patterns
  *      (terminated by a NULL), indicate if any of the matching switches has

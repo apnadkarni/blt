@@ -1,19 +1,19 @@
 /* -*- mode: c; c-basic-offset: 4; indent-tabs-mode: nil -*- */
-
 /*
  * bltTable.c --
  *
- * This module implements a table-based geometry manager for the BLT toolkit.
+ * This module implements a table-based geometry manager for the BLT
+ * toolkit.
  *
  *	Copyright 1993-2004 George A Howlett.
  *
- *	Permission is hereby granted, free of charge, to any person obtaining
- *	a copy of this software and associated documentation files (the
- *	"Software"), to deal in the Software without restriction, including
- *	without limitation the rights to use, copy, modify, merge, publish,
- *	distribute, sublicense, and/or sell copies of the Software, and to
- *	permit persons to whom the Software is furnished to do so, subject to
- *	the following conditions:
+ *	Permission is hereby granted, free of charge, to any person
+ *	obtaining a copy of this software and associated documentation
+ *	files (the "Software"), to deal in the Software without
+ *	restriction, including without limitation the rights to use, copy,
+ *	modify, merge, publish, distribute, sublicense, and/or sell copies
+ *	of the Software, and to permit persons to whom the Software is
+ *	furnished to do so, subject to the following conditions:
  *
  *	The above copyright notice and this permission notice shall be
  *	included in all copies or substantial portions of the Software.
@@ -21,23 +21,26 @@
  *	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  *	EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  *	MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- *	NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
- *	LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
- *	OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
- *	WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *	NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+ *	BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ *	ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ *	CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ *	SOFTWARE.
  */
 
 /*
  * To do:
  *
  * 3) No way to detect if widget is already a container of another geometry
- *    manager.  This one is especially bad with toplevel widgets, causing the
- *    window manager to lock-up trying to handle the myriads of resize requests.
+ *    manager.  This one is especially bad with toplevel widgets, causing
+ *    the window manager to lock-up trying to handle the myriads of resize
+ *    requests.
  *
- *   Note:  This problem continues in Tk 8.x.  It's possible for a widget
- *	    to be a container for two different geometry managers.  Each manager
- *	    will set its own requested geometry for the container widget. The
- *	    winner sets the geometry last (sometimes ad infinitum).
+ *   Note: This problem continues in Tk 8.x.  It's possible for a widget to
+ *	    be a container for two different geometry managers.  Each
+ *	    manager will set its own requested geometry for the container
+ *	    widget. The winner sets the geometry last (sometimes ad
+ *	    infinitum).
  *
  * 7) Relative sizing of partitions?
  *
@@ -104,9 +107,12 @@ static Tk_GeomRequestProc WidgetGeometryProc;
 static Tk_GeomLostSlaveProc WidgetCustodyProc;
 static Tk_GeomMgr tableMgrInfo =
 {
-    (char *)"table",		/* Name of geometry manager used by winfo */
-    WidgetGeometryProc,		/* Procedure to for new geometry requests */
-    WidgetCustodyProc,		/* Procedure when widget is taken away */
+    (char *)"table",                    /* Name of geometry manager used by
+                                         * winfo */
+    WidgetGeometryProc,                 /* Procedure to for new geometry
+                                         * requests */
+    WidgetCustodyProc,                  /* Procedure when widget is taken
+                                         * away */
 };
 
 static Blt_OptionParseProc ObjToLimits;

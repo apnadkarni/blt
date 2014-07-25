@@ -1,5 +1,4 @@
 /* -*- mode: c; c-basic-offset: 4; indent-tabs-mode: nil -*- */
-
 /*
  * bltPictCanv.c --
  *
@@ -298,6 +297,7 @@ Blt_CanvasToPicture(Tcl_Interp *interp, const char *pathName, float gamma)
 	Tk_MakeWindowExist(tkwin);
     }
     canvasPtr = Blt_GetWindowInstanceData(tkwin);
+    assert(canvasPtr->tkwin == tkwin);
     if (canvasPtr->tkwin == NULL) {
 	Tcl_AppendResult(interp, "can't snap canvas: window was destroyed.",
 		(char *)NULL);

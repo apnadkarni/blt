@@ -499,7 +499,7 @@ Blt_GetWindowInstanceData(Tk_Window tkwin)
     while (tkwin != NULL) {
 	winPtr = (TkWindow *)tkwin;
 	if (winPtr->instanceData != NULL) {
-	    return (ClientData)winPtr->instanceData;
+	    return winPtr->instanceData;
 	}
 	tkwin = Tk_Parent(tkwin);
     }

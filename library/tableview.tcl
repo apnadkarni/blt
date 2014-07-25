@@ -2,29 +2,28 @@
 #
 # tableview.tcl
 #
-#	Event bindings for the BLT tableview widget.
+#   Event bindings for the BLT tableview widget.
 #
 #	Copyright 2012 George A Howlett.
 #
-#	Permission is hereby granted, free of charge, to any person
-#	obtaining a copy of this software and associated documentation
-#	files (the "Software"), to deal in the Software without
-#	restriction, including without limitation the rights to use, copy,
-#	modify, merge, publish, distribute, sublicense, and/or sell copies
-#	of the Software, and to permit persons to whom the Software is
-#	furnished to do so, subject to the following conditions:
+#   Permission is hereby granted, free of charge, to any person obtaining a
+#   copy of this software and associated documentation files (the
+#   "Software"), to deal in the Software without restriction, including
+#   without limitation the rights to use, copy, modify, merge, publish,
+#   distribute, sublicense, and/or sell copies of the Software, and to
+#   permit persons to whom the Software is furnished to do so, subject to
+#   the following conditions:
 #
-#	The above copyright notice and this permission notice shall be
-#	included in all copies or substantial portions of the Software.
+#   The above copyright notice and this permission notice shall be
+#   included in all copies or substantial portions of the Software.
 #
-#	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-#	EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-#	MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-#	NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
-#	BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
-#	ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-#	CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-#	SOFTWARE.
+#   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+#   OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+#   MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+#   NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+#   LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+#   OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+#   WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #
 
 namespace eval blt {
@@ -231,11 +230,11 @@ if {[string equal "x11" [tk windowingsystem]]} {
 #
 # Initialize --
 #
-#	Invoked when a new TableView widget is created.  Initializes
-#	the default bindings for the tableview widget cells, rows, and
-#	columns.  These bindings can't be set through the widget's class 
-#	bind tags.  The are specific to the widget instance and need to be 
-#	set when a tableview widget is created.  
+#   Invoked when a new TableView widget is created.  Initializes the
+#   default bindings for the tableview widget cells, rows, and columns.
+#   These bindings can't be set through the widget's class bind tags.  The
+#   are specific to the widget instance and need to be set when a tableview
+#   widget is created.
 #
 proc blt::TableView::Initialize { w } {
     variable _private
@@ -590,14 +589,13 @@ proc blt::TableView::Initialize { w } {
 #
 # PostComboBoxMenu --
 #
-#	Posts the combo menu at the location of the cell requesting it.
-#	The menu is selected to the current cell value and we bind
-#	to the  menu's <<MenuSelect>> event to know if a menu item was
-#	selected.
+#   Posts the combo menu at the location of the cell requesting it.  The
+#   menu is selected to the current cell value and we bind to the menu's
+#   <<MenuSelect>> event to know if a menu item was selected.
 #
-#	The most important part is that we set a grab on the menu. 
-#	This will force <ButtonRelease> events to be interpreted
-#	by the combo menu instead of the tableview widget.
+#   The most important part is that we set a grab on the menu.  This will
+#   force <ButtonRelease> events to be interpreted by the combo menu
+#   instead of the tableview widget.
 #
 proc blt::TableView::PostComboBoxMenu { w cell } {
     variable _private
@@ -608,7 +606,8 @@ proc blt::TableView::PostComboBoxMenu { w cell } {
 	puts stderr "no menu specified"
 	return;				# No menu specified.
     }
-    # Get the current value of the cell and select the corresponding menu item.
+    # Get the current value of the cell and select the corresponding menu
+    # item.
     set table [$w cget -table]
     foreach { row col } [$w index $cell] break
     set value [$table get $row $col ""]
@@ -617,8 +616,8 @@ proc blt::TableView::PostComboBoxMenu { w cell } {
 	$menu select $item
     }
     $w cell configure $cell -state "posted"
-    # Watch for <<MenuSelect>> events on the menu.  Set the cell value to the
-    # selected value when we get one.
+    # Watch for <<MenuSelect>> events on the menu.  Set the cell value to
+    # the selected value when we get one.
     set _private(posting) [$w index $cell]
     bind $menu <<MenuSelect>> \
 	[list blt::TableView::ImportFromComboBoxMenu $w $_private(posting) $menu]
@@ -637,9 +636,9 @@ proc blt::TableView::PostComboBoxMenu { w cell } {
 #
 # ImportFromMenu --
 #
-#	This is called whenever a menu item is selected (via the <<MenuSelect>>
-#	event generated by the combomenu).  Gets the currently selected value 
-#	from the combo menu and sets the corresponding table cell to it.
+#   This is called whenever a menu item is selected (via the <<MenuSelect>>
+#   event generated by the combomenu).  Gets the currently selected value
+#   from the combo menu and sets the corresponding table cell to it.
 #
 proc blt::TableView::ImportFromComboBoxMenu { w cell menu } {
     set value [$menu value active]
@@ -655,11 +654,11 @@ proc blt::TableView::ImportFromComboBoxMenu { w cell menu } {
 #
 # UnpostComboBoxMenu --
 #
-#	Unposts the combobox menu.  Note that the current value set in
-#	the cell style is not propagated to the table here.  This is done
-#	via a <<MenuSelect>> event.  We don't know if we're unposting
-#	the menu because a menu item was selected or if the user clicked
-#	outside of the menu to cancel the operation.
+#   Unposts the combobox menu.  Note that the current value set in the cell
+#   style is not propagated to the table here.  This is done via a
+#   <<MenuSelect>> event.  We don't know if we're unposting the menu
+#   because a menu item was selected or if the user clicked outside of the
+#   menu to cancel the operation.
 #
 proc ::blt::TableView::UnpostComboBoxMenu { w } {
     variable _private
@@ -690,14 +689,13 @@ proc ::blt::TableView::UnpostComboBoxMenu { w } {
 #
 # PostEditor --
 #
-#	Posts the editor at the location of the cell requesting it.
-#	The editor is initialized to the current cell value and we bind
-#	to the  editor's <<Value>> event to know if the text was
-#	edited.
+#   Posts the editor at the location of the cell requesting it.  The editor
+#   is initialized to the current cell value and we bind to the editor's
+#   <<Value>> event to know if the text was edited.
 #
-#	The most important part is that we set a grab on the editor. 
-#	This will force <ButtonRelease> events to be interpreted
-#	by the editor instead of the tableview widget.
+#   The most important part is that we set a grab on the editor.  This will
+#   force <ButtonRelease> events to be interpreted by the editor instead of
+#   the tableview widget.
 #
 proc blt::TableView::PostEditor { w cell } {
     set style [$w cell style $cell]
@@ -705,15 +703,16 @@ proc blt::TableView::PostEditor { w cell } {
     if { $editor == "" } {
 	return;				# No editor specified.
     }
-    # Get the current value of the cell and copy it to the corresponding editor.
+    # Get the current value of the cell and copy it to the corresponding
+    # editor.
     set table [$w cget -table]
     set value [$table get $row $col ""]
     $editor configure -icon [$w stype cget -icon $style]
     $editor delete 0 end
     $editor insert 0 $value
 
-    # Watch for <<MenuSelect>> events on the menu.  Set the cell value to the
-    # selected value when we get one.
+    # Watch for <<MenuSelect>> events on the menu.  Set the cell value to
+    # the selected value when we get one.
     bind $editor <<Value>> \
 	[list blt::TableView::ImportFromEditor $w $cell $editor]
 
@@ -730,9 +729,9 @@ proc blt::TableView::PostEditor { w cell } {
 #
 # ImportFromEditor --
 #
-#	This is called whenever a editor text changes (via the <<Value>>
-#	event generated by the editor).  Gets the currently selected value 
-#	from the editor and sets the corresponding table cell to it.
+#   This is called whenever a editor text changes (via the <<Value>> event
+#   generated by the editor).  Gets the currently selected value from the
+#   editor and sets the corresponding table cell to it.
 #
 proc blt::TableView::ImportFromEditor { w cell editor } {
     set value [$editor get 0 end]
@@ -748,11 +747,11 @@ proc blt::TableView::ImportFromEditor { w cell editor } {
 #
 # UnpostEditor --
 #
-#	Unposts the editor.  Note that the current value set in
-#	the cell style is not propagated to the table here.  This is done
-#	via a <<Value>> event.  We don't know if we're unposting
-#	the editor because the text was changed or if the user clicked
-#	outside of the editor to cancel the operation.
+#   Unposts the editor.  Note that the current value set in the cell style
+#   is not propagated to the table here.  This is done via a <<Value>>
+#   event.  We don't know if we're unposting the editor because the text
+#   was changed or if the user clicked outside of the editor to cancel the
+#   operation.
 #
 proc ::blt::TableView::UnpostEditor { w cell } {
     variable _private
@@ -789,17 +788,18 @@ proc ::blt::TableView::UnpostEditor { w cell } {
 #
 # ToggleValue --
 #
-#	Toggles the value at the location of the cell requesting it.  This is
-#	called only for checkbox style cells. The value is pulled from the
-#	table and compared against the style's on value.  If its the "on"
-#	value, set the cell value in the table to its "off" value.
+#   Toggles the value at the location of the cell requesting it.  This is
+#   called only for checkbox style cells. The value is pulled from the
+#   table and compared against the style's on value.  If its the "on"
+#   value, set the cell value in the table to its "off" value.
 #
 proc blt::TableView::ToggleValue { w cell } {
     set style [$w cell style $cell]
     set off   [$w style cget $style -offvalue]
     set on    [$w style cget $style -onvalue]
 
-    # Get the current value of the cell and select the corresponding menu item.
+    # Get the current value of the cell and select the corresponding menu
+    # item.
     set table [$w cget -table]
     foreach { row col } [$w index $cell] break
     set value [$table get $row $col ""]
@@ -817,15 +817,13 @@ proc blt::TableView::ToggleValue { w cell } {
     $w cell invoke $cell
 }
 
-# ----------------------------------------------------------------------
 #
 # AutoScroll --
 #
-#	Invoked when the user is selecting elements in a tableview
-#	widget and drags the mouse pointer outside of the widget.
-#	Scrolls the view in the direction of the pointer.
+#   Invoked when the user is selecting elements in a tableview widget and
+#   drags the mouse pointer outside of the widget.  Scrolls the view in the
+#   direction of the pointer.
 #
-# ----------------------------------------------------------------------
 proc blt::TableView::AutoScroll { w } {
     variable _private
 
@@ -871,8 +869,8 @@ proc blt::TableView::AutoScroll { w } {
 #
 # SetSelectionAnchor --
 #
-#	Sets the selection anchor.  Depending upon the mode this 
-#	could select a row, multiple rows, or one or more cells.
+#   Sets the selection anchor.  Depending upon the mode this could select a
+#   row, multiple rows, or one or more cells.
 #
 proc blt::TableView::SetSelectionAnchor { w cell } {
     variable _private
@@ -905,9 +903,8 @@ proc blt::TableView::SetSelectionAnchor { w cell } {
 #
 # MoveFocus --
 #
-#	Invoked by KeyPress bindings.  Moves the active selection to
-#	the cell $cel, which is an index such as "up", "down",
-#	"previous", "next", etc.
+#    Invoked by KeyPress bindings.  Moves the active selection to the cell
+#    $cel, which is an index such as "up", "down", "previous", "next", etc.
 #
 proc blt::TableView::MoveFocus { w cell } {
     catch {$w focus $cell}
@@ -922,9 +919,8 @@ proc blt::TableView::MoveFocus { w cell } {
 #
 # MovePage --
 #
-#	Invoked by KeyPress bindings.  Pages the current view up or
-#	down.  The <where> argument should be either "top" or
-#	"bottom".
+#    Invoked by KeyPress bindings.  Pages the current view up or down.  The
+#    <where> argument should be either "top" or "bottom".
 #
 proc blt::TableView::MovePage { w where } {
 
@@ -1006,9 +1002,9 @@ bind BltTableView <Control-KeyPress-d> {
 #
 # SetGrab --
 #
-#	Simulates a grab for a cell.  All component events are redirected
-#	to the cell.  The widget Key and Button events are shunted by 
-#	a bindtag that simply ignores and short circuits event handlers.
+#   Simulates a grab for a cell.  All component events are redirected to
+#   the cell.  The widget Key and Button events are shunted by a bindtag
+#   that simply ignores and short circuits event handlers.
 #
 proc blt::TableView::SetGrab { w cell } {
     variable _private
@@ -1035,9 +1031,9 @@ proc blt::TableView::SetGrab { w cell } {
 #
 # SortColumn --
 #
-#	This is called when the column title button is pressed to sort
-#	the table according to this column.  Clicking again will change
-#	the order of the sort (increasing or decreasing).
+#   This is called when the column title button is pressed to sort the
+#   table according to this column.  Clicking again will change the order
+#   of the sort (increasing or decreasing).
 #
 proc blt::TableView::SortColumn { w col } {
     set old [$w sort cget -column]
@@ -1060,9 +1056,8 @@ proc blt::TableView::SortColumn { w col } {
 #
 # BuildFiltersMenu --
 #
-#	Builds a menu of filter options.  This is column-specific as 
-#	the lower portion of the menu is filled with the unique values 
-#	of the column.
+#   Builds a menu of filter options.  This is column-specific as the lower
+#   portion of the menu is filled with the unique values of the column.
 #
 proc blt::TableView::BuildFiltersMenu { w col } {
     variable _private
@@ -1252,14 +1247,13 @@ proc blt::TableView::ApplyFilters { w } {
 #
 # PostFilter --
 #
-#	Posts the filter combo menu at the location of the column requesting it.
-#	The menu is selected to the current cell value and we bind
-#	to the  menu's <<MenuSelect>> event to know if a menu item was
-#	selected.
+#   Posts the filter combo menu at the location of the column requesting
+#   it.  The menu is selected to the current cell value and we bind to the
+#   menu's <<MenuSelect>> event to know if a menu item was selected.
 #
-#	The most important part is that we set a grab on the menu. 
-#	This will force <ButtonRelease> events to be interpreted
-#	by the combo menu instead of the tableview widget.
+#   The most important part is that we set a grab on the menu.  This will
+#   force <ButtonRelease> events to be interpreted by the combo menu
+#   instead of the tableview widget.
 #
 proc blt::TableView::PostFilter { w col } {
     variable _private
@@ -1272,7 +1266,8 @@ proc blt::TableView::PostFilter { w col } {
     BuildFiltersMenu $w $col
     update idletasks
     update
-    # Get the current value of the cell and select the corresponding menu item.
+    # Get the current value of the cell and select the corresponding menu
+    # item.
     set table [$w cget -table]
     # Watch for <<MenuSelect>> events on the menu.  Set the cell value to the
     # selected value when we get one. 
@@ -1288,11 +1283,11 @@ proc blt::TableView::PostFilter { w col } {
 #
 # UnpostFilter --
 #
-#	Unposts the filter menu.  Note that the current value set in
-#	the cell style is not propagated to the table here.  This is done
-#	via a <<MenuSelect>> event.  We don't know if we're unposting
-#	the menu because a menu item was selected or if the user clicked
-#	outside of the menu to cancel the operation.
+#   Unposts the filter menu.  Note that the current value set in the cell
+#   style is not propagated to the table here.  This is done via a
+#   <<MenuSelect>> event.  We don't know if we're unposting the menu
+#   because a menu item was selected or if the user clicked outside of the
+#   menu to cancel the operation.
 #
 proc ::blt::TableView::UnpostFilter { w } {
     variable _private
@@ -1311,9 +1306,8 @@ proc ::blt::TableView::UnpostFilter { w } {
 #
 # BuildFiltersMenu --
 #
-#	Builds a menu of filter options.  This is column-specific as 
-#	the lower portion of the menu is filled with the unique values 
-#	of the column.
+#   Builds a menu of filter options.  This is column-specific as the lower
+#   portion of the menu is filled with the unique values of the column.
 #
 proc blt::TableView::BuildVersion2FiltersMenu { w col } {
     variable _private
