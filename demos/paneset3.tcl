@@ -1,6 +1,5 @@
 
 package require BLT
-source scripts/demo.tcl
 
 blt::paneset .vps -orient vertical 
 blt::paneset .vps.hps  

@@ -1,6 +1,5 @@
 
 package require BLT
-source scripts/demo.tcl
 
 blt::paneset .ps -width 800 -mode spreadsheet 
 

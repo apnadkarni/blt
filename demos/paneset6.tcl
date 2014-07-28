@@ -1,6 +1,5 @@
 
 package require BLT
-source scripts/demo.tcl
 
 set pictures [glob -nocomplain "*.jpg"]
 set autocolors {

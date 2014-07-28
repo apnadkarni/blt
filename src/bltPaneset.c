@@ -5527,13 +5527,32 @@ static Blt_OpSpec panesetOps[] =
     {"move",       1, MoveOp,      3, 0, "pane after|before pane",},
     {"names",      1, NamesOp,     2, 0, "?pattern...?",},
     {"pane",       1, PaneOp,      2, 0, "oper ?args?",},
+    {"tag",        1, TagOp,	   2, 0, "oper args",},
+};
+
+static int numPanesetOps = sizeof(panesetOps) / sizeof(Blt_OpSpec);
+
+static Blt_OpSpec filmstripOps[] =
+{
+    {"add",        1, AddOp,       2, 0, "?name? ?option value?...",},
+    {"cget",       2, CgetOp,      3, 3, "option",},
+    {"configure",  2, ConfigureOp, 2, 0, "?option value?",},
+    {"delete",     1, DeleteOp,    3, 3, "pane",},
+    {"exists",     1, ExistsOp,    3, 3, "pane",},
+    {"handle",     1, HandleOp,    2, 0, "oper ?args?",},
+    {"index",      3, IndexOp,     3, 3, "pane",},
+    {"insert",     3, InsertOp,    3, 0, "position ?name? ?option value?...",},
+    {"invoke",     3, InvokeOp,    3, 3, "pane",},
+    {"move",       1, MoveOp,      3, 0, "pane after|before pane",},
+    {"names",      1, NamesOp,     2, 0, "?pattern...?",},
+    {"pane",       1, PaneOp,      2, 0, "oper ?args?",},
     {"see",        1, SeeOp,       3, 3, "pane",},
     {"tag",        1, TagOp,	   2, 0, "oper args",},
     {"view",       1, ViewOp,	   2, 5, 
 	"?moveto fract? ?scroll number what?",},
 };
 
-static int numPanesetOps = sizeof(panesetOps) / sizeof(Blt_OpSpec);
+static int numFilmstripOps = sizeof(filmstripOps) / sizeof(Blt_OpSpec);
 
 /*
  *---------------------------------------------------------------------------
@@ -5597,9 +5616,15 @@ PanesetInstCmdProc(
     Tcl_Obj *const *objv)
 {
     Tcl_ObjCmdProc *proc;
+    Paneset *setPtr = clientData;
 
-    proc = Blt_GetOpFromObj(interp, numPanesetOps, panesetOps, BLT_OP_ARG1, 
-		objc, objv, 0);
+    if (setPtr->type == FILMSTRIP) {
+        proc = Blt_GetOpFromObj(interp, numFilmstripOps, filmstripOps, 
+                BLT_OP_ARG1, objc, objv, 0);
+    } else {
+        proc = Blt_GetOpFromObj(interp, numPanesetOps, panesetOps, BLT_OP_ARG1, 
+                objc, objv, 0);
+    }
     if (proc == NULL) {
 	return TCL_ERROR;
     }

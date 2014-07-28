@@ -1,5 +1,4 @@
 package require BLT
-source scripts/demo.tcl
 
 blt::paneset .ps -height 900 \
     -orient vertical
