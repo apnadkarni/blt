@@ -80,6 +80,8 @@ typedef int (SizeProc)(Drawer *drawPtr);
 #define DEF_HEIGHT		"0"
 #define DEF_HIGHLIGHT_THICKNESS	"1"
 #define DEF_DRAWER_SHRINK	"0"
+#define DEF_DRAWER_XOFFSET	"0"
+#define DEF_DRAWER_YOFFSET	"0"
 #define DEF_DRAWER_FILL		"1"
 #define DEF_PAD			"0"
 #define DEF_DRAWER_ANCHOR	"c"
@@ -171,9 +173,9 @@ struct _Drawer  {
 					 * widget is positioned if extra
 					 * space is available in the
 					 * drawer. */
-    Blt_Pad xPad;			/* Extra padding placed left and
+    int xOffset;			/* Extra padding placed left and
 					 * right of the widget. */
-    Blt_Pad yPad;			/* Extra padding placed above and
+    int yOffset;			/* Extra padding placed above and
 					 * below the widget */
     int iPadX, iPadY;			/* Extra padding added to the
 					 * interior of the widget
@@ -409,6 +411,7 @@ struct _Drawerset {
 #define FOCUS		(1<<6)
 
 #define VERTICAL	(1<<7)
+#define RESTACK         (1<<8)
 
 static Tk_GeomRequestProc BaseGeometryProc;
 static Tk_GeomLostSlaveProc BaseCustodyProc;
@@ -514,6 +517,12 @@ static Blt_ConfigSpec drawerSpecs[] =
 	Blt_Offset(Drawer, reqWidth), 0},
     {BLT_CONFIG_CUSTOM, "-window", "window", "Window", (char *)NULL, 
 	Blt_Offset(Drawer, tkwin), BLT_CONFIG_NULL_OK, &childOption },
+    {BLT_CONFIG_PIXELS_NNEG, "-xoffset", "xOffset", "XOffset", 
+        DEF_DRAWER_XOFFSET, Blt_Offset(Drawer, xOffset), 
+        BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_PIXELS_NNEG, "-yoffset", "yOffset", "YOffset", 
+        DEF_DRAWER_YOFFSET, Blt_Offset(Drawer, yOffset), 
+        BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_END, NULL, NULL, NULL, NULL, 0, 0}
 };
 
@@ -767,6 +776,7 @@ UnmanageBase(Drawerset *setPtr, Tk_Window tkwin)
 static void
 ManageBase(Drawerset *setPtr, Tk_Window tkwin)
 {
+    setPtr->flags |= RESTACK;
     Tk_CreateEventHandler(tkwin, StructureNotifyMask, BaseEventProc, setPtr);
     Tk_ManageGeometry(tkwin, &baseMgrInfo, setPtr);
 }
@@ -888,6 +898,7 @@ RaiseDrawer(Drawer *drawPtr)
 	setPtr = drawPtr->setPtr;
 	Blt_Chain_UnlinkLink(setPtr->chain, drawPtr->link);
 	Blt_Chain_AppendLink(setPtr->chain, drawPtr->link);
+        setPtr->flags |= RESTACK;
     }
 }
 
@@ -915,6 +926,7 @@ LowerDrawer(Drawer *drawPtr)
 	setPtr = drawPtr->setPtr;
 	Blt_Chain_UnlinkLink(setPtr->chain, drawPtr->link);
 	Blt_Chain_PrependLink(setPtr->chain, drawPtr->link);
+        setPtr->flags |= RESTACK;
     }
 }
 
@@ -2284,8 +2296,8 @@ GetDrawerByName(Drawerset *setPtr, const char *string)
  *
  * GetDrawerIterator --
  *
- *	Converts a string representing a drawer index into an drawer pointer.
- *	The index may be in one of the following forms:
+ *	Converts a string representing a drawer index into an drawer
+ *	pointer.  The index may be in one of the following forms:
  *
  *	 number		Drawer at index in the list of drawers.
  *	 @x,y		Drawer closest to the specified X-Y screen coordinates.
@@ -2575,7 +2587,7 @@ NewDrawerset(Tcl_Interp *interp, Tcl_Obj *objPtr)
     setPtr->relief = TK_RELIEF_FLAT;
     setPtr->activeRelief = TK_RELIEF_RAISED;
     setPtr->handleBW = 1;
-    setPtr->flags = LAYOUT_PENDING;
+    setPtr->flags = LAYOUT_PENDING | RESTACK;
     setPtr->interval = 30;
     setPtr->scrollUnits = 10;
     setPtr->highlightThickness = 1;
@@ -2601,6 +2613,7 @@ RenumberDrawers(Drawerset *setPtr)
     Blt_ChainLink link;
 
     count = 0;
+    setPtr->flags |= RESTACK;
     for (link = Blt_Chain_FirstLink(setPtr->chain); link != NULL;
 	 link = Blt_Chain_NextLink(link)) {
 	Drawer *drawPtr;
@@ -2624,7 +2637,8 @@ RenumberDrawers(Drawerset *setPtr)
  *	None.
  *
  * Side effects:
- *	Everything associated with the drawerset geometry manager is freed up.
+ *	Everything associated with the drawerset geometry manager is freed
+ *	up.
  *
  *---------------------------------------------------------------------------
  */
@@ -2667,7 +2681,8 @@ DestroyDrawerset(Drawerset *setPtr)
  *	None.
  *
  * Side effects:
- *	Everything associated with the drawerset geometry manager is freed up.
+ *	Everything associated with the drawerset geometry manager is freed
+ *	up.
  *
  *---------------------------------------------------------------------------
  */
@@ -2816,47 +2831,6 @@ LayoutDrawers(Drawerset *setPtr)
     }
 }
 
-#ifdef notdef
-static void
-ArrangeHandle(Drawer *drawPtr, int x, int y) 
-{
-    Drawerset *setPtr;
-
-    setPtr = drawPtr->setPtr;
-    if (drawPtr->flags & HANDLE) {
-	int w, h;
-	
-	if (ISVERT(setPtr)) {
-	    x = 0;
-	    if (drawPtr->side & HANDLE_FARSIDE) {
-		y += drawPtr->size - setPtr->handleSize;
-	    }
-	    w = Tk_Width(setPtr->tkwin);
-	    h = setPtr->handleSize; 
-	} else {
-	    y = 0;
-	    if (drawPtr->side & HANDLE_FARSIDE) {
-		x += drawPtr->size - setPtr->handleSize;
-	    } 
-	    h = Tk_Height(setPtr->tkwin);
-	    w = setPtr->handleSize; 
-	}
-	if ((x != Tk_X(drawPtr->tkwin)) || 
-	    (y != Tk_Y(drawPtr->tkwin)) ||
-	    (w != Tk_Width(drawPtr->tkwin)) ||
-	    (h != Tk_Height(drawPtr->tkwin))) {
-	    Tk_MoveResizeWindow(drawPtr->handle, x, y, w, h);
-	}
-	if (!Tk_IsMapped(drawPtr->handle)) {
-	    Tk_MapWindow(drawPtr->handle);
-	}
-	XRaiseWindow(setPtr->display, Tk_WindowId(drawPtr->handle));
-    } else if (Tk_IsMapped(drawPtr->handle)) {
-	Tk_UnmapWindow(drawPtr->handle);
-    }
-}
-#endif
-
 static void
 ArrangeDrawer(Drawer *drawPtr) 
 {
@@ -2873,6 +2847,9 @@ ArrangeDrawer(Drawer *drawPtr)
 	return;
     }	
     setPtr = drawPtr->setPtr;
+    x = ScreenX(drawPtr) + Tk_Changes(drawPtr->tkwin)->border_width;
+    y = ScreenY(drawPtr) + Tk_Changes(drawPtr->tkwin)->border_width;
+
     if (drawPtr->side & SIDE_VERTICAL) {
 	if (drawPtr->y > Tk_Height(setPtr->tkwin)) {
 	    drawPtr->y = Tk_Height(setPtr->tkwin);
@@ -2890,8 +2867,6 @@ ArrangeDrawer(Drawer *drawPtr)
 	drawPtr->width = drawPtr->size;
 	drawPtr->height = GetReqDrawerHeight(drawPtr);
     }
-    x = ScreenX(drawPtr) + Tk_Changes(drawPtr->tkwin)->border_width;
-    y = ScreenY(drawPtr) + Tk_Changes(drawPtr->tkwin)->border_width;
 
     w = GetReqDrawerWidth(drawPtr);
     h = GetReqDrawerHeight(drawPtr);
@@ -2911,7 +2886,7 @@ ArrangeDrawer(Drawer *drawPtr)
     anchor = (drawPtr->side & SIDE_VERTICAL) ? drawPtr->y : drawPtr->x;
 
     if (drawPtr->side & SIDE_VERTICAL) {
-	if (cavityHeight > h) {
+	if (drawPtr->fill & FILL_Y) {
 	    h = cavityHeight;		/* Automatically grow the window. */
 	}
 	if ((cavityHeight < h) && (drawPtr->flags & SHRINK)) {
@@ -2984,7 +2959,28 @@ ArrangeDrawer(Drawer *drawPtr)
 	    break;
 	}
     }
-
+    switch (drawPtr->side) {
+    case SIDE_BOTTOM:
+        if (cavityHeight > (drawPtr->yOffset + h)) {
+            y -= drawPtr->yOffset;
+        }
+        break;
+    case SIDE_TOP:
+        if (cavityHeight > (drawPtr->yOffset + h)) {
+            y += drawPtr->yOffset;
+        }
+        break;
+    case SIDE_LEFT:
+        if (cavityWidth > (drawPtr->xOffset + w)) {
+            x += drawPtr->xOffset;
+        }
+        break;
+    case SIDE_RIGHT:
+        if (cavityWidth > (drawPtr->xOffset + w)) {
+            x -= drawPtr->xOffset;
+        }
+        break;
+    }
     if (drawPtr->flags & HANDLE) {
 	/* Make room for the handle if one if needed. Adjust the window's
 	 * position if the handle is on the near side. */
@@ -3026,7 +3022,6 @@ ArrangeDrawer(Drawer *drawPtr)
 	if (!Tk_IsMapped(drawPtr->tkwin)) {
 	    Tk_MapWindow(drawPtr->tkwin);
 	}
-	XRaiseWindow(setPtr->display, Tk_WindowId(drawPtr->tkwin));
 	drawPtr->flags &= ~VIRGIN;
     }
 
@@ -3055,7 +3050,6 @@ ArrangeDrawer(Drawer *drawPtr)
 	if (!Tk_IsMapped(drawPtr->handle)) {
 	    Tk_MapWindow(drawPtr->handle);
 	}
-	XRaiseWindow(setPtr->display, Tk_WindowId(drawPtr->handle));
     } else if (Tk_IsMapped(drawPtr->handle)) {
 	Tk_UnmapWindow(drawPtr->handle);
     }
@@ -3113,6 +3107,61 @@ ArrangeDrawers(Drawerset *setPtr)
 	drawPtr = Blt_Chain_GetValue(link);
 	ArrangeDrawer(drawPtr);
     }
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * RestackDrawers --
+ *
+ *
+ * Results:
+ *	None.
+ *
+ * Side Effects:
+ * 	The widgets in the drawers are possibly resized and redrawn.
+ *
+ *---------------------------------------------------------------------------
+ */
+static void
+RestackDrawers(Drawerset *setPtr)
+{
+    Blt_ChainLink link, prev;
+    Window *windows;
+    int numWindows;
+
+    numWindows = (Blt_Chain_GetLength(setPtr->chain) * 2) + 1;
+    windows = Blt_AssertMalloc(numWindows * sizeof(Window));
+    numWindows = 0;
+    for (link = Blt_Chain_LastLink(setPtr->chain); link != NULL; link = prev) {
+	Drawer *drawPtr;
+
+	prev = Blt_Chain_PrevLink(link);
+	drawPtr = Blt_Chain_GetValue(link);
+        if (drawPtr->tkwin != NULL) {
+            if (Tk_WindowId(drawPtr->tkwin) == None) {
+                Tk_MakeWindowExist(drawPtr->tkwin);
+            }
+            windows[numWindows] = Tk_WindowId(drawPtr->tkwin);
+            numWindows++;
+        }
+        if ((drawPtr->flags & SHOW_HANDLE) && (drawPtr->handle != NULL)) {
+            if (Tk_WindowId(drawPtr->handle) == None) {
+                Tk_MakeWindowExist(drawPtr->handle);
+            }
+            windows[numWindows] = Tk_WindowId(drawPtr->handle);
+            numWindows++;
+        }
+    }
+    if (setPtr->base != NULL) {
+        if (Tk_WindowId(setPtr->base) == None) {
+            Tk_MakeWindowExist(setPtr->base);
+        }
+        windows[numWindows] = Tk_WindowId(setPtr->base);
+        numWindows++;
+    }
+    XRestackWindows(setPtr->display, windows, numWindows);
+    Blt_Free(windows);
 }
 
 static void
@@ -3225,8 +3274,8 @@ AdjustHandle(Drawerset *setPtr, int delta)
  *
  * AddOp --
  *
- *	Adds a drawer into the widget. The drawer is by default
- *	draw above the previously created drawers.
+ *	Adds a drawer into the widget. The drawer is by default draw above
+ *	the previously created drawers.
  *
  * Results:
  *	Returns a standard TCL result.  The index of the drawer is left in
@@ -3379,8 +3428,9 @@ ConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * DeleteOp --
  *
- *	Deletes the specified drawers from the widget.  Note that the drawer
- *	indices can be fixed only after all the deletions have occurred.
+ *	Deletes the specified drawers from the widget.  Note that the
+ *	drawer indices can be fixed only after all the deletions have
+ *	occurred.
  *
  * Results:
  *	Returns a standard TCL result.
@@ -3607,9 +3657,9 @@ HandleActivateOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * HandleAnchorOp --
  *
- *	Set the anchor for the resize/moving the drawer.  Only one of
- *	the x and y coordinates are used depending upon the orientation of
- *	the drawer or drawer.
+ *	Set the anchor for the resize/moving the drawer.  Only one of the x
+ *	and y coordinates are used depending upon the orientation of the
+ *	drawer or drawer.
  *
  *	pathName handle anchor $drawer x y
  *
@@ -4301,7 +4351,7 @@ OpenOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * RaiseOp --
  *
- *	Raises the specified drawer to the top of the stack of drawers.  
+ *	Raises the specified drawer to the top of the stack of drawers.
  *
  * Results:
  *	Returns a standard TCL result.
@@ -4377,7 +4427,8 @@ SizeOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *---------------------------------------------------------------------------
  */
 static int
-TagAddOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+TagAddOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+         Tcl_Obj *const *objv)
 {
     Drawerset *setPtr = clientData;
     const char *tag;
@@ -4477,8 +4528,8 @@ TagDeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * TagExistsOp --
  *
- *	Returns the existence of the one or more tags in the given node.  If
- *	the node has any the tags, true is return in the interpreter.
+ *	Returns the existence of the one or more tags in the given node.
+ *	If the node has any the tags, true is return in the interpreter.
  *
  *	.t tag exists drawer tag1 tag2 tag3...
  *
@@ -4486,7 +4537,8 @@ TagDeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
  */
 /*ARGSUSED*/
 static int
-TagExistsOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+TagExistsOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+            Tcl_Obj *const *objv)
 {
     Drawerset *setPtr = clientData;
     int i;
@@ -4550,15 +4602,16 @@ TagForgetOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const 
  *
  * TagGetOp --
  *
- *	Returns tag names for a given node.  If one of more pattern arguments
- *	are provided, then only those matching tags are returned.
+ *	Returns tag names for a given node.  If one of more pattern
+ *	arguments are provided, then only those matching tags are returned.
  *
  *	.t tag get drawer pat1 pat2...
  *
  *---------------------------------------------------------------------------
  */
 static int
-TagGetOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+TagGetOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+         Tcl_Obj *const *objv)
 {
     Drawerset *setPtr = clientData;
     Drawer *drawPtr; 
@@ -4643,16 +4696,17 @@ TagGetOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *ob
  *
  * TagNamesOp --
  *
- *	Returns the names of all the tags in the drawerset.  If one of more node
- *	arguments are provided, then only the tags found in those nodes are
- *	returned.
+ *	Returns the names of all the tags in the drawerset.  If one of more
+ *	node arguments are provided, then only the tags found in those
+ *	nodes are returned.
  *
  *	.t tag names drawer drawer drawer...
  *
  *---------------------------------------------------------------------------
  */
 static int
-TagNamesOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+TagNamesOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+           Tcl_Obj *const *objv)
 {
     Drawerset *setPtr = clientData;
     Tcl_Obj *listObjPtr, *objPtr;
@@ -4727,14 +4781,16 @@ TagNamesOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *
  * TagIndicesOp --
  *
  *	Returns the indices associated with the given tags.  The indices
- *	returned will represent the union of drawers for all the given tags.
+ *	returned will represent the union of drawers for all the given
+ *	tags.
  *
  *	.t tag indices tag1 tag2 tag3...
  *
  *---------------------------------------------------------------------------
  */
 static int
-TagIndicesOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+TagIndicesOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+             Tcl_Obj *const *objv)
 {
     Drawerset *setPtr = clientData;
     Blt_HashTable drawerTable;
@@ -4768,7 +4824,8 @@ TagIndicesOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const
 
 		    drawPtr = Blt_GetHashValue(hPtr);
 		    if (drawPtr != NULL) {
-			Blt_CreateHashEntry(&drawerTable, (char *)drawPtr, &isNew);
+			Blt_CreateHashEntry(&drawerTable, (char *)drawPtr, 
+                                            &isNew);
 		    }
 		}
 		continue;
@@ -4808,16 +4865,17 @@ TagIndicesOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const
  *
  * TagSetOp --
  *
- *	Sets one or more tags for a given drawer.  Tag names can't start with a
- *	digit (to distinquish them from node ids) and can't be a reserved tag
- *	("all").
+ *	Sets one or more tags for a given drawer.  Tag names can't start
+ *	with a digit (to distinquish them from node ids) and can't be a
+ *	reserved tag ("all").
  *
  *	.t tag set drawer tag1 tag2...
  *
  *---------------------------------------------------------------------------
  */
 static int
-TagSetOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+TagSetOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+         Tcl_Obj *const *objv)
 {
     Drawerset *setPtr = clientData;
     int i;
@@ -4855,16 +4913,17 @@ TagSetOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *ob
  *
  * TagUnsetOp --
  *
- *	Removes one or more tags from a given drawer. If a tag doesn't exist or
- *	is a reserved tag ("all"), nothing will be done and no error
- *	message will be returned.
+ *	Removes one or more tags from a given drawer. If a tag doesn't
+ *	exist or is a reserved tag ("all"), nothing will be done and no
+ *	error message will be returned.
  *
  *	.t tag unset drawer tag1 tag2...
  *
  *---------------------------------------------------------------------------
  */
 static int
-TagUnsetOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+TagUnsetOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+           Tcl_Obj *const *objv)
 {
     Drawerset *setPtr = clientData;
     Drawer *drawPtr;
@@ -4971,8 +5030,8 @@ ToggleOp(ClientData clientData, Tcl_Interp *interp, int objc,
  * DrawersetInstCmdDeleteProc --
  *
  *	This procedure is invoked when a widget command is deleted.  If the
- *	widget isn't already in the process of being destroyed, this command
- *	destroys it.
+ *	widget isn't already in the process of being destroyed, this
+ *	command destroys it.
  *
  * Results:
  *	None.
@@ -5220,6 +5279,10 @@ DisplayProc(ClientData clientData)
     }
     if (setPtr->numVisible > 0) {
 	ArrangeDrawers(setPtr);
+    }
+    if (setPtr->flags & RESTACK) {
+        setPtr->flags &= ~RESTACK;
+        RestackDrawers(setPtr);
     }
 }
 
