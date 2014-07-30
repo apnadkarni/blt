@@ -5818,6 +5818,9 @@ static void
 DisplayProc(ClientData clientData)
 {
     Paneset *setPtr = clientData;
+    Pixmap drawable;
+    unsigned int w, h;
+    GC gc;
 
     setPtr->flags &= ~REDRAW_PENDING;
 #if TRACE
@@ -5852,9 +5855,15 @@ DisplayProc(ClientData clientData)
 	setPtr->flags &= ~SCROLL_PENDING;
     }
     setPtr->numVisible = Blt_Chain_GetLength(setPtr->chain);
-    Blt_Bg_FillRectangle(setPtr->tkwin, Tk_WindowId(setPtr->tkwin), 
-                         setPtr->bg, 0, 0, Tk_Width(setPtr->tkwin), 
-                         Tk_Height(setPtr->tkwin), 0, TK_RELIEF_FLAT);
+    w = Tk_Width(setPtr->tkwin);
+    h = Tk_Height(setPtr->tkwin);
+    drawable = Blt_GetPixmap(setPtr->display, Tk_WindowId(setPtr->tkwin), w, h, 
+        Tk_Depth(setPtr->tkwin));
+    Blt_Bg_FillRectangle(setPtr->tkwin, drawable, setPtr->bg, 0, 0, w, h, 
+        0, TK_RELIEF_FLAT);
+    gc = DefaultGC(setPtr->display, Tk_ScreenNumber(setPtr->tkwin));
+    XCopyArea(setPtr->display, drawable, Tk_WindowId(setPtr->tkwin),
+	gc, 0, 0, w, h, 0, 0);
     if (setPtr->numVisible > 0) {
         if (ISVERT(setPtr)) {
             VerticalPanes(setPtr);
@@ -5862,6 +5871,7 @@ DisplayProc(ClientData clientData)
             HorizontalPanes(setPtr);
         }
     }
+    Tk_FreePixmap(setPtr->display, drawable);
 }
 
 /*
@@ -5912,12 +5922,13 @@ DisplayHandle(ClientData clientData)
     Blt_Bg_FillRectangle(panePtr->handle, drawable, bg, 
 	0, 0, Tk_Width(panePtr->handle), Tk_Height(panePtr->handle), 
 	0, TK_RELIEF_FLAT);
-    Blt_Bg_DrawRectangle(panePtr->handle, drawable, bg, 
-	setPtr->handlePad.side1, setPtr->handlePad.side1, 
-	Tk_Width(panePtr->handle) - PADDING(setPtr->handlePad), 
-	Tk_Height(panePtr->handle) - PADDING(setPtr->handlePad),
-	setPtr->handleBW, relief);
-
+    if (relief != TK_RELIEF_FLAT) {
+        Blt_Bg_DrawRectangle(panePtr->handle, drawable, bg, 
+                setPtr->handlePad.side1, setPtr->handlePad.side1, 
+                Tk_Width(panePtr->handle) - PADDING(setPtr->handlePad), 
+                Tk_Height(panePtr->handle) - PADDING(setPtr->handlePad),
+                setPtr->handleBW, relief);
+    }
     if ((setPtr->highlightThickness > 0) && (panePtr->flags & FOCUS)) {
 	GC gc;
 

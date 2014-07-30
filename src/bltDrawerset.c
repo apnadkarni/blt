@@ -186,8 +186,6 @@ struct _Drawer  {
     int resize;				/* Indicates if the drawer should
 					 * expand/shrink. */
     int x, y;				/* Origin of drawer wrt container. */
-    short int width, height;		/* Size of drawer, including
-					   handle. */
     Blt_ChainLink link;			/* Pointer of this drawer into the
 					 * list of drawers. */
     Blt_HashEntry *hashPtr;	        /* Pointer of this drawer into
@@ -198,6 +196,7 @@ struct _Drawer  {
     int size;				/* Current size of the drawer. This
 					 * size is bounded by min and
 					 * max. */
+
 
     /*
      * nom and size perform similar duties.  I need to keep track of the
@@ -219,6 +218,9 @@ struct _Drawer  {
 					 * specified (max widget size).
 					 * This includes any extra padding
 					 * which may be specified. */
+    int normalSize;                     /* Requested size of the drawer. This
+					 * size is bounded by -reqwidth or
+					 * -reqheight. */
     Blt_Bg handleBg;
     Blt_Bg activeHandleBg;
     Blt_Bg bg;				/* 3D background border surrounding
@@ -1264,9 +1266,9 @@ EventuallyOpenDrawer(Drawer *drawPtr)
 		DrawerTimerProc, drawPtr);
     } else {
 	if (drawPtr->side & SIDE_VERTICAL) {
-	    drawPtr->size = drawPtr->y = GetReqDrawerHeight(drawPtr);
+	    drawPtr->y = GetReqDrawerHeight(drawPtr);
 	} else {
-	    drawPtr->size = drawPtr->x = GetReqDrawerWidth(drawPtr);
+	    drawPtr->x = GetReqDrawerWidth(drawPtr);
 	}
 	SetDrawerVariable(drawPtr);
     }
@@ -2743,14 +2745,14 @@ ResetDrawers(Drawerset *setPtr)
 	     * the normal sizes.  So temporarily fix min and max to the
 	     * nominal size and reset them back later.
 	     */
-	    drawPtr->min = drawPtr->max = drawPtr->size = drawPtr->nom = 
+	    drawPtr->min = drawPtr->max = drawPtr->normalSize = drawPtr->nom = 
 		size + extra;
 	} else {
 	    /* The range defaults to 0..MAXINT */
 	    drawPtr->min = drawPtr->reqSize.min + extra;
 	    drawPtr->max = drawPtr->reqSize.max + extra;
 	    drawPtr->nom = LIMITS_NOM;
-	    drawPtr->size = size + extra;
+	    drawPtr->normalSize = size + extra;
 	}
     }
 }
@@ -2785,10 +2787,10 @@ LayoutDrawers(Drawerset *setPtr)
 	drawPtr = Blt_Chain_GetValue(link);
 	    
 	if (drawPtr->side & SIDE_VERTICAL) {
-	    drawPtr->size = GetReqDrawerHeight(drawPtr);
+	    drawPtr->normalSize = GetReqDrawerHeight(drawPtr);
 	    anchor = drawPtr->y;
 	} else {
-	    drawPtr->size =  GetReqDrawerWidth(drawPtr);
+	    drawPtr->normalSize =  GetReqDrawerWidth(drawPtr);
 	    anchor = drawPtr->x;
 	}
 	if (anchor < 0) {
@@ -2812,21 +2814,11 @@ LayoutDrawers(Drawerset *setPtr)
 	    }
 	    continue;
 	}
-	if (drawPtr->flags & VIRGIN) {
-#ifdef notdef
-	    drawPtr->x = drawPtr->y = 0;
-	    if (drawPtr->side & SIDE_VERTICAL) {
-		drawPtr->y = drawPtr->size = GetReqDrawerHeight(drawPtr);
-	    } else {
-		drawPtr->x = drawPtr->size = GetReqDrawerWidth(drawPtr);
-	    }
-#endif
-	}
 	if ((drawPtr->resize & RESIZE_EXPAND) == 0) {
-	    drawPtr->max = drawPtr->size;
+	    drawPtr->max = drawPtr->normalSize;
 	}
 	if ((drawPtr->resize & RESIZE_SHRINK) == 0) {
-	    drawPtr->min = drawPtr->size;
+	    drawPtr->min = drawPtr->normalSize;
 	}
     }
 }
@@ -2835,9 +2827,8 @@ static void
 ArrangeDrawer(Drawer *drawPtr) 
 {
     Drawerset *setPtr;
-    int cavityWidth, cavityHeight;
     int x, y;
-    int w, h;
+    unsigned int w, h, cw, ch;
     int anchor;
 
     if ((drawPtr->flags & CLOSED) || (drawPtr->tkwin == NULL)) {
@@ -2850,26 +2841,22 @@ ArrangeDrawer(Drawer *drawPtr)
     x = ScreenX(drawPtr) + Tk_Changes(drawPtr->tkwin)->border_width;
     y = ScreenY(drawPtr) + Tk_Changes(drawPtr->tkwin)->border_width;
 
+    drawPtr->size = drawPtr->normalSize;
+    ch = Tk_Height(setPtr->tkwin);
+    cw = Tk_Width(setPtr->tkwin);
+    w = GetReqDrawerWidth(drawPtr);
+    h = GetReqDrawerHeight(drawPtr);
+
     if (drawPtr->side & SIDE_VERTICAL) {
 	if (drawPtr->y > Tk_Height(setPtr->tkwin)) {
 	    drawPtr->y = Tk_Height(setPtr->tkwin);
 	}
-	cavityHeight = drawPtr->y;
-	cavityWidth  = Tk_Width(setPtr->tkwin);
-	drawPtr->height = drawPtr->size;
-	drawPtr->width = GetReqDrawerWidth(drawPtr);
     } else {
 	if (drawPtr->x > Tk_Width(setPtr->tkwin)) {
 	    drawPtr->x = Tk_Width(setPtr->tkwin);
 	}
-	cavityWidth = drawPtr->x;
-	cavityHeight = Tk_Height(setPtr->tkwin);
-	drawPtr->width = drawPtr->size;
-	drawPtr->height = GetReqDrawerHeight(drawPtr);
     }
 
-    w = GetReqDrawerWidth(drawPtr);
-    h = GetReqDrawerHeight(drawPtr);
 
     /*
      *
@@ -2886,44 +2873,32 @@ ArrangeDrawer(Drawer *drawPtr)
     anchor = (drawPtr->side & SIDE_VERTICAL) ? drawPtr->y : drawPtr->x;
 
     if (drawPtr->side & SIDE_VERTICAL) {
-	if (drawPtr->fill & FILL_Y) {
-	    h = cavityHeight;		/* Automatically grow the window. */
+	if ((drawPtr->fill & FILL_Y) || 
+            ((ch < h) && (drawPtr->flags & SHRINK))) {
+	    h = ch;		
 	}
-	if ((cavityHeight < h) && (drawPtr->flags & SHRINK)) {
-	    h = cavityHeight;	
-	}
-	if (h > drawPtr->reqHeight.max) {
-	    h = drawPtr->reqHeight.max;
-	}
-	drawPtr->size = h;
-	if ((cavityWidth < w) || (drawPtr->fill & FILL_X)) {
-	    w = cavityWidth;
-	    if (w > drawPtr->reqWidth.max) {
-		w = drawPtr->reqWidth.max;
-	    }
+        h = BoundHeight(h, &drawPtr->reqSize);
+	if ((cw < w) || (drawPtr->fill & FILL_X)) {
+            /* -fill x overrides -reqwidth. */
+	    w = cw;
 	} 
+        drawPtr->size = h;
     } else {
-	if (cavityWidth > w) {
-	    w = cavityWidth;		/* Automatically grow the window. */
+	if ((drawPtr->fill & FILL_X) ||
+            ((cw < w) && (drawPtr->flags & SHRINK))) {
+	    w = cw;
 	}
-	if ((cavityWidth < w) && (drawPtr->flags & SHRINK)) {
-	    w = cavityWidth;		/* Allow window to be shrunk. */
+        w = BoundWidth(w, &drawPtr->reqSize);
+	if ((ch < h) || (drawPtr->fill & FILL_Y)) {
+            /* -fill y overrides -reqheight. */
+	    h = ch;
 	}
-	if (w > drawPtr->reqWidth.max) {
-	    w = drawPtr->reqWidth.max;
-	}
-	drawPtr->size = w;
-	if ((cavityHeight < h) || (drawPtr->fill & FILL_Y)) {
-	    h = cavityHeight;
-	    if (h > drawPtr->reqHeight.max) {
-		h = drawPtr->reqHeight.max;
-	    }
-	}
+        drawPtr->size = w;
     }
     x = ScreenX(drawPtr) + Tk_Changes(drawPtr->tkwin)->border_width;
     y = ScreenY(drawPtr) + Tk_Changes(drawPtr->tkwin)->border_width;
 
-    if ((drawPtr->side & SIDE_HORIZONTAL) && (cavityHeight > h)) {
+    if ((drawPtr->side & SIDE_HORIZONTAL) && (ch > h)) {
 	switch (drawPtr->anchor) {
 	case TK_ANCHOR_NW:			/* Upper left corner */
 	case TK_ANCHOR_N:			/* Top center */
@@ -2932,51 +2907,51 @@ ArrangeDrawer(Drawer *drawPtr)
 	case TK_ANCHOR_E:			/* Right center */
 	case TK_ANCHOR_W:			/* Left center */
 	case TK_ANCHOR_CENTER:			/* Centered */
-	    y += (cavityHeight - h) / 2;
+	    y += (ch - h) / 2;
 	    break;
 	case TK_ANCHOR_SW:			/* Lower left corner */
 	case TK_ANCHOR_S:			/* Bottom center */
 	case TK_ANCHOR_SE:			/* Lower right corner */
-	    y += cavityHeight - h;
+	    y += ch - h;
 	    break;
 	}
     }
-    if ((drawPtr->side & SIDE_VERTICAL) && (cavityWidth > w)) {
+    if ((drawPtr->side & SIDE_VERTICAL) && (cw > w)) {
 	switch (drawPtr->anchor) {
-	case TK_ANCHOR_NW:			/* Upper left corner */
-	case TK_ANCHOR_SW:			/* Lower left corner */
-	case TK_ANCHOR_W:			/* Left center */
+	case TK_ANCHOR_NW:              /* Upper left corner */
+	case TK_ANCHOR_SW:              /* Lower left corner */
+	case TK_ANCHOR_W:               /* Left center */
 	    break;
-	case TK_ANCHOR_N:			/* Top center */
-	case TK_ANCHOR_CENTER:			/* Centered */
-	case TK_ANCHOR_S:			/* Bottom center */
-	    x += (cavityWidth - w) / 2;
+	case TK_ANCHOR_N:               /* Top center */
+	case TK_ANCHOR_CENTER:          /* Centered */
+	case TK_ANCHOR_S:               /* Bottom center */
+	    x += (cw - w) / 2;
 	    break;
-	case TK_ANCHOR_E:			/* Right center */
-	case TK_ANCHOR_SE:			/* Lower right corner */
-	case TK_ANCHOR_NE:			/* Upper right corner */
-	    x += cavityWidth - w;
-	    break;
+	case TK_ANCHOR_E:               /* Right center */
+	case TK_ANCHOR_SE:              /* Lower right corner */
+	case TK_ANCHOR_NE:              /* Upper right corner */
+	    x += cw - w;
+	    break;                      
 	}
     }
     switch (drawPtr->side) {
     case SIDE_BOTTOM:
-        if (cavityHeight > (drawPtr->yOffset + h)) {
+        if (ch > (drawPtr->yOffset + h)) {
             y -= drawPtr->yOffset;
         }
         break;
     case SIDE_TOP:
-        if (cavityHeight > (drawPtr->yOffset + h)) {
+        if (ch > (drawPtr->yOffset + h)) {
             y += drawPtr->yOffset;
         }
         break;
     case SIDE_LEFT:
-        if (cavityWidth > (drawPtr->xOffset + w)) {
+        if (cw > (drawPtr->xOffset + w)) {
             x += drawPtr->xOffset;
         }
         break;
     case SIDE_RIGHT:
-        if (cavityWidth > (drawPtr->xOffset + w)) {
+        if (cw > (drawPtr->xOffset + w)) {
             x -= drawPtr->xOffset;
         }
         break;
@@ -3013,6 +2988,10 @@ ArrangeDrawer(Drawer *drawPtr)
 	/*
 	 * Resize and/or move the widget as necessary.
 	 */
+#ifdef notdef
+        fprintf(stderr, "drawer %s, x=%d y=%d w=%d h=%d cw=%d ch=%d\n",
+                Tk_PathName(drawPtr->tkwin), x, y, w, h, cw, ch);
+#endif
 	if ((x != Tk_X(drawPtr->tkwin)) || 
 	    (y != Tk_Y(drawPtr->tkwin)) ||
 	    (w != Tk_Width(drawPtr->tkwin)) || 
