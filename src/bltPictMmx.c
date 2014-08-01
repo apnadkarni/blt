@@ -1993,6 +1993,25 @@ BlankPicture(Pict *destPtr, unsigned int colorValue)
     asm volatile ("emms");
 }
 #endif
+#ifdef notdef
+int result;
+__asm __volatile(
+" pushfl\n"
+" pop %%eax\n"
+" mov %%eax, %%ecx\n"
+" xor $0x200000, %%eax\n"
+" push %%eax\n"
+" popfl\n"
+" pushfl\n"
+" pop %%eax\n"
+" xor %%ecx, %%eax\n"
+" mov %%eax, %0\n"
+" push %%ecx\n"
+" popfl\n"
+: "=m"(result)
+: :"eax", "ecx", "memory");
+return (result != 0);
+#endif
 
 static int
 HaveCpuId(void)
