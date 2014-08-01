@@ -1,5 +1,4 @@
 package require BLT
-source scripts/demo.tcl
 
 blt::paneset .ps  -bg grey -width 800 \
     -sashthickness 3 -background red \

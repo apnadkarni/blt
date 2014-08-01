@@ -13,11 +13,11 @@ blt::barchart .ds.b1 -bg \#FFCCCC -height 300 -width 300
 blt::barchart .ds.b2 -bg \#CCFFCC -height 300 -width 300
 blt::barchart .ds.b3 -bg yellow -height 300 -width 300
 .ds add \
-    -side bottom \
+    -side left \
     -window .ds.b1 \
     -resize none \
-    -fill y \
-    -anchor e \
+    -fill none \
+    -anchor nw \
     -variable first
 .ds add \
     -side bottom \

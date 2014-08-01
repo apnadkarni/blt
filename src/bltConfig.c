@@ -51,20 +51,19 @@
  *     Unfortunately, most widgets save the display pointer and
  *     de-reference their tkwin when the window is destroyed.
  *
- *   o There's no TK_CONFIG_CUSTOM functionality.  This means that 
- *     special options must be saved as strings by Tk_ConfigureWidget and
- *     processed later, thus losing the benefits of Tcl_Objs.  It also make
- *     error handling problematic, since you don't pick up certain errors
- *     like
+ *   o There's no TK_CONFIG_CUSTOM functionality.  This means that special
+ *     options must be saved as strings by Tk_ConfigureWidget and processed
+ *     later, thus losing the benefits of Tcl_Objs.  It also make error
+ *     handling problematic, since you don't pick up certain errors like
  *	  
  *	    .widget configure -myoption bad -myoption good
  *        
  *     You will never see the first "bad" value.
  *
  *   o Especially compared to the former Tk_ConfigureWidget calls, the new
- *     interface seems overly complex.  If there was a big performance win, it
- *     might be worth the effort.  But let's face it, this biggest wins are
- *     in processing custom options values with thousands of elements.
+ *     interface seems overly complex.  If there was a big performance win,
+ *     it might be worth the effort.  But let's face it, this biggest wins
+ *     are in processing custom options values with thousands of elements.
  *     Most common resources (font, color, etc) have string tokens anyways.
  *
  *  On the other hand, the replacement functions in this file fell into
@@ -281,10 +280,13 @@ Tk_AllocBitmapFromObj(
  */
 Tk_Font
 Tk_AllocFontFromObj(
-    Tcl_Interp *interp,		/* Interp for database and error return. */
-    Tk_Window tkwin,		/* For screen on which font will be used. */
-    Tcl_Obj *objPtr)		/* Object describing font, as: named font,
-				 * native format, or parseable string. */
+    Tcl_Interp *interp,                 /* Interp for database and error
+                                         * return. */
+    Tk_Window tkwin,                    /* For screen on which font will be
+                                         * used. */
+    Tcl_Obj *objPtr)                    /* Object describing font, as:
+                                         * named font, native format, or
+                                         * parseable string. */
 {
     return Tk_GetFont(interp, tkwin, Tcl_GetString(objPtr));
 }
@@ -294,16 +296,16 @@ Tk_AllocFontFromObj(
  *
  * Tk_AllocCursorFromObj --
  *
- *	Given a Tcl_Obj *, map the value to a corresponding
- *	Tk_Cursor structure based on the tkwin given.
+ *	Given a Tcl_Obj *, map the value to a corresponding Tk_Cursor
+ *	structure based on the tkwin given.
  *
  * Results:
- *	The return value is the X identifer for the desired cursor,
- *	unless objPtr couldn't be parsed correctly.  In this case,
- *	None is returned and an error message is left in the interp's result.
- *	The caller should never modify the cursor that is returned, and
- *	should eventually call Tk_FreeCursorFromObj when the cursor is no 
- *	longer needed.
+ *	The return value is the X identifer for the desired cursor, unless
+ *	objPtr couldn't be parsed correctly.  In this case, None is
+ *	returned and an error message is left in the interp's result.  The
+ *	caller should never modify the cursor that is returned, and should
+ *	eventually call Tk_FreeCursorFromObj when the cursor is no longer
+ *	needed.
  *
  * Side effects:
  *	The cursor is added to an internal database with a reference count.
@@ -315,11 +317,13 @@ Tk_AllocFontFromObj(
  */
 Tk_Cursor
 Tk_AllocCursorFromObj(
-    Tcl_Interp *interp,		/* Interp for error results. */
-    Tk_Window tkwin,		/* Window in which the cursor will be used.*/
-    Tcl_Obj *objPtr)		/* Object describing cursor; see manual
-				 * entry for description of legal
-				 * syntax of this obj's string rep. */
+    Tcl_Interp *interp,                 /* Interp for error results. */
+    Tk_Window tkwin,                    /* Window in which the cursor will
+                                         * be used.*/
+    Tcl_Obj *objPtr)                    /* Object describing cursor; see
+                                         * manual entry for description of
+                                         * legal syntax of this obj's
+                                         * string rep. */
 {
     return Tk_GetCursor(interp, tkwin, Tcl_GetString(objPtr));
 }

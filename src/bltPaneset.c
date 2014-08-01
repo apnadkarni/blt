@@ -5527,13 +5527,32 @@ static Blt_OpSpec panesetOps[] =
     {"move",       1, MoveOp,      3, 0, "pane after|before pane",},
     {"names",      1, NamesOp,     2, 0, "?pattern...?",},
     {"pane",       1, PaneOp,      2, 0, "oper ?args?",},
+    {"tag",        1, TagOp,	   2, 0, "oper args",},
+};
+
+static int numPanesetOps = sizeof(panesetOps) / sizeof(Blt_OpSpec);
+
+static Blt_OpSpec filmstripOps[] =
+{
+    {"add",        1, AddOp,       2, 0, "?name? ?option value?...",},
+    {"cget",       2, CgetOp,      3, 3, "option",},
+    {"configure",  2, ConfigureOp, 2, 0, "?option value?",},
+    {"delete",     1, DeleteOp,    3, 3, "pane",},
+    {"exists",     1, ExistsOp,    3, 3, "pane",},
+    {"handle",     1, HandleOp,    2, 0, "oper ?args?",},
+    {"index",      3, IndexOp,     3, 3, "pane",},
+    {"insert",     3, InsertOp,    3, 0, "position ?name? ?option value?...",},
+    {"invoke",     3, InvokeOp,    3, 3, "pane",},
+    {"move",       1, MoveOp,      3, 0, "pane after|before pane",},
+    {"names",      1, NamesOp,     2, 0, "?pattern...?",},
+    {"pane",       1, PaneOp,      2, 0, "oper ?args?",},
     {"see",        1, SeeOp,       3, 3, "pane",},
     {"tag",        1, TagOp,	   2, 0, "oper args",},
     {"view",       1, ViewOp,	   2, 5, 
 	"?moveto fract? ?scroll number what?",},
 };
 
-static int numPanesetOps = sizeof(panesetOps) / sizeof(Blt_OpSpec);
+static int numFilmstripOps = sizeof(filmstripOps) / sizeof(Blt_OpSpec);
 
 /*
  *---------------------------------------------------------------------------
@@ -5597,9 +5616,15 @@ PanesetInstCmdProc(
     Tcl_Obj *const *objv)
 {
     Tcl_ObjCmdProc *proc;
+    Paneset *setPtr = clientData;
 
-    proc = Blt_GetOpFromObj(interp, numPanesetOps, panesetOps, BLT_OP_ARG1, 
-		objc, objv, 0);
+    if (setPtr->type == FILMSTRIP) {
+        proc = Blt_GetOpFromObj(interp, numFilmstripOps, filmstripOps, 
+                BLT_OP_ARG1, objc, objv, 0);
+    } else {
+        proc = Blt_GetOpFromObj(interp, numPanesetOps, panesetOps, BLT_OP_ARG1, 
+                objc, objv, 0);
+    }
     if (proc == NULL) {
 	return TCL_ERROR;
     }
@@ -5793,6 +5818,9 @@ static void
 DisplayProc(ClientData clientData)
 {
     Paneset *setPtr = clientData;
+    Pixmap drawable;
+    unsigned int w, h;
+    GC gc;
 
     setPtr->flags &= ~REDRAW_PENDING;
 #if TRACE
@@ -5827,9 +5855,15 @@ DisplayProc(ClientData clientData)
 	setPtr->flags &= ~SCROLL_PENDING;
     }
     setPtr->numVisible = Blt_Chain_GetLength(setPtr->chain);
-    Blt_Bg_FillRectangle(setPtr->tkwin, Tk_WindowId(setPtr->tkwin), 
-                         setPtr->bg, 0, 0, Tk_Width(setPtr->tkwin), 
-                         Tk_Height(setPtr->tkwin), 0, TK_RELIEF_FLAT);
+    w = Tk_Width(setPtr->tkwin);
+    h = Tk_Height(setPtr->tkwin);
+    drawable = Blt_GetPixmap(setPtr->display, Tk_WindowId(setPtr->tkwin), w, h, 
+        Tk_Depth(setPtr->tkwin));
+    Blt_Bg_FillRectangle(setPtr->tkwin, drawable, setPtr->bg, 0, 0, w, h, 
+        0, TK_RELIEF_FLAT);
+    gc = DefaultGC(setPtr->display, Tk_ScreenNumber(setPtr->tkwin));
+    XCopyArea(setPtr->display, drawable, Tk_WindowId(setPtr->tkwin),
+	gc, 0, 0, w, h, 0, 0);
     if (setPtr->numVisible > 0) {
         if (ISVERT(setPtr)) {
             VerticalPanes(setPtr);
@@ -5837,6 +5871,7 @@ DisplayProc(ClientData clientData)
             HorizontalPanes(setPtr);
         }
     }
+    Tk_FreePixmap(setPtr->display, drawable);
 }
 
 /*
@@ -5887,12 +5922,13 @@ DisplayHandle(ClientData clientData)
     Blt_Bg_FillRectangle(panePtr->handle, drawable, bg, 
 	0, 0, Tk_Width(panePtr->handle), Tk_Height(panePtr->handle), 
 	0, TK_RELIEF_FLAT);
-    Blt_Bg_DrawRectangle(panePtr->handle, drawable, bg, 
-	setPtr->handlePad.side1, setPtr->handlePad.side1, 
-	Tk_Width(panePtr->handle) - PADDING(setPtr->handlePad), 
-	Tk_Height(panePtr->handle) - PADDING(setPtr->handlePad),
-	setPtr->handleBW, relief);
-
+    if (relief != TK_RELIEF_FLAT) {
+        Blt_Bg_DrawRectangle(panePtr->handle, drawable, bg, 
+                setPtr->handlePad.side1, setPtr->handlePad.side1, 
+                Tk_Width(panePtr->handle) - PADDING(setPtr->handlePad), 
+                Tk_Height(panePtr->handle) - PADDING(setPtr->handlePad),
+                setPtr->handleBW, relief);
+    }
     if ((setPtr->highlightThickness > 0) && (panePtr->flags & FOCUS)) {
 	GC gc;
 

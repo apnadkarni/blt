@@ -40,12 +40,14 @@
 #include "bltPictInt.h"
 
 #if defined(__GNUC__) && defined(HAVE_X86) && defined(__OPTIMIZE__)
+#ifdef notdef
 #  define GCC_VERSION \
     ((__GNUC__)*10000+(__GNUC_MINOR__)*100+(__GNUC_PATCHLEVEL__))
 #  if ((GCC_VERSION >= 40801) && (GCC_VERSION < 40900))
 #    warning("Disabling MMX because of GCC version")
 #    undef HAVE_X86_ASM
 #  endif
+#endif
 #endif
 
 #ifdef HAVE_X86_ASM
@@ -159,7 +161,7 @@ SelectPixels(
  		"pcmpeqd %%mm6, %%mm0	# invert logic\n\t"
 		"movq %%mm0, (%0)	# dp = new value\n" :
 		/* output registers */
-		"+r" (dp) :
+		"=r" (dp) :
 		/* input registers */
 		"r" (sp));
 	    dp += 2;
@@ -778,7 +780,7 @@ ZoomVertically(Pict *destPtr, Pict *srcPtr, ResampleFilter *filterPtr)
 	    Blt_Pixel *sp;
 
 	    sp = srcColumnPtr + (splPtr->start * srcPtr->pixelsPerRow);
-	    asm volatile (
+	    asm (
 		/* Clear the accumulator mm5. */
                  "pxor %%mm5, %%mm5	    #  mm5 = 0\n\n" 
                  ".Lasm%=:\n\t" 
@@ -818,7 +820,7 @@ ZoomVertically(Pict *destPtr, Pict *srcPtr, ResampleFilter *filterPtr)
 		 /* Save the word (pixel) in the destination. */
                  "movd %%mm5,(%0)           # dp = word\n"
   		 /* output registers */ 
-		 : "+r" (dp) 
+		 : "=r" (dp) 
 		 /* input registers */
 		 : "r" (splPtr->weights), 
 		   "r" (splPtr->wend), 
@@ -875,7 +877,7 @@ ZoomHorizontally(
 	    Blt_Pixel *sp;
 
 	    sp = srcRowPtr + splPtr->start;
-	    asm volatile (
+	    asm  (
 		/* Clear the accumulator mm5. */
                  "pxor %%mm5, %%mm5        #  mm5 = 0\n\n" 
                  ".Lasm%=:\n\t" 
@@ -916,7 +918,7 @@ ZoomHorizontally(
 		 /* Store the word (pixel) in the destination. */
                  "movd %%mm5,(%0)	   # dp = word\n" 
   		 /* output registers */ 
-		 : "+r" (dp) 
+		 : "=r" (dp) 
 		 /* input registers */
 		 : "r" (splPtr->weights), 
 		   "r" (splPtr->wend), 
@@ -981,7 +983,7 @@ TentVertically(Pict *destPtr, Pict *srcPtr)
 	    "movd %%mm0,(%0)	      # dp = word\n\t"
 	    "movq %%mm3, %%mm1	      # cp = rp\n" :
 	    /* output registers */ 
-	    "+r" (dp), "+r" (rp) :
+	    "=r" (dp), "+r" (rp) :
 	    /* input registers */
 	    "r" (srcColumnPtr));
 	dp += destPtr->pixelsPerRow;
@@ -1001,7 +1003,7 @@ TentVertically(Pict *destPtr, Pict *srcPtr)
   	        "movq %%mm1, %%mm2        #  lp = cp\n\t"
   	        "movq %%mm3, %%mm1        #  cp = rp\n"
 		/* output registers */ 
-		: "+r" (dp), 
+		: "=r" (dp), 
 		  "+r" (rp));
 	    dp += destPtr->pixelsPerRow;
 	    rp += srcPtr->pixelsPerRow;
@@ -1016,7 +1018,7 @@ TentVertically(Pict *destPtr, Pict *srcPtr)
 	    "packuswb %%mm0, %%mm0    #  Pack into low 4 bytes.\n\t"  
 	    "movd %%mm0,(%0)	      #  dp = word\n" 
 	    /* output registers */ 
-	    : "+r" (dp));
+	    : "=r" (dp));
 
 	srcColumnPtr++, destColumnPtr++;
     }
@@ -1067,7 +1069,7 @@ TentHorizontally(Pict *destPtr, Pict *srcPtr)
 	    "movd %%mm0,(%0)	      #  dp = word\n\t"
 	    "movq %%mm3, %%mm1	      #  cp = rp\n" :
 	    /* output registers */ 
-	    "+r" (dp), "+r" (rp) :
+	    "=r" (dp), "+r" (rp) :
 	    /* input registers */
 	    "r" (srcRowPtr));
 	dp++, rp++;
@@ -1086,7 +1088,7 @@ TentHorizontally(Pict *destPtr, Pict *srcPtr)
   	        "movq %%mm1, %%mm2        #  lp = cp\n\t"
   	        "movq %%mm3, %%mm1        #  cp = rp\n" 
 		/* output registers */ 
-		: "+r" (dp), 
+		: "=r" (dp), 
 		  "+r" (rp));
 	    dp++, rp++;
 	}
@@ -1101,7 +1103,7 @@ TentHorizontally(Pict *destPtr, Pict *srcPtr)
 	    "packuswb %%mm0, %%mm0    #  Pack into low 4 bytes.\n\t"  
 	    "movd %%mm0,(%0)	      #  dp = word\n" 
 	    /* output registers */ 
-	    : "+r" (dp));
+	    : "=r" (dp));
 
 	srcRowPtr += srcPtr->pixelsPerRow;
 	destRowPtr += destPtr->pixelsPerRow;
@@ -1284,7 +1286,7 @@ ConvolvePictureVertically(Pict *destPtr, Pict *srcPtr,
 		 /* Save the word (pixel) in the destination. */
                  "movd %%mm5,(%0)           # dp = word\n" 
   		 /* output registers */ 
-		 : "+r" (dp) 
+		 : "=r" (dp) 
 		 /* input registers */
 		 : "r" (splPtr->weights), 
 		   "r" (splPtr->wend), 
@@ -1383,7 +1385,7 @@ ConvolvePictureHorizontally(Pict *destPtr, Pict *srcPtr,
 		 /* Store the word (pixel) in the destination. */
                  "movd %%mm5,(%0)	   # dp = word\n" 
   		 /* output registers */ 
-		 : "+r" (dp) 
+		 : "=r" (dp) 
 		 /* input registers */
 		 : "r" (splPtr->weights), 
 		   "r" (splPtr->wend), 
@@ -1664,7 +1666,7 @@ CopyPictureBits(Pict *destPtr, Pict *srcPtr, int sx, int sy,
 	    asm volatile (
 		"movdqa (%1), %%xmm1\n\t"
 		"movdqa %%xmm1, (%0)\n\t" 
-		: "+r" (dp) 
+		: "=r" (dp) 
 		: "r" (sp));
 	}
 	switch (width & 3) {
@@ -1979,7 +1981,7 @@ BlankPicture(Pict *destPtr, unsigned int colorValue)
 	     dp += 4)
 	    asm volatile (
 		"movdqa %%xmm1, (%0)\n\t" 
-		: "+r" (dp));
+		: "=r" (dp));
 	}
 	switch (width & 3) {
 	case 3:		dp->u32 = colorValue; dp++;
