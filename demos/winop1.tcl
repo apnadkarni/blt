@@ -4,10 +4,10 @@ package require BLT
 source scripts/demo.tcl
 
 #set imgfile ./images/sample.gif
-set imgfile ./images/blt98.gif
 if { [llength $argv] > 0 } {
     set imgfile [lindex $argv 0]
 }
+set imgfile ./images/blt98.gif
 if { [ file exists $imgfile] } {
     set src [image create picture -file $imgfile]  
 } else {
@@ -22,7 +22,7 @@ option add *Label.background white
 . configure -bg white
 set type gif
 set i 0
-foreach scale { 0.8 0.6666666 0.5 0.4 0.3333333 0.3 0.25 0.2 0.15 0.1 } {
+foreach scale { 1.0 0.8 0.6666666 0.5 0.4 0.3333333 0.3 0.25 0.2 0.15 0.1 } {
     incr i
     set iw [expr int($width * $scale)]
     set ih [expr int($height * $scale)]

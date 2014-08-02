@@ -129,10 +129,11 @@ SelectPixels(
 	"movd %1, %%mm5	        # mm5 = H\n\t"
 	"pxor %%mm6, %%mm6	# mm6 = 0\n\t"
 	"punpckldq %%mm4, %%mm4 # mm4 = L,L\n\t" 
-	"punpckldq %%mm5, %%mm5 # mm5 = H,H\n\t" :
-	/* output registers */ :
-	/* input registers */
-	"r" (lowerPtr->u32), "r" (upperPtr->u32));
+	"punpckldq %%mm5, %%mm5 # mm5 = H,H\n\t" 
+        : /* output registers */ 
+        : /* input registers */
+          "r" (lowerPtr->u32), 
+          "r" (upperPtr->u32));
 
     destRowPtr = destPtr->bits, srcRowPtr = srcPtr->bits;
     for (y = 0; y < srcPtr->height; y++) {
@@ -159,11 +160,11 @@ SelectPixels(
 
 		"por %%mm1, %%mm0	# mm0 = (S >= L)|(H >= S)\n\t"
  		"pcmpeqd %%mm6, %%mm0	# invert logic\n\t"
-		"movq %%mm0, (%0)	# dp = new value\n" :
-		/* output registers */
-		"=r" (dp) :
-		/* input registers */
-		"r" (sp));
+		"movq %%mm0, (%0)	# dp = new value\n" 
+                : /* output registers */
+                  "+r" (dp) 
+                : /* input registers */
+                  "r" (sp));
 	    dp += 2;
 	}
 	srcRowPtr  += srcPtr->pixelsPerRow;
@@ -195,11 +196,11 @@ AddPictureToPicture(Pict *destPtr, Pict *srcPtr, int x, int y, int w, int h,
 	    asm volatile (
 	        "movq (%0), %%mm0\n\t" 
 		"paddusb (%1), %%mm0\n\t" 
-		"movq %%mm0, (%0)" : 
-		/* output registers */
-		"+r" (dp) : 
-		/* input registers */
-		"r" (sp));
+		"movq %%mm0, (%0)" 
+                : /* output registers */
+                  "+r" (dp) 
+                : /* input registers */
+                  "r" (sp));
 	}
 	destRowPtr += destPtr->pixelsPerRow;
 	srcRowPtr += srcPtr->pixelsPerRow;
@@ -228,11 +229,11 @@ SubPictureToPicture(Pict *destPtr, Pict *srcPtr, int x, int y, int w, int h,
 	    asm volatile (
 		"movq (%0), %%mm0\n\t" 
 		"psubusb (%1), %%mm0\n\t" 
-		"movq %%mm0, (%0)" : 
-		/* output registers */
-		"+r" (dp) : 
-		/* input registers */
-		"r" (sp));
+		"movq %%mm0, (%0)" 
+                : /* output registers */
+                  "+r" (dp) 
+                : /* input registers */
+                  "r" (sp));
 	}
 	destRowPtr += destPtr->pixelsPerRow;
 	srcRowPtr += srcPtr->pixelsPerRow;
@@ -261,11 +262,11 @@ RSubPictureToPicture(Pict *destPtr, Pict *srcPtr, int x, int y, int w, int h,
 	    asm volatile (
 		"movq (%1), %%mm1\n\t" 
 		"psubusb (%0), %%mm1\n\t" 
-		"movq %%mm1, (%0)" : 
-		/* output registers */
-		"+r" (dp) : 
-		/* input registers */
-		"r" (sp));
+		"movq %%mm1, (%0)" 
+                : /* output registers */
+                  "+r" (dp) 
+                : /* input registers */
+                  "r" (sp));
 	}
 	destRowPtr += destPtr->pixelsPerRow;
 	srcRowPtr += srcPtr->pixelsPerRow;
@@ -294,11 +295,11 @@ AndPictureToPicture(Pict *destPtr, Pict *srcPtr, int x, int y, 	int w, int h,
 	    asm volatile (
 		"movq (%0), %%mm0\n\t" 
 		"pand (%1), %%mm0\n\t" 
-		"movq %%mm0, (%0)" : 
-		/* output registers */
-		"+r" (dp) : 
-		/* input registers */
-		"r" (sp));
+		"movq %%mm0, (%0)" 
+                : /* output registers */
+                  "+r" (dp) 
+                : /* input registers */
+                  "r" (sp));
 	}
 	destRowPtr += destPtr->pixelsPerRow;
 	srcRowPtr += srcPtr->pixelsPerRow;
@@ -327,11 +328,11 @@ OrPictureToPicture(Pict *destPtr, Pict *srcPtr, int x, int y, int w, int h,
 	    asm volatile (
 		"movq (%0), %%mm0\n\t" 
 		"por (%1), %%mm0\n\t" 
-		"movq %%mm0, (%0)" : 
-		/* output registers */
-		"+r" (dp) : 
-		/* input registers */
-		"r" (sp));
+		"movq %%mm0, (%0)" 
+                : /* output registers */
+                  "+r" (dp) 
+                : /* input registers */
+                  "r" (sp));
 	}
 	destRowPtr += destPtr->pixelsPerRow;
 	srcRowPtr += srcPtr->pixelsPerRow;
@@ -361,11 +362,11 @@ NandPictureToPicture(Pict *destPtr, Pict *srcPtr, int x, int y, int w, int h,
 		"movq (%0), %%mm0\n\t" 
 		"pand (%1), %%mm0\n\t" 
 		"pxor %%mm7, %%mm0\n\t" 
-		"movq %%mm0, (%0)" : 
-		/* output registers */
-		"+r" (dp) : 
-		/* input registers */
-		"r" (sp));
+		"movq %%mm0, (%0)" 
+                : /* output registers */
+                  "+r" (dp) 
+                : /* input registers */
+                  "r" (sp));
 	}
 	destRowPtr += destPtr->pixelsPerRow;
 	srcRowPtr += srcPtr->pixelsPerRow;
@@ -396,10 +397,10 @@ NorPictureToPicture(Pict *destPtr, Pict *srcPtr, int x, int y, int w, int h,
 		"por (%1), %%mm0\n\t" 
 		"pxor %%mm7, %%mm0\n\t" 
 		"movq %%mm0, (%0)" 
-		/* output registers */
-		: "+r" (dp) 
-		/* input registers */
-		: "r" (sp));
+		: /* output registers */
+                  "+r" (dp) 
+                : /* input registers */
+                  "r" (sp));
 	}
 	destRowPtr += destPtr->pixelsPerRow;
 	srcRowPtr += srcPtr->pixelsPerRow;
@@ -429,10 +430,10 @@ XorPictureToPicture(Pict *destPtr, Pict *srcPtr, int x, int y, int w, int h,
 		"movq (%0), %%mm0\n\t" 
 		"pxor (%1), %%mm0\n\t" 
 		"movq %%mm0, (%0)" 
-		/* output registers */
-		: "+r" (dp) 
-		/* input registers */
-		: "r" (sp));
+		: /* output registers */
+                  "+r" (dp) 
+                : /* input registers */
+                  "r" (sp));
 	}
 	destRowPtr += destPtr->pixelsPerRow;
 	srcRowPtr += srcPtr->pixelsPerRow;
@@ -469,10 +470,10 @@ MinPictureToPicture(Pict *destPtr, Pict *srcPtr, int x, int y, int w, int h,
 		"pand %%mm2, %%mm1		# mm0 = ~mask & B\n\t" 
 		"por %%mm1, %%mm0		# mm0 = R1 | R2\n\t" 
 		"movq %%mm0, (%0)" 
-		/* output registers */
-		: "+r" (dp) 
-		/* input registers */
-		: "r" (sp));
+		: /* output registers */
+                  "+r" (dp) 
+                : /* input registers */
+                  "r" (sp));
 	}
 	destRowPtr += destPtr->pixelsPerRow;
 	srcRowPtr += srcPtr->pixelsPerRow;
@@ -509,10 +510,10 @@ MaxPictureToPicture(Pict *destPtr, Pict *srcPtr, int x, int y, int w, int h,
 		"pand %%mm2, %%mm0		# mm0 = ~mask & A\n\t" 
 		"por %%mm1, %%mm0		# mm3 = R1 | R2\n\t" 
 		"movq %%mm0, (%0)" 
-		/* output registers */
-		: "+r" (dp) 
-		/* input registers */
-		: "r" (sp));
+		: /* output registers */
+                  "+r" (dp) 
+                : /* input registers */
+                  "r" (sp));
 	}
 	destRowPtr += destPtr->pixelsPerRow;
 	srcRowPtr += srcPtr->pixelsPerRow;
@@ -595,10 +596,9 @@ ApplyScalarToPicture(
 	/* Put the scalar into hi/lo 32-bit words.*/
 	"movd %0, %%mm4		  # mm4 = scalar\n\t"
 	"punpckldq %%mm4, %%mm4   # mm2 = S,S\n" 
-	/* output registers */
-	:
-	/* input registers */
-	: "r" (colorPtr->u32));
+	: /* output registers */
+        : /* input registers */
+          "r" (colorPtr->u32));
 
     srcRowPtr = srcPtr->bits;
     for (y = 0; y < srcPtr->height; y++) {
@@ -612,9 +612,9 @@ ApplyScalarToPicture(
 		asm volatile (
 		    "movq (%0), %%mm0\n\t" 
 		    "paddusb %%mm4, %%mm0\n\t" 
-		    "movq %%mm0, (%0)" : 
-		    /* output registers */
-		    "+r" (sp));
+		    "movq %%mm0, (%0)" 
+                    : /* output registers */
+                      "+r" (sp));
 		sp += 2;
 	    }
 	    break;
@@ -624,9 +624,9 @@ ApplyScalarToPicture(
 		asm volatile (
 		     "movq (%0), %%mm0\n\t" 
 		     "psubusb %%mm4, %%mm0\n\t" 
-		     "movq %%mm0, (%0)" : 
-		     /* output registers */
-		     "+r" (sp));
+		     "movq %%mm0, (%0)" 
+                     : /* output registers */
+                       "+r" (sp));
 		sp += 2;
 	    }
 	    break;
@@ -637,9 +637,9 @@ ApplyScalarToPicture(
 		     "movq (%0), %%mm0\n\t" 
 		     "movq %%mm4, %%mm1\n\t"
 		     "psubusb %%mm0, %%mm1\n\t" 
-		     "movq %%mm1, (%0)" : 
-		     /* output registers */
-		     "+r" (sp));
+		     "movq %%mm1, (%0)" 
+                     : /* output registers */
+                       "+r" (sp));
 		sp += 2;
 	    }
 	    break;
@@ -649,9 +649,9 @@ ApplyScalarToPicture(
 		asm volatile (
 		    "movq (%0), %%mm0\n\t" 
 		    "pand %%mm4, %%mm0\n\t" 
-		    "movq %%mm0, (%0)" : 
-		    /* output registers */
-		    "+r" (sp));
+		    "movq %%mm0, (%0)" 
+                    : /* output registers */
+                      "+r" (sp));
 		sp += 2;
 	    }
 	    break;
@@ -661,9 +661,9 @@ ApplyScalarToPicture(
 		asm volatile (
 		    "movq (%0), %%mm0\n\t" 
 		    "por %%mm4, %%mm0\n\t" 
-		    "movq %%mm0, (%0)" : 
-		    /* output registers */
-		    "+r" (sp));
+		    "movq %%mm0, (%0)" 
+                    : /* output registers */
+                      "+r" (sp));
 		sp += 2;
 	    }
 	    break;
@@ -674,9 +674,9 @@ ApplyScalarToPicture(
 		    "movq (%0), %%mm0\n\t" 
 		    "pand %%mm4, %%mm0\n\t" 
 		    "pxor %%mm7, %%mm0\n\t" 
-		    "movq %%mm0, (%0)" : 
-		    /* output registers */
-		    "+r" (sp));
+		    "movq %%mm0, (%0)" 
+                    : /* output registers */
+                      "+r" (sp));
 		sp += 2;
 	    }
 	    break;
@@ -687,9 +687,9 @@ ApplyScalarToPicture(
 		    "movq (%0), %%mm0\n\t" 
 		    "por %%mm4, %%mm0\n\t" 
 		    "pxor %%mm7, %%mm0\n\t" 
-		    "movq %%mm0, (%0)" : 
-		    /* output registers */
-		    "+r" (sp));
+		    "movq %%mm0, (%0)" 
+                    : /* output registers */
+                      "+r" (sp));
 		sp += 2;
 	    }
 	    break;
@@ -699,9 +699,9 @@ ApplyScalarToPicture(
 		asm volatile (
 		    "movq (%0), %%mm0\n\t" 
 		    "pxor %%mm4, %%mm0\n\t" 
-		    "movq %%mm0, (%0)" : 
-		    /* output registers */
-		    "+r" (sp));
+		    "movq %%mm0, (%0)" 
+                    : /* output registers */
+                      "+r" (sp));
 		sp += 2;
 	    }
 	    break;
@@ -718,8 +718,8 @@ ApplyScalarToPicture(
 		    "pand %%mm4, %%mm1    # mm1 = S & ~mask\n\t" 
 		    "por %%mm1, %%mm0     # mm0 = (S&~mask)|(mask&C)\n\t" 
 		    "movq %%mm0, (%0)" 
-		    /* output registers */
-		    : "+r" (sp));
+		    : /* output registers */
+                      "+r" (sp));
 		sp += 2;
 	    }
 	    break;
@@ -736,8 +736,8 @@ ApplyScalarToPicture(
 		    "pand %%mm4, %%mm1    # mm1 = S & ~mask\n\t" 
 		    "por %%mm1, %%mm0     # mm0 = (S&~mask)|(mask&C)\n\t" 
 		    "movq %%mm0, (%0)" 
-		    /* output registers */
-		    : "+r" (sp));
+		    : /* output registers */
+                      "+r" (sp));
 		sp += 2;
 	    }
 	    break;
@@ -753,12 +753,10 @@ ZoomVertically(Pict *destPtr, Pict *srcPtr, ResampleFilter *filterPtr)
     Sample *samples, *send;
     int x;
     int bytesPerSample;			/* Size of sample. */
-    long bytesPerRow;
 
     /* Pre-calculate filter contributions for each row. */
     bytesPerSample = Blt_ComputeWeights(srcPtr->height, destPtr->height, 
 	filterPtr, &samples);
-    bytesPerRow = sizeof(Blt_Pixel) * srcPtr->pixelsPerRow;
     send = (Sample *)((char *)samples + (destPtr->height * bytesPerSample));
 
     asm volatile (
@@ -767,70 +765,62 @@ ZoomVertically(Pict *destPtr, Pict *srcPtr, ResampleFilter *filterPtr)
 	"pcmpeqw %mm2, %mm2	# mm2 = -1 \n\t"
 	"psubw %mm6, %mm2	# mm2 = 1,1,1,1\n\t"
 	"psllw $4, %mm2	        # mm2 = BIAS\n");
-
     /* Apply filter to each row. */
     for (x = 0; x < srcPtr->width; x++) {
-	Blt_Pixel *dp, *srcColumnPtr;
+	Blt_Pixel *dp, *srcColPtr;
 	Sample *splPtr;
 
-	srcColumnPtr = srcPtr->bits + x;
+	srcColPtr = srcPtr->bits + x;
 	dp = destPtr->bits + x;
 	for (splPtr = samples; splPtr < send; 
 	     splPtr = (Sample *)((char *)splPtr + bytesPerSample)) {
 	    Blt_Pixel *sp;
+	    PixelWeight *wp;
 
-	    sp = srcColumnPtr + (splPtr->start * srcPtr->pixelsPerRow);
-	    asm (
-		/* Clear the accumulator mm5. */
-                 "pxor %%mm5, %%mm5	    #  mm5 = 0\n\n" 
-                 ".Lasm%=:\n\t" 
-		 /* Load the weighting factor into mm1. */
-		 "movd (%1), %%mm1	    #  mm1 = 0,0,0,W\n\t"
-		 /* Load the source pixel into mm0. */
-                 "movd (%3), %%mm0          #  mm0 = S\n\t" 
-		 /* Unpack the weighting factor into mm1. */
-		 "punpcklwd %%mm1, %%mm1    #  mm1 = 0,0,W,W\n\t"
-		 /* Unpack the pixel components into 16-bit words.*/
-                 "punpcklbw %%mm6, %%mm0    #  mm0 = Sa,Sb,Sg,Sr\n\t" 
-		 /*  */
-		 "punpcklwd %%mm1, %%mm1    #  mm1 = W,W,W,W\n\t"
-		 /* Scale the 8-bit components to 14 bits. (S * 257) >> 2 */
-                 "movq %%mm0, %%mm3         #  mm3 = S8\n\t" 
-                 "psllw $8, %%mm3           #  mm3 = S8 * 256\n\t" 
-                 "paddw %%mm3, %%mm0        #  mm0 = S16\n\t" 
-                 "psrlw $1, %%mm0           #  mm0 = S15\n\t" 
-		 /* Multiple each pixel component by the weight.  Note that
-		  * the lower 16-bits of the product are truncated (bad)
-		  * creating round-off error in the sum. */
-                 "pmulhw %%mm1, %%mm0       #  mm0 = S15 * W14\n\t" 
-                 "add $4, %1                #  wp++\n\t" 
-                 "add %4, %3                #  sp++\n\t" 
-                 /* Accumulate upper 16-bit results of product in mm5. */
-                 "paddsw %%mm0, %%mm5       #  mm5 = prod + mm5\n\t" 
-                 /* Move the pointers to the next weight and pixel */
-                 "cmp %2, %1                #  wend == wp\n\t" 
-                 "jnz .Lasm%=\n\t" 
-                 /* end loop */
-                 /* Add a rounding bias to the pixel sum */
-                 "paddw %%mm2, %%mm5        # mm5 = A13 + BIAS\n\t" 
-                 /* Shift off fractional part */
-                 "psraw $5, %%mm5           # mm5 = A8\n\t" 
-		 /* Pack 16-bit components into lower 4 bytes. */
-                 "packuswb  %%mm5, %%mm5    # Pack 4 low-order bytes.\n\t" 
-		 /* Save the word (pixel) in the destination. */
-                 "movd %%mm5,(%0)           # dp = word\n"
-  		 /* output registers */ 
-		 : "=r" (dp) 
-		 /* input registers */
-		 : "r" (splPtr->weights), 
-		   "r" (splPtr->wend), 
-		   "r" (sp),
-		   "r" (bytesPerRow));
-#ifdef notdef
-	    if (dp->Alpha != 0xFF) {
-		fprintf(stdout, "mmx v-alpha=0x%x\n", dp->Alpha);
-	    }
-#endif
+	    asm volatile (
+                /* Clear the accumulator mm5. */
+                "pxor %mm5, %mm5        #  mm5 = 0\n\t");
+	    sp = srcColPtr + (splPtr->start * srcPtr->pixelsPerRow);
+	    for (wp = splPtr->weights; wp < splPtr->wend; wp++) {
+ 	        asm volatile (
+  		    /* Load the weighting factor into mm1. */
+		    "movd (%0), %%mm1	       #  mm1 = 0,0,0,W\n\t"
+                    /* Load the source pixel into mm0. */
+                    "movd (%1), %%mm0          #  mm0 = S\n\t" 
+                    /* Unpack the weighting factor into mm1. */
+                    "punpcklwd %%mm1, %%mm1    #  mm1 = 0,0,W,W\n\t"
+                    /* Unpack the pixel components into 16-bit words.*/
+                    "punpcklbw %%mm6, %%mm0    #  mm0 = Sa,Sb,Sg,Sr\n\t" 
+                    /*  */
+                    "punpcklwd %%mm1, %%mm1    #  mm1 = W,W,W,W\n\t"
+                    /* Scale the 8-bit components to 14 bits. (S * 257) >> 2 */
+                    "movq %%mm0, %%mm3         #  mm3 = S8\n\t" 
+                    "psllw $8, %%mm3           #  mm3 = S8 * 256\n\t" 
+                    "paddw %%mm3, %%mm0        #  mm0 = S16\n\t" 
+                    "psrlw $1, %%mm0           #  mm0 = S15\n\t" 
+                    /* Multiple each pixel component by the weight.  Note that
+                     * the lower 16-bits of the product are truncated (bad)
+                     * creating round-off error in the sum. */
+                    "pmulhw %%mm1, %%mm0       #  mm0 = S15 * W14\n\t" 
+                    /* Accumulate upper 16-bit results of product in mm5. */
+                    "paddsw %%mm0, %%mm5       #  mm5 = prod + mm5\n\t" 
+                    : /* output registers */ 
+                    : /* input registers */
+                      "r" (wp), 
+                      "r" (sp));
+		sp += srcPtr->pixelsPerRow;
+            }
+	    asm volatile (
+                /* Add a rounding bias to the pixel sum */
+                "paddw %%mm2, %%mm5        # mm5 = A13 + BIAS\n\t" 
+                /* Shift off fractional part */
+                "psraw $5, %%mm5           # mm5 = A8\n\t" 
+                /* Pack 16-bit components into lower 4 bytes. */
+                "packuswb  %%mm5, %%mm5    # Pack 4 low-order bytes.\n\t" 
+                /* Save the word (pixel) in the destination. */
+                "movd %%mm5,(%0)           # dp = word\n" 
+                : /* output registers */ 
+                  "+r" (dp));
 	    dp += destPtr->pixelsPerRow;
 
 	}
@@ -875,62 +865,56 @@ ZoomHorizontally(
 	for (splPtr = samples; splPtr < send; 
 	     splPtr = (Sample *)((char *)splPtr + bytesPerSample)) {
 	    Blt_Pixel *sp;
+	    PixelWeight *wp;
 
 	    sp = srcRowPtr + splPtr->start;
-	    asm  (
-		/* Clear the accumulator mm5. */
-                 "pxor %%mm5, %%mm5        #  mm5 = 0\n\n" 
-                 ".Lasm%=:\n\t" 
-		 /* Load the weighting factor into mm1. */
-                 "movd (%1), %%mm1         #  mm1 = W\n\t" 
-		 /* Get the source RGBA pixel. */
-                 "movd (%3), %%mm0         #  mm0 = sp\n\t" 
-		 /* Unpack the weighting factor into mm1. */
-		 "punpcklwd %%mm1, %%mm1   #  mm1 = 0,0,W,W\n\t"
-		 /* Unpack the pixel into mm0. */
-                 "punpcklbw %%mm6, %%mm0   #  mm0 = Sa,Sr,Sg,Sb\n\t" 
-		 /*  */
-		 "punpcklwd %%mm1, %%mm1   #  mm1 = W,W,W,W\n\t"
-		 /* Scale the 8-bit components to 14 bits: (S * 257) >> 2 */
-                 "movq %%mm0, %%mm3        #  mm3 = S8\n\t" 
-                 "psllw $8, %%mm3          #  mm3 = S8 * 256\n\t" 
-                 "paddw %%mm3, %%mm0       #  mm0 = S16\n\t" 
-                 "psrlw $1, %%mm0          #  mm0 = S15\n\t" 
-		 /* Multiple each pixel component by the weight.  Note
-		  * that the lower 16-bits of the product are
-		  * truncated (bad) creating round-off error in the
-		  * sum. */
-                 "pmulhw %%mm1, %%mm0      #  mm0 = S15 * W14\n\t"  
-                 "add $4, %1		   #  wp++\n\t" 
-                 "add $4, %3               #  sp++\n\t" 
-                 /* Add the 16-bit components to mm5. */
-                 "paddsw %%mm0, %%mm5      #  mm5 = A13 + mm5\n\t" 
-                 /* Move the pointers to the next weight and pixel */
-                 "cmp %2, %1               #  wend == wp\n\t" 
-                 "jnz .Lasm%=\n\t" 
-                 /* end loop */
-                 /* Add a rounding bias to the pixel sum. */
-                 "paddw %%mm2, %%mm5       # mm5 = A13 + BIAS\n\t" 
-                 /* Shift off fractional portion. */
-                 "psraw $5, %%mm5          # mm5 = A8\n\t" 
-		 /* Pack 16-bit components into lower 4 bytes. */
-                 "packuswb %%mm5, %%mm5    # Pack A8 into low 4 bytes.\n\t" 
-		 /* Store the word (pixel) in the destination. */
-                 "movd %%mm5,(%0)	   # dp = word\n" 
-  		 /* output registers */ 
-		 : "=r" (dp) 
-		 /* input registers */
-		 : "r" (splPtr->weights), 
-		   "r" (splPtr->wend), 
-		   "r" (sp));
-#ifdef notdef
-	    if (dp->Alpha != 0xFF) {
-		fprintf(stdout, "mmx h-alpha=0x%x\n", dp->Alpha);
-	    }
-#endif
+	    asm volatile (
+                /* Clear the accumulator mm5. */
+                "pxor %mm5, %mm5        #  mm5 = 0\n\n");
+	    for (wp = splPtr->weights; wp < splPtr->wend; wp++) {
+                asm volatile (
+ 		   /* Load the weighting factor into mm1. */
+                   "movd (%0), %%mm1         #  mm1 = W\n\t" 
+                   /* Get the source RGBA pixel. */
+                   "movd (%1), %%mm0         #  mm0 = sp\n\t" 
+                   /* Unpack the weighting factor into mm1. */
+                   "punpcklwd %%mm1, %%mm1   #  mm1 = 0,0,W,W\n\t"
+                   /* Unpack the pixel into mm0. */
+                   "punpcklbw %%mm6, %%mm0   #  mm0 = Sa,Sr,Sg,Sb\n\t" 
+                   /*  */
+                   "punpcklwd %%mm1, %%mm1   #  mm1 = W,W,W,W\n\t"
+                   /* Scale the 8-bit components to 14 bits: (S * 257) >> 2 */
+                   "movq %%mm0, %%mm3        #  mm3 = S8\n\t" 
+                   "psllw $8, %%mm3          #  mm3 = S8 * 256\n\t" 
+                   "paddw %%mm3, %%mm0       #  mm0 = S16\n\t" 
+                   "psrlw $1, %%mm0          #  mm0 = S15\n\t" 
+                   /* Multiple each pixel component by the weight.  Note
+                    * that the lower 16-bits of the product are
+                    * truncated (bad) creating round-off error in the
+                    * sum. */
+                   "pmulhw %%mm1, %%mm0      #  mm0 = S15 * W14\n\t"  
+                   /* Add the 16-bit components to mm5. */
+                   "paddsw %%mm0, %%mm5      #  mm5 = A13 + mm5\n\t" 
+                   : /* output registers */ 
+                   : /* input registers */
+                     "r" (wp), 
+		     "r" (sp));
+                sp++;
+            }                   
+            asm volatile (
+                /* Add a rounding bias to the pixel sum. */
+                "paddw %%mm2, %%mm5       # mm5 = A13 + BIAS\n\t" 
+                /* Shift off fractional portion. */
+                "psraw $5, %%mm5          # mm5 = A8\n\t" 
+                /* Pack 16-bit components into lower 4 bytes. */
+                "packuswb %%mm5, %%mm5    # Pack A8 into low 4 bytes.\n\t" 
+                /* Store the word (pixel) in the destination. */
+                "movd %%mm5,(%0)	   # dp = word\n" 
+                : /* output registers */ 
+                  "+r" (dp));
 	    dp++;
 	}
-	srcRowPtr += srcPtr->pixelsPerRow;
+        srcRowPtr += srcPtr->pixelsPerRow;
 	destRowPtr += destPtr->pixelsPerRow;
     }
     asm volatile ("emms");
@@ -942,7 +926,7 @@ ZoomHorizontally(
 static void
 TentVertically(Pict *destPtr, Pict *srcPtr) 
 {
-    Blt_Pixel *srcColumnPtr, *destColumnPtr;
+    Blt_Pixel *srcColPtr, *destColumnPtr;
     int x;
     size_t numPixels;
     
@@ -951,7 +935,7 @@ TentVertically(Pict *destPtr, Pict *srcPtr)
 	"pxor %mm6, %mm6	# mm6 = 0\n");
 
     numPixels = srcPtr->height * srcPtr->pixelsPerRow; 
-    srcColumnPtr = srcPtr->bits;
+    srcColPtr = srcPtr->bits;
     destColumnPtr = destPtr->bits;
     for (x = 0; x < srcPtr->width; x++) {
 	Blt_Pixel *dp, *rp, *rend;
@@ -967,7 +951,7 @@ TentVertically(Pict *destPtr, Pict *srcPtr)
 	 * mm7 = 
 	 */
 	dp = destColumnPtr;
-	rp = srcColumnPtr + srcPtr->pixelsPerRow;
+	rp = srcColPtr + srcPtr->pixelsPerRow;
 	asm volatile (
 	    "movd (%2), %%mm1         # mm1 = cp\n\t"
 	    "movd (%1), %%mm3         # mm3 = rp\n\t"
@@ -981,15 +965,16 @@ TentVertically(Pict *destPtr, Pict *srcPtr)
 	    "psraw $2, %%mm0          # mm0 = (lp + (cp << 1) + rp) >> 2\n\t"
 	    "packuswb %%mm0, %%mm0    # Pack into low 4 bytes.\n\t"  
 	    "movd %%mm0,(%0)	      # dp = word\n\t"
-	    "movq %%mm3, %%mm1	      # cp = rp\n" :
-	    /* output registers */ 
-	    "=r" (dp), "+r" (rp) :
-	    /* input registers */
-	    "r" (srcColumnPtr));
+	    "movq %%mm3, %%mm1	      # cp = rp\n" 
+	    : /* output registers */ 
+              "=r" (dp), 
+              "+r" (rp) 
+            : /* input registers */
+              "r" (srcColPtr));
 	dp += destPtr->pixelsPerRow;
 	rp += srcPtr->pixelsPerRow;
 
-	for (rend = srcColumnPtr + numPixels; rp < rend; /*empty*/) {
+	for (rend = srcColPtr + numPixels; rp < rend; /*empty*/) {
 	    asm volatile (
 	        "movd (%1), %%mm3         #  mm3 = rp\n\t" 
 	        "punpcklbw %%mm6, %%mm3   #  mm3 = S8\n\t"
@@ -1002,8 +987,8 @@ TentVertically(Pict *destPtr, Pict *srcPtr)
 		"movd %%mm0,(%0)	  #  dp = word\n\t" 
   	        "movq %%mm1, %%mm2        #  lp = cp\n\t"
   	        "movq %%mm3, %%mm1        #  cp = rp\n"
-		/* output registers */ 
-		: "=r" (dp), 
+		: /* output registers */ 
+                  "=r" (dp), 
 		  "+r" (rp));
 	    dp += destPtr->pixelsPerRow;
 	    rp += srcPtr->pixelsPerRow;
@@ -1017,10 +1002,10 @@ TentVertically(Pict *destPtr, Pict *srcPtr)
 	    "psraw $2, %%mm0          #  mm0 = (lp + (cp << 1) + rp) >> 2\n\t"
 	    "packuswb %%mm0, %%mm0    #  Pack into low 4 bytes.\n\t"  
 	    "movd %%mm0,(%0)	      #  dp = word\n" 
-	    /* output registers */ 
-	    : "=r" (dp));
+	    : /* output registers */ 
+              "=r" (dp));
 
-	srcColumnPtr++, destColumnPtr++;
+	srcColPtr++, destColumnPtr++;
     }
     asm volatile ("emms");
 }
@@ -1067,11 +1052,12 @@ TentHorizontally(Pict *destPtr, Pict *srcPtr)
 	    "psraw $2, %%mm0          #  mm0 = (lp + (cp << 1) + rp) >> 2\n\t"
 	    "packuswb %%mm0, %%mm0    #  Pack into low 4 bytes.\n\t"  
 	    "movd %%mm0,(%0)	      #  dp = word\n\t"
-	    "movq %%mm3, %%mm1	      #  cp = rp\n" :
-	    /* output registers */ 
-	    "=r" (dp), "+r" (rp) :
-	    /* input registers */
-	    "r" (srcRowPtr));
+	    "movq %%mm3, %%mm1	      #  cp = rp\n" 
+	    : /* output registers */ 
+              "=r" (dp), 
+              "+r" (rp) 
+            : /* input registers */
+              "r" (srcRowPtr));
 	dp++, rp++;
 
 	for (rend = srcRowPtr + srcPtr->width; rp < rend; /*empty*/) {
@@ -1087,8 +1073,8 @@ TentHorizontally(Pict *destPtr, Pict *srcPtr)
 		"movd %%mm0,(%0)	  #  dp = word\n\t" 
   	        "movq %%mm1, %%mm2        #  lp = cp\n\t"
   	        "movq %%mm3, %%mm1        #  cp = rp\n" 
-		/* output registers */ 
-		: "=r" (dp), 
+		: /* output registers */ 
+                  "=r" (dp), 
 		  "+r" (rp));
 	    dp++, rp++;
 	}
@@ -1102,8 +1088,8 @@ TentHorizontally(Pict *destPtr, Pict *srcPtr)
 	    "psraw $2, %%mm0          #  mm0 = (lp + (cp << 1) + rp) >> 2\n\t"
 	    "packuswb %%mm0, %%mm0    #  Pack into low 4 bytes.\n\t"  
 	    "movd %%mm0,(%0)	      #  dp = word\n" 
-	    /* output registers */ 
-	    : "=r" (dp));
+	    : /* output registers */ 
+              "=r" (dp));
 
 	srcRowPtr += srcPtr->pixelsPerRow;
 	destRowPtr += destPtr->pixelsPerRow;
@@ -1237,16 +1223,16 @@ ConvolvePictureVertically(Pict *destPtr, Pict *srcPtr,
 
     /* Apply filter to each row. */
     for (x = 0; x < srcPtr->width; x++) {
-	Blt_Pixel *dp, *srcColumnPtr;
+	Blt_Pixel *dp, *srcColPtr;
 	Sample *splPtr;
 
-	srcColumnPtr = srcPtr->bits + x;
+	srcColPtr = srcPtr->bits + x;
 	dp = destPtr->bits + x;
 	for (splPtr = samples; splPtr < send; 
 	     splPtr = (Sample *)((char *)splPtr + bytesPerSample)) {
 	    Blt_Pixel *sp;
 
-	    sp = srcColumnPtr + (splPtr->start * srcPtr->pixelsPerRow);
+	    sp = srcColPtr + (splPtr->start * srcPtr->pixelsPerRow);
 	    asm volatile (
 		/* Clear the accumulator mm5. */
                  "pxor %%mm5, %%mm5	    # mm5 = 0\n\n" 
@@ -1425,10 +1411,9 @@ AssociateColors(Pict *srcPtr)		/* (in/out) picture */
 	"movd %0, %%mm4         # mm4 = mask\n\t" 
 	"psllw $7, %%mm5        # mm5 = ROUND = 128\n" 
 	"punpcklbw %%mm6, %%mm4 # mm4 = 0,0,0,FF\n\t" 
-	/* outputs */
-	: 
-	/* inputs */
-	: "r" (mask.u32));
+	: /* outputs */
+        : /* inputs */
+          "r" (mask.u32));
 
     srcRowPtr = srcPtr->bits;
     for (y = 0; y < srcPtr->height; y++) {
@@ -1488,11 +1473,11 @@ AssociateColors(Pict *srcPtr)		/* (in/out) picture */
 		"packuswb %%mm1, %%mm1    #  Pack 4 low bytes.\n\t" 
 		"movd %%mm0, (%0)         #  *P = word\n" 
 		"movd %%mm1, (%1)         #  *Q = word\n" 
-		/* outputs */
-		: "+r" (p), 
+		: /* outputs */
+                  "+r" (p), 
 		  "+r" (q)
-		/* inputs */
-		: "r" ((unsigned int)(p->Alpha)), 
+                : /* inputs */
+                  "r" ((unsigned int)(p->Alpha)), 
 		  "r" ((unsigned int)(q->Alpha)));
 	}
 	srcRowPtr += srcPtr->pixelsPerRow;
