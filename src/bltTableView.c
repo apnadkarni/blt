@@ -405,6 +405,9 @@ static Blt_ConfigSpec tableSpecs[] =
     {BLT_CONFIG_PIXELS_NNEG, "-highlightthickness", "highlightThickness",
 	"HighlightThickness", DEF_FOCUS_HIGHLIGHT_WIDTH, 
 	Blt_Offset(TableView, highlightWidth), BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_CUSTOM, "-increasingicon", "increaingIcon", "IncreasingIcon", 
+	DEF_SORT_UP_ICON, Blt_Offset(TableView, sort.up), 
+	BLT_CONFIG_NULL_OK | BLT_CONFIG_DONT_SET_DEFAULT, &iconOption},
     {BLT_CONFIG_OBJ, "-rowcommand", "rowCommand", "RowCommand", 
 	DEF_ROW_COMMAND, Blt_Offset(TableView, rowCmdObjPtr),
 	BLT_CONFIG_DONT_SET_DEFAULT | BLT_CONFIG_NULL_OK}, 
@@ -431,9 +434,6 @@ static Blt_ConfigSpec tableSpecs[] =
     {BLT_CONFIG_CUSTOM, "-selectmode", "selectMode", "SelectMode",
 	DEF_SELECT_MODE, Blt_Offset(TableView, selectMode), 
 	BLT_CONFIG_DONT_SET_DEFAULT, &selectModeOption},
-    {BLT_CONFIG_CUSTOM, "-increasingicon", "increaingIcon", "IncreasingIcon", 
-	DEF_SORT_UP_ICON, Blt_Offset(TableView, sort.up), 
-	BLT_CONFIG_NULL_OK | BLT_CONFIG_DONT_SET_DEFAULT, &iconOption},
     {BLT_CONFIG_RELIEF, "-relief", "relief", "Relief", DEF_RELIEF, 
 	Blt_Offset(TableView, relief), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_BITMASK, "-sortselection", "sortSelection", "SortSelection",
@@ -1834,7 +1834,7 @@ ScrollModeToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
     case BLT_SCROLL_MODE_LISTBOX: 
 	return Tcl_NewStringObj("listbox", 7);
     case BLT_SCROLL_MODE_HIERBOX: 
-	return Tcl_NewStringObj("hierbox", 9);
+	return Tcl_NewStringObj("hierbox", 7);
     case BLT_SCROLL_MODE_CANVAS:  
 	return Tcl_NewStringObj("canvas", 6);
     default:

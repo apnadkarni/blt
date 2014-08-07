@@ -1129,7 +1129,9 @@ EventuallyOpenDrawer(Drawer *drawPtr)
 	    drawPtr->x = GetReqDrawerWidth(drawPtr);
 	}
     }
+#ifdef notdef
     setPtr->flags |= LAYOUT_PENDING;
+#endif
     EventuallyRedraw(setPtr);
 }
 
@@ -1180,7 +1182,9 @@ EventuallyCloseDrawer(Drawer *drawPtr)
     } else {
 	CloseDrawer(drawPtr);
     }
+#ifdef notdef
     setPtr->flags |= LAYOUT_PENDING;
+#endif
     EventuallyRedraw(setPtr);
 }
 
@@ -2377,6 +2381,8 @@ GetDrawerIterator(Tcl_Interp *interp, Drawerset *setPtr, Tcl_Obj *objPtr,
 	    iterPtr->type = ITER_SINGLE;
 	    return TCL_OK;
 	}
+        Tcl_AppendResult(interp, "unknown handle window \"", string, "\"",
+                         (char *)NULL);
 	return TCL_ERROR;
     } else if ((c == 'a') && (strcmp(iterPtr->tagName, "all") == 0)) {
 	iterPtr->type  = ITER_ALL;
@@ -2764,7 +2770,7 @@ ResetDrawers(Drawerset *setPtr)
 /*
  *---------------------------------------------------------------------------
  *
- * LayoutDrawers --
+ * GetDrawersGeometry --
  *
  *	Calculates the normal space requirements for drawers.  
  *
@@ -2778,7 +2784,7 @@ ResetDrawers(Drawerset *setPtr)
  *---------------------------------------------------------------------------
  */
 static void
-LayoutDrawers(Drawerset *setPtr)
+GetDrawersGeometry(Drawerset *setPtr)
 {
     Blt_ChainLink link, next;
 
@@ -3150,7 +3156,7 @@ RestackDrawers(Drawerset *setPtr)
 static void
 ComputeGeometry(Drawerset *setPtr) 
 {
-    LayoutDrawers(setPtr);
+    GetDrawersGeometry(setPtr);
     if (setPtr->base != NULL) {
 	setPtr->normalWidth = Tk_ReqWidth(setPtr->base);
 	setPtr->normalHeight = Tk_ReqHeight(setPtr->base);
