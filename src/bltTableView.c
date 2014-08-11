@@ -7118,7 +7118,7 @@ ColumnIndexOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  *	Add new columns to the table.
  *
- *	.tv column insert position name ?option values?
+ *	.tv column insert name position ?option values?
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
@@ -7135,6 +7135,10 @@ ColumnInsertOp(ClientData clientData, Tcl_Interp *interp, int objc,
     int isNew;
     long i, insertPos;
 
+    if (viewPtr->table == NULL) {
+	Tcl_AppendResult(interp, "no data table to view.", (char *)NULL);
+	return TCL_ERROR;
+    }
     col = blt_table_get_column(interp, viewPtr->table, objv[3]);
     if (col == NULL) {
 	return TCL_ERROR;
@@ -7162,7 +7166,7 @@ ColumnInsertOp(ClientData clientData, Tcl_Interp *interp, int objc,
     uidOption.clientData = viewPtr;
     styleOption.clientData = viewPtr;
     if (Blt_ConfigureComponentFromObj(viewPtr->interp, viewPtr->tkwin, 
-	colPtr->title, "Column", columnSpecs, objc - 4, objv + 4, 
+	colPtr->title, "Column", columnSpecs, objc - 5, objv + 5, 
 	(char *)colPtr, 0) != TCL_OK) {	
 	DestroyColumn(colPtr);
 	return TCL_ERROR;
@@ -7255,9 +7259,112 @@ ColumnInvokeOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  *	Move a column.
  *
- * .h column move field1 position
+ * .    h column move field1 position 
  *---------------------------------------------------------------------------
  */
+/*ARGSUSED*/
+static int
+ColumnMoveOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+	       Tcl_Obj *const *objv)
+{
+    Column *colPtr;
+    TableView *viewPtr = clientData;
+    long src, dest, count, i;
+    Column **columns;
+    
+    if (GetColumn(interp, viewPtr, objv[3], &colPtr) != TCL_OK) {
+	return TCL_ERROR;
+    }
+    if (Blt_GetPositionFromObj(viewPtr->interp, objv[4], &dest) != TCL_OK){
+	return TCL_ERROR;
+    }
+    for (i = 0; i < viewPtr->numColumns; i++) {
+        Column *colPtr;
+        
+        colPtr = viewPtr->columns[i];
+        colPtr->index = i;
+    }
+    src = colPtr->index;
+    if ((dest < 0) || (dest >= viewPtr->numColumns)) {
+        dest = viewPtr->numColumns - 1;
+    } 
+    if (src == dest) {
+        return TCL_OK;
+    }
+    count = 1;
+    columns = Blt_AssertCalloc(viewPtr->numColumns, sizeof(Column *));
+    if (dest < src) {
+	long i, j;
+
+	/*
+	 *     dest   src
+	 *      v     v
+	 * | | | | | |x|x|x|x| |
+	 *  A A B B B C C C C D
+	 * | | |x|x|x|x| | | | |
+	 *
+	 * Section C is the selected region to move.
+	 */
+	/* Section A: copy everything from 0 to "dest" */
+	for (i = 0; i < dest; i++) {
+	    columns[i] = viewPtr->columns[i];
+	}
+	/* Section C: append the selected region. */
+	for (i = src, j = dest; i < (src + count); i++, j++) {
+	    columns[j] = viewPtr->columns[i];
+	}
+	/* Section B: shift the preceding indices from "dest" to "src".  */
+	for (i = dest; i < src; i++, j++) {
+	    columns[j] = viewPtr->columns[i];
+	}
+	/* Section D: append trailing indices until the end. */
+	for (i = src + count; i < viewPtr->numColumns; i++, j++) {
+	    columns[j] = viewPtr->columns[i];
+	}
+    } else if (src < dest) {
+	long i, j;
+
+	/*
+	 *     src        dest
+	 *      v           v
+	 * | | |x|x|x|x| | | | |
+	 *  A A C C C C B B B D
+	 * | | | | | |x|x|x|x| |
+	 *
+	 * Section C is the selected region to move.
+	 */
+	/* Section A: copy everything from 0 to "src" */
+	for (j = 0; j < src; j++) {
+	    columns[j] = viewPtr->columns[j];
+	}
+	/* Section B: shift the trailing indices from "src" to "dest".  */
+	for (i = (src + count); j < dest; i++, j++) {
+	    columns[j] = viewPtr->columns[i];
+	}
+	/* Section C: append the selected region. */
+	for (i = src; i < (src + count); i++, j++) {
+	    columns[j] = viewPtr->columns[i];
+	}
+	/* Section D: append trailing indices until the end. */
+	for (i = dest + count; i < viewPtr->numColumns; i++, j++) {
+	    columns[j] = viewPtr->columns[i];
+	}
+    }
+    if (viewPtr->columns != NULL) {
+        Blt_Free(viewPtr->columns);
+    }
+    viewPtr->columns = columns;
+    for (i = 0; i < viewPtr->numColumns; i++) {
+        Column *colPtr;
+        
+        colPtr = viewPtr->columns[i];
+        colPtr->index = i;
+    }
+    viewPtr->flags |= GEOMETRY;
+    EventuallyRedraw(viewPtr);
+    return TCL_OK;
+}
+
 
 /*
  *---------------------------------------------------------------------------
@@ -7580,6 +7687,7 @@ static Blt_OpSpec columnOps[] = {
     {"index",      3, ColumnIndexOp,      4, 4, "col",}, 
     {"insert",     3, ColumnInsertOp,     5, 0, "col pos ?option value?...",},  
     {"invoke",     3, ColumnInvokeOp,     4, 4, "col",},  
+    {"move",       1, ColumnMoveOp,       5, 5, "col pos",},  
     {"names",      2, ColumnNamesOp,      3, 3, "",},
     {"nearest",    2, ColumnNearestOp,    4, 4, "y",},
     {"resize",     1, ColumnResizeOp,     3, 0, "args",},
@@ -8240,6 +8348,10 @@ FindOp(ClientData clientData, Tcl_Interp *interp, int objc,
     int result;
     TableView *viewPtr = clientData;
 
+    if (viewPtr->table == NULL) {
+	Tcl_AppendResult(interp, "no data table to view.", (char *)NULL);
+	return TCL_ERROR;
+    }
     memset(&switches, 0, sizeof(switches));
     if (Blt_ParseSwitches(interp, findSwitches, objc - 3, objv + 3, 
 	&switches, BLT_SWITCH_DEFAULTS) < 0) {
@@ -9072,6 +9184,10 @@ RowInsertOp(ClientData clientData, Tcl_Interp *interp, int objc,
     int isNew;
     long i, insertPos;
 
+    if (viewPtr->table == NULL) {
+	Tcl_AppendResult(interp, "no data table to view.", (char *)NULL);
+	return TCL_ERROR;
+    }
     row = blt_table_get_row(interp, viewPtr->table, objv[3]);
     if (row == NULL) {
 	return TCL_ERROR;
@@ -11545,15 +11661,18 @@ DeleteColumns(TableView *viewPtr, BLT_TABLE_NOTIFY_EVENT *eventPtr)
 static void
 AddColumns(TableView *viewPtr, BLT_TABLE_NOTIFY_EVENT *eventPtr)
 {
-    Column **columns;
     long i;
     unsigned long count, oldNumColumns, newNumColumns;
 
     oldNumColumns = viewPtr->numColumns;
     newNumColumns = blt_table_num_columns(viewPtr->table);
     assert(newNumColumns > oldNumColumns);
-    columns = Blt_AssertMalloc(sizeof(Column *) * newNumColumns);
-    count = 0;
+    viewPtr->columns = Blt_Realloc(viewPtr->columns, 
+        sizeof(Column *) * newNumColumns);
+    
+    count = oldNumColumns;
+    /* Loop through the table looking for new columns (i.e. columns that
+     * the tableview widget doesn't know about yet). */
     for (i = 0; i < newNumColumns; i++) {
 	Blt_HashEntry *hPtr;
 	int isNew;
@@ -11582,16 +11701,10 @@ AddColumns(TableView *viewPtr, BLT_TABLE_NOTIFY_EVENT *eventPtr)
 		AddCellGeometry(viewPtr, cellPtr);
 		Blt_SetHashValue(h2Ptr, cellPtr);
 	    }
-	} else {
-	    colPtr = Blt_GetHashValue(hPtr);
+            viewPtr->columns[count] = colPtr;
+            count++;
 	}
-	columns[count] = colPtr;
-	count++;
     }
-    if (viewPtr->columns != NULL) {
-        Blt_Free(viewPtr->columns);
-    }
-    viewPtr->columns = columns;
     viewPtr->numColumns = newNumColumns;
     viewPtr->flags |= LAYOUT_PENDING;
     PossiblyRedraw(viewPtr);

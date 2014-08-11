@@ -2635,14 +2635,6 @@ CheckBoxStyleGeometryProc(Cell *cellPtr, CellStyle *cellStylePtr)
 	iw = IconWidth(stylePtr->icon);
 	ih = IconHeight(stylePtr->icon);
     } 
-    if (stylePtr->onPtr != NULL) {
-	Blt_Free(stylePtr->onPtr);
-	stylePtr->onPtr = NULL;
-    }
-    if (stylePtr->offPtr != NULL) {
-	Blt_Free(stylePtr->offPtr);
-	stylePtr->offPtr = NULL;
-    }
     gap = 0;
     FreeCell(cellPtr);
 
