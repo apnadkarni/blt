@@ -2562,6 +2562,7 @@ CheckBoxStyleConfigureProc(TableView *viewPtr, CellStyle *cellStylePtr)
         if (stylePtr->onPtr != NULL) {
             Blt_Free(stylePtr->onPtr);
         }
+	Blt_Ts_InitStyle(ts);
 	Blt_Ts_SetFont(ts, stylePtr->font);
         string = Tcl_GetStringFromObj(stylePtr->onValueObjPtr, &length);
         stylePtr->onPtr = Blt_Ts_CreateLayout(string, length, &ts);
@@ -2575,6 +2576,7 @@ CheckBoxStyleConfigureProc(TableView *viewPtr, CellStyle *cellStylePtr)
         if (stylePtr->offPtr != NULL) {
             Blt_Free(stylePtr->offPtr);
         }
+	Blt_Ts_InitStyle(ts);
 	Blt_Ts_SetFont(ts, stylePtr->font);
         string = Tcl_GetStringFromObj(stylePtr->offValueObjPtr, &length);
         stylePtr->offPtr = Blt_Ts_CreateLayout(string, length, &ts);
@@ -2870,12 +2872,12 @@ CheckBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
     ix = x;
     iy = y;
     if (rowHeight > ih) {
-        y += (rowHeight - ih) / 2;
+        iy += (rowHeight - ih) / 2;
     }
     tx = ix + iw + gap;
     ty = y;
     if (rowHeight > th) {
-        y += (rowHeight - th) / 2;
+        ty += (rowHeight - th) / 2;
     }
     if (stylePtr->icon != NULL) {
 	Tk_RedrawImage(IconBits(stylePtr->icon), 0, 0, iw, ih, drawable,ix, iy);

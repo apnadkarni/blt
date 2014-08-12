@@ -212,7 +212,7 @@ puts "$count entries"
 $view style create checkbox check \
     -onvalue "directory" -offvalue "file" \
     -showvalue yes
-$view column configure type -style check  
+$view column configure type -style check
 
 $view style create combobox combo \
     -menu $view.menu \
@@ -230,7 +230,7 @@ blt::tk::scrollbar $view.menu.ybar
 $view.menu add -text directory -value directory
 $view.menu add -text file -value file
 
-$view column configure type -style combo 
+#$view column configure type -style combo 
 
 $view filter configure -menu $view.filter 
 
