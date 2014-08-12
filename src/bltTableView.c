@@ -2472,19 +2472,25 @@ RowTraceProc(ClientData clientData, BLT_TABLE_TRACE_EVENT *eventPtr)
     TableView *viewPtr = clientData; 
 
     if (eventPtr->mask & (TABLE_TRACE_WRITES | TABLE_TRACE_UNSETS)) {
-	Row *rowPtr;
+	Column *colPtr;
+        Row *rowPtr;
+        long row, col;
 
-	rowPtr = GetRowContainer(viewPtr, eventPtr->row);
+	colPtr = GetColumnContainer(viewPtr, eventPtr->column);
+        rowPtr = GetRowContainer(viewPtr, eventPtr->row);
+        row = col = -1;
+	if (colPtr != NULL) {
+            col = colPtr->index;
+        }
 	if (rowPtr != NULL) {
 	    rowPtr->flags |= GEOMETRY | REDRAW;
-	}
+            row = rowPtr->index;
+        }
 	viewPtr->flags |= GEOMETRY | LAYOUT_PENDING;
         /* Check if the event's row or column occur outside of the range of
          * visible cells. */
-        if ((blt_table_row_index(eventPtr->row) > 
-             GetLastVisibleRowIndex(viewPtr)) ||
-            (blt_table_column_index(eventPtr->column) > 
-             GetLastVisibleColumnIndex(viewPtr))) {
+        if ((row > GetLastVisibleRowIndex(viewPtr)) ||
+            (col > GetLastVisibleColumnIndex(viewPtr))) {
             return TCL_OK;
         }
 	PossiblyRedraw(viewPtr);
@@ -2510,18 +2516,24 @@ ColumnTraceProc(ClientData clientData, BLT_TABLE_TRACE_EVENT *eventPtr)
 
     if (eventPtr->mask & (TABLE_TRACE_WRITES | TABLE_TRACE_UNSETS)) {
 	Column *colPtr;
+        Row *rowPtr;
+        long row, col;
 
 	colPtr = GetColumnContainer(viewPtr, eventPtr->column);
+        rowPtr = GetRowContainer(viewPtr, eventPtr->row);
+        row = col = -1;
 	if (colPtr != NULL) {
 	    colPtr->flags |= GEOMETRY | REDRAW;
-	}
+            col = colPtr->index;
+        }
+	if (rowPtr != NULL) {
+            row = rowPtr->index;
+        }
 	viewPtr->flags |= GEOMETRY | LAYOUT_PENDING;
         /* Check if the event's row or column occur outside of the range of
          * visible cells. */
-        if ((blt_table_row_index(eventPtr->row) > 
-             GetLastVisibleRowIndex(viewPtr)) ||
-            (blt_table_column_index(eventPtr->column) > 
-             GetLastVisibleColumnIndex(viewPtr))) {
+        if ((row > GetLastVisibleRowIndex(viewPtr)) ||
+            (col > GetLastVisibleColumnIndex(viewPtr))) {
             return TCL_OK;
         }
 	PossiblyRedraw(viewPtr);
@@ -11105,6 +11117,7 @@ ComputeGeometry(TableView *viewPtr)
 		colPtr->titleWidth = colPtr->titleHeight = 0;
 	    }
 	}
+        colPtr->index = i;
 	colPtr->nomWidth = colPtr->titleWidth;
 	if ((colPtr->flags & HIDDEN) == 0) {
 	    if (colPtr->titleHeight > viewPtr->colTitleHeight) {
@@ -11123,6 +11136,7 @@ ComputeGeometry(TableView *viewPtr)
 		rowPtr->titleHeight = rowPtr->titleWidth = 0;
 	    }
 	}
+        rowPtr->index = i;
 	rowPtr->nomHeight = rowPtr->titleHeight;
 	if ((rowPtr->flags & HIDDEN) == 0) {
 	    if (rowPtr->titleWidth > viewPtr->rowTitleWidth) {

@@ -2143,6 +2143,12 @@ TextBoxStyleGeometryProc(Cell *cellPtr, CellStyle *cellStylePtr)
 	if (stylePtr->icon != NULL) {
 	    gap = stylePtr->gap;
 	}
+        if (tw > SHRT_MAX) {
+            tw = SHRT_MAX;
+        }
+        if (th > SHRT_MAX) {
+            th = SHRT_MAX;
+        }
     } 
     if (stylePtr->side & (SIDE_TOP | SIDE_BOTTOM)) {
 	cellPtr->width  += MAX(tw, iw);
@@ -2159,6 +2165,12 @@ TextBoxStyleGeometryProc(Cell *cellPtr, CellStyle *cellStylePtr)
     }
     cellPtr->textWidth = tw;
     cellPtr->textHeight = th;
+#ifdef notdef
+    if (tw > 5000) {
+    fprintf(stderr, "cell row=%d col=%s tw=%d th=%d iw=%d ih=%d w=%d h=%d text=%s\n",
+            rowPtr->index, colPtr->title, tw, th, iw, ih, cellPtr->width, cellPtr->height, cellPtr->text);
+    }
+#endif
 }
 
 /*
@@ -3548,7 +3560,7 @@ ComboBoxStyleFreeProc(CellStyle *cellStylePtr)
  *
  * NewImageBoxStyle --
  *
- *	Creates a "combobox" style.
+ *	Creates a "imagebox" style.
  *
  * Results:
  *	A pointer to the new style structure.
@@ -3817,7 +3829,7 @@ ImageBoxStyleGeometryProc(Cell *cellPtr, CellStyle *cellStylePtr)
  *
  * ImageBoxStyleDrawProc --
  *
- *	Draws the "combobox" given the screen coordinates and the
+ *	Draws the "imagebox" given the screen coordinates and the
  *	value to be displayed.  
  *
  * Results:

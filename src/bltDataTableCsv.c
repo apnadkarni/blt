@@ -1,5 +1,4 @@
 /* -*- mode: c; c-basic-offset: 4; indent-tabs-mode: nil -*- */
-
 /*
  *
  * bltDataTableCsv.c --
@@ -499,9 +498,9 @@ ExportCsvProc(BLT_TABLE table, Tcl_Interp *interp, int objc,
  * ImportGetLine -- 
  *
  *	Get a single line from the input buffer or file.  We don't remove
- *      newlines.  The parser needs them to determine if we are really 
- * 	at the end of a row or in a quoted field.  So the resulting line
- *	always contains a new line unless an error occurs or we hit EOF.
+ *      newlines.  The parser needs them to determine if we are really at
+ *      the end of a row or in a quoted field.  So the resulting line
+ *      always contains a new line unless an error occurs or we hit EOF.
  *
  */
 static int
@@ -546,13 +545,14 @@ ImportGetLine(Tcl_Interp *interp, ImportSwitches *importPtr, char **bufferPtr,
 	*bufferPtr = importPtr->buffer;
 	numBytes = bp - importPtr->buffer;
 	*numBytesPtr = numBytes;
-	importPtr->numBytes -= numBytes;	/* Important to reduce bytes left
-					 * regardless of trailing newline. */
+	importPtr->numBytes -= numBytes; /* Important to reduce bytes left
+                                          * regardless of trailing
+                                          * newline. */
 	if (numBytes > 0) {
 	    if (*(bp-1) != '\n') {
 		/* The last newline has been trimmed.  Append a newline.
-		 * Don't change the data object's string representation. Copy
-		 * the line and append the newline. */
+		 * Don't change the data object's string
+		 * representation. Copy the line and append the newline. */
 		assert(*bp == '\0');
 		Tcl_DStringSetLength(&importPtr->ds, 0);
 		Tcl_DStringAppend(&importPtr->ds, importPtr->buffer, numBytes);
