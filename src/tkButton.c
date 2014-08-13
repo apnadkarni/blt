@@ -661,11 +661,21 @@ ObjToImageProc(
     Button *butPtr = (Button *)(widgRec);
     Tk_Image *imagePtr = (Tk_Image *)(widgRec + offset);
     Tk_Image image;
+    const char *string;
+    unsigned int length;
 
-    image = Tk_GetImage(interp, butPtr->tkwin, Tcl_GetString(objPtr), 
-	ImageChangedProc, butPtr);
-    if (image == NULL) {
-	return TCL_ERROR;
+    string = Tcl_GetStringFromObj(objPtr, &length);
+    if ((flags & BLT_CONFIG_NULL_OK) && (length == 0)) {
+        image = NULL;
+    } else {
+        image = Tk_GetImage(interp, butPtr->tkwin, Tcl_GetString(objPtr), 
+                            ImageChangedProc, butPtr);
+        if (image == NULL) {
+            return TCL_ERROR;
+        }
+    }
+    if (*imagePtr != NULL) {
+        Tk_FreeImage(*imagePtr);
     }
     *imagePtr = image;
     return TCL_OK;

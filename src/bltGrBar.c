@@ -266,7 +266,7 @@ static Blt_CustomOption colormapOption =
 static Blt_ConfigSpec penSpecs[] =
 {
     {BLT_CONFIG_CUSTOM, "-color", "color", "Color", DEF_PEN_ACTIVE_COLOR, 
-	0,  BLT_CONFIG_DONT_SET_DEFAULT | ACTIVE_PEN, &penColorsOption},
+        0,  BLT_CONFIG_DONT_SET_DEFAULT | ACTIVE_PEN, &penColorsOption},
     {BLT_CONFIG_CUSTOM, "-color", "color", "Color", DEF_PEN_NORMAL_COLOR, 
 	0, BLT_CONFIG_DONT_SET_DEFAULT | NORMAL_PEN,  &penColorsOption},
     {BLT_CONFIG_BACKGROUND, "-background", "background", "Background",
@@ -664,7 +664,7 @@ PenColorsToObj(
     int offset,			/* Offset to field in structure */
     int flags)			/* Not used. */
 {
-    BarPen *penPtr = (BarPen *)widgRec;
+    BarPen *penPtr = (BarPen *)(widgRec + offset);
 
     return Tcl_NewStringObj(Tk_NameOfColor(penPtr->errorBarColor), -1);
 }

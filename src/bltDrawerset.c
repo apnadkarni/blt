@@ -106,12 +106,12 @@ typedef int (SizeProc)(Drawer *drawPtr);
 #define DEF_VCURSOR		"sb_v_double_arrow"
 #define DEF_WIDTH		"0"
 
-#define DRAWER_DEF_ANCHOR		TK_ANCHOR_NW
+#define DRAWER_DEF_ANCHOR       TK_ANCHOR_NW
 #define DRAWER_DEF_FILL		FILL_BOTH
 #define DRAWER_DEF_IPAD		0
 #define DRAWER_DEF_PAD		0
 #define DRAWER_DEF_PAD		0
-#define DRAWER_DEF_RESIZE		RESIZE_BOTH
+#define DRAWER_DEF_RESIZE       RESIZE_BOTH
 
 #define FCLAMP(x)	((((x) < 0.0) ? 0.0 : ((x) > 1.0) ? 1.0 : (x)))
 #define VAR_FLAGS (TCL_GLOBAL_ONLY|TCL_TRACE_WRITES|TCL_TRACE_UNSETS)
@@ -491,7 +491,7 @@ static Blt_ConfigSpec drawerSpecs[] =
 	(char *)NULL, Blt_Offset(Drawer, iPadX), 0},
     {BLT_CONFIG_PIXELS_NNEG, "-ipady", (char *)NULL, (char *)NULL, 
 	(char *)NULL, Blt_Offset(Drawer, iPadY), 0},
-    {BLT_CONFIG_OBJ, "-opennvalue", "openValue", "OpenValue", 
+    {BLT_CONFIG_OBJ, "-openvalue", "openValue", "OpenValue", 
 	DEF_DRAWER_OPENVALUE, Blt_Offset(Drawer, openValueObjPtr), 
 	BLT_CONFIG_NULL_OK },
     {BLT_CONFIG_CUSTOM, "-reqheight", "reqHeight", (char *)NULL, (char *)NULL, 
@@ -1085,28 +1085,140 @@ GetReqDrawerHeight(Drawer *drawPtr)
     return h;
 }
 
+static void
+EventuallyOpenDrawer(Drawer *drawPtr) 
+{
+    Drawerset *setPtr;
+
+    if ((drawPtr->flags & (CLOSED|DISABLED)) != HIDE) {
+	return;				/* Already open or disabled. */
+    }
+    setPtr = drawPtr->setPtr;
+    drawPtr->flags &= ~CLOSED;
+    if (setPtr->flags & AUTORAISE) {
+	RaiseDrawer(drawPtr);
+    }
+    if (setPtr->flags & ANIMATE) {
+	int anchor;
+
+	if (drawPtr->side & SIDE_VERTICAL) {
+	    drawPtr->scrollTarget = GetReqDrawerHeight(drawPtr);
+	    if (drawPtr->y < 0) {
+		drawPtr->y = 0;
+	    }
+	    anchor = drawPtr->y;
+	} else {
+	    drawPtr->scrollTarget = GetReqDrawerWidth(drawPtr);
+	    if (drawPtr->x < 0) {
+		drawPtr->x = 0;
+	    }
+	    anchor = drawPtr->x;
+	}
+	if (drawPtr->timerToken != (Tcl_TimerToken)0) {
+	    Tcl_DeleteTimerHandler(drawPtr->timerToken);
+	    drawPtr->timerToken = 0;
+	}
+	drawPtr->scrollIncr = (drawPtr->nom > anchor) ? -setPtr->scrollUnits : 
+	    setPtr->scrollUnits;
+	drawPtr->timerToken = Tcl_CreateTimerHandler(setPtr->interval, 
+		DrawerTimerProc, drawPtr);
+    } else {
+	if (drawPtr->side & SIDE_VERTICAL) {
+	    drawPtr->y = GetReqDrawerHeight(drawPtr);
+	} else {
+	    drawPtr->x = GetReqDrawerWidth(drawPtr);
+	}
+    }
+#ifdef notdef
+    setPtr->flags |= LAYOUT_PENDING;
+#endif
+    EventuallyRedraw(setPtr);
+}
+
+static void
+CloseDrawer(Drawer *drawPtr) 
+{
+    if (drawPtr->flags & (CLOSED|DISABLED)) {
+	return;				/* Already closed or disabled. */
+    }
+    if (drawPtr->tkwin != NULL) {
+	if (Tk_IsMapped(drawPtr->tkwin)) {
+	    Tk_UnmapWindow(drawPtr->tkwin);
+	}
+    }
+    if (Tk_IsMapped(drawPtr->handle)) {
+	Tk_UnmapWindow(drawPtr->handle);
+    }
+    if (drawPtr->side & SIDE_VERTICAL) {
+	drawPtr->y = -1;
+    } else {
+	drawPtr->x = -1;
+    }
+    if (drawPtr->timerToken != (Tcl_TimerToken)0) {
+	Tcl_DeleteTimerHandler(drawPtr->timerToken);
+	drawPtr->timerToken = 0;
+    }
+    drawPtr->flags |= CLOSED;
+}
+
+static void
+EventuallyCloseDrawer(Drawer *drawPtr) 
+{
+    Drawerset *setPtr;
+
+    if (drawPtr->flags & (DISABLED|CLOSED)) {
+	return;				/* Already closed or disabled. */
+    }
+    setPtr = drawPtr->setPtr;
+    if (setPtr->flags & ANIMATE) {
+	drawPtr->scrollTarget = -1;
+	if (drawPtr->timerToken != (Tcl_TimerToken)0) {
+	    Tcl_DeleteTimerHandler(drawPtr->timerToken);
+	    drawPtr->timerToken = 0;
+	}
+	drawPtr->scrollIncr = -setPtr->scrollUnits;
+	drawPtr->timerToken = Tcl_CreateTimerHandler(setPtr->interval, 
+		DrawerTimerProc, drawPtr);
+    } else {
+	CloseDrawer(drawPtr);
+    }
+#ifdef notdef
+    setPtr->flags |= LAYOUT_PENDING;
+#endif
+    EventuallyRedraw(setPtr);
+}
 
 static int
 SetDrawerVariable(Drawer *drawPtr) 
 {
-    Drawerset *setPtr;
-    Tcl_Obj *objPtr;
     int state;
     int result;
 
-    result = TCL_OK;
     state = (drawPtr->flags & CLOSED) ? FALSE : TRUE;
-    objPtr = (state) ? drawPtr->openValueObjPtr : drawPtr->closeValueObjPtr;
-    if (objPtr == NULL) {
-	objPtr = Tcl_NewBooleanObj(state);
+    result = TCL_OK;
+    if (drawPtr->variableObjPtr == NULL) { 
+        /* No variable set. No trace to trigger open/close of the drawer. */
+        if (state) {
+            EventuallyOpenDrawer(drawPtr);
+        } else {
+            EventuallyCloseDrawer(drawPtr);
+        }
+    } else {
+        Tcl_Obj *objPtr;
+        Drawerset *setPtr;
+
+        objPtr = (state) ? drawPtr->openValueObjPtr : drawPtr->closeValueObjPtr;
+        if (objPtr == NULL) {
+            objPtr = Tcl_NewBooleanObj(state);
+        }
+        setPtr = drawPtr->setPtr;
+        Tcl_IncrRefCount(objPtr);
+        if (Tcl_ObjSetVar2(setPtr->interp, drawPtr->variableObjPtr, NULL, 
+                           objPtr, TCL_GLOBAL_ONLY|TCL_LEAVE_ERR_MSG) == NULL) {
+            result = TCL_ERROR;
+        }
+        Tcl_DecrRefCount(objPtr);
     }
-    setPtr = drawPtr->setPtr;
-    Tcl_IncrRefCount(objPtr);
-    if (Tcl_ObjSetVar2(setPtr->interp, drawPtr->variableObjPtr, NULL, 
-		objPtr, TCL_GLOBAL_ONLY|TCL_LEAVE_ERR_MSG) == NULL) {
-	result = TCL_ERROR;
-    }
-    Tcl_DecrRefCount(objPtr);
     return result;
 }
 
@@ -1197,109 +1309,6 @@ DestroyDrawer(Drawer *drawPtr)
     Blt_Free(drawPtr);
 }
 
-static void
-CloseDrawer(Drawer *drawPtr) 
-{
-    if (drawPtr->flags & (CLOSED|DISABLED)) {
-	return;				/* Already closed or disabled. */
-    }
-    if (drawPtr->tkwin != NULL) {
-	if (Tk_IsMapped(drawPtr->tkwin)) {
-	    Tk_UnmapWindow(drawPtr->tkwin);
-	}
-    }
-    if (Tk_IsMapped(drawPtr->handle)) {
-	Tk_UnmapWindow(drawPtr->handle);
-    }
-    if (drawPtr->side & SIDE_VERTICAL) {
-	drawPtr->y = -1;
-    } else {
-	drawPtr->x = -1;
-    }
-    if (drawPtr->timerToken != (Tcl_TimerToken)0) {
-	Tcl_DeleteTimerHandler(drawPtr->timerToken);
-	drawPtr->timerToken = 0;
-    }
-    drawPtr->flags |= CLOSED;
-    SetDrawerVariable(drawPtr);
-}
-
-
-static void
-EventuallyOpenDrawer(Drawer *drawPtr) 
-{
-    Drawerset *setPtr;
-
-    if ((drawPtr->flags & (CLOSED|DISABLED)) != HIDE) {
-	return;				/* Already open or disabled. */
-    }
-    setPtr = drawPtr->setPtr;
-    drawPtr->flags &= ~CLOSED;
-    SetDrawerVariable(drawPtr);
-
-    if (setPtr->flags & AUTORAISE) {
-	RaiseDrawer(drawPtr);
-    }
-    if (setPtr->flags & ANIMATE) {
-	int anchor;
-
-	if (drawPtr->side & SIDE_VERTICAL) {
-	    drawPtr->scrollTarget = GetReqDrawerHeight(drawPtr);
-	    if (drawPtr->y < 0) {
-		drawPtr->y = 0;
-	    }
-	    anchor = drawPtr->y;
-	} else {
-	    drawPtr->scrollTarget = GetReqDrawerWidth(drawPtr);
-	    if (drawPtr->x < 0) {
-		drawPtr->x = 0;
-	    }
-	    anchor = drawPtr->x;
-	}
-	if (drawPtr->timerToken != (Tcl_TimerToken)0) {
-	    Tcl_DeleteTimerHandler(drawPtr->timerToken);
-	    drawPtr->timerToken = 0;
-	}
-	drawPtr->scrollIncr = (drawPtr->nom > anchor) ? -setPtr->scrollUnits : 
-	    setPtr->scrollUnits;
-	drawPtr->timerToken = Tcl_CreateTimerHandler(setPtr->interval, 
-		DrawerTimerProc, drawPtr);
-    } else {
-	if (drawPtr->side & SIDE_VERTICAL) {
-	    drawPtr->y = GetReqDrawerHeight(drawPtr);
-	} else {
-	    drawPtr->x = GetReqDrawerWidth(drawPtr);
-	}
-	SetDrawerVariable(drawPtr);
-    }
-    setPtr->flags |= LAYOUT_PENDING;
-    EventuallyRedraw(setPtr);
-}
-
-static void
-EventuallyCloseDrawer(Drawer *drawPtr) 
-{
-    Drawerset *setPtr;
-
-    if (drawPtr->flags & (DISABLED|CLOSED)) {
-	return;				/* Already closed or disabled. */
-    }
-    setPtr = drawPtr->setPtr;
-    if (setPtr->flags & ANIMATE) {
-	drawPtr->scrollTarget = -1;
-	if (drawPtr->timerToken != (Tcl_TimerToken)0) {
-	    Tcl_DeleteTimerHandler(drawPtr->timerToken);
-	    drawPtr->timerToken = 0;
-	}
-	drawPtr->scrollIncr = -setPtr->scrollUnits;
-	drawPtr->timerToken = Tcl_CreateTimerHandler(setPtr->interval, 
-		DrawerTimerProc, drawPtr);
-    } else {
-	CloseDrawer(drawPtr);
-    }
-    setPtr->flags |= LAYOUT_PENDING;
-    EventuallyRedraw(setPtr);
-}
 
 /*
  *---------------------------------------------------------------------------
@@ -1315,7 +1324,6 @@ DrawerTimerProc(ClientData clientData)
     int *anchorPtr;
     Drawerset *setPtr;
 
-    assert((drawPtr->flags & CLOSED) == 0);
     setPtr = drawPtr->setPtr;
     anchorPtr = (drawPtr->side & SIDE_VERTICAL) ? &drawPtr->y : &drawPtr->x;
     if (*anchorPtr != drawPtr->scrollTarget) {
@@ -2373,6 +2381,8 @@ GetDrawerIterator(Tcl_Interp *interp, Drawerset *setPtr, Tcl_Obj *objPtr,
 	    iterPtr->type = ITER_SINGLE;
 	    return TCL_OK;
 	}
+        Tcl_AppendResult(interp, "unknown handle window \"", string, "\"",
+                         (char *)NULL);
 	return TCL_ERROR;
     } else if ((c == 'a') && (strcmp(iterPtr->tagName, "all") == 0)) {
 	iterPtr->type  = ITER_ALL;
@@ -2760,7 +2770,7 @@ ResetDrawers(Drawerset *setPtr)
 /*
  *---------------------------------------------------------------------------
  *
- * LayoutDrawers --
+ * GetDrawersGeometry --
  *
  *	Calculates the normal space requirements for drawers.  
  *
@@ -2774,7 +2784,7 @@ ResetDrawers(Drawerset *setPtr)
  *---------------------------------------------------------------------------
  */
 static void
-LayoutDrawers(Drawerset *setPtr)
+GetDrawersGeometry(Drawerset *setPtr)
 {
     Blt_ChainLink link, next;
 
@@ -3146,7 +3156,7 @@ RestackDrawers(Drawerset *setPtr)
 static void
 ComputeGeometry(Drawerset *setPtr) 
 {
-    LayoutDrawers(setPtr);
+    GetDrawersGeometry(setPtr);
     if (setPtr->base != NULL) {
 	setPtr->normalWidth = Tk_ReqWidth(setPtr->base);
 	setPtr->normalHeight = Tk_ReqHeight(setPtr->base);
@@ -3357,7 +3367,8 @@ CloseOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     for (drawPtr = FirstTaggedDrawer(&iter); drawPtr != NULL; 
 	 drawPtr = NextTaggedDrawer(&iter)) {
-	EventuallyCloseDrawer(drawPtr);
+        drawPtr->flags |= CLOSED;
+        SetDrawerVariable(drawPtr);
     }
     return TCL_OK;
 }
@@ -4320,7 +4331,8 @@ OpenOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	if (drawPtr->flags & (DISABLED|HIDE)) {
 	    continue;
 	}
-	EventuallyOpenDrawer(drawPtr);
+        drawPtr->flags &= ~CLOSED;
+        SetDrawerVariable(drawPtr);
     }
     return TCL_OK;
 }
@@ -4996,10 +5008,11 @@ ToggleOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	return TCL_OK;
     }
     if (drawPtr->flags & CLOSED) {
-	EventuallyOpenDrawer(drawPtr);
+	drawPtr->flags &= ~CLOSED;
     } else {
-	EventuallyCloseDrawer(drawPtr);
+	drawPtr->flags |= CLOSED;
     }
+    SetDrawerVariable(drawPtr);
     return TCL_OK;
 }
 

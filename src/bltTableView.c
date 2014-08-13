@@ -125,7 +125,7 @@ typedef ClientData (TagProc)(TableView *viewPtr, const char *string);
 #define DEF_ACTIVE_TITLE_BG		STD_ACTIVE_BACKGROUND
 #define DEF_ACTIVE_TITLE_FG		STD_ACTIVE_FOREGROUND
 #define DEF_AUTO_CREATE			"0"
-#define DEF_AUTO_FILTERS		"0"
+#define DEF_COLUMN_FILTERS		"0"
 #define DEF_BACKGROUND			STD_NORMAL_BACKGROUND
 #define DEF_BIND_TAGS			"all"
 #define DEF_BORDERWIDTH			STD_BORDERWIDTH
@@ -342,9 +342,9 @@ static Blt_ConfigSpec tableSpecs[] =
     {BLT_CONFIG_CUSTOM, "-autocreate", "autoCreate", "AutoCreate",
 	DEF_AUTO_CREATE, Blt_Offset(TableView, flags), 
         BLT_CONFIG_DONT_SET_DEFAULT, &autoCreateOption},
-    {BLT_CONFIG_BITMASK, "-autofilters", "autoFilters", "AutoFilters",
-	DEF_AUTO_FILTERS, Blt_Offset(TableView, flags), 
-        BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)AUTOFILTERS},
+    {BLT_CONFIG_BITMASK, "-columnfilters", "columnFilters", "ColumnFilters",
+	DEF_COLUMN_FILTERS, Blt_Offset(TableView, flags), 
+        BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)COLUMN_FILTERS},
     {BLT_CONFIG_BACKGROUND, "-background", "background", "Background", 
 	DEF_BACKGROUND, Blt_Offset(TableView, bg), 0},
     {BLT_CONFIG_SYNONYM, "-bd", "borderWidth", (char *)NULL, (char *)NULL, 
@@ -405,6 +405,9 @@ static Blt_ConfigSpec tableSpecs[] =
     {BLT_CONFIG_PIXELS_NNEG, "-highlightthickness", "highlightThickness",
 	"HighlightThickness", DEF_FOCUS_HIGHLIGHT_WIDTH, 
 	Blt_Offset(TableView, highlightWidth), BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_CUSTOM, "-increasingicon", "increaingIcon", "IncreasingIcon", 
+	DEF_SORT_UP_ICON, Blt_Offset(TableView, sort.up), 
+	BLT_CONFIG_NULL_OK | BLT_CONFIG_DONT_SET_DEFAULT, &iconOption},
     {BLT_CONFIG_OBJ, "-rowcommand", "rowCommand", "RowCommand", 
 	DEF_ROW_COMMAND, Blt_Offset(TableView, rowCmdObjPtr),
 	BLT_CONFIG_DONT_SET_DEFAULT | BLT_CONFIG_NULL_OK}, 
@@ -431,9 +434,6 @@ static Blt_ConfigSpec tableSpecs[] =
     {BLT_CONFIG_CUSTOM, "-selectmode", "selectMode", "SelectMode",
 	DEF_SELECT_MODE, Blt_Offset(TableView, selectMode), 
 	BLT_CONFIG_DONT_SET_DEFAULT, &selectModeOption},
-    {BLT_CONFIG_CUSTOM, "-increasingicon", "increaingIcon", "IncreasingIcon", 
-	DEF_SORT_UP_ICON, Blt_Offset(TableView, sort.up), 
-	BLT_CONFIG_NULL_OK | BLT_CONFIG_DONT_SET_DEFAULT, &iconOption},
     {BLT_CONFIG_RELIEF, "-relief", "relief", "Relief", DEF_RELIEF, 
 	Blt_Offset(TableView, relief), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_BITMASK, "-sortselection", "sortSelection", "SortSelection",
@@ -653,8 +653,8 @@ static Blt_ConfigSpec filterSpecs[] =
     {BLT_CONFIG_COLOR, "-foreground", "foreground", "Foreground", 
 	DEF_FILTER_NORMAL_FG, Blt_Offset(TableView, filter.normalFg), 0},
     {BLT_CONFIG_BITMASK, "-hide", "hide", "Hide",
-	DEF_AUTO_FILTERS, Blt_Offset(TableView, flags), 
-        BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)AUTOFILTERS},
+	DEF_COLUMN_FILTERS, Blt_Offset(TableView, flags), 
+        BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)COLUMN_FILTERS},
     {BLT_CONFIG_BACKGROUND, "-highlightbackground", "highlightBackground", 
 	"HighlightBackground", DEF_FILTER_HIGHLIGHT_BG, 
 	Blt_Offset(TableView, filter.highlightBg), 0},
@@ -670,7 +670,7 @@ static Blt_ConfigSpec filterSpecs[] =
 	Blt_Offset(TableView, filter.relief), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_BITMASK_INVERT, "-show", "show", "Show", DEF_FILTER_SHOW, 
 	Blt_Offset(TableView, flags), BLT_CONFIG_DONT_SET_DEFAULT,
-	(Blt_CustomOption *)AUTOFILTERS},
+	(Blt_CustomOption *)COLUMN_FILTERS},
     {BLT_CONFIG_BACKGROUND, "-selectbackground", "selectBackground", 
 	"SelectBackground", DEF_FILTER_SELECT_BG, 
 	Blt_Offset(TableView, filter.selectBg), 0},
@@ -1834,7 +1834,7 @@ ScrollModeToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
     case BLT_SCROLL_MODE_LISTBOX: 
 	return Tcl_NewStringObj("listbox", 7);
     case BLT_SCROLL_MODE_HIERBOX: 
-	return Tcl_NewStringObj("hierbox", 9);
+	return Tcl_NewStringObj("hierbox", 7);
     case BLT_SCROLL_MODE_CANVAS:  
 	return Tcl_NewStringObj("canvas", 6);
     default:
@@ -2472,19 +2472,25 @@ RowTraceProc(ClientData clientData, BLT_TABLE_TRACE_EVENT *eventPtr)
     TableView *viewPtr = clientData; 
 
     if (eventPtr->mask & (TABLE_TRACE_WRITES | TABLE_TRACE_UNSETS)) {
-	Row *rowPtr;
+	Column *colPtr;
+        Row *rowPtr;
+        long row, col;
 
-	rowPtr = GetRowContainer(viewPtr, eventPtr->row);
+	colPtr = GetColumnContainer(viewPtr, eventPtr->column);
+        rowPtr = GetRowContainer(viewPtr, eventPtr->row);
+        row = col = -1;
+	if (colPtr != NULL) {
+            col = colPtr->index;
+        }
 	if (rowPtr != NULL) {
 	    rowPtr->flags |= GEOMETRY | REDRAW;
-	}
+            row = rowPtr->index;
+        }
 	viewPtr->flags |= GEOMETRY | LAYOUT_PENDING;
         /* Check if the event's row or column occur outside of the range of
          * visible cells. */
-        if ((blt_table_row_index(eventPtr->row) > 
-             GetLastVisibleRowIndex(viewPtr)) ||
-            (blt_table_column_index(eventPtr->column) > 
-             GetLastVisibleColumnIndex(viewPtr))) {
+        if ((row > GetLastVisibleRowIndex(viewPtr)) ||
+            (col > GetLastVisibleColumnIndex(viewPtr))) {
             return TCL_OK;
         }
 	PossiblyRedraw(viewPtr);
@@ -2510,18 +2516,24 @@ ColumnTraceProc(ClientData clientData, BLT_TABLE_TRACE_EVENT *eventPtr)
 
     if (eventPtr->mask & (TABLE_TRACE_WRITES | TABLE_TRACE_UNSETS)) {
 	Column *colPtr;
+        Row *rowPtr;
+        long row, col;
 
 	colPtr = GetColumnContainer(viewPtr, eventPtr->column);
+        rowPtr = GetRowContainer(viewPtr, eventPtr->row);
+        row = col = -1;
 	if (colPtr != NULL) {
 	    colPtr->flags |= GEOMETRY | REDRAW;
-	}
+            col = colPtr->index;
+        }
+	if (rowPtr != NULL) {
+            row = rowPtr->index;
+        }
 	viewPtr->flags |= GEOMETRY | LAYOUT_PENDING;
         /* Check if the event's row or column occur outside of the range of
          * visible cells. */
-        if ((blt_table_row_index(eventPtr->row) > 
-             GetLastVisibleRowIndex(viewPtr)) ||
-            (blt_table_column_index(eventPtr->column) > 
-             GetLastVisibleColumnIndex(viewPtr))) {
+        if ((row > GetLastVisibleRowIndex(viewPtr)) ||
+            (col > GetLastVisibleColumnIndex(viewPtr))) {
             return TCL_OK;
         }
 	PossiblyRedraw(viewPtr);
@@ -5408,7 +5420,7 @@ DisplayColumnTitles(TableView *viewPtr, Drawable drawable)
 	colPtr = viewPtr->visibleColumns[i];
 	if ((colPtr->flags & HIDDEN) == 0) {
 	    DisplayColumnTitle(viewPtr, colPtr, drawable);
-	    if (viewPtr->flags & AUTOFILTERS) {
+	    if (viewPtr->flags & COLUMN_FILTERS) {
 		DisplayColumnFilter(viewPtr, colPtr, drawable);
 	    }
 	}
@@ -7118,7 +7130,7 @@ ColumnIndexOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  *	Add new columns to the table.
  *
- *	.tv column insert position name ?option values?
+ *	.tv column insert name position ?option values?
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
@@ -7135,6 +7147,10 @@ ColumnInsertOp(ClientData clientData, Tcl_Interp *interp, int objc,
     int isNew;
     long i, insertPos;
 
+    if (viewPtr->table == NULL) {
+	Tcl_AppendResult(interp, "no data table to view.", (char *)NULL);
+	return TCL_ERROR;
+    }
     col = blt_table_get_column(interp, viewPtr->table, objv[3]);
     if (col == NULL) {
 	return TCL_ERROR;
@@ -7162,7 +7178,7 @@ ColumnInsertOp(ClientData clientData, Tcl_Interp *interp, int objc,
     uidOption.clientData = viewPtr;
     styleOption.clientData = viewPtr;
     if (Blt_ConfigureComponentFromObj(viewPtr->interp, viewPtr->tkwin, 
-	colPtr->title, "Column", columnSpecs, objc - 4, objv + 4, 
+	colPtr->title, "Column", columnSpecs, objc - 5, objv + 5, 
 	(char *)colPtr, 0) != TCL_OK) {	
 	DestroyColumn(colPtr);
 	return TCL_ERROR;
@@ -7255,9 +7271,112 @@ ColumnInvokeOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  *	Move a column.
  *
- * .h column move field1 position
+ * .    h column move field1 position 
  *---------------------------------------------------------------------------
  */
+/*ARGSUSED*/
+static int
+ColumnMoveOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+	       Tcl_Obj *const *objv)
+{
+    Column *colPtr;
+    TableView *viewPtr = clientData;
+    long src, dest, count, i;
+    Column **columns;
+    
+    if (GetColumn(interp, viewPtr, objv[3], &colPtr) != TCL_OK) {
+	return TCL_ERROR;
+    }
+    if (Blt_GetPositionFromObj(viewPtr->interp, objv[4], &dest) != TCL_OK){
+	return TCL_ERROR;
+    }
+    for (i = 0; i < viewPtr->numColumns; i++) {
+        Column *colPtr;
+        
+        colPtr = viewPtr->columns[i];
+        colPtr->index = i;
+    }
+    src = colPtr->index;
+    if ((dest < 0) || (dest >= viewPtr->numColumns)) {
+        dest = viewPtr->numColumns - 1;
+    } 
+    if (src == dest) {
+        return TCL_OK;
+    }
+    count = 1;
+    columns = Blt_AssertCalloc(viewPtr->numColumns, sizeof(Column *));
+    if (dest < src) {
+	long i, j;
+
+	/*
+	 *     dest   src
+	 *      v     v
+	 * | | | | | |x|x|x|x| |
+	 *  A A B B B C C C C D
+	 * | | |x|x|x|x| | | | |
+	 *
+	 * Section C is the selected region to move.
+	 */
+	/* Section A: copy everything from 0 to "dest" */
+	for (i = 0; i < dest; i++) {
+	    columns[i] = viewPtr->columns[i];
+	}
+	/* Section C: append the selected region. */
+	for (i = src, j = dest; i < (src + count); i++, j++) {
+	    columns[j] = viewPtr->columns[i];
+	}
+	/* Section B: shift the preceding indices from "dest" to "src".  */
+	for (i = dest; i < src; i++, j++) {
+	    columns[j] = viewPtr->columns[i];
+	}
+	/* Section D: append trailing indices until the end. */
+	for (i = src + count; i < viewPtr->numColumns; i++, j++) {
+	    columns[j] = viewPtr->columns[i];
+	}
+    } else if (src < dest) {
+	long i, j;
+
+	/*
+	 *     src        dest
+	 *      v           v
+	 * | | |x|x|x|x| | | | |
+	 *  A A C C C C B B B D
+	 * | | | | | |x|x|x|x| |
+	 *
+	 * Section C is the selected region to move.
+	 */
+	/* Section A: copy everything from 0 to "src" */
+	for (j = 0; j < src; j++) {
+	    columns[j] = viewPtr->columns[j];
+	}
+	/* Section B: shift the trailing indices from "src" to "dest".  */
+	for (i = (src + count); j < dest; i++, j++) {
+	    columns[j] = viewPtr->columns[i];
+	}
+	/* Section C: append the selected region. */
+	for (i = src; i < (src + count); i++, j++) {
+	    columns[j] = viewPtr->columns[i];
+	}
+	/* Section D: append trailing indices until the end. */
+	for (i = dest + count; i < viewPtr->numColumns; i++, j++) {
+	    columns[j] = viewPtr->columns[i];
+	}
+    }
+    if (viewPtr->columns != NULL) {
+        Blt_Free(viewPtr->columns);
+    }
+    viewPtr->columns = columns;
+    for (i = 0; i < viewPtr->numColumns; i++) {
+        Column *colPtr;
+        
+        colPtr = viewPtr->columns[i];
+        colPtr->index = i;
+    }
+    viewPtr->flags |= GEOMETRY;
+    EventuallyRedraw(viewPtr);
+    return TCL_OK;
+}
+
 
 /*
  *---------------------------------------------------------------------------
@@ -7580,6 +7699,7 @@ static Blt_OpSpec columnOps[] = {
     {"index",      3, ColumnIndexOp,      4, 4, "col",}, 
     {"insert",     3, ColumnInsertOp,     5, 0, "col pos ?option value?...",},  
     {"invoke",     3, ColumnInvokeOp,     4, 4, "col",},  
+    {"move",       1, ColumnMoveOp,       5, 5, "col pos",},  
     {"names",      2, ColumnNamesOp,      3, 3, "",},
     {"nearest",    2, ColumnNearestOp,    4, 4, "y",},
     {"resize",     1, ColumnResizeOp,     3, 0, "args",},
@@ -8240,6 +8360,10 @@ FindOp(ClientData clientData, Tcl_Interp *interp, int objc,
     int result;
     TableView *viewPtr = clientData;
 
+    if (viewPtr->table == NULL) {
+	Tcl_AppendResult(interp, "no data table to view.", (char *)NULL);
+	return TCL_ERROR;
+    }
     memset(&switches, 0, sizeof(switches));
     if (Blt_ParseSwitches(interp, findSwitches, objc - 3, objv + 3, 
 	&switches, BLT_SWITCH_DEFAULTS) < 0) {
@@ -9072,6 +9196,10 @@ RowInsertOp(ClientData clientData, Tcl_Interp *interp, int objc,
     int isNew;
     long i, insertPos;
 
+    if (viewPtr->table == NULL) {
+	Tcl_AppendResult(interp, "no data table to view.", (char *)NULL);
+	return TCL_ERROR;
+    }
     row = blt_table_get_row(interp, viewPtr->table, objv[3]);
     if (row == NULL) {
 	return TCL_ERROR;
@@ -10989,6 +11117,7 @@ ComputeGeometry(TableView *viewPtr)
 		colPtr->titleWidth = colPtr->titleHeight = 0;
 	    }
 	}
+        colPtr->index = i;
 	colPtr->nomWidth = colPtr->titleWidth;
 	if ((colPtr->flags & HIDDEN) == 0) {
 	    if (colPtr->titleHeight > viewPtr->colTitleHeight) {
@@ -11007,6 +11136,7 @@ ComputeGeometry(TableView *viewPtr)
 		rowPtr->titleHeight = rowPtr->titleWidth = 0;
 	    }
 	}
+        rowPtr->index = i;
 	rowPtr->nomHeight = rowPtr->titleHeight;
 	if ((rowPtr->flags & HIDDEN) == 0) {
 	    if (rowPtr->titleWidth > viewPtr->rowTitleWidth) {
@@ -11038,7 +11168,7 @@ ComputeGeometry(TableView *viewPtr)
 	    rowPtr->nomHeight = cellPtr->height;
 	}
     }
-    if (viewPtr->flags & AUTOFILTERS) {
+    if (viewPtr->flags & COLUMN_FILTERS) {
 	GetColumnFiltersGeometry(viewPtr);
     }
     viewPtr->flags |= LAYOUT_PENDING;
@@ -11110,7 +11240,7 @@ ComputeLayout(TableView *viewPtr)
     if (viewPtr->flags & COLUMN_TITLES) {
 	viewPtr->height += viewPtr->colTitleHeight;
     }
-    if (viewPtr->flags & AUTOFILTERS) {
+    if (viewPtr->flags & COLUMN_FILTERS) {
 	viewPtr->height += viewPtr->colFilterHeight;
     }
     if (viewPtr->flags & ROW_TITLES) {
@@ -11463,7 +11593,7 @@ AddColumnGeometry(TableView *viewPtr, Column *colPtr)
 	    viewPtr->colTitleHeight = colPtr->titleHeight;
 	}
     }
-    if (viewPtr->flags & AUTOFILTERS) {
+    if (viewPtr->flags & COLUMN_FILTERS) {
 	GetColumnFiltersGeometry(viewPtr);
     }
 }
@@ -11484,7 +11614,7 @@ AddRowGeometry(TableView *viewPtr, Row *rowPtr)
 	    viewPtr->rowTitleWidth = rowPtr->titleWidth;
 	}
     }
-    if (viewPtr->flags & AUTOFILTERS) {
+    if (viewPtr->flags & COLUMN_FILTERS) {
 	GetColumnFiltersGeometry(viewPtr);
     }
 }
@@ -11545,15 +11675,18 @@ DeleteColumns(TableView *viewPtr, BLT_TABLE_NOTIFY_EVENT *eventPtr)
 static void
 AddColumns(TableView *viewPtr, BLT_TABLE_NOTIFY_EVENT *eventPtr)
 {
-    Column **columns;
     long i;
     unsigned long count, oldNumColumns, newNumColumns;
 
     oldNumColumns = viewPtr->numColumns;
     newNumColumns = blt_table_num_columns(viewPtr->table);
     assert(newNumColumns > oldNumColumns);
-    columns = Blt_AssertMalloc(sizeof(Column *) * newNumColumns);
-    count = 0;
+    viewPtr->columns = Blt_Realloc(viewPtr->columns, 
+        sizeof(Column *) * newNumColumns);
+    
+    count = oldNumColumns;
+    /* Loop through the table looking for new columns (i.e. columns that
+     * the tableview widget doesn't know about yet). */
     for (i = 0; i < newNumColumns; i++) {
 	Blt_HashEntry *hPtr;
 	int isNew;
@@ -11582,16 +11715,10 @@ AddColumns(TableView *viewPtr, BLT_TABLE_NOTIFY_EVENT *eventPtr)
 		AddCellGeometry(viewPtr, cellPtr);
 		Blt_SetHashValue(h2Ptr, cellPtr);
 	    }
-	} else {
-	    colPtr = Blt_GetHashValue(hPtr);
+            viewPtr->columns[count] = colPtr;
+            count++;
 	}
-	columns[count] = colPtr;
-	count++;
     }
-    if (viewPtr->columns != NULL) {
-        Blt_Free(viewPtr->columns);
-    }
-    viewPtr->columns = columns;
     viewPtr->numColumns = newNumColumns;
     viewPtr->flags |= LAYOUT_PENDING;
     PossiblyRedraw(viewPtr);

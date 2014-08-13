@@ -83,6 +83,7 @@ FreeColor(
 
     if ((colorPtr != NULL) && (colorPtr != COLOR_DEFAULT)) {
 	Tk_FreeColor(colorPtr);
+        colorPtr = NULL;
     }
 }
 

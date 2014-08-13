@@ -1820,9 +1820,6 @@ DrawScrollset(Scrollset *setPtr)
 	 * then unmap it.
 	 */
 	if ((setPtr->slaveWidth < 1) || (setPtr->slaveHeight < 1)) {
- fprintf(stderr, "Drawscrollset slave=%s sw=%d sh=%d\n",
- Tk_PathName(setPtr->slave), setPtr->slaveWidth,
- setPtr->slaveHeight);
 	    if (Tk_IsMapped(setPtr->slave)) {
 		if (setPtr->tkwin != Tk_Parent(setPtr->slave)) {
 		    Tk_UnmaintainGeometry(setPtr->slave, setPtr->tkwin);
