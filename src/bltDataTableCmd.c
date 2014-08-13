@@ -1574,6 +1574,8 @@ TraceProc(ClientData clientData, BLT_TABLE_TRACE_EVENT *eventPtr)
     objPtr = Tcl_NewStringObj(string, -1);
     Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
 
+    fprintf(stderr, "Got callback cmd=%s\n", Tcl_GetString(cmdObjPtr));
+
     Tcl_IncrRefCount(cmdObjPtr);
     result = Tcl_EvalObjEx(interp, cmdObjPtr, TCL_EVAL_GLOBAL);
     Tcl_DecrRefCount(cmdObjPtr);
@@ -3828,9 +3830,7 @@ ColumnTraceOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     BLT_TABLE_ITERATOR iter;
     BLT_TABLE_TRACE trace;
     TraceInfo *tracePtr;
-    const char *tag;
     int flags;
-    BLT_TABLE_COLUMN col;
     BLT_TABLE table;
 
     table = cmdPtr->table;
@@ -3843,31 +3843,36 @@ ColumnTraceOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 		"\"", (char *)NULL);
 	return TCL_ERROR;
     }
-    col = NULL;
-    tag = NULL;
     if (iter.type == TABLE_ITERATOR_RANGE) {
 	Tcl_AppendResult(interp, "can't trace range of columns: use a tag", 
 		(char *)NULL);
 	return TCL_ERROR;
     }
-    if ((iter.type == TABLE_ITERATOR_INDEX) || 
-	(iter.type == TABLE_ITERATOR_LABEL)) {
-	col = blt_table_first_tagged_column(&iter);
-    } else {
-	tag = iter.tagName;
-    } 
     tracePtr = Blt_Malloc(sizeof(TraceInfo));
     if (tracePtr == NULL) {
 	Tcl_AppendResult(interp, "can't allocate trace: out of memory", 
 		(char *)NULL);
 	return TCL_ERROR;
     }
-    trace = blt_table_create_trace(table, NULL, col, NULL, tag, flags, 
-	TraceProc, TraceDeleteProc, tracePtr);
+    if ((iter.type == TABLE_ITERATOR_INDEX) || 
+	(iter.type == TABLE_ITERATOR_LABEL)) {
+        BLT_TABLE_COLUMN col;
+
+	col = blt_table_first_tagged_column(&iter);
+        fprintf(stderr, "iter col=%x\n", col);
+        trace = blt_table_create_column_trace(table, col, flags, TraceProc, 
+                TraceDeleteProc, tracePtr);
+    } else {
+        const char *tag;
+
+	tag = iter.tagName;
+        fprintf(stderr, "iter tag=%s\n", tag);
+        trace = blt_table_create_column_tag_trace(table, tag, flags, TraceProc, 
+                TraceDeleteProc, tracePtr);
+    } 
     if (trace == NULL) {
 	Tcl_AppendResult(interp, "can't create column trace: out of memory", 
 		(char *)NULL);
-	Blt_Free(tracePtr);
 	return TCL_ERROR;
     }
     /* Initialize the trace information structure. */
@@ -7426,12 +7431,8 @@ TraceCreateOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     BLT_TABLE_COLUMN col;
     
     table = cmdPtr->table;
-    if (blt_table_iterate_row(interp, table, objv[3], &ri) != TCL_OK) {
-	return TCL_ERROR;
-    }
-    if (blt_table_iterate_column(interp, table, objv[4], &ci) != TCL_OK) {
-	return TCL_ERROR;
-    }
+    rowSpec = blt_table_row_spec(table, objv[3], &rowName);
+    colSpec = blt_table_column_spec(table, objv[4], &colName);
     flags = GetTraceFlags(Tcl_GetString(objv[5]));
     if (flags < 0) {
 	Tcl_AppendResult(interp, "unknown flag in \"", Tcl_GetString(objv[5]), 
@@ -7441,27 +7442,27 @@ TraceCreateOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     row = NULL;
     col = NULL;
     colTag = rowTag = NULL;
-    if (ri.type == TABLE_ITERATOR_RANGE) {
+    if (rowSpec == TABLE_SPEC_RANGE) {
 	Tcl_AppendResult(interp, "can't trace range of rows: use a tag", 
 		(char *)NULL);
 	return TCL_ERROR;
     }
-    if (ci.type == TABLE_ITERATOR_RANGE) {
+    if (colSpec == TABLE_SPEC_RANGE) {
 	Tcl_AppendResult(interp, "can't trace range of columns: use a tag", 
 		(char *)NULL);
 	return TCL_ERROR;
     }
-    if ((ri.type == TABLE_ITERATOR_INDEX) || 
-	(ri.type == TABLE_ITERATOR_LABEL)) {
+    if ((rowSpec == TABLE_SPEC_INDEX) || 
+	(rowSpec == TABLE_SPEC_LABEL)) {
 	row = blt_table_first_tagged_row(&ri);
     } else {
-	rowTag = ri.tagName;
+	rowTag = rowName;
     }
-    if ((ci.type == TABLE_ITERATOR_INDEX) || 
-	(ci.type == TABLE_ITERATOR_LABEL)) {
+    if ((colSpec == TABLE_SPEC_INDEX) || 
+	(colSpec == TABLE_SPEC_LABEL)) {
 	col = blt_table_first_tagged_column(&ci);
     } else {
-	colTag = ci.tagName;
+	colTag = colName;
     }
     tracePtr = Blt_Malloc(sizeof(TraceInfo));
     if (tracePtr == NULL) {

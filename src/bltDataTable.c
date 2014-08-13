@@ -1887,12 +1887,14 @@ CallClientTraces(Table *tablePtr, Table *clientPtr, Row *rowPtr, Column *colPtr,
 
 	next = Blt_Chain_NextLink(link);
 	tracePtr = Blt_Chain_GetValue(link);
+
 	if ((tracePtr->flags & flags) == 0) {
-	    continue;		/* Doesn't match trace flags. */
+	    continue;                   /* Doesn't match trace flags. */
 	}
 	if (tracePtr->flags & TABLE_TRACE_ACTIVE) {
-	    continue;		/* Ignore callbacks that were triggered from
-				 * the active trace handler routine. */
+	    continue;                   /* Ignore callbacks that were
+                                         * triggered from the active trace
+                                         * handler routine. */
 	}
 	match = 0;
 	if (tracePtr->colTag != NULL) {
@@ -1911,7 +1913,13 @@ CallClientTraces(Table *tablePtr, Table *clientPtr, Row *rowPtr, Column *colPtr,
 	    match++;
 	}
 	if (match < 2) {
-	    continue;			/* Must match both row and column.  */
+#ifdef notdef
+        fprintf(stderr, "CallClientTraces: match < 2 %s callback=%x, colPtr=%x tracePtr->column=%x\n", 
+                blt_table_column_label(colPtr),
+                tracePtr->proc, colPtr, tracePtr->column);
+#endif
+	    continue;                   /* Must match both row and
+                                         * column.  */
 	}
 	if (tracePtr->flags & TABLE_TRACE_WHENIDLE) {
 	    if ((tracePtr->flags & TABLE_TRACE_PENDING) == 0) {
@@ -1921,7 +1929,8 @@ CallClientTraces(Table *tablePtr, Table *clientPtr, Row *rowPtr, Column *colPtr,
 	    }
 	} else {
 	    if (DoTrace(tracePtr, &event) == TCL_BREAK) {
-		return;		/* Don't complete traces on break. */
+		return;                 /* Don't complete traces on
+                                         * break. */
 	    }
 	}
     }
@@ -2902,6 +2911,12 @@ blt_table_row_spec(BLT_TABLE table, Tcl_Obj *objPtr, const char **sp)
 	*sp = string + 4;
 	return TABLE_SPEC_TAG;
     } else if (blt_table_get_row_by_label(table, string) != NULL) {
+        Blt_HashTable *tablePtr;
+
+	tablePtr = blt_table_row_get_label_table(table, string);
+        if (tablePtr->numEntries > 1) {
+            return TABLE_SPEC_LABELS;
+	}
 	return TABLE_SPEC_LABEL;
     } else if (blt_table_get_row_tag_table(table, string) != NULL) {
 	return TABLE_SPEC_TAG;
@@ -3028,6 +3043,14 @@ blt_table_iterate_row(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr,
 	return TCL_OK;
 
     case TABLE_SPEC_LABEL:
+        from = blt_table_get_row_by_label(table, tagName);
+        index = blt_table_row_index(from);
+	iterPtr->start = index;
+	iterPtr->end = index + 1;
+	iterPtr->numEntries = 1;
+	return TCL_OK;
+
+    case TABLE_SPEC_LABELS:
 	iterPtr->tablePtr = blt_table_row_get_label_table(table, tagName);
 	if (iterPtr->tablePtr == NULL) {
 	    if (interp != NULL) {
@@ -3311,6 +3334,9 @@ blt_table_iterate_column(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr,
     iterPtr->type = TABLE_ITERATOR_INDEX;
 
     spec = blt_table_column_spec(table, objPtr, &tagName);
+    fprintf(stderr, "column spec for %s is %d\n",  Tcl_GetString(objPtr),
+            spec);
+
     switch (spec) {
     case TABLE_SPEC_INDEX:
 	p = Tcl_GetString(objPtr);
@@ -3936,6 +3962,7 @@ blt_table_create_trace(
     }
     tracePtr->row = rowPtr;
     tracePtr->column = colPtr;
+    fprintf(stderr, "create_trace colPtr=%x\n", colPtr);
     if (rowTag != NULL) {
 	tracePtr->rowTag = Blt_AssertStrdup(rowTag);
     }
@@ -3990,6 +4017,7 @@ blt_table_create_column_trace(
 					 * when the callback is
 					 * executed. */
 {
+    fprintf(stderr, "create_column_trace colPtr=%x\n", colPtr);
     return blt_table_create_trace(tablePtr, NULL, colPtr, NULL, NULL, flags,
 		proc, deleteProc, clientData);
 }
