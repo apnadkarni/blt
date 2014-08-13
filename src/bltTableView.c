@@ -125,7 +125,7 @@ typedef ClientData (TagProc)(TableView *viewPtr, const char *string);
 #define DEF_ACTIVE_TITLE_BG		STD_ACTIVE_BACKGROUND
 #define DEF_ACTIVE_TITLE_FG		STD_ACTIVE_FOREGROUND
 #define DEF_AUTO_CREATE			"0"
-#define DEF_AUTO_FILTERS		"0"
+#define DEF_COLUMN_FILTERS		"0"
 #define DEF_BACKGROUND			STD_NORMAL_BACKGROUND
 #define DEF_BIND_TAGS			"all"
 #define DEF_BORDERWIDTH			STD_BORDERWIDTH
@@ -342,9 +342,9 @@ static Blt_ConfigSpec tableSpecs[] =
     {BLT_CONFIG_CUSTOM, "-autocreate", "autoCreate", "AutoCreate",
 	DEF_AUTO_CREATE, Blt_Offset(TableView, flags), 
         BLT_CONFIG_DONT_SET_DEFAULT, &autoCreateOption},
-    {BLT_CONFIG_BITMASK, "-autofilters", "autoFilters", "AutoFilters",
-	DEF_AUTO_FILTERS, Blt_Offset(TableView, flags), 
-        BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)AUTOFILTERS},
+    {BLT_CONFIG_BITMASK, "-columnfilters", "columnFilters", "ColumnFilters",
+	DEF_COLUMN_FILTERS, Blt_Offset(TableView, flags), 
+        BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)COLUMN_FILTERS},
     {BLT_CONFIG_BACKGROUND, "-background", "background", "Background", 
 	DEF_BACKGROUND, Blt_Offset(TableView, bg), 0},
     {BLT_CONFIG_SYNONYM, "-bd", "borderWidth", (char *)NULL, (char *)NULL, 
@@ -653,8 +653,8 @@ static Blt_ConfigSpec filterSpecs[] =
     {BLT_CONFIG_COLOR, "-foreground", "foreground", "Foreground", 
 	DEF_FILTER_NORMAL_FG, Blt_Offset(TableView, filter.normalFg), 0},
     {BLT_CONFIG_BITMASK, "-hide", "hide", "Hide",
-	DEF_AUTO_FILTERS, Blt_Offset(TableView, flags), 
-        BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)AUTOFILTERS},
+	DEF_COLUMN_FILTERS, Blt_Offset(TableView, flags), 
+        BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)COLUMN_FILTERS},
     {BLT_CONFIG_BACKGROUND, "-highlightbackground", "highlightBackground", 
 	"HighlightBackground", DEF_FILTER_HIGHLIGHT_BG, 
 	Blt_Offset(TableView, filter.highlightBg), 0},
@@ -670,7 +670,7 @@ static Blt_ConfigSpec filterSpecs[] =
 	Blt_Offset(TableView, filter.relief), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_BITMASK_INVERT, "-show", "show", "Show", DEF_FILTER_SHOW, 
 	Blt_Offset(TableView, flags), BLT_CONFIG_DONT_SET_DEFAULT,
-	(Blt_CustomOption *)AUTOFILTERS},
+	(Blt_CustomOption *)COLUMN_FILTERS},
     {BLT_CONFIG_BACKGROUND, "-selectbackground", "selectBackground", 
 	"SelectBackground", DEF_FILTER_SELECT_BG, 
 	Blt_Offset(TableView, filter.selectBg), 0},
@@ -5420,7 +5420,7 @@ DisplayColumnTitles(TableView *viewPtr, Drawable drawable)
 	colPtr = viewPtr->visibleColumns[i];
 	if ((colPtr->flags & HIDDEN) == 0) {
 	    DisplayColumnTitle(viewPtr, colPtr, drawable);
-	    if (viewPtr->flags & AUTOFILTERS) {
+	    if (viewPtr->flags & COLUMN_FILTERS) {
 		DisplayColumnFilter(viewPtr, colPtr, drawable);
 	    }
 	}
@@ -11168,7 +11168,7 @@ ComputeGeometry(TableView *viewPtr)
 	    rowPtr->nomHeight = cellPtr->height;
 	}
     }
-    if (viewPtr->flags & AUTOFILTERS) {
+    if (viewPtr->flags & COLUMN_FILTERS) {
 	GetColumnFiltersGeometry(viewPtr);
     }
     viewPtr->flags |= LAYOUT_PENDING;
@@ -11240,7 +11240,7 @@ ComputeLayout(TableView *viewPtr)
     if (viewPtr->flags & COLUMN_TITLES) {
 	viewPtr->height += viewPtr->colTitleHeight;
     }
-    if (viewPtr->flags & AUTOFILTERS) {
+    if (viewPtr->flags & COLUMN_FILTERS) {
 	viewPtr->height += viewPtr->colFilterHeight;
     }
     if (viewPtr->flags & ROW_TITLES) {
@@ -11593,7 +11593,7 @@ AddColumnGeometry(TableView *viewPtr, Column *colPtr)
 	    viewPtr->colTitleHeight = colPtr->titleHeight;
 	}
     }
-    if (viewPtr->flags & AUTOFILTERS) {
+    if (viewPtr->flags & COLUMN_FILTERS) {
 	GetColumnFiltersGeometry(viewPtr);
     }
 }
@@ -11614,7 +11614,7 @@ AddRowGeometry(TableView *viewPtr, Row *rowPtr)
 	    viewPtr->rowTitleWidth = rowPtr->titleWidth;
 	}
     }
-    if (viewPtr->flags & AUTOFILTERS) {
+    if (viewPtr->flags & COLUMN_FILTERS) {
 	GetColumnFiltersGeometry(viewPtr);
     }
 }

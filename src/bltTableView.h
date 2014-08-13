@@ -156,7 +156,7 @@
 					 * needed when attached a
 					 * datatable. */
 #define AUTOCREATE	(AUTO_ROWS|AUTO_COLUMNS)
-#define AUTOFILTERS	(1<<27)		/* Display combobox below each
+#define COLUMN_FILTERS	(1<<27)		/* Display combobox below each
 					 * column title to filter row
 					 * values. */
 #define FILTERHIGHLIGHT (1<<28)		/* Display the filter with
