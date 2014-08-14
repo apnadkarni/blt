@@ -1574,8 +1574,6 @@ TraceProc(ClientData clientData, BLT_TABLE_TRACE_EVENT *eventPtr)
     objPtr = Tcl_NewStringObj(string, -1);
     Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
 
-    fprintf(stderr, "Got callback cmd=%s\n", Tcl_GetString(cmdObjPtr));
-
     Tcl_IncrRefCount(cmdObjPtr);
     result = Tcl_EvalObjEx(interp, cmdObjPtr, TCL_EVAL_GLOBAL);
     Tcl_DecrRefCount(cmdObjPtr);
@@ -2185,27 +2183,27 @@ ColumnJoinOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 static int
 ColumnDeleteOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 {
-    BLT_TABLE_ITERATOR iter;
+    BLT_TABLE_ITERATOR ci;
     BLT_TABLE_COLUMN col;
     int result;
 
     result = TCL_ERROR;
     if (blt_table_iterate_column_objv(interp, cmdPtr->table, objc - 3, objv + 3,
-	&iter) != TCL_OK) {
+	&ci) != TCL_OK) {
 	return TCL_ERROR;
     }
     /* 
      * Walk through the list of column offsets, deleting each column.
      */
-    for (col = blt_table_first_tagged_column(&iter); col != NULL; 
-	 col = blt_table_next_tagged_column(&iter)) {
+    for (col = blt_table_first_tagged_column(&ci); col != NULL; 
+	 col = blt_table_next_tagged_column(&ci)) {
 	if (blt_table_delete_column(cmdPtr->table, col) != TCL_OK) {
 	    goto error;
 	}
     }
     result = TCL_OK;
  error:
-    blt_table_free_iterator_objv(&iter);
+    blt_table_free_iterator_objv(&ci);
     return result;
 }
 
@@ -2232,18 +2230,18 @@ ColumnDupOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 {
     BLT_TABLE table;
     Tcl_Obj *listObjPtr;
-    BLT_TABLE_ITERATOR iter;
+    BLT_TABLE_ITERATOR ci;
     BLT_TABLE_COLUMN srcCol;
 
     table = cmdPtr->table;
     listObjPtr = NULL;
-    if (blt_table_iterate_column_objv(interp, table, objc - 3, objv + 3, &iter) 
+    if (blt_table_iterate_column_objv(interp, table, objc - 3, objv + 3, &ci) 
 	!= TCL_OK) {
 	goto error;
     }
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
-    for (srcCol = blt_table_first_tagged_column(&iter); srcCol != NULL; 
-	 srcCol = blt_table_next_tagged_column(&iter)) {
+    for (srcCol = blt_table_first_tagged_column(&ci); srcCol != NULL; 
+	 srcCol = blt_table_next_tagged_column(&ci)) {
 	long i;
 	BLT_TABLE_COLUMN dstCol;
 
@@ -2259,11 +2257,11 @@ ColumnDupOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	i = blt_table_column_index(dstCol);
 	Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewLongObj(i));
     }
-    blt_table_free_iterator_objv(&iter);
+    blt_table_free_iterator_objv(&ci);
     Tcl_SetObjResult(interp, listObjPtr);
     return TCL_OK;
  error:
-    blt_table_free_iterator_objv(&iter);
+    blt_table_free_iterator_objv(&ci);
     if (listObjPtr != NULL) {
 	Tcl_DecrRefCount(listObjPtr);
     }
@@ -2496,15 +2494,15 @@ ColumnGetOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
 	}
     } else {
-	BLT_TABLE_ITERATOR iter;
+	BLT_TABLE_ITERATOR ri;
 	BLT_TABLE_ROW row;
 
-	if (blt_table_iterate_row_objv(interp, table, objc - 4, objv + 4, &iter) 
+	if (blt_table_iterate_row_objv(interp, table, objc - 4, objv + 4, &ri) 
 	    != TCL_OK) {
 	    return TCL_ERROR;
 	}
-	for (row = blt_table_first_tagged_row(&iter); row != NULL; 
-	     row = blt_table_next_tagged_row(&iter)) {
+	for (row = blt_table_first_tagged_row(&ri); row != NULL; 
+	     row = blt_table_next_tagged_row(&ri)) {
 	    Tcl_Obj *objPtr;
 	    
 	    if (needLabels) {
@@ -2519,6 +2517,7 @@ ColumnGetOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	    }
 	    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
 	}
+        blt_table_free_iterator_objv(&ri);
     }
     Tcl_SetObjResult(interp, listObjPtr);
     return TCL_OK;
@@ -2578,23 +2577,23 @@ static int
 ColumnIndicesOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 {
     Tcl_Obj *listObjPtr;
-    BLT_TABLE_ITERATOR iter;
+    BLT_TABLE_ITERATOR ci;
     BLT_TABLE_COLUMN col;
 
     if (blt_table_iterate_column_objv(interp, cmdPtr->table, objc - 3, objv + 3,
-		&iter) != TCL_OK) {
+		&ci) != TCL_OK) {
 	return TCL_ERROR;
     }
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
-    for (col = blt_table_first_tagged_column(&iter); col != NULL; 
-	 col = blt_table_next_tagged_column(&iter)) {
+    for (col = blt_table_first_tagged_column(&ci); col != NULL; 
+	 col = blt_table_next_tagged_column(&ci)) {
 	Tcl_Obj *objPtr;
 
 	objPtr = Tcl_NewLongObj(blt_table_column_index(col));
 	Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
     }
     Tcl_SetObjResult(interp, listObjPtr);
-    blt_table_free_iterator_objv(&iter);
+    blt_table_free_iterator_objv(&ci);
     return TCL_OK;
 }
 
@@ -3113,13 +3112,13 @@ ColumnNotifyOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 static int
 ColumnSetOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 {
-    BLT_TABLE_ITERATOR iter;
+    BLT_TABLE_ITERATOR ci;
     BLT_TABLE_COLUMN col;
     BLT_TABLE table;
 
     table = cmdPtr->table;
     /* May set more than one row with the same values. */
-    if (IterateColumns(interp, table, objv[3], &iter) != TCL_OK) {
+    if (IterateColumns(interp, table, objv[3], &ci) != TCL_OK) {
 	return TCL_ERROR;
     }
     if (objc == 4) {
@@ -3131,8 +3130,8 @@ ColumnSetOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 		(char *)NULL);
 	return TCL_ERROR;
     }
-    for (col = blt_table_first_tagged_column(&iter); col != NULL; 
-	 col = blt_table_next_tagged_column(&iter)) {
+    for (col = blt_table_first_tagged_column(&ci); col != NULL; 
+	 col = blt_table_next_tagged_column(&ci)) {
 	long i;
 
 	/* The remaining arguments are index/value pairs. */
@@ -3174,23 +3173,23 @@ ColumnTagAddOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 {
     BLT_TABLE table;
     int i;
-    const char *tagName;
+    const char *tag;
 
     table = cmdPtr->table;
-    tagName = Tcl_GetString(objv[4]);
-    if (blt_table_set_column_tag(interp, table, NULL, tagName) != TCL_OK) {
+    tag = Tcl_GetString(objv[4]);
+    if (blt_table_set_column_tag(interp, table, NULL, tag) != TCL_OK) {
 	return TCL_ERROR;
     }
     for (i = 5; i < objc; i++) {
 	BLT_TABLE_COLUMN col;
-	BLT_TABLE_ITERATOR iter;
+	BLT_TABLE_ITERATOR ci;
 
-	if (blt_table_iterate_column(interp, table, objv[i], &iter) != TCL_OK) {
+	if (blt_table_iterate_column(interp, table, objv[i], &ci) != TCL_OK) {
 	    return TCL_ERROR;
 	}
-	for (col = blt_table_first_tagged_column(&iter); col != NULL; 
-	     col = blt_table_next_tagged_column(&iter)) {
-	    if (blt_table_set_column_tag(interp, table, col, tagName) != TCL_OK) {
+	for (col = blt_table_first_tagged_column(&ci); col != NULL; 
+	     col = blt_table_next_tagged_column(&ci)) {
+	    if (blt_table_set_column_tag(interp, table, col, tag) != TCL_OK) {
 		return TCL_ERROR;
 	    }
 	}    
@@ -3216,21 +3215,21 @@ ColumnTagDeleteOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc,
 		  Tcl_Obj *const *objv)
 {
     BLT_TABLE table;
-    BLT_TABLE_ITERATOR iter;
+    BLT_TABLE_ITERATOR ci;
     int i;
-    const char *tagName;
+    const char *tag;
 
     table = cmdPtr->table;
-    tagName = Tcl_GetString(objv[4]);
+    tag = Tcl_GetString(objv[4]);
     for (i = 5; i < objc; i++) {
 	BLT_TABLE_COLUMN col;
 	
-	if (blt_table_iterate_column(interp, table, objv[i], &iter) != TCL_OK) {
+	if (blt_table_iterate_column(interp, table, objv[i], &ci) != TCL_OK) {
 	    return TCL_ERROR;
 	}
-	for (col = blt_table_first_tagged_column(&iter); col != NULL; 
-	     col = blt_table_next_tagged_column(&iter)) {
-	    if (blt_table_unset_column_tag(interp, table, col, tagName)!=TCL_OK) {
+	for (col = blt_table_first_tagged_column(&ci); col != NULL; 
+	     col = blt_table_next_tagged_column(&ci)) {
+	    if (blt_table_unset_column_tag(interp, table, col, tag) != TCL_OK) {
 		return TCL_ERROR;
 	    }
 	}
@@ -3256,12 +3255,12 @@ ColumnTagExistsOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc,
 		  Tcl_Obj *const *objv)
 {
     int bool;
-    const char *tagName;
+    const char *tag;
     BLT_TABLE table;
 
-    tagName = Tcl_GetString(objv[4]);
+    tag = Tcl_GetString(objv[4]);
     table = cmdPtr->table;
-    bool = (blt_table_get_column_tag_table(table, tagName) != NULL);
+    bool = (blt_table_get_column_tag_table(table, tag) != NULL);
     if (objc == 6) {
 	BLT_TABLE_COLUMN col;
 
@@ -3269,7 +3268,7 @@ ColumnTagExistsOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc,
 	if (col == NULL) {
 	    bool = FALSE;
 	} else {
-	    bool = blt_table_column_has_tag(table, col, tagName);
+	    bool = blt_table_column_has_tag(table, col, tag);
 	}
     } 
     Tcl_SetBooleanObj(Tcl_GetObjResult(interp), bool);
@@ -3324,11 +3323,11 @@ ColumnTagGetOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     Blt_HashTable tagTable;
     BLT_TABLE table;
     BLT_TABLE_COLUMN col;
-    BLT_TABLE_ITERATOR iter;
+    BLT_TABLE_ITERATOR ci;
     Tcl_Obj *listObjPtr;
 
     table = cmdPtr->table;
-    if (blt_table_iterate_column(interp, table, objv[4], &iter) != TCL_OK) {
+    if (blt_table_iterate_column(interp, table, objv[4], &ci) != TCL_OK) {
 	return TCL_ERROR;
     }
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
@@ -3336,35 +3335,35 @@ ColumnTagGetOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     Blt_InitHashTable(&tagTable, BLT_STRING_KEYS);
     
     /* Collect all the tags into a hash table. */
-    for (col = blt_table_first_tagged_column(&iter); col != NULL; 
-	 col = blt_table_next_tagged_column(&iter)) {
+    for (col = blt_table_first_tagged_column(&ci); col != NULL; 
+	 col = blt_table_next_tagged_column(&ci)) {
 	Blt_Chain chain;
 	Blt_ChainLink link;
 
 	chain = blt_table_column_tags(table, col);
 	for (link = Blt_Chain_FirstLink(chain); link != NULL;
 	     link = Blt_Chain_NextLink(link)) {
-	    const char *tagName;
+	    const char *tag;
 	    int isNew;
 
-	    tagName = Blt_Chain_GetValue(link);
-	    Blt_CreateHashEntry(&tagTable, tagName, &isNew);
+	    tag = Blt_Chain_GetValue(link);
+	    Blt_CreateHashEntry(&tagTable, tag, &isNew);
 	}
 	Blt_Chain_Destroy(chain);
     }
     for (hPtr = Blt_FirstHashEntry(&tagTable, &hsearch); hPtr != NULL;
 	 hPtr = Blt_NextHashEntry(&hsearch)) {
 	int match;
-	const char *tagName;
+	const char *tag;
 
-	tagName = Blt_GetHashKey(&tagTable, hPtr);
+	tag = Blt_GetHashKey(&tagTable, hPtr);
 	match = TRUE;
 	if (objc > 5) {
 	    int i;
 
 	    match = FALSE;
 	    for (i = 5; i < objc; i++) {
-		if (Tcl_StringMatch(tagName, Tcl_GetString(objv[i]))) {
+		if (Tcl_StringMatch(tag, Tcl_GetString(objv[i]))) {
 		    match = TRUE;
 		}
 	    }
@@ -3372,7 +3371,7 @@ ColumnTagGetOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	if (match) {
 	    Tcl_Obj *objPtr;
 
-	    objPtr = Tcl_NewStringObj(tagName, -1);
+	    objPtr = Tcl_NewStringObj(tag, -1);
 	    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
 	}
     }
@@ -3394,17 +3393,17 @@ GetColumnTagMatches(Tcl_Interp *interp, BLT_TABLE table, int objc,
     matches = Blt_AssertCalloc(numCols, sizeof(unsigned char));
     /* Handle the reserved tags "all" or "end". */
     for (i = 0; i < objc; i++) {
-	char *tagName;
+	const char *tag;
 
-	tagName = Tcl_GetString(objv[i]);
-	if (strcmp("all", tagName) == 0) {
+	tag = Tcl_GetString(objv[i]);
+	if (strcmp("all", tag) == 0) {
 	    long j;
 	    for (j = 0; j < numCols; j++) {
 		matches[j] = TRUE;
 	    }
 	    return matches;		/* Don't care other tags. */
 	} 
-	if (strcmp("end", tagName) == 0) {
+	if (strcmp("end", tag) == 0) {
 	    matches[numCols - 1] = TRUE;
 	}
     }
@@ -3413,15 +3412,15 @@ GetColumnTagMatches(Tcl_Interp *interp, BLT_TABLE table, int objc,
 	Blt_HashEntry *hPtr;
 	Blt_HashSearch iter;
 	Blt_HashTable *tagTablePtr;
-	const char *tagName;
+	const char *tag;
 	
-	tagName = Tcl_GetString(objv[i]);
-	if ((strcmp("all", tagName) == 0) || (strcmp("end", tagName) == 0)) {
+	tag = Tcl_GetString(objv[i]);
+	if ((strcmp("all", tag) == 0) || (strcmp("end", tag) == 0)) {
 	    continue;
 	}
-	tagTablePtr = blt_table_get_column_tag_table(table, tagName);
+	tagTablePtr = blt_table_get_column_tag_table(table, tag);
 	if (tagTablePtr == NULL) {
-	    Tcl_AppendResult(interp, "unknown column tag \"", tagName, "\"",
+	    Tcl_AppendResult(interp, "unknown column tag \"", tag, "\"",
 		(char *)NULL);
 	    Blt_Free(matches);
 	    return NULL;
@@ -3554,16 +3553,16 @@ ColumnTagRangeOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc,
 	return TCL_OK;
     }
     for (i = 6; i < objc; i++) {
-	const char *tagName;
+	const char *tag;
 	long j;
 	
-	tagName = Tcl_GetString(objv[i]);
+	tag = Tcl_GetString(objv[i]);
 	for (j = blt_table_column_index(from); j <= blt_table_column_index(to); 
 	     j++) {
 	    BLT_TABLE_COLUMN col;
 
 	    col = blt_table_column(table, j);
-	    if (blt_table_set_column_tag(interp, table, col, tagName) != TCL_OK) {
+	    if (blt_table_set_column_tag(interp, table, col, tag) != TCL_OK) {
 		return TCL_ERROR;
 	    }
 	}    
@@ -3589,13 +3588,13 @@ ColumnTagSearchOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc,
 		  Tcl_Obj *const *objv)
 {
     BLT_TABLE table;
-    BLT_TABLE_ITERATOR iter;
+    BLT_TABLE_ITERATOR ci;
     Blt_HashEntry *hPtr;
     Blt_HashSearch cursor;
     Tcl_Obj *listObjPtr;
 
     table = cmdPtr->table;
-    if (blt_table_iterate_column(interp, table, objv[4], &iter) != TCL_OK) {
+    if (blt_table_iterate_column(interp, table, objv[4], &ci) != TCL_OK) {
 	return TCL_ERROR;
     }
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
@@ -3605,20 +3604,20 @@ ColumnTagSearchOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc,
 	BLT_TABLE_COLUMN col;
 
 	tablePtr = Blt_GetHashValue(hPtr);
-	for (col = blt_table_first_tagged_column(&iter); col != NULL; 
-	     col = blt_table_next_tagged_column(&iter)) {
+	for (col = blt_table_first_tagged_column(&ci); col != NULL; 
+	     col = blt_table_next_tagged_column(&ci)) {
 	    Blt_HashEntry *h2Ptr;
 	
 	    h2Ptr = Blt_FindHashEntry(tablePtr, (char *)col);
 	    if (h2Ptr != NULL) {
-		const char *tagName;
+		const char *tag;
 		int match;
 		int i;
 
 		match = (objc == 5);
-		tagName = hPtr->key.string;
+		tag = hPtr->key.string;
 		for (i = 5; i < objc; i++) {
-		    if (Tcl_StringMatch(tagName, Tcl_GetString(objv[i]))) {
+		    if (Tcl_StringMatch(tag, Tcl_GetString(objv[i]))) {
 			match = TRUE;
 			break;		/* Found match. */
 		    }
@@ -3626,10 +3625,11 @@ ColumnTagSearchOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc,
 		if (match) {
 		    Tcl_Obj *objPtr;
 
-		    objPtr = Tcl_NewStringObj(tagName, -1);
+		    objPtr = Tcl_NewStringObj(tag, -1);
 		    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-		    break;		/* Tag matches this column. Don't care
-					 * if it matches any other columns. */
+		    break;		/* Tag matches this column. Don't
+					 * care if it matches any other
+					 * columns. */
 		}
 	    }
 	}
@@ -3657,8 +3657,8 @@ ColumnTagSearchOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc,
 	    BLT_TABLE_COLUMN col, lastCol;
 	    
 	    lastCol = blt_table_column(table, blt_table_num_columns(table) - 1);
-	    for (col = blt_table_first_tagged_column(&iter); col != NULL; 
-		 col = blt_table_next_tagged_column(&iter)) {
+	    for (col = blt_table_first_tagged_column(&ci); col != NULL; 
+		 col = blt_table_next_tagged_column(&ci)) {
 		if (col == lastCol) {
 		    Tcl_ListObjAppendElement(interp, listObjPtr,
 			Tcl_NewStringObj("end", 3));
@@ -3688,21 +3688,21 @@ static int
 ColumnTagSetOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 {
     BLT_TABLE table;
-    BLT_TABLE_ITERATOR iter;
+    BLT_TABLE_ITERATOR ci;
     int i;
 
     table = cmdPtr->table;
-    if (blt_table_iterate_column(interp, table, objv[4], &iter) != TCL_OK) {
+    if (blt_table_iterate_column(interp, table, objv[4], &ci) != TCL_OK) {
 	return TCL_ERROR;
     }
     for (i = 5; i < objc; i++) {
-	const char *tagName;
+	const char *tag;
 	BLT_TABLE_COLUMN col;
 
-	tagName = Tcl_GetString(objv[i]);
-	for (col = blt_table_first_tagged_column(&iter); col != NULL; 
-	     col = blt_table_next_tagged_column(&iter)) {
-	    if (blt_table_set_column_tag(interp, table, col, tagName) != TCL_OK) {
+	tag = Tcl_GetString(objv[i]);
+	for (col = blt_table_first_tagged_column(&ci); col != NULL; 
+	     col = blt_table_next_tagged_column(&ci)) {
+	    if (blt_table_set_column_tag(interp, table, col, tag) != TCL_OK) {
 		return TCL_ERROR;
 	    }
 	}    
@@ -3729,21 +3729,21 @@ ColumnTagUnsetOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc,
 		 Tcl_Obj *const *objv)
 {
     BLT_TABLE table;
-    BLT_TABLE_ITERATOR iter;
+    BLT_TABLE_ITERATOR ci;
     int i;
 
     table = cmdPtr->table;
-    if (blt_table_iterate_column(interp, table, objv[4], &iter) != TCL_OK) {
+    if (blt_table_iterate_column(interp, table, objv[4], &ci) != TCL_OK) {
 	return TCL_ERROR;
     }
     for (i = 5; i < objc; i++) {
-	const char *tagName;
+	const char *tag;
 	BLT_TABLE_COLUMN col;
 	
-	tagName = Tcl_GetString(objv[i]);
-	for (col = blt_table_first_tagged_column(&iter); col != NULL; 
-	     col = blt_table_next_tagged_column(&iter)) {
-	    if (blt_table_unset_column_tag(interp, table, col, tagName)!=TCL_OK) {
+	tag = Tcl_GetString(objv[i]);
+	for (col = blt_table_first_tagged_column(&ci); col != NULL; 
+	     col = blt_table_next_tagged_column(&ci)) {
+	    if (blt_table_unset_column_tag(interp, table, col, tag) != TCL_OK) {
 		return TCL_ERROR;
 	    }
 	}
@@ -3827,49 +3827,48 @@ ColumnTagOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 static int
 ColumnTraceOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 {
-    BLT_TABLE_ITERATOR iter;
     BLT_TABLE_TRACE trace;
     TraceInfo *tracePtr;
     int flags;
     BLT_TABLE table;
+    BLT_TABLE_COLUMN col;
+    BLT_TABLE_ROWCOLUMN_SPEC colSpec;
+    const char *colTag, *colName;
 
+    colTag = NULL;
+    col = NULL;
     table = cmdPtr->table;
-    if (blt_table_iterate_column(interp, table, objv[3], &iter) != TCL_OK) {
-	return TCL_ERROR;
-    }
+    colSpec = blt_table_column_spec(table, objv[3], &colName);
     flags = GetTraceFlags(Tcl_GetString(objv[4]));
     if (flags < 0) {
 	Tcl_AppendResult(interp, "unknown flag in \"", Tcl_GetString(objv[4]), 
 		"\"", (char *)NULL);
 	return TCL_ERROR;
     }
-    if (iter.type == TABLE_ITERATOR_RANGE) {
-	Tcl_AppendResult(interp, "can't trace range of columns: use a tag", 
-		(char *)NULL);
+    col = NULL;
+    colTag = NULL;
+    switch (colSpec) {
+    case TABLE_SPEC_RANGE:
+    case TABLE_SPEC_LABELS:
+	Tcl_AppendResult(interp, "can't trace multiple columns \"",
+                         Tcl_GetString(objv[3]), "\": use a tag instead", 
+                         (char *)NULL);
 	return TCL_ERROR;
+    case TABLE_SPEC_INDEX:
+    case TABLE_SPEC_LABEL:
+        col = blt_table_get_column(interp, table, objv[3]);
+        break;
+    default:
+        colTag = colName;
     }
-    tracePtr = Blt_Malloc(sizeof(TraceInfo));
+    tracePtr = Blt_AssertMalloc(sizeof(TraceInfo));
     if (tracePtr == NULL) {
 	Tcl_AppendResult(interp, "can't allocate trace: out of memory", 
 		(char *)NULL);
 	return TCL_ERROR;
     }
-    if ((iter.type == TABLE_ITERATOR_INDEX) || 
-	(iter.type == TABLE_ITERATOR_LABEL)) {
-        BLT_TABLE_COLUMN col;
-
-	col = blt_table_first_tagged_column(&iter);
-        fprintf(stderr, "iter col=%x\n", col);
-        trace = blt_table_create_column_trace(table, col, flags, TraceProc, 
-                TraceDeleteProc, tracePtr);
-    } else {
-        const char *tag;
-
-	tag = iter.tagName;
-        fprintf(stderr, "iter tag=%s\n", tag);
-        trace = blt_table_create_column_tag_trace(table, tag, flags, TraceProc, 
-                TraceDeleteProc, tracePtr);
-    } 
+    trace = blt_table_create_trace(table, NULL, col, NULL, colTag, flags, 
+	TraceProc, TraceDeleteProc, tracePtr);
     if (trace == NULL) {
 	Tcl_AppendResult(interp, "can't create column trace: out of memory", 
 		(char *)NULL);
@@ -3925,14 +3924,14 @@ ColumnTraceOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 static int
 ColumnTypeOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 {
-    BLT_TABLE_ITERATOR iter;
+    BLT_TABLE_ITERATOR ci;
     Tcl_Obj *listObjPtr;
     BLT_TABLE_COLUMN col;
     BLT_TABLE table;
     BLT_TABLE_COLUMN_TYPE type;
 
     table = cmdPtr->table;
-    if (blt_table_iterate_column(interp, table, objv[3], &iter) != TCL_OK) {
+    if (blt_table_iterate_column(interp, table, objv[3], &ci) != TCL_OK) {
 	return TCL_ERROR;
     }
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
@@ -3945,8 +3944,8 @@ ColumnTypeOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	    return TCL_ERROR;
 	}
     }
-    for (col = blt_table_first_tagged_column(&iter); col != NULL; 
-	 col = blt_table_next_tagged_column(&iter)) {
+    for (col = blt_table_first_tagged_column(&ci); col != NULL; 
+	 col = blt_table_next_tagged_column(&ci)) {
 	Tcl_Obj *objPtr;
 
 	if (objc == 5) {
@@ -3968,13 +3967,13 @@ ColumnTypeOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  * ColumnUnsetOp --
  *
  *	Unsets one or more columns of values.  One or more columns may be
- *	unset (using tags or multiple arguments). It's an error if the column
- *	doesn't exist.
+ *	unset (using tags or multiple arguments). It's an error if the
+ *	column doesn't exist.
  * 
  * Results:
  *	A standard TCL result. If the tag or column index is invalid,
- *	TCL_ERROR is returned and an error message is left in the interpreter
- *	result.
+ *	TCL_ERROR is returned and an error message is left in the
+ *	interpreter result.
  *	
  * Example:
  *	$t column unset $col ?indices?
@@ -3985,25 +3984,25 @@ static int
 ColumnUnsetOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 {
     BLT_TABLE table;
-    BLT_TABLE_ITERATOR rIter, cIter;
+    BLT_TABLE_ITERATOR ri, ci;
     BLT_TABLE_COLUMN col;
     int result;
 
     table = cmdPtr->table;
-    if (blt_table_iterate_column(interp, table, objv[3], &cIter) != TCL_OK) {
+    if (blt_table_iterate_column(interp, table, objv[3], &ci) != TCL_OK) {
 	return TCL_ERROR;
     }
-    if (blt_table_iterate_row_objv(interp, table, objc-4, objv+4 , &rIter) 
-	!= TCL_OK) {
+    if (blt_table_iterate_row_objv(interp, table, objc - 4, objv + 4 , &ri) 
+        != TCL_OK) {
 	return TCL_ERROR;
     }
     result = TCL_ERROR;
-    for (col = blt_table_first_tagged_column(&cIter); col != NULL; 
-	 col = blt_table_next_tagged_column(&cIter)) {
+    for (col = blt_table_first_tagged_column(&ci); col != NULL; 
+	 col = blt_table_next_tagged_column(&ci)) {
 	BLT_TABLE_ROW row;
 
-	for (row = blt_table_first_tagged_row(&rIter); row != NULL;
-	     row = blt_table_next_tagged_row(&rIter)) {
+	for (row = blt_table_first_tagged_row(&ri); row != NULL;
+	     row = blt_table_next_tagged_row(&ri)) {
 	    if (blt_table_unset_value(table, row, col) != TCL_OK) {
 		goto error;
 	    }
@@ -4011,7 +4010,7 @@ ColumnUnsetOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     }
     result = TCL_OK;
  error:
-    blt_table_free_iterator_objv(&rIter);
+    blt_table_free_iterator_objv(&ri);
     return result;
 }
 
@@ -4406,25 +4405,24 @@ RowCreateOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 static int
 RowDeleteOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 {
-    BLT_TABLE_ITERATOR iter;
+    BLT_TABLE_ITERATOR ri;
     BLT_TABLE_ROW row;
     int result;
 
     result = TCL_ERROR;
     if (blt_table_iterate_row_objv(interp, cmdPtr->table, objc - 3, objv + 3, 
-	&iter) != TCL_OK) {
+	&ri) != TCL_OK) {
 	goto error;
     }
-    /* Walk through the list of row offsets, deleting each row. */
-    for (row = blt_table_first_tagged_row(&iter); row != NULL; 
-	 row = blt_table_next_tagged_row(&iter)) {
+    for (row = blt_table_first_tagged_row(&ri); row != NULL; 
+	 row = blt_table_next_tagged_row(&ri)) {
 	if (blt_table_delete_row(cmdPtr->table, row) != TCL_OK) {
 	    goto error;
 	}
     }
     result = TCL_OK;
  error:
-    blt_table_free_iterator_objv(&iter);
+    blt_table_free_iterator_objv(&ri);
     return result;
 }
 
@@ -4450,18 +4448,18 @@ static int
 RowDupOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 {
     Tcl_Obj *listObjPtr;
-    BLT_TABLE_ITERATOR iter;
+    BLT_TABLE_ITERATOR ri;
     BLT_TABLE_ROW src;
     int result;
 
     if (blt_table_iterate_row_objv(interp, cmdPtr->table, objc - 3, objv + 3, 
-	&iter) != TCL_OK) {
+	&ri) != TCL_OK) {
 	return TCL_ERROR;
     }
     result = TCL_ERROR;
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
-    for (src = blt_table_first_tagged_row(&iter); src != NULL; 
-	 src = blt_table_next_tagged_row(&iter)) {
+    for (src = blt_table_first_tagged_row(&ri); src != NULL; 
+	 src = blt_table_next_tagged_row(&ri)) {
 	const char *label;
 	long j;
 	BLT_TABLE_ROW dest;
@@ -4481,7 +4479,7 @@ RowDupOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     Tcl_SetObjResult(interp, listObjPtr);
     result = TCL_OK;
  error:
-    blt_table_free_iterator_objv(&iter);
+    blt_table_free_iterator_objv(&ri);
     if (result != TCL_OK) {
 	Tcl_DecrRefCount(listObjPtr);
     }
@@ -4697,15 +4695,15 @@ RowGetOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
 	}
     } else {
-	BLT_TABLE_ITERATOR iter;
+	BLT_TABLE_ITERATOR ci;
 	BLT_TABLE_COLUMN col;
 
 	if (blt_table_iterate_column_objv(interp, table, objc - 4, objv + 4, 
-		&iter) != TCL_OK) {
+		&ci) != TCL_OK) {
 	    return TCL_ERROR;
 	}
-	for (col = blt_table_first_tagged_column(&iter); col != NULL; 
-	     col = blt_table_next_tagged_column(&iter)) {
+	for (col = blt_table_first_tagged_column(&ci); col != NULL; 
+	     col = blt_table_next_tagged_column(&ci)) {
 	    Tcl_Obj *objPtr;
 	    
 	    if (needLabels) {
@@ -4720,6 +4718,7 @@ RowGetOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	    }
 	    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
 	}
+        blt_table_free_iterator_objv(&ci);
     }
     Tcl_SetObjResult(interp, listObjPtr);
     return TCL_OK;
@@ -4777,24 +4776,24 @@ RowIndexOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 static int
 RowIndicesOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 {
-    BLT_TABLE_ITERATOR iter;
+    BLT_TABLE_ITERATOR ri;
     BLT_TABLE_ROW row;
     Tcl_Obj *listObjPtr;
 
     if (blt_table_iterate_row_objv(interp, cmdPtr->table, objc - 3, objv + 3, 
-	&iter) != TCL_OK) {
+	&ri) != TCL_OK) {
 	return TCL_ERROR;
     }
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
-    for (row = blt_table_first_tagged_row(&iter); row != NULL; 
-	 row = blt_table_next_tagged_row(&iter)) {
+    for (row = blt_table_first_tagged_row(&ri); row != NULL; 
+	 row = blt_table_next_tagged_row(&ri)) {
 	Tcl_Obj *objPtr;
 
 	objPtr = Tcl_NewLongObj(blt_table_row_index(row));
 	Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
     }
     Tcl_SetObjResult(interp, listObjPtr);
-    blt_table_free_iterator_objv(&iter);
+    blt_table_free_iterator_objv(&ri);
     return TCL_OK;
 }
 /*
@@ -5292,13 +5291,13 @@ static int
 RowSetOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 {
     BLT_TABLE table;
-    BLT_TABLE_ITERATOR iter;
+    BLT_TABLE_ITERATOR ri;
     long numCols;
     BLT_TABLE_ROW row;
 
     table = cmdPtr->table;
     /* May set more than one row with the same values. */
-    if (IterateRows(interp, table, objv[3], &iter) != TCL_OK) {
+    if (IterateRows(interp, table, objv[3], &ri) != TCL_OK) {
 	return TCL_ERROR;
     }
     if (objc == 4) {
@@ -5311,8 +5310,8 @@ RowSetOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 			 (char *)NULL);
 	return TCL_ERROR;
     }
-    for (row = blt_table_first_tagged_row(&iter); row != NULL; 
-	 row = blt_table_next_tagged_row(&iter)) {
+    for (row = blt_table_first_tagged_row(&ri); row != NULL; 
+	 row = blt_table_next_tagged_row(&ri)) {
 	long i;
 
 	/* The remaining arguments are index/value pairs. */
@@ -5342,8 +5341,8 @@ RowSetOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  * RowTagAddOp --
  *
  *	Adds a given tag to one or more rows.  Tag names can't start with a
- *	digit (to distinquish them from node ids) and can't be a reserved tag
- *	("all" or "end").
+ *	digit (to distinquish them from node ids) and can't be a reserved
+ *	tag ("all" or "end").
  *
  *	.t row tag add tag ?row...?
  *
@@ -5354,23 +5353,23 @@ RowTagAddOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 {
     BLT_TABLE table;
     int i;
-    const char *tagName;
+    const char *tag;
 
     table = cmdPtr->table;
-    tagName = Tcl_GetString(objv[4]);
-    if (blt_table_set_row_tag(interp, table, NULL, tagName) != TCL_OK) {
+    tag = Tcl_GetString(objv[4]);
+    if (blt_table_set_row_tag(interp, table, NULL, tag) != TCL_OK) {
 	return TCL_ERROR;
     }
     for (i = 5; i < objc; i++) {
 	BLT_TABLE_ROW row;
-	BLT_TABLE_ITERATOR iter;
+	BLT_TABLE_ITERATOR ri;
 
-	if (blt_table_iterate_row(interp, table, objv[i], &iter) != TCL_OK) {
+	if (blt_table_iterate_row(interp, table, objv[i], &ri) != TCL_OK) {
 	    return TCL_ERROR;
 	}
-	for (row = blt_table_first_tagged_row(&iter); row != NULL; 
-	     row = blt_table_next_tagged_row(&iter)) {
-	    if (blt_table_set_row_tag(interp, table, row, tagName) != TCL_OK) {
+	for (row = blt_table_first_tagged_row(&ri); row != NULL; 
+	     row = blt_table_next_tagged_row(&ri)) {
+	    if (blt_table_set_row_tag(interp, table, row, tag) != TCL_OK) {
 		return TCL_ERROR;
 	    }
 	}    
@@ -5396,21 +5395,21 @@ static int
 RowTagDeleteOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 {
     BLT_TABLE table;
-    BLT_TABLE_ITERATOR iter;
+    BLT_TABLE_ITERATOR ri;
     int i;
-    const char *tagName;
+    const char *tag;
 
     table = cmdPtr->table;
-    tagName = Tcl_GetString(objv[4]);
+    tag = Tcl_GetString(objv[4]);
     for (i = 5; i < objc; i++) {
 	BLT_TABLE_ROW row;
 	
-	if (blt_table_iterate_row(interp, table, objv[i], &iter) != TCL_OK) {
+	if (blt_table_iterate_row(interp, table, objv[i], &ri) != TCL_OK) {
 	    return TCL_ERROR;
 	}
-	for (row = blt_table_first_tagged_row(&iter); row != NULL; 
-	     row = blt_table_next_tagged_row(&iter)) {
-	    if (blt_table_unset_row_tag(interp, table, row, tagName)!=TCL_OK) {
+	for (row = blt_table_first_tagged_row(&ri); row != NULL; 
+	     row = blt_table_next_tagged_row(&ri)) {
+	    if (blt_table_unset_row_tag(interp, table, row, tag) != TCL_OK) {
 		return TCL_ERROR;
 	    }
 	}
@@ -5435,10 +5434,10 @@ static int
 RowTagExistsOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 {
     int bool;
-    const char *tagName;
+    const char *tag;
 
-    tagName = Tcl_GetString(objv[4]);
-    bool = (blt_table_get_row_tag_table(cmdPtr->table, tagName) != NULL);
+    tag = Tcl_GetString(objv[4]);
+    bool = (blt_table_get_row_tag_table(cmdPtr->table, tag) != NULL);
     if (objc == 6) {
 	BLT_TABLE_ROW row;
 
@@ -5446,7 +5445,7 @@ RowTagExistsOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	if (row == NULL) {
 	    bool = FALSE;
 	} else {
-	    bool = blt_table_row_has_tag(cmdPtr->table, row, tagName);
+	    bool = blt_table_row_has_tag(cmdPtr->table, row, tag);
 	}
     } 
     Tcl_SetBooleanObj(Tcl_GetObjResult(interp), bool);
@@ -5500,12 +5499,12 @@ RowTagGetOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     Blt_HashSearch hsearch;
     Blt_HashTable tagTable;
     BLT_TABLE table;
-    BLT_TABLE_ITERATOR iter;
+    BLT_TABLE_ITERATOR ri;
     BLT_TABLE_ROW row;
     Tcl_Obj *listObjPtr;
 
     table = cmdPtr->table;
-    if (blt_table_iterate_row(interp, table, objv[4], &iter) != TCL_OK) {
+    if (blt_table_iterate_row(interp, table, objv[4], &ri) != TCL_OK) {
 	return TCL_ERROR;
     }
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
@@ -5513,35 +5512,35 @@ RowTagGetOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     Blt_InitHashTable(&tagTable, BLT_STRING_KEYS);
     
     /* Collect all the tags into a hash table. */
-    for (row = blt_table_first_tagged_row(&iter); row != NULL; 
-	 row = blt_table_next_tagged_row(&iter)) {
+    for (row = blt_table_first_tagged_row(&ri); row != NULL; 
+	 row = blt_table_next_tagged_row(&ri)) {
 	Blt_Chain chain;
 	Blt_ChainLink link;
 
 	chain = blt_table_row_tags(table, row);
 	for (link = Blt_Chain_FirstLink(chain); link != NULL;
 	     link = Blt_Chain_NextLink(link)) {
-	    const char *tagName;
+	    const char *tag;
 	    int isNew;
 
-	    tagName = Blt_Chain_GetValue(link);
-	    Blt_CreateHashEntry(&tagTable, tagName, &isNew);
+	    tag = Blt_Chain_GetValue(link);
+	    Blt_CreateHashEntry(&tagTable, tag, &isNew);
 	}
 	Blt_Chain_Destroy(chain);
     }
     for (hPtr = Blt_FirstHashEntry(&tagTable, &hsearch); hPtr != NULL;
 	 hPtr = Blt_NextHashEntry(&hsearch)) {
 	int match;
-	const char *tagName;
+	const char *tag;
 
-	tagName = Blt_GetHashKey(&tagTable, hPtr);
+	tag = Blt_GetHashKey(&tagTable, hPtr);
 	match = TRUE;
 	if (objc > 5) {
 	    int i;
 
 	    match = FALSE;
 	    for (i = 5; i < objc; i++) {
-		if (Tcl_StringMatch(tagName, Tcl_GetString(objv[i]))) {
+		if (Tcl_StringMatch(tag, Tcl_GetString(objv[i]))) {
 		    match = TRUE;
 		}
 	    }
@@ -5549,7 +5548,7 @@ RowTagGetOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	if (match) {
 	    Tcl_Obj *objPtr;
 
-	    objPtr = Tcl_NewStringObj(tagName, -1);
+	    objPtr = Tcl_NewStringObj(tag, -1);
 	    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
 	}
     }
@@ -5569,17 +5568,17 @@ GetRowTagMatches(BLT_TABLE table, int objc, Tcl_Obj *const *objv)
     matches = Blt_AssertCalloc(numRows, sizeof(unsigned char));
     /* Handle the reserved tags "all" or "end". */
     for (i = 0; i < objc; i++) {
-	char *tagName;
+	char *tag;
 
-	tagName = Tcl_GetString(objv[i]);
-	if (strcmp("all", tagName) == 0) {
+	tag = Tcl_GetString(objv[i]);
+	if (strcmp("all", tag) == 0) {
 	    long j;
 	    for (j = 0; j < blt_table_num_rows(table); j++) {
 		matches[j] = TRUE;
 	    }
 	    return matches;		/* Don't care about other tags. */
 	} 
-	if (strcmp("end", tagName) == 0) {
+	if (strcmp("end", tag) == 0) {
 	    matches[numRows - 1] = TRUE;
 	}
     }
@@ -5588,13 +5587,13 @@ GetRowTagMatches(BLT_TABLE table, int objc, Tcl_Obj *const *objv)
 	Blt_HashEntry *hPtr;
 	Blt_HashSearch iter;
 	Blt_HashTable *tagTablePtr;
-	const char *tagName;
+	const char *tag;
 	
-	tagName = Tcl_GetString(objv[i]);
-	if ((strcmp("all", tagName) == 0) || (strcmp("end", tagName) == 0)) {
+	tag = Tcl_GetString(objv[i]);
+	if ((strcmp("all", tag) == 0) || (strcmp("end", tag) == 0)) {
 	    continue;
 	}
-	tagTablePtr = blt_table_get_row_tag_table(table, tagName);
+	tagTablePtr = blt_table_get_row_tag_table(table, tag);
 	if (tagTablePtr == NULL) {
 	    Blt_Free(matches);
 	    return NULL;
@@ -5719,15 +5718,15 @@ RowTagRangeOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	return TCL_OK;
     }
     for (i = 6; i < objc; i++) {
-	const char *tagName;
+	const char *tag;
 	long j;
 	
-	tagName = Tcl_GetString(objv[i]);
+	tag = Tcl_GetString(objv[i]);
 	for (j = blt_table_row_index(from); j <= blt_table_row_index(to); j++) {
 	    BLT_TABLE_ROW row;
 
 	    row = blt_table_row(table, j);
-	    if (blt_table_set_row_tag(interp, table, row, tagName) != TCL_OK) {
+	    if (blt_table_set_row_tag(interp, table, row, tag) != TCL_OK) {
 		return TCL_ERROR;
 	    }
 	}    
@@ -5753,11 +5752,11 @@ RowTagSearchOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     BLT_TABLE table;
     Blt_HashEntry *hPtr;
     Blt_HashSearch cursor;
-    BLT_TABLE_ITERATOR iter;
+    BLT_TABLE_ITERATOR ri;
     Tcl_Obj *listObjPtr;
 
     table = cmdPtr->table;
-    if (blt_table_iterate_row(interp, table, objv[4], &iter) != TCL_OK) {
+    if (blt_table_iterate_row(interp, table, objv[4], &ri) != TCL_OK) {
 	return TCL_ERROR;
     }
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
@@ -5767,20 +5766,20 @@ RowTagSearchOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	BLT_TABLE_ROW row;
 	
 	tablePtr = Blt_GetHashValue(hPtr);
-	for (row = blt_table_first_tagged_row(&iter); row != NULL; 
-	     row = blt_table_next_tagged_row(&iter)) {
+	for (row = blt_table_first_tagged_row(&ri); row != NULL; 
+	     row = blt_table_next_tagged_row(&ri)) {
 	    Blt_HashEntry *h2Ptr;
 	
 	    h2Ptr = Blt_FindHashEntry(tablePtr, (char *)row);
 	    if (h2Ptr != NULL) {
-		const char *tagName;
+		const char *tag;
 		int match;
 		int i;
 
 		match = (objc == 5);
-		tagName = hPtr->key.string;
+		tag = hPtr->key.string;
 		for (i = 5; i < objc; i++) {
-		    if (Tcl_StringMatch(tagName, Tcl_GetString(objv[i]))) {
+		    if (Tcl_StringMatch(tag, Tcl_GetString(objv[i]))) {
 			match = TRUE;
 			break;	/* Found match. */
 		    }
@@ -5788,10 +5787,10 @@ RowTagSearchOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 		if (match) {
 		    Tcl_Obj *objPtr;
 
-		    objPtr = Tcl_NewStringObj(tagName, -1);
+		    objPtr = Tcl_NewStringObj(tag, -1);
 		    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-		    break;	/* Tag matches this row. Don't care if it
-				 * matches any other rows. */
+		    break;              /* Tag matches this row. Don't care
+                                         * if it matches any other rows. */
 		}
 	    }
 	}
@@ -5819,8 +5818,8 @@ RowTagSearchOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	    BLT_TABLE_ROW row, lastRow;
 	    
 	    lastRow = blt_table_row(table, blt_table_num_rows(table) - 1);
-	    for (row = blt_table_first_tagged_row(&iter); row != NULL; 
-		 row = blt_table_next_tagged_row(&iter)) {
+	    for (row = blt_table_first_tagged_row(&ri); row != NULL; 
+		 row = blt_table_next_tagged_row(&ri)) {
 		if (row == lastRow) {
 		    Tcl_ListObjAppendElement(interp, listObjPtr,
 			Tcl_NewStringObj("end", 3));
@@ -5848,21 +5847,21 @@ static int
 RowTagSetOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 {
     BLT_TABLE table;
-    BLT_TABLE_ITERATOR iter;
+    BLT_TABLE_ITERATOR ri;
     int i;
 
     table = cmdPtr->table;
-    if (blt_table_iterate_row(interp, table, objv[4], &iter) != TCL_OK) {
+    if (blt_table_iterate_row(interp, table, objv[4], &ri) != TCL_OK) {
 	return TCL_ERROR;
     }
     for (i = 5; i < objc; i++) {
-	const char *tagName;
+	const char *tag;
 	BLT_TABLE_ROW row;
 
-	tagName = Tcl_GetString(objv[i]);
-	for (row = blt_table_first_tagged_row(&iter); row != NULL; 
-	     row = blt_table_next_tagged_row(&iter)) {
-	    if (blt_table_set_row_tag(interp, table, row, tagName) != TCL_OK) {
+	tag = Tcl_GetString(objv[i]);
+	for (row = blt_table_first_tagged_row(&ri); row != NULL; 
+	     row = blt_table_next_tagged_row(&ri)) {
+	    if (blt_table_set_row_tag(interp, table, row, tag) != TCL_OK) {
 		return TCL_ERROR;
 	    }
 	}    
@@ -5886,21 +5885,21 @@ static int
 RowTagUnsetOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 {
     BLT_TABLE table;
-    BLT_TABLE_ITERATOR iter;
+    BLT_TABLE_ITERATOR ri;
     int i;
 
     table = cmdPtr->table;
-    if (blt_table_iterate_row(interp, table, objv[4], &iter) != TCL_OK) {
+    if (blt_table_iterate_row(interp, table, objv[4], &ri) != TCL_OK) {
 	return TCL_ERROR;
     }
     for (i = 5; i < objc; i++) {
-	const char *tagName;
+	const char *tag;
 	BLT_TABLE_ROW row;
 	
-	tagName = Tcl_GetString(objv[i]);
-	for (row = blt_table_first_tagged_row(&iter); row != NULL; 
-	     row = blt_table_next_tagged_row(&iter)) {
-	    if (blt_table_unset_row_tag(interp, table, row, tagName)!=TCL_OK) {
+	tag = Tcl_GetString(objv[i]);
+	for (row = blt_table_first_tagged_row(&ri); row != NULL; 
+	     row = blt_table_next_tagged_row(&ri)) {
+	    if (blt_table_unset_row_tag(interp, table, row, tag)!=TCL_OK) {
 		return TCL_ERROR;
 	    }
 	}
@@ -5955,24 +5954,23 @@ RowTagOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     return result;
 }
 
-
 /*
  *---------------------------------------------------------------------------
  *
  * RowTraceOp --
  *
- *	Creates a trace for this instance.  Traces represent list of keys, a
- *	bitmask of trace flags, and a command prefix to be invoked when a
+ *	Creates a trace for this instance.  Traces represent list of keys,
+ *	a bitmask of trace flags, and a command prefix to be invoked when a
  *	matching trace event occurs.
  *
  *	The command prefix is parsed and saved in an array of Tcl_Objs. The
  *	qualified name of the instance is saved also.
  *
  * Results:
- *	A standard TCL result.  The name of the new trace is returned in the
- *	interpreter result.  Otherwise, if it failed to parse a switch, then
- *	TCL_ERROR is returned and an error message is left in the interpreter
- *	result.
+ *	A standard TCL result.  The name of the new trace is returned in
+ *	the interpreter result.  Otherwise, if it failed to parse a switch,
+ *	then TCL_ERROR is returned and an error message is left in the
+ *	interpreter result.
  *
  * Example:
  *	$t row trace tag rwx proc 
@@ -5984,17 +5982,15 @@ static int
 RowTraceOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 {
     BLT_TABLE table;
-    BLT_TABLE_ITERATOR iter;
     BLT_TABLE_TRACE trace;
     TraceInfo *tracePtr;
-    const char *tag;
     int flags;
     BLT_TABLE_ROW row;
+    BLT_TABLE_ROWCOLUMN_SPEC rowSpec;
+    const char *rowTag, *rowName;
 
     table = cmdPtr->table;
-    if (blt_table_iterate_row(interp, table, objv[3], &iter) != TCL_OK) {
-	return TCL_ERROR;
-    }
+    rowSpec = blt_table_row_spec(table, objv[3], &rowName);
     flags = GetTraceFlags(Tcl_GetString(objv[4]));
     if (flags < 0) {
 	Tcl_AppendResult(interp, "unknown flag in \"", Tcl_GetString(objv[4]), 
@@ -6002,17 +5998,20 @@ RowTraceOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	return TCL_ERROR;
     }
     row = NULL;
-    tag = NULL;
-    if (iter.type == TABLE_ITERATOR_RANGE) {
-	Tcl_AppendResult(interp, "can't trace range of rows: use a tag", 
-		(char *)NULL);
+    rowTag = NULL;
+    switch (rowSpec) {
+    case TABLE_SPEC_RANGE:
+    case TABLE_SPEC_LABELS:
+	Tcl_AppendResult(interp, "can't trace multiple rows \"",
+                         Tcl_GetString(objv[3]), "\": use a tag instead", 
+                         (char *)NULL);
 	return TCL_ERROR;
-    }
-    if ((iter.type == TABLE_ITERATOR_INDEX) || 
-	(iter.type == TABLE_ITERATOR_LABEL)) {
-	row = blt_table_first_tagged_row(&iter);
-    } else {
-	tag = iter.tagName;
+    case TABLE_SPEC_INDEX:
+    case TABLE_SPEC_LABEL:
+        row = blt_table_get_row(interp, table, objv[3]);
+        break;
+    default:
+        rowTag = rowName;
     }
     tracePtr = Blt_Malloc(sizeof(TraceInfo));
     if (tracePtr == NULL) {
@@ -6020,7 +6019,7 @@ RowTraceOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 		(char *)NULL);
 	return TCL_ERROR;
     }
-    trace = blt_table_create_trace(table, row, NULL, tag, NULL, flags, 
+    trace = blt_table_create_trace(table, row, NULL, rowTag, NULL, flags, 
 	TraceProc, TraceDeleteProc, tracePtr);
     if (trace == NULL) {
 	Tcl_AppendResult(interp, "can't create row trace: out of memory", 
@@ -6049,7 +6048,8 @@ RowTraceOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	int isNew;
 
 	Blt_FormatString(traceId, 200, "trace%d", cmdPtr->nextTraceId++);
-	tracePtr->hPtr = Blt_CreateHashEntry(&cmdPtr->traceTable, traceId, &isNew);
+	tracePtr->hPtr = Blt_CreateHashEntry(&cmdPtr->traceTable, traceId, 
+                &isNew);
 	Blt_SetHashValue(tracePtr->hPtr, tracePtr);
 	Tcl_SetStringObj(Tcl_GetObjResult(interp), traceId, -1);
     }
@@ -6077,25 +6077,25 @@ static int
 RowUnsetOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 {
     BLT_TABLE table;
-    BLT_TABLE_ITERATOR rIter, cIter;
+    BLT_TABLE_ITERATOR ri, ci;
     BLT_TABLE_COLUMN col;
     int result;
 
     table = cmdPtr->table;
-    if (blt_table_iterate_row(interp, table, objv[3], &rIter) != TCL_OK) {
+    if (blt_table_iterate_row(interp, table, objv[3], &ri) != TCL_OK) {
 	return TCL_ERROR;
     }
-    if (blt_table_iterate_column_objv(interp, table, objc-4, objv+4 , &cIter) 
+    if (blt_table_iterate_column_objv(interp, table, objc - 4, objv + 4 , &ci) 
 	!= TCL_OK) {
 	return TCL_ERROR;
     }
     result = TCL_ERROR;
-    for (col = blt_table_first_tagged_column(&cIter); col != NULL; 
-	 col = blt_table_next_tagged_column(&cIter)) {
+    for (col = blt_table_first_tagged_column(&ci); col != NULL; 
+	 col = blt_table_next_tagged_column(&ci)) {
 	BLT_TABLE_ROW row;
 
-	for (row = blt_table_first_tagged_row(&rIter); row != NULL;
-	     row = blt_table_next_tagged_row(&rIter)) {
+	for (row = blt_table_first_tagged_row(&ri); row != NULL;
+	     row = blt_table_next_tagged_row(&ri)) {
 	    if (blt_table_unset_value(table, row, col) != TCL_OK) {
 		goto error;
 	    }
@@ -6103,7 +6103,7 @@ RowUnsetOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     }
     result = TCL_OK;
  error:
-    blt_table_free_iterator_objv(&cIter);
+    blt_table_free_iterator_objv(&ci);
     return result;
 }
 
@@ -7422,11 +7422,11 @@ static int
 TraceCreateOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 {
     BLT_TABLE table;
-    BLT_TABLE_ITERATOR ri, ci;
     BLT_TABLE_TRACE trace;
     TraceInfo *tracePtr;
-    const char *rowTag, *colTag;
+    const char *rowTag, *colTag, *colName, *rowName;
     int flags;
+    BLT_TABLE_ROWCOLUMN_SPEC rowSpec, colSpec;
     BLT_TABLE_ROW row;
     BLT_TABLE_COLUMN col;
     
@@ -7442,27 +7442,33 @@ TraceCreateOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     row = NULL;
     col = NULL;
     colTag = rowTag = NULL;
-    if (rowSpec == TABLE_SPEC_RANGE) {
-	Tcl_AppendResult(interp, "can't trace range of rows: use a tag", 
-		(char *)NULL);
+    switch (rowSpec) {
+    case TABLE_SPEC_RANGE:
+    case TABLE_SPEC_LABELS:
+	Tcl_AppendResult(interp, "can't trace multiple rows \"",
+                         Tcl_GetString(objv[3]), "\": use a tag instead", 
+                         (char *)NULL);
 	return TCL_ERROR;
+    case TABLE_SPEC_INDEX:
+    case TABLE_SPEC_LABEL:
+        row = blt_table_get_row(interp, table, objv[3]);
+        break;
+    default:
+        rowTag = rowName;
     }
-    if (colSpec == TABLE_SPEC_RANGE) {
-	Tcl_AppendResult(interp, "can't trace range of columns: use a tag", 
-		(char *)NULL);
+    switch (colSpec) {
+    case TABLE_SPEC_RANGE:
+    case TABLE_SPEC_LABELS:
+	Tcl_AppendResult(interp, "can't trace multiple columns \"",
+                         Tcl_GetString(objv[4]), "\": use a tag instead", 
+                         (char *)NULL);
 	return TCL_ERROR;
-    }
-    if ((rowSpec == TABLE_SPEC_INDEX) || 
-	(rowSpec == TABLE_SPEC_LABEL)) {
-	row = blt_table_first_tagged_row(&ri);
-    } else {
-	rowTag = rowName;
-    }
-    if ((colSpec == TABLE_SPEC_INDEX) || 
-	(colSpec == TABLE_SPEC_LABEL)) {
-	col = blt_table_first_tagged_column(&ci);
-    } else {
-	colTag = colName;
+    case TABLE_SPEC_INDEX:
+    case TABLE_SPEC_LABEL:
+        col = blt_table_get_column(interp, table, objv[4]);
+        break;
+    default:
+        colTag = colName;
     }
     tracePtr = Blt_Malloc(sizeof(TraceInfo));
     if (tracePtr == NULL) {
@@ -7470,8 +7476,8 @@ TraceCreateOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 		(char *)NULL);
 	return TCL_ERROR;
     }
-    trace = blt_table_create_trace(table, row, col, rowTag, colTag, 
-	flags, TraceProc, TraceDeleteProc, tracePtr);
+    trace = blt_table_create_trace(table, row, col, rowTag, colTag, flags, 
+        TraceProc, TraceDeleteProc, tracePtr);
     if (trace == NULL) {
 	Tcl_AppendResult(interp, "can't create individual trace: out of memory",
 		(char *)NULL);
@@ -7941,10 +7947,10 @@ DumpColumn(BLT_TABLE table, DumpSwitches *dumpPtr, BLT_TABLE_COLUMN col)
     Tcl_DStringStartSublist(dumpPtr->dsPtr);
     for (link = Blt_Chain_FirstLink(colTags); link != NULL;
 	 link = Blt_Chain_NextLink(link)) {
-	const char *tagName;
+	const char *tag;
 
-	tagName = Blt_Chain_GetValue(link);
-	Tcl_DStringAppendElement(dumpPtr->dsPtr, tagName);
+	tag = Blt_Chain_GetValue(link);
+	Tcl_DStringAppendElement(dumpPtr->dsPtr, tag);
     }
     Blt_Chain_Destroy(colTags);
     Tcl_DStringEndSublist(dumpPtr->dsPtr);
@@ -7978,10 +7984,10 @@ DumpRow(BLT_TABLE table, DumpSwitches *dumpPtr, BLT_TABLE_ROW row)
     rowTags = blt_table_row_tags(table, row);
     for (link = Blt_Chain_FirstLink(rowTags); link != NULL;
 	 link = Blt_Chain_NextLink(link)) {
-	const char *tagName;
+	const char *tag;
 
-	tagName = Blt_Chain_GetValue(link);
-	Tcl_DStringAppendElement(dumpPtr->dsPtr, tagName);
+	tag = Blt_Chain_GetValue(link);
+	Tcl_DStringAppendElement(dumpPtr->dsPtr, tag);
     }
     Blt_Chain_Destroy(rowTags);
     Tcl_DStringEndSublist(dumpPtr->dsPtr);

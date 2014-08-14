@@ -1913,11 +1913,6 @@ CallClientTraces(Table *tablePtr, Table *clientPtr, Row *rowPtr, Column *colPtr,
 	    match++;
 	}
 	if (match < 2) {
-#ifdef notdef
-        fprintf(stderr, "CallClientTraces: match < 2 %s callback=%x, colPtr=%x tracePtr->column=%x\n", 
-                blt_table_column_label(colPtr),
-                tracePtr->proc, colPtr, tracePtr->column);
-#endif
 	    continue;                   /* Must match both row and
                                          * column.  */
 	}
@@ -2316,12 +2311,6 @@ MoveIndices(
     Header **newMap;		/* Resulting reordered map. */
     long src, dest;
 
-#ifdef notdef
-    fprintf(stderr, "src=%ld, dest=%ld, count=%d\n", srcPtr->index, 
-	destPtr->index, count);
-    fprintf(stderr, "%s numUsed=%d, numAllocated=%d\n", rcPtr->classPtr->name,
-	    rcPtr->numUsed, rcPtr->numAllocated);
-#endif
     if (srcPtr == destPtr) {
 	return TRUE;
     }
@@ -3334,9 +3323,6 @@ blt_table_iterate_column(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr,
     iterPtr->type = TABLE_ITERATOR_INDEX;
 
     spec = blt_table_column_spec(table, objPtr, &tagName);
-    fprintf(stderr, "column spec for %s is %d\n",  Tcl_GetString(objPtr),
-            spec);
-
     switch (spec) {
     case TABLE_SPEC_INDEX:
 	p = Tcl_GetString(objPtr);
@@ -3962,7 +3948,6 @@ blt_table_create_trace(
     }
     tracePtr->row = rowPtr;
     tracePtr->column = colPtr;
-    fprintf(stderr, "create_trace colPtr=%x\n", colPtr);
     if (rowTag != NULL) {
 	tracePtr->rowTag = Blt_AssertStrdup(rowTag);
     }
@@ -4017,7 +4002,6 @@ blt_table_create_column_trace(
 					 * when the callback is
 					 * executed. */
 {
-    fprintf(stderr, "create_column_trace colPtr=%x\n", colPtr);
     return blt_table_create_trace(tablePtr, NULL, colPtr, NULL, NULL, flags,
 		proc, deleteProc, clientData);
 }
