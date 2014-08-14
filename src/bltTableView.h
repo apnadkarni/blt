@@ -187,6 +187,33 @@
 
 #define CELL_FLAGS_MASK         (DISABLED|POSTED|HIGHLIGHT)
 
+/*
+ * Limits --
+ *
+ * 	Defines the bounding of a size (width or height) in the table.  It may
+ * 	be related to the partition, entry, or table size.  The widget
+ * 	pointers are used to associate sizes with the requested size of other
+ * 	widgets.
+ */
+
+typedef struct {
+    int flags;			/* Flags indicate whether using default
+				 * values for limits or not. See flags
+				 * below. */
+    int max, min;		/* Values for respective limits. */
+    int nom;			/* Nominal starting value. */
+} Limits;
+
+#define LIMITS_SET_BIT	1
+#define LIMITS_SET_MIN  (LIMITS_SET_BIT<<0)
+#define LIMITS_SET_MAX  (LIMITS_SET_BIT<<1)
+#define LIMITS_SET_NOM  (LIMITS_SET_BIT<<2)
+
+#define LIMITS_MIN	0	/* Default minimum limit  */
+#define LIMITS_MAX	SHRT_MAX/* Default maximum limit */
+#define LIMITS_NOM	-1000	/* Default nomimal value.  Indicates if a
+				 * partition has received any space yet */
+
 typedef enum CellStyleTypes {
     STYLE_TEXTBOX, STYLE_CHECKBOX, STYLE_COMBOBOX, STYLE_IMAGEBOX
 } CellStyleType;
@@ -394,17 +421,11 @@ struct _Row {
     int titleJustify;
     int height;				/* Maximum height of all the cells
 					 * in this row. */
-    int reqHeight;			/* If > 0, requested height of this
+    Limits reqHeight;			/* If > 0, requested height of this
 					 * row.  This overrides the
 					 * computed height. */
-    int nomHeight;
-    int reqMin, reqMax;			/* Requested bounds on the height
-					 * of row.  Does not include any
-					 * padding or the borderwidth of
-					 * row.  If non-zero, overrides the
-					 * computed height of the row. */
-    int max;				/* Maximum space allowed for the
-					 * row. */
+    int min, max, nom;                  /* Min/Max/Nominal space allowed for
+					 * column. */
     int ruleHeight;
     long index;
     long visibleIndex;
@@ -459,17 +480,10 @@ struct _Column {
 
     int width;				/* Maximum width of all the cells
 					 * in this column. */
-    int reqWidth;			/* Requested width of this column.
+    Limits reqWidth;			/* Requested width of this column.
 					 * This overrides the computed
 					 * width. */
-    int nomWidth;
-    int reqMin, reqMax;			/* Requested bounds on the width of
-					 * column.  Does not include any
-					 * padding or the borderwidth of
-					 * column.  If non-zero, overrides
-					 * the computed width of the
-					 * column. */
-    int max;				/* Maximum space allowed for
+    int min, max, nom;                  /* Min/Max/Nominal space allowed for
 					 * column. */
     int ruleWidth;
     long index;
@@ -501,6 +515,7 @@ struct _Column {
     const char *filterText;		/* Text of last filter selected. */
     short int filterTextWidth, filterTextHeight;
     Icon filterIcon;			/* Icon of last filter selected. */
+    Blt_Font filterFont;                /* Font of last filter selected. */
     const char *filterValue;		/* Value of last filter selected. */
     Tcl_Obj *filterMenuObjPtr;		/* Name of menu attached to this
 					 * column to filter row values. */

@@ -1720,7 +1720,9 @@ ColumnVarResolverProc(
 	col);
     if (valueObjPtr == NULL) {
 	valueObjPtr = switchesPtr->emptyValueObjPtr;
-	if (valueObjPtr == NULL) {
+	if (valueObjPtr != NULL) {
+            Tcl_IncrRefCount(valueObjPtr);
+        } else {
 	    return TCL_CONTINUE;
 	}
     }
@@ -2277,8 +2279,8 @@ ColumnDupOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * Results:
  *	A standard TCL result. If the tag or column index is invalid,
- *	TCL_ERROR is returned and an error message is left in the interpreter
- *	result.
+ *	TCL_ERROR is returned and an error message is left in the
+ *	interpreter result.
  *
  * Example:
  *	$t column empty column
@@ -2290,28 +2292,22 @@ ColumnEmptyOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 {
     BLT_TABLE_COLUMN col;
     Tcl_Obj *listObjPtr;
-    long i;
+
+    BLT_TABLE_ROW row;
 
     col = blt_table_get_column(interp, cmdPtr->table, objv[3]);
     if (col == NULL) {
 	return TCL_ERROR;
     }
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
-    for (i = 0; i < blt_table_num_columns(cmdPtr->table); i++) {
-	BLT_TABLE_ROW row;
-	
-	for (row = blt_table_first_row(cmdPtr->table); row != NULL;
-	     row = blt_table_next_row(cmdPtr->table, row)) {
-	    BLT_TABLE_VALUE value;
-
-	    value = blt_table_get_value(cmdPtr->table, row, col);
-	    if (value == NULL) {
-		Tcl_Obj *objPtr;
-
-		objPtr = Tcl_NewLongObj(blt_table_row_index(row));
-		Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-	    }
-	}
+    for (row = blt_table_first_row(cmdPtr->table); row != NULL;
+         row = blt_table_next_row(cmdPtr->table, row)) {
+        if (!blt_table_value_exists(cmdPtr->table, row, col))  {
+            Tcl_Obj *objPtr;
+            
+            objPtr = Tcl_NewLongObj(blt_table_row_index(row));
+            Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+        }
     }
     Tcl_SetObjResult(interp, listObjPtr);
     return TCL_OK;
@@ -7184,15 +7180,20 @@ PrintUniqueValues(Tcl_Interp *interp, BLT_TABLE table, long numRows,
     /* Get the compare procedure for the column. We'll use that to sift out
      * unique values. */
     proc = blt_table_get_compare_proc(table, col, flags);
+    for (i = 0; i < numRows; i++) {
+        if (blt_table_value_exists(table, rows[i], col)) {
+            break;
+        }
+    }
     /* Convert the table offset back to a client index. */
     if (flags & SORT_VALUES) {
-	objPtr = blt_table_get_obj(table, rows[0], col);
+	objPtr = blt_table_get_obj(table, rows[i], col);
     } else {
 	/* Convert the table offset back to a client index. */
-	objPtr = Tcl_NewLongObj(blt_table_row_index(rows[0]));
+	objPtr = Tcl_NewLongObj(blt_table_row_index(rows[i]));
     }
     Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-    for (i = 1; i < numRows; i++) {
+    for (i++; i < numRows; i++) {
 	if (((*proc)(table, col, rows[i-1], rows[i])) == 0) {
 	    continue;
 	}
@@ -7202,7 +7203,9 @@ PrintUniqueValues(Tcl_Interp *interp, BLT_TABLE table, long numRows,
 	    /* Convert the table offset back to a client index. */
 	    objPtr = Tcl_NewLongObj(blt_table_row_index(rows[i]));
 	}
-	Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+        if (objPtr != NULL) {
+            Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+        }
     }
     return listObjPtr;
 }
@@ -8293,6 +8296,9 @@ FindOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     rowIterSwitch.clientData = cmdPtr->table;
     blt_table_iterate_all_rows(cmdPtr->table, &switches.iter);
 
+#ifdef notdef    
+    switches.emptyValueObjPtr = Tcl_NewStringObj(cmdPtr->emptyValue, -1);
+#endif
     if (Blt_ParseSwitches(interp, findSwitches, objc - 3, objv + 3, 
 	&switches, BLT_SWITCH_DEFAULTS) < 0) {
 	return TCL_ERROR;

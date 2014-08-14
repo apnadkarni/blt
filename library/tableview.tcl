@@ -1069,9 +1069,9 @@ proc blt::TableView::BuildFiltersMenu { w col } {
     }
     set col [$w column index $col]
     $menu configure -command [list blt::TableView::UpdateFilter $w $col]
-    $menu configure -font "Arial 8"
+    $menu configure -font "Arial 9"
     if { ![$menu style exists mystyle] } {
-	$menu style create mystyle -font "Arial 8 italic"
+	$menu style create mystyle -font "Arial 9 italic"
     }
     $menu delete all
     $menu add -text "All" \
@@ -1143,7 +1143,7 @@ proc blt::TableView::UpdateFilter { w col } {
     }
     set style [$menu item cget $item -style]
     set font [$menu style cget $style -font]
-    $w filter configure -font $font
+    $w column configure $col -filterfont $font
 }
 
 proc blt::TableView::FilterAll { w col } {
@@ -1162,7 +1162,7 @@ proc blt::TableView::FilterTop10 { w col } {
     foreach value $values {
 	lappend list "(\$${index} == \"$value\")"
     }
-    set expr " ([join $list " || "]) "
+    set expr "\[info exists ${index}\] && ([join $list " || "]) "
     $w column configure $col -filterdata $expr
     ApplyFilters $w
 }
@@ -1177,7 +1177,7 @@ proc blt::TableView::FilterBottom10 { w col } {
     foreach value $values {
 	lappend list "(\$${index} == \"$value\")"
     }
-    set expr " ([join $list " || "]) "
+    set expr "\[info exists ${index}\] && ([join $list " || "]) "
     $w column configure $col -filterdata $expr
     ApplyFilters $w
 }
@@ -1208,8 +1208,8 @@ proc blt::TableView::SetFilter { w col } {
     if { $value == "" } {
 	set value [$menu item cget $item -text]
     }
-    set cmd "(\$${index} == \"${value}\")"
-    $w column configure $col -filterdata $cmd
+    set expr "\[info exists ${index}\] && (\$${index} == \"${value}\")"
+    $w column configure $col -filterdata $expr
     ApplyFilters $w
 }
 
@@ -1228,6 +1228,7 @@ proc blt::TableView::GetColumnFilterRows { w col } {
     }
     set expr [join $list " && "]
     if { $expr != "" } {
+# puts stderr "find \"$expr\""
 	return [$table find $expr]
     }
     return ""

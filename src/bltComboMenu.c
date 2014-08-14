@@ -1439,12 +1439,15 @@ ComputeItemGeometry(ComboMenu *comboPtr, Item *itemPtr)
 	    itemPtr->textWidth = IconWidth(itemPtr->image);
 	    itemPtr->textHeight = IconHeight(itemPtr->image);
 	} else if (itemPtr->text != emptyString) {
-	    unsigned int tw, th;
-	    
+	    unsigned int tw, th, h;
+	    Blt_FontMetrics fm;
+
+	    Blt_Font_GetMetrics(itemPtr->stylePtr->textFont, &fm);
+	    h = fm.linespace;
 	    Blt_GetTextExtents(itemPtr->stylePtr->textFont, 0, itemPtr->text,
 		 -1, &tw, &th);
-	    itemPtr->textWidth = tw;
-	    itemPtr->textHeight = th;
+            itemPtr->textWidth = tw;
+	    itemPtr->textHeight = MAX(th, h);
 	}
 	if (itemPtr->flags & ITEM_CASCADE) {
 	    Blt_FontMetrics fm;
@@ -4284,15 +4287,15 @@ AddListOp(ComboMenu *comboPtr, Tcl_Interp *interp, int objc,
 	  Tcl_Obj *const *objv)
 {
     int i;
-    int iobjc;
-    Tcl_Obj **iobjv;
+    int elc;
+    Tcl_Obj **elv;
     Tcl_Obj *listObjPtr;
 
-    if (Tcl_ListObjGetElements(interp, objv[2], &iobjc, &iobjv) != TCL_OK) {
+    if (Tcl_ListObjGetElements(interp, objv[2], &elc, &elv) != TCL_OK) {
 	return TCL_ERROR;
     }
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
-    for (i = 0; i < iobjc; i++) {
+    for (i = 0; i < elc; i++) {
 	Tcl_Obj *objPtr;
 	Item *itemPtr;
 
@@ -4301,7 +4304,7 @@ AddListOp(ComboMenu *comboPtr, Tcl_Interp *interp, int objc,
 	    DestroyItem(itemPtr);
 	    return TCL_ERROR;	
 	}
-	itemPtr->text = NewText(itemPtr, Tcl_GetString(iobjv[i]));
+	itemPtr->text = NewText(itemPtr, Tcl_GetString(elv[i]));
 	objPtr = Tcl_NewLongObj(itemPtr->index);
 	Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
     }

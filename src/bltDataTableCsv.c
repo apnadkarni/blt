@@ -73,9 +73,9 @@ typedef struct {
 					 * from. */
     Tcl_Obj *encodingObjPtr;
     char *buffer;			/* Buffer to read data into. */
-    int numBytes;				/* # of bytes in the buffer. */
+    int numBytes;                       /* # of bytes in the buffer. */
     Tcl_DString ds;			/* Dynamic string used to read the
-					 * file line by line. */
+					 * file line-by-line. */
     Tcl_Interp *interp;
     Blt_HashTable dataTable;
     Tcl_Obj *fileObjPtr;		/* Name of file representing the
@@ -86,6 +86,7 @@ typedef struct {
     const char *quote;			/* Quoted string delimiter. */
     const char *separators;		/* Separator characters. */
     const char *comment;		/* Comment character. */
+    Tcl_Obj *emptyValueObjPtr;          /* If non-NULL, empty value. */
     int maxRows;			/* Stop processing after this many
 					 * rows have been found. */
 } ImportSwitches;
@@ -106,6 +107,8 @@ static Blt_SwitchSpec importSwitches[] =
 	Blt_Offset(ImportSwitches, quote), 0},
     {BLT_SWITCH_STRING, "-separators", "characters", (char *)NULL,
 	Blt_Offset(ImportSwitches, separators), 0},
+    {BLT_SWITCH_OBJ,    "-empty",      "string", (char *)NULL,
+	Blt_Offset(ImportSwitches, emptyValueObjPtr), 0},
     {BLT_SWITCH_END}
 };
 
@@ -122,8 +125,8 @@ typedef struct {
     int length;				/* Length of dynamic string. */
     int count;				/* # of fields in current record. */
     Tcl_Interp *interp;
-    char *quote;			/* Quoted string delimiter. */
-    char *separator;			/* Separator character. */
+    const char *quote;			/* Quoted string delimiter. */
+    const char *separator;              /* Separator character. */
 } ExportSwitches;
 
 static Blt_SwitchFreeProc ColumnIterFreeProc;
@@ -498,6 +501,26 @@ ExportCsvProc(BLT_TABLE table, Tcl_Interp *interp, int objc,
 }
 
 /* 
+ * IsEmpty -- 
+ *
+ */
+static INLINE int
+IsEmpty(ImportSwitches *importPtr, const char *field, size_t count)
+{
+    const char *value;
+    int length;
+
+    if (importPtr->emptyValueObjPtr == NULL) {
+        return FALSE;                   /* No empty value defined. */
+    }
+    value = Tcl_GetStringFromObj(importPtr->emptyValueObjPtr, &length);
+    if (count > 0) {
+        return (strncmp(field, value, count) == 0); /* Matches empty value. */
+    }
+    return (length == 0);               /* Check if count==length==0 */
+}
+
+/* 
  * ImportGetLine -- 
  *
  *	Get a single line from the input buffer or file.  We don't remove
@@ -670,11 +693,12 @@ ImportCsv(Tcl_Interp *interp, BLT_TABLE table, ImportSwitches *importPtr)
 		    } else {
 			col = blt_table_column(table, i);
 		    }
-		    if ((last > field) || (isQuoted)) {
-			if (blt_table_set_string(table, row, col, field, 
-				last - field) != TCL_OK) {
-			    goto error;
-			}
+		    if (((last > field) || (isQuoted)) && 
+                        (!IsEmpty(importPtr, field, last - field))) {
+                        if (blt_table_set_string(table, row, col, field,
+                                last - field) != TCL_OK) {             
+                            goto error;
+                        }
 		    }
 		    i++;
 		    if (*bp == '\n') {
@@ -766,11 +790,12 @@ ImportCsv(Tcl_Interp *interp, BLT_TABLE table, ImportSwitches *importPtr)
 			goto error;
 		    }
 		}			
-		if ((last > field) || (isQuoted)) {
-		    if (blt_table_set_string(table, row, col, field, 
-			last - field) != TCL_OK) {
-			goto error;
-		    }
+                if (((last > field) || (isQuoted)) && 
+                    (!IsEmpty(importPtr, field, last - field))) {
+                    if (blt_table_set_string(table, row, col, field, 
+                        last - field) != TCL_OK) {
+                        goto error;
+                    }
 		}		
 	    }    
 	    break;

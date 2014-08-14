@@ -19,7 +19,7 @@
  *
  *	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  *	EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- *	MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ *	MERCANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
  *	NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  *	BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
  *	ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
@@ -116,6 +116,8 @@
 
 #define RESIZE_AREA		(8)
 #define FCLAMP(x)	((((x) < 0.0) ? 0.0 : ((x) > 1.0) ? 1.0 : (x)))
+#define CHOOSE(default, override)	\
+	(((override) == NULL) ? (default) : (override))
 
 typedef ClientData (TagProc)(TableView *viewPtr, const char *string);
 
@@ -294,6 +296,13 @@ static Blt_OptionParseProc ObjToCellStateProc;
 static Blt_OptionPrintProc CellStateToObjProc;
 static Blt_CustomOption cellStateOption = {
     ObjToCellStateProc, CellStateToObjProc, NULL, (ClientData)0
+};
+
+static Blt_OptionParseProc ObjToLimits;
+static Blt_OptionPrintProc LimitsToObj;
+static Blt_CustomOption limitsOption =
+{
+    ObjToLimits, LimitsToObj, NULL, (ClientData)0
 };
 
 static Blt_OptionParseProc ObjToStyleProc;
@@ -483,6 +492,8 @@ static Blt_ConfigSpec columnSpecs[] =
 	(Blt_CustomOption *)EDIT},
     {BLT_CONFIG_OBJ, "-filterdata", "filterData", "FilterData", (char *)NULL,
 	Blt_Offset(Column, filterDataObjPtr), BLT_CONFIG_NULL_OK},
+    {BLT_CONFIG_FONT, "-filterfont", "filterFont", "FilterFont", 
+        DEF_FILTER_FONT, Blt_Offset(Column, filterFont), 0},
     {BLT_CONFIG_CUSTOM, "-filtericon", "filterIcon", "FilterIcon",
 	DEF_FILTER_ICON, Blt_Offset(Column, filterIcon), 
 	BLT_CONFIG_NULL_OK | BLT_CONFIG_DONT_SET_DEFAULT, &iconOption},
@@ -503,10 +514,6 @@ static Blt_ConfigSpec columnSpecs[] =
     {BLT_CONFIG_CUSTOM, "-icon", "icon", "icon", DEF_COLUMN_ICON, 
 	Blt_Offset(Column, icon), 
 	BLT_CONFIG_NULL_OK | BLT_CONFIG_DONT_SET_DEFAULT, &iconOption},
-    {BLT_CONFIG_PIXELS_NNEG, "-max", "max", "Max", DEF_COLUMN_MAX, 
-	Blt_Offset(Column, reqMax), BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_PIXELS_NNEG, "-min", "min", "Min", DEF_COLUMN_MIN, 
-	Blt_Offset(Column, reqMin), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_BITMASK_INVERT, "-show", "show", "Show", DEF_COLUMN_SHOW, 
 	Blt_Offset(Column, flags), BLT_CONFIG_DONT_SET_DEFAULT,
 	(Blt_CustomOption *)HIDDEN},
@@ -534,8 +541,9 @@ static Blt_ConfigSpec columnSpecs[] =
 	BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_DOUBLE, "-weight", "weight", "Weight", DEF_COLUMN_WEIGHT, 
 	Blt_Offset(Column, weight), BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_PIXELS_NNEG, "-width", "width", "Width", DEF_COLUMN_WIDTH, 
-	Blt_Offset(Column, reqWidth), BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_CUSTOM, "-width", "width", "Width", DEF_COLUMN_WIDTH, 
+        Blt_Offset(Column, reqWidth), BLT_CONFIG_DONT_SET_DEFAULT, 
+        &limitsOption},
     {BLT_CONFIG_END, (char *)NULL, (char *)NULL, (char *)NULL,
 	(char *)NULL, 0, 0}
 };
@@ -565,18 +573,15 @@ static Blt_ConfigSpec rowSpecs[] =
     {BLT_CONFIG_BITMASK_INVERT, "-edit", "edit", "Edit", DEF_ROW_EDIT, 
 	Blt_Offset(Row, flags), BLT_CONFIG_DONT_SET_DEFAULT, 
 	(Blt_CustomOption *)EDIT},
-    {BLT_CONFIG_PIXELS_NNEG, "-height", "height", "Height", DEF_ROW_HEIGHT, 
-	Blt_Offset(Row, reqHeight), BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_CUSTOM, "-height", "height", "Height", DEF_ROW_HEIGHT, 
+        Blt_Offset(Row, reqHeight), BLT_CONFIG_DONT_SET_DEFAULT, 
+        &limitsOption},
     {BLT_CONFIG_BITMASK, "-hide", "hide", "Hide", DEF_ROW_HIDE, 
 	Blt_Offset(Row, flags), BLT_CONFIG_DONT_SET_DEFAULT, 
 	(Blt_CustomOption *)HIDDEN},
     {BLT_CONFIG_CUSTOM, "-icon", "icon", "icon", DEF_ROW_ICON, 
 	Blt_Offset(Row, icon), 
 	BLT_CONFIG_NULL_OK | BLT_CONFIG_DONT_SET_DEFAULT, &iconOption},
-    {BLT_CONFIG_PIXELS_NNEG, "-max", "max", "Max", DEF_ROW_MAX, 
-	Blt_Offset(Row, reqMax), BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_PIXELS_NNEG, "-min", "min", "Min", DEF_ROW_MIN, 
-	Blt_Offset(Row, reqMin), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_PIXELS_NNEG, "-ruleheight", "ruleHeight", "RuleHeight",
         DEF_RULE_HEIGHT, Blt_Offset(Row, ruleHeight), 
 	BLT_CONFIG_DONT_SET_DEFAULT},
@@ -2401,6 +2406,263 @@ FreeUidProc(ClientData clientData, Display *display, char *widgRec, int offset)
     }
 }
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * GetBoundedWidth --
+ *
+ *	Bounds a given width value to the limits described in the limit
+ *	structure.  The initial starting value may be overridden by the
+ *	nominal value in the limits.
+ *
+ * Results:
+ *	Returns the constrained value.
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+GetBoundedWidth(int w, Limits *limitsPtr)		
+{
+    if (limitsPtr->flags & LIMITS_SET_NOM) {
+	w = limitsPtr->nom;         /* Override initial value */
+    }
+    if (w < limitsPtr->min) {
+	w = limitsPtr->min;         /* Bounded by minimum value */
+    } else if (w > limitsPtr->max) {
+	w = limitsPtr->max;         /* Bounded by maximum value */
+    }
+    return w;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * GetBoundedHeight --
+ *
+ *	Bounds a given value to the limits described in the limit structure.
+ *	The initial starting value may be overridden by the nominal value in
+ *	the limits.
+ *
+ * Results:
+ *	Returns the constrained value.
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+GetBoundedHeight(int h, Limits *limitsPtr)
+{
+    if (limitsPtr->flags & LIMITS_SET_NOM) {
+	h = limitsPtr->nom;             /* Override initial value */
+    }
+    if (h < limitsPtr->min) {
+	h = limitsPtr->min;             /* Bounded by minimum value */
+    } else if (h > limitsPtr->max) {
+	h = limitsPtr->max;             /* Bounded by maximum value */
+    }
+    return h;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * ObjToLimits --
+ *
+ *	Converts the list of elements into zero or more pixel values which
+ *	determine the range of pixel values possible.  An element can be in
+ *	any form accepted by Tk_GetPixels. The list has a different meaning
+ *	based upon the number of elements.
+ *
+ *	    # of elements:
+ *
+ *	    0 - the limits are reset to the defaults.
+ *	    1 - the minimum and maximum values are set to this
+ *		value, freezing the range at a single value.
+ *	    2 - first element is the minimum, the second is the
+ *		maximum.
+ *	    3 - first element is the minimum, the second is the
+ *		maximum, and the third is the nominal value.
+ *
+ *	Any element may be the empty string which indicates the default.
+ *
+ * Results:
+ *	The return value is a standard TCL result.  The min and max fields
+ *	of the range are set.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+ObjToLimits(
+    ClientData clientData,	/* Not used. */
+    Tcl_Interp *interp,		/* Interpreter to send results back to */
+    Tk_Window tkwin,		/* Widget of table */
+    Tcl_Obj *objPtr,		/* New width list */
+    char *widgRec,		/* Widget record */
+    int offset,			/* Offset to field in structure */
+    int flags)	
+{
+    Limits *limitsPtr = (Limits *)(widgRec + offset);
+    Tcl_Obj **elv;
+    int elc;
+    int limits[3];
+    int limitsFlags;
+
+    elv = NULL;
+    elc = 0;
+
+    /* Initialize limits to default values */
+    limits[2] = LIMITS_NOM;
+    limits[1] = LIMITS_MAX;
+    limits[0] = LIMITS_MIN;
+    limitsFlags = 0;
+
+    if (objPtr != NULL) {
+	int i;
+
+	if (Tcl_ListObjGetElements(interp, objPtr, &elc, &elv) != TCL_OK) {
+	    return TCL_ERROR;
+	}
+	if (elc > 3) {
+	    Tcl_AppendResult(interp, "wrong # limits \"", 
+                        Tcl_GetString(objPtr), "\"", (char *)NULL);
+	    return TCL_ERROR;
+	}
+	for (i = 0; i < elc; i++) {
+            int length, size;
+
+            Tcl_GetStringFromObj(elv[i], &length);
+	    if (length == 0) {
+		continue;             /* Empty string: use default value */
+	    }
+	    limitsFlags |= (LIMITS_SET_BIT << i);
+            if (Tk_GetPixelsFromObj(interp, tkwin, elv[i], &size) != TCL_OK) {
+                return TCL_ERROR;
+            }
+            if ((size < LIMITS_MIN) || (size > LIMITS_MAX)) {
+                Tcl_AppendResult(interp, "bad limits \"", 
+                        Tcl_GetString(objPtr), "\"", (char *)NULL);
+                return TCL_ERROR;
+            }
+            limits[i] = size;
+	}
+    }
+    /*
+    * Check the limits specified.  We can't check the requested
+    * size of widgets.
+    */
+    switch (elc) {
+    case 1:
+	limitsFlags |= (LIMITS_SET_MIN | LIMITS_SET_MAX);
+        limits[1] = limits[0];       /* Set minimum and maximum to value */
+	break;
+
+    case 2:
+        if (limits[1] < limits[0]) {
+	    Tcl_AppendResult(interp, "bad range \"", Tcl_GetString(objPtr),
+		"\": min > max", (char *)NULL);
+	    return TCL_ERROR;         /* Minimum is greater than maximum */
+	}
+	break;
+    case 3:
+        if (limits[1] < limits[0]) {
+            Tcl_AppendResult(interp, "bad range \"", Tcl_GetString(objPtr),
+                             "\": min > max", (char *)NULL);
+            return TCL_ERROR;         /* Minimum is greater than maximum */
+        }
+        if ((limits[2] < limits[0]) || (limits[2] > limits[1])) {
+            Tcl_AppendResult(interp, "nominal value \"", 
+                             Tcl_GetString(objPtr),
+                             "\" out of range", (char *)NULL);
+            return TCL_ERROR;        /* Nominal is outside of range defined
+                                      * by minimum and maximum */
+        }
+        break;
+    }
+    limitsPtr->min = limits[0];
+    limitsPtr->max = limits[1];
+    limitsPtr->nom = limits[2];
+    limitsPtr->flags = limitsFlags;
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * ResetLimits --
+ *
+ *	Resets the limits to their default values.
+ *
+ * Results:
+ *	None.
+ *
+ *---------------------------------------------------------------------------
+ */
+INLINE static void
+ResetLimits(Limits *limitsPtr)	/* Limits to be imposed on the value */
+{
+    limitsPtr->flags = 0;
+    limitsPtr->min = LIMITS_MIN;
+    limitsPtr->max = LIMITS_MAX;
+    limitsPtr->nom = LIMITS_NOM;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * NameOfLimits --
+ *
+ *	Convert the values into a list representing the limits.
+ *
+ * Results:
+ *	The static string representation of the limits is returned.
+ *
+ *---------------------------------------------------------------------------
+ */
+static Tcl_Obj *
+NameOfLimits(Tcl_Interp *interp, Limits *limitsPtr)
+{
+    Tcl_Obj *listObjPtr, *objPtr;
+
+    listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
+    objPtr = (limitsPtr->flags & LIMITS_SET_MIN) ? 
+        Tcl_NewIntObj(limitsPtr->min) : Tcl_NewStringObj("", 0);
+    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+    objPtr = (limitsPtr->flags & LIMITS_SET_MAX) ? 
+        Tcl_NewIntObj(limitsPtr->max) : Tcl_NewStringObj("", 0);
+    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+    objPtr = (limitsPtr->flags & LIMITS_SET_NOM) ? 
+        Tcl_NewIntObj(limitsPtr->nom) : Tcl_NewStringObj("", 0);
+    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+    return listObjPtr;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * LimitsToObj --
+ *
+ *	Convert the limits of the pixel values allowed into a list.
+ *
+ * Results:
+ *	The string representation of the limits is returned.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static Tcl_Obj *
+LimitsToObj(
+    ClientData clientData,	/* Not used. */
+    Tcl_Interp *interp,		/* Not used. */
+    Tk_Window tkwin,		/* Not used. */
+    char *widgRec,		/* Row/column structure record */
+    int offset,			/* Offset to field in structure */
+    int flags)	
+{
+    Limits *limitsPtr = (Limits *)(widgRec + offset);
+
+    return NameOfLimits(interp, limitsPtr);
+}
+
 static Row *
 GetRowContainer(TableView *viewPtr, BLT_TABLE_ROW row)
 {
@@ -2686,6 +2948,7 @@ NewRow(TableView *viewPtr, BLT_TABLE_ROW row, Blt_HashEntry *hPtr)
     rowPtr->titleJustify = TK_JUSTIFY_RIGHT;
     rowPtr->titleRelief = rowPtr->activeTitleRelief = TK_RELIEF_RAISED;
     rowPtr->hashPtr = hPtr;
+    ResetLimits(&rowPtr->reqHeight);
     Blt_SetHashValue(hPtr, rowPtr);
     return rowPtr;
 }
@@ -2759,6 +3022,7 @@ NewColumn(TableView *viewPtr, BLT_TABLE_COLUMN col, Blt_HashEntry *hPtr)
     colPtr->titleRelief = colPtr->activeTitleRelief = TK_RELIEF_RAISED;
     colPtr->hashPtr = hPtr;
     Blt_SetHashValue(hPtr, colPtr);
+    ResetLimits(&colPtr->reqWidth);
     return colPtr;
 }
 
@@ -2836,16 +3100,20 @@ GetColumnFiltersGeometry(TableView *viewPtr)
 	}
 	if (colPtr->filterText != NULL) {
 	    TextStyle ts;
-	    
+            Blt_Font font;
+
 	    Blt_Ts_InitStyle(ts);
-	    Blt_Ts_SetFont(ts, filterPtr->font);
+            font = CHOOSE(filterPtr->font, colPtr->filterFont);
+	    Blt_Ts_SetFont(ts, font);
 	    Blt_Ts_GetExtents(&ts, colPtr->filterText, &tw, &th);
 	    colPtr->filterTextWidth = tw;
 	    colPtr->filterTextHeight = th;
 	} else {
 	    Blt_FontMetrics fm;
+            Blt_Font font;
 
-	    Blt_Font_GetMetrics(filterPtr->font, &fm);
+            font = CHOOSE(filterPtr->font, colPtr->filterFont);
+	    Blt_Font_GetMetrics(font, &fm);
 	    th = fm.linespace;
             colPtr->filterTextWidth = 0, colPtr->filterTextHeight = th;
 	}
@@ -4977,9 +5245,11 @@ DrawColumnFilter(TableView *viewPtr, Column *colPtr, Drawable drawable,
 	if (maxLength > 0) {
 	    TextStyle ts;
 	    TextLayout *textPtr;
-	    
+            Blt_Font font;
+
+            font = CHOOSE(filterPtr->font, colPtr->filterFont);
 	    Blt_Ts_InitStyle(ts);
-	    Blt_Ts_SetFont(ts, filterPtr->font);
+	    Blt_Ts_SetFont(ts, font);
 	    Blt_Ts_SetGC(ts, gc);
 	    Blt_Ts_SetMaxLength(ts, maxLength);
 	    textPtr = Blt_Ts_CreateLayout(colPtr->filterText, -1, &ts);
@@ -5492,8 +5762,7 @@ AdjustColumns(TableView *viewPtr)
 	    continue;
 	}
 	lastPtr = colPtr;
-	if ((colPtr->weight == 0.0) || (colPtr->width >= colPtr->max) || 
-	    (colPtr->reqWidth > 0)) {
+	if ((colPtr->weight == 0.0) || (colPtr->width >= colPtr->max)) {
 	    continue;
 	}
 	numOpen++;
@@ -5518,8 +5787,7 @@ AdjustColumns(TableView *viewPtr)
 		continue;
 	    }
 	    lastPtr = colPtr;
-	    if ((colPtr->weight == 0.0) || (colPtr->width >= colPtr->max) || 
-		(colPtr->reqWidth > 0)) {
+	    if ((colPtr->weight == 0.0) || (colPtr->width >= colPtr->max)) {
 		continue;
 	    }
 	    size = (int)(ration * colPtr->weight);
@@ -7456,11 +7724,11 @@ UpdateColumnMark(TableView *viewPtr, int newMark)
     }
     dx = newMark - viewPtr->colResizeAnchor; 
     width = colPtr->width;
-    if ((colPtr->reqMin > 0) && ((width + dx) < colPtr->reqMin)) {
-	dx = colPtr->reqMin - width;
+    if ((colPtr->reqWidth.min > 0) && ((width + dx) < colPtr->reqWidth.min)) {
+	dx = colPtr->reqWidth.min - width;
     }
-    if ((colPtr->reqMax > 0) && ((width + dx) > colPtr->reqMax)) {
-	dx = colPtr->reqMax - width;
+    if ((colPtr->reqWidth.max > 0) && ((width + dx) > colPtr->reqWidth.max)) {
+	dx = colPtr->reqWidth.max - width;
     }
     if ((width + dx) < 4) {
 	dx = 4 - width;
@@ -7819,6 +8087,9 @@ ColumnVarResolverProc(
     /* Look up the column from the variable name given. */
     if (Blt_GetLong((Tcl_Interp *)NULL, (char *)name, &index) == TCL_OK) {
  	col = blt_table_get_column_by_index(switchesPtr->table, index);
+        if (col == NULL) {
+            fprintf(stderr, "index=%d col=%x\n", index, col);
+        }
     } else {
 	col = blt_table_get_column_by_label(switchesPtr->table, name);
     }
@@ -7832,6 +8103,7 @@ ColumnVarResolverProc(
     if (valueObjPtr == NULL) {
 	valueObjPtr = switchesPtr->emptyValueObjPtr;
 	if (valueObjPtr == NULL) {
+            fprintf(stderr, "sending back continue\n");
 	    return TCL_CONTINUE;
 	}
     }
@@ -9415,11 +9687,11 @@ UpdateRowMark(TableView *viewPtr, int newMark)
     rowPtr = viewPtr->rowResizePtr;
     dy = newMark - viewPtr->rowResizeAnchor; 
     height = rowPtr->height;
-    if ((rowPtr->reqMin > 0) && ((height + dy) < rowPtr->reqMin)) {
-	dy = rowPtr->reqMin - height;
+    if ((rowPtr->reqHeight.min > 0) && ((height + dy) < rowPtr->reqHeight.min)){
+	dy = rowPtr->reqHeight.min - height;
     }
-    if ((rowPtr->reqMax > 0) && ((height + dy) > rowPtr->reqMax)) {
-	dy = rowPtr->reqMax - height;
+    if ((rowPtr->reqHeight.max > 0) && ((height + dy) > rowPtr->reqHeight.max)){
+	dy = rowPtr->reqHeight.max - height;
     }
     if ((height + dy) < 4) {
 	dy = 4 - height;
@@ -11118,7 +11390,7 @@ ComputeGeometry(TableView *viewPtr)
 	    }
 	}
         colPtr->index = i;
-	colPtr->nomWidth = colPtr->titleWidth;
+	colPtr->nom = colPtr->titleWidth;
 	if ((colPtr->flags & HIDDEN) == 0) {
 	    if (colPtr->titleHeight > viewPtr->colTitleHeight) {
 		viewPtr->colTitleHeight = colPtr->titleHeight;
@@ -11137,7 +11409,7 @@ ComputeGeometry(TableView *viewPtr)
 	    }
 	}
         rowPtr->index = i;
-	rowPtr->nomHeight = rowPtr->titleHeight;
+	rowPtr->nom = rowPtr->titleHeight;
 	if ((rowPtr->flags & HIDDEN) == 0) {
 	    if (rowPtr->titleWidth > viewPtr->rowTitleWidth) {
 		viewPtr->rowTitleWidth = rowPtr->titleWidth;
@@ -11161,11 +11433,11 @@ ComputeGeometry(TableView *viewPtr)
 	if ((rowPtr->flags|colPtr->flags|cellPtr->flags) & GEOMETRY) {
 	    GetCellGeometry(cellPtr);
 	}
-	if (cellPtr->width > colPtr->nomWidth) {
-	    colPtr->nomWidth = cellPtr->width;
+	if (cellPtr->width > colPtr->nom) {
+	    colPtr->nom = cellPtr->width;
 	}
-	if (cellPtr->height > rowPtr->nomHeight) {
-	    rowPtr->nomHeight = cellPtr->height;
+	if (cellPtr->height > rowPtr->nom) {
+	    rowPtr->nom = cellPtr->height;
 	}
     }
     if (viewPtr->flags & COLUMN_FILTERS) {
@@ -11189,9 +11461,19 @@ ComputeLayout(TableView *viewPtr)
 	rowPtr->flags &= ~GEOMETRY;	/* Always remove the geometry
                                          * flag. */
 	rowPtr->index = i;		/* Reset the index. */
-	rowPtr->height = rowPtr->nomHeight;
-	if (rowPtr->reqHeight > 0) {
-	    rowPtr->height = rowPtr->reqHeight;
+        rowPtr->height = GetBoundedHeight(rowPtr->nom, &rowPtr->reqHeight);
+	if (rowPtr->reqHeight.flags & LIMITS_SET_NOM) {
+	    /*
+	     * This could be done more cleanly.  We want to ensure that the
+	     * requested nominal size is not overridden when determining
+	     * the normal sizes.  So temporarily fix min and max to the
+	     * nominal size and reset them back later.
+	     */
+	    rowPtr->min = rowPtr->max = rowPtr->height;
+	} else {
+	    /* The range defaults to 0..MAXINT */
+	    rowPtr->min = rowPtr->reqHeight.min;
+	    rowPtr->max = rowPtr->reqHeight.max;
 	}
 	rowPtr->worldY = y;
 	if ((rowPtr->flags & HIDDEN) == 0) {
@@ -11214,16 +11496,19 @@ ComputeLayout(TableView *viewPtr)
 	colPtr->index = i;		/* Reset the index. */
 	colPtr->width = 0;
 	colPtr->worldX = x;
-	if (colPtr->reqWidth > 0) {
-	    colPtr->width = colPtr->reqWidth;
+        colPtr->width = GetBoundedWidth(colPtr->nom, &colPtr->reqWidth);
+	if (colPtr->reqWidth.flags & LIMITS_SET_NOM) {
+	    /*
+	     * This could be done more cleanly.  We want to ensure that the
+	     * requested nominal size is not overridden when determining
+	     * the normal sizes.  So temporarily fix min and max to the
+	     * nominal size and reset them back later.
+	     */
+	    colPtr->min = colPtr->max = colPtr->width;
 	} else {
-	    colPtr->width = colPtr->nomWidth;
-	    if ((colPtr->reqMin > 0) && (colPtr->reqMin > colPtr->width)) {
-		colPtr->width = colPtr->reqMin;
-	    }
-	    if ((colPtr->reqMax > 0) && (colPtr->reqMax < colPtr->width)) {
-		colPtr->width = colPtr->reqMax;
-	    }
+	    /* The range defaults to 0..MAXINT */
+	    colPtr->min = colPtr->reqWidth.min;
+	    colPtr->max = colPtr->reqWidth.max;
 	}
 	if ((colPtr->flags & HIDDEN) == 0) {
 	    x += colPtr->width;
@@ -11569,11 +11854,11 @@ AddCellGeometry(TableView *viewPtr, Cell *cellPtr)
     rowPtr = keyPtr->rowPtr;
     colPtr = keyPtr->colPtr;
     GetCellGeometry(cellPtr);
-    if (cellPtr->width > colPtr->nomWidth) {
-	colPtr->nomWidth = cellPtr->width;
+    if (cellPtr->width > colPtr->nom) {
+	colPtr->nom = cellPtr->width;
     }
-    if (cellPtr->height > rowPtr->nomHeight) {
-	rowPtr->nomHeight = cellPtr->height;
+    if (cellPtr->height > rowPtr->nom) {
+	rowPtr->nom = cellPtr->height;
     }
 }
 
@@ -11587,7 +11872,7 @@ AddColumnGeometry(TableView *viewPtr, Column *colPtr)
 	    colPtr->titleWidth = colPtr->titleHeight = 0;
 	}
     }
-    colPtr->nomWidth = colPtr->titleWidth;
+    colPtr->nom = colPtr->titleWidth;
     if ((colPtr->flags & HIDDEN) == 0) {
 	if (colPtr->titleHeight > viewPtr->colTitleHeight) {
 	    viewPtr->colTitleHeight = colPtr->titleHeight;
@@ -11608,7 +11893,7 @@ AddRowGeometry(TableView *viewPtr, Row *rowPtr)
 	    rowPtr->titleHeight = rowPtr->titleWidth = 0;
 	}
     }
-    rowPtr->nomHeight = rowPtr->titleHeight;
+    rowPtr->nom = rowPtr->titleHeight;
     if ((rowPtr->flags & HIDDEN) == 0) {
 	if (rowPtr->titleWidth > viewPtr->rowTitleWidth) {
 	    viewPtr->rowTitleWidth = rowPtr->titleWidth;
