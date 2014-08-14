@@ -171,7 +171,7 @@ test datatable.24 {datatable0} {
 } {1 {wrong # args: should be one of...
   datatable0 add table ?switches?
   datatable0 append row column value ?value...?
-  datatable0 attach args...
+  datatable0 attach table
   datatable0 column op args...
   datatable0 copy table
   datatable0 dir path ?switches?
@@ -206,7 +206,7 @@ test datatable.25 {datatable0 badOp} {
 } {1 {bad operation "badOp": should be one of...
   datatable0 add table ?switches?
   datatable0 append row column value ?value...?
-  datatable0 attach args...
+  datatable0 attach table
   datatable0 column op args...
   datatable0 copy table
   datatable0 dir path ?switches?
@@ -251,6 +251,7 @@ test datatable.27 {datatable0 column badOp} {
   datatable0 column create ?switches?
   datatable0 column delete column...
   datatable0 column duplicate column...
+  datatable0 column empty column
   datatable0 column exists column
   datatable0 column extend label ?label...?
   datatable0 column get column ?switches?
@@ -261,6 +262,7 @@ test datatable.27 {datatable0 column badOp} {
   datatable0 column labels ?labelList?
   datatable0 column move from to ?count?
   datatable0 column names ?pattern...?
+  datatable0 column nonempty column
   datatable0 column notify column ?flags? command
   datatable0 column set column row value...
   datatable0 column tag op args...
@@ -286,6 +288,7 @@ test datatable.29 {datatable0 row badOp} {
   datatable0 row create ?switches...?
   datatable0 row delete ?row...?
   datatable0 row duplicate ?row...?
+  datatable0 row empty row
   datatable0 row exists row
   datatable0 row extend label ?label...?
   datatable0 row get row ?switches?
@@ -296,6 +299,7 @@ test datatable.29 {datatable0 row badOp} {
   datatable0 row labels ?labelList?
   datatable0 row move from to ?count?
   datatable0 row names ?pattern...?
+  datatable0 row nonempty row
   datatable0 row notify row ?flags? command
   datatable0 row set row column value...
   datatable0 row tag op args...
@@ -323,6 +327,7 @@ test datatable.33 {datatable0 column -label xyz create} {
   datatable0 column create ?switches?
   datatable0 column delete column...
   datatable0 column duplicate column...
+  datatable0 column empty column
   datatable0 column exists column
   datatable0 column extend label ?label...?
   datatable0 column get column ?switches?
@@ -333,6 +338,7 @@ test datatable.33 {datatable0 column -label xyz create} {
   datatable0 column labels ?labelList?
   datatable0 column move from to ?count?
   datatable0 column names ?pattern...?
+  datatable0 column nonempty column
   datatable0 column notify column ?flags? command
   datatable0 column set column row value...
   datatable0 column tag op args...
@@ -1516,7 +1522,7 @@ test datatable.244 {column trace all rwuc Doit} {
 
 test datatable.245 {trace info trace0} {
     list [catch {datatable1 trace info trace0} msg] $msg
-} {0 {id trace0 column all flags rwuc command Doit}}
+} {0 {id trace0 column all flags rwuc command {Doit ::datatable1}}}
 
 test datatable.246 {test create trace} {
     list [catch {
@@ -1847,6 +1853,7 @@ test datatable.316 {row -label xyz create} {
   datatable4 row create ?switches...?
   datatable4 row delete ?row...?
   datatable4 row duplicate ?row...?
+  datatable4 row empty row
   datatable4 row exists row
   datatable4 row extend label ?label...?
   datatable4 row get row ?switches?
@@ -1857,6 +1864,7 @@ test datatable.316 {row -label xyz create} {
   datatable4 row labels ?labelList?
   datatable4 row move from to ?count?
   datatable4 row names ?pattern...?
+  datatable4 row nonempty row
   datatable4 row notify row ?flags? command
   datatable4 row set row column value...
   datatable4 row tag op args...
@@ -2308,7 +2316,8 @@ d 4 5 5.5
 
 test datatable.409 {export csv} {
     list [catch {datatable1 export csv} msg] $msg
-} {0 {,,,,,
+} {0 {"c1","c2","c3","c4","c5","c6"
+,,,,,
 2.0,"2.1","2.2","2.3","2.4","2.5"
 3.0,"3.1","3.2","3.3","3.4","3.5"
 4.0,"4.1","4.2","4.3","4.4","4.5"

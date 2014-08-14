@@ -6341,7 +6341,6 @@ AddOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * AppendOp --
  *
- *
  *	Appends one or more values to the current value at the given
  *	location. If the column or row doesn't already exist, it will
  *	automatically be created.

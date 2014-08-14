@@ -14602,6 +14602,7 @@ TagNamesOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	    Blt_ChainLink link;
 	    Entry *entryPtr;
 
+            entryPtr = NULL;            /* Suppress compiled warning. */
 	    if (GetEntry(viewPtr, objv[i], &entryPtr) != TCL_OK) {
 		return TCL_ERROR;
 	    }
