@@ -1,3 +1,4 @@
+package require BLT
 
 # Test switches
 #
@@ -21,6 +22,7 @@ test palette.1 {palette no args} {
   blt::palette configure name ?option value?...
   blt::palette create ?name? ?option value?...
   blt::palette delete ?name?...
+  blt::palette draw name picture
   blt::palette exists name
   blt::palette interpolate name value ?switches?
   blt::palette names ?pattern?...}}
@@ -32,6 +34,7 @@ test palette.2 {palette badOp} {
   blt::palette configure name ?option value?...
   blt::palette create ?name? ?option value?...
   blt::palette delete ?name?...
+  blt::palette draw name picture
   blt::palette exists name
   blt::palette interpolate name value ?switches?
   blt::palette names ?pattern?...}}
@@ -46,7 +49,7 @@ test palette.4 {palette create myPalette} {
 
 test palette.5 {palette names} {
     list [catch {lsort [blt::palette names]} msg] $msg
-} {0 {::myPalette ::palette0}}
+} {0 {::BCGYR ::BGYOR ::ROYGB ::RYGCB ::blue ::blue-to-brown ::blue-to-gray ::blue-to-green ::blue-to-grey ::blue-to-orange ::brown-to-blue ::green-to-magenta ::grey-to-blue ::greyscale ::myPalette ::nanohub ::orange-to-blue ::palette0 ::rainbow ::spectral ::spectral-scheme}}
 
 test palette.6 {palette create -colors {} -opacities {}} {
     list [catch {blt::palette create -colors {} -opacities {}} msg] $msg
@@ -66,11 +69,11 @@ test palette.9 {palette create myPalette} {
 
 test palette.10 {palette configure myPalette} {
     list [catch {blt::palette configure myPalette} msg] $msg
-} {0 {{-colors {} {} {} {}} {-opacities {} {} {} {}}}}
+} {0 {{-colors {} {}} {-opacities {} {}} {-rgbcolors {} {}} {-baseopacity {} 100.0}}}
 
 test palette.11 {palette configure ::myPalette} {
     list [catch {blt::palette configure ::myPalette} msg] $msg
-} {0 {{-colors {} {} {} {}} {-opacities {} {} {} {}}}}
+} {0 {{-colors {} {}} {-opacities {} {}} {-rgbcolors {} {}} {-baseopacity {} 100.0}}}
 
 test palette.12 {palette configure badPalette} {
     list [catch {blt::palette configure badPalette} msg] $msg
@@ -82,11 +85,11 @@ test palette.13 {palette configure ::badNs::myPalette} {
 
 test palette.14 {palette configure ::myPalette -colors} {
     list [catch {blt::palette configure ::myPalette -colors} msg] $msg
-} {0 {-colors {} {} {} {}}}
+} {0 {-colors {} {}}}
 
 test palette.15 {palette configure ::myPalette -opacities} {
     list [catch {blt::palette configure ::myPalette -opacities} msg] $msg
-} {0 {-opacities {} {} {} {}}}
+} {0 {-opacities {} {}}}
 
 test palette.16 {palette configure ::myPalette -colors { blue red }} {
     list [catch {
@@ -96,7 +99,7 @@ test palette.16 {palette configure ::myPalette -colors { blue red }} {
 
 test palette.17 {palette configure ::myPalette} {
     list [catch {blt::palette configure ::myPalette} msg] $msg
-} {0 {{-colors {} {} {} {{0.0% 0xff0000ff 100.0% 0xffff0000}}} {-opacities {} {} {} {}}}}
+} {0 {{-colors {} {{0.0% 0xff0000ff 100.0% 0xffff0000}}} {-opacities {} {}} {-rgbcolors {} {{0.0% 0xff0000ff 100.0% 0xffff0000}}} {-baseopacity {} 100.0}}}
 
 test palette.18 {palette interpolate myPalette (missing value)} {
     list [catch {blt::palette interpolate myPalette} msg] $msg
@@ -221,11 +224,11 @@ test palette.41 {palette interpolate myPalette 100.0%} {
     list [catch {blt::palette interpolate myPalette 100.0%} msg] $msg
 } {0 {255 0 0 0}}
 
-test palette.42 {palette create irregular myIrregular} {
+test palette.42 {palette create myIrregular} {
     list [catch {blt::palette create irregular myIrregular} msg] $msg
 } {0 ::myIrregular}
 
-test palette.43 {palette create cloud} {
+test palette.43 {palette create} {
     list [catch {blt::palette create cloud} msg] $msg
 } {0 ::palette2}
 

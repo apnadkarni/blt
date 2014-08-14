@@ -145,6 +145,7 @@ test tree.24 {tree0} {
   tree0 lappend node key ?value...?
   tree0 lastchild node
   tree0 move node newParent ?switches?
+  tree0 names node ?key?
   tree0 next node
   tree0 nextsibling node
   tree0 notify args...
@@ -161,8 +162,7 @@ test tree.24 {tree0} {
   tree0 tag args...
   tree0 trace args...
   tree0 type node key
-  tree0 unset node ?key...?
-  tree0 values node ?key?}}
+  tree0 unset node ?key...?}}
 
 test tree.25 {tree0 badOp} {
     list [catch {tree0 badOp} msg] $msg
@@ -197,6 +197,7 @@ test tree.25 {tree0 badOp} {
   tree0 lappend node key ?value...?
   tree0 lastchild node
   tree0 move node newParent ?switches?
+  tree0 names node ?key?
   tree0 next node
   tree0 nextsibling node
   tree0 notify args...
@@ -213,8 +214,7 @@ test tree.25 {tree0 badOp} {
   tree0 tag args...
   tree0 trace args...
   tree0 type node key
-  tree0 unset node ?key...?
-  tree0 values node ?key?}}
+  tree0 unset node ?key...?}}
 
 test tree.26 {tree0 insert (wrong # args)} {
     list [catch {tree0 insert} msg] $msg
@@ -1414,7 +1414,8 @@ test tree.268 {tree0 path badArg} {
 } {1 {bad operation "badArg": should be one of...
   tree0 path create path ?switches?
   tree0 path parse path ?switches?
-  tree0 path print node ?switches?}}
+  tree0 path print node ?switches?
+  tree0 path separator ?string?}}
 
 test tree.268 {tree0 path print root} {
     list [catch {tree0 path print root} msg] $msg
