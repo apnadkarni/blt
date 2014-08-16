@@ -108,6 +108,21 @@ Blt_CallocAbortOnError(size_t numElem, size_t elemSize, const char *fileName,
     return ptr;
 }
 
+void *
+Blt_ReallocAbortOnError(void *ptr, size_t size, const char *fileName, 
+		       int lineNum)
+{
+    void *ptr2;
+
+    ptr2 = (*bltReallocPtr)(ptr, size);
+    if (ptr2 == NULL) {
+	Blt_Warn("line %d of %s: can't reallocate array or size %lu bytes\n", 
+		lineNum, fileName, (unsigned long)size);
+	abort();
+    }
+    return ptr2;
+}
+
 /*
  *---------------------------------------------------------------------------
  *

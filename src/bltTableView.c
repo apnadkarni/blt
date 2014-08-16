@@ -11966,7 +11966,7 @@ AddColumns(TableView *viewPtr, BLT_TABLE_NOTIFY_EVENT *eventPtr)
     oldNumColumns = viewPtr->numColumns;
     newNumColumns = blt_table_num_columns(viewPtr->table);
     assert(newNumColumns > oldNumColumns);
-    viewPtr->columns = Blt_Realloc(viewPtr->columns, 
+    viewPtr->columns = Blt_AssertRealloc(viewPtr->columns, 
         sizeof(Column *) * newNumColumns);
     
     count = oldNumColumns;
@@ -12072,8 +12072,8 @@ AddRows(TableView *viewPtr, BLT_TABLE_NOTIFY_EVENT *eventPtr)
     oldNumRows = viewPtr->numRows;
     newNumRows = blt_table_num_rows(viewPtr->table);
     assert(newNumRows > oldNumRows);
-    rows = Blt_AssertMalloc(sizeof(Row *) * newNumRows);
-    count = 0;
+    viewPtr->rows = Blt_AssertRealloc(viewPtr->rows, sizeof(Row *)*newNumRows);
+    count = oldNumRows;
     for (i = 0; i < newNumRows; i++) {
 	Blt_HashEntry *hPtr;
 	int isNew;
@@ -12102,16 +12102,10 @@ AddRows(TableView *viewPtr, BLT_TABLE_NOTIFY_EVENT *eventPtr)
 		AddCellGeometry(viewPtr, cellPtr);
 		Blt_SetHashValue(h2Ptr, cellPtr);
 	    }
-	} else {
-	    rowPtr = Blt_GetHashValue(hPtr);
+            viewPtr->rows[count] = rowPtr;
+            count++;
 	}
-	rows[count] = rowPtr;
-	count++;
     }
-    if (viewPtr->rows != NULL) {
-        Blt_Free(viewPtr->rows);
-    }
-    viewPtr->rows = rows;
     viewPtr->numRows = newNumRows;
     viewPtr->flags |= LAYOUT_PENDING;
     PossiblyRedraw(viewPtr);

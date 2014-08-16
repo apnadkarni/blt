@@ -35,14 +35,16 @@ BLT_EXTERN void *Blt_Calloc(size_t numElem, size_t size);
 BLT_EXTERN char *Blt_Strdup(const char *string);
 
 BLT_EXTERN void *Blt_MallocAbortOnError(size_t size, const char *file,int line);
-
 BLT_EXTERN void *Blt_CallocAbortOnError(size_t numElem, size_t size, 
+	const char *file, int line);
+BLT_EXTERN void *Blt_ReallocAbortOnError(void *ptr, size_t size, 
 	const char *file, int line);
 BLT_EXTERN char *Blt_StrdupAbortOnError(const char *ptr, const char *file, 
 	int line);
 
 #define Blt_AssertCalloc(n,s) (Blt_CallocAbortOnError(n,s,__FILE__, __LINE__))
 #define Blt_AssertMalloc(s) (Blt_MallocAbortOnError(s,__FILE__, __LINE__))
+#define Blt_AssertRealloc(p,s) (Blt_ReallocAbortOnError(p,s,__FILE__, __LINE__))
 #define Blt_AssertStrdup(s) (Blt_StrdupAbortOnError(s,__FILE__, __LINE__))
 
 BLT_EXTERN int Blt_DictionaryCompare (const char *s1, const char *s2);
