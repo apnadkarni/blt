@@ -8087,9 +8087,6 @@ ColumnVarResolverProc(
     /* Look up the column from the variable name given. */
     if (Blt_GetLong((Tcl_Interp *)NULL, (char *)name, &index) == TCL_OK) {
  	col = blt_table_get_column_by_index(switchesPtr->table, index);
-        if (col == NULL) {
-            fprintf(stderr, "index=%d col=%x\n", index, col);
-        }
     } else {
 	col = blt_table_get_column_by_label(switchesPtr->table, name);
     }
@@ -8103,7 +8100,6 @@ ColumnVarResolverProc(
     if (valueObjPtr == NULL) {
 	valueObjPtr = switchesPtr->emptyValueObjPtr;
 	if (valueObjPtr == NULL) {
-            fprintf(stderr, "sending back continue\n");
 	    return TCL_CONTINUE;
 	}
     }
@@ -12066,7 +12062,6 @@ static void
 AddRows(TableView *viewPtr, BLT_TABLE_NOTIFY_EVENT *eventPtr)
 {
     long i;
-    Row **rows;
     unsigned long count, newNumRows, oldNumRows;
 
     oldNumRows = viewPtr->numRows;
