@@ -98,6 +98,8 @@ typedef int (SizeProc)(Drawer *drawPtr);
 #define DEF_DRAWER_OPENVALUE	"1"
 #define DEF_DRAWER_CLOSEVALUE	"0"
 #define DEF_DRAWER_VARIABLE	(char *)NULL
+#define DEF_DRAWER_OPEN_COMMAND (char *)NULL
+#define DEF_DRAWER_CLOSE_COMMAND (char *)NULL
 #define DEF_SCROLLCOMMAND	"0"
 #define DEF_SCROLLDELAY		"30"
 #define DEF_SCROLLINCREMENT	"10"
@@ -239,6 +241,11 @@ struct _Drawer  {
     /* Checkbutton on and off values. */
     Tcl_Obj *openValueObjPtr;		/* Drawer open-value. */
     Tcl_Obj *closeValueObjPtr;		/* Drawer close-value. */
+
+    Tcl_Obj *openCmdObjPtr;             /* Command to be invoked whenever
+                                         * the drawer has been opened. */
+    Tcl_Obj *closeCmdObjPtr;            /* Command to be invoked whenever
+                                         * the drawer has been closed. */
 };
 
 /* Drawer/handle flags.  */
@@ -467,6 +474,9 @@ static Blt_ConfigSpec drawerSpecs[] =
 	BLT_CONFIG_NULL_OK | BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_SYNONYM, "-bg", "background", (char *)NULL, (char *)NULL, 
 	0, 0},
+    {BLT_CONFIG_OBJ, "-closecommand", "closeCommand", "CloseCommand", 
+        DEF_DRAWER_CLOSE_COMMAND, Blt_Offset(Drawer, closeCmdObjPtr), 
+        BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_OBJ, "-closevalue", "closeValue", "CloseValue",
 	DEF_DRAWER_CLOSEVALUE, Blt_Offset(Drawer, closeValueObjPtr), 
 	BLT_CONFIG_NULL_OK },
@@ -491,6 +501,9 @@ static Blt_ConfigSpec drawerSpecs[] =
 	(char *)NULL, Blt_Offset(Drawer, iPadX), 0},
     {BLT_CONFIG_PIXELS_NNEG, "-ipady", (char *)NULL, (char *)NULL, 
 	(char *)NULL, Blt_Offset(Drawer, iPadY), 0},
+    {BLT_CONFIG_OBJ, "-opencommand", "openCommand", "OpenCommand", 
+        DEF_DRAWER_OPEN_COMMAND, Blt_Offset(Drawer, openCmdObjPtr), 
+        BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_OBJ, "-openvalue", "openValue", "OpenValue", 
 	DEF_DRAWER_OPENVALUE, Blt_Offset(Drawer, openValueObjPtr), 
 	BLT_CONFIG_NULL_OK },
@@ -1085,6 +1098,48 @@ GetReqDrawerHeight(Drawer *drawPtr)
     return h;
 }
 
+static int
+InvokeDrawerCommand(Tcl_Interp *interp, Drawer *drawPtr, Tcl_Obj *cmdObjPtr) 
+{
+    Tcl_Obj *objPtr;
+    int result;
+
+    cmdObjPtr = Tcl_DuplicateObj(cmdObjPtr);
+    objPtr = Tcl_NewIntObj(drawPtr->index);
+    Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
+    Tcl_IncrRefCount(cmdObjPtr);
+    result = Tcl_EvalObjEx(interp, cmdObjPtr, TCL_EVAL_GLOBAL);
+    Tcl_DecrRefCount(cmdObjPtr);
+    return result;
+}
+
+static void
+OpenDrawer(Drawer *drawPtr) 
+{
+    fprintf(stderr, "opendrawer drawer=%s\n", drawPtr->name);
+    if ((drawPtr->flags & (CLOSED|DISABLED)) != CLOSED) {
+        fprintf(stderr, "drawer %s is already open or disabled\n", 
+                drawPtr->name);
+	/* return;				/* Already open or disabled. */
+    }
+    if (drawPtr->timerToken != (Tcl_TimerToken)0) {
+	Tcl_DeleteTimerHandler(drawPtr->timerToken);
+	drawPtr->timerToken = 0;
+    }
+    drawPtr->flags &= ~CLOSED;
+    if (drawPtr->openCmdObjPtr != NULL) {
+        int result;
+        Drawerset *setPtr;
+
+        setPtr = drawPtr->setPtr;
+        result = InvokeDrawerCommand(setPtr->interp, drawPtr, 
+                drawPtr->openCmdObjPtr);
+        if (result != TCL_OK) {
+            Tcl_BackgroundError(setPtr->interp);
+        }
+    }
+}
+
 static void
 EventuallyOpenDrawer(Drawer *drawPtr) 
 {
@@ -1159,6 +1214,17 @@ CloseDrawer(Drawer *drawPtr)
 	drawPtr->timerToken = 0;
     }
     drawPtr->flags |= CLOSED;
+    if (drawPtr->closeCmdObjPtr != NULL) {
+        int result;
+        Drawerset *setPtr;
+
+        setPtr = drawPtr->setPtr;
+        result = InvokeDrawerCommand(setPtr->interp, drawPtr, 
+                                     drawPtr->closeCmdObjPtr);
+        if (result != TCL_OK) {
+            Tcl_BackgroundError(setPtr->interp);
+        }
+    }
 }
 
 static void
@@ -1340,7 +1406,9 @@ DrawerTimerProc(ClientData clientData)
 	}
 	if (*anchorPtr < 0) {
 	    CloseDrawer(drawPtr);
-	}
+	} else {
+            OpenDrawer(drawPtr);
+        }
     } else if (setPtr->flags & ANIMATE) {
 	drawPtr->scrollIncr += drawPtr->scrollIncr;
 	drawPtr->timerToken = Tcl_CreateTimerHandler(setPtr->interval, 
@@ -4096,18 +4164,7 @@ InvokeOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     cmdObjPtr = GETATTR(drawPtr, cmdObjPtr);
     if (cmdObjPtr != NULL) {
-	Tcl_Obj *objPtr;
-	int result;
-
-	cmdObjPtr = Tcl_DuplicateObj(cmdObjPtr);
-	objPtr = Tcl_NewIntObj(drawPtr->index);
-	Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
-	Tcl_IncrRefCount(cmdObjPtr);
-	result = Tcl_EvalObjEx(interp, cmdObjPtr, TCL_EVAL_GLOBAL);
-	Tcl_DecrRefCount(cmdObjPtr);
-	if (result != TCL_OK) {
-	    return TCL_ERROR;
-	}
+        return InvokeDrawerCommand(interp, drawPtr, cmdObjPtr);
     }
     return TCL_OK;
 }

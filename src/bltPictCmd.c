@@ -430,6 +430,11 @@ static Blt_SwitchCustom filterSwitch = {
     FilterSwitchProc, NULL, NULL, (ClientData)0
 };
 
+static Blt_SwitchParseProc PixelsSwitchProc;
+static Blt_SwitchCustom pixelsSwitch = {
+    PixelsSwitchProc, NULL, NULL, (ClientData)0
+};
+
 static Blt_SwitchParseProc BlendingModeSwitchProc;
 static Blt_SwitchCustom blendModeSwitch = {
     BlendingModeSwitchProc, NULL, NULL, (ClientData)0
@@ -552,16 +557,16 @@ static Blt_SwitchSpec resampleSwitches[] = {
 	Blt_Offset(ResampleSwitches, filter), 0, 0, &filterSwitch},
     {BLT_SWITCH_CUSTOM, "-from",   "bbox", (char *)NULL,
 	Blt_Offset(ResampleSwitches, from), 0, 0, &bboxSwitch},
-    {BLT_SWITCH_INT,    "-height",  "int", (char *)NULL,
-	Blt_Offset(ResampleSwitches, height),  0},
+    {BLT_SWITCH_CUSTOM, "-height",  "int", (char *)NULL,
+        Blt_Offset(ResampleSwitches, height),  0, 0, &pixelsSwitch},
     {BLT_SWITCH_CUSTOM, "-hfilter", "filter", (char *)NULL,
 	Blt_Offset(ResampleSwitches, hFilter), 0, 0, &filterSwitch},
     {BLT_SWITCH_BITMASK, "-maxpect", "", (char *)NULL, 
 	Blt_Offset(ResampleSwitches, flags), 0, MAXPECT},
     {BLT_SWITCH_CUSTOM, "-vfilter", "filter", (char *)NULL,
 	Blt_Offset(ResampleSwitches, vFilter), 0, 0, &filterSwitch},
-    {BLT_SWITCH_INT,    "-width",   "int", (char *)NULL,
-	Blt_Offset(ResampleSwitches, width),  0},
+    {BLT_SWITCH_CUSTOM, "-width",   "int", (char *)NULL,
+        Blt_Offset(ResampleSwitches, width),  0, 0, &pixelsSwitch},
     {BLT_SWITCH_END}
 };
 
@@ -2220,6 +2225,37 @@ FilterSwitchProc(
     Blt_ResampleFilter *filterPtr = (Blt_ResampleFilter *)(record + offset);
 
     return Blt_GetResampleFilterFromObj(interp, objPtr, filterPtr);
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * PixelsSwitch --
+ *
+ *	Convert a Tcl_Obj representing a screen distance to the number of
+ *      pixels.
+ *
+ * Results:
+ *	The return value is a standard TCL result.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+PixelsSwitchProc(
+    ClientData clientData,		/* Not used. */
+    Tcl_Interp *interp,			/* Interpreter to send results back
+					 * to */
+    const char *switchName,		/* Not used. */
+    Tcl_Obj *objPtr,			/* String representation */
+    char *record,			/* Structure record */
+    int offset,				/* Offset to field in structure */
+    int flags)				/* Not used. */
+{
+    int *pixelsPtr = (int *)(record + offset);
+
+    return Blt_GetPixelsFromObj(interp, Tk_MainWindow(interp), objPtr, 
+        PIXELS_NNEG, pixelsPtr);
 }
 
 /*
