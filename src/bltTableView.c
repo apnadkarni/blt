@@ -3248,13 +3248,6 @@ NearestColumn(TableView *viewPtr, int x, int selectOne)
     Column *lastPtr;
     long i;
 
-    /*
-     * We implicitly can pick only visible rows.  So make sure that the
-     * row exists.
-     */
-    if (viewPtr->numVisibleRows == 0) {
-	return NULL;
-    }
     if (x < viewPtr->rowTitleWidth) {
 	return (selectOne) ? viewPtr->visibleColumns[0] : NULL;
     }
@@ -4485,9 +4478,11 @@ TableViewPickProc(
 	viewPtr->flags &= ~SCROLL_PENDING;
 	ComputeVisibleEntries(viewPtr);
     }
+#ifdef notdef
     if ((viewPtr->numVisibleRows == 0) || (viewPtr->numVisibleColumns == 0)) {
 	return NULL;			/* Nothing to pick. */
     }
+#endif
     viewPtr->colActivePtr = colPtr = NearestColumn(viewPtr, x, FALSE);
     viewPtr->rowActivePtr = rowPtr = NearestRow(viewPtr, y, FALSE);
     worldX = WORLDX(viewPtr, x);
@@ -8216,7 +8211,6 @@ FilterActivateOp(ClientData clientData, Tcl_Interp *interp, int objc,
     TableView *viewPtr = clientData;
     Column *colPtr, *activePtr;
     FilterInfo *filterPtr;
-
 
     if (GetColumn(interp, viewPtr, objv[3], &colPtr) != TCL_OK) {
 	return TCL_ERROR;

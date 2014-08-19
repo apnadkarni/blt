@@ -1228,20 +1228,20 @@ proc blt::TableView::GetColumnFilterRows { w col } {
     }
     set expr [join $list " && "]
     if { $expr != "" } {
-# puts stderr "find \"$expr\""
+#	puts stderr "find \"$expr\" <= [$table find $expr]"
 	return [$table find $expr]
     }
-    return ""
+    return "all"
 }
 
 proc blt::TableView::ApplyFilters { w } {
     set table [$w cget -table]
     set rows [GetColumnFilterRows $w -1]
-    if { [llength $rows] > 0 } {
+    if { $rows == "all" } {
+	eval $w row expose all
+    } else {
 	eval $w row hide all
 	eval $w row expose $rows
-    } else {
-	eval $w row expose all
     }
 }
 

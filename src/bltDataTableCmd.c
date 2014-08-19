@@ -463,6 +463,22 @@ static Blt_SwitchSpec insertSwitches[] =
 
 typedef struct {
     unsigned int flags;
+} IndicesSwitches;
+
+#define INDICES_EMPTY           (1<<1)
+#define INDICES_DUPLICATES      (1<<2)
+
+static Blt_SwitchSpec indicesSwitches[] = 
+{
+    {BLT_SWITCH_BITMASK, "-duplicates",  "",	(char *)NULL,
+	Blt_Offset(IndicesSwitches, flags), 0, INDICES_DUPLICATES},
+    {BLT_SWITCH_BITMASK, "-empty",  "",	(char *)NULL,
+	Blt_Offset(IndicesSwitches, flags), 0, INDICES_EMPTY},
+    {BLT_SWITCH_END}
+};
+
+typedef struct {
+    unsigned int flags;
     BLT_TABLE table;
 } CopySwitches;
 
@@ -569,7 +585,7 @@ static Blt_SwitchSpec restoreSwitches[] =
 typedef struct {
     unsigned int flags;
     BLT_TABLE table;
-    Blt_Chain columns, rows;
+    BLT_TABLE_ITERATOR ri, ci;
 } SortSwitches;
 
 #define SORT_UNIQUE	(1<<6)
@@ -581,7 +597,7 @@ static Blt_SwitchSpec sortSwitches[] =
     {BLT_SWITCH_BITMASK, "-ascii",	"", (char *)NULL,
 	Blt_Offset(SortSwitches, flags),  0, TABLE_SORT_ASCII},
     {BLT_SWITCH_CUSTOM, "-columns", "", (char *)NULL,
-        Blt_Offset(SortSwitches, columns), 0, 0, &columnsSwitch},
+        Blt_Offset(SortSwitches, ci), 0, 0, &columnIterSwitch},
     {BLT_SWITCH_BITMASK, "-decreasing", "", (char *)NULL,
 	Blt_Offset(SortSwitches, flags), 0, TABLE_SORT_DECREASING},
     {BLT_SWITCH_BITMASK, "-dictionary", "", (char *)NULL,
@@ -591,7 +607,7 @@ static Blt_SwitchSpec sortSwitches[] =
     {BLT_SWITCH_BITMASK, "-list", "", (char *)NULL,
 	Blt_Offset(SortSwitches, flags), 0, SORT_LIST},
     {BLT_SWITCH_CUSTOM, "-rows", "", (char *)NULL,
-        Blt_Offset(SortSwitches, rows), 0, 0, &rowsSwitch},
+        Blt_Offset(SortSwitches, ri), 0, 0, &rowIterSwitch},
     {BLT_SWITCH_BITMASK, "-unique", "", (char *)NULL,
 	Blt_Offset(SortSwitches, flags), 0, SORT_UNIQUE|SORT_LIST},
     {BLT_SWITCH_BITMASK, "-values", "", (char *)NULL,
@@ -2565,7 +2581,7 @@ ColumnIndexOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *	result.
  *
  * Example:
- *	$t column indices $col $col
+ *	$t column indices patterns...
  *	
  *---------------------------------------------------------------------------
  */
@@ -2573,23 +2589,65 @@ static int
 ColumnIndicesOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 {
     Tcl_Obj *listObjPtr;
-    BLT_TABLE_ITERATOR ci;
     BLT_TABLE_COLUMN col;
+    IndicesSwitches switches;
+    int i;
 
-    if (blt_table_iterate_column_objv(interp, cmdPtr->table, objc - 3, objv + 3,
-		&ci) != TCL_OK) {
+    switches.flags = 0;
+    i = Blt_ParseSwitches(interp, indicesSwitches, objc - 3, objv + 3, 
+        &switches, BLT_SWITCH_OBJV_PARTIAL);
+    if (i < 0)  {
 	return TCL_ERROR;
     }
+    objc -= i, objv += i;
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
-    for (col = blt_table_first_tagged_column(&ci); col != NULL; 
-	 col = blt_table_next_tagged_column(&ci)) {
-	Tcl_Obj *objPtr;
+    for (col = blt_table_first_column(cmdPtr->table); col != NULL;
+	 col = blt_table_next_column(cmdPtr->table, col)) {
+	const char *label;
+	int match;
+	int i;
 
-	objPtr = Tcl_NewLongObj(blt_table_column_index(col));
-	Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+	label = blt_table_column_label(col);
+        if (switches.flags & INDICES_DUPLICATES) {
+            Blt_HashTable *tablePtr;
+
+            tablePtr = blt_table_column_get_label_table(cmdPtr->table, label);
+            if (tablePtr->numEntries == 1) {
+                continue;
+            }
+        }
+        if (switches.flags & INDICES_EMPTY) {
+            BLT_TABLE_ROW row;
+
+            for (row = blt_table_first_row(cmdPtr->table); row != NULL;
+                 row = blt_table_next_row(cmdPtr->table, row)) {
+                if (blt_table_value_exists(cmdPtr->table, row, col)) {
+                    break;
+                }
+            }
+            if (row != NULL) {
+                continue;
+            }
+        }
+	match = (objc == 3);
+	for (i = 3; i < objc; i++) {
+	    char *pattern;
+
+	    pattern = Tcl_GetString(objv[i]);
+	    if (Tcl_StringMatch(label, pattern)) {
+                    
+		match = TRUE;
+		break;
+	    }
+	}
+	if (match) {
+	    Tcl_Obj *objPtr;
+
+	    objPtr = Tcl_NewLongObj(blt_table_column_index(col));
+	    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+	}
     }
     Tcl_SetObjResult(interp, listObjPtr);
-    blt_table_free_iterator_objv(&ci);
     return TCL_OK;
 }
 
@@ -2742,7 +2800,7 @@ ColumnLabelOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *	the interpreter result.  
  *	
  * Example:
- *	$t column labels ?labelList?
+ *	$t column labels ?labelList? 
  *
  *---------------------------------------------------------------------------
  */
@@ -2903,7 +2961,7 @@ ColumnMoveOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *	labels.
  *	
  * Example:
- *	$t column names pattern 
+ *	$t column names -duplicates ?pattern...?
  *
  *---------------------------------------------------------------------------
  */
@@ -2965,29 +3023,22 @@ ColumnNonEmptyOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc,
 		 Tcl_Obj *const *objv)
 {
     BLT_TABLE_COLUMN col;
+    BLT_TABLE_ROW row;
     Tcl_Obj *listObjPtr;
-    long i;
 
     col = blt_table_get_column(interp, cmdPtr->table, objv[3]);
     if (col == NULL) {
 	return TCL_ERROR;
     }
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
-    for (i = 0; i < blt_table_num_columns(cmdPtr->table); i++) {
-	BLT_TABLE_ROW row;
-	
-	for (row = blt_table_first_row(cmdPtr->table); row != NULL;
-	     row = blt_table_next_row(cmdPtr->table, row)) {
-	    BLT_TABLE_VALUE value;
-
-	    value = blt_table_get_value(cmdPtr->table, row, col);
-	    if (value != NULL) {
-		Tcl_Obj *objPtr;
-
-		objPtr = Tcl_NewLongObj(blt_table_row_index(row));
-		Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-	    }
-	}
+    for (row = blt_table_first_row(cmdPtr->table); row != NULL;
+         row = blt_table_next_row(cmdPtr->table, row)) {
+        if (blt_table_value_exists(cmdPtr->table, row, col))  {
+            Tcl_Obj *objPtr;
+            
+            objPtr = Tcl_NewLongObj(blt_table_row_index(row));
+            Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+        }
     }
     Tcl_SetObjResult(interp, listObjPtr);
     return TCL_OK;
@@ -4110,7 +4161,7 @@ static Blt_OpSpec columnOps[] =
     {"extend",    3, ColumnExtendOp,  4, 0, "label ?label...?",},
     {"get",       1, ColumnGetOp,     4, 0, "column ?switches?",},
     {"index",     4, ColumnIndexOp,   4, 4, "column",},
-    {"indices",   4, ColumnIndicesOp, 3, 0, "column ?column...?",},
+    {"indices",   4, ColumnIndicesOp, 3, 0, "?pattern...?",},
     {"join",      1, ColumnJoinOp,    4, 0, "table ?switches?",},
     {"label",     5, ColumnLabelOp,   4, 0, "column ?label?",},
     {"labels",    6, ColumnLabelsOp,  3, 4, "?labelList?",},
@@ -7185,6 +7236,10 @@ PrintUniqueValues(Tcl_Interp *interp, BLT_TABLE table, long numRows,
             break;
         }
     }
+    /* What if all the rows are empty? */
+    if (i == numRows) {
+        return TCL_OK;
+    }
     /* Convert the table offset back to a client index. */
     if (flags & SORT_VALUES) {
 	objPtr = blt_table_get_obj(table, rows[i], col);
@@ -7225,8 +7280,8 @@ SortOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 {
     BLT_TABLE table;
     BLT_TABLE_ROW *map;
+    BLT_TABLE_COLUMN col;
     BLT_TABLE_SORT_ORDER *sp, *order;
-    Blt_ChainLink link;
     SortSwitches switches;
     int result;
     long numColumns, numRows;
@@ -7237,26 +7292,26 @@ SortOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 
     /* Process switches  */
     switches.flags = 0;
-    switches.columns = NULL;
-    switches.rows = NULL;
     table = switches.table = cmdPtr->table;
+    rowIterSwitch.clientData = cmdPtr->table;
+    columnIterSwitch.clientData = cmdPtr->table;
     if (Blt_ParseSwitches(interp, sortSwitches, objc - 2, objv + 2, &switches, 
 	BLT_SWITCH_DEFAULTS) < 0) {
 	return TCL_ERROR;		
     }
-    numColumns = Blt_Chain_GetLength(switches.columns);
+    numColumns = switches.ci.numEntries;
     if (numColumns == 0) {
 	return TCL_OK;			/* Nothing to sort. */
     }
     sp = order = Blt_AssertCalloc(numColumns, sizeof(BLT_TABLE_SORT_ORDER));
     /* Then add the secondary sorting columns. */
-    for (link = Blt_Chain_FirstLink(switches.columns); link != NULL; 
-	 link = Blt_Chain_NextLink(link)) {
-	sp->column = Blt_Chain_GetValue(link);
+    for (col = blt_table_first_tagged_column(&switches.ci); col != NULL; 
+	 col = blt_table_next_tagged_column(&switches.ci)) {
+	sp->column = col;
 	sp++;
     }
     blt_table_sort_init(table, order, numColumns, switches.flags);
-    numRows = Blt_Chain_GetLength(switches.rows);
+    numRows = switches.ri.numEntries;
     if (numRows == 0) {
 	map = blt_table_sort_rows(table);
 	if (map == NULL) {
@@ -7266,13 +7321,15 @@ SortOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	}
 	numRows = blt_table_num_rows(table);
     } else {
-	Blt_ChainLink link;
 	long i;
+        BLT_TABLE_ROW row;
 
+        i = 0;
 	map = Blt_AssertCalloc(numRows, sizeof(BLT_TABLE_ROW));
-	for (i = 0, link = Blt_Chain_FirstLink(switches.rows); link != NULL; 
-	     link = Blt_Chain_NextLink(link), i++) {
-	    map[i] = Blt_Chain_GetValue(link);
+	for (row = blt_table_first_tagged_row(&switches.ri); row != NULL; 
+	     row = blt_table_next_tagged_row(&switches.ri)) {
+	    map[i] = row;
+            i++;
 	}
 	blt_table_sort_rows_subset(table, numRows, map);
 	switches.flags |= SORT_LIST;
@@ -7290,7 +7347,9 @@ SortOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	    listObjPtr = PrintValues(interp, table, numRows, map, col, 
 		switches.flags);
 	}
-	Tcl_SetObjResult(interp, listObjPtr);
+        if (listObjPtr != NULL) {
+            Tcl_SetObjResult(interp, listObjPtr);
+        }
 	Blt_Free(map);
     } else {
 	/* Make row order permanent. */
