@@ -5462,7 +5462,8 @@ TagOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 }
 
 static int
-ViewOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+ViewOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+       Tcl_Obj *const *objv)
 {
     Paneset *setPtr = clientData;
     int width;

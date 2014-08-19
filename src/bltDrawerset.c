@@ -1116,12 +1116,6 @@ InvokeDrawerCommand(Tcl_Interp *interp, Drawer *drawPtr, Tcl_Obj *cmdObjPtr)
 static void
 OpenDrawer(Drawer *drawPtr) 
 {
-    fprintf(stderr, "opendrawer drawer=%s\n", drawPtr->name);
-    if ((drawPtr->flags & (CLOSED|DISABLED)) != CLOSED) {
-        fprintf(stderr, "drawer %s is already open or disabled\n", 
-                drawPtr->name);
-	/* return;				/* Already open or disabled. */
-    }
     if (drawPtr->timerToken != (Tcl_TimerToken)0) {
 	Tcl_DeleteTimerHandler(drawPtr->timerToken);
 	drawPtr->timerToken = 0;
