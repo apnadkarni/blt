@@ -1,4 +1,4 @@
-
+# -*- mode: tcl; indent-tabs-mode: nil -*- 
 #
 # tableview.tcl
 #
@@ -1098,7 +1098,6 @@ proc blt::TableView::BuildFiltersMenu { w col } {
 	-style mystyle \
 	-command [list blt::TableView::CustomFilter $w $col] \
 	-icon $_private(icon)
-    $menu add -type separator
     if { [llength [$table column empty $col]] > 0 } {
 	$menu item configure "Empty" -state normal
     } else {
@@ -1110,10 +1109,17 @@ proc blt::TableView::BuildFiltersMenu { w col } {
     set rows [GetColumnFilterRows $w $col]
     if { $fmtcmd == "" } {
 	set values [$table sort -columns $col -values -unique -rows $rows]
+	if { [llength $values] > 0 } {
+	    $menu add -type separator
+	}
 	$menu listadd $values \
 		-command  [list blt::TableView::SetFilter $w $col]
     } else {
-	foreach row [$table sort -columns $col -unique -rows $rows] {
+	set rows [$table sort -columns $col -unique -rows $rows]
+	if { [llength $rows] > 0 } {
+	    $menu add -type separator
+	}
+	foreach row $rows {
 	    set fmtvalue [eval $fmtcmd $row $col]
 	    set value [$table get $row $col]
 	    $menu add -text $fmtvalue -value $value \
@@ -1162,7 +1168,10 @@ proc blt::TableView::FilterTop10 { w col } {
     foreach value $values {
 	lappend list "(\$${index} == \"$value\")"
     }
-    set expr "\[info exists ${index}\] && ([join $list " || "]) "
+    set expr "\[info exists ${index}\]"
+    if { [llength $list] > 0 } {
+	set expr "$expr && ([join $list " || "]) "
+    }
     $w column configure $col -filterdata $expr
     ApplyFilters $w
 }
@@ -1177,7 +1186,10 @@ proc blt::TableView::FilterBottom10 { w col } {
     foreach value $values {
 	lappend list "(\$${index} == \"$value\")"
     }
-    set expr "\[info exists ${index}\] && ([join $list " || "]) "
+    set expr "\[info exists ${index}\]"
+    if { [llength $list] > 0 } {
+	set expr "$expr && ([join $list " || "]) "
+    }
     $w column configure $col -filterdata $expr
     ApplyFilters $w
 }
@@ -1365,10 +1377,12 @@ proc blt::TableView::BuildVersion2FiltersMenu { w col } {
     $menu add -text "Custom..." \
 	-command [list blt::TableView::CustomFilter $w $col] \
 	-icon $_private(icon)
-    $menu add -type separator
     set fmtcmd [$w column cget $col -formatcommand]
     set rows [$w row expose]
     set values [$table sort -columns $col -unique -values -rows $rows]
+    if { [llength $rows] > 0 } {
+	$menu add -type separator
+    }
     if { $fmtcmd == "" } {
 	$menu listadd $values \
 		-command  [list blt::TableView::SetFilter $w $col]
