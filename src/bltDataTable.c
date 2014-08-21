@@ -884,7 +884,7 @@ DoTrace(Trace *tracePtr, BLT_TABLE_TRACE_EVENT *eventPtr)
 
     if (result == TCL_ERROR) {
 	Blt_Warn("error in trace callback: %s\n", 
-		Tcl_GetStringResult(eventPtr->interp));
+                 Tcl_GetString(Tcl_GetObjResult(eventPtr->interp)));
 	Tcl_BackgroundError(eventPtr->interp);
     }
     return result;

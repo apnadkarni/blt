@@ -3270,9 +3270,11 @@ ScrollbarEventProc(
 	comboPtr->flags |= LAYOUT_PENDING;
 	EventuallyRedraw(comboPtr);
     } else if (eventPtr->type == DestroyNotify) {
-	if (eventPtr->xany.window == Tk_WindowId(comboPtr->yScrollbar)) {
+	if ((comboPtr->yScrollbar != NULL) &&
+            (eventPtr->xany.window == Tk_WindowId(comboPtr->yScrollbar))) {
 	    comboPtr->yScrollbar = NULL;
-	} else if (eventPtr->xany.window == Tk_WindowId(comboPtr->xScrollbar)) {
+	} else if ((comboPtr->xScrollbar != NULL) && 
+                (eventPtr->xany.window == Tk_WindowId(comboPtr->xScrollbar))) {
 	    comboPtr->xScrollbar = NULL;
 	} 
 	comboPtr->flags |= LAYOUT_PENDING;
