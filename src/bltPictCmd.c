@@ -395,7 +395,7 @@ static Blt_ConfigSpec configSpecs[] =
 	DEF_FILTER, Blt_Offset(PictImage, filter), 0, &bltFilterOption},
     {BLT_CONFIG_FLOAT, "-gamma", (char *)NULL, (char *)NULL, DEF_GAMMA,
 	Blt_Offset(PictImage, gamma), BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_PIXELS_NNEG, "-height", (char *)NULL, (char *)NULL,
+   {BLT_CONFIG_PIXELS_NNEG, "-height", (char *)NULL, (char *)NULL,
 	DEF_HEIGHT, Blt_Offset(PictImage, reqHeight), 0},
     {BLT_CONFIG_CUSTOM, "-image", (char *)NULL, (char *)NULL, DEF_IMAGE,
 	Blt_Offset(PictImage, picture), 0, &imageOption},

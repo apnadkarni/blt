@@ -126,6 +126,7 @@ typedef int (SizeProc)(Pane *panePtr);
 #define DEF_VCURSOR		"sb_v_double_arrow"
 #define DEF_WEIGHT		"0"
 #define DEF_WIDTH		"0"
+#define DEF_PANE_TAGS   	(char *)NULL
 
 #define PANE_DEF_ANCHOR		TK_ANCHOR_NW
 #define PANE_DEF_FILL		FILL_BOTH
@@ -137,6 +138,13 @@ typedef int (SizeProc)(Pane *panePtr);
 
 #define FCLAMP(x)	((((x) < 0.0) ? 0.0 : ((x) > 1.0) ? 1.0 : (x)))
 #define VAR_FLAGS (TCL_GLOBAL_ONLY|TCL_TRACE_WRITES|TCL_TRACE_UNSETS)
+
+typedef struct {
+    const char *handleClassName;
+    const char *objectName;
+    Blt_ConfigSpec *specs;
+    unsigned int type;
+} WidgetClass;
 
 /*
  * Paneset structure
@@ -166,7 +174,7 @@ typedef int (SizeProc)(Pane *panePtr);
 struct _Paneset {
     int flags;				/* See the flags definitions
                                          * below. */
-    int type;				/* Type of widget: PANESET or
+    WidgetClass *classPtr;              /* Type of widget: PANESET or
 					 * FILMSTRIP. */
     Display *display;			/* Display of the widget. */
     Tk_Window tkwin;			/* The container window into which
@@ -303,7 +311,7 @@ struct _Paneset {
 #define VERTICAL	(1<<7)
 
 #define PANESET		(BLT_CONFIG_USER_BIT << 1)
-#define FILMSTRIP	(BLT_CONFIG_USER_BIT << 3)
+#define FILMSTRIP	(BLT_CONFIG_USER_BIT << 2)
 #define ALL		(PANESET|FILMSTRIP)
 
 /*
@@ -490,71 +498,119 @@ static Blt_CustomOption adjustOption = {
     ObjToMode, ModeToObj, NULL, (ClientData)0,
 };
 
+static Blt_OptionFreeProc FreeTagsProc;
+static Blt_OptionParseProc ObjToTagsProc;
+static Blt_OptionPrintProc TagsToObjProc;
+static Blt_CustomOption tagsOption = {
+    ObjToTagsProc, TagsToObjProc, FreeTagsProc, (ClientData)0
+};
+
 static Blt_ConfigSpec paneSpecs[] =
 {
-    {BLT_CONFIG_BACKGROUND, "-activehandlecolor", "activeHandleColor", 
-	"HandleColor", DEF_ACTIVEHANDLECOLOR, Blt_Offset(Pane, activeHandleBg), 
-        BLT_CONFIG_DONT_SET_DEFAULT | BLT_CONFIG_NULL_OK | FILMSTRIP},
     {BLT_CONFIG_BACKGROUND, "-activesashcolor", "activeSashColor", 
 	"ActiveSashColor", DEF_ACTIVEHANDLECOLOR, 
 	Blt_Offset(Pane, activeHandleBg), 
-        BLT_CONFIG_DONT_SET_DEFAULT | BLT_CONFIG_NULL_OK | PANESET},
+        BLT_CONFIG_DONT_SET_DEFAULT | BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_ANCHOR, "-anchor", (char *)NULL, (char *)NULL, DEF_PANE_ANCHOR,
-	Blt_Offset(Pane, anchor), BLT_CONFIG_DONT_SET_DEFAULT | PANESET},
+	Blt_Offset(Pane, anchor), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_BACKGROUND, "-background", "background", "Background",
 	(char *)NULL, Blt_Offset(Pane, bg), 
-	BLT_CONFIG_NULL_OK | BLT_CONFIG_DONT_SET_DEFAULT | ALL},
-    {BLT_CONFIG_SYNONYM, "-bg", "background", (char *)NULL, (char *)NULL, 
-	0, ALL},
+	BLT_CONFIG_NULL_OK | BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_SYNONYM, "-bg", "background", (char *)NULL, (char *)NULL, 0, 0},
     {BLT_CONFIG_CURSOR, "-cursor", "cursor", "Cursor",
-        DEF_PANE_CURSOR, Blt_Offset(Pane, cursor), BLT_CONFIG_NULL_OK | ALL},
+        DEF_PANE_CURSOR, Blt_Offset(Pane, cursor), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_FILL, "-fill", "fill", "Fill", DEF_PANE_FILL, 
-	Blt_Offset(Pane, fill), 
-	BLT_CONFIG_DONT_SET_DEFAULT | PANESET | FILMSTRIP },
-    {BLT_CONFIG_BACKGROUND, "-handlecolor", "handleColor", "HandleColor",
-	DEF_HANDLECOLOR, Blt_Offset(Pane, handleBg), 
-        BLT_CONFIG_DONT_SET_DEFAULT | BLT_CONFIG_NULL_OK | FILMSTRIP},
+	Blt_Offset(Pane, fill), BLT_CONFIG_DONT_SET_DEFAULT },
     {BLT_CONFIG_SYNONYM, "-height", "reqHeight", (char *)NULL, (char *)NULL, 
 	Blt_Offset(Pane, reqHeight), 0},
     {BLT_CONFIG_BITMASK, "-hide", "hide", "Hide", DEF_PANE_HIDE, 
-	Blt_Offset(Pane, flags), 
-	BLT_CONFIG_DONT_SET_DEFAULT | FILMSTRIP | PANESET, 
+        Blt_Offset(Pane, flags), BLT_CONFIG_DONT_SET_DEFAULT, 
 	(Blt_CustomOption *)HIDE },
     {BLT_CONFIG_COLOR, "-highlightbackground", "highlightBackground",
 	"HighlightBackground", DEF_PANE_HIGHLIGHT_BACKGROUND, 
-	Blt_Offset(Pane, highlightBgColor), ALL},
+	Blt_Offset(Pane, highlightBgColor), 0},
     {BLT_CONFIG_COLOR, "-highlightcolor", "highlightColor", "HighlightColor",
-	DEF_PANE_HIGHLIGHT_COLOR, Blt_Offset(Pane, highlightColor), ALL},
+	DEF_PANE_HIGHLIGHT_COLOR, Blt_Offset(Pane, highlightColor), 0},
     {BLT_CONFIG_PIXELS_NNEG, "-ipadx", (char *)NULL, (char *)NULL,
-	(char *)NULL, Blt_Offset(Pane, iPadX), ALL},
+	(char *)NULL, Blt_Offset(Pane, iPadX), 0},
     {BLT_CONFIG_PIXELS_NNEG, "-ipady", (char *)NULL, (char *)NULL, 
-	(char *)NULL, Blt_Offset(Pane, iPadY), ALL},
+	(char *)NULL, Blt_Offset(Pane, iPadY), 0},
     {BLT_CONFIG_CUSTOM, "-reqheight", "reqHeight", (char *)NULL, (char *)NULL, 
-	Blt_Offset(Pane, reqHeight), ALL, &bltLimitsOption},
+	Blt_Offset(Pane, reqHeight), 0, &bltLimitsOption},
     {BLT_CONFIG_CUSTOM, "-reqwidth", "reqWidth", (char *)NULL, (char *)NULL, 
-	Blt_Offset(Pane, reqWidth), ALL, &bltLimitsOption},
+	Blt_Offset(Pane, reqWidth), 0, &bltLimitsOption},
     {BLT_CONFIG_RESIZE, "-resize", "resize", "Resize", DEF_PANE_RESIZE,
-	Blt_Offset(Pane, resize), BLT_CONFIG_DONT_SET_DEFAULT | ALL},
+	Blt_Offset(Pane, resize), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_BACKGROUND, "-sashcolor", "sashColor", "SashColor",
 	DEF_HANDLECOLOR, Blt_Offset(Pane, handleBg), 
-        BLT_CONFIG_DONT_SET_DEFAULT | BLT_CONFIG_NULL_OK | PANESET},
-    {BLT_CONFIG_BITMASK, "-showhandle", "showHandle", "showHandle", 
-	DEF_PANE_SHOWHANDLE, Blt_Offset(Pane, flags), 
-	BLT_CONFIG_DONT_SET_DEFAULT | FILMSTRIP, 
-        (Blt_CustomOption *)SHOW_HANDLE },
+        BLT_CONFIG_DONT_SET_DEFAULT | BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_BITMASK, "-showsash", "showSash", "showSash", 
 	DEF_PANE_SHOWHANDLE, Blt_Offset(Pane, flags), 
-	BLT_CONFIG_DONT_SET_DEFAULT | PANESET, (Blt_CustomOption *)SHOW_HANDLE},
+	BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)SHOW_HANDLE},
     {BLT_CONFIG_CUSTOM, "-size", (char *)NULL, (char *)NULL, (char *)NULL, 
-	Blt_Offset(Pane, reqSize), ALL, &bltLimitsOption},
+	Blt_Offset(Pane, reqSize), 0, &bltLimitsOption},
+     {BLT_CONFIG_CUSTOM, "-tags", (char *)NULL, (char *)NULL,
+        DEF_PANE_TAGS, 0, BLT_CONFIG_NULL_OK, &tagsOption},
     {BLT_CONFIG_STRING, "-takefocus", "takeFocus", "TakeFocus",
-	DEF_TAKEFOCUS, Blt_Offset(Pane, takeFocus), BLT_CONFIG_NULL_OK | ALL},
+	DEF_TAKEFOCUS, Blt_Offset(Pane, takeFocus), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_FLOAT, "-weight", "weight", "Weight", DEF_PANE_WEIGHT,
 	Blt_Offset(Pane, weight), BLT_CONFIG_DONT_SET_DEFAULT | PANESET},
     {BLT_CONFIG_SYNONYM, "-width", "reqWidth", (char *)NULL, (char *)NULL, 
 	Blt_Offset(Pane, reqWidth), 0},
     {BLT_CONFIG_CUSTOM, "-window", "window", "Window", (char *)NULL, 
-	Blt_Offset(Pane, tkwin), BLT_CONFIG_NULL_OK | ALL, &childOption },
+	Blt_Offset(Pane, tkwin), BLT_CONFIG_NULL_OK, &childOption },
+    {BLT_CONFIG_END, NULL, NULL, NULL, NULL, 0, 0}
+};
+
+static Blt_ConfigSpec frameSpecs[] =
+{
+    {BLT_CONFIG_BACKGROUND, "-activehandlecolor", "activeHandleColor", 
+	"HandleColor", DEF_ACTIVEHANDLECOLOR, Blt_Offset(Pane, activeHandleBg), 
+        BLT_CONFIG_DONT_SET_DEFAULT | BLT_CONFIG_NULL_OK},
+    {BLT_CONFIG_BACKGROUND, "-background", "background", "Background",
+	(char *)NULL, Blt_Offset(Pane, bg), 
+	BLT_CONFIG_NULL_OK | BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_SYNONYM, "-bg", "background", (char *)NULL, (char *)NULL, 0, 0},
+    {BLT_CONFIG_CURSOR, "-cursor", "cursor", "Cursor",
+        DEF_PANE_CURSOR, Blt_Offset(Pane, cursor), BLT_CONFIG_NULL_OK},
+    {BLT_CONFIG_FILL, "-fill", "fill", "Fill", DEF_PANE_FILL, 
+	Blt_Offset(Pane, fill), BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_BACKGROUND, "-handlecolor", "handleColor", "HandleColor",
+	DEF_HANDLECOLOR, Blt_Offset(Pane, handleBg), 
+        BLT_CONFIG_DONT_SET_DEFAULT | BLT_CONFIG_NULL_OK},
+    {BLT_CONFIG_SYNONYM, "-height", "reqHeight", (char *)NULL, (char *)NULL, 
+	Blt_Offset(Pane, reqHeight), 0},
+    {BLT_CONFIG_BITMASK, "-hide", "hide", "Hide", DEF_PANE_HIDE, 
+	Blt_Offset(Pane, flags), BLT_CONFIG_DONT_SET_DEFAULT, 
+	(Blt_CustomOption *)HIDE },
+    {BLT_CONFIG_COLOR, "-highlightbackground", "highlightBackground",
+	"HighlightBackground", DEF_PANE_HIGHLIGHT_BACKGROUND, 
+	Blt_Offset(Pane, highlightBgColor), 0},
+    {BLT_CONFIG_COLOR, "-highlightcolor", "highlightColor", "HighlightColor",
+	DEF_PANE_HIGHLIGHT_COLOR, Blt_Offset(Pane, highlightColor), 0},
+    {BLT_CONFIG_PIXELS_NNEG, "-ipadx", (char *)NULL, (char *)NULL,
+	(char *)NULL, Blt_Offset(Pane, iPadX), 0},
+    {BLT_CONFIG_PIXELS_NNEG, "-ipady", (char *)NULL, (char *)NULL, 
+	(char *)NULL, Blt_Offset(Pane, iPadY), 0},
+    {BLT_CONFIG_CUSTOM, "-reqheight", "reqHeight", (char *)NULL, (char *)NULL, 
+	Blt_Offset(Pane, reqHeight), 0, &bltLimitsOption},
+    {BLT_CONFIG_CUSTOM, "-reqwidth", "reqWidth", (char *)NULL, (char *)NULL, 
+	Blt_Offset(Pane, reqWidth), 0, &bltLimitsOption},
+    {BLT_CONFIG_RESIZE, "-resize", "resize", "Resize", DEF_PANE_RESIZE,
+	Blt_Offset(Pane, resize), BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_BITMASK, "-showhandle", "showHandle", "showHandle", 
+	DEF_PANE_SHOWHANDLE, Blt_Offset(Pane, flags), 
+	BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)SHOW_HANDLE },
+    {BLT_CONFIG_CUSTOM, "-size", (char *)NULL, (char *)NULL, (char *)NULL, 
+	Blt_Offset(Pane, reqSize), 0, &bltLimitsOption},
+     {BLT_CONFIG_CUSTOM, "-tags", (char *)NULL, (char *)NULL,
+        DEF_PANE_TAGS, 0, BLT_CONFIG_NULL_OK, &tagsOption},
+    {BLT_CONFIG_STRING, "-takefocus", "takeFocus", "TakeFocus",
+	DEF_TAKEFOCUS, Blt_Offset(Pane, takeFocus), BLT_CONFIG_NULL_OK},
+    {BLT_CONFIG_SYNONYM, "-width", "reqWidth", (char *)NULL, (char *)NULL, 
+	Blt_Offset(Pane, reqWidth), 0},
+    {BLT_CONFIG_CUSTOM, "-window", "window", "Window", (char *)NULL, 
+	Blt_Offset(Pane, tkwin), BLT_CONFIG_NULL_OK, &childOption },
     {BLT_CONFIG_END, NULL, NULL, NULL, NULL, 0, 0}
 };
 
@@ -692,6 +748,22 @@ typedef struct _Iterator {
     Blt_ChainLink link;
 } PaneIterator;
 
+
+static WidgetClass panesetClass = {
+    "BltPanesetSash",
+    "pane",
+    paneSpecs,
+    PANESET,
+};
+
+static WidgetClass filmstripClass = {
+    "BltFilmStripHandle",
+    "frame",
+    frameSpecs,
+    FILMSTRIP,
+};
+
+
 /*
  * Forward declarations
  */
@@ -721,7 +793,7 @@ ScreenX(Pane *panePtr)
 
     x = panePtr->x;
     setPtr = panePtr->setPtr;
-    if ((setPtr->type == FILMSTRIP) && (ISHORIZ(setPtr))) {
+    if ((setPtr->classPtr->type == FILMSTRIP) && (ISHORIZ(setPtr))) {
 	x -= setPtr->scrollOffset;
     }
     return x;
@@ -735,7 +807,7 @@ ScreenY(Pane *panePtr)
 
     setPtr = panePtr->setPtr;
     y = panePtr->y;
-    if ((setPtr->type == FILMSTRIP) && (ISVERT(setPtr))) {
+    if ((setPtr->classPtr->type == FILMSTRIP) && (ISVERT(setPtr))) {
 	y -= setPtr->scrollOffset;
     }
     return y;
@@ -874,23 +946,104 @@ EventuallyRedraw(Paneset *setPtr)
     }
 }
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * SetTag --
+ *
+ *	Associates a tag with a given row.  Individual row tags are
+ *	stored in hash tables keyed by the tag name.  Each table is in
+ *	turn stored in a hash table keyed by the row location.
+ *
+ * Results:
+ *	None.
+ *
+ * Side Effects:
+ *	A tag is stored for a particular row.
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+SetTag(Tcl_Interp *interp, Pane *panePtr, const char *tagName)
+{
+    Blt_HashEntry *hPtr;
+    Blt_HashTable *tagTablePtr;
+    Paneset *setPtr;
+    int isNew;
+    long dummy;
+    
+    if ((strcmp(tagName, "all") == 0) || (strcmp(tagName, "end") == 0)) {
+	return TCL_OK;			/* Don't need to create reserved
+					 * tags. */
+    }
+    if (tagName[0] == '\0') {
+	if (interp != NULL) {
+	    Tcl_AppendResult(interp, "tag \"", tagName, "\" can't be empty.", 
+		(char *)NULL);
+	}
+	return TCL_ERROR;
+    }
+    if (tagName[0] == '-') {
+	if (interp != NULL) {
+	    Tcl_AppendResult(interp, "tag \"", tagName, 
+		"\" can't start with a '-'.", (char *)NULL);
+	}
+	return TCL_ERROR;
+    }
+    if (Blt_GetLong(NULL, (char *)tagName, &dummy) == TCL_OK) {
+	if (interp != NULL) {
+	    Tcl_AppendResult(interp, "tag \"", tagName, "\" can't be a number.",
+			     (char *)NULL);
+	}
+	return TCL_ERROR;
+    }
+    setPtr = panePtr->setPtr;
+    hPtr = Blt_CreateHashEntry(&setPtr->tagTable, tagName, &isNew);
+    if (hPtr == NULL) {
+	if (interp != NULL) {
+	    Tcl_AppendResult(interp, "can't add tag \"", tagName, 
+			 "\": out of memory", (char *)NULL);
+	}
+	return TCL_ERROR;
+    }
+    if (isNew) {
+	tagTablePtr = Blt_AssertMalloc(sizeof(Blt_HashTable));
+	Blt_InitHashTable(tagTablePtr, BLT_ONE_WORD_KEYS);
+	Blt_SetHashValue(hPtr, tagTablePtr);
+    } else {
+	tagTablePtr = Blt_GetHashValue(hPtr);
+    }
+    hPtr = Blt_CreateHashEntry(tagTablePtr, (char *)panePtr, &isNew);
+    if (isNew) {
+	Blt_SetHashValue(hPtr, panePtr);
+    }
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * ReleaseTags --
+ *
+ *	Releases the tags used by this item.  
+ *
+ *---------------------------------------------------------------------------
+ */
 static void
-ClearTags(Pane *panePtr)
+ReleaseTags(Paneset *setPtr, Pane *panePtr)
 {
     Blt_HashEntry *hPtr;
     Blt_HashSearch iter;
-    Paneset *setPtr;
 
-    setPtr = panePtr->setPtr;
     for (hPtr = Blt_FirstHashEntry(&setPtr->tagTable, &iter); hPtr != NULL;
 	 hPtr = Blt_NextHashEntry(&iter)) {
-	Blt_HashTable *tablePtr;
-	Blt_HashEntry *h2Ptr;
-	
-	tablePtr = Blt_GetHashValue(hPtr);
-	h2Ptr = Blt_FindHashEntry(tablePtr, (char *)panePtr);
-	if (h2Ptr != NULL) {
-	    Blt_DeleteHashEntry(tablePtr, h2Ptr);
+	Blt_HashTable *tagTablePtr;
+	Blt_HashEntry *hPtr2;
+
+	tagTablePtr = Blt_GetHashValue(hPtr); 
+	hPtr2 = Blt_FindHashEntry(tagTablePtr, (char *)panePtr);
+	if (hPtr2 != NULL) {
+	    Blt_DeleteHashEntry(tagTablePtr, hPtr2);
 	}
     }
 }
@@ -916,8 +1069,8 @@ DestroyPane(Pane *panePtr)
 {
     Paneset *setPtr;
 
-    ClearTags(panePtr);
     setPtr = panePtr->setPtr;
+    ReleaseTags(setPtr, panePtr);
     Blt_FreeOptions(paneSpecs, (char *)panePtr, setPtr->display, 0);
     if (panePtr->timerToken != (Tcl_TimerToken)0) {
 	Tcl_DeleteTimerHandler(panePtr->timerToken);
@@ -1236,7 +1389,116 @@ OrientToObjProc(
     return Tcl_NewStringObj(string, -1);
 }
 
+/*ARGSUSED*/
+static void
+FreeTagsProc(
+    ClientData clientData,
+    Display *display,                   /* Not used. */
+    char *widgRec,
+    int offset)
+{
+    Paneset *setPtr;
+    Pane *panePtr = (Pane *)widgRec;
 
+    setPtr = panePtr->setPtr;
+    ReleaseTags(setPtr, panePtr);
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * ObjToTagsProc --
+ *
+ *	Convert the string representation of a list of tags.
+ *
+ * Results:
+ *	The return value is a standard TCL result.  The tags are
+ *	save in the widget.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+ObjToTagsProc(
+    ClientData clientData,		/* Not used. */
+    Tcl_Interp *interp,			/* Interpreter to send results back
+					 * to */
+    Tk_Window tkwin,			/* Not used. */
+    Tcl_Obj *objPtr,			/* String representing style. */
+    char *widgRec,			/* Widget record */
+    int offset,				/* Offset to field in structure */
+    int flags)	
+{
+    Paneset *setPtr;
+    Pane *panePtr = (Pane *)widgRec;
+    int i;
+    char *string;
+    int objc;
+    Tcl_Obj **objv;
+
+    setPtr = panePtr->setPtr;
+    ReleaseTags(setPtr, panePtr);
+    string = Tcl_GetString(objPtr);
+    if ((string[0] == '\0') && (flags & BLT_CONFIG_NULL_OK)) {
+	return TCL_OK;
+    }
+    if (Tcl_ListObjGetElements(interp, objPtr, &objc, &objv) != TCL_OK) {
+	return TCL_ERROR;
+    }
+    for (i = 0; i < objc; i++) {
+	SetTag(interp, panePtr, Tcl_GetString(objv[i]));
+    }
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * TagsToObjProc --
+ *
+ *	Return the name of the style.
+ *
+ * Results:
+ *	The name representing the style is returned.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static Tcl_Obj *
+TagsToObjProc(
+    ClientData clientData,		/* Not used. */
+    Tcl_Interp *interp,
+    Tk_Window tkwin,			/* Not used. */
+    char *widgRec,			/* Widget information record */
+    int offset,				/* Offset to field in structure */
+    int flags)	
+{
+    Blt_HashEntry *hPtr;
+    Blt_HashSearch iter;
+    Paneset *setPtr;
+    Pane *panePtr = (Pane *)widgRec;
+    Tcl_Obj *listObjPtr;
+
+    setPtr = panePtr->setPtr;
+    listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
+    for (hPtr = Blt_FirstHashEntry(&setPtr->tagTable, &iter); hPtr != NULL;
+	 hPtr = Blt_NextHashEntry(&iter)) {
+	Blt_HashTable *tagTablePtr;
+	Blt_HashEntry *hPtr2;
+
+	tagTablePtr = Blt_GetHashValue(hPtr); 
+	hPtr2 = Blt_FindHashEntry(tagTablePtr, (char *)panePtr);
+	if (hPtr2 != NULL) {
+	    Tcl_Obj *objPtr;
+	    const char *name;
+
+	    name = Tcl_GetHashKey(&setPtr->tagTable, hPtr);
+	    objPtr = Tcl_NewStringObj(name, -1);
+	    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+	}
+    }
+    return listObjPtr;
+}
 
 static void
 EventuallyRedrawHandle(Pane *panePtr)
@@ -2060,19 +2322,9 @@ NewPane(Tcl_Interp *interp, Paneset *setPtr, const char *name)
     Blt_HashEntry *hPtr;
     Pane *panePtr;
     int isNew;
-    const char *object, *className;
     char *handleName;
     char string[200];
 
-    className = NULL;			/* Suppress compiler warning. */
-    object = NULL;			/* Suppress compiler warning. */
-    if (setPtr->type == PANESET) {
-	className = "BltPanesetSash";
-	object = "pane";
-    } else if (setPtr->type == FILMSTRIP) {
-	className = "BltFilmstripGrip";
-	object = "frame";
-    }
     {
 	char *path;
 
@@ -2080,7 +2332,8 @@ NewPane(Tcl_Interp *interp, Paneset *setPtr, const char *name)
 	 * more than one drawer widget assigned to the same window.  */
 	path = Blt_AssertMalloc(strlen(Tk_PathName(setPtr->tkwin)) + 200);
 	do {
-	    sprintf(string, "%s%lu", object, (unsigned long)setPtr->nextId++);
+	    sprintf(string, "%s%lu", setPtr->classPtr->objectName, 
+                (unsigned long)setPtr->nextId++);
 	    sprintf(path, "%s.%s", Tk_PathName(setPtr->tkwin), string);
 	} while (Tk_NameToWindow(interp, path, setPtr->tkwin) != NULL);
 	Blt_Free(path);
@@ -2091,8 +2344,8 @@ NewPane(Tcl_Interp *interp, Paneset *setPtr, const char *name)
     }
     hPtr = Blt_CreateHashEntry(&setPtr->paneTable, name, &isNew);
     if (!isNew) {
-	Tcl_AppendResult(interp, object, " \"", name, "\" already exists.", 
-		(char *)NULL);
+	Tcl_AppendResult(interp, setPtr->classPtr->objectName, " \"", name, 
+                "\" already exists.", (char *)NULL);
 	return NULL;
     }
     panePtr = Blt_AssertCalloc(1, sizeof(Pane));
@@ -2120,7 +2373,7 @@ NewPane(Tcl_Interp *interp, Paneset *setPtr, const char *name)
     Tk_CreateEventHandler(panePtr->handle, 
 			  ExposureMask|FocusChangeMask|StructureNotifyMask, 
 			  HandleEventProc, panePtr);
-    Tk_SetClass(panePtr->handle, className);
+    Tk_SetClass(panePtr->handle, setPtr->classPtr->handleClassName);
 
     /* Also add drawer to handle table */
     hPtr = Blt_CreateHashEntry(&setPtr->handleTable, 
@@ -2188,13 +2441,14 @@ NewPaneset(Tcl_Interp *interp, Tcl_Obj *objPtr, int type)
     if (tkwin == NULL) {
 	return NULL;
     }
+    setPtr = Blt_AssertCalloc(1, sizeof(Paneset));
     if (type == PANESET) {
 	Tk_SetClass(tkwin, (char *)"BltPaneset");
+        setPtr->classPtr = &panesetClass;
     } else if (type == FILMSTRIP) {
 	Tk_SetClass(tkwin, (char *)"BltFilmstrip");
+        setPtr->classPtr = &filmstripClass;
     }
-    setPtr = Blt_AssertCalloc(1, sizeof(Paneset));
-    setPtr->type = type;
     setPtr->tkwin = tkwin;
     setPtr->interp = interp;
     setPtr->display = Tk_Display(tkwin);
@@ -3639,7 +3893,7 @@ VerticalPanes(Paneset *setPtr)
      * the container is different from paneset space requirements), try to
      * adjust size of the panes to fit the widget.
      */
-    if (setPtr->type == PANESET) {
+    if (setPtr->classPtr->type == PANESET) {
 	Pane *firstPtr, *lastPtr;
 	Blt_Chain span;
 	int dy;
@@ -3754,7 +4008,7 @@ HorizontalPanes(Paneset *setPtr)
      * the paneset is different from the total panes space requirements), try
      * to adjust size of the panes to fit the widget.
      */
-    if (setPtr->type == PANESET) {
+    if (setPtr->classPtr->type == PANESET) {
 	Pane *firstPtr, *lastPtr;
 	Blt_Chain span;
 	int dx;
@@ -3876,14 +4130,14 @@ AdjustHandle(Paneset *setPtr, int delta)
 {
     Pane *panePtr;
 
-    if (setPtr->type != FILMSTRIP) {
+    if (setPtr->classPtr->type != FILMSTRIP) {
         delta = AdjustPanesetDelta(setPtr, delta);
 	for (panePtr = FirstPane(setPtr); panePtr != NULL; 
 	     panePtr = NextPane(panePtr)) {
 	    panePtr->nom = panePtr->size;
 	}
     }
-    if (setPtr->type == FILMSTRIP) {
+    if (setPtr->classPtr->type == FILMSTRIP) {
 	setPtr->scrollOffset -= delta;
 	setPtr->flags |= SCROLL_PENDING;
     } else {
@@ -3968,8 +4222,9 @@ AddOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     if (panePtr == NULL) {
 	return TCL_ERROR;
     }
-    if (Blt_ConfigureWidgetFromObj(interp, panePtr->handle, paneSpecs, objc - 2, 
-	objv + 2, (char *)panePtr, setPtr->type) != TCL_OK) {
+    if (Blt_ConfigureWidgetFromObj(interp, panePtr->handle, 
+        setPtr->classPtr->specs, objc - 2, objv + 2, (char *)panePtr, 0) 
+        != TCL_OK) {
 	return TCL_ERROR;
     }
     panePtr->link = Blt_Chain_Append(setPtr->chain, panePtr);
@@ -4003,7 +4258,7 @@ CgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
     Paneset *setPtr = clientData;
 
     return Blt_ConfigureValueFromObj(interp, setPtr->tkwin, panesetSpecs, 
-	(char *)setPtr, objv[2], setPtr->type);
+	(char *)setPtr, objv[2], setPtr->classPtr->type);
 }
 
 /*
@@ -4029,14 +4284,14 @@ ConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
 
     if (objc == 2) {
 	return Blt_ConfigureInfoFromObj(interp, setPtr->tkwin, panesetSpecs, 
-		(char *)setPtr, (Tcl_Obj *)NULL, setPtr->type);
+		(char *)setPtr, (Tcl_Obj *)NULL, setPtr->classPtr->type);
     } else if (objc == 3) {
 	return Blt_ConfigureInfoFromObj(interp, setPtr->tkwin, panesetSpecs, 
-		(char *)setPtr, objv[2], setPtr->type);
+		(char *)setPtr, objv[2], setPtr->classPtr->type);
     }
     if (Blt_ConfigureWidgetFromObj(interp, setPtr->tkwin, panesetSpecs,
-	objc - 2, objv + 2, (char *)setPtr, BLT_CONFIG_OBJV_ONLY|setPtr->type) 
-	!= TCL_OK) {
+	objc - 2, objv + 2, (char *)setPtr, 
+        BLT_CONFIG_OBJV_ONLY|setPtr->classPtr->type) != TCL_OK) {
 	return TCL_ERROR;
     }
     ConfigurePaneset(setPtr);
@@ -4512,8 +4767,9 @@ InsertOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     setPtr->flags |= LAYOUT_PENDING;
     EventuallyRedraw(setPtr);
-    if (Blt_ConfigureWidgetFromObj(interp, panePtr->handle, paneSpecs, objc - 3, 
-	objv + 3, (char *)panePtr, setPtr->type) != TCL_OK) {
+    if (Blt_ConfigureWidgetFromObj(interp, panePtr->handle, 
+        setPtr->classPtr->specs, objc - 3, objv + 3, (char *)panePtr, 0) 
+        != TCL_OK) {
 	DestroyPane(panePtr);
 	return TCL_ERROR;
     }
@@ -4721,8 +4977,8 @@ PaneCgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (GetPaneFromObj(interp, setPtr, objv[3], &panePtr) != TCL_OK) {
 	return TCL_ERROR;
     }
-    return Blt_ConfigureValueFromObj(interp, setPtr->tkwin, paneSpecs, 
-	(char *)panePtr, objv[4], setPtr->type);
+    return Blt_ConfigureValueFromObj(interp, setPtr->tkwin, 
+        setPtr->classPtr->specs, (char *)panePtr, objv[4], 0);
 }
 
 /*
@@ -4746,20 +5002,31 @@ PaneConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
 {
     Paneset *setPtr = clientData;
     Pane *panePtr;
+    PaneIterator iter;
 
-    if (GetPaneFromObj(interp, setPtr, objv[3], &panePtr) != TCL_OK) {
-	return TCL_ERROR;
-    }
     if (objc == 4) {
-	return Blt_ConfigureInfoFromObj(interp, panePtr->handle, paneSpecs, 
-		(char *)panePtr, (Tcl_Obj *)NULL, setPtr->type);
+        if (GetPaneFromObj(interp, setPtr, objv[3], &panePtr) != TCL_OK) {
+            return TCL_ERROR;
+        }
+	return Blt_ConfigureInfoFromObj(interp, panePtr->handle, 
+                setPtr->classPtr->specs, (char *)panePtr, (Tcl_Obj *)NULL, 0);
     } else if (objc == 5) {
-	return Blt_ConfigureInfoFromObj(interp, panePtr->handle, paneSpecs, 
-		(char *)panePtr, objv[4], setPtr->type);
+        if (GetPaneFromObj(interp, setPtr, objv[3], &panePtr) != TCL_OK) {
+            return TCL_ERROR;
+        }
+	return Blt_ConfigureInfoFromObj(interp, panePtr->handle, 
+                setPtr->classPtr->specs, (char *)panePtr, objv[4], 0);
     }
-    if (Blt_ConfigureWidgetFromObj(interp, panePtr->handle, paneSpecs, objc-4, 
-	objv+4, (char *)panePtr, BLT_CONFIG_OBJV_ONLY | setPtr->type) != TCL_OK) {
+    if (GetPaneIterator(interp, setPtr, objv[3], &iter) != TCL_OK) {
 	return TCL_ERROR;
+    }
+    for (panePtr = FirstTaggedPane(&iter); panePtr != NULL; 
+	 panePtr = NextTaggedPane(&iter)) {
+        if (Blt_ConfigureWidgetFromObj(interp, panePtr->handle, 
+                setPtr->classPtr->specs, objc - 4, objv + 4, (char *)panePtr, 
+                BLT_CONFIG_OBJV_ONLY) != TCL_OK) {
+            return TCL_ERROR;
+        }
     }
     setPtr->anchorPtr = NULL;
     setPtr->flags |= LAYOUT_PENDING;
@@ -5119,7 +5386,7 @@ TagGetOp(ClientData clientData, Tcl_Interp *interp, int objc,
 		}
 	    }
 	    Tcl_ListObjAppendElement(interp, listObjPtr, 
-				     Tcl_NewStringObj("all", 3));
+                        Tcl_NewStringObj("all", 3));
 	} else {
 	    int i;
 	    
@@ -5540,13 +5807,13 @@ static Blt_OpSpec filmstripOps[] =
     {"configure",  2, ConfigureOp, 2, 0, "?option value?",},
     {"delete",     1, DeleteOp,    3, 3, "pane",},
     {"exists",     1, ExistsOp,    3, 3, "pane",},
+    {"frame",      1, PaneOp,      2, 0, "oper ?args?",},
     {"handle",     1, HandleOp,    2, 0, "oper ?args?",},
     {"index",      3, IndexOp,     3, 3, "pane",},
     {"insert",     3, InsertOp,    3, 0, "position ?name? ?option value?...",},
     {"invoke",     3, InvokeOp,    3, 3, "pane",},
     {"move",       1, MoveOp,      3, 0, "pane after|before pane",},
     {"names",      1, NamesOp,     2, 0, "?pattern...?",},
-    {"pane",       1, PaneOp,      2, 0, "oper ?args?",},
     {"see",        1, SeeOp,       3, 3, "pane",},
     {"tag",        1, TagOp,	   2, 0, "oper args",},
     {"view",       1, ViewOp,	   2, 5, 
@@ -5619,7 +5886,7 @@ PanesetInstCmdProc(
     Tcl_ObjCmdProc *proc;
     Paneset *setPtr = clientData;
 
-    if (setPtr->type == FILMSTRIP) {
+    if (setPtr->classPtr->type == FILMSTRIP) {
         proc = Blt_GetOpFromObj(interp, numFilmstripOps, filmstripOps, 
                 BLT_OP_ARG1, objc, objv, 0);
     } else {
@@ -5689,7 +5956,7 @@ PanesetCmd(
 	goto error;
     }
     if (Blt_ConfigureWidgetFromObj(interp, setPtr->tkwin, panesetSpecs, 
-	objc - 2, objv + 2, (char *)setPtr, setPtr->type) != TCL_OK) {
+	objc - 2, objv + 2, (char *)setPtr, setPtr->classPtr->type) != TCL_OK) {
 	goto error;
     }
     ConfigurePaneset(setPtr);
@@ -5761,7 +6028,7 @@ FilmstripCmd(
     }
 
     if (Blt_ConfigureWidgetFromObj(interp, setPtr->tkwin, panesetSpecs, 
-	objc - 2, objv + 2, (char *)setPtr, setPtr->type) != TCL_OK) {
+	objc - 2, objv + 2, (char *)setPtr, setPtr->classPtr->type) != TCL_OK) {
 	goto error;
     }
     ConfigurePaneset(setPtr);
@@ -5841,7 +6108,8 @@ DisplayProc(ClientData clientData)
 	 * coordinates of the new layout.  */
 	return;
     }
-    if ((setPtr->type == FILMSTRIP) && (setPtr->flags & SCROLL_PENDING)) {
+    if ((setPtr->classPtr->type == FILMSTRIP) && 
+        (setPtr->flags & SCROLL_PENDING)) {
 	int width;
 
 	width = VPORTWIDTH(setPtr);

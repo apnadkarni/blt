@@ -365,7 +365,7 @@ struct _Drawerset {
     Blt_HashTable drawerTable;		/* Table of drawers.  Serves as a
 					 * directory to look up drawers
 					 * from their windows. */
-    Blt_HashTable handleTable;		/* Table of handle path name.  
+    Blt_HashTable handleTable;		/* Table of handle path name.
 					 * Serves as look up for drawers
 					 * from their handle windows. */
     Blt_HashTable tagTable;		/* Table of tags. */
@@ -373,10 +373,12 @@ struct _Drawerset {
 					 * active handle. */
     Drawer *anchorPtr;			/* Drawer that is currently
                                          * anchored */
-    int bearing;			/* Location of the split (drawerset).
-					 * the drawer (drawer). */
-    Tcl_Obj *cmdObjPtr;			/* Command to invoke when the "invoke"
-					 * operation is performed. */
+    int bearing;			/* Location of the split
+					 * (drawerset).  the drawer
+					 * (drawer). */
+    Tcl_Obj *cmdObjPtr;			/* Command to invoke when the
+					 * "invoke" operation is
+					 * performed. */
     size_t numVisible;			/* # of visible drawers. */
     GC gc;
     size_t nextId;			/* Counter to generate unique
@@ -489,6 +491,9 @@ static Blt_ConfigSpec drawerSpecs[] =
         BLT_CONFIG_DONT_SET_DEFAULT | BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_SYNONYM, "-height", "reqHeight", (char *)NULL, (char *)NULL, 
 	Blt_Offset(Drawer, reqHeight), 0},
+    {BLT_CONFIG_BITMASK, "-hide", "hide", "Hide", DEF_DRAWER_HIDE, 
+        Blt_Offset(Drawer, flags), BLT_CONFIG_DONT_SET_DEFAULT, 
+        (Blt_CustomOption *)HIDE },
     {BLT_CONFIG_COLOR, "-highlightbackground", "highlightBackground",
 	"HighlightBackground", DEF_DRAWER_HIGHLIGHT_BACKGROUND, 
 	Blt_Offset(Drawer, highlightBgColor), 0},
