@@ -1749,20 +1749,26 @@ int
 Blt_GetDate(Tcl_Interp *interp, const char *string, double *timePtr)
 {
     /* First see if the date is a number (seconds). */
+    if (GetDate(interp, string, timePtr) == TCL_OK) {
+        return TCL_OK;
+    }
     if (Tcl_GetDouble(NULL, string, timePtr) == TCL_OK) {
 	return TCL_OK;
     }
-    return GetDate(interp, string, timePtr);
+    return TCL_ERROR;
 }
 
 int
 Blt_GetDateFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, double *timePtr)
 {
-    /* First see if the date is a number (seconds). */
+    if (GetDate(interp, Tcl_GetString(objPtr), timePtr) == TCL_OK) {
+        return TCL_OK;
+    }
+    /* Next see if the date is a number (seconds). */
     if (Tcl_GetDoubleFromObj(NULL, objPtr, timePtr) == TCL_OK) {
 	return TCL_OK;
     }
-    return GetDate(interp, Tcl_GetString(objPtr), timePtr);
+    return TCL_ERROR;
 }
 
 
@@ -1782,7 +1788,6 @@ GetTime(Tcl_Interp *interp, const char *string, const char *fmt,
     memset(&tm, 0, sizeof(struct tm));
     s = strptime(string, fmt, &tm);
     if ((s == NULL) || ((*s != '\0') && (*s != '.'))) {
-	fprintf(stderr, "s=%s\n", s);
 	Tcl_AppendResult(interp, "invalid time conversion for \"", string,
 			 "\"", (char *)NULL);
 	return TCL_ERROR;

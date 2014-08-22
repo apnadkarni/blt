@@ -7291,6 +7291,7 @@ SortOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     map = NULL;
 
     /* Process switches  */
+    memset(&switches, 0, sizeof(SortSwitches));
     switches.flags = 0;
     table = switches.table = cmdPtr->table;
     rowIterSwitch.clientData = cmdPtr->table;

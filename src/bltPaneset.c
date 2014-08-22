@@ -3978,7 +3978,6 @@ HorizontalPanes(Paneset *setPtr)
      */
     panePtr = LastPane(setPtr);
     if (panePtr == NULL) {
-	Blt_Warn("HPanes: first pane is null\n");
 	return;
     }
     if (setPtr->anchorPtr == NULL) {
