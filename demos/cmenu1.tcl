@@ -48,6 +48,7 @@ blt::combomenu .e.m  \
     -yscrollbar .e.m.ybar \
     -xscrollbar .e.m.xbar
 
+.e.m sort configure -auto 1
 blt::tk::scrollbar .e.m.xbar 
 blt::tk::scrollbar .e.m.ybar
 

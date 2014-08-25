@@ -501,6 +501,39 @@ Blt_Chain_Sort(Chain *chainPtr, Blt_ChainCompareProc *proc)
     Blt_Free(linkArr);
 }
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * Blt_Chain_Reverse --
+ *
+ *	Reverse the order of the chain.  
+ *
+ * Results:
+ *	None.
+ *
+ * Side Effects:
+ *	The chain is reordered.
+ *
+ *---------------------------------------------------------------------------
+ */
+void
+Blt_Chain_Reverse(Chain *chainPtr)
+{
+    ChainLink *lastPtr, *linkPtr, *nextPtr;
+
+    lastPtr = NULL;
+    for (linkPtr = chainPtr->head; linkPtr != NULL; linkPtr = nextPtr) { 
+        nextPtr = linkPtr->next;
+        linkPtr->next = lastPtr;
+        linkPtr->prev = nextPtr;
+        lastPtr = linkPtr;
+    }
+    /* Swap head and tail pointers. */
+    linkPtr = chainPtr->head;
+    chainPtr->head = chainPtr->tail;
+    chainPtr->tail = linkPtr;
+}
+
 
 /*
  *---------------------------------------------------------------------------

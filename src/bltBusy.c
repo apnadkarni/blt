@@ -113,7 +113,6 @@ typedef struct {
     int interval;
     Tcl_TimerToken timerToken;
 
-    GC copyGC;
 } Busy;
 
 #define REDRAW_PENDING	(1<<0)		/* Indicates a DoWhenIdle handler has
@@ -827,15 +826,16 @@ BusyTimerProc(ClientData clientData)
  *
  * ConfigureBusy --
  *
- *	This procedure is called from the Tk event dispatcher. It releases X
- *	resources and memory used by the busy window and updates the internal
- *	hash table.
+ *	This procedure is called from the Tk event dispatcher. It releases
+ *	X resources and memory used by the busy window and updates the
+ *	internal hash table.
  *
  * Results:
  *	None.
  *
  * Side effects:
- *	Memory and resources are released and the Tk event handler is removed.
+ *	Memory and resources are released and the Tk event handler is
+ *	removed.
  *
  *---------------------------------------------------------------------------
  */
@@ -848,27 +848,12 @@ ConfigureBusy(
     unsigned int flags)
 {
     Tk_Cursor oldCursor;
-    GC newGC;
 
     oldCursor = busyPtr->cursor;
     if (Blt_ConfigureWidgetFromObj(interp, busyPtr->tkRef, configSpecs, 
 	objc, objv, (char *)busyPtr, flags) != TCL_OK) {
 	return TCL_ERROR;
     }
-
-    if (busyPtr->flags & SNAPSHOT) {
-	XGCValues gcValues;
-	unsigned long gcMask;
-
-	gcMask = 0;
-	newGC = Tk_GetGC(busyPtr->tkBusy, gcMask, &gcValues);
-    } else {
-	newGC = NULL;
-    }
-    if (busyPtr->copyGC != NULL) {
-	Tk_FreeGC(busyPtr->display, busyPtr->copyGC);
-    }
-    busyPtr->copyGC = newGC;
 
     if (busyPtr->cursor != oldCursor) {
 	if (busyPtr->cursor == None) {
@@ -1103,9 +1088,6 @@ DestroyBusy(DestroyData data)		/* Busy window structure record */
     if (busyPtr->tkRef != NULL) {
 	Tk_DeleteEventHandler(busyPtr->tkRef, StructureNotifyMask, 
 			      RefWinEventProc, busyPtr);
-    }
-    if (busyPtr->copyGC != NULL) {
-	Tk_FreeGC(busyPtr->display, busyPtr->copyGC);
     }
     if (busyPtr->tkBusy != NULL) {
 	unsigned int mask;
@@ -1924,8 +1906,9 @@ DisplayBusy(ClientData clientData)
 	    Blt_FreePicture(copy);
 	}
     }
-    XCopyArea(busyPtr->display, drawable, Tk_WindowId(tkwin), busyPtr->copyGC, 
-	0, 0, busyPtr->width, busyPtr->height, 0, 0);
+    XCopyArea(busyPtr->display, drawable, Tk_WindowId(tkwin), 
+              DefaultGC(busyPtr->display, Tk_ScreenNumber(tkwin)), 
+              0, 0, busyPtr->width, busyPtr->height, 0, 0);
     Tk_FreePixmap(busyPtr->display, drawable);
 }
 

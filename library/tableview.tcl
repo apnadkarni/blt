@@ -1128,10 +1128,12 @@ proc blt::TableView::BuildFiltersMenu { w col } {
     }
     set text [$w column cget $col -filtertext]
     if { $text == "" } {
-	$menu select 0
+	$menu select first
     } else {
 	set item [$menu index text:$text]
-	$menu select $item
+        if { $item != -1 } {
+            $menu select $item
+        }
     }
 }
 

@@ -89,6 +89,15 @@ static const char emptyString[] = "";
 					 * the menu of the maximum size of the
 					 * parent widget that posted the
 					 * menu. */
+#define SORT_AUTO               (1<<12)
+#define SORT_BYVALUE            (1<<13)
+#define SORT_DECREASING         (1<<14)
+#define SORT_PENDING            (1<<15)		
+#define SORTED                  (1<<17)	/* The menu is currently sorted.
+					 * This is used to simply reverse
+					 * the menu when the sort
+					 * -decreasing flag is changed. */
+
 #define RESTRICT_NONE		(0)
 #define COMBOMENU		(1<<20)
 
@@ -139,20 +148,25 @@ static const char emptyString[] = "";
 			   (ITEM_CASCADE)|(ITEM_SEPARATOR))
 
 
-#define DEF_COMMAND		    (char *)NULL
-#define DEF_BORDERWIDTH	    "1"
-#define DEF_CURSOR            ((char *)NULL)
-#define DEF_HEIGHT	    "0"
-#define DEF_ICON_VARIABLE	    ((char *)NULL)
-#define DEF_POSTCOMMAND	    ((char *)NULL)
-#define DEF_RELIEF	    "solid"
-#define DEF_SCROLLBAR	    ((char *)NULL)
-#define DEF_SCROLL_CMD	    ((char *)NULL)
-#define DEF_SCROLL_INCR	    "2"
-#define DEF_TAKE_FOCUS        "1"
-#define DEF_TEXT_VARIABLE	    ((char *)NULL)
-#define DEF_UNPOSTCOMMAND	    ((char *)NULL)
-#define DEF_WIDTH             "0"
+#define DEF_BORDERWIDTH                 "1"
+#define DEF_COMMAND                     ((char *)NULL)
+#define DEF_CURSOR                      ((char *)NULL)
+#define DEF_HEIGHT                      "0"
+#define DEF_ICON_VARIABLE               ((char *)NULL)
+#define DEF_POSTCOMMAND                 ((char *)NULL)
+#define DEF_RELIEF                      "solid"
+#define DEF_SCROLLBAR                   ((char *)NULL)
+#define DEF_SCROLL_CMD                  ((char *)NULL)
+#define DEF_SCROLL_INCR                 "2"
+#define DEF_SORT_AUTO                   "0"
+#define DEF_SORT_BYVALUE                "0"
+#define DEF_SORT_TYPE                   "dictionary"
+#define DEF_SORT_DECREASING             "0"
+#define DEF_TAKE_FOCUS                  "1"
+#define DEF_TEXT_VARIABLE               ((char *)NULL)
+#define DEF_UNPOSTCOMMAND               ((char *)NULL)
+#define DEF_WIDTH                       "0"
+
 #define	DEF_CHECKBUTTON_FILL_COLOR	(char *)NULL
 #define	DEF_CHECKBUTTON_OUTLINE_COLOR	(char *)NULL
 #define	DEF_CHECKBUTTON_COLOR		STD_INDICATOR_COLOR
@@ -202,6 +216,19 @@ static const char emptyString[] = "";
 #define DISABLED_BACKGROUND	    RGB_GREY90
 #define DISABLED_FOREGROUND         RGB_GREY70
 
+static const char *sortTypeStrings[] = {
+    "dictionary", "ascii", "integer", "real", "command", NULL
+};
+
+enum SortTypeValues { 
+    SORT_DICTIONARY, SORT_ASCII, SORT_INTEGER, SORT_REAL, SORT_COMMAND
+};
+
+static Blt_OptionParseProc ObjToEnumProc;
+static Blt_OptionPrintProc EnumToObjProc;
+static Blt_CustomOption sortTypeOption = {
+    ObjToEnumProc, EnumToObjProc, NULL, (ClientData)sortTypeStrings
+};
 
 static Blt_OptionParseProc ObjToStyleProc;
 static Blt_OptionPrintProc StyleToObjProc;
@@ -382,6 +409,14 @@ static Blt_ConfigSpec styleConfigSpecs[] =
 	0, 0}
 };
 
+typedef struct {
+    unsigned int flags;
+    int type;                           /* Type of sort. */
+    int isDecreasing;                   /* Current sorting direction */
+    Tcl_Obj *cmdObjPtr;                 /* If non-NULL, custom command to
+                                         * sort menu items. */
+} SortInfo;
+
 /*
  *
  *  [left indicator] [icon] [text] [right indicator/accel] [scrollbar]
@@ -534,6 +569,8 @@ struct _ComboMenu {
     int borderWidth;
 
     Style defStyle;			/* Default style. */
+
+    SortInfo sort;
 
     int normalWidth, normalHeight;
     
@@ -832,6 +869,24 @@ static Blt_SwitchSpec findSwitches[] =
     {BLT_SWITCH_END}
 };
 
+static Blt_ConfigSpec sortSpecs[] =
+{
+    {BLT_CONFIG_BITMASK, "-auto", "auto", "Auto", DEF_SORT_AUTO, 
+        Blt_Offset(ComboMenu, sort.flags), BLT_CONFIG_DONT_SET_DEFAULT, 
+        (Blt_CustomOption *)SORT_AUTO},
+    {BLT_CONFIG_BITMASK, "-byvalue", "byValue", "ByValue", DEF_SORT_BYVALUE, 
+        Blt_Offset(ComboMenu, sort.flags), BLT_CONFIG_DONT_SET_DEFAULT, 
+        (Blt_CustomOption *)SORT_BYVALUE},
+    {BLT_CONFIG_BITMASK, "-decreasing", "decreasing", "Decreasing", 
+        DEF_SORT_DECREASING, Blt_Offset(ComboMenu, sort.flags), 
+        BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)SORT_DECREASING},
+    {BLT_CONFIG_CUSTOM, "-type", "type", "Type", DEF_SORT_TYPE, 
+        Blt_Offset(ComboMenu, sort.type), BLT_CONFIG_DONT_SET_DEFAULT, 
+        &sortTypeOption},
+    {BLT_CONFIG_END, (char *)NULL, (char *)NULL, (char *)NULL,
+	(char *)NULL, 0, 0}
+};
+
 typedef int (ComboMenuCmdProc)(ComboMenu *comboPtr, Tcl_Interp *interp, 
 	int objc, Tcl_Obj *const *objv);
 static int GetItemIterator(Tcl_Interp *interp, ComboMenu *comboPtr,
@@ -841,7 +896,7 @@ static int GetItemFromObj(Tcl_Interp *interp, ComboMenu *comboPtr,
 
 static Tcl_IdleProc ConfigureScrollbarsProc;
 static Tcl_IdleProc DisplayItem;
-static Tcl_IdleProc DisplayComboMenu;
+static Tcl_IdleProc DisplayProc;
 static Tcl_FreeProc DestroyComboMenu;
 static Tk_EventProc ScrollbarEventProc;
 static Tk_EventProc CascadeEventProc;
@@ -850,6 +905,21 @@ static Tcl_ObjCmdProc ComboMenuInstCmdProc;
 static Tcl_CmdDeleteProc ComboMenuInstCmdDeletedProc;
 static Tcl_VarTraceProc ItemVarTraceProc;
 static Tk_ImageChangedProc IconChangedProc;
+
+static inline int
+RenumberItems(ComboMenu *comboPtr)
+{
+    Blt_ChainLink link;
+    long count;
+    
+    for (count = 0, link = Blt_Chain_FirstLink(comboPtr->chain); 
+         link != NULL; link = Blt_Chain_NextLink(link), count++) {
+        Item *itemPtr;
+        
+        itemPtr = Blt_Chain_GetValue(link);
+        itemPtr->index = count;
+    }
+}
 
 static inline int
 GetWidth(ComboMenu *comboPtr)
@@ -901,7 +971,7 @@ static void
 EventuallyRedraw(ComboMenu *comboPtr) 
 {
     if ((comboPtr->tkwin != NULL) && !(comboPtr->flags & REDRAW_PENDING)) {
-	Tcl_DoWhenIdle(DisplayComboMenu, comboPtr);
+	Tcl_DoWhenIdle(DisplayProc, comboPtr);
 	comboPtr->flags |= REDRAW_PENDING;
     }
 }
@@ -974,7 +1044,7 @@ ReleaseTags(ComboMenu *comboPtr, Item *itemPtr)
 	Blt_HashEntry *hPtr2;
 
 	tagTablePtr = Blt_GetHashValue(hPtr); 
-	hPtr2 = Blt_FindHashEntry(tagTablePtr, (char *)itemPtr->index);
+	hPtr2 = Blt_FindHashEntry(tagTablePtr, (char *)itemPtr);
 	if (hPtr2 != NULL) {
 	    Blt_DeleteHashEntry(tagTablePtr, hPtr2);
 	}
@@ -1216,6 +1286,144 @@ SelectItem(Tcl_Interp *interp, ComboMenu *comboPtr, Item *itemPtr, int newState)
 	}
     }
     return result;
+}
+
+static ComboMenu *comboMenuInstance;
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * CompareItems --
+ *
+ *	Comparison routine (used by qsort) to sort a chain of subnodes.
+ *
+ * Results:
+ *	1 is the first is greater, -1 is the second is greater, 0
+ *	if equal.
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+CompareItems(Blt_ChainLink *link1Ptr, Blt_ChainLink *link2Ptr)
+{
+    Item *item1Ptr, *item2Ptr;
+    ComboMenu *comboPtr;
+    int result;
+    SortInfo *sortPtr;
+    const char *s1, *s2;
+
+    item1Ptr = Blt_Chain_GetValue(*link1Ptr);
+    item2Ptr = Blt_Chain_GetValue(*link2Ptr);
+    comboPtr = comboMenuInstance;
+    sortPtr = &comboPtr->sort;
+
+    s1 = item1Ptr->text;
+    s2 = item2Ptr->text;
+    if (sortPtr->flags & SORT_BYVALUE) {
+        if (item1Ptr->valueObjPtr != NULL) {
+            s1 = Tcl_GetString(item1Ptr->valueObjPtr);
+        }
+        if (item1Ptr->valueObjPtr != NULL) {
+            s2 = Tcl_GetString(item2Ptr->valueObjPtr);
+        }
+    }
+    result = 0;
+    switch (sortPtr->type) {
+    case SORT_ASCII:
+	result = strcmp(s1, s2);
+	break;
+    case SORT_DICTIONARY:
+	result = Blt_DictionaryCompare(s1, s2);
+	break;
+    case SORT_INTEGER:
+        {
+            long l1, l2;
+
+            if ((Blt_GetLong(NULL, s1, &l1) != TCL_OK) ||
+                (Blt_GetLong(NULL, s2, &l2) != TCL_OK)) {
+                return 0;
+            }
+            result = l1 - l2;
+        }
+        break;
+    case SORT_REAL:
+        {
+            double d1, d2;
+
+            if ((Tcl_GetDouble(NULL, s1, &d1) != TCL_OK) ||
+                (Tcl_GetDouble(NULL, s2, &d2) != TCL_OK)) {
+                return 0;
+            }
+            result = (d1 > d2) ? 1 : (d1 < d2) ? -1 : 0;
+        }
+        break;
+    case SORT_COMMAND:
+        if (sortPtr->cmdObjPtr != NULL) {
+            Tcl_Interp *interp;
+            Tcl_Obj *objPtr, *cmdObjPtr, *resultObjPtr;
+            
+            interp = comboPtr->interp;
+            cmdObjPtr = Tcl_DuplicateObj(sortPtr->cmdObjPtr);
+            if (sortPtr->flags & SORT_BYVALUE) {
+                objPtr = Tcl_NewStringObj(s1, -1);
+                Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
+                objPtr = Tcl_NewStringObj(s2, -1);
+                Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
+            } else {
+                objPtr = Tcl_NewStringObj(s1, -1);
+                Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
+                objPtr = Tcl_NewStringObj(s1, -1);
+                Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
+            }
+            Tcl_IncrRefCount(cmdObjPtr);
+            result = Tcl_EvalObjEx(interp, cmdObjPtr, TCL_EVAL_GLOBAL);
+            Tcl_DecrRefCount(cmdObjPtr);
+            if (result != TCL_OK) {
+                Tcl_BackgroundError(interp);
+            }
+            resultObjPtr = Tcl_GetObjResult(interp);
+            if (Tcl_GetIntFromObj(interp, resultObjPtr, &result) != TCL_OK) {
+                Tcl_BackgroundError(interp);
+            }
+        }
+    }
+    if (sortPtr->flags & SORT_DECREASING) {
+	return -result;
+    } 
+    return result;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * SortItems --
+ *
+ *	Sorts the menu items.
+ *
+ *---------------------------------------------------------------------------
+ */
+static void
+SortItems(ComboMenu *comboPtr)
+{
+    SortInfo *sortPtr = &comboPtr->sort;
+
+    comboMenuInstance = comboPtr;
+    comboPtr->flags &= ~SORT_PENDING;
+    if (Blt_Chain_GetLength(comboPtr->chain) < 2) {
+	return;                         /* Too few items. No sort needed. */
+    }
+    if (sortPtr->flags & SORTED) {
+	if ((sortPtr->flags & SORT_DECREASING) == sortPtr->isDecreasing) {
+	    return;
+	}
+        Blt_Chain_Reverse(comboPtr->chain);
+    } else {
+        Blt_Chain_Sort(comboPtr->chain, CompareItems);
+    }
+    sortPtr->isDecreasing = (sortPtr->flags & SORT_DECREASING);
+    sortPtr->flags |= SORTED;
+    comboPtr->flags |= LAYOUT_PENDING;
+    RenumberItems(comboPtr);
 }
 
 /*
@@ -2124,7 +2332,7 @@ SetTag(Tcl_Interp *interp, Item *itemPtr, const char *tagName)
     } else {
 	tagTablePtr = Blt_GetHashValue(hPtr);
     }
-    hPtr = Blt_CreateHashEntry(tagTablePtr, (char *)itemPtr->index, &isNew);
+    hPtr = Blt_CreateHashEntry(tagTablePtr, (char *)itemPtr, &isNew);
     if (isNew) {
 	Blt_SetHashValue(hPtr, itemPtr);
     }
@@ -2416,16 +2624,7 @@ MoveItem(ComboMenu *comboPtr, Item *itemPtr, int dir, Item *wherePtr)
 	Blt_Chain_LinkBefore(comboPtr->chain, itemPtr->link, wherePtr->link);
 	break;
     }
-    {
-	Blt_ChainLink link;
-	long count;
-
-	for (count = 0, link = Blt_Chain_FirstLink(comboPtr->chain); 
-	     link != NULL; link = Blt_Chain_NextLink(link), count++) {
-	    itemPtr = Blt_Chain_GetValue(link);
-	    itemPtr->index = count;
-	}
-    }
+    RenumberItems(comboPtr);
 }
 
 static int 
@@ -3199,7 +3398,7 @@ ComboMenuEventProc(ClientData clientData, XEvent *eventPtr)
 	    comboPtr->tkwin = NULL; 
 	}
 	if (comboPtr->flags & REDRAW_PENDING) {
-	    Tcl_CancelIdleCall(DisplayComboMenu, comboPtr);
+	    Tcl_CancelIdleCall(DisplayProc, comboPtr);
 	}
 	Tcl_EventuallyFree(comboPtr, DestroyComboMenu);
     }
@@ -3861,7 +4060,7 @@ TagsToObjProc(
 	Blt_HashEntry *hPtr2;
 
 	tagTablePtr = Blt_GetHashValue(hPtr); 
-	hPtr2 = Blt_FindHashEntry(tagTablePtr, (char *)itemPtr->index);
+	hPtr2 = Blt_FindHashEntry(tagTablePtr, (char *)itemPtr);
 	if (hPtr2 != NULL) {
 	    Tcl_Obj *objPtr;
 	    const char *name;
@@ -4124,6 +4323,84 @@ TypeToObjProc(
     return Tcl_NewStringObj(NameOfType(type), -1);
 }
 
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * ObjToEnumProc --
+ *
+ *	Converts the string into its enumerated type.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+ObjToEnumProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+	      Tcl_Obj *objPtr, char *widgRec, int offset, int flags)
+{
+    int *enumPtr = (int *)(widgRec + offset);
+    char c;
+    char **p;
+    int i;
+    int count;
+    char *string;
+
+    string = Tcl_GetString(objPtr);
+    c = string[0];
+    count = 0;
+    for (p = (char **)clientData; *p != NULL; p++) {
+	if ((c == p[0][0]) && (strcmp(string, *p) == 0)) {
+	    *enumPtr = count;
+	    return TCL_OK;
+	}
+	count++;
+    }
+    *enumPtr = -1;
+
+    Tcl_AppendResult(interp, "bad value \"", string, "\": should be ", 
+	(char *)NULL);
+    p = (char **)clientData; 
+    if (count > 0) {
+	Tcl_AppendResult(interp, p[0], (char *)NULL);
+    }
+    for (i = 1; i < (count - 1); i++) {
+	Tcl_AppendResult(interp, " ", p[i], ", ", (char *)NULL);
+    }
+    if (count > 1) {
+	Tcl_AppendResult(interp, " or ", p[count - 1], ".", (char *)NULL);
+    }
+    return TCL_ERROR;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * EnumToObjProc --
+ *
+ *	Returns the string associated with the enumerated type.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static Tcl_Obj *
+EnumToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+	      char *widgRec, int offset, int flags)	
+{
+    int value = *(int *)(widgRec + offset);
+    char **strings = (char **)clientData;
+    char **p;
+    int count;
+
+    count = 0;
+    for (p = strings; *p != NULL; p++) {
+	if (value == count) {
+	    return Tcl_NewStringObj(*p, -1);
+	}
+	count++;
+    }
+    return Tcl_NewStringObj("unknown value", -1);
+}
+
 /*
  *---------------------------------------------------------------------------
  *
@@ -4262,6 +4539,10 @@ AddOp(ComboMenu *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	return TCL_ERROR;		/* Error configuring the entry. */
     }
     comboPtr->flags |= LAYOUT_PENDING;
+    if (comboPtr->sort.flags & SORT_AUTO) {
+        comboPtr->flags |= SORT_PENDING;
+    }
+    comboPtr->sort.flags &= ~SORTED;
     EventuallyRedraw(comboPtr);
     Tcl_SetLongObj(Tcl_GetObjResult(interp), itemPtr->index);
     return TCL_OK;
@@ -4311,6 +4592,10 @@ AddListOp(ComboMenu *comboPtr, Tcl_Interp *interp, int objc,
 	Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
     }
     comboPtr->flags |= LAYOUT_PENDING;
+    if (comboPtr->sort.flags & SORT_AUTO) {
+        comboPtr->flags |= SORT_PENDING;
+    }
+    comboPtr->sort.flags &= ~SORTED;
     EventuallyRedraw(comboPtr);
     Tcl_SetObjResult(interp, listObjPtr);
     return TCL_OK;
@@ -5472,7 +5757,7 @@ SeeOp(ComboMenu *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 /*
  *---------------------------------------------------------------------------
  *
- * InvokeOp --
+ * SelectOp --
  *
  * Results:
  *	Standard TCL result.
@@ -5513,6 +5798,123 @@ SizeOp(ComboMenu *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     Tcl_SetLongObj(Tcl_GetObjResult(interp), 
 		   Blt_Chain_GetLength(comboPtr->chain));
     return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * SortCgetOp --
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+SortCgetOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+	   Tcl_Obj *const *objv)
+{
+    ComboMenu *comboPtr = clientData;
+
+    return Blt_ConfigureValueFromObj(interp, comboPtr->tkwin, sortSpecs, 
+	(char *)comboPtr, objv[3], 0);
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * SortConfigureOp --
+ *
+ * 	This procedure is called to process a list of configuration
+ *	options database, in order to reconfigure the one of more
+ *	entries in the widget.
+ *
+ *	  .t sort configure option value
+ *
+ * Results:
+ *	A standard TCL result.  If TCL_ERROR is returned, then
+ *	interp->result contains an error message.
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+SortConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+		Tcl_Obj *const *objv)
+{
+    ComboMenu *comboPtr = clientData;
+    SortInfo *sortPtr;
+
+    if (objc == 3) {
+	return Blt_ConfigureInfoFromObj(interp, comboPtr->tkwin, sortSpecs, 
+		(char *)comboPtr, (Tcl_Obj *)NULL, 0);
+    } else if (objc == 4) {
+	return Blt_ConfigureInfoFromObj(interp, comboPtr->tkwin, sortSpecs, 
+		(char *)comboPtr, objv[3], 0);
+    }
+    sortPtr = &comboPtr->sort;
+    if (Blt_ConfigureWidgetFromObj(interp, comboPtr->tkwin, sortSpecs, 
+	objc - 3, objv + 3, (char *)comboPtr, BLT_CONFIG_OBJV_ONLY) != TCL_OK) {
+	return TCL_ERROR;
+    }
+    sortPtr->flags &= ~SORTED;
+    comboPtr->flags |= LAYOUT_PENDING;
+    if (comboPtr->sort.flags & SORT_AUTO) {
+	comboPtr->flags |= SORT_PENDING;
+    }
+    EventuallyRedraw(comboPtr);
+    return TCL_OK;
+}
+
+/*ARGSUSED*/
+static int
+SortOnceOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+	   Tcl_Obj *const *objv)
+{
+    ComboMenu *comboPtr = clientData;
+
+    comboPtr->flags |= LAYOUT_PENDING | SORT_PENDING;
+    comboPtr->sort.flags &= ~SORTED;
+    EventuallyRedraw(comboPtr);
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * SortOp --
+ *
+ *	Comparison routine (used by qsort) to sort a chain of subnodes.
+ *	A simple string comparison is performed on each node name.
+ *
+ *	.h sort once
+ *	.h sort configure -option value
+ *	.h sort cget -option
+ *
+ * Results:
+ *	1 is the first is greater, -1 is the second is greater, 0
+ *	if equal.
+ *
+ *---------------------------------------------------------------------------
+ */
+static Blt_OpSpec sortOps[] =
+{
+    {"cget",      2, SortCgetOp,      4, 4, "option",},
+    {"configure", 2, SortConfigureOp, 3, 0, "?option value?...",},
+    {"once",      1, SortOnceOp,      2, 0, "",},
+};
+static int numSortOps = sizeof(sortOps) / sizeof(Blt_OpSpec);
+
+/*ARGSUSED*/
+static int
+SortOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+       Tcl_Obj *const *objv)
+{
+    Tcl_ObjCmdProc *proc;
+
+    proc = Blt_GetOpFromObj(interp, numSortOps, sortOps, BLT_OP_ARG2, objc, 
+	    objv, 0);
+    if (proc == NULL) {
+	return TCL_ERROR;
+    }
+    return (*proc) (clientData, interp, objc, objv);
 }
 
 /* .m style create ?name? option value option value */
@@ -5921,7 +6323,7 @@ DestroyComboMenu(DestroyData dataPtr)	/* Pointer to the widget record. */
     ComboMenu *comboPtr = (ComboMenu *)dataPtr;
 
     if (comboPtr->flags & REDRAW_PENDING) {
-	Tcl_CancelIdleCall(DisplayComboMenu, comboPtr);
+	Tcl_CancelIdleCall(DisplayProc, comboPtr);
     }
     if (comboPtr->flags & INSTALL_XSCROLLBAR) {
 	Tcl_CancelIdleCall(InstallXScrollbar, comboPtr);
@@ -5972,6 +6374,8 @@ NewComboMenu(Tcl_Interp *interp, Tk_Window tkwin)
     comboPtr->borderWidth = 1;
     comboPtr->chain = Blt_Chain_Create();
     comboPtr->painter = Blt_GetPainter(tkwin, 1.0);
+    comboPtr->sort.type = SORT_DICTIONARY;
+    comboPtr->sort.flags = 0;
     Blt_ResetLimits(&comboPtr->reqWidth);
     Blt_ResetLimits(&comboPtr->reqHeight);
     Blt_InitHashTable(&comboPtr->iconTable,  BLT_STRING_KEYS);
@@ -6025,6 +6429,7 @@ static Blt_OpSpec menuOps[] =
     {"see",         3, SeeOp,         3, 5, "item",},
     {"select",      3, SelectOp,      3, 3, "item",},
     {"size",        2, SizeOp,        2, 2, "",},
+    {"sort",        2, SortOp,	      2, 0, "args",},
     {"style",       2, StyleOp,       2, 0, "op ?args...?",},
     {"type",        1, TypeOp,        3, 3, "item",},
     {"unpost",      1, UnpostOp,      2, 2, "",},
@@ -6692,7 +7097,7 @@ DisplayItem(ClientData clientData)
 /*
  *---------------------------------------------------------------------------
  *
- * DisplayComboMenu --
+ * DisplayProc --
  *
  *	This procedure is invoked to display a combomenu widget.
  *
@@ -6705,7 +7110,7 @@ DisplayItem(ClientData clientData)
  *---------------------------------------------------------------------------
  */
 static void
-DisplayComboMenu(ClientData clientData)
+DisplayProc(ClientData clientData)
 {
     ComboMenu *comboPtr = clientData;
     Pixmap drawable;
@@ -6718,10 +7123,16 @@ DisplayComboMenu(ClientData clientData)
 					 * here) */
     }
 #ifdef notdef
-    fprintf(stderr, "Calling DisplayComboMenu(%s) w=%d h=%d\n", 
+    fprintf(stderr, "Calling DisplayProc(%s) w=%d h=%d\n", 
 	    Tk_PathName(comboPtr->tkwin), Tk_Width(comboPtr->tkwin),
 	    Tk_Height(comboPtr->tkwin));
 #endif
+    if (comboPtr->flags & SORT_PENDING) {
+	/* If the table needs resorting do it now before recalculating the
+	 * geometry. */
+	SortItems(comboPtr);	
+        comboPtr->flags |= LAYOUT_PENDING;
+    }
     if (comboPtr->flags & LAYOUT_PENDING) {
 	ComputeComboGeometry(comboPtr);
     }

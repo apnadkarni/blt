@@ -72,6 +72,7 @@ BLT_EXTERN void Blt_Chain_UnlinkLink(Blt_Chain chain, Blt_ChainLink link);
 BLT_EXTERN void Blt_Chain_DeleteLink(Blt_Chain chain, Blt_ChainLink link);
 BLT_EXTERN Blt_ChainLink Blt_Chain_GetNthLink(Blt_Chain chain, long position);
 BLT_EXTERN void Blt_Chain_Sort(Blt_Chain chain, Blt_ChainCompareProc *proc);
+BLT_EXTERN void Blt_Chain_Reverse(Blt_Chain chain);
 BLT_EXTERN int Blt_Chain_IsBefore(Blt_ChainLink first, Blt_ChainLink last);
 
 #define Blt_Chain_GetLength(c)	(((c) == NULL) ? 0 : (c)->numLinks)
