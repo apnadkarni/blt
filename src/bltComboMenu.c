@@ -906,7 +906,7 @@ static Tcl_CmdDeleteProc ComboMenuInstCmdDeletedProc;
 static Tcl_VarTraceProc ItemVarTraceProc;
 static Tk_ImageChangedProc IconChangedProc;
 
-static inline int
+static void
 RenumberItems(ComboMenu *comboPtr)
 {
     Blt_ChainLink link;
