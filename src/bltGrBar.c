@@ -1731,6 +1731,7 @@ MapProc(Graph *graphPtr, Element *basePtr)
 	    Blt_HashEntry *hPtr;
 	    SetKey key;
 
+            memset(&key, 0, sizeof(key));
 	    key.value = (float)x[i];
 	    key.axes = elemPtr->axes;
 	    key.axes.y = NULL;
@@ -1765,7 +1766,11 @@ MapProc(Graph *graphPtr, Element *basePtr)
 			break;
 			
 		    case BARS_ALIGNED:
+#ifdef notdef
 			slice /= groupPtr->numSegments;
+#else
+			slice /= Blt_Chain_GetLength(graphPtr->elements.displayList);
+#endif
 			c1.x += offset + (slice * groupPtr->count);
 			c2.x = c1.x + slice;
 			groupPtr->count++;
@@ -2668,6 +2673,7 @@ Blt_InitSetTable(Graph *graphPtr)
 	    size_t count;
 	    const char *name;
 
+            memset(&key, 0, sizeof(key));
 	    key.value = *x;
 	    key.axes = elemPtr->axes;
 	    key.axes.y = NULL;

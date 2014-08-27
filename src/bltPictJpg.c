@@ -435,6 +435,7 @@ JpgToPicture(
     int samplesPerRow;
     struct jpeg_decompress_struct cinfo;
     unsigned int width, height;
+    Blt_Pixel *destRowPtr;
 
     destPtr = NULL;
 
@@ -453,6 +454,7 @@ JpgToPicture(
     Tcl_DStringAppend(&error.ds, "\": ", -1);
 
     if (setjmp(error.jmpbuf)) {
+    error:
 	jpeg_destroy_decompress(&cinfo);
 	Tcl_DStringResult(interp, &error.ds);
 	return NULL;
@@ -478,10 +480,9 @@ JpgToPicture(
     rows = (*cinfo.mem->alloc_sarray)((j_common_ptr)&cinfo, JPOOL_IMAGE, 
 	samplesPerRow, 1);
     destPtr = Blt_CreatePicture(width, height);
-    if (cinfo.output_components == 1) {
-	Blt_Pixel *destRowPtr;
-
-	destRowPtr = destPtr->bits;
+    destRowPtr = destPtr->bits;
+    switch (cinfo.output_components) {
+    case 1:
 	while (cinfo.output_scanline < height) {
 	    JSAMPLE *bp;
 	    Blt_Pixel *dp;
@@ -497,10 +498,8 @@ JpgToPicture(
 	    }
 	    destRowPtr += destPtr->pixelsPerRow;
 	}
-    } else {
-	Blt_Pixel *destRowPtr;
-
-	destRowPtr = destPtr->bits;
+        break;
+    case 3:
 	while (cinfo.output_scanline < height) {
 	    JSAMPLE *bp;
 	    Blt_Pixel *dp;
@@ -519,6 +518,34 @@ JpgToPicture(
 	    destRowPtr += destPtr->pixelsPerRow;
 	}
 	destPtr->flags |= BLT_PIC_COLOR;
+        break;
+    case 4:
+	while (cinfo.output_scanline < height) {
+	    JSAMPLE *bp;
+	    Blt_Pixel *dp;
+	    int i;
+	    
+	    dp = destRowPtr;
+	    jpeg_read_scanlines(&cinfo, rows, 1);
+	    bp = rows[0];
+	    for (i = 0; i < (int)width; i++) {
+		dp->Red = *bp++;
+		dp->Green = *bp++;
+		dp->Blue = *bp++;
+		dp->Alpha = *bp++;
+		dp++;
+	    }
+	    destRowPtr += destPtr->pixelsPerRow;
+	}
+	destPtr->flags |= BLT_PIC_COLOR | BLT_PIC_BLEND;
+        break;
+    default:
+	Tcl_AppendResult(interp, "\"", fileName, "\": ",
+                         "don't know how to handle JPEG image with ", 
+                        Blt_Itoa(cinfo.output_components), 
+                        " output components.", (char *)NULL);
+        Blt_FreePicture(destPtr);
+        goto error;
     }
     jpeg_finish_decompress(&cinfo);
     jpeg_destroy_decompress(&cinfo);
