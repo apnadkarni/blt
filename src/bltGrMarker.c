@@ -5067,7 +5067,7 @@ Blt_DestroyMarkers(Graph *graphPtr)
     }
     Blt_DeleteHashTable(&graphPtr->markers.nameTable);
     Blt_DeleteHashTable(&graphPtr->markers.bindTagTable);
-    Blt_DeleteHashTable(&graphPtr->markers.tagTable);
+    Blt_Tags_Init(&graphPtr->markers.tags);
     Blt_Chain_Destroy(graphPtr->markers.displayList);
 }
 

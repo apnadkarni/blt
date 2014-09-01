@@ -33,6 +33,8 @@
 
 typedef struct _BLT_TABLE_TAGS *BLT_TABLE_TAGS;
 
+typedef struct _Blt_Tags *Blt_Tags;
+
 typedef enum {
     TABLE_COLUMN_TYPE_UNKNOWN=-1, 
     TABLE_COLUMN_TYPE_STRING, 
@@ -197,8 +199,8 @@ typedef struct _BLT_TABLE {
     Blt_ChainLink link2;		/* Pointer into the list of clients
 					 * using the same table name. */
 
-    Blt_HashTable *rowTags;
-    Blt_HashTable *columnTags;
+    Blt_Tags rowTags;
+    Blt_Tags columnTags;
 
     Blt_HashTable traces;		/* Hash table of valid traces */
 
@@ -262,9 +264,9 @@ BLT_EXTERN const char *blt_table_column_type_to_name(
 	BLT_TABLE_COLUMN_TYPE type);
 
 BLT_EXTERN int blt_table_set_column_tag(Tcl_Interp *interp, BLT_TABLE table, 
-	BLT_TABLE_COLUMN column, const char *tagName);
+	BLT_TABLE_COLUMN column, const char *tag);
 BLT_EXTERN int blt_table_set_row_tag(Tcl_Interp *interp, BLT_TABLE table, 
-	BLT_TABLE_ROW row, const char *tagName);
+	BLT_TABLE_ROW row, const char *tag);
 
 BLT_EXTERN BLT_TABLE_ROW blt_table_create_row(Tcl_Interp *interp, 
 	BLT_TABLE table, const char *label);
@@ -313,32 +315,29 @@ BLT_EXTERN int blt_table_unset_value(BLT_TABLE table, BLT_TABLE_ROW row,
 BLT_EXTERN int blt_table_value_exists(BLT_TABLE table, BLT_TABLE_ROW row, 
 	BLT_TABLE_COLUMN column);
 
-BLT_EXTERN Blt_HashTable *blt_table_get_row_tag_table(BLT_TABLE table, 
-	const char *tagName);
-BLT_EXTERN Blt_HashTable *blt_table_get_column_tag_table(BLT_TABLE table, 
-	const char *tagName);
-BLT_EXTERN Blt_Chain blt_table_row_tags(BLT_TABLE table, BLT_TABLE_ROW row);
-BLT_EXTERN Blt_Chain blt_table_column_tags(BLT_TABLE table, 
-	BLT_TABLE_COLUMN column);
-
 BLT_EXTERN int blt_table_tags_are_shared(BLT_TABLE table);
-
+BLT_EXTERN void blt_table_clear_row_tags(BLT_TABLE table, BLT_TABLE_ROW row);
+BLT_EXTERN void blt_table_clear_column_tags(BLT_TABLE table, 
+        BLT_TABLE_COLUMN col);
+BLT_EXTERN Blt_Chain blt_table_get_row_tags(BLT_TABLE table, BLT_TABLE_ROW row);
+BLT_EXTERN Blt_Chain blt_table_get_column_tags(BLT_TABLE table, 
+	BLT_TABLE_COLUMN column);
+BLT_EXTERN Blt_Chain blt_table_get_tagged_rows(BLT_TABLE table, 
+        const char *tag);
+BLT_EXTERN Blt_Chain blt_table_get_tagged_columns(BLT_TABLE table, 
+        const char *tag);
 BLT_EXTERN int blt_table_row_has_tag(BLT_TABLE table, BLT_TABLE_ROW row, 
-	const char *tagName);
+	const char *tag);
 BLT_EXTERN int blt_table_column_has_tag(BLT_TABLE table, 
-	BLT_TABLE_COLUMN column, const char *tagName);
+	BLT_TABLE_COLUMN column, const char *tag);
 BLT_EXTERN int blt_table_forget_row_tag(Tcl_Interp *interp, BLT_TABLE table, 
-	const char *tagName);
+	const char *tag);
 BLT_EXTERN int blt_table_forget_column_tag(Tcl_Interp *interp, BLT_TABLE table, 
-	const char *tagName);
+	const char *tag);
 BLT_EXTERN int blt_table_unset_row_tag(Tcl_Interp *interp, BLT_TABLE table, 
-	BLT_TABLE_ROW row, const char *tagName);
+	BLT_TABLE_ROW row, const char *tag);
 BLT_EXTERN int blt_table_unset_column_tag(Tcl_Interp *interp, BLT_TABLE table, 
-	BLT_TABLE_COLUMN column, const char *tagName);
-BLT_EXTERN Blt_HashEntry *blt_table_first_row_tag(BLT_TABLE table, 
-	Blt_HashSearch *cursorPtr);
-BLT_EXTERN Blt_HashEntry *blt_table_first_column_tag(BLT_TABLE table, 
-	Blt_HashSearch *cursorPtr);
+	BLT_TABLE_COLUMN column, const char *tag);
 
 BLT_EXTERN BLT_TABLE_COLUMN blt_table_first_column(BLT_TABLE table);
 BLT_EXTERN BLT_TABLE_COLUMN blt_table_next_column(BLT_TABLE table, 
@@ -403,7 +402,7 @@ typedef struct _BLT_TABLE_ITERATOR {
 					 * of tags, labels, and indices.
 					 */
 
-    const char *tagName;		/* Used by notification routines to
+    const char *tag;                    /* Used by notification routines to
 					 * determine if a tag is being
 					 * used. */
     long start;				/* Starting index.  Starting point
@@ -549,11 +548,6 @@ typedef struct _BLT_TABLE_TRACE {
 #define TABLE_TRACE_DESTROYED	(1<<11)
 #define TABLE_TRACE_PENDING	(1<<12)
 #define TABLE_TRACE_WHENIDLE	(1<<13)
-
-BLT_EXTERN void blt_table_clear_row_tags(BLT_TABLE table, BLT_TABLE_ROW row);
-
-BLT_EXTERN void blt_table_clear_column_tags(BLT_TABLE table, 
-	BLT_TABLE_COLUMN column);
 
 BLT_EXTERN void blt_table_clear_row_traces(BLT_TABLE table, BLT_TABLE_ROW row);
 

@@ -405,7 +405,7 @@ struct _Graph {
 	Blt_Chain displayList;		/* Display list. */
 	Blt_HashTable nameTable;	/* Hash table of ids. */
 	Blt_HashTable bindTagTable;	/* Table of bind tags. */
-	Blt_HashTable tagTable;		/* Table of tags. */
+	struct _Blt_Tags tags;          /* Table of tags. */
     } elements, markers, axes;
 
     Blt_HashTable dataTables;		/* Hash table of datatable

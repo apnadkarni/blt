@@ -342,6 +342,7 @@ BLT_TCL_SO_OBJS =	bltAlloc.o \
 			bltDBuffer.o \
 			bltSpline.o \
 			bltSwitch.o \
+			bltTags.o \
 			$(TREE_OBJS) \
 			bltUtil.o \
 			bltVar.o \
@@ -634,27 +635,28 @@ $(blt_pict_text_so): bltPictText.o $(blt_libs)
 		$(tcl_lib_spec) $(tk_lib_spec) -lm
 
 BLT_TCL_INT_HEADERS =	\
-		$(srcdir)/bltDBuffer.h  \
-		$(srcdir)/bltTclInt.h \
 		$(srcdir)/bltArrayObj.h \
 		$(srcdir)/bltAssert.h  \
+		$(srcdir)/bltDBuffer.h  \
 		$(srcdir)/bltInitCmd.h \
 		$(srcdir)/bltInt.h \
 		$(srcdir)/bltMath.h \
-		$(srcdir)/bltOp.h \
 		$(srcdir)/bltNsUtil.h \
+		$(srcdir)/bltOp.h \
 		$(srcdir)/bltSpline.h \
 		$(srcdir)/bltSwitch.h \
+		$(srcdir)/bltTclInt.h \
 		$(srcdir)/bltVar.h
 
 BLT_TCL_HEADERS = \
 		$(srcdir)/bltAlloc.h \
 		$(srcdir)/bltChain.h \
-		$(srcdir)/bltList.h \
 		$(srcdir)/bltDataTable.h \
-		$(srcdir)/bltPool.h \
-		$(srcdir)/bltTree.h \
 		$(srcdir)/bltHash.h.in \
+		$(srcdir)/bltList.h \
+		$(srcdir)/bltPool.h \
+		$(srcdir)/bltTags.h \
+		$(srcdir)/bltTree.h \
 		$(srcdir)/bltVector.h
 
 BLT_TK_INT_HEADERS =	bltTkInt.h bltFont.h bltBg.h bltBind.h bltAfm.h \

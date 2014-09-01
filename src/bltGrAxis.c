@@ -42,6 +42,7 @@
 #include "bltPs.h"
 #include "bltBg.h"
 #include "bltPicture.h"
+#include "bltTags.h"
 #include "bltGraph.h"
 #include "bltGrAxis.h"
 #include "bltGrLegd.h"

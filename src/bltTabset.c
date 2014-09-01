@@ -56,6 +56,7 @@
 #include "bltBind.h"
 #include "bltOp.h"
 #include "bltInitCmd.h"
+#include "bltTags.h"
 
 #define DEBUG0			0
 #define DEBUG1			0
@@ -757,7 +758,7 @@ struct _Tabset {
     int numVisible;			/* Number of tabs that are currently
 					 * visible in the view port. */
     Blt_BindTable bindTable;		/* Tab binding information */
-    Blt_HashTable tagTable;		/* Table of tags. */
+    struct _Blt_Tags tags;
     Blt_HashTable bindTagTable;		/* Table of binding tags. */
 };
 
@@ -911,9 +912,6 @@ typedef struct _Iterator {
 					/* For tag-based searches. */
     char *tagName;			/* If non-NULL, is the tag that we are
 					 * currently iterating over. */
-    Blt_HashTable *tablePtr;		/* Pointer to tag hash table. */
-    Blt_HashSearch cursor;		/* Search iterator for tag hash
-					 * table. */
     Blt_ChainLink link;
 } TabIterator;
 
@@ -1175,161 +1173,6 @@ FreeIconProc(ClientData clientData, Display *display, char *widgRec, int offset)
     if (*iconPtr != NULL) {
 	FreeIcon(setPtr, *iconPtr);
 	*iconPtr = NULL;
-    }
-}
-
-static Blt_HashTable *
-GetTagTable(Tabset *setPtr, const char *tagName)
-{
-    Blt_HashEntry *hPtr;
-
-    hPtr = Blt_FindHashEntry(&setPtr->tagTable, tagName);
-    if (hPtr == NULL) {
-	return NULL;			/* No tag by name. */
-    }
-    return Blt_GetHashValue(hPtr);
-}
-
-static int
-HasTag(Tab *tabPtr, const char *tagName)
-{
-    Blt_HashEntry *hPtr;
-    Blt_HashTable *tablePtr;
-
-    if (strcmp(tagName, "all") == 0) {
-	return TRUE;
-    }
-    tablePtr = GetTagTable(tabPtr->setPtr, tagName);
-    if (tablePtr == NULL) {
-	return FALSE;
-    }
-    hPtr = Blt_FindHashEntry(tablePtr, (char *)tabPtr);
-    if (hPtr == NULL) {
-	return FALSE;
-    }
-    return TRUE;
-}
-
-static Blt_HashTable *
-AddTagTable(Tabset *setPtr, const char *tagName)
-{
-    Blt_HashEntry *hPtr;
-    Blt_HashTable *tablePtr;
-    int isNew;
-
-    hPtr = Blt_CreateHashEntry(&setPtr->tagTable, tagName, &isNew);
-    if (isNew) {
-	tablePtr = Blt_AssertMalloc(sizeof(Blt_HashTable));
-	Blt_InitHashTable(tablePtr, BLT_ONE_WORD_KEYS);
-	Blt_SetHashValue(hPtr, tablePtr);
-    } else {
-	tablePtr = Blt_GetHashValue(hPtr);
-    }
-    return tablePtr;
-}
-
-static void
-AddTag(Tabset *setPtr, Tab *tabPtr, const char *tagName)
-{
-    int isNew;
-    Blt_HashEntry *hPtr;
-    Blt_HashTable *tablePtr;
-
-    tablePtr = AddTagTable(setPtr, tagName);
-    hPtr = Blt_CreateHashEntry(tablePtr, (char *)tabPtr, &isNew);
-    if (isNew) {
-	Blt_SetHashValue(hPtr, tabPtr);
-    }
-}
-
-
-static void
-ForgetTag(Tabset *setPtr, const char *tagName)
-{
-    Blt_HashEntry *hPtr;
-    Blt_HashTable *tablePtr;
-
-    if (strcmp(tagName, "all") == 0) {
-	return;				/* Can't remove tag "all". */
-    }
-    hPtr = Blt_FindHashEntry(&setPtr->tagTable, tagName);
-    if (hPtr == NULL) {
-	return;				/* No tag by name. */
-    }
-    tablePtr = Blt_GetHashValue(hPtr);
-    Blt_DeleteHashTable(tablePtr);
-    Blt_Free(tablePtr);
-    Blt_DeleteHashEntry(&setPtr->tagTable, hPtr);
-}
-
-static void
-DestroyTags(Tabset *setPtr)
-{
-    Blt_HashEntry *hPtr;
-    Blt_HashSearch iter;
-
-    for (hPtr = Blt_FirstHashEntry(&setPtr->tagTable, &iter); hPtr != NULL;
-	 hPtr = Blt_NextHashEntry(&iter)) {
-	Blt_HashTable *tablePtr;
-	
-	tablePtr = Blt_GetHashValue(hPtr);
-	Blt_DeleteHashTable(tablePtr);
-    }
-}
-
-static void
-RemoveTag(Tab *tabPtr, const char *tagName)
-{
-    Blt_HashTable *tablePtr;
-    Tabset *setPtr;
-
-    setPtr = tabPtr->setPtr;
-    tablePtr = GetTagTable(setPtr, tagName);
-    if (tablePtr != NULL) {
-	Blt_HashEntry *hPtr;
-
-	hPtr = Blt_FindHashEntry(tablePtr, (char *)tabPtr);
-	if (hPtr != NULL) {
-	    Blt_DeleteHashEntry(tablePtr, hPtr);
-	}
-    }
-}
-
-static void
-ClearTags(Tab *tabPtr)
-{
-    Blt_HashEntry *hPtr;
-    Blt_HashSearch iter;
-    Tabset *setPtr;
-
-    setPtr = tabPtr->setPtr;
-    for (hPtr = Blt_FirstHashEntry(&setPtr->tagTable, &iter); hPtr != NULL;
-	 hPtr = Blt_NextHashEntry(&iter)) {
-	Blt_HashTable *tablePtr;
-	Blt_HashEntry *h2Ptr;
-	
-	tablePtr = Blt_GetHashValue(hPtr);
-	h2Ptr = Blt_FindHashEntry(tablePtr, (char *)tabPtr);
-	if (h2Ptr != NULL) {
-	    Blt_DeleteHashEntry(tablePtr, h2Ptr);
-	}
-    }
-}
-
-static void
-AppendTags(Tabset *setPtr, Tab *tabPtr, Blt_Chain tags)
-{
-    Blt_HashEntry *hPtr;
-    Blt_HashSearch iter;
-
-    for (hPtr = Blt_FirstHashEntry(&setPtr->tagTable, &iter); hPtr != NULL;
-	 hPtr = Blt_NextHashEntry(&iter)) {
-	Blt_HashTable *tablePtr;
-	
-	tablePtr = Blt_GetHashValue(hPtr);
-	if (Blt_FindHashEntry(tablePtr, (char *)tabPtr) != NULL) {
-	    Blt_Chain_Append(tags, Blt_GetHashKey(&setPtr->tagTable, hPtr));
-	}
     }
 }
 
@@ -2195,15 +2038,6 @@ NextTaggedTab(TabIterator *iterPtr)
 {
     switch (iterPtr->type) {
     case ITER_TAG:
-	{
-	    Blt_HashEntry *hPtr;
-	    
-	    hPtr = Blt_NextHashEntry(&iterPtr->cursor); 
-	    if (hPtr != NULL) {
-		return Blt_GetHashValue(hPtr);
-	    }
-	    break;
-	}
     case ITER_ALL:
 	if (iterPtr->link != NULL) {
 	    Tab *tabPtr;
@@ -2253,15 +2087,6 @@ FirstTaggedTab(TabIterator *iterPtr)
 {
     switch (iterPtr->type) {
     case ITER_TAG:
-	{
-	    Blt_HashEntry *hPtr;
-	    
-	    hPtr = Blt_FirstHashEntry(iterPtr->tablePtr, &iterPtr->cursor);
-	    if (hPtr != NULL) {
-		return Blt_GetHashValue(hPtr);
-	    }
-	}
-
     case ITER_ALL:
 	if (iterPtr->link != NULL) {
 	    Tab *tabPtr;
@@ -2507,7 +2332,7 @@ GetTabIterator(Tcl_Interp *interp, Tabset *setPtr, Tcl_Obj *objPtr,
 	       TabIterator *iterPtr)
 {
     Tab *tabPtr;
-    Blt_HashTable *tablePtr;
+    Blt_Chain chain;
     char *string;
     char c;
     int numBytes;
@@ -2561,19 +2386,14 @@ GetTabIterator(Tcl_Interp *interp, Tabset *setPtr, Tcl_Obj *objPtr,
 	iterPtr->startPtr = iterPtr->endPtr = tabPtr;
     } else if ((c == 't') && (length > 4) && 
 	       (strncmp(string, "tag:", 4) == 0)) {
-	Blt_HashTable *tablePtr;
+        Blt_Chain chain;
 
-	tablePtr = GetTagTable(setPtr, string + 4);
-	if (tablePtr == NULL) {
-	    if (interp != NULL) {
-		Tcl_AppendResult(interp, "can't find a tag \"", string + 5,
-			"\" in \"", Tk_PathName(setPtr->tkwin), "\"",
-			(char *)NULL);
-	    }
-	    return TCL_ERROR;
+	chain = Blt_Tags_GetItemList(&setPtr->tags, string + 4);
+	if (chain == NULL) {
+	    return TCL_OK;
 	}
 	iterPtr->tagName = string + 4;
-	iterPtr->tablePtr = tablePtr;
+	iterPtr->link = Blt_Chain_FirstLink(chain);
 	iterPtr->type = ITER_TAG;
     } else if ((c == 'l') && (length > 6) && 
 	       (strncmp(string, "label:", 6) == 0)) {
@@ -2582,9 +2402,9 @@ GetTabIterator(Tcl_Interp *interp, Tabset *setPtr, Tcl_Obj *objPtr,
 	iterPtr->type = ITER_PATTERN;
     } else if ((tabPtr = GetTabByName(setPtr, string)) != NULL) {
 	iterPtr->startPtr = iterPtr->endPtr = tabPtr;
-    } else if ((tablePtr = GetTagTable(setPtr, string)) != NULL) {
+    } else if ((chain = Blt_Tags_GetItemList(&setPtr->tags, string))!=NULL) {
 	iterPtr->tagName = string;
-	iterPtr->tablePtr = tablePtr;
+	iterPtr->link = Blt_Chain_FirstLink(chain);
 	iterPtr->type = ITER_TAG;
     } else {
 	if (interp != NULL) {
@@ -2867,7 +2687,7 @@ DestroyTab(Tab *tabPtr)
     setPtr = tabPtr->setPtr;
     iconOption.clientData = setPtr;
     Blt_FreeOptions(tabSpecs, (char *)tabPtr, setPtr->display, 0);
-    ClearTags(tabPtr);
+    Blt_Tags_ClearTagsFromItem(&setPtr->tags, tabPtr);
     if (tabPtr->flags & TEAROFF_REDRAW) {
 	Tcl_CancelIdleCall(DisplayTearoff, tabPtr);
     }
@@ -3593,7 +3413,7 @@ AppendTagsProc(Blt_BindTable table, ClientData object, ClientData context,
 	Blt_Chain_Append(tags, MakeBindTag(setPtr, tabPtr->name));
     } else if (context == TAB_LABEL) {
 	Blt_Chain_Append(tags, MakeBindTag(setPtr, tabPtr->name));
-	AppendTags(setPtr, tabPtr, tags);
+	Blt_Tags_AppendTagsToChain(&setPtr->tags, tabPtr, tags);
 	Blt_Chain_Append(tags, MakeBindTag(setPtr, "all"));
     }
 }
@@ -3705,12 +3525,11 @@ FreeTabset(DestroyData dataPtr)
 	tabPtr->hashPtr = NULL;
 	DestroyTab(tabPtr);
     }
-    DestroyTags(setPtr);
+    Blt_Tags_Reset(&setPtr->tags);
     DestroyButton(setPtr, &setPtr->closeButton);
     Blt_Chain_Destroy(setPtr->chain);
     Blt_DestroyBindingTable(setPtr->bindTable);
     Blt_DeleteHashTable(&setPtr->iconTable);
-    Blt_DeleteHashTable(&setPtr->tagTable);
     Blt_DeleteHashTable(&setPtr->bindTagTable);
     Blt_Free(setPtr);
 }
@@ -3753,9 +3572,9 @@ NewTabset(Tcl_Interp *interp, Tk_Window tkwin)
     setPtr->bindTable = Blt_CreateBindingTable(interp, tkwin, setPtr, 
 	PickTabProc, AppendTagsProc);
     setPtr->chain = Blt_Chain_Create();
+    Blt_Tags_Init(&setPtr->tags);
     Blt_InitHashTable(&setPtr->tabTable, BLT_STRING_KEYS);
     Blt_InitHashTable(&setPtr->iconTable, BLT_STRING_KEYS);
-    Blt_InitHashTable(&setPtr->tagTable, BLT_STRING_KEYS);
     Blt_InitHashTable(&setPtr->bindTagTable, BLT_STRING_KEYS);
     Blt_SetWindowInstanceData(tkwin, setPtr);
     return setPtr;
@@ -4009,20 +3828,6 @@ BindOp(Tabset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 {
     ClientData tag;
 
-    if (objc == 2) {
-	Blt_HashEntry *hPtr;
-	Blt_HashSearch cursor;
-	Tcl_Obj *listObjPtr, *objPtr;
-
-	listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
-	for (hPtr = Blt_FirstHashEntry(&setPtr->tagTable, &cursor);
-	    hPtr != NULL; hPtr = Blt_NextHashEntry(&cursor)) {
-	    objPtr = Blt_GetHashValue(hPtr);
-	    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-	}
-	Tcl_SetObjResult(interp, listObjPtr);
-	return TCL_OK;
-    }
     tag = MakeBindTag(setPtr, Tcl_GetString(objv[2]));
     return Blt_ConfigureBindingsFromObj(interp, setPtr->bindTable, tag, 
 	objc - 3, objv + 3);
@@ -5336,7 +5141,7 @@ TagAddOp(Tabset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     }
     if (objc == 4) {
 	/* No nodes specified.  Just add the tag. */
-	AddTag(setPtr, NULL, tag);
+	Blt_Tags_AddTag(&setPtr->tags, tag);
     } else {
 	int i;
 
@@ -5349,7 +5154,7 @@ TagAddOp(Tabset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	    }
 	    for (tabPtr = FirstTaggedTab(&iter); tabPtr != NULL; 
 		 tabPtr = NextTaggedTab(&iter)) {
-		AddTag(setPtr, tabPtr, tag);
+		Blt_Tags_AddItemToTag(&setPtr->tags, tabPtr, tag);
 	    }
 	}
     }
@@ -5370,8 +5175,8 @@ static int
 TagDeleteOp(Tabset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 {
     const char *tag;
-    Blt_HashTable *tablePtr;
     long tagId;
+    int i;
 
     tag = Tcl_GetString(objv[3]);
     if (Blt_GetLongFromObj(NULL, objv[3], &tagId) == TCL_OK) {
@@ -5384,27 +5189,17 @@ TagDeleteOp(Tabset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 			 (char *)NULL);
         return TCL_ERROR;
     }
-    tablePtr = GetTagTable(setPtr, tag);
-    if (tablePtr != NULL) {
-        int i;
-      
-        for (i = 4; i < objc; i++) {
-	    Tab *tabPtr;
-	    TabIterator iter;
-
-	    if (GetTabIterator(interp, setPtr, objv[i], &iter) != TCL_OK) {
-	        return TCL_ERROR;
-	    }
-	    for (tabPtr = FirstTaggedTab(&iter); tabPtr != NULL; 
-		 tabPtr = NextTaggedTab(&iter)) {
-		Blt_HashEntry *hPtr;
-
-	        hPtr = Blt_FindHashEntry(tablePtr, (char *)tabPtr);
-	        if (hPtr != NULL) {
-		    Blt_DeleteHashEntry(tablePtr, hPtr);
-	        }
-	   }
-       }
+    for (i = 4; i < objc; i++) {
+        Tab *tabPtr;
+        TabIterator iter;
+        
+        if (GetTabIterator(interp, setPtr, objv[i], &iter) != TCL_OK) {
+            return TCL_ERROR;
+        }
+        for (tabPtr = FirstTaggedTab(&iter); tabPtr != NULL; 
+             tabPtr = NextTaggedTab(&iter)) {
+            Blt_Tags_RemoveItemFromTag(&setPtr->tags, tabPtr, tag);
+        }
     }
     return TCL_OK;
 }
@@ -5439,7 +5234,7 @@ TagExistsOp(Tabset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	tag = Tcl_GetString(objv[i]);
 	for (tabPtr = FirstTaggedTab(&iter); tabPtr != NULL; 
 	     tabPtr = NextTaggedTab(&iter)) {
-	    if (HasTag(tabPtr, tag)) {
+	    if (Blt_Tags_ItemHasTag(&setPtr->tags, tabPtr, tag)) {
 		Tcl_SetBooleanObj(Tcl_GetObjResult(interp), TRUE);
 		return TCL_OK;
 	    }
@@ -5476,7 +5271,7 @@ TagForgetOp(Tabset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 			     "\": can't be a number.", (char *)NULL);
 	    return TCL_ERROR;
 	}
-	ForgetTag(setPtr, tag);
+	Blt_Tags_ForgetTag(&setPtr->tags, tag);
     }
     return TCL_OK;
 }
@@ -5507,23 +5302,7 @@ TagGetOp(Tabset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     for (tabPtr = FirstTaggedTab(&iter); tabPtr != NULL; 
 	 tabPtr = NextTaggedTab(&iter)) {
 	if (objc == 4) {
-	    Blt_HashEntry *hPtr;
-	    Blt_HashSearch hiter;
-
-	    for (hPtr = Blt_FirstHashEntry(&setPtr->tagTable, &hiter); 
-		 hPtr != NULL; hPtr = Blt_NextHashEntry(&hiter)) {
-		Blt_HashTable *tablePtr;
-
-		tablePtr = Blt_GetHashValue(hPtr);
-		if (Blt_FindHashEntry(tablePtr, (char *)tabPtr) != NULL) {
-		    const char *tag;
-		    Tcl_Obj *objPtr;
-
-		    tag = Blt_GetHashKey(&setPtr->tagTable, hPtr);
-		    objPtr = Tcl_NewStringObj(tag, -1);
-		    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-		}
-	    }
+            Blt_Tags_AppendTagsToObj(&setPtr->tags, tabPtr, listObjPtr);
 	    Tcl_ListObjAppendElement(interp, listObjPtr, 
 				     Tcl_NewStringObj("all", 3));
 	} else {
@@ -5544,28 +5323,26 @@ TagGetOp(Tabset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	    }
 	    /* Now process any standard tags. */
 	    for (i = 4; i < objc; i++) {
-		Blt_HashEntry *hPtr;
-		Blt_HashSearch hiter;
+		Blt_ChainLink link;
 		const char *pattern;
-		
-		pattern = Tcl_GetString(objv[i]);
-		for (hPtr = Blt_FirstHashEntry(&setPtr->tagTable, &hiter); 
-		     hPtr != NULL; hPtr = Blt_NextHashEntry(&hiter)) {
-		    const char *tag;
-		    Blt_HashTable *tablePtr;
+                Blt_Chain chain;
 
-		    tablePtr = Blt_GetHashValue(hPtr);
-		    tag = Blt_GetHashKey(&setPtr->tagTable, hPtr);
+                chain = Blt_Chain_Create();
+                Blt_Tags_AppendTagsToChain(&setPtr->tags, tabPtr, chain);
+		pattern = Tcl_GetString(objv[i]);
+		for (link = Blt_Chain_FirstLink(chain); link != NULL; 
+                     link = Blt_Chain_NextLink(link)) {
+		    const char *tag;
+                    Tcl_Obj *objPtr;
+
+		    tag = (const char *)Blt_Chain_GetValue(link);
 		    if (!Tcl_StringMatch(tag, pattern)) {
 			continue;
 		    }
-		    if (Blt_FindHashEntry(tablePtr, (char *)tabPtr) != NULL) {
-			Tcl_Obj *objPtr;
-
-			objPtr = Tcl_NewStringObj(tag, -1);
-			Tcl_ListObjAppendElement(interp, listObjPtr,objPtr);
-		    }
-		}
+                    objPtr = Tcl_NewStringObj(tag, -1);
+                    Tcl_ListObjAppendElement(interp, listObjPtr,objPtr);
+                }
+                Blt_Chain_Destroy(chain);
 	    }
 	}    
     }
@@ -5595,16 +5372,7 @@ TagNamesOp(Tabset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     objPtr = Tcl_NewStringObj("all", -1);
     Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
     if (objc == 3) {
-	Blt_HashEntry *hPtr;
-	Blt_HashSearch iter;
-
-	for (hPtr = Blt_FirstHashEntry(&setPtr->tagTable, &iter); hPtr != NULL; 
-	     hPtr = Blt_NextHashEntry(&iter)) {
-	    const char *tag;
-	    tag = Blt_GetHashKey(&setPtr->tagTable, hPtr);
-	    objPtr = Tcl_NewStringObj(tag, -1);
-	    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-	}
+        Blt_Tags_AppendAllTagsToObj(&setPtr->tags, listObjPtr);
     } else {
 	Blt_HashTable uniqTable;
 	int i;
@@ -5619,21 +5387,20 @@ TagNamesOp(Tabset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	    }
 	    for (tabPtr = FirstTaggedTab(&iter); tabPtr != NULL; 
 		 tabPtr = NextTaggedTab(&iter)) {
-		Blt_HashEntry *hPtr;
-		Blt_HashSearch hiter;
-		for (hPtr = Blt_FirstHashEntry(&setPtr->tagTable, &hiter); 
-		     hPtr != NULL; hPtr = Blt_NextHashEntry(&hiter)) {
+		Blt_ChainLink link;
+                Blt_Chain chain;
+
+                chain = Blt_Chain_Create();
+                Blt_Tags_AppendTagsToChain(&setPtr->tags, tabPtr, chain);
+		for (link = Blt_Chain_FirstLink(chain); link != NULL; 
+                     link = Blt_Chain_NextLink(link)) {
 		    const char *tag;
-		    Blt_HashTable *tablePtr;
+                    int isNew;
 
-		    tag = Blt_GetHashKey(&setPtr->tagTable, hPtr);
-		    tablePtr = Blt_GetHashValue(hPtr);
-		    if (Blt_FindHashEntry(tablePtr, tabPtr) != NULL) {
-			int isNew;
-
-			Blt_CreateHashEntry(&uniqTable, tag, &isNew);
-		    }
+		    tag = Blt_Chain_GetValue(link);
+                    Blt_CreateHashEntry(&uniqTable, tag, &isNew);
 		}
+                Blt_Chain_Destroy(chain);
 	    }
 	}
 	{
@@ -5687,25 +5454,22 @@ TagIndicesOp(Tabset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	if (strcmp(tag, "all") == 0) {
 	    break;
 	} else {
-	    Blt_HashTable *tablePtr;
-	    
-	    tablePtr = GetTagTable(setPtr, tag);
-	    if (tablePtr != NULL) {
-		Blt_HashEntry *hPtr;
-		Blt_HashSearch iter;
+            Blt_Chain chain;
 
-		for (hPtr = Blt_FirstHashEntry(tablePtr, &iter); 
-		     hPtr != NULL; hPtr = Blt_NextHashEntry(&iter)) {
-		    Tab *tabPtr;
-		    int isNew;
+            chain = Blt_Tags_GetItemList(&setPtr->tags, tag);
+            if (chain != NULL) {
+                Blt_ChainLink link;
 
-		    tabPtr = Blt_GetHashValue(hPtr);
-		    if (tabPtr != NULL) {
-			Blt_CreateHashEntry(&tabTable, (char *)tabPtr, &isNew);
-		    }
-		}
-		continue;
-	    }
+                for (link = Blt_Chain_FirstLink(chain); link != NULL; 
+                     link = Blt_Chain_NextLink(link)) {
+                    Tab *tabPtr;
+                    int isNew;
+                    
+                    tabPtr = Blt_Chain_GetValue(link);
+                    Blt_CreateHashEntry(&tabTable, (char *)tabPtr, &isNew);
+                }
+            }
+            continue;
 	}
 	Tcl_AppendResult(interp, "can't find a tag \"", tag, "\"",
 			 (char *)NULL);
@@ -5776,7 +5540,7 @@ TagSetOp(Tabset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	}
 	for (tabPtr = FirstTaggedTab(&iter); tabPtr != NULL; 
 	     tabPtr = NextTaggedTab(&iter)) {
-	    AddTag(setPtr, tabPtr, tag);
+	    Blt_Tags_AddItemToTag(&setPtr->tags, tabPtr, tag);
 	}    
     }
     return TCL_OK;
@@ -5808,7 +5572,10 @@ TagUnsetOp(Tabset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	 tabPtr = NextTaggedTab(&iter)) {
 	int i;
 	for (i = 4; i < objc; i++) {
-	    RemoveTag(tabPtr, Tcl_GetString(objv[i]));
+            const char *tag;
+
+            tag = Tcl_GetString(objv[i]);
+            Blt_Tags_RemoveItemFromTag(&setPtr->tags, tabPtr, tag);
 	}    
     }
     return TCL_OK;
@@ -7463,7 +7230,7 @@ static Blt_OpSpec tabsetOps[] =
 {
     {"activate",    2, ActivateOp,    3, 3, "tab",},
     {"add",         2, AddOp,         2, 0, "?label? ?option-value..?",},
-    {"bind",        2, BindOp,	      2, 5, "tab ?sequence command?",},
+    {"bind",        2, BindOp,	      3, 5, "tab ?sequence command?",},
     {"button",      2, ButtonOp,      2, 0, "args",},
     {"cget",        2, CgetOp,	      3, 3, "option",},
     {"close",       2, CloseOp,       3, 3, "tab",},

@@ -525,7 +525,7 @@ struct _ListView {
     /* Commands to control horizontal and vertical scrollbars. */
     Tcl_Obj *xScrollCmdObjPtr, *yScrollCmdObjPtr;
 
-    Blt_HashTable tagTable;		/* Table of tags. */
+    struct _Blt_Tags tags;              /* Table of tags. */
     Blt_HashTable textTable;		/* Table of texts (hashtables). */
     Blt_HashTable iconTable;		/* Table of icons. */
 
@@ -1674,34 +1674,6 @@ EventuallyRedrawItem(Item *itemPtr)
     }
 }
 
-/*
- *---------------------------------------------------------------------------
- *
- * ReleaseTags --
- *
- *	Releases the tags used by this item.  
- *
- *---------------------------------------------------------------------------
- */
-static void
-ReleaseTags(ListView *viewPtr, Item *itemPtr)
-{
-    Blt_HashEntry *hPtr;
-    Blt_HashSearch iter;
-
-    for (hPtr = Blt_FirstHashEntry(&viewPtr->tagTable, &iter); hPtr != NULL;
-	 hPtr = Blt_NextHashEntry(&iter)) {
-	Blt_HashTable *tagTablePtr;
-	Blt_HashEntry *h2Ptr;
-
-	tagTablePtr = Blt_GetHashValue(hPtr); 
-	h2Ptr = Blt_FindHashEntry(tagTablePtr, (char *)itemPtr->index);
-	if (h2Ptr != NULL) {
-	    Blt_DeleteHashEntry(tagTablePtr, h2Ptr);
-	}
-    }
-}
-
 static void
 RemoveText(ListView *viewPtr, Item *itemPtr)
 {
@@ -1732,7 +1704,7 @@ DestroyItem(Item *itemPtr)
     ListView *viewPtr = itemPtr->viewPtr;
 
     DeselectItem(viewPtr, itemPtr);
-    ReleaseTags(viewPtr, itemPtr);
+    Blt_Tags_ClearTagsFromItem(&viewPtr->tags, itemPtr);
     iconOption.clientData = viewPtr;
     if (itemPtr->layoutPtr != NULL) {
 	Blt_Free(itemPtr->layoutPtr);
@@ -2620,10 +2592,7 @@ GetStyleFromObj(Tcl_Interp *interp, ListView *viewPtr, Tcl_Obj *objPtr,
 static int
 SetTag(Tcl_Interp *interp, Item *itemPtr, const char *tagName)
 {
-    Blt_HashEntry *hPtr;
-    Blt_HashTable *tagTablePtr;
     ListView *viewPtr;
-    int isNew;
     long dummy;
     
     if ((strcmp(tagName, "all") == 0) || (strcmp(tagName, "end") == 0)) {
@@ -2652,51 +2621,8 @@ SetTag(Tcl_Interp *interp, Item *itemPtr, const char *tagName)
 	return TCL_ERROR;
     }
     viewPtr = itemPtr->viewPtr;
-    hPtr = Blt_CreateHashEntry(&viewPtr->tagTable, tagName, &isNew);
-    if (hPtr == NULL) {
-	if (interp != NULL) {
-	    Tcl_AppendResult(interp, "can't add tag \"", tagName, 
-			 "\": out of memory", (char *)NULL);
-	}
-	return TCL_ERROR;
-    }
-    if (isNew) {
-	tagTablePtr = Blt_AssertMalloc(sizeof(Blt_HashTable));
-	Blt_InitHashTable(tagTablePtr, BLT_ONE_WORD_KEYS);
-	Blt_SetHashValue(hPtr, tagTablePtr);
-    } else {
-	tagTablePtr = Blt_GetHashValue(hPtr);
-    }
-    hPtr = Blt_CreateHashEntry(tagTablePtr, (char *)itemPtr->index, &isNew);
-    if (isNew) {
-	Blt_SetHashValue(hPtr, itemPtr);
-    }
+    Blt_Tags_AddItemToTag(&viewPtr->tags, itemPtr, tagName);
     return TCL_OK;
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * GetTagTable --
- *
- *	Returns the hash table containing row indices for a tag.
- *
- * Results:
- *	Returns a pointer to the hash table containing indices for the
- *	given tag.  If the row has no tags, then NULL is returned.
- *
- *---------------------------------------------------------------------------
- */
-static Blt_HashTable *
-GetTagTable(ListView *viewPtr, const char *tagName)		
-{
-    Blt_HashEntry *hPtr;
-
-    hPtr = Blt_FindHashEntry(&viewPtr->tagTable, tagName);
-    if (hPtr == NULL) {
-	return NULL;			/* No tag by that name. */
-    }
-    return Blt_GetHashValue(hPtr);
 }
 
 static int
@@ -2882,16 +2808,6 @@ NextTaggedItem(ItemIterator *iterPtr)
 
     switch (iterPtr->type) {
     case ITER_TAG:
-	{
-	    Blt_HashEntry *hPtr;
-	    
-	    hPtr = Blt_NextHashEntry(&iterPtr->cursor); 
-	    if (hPtr != NULL) {
-		return Blt_GetHashValue(hPtr);
-	    }
-	}
-	break;
-
     case ITER_ALL:
 	if (iterPtr->link != NULL) {
 	    itemPtr = Blt_Chain_GetValue(iterPtr->link);
@@ -2942,17 +2858,6 @@ FirstTaggedItem(ItemIterator *iterPtr)
 	    
     switch (iterPtr->type) {
     case ITER_TAG: 
-	{
-	    Blt_HashEntry *hPtr;
-	    
-	    hPtr = Blt_FirstHashEntry(iterPtr->tablePtr, &iterPtr->cursor);
-	    if (hPtr == NULL) {
-		return NULL;
-	    }
-	    return Blt_GetHashValue(hPtr);
-	}
-	break;
-
     case ITER_ALL:
 	if (iterPtr->link != NULL) {
 	    itemPtr = Blt_Chain_GetValue(iterPtr->link);
@@ -3151,7 +3056,7 @@ GetItemIterator(Tcl_Interp *interp, ListView *viewPtr, Tcl_Obj *objPtr,
 	       ItemIterator *iterPtr)
 {
     Item *itemPtr;
-    Blt_HashTable *tablePtr;
+    Blt_Chain chain;
     char *string;
     char c;
     int numBytes;
@@ -3162,6 +3067,7 @@ GetItemIterator(Tcl_Interp *interp, ListView *viewPtr, Tcl_Obj *objPtr,
     iterPtr->type = ITER_SINGLE;
     iterPtr->tagName = Tcl_GetStringFromObj(objPtr, &numBytes);
     iterPtr->nextPtr = NULL;
+    iterPtr->link = NULL;
     iterPtr->startPtr = iterPtr->endPtr = NULL;
 
     if (viewPtr->flags & LAYOUT_PENDING) {
@@ -3191,17 +3097,14 @@ GetItemIterator(Tcl_Interp *interp, ListView *viewPtr, Tcl_Obj *objPtr,
 	iterPtr->startPtr = iterPtr->endPtr = itemPtr;
     } else if ((c == 't') && (length > 4) && 
 	       (strncmp(string, "tag:", 4) == 0)) {
-	Blt_HashTable *tablePtr;
+	Blt_Chain chain;
 
-	tablePtr = GetTagTable(viewPtr, string + 4);
-	if (tablePtr == NULL) {
-	    Tcl_AppendResult(interp, "can't find a tag \"", string + 5,
-			"\" in \"", Tk_PathName(viewPtr->tkwin), "\"",
-			(char *)NULL);
-	    return TCL_ERROR;
+	chain = Blt_Tags_GetItemList(&viewPtr->tags, string + 4);
+	if (chain == NULL) {
+	    return TCL_OK;
 	}
 	iterPtr->tagName = string + 4;
-	iterPtr->tablePtr = tablePtr;
+	iterPtr->link = Blt_Chain_FirstLink(chain);
 	iterPtr->type = ITER_TAG;
     } else if ((c == 'l') && (length > 6) && 
 	       (strncmp(string, "text:", 6) == 0)) {
@@ -3210,9 +3113,9 @@ GetItemIterator(Tcl_Interp *interp, ListView *viewPtr, Tcl_Obj *objPtr,
 	iterPtr->type = ITER_PATTERN;
     } else if ((itemPtr = GetItemByText(viewPtr, string)) != NULL) {
 	iterPtr->startPtr = iterPtr->endPtr = itemPtr;
-    } else if ((tablePtr = GetTagTable(viewPtr, string)) != NULL) {
+    } else if ((chain = Blt_Tags_GetItemList(&viewPtr->tags, string)) != NULL) {
 	iterPtr->tagName = string;
-	iterPtr->tablePtr = tablePtr;
+	iterPtr->link = Blt_Chain_FirstLink(chain);
 	iterPtr->type = ITER_TAG;
     } else {
 	if (interp != NULL) {
@@ -3717,7 +3620,7 @@ FreeTagsProc(
     Item *itemPtr = (Item *)widgRec;
 
     viewPtr = itemPtr->viewPtr;
-    ReleaseTags(viewPtr, itemPtr);
+    Blt_Tags_ClearTagsFromItem(&viewPtr->tags, itemPtr);
 }
 
 /*
@@ -3753,7 +3656,7 @@ ObjToTagsProc(
     Tcl_Obj **objv;
 
     viewPtr = itemPtr->viewPtr;
-    ReleaseTags(viewPtr, itemPtr);
+    Blt_Tags_ClearTagsFromItem(&viewPtr->tags, itemPtr);
     string = Tcl_GetString(objPtr);
     if ((string[0] == '\0') && (flags & BLT_CONFIG_NULL_OK)) {
 	return TCL_OK;
@@ -3789,30 +3692,13 @@ TagsToObjProc(
     int offset,				/* Offset to field in structure */
     int flags)	
 {
-    Blt_HashEntry *hPtr;
-    Blt_HashSearch iter;
     ListView *viewPtr;
     Item *itemPtr = (Item *)widgRec;
     Tcl_Obj *listObjPtr;
 
     viewPtr = itemPtr->viewPtr;
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
-    for (hPtr = Blt_FirstHashEntry(&viewPtr->tagTable, &iter); hPtr != NULL;
-	 hPtr = Blt_NextHashEntry(&iter)) {
-	Blt_HashTable *tagTablePtr;
-	Blt_HashEntry *h2Ptr;
-
-	tagTablePtr = Blt_GetHashValue(hPtr); 
-	h2Ptr = Blt_FindHashEntry(tagTablePtr, (char *)itemPtr->index);
-	if (h2Ptr != NULL) {
-	    Tcl_Obj *objPtr;
-	    const char *name;
-
-	    name = Tcl_GetHashKey(&viewPtr->tagTable, hPtr);
-	    objPtr = Tcl_NewStringObj(name, -1);
-	    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-	}
-    }
+    Blt_Tags_AppendTagsToObj(&viewPtr->tags,  itemPtr, listObjPtr);
     return listObjPtr;
 }
 
@@ -6104,7 +5990,7 @@ DestroyListView(DestroyData dataPtr)	/* Pointer to the widget record. */
     DestroyItems(viewPtr);
     DestroyStyles(viewPtr);
     DestroyTexts(viewPtr);
-    Blt_DeleteHashTable(&viewPtr->tagTable);
+    Blt_Tags_Reset(&viewPtr->tags);
     DestroyIcons(viewPtr);
     if (viewPtr->painter != NULL) {
 	Blt_FreePainter(viewPtr->painter);
@@ -6154,7 +6040,7 @@ NewListView(Tcl_Interp *interp, Tk_Window tkwin)
     Blt_InitHashTable(&viewPtr->iconTable,  BLT_STRING_KEYS);
     Blt_InitHashTable(&viewPtr->textTable, BLT_STRING_KEYS);
     Blt_InitHashTable(&viewPtr->styleTable, BLT_STRING_KEYS);
-    Blt_InitHashTable(&viewPtr->tagTable, BLT_STRING_KEYS);
+    Blt_Tags_Init(&viewPtr->tags);
     Blt_InitHashTable(&viewPtr->selTable, BLT_ONE_WORD_KEYS);
     viewPtr->selected = Blt_Chain_Create();
     AddDefaultStyle(interp, viewPtr);

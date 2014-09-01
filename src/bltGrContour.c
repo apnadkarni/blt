@@ -486,7 +486,7 @@ struct _ContourElement {
 					 * default all triangles are
 					 * opaque. * */
     Isoline *activePtr;
-    Blt_HashTable tagTable;		/* Table of tags. */
+    struct _Blt_Tags isoTags;		/* Table of tags. */
 
     /* Mesh attributes. */
     Blt_Dashes meshDashes;		/* Dash on-off list value */
@@ -532,6 +532,7 @@ typedef struct _IsolineIterator {
     Blt_HashTable *tablePtr;		/* Pointer to tag hash table. */
     Blt_HashSearch cursor;		/* Search iterator for tag hash
 					 * table. */
+    Blt_ChainLink link;
 } IsolineIterator;
 
 
@@ -1398,142 +1399,6 @@ ColormapToObjProc(
 
 /* Isoline procedures. */
 
-static int
-GetIsoTagTable(ContourElement *elemPtr, const char *name,  
-	    Blt_HashTable **tablePtrPtr)
-{
-    Blt_HashEntry *hPtr;
-
-    hPtr = Blt_FindHashEntry(&elemPtr->tagTable, name);
-    if (hPtr == NULL) {
-	return TCL_ERROR;			/* No tag by name. */
-    }
-    *tablePtrPtr = Blt_GetHashValue(hPtr);
-    return TCL_OK;
-}
-
-static int
-HasIsoTag(Isoline *isoPtr, const char *name)
-{
-    Blt_HashEntry *hPtr;
-    Blt_HashTable *tablePtr;
-
-    if (strcmp(name, "all") == 0) {
-	return TRUE;
-    }
-    if (GetIsoTagTable(isoPtr->elemPtr, name, &tablePtr) != TCL_OK) {
-	return FALSE;
-    }
-    hPtr = Blt_FindHashEntry(tablePtr, (char *)isoPtr);
-    if (hPtr == NULL) {
-	return FALSE;
-    }
-    return TRUE;
-}
-
-static Blt_HashTable *
-AddIsoTagTable(ContourElement *elemPtr, const char *name)
-{
-    Blt_HashEntry *hPtr;
-    Blt_HashTable *tablePtr;
-    int isNew;
-
-    hPtr = Blt_CreateHashEntry(&elemPtr->tagTable, name, &isNew);
-    if (isNew) {
-	tablePtr = Blt_AssertMalloc(sizeof(Blt_HashTable));
-	Blt_InitHashTable(tablePtr, BLT_ONE_WORD_KEYS);
-	Blt_SetHashValue(hPtr, tablePtr);
-    } else {
-	tablePtr = Blt_GetHashValue(hPtr);
-    }
-    return tablePtr;
-}
-
-static void
-AddIsoTag(ContourElement *elemPtr, Isoline *isoPtr, const char *name)
-{
-    int isNew;
-    Blt_HashEntry *hPtr;
-    Blt_HashTable *tablePtr;
-
-    tablePtr = AddIsoTagTable(elemPtr, name);
-    hPtr = Blt_CreateHashEntry(tablePtr, (char *)isoPtr, &isNew);
-    if (isNew) {
-	Blt_SetHashValue(hPtr, isoPtr);
-    }
-}
-
-static void
-ForgetIsoTag(ContourElement *elemPtr, const char *name)
-{
-    Blt_HashEntry *hPtr;
-    Blt_HashTable *tablePtr;
-
-    if (strcmp(name, "all") == 0) {
-	return;				/* Can't remove tag "all". */
-    }
-    hPtr = Blt_FindHashEntry(&elemPtr->tagTable, name);
-    if (hPtr == NULL) {
-	return;				/* No tag by name. */
-    }
-    tablePtr = Blt_GetHashValue(hPtr);
-    Blt_DeleteHashTable(tablePtr);
-    Blt_Free(tablePtr);
-    Blt_DeleteHashEntry(&elemPtr->tagTable, hPtr);
-}
-
-static void
-DestroyIsoTags(ContourElement *elemPtr)
-{
-    Blt_HashEntry *hPtr;
-    Blt_HashSearch iter;
-
-    for (hPtr = Blt_FirstHashEntry(&elemPtr->tagTable, &iter); hPtr != NULL;
-	 hPtr = Blt_NextHashEntry(&iter)) {
-	Blt_HashTable *tablePtr;
-	
-	tablePtr = Blt_GetHashValue(hPtr);
-	Blt_DeleteHashTable(tablePtr);
-    }
-}
-
-static void
-RemoveIsoTag(Isoline *isoPtr, const char *name)
-{
-    Blt_HashTable *tablePtr;
-
-    tablePtr = NULL;			/* Suppress compiler warning. */
-    if (GetIsoTagTable(isoPtr->elemPtr, name, &tablePtr) == TCL_OK) {
-	Blt_HashEntry *hPtr;
-
-	hPtr = Blt_FindHashEntry(tablePtr, (char *)isoPtr);
-	if (hPtr != NULL) {
-	    Blt_DeleteHashEntry(tablePtr, hPtr);
-	}
-    }
-}
-
-static void
-ClearIsoTags(Isoline *isoPtr)
-{
-    Blt_HashEntry *hPtr;
-    Blt_HashSearch iter;
-    ContourElement *elemPtr;
-
-    elemPtr = isoPtr->elemPtr;
-    for (hPtr = Blt_FirstHashEntry(&elemPtr->tagTable, &iter); hPtr != NULL;
-	 hPtr = Blt_NextHashEntry(&iter)) {
-	Blt_HashTable *tablePtr;
-	Blt_HashEntry *h2Ptr;
-	
-	tablePtr = Blt_GetHashValue(hPtr);
-	h2Ptr = Blt_FindHashEntry(tablePtr, (char *)isoPtr);
-	if (h2Ptr != NULL) {
-	    Blt_DeleteHashEntry(tablePtr, h2Ptr);
-	}
-    }
-}
-
 /*
  *---------------------------------------------------------------------------
  *
@@ -1552,6 +1417,15 @@ NextTaggedIsoline(IsolineIterator *iterPtr)
 {
     switch (iterPtr->type) {
     case ITER_TAG:
+	if (iterPtr->link != NULL) {
+	    Isoline *isoPtr;
+	    
+	    isoPtr = Blt_Chain_GetValue(iterPtr->link);
+	    iterPtr->link = Blt_Chain_NextLink(iterPtr->link);
+	    return isoPtr;
+	}
+	break;
+
     case ITER_ALL:
 	{
 	    Blt_HashEntry *hPtr;
@@ -1587,6 +1461,14 @@ FirstTaggedIsoline(IsolineIterator *iterPtr)
 {
     switch (iterPtr->type) {
     case ITER_TAG:
+	if (iterPtr->link != NULL) {
+	    Isoline *isoPtr;
+	    
+	    isoPtr = Blt_Chain_GetValue(iterPtr->link);
+	    iterPtr->link = Blt_Chain_NextLink(iterPtr->link);
+	    return isoPtr;
+	}
+	break;
     case ITER_ALL:
 	{
 	    Blt_HashEntry *hPtr;
@@ -1643,7 +1525,7 @@ GetIsolineIterator(Tcl_Interp *interp, ContourElement *elemPtr, Tcl_Obj *objPtr,
 		   IsolineIterator *iterPtr)
 {
     Isoline *isoPtr;
-    Blt_HashTable *tablePtr;
+    Blt_Chain chain;
     const char *string;
     char c;
     int numBytes, length;
@@ -1651,6 +1533,7 @@ GetIsolineIterator(Tcl_Interp *interp, ContourElement *elemPtr, Tcl_Obj *objPtr,
     iterPtr->elemPtr = elemPtr;
     iterPtr->type = ITER_SINGLE;
     iterPtr->tagName = Tcl_GetStringFromObj(objPtr, &numBytes);
+    iterPtr->link = NULL;
     iterPtr->nextPtr = NULL;
     iterPtr->startPtr = iterPtr->endPtr = NULL;
 
@@ -1662,9 +1545,10 @@ GetIsolineIterator(Tcl_Interp *interp, ContourElement *elemPtr, Tcl_Obj *objPtr,
     } else if (GetIsolineFromObj(NULL, elemPtr, objPtr, &isoPtr) == TCL_OK) {
 	iterPtr->startPtr = iterPtr->endPtr = isoPtr;
 	iterPtr->type = ITER_SINGLE;
-    } else if (GetIsoTagTable(elemPtr, string, &tablePtr) == TCL_OK) {
+    } else if ((chain = Blt_Tags_GetItemList(&elemPtr->isoTags, string)) 
+               != NULL) {
 	iterPtr->tagName = string;
-	iterPtr->tablePtr = tablePtr;
+	iterPtr->link = Blt_Chain_FirstLink(chain);
 	iterPtr->type = ITER_TAG;
     } else {
 	if (interp != NULL) {
@@ -1731,15 +1615,17 @@ static void
 DestroyIsoline(Isoline *isoPtr)
 {
     Graph *graphPtr;
+    ContourElement *elemPtr;
 
+    elemPtr = isoPtr->elemPtr;
     if (isoPtr->hashPtr != NULL) {
-	Blt_DeleteHashEntry(&isoPtr->elemPtr->isoTable, isoPtr->hashPtr);
+	Blt_DeleteHashEntry(&elemPtr->isoTable, isoPtr->hashPtr);
     }
-    ClearIsoTags(isoPtr);
-    graphPtr = isoPtr->elemPtr->obj.graphPtr;
+    Blt_Tags_ClearTagsFromItem(&elemPtr->isoTags, isoPtr);
+    graphPtr = elemPtr->obj.graphPtr;
     Blt_FreeOptions(isolineSpecs, (char *)isoPtr, graphPtr->display, 0);
-    if (isoPtr->elemPtr->activePtr == isoPtr) {
-	isoPtr->elemPtr->activePtr = NULL;
+    if (elemPtr->activePtr == isoPtr) {
+	elemPtr->activePtr = NULL;
     }
     Blt_Free(isoPtr);
 }
@@ -4625,7 +4511,7 @@ DestroyProc(Graph *graphPtr, Element *basePtr)
 	elemPtr->triangles = NULL;
 	elemPtr->numTriangles = 0;
     }
-    DestroyIsoTags(elemPtr);
+    Blt_Tags_Reset(&elemPtr->isoTags);
     DestroyIsolines(elemPtr);
     if (elemPtr->meshGC != NULL) {
 	Blt_FreePrivateGC(graphPtr->display, elemPtr->meshGC);
@@ -5946,7 +5832,7 @@ IsoTagAddOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     if (objc == 6) {
 	/* No nodes specified.  Just add the tag. */
-	AddIsoTag(elemPtr, NULL, tag);
+	Blt_Tags_AddTag(&elemPtr->isoTags, tag);
     } else {
 	int i;
 
@@ -5959,7 +5845,7 @@ IsoTagAddOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	    }
 	    for (isoPtr = FirstTaggedIsoline(&iter); isoPtr != NULL; 
 		 isoPtr = NextTaggedIsoline(&iter)) {
-		AddIsoTag(elemPtr, isoPtr, tag);
+		Blt_Tags_AddItemToTag(&elemPtr->isoTags, isoPtr, tag);
 	    }
 	}
     }
@@ -5982,7 +5868,7 @@ IsoTagDeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
 {
     ContourElement *elemPtr = clientData;
     const char *tag;
-    Blt_HashTable *tablePtr;
+    int i;
 
     tag = Tcl_GetString(objv[5]);
     if (strcmp(tag, "all") == 0) {
@@ -5990,27 +5876,17 @@ IsoTagDeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
 			 (char *)NULL);
         return TCL_ERROR;
     }
-    tablePtr = NULL;			/* Suppress compiler warning. */
-    if (GetIsoTagTable(elemPtr, tag, &tablePtr) == TCL_OK) {
-        int i;
-      
-        for (i = 6; i < objc; i++) {
-	    Isoline *isoPtr;
-	    IsolineIterator iter;
-
-	    if (GetIsolineIterator(interp, elemPtr, objv[i], &iter) != TCL_OK) {
-	        return TCL_ERROR;
-	    }
-	    for (isoPtr = FirstTaggedIsoline(&iter); isoPtr != NULL; 
-		 isoPtr = NextTaggedIsoline(&iter)) {
-		Blt_HashEntry *hPtr;
-
-	        hPtr = Blt_FindHashEntry(tablePtr, (char *)isoPtr);
-	        if (hPtr != NULL) {
-		    Blt_DeleteHashEntry(tablePtr, hPtr);
-	        }
-	   }
-       }
+    for (i = 6; i < objc; i++) {
+        Isoline *isoPtr;
+        IsolineIterator iter;
+        
+        if (GetIsolineIterator(interp, elemPtr, objv[i], &iter) != TCL_OK) {
+            return TCL_ERROR;
+        }
+        for (isoPtr = FirstTaggedIsoline(&iter); isoPtr != NULL; 
+             isoPtr = NextTaggedIsoline(&iter)) {
+            Blt_Tags_RemoveItemFromTag(&elemPtr->isoTags, isoPtr, tag);
+        }
     }
     return TCL_OK;
 }
@@ -6045,9 +5921,13 @@ IsoTagExistsOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	Isoline *isoPtr;
 
 	tag = Tcl_GetString(objv[i]);
+        if (strcmp(tag, "all") == 0) {
+            Tcl_SetBooleanObj(Tcl_GetObjResult(interp), TRUE);
+            return TCL_OK;
+        }
 	for (isoPtr = FirstTaggedIsoline(&iter); isoPtr != NULL; 
 	     isoPtr = NextTaggedIsoline(&iter)) {
-	    if (HasIsoTag(isoPtr, tag)) {
+            if (Blt_Tags_ItemHasTag(&elemPtr->isoTags, isoPtr, tag)) {
 		Tcl_SetBooleanObj(Tcl_GetObjResult(interp), TRUE);
 		return TCL_OK;
 	    }
@@ -6080,7 +5960,10 @@ IsoTagForgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	const char *tag;
 
 	tag = Tcl_GetString(objv[i]);
-	ForgetIsoTag(elemPtr, tag);
+        if (strcmp(tag, "all") == 0) {
+            continue;                   /* Can't remove tag "all". */
+        }
+        Blt_Tags_ForgetTag(&elemPtr->isoTags, tag);
     }
     return TCL_OK;
 }
@@ -6113,23 +5996,7 @@ IsoTagGetOp(ClientData clientData, Tcl_Interp *interp, int objc,
     for (isoPtr = FirstTaggedIsoline(&iter); isoPtr != NULL; 
 	 isoPtr = NextTaggedIsoline(&iter)) {
 	if (objc == 6) {
-	    Blt_HashEntry *hPtr;
-	    Blt_HashSearch hiter;
-
-	    for (hPtr = Blt_FirstHashEntry(&elemPtr->tagTable, &hiter); 
-		 hPtr != NULL; hPtr = Blt_NextHashEntry(&hiter)) {
-		Blt_HashTable *tablePtr;
-
-		tablePtr = Blt_GetHashValue(hPtr);
-		if (Blt_FindHashEntry(tablePtr, (char *)isoPtr) != NULL) {
-		    const char *tag;
-		    Tcl_Obj *objPtr;
-
-		    tag = Blt_GetHashKey(&elemPtr->tagTable, hPtr);
-		    objPtr = Tcl_NewStringObj(tag, -1);
-		    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-		}
-	    }
+            Blt_Tags_AppendTagsToObj(&elemPtr->isoTags, isoPtr, listObjPtr);
 	    Tcl_ListObjAppendElement(interp, listObjPtr, 
 		Tcl_NewStringObj("all", 3));
 	} else {
@@ -6150,29 +6017,27 @@ IsoTagGetOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	    }
 	    /* Now process any standard tags. */
 	    for (i = 7; i < objc; i++) {
-		Blt_HashEntry *hPtr;
-		Blt_HashSearch hiter;
+		Blt_ChainLink link;
 		const char *pattern;
-		
-		pattern = Tcl_GetString(objv[i]);
-		for (hPtr = Blt_FirstHashEntry(&elemPtr->tagTable, &hiter); 
-		     hPtr != NULL; hPtr = Blt_NextHashEntry(&hiter)) {
-		    const char *tag;
-		    Blt_HashTable *tablePtr;
+                Blt_Chain chain;
 
-		    tablePtr = Blt_GetHashValue(hPtr);
-		    tag = Blt_GetHashKey(&elemPtr->tagTable, hPtr);
+                chain = Blt_Chain_Create();
+                Blt_Tags_AppendTagsToChain(&elemPtr->isoTags, isoPtr, chain);
+		pattern = Tcl_GetString(objv[i]);
+		for (link = Blt_Chain_FirstLink(chain); link != NULL; 
+                     link = Blt_Chain_NextLink(link)) {
+		    const char *tag;
+                    Tcl_Obj *objPtr;
+
+		    tag = (const char *)Blt_Chain_GetValue(link);
 		    if (!Tcl_StringMatch(tag, pattern)) {
 			continue;
 		    }
-		    if (Blt_FindHashEntry(tablePtr, (char *)isoPtr) != NULL) {
-			Tcl_Obj *objPtr;
-
-			objPtr = Tcl_NewStringObj(tag, -1);
-			Tcl_ListObjAppendElement(interp, listObjPtr,objPtr);
-		    }
-		}
-	    }
+                    objPtr = Tcl_NewStringObj(tag, -1);
+                    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+                }
+                Blt_Chain_Destroy(chain);
+            }
 	}    
     }
     Tcl_SetObjResult(interp, listObjPtr);
@@ -6203,17 +6068,7 @@ IsoTagNamesOp(ClientData clientData, Tcl_Interp *interp, int objc,
     objPtr = Tcl_NewStringObj("all", -1);
     Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
     if (objc == 5) {
-	Blt_HashEntry *hPtr;
-	Blt_HashSearch iter;
-
-	for (hPtr = Blt_FirstHashEntry(&elemPtr->tagTable, &iter); 
-	     hPtr != NULL; hPtr = Blt_NextHashEntry(&iter)) {
-	    const char *tag;
-
-	    tag = Blt_GetHashKey(&elemPtr->tagTable, hPtr);
-	    objPtr = Tcl_NewStringObj(tag, -1);
-	    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-	}
+        Blt_Tags_AppendAllTagsToObj(&elemPtr->isoTags, listObjPtr);
     } else {
 	Blt_HashTable uniqTable;
 	int i;
@@ -6228,22 +6083,20 @@ IsoTagNamesOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	    }
 	    for (isoPtr = FirstTaggedIsoline(&iter); isoPtr != NULL; 
 		 isoPtr = NextTaggedIsoline(&iter)) {
-		Blt_HashEntry *hPtr;
-		Blt_HashSearch hiter;
+		Blt_ChainLink link;
+                Blt_Chain chain;
 
-		for (hPtr = Blt_FirstHashEntry(&elemPtr->tagTable, &hiter); 
-		     hPtr != NULL; hPtr = Blt_NextHashEntry(&hiter)) {
+                chain = Blt_Chain_Create();
+                Blt_Tags_AppendTagsToChain(&elemPtr->isoTags, isoPtr, chain);
+		for (link = Blt_Chain_FirstLink(chain); link != NULL; 
+                     link = Blt_Chain_NextLink(link)) {
 		    const char *tag;
-		    Blt_HashTable *tablePtr;
+                    int isNew;
 
-		    tag = Blt_GetHashKey(&elemPtr->tagTable, hPtr);
-		    tablePtr = Blt_GetHashValue(hPtr);
-		    if (Blt_FindHashEntry(tablePtr, isoPtr) != NULL) {
-			int isNew;
-
-			Blt_CreateHashEntry(&uniqTable, tag, &isNew);
-		    }
+		    tag = Blt_Chain_GetValue(link);
+                    Blt_CreateHashEntry(&uniqTable, tag, &isNew);
 		}
+                Blt_Chain_Destroy(chain);
 	    }
 	}
 	{
@@ -6301,7 +6154,7 @@ IsoTagSetOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	}
 	for (isoPtr = FirstTaggedIsoline(&iter); isoPtr != NULL; 
 	     isoPtr = NextTaggedIsoline(&iter)) {
-	    AddIsoTag(elemPtr, isoPtr, tag);
+	    Blt_Tags_AddItemToTag(&elemPtr->isoTags, isoPtr, tag);
 	}    
     }
     return TCL_OK;
@@ -6335,7 +6188,10 @@ IsoTagUnsetOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	 isoPtr = NextTaggedIsoline(&iter)) {
 	int i;
 	for (i = 6; i < objc; i++) {
-	    RemoveIsoTag(isoPtr, Tcl_GetString(objv[i]));
+            const char *tag;
+
+            tag = Tcl_GetString(objv[i]);
+            Blt_Tags_RemoveItemFromTag(&elemPtr->isoTags, isoPtr, tag);
 	}    
     }
     return TCL_OK;

@@ -42,6 +42,7 @@
 #include <bltPool.h>
 #include <bltNsUtil.h>
 #include <bltArrayObj.h>
+#include <bltTags.h>
 #include <bltDataTable.h>
 
 /*
@@ -161,10 +162,10 @@ static const char *valueTypes[] = {
  *	share tags without sharing the same view.
  */
 struct _BLT_TABLE_TAGS {
-    Blt_HashTable rowTable;		/* Table of row indices.  Each entry
+    struct _Blt_Tags rowTags;		/* Table of row indices.  Each entry
 					 * is itself a hash table of tag
 					 * names. */
-    Blt_HashTable columnTable;		/* Table of column indices.  Each
+    struct _Blt_Tags columnTags;        /* Table of column indices.  Each
 					 * entry is itself a hash table of tag
 					 * names. */
     int refCount;			/* Tracks the number of clients
@@ -978,73 +979,6 @@ DestroyNotifiers(Table *tablePtr, Blt_Chain chain)
     Blt_Chain_Destroy(chain);
 }
 
-
-/*
- *---------------------------------------------------------------------------
- *
- * DumpTags --
- *
- *	Retrieves all tags for a given row or column into a tcl list.  
- *
- * Results:
- *	Returns the number of tags in the list.
- *
- *---------------------------------------------------------------------------
- */
-static void
-DumpTags(Blt_HashTable *tagTablePtr, Header *headerPtr, Blt_Chain chain)
-{
-    Blt_HashEntry *hPtr;
-    Blt_HashSearch cursor;
-
-    for (hPtr = Blt_FirstHashEntry(tagTablePtr, &cursor); hPtr != NULL; 
-	 hPtr = Blt_NextHashEntry(&cursor)) {
-	Blt_HashEntry *hPtr2;
-	Blt_HashTable *tablePtr;
-
-	tablePtr = Blt_GetHashValue(hPtr);
-	hPtr2 = Blt_FindHashEntry(tablePtr, (char *)headerPtr);
-	if (hPtr2 != NULL) {
-	    Blt_Chain_Append(chain, Blt_GetHashKey(tagTablePtr, hPtr));
-	}
-    }
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * ClearTags --
- *
- *	Removes all tags for a given row or column.  
- *
- * Results:
- *	None.
- *
- * Side Effects:
- *      All tags associcated with the row are freed.
- *
- *---------------------------------------------------------------------------
- */
-static void
-ClearTags(Blt_HashTable *tagTablePtr, Header *headerPtr)
-{
-    Blt_HashEntry *hPtr;
-    Blt_HashSearch cursor;
-
-    for (hPtr = Blt_FirstHashEntry(tagTablePtr, &cursor); hPtr != NULL; 
-	 hPtr = Blt_NextHashEntry(&cursor)) {
-	Blt_HashEntry *hPtr2;
-	Blt_HashTable *tablePtr;
-
-	tablePtr = Blt_GetHashValue(hPtr);
-	hPtr2 = Blt_FindHashEntry(tablePtr, (char *)headerPtr);
-	if (hPtr2 != NULL) {
-	    Blt_DeleteHashEntry(tablePtr, hPtr2);
-	}
-    }
-}
-
-
 /*
  *---------------------------------------------------------------------------
  *
@@ -1171,8 +1105,6 @@ blt_table_column_type_to_name(BLT_TABLE_COLUMN_TYPE type)
     return valueTypes[type];
 }
 
-
-
 /*
  *---------------------------------------------------------------------------
  *
@@ -1187,8 +1119,8 @@ NewTags(void)
 
     tagsPtr = Blt_Malloc(sizeof(Tags));
     if (tagsPtr != NULL) {
-	Blt_InitHashTable(&tagsPtr->rowTable, BLT_STRING_KEYS);
-	Blt_InitHashTable(&tagsPtr->columnTable, BLT_STRING_KEYS);
+	Blt_Tags_Init(&tagsPtr->rowTags);
+	Blt_Tags_Init(&tagsPtr->columnTags);
 	tagsPtr->refCount = 1;
     }
     return tagsPtr;
@@ -1198,8 +1130,8 @@ static void
 InitTags(Table *tablePtr)
 {
     tablePtr->tags = NewTags();
-    tablePtr->rowTags = &tablePtr->tags->rowTable;
-    tablePtr->columnTags = &tablePtr->tags->columnTable;
+    tablePtr->rowTags = &tablePtr->tags->rowTags;
+    tablePtr->columnTags = &tablePtr->tags->columnTags;
 }
 
 /*
@@ -1217,8 +1149,8 @@ ShareTags(Table *srcPtr, Table *destPtr)
 	blt_table_release_tags(destPtr);
     }
     destPtr->tags = srcPtr->tags;
-    destPtr->rowTags = &destPtr->tags->rowTable;
-    destPtr->columnTags = &destPtr->tags->columnTable;
+    destPtr->rowTags = &destPtr->tags->rowTags;
+    destPtr->columnTags = &destPtr->tags->columnTags;
 }
 
 /*
@@ -2812,32 +2744,43 @@ blt_table_get_column_map(Table *tablePtr)
     return (BLT_TABLE_COLUMN *)tablePtr->corePtr->columns.map;
 }
 
-Blt_HashEntry *
-blt_table_first_row_tag(Table *tablePtr, Blt_HashSearch *cursorPtr)  
+Blt_Chain
+blt_table_get_row_tags(Table *tablePtr, Row *rowPtr)  
 {
-    return Blt_FirstHashEntry(tablePtr->rowTags, cursorPtr);
+    Blt_Chain chain;
+
+    chain = Blt_Chain_Create();
+    Blt_Tags_AppendTagsToChain(tablePtr->rowTags, rowPtr, chain);
+    return chain;
 }
 
-Blt_HashEntry *
-blt_table_first_column_tag(Table *tablePtr, Blt_HashSearch *cursorPtr)  
+Blt_Chain
+blt_table_get_column_tags(Table *tablePtr, Column *colPtr)  
 {
-    return Blt_FirstHashEntry(tablePtr->columnTags, cursorPtr);
+    Blt_Chain chain;
+
+    chain = Blt_Chain_Create();
+    Blt_Tags_AppendTagsToChain(tablePtr->columnTags, colPtr, chain);
+    return chain;
 }
+
+Blt_Chain
+blt_table_get_tagged_columns(Table *tablePtr, const char *tag)  
+{
+    return Blt_Tags_GetItemList(tablePtr->columnTags, tag);
+}
+
+Blt_Chain
+blt_table_get_tagged_rows(Table *tablePtr, const char *tag)  
+{
+    return Blt_Tags_GetItemList(tablePtr->rowTags, tag);
+}
+
 
 int 
 blt_table_same_object(Table *tablePtr1, Table *tablePtr2)  
 {
     return tablePtr1->corePtr == tablePtr2->corePtr;
-}
-
-Blt_Chain
-blt_table_row_tags(Table *tablePtr, Row *rowPtr)  
-{
-    Blt_Chain chain;
-
-    chain = Blt_Chain_Create();
-    DumpTags(tablePtr->rowTags, (Header *)rowPtr, chain);
-    return chain;
 }
 
 BLT_TABLE_ROW
@@ -2858,17 +2801,6 @@ blt_table_get_column_by_index(Table *tablePtr, long index)
     return NULL;
 }
 
-Blt_Chain
-blt_table_column_tags(Table *tablePtr, BLT_TABLE_COLUMN col)  
-{
-    Blt_Chain chain;
-
-    chain = Blt_Chain_Create();
-    DumpTags(tablePtr->columnTags, (Header *)col, chain);
-    return chain;
-}
-
-
 BLT_TABLE_ROWCOLUMN_SPEC
 blt_table_row_spec(BLT_TABLE table, Tcl_Obj *objPtr, const char **sp)
 {
@@ -2887,16 +2819,16 @@ blt_table_row_spec(BLT_TABLE table, Tcl_Obj *objPtr, const char **sp)
 	return TABLE_SPEC_TAG;
     } else if ((c == 'a') && (strcmp(string, "all") == 0)) {
 	return TABLE_SPEC_TAG;
-    } else if ((c == 'r') && (strncmp(string, "range=", 6) == 0)) {
+    } else if ((c == 'r') && (strncmp(string, "range:", 6) == 0)) {
 	*sp = string + 6;
 	return TABLE_SPEC_RANGE;
-    } else if ((c == 'i') && (strncmp(string, "index=", 6) == 0)) {
+    } else if ((c == 'i') && (strncmp(string, "index:", 6) == 0)) {
 	*sp = string + 6;
 	return TABLE_SPEC_INDEX;
-    } else if ((c == 'l') && (strncmp(string, "label=", 6) == 0)) {
+    } else if ((c == 'l') && (strncmp(string, "label:", 6) == 0)) {
 	*sp = string + 6;
 	return TABLE_SPEC_LABEL;
-    } else if ((c == 't') && (strncmp(string, "tag=", 4) == 0)) {
+    } else if ((c == 't') && (strncmp(string, "tag:", 4) == 0)) {
 	*sp = string + 4;
 	return TABLE_SPEC_TAG;
     } else if (blt_table_get_row_by_label(table, string) != NULL) {
@@ -2907,7 +2839,7 @@ blt_table_row_spec(BLT_TABLE table, Tcl_Obj *objPtr, const char **sp)
             return TABLE_SPEC_LABELS;
 	}
 	return TABLE_SPEC_LABEL;
-    } else if (blt_table_get_row_tag_table(table, string) != NULL) {
+    } else if (blt_table_get_tagged_rows(table, string) != NULL) {
 	return TABLE_SPEC_TAG;
     }
     p = strchr(string, '-');
@@ -2992,7 +2924,7 @@ blt_table_iterate_row(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr,
 		      BLT_TABLE_ITERATOR *iterPtr)
 {
     BLT_TABLE_ROW from, to;
-    const char *tagName, *p;
+    const char *tag, *p;
     int result;
     Tcl_Obj *rangeObjPtr;
     long index;
@@ -3001,19 +2933,20 @@ blt_table_iterate_row(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr,
     memset(iterPtr, 0, sizeof(BLT_TABLE_ITERATOR));
     iterPtr->table = table;
     iterPtr->type = TABLE_ITERATOR_INDEX;
+    iterPtr->link = NULL;
 
-    spec = blt_table_row_spec(table, objPtr, &tagName);
+    spec = blt_table_row_spec(table, objPtr, &tag);
     switch (spec) {
     case TABLE_SPEC_INDEX:
 	p = Tcl_GetString(objPtr);
-	if (p == tagName) {
+	if (p == tag) {
 	    result = Blt_GetLongFromObj((Tcl_Interp *)NULL, objPtr, &index);
 	} else {
-	    result = Blt_GetLong((Tcl_Interp *)NULL, (char *)tagName, &index);
+	    result = Blt_GetLong((Tcl_Interp *)NULL, (char *)tag, &index);
 	}
 	if (result != TCL_OK) {
 	    if (interp != NULL) {
-		Tcl_AppendResult(interp, "badly formed row index \"", tagName, 
+		Tcl_AppendResult(interp, "badly formed row index \"", tag, 
 			"\"", (char *)NULL);
 	    }
 	    return TCL_ERROR;
@@ -3027,12 +2960,12 @@ blt_table_iterate_row(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr,
 	}		
 	iterPtr->start = index;
 	iterPtr->end = iterPtr->start + 1;
-	iterPtr->tagName = tagName;
+	iterPtr->tag = tag;
 	iterPtr->numEntries = 1;
 	return TCL_OK;
 
     case TABLE_SPEC_LABEL:
-        from = blt_table_get_row_by_label(table, tagName);
+        from = blt_table_get_row_by_label(table, tag);
         index = blt_table_row_index(from);
 	iterPtr->start = index;
 	iterPtr->end = index + 1;
@@ -3040,56 +2973,54 @@ blt_table_iterate_row(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr,
 	return TCL_OK;
 
     case TABLE_SPEC_LABELS:
-	iterPtr->tablePtr = blt_table_row_get_label_table(table, tagName);
+	iterPtr->tablePtr = blt_table_row_get_label_table(table, tag);
 	if (iterPtr->tablePtr == NULL) {
 	    if (interp != NULL) {
-		Tcl_AppendResult(interp, "can't find row label \"", tagName, 
+		Tcl_AppendResult(interp, "can't find row label \"", tag, 
 			"\" in ", blt_table_name(table), (char *)NULL);
 	    }
 	    return TCL_ERROR;
 	}
 	iterPtr->type = TABLE_ITERATOR_TAG;
-	iterPtr->tagName = tagName;
+	iterPtr->tag = tag;
 	iterPtr->numEntries = iterPtr->tablePtr->numEntries;
 	return TCL_OK;
 
     case TABLE_SPEC_TAG:
-	if (strcmp(tagName, "all") == 0) {
+	if (strcmp(tag, "all") == 0) {
 	    iterPtr->type = TABLE_ITERATOR_ALL;
 	    iterPtr->start = 0;
 	    iterPtr->end = iterPtr->numEntries = blt_table_num_rows(table);
-	    iterPtr->tagName = tagName;
-	} else if (strcmp(tagName, "end") == 0) {
-	    iterPtr->tagName = tagName;
+	    iterPtr->tag = tag;
+	} else if (strcmp(tag, "end") == 0) {
+	    iterPtr->tag = tag;
 	    iterPtr->start = blt_table_num_rows(table) - 1;
 	    iterPtr->end = iterPtr->start + 1;
 	    iterPtr->numEntries = 1;
 	} else {
-	    iterPtr->tablePtr = blt_table_get_row_tag_table(iterPtr->table, 
-		tagName);
-	    if (iterPtr->tablePtr == NULL) {
-		if (interp != NULL) {
-		    Tcl_AppendResult(interp, "can't find row tag \"", tagName, 
-			"\" in ", blt_table_name(table), (char *)NULL);
-		}
-		return TCL_ERROR;
-	    }
+            Blt_Chain chain;
+
+            chain = blt_table_get_tagged_rows(iterPtr->table, tag);
+            if (chain == NULL) {
+                return TCL_OK;
+            }
+	    iterPtr->link = Blt_Chain_FirstLink(chain);
 	    iterPtr->type = TABLE_ITERATOR_TAG;
-	    iterPtr->tagName = tagName;
-	    iterPtr->numEntries = iterPtr->tablePtr->numEntries;
+	    iterPtr->tag = tag;
+	    iterPtr->numEntries = Blt_Chain_GetLength(chain);
 	}
 	return TCL_OK;
 
     case TABLE_SPEC_RANGE:
-	p = strchr(tagName, '-');
+	p = strchr(tag, '-');
 	if (p == NULL) {
 	    if (interp != NULL) {
-		Tcl_AppendResult(interp, "bad range specification \"", tagName, 
+		Tcl_AppendResult(interp, "bad range specification \"", tag, 
 			"\"", (char *)NULL);
 	    }
 	    return TCL_ERROR;
 	}
-	rangeObjPtr = Tcl_NewStringObj(tagName, p - tagName);
+	rangeObjPtr = Tcl_NewStringObj(tag, p - tag);
 	from = blt_table_get_row(interp, table, rangeObjPtr);
 	Tcl_DecrRefCount(rangeObjPtr);
         if (from == NULL) {
@@ -3107,12 +3038,12 @@ blt_table_iterate_row(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr,
 	iterPtr->type = TABLE_ITERATOR_RANGE;
 	iterPtr->table = table;
 	iterPtr->next = -1;
-	iterPtr->tagName = tagName;
+	iterPtr->tag = tag;
 	return TCL_OK;
 
     default:
 	if (interp != NULL) {
-	    Tcl_AppendResult(interp, "unknown row specification \"", tagName, 
+	    Tcl_AppendResult(interp, "unknown row specification \"", tag, 
 		"\" in ", blt_table_name(table), (char *)NULL);
 	}
     }
@@ -3135,26 +3066,36 @@ blt_table_iterate_row(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr,
 BLT_TABLE_ROW
 blt_table_first_tagged_row(BLT_TABLE_ITERATOR *iterPtr)
 {
-    if (iterPtr->type == TABLE_ITERATOR_TAG) {
-	Blt_HashEntry *hPtr;
+    BLT_TABLE_ROW row;
 
-	hPtr = Blt_FirstHashEntry(iterPtr->tablePtr, &iterPtr->cursor);
-	if (hPtr == NULL) {
-	    return NULL;
-	}
-	return Blt_GetHashValue(hPtr);
-    } else if (iterPtr->type == TABLE_ITERATOR_CHAIN) {
-	iterPtr->link = Blt_Chain_FirstLink(iterPtr->chain);
+    switch (iterPtr->type) {
+    case TABLE_ITERATOR_TAG:
+    case TABLE_ITERATOR_CHAIN:
 	if (iterPtr->link != NULL) {
-	    return Blt_Chain_GetValue(iterPtr->link);
-	}
-    } else if (iterPtr->start < iterPtr->end) {
-	BLT_TABLE_ROW row;
-	
-	row = blt_table_row(iterPtr->table, iterPtr->start);
-	iterPtr->next = iterPtr->start + 1;
-	return row;
-    } 
+            row = Blt_Chain_GetValue(iterPtr->link);
+            iterPtr->link = Blt_Chain_NextLink(iterPtr->link);
+            return row;
+        }
+        break;
+    case TABLE_ITERATOR_LABEL:
+        {
+            Blt_HashEntry *hPtr;
+            
+            hPtr = Blt_FirstHashEntry(iterPtr->tablePtr, &iterPtr->cursor);
+            if (hPtr == NULL) {
+                return NULL;
+            }
+            return Blt_GetHashValue(hPtr);
+        }
+        break;
+
+    default:
+        if (iterPtr->start < iterPtr->end) {
+            row = blt_table_row(iterPtr->table, iterPtr->start);
+            iterPtr->next = iterPtr->start + 1;
+            return row;
+        } 
+    }
     return NULL;
 }
 
@@ -3174,25 +3115,35 @@ blt_table_first_tagged_row(BLT_TABLE_ITERATOR *iterPtr)
 BLT_TABLE_ROW
 blt_table_next_tagged_row(BLT_TABLE_ITERATOR *iterPtr)
 {
-    if (iterPtr->type == TABLE_ITERATOR_TAG) {
-	Blt_HashEntry *hPtr;
-
-	hPtr = Blt_NextHashEntry(&iterPtr->cursor); 
-	if (hPtr != NULL) {
-	    return Blt_GetHashValue(hPtr);
-	}
-    } else if (iterPtr->type == TABLE_ITERATOR_CHAIN) {
-	iterPtr->link = Blt_Chain_NextLink(iterPtr->link);
+    BLT_TABLE_ROW row;
+            
+    switch (iterPtr->type) {
+    case TABLE_ITERATOR_CHAIN:
+    case TABLE_ITERATOR_TAG:
 	if (iterPtr->link != NULL) {
-	    return Blt_Chain_GetValue(iterPtr->link);
+            row = Blt_Chain_GetValue(iterPtr->link);
+            iterPtr->link = Blt_Chain_NextLink(iterPtr->link);
+            return row;
+        }
+        break;
+    case TABLE_ITERATOR_LABEL:
+        {
+            Blt_HashEntry *hPtr;
+
+            hPtr = Blt_NextHashEntry(&iterPtr->cursor); 
+            if (hPtr == NULL) {
+                return NULL;
+            }
+            return Blt_GetHashValue(hPtr);
 	}
-    } else if (iterPtr->next < iterPtr->end) {
-	BLT_TABLE_ROW row;
-	
-	row = blt_table_row(iterPtr->table, iterPtr->next);
-	iterPtr->next++;
-	return row;
-    }	
+        break;
+    default:
+        if (iterPtr->next < iterPtr->end) {
+            row = blt_table_row(iterPtr->table, iterPtr->next);
+            iterPtr->next++;
+            return row;
+        }	
+    }
     return NULL;
 }
 
@@ -3204,7 +3155,7 @@ blt_table_next_tagged_row(BLT_TABLE_ITERATOR *iterPtr)
  *	Gets the row offset associated the given row index, tag, or
  *	label.  This routine is used when you want only one row index.
  *	It's an error if more than one row is specified (e.g. "all"
- *	tag or range "1:4").  It's also an error if the row tag is
+ *	tag or range "1-4").  It's also an error if the row tag is
  *	empty (no rows are currently tagged).
  *
  *---------------------------------------------------------------------------
@@ -3255,19 +3206,19 @@ blt_table_column_spec(BLT_TABLE table, Tcl_Obj *objPtr, const char **sp)
 	return TABLE_SPEC_TAG;
     } else if ((c == 'a') && (strcmp(string, "all") == 0)) {
 	return TABLE_SPEC_TAG;
-    } else if ((c == 'r') && (strncmp(string, "range=", 6) == 0)) {
+    } else if ((c == 'r') && (strncmp(string, "range:", 6) == 0)) {
 	*sp = string + 6;
 	return TABLE_SPEC_RANGE;
-    } else if ((c == 'i') && (strncmp(string, "index=", 6) == 0)) {
+    } else if ((c == 'i') && (strncmp(string, "index:", 6) == 0)) {
 	*sp = string + 6;
 	return TABLE_SPEC_INDEX;
-    } else if ((c == 'l') && (strncmp(string, "label=", 6) == 0)) {
+    } else if ((c == 'l') && (strncmp(string, "label:", 6) == 0)) {
 	*sp = string + 6;
 	return TABLE_SPEC_LABEL;
-    } else if ((c == 't') && (strncmp(string, "tag=", 4) == 0)) {
+    } else if ((c == 't') && (strncmp(string, "tag:", 4) == 0)) {
 	*sp = string + 4;
 	return TABLE_SPEC_TAG;
-    } else if (blt_table_get_column_tag_table(table, string) != NULL) {
+    } else if (blt_table_get_tagged_columns(table, string) != NULL) {
 	return TABLE_SPEC_TAG;
     } else if (blt_table_get_column_by_label(table, string) != NULL) {
 	return TABLE_SPEC_LABEL;
@@ -3313,7 +3264,7 @@ blt_table_iterate_column(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr,
 			 BLT_TABLE_ITERATOR *iterPtr)
 {
     BLT_TABLE_COLUMN from, to;
-    const char *tagName, *p;
+    const char *tag, *p;
     int result;
     Tcl_Obj *fromObjPtr, *toObjPtr;
     long index;
@@ -3321,20 +3272,21 @@ blt_table_iterate_column(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr,
 
     iterPtr->table = table;
     iterPtr->type = TABLE_ITERATOR_INDEX;
+    iterPtr->link = NULL;
 
-    spec = blt_table_column_spec(table, objPtr, &tagName);
+    spec = blt_table_column_spec(table, objPtr, &tag);
     switch (spec) {
     case TABLE_SPEC_INDEX:
 	p = Tcl_GetString(objPtr);
-	if (p == tagName) {
+	if (p == tag) {
 	    result = Blt_GetLongFromObj((Tcl_Interp *)NULL, objPtr, &index);
 	} else {
-	    result = Blt_GetLong((Tcl_Interp *)NULL, (char *)tagName, &index);
+	    result = Blt_GetLong((Tcl_Interp *)NULL, (char *)tag, &index);
 	}
 	if (result != TCL_OK) {
 	    if (interp != NULL) {
 		Tcl_AppendResult(interp, "badly formed column index \"", 
-			tagName, "\"", (char *)NULL);
+			tag, "\"", (char *)NULL);
 	    }
 	    return TCL_ERROR;
 	}
@@ -3347,61 +3299,59 @@ blt_table_iterate_column(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr,
 	}		
 	iterPtr->start = index;
 	iterPtr->end = iterPtr->start + 1;
-	iterPtr->tagName = tagName;
+	iterPtr->tag = tag;
 	iterPtr->numEntries = 1;
 	return TCL_OK;
 
     case TABLE_SPEC_LABEL:
-	iterPtr->tablePtr = blt_table_column_get_label_table(table, tagName);
+	iterPtr->tablePtr = blt_table_column_get_label_table(table, tag);
 	if (iterPtr->tablePtr == NULL) {
 	    if (interp != NULL) {
-		Tcl_AppendResult(interp, "can't find column label \"", tagName, 
+		Tcl_AppendResult(interp, "can't find column label \"", tag, 
 			"\" in ", blt_table_name(table), (char *)NULL);
 	    }
 	    return TCL_ERROR;
 	}
-	iterPtr->type = TABLE_ITERATOR_TAG;
-	iterPtr->tagName = tagName;
+	iterPtr->type = TABLE_ITERATOR_LABEL;
+	iterPtr->tag = tag;
 	iterPtr->numEntries = iterPtr->tablePtr->numEntries;
 	return TCL_OK;
 
     case TABLE_SPEC_TAG:
-	if (strcmp(tagName, "all") == 0) {
+	if (strcmp(tag, "all") == 0) {
 	    iterPtr->type = TABLE_ITERATOR_ALL;
 	    iterPtr->start = 0;
 	    iterPtr->end = iterPtr->numEntries = blt_table_num_columns(table);
-	    iterPtr->tagName = tagName;
-	} else if (strcmp(tagName, "end") == 0) {
-	    iterPtr->tagName = tagName;
+	    iterPtr->tag = tag;
+	} else if (strcmp(tag, "end") == 0) {
+	    iterPtr->tag = tag;
 	    iterPtr->start = blt_table_num_columns(table) - 1;
 	    iterPtr->end = iterPtr->start + 1;
 	    iterPtr->numEntries = 1;
 	} else {
-	    iterPtr->tablePtr = blt_table_get_column_tag_table(iterPtr->table,
-		tagName);
-	    if (iterPtr->tablePtr == NULL) {
-		if (interp != NULL) {
-		    Tcl_AppendResult(interp, "can't find column tag \"", 
-			tagName, "\" in ", blt_table_name(table), (char *)NULL);
-		}
-		return TCL_ERROR;
+            Blt_Chain chain;
+
+            chain = blt_table_get_tagged_columns(iterPtr->table, tag);
+	    if (chain == NULL) {
+		return TCL_OK;
 	    }
+	    iterPtr->link = Blt_Chain_FirstLink(chain);
 	    iterPtr->type = TABLE_ITERATOR_TAG;
-	    iterPtr->tagName = tagName;
-	    iterPtr->numEntries = iterPtr->tablePtr->numEntries;
+	    iterPtr->tag = tag;
+	    iterPtr->numEntries = Blt_Chain_GetLength(chain);
 	}
 	return TCL_OK;
 
     case TABLE_SPEC_RANGE:
-	p = strchr(tagName, '-');
+	p = strchr(tag, '-');
 	if (p == NULL) {
 	    if (interp != NULL) {
-		Tcl_AppendResult(interp, "bad range specification \"", tagName, 
+		Tcl_AppendResult(interp, "bad range specification \"", tag, 
 			"\"", (char *)NULL);
 	    }
 	    return TCL_ERROR;
 	}
-	fromObjPtr = Tcl_NewStringObj(tagName, p - tagName);
+	fromObjPtr = Tcl_NewStringObj(tag, p - tag);
 	from = blt_table_get_column(interp, table, fromObjPtr);
 	Tcl_DecrRefCount(fromObjPtr);
         if (from == NULL) {
@@ -3417,142 +3367,17 @@ blt_table_iterate_column(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr,
 	iterPtr->end   = blt_table_column_index(to) + 1;
 	iterPtr->numEntries = iterPtr->end - iterPtr->start;
 	iterPtr->type  = TABLE_ITERATOR_RANGE;
-	iterPtr->tagName = tagName;
+	iterPtr->tag = tag;
 	return TCL_OK;
 
     default:
 	if (interp != NULL) {
 	    Tcl_AppendResult(interp, "unknown column specification \"", 
-		tagName, "\" in ", blt_table_name(table),(char *)NULL);
+		tag, "\" in ", blt_table_name(table),(char *)NULL);
 	}
     }
     return TCL_ERROR;
 }
-
-#ifdef notdef
-/*
- *---------------------------------------------------------------------------
- *
- * blt_table_iterate_column --
- *
- *	Initials the table iterator to walk through the columns tagged by the
- *	given tag, label, or index, as represented in objPtr.
- *
- *	Notes: 
- *
- *	1) A tag doesn't need to point to any columns. It can be empty.  This
- *	routine does not check if a tag represents any columns, only that the
- *	tag itself exists.
- *
- *	2) If a column label and tag are the same string, the label always
- *	wins.
- *
- *	3) A range of columns can be represented by "from x to y" x:y x-y {x y}
- *
- * Results:
- *	A standard TCL result.  If there is an error parsing the index or tag,
- *	then TCL_ERROR is returned and an error message is left in the
- *	interpreter.
- *
- *---------------------------------------------------------------------------
- */
-int
-blt_table_iterate_column(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr, 
-			 BLT_TABLE_ITERATOR *iterPtr)
-{
-    long index;
-    const char *p, *rp, *pend;
-    const char *tagName;
-    int numBytes;
-    int badrange;
-
-    iterPtr->table = table;
-    iterPtr->type = TABLE_ITERATOR_INDEX;
-    iterPtr->next = -1;
-
-    tagName = Tcl_GetStringFromObj(objPtr, &nBytes);
-    rp = NULL;
-    for (p = tagName, pend = p + numBytes; p < pend; p++) {
-	if (*p != '-') {
-	    continue;
-	}
-	if (rp != NULL) {
-	    /* Found more than one range specifier. We'll assume it's
-	     * not a range and try is as a regular index, tag, or
-	     * label. */
-	    rp = NULL;
-	    break;
-	}
-	rp = p;
-    } 
-    badrange = FALSE;
-    if ((rp != NULL) && (rp != tagName) && (rp != (pend - 1))) {
-	long length;
-	Tcl_Obj *objPtr1, *objPtr2;
-	BLT_TABLE_COLUMN from, to;
-	
-	length = rp - tagName;
-	objPtr1 = Tcl_NewStringObj(tagName, length);
-	rp++;
-	objPtr2 = Tcl_NewStringObj(rp, pend - rp);
-	from = blt_table_get_column(interp, table, objPtr1);
-	if (from != NULL) {
-	    to = blt_table_get_column(interp, table, objPtr2);
-	}
-	Tcl_DecrRefCount(objPtr1);
-	Tcl_DecrRefCount(objPtr2);
-	if (to != NULL) {
-	    iterPtr->start = blt_table_column_index(from);
-	    iterPtr->end   = blt_table_column_index(to) + 1;
-	    iterPtr->type  = TABLE_ITERATOR_RANGE;
-	    return TCL_OK;
-	}
-	badrange = TRUE;
-    }
-    if (Blt_GetLongFromObj((Tcl_Interp *)NULL, objPtr, &index) == TCL_OK) {
-	if ((index < 0) || (index >= blt_table_num_columns(table))) {
-	    if (interp != NULL) {
-		Tcl_AppendResult(interp, 
-			"can't find column: bad column index \"", 
-			Tcl_GetString(objPtr), "\"", (char *)NULL);
-	    }
-	    return TCL_ERROR;
-	}		
-	iterPtr->start = index;
-	iterPtr->end = iterPtr->start + 1;
-	return TCL_OK;
-    } else if (strcmp(tagName, "all") == 0) {
-	iterPtr->type = TABLE_ITERATOR_ALL;
-	iterPtr->start = 0;
-	iterPtr->end = blt_table_num_columns(table);
-	return TCL_OK;
-    } else if (strcmp(tagName, "end") == 0) {
-	iterPtr->start = blt_table_num_columns(table) - 1;
-	iterPtr->end   = iterPtr->start + 1;
-	return TCL_OK;
-    } else {
-	Column *colPtr;
-
-	colPtr = blt_table_get_column_by_label(table, tagName);
-	if (colPtr != NULL) {
-	    iterPtr->start = colPtr->index;
-	    iterPtr->end = iterPtr->start + 1;
-	    return TCL_OK;
-	}
-	iterPtr->tablePtr = blt_table_get_column_tag_table(iterPtr->table, 
-		tagName);
-	if (iterPtr->tablePtr != NULL) {
-	    iterPtr->type = TABLE_ITERATOR_TAG;
-	    return TCL_OK;
-	}
-    }
-    if ((interp != NULL) && (!badrange)) {
-	Tcl_AppendResult(interp, "can't find column tag \"", tagName, 
-		"\" in ", blt_table_name(table), (char *)NULL);
-    }
-    return TCL_ERROR;
-}
-#endif
 
 /*
  *---------------------------------------------------------------------------
@@ -3570,26 +3395,36 @@ blt_table_iterate_column(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr,
 BLT_TABLE_COLUMN
 blt_table_first_tagged_column(BLT_TABLE_ITERATOR *iterPtr)
 {
-    if (iterPtr->type == TABLE_ITERATOR_TAG) {
-	Blt_HashEntry *hPtr;
+    BLT_TABLE_COLUMN col;
 
-	hPtr = Blt_FirstHashEntry(iterPtr->tablePtr, &iterPtr->cursor);
-	if (hPtr == NULL) {
-	    return NULL;
-	}
-	return Blt_GetHashValue(hPtr);
-    } else if (iterPtr->type == TABLE_ITERATOR_CHAIN) {
-	iterPtr->link = Blt_Chain_FirstLink(iterPtr->chain);
+    switch (iterPtr->type) {
+    case TABLE_ITERATOR_TAG:
+    case TABLE_ITERATOR_CHAIN:
 	if (iterPtr->link != NULL) {
-	    return Blt_Chain_GetValue(iterPtr->link);
-	}
-    } else if (iterPtr->start < iterPtr->end) {
-	BLT_TABLE_COLUMN col;
-	
-	col = blt_table_column(iterPtr->table, iterPtr->start);
-	iterPtr->next = iterPtr->start + 1;
-	return col;
-    } 
+            col = Blt_Chain_GetValue(iterPtr->link);
+            iterPtr->link = Blt_Chain_NextLink(iterPtr->link);
+            return col;
+        }
+        break;
+    case TABLE_ITERATOR_LABEL:
+        {
+            Blt_HashEntry *hPtr;
+            
+            hPtr = Blt_FirstHashEntry(iterPtr->tablePtr, &iterPtr->cursor);
+            if (hPtr == NULL) {
+                return NULL;
+            }
+            return Blt_GetHashValue(hPtr);
+        }
+        break;
+    default:
+        if (iterPtr->start < iterPtr->end) {
+            col = blt_table_column(iterPtr->table, iterPtr->start);
+            iterPtr->next = iterPtr->start + 1;
+            return col;
+        } 
+        break;
+    }
     return NULL;
 }
 
@@ -3610,25 +3445,36 @@ blt_table_first_tagged_column(BLT_TABLE_ITERATOR *iterPtr)
 BLT_TABLE_COLUMN
 blt_table_next_tagged_column(BLT_TABLE_ITERATOR *iterPtr)
 {
-    if (iterPtr->type == TABLE_ITERATOR_TAG) {
-	Blt_HashEntry *hPtr;
-
-	hPtr = Blt_NextHashEntry(&iterPtr->cursor); 
-	if (hPtr != NULL) {
-	    return Blt_GetHashValue(hPtr);
-	}
-    } else if (iterPtr->type == TABLE_ITERATOR_CHAIN) {
-	iterPtr->link = Blt_Chain_NextLink(iterPtr->link);
+    BLT_TABLE_COLUMN col;
+            
+    switch (iterPtr->type) {
+    case TABLE_ITERATOR_TAG:
+    case TABLE_ITERATOR_CHAIN:
 	if (iterPtr->link != NULL) {
-	    return Blt_Chain_GetValue(iterPtr->link);
+            col = Blt_Chain_GetValue(iterPtr->link);
+            iterPtr->link = Blt_Chain_NextLink(iterPtr->link);
+            return col;
+        }
+        break;
+    case TABLE_ITERATOR_LABEL:
+        {
+            Blt_HashEntry *hPtr;
+
+            hPtr = Blt_NextHashEntry(&iterPtr->cursor); 
+            if (hPtr == NULL) {
+                return NULL;
+            }
+            return Blt_GetHashValue(hPtr);
 	}
-    } else if (iterPtr->next < iterPtr->end) {
-	BLT_TABLE_COLUMN col;
-	
-	col = blt_table_column(iterPtr->table, iterPtr->next);
-	iterPtr->next++;
-	return col;
-    }	
+        break;
+    default:
+        if (iterPtr->next < iterPtr->end) {
+            col = blt_table_column(iterPtr->table, iterPtr->next);
+            iterPtr->next++;
+            return col;
+        }	
+        break;
+    }
     return NULL;
 }
 
@@ -3763,11 +3609,12 @@ blt_table_iterate_row_objv(Tcl_Interp *interp, BLT_TABLE table, int objc,
 	return TCL_ERROR;
     }
     iterPtr->type = TABLE_ITERATOR_CHAIN;
+    iterPtr->link = Blt_Chain_FirstLink(chain);
     iterPtr->next = -1;
     iterPtr->start = 0;
     iterPtr->end = iterPtr->numEntries = Blt_Chain_GetLength(chain);
     iterPtr->chain = chain;
-    iterPtr->tagName = "";
+    iterPtr->tag = "";
     return TCL_OK;
 }
 
@@ -3776,10 +3623,11 @@ blt_table_iterate_all_rows(BLT_TABLE table, BLT_TABLE_ITERATOR *iterPtr)
 {
     iterPtr->table = table;
     iterPtr->type = TABLE_ITERATOR_ALL;
+    iterPtr->link = NULL;
     iterPtr->next = -1;
     iterPtr->start = 0;
     iterPtr->end = iterPtr->numEntries = blt_table_num_rows(table);
-    iterPtr->tagName = "all";
+    iterPtr->tag = "all";
     iterPtr->chain = NULL;
 }
 
@@ -3796,11 +3644,12 @@ blt_table_iterate_column_objv(Tcl_Interp *interp, BLT_TABLE table, int objc,
     }
     iterPtr->table = table;
     iterPtr->type = TABLE_ITERATOR_CHAIN;
+    iterPtr->link = Blt_Chain_FirstLink(chain);    
     iterPtr->next = -1;
     iterPtr->start = 0;
     iterPtr->end = iterPtr->numEntries = Blt_Chain_GetLength(chain);
     iterPtr->chain = chain;
-    iterPtr->tagName = "";
+    iterPtr->tag = "";
     return TCL_OK;
 }
 
@@ -3809,10 +3658,11 @@ blt_table_iterate_all_columns(BLT_TABLE table, BLT_TABLE_ITERATOR *iterPtr)
 {
     iterPtr->table = table;
     iterPtr->type = TABLE_ITERATOR_ALL;
+    iterPtr->link = NULL;
     iterPtr->next = -1;
     iterPtr->start = 0;
     iterPtr->end = iterPtr->numEntries = blt_table_num_columns(table);
-    iterPtr->tagName = "all";
+    iterPtr->tag = "all";
     iterPtr->chain = NULL;
 }
 
@@ -4107,30 +3957,11 @@ blt_table_release_tags(Table *tablePtr)
     tagsPtr = tablePtr->tags;
     tagsPtr->refCount--;
     if (tagsPtr->refCount <= 0) {
-	Blt_HashEntry *hPtr;
-	Blt_HashSearch cursor;
-
-	for (hPtr = Blt_FirstHashEntry(&tagsPtr->rowTable, &cursor); 
-	     hPtr != NULL; hPtr = Blt_NextHashEntry(&cursor)) {
-	    Blt_HashTable *tablePtr;
-
-	    tablePtr = Blt_GetHashValue(hPtr); 
-	    Blt_DeleteHashTable(tablePtr);
-	    Blt_Free(tablePtr);
-	}
-	Blt_DeleteHashTable(&tagsPtr->rowTable);
+        Blt_Tags_Reset(&tagsPtr->rowTags);
 	tablePtr->rowTags = NULL;
-	for (hPtr = Blt_FirstHashEntry(&tagsPtr->columnTable, &cursor); 
-	     hPtr != NULL; hPtr = Blt_NextHashEntry(&cursor)) {
-	    Blt_HashTable *tablePtr;
-
-	    tablePtr = Blt_GetHashValue(hPtr); 
-	    Blt_DeleteHashTable(tablePtr);
-	    Blt_Free(tablePtr);
-	}
-	Blt_DeleteHashTable(&tagsPtr->columnTable);
-	Blt_Free(tagsPtr);
+        Blt_Tags_Reset(&tagsPtr->columnTags);
 	tablePtr->columnTags = NULL;
+	Blt_Free(tagsPtr);
     }
 }
 
@@ -4177,59 +4008,8 @@ blt_table_new_tags(Table *tablePtr)
 	blt_table_release_tags(tablePtr);
     }
     tablePtr->tags = NewTags();
-    tablePtr->rowTags = &tablePtr->tags->rowTable;
-    tablePtr->columnTags = &tablePtr->tags->columnTable;
-}
-
-
-/*
- *---------------------------------------------------------------------------
- *
- * blt_table_get_row_tag_table --
- *
- *	Returns the hash table containing row indices for a tag.
- *
- * Results:
- *	Returns a pointer to the hash table containing indices for the given
- *	tag.  If the row has no tags, then NULL is returned.
- *
- *---------------------------------------------------------------------------
- */
-Blt_HashTable *
-blt_table_get_row_tag_table(Table *tablePtr, const char *tagName)		
-{
-    Blt_HashEntry *hPtr;
-
-    hPtr = Blt_FindHashEntry(tablePtr->rowTags, tagName);
-    if (hPtr == NULL) {
-	return NULL;		/* Row isn't tagged. */
-    }
-    return Blt_GetHashValue(hPtr);
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * blt_table_get_column_tag_table --
- *
- *	Returns the hash table containing column indices for a tag.
- *
- * Results:
- *	Returns a pointer to the hash table containing indices for the given
- *	tag.  If the tag has no indices, then NULL is returned.
- *
- *---------------------------------------------------------------------------
- */
-Blt_HashTable *
-blt_table_get_column_tag_table(Table *tablePtr, const char *tagName)
-{
-    Blt_HashEntry *hPtr;
-
-    hPtr = Blt_FindHashEntry(tablePtr->columnTags, tagName);
-    if (hPtr == NULL) {
-	return NULL;		
-    }
-    return Blt_GetHashValue(hPtr);
+    tablePtr->rowTags = &tablePtr->tags->rowTags;
+    tablePtr->columnTags = &tablePtr->tags->columnTags;
 }
 
 /*
@@ -4237,9 +4017,9 @@ blt_table_get_column_tag_table(Table *tablePtr, const char *tagName)
  *
  * blt_table_forget_row_tag --
  *
- *	Removes a tag from the row tag table.  Row tags are contained in hash
- *	tables keyed by the tag name.  Each table is in turn hashed by the row
- *	index in the row tag table.
+ *	Removes a tag from the row tag table.  Row tags are contained in
+ *	hash tables keyed by the tag name.  Each table is in turn hashed by
+ *	the row index in the row tag table.
  *
  * Results:
  *	None.
@@ -4251,26 +4031,12 @@ blt_table_get_column_tag_table(Table *tablePtr, const char *tagName)
  *---------------------------------------------------------------------------
  */
 int
-blt_table_forget_row_tag(Tcl_Interp *interp, Table *tablePtr, const char *tagName)
+blt_table_forget_row_tag(Tcl_Interp *interp, Table *tablePtr, const char *tag)
 {
-    Blt_HashEntry *hPtr;
-    Blt_HashTable *tagTablePtr;
-
-    if ((strcmp(tagName, "all") == 0) || (strcmp(tagName, "end") == 0)) {
+    if ((strcmp(tag, "all") == 0) || (strcmp(tag, "end") == 0)) {
 	return TCL_OK;			/* Can't forget reserved tags. */
     }
-    hPtr = Blt_FindHashEntry(tablePtr->rowTags, tagName);
-    if (hPtr == NULL) {
-	if (interp != NULL) {
-	    Tcl_AppendResult(interp, "unknown row tag \"", tagName, "\"", 
-			     (char *)NULL);
-	}
-	return TCL_ERROR;		/* No such row tag. */
-    }
-    tagTablePtr = Blt_GetHashValue(hPtr);
-    Blt_DeleteHashTable(tagTablePtr);
-    Blt_Free(tagTablePtr);
-    Blt_DeleteHashEntry(tablePtr->rowTags, hPtr);
+    Blt_Tags_ForgetTag(tablePtr->rowTags, tag);
     return TCL_OK;
 }
 
@@ -4279,9 +4045,9 @@ blt_table_forget_row_tag(Tcl_Interp *interp, Table *tablePtr, const char *tagNam
  *
  * blt_table_forget_column_tag --
  *
- *	Removes a tag from the column tag table.  Column tags are contained in
- *	hash tables keyed by the tag name.  Each table is in turn hashed by
- *	the column offset in the column tag table.
+ *	Removes a tag from the column tag table.  Column tags are contained
+ *	in hash tables keyed by the tag name.  Each table is in turn hashed
+ *	by the column offset in the column tag table.
  *
  * Results:
  *	None.
@@ -4294,26 +4060,12 @@ blt_table_forget_row_tag(Tcl_Interp *interp, Table *tablePtr, const char *tagNam
  */
 int
 blt_table_forget_column_tag(Tcl_Interp *interp, Table *tablePtr, 
-			  const char *tagName)
+                            const char *tag)
 {
-    Blt_HashEntry *hPtr;
-    Blt_HashTable *tagTablePtr;
-
-    if ((strcmp(tagName, "all") == 0) || (strcmp(tagName, "end") == 0)) {
+    if ((strcmp(tag, "all") == 0) || (strcmp(tag, "end") == 0)) {
 	return TCL_OK;			/* Can't forget reserved tags. */
     }
-    hPtr = Blt_FindHashEntry(tablePtr->columnTags, tagName);
-    if (hPtr == NULL) {
-	if (interp != NULL) {
-	    Tcl_AppendResult(interp, "unknown column tag \"", tagName, "\"", 
-			     (char *)NULL);
-	}
-	return TCL_ERROR;		/* No such column tag. */
-    }
-    tagTablePtr = Blt_GetHashValue(hPtr);
-    Blt_DeleteHashTable(tagTablePtr);
-    Blt_Free(tagTablePtr);
-    Blt_DeleteHashEntry(tablePtr->columnTags, hPtr);
+    Blt_Tags_ForgetTag(tablePtr->columnTags, tag);
     return TCL_OK;
 }
 
@@ -4322,9 +4074,9 @@ blt_table_forget_column_tag(Tcl_Interp *interp, Table *tablePtr,
  *
  * blt_table_set_row_tag --
  *
- *	Associates a tag with a given row.  Individual row tags are stored in
- *	hash tables keyed by the tag name.  Each table is in turn stored in a
- *	hash table keyed by the row location.
+ *	Associates a tag with a given row.  Individual row tags are stored
+ *	in hash tables keyed by the tag name.  Each table is in turn stored
+ *	in a hash table keyed by the row location.
  *
  * Results:
  *	None.
@@ -4336,58 +4088,35 @@ blt_table_forget_column_tag(Tcl_Interp *interp, Table *tablePtr,
  */
 int
 blt_table_set_row_tag(Tcl_Interp *interp, Table *tablePtr, Row *rowPtr, 
-		    const char *tagName)
+		    const char *tag)
 {
-    Blt_HashEntry *hPtr;
-    Blt_HashTable *tagTablePtr;
-    int isNew;
     long dummy;
 
-    if ((strcmp(tagName, "all") == 0) || (strcmp(tagName, "end") == 0)) {
+    if ((strcmp(tag, "all") == 0) || (strcmp(tag, "end") == 0)) {
 	return TCL_OK;		/* Don't need to create reserved tags. */
     }
-    if (tagName[0] == '\0') {
+    if (tag[0] == '\0') {
 	if (interp != NULL) {
-	    Tcl_AppendResult(interp, "tag \"", tagName, "\" can't be empty.", 
+	    Tcl_AppendResult(interp, "tag \"", tag, "\" can't be empty.", 
 		(char *)NULL);
 	}
 	return TCL_ERROR;
     }
-    if (tagName[0] == '-') {
+    if (tag[0] == '-') {
 	if (interp != NULL) {
-	    Tcl_AppendResult(interp, "tag \"", tagName, 
-		"\" can't start with a '-'.", (char *)NULL);
+	    Tcl_AppendResult(interp, "tag \"", tag, 
+                "\" can't start with a '-'.", (char *)NULL);
 	}
 	return TCL_ERROR;
     }
-    if (Blt_GetLong(NULL, (char *)tagName, &dummy) == TCL_OK) {
+    if (Blt_GetLong(NULL, (char *)tag, &dummy) == TCL_OK) {
 	if (interp != NULL) {
-	    Tcl_AppendResult(interp, "tag \"", tagName, "\" can't be a number.",
+	    Tcl_AppendResult(interp, "tag \"", tag, "\" can't be a number.",
 			     (char *)NULL);
 	}
 	return TCL_ERROR;
     }
-    hPtr = Blt_CreateHashEntry(tablePtr->rowTags, tagName, &isNew);
-    if (hPtr == NULL) {
-	if (interp != NULL) {
-	    Tcl_AppendResult(interp, "can't add tag \"", tagName, 
-			 "\": out of memory", (char *)NULL);
-	}
-	return TCL_ERROR;
-    }
-    if (isNew) {
-	tagTablePtr = Blt_AssertMalloc(sizeof(Blt_HashTable));
-	Blt_InitHashTable(tagTablePtr, BLT_ONE_WORD_KEYS);
-	Blt_SetHashValue(hPtr, tagTablePtr);
-    } else {
-	tagTablePtr = Blt_GetHashValue(hPtr);
-    }
-    if (rowPtr != NULL) {
-	hPtr = Blt_CreateHashEntry(tagTablePtr, (char *)rowPtr, &isNew);
-	if (isNew) {
-	    Blt_SetHashValue(hPtr, rowPtr);
-	}
-    }
+    Blt_Tags_AddItemToTag(tablePtr->rowTags, rowPtr, tag);
     return TCL_OK;
 }
 
@@ -4411,58 +4140,35 @@ blt_table_set_row_tag(Tcl_Interp *interp, Table *tablePtr, Row *rowPtr,
  */
 int
 blt_table_set_column_tag(Tcl_Interp *interp, Table *tablePtr, Column *colPtr, 
-		       const char *tagName)
+                         const char *tag)
 {
-    Blt_HashEntry *hPtr;
-    Blt_HashTable *tagTablePtr;
-    int isNew;
     long dummy;
 
-    if ((strcmp(tagName, "all") == 0) || (strcmp(tagName, "end") == 0)) {
+    if ((strcmp(tag, "all") == 0) || (strcmp(tag, "end") == 0)) {
 	return TCL_OK;			/* Don't create reserved tags. */
     }
-    if (tagName[0] == '\0') {
+    if (tag[0] == '\0') {
 	if (interp != NULL) {
-	    Tcl_AppendResult(interp, "tag \"", tagName, "\" can't be empty.", 
+	    Tcl_AppendResult(interp, "tag \"", tag, "\" can't be empty.", 
 			     (char *)NULL);
 	}
 	return TCL_ERROR;
     }
-    if (tagName[0] == '-') {
+    if (tag[0] == '-') {
 	if (interp != NULL) {
-	    Tcl_AppendResult(interp, "tag \"", tagName, 
+	    Tcl_AppendResult(interp, "tag \"", tag, 
 		"\" can't start with a '-'.", (char *)NULL);
 	}
 	return TCL_ERROR;
     }
-    if (Blt_GetLong(NULL, (char *)tagName, &dummy) == TCL_OK) {
+    if (Blt_GetLong(NULL, (char *)tag, &dummy) == TCL_OK) {
 	if (interp != NULL) {
-	    Tcl_AppendResult(interp, "tag \"", tagName, "\" can't be a number.",
+	    Tcl_AppendResult(interp, "tag \"", tag, "\" can't be a number.",
 			     (char *)NULL);
 	}
 	return TCL_ERROR;
     }
-    hPtr = Blt_CreateHashEntry(tablePtr->columnTags, tagName, &isNew);
-    if (hPtr == NULL) {
-	if (interp != NULL) {
-	    Tcl_AppendResult(interp, "can't add tag \"", tagName, 
-			 "\": out of memory", (char *)NULL);
-	}
-	return TCL_ERROR;
-    }
-    if (isNew) {
-	tagTablePtr = Blt_AssertMalloc(sizeof(Blt_HashTable));
-	Blt_InitHashTable(tagTablePtr, BLT_ONE_WORD_KEYS);
-	Blt_SetHashValue(hPtr, tagTablePtr);
-    } else {
-	tagTablePtr = Blt_GetHashValue(hPtr);
-    }
-    if (colPtr != NULL) {
-	hPtr = Blt_CreateHashEntry(tagTablePtr, (char *)colPtr, &isNew);
-	if (isNew) {
-	    Blt_SetHashValue(hPtr, colPtr);
-	}
-    }
+    Blt_Tags_AddItemToTag(tablePtr->columnTags, colPtr, tag);
     return TCL_OK;
 }
 
@@ -4479,26 +4185,15 @@ blt_table_set_column_tag(Tcl_Interp *interp, Table *tablePtr, Column *colPtr,
  *---------------------------------------------------------------------------
  */
 int
-blt_table_row_has_tag(Table *tablePtr, Row *rowPtr, const char *tagName)
+blt_table_row_has_tag(Table *tablePtr, Row *rowPtr, const char *tag)
 {
-    Blt_HashTable *tagTablePtr;
-    Blt_HashEntry *hPtr;
-
-    if (strcmp(tagName, "all") == 0) {
+    if (strcmp(tag, "all") == 0) {
 	return TRUE;		/* "all" tags matches every row. */
     }
-    if (strcmp(tagName, "end") == 0) {
-	return (blt_table_row_index(rowPtr) == (blt_table_num_rows(tablePtr)-1));
+    if (strcmp(tag, "end") == 0) {
+	return (blt_table_row_index(rowPtr)==(blt_table_num_rows(tablePtr)-1));
     }
-    tagTablePtr = blt_table_get_row_tag_table(tablePtr, tagName);
-    if (tagTablePtr == NULL) {
-	return FALSE;
-    }
-    hPtr = Blt_FindHashEntry(tagTablePtr, (char *)rowPtr);
-    if (hPtr != NULL) {
-	return TRUE;		/* Found tag in row tag table. */
-    }
-    return FALSE;
+    return Blt_Tags_ItemHasTag(tablePtr->rowTags, rowPtr, tag);
 }
 
 /*
@@ -4514,27 +4209,16 @@ blt_table_row_has_tag(Table *tablePtr, Row *rowPtr, const char *tagName)
  *---------------------------------------------------------------------------
  */
 int
-blt_table_column_has_tag(Table *tablePtr, Column *colPtr, const char *tagName)
+blt_table_column_has_tag(Table *tablePtr, Column *colPtr, const char *tag)
 {
-    Blt_HashTable *tagTablePtr;
-    Blt_HashEntry *hPtr;
-
-    if (strcmp(tagName, "all") == 0) {
+    if (strcmp(tag, "all") == 0) {
 	return TRUE;			/* "all" tags matches every column. */
     }
-    if (strcmp(tagName, "end") == 0) {
+    if (strcmp(tag, "end") == 0) {
 	return (blt_table_column_index(colPtr) == 
 		(blt_table_num_columns(tablePtr)-1));
     }
-    tagTablePtr = blt_table_get_column_tag_table(tablePtr, tagName);
-    if (tagTablePtr == NULL) {
-	return FALSE;
-    }
-    hPtr = Blt_FindHashEntry(tagTablePtr, (char *)colPtr);
-    if (hPtr != NULL) {
-	return TRUE;			/* Found tag in column tag table. */
-    }
-    return FALSE;
+    return Blt_Tags_ItemHasTag(tablePtr->columnTags, colPtr, tag);
 }
 
 /*
@@ -4545,9 +4229,8 @@ blt_table_column_has_tag(Table *tablePtr, Column *colPtr, const char *tagName)
  *	Removes a tag from a given row.  
  *
  * Results:
- *	A standard TCL result.  If an error occurred, TCL_ERROR
- *	is returned and the interpreter result contains the error
- *	message.
+ *	A standard TCL result.  If an error occurred, TCL_ERROR is returned
+ *	and the interpreter result contains the error message.
  *
  * Side Effects:
  *      The tag associated with the row is freed.
@@ -4556,26 +4239,12 @@ blt_table_column_has_tag(Table *tablePtr, Column *colPtr, const char *tagName)
  */
 int
 blt_table_unset_row_tag(Tcl_Interp *interp, Table *tablePtr, Row *rowPtr, 
-		      const char *tagName)
+                        const char *tag)
 {
-    Blt_HashEntry *hPtr;
-    Blt_HashTable *tagTablePtr;
-
-    if ((strcmp(tagName, "all") == 0) || (strcmp(tagName, "end") == 0)) {
+    if ((strcmp(tag, "all") == 0) || (strcmp(tag, "end") == 0)) {
 	return TCL_OK;			/* Can't remove reserved tags. */
     } 
-    tagTablePtr = blt_table_get_row_tag_table(tablePtr, tagName);
-    if (tagTablePtr == NULL) {
-	if (interp != NULL) {
-	    Tcl_AppendResult(interp, "unknown row tag \"", tagName, "\"", 
-		(char *)NULL);
-	}
-	return TCL_ERROR;
-    }
-    hPtr = Blt_FindHashEntry(tagTablePtr, (char *)rowPtr);
-    if (hPtr != NULL) {
-	Blt_DeleteHashEntry(tagTablePtr, hPtr);
-    }
+    Blt_Tags_RemoveItemFromTag(tablePtr->rowTags, rowPtr, tag);
     return TCL_OK;
 }    
 
@@ -4598,26 +4267,12 @@ blt_table_unset_row_tag(Tcl_Interp *interp, Table *tablePtr, Row *rowPtr,
  */
 int
 blt_table_unset_column_tag(Tcl_Interp *interp, Table *tablePtr, Column *colPtr, 
-			 const char *tagName)
+			 const char *tag)
 {
-    Blt_HashEntry *hPtr;
-    Blt_HashTable *tagTablePtr;
-
-    if ((strcmp(tagName, "all") == 0) || (strcmp(tagName, "end") == 0)) {
+    if ((strcmp(tag, "all") == 0) || (strcmp(tag, "end") == 0)) {
 	return TCL_OK;			/* Can't remove reserved tags. */
     } 
-    tagTablePtr = blt_table_get_column_tag_table(tablePtr, tagName);
-    if (tagTablePtr == NULL) {
-	if (interp != NULL) {
-	    Tcl_AppendResult(interp, "unknown column tag \"", tagName, "\"", 
-		(char *)NULL);
-	}
-	return TCL_ERROR;
-    }
-    hPtr = Blt_FindHashEntry(tagTablePtr, (char *)colPtr);
-    if (hPtr != NULL) {
-	Blt_DeleteHashEntry(tagTablePtr, hPtr);
-    }
+    Blt_Tags_RemoveItemFromTag(tablePtr->columnTags, colPtr, tag);
     return TCL_OK;
 }    
 
@@ -4639,7 +4294,7 @@ blt_table_unset_column_tag(Tcl_Interp *interp, Table *tablePtr, Column *colPtr,
 void
 blt_table_clear_row_tags(Table *tablePtr, Row *rowPtr)
 {
-    ClearTags(tablePtr->rowTags, (Header *)rowPtr);
+    Blt_Tags_ClearTagsFromItem(tablePtr->rowTags, rowPtr);
 }
 
 /*
@@ -4660,7 +4315,7 @@ blt_table_clear_row_tags(Table *tablePtr, Row *rowPtr)
 void
 blt_table_clear_column_tags(Table *tablePtr, Column *colPtr)
 {
-    ClearTags(tablePtr->columnTags, (Header *)colPtr);
+    Blt_Tags_ClearTagsFromItem(tablePtr->columnTags, colPtr);
 }
 
 /*
@@ -5537,7 +5192,7 @@ blt_table_delete_row(Table *tablePtr, Row *rowPtr)
     UnsetRowValues(tablePtr, rowPtr);
     NotifyRowChanged(tablePtr, rowPtr, TABLE_NOTIFY_ROWS_DELETED);
     NotifyColumnChanged(tablePtr, NULL, TABLE_NOTIFY_COLUMNS_DELETED);
-    blt_table_clear_row_tags(tablePtr, rowPtr);
+    Blt_Tags_ClearTagsFromItem(tablePtr->rowTags, rowPtr);
     blt_table_clear_row_traces(tablePtr, rowPtr);
     ClearRowNotifiers(tablePtr, rowPtr);
     tablePtr->flags |= TABLE_KEYS_DIRTY;
@@ -5719,7 +5374,7 @@ blt_table_delete_column(Table *tablePtr, Column *colPtr)
     NotifyColumnChanged(tablePtr, colPtr, TABLE_NOTIFY_COLUMNS_DELETED);
     NotifyRowChanged(tablePtr, NULL, TABLE_NOTIFY_ROWS_DELETED);
     blt_table_clear_column_traces(tablePtr, colPtr);
-    blt_table_clear_column_tags(tablePtr, colPtr);
+    Blt_Tags_ClearTagsFromItem(tablePtr->columnTags, colPtr);
     ClearColumnNotifiers(tablePtr, colPtr);
     DeleteHeader(&tablePtr->corePtr->columns, (Header *)colPtr);
     return TCL_OK;

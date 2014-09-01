@@ -183,6 +183,11 @@ bind BltTableView <KeyRelease-Return> {
 bind BltTableView <Enter> {
     focus %W
 }
+bind BltTableView <Control-KeyPress-a> {
+    %W selection clearall
+    %W selection anchor { first first }
+    %W selection mark { last last }
+}
 
 # 
 # ButtonPress assignments

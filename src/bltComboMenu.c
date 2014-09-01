@@ -582,7 +582,7 @@ struct _ComboMenu {
     /* Commands to control horizontal and vertical scrollbars. */
     Tcl_Obj *xScrollCmdObjPtr, *yScrollCmdObjPtr;
 
-    Blt_HashTable tagTable;		/* Table of tags. */
+    struct _Blt_Tags tags;		/* Table of tags. */
     Blt_HashTable textTable;		/* Table of labels (hashtables). */
     Blt_HashTable iconTable;		/* Table of icons. */
 
@@ -1023,40 +1023,12 @@ ConfigureScrollbarsProc(ClientData clientData)
     }
 }
 
-/*
- *---------------------------------------------------------------------------
- *
- * ReleaseTags --
- *
- *	Releases the tags used by this item.  
- *
- *---------------------------------------------------------------------------
- */
-static void
-ReleaseTags(ComboMenu *comboPtr, Item *itemPtr)
-{
-    Blt_HashEntry *hPtr;
-    Blt_HashSearch iter;
-
-    for (hPtr = Blt_FirstHashEntry(&comboPtr->tagTable, &iter); hPtr != NULL;
-	 hPtr = Blt_NextHashEntry(&iter)) {
-	Blt_HashTable *tagTablePtr;
-	Blt_HashEntry *hPtr2;
-
-	tagTablePtr = Blt_GetHashValue(hPtr); 
-	hPtr2 = Blt_FindHashEntry(tagTablePtr, (char *)itemPtr);
-	if (hPtr2 != NULL) {
-	    Blt_DeleteHashEntry(tagTablePtr, hPtr2);
-	}
-    }
-}
-
 static void
 DestroyItem(Item *itemPtr)
 {
     ComboMenu *comboPtr = itemPtr->comboPtr;
 
-    ReleaseTags(comboPtr, itemPtr);
+    Blt_Tags_ClearTagsFromItem(&comboPtr->tags, itemPtr);
     iconOption.clientData = comboPtr;
     Blt_FreeOptions(itemConfigSpecs, (char *)itemPtr, comboPtr->display, 0);
     if (comboPtr->activePtr == itemPtr) {
@@ -2285,10 +2257,7 @@ GetStyleFromObj(Tcl_Interp *interp, ComboMenu *comboPtr, Tcl_Obj *objPtr,
 static int
 SetTag(Tcl_Interp *interp, Item *itemPtr, const char *tagName)
 {
-    Blt_HashEntry *hPtr;
-    Blt_HashTable *tagTablePtr;
     ComboMenu *comboPtr;
-    int isNew;
     long dummy;
     
     if ((strcmp(tagName, "all") == 0) || (strcmp(tagName, "end") == 0)) {
@@ -2317,51 +2286,8 @@ SetTag(Tcl_Interp *interp, Item *itemPtr, const char *tagName)
 	return TCL_ERROR;
     }
     comboPtr = itemPtr->comboPtr;
-    hPtr = Blt_CreateHashEntry(&comboPtr->tagTable, tagName, &isNew);
-    if (hPtr == NULL) {
-	if (interp != NULL) {
-	    Tcl_AppendResult(interp, "can't add tag \"", tagName, 
-			 "\": out of memory", (char *)NULL);
-	}
-	return TCL_ERROR;
-    }
-    if (isNew) {
-	tagTablePtr = Blt_AssertMalloc(sizeof(Blt_HashTable));
-	Blt_InitHashTable(tagTablePtr, BLT_ONE_WORD_KEYS);
-	Blt_SetHashValue(hPtr, tagTablePtr);
-    } else {
-	tagTablePtr = Blt_GetHashValue(hPtr);
-    }
-    hPtr = Blt_CreateHashEntry(tagTablePtr, (char *)itemPtr, &isNew);
-    if (isNew) {
-	Blt_SetHashValue(hPtr, itemPtr);
-    }
+    Blt_Tags_AddItemToTag(&comboPtr->tags, itemPtr, tagName);
     return TCL_OK;
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * GetTagTable --
- *
- *	Returns the hash table containing row indices for a tag.
- *
- * Results:
- *	Returns a pointer to the hash table containing indices for the
- *	given tag.  If the row has no tags, then NULL is returned.
- *
- *---------------------------------------------------------------------------
- */
-static Blt_HashTable *
-GetTagTable(ComboMenu *comboPtr, const char *tagName)		
-{
-    Blt_HashEntry *hPtr;
-
-    hPtr = Blt_FindHashEntry(&comboPtr->tagTable, tagName);
-    if (hPtr == NULL) {
-	return NULL;			/* No tag by that name. */
-    }
-    return Blt_GetHashValue(hPtr);
 }
 
 static void
@@ -2704,14 +2630,14 @@ NextTaggedItem(ItemIterator *iterPtr)
     Item *itemPtr;
 
     switch (iterPtr->type) {
+    case ITER_ALL:
     case ITER_TAG:
-	{
-	    Blt_HashEntry *hPtr;
+	if (iterPtr->link != NULL) {
+	    Item *itemPtr;
 	    
-	    hPtr = Blt_NextHashEntry(&iterPtr->cursor); 
-	    if (hPtr != NULL) {
-		return Blt_GetHashValue(hPtr);
-	    }
+	    itemPtr = Blt_Chain_GetValue(iterPtr->link);
+	    iterPtr->link = Blt_Chain_NextLink(iterPtr->link);
+	    return itemPtr;
 	}
 	break;
     case ITER_TYPE:
@@ -2731,14 +2657,6 @@ NextTaggedItem(ItemIterator *iterPtr)
 	    iterPtr->nextPtr = StepItem(itemPtr);
 	}
 	return itemPtr;
-
-    case ITER_ALL:
-	if (iterPtr->link != NULL) {
-	    itemPtr = Blt_Chain_GetValue(iterPtr->link);
-	    iterPtr->link = Blt_Chain_NextLink(iterPtr->link);
-	    return itemPtr;
-	}
-	break;
 
     case ITER_PATTERN:
 	{
@@ -2782,17 +2700,6 @@ FirstTaggedItem(ItemIterator *iterPtr)
 	    
     switch (iterPtr->type) {
     case ITER_TAG: 
-	{
-	    Blt_HashEntry *hPtr;
-	    
-	    hPtr = Blt_FirstHashEntry(iterPtr->tablePtr, &iterPtr->cursor);
-	    if (hPtr == NULL) {
-		return NULL;
-	    }
-	    return Blt_GetHashValue(hPtr);
-	}
-	break;
-
     case ITER_ALL:
 	if (iterPtr->link != NULL) {
 	    itemPtr = Blt_Chain_GetValue(iterPtr->link);
@@ -3023,7 +2930,7 @@ GetItemIterator(Tcl_Interp *interp, ComboMenu *comboPtr, Tcl_Obj *objPtr,
 	       ItemIterator *iterPtr)
 {
     Item *itemPtr;
-    Blt_HashTable *tablePtr;
+    Blt_Chain chain;
     char *string;
     char c;
     int numBytes;
@@ -3033,6 +2940,7 @@ GetItemIterator(Tcl_Interp *interp, ComboMenu *comboPtr, Tcl_Obj *objPtr,
     iterPtr->comboPtr = comboPtr;
     iterPtr->type = ITER_SINGLE;
     iterPtr->tagName = Tcl_GetStringFromObj(objPtr, &numBytes);
+    iterPtr->link = NULL;
     iterPtr->nextPtr = NULL;
     iterPtr->startPtr = iterPtr->endPtr = NULL;
 
@@ -3066,17 +2974,14 @@ GetItemIterator(Tcl_Interp *interp, ComboMenu *comboPtr, Tcl_Obj *objPtr,
 	iterPtr->startPtr = iterPtr->endPtr = itemPtr;
     } else if ((c == 't') && (length > 4) && 
 	       (strncmp(string, "tag:", 4) == 0)) {
-	Blt_HashTable *tablePtr;
+	Blt_Chain chain;
 
-	tablePtr = GetTagTable(comboPtr, string + 4);
-	if (tablePtr == NULL) {
-	    Tcl_AppendResult(interp, "can't find a tag \"", string + 5,
-			"\" in \"", Tk_PathName(comboPtr->tkwin), "\"",
-			(char *)NULL);
-	    return TCL_ERROR;
+	chain = Blt_Tags_GetItemList(&comboPtr->tags, string + 4);
+	if (chain == NULL) {
+	    return TCL_OK;              /* No tag found. */
 	}
 	iterPtr->tagName = string + 4;
-	iterPtr->tablePtr = tablePtr;
+	iterPtr->link = Blt_Chain_FirstLink(chain);
 	iterPtr->type = ITER_TAG;
     } else if ((c == 't') && (length > 5) && 
 	       (strncmp(string, "text:", 5) == 0)) {
@@ -3084,9 +2989,10 @@ GetItemIterator(Tcl_Interp *interp, ComboMenu *comboPtr, Tcl_Obj *objPtr,
 	iterPtr->startPtr = iterPtr->endPtr = itemPtr;
     } else if ((itemPtr = GetItemByText(comboPtr, string)) != NULL) {
 	iterPtr->startPtr = iterPtr->endPtr = itemPtr;
-    } else if ((tablePtr = GetTagTable(comboPtr, string)) != NULL) {
+    } else if ((chain = Blt_Tags_GetItemList(&comboPtr->tags, string)) 
+               != NULL) {
 	iterPtr->tagName = string;
-	iterPtr->tablePtr = tablePtr;
+	iterPtr->link = Blt_Chain_FirstLink(chain);
 	iterPtr->type = ITER_TAG;
     } else {
 	if (interp != NULL) {
@@ -3974,7 +3880,7 @@ FreeTagsProc(
     Item *itemPtr = (Item *)widgRec;
 
     comboPtr = itemPtr->comboPtr;
-    ReleaseTags(comboPtr, itemPtr);
+    Blt_Tags_ClearTagsFromItem(&comboPtr->tags, itemPtr);
 }
 
 /*
@@ -4010,7 +3916,7 @@ ObjToTagsProc(
     Tcl_Obj **objv;
 
     comboPtr = itemPtr->comboPtr;
-    ReleaseTags(comboPtr, itemPtr);
+    Blt_Tags_ClearTagsFromItem(&comboPtr->tags, itemPtr);
     string = Tcl_GetString(objPtr);
     if ((string[0] == '\0') && (flags & BLT_CONFIG_NULL_OK)) {
 	return TCL_OK;
@@ -4046,30 +3952,13 @@ TagsToObjProc(
     int offset,				/* Offset to field in structure */
     int flags)	
 {
-    Blt_HashEntry *hPtr;
-    Blt_HashSearch iter;
     ComboMenu *comboPtr;
     Item *itemPtr = (Item *)widgRec;
     Tcl_Obj *listObjPtr;
 
     comboPtr = itemPtr->comboPtr;
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
-    for (hPtr = Blt_FirstHashEntry(&comboPtr->tagTable, &iter); hPtr != NULL;
-	 hPtr = Blt_NextHashEntry(&iter)) {
-	Blt_HashTable *tagTablePtr;
-	Blt_HashEntry *hPtr2;
-
-	tagTablePtr = Blt_GetHashValue(hPtr); 
-	hPtr2 = Blt_FindHashEntry(tagTablePtr, (char *)itemPtr);
-	if (hPtr2 != NULL) {
-	    Tcl_Obj *objPtr;
-	    const char *name;
-
-	    name = Tcl_GetHashKey(&comboPtr->tagTable, hPtr);
-	    objPtr = Tcl_NewStringObj(name, -1);
-	    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-	}
-    }
+    Blt_Tags_AppendTagsToObj(&comboPtr->tags,  itemPtr, listObjPtr);
     return listObjPtr;
 }
 
@@ -6340,7 +6229,7 @@ DestroyComboMenu(DestroyData dataPtr)	/* Pointer to the widget record. */
     DestroyItems(comboPtr);
     DestroyStyles(comboPtr);
     DestroyLabels(comboPtr);
-    Blt_DeleteHashTable(&comboPtr->tagTable);
+    Blt_Tags_Reset(&comboPtr->tags);
     DestroyIcons(comboPtr);
     if (comboPtr->painter != NULL) {
 	Blt_FreePainter(comboPtr->painter);
@@ -6381,7 +6270,7 @@ NewComboMenu(Tcl_Interp *interp, Tk_Window tkwin)
     Blt_InitHashTable(&comboPtr->iconTable,  BLT_STRING_KEYS);
     Blt_InitHashTable(&comboPtr->textTable, BLT_STRING_KEYS);
     Blt_InitHashTable(&comboPtr->styleTable, BLT_STRING_KEYS);
-    Blt_InitHashTable(&comboPtr->tagTable, BLT_STRING_KEYS);
+    Blt_Tags_Init(&comboPtr->tags);
     AddDefaultStyle(interp, comboPtr);
     Blt_SetWindowInstanceData(tkwin, comboPtr);
     return comboPtr;

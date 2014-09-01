@@ -378,6 +378,8 @@ static Blt_SwitchCustom typeSwitch = {
     TypeSwitchProc, NULL, NULL, 0,
 };
 
+#ifdef notdef
+
 static Blt_SwitchParseProc ColumnsSwitchProc;
 static Blt_SwitchFreeProc ColumnsFreeProc;
 static Blt_SwitchCustom columnsSwitch = {
@@ -389,6 +391,8 @@ static Blt_SwitchFreeProc RowsFreeProc;
 static Blt_SwitchCustom rowsSwitch = {
     RowsSwitchProc, NULL, RowsFreeProc, 0,
 };
+
+#endif
 
 #define INSERT_BEFORE	(ClientData)(1<<0)
 #define INSERT_AFTER	(ClientData)(1<<1)
@@ -437,8 +441,8 @@ typedef struct {
 					 * column. */
     BLT_TABLE_COLUMN column;
     const char *label;			/* New label. */
-    Tcl_Obj *tags;			/* List of tags to be applied to this
-					 * row or column. */
+    Tcl_Obj *tags;			/* List of tags to be applied to
+					 * this row or column. */
     BLT_TABLE_COLUMN_TYPE type;
 } InsertSwitches;
 
@@ -821,6 +825,7 @@ blt_table_column_iter_switch_proc(
     return TCL_OK;
 }
 
+#ifdef notdef
 /*
  *---------------------------------------------------------------------------
  *
@@ -896,6 +901,7 @@ ColumnsSwitchProc(
     *chainPtr = chain;
     return TCL_OK;
 }
+#endif
 
 /*
  *---------------------------------------------------------------------------
@@ -960,6 +966,7 @@ blt_table_row_iter_switch_proc(
     return TCL_OK;
 }
 
+#ifdef notdef
 /*
  *---------------------------------------------------------------------------
  *
@@ -1035,6 +1042,7 @@ RowsSwitchProc(
     *chainPtr = chain;
     return TCL_OK;
 }
+#endif
 
 /*
  *---------------------------------------------------------------------------
@@ -1917,23 +1925,17 @@ CopyColumnTags(BLT_TABLE src, BLT_TABLE dst,
     BLT_TABLE_COLUMN c1,	/* Column in the source table. */
     BLT_TABLE_COLUMN c2)	/* Column in the dstination table. */
 {
-    Blt_HashEntry *hPtr;
-    Blt_HashSearch iter;
+    Blt_Chain chain;
+    Blt_ChainLink link;
 
     /* Find all tags for with this column index. */
-    for (hPtr = blt_table_first_column_tag(src, &iter); hPtr != NULL; 
-	 hPtr = Blt_NextHashEntry(&iter)) {
-	Blt_HashTable *tablePtr;
-	Blt_HashEntry *h2Ptr;
-	
-	tablePtr = Blt_GetHashValue(hPtr);
-	h2Ptr = Blt_FindHashEntry(tablePtr, (char *)c1);
-	if (h2Ptr != NULL) {
-	    /* We know the tag tables are keyed by strings, so we don't need
-	     * to call Blt_GetHashKey or use the hash table pointer to
-	     * retrieve the key. */
-	    blt_table_set_column_tag(NULL, dst, c2, hPtr->key.string);
-	}
+    chain = blt_table_get_column_tags(src, c1);
+    for (link = Blt_Chain_FirstLink(chain); link != NULL;
+         link = Blt_Chain_NextLink(link)) {
+        const char *tag;
+
+        tag = Blt_Chain_GetValue(link);
+        blt_table_set_column_tag(NULL, dst, c2, tag);
     }
 }	    
 
@@ -3307,8 +3309,8 @@ ColumnTagExistsOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc,
 
     tag = Tcl_GetString(objv[4]);
     table = cmdPtr->table;
-    bool = (blt_table_get_column_tag_table(table, tag) != NULL);
-    if (objc == 6) {
+    bool = (blt_table_get_tagged_columns(table, tag) != NULL);
+    if ((bool) && (objc == 6)) {
 	BLT_TABLE_COLUMN col;
 
 	col = blt_table_get_column(interp, table, objv[5]);
@@ -3387,7 +3389,7 @@ ColumnTagGetOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	Blt_Chain chain;
 	Blt_ChainLink link;
 
-	chain = blt_table_column_tags(table, col);
+	chain = blt_table_get_column_tags(table, col);
 	for (link = Blt_Chain_FirstLink(chain); link != NULL;
 	     link = Blt_Chain_NextLink(link)) {
 	    const char *tag;
@@ -3456,28 +3458,27 @@ GetColumnTagMatches(Tcl_Interp *interp, BLT_TABLE table, int objc,
     }
     /* Now check user-defined tags. */
     for (i = 0; i < objc; i++) {
-	Blt_HashEntry *hPtr;
-	Blt_HashSearch iter;
-	Blt_HashTable *tagTablePtr;
+	Blt_Chain chain;
+        Blt_ChainLink link;
 	const char *tag;
 	
 	tag = Tcl_GetString(objv[i]);
 	if ((strcmp("all", tag) == 0) || (strcmp("end", tag) == 0)) {
 	    continue;
 	}
-	tagTablePtr = blt_table_get_column_tag_table(table, tag);
-	if (tagTablePtr == NULL) {
+	chain = blt_table_get_tagged_columns(table, tag);
+	if (chain == NULL) {
 	    Tcl_AppendResult(interp, "unknown column tag \"", tag, "\"",
 		(char *)NULL);
 	    Blt_Free(matches);
 	    return NULL;
 	}
-	for (hPtr = Blt_FirstHashEntry(tagTablePtr, &iter); hPtr != NULL; 
-	     hPtr = Blt_NextHashEntry(&iter)) {
+	for (link = Blt_Chain_FirstLink(chain); link != NULL; 
+	     link = Blt_Chain_NextLink(link)) {
 	    BLT_TABLE_COLUMN col;
 	    long j;
 
-	    col = Blt_GetHashValue(hPtr);
+	    col = Blt_Chain_GetValue(link);
 	    j = blt_table_column_index(col);
 	    assert(j >= 0);
 	    matches[j] = TRUE;
@@ -3636,50 +3637,45 @@ ColumnTagSearchOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc,
 {
     BLT_TABLE table;
     BLT_TABLE_ITERATOR ci;
-    Blt_HashEntry *hPtr;
-    Blt_HashSearch cursor;
     Tcl_Obj *listObjPtr;
+    BLT_TABLE_COLUMN col;
 
     table = cmdPtr->table;
     if (blt_table_iterate_column(interp, table, objv[4], &ci) != TCL_OK) {
 	return TCL_ERROR;
     }
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
-    for (hPtr = blt_table_first_column_tag(table, &cursor); hPtr != NULL; 
-	hPtr = Blt_NextHashEntry(&cursor)) {
-	Blt_HashTable *tablePtr;
-	BLT_TABLE_COLUMN col;
+    for (col = blt_table_first_tagged_column(&ci); col != NULL; 
+         col = blt_table_next_tagged_column(&ci)) {
+        Blt_Chain chain;
+        Blt_ChainLink link;
 
-	tablePtr = Blt_GetHashValue(hPtr);
-	for (col = blt_table_first_tagged_column(&ci); col != NULL; 
-	     col = blt_table_next_tagged_column(&ci)) {
-	    Blt_HashEntry *h2Ptr;
-	
-	    h2Ptr = Blt_FindHashEntry(tablePtr, (char *)col);
-	    if (h2Ptr != NULL) {
-		const char *tag;
-		int match;
-		int i;
+        chain = blt_table_get_column_tags(table, col);
+        for (link = Blt_Chain_FirstLink(chain); link != NULL; 
+             link = Blt_Chain_NextLink(link)) {
+            const char *tag;
+            int match;
+            int i;
 
-		match = (objc == 5);
-		tag = hPtr->key.string;
-		for (i = 5; i < objc; i++) {
-		    if (Tcl_StringMatch(tag, Tcl_GetString(objv[i]))) {
-			match = TRUE;
-			break;		/* Found match. */
-		    }
-		}
-		if (match) {
-		    Tcl_Obj *objPtr;
-
-		    objPtr = Tcl_NewStringObj(tag, -1);
-		    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-		    break;		/* Tag matches this column. Don't
-					 * care if it matches any other
-					 * columns. */
-		}
-	    }
-	}
+            tag = Blt_Chain_GetValue(link);
+            match = (objc == 5);
+            for (i = 5; i < objc; i++) {
+                if (Tcl_StringMatch(tag, Tcl_GetString(objv[i]))) {
+                    match = TRUE;
+                    break;                  /* Found match. */
+                }
+            }
+            if (match) {
+                Tcl_Obj *objPtr;
+                
+                objPtr = Tcl_NewStringObj(tag, -1);
+                Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+                break;                      /* Tag matches this column. Don't
+                                             * care if it matches any other
+                                             * columns. */
+            }
+        }
+        Blt_Chain_Destroy(chain);
     }
 
     /* Handle reserved tags specially. */
@@ -4233,27 +4229,22 @@ CopyRow(Tcl_Interp *interp, BLT_TABLE srcTable, BLT_TABLE destTable,
 
 static void
 CopyRowTags(BLT_TABLE srcTable, BLT_TABLE destTable,
-    BLT_TABLE_ROW srcRow,		/* Row offset in the source table. */
-    BLT_TABLE_ROW destRow)		/* Row offset in the destination. */
+    BLT_TABLE_ROW srcRow,		/* Row in the source table. */
+    BLT_TABLE_ROW destRow)		/* Row in the destination table. */
 {
-    Blt_HashEntry *hPtr;
-    Blt_HashSearch iter;
+    Blt_Chain chain;
+    Blt_ChainLink link;
 
-    /* Find all tags for with this row index. */
-    for (hPtr = blt_table_first_row_tag(srcTable, &iter); hPtr != NULL; 
-	 hPtr = Blt_NextHashEntry(&iter)) {
-	Blt_HashTable *tablePtr;
-	Blt_HashEntry *h2Ptr;
-	
-	tablePtr = Blt_GetHashValue(hPtr);
-	h2Ptr = Blt_FindHashEntry(tablePtr, (char *)srcRow);
-	if (h2Ptr != NULL) {
-	    /* We know the tag tables are keyed by strings, so we don't need
-	     * to call Blt_GetHashKey and hence the hash table pointer to
-	     * retrieve the key. */
-	    blt_table_set_row_tag(NULL, destTable, destRow, hPtr->key.string);
-	}
+    /* Get all tags for this particular row in the source table. */
+    chain = blt_table_get_row_tags(srcTable, srcRow);
+    for (link = Blt_Chain_FirstLink(chain); link != NULL; 
+         link = Blt_Chain_NextLink(link)) {
+        const char *tag;
+
+        tag = Blt_Chain_GetValue(link);
+        blt_table_set_row_tag(NULL, destTable, destRow, tag);
     }
+    Blt_Chain_Destroy(chain);
 }	    
 
 /*
@@ -5484,7 +5475,7 @@ RowTagExistsOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     const char *tag;
 
     tag = Tcl_GetString(objv[4]);
-    bool = (blt_table_get_row_tag_table(cmdPtr->table, tag) != NULL);
+    bool = (blt_table_get_tagged_rows(cmdPtr->table, tag) != NULL);
     if (objc == 6) {
 	BLT_TABLE_ROW row;
 
@@ -5564,7 +5555,7 @@ RowTagGetOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	Blt_Chain chain;
 	Blt_ChainLink link;
 
-	chain = blt_table_row_tags(table, row);
+	chain = blt_table_get_row_tags(table, row);
 	for (link = Blt_Chain_FirstLink(chain); link != NULL;
 	     link = Blt_Chain_NextLink(link)) {
 	    const char *tag;
@@ -5631,26 +5622,25 @@ GetRowTagMatches(BLT_TABLE table, int objc, Tcl_Obj *const *objv)
     }
     /* Now check user-defined tags. */
     for (i = 0; i < objc; i++) {
-	Blt_HashEntry *hPtr;
-	Blt_HashSearch iter;
-	Blt_HashTable *tagTablePtr;
+        Blt_Chain chain;
+        Blt_ChainLink link;
 	const char *tag;
 	
 	tag = Tcl_GetString(objv[i]);
 	if ((strcmp("all", tag) == 0) || (strcmp("end", tag) == 0)) {
 	    continue;
 	}
-	tagTablePtr = blt_table_get_row_tag_table(table, tag);
-	if (tagTablePtr == NULL) {
+	chain = blt_table_get_tagged_rows(table, tag);
+	if (chain == NULL) {
 	    Blt_Free(matches);
 	    return NULL;
 	}
-	for (hPtr = Blt_FirstHashEntry(tagTablePtr, &iter); hPtr != NULL; 
-	     hPtr = Blt_NextHashEntry(&iter)) {
+	for (link = Blt_Chain_FirstLink(chain); link != NULL; 
+	     link = Blt_Chain_NextLink(link)) {
 	    BLT_TABLE_ROW row;
 	    long j;
 
-	    row = Blt_GetHashValue(hPtr);
+	    row = Blt_Chain_GetValue(link);
 	    j = blt_table_row_index(row);
 	    assert(j >= 0);
 	    matches[j] = TRUE;
@@ -5797,50 +5787,46 @@ static int
 RowTagSearchOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 {
     BLT_TABLE table;
-    Blt_HashEntry *hPtr;
-    Blt_HashSearch cursor;
     BLT_TABLE_ITERATOR ri;
     Tcl_Obj *listObjPtr;
+    BLT_TABLE_ROW row;
 
     table = cmdPtr->table;
     if (blt_table_iterate_row(interp, table, objv[4], &ri) != TCL_OK) {
 	return TCL_ERROR;
     }
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
-    for (hPtr = blt_table_first_row_tag(table, &cursor); hPtr != NULL; 
-	hPtr = Blt_NextHashEntry(&cursor)) {
-	Blt_HashTable *tablePtr;
-	BLT_TABLE_ROW row;
-	
-	tablePtr = Blt_GetHashValue(hPtr);
-	for (row = blt_table_first_tagged_row(&ri); row != NULL; 
-	     row = blt_table_next_tagged_row(&ri)) {
-	    Blt_HashEntry *h2Ptr;
-	
-	    h2Ptr = Blt_FindHashEntry(tablePtr, (char *)row);
-	    if (h2Ptr != NULL) {
-		const char *tag;
-		int match;
-		int i;
+    for (row = blt_table_first_tagged_row(&ri); row != NULL; 
+         row = blt_table_next_tagged_row(&ri)) {
+        Blt_Chain chain;
+        Blt_ChainLink link;
 
-		match = (objc == 5);
-		tag = hPtr->key.string;
-		for (i = 5; i < objc; i++) {
-		    if (Tcl_StringMatch(tag, Tcl_GetString(objv[i]))) {
-			match = TRUE;
-			break;	/* Found match. */
-		    }
-		}
-		if (match) {
-		    Tcl_Obj *objPtr;
+        chain = blt_table_get_row_tags(table, row);
+        for (link = Blt_Chain_FirstLink(chain); link != NULL; 
+             link = Blt_Chain_NextLink(link)) {
+            const char *tag;
+            int match;
+            int i;
 
-		    objPtr = Tcl_NewStringObj(tag, -1);
-		    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-		    break;              /* Tag matches this row. Don't care
-                                         * if it matches any other rows. */
-		}
-	    }
-	}
+            tag = Blt_Chain_GetValue(link);
+            match = (objc == 5);
+            for (i = 5; i < objc; i++) {
+                if (Tcl_StringMatch(tag, Tcl_GetString(objv[i]))) {
+                    match = TRUE;
+                    break;                  /* Found match. */
+                }
+            }
+            if (match) {
+                Tcl_Obj *objPtr;
+                
+                objPtr = Tcl_NewStringObj(tag, -1);
+                Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+                break;                      /* Tag matches this column. Don't
+                                             * care if it matches any other
+                                             * columns. */
+            }
+        }
+        Blt_Chain_Destroy(chain);
     }
 
     /* Handle reserved tags specially. */
@@ -8005,7 +7991,7 @@ DumpColumn(BLT_TABLE table, DumpSwitches *dumpPtr, BLT_TABLE_COLUMN col)
     }
     Tcl_DStringAppendElement(dumpPtr->dsPtr, name);
 
-    colTags = blt_table_column_tags(table, col);
+    colTags = blt_table_get_column_tags(table, col);
     Tcl_DStringStartSublist(dumpPtr->dsPtr);
     for (link = Blt_Chain_FirstLink(colTags); link != NULL;
 	 link = Blt_Chain_NextLink(link)) {
@@ -8043,7 +8029,7 @@ DumpRow(BLT_TABLE table, DumpSwitches *dumpPtr, BLT_TABLE_ROW row)
     Tcl_DStringAppendElement(dumpPtr->dsPtr, Blt_Ltoa(blt_table_row_index(row)));
     Tcl_DStringAppendElement(dumpPtr->dsPtr, (char *)blt_table_row_label(row));
     Tcl_DStringStartSublist(dumpPtr->dsPtr);
-    rowTags = blt_table_row_tags(table, row);
+    rowTags = blt_table_get_row_tags(table, row);
     for (link = Blt_Chain_FirstLink(rowTags); link != NULL;
 	 link = Blt_Chain_NextLink(link)) {
 	const char *tag;

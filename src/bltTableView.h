@@ -755,9 +755,9 @@ struct _TableView {
     Blt_HashTable uidTable;		/* Table of strings. */
     Blt_HashTable iconTable;		/* Table of icons. */
     Blt_HashTable styleTable;		/* Table of cell styles. */
-    Blt_HashTable rowTagTable;		/* Table of row tags. */
-    Blt_HashTable colTagTable;		/* Table of column tags. */
-    Blt_HashTable cellTagTable;		/* Table of cell tags. */
+    Blt_HashTable rowBindTagTable;      /* Table of row bindtags. */
+    Blt_HashTable colBindTagTable;      /* Table of column bindtags. */
+    Blt_HashTable cellBindTagTable;     /* Table of cell bindtags. */
     Row **rows;				/* Array of pointers to rows. This
 					 * represents the sorted view of
 					 * the table. */

@@ -44,6 +44,7 @@
 #include "bltBg.h"
 #include "bltOp.h"
 #include "bltInitCmd.h"
+#include "bltTags.h"
 
 #define GETATTR(t,attr)		\
    (((t)->attr != NULL) ? (t)->attr : (t)->setPtr->attr)
@@ -368,7 +369,7 @@ struct _Drawerset {
     Blt_HashTable handleTable;		/* Table of handle path name.
 					 * Serves as look up for drawers
 					 * from their handle windows. */
-    Blt_HashTable tagTable;		/* Table of tags. */
+    struct _Blt_Tags tags;              /* Table of tags. */
     Drawer *activePtr;			/* Indicates the drawer with the
 					 * active handle. */
     Drawer *anchorPtr;			/* Drawer that is currently
@@ -643,7 +644,6 @@ typedef struct _Iterator {
     /* For tag-based searches. */
     char *tagName;			/* If non-NULL, is the tag that we
 					 * are currently iterating over. */
-    Blt_HashTable *tablePtr;		/* Pointer to tag hash table. */
     Blt_HashSearch cursor;		/* Search iterator for tag hash
 					 * table. */
     Blt_ChainLink link;
@@ -1287,27 +1287,6 @@ SetDrawerVariable(Drawer *drawPtr)
     return result;
 }
 
-static void
-ClearTags(Drawer *drawPtr)
-{
-    Blt_HashEntry *hPtr;
-    Blt_HashSearch iter;
-    Drawerset *setPtr;
-
-    setPtr = drawPtr->setPtr;
-    for (hPtr = Blt_FirstHashEntry(&setPtr->tagTable, &iter); hPtr != NULL;
-	 hPtr = Blt_NextHashEntry(&iter)) {
-	Blt_HashTable *tablePtr;
-	Blt_HashEntry *h2Ptr;
-	
-	tablePtr = Blt_GetHashValue(hPtr);
-	h2Ptr = Blt_FindHashEntry(tablePtr, (char *)drawPtr);
-	if (h2Ptr != NULL) {
-	    Blt_DeleteHashEntry(tablePtr, h2Ptr);
-	}
-    }
-}
-
 /*
  *---------------------------------------------------------------------------
  *
@@ -1329,8 +1308,8 @@ DestroyDrawer(Drawer *drawPtr)
 {
     Drawerset *setPtr;
 
-    ClearTags(drawPtr);
     setPtr = drawPtr->setPtr;
+    Blt_Tags_ClearTagsFromItem(&setPtr->tags, drawPtr);
     Blt_FreeOptions(drawerSpecs, (char *)drawPtr, setPtr->display, 0);
     if (drawPtr->timerToken != (Tcl_TimerToken)0) {
 	Tcl_DeleteTimerHandler(drawPtr->timerToken);
@@ -1999,123 +1978,6 @@ HandleEventProc(
     } 
 }
 
-static Blt_HashTable *
-GetTagTable(Drawerset *setPtr, const char *tagName)
-{
-    Blt_HashEntry *hPtr;
-
-    hPtr = Blt_FindHashEntry(&setPtr->tagTable, tagName);
-    if (hPtr == NULL) {
-	return NULL;			/* No tag by name. */
-    }
-    return Blt_GetHashValue(hPtr);
-}
-
-static int
-HasTag(Drawer *drawPtr, const char *tagName)
-{
-    Blt_HashEntry *hPtr;
-    Blt_HashTable *tablePtr;
-
-    if (strcmp(tagName, "all") == 0) {
-	return TRUE;
-    }
-    tablePtr = GetTagTable(drawPtr->setPtr, tagName);
-    if (tablePtr == NULL) {
-	return FALSE;
-    }
-    hPtr = Blt_FindHashEntry(tablePtr, (char *)drawPtr);
-    if (hPtr == NULL) {
-	return FALSE;
-    }
-    return TRUE;
-}
-
-static Blt_HashTable *
-AddTagTable(Drawerset *setPtr, const char *tagName)
-{
-    Blt_HashEntry *hPtr;
-    Blt_HashTable *tablePtr;
-    int isNew;
-
-    hPtr = Blt_CreateHashEntry(&setPtr->tagTable, tagName, &isNew);
-    if (isNew) {
-	tablePtr = Blt_AssertMalloc(sizeof(Blt_HashTable));
-	Blt_InitHashTable(tablePtr, BLT_ONE_WORD_KEYS);
-	Blt_SetHashValue(hPtr, tablePtr);
-    } else {
-	tablePtr = Blt_GetHashValue(hPtr);
-    }
-    return tablePtr;
-}
-
-static void
-AddTag(Drawerset *setPtr, Drawer *drawPtr, const char *tagName)
-{
-    Blt_HashEntry *hPtr;
-    Blt_HashTable *tablePtr;
-    int isNew;
-
-    tablePtr = AddTagTable(setPtr, tagName);
-    hPtr = Blt_CreateHashEntry(tablePtr, (char *)drawPtr, &isNew);
-    if (isNew) {
-	Blt_SetHashValue(hPtr, drawPtr);
-    }
-}
-
-
-static void
-ForgetTag(Drawerset *setPtr, const char *tagName)
-{
-    Blt_HashEntry *hPtr;
-    Blt_HashTable *tablePtr;
-
-    if (strcmp(tagName, "all") == 0) {
-	return;				/* Can't remove tag "all". */
-    }
-    hPtr = Blt_FindHashEntry(&setPtr->tagTable, tagName);
-    if (hPtr == NULL) {
-	return;				/* No tag by name. */
-    }
-    tablePtr = Blt_GetHashValue(hPtr);
-    Blt_DeleteHashTable(tablePtr);
-    Blt_Free(tablePtr);
-    Blt_DeleteHashEntry(&setPtr->tagTable, hPtr);
-}
-
-static void
-DestroyTags(Drawerset *setPtr)
-{
-    Blt_HashEntry *hPtr;
-    Blt_HashSearch iter;
-
-    for (hPtr = Blt_FirstHashEntry(&setPtr->tagTable, &iter); hPtr != NULL;
-	 hPtr = Blt_NextHashEntry(&iter)) {
-	Blt_HashTable *tablePtr;
-	
-	tablePtr = Blt_GetHashValue(hPtr);
-	Blt_DeleteHashTable(tablePtr);
-    }
-}
-
-static void
-RemoveTag(Drawer *drawPtr, const char *tagName)
-{
-    Blt_HashTable *tablePtr;
-    Drawerset *setPtr;
-
-    setPtr = drawPtr->setPtr;
-    tablePtr = GetTagTable(setPtr, tagName);
-    if (tablePtr != NULL) {
-	Blt_HashEntry *hPtr;
-
-	hPtr = Blt_FindHashEntry(tablePtr, (char *)drawPtr);
-	if (hPtr != NULL) {
-	    Blt_DeleteHashEntry(tablePtr, hPtr);
-	}
-    }
-}
-
 static INLINE Drawer *
 BeginDrawer(Drawerset *setPtr)
 {
@@ -2174,15 +2036,6 @@ NextTaggedDrawer(DrawerIterator *iterPtr)
 {
     switch (iterPtr->type) {
     case ITER_TAG:
-	{
-	    Blt_HashEntry *hPtr;
-	    
-	    hPtr = Blt_NextHashEntry(&iterPtr->cursor); 
-	    if (hPtr != NULL) {
-		return Blt_GetHashValue(hPtr);
-	    }
-	    break;
-	}
     case ITER_ALL:
 	if (iterPtr->link != NULL) {
 	    Drawer *drawPtr;
@@ -2232,16 +2085,6 @@ FirstTaggedDrawer(DrawerIterator *iterPtr)
 {
     switch (iterPtr->type) {
     case ITER_TAG:
-	{
-	    Blt_HashEntry *hPtr;
-	    
-	    hPtr = Blt_FirstHashEntry(iterPtr->tablePtr, &iterPtr->cursor);
-	    if (hPtr != NULL) {
-		return Blt_GetHashValue(hPtr);
-	    }
-	}
-	break
-;
     case ITER_ALL:
 	if (iterPtr->link != NULL) {
 	    Drawer *drawPtr;
@@ -2413,7 +2256,7 @@ GetDrawerIterator(Tcl_Interp *interp, Drawerset *setPtr, Tcl_Obj *objPtr,
 	       DrawerIterator *iterPtr)
 {
     Drawer *drawPtr;
-    Blt_HashTable *tablePtr;
+    Blt_Chain chain;
     char *string;
     char c;
     int numBytes;
@@ -2421,6 +2264,7 @@ GetDrawerIterator(Tcl_Interp *interp, Drawerset *setPtr, Tcl_Obj *objPtr,
     int result;
 
     iterPtr->setPtr = setPtr;
+    iterPtr->link = NULL;
     iterPtr->type = ITER_SINGLE;
     iterPtr->tagName = Tcl_GetStringFromObj(objPtr, &numBytes);
     iterPtr->nextPtr = NULL;
@@ -2475,19 +2319,14 @@ GetDrawerIterator(Tcl_Interp *interp, Drawerset *setPtr, Tcl_Obj *objPtr,
 	iterPtr->startPtr = iterPtr->endPtr = drawPtr;
     } else if ((c == 't') && (length > 4) && 
 	       (strncmp(string, "tag:", 4) == 0)) {
-	Blt_HashTable *tablePtr;
+	Blt_Chain chain;
 
-	tablePtr = GetTagTable(setPtr, string + 4);
-	if (tablePtr == NULL) {
-	    if (interp != NULL) {
-		Tcl_AppendResult(interp, "can't find a tag \"", string + 5,
-			"\" in \"", Tk_PathName(setPtr->tkwin), "\"",
-			(char *)NULL);
-	    }
-	    return TCL_ERROR;
+	chain = Blt_Tags_GetItemList(&setPtr->tags, string + 4);
+	if (chain == NULL) {
+	    return TCL_OK;
 	}
 	iterPtr->tagName = string + 4;
-	iterPtr->tablePtr = tablePtr;
+	iterPtr->link = Blt_Chain_FirstLink(chain);
 	iterPtr->type = ITER_TAG;
     } else if ((c == 'l') && (length > 6) && 
 	       (strncmp(string, "label:", 6) == 0)) {
@@ -2496,9 +2335,9 @@ GetDrawerIterator(Tcl_Interp *interp, Drawerset *setPtr, Tcl_Obj *objPtr,
 	iterPtr->type = ITER_PATTERN;
     } else if ((drawPtr = GetDrawerByName(setPtr, string)) != NULL) {
 	iterPtr->startPtr = iterPtr->endPtr = drawPtr;
-    } else if ((tablePtr = GetTagTable(setPtr, string)) != NULL) {
+    } else if ((chain = Blt_Tags_GetItemList(&setPtr->tags, string)) != NULL) {
 	iterPtr->tagName = string;
-	iterPtr->tablePtr = tablePtr;
+	iterPtr->link = Blt_Chain_FirstLink(chain);
 	iterPtr->type = ITER_TAG;
     } else {
 	if (interp != NULL) {
@@ -2673,7 +2512,7 @@ NewDrawerset(Tcl_Interp *interp, Tcl_Obj *objPtr)
     Blt_SetWindowInstanceData(tkwin, setPtr);
     Blt_InitHashTable(&setPtr->drawerTable, BLT_STRING_KEYS);
     Blt_InitHashTable(&setPtr->handleTable, BLT_STRING_KEYS);
-    Blt_InitHashTable(&setPtr->tagTable, BLT_STRING_KEYS);
+    Blt_Tags_Init(&setPtr->tags);
     Tk_CreateEventHandler(tkwin, 
 	ExposureMask|FocusChangeMask|StructureNotifyMask, 
 	 DrawersetEventProc, setPtr);
@@ -2740,7 +2579,7 @@ DestroyDrawerset(Drawerset *setPtr)
     }
     Tk_FreeCursor(setPtr->display, setPtr->defHorzCursor);
     Tk_FreeCursor(setPtr->display, setPtr->defVertCursor);
-    DestroyTags(setPtr);
+    Blt_Tags_Reset(&setPtr->tags);
     Blt_Chain_Destroy(setPtr->chain);
     Blt_DeleteHashTable(&setPtr->drawerTable);
     Blt_DeleteHashTable(&setPtr->handleTable);
@@ -4494,7 +4333,7 @@ TagAddOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     if (objc == 4) {
 	/* No nodes specified.  Just add the tag. */
-	AddTag(setPtr, NULL, tag);
+	Blt_Tags_AddTag(&setPtr->tags, tag);
     } else {
 	int i;
 
@@ -4507,7 +4346,7 @@ TagAddOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	    }
 	    for (drawPtr = FirstTaggedDrawer(&iter); drawPtr != NULL; 
 		 drawPtr = NextTaggedDrawer(&iter)) {
-		AddTag(setPtr, drawPtr, tag);
+		Blt_Tags_AddItemToTag(&setPtr->tags, drawPtr, tag);
 	    }
 	}
     }
@@ -4530,8 +4369,8 @@ TagDeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
 {
     Drawerset *setPtr = clientData;
     const char *tag;
-    Blt_HashTable *tablePtr;
     long drawerId;
+    int i;
 
     tag = Tcl_GetString(objv[3]);
     if (Blt_GetLongFromObj(NULL, objv[3], &drawerId) == TCL_OK) {
@@ -4544,27 +4383,17 @@ TagDeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
 			 (char *)NULL);
         return TCL_ERROR;
     }
-    tablePtr = GetTagTable(setPtr, tag);
-    if (tablePtr != NULL) {
-        int i;
-      
-        for (i = 4; i < objc; i++) {
-	    Drawer *drawPtr;
-	    DrawerIterator iter;
-
-	    if (GetDrawerIterator(interp, setPtr, objv[i], &iter) != TCL_OK) {
-	        return TCL_ERROR;
-	    }
-	    for (drawPtr = FirstTaggedDrawer(&iter); drawPtr != NULL; 
-		 drawPtr = NextTaggedDrawer(&iter)) {
-		Blt_HashEntry *hPtr;
-
-	        hPtr = Blt_FindHashEntry(tablePtr, (char *)drawPtr);
-	        if (hPtr != NULL) {
-		    Blt_DeleteHashEntry(tablePtr, hPtr);
-	        }
-	   }
-       }
+    for (i = 4; i < objc; i++) {
+        Drawer *drawPtr;
+        DrawerIterator iter;
+        
+        if (GetDrawerIterator(interp, setPtr, objv[i], &iter) != TCL_OK) {
+            return TCL_ERROR;
+        }
+        for (drawPtr = FirstTaggedDrawer(&iter); drawPtr != NULL; 
+             drawPtr = NextTaggedDrawer(&iter)) {
+            Blt_Tags_RemoveItemFromTag(&setPtr->tags, drawPtr, tag);
+        }
     }
     return TCL_OK;
 }
@@ -4587,21 +4416,21 @@ static int
 TagExistsOp(ClientData clientData, Tcl_Interp *interp, int objc, 
             Tcl_Obj *const *objv)
 {
+    DrawerIterator iter;
     Drawerset *setPtr = clientData;
     int i;
-    DrawerIterator iter;
 
     if (GetDrawerIterator(interp, setPtr, objv[3], &iter) != TCL_OK) {
 	return TCL_ERROR;
     }
     for (i = 4; i < objc; i++) {
-	const char *tag;
 	Drawer *drawPtr;
+	const char *tag;
 
 	tag = Tcl_GetString(objv[i]);
 	for (drawPtr = FirstTaggedDrawer(&iter); drawPtr != NULL; 
 	     drawPtr = NextTaggedDrawer(&iter)) {
-	    if (HasTag(drawPtr, tag)) {
+	    if (Blt_Tags_ItemHasTag(&setPtr->tags, drawPtr, tag)) {
 		Tcl_SetBooleanObj(Tcl_GetObjResult(interp), TRUE);
 		return TCL_OK;
 	    }
@@ -4624,7 +4453,8 @@ TagExistsOp(ClientData clientData, Tcl_Interp *interp, int objc,
  */
 /*ARGSUSED*/
 static int
-TagForgetOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+TagForgetOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+            Tcl_Obj *const *objv)
 {
     Drawerset *setPtr = clientData;
     int i;
@@ -4639,7 +4469,7 @@ TagForgetOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const 
 			     "\": can't be a number.", (char *)NULL);
 	    return TCL_ERROR;
 	}
-	ForgetTag(setPtr, tag);
+	Blt_Tags_ForgetTag(&setPtr->tags, tag);
     }
     return TCL_OK;
 }
@@ -4672,23 +4502,7 @@ TagGetOp(ClientData clientData, Tcl_Interp *interp, int objc,
     for (drawPtr = FirstTaggedDrawer(&iter); drawPtr != NULL; 
 	 drawPtr = NextTaggedDrawer(&iter)) {
 	if (objc == 4) {
-	    Blt_HashEntry *hPtr;
-	    Blt_HashSearch hiter;
-
-	    for (hPtr = Blt_FirstHashEntry(&setPtr->tagTable, &hiter); 
-		 hPtr != NULL; hPtr = Blt_NextHashEntry(&hiter)) {
-		Blt_HashTable *tablePtr;
-
-		tablePtr = Blt_GetHashValue(hPtr);
-		if (Blt_FindHashEntry(tablePtr, (char *)drawPtr) != NULL) {
-		    const char *tag;
-		    Tcl_Obj *objPtr;
-
-		    tag = Blt_GetHashKey(&setPtr->tagTable, hPtr);
-		    objPtr = Tcl_NewStringObj(tag, -1);
-		    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-		}
-	    }
+            Blt_Tags_AppendTagsToObj(&setPtr->tags, drawPtr, listObjPtr);
 	    Tcl_ListObjAppendElement(interp, listObjPtr, 
 				     Tcl_NewStringObj("all", 3));
 	} else {
@@ -4709,28 +4523,26 @@ TagGetOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	    }
 	    /* Now process any standard tags. */
 	    for (i = 4; i < objc; i++) {
-		Blt_HashEntry *hPtr;
-		Blt_HashSearch hiter;
+		Blt_ChainLink link;
 		const char *pattern;
-		
-		pattern = Tcl_GetString(objv[i]);
-		for (hPtr = Blt_FirstHashEntry(&setPtr->tagTable, &hiter); 
-		     hPtr != NULL; hPtr = Blt_NextHashEntry(&hiter)) {
-		    const char *tag;
-		    Blt_HashTable *tablePtr;
+                Blt_Chain chain;
 
-		    tablePtr = Blt_GetHashValue(hPtr);
-		    tag = Blt_GetHashKey(&setPtr->tagTable, hPtr);
+                chain = Blt_Chain_Create();
+                Blt_Tags_AppendTagsToChain(&setPtr->tags, drawPtr, chain);
+		pattern = Tcl_GetString(objv[i]);
+		for (link = Blt_Chain_FirstLink(chain); link != NULL; 
+                     link = Blt_Chain_NextLink(link)) {
+		    const char *tag;
+                    Tcl_Obj *objPtr;
+
+		    tag = (const char *)Blt_Chain_GetValue(link);
 		    if (!Tcl_StringMatch(tag, pattern)) {
 			continue;
 		    }
-		    if (Blt_FindHashEntry(tablePtr, (char *)drawPtr) != NULL) {
-			Tcl_Obj *objPtr;
-
-			objPtr = Tcl_NewStringObj(tag, -1);
-			Tcl_ListObjAppendElement(interp, listObjPtr,objPtr);
-		    }
-		}
+                    objPtr = Tcl_NewStringObj(tag, -1);
+                    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+                }
+                Blt_Chain_Destroy(chain);
 	    }
 	}    
     }
@@ -4762,16 +4574,7 @@ TagNamesOp(ClientData clientData, Tcl_Interp *interp, int objc,
     objPtr = Tcl_NewStringObj("all", -1);
     Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
     if (objc == 3) {
-	Blt_HashEntry *hPtr;
-	Blt_HashSearch iter;
-
-	for (hPtr = Blt_FirstHashEntry(&setPtr->tagTable, &iter); hPtr != NULL; 
-	     hPtr = Blt_NextHashEntry(&iter)) {
-	    const char *tag;
-	    tag = Blt_GetHashKey(&setPtr->tagTable, hPtr);
-	    objPtr = Tcl_NewStringObj(tag, -1);
-	    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-	}
+        Blt_Tags_AppendAllTagsToObj(&setPtr->tags, listObjPtr);
     } else {
 	Blt_HashTable uniqTable;
 	int i;
@@ -4786,21 +4589,20 @@ TagNamesOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	    }
 	    for (drawPtr = FirstTaggedDrawer(&iter); drawPtr != NULL; 
 		 drawPtr = NextTaggedDrawer(&iter)) {
-		Blt_HashEntry *hPtr;
-		Blt_HashSearch hiter;
-		for (hPtr = Blt_FirstHashEntry(&setPtr->tagTable, &hiter); 
-		     hPtr != NULL; hPtr = Blt_NextHashEntry(&hiter)) {
+		Blt_ChainLink link;
+                Blt_Chain chain;
+
+                chain = Blt_Chain_Create();
+                Blt_Tags_AppendTagsToChain(&setPtr->tags, drawPtr, chain);
+		for (link = Blt_Chain_FirstLink(chain); link != NULL; 
+                     link = Blt_Chain_NextLink(link)) {
 		    const char *tag;
-		    Blt_HashTable *tablePtr;
+                    int isNew;
 
-		    tag = Blt_GetHashKey(&setPtr->tagTable, hPtr);
-		    tablePtr = Blt_GetHashValue(hPtr);
-		    if (Blt_FindHashEntry(tablePtr, drawPtr) != NULL) {
-			int isNew;
-
-			Blt_CreateHashEntry(&uniqTable, tag, &isNew);
-		    }
+		    tag = Blt_Chain_GetValue(link);
+                    Blt_CreateHashEntry(&uniqTable, tag, &isNew);
 		}
+                Blt_Chain_Destroy(chain);
 	    }
 	}
 	{
@@ -4857,26 +4659,22 @@ TagIndicesOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	if (strcmp(tag, "all") == 0) {
 	    break;
 	} else {
-	    Blt_HashTable *tablePtr;
-	    
-	    tablePtr = GetTagTable(setPtr, tag);
-	    if (tablePtr != NULL) {
-		Blt_HashEntry *hPtr;
-		Blt_HashSearch iter;
+            Blt_Chain chain;
 
-		for (hPtr = Blt_FirstHashEntry(tablePtr, &iter); 
-		     hPtr != NULL; hPtr = Blt_NextHashEntry(&iter)) {
-		    Drawer *drawPtr;
-		    int isNew;
+            chain = Blt_Tags_GetItemList(&setPtr->tags, tag);
+            if (chain != NULL) {
+                Blt_ChainLink link;
 
-		    drawPtr = Blt_GetHashValue(hPtr);
-		    if (drawPtr != NULL) {
-			Blt_CreateHashEntry(&drawerTable, (char *)drawPtr, 
-                                            &isNew);
-		    }
-		}
-		continue;
-	    }
+                for (link = Blt_Chain_FirstLink(chain); link != NULL; 
+                     link = Blt_Chain_NextLink(link)) {
+                    Drawer *drawPtr;
+                    int isNew;
+                    
+                    drawPtr = Blt_Chain_GetValue(link);
+                    Blt_CreateHashEntry(&drawerTable, (char *)drawPtr, &isNew);
+                }
+            }
+            continue;
 	}
 	Tcl_AppendResult(interp, "can't find a tag \"", tag, "\"",
 			 (char *)NULL);
@@ -4949,7 +4747,7 @@ TagSetOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	}
 	for (drawPtr = FirstTaggedDrawer(&iter); drawPtr != NULL; 
 	     drawPtr = NextTaggedDrawer(&iter)) {
-	    AddTag(setPtr, drawPtr, tag);
+	    Blt_Tags_AddItemToTag(&setPtr->tags, drawPtr, tag);
 	}    
     }
     return TCL_OK;
@@ -4983,7 +4781,10 @@ TagUnsetOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	 drawPtr = NextTaggedDrawer(&iter)) {
 	int i;
 	for (i = 4; i < objc; i++) {
-	    RemoveTag(drawPtr, Tcl_GetString(objv[i]));
+            const char *tag;
+
+            tag = Tcl_GetString(objv[i]);
+            Blt_Tags_RemoveItemFromTag(&setPtr->tags, drawPtr, tag);
 	}    
     }
     return TCL_OK;

@@ -4155,15 +4155,20 @@ DeselectRow(TableView *viewPtr, Row *rowPtr)
 static int
 SelectRows(TableView *viewPtr, Row *fromPtr, Row *toPtr)
 {
-    long from, to, i;
+    long from, to;
 
     from = fromPtr->index;
     to = toPtr->index;
     if (from > to) {
+        int i;
+
 	for (i = from; i >= to; i--) {
 	    Row *rowPtr;
 
 	    rowPtr = viewPtr->rows[i];
+            if (rowPtr->flags & HIDDEN) {
+                continue;
+            }
 	    switch (viewPtr->selectRows.flags & SELECT_MASK) {
 	    case SELECT_CLEAR:
 		DeselectRow(viewPtr, rowPtr); break;
@@ -4179,13 +4184,18 @@ SelectRows(TableView *viewPtr, Row *fromPtr, Row *toPtr)
 	    }
 	}
     } else {
+        int i;
+
 	for (i = from; i <= to; i++) {
 	    Row *rowPtr;
 
 	    rowPtr = viewPtr->rows[i];
+            if (rowPtr->flags & HIDDEN) {
+                continue;
+            }
 	    switch (viewPtr->selectRows.flags & SELECT_MASK) {
 	    case SELECT_CLEAR:
-		DeselectRow(viewPtr, rowPtr); break;
+		DeselectRow(viewPtr, rowPtr);   break;
 	    case SELECT_SET:
 		SelectRow(viewPtr, rowPtr);	break;
 	    case SELECT_TOGGLE:
@@ -4328,33 +4338,33 @@ TableEventProc(ClientData clientData, BLT_TABLE_NOTIFY_EVENT *eventPtr)
 }
 
 static ClientData
-RowTag(TableView *viewPtr, const char *key)
+RowBindTagProc(TableView *viewPtr, const char *key)
 {
     Blt_HashEntry *hPtr;
     int isNew;				/* Not used. */
 
-    hPtr = Blt_CreateHashEntry(&viewPtr->rowTagTable, key, &isNew);
-    return Blt_GetHashKey(&viewPtr->rowTagTable, hPtr);
+    hPtr = Blt_CreateHashEntry(&viewPtr->rowBindTagTable, key, &isNew);
+    return Blt_GetHashKey(&viewPtr->rowBindTagTable, hPtr);
 }
 
 static ClientData
-ColumnTag(TableView *viewPtr, const char *key)
+ColumnBindTagProc(TableView *viewPtr, const char *key)
 {
     Blt_HashEntry *hPtr;
     int isNew;				/* Not used. */
 
-    hPtr = Blt_CreateHashEntry(&viewPtr->colTagTable, key, &isNew);
-    return Blt_GetHashKey(&viewPtr->colTagTable, hPtr);
+    hPtr = Blt_CreateHashEntry(&viewPtr->colBindTagTable, key, &isNew);
+    return Blt_GetHashKey(&viewPtr->colBindTagTable, hPtr);
 }
 
 static ClientData
-CellTag(TableView *viewPtr, const char *key)
+CellBindTagProc(TableView *viewPtr, const char *key)
 {
     Blt_HashEntry *hPtr;
     int isNew;				/* Not used. */
 
-    hPtr = Blt_CreateHashEntry(&viewPtr->cellTagTable, key, &isNew);
-    return Blt_GetHashKey(&viewPtr->cellTagTable, hPtr);
+    hPtr = Blt_CreateHashEntry(&viewPtr->cellBindTagTable, key, &isNew);
+    return Blt_GetHashKey(&viewPtr->cellBindTagTable, hPtr);
 }
 
 static void
@@ -4388,24 +4398,24 @@ AppendTagsProc(Blt_BindTable table, ClientData object, ClientData hint,
     }
     viewPtr = Blt_GetBindingData(table);
     if (flags & ITEM_COLUMN_FILTER) {
-	Blt_Chain_Append(tags, ColumnTag(viewPtr, "ColumnFilter"));
+	Blt_Chain_Append(tags, ColumnBindTagProc(viewPtr, "ColumnFilter"));
     } else if (flags & ITEM_COLUMN_RESIZE) {
-	Blt_Chain_Append(tags, ColumnTag(viewPtr, "Resize"));
+	Blt_Chain_Append(tags, ColumnBindTagProc(viewPtr, "Resize"));
     } else if (flags & ITEM_COLUMN_TITLE) {
 	Column *colPtr = object;
 
 	Blt_Chain_Append(tags, colPtr);
 	if (colPtr->bindTags != NULL) {
-	    AddBindTags(viewPtr, tags, colPtr->bindTags, ColumnTag);
+	    AddBindTags(viewPtr, tags, colPtr->bindTags, ColumnBindTagProc);
 	}
     } else if(flags & ITEM_ROW_RESIZE) {
-	Blt_Chain_Append(tags, RowTag(viewPtr, "Resize"));
+	Blt_Chain_Append(tags, RowBindTagProc(viewPtr, "Resize"));
     } else if(flags & ITEM_ROW_TITLE) {
 	Row *rowPtr = object;
 
 	Blt_Chain_Append(tags, rowPtr);
 	if (rowPtr->bindTags != NULL) {
-	    AddBindTags(viewPtr, tags, rowPtr->bindTags, RowTag);
+	    AddBindTags(viewPtr, tags, rowPtr->bindTags, RowBindTagProc);
 	}
     } else if(flags & ITEM_CELL) {
 	Cell *cellPtr = object;
@@ -4416,10 +4426,11 @@ AppendTagsProc(Blt_BindTable table, ClientData object, ClientData hint,
 	stylePtr = GetCurrentStyle(viewPtr, keyPtr->rowPtr, keyPtr->colPtr,
 				   cellPtr);
 	if (stylePtr->name != NULL) {
-	    Blt_Chain_Append(tags, CellTag(viewPtr, stylePtr->name));
+	    Blt_Chain_Append(tags, CellBindTagProc(viewPtr, stylePtr->name));
 	}
-	Blt_Chain_Append(tags, CellTag(viewPtr, stylePtr->classPtr->className));
-	Blt_Chain_Append(tags, CellTag(viewPtr, "all"));
+	Blt_Chain_Append(tags, 
+                CellBindTagProc(viewPtr, stylePtr->classPtr->className));
+	Blt_Chain_Append(tags, CellBindTagProc(viewPtr, "all"));
     } else {
 	fprintf(stderr, "unknown object %lx\n", (unsigned long)object);
     }
@@ -4475,7 +4486,6 @@ TableViewPickProc(
 	ComputeLayout(viewPtr);
     }
     if (viewPtr->flags & SCROLL_PENDING) {
-	viewPtr->flags &= ~SCROLL_PENDING;
 	ComputeVisibleEntries(viewPtr);
     }
 #ifdef notdef
@@ -4663,9 +4673,9 @@ TableViewFreeProc(DestroyData dataPtr) /* Pointer to the widget record. */
     Blt_DeleteHashTable(&viewPtr->cellTable);
     Blt_DeleteHashTable(&viewPtr->rowTable);
     Blt_DeleteHashTable(&viewPtr->columnTable);
-    Blt_DeleteHashTable(&viewPtr->rowTagTable);
-    Blt_DeleteHashTable(&viewPtr->colTagTable);
-    Blt_DeleteHashTable(&viewPtr->cellTagTable);
+    Blt_DeleteHashTable(&viewPtr->rowBindTagTable);
+    Blt_DeleteHashTable(&viewPtr->colBindTagTable);
+    Blt_DeleteHashTable(&viewPtr->cellBindTagTable);
     Blt_DeleteHashTable(&viewPtr->uidTable);
     Blt_Pool_Destroy(viewPtr->rowPool);
     Blt_Pool_Destroy(viewPtr->columnPool);
@@ -6106,7 +6116,7 @@ BindOp(TableView *viewPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     if ((GetCellFromObj(NULL, viewPtr, objv[2], &cellPtr) != TCL_OK) ||
 	(cellPtr == NULL)) {
 	/* Assume that this is a binding tag. */
-	object = CellTag(viewPtr, Tcl_GetString(objv[2]));
+	object = CellBindTagProc(viewPtr, Tcl_GetString(objv[2]));
     } else {
 	object = cellPtr;
     } 
@@ -7003,7 +7013,7 @@ ColumnBindOp(TableView *viewPtr, Tcl_Interp *interp, int objc,
     if (GetColumn(NULL, viewPtr, objv[3], &colPtr) == TCL_OK) {
 	object = colPtr;
     } else {
-	object = ColumnTag(viewPtr, Tcl_GetString(objv[3]));
+	object = ColumnBindTagProc(viewPtr, Tcl_GetString(objv[3]));
     }
     return Blt_ConfigureBindingsFromObj(interp, viewPtr->bindTable, object,
 	objc - 4, objv + 4);
@@ -7303,7 +7313,7 @@ ColumnExposeOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * ColumnHideOp --
  *
- *	.tv column hide ?row...?
+ *	.tv column hide ?col...?
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
@@ -9083,7 +9093,7 @@ RowBindOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (GetRow(NULL, viewPtr, objv[3], &rowPtr) == TCL_OK) {
 	object = rowPtr;
     } else {
-	object = RowTag(viewPtr, Tcl_GetString(objv[3]));
+	object = RowBindTagProc(viewPtr, Tcl_GetString(objv[3]));
     }
     return Blt_ConfigureBindingsFromObj(interp, viewPtr->bindTable, object,
 	objc - 4, objv + 4);
@@ -9168,7 +9178,6 @@ RowConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
     EventuallyRedraw(viewPtr);
     return TCL_OK;
 }
-
 
 /*
  *---------------------------------------------------------------------------
@@ -10109,7 +10118,7 @@ SelectionAnchorOp(ClientData clientData, Tcl_Interp *interp, int objc,
     CellKey *keyPtr;
     TableView *viewPtr = clientData;
 
-    if (GetCellFromObj(interp, viewPtr, objv[2], &cellPtr) != TCL_OK) {
+    if (GetCellFromObj(interp, viewPtr, objv[3], &cellPtr) != TCL_OK) {
 	return TCL_ERROR;
     }
     if (cellPtr == NULL) {
@@ -12399,9 +12408,9 @@ NewTableView(Tcl_Interp *interp, Tk_Window tkwin)
     Blt_InitHashTableWithPool(&viewPtr->columnTable, BLT_ONE_WORD_KEYS);
     Blt_InitHashTable(&viewPtr->iconTable, BLT_STRING_KEYS);
     Blt_InitHashTable(&viewPtr->styleTable, BLT_STRING_KEYS);
-    Blt_InitHashTable(&viewPtr->rowTagTable, BLT_STRING_KEYS);
-    Blt_InitHashTable(&viewPtr->colTagTable, BLT_STRING_KEYS);
-    Blt_InitHashTable(&viewPtr->cellTagTable, BLT_STRING_KEYS);
+    Blt_InitHashTable(&viewPtr->rowBindTagTable, BLT_STRING_KEYS);
+    Blt_InitHashTable(&viewPtr->colBindTagTable, BLT_STRING_KEYS);
+    Blt_InitHashTable(&viewPtr->cellBindTagTable, BLT_STRING_KEYS);
     Blt_InitHashTable(&viewPtr->uidTable, BLT_STRING_KEYS);
 
     viewPtr->rowPool    = Blt_Pool_Create(BLT_FIXED_SIZE_ITEMS);

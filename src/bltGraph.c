@@ -918,9 +918,9 @@ CreateGraph(Tcl_Interp *interp, int objc, Tcl_Obj *const *objv, ClassId classId)
     Blt_InitHashTable(&graphPtr->markers.nameTable, BLT_STRING_KEYS);
     Blt_InitHashTable(&graphPtr->markers.bindTagTable, BLT_STRING_KEYS);
     Blt_InitHashTable(&graphPtr->dataTables, BLT_STRING_KEYS);
-    Blt_InitHashTable(&graphPtr->elements.tagTable, BLT_STRING_KEYS);
-    Blt_InitHashTable(&graphPtr->markers.tagTable, BLT_STRING_KEYS);
-    Blt_InitHashTable(&graphPtr->axes.tagTable, BLT_STRING_KEYS);
+    Blt_Tags_Init(&graphPtr->elements.tags);
+    Blt_Tags_Init(&graphPtr->markers.tags);
+    Blt_Tags_Init(&graphPtr->axes.tags);
     graphPtr->elements.displayList = Blt_Chain_Create();
     graphPtr->markers.displayList = Blt_Chain_Create();
     graphPtr->axes.displayList = Blt_Chain_Create();
