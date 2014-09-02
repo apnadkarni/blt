@@ -369,6 +369,7 @@ BLT_TCL_SO_OBJS =	bltAlloc.o \
 			bltDBuffer.o \
 			bltSpline.o \
 			bltSwitch.o \
+			bltTags.o \
 			$(TREE_OBJS) \
 			bltUtil.o \
 			bltVar.o \

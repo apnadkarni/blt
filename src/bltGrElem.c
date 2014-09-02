@@ -316,22 +316,36 @@ GetVectorData(Tcl_Interp *interp, ElemValues *valuesPtr, const char *vecName)
 
 static int
 FetchTableValues(Tcl_Interp *interp, ElemValues *valuesPtr, 
-		 BLT_TABLE_COLUMN col)
+		 BLT_TABLE_COLUMN col, Tcl_Obj *objPtr)
 {
     long i;
     double *array;
     BLT_TABLE table;
+    BLT_TABLE_ITERATOR ri;
+    BLT_TABLE_ROW row;
 
     table = valuesPtr->tableSource.table;
-    array = Blt_Malloc(sizeof(double) * blt_table_num_rows(table));
+    if (objPtr != NULL) {
+        if (blt_table_iterate_row(interp, table, objPtr, &ri) != TCL_OK) {
+            return TCL_ERROR;
+        }
+        if (ri.numEntries == 0) {
+            Tcl_AppendResult(interp, "no values in tag \"", 
+                Tcl_GetString(objPtr), "\"", (char *)NULL);
+            return TCL_ERROR;
+        }
+    } else {
+        blt_table_iterate_all_rows(table, &ri);
+    }
+    array = Blt_Malloc(sizeof(double) * ri.numEntries);
     if (array == NULL) {
 	return TCL_ERROR;
     }
-    for (i = 0; i < blt_table_num_rows(table); i++) {
-	BLT_TABLE_ROW row;
-
-	row = blt_table_row(table, i);
+    i = 0;
+    for (row = blt_table_first_tagged_row(&ri); row != NULL; 
+         row = blt_table_next_tagged_row(&ri)) {
 	array[i] = blt_table_get_double(table, row, col);
+        i++;
     }
     if (valuesPtr->values != NULL) {
 	Blt_Free(valuesPtr->values);
@@ -398,7 +412,7 @@ TableNotifyProc(ClientData clientData, BLT_TABLE_NOTIFY_EVENT *eventPtr)
     graphPtr = elemPtr->obj.graphPtr;
     if ((eventPtr->type == TABLE_NOTIFY_COLUMNS_DELETED) || 
 	(FetchTableValues(graphPtr->interp, valuesPtr, 
-		eventPtr->column)) != TCL_OK) {
+                eventPtr->column, NULL)) != TCL_OK) {
 	FreeTableSource(valuesPtr);
 	return TCL_ERROR;
     } 
@@ -436,7 +450,7 @@ TableTraceProc(ClientData clientData, BLT_TABLE_TRACE_EVENT *eventPtr)
     elemPtr = valuesPtr->elemPtr;
     graphPtr = elemPtr->obj.graphPtr;
     assert((BLT_TABLE_COLUMN)eventPtr->column == valuesPtr->tableSource.column);
-    if (FetchTableValues(eventPtr->interp, valuesPtr, eventPtr->column) 
+    if (FetchTableValues(eventPtr->interp, valuesPtr, eventPtr->column, NULL) 
 	!= TCL_OK) {
 	FreeTableSource(valuesPtr);
 	return TCL_ERROR;
@@ -451,22 +465,24 @@ TableTraceProc(ClientData clientData, BLT_TABLE_TRACE_EVENT *eventPtr)
 }
 
 static int
-GetTableData(Tcl_Interp *interp, ElemValues *valuesPtr, const char *tableName,
-	     Tcl_Obj *colObjPtr)
+GetTableData(Tcl_Interp *interp, ElemValues *valuesPtr, int objc, 
+             Tcl_Obj **objv)
 {
     TableDataSource *srcPtr;
     TableClient *clientPtr;
     int isNew;
     Graph *graphPtr;
+    Tcl_Obj *tagObjPtr;
 
     memset(&valuesPtr->tableSource, 0, sizeof(TableDataSource));
     srcPtr = &valuesPtr->tableSource;
     graphPtr = valuesPtr->elemPtr->obj.graphPtr;
     /* See if the graph is already using this table. */
-    srcPtr->hashPtr = Blt_CreateHashEntry(&graphPtr->dataTables, tableName, 
-	&isNew);
+    srcPtr->hashPtr = Blt_CreateHashEntry(&graphPtr->dataTables, 
+        Tcl_GetString(objv[0]), &isNew);
     if (isNew) {
-	if (blt_table_open(interp, tableName, &srcPtr->table) != TCL_OK) {
+	if (blt_table_open(interp, Tcl_GetString(objv[0]), &srcPtr->table) 
+            != TCL_OK) {
 	    return TCL_ERROR;
 	}
 	clientPtr = Blt_AssertMalloc(sizeof(TableClient));
@@ -478,11 +494,13 @@ GetTableData(Tcl_Interp *interp, ElemValues *valuesPtr, const char *tableName,
 	srcPtr->table = clientPtr->table;
 	clientPtr->refCount++;
     }
-    srcPtr->column = blt_table_get_column(interp, srcPtr->table, colObjPtr);
+    srcPtr->column = blt_table_get_column(interp, srcPtr->table, objv[1]);
     if (srcPtr->column == NULL) {
 	goto error;
     }
-    if (FetchTableValues(interp, valuesPtr, srcPtr->column) != TCL_OK) {
+    tagObjPtr = (objc == 3) ? objv[2] : NULL;
+    if (FetchTableValues(interp, valuesPtr, srcPtr->column, tagObjPtr) 
+        != TCL_OK) {
 	goto error;
     }
     srcPtr->notifier = blt_table_create_column_notifier(interp, srcPtr->table, 
@@ -706,8 +724,9 @@ ObjToValues(
     string = Tcl_GetString(objv[0]);
     if ((objc == 1) && (Blt_VectorExists2(interp, string))) {
 	result = GetVectorData(interp, valuesPtr, string);
-    } else if ((objc == 2) && (blt_table_exists(interp, string))) {
-	result = GetTableData(interp, valuesPtr, string, objv[1]);
+    } else if (((objc == 2) || (objc == 3)) && 
+               (blt_table_exists(interp, string))) {
+	result = GetTableData(interp, valuesPtr, objc, objv);
     } else {
 	double *values;
 	int numValues;
