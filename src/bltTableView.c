@@ -4488,11 +4488,6 @@ TableViewPickProc(
     if (viewPtr->flags & SCROLL_PENDING) {
 	ComputeVisibleEntries(viewPtr);
     }
-#ifdef notdef
-    if ((viewPtr->numVisibleRows == 0) || (viewPtr->numVisibleColumns == 0)) {
-	return NULL;			/* Nothing to pick. */
-    }
-#endif
     viewPtr->colActivePtr = colPtr = NearestColumn(viewPtr, x, FALSE);
     viewPtr->rowActivePtr = rowPtr = NearestRow(viewPtr, y, FALSE);
     worldX = WORLDX(viewPtr, x);
@@ -5817,12 +5812,6 @@ AdjustColumns(TableView *viewPtr)
 	Column *colPtr;
 
 	colPtr = viewPtr->columns[i];
-#ifdef notdef
-	colPtr->width |= 0x1;		/* Make the width of the column
-					 * odd. This means that the dotted
-					 * focus rectangle will have dots on
-					 * the corners.  */
-#endif
 	if (colPtr->flags & HIDDEN) {
 	    continue;			/* Ignore hidden columns. */
 	}
@@ -5912,12 +5901,6 @@ AdjustRows(TableView *viewPtr)
 	Row *rowPtr;
 
 	rowPtr = viewPtr->rows[i];
-#ifdef notdef
-	rowPtr->height |= 0x1;		/* Make the width of the column
-					 * odd. This means that the dotted
-					 * focus rectangle will have dots on
-					 * the corners.  */
-#endif
 	if (rowPtr->flags & HIDDEN) {
 	    continue;			/* Ignore hidden columns. */
 	}
@@ -10649,7 +10632,6 @@ SortOp(ClientData clientData, Tcl_Interp *interp, int objc,
     return (*proc) (clientData, interp, objc, objv);
 }
 
-
 /*
  *---------------------------------------------------------------------------
  *
@@ -10705,7 +10687,6 @@ StyleApplyOp(TableView *viewPtr, Tcl_Interp *interp, int objc,
     Blt_Chain_Destroy(cells);
     return TCL_OK;
 }
-
 
 /*
  *---------------------------------------------------------------------------
@@ -10778,7 +10759,6 @@ StyleConfigureOp(TableView *viewPtr, Tcl_Interp *interp, int objc,
     EventuallyRedraw(viewPtr);
     return TCL_OK;
 }
-
 
 /*
  *---------------------------------------------------------------------------
@@ -11054,7 +11034,6 @@ StyleOp(ClientData clientData, Tcl_Interp *interp, int objc,
     result = (*proc)(clientData, interp, objc, objv);
     return result;
 }
-
 
 /*
  *---------------------------------------------------------------------------
