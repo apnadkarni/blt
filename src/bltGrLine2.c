@@ -2,8 +2,8 @@
 /*
  * bltGrLine2.c --
  *
- * This module implements line graph and stripchart elements for the BLT graph
- * widget.
+ * This module implements line graph and stripchart elements for the BLT
+ * graph widget.
  *
  *	Copyright (c) 1993 George A Howlett.
  *
@@ -190,27 +190,28 @@ static SymbolTable symbolTable[] = {
 typedef struct _LineElement LineElement;
 
 typedef struct {
-    SymbolType type;			/* Type of symbol to be drawn/printed */
-    int size;				/* Requested size of symbol in pixels */
+    SymbolType type;			/* Type of symbol to be
+                                         * drawn/printed */
+    int size;				/* Requested size of symbol in
+                                         * pixels */
     XColor *outlineColor;		/* Outline color */
     int outlineWidth;			/* Width of the outline */
     GC outlineGC;			/* Outline graphics context */
     XColor *fillColor;			/* Normal fill color */
     GC fillGC;				/* Fill graphics context */
-
     Tk_Image image;			/* This is used of image symbols.  */
 } Symbol;
 
 typedef struct {
-    const char *name;			/* Pen style identifier.  If NULL pen
-					 * was statically allocated. */
+    const char *name;			/* Pen style identifier.  If NULL
+					 * pen was statically allocated. */
     ClassId classId;			/* Type of pen */
-    const char *typeId;			/* String token identifying the type of
-					 * pen. */
+    const char *typeId;			/* String token identifying the
+					 * type of pen. */
     unsigned int flags;			/* Indicates if the pen element is
 					 * active or normal */
-    int refCount;			/* Reference count for elements using
-					 * this pen. */
+    int refCount;			/* Reference count for elements
+					 * using this pen. */
     Blt_HashEntry *hashPtr;
     Blt_ConfigSpec *configSpecs;	/* Configuration specifications */
     PenConfigureProc *configProc;
@@ -238,29 +239,30 @@ typedef struct {
     GC errorGC;				/* Error bar graphics context. */
 
     /* Show value attributes. */
-    unsigned int valueFlags;		/* Indicates whether to display text
-					 * of the data value.  Values are x,
-					 * y, both, or none. */
+    unsigned int valueFlags;		/* Indicates whether to display
+					 * text of the data value.  Values
+					 * are x, y, both, or none. */
     const char *valueFormat;		/* A printf format string. */
     TextStyle valueStyle;		/* Text attributes (color, font,
 					 * rotation, etc.) of the value. */
 } LinePen;
 
 /* 
- * A TraceSegment represents the individual line segment (which is part of an
- * error bar) in a trace.  Included is the both the index of the data point 
- * it is associated with and the flags or the point (if it's active, etc).
+ * A TraceSegment represents the individual line segment (which is part of
+ * an error bar) in a trace.  Included is the both the index of the data
+ * point it is associated with and the flags or the point (if it's active,
+ * etc).
  */
 typedef struct _TraceSegment {
     struct _TraceSegment *next;		/* Pointer to next point in trace. */
     float x1, y1, x2, y2;		/* Screen coordinate of the point. */
-    int index;				/* Index of this coordinate pointing
-					 * back to the raw world values in the
-					 * individual data arrays. This index
-					 * is replicated for generated
-					 * values. */
-    unsigned int flags;			/* Flags associated with a segment are
-					 * described below. */
+    int index;				/* Index of this coordinate
+					 * pointing back to the raw world
+					 * values in the individual data
+					 * arrays. This index is replicated
+					 * for generated values. */
+    unsigned int flags;			/* Flags associated with a segment
+					 * are described below. */
 } TraceSegment;
 
 /* 
@@ -269,13 +271,13 @@ typedef struct _TraceSegment {
 typedef struct _TracePoint {
     struct _TracePoint *next;		/* Pointer to next point in trace. */
     float x, y;				/* Screen coordinate of the point. */
-    int index;				/* Index of this coordinate pointing
-					 * back to the raw world values in the
-					 * individual data arrays. This index
-					 * is replicated for generated
-					 * values. */
-    unsigned int flags;			/* Flags associated with a point are
-					 * described below. */
+    int index;				/* Index of this coordinate
+					 * pointing back to the raw world
+					 * values in the individual data
+					 * arrays. This index is replicated
+					 * for generated values. */
+    unsigned int flags;			/* Flags associated with a point
+					 * are described below. */
 } TracePoint;
 
 
@@ -291,13 +293,14 @@ typedef struct _Trace {
     LinePen *penPtr;
     unsigned short flags;		/* Flags associated with a trace are
 					 * described blow. */
-    unsigned short drawFlags;		/* Flags for individual points and 
-					 * segments when drawing the trace. */
+    unsigned short drawFlags;		/* Flags for individual points and
+					 * segments when drawing the
+					 * trace. */
     TraceSegment *segments;		/* Segments used for errorbars. */
     int numSegments;
-    Point2d *fillPts;			/* Polygon representing the area under
-					 * the curve.  May be a degenerate
-					 * polygon. */
+    Point2d *fillPts;			/* Polygon representing the area
+					 * under the curve.  May be a
+					 * degenerate polygon. */
     int numFillPts;
 } Trace;
 
@@ -321,17 +324,19 @@ struct _LineElement {
     Axis2d axes;			/* X-axis and Y-axis mapping the
 					 * element */
     ElemValues x, y, w;			/* Contains array of floating point
-					 * graph coordinate values. Also holds
-					 * min/max * and the number of
-					 * coordinates */
+					 * graph coordinate values. Also
+					 * holds min/max * and the number
+					 * of coordinates */
     Blt_HashTable activeTable;		/* Table of indices which indicate
-					 * which data points are active (drawn
-					 * * with "active" colors). */
+					 * which data points are active
+					 * (drawn * with "active"
+					 * colors). */
     int numActiveIndices;		/* Number of active data points.
-					 * Special case: if numActiveIndices <
-					 * 0 and the active bit is set in
-					 * "flags", then all data points are
-					 * drawn active. */
+					 * Special case: if
+					 * numActiveIndices < 0 and the
+					 * active bit is set in "flags",
+					 * then all data points are drawn
+					 * active. */
     ElementProcs *procsPtr;
     Blt_ConfigSpec *configSpecs;	/* Configuration specifications. */
     LinePen *activePenPtr;		/* Standard Pens */
