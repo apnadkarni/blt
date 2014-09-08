@@ -1,20 +1,20 @@
 /* -*- mode: c; c-basic-offset: 4; indent-tabs-mode: nil -*- */
-
 /*
  * bltDate.c --
  *
- * A date parser for the BLT toolkit.  Used to automatically convert 
- * dates in datatables to seconds.  May include fractional seconds.
+ *      This module implements a date parser for the BLT toolkit.  It's
+ *      used to automatically convert dates in datatables to seconds (may
+ *      include fractional seconds).
  *
  *	Copyright 1993-2004 George A Howlett.
  *
- *	Permission is hereby granted, free of charge, to any person obtaining
- *	a copy of this software and associated documentation files (the
- *	"Software"), to deal in the Software without restriction, including
- *	without limitation the rights to use, copy, modify, merge, publish,
- *	distribute, sublicense, and/or sell copies of the Software, and to
- *	permit persons to whom the Software is furnished to do so, subject to
- *	the following conditions:
+ *	Permission is hereby granted, free of charge, to any person
+ *	obtaining a copy of this software and associated documentation
+ *	files (the "Software"), to deal in the Software without
+ *	restriction, including without limitation the rights to use, copy,
+ *	modify, merge, publish, distribute, sublicense, and/or sell copies
+ *	of the Software, and to permit persons to whom the Software is
+ *	furnished to do so, subject to the following conditions:
  *
  *	The above copyright notice and this permission notice shall be
  *	included in all copies or substantial portions of the Software.
@@ -22,10 +22,11 @@
  *	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  *	EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  *	MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- *	NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
- *	LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
- *	OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
- *	WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *	NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+ *	BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ *	ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ *	CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ *	SOFTWARE.
  */
 
 #define _BSD_SOURCE 1
@@ -97,7 +98,8 @@ struct _Token {
     Blt_ChainLink link;			/* If non-NULL, pointer this entry
 					 * in the list of tokens. */
     Blt_Chain chain;			/* Pointer to list of tokens. */
-    const char *ident;			/* String representing this token. */
+    const char *ident;			/* String representing this
+                                         * token. */
     int length;				/* # of bytes in string. */
     TokenNumber id;			/* Serial Id of token. */
     uint64_t lvalue;			/* Numeric value of token. */
@@ -132,7 +134,8 @@ typedef struct {
 typedef struct {
     const char *name;			/* Name of identifier. */
     TokenNumber id;			/* Serial Id # of identifier. */
-    int value;				/* Value associated with identifier. */
+    int value;				/* Value associated with
+                                         * identifier. */
 } IdentTable;
 
 static const char *monthTable[] = {
@@ -1904,7 +1907,7 @@ static int numCmdOps = sizeof(dateCmdOps) / sizeof(Blt_OpSpec);
 /*ARGSUSED*/
 static int
 DateObjCmd(
-    ClientData clientData,	/* Interpreter-specific data. */
+    ClientData clientData,              /* Interpreter-specific data. */
     Tcl_Interp *interp,
     int objc,
     Tcl_Obj *const *objv)
@@ -1924,14 +1927,13 @@ DateObjCmd(
  *
  * Blt_DateScanCmdInitProc --
  *
- *	This procedure is invoked to initialize the "tree" command.
+ *	This procedure is invoked to initialize the "date" command.
  *
  * Results:
  *	None.
  *
  * Side effects:
- *	Creates the new command and adds a new entry into a global Tcl
- *	associative array.
+ *	Creates the new command.
  *
  *---------------------------------------------------------------------------
  */
