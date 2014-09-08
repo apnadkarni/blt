@@ -955,25 +955,28 @@ Blt_CreateBarPen(Graph *graphPtr, Blt_HashEntry *hPtr)
 static void
 CheckStacks(Graph *graphPtr, Axis2d *pairPtr, double *minPtr, double *maxPtr)
 {
-    BarGroup *gp, *gend;
+    int i;
 
     if ((graphPtr->mode != BARS_STACKED) || (graphPtr->numBarGroups == 0)) {
 	return;
     }
-    for (gp = graphPtr->barGroups, gend = gp + graphPtr->numBarGroups; 
-	 gp < gend; gp++) {
-	if ((gp->axes.x == pairPtr->x) && (gp->axes.y == pairPtr->y)) {
+    for (i = 0; i < graphPtr->numBarGroups; i++) {
+        BarGroup *groupPtr;
+
+        groupPtr = graphPtr->barGroups + i;
+	if ((groupPtr->axes.x == pairPtr->x) && 
+            (groupPtr->axes.y == pairPtr->y)) {
 	    /*
 	     * Check if any of the y-values (because of stacking) are
 	     * greater than the current limits of the graph.
 	     */
-	    if (gp->sum < 0.0f) {
-		if (*minPtr > gp->sum) {
-		    *minPtr = gp->sum;
+	    if (groupPtr->sum < 0.0f) {
+		if (*minPtr > groupPtr->sum) {
+		    *minPtr = groupPtr->sum;
 		}
 	    } else {
-		if (*maxPtr < gp->sum) {
-		    *maxPtr = gp->sum;
+		if (*maxPtr < groupPtr->sum) {
+		    *maxPtr = groupPtr->sum;
 		}
 	    }
 	}
@@ -2656,8 +2659,7 @@ Blt_InitSetTable(Graph *graphPtr)
     for (link = Blt_Chain_FirstLink(graphPtr->elements.displayList);
 	link != NULL; link = Blt_Chain_NextLink(link)) {
 	BarElement *elemPtr;
-	double *x, *xend;
-	int numPoints;
+	int i, numPoints;
 
 	elemPtr = Blt_Chain_GetValue(link);
 	if ((elemPtr->flags & HIDE) || (elemPtr->obj.classId != CID_ELEM_BAR)) {
@@ -2665,7 +2667,7 @@ Blt_InitSetTable(Graph *graphPtr)
 	}
 	numSegs++;
 	numPoints = NUMBEROFPOINTS(elemPtr);
-	for (x = elemPtr->x.values, xend = x + numPoints; x < xend; x++) {
+	for (i = 0; i < numPoints; i++) {
 	    Blt_HashEntry *hPtr;
 	    Blt_HashTable *tablePtr;
 	    SetKey key;
@@ -2674,7 +2676,7 @@ Blt_InitSetTable(Graph *graphPtr)
 	    const char *name;
 
             memset(&key, 0, sizeof(key));
-	    key.value = *x;
+            key.value = elemPtr->x.values[i];
 	    key.axes = elemPtr->axes;
 	    key.axes.y = NULL;
 	    hPtr = Blt_CreateHashEntry(&setTable, (char *)&key, &isNew);
@@ -2698,6 +2700,7 @@ Blt_InitSetTable(Graph *graphPtr)
 	}
     }
     if (setTable.numEntries == 0) {
+        Blt_DeleteHashTable(&setTable);
 	return;				/* No bar elements to be displayed */
     }
     sum = max = 0;
@@ -2713,7 +2716,7 @@ Blt_InitSetTable(Graph *graphPtr)
 	tablePtr = Blt_GetHashValue(hPtr);
 	Blt_SetHashValue(hPtr2, tablePtr);
 	if (max < tablePtr->numEntries) {
-	    max = tablePtr->numEntries;	/* # of stacks in group. */
+	    max = tablePtr->numEntries;         /* # of stacks in group. */
 	}
 	sum += tablePtr->numEntries;
     }
