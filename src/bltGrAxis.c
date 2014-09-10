@@ -1,5 +1,4 @@
 /* -*- mode: c; c-basic-offset: 4; indent-tabs-mode: nil -*- */
-
 /*
  * bltGrAxis.c --
  *
@@ -7,13 +6,13 @@
  *
  *	Copyright 1993-2004 George A Howlett.
  *
- *	Permission is hereby granted, free of charge, to any person obtaining
- *	a copy of this software and associated documentation files (the
- *	"Software"), to deal in the Software without restriction, including
- *	without limitation the rights to use, copy, modify, merge, publish,
- *	distribute, sublicense, and/or sell copies of the Software, and to
- *	permit persons to whom the Software is furnished to do so, subject to
- *	the following conditions:
+ *	Permission is hereby granted, free of charge, to any person
+ *	obtaining a copy of this software and associated documentation
+ *	files (the "Software"), to deal in the Software without
+ *	restriction, including without limitation the rights to use, copy,
+ *	modify, merge, publish, distribute, sublicense, and/or sell copies
+ *	of the Software, and to permit persons to whom the Software is
+ *	furnished to do so, subject to the following conditions:
  *
  *	The above copyright notice and this permission notice shall be
  *	included in all copies or substantial portions of the Software.
@@ -21,10 +20,11 @@
  *	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  *	EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  *	MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- *	NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
- *	LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
- *	OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
- *	WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *	NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+ *	BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ *	ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ *	CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ *	SOFTWARE.
  */
 #define BUILD_BLT_TK_PROCS 1
 #include "bltInt.h"
@@ -52,8 +52,8 @@
 
 #define AUTO_MAJOR	(1<<16)		/* Auto-generate major ticks. */
 #define AUTO_MINOR	(1<<17)		/* Auto-generate minor ticks. */
-#define USE		(1<<18)		/* Axis is displayed on the screen via
-					 * the "use" operation */
+#define USE		(1<<18)		/* Axis is displayed on the screen
+					 * via the "use" operation */
 #define GRID		(1<<19)		/* Display grid lines. */
 #define GRIDMINOR	(1<<20)		/* Display grid lines for minor
 					 * ticks. */
@@ -1642,15 +1642,14 @@ NiceNum(double x, int round)		/* If non-zero, round. Otherwise take
 }
 
 static Ticks *
-GenerateTicks(TickSweep *sweepPtr)
+GenerateTicks(double step, double initial, int numSteps)
 {
     Ticks *ticksPtr;
 
-    ticksPtr = Blt_AssertMalloc(sizeof(Ticks) + 
-	(sweepPtr->numSteps * sizeof(double)));
+    ticksPtr = Blt_AssertMalloc(sizeof(Ticks) + (numSteps * sizeof(double)));
     ticksPtr->numTicks = 0;
 
-    if (sweepPtr->step == 0.0) { 
+    if (step == 0.0) { 
 	/* Hack: A zero step indicates to use log values. */
 	int i;
 	/* Precomputed log10 values [1..10] */
@@ -1666,21 +1665,21 @@ GenerateTicks(TickSweep *sweepPtr)
 	    0.954242509439325, 
 	    1.0
 	};
-	for (i = 0; i < sweepPtr->numSteps; i++) {
+	for (i = 0; i < numSteps; i++) {
 	    ticksPtr->values[i] = logTable[i];
 	}
     } else {
 	double value;
 	int i;
     
-	value = sweepPtr->initial;	/* Start from smallest axis tick */
-	for (i = 0; i < sweepPtr->numSteps; i++) {
-	    value = UROUND(value, sweepPtr->step);
+	value = initial;                /* Start from smallest axis tick */
+	for (i = 0; i < numSteps; i++) {
+	    value = UROUND(value, step);
 	    ticksPtr->values[i] = value;
-	    value += sweepPtr->step;
+	    value += step;
 	}
     }
-    ticksPtr->numTicks = sweepPtr->numSteps;
+    ticksPtr->numTicks = numSteps;
     return ticksPtr;
 }
 
@@ -1801,9 +1800,9 @@ LogAxis(Axis *axisPtr, double min, double max)
 	    
 	    minorStep = 0.0;		/* This is a special hack to pass
 					 * information to the GenerateTicks
-					 * routine. An interval of 0.0 tells 1)
-					 * this is a minor sweep and 2) the axis
-					 * is log scale. */
+					 * routine. An interval of 0.0
+					 * tells 1) this is a minor sweep
+					 * and 2) the axis is log scale. */
 	    numMinor = 10;
 	}
 	if ((axisPtr->looseMin == TIGHT) || ((axisPtr->looseMin == LOOSE) && 
@@ -1816,12 +1815,24 @@ LogAxis(Axis *axisPtr, double min, double max)
 	    tickMax = max;
 	}
     }
+    if (axisPtr->flags & AUTO_MAJOR) {
+        if (axisPtr->t1Ptr != NULL) {
+            Blt_Free(axisPtr->t1Ptr);
+        }
+        axisPtr->t1Ptr = GenerateTicks(majorStep, floor(tickMin), numMajor);
+    }
     axisPtr->majorSweep.step = majorStep;
     axisPtr->majorSweep.initial = floor(tickMin);
     axisPtr->majorSweep.numSteps = numMajor;
     axisPtr->minorSweep.initial = axisPtr->minorSweep.step = minorStep;
     axisPtr->minorSweep.numSteps = numMinor;
     SetAxisRange(&axisPtr->axisRange, tickMin, tickMax);
+    if (axisPtr->flags & AUTO_MINOR) {
+	if (axisPtr->t2Ptr != NULL) {
+	    Blt_Free(axisPtr->t2Ptr);
+	}
+	axisPtr->t2Ptr = GenerateTicks(minorStep, minorStep, numMinor);
+    }
 }
 
 /*
@@ -1920,10 +1931,6 @@ LinearAxis(Axis *axisPtr, double min, double max)
 	
 	numTicks = Round((tickMax - tickMin) / step) + 1;
     } 
-    axisPtr->majorSweep.step = step;
-    axisPtr->majorSweep.initial = tickMin;
-    axisPtr->majorSweep.numSteps = numTicks;
-
     /*
      * The limits of the axis are either the range of the data ("tight") or at
      * the next outer tick interval ("loose").  The looseness or tightness has
@@ -1942,6 +1949,15 @@ LinearAxis(Axis *axisPtr, double min, double max)
     }
     SetAxisRange(&axisPtr->axisRange, axisMin, axisMax);
 
+    if (axisPtr->flags & AUTO_MAJOR) {
+        if (axisPtr->t1Ptr != NULL) {
+            Blt_Free(axisPtr->t1Ptr);
+        }
+        axisPtr->t1Ptr = GenerateTicks(step, tickMin, numTicks);
+    }
+    axisPtr->majorSweep.step = step;
+    axisPtr->majorSweep.initial = tickMin;
+    axisPtr->majorSweep.numSteps = numTicks;
     /* Now calculate the minor tick step and number. */
 
     if ((axisPtr->reqNumMinorTicks > 0) && (axisPtr->flags & AUTO_MAJOR)) {
@@ -1949,16 +1965,23 @@ LinearAxis(Axis *axisPtr, double min, double max)
 	step = 1.0 / (numTicks + 1);
     } else {
 	numTicks = 0;			/* No minor ticks. */
-	step = 0.5;			/* Don't set the minor tick interval
-					 * to 0.0. It makes the GenerateTicks
-					 * routine * create minor log-scale
-					 * tick marks.  */
+        /* Don't set the minor tick interval to 0.0. It makes the
+         * GenerateTicks routine create minor log-scale tick marks.  */
+        step = 0.5;
+    }
+
+    if (axisPtr->flags & AUTO_MINOR) {
+	if (axisPtr->t2Ptr != NULL) {
+	    Blt_Free(axisPtr->t2Ptr);
+	}
+	axisPtr->t2Ptr = GenerateTicks(step, step, numTicks);
     }
     axisPtr->minorSweep.initial = axisPtr->minorSweep.step = step;
     axisPtr->minorSweep.numSteps = numTicks;
 }
 
 
+#ifdef notdef
 static void
 SweepTicks(Axis *axisPtr)
 {
@@ -1975,6 +1998,7 @@ SweepTicks(Axis *axisPtr)
 	axisPtr->t2Ptr = GenerateTicks(&axisPtr->minorSweep);
     }
 }
+#endif
 
 /*
  *---------------------------------------------------------------------------
@@ -1993,10 +2017,10 @@ Blt_ResetAxes(Graph *graphPtr)
     Blt_HashEntry *hPtr;
     Blt_HashSearch cursor;
 
-    /* FIXME: This should be called whenever the display list of
-     *	      elements change. Maybe yet another flag INIT_STACKS to
-     *	      indicate that the element display list has changed.
-     *	      Needs to be done before the axis limits are set.
+    /* FIXME: This should be called whenever the display list of elements
+     *	      change. Maybe yet another flag INIT_STACKS to indicate that
+     *	      the element display list has changed.  Needs to be done
+     *	      before the axis limits are set.
      */
     Blt_InitSetTable(graphPtr);
     if ((graphPtr->mode == BARS_STACKED) && (graphPtr->numBarGroups > 0)) {
@@ -2057,20 +2081,20 @@ Blt_ResetAxes(Graph *graphPtr)
 	if ((DEFINED(axisPtr->scrollMax)) && (max > axisPtr->scrollMax)) {
 	    max = axisPtr->scrollMax;
 	}
-	if (axisPtr->logScale) {
-	    LogAxis(axisPtr, min, max);
-	} else if (axisPtr->timeScale) {
-	    TimeAxis(axisPtr, min, max);
-	} else {
-	    LinearAxis(axisPtr, min, max);
-	}
+        if (axisPtr->logScale) {
+            LogAxis(axisPtr, min, max);
+        } else if (axisPtr->timeScale) {
+            TimeAxis(axisPtr, min, max);
+        } else {
+            LinearAxis(axisPtr, min, max);
+        }
 	if ((axisPtr->flags & (DIRTY|USE)) == (DIRTY|USE)) {
 	    graphPtr->flags |= CACHE_DIRTY;
 	}
     }
 
     graphPtr->flags &= ~RESET_AXES;
-
+    
     /*
      * When any axis changes, we need to layout the entire graph.
      */
@@ -2169,8 +2193,8 @@ ResetTextStyles(Axis *axisPtr)
  *	None.
  *
  * Side effects:
- *	Resources (font, color, gc, labels, etc.) associated with the axis are
- *	deallocated.
+ *	Resources (font, color, gc, labels, etc.) associated with the axis
+ *	are deallocated.
  *
  *---------------------------------------------------------------------------
  */
@@ -2237,7 +2261,8 @@ AxisOffsets(Axis *axisPtr, Margin *marginPtr, int offset, AxisInfo *infoPtr)
     Graph *graphPtr = axisPtr->obj.graphPtr;
     int pad;				/* Offset of axis from interior
 					 * region. This includes a possible
-					 * border and the axis line width. */
+					 * border and the axis line
+					 * width. */
     int axisLine;
     int t1, t2, labelOffset;
     int tickLabel, axisPad;
@@ -2269,8 +2294,8 @@ AxisOffsets(Axis *axisPtr, Margin *marginPtr, int offset, AxisInfo *infoPtr)
     }
     pad = 0;				/* FIXME: test */
     /*
-     * Pre-calculate the x-coordinate positions of the axis, tick labels, and
-     * the individual major and minor ticks.
+     * Pre-calculate the x-coordinate positions of the axis, tick labels,
+     * and the individual major and minor ticks.
      */
     inset = pad + axisPtr->lineWidth / 2;
     switch (marginPtr->site) {
@@ -2341,7 +2366,7 @@ AxisOffsets(Axis *axisPtr, Margin *marginPtr, int offset, AxisInfo *infoPtr)
 		tickLabel += axisPtr->tickLength;
 	    }
 	} else {
-	    axisLine -= axisPad + axisPtr->lineWidth / 2;
+            axisLine -= axisPad + axisPtr->lineWidth / 2;
 	    tickLabel = graphPtr->bottom +  graphPtr->plotBW + 2;
 	}
 	mark = graphPtr->bottom + offset;
@@ -2501,7 +2526,7 @@ AxisOffsets(Axis *axisPtr, Margin *marginPtr, int offset, AxisInfo *infoPtr)
 	    y = (axisPtr->bottom + axisPtr->top) / 2;
 	    axisPtr->titleAnchor = TK_ANCHOR_E;
 	}
-	axisPtr->titlePos.x = x;
+        axisPtr->titlePos.x = x;
 	axisPtr->titlePos.y = y;
 	break;
 
@@ -2599,32 +2624,35 @@ MakeSegments(Axis *axisPtr, AxisInfo *infoPtr)
 	double labelPos;
 	int i;
 
-	for (i = 0; i < numMajorTicks; i++) {
-	    double t1, t2;
+	for (i = 0; i < (numMajorTicks - 1); i++) {
+	    double first, second, delta;
 	    int j;
 
-	    t1 = axisPtr->t1Ptr->values[i];
+	    first  = axisPtr->t1Ptr->values[i];
+            second = axisPtr->t1Ptr->values[i+1];
+            delta = second - first;
 	    /* Minor ticks */
 	    for (j = 0; j < numMinorTicks; j++) {
-		t2 = t1 + (axisPtr->majorSweep.step * 
-			   axisPtr->t2Ptr->values[j]);
-		if (InRange(t2, &axisPtr->axisRange)) {
-		    MakeTick(axisPtr, t2, infoPtr->t2, infoPtr->axis, s);
+                double x;
+
+		x = first + (delta * axisPtr->t2Ptr->values[j]);
+		if (InRange(x, &axisPtr->axisRange)) {
+		    MakeTick(axisPtr, x, infoPtr->t2, infoPtr->axis, s);
 		    s++;
 		}
 	    }
-	    if (!InRange(t1, &axisPtr->axisRange)) {
+	    if (!InRange(first, &axisPtr->axisRange)) {
 		continue;
 	    }
 	    /* Major tick */
-	    MakeTick(axisPtr, t1, infoPtr->t1, infoPtr->axis, s);
+	    MakeTick(axisPtr, first, infoPtr->t1, infoPtr->axis, s);
 	    s++;
 	}
 
 	link = Blt_Chain_FirstLink(axisPtr->tickLabels);
 	labelPos = (double)infoPtr->label;
 
-	for (i = 0; i < numMajorTicks; i++) {
+        for (i = 0; (i < numMajorTicks) ; i++) {
 	    double t1;
 	    TickLabel *labelPtr;
 	    Segment2d seg;
@@ -3147,13 +3175,17 @@ MapGridlines(Axis *axisPtr)
 	return;
     }
     t1Ptr = axisPtr->t1Ptr;
+#ifdef notdef
     if (t1Ptr == NULL) {
 	t1Ptr = GenerateTicks(&axisPtr->majorSweep);
     }
+#endif
     t2Ptr = axisPtr->t2Ptr;
+#ifdef notdef
     if (t2Ptr == NULL) {
 	t2Ptr = GenerateTicks(&axisPtr->minorSweep);
     }
+#endif
     needed = t1Ptr->numTicks;
     if (axisPtr->flags & GRIDMINOR) {
 	needed += (t1Ptr->numTicks * t2Ptr->numTicks);
@@ -3179,25 +3211,26 @@ MapGridlines(Axis *axisPtr)
     }
     s1 = axisPtr->major.segments, s2 = axisPtr->minor.segments;
     for (i = 0; i < t1Ptr->numTicks; i++) {
-	double value;
+	double first, second, delta;
 
-	value = t1Ptr->values[i];
+	first  = t1Ptr->values[i];
+	second = t1Ptr->values[i];
+        delta = second - first;
 	if (axisPtr->flags & GRIDMINOR) {
 	    int j;
 
 	    for (j = 0; j < t2Ptr->numTicks; j++) {
-		double subValue;
+		double x;
 
-		subValue = value + (axisPtr->majorSweep.step * 
-				    t2Ptr->values[j]);
-		if (InRange(subValue, &axisPtr->axisRange)) {
-		    MakeGridLine(axisPtr, subValue, s2);
+		x = first + (delta * t2Ptr->values[j]);
+		if (InRange(x, &axisPtr->axisRange)) {
+		    MakeGridLine(axisPtr, x, s2);
 		    s2++;
 		}
 	    }
 	}
-	if (InRange(value, &axisPtr->axisRange)) {
-	    MakeGridLine(axisPtr, value, s1);
+	if (InRange(first, &axisPtr->axisRange)) {
+	    MakeGridLine(axisPtr, first, s1);
 	    s1++;
 	}
     }
@@ -3258,8 +3291,9 @@ Blt_GetAxisGeometry(Graph *graphPtr, Axis *axisPtr)
 	unsigned int pad;
 	unsigned int i, numLabels, numTicks;
 
+#ifdef notdef
 	SweepTicks(axisPtr);
-	
+#endif	
 	numTicks = 0;
 	if (axisPtr->t1Ptr != NULL) {
 	    numTicks = axisPtr->t1Ptr->numTicks;
@@ -3648,7 +3682,8 @@ Blt_LayoutGraph(Graph *graphPtr)
     }
 #ifdef notdef
     if (graphPtr->colorbarPtr == colormapPtrcolorbar.colormapPtr ) {
-    right += Blt_Colorbar_Geometry(graphPtr, plotWidth, plotHeight);
+        right += Blt_Colorbar_Geometry(graphPtr, plotWidth, plotHeight);
+    }
 #endif
     /* 
      * Recompute the plotarea or graph size, now accounting for the legend. 
@@ -5276,7 +5311,7 @@ Blt_MapAxes(Graph *graphPtr)
 	    Axis *axisPtr;
 
 	    axisPtr = Blt_Chain_GetValue(link);
-	    if ((axisPtr->flags & (USE|DELETE_PENDING)) != USE) {
+	    if ((axisPtr->flags & (USE|HIDE|DELETE_PENDING)) != USE) {
 		continue;
 	    }
 	    if (graphPtr->stackAxes) {
@@ -5419,7 +5454,6 @@ Blt_GridsToPostScript(Graph *graphPtr, Blt_Ps ps)
     }
 }
 
-
 void
 Blt_AxesToPostScript(Graph *graphPtr, Blt_Ps ps) 
 {
@@ -5447,16 +5481,16 @@ Blt_AxesToPostScript(Graph *graphPtr, Blt_Ps ps)
  *
  * Blt_DrawAxisLimits --
  *
- *	Draws the min/max values of the axis in the plotting area.  The text
- *	strings are formatted according to the "sprintf" format descriptors in
- *	the limitsFormats array.
+ *	Draws the min/max values of the axis in the plotting area.  The
+ *	text strings are formatted according to the "sprintf" format
+ *	descriptors in the limitsFormats array.
  *
  * Results:
  *	None.
  *
  * Side Effects:
- *	Draws the numeric values of the axis limits into the outer regions of
- *	the plotting area.
+ *	Draws the numeric values of the axis limits into the outer regions
+ *	of the plotting area.
  *
  *---------------------------------------------------------------------------
  */
@@ -5699,179 +5733,226 @@ Blt_MakeAxisTag(Graph *graphPtr, const char *tagName)
     return Blt_GetHashKey(&graphPtr->axes.bindTagTable, hPtr);
 }
 
-/*
- *---------------------------------------------------------------------------
- *
- * TimeAxis --
- *
- * 	Determine the units of a linear scaled axis.
- *
- *	The axis limits are either the range of the data values mapped
- *	to the axis (autoscaled), or the values specified by the -min
- *	and -max options (manual).
- *
- *	If autoscaled, the smallest and largest major ticks will
- *	encompass the range of data values.  If the -loose option is
- *	selected, the next outer ticks are choosen.  If tight, the
- *	ticks are at or inside of the data limits are used.
- *
- * 	If manually set, the ticks are at or inside the data limits
- * 	are used.  This makes sense for zooming.  You want the
- * 	selected range to represent the next limit, not something a
- * 	bit bigger.
- *
- *	Note: I added an "always" value to the -loose option to force
- *	      the manually selected axes to be loose. It's probably
- *	      not a good idea.
- *
- *          maxY
- *            |    units = magnitude (of least significant digit)
- *            |    high  = largest unit tick < max axis value
- *      high _|    low   = smallest unit tick > min axis value
- *            |
- *            |    range = high - low
- *            |    # ticks = greatest factor of range/units
- *           _|
- *        U   |
- *        n   |
- *        i   |
- *        t  _|
- *            |
- *            |
- *            |
- *       low _|
- *            |
- *            |_minX________________maxX__
- *            |   |       |      |       |
- *     minY  low                        high
- *           minY
- *
- * 	numTicks = Number of ticks
- * 	min = Minimum value of axis
- * 	max = Maximum value of axis
- * 	range    = Range of values (max - min)
- *
- * Results:
- *	None.
- *
- * Side Effects:
- *	The axis tick information is set.  The actual tick values will
- *	be generated later.
- *
- *---------------------------------------------------------------------------
- */
 static void
 TimeAxis(Axis *axisPtr, double min, double max)
 {
+}
+
 #ifdef notdef
-    double step;
-    double tickMin, tickMax;
-    double axisMin, axisMax;
-    unsigned int numTicks;
+
+enum TimeUnits {
+    TIME_YEARS,
+    TIME_MONTHS,
+    TIME_DAYS,
+    TIME_HOURS,
+    TIME_MINUTES,
+    TIME_SECONDS,
+};
+
+#define SECONDS_SECOND        (1)
+#define SECONDS_MINUTE        (60)
+#define SECONDS_HOUR          (SECONDS_MINUTE * 60)
+#define SECONDS_DAY           (SECONDS_HOUR * 24)
+#define SECONDS_MONTH         (SECONDS_DAY * 30)
+#define SECONDS_YEAR          (SECONDS_DAY * 365)
+
+static double
+TimeFloor(double min, enum TimeUnits units, struct tm *tmPtr)
+{
+    time_t ticks;
+
+    ticks = (time_t)floor(min);
+    gmtime_r(&ticks, tmPtr);
+    switch (units) {
+    case TIME_YEARS:
+        tmPtr->tm_mon = 0;
+        /* fallthrough */
+    case TIME_MONTHS:
+        tmPtr->tm_day = tmPtr->tm_yday = tmPtr->tm_wday = 0;
+        /* fallthrough */
+    case TIME_DAYS:
+        tmPtr->tm_hour = 0;
+        /* fallthrough */
+    case TIME_HOURS:
+        tmPtr->tm_min = 0;
+        /* fallthrough */
+    case TIME_MINUTES:
+        tmPtr->tm_sec = 0;
+        /* fallthrough */
+    case TIME_SECONDS:
+        break;
+    }
+    return mktime(tmPtr);
+}
+
+static double
+TimeCeil(double max, enum TimeUnits units, struct tm *tmPtr)
+{
+    time_t ticks;
+
+    ticks = (time_t)ceil(max);
+    gmtime_r(&ticks, tmPtr);
+    switch (units) {
+    case TIME_YEARS:
+        tmPtr->tm_year++;
+        tmPtr->tm_mon = 0;
+        tmPtr->tm_day = tmPtr->tm_yday = tmPtr->tm_wday = 0;
+        tmPtr->tm_hour = 0;
+        tmPtr->tm_min = 0;
+        tmPtr->tm_sec = 0;
+        break;
+    case TIME_MONTHS:
+        tmPtr->tm_mon++;
+        tmPtr->tm_day = tmPtr->tm_yday = tmPtr->tm_wday = 0;
+        tmPtr->tm_hour = 0;
+        tmPtr->tm_min = 0;
+        tmPtr->tm_sec = 0;
+        break;
+    case TIME_DAYS:
+        tmPtr->tm_day++;
+        tmPtr->tm_hour = 0;
+        tmPtr->tm_min = 0;
+        tmPtr->tm_sec = 0;
+        break;
+    case TIME_HOURS:
+        tmPtr->tm_hour++;
+        tmPtr->tm_min = 0;
+        tmPtr->tm_sec = 0;
+        break;
+    case TIME_MINUTES:
+        tmPtr->tm_min++;
+        tmPtr->tm_sec = 0;
+        break;
+    case TIME_SECONDS:
+        tmPtr->tm_sec++;
+        break;
+    }
+    return mktime(tmPtr);
+}
+
+static int 
+GetMajorTimeUnits(double min, double max)
+{
+    double range;
 
     range = max - min;
-
-#define SECONDS(x)	(x)
-#define MINUTES(x)	((x) * 60)
-#define HOURS(x)	((x) * 60 * 60)
-#define DAYS(x)		((x) * 60 * 60 * 24)
-#define MONTHS(x)	((x) * 60 * 60 * 24 * 30)
-#define YEARS(x)	((x) * 60 * 60 * 24 * 365)
-    div = numTicks - 1;
-    if (range > (MONTHS(6) * div)) {
-	unit = TICK_YEAR;
-    } else if (range > (MONTHS(3) * div)) {
-	unit = TICKS_6MONTH;
-	first = timefloor(min, unit);
-	last = timeceil(max, unit);
-    } else if (range > (MONTHS(2) * div)) {
-	unit = TICKS_3MONTH;
-	first = timefloor(min, unit);
-	last = timeceil(max, unit);
-    } else if (range > (MONTHS(1) * div)) {
-	unit = TICKS_2MONTH;
-	first = timefloor(min, unit);
-	last = timeceil(max, unit);
-    } else if (range > (DAYS(15) * div)) {
-	unit = TICKS_1MONTH;
-    } else if (range > (DAYS(10) * div)) {
-	unit = TICKS_15DAY;
-    } else if (range > (DAYS(1) * div)) {
-	unit = TICKS_10DAY;
-    } else if (range > (HOURS(12) * div)) {
-	unit = TICKS_1DAY;
-    } else if (range > (HOURS(6) * div)) {
-	unit = TICKS_12HOUR;
-    } else if (range > (HOURS(3) * div)) {
-	unit = TICKS_6HOUR;
-    } else if (range > (HOURS(1) * div)) {
-	unit = TICKS_3HOUR;
-    } else if (range > (MINUTES(30) * div)) {
-	unit = TICKS_HOUR;
-    } else if (range > (MINUTES(20) * div)) {
-	unit = TICKS_30MIN;
-    } else if (range > (MINUTES(15) * div)) {
-	unit = TICKS_20MIN;
-    } else if (range > (MINUTES(10) * div)) {
-	unit = TICKS_15MIN;
-    } else if (range > (MINUTES(1) * div)) {
-	unit = TICKS_10MIN;
-    } else if (range > (SECONDS(30) * div)) {
-	unit = TICKS_1MIN;
-    } else if (range > (SECONDS(20) * div)) {
-	unit = TICKS_30SEC;
-    } else if (range > (SECONDS(15) * div)) {
-	unit = TICKS_20SEC;
-    } else if (range > (SECONDS(10) * div)) {
-	unit = TICKS_15SEC;
-    } else if (range > (SECONDS(1) * div)) {
-	unit = TICKS_10SEC;
-    } else {
-	unit = TICKS_1SEC;
+    if (range <= 0.0) {
+        return -1;
     }
-
-    } else {
-	unit = TICKS_SECS;
-    }
-    numTicks = 0;
-    step = 1.0;
-    /* Suppress compiler warning. */
-    axisMin = axisMax = tickMin = tickMax = Blt_NaN();
-    if (min < max) {
-	double range;
-
-	range = max - min;
-	/* Calculate the major tick stepping. */
-	if (axisPtr->reqStep > 0.0) {
-	    /* An interval was designated by the user.  Keep scaling it until
-	     * it fits comfortably within the current range of the axis.  */
-	    step = axisPtr->reqStep;
-	    while ((2 * step) >= range) {
-		step *= 0.5;
-	    }
-	} else {
-	    range = NiceNum(range, 0);
-	    step = NiceNum(range / axisPtr->reqNumMajorTicks, 1);
-	}
-	
-	/* Find the outer tick values. Add 0.0 to prevent getting -0.0. */
-	axisMin = tickMin = floor(min / step) * step + 0.0;
-	axisMax = tickMax = ceil(max / step) * step + 0.0;
-	
-	numTicks = Round((tickMax - tickMin) / step) + 1;
+    if (range > SECONDS_YEAR) {
+        return TIME_YEARS;
     } 
-    axisPtr->majorSweep.step = step;
-    axisPtr->majorSweep.initial = tickMin;
-    axisPtr->majorSweep.numSteps = numTicks;
+    if (range > SECONDS_MONTH) {
+	return TIME_MONTHS;
+    } 
+    if (range > SECONDS_DAY) {
+	return TIME_DAYS;
+    }
+    if (range > SECONDS_HOUR) {
+        return TIME_HOURS;
+    }
+    if (range > SECONDS_MINUTE) {
+	return TIME_MINUTES;
+    }
+    return TIME_SECONDS;
+}
 
-    /*
-     * The limits of the axis are either the range of the data ("tight") or at
-     * the next outer tick interval ("loose").  The looseness or tightness has
-     * to do with how the axis fits the range of data values.  This option is
-     * overridden when the user sets an axis limit (by either -min or -max
-     * option).  The axis limit is always at the selected limit (otherwise we
-     * assume that user would have picked a different number).
-     */
+static void
+GenerateYearTicks(Axis *axisPtr, double min, double max)
+{
+    Ticks *ticksPtr;
+    struct tm first, last;
+    double range, step;
+    int numTicks;
+    double tickMin, tickMax;            /* Years. */
+    double axisMin, axisMax;            /* Seconds. */
+
+    TimeFloor(min, TIME_YEARS, &first);
+    TimeCeil(max, TIME_YEARS, &last);
+    step = 1.0;
+    range = last.tm_year - first.tm_year;
+    if (axisPtr->reqStep > 0.0) {
+        /* An interval was designated by the user.  Keep scaling it until
+         * it fits comfortably within the current range of the axis.  */
+        step = axisPtr->reqStep;
+        while ((2 * step) >= range) {
+            step *= 0.5;
+        }
+    } else {
+        range = NiceNum(range, 0);
+        step = NiceNum(range / axisPtr->reqNumMajorTicks, 1);
+	/* Find the outer tick values. Add 0.0 to prevent getting -0.0. */
+    }
+    tickMin = floor(first.tm_year / step) * step + 0.0;
+    tickMax = ceil(last.tm_year / step) * step + 0.0;
+    numTicks = Round((tickMax - tickMin) / step) + 1;
+
+    tm = first;
+    if ((axisPtr->looseMin == TIGHT) || ((axisPtr->looseMin == LOOSE) &&
+	 (DEFINED(axisPtr->reqMin)))) {
+	axisMin = min;
+    } else {
+        tm.tm_year = tickMin;
+        axisMin = (double)mktime(&tm);
+    }
+    if ((axisPtr->looseMax == TIGHT) || ((axisPtr->looseMax == LOOSE) &&
+	 (DEFINED(axisPtr->reqMax)))) {
+	axisMax = max;
+    } else {
+        tm.tm_year = tickMax;
+        axisMax = (double)mktime(&tm);
+    }
+    SetAxisRange(&axisPtr->axisRange, axisMin, axisMax);
+
+    ticksPtr = Blt_AssertMalloc(sizeof(Ticks) + (numTicks * sizeof(double)));
+    tm = first;
+    value = tickMin;
+    ticksPtr->numTicks = numTicks;
+    for (i = 0; i < numTicks; i++) {
+        tm.tm_year = UROUND(value, step);
+        ticksPtr->values[i] = (double)mktime(&tm);
+        value += step;
+    }
+    if (axisPtr->t1Ptr != NULL) {
+        Blt_Free(axisPtr->t1Ptr);
+    }
+    axisPtr->t1Ptr = ticksPtr;
+}
+
+static void
+GenerateMonthTicks(Axis *axisPtr, double min, double max)
+{
+    Ticks *ticksPtr;
+    struct tm first, last;
+    double range;
+    int numTicks;
+    double tickMin, tickMax;            /* months. */
+    double axisMin, axisMax;            /* seconds. */
+
+    axisMin = TimeFloor(min, TIME_MONTHS, &first);
+    axisMax = TimeCeil(max, TIME_MONTHS, &last);
+    step = 1.0;
+    if (last.tm_year > first.tm_year) {
+        last.tm_mon += 12;
+    }
+    range = last.tm_mon - first.tm_mon;
+    if (range > 12) {
+        step = 6;
+    } else if (range > 7) {
+        step = 3;
+    } else {
+        step = 1;
+    }
+    numTicks = range / step + 1;
+    ticksPtr = Blt_AssertMalloc(sizeof(Ticks) + (numTicks * sizeof(double)));
+    tm = first;
+    value = tickMin;
+    ticksPtr->numTicks = numTicks;
+    for (i = 0; i < numTicks; i++) {
+        value = TimeFloor(value, TIME_MONTHS, &tm);
+        ticksPtr->values[i] = value;
+        value += SECONDS_DAY * 32 * step; /* Overshoot start of month.  */
+    }
     if ((axisPtr->looseMin == TIGHT) || ((axisPtr->looseMin == LOOSE) &&
 	 (DEFINED(axisPtr->reqMin)))) {
 	axisMin = min;
@@ -5881,88 +5962,234 @@ TimeAxis(Axis *axisPtr, double min, double max)
 	axisMax = max;
     }
     SetAxisRange(&axisPtr->axisRange, axisMin, axisMax);
-
-    /* Now calculate the minor tick step and number. */
-
-    if ((axisPtr->reqNumMinorTicks > 0) && (axisPtr->flags & AUTO_MAJOR)) {
-	numTicks = axisPtr->reqNumMinorTicks - 1;
-	step = 1.0 / (numTicks + 1);
-    } else {
-	numTicks = 0;			/* No minor ticks. */
-	step = 0.5;			/* Don't set the minor tick interval to
-					 * 0.0. It makes the GenerateTicks
-					 * routine * create minor log-scale tick
-					 * marks.  */
+    if (axisPtr->t1Ptr != NULL) {
+        Blt_Free(axisPtr->t1Ptr);
     }
-    axisPtr->minorSweep.initial = axisPtr->minorSweep.step = step;
-    axisPtr->minorSweep.numSteps = numTicks;
-#endif
+    axisPtr->t1Ptr = ticksPtr;
 }
 
-#ifdef notdef
-static Ticks *
-TimeGenerateTicks(TickSweep *sweepPtr)
+static void
+GenerateDayTicks(Axis *axisPtr, double min, double max)
 {
     Ticks *ticksPtr;
+    struct tm first, last;
+    double range;
+    int numTicks;
+    double tickMin, tickMax;            /* days. */
+    double axisMin, axisMax;            /* seconds. */
 
-    ticksPtr = Blt_AssertMalloc(sizeof(Ticks) + 
-	(sweepPtr->numSteps * sizeof(double)));
-    ticksPtr->numTicks = 0;
-
-    if (sweepPtr->step == 0.0) { 
-	/* Hack: A zero step indicates to use log values. */
-	int i;
-	/* Precomputed log10 values [1..10] */
-	static double logTable[] = {
-	    0.0, 
-	    0.301029995663981, 
-	    0.477121254719662, 
-	    0.602059991327962, 
-	    0.698970004336019, 
-	    0.778151250383644, 
-	    0.845098040014257,
-	    0.903089986991944, 
-	    0.954242509439325, 
-	    1.0
-	};
-	for (i = 0; i < sweepPtr->numSteps; i++) {
-	    ticksPtr->values[i] = logTable[i];
-	}
-    } else {
-	double value;
-	int i;
-    
-	value = sweepPtr->initial;	/* Start from smallest axis tick */
-	for (i = 0; i < sweepPtr->numSteps; i++) {
-	    value = UROUND(value, sweepPtr->step);
-	    ticksPtr->values[i] = value;
-	    value += sweepPtr->step;
-	}
+    axisMin = TimeFloor(min, TIME_DAYS, &first);
+    axisMax = TimeCeil(max, TIME_DAYS, &last);
+    step = 1.0;
+    if (last.tm_mon > first.tm_mon) {
+        last.tm_mday += 31;             /* It's OK if it's not accurate. */
     }
-    ticksPtr->numTicks = sweepPtr->numSteps;
+    range = last.tm_mday - first.tm_mday;
+    if (range > 16) {
+        step = 6;
+    } else if (range > 7) {
+        step = 3;
+    } else {
+        step = 1;
+    }
+    numTicks = range / step + 1;
+    ticksPtr = Blt_AssertMalloc(sizeof(Ticks) + (numTicks * sizeof(double)));
+    tm = first;
+    value = axisMin;
+    ticksPtr->numTicks = numTicks;
+    for (i = 0; i < numTicks; i++) {
+        value = TimeFloor(value, TIME_DAYS, &tm);
+        ticksPtr->values[i] = value;
+        value += 25 * SECONDS_HOUR * step; /* Overshoot start of day.  */
+    }
+    if ((axisPtr->looseMin == TIGHT) || ((axisPtr->looseMin == LOOSE) &&
+	 (DEFINED(axisPtr->reqMin)))) {
+	axisMin = min;
+    }
+    if ((axisPtr->looseMax == TIGHT) || ((axisPtr->looseMax == LOOSE) &&
+	 (DEFINED(axisPtr->reqMax)))) {
+	axisMax = max;
+    }
+    SetAxisRange(&axisPtr->axisRange, axisMin, axisMax);
+    if (axisPtr->t1Ptr != NULL) {
+        Blt_Free(axisPtr->t1Ptr);
+    }
+    axisPtr->t1Ptr = ticksPtr;
+}
+
+static void
+GenerateHourTicks(Axis *axisPtr, double min, double max)
+{
+    Ticks *ticksPtr;
+    struct tm first, last;
+    double range;
+    int numTicks;
+    double tickMin, tickMax;            /* months. */
+    double axisMin, axisMax;            /* seconds. */
+
+    axisMin = TimeFloor(min, TIME_HOURS, &first);
+    axisMax = TimeCeil(max, TIME_HOURS, &last);
+    step = 1.0;
+    if (last.tm_day > first.tm_day) {
+        last.tm_day += 24;              /* It's OK if it's not accurate. */
+    }
+    range = last.tm_mon - first.tm_mon;
+    if (range > 12) {
+        step = 6;
+    } else if (range > 7) {
+        step = 3;
+    } else {
+        step = 1;
+    }
+    numTicks = range / step + 1;
+    ticksPtr = Blt_AssertMalloc(sizeof(Ticks) + (numTicks * sizeof(double)));
+    tm = first;
+    value = tickMin;
+    ticksPtr->numTicks = numTicks;
+    for (i = 0; i < numTicks; i++) {
+        value = TimeFloor(value, TIME_DAYS, &tm);
+        ticksPtr->values[i] = value;
+        value += SECONDS_MINUTE * 61 * step; /* Overshoot start of day.  */
+    }
+    if ((axisPtr->looseMin == TIGHT) || ((axisPtr->looseMin == LOOSE) &&
+	 (DEFINED(axisPtr->reqMin)))) {
+	axisMin = min;
+    }
+    if ((axisPtr->looseMax == TIGHT) || ((axisPtr->looseMax == LOOSE) &&
+	 (DEFINED(axisPtr->reqMax)))) {
+	axisMax = max;
+    }
+    SetAxisRange(&axisPtr->axisRange, axisMin, axisMax);
+    if (axisPtr->t1Ptr != NULL) {
+        Blt_Free(axisPtr->t1Ptr);
+    }
+    axisPtr->t1Ptr = ticksPtr;
+}
+
+static void
+GenerateMinuteTicks(Axis *axisPtr, double min, double max)
+{
+    Ticks *ticksPtr;
+    struct tm first, last;
+    double range;
+    int numTicks;
+    double tickMin, tickMax;            /* minutes. */
+    double axisMin, axisMax;            /* seconds. */
+
+    axisMin = TimeFloor(min, TIME_MINUTES, &first);
+    axisMax = TimeCeil(max, TIME_MINUTES, &last);
+    step = 1.0;
+    if (last.tm_hour > first.tm_hour) {
+        last.tm_hour += 60;              /* It's OK if it's not accurate. */
+    }
+    range = last.tm_hour - first.tm_hour;
+    if (range > 12) {
+        step = 6;
+    } else if (range > 7) {
+        step = 3;
+    } else {
+        step = 1;
+    }
+    numTicks = range / step + 1;
+    ticksPtr = Blt_AssertMalloc(sizeof(Ticks) + (numTicks * sizeof(double)));
+    tm = first;
+    value = tickMin;
+    ticksPtr->numTicks = numTicks;
+    for (i = 0; i < numTicks; i++) {
+        value = TimeFloor(value, TIME_MINUTES, &tm);
+        ticksPtr->values[i] = value;
+        value += SECONDS_MINUTE * step;             /*  */
+    }
+    if ((axisPtr->looseMin == TIGHT) || ((axisPtr->looseMin == LOOSE) &&
+	 (DEFINED(axisPtr->reqMin)))) {
+	axisMin = min;
+    }
+    if ((axisPtr->looseMax == TIGHT) || ((axisPtr->looseMax == LOOSE) &&
+	 (DEFINED(axisPtr->reqMax)))) {
+	axisMax = max;
+    }
+    SetAxisRange(&axisPtr->axisRange, axisMin, axisMax);
+    if (axisPtr->t1Ptr != NULL) {
+        Blt_Free(axisPtr->t1Ptr);
+    }
+    axisPtr->t1Ptr = ticksPtr;
+}
+
+static Ticks *
+GenerateSecondTicks(Axis *axisPtr, double min, double max)
+{
+    Ticks *ticksPtr;
+    double step, range;
+    int numTicks;
+
+    numTicks = Round((max - min) / step) + 1;
+    range = max - min;
+    if (axisPtr->reqStep > 0.0) {
+        /* An interval was designated by the user.  Keep scaling it until
+         * it fits comfortably within the current range of the axis.  */
+        step = axisPtr->reqStep;
+        while ((2 * step) >= range) {
+            step *= 0.5;
+        }
+    } else {
+        range = NiceNum(range, 0);
+        step = NiceNum(range / axisPtr->reqNumMajorTicks, 1);
+    }
+    ticksPtr = Blt_AssertMalloc(sizeof(Ticks) + (numTicks * sizeof(double)));
+    ticksPtr->numTicks = numTicks;
+    for (i = 0; i < numTicks; i++) {
+        ticksPtr->values[i] = (double)mktime(minPtr);
+        ticksPtr->majorValue[i] = minPtr->tm_year;
+        minPtr->tm_year++;
+    }
     return ticksPtr;
 }
 
-static double
-TimeFloor(double min, int unit)
+/*
+ *---------------------------------------------------------------------------
+ *
+ * TimeAxis --
+ *
+ * 	Determine the units of a linear scaled axis.
+ *
+ * Results:
+ *	None.
+ *
+ * Side Effects:
+ *	The tick values are generated.
+ *
+ *---------------------------------------------------------------------------
+ */
+static void
+TimeAxis(Axis *axisPtr, double min, double max)
 {
-    unsigned long ticks;
+    enum TimeUnits units;
 
-    ticks = (long)floor(min);
-    localtime_r(&ticks, &tm);
-    switch(unit) {
-	case TICK_6MONTHS:
-	    tm.sec = 0;
-	    tm.min = 0;
-	    tm.day = 0;
-	    tm.
+    units = GetMajorTimeUnits(min, max);
+    if (units == -1) {
+        return;
+    }
+    switch (units) {
+    case TIME_YEARS:
+        GenerateYearTicks(axisPtr, tickMin, tickMax);
+        break;
+    case TIME_MONTHS:
+        GenerateMonthTicks(axisPtr, axisMin, axisMax);
+        break;
+    case TIME_DAYS:
+        GenerateDayTicks(axisPtr, axisMin, axisMax);
+        break;
+    case TIME_HOURS:
+        GenerateHourTicks(axisPtr, axisMin, axisMax);
+        break;
+    case TIME_MINUTES:
+        GenerateMinuteTicks(axisPtr, axisMin, axisMax);
+        break;
+    case TIME_SECONDS:
+        GenerateSecondTicks(axisPtr, axisMin, axisMax);
+        break;
     }
 }
-static double
-TimeCeil(double max, int unit)
-{
-    
-}
-
 #endif
+
 
