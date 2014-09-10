@@ -83,6 +83,12 @@ typedef struct {
     char string[1];
 } TickLabel;
 
+typedef struct {
+    double location;                    /* Location of tick in graph
+                                         * coordinates. */
+    double value;                       /* Value of tick. */
+} Tick;
+
 /*
  *---------------------------------------------------------------------------
  *

@@ -3929,6 +3929,7 @@ MapPolyline(LineElement *elemPtr, Trace *tracePtr)
 		p->y = p1.y;
 		/* The replaced point is now visible but longer a knot. */
 		p->flags |= VISIBLE;
+                fprintf(stderr, "first point is offscreen removing knot\n");
 		p->flags &= ~KNOT;
 	    }
 	} else {
