@@ -198,6 +198,7 @@ static Blt_CustomOption paletteOption =
 #define DEF_LIMITS_FORMAT	(char *)NULL
 #define DEF_LINEWIDTH		"1"
 #define DEF_LOGSCALE		"0"
+#define DEF_TIMESCALE		"0"
 #define DEF_LOOSE		"0"
 #define DEF_PALETTE		(char *)NULL
 #define DEF_RANGE		"0.0"
@@ -367,6 +368,9 @@ static Blt_ConfigSpec configSpecs[] =
         ALL_GRAPHS | BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_INT, "-tickdefault", "tickDefault", "TickDefault",
 	DEF_DIVISIONS, Blt_Offset(Axis, reqNumMajorTicks),
+	ALL_GRAPHS | BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_BOOLEAN, "-timescale", "timeScale", "timeScale",
+	DEF_TIMESCALE, Blt_Offset(Axis, timeScale),
 	ALL_GRAPHS | BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_STRING, "-title", "title", "Title",
 	(char *)NULL, Blt_Offset(Axis, title),
@@ -5732,13 +5736,16 @@ Blt_MakeAxisTag(Graph *graphPtr, const char *tagName)
     hPtr = Blt_CreateHashEntry(&graphPtr->axes.bindTagTable, tagName, &isNew);
     return Blt_GetHashKey(&graphPtr->axes.bindTagTable, hPtr);
 }
-
+#ifdef notdef
 static void
 TimeAxis(Axis *axisPtr, double min, double max)
 {
 }
+#endif
 
-#ifdef notdef
+
+#include <time.h>
+#include <sys/time.h>
 
 enum TimeUnits {
     TIME_YEARS,
@@ -5759,75 +5766,61 @@ enum TimeUnits {
 static double
 TimeFloor(double min, enum TimeUnits units, struct tm *tmPtr)
 {
-    time_t ticks;
+    time_t ticks, x;
 
     ticks = (time_t)floor(min);
-    gmtime_r(&ticks, tmPtr);
+    localtime_r(&ticks, tmPtr);
     switch (units) {
     case TIME_YEARS:
-        tmPtr->tm_mon = 0;
+        tmPtr->tm_mon = 0;              /* 0-11 */
         /* fallthrough */
     case TIME_MONTHS:
-        tmPtr->tm_day = tmPtr->tm_yday = tmPtr->tm_wday = 0;
+        tmPtr->tm_mday = 1;             /* 1-31, 0 is last day or preceding
+                                         * month. */
         /* fallthrough */
     case TIME_DAYS:
-        tmPtr->tm_hour = 0;
+        tmPtr->tm_hour = 0;             /* 0-23 */
         /* fallthrough */
     case TIME_HOURS:
-        tmPtr->tm_min = 0;
+        tmPtr->tm_min = 0;              /* 0-59 */
         /* fallthrough */
     case TIME_MINUTES:
-        tmPtr->tm_sec = 0;
+        tmPtr->tm_sec = 0;              /* 0-60 */
         /* fallthrough */
     case TIME_SECONDS:
         break;
     }
+    tmPtr->tm_isdst = 0;
     return mktime(tmPtr);
 }
 
 static double
 TimeCeil(double max, enum TimeUnits units, struct tm *tmPtr)
 {
-    time_t ticks;
+    double ticks;
 
-    ticks = (time_t)ceil(max);
-    gmtime_r(&ticks, tmPtr);
+    ticks = ceil(max);
     switch (units) {
     case TIME_YEARS:
-        tmPtr->tm_year++;
-        tmPtr->tm_mon = 0;
-        tmPtr->tm_day = tmPtr->tm_yday = tmPtr->tm_wday = 0;
-        tmPtr->tm_hour = 0;
-        tmPtr->tm_min = 0;
-        tmPtr->tm_sec = 0;
+        ticks += SECONDS_YEAR;
         break;
     case TIME_MONTHS:
-        tmPtr->tm_mon++;
-        tmPtr->tm_day = tmPtr->tm_yday = tmPtr->tm_wday = 0;
-        tmPtr->tm_hour = 0;
-        tmPtr->tm_min = 0;
-        tmPtr->tm_sec = 0;
+        ticks += SECONDS_MONTH;
         break;
     case TIME_DAYS:
-        tmPtr->tm_day++;
-        tmPtr->tm_hour = 0;
-        tmPtr->tm_min = 0;
-        tmPtr->tm_sec = 0;
+        ticks += SECONDS_DAY;
         break;
     case TIME_HOURS:
-        tmPtr->tm_hour++;
-        tmPtr->tm_min = 0;
-        tmPtr->tm_sec = 0;
+        ticks += SECONDS_HOUR;
         break;
     case TIME_MINUTES:
-        tmPtr->tm_min++;
-        tmPtr->tm_sec = 0;
+        ticks += SECONDS_MINUTE;
         break;
     case TIME_SECONDS:
         tmPtr->tm_sec++;
         break;
     }
-    return mktime(tmPtr);
+    return TimeFloor(ticks, units, tmPtr);
 }
 
 static int 
@@ -5861,9 +5854,9 @@ static void
 GenerateYearTicks(Axis *axisPtr, double min, double max)
 {
     Ticks *ticksPtr;
-    struct tm first, last;
-    double range, step;
-    int numTicks;
+    struct tm first, last, tm;
+    double value, range, step;
+    int i, numTicks;
     double tickMin, tickMax;            /* Years. */
     double axisMin, axisMax;            /* Seconds. */
 
@@ -5923,33 +5916,41 @@ static void
 GenerateMonthTicks(Axis *axisPtr, double min, double max)
 {
     Ticks *ticksPtr;
-    struct tm first, last;
-    double range;
-    int numTicks;
+    struct tm first, last, tm;
+    double value, range, step;
+    int i, numTicks;
     double tickMin, tickMax;            /* months. */
     double axisMin, axisMax;            /* seconds. */
+    time_t t;
 
-    axisMin = TimeFloor(min, TIME_MONTHS, &first);
-    axisMax = TimeCeil(max, TIME_MONTHS, &last);
+ fprintf(stderr, "Generating Month Ticks\n");
+ t = min;
+ fprintf(stderr, "before min=%.15g date=%s\n", min, ctime(&t));
+    tickMin = axisMin = TimeFloor(min, TIME_MONTHS, &first);
+ fprintf(stderr, "after tickMin=%.15g date=%s\n", tickMin, asctime(&first));
+    tickMax = axisMax = TimeCeil(max, TIME_MONTHS, &last);
     step = 1.0;
     if (last.tm_year > first.tm_year) {
         last.tm_mon += 12;
     }
+
     range = last.tm_mon - first.tm_mon;
-    if (range > 12) {
-        step = 6;
-    } else if (range > 7) {
-        step = 3;
-    } else {
-        step = 1;
-    }
-    numTicks = range / step + 1;
+    step = 1;
+    numTicks = Round((range) / step) + 1;
+    fprintf(stderr, "first=%d last=%d tm=%.15g, nt=%d\n", first.tm_mon, last.tm_mon,
+            tickMin, numTicks);
     ticksPtr = Blt_AssertMalloc(sizeof(Ticks) + (numTicks * sizeof(double)));
     tm = first;
     value = tickMin;
     ticksPtr->numTicks = numTicks;
     for (i = 0; i < numTicks; i++) {
+        time_t t;
+
+        t = value;
+        fprintf(stderr, "before tick=%.15g date=%s\n", value, ctime(&t));
         value = TimeFloor(value, TIME_MONTHS, &tm);
+        t = value;
+        fprintf(stderr, "afterr tick=%.15g date=%s\n", value, ctime(&t));
         ticksPtr->values[i] = value;
         value += SECONDS_DAY * 32 * step; /* Overshoot start of month.  */
     }
@@ -5972,14 +5973,14 @@ static void
 GenerateDayTicks(Axis *axisPtr, double min, double max)
 {
     Ticks *ticksPtr;
-    struct tm first, last;
-    double range;
-    int numTicks;
+    struct tm first, last, tm;
+    double value, range, step;
+    int i, numTicks;
     double tickMin, tickMax;            /* days. */
     double axisMin, axisMax;            /* seconds. */
 
-    axisMin = TimeFloor(min, TIME_DAYS, &first);
-    axisMax = TimeCeil(max, TIME_DAYS, &last);
+    tickMin = axisMin = TimeFloor(min, TIME_DAYS, &first);
+    tickMax = axisMax = TimeCeil(max, TIME_DAYS, &last);
     step = 1.0;
     if (last.tm_mon > first.tm_mon) {
         last.tm_mday += 31;             /* It's OK if it's not accurate. */
@@ -6021,17 +6022,17 @@ static void
 GenerateHourTicks(Axis *axisPtr, double min, double max)
 {
     Ticks *ticksPtr;
-    struct tm first, last;
-    double range;
-    int numTicks;
+    struct tm first, last, tm;
+    double value, range, step;
+    int i, numTicks;
     double tickMin, tickMax;            /* months. */
     double axisMin, axisMax;            /* seconds. */
 
-    axisMin = TimeFloor(min, TIME_HOURS, &first);
-    axisMax = TimeCeil(max, TIME_HOURS, &last);
+    tickMin = axisMin = TimeFloor(min, TIME_HOURS, &first);
+    tickMax = axisMax = TimeCeil(max, TIME_HOURS, &last);
     step = 1.0;
-    if (last.tm_day > first.tm_day) {
-        last.tm_day += 24;              /* It's OK if it's not accurate. */
+    if (last.tm_mday > first.tm_mday) {
+        last.tm_hour += 24;              /* It's OK if it's not accurate. */
     }
     range = last.tm_mon - first.tm_mon;
     if (range > 12) {
@@ -6070,17 +6071,17 @@ static void
 GenerateMinuteTicks(Axis *axisPtr, double min, double max)
 {
     Ticks *ticksPtr;
-    struct tm first, last;
-    double range;
-    int numTicks;
+    struct tm first, last, tm;
+    double value, range, step;
+    int i, numTicks;
     double tickMin, tickMax;            /* minutes. */
     double axisMin, axisMax;            /* seconds. */
 
-    axisMin = TimeFloor(min, TIME_MINUTES, &first);
-    axisMax = TimeCeil(max, TIME_MINUTES, &last);
+    tickMin = axisMin = TimeFloor(min, TIME_MINUTES, &first);
+    tickMax = axisMax = TimeCeil(max, TIME_MINUTES, &last);
     step = 1.0;
     if (last.tm_hour > first.tm_hour) {
-        last.tm_hour += 60;              /* It's OK if it's not accurate. */
+        last.tm_min += 60;              /* It's OK if it's not accurate. */
     }
     range = last.tm_hour - first.tm_hour;
     if (range > 12) {
@@ -6119,11 +6120,13 @@ static Ticks *
 GenerateSecondTicks(Axis *axisPtr, double min, double max)
 {
     Ticks *ticksPtr;
-    double step, range;
-    int numTicks;
+    double value, step, range;
+    int i, numTicks;
+    double tickMin, tickMax;            /* minutes. */
+    double axisMin, axisMax;            /* seconds. */
 
-    numTicks = Round((max - min) / step) + 1;
     range = max - min;
+    step = 1.0;
     if (axisPtr->reqStep > 0.0) {
         /* An interval was designated by the user.  Keep scaling it until
          * it fits comfortably within the current range of the axis.  */
@@ -6135,12 +6138,18 @@ GenerateSecondTicks(Axis *axisPtr, double min, double max)
         range = NiceNum(range, 0);
         step = NiceNum(range / axisPtr->reqNumMajorTicks, 1);
     }
+    /* Find the outer tick values. Add 0.0 to prevent getting -0.0. */
+    axisMin = tickMin = floor(min / step) * step + 0.0;
+    axisMax = tickMax = ceil(max / step) * step + 0.0;
+	
+    numTicks = Round((tickMax - tickMin) / step) + 1;
     ticksPtr = Blt_AssertMalloc(sizeof(Ticks) + (numTicks * sizeof(double)));
     ticksPtr->numTicks = numTicks;
+    value = tickMin;                /* Start from smallest axis tick */
     for (i = 0; i < numTicks; i++) {
-        ticksPtr->values[i] = (double)mktime(minPtr);
-        ticksPtr->majorValue[i] = minPtr->tm_year;
-        minPtr->tm_year++;
+        value = UROUND(value, step);
+        ticksPtr->values[i] = value;
+        value += step;
     }
     return ticksPtr;
 }
@@ -6171,25 +6180,26 @@ TimeAxis(Axis *axisPtr, double min, double max)
     }
     switch (units) {
     case TIME_YEARS:
-        GenerateYearTicks(axisPtr, tickMin, tickMax);
+        GenerateYearTicks(axisPtr, min, max);
         break;
     case TIME_MONTHS:
-        GenerateMonthTicks(axisPtr, axisMin, axisMax);
+        GenerateMonthTicks(axisPtr, min, max);
         break;
     case TIME_DAYS:
-        GenerateDayTicks(axisPtr, axisMin, axisMax);
+        GenerateDayTicks(axisPtr, min, max);
         break;
     case TIME_HOURS:
-        GenerateHourTicks(axisPtr, axisMin, axisMax);
+        GenerateHourTicks(axisPtr, min, max);
         break;
     case TIME_MINUTES:
-        GenerateMinuteTicks(axisPtr, axisMin, axisMax);
+        GenerateMinuteTicks(axisPtr, min, max);
         break;
     case TIME_SECONDS:
-        GenerateSecondTicks(axisPtr, axisMin, axisMax);
+        GenerateSecondTicks(axisPtr, min, max);
         break;
+    default:
+        abort();
     }
 }
-#endif
 
 
