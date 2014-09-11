@@ -5764,38 +5764,44 @@ enum TimeUnits {
 #define SECONDS_YEAR          (SECONDS_DAY * 365)
 
 static double
-TimeFloor(double min, enum TimeUnits units, struct tm *tmPtr)
+TimeFloor(Axis *axisPtr, double min, enum TimeUnits units, Blt_DateTime *datePtr)
 {
-    time_t ticks, x;
+    double seconds;
+    Tcl_Interp *interp;
 
-    ticks = (time_t)floor(min);
-    localtime_r(&ticks, tmPtr);
+    interp = axisPtr->obj.graphPtr->interp;
+    seconds = floor(min);
+    Blt_SecondsToDate(seconds, datePtr);
     switch (units) {
     case TIME_YEARS:
-        tmPtr->tm_mon = 0;              /* 0-11 */
+        datePtr->mon = 0;               /* 0-11 */
         /* fallthrough */
     case TIME_MONTHS:
-        tmPtr->tm_mday = 1;             /* 1-31, 0 is last day or preceding
+        datePtr->mday = 1;              /* 1-31, 0 is last day or preceding
                                          * month. */
         /* fallthrough */
     case TIME_DAYS:
-        tmPtr->tm_hour = 0;             /* 0-23 */
+        datePtr->hour = 0;              /* 0-23 */
         /* fallthrough */
     case TIME_HOURS:
-        tmPtr->tm_min = 0;              /* 0-59 */
+        datePtr->min = 0;               /* 0-59 */
         /* fallthrough */
     case TIME_MINUTES:
-        tmPtr->tm_sec = 0;              /* 0-60 */
+        datePtr->sec = 0;               /* 0-60 */
         /* fallthrough */
     case TIME_SECONDS:
         break;
     }
-    tmPtr->tm_isdst = 0;
-    return mktime(tmPtr);
+    datePtr->isdst = 0;
+    if (Blt_DateToSeconds(interp, datePtr, &seconds) != TCL_OK) {
+        fprintf(stderr, "TimeFloor datetoseconds failed: %s\n",
+                Tcl_GetString(Tcl_GetObjResult(interp)));
+    }
+    return seconds;
 }
 
 static double
-TimeCeil(double max, enum TimeUnits units, struct tm *tmPtr)
+TimeCeil(Axis *axisPtr, double max, enum TimeUnits units, Blt_DateTime *datePtr)
 {
     double ticks;
 
@@ -5817,10 +5823,10 @@ TimeCeil(double max, enum TimeUnits units, struct tm *tmPtr)
         ticks += SECONDS_MINUTE;
         break;
     case TIME_SECONDS:
-        tmPtr->tm_sec++;
+        datePtr->sec++;
         break;
     }
-    return TimeFloor(ticks, units, tmPtr);
+    return TimeFloor(axisPtr, ticks, units, datePtr);
 }
 
 static int 
@@ -5853,17 +5859,19 @@ GetMajorTimeUnits(double min, double max)
 static void
 GenerateYearTicks(Axis *axisPtr, double min, double max)
 {
+    Tcl_Interp *interp;
     Ticks *ticksPtr;
-    struct tm first, last, tm;
+    Blt_DateTime date1, date2, tm;
     double value, range, step;
     int i, numTicks;
     double tickMin, tickMax;            /* Years. */
     double axisMin, axisMax;            /* Seconds. */
 
-    TimeFloor(min, TIME_YEARS, &first);
-    TimeCeil(max, TIME_YEARS, &last);
+    interp = axisPtr->obj.graphPtr->interp;
+    TimeFloor(axisPtr, min, TIME_YEARS, &date1);
+    TimeCeil(axisPtr, max, TIME_YEARS, &date2);
     step = 1.0;
-    range = last.tm_year - first.tm_year;
+    range = date2.year - date1.year;
     if (axisPtr->reqStep > 0.0) {
         /* An interval was designated by the user.  Keep scaling it until
          * it fits comfortably within the current range of the axis.  */
@@ -5876,34 +5884,40 @@ GenerateYearTicks(Axis *axisPtr, double min, double max)
         step = NiceNum(range / axisPtr->reqNumMajorTicks, 1);
 	/* Find the outer tick values. Add 0.0 to prevent getting -0.0. */
     }
-    tickMin = floor(first.tm_year / step) * step + 0.0;
-    tickMax = ceil(last.tm_year / step) * step + 0.0;
+    tickMin = floor(date1.year / step) * step + 0.0;
+    tickMax = ceil(date2.year / step) * step + 0.0;
     numTicks = Round((tickMax - tickMin) / step) + 1;
 
-    tm = first;
+    tm = date1;
     if ((axisPtr->looseMin == TIGHT) || ((axisPtr->looseMin == LOOSE) &&
 	 (DEFINED(axisPtr->reqMin)))) {
 	axisMin = min;
     } else {
-        tm.tm_year = tickMin;
-        axisMin = (double)mktime(&tm);
+        tm.year = tickMin;
+        if (Blt_DateToSeconds(interp, &tm, &axisMin) != TCL_OK) {
+            fprintf(stderr, "GenerateYear datetoseconds failed\n");
+        }
     }
     if ((axisPtr->looseMax == TIGHT) || ((axisPtr->looseMax == LOOSE) &&
 	 (DEFINED(axisPtr->reqMax)))) {
 	axisMax = max;
     } else {
-        tm.tm_year = tickMax;
-        axisMax = (double)mktime(&tm);
+        tm.year = tickMax;
+        if (Blt_DateToSeconds(interp, &tm, &axisMax) != TCL_OK) {
+            fprintf(stderr, "GenerateYear datetoseconds failed\n");
+        }
     }
     SetAxisRange(&axisPtr->axisRange, axisMin, axisMax);
 
     ticksPtr = Blt_AssertMalloc(sizeof(Ticks) + (numTicks * sizeof(double)));
-    tm = first;
+    tm = date1;
     value = tickMin;
     ticksPtr->numTicks = numTicks;
     for (i = 0; i < numTicks; i++) {
-        tm.tm_year = UROUND(value, step);
-        ticksPtr->values[i] = (double)mktime(&tm);
+        tm.year = UROUND(value, step);
+        if (Blt_DateToSeconds(interp, &tm, ticksPtr->values + i) != TCL_OK) {
+            fprintf(stderr, "GenerateYear datetoseconds failed\n");
+        }
         value += step;
     }
     if (axisPtr->t1Ptr != NULL) {
@@ -5916,41 +5930,31 @@ static void
 GenerateMonthTicks(Axis *axisPtr, double min, double max)
 {
     Ticks *ticksPtr;
-    struct tm first, last, tm;
+    Blt_DateTime date1, date2, tm;
     double value, range, step;
     int i, numTicks;
     double tickMin, tickMax;            /* months. */
     double axisMin, axisMax;            /* seconds. */
-    time_t t;
 
  fprintf(stderr, "Generating Month Ticks\n");
- t = min;
- fprintf(stderr, "before min=%.15g date=%s\n", min, ctime(&t));
-    tickMin = axisMin = TimeFloor(min, TIME_MONTHS, &first);
- fprintf(stderr, "after tickMin=%.15g date=%s\n", tickMin, asctime(&first));
-    tickMax = axisMax = TimeCeil(max, TIME_MONTHS, &last);
+    tickMin = axisMin = TimeFloor(axisPtr, min, TIME_MONTHS, &date1);
+    tickMax = axisMax = TimeCeil(axisPtr, max, TIME_MONTHS, &date2);
     step = 1.0;
-    if (last.tm_year > first.tm_year) {
-        last.tm_mon += 12;
+    if (date2.year > date1.year) {
+        date2.mon += 12;
     }
 
-    range = last.tm_mon - first.tm_mon;
+    range = date2.mon - date1.mon;
     step = 1;
     numTicks = Round((range) / step) + 1;
-    fprintf(stderr, "first=%d last=%d tm=%.15g, nt=%d\n", first.tm_mon, last.tm_mon,
+    fprintf(stderr, "first=%d last=%d tm=%.15g, nt=%d\n", date1.mon, date2.mon,
             tickMin, numTicks);
     ticksPtr = Blt_AssertMalloc(sizeof(Ticks) + (numTicks * sizeof(double)));
-    tm = first;
+    tm = date1;
     value = tickMin;
     ticksPtr->numTicks = numTicks;
     for (i = 0; i < numTicks; i++) {
-        time_t t;
-
-        t = value;
-        fprintf(stderr, "before tick=%.15g date=%s\n", value, ctime(&t));
-        value = TimeFloor(value, TIME_MONTHS, &tm);
-        t = value;
-        fprintf(stderr, "afterr tick=%.15g date=%s\n", value, ctime(&t));
+        value = TimeFloor(axisPtr, value, TIME_MONTHS, &tm);
         ticksPtr->values[i] = value;
         value += SECONDS_DAY * 32 * step; /* Overshoot start of month.  */
     }
@@ -5973,19 +5977,19 @@ static void
 GenerateDayTicks(Axis *axisPtr, double min, double max)
 {
     Ticks *ticksPtr;
-    struct tm first, last, tm;
+    Blt_DateTime first, last, tm;
     double value, range, step;
     int i, numTicks;
     double tickMin, tickMax;            /* days. */
     double axisMin, axisMax;            /* seconds. */
 
-    tickMin = axisMin = TimeFloor(min, TIME_DAYS, &first);
-    tickMax = axisMax = TimeCeil(max, TIME_DAYS, &last);
+    tickMin = axisMin = TimeFloor(axisPtr, min, TIME_DAYS, &first);
+    tickMax = axisMax = TimeCeil(axisPtr, max, TIME_DAYS, &last);
     step = 1.0;
-    if (last.tm_mon > first.tm_mon) {
-        last.tm_mday += 31;             /* It's OK if it's not accurate. */
+    if (last.mon > first.mon) {
+        last.mday += 31;             /* It's OK if it's not accurate. */
     }
-    range = last.tm_mday - first.tm_mday;
+    range = last.mday - first.mday;
     if (range > 16) {
         step = 6;
     } else if (range > 7) {
@@ -5999,7 +6003,7 @@ GenerateDayTicks(Axis *axisPtr, double min, double max)
     value = axisMin;
     ticksPtr->numTicks = numTicks;
     for (i = 0; i < numTicks; i++) {
-        value = TimeFloor(value, TIME_DAYS, &tm);
+        value = TimeFloor(axisPtr, value, TIME_DAYS, &tm);
         ticksPtr->values[i] = value;
         value += 25 * SECONDS_HOUR * step; /* Overshoot start of day.  */
     }
@@ -6022,19 +6026,19 @@ static void
 GenerateHourTicks(Axis *axisPtr, double min, double max)
 {
     Ticks *ticksPtr;
-    struct tm first, last, tm;
+    Blt_DateTime first, last, tm;
     double value, range, step;
     int i, numTicks;
     double tickMin, tickMax;            /* months. */
     double axisMin, axisMax;            /* seconds. */
 
-    tickMin = axisMin = TimeFloor(min, TIME_HOURS, &first);
-    tickMax = axisMax = TimeCeil(max, TIME_HOURS, &last);
+    tickMin = axisMin = TimeFloor(axisPtr, min, TIME_HOURS, &first);
+    tickMax = axisMax = TimeCeil(axisPtr, max, TIME_HOURS, &last);
     step = 1.0;
-    if (last.tm_mday > first.tm_mday) {
-        last.tm_hour += 24;              /* It's OK if it's not accurate. */
+    if (last.mday > first.mday) {
+        last.hour += 24;              /* It's OK if it's not accurate. */
     }
-    range = last.tm_mon - first.tm_mon;
+    range = last.mon - first.mon;
     if (range > 12) {
         step = 6;
     } else if (range > 7) {
@@ -6048,7 +6052,7 @@ GenerateHourTicks(Axis *axisPtr, double min, double max)
     value = tickMin;
     ticksPtr->numTicks = numTicks;
     for (i = 0; i < numTicks; i++) {
-        value = TimeFloor(value, TIME_DAYS, &tm);
+        value = TimeFloor(axisPtr, value, TIME_DAYS, &tm);
         ticksPtr->values[i] = value;
         value += SECONDS_MINUTE * 61 * step; /* Overshoot start of day.  */
     }
@@ -6071,19 +6075,19 @@ static void
 GenerateMinuteTicks(Axis *axisPtr, double min, double max)
 {
     Ticks *ticksPtr;
-    struct tm first, last, tm;
+    Blt_DateTime first, last, tm;
     double value, range, step;
     int i, numTicks;
     double tickMin, tickMax;            /* minutes. */
     double axisMin, axisMax;            /* seconds. */
 
-    tickMin = axisMin = TimeFloor(min, TIME_MINUTES, &first);
-    tickMax = axisMax = TimeCeil(max, TIME_MINUTES, &last);
+    tickMin = axisMin = TimeFloor(axisPtr, min, TIME_MINUTES, &first);
+    tickMax = axisMax = TimeCeil(axisPtr, max, TIME_MINUTES, &last);
     step = 1.0;
-    if (last.tm_hour > first.tm_hour) {
-        last.tm_min += 60;              /* It's OK if it's not accurate. */
+    if (last.hour > first.hour) {
+        last.min += 60;              /* It's OK if it's not accurate. */
     }
-    range = last.tm_hour - first.tm_hour;
+    range = last.hour - first.hour;
     if (range > 12) {
         step = 6;
     } else if (range > 7) {
@@ -6097,7 +6101,7 @@ GenerateMinuteTicks(Axis *axisPtr, double min, double max)
     value = tickMin;
     ticksPtr->numTicks = numTicks;
     for (i = 0; i < numTicks; i++) {
-        value = TimeFloor(value, TIME_MINUTES, &tm);
+        value = TimeFloor(axisPtr, value, TIME_MINUTES, &tm);
         ticksPtr->values[i] = value;
         value += SECONDS_MINUTE * step;             /*  */
     }

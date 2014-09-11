@@ -74,6 +74,24 @@ typedef struct _Blt_Pid {
 } Blt_Pid;
 #endif
 
+#include <time.h>
+#include <sys/time.h>
+
+typedef struct {
+    time_t sec;				/* Second. 0-60. */
+    time_t min;				/* Minute 0-59 */
+    time_t hour;			/* Hour 0-23. */
+    time_t mday;			/* Day of the month. 1-31. */
+    time_t mon;				/* Month 1-12. */
+    time_t year;			/* Year 0-9999. */
+    time_t wday;			/* Day of week. 1-7. */
+    time_t yday;			/* Day of the year. 1-366. */
+    time_t week;			/* Ordinal week. 1-53. */
+    float frac;				/* Fractional seconds. */
+    time_t tzoffset;			/* Timezone offset. */
+    int isdst;
+} Blt_DateTime;
+
 BLT_EXTERN int Blt_CreatePipeline(Tcl_Interp *interp, int objc, 
 	Tcl_Obj *const *objv, Blt_Pid **pidArrayPtr, int *stdinPipePtr,
 	int *stdoutPipePtr, int *stderrPipePtr);
@@ -207,4 +225,7 @@ BLT_EXTERN const char *Blt_LastError(void);
 BLT_EXTERN double Blt_NaN(void);
 BLT_EXTERN int Blt_AlmostEquals(double x, double y);
 
+BLT_EXTERN void Blt_SecondsToDate(double seconds, Blt_DateTime *timePtr);
+BLT_EXTERN int Blt_DateToSeconds(Tcl_Interp *interp, Blt_DateTime *timePtr,
+        double *secondsPtr);
 #endif /*_BLT_TCL_INT_H*/
