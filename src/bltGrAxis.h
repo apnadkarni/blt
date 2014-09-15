@@ -83,11 +83,9 @@ typedef struct {
     char string[1];
 } TickLabel;
 
-typedef struct {
-    double location;                    /* Location of tick in graph
-                                         * coordinates. */
-    double value;                       /* Value of tick. */
-} Tick;
+typedef enum  _AxisScaleType {
+    SCALE_LINEAR, SCALE_LOG, SCALE_TIME, SCALE_CUSTOM
+}  AxisScaleType;
 
 /*
  *---------------------------------------------------------------------------
@@ -100,27 +98,25 @@ typedef struct {
  *---------------------------------------------------------------------------
  */
 typedef struct {
-    int numTicks;			/* # of ticks on axis */
-    double values[1];                   /* Array of tick values
+    double initial;			/* Initial value */
+    double step;                        /* Size of interval */
+    int numSteps;			/* Number of intervals. */
+    int index;                          /* Current index of iterator. */
+    AxisScaleType scaleType;            /* Scale type. */
+    double range;                       /* Range of entire sweep. */
+    int isLeapYear;                     /* Indicates if the major tick
+                                         * value is a leap year. */
+    int timeUnits;                      /* Indicates the time units of the
+                                         * sweep. */
+    double *values;                     /* Array of tick values
                                          * (malloc-ed). */
+    Grid grid;                          /* Axis grid information. */
 } Ticks;
 
-/*
- *---------------------------------------------------------------------------
- *
- * TickSweep --
- *
- * 	Structure containing information where the ticks (major or minor)
- *	will be displayed on the graph.
- *
- *---------------------------------------------------------------------------
- */
 typedef struct {
-    double initial;			/* Initial value */
-    double step;			/* Size of interval */
-    int numSteps;			/* Number of intervals. */
-} TickSweep;
-
+    Ticks ticks;
+    Grid grid;                          /* Axis grid information. */
+} TickGrid;
 /*
  *---------------------------------------------------------------------------
  *
@@ -229,16 +225,7 @@ struct _Axis {
 					 * of elements mapped to the
 					 * axis. The default value is
 					 * 0.0. */
-    Ticks *t1Ptr;			/* Array of major tick
-					 * positions. May be set by the
-					 * user or generated from the major
-					 * sweep below. */
-    Ticks *t2Ptr;			/* Array of minor tick
-					 * positions. May be set by the
-					 * user or generated from the minor
-					 * sweep below. */
-
-    TickSweep minorSweep, majorSweep;
+    TickGrid minor, major;
 
     int reqNumMajorTicks;		/* Default number of ticks to be
 					 * displayed. */
@@ -297,8 +284,6 @@ struct _Axis {
     Tk_Justify titleJustify;
     XColor *titleColor;
     
-    Grid major, minor;			/* Axis grid information. */
-
     double screenScale;
     int screenMin, screenRange;
     Blt_Palette palette;

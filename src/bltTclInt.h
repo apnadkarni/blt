@@ -82,7 +82,7 @@ typedef struct {
     time_t min;				/* Minute 0-59 */
     time_t hour;			/* Hour 0-23. */
     time_t mday;			/* Day of the month. 1-31. */
-    time_t mon;				/* Month 1-12. */
+    time_t mon;				/* Month 0-11. */
     time_t year;			/* Year 0-9999. */
     time_t wday;			/* Day of week. 1-7. */
     time_t yday;			/* Day of the year. 1-366. */
@@ -90,6 +90,7 @@ typedef struct {
     float frac;				/* Fractional seconds. */
     time_t tzoffset;			/* Timezone offset. */
     int isdst;
+    int isLeapYear;
 } Blt_DateTime;
 
 BLT_EXTERN int Blt_CreatePipeline(Tcl_Interp *interp, int objc, 

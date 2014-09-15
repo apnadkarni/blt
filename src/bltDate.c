@@ -1287,7 +1287,7 @@ ExtractDate(DateParser *parserPtr)
 	id = patPtr->ids[i];
 	switch (id) {
 	case T_MONTH:
-	    parserPtr->date.mon = tokenPtr->lvalue;
+	    parserPtr->date.mon = tokenPtr->lvalue - 1;
 	    break;
 
 	case T_YEAR:
@@ -1334,6 +1334,7 @@ ExtractDate(DateParser *parserPtr)
 		parserPtr->date.mday = value % 100;
 		value /= 100;
 		parserPtr->date.mon = value % 100;
+		parserPtr->date.mon -= 1;
 		value /= 100;
 		parserPtr->date.year = value;
 	    }
@@ -1358,31 +1359,31 @@ ExtractDate(DateParser *parserPtr)
 
 
 static int
-NumberDaysFromMonth(Blt_DateTime *datePtr)
+NumberDaysFromStartOfYear(time_t year, time_t month, time_t mday)
 {
     int i, numDays;
     int isLeapYear;
 
-    isLeapYear = IsLeapYear(datePtr->year);
+    isLeapYear = IsLeapYear(year);
     numDays = 0;
-    for (i = 0; i < (datePtr->mon - 1); i++) {
+    for (i = 0; i < month; i++) {
         numDays += numDaysMonth[isLeapYear][i];
     }
-    return numDays;
+    return numDays + (mday - 1);
 }
 
 static int
-NumberDaysFromYear(Blt_DateTime *datePtr)
+NumberDaysFromEpoch(time_t year)
 {
     int y, numDays;
 
     numDays = 0;
-    if (datePtr->year >= EPOCH) {
-        for (y = EPOCH; y < datePtr->year; y++) {
+    if (year >= EPOCH) {
+        for (y = EPOCH; y < year; y++) {
             numDays += numDaysYear[IsLeapYear(y)];
 	}
     } else {
-        for (y = datePtr->year; y < EPOCH; y++)
+        for (y = year; y < EPOCH; y++)
             numDays -= numDaysYear[IsLeapYear(y)];
     }
     return numDays;
@@ -1416,7 +1417,7 @@ Blt_DateToSeconds(Tcl_Interp *interp, Blt_DateTime *datePtr, double *secondsPtr)
 #endif
     isLeapYear = IsLeapYear(datePtr->year);
     /* Check the inputs for validity */
-    if ((datePtr->mon > 12) || (datePtr->mon < 1)) { /* 1..12 */
+    if ((datePtr->mon > 11) || (datePtr->mon < 0)) { /* 0..11 */
         if (interp != NULL) {
             ParseError(interp, "month \"%ld\" is out of range.", datePtr->mon);
         }
@@ -1428,10 +1429,10 @@ Blt_DateToSeconds(Tcl_Interp *interp, Blt_DateTime *datePtr, double *secondsPtr)
         }
         return TCL_ERROR;
     }
-    if (datePtr->mday > numDaysMonth[isLeapYear][datePtr->mon - 1]) {
+    if (datePtr->mday > numDaysMonth[isLeapYear][datePtr->mon]) {
         if (interp != NULL) {
             ParseError(interp, "day \"%ld\" is out of range for month \"%s\"",
-		    datePtr->mday, monthTable[datePtr->mon - 1]);
+		    datePtr->mday, monthTable[datePtr->mon]);
         }
 	return TCL_ERROR;
     }
@@ -1473,17 +1474,30 @@ Blt_DateToSeconds(Tcl_Interp *interp, Blt_DateTime *datePtr, double *secondsPtr)
 	    return TCL_ERROR;
 	}
     }
-    numDays = 0;
-    if (datePtr->year > 0) {
-	numDays += NumberDaysFromYear(datePtr);
-    }
+    numDays = NumberDaysFromEpoch(datePtr->year);
+#ifndef notdef
+    fprintf(stderr, "numDays from epoch=%ld\n", numDays);
+#endif
     if (datePtr->yday > 0) {
-	numDays += (datePtr->yday - 1);
+        time_t n;
+
+	n = (datePtr->yday - 1);
+        numDays += n;
+#ifndef notdef
+        fprintf(stderr, "numDays from with yday=%ld yday=%ld\n", n, datePtr->yday);
+#endif
     } else if (datePtr->mday > 0) {
-	numDays += (datePtr->mday - 1) + NumberDaysFromMonth(datePtr);
+        time_t n;
+
+	n= NumberDaysFromStartOfYear(datePtr->year, datePtr->mon, 
+                datePtr->mday);
+        numDays += n;
+#ifndef notdef
+        fprintf(stderr, "numDays from start of year=%ld\n", n);
+#endif
     }
     t = numDays * SECONDS_DAY;          /* Convert to seconds. */
-#ifdef notdef
+#ifndef notdef
     fprintf(stderr, "numDays=%ld t=%.15g\n", numDays, t);
 #endif
     /* Add the timezone offset. */
@@ -1549,22 +1563,25 @@ Blt_SecondsToDate(double seconds, Blt_DateTime *datePtr)
         } while (days < 0);
     }
     datePtr->year = y;
+    datePtr->isLeapYear = IsLeapYear(y);
     datePtr->yday = days;
-    ip = numDaysMonth[isLeapYear];
-    for (datePtr->mon = 0; days >= ip[datePtr->mon - 1]; ++datePtr->mon) {
-        days -= ip[datePtr->mon - 1];
+    ip = numDaysMonth[datePtr->isLeapYear];
+    for (datePtr->mon = 0; days >= ip[datePtr->mon]; ++datePtr->mon) {
+        days -= ip[datePtr->mon];
     }
     datePtr->mday = days + 1;
     datePtr->isdst = 0;
 }
 
 static void
-GMTime2(time_t ticks, Blt_DateTime *datePtr)
+Blt_SecondsToDate2(double seconds, Blt_DateTime *datePtr)
 {
+    time_t ticks;
     unsigned long dayclock, dayno;
     int year = EPOCH;
     int numDaysInYear;
 
+    ticks = floor(seconds);
 #ifdef notdef
      dtime = ticks % SECONDS_DAY;
 #endif     
@@ -1986,10 +2003,6 @@ FormatOp(ClientData clientData, Tcl_Interp *interp, int objc,
     fprintf(stderr, "year=%d,mon=%d,day=%d,hour=%d,min=%d,sec=%d\n",
             date1.year, date1.mon, date1.mday, 
             date1.hour, date1.min, date1.sec);
-    GMTime2((time_t)seconds, &date2);
-    fprintf(stderr, "year=%d,mon=%d,day=%d,hour=%d,min=%d,sec=%d\n",
-            date2.year, date2.mon, date2.mday, 
-            date2.hour, date2.min, date2.sec);
     return TCL_OK;
 }
 
