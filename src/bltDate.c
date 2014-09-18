@@ -2,9 +2,11 @@
 /*
  * bltDate.c --
  *
- *      This module implements a date parser for the BLT toolkit.  It's
- *      used to automatically convert dates in datatables to seconds (may
- *      include fractional seconds).
+ *      This module implements a date parser for the BLT toolkit.  It
+ *      differs slightly from the TCL "clock" command.  It handles
+ *      different date formats and is faster.  It was built to
+ *      programatically convert thousands of dates in datatables to seconds
+ *      (especially dates that may include fractional seconds).
  *
  *	Copyright 1993-2004 George A Howlett.
  *
@@ -999,7 +1001,7 @@ GetDateFromOrdinalDay(Tcl_Interp *interp, time_t yday, Blt_DateTime *datePtr)
     count = 0;
     for (i = 0; i < 13; i++) {
 	if ((count + numDaysMonth[isLeapYear][i]) > yday) {
-	    datePtr->mon = i + 1;
+	    datePtr->mon = i;
 	    datePtr->mday = yday - count + 1;
 	    return TCL_OK;
 	}
@@ -1412,70 +1414,71 @@ Blt_DateToSeconds(Tcl_Interp *interp, Blt_DateTime *datePtr, double *secondsPtr)
     time_t numDays;
     int isLeapYear;
 #ifdef notdef
-    fprintf(stderr, "mon=%ld year=%ld mday=%ld\n", datePtr->mon,
+    fprintf(stderr, "DateToSeconds: mon=%ld year=%ld mday=%ld\n", datePtr->mon,
 	    datePtr->year, datePtr->mday);
 #endif
     isLeapYear = IsLeapYear(datePtr->year);
     /* Check the inputs for validity */
     if ((datePtr->mon > 11) || (datePtr->mon < 0)) { /* 0..11 */
         if (interp != NULL) {
-            ParseError(interp, "month \"%ld\" is out of range.", datePtr->mon);
+            ParseError(interp, "month \"%ld\" is out of range.", 
+                       datePtr->mon + 1);
         }
         return TCL_ERROR;
     }
-    if (datePtr->year > 9999) {
+    if ((datePtr->year < 0) || (datePtr->year > 9999)) {
         if (interp != NULL) {
-            ParseError(interp, "year \"%ld\" is out of range.", datePtr->year);
+            ParseError(interp, "year \"%ld\" is out of range.", 
+                datePtr->year);
         }
         return TCL_ERROR;
     }
     if (datePtr->mday > numDaysMonth[isLeapYear][datePtr->mon]) {
         if (interp != NULL) {
-            ParseError(interp, "day \"%ld\" is out of range for month \"%s\"",
-		    datePtr->mday, monthTable[datePtr->mon]);
+            ParseError(interp, 
+                "day \"%ld\" is out of range for month \"%s\"",
+                datePtr->mday, monthTable[datePtr->mon]);
         }
 	return TCL_ERROR;
     }
-    if (datePtr->hour > 24) {
+    if ((datePtr->hour < 0) || (datePtr->hour > 24)) {
         if (interp != NULL) {
             ParseError(interp, "hour \"%ld\" is out of range.",
-                       datePtr->hour); 
+                datePtr->hour); 
         }
 	return TCL_ERROR;
     }
-    if (datePtr->min > 59) {
+    if ((datePtr->min < 0) || (datePtr->min > 59)) {
         if (interp != NULL) {
             ParseError(interp, "minute \"%ld\", is out of range.", 
                 datePtr->min);
         }
 	return TCL_ERROR;
     }
-    if (datePtr->sec > 60) {
+    if ((datePtr->sec < 0) || (datePtr->sec > 60)) {
 	if (interp != NULL) {
             ParseError(interp, "seconds \"%ld\" is out of range.", 
                        datePtr->sec);
         }
 	return TCL_ERROR;
     }
+
     /* Start computing the value.  First determine the number of days
-     * represented by the date, then multiply by the number of seconds/day.
-     */
+     * represented by the date, then multiply by the number of
+     * seconds/day. */
     if (datePtr->week > 0) {
-	time_t wday, yday, corr, n;
+	time_t yday, corr, n;
  
 	datePtr->wday = GetWeekday(datePtr->year, 1, 4, &yday);
 	corr = datePtr->wday + 3;
 	n = ((datePtr->week) * 7) + (datePtr->wday) + IsLeapYear(datePtr->year);
 	yday = n - corr;
-        fprintf(stderr, "week=%ld wday=%ld corr=%ld n=%ld yday=%ld\n", 
-                datePtr->week, datePtr->wday, 
-                corr, n, yday);
 	if (GetDateFromOrdinalDay(interp, yday - 1, datePtr) != TCL_OK) {
 	    return TCL_ERROR;
 	}
     }
     numDays = NumberDaysFromEpoch(datePtr->year);
-#ifndef notdef
+#ifdef notdef
     fprintf(stderr, "numDays from epoch=%ld\n", numDays);
 #endif
     if (datePtr->yday > 0) {
@@ -1483,7 +1486,7 @@ Blt_DateToSeconds(Tcl_Interp *interp, Blt_DateTime *datePtr, double *secondsPtr)
 
 	n = (datePtr->yday - 1);
         numDays += n;
-#ifndef notdef
+#ifdef notdef
         fprintf(stderr, "numDays from with yday=%ld yday=%ld\n", n, datePtr->yday);
 #endif
     } else if (datePtr->mday > 0) {
@@ -1492,12 +1495,12 @@ Blt_DateToSeconds(Tcl_Interp *interp, Blt_DateTime *datePtr, double *secondsPtr)
 	n= NumberDaysFromStartOfYear(datePtr->year, datePtr->mon, 
                 datePtr->mday);
         numDays += n;
-#ifndef notdef
+#ifdef notdef
         fprintf(stderr, "numDays from start of year=%ld\n", n);
 #endif
     }
     t = numDays * SECONDS_DAY;          /* Convert to seconds. */
-#ifndef notdef
+#ifdef notdef
     fprintf(stderr, "numDays=%ld t=%.15g\n", numDays, t);
 #endif
     /* Add the timezone offset. */
@@ -1544,7 +1547,7 @@ Blt_SecondsToDate(double seconds, Blt_DateTime *datePtr)
     if ((datePtr->wday = ((EPOCH_WDAY + days) % 7)) < 0) {
         datePtr->wday += 7;
     }
-    /* Compute year & day of year */
+    /* Compute year and  day of year */
     y = EPOCH;
     if (days >= 0) {
         for (;;) {
@@ -1571,44 +1574,6 @@ Blt_SecondsToDate(double seconds, Blt_DateTime *datePtr)
     }
     datePtr->mday = days + 1;
     datePtr->isdst = 0;
-}
-
-static void
-Blt_SecondsToDate2(double seconds, Blt_DateTime *datePtr)
-{
-    time_t ticks;
-    unsigned long dayclock, dayno;
-    int year = EPOCH;
-    int numDaysInYear;
-
-    ticks = floor(seconds);
-#ifdef notdef
-     dtime = ticks % SECONDS_DAY;
-#endif     
-     dayclock = (unsigned long)ticks % SECONDS_DAY;
-     
-     dayno = (unsigned long)ticks / SECONDS_DAY;
-
-     datePtr->sec = dayclock % SECONDS_MINUTE;
-     datePtr->min = (dayclock % SECONDS_HOUR) / SECONDS_MINUTE;
-     datePtr->hour = dayclock / SECONDS_HOUR;
-     datePtr->wday = (dayno + 4) % 7;       /* day 0 was a thursday */
-
-     numDaysInYear = numDaysYear[IsLeapYear(year)];
-     while (dayno >= numDaysInYear) {
-         dayno -= numDaysInYear;
-         year++;
-         numDaysInYear = numDaysYear[IsLeapYear(year)];
-     }
-     datePtr->year = year - 1900;
-     datePtr->yday = dayno;
-     datePtr->mon = 0;
-     while (dayno >= numDaysMonth[IsLeapYear(year)][datePtr->mon]) {
-         dayno -= numDaysMonth[IsLeapYear(year)][datePtr->mon];
-         datePtr->mon++;
-     }
-     datePtr->mday = dayno + 1;
-     datePtr->isdst = 0;
 }
 
 /* 
@@ -1885,32 +1850,20 @@ GetDate(Tcl_Interp *interp, const char *string, double *secondsPtr)
  *	wday month day yyyy
  */
 int
-Blt_GetDate(Tcl_Interp *interp, const char *string, double *timePtr)
+Blt_GetDate(Tcl_Interp *interp, const char *string, double *secondsPtr)
 {
-    /* First see if the date is a number (seconds). */
-    if (GetDate(interp, string, timePtr) == TCL_OK) {
+    if (GetDate(interp, string, secondsPtr) == TCL_OK) {
         return TCL_OK;
     }
-#ifdef notdef
-    if (Tcl_GetDouble(NULL, string, timePtr) == TCL_OK) {
-	return TCL_OK;
-    }
-#endif
     return TCL_ERROR;
 }
 
 int
-Blt_GetDateFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, double *timePtr)
+Blt_GetDateFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, double *secondsPtr)
 {
-    if (GetDate(interp, Tcl_GetString(objPtr), timePtr) == TCL_OK) {
+    if (GetDate(interp, Tcl_GetString(objPtr), secondsPtr) == TCL_OK) {
         return TCL_OK;
     }
-#ifdef notdef
-    /* Next see if the date is a number (seconds). */
-    if (Tcl_GetDoubleFromObj(interp, objPtr, timePtr) == TCL_OK) {
-	return TCL_OK;
-    }
-#endif
     return TCL_ERROR;
 }
 
@@ -1985,7 +1938,7 @@ FormatOp(ClientData clientData, Tcl_Interp *interp, int objc,
        Tcl_Obj *const *objv)
 {
     FormatSwitches switches;
-    Blt_DateTime date1, date2;
+    Blt_DateTime date;
     double seconds;
 
     /* Process switches  */
@@ -1999,10 +1952,12 @@ FormatOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (Tcl_GetDoubleFromObj(interp, objv[2], &seconds) != TCL_OK) {
         return TCL_ERROR;
     }
-    Blt_SecondsToDate(seconds, &date1);
-    fprintf(stderr, "year=%d,mon=%d,day=%d,hour=%d,min=%d,sec=%d\n",
-            date1.year, date1.mon, date1.mday, 
-            date1.hour, date1.min, date1.sec);
+    Blt_SecondsToDate(seconds, &date);
+#ifdef notdef
+    fprintf(stderr, "year=%ld,mon=%ld,day=%ld,hour=%ld,min=%ld,sec=%ld\n",
+            date.year, date.mon, date.mday, 
+            date.hour, date.min, date.sec);
+#endif
     return TCL_OK;
 }
 

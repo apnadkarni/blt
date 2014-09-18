@@ -33,8 +33,6 @@
 
 typedef struct _BLT_TABLE_TAGS *BLT_TABLE_TAGS;
 
-typedef struct _Blt_Tags *Blt_Tags;
-
 typedef enum {
     TABLE_COLUMN_TYPE_UNKNOWN=-1, 
     TABLE_COLUMN_TYPE_STRING, 

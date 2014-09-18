@@ -159,10 +159,10 @@
 #define ROUND(x) 	((int)(((double)(x)) + (((x)<0.0) ? -0.5 : 0.5)))
 
 #ifdef HAVE_FINITE
-#define FINITE(x)	finite(x)
+#define FINITE(x)	(finite(x))
 #else
 #ifdef HAVE_ISFINITE
-#define FINITE(x)	isfinite(x)
+#define FINITE(x)	(isfinite(x))
 #else
 #ifdef HAVE_ISNAN
 #define FINITE(x)	(!isnan(x))

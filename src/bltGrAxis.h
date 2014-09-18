@@ -111,6 +111,9 @@ typedef struct {
     double *values;                     /* Array of tick values
                                          * (malloc-ed). */
     Grid grid;                          /* Axis grid information. */
+    int month;
+    int year;
+    int timeFormat;
 } Ticks;
 
 typedef struct {
@@ -184,8 +187,8 @@ struct _Axis {
     int tickLength;			/* Length of major ticks in
                                          * pixels */
     Tcl_Obj *fmtCmdObjPtr;		/* Specifies a TCL command, to be
-					 * invoked by the axis whenever it has
-					 * to generate tick labels. */
+					 * invoked by the axis whenever it
+					 * has to generate tick labels. */
     Tcl_Obj *scrollCmdObjPtr;
     int scrollUnits;
     double min, max;			/* The actual axis range. */
