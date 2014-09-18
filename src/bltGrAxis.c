@@ -5846,8 +5846,11 @@ YearTicks(Axis *axisPtr, double min, double max)
         tickMin = NumberDaysFromEpoch(first) * SECONDS_DAY;
         last = (time_t)tickMax;
         tickMax = NumberDaysFromEpoch(last) * SECONDS_DAY;
+
+        axisPtr->major.ticks.year = tickMin;
+#ifdef notdef
         step = (tickMax - tickMin) / (numTicks - 1);
-        
+#endif        
         axisPtr->minor.ticks.numSteps = 0;
 #ifdef notdef
         minorStep = EXP10(floor(log10(step)));
@@ -5865,6 +5868,7 @@ YearTicks(Axis *axisPtr, double min, double max)
         axisPtr->major.ticks.year = date1.year;
         if (numYears > 2) {
             axisPtr->major.ticks.timeFormat = TIME_FORMAT_YEARS5;
+
             axisPtr->minor.ticks.step = (SECONDS_YEAR+1) / 2; /* 1/2 year */
             axisPtr->minor.ticks.initial = 0;
             axisPtr->minor.ticks.numSteps = 1;  /* 3 - 2 */
@@ -5873,6 +5877,7 @@ YearTicks(Axis *axisPtr, double min, double max)
             axisPtr->minor.ticks.range = 0;
         } else {
             axisPtr->major.ticks.timeFormat = TIME_FORMAT_YEARS1;
+     
             axisPtr->minor.ticks.step = 0; /* Months */
             axisPtr->minor.ticks.initial = 0;
             axisPtr->minor.ticks.numSteps = 11;  /* 12 - 1 */
@@ -5885,8 +5890,9 @@ YearTicks(Axis *axisPtr, double min, double max)
 
     axisMin = tickMin;
     axisMax = tickMax;
- fprintf(stderr, "numYears=%.15g tickMin=%.15g tickMax=%.15g, step=%.15g nt=%d min=%.15g max=%.15g\n", 
-            numYears, tickMin, tickMax, step, numTicks, min, max);
+ fprintf(stderr, "numYears=%.15g tickMin=%.15g tickMax=%.15g, step=%.15g nt=%d min=%.15g max=%.15g, tf=%d\n", 
+         numYears, tickMin, tickMax, step, numTicks, min, max,
+         axisPtr->major.ticks.timeFormat);
     if ((axisPtr->looseMin == TIGHT) || ((axisPtr->looseMin == LOOSE) &&
 	 (DEFINED(axisPtr->reqMin)))) {
 	axisMin = min;
@@ -6260,10 +6266,26 @@ NextMajorTick(Axis *axisPtr)
         case TIME_YEARS:
             switch(ticksPtr->timeFormat) {
             case TIME_FORMAT_YEARS10:
-                d = ticksPtr->step * ticksPtr->index;
+                {
+                    int i;
+                    
+                    d = 0.0;
+                    for (i = 0; i < (ticksPtr->index*ticksPtr->step); i++) {
+                        time_t year, numDays;
+                        
+                        year = ticksPtr->year + i;
+                        numDays = numDaysYear[IsLeapYear(year)]; 
+ fprintf(stderr, "start=%d year=%d numDays=%ld lp=%d\n",
+        ticksPtr->year, year, numDays, IsLeapYear(year));
+                        d += numDays * SECONDS_DAY;
+                    }
+                }
                 break;
+#ifdef notdef
+               d = ticksPtr->step * ticksPtr->index;
+                break;
+#endif
             case TIME_FORMAT_YEARS5:
-                d = ticksPtr->step;
             case TIME_FORMAT_YEARS1:
                 {
                     int i;

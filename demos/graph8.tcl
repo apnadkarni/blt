@@ -2,7 +2,8 @@
 package require BLT
 
 proc FormatDate { g value } {
-    return [clock format [expr $value] -timezone :UTC -format "%b %Y" ]
+    return [clock format [expr $value] -timezone :UTC]
+# -format "%b %Y" ]
 }
     
 
@@ -71,6 +72,28 @@ proc years2 { t } {
     }
 }
 
+proc years3 { t } {
+    $t row delete all
+    set year 1969
+    set month 0
+    set day 1
+    for { set i 0 } { $i < 25 } { incr i } {
+	incr month
+	if { $month > 12 } {
+	    set month 1
+	    incr year
+	}
+	set d1 [blt::date scan "$year/$month/$day"]
+	set d2 [clock scan "$month/$day/$year" -timezone :UTC]
+	if { $d1 != $d2 } {
+	    error "date scan and clock scan don't agree"
+	}
+	$t set $i "date" $d1
+	$t set $i "value" [expr sin($i/2.0)]
+	puts stderr [blt::date format [expr $d1]]
+    }
+}
+
 proc months1 { t } {
     $t row delete all
     set year 1969
@@ -111,7 +134,7 @@ blt::comboentry .b \
 blt::combomenu $m \
     -text "Test" \
     -textvariable test
-foreach test { years1 years2 months1 } {
+foreach test { years1 years2 years3 months1 } {
     $m add \
 	-text $test \
 	-command [list $test $t] \

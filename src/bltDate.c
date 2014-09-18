@@ -935,27 +935,26 @@ ExtractSeparator(DateParser *parserPtr)
     return TCL_ERROR;
 }
 
-#ifdef notdef
 static int
-DayOfWeek(int day, int mon, int year)
+GetDayOfWeek(time_t year, time_t mon, time_t mday)
 {
-    int cent;
+    int century;
     
-    /* adjust months so February is the last one */
+    /* Adjust months so February is the last one */
     mon -= 2;
     if (mon < 1) {
 	mon += 12;
-	--year;
+	year--;
     }
-    /* split by century */
-    cent = year / 100;
+    /* Split by century */
+    century = year / 100;
     year %= 100;
-    return (((26*mon - 2)/10 + day + year + year/4 + cent/4 + 5*cent) % 7);
+    return (((26*mon - 2)/10 + mday + year + year/4 + 
+             century/4 + 5*century) % 7);
 }
-#endif
 
 static int
-GetWeekday(time_t year, time_t mon, time_t day, time_t *ydayPtr)
+GetIsoWeek(time_t year, time_t mon, time_t day, time_t *ydayPtr)
 {
     long a, b, c, s, e, f, d, g, n;
 
@@ -1457,19 +1456,32 @@ Blt_DateToSeconds(Tcl_Interp *interp, Blt_DateTime *datePtr, double *secondsPtr)
     }
     if ((datePtr->sec < 0) || (datePtr->sec > 60)) {
 	if (interp != NULL) {
-            ParseError(interp, "seconds \"%ld\" is out of range.", 
+            ParseError(interp, "second \"%ld\" is out of range.", 
+                       datePtr->sec);
+        }
+	return TCL_ERROR;
+    }
+    if ((datePtr->week < 0) || (datePtr->week > 53)) {
+	if (interp != NULL) {
+            ParseError(interp, "week \"%ld\" is out of range.", 
+                       datePtr->sec);
+        }
+	return TCL_ERROR;
+    }
+    if ((datePtr->yday < 0) || (datePtr->yday > 366)) {
+	if (interp != NULL) {
+            ParseError(interp, "day of year \"%ld\" is out of range.", 
                        datePtr->sec);
         }
 	return TCL_ERROR;
     }
 
-    /* Start computing the value.  First determine the number of days
-     * represented by the date, then multiply by the number of
-     * seconds/day. */
     if (datePtr->week > 0) {
 	time_t yday, corr, n;
  
-	datePtr->wday = GetWeekday(datePtr->year, 1, 4, &yday);
+        /* If the date was given by week number, convert to year, month,
+         * and mday. */
+	datePtr->wday = GetDayOfWeek(datePtr->year, 1, 4);
 	corr = datePtr->wday + 3;
 	n = ((datePtr->week) * 7) + (datePtr->wday) + IsLeapYear(datePtr->year);
 	yday = n - corr;
@@ -1477,39 +1489,33 @@ Blt_DateToSeconds(Tcl_Interp *interp, Blt_DateTime *datePtr, double *secondsPtr)
 	    return TCL_ERROR;
 	}
     }
+
+    /* Compute the number of seconds.  First determine the number of days
+     * represented by the date. */
     numDays = NumberDaysFromEpoch(datePtr->year);
-#ifdef notdef
-    fprintf(stderr, "numDays from epoch=%ld\n", numDays);
-#endif
+
+    /* Use the day of year if it was supplied, otherwise compute it. */
     if (datePtr->yday > 0) {
         time_t n;
 
 	n = (datePtr->yday - 1);
         numDays += n;
-#ifdef notdef
-        fprintf(stderr, "numDays from with yday=%ld yday=%ld\n", n, datePtr->yday);
-#endif
     } else if (datePtr->mday > 0) {
-        time_t n;
+        time_t yday;
 
-	n= NumberDaysFromStartOfYear(datePtr->year, datePtr->mon, 
+	yday = NumberDaysFromStartOfYear(datePtr->year, datePtr->mon, 
                 datePtr->mday);
-        numDays += n;
-#ifdef notdef
-        fprintf(stderr, "numDays from start of year=%ld\n", n);
-#endif
+        numDays += yday;
     }
     t = numDays * SECONDS_DAY;          /* Convert to seconds. */
-#ifdef notdef
-    fprintf(stderr, "numDays=%ld t=%.15g\n", numDays, t);
-#endif
-    /* Add the timezone offset. */
+
+    /* Add in the timezone offset. */
     t += datePtr->tzoffset;
 
     if (datePtr->isdst > 0) {
 	datePtr->hour++; 
     }
-    /* Add in the time, including the fraction. */
+    /* Finally include the time, including the fractional seconds. */
     t += (datePtr->hour * SECONDS_HOUR) + (datePtr->min * SECONDS_MINUTE) + 
         datePtr->sec;
     t += datePtr->frac;	
@@ -1521,8 +1527,8 @@ Blt_DateToSeconds(Tcl_Interp *interp, Blt_DateTime *datePtr, double *secondsPtr)
 void
 Blt_SecondsToDate(double seconds, Blt_DateTime *datePtr)
 {
-    long days, rem;
-    int y;
+    time_t mon, year, days;
+    long rem;
     int isLeapYear;
     const int *ip;
 
@@ -1548,31 +1554,35 @@ Blt_SecondsToDate(double seconds, Blt_DateTime *datePtr)
         datePtr->wday += 7;
     }
     /* Compute year and  day of year */
-    y = EPOCH;
+    year = EPOCH;
     if (days >= 0) {
         for (;;) {
-            isLeapYear = IsLeapYear(y);
+            isLeapYear = IsLeapYear(year);
             if (days < numDaysYear[isLeapYear]) {
                 break;
             }
-            y++;
+            year++;
             days -= numDaysYear[isLeapYear];
         }
     } else {
         do {
-            --y;
-            isLeapYear = IsLeapYear(y);
+            --year;
+            isLeapYear = IsLeapYear(year);
             days += numDaysYear[isLeapYear];
         } while (days < 0);
     }
-    datePtr->year = y;
-    datePtr->isLeapYear = IsLeapYear(y);
+    datePtr->year = year;
+    datePtr->isLeapYear = IsLeapYear(year);
     datePtr->yday = days;
     ip = numDaysMonth[datePtr->isLeapYear];
-    for (datePtr->mon = 0; days >= ip[datePtr->mon]; ++datePtr->mon) {
-        days -= ip[datePtr->mon];
+    for (mon = 0; days >= ip[mon]; mon++) {
+        days -= ip[mon];
     }
+    datePtr->mon = mon;
     datePtr->mday = days + 1;
+    datePtr->wday = GetDayOfWeek(year, mon + 1, days + 1);
+    fprintf(stderr, "year=%ld mon=%d mday=%ld wday=%ld\n",
+            datePtr->year, datePtr->mon, datePtr->mday, datePtr->wday);
     datePtr->isdst = 0;
 }
 
