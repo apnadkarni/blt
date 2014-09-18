@@ -114,6 +114,7 @@ typedef struct {
     int month;
     int year;
     int timeFormat;
+    time_t numDaysFromInitial;
 } Ticks;
 
 typedef struct {

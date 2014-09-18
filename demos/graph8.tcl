@@ -24,7 +24,7 @@ blt::graph .g
     -pixels 5
 
 .g axis configure x -title "Date" -timescale yes  -command FormatDate \
-    -rotate 90 -loose no
+    -rotate 90 -loose yes
 .g axis configure y -title "Value" 
 
 
@@ -73,6 +73,42 @@ proc years2 { t } {
 }
 
 proc years3 { t } {
+    $t row delete all
+    set year 1968
+    set month 1
+    set day 1
+    for { set i 0 } { $i < 25 } { incr i } {
+	incr year
+	set d1 [blt::date scan "$year/$month/$day"]
+	set d2 [clock scan "$month/$day/$year" -timezone :UTC]
+	if { $d1 != $d2 } {
+	    error "date scan and clock scan don't agree"
+	}
+	$t set $i "date" $d1
+	$t set $i "value" [expr sin($i/2.0)]
+	puts stderr [blt::date format [expr $d1]]
+    }
+}
+
+proc years4 { t } {
+    $t row delete all
+    set year 1899
+    set month 1
+    set day 1
+    for { set i 0 } { $i < 114 } { incr i } {
+	incr year
+	set d1 [blt::date scan "$year"]
+	set d2 [clock scan "$month/$day/$year" -timezone :UTC]
+	if { $d1 != $d2 } {
+	    error "date scan and clock scan don't agree"
+	}
+	$t set $i "date" $d1
+	$t set $i "value" [expr sin($i/2.0)]
+	puts stderr [blt::date format [expr $d1]]
+    }
+}
+
+proc years5 { t } {
     $t row delete all
     set year 1969
     set month 0
@@ -134,10 +170,17 @@ blt::comboentry .b \
 blt::combomenu $m \
     -text "Test" \
     -textvariable test
-foreach test { years1 years2 years3 months1 } {
+foreach {proc desc} { 
+    years1 "30 months, Major: 3 years, Minor: 12 months"
+    years2 "130 months, Major: 14 years, Minor: every 1 year"
+    years3 "25 years, Major: 30 years, Minor: every 2 years"
+    years4 "114 years, Major: 120 years: Minor: every 5 years"
+    years5 "Major: years < 3: Minor: 12 months"
+    months1 "Major years < 3: Minor: 12 months"
+} {
     $m add \
-	-text $test \
-	-command [list $test $t] \
+	-text $desc \
+	-command [list $proc $t] \
 	-variable test
 }
 
