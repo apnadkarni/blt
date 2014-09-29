@@ -47,7 +47,6 @@ set count 0
 foreach {label symbol fill color} $attributes {
     set y [blt::vector create]
     $y expr sin($x*($count))
-puts stderr "symbol=$symbol
     $graph element create line${count} \
 	-label $label -symbol $symbol -color $color -fill $fill -x $x -y $y
     $graph element lower line${count}

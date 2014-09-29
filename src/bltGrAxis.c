@@ -191,12 +191,12 @@ static Blt_CustomOption paletteOption =
 #define DEF_DECREASING		"0"
 #define DEF_FOREGROUND		RGB_BLACK
 #define DEF_GRID_BARCHART	"1"
-#define DEF_GRIDCOLOR		RGB_GREY64
+#define DEF_GRIDCOLOR		RGB_GREY40
 #define DEF_GRIDDASHES		"dot"
 #define DEF_GRID_GRAPH		"0"
 #define DEF_GRIDLINEWIDTH	"0"
 #define DEF_GRIDMINOR		"1"
-#define DEF_GRIDMINOR_COLOR	RGB_GREY64
+#define DEF_GRIDMINOR_COLOR	RGB_GREY77
 #define DEF_HIDE		"0"
 #define DEF_JUSTIFY		"c"
 #define DEF_LIMITS_FORMAT	(char *)NULL
@@ -400,10 +400,10 @@ static Tcl_FreeProc FreeAxis;
 static int GetAxisByClass(Tcl_Interp *interp, Graph *graphPtr, Tcl_Obj *objPtr,
 	ClassId classId, Axis **axisPtrPtr);
 static void TimeAxis(Axis *axisPtr, double min, double max);
-static double FirstMajorTick(Axis *axisPtr);
-static double NextMajorTick(Axis *axisPtr);
-static double FirstMinorTick(Axis *axisPtr);
-static double NextMinorTick(Axis *axisPtr);
+static Tick FirstMajorTick(Axis *axisPtr);
+static Tick NextMajorTick(Axis *axisPtr);
+static Tick FirstMinorTick(Axis *axisPtr);
+static Tick NextMinorTick(Axis *axisPtr);
 static int lastMargin;
 
 typedef int (GraphAxisProc)(Tcl_Interp *interp, Axis *axisPtr, int objc, 
@@ -1932,8 +1932,8 @@ LinearAxis(Axis *axisPtr, double min, double max)
     /* Now calculate the minor tick step and number. */
 
     if ((axisPtr->reqNumMinorTicks > 0) && (axisPtr->flags & AUTO_MAJOR)) {
+	step = 1.0 / (double)axisPtr->reqNumMinorTicks;
 	numTicks = axisPtr->reqNumMinorTicks - 1;
-	step = 1.0 / (numTicks + 1);
     } else {
 	numTicks = 0;			/* No minor ticks. */
         /* Don't set the minor tick interval to 0.0. It makes the
@@ -1941,7 +1941,7 @@ LinearAxis(Axis *axisPtr, double min, double max)
         step = 0.5;
     }
 
-    axisPtr->minor.ticks.initial = axisPtr->minor.ticks.step = step;
+    axisPtr->minor.ticks.step = step;
     axisPtr->minor.ticks.numSteps = numTicks;
     axisPtr->minor.ticks.scaleType = SCALE_LINEAR;
     /* Never generate minor ticks. */
@@ -2564,38 +2564,45 @@ MakeSegments(Axis *axisPtr, AxisInfo *infoPtr)
     }
     if (axisPtr->flags & SHOWTICKS) {
 	Blt_ChainLink link;
-	double labelPos, left, right;
+	double labelPos;
+        Tick left, right;
 
 	link = Blt_Chain_FirstLink(axisPtr->tickLabels);
 	labelPos = (double)infoPtr->label;
-	for (left = FirstMajorTick(axisPtr); FINITE(left); left = right) {
+	for (left = FirstMajorTick(axisPtr); left.isValid; left = right) {
+
             right = NextMajorTick(axisPtr);
-            if (FINITE(right)) {
-                double minor;
+            if (right.isValid) {
+                Tick minor;
 
                 /* If this isn't the last major tick, add minor ticks. */
-                axisPtr->minor.ticks.range = right - left;
-                axisPtr->minor.ticks.initial = left;
-                for (minor = FirstMinorTick(axisPtr); FINITE(minor); 
+                axisPtr->minor.ticks.range = right.value - left.value;
+                axisPtr->minor.ticks.initial = left.value;
+                for (minor = FirstMinorTick(axisPtr); minor.isValid; 
                      minor = NextMinorTick(axisPtr)) {
-                    if (InRange(minor, &axisPtr->axisRange)) {
+                    if (InRange(minor.value, &axisPtr->axisRange)) {
                         /* Add minor tick. */
-                        MakeTick(axisPtr, minor, infoPtr->t2, infoPtr->axis, s);
+                        MakeTick(axisPtr, minor.value, infoPtr->t2, 
+                                infoPtr->axis, s);
                         s++;
                     }else {
- fprintf(stderr, "minor not in range %.15g min=%.15g max=%.15g\n",
-                        minor, axisPtr->axisRange.min, axisPtr->axisRange.max);
+ fprintf(stderr, "minor %d not in range %.15g min=%.15g max=%.15g\n",
+         axisPtr->minor.ticks.index, minor.value, axisPtr->axisRange.min, 
+                        axisPtr->axisRange.max);
                     }
                 }        
             }
-            if (InRange(left, &axisPtr->axisRange)) {
+            if (InRange(left.value, &axisPtr->axisRange)) {
+                double mid;
+
                 /* Add major tick. This could be the last major tick. */
-                MakeTick(axisPtr, left, infoPtr->t1, infoPtr->axis, s);
+                MakeTick(axisPtr, left.value, infoPtr->t1, infoPtr->axis, s);
                 
-                if ((axisPtr->labelOffset) && FINITE(right)) {
-                    left = (right - left) * 0.5;
+                mid = left.value;
+                if ((axisPtr->labelOffset) && (right.isValid)) {
+                    mid = (right.value - left.value) * 0.5;
                 }
-                if (InRange(left, &axisPtr->axisRange)) {
+                if (InRange(mid, &axisPtr->axisRange)) {
                     TickLabel *labelPtr;
 
                     labelPtr = Blt_Chain_GetValue(link);
@@ -2609,10 +2616,6 @@ MakeSegments(Axis *axisPtr, AxisInfo *infoPtr)
                         labelPtr->anchorPos.x = labelPos;
                         labelPtr->anchorPos.y = s->p.y;
                     }
-                } else {
- fprintf(stderr, "label not in range %.15g min=%.15g max=%.15g\n",
-                        left, axisPtr->axisRange.min, axisPtr->axisRange.max);
-
                 }
                 s++;
             }
@@ -3096,8 +3099,8 @@ MakeGridLine(Axis *axisPtr, double value, Segment2d *s)
  * MapGridlines --
  *
  *	Assembles the grid lines associated with an axis. Generates tick
- *	positions if necessary (this happens when the axis is not a logical axis
- *	too).
+ *	positions if necessary (this happens when the axis is not a logical
+ *	axis too).
  *
  * Results:
  *	None.
@@ -3110,8 +3113,8 @@ MapGridlines(Axis *axisPtr)
     Segment2d *s1, *s2;
     Ticks *majorPtr, *minorPtr;
     int needed;
-    int i;
-
+    Tick left, right;
+    
     if (axisPtr == NULL) {
 	return;
     }
@@ -3144,27 +3147,25 @@ MapGridlines(Axis *axisPtr)
     }
     s1 = axisPtr->major.grid.segments;
     s2 = axisPtr->minor.grid.segments;
-    for (i = 0; i < majorPtr->numSteps; i++) {
-	double first, second, delta;
+    for (left = FirstMajorTick(axisPtr); left.isValid; left = right) {
+        right = NextMajorTick(axisPtr);
 
-	first  = majorPtr->values[i];
-	second = minorPtr->values[i];
-        delta = second - first;
-	if (axisPtr->flags & GRIDMINOR) {
-	    int j;
-
-	    for (j = 0; j < minorPtr->numSteps; j++) {
-		double x;
-
-		x = first + (delta * minorPtr->values[j]);
-		if (InRange(x, &axisPtr->axisRange)) {
-		    MakeGridLine(axisPtr, x, s2);
+        /* If this isn't the last major tick, add minor grid lines. */
+        if ((axisPtr->flags & GRIDMINOR) && (right.isValid)) {
+            Tick minor;
+            
+            axisPtr->minor.ticks.range = right.value - left.value;
+            axisPtr->minor.ticks.initial = left.value;
+            for (minor = FirstMinorTick(axisPtr); minor.isValid; 
+                 minor = NextMinorTick(axisPtr)) {
+		if (InRange(minor.value, &axisPtr->axisRange)) {
+		    MakeGridLine(axisPtr, minor.value, s2);
 		    s2++;
 		}
 	    }
 	}
-	if (InRange(first, &axisPtr->axisRange)) {
-	    MakeGridLine(axisPtr, first, s1);
+	if (InRange(left.value, &axisPtr->axisRange)) {
+	    MakeGridLine(axisPtr, left.value, s1);
 	    s1++;
 	}
     }
@@ -3218,27 +3219,27 @@ Blt_GetAxisGeometry(Graph *graphPtr, Axis *axisPtr)
     if (axisPtr->flags & SHOWTICKS) {
 	unsigned int pad;
 	unsigned int numTicks;
-        double left, right;
+        Tick left, right;
 
         numTicks = axisPtr->major.ticks.numSteps;
- fprintf(stderr, "numSteps=%d timeUnits=%ld range=%.15g\n", numTicks, axisPtr->major.ticks.timeUnits, axisPtr->major.ticks.range);
+ fprintf(stderr, "numSteps=%d timeUnits=%d range=%.15g\n", numTicks, axisPtr->major.ticks.timeUnits, axisPtr->major.ticks.range);
 	assert(numTicks <= MAXTICKS);
-	for (left = FirstMajorTick(axisPtr); FINITE(left); left = right) {
+	for (left = FirstMajorTick(axisPtr); left.isValid; left = right) {
 	    TickLabel *labelPtr;
             double mid;
 	    int lw, lh;			/* Label width and height. */
 
             right = NextMajorTick(axisPtr);
-            mid = left;
-            if ((axisPtr->labelOffset) && (FINITE(right))) {
-                mid = (right - left) * 0.5;
+            mid = left.value;
+            if ((axisPtr->labelOffset) && (right.isValid)) {
+                mid = (right.value - left.value) * 0.5;
             }
             if (!InRange(mid, &axisPtr->axisRange)) {
- fprintf(stderr, "mid not in range %.15g min=%.15g max=%.15g\n",
-                        mid, axisPtr->axisRange.min, axisPtr->axisRange.max);
+ fprintf(stderr, "mid %d not in range %.15g min=%.15g max=%.15g\n",
+         axisPtr->major.ticks.index, mid, axisPtr->axisRange.min, axisPtr->axisRange.max);
                 continue;
             }
-      	    labelPtr = MakeLabel(axisPtr, left);
+      	    labelPtr = MakeLabel(axisPtr, left.value);
 	    Blt_Chain_Append(axisPtr->tickLabels, labelPtr);
 	    /* 
 	     * Get the dimensions of each tick label.  Remember tick labels
@@ -5202,7 +5203,6 @@ Blt_AxisOp(Tcl_Interp *interp, Graph *graphPtr, int margin, int objc,
     return result;
 }
 
-
 void
 Blt_MapAxes(Graph *graphPtr)
 {
@@ -5669,14 +5669,15 @@ TimeAxis(Axis *axisPtr, double min, double max)
 #include <time.h>
 #include <sys/time.h>
 
-enum TimeUnits {
+typedef enum _TimeUnits {
     TIME_YEARS=1,
     TIME_MONTHS,
+    TIME_WEEKS,
     TIME_DAYS,
     TIME_HOURS,
     TIME_MINUTES,
     TIME_SECONDS,
-};
+} TimeUnits;
 
 enum TimeFormat {
     TIME_FORMAT_YEARS1,
@@ -5690,6 +5691,7 @@ enum TimeFormat {
 #define SECONDS_MINUTE        (60)
 #define SECONDS_HOUR          (SECONDS_MINUTE * 60)
 #define SECONDS_DAY           (SECONDS_HOUR * 24)
+#define SECONDS_WEEK          (SECONDS_DAY * 7)
 #define SECONDS_MONTH         (SECONDS_DAY * 30)
 #define SECONDS_YEAR          (SECONDS_DAY * 365)
 
@@ -5700,11 +5702,13 @@ static const int numDaysMonth[2][13] = {
 static const int numDaysYear[2] = { 365, 366 };
 
 #   define EPOCH           1970
+#   define EPOCH_WDAY      4            /* Thursday. */
 
-static int
-NumberDaysFromEpoch(time_t year)
+static long
+NumberDaysFromEpoch(int year)
 {
-    int y, numDays;
+    int y;
+    long numDays;
 
     numDays = 0;
     if (year >= EPOCH) {
@@ -5719,23 +5723,27 @@ NumberDaysFromEpoch(time_t year)
 }
 
 static double
-TimeFloor(Axis *axisPtr, double min, enum TimeUnits units, Blt_DateTime *datePtr)
+TimeFloor(Axis *axisPtr, double min, TimeUnits units, Blt_DateTime *datePtr)
 {
     double seconds;
-    Tcl_Interp *interp;
+    int mday;
 
-    interp = axisPtr->obj.graphPtr->interp;
     seconds = floor(min);
     Blt_SecondsToDate(seconds, datePtr);
+    fprintf(stderr, "TimeFloor units=%d week=%d y=%d m=%d mday=%d wday=%d yday=%d seconds=%.15g\n", 
+        units, datePtr->week, datePtr->year, datePtr->mon, 
+            datePtr->mday, datePtr->wday, datePtr->yday, seconds);
+    mday = 0;                           /* Suppress compiler warning. */
     switch (units) {
     case TIME_YEARS:
         datePtr->mon = 0;               /* 0-11 */
         /* fallthrough */
     case TIME_MONTHS:
-        datePtr->mday = 1;              /* 1-31, 0 is last day or preceding
+    case TIME_WEEKS:
+        mday = datePtr->mday;
+        datePtr->mday = 1;              /* 1-31, 0 is last day of preceding
                                          * month. */
-        datePtr->yday = datePtr->wday = 0;
-      /* fallthrough */
+        /* fallthrough */
     case TIME_DAYS:
         datePtr->hour = 0;              /* 0-23 */
         /* fallthrough */
@@ -5748,35 +5756,49 @@ TimeFloor(Axis *axisPtr, double min, enum TimeUnits units, Blt_DateTime *datePtr
     case TIME_SECONDS:
         break;
     }
-    datePtr->isdst = 0;
-    if (Blt_DateToSeconds(interp, datePtr, &seconds) != TCL_OK) {
- fprintf(stderr, "TimeFloor datetoseconds failed: %s\n",
-                Tcl_GetString(Tcl_GetObjResult(interp)));
+    if (units == TIME_WEEKS) {
+        mday -= datePtr->wday;
+        datePtr->wday = 0;
+        if (mday < 1) {
+            datePtr->mon--;
+            if (datePtr->mon < 0) {
+                datePtr->mon = 11;      /* 0-11 */
+                datePtr->year--;
+            }
+            mday += 
+                numDaysMonth[IsLeapYear(datePtr->year)][datePtr->mon];
+        }
+        datePtr->mday = mday;
     }
+    datePtr->isdst = 0;
+    Blt_DateToSeconds(datePtr, &seconds);
     return seconds;
 }
 
 static double
-TimeCeil(Axis *axisPtr, double max, enum TimeUnits units, Blt_DateTime *datePtr)
+TimeCeil(Axis *axisPtr, double max, TimeUnits units, Blt_DateTime *datePtr)
 {
     double seconds;
 
     seconds = ceil(max);
     switch (units) {
     case TIME_YEARS:
-        seconds += SECONDS_YEAR;
+        seconds += SECONDS_YEAR - 1;
         break;
     case TIME_MONTHS:
-        seconds += SECONDS_MONTH;
+        seconds += SECONDS_MONTH - 1;
+        break;
+    case TIME_WEEKS:
+        seconds += SECONDS_WEEK - 1;
         break;
     case TIME_DAYS:
-        seconds += SECONDS_DAY;
+        seconds += SECONDS_DAY - 1;
         break;
     case TIME_HOURS:
-        seconds += SECONDS_HOUR;
+        seconds += SECONDS_HOUR - 1;
         break;
     case TIME_MINUTES:
-        seconds += SECONDS_MINUTE;
+        seconds += SECONDS_MINUTE - 1;
         break;
     case TIME_SECONDS:
         seconds += 1.0;
@@ -5797,16 +5819,19 @@ GetMajorTimeUnits(double min, double max)
     if (range > (SECONDS_YEAR * 1.5)) {
         return TIME_YEARS;
     } 
-    if (range > (SECONDS_MONTH * 1.5)) {
+    if (range > (SECONDS_MONTH * 2.1)) {
 	return TIME_MONTHS;
     } 
-    if (range > SECONDS_DAY) {
+    if (range > (SECONDS_WEEK * 2)) {
+	return TIME_WEEKS;
+    } 
+    if (range > (SECONDS_DAY * 2)) {
 	return TIME_DAYS;
     }
-    if (range > SECONDS_HOUR) {
+    if (range > (SECONDS_HOUR * 2)) {
         return TIME_HOURS;
     }
-    if (range > SECONDS_MINUTE) {
+    if (range > (SECONDS_MINUTE * 2)) {
 	return TIME_MINUTES;
     }
     return TIME_SECONDS;
@@ -5815,7 +5840,6 @@ GetMajorTimeUnits(double min, double max)
 static void
 YearTicks(Axis *axisPtr, double min, double max)
 {
-    Tcl_Interp *interp;
     Blt_DateTime date1, date2;
     double step;
     int numTicks;
@@ -5827,13 +5851,12 @@ YearTicks(Axis *axisPtr, double min, double max)
         SCALE_TIME;
     fprintf(stderr, "YearTicks axis=%s, min=%.15g max=%.15g\n",
             axisPtr->obj.name, min, max);
-    interp = axisPtr->obj.graphPtr->interp;
     tickMin = TimeFloor(axisPtr, min, TIME_YEARS, &date1);
     tickMax = TimeCeil(axisPtr, max, TIME_YEARS, &date2);
     step = 1.0;
     numYears = date2.year - date1.year;
     if (numYears > 10) {
-        time_t year, first, last;
+        long minDays, maxDays;
         double range;
 
         axisPtr->major.ticks.timeFormat = TIME_FORMAT_YEARS10;
@@ -5849,33 +5872,30 @@ YearTicks(Axis *axisPtr, double min, double max)
          numYears, tickMin, tickMax, step, numTicks, min, max,
          axisPtr->major.ticks.timeFormat, range);
 
-        first = NumberDaysFromEpoch((time_t)tickMin);
-        last  = NumberDaysFromEpoch((time_t)tickMax);
-        tickMin = first * SECONDS_DAY;
-        tickMax = last * SECONDS_DAY;
- fprintf(stderr, "1. numYears=%.15g first=%ld last=%ld tickMin=%.15g tickMax=%.15g, step=%.15g nt=%d min=%.15g max=%.15g, tf=%d\n", 
-         numYears, first, last, tickMin, tickMax, step, numTicks, min, max,
-         axisPtr->major.ticks.timeFormat);
+        minDays = NumberDaysFromEpoch((int)tickMin);
+        maxDays  = NumberDaysFromEpoch((int)tickMax);
+        tickMin = minDays * SECONDS_DAY;
+        tickMax = maxDays * SECONDS_DAY;
+ fprintf(stderr, "1. numYears=%.15g minDays=%ld maxDays=%ld tickMin=%.15g tickMax=%.15g, step=%.15g nt=%d min=%.15g max=%.15g, tf=%d\n", 
+         numYears, minDays, maxDays, tickMin, tickMax, step, numTicks, min, max, axisPtr->major.ticks.timeFormat);
         axisPtr->major.ticks.year = tickMin;
         axisPtr->minor.ticks.timeUnits = TIME_YEARS;
         if (step > 5) {
             axisPtr->minor.ticks.numSteps = 1;
-            axisPtr->minor.ticks.step = 5;
+            axisPtr->minor.ticks.step = step / 2;
         } else {
             axisPtr->minor.ticks.step = 1; /* Years */
             axisPtr->minor.ticks.numSteps = step - 1;
         }
     } else {
-        time_t year;
-
-        numTicks = (time_t)numYears + 1;
+        numTicks = numYears + 1;
         step = 0;                       /* Number of days in the year */
 
         tickMin = NumberDaysFromEpoch(date1.year) * SECONDS_DAY;
         tickMax = NumberDaysFromEpoch(date2.year) * SECONDS_DAY;
         
         axisPtr->major.ticks.year = date1.year;
-        if (numYears > 3) {
+        if (numYears > 5) {
             axisPtr->major.ticks.timeFormat = TIME_FORMAT_YEARS5;
 
             axisPtr->minor.ticks.step = (SECONDS_YEAR+1) / 2; /* 1/2 year */
@@ -5917,19 +5937,20 @@ YearTicks(Axis *axisPtr, double min, double max)
 static void
 MonthTicks(Axis *axisPtr, double min, double max)
 {
-    Blt_DateTime date1, date2;
-    time_t numMonths, step;
+    Blt_DateTime left, right;
+    int numMonths;
+    double step;
     int numTicks;
     double tickMin, tickMax;            /* months. */
     double axisMin, axisMax;            /* seconds. */
     
  fprintf(stderr, "Month Ticks\n");
-    tickMin = axisMin = TimeFloor(axisPtr, min, TIME_MONTHS, &date1);
-    tickMax = axisMax = TimeCeil(axisPtr, max, TIME_MONTHS, &date2);
-    if (date2.year > date1.year) {
-        date2.mon += 12;
+    tickMin = axisMin = TimeFloor(axisPtr, min, TIME_MONTHS, &left);
+    tickMax = axisMax = TimeCeil(axisPtr, max, TIME_MONTHS, &right);
+    if (right.year > left.year) {
+        right.mon += 12;
     }
-    numMonths = date2.mon - date1.mon;
+    numMonths = right.mon - left.mon;
     numTicks = numMonths + 1;
     step = 1;
     if ((axisPtr->looseMin == TIGHT) || ((axisPtr->looseMin == LOOSE) &&
@@ -5947,41 +5968,76 @@ MonthTicks(Axis *axisPtr, double min, double max)
     axisPtr->major.ticks.initial = tickMin;
     axisPtr->major.ticks.numSteps = numTicks;
     axisPtr->major.ticks.step = step;
+    axisPtr->major.ticks.range = tickMax - tickMin;
+    axisPtr->major.ticks.isLeapYear = left.isLeapYear;
+    axisPtr->major.ticks.month = left.mon;
+    axisPtr->major.ticks.year = left.year;
     axisPtr->major.ticks.timeUnits = TIME_MONTHS;
     axisPtr->major.ticks.scaleType = SCALE_TIME;
-    axisPtr->major.ticks.range = tickMax - tickMin;
-    axisPtr->major.ticks.isLeapYear = date1.isLeapYear;
-    axisPtr->major.ticks.month = date1.mon;
-    axisPtr->major.ticks.year = date1.year;
     
+    fprintf(stderr, "major month: step=%.15g tickMin=%.15g tickMax=%.15g nt=%d left=%d, right=%d min=%.15g max=%.15g\n",
+            step, tickMin, tickMax, numTicks, left.mon, right.mon, min, max);
+
     axisPtr->minor.ticks.numSteps = 1;
     axisPtr->minor.ticks.step = axisPtr->major.ticks.range * 0.5;
-    axisPtr->minor.ticks.initial = 0;
+    axisPtr->minor.ticks.month = left.mon;
+    axisPtr->minor.ticks.year = left.year;
     axisPtr->minor.ticks.timeUnits = TIME_DAYS;
     axisPtr->minor.ticks.scaleType = SCALE_TIME;
-    axisPtr->minor.ticks.range = 0;
-    axisPtr->minor.ticks.month = date1.mon;
-    axisPtr->minor.ticks.year = date1.year;
 
 }
 
+/* 
+ *---------------------------------------------------------------------------
+ *
+ * WeekTicks --
+ *
+ *    Calculate the ticks for a major axis divided into weeks.  The step for
+ *    week ticks is 1 week if the number of week is less than 6.  Otherwise
+ *    we compute the linear version of 
+ *
+ *---------------------------------------------------------------------------
+ */
 static void
-DayTicks(Axis *axisPtr, double min, double max)
+WeekTicks(Axis *axisPtr, double min, double max)
 {
-    Blt_DateTime first, last;
-    time_t numDays, step;
+    Blt_DateTime left, right;
+    int numWeeks;
+    double step;
     int numTicks;
     double tickMin, tickMax;            /* days. */
     double axisMin, axisMax;            /* seconds. */
 
-    tickMin = axisMin = TimeFloor(axisPtr, min, TIME_DAYS, &first);
-    tickMax = axisMax = TimeCeil(axisPtr, max, TIME_DAYS, &last);
-    if (last.mon > first.mon) {
-        last.mday += numDaysMonth[first.isLeapYear][first.mon];
+ fprintf(stderr, "Week Ticks min=%.15g max=%.15g\n", min, max);
+    tickMin = axisMin = TimeFloor(axisPtr, min, TIME_WEEKS, &left);
+    tickMax = axisMax = TimeCeil(axisPtr, max, TIME_WEEKS, &right);
+    numWeeks = (tickMax - tickMin) / SECONDS_WEEK;
+ fprintf(stderr, "0. numWeeks=%d tickMin=%.15g tickMax=%.15g y=%d m=%d mday=%d yday=%d wday=%d\n", 
+         numWeeks, tickMin, tickMax, 
+         left.year, left.mon, left.mday, left.yday, left.wday);
+    if (numWeeks > 5) {
+        double range, s;
+        int minWeek, maxWeek;
+
+        range = numWeeks;
+        range = NiceNum(range, 0);
+        s = step = NiceNum(range / axisPtr->reqNumMajorTicks, 1);
+        numTicks = (int)(range / step) + 1;
+        step *= SECONDS_WEEK;
+        tickMin = UFLOOR(tickMin, step);
+        tickMax = UCEIL(tickMax, step);
+        tickMin += (7 - EPOCH_WDAY)*SECONDS_DAY;
+        tickMax -= EPOCH_WDAY*SECONDS_DAY;
+        axisMin = tickMin;
+        axisMax = tickMax;
+ fprintf(stderr, "1. numWeeks=%d range=%.15g s=%.15g tickMin=%.15g tickMax=%.15g, range=%.15g step=%.15g nt=%d\n", 
+         numWeeks, range, s, tickMin, tickMax, range, step, numTicks);
+        
+    } else {
+        numTicks = numWeeks + 1;
+        step = SECONDS_WEEK;
     }
-    numDays = last.mday - first.mday;
-    numTicks = numDays + 1;
-    step = SECONDS_DAY;
+
     if ((axisPtr->looseMin == TIGHT) || ((axisPtr->looseMin == LOOSE) &&
 	 (DEFINED(axisPtr->reqMin)))) {
 	axisMin = min;
@@ -5991,43 +6047,119 @@ DayTicks(Axis *axisPtr, double min, double max)
 	axisMax = max;
     }
     SetAxisRange(&axisPtr->axisRange, axisMin, axisMax);
+
+    axisPtr->major.ticks.step = step;
+    axisPtr->major.ticks.initial = tickMin;
+    axisPtr->major.ticks.numSteps = numTicks;
+    axisPtr->major.ticks.timeUnits = TIME_WEEKS;
+    axisPtr->major.ticks.range = tickMax - tickMin;
+    axisPtr->major.ticks.scaleType = SCALE_TIME;
+    fprintf(stderr, "major week: step=%.15g tickMin=%.15g nt=%d left=%d, right=%d min=%.15g max=%.15g\n",
+            step, tickMin, numTicks, left.week, right.week, min, max);
+    axisPtr->minor.ticks.step = SECONDS_DAY;
+    axisPtr->minor.ticks.numSteps = 6;  
+    axisPtr->minor.ticks.timeUnits = TIME_DAYS;
+    axisPtr->minor.ticks.scaleType = SCALE_TIME;
+}
+
+
+/* 
+ *---------------------------------------------------------------------------
+ *
+ * DayTicks --
+ *
+ *    Calculate the ticks for a major axis divided into days.  The step for
+ *    day ticks is always 1 day.  There is no multiple of days that fits 
+ *    evenly into a week or month.
+ *
+ *---------------------------------------------------------------------------
+ */
+static void
+DayTicks(Axis *axisPtr, double min, double max)
+{
+    Blt_DateTime left, right;
+    int numDays, numTicks;
+    double step;
+    double tickMin, tickMax;            /* days. */
+    double axisMin, axisMax;            /* seconds. */
+
+ fprintf(stderr, "Day Ticks min=%.15g max=%.15g\n", min, max);
+    tickMin = axisMin = TimeFloor(axisPtr, min, TIME_DAYS, &left);
+    tickMax = axisMax = TimeCeil(axisPtr, max, TIME_DAYS, &right);
+    numDays = (tickMax - tickMin) / SECONDS_DAY;
+    numTicks = numDays + 1;
+    step = SECONDS_DAY;
+
+    if ((axisPtr->looseMin == TIGHT) || ((axisPtr->looseMin == LOOSE) &&
+	 (DEFINED(axisPtr->reqMin)))) {
+	axisMin = min;
+    }
+    if ((axisPtr->looseMax == TIGHT) || ((axisPtr->looseMax == LOOSE) &&
+	 (DEFINED(axisPtr->reqMax)))) {
+	axisMax = max;
+    }
+    SetAxisRange(&axisPtr->axisRange, axisMin, axisMax);
+
     axisPtr->major.ticks.step = step;
     axisPtr->major.ticks.initial = tickMin;
     axisPtr->major.ticks.numSteps = numTicks;
     axisPtr->major.ticks.timeUnits = TIME_DAYS;
-    axisPtr->major.ticks.scaleType = SCALE_TIME;
     axisPtr->major.ticks.range = tickMax - tickMin;
-
-    axisPtr->minor.ticks.step = SECONDS_HOUR * 4;
+    axisPtr->major.ticks.scaleType = SCALE_TIME;
+    fprintf(stderr, "major day: step=%.15g tickMin=%.15g tickMax=%.15g nt=%d left=%d, right=%d min=%.15g max=%.15g\n",
+            step, tickMin, tickMax, numTicks, left.mday, right.mday, min, max);
+    axisPtr->minor.ticks.step = SECONDS_HOUR * 6;
     axisPtr->minor.ticks.initial = 0;
-    axisPtr->minor.ticks.numSteps = 4;  /* 6 - 2 */
+    axisPtr->minor.ticks.numSteps = 2;  /* 6 - 2 */
     axisPtr->minor.ticks.timeUnits = TIME_HOURS;
     axisPtr->minor.ticks.scaleType = SCALE_TIME;
-    axisPtr->minor.ticks.range = 0;
 }
 
+/* 
+ *---------------------------------------------------------------------------
+ *
+ * HourTicks --
+ *
+ *    Calculate the ticks for a major axis divided in hours.  The hour step
+ *    should evenly divide into 24 hours, so we select the step based on the 
+ *    number of hours in the range.
+ *
+ *---------------------------------------------------------------------------
+ */
 static void
 HourTicks(Axis *axisPtr, double min, double max)
 {
-    Blt_DateTime first, last;
+    Blt_DateTime left, right;
     double axisMin, axisMax;            
     double tickMin, tickMax;            
     int numTicks;
-    time_t numHours, step;
+    int numHours;
 
-    tickMin = axisMin = TimeFloor(axisPtr, min, TIME_HOURS, &first);
-    tickMax = axisMax = TimeCeil(axisPtr, max, TIME_HOURS, &last);
-    if (last.mday > first.mday) {
-        last.hour += 24;
-    }
-    numHours = last.mday - first.mday;
-    if (numHours > 12) {
+    double step;
+
+ fprintf(stderr, "Hour Ticks\n");
+    tickMin = axisMin = TimeFloor(axisPtr, min, TIME_HOURS, &left);
+    tickMax = axisMax = TimeCeil(axisPtr, max, TIME_HOURS, &right);
+    numHours = (tickMax - tickMin) / SECONDS_HOUR;
+    if (numHours < 7) {                 /* 3-6 hours */
+        step = SECONDS_HOUR;            
+    } else if (numHours < 13) {         /* 7-12 hours */
+        step = SECONDS_HOUR * 2;
+    } else if (numHours < 25) {         /* 13-24 hours */
         step = SECONDS_HOUR * 4;
-        numTicks = numHours / 6 + 1;
-    } else {
-        step = SECONDS_HOUR;
-        numTicks = numHours + 1;
+    } else if (numHours < 36) {         /* 23-35 hours */
+        step = SECONDS_HOUR * 6;
+    } else {                            /* 33-48 hours */
+        step = SECONDS_HOUR * 8;
     }
+
+    axisMin = tickMin = UFLOOR(tickMin, step);
+    axisMax = tickMax = UCEIL(tickMax, step);
+    numTicks = ((tickMax - tickMin) / (long)step) + 1;
+
+    fprintf(stderr, "step=%.15g tickMin=%.15g, tickMax=%.15g, numTicks=%d\n",
+            step, tickMin, tickMax, numTicks);
+
     if ((axisPtr->looseMin == TIGHT) || ((axisPtr->looseMin == LOOSE) &&
 	 (DEFINED(axisPtr->reqMin)))) {
 	axisMin = min;
@@ -6040,43 +6172,55 @@ HourTicks(Axis *axisPtr, double min, double max)
     axisPtr->major.ticks.step = step;
     axisPtr->major.ticks.initial = tickMin;
     axisPtr->major.ticks.numSteps = numTicks;
+    axisPtr->major.ticks.range = tickMax - tickMin;
     axisPtr->major.ticks.timeUnits = TIME_HOURS;
     axisPtr->major.ticks.scaleType = SCALE_TIME;
-    axisPtr->major.ticks.range = tickMax - tickMin;
 
-    axisPtr->minor.ticks.step = SECONDS_MINUTE * 10;
-    axisPtr->minor.ticks.initial = 0;
+    fprintf(stderr, "major hour: step=%.15g tickMin=%.15g tickMax=%.15g numHours=%d nt=%d left=%d, right=%d min=%.15g max=%.15g\n",
+            step, tickMin, tickMax, numHours, numTicks, left.hour, right.hour, min, max);
+
+    axisPtr->minor.ticks.step = step / 4;
     axisPtr->minor.ticks.numSteps = 4;  /* 6 - 2 */
     axisPtr->minor.ticks.timeUnits = TIME_MINUTES;
     axisPtr->minor.ticks.scaleType = SCALE_TIME;
-    axisPtr->minor.ticks.range = 0;
 }
 
+/* 
+ *---------------------------------------------------------------------------
+ *
+ * MinuteTicks --
+ *
+ *    Calculate the ticks for a major axis divided in minutes.  Minutes can
+ *    be in steps of 5 or 10 so we can use the standard tick selecting
+ *    procedures.
+ *
+ *---------------------------------------------------------------------------
+ */
 static void
 MinuteTicks(Axis *axisPtr, double min, double max)
 {
-    Blt_DateTime first, last;
-    time_t step, numMinutes;
-    int numTicks;
+    Blt_DateTime left, right;
+    int numMinutes, numTicks;
+    double step, range;
     double tickMin, tickMax;            /* minutes. */
     double axisMin, axisMax;            /* seconds. */
 
-    tickMin = axisMin = TimeFloor(axisPtr, min, TIME_MINUTES, &first);
-    tickMax = axisMax = TimeCeil(axisPtr, max, TIME_MINUTES, &last);
-    if (last.hour > first.hour) {
-        last.min += 60;              /* It's OK if it's not accurate. */
-    }
-    numMinutes = last.min - first.min;
-    if (numMinutes > 30) {
-        step = SECONDS_MINUTE * 10;
-        numTicks = numMinutes / 10 + 1;
-    } else if (numMinutes > 20) {
-        step = SECONDS_MINUTE * 5;
-        numTicks = numMinutes / 5 + 1;
-    } else {
-        step = SECONDS_MINUTE;
-        numTicks = numMinutes + 1;
-    }
+ fprintf(stderr, "Minute Ticks min=%.15g max=%.15g\n", min, max);
+    tickMin = axisMin = TimeFloor(axisPtr, min, TIME_MINUTES, &left);
+    tickMax = axisMax = TimeCeil(axisPtr, max, TIME_MINUTES, &right);
+    numMinutes = (tickMax - tickMin) / SECONDS_MINUTE;
+
+    range = numMinutes;
+    range = NiceNum(range, 0);
+    step = NiceNum(range / axisPtr->reqNumMajorTicks, 1);
+    numTicks = (int)(range / step) + 1;
+    step *= SECONDS_MINUTE;
+    axisMin = tickMin = UFLOOR(tickMin, step);
+    axisMax = tickMax = UCEIL(tickMax, step);
+
+    fprintf(stderr, "1. numMinutes=%d tickMin=%.15g tickMax=%.15g, range=%.15g step=%.15g nt=%d\n", 
+         numMinutes, tickMin, tickMax, range, step, numTicks);
+
     if ((axisPtr->looseMin == TIGHT) || ((axisPtr->looseMin == LOOSE) &&
 	 (DEFINED(axisPtr->reqMin)))) {
 	axisMin = min;
@@ -6096,14 +6240,25 @@ MinuteTicks(Axis *axisPtr, double min, double max)
     axisPtr->major.ticks.scaleType = SCALE_TIME;
     axisPtr->major.ticks.range = tickMax - tickMin;
 
-    axisPtr->minor.ticks.step = SECONDS_MINUTE * 10;
-    axisPtr->minor.ticks.initial = 0;
-    axisPtr->minor.ticks.numSteps = 4 /* 6 - 2 */;
-    axisPtr->minor.ticks.timeUnits = TIME_SECONDS;
+    axisPtr->minor.ticks.step = step / (axisPtr->reqNumMinorTicks - 1);
+    axisPtr->minor.ticks.numSteps = axisPtr->reqNumMinorTicks;
+    axisPtr->minor.ticks.timeUnits = TIME_MINUTES;
     axisPtr->minor.ticks.scaleType = SCALE_TIME;
-    axisPtr->minor.ticks.range = 0;
+ fprintf(stderr, "2. minor: range=%.15g step=%.15g nt=%d\n", 
+         step, axisPtr->minor.ticks.step, axisPtr->minor.ticks.numSteps);
 }
 
+/* 
+ *---------------------------------------------------------------------------
+ *
+ * SecondTicks --
+ *
+ *    Calculate the ticks for a major axis divided into seconds.  Seconds
+ *    can be in steps of 5 or 10 so we can use the standard tick selecting
+ *    procedures.
+ *
+ *---------------------------------------------------------------------------
+ */
 static void
 SecondTicks(Axis *axisPtr, double min, double max)
 {
@@ -6112,6 +6267,7 @@ SecondTicks(Axis *axisPtr, double min, double max)
     double tickMin, tickMax;            /* minutes. */
     double axisMin, axisMax;            /* seconds. */
 
+ fprintf(stderr, "Second Ticks\n");
     range = max - min;
     step = 1.0;
     if (axisPtr->reqStep > 0.0) {
@@ -6175,6 +6331,9 @@ TimeAxis(Axis *axisPtr, double min, double max)
     case TIME_MONTHS:
         MonthTicks(axisPtr, min, max);
         break;
+    case TIME_WEEKS:
+        WeekTicks(axisPtr, min, max);
+        break;
     case TIME_DAYS:
         DayTicks(axisPtr, min, max);
         break;
@@ -6204,22 +6363,38 @@ static double logTable[] = {
 };
 
 
-static double
+static Tick
 FirstMajorTick(Axis *axisPtr)
 {
-    double value;                       /* Major tick. */
     Ticks *ticksPtr;
+    Tick tick;
 
     ticksPtr = &axisPtr->major.ticks;
     ticksPtr->index = 0;
     ticksPtr->numDaysFromInitial = 0;
+    tick.isValid = FALSE;
+    tick.value = Blt_NaN();
     switch (ticksPtr->scaleType) {
-    case SCALE_CUSTOM:                  /* User defined minor ticks */
-        value = ticksPtr->values[0];
-        break;
     case SCALE_LOG:
+    case SCALE_LINEAR:
+        /* The number of major ticks and the step has been computed in
+         * LinearAxis. */
+        tick.value = ticksPtr->initial;
+        break;
+    case SCALE_CUSTOM:                  /* User defined minor ticks */
+        tick.value = ticksPtr->values[0];
+        break;
     case SCALE_TIME:
         switch (ticksPtr->timeUnits) {
+        case TIME_YEARS:
+            {
+                Blt_DateTime date;
+
+                Blt_SecondsToDate(ticksPtr->initial, &date);
+                ticksPtr->isLeapYear = date.isLeapYear;
+                ticksPtr->year = date.year;
+            }
+            break;
         case TIME_MONTHS:
             if (ticksPtr->numSteps <= 3) {
                 axisPtr->minor.ticks.numSteps = 
@@ -6227,44 +6402,48 @@ FirstMajorTick(Axis *axisPtr)
                 axisPtr->minor.ticks.step = SECONDS_DAY;
             } 
             break;
+        case TIME_DAYS: 
+        case TIME_WEEKS:
+            break;
         }
-        value = ticksPtr->initial;
-        break;
-    case SCALE_LINEAR:
-        /* The number of major ticks and the step has been computed in
-         * LinearAxis. */
-        value = ticksPtr->initial;
+        tick.value = ticksPtr->initial;
         break;
     }
     if (ticksPtr->index >= ticksPtr->numSteps) {
-        return Blt_NaN();
+        return tick;
     }
-    return value;
+    tick.isValid = TRUE;
+    return tick;
 }
 
-static double
+static Tick
 NextMajorTick(Axis *axisPtr)
 {
     double d;                           /* Delta from initial to major
                                          * tick. */
     Ticks *ticksPtr;
+    Tick tick;
 
     ticksPtr = &axisPtr->major.ticks;
     ticksPtr->index++;
+    tick.isValid = FALSE;
+    tick.value = Blt_NaN();
     if (ticksPtr->index >= ticksPtr->numSteps) {
-        return Blt_NaN();
+        return tick;
     }
     d = 0.0;                            /* Suppress compiler warning. */
     switch (ticksPtr->scaleType) {
-    case SCALE_CUSTOM:                  /* User defined minor ticks */
-        return ticksPtr->values[ticksPtr->index];
-    case SCALE_LOG:
-        d = ticksPtr->range * logTable[ticksPtr->index];
-        break;
     case SCALE_LINEAR:
         d = ticksPtr->index * ticksPtr->step;
         d = UROUND(d, ticksPtr->step);
         break;
+    case SCALE_LOG:
+        d = ticksPtr->range * logTable[ticksPtr->index];
+        break;
+    case SCALE_CUSTOM:                  /* User defined minor ticks */
+        tick.value = ticksPtr->values[ticksPtr->index];
+        tick.isValid = TRUE;
+        return tick;
     case SCALE_TIME:
         switch (ticksPtr->timeUnits) {
         case TIME_YEARS:
@@ -6274,9 +6453,9 @@ NextMajorTick(Axis *axisPtr)
                     int i;
                     
                     for (i = 0; i < ticksPtr->step; i++) {
-                        time_t year, numDays;
+                        int year, numDays;
                         
-                        year = ticksPtr->year + i;
+                        year = ticksPtr->year++;
                         numDays = numDaysYear[IsLeapYear(year)]; 
                         ticksPtr->numDaysFromInitial += numDays;
                     }
@@ -6290,7 +6469,7 @@ NextMajorTick(Axis *axisPtr)
                     
                     d = 0.0;
                     for (i = 0; i < ticksPtr->index; i++) {
-                        time_t year, numDays;
+                        int year, numDays;
                         
                         year = ticksPtr->year + i;
                         numDays = numDaysYear[IsLeapYear(year)]; 
@@ -6302,7 +6481,8 @@ NextMajorTick(Axis *axisPtr)
             break;
         case TIME_MONTHS:
             {
-                time_t numDays, mon, year;
+                long numDays;
+                int mon, year;
                 int i;
 
                 numDays = 0;
@@ -6317,9 +6497,12 @@ NextMajorTick(Axis *axisPtr)
                 d = numDays * SECONDS_DAY;
             }
             break;
-        case TIME_DAYS:
+        case TIME_WEEKS:
         case TIME_HOURS:
         case TIME_MINUTES:
+            d = ticksPtr->index * ticksPtr->step;
+            break;
+        case TIME_DAYS:
             d = ticksPtr->index * ticksPtr->step;
             break;
         case TIME_SECONDS:
@@ -6329,30 +6512,34 @@ NextMajorTick(Axis *axisPtr)
         }
         break;
     }
-    return  ticksPtr->initial + d;
+    tick.value = ticksPtr->initial + d;
+    tick.isValid = TRUE;
+    return tick;
 }
 
-static double
+static Tick
 FirstMinorTick(Axis *axisPtr)
 {
     double d;                           /* Delta from major to minor
                                          * tick. */
     Ticks *ticksPtr;
+    Tick tick;
 
     ticksPtr = &axisPtr->minor.ticks;
     ticksPtr->numDaysFromInitial = 0;
     ticksPtr->index = 0;
+    tick.isValid = FALSE;
+    tick.value = Blt_NaN();
     d = 0.0;                            /* Suppress compiler warning. */
     switch (ticksPtr->scaleType) {
+    case SCALE_LINEAR:
+        d = ticksPtr->step * ticksPtr->range;
+        break;
     case SCALE_CUSTOM:                  /* User defined minor ticks */
         d = ticksPtr->values[0] * ticksPtr->range;
         break;
     case SCALE_LOG:
         d = logTable[0] * ticksPtr->range;
-        break;
-    case SCALE_LINEAR:
-        d = ticksPtr->step;
-        d = UROUND(d, ticksPtr->step);
         break;
     case SCALE_TIME:
         switch (ticksPtr->timeUnits) {
@@ -6365,9 +6552,9 @@ FirstMinorTick(Axis *axisPtr)
                 ticksPtr->isLeapYear = date.isLeapYear;
                 ticksPtr->year = date.year;
                 for (i = 0; i < ticksPtr->step; i++) {
-                    time_t year, numDays;
+                    int year, numDays;
 
-                    year = ticksPtr->year + i;
+                    year = ticksPtr->year++;
                     numDays = numDaysYear[IsLeapYear(year)];
                     ticksPtr->numDaysFromInitial += numDays;
                 }
@@ -6377,7 +6564,7 @@ FirstMinorTick(Axis *axisPtr)
         case TIME_MONTHS:
             {
                 Blt_DateTime date;
-                time_t numDays;
+                int numDays;
 
                 Blt_SecondsToDate(ticksPtr->initial, &date);
                 ticksPtr->isLeapYear = date.isLeapYear;
@@ -6393,8 +6580,10 @@ FirstMinorTick(Axis *axisPtr)
             } 
             d = ticksPtr->step;
             break;
+        case TIME_WEEKS:
         case TIME_HOURS:
         case TIME_MINUTES:
+            ticksPtr->step = ticksPtr->range / ticksPtr->numSteps;
             d = ticksPtr->step;
             break;
         case TIME_SECONDS:
@@ -6407,33 +6596,38 @@ FirstMinorTick(Axis *axisPtr)
         break;
     }
     if (ticksPtr->index >= ticksPtr->numSteps) {
-        return Blt_NaN();
+        return tick;
     }
-    return  ticksPtr->initial + d;
+    tick.isValid = TRUE;
+    tick.value = ticksPtr->initial + d;
+    return tick;
 }
 
-static double
+static Tick
 NextMinorTick(Axis *axisPtr)
 {
     double d;                           /* Delta from major to minor
                                          * tick. */
     Ticks *ticksPtr;
+    Tick tick;
 
     ticksPtr = &axisPtr->minor.ticks;
     ticksPtr->index++;
+    tick.isValid = FALSE;
+    tick.value = Blt_NaN();
     if (ticksPtr->index >= ticksPtr->numSteps) {
-        return Blt_NaN();
+        return tick;
     }
     d = 0.0;                            /* Suppress compiler warning. */
     switch (ticksPtr->scaleType) {
+    case SCALE_LINEAR:
+        d = ticksPtr->range * (ticksPtr->index + 1) * ticksPtr->step;
+        break;
     case SCALE_CUSTOM:                  /* User defined minor ticks */
         d = ticksPtr->range * ticksPtr->values[ticksPtr->index];
         break;
     case SCALE_LOG:
         d = ticksPtr->range * logTable[ticksPtr->index];
-        break;
-    case SCALE_LINEAR:
-        d = ticksPtr->range * ticksPtr->index * ticksPtr->step;
         break;
     case SCALE_TIME:
         switch (ticksPtr->timeUnits) {
@@ -6442,9 +6636,9 @@ NextMinorTick(Axis *axisPtr)
                 int i;
 
                 for (i = 0; i < ticksPtr->step; i++) {
-                    time_t year, numDays;
+                    int year, numDays;
 
-                    year = ticksPtr->year + ticksPtr->index + i;
+                    year = ticksPtr->year++;
                     numDays = numDaysYear[IsLeapYear(year)];
                     ticksPtr->numDaysFromInitial += numDays;
                 }
@@ -6453,13 +6647,13 @@ NextMinorTick(Axis *axisPtr)
             break;
         case TIME_MONTHS:
             {
-                time_t numDays, mon, year;
+                int mon, year;
                 int i;
 
                 d = 0.0;
                 mon = ticksPtr->month + 1, year = ticksPtr->year;
                 for (i = 0; i <= ticksPtr->index; i++, mon++) {
-                    time_t numDays;
+                    int numDays;
 
                     if (mon > 11) {
                         mon = 0;
@@ -6471,6 +6665,7 @@ NextMinorTick(Axis *axisPtr)
                 d *= SECONDS_DAY;
             }
             break;
+        case TIME_WEEKS:
         case TIME_DAYS:
         case TIME_HOURS:
         case TIME_MINUTES:
@@ -6482,6 +6677,8 @@ NextMinorTick(Axis *axisPtr)
         }
         break;
     }
-    return  ticksPtr->initial + d;
+    tick.isValid = TRUE;
+    tick.value = ticksPtr->initial + d;
+    return tick;
 }
 

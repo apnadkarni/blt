@@ -83,6 +83,21 @@ typedef struct {
     char string[1];
 } TickLabel;
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * TickLabel --
+ *
+ * 	Structure containing the X-Y screen coordinates of the tick label
+ * 	(anchored at its center).
+ *
+ *---------------------------------------------------------------------------
+ */
+typedef struct {
+    int isValid;
+    double value;
+} Tick;
+
 typedef enum  _AxisScaleType {
     SCALE_LINEAR, SCALE_LOG, SCALE_TIME, SCALE_CUSTOM
 }  AxisScaleType;
@@ -100,21 +115,20 @@ typedef enum  _AxisScaleType {
 typedef struct {
     double initial;			/* Initial value */
     double step;                        /* Size of interval */
+    double range;                       /* Range of entire sweep. */
+    AxisScaleType scaleType;            /* Scale type. */
+    time_t numDaysFromInitial;
     int numSteps;			/* Number of intervals. */
     int index;                          /* Current index of iterator. */
-    AxisScaleType scaleType;            /* Scale type. */
-    double range;                       /* Range of entire sweep. */
     int isLeapYear;                     /* Indicates if the major tick
                                          * value is a leap year. */
     int timeUnits;                      /* Indicates the time units of the
                                          * sweep. */
-    double *values;                     /* Array of tick values
-                                         * (malloc-ed). */
-    Grid grid;                          /* Axis grid information. */
     int month;
     int year;
     int timeFormat;
-    time_t numDaysFromInitial;
+    double *values;                     /* Array of tick values
+                                         * (malloc-ed). */
 } Ticks;
 
 typedef struct {

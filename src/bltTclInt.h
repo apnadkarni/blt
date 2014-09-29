@@ -1,5 +1,4 @@
 /* -*- mode: c; c-basic-offset: 4; indent-tabs-mode: nil -*- */
-/* -*- mode: c; c-basic-offset: 4; fill-column: 78; column-indent: 40 -*- */
 /*
  * bltTclInt.h --
  *
@@ -78,16 +77,19 @@ typedef struct _Blt_Pid {
 #include <sys/time.h>
 
 typedef struct {
-    time_t sec;				/* Second. 0-60. */
-    time_t min;				/* Minute 0-59 */
-    time_t hour;			/* Hour 0-23. */
-    time_t mday;			/* Day of the month. 1-31. */
-    time_t mon;				/* Month 0-11. */
-    time_t year;			/* Year 0-9999. */
-    time_t wday;			/* Day of week. 1-7. */
-    time_t yday;			/* Day of the year. 1-366. */
-    time_t week;			/* Ordinal week. 1-53. */
-    float frac;				/* Fractional seconds. */
+    int year;                           /* Year 0-9999. */
+    int mon;				/* Month 0-11. */
+    int week;                           /* Ordinal week. 1-53. */
+    int yday;                           /* Day of the year. 0-365. Jan 1st
+                                         * is 0. */
+    int mday;                           /* Day of the month. 1-31. */
+    int wday;                           /* Day of week. 0-6. Sunday is
+                                         * zero. */
+    int wyear;                          /* Year of ordinal week. 0-9999. */
+    int hour;                           /* Hour 0-23. */
+    int min;				/* Minute 0-59 */
+    int sec;				/* Second. 0-60. */
+    double frac;                        /* Fractional seconds. */
     time_t tzoffset;			/* Timezone offset. */
     int isdst;
     int isLeapYear;
@@ -195,14 +197,14 @@ BLT_EXTERN int Blt_GetDoubleFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr,
 	double *valuePtr);
 
 BLT_EXTERN int Blt_GetTimeFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, 
-	double *valuePtr);
+	double *secondsPtr);
 BLT_EXTERN int Blt_GetTime(Tcl_Interp *interp, const char *string, 
-	double *valuePtr);
+	double *secondsPtr);
 
-BLT_EXTERN int Blt_GetDateFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, 
-	double *timePtr);
-BLT_EXTERN int Blt_GetDate(Tcl_Interp *interp, const char *string, 
-	double *timePtr);
+BLT_EXTERN void Blt_SecondsToDate(double seconds, Blt_DateTime *datePtr);
+BLT_EXTERN void Blt_DateToSeconds(Blt_DateTime *datePtr, double *secondsPtr);
+BLT_EXTERN void Blt_FormatDate(Blt_DateTime *datePtr, const char *format, 
+        Tcl_DString *resultPtr);
 
 BLT_EXTERN int Blt_GetPositionFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, 
 	long *indexPtr);
@@ -226,7 +228,4 @@ BLT_EXTERN const char *Blt_LastError(void);
 BLT_EXTERN double Blt_NaN(void);
 BLT_EXTERN int Blt_AlmostEquals(double x, double y);
 
-BLT_EXTERN void Blt_SecondsToDate(double seconds, Blt_DateTime *timePtr);
-BLT_EXTERN int Blt_DateToSeconds(Tcl_Interp *interp, Blt_DateTime *timePtr,
-        double *secondsPtr);
 #endif /*_BLT_TCL_INT_H*/
