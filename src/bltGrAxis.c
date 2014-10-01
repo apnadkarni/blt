@@ -5978,11 +5978,11 @@ MonthTicks(Axis *axisPtr, double min, double max)
     fprintf(stderr, "major month: step=%.15g tickMin=%.15g tickMax=%.15g nt=%d left=%d, right=%d min=%.15g max=%.15g\n",
             step, tickMin, tickMax, numTicks, left.mon, right.mon, min, max);
 
-    axisPtr->minor.ticks.numSteps = 1;
-    axisPtr->minor.ticks.step = axisPtr->major.ticks.range * 0.5;
+    axisPtr->minor.ticks.numSteps = 5;
+    axisPtr->minor.ticks.step = SECONDS_WEEK;
     axisPtr->minor.ticks.month = left.mon;
     axisPtr->minor.ticks.year = left.year;
-    axisPtr->minor.ticks.timeUnits = TIME_DAYS;
+    axisPtr->minor.ticks.timeUnits = TIME_WEEKS;
     axisPtr->minor.ticks.scaleType = SCALE_TIME;
 
 }
@@ -6581,6 +6581,14 @@ FirstMinorTick(Axis *axisPtr)
             d = ticksPtr->step;
             break;
         case TIME_WEEKS:
+            {
+                Blt_DateTime date;
+
+                Blt_SecondsToDate(ticksPtr->initial, &date);
+                ticksPtr->numDaysFromInitial = (7 - date.wday);
+                d = ticksPtr->numDaysFromInitial * SECONDS_DAY;
+            }
+            break;
         case TIME_HOURS:
         case TIME_MINUTES:
             ticksPtr->step = ticksPtr->range / ticksPtr->numSteps;
@@ -6666,6 +6674,9 @@ NextMinorTick(Axis *axisPtr)
             }
             break;
         case TIME_WEEKS:
+            ticksPtr->numDaysFromInitial += 7;
+            d = ticksPtr->numDaysFromInitial * SECONDS_DAY;
+            break;
         case TIME_DAYS:
         case TIME_HOURS:
         case TIME_MINUTES:

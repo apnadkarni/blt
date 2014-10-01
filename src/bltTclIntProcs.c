@@ -106,23 +106,22 @@ BltTclIntProcs bltTclIntProcs = {
     Blt_GetDoubleFromObj, /* 96 */
     Blt_GetTimeFromObj, /* 97 */
     Blt_GetTime, /* 98 */
-    Blt_GetDateFromObj, /* 99 */
-    Blt_GetDate, /* 100 */
-    Blt_GetPositionFromObj, /* 101 */
-    Blt_GetCountFromObj, /* 102 */
-    Blt_SimplifyLine, /* 103 */
-    Blt_GetLong, /* 104 */
-    Blt_GetLongFromObj, /* 105 */
-    Blt_FormatString, /* 106 */
-    Blt_LowerCase, /* 107 */
-    Blt_GetPlatformId, /* 108 */
-    Blt_LastError, /* 109 */
-    Blt_NaN, /* 110 */
-    Blt_AlmostEquals, /* 111 */
-    Blt_SecondsToDate, /* 112 */
-    Blt_DateToSeconds, /* 113 */
-    Blt_GetCachedVar, /* 114 */
-    Blt_FreeCachedVars, /* 115 */
+    Blt_SecondsToDate, /* 99 */
+    Blt_DateToSeconds, /* 100 */
+    Blt_FormatDate, /* 101 */
+    Blt_GetPositionFromObj, /* 102 */
+    Blt_GetCountFromObj, /* 103 */
+    Blt_SimplifyLine, /* 104 */
+    Blt_GetLong, /* 105 */
+    Blt_GetLongFromObj, /* 106 */
+    Blt_FormatString, /* 107 */
+    Blt_LowerCase, /* 108 */
+    Blt_GetPlatformId, /* 109 */
+    Blt_LastError, /* 110 */
+    Blt_NaN, /* 111 */
+    Blt_AlmostEquals, /* 112 */
+    Blt_GetCachedVar, /* 113 */
+    Blt_FreeCachedVars, /* 114 */
 };
 
 /* !END!: Do not edit above this line. */

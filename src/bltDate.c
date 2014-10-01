@@ -1426,8 +1426,7 @@ ExtractTime(DateParser *parserPtr)
 	    parserPtr->date.frac = tokenPtr->lvalue * 1e-3;
 	    tokenPtr = NextToken(tokenPtr);
 	}
-    } else if ((GetId(tokenPtr) == _DOT) || 
-	       (GetId(tokenPtr) == _COMMA)) {
+    } else if ((GetId(tokenPtr) == _DOT) || (GetId(tokenPtr) == _COMMA)) {
 	tokenPtr = NextToken(tokenPtr);
 	if ((GetId(tokenPtr) == _NUMBER)) {
 	    double d;
