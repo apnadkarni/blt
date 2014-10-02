@@ -1278,16 +1278,13 @@ static TickLabel *
 MakeLabel(Axis *axisPtr, double value)
 {
 #define TICK_LABEL_SIZE		200
-    char string[TICK_LABEL_SIZE + 1];
+    char buffer[TICK_LABEL_SIZE + 1];
+    const char *string;
     TickLabel *labelPtr;
+    Tcl_DString ds;
 
-    /* Generate a default tick label based upon the tick value.  */
-    if (axisPtr->logScale) {
-	Blt_FormatString(string, TICK_LABEL_SIZE, "1E%d", ROUND(value));
-    } else {
-	Blt_FormatString(string, TICK_LABEL_SIZE, "%.*G", NUMDIGITS, value);
-    }
-
+    string = NULL;
+    Tcl_DStringInit(&ds);
     if (axisPtr->fmtCmdObjPtr != NULL) {
 	Graph *graphPtr;
 	Tcl_Interp *interp;
@@ -1306,7 +1303,7 @@ MakeLabel(Axis *axisPtr, double value)
 	cmdObjPtr = Tcl_DuplicateObj(axisPtr->fmtCmdObjPtr);
 	objPtr = Tcl_NewStringObj(Tk_PathName(tkwin), -1);
 	Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
-	objPtr = Tcl_NewStringObj(string, -1);
+	objPtr = Tcl_NewDoubleObj(value);
 	Tcl_ResetResult(interp);
 	Tcl_IncrRefCount(cmdObjPtr);
 	Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
@@ -1314,20 +1311,26 @@ MakeLabel(Axis *axisPtr, double value)
 	Tcl_DecrRefCount(cmdObjPtr);
 	if (result != TCL_OK) {
 	    Tcl_BackgroundError(interp);
-	} else {
-	    /* 
-	     * The proc could return a string of any length, so arbitrarily
-	     * limit it to what will fit in the return string.
-	     */
-	    strncpy(string, Tcl_GetStringResult(interp), TICK_LABEL_SIZE);
-	    string[TICK_LABEL_SIZE] = '\0';
-	    
-	    Tcl_ResetResult(interp); /* Clear the interpreter's result. */
-	}
+	} 
+        Tcl_DStringGetResult(interp, &ds);
+        string = Tcl_DStringValue(&ds);
+    } else if (axisPtr->logScale) {
+	Blt_FormatString(buffer, TICK_LABEL_SIZE, "1E%d", ROUND(value));
+        string = buffer;
+    } else if (axisPtr->timeScale) {
+        Blt_DateTime date;
+
+        Blt_SecondsToDate(value, &date);
+        Blt_FormatDate(&date, axisPtr->major.ticks.fmt, &ds);
+        string = Tcl_DStringValue(&ds);
+    } else {
+	Blt_FormatString(buffer, TICK_LABEL_SIZE, "%.*G", NUMDIGITS, value);
+        string = buffer;
     }
     labelPtr = Blt_AssertMalloc(sizeof(TickLabel) + strlen(string));
     strcpy(labelPtr->string, string);
     labelPtr->anchorPos.x = labelPtr->anchorPos.y = DBL_MAX;
+    Tcl_DStringFree(&ds);
     return labelPtr;
 }
 
@@ -3222,7 +3225,6 @@ Blt_GetAxisGeometry(Graph *graphPtr, Axis *axisPtr)
         Tick left, right;
 
         numTicks = axisPtr->major.ticks.numSteps;
- fprintf(stderr, "numSteps=%d timeUnits=%d range=%.15g\n", numTicks, axisPtr->major.ticks.timeUnits, axisPtr->major.ticks.range);
 	assert(numTicks <= MAXTICKS);
 	for (left = FirstMajorTick(axisPtr); left.isValid; left = right) {
 	    TickLabel *labelPtr;
@@ -5677,14 +5679,13 @@ typedef enum _TimeUnits {
     TIME_HOURS,
     TIME_MINUTES,
     TIME_SECONDS,
+    TIME_SUBSECONDS,
 } TimeUnits;
 
 enum TimeFormat {
     TIME_FORMAT_YEARS1,
     TIME_FORMAT_YEARS5,
     TIME_FORMAT_YEARS10,
-    TIME_FORMAT_DAYS30,
-    TIME_FORMAT_DAYS1,
 };
 
 #define SECONDS_SECOND        (1)
@@ -5730,9 +5731,6 @@ TimeFloor(Axis *axisPtr, double min, TimeUnits units, Blt_DateTime *datePtr)
 
     seconds = floor(min);
     Blt_SecondsToDate(seconds, datePtr);
-    fprintf(stderr, "TimeFloor units=%d week=%d y=%d m=%d mday=%d wday=%d yday=%d seconds=%.15g\n", 
-        units, datePtr->week, datePtr->year, datePtr->mon, 
-            datePtr->mday, datePtr->wday, datePtr->yday, seconds);
     mday = 0;                           /* Suppress compiler warning. */
     switch (units) {
     case TIME_YEARS:
@@ -5834,7 +5832,10 @@ GetMajorTimeUnits(double min, double max)
     if (range > (SECONDS_MINUTE * 2)) {
 	return TIME_MINUTES;
     }
-    return TIME_SECONDS;
+    if (range > (SECONDS_SECOND * 2)) {
+        return TIME_SECONDS;
+    }
+    return TIME_SUBSECONDS;
 }
 
 static void
@@ -5849,8 +5850,6 @@ YearTicks(Axis *axisPtr, double min, double max)
 
     axisPtr->major.ticks.scaleType = axisPtr->minor.ticks.scaleType = 
         SCALE_TIME;
-    fprintf(stderr, "YearTicks axis=%s, min=%.15g max=%.15g\n",
-            axisPtr->obj.name, min, max);
     tickMin = TimeFloor(axisPtr, min, TIME_YEARS, &date1);
     tickMax = TimeCeil(axisPtr, max, TIME_YEARS, &date2);
     step = 1.0;
@@ -5868,16 +5867,10 @@ YearTicks(Axis *axisPtr, double min, double max)
         range = tickMax - tickMin;
         numTicks = (int)(range / step) + 1;
     
- fprintf(stderr, "0. numYears=%.15g tickMin=%.15g tickMax=%.15g, step=%.15g nt=%d min=%.15g max=%.15g, tf=%d, range=%.15g\n", 
-         numYears, tickMin, tickMax, step, numTicks, min, max,
-         axisPtr->major.ticks.timeFormat, range);
-
         minDays = NumberDaysFromEpoch((int)tickMin);
         maxDays  = NumberDaysFromEpoch((int)tickMax);
         tickMin = minDays * SECONDS_DAY;
         tickMax = maxDays * SECONDS_DAY;
- fprintf(stderr, "1. numYears=%.15g minDays=%ld maxDays=%ld tickMin=%.15g tickMax=%.15g, step=%.15g nt=%d min=%.15g max=%.15g, tf=%d\n", 
-         numYears, minDays, maxDays, tickMin, tickMax, step, numTicks, min, max, axisPtr->major.ticks.timeFormat);
         axisPtr->major.ticks.year = tickMin;
         axisPtr->minor.ticks.timeUnits = TIME_YEARS;
         if (step > 5) {
@@ -5913,9 +5906,6 @@ YearTicks(Axis *axisPtr, double min, double max)
 
     axisMin = tickMin;
     axisMax = tickMax;
- fprintf(stderr, "numYears=%.15g tickMin=%.15g tickMax=%.15g, step=%.15g nt=%d min=%.15g max=%.15g, tf=%d\n", 
-         numYears, tickMin, tickMax, step, numTicks, min, max,
-         axisPtr->major.ticks.timeFormat);
     if ((axisPtr->looseMin == TIGHT) || ((axisPtr->looseMin == LOOSE) &&
 	 (DEFINED(axisPtr->reqMin)))) {
 	axisMin = min;
@@ -5927,6 +5917,7 @@ YearTicks(Axis *axisPtr, double min, double max)
     SetAxisRange(&axisPtr->axisRange, axisMin, axisMax);
 
     axisPtr->major.ticks.timeUnits = TIME_YEARS;
+    axisPtr->major.ticks.fmt = "%Y";
     axisPtr->major.ticks.scaleType = SCALE_TIME;
     axisPtr->major.ticks.range = tickMax - tickMin;
     axisPtr->major.ticks.initial = tickMin;
@@ -5944,7 +5935,6 @@ MonthTicks(Axis *axisPtr, double min, double max)
     double tickMin, tickMax;            /* months. */
     double axisMin, axisMax;            /* seconds. */
     
- fprintf(stderr, "Month Ticks\n");
     tickMin = axisMin = TimeFloor(axisPtr, min, TIME_MONTHS, &left);
     tickMax = axisMax = TimeCeil(axisPtr, max, TIME_MONTHS, &right);
     if (right.year > left.year) {
@@ -5970,14 +5960,12 @@ MonthTicks(Axis *axisPtr, double min, double max)
     axisPtr->major.ticks.step = step;
     axisPtr->major.ticks.range = tickMax - tickMin;
     axisPtr->major.ticks.isLeapYear = left.isLeapYear;
+    axisPtr->major.ticks.fmt = "%h %Y";
     axisPtr->major.ticks.month = left.mon;
     axisPtr->major.ticks.year = left.year;
     axisPtr->major.ticks.timeUnits = TIME_MONTHS;
     axisPtr->major.ticks.scaleType = SCALE_TIME;
     
-    fprintf(stderr, "major month: step=%.15g tickMin=%.15g tickMax=%.15g nt=%d left=%d, right=%d min=%.15g max=%.15g\n",
-            step, tickMin, tickMax, numTicks, left.mon, right.mon, min, max);
-
     axisPtr->minor.ticks.numSteps = 5;
     axisPtr->minor.ticks.step = SECONDS_WEEK;
     axisPtr->minor.ticks.month = left.mon;
@@ -6008,20 +5996,15 @@ WeekTicks(Axis *axisPtr, double min, double max)
     double tickMin, tickMax;            /* days. */
     double axisMin, axisMax;            /* seconds. */
 
- fprintf(stderr, "Week Ticks min=%.15g max=%.15g\n", min, max);
     tickMin = axisMin = TimeFloor(axisPtr, min, TIME_WEEKS, &left);
     tickMax = axisMax = TimeCeil(axisPtr, max, TIME_WEEKS, &right);
     numWeeks = (tickMax - tickMin) / SECONDS_WEEK;
- fprintf(stderr, "0. numWeeks=%d tickMin=%.15g tickMax=%.15g y=%d m=%d mday=%d yday=%d wday=%d\n", 
-         numWeeks, tickMin, tickMax, 
-         left.year, left.mon, left.mday, left.yday, left.wday);
     if (numWeeks > 5) {
-        double range, s;
-        int minWeek, maxWeek;
+        double range;
 
         range = numWeeks;
         range = NiceNum(range, 0);
-        s = step = NiceNum(range / axisPtr->reqNumMajorTicks, 1);
+        step = NiceNum(range / axisPtr->reqNumMajorTicks, 1);
         numTicks = (int)(range / step) + 1;
         step *= SECONDS_WEEK;
         tickMin = UFLOOR(tickMin, step);
@@ -6030,9 +6013,6 @@ WeekTicks(Axis *axisPtr, double min, double max)
         tickMax -= EPOCH_WDAY*SECONDS_DAY;
         axisMin = tickMin;
         axisMax = tickMax;
- fprintf(stderr, "1. numWeeks=%d range=%.15g s=%.15g tickMin=%.15g tickMax=%.15g, range=%.15g step=%.15g nt=%d\n", 
-         numWeeks, range, s, tickMin, tickMax, range, step, numTicks);
-        
     } else {
         numTicks = numWeeks + 1;
         step = SECONDS_WEEK;
@@ -6053,9 +6033,8 @@ WeekTicks(Axis *axisPtr, double min, double max)
     axisPtr->major.ticks.numSteps = numTicks;
     axisPtr->major.ticks.timeUnits = TIME_WEEKS;
     axisPtr->major.ticks.range = tickMax - tickMin;
+    axisPtr->major.ticks.fmt = "%d %h";
     axisPtr->major.ticks.scaleType = SCALE_TIME;
-    fprintf(stderr, "major week: step=%.15g tickMin=%.15g nt=%d left=%d, right=%d min=%.15g max=%.15g\n",
-            step, tickMin, numTicks, left.week, right.week, min, max);
     axisPtr->minor.ticks.step = SECONDS_DAY;
     axisPtr->minor.ticks.numSteps = 6;  
     axisPtr->minor.ticks.timeUnits = TIME_DAYS;
@@ -6083,7 +6062,6 @@ DayTicks(Axis *axisPtr, double min, double max)
     double tickMin, tickMax;            /* days. */
     double axisMin, axisMax;            /* seconds. */
 
- fprintf(stderr, "Day Ticks min=%.15g max=%.15g\n", min, max);
     tickMin = axisMin = TimeFloor(axisPtr, min, TIME_DAYS, &left);
     tickMax = axisMax = TimeCeil(axisPtr, max, TIME_DAYS, &right);
     numDays = (tickMax - tickMin) / SECONDS_DAY;
@@ -6106,8 +6084,7 @@ DayTicks(Axis *axisPtr, double min, double max)
     axisPtr->major.ticks.timeUnits = TIME_DAYS;
     axisPtr->major.ticks.range = tickMax - tickMin;
     axisPtr->major.ticks.scaleType = SCALE_TIME;
-    fprintf(stderr, "major day: step=%.15g tickMin=%.15g tickMax=%.15g nt=%d left=%d, right=%d min=%.15g max=%.15g\n",
-            step, tickMin, tickMax, numTicks, left.mday, right.mday, min, max);
+    axisPtr->major.ticks.fmt = "%d %h";
     axisPtr->minor.ticks.step = SECONDS_HOUR * 6;
     axisPtr->minor.ticks.initial = 0;
     axisPtr->minor.ticks.numSteps = 2;  /* 6 - 2 */
@@ -6137,7 +6114,6 @@ HourTicks(Axis *axisPtr, double min, double max)
 
     double step;
 
- fprintf(stderr, "Hour Ticks\n");
     tickMin = axisMin = TimeFloor(axisPtr, min, TIME_HOURS, &left);
     tickMax = axisMax = TimeCeil(axisPtr, max, TIME_HOURS, &right);
     numHours = (tickMax - tickMin) / SECONDS_HOUR;
@@ -6157,9 +6133,6 @@ HourTicks(Axis *axisPtr, double min, double max)
     axisMax = tickMax = UCEIL(tickMax, step);
     numTicks = ((tickMax - tickMin) / (long)step) + 1;
 
-    fprintf(stderr, "step=%.15g tickMin=%.15g, tickMax=%.15g, numTicks=%d\n",
-            step, tickMin, tickMax, numTicks);
-
     if ((axisPtr->looseMin == TIGHT) || ((axisPtr->looseMin == LOOSE) &&
 	 (DEFINED(axisPtr->reqMin)))) {
 	axisMin = min;
@@ -6173,11 +6146,9 @@ HourTicks(Axis *axisPtr, double min, double max)
     axisPtr->major.ticks.initial = tickMin;
     axisPtr->major.ticks.numSteps = numTicks;
     axisPtr->major.ticks.range = tickMax - tickMin;
+    axisPtr->major.ticks.fmt = "%H:%M %d %h";
     axisPtr->major.ticks.timeUnits = TIME_HOURS;
     axisPtr->major.ticks.scaleType = SCALE_TIME;
-
-    fprintf(stderr, "major hour: step=%.15g tickMin=%.15g tickMax=%.15g numHours=%d nt=%d left=%d, right=%d min=%.15g max=%.15g\n",
-            step, tickMin, tickMax, numHours, numTicks, left.hour, right.hour, min, max);
 
     axisPtr->minor.ticks.step = step / 4;
     axisPtr->minor.ticks.numSteps = 4;  /* 6 - 2 */
@@ -6205,7 +6176,6 @@ MinuteTicks(Axis *axisPtr, double min, double max)
     double tickMin, tickMax;            /* minutes. */
     double axisMin, axisMax;            /* seconds. */
 
- fprintf(stderr, "Minute Ticks min=%.15g max=%.15g\n", min, max);
     tickMin = axisMin = TimeFloor(axisPtr, min, TIME_MINUTES, &left);
     tickMax = axisMax = TimeCeil(axisPtr, max, TIME_MINUTES, &right);
     numMinutes = (tickMax - tickMin) / SECONDS_MINUTE;
@@ -6217,9 +6187,6 @@ MinuteTicks(Axis *axisPtr, double min, double max)
     step *= SECONDS_MINUTE;
     axisMin = tickMin = UFLOOR(tickMin, step);
     axisMax = tickMax = UCEIL(tickMax, step);
-
-    fprintf(stderr, "1. numMinutes=%d tickMin=%.15g tickMax=%.15g, range=%.15g step=%.15g nt=%d\n", 
-         numMinutes, tickMin, tickMax, range, step, numTicks);
 
     if ((axisPtr->looseMin == TIGHT) || ((axisPtr->looseMin == LOOSE) &&
 	 (DEFINED(axisPtr->reqMin)))) {
@@ -6238,14 +6205,13 @@ MinuteTicks(Axis *axisPtr, double min, double max)
     axisPtr->major.ticks.numSteps = numTicks;
     axisPtr->major.ticks.timeUnits = TIME_MINUTES;
     axisPtr->major.ticks.scaleType = SCALE_TIME;
+    axisPtr->major.ticks.fmt = "%H:%M";
     axisPtr->major.ticks.range = tickMax - tickMin;
 
     axisPtr->minor.ticks.step = step / (axisPtr->reqNumMinorTicks - 1);
     axisPtr->minor.ticks.numSteps = axisPtr->reqNumMinorTicks;
     axisPtr->minor.ticks.timeUnits = TIME_MINUTES;
     axisPtr->minor.ticks.scaleType = SCALE_TIME;
- fprintf(stderr, "2. minor: range=%.15g step=%.15g nt=%d\n", 
-         step, axisPtr->minor.ticks.step, axisPtr->minor.ticks.numSteps);
 }
 
 /* 
@@ -6266,10 +6232,11 @@ SecondTicks(Axis *axisPtr, double min, double max)
     int numTicks;
     double tickMin, tickMax;            /* minutes. */
     double axisMin, axisMax;            /* seconds. */
+    long numSeconds;
 
- fprintf(stderr, "Second Ticks\n");
-    range = max - min;
+    numSeconds = (long)(max - min);
     step = 1.0;
+    range = numSeconds;
     if (axisPtr->reqStep > 0.0) {
         /* An interval was designated by the user.  Keep scaling it until
          * it fits comfortably within the current range of the axis.  */
@@ -6282,9 +6249,11 @@ SecondTicks(Axis *axisPtr, double min, double max)
         step = NiceNum(range / axisPtr->reqNumMajorTicks, 1);
     }
     /* Find the outer tick values. Add 0.0 to prevent getting -0.0. */
-    axisMin = tickMin = floor(min / step) * step + 0.0;
-    axisMax = tickMax = ceil(max / step) * step + 0.0;
+    axisMin = tickMin = UFLOOR(min, step);
+    axisMax = tickMax = UCEIL(max, step);
     numTicks = Round((tickMax - tickMin) / step) + 1;
+    fprintf(stderr, "Second Ticks step=%.15g range=%.15g numSeconds=%ld min=%.15g, max=%.15g tickMin=%.15g tickMax=%.15g\n",
+            step, range, numSeconds, min, max, tickMin, tickMax);
 	
     if ((axisPtr->looseMin == TIGHT) || ((axisPtr->looseMin == LOOSE) &&
 	 (DEFINED(axisPtr->reqMin)))) {
@@ -6298,6 +6267,14 @@ SecondTicks(Axis *axisPtr, double min, double max)
     axisPtr->major.ticks.initial = tickMin;
     axisPtr->major.ticks.numSteps = numTicks;
     axisPtr->major.ticks.step = step;
+    axisPtr->major.ticks.fmt = "%H:%M:%S";
+    axisPtr->major.ticks.timeUnits = TIME_SECONDS;
+    axisPtr->major.ticks.scaleType = SCALE_TIME;
+    axisPtr->major.ticks.range = tickMax - tickMin;
+
+    axisPtr->minor.ticks.step = 1.0 / (double)axisPtr->reqNumMinorTicks;
+    axisPtr->minor.ticks.numSteps = axisPtr->reqNumMinorTicks - 1;
+    axisPtr->minor.ticks.scaleType = SCALE_LINEAR;
 }
 
 /*
@@ -6345,6 +6322,9 @@ TimeAxis(Axis *axisPtr, double min, double max)
         break;
     case TIME_SECONDS:
         SecondTicks(axisPtr, min, max);
+        break;
+    case TIME_SUBSECONDS:
+        LinearAxis(axisPtr, min, max);
         break;
     default:
         Blt_Panic("unknown time units");

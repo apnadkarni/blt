@@ -2,7 +2,7 @@
 package require BLT
 
 proc FormatDate { g value } {
-    return [clock format [expr $value] -timezone :UTC]
+    return [clock format [expr int($value)] -timezone :UTC]
 # -format "%b %Y" ]
 }
     
@@ -34,12 +34,17 @@ blt::graph .g
     -fill green2 \
     -pixels 5
 
-.g axis configure x -title "Date" -timescale yes  -command FormatDate \
-    -rotate 90 -loose $loose
+.g axis configure x \
+    -title "Date" \
+    -timescale yes  \
+    -rotate 0 \
+    -loose $loose \
+
+#    -command FormatDate 
 .g axis configure y -title "Value" 
 .g legend configure -hide yes
     
-proc years1 { t } {
+proc test1 { t } {
     $t row delete all
     set year 1969
     set month 0
@@ -61,7 +66,7 @@ proc years1 { t } {
     }
 }
 
-proc years2 { t } {
+proc test2 { t } {
     $t row delete all
     set year 1969
     set month 0
@@ -83,7 +88,7 @@ proc years2 { t } {
     }
 }
 
-proc years3 { t } {
+proc test3 { t } {
     $t row delete all
     set year 1968
     set month 1
@@ -101,7 +106,7 @@ proc years3 { t } {
     }
 }
 
-proc years4 { t } {
+proc test4 { t } {
     $t row delete all
     set year 1899
     set month 1
@@ -119,7 +124,7 @@ proc years4 { t } {
     }
 }
 
-proc years5 { t } {
+proc test5 { t } {
     $t row delete all
     set year 1969
     set month 0
@@ -141,7 +146,7 @@ proc years5 { t } {
     }
 }
 
-proc months1 { t } {
+proc test6 { t } {
     $t row delete all
     set year 1969
     set month 12
@@ -163,7 +168,7 @@ proc months1 { t } {
     }
 }
 
-proc months2 { t } {
+proc test7 { t } {
     $t row delete all
     set year 1999
     set month 0
@@ -185,7 +190,7 @@ proc months2 { t } {
     }
 }
 
-proc months3 { t } {
+proc test8 { t } {
     $t row delete all
     set year 1999
     set month 0
@@ -200,7 +205,7 @@ proc months3 { t } {
 }
 
 
-proc days1 { t } {
+proc test9 { t } {
     $t row delete all
     set year 1999
     set month 0
@@ -218,7 +223,7 @@ proc days1 { t } {
     }
 }
 
-proc days2 { t } {
+proc test10 { t } {
     $t row delete all
     set year 1999
     set month 0
@@ -237,7 +242,7 @@ proc days2 { t } {
 }
 
 
-proc days3 { t } {
+proc test11 { t } {
     $t row delete all
     set year 1999
     set month 0
@@ -255,7 +260,7 @@ proc days3 { t } {
     }
 }
 
-proc days4 { t } {
+proc test12 { t } {
     $t row delete all
     set year 1980
     set month 0
@@ -273,7 +278,7 @@ proc days4 { t } {
     }
 }
 
-proc days5 { t } {
+proc test13 { t } {
     $t row delete all
     set year 1980
     set month 1
@@ -289,7 +294,7 @@ proc days5 { t } {
     }
 }
 
-proc hours1 { t } {
+proc test14 { t } {
     $t row delete all
     set year 1980
     set day 350
@@ -308,7 +313,7 @@ proc hours1 { t } {
     }
 }
 
-proc hours1.1 { t } {
+proc test15 { t } {
     $t row delete all
     set year 1980
     set day 350
@@ -327,7 +332,7 @@ proc hours1.1 { t } {
     }
 }
 
-proc hours2 { t } {
+proc test16 { t } {
     $t row delete all
     set year 1980
     set month 0
@@ -345,7 +350,7 @@ proc hours2 { t } {
     }
 }
 
-proc hours3 { t } {
+proc test17 { t } {
     $t row delete all
     set year 1980
     set month 0
@@ -363,7 +368,7 @@ proc hours3 { t } {
     }
 }
 
-proc hours4 { t } {
+proc test18 { t } {
     $t row delete all
     set year 1980
     set hour 20
@@ -381,7 +386,7 @@ proc hours4 { t } {
     }
 }
 
-proc hours5 { t } {
+proc test19 { t } {
     $t row delete all
     set year 1980
     set hour 1
@@ -401,7 +406,7 @@ proc hours5 { t } {
     }
 }
 
-proc hours6 { t } {
+proc test20 { t } {
     $t row delete all
     set year 1980
     set hour 0
@@ -421,7 +426,48 @@ proc hours6 { t } {
     }
 }
 
-years1 $t
+proc test21 { t } {
+    $t row delete all
+    set year 1980
+    set hour 0
+    set min 22
+    set day 1
+    for { set i 0 } { $i <= 30 } { incr i } {
+	if { $min >= 60 } {
+	    incr hour
+	    set min 0
+	}
+	set date [format "%4d-%03d %02d:%02d" $year $day $hour $min]
+	set d1 [blt::date scan $date]
+	puts stderr \n$date=[blt::date format $d1]\n
+	$t set $i "date" $d1
+	$t set $i "value" [expr sin($i/2.0)]
+	incr min 
+    }
+}
+
+proc test22 { t } {
+    $t row delete all
+    set year 1980
+    set hour 0
+    set min 22
+    set day 1
+    set sec 0
+    for { set i 0 } { $i <= 30 } { incr i } {
+	if { $sec >= 60 } {
+	    incr min
+	    set sec 0
+	}
+	set date [format "%4d-%03d %02d:%02d:%02d" $year $day $hour $min $sec]
+	set d1 [blt::date scan $date]
+	puts stderr \n$date=[blt::date format $d1]\n
+	$t set $i "date" $d1
+	$t set $i "value" [expr sin($i/2.0)]
+	incr sec 
+    }
+}
+
+test1 $t
 
 $t export csv -file dates.csv
 Blt_ClosestPoint .g
@@ -440,26 +486,28 @@ blt::combomenu $m \
     -text "Test" \
     -textvariable test
 foreach {proc desc} { 
-    years1 "30 months, Major: every 1 year, Minor: 12 months"
-    years2 "130 months, Major: every 2 years, Minor: every 1 year"
-    years3 "25 years, Major: every 5 years, Minor: every 2 years"
-    years4 "114 years, Major: every 20 years: Minor: every 10 years"
-    years5 "24 months, Major: every 1 year, Minor: every 1 month"
-    months1 "2 months, Major: every 1 month: Minor: every 1 day"
-    months2 "7 months, Major: every 1 months: Minor: 1/2 month"
-    months3 "120 days, Major: every 1 month: Minor: 1/2 month"
-    days1 "5 days, Major: every 1 day: Minor: every 6 hours"
-    days2 "12 days, Major: every 1 day: Minor: every 6 hours"
-    days3 "32 days, Major: every 1 day: Minor: every 6 hours"
-    days4 "45 days, Major: every 1 month: Minor: every 1 day"
-    days5 "10 days, Major: every 1 day: Minor: every 6 hours"
-    hours1 "126 hours, Major: every 1 day: Minor: every 6 hours"
-    hours1.1 "72 hours, Major: every 1 day: Minor: every 6 hours"
-    hours2 "34 hours, Major: every 4 hours: Minor: every 1 hour"
-    hours3 "14 hours, Major: every 4 hours: Minor: every 1 hour"
-    hours4 "8 hours, Major: every 1 hour: Minor: every 15 minutes"
-    hours5 "2 hours, Major: every 1 hour: Minor: every 15 minutes"
-    hours6 "2 hours, Major: every 1 hour: Minor: every 15 minutes"
+    test1 "30 months, Major: every 1 year, Minor: 12 months"
+    test2 "130 months, Major: every 2 years, Minor: every 1 year"
+    test3 "25 years, Major: every 5 years, Minor: every 1 year"
+    test4 "114 years, Major: every 20 years: Minor: every 10 years"
+    test5 "24 months, Major: every 1 year, Minor: every 1 month"
+    test6 "2 months, Major: every 1 week: Minor: every 1 day"
+    test7 "7 months, Major: every 1 months: Minor: every 1 week"
+    test8 "120 days, Major: every 1 month: Minor: every 1 week"
+    test9 "5 days, Major: every 1 day: Minor: every 12 hours"
+    test10 "12 days, Major: every 1 day: Minor: every 12 hours"
+    test11 "32 days, Major: every 1 week: Minor: every 1 day"
+    test12 "45 days, Major: every 1 week: Minor: every 1 day"
+    test13 "10 days, Major: every 1 day: Minor: every 12 hours"
+    test14 "126 hours, Major: every 1 day: Minor: every 12 hours"
+    test15 "72 hours, Major: every 6 hours: Minor: every 4/6 hours"
+    test16 "34 hours, Major: every 6 hours: Minor: every 4/6 hours"
+    test17 "14 hours, Major: every 4 hours: Minor: every 1 hour"
+    test18 "8 hours, Major: every 2 hours: Minor: every 30 minutes"
+    test19 "2 hours, Major: every 20 minutes: Minor: every 10 minutes"
+    test20 "2 hours, Major: every 20 minutes: Minor: every 10 minutes"
+    test21 "32 minutes, Major: every 5 minutes: Minor: every 5/2 minutes"
+    test22 "30 seconds, Major: every 5 seconds: Minor: every 5/2 minutes"
 } {
     $m add \
 	-text $desc \

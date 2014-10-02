@@ -117,7 +117,8 @@ typedef struct {
     double step;                        /* Size of interval */
     double range;                       /* Range of entire sweep. */
     AxisScaleType scaleType;            /* Scale type. */
-    time_t numDaysFromInitial;
+    time_t numDaysFromInitial;          /* Number of days from the initial
+                                         * tick. */
     int numSteps;			/* Number of intervals. */
     int index;                          /* Current index of iterator. */
     int isLeapYear;                     /* Indicates if the major tick
@@ -127,6 +128,8 @@ typedef struct {
     int month;
     int year;
     int timeFormat;
+    const char *fmt;                    /* Default format for timescale
+                                         * ticks. */
     double *values;                     /* Array of tick values
                                          * (malloc-ed). */
 } Ticks;
