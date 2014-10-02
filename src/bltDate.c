@@ -1188,7 +1188,7 @@ ExtractSeparator(DateParser *parserPtr)
     return TCL_ERROR;
 }
 
-#ifdef notdef
+#ifndef notdef
 static int
 GetWeekDay(int year, int mon, int mday)
 {
@@ -1210,11 +1210,10 @@ GetWeekDay(int year, int mon, int mday)
 static int
 GetDateFromOrdinalDay(Tcl_Interp *interp, int year, int yday, int *monthPtr)
 {
-    int isLeapYear, numDays, mon;
+    int numDays, mon;
 
     numDays = yday;
     mon = 0;
-    isLeapYear = IsLeapYear(year);
     while (numDays >= numDaysMonth[IsLeapYear(year)][mon]) {
         numDays -= numDaysMonth[IsLeapYear(year)][mon];
         mon++;
@@ -1756,8 +1755,12 @@ ConvertDate(Tcl_Interp *interp, DateParser *parserPtr, double *secondsPtr)
             return TCL_ERROR;
         }
     }
-
-#ifdef notdef
+    if ((parserPtr->flags & PARSE_YDAY) && (datePtr->yday > 0)) {
+	datePtr->mday = GetDateFromOrdinalDay(interp, datePtr->year, 
+                datePtr->yday, &datePtr->mon);
+        fprintf(stderr, "yday=%d year=%d mon=%d mday=%d\n",
+                datePtr->yday, datePtr->year, datePtr->mon, datePtr->mday);
+    }         
     if ((parserPtr->flags & PARSE_WEEK) && (datePtr->week > 0)) {
 	int mday, mon, wday, corr, numDays;
         
@@ -1776,7 +1779,6 @@ ConvertDate(Tcl_Interp *interp, DateParser *parserPtr, double *secondsPtr)
         fprintf(stderr, "yday=%d week=%d wday=%d mday=%d\n",
                 datePtr->yday, datePtr->week, datePtr->wday, datePtr->mday);
     }
-#endif
     Blt_DateToSeconds(datePtr, secondsPtr);
     return TCL_OK;
 }
