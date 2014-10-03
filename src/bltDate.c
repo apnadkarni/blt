@@ -63,24 +63,16 @@
 #include <bltMath.h>
 
 #define HRS2MINS(x)         ((int) (60 * x))
+#define TZOFFSET(x) \
+    ((((x)/100) * SECONDS_HOUR) + (((x) % 100) * SECONDS_MINUTE))
 
-#if defined(MAC_TCL) && !defined(TCL_MAC_USE_MSL_EPOCH)
-#   define EPOCH           1904
-#   define START_OF_TIME   1904
-#   define END_OF_TIME     2039
-#else
-#   define EPOCH           1970
-#   define START_OF_TIME   1902
-#   define END_OF_TIME     2037
-#endif
-#   define EPOCH_WDAY      4            /* Thursday. */
-
-#define MER_AM		0
-#define MER_PM		1
-#define MER_24		2
+#define EPOCH           1970
+#define EPOCH_WDAY      4               /* Thursday. */
 
 #define IsLeapYear(y) \
         ((((y) % 4) == 0) && ((((y) % 100) != 0) || (((y) % 400) == 0)))
+
+#define GetId(t)        (((t) == NULL) ? _END : (t)->id)
 
 static const char *tokenNames[] = {
     "end",
@@ -155,8 +147,7 @@ typedef struct {
 
 static const char *monthNames[] = {
     "January", "February", "March", "April", "May", "June", 
-    "July", "August", "September", "October", "November", "December",
-    "Off by one month"
+    "July", "August", "September", "October", "November", "December"
 };
 static int numMonths = sizeof(monthNames) / sizeof(const char *);
 
@@ -174,7 +165,7 @@ static const int numDaysYear[2] = { 365, 366 };
 
 static const char *weekdayNames[] = {
     "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday",  
-    "Saturday", "Off by one weekday"
+    "Saturday"
 };
 
 static int numWeekdays = sizeof(weekdayNames) / sizeof(const char *);
@@ -189,82 +180,82 @@ static int numMeridians = sizeof(meridianNames) / sizeof(const char *);
  * point constants to work around an SGI compiler bug).
  */
 static IdentTable tzTable[] = {
-    { "gmt",  _STD, HRS2MINS(0) },	/* Greenwich Mean */
-    { "ut",   _STD, HRS2MINS(0) },	/* Universal (Coordinated) */
-    { "utc",  _STD, HRS2MINS(0) },
-    { "uct",  _STD, HRS2MINS(0) },	/* Universal Coordinated Time */
-    { "wet",  _STD, HRS2MINS(0) },	/* Western European */
-    { "bst",  _DST, HRS2MINS(0) },	/* British Summer */
-    { "wat",  _STD, HRS2MINS(1) },	/* West Africa */
-    { "at",   _STD, HRS2MINS(2) },	/* Azores */
+    { "gmt",  _STD,    0 },	/* Greenwich Mean */
+    { "ut",   _STD,    0 },	/* Universal (Coordinated) */
+    { "utc",  _STD,    0 },
+    { "uct",  _STD,    0 },	/* Universal Coordinated Time */
+    { "wet",  _STD,    0 },	/* Western European */
+    { "bst",  _DST,    0 },	/* British Summer */
+    { "wat",  _STD,  100 },	/* West Africa */
+    { "at",   _STD,  200 },	/* Azores */
 #if     0
     /* For completeness.  BST is also British Summer, and GST is also Guam
      * Standard. */
-    { "bst",  _STD, HRS2MINS(3) },	/* Brazil Standard */
-    { "gst",  _STD, HRS2MINS(3) },	/* Greenland Standard */
+    { "bst",  _STD,  300 },	/* Brazil Standard */
+    { "gst",  _STD,  300 },	/* Greenland Standard */
 #endif
-    { "nft",  _STD, HRS2MINS(7/2) },	/* Newfoundland */
-    { "nst",  _STD, HRS2MINS(7/2) },	/* Newfoundland Standard */
-    { "ndt",  _DST, HRS2MINS(7/2) },	/* Newfoundland Daylight */
-    { "ast",  _STD, HRS2MINS(4) },	/* Atlantic Standard */
-    { "adt",  _DST, HRS2MINS(4) },	/* Atlantic Daylight */
-    { "est",  _STD, HRS2MINS(5) },	/* Eastern Standard */
-    { "edt",  _DST, HRS2MINS(5) },	/* Eastern Daylight */
-    { "cst",  _STD, HRS2MINS(6) },	/* Central Standard */
-    { "cdt",  _DST, HRS2MINS(6) },	/* Central Daylight */
-    { "mst",  _STD, HRS2MINS(7) },	/* Mountain Standard */
-    { "mdt",  _DST, HRS2MINS(7) },	/* Mountain Daylight */
-    { "pst",  _STD, HRS2MINS(8) },	/* Pacific Standard */
-    { "pdt",  _DST, HRS2MINS(8) },	/* Pacific Daylight */
-    { "yst",  _STD, HRS2MINS(9) },	/* Yukon Standard */
-    { "ydt",  _DST, HRS2MINS(9) },	/* Yukon Daylight */
-    { "hst",  _STD, HRS2MINS(10) },	/* Hawaii Standard */
-    { "hdt",  _DST, HRS2MINS(10) },	/* Hawaii Daylight */
-    { "cat",  _STD, HRS2MINS(10) },	/* Central Alaska */
-    { "ahst", _STD, HRS2MINS(10) },	/* Alaska-Hawaii Standard */
-    { "nt",   _STD, HRS2MINS(11) },	/* Nome */
-    { "idlw", _STD, HRS2MINS(12) },	/* International Date Line West */
-    { "cet",  _STD, -HRS2MINS(1) },	/* Central European */
-    { "cest", _DST, -HRS2MINS(1) },	/* Central European Summer */
-    { "met",  _STD, -HRS2MINS(1) },	/* Middle European */
-    { "mewt", _STD, -HRS2MINS(1) },	/* Middle European Winter */
-    { "mest", _DST, -HRS2MINS(1) },	/* Middle European Summer */
-    { "swt",  _STD, -HRS2MINS(1) },	/* Swedish Winter */
-    { "sst",  _DST, -HRS2MINS(1) },	/* Swedish Summer */
-    { "fwt",  _STD, -HRS2MINS(1) },	/* French Winter */
-    { "fst",  _DST, -HRS2MINS(1) },	/* French Summer */
-    { "eet",  _STD, -HRS2MINS(2) },	/* Eastern Europe, USSR Zone 1 */
-    { "bt",   _STD, -HRS2MINS(3) },	/* Baghdad, USSR Zone 2 */
-    { "it",   _STD, -HRS2MINS(7/2) },	/* Iran */
-    { "zp4",  _STD, -HRS2MINS(4) },	/* USSR Zone 3 */
-    { "zp5",  _STD, -HRS2MINS(5) },	/* USSR Zone 4 */
-    { "ist",  _STD, -HRS2MINS(11/2) },    /* Indian Standard */
-    { "zp6",  _STD, -HRS2MINS(6) },	/* USSR Zone 5 */
+    { "nft",  _STD,  330 },	/* Newfoundland */
+    { "nst",  _STD,  330 },	/* Newfoundland Standard */
+    { "ndt",  _DST,  330 },	/* Newfoundland Daylight */
+    { "ast",  _STD,  400 },	/* Atlantic Standard */
+    { "adt",  _DST,  400 },	/* Atlantic Daylight */
+    { "est",  _STD,  500 },	/* Eastern Standard */
+    { "edt",  _DST,  500 },	/* Eastern Daylight */
+    { "cst",  _STD,  600 },	/* Central Standard */
+    { "cdt",  _DST,  600 },	/* Central Daylight */
+    { "mst",  _STD,  700 },	/* Mountain Standard */
+    { "mdt",  _DST,  700 },	/* Mountain Daylight */
+    { "pst",  _STD,  800 },	/* Pacific Standard */
+    { "pdt",  _DST,  800 },	/* Pacific Daylight */
+    { "yst",  _STD,  900 },	/* Yukon Standard */
+    { "ydt",  _DST,  900 },	/* Yukon Daylight */
+    { "hst",  _STD, 1000 },	/* Hawaii Standard */
+    { "hdt",  _DST, 1000 },	/* Hawaii Daylight */
+    { "cat",  _STD, 1000 },	/* Central Alaska */
+    { "ahst", _STD, 1000 },	/* Alaska-Hawaii Standard */
+    { "nt",   _STD, 1100 },	/* Nome */
+    { "idlw", _STD, 1200 },	/* International Date Line West */
+    { "cet",  _STD, -100 },	/* Central European */
+    { "cest", _DST, -100 },	/* Central European Summer */
+    { "met",  _STD, -100 },	/* Middle European */
+    { "mewt", _STD, -100 },	/* Middle European Winter */
+    { "mest", _DST, -100 },	/* Middle European Summer */
+    { "swt",  _STD, -100 },	/* Swedish Winter */
+    { "sst",  _DST, -100 },	/* Swedish Summer */
+    { "fwt",  _STD, -100 },	/* French Winter */
+    { "fst",  _DST, -100 },	/* French Summer */
+    { "eet",  _STD, -200 },	/* Eastern Europe, USSR Zone 1 */
+    { "bt",   _STD, -300 },	/* Baghdad, USSR Zone 2 */
+    { "it",   _STD, -330 },	/* Iran */
+    { "zp4",  _STD, -400 },	/* USSR Zone 3 */
+    { "zp5",  _STD, -500 },	/* USSR Zone 4 */
+    { "ist",  _STD, -530 },  /* Indian Standard */
+    { "zp6",  _STD, -600 },  /* USSR Zone 5 */
 #if     0
-    /* For completeness.  NST is also Newfoundland Stanard, nad SST is also
+    /* For completeness.  NST is also Newfoundland Standard, and SST is also
      * Swedish Summer. */
-    { "nst",  _STD, -HRS2MINS(13/2) },    /* North Sumatra */
-    { "sst",  _STD, -HRS2MINS( 7) },      /* south Sumatra, USSR Zone 6 */
+    { "nst",  _STD, -630 },  /* North Sumatra */
+    { "sst",  _STD, -700 },  /* south Sumatra, USSR Zone 6 */
 #endif  /* 0 */ 
-    { "wast", _STD, -HRS2MINS( 7) },      /* West Australian Standard */
-    { "wadt", _DST, -HRS2MINS( 7) },      /* West Australian Daylight */
-    { "jt",   _STD, -HRS2MINS(15/2) },    /* Java (3pm in Cronusland!) */
-    { "cct",  _STD, -HRS2MINS( 8) },      /* China Coast, USSR Zone 7 */
-    { "jst",  _STD, -HRS2MINS( 9) },      /* Japan Standard, USSR Zone 8 */
-    { "jdt",  _DST, -HRS2MINS( 9) },      /* Japan Daylight */
-    { "kst",  _STD, -HRS2MINS( 9) },      /* Korea Standard */
-    { "kdt",  _DST, -HRS2MINS( 9) },      /* Korea Daylight */
-    { "cast", _STD, -HRS2MINS(19/2) },    /* Central Australian Standard */
-    { "cadt", _DST, -HRS2MINS(19/2) },    /* Central Australian Daylight */
-    { "east", _STD, -HRS2MINS(10) },      /* Eastern Australian Standard */
-    { "eadt", _DST, -HRS2MINS(10) },      /* Eastern Australian Daylight */
-    { "gst",  _STD, -HRS2MINS(10) },      /* Guam Standard, USSR Zone 9 */
-    { "nzt",  _STD, -HRS2MINS(12) },      /* New Zealand */
-    { "nzst", _STD, -HRS2MINS(12) },      /* New Zealand Standard */
-    { "nzdt", _DST, -HRS2MINS(12) },      /* New Zealand Daylight */
-    { "idle", _STD, -HRS2MINS(12) },      /* International Date Line East */
+    { "wast", _STD, -700 },  /* West Australian Standard */
+    { "wadt", _DST, -700 },  /* West Australian Daylight */
+    { "jt",   _STD, -730 },  /* Java (3pm in Cronusland!) */
+    { "cct",  _STD, -800 },  /* China Coast, USSR Zone 7 */
+    { "jst",  _STD, -900 },  /* Japan Standard, USSR Zone 8 */
+    { "jdt",  _DST, -900 },  /* Japan Daylight */
+    { "kst",  _STD, -900 },  /* Korea Standard */
+    { "kdt",  _DST, -900 },  /* Korea Daylight */
+    { "cast", _STD, -930 },  /* Central Australian Standard */
+    { "cadt", _DST, -930 },  /* Central Australian Daylight */
+    { "east", _STD, -1000 },  /* Eastern Australian Standard */
+    { "eadt", _DST, -1000 },  /* Eastern Australian Daylight */
+    { "gst",  _STD, -1000 },  /* Guam Standard, USSR Zone 9 */
+    { "nzt",  _STD, -1200 },  /* New Zealand */
+    { "nzst", _STD, -1200 },  /* New Zealand Standard */
+    { "nzdt", _DST, -1200 },  /* New Zealand Daylight */
+    { "idle", _STD, -1200 },  /* International Date Line East */
     /* ADDED BY Marco Nijdam */
-    { "dst",  _DST, HRS2MINS( 0) },       /* DST on (hour is ignored) */
+    { "dst",  _DST,     0 },   /* DST on (hour is ignored) */
     /* End ADDED */
 };
 static int numTimezones = sizeof(tzTable) / sizeof(IdentTable);
@@ -273,33 +264,33 @@ static int numTimezones = sizeof(tzTable) / sizeof(IdentTable);
  * Military timezone table.
  */
 static IdentTable milTzTable[] = {
-    { "a",  _STD,  HRS2MINS(1)   },
-    { "b",  _STD,  HRS2MINS(2)   },
-    { "c",  _STD,  HRS2MINS(3)   },
-    { "d",  _STD,  HRS2MINS(4)   },
-    { "e",  _STD,  HRS2MINS(5)   },
-    { "f",  _STD,  HRS2MINS(6)   },
-    { "g",  _STD,  HRS2MINS(7)   },
-    { "h",  _STD,  HRS2MINS(8)   },
-    { "i",  _STD,  HRS2MINS(9)   },
-    { "k",  _STD,  HRS2MINS(10)  },
-    { "l",  _STD,  HRS2MINS(11)  },
-    { "m",  _STD,  HRS2MINS(12)  },
-    { "n",  _STD,  HRS2MINS(-1)  },
-    { "o",  _STD,  HRS2MINS(-2)  },
-    { "p",  _STD,  HRS2MINS(-3)  },
-    { "q",  _STD,  HRS2MINS(-4)  },
-    { "r",  _STD,  HRS2MINS(-5)  },
-    { "s",  _STD,  HRS2MINS(-6)  },
-    { "t",  _STD,  HRS2MINS(-7)  },
-    { "u",  _STD,  HRS2MINS(-8)  },
-    { "v",  _STD,  HRS2MINS(-9)  },
-    { "w",  _STD,  HRS2MINS(-10) },
-    { "x",  _STD,  HRS2MINS(-11) },
-    { "y",  _STD,  HRS2MINS(-12) },
-    { "z",  _STD,  HRS2MINS(0)   },
+    { "a",  _STD,    100  },
+    { "b",  _STD,    200  },
+    { "c",  _STD,    300  },
+    { "d",  _STD,    400  },
+    { "e",  _STD,    500  },
+    { "f",  _STD,    600  },
+    { "g",  _STD,    700  },
+    { "h",  _STD,    800  },
+    { "i",  _STD,    900  },
+    { "j",     0,      0  },
+    { "k",  _STD,   1000  },
+    { "l",  _STD,   1100  },
+    { "m",  _STD,   1200  },
+    { "n",  _STD,   -100  },
+    { "o",  _STD,   -200  },
+    { "p",  _STD,   -300  },
+    { "q",  _STD,   -400  },
+    { "r",  _STD,   -500  },
+    { "s",  _STD,   -600  },
+    { "t",  _STD,   -700  },
+    { "u",  _STD,   -800  },
+    { "v",  _STD,   -900  },
+    { "w",  _STD,  -1000  },
+    { "x",  _STD,  -1100  },
+    { "y",  _STD,  -1200  },
+    { "z",  _STD,      0  },
 };
-static int numMilitaryTimezones = sizeof(milTzTable) / sizeof(IdentTable);
 
 typedef struct {
     int numIds;
@@ -314,6 +305,7 @@ static Pattern datePatterns[] = {
     { 3, {_YEAR, _MONTH} },		/* yyyy mon (2012 Jan) */
     { 3, {_YEAR, _WEEK} },		/* yyyywww (2012W01)*/
     { 3, {_YDAY, _COLON} },		/* ddd:hh:mm:ss */
+    { 3, {_MONTH, _MDAY} },		/* mon dd */
     { 4, {_MDAY, _MONTH, _YEAR} },	/* dd mon yyyy (31 Jan 2012) */
     { 4, {_MONTH, _MDAY, _YEAR} },	/* mon dd yyyy (Jan 31 2012) */
     { 4, {_MONTH, _SLASH, _MDAY} },	/* mon/dd (12/23) */
@@ -401,6 +393,9 @@ InitParser(Tcl_Interp *interp, DateParser *parserPtr, const char *string)
     *q = '\0';
     parserPtr->nextCharPtr = parserPtr->buffer;
     parserPtr->tokens = Blt_Chain_Create();
+    /* Default date is the EPOCH which is 0 seconds. */
+    parserPtr->date.year = EPOCH;
+    parserPtr->date.mday = 1;
 }
 
 /* 
@@ -470,28 +465,6 @@ ParseWarning(Tcl_Interp *interp, const char *fmt, ...)
 /* 
  *-----------------------------------------------------------------------------
  *
- * GetId --
- *
- *	Returns the ID of the token.
- *
- * Returns:
- *	Returns the ID of the token.  If *tokenPtr* is NULL, _END is
- *	returned.
- *
- *-----------------------------------------------------------------------------
- */
-static TokenId
-GetId(Token *tokenPtr) 
-{
-    if (tokenPtr == NULL) {
-	return _END;
-    }
-    return tokenPtr->id;
-}
-
-/* 
- *-----------------------------------------------------------------------------
- *
  * DeleteToken --
  *
  *	Removed the token from the chain of tokens.
@@ -502,10 +475,10 @@ GetId(Token *tokenPtr)
  *-----------------------------------------------------------------------------
  */
 static void
-DeleteToken(Token *tokenPtr) 
+DeleteToken(Token *t) 
 {
-    if (tokenPtr->link != NULL) {
-	Blt_Chain_DeleteLink(tokenPtr->chain, tokenPtr->link);
+    if (t->link != NULL) {
+	Blt_Chain_DeleteLink(t->chain, t->link);
     }
 }
 
@@ -527,11 +500,11 @@ ParseNumber(DateParser *parserPtr, const char *string)
     const char *p;
     long lvalue;
     int length, result;
-    Token *tokenPtr;
+    Token *t;
     Tcl_Obj *objPtr;
 
     p = string;
-    tokenPtr = parserPtr->currentPtr;
+    t = parserPtr->currentPtr;
     while (isdigit(*p)) {
 	p++;
     }
@@ -545,10 +518,11 @@ ParseNumber(DateParser *parserPtr, const char *string)
                 length, string);
 	return _UNKNOWN;
     }
-    tokenPtr->lvalue = lvalue;
-    tokenPtr->ident = string;
-    tokenPtr->length = p - string;
-    return tokenPtr->id = _NUMBER;
+    t->lvalue = lvalue;
+    t->ident = string;
+    t->length = p - string;
+    t->id = _NUMBER;
+    return _NUMBER;
 }
 
 /* 
@@ -568,10 +542,9 @@ static TokenId
 ParseString(DateParser *parserPtr, int length, const char *string)
 {
     char c;
-    int i;
-    Token *tokenPtr;
+    Token *t;
 
-    tokenPtr = parserPtr->currentPtr;
+    t = parserPtr->currentPtr;
     c = tolower(string[0]);
     /* Month and weekday names (may be abbreviated). */
     if (length >= 3) {
@@ -583,10 +556,11 @@ ParseString(DateParser *parserPtr, int length, const char *string)
 
 	    p = monthNames[i];
 	    if ((c == tolower(*p)) && (strncasecmp(p, string, length) == 0)) {
-		tokenPtr->lvalue = i + 1;
-		tokenPtr->ident = p;
-		tokenPtr->length = 0;
-		return tokenPtr->id = _MONTH;
+		t->lvalue = i + 1;
+		t->ident = p;
+		t->length = 0;
+		t->id = _MONTH;
+		return _MONTH;
 	    }
 	}
 	/* Test for weekdays. Allow abbreviations greater than 2 characters. */
@@ -595,58 +569,58 @@ ParseString(DateParser *parserPtr, int length, const char *string)
 
 	    p = weekdayNames[i];
 	    if ((c == tolower(*p)) && (strncasecmp(p, string, length) == 0)) {
-		tokenPtr->lvalue = i;
-		tokenPtr->length = 0;
-		tokenPtr->ident = p;
-		return tokenPtr->id = _WDAY;
+		t->lvalue = i;
+		t->length = 0;
+		t->ident = p;
+		t->id = _WDAY;
+		return _WDAY;
 	    }
 	}
     }
-    /* Timezone. */
-    for (i = 0; i < numTimezones; i++) {
-	IdentTable *p;
+    /* Token is possibly a timezone. */
+    /* If it's a single letter (a-i,k-z), it's a military timezone. */
+    if ((length == 1) && (c != 'j') && (isalpha(c))) {
+        IdentTable *p;
 
-	p = tzTable + i;
-	/* Test of timezomes. No abbreviations. */
-	if ((c == p->name[0]) && (strncmp(p->name, string, length) == 0)) {
-	    tokenPtr->lvalue = p->value;
-	    tokenPtr->ident = p->name;
-	    tokenPtr->length = 0;
-	    return  tokenPtr->id = p->id;
-	}
-    }
-    /* Meridian: am or pm. */
-    if (length == 2) {
-	int i;
+        p = milTzTable + (c - 'a');
+        t->ident = p->name;
+        t->length = 1;
+        t->lvalue = p->value;
+        t->id = _STD;
+        return _STD;
+    } else {
+        int i;
 
-	/* Test of meridian. */
-	for (i = 0; i < numMeridians; i++) {
-	    const char *p;
-
-	    p = meridianNames[i];
-	    if ((c == tolower(*p)) && (strncasecmp(p, string, length) == 0)) {
-		tokenPtr->lvalue = i;
-		tokenPtr->length = 0;
-		return tokenPtr->id = _AMPM;
-	    }
-	}
-    }
-    /* Military timezone. Single letter a-z. */
-    if (length == 1) {
-	int i;
-
-	/* Test of military timezones. Only one character wide. */
-	for (i = 0; i < numMilitaryTimezones; i++) {
-	    IdentTable *p;
-
-	    p = milTzTable + i;
-	    if (c == p->name[0]) {
-		tokenPtr->ident = p->name;
-		tokenPtr->length = 1;
-		tokenPtr->lvalue = p->value;
-		return tokenPtr->id = _STD;
-	    }
-	}
+        /* Test for standard timezones. */
+        for (i = 0; i < numTimezones; i++) {
+            IdentTable *p;
+            
+            p = tzTable + i;
+            /* Test of timezomes. No abbreviations. */
+            if ((c == p->name[0]) && (strncmp(p->name, string, length) == 0)) {
+                t->lvalue = p->value;
+                t->ident = p->name;
+                t->length = 0;
+                t->id = p->id;
+                return p->id;
+            }
+        }
+        /* Otherwise test for meridian: am or pm. */
+        if (length == 2) {
+            /* Test of meridian. */
+            for (i = 0; i < numMeridians; i++) {
+                const char *p;
+                
+                p = meridianNames[i];
+                if ((c == tolower(*p)) && 
+                    (strncasecmp(p, string, length) == 0)) {
+                    t->lvalue = i;
+                    t->length = 0;
+                    t->id = _AMPM;
+                    return _AMPM;
+                }
+            }
+        }
     }
     ParseError(parserPtr->interp, "unknown token \"%.*s\"", length, string);
     return _UNKNOWN;
@@ -704,14 +678,14 @@ LastToken(DateParser *parserPtr)
  *-----------------------------------------------------------------------------
  */
 static Token *
-NextToken(Token *tokenPtr)
+NextToken(Token *t)
 {
     Blt_ChainLink link;
 
-    if (tokenPtr->link == NULL) {
+    if (t->link == NULL) {
 	return NULL;
     }
-    link = Blt_Chain_NextLink(tokenPtr->link);
+    link = Blt_Chain_NextLink(t->link);
     if (link == NULL) {
 	return NULL;
     }
@@ -728,14 +702,14 @@ NextToken(Token *tokenPtr)
  *-----------------------------------------------------------------------------
  */
 static Token *
-PrevToken(Token *tokenPtr)
+PrevToken(Token *t)
 {
     Blt_ChainLink link;
 
-    if (tokenPtr->link == NULL) {
+    if (t->link == NULL) {
 	return NULL;
     }
-    link = Blt_Chain_PrevLink(tokenPtr->link);
+    link = Blt_Chain_PrevLink(t->link);
     if (link == NULL) {
 	return NULL;
     }
@@ -767,24 +741,23 @@ NumberTokens(DateParser *parserPtr)
  *-----------------------------------------------------------------------------
  */
 static const char *
-TokenName(Token *tokenPtr) 
+TokenName(Token *t) 
 {
-    if (tokenPtr == NULL) {
+    if (t == NULL) {
 	return tokenNames[_END];
     } 
-    return tokenNames[tokenPtr->id];
+    return tokenNames[t->id];
 }
 
 
 static void
 PrintTokens(DateParser *parserPtr) 
 {
-    Token *tokenPtr;
+    Token *t;
 
     fprintf(stderr, "tokens = [ ");
-    for (tokenPtr = FirstToken(parserPtr); tokenPtr != NULL;
-	 tokenPtr = NextToken(tokenPtr)) {
-	fprintf(stderr, "%s ",TokenName(tokenPtr));
+    for (t = FirstToken(parserPtr); t != NULL; t = NextToken(t)) {
+	fprintf(stderr, "%s ",TokenName(t));
     }
     fprintf(stderr, "]\n");
 }
@@ -803,15 +776,15 @@ GetNextToken(DateParser *parserPtr, TokenId *idPtr)
 {
     char *p;
     TokenId id;
-    Token *tokenPtr;
+    Token *t;
     Blt_ChainLink link;
 
     link = Blt_Chain_AllocLink(sizeof(Token));
     Blt_Chain_LinkAfter(parserPtr->tokens, link, NULL);
-    tokenPtr = Blt_Chain_GetValue(link);
-    tokenPtr->link = link;
-    tokenPtr->chain = parserPtr->tokens;
-    parserPtr->currentPtr = tokenPtr;
+    t = Blt_Chain_GetValue(link);
+    t->link = link;
+    t->chain = parserPtr->tokens;
+    parserPtr->currentPtr = t;
     p = parserPtr->nextCharPtr;
     while (isspace(*p)) {
 	p++;				/* Skip leading spaces. */
@@ -838,11 +811,11 @@ GetNextToken(DateParser *parserPtr, TokenId *idPtr)
 	id = _DASH;
 	p++;
     } else if ((*p == 'w') && (isdigit(*(p+1))) && (isdigit(*(p+2)))) {
-	tokenPtr->ident = p;
-	tokenPtr->lvalue = (p[1] - '0') * 10 + (p[2] - '0');
+	t->ident = p;
+	t->lvalue = (p[1] - '0') * 10 + (p[2] - '0');
 	id = _WEEK;
-	tokenPtr->length = 3;
-	p += tokenPtr->length;
+	t->length = 3;
+	p += t->length;
     } else if (isdigit(*p)) {
 	char *start;
 	char save;
@@ -858,6 +831,13 @@ GetNextToken(DateParser *parserPtr, TokenId *idPtr)
 	    return TCL_ERROR;
 	}
 	*p = save;			/* Restore last chararacter. */
+        if (((p[0] == 't') && (p[1] == 'h')) ||
+            ((p[0] == 's') && (p[1] == 't')) ||
+            ((p[0] == 'n') && (p[1] == 'd')) ||
+            ((p[0] == 'r') && (p[1] == 'd'))) {
+            p += 2;
+            id = _MDAY;
+        }
     } else if (isalpha(*p)) {
 	char name[BUFSIZ];
 	int i;
@@ -928,47 +908,43 @@ MatchDatePattern(DateParser *parserPtr)
     /* Find the first colon. */
     for (i = 0; i < numDatePatterns; i++) {
 	int j;
-	Token *tokenPtr;
+	Token *t;
 	Pattern *patPtr;
 
 	patPtr = datePatterns + i;
 	if (patPtr->numIds != NumberTokens(parserPtr)) {
 	    continue;
 	}
-	for (j = 0, tokenPtr = FirstToken(parserPtr); 
-	     (tokenPtr != NULL) && (j < patPtr->numIds); 
-	     tokenPtr = NextToken(tokenPtr), j++) {
+	for (j = 0, t = FirstToken(parserPtr); 
+             (t != NULL) && (j < patPtr->numIds); t = NextToken(t), j++) {
 	    TokenId id;
 
 	    id = patPtr->ids[j];
-	    if (tokenPtr->id != id) {
-		if ((tokenPtr->id == _NUMBER) && (tokenPtr->length <= 2)){
+	    if (t->id != id) {
+		if ((t->id == _NUMBER) && (t->length <= 2)){
 		    switch (id) {
 		    case _WDAY:
-			if ((tokenPtr->lvalue > 0) && (tokenPtr->lvalue <= 7)) {
+			if ((t->lvalue > 0) && (t->lvalue <= 7)) {
 			    continue;
 			}
 			ParseWarning(parserPtr->interp, 
-                                "weekday \"%d\" is out of range", 
-                                tokenPtr->lvalue);
+                                "weekday \"%d\" is out of range", t->lvalue);
 			break;
 
 		    case _MONTH:
-			if (tokenPtr->lvalue <= 12) {
+			if (t->lvalue <= 12) {
 			    continue;
 			}
 			ParseWarning(parserPtr->interp, 
-                                "month \"%d\" is out of range", 
-                                tokenPtr->lvalue);
+                                "month \"%d\" is out of range", t->lvalue);
 			break;
 
 		    case _MDAY:
-			if (tokenPtr->lvalue <= 31) {
+			if (t->lvalue <= 31) {
 			    continue;
 			}
 			ParseWarning(parserPtr->interp, 
-                                "day \"%d\" is out of range", 
-                                tokenPtr->lvalue);
+                                "day \"%d\" is out of range", t->lvalue);
 			break;
 
 		    case _YEAR:
@@ -991,63 +967,11 @@ MatchDatePattern(DateParser *parserPtr)
 /* 
  *-----------------------------------------------------------------------------
  *
- * GetTz --
- *
- *	Trys to parse a timezone specification from the current
- *      point in the parser.
- *
- * Returns:
- *      Return a pointer to the timezone token or NULL is no timezone
- *      specification is found.
- *
- *-----------------------------------------------------------------------------
- */
-static Token *
-GetTz(Token *tokenPtr, int *mPtr)
-{
-    int m, sign;
-    
-    sign = 1;
-    if (GetId(tokenPtr) == _DASH) {
-	sign = -1;
-    }
-    /* Verify the next token after the +/-/' is a number.  */
-    tokenPtr = NextToken(tokenPtr);
-    if (GetId(tokenPtr) != _NUMBER) {
-	return NULL;
-    }
-    /* The timezone is in the form NN:NN or NNNN. */
-    if (tokenPtr->length == 4) {
-	m = ((tokenPtr->lvalue / 100) * 60) + (tokenPtr->lvalue % 100);
-    } else if (tokenPtr->length == 2) {
-	m = HRS2MINS(tokenPtr->lvalue);
-	tokenPtr = NextToken(tokenPtr);
-	if (GetId(tokenPtr) != _COLON) {
-	    *mPtr = sign * m;
-	    return tokenPtr;
-	}
-	tokenPtr = NextToken(tokenPtr);
-	if ((GetId(tokenPtr) != _NUMBER) || (tokenPtr->length != 2)) {
-	    return NULL;
-	}
-	m += tokenPtr->lvalue;
-    } else {
-	return NULL;                    /* Error: expecting 2 digit or 4
-                                         * digit number after plus or
-                                         * minus. */
-    }
-    tokenPtr = NextToken(tokenPtr);
-    *mPtr = sign * m;
-    return tokenPtr;
-}
-
-/* 
- *-----------------------------------------------------------------------------
- *
  * ExtractTimezone --
  *
- *	Searches for a possible timezone token (or serier of token) and
- *      removes them from the parser chain.
+ *	Searches and removes (if found) the timezone token from the parser
+ *      chain.  The timezone name (different from the timezone offset) is
+ *      unambiguous.  
  *
  * Returns:
  *      A standard TCL result.  Always TCL_OK.
@@ -1061,74 +985,57 @@ GetTz(Token *tokenPtr, int *mPtr)
 static int
 ExtractTimezone(DateParser *parserPtr)
 {
-    int isdst, m;
-    Token *tokenPtr;
+    Token *t;
 
-    m = 0;
-    isdst = 0;
-    for (tokenPtr = LastToken(parserPtr); tokenPtr != NULL;
-	 tokenPtr = PrevToken(tokenPtr)) {
-	switch (tokenPtr->id) {
-	case _DST:			/* (EDT) */
-	    isdst = 1;
-	    m = HRS2MINS(tokenPtr->lvalue);
-	    isdst = TRUE;
-	    goto found;
-	    
-	case _STD:			/* (EST) */
-	    m = HRS2MINS(tokenPtr->lvalue);
-	    goto found;
-
-	break;
-	default:
-	    break;
-	}
+    for (t = LastToken(parserPtr); t != NULL; t = PrevToken(t)) {
+	if ((GetId(t) == _DST) || (GetId(t) == _STD)) {
+            parserPtr->date.tzoffset = TZOFFSET(t->lvalue);
+            parserPtr->date.isdst = (GetId(t) == _DST);
+            parserPtr->flags |= PARSE_TZ;
+            DeleteToken(t);
+            break;
+        }
     }
-    if (tokenPtr == NULL) {
-	return TCL_OK;			/* No timezone found. */
-    }
-found:
-    DeleteToken(tokenPtr);
-    parserPtr->date.tzoffset = m;
-    parserPtr->date.isdst = isdst;
-    parserPtr->flags |= PARSE_TZ;
     return TCL_OK;
 }
 
 
 static int
-GetTimezone(DateParser *parserPtr, Token *tokenPtr, Token **resPtrPtr)
+GetTzOffset(DateParser *parserPtr, Token *t, Token **nextPtr)
 {
-    int isdst, m;
+    int sign, offset;
 
-    isdst = 0;
-    switch (GetId(tokenPtr)) {
-    case _PLUS:                         /* +00:00 */
-    case _DASH:                         /* -00:00 */
-	tokenPtr = GetTz(tokenPtr, &m);
-	break;
+    sign = (GetId(t) == _DASH) ? -1 : 1;
 
-    case _DST:				/* EDT */
-	m = HRS2MINS(tokenPtr->lvalue);
-	isdst = TRUE;
-	tokenPtr = NextToken(tokenPtr);
-	goto done;
-
-    case _STD:				/* EST */
-	m = HRS2MINS(tokenPtr->lvalue);
-	tokenPtr = NextToken(tokenPtr);
-	goto done;
-
-    default:
-	return TCL_CONTINUE;
+    /* Verify the next token after the +/-/' is a number.  */
+    t = NextToken(t);
+    if (GetId(t) != _NUMBER) {
+        return TCL_ERROR;
     }
-    if (tokenPtr == NULL) {
-	return TCL_ERROR;
+    /* The timezone is in the form NN:NN or NNNN. */
+    if (t->length == 4) {
+        offset = TZOFFSET(t->lvalue);
+    } else if (t->length == 2) {
+        offset = t->lvalue * SECONDS_HOUR;
+        t = NextToken(t);
+        if (GetId(t) != _COLON) {
+            goto found;
+        }
+        t = NextToken(t);
+        if ((GetId(t) != _NUMBER) || (t->length != 2)) {
+            return TCL_ERROR;
+	}
+        offset += t->lvalue * SECONDS_MINUTE;
+    } else {
+        return TCL_ERROR;               /* Error: expecting 2 digit or 4
+                                         * digit number after plus or
+                                         * minus. */
     }
- done:
-    *resPtrPtr = tokenPtr;
-    parserPtr->date.tzoffset = m;
-    parserPtr->date.isdst = isdst;
+ found:
+    *nextPtr = NextToken(t);
+    /* Subtract or add the offset to the current timezone offset. */
+    parserPtr->date.tzoffset += sign * offset;
+    parserPtr->date.isdst = 0;
     parserPtr->flags |= PARSE_TZ;
     return TCL_OK;
 }
@@ -1140,8 +1047,9 @@ GetTimezone(DateParser *parserPtr, Token *tokenPtr, Token **resPtrPtr)
  *
  *	Searches for a weekday token and removes it from the parser chain.
  *      The weekday would have been specified are a weekday name
- *      (e.g. Tuesday).
- *
+ *              Tuesday  
+ *      Also remove a following comma if one exists.
+ *              Tuesday,
  * Returns:
  *      None.
  *
@@ -1153,14 +1061,17 @@ GetTimezone(DateParser *parserPtr, Token *tokenPtr, Token **resPtrPtr)
 static void
 ExtractWeekday(DateParser *parserPtr)
 {
-    Token *tokenPtr;
+    Token *t, *next;
 
-    for (tokenPtr = FirstToken(parserPtr); tokenPtr != NULL; 
-	 tokenPtr = NextToken(tokenPtr)) {
-	if (tokenPtr->id == _WDAY) {
-	    parserPtr->date.wday = tokenPtr->lvalue; /* 0-6 */
-	    DeleteToken(tokenPtr);
-	    return;
+    for (t = FirstToken(parserPtr); t != NULL; t = next) {
+        next = NextToken(t);
+	if (GetId(t) == _WDAY) {
+	    parserPtr->date.wday = t->lvalue; /* 0-6 */
+	    DeleteToken(t);
+            if (GetId(next) == _COMMA) {
+                DeleteToken(next);
+            }
+	    break;
 	}
     }
 }
@@ -1168,19 +1079,17 @@ ExtractWeekday(DateParser *parserPtr)
 static int
 ExtractSeparator(DateParser *parserPtr)
 {
-    Token *tokenPtr;
+    Token *t;
 
     /* Find the date/time separator "t" and remove it. */
-    for (tokenPtr = FirstToken(parserPtr); tokenPtr != NULL; 
-	 tokenPtr = NextToken(tokenPtr)) {
-	if ((tokenPtr->id == _STD) && (tokenPtr->length == 1) &&
-	    (tokenPtr->ident[0] == 't')) {
-	    Token *nextPtr;
+    for (t = FirstToken(parserPtr); t != NULL; t = NextToken(t)) {
+	if ((GetId(t) == _STD) && (t->length == 1) && (t->ident[0] == 't')) {
+	    Token *next;
 
 	    /* Check if the 't' is a military timezone or a separator. */
-	    nextPtr = NextToken(tokenPtr);
-	    if (GetId(nextPtr) != _END) {
-		DeleteToken(tokenPtr);
+	    next = NextToken(t);
+	    if (GetId(next) != _END) {
+		DeleteToken(t);
 	    }
 	    return TCL_OK;
 	}
@@ -1288,19 +1197,18 @@ GetIsoWeek(int year, int mon, int day, int *wyearPtr)
 static void
 FixTokens(DateParser *parserPtr)
 {
-    Token *tokenPtr;
+    Token *t;
 
-    for (tokenPtr = FirstToken(parserPtr); tokenPtr != NULL; 
-	 tokenPtr = NextToken(tokenPtr)) {
-	if (tokenPtr->id == _NUMBER) {
-	    if (tokenPtr->length == 3) {
-		tokenPtr->id = _YDAY;
-	    } else if (tokenPtr->length == 4) {
-		tokenPtr->id = _YEAR;
-	    } else if (tokenPtr->length == 7) {
-		tokenPtr->id = _ISO7;
-	    } else if (tokenPtr->length == 8) {
-		tokenPtr->id = _ISO8;
+    for (t = FirstToken(parserPtr); t != NULL; t = NextToken(t)) {
+	if (t->id == _NUMBER) {
+	    if (t->length == 3) {
+		t->id = _YDAY;
+	    } else if (t->length == 4) {
+		t->id = _YEAR;
+	    } else if (t->length == 7) {
+		t->id = _ISO7;
+	    } else if (t->length == 8) {
+		t->id = _ISO8;
 	    }
 	}
     }
@@ -1340,127 +1248,124 @@ FixTokens(DateParser *parserPtr)
 static int
 ExtractTime(DateParser *parserPtr)
 {
-    int result;
-    Token *nextPtr, *firstPtr, *lastPtr;
-    Token *tokenPtr, *hourPtr, *minPtr;
+    Token *next, *first, *last;
+    Token *t, *hour, *min;
 
-    firstPtr = lastPtr = NULL;
+    first = last = NULL;
     /* Find the starting pattern "num colon num". */
-    for (tokenPtr = FirstToken(parserPtr); tokenPtr != NULL; 
-	 tokenPtr = NextToken(tokenPtr)) {
-	Token *colonPtr;
+    for (t = FirstToken(parserPtr); t != NULL; t = NextToken(t)) {
+	Token *colon;
 
-	hourPtr = firstPtr = tokenPtr;
-	if ((GetId(tokenPtr) == _NUMBER) && (tokenPtr->length == 6)) {
+	hour = first = t;
+	if ((GetId(t) == _NUMBER) && (t->length == 6)) {
 	    long value;
 
 	    /* Assuming that any 6-digit number is a time. */
 	    /* ISO time format hhmmss */
-	    value = tokenPtr->lvalue;
+	    value = t->lvalue;
 	    parserPtr->date.sec = value % 100;
 	    value /= 100;
 	    parserPtr->date.min = value % 100;
 	    value /= 100;
 	    parserPtr->date.hour = value % 100;
-	    firstPtr = tokenPtr;
-	    tokenPtr = NextToken(tokenPtr);
+	    first = t;
+	    t = NextToken(t);
 	    goto done;
 	}
-	if ((GetId(hourPtr) != _NUMBER) || (hourPtr->length > 2)) {
+	if ((GetId(hour) != _NUMBER) || (hour->length > 2)) {
 	    continue;
 	}
-	colonPtr = NextToken(tokenPtr);
-	if (GetId(colonPtr) != _COLON) {
+	colon = NextToken(t);
+	if ((GetId(colon) != _COLON) && (GetId(colon) != _DOT)) {
 	    continue;
 	}
-	minPtr = NextToken(colonPtr);
-	if ((GetId(minPtr) != _NUMBER) || (minPtr->length > 2)) {
+	min = NextToken(colon);
+	if ((GetId(min) != _NUMBER) || (min->length > 2)) {
 	    continue;
 	}
-	tokenPtr = NextToken(minPtr);
+	t = NextToken(min);
 	break;				/* Found the starting pattern */
     }
-    if (tokenPtr == NULL) {
-	for (tokenPtr = FirstToken(parserPtr); tokenPtr != NULL; 
-	     tokenPtr = NextToken(tokenPtr)) {
-	    if ((GetId(tokenPtr) == _NUMBER) && 
-		((tokenPtr->length == 6) || (tokenPtr->length == 14))) {
+    if (t == NULL) {
+	for (t = FirstToken(parserPtr); t != NULL; t = NextToken(t)) {
+	    if ((GetId(t) == _NUMBER) && 
+                ((t->length == 6) || (t->length == 14))) {
 		long value;
 		/* Iso time format hhmmss */
-		value = tokenPtr->lvalue;
+		value = t->lvalue;
 		
 		parserPtr->date.sec = value % 100;
 		value /= 100;
 		parserPtr->date.min = value % 100;
 		value /= 100;
 		parserPtr->date.hour = value % 100;
-		if (tokenPtr->length == 14) {
+		if (t->length == 14) {
 		    value /= 100;
-		    tokenPtr->length = 8;  /* Convert to ISO8 */
-		    tokenPtr->lvalue = value;
-		    firstPtr = tokenPtr = NextToken(tokenPtr);
+		    t->length = 8;  /* Convert to ISO8 */
+		    t->lvalue = value;
+		    first = t = NextToken(t);
 		} else {
-		    firstPtr = tokenPtr;
-		    tokenPtr = NextToken(tokenPtr);
+		    first = t;
+		    t = NextToken(t);
 		}
 		goto done;
 	    }
 	}
 	return TCL_OK;			/* No time tokens found. */
     }
-    parserPtr->date.hour = hourPtr->lvalue;
-    parserPtr->date.min = minPtr->lvalue;
-    if (GetId(tokenPtr) != _COLON) {
+    parserPtr->date.hour = hour->lvalue;
+    parserPtr->date.min = min->lvalue;
+    if ((GetId(t) != _COLON) && (GetId(t) != _DOT)) {
 	goto done;
     }
-    tokenPtr = NextToken(tokenPtr);
-    if ((GetId(tokenPtr) != _NUMBER) || (tokenPtr->length > 2)) {
+    t = NextToken(t);
+    if ((GetId(t) != _NUMBER) || (t->length > 2)) {
 	goto done;
     }
-    parserPtr->date.sec = tokenPtr->lvalue;
-    tokenPtr = NextToken(tokenPtr);
-    if (GetId(tokenPtr) == _COLON) {
-	tokenPtr = NextToken(tokenPtr);
-	if ((GetId(tokenPtr) == _NUMBER) && (tokenPtr->length == 3)) {
-	    parserPtr->date.frac = tokenPtr->lvalue * 1e-3;
-	    tokenPtr = NextToken(tokenPtr);
-	}
-    } else if ((GetId(tokenPtr) == _DOT) || (GetId(tokenPtr) == _COMMA)) {
-	tokenPtr = NextToken(tokenPtr);
-	if ((GetId(tokenPtr) == _NUMBER)) {
+    parserPtr->date.sec = t->lvalue;
+    t = NextToken(t);
+    switch (GetId(t)) {
+    case _COLON:
+    case _DOT:
+    case _COMMA:
+	t = NextToken(t);
+	if ((GetId(t) == _NUMBER)) {
 	    double d;
 
-	    d = pow(10.0, tokenPtr->length);
-	    parserPtr->date.frac = tokenPtr->lvalue / d;
-	    tokenPtr = NextToken(tokenPtr);
+	    d = pow(10.0, t->length);
+	    parserPtr->date.frac = t->lvalue / d;
+	    t = NextToken(t);
 	}
+        break;
+    default:
+        break;
     }
  done:
     /* Look for AMPM designation. */
-    if (GetId(tokenPtr) == _AMPM) {
+    if (GetId(t) == _AMPM) {
 	if (parserPtr->date.hour > 12) {
 	    fprintf(stderr, "invalid am/pm, already in 24hr format\n");
 	}
-	if (tokenPtr->lvalue) {
+	if (t->lvalue) {
 	    parserPtr->date.hour += 12;
 	}
-	tokenPtr = NextToken(tokenPtr);
+	t = NextToken(t);
     }
-    result = GetTimezone(parserPtr, tokenPtr, &nextPtr);
-    if (result == TCL_ERROR) {
-	return TCL_ERROR;
-    }
-    if (result == TCL_OK) {
-	tokenPtr = nextPtr;
+    /* Check for the timezone offset. */
+    if ((GetId(t) == _PLUS) || (GetId(t) == _DASH)) {
+        if (GetTzOffset(parserPtr, t, &next) != TCL_OK) {
+            return TCL_ERROR;
+        }
+        t = next;
     }
     /* Remove the time-related tokens from the list. */
-    lastPtr = tokenPtr;
-    for (tokenPtr = firstPtr; tokenPtr != NULL; tokenPtr = nextPtr) {
-	nextPtr = NextToken(tokenPtr);
-	if (tokenPtr == lastPtr) {
+    last = t;
+    for (t = first; t != NULL; t = next) {
+	next = NextToken(t);
+	if (t == last) {
 	    break;
 	}
-	DeleteToken(tokenPtr);
+	DeleteToken(t);
     }
     parserPtr->flags |= PARSE_TIME;
     return TCL_OK;
@@ -1514,7 +1419,7 @@ ExtractTime(DateParser *parserPtr)
 static int
 ExtractDate(DateParser *parserPtr)
 {
-    Token *nextPtr, *tokenPtr;
+    Token *next, *t;
     int i, patternIndex;
     Pattern *patPtr;
 
@@ -1536,44 +1441,44 @@ ExtractDate(DateParser *parserPtr)
     /* Process the list against the matching pattern. */
     patPtr = datePatterns + patternIndex;
     assert(patPtr->numIds == NumberTokens(parserPtr));
-    tokenPtr = FirstToken(parserPtr); 
-    for (i = 0; i < patPtr->numIds; i++, tokenPtr = NextToken(tokenPtr)) {
+    t = FirstToken(parserPtr); 
+    for (i = 0; i < patPtr->numIds; i++, t = NextToken(t)) {
 	TokenId id;
 	
 	id = patPtr->ids[i];
 	switch (id) {
 	case _MONTH:                   /* 1-12 converted to 0-11 */
-	    parserPtr->date.mon = tokenPtr->lvalue - 1;
+	    parserPtr->date.mon = t->lvalue - 1;
 	    break;
 
 	case _YEAR:                    /* 0000-9999 or 00-99 */
-	    parserPtr->date.year = tokenPtr->lvalue;
-	    if (tokenPtr->length == 2) {
+	    parserPtr->date.year = t->lvalue;
+	    if (t->length == 2) {
 		parserPtr->date.year += 1900;
 	    }
 	    break;
 	case _WEEK:                    /* 1-53 converted to 0-52 */
             parserPtr->flags |= PARSE_WEEK;
-	    parserPtr->date.week = tokenPtr->lvalue - 1;
+	    parserPtr->date.week = t->lvalue - 1;
 	    break;
 	case _WDAY:                    /* 1-7 converted to 0-6 */
             parserPtr->flags |= PARSE_WDAY;
-	    parserPtr->date.wday = tokenPtr->lvalue - 1;
+	    parserPtr->date.wday = t->lvalue - 1;
 	    break;
 	case _MDAY:                    /* 1-31 */
             parserPtr->flags |= PARSE_MDAY;
-	    parserPtr->date.mday = tokenPtr->lvalue;
+	    parserPtr->date.mday = t->lvalue;
 	    break;
 	case _YDAY:                    /* 1-366 converted to 0-365 */
             parserPtr->flags |= PARSE_YDAY;
-	    parserPtr->date.yday = tokenPtr->lvalue - 1;
+	    parserPtr->date.yday = t->lvalue - 1;
 	    break;
 
 	case _ISO7:                    /* 0000-9999,1-366  */
 	    {
 		long value;
 		/* Iso date format */
-		value = tokenPtr->lvalue;
+		value = t->lvalue;
 		
 		parserPtr->date.yday = (value % 1000) - 1;
 		value /= 1000;
@@ -1586,7 +1491,7 @@ ExtractDate(DateParser *parserPtr)
 	    {
 		long value;
 		/* Iso date format */
-		value = tokenPtr->lvalue;
+		value = t->lvalue;
 		
 		parserPtr->date.mday = value % 100;
 		value /= 100;
@@ -1605,10 +1510,9 @@ ExtractDate(DateParser *parserPtr)
 	    break;
 	}
     }
-    for (tokenPtr = FirstToken(parserPtr); tokenPtr != NULL; 
-	 tokenPtr = nextPtr) {
-	nextPtr = NextToken(tokenPtr);
-	DeleteToken(tokenPtr);
+    for (t = FirstToken(parserPtr); t != NULL; t = next) {
+	next = NextToken(t);
+	DeleteToken(t);
     }
     parserPtr->flags |= PARSE_DATE;
     return TCL_OK;
@@ -1642,6 +1546,80 @@ NumberDaysFromEpoch(int year)
     return numDays;
 }
 
+static Tcl_Obj *
+DateToListObj(Tcl_Interp *interp, Blt_DateTime *datePtr)
+{
+    Tcl_Obj *objPtr, *listObjPtr;
+
+    listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
+    /* Year */
+    objPtr = Tcl_NewStringObj("year", 4);
+    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+    objPtr = Tcl_NewIntObj(datePtr->year);
+    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+    /* Month */
+    objPtr = Tcl_NewStringObj("month", 5);
+    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+    objPtr = Tcl_NewStringObj(monthNames[datePtr->mon], -1);
+    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+    /* Month Day */
+    objPtr = Tcl_NewStringObj("mday", 4);
+    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+    objPtr = Tcl_NewIntObj(datePtr->mday);
+    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+    /* Week Day */
+    objPtr = Tcl_NewStringObj("wday", 4);
+    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+    objPtr = Tcl_NewStringObj(weekdayNames[datePtr->wday], -1);
+    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+    /* Year Day */
+    objPtr = Tcl_NewStringObj("yday", 4);
+    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+    objPtr = Tcl_NewIntObj(datePtr->yday);
+    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+    /* Week */
+    objPtr = Tcl_NewStringObj("week", 4);
+    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+    objPtr = Tcl_NewIntObj(datePtr->week);
+    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+    /* Week Year */
+    objPtr = Tcl_NewStringObj("wyear", 5);
+    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+    objPtr = Tcl_NewIntObj(datePtr->wyear);
+    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+    /* Leap year */
+    objPtr = Tcl_NewStringObj("isleapyear", 10);
+    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+    objPtr = Tcl_NewBooleanObj(datePtr->isLeapYear);
+    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+    /* Hour */
+    objPtr = Tcl_NewStringObj("hour", 4);
+    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+    objPtr = Tcl_NewIntObj(datePtr->hour);
+    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+    /* Minute */
+    objPtr = Tcl_NewStringObj("minute", 6);
+    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+    objPtr = Tcl_NewIntObj(datePtr->min);
+    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+    /* Second */
+    objPtr = Tcl_NewStringObj("second", 6);
+    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+    objPtr = Tcl_NewDoubleObj(datePtr->sec + datePtr->frac);
+    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+    /* Daylight Savings Time */
+    objPtr = Tcl_NewStringObj("isdst", 5);
+    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+    objPtr = Tcl_NewBooleanObj(datePtr->isdst);
+    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+    /* Timezone Offset */
+    objPtr = Tcl_NewStringObj("tzoffset", 8);
+    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+    objPtr = Tcl_NewIntObj(datePtr->tzoffset);
+    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+    return listObjPtr;
+}
+
 /*
  *-----------------------------------------------------------------------------
  *
@@ -1666,8 +1644,11 @@ ConvertDate(Tcl_Interp *interp, DateParser *parserPtr, double *secondsPtr)
 
     datePtr = &parserPtr->date;
 #ifdef notdef
-    fprintf(stderr, "ConvertDate: year=%d mon=%d mday=%d week=%d\n", 
-            datePtr->year, datePtr->mon, datePtr->mday, datePtr->week);
+    fprintf(stderr, "ConvertDate: (%s) year=%d mon=%d mday=%d week=%d, %dh%dm%ds.%g, tz=%d\n", 
+            parserPtr->buffer, 
+            datePtr->year, datePtr->mon, datePtr->mday, datePtr->week,
+            datePtr->hour, datePtr->min, datePtr->sec, datePtr->frac,
+            datePtr->tzoffset);
 #endif
     isLeapYear = IsLeapYear(datePtr->year);
     /* Check the inputs for validity */
@@ -2039,9 +2020,9 @@ ParseDate(Tcl_Interp *interp, const char *string, double *secondsPtr)
 
     /* Remove the time/date 'T' separator if one exists. */
     ExtractSeparator(&parser);
-    /* Now parse out the time, timezone, and then date. */
-    if ((ExtractTime(&parser) != TCL_OK) ||
-	(ExtractTimezone(&parser) != TCL_OK) ||
+    /* Now parse out the timezone, time, and date. */
+    if ((ExtractTimezone(&parser) != TCL_OK) ||
+	(ExtractTime(&parser) != TCL_OK) ||
 	(ExtractDate(&parser) != TCL_OK)) {
 	goto error;
     }
@@ -2086,6 +2067,35 @@ FormatOp(ClientData clientData, Tcl_Interp *interp, int objc,
     return TCL_OK;
 }
 
+static int
+ParseOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+       Tcl_Obj *const *objv)
+{
+    DateParser parser;
+
+    InitParser(interp, &parser, Tcl_GetString(objv[2]));
+
+    /* Create list of tokens from date string. */
+    if (ProcessTokens(&parser) != TCL_OK) {
+        goto error;
+    }
+
+    /* Remove the time/date 'T' separator if one exists. */
+    ExtractSeparator(&parser);
+    /* Now parse out the timezone, time, and date. */
+    if ((ExtractTimezone(&parser) != TCL_OK) ||
+	(ExtractTime(&parser) != TCL_OK) ||
+	(ExtractDate(&parser) != TCL_OK)) {
+	goto error;
+    }
+    Tcl_SetObjResult(interp, DateToListObj(interp, &parser.date));
+    FreeParser(&parser);
+    return TCL_OK;
+ error:
+    FreeParser(&parser);
+    return TCL_ERROR;
+}
+
 
 static int
 ScanOp(ClientData clientData, Tcl_Interp *interp, int objc, 
@@ -2111,6 +2121,7 @@ ScanOp(ClientData clientData, Tcl_Interp *interp, int objc,
 static Blt_OpSpec dateCmdOps[] =
 {
     {"format",  1, FormatOp,      3, 0, "seconds ?switches?",},
+    {"parse",   1, ParseOp,       3, 3, "date",},
     {"scan",    1, ScanOp,        3, 3, "date",},
 };
 
@@ -2696,7 +2707,11 @@ Blt_FormatDate(Blt_DateTime *datePtr, const char *fmt, Tcl_DString *resultPtr)
             bp += 4;
             break;
         case 'z':                       /* Numeric timezone, +hhmm */
-            sprintf(bp, "+%04ld", datePtr->tzoffset);
+            if (datePtr->tzoffset < 0) {
+                sprintf(bp, "%05d", datePtr->tzoffset);
+            } else {
+                sprintf(bp, "+%04d", datePtr->tzoffset);
+            }
             bp += 5;
             break;
         }

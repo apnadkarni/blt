@@ -90,7 +90,7 @@ typedef struct {
     int min;				/* Minute 0-59 */
     int sec;				/* Second. 0-60. */
     double frac;                        /* Fractional seconds. */
-    time_t tzoffset;			/* Timezone offset. */
+    int tzoffset;			/* Timezone offset. */
     int isdst;
     int isLeapYear;
 } Blt_DateTime;
