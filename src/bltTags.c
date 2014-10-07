@@ -359,7 +359,7 @@ Blt_Tags_AddTag(Tags *tagsPtr, const char *tag)
  *---------------------------------------------------------------------------
  */
 void
-Blt_Tags_AddItemToTag(Tags *tagsPtr, ClientData item, const char *tag)
+Blt_Tags_AddItemToTag(Tags *tagsPtr, const char *tag, ClientData item)
 {
     TagTable *tagTablePtr;
 
@@ -411,7 +411,7 @@ Blt_Tags_ForgetTag(Tags *tagsPtr, const char *tag)
  *---------------------------------------------------------------------------
  */
 void
-Blt_Tags_RemoveItemFromTag(Tags *tagsPtr, ClientData item, const char *tag)
+Blt_Tags_RemoveItemFromTag(Tags *tagsPtr, const char *tag, ClientData item)
 {
     TagTable *tagTablePtr;
 

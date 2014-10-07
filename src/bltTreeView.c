@@ -1017,7 +1017,6 @@ NextEntry(Entry *entryPtr, unsigned int mask)
 
     ignoreLeaf = ((viewPtr->flags & HIDE_LEAVES) && 
 		  (Blt_Tree_IsLeaf(entryPtr->node)));
-
     if ((!ignoreLeaf) && ((entryPtr->flags & mask) == 0)) {
 	nextPtr = FirstChild(entryPtr, mask); 
 	if (nextPtr != NULL) {
@@ -1025,8 +1024,8 @@ NextEntry(Entry *entryPtr, unsigned int mask)
 	}
     }
     /* 
-     * Back up until to a level where we can pick a "next sibling".  For
-     * the last entry we'll thread our way back to the root.
+     * Back up to a level where we can pick a "next sibling".  For the last
+     * entry we'll thread our way back to the root.
      */
     while (entryPtr != viewPtr->rootPtr) {
 	nextPtr = NextSibling(entryPtr, mask);
@@ -3641,7 +3640,7 @@ MapAncestors(TreeView *viewPtr, Entry *entryPtr)
 	entryPtr = ParentEntry(entryPtr);
 	if (entryPtr->flags & (ENTRY_CLOSED | ENTRY_HIDE)) {
 	    viewPtr->flags |= LAYOUT_PENDING;
-	    entryPtr->flags &= (ENTRY_CLOSED | ENTRY_HIDE);
+	    entryPtr->flags &= ~(ENTRY_CLOSED | ENTRY_HIDE);
 	} 
     }
 }
@@ -4791,7 +4790,6 @@ CreateEntry(
 	entryPtr->labelUid = NULL;
 	entryPtr->node = node;
 	Blt_SetHashValue(hPtr, entryPtr);
-
     } else {
 	entryPtr = Blt_GetHashValue(hPtr);
     }
@@ -4920,8 +4918,8 @@ TreeTraceProc(
 					 * in. */
     }
     entryPtr = Blt_GetHashValue(hPtr);
-    flags &= TREE_TRACE_WRITES | TREE_TRACE_READS | TREE_TRACE_UNSETS;
-    switch (flags) {
+#define TRACE_FLAGS (TREE_TRACE_WRITES | TREE_TRACE_READS | TREE_TRACE_UNSETS)
+    switch (flags & TRACE_FLAGS) {
     case TREE_TRACE_WRITES:
 	hPtr = Blt_FindHashEntry(&viewPtr->columnTable, key);
 	if (hPtr == NULL) {
@@ -8190,7 +8188,6 @@ DrawFlatEntry(
     Icon icon;
 
     entryPtr->flags &= ~ENTRY_REDRAW;
-
     x = SCREENX(viewPtr, entryPtr->worldX);
     y = SCREENY(viewPtr, entryPtr->worldY);
     icon = GetEntryIcon(viewPtr, entryPtr);

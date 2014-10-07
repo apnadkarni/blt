@@ -4346,7 +4346,7 @@ TagAddOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	    }
 	    for (drawPtr = FirstTaggedDrawer(&iter); drawPtr != NULL; 
 		 drawPtr = NextTaggedDrawer(&iter)) {
-		Blt_Tags_AddItemToTag(&setPtr->tags, drawPtr, tag);
+		Blt_Tags_AddItemToTag(&setPtr->tags, tag, drawPtr);
 	    }
 	}
     }
@@ -4392,7 +4392,7 @@ TagDeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
         }
         for (drawPtr = FirstTaggedDrawer(&iter); drawPtr != NULL; 
              drawPtr = NextTaggedDrawer(&iter)) {
-            Blt_Tags_RemoveItemFromTag(&setPtr->tags, drawPtr, tag);
+            Blt_Tags_RemoveItemFromTag(&setPtr->tags, tag, drawPtr);
         }
     }
     return TCL_OK;
@@ -4747,7 +4747,7 @@ TagSetOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	}
 	for (drawPtr = FirstTaggedDrawer(&iter); drawPtr != NULL; 
 	     drawPtr = NextTaggedDrawer(&iter)) {
-	    Blt_Tags_AddItemToTag(&setPtr->tags, drawPtr, tag);
+	    Blt_Tags_AddItemToTag(&setPtr->tags, tag, drawPtr);
 	}    
     }
     return TCL_OK;
@@ -4784,7 +4784,7 @@ TagUnsetOp(ClientData clientData, Tcl_Interp *interp, int objc,
             const char *tag;
 
             tag = Tcl_GetString(objv[i]);
-            Blt_Tags_RemoveItemFromTag(&setPtr->tags, drawPtr, tag);
+            Blt_Tags_RemoveItemFromTag(&setPtr->tags, tag, drawPtr);
 	}    
     }
     return TCL_OK;

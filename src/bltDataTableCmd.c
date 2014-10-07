@@ -5395,6 +5395,8 @@ RowTagAddOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 
     table = cmdPtr->table;
     tag = Tcl_GetString(objv[4]);
+
+    /* Create an empty row tag. */
     if (blt_table_set_row_tag(interp, table, NULL, tag) != TCL_OK) {
 	return TCL_ERROR;
     }

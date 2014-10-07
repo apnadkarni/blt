@@ -1295,7 +1295,7 @@ ObjToAutoCreateProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 		"\": should be both, columns, rows, or none", (char *)NULL);
 	return TCL_ERROR;
     }
-    *flagsPtr &= AUTOCREATE;
+    *flagsPtr &= ~AUTOCREATE;
     *flagsPtr |= mask;
     return TCL_OK;
 }
@@ -1320,7 +1320,7 @@ AutoCreateToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
     int mask = *(int *)(widgRec + offset);
     const char *string;
 
-    mask &= AUTOCREATE;
+    mask &= AUTOCREATE;                 /* Only care about AUTO flags. */
     if (mask == AUTOCREATE) {
 	string = "both";
     } else if (mask == AUTO_ROWS) {

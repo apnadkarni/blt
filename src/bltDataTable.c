@@ -4076,7 +4076,8 @@ blt_table_forget_column_tag(Tcl_Interp *interp, Table *tablePtr,
  *
  *	Associates a tag with a given row.  Individual row tags are stored
  *	in hash tables keyed by the tag name.  Each table is in turn stored
- *	in a hash table keyed by the row location.
+ *	in a hash table keyed by the row location. If the row is NULL, this 
+ *      indicates to simply create the tag entry.
  *
  * Results:
  *	None.
@@ -4116,7 +4117,11 @@ blt_table_set_row_tag(Tcl_Interp *interp, Table *tablePtr, Row *rowPtr,
 	}
 	return TCL_ERROR;
     }
-    Blt_Tags_AddItemToTag(tablePtr->rowTags, rowPtr, tag);
+    if (rowPtr == NULL) {
+        Blt_Tags_AddTag(tablePtr->rowTags, tag);
+    } else {
+        Blt_Tags_AddItemToTag(tablePtr->rowTags, tag, rowPtr);
+    }
     return TCL_OK;
 }
 
@@ -4125,10 +4130,10 @@ blt_table_set_row_tag(Tcl_Interp *interp, Table *tablePtr, Row *rowPtr,
  *
  * blt_table_set_column_tag --
  *
- *	Associates a tag with a given column.  Individual column tags
- *	are stored in hash tables keyed by the tag name.  Each table
- *	is in turn stored in a hash table keyed by the column
- *	location.
+ *	Associates a tag with a given column.  Individual column tags are
+ *	stored in hash tables keyed by the tag name.  Each table is in turn
+ *	stored in a hash table keyed by the column location.  If the column
+ *      is NULL, then this means to simply create the tag.
  *
  * Results:
  *	None.
@@ -4168,7 +4173,11 @@ blt_table_set_column_tag(Tcl_Interp *interp, Table *tablePtr, Column *colPtr,
 	}
 	return TCL_ERROR;
     }
-    Blt_Tags_AddItemToTag(tablePtr->columnTags, colPtr, tag);
+    if (colPtr == NULL) {
+        Blt_Tags_AddTag(tablePtr->columnTags, tag);
+    } else {
+        Blt_Tags_AddItemToTag(tablePtr->columnTags, tag, colPtr);
+    }
     return TCL_OK;
 }
 
@@ -4244,7 +4253,7 @@ blt_table_unset_row_tag(Tcl_Interp *interp, Table *tablePtr, Row *rowPtr,
     if ((strcmp(tag, "all") == 0) || (strcmp(tag, "end") == 0)) {
 	return TCL_OK;			/* Can't remove reserved tags. */
     } 
-    Blt_Tags_RemoveItemFromTag(tablePtr->rowTags, rowPtr, tag);
+    Blt_Tags_RemoveItemFromTag(tablePtr->rowTags, tag, rowPtr);
     return TCL_OK;
 }    
 
@@ -4272,7 +4281,7 @@ blt_table_unset_column_tag(Tcl_Interp *interp, Table *tablePtr, Column *colPtr,
     if ((strcmp(tag, "all") == 0) || (strcmp(tag, "end") == 0)) {
 	return TCL_OK;			/* Can't remove reserved tags. */
     } 
-    Blt_Tags_RemoveItemFromTag(tablePtr->columnTags, colPtr, tag);
+    Blt_Tags_RemoveItemFromTag(tablePtr->columnTags, tag, colPtr);
     return TCL_OK;
 }    
 

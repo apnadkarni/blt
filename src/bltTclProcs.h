@@ -992,8 +992,8 @@ BLT_EXTERN void		Blt_Tags_AddTag(Blt_Tags tags, const char *tag);
 #ifndef Blt_Tags_AddItemToTag_DECLARED
 #define Blt_Tags_AddItemToTag_DECLARED
 /* 157 */
-BLT_EXTERN void		Blt_Tags_AddItemToTag(Blt_Tags tags, ClientData item,
-				const char *tag);
+BLT_EXTERN void		Blt_Tags_AddItemToTag(Blt_Tags tags, const char *tag, 
+                                ClientData item);
 #endif
 #ifndef Blt_Tags_ForgetTag_DECLARED
 #define Blt_Tags_ForgetTag_DECLARED
@@ -1004,7 +1004,7 @@ BLT_EXTERN void		Blt_Tags_ForgetTag(Blt_Tags tags, const char *tag);
 #define Blt_Tags_RemoveItemFromTag_DECLARED
 /* 159 */
 BLT_EXTERN void		Blt_Tags_RemoveItemFromTag(Blt_Tags tags,
-				ClientData item, const char *tag);
+                                const char *tag, ClientData item);
 #endif
 #ifndef Blt_Tags_ClearTagsFromItem_DECLARED
 #define Blt_Tags_ClearTagsFromItem_DECLARED

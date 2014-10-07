@@ -2286,7 +2286,7 @@ SetTag(Tcl_Interp *interp, Item *itemPtr, const char *tagName)
 	return TCL_ERROR;
     }
     comboPtr = itemPtr->comboPtr;
-    Blt_Tags_AddItemToTag(&comboPtr->tags, itemPtr, tagName);
+    Blt_Tags_AddItemToTag(&comboPtr->tags, tagName, itemPtr);
     return TCL_OK;
 }
 

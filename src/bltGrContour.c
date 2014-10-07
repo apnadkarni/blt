@@ -5845,7 +5845,7 @@ IsoTagAddOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	    }
 	    for (isoPtr = FirstTaggedIsoline(&iter); isoPtr != NULL; 
 		 isoPtr = NextTaggedIsoline(&iter)) {
-		Blt_Tags_AddItemToTag(&elemPtr->isoTags, isoPtr, tag);
+		Blt_Tags_AddItemToTag(&elemPtr->isoTags, tag, isoPtr);
 	    }
 	}
     }
@@ -5885,7 +5885,7 @@ IsoTagDeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
         }
         for (isoPtr = FirstTaggedIsoline(&iter); isoPtr != NULL; 
              isoPtr = NextTaggedIsoline(&iter)) {
-            Blt_Tags_RemoveItemFromTag(&elemPtr->isoTags, isoPtr, tag);
+            Blt_Tags_RemoveItemFromTag(&elemPtr->isoTags, tag, isoPtr);
         }
     }
     return TCL_OK;
@@ -6154,7 +6154,7 @@ IsoTagSetOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	}
 	for (isoPtr = FirstTaggedIsoline(&iter); isoPtr != NULL; 
 	     isoPtr = NextTaggedIsoline(&iter)) {
-	    Blt_Tags_AddItemToTag(&elemPtr->isoTags, isoPtr, tag);
+	    Blt_Tags_AddItemToTag(&elemPtr->isoTags, tag, isoPtr);
 	}    
     }
     return TCL_OK;
@@ -6191,7 +6191,7 @@ IsoTagUnsetOp(ClientData clientData, Tcl_Interp *interp, int objc,
             const char *tag;
 
             tag = Tcl_GetString(objv[i]);
-            Blt_Tags_RemoveItemFromTag(&elemPtr->isoTags, isoPtr, tag);
+            Blt_Tags_RemoveItemFromTag(&elemPtr->isoTags, tag, isoPtr);
 	}    
     }
     return TCL_OK;

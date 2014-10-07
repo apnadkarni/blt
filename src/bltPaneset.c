@@ -991,7 +991,7 @@ SetTag(Tcl_Interp *interp, Pane *panePtr, const char *tagName)
 	return TCL_ERROR;
     }
     setPtr = panePtr->setPtr;
-    Blt_Tags_AddItemToTag(&setPtr->tags, panePtr, tagName);
+    Blt_Tags_AddItemToTag(&setPtr->tags, tagName, panePtr);
     return TCL_OK;
 }
 
@@ -4991,7 +4991,7 @@ TagAddOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	    }
 	    for (panePtr = FirstTaggedPane(&iter); panePtr != NULL; 
 		 panePtr = NextTaggedPane(&iter)) {
-		Blt_Tags_AddItemToTag(&setPtr->tags, panePtr, tag);
+		Blt_Tags_AddItemToTag(&setPtr->tags, tag, panePtr);
 	    }
 	}
     }
@@ -5037,7 +5037,7 @@ TagDeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
         }
         for (panePtr = FirstTaggedPane(&iter); panePtr != NULL; 
              panePtr = NextTaggedPane(&iter)) {
-            Blt_Tags_RemoveItemFromTag(&setPtr->tags, panePtr, tag);
+            Blt_Tags_RemoveItemFromTag(&setPtr->tags, tag, panePtr);
         }
     }
     return TCL_OK;
@@ -5390,7 +5390,7 @@ TagSetOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	}
 	for (panePtr = FirstTaggedPane(&iter); panePtr != NULL; 
 	     panePtr = NextTaggedPane(&iter)) {
-	    Blt_Tags_AddItemToTag(&setPtr->tags, panePtr, tag);
+	    Blt_Tags_AddItemToTag(&setPtr->tags, tag, panePtr);
 	}    
     }
     return TCL_OK;
@@ -5427,7 +5427,7 @@ TagUnsetOp(ClientData clientData, Tcl_Interp *interp, int objc,
             const char *tag;
 
             tag = Tcl_GetString(objv[i]);
-            Blt_Tags_RemoveItemFromTag(&setPtr->tags, panePtr, tag);
+            Blt_Tags_RemoveItemFromTag(&setPtr->tags, tag, panePtr);
 	}    
     }
     return TCL_OK;

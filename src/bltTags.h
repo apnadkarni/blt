@@ -42,11 +42,11 @@ BLT_EXTERN void Blt_Tags_Reset(Blt_Tags tags);
 BLT_EXTERN int Blt_Tags_ItemHasTag(Blt_Tags tags, ClientData item, 
 	const char *tag);
 BLT_EXTERN void Blt_Tags_AddTag(Blt_Tags tags, const char *tag);
-BLT_EXTERN void Blt_Tags_AddItemToTag(Blt_Tags tags, ClientData item, 
-	const char *tag);
+BLT_EXTERN void Blt_Tags_AddItemToTag(Blt_Tags tags, const char *tag, 
+        ClientData item);
 BLT_EXTERN void Blt_Tags_ForgetTag(Blt_Tags tags, const char *tag);
-BLT_EXTERN void Blt_Tags_RemoveItemFromTag(Blt_Tags tags, ClientData item, 
-	const char *tag);
+BLT_EXTERN void Blt_Tags_RemoveItemFromTag(Blt_Tags tags, const char *tag, 
+        ClientData item);
 BLT_EXTERN void Blt_Tags_ClearTagsFromItem(Blt_Tags tags, ClientData item);
 BLT_EXTERN void Blt_Tags_AppendTagsToChain(Blt_Tags tags, ClientData item,
 	Blt_Chain list);

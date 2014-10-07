@@ -5154,7 +5154,7 @@ TagAddOp(Tabset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	    }
 	    for (tabPtr = FirstTaggedTab(&iter); tabPtr != NULL; 
 		 tabPtr = NextTaggedTab(&iter)) {
-		Blt_Tags_AddItemToTag(&setPtr->tags, tabPtr, tag);
+		Blt_Tags_AddItemToTag(&setPtr->tags, tag, tabPtr);
 	    }
 	}
     }
@@ -5198,7 +5198,7 @@ TagDeleteOp(Tabset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
         }
         for (tabPtr = FirstTaggedTab(&iter); tabPtr != NULL; 
              tabPtr = NextTaggedTab(&iter)) {
-            Blt_Tags_RemoveItemFromTag(&setPtr->tags, tabPtr, tag);
+            Blt_Tags_RemoveItemFromTag(&setPtr->tags, tag, tabPtr);
         }
     }
     return TCL_OK;
@@ -5540,7 +5540,7 @@ TagSetOp(Tabset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	}
 	for (tabPtr = FirstTaggedTab(&iter); tabPtr != NULL; 
 	     tabPtr = NextTaggedTab(&iter)) {
-	    Blt_Tags_AddItemToTag(&setPtr->tags, tabPtr, tag);
+	    Blt_Tags_AddItemToTag(&setPtr->tags, tag, tabPtr);
 	}    
     }
     return TCL_OK;
@@ -5575,7 +5575,7 @@ TagUnsetOp(Tabset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
             const char *tag;
 
             tag = Tcl_GetString(objv[i]);
-            Blt_Tags_RemoveItemFromTag(&setPtr->tags, tabPtr, tag);
+            Blt_Tags_RemoveItemFromTag(&setPtr->tags, tag, tabPtr);
 	}    
     }
     return TCL_OK;

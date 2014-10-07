@@ -2621,7 +2621,7 @@ SetTag(Tcl_Interp *interp, Item *itemPtr, const char *tagName)
 	return TCL_ERROR;
     }
     viewPtr = itemPtr->viewPtr;
-    Blt_Tags_AddItemToTag(&viewPtr->tags, itemPtr, tagName);
+    Blt_Tags_AddItemToTag(&viewPtr->tags, tagName, itemPtr);
     return TCL_OK;
 }
 

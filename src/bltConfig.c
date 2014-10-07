@@ -1581,24 +1581,22 @@ FormatConfigValue(
 
     case BLT_CONFIG_BITMASK:
 	{
-	    unsigned long mask;
-	    unsigned int flags;
+	    unsigned long flags;
+	    unsigned int mask;
 
-	    mask = (unsigned long)sp->customPtr;
-	    flags = (*(unsigned int *)ptr);
-	    flags &= mask;
-	    return Tcl_NewBooleanObj((flags != 0));
+	    flags = (unsigned long)sp->customPtr;
+	    mask = (*(unsigned int *)ptr);
+	    return Tcl_NewBooleanObj((mask & flags));
 	}
 
     case BLT_CONFIG_BITMASK_INVERT:
 	{
-	    unsigned long mask;
-	    unsigned int flags;
+	    unsigned long flags;
+	    unsigned int mask;
 
-	    mask = (unsigned long)sp->customPtr;
-	    flags = (*(unsigned int *)ptr);
-	    flags &= mask;
-	    return Tcl_NewBooleanObj((flags == 0));
+	    flags = (unsigned long)sp->customPtr;
+	    mask = (*(unsigned int *)ptr);
+	    return Tcl_NewBooleanObj((mask & flags) == 0);
 	}
 
     case BLT_CONFIG_DASHES: 

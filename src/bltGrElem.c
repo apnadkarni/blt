@@ -3348,7 +3348,7 @@ TagAddOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	    }
 	    for (elemPtr = FirstTaggedElement(&iter); elemPtr != NULL; 
 		 elemPtr = NextTaggedElement(&iter)) {
-		Blt_Tags_AddItemToTag(&graphPtr->elements.tags, elemPtr, tag);
+		Blt_Tags_AddItemToTag(&graphPtr->elements.tags, tag, elemPtr);
 	    }
 	}
     }
@@ -3386,7 +3386,7 @@ TagDeleteOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
         }
         for (elemPtr = FirstTaggedElement(&iter); elemPtr != NULL; 
              elemPtr = NextTaggedElement(&iter)) {
-            Blt_Tags_RemoveItemFromTag(&graphPtr->elements.tags, elemPtr, tag);
+            Blt_Tags_RemoveItemFromTag(&graphPtr->elements.tags, tag, elemPtr);
         }
     }
     return TCL_OK;
@@ -3714,7 +3714,7 @@ TagSetOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	}
 	for (elemPtr = FirstTaggedElement(&iter); elemPtr != NULL; 
 	     elemPtr = NextTaggedElement(&iter)) {
-	    Blt_Tags_AddItemToTag(&graphPtr->elements.tags, elemPtr, tag);
+	    Blt_Tags_AddItemToTag(&graphPtr->elements.tags, tag, elemPtr);
 	}    
     }
     return TCL_OK;
@@ -3750,7 +3750,7 @@ TagUnsetOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
             const char *tag;
 
             tag = Tcl_GetString(objv[i]);
-	    Blt_Tags_RemoveItemFromTag(&graphPtr->elements.tags, elemPtr, tag);
+	    Blt_Tags_RemoveItemFromTag(&graphPtr->elements.tags, tag, elemPtr);
 	}    
     }
     return TCL_OK;
