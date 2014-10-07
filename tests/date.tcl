@@ -9,7 +9,7 @@ if [file exists ../library] {
     set blt_library ../library
 }
 
-#set VERBOSE 1
+set VERBOSE 0
 
 test date.1 {date no args} {
     list [catch {blt::date} msg] $msg
@@ -36,7 +36,7 @@ test date.5 {date scan 0} {
 } {0 -62167219200.0}
 
 # One difference between "clock scan" and "blt::date scan" is that
-# default timezone is always GMT to the localtime zone.  
+# default timezone is always GMT, not the localtime zone.  
 set date "Jun 21, 1968"
 set d2 [clock scan $date -gmt yes]
 
@@ -155,6 +155,7 @@ test date.21 {date scan "Wed, 21 Jun 1968"} {
 test date.22 {date scan "Thu, 21 Jun 68 00:00:00 GMT"} {
     list [catch {
 	set d1 [blt::date scan "Thu, 21 Jun 68 00:00:00 GMT"]
+	puts stderr [blt::date parse "Thu, 21 Jun 68 00:00:00 GMT"]
 	expr { $d1 - $d2 }
     } msg] $msg
 } {0 0.0}
@@ -200,7 +201,6 @@ set d2 [clock scan $date -gmt yes]
 test date.28 {date scan "1970"} {
     list [catch {
 	set d1 [blt::date scan "1970"]
-	puts stderr [blt::date format $d1]
 	expr { $d1 - $d2 }
     } msg] $msg
 } {0 0.0}
@@ -392,7 +392,7 @@ test date.54 {date scan ""} {
     } msg] $msg
 } {0 0.0}
 
-# Worded days like 23rd can be unambiguously parsed as the day of the month.
+# Word-ie days like 23rd can be unambiguously parsed as the day of the month.
 test date.55 {date scan "Jan 1st"} {
     list [catch {
  	set d1 [blt::date scan "Jan 1st"]
@@ -469,6 +469,21 @@ test date.63 {date scan "Mon Jan 02 15:04:05 -0700 2006"} {
     } msg] $msg
 } {0 0.0}
 
+test date.63 {date scan "Mon Jan 02 15:04:05 -07 2006"} {
+    list [catch {
+ 	set d1 [blt::date scan "Mon Jan 02 15:04:05 -07 2006"]
+	puts stderr [blt::date parse "Mon Jan 02 15:04:05 -07 2006"]
+	expr { $d1 - $d2 }
+    } msg] $msg
+} {0 0.0}
+
+test date.63 {date scan "Mon Jan 02 15:04:05 -7 2006"} {
+    list [catch {
+ 	set d1 [blt::date scan "Mon Jan 02 15:04:05 -7 2006"]
+	puts stderr [blt::date format $d1]
+	expr { $d1 - $d2 }
+    } msg] $msg
+} {0 0.0}
 
 set date "Dec 28, 1969"
 set d2 [clock scan $date -gmt yes]
@@ -990,12 +1005,11 @@ test date.118 {date scan "01-02-2003"} {
 test date.119 {date scan "02.01.2003"} {
     list [catch {
  	set d1 [blt::date scan "02.01.2003"]
-	puts stderr [blt::date format $d1]
 	expr { $d1 - $d2 }
     } msg] $msg
 } {0 0.0}
 
-set date "Feb 1, 1903"
+set date "Jan 2, 1903"
 set d2 [clock scan $date -gmt yes]
 
 test date.120 {date scan "01-02-03"} {
@@ -1006,97 +1020,217 @@ test date.120 {date scan "01-02-03"} {
 } {0 0.0}
 
 # Jan 1 1970 is a Thurday (Sunday 1 - Saturday 7).  
-test date.58 {date scan "1972-W01-1"} { 
+test date.121 {date scan "1972-W01-1"} { 
     list [catch {
  	set d1 [blt::date scan "1972-W01-1"]
-	puts stderr [blt::date format $d1]
 	expr { $d1 - $d2 }
     } msg] $msg
 } {0 0.0}
 
-if 0 {
-	YY-MM-DD		99-01-24
-	YYYY-MM-DD		1999-01-24
-	MM/YY		 	08/99
-	MM/YYYY		 	12/2005
-	YY/MM		 	99/08
-	YYYY/MM			2005/12
-	Month DD, YYYY		July 04, 2006
-	Mon YYYY		Apr 2006 1
-	Month YYYY 		February 2006
-	DD Month		11 September 
-	Month DD		September 11
-	DD Month YY		19 February 72 
-	DD Month YYYY		11 September 2002 
-	MM-YY		 	12-92
-	MM-YYYY		 	05-2006
-	YY-MM		 	92-12
-	YYYY-MM		 	2006-05
-	MMDDYY		 	122506
-	MMDDYYYY 	 	12252006
-	DDMMYY		 	240702
-	DDMMYYYY 	 	24072002
-	Mon-YY			Sep-02 1
-	Mon-YYYY		Sep-2002 
-	DD-Mon-YY		25-Dec-05 
-	DD-Mon-YYYY 
 
-	mm/dd/yy	 	11/23/98
-	mm/dd/yyyy		11/23/1998
-	yy.mm.dd	 	72.01.01
-	yyyy.mm.dd	 	1972.01.01
-	dd/mm/yy	 	19/02/72
-	dd/mm/yyyy	 	19/02/1972
-	dd.mm.yy	 	25.12.05
-	dd.mm.yyyy		25.12.2005
-	dd-mm-yy		24-01-98
-	dd-mm-yyyy 		24-01-1998
-	dd mon yy	 	04 Jul 06 1
-	dd mon yyyy	 	04 Jul 2006 1
-	mon dd, yy	 	Jan 24, 98 1
-	mon dd, yyyy	 	Jan 24, 1998 1
-	mm-dd-yy		01-01-06
-	mm-dd-yyyy		01-01-2006
-	yy/mm/dd	 	98/11/23
-	yyyy/mm/dd	 	1998/11/23
-	yymmdd			980124
-	yyyymmdd 	 	19980124
-	dd mon yyyy HH:MM:SS:MMM 	28 Apr 2006 00:34:55:190 
-	hh:mi:ss:mmm	  	11:34:23:013
-	yyyy-mm-dd HH:MI:SS 	1972-01-01 13:42:24
-	yyyy-mm-dd HH:MI:SS.MMM	1972-02-19 06:35:24.489
-	yyyy-mm-ddthh:MM:SS:MMM 1998-11-23T11:25:43:250
-	dd mon yyyy HH:MI:SS:MMMAM	28 Apr 2006 12:39:32:429AM 1
-	dd/mm/yyyy HH:MI:SS:MMMAM  	28/04/2006 12:39:32:429AM
+set date "Oct 30, 2005 10:45"
+set d2 [clock scan $date -gmt yes]
 
-	yy-mm-dd		99-01-24
-	yyyy-mm-dd		1999-01-24
-	mm/yy		 	08/99
-	mm/yyyy		 	12/2005
-	yy/mm		 	99/08
-	yyyy/mm			2005/12
-	month dd, yyyy		July 04, 2006
-	mon yyyy		Apr 2006 1
-	month yyyy 		February 2006
-	dd month		11 September 
-	month dd		September 11
-	dd month yy		19 February 72 
-	dd month yyyy		11 September 2002 
-	mm-yy		 	12-92
-	mm-yyyy		 	05-2006
-	yy-mm		 	92-12
-	yyyy-mm		 	2006-05
-	mmddyy		 	122506
-	mmddyyyy 	 	12252006
-	ddmmyy		 	240702
-	ddmmyyyy 	 	24072002
-	mon-yy			Sep-02
-	mon-yyyy		Sep-2002 
-	dd-mon-yy		25-Dec-05 
-	dd-mon-yyyy 
+test date.122 {date scan "2005-10-30 T 10:45 UTC"} { 
+    list [catch {
+ 	set d1 [blt::date scan "2005-10-30 T 10:45 UTC"]
+	expr { $d1 - $d2 }
+    } msg] $msg
+} {0 0.0}
 
-	D:yyyymmddhhmmss+'HHMM
-}
+set date "Nov 09, 2007 11:20"
+set d2 [clock scan $date -gmt yes]
 
+test date.123 {date scan "2007-11-09 T 11:20 UTC"} { 
+    list [catch {
+ 	set d1 [blt::date scan "2007-11-09 T 11:20 UTC"]
+	expr { $d1 - $d2 }
+    } msg] $msg
+} {0 0.0}
 
+set date "Jul 23, 2005 02:16:57"
+set d2 [clock scan $date -gmt yes]
+
+test date.124 {date scan "Sat Jul 23 02:16:57 2005"} { 
+    list [catch {
+ 	set d1 [blt::date scan "Sat Jul 23 02:16:57 2005"]
+	expr { $d1 - $d2 }
+    } msg] $msg
+} {0 0.0}
+
+set date "Jul 21, 1969 02:56"
+set d2 [clock scan $date -gmt yes]
+
+test date.125 {date scan "1969-07-21 T 02:56 UTC"} { 
+    list [catch {
+ 	set d1 [blt::date scan "1969-07-21 T 02:56 UTC"]
+	expr { $d1 - $d2 }
+    } msg] $msg
+} {0 0.0}
+
+set date "Dec 11, 2012 07:38"
+set d2 [clock scan $date -gmt yes]
+
+test date.126 {date scan "07:38, 11 December 2012 (UTC)"} { 
+    list [catch {
+ 	set d1 [blt::date scan "07:38, 11 December 2012 (UTC)"]
+	expr { $d1 - $d2 }
+    } msg] $msg
+} {0 0.0}
+
+set date "Jan 1, 1997"
+set d2 [clock scan $date -gmt yes]
+
+test date.127 {date scan "1997"} { 
+    list [catch {
+ 	set d1 [blt::date scan "1997"]
+	expr { $d1 - $d2 }
+    } msg] $msg
+} {0 0.0}
+
+set date "Jul 1, 1997"
+set d2 [clock scan $date -gmt yes]
+
+test date.128 {date scan "1997-07"} { 
+    list [catch {
+ 	set d1 [blt::date scan "1997-07"]
+	expr { $d1 - $d2 }
+    } msg] $msg
+} {0 0.0}
+
+set date "Jul 16, 1997"
+set d2 [clock scan $date -gmt yes]
+
+test date.129 {date scan "1997-07-16"} { 
+    list [catch {
+ 	set d1 [blt::date scan "1997-07-16"]
+	expr { $d1 - $d2 }
+    } msg] $msg
+} {0 0.0}
+
+# 5 digit year
+test date.129 {date scan "01997-07-16"} { 
+    list [catch {
+ 	set d1 [blt::date scan "1997-07-16"]
+	expr { $d1 - $d2 }
+    } msg] $msg
+} {0 0.0}
+
+set date "Jul 16, 1997 19:20a"
+set d2 [clock scan $date -gmt yes]
+
+test date.130 {date scan "1997-07-16T19:20+01:00"} { 
+    list [catch {
+ 	set d1 [blt::date scan "1997-07-16T19:20+01:00"]
+	expr { $d1 - $d2 }
+    } msg] $msg
+} {0 0.0}
+
+set date "Jul 16, 1997 19:20:30a"
+set d2 [clock scan $date -gmt yes]
+
+test date.131 {date scan "1997-07-16T19:20:30+01:00"} { 
+    list [catch {
+ 	set d1 [blt::date scan "1997-07-16T19:20:30+01:00"]
+	expr { $d1 - $d2 }
+    } msg] $msg
+} {0 0.0}
+
+set date "Jul 16, 1997 19:20:30a"
+set d2 [clock scan $date -gmt yes]
+
+test date.132 {date scan "1997-07-16T19:20:30.45+01:00"} { 
+    list [catch {
+ 	set d1 [blt::date scan "1997-07-16T19:20:30.45+01:00"]
+	format %g [expr { $d1 - $d2 }]
+    } msg] $msg
+} {0 0.45}
+
+set date "Apr 12, 1985 23:20:50"
+set d2 [clock scan $date -gmt yes]
+
+test date.133 {date scan "1985-04-12T23:20:50.52Z"} { 
+    list [catch {
+ 	set d1 [blt::date scan "1985-04-12T23:20:50.52Z"]
+	format %g [expr { $d1 - $d2 }]
+    } msg] $msg
+} {0 0.52}
+      
+set date "Dec 19, 1996 16:39:57u"
+set d2 [clock scan $date -gmt yes]
+
+test date.134 {date scan "1996-12-19T16:39:57-08:00"} { 
+    list [catch {
+ 	set d1 [blt::date scan "1996-12-19T16:39:57-08:00"]
+	expr { $d1 - $d2 }
+    } msg] $msg
+} {0 0.0}
+
+set date "Dec 31, 1990 23:59:59"
+set d2 [clock scan $date -gmt yes]
+
+# Handle leap second.
+test date.135 {date scan "1990-12-31T23:59:60Z"} { 
+    list [catch {
+ 	set d1 [blt::date scan "1990-12-31T23:59:60Z"]
+	puts stderr [blt::date format $d1]
+	expr { $d1 - $d2 }
+    } msg] $msg
+} {0 1.0}
+
+set date "Dec 31, 1990 15:59:59u"
+set d2 [clock scan $date -gmt yes]
+
+# Handle leap second.
+test date.136 {date scan "1990-12-31T15:59:60-08:00"} { 
+    list [catch {
+ 	set d1 [blt::date scan "1990-12-31T15:59:60-08:00"]
+	expr { $d1 - $d2 }
+    } msg] $msg
+} {0 1.0}
+
+set date "Jan 1, 1937 12:00:27"
+set d2 [clock scan $date -gmt yes]
+
+test date.137 {date scan "1937-01-01T12:00:27.87+00:20"} { 
+    list [catch {
+ 	set d1 [blt::date scan "1937-01-01T12:00:27.87+00:20"]
+	format %g [expr { $d1 - $d2 }]
+    } msg] $msg
+} {0 -1199.13};				# 20 minutes from GMT + .87 seconds
+      
+set date "Dec 17, 1997 07:37:16 PST"
+set d2 [clock scan $date -gmt yes]
+
+# ISO 	ISO 8601/SQL standard 	
+test date.136 {date scan "1997-12-17 07:37:16-08"} { 
+    list [catch {
+ 	set d1 [blt::date scan "1997-12-17 07:37:16-08"]
+	expr { $d1 - $d2 }
+    } msg] $msg
+} {0 0.0}
+
+# SQL 	traditional style 	
+test date.136 {date scan "12/17/1997 07:37:16.00 PST"} { 
+    list [catch {
+ 	set d1 [blt::date scan "12/17/1997 07:37:16.00 PST"]
+	expr { $d1 - $d2 }
+    } msg] $msg
+} {0 0.0}
+
+# POSTGRES 	original style
+test date.136 {date scan "Wed Dec 17 07:37:16 1997 PST"} { 
+    list [catch {
+ 	set d1 [blt::date scan "Wed Dec 17 07:37:16 1997 PST"]
+	expr { $d1 - $d2 }
+    } msg] $msg
+} {0 0.0}
+
+# German 	regional style
+test date.136 {date scan "17.12.1997 07:37:16.00 PST"} { 
+    list [catch {
+ 	set d1 [blt::date scan "17.12.1997 07:37:16.00 PST"]
+	expr { $d1 - $d2 }
+    } msg] $msg
+} {0 0.0}
 

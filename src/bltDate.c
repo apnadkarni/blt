@@ -78,7 +78,7 @@ static const char *tokenNames[] = {
     "month", "wday", "yday", "day", "year", "week",
     "hours", "seconds", "minutes", "ampm", 
     "tz_std", "tz_dst", 
-    "/", "-", ",", ":", "+", ".", "'",
+    "/", "-", ",", ":", "+", ".", "'", "(", ")", 
     "number", "iso6", "iso7", "iso8", 
     "unknown"
 };
@@ -88,7 +88,7 @@ typedef enum {
     _MONTH, _WDAY, _YDAY, _MDAY, _YEAR, _WEEK,
     _HOUR, _SECOND, _MINUTE, _AMPM,
     _STD, _DST,
-    _SLASH, _DASH, _COMMA, _COLON, _PLUS, _DOT, _QUOTE,
+    _SLASH, _DASH, _COMMA, _COLON, _PLUS, _DOT, _QUOTE, _LPAREN, _RPAREN,
     _NUMBER, _ISO6, _ISO7, _ISO8, _UNKNOWN,
 } DateTokenId;
 
@@ -798,6 +798,12 @@ GetNextToken(DateParser *parserPtr, DateTokenId *idPtr)
     } else if (*p == '-') {
 	id = _DASH;
 	p++;
+    } else if (*p == '(') {
+	id = _LPAREN;
+	p++;
+    } else if (*p == ')') {
+	id = _RPAREN;
+	p++;
     } else if ((*p == 'w') && (isdigit(*(p+1))) && (isdigit(*(p+2)))) {
 	t->identifier = p;
 	t->lvalue = (p[1] - '0') * 10 + (p[2] - '0');
@@ -842,8 +848,10 @@ GetNextToken(DateParser *parserPtr, DateTokenId *idPtr)
 	}
     } else if (*p == '\0') {
 	id = _END;
+        p++;
     } else {
 	id = _UNKNOWN;
+        p++;
     }
     *idPtr = parserPtr->currentPtr->id = id;
     parserPtr->nextCharPtr = p;
@@ -1011,14 +1019,14 @@ ExtractTimezone(DateParser *parserPtr)
         if ((t->length == 4) && (allowNNNN)) {
             offset = TZOFFSET(t->lvalue);
             end = NextToken(t);
-        } else if (t->length == 2) {
+        } else if (t->length < 3) {
             offset = t->lvalue * SECONDS_HOUR;
             t = NextToken(t);
             if (t->id != _COLON) {
                 goto found;             /* Only found NN */
             }
             t = NextToken(t);
-            if ((t->id != _NUMBER) || (t->length != 2)) {
+            if ((t->id != _NUMBER) || (t->length > 2)) {
                 return TCL_ERROR;       /* The token following the colon
                                          * isn't a 2 digit number.  */
             }
@@ -1054,14 +1062,14 @@ GetTzOffset(DateParser *parserPtr, DateToken *t, DateToken **nextPtr)
     /* The timezone is in the form NN:NN or NNNN. */
     if (t->length == 4) {
         offset = TZOFFSET(t->lvalue);
-    } else if (t->length == 2) {
+    } else if (t->length < 3) {
         offset = t->lvalue * SECONDS_HOUR;
         t = NextToken(t);
         if (t->id != _COLON) {
             goto found;
         }
         t = NextToken(t);
-        if ((t->id != _NUMBER) || (t->length != 2)) {
+        if ((t->id != _NUMBER) || (t->length > 2)) {
             return TCL_ERROR;
 	}
         offset += t->lvalue * SECONDS_MINUTE;
@@ -1070,8 +1078,9 @@ GetTzOffset(DateParser *parserPtr, DateToken *t, DateToken **nextPtr)
                                          * digit number after plus or
                                          * minus. */
     }
+    t = NextToken(t);
  found:
-    *nextPtr = NextToken(t);
+    *nextPtr = t;
     /* Subtract or add the offset to the current timezone offset. */
     parserPtr->date.tzoffset += sign * offset;
     parserPtr->date.isdst = 0;
@@ -1283,7 +1292,7 @@ FixDateTokens(DateParser *parserPtr)
                 }
             } else if (t->length == 3) {
 		t->id = _YDAY;
-	    } else if (t->length == 4) {
+	    } else if ((t->length == 4) || (t->length == 5)) {
 		t->id = _YEAR;
 	    } else if (t->length == 7) {
 		t->id = _ISO7;
@@ -1296,12 +1305,52 @@ FixDateTokens(DateParser *parserPtr)
         case _SLASH:
         case _COMMA:
         case _COLON:
+        case _LPAREN:
+        case _RPAREN:
             DeleteToken(t);
             break;
         default:
             break;
         }
     }
+}
+
+static DateToken *
+FindTimeSequence(DateToken *t, DateToken **tokens)
+{
+    DateToken *prev;
+
+    tokens[0] = tokens[1] = tokens[2] = NULL;
+
+    /* Find the pattern "NN [:.] NN"  or "NN [:.] NN [:.] NN". */
+    if ((t->id != _NUMBER) || (t->length > 2) || (t->lvalue > 23)) {
+        return NULL;                    /* Not a valid hour spec. */
+    }
+    prev = PrevToken(t);
+    if ((prev != NULL) && (prev->id == _DOT)) {
+        return NULL;                    /* Previous token can't be a
+                                         * dot. */
+    }
+    tokens[0] = t;                      /* Save hour token */
+    t = NextToken(t);
+    if ((t->id != _COLON) && (t->id != _DOT)) {
+        return NULL;                    /* Must be separated by : or . */
+    }
+    t = NextToken(t);
+    if ((t->id != _NUMBER) || (t->length > 2) || (t->lvalue > 59)) {
+        return NULL;                    /* Not a valid minute spec. */
+    }
+    tokens[1] = t;                      /* Save minute token. */
+    t = NextToken(t);
+    if ((t->id != _COLON) && (t->id != _DOT)) {
+        return t;                       /* No second spec. */
+    }
+    t = NextToken(t);
+    if ((t->id != _NUMBER) || (t->length > 2) || (t->lvalue > 60)) {
+        return NULL;                    /* Not a valid second spec. */
+    }
+    tokens[2] = t;                      /* Save second token. */
+    return NextToken(t);
 }
 
 /*
@@ -1339,10 +1388,12 @@ static int
 ExtractTime(DateParser *parserPtr)
 {
     DateToken *next, *first, *last;
-    DateToken *t, *t1, *t2;
+    DateToken *t, *t1, *t2, *t3;
+    DateToken *tokens[3];
 
 #if DEBUG
-    PrintTokens(parserPtr);
+    fprintf(stderr, "ExtractTime (%s)\n", 
+            Tcl_GetString(PrintTokens(parserPtr)));
 #endif
     first = last = NULL;
     for (t = FirstToken(parserPtr); t != NULL; t = NextToken(t)) {
@@ -1358,30 +1409,17 @@ ExtractTime(DateParser *parserPtr)
 	    value /= 100;
 	    parserPtr->date.hour = value % 100;
 	    first = t;
-	    t = NextToken(t);
+	    next = t = NextToken(t);
 	    goto done;
 	}
-        /* Find the starting pattern "NN [:.] NN". */
-	if ((t1->id != _NUMBER) || (t1->length > 2) || (t1->lvalue > 23)) {
-	    continue;                   /* Not a valid hour spec. */
-	}
-        t2 = PrevToken(t);
-        if ((t2 != NULL) && (t2->id == _DOT)) {
-            continue;                   /* Previous token can't be a
-                                         * dot. */
+        next = FindTimeSequence(t, tokens);
+        if (next != NULL) {
+            first = t;
+            break;                      /* Found the time pattern */
         }
-	t2 = NextToken(t);
-	if ((t2->id != _COLON) && (t2->id != _DOT)) {
-	    continue;                   /* Must be separated by : or . */
-	}
-	t2 = NextToken(t2);
-	if ((t2->id != _NUMBER) || (t2->length > 2) || (t2->lvalue > 59)) {
-	    continue;                   /* Not a valid minute spec. */
-	}
-	t = NextToken(t2);
-	break;				/* Found the starting pattern */
     }
     if (t == NULL) {
+        /* Could not window a time sequence. */
 	for (t = FirstToken(parserPtr); t != NULL; t = NextToken(t)) {
 	    if ((t->id == _NUMBER) && 
                 ((t->length == 6) || (t->length == 14))) {
@@ -1408,19 +1446,13 @@ ExtractTime(DateParser *parserPtr)
 	}
 	return TCL_OK;			/* No time tokens found. */
     }
-    if ((t->id == _COLON) || (t->id == _DOT)) {
-        t = NextToken(t);
-        if (t->id == _NUMBER) {
-            if ((t->length > 2) || (t->lvalue > 59)) {
-                /* This isn't a time. It's probably a date. */
-                return TCL_OK;
-            }
-            parserPtr->date.sec = t->lvalue;
-            t = NextToken(t);
-            switch (t->id) {
-            case _COLON:
-            case _DOT:
-            case _COMMA:
+    if (next != NULL) {
+        parserPtr->date.hour = tokens[0]->lvalue;
+        parserPtr->date.min = tokens[1]->lvalue;
+        t = next;
+        if (tokens[2] != NULL) {
+            parserPtr->date.sec = tokens[2]->lvalue;
+            if ((t->id == _COLON) || (t->id == _DOT) || (t->id == _COMMA)) {
                 t = NextToken(t);
                 if ((t->id == _NUMBER)) {
                     double d;
@@ -1429,14 +1461,9 @@ ExtractTime(DateParser *parserPtr)
                     parserPtr->date.frac = (double)t->lvalue / d;
                     t = NextToken(t);
                 }
-                break;
-            default:
-                break;
             }
         }
     }
-    parserPtr->date.hour = t1->lvalue;
-    parserPtr->date.min = t2->lvalue;
  done:
     /* Look for AMPM designation. */
     if (t->id == _AMPM) {
@@ -1537,7 +1564,8 @@ ExtractDate(DateParser *parserPtr)
     FixDateTokens(parserPtr);
     ExtractYear(parserPtr);
 #if DEBUG
-    PrintTokens(parserPtr);
+    fprintf(stderr, "ExtractDate (%s)\n", 
+            Tcl_GetString(PrintTokens(parserPtr)));
 #endif
     patternIndex = MatchDatePattern(parserPtr);
 #if DEBUG
@@ -1660,10 +1688,12 @@ NumberDaysFromEpoch(int year)
 }
 
 static Tcl_Obj *
-DateToListObj(Tcl_Interp *interp, Blt_DateTime *datePtr)
+DateToListObj(Tcl_Interp *interp, DateParser *parserPtr)
 {
     Tcl_Obj *objPtr, *listObjPtr;
+    Blt_DateTime *datePtr;
 
+    datePtr = &parserPtr->date;
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
     /* Year */
     objPtr = Tcl_NewStringObj("year", 4);
@@ -1675,31 +1705,36 @@ DateToListObj(Tcl_Interp *interp, Blt_DateTime *datePtr)
     Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
     objPtr = Tcl_NewStringObj(monthNames[datePtr->mon], -1);
     Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-    /* Month Day */
-    objPtr = Tcl_NewStringObj("mday", 4);
-    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-    objPtr = Tcl_NewIntObj(datePtr->mday);
-    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-    /* Week Day */
-    objPtr = Tcl_NewStringObj("wday", 4);
-    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-    objPtr = Tcl_NewStringObj(weekdayNames[datePtr->wday], -1);
-    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-    /* Year Day */
-    objPtr = Tcl_NewStringObj("yday", 4);
-    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-    objPtr = Tcl_NewIntObj(datePtr->yday);
-    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-    /* Week */
-    objPtr = Tcl_NewStringObj("week", 4);
-    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-    objPtr = Tcl_NewIntObj(datePtr->week);
-    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-    /* Week Year */
-    objPtr = Tcl_NewStringObj("wyear", 5);
-    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-    objPtr = Tcl_NewIntObj(datePtr->wyear);
-    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+
+    if (parserPtr->flags & PARSE_MDAY) { /* Date of month. */
+        objPtr = Tcl_NewStringObj("mday", 4);
+        Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+        objPtr = Tcl_NewIntObj(datePtr->mday);
+        Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+    }
+    if (parserPtr->flags & PARSE_WDAY) { /* Week Day */
+        objPtr = Tcl_NewStringObj("wday", 4);
+        Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+        objPtr = Tcl_NewStringObj(weekdayNames[datePtr->wday], -1);
+        Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+    }
+    if (parserPtr->flags & PARSE_YDAY) { /* Year Day */
+        objPtr = Tcl_NewStringObj("yday", 4);
+        Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+        objPtr = Tcl_NewIntObj(datePtr->yday);
+        Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+    }
+    if (parserPtr->flags & PARSE_WEEK) { /* Week */
+        objPtr = Tcl_NewStringObj("week", 4);
+        Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+        objPtr = Tcl_NewIntObj(datePtr->week);
+        Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+        /* Week Year */
+        objPtr = Tcl_NewStringObj("wyear", 5);
+        Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+        objPtr = Tcl_NewIntObj(datePtr->wyear);
+        Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+    }
     /* Leap year */
     objPtr = Tcl_NewStringObj("isleapyear", 10);
     Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
@@ -2204,7 +2239,7 @@ ParseOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	(ExtractDate(&parser) != TCL_OK)) {
 	goto error;
     }
-    Tcl_SetObjResult(interp, DateToListObj(interp, &parser.date));
+    Tcl_SetObjResult(interp, DateToListObj(interp, &parser));
     FreeParser(&parser);
     return TCL_OK;
  error:
@@ -2749,11 +2784,11 @@ Blt_FormatDate(Blt_DateTime *datePtr, const char *fmt, Tcl_DString *resultPtr)
             bp += numBytes;
             break;
         case 'P':
-            strcpy ((datePtr->hour > 11) ? "pm" : "am");
+            strcpy (bp, (datePtr->hour > 11) ? "pm" : "am");
             bp += 2;
             break;
         case 'p':                       /* Equivalent of either AM or PM */
-            strcpy ((datePtr->hour > 11) ? "PM" : "AM");
+            strcpy (bp, (datePtr->hour > 11) ? "PM" : "AM");
             bp += 2;
             break;
         case 'r':                       /* 12 hour clock time (hh:mm:ss AM) */
