@@ -1180,83 +1180,6 @@ ExtractSeparator(DateParser *parserPtr)
     return TCL_ERROR;
 }
 
-#ifndef notdef
-static int
-GetWeekDay(int year, int mon, int mday)
-{
-    int century;
-    
-    /* Adjust months so February is the last one */
-    mon -= 2;
-    if (mon < 1) {
-	mon += 12;
-	year--;
-    }
-    /* Split by century */
-    century = year / 100;
-    year %= 100;
-    return (((26*mon - 2)/10 + mday + year + year/4 + 
-             century/4 + 5*century) % 7);
-}
-
-static int
-GetDateFromOrdinalDay(Tcl_Interp *interp, int year, int yday, int *monthPtr)
-{
-    int numDays, mon;
-
-    numDays = yday;
-    mon = 0;
-    while (numDays >= numDaysMonth[IsLeapYear(year)][mon]) {
-        numDays -= numDaysMonth[IsLeapYear(year)][mon];
-        mon++;
-    }
-    *monthPtr = mon;
-    return numDays + 1;                 /* mday is 1-31 */
-}
-
-#endif
-
-static int
-GetIsoWeek(int year, int mon, int day, int *wyearPtr)
-{
-    long a, b, c, s, e, f, d, g, n;
-    int week, wyear;
-
-    if (mon < 2) {
-	a = year - 1;
-	b = a / 4 -  a / 100 +  a / 400;
-	c = (a-1)/4 - (a-1)/100 + (a-1)/400;
-	s = b - c;
-	e = 0;
-	f = day - 1 +  31 * (mon-1);
-    } else {
-	a = year;
-	b = a/4 - a/100 + a/400;
-	c = (a-1)/4 - (a-1)/100 + (a-1)/400;
-
-	s = b-c;
-	e = s+1;
-	f = day + (153*(mon-3)+2)/5 + 58 + s;
-    }
-    g = (a + b) % 7;
-    d = (f + g - e) % 7;
-    n = f + 3 - d;
-
-    if (n < 0) {
-        week = 53-(g-s)/5;
-        wyear = year-1;
-    }
-    else if (n>364+s) {
-        week = 1;
-        wyear = year+1;
-    }
-    else {
-        week = n/7 + 1;
-        wyear = year;
-    }
-    *wyearPtr = wyear;
-    return week;
-}
 
     
 /*
@@ -1388,8 +1311,7 @@ static int
 ExtractTime(DateParser *parserPtr)
 {
     DateToken *next, *first, *last;
-    DateToken *t, *t1, *t2, *t3;
-    DateToken *tokens[3];
+    DateToken *t, *tokens[3];
 
 #if DEBUG
     fprintf(stderr, "ExtractTime (%s)\n", 
@@ -1397,7 +1319,7 @@ ExtractTime(DateParser *parserPtr)
 #endif
     first = last = NULL;
     for (t = FirstToken(parserPtr); t != NULL; t = NextToken(t)) {
-	t1 = first = t;
+	first = t;
         /* Assume that any 6-digit number is ISO time format (hhmmss). */
 	if ((t->id == _NUMBER) && (t->length == 6)) {
 	    long value;
@@ -1659,7 +1581,20 @@ ExtractDate(DateParser *parserPtr)
     return TCL_OK;
 }
 
-
+/* 
+ *-----------------------------------------------------------------------------
+ *
+ * NumbefDaysFromStartOfYear --
+ *
+ *	Computes the number of days from the beginning of the given
+ *      year to the given date.  Note that mday is 1-31, not 0-30.
+ *
+ * Returns:
+ *      Returns the number of days from beginning of the given year to
+ *      the given date.
+ *
+ *-----------------------------------------------------------------------------
+ */
 static int
 NumberDaysFromStartOfYear(int year, int month, int mday)
 {
@@ -1669,6 +1604,21 @@ NumberDaysFromStartOfYear(int year, int month, int mday)
     return numDays + (mday - 1);
 }
 
+/* 
+ *-----------------------------------------------------------------------------
+ *
+ * NumberDaysFromEpoch --
+ *
+ *	Computes the number of days from the epoch (0 secs) to the given
+ *      year.  Note that returned value may be negative if the give year
+ *      occurs before the epoch.
+ *
+ * Returns:
+ *      Returns the number of days since the epoch to the beginning of the
+ *      given year.
+ *
+ *-----------------------------------------------------------------------------
+ */
 static long
 NumberDaysFromEpoch(int year)
 {
@@ -1685,6 +1635,144 @@ NumberDaysFromEpoch(int year)
             numDays -= numDaysYear[IsLeapYear(y)];
     }
     return numDays;
+}
+
+/* 
+ *-----------------------------------------------------------------------------
+ *
+ * GetWeek --
+ *
+ *	Computes the US week number give the year, month, and day. The
+ *	first week of the year contains Jan 1st.  Weeks start on Sunday
+ *      and are numbered 0-52. 
+ *
+ * Returns:
+ *      Returns the week number for the date.  
+ *
+ *-----------------------------------------------------------------------------
+ */
+static int
+GetWeek(int year, int mon, int mday)
+{
+    long numDays;
+    int wdayJan1st;                     /* Weekday of Jan 1st. */
+
+    numDays = NumberDaysFromEpoch(year);
+    wdayJan1st = ((numDays % 7) + EPOCH_WDAY) % 7;
+    numDays = NumberDaysFromStartOfYear(year, mon, mday) + wdayJan1st;
+    if (numDays < 0) {
+        return 0;
+    }  
+    return (numDays / 7);
+}
+
+/* 
+ *-----------------------------------------------------------------------------
+ *
+ * GetIsoWeek --
+ *
+ *	Computes the ISO week number give the year, month, and day. The
+ *	first week of the year contains Jan 4th.  Weeks start on Monday
+ *      and are numbered 0-52. 
+ *
+ * Returns:
+ *      Returns the week number for the date.  
+ *
+ *-----------------------------------------------------------------------------
+ */
+static int
+GetIsoWeek(int year, int mon, int day, int *wyearPtr)
+{
+    long a, b, c, s, e, f, d, g, n;
+    int week, wyear;
+
+    if (mon < 2) {
+	a = year - 1;
+	b = a / 4 -  a / 100 +  a / 400;
+	c = (a-1)/4 - (a-1)/100 + (a-1)/400;
+	s = b - c;
+	e = 0;
+	f = day - 1 +  31 * (mon-1);
+    } else {
+	a = year;
+	b = a/4 - a/100 + a/400;
+	c = (a-1)/4 - (a-1)/100 + (a-1)/400;
+
+	s = b-c;
+	e = s+1;
+	f = day + (153*(mon-3)+2)/5 + 58 + s;
+    }
+    g = (a + b) % 7;
+    d = (f + g - e) % 7;
+    n = f + 3 - d;
+
+    if (n < 0) {
+        week = 53-(g-s)/5;
+        wyear = year-1;
+    }
+    else if (n>364+s) {
+        week = 1;
+        wyear = year+1;
+    }
+    else {
+        week = n/7 + 1;
+        wyear = year;
+    }
+    *wyearPtr = wyear;
+    return week;
+}
+
+#ifdef notdef
+static int
+GetWeekDay(int year, int mon, int mday)
+{
+    int century;
+    
+    /* Adjust months so February is the last one */
+    mon -= 2;
+    if (mon < 1) {
+	mon += 12;
+	year--;
+    }
+    /* Split by century */
+    century = year / 100;
+    year %= 100;
+    return (((26*mon - 2)/10 + mday + year + year/4 + 
+             century/4 + 5*century) % 7);
+}
+#endif
+
+/* 
+ *-----------------------------------------------------------------------------
+ *
+ * GetDateFromOrdinalDay --
+ *
+ *	Computes the month and day of the month from the given year and 
+ *      ordinal day (day of the year).
+ *
+ * Returns:
+ *      Returns the day of the month.  
+ *
+ * Side Effects:
+ *      The month is returned via *monthPtr*.
+ *
+ *-----------------------------------------------------------------------------
+ */
+static int
+GetDateFromOrdinalDay(Tcl_Interp *interp, int year, int yday, int *monthPtr)
+{
+    int numDays, mon;
+
+    /* Keep subtracting the number of days in the month from the ordinal
+     * day until it fits within the month.  */
+    numDays = yday;
+    mon = 0;
+    while (numDays >= numDaysMonth[IsLeapYear(year)][mon]) {
+        numDays -= numDaysMonth[IsLeapYear(year)][mon];
+        mon++;
+    }
+    *monthPtr = mon;
+    return numDays + 1;                 /* mday is 1-31 */
 }
 
 static Tcl_Obj *
@@ -1800,7 +1888,7 @@ ConvertDate(Tcl_Interp *interp, DateParser *parserPtr, double *secondsPtr)
 #endif
     isLeapYear = IsLeapYear(datePtr->year);
     /* Check the inputs for validity */
-    if ((datePtr->year < 0) || (datePtr->year > 9999)) {
+    if ((datePtr->year < 0) || (datePtr->year > 99999)) {
         if (interp != NULL) {
             ParseError(interp, "year \"%d\" is out of range.", 
                        datePtr->year);
@@ -1884,11 +1972,13 @@ ConvertDate(Tcl_Interp *interp, DateParser *parserPtr, double *secondsPtr)
     if ((parserPtr->flags & PARSE_YDAY) && (datePtr->yday > 0)) {
 	datePtr->mday = GetDateFromOrdinalDay(interp, datePtr->year, 
                 datePtr->yday, &datePtr->mon);
+#ifdef notdef
         fprintf(stderr, "parse yday: yday=%d year=%d mon=%d mday=%d\n",
                 datePtr->yday, datePtr->year, datePtr->mon, datePtr->mday);
+#endif
     }         
     if (parserPtr->flags & PARSE_WEEK) {
-	int numDays, adjustToPrevSunday;
+	int numDays, wdayJan1, numDaysToFirstSunday;
         
         /* If the date was given by week number + week day, convert to
          * month, and mday. Note that the year may change. */
@@ -1898,18 +1988,35 @@ ConvertDate(Tcl_Interp *interp, DateParser *parserPtr, double *secondsPtr)
         /* The epoch started on a Thursday, so figure out what the offset
          * is to the first Sunday of the year.  Note it could be in the
          * previous year. */
-        adjustToPrevSunday = EPOCH_WDAY - (numDays % 7); 
-        /* Now compute the day of the year. */
-        datePtr->yday = (datePtr->week*7) + datePtr->wday - adjustToPrevSunday;
+        wdayJan1 = ((ABS(numDays) % 7) + EPOCH_WDAY) % 7;
+        /* Jan 1st
+         *  Mon, Tue, Wed, or Thu (1-4):  Week 01 (0).  
+         *  Fri (5):                      Week 53 (52) of previous year.
+         *  Sat (6):                      Week 52 or 53 of previous year. 
+         *  Sun (0):                      Week 52 (51) of previous year. 
+         * 
+         * Which means if Jan 1st isn't 1-4, then the first week is +7 days.
+         */
+        numDaysToFirstSunday = numDays - wdayJan1;
+        if ((wdayJan1 < 1) || (wdayJan1 > 4)) {
+            numDaysToFirstSunday += 7;  /* Week 1 is the next week. */
+        }
+        datePtr->yday = (numDaysToFirstSunday + (datePtr->week * 7) + 
+                         datePtr->wday + 1) - numDays;
+
+        /* If the day of the year is negative, that means the day is in the
+         * last year. */
         if (datePtr->yday < 0) {
             datePtr->year--;
-            datePtr->yday = 365 + IsLeapYear(datePtr->year) + datePtr->yday;
+            datePtr->yday += numDaysYear[IsLeapYear(datePtr->year)];
+        }
+       /* If the week was 52 or 53, then you might cross into the next year. */
+        if (datePtr->yday >= numDaysYear[IsLeapYear(datePtr->year)]) {
+            datePtr->yday -= numDaysYear[IsLeapYear(datePtr->year)];
+            datePtr->year++;
         }
 	datePtr->mday = GetDateFromOrdinalDay(interp, datePtr->year, 
                 datePtr->yday, &datePtr->mon);
-        fprintf(stderr, "parse week+wday: yday=%d week=%d wday=%d mday=%d adjust=%d\n",
-                datePtr->yday, datePtr->week, datePtr->wday, 
-                datePtr->mday, adjustToPrevSunday);
     }
     Blt_DateToSeconds(datePtr, secondsPtr);
     return TCL_OK;
@@ -2219,7 +2326,7 @@ FormatOp(ClientData clientData, Tcl_Interp *interp, int objc,
 }
 
 static int
-ParseOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+DebugOp(ClientData clientData, Tcl_Interp *interp, int objc, 
        Tcl_Obj *const *objv)
 {
     DateParser parser;
@@ -2270,8 +2377,8 @@ ScanOp(ClientData clientData, Tcl_Interp *interp, int objc,
  */
 static Blt_OpSpec dateCmdOps[] =
 {
+    {"debug",   1, DebugOp,       3, 3, "date",},
     {"format",  1, FormatOp,      3, 0, "seconds ?switches?",},
-    {"parse",   1, ParseOp,       3, 3, "date",},
     {"scan",    1, ScanOp,        3, 3, "date",},
 };
 
@@ -2329,7 +2436,7 @@ Blt_DateScanCmdInitProc(Tcl_Interp *interp)
  *      Converts a date structure into the number of second since the
  *      epoch.  The date can contain fractional seconds.  The date fields
  *      year, mon, and mday are used to compute the time, while week, wday,
- *      and yday and ignored.  You much have previously converted the them
+ *      and yday and ignored.  You must have previously converted the them
  *      to year, mon, and mday.
  *
  * Results:
@@ -2361,7 +2468,7 @@ Blt_DateToSeconds(Blt_DateTime *datePtr, double *secondsPtr)
 
     /* Step 2: Add in the number of days from the start of the year. Use
      *         the day of year if it was supplied, otherwise compute it. */
-    if (datePtr->mday > 0) {
+    if (datePtr->mday > 0) {            
         int n;                          
 
 	n = NumberDaysFromStartOfYear(datePtr->year, datePtr->mon, 
@@ -2421,12 +2528,14 @@ Blt_SecondsToDate(double seconds, Blt_DateTime *datePtr)
     memset(datePtr, 0, sizeof(Blt_DateTime));
     numDays = ((long)seconds) / SECONDS_DAY;
     rem  = ((long)seconds) % SECONDS_DAY;
-    while (rem < 0) {
+    if (rem < 0) {
+#ifdef notdef
  fprintf(stderr, "rem=%ld numDays=%ld rem < 0\n", rem, numDays);
+#endif
         rem += SECONDS_DAY;
         numDays--;
     }
-    while (rem >= SECONDS_DAY) {
+    if (rem >= SECONDS_DAY) {
  fprintf(stderr, "rem=%ld numDays=%ld rem >= SECONDS_DAY\n", 
                 rem, numDays);
         rem -= SECONDS_DAY;
@@ -2475,14 +2584,16 @@ Blt_SecondsToDate(double seconds, Blt_DateTime *datePtr)
     }
     datePtr->mon = mon;
     datePtr->mday = numDays + 1;        /* mday is 1-31 */
+
     /* Step 5: Lastly, compute the ISO week and week year. */
     datePtr->week = GetIsoWeek(year, mon + 1, numDays, &datePtr->wyear);
 
 #ifdef notdef
-    fprintf(stderr, "Leaving Blt_SecondsToDate: y=%d m=%d mday=%d wday=%d yday=%d week=%d wyear=%d hour=%d min=%d sec=%d\n",
+    fprintf(stderr, "Leaving Blt_SecondsToDate: y=%d m=%d mday=%d wday=%d yday=%d week=%d wyear=%d hour=%d min=%d sec=%d usaweek=%d\n",
             datePtr->year, datePtr->mon, datePtr->mday, datePtr->wday,
             datePtr->yday, datePtr->week, datePtr->wyear, datePtr->hour,
-            datePtr->min, datePtr->sec);
+            datePtr->min, datePtr->sec, 
+            GetWeek(datePtr->year, datePtr->mon, datePtr->mday));
 #endif
     datePtr->isdst = 0;
 }
@@ -2576,7 +2687,7 @@ Blt_FormatDate(Blt_DateTime *datePtr, const char *fmt, Tcl_DString *resultPtr)
             break;
         case 'c':                       /* Date and time (Thu Mar 3
                                          * 23:05:25 2005)". */
-            count += 3 + 3 + 2 + 8 + 4 + 4;
+            count += 4 + 4 + 3 + 9 + 4;
             break;
         case 'C':                       /* Century without last two digits
                                          * (20) */
@@ -2658,9 +2769,15 @@ Blt_FormatDate(Blt_DateTime *datePtr, const char *fmt, Tcl_DString *resultPtr)
             break;
         case 'Y':                       /* Year, 4 digits (1999) */
             count += 4;
+            if (datePtr->year > 9999) {
+                count++;
+            }
             break;
         case 'z':                       /* Numeric timezone, +hhmm */
             count += 5;
+            break;
+        default:
+            count += 2;
             break;
         }
     }
@@ -2687,7 +2804,7 @@ Blt_FormatDate(Blt_DateTime *datePtr, const char *fmt, Tcl_DString *resultPtr)
             *bp++ = '%';                    
             break;
         case 'a':                       /* Abbreviated weekday (Sun) */
-            sprintf(bp, "%3s", weekdayNames[datePtr->wday]);                
+            sprintf(bp, "%.3s", weekdayNames[datePtr->wday]);                
             bp += 3;
             break;
         case 'A':                       /* Weekday */
@@ -2696,7 +2813,7 @@ Blt_FormatDate(Blt_DateTime *datePtr, const char *fmt, Tcl_DString *resultPtr)
             break;
         case 'b':                       /* Abbreviated month (Jan) */
         case 'h':
-            sprintf(bp, "%3s", monthNames[datePtr->mon]);                
+            sprintf(bp, "%.3s", monthNames[datePtr->mon]);                
             bp += 3;
             break;
         case 'B':                       /* Month */
@@ -2705,7 +2822,7 @@ Blt_FormatDate(Blt_DateTime *datePtr, const char *fmt, Tcl_DString *resultPtr)
             break;
         case 'c':                       /* Date and time (Thu Mar 3
                                          * 23:05:25 2005)". */
-            numBytes = sprintf(bp, "%3s %3s %d %02d:%02d:%02d %4d",
+            numBytes = sprintf(bp, "%.3s %.3s %d %02d:%02d:%02d %4d",
                             weekdayNames[datePtr->wday],
                             monthNames[datePtr->mon],
                             datePtr->mday,
@@ -2717,7 +2834,7 @@ Blt_FormatDate(Blt_DateTime *datePtr, const char *fmt, Tcl_DString *resultPtr)
             break;
         case 'C':                       /* Century without last two digits
                                          * (20) */
-            sprintf(bp, "%2d", datePtr->year % 100);
+            sprintf(bp, "%2d", datePtr->year / 100);
             bp += 2;
             break;
         case 'd':                       /* Day of month (01-31). */
@@ -2736,16 +2853,16 @@ Blt_FormatDate(Blt_DateTime *datePtr, const char *fmt, Tcl_DString *resultPtr)
             bp += 2;
             break;
         case 'F':                       /* Full date yyyy-mm-dd */
-            sprintf(bp, "%4d-%2d-%2d", datePtr->year, datePtr->mon + 1, 
+            sprintf(bp, "%04d-%02d-%02d", datePtr->year, datePtr->mon + 1, 
                     datePtr->mday);
             bp += 10;
             break;
         case 'g':                       /* Last 2 digits of ISO wyear */
-            sprintf(bp, "%2d", datePtr->wyear % 100);
+            sprintf(bp, "%02d", datePtr->wyear % 100);
             bp += 2;
             break;
         case 'G':                       /* ISO year */
-            sprintf(bp, "%4d", datePtr->wyear);
+            sprintf(bp, "%04d", datePtr->wyear);
             bp += 4;
             break;
         case 'H':                       /* Hour (0-23) */
@@ -2753,10 +2870,11 @@ Blt_FormatDate(Blt_DateTime *datePtr, const char *fmt, Tcl_DString *resultPtr)
             bp += 2;
             break;
         case 'I':                       /* Hour (01-12) */
-            sprintf(bp, "%02d", (datePtr->hour % 12) + 1);
+            sprintf(bp, "%02d", ((datePtr->hour == 0) || (datePtr->hour == 12))
+                    ? 12 : (datePtr->hour % 12));
             bp += 2;
             break;
-        case 'j':                       /* Day of year 1-366 */
+        case 'j':                       /* Day of year 001-366 */
             sprintf(bp, "%03d", datePtr->yday + 1);
             bp += 3;
             break;
@@ -2765,7 +2883,8 @@ Blt_FormatDate(Blt_DateTime *datePtr, const char *fmt, Tcl_DString *resultPtr)
             bp += 2;
             break;
         case 'l':                       /* Hour, space padded */
-            sprintf(bp, "%2d", (datePtr->hour % 12) + 1);
+            sprintf(bp, "%2d", ((datePtr->hour == 0) || (datePtr->hour == 12))
+                    ? 12 : (datePtr->hour % 12));
             bp += 2;
             break;
         case 'm':                       /* Month (01-12) */
@@ -2778,7 +2897,7 @@ Blt_FormatDate(Blt_DateTime *datePtr, const char *fmt, Tcl_DString *resultPtr)
             break;
         case 'N':                       /* nanoseconds (000000000..999999999) */
             Blt_DateToSeconds(datePtr, &seconds);
-            numBytes = sprintf(bp, "%ld%ld", 
+            numBytes = sprintf(bp, "%ld.%ld", 
                                (long)seconds, 
                                (long)(datePtr->frac * 1e9));
             bp += numBytes;
@@ -2793,7 +2912,9 @@ Blt_FormatDate(Blt_DateTime *datePtr, const char *fmt, Tcl_DString *resultPtr)
             break;
         case 'r':                       /* 12 hour clock time (hh:mm:ss AM) */
             sprintf(bp, "%02d:%02d:%02d %2s",
-                    datePtr->hour, datePtr->min, datePtr->sec,
+                    ((datePtr->hour == 0) || (datePtr->hour == 12)) 
+                    ? 12 : (datePtr->hour % 12), 
+                    datePtr->min, datePtr->sec,
                     (datePtr->hour > 11) ? "PM" : "AM");
             bp += 11;
             break;
@@ -2811,7 +2932,7 @@ Blt_FormatDate(Blt_DateTime *datePtr, const char *fmt, Tcl_DString *resultPtr)
             sprintf(bp, "%02d", datePtr->sec);
             bp += 2;
             break;
-        case 'T':                       /* The time as "hh:%mm:ss". */
+        case 'T':                       /* The time as "hh:mm:ss". */
             sprintf(bp, "%02d:%02d:%02d",
                     datePtr->hour, datePtr->min, datePtr->sec);
             bp += 8;
@@ -2820,9 +2941,10 @@ Blt_FormatDate(Blt_DateTime *datePtr, const char *fmt, Tcl_DString *resultPtr)
             sprintf(bp, "%1d", datePtr->wday + 1);
             bp += 1;
             break;
-        case 'U':                       /* Week (00-53). Sunday is first
+        case 'U':                       /* Week (10-53). Sunday is first
                                          * day of week. */
-            sprintf(bp, "%02d", datePtr->week);
+            sprintf(bp, "%02d", 
+                    GetWeek(datePtr->year, datePtr->mon, datePtr->mday) + 1);
             bp += 2;
             break;
         case 'V':                       /* ISO Week (01-53). Monday is
@@ -2834,14 +2956,15 @@ Blt_FormatDate(Blt_DateTime *datePtr, const char *fmt, Tcl_DString *resultPtr)
             sprintf(bp, "%1d", datePtr->wday);
             bp += 1;
             break;
-        case 'W':                       /* Week (00-53). Monday is first
-                                         * day of week. */
+        case 'W':                       /* Week (00-53). Monday is the
+                                         * first day of week. (I don't know
+                                         * what this is.) */
             sprintf(bp, "%02d", datePtr->week);
             bp += 2;
             break;
         case 'x':                       /* Date representation mm/dd/yy */
             sprintf(bp, "%02d/%02d/%02d", 
-                    datePtr->mon, datePtr->mday, datePtr->year % 100);
+                    datePtr->mon + 1, datePtr->mday, datePtr->year % 100);
             bp += 8;
             break;
         case 'y':                       /* Year, last 2 digits (yy) */
@@ -2849,8 +2972,9 @@ Blt_FormatDate(Blt_DateTime *datePtr, const char *fmt, Tcl_DString *resultPtr)
             bp += 2;
             break;
         case 'Y':                       /* Year, 4 digits (yyyy) */
-            sprintf(bp, "%04d", datePtr->year);
-            bp += 4;
+            numBytes = sprintf(bp, (datePtr->year > 9999) ? "%05d" : "%04d", 
+                datePtr->year);
+            bp += numBytes;
             break;
         case 'z':                       /* Numeric timezone, +-hhmm */
             if (datePtr->tzoffset < 0) {
@@ -2859,6 +2983,10 @@ Blt_FormatDate(Blt_DateTime *datePtr, const char *fmt, Tcl_DString *resultPtr)
                 sprintf(bp, "+%04d", datePtr->tzoffset);
             }
             bp += 5;
+            break;
+        default:                        /* Not a substitution. */
+            sprintf(bp, "%%%c", *p);
+            bp += 2;
             break;
         }
         assert((bp - buffer) < count);
