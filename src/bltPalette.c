@@ -290,7 +290,7 @@ GetOpacityFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, Blt_Pixel *pixelPtr)
 	return TCL_ERROR;
     }
     if ((value < 0.0) || (value > 1.0)) {
-	Tcl_AppendResult(interp, "bad opacity value: should be 0..1",
+	Tcl_AppendResult(interp, "bad opacity value: should be 0.0 - 1.0",
 		(char *)NULL);
 	return TCL_ERROR;
     }
@@ -466,7 +466,7 @@ ParseColorPoints(Tcl_Interp *interp, PaletteCmd *cmdPtr, int objc,
     for (i = 1; i < objc; i++) {
 	Blt_PaletteEntry *entryPtr;
 	
-	entryPtr = entries + i - 1;
+	entryPtr = entries + (i - 1);
 	entryPtr->min = point;
 	entryPtr->low.u32 = color.u32;
 	if (GetColorPoint(interp, objv[i], &point, &color) != TCL_OK) {
@@ -870,14 +870,15 @@ ColorsToObjProc(
 {
     PaletteCmd *cmdPtr = (PaletteCmd *)record;
     Tcl_Obj *listObjPtr;
-    Blt_PaletteEntry *entryPtr, *endPtr;
+    int i;
 
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
-    for (entryPtr = cmdPtr->colors, endPtr = entryPtr + cmdPtr->numColors; 
-	entryPtr < endPtr; entryPtr++) {
+    for (i = 0; i < cmdPtr->numColors; i++) {
+        Blt_PaletteEntry *entryPtr;
 	Tcl_Obj *objPtr, *subListObjPtr;
 	char string[200];
 
+        entryPtr = cmdPtr->colors + i;
 	subListObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
 	if (entryPtr->min.isAbsolute) {
 	    objPtr = Tcl_NewDoubleObj(entryPtr->min.value);
@@ -1015,15 +1016,15 @@ OpacitiesToObjProc(
 {
     PaletteCmd *cmdPtr = (PaletteCmd *)record;
     Tcl_Obj *listObjPtr;
-    Blt_PaletteEntry *entryPtr, *endPtr;
+    int i;
 
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
-    entryPtr = cmdPtr->opacities;
-    for (endPtr = entryPtr + cmdPtr->numOpacities; entryPtr < endPtr; 
-	 entryPtr++) {
+    for (i = 0; i < cmdPtr->numOpacities; i++) {
+        Blt_PaletteEntry *entryPtr;
 	Tcl_Obj *objPtr, *subListObjPtr;
 	double value;
 
+        entryPtr = cmdPtr->opacities + i;
 	subListObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
 	objPtr = Tcl_NewDoubleObj(entryPtr->min.value);
 	if (entryPtr->min.isAbsolute) {
@@ -1259,30 +1260,44 @@ OpacityLerp(Blt_PaletteEntry *entryPtr, double t)
     return CLAMP(a);
 }
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * ConvertAbsoluteToRelative --
+ *
+ *      Converts all color and opacity entries with absolute values 
+ *      to relative values 0.0 - 1.0 based upon the given range.
+ *
+ *---------------------------------------------------------------------------
+ */
 static void
-ApplyRange(PaletteCmd *cmdPtr, double rangeMin, double rangeMax)
+ConvertAbsoluteToRelative(PaletteCmd *cmdPtr, double min, double max)
 {
-    Blt_PaletteEntry *entryPtr, *endPtr;
     double range, scale;
-
-    range = rangeMax - rangeMin;
+    int i;
+    
+    range = max - min;
     scale = 1.0 / range;
-    for (entryPtr = cmdPtr->colors, endPtr = entryPtr + cmdPtr->numColors; 
-	 entryPtr < endPtr; entryPtr++) {
+    for (i = 0; i < cmdPtr->numColors; i++) {
+        Blt_PaletteEntry *entryPtr;
+
+        entryPtr = cmdPtr->colors + i;
 	if (entryPtr->min.isAbsolute) {
-	    entryPtr->min.relValue = (entryPtr->min.value - rangeMin) * scale;
+	    entryPtr->min.relValue = (entryPtr->min.value - min) * scale;
 	} 
 	if (entryPtr->max.isAbsolute) {
-	    entryPtr->max.relValue = (entryPtr->max.value - rangeMin) * scale;
+	    entryPtr->max.relValue = (entryPtr->max.value - min) * scale;
 	}
     }
-    for (entryPtr = cmdPtr->opacities, endPtr = entryPtr + cmdPtr->numOpacities;
-	 entryPtr < endPtr; entryPtr++) {
+    for (i = 0; i < cmdPtr->numOpacities; i++) {
+        Blt_PaletteEntry *entryPtr;
+
+        entryPtr = cmdPtr->opacities + i;
 	if (entryPtr->min.isAbsolute) {
-	    entryPtr->min.relValue = (entryPtr->min.value - rangeMin) * scale;
+	    entryPtr->min.relValue = (entryPtr->min.value - min) * scale;
 	}
 	if (entryPtr->max.isAbsolute) {
-	    entryPtr->min.relValue = (entryPtr->max.value - rangeMin) * scale;
+	    entryPtr->min.relValue = (entryPtr->max.value - min) * scale;
 	}
     }
 }
@@ -1290,35 +1305,36 @@ ApplyRange(PaletteCmd *cmdPtr, double rangeMin, double rangeMax)
 static int 
 Interpolate(PaletteCmd *cmdPtr, double relValue, Blt_Pixel *colorPtr)
 {
-    Blt_PaletteEntry *entryPtr, *endPtr;
+    int i;
     Blt_Pixel color;
-    int found;
 
     relValue = RCLAMP(relValue);
-    found = FALSE;
     color.u32 = 0x00;			/* Default to empty. */
-    for (entryPtr = cmdPtr->colors, endPtr = entryPtr + cmdPtr->numColors; 
-	 entryPtr < endPtr; entryPtr++) {
-	if (InRange(relValue, entryPtr->min.relValue, entryPtr->max.relValue)) {
+    for (i = 0; i < cmdPtr->numColors; i++) {
+        Blt_PaletteEntry *entryPtr;
+
+        entryPtr = cmdPtr->colors + i;
+	if (InRange(relValue, entryPtr->min.relValue, entryPtr->max.relValue)){
 	    double t;
 	    
 	    t = (relValue - entryPtr->min.relValue) / 
 		(entryPtr->max.relValue - entryPtr->min.relValue);
 	    color.u32 = ColorLerp(entryPtr, t);
-	    found = TRUE;
 	    break;
 	}
     }
-    if (!found) {
+    if (i == cmdPtr->numColors) {
 #ifndef notdef
 	fprintf(stderr, "can't interpolate: relValue=%.17g\n", relValue);
 #endif
 	abort();
 	return FALSE;
     }
-    for (entryPtr = cmdPtr->opacities, endPtr = entryPtr + cmdPtr->numOpacities;
-	 entryPtr < endPtr; entryPtr++) {
-	if (InRange(relValue, entryPtr->min.relValue, entryPtr->max.relValue)) {
+    for (i = 0;  i < cmdPtr->numOpacities; i++) {
+        Blt_PaletteEntry *entryPtr;
+
+        entryPtr = cmdPtr->opacities + i;
+	if (InRange(relValue, entryPtr->min.relValue, entryPtr->max.relValue)){
 	    double t;
             unsigned int alpha;
 
@@ -1667,7 +1683,7 @@ InterpolateOp(ClientData clientData, Tcl_Interp *interp, int objc,
     } else {
 	relValue = point.value;
     }
-    ApplyRange(cmdPtr, switches.min, switches.max);
+    ConvertAbsoluteToRelative(cmdPtr, switches.min, switches.max);
     if (!Interpolate(cmdPtr, relValue, &color)) {
 	Tcl_AppendResult(interp, "value \"", Tcl_GetString(objv[3]), 
 		"\" not in any range", (char *)NULL);
@@ -1905,11 +1921,11 @@ Blt_Palette_GetFromString(Tcl_Interp *interp, const char *string,
 }
 
 void
-Blt_Palette_SetRange(Blt_Palette palette, double rangeMin, double rangeMax)
+Blt_Palette_SetRange(Blt_Palette palette, double min, double max)
 {
     PaletteCmd *cmdPtr = (PaletteCmd *)palette;
 
-    ApplyRange(cmdPtr, rangeMin, rangeMax);
+    ConvertAbsoluteToRelative(cmdPtr, min, max);
 }
 
 int

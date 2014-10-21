@@ -1,5 +1,4 @@
 /* -*- mode: c; c-basic-offset: 4; indent-tabs-mode: nil -*- */
-
 /*
  * bltGrColormap.c --
  *
@@ -7,13 +6,13 @@
  *
  *	Copyright 2011 George A Howlett.
  *
- *	Permission is hereby granted, free of charge, to any person obtaining
- *	a copy of this software and associated documentation files (the
- *	"Software"), to deal in the Software without restriction, including
- *	without limitation the rights to use, copy, modify, merge, publish,
- *	distribute, sublicense, and/or sell copies of the Software, and to
- *	permit persons to whom the Software is furnished to do so, subject to
- *	the following conditions:
+ *	Permission is hereby granted, free of charge, to any person
+ *	obtaining a copy of this software and associated documentation
+ *	files (the "Software"), to deal in the Software without
+ *	restriction, including without limitation the rights to use, copy,
+ *	modify, merge, publish, distribute, sublicense, and/or sell copies
+ *	of the Software, and to permit persons to whom the Software is
+ *	furnished to do so, subject to the following conditions:
  *
  *	The above copyright notice and this permission notice shall be
  *	included in all copies or substantial portions of the Software.
@@ -21,10 +20,11 @@
  *	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  *	EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  *	MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- *	NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
- *	LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
- *	OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
- *	WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *	NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+ *	BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ *	ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ *	CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ *	SOFTWARE.
  */
 
 #define BUILD_BLT_TK_PROCS 1
@@ -83,8 +83,8 @@ static Blt_ConfigSpec configSpecs[] =
  *
  * GetColormap --
  *
- *	Gets the named colormap.  The colormap must already exist or
- *	an error message is returned.
+ *	Gets the named colormap.  The colormap must already exist or an
+ *	error message is returned.
  *
  * Results:
  *	A standard TCL result.
@@ -114,8 +114,8 @@ GetColormap(Tcl_Interp *interp, Graph *graphPtr, const char *string,
  *
  * GetColormapFromObj --
  *
- *	Gets the named colormap.  The colormap must already exist or
- *	an error message is returned.
+ *	Gets the named colormap.  The colormap must already exist or an
+ *	error message is returned.
  *
  * Results:
  *	A standard TCL result.
@@ -417,11 +417,11 @@ CreateOp(ClientData clientData, Tcl_Interp *interp, int objc,
     } 
     if (hPtr == NULL) {
 	/* If no name was given for the colormap, make up one. */
-
 	do { 
 	    char ident[200];
 
-	    Blt_FormatString(ident, 200, "colormap%d", graphPtr->nextColormapId++);
+	    Blt_FormatString(ident, 200, "colormap%d",
+                        graphPtr->nextColormapId++);
 	    hPtr = Blt_CreateHashEntry(&graphPtr->colormapTable, ident, &isNew);
 	} while (!isNew);
     }

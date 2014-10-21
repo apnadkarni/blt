@@ -1026,13 +1026,13 @@ proc SetOpacity {} {
     if { $current == "particle" } {
 	.g element configure particle -opacity 100.0 
 	.g element configure substrate -opacity 50.0 
-	.g legend deactivate all
+	.g legend deactivate
 	.g legend activate particle
 	.g element show { substrate particle }
     } else {
 	.g element configure substrate -opacity 100.0 
 	.g element configure particle -opacity 50.0 
-	.g legend deactivate all
+	.g legend deactivate
 	.g legend activate substrate
 	.g element show { particle substrate }
     }

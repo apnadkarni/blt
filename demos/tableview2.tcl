@@ -153,7 +153,7 @@ blt::tableview $view \
     -height 4i \
     -selectmode multiple \
     -table $table \
-    -autofilters yes
+    -columnfilters yes
 
 blt::table . \
     0,0 .ss  -fill both 

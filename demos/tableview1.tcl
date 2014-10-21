@@ -16,7 +16,7 @@ blt::tk::scrollbar .ss.y
 
 
 blt::tableview $view -table $table -titles both -selectmode multiple \
-    -autofilters yes 
+    -columnfilters yes 
 blt::table . \
     0,0 .ss -fill both
 $view filter configure -menu $view.filter

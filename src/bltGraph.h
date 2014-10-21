@@ -552,18 +552,18 @@ struct _Graph {
  *	GET_AXIS_GEOMETRY	Indicates that the size of the axes needs 
  *				to be recalculated. 
  *
- *	RESET_AXES Flag to call to Blt_ResetAxes routine.  This routine
- *				recalculates the scale offset (used for
- *				mapping coordinates) of each axis.  If an
- *				axis limit has changed, then it sets flags
- *				to re-layout and redraw the entire graph.
- *				This needs to happend before the axis can
- *				compute transformations between graph and
- *				screen coordinates.
+ *	RESET_AXES              Flag to call to Blt_ResetAxes routine.
+ *				This routine recalculates the scale offset
+ *				(used for mapping coordinates) of each
+ *				axis.  If an axis limit has changed, then
+ *				it sets flags to re-layout and redraw the
+ *				entire graph.  This needs to happen before
+ *				the axis can compute transformations
+ *				between graph and screen coordinates.
  *
  *	LAYOUT_NEEDED		
  *
- *	CACHE_DIRTY		If set, redraw all elements into the pixmap 
+ *	CACHE_DIRTY		If set redraw all elements into the pixmap 
  *				used for buffering elements. 
  *
  *	REDRAW_PENDING		Non-zero means a DoWhenIdle handler has 
