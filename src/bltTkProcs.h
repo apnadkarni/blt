@@ -508,7 +508,7 @@ BLT_EXTERN void		Blt_Palette_SetRange(Blt_Palette palette, double min,
 #define Blt_Palette_GetAssociatedColor_DECLARED
 /* 84 */
 BLT_EXTERN int		Blt_Palette_GetAssociatedColor(Blt_Palette palette,
-				double relValue);
+				double norm);
 #endif
 #ifndef Blt_Palette_CreateNotifier_DECLARED
 #define Blt_Palette_CreateNotifier_DECLARED
@@ -765,7 +765,7 @@ typedef struct BltTkProcs {
     int (*blt_Palette_GetFromString) (Tcl_Interp *interp, const char *string, Blt_Palette *palPtr); /* 81 */
     int (*blt_Palette_GetAssociatedColorFromAbsoluteValue) (Blt_Palette palette, double absValue, double rangeMin, double rangeMax); /* 82 */
     void (*blt_Palette_SetRange) (Blt_Palette palette, double min, double max); /* 83 */
-    int (*blt_Palette_GetAssociatedColor) (Blt_Palette palette, double relValue); /* 84 */
+    int (*blt_Palette_GetAssociatedColor) (Blt_Palette palette, double norm); /* 84 */
     void (*blt_Palette_CreateNotifier) (Blt_Palette palette, Blt_Palette_NotifyProc *proc, ClientData clientData); /* 85 */
     void (*blt_Palette_DeleteNotifier) (Blt_Palette palette, ClientData clientData); /* 86 */
     const char * (*blt_Palette_Name) (Blt_Palette palette); /* 87 */

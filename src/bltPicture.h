@@ -443,10 +443,10 @@ BLT_EXTERN void Blt_Shadow_Set(Blt_Shadow *sPtr, int width, int offset,
  */
 typedef struct {
     double value;
+    double norm;                        /* Normalized values 0..1 */
     int isAbsolute;			/* Indicates if the value is
-					 * relative (percent) or an
+					 * relative (normalized) or an
 					 * absolute value. */
-    double relValue;
 } Blt_PalettePoint;
 
 /*
@@ -497,7 +497,7 @@ BLT_EXTERN int Blt_Palette_GetAssociatedColorFromAbsoluteValue(Blt_Palette palet
 	double absValue, double rangeMin, double rangeMax);
 BLT_EXTERN void Blt_Palette_SetRange(Blt_Palette palette, double min, 
 	double max);
-BLT_EXTERN int Blt_Palette_GetAssociatedColor(Blt_Palette palette, double relValue);
+BLT_EXTERN int Blt_Palette_GetAssociatedColor(Blt_Palette palette, double norm);
 BLT_EXTERN void Blt_Palette_CreateNotifier(Blt_Palette palette, 
 	Blt_Palette_NotifyProc *proc, ClientData clientData);
 BLT_EXTERN void Blt_Palette_DeleteNotifier(Blt_Palette palette, 
