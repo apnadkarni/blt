@@ -710,7 +710,6 @@ test sftp.149 {get test_file } {
     list [catch {$sftp get test_directory/test_file } msg] $msg
 } {0 {}}
 
-
 test sftp.150 {create fred} {
     list [catch {blt::sftp create fred} msg] $msg
 } {0 ::fred}

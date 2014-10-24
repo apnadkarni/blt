@@ -6033,7 +6033,7 @@ WeekTicks(Axis *axisPtr, double min, double max)
     axisPtr->major.ticks.numSteps = numTicks;
     axisPtr->major.ticks.timeUnits = TIME_WEEKS;
     axisPtr->major.ticks.range = tickMax - tickMin;
-    axisPtr->major.ticks.fmt = "%d %h";
+    axisPtr->major.ticks.fmt = "%h %d";
     axisPtr->major.ticks.scaleType = SCALE_TIME;
     axisPtr->minor.ticks.step = SECONDS_DAY;
     axisPtr->minor.ticks.numSteps = 6;  
@@ -6084,7 +6084,7 @@ DayTicks(Axis *axisPtr, double min, double max)
     axisPtr->major.ticks.timeUnits = TIME_DAYS;
     axisPtr->major.ticks.range = tickMax - tickMin;
     axisPtr->major.ticks.scaleType = SCALE_TIME;
-    axisPtr->major.ticks.fmt = "%d %h";
+    axisPtr->major.ticks.fmt = "%h %d";
     axisPtr->minor.ticks.step = SECONDS_HOUR * 6;
     axisPtr->minor.ticks.initial = 0;
     axisPtr->minor.ticks.numSteps = 2;  /* 6 - 2 */
@@ -6146,7 +6146,7 @@ HourTicks(Axis *axisPtr, double min, double max)
     axisPtr->major.ticks.initial = tickMin;
     axisPtr->major.ticks.numSteps = numTicks;
     axisPtr->major.ticks.range = tickMax - tickMin;
-    axisPtr->major.ticks.fmt = "%H:%M %d %h";
+    axisPtr->major.ticks.fmt = "%h %d %H:%M";
     axisPtr->major.ticks.timeUnits = TIME_HOURS;
     axisPtr->major.ticks.scaleType = SCALE_TIME;
 
