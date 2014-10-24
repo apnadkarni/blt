@@ -1526,7 +1526,31 @@ test date.180 {date format %N} {
  	set d1 [blt::date scan "Jan 1, 1970"]
 	blt::date format $d1 -format "%N"
     } msg] $msg
-} {0 0.0}
+} {0 0}
+
+# Nanoseconds in an hour
+test date.180 {date format %N} { 
+    list [catch {
+ 	set d1 [blt::date scan "Jan 1, 1970 01:00"]
+	blt::date format $d1 -format "%N"
+    } msg] $msg
+} {0 3600000000000}
+
+# Nanoseconds in a day.
+test date.180 {date format %N} { 
+    list [catch {
+ 	set d1 [blt::date scan "Jan 2, 1970"]
+	blt::date format $d1 -format "%N"
+    } msg] $msg
+} {0 86400000000000}
+
+# Nanoseconds in a year.
+test date.180 {date format %N} { 
+    list [catch {
+ 	set d1 [blt::date scan "Jan 1, 1971"]
+	blt::date format $d1 -format "%N"
+    } msg] $msg
+} {0 31536000000000000}
 
 # AM/PM
 test date.181 {date format %P} { 

@@ -2729,7 +2729,7 @@ Blt_FormatDate(Blt_DateTime *datePtr, const char *fmt, Tcl_DString *resultPtr)
             count += 2;
             break;
         case 'N':                       /* nanoseconds (000000000..999999999) */
-            count += 17;
+            count += 25;
             break;
         case 'P':
         case 'p':                       /* Equivalent of either AM or PM
@@ -2897,9 +2897,7 @@ Blt_FormatDate(Blt_DateTime *datePtr, const char *fmt, Tcl_DString *resultPtr)
             break;
         case 'N':                       /* nanoseconds (000000000..999999999) */
             Blt_DateToSeconds(datePtr, &seconds);
-            numBytes = sprintf(bp, "%ld.%ld", 
-                               (long)seconds, 
-                               (long)(datePtr->frac * 1e9));
+            numBytes = sprintf(bp, "%ld", (long)(seconds * 1e9));
             bp += numBytes;
             break;
         case 'P':
