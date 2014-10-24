@@ -429,8 +429,8 @@ ClearOp(Vector *vPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * DeleteOp --
  *
- *	Deletes the given indices from the vector.  If no indices are provided
- *	the entire vector is deleted.
+ *	Deletes the given indices from the vector.  If no indices are
+ *	provided the entire vector is deleted.
  *
  * Results:
  *	A standard TCL result.  If any of the given indices is invalid,
@@ -472,7 +472,7 @@ DeleteOp(Vector *vPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	    Blt_Free(unsetArr);
 	    return TCL_ERROR;
 	}
-	for (j = 0; j < vPtr->length; j++) {
+	for (j = vPtr->first; j <= vPtr->last; j++) {
 	    SetBit(j);			/* Mark the element for deletion. */
 	}
     }
@@ -2083,7 +2083,7 @@ RangeOp(Vector *vPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	}
     } else {
 	Tcl_AppendResult(interp, "wrong # args: should be \"",
-		Tcl_GetString(objv[0]), " range ?first last?", (char *)NULL);
+		Tcl_GetString(objv[0]), " range ?first last?\"", (char *)NULL);
 	return TCL_ERROR;	
     }
     if (((first == -1) || (last == -1)) && (vPtr->length == 0)) {

@@ -164,7 +164,8 @@ typedef struct {
     LIBSSH2_SFTP *sftp;			/*  */
     int sock;				/* Socket used to connected to sftp
 					 * server.  */
-    Tcl_Obj *cwdObjPtr;			/* Current working directory. */
+    const char *cwd;                    /* Current home directory on remote. */
+    int cwdLength;
     const char *user;			/* User name on sftp server. */
     const char *host;			/* Host name of sftp server. */
     const char *password;		
@@ -1069,8 +1070,8 @@ NewRemoteEntry(const char *name, LIBSSH2_SFTP_ATTRIBUTES *attrsPtr)
     return entryPtr;
 }
 
-static void
-DestroyRemoteEntries(Blt_Chain entries) 
+static void INLINE
+FreeRemoteEntries(Blt_Chain entries) 
 {
     Blt_Chain_Destroy(entries);
 }
@@ -1156,7 +1157,7 @@ ReadRemoteEntries(Tcl_Interp *interp, Remote *remotePtr, const char *path,
     libssh2_sftp_closedir(handle);
     libssh2_session_set_blocking(remotePtr->session, TRUE);
     if (result == TCL_ERROR) {
-	DestroyRemoteEntries(chain);
+	FreeRemoteEntries(chain);
 	return NULL;
     }
     return chain;
@@ -1220,7 +1221,7 @@ ApplyToRemote(Tcl_Interp *interp, Remote *remotePtr, const char *path,
 	result = ApplyToRemote(interp, remotePtr, fullPath, fullLen, 
 		&entryPtr->attrs, subentries, dataPtr);
 	Tcl_DStringFree(&ds);
-	DestroyRemoteEntries(subentries);
+	FreeRemoteEntries(subentries);
 	if (result != TCL_OK) {
 	    return TCL_ERROR;
 	}
@@ -2070,11 +2071,7 @@ GetRemotePath(Remote *remotePtr, const char *string, int *lengthPtr)
 	    Tcl_DStringAppend(&remotePtr->ds, string + 1, -1);
 	}
     }  else {				/* Relative path. Append to cwd. */
-	const char *cwd;
-	int cwdLength;
-
-	cwd = Tcl_GetStringFromObj(remotePtr->cwdObjPtr, &cwdLength);
-    	Tcl_DStringAppend(&remotePtr->ds, cwd, cwdLength);
+    	Tcl_DStringAppend(&remotePtr->ds, remotePtr->cwd, remotePtr->cwdLength);
     	Tcl_DStringAppend(&remotePtr->ds, "/", 1);
     	Tcl_DStringAppend(&remotePtr->ds, string, -1);
     }
@@ -2109,11 +2106,7 @@ GetRemotePathFromObj(Remote *remotePtr, Tcl_Obj *objPtr, int *lengthPtr)
 	    Tcl_DStringAppend(&remotePtr->ds, string + 1, -1);
 	}
     }  else {				/* Relative path. Append to cwd. */
-	const char *cwd;
-	int cwdLength;
-
-	cwd = Tcl_GetStringFromObj(remotePtr->cwdObjPtr, &cwdLength);
-    	Tcl_DStringAppend(&remotePtr->ds, cwd, cwdLength);
+    	Tcl_DStringAppend(&remotePtr->ds, remotePtr->cwd, remotePtr->cwdLength);
     	Tcl_DStringAppend(&remotePtr->ds, "/", 1);
     	Tcl_DStringAppend(&remotePtr->ds, string, length);
     }
@@ -2857,9 +2850,12 @@ RemoveRemoteDirectory(Tcl_Interp *interp, Remote *remotePtr, const char *path,
 		    ClientData clientData)
 {
     if (libssh2_sftp_rmdir_ex(remotePtr->sftp, path, length) < 0) {
-	Tcl_AppendResult(interp, "can't delete directory \"", path, "\": ", 
+        unsigned long flags = (unsigned long)clientData;
+        if ((flags & FORCE) == 0) {
+            Tcl_AppendResult(interp, "can't delete directory \"", path, "\": ", 
 		RemoteError(remotePtr), (char *)NULL);
-	return TCL_ERROR;
+            return TCL_ERROR;
+        }
     }
     return TCL_OK;
 }
@@ -2870,9 +2866,12 @@ RemoveRemoteFile(Tcl_Interp *interp, Remote *remotePtr, const char *path,
 	       ClientData clientData)
 {
     if (libssh2_sftp_unlink_ex(remotePtr->sftp, path, length) < 0) {
-	Tcl_AppendResult(interp, "can't delete file \"", path, "\": ", 
-		RemoteError(remotePtr), (char *)NULL);
-	return TCL_ERROR;
+        unsigned long flags = (unsigned long)clientData;
+        if ((flags & FORCE) == 0) {
+            Tcl_AppendResult(interp, "can't delete file \"", path, "\": ", 
+                         RemoteError(remotePtr), (char *)NULL);
+            return TCL_ERROR;
+        }
     }
     return TCL_OK;
 }
@@ -3222,7 +3221,11 @@ ChdirOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	    return TCL_ERROR;
 	}
 	if (LIBSSH2_SFTP_S_ISDIR(attrs.permissions)) {
-	    Tcl_SetStringObj(remotePtr->cwdObjPtr, path, length);
+            if (remotePtr->cwd != NULL) {
+                Blt_Free(remotePtr->cwd);
+            }
+            remotePtr->cwdLength = length;
+	    remotePtr->cwd = Blt_AssertStrdup(path);
 	} else {
 	    Tcl_AppendResult(interp, 
 		"can't change current working directory to \"", 
@@ -3231,7 +3234,8 @@ ChdirOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	    return TCL_ERROR;
 	}
     }
-    Tcl_SetObjResult(interp, remotePtr->cwdObjPtr);
+    Tcl_SetStringObj(Tcl_GetObjResult(interp), remotePtr->cwd,
+                        remotePtr->cwdLength);
     return TCL_OK;
 }
 
@@ -3298,7 +3302,7 @@ ChgrpOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	    result = ApplyToRemote(interp, remotePtr, path, length, &attrs, 
 		entries, &data);
 	}
-	DestroyRemoteEntries(entries);
+	FreeRemoteEntries(entries);
 	if (result !=TCL_OK) {
 	    return TCL_ERROR;		/* Error chmod-ing entries. */
 	}
@@ -3380,7 +3384,7 @@ ChmodOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	    result = ApplyToRemote(interp, remotePtr, path, length, &attrs, 
 		entries, &data);
 	}
-	DestroyRemoteEntries(entries);
+	FreeRemoteEntries(entries);
 	if (result !=TCL_OK) {
 	    return TCL_ERROR;
 	}
@@ -3420,24 +3424,27 @@ DeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	}
     }
     path = GetRemotePathFromObj(remotePtr, objv[2], &length);
-    if (GetRemoteAttributes(remotePtr, path, length, &attrs) != TCL_OK) {
-	Tcl_AppendResult(interp, "can't stat \"", Tcl_GetString(objv[2]), 
-		"\": ", RemoteError(remotePtr), (char *)NULL);
+    switches.flags = 0;
+    if (Blt_ParseSwitches(interp, deleteSwitches, objc - 3, objv + 3, &switches,
+	BLT_SWITCH_DEFAULTS) < 0) {
 	return TCL_ERROR;
+    }
+    if (GetRemoteAttributes(remotePtr, path, length, &attrs) != TCL_OK) {
+        if (switches.flags & FORCE) {
+            return TCL_OK;
+        }
+        Tcl_AppendResult(interp, "can't stat \"", Tcl_GetString(objv[2]), 
+                             "\": ", RemoteError(remotePtr), (char *)NULL);
+        return TCL_ERROR;
     }
     if ((attrs.flags & LIBSSH2_SFTP_ATTR_PERMISSIONS) == 0) {
 	Tcl_AppendResult(interp, "server does not report permissions for \"",
 			 path, "\"", (char *)NULL);
 	return TCL_ERROR;
     }
-    switches.flags = 0;
-    if (Blt_ParseSwitches(interp, deleteSwitches, objc - 3, objv + 3, &switches,
-	BLT_SWITCH_DEFAULTS) < 0) {
-	return TCL_ERROR;
-    }
     data.fileProc = RemoveRemoteFile;
     data.dirProc = RemoveRemoteDirectory;
-    data.clientData = NULL;
+    data.clientData = (void *)((unsigned long)switches.flags & FORCE);
     if (LIBSSH2_SFTP_S_ISDIR(attrs.permissions)) {
 	Blt_Chain entries;
 
@@ -3448,18 +3455,18 @@ DeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	if (Blt_Chain_GetLength(entries) == 0) {
 	    result = RemoveRemoteDirectory(interp, remotePtr, path, length, 
 		&attrs, NULL);
-	    DestroyRemoteEntries(entries);
+	    FreeRemoteEntries(entries);
 	    return result;
 	}
 	if ((switches.flags & FORCE) == 0) {
 	    Tcl_AppendResult(interp, "can't delete directory \"", 
 		Tcl_GetString(objv[2]), "\": is not empty", (char *)NULL);
-	    DestroyRemoteEntries(entries);
+	    FreeRemoteEntries(entries);
 	    return TCL_ERROR;
 	}
 	result = ApplyToRemote(interp, remotePtr, path, length, &attrs, 
 		entries, &data);
-	DestroyRemoteEntries(entries);
+	FreeRemoteEntries(entries);
     } else {
 	result = RemoveRemoteFile(interp, remotePtr, path, length, &attrs,NULL);
     }
@@ -3646,7 +3653,7 @@ ExistsOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * GetOp --
  *
- *	sftp get path ?file? \
+ *	sftp get remoteFile ?localFile? \
  *		-progress cmd \
  *		-timeout 10 \
  *		-resume \
@@ -3660,7 +3667,7 @@ GetOp(ClientData clientData, Tcl_Interp *interp, int objc,
 {
     Remote *remotePtr = clientData;
     int length, result;
-    const char *path, *string, *fileName;
+    const char *path, *string, *localFile;
     FileReader reader;
     LIBSSH2_SFTP_ATTRIBUTES attrs;
 
@@ -3690,26 +3697,31 @@ GetOp(ClientData clientData, Tcl_Interp *interp, int objc,
     reader.interp = interp;
     reader.size = attrs.filesize;
     reader.remotePtr = remotePtr;
-    string = Tcl_GetString(objv[2]);
-    if (string[0] != '-') {
-	fileName = string;
-	objv++; objc--;
+    if (objc > 3) {
+        string = Tcl_GetString(objv[3]);
+        if (string[0] == '-') {
+            goto localSameAsRemote;
+        }
+        localFile = string;
+        objv++; objc--;
     } else {
-	fileName = FileTail(path);
+    localSameAsRemote:
+	localFile = FileTail(path);
     }
     if (Blt_ParseSwitches(interp, getSwitches, objc - 3, objv + 3, &reader,
 	BLT_SWITCH_DEFAULTS) < 0) {
 	return TCL_ERROR;
     }
-    reader.f = Blt_OpenFile(interp, fileName, "w");
+    reader.f = Blt_OpenFile(interp, localFile, "w");
     if (reader.f == NULL) {
+        fprintf(stderr, "localFile=%s\n", localFile);
 	goto error;
     }
     if (reader.flags & RESUME) {
 	struct stat stat;
 
 	if (fstat(fileno(reader.f), &stat) < 0) {
-	    Tcl_AppendResult(interp, "can't stat \"", fileName, "\": ", 
+	    Tcl_AppendResult(interp, "can't stat \"", localFile, "\": ", 
 		Tcl_PosixError(interp), (char *)NULL);
 	    goto error;
 	}
@@ -4094,7 +4106,7 @@ OwnedOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * PutOp --
  *
- *	sftp put path ?remotePath? \
+ *	sftp put localFile ?remoteFile? \
  *		-progress cmd \
  *		-timeout 10 \
  *		-resume \
@@ -4108,7 +4120,7 @@ PutOp(ClientData clientData, Tcl_Interp *interp, int objc,
 {
     Remote *remotePtr = clientData;
     int length, result;
-    const char *fileName, *path, *string;
+    const char *localFile, *path;
     FileWriter writer;
     struct stat stat;
     LIBSSH2_SFTP_ATTRIBUTES attrs;
@@ -4123,26 +4135,32 @@ PutOp(ClientData clientData, Tcl_Interp *interp, int objc,
     writer.interp = interp;
     writer.remotePtr = remotePtr;
     writer.mode = 0640;
-    fileName = Tcl_GetString(objv[2]);
-    writer.f = Blt_OpenFile(interp, fileName, "r");
+    localFile = Tcl_GetString(objv[2]);
+    writer.f = Blt_OpenFile(interp, localFile, "r");
     if (writer.f == NULL) {
 	return TCL_ERROR;
     }
     if (fstat(fileno(writer.f), &stat) < 0) {
-	Tcl_AppendResult(interp, "can't stat \"", fileName, "\": ", 
+	Tcl_AppendResult(interp, "can't stat \"", localFile, "\": ", 
 		Tcl_PosixError(interp), (char *)NULL);
 	fclose(writer.f);
 	return TCL_ERROR;
     }
     writer.size = stat.st_size;
-    string = Tcl_GetString(objv[3]);
-    if (string[0] != '-') {
-	path = GetRemotePathFromObj(remotePtr, objv[3], &length);
-	objv++, objc--;
+    if (objc > 3) {
+        const char *string;
+        
+        string = Tcl_GetString(objv[3]);
+        if (string[0] == '-') {
+            goto remoteSameAsLocal;
+        }
+        path = GetRemotePathFromObj(remotePtr, objv[3], &length);
+        objv++, objc--;
     } else {
 	const char *name;
 
- 	name = FileTail(fileName);
+    remoteSameAsLocal:
+ 	name = FileTail(localFile);
 	path = GetRemotePath(remotePtr, name, &length);
     }
     if (Blt_ParseSwitches(interp, putSwitches, objc - 3, objv + 3, &writer,
@@ -4154,7 +4172,8 @@ PutOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (GetRemoteAttributes(remotePtr, path, length, &attrs) == TCL_OK) {
 	if (attrs.flags & LIBSSH2_SFTP_ATTR_PERMISSIONS) {
 	    if (LIBSSH2_SFTP_S_ISDIR(attrs.permissions)) {
-		path = FileJoin(path, FileTail(fileName), &ds);
+                /* Remote path is a directory. Append file name. */
+		path = FileJoin(path, FileTail(localFile), &ds);
 		length = Tcl_DStringLength(&ds);
 	    }
 	}
@@ -4162,15 +4181,13 @@ PutOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if ((GetRemoteAttributes(remotePtr, path, length, &attrs) == TCL_OK) &&
 	(attrs.flags & LIBSSH2_SFTP_ATTR_PERMISSIONS)) {
 	if (LIBSSH2_SFTP_S_ISDIR(attrs.permissions)) {
-	    Tcl_AppendResult(interp, "can't put file \"", fileName, 
-		"\": \"", Tcl_GetString(objv[2]), "\" is a directory", 
-		(char *)NULL);
+	    Tcl_AppendResult(interp, "can't put file \"", localFile, 
+		"\": is a directory on remote", (char *)NULL);
 	    return TCL_ERROR;
 	}
 	if ((writer.flags & FORCE) == 0) {
-	    Tcl_AppendResult(interp, "can't put file \"", fileName, 
-		"\": \"", Tcl_GetString(objv[3]), "\" already exists", 
-		(char *)NULL);
+	    Tcl_AppendResult(interp, "can't put file \"", localFile, 
+		"\": already exists on remote", (char *)NULL);
 	    Tcl_DStringFree(&ds);
 	    return TCL_ERROR;
 	}
@@ -4218,7 +4235,8 @@ PwdOp(ClientData clientData, Tcl_Interp *interp, int objc,
 {
     Remote *remotePtr = clientData;
 
-    Tcl_SetObjResult(interp, remotePtr->cwdObjPtr);
+    Tcl_SetStringObj(Tcl_GetObjResult(interp), remotePtr->cwd,
+                     remotePtr->cwdLength);
     return TCL_OK;
 }
 
@@ -4490,7 +4508,7 @@ RmdirOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	return TCL_ERROR;
     }
     numEntries = Blt_Chain_GetLength(entries);
-    DestroyRemoteEntries(entries);
+    FreeRemoteEntries(entries);
     if (numEntries > 0) {
 	Tcl_AppendResult(interp, "can't remove \"", Tcl_GetString(objv[2]), 
 		"\": is not empty", (char *)NULL);
@@ -5007,7 +5025,8 @@ SftpCreateOp(
     if (ConnectToRemote(interp, remotePtr) != TCL_OK) {
 	goto error;
     }
-    remotePtr->cwdObjPtr = Tcl_NewStringObj(remotePtr->homedir, -1);
+    remotePtr->cwd = Blt_AssertStrdup(remotePtr->homedir);
+    remotePtr->cwdLength = strlen(remotePtr->homedir);
     remotePtr->cmdToken = Tcl_CreateObjCommand(interp, (char *)name, 
 	SftpCmdInstObjCmdProc, remotePtr, SftpCmdInstDeleteProc);
     remotePtr->tablePtr = &dataPtr->sessionTable;

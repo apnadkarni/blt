@@ -364,13 +364,13 @@ static ArcBall *
 GetArcBallFromObj(ArcBallCmdInterpData *dataPtr, Tcl_Interp *interp, 
 		  Tcl_Obj *objPtr)
 {
+    Blt_HashEntry *hPtr;
     Blt_ObjectName objName;
     Tcl_CmdInfo cmdInfo;
-    Blt_HashEntry *hPtr;
     Tcl_DString ds;
-    const char *abName;
-    int result;
+    const char *ballName;
     const char *string;
+    int result;
 
     /* Pull apart the arcball name and put it back together in a standard
      * format. */
@@ -379,8 +379,8 @@ GetArcBallFromObj(ArcBallCmdInterpData *dataPtr, Tcl_Interp *interp,
 	return NULL;			/* No such parent namespace. */
     }
     /* Rebuild the fully qualified name. */
-    abName = Blt_MakeQualifiedName(&objName, &ds);
-    result = Tcl_GetCommandInfo(interp, abName, &cmdInfo);
+    ballName = Blt_MakeQualifiedName(&objName, &ds);
+    result = Tcl_GetCommandInfo(interp, ballName, &cmdInfo);
     Tcl_DStringFree(&ds);
     if (!result) {
 	return NULL;
@@ -410,11 +410,11 @@ SetArcBallBounds(ArcBall *arcPtr, double w, double h)
 static ArcBall *
 NewArcBall(double w, double h)
 {
-    ArcBall *abPtr;
+    ArcBall *ballPtr;
 
-    abPtr = Blt_Calloc(1, sizeof(ArcBall));
-    SetArcBallBounds (abPtr, w, h);
-    return abPtr;
+    ballPtr = Blt_Calloc(1, sizeof(ArcBall));
+    SetArcBallBounds (ballPtr, w, h);
+    return ballPtr;
 }
 
 static void 
@@ -519,7 +519,7 @@ GetEulerAnglesFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, EulerAngles *e)
 /*
  * --------------------------------------------------------------
  *
- * ArcBallEulerOp --
+ * EulerOp --
  *
  * 	Sets/gets the current quaternion in terms of euler angles.
  *
@@ -533,10 +533,10 @@ GetEulerAnglesFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, EulerAngles *e)
  * --------------------------------------------------------------
  */
 static int
-ArcBallEulerOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-	       Tcl_Obj *const *objv)
+EulerOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+        Tcl_Obj *const *objv)
 {
-    ArcBall *abPtr = clientData;
+    ArcBall *ballPtr = clientData;
 
     if (objc == 3) {
 	EulerAngles euler;
@@ -567,14 +567,14 @@ ArcBallEulerOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	q1.y = 0.0;
 	q1.z = 0.0;
 	
-	CombineRotations(&q3, &q1, &abPtr->q);
+	CombineRotations(&q3, &q1, &ballPtr->q);
     } else {
 	HMatrix A;
 	double phi, cosPhi;
 	Tcl_Obj *objPtr, *listObjPtr;
 	double x, y, z;
 
-	QuaternionToMatrix(&abPtr->q, A);
+	QuaternionToMatrix(&ballPtr->q, A);
 	phi = -asin(A[0][2]);		/* Calculate Y-axis angle */
 	cosPhi = cos(phi);
 	y = phi * RAD2DEG;
@@ -619,7 +619,7 @@ ArcBallEulerOp(ClientData clientData, Tcl_Interp *interp, int objc,
 /*
  * --------------------------------------------------------------
  *
- * ArcBallMatrixOp --
+ * MatrixOp --
  *
  * 	Sets/gets the rotation matrix from the current quaternion.  The 3x3
  * 	rotation matrix is represented by nine numbers (row-major).
@@ -634,10 +634,10 @@ ArcBallEulerOp(ClientData clientData, Tcl_Interp *interp, int objc,
  * --------------------------------------------------------------
  */
 static int
-ArcBallMatrixOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+MatrixOp(ClientData clientData, Tcl_Interp *interp, int objc, 
 		Tcl_Obj *const *objv)
 {
-    ArcBall *abPtr = clientData;
+    ArcBall *ballPtr = clientData;
 
     if (objc == 3) {
 	HMatrix A;
@@ -645,13 +645,13 @@ ArcBallMatrixOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	if (GetMatrixFromObj(interp, objv[2], A) != TCL_OK) {
 	    return TCL_ERROR;
 	}
-	MatrixToQuaternion(A, &abPtr->q);
+	MatrixToQuaternion(A, &ballPtr->q);
     } else {
 	HMatrix A;
 	Tcl_Obj *listObjPtr;
 	int i, j;
 
-	QuaternionToMatrix(&abPtr->q, A);
+	QuaternionToMatrix(&ballPtr->q, A);
 	listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
 	for (i = 0; i < 3; i++) {
 	    for (j = 0; j < 3; j++) {
@@ -669,7 +669,7 @@ ArcBallMatrixOp(ClientData clientData, Tcl_Interp *interp, int objc,
 /*
  * --------------------------------------------------------------
  *
- * ArcBallQuaternionOp --
+ * QuaternionOp --
  *
  * 	Sets/gets the current quaternion.
  *
@@ -683,10 +683,10 @@ ArcBallMatrixOp(ClientData clientData, Tcl_Interp *interp, int objc,
  * --------------------------------------------------------------
  */
 static int
-ArcBallQuaternionOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-		    Tcl_Obj *const *objv)
+QuaternionOp(ClientData clientData, Tcl_Interp *interp, int objc,
+             Tcl_Obj *const *objv)
 {
-    ArcBall *abPtr = clientData;
+    ArcBall *ballPtr = clientData;
 
     if (objc == 3) {
 	Quaternion q;
@@ -694,18 +694,18 @@ ArcBallQuaternionOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	if (GetQuaternionFromObj(interp, objv[2], &q) != TCL_OK) {
 	    return TCL_ERROR;
 	}
-	abPtr->q = q;
+	ballPtr->q = q;
     } else {
 	Tcl_Obj *objPtr, *listObjPtr;
 
 	listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
-	objPtr = Tcl_NewDoubleObj(abPtr->q.w);
+	objPtr = Tcl_NewDoubleObj(ballPtr->q.w);
 	Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
- 	objPtr = Tcl_NewDoubleObj(abPtr->q.x);
+ 	objPtr = Tcl_NewDoubleObj(ballPtr->q.x);
 	Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-	objPtr = Tcl_NewDoubleObj(abPtr->q.y);
+	objPtr = Tcl_NewDoubleObj(ballPtr->q.y);
 	Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-	objPtr = Tcl_NewDoubleObj(abPtr->q.z);
+	objPtr = Tcl_NewDoubleObj(ballPtr->q.z);
 	Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
 	Tcl_SetObjResult(interp, listObjPtr);
     }
@@ -715,7 +715,7 @@ ArcBallQuaternionOp(ClientData clientData, Tcl_Interp *interp, int objc,
 /*
  * --------------------------------------------------------------
  *
- * ArcBallResetOp --
+ * ResetOp --
  *
  * 	Resets the quaterion to identity.  Used also the initialize the
  * 	quaternion.
@@ -728,12 +728,12 @@ ArcBallQuaternionOp(ClientData clientData, Tcl_Interp *interp, int objc,
  * --------------------------------------------------------------
  */
 static int
-ArcBallResetOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-	       Tcl_Obj *const *objv)
+ResetOp(ClientData clientData, Tcl_Interp *interp, int objc,
+        Tcl_Obj *const *objv)
 {
-    ArcBall *abPtr = clientData;
+    ArcBall *ballPtr = clientData;
 
-    SetIdentity(&abPtr->q);
+    SetIdentity(&ballPtr->q);
     return TCL_OK;
 }
 
@@ -752,10 +752,10 @@ ArcBallResetOp(ClientData clientData, Tcl_Interp *interp, int objc,
  * --------------------------------------------------------------
  */
 static int
-ArcBallResizeOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-		Tcl_Obj *const *objv)
+ResizeOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+         Tcl_Obj *const *objv)
 {
-    ArcBall *abPtr = clientData;
+    ArcBall *ballPtr = clientData;
     int w, h;
 
     if ((Tcl_GetIntFromObj(interp, objv[2], &w) != TCL_OK) ||
@@ -768,14 +768,14 @@ ArcBallResizeOp(ClientData clientData, Tcl_Interp *interp, int objc,
 			 Tcl_GetString(objv[3]), (char *)NULL);
 	return TCL_ERROR;
     }
-    SetArcBallBounds(abPtr, w, h);
+    SetArcBallBounds(ballPtr, w, h);
     return TCL_OK;
 }
 
 /*
  * --------------------------------------------------------------
  *
- * ArcBallRotateOp --
+ * RotateOp --
  *
  * 	Rotates the arcball based upon the starting end ending coordinates
  * 	in the window.
@@ -789,12 +789,12 @@ ArcBallResizeOp(ClientData clientData, Tcl_Interp *interp, int objc,
  * --------------------------------------------------------------
  */
 static int
-ArcBallRotateOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-		Tcl_Obj *const *objv)
+RotateOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+         Tcl_Obj *const *objv)
 {
-    ArcBall *abPtr = clientData;
+    ArcBall *ballPtr = clientData;
     Quaternion q, p;
-    Tcl_Obj *listObjPtr;
+    Tcl_Obj *objPtr, *listObjPtr;
     double x1, y1, x2, y2;
 
     if ((Tcl_GetDoubleFromObj(interp, objv[2], &x1) != TCL_OK) ||
@@ -803,15 +803,19 @@ ArcBallRotateOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	(Tcl_GetDoubleFromObj(interp, objv[5], &y2) != TCL_OK)) {
 	return TCL_ERROR;
     }
-    ClickArcBall(abPtr, x1, y1);
-    DragArcBall(abPtr, x2, y2, &q);
-    p = abPtr->q;
-    CombineRotations(&p, &q, &abPtr->q);
+    ClickArcBall(ballPtr, x1, y1);
+    DragArcBall(ballPtr, x2, y2, &q);
+    p = ballPtr->q;
+    CombineRotations(&p, &q, &ballPtr->q);
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
-    Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewDoubleObj(abPtr->q.w));
-    Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewDoubleObj(abPtr->q.x));
-    Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewDoubleObj(abPtr->q.y));
-    Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewDoubleObj(abPtr->q.z));
+    objPtr = Tcl_NewDoubleObj(ballPtr->q.w);
+    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+    objPtr = Tcl_NewDoubleObj(ballPtr->q.x);
+    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+    objPtr = Tcl_NewDoubleObj(ballPtr->q.y);
+    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+    objPtr = Tcl_NewDoubleObj(ballPtr->q.z);
+    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
     Tcl_SetObjResult(interp, listObjPtr);
     return TCL_OK;
 }
@@ -834,12 +838,12 @@ ArcBallRotateOp(ClientData clientData, Tcl_Interp *interp, int objc,
  */
 static Blt_OpSpec arcBallOps[] =
 {
-    {"euler",       1, ArcBallEulerOp,       2, 3, "?angles?",},
-    {"matrix",      1, ArcBallMatrixOp,      2, 3, "?matrix?",},
-    {"quaternion",  1, ArcBallQuaternionOp,  2, 3, "?quat?",},
-    {"reset",       3, ArcBallResetOp,       2, 2, "",},
-    {"resize",      3, ArcBallResizeOp,      4, 4, "w h",},
-    {"rotate",      2, ArcBallRotateOp,      6, 6, "x1 y1 x2 y2",},
+    {"euler",       1, EulerOp,       2, 3, "?angles?",},
+    {"matrix",      1, MatrixOp,      2, 3, "?matrix?",},
+    {"quaternion",  1, QuaternionOp,  2, 3, "?quat?",},
+    {"reset",       3, ResetOp,       2, 2, "",},
+    {"resize",      3, ResizeOp,      4, 4, "w h",},
+    {"rotate",      2, RotateOp,      6, 6, "x1 y1 x2 y2",},
 };
 static int numArcBallOps = sizeof(arcBallOps) / sizeof(Blt_OpSpec);
 
@@ -849,16 +853,16 @@ ArcBallInstObjCmd(ClientData clientData, Tcl_Interp *interp, int objc,
 {
     Tcl_ObjCmdProc *proc;
     int result;
-    ArcBall *abPtr = clientData;
+    ArcBall *ballPtr = clientData;
 
     proc = Blt_GetOpFromObj(interp, numArcBallOps, arcBallOps, BLT_OP_ARG1, 
 	     objc, objv, 0);
     if (proc == NULL) {
 	return TCL_ERROR;
     }
-    Tcl_Preserve(abPtr);
+    Tcl_Preserve(ballPtr);
     result = (*proc) (clientData, interp, objc, objv);
-    Tcl_Release(abPtr);
+    Tcl_Release(ballPtr);
     return result;
 }
 
@@ -867,9 +871,8 @@ ArcBallInstObjCmd(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * ArcBallInstDeleteProc --
  *
- *	Deletes the command associated with the arcball.  This is
- *	called only when the command associated with the arcball is
- *	destroyed.
+ *	Deletes the command associated with the arcball.  This is called
+ *	only when the command associated with the arcball is destroyed.
  *
  * Results:
  *	None.
@@ -879,12 +882,12 @@ ArcBallInstObjCmd(ClientData clientData, Tcl_Interp *interp, int objc,
 static void
 ArcBallInstDeleteProc(ClientData clientData)
 {
-    ArcBall *abPtr = clientData;
+    ArcBall *ballPtr = clientData;
 
-    if (abPtr->hashPtr != NULL) {
-	Blt_DeleteHashEntry(abPtr->tablePtr, abPtr->hashPtr);
+    if (ballPtr->hashPtr != NULL) {
+	Blt_DeleteHashEntry(ballPtr->tablePtr, ballPtr->hashPtr);
     }
-    Blt_Free(abPtr);
+    Blt_Free(ballPtr);
 }
 
 
@@ -893,10 +896,10 @@ ArcBallInstDeleteProc(ClientData clientData)
  *
  * GenerateName --
  *
- *	Generates an unique arcball command name.  Tree names are in the form
- *	"arcballN", where N is a non-negative integer. Check each name
- *	generated to see if it is already a command. We want to recycle names
- *	if possible.
+ *	Generates an unique arcball command name.  Tree names are in the
+ *	form "arcballN", where N is a non-negative integer. Check each name
+ *	generated to see if it is already a command. We want to recycle
+ *	names if possible.
  *	
  * Results:
  *	Returns the unique name.  The string itself is stored in the dynamic
@@ -910,7 +913,7 @@ GenerateName(Tcl_Interp *interp, const char *prefix, const char *suffix,
 {
 
     int i;
-    const char *abName;
+    const char *ballName;
 
     /* 
      * Parse the command and put back so that it's in a consistent format.
@@ -920,7 +923,7 @@ GenerateName(Tcl_Interp *interp, const char *prefix, const char *suffix,
      *	::t1	   ::t1
      *  ::n1::t1   ::n1::t1
      */
-    abName = NULL;			/* Suppress compiler warning. */
+    ballName = NULL;			/* Suppress compiler warning. */
     for (i = 0; i < INT_MAX; i++) {
 	Blt_ObjectName objName;
 	Tcl_DString ds;
@@ -935,36 +938,39 @@ GenerateName(Tcl_Interp *interp, const char *prefix, const char *suffix,
 	    Tcl_DStringFree(&ds);
 	    return NULL;
 	}
-	abName = Blt_MakeQualifiedName(&objName, resultPtr);
+	ballName = Blt_MakeQualifiedName(&objName, resultPtr);
 	Tcl_DStringFree(&ds);
 
-	if (Blt_CommandExists(interp, abName)) {
+	if (Blt_CommandExists(interp, ballName)) {
 	    continue;			/* A command by this name already
 					 * exists. */
 	}
 	break;
     }
-    return abName;
+    return ballName;
 }
 
 /*
  *----------------------------------------------------------------------
  *
- * ArcBallCreateOp --
+ * CreateOp --
  *
- *	arcball create x w h 
+ *      Creates new instance of an arcball.
+ *
+ *	blt::arcball create x w h 
+ *
  *---------------------------------------------------------------------- 
  */
 /*ARGSUSED*/
 static int
-ArcBallCreateOp(ClientData clientData, Tcl_Interp *interp, int objc,
-		Tcl_Obj *const *objv)
+CreateOp(ClientData clientData, Tcl_Interp *interp, int objc,
+         Tcl_Obj *const *objv)
 {
     ArcBallCmdInterpData *dataPtr = clientData;
     const char *name;
     Tcl_DString ds;
     int isNew;
-    ArcBall *abPtr;
+    ArcBall *ballPtr;
 
     name = NULL;
     if (objc == 3) {
@@ -1009,16 +1015,16 @@ ArcBallCreateOp(ClientData clientData, Tcl_Interp *interp, int objc,
 			     Tcl_GetString(objv[3]), (char *)NULL);
 	    goto error;
 	}
-	abPtr = NewArcBall(w, h);
-	assert(abPtr);
-	abPtr->dataPtr = dataPtr;
-	abPtr->interp = interp;
-	abPtr->cmdToken = Tcl_CreateObjCommand(interp, (char *)name, 
-		ArcBallInstObjCmd, abPtr, ArcBallInstDeleteProc);
-	abPtr->tablePtr = &dataPtr->arcballTable;
-	abPtr->hashPtr = Blt_CreateHashEntry(abPtr->tablePtr, (char *)abPtr,
-		&isNew);
-	Blt_SetHashValue(abPtr->hashPtr, abPtr);
+	ballPtr = NewArcBall(w, h);
+	assert(ballPtr);
+	ballPtr->dataPtr = dataPtr;
+	ballPtr->interp = interp;
+	ballPtr->cmdToken = Tcl_CreateObjCommand(interp, (char *)name, 
+		ArcBallInstObjCmd, ballPtr, ArcBallInstDeleteProc);
+	ballPtr->tablePtr = &dataPtr->arcballTable;
+	ballPtr->hashPtr = Blt_CreateHashEntry(ballPtr->tablePtr,
+                (char *)ballPtr, &isNew);
+	Blt_SetHashValue(ballPtr->hashPtr, ballPtr);
 	Tcl_SetStringObj(Tcl_GetObjResult(interp), name, -1);
 	Tcl_DStringFree(&ds);
 	return TCL_OK;
@@ -1031,28 +1037,28 @@ ArcBallCreateOp(ClientData clientData, Tcl_Interp *interp, int objc,
 /*
  *----------------------------------------------------------------------
  *
- * ArcBallDestroyOp --
+ * DestroyOp --
  *
  *---------------------------------------------------------------------- 
  */
 /*ARGSUSED*/
 static int
-ArcBallDestroyOp(ClientData clientData, Tcl_Interp *interp, int objc,
-		 Tcl_Obj *const *objv)
+DestroyOp(ClientData clientData, Tcl_Interp *interp, int objc,
+          Tcl_Obj *const *objv)
 {
     ArcBallCmdInterpData *dataPtr = clientData;
     int i;
 
     for (i = 2; i < objc; i++) {
-	ArcBall *abPtr;
+	ArcBall *ballPtr;
 
-	abPtr = GetArcBallFromObj(dataPtr, interp, objv[i]);
-	if (abPtr == NULL) {
+	ballPtr = GetArcBallFromObj(dataPtr, interp, objv[i]);
+	if (ballPtr == NULL) {
 	    Tcl_AppendResult(interp, "can't find an arcball named \"", 
 			     Tcl_GetString(objv[i]), "\"", (char *)NULL);
 	    return TCL_ERROR;
 	}
-	Tcl_DeleteCommandFromToken(interp, abPtr->cmdToken);
+	Tcl_DeleteCommandFromToken(interp, ballPtr->cmdToken);
     }
     return TCL_OK;
 }
@@ -1060,14 +1066,14 @@ ArcBallDestroyOp(ClientData clientData, Tcl_Interp *interp, int objc,
 /*
  *----------------------------------------------------------------------
  *
- * ArcBallNamesOp --
+ * NamesOp --
  *
  *---------------------------------------------------------------------- 
  */
 /*ARGSUSED*/
 static int
-ArcBallNamesOp(ClientData clientData, Tcl_Interp *interp, int objc,
-	       Tcl_Obj *const *objv)
+NamesOp(ClientData clientData, Tcl_Interp *interp, int objc,
+        Tcl_Obj *const *objv)
 {
     ArcBallCmdInterpData *dataPtr = clientData;
     Blt_HashEntry *hPtr;
@@ -1079,14 +1085,14 @@ ArcBallNamesOp(ClientData clientData, Tcl_Interp *interp, int objc,
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
     for (hPtr = Blt_FirstHashEntry(&dataPtr->arcballTable, &cursor);
 	 hPtr != NULL; hPtr = Blt_NextHashEntry(&cursor)) {
-	ArcBall *abPtr;
+	ArcBall *ballPtr;
 	Blt_ObjectName objName;
 	Tcl_Obj *objPtr;
 	const char *qualName;
 	
-	abPtr = Blt_GetHashValue(hPtr);
-	objName.name = Tcl_GetCommandName(interp, abPtr->cmdToken);
-	objName.nsPtr = Blt_GetCommandNamespace(abPtr->cmdToken);
+	ballPtr = Blt_GetHashValue(hPtr);
+	objName.name = Tcl_GetCommandName(interp, ballPtr->cmdToken);
+	objName.nsPtr = Blt_GetCommandNamespace(ballPtr->cmdToken);
 	qualName = Blt_MakeQualifiedName(&objName, &ds);
 	if (objc == 3) {
 	    if (!Tcl_StringMatch(qualName, Tcl_GetString(objv[2]))) {
@@ -1110,9 +1116,9 @@ ArcBallNamesOp(ClientData clientData, Tcl_Interp *interp, int objc,
  */
 static Blt_OpSpec arcBallCmdOps[] =
 {
-    {"create",  1, ArcBallCreateOp,  4, 5, "?name? w h",},
-    {"destroy", 1, ArcBallDestroyOp, 3, 0, "name...",},
-    {"names",   1, ArcBallNamesOp,   2, 3, "?pattern?...",},
+    {"create",  1, CreateOp,  4, 5, "?name? w h",},
+    {"destroy", 1, DestroyOp, 3, 0, "name...",},
+    {"names",   1, NamesOp,   2, 3, "?pattern?...",},
 };
 
 static int numArcBallCmdOps = sizeof(arcBallCmdOps) / sizeof(Blt_OpSpec);

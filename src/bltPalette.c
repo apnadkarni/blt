@@ -393,18 +393,18 @@ ParseColors(Tcl_Interp *interp, PaletteCmd *cmdPtr, int objc,
     step = 1.0 / numEntries;
     for (i = 0; i < numEntries; i++) {
 	Blt_PaletteEntry *entryPtr;
-
+        Blt_Pixel low, high;
+        
 	entryPtr = entries + i;
-	if (Blt_GetPixelFromObj(interp, objv[i], &entryPtr->low) != TCL_OK) {
-	    goto error;
+	if ((Blt_GetPixelFromObj(interp, objv[i], &low) != TCL_OK) ||
+            (Blt_GetPixelFromObj(interp, objv[i+1], &high) != TCL_OK)) {
+            goto error;
 	}
+        entryPtr->high.u32 = high.u32;
+        entryPtr->low.u32 = low.u32;
 	entryPtr->min.value = entryPtr->min.norm = i * step;
-	entryPtr->min.isAbsolute = FALSE;
-	if (Blt_GetPixelFromObj(interp, objv[i+1], &entryPtr->high) != TCL_OK) {
-	    goto error;
-	}
 	entryPtr->max.value = entryPtr->max.norm = (i+1) * step;
-	entryPtr->max.isAbsolute = FALSE;
+	entryPtr->min.isAbsolute = entryPtr->max.isAbsolute = FALSE;
     }
     if (cmdPtr->colors != NULL) {
 	Blt_Free(cmdPtr->colors);

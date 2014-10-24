@@ -2130,7 +2130,5 @@ test tree.381 {copy tree to tree -recurse} {
 0 56 {{} node14} {key1 myValue} {}
 }}
 
-puts stderr "done testing treecmd.tcl"
-
 exit 0
 
