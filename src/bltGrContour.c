@@ -2540,7 +2540,7 @@ MapIsoline(Isoline *isoPtr)
     } else {
 	isoPtr->paletteColor.u32 = 0xFF000000;
     }
-    /* Process the isoline, computing its line segments looking at all
+    /* Process the isoline, computing its line segments, looking at all
      * relevant triangles in the mesh. */
     Blt_InitHashTable(&isoPtr->pointTable, sizeof(PointKey) / sizeof(int));
     for (i = 0; i < elemPtr->numTriangles; i++) {
@@ -3239,7 +3239,7 @@ DrawHull(Graph *graphPtr, Drawable drawable, ContourElement *elemPtr)
  *
  * DrawMesh --
  *
- * 	Draws the numeric value of the bar.
+ * 	Draws the mesh.
  *
  * Results:
  *	None.
@@ -3958,7 +3958,7 @@ DrawSymbols(Graph *graphPtr, Drawable drawable, Isoline *isoPtr,
  *
  * DrawValues --
  *
- * 	Draws the numeric value of the bar.
+ * 	Draws the numeric value at isoline points.
  *
  * Results:
  *	None.
@@ -4351,7 +4351,7 @@ DestroyPenProc(Graph *graphPtr, Pen *basePtr)
 /*
  *---------------------------------------------------------------------------
  *
- * ConfigureBarProc --
+ * ConfigureProc --
  *
  *	Sets up the appropriate configuration parameters in the GC.  It is
  *	assumed the parameters have been previously set by a call to
@@ -4362,8 +4362,8 @@ DestroyPenProc(Graph *graphPtr, Pen *basePtr)
  *	then interp->result contains an error message.
  *
  * Side effects:
- *	Configuration information such as bar foreground/background color and
- *	stipple etc. get set in a new GC.
+ *	Configuration information such as contour foreground/background
+ *	color and stipple etc. get set in a new GC.
  *
  *---------------------------------------------------------------------------
  */
@@ -4486,13 +4486,13 @@ NearestProc(Graph *graphPtr, Element *basePtr, NearestElement *nearestPtr)
  *
  * DestroyProc --
  *
- *	Release memory and resources allocated for the bar element.
+ *	Release memory and resources allocated for the contour element.
  *
  * Results:
  *	None.
  *
  * Side effects:
- *	Everything associated with the bar element is freed up.
+ *	Everything associated with the contour element is freed up.
  *
  *---------------------------------------------------------------------------
  */
@@ -4526,21 +4526,11 @@ DestroyProc(Graph *graphPtr, Element *basePtr)
  *
  * MapProc --
  *
- *	Calculates the actual screen coordinates of the contour element.  The
- *	screen coordinates are saved in the contour element structure.
+ *	Calculates the actual screen coordinates of the contour element.
+ *	The screen coordinates are saved in the contour element structure.
  *
  * Results:
  *	None.
- *
- * Notes:
- *	A bar can have multiple segments (more than one x,y pairs).  In this
- *	case, the bar can be represented as either a set of non-contiguous
- *	bars or a single multi-segmented (stacked) bar.
- *
- *	The x-axis layout for a contour plot may be presented in one of two
- *	ways.  If abscissas are used, the bars are placed at those
- *	coordinates.  Otherwise, the range will represent the number of
- *	values.
  *
  *---------------------------------------------------------------------------
  */
@@ -4638,9 +4628,7 @@ DrawProc(Graph *graphPtr, Drawable drawable, Element *basePtr)
  *
  * DrawActiveProc --
  *
- *	Draws contours representing the active segments of the bar element.
- *	If the -relief option is set (other than "flat") and the borderwidth
- *	is greater than 0, a 3D border is drawn around the each bar segment.
+ *	Draws contours representing the active segments of the isolines.
  *
  * Results:
  *	None.
@@ -4683,8 +4671,8 @@ DrawActiveProc(Graph *graphPtr, Drawable drawable, Element *basePtr)
  *
  * GetSymbolPostScriptInfo --
  *
- *	Set up the PostScript environment with the macros and attributes needed
- *	to draw the symbols of the element.
+ *	Set up the PostScript environment with the macros and attributes
+ *	needed to draw the symbols of the element.
  *
  * Results:
  *	None.
@@ -4717,9 +4705,9 @@ GetSymbolPostScriptInfo(Blt_Ps ps, ContourElement *elemPtr, ContourPen *penPtr,
     }
 
     /*
-     * Build a PostScript procedure to draw the symbols.  For bitmaps, paint
-     * both the bitmap and its mask. Otherwise fill and stroke the path formed
-     * already.
+     * Build a PostScript procedure to draw the symbols.  For bitmaps,
+     * paint both the bitmap and its mask. Otherwise fill and stroke the
+     * path formed already.
      */
     Blt_Ps_Append(ps, "\n/DrawSymbolProc {\n");
     if (penPtr->symbol.type != SYMBOL_NONE) {
@@ -4898,8 +4886,8 @@ MeshToPostScript(Graph *graphPtr, Blt_Ps ps, ContourElement *elemPtr)
  *
  * SymbolToPostScriptProc --
  *
- * 	Draw a symbol centered at the given x,y window coordinate based upon
- * 	the element symbol type and size.
+ * 	Draw a symbol centered at the given x,y window coordinate based
+ * 	upon the element symbol type and size.
  *
  * Results:
  *	None.
@@ -5005,8 +4993,8 @@ IsolineToPostScript(Graph *graphPtr, Blt_Ps ps, ContourElement *elemPtr,
  *
  * SymbolsToPostScript --
  *
- * 	Draw a symbol centered at the given x,y window coordinate based upon
- * 	the element symbol type and size.
+ * 	Draw a symbol centered at the given x,y window coordinate based
+ * 	upon the element symbol type and size.
  *
  * Results:
  *	None.
@@ -5104,8 +5092,8 @@ ValuesToPostScript(Blt_Ps ps, Trace *tracePtr, ContourPen *penPtr)
  * ActiveToPostScriptProc --
  *
  *	Similar to the NormalToPostScript procedure, generates PostScript
- *	commands to display the bars representing the active bar segments of
- *	the element.
+ *	commands to display the contours representing the active contour
+ *	segments of the element.
  *
  * Results:
  *	None.
@@ -5175,19 +5163,18 @@ NormalToPostScriptProc(Graph *graphPtr, Blt_Ps ps, Element *basePtr)
  *
  * IsolineActivateOp --
  *
- *	Indicates if a isoline by the given name exists in the element.
+ *	Activates the given isolines in the element.
  *
  * Results:
- *	The return value is a standard TCL result. The interpreter
- *	result will contain a TCL list of the element names.
+ *	The return value is a standard TCL result. 
  *
- *	.g element isoline exists $elem $name
+ *	.g element isoline exists elemName isoNameOrTag
  *
  *---------------------------------------------------------------------------
  */
 static int
 IsolineActivateOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-		Tcl_Obj *const *objv)
+                  Tcl_Obj *const *objv)
 {
     Graph *graphPtr = clientData;
     ContourElement *elemPtr;
@@ -5215,7 +5202,7 @@ IsolineActivateOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * IsolineCgetOp --
  *
- *	.g element isoline cget $elem $name -option
+ *	.g element isoline cget elemName isoName -option
  *
  *---------------------------------------------------------------------------
  */
@@ -5257,9 +5244,9 @@ IsolineCgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
 /*ARGSUSED*/
 static double
 DistanceToIsoline(
-    int x, int y,			/* Sample X-Y coordinate. */
-    Point2d *p, Point2d *q,		/* End points of the line segment. */
-    Point2d *t)				/* (out) Point on line segment. */
+    int x, int y,                     /* Sample X-Y coordinate. */
+    Point2d *p, Point2d *q,           /* End points of the line segment. */
+    Point2d *t)                       /* (out) Point on line segment. */
 {
     double right, left, top, bottom;
 
@@ -5292,14 +5279,13 @@ DistanceToIsoline(
  *
  * IsolineNearestOp --
  *
- *	Find the nearest isoline for this element to the given screen
+ *	Finds the isoline in the given element closest to the given screen
  *	coordinates.
  *
  * Results:
- *	The return value is a standard TCL result. The interpreter
- *	result will contain a TCL list of the element names.
+ *	The return value is a standard TCL result. 
  *
- *	.g element isoline nearest $elem x y ?option value?...
+ *	.g element isoline nearest elemName x y ?option value?...
  *
  *---------------------------------------------------------------------------
  */
@@ -5428,18 +5414,19 @@ IsolineNearestOp(ClientData clientData, Tcl_Interp *interp, int objc,
  * IsolineConfigureOp --
  *
  * 	This procedure is called to process an objv/objc list, plus the Tk
- * 	option database, in order to configure (or reconfigure) the widget.
+ * 	option database, in order to configure (or reconfigure) the
+ * 	isoline.
  *
  * Results:
- *	A standard TCL result.  If TCL_ERROR is returned, then interp->result
- *	contains an error message.
+ *	A standard TCL result.  If TCL_ERROR is returned, then the
+ *	interpreter result will contain an error message.
  *
  * Side Effects:
- *	Configuration information, such as text string, colors, font, etc. get
- *	set for setPtr; old resources get freed, if there were any.  The
- *	widget is redisplayed.
+ *	Configuration information, such as text string, colors, font,
+ *	etc. get set for setPtr; old resources get freed, if there were
+ *	any.  The widget is redisplayed.
  *
- *	.g element isoline configure $elem $isoline ?option value?...
+ *	.g element isoline configure elemName isoNameOrTag ?option value?...
  *
  *---------------------------------------------------------------------------
  */
@@ -5491,10 +5478,9 @@ IsolineConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *	Creates a isoline for the named element.
  *
  * Results:
- *	The return value is a standard TCL result. The interpreter
- *	result will contain a TCL list of the element names.
+ *	The return value is a standard TCL result. 
  *
- *	.g element isoline create $elem ?$name? ?option value?...
+ *	.g element isoline create elemName ?isoName? ?option value?...
  *
  *---------------------------------------------------------------------------
  */
@@ -5557,13 +5543,12 @@ IsolineCreateOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * IsolineDeactivateOp --
  *
- *	Indicates if a isoline by the given name exists in the element.
+ *	Deactivates the given isoline in the element.
  *
  * Results:
- *	The return value is a standard TCL result. The interpreter
- *	result will contain a TCL list of the element names.
+ *	The return value is a standard TCL result. 
  *
- *	.g element isoline deactivate $elem $name
+ *	.g element isoline deactivate elemName isoNameOrTag
  *
  *---------------------------------------------------------------------------
  */
@@ -5601,10 +5586,9 @@ IsolineDeactivateOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *	Deletes one or more isolines from the named element.
  *
  * Results:
- *	The return value is a standard TCL result. The interpreter
- *	result will contain a TCL list of the element names.
+ *	The return value is a standard TCL result. 
  *
- *	.g element isoline delete $elem ?$name?...
+ *	.g element isoline delete elemName ?isoNameOrTag...?
  *
  *---------------------------------------------------------------------------
  */
@@ -5662,10 +5646,9 @@ IsolineDeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *	Indicates if a isoline by the given name exists in the element.
  *
  * Results:
- *	The return value is a standard TCL result. The interpreter
- *	result will contain a TCL list of the element names.
+ *	The return value is a standard TCL result. 
  *
- *	.g element isoline exists $elem $name
+ *	.g element isoline exists elemName isoName
  *
  *---------------------------------------------------------------------------
  */
@@ -5691,15 +5674,15 @@ IsolineExistsOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * IsolineNamesOp --
  *
- *	Returns the names of the isoline in the element is the graph matching
- *	one of more patterns provided.  If no pattern arguments
- *	are given, then all element names will be returned.
+ *	Returns the names of the isolines in the element matching one of
+ *	the patterns provided.  If no pattern arguments are given, then
+ *	all isoline names will be returned.
  *
  * Results:
- *	The return value is a standard TCL result. The interpreter
- *	result will contain a TCL list of the element names.
+ *	The return value is a standard TCL result. The interpreter result
+ *	will contain a TCL list of the isoline names.
  *
- *	.g element isoline names $elem $pattern
+ *	.g element isoline names elemName ?pattern...?
  *
  *---------------------------------------------------------------------------
  */
@@ -5712,7 +5695,7 @@ IsolineNamesOp(Graph *graphPtr, Tcl_Interp *interp, int objc,
 
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
     if (GetContourElement(interp, graphPtr, objv[4], &elemPtr) != TCL_OK) {
-	return TCL_ERROR;	/* Can't find named element */
+	return TCL_ERROR;               /* Can't find named element */
     }
     if (objc == 5) {
 	Blt_HashEntry *hPtr;
@@ -5760,14 +5743,13 @@ IsolineNamesOp(Graph *graphPtr, Tcl_Interp *interp, int objc,
  *
  * IsolineStepsOp --
  *
- *	Generates the given number of evenly placed isolines in the 
+ *	Generates the given number of evenly placed isolines in the
  *	element.
  *
  * Results:
- *	The return value is a standard TCL result. The interpreter
- *	result will contain a TCL list of the isoline names.
+ *	The return value is a standard TCL result. 
  *
- *	.g element isoline steps $elem $n ?option value?...
+ *	.g element isoline steps elemName numSteps ?option value?...
  *
  *---------------------------------------------------------------------------
  */
@@ -5813,7 +5795,7 @@ IsolineStepsOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * IsoTagAddOp --
  *
- *	.t element tag add $elem $tagName isoline...
+ *	.t element isotag add elemName tagName ?isoNameOrTag...?
  *
  *---------------------------------------------------------------------------
  */
@@ -5858,7 +5840,7 @@ IsoTagAddOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * IsoTagDeleteOp --
  *
- *	.g element tag delete $elem tagName isoline...
+ *	.g element isotag delete elemName tagName ?isoNameOrTag...?
  *
  *---------------------------------------------------------------------------
  */
@@ -5897,10 +5879,11 @@ IsoTagDeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * IsoTagExistsOp --
  *
- *	Returns the existence of the one or more tags in the given node.  If
- *	the node has any the tags, true is return in the interpreter.
+ *	Returns the existence of the one or more tags in the given isoline.
+ *	If the isoline has any the tags, true is returned in the
+ *	interpreter.
  *
- *	.g element isoline tag exists $elem isoline tag1 tag2 tag3...
+ *	.g element isotag exists elemName isoNameOrTag ?tag...?
  *
  *---------------------------------------------------------------------------
  */
@@ -5942,9 +5925,9 @@ IsoTagExistsOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * IsoTagForgetOp --
  *
- *	Removes the given tags from all tabs.
+ *	Removes the given tags from all isolines in the element.
  *
- *	.g element tag forget $elem tag1 tag2 tag3...
+ *	.g element isotag forget elemName ?tag...?
  *
  *---------------------------------------------------------------------------
  */
@@ -5973,10 +5956,10 @@ IsoTagForgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * IsoTagGetOp --
  *
- *	Returns tag names for a given node.  If one of more pattern arguments
- *	are provided, then only those matching tags are returned.
+ *	Returns tag names for a given isoline.  If one of more pattern
+ *	arguments are provided, then only those matching tags are returned.
  *
- *	.g element tag get $elem $iso pat1 pat2...
+ *	.g element isotag get elemName isoNameOrTag pat1 pat2...
  *
  *---------------------------------------------------------------------------
  */
@@ -6049,11 +6032,11 @@ IsoTagGetOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * IsoTagNamesOp --
  *
- *	Returns the names of all the tags in the tabset.  If one of more node
- *	arguments are provided, then only the tags found in those nodes are
- *	returned.
+ *	Returns the names of all the tags for the isoline.  If one of more
+ *	isoline arguments are provided, then only the tags found in those
+ *	isolines are returned.
  *
- *	.g element tag names $elem tab tab tab...
+ *	.g element isotag elemName ?isoNameOrTag...?
  *
  *---------------------------------------------------------------------------
  */
@@ -6123,17 +6106,16 @@ IsoTagNamesOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * IsoTagSetOp --
  *
- *	Sets one or more tags for a given tab.  Tag names can't start with a
- *	digit (to distinquish them from node ids) and can't be a reserved tag
- *	("all").
+ *	Sets one or more tags for a given isoline.  Tag names can't start
+ *	with a digit and can't be a reserved tag ("all").
  *
- *	.g element tag set $elem $iso tag1 tag2...
+ *	.g element isotag set elemName isoNameOrTag tag1 tag2...
  *
  *---------------------------------------------------------------------------
  */
 static int
 IsoTagSetOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-	 Tcl_Obj *const *objv)
+            Tcl_Obj *const *objv)
 {
     int i;
     IsolineIterator iter;
@@ -6165,11 +6147,11 @@ IsoTagSetOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * IsoTagUnsetOp --
  *
- *	Removes one or more tags from a given isoline. If a isoline doesn't 
- *	exist or is a reserved tag ("all"), nothing will be done and no error
- *	message will be returned.
+ *	Removes one or more tags from a given isoline. If a isoline doesn't
+ *	exist or is a reserved tag ("all"), nothing will be done and no
+ *	error message will be returned.
  *
- *	.t element tag unset $elem $iso tag1 tag2...
+ *	.t element isotag unset elemName isoNameOrTag tag1 tag2...
  *
  *---------------------------------------------------------------------------
  */
@@ -6210,20 +6192,20 @@ IsoTagUnsetOp(ClientData clientData, Tcl_Interp *interp, int objc,
  * Side Effects:
  *	See the user documentation.
  *
- *	.g element isotag $elem $iso args...
+ *	.g element isotag elemName isoName args...
  *
  *---------------------------------------------------------------------------
  */
 static Blt_OpSpec isoTagOps[] =
 {
-    {"add",     1, IsoTagAddOp,      4, 0, "elem isoline ?tag...?",},
-    {"delete",  1, IsoTagDeleteOp,   4, 0, "elem isoline ?tag...?",},
-    {"exists",  1, IsoTagExistsOp,   4, 0, "elem isoline ?tag...?",},
-    {"forget",  1, IsoTagForgetOp,   3, 0, "elem ?tag...?",},
-    {"get",     1, IsoTagGetOp,      4, 0, "elem isoline ?pattern...?",},
-    {"names",   1, IsoTagNamesOp,    3, 0, "elem ?tab...?",},
-    {"set",     1, IsoTagSetOp,      4, 0, "elem isoline ?tag...",},
-    {"unset",   1, IsoTagUnsetOp,    4, 0, "elem isoline ?tag...",},
+    {"add",     1, IsoTagAddOp,      4, 0, "elemName isoName ?tag...?",},
+    {"delete",  1, IsoTagDeleteOp,   4, 0, "elemName isoName ?tag...?",},
+    {"exists",  1, IsoTagExistsOp,   4, 0, "elemName isoName ?tag...?",},
+    {"forget",  1, IsoTagForgetOp,   3, 0, "elemName ?tag...?",},
+    {"get",     1, IsoTagGetOp,      4, 0, "elemName isoName ?pattern...?",},
+    {"names",   1, IsoTagNamesOp,    3, 0, "elemName ?tab...?",},
+    {"set",     1, IsoTagSetOp,      4, 0, "elemName isoName ?tag...",},
+    {"unset",   1, IsoTagUnsetOp,    4, 0, "elemName isoName ?tag...",},
 };
 
 static int numIsoTagOps = sizeof(isoTagOps) / sizeof(Blt_OpSpec);
@@ -6262,8 +6244,8 @@ Blt_IsoTagOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *	.g element isoline delete $elem all
  *	.g element isoline steps $elem 10 ?value option?
  *
- *	.g element isolines create $elem $name -value $value -color $color
- *	.g element isolines configure $elem -values $values \
+ *	.g element isoline create $elem $name -value $value -color $color
+ *	.g element isoline configure $elem -values $values \
  *		-hide no -loose yes -logscale yes -showvalues yes \
  *		-stepsize 0.5 -symbols triangle \
  *	.g element isoline delete $elem delete $name
@@ -6274,16 +6256,16 @@ Blt_IsoTagOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *---------------------------------------------------------------------------
  */
 static Blt_OpSpec isolineOps[] = {
-    {"activate",  1, IsolineActivateOp, 6, 6, "elem name",},
-    {"cget",      2, IsolineCgetOp,     6, 7, "elem name option",},
-    {"configure", 2, IsolineConfigureOp,6, 0, "elem name ?option value?...",},
-    {"create",    2, IsolineCreateOp,   5, 0, "elem ?name? ?option value?...",},
-    {"deactivate",3, IsolineDeactivateOp,5, 5, "elem",},
-    {"delete",    3, IsolineDeleteOp,   5, 0, "elem ?name?...",},
-    {"exists",    1, IsolineExistsOp,   6, 6, "elem name",},
-    {"names",     2, IsolineNamesOp,    5, 0, "elem ?pattern?...",},
-    {"nearest",   2, IsolineNearestOp,  6, 0, "elem x y ?switches?",},
-    {"steps",     1, IsolineStepsOp,    6, 0, "elem count",},
+    {"activate",  1, IsolineActivateOp, 6, 6, "elemName isoName",},
+    {"cget",      2, IsolineCgetOp,     6, 7, "elemName isoName option",},
+    {"configure", 2, IsolineConfigureOp,6, 0, "elemName isoName ?option value?...",},
+    {"create",    2, IsolineCreateOp,   5, 0, "elemName ?isoName? ?option value?...",},
+    {"deactivate",3, IsolineDeactivateOp,5, 5, "elemName",},
+    {"delete",    3, IsolineDeleteOp,   5, 0, "elemName ?isoName?...",},
+    {"exists",    1, IsolineExistsOp,   6, 6, "elemName isoName",},
+    {"names",     2, IsolineNamesOp,    5, 0, "elemName ?pattern?...",},
+    {"nearest",   2, IsolineNearestOp,  6, 0, "elemName x y ?switches?",},
+    {"steps",     1, IsolineStepsOp,    6, 0, "elemName count",},
 };
 
 static int numIsolineOps = sizeof(isolineOps) / sizeof(Blt_OpSpec);
@@ -6316,7 +6298,7 @@ typedef struct {
     EdgeEquation edge[3];
     int64_t red[3], green[3], blue[3], alpha[3];
     int64_t value[3];
-    int64_t x1, x2, y1, y2;
+    int64_t x1, x2, y1, y2;            
     int xOffset, yOffset;
 } TriangleRenderer;
 
@@ -6553,7 +6535,8 @@ DrawTriangle(ContourElement *elemPtr, Pict *destPtr, Triangle *t, int xoff,
 		if (cz < t->min) {
 		    cz = t->min;
 		}
-		dp->u32 = Blt_Colormap_GetAssociatedColor(elemPtr->colormapPtr, cz);
+		dp->u32 = Blt_Colormap_GetAssociatedColor(elemPtr->colormapPtr,
+                        cz);
 #ifdef notdef
 		fprintf(stderr, "z=%.17g color=(%d %d %d %d)\n",
 			cz, dp->Red, dp->Green, dp->Blue, dp->Alpha);
@@ -6765,7 +6748,8 @@ DrawTriangle(ContourElement *elemPtr, Pict *destPtr, Triangle *t, int xoff,
 		if (cz < t->min) {
 		    cz = t->min;
 		}
-		dp->u32 = Blt_Colormap_GetAssociatedColor(elemPtr->colormapPtr, cz);
+		dp->u32 = Blt_Colormap_GetAssociatedColor(elemPtr->colormapPtr,
+                        cz);
 #ifdef notdef
 		fprintf(stderr, "z=%.17g color=(%d %d %d %d)\n",
 			cz, dp->Red, dp->Green, dp->Blue, dp->Alpha);
@@ -6808,13 +6792,13 @@ Blt_CreateContourPen(Graph *graphPtr, ClassId id, Blt_HashEntry *hPtr)
  *
  * Blt_ContourElement --
  *
- *	Allocate memory and initialize methods for the new bar element.
+ *	Allocate memory and initialize methods for the new contour element.
  *
  * Results:
  *	The pointer to the newly allocated element structure is returned.
  *
  * Side effects:
- *	Memory is allocated for the bar element structure.
+ *	Memory is allocated for the contour element structure.
  *
  *---------------------------------------------------------------------------
  */
