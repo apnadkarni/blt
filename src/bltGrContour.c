@@ -115,16 +115,17 @@ static int tkpWinRopModes[] =
 #define RECOUNT		(1<<10)		/* Trace needs to be fixed. */
 
 /* Flags for trace's point and segments. */
-#define VISIBLE		(1<<0)		/* Point is on visible on screen. */
-#define KNOT		(1<<1)		/* Point is a knot, original data
+#define VISIBLE		(1<<0)		/* Point is visible on-screen. */
+#define KNOT		(1<<1)		/* Point is a knot, an original data
 					 * point. */
-#define SYMBOL		(1<<2)		/* Point is designated to have a
-					 * symbol. This is only used when
-					 * reqMaxSymbols is non-zero. */
+#define SYMBOL		(1<<2)		/* Point is designated to be drawn
+					 * with a symbol. This is only used
+					 * when reqMaxSymbols is
+					 * non-zero. */
 #define ACTIVE_POINT	(1<<3)		/* Point is active. This is only
 					 * used when numActivePoints is
 					 * greater than zero. */
-#define ISOLINES	(1<<12)		/* Draw the isolines on top of the
+#define ISOLINES	(1<<12)		/* Draw isolines on top of the
 					 * mesh. */
 #define COLORMAP	(1<<13)		/* Fill the triangles of the
                                          * mesh. */
@@ -134,10 +135,10 @@ static int tkpWinRopModes[] =
 #define WIRES		(1<<20)		/* Draw the edges of the triangular
 					 * mesh. */
 #define TRIANGLES	(1<<21)		/* Map mesh. */
-#define VALUES		(1<<16)		/* Draw the z-values at the
+#define VALUES		(1<<16)		/* Display the z-values at the
 					 * vertices of the mesh. */
 #define SYMBOLS		(1<<17)		/* Draw the symbols on top of the
-					 * mesh. */
+					 * isolines. */
 
 #define DRAWN(t,f)	(((f) & (t)->drawFlags) == (t)->drawFlags)
 #define imul8x8(a,b,t)	((t) = (a)*(b)+128,(((t)+((t)>>8))>>8))
@@ -187,7 +188,7 @@ typedef struct _Blt_Picture Pict;
  */
 typedef struct {
     int index;				/* Index to the array of values
-					 * (also original x and y
+					 * (also arrays of original x and y
 					 * coordinates). */
     unsigned int flags;			/* Flags for vertex. */
     float x, y, z;			/* Screen coordinates of this point
@@ -199,7 +200,7 @@ typedef struct {
 typedef struct {
     int a, b, c;			/* Indices of the vectices that
 					 * form the triangle. */
-    float min, max;			/* Minimum and maximum field
+    float min, max;			/* Minimum and maximum z field
 					 * values, used to sort the
 					 * triangles. */
     unsigned int flags;
@@ -2042,11 +2043,12 @@ GetScreenPoints(ContourElement *elemPtr)
 	if ((elemPtr->zAxisPtr->logScale) && (z != 0.0)) {
 	    z = log10(z);
 	} 
+	/* Map graph z-coordinate to normalized coordinates [0..1] */
 	z = (z - rangePtr->min)  * rangePtr->scale;
-	/* Map graph coordinate to normalized coordinates [0..1] */
 	v->z = z;
 	if (elemPtr->colormapPtr != NULL) {
-	    v->color.u32 = Blt_Colormap_GetAssociatedColor(elemPtr->colormapPtr, v->z);
+	    v->color.u32 = Blt_Colormap_GetAssociatedColor(
+                elemPtr->colormapPtr, v->z);
 	}
     }
     elemPtr->vertices = vertices;
@@ -2535,10 +2537,10 @@ MapIsoline(Isoline *isoPtr)
 	isoPtr->value = isoPtr->reqValue;
     }
     if (elemPtr->colormapPtr != NULL) {
-        isoPtr->paletteColor.u32 = Blt_Colormap_GetAssociatedColor(elemPtr->colormapPtr, 
-		isoPtr->value);
+        isoPtr->paletteColor.u32 = Blt_Colormap_GetAssociatedColor(
+                elemPtr->colormapPtr, isoPtr->value);
     } else {
-	isoPtr->paletteColor.u32 = 0xFF000000;
+	isoPtr->paletteColor.u32 = 0xFF000000; /* Solid black. */
     }
     /* Process the isoline, computing its line segments, looking at all
      * relevant triangles in the mesh. */
