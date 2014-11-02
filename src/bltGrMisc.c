@@ -1,6 +1,4 @@
 /* -*- mode: c; c-basic-offset: 4; indent-tabs-mode: nil -*- */
-
-
 /*
  * bltGrMisc.c --
  *
@@ -8,13 +6,13 @@
  *
  *	Copyright 1993-2004 George A Howlett.
  *
- *	Permission is hereby granted, free of charge, to any person obtaining
- *	a copy of this software and associated documentation files (the
- *	"Software"), to deal in the Software without restriction, including
- *	without limitation the rights to use, copy, modify, merge, publish,
- *	distribute, sublicense, and/or sell copies of the Software, and to
- *	permit persons to whom the Software is furnished to do so, subject to
- *	the following conditions:
+ *	Permission is hereby granted, free of charge, to any person
+ *	obtaining a copy of this software and associated documentation
+ *	files (the "Software"), to deal in the Software without
+ *	restriction, including without limitation the rights to use, copy,
+ *	modify, merge, publish, distribute, sublicense, and/or sell copies
+ *	of the Software, and to permit persons to whom the Software is
+ *	furnished to do so, subject to the following conditions:
  *
  *	The above copyright notice and this permission notice shall be
  *	included in all copies or substantial portions of the Software.
@@ -22,10 +20,11 @@
  *	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  *	EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  *	MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- *	NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
- *	LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
- *	OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
- *	WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *	NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+ *	BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ *	ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ *	CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ *	SOFTWARE.
  */
 
 #define BUILD_BLT_TK_PROCS 1
@@ -85,14 +84,14 @@ Blt_CustomOption bltLimitsOption =
  *
  * Blt_GetXY --
  *
- *	Converts a string in the form "@x,y" into an XPoint structure of the x
- *	and y coordinates.
+ *	Converts a string in the form "@x,y" into an XPoint structure of
+ *	the x and y coordinates.
  *
  * Results:
  *	A standard TCL result. If the string represents a valid position
- *	*pointPtr* will contain the converted x and y coordinates and TCL_OK
- *	is returned.  Otherwise, TCL_ERROR is returned and interp->result will
- *	contain an error message.
+ *	*pointPtr* will contain the converted x and y coordinates and
+ *	TCL_OK is returned.  Otherwise, TCL_ERROR is returned and
+ *	interp->result will contain an error message.
  *
  *---------------------------------------------------------------------------
  */
@@ -138,12 +137,12 @@ Blt_GetXY(Tcl_Interp *interp, Tk_Window tkwin, const char *string,
  *
  * ObjToPoint --
  *
- *	Convert the string representation of a legend XY position into window
- *	coordinates.  The form of the string must be "@x,y" or none.
+ *	Convert the string representation of a legend XY position into
+ *	window coordinates.  The form of the string must be "@x,y" or none.
  *
  * Results:
- *	A standard TCL result.  The symbol type is written into the
- *	widget record.
+ *	A standard TCL result.  The symbol type is written into the widget
+ *	record.
  *
  *---------------------------------------------------------------------------
  */
@@ -183,12 +182,12 @@ ObjToPoint(
 /*ARGSUSED*/
 static Tcl_Obj *
 PointToObj(
-    ClientData clientData,	/* Not used. */
-    Tcl_Interp *interp,		/* Not used. */
-    Tk_Window tkwin,		/* Not used. */
-    char *widgRec,		/* Widget record */
-    int offset,			/* Offset to field in structure */
-    int flags)			/* Not used. */
+    ClientData clientData,              /* Not used. */
+    Tcl_Interp *interp,                 /* Not used. */
+    Tk_Window tkwin,                    /* Not used. */
+    char *widgRec,                      /* Widget record */
+    int offset,                         /* Offset to field in structure */
+    int flags)                          /* Not used. */
 {
     XPoint *pointPtr = (XPoint *)(widgRec + offset);
     Tcl_Obj *objPtr;
@@ -210,9 +209,9 @@ PointToObj(
  * ObjToLimitsProc --
  *
  *	Converts the list of elements into zero or more pixel values which
- *	determine the range of pixel values possible.  An element can be in any
- *	form accepted by Tk_GetPixels. The list has a different meaning based
- *	upon the number of elements.
+ *	determine the range of pixel values possible.  An element can be in
+ *	any form accepted by Tk_GetPixels. The list has a different meaning
+ *	based upon the number of elements.
  *
  *	    # of elements:
  *
@@ -340,9 +339,10 @@ Blt_PointInSegments(
 
 int
 Blt_PointInPolygon(
-    Point2d *s,			/* Sample point. */
-    Point2d *points,		/* Points representing the polygon. */
-    int numPoints)		/* # of points in above array. */
+    Point2d *s,                         /* Sample point. */
+    Point2d *points,                    /* Points representing the
+                                         * polygon. */
+    int numPoints)                      /* # of points in above array. */
 {
     Point2d *p, *q, *qend;
     int count;
@@ -355,7 +355,7 @@ Blt_PointInPolygon(
 
 	    b = (q->x - p->x) * (s->y - p->y) / (q->y - p->y) + p->x;
 	    if (s->x < b) {
-		count++;	/* Count the number of intersections. */
+		count++;                /* Count the # of intersections. */
 	    }
 	}
     }
@@ -501,8 +501,8 @@ Blt_LineRectClip(
  *
  *	Clips the given polygon to a rectangular region.  The resulting
  *	polygon is returned. Note that the resulting polyon may be complex,
- *	connected by zero width/height segments.  The drawing routine (such as
- *	XFillPolygon) will not draw a connecting segment.
+ *	connected by zero width/height segments.  The drawing routine (such
+ *	as XFillPolygon) will not draw a connecting segment.
  *
  *	Reference:  
  *	  Liang Y. D. and Brian A. Barsky, "Analysis and Algorithm for
@@ -510,8 +510,8 @@ Blt_LineRectClip(
  *	  p.868-877, 1983
  *
  * Results:
- *	Returns the number of points in the clipped polygon. The points of the
- *	clipped polygon are stored in *outputPts*.
+ *	Returns the number of points in the clipped polygon. The points of
+ *	the clipped polygon are stored in *outputPts*.
  *
  *---------------------------------------------------------------------------
  */
@@ -541,8 +541,8 @@ Blt_PolyRectClip(
 	double tin1, tin2, tinx, tiny;
 	double xin, yin, xout, yout;
 
-	dx = q->x - p->x;	/* X-direction */
-	dy = q->y - p->y;	/* Y-direction */
+	dx = q->x - p->x;               /* X-direction */
+	dy = q->y - p->y;               /* Y-direction */
 
 	if (FABS(dx) < EPSILON) { 
 	    dx = (p->x > regionPtr->left) ? -EPSILON : EPSILON ;
@@ -569,10 +569,10 @@ Blt_PolyRectClip(
 	tinx = (xin - p->x) / dx;
 	tiny = (yin - p->y) / dy;
 	
-	if (tinx < tiny) {	/* Hits x first */
+	if (tinx < tiny) {              /* Hits x first */
 	    tin1 = tinx;
 	    tin2 = tiny;
-	} else {		/* Hits y first */
+	} else {                        /* Hits y first */
 	    tin1 = tiny;
 	    tin2 = tinx;
 	}
@@ -629,14 +629,14 @@ Blt_PolyRectClip(
  *
  * Blt_GetProjection --
  *
- *	Computes the projection of a point on a line.  The line (given by two
- *	points), is assumed the be infinite.
+ *	Computes the projection of a point on a line.  The line (given by
+ *	two points), is assumed the be infinite.
  *
- *	Compute the slope (angle) of the line and rotate it 90 degrees.  Using
- *	the slope-intercept method (we know the second line from the sample
- *	test point and the computed slope), then find the intersection of both
- *	lines. This will be the projection of the sample point on the first
- *	line.
+ *	Compute the slope (angle) of the line and rotate it 90 degrees.
+ *	Using the slope-intercept method (we know the second line from the
+ *	sample test point and the computed slope), then find the
+ *	intersection of both lines. This will be the projection of the
+ *	sample point on the first line.
  *
  * Results:
  *	Returns the coordinates of the projection on the line.
@@ -660,9 +660,9 @@ Blt_GetProjection(
     } else if (FABS(dy) < DBL_EPSILON) {
 	t.x = (double)x, t.y = p->y;
     } else {
-	double m1, m2;		/* Slope of both lines */
-	double b1, b2;		/* y-intercepts */
-	double midX, midY;	/* Midpoint of line segment. */
+	double m1, m2;                  /* Slope of both lines */
+	double b1, b2;                  /* y-intercepts */
+	double midX, midY;              /* Midpoint of line segment. */
 	double ax, ay, bx, by;
 
 	/* Compute the slope and intercept of PQ. */
@@ -670,9 +670,9 @@ Blt_GetProjection(
 	b1 = p->y - (p->x * m1);
 
 	/* 
-	 * Compute the slope and intercept of a second line segment: one that
-	 * intersects through sample X-Y coordinate with a slope perpendicular
-	 * to original line.
+	 * Compute the slope and intercept of a second line segment: one
+	 * that intersects through sample X-Y coordinate with a slope
+	 * perpendicular to original line.
 	 */
 
 	/* Find midpoint of PQ. */
@@ -1152,10 +1152,10 @@ Blt_GetScrollInfoFromObj(Tcl_Interp *interp, int objc, Tcl_Obj *const *objv,
  *
  * Blt_UpdateScrollbar --
  *
- * 	Invoke a TCL command to the scrollbar, defining the new position and
- * 	length of the scroll. See the Tk documentation for further information
- * 	on the scrollbar.  It is assumed the scrollbar command prefix is
- * 	valid.
+ * 	Invoke a TCL command to the scrollbar, defining the new position
+ * 	and length of the scroll. See the Tk documentation for further
+ * 	information on the scrollbar.  It is assumed the scrollbar command
+ * 	prefix is valid.
  *
  * Results:
  *	None.
@@ -1197,10 +1197,10 @@ Blt_UpdateScrollbar(
  *
  * Blt_GetPrivateGCFromDrawable --
  *
- *      Like Tk_GetGC, but doesn't share the GC with any other widget.  This
- *      is needed because the certain GC parameters (like dashes) can not be
- *      set via XCreateGC, therefore there is no way for Tk's hashing
- *      mechanism to recognize that two such GCs differ.
+ *      Like Tk_GetGC, but doesn't share the GC with any other widget.
+ *      This is needed because the certain GC parameters (like dashes) can
+ *      not be set via XCreateGC, therefore there is no way for Tk's
+ *      hashing mechanism to recognize that two such GCs differ.
  *
  * Results:
  *      A new GC is returned.
@@ -1229,10 +1229,10 @@ Blt_GetPrivateGCFromDrawable(
  *
  * Blt_GetPrivateGC --
  *
- *      Like Tk_GetGC, but doesn't share the GC with any other widget.  This
- *      is needed because the certain GC parameters (like dashes) can not be
- *      set via XCreateGC, therefore there is no way for Tk's hashing
- *      mechanism to recognize that two such GCs differ.
+ *      Like Tk_GetGC, but doesn't share the GC with any other widget.
+ *      This is needed because the certain GC parameters (like dashes) can
+ *      not be set via XCreateGC, therefore there is no way for Tk's
+ *      hashing mechanism to recognize that two such GCs differ.
  *
  * Results:
  *      A new GC is returned.

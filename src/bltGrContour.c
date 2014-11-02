@@ -87,30 +87,6 @@
 #define MAX_DRAWRECTANGLES(d)	Blt_MaxRequestSize(d, sizeof(XRectangle))
 #define MAX_DRAWARCS(d)		Blt_MaxRequestSize(d, sizeof(XArc))
 
-#ifdef WIN32
-
-static int tkpWinRopModes[] =
-{
-    R2_BLACK,				/* GXclear */
-    R2_MASKPEN,				/* GXand */
-    R2_MASKPENNOT,			/* GXandReverse */
-    R2_COPYPEN,				/* GXcopy */
-    R2_MASKNOTPEN,			/* GXandInverted */
-    R2_NOT,				/* GXnoop */
-    R2_XORPEN,				/* GXxor */
-    R2_MERGEPEN,			/* GXor */
-    R2_NOTMERGEPEN,			/* GXnor */
-    R2_NOTXORPEN,			/* GXequiv */
-    R2_NOT,				/* GXinvert */
-    R2_MERGEPENNOT,			/* GXorReverse */
-    R2_NOTCOPYPEN,			/* GXcopyInverted */
-    R2_MERGENOTPEN,			/* GXorInverted */
-    R2_NOTMASKPEN,			/* GXnand */
-    R2_WHITE				/* GXset */
-};
-
-#endif
-
 /* Trace flags. */
 #define RECOUNT		(1<<10)		/* Trace needs to be fixed. */
 
@@ -172,6 +148,9 @@ static int tkpWinRopModes[] =
  *  .g element isoline activate $element $name
  *  .g element isoline deactivate $element $name
  *  .g element isoline deactivate $element $name
+ *
+ *  .g element xcutline elemName x
+ *  .g element ycutline elemName y
  */
 
 typedef struct _ContourElement ContourElement;
@@ -354,7 +333,6 @@ typedef struct {
     Blt_Chain traces;			/* Set of traces that describe the
 					 * polyline(s) that represent the
 					 * isoline. */
-    Blt_HashTable edgeTable;
     Blt_HashTable pointTable;
     TraceSegment *segments;		/* Segments used for isolnes. */
     int numSegments;
@@ -2323,6 +2301,68 @@ MapMesh(ContourElement *elemPtr)
     elemPtr->flags &= ~TRIANGLES;
 }    
     
+static int triangleIntersections[3][3][3] = {
+    {
+        { 
+            0,			/* 0: 0,0,0 */
+            0,			/* 1: 0,0,1	AC vertex.*/
+            0			/* 2: 0,0,2	AC interpolated point. */
+        },
+        { 
+            0,			/* 3: 0,1,0	BC vertex. */
+            1,			/* 4: 0,1,1	BC and AC vertices. */
+            1			/* 5: 0,1,2	BC vertex, 
+                                 *		AC interpolated point. */
+        },
+        { 
+            0,			/* 6: 0,2,0	BC interpolated point.*/
+            1,			/* 7: 0,2,1     BC interpolated point, 
+                                 *		AC vertex. */
+            1			/* 8: 0,2,2	BC interpolated point, 
+                                 *		AC interpolated point. */
+        }
+    },
+    {
+        { 
+            0,			/* 9: 1,0,0	AB vertex. */
+            1,			/* 10: 1,0,1 */
+            1			/* 11: 1,0,2 */
+        },
+        { 
+            1,			/* 12: 1,1,0 */
+            0,			/* 13: 1,1,1 */
+            1			/* 14: 1,1,2 */
+        },
+        { 
+            1,			/* 15: 1,2,0 */
+            1,			/* 16: 1,2,1 */
+            0			/* 17: 1,2,2	Not possible. */
+        }
+    },
+    {
+        { 
+            0,			/* 18: 2,0,0 */
+            1,			/* 19: 2,0,1 */
+            1			/* 20: 2,0,2 */
+        },
+        { 
+            1,			/* 21: 2,1,0 */
+            1,			/* 22: 2,1,1 */
+            0			/* 23: 2,1,2 */
+        },
+        { 
+            1,			/* 24: 2,2,0 */
+            0,			/* 25: 2,2,1 */
+            0			/* 26: 2,2,2 */
+        }
+    }
+};
+
+static int INLINE 
+TriangleHasIntersection(int ab, int bc, int ac) {
+    return triangleIntersections[ab][bc][ac];
+}
+
 /* Process a Cont triangle  */
 static void 
 ProcessTriangle(ContourElement *elemPtr, Triangle *t, Isoline *isoPtr) 
@@ -2331,66 +2371,6 @@ ProcessTriangle(ContourElement *elemPtr, Triangle *t, Isoline *isoPtr)
     double t1, t2, t3, range;
     Region2d exts;
 
-    static int classify[3][3][3] = {
-	{
-	    { 
-		0,			/* 0: 0,0,0 */
-		0,			/* 1: 0,0,1	AC vertex.*/
-		0			/* 2: 0,0,2	AC interpolated point. 
-					 */
-	    },
-	    { 
-		0,			/* 3: 0,1,0	BC vertex. */
-		1,			/* 4: 0,1,1	BC and AC vertices. */
-		1			/* 5: 0,1,2	BC vertex, 
-					 *		AC interpolated point. 
-					 */
-	    },
-	    { 
-		0,			/* 6: 0,2,0	BC interpolated point.*/
-		1,			/* 7: 0,2,1     BC interpolated point, 
-					 *		AC vertex. */
-		1			/* 8: 0,2,2	BC interpolated point, 
-					 *		AC interpolated point. 
-					 */
-	    }
-        },
-        {
-	    { 
-		0,			/* 9: 1,0,0	AB vertex. */
-		1,			/* 10: 1,0,1 */
-		1			/* 11: 1,0,2 */
-	    },
-	    { 
-		1,			/* 12: 1,1,0 */
-		0,			/* 13: 1,1,1 */
-		1			/* 14: 1,1,2 */
-	    },
-	    { 
-		1,			/* 15: 1,2,0 */
-		1,			/* 16: 1,2,1 */
-		0			/* 17: 1,2,2	Not possible. */
-	    }
-        },
-        {
-	    { 
-		0,			/* 18: 2,0,0 */
-		1,			/* 19: 2,0,1 */
-		1			/* 20: 2,0,2 */
-	    },
-	    { 
-		1,			/* 21: 2,1,0 */
-		1,			/* 22: 2,1,1 */
-		0			/* 23: 2,1,2 */
-	    },
-	    { 
-		1,			/* 24: 2,2,0 */
-		0,			/* 25: 2,2,1 */
-		0			/* 26: 2,2,2 */
-	    }
-        }
-    };
-    
     Blt_GraphExtents(elemPtr, &exts);
     t1 = t2 = t3 = 0.0;
     ab = bc = ca = 0;
@@ -2413,11 +2393,11 @@ ProcessTriangle(ContourElement *elemPtr, Triangle *t, Isoline *isoPtr)
     } else {
 	t2 = (isoPtr->value - Bz) / range; /* B to C */
 	if (Blt_AlmostEquals(t2, 0.0)) {
-	    bc = 1;				/* At a vertex. */
+	    bc = 1;                     /* At a vertex. */
 	} else if ((t2 < 0.0) || (t2 > 1.0)) {
-	    bc = 0;				/* Outside of edge. */
+	    bc = 0;                     /* Outside of edge. */
 	} else {
-	    bc = 2;				/* Inside of edge. */
+	    bc = 2;                     /* Inside of edge. */
 	}
     }
 
@@ -2434,7 +2414,7 @@ ProcessTriangle(ContourElement *elemPtr, Triangle *t, Isoline *isoPtr)
 	    ca = 2;			/* Inside of edge. */
 	}
     }
-    if (classify[ab][bc][ca]) {
+    if (TriangleHasIntersection(ab, bc, ca)) {
 	if (ab > 0) {
 	    if (bc > 0) {
 		Point2d p, q;
@@ -6289,10 +6269,301 @@ Blt_IsolineOp(ClientData clientData, Tcl_Interp *interp, int objc,
 
 #ifdef notdef
 
+typedef struct {
+    Blt_Pool pool;                      /* Pool of points. */
+    Blt_HashTable edgeTable;            /* Hashtable of edges */
+    int numPoints;
+} Stitches;
+
+static Stitch *
+NewStitch(Stitches *stitchesPtr, Point2d *p)
+{
+    stitchPtr = Blt_Pool_AllocItem(stitchesPtr->pool, sizeof(Stitch));
+    stitchPtr->x = p.x;
+    stitchPtr->y = p.y;
+    stitchPtr->next = stitchPtr->last = NULL;
+    stitchesPtr->numPoints++;
+    return stitchPtr;
+}
+
+static void
+FreeStitch(Stitches *stitchesPtr, pool, Stitch *s)
+{
+    Blt_Pool_FreeItem(stitchesPtr->pool, s);
+    stitchesPtr->numPoints--;
+}
+
+static void
+AddCutlineSegment(Stitches *stitchesPtr, EdgeKey *key1Ptr, EdgeKey *key2Ptr,
+                  Point2d *p, Point2d *q)
+{
+    Stitch *p1, *p2;
+    Blt_HashEntry *hPtr;
+    int isNew;
+    
+    p1 = NewStitch(stitchesPtr, p);
+    p2 = NewStitch(stitchesPtr, q);
+    p1->next = p1;
+    p2->last = p2;
+    
+    hPtr = Blt_CreateHashEntry(&stitchesPtr->edgeTable, key1Ptr, &isNew);
+    if (isNew) {
+        Blt_SetHashValue(hPtr, p1);
+    } else {
+        Stitch *old;
+
+        /* Merge new and old segments. */
+        old = Blt_GetHashValue(hPtr);
+        if (old->next == NULL) {
+            p1->last = old->last;
+            p1->last->next = p1;
+        } else if (old->last == NULL) {
+            p1->next = old->next;
+            p1->next->last = p1;
+        }
+        /* Remove the point from the table and the duplicate point. */
+        FreeStitch(stitchePtr, old);
+        Blt_DeleteHashEntry(&stitchesPtr->edgeTable, hPtr);
+    }
+
+    hPtr = Blt_CreateHashEntry(&stitchesPtr->edgeTable, key2Ptr, &isNew);
+    if (isNew) {
+        Blt_SetHashValue(hPtr, p2);
+    } else {
+        Stitch *old;
+
+        /* Merge new and old segments. */
+        old = Blt_GetHashValue(hPtr);
+        if (old->next == NULL) {
+            p2->last = old->last;
+            p2->last->next = p2;
+        } else if (old->last == NULL) {
+            p2->next = old->next;
+            p2->next->last = p2;
+        }
+        /* Remove the point from the table and the duplicate point. */
+        FreeStitch(stitchesPtr, old);
+        Blt_DeleteHashEntry(&stitchesPtr->edgeTable, hPtr);
+    }
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * CutTriangleAlongX --
+ *
+ * 	Computes the intersection of the triangle and the perpendicular
+ *      line represented by the given x-coordinate.  We only care about
+ *      intersections that result in line segments.
+ *
+ * Results:
+ *	None.
+ *
+ *---------------------------------------------------------------------------
+ */
+static void 
+CutTriangleAlongX(Stitches *stitchesPtr, Triangle *t, double x)
+{
+    int ab, bc, ca;
+    double t1, t2, t3, range;
+    
+    t1 = t2 = t3 = 0.0;
+    ab = bc = ca = 0;
+    range = Bx - Ax;
+    if (fabs(range) < DBL_EPSILON) {
+	ab = Blt_AlmostEquals(Ax, x);
+    } else {
+	t1 = (x - Ax) / range;          /* A to B */
+	if (Blt_AlmostEquals(t1, 0.0)) {
+	    ab = 1;			/* At a vertex. */
+	} else if ((t1 < 0.0) || (t1 > 1.0)) {
+	    ab = 0;			/* Outside of edge. */
+	} else {
+	    ab = 2;			/* Inside of edge. */
+	}
+    }
+    range = Cx - Bx;
+    if (fabs(range) < DBL_EPSILON) {
+	bc = Blt_AlmostEquals(Bx, x);
+    } else {
+	t2 = (x - Bx) / range; /* B to C */
+	if (Blt_AlmostEquals(t2, 0.0)) {
+	    bc = 1;                     /* At a vertex. */
+	} else if ((t2 < 0.0) || (t2 > 1.0)) {
+	    bc = 0;                     /* Outside of edge. */
+	} else {
+	    bc = 2;                     /* Inside of edge. */
+	}
+    }
+
+    range = Ax - Cx;
+    if (fabs(range) < DBL_EPSILON) {
+	ca = Blt_AlmostEquals(Cx, x);
+    } else {
+	t3 = (x - Cx) / range;          /* A to B */
+	if (Blt_AlmostEquals(t3, 0.0)) {
+	    ca = 1;			/* At a vertex. */
+	} else if ((t3 < 0.0) || (t3 > 1.0)) {
+	    ca = 0;			/* Outside of edge. */
+	} else {
+	    ca = 2;			/* Inside of edge. */
+	}
+    }
+    if (TriangleHasIntersection(ab, bc, ca)) {
+	if (ab > 0) {
+	    if (bc > 0) {
+		Point2d p, q;
+                EdgeKey key1, key2;
+
+		/* Compute interpolated points ab and bc */
+		p.y = Az + t1 * (Bz - Az);
+		p.x = Ay + t1 * (By - Ay);
+		q.y = Bz + t2 * (Cz - Bz);
+		q.x = By + t2 * (Cy - By);
+                /* Key is edge index ab and bc */
+                MakeEdgeKey(&key1, t->a, t->b);
+                MakeEdgeKey(&key2, t->b, t->c);
+                AddCutlineSegment(stitchesPtr, key1, key2, &p, &q);
+	    } else if (ca > 0) {
+		Point2d p, q;
+                EdgeKey key1, key2;
+                
+		/* Compute interpolated points ab and ac */
+		p.y = Az + t1 * (Bz - Az);
+		p.x = Ay + t1 * (By - Ay);
+		q.y = Cz + t3 * (Az - Cz);
+		q.x = Cy + t3 * (Ay - Cy);
+                /* Key is edge index ab and ac */
+                MakeEdgeKey(&key1, t->a, t->b);
+                MakeEdgeKey(&key2, t->a, t->c);
+                AddCutlineSegment(stitchesPtr, key1, key2, &p, &q);
+	    }
+	} else if (bc > 0) {
+	    if (ca > 0) {
+		Point2d p, q;
+		int result;
+
+		/* Compute interpolated points bc and ac */
+		p.y = Bz + t2 * (Cz - Bz);
+		p.x = By + t2 * (Cy - By);
+		q.y = Cz + t3 * (Az - Cz);
+		q.x = Cy + t3 * (Ay - Cy);
+                /* Key is edge index bc and ac */
+                MakeEdgeKey(&key1, t->b, t->c);
+                MakeEdgeKey(&key2, t->a, t->c);
+                AddCutlineSegment(stitchesPtr, key1, key2, &p, &q);
+	    }
+	} else {
+	    /* Can't happen. Must have two interpolated points or
+             * vertices. */
+	}
+    } else {
+#ifndef notdef
+	fprintf(stderr,
+		"ignoring triangle %d a=%d b=%d c=%d value=%.17g a=%.17g b=%.17g c=%.17g\n",
+		t->index, t->a, t->b, t->c, isoPtr->value, Az, Bz, Cz);
+	fprintf(stderr, "\tab=%d, bc=%d ca=%d\n", ab, bc, ca);
+	fprintf(stderr, "\tt1=%.17g t2=%.17g t3=%.17g\n", t1, t2, t3);
+	fprintf(stderr, "\tt->min=%.17g t->max=%.17g MIN3=%.17g MAX3=%.17g\n", 
+		t->min, t->max, MIN3(Az,Bz,Cz), MAX3(Az,Bz,Cz));
+#endif
+    }
+}
+
+static int
+XCutline(Tcl_Interp *interp, ContourElement *elemPtr, double x,
+         Blt_Vector *xVectorPtr, Blt_Vector *yVectorPtr)
+{
+    int i;
+    Stitches stitches;
+    
+    /* Optimization: Sort triangles by x-coordinate */
+
+    Blt_InitHashTable(&stitches.edgeTable, sizeof(EdgeKey) / sizeof(int));
+    stitches.pool = Blt_Pool_Create(BLT_FIXED_SIZE_ITEMS);
+    for (i = 0; i < elemPtr->numTriangles; i++) {
+        Triangle *t;
+        
+        t = elemPtr->triangles + i;
+        if ((x < MIN3(Ax,Bx,Cx)) || (x > MAX3(Ax,Bx,Cx))) {
+            continue;
+        }
+        CutTriangleAlongX(&stitches, t, x);
+    }
+    /* 
+     * The Edge table should have entries for ends of each polyline.
+     */
+    Blt_Vec_ChangeLength(interp, xVectorPtr, stitches.numPoints);
+    Blt_Vec_ChangeLength(interp, yVectorPtr, stitches.numPoints);
+    count = 0;
+    for (hPtr = Blt_FirstHashEntry(&stitches.edgeTable, &iter); hPtr != NULL;
+         hPtr = Blt_NextHashEntry(&iter)) {
+        Stitch *p;
+
+        p = Blt_GetHashValue(hPtr);
+        if (p->next == NULL) {
+            continue;                   /* Stitch runs in other direction. */
+        }
+        while (p != NULL) {
+            xVectorPtr->valueArr[count] = p->x;
+            yVectorPtr->valueArr[count] = p->y;
+            count++;
+            p = p->next;
+        }
+    }
+    Blt_Vec_NotifyClients(xVectorPtr);
+    Blt_Vec_NotifyClients(yVectorPtr);
+    Blt_DeleteHashTable(&stitches.edgeTable);
+    Blt_Pool_Destroy(stitches.pool);
+}
+
+static int
+YCutline(Tcl_Interp *interp, ContourElement *elemPtr, double x)
+{
+    /* Sort triangles by y-coordinate */
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * Blt_CutlineOp --
+ *
+ *	.g element xcutline elemName value xv yv
+ *	.g element ycutline elemName value xv yv 
+ *
+ *---------------------------------------------------------------------------
+ */
+int
+Blt_CutlineOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+	      Tcl_Obj *const *objv)
+{
+    double value;
+    ContourElement *elemPtr;
+    const char *string;
+    
+    if (GetContourElement(interp, graphPtr, objv[3], &elemPtr) != TCL_OK) {
+	return TCL_ERROR;		/* Can't find named element */
+    }
+    if (Tcl_GetDoubleObj(interp, objv[4], &value) != TCL_OK) {
+	return TCL_ERROR;		/* Bad coordinate. */
+    }
+    string = Tcl_GetString(objv[2]);
+    if (string[0] == 'x') {
+        XCutline(interp, graphPtr, elemPtr, value, xVectorPtr, yVectorPtr);
+    } else {
+        YCutline(interp, graphPtr, elemPtr, value, xVectorPtr, yVectorPtr);
+    }
+    return TCL_OK;
+}
+#endif
+
+#ifdef notdef
+
 #define  FRACBITS 12
 
 typedef struct {
-    int64_t A, B, C;
+    int64_t A, B, C;                    /* C is the signed area of the
+                                         * triangle. */
     int flag;
 } EdgeEquation;
 

@@ -6,13 +6,13 @@
  *
  *	Copyright 1995-2004 George A Howlett.
  *
- *	Permission is hereby granted, free of charge, to any person obtaining
- *	a copy of this software and associated documentation files (the
- *	"Software"), to deal in the Software without restriction, including
- *	without limitation the rights to use, copy, modify, merge, publish,
- *	distribute, sublicense, and/or sell copies of the Software, and to
- *	permit persons to whom the Software is furnished to do so, subject to
- *	the following conditions:
+ *	Permission is hereby granted, free of charge, to any person
+ *	obtaining a copy of this software and associated documentation
+ *	files (the "Software"), to deal in the Software without
+ *	restriction, including without limitation the rights to use, copy,
+ *	modify, merge, publish, distribute, sublicense, and/or sell copies
+ *	of the Software, and to permit persons to whom the Software is
+ *	furnished to do so, subject to the following conditions:
  *
  *	The above copyright notice and this permission notice shall be
  *	included in all copies or substantial portions of the Software.
@@ -20,10 +20,11 @@
  *	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  *	EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  *	MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- *	NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
- *	LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
- *	OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
- *	WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *	NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+ *	BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ *	ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ *	CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ *	SOFTWARE.
  *
  * Code for binary data read operation was donated by Harold Kirsch.
  *
@@ -259,13 +260,14 @@ static Tcl_Obj *
 GetValues(Vector *vPtr, int first, int last)
 { 
     Tcl_Obj *listObjPtr;
-    double *vp, *vend;
+    int i;
 
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
-    for (vp = vPtr->valueArr + first, vend = vPtr->valueArr + last; vp <= vend;
-	vp++) { 
-	Tcl_ListObjAppendElement(vPtr->interp, listObjPtr, 
-		Tcl_NewDoubleObj(*vp));
+    for (i = first; i <= last; i++) {
+        Tcl_Obj *objPtr;
+        
+        objPtr = Tcl_NewDoubleObj(vPtr->valueArr[i]);
+	Tcl_ListObjAppendElement(vPtr->interp, listObjPtr, objPtr);
     } 
     return listObjPtr;
 }
@@ -273,11 +275,10 @@ GetValues(Vector *vPtr, int first, int last)
 static void
 ReplicateValue(Vector *vPtr, int first, int last, double value)
 { 
-    double *vp, *vend;
+    int i;
  
-    for (vp = vPtr->valueArr + first, vend = vPtr->valueArr + last; 
-	 vp <= vend; vp++) { 
-	*vp = value; 
+    for (i = first; i <= last; i++) {
+	vPtr->valueArr[i] = value; 
     } 
     vPtr->notifyFlags |= UPDATE_RANGE; 
 }
@@ -320,7 +321,7 @@ AppendVector(Vector *destPtr, Vector *srcPtr)
 }
 
 static int
-AppendList(Vector *vPtr, int objc, Tcl_Obj *const *objv)
+AppendObjv(Vector *vPtr, int objc, Tcl_Obj *const *objv)
 {
     Tcl_Interp *interp = vPtr->interp;
     int count;
@@ -377,14 +378,13 @@ AppendOp(Vector *vPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	if (v2Ptr != NULL) {
 	    result = AppendVector(vPtr, v2Ptr);
 	} else {
-	    int numElem;
-	    Tcl_Obj **elemObjArr;
+	    int ec;
+	    Tcl_Obj **ev;
 
-	    if (Tcl_ListObjGetElements(interp, objv[i], &numElem, &elemObjArr) 
-		!= TCL_OK) {
+	    if (Tcl_ListObjGetElements(interp, objv[i], &ec, &ev) != TCL_OK) {
 		return TCL_ERROR;
 	    }
-	    result = AppendList(vPtr, numElem, elemObjArr);
+	    result = AppendObjv(vPtr, ec, ev);
 	}
 	if (result != TCL_OK) {
 	    return TCL_ERROR;

@@ -1,5 +1,4 @@
 /* -*- mode: c; c-basic-offset: 4; indent-tabs-mode: nil -*- */
-
 /*
  * bltGrMesh.c --
  *
@@ -7,13 +6,13 @@
  *
  *	Copyright 2011 George A Howlett.
  *
- *	Permission is hereby granted, free of charge, to any person obtaining
- *	a copy of this software and associated documentation files (the
- *	"Software"), to deal in the Software without restriction, including
- *	without limitation the rights to use, copy, modify, merge, publish,
- *	distribute, sublicense, and/or sell copies of the Software, and to
- *	permit persons to whom the Software is furnished to do so, subject to
- *	the following conditions:
+ *	Permission is hereby granted, free of charge, to any person
+ *	obtaining a copy of this software and associated documentation
+ *	files (the "Software"), to deal in the Software without
+ *	restriction, including without limitation the rights to use, copy,
+ *	modify, merge, publish, distribute, sublicense, and/or sell copies
+ *	of the Software, and to permit persons to whom the Software is
+ *	furnished to do so, subject to the following conditions:
  *
  *	The above copyright notice and this permission notice shall be
  *	included in all copies or substantial portions of the Software.
@@ -21,10 +20,11 @@
  *	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  *	EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  *	MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- *	NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
- *	LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
- *	OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
- *	WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *	NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+ *	BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ *	ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ *	CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ *	SOFTWARE.
  */
 
 #define BUILD_BLT_TK_PROCS 1
@@ -58,11 +58,11 @@
 /*
  * MeshCmdInterpData --
  *
- *	Structure containing global data, used on a interpreter by interpreter
- *	basis.
+ *	Structure containing global data, used on a interpreter by
+ *	interpreter basis.
  *
- *	This structure holds the hash table of instances of datatable commands
- *	associated with a particular interpreter.
+ *	This structure holds the hash table of instances of datatable
+ *	commands associated with a particular interpreter.
  */
 struct _MeshCmdInterpData {
     Blt_HashTable meshTable;		/* Tracks tables in use. */
@@ -89,9 +89,10 @@ typedef enum SourceTypes {
 } SourceType;
 
 typedef struct {
-    enum SourceTypes type;		/* Selects the type of data populating
-					 * this data source: SOURCE_VECTOR,
-					 * SOURCE_TABLE, or SOURCE_LIST */
+    enum SourceTypes type;		/* Selects the type of data
+					 * populating this data source:
+					 * SOURCE_VECTOR, SOURCE_TABLE, or
+					 * SOURCE_LIST */
     const char *name;
     DataSourceGetProc *getProc;
     DataSourceDestroyProc *destroyProc;
@@ -143,9 +144,10 @@ typedef struct {
     BLT_TABLE_TRACE trace;		/* Trace used for column
 					 * (set/get/unset). */
     Blt_HashEntry *hashPtr;		/* Pointer to entry of source in
-					 * meshes' hash table of meshes. One
-					 * mesh may use multiple columns from
-					 * the same data table. */
+					 * meshes' hash table of
+					 * meshes. One mesh may use
+					 * multiple columns from the same
+					 * data table. */
 } TableDataSource;
 
 typedef int (MeshConfigureProc)(Tcl_Interp *interp, Mesh *meshPtr);
@@ -297,13 +299,14 @@ static int ComputeMesh(Mesh *meshPtr);
  *
  * ObjToTrianglesProc --
  *
- *	Given a string representation of a data source, converts it into its
- *	equivalent data source.  A data source may be a list of numbers, a
- *	vector name, or a two element list of table name and column.
+ *	Given a string representation of a data source, this routine
+ *	converts it into its equivalent data source.  A data source may be
+ *	a list of numbers, a vector name, or a two element list of table
+ *	name and column.
  *
  * Results:
- *	The return value is a standard TCL result.  The data source is passed
- *	back via the srcPtr.
+ *	The return value is a standard TCL result.  The data source is
+ *	passed back via the srcPtr.
  *
  *---------------------------------------------------------------------------
  */
@@ -322,69 +325,83 @@ ObjToTrianglesProc(
     Mesh *meshPtr = (Mesh *)record;
     Tcl_Obj **objv;
     int objc;
-    MeshTriangle *t, *triples;
-    int i, numTriples;
+    MeshTriangle *t, *reqTriangles;
+    int i, numReqTriangles;
 
     if (Tcl_ListObjGetElements(interp, objPtr, &objc, &objv) != TCL_OK) {
 	return TCL_ERROR;
     }
     if (objc == 0) {
-	if (meshPtr->triples != NULL) {
-	    Blt_Free(meshPtr->triples);
+	if (meshPtr->reqTriangles != NULL) {
+	    Blt_Free(meshPtr->reqTriangles);
 	}
-	meshPtr->triples = NULL;
-	meshPtr->numTriples = 0;
+	meshPtr->reqTriangles = NULL;
+	meshPtr->numReqTriangles = 0;
 	return TCL_OK;
     }
-    if ((objc & 3) != 0) {
+    if ((objc % 3) != 0) {
 	Tcl_AppendResult(interp, "wrong # of elements in triangle list: ",
 			 "must be have 3 indices for each triangle",
 			 (char *)NULL);
 	return TCL_ERROR;
     }
-    numTriples = objc / 3;
-    triples = Blt_Malloc(sizeof(MeshTriangle) * numTriples);
-    if (triples == NULL) {
+    numReqTriangles = objc / 3;
+    reqTriangles = Blt_Malloc(sizeof(MeshTriangle) * numReqTriangles);
+    if (reqTriangles == NULL) {
 	Tcl_AppendResult(interp, "can't allocate array of ",
-			 Blt_Itoa(numTriples), " triangles.", (char *)NULL);
+                Blt_Itoa(numReqTriangles), " triangles.", (char *)NULL);
 	return TCL_ERROR;
     }
-    t = triples;
+    t = reqTriangles;
     for (i = 0; i < objc; i += 3) {
 	int a, b, c;
 
+        /* We assume that user-defined triangle indices start from 1. */
 	if ((Tcl_GetIntFromObj(interp, objv[i], &a) != TCL_OK) || (a <= 0)) {
 	    Tcl_AppendResult(interp, "bad triangle index \"", 
-			     Tcl_GetString(objv[i]), "\"", (char *)NULL);
+                Tcl_GetString(objv[i]), "\"", (char *)NULL);
 	    goto error;
 	}
 	if ((Tcl_GetIntFromObj(interp, objv[i+1], &b) != TCL_OK) || (b <= 0)) {
 	    Tcl_AppendResult(interp, "bad triangle index \"", 
-			     Tcl_GetString(objv[i+1]), "\"", (char *)NULL);
+                Tcl_GetString(objv[i+1]), "\"", (char *)NULL);
 	    goto error;
 	}
 	if ((Tcl_GetIntFromObj(interp, objv[i+2], &c) != TCL_OK) || (c <= 0)) {
 	    Tcl_AppendResult(interp, "bad triangle index \"", 
-			     Tcl_GetString(objv[i+2]), "\"", (char *)NULL);
+                Tcl_GetString(objv[i+2]), "\"", (char *)NULL);
 	    goto error;
 	}
+        /* But our triangle indices start from 0. */
 	t->a = a - 1;
 	t->b = b - 1;
 	t->c = c - 1;
 	t++;
     }
-    if (meshPtr->triples != NULL) {
-	Blt_Free(meshPtr->triples);
+    if (meshPtr->reqTriangles != NULL) {
+	Blt_Free(meshPtr->reqTriangles);
     }
-    meshPtr->triples = triples;
-    meshPtr->numTriples = numTriples;
+    meshPtr->reqTriangles = reqTriangles;
+    meshPtr->numReqTriangles = numReqTriangles;
     return TCL_OK;
  error:
-    if (triples != NULL) {
-	Blt_Free(triples);
+    if (reqTriangles != NULL) {
+	Blt_Free(reqTriangles);
     }
-    meshPtr->numTriples = 0;
+    meshPtr->numReqTriangles = 0;
     return TCL_ERROR;
+}
+
+static Tcl_Obj *
+TriangleToObj(Tcl_Interp *interp, MeshTriangle *t)
+{
+    Tcl_Obj *listObjPtr;
+    
+    listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
+    Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewIntObj(t->a));
+    Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewIntObj(t->b));
+    Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewIntObj(t->c));
+    return listObjPtr;
 }
 
 /*
@@ -410,18 +427,15 @@ TrianglesToObjProc(
     int flags)				/* Not used. */
 {
     Mesh *meshPtr = (Mesh *)record;
-    MeshTriangle *t, *tend;
     Tcl_Obj *listObjPtr;
+    int i;
 
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
-    for (t = meshPtr->triples, tend = t + meshPtr->numTriples; t < tend; t++) {
-	Tcl_Obj *subListObjPtr;
+    for (i = 0; i < meshPtr->numReqTriangles; i++) {
+	Tcl_Obj *objPtr;
 	
-	subListObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
-	Tcl_ListObjAppendElement(interp, subListObjPtr, Tcl_NewIntObj(t->a));
-	Tcl_ListObjAppendElement(interp, subListObjPtr, Tcl_NewIntObj(t->b));
-	Tcl_ListObjAppendElement(interp, subListObjPtr, Tcl_NewIntObj(t->c));
-	Tcl_ListObjAppendElement(interp, listObjPtr, subListObjPtr);
+        objPtr = TriangleToObj(interp, meshPtr->reqTriangles + i);
+	Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
     }
     return listObjPtr;
 }
@@ -441,10 +455,10 @@ FreeTrianglesProc(ClientData clientData, char *record, int offset, int flags)
 {
     Mesh *meshPtr = (Mesh *)record;
 
-    if (meshPtr->triples != NULL) {
-	Blt_Free(meshPtr->triples);
-	meshPtr->triples = NULL;
-	meshPtr->numTriples = 0;
+    if (meshPtr->reqTriangles != NULL) {
+	Blt_Free(meshPtr->reqTriangles);
+	meshPtr->reqTriangles = NULL;
+	meshPtr->numReqTriangles = 0;
     }
 }
 
@@ -621,14 +635,17 @@ ListDataSourcePrintProc(DataSource *basePtr)
     ListDataSource *srcPtr = (ListDataSource *)basePtr;
     Tcl_Interp *interp;
     Tcl_Obj *listObjPtr;
-    double *p, *pend; 
+    int i;
     Mesh *meshPtr;
 
     meshPtr = srcPtr->clientData;
     interp = meshPtr->interp;
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
-    for (p = srcPtr->values, pend = p + srcPtr->numValues; p < pend; p++) {
-	Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewDoubleObj(*p));
+    for (i = 0; i < srcPtr->numValues; i++) {
+        Tcl_Obj *objPtr;
+
+        objPtr = Tcl_NewDoubleObj(srcPtr->values[i]);
+	Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
     }
     return listObjPtr;
 }
@@ -1077,15 +1094,15 @@ IsLeft(HullVertex *p0, HullVertex *p1, HullVertex *p2)
  *		  allocated by the caller.
  *	
  * Results:
- *     	The number of vertices in the convex hull is returned. The coordinates
- *	of the hull will be written in the given point array.
+ *     	The number of vertices in the convex hull is returned. The
+ *	coordinates of the hull will be written in the given point array.
  *
  *	Copyright 2001, softSurfer (www.softsurfer.com) This code may be
- *	freely used and modified for any purpose providing that this copyright
- *	notice is included with it.  SoftSurfer makes no warranty for this
- *	code, and cannot be held liable for any real or imagined damage
- *	resulting from its use.  Users of this code must verify correctness
- *	for their application.
+ *	freely used and modified for any purpose providing that this
+ *	copyright notice is included with it.  SoftSurfer makes no warranty
+ *	for this code, and cannot be held liable for any real or imagined
+ *	damage resulting from its use.  Users of this code must verify
+ *	correctness for their application.
  *
  *---------------------------------------------------------------------------
  */
@@ -1304,8 +1321,9 @@ ComputeMesh(Mesh *meshPtr)
 	    goto error;
 	}
     }
-    /* Compress the triangle array. This is because there are hidden triangles
-     * designated or we over-allocated the initial array of triangles. */
+    /* Compress the triangle array. This is because there are hidden
+     * triangles designated or we over-allocated the initial array of
+     * triangles. */
     count = 0;
     for (i = 0; i < numTriangles; i++) {
 	if (Blt_FindHashEntry(&meshPtr->hideTable, (char *)i)) {
@@ -1484,10 +1502,8 @@ RegularMeshConfigureProc(Tcl_Interp *interp, Mesh *meshPtr)
     if (meshPtr->vertices != NULL) {
 	Blt_Free(meshPtr->vertices);
     }
-    meshPtr->xMin = xMin;
-    meshPtr->xMax = xMax;
-    meshPtr->yMin = yMin;
-    meshPtr->yMax = yMax;
+    meshPtr->xMin = xMin, meshPtr->xMax = xMax;
+    meshPtr->yMin = yMin, meshPtr->yMax = yMax;
     meshPtr->vertices = vertices;
     meshPtr->numVertices = numVertices;
     return ComputeRegularMesh(meshPtr, xNum, yNum);
@@ -1554,10 +1570,8 @@ IrregularMeshConfigureProc(Tcl_Interp *interp, Mesh *meshPtr)
     if (meshPtr->vertices != NULL) {
 	Blt_Free(meshPtr->vertices);
     }
-    meshPtr->xMin = x.min;
-    meshPtr->xMax = x.max;
-    meshPtr->yMin = y.min;
-    meshPtr->yMax = y.max;
+    meshPtr->xMin = x.min, meshPtr->xMax = x.max;
+    meshPtr->yMin = y.min, meshPtr->yMax = y.max;
     meshPtr->vertices = vertices;
     meshPtr->numVertices = numVertices;
     return ComputeMesh(meshPtr);
@@ -1637,10 +1651,8 @@ CloudMeshConfigureProc(Tcl_Interp *interp, Mesh *meshPtr)
     if (meshPtr->vertices != NULL) {
 	Blt_Free(meshPtr->vertices);
     }
-    meshPtr->xMin = x.min;
-    meshPtr->xMax = x.max;
-    meshPtr->yMin = y.min;
-    meshPtr->yMax = y.max;
+    meshPtr->xMin = x.min, meshPtr->xMax = x.max;
+    meshPtr->yMin = y.min, meshPtr->yMax = y.max;
     meshPtr->vertices = vertices;
     meshPtr->numVertices = count;
     return ComputeMesh(meshPtr);
@@ -1657,7 +1669,7 @@ TriangleMeshConfigureProc(Tcl_Interp *interp, Mesh *meshPtr)
     if ((meshPtr->x == NULL) || (meshPtr->y == NULL)) {
 	return TCL_OK;
     }
-    if (meshPtr->numTriples == 0) {
+    if (meshPtr->numReqTriangles == 0) {
 	return TCL_OK;
     }
     if ((meshPtr->x->classPtr == NULL) || (meshPtr->y->classPtr == NULL)) {
@@ -1705,13 +1717,13 @@ TriangleMeshConfigureProc(Tcl_Interp *interp, Mesh *meshPtr)
 			 (char *)NULL);
 	goto error;
     }
-    numTriangles = meshPtr->numTriples;
+    numTriangles = meshPtr->numReqTriangles;
     /* Fill the triangles array with the sorted indices of the vertices. */
     triangles = Blt_AssertCalloc(numTriangles, sizeof(MeshTriangle));
     for (i = 0; i < numTriangles; i++) {
 	MeshTriangle *t;
 
-	t = meshPtr->triples + i;
+	t = meshPtr->reqTriangles + i;
 	if ((t->a < 0) || (t->a >= numVertices)) {
 	    Tcl_AppendResult(meshPtr->interp, "first index on triangle ",
 			     Blt_Itoa(i), " is out of range.",
@@ -1753,7 +1765,7 @@ TriangleMeshConfigureProc(Tcl_Interp *interp, Mesh *meshPtr)
 	triangles = Blt_Realloc(triangles, count * sizeof(MeshTriangle));
 	if (triangles == NULL) {
 	    Tcl_AppendResult(meshPtr->interp, 
-		"can't reallocated triangle array for mesh \"", meshPtr->name,
+		"can't reallocate triangle array for mesh \"", meshPtr->name,
 		"\".", (char *)NULL);
 	    goto error;
 	}
@@ -1767,12 +1779,10 @@ TriangleMeshConfigureProc(Tcl_Interp *interp, Mesh *meshPtr)
     if (meshPtr->triangles != NULL) {
 	Blt_Free(meshPtr->triangles);
     }
-    meshPtr->triangles = triangles;
+    meshPtr->xMin = x.min, meshPtr->xMax = x.max;
+    meshPtr->yMin = y.min, meshPtr->yMax = y.max;
     meshPtr->numTriangles = numTriangles;
-    meshPtr->xMin = x.min;
-    meshPtr->xMax = x.max;
-    meshPtr->yMin = y.min;
-    meshPtr->yMax = y.max;
+    meshPtr->triangles = triangles;
     return TCL_OK;
  error:
     if (vertices != NULL) {
@@ -1880,17 +1890,14 @@ static int
 CreateOp(ClientData clientData, Tcl_Interp *interp, int objc, 
 	 Tcl_Obj *const *objv)
 {
-    MeshCmdInterpData *dataPtr = clientData;
-    Mesh *meshPtr;
     Blt_HashEntry *hPtr;
-    char ident[200];
-    const char *name;
-    int isNew;
-    char c;
-    int length;
-    const char *string;
+    Mesh *meshPtr;
+    MeshCmdInterpData *dataPtr = clientData;
     Tcl_DString ds;
-    int type;
+    char c;
+    char ident[200];
+    const char *name, *string;
+    int isNew, length, type;
 
     meshPtr = NULL;                     /* Suppress compiler warning. */
     string = Tcl_GetString(objv[2]);
@@ -2153,24 +2160,20 @@ static int
 TrianglesOp(ClientData clientData, Tcl_Interp *interp, int objc, 
 	    Tcl_Obj *const *objv)
 {
-    MeshCmdInterpData *dataPtr = clientData;
     Mesh *meshPtr;
-    MeshTriangle *t, *tend;
+    MeshCmdInterpData *dataPtr = clientData;
     Tcl_Obj *listObjPtr;
+    int i;
 
     if (GetMeshFromObj(interp, dataPtr, objv[2], &meshPtr) != TCL_OK) {
 	return TCL_ERROR;
     }
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
-    for (t = meshPtr->triangles, tend = t + meshPtr->numTriangles; 
-	 t < tend; t++) {
-	Tcl_Obj *subListObjPtr;
+    for (i = 0; i < meshPtr->numTriangles; i++) {
+	Tcl_Obj *objPtr;
 	
-	subListObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
-	Tcl_ListObjAppendElement(interp, subListObjPtr, Tcl_NewIntObj(t->a));
-	Tcl_ListObjAppendElement(interp, subListObjPtr, Tcl_NewIntObj(t->b));
-	Tcl_ListObjAppendElement(interp, subListObjPtr, Tcl_NewIntObj(t->c));
-	Tcl_ListObjAppendElement(interp, listObjPtr, subListObjPtr);
+        objPtr = TriangleToObj(interp, meshPtr->triangles + i);
+	Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
 
     }
     Tcl_SetObjResult(interp, listObjPtr);
@@ -2240,99 +2243,34 @@ DestroyMeshes(MeshCmdInterpData *dataPtr)
     }
 }
 
-void
-Blt_FreeMesh(Mesh *meshPtr)
-{
-    if (meshPtr != NULL) {
-	DestroyMesh(meshPtr);
-    }
-}
-
-int
-Blt_GetMeshFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, Mesh **meshPtrPtr)
-{
-    Mesh *meshPtr;
-    MeshCmdInterpData *dataPtr;
-
-    dataPtr = GetMeshCmdInterpData(interp);
-    if (GetMeshFromObj(interp, dataPtr, objPtr, &meshPtr) != TCL_OK) {
-	return TCL_ERROR;
-    }
-    *meshPtrPtr = meshPtr;
-    return TCL_OK;
-}
-
-int
-Blt_GetMesh(Tcl_Interp *interp, const char *string, Mesh **meshPtrPtr)
-{
-    Blt_HashEntry *hPtr;
-    MeshCmdInterpData *dataPtr;
-
-    dataPtr = GetMeshCmdInterpData(interp);
-    hPtr = Blt_FindHashEntry(&dataPtr->meshTable, string);
-    if (hPtr == NULL) {
-	Tcl_AppendResult(interp, "can't find a mesh \"", string, "\"", 
-		(char *)NULL);
-	return TCL_ERROR;
-    }
-    *meshPtrPtr = Blt_GetHashValue(hPtr);
-    return TCL_OK;
-}
-
-void
-Blt_CreateMeshNotifier(Mesh *meshPtr, MeshNotifyProc *proc, 
-		       ClientData clientData)
-{
-    Blt_HashEntry *hPtr;
-    int isNew;
-
-    hPtr = Blt_CreateHashEntry(&meshPtr->notifierTable, clientData, &isNew);
-    Blt_SetHashValue(hPtr, proc);
-}
-
-void
-Blt_DeleteMeshNotifier(Mesh *meshPtr, ClientData clientData)
-{
-    Blt_HashEntry *hPtr;
-
-    hPtr = Blt_FindHashEntry(&meshPtr->notifierTable, clientData);
-    Blt_DeleteHashEntry(&meshPtr->notifierTable, hPtr);
-}
-
-const char *
-Blt_NameOfMesh(Mesh *meshPtr)
-{
-    return meshPtr->name;
-}
-
 /*
  *---------------------------------------------------------------------------
  *
  * MeshCmd --
  *
- *	.g mesh create regular ?$name? -x {x0 xN n} -y {y0 yN n}
- *	.g mesh create irregular ?$name? -x $xvalues -y $yvalues 
- *	.g mesh create triangle ?$name? -x x -y y -triangles $triangles
- *	.g mesh create cloud ?$name? -x x -y y 
- *	.g mesh type $name
- *	.g mesh names ?pattern?
- *	.g mesh delete $name
- *	.g mesh configure $name -hide no -linewidth 1 -color black
+ *	.g mesh create regular ?meshName? -x {x0 xN n} -y {y0 yN n}
+ *	.g mesh create irregular ?meshName? -x $xvalues -y $yvalues 
+ *	.g mesh create triangle ?meshName? -x x -y y -triangles $triangles
+ *	.g mesh create cloud ?meshName? -x x -y y 
+ *	.g mesh type meshName
+ *	.g mesh names pattern
+ *	.g mesh delete meshName
+ *	.g mesh configure meshName -hide no -linewidth 1 -color black
  *
  *---------------------------------------------------------------------------
  */
 static Blt_OpSpec meshOps[] =
 {
-    {"cget",        2, CgetOp,       3, 4, "name option",},
-    {"configure",   2, ConfigureOp,  2, 0, "name ?option value?...",},
-    {"create",      2, CreateOp,     3, 0, "type ?name? ?option value?...",},
-    {"delete",      1, DeleteOp,     2, 0, "?name?...",},
-    {"hide",        2, HideOp,       3, 4, "name ?indices...?",},
-    {"hull",        2, HullOp,       3, 4, "name ?-vertices?",},
-    {"names",       1, NamesOp,      2, 0, "?pattern?...",},
-    {"triangles",   2, TrianglesOp,  3, 3, "name",},
-    {"type",        2, TypeOp,       3, 3, "name",},
-    {"vertices",    1, VerticesOp,   3, 3, "name",},
+    {"cget",        2, CgetOp,       3, 4,"meshName option",},
+    {"configure",   2, ConfigureOp,  2, 0,"meshName ?option value?...",},
+    {"create",      2, CreateOp,     3, 0,"type ?meshName? ?option value?...",},
+    {"delete",      1, DeleteOp,     2, 0,"?meshName?...",},
+    {"hide",        2, HideOp,       3, 4,"meshName ?indices...?",},
+    {"hull",        2, HullOp,       3, 4,"meshName ?-vertices?",},
+    {"names",       1, NamesOp,      2, 0,"?pattern?...",},
+    {"triangles",   2, TrianglesOp,  3, 3,"meshName",},
+    {"type",        2, TypeOp,       3, 3,"meshName",},
+    {"vertices",    1, VerticesOp,   3, 3,"meshName",},
 };
 static int numMeshOps = sizeof(meshOps) / sizeof(Blt_OpSpec);
 
@@ -2355,8 +2293,8 @@ MeshCmd(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * MeshInterpDeleteProc --
  *
- *	This is called when the interpreter registering the "mesh"
- *	command is deleted.
+ *	This is called when the interpreter registering the "mesh" command
+ *	is deleted.
  *
  * Results:
  *	None.
@@ -2431,3 +2369,71 @@ Blt_MeshCmdInitProc(Tcl_Interp *interp)
     }
     return TCL_OK;
 }
+
+/* Public routines. */
+
+void
+Blt_FreeMesh(Mesh *meshPtr)
+{
+    if (meshPtr != NULL) {
+	DestroyMesh(meshPtr);
+    }
+}
+
+int
+Blt_GetMeshFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, Mesh **meshPtrPtr)
+{
+    Mesh *meshPtr;
+    MeshCmdInterpData *dataPtr;
+
+    dataPtr = GetMeshCmdInterpData(interp);
+    if (GetMeshFromObj(interp, dataPtr, objPtr, &meshPtr) != TCL_OK) {
+	return TCL_ERROR;
+    }
+    *meshPtrPtr = meshPtr;
+    return TCL_OK;
+}
+
+int
+Blt_GetMesh(Tcl_Interp *interp, const char *string, Mesh **meshPtrPtr)
+{
+    Blt_HashEntry *hPtr;
+    MeshCmdInterpData *dataPtr;
+
+    dataPtr = GetMeshCmdInterpData(interp);
+    hPtr = Blt_FindHashEntry(&dataPtr->meshTable, string);
+    if (hPtr == NULL) {
+	Tcl_AppendResult(interp, "can't find a mesh \"", string, "\"", 
+		(char *)NULL);
+	return TCL_ERROR;
+    }
+    *meshPtrPtr = Blt_GetHashValue(hPtr);
+    return TCL_OK;
+}
+
+void
+Blt_CreateMeshNotifier(Mesh *meshPtr, MeshNotifyProc *proc, 
+		       ClientData clientData)
+{
+    Blt_HashEntry *hPtr;
+    int isNew;
+
+    hPtr = Blt_CreateHashEntry(&meshPtr->notifierTable, clientData, &isNew);
+    Blt_SetHashValue(hPtr, proc);
+}
+
+void
+Blt_DeleteMeshNotifier(Mesh *meshPtr, ClientData clientData)
+{
+    Blt_HashEntry *hPtr;
+
+    hPtr = Blt_FindHashEntry(&meshPtr->notifierTable, clientData);
+    Blt_DeleteHashEntry(&meshPtr->notifierTable, hPtr);
+}
+
+const char *
+Blt_NameOfMesh(Mesh *meshPtr)
+{
+    return meshPtr->name;
+}
+
