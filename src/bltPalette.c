@@ -211,24 +211,8 @@ GetPaletteCmd(Tcl_Interp *interp, PaletteCmdInterpData *dataPtr,
 	      const char *string, PaletteCmd **cmdPtrPtr)
 {
     Blt_HashEntry *hPtr;
-    Blt_ObjectName objName;
-    Tcl_DString ds;
-    const char *name;
 
-    /* 
-     * Parse the command and put back so that it's in a consistent format.
-     *
-     *	t1         <current namespace>::t1
-     *	n1::t1     <current namespace>::n1::t1
-     *	::t1	   ::t1
-     *  ::n1::t1   ::n1::t1
-     */
-    if (!Blt_ParseObjectName(interp, string, &objName, 0)) {
-	return TCL_ERROR;
-    }
-    name = Blt_MakeQualifiedName(&objName, &ds);
-    hPtr = Blt_FindHashEntry(&dataPtr->paletteTable, name);
-    Tcl_DStringFree(&ds);
+    hPtr = Blt_FindHashEntry(&dataPtr->paletteTable, string);
     if (hPtr == NULL) {
 	if (interp != NULL) {
 	    Tcl_AppendResult(interp, "can't find a palette \"", string, "\"",
@@ -1441,48 +1425,27 @@ CreateOp(ClientData clientData, Tcl_Interp *interp, int objc,
     const char *name;
     char ident[200];
     const char *string;
-    Tcl_DString ds;
 
     name = NULL;
-    Tcl_DStringInit(&ds);
     if (objc > 2) {
 	string = Tcl_GetString(objv[2]);
-	if (string[0] != '-') {
-	    Blt_ObjectName objName;
-
-	    /* 
-	     * Parse the command and put back so that it's in a consistent
-	     * format.
-	     *
-	     *	t1         <current namespace>::t1
-	     *	n1::t1     <current namespace>::n1::t1
-	     *	::t1	   ::t1
-	     *  ::n1::t1   ::n1::t1
-	     */
-	    if (!Blt_ParseObjectName(interp, string, &objName, 0)) {
-		return TCL_ERROR;
-	    }
-	    name = Blt_MakeQualifiedName(&objName, &ds);
-	    if (Blt_FindHashEntry(&dataPtr->paletteTable, name) != NULL) {
-		Tcl_AppendResult(interp, "palette \"", name, 
-			"\" already exists", (char *)NULL);
-		return TCL_ERROR;
-	    }
-	    objc--, objv++;
-	}
+        if (Blt_FindHashEntry(&dataPtr->paletteTable, string) != NULL) {
+            Tcl_AppendResult(interp, "palette \"", string, 
+                             "\" already exists", (char *)NULL);
+            return TCL_ERROR;
+        }
+        name = string;
+        objc--, objv++;
     }
     /* If no name was given for the marker, make up one. */
     if (name == NULL) {
-	Blt_ObjectName objName;
-
-	Blt_FormatString(ident, 200, "palette%d", dataPtr->nextPaletteCmdId++);
-	if (!Blt_ParseObjectName(interp, ident, &objName, 0)) {
-	    return TCL_ERROR;
-	}
-	name = Blt_MakeQualifiedName(&objName, &ds);
+        do {
+            Blt_FormatString(ident, 200, "palette%d",
+                             dataPtr->nextPaletteCmdId++);
+        } while (Blt_FindHashEntry(&dataPtr->paletteTable, ident));
+        name = ident;
     }
     cmdPtr = NewPaletteCmd(interp, dataPtr, name);
-    Tcl_DStringFree(&ds);
     if (cmdPtr == NULL) {
 	return TCL_ERROR;
     }
@@ -2007,3 +1970,4 @@ Blt_Palette_Free(Blt_Palette palette)
     }
     Blt_Free(palPtr);
 }
+

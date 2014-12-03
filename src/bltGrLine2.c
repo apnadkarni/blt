@@ -356,8 +356,10 @@ struct _LineElement {
 
     /* The line element specific fields start here. */
 
-    ElemValues xError;			/* Relative/symmetric X error values. */
-    ElemValues yError;			/* Relative/symmetric Y error values. */
+    ElemValues xError;			/* Relative/symmetric X error
+                                         * values. */
+    ElemValues yError;			/* Relative/symmetric Y error
+                                         * values. */
     ElemValues xHigh, xLow;		/* Absolute/asymmetric X-coordinate
 					 * high/low error values. */
     ElemValues yHigh, yLow;		/* Absolute/asymmetric Y-coordinate
@@ -365,11 +367,12 @@ struct _LineElement {
     LinePen builtinPen;
 
     /* Line smoothing */
-    unsigned int reqSmooth;		/* Requested smoothing function to use
-					 * for connecting the data points */
+    unsigned int reqSmooth;		/* Requested smoothing function to
+					 * use for connecting the data
+					 * points */
     unsigned int smooth;		/* Smoothing function used. */
-    float rTolerance;			/* Tolerance to reduce the number of
-					 * points displayed. */
+    float rTolerance;			/* Tolerance to reduce the number
+					 * of points displayed. */
 
     /* Drawing-related data structures. */
 
@@ -378,20 +381,21 @@ struct _LineElement {
     XColor *fillBgColor;
     GC fillGC;
 
-    Blt_Bg fillBg;			/* Fill background for area under 
+    Blt_Bg fillBg;			/* Fill background for area under
 					 * curve. */
 
     int reqMaxSymbols;			/* Indicates the interval the draw
-					 * symbols.  Zero (and one) means draw
-					 * all symbols. */
+					 * symbols.  Zero (and one) means
+					 * draw all symbols. */
     int penDir;				/* Indicates if a change in the pen
 					 * direction should be considered a
 					 * retrace (line segment is not
 					 * drawn). */
-    Blt_Chain traces;			/* List of traces (a trace is a series
-					 * of contiguous line segments).  New
-					 * traces are generated when either
-					 * the next segment changes the pen
+    Blt_Chain traces;			/* List of traces (a trace is a
+					 * series of contiguous line
+					 * segments).  New traces are
+					 * generated when either the next
+					 * segment changes the pen
 					 * direction, or the end point is
 					 * clipped by the plotting area. */
     Blt_Pool pointPool;
@@ -925,12 +929,12 @@ FreeSymbolProc(
  *
  * ObjToSymbolProc --
  *
- *	Convert the string representation of a line style or symbol name into
- *	its numeric form.
+ *	Convert the string representation of a line style or symbol name
+ *	into its numeric form.
  *
  * Results:
- *	The return value is a standard TCL result.  The symbol type is written
- *	into the widget record.
+ *	The return value is a standard TCL result.  The symbol type is
+ *	written into the widget record.
  *
  *---------------------------------------------------------------------------
  */
@@ -1392,7 +1396,9 @@ FreeColormapProc(ClientData clientData, Display *display, char *widgRec,
     GraphColormap **cmapPtrPtr = (GraphColormap **)(widgRec + offset);
     LineElement *elemPtr = (LineElement *)widgRec;
     
-    Blt_Colormap_DeleteNotifier(*cmapPtrPtr, elemPtr);
+    if (*cmapPtrPtr != NULL) {
+        Blt_Colormap_DeleteNotifier(*cmapPtrPtr, elemPtr);
+    }
     *cmapPtrPtr = NULL;
 }
 
@@ -2758,7 +2764,7 @@ SmoothElement(LineElement *elemPtr)
 	Trace *tracePtr;
 
 	tracePtr = Blt_Chain_GetValue(link);
-	if ((tracePtr->numPoints < 2) || (tracePtr->penPtr->traceWidth == 0)) {
+	if (tracePtr->numPoints < 2) {
 	    continue;
 	}
 	switch (elemPtr->smooth) {
@@ -3477,27 +3483,27 @@ MapAreaUnderTrace(Trace *tracePtr)
 	count++;
 	points[count] = points[0];
     } else {
-	double maxY;
+	double yMax;
 	TracePoint *p;
 	int count;
 
 	count = 0;
-	maxY = (double)tracePtr->elemPtr->axes.y->bottom;
+	yMax = (double)tracePtr->elemPtr->axes.y->bottom + 2;
 	for (p = tracePtr->head; p != NULL; p = p->next) {
 	    points[count].x = p->x + 1;
-	    points[count].y = p->y;
-	    if (points[count].y > maxY) {
-		maxY = points[count].y;
+	    points[count].y = p->y + 1;
+	    if (points[count].y > yMax) {
+		yMax = points[count].y;
 	    }
 	    count++;
 	}	
 	/* Add edges to extend the fill polygon to the bottom of plotting
 	 * window */
 	points[count].x = points[count - 1].x;
-	points[count].y = maxY;
+	points[count].y = yMax;
 	count++;
 	points[count].x = points[0].x; 
-	points[count].y = maxY;
+	points[count].y = yMax;
 	count++;
 	points[count] = points[0];
     }
@@ -6292,8 +6298,7 @@ DestroyProc(Graph *graphPtr, Element *basePtr)
  *---------------------------------------------------------------------------
  */
 
-static ElementProcs lineProcs =
-{
+static ElementProcs lineProcs = {
     NearestProc,			/* Finds the closest element/data
 					 * point */
     ConfigureProc,			/* Configures the element. */

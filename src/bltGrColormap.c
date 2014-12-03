@@ -168,8 +168,10 @@ FreePaletteProc(
     Blt_Palette *palPtr = (Blt_Palette *)(widgRec + offset);
     GraphColormap *cmapPtr = (GraphColormap *)widgRec;
     
-    Blt_Palette_DeleteNotifier(*palPtr, cmapPtr);
-    *palPtr = NULL;
+    if (*palPtr != NULL) {
+        Blt_Palette_DeleteNotifier(*palPtr, cmapPtr);
+        *palPtr = NULL;
+    }
 }
 
 /*

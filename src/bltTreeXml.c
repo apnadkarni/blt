@@ -1,18 +1,17 @@
 /* -*- mode: c; c-basic-offset: 4; indent-tabs-mode: nil -*- */
-
 /*
  *
  * bltTreeXml.c --
  *
  *	Copyright 1998-2005 George A Howlett.
  *
- *	Permission is hereby granted, free of charge, to any person obtaining
- *	a copy of this software and associated documentation files (the
- *	"Software"), to deal in the Software without restriction, including
- *	without limitation the rights to use, copy, modify, merge, publish,
- *	distribute, sublicense, and/or sell copies of the Software, and to
- *	permit persons to whom the Software is furnished to do so, subject to
- *	the following conditions:
+ *	Permission is hereby granted, free of charge, to any person
+ *	obtaining a copy of this software and associated documentation
+ *	files (the "Software"), to deal in the Software without
+ *	restriction, including without limitation the rights to use, copy,
+ *	modify, merge, publish, distribute, sublicense, and/or sell copies
+ *	of the Software, and to permit persons to whom the Software is
+ *	furnished to do so, subject to the following conditions:
  *
  *	The above copyright notice and this permission notice shall be
  *	included in all copies or substantial portions of the Software.
@@ -20,10 +19,11 @@
  *	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  *	EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  *	MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- *	NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
- *	LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
- *	OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
- *	WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *	NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+ *	BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ *	ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ *	CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ *	SOFTWARE.
  */
 
 #include <bltInt.h>
@@ -166,6 +166,7 @@ typedef struct {
     unsigned int flags;
     Tcl_Channel channel;	/* If non-NULL, channel to write output to. */
     Tcl_DString *dsPtr;
+    int lastDepth;
 } XmlWriter;
 
 static Blt_SwitchSpec exportSwitches[] = 
@@ -178,6 +179,8 @@ static Blt_SwitchSpec exportSwitches[] =
 	Blt_Offset(XmlWriter, root),	0, 0, &nodeSwitch},
     {BLT_SWITCH_END}
 };
+
+#define EXPORT_CDATA (1<<2)
 
 #ifdef HAVE_LIBEXPAT
 #include <expat.h>
@@ -285,7 +288,7 @@ GetDeclProc(
     int standalone)
 {
     XmlReader *readerPtr = userData;
-
+    
     if (version != NULL) {
 	Blt_Tree_SetValue(readerPtr->interp, readerPtr->tree, readerPtr->parent,
 		 SYM_VERSION, Tcl_NewStringObj(version, -1));
@@ -400,7 +403,7 @@ GetCharacterDataProc(void *userData, const XML_Char *string, int length)
 	/* Last child added was a CDATA node, append new data to it.  */
 	
 	if (Blt_Tree_GetValue(readerPtr->interp, tree, child, SYM_CDATA, 
-		&objPtr) == TCL_OK) {
+                              &objPtr) == TCL_OK) {
 	    Tcl_AppendToObj(objPtr, string, length);
 	    return;
 	}
@@ -914,6 +917,7 @@ XmlOpenStartElement(XmlWriter *writerPtr, Blt_TreeNode node)
     if (writerPtr->channel != NULL) {
 	Tcl_DStringSetLength(writerPtr->dsPtr, 0);
     }
+    /* Always indent starting element tags */
     for (i = 0; i < Blt_Tree_NodeDepth(node); i++) {
 	Tcl_DStringAppend(writerPtr->dsPtr, "  ", 2);
     }
@@ -924,7 +928,7 @@ XmlOpenStartElement(XmlWriter *writerPtr, Blt_TreeNode node)
 static int
 XmlCloseStartElement(XmlWriter *writerPtr)
 {
-    Tcl_DStringAppend(writerPtr->dsPtr, ">\n", 2);
+    Tcl_DStringAppend(writerPtr->dsPtr, ">", 1);
     if (writerPtr->channel != NULL) {
 	return XmlFlush(writerPtr);
     }
@@ -934,15 +938,17 @@ XmlCloseStartElement(XmlWriter *writerPtr)
 static int
 XmlEndElement(XmlWriter *writerPtr, Blt_TreeNode node)
 {
-    long i;
 
-    Tcl_DStringAppend(writerPtr->dsPtr, "\n", 1);
-    for (i = 0; i < Blt_Tree_NodeDepth(node); i++) {
-	Tcl_DStringAppend(writerPtr->dsPtr, "  ", 2);
+    if ((writerPtr->flags & EXPORT_CDATA) == 0) {
+        long i;
+        for (i = 0; i < Blt_Tree_NodeDepth(node); i++) {
+            Tcl_DStringAppend(writerPtr->dsPtr, "  ", 2);
+        }
     }
+    writerPtr->flags &= ~EXPORT_CDATA;
     Tcl_DStringAppend(writerPtr->dsPtr, "</", 2);
     Tcl_DStringAppend(writerPtr->dsPtr, Blt_Tree_NodeLabel(node), -1);
-    Tcl_DStringAppend(writerPtr->dsPtr, ">\n", 2);
+    Tcl_DStringAppend(writerPtr->dsPtr, ">", 1);
     if (writerPtr->channel != NULL) {
 	return XmlFlush(writerPtr);
     }
@@ -980,9 +986,8 @@ XmlAppendCharacterData(
     if (length < 0) {
 	length = strlen(string);
     } 
-    Tcl_DStringAppend(writerPtr->dsPtr, "CDATA=(", -1);
+    writerPtr->flags |= EXPORT_CDATA;
     XmlPutEscapeString(string, length, writerPtr);
-    Tcl_DStringAppend(writerPtr->dsPtr, ")", -1);
 }
 
 static int
@@ -1005,7 +1010,11 @@ XmlExportElement(Blt_Tree tree, Blt_TreeNode parent, XmlWriter *writerPtr)
 	value = Tcl_GetStringFromObj(valueObjPtr, &numBytes);
 	XmlAppendCharacterData(writerPtr, value, numBytes);
 	return TCL_OK;
+    } 
+    if (Blt_Tree_NodeDepth(parent) != writerPtr->lastDepth) {
+        Tcl_DStringAppend(writerPtr->dsPtr, "\n", 1);
     }
+    writerPtr->lastDepth = Blt_Tree_NodeDepth(parent);
     XmlOpenStartElement(writerPtr, parent);
     for (key = Blt_Tree_FirstKey(tree, parent, &iter); key != NULL; 
 	 key = Blt_Tree_NextKey(tree, &iter)) {
@@ -1027,7 +1036,10 @@ XmlExportElement(Blt_Tree tree, Blt_TreeNode parent, XmlWriter *writerPtr)
 	    return TCL_ERROR;
 	}
     }
-    return XmlEndElement(writerPtr, parent);
+    writerPtr->lastDepth = Blt_Tree_NodeDepth(parent);
+    XmlEndElement(writerPtr, parent);
+    Tcl_DStringAppend(writerPtr->dsPtr, "\n", 1);
+    return TCL_OK;
 }
 
 static int
