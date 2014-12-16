@@ -89,6 +89,13 @@ static Blt_SwitchCustom rgbColorsSwitch =
     ObjToRGBColorsProc, ColorsToObjProc, NULL, (ClientData)0
 };
 
+static Blt_SwitchParseProc ObjToXRGBColorsProc;
+static Blt_SwitchPrintProc ColorsToObjProc;
+static Blt_SwitchCustom xrgbColorsSwitch =
+{
+    ObjToXRGBColorsProc, ColorsToObjProc, NULL, (ClientData)0
+};
+
 static Blt_SwitchParseProc ObjToColorsProc;
 static Blt_SwitchPrintProc ColorsToObjProc;
 static Blt_SwitchCustom colorsSwitch =
@@ -118,6 +125,8 @@ static Blt_SwitchSpec paletteSpecs[] =
 	Blt_Offset(PaletteCmd, opacities), 0, 0, &opacitiesSwitch},
     {BLT_SWITCH_CUSTOM, "-rgbcolors", (char *)NULL, (char *)NULL, 
 	Blt_Offset(PaletteCmd, colors), 0, 0, &rgbColorsSwitch},
+    {BLT_SWITCH_CUSTOM, "-xrgbcolors", (char *)NULL, (char *)NULL, 
+	Blt_Offset(PaletteCmd, colors), 0, 0, &xrgbColorsSwitch},
     {BLT_SWITCH_CUSTOM, "-baseopacity", (char *)NULL, (char *)NULL,
         Blt_Offset(PaletteCmd, alpha), 0, 0, &baseOpacitySwitch},
     {BLT_SWITCH_END}
@@ -321,7 +330,7 @@ GetRGBFromObjv(Tcl_Interp *interp, Tcl_Obj *const *objv, Blt_Pixel *colorPtr)
 }
 
 /*
- *	-colors "c1 c2 c3 c4.."
+ *	-rgbcolors "c1 c2 c3 c4.."
  *	-colors "{v1 c1} {v2 c2} {v3 c3}..."
  *	-colors "{v1 c1 v2 c2} {v3 c3 v4 c4}..."
  */
@@ -347,6 +356,49 @@ ParseRGBColors(Tcl_Interp *interp, PaletteCmd *cmdPtr, int objc,
 	entryPtr->min.value = entryPtr->min.norm = j * step;
 	entryPtr->max.value = entryPtr->max.norm = (j+1) * step;
 	entryPtr->min.isAbsolute = entryPtr->max.isAbsolute = FALSE;
+    }
+    if (cmdPtr->colors != NULL) {
+	Blt_Free(cmdPtr->colors);
+    }
+    cmdPtr->colors = entries;
+    cmdPtr->numColors = numEntries;
+    return TCL_OK;
+ error:
+    Blt_Free(entries);
+    return TCL_ERROR;
+}
+
+/*
+ *	-xrgbcolors "x r g b ..."
+ */
+static int
+ParseXRGBColors(Tcl_Interp *interp, PaletteCmd *cmdPtr, int objc, 
+	       Tcl_Obj *const *objv)
+{
+    Blt_PaletteEntry *entries, *entryPtr;
+    int i, j, numEntries;
+    Blt_PalettePoint lastValue;
+    Blt_Pixel lastColor;
+    
+    numEntries = (objc / 4) - 1;
+    entries = Blt_AssertMalloc(sizeof(Blt_PaletteEntry) * numEntries);
+    if (GetPointFromObj(interp, objv[0], &lastValue) != TCL_OK) {
+        goto error;
+    }
+    if (GetRGBFromObjv(interp, objv + 1, &lastColor) != TCL_OK) {
+        goto error;
+    }
+    for (entryPtr = entries, i = 4; i < objc; i += 4, entryPtr++) {
+        entryPtr->min = lastValue;
+        entryPtr->low = lastColor;
+        if (GetPointFromObj(interp, objv[i], &entryPtr->max) != TCL_OK) {
+            goto error;
+        }
+	if (GetRGBFromObjv(interp, objv+(i+1), &entryPtr->high) != TCL_OK) {
+            goto error;
+	}
+        lastColor = entryPtr->high;
+        lastValue = entryPtr->max;
     }
     if (cmdPtr->colors != NULL) {
 	Blt_Free(cmdPtr->colors);
@@ -731,6 +783,57 @@ ObjToRGBColorsProc(
 	return TCL_ERROR;
     }
     return ParseRGBColors(interp, cmdPtr, objc, objv);
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * ObjToXRGBColorsProc --
+ *
+ * Results:
+ *	A standard TCL result.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+ObjToXRGBColorsProc(
+    ClientData clientData,		/* Not used. */
+    Tcl_Interp *interp,			/* Interpreter to send results back
+					 * to */
+    const char *switchName,
+    Tcl_Obj *objPtr,			/* Mode style string */
+    char *record,			/* Cubicle structure record */
+    int offset,				/* Offset to field in structure */
+    int flags)	
+{
+    PaletteCmd *cmdPtr = (PaletteCmd *)record;
+    Tcl_Obj **objv;
+    int objc;
+
+    if (Tcl_ListObjGetElements(interp, objPtr, &objc, &objv) != TCL_OK) {
+	return TCL_ERROR;
+    }
+    if (objc == 0) {
+	if (cmdPtr->colors != NULL) {
+	    Blt_Free(cmdPtr->colors);
+	    cmdPtr->colors = NULL;
+	}
+	cmdPtr->numColors = 0;
+	return TCL_OK;
+    }
+    if (objc < 8) {
+	Tcl_AppendResult(interp, 
+		"too few elements: must have at least 2 color values",
+		(char *)NULL);
+	return TCL_ERROR;
+    }
+    if ((objc % 4) != 0) {
+	Tcl_AppendResult(interp, "wrong # of elements: should be r g b...",
+		(char *)NULL);
+	return TCL_ERROR;
+    }
+    return ParseXRGBColors(interp, cmdPtr, objc, objv);
 }
 
 /*

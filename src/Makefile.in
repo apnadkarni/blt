@@ -38,6 +38,8 @@ MYSQL_INC_SPEC =	@MYSQL_INC_SPEC@
 MYSQL_LIB_SPEC =	@MYSQL_LIB_SPEC@
 PNG_INC_SPEC =		@PNG_INC_SPEC@
 PNG_LIB_SPEC =		@PNG_LIB_SPEC@ $(Z_LIB_SPEC)
+PQ_INC_SPEC =		@PQ_INC_SPEC@
+PQ_LIB_SPEC =		@PQ_LIB_SPEC@
 TCL_INC_SPEC =		@TCL_INC_SPEC@
 TCL_LIB_SPEC =		@TCL_LIB_SPEC@
 TCL_STUBS_SPEC =	@TCL_STUBS_SPEC@
@@ -124,6 +126,7 @@ BLT_SO_LIBS =		$(BLT_TK_SO_LIBS) $(BLT_TCL_SO_LIBS)
 
 BLT_TCL_LIBS =		$(BLT_TCL_SO_LIBS) \
 			$(MYSQL_LIB_SPEC) \
+			$(PQ_LIB_SPEC) \
 			$(EXPAT_LIB_SPEC) 
 
 blt_a =			lib$(blt_name).a
@@ -139,6 +142,7 @@ blt_tk_so =		libBlt$(blt_tk_name)$(SO_EXT)
 
 blt_table_csv_name =    TableCsv$(version)$(LIB_SUFFIX)
 blt_table_mysql_name =  TableMysql$(version)$(LIB_SUFFIX)
+blt_table_psql_name =   TablePsql$(version)$(LIB_SUFFIX)
 blt_table_tree_name =   TableTree$(version)$(LIB_SUFFIX)
 blt_table_txt_name =    TableTxt$(version)$(LIB_SUFFIX)
 blt_table_vec_name =    TableVector$(version)$(LIB_SUFFIX)
@@ -146,6 +150,7 @@ blt_table_xml_name =    TableXml$(version)$(LIB_SUFFIX)
 
 blt_table_csv_so =	$(blt_table_csv_name)$(SO_EXT)
 blt_table_mysql_so =    $(blt_table_mysql_name)$(SO_EXT)
+blt_table_psql_so =     $(blt_table_psql_name)$(SO_EXT)
 blt_table_tree_so =	$(blt_table_tree_name)$(SO_EXT)
 blt_table_txt_so =	$(blt_table_txt_name)$(SO_EXT)
 blt_table_vec_so =	$(blt_table_vec_name)$(SO_EXT)
@@ -201,6 +206,9 @@ ifneq ("$(EXPAT_LIB_SPEC)", "")
 endif
 ifneq ("$(MYSQL_LIB_SPEC)", "")
    blt_tcl_pkgs += $(blt_table_mysql_so) 
+endif
+ifneq ("$(PQ_LIB_SPEC)", "")
+   blt_tcl_pkgs += $(blt_table_psql_so) 
 endif
 ifneq ("$(LIBSSH2_LIB_SPEC)", "")
    blt_tcl_pkgs += $(blt_sftp_so) 
@@ -317,6 +325,7 @@ DATATABLE_OBJS =	bltDataTable.o \
 
 DATATABLE_PKG_OBJS =	bltDataTableCsv.o \
 			bltDataTableMysql.o \
+			bltDataTablePsql.o \
 			bltDataTableTree.o \
 			bltDataTableTxt.o \
 			bltDataTableVec.o \
@@ -529,6 +538,11 @@ $(blt_table_csv_so): bltDataTableCsv.o $(blt_tcl_lib)
 $(blt_table_mysql_so): bltDataTableMysql.o $(blt_tcl_lib) 
 	$(RM) $@
 	$(SO_LD) $(SO_LDFLAGS) -o $@ bltDataTableMysql.o $(MYSQL_LIB_SPEC) \
+		$(blt_tcl_lib) 
+
+$(blt_table_psql_so): bltDataTablePsql.o $(blt_tcl_lib) 
+	$(RM) $@
+	$(SO_LD) $(SO_LDFLAGS) -o $@ bltDataTablePsql.o $(PQ_LIB_SPEC) \
 		$(blt_tcl_lib) 
 
 $(blt_table_tree_so): bltDataTableTree.o $(blt_tcl_lib) 
@@ -749,6 +763,8 @@ distclean:	clean
 
 bltDataTableMysql.o: $(srcdir)/bltDataTableMysql.c
 	$(CC) -c $(CC_OPTS) $(MYSQL_INC_SPEC) $?
+bltDataTablePsql.o: $(srcdir)/bltDataTablePsql.c
+	$(CC) -c $(CC_OPTS) $(PQ_INC_SPEC) $?
 bltDataTableXml.o: $(srcdir)/bltDataTableXml.c
 	$(CC) -c $(CC_OPTS) $(EXPAT_INC_SPEC) $?
 

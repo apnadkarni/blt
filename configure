@@ -640,6 +640,7 @@ TCL_LIB_SPEC
 TCL_LIB_DIR
 TCL_INC_SPEC
 TCL_DBGX
+PQ_INC_SPEC
 PNG_INC_SPEC
 MYSQL_INC_SPEC
 LIB_SUFFIX
@@ -720,6 +721,9 @@ PNG_STATIC_LIB
 TIF_LIB_SPEC
 TIF_LIB_DIR
 TIF_STATIC_LIB
+PQ_LIB_SPEC
+PQ_LIB_DIR
+PQ_STATIC_LIB
 JPG_LIB_SPEC
 JPG_LIB_DIR
 JPG_STATIC_LIB
@@ -833,6 +837,8 @@ with_expatincdir
 with_expatlibdir
 with_mysqlincdir
 with_mysqllibdir
+with_pqincdir
+with_pqlibdir
 with_libssh2incdir
 with_libssh2libdir
 with_openssllibdir
@@ -1503,6 +1509,8 @@ Optional Packages:
   --with-expatlibdir=DIR  find expat libraries in DIR
   --with-mysqlincdir=DIR  find mysql headers in DIR
   --with-mysqllibdir=DIR  find mysql libraries in DIR
+  --with-pqincdir=DIR     find Postgres headers in DIR
+  --with-pqlibdir=DIR     find Postgres libraries in DIR
   --with-libssh2incdir=DIR
                           find libssh2 headers in DIR
   --with-libssh2libdir=DIR
@@ -2631,6 +2639,8 @@ blt_with_mysql_include_dir="yes"
 blt_with_mysql_lib_dir="yes"
 blt_with_png_include_dir="yes"
 blt_with_png_lib_dir="yes"
+blt_with_pq_include_dir="yes"
+blt_with_pq_lib_dir="yes"
 blt_with_z_lib_dir="yes"
 blt_with_scriptdir=""
 blt_with_tcl=""
@@ -2826,7 +2836,20 @@ if test "${with_mysqllibdir+set}" = set; then :
   withval=$with_mysqllibdir; blt_with_mysql_lib_dir=$withval
 fi
 
-# --with-libssh2incdir
+# --with-pqincdir
+
+# Check whether --with-pqincdir was given.
+if test "${with_pqincdir+set}" = set; then :
+  withval=$with_pqincdir; blt_with_pq_include_dir=$withval
+fi
+
+# --with-pqlibdir
+
+# Check whether --with-pqlibdir was given.
+if test "${with_pqlibdir+set}" = set; then :
+  withval=$with_pqlibdir; blt_with_pq_lib_dir=$withval
+fi
+
 
 # Check whether --with-libssh2incdir was given.
 if test "${with_libssh2incdir+set}" = set; then :
@@ -2883,6 +2906,8 @@ MYSQL_INC_SPEC=""
 MYSQL_LIB_SPEC=""
 PNG_INC_SPEC=""
 PNG_LIB_SPEC=""
+PQ_INC_SPEC=""
+PQ_LIB_SPEC=""
 TCL_INC_SPEC=""
 TCL_LIB_SPEC=""
 TIF_INC_SPEC=""
@@ -5299,7 +5324,6 @@ SIZEOF_VOID_P=${ac_cv_sizeof_void_p}
 SIZEOF_FLOAT=${ac_cv_sizeof_float}
 
 
-
 # -----------------------------------------------------------------------
 # Libraries:
 # -----------------------------------------------------------------------
@@ -6309,6 +6333,53 @@ done
 
 fi
 
+# LIBPQ header
+if test "${blt_with_pq_include_dir}" != "no" ; then
+
+  if test "$blt_with_pq_include_dir" != "no" ; then
+    new_CPPFLAGS=""
+    if test "$blt_with_pq_include_dir" != "yes" ; then
+      for dir in $blt_with_pq_include_dir $blt_with_pq_include_dir/include ; do
+        if test -r "${dir}/libpq-fe.h" ; then
+	  new_CPPFLAGS="-I${dir}"
+	  PQ_INC_DIR="$dir"
+	  break
+        fi
+      done
+    else
+      for dir in $prefix $prefix/include ; do
+        if test -r "${dir}/libpq-fe.h" ; then
+	  if test "${dir}" = "/usr/include" ; then
+            new_CPPFLAGS=""
+          else
+  	    new_CPPFLAGS="-I${dir}"
+          fi
+	  PQ_INC_DIR="$dir"
+	  break
+        fi
+      done
+    fi
+    save_CPPFLAGS=${CPPFLAGS}
+    CPPFLAGS=" ${new_CPPFLAGS}"
+    for ac_header in libpq-fe.h
+do :
+  ac_fn_c_check_header_mongrel "$LINENO" "libpq-fe.h" "ac_cv_header_libpq_fe_h" "$ac_includes_default"
+if test "x$ac_cv_header_libpq_fe_h" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_LIBPQ_FE_H 1
+_ACEOF
+ PQ_INC_SPEC="${new_CPPFLAGS}"
+else
+  PQ_INC_SPEC=""
+fi
+
+done
+
+    CPPFLAGS=${save_CPPFLAGS}
+  fi
+
+fi
+
 # XPM header
 if test "${blt_with_xpm_include_dir}" != "no" ; then
 
@@ -6774,7 +6845,7 @@ $as_echo_n "checking whether DBL_EPSILON can be computed.... " >&6; }
     as_fn_error $? "can not run test program while cross compiling" "$LINENO" 5
 else
 cat > conftest.$ac_ext <<EOF
-#line 6777 "configure"
+#line 6848 "configure"
 #include "confdefs.h"
 #ifdef __cplusplus
 extern "C" void exit(int);
@@ -7813,6 +7884,124 @@ $as_echo "#define HAVE_LIBJPG 1" >>confdefs.h
   fi
   if test -r "${dir}/libjpeg.a" ; then
     JPG_STATIC_LIB="${dir}/libjpeg.a"
+  fi
+
+
+
+  LIBS=${save_LIBS}
+fi
+
+fi
+
+# Postgres client library
+
+if test "${blt_with_pq_lib_dir}" != "no" -a \
+	"${ac_cv_header_libpq-fe_h}" != "no" ; then
+
+if test "$blt_with_pq_lib_dir" != "no" ; then
+  save_LIBS="${LIBS}"
+  if test "$blt_with_pq_lib_dir" = "yes" ; then
+    # Check standard system location
+    lib_spec="-llibpq"
+    dir=""
+    LIBS="${lib_spec} ${save_LIBS}"
+    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#ifdef __cplusplus
+extern "C"
+#endif
+char PQconnectdb();
+
+int
+main ()
+{
+PQconnectdb()
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  eval "found=yes"
+else
+  eval "found=no"
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+    if test "${found}" = "no" ; then
+      # Then check locations based on prefix
+      dir=$prefix/lib
+      lib_spec="-L${dir} -llibpq "
+      LIBS="${lib_spec} ${save_LIBS}"
+      cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#ifdef __cplusplus
+extern "C"
+#endif
+char PQconnectdb();
+
+int
+main ()
+{
+PQconnectdb()
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  eval "found=yes"
+else
+  eval "found=no"
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+    fi
+  else
+    # A path was specified.
+    for dir in $blt_with_pq_lib_dir $blt_with_pq_lib_dir/lib ; do
+      lib_spec="-L${dir} -llibpq "
+      LIBS="${lib_spec} ${save_LIBS}"
+      cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#ifdef __cplusplus
+extern "C"
+#endif
+char PQconnectdb();
+
+int
+main ()
+{
+PQconnectdb()
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  eval "found=yes"
+else
+  eval "found=no"
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+      if test "${found}" = "yes" ; then
+	break
+      fi
+    done
+  fi
+  PQ_STATIC_LIB=""
+  PQ_LIB_DIR=""
+  PQ_LIB_SPEC=""
+  if test "${found}" = "yes" ; then
+
+$as_echo "#define HAVE_LIBPQ 1" >>confdefs.h
+
+    PQ_LIB_DIR="$dir"
+    PQ_LIB_SPEC=$lib_spec
+  fi
+  if test -r "${dir}/liblibpq.a" ; then
+    PQ_STATIC_LIB="${dir}/liblibpq.a"
   fi
 
 
@@ -9943,6 +10132,9 @@ INCLUDES=${INC_SPECS}
 
 
 
+
+
+
 #--------------------------------------------------------------------
 #	The BLT script directory was either specified or we
 #	assume <prefix>/lib
@@ -9977,6 +10169,8 @@ echo "  libraries    to be installed in  $libdir"
 echo "  scripts      to be installed in  $BLT_LIBRARY"
 echo "  manual pages to be installed in  $mandir"
 echo "Optional packages:"
+echo "  PQ library		$PQ_LIB_SPEC"
+echo "  PQ headers		$PQ_INC_SPEC"
 echo "  MYSQL library		$MYSQL_LIB_SPEC"
 echo "  MYSQL headers		$MYSQL_INC_SPEC"
 echo "  EXPAT library		$EXPAT_LIB_SPEC"

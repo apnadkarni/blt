@@ -258,28 +258,48 @@ static Blt_ConfigSpec configSpecs[] =
     {BLT_CONFIG_END, NULL, NULL, NULL, NULL, 0, 0}
 };
 
+static Blt_SwitchParseProc ObjToElement;
+static Blt_SwitchCustom elementSwitch =
+{
+    ObjToElement, NULL, NULL, (ClientData)0,
+};
+
+typedef struct {
+    Element *elemPtr;
+    Graph *graphPtr;
+} TransformArgs;
+
+static Blt_SwitchSpec transformSpecs[] = 
+{
+    {BLT_SWITCH_CUSTOM, "-element",  "elemName", (char *)NULL,
+     Blt_Offset(TransformArgs, elemPtr),  0, 0, &elementSwitch},
+    {BLT_SWITCH_END}
+};
+
+
 static Blt_SwitchParseProc ObjToFormat;
 static Blt_SwitchCustom formatSwitch =
 {
     ObjToFormat, NULL, NULL, (ClientData)0,
 };
 
+
 typedef struct {
     const char *name;
     int width, height;
     int format;
-} SnapSwitches;
+} SnapArgs;
 
 enum SnapFormats { FORMAT_PICTURE, FORMAT_PHOTO, FORMAT_EMF, FORMAT_WMF };
 
-static Blt_SwitchSpec snapSwitches[] = 
+static Blt_SwitchSpec snapSpecs[] = 
 {
     {BLT_SWITCH_INT_POS, "-width",  "width", (char *)NULL,
-	Blt_Offset(SnapSwitches, width),  0},
+	Blt_Offset(SnapArgs, width),  0},
     {BLT_SWITCH_INT_POS, "-height", "height", (char *)NULL,
-	Blt_Offset(SnapSwitches, height), 0},
+	Blt_Offset(SnapArgs, height), 0},
     {BLT_SWITCH_CUSTOM,  "-format", "format", (char *)NULL,
-	Blt_Offset(SnapSwitches, format), 0, 0, &formatSwitch},
+	Blt_Offset(SnapArgs, format), 0, 0, &formatSwitch},
     {BLT_SWITCH_END}
 };
 
@@ -1202,6 +1222,7 @@ InsideOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     return TCL_OK;
 }
 
+
 /*
  *---------------------------------------------------------------------------
  *
@@ -1223,10 +1244,11 @@ static int
 InvtransformOp(Graph *graphPtr, Tcl_Interp *interp, int objc, 
 	       Tcl_Obj *const *objv)
 {
-    double x, y;
-    Point2d point;
     Axis2d axes;
+    Point2d point;
     Tcl_Obj *listObjPtr;
+    TransformArgs args;
+    double x, y;
 
     if ((Blt_ExprDoubleFromObj(interp, objv[2], &x) != TCL_OK) ||
 	(Blt_ExprDoubleFromObj(interp, objv[3], &y) != TCL_OK)) {
@@ -1235,16 +1257,20 @@ InvtransformOp(Graph *graphPtr, Tcl_Interp *interp, int objc,
     if (graphPtr->flags & RESET_AXES) {
 	Blt_ResetAxes(graphPtr);
     }
-    /* Perform the reverse transformation, converting from window
-     * coordinates to graph data coordinates.  Note that the point is
-     * always mapped to the bottom and left axes (which may not be what the
-     * user wants).  */
-
-    /*  Pick the first pair of axes */
-    axes.x = Blt_GetFirstAxis(graphPtr->axisChain[0]);
-    axes.y = Blt_GetFirstAxis(graphPtr->axisChain[1]);
-    point = Blt_InvMap2D(graphPtr, x, y, &axes);
-
+    args.elemPtr = NULL;
+    args.graphPtr = graphPtr;
+    if (Blt_ParseSwitches(interp, transformSpecs, objc - 4, objv + 4, &args, 
+        BLT_SWITCH_DEFAULTS) < 0) {
+        return TCL_ERROR;
+    }
+    if (args.elemPtr == NULL) {
+        /*  Pick the first pair of axes */
+        axes.x = Blt_GetFirstAxis(graphPtr->axisChain[0]);
+        axes.y = Blt_GetFirstAxis(graphPtr->axisChain[1]);
+        point = Blt_InvMap2D(graphPtr, x, y, &axes);
+    } else {
+        point = Blt_InvMap2D(graphPtr, x, y, &args.elemPtr->axes);
+    }
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
     Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewDoubleObj(point.x));
     Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewDoubleObj(point.y));
@@ -1272,11 +1298,12 @@ InvtransformOp(Graph *graphPtr, Tcl_Interp *interp, int objc,
 static int
 TransformOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 {
-    double x, y;
-    Point2d point;
     Axis2d axes;
+    Point2d point;
     Tcl_Obj *listObjPtr;
-
+    TransformArgs args;
+    double x, y;
+    
     if ((Blt_ExprDoubleFromObj(interp, objv[2], &x) != TCL_OK) ||
 	(Blt_ExprDoubleFromObj(interp, objv[3], &y) != TCL_OK)) {
 	return TCL_ERROR;
@@ -1284,16 +1311,20 @@ TransformOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     if (graphPtr->flags & RESET_AXES) {
 	Blt_ResetAxes(graphPtr);
     }
-    /*
-     * Perform the transformation from window to graph coordinates.  Note
-     * that the points are always mapped onto the bottom and left axes
-     * (which may not be the what the user wants).
-     */
-    axes.x = Blt_GetFirstAxis(graphPtr->axisChain[0]);
-    axes.y = Blt_GetFirstAxis(graphPtr->axisChain[1]);
-
-    point = Blt_Map2D(graphPtr, x, y, &axes);
-
+    args.elemPtr = NULL;
+    args.graphPtr = graphPtr;
+    if (Blt_ParseSwitches(interp, snapSpecs, objc - 4, objv + 4, &args, 
+        BLT_SWITCH_DEFAULTS) < 0) {
+        return TCL_ERROR;
+    }
+    if (args.elemPtr == NULL) {
+        /*  Pick the first pair of axes */
+        axes.x = Blt_GetFirstAxis(graphPtr->axisChain[0]);
+        axes.y = Blt_GetFirstAxis(graphPtr->axisChain[1]);
+        point = Blt_Map2D(graphPtr, x, y, &axes);
+    } else {
+        point = Blt_Map2D(graphPtr, x, y, &args.elemPtr->axes);
+    }
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
     Tcl_ListObjAppendElement(interp, listObjPtr, 
 	Tcl_NewIntObj(ROUND(point.x)));
@@ -1555,6 +1586,47 @@ ObjToFormat(
     return TCL_OK;
 }
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * ObjToFormat --
+ *
+ *	Convert a string represent a node number into its integer value.
+ *
+ * Results:
+ *	The return value is a standard TCL result.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+ObjToElement(
+    ClientData clientData,		/* Not used.*/
+    Tcl_Interp *interp,			/* Interpreter to send results back
+                                         * to */
+    const char *switchName,		/* Not used. */
+    Tcl_Obj *objPtr,			/* String representation */
+    char *record,			/* Structure record */
+    int offset,				/* Offset to field in structure */
+    int flags)				/* Not used. */
+{
+    TransformArgs *argsPtr = (TransformArgs *)record;
+    Element **elemPtrPtr = (Element **)(record + offset);
+    Element *elemPtr;
+    const char *string;
+
+    string = Tcl_GetString(objPtr);
+    if (string[0] == '\0') {
+        *elemPtrPtr = NULL;
+        return TCL_OK;
+    }
+    if (Blt_GetElement(interp, argsPtr->graphPtr, objPtr, &elemPtr) != TCL_OK) {
+        return TCL_ERROR;
+    }
+    *elemPtrPtr = elemPtr;
+    return TCL_OK;
+}
+
 #ifdef WIN32
 static int InitMetaFileHeader(
     Tk_Window tkwin,
@@ -1666,20 +1738,20 @@ SnapOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     int result;
     Pixmap drawable;
     int i;
-    SnapSwitches switches;
+    SnapArgs args;
 
     /* .g snap ?switches? name */
-    switches.height = Tk_Height(graphPtr->tkwin);
-    if ((switches.height < 2) && (graphPtr->reqHeight > 0)) {
-	switches.height = graphPtr->reqHeight;
+    args.height = Tk_Height(graphPtr->tkwin);
+    if ((args.height < 2) && (graphPtr->reqHeight > 0)) {
+	args.height = graphPtr->reqHeight;
     }
-    switches.width = Tk_Width(graphPtr->tkwin);
-    if ((switches.width < 2) && (graphPtr->reqWidth > 0)) {
-	switches.width = graphPtr->reqWidth;
+    args.width = Tk_Width(graphPtr->tkwin);
+    if ((args.width < 2) && (graphPtr->reqWidth > 0)) {
+	args.width = graphPtr->reqWidth;
     }
-    switches.format = FORMAT_PICTURE;
+    args.format = FORMAT_PICTURE;
     /* Process switches  */
-    i = Blt_ParseSwitches(interp, snapSwitches, objc - 2, objv + 2, &switches, 
+    i = Blt_ParseSwitches(interp, snapSpecs, objc - 2, objv + 2, &args, 
 	BLT_SWITCH_OBJV_PARTIAL);
     if (i < 0) {
 	return TCL_ERROR;
@@ -1690,21 +1762,21 @@ SnapOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 		Tcl_GetString(objv[0]), "snap ?switches? name\"", (char *)NULL);
 	return TCL_ERROR;
     }
-    switches.name = Tcl_GetString(objv[i]);
-    if (switches.width < 2) {
-	switches.width = Tk_ReqWidth(graphPtr->tkwin);
+    args.name = Tcl_GetString(objv[i]);
+    if (args.width < 2) {
+	args.width = Tk_ReqWidth(graphPtr->tkwin);
     }
-    if (switches.height < 2) {
-	switches.width = Tk_ReqHeight(graphPtr->tkwin);
+    if (args.height < 2) {
+	args.width = Tk_ReqHeight(graphPtr->tkwin);
     }
     /* Always re-compute the layout of the graph before snapping the
      * picture. */
-    graphPtr->width = switches.width;
-    graphPtr->height = switches.height;
+    graphPtr->width = args.width;
+    graphPtr->height = args.height;
     Blt_MapGraph(graphPtr);
 
     drawable = Tk_WindowId(graphPtr->tkwin);
-    switch (switches.format) {
+    switch (args.format) {
     case FORMAT_PICTURE:
     case FORMAT_PHOTO:
 	drawable = Blt_GetPixmap(graphPtr->display, drawable, graphPtr->width, 
@@ -1714,14 +1786,14 @@ SnapOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 #endif
 	graphPtr->flags |= RESET_WORLD;
 	Blt_DrawGraph(graphPtr, drawable);
-	if (switches.format == FORMAT_PICTURE) {
+	if (args.format == FORMAT_PICTURE) {
 	    result = Blt_SnapPicture(interp, graphPtr->tkwin, drawable, 0, 0, 
-		switches.width, switches.height, switches.width, 
-		switches.height, switches.name, 1.0);
+		args.width, args.height, args.width, args.height, args.name,
+                1.0);
 	} else {
 	    result = Blt_SnapPhoto(interp, graphPtr->tkwin, drawable, 0, 0, 
-		switches.width, switches.height, switches.width, 
-		switches.height, switches.name, 1.0);
+		args.width, args.height, args.width, args.height, args.name,
+                1.0);
 	}
 	Tk_FreePixmap(graphPtr->display, drawable);
 	break;
@@ -1758,13 +1830,13 @@ SnapOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	    drawableDC.hdc = hDC;
 	    drawableDC.type = TWD_WINDC;
 	    
-	    graphPtr->width = switches.width;
-	    graphPtr->height = switches.height;
+	    graphPtr->width = args.width;
+	    graphPtr->height = args.height;
 	    Blt_MapGraph(graphPtr);
 	    graphPtr->flags |= RESET_WORLD;
 	    Blt_DrawGraph(graphPtr, (Drawable)&drawableDC);
 	    hMetaFile = CloseEnhMetaFile(hDC);
-	    if (strcmp(switches.name, "CLIPBOARD") == 0) {
+	    if (strcmp(args.name, "CLIPBOARD") == 0) {
 		HWND hWnd;
 		
 		hWnd = Tk_GetHWND(drawable);
@@ -1775,18 +1847,18 @@ SnapOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 		result = TCL_OK;
 	    } else {
 		result = TCL_ERROR;
-		if (switches.format == FORMAT_WMF) {
+		if (args.format == FORMAT_WMF) {
 		    APMHEADER mfh;
 		    
 		    assert(sizeof(mfh) == 22);
-		    InitMetaFileHeader(graphPtr->tkwin, switches.width, 
-				       switches.height, &mfh);
+		    InitMetaFileHeader(graphPtr->tkwin, args.width, 
+				       args.height, &mfh);
 		    result = CreateAPMetaFile(interp, hMetaFile, hRefDC, &mfh, 
-					      switches.name);
+					      args.name);
 		} else {
 		    HENHMETAFILE hMetaFile2;
 		    
-		    hMetaFile2 = CopyEnhMetaFile(hMetaFile, switches.name);
+		    hMetaFile2 = CopyEnhMetaFile(hMetaFile, args.name);
 		    if (hMetaFile2 != NULL) {
 			result = TCL_OK;
 			DeleteEnhMetaFile(hMetaFile2); 
@@ -1835,7 +1907,7 @@ static Blt_OpSpec graphOps[] =
     {"element",      2, ElementOp,         2, 0, "oper ?args?",},
     {"extents",      2, ExtentsOp,         3, 3, "item",},
     {"inside",       3, InsideOp,          4, 4, "winX winY",},
-    {"invtransform", 3, InvtransformOp,    4, 4, "winX winY",},
+    {"invtransform", 3, InvtransformOp,    4, 0, "winX winY ?switches?",},
     {"legend",       2, Blt_LegendOp,      2, 0, "oper ?args?",},
     {"line",         2, LineOp,            2, 0, "oper ?args?",},
     {"marker",       1, Blt_MarkerOp,      2, 0, "oper ?args?",},
@@ -1847,7 +1919,7 @@ static Blt_OpSpec graphOps[] =
     {"print2",       6, Print2Op,          2, 3, "?printerName?",},
 #endif /*NO_PRINTER*/
     {"snap",         1, SnapOp,            3, 0, "?switches? name",},
-    {"transform",    1, TransformOp,       4, 4, "x y",},
+    {"transform",    1, TransformOp,       4, 0, "x y ?switches?",},
     {"x2axis",       2, X2AxisOp,          2, 0, "oper ?args?",},
     {"xaxis",        2, XAxisOp,           2, 0, "oper ?args?",},
     {"y2axis",       2, Y2AxisOp,          2, 0, "oper ?args?",},

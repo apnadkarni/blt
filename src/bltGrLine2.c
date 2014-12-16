@@ -58,7 +58,7 @@
 
 /* Flags for trace's point and segments. */
 #define VISIBLE		(1<<0)		/* Point is on visible on screen. */
-#define KNOT		(1<<1)		/* Point is a knot, original data 
+#define KNOT		(1<<1)		/* Point is a knot, original data
 					 * point. */
 #define SYMBOL		(1<<2)		/* Point is designated to have a
 					 * symbol. This is only used when
@@ -111,10 +111,10 @@
 #define COLOR_DEFAULT	(XColor *)1
 #define PATTERN_SOLID	((Pixmap)1)
 
-#define PEN_INCREASING  1		/* Draw line segments for only those
-					 * data points whose abscissas are
-					 * monotonically increasing in
-					 * order. */
+#define PEN_INCREASING  1		/* Draw line segments for only
+					 * those data points whose
+					 * abscissas are monotonically
+					 * increasing in order. */
 #define PEN_DECREASING  2		/* Lines will be drawn between only
 					 * those points whose abscissas are
 					 * decreasing in order. */
@@ -3450,6 +3450,7 @@ ConfigureProc(Graph *graphPtr, Element *basePtr)
 static void
 MapAreaUnderTrace(Trace *tracePtr)
 {
+    LineElement *elemPtr = tracePtr->elemPtr;
     Graph *graphPtr;
     int n;
     Point2d *points, *clipPts;
@@ -3457,28 +3458,28 @@ MapAreaUnderTrace(Trace *tracePtr)
 
     n = tracePtr->numPoints + 3;
     points = Blt_AssertMalloc(sizeof(Point2d) * n);
-    graphPtr = tracePtr->elemPtr->obj.graphPtr;
+    graphPtr = elemPtr->obj.graphPtr;
     if (graphPtr->inverted) {
-	double minX;
+	double xMin;
 	TracePoint *p;
 	int count;
 
 	count = 0;
-	minX = (double)tracePtr->elemPtr->axes.y->screenMin;
+	xMin = (double)elemPtr->axes.y->screenMin;
 	for (p = tracePtr->head; p != NULL; p = p->next) {
 	    points[count].x = p->x + 1;
 	    points[count].y = p->y;
-	    if (points[count].x < minX) {
-		minX = points[count].x;
+	    if (points[count].x < xMin) {
+		xMin = points[count].x;
 	    }
 	    count++;
 	}	
 	/* Add edges to make (if necessary) the polygon fill to the bottom of
 	 * plotting window */
-	points[count].x = minX;
+	points[count].x = xMin;
 	points[count].y = points[count - 1].y;
 	count++;
-	points[count].x = minX;
+	points[count].x = xMin;
 	points[count].y = points[0].y; 
 	count++;
 	points[count] = points[0];
@@ -3488,7 +3489,7 @@ MapAreaUnderTrace(Trace *tracePtr)
 	int count;
 
 	count = 0;
-	yMax = (double)tracePtr->elemPtr->axes.y->bottom + 2;
+	yMax = (double)elemPtr->axes.y->bottom + 2;
 	for (p = tracePtr->head; p != NULL; p = p->next) {
 	    points[count].x = p->x + 1;
 	    points[count].y = p->y + 1;

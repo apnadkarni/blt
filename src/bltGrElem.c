@@ -229,12 +229,23 @@ static int
 FetchVectorValues(Tcl_Interp *interp, ElemValues *valuesPtr, Blt_Vector *vector)
 {
     double *array;
-    
+    size_t size;
+
+    size = Blt_VecLength(vector) * sizeof(double);
+    if (size == 0) {
+        if (valuesPtr->values != NULL) {
+            Blt_Free(valuesPtr->values);
+         }
+        valuesPtr->min = 0.0;
+        valuesPtr->min = 1.0;
+        valuesPtr->values = NULL;
+        valuesPtr->numValues = 0;
+        return TCL_OK;
+    }
     if (valuesPtr->values == NULL) {
-	array = Blt_Malloc(Blt_VecLength(vector) * sizeof(double));
+	array = Blt_Malloc(size);
     } else {
-	array = Blt_Realloc(valuesPtr->values, 
-			    Blt_VecLength(vector) * sizeof(double));
+	array = Blt_Realloc(valuesPtr->values, size);
     }
     if (array == NULL) {
 	if (interp != NULL) {
@@ -242,7 +253,7 @@ FetchVectorValues(Tcl_Interp *interp, ElemValues *valuesPtr, Blt_Vector *vector)
 	}
 	return TCL_ERROR;
     }
-    memcpy(array, Blt_VecData(vector), sizeof(double) * Blt_VecLength(vector));
+    memcpy(array, Blt_VecData(vector), size);
     valuesPtr->min = Blt_VecMin(vector);
     valuesPtr->max = Blt_VecMax(vector);
     valuesPtr->values = array;
@@ -3849,30 +3860,30 @@ TypeOp(
  * Global routines:
  */
 static Blt_OpSpec elemOps[] = {
-    {"activate",   6, ActivateOp,    3, 0, "?elemName? ?index...?",},
-    {"active",     6, ActiveOp,      2, 0, "args",},
-    {"bind",       1, BindOp,        3, 6, "elemName sequence command",},
-    {"cget",       2, CgetOp,        5, 5, "elemName option",},
+    {"activate",   6, ActivateOp,    3, 0, "?elemName? ?index...?"},
+    {"active",     6, ActiveOp,      2, 0, "args"},
+    {"bind",       1, BindOp,        3, 6, "elemName sequence command"},
+    {"cget",       2, CgetOp,        5, 5, "elemName option"},
     {"closest",    2, ClosestOp,     6, 0,
-	"x y varName ?option value?... ?elemName?...",},
+	"x y varName ?option value?... ?elemName?..."},
     {"configure",  2, ConfigureOp,   4, 0,
-	"elemName ?elemName?... ?option value?...",},
-    {"create",     2, CreateOp,      4, 0, "elemName ?option value?...",},
-    {"deactivate", 3, DeactivateOp,  3, 0, "?elemName?...",},
-    {"delete",     3, DeleteOp,      3, 0, "?elemName?...",},
-    {"exists",     1, ExistsOp,      4, 4, "elemName",},
-    {"find",       1, FindOp,        7, 8, "elemName x1 y1 x2 y2",},
-    {"get",        1, GetOp,         4, 4, "elemName",},
-    {"isoline",    4, Blt_IsolineOp, 2, 0, "args...",},
-    {"isotag",     4, Blt_IsoTagOp,  2, 0, "args...",},
-    {"lower",      1, LowerOp,       3, 0, "?elemName?...",},
-    {"names",      2, NamesOp,       3, 0, "?pattern?...",},
+	"elemName ?elemName?... ?option value?..."},
+    {"create",     2, CreateOp,      4, 0, "elemName ?option value?..."},
+    {"deactivate", 3, DeactivateOp,  3, 0, "?elemName?..."},
+    {"delete",     3, DeleteOp,      3, 0, "?elemName?..."},
+    {"exists",     1, ExistsOp,      4, 4, "elemName"},
+    {"find",       1, FindOp,        7, 8, "elemName x1 y1 x2 y2"},
+    {"get",        1, GetOp,         4, 4, "elemName"},
+    {"isoline",    4, Blt_IsolineOp, 2, 0, "args..."},
+    {"isotag",     4, Blt_IsoTagOp,  2, 0, "args..."},
+    {"lower",      1, LowerOp,       3, 0, "?elemName?..."},
+    {"names",      2, NamesOp,       3, 0, "?pattern?..."},
     {"nearest",    2, NearestOp,     5, 0,
-	"x y ?option value?... ?elemName?...",},
-    {"raise",      1, RaiseOp,       3, 0, "?elemName?...",},
-    {"show",       1, ShowOp,        3, 4, "?elemList?",},
-    {"tag",        2, TagOp,         2, 0, "args",},
-    {"type",       2, TypeOp,        4, 4, "elemName",},
+        "x y ?option value?... ?elemName?..."},
+    {"raise",      1, RaiseOp,       3, 0, "?elemName?..."},
+    {"show",       1, ShowOp,        3, 4, "?elemList?"},
+    {"tag",        2, TagOp,         2, 0, "args"},
+    {"type",       2, TypeOp,        4, 4, "elemName"},
 };
 static int numElemOps = sizeof(elemOps) / sizeof(Blt_OpSpec);
 
