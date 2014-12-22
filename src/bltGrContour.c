@@ -402,8 +402,8 @@ struct _ContourElement {
 					 * graph coordinate values. Also
 					 * holds min/max and the number of
 					 * coordinates */
-    Blt_HashTable activeTable;		/* Table of indices which indicate
-					 * which data points are active
+    Blt_HashTable activeTable;		/* Table of indices that indicate
+					 * the data points are active
 					 * (drawn with "active" colors). */
     int numActiveIndices;		/* # of active data points.
 					 * Special case: if
@@ -417,21 +417,15 @@ struct _ContourElement {
     ContourPen *penPtr;
     ContourPen *builtinPenPtr;
     Blt_Chain dummy2;			/* Placeholder: Palette of pens. */
-
     int scaleSymbols;			/* If non-zero, the symbols will
 					 * scale in size as the graph is
 					 * zoomed in/out.  */
-
     double xRange, yRange;		/* Initial X-axis and Y-axis
 					 * ranges: used to scale the size
 					 * of element's symbol. */
     int state;
-
     ContourPen builtinPen;
-
     Axis *zAxisPtr;
-
-
     int reqMaxSymbols;			/* Indicates the interval the draw
 					 * symbols.  Zero (and one) means draw
 					 * all symbols. */
@@ -453,7 +447,8 @@ struct _ContourElement {
 					 * mesh.  */
     int numWires;			/* # of segments in above array. */
     int numVertices;			/* # of vertices in above array. */
-    int numTriangles;			/* # of triangles in the above array. */
+    int numTriangles;			/* # of triangles in the above
+                                         * array. */
     int nextIsoline;
     const char *valueFormat;		/* A printf format string. */
     TextStyle valueStyle;		/* Text attributes (color, font,

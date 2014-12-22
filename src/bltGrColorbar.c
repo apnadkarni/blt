@@ -1,7 +1,6 @@
 /* -*- mode: c; c-basic-offset: 4; indent-tabs-mode: nil -*- */
-
 /*
- * bltGrClrbar.c --
+ * bltGrColorbar.c --
  *
  *	This module implements colorbar widget for the BLT graph widget.
  *

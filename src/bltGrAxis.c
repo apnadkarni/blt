@@ -80,9 +80,9 @@
 #define UCEIL(x,u)	(ceil((x)/(u))*(u))
 #define UFLOOR(x,u)	(floor((x)/(u))*(u))
 
-#define NUMDIGITS	15		/* Specifies the number of digits of
-					 * accuracy used when outputting axis
-					 * tick labels. */
+#define NUMDIGITS	15		/* Specifies the number of digits
+					 * of accuracy used when outputting
+					 * axis tick labels. */
 enum TickRange {
     TIGHT, LOOSE, ALWAYS_LOOSE
 };
@@ -104,7 +104,8 @@ typedef struct {
 					 * pixels). */
     int t2;			        /* Length of a minor tick (in
 					 * pixels). */
-    int label;				/* Distance from axis to tick label. */
+    int label;				/* Distance from axis to tick
+                                         * label. */
 } AxisInfo;
 
 typedef struct {

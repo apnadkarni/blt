@@ -276,6 +276,10 @@ typedef struct {
 					 * callbacks to be made whenever
 					 * the colormap changes or is
 					 * deleted. */
+    unsigned int flags;
+    unsigned short width, height;       /* Size of colorbar + axis */
+    unsigned short thickness;
+    unsigned short side;
 } GraphColormap;
 
 typedef void (GraphColormapNotifyProc) (GraphColormap *cmapPtr, 
