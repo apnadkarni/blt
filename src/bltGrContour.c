@@ -4619,7 +4619,6 @@ PolylineToPostScript(Blt_Ps ps, Trace *tracePtr, ContourPen *penPtr)
     Blt_Free(points);
 }
 
-#ifdef notdef
 /*
  *---------------------------------------------------------------------------
  *
@@ -4684,7 +4683,6 @@ TrianglesToPostScript(Graph *graphPtr, Blt_Ps ps, ContourElement *elemPtr,
 		      ContourPen *penPtr)
 {
     Region2d exts;
-    Triangle *t, *tend;
     int x, y, w, h;
     int i;
 
@@ -4703,9 +4701,7 @@ TrianglesToPostScript(Graph *graphPtr, Blt_Ps ps, ContourElement *elemPtr,
     /* Create a clip path from the hull and draw the picture */
     Blt_Ps_DrawPicture(ps, elemPtr->picture, exts.left, exts.top);
 }
-#endif
 
-#ifdef notdef
 /*
  *---------------------------------------------------------------------------
  *
@@ -4734,7 +4730,6 @@ MeshToPostScript(Graph *graphPtr, Blt_Ps ps, ContourElement *elemPtr)
 	HullToPostScript(graphPtr, ps, elemPtr);
     }
 }
-#endif
 
 /*
  *---------------------------------------------------------------------------
@@ -4799,7 +4794,6 @@ SymbolToPostScriptProc(
 }
 
 
-#ifdef notdef
 /*
  *---------------------------------------------------------------------------
  *
@@ -4823,12 +4817,12 @@ IsolineToPostScript(Graph *graphPtr, Blt_Ps ps, ContourElement *elemPtr,
     colorPtr = NULL;
     if (penPtr->traceColor == COLOR_PALETTE) {
 	if (colorPtr == NULL) {
-	    XColor color;
+	    XColor xc;
 
-	    color.red   = isoPtr->paletteColor.Red * 257;
-	    color.green = isoPtr->paletteColor.Green * 257;
-	    color.blue  = isoPtr->paletteColor.Blue * 257;
-	    colorPtr = Tk_GetColorByValue(graphPtr->tkwin, &color);
+	    xc.red   = isoPtr->paletteColor.Red * 257;
+	    xc.green = isoPtr->paletteColor.Green * 257;
+	    xc.blue  = isoPtr->paletteColor.Blue * 257;
+	    colorPtr = Tk_GetColorByValue(graphPtr->tkwin, &xc);
 	}
 	/* Temporarily set the color from the interpolated value. */
 	Blt_Ps_XSetForeground(ps, colorPtr);
@@ -4861,16 +4855,19 @@ IsolineToPostScript(Graph *graphPtr, Blt_Ps ps, ContourElement *elemPtr,
  *---------------------------------------------------------------------------
  */
 static void
-SymbolsToPostScript(Blt_Ps ps, Trace *tracePtr, LinePen *penPtr)
+SymbolsToPostScript(Graph *graphPtr, Blt_Ps ps, Isoline *isoPtr,
+                    ContourPen *penPtr)
 {
+#ifdef notdef
     TracePoint *p;
+    Trace *tracePtr;
     double size;
     static const char *symbolMacros[] =
     {
 	"Li", "Sq", "Ci", "Di", "Pl", "Cr", "Sp", "Sc", "Tr", "Ar", "Bm", 
 	(char *)NULL,
     };
-
+    tracePtr = isoPtr->tracePtr;
     GetSymbolPostScriptInfo(ps, tracePtr->elemPtr, penPtr, 
 	    tracePtr->symbolSize);
     size = (double)tracePtr->symbolSize;
@@ -4904,6 +4901,7 @@ SymbolsToPostScript(Blt_Ps ps, Trace *tracePtr, LinePen *penPtr)
 	Blt_Ps_Format(ps, "%g %g %g %s\n", p->x, p->y, size, 
 		symbolMacros[penPtr->symbol.type]);
     }
+#endif
 }
 
 static void
@@ -4917,7 +4915,7 @@ ValuesToPostScript(Blt_Ps ps, Trace *tracePtr, ContourPen *penPtr)
     if (fmt == NULL) {
 	fmt = "%g";
     }
-    vertices = tracePtr->elemPtr->vectices;
+    vertices = tracePtr->elemPtr->vertices;
     for (p = tracePtr->head; p != NULL; p = p->next) {
 	double x, y;
 	char string[TCL_DOUBLE_SPACE * 2 + 2];
@@ -4939,7 +4937,6 @@ ValuesToPostScript(Blt_Ps ps, Trace *tracePtr, ContourPen *penPtr)
 	Blt_Ps_DrawText(ps, string, &penPtr->valueStyle, p->x, p->y);
     }
 }
-#endif
 
 /*
  *---------------------------------------------------------------------------
@@ -4987,12 +4984,11 @@ ActiveToPostScriptProc(Graph *graphPtr, Blt_Ps ps, Element *basePtr)
 static void
 NormalToPostScriptProc(Graph *graphPtr, Blt_Ps ps, Element *basePtr)
 {
-#ifdef FIXME
     ContourElement *elemPtr = (ContourElement *)basePtr;
     Blt_HashEntry *hPtr;
     Blt_HashSearch iter;
 
-    MeshToPostScript(graphPtr, drawable, elemPtr);
+    MeshToPostScript(graphPtr, ps, elemPtr);
     for (hPtr = Blt_FirstHashEntry(&elemPtr->isoTable, &iter); hPtr != NULL;
 	 hPtr = Blt_NextHashEntry(&iter)) {
 	Isoline *isoPtr;
@@ -5008,7 +5004,6 @@ NormalToPostScriptProc(Graph *graphPtr, Blt_Ps ps, Element *basePtr)
 	    SymbolsToPostScript(graphPtr, ps, isoPtr, isoPtr->penPtr);
 	}
     }
-#endif
 }
 
 /* Isoline TCL API operations. */

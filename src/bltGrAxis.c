@@ -419,18 +419,6 @@ typedef int (GraphAxisProc)(Tcl_Interp *interp, Axis *axisPtr, int objc,
 typedef int (GraphVirtualAxisProc)(Tcl_Interp *interp, Graph *graphPtr, 
 	int objc, Tcl_Obj *const *objv);
 
-static int
-HasColormap(Axis *axisPtr)
-{
-    if (axisPtr == NULL) {
-        return FALSE;
-    }
-    if (axisPtr->palette == NULL) {
-        return FALSE;
-    }
-    return TRUE;
-}
-
 static void
 FreeAxis(DestroyData data)
 {
@@ -2560,14 +2548,14 @@ MakeColorbar(Axis *axisPtr, AxisInfo *infoPtr)
 	x1 = Blt_HMap(axisPtr, max);
         axisPtr->colorbar.rect.x = MIN(x1, x2);
         axisPtr->colorbar.rect.y = infoPtr->colorbar;
-        axisPtr->colorbar.rect.width = abs(x1 - x2) + 1;
+        axisPtr->colorbar.rect.width = ABS(x1 - x2) + 1;
         axisPtr->colorbar.rect.height = axisPtr->colorbar.thickness;
     } else {
         y2 = Blt_VMap(axisPtr, min);
         y1 = Blt_VMap(axisPtr, max);
         axisPtr->colorbar.rect.x = infoPtr->colorbar;
         axisPtr->colorbar.rect.y = MIN(y1,y2);
-        axisPtr->colorbar.rect.height = abs(y1 - y2) + 1;
+        axisPtr->colorbar.rect.height = ABS(y1 - y2) + 1;
         axisPtr->colorbar.rect.width = axisPtr->colorbar.thickness;
     }
 }
@@ -2918,12 +2906,12 @@ GradientColorProc(Blt_PaintBrush *brushPtr, int x, int y)
 {
     Axis *axisPtr = brushPtr->clientData;
     Blt_Pixel color;
-    double value;
     XRectangle *rectPtr;
+    double value;
 
     rectPtr = &axisPtr->colorbar.rect;
     if (axisPtr->obj.classId == CID_AXIS_Y) {
-	value = (double)(y - rectPtr->y) / (rectPtr->height - 1);
+	value = 1.0 - (double)(y - rectPtr->y) / (rectPtr->height - 1);
     } else if (axisPtr->obj.classId == CID_AXIS_X) {
 	value = (double)(x - rectPtr->x) / (rectPtr->width - 1);
     } else {
