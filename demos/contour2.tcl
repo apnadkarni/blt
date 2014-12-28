@@ -11,10 +11,10 @@ $zv expr {abs(sin($xv*$yv/70.0))}
 
 blt::contour .g
 set mesh [blt::mesh create cloud -x $xv -y $yv]
-.g colormap create rainbow -palette rainbow -min 0.0 -max 1.0 -axis z
-.g element create sine -values $zv -mesh $mesh -colormap rainbow
+.g element create sine -values $zv -mesh $mesh 
 .g element isoline steps sine $numIsolines
-
+.g axis configure z -palette rainbow -colorbarthickness 15 -use y2 \
+    -exterior yes -rotate -90 -title "Units"  
 proc UpdateColors {} {
     global usePaletteColors
     if { $usePaletteColors } {
@@ -93,7 +93,7 @@ foreach name [lsort -dictionary [.g element isoline names sine]] {
 	$count,1 .$name -anchor w 
     incr count
 }
-.g legend configure -anchor s
+
 blt::table configure . r* c1 -resize none
 blt::table configure . r$count -resize both
 blt::table . \

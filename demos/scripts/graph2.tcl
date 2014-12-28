@@ -92,7 +92,7 @@ set tcl_precision 15
 set pi1_2 [expr 3.14159265358979323846/180.0]
 
 blt::vector w x sinX cosX radians
-x seq -360.0 360.0 60.0
+x seq -360.0 360.0 10.0
 #x seq -360.0 -180.0 30.0
 radians expr { x * $pi1_2 }
 sinX expr sin(radians)

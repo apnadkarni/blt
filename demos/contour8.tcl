@@ -48,10 +48,10 @@ $table column type all double
 set count 0
 
 blt::contour .g -highlightthickness 0
-.g colormap create myColormap -palette $palette
-.g element create myContour -color blue -colormap myColormap
+.g element create myContour -color blue
 .g element isoline steps myContour 10 
 .g legend configure -hide yes
+.g axis configure z -palette $palette
 
 proc UpdateColors {} {
      global usePaletteColors 

@@ -89,23 +89,25 @@ enum TickRange {
 
 
 #define AXIS_PAD_TITLE		2	/* Padding for axis title. */
+#define TICK_PAD                2
+#define COLORBAR_PAD            4
 
-#define HORIZMARGIN(m)	(!((m)->site & 0x1)) /* Even sites are horizontal */
+#define HORIZMARGIN(m)	(!((m)->side & 0x1)) /* Even sides are horizontal */
 
 /* Indicates how to rotate axis title for each margin. */
-static float titleAngle[4] =		
-{
+static float titleAngle[4] = {
     0.0, 90.0, 0.0, 270.0
 };
 
 typedef struct {
-    int axis;				/* Length of the axis.  */
+    int axisLength;                     /* Length of the axis. */
     int t1;			        /* Length of a major tick (in
 					 * pixels). */
     int t2;			        /* Length of a minor tick (in
 					 * pixels). */
     int label;				/* Distance from axis to tick
                                          * label. */
+    int colorbar;
 } AxisInfo;
 
 typedef struct {
@@ -189,6 +191,7 @@ static Blt_CustomOption paletteOption =
 #define DEF_BORDERWIDTH		"0"
 #define DEF_CHECKLIMITS		"0"
 #define DEF_COMMAND		(char *)NULL
+#define DEF_COLORBAR_THICKNESS	"20"
 #define DEF_DECREASING		"0"
 #define DEF_FOREGROUND		RGB_BLACK
 #define DEF_GRID_BARCHART	"1"
@@ -257,6 +260,10 @@ static Blt_ConfigSpec configSpecs[] =
 	(Blt_CustomOption *)CHECK_LIMITS},
     {BLT_CONFIG_COLOR, "-color", "color", "Color",
 	DEF_FOREGROUND, Blt_Offset(Axis, tickColor), ALL_GRAPHS},
+    {BLT_CONFIG_PIXELS_NNEG, "-colorbarthickness", "colorBarThickness", 
+	"ColorBarThickness", DEF_COLORBAR_THICKNESS, 
+	Blt_Offset(Axis, colorbar.thickness), 
+        BLT_CONFIG_DONT_SET_DEFAULT | ALL_GRAPHS},
     {BLT_CONFIG_OBJ, "-command", "command", "Command", DEF_COMMAND, 
 	Blt_Offset(Axis, fmtCmdObjPtr), BLT_CONFIG_NULL_OK | ALL_GRAPHS},
     {BLT_CONFIG_BOOLEAN, "-decreasing", "decreasing", "Decreasing",
@@ -412,6 +419,18 @@ typedef int (GraphAxisProc)(Tcl_Interp *interp, Axis *axisPtr, int objc,
 typedef int (GraphVirtualAxisProc)(Tcl_Interp *interp, Graph *graphPtr, 
 	int objc, Tcl_Obj *const *objv);
 
+static int
+HasColormap(Axis *axisPtr)
+{
+    if (axisPtr == NULL) {
+        return FALSE;
+    }
+    if (axisPtr->palette == NULL) {
+        return FALSE;
+    }
+    return TRUE;
+}
+
 static void
 FreeAxis(DestroyData data)
 {
@@ -478,12 +497,12 @@ InRange(double x, AxisRange *rangePtr)
 INLINE static int
 AxisIsHorizontal(Axis *axisPtr)
 {
-    Graph *graphPtr = axisPtr->obj.graphPtr;
-
-    if (axisPtr->obj.classId == CID_AXIS_Z) {
-	return 0;			/* Z-axis is always vertical. */
+    if (axisPtr->obj.graphPtr->flags & INVERTED) {
+        return (axisPtr->obj.classId == CID_AXIS_Y);
+    } else {
+        return (axisPtr->obj.classId == CID_AXIS_X);
     }
-    return ((axisPtr->obj.classId == CID_AXIS_Y) == graphPtr->inverted);
+    return FALSE;
 }
 
 
@@ -835,13 +854,16 @@ ObjToUseProc(
      * another type.  */
     if (axisPtr->obj.classId == CID_NONE) {
 	Blt_GraphSetObjectClass(&axisPtr->obj, axisNames[i].classId);
+    } else if (axisPtr->obj.classId == CID_AXIS_Z) {
+	Blt_GraphSetObjectClass(&axisPtr->obj, axisNames[i].classId);
     } else if (axisPtr->obj.classId != axisNames[i].classId) {
 	Tcl_AppendResult(interp, "wrong type for axis \"", 
 		axisPtr->obj.name, "\": can't use ", 
-		axisPtr->obj.className, " type axis.", (char *)NULL); 
+                Blt_GraphClassName(axisNames[i].classId), " type axis.",
+                (char *)NULL); 
 	return TCL_ERROR;
     }
-    margin = (graphPtr->inverted) ? 
+    margin = (graphPtr->flags & INVERTED) ? 
 	axisNames[i].invertMargin : axisNames[i].margin;
     chain = graphPtr->margins[margin].axes;
     if (axisPtr->link != NULL) {
@@ -853,6 +875,7 @@ ObjToUseProc(
     axisPtr->chain = chain;
     axisPtr->flags |= USE;
     axisPtr->margin = margin;
+    axisPtr->marginPtr = graphPtr->margins + margin;
  done:
     graphPtr->flags |= (GET_AXIS_GEOMETRY | LAYOUT_NEEDED | RESET_AXES);
     /* When any axis changes, we need to layout the entire graph.  */
@@ -1149,7 +1172,7 @@ PaletteChangedProc(Blt_Palette palette, ClientData clientData,
 {
     Axis *axisPtr = clientData;
 
-    if (flags & PALETTE_DELETE_NOTIFY) {
+     if (flags & PALETTE_DELETE_NOTIFY) {
 	axisPtr->palette = NULL;
     }
     axisPtr->flags |= MAP_ITEM;
@@ -1330,7 +1353,7 @@ MakeLabel(Axis *axisPtr, double value)
     }
     labelPtr = Blt_AssertMalloc(sizeof(TickLabel) + strlen(string));
     strcpy(labelPtr->string, string);
-    labelPtr->anchorPos.x = labelPtr->anchorPos.y = DBL_MAX;
+    labelPtr->anchorPos.x = labelPtr->anchorPos.y = 0;
     Tcl_DStringFree(&ds);
     return labelPtr;
 }
@@ -1469,7 +1492,7 @@ Blt_Map2D(Graph *graphPtr, double x, double y, Axis2d *axesPtr)
 {
     Point2d point;
 
-    if (graphPtr->inverted) {
+    if (graphPtr->flags & INVERTED) {
 	point.x = Blt_HMap(axesPtr->y, y);
 	point.y = Blt_VMap(axesPtr->x, x);
     } else {
@@ -1500,7 +1523,7 @@ Blt_InvMap2D(
 {
     Point2d point;
 
-    if (graphPtr->inverted) {
+    if (graphPtr->flags & INVERTED) {
 	point.x = Blt_InvVMap(axesPtr->x, y);
 	point.y = Blt_InvHMap(axesPtr->y, x);
     } else {
@@ -2199,7 +2222,7 @@ DestroyAxis(Axis *axisPtr)
  *
  * AxisOffsets --
  *
- *	Determines the sites of the axis, major and minor ticks, and title
+ *	Determines the sides of the axis, major and minor ticks, and title
  *	of the axis.
  *
  * Results:
@@ -2208,7 +2231,7 @@ DestroyAxis(Axis *axisPtr)
  *---------------------------------------------------------------------------
  */
 static void
-AxisOffsets(Axis *axisPtr, Margin *marginPtr, int offset, AxisInfo *infoPtr)
+AxisOffsets(Axis *axisPtr, Margin *marginPtr, AxisInfo *infoPtr)
 {
     Graph *graphPtr = axisPtr->obj.graphPtr;
     int pad;				/* Offset of axis from interior
@@ -2222,7 +2245,7 @@ AxisOffsets(Axis *axisPtr, Margin *marginPtr, int offset, AxisInfo *infoPtr)
     int x, y;
     float fangle;
 
-    axisPtr->titleAngle = titleAngle[marginPtr->site];
+    axisPtr->titleAngle = titleAngle[marginPtr->side];
     tickLabel = axisLine = t1 = t2 = 0;
     labelOffset = AXIS_PAD_TITLE;
     if (axisPtr->lineWidth > 0) {
@@ -2250,9 +2273,12 @@ AxisOffsets(Axis *axisPtr, Margin *marginPtr, int offset, AxisInfo *infoPtr)
      * and the individual major and minor ticks.
      */
     inset = pad + axisPtr->lineWidth / 2;
-    switch (marginPtr->site) {
+    switch (marginPtr->side) {
     case MARGIN_TOP:
-	axisLine = graphPtr->top;
+	axisLine = graphPtr->top - marginPtr->nextLayerOffset;
+        if (axisPtr->colorbar.thickness > 0) {
+            axisLine -= axisPtr->colorbar.thickness + COLORBAR_PAD;
+        }
 	if (axisPtr->flags & EXTERIOR) {
 	    axisLine -= graphPtr->plotBW + axisPad + axisPtr->lineWidth / 2;
 	    tickLabel = axisLine - 2;
@@ -2266,11 +2292,11 @@ AxisOffsets(Axis *axisPtr, Margin *marginPtr, int offset, AxisInfo *infoPtr)
 	    axisLine -= axisPad + axisPtr->lineWidth / 2;
 	    tickLabel = graphPtr->top -  graphPtr->plotBW - 2;
 	}
-	mark = graphPtr->top - offset - pad;
+	mark = graphPtr->top - marginPtr->nextLayerOffset - pad;
 	axisPtr->tickAnchor = TK_ANCHOR_S;
 	axisPtr->left = axisPtr->screenMin - inset - 2;
 	axisPtr->right = axisPtr->screenMin + axisPtr->screenRange + inset - 1;
-	if (graphPtr->stackAxes) {
+	if (graphPtr->flags & STACK_AXES) {
 	    axisPtr->top = mark - marginPtr->axesOffset;
 	} else {
 	    axisPtr->top = mark - axisPtr->height;
@@ -2282,7 +2308,7 @@ AxisOffsets(Axis *axisPtr, Margin *marginPtr, int offset, AxisInfo *infoPtr)
 	    axisPtr->titleAnchor = TK_ANCHOR_W;
 	} else {
 	    x = (axisPtr->right + axisPtr->left) / 2;
-	    if (graphPtr->stackAxes) {
+	    if (graphPtr->flags & STACK_AXES) {
 		y = mark - marginPtr->axesOffset + AXIS_PAD_TITLE;
 	    } else {
 		y = mark - axisPtr->height + AXIS_PAD_TITLE;
@@ -2291,6 +2317,7 @@ AxisOffsets(Axis *axisPtr, Margin *marginPtr, int offset, AxisInfo *infoPtr)
 	}
 	axisPtr->titlePos.x = x;
 	axisPtr->titlePos.y = y;
+	infoPtr->colorbar = axisLine - axisPtr->colorbar.thickness;
 	break;
 
     case MARGIN_BOTTOM:
@@ -2307,7 +2334,10 @@ AxisOffsets(Axis *axisPtr, Margin *marginPtr, int offset, AxisInfo *infoPtr)
 	 *                   tick
 	 *		    title
 	 */
-	axisLine = graphPtr->bottom;
+	axisLine = graphPtr->bottom + marginPtr->nextLayerOffset;
+        if (axisPtr->colorbar.thickness > 0) {
+            axisLine += axisPtr->colorbar.thickness + COLORBAR_PAD;
+        }
 	if (graphPtr->plotRelief == TK_RELIEF_SOLID) {
 	    axisLine++;
 	} 
@@ -2321,7 +2351,7 @@ AxisOffsets(Axis *axisPtr, Margin *marginPtr, int offset, AxisInfo *infoPtr)
             axisLine -= axisPad + axisPtr->lineWidth / 2;
 	    tickLabel = graphPtr->bottom +  graphPtr->plotBW + 2;
 	}
-	mark = graphPtr->bottom + offset;
+	mark = graphPtr->bottom + marginPtr->nextLayerOffset;
 	fangle = FMOD(axisPtr->tickAngle, 90.0f);
 	if (fangle == 0.0) {
 	    axisPtr->tickAnchor = TK_ANCHOR_N;
@@ -2338,7 +2368,7 @@ AxisOffsets(Axis *axisPtr, Margin *marginPtr, int offset, AxisInfo *infoPtr)
 	axisPtr->left = axisPtr->screenMin - inset - 2;
 	axisPtr->right = axisPtr->screenMin + axisPtr->screenRange + inset - 1;
 	axisPtr->top = graphPtr->bottom + labelOffset - t1;
-	if (graphPtr->stackAxes) {
+	if (graphPtr->flags & STACK_AXES) {
 	    axisPtr->bottom = mark + marginPtr->axesOffset - 1;
 	} else {
 	    axisPtr->bottom = mark + axisPtr->height - 1;
@@ -2349,7 +2379,7 @@ AxisOffsets(Axis *axisPtr, Margin *marginPtr, int offset, AxisInfo *infoPtr)
 	    axisPtr->titleAnchor = TK_ANCHOR_W; 
 	} else {
 	    x = (axisPtr->right + axisPtr->left) / 2;
-	    if (graphPtr->stackAxes) {
+	    if (graphPtr->flags & STACK_AXES) {
 		y = mark + marginPtr->axesOffset - AXIS_PAD_TITLE;
 	    } else {
 		y = mark + axisPtr->height - AXIS_PAD_TITLE;
@@ -2358,6 +2388,7 @@ AxisOffsets(Axis *axisPtr, Margin *marginPtr, int offset, AxisInfo *infoPtr)
 	}
 	axisPtr->titlePos.x = x;
 	axisPtr->titlePos.y = y;
+	infoPtr->colorbar = axisLine - axisPtr->colorbar.thickness;
 	break;
 
     case MARGIN_LEFT:
@@ -2398,7 +2429,10 @@ AxisOffsets(Axis *axisPtr, Margin *marginPtr, int offset, AxisInfo *infoPtr)
 	 * G = graph border width
 	 * H = highlight thickness
 	 */
-	axisLine = graphPtr->left;
+	axisLine = graphPtr->left - marginPtr->nextLayerOffset;
+        if (axisPtr->colorbar.thickness > 0) {
+            axisLine -= axisPtr->colorbar.thickness + COLORBAR_PAD;
+        }
 	if (axisPtr->flags & EXTERIOR) {
 	    axisLine -= graphPtr->plotBW + axisPad + axisPtr->lineWidth / 2;
 	    tickLabel = axisLine - 2;
@@ -2412,9 +2446,9 @@ AxisOffsets(Axis *axisPtr, Margin *marginPtr, int offset, AxisInfo *infoPtr)
 	    axisLine += axisPad + axisPtr->lineWidth / 2;
 	    tickLabel = graphPtr->left - graphPtr->plotBW - 2;
 	}
-	mark = graphPtr->left - offset;
+	mark = graphPtr->left - marginPtr->nextLayerOffset;
 	axisPtr->tickAnchor = TK_ANCHOR_E;
-	if (graphPtr->stackAxes) {
+	if (graphPtr->flags & STACK_AXES) {
 	    axisPtr->left = mark - marginPtr->axesOffset;
 	} else {
 	    axisPtr->left = mark - axisPtr->width;
@@ -2427,7 +2461,7 @@ AxisOffsets(Axis *axisPtr, Margin *marginPtr, int offset, AxisInfo *infoPtr)
 	    y = graphPtr->top - AXIS_PAD_TITLE;
 	    axisPtr->titleAnchor = TK_ANCHOR_SW; 
 	} else {
-	    if (graphPtr->stackAxes) {
+	    if (graphPtr->flags & STACK_AXES) {
 		x = mark - marginPtr->axesOffset;
 	    } else {
 		x = mark - axisPtr->width + AXIS_PAD_TITLE;
@@ -2437,10 +2471,14 @@ AxisOffsets(Axis *axisPtr, Margin *marginPtr, int offset, AxisInfo *infoPtr)
 	} 
 	axisPtr->titlePos.x = x;
 	axisPtr->titlePos.y = y;
+	infoPtr->colorbar = axisLine;
 	break;
 
     case MARGIN_RIGHT:
-	axisLine = graphPtr->right;
+	axisLine = graphPtr->right + marginPtr->nextLayerOffset;
+        if (axisPtr->colorbar.thickness > 0) {
+            axisLine += axisPtr->colorbar.thickness + COLORBAR_PAD;
+        }
 	if (graphPtr->plotRelief == TK_RELIEF_SOLID) {
 	    axisLine++;			/* Draw axis line within solid plot
 					 * border. */
@@ -2453,12 +2491,12 @@ AxisOffsets(Axis *axisPtr, Margin *marginPtr, int offset, AxisInfo *infoPtr)
 	    }
 	} else {
 	    axisLine -= axisPad + axisPtr->lineWidth / 2;
-	    tickLabel = graphPtr->right + graphPtr->plotBW + 2;
+	    tickLabel = axisLine + 2;
 	}
-	mark = graphPtr->right + offset + pad;
+	mark = graphPtr->right + marginPtr->nextLayerOffset + pad;
 	axisPtr->tickAnchor = TK_ANCHOR_W;
 	axisPtr->left = mark;
-	if (graphPtr->stackAxes) {
+	if (graphPtr->flags & STACK_AXES) {
 	    axisPtr->right = mark + marginPtr->axesOffset - 1;
 	} else {
 	    axisPtr->right = mark + axisPtr->width - 1;
@@ -2470,7 +2508,7 @@ AxisOffsets(Axis *axisPtr, Margin *marginPtr, int offset, AxisInfo *infoPtr)
 	    y = graphPtr->top - AXIS_PAD_TITLE;
 	    axisPtr->titleAnchor = TK_ANCHOR_SE; 
 	} else {
-	    if (graphPtr->stackAxes) {
+	    if (graphPtr->flags & STACK_AXES) {
 		x = mark + marginPtr->axesOffset - AXIS_PAD_TITLE;
 	    } else {
 		x = mark + axisPtr->width - AXIS_PAD_TITLE;
@@ -2480,17 +2518,18 @@ AxisOffsets(Axis *axisPtr, Margin *marginPtr, int offset, AxisInfo *infoPtr)
 	}
         axisPtr->titlePos.x = x;
 	axisPtr->titlePos.y = y;
+        infoPtr->colorbar = axisLine - axisPtr->colorbar.thickness;
 	break;
 
     case MARGIN_NONE:
 	axisLine = 0;
 	break;
     }
-    if ((marginPtr->site == MARGIN_LEFT) || (marginPtr->site == MARGIN_TOP)) {
+    if ((marginPtr->side == MARGIN_LEFT) || (marginPtr->side == MARGIN_TOP)) {
 	t1 = -t1, t2 = -t2;
 	labelOffset = -labelOffset;
     }
-    infoPtr->axis = axisLine;
+    infoPtr->axisLength = axisLine;
     infoPtr->t1 = axisLine + t1;
     infoPtr->t2 = axisLine + t2;
     if (tickLabel > 0) {
@@ -2503,6 +2542,34 @@ AxisOffsets(Axis *axisPtr, Margin *marginPtr, int offset, AxisInfo *infoPtr)
 	infoPtr->t1 = axisLine - t1;
 	infoPtr->t2 = axisLine - t2;
     } 
+}
+
+static void
+MakeColorbar(Axis *axisPtr, AxisInfo *infoPtr)
+{
+    double min, max;
+    int x1, y1, x2, y2;
+    min = axisPtr->axisRange.min;
+    max = axisPtr->axisRange.max;
+    if (axisPtr->logScale) {
+	min = EXP10(min);
+	max = EXP10(max);
+    }
+    if (axisPtr->flags & HORIZONTAL) {
+	x2 = Blt_HMap(axisPtr, min);
+	x1 = Blt_HMap(axisPtr, max);
+        axisPtr->colorbar.rect.x = MIN(x1, x2);
+        axisPtr->colorbar.rect.y = infoPtr->colorbar;
+        axisPtr->colorbar.rect.width = abs(x1 - x2) + 1;
+        axisPtr->colorbar.rect.height = axisPtr->colorbar.thickness;
+    } else {
+        y2 = Blt_VMap(axisPtr, min);
+        y1 = Blt_VMap(axisPtr, max);
+        axisPtr->colorbar.rect.x = infoPtr->colorbar;
+        axisPtr->colorbar.rect.y = MIN(y1,y2);
+        axisPtr->colorbar.rect.height = abs(y1 - y2) + 1;
+        axisPtr->colorbar.rect.width = axisPtr->colorbar.thickness;
+    }
 }
 
 static void
@@ -2563,7 +2630,7 @@ MakeSegments(Axis *axisPtr, AxisInfo *infoPtr)
     s = segments;
     if (axisPtr->lineWidth > 0) {
 	/* Axis baseline */
-	MakeAxisLine(axisPtr, infoPtr->axis, s);
+	MakeAxisLine(axisPtr, infoPtr->axisLength, s);
 	s++;
     }
     if (axisPtr->flags & SHOWTICKS) {
@@ -2587,12 +2654,8 @@ MakeSegments(Axis *axisPtr, AxisInfo *infoPtr)
                     if (InRange(minor.value, &axisPtr->axisRange)) {
                         /* Add minor tick. */
                         MakeTick(axisPtr, minor.value, infoPtr->t2, 
-                                infoPtr->axis, s);
+                                infoPtr->axisLength, s);
                         s++;
-                    }else {
- fprintf(stderr, "minor %d not in range %.15g min=%.15g max=%.15g\n",
-         axisPtr->minor.ticks.index, minor.value, axisPtr->axisRange.min, 
-                        axisPtr->axisRange.max);
                     }
                 }        
             }
@@ -2600,7 +2663,8 @@ MakeSegments(Axis *axisPtr, AxisInfo *infoPtr)
                 double mid;
 
                 /* Add major tick. This could be the last major tick. */
-                MakeTick(axisPtr, left.value, infoPtr->t1, infoPtr->axis, s);
+                MakeTick(axisPtr, left.value, infoPtr->t1,
+                        infoPtr->axisLength, s);
                 
                 mid = left.value;
                 if ((axisPtr->labelOffset) && (right.isValid)) {
@@ -2636,9 +2700,9 @@ MakeSegments(Axis *axisPtr, AxisInfo *infoPtr)
  * MapAxis --
  *
  *	Pre-calculates positions of the axis, ticks, and labels (to be used
- *	later when displaying the axis).  Calculates the values for each major
- *	and minor tick and checks to see if they are in range (the outer ticks
- *	may be outside of the range of plotted values).
+ *	later when displaying the axis).  Calculates the values for each
+ *	major and minor tick and checks to see if they are in range (the
+ *	outer ticks may be outside of the range of plotted values).
  *
  *	Line segments for the minor and major ticks are saved into one
  *	XSegment array so that they can be drawn by a single XDrawSegments
@@ -2654,17 +2718,12 @@ MakeSegments(Axis *axisPtr, AxisInfo *infoPtr)
  *---------------------------------------------------------------------------
  */
 static void
-MapAxis(Axis *axisPtr, Margin *marginPtr, int offset)
+MapAxis(Axis *axisPtr, Margin *marginPtr)
 {
     AxisInfo info;
     Graph *graphPtr = axisPtr->obj.graphPtr;
     
-    if (axisPtr->flags & COLORBAR) {
-	axisPtr->screenMin = graphPtr->vOffset;
-	axisPtr->height = graphPtr->bottom;
-	axisPtr->height -= graphPtr->top + Blt_Legend_Height(graphPtr);
-	axisPtr->screenRange = graphPtr->vRange - Blt_Legend_Height(graphPtr);
-    } else if (axisPtr->flags & HORIZONTAL) {
+    if (axisPtr->flags & HORIZONTAL) {
 	axisPtr->screenMin = graphPtr->hOffset;
 	axisPtr->width = graphPtr->right - graphPtr->left;
 	axisPtr->screenRange = graphPtr->hRange;
@@ -2674,8 +2733,11 @@ MapAxis(Axis *axisPtr, Margin *marginPtr, int offset)
 	axisPtr->screenRange = graphPtr->vRange;
     }
     axisPtr->screenScale = 1.0 / axisPtr->screenRange;
-    AxisOffsets(axisPtr, marginPtr, offset, &info);
+    AxisOffsets(axisPtr, marginPtr, &info);
     MakeSegments(axisPtr, &info);
+    if (axisPtr->colorbar.thickness > 0) {
+        MakeColorbar(axisPtr, &info);
+    }
 }
 
 /*
@@ -2684,13 +2746,13 @@ MapAxis(Axis *axisPtr, Margin *marginPtr, int offset)
  * MapStackedAxis --
  *
  *	Pre-calculates positions of the axis, ticks, and labels (to be used
- *	later when displaying the axis).  Calculates the values for each major
- *	and minor tick and checks to see if they are in range (the outer ticks
- *	may be outside of the range of plotted values).
+ *	later when displaying the axis).  Calculates the values for each
+ *	major and minor tick and checks to see if they are in range (the
+ *	outer ticks may be outside of the range of plotted values).
  *
- *	Line segments for the minor and major ticks are saved into one XSegment
- *	array so that they can be drawn by a single XDrawSegments call. The
- *	positions of the tick labels are also computed and saved.
+ *	Line segments for the minor and major ticks are saved into one
+ *	XSegment array so that they can be drawn by a single XDrawSegments
+ *	call. The positions of the tick labels are also computed and saved.
  *
  * Results:
  *	None.
@@ -2728,12 +2790,12 @@ MapStackedAxis(Axis *axisPtr, Margin *marginPtr, float totalWeight)
 #define AXIS_PAD 2
     Blt_GetTextExtents(axisPtr->tickFont, 0, "0", 1, &w, &h);
     if (n > 1) {
-	axisPtr->screenMin += marginPtr->offset + AXIS_PAD + h / 2;
+	axisPtr->screenMin += marginPtr->nextStackOffset + AXIS_PAD + h / 2;
 	axisPtr->screenRange = slice - 2 * AXIS_PAD - h;
-	marginPtr->offset += slice;
+	marginPtr->nextStackOffset += slice;
     }
     axisPtr->screenScale = 1.0f / axisPtr->screenRange;
-    AxisOffsets(axisPtr, marginPtr, 0, &info);
+    AxisOffsets(axisPtr, marginPtr, &info);
     MakeSegments(axisPtr, &info);
 }
 
@@ -2742,8 +2804,8 @@ MapStackedAxis(Axis *axisPtr, Margin *marginPtr, float totalWeight)
  *
  * AdjustViewport --
  *
- *	Adjusts the offsets of the viewport according to the scroll mode.  This
- *	is to accommodate both "listbox" and "canvas" style scrolling.
+ *	Adjusts the offsets of the viewport according to the scroll mode.
+ *	This is to accommodate both "listbox" and "canvas" style scrolling.
  *
  *	"canvas"	The viewport scrolls within the range of world
  *			coordinates.  This way the viewport always displays
@@ -2767,7 +2829,8 @@ static double
 AdjustViewport(double offset, double windowSize)
 {
     /*
-     * Canvas-style scrolling allows the world to be scrolled within the window.
+     * Canvas-style scrolling allows the world to be scrolled within the
+     * window.
      */
     if (windowSize > 1.0) {
 	if (windowSize < (1.0 - offset)) {
@@ -2850,6 +2913,67 @@ GetAxisScrollInfo(Tcl_Interp *interp, int objc, Tcl_Obj *const *objv,
     return TCL_OK;
 }
 
+static int
+GradientColorProc(Blt_PaintBrush *brushPtr, int x, int y)
+{
+    Axis *axisPtr = brushPtr->clientData;
+    Blt_Pixel color;
+    double value;
+    XRectangle *rectPtr;
+
+    rectPtr = &axisPtr->colorbar.rect;
+    if (axisPtr->obj.classId == CID_AXIS_Y) {
+	value = (double)(y - rectPtr->y) / (rectPtr->height - 1);
+    } else if (axisPtr->obj.classId == CID_AXIS_X) {
+	value = (double)(x - rectPtr->x) / (rectPtr->width - 1);
+    } else {
+	return 0x0;
+    }
+    if (axisPtr->decreasing) {
+        value = 1.0 - value;
+    }
+    color.u32 = Blt_Palette_GetAssociatedColor(brushPtr->palette, value);
+    return color.u32;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * DrawGradientRectangle --
+ *
+ * Results:
+ *	None.
+ *
+ *---------------------------------------------------------------------------
+ */
+static void
+DrawGradientRectangle(Axis *axisPtr, Drawable drawable)
+{
+    Blt_PaintBrush brush;
+    Blt_Painter painter;
+    Blt_Picture bg;
+    XRectangle *rectPtr;
+    Graph *graphPtr;
+    if (axisPtr->palette == NULL) {
+	return;				/* No palette defined. */
+    }
+    graphPtr = axisPtr->obj.graphPtr;
+    rectPtr = &axisPtr->colorbar.rect;
+    bg = Blt_CreatePicture(rectPtr->width, rectPtr->height);
+    if (bg == NULL) {
+ 	return;				/* Background is obscured. */
+    }
+    Blt_PaintBrush_Init(&brush);
+    Blt_PaintBrush_SetOrigin(&brush, -rectPtr->x, -rectPtr->y); 
+    Blt_PaintBrush_SetPalette(&brush, axisPtr->palette);
+    Blt_PaintBrush_SetColorProc(&brush, GradientColorProc, axisPtr);
+    Blt_PaintRectangle(bg, 0, 0, rectPtr->width, rectPtr->height, 0, 0, &brush);
+    painter = Blt_GetPainter(graphPtr->tkwin, 1.0);
+    Blt_PaintPicture(painter, drawable, bg, 0, 0, rectPtr->width, 
+		     rectPtr->height, rectPtr->x, rectPtr->y, 0);
+    Blt_FreePicture(bg);
+}
+
 /*
  *---------------------------------------------------------------------------
  *
@@ -2881,6 +3005,9 @@ DrawAxis(Axis *axisPtr, Drawable drawable)
 		axisPtr->right - axisPtr->left, 
 		axisPtr->bottom - axisPtr->top, axisPtr->borderWidth, 
 		axisPtr->relief);
+    }
+    if (axisPtr->colorbar.thickness > 0) {
+        DrawGradientRectangle(axisPtr, drawable);
     }
     if (axisPtr->title != NULL) {
 	TextStyle ts;
@@ -3238,8 +3365,6 @@ Blt_GetAxisGeometry(Graph *graphPtr, Axis *axisPtr)
                 mid = (right.value - left.value) * 0.5;
             }
             if (!InRange(mid, &axisPtr->axisRange)) {
- fprintf(stderr, "mid %d not in range %.15g min=%.15g max=%.15g\n",
-         axisPtr->major.ticks.index, mid, axisPtr->axisRange.min, axisPtr->axisRange.max);
                 continue;
             }
       	    labelPtr = MakeLabel(axisPtr, left.value);
@@ -3299,7 +3424,10 @@ Blt_GetAxisGeometry(Graph *graphPtr, Axis *axisPtr)
 	    y += axisPtr->titleHeight + AXIS_PAD_TITLE;
 	}
     }
-
+    /* Add in the bar thickness. */
+    if (axisPtr->colorbar.thickness > 0) {
+        y += axisPtr->colorbar.thickness + 4;
+    }
     /* Correct for orientation of the axis. */
     if (axisPtr->flags & HORIZONTAL) {
 	axisPtr->height = y;
@@ -3324,9 +3452,9 @@ Blt_GetAxisGeometry(Graph *graphPtr, Axis *axisPtr)
  *	horizontally along the graph or vertically.
  *
  * Side Effects:
- *	The area width and height set in the margin.  Note again that this may
- *	be corrected later (mulitple axes) to adjust for the longest title in
- *	another margin.
+ *	The area width and height set in the margin.  Note again that this
+ *	may be corrected later (mulitple axes) to adjust for the longest
+ *	title in another margin.
  *
  *---------------------------------------------------------------------------
  */
@@ -3337,14 +3465,15 @@ GetMarginGeometry(Graph *graphPtr, Margin *marginPtr)
     int l, w, h;			/* Length, width, and height. */
     int isHoriz;
     unsigned int numVisible;
-
+    
     isHoriz = HORIZMARGIN(marginPtr);
 
     /* Count the visible axes. */
     numVisible = 0;
     l = w = h = 0;
+    /* Need to track the widest and tallest tick labels in the margin. */
     marginPtr->maxAxisLabelWidth = marginPtr->maxAxisLabelHeight = 0;
-    if (graphPtr->stackAxes) {
+    if (graphPtr->flags & STACK_AXES) {
 	for (link = Blt_Chain_FirstLink(marginPtr->axes); link != NULL;
 	     link = Blt_Chain_NextLink(link)) {
 	    Axis *axisPtr;
@@ -3488,8 +3617,9 @@ GetMarginGeometry(Graph *graphPtr, Margin *marginPtr)
  *
  * The plotting area is between the margins which includes the X and Y axes
  * including the ticks but not the tick numeric labels. The length of the
- * ticks and its padding is 5% of the entire plotting area.  Hence the entire
- * plotting area is scaled as 105% of the width and height of the area.
+ * ticks and its padding is 5% of the entire plotting area.  Hence the
+ * entire plotting area is scaled as 105% of the width and height of the
+ * area.
  *
  * The axis labels, ticks labels, title, and legend may or may not be
  * displayed which must be taken into account.
@@ -3608,11 +3738,6 @@ Blt_LayoutGraph(Graph *graphPtr)
 	    break;
 	}
     }
-#ifdef notdef
-    if (graphPtr->colorbarPtr == colormapPtrcolorbar.colormapPtr ) {
-        right += Blt_Colorbar_Geometry(graphPtr, plotWidth, plotHeight);
-    }
-#endif
     /* 
      * Recompute the plotarea or graph size, now accounting for the legend. 
      */
@@ -3628,11 +3753,6 @@ Blt_LayoutGraph(Graph *graphPtr)
 	    plotHeight = 1;
 	}
     }
-#ifdef notdef
-    if (graphPtr->colorbar.site == graphPtr->legend.site) {
-	Blt_GetColorbarGeometry(plotWidth, plotHeight);
-    } 
-#endif
     /*
      * Step 5: If necessary, correct for the requested plot area aspect
      *	       ratio.
@@ -3937,6 +4057,7 @@ NewAxis(Graph *graphPtr, const char *name, int margin)
 	axisPtr->reqNumMajorTicks = 10;
 	axisPtr->margin = MARGIN_NONE;
 	axisPtr->tickLength = 8;
+        axisPtr->colorbar.thickness = 0;
 	axisPtr->scrollUnits = 10;
 	axisPtr->reqMin = axisPtr->reqMax = Blt_NaN();
 	axisPtr->reqScrollMin = axisPtr->reqScrollMax = Blt_NaN();
@@ -4317,7 +4438,7 @@ InvTransformOp(Tcl_Interp *interp, Axis *axisPtr, int objc,
     /*
      * Is the axis vertical or horizontal?
      *
-     * Check the site where the axis was positioned.  If the axis is
+     * Check the side where the axis was positioned.  If the axis is
      * virtual, all we have to go on is how it was mapped to an
      * element (using either -mapx or -mapy options).  
      */
@@ -4439,7 +4560,8 @@ TypeOp(Tcl_Interp *interp, Axis *axisPtr, int objc, Tcl_Obj *const *objv)
  *
  * UseOp --
  *
- *	Sets the default axis for a margin.
+ *	Sets the default axis for a margin.  Both sets the margin of the
+ *      axis and indicates the axis is in use.
  *
  * Results:
  *	A standard TCL result.  If the named axis doesn't exist
@@ -4479,9 +4601,9 @@ UseOp(Tcl_Interp *interp, Axis *axisPtr, int objc, Tcl_Obj *const *objv)
 	return TCL_OK;
     }
     if ((lastMargin == MARGIN_BOTTOM) || (lastMargin == MARGIN_TOP)) {
-	classId = (graphPtr->inverted) ? CID_AXIS_Y : CID_AXIS_X;
+	classId = (graphPtr->flags & INVERTED) ? CID_AXIS_Y : CID_AXIS_X;
     } else {
-	classId = (graphPtr->inverted) ? CID_AXIS_X : CID_AXIS_Y;
+	classId = (graphPtr->flags & INVERTED) ? CID_AXIS_X : CID_AXIS_Y;
     }
     if (Tcl_ListObjGetElements(interp, objv[0], &axisObjc, &axisObjv) 
 	!= TCL_OK) {
@@ -4997,7 +5119,6 @@ AxisMarginOp(Tcl_Interp *interp, Graph *graphPtr, int objc,
     return MarginOp(interp, axisPtr, objc - 4, objv + 4);
 }
 
-
 /*
  *---------------------------------------------------------------------------
  *
@@ -5010,7 +5131,6 @@ AxisMarginOp(Tcl_Interp *interp, Graph *graphPtr, int objc,
  *
  *---------------------------------------------------------------------------
  */
-
 /*ARGSUSED*/
 static int
 AxisNamesOp(Tcl_Interp *interp, Graph *graphPtr, int objc, Tcl_Obj *const *objv)
@@ -5163,16 +5283,16 @@ Blt_VirtualAxisOp(Graph *graphPtr, Tcl_Interp *interp, int objc,
 }
 
 static Blt_OpSpec axisOps[] = {
-    {"activate",     1, ActivateOp,     3, 3, "",},
-    {"bind",         1, BindOp,         2, 5, "sequence command",},
-    {"cget",         2, CgetOp,         4, 4, "option",},
-    {"configure",    2, ConfigureOp,    3, 0, "?option value?...",},
-    {"deactivate",   1, ActivateOp,     3, 3, "",},
-    {"invtransform", 1, InvTransformOp, 4, 4, "value",},
-    {"limits",       1, LimitsOp,       3, 3, "",},
-    {"transform",    1, TransformOp,    4, 4, "value",},
-    {"use",          1, UseOp,          3, 4, "?axisName?",},
-    {"view",         1, ViewOp,         3, 6, "?moveto fract? ",},
+    {"activate",     1, ActivateOp,     3, 3, ""},
+    {"bind",         1, BindOp,         2, 5, "sequence command"},
+    {"cget",         2, CgetOp,         4, 4, "option"},
+    {"configure",    2, ConfigureOp,    3, 0, "?option value?..."},
+    {"deactivate",   1, ActivateOp,     3, 3, ""},
+    {"invtransform", 1, InvTransformOp, 4, 4, "value"},
+    {"limits",       1, LimitsOp,       3, 3, ""},
+    {"transform",    1, TransformOp,    4, 4, "value"},
+    {"use",          1, UseOp,          3, 4, "?axisName?"},
+    {"view",         1, ViewOp,         3, 6, "?moveto fract? "},
 };
 
 static int numAxisOps = sizeof(axisOps) / sizeof(Blt_OpSpec);
@@ -5209,26 +5329,27 @@ Blt_AxisOp(Tcl_Interp *interp, Graph *graphPtr, int margin, int objc,
 void
 Blt_MapAxes(Graph *graphPtr)
 {
-    int margin;
+    int i;
     
-    for (margin = 0; margin < 4; margin++) {
+    for (i = 0; i < 4; i++) {
 	Blt_ChainLink link;
-	int offset;
 	Margin *marginPtr;
 	float sum;
 
-	marginPtr = graphPtr->margins + margin;
-	offset = 0;
+	marginPtr = graphPtr->margins + i;
+        /* Reset the margin offsets (stacked and layered). */
+        marginPtr->nextStackOffset = marginPtr->nextLayerOffset = 0;
 	sum = 0.0;
-	if (graphPtr->stackAxes) {
-	    marginPtr->offset = 0;
+	if (graphPtr->flags & STACK_AXES) {
+            /* For stacked axes figure out the sum of the weights.*/
 	    for (link = Blt_Chain_FirstLink(marginPtr->axes); link != NULL; 
 		 link = Blt_Chain_NextLink(link)) {
 		Axis *axisPtr;
 
 		axisPtr = Blt_Chain_GetValue(link);
 		if ((axisPtr->flags & (USE|DELETE_PENDING)) != USE) {
-		    continue;
+		    continue;           /* Ignore axes that aren't in use
+                                         * or have been deleted.  */
 		}
 		sum += axisPtr->weight;
 	    }
@@ -5239,9 +5360,10 @@ Blt_MapAxes(Graph *graphPtr)
 
 	    axisPtr = Blt_Chain_GetValue(link);
 	    if ((axisPtr->flags & (USE|HIDE|DELETE_PENDING)) != USE) {
-		continue;
+		continue;               /* Don't map axes that aren't being
+                                         * used or have been deleted. */
 	    }
-	    if (graphPtr->stackAxes) {
+	    if (graphPtr->flags & STACK_AXES) {
 		if (axisPtr->reqNumMajorTicks <= 0) {
 		    axisPtr->reqNumMajorTicks = 4;
 		}
@@ -5250,8 +5372,9 @@ Blt_MapAxes(Graph *graphPtr)
 		if (axisPtr->reqNumMajorTicks <= 0) {
 		    axisPtr->reqNumMajorTicks = 4;
 		}
-		MapAxis(axisPtr, marginPtr, offset);
-		offset += (axisPtr->flags & HORIZONTAL) ? 
+		MapAxis(axisPtr, marginPtr);
+                /* The next axis will start after the current axis. */
+		marginPtr->nextLayerOffset += (axisPtr->flags & HORIZONTAL) ? 
 		    axisPtr->height : axisPtr->width;
 	    }
 	    if (axisPtr->flags & GRID) {
@@ -5752,6 +5875,7 @@ TimeFloor(Axis *axisPtr, double min, TimeUnits units, Blt_DateTime *datePtr)
     case TIME_MINUTES:
         datePtr->sec = 0;               /* 0-60 */
         /* fallthrough */
+    default:
     case TIME_SECONDS:
         break;
     }
@@ -5801,6 +5925,8 @@ TimeCeil(Axis *axisPtr, double max, TimeUnits units, Blt_DateTime *datePtr)
         break;
     case TIME_SECONDS:
         seconds += 1.0;
+        break;
+    default:
         break;
     }
     return TimeFloor(axisPtr, seconds, units, datePtr);
@@ -6253,9 +6379,6 @@ SecondTicks(Axis *axisPtr, double min, double max)
     axisMin = tickMin = UFLOOR(min, step);
     axisMax = tickMax = UCEIL(max, step);
     numTicks = Round((tickMax - tickMin) / step) + 1;
-    fprintf(stderr, "Second Ticks step=%.15g range=%.15g numSeconds=%ld min=%.15g, max=%.15g tickMin=%.15g tickMax=%.15g\n",
-            step, range, numSeconds, min, max, tickMin, tickMax);
-	
     if ((axisPtr->looseMin == TIGHT) || ((axisPtr->looseMin == LOOSE) &&
 	 (DEFINED(axisPtr->reqMin)))) {
 	axisMin = min;
@@ -6673,4 +6796,3 @@ NextMinorTick(Axis *axisPtr)
     tick.value = ticksPtr->initial + d;
     return tick;
 }
-

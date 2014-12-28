@@ -1961,7 +1961,7 @@ AxisOffsets(Axis *sliderPtr, Margin *marginPtr, int offset, AxisInfo *infoPtr)
 	sliderPtr->tickAnchor = TK_ANCHOR_S;
 	sliderPtr->left = sliderPtr->screenMin - inset - 2;
 	sliderPtr->right = sliderPtr->screenMin + sliderPtr->screenRange + inset - 1;
-	if (sliderPtr->stackAxes) {
+	if (sliderPtr->flags & STACK_AXES) {
 	    sliderPtr->top = mark - marginPtr->axesOffset;
 	} else {
 	    sliderPtr->top = mark - sliderPtr->height;
@@ -1973,7 +1973,7 @@ AxisOffsets(Axis *sliderPtr, Margin *marginPtr, int offset, AxisInfo *infoPtr)
 	    sliderPtr->titleAnchor = TK_ANCHOR_W;
 	} else {
 	    x = (sliderPtr->right + sliderPtr->left) / 2;
-	    if (sliderPtr->stackAxes) {
+	    if (sliderPtr->flags & STACK_AXES) {
 		y = mark - marginPtr->axesOffset + AXIS_PAD_TITLE;
 	    } else {
 		y = mark - sliderPtr->height + AXIS_PAD_TITLE;
@@ -2029,7 +2029,7 @@ AxisOffsets(Axis *sliderPtr, Margin *marginPtr, int offset, AxisInfo *infoPtr)
 	sliderPtr->left = sliderPtr->screenMin - inset - 2;
 	sliderPtr->right = sliderPtr->screenMin + sliderPtr->screenRange + inset - 1;
 	sliderPtr->top = sliderPtr->bottom + labelOffset - t1;
-	if (sliderPtr->stackAxes) {
+	if (sliderPtr->flags & STACK_AXES) {
 	    sliderPtr->bottom = mark + marginPtr->axesOffset - 1;
 	} else {
 	    sliderPtr->bottom = mark + sliderPtr->height - 1;
@@ -2040,7 +2040,7 @@ AxisOffsets(Axis *sliderPtr, Margin *marginPtr, int offset, AxisInfo *infoPtr)
 	    sliderPtr->titleAnchor = TK_ANCHOR_W; 
 	} else {
 	    x = (sliderPtr->right + sliderPtr->left) / 2;
-	    if (sliderPtr->stackAxes) {
+	    if (sliderPtr->flags & STACK_AXES) {
 		y = mark + marginPtr->axesOffset - AXIS_PAD_TITLE;
 	    } else {
 		y = mark + sliderPtr->height - AXIS_PAD_TITLE;
@@ -2105,7 +2105,7 @@ AxisOffsets(Axis *sliderPtr, Margin *marginPtr, int offset, AxisInfo *infoPtr)
 	}
 	mark = sliderPtr->left - offset;
 	sliderPtr->tickAnchor = TK_ANCHOR_E;
-	if (sliderPtr->stackAxes) {
+	if (sliderPtr->flags & STACK_AXES) {
 	    sliderPtr->left = mark - marginPtr->axesOffset;
 	} else {
 	    sliderPtr->left = mark - sliderPtr->width;
@@ -2118,7 +2118,7 @@ AxisOffsets(Axis *sliderPtr, Margin *marginPtr, int offset, AxisInfo *infoPtr)
 	    y = sliderPtr->top - AXIS_PAD_TITLE;
 	    sliderPtr->titleAnchor = TK_ANCHOR_SW; 
 	} else {
-	    if (sliderPtr->stackAxes) {
+	    if (sliderPtr->flags & STACK_AXES) {
 		x = mark - marginPtr->axesOffset;
 	    } else {
 		x = mark - sliderPtr->width + AXIS_PAD_TITLE;
@@ -2149,7 +2149,7 @@ AxisOffsets(Axis *sliderPtr, Margin *marginPtr, int offset, AxisInfo *infoPtr)
 	mark = sliderPtr->right + offset + pad;
 	sliderPtr->tickAnchor = TK_ANCHOR_W;
 	sliderPtr->left = mark;
-	if (sliderPtr->stackAxes) {
+	if (sliderPtr->flags & STACK_AXES) {
 	    sliderPtr->right = mark + marginPtr->axesOffset - 1;
 	} else {
 	    sliderPtr->right = mark + sliderPtr->width - 1;
@@ -2161,7 +2161,7 @@ AxisOffsets(Axis *sliderPtr, Margin *marginPtr, int offset, AxisInfo *infoPtr)
 	    y = sliderPtr->top - AXIS_PAD_TITLE;
 	    sliderPtr->titleAnchor = TK_ANCHOR_SE; 
 	} else {
-	    if (sliderPtr->stackAxes) {
+	    if (sliderPtr->flags & STACK_AXES) {
 		x = mark + marginPtr->axesOffset - AXIS_PAD_TITLE;
 	    } else {
 		x = mark + sliderPtr->width - AXIS_PAD_TITLE;

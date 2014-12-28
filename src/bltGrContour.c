@@ -424,6 +424,9 @@ struct _ContourElement {
 					 * ranges: used to scale the size
 					 * of element's symbol. */
     int state;
+    GraphColormap *cmapPtr;
+
+    /* Contour-specific fields. */
     ContourPen builtinPen;
     Axis *zAxisPtr;
     int reqMaxSymbols;			/* Indicates the interval the draw
@@ -470,7 +473,6 @@ struct _ContourElement {
     int meshWidth;			/* Width of the line segments. If
 					 * lineWidth is 0, no line will be
 					 * drawn, only symbols. */
-    GraphColormap *colormapPtr;
 };
 
 /*
@@ -540,20 +542,11 @@ static Blt_CustomOption meshOption = {
     ObjToMeshProc, MeshToObjProc, FreeMeshProc, (ClientData)0
 };
 
-static Blt_OptionFreeProc FreeColormapProc;
-static Blt_OptionParseProc ObjToColormapProc;
-static Blt_OptionPrintProc ColormapToObjProc;
-static Blt_CustomOption colormapOption =
-{
-    ObjToColormapProc, ColormapToObjProc, FreeColormapProc, (ClientData)0
-};
-
 #define DEF_ACTIVE_PEN		"activeContour"
 #define DEF_AXIS_X		"x"
 #define DEF_AXIS_Y		"y"
 #define DEF_AXIS_Z		"z"
 #define DEF_BACKGROUND		"navyblue"
-#define DEF_COLORMAP		(char *)NULL
 #define DEF_DISPLAY_COLORMAP	"1"
 #define DEF_DISPLAY_EDGES	"0"
 #define DEF_DISPLAY_HULL	"1"
@@ -655,8 +648,6 @@ static Blt_ConfigSpec contourSpecs[] =
     {BLT_CONFIG_CUSTOM, "-color", "color", "Color", DEF_PEN_COLOR, 
 	Blt_Offset(ContourElement, builtinPen.traceColor), NORMAL_PEN, 
 	&colorOption},
-    {BLT_CONFIG_CUSTOM, "-colormap", "colormap", "Colormap", DEF_COLORMAP, 
-	Blt_Offset(ContourElement, colormapPtr), 0, &colormapOption},
     {BLT_CONFIG_DASHES, "-dashes", "dashes", "Dashes", DEF_PEN_DASHES, 
 	Blt_Offset(ContourElement, builtinPen.traceDashes), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_CUSTOM, "-fill", "fill", "Fill", DEF_PEN_FILL_COLOR, 
@@ -814,10 +805,6 @@ static ElementMapProc MapProc;
 
 static void DrawTriangle(ContourElement *elemPtr, Blt_Picture picture, 
 	Triangle *t, int xOffset, int yOffset);
-
-static int ComputeColorBarGeometry(Graph *graphPtr, ContourElement *elemPtr, 
-				   int width, int height);
-
 
 static int 
 GetContourElement(Tcl_Interp *interp, Graph *graphPtr, Tcl_Obj *objPtr, 
@@ -1253,122 +1240,6 @@ MeshToObjProc(
 	return Tcl_NewStringObj("", -1);
     } 
     return Tcl_NewStringObj(Blt_NameOfMesh(meshPtr), -1);
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * ColormapChangedProc
- *
- *
- * Results:
- *	None.
- *
- *---------------------------------------------------------------------------
- */
-/* ARGSUSED */
-static void
-ColormapChangedProc(GraphColormap *cmapPtr, ClientData clientData, 
-		    unsigned int flags)
-{
-    ContourElement *elemPtr = clientData;
-    Graph *graphPtr;
-
-    if (flags & COLORMAP_DELETE_NOTIFY) {
-	cmapPtr->palette = NULL;
-    }
-    graphPtr = cmapPtr->graphPtr;
-    /* Colormap changed. Don't need to remap the item. */
-      elemPtr->flags |= MAP_ITEM;
-#ifdef notdef
-    graphPtr->flags |= CACHE_DIRTY;
-#endif
-    Blt_EventuallyRedrawGraph(graphPtr);
-}
-
-/*ARGSUSED*/
-static void
-FreeColormapProc(ClientData clientData, Display *display, char *widgRec,
-		 int offset)
-{
-    GraphColormap **cmapPtrPtr = (GraphColormap **)(widgRec + offset);
-    ContourElement *elemPtr = (ContourElement *)widgRec;
-    
-    Blt_Colormap_DeleteNotifier(*cmapPtrPtr, elemPtr);
-    *cmapPtrPtr = NULL;
-}
-
-
-/*
- *---------------------------------------------------------------------------
- *
- * ObjToColormapProc --
- *
- *	Convert the string representation of a colormap into its token.
- *
- * Results:
- *	The return value is a standard TCL result.  The colormap token is
- *	written into the widget record.
- *
- *---------------------------------------------------------------------------
- */
-/*ARGSUSED*/
-static int
-ObjToColormapProc(
-    ClientData clientData,		/* Not used. */
-    Tcl_Interp *interp,			/* Interpreter where to report
-                                         * results. */
-    Tk_Window tkwin,			/* Not used. */
-    Tcl_Obj *objPtr,			/* String representing symbol type */
-    char *widgRec,			/* Element information record */
-    int offset,				/* Offset to field in structure */
-    int flags)				/* Not used. */
-{
-    GraphColormap **cmapPtrPtr = (GraphColormap **)(widgRec + offset);
-    ContourElement *elemPtr = (ContourElement *)widgRec;
-    const char *string;
-    
-    string = Tcl_GetString(objPtr);
-    if ((string == NULL) || (string[0] == '\0')) {
-	FreeColormapProc(clientData, Tk_Display(tkwin), widgRec, offset);
-	return TCL_OK;
-    }
-    if (Blt_Colormap_Get(interp, elemPtr->obj.graphPtr, objPtr, cmapPtrPtr) 
-	!= TCL_OK) {
-	return TCL_ERROR;
-    }
-    Blt_Colormap_CreateNotifier(*cmapPtrPtr, ColormapChangedProc, elemPtr);
-    return TCL_OK;
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * ColormapToObjProc --
- *
- *	Convert the colormap token into a string.
- *
- * Results:
- *	The string representing the colormap is returned.
- *
- *---------------------------------------------------------------------------
- */
-/*ARGSUSED*/
-static Tcl_Obj *
-ColormapToObjProc(
-    ClientData clientData,		/* Not used. */
-    Tcl_Interp *interp,
-    Tk_Window tkwin,
-    char *widgRec,			/* Element information record */
-    int offset,				/* Offset to field in structure */
-    int flags)				/* Not used. */
-{
-    GraphColormap *cmapPtr = *(GraphColormap **)(widgRec + offset);
-
-    if (cmapPtr == NULL) {
-	return Tcl_NewStringObj("", -1);
-    } 
-    return Tcl_NewStringObj(cmapPtr->name, -1);
 }
 
 /* Isoline procedures. */
@@ -1988,15 +1859,17 @@ GetScreenPoints(ContourElement *elemPtr)
     Region2d exts;
     Trace *tracePtr;
     AxisRange *rangePtr;
+    Axis *zAxisPtr;
 
+    zAxisPtr = elemPtr->zAxisPtr;
     /* 
      * Step 1: Create array of vertices and apply the current palette.
      */
     vertices = Blt_AssertMalloc(sizeof(Vertex) * elemPtr->z.numValues);
     Blt_GraphExtents(elemPtr, &exts);
-    rangePtr = &elemPtr->zAxisPtr->axisRange;
-    if (elemPtr->colormapPtr != NULL) {
-	Blt_Colormap_Init(elemPtr->colormapPtr);
+    rangePtr = &zAxisPtr->axisRange;
+    if (zAxisPtr->palette != NULL) {
+	Blt_Palette_SetRange(zAxisPtr->palette, rangePtr->min, rangePtr->max);
     }
     for (i = 0; i < elemPtr->meshPtr->numVertices; i++) {
 	Point2d p;
@@ -2019,9 +1892,9 @@ GetScreenPoints(ContourElement *elemPtr)
 	/* Map graph z-coordinate to normalized coordinates [0..1] */
 	z = (z - rangePtr->min)  * rangePtr->scale;
 	v->z = z;
-	if (elemPtr->colormapPtr != NULL) {
-	    v->color.u32 = Blt_Colormap_GetAssociatedColor(
-                elemPtr->colormapPtr, v->z);
+	if (zAxisPtr->palette != NULL) {
+            v->color.u32 = Blt_Palette_GetAssociatedColor(zAxisPtr->palette,
+                v->z);
 	}
     }
     elemPtr->vertices = vertices;
@@ -2497,12 +2370,14 @@ ProcessTriangle(ContourElement *elemPtr, Triangle *t, Isoline *isoPtr)
 static void
 MapIsoline(Isoline *isoPtr)
 {
+    Axis *zAxisPtr;
     AxisRange *rangePtr;
     ContourElement *elemPtr;
     int i;
-
+    
     elemPtr = isoPtr->elemPtr;
-    rangePtr = &elemPtr->zAxisPtr->axisRange;
+    zAxisPtr = elemPtr->zAxisPtr;
+    rangePtr = &zAxisPtr->axisRange;
     if (isoPtr->flags & ABSOLUT) {
 	if (fabs(rangePtr->range) < DBL_EPSILON) {
 	    return;
@@ -2511,9 +2386,9 @@ MapIsoline(Isoline *isoPtr)
     } else {
 	isoPtr->value = isoPtr->reqValue;
     }
-    if (elemPtr->colormapPtr != NULL) {
-        isoPtr->paletteColor.u32 = Blt_Colormap_GetAssociatedColor(
-                elemPtr->colormapPtr, isoPtr->value);
+    if (zAxisPtr->palette != NULL) {
+        isoPtr->paletteColor.u32 = Blt_Palette_GetAssociatedColor(
+                zAxisPtr->palette, isoPtr->value);
     } else {
 	isoPtr->paletteColor.u32 = 0xFF000000; /* Solid black. */
     }
@@ -4518,6 +4393,11 @@ MapProc(Graph *graphPtr, Element *basePtr)
     Blt_HashEntry *hPtr;
     Blt_HashSearch iter;
     Tcl_Interp *interp;
+    Axis *zAxisPtr;
+    AxisRange *rangePtr;
+    
+    zAxisPtr = elemPtr->zAxisPtr;
+    rangePtr = &zAxisPtr->axisRange;
 
     interp = elemPtr->obj.graphPtr->interp;
     ResetElement(elemPtr);
@@ -4547,8 +4427,8 @@ MapProc(Graph *graphPtr, Element *basePtr)
 #ifdef notdef
     MapActiveTriangles(elemPtr);
 #endif
-    if (elemPtr->colormapPtr != NULL) {
-	Blt_Colormap_Init(elemPtr->colormapPtr);
+    if (zAxisPtr->palette != NULL) {
+	Blt_Palette_SetRange(zAxisPtr->palette, rangePtr->min, rangePtr->max);
     }
     /* Map contour isolines. */
     for (hPtr = Blt_FirstHashEntry(&elemPtr->isoTable, &iter); hPtr != NULL;
@@ -4558,8 +4438,6 @@ MapProc(Graph *graphPtr, Element *basePtr)
 	isoPtr = Blt_GetHashValue(hPtr);
 	MapIsoline(isoPtr);
     }
-    /* Map auxillary legend. */
-    ComputeColorBarGeometry(graphPtr, elemPtr, 100, 100);
 }
 
 /*
@@ -6746,6 +6624,11 @@ DrawTriangle(ContourElement *elemPtr, Pict *destPtr, Triangle *t, int xoff,
     int x, y;  
     Blt_Pixel *destRowPtr;
     TriangleRenderer ren;
+    Axis *zAxisPtr;
+    AxisRange *rangePtr;
+    
+    zAxisPtr = elemPtr->zAxisPtr;
+    rangePtr = &zAxisPtr->axisRange;
 #define A0	ren.edge[0].A
 #define B0	ren.edge[0].B
 #define C0	ren.edge[0].C
@@ -6803,8 +6686,7 @@ DrawTriangle(ContourElement *elemPtr, Pict *destPtr, Triangle *t, int xoff,
 		if (cz < t->min) {
 		    cz = t->min;
 		}
-		dp->u32 = Blt_Colormap_GetAssociatedColor(elemPtr->colormapPtr,
-                        cz);
+		dp->u32 = Blt_Palette_GetAssociatedColor(zAxisPtr->palette, cz);
 #ifdef notdef
 		fprintf(stderr, "z=%.17g color=(%d %d %d %d)\n",
 			cz, dp->Red, dp->Green, dp->Blue, dp->Alpha);
@@ -6966,6 +6848,11 @@ DrawTriangle(ContourElement *elemPtr, Pict *destPtr, Triangle *t, int xoff,
     int x, y, j;  
     Blt_Pixel *destRowPtr;
     TriangleRenderer ren;
+    Axis *zAxisPtr;
+    AxisRange *rangePtr;
+    
+    zAxisPtr = elemPtr->zAxisPtr;
+    rangePtr = &zAxisPtr->axisRange;
 #define A0	ren.edge[0].A
 #define B0	ren.edge[0].B
 #define A1	ren.edge[1].A
@@ -6982,7 +6869,7 @@ DrawTriangle(ContourElement *elemPtr, Pict *destPtr, Triangle *t, int xoff,
 #define Ba	ren.alpha[1]
 #define Av	ren.value[0]
 #define Bv	ren.value[1]
-    if (elemPtr->colormapPtr == NULL) {
+    if (zAxisPtr->palette == NULL) {
 	return;
     }
     if (!InitRenderer(elemPtr, t, &ren)) {
@@ -6992,7 +6879,7 @@ DrawTriangle(ContourElement *elemPtr, Pict *destPtr, Triangle *t, int xoff,
     t1 = A1 * ren.x1 + B1 * ren.y1 + ren.edge[1].C;
     t2 = A2 * ren.x1 + B2 * ren.y1 + ren.edge[2].C;
     tz = ren.value[2];
-    Blt_Colormap_Init(elemPtr->colormapPtr);
+    Blt_Palette_SetRange(zAxisPtr->palette, rangePtr->min, rangePtr->max);
     destRowPtr = destPtr->bits + (destPtr->pixelsPerRow * (ren.y1-yoff));
     for (j = 0, y = ren.y1; y <= ren.y2; y++, j++) {
 	double e0, e1, e2;
@@ -7016,8 +6903,7 @@ DrawTriangle(ContourElement *elemPtr, Pict *destPtr, Triangle *t, int xoff,
 		if (cz < t->min) {
 		    cz = t->min;
 		}
-		dp->u32 = Blt_Colormap_GetAssociatedColor(elemPtr->colormapPtr,
-                        cz);
+		dp->u32 = Blt_Palette_GetAssociatedColor(zAxisPtr->palette, cz);
 #ifdef notdef
 		fprintf(stderr, "z=%.17g color=(%d %d %d %d)\n",
 			cz, dp->Red, dp->Green, dp->Blue, dp->Alpha);
@@ -7115,60 +7001,3 @@ Blt_ContourElement(Graph *graphPtr, ClassId classId, Blt_HashEntry *hPtr)
     elemPtr->painter = Blt_GetPainter(graphPtr->tkwin, 1.0);
     return (Element *)elemPtr;
 }
-
-static int 
-ComputeColorBarGeometry(Graph *graphPtr, ContourElement *elemPtr, 
-			int width, int height) 
-{
-    Axis *axisPtr;
-    int right, left, top, bottom;
-
-    axisPtr = elemPtr->zAxisPtr;
-    /* 
-     * horizontal color bar
-     *
-     *	min ---------------------- max 
-     *      |  |   |   |    |    |
-     */
-    Blt_GetAxisGeometry(graphPtr, axisPtr);
-    right = left = top = bottom = 0;
-    if (!Blt_Legend_IsHidden(graphPtr)) {
-	switch (Blt_Legend_Site(graphPtr)) {
-	case LEGEND_RIGHT:
-	    right += Blt_Legend_Width(graphPtr) + 2;
-	    break;
-	case LEGEND_LEFT:
-	    left += Blt_Legend_Width(graphPtr) + 2;
-	    break;
-	case LEGEND_TOP:
-	    top += Blt_Legend_Height(graphPtr) + 2;
-	    break;
-	case LEGEND_BOTTOM:
-	    bottom += Blt_Legend_Height(graphPtr) + 2;
-	    break;
-	case LEGEND_XY:
-	case LEGEND_PLOT:
-	case LEGEND_WINDOW:
-	    /* Do nothing. */
-	    break;
-	}
-    }
-#ifdef notdef
-    fprintf(stderr, "legend site=%d, x=%d y=%d w=%d h=%d\n", 
-	    Blt_Legend_Site(graphPtr), 
-	    Blt_Legend_X(graphPtr), 
-	    Blt_Legend_Y(graphPtr), 
-	    Blt_Legend_Width(graphPtr), 
-	    Blt_Legend_Height(graphPtr));
-#endif
-    return TCL_OK;
-}
-
-#ifdef notdef
-static int 
-DrawColorBar(int width, int height) 
-{
-    /*  */
-    return TCL_OK;
-}
-#endif

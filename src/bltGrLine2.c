@@ -354,8 +354,7 @@ struct _LineElement {
 					 * symbol. */
     int state;
 
-    /* The line element specific fields start here. */
-
+    /* Line-specific fields. */
     ElemValues xError;			/* Relative/symmetric X error
                                          * values. */
     ElemValues yError;			/* Relative/symmetric Y error
@@ -400,7 +399,7 @@ struct _LineElement {
 					 * clipped by the plotting area. */
     Blt_Pool pointPool;
     Blt_Pool segmentPool;
-    GraphColormap *colormapPtr;
+    Axis *zAxisPtr;
 };
 
 static Blt_OptionParseProc ObjToSmoothProc;
@@ -432,14 +431,6 @@ static Blt_CustomOption symbolOption =
     ObjToSymbolProc, SymbolToObjProc, FreeSymbolProc, (ClientData)0
 };
 
-static Blt_OptionFreeProc FreeColormapProc;
-static Blt_OptionParseProc ObjToColormapProc;
-static Blt_OptionPrintProc ColormapToObjProc;
-static Blt_CustomOption colormapOption =
-{
-    ObjToColormapProc, ColormapToObjProc, FreeColormapProc, (ClientData)0
-};
-
 BLT_EXTERN Blt_CustomOption bltLineStylesOption;
 BLT_EXTERN Blt_CustomOption bltColorOption;
 BLT_EXTERN Blt_CustomOption bltValuesOption;
@@ -447,6 +438,7 @@ BLT_EXTERN Blt_CustomOption bltValuePairsOption;
 BLT_EXTERN Blt_CustomOption bltLinePenOption;
 BLT_EXTERN Blt_CustomOption bltXAxisOption;
 BLT_EXTERN Blt_CustomOption bltYAxisOption;
+BLT_EXTERN Blt_CustomOption bltAxisOption;
 
 #define DEF_ACTIVE_PEN		"activeLine"
 #define DEF_AXIS_X		"x"
@@ -567,7 +559,7 @@ static Blt_ConfigSpec lineSpecs[] =
 	Blt_Offset(LineElement, normalPenPtr), BLT_CONFIG_NULL_OK, 
 	&bltLinePenOption},
     {BLT_CONFIG_CUSTOM, "-colormap", "colormap", "Colormap", DEF_COLORMAP, 
-	Blt_Offset(LineElement, colormapPtr), 0, &colormapOption},
+	Blt_Offset(LineElement, zAxisPtr), 0, &bltAxisOption},
     {BLT_CONFIG_PIXELS_NNEG, "-pixels", "pixels", "Pixels", DEF_PEN_PIXELS, 
 	Blt_Offset(LineElement, builtinPen.symbol.size), GRAPH | STRIPCHART}, 
     {BLT_CONFIG_FLOAT, "-reduce", "reduce", "Reduce",
@@ -1349,136 +1341,6 @@ PenDirToObjProc(
 /*
  *---------------------------------------------------------------------------
  *
- * ColormapChangedProc
- *
- *
- * Results:
- *	None.
- *
- *---------------------------------------------------------------------------
- */
-/* ARGSUSED */
-static void
-ColormapChangedProc(GraphColormap *cmapPtr, ClientData clientData, 
-		    unsigned int flags)
-{
-    LineElement *elemPtr = clientData;
-    Graph *graphPtr;
-
-    if (flags & COLORMAP_DELETE_NOTIFY) {
-	cmapPtr->palette = NULL;
-    }
-    elemPtr->flags |= MAP_ITEM;
-    graphPtr = cmapPtr->graphPtr;
-    graphPtr->flags |= CACHE_DIRTY;
-    Blt_EventuallyRedrawGraph(graphPtr);
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * FreeColormapProc --
- *
- *	Releases the colormap.  The notifier for the colormap component is
- *	deleted.
- *
- * Results:
- *	The return value is a standard TCL result.  The colormap token is
- *	written into the widget record.
- *
- *---------------------------------------------------------------------------
- */
-/*ARGSUSED*/
-static void
-FreeColormapProc(ClientData clientData, Display *display, char *widgRec,
-		 int offset)
-{
-    GraphColormap **cmapPtrPtr = (GraphColormap **)(widgRec + offset);
-    LineElement *elemPtr = (LineElement *)widgRec;
-    
-    if (*cmapPtrPtr != NULL) {
-        Blt_Colormap_DeleteNotifier(*cmapPtrPtr, elemPtr);
-    }
-    *cmapPtrPtr = NULL;
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * ObjToColormapProc --
- *
- *	Convert the string representation of a colormap into its token.
- *
- * Results:
- *	The return value is a standard TCL result.  The colormap token is
- *	written into the widget record.
- *
- *---------------------------------------------------------------------------
- */
-/*ARGSUSED*/
-static int
-ObjToColormapProc(
-    ClientData clientData,		/* Not used. */
-    Tcl_Interp *interp,			/* Interpreter to send results back
-					 * to */
-    Tk_Window tkwin,			/* Not used. */
-    Tcl_Obj *objPtr,			/* String representing symbol type */
-    char *widgRec,			/* Element information record */
-    int offset,				/* Offset to field in structure */
-    int flags)				/* Not used. */
-{
-    GraphColormap **cmapPtrPtr = (GraphColormap **)(widgRec + offset);
-    LineElement *elemPtr = (LineElement *)widgRec;
-    const char *string;
-    
-    string = Tcl_GetString(objPtr);
-    if ((string == NULL) || (string[0] == '\0')) {
-	FreeColormapProc(clientData, Tk_Display(tkwin), widgRec, offset);
-	return TCL_OK;
-    }
-    if (Blt_Colormap_Get(interp, elemPtr->obj.graphPtr, objPtr, cmapPtrPtr) 
-	!= TCL_OK) {
-	return TCL_ERROR;
-    }
-    if (*cmapPtrPtr != NULL) {
-	Blt_Colormap_CreateNotifier(*cmapPtrPtr, ColormapChangedProc, elemPtr);
-    }
-    return TCL_OK;
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * ColormapToObjProc --
- *
- *	Convert the colormap token into a string.
- *
- * Results:
- *	The string representing the colormap is returned.
- *
- *---------------------------------------------------------------------------
- */
-/*ARGSUSED*/
-static Tcl_Obj *
-ColormapToObjProc(
-    ClientData clientData,		/* Not used. */
-    Tcl_Interp *interp,
-    Tk_Window tkwin,
-    char *widgRec,			/* Element information record */
-    int offset,				/* Offset to field in structure */
-    int flags)				/* Not used. */
-{
-    GraphColormap *cmapPtr = *(GraphColormap **)(widgRec + offset);
-
-    if (cmapPtr == NULL) {
-	return Tcl_NewStringObj("", -1);
-    } 
-    return Tcl_NewStringObj(cmapPtr->name, -1);
-}
-
-/*
- *---------------------------------------------------------------------------
- *
  * ConfigurePenProc --
  *
  *	Sets up the appropriate configuration parameters in the GC.  It is
@@ -1486,8 +1348,8 @@ ColormapToObjProc(
  *	Blt_ConfigureWidget.
  *
  * Results:
- *	The return value is a standard TCL result.  If TCL_ERROR is returned,
- *	then interp->result contains an error message.
+ *	The return value is a standard TCL result.  If TCL_ERROR is
+ *	returned, then interp->result contains an error message.
  *
  * Side effects:
  *	Configuration information such as line width, line style, color
@@ -1661,10 +1523,10 @@ Blt_CreateLinePen2(Graph *graphPtr, ClassId id, Blt_HashEntry *hPtr)
  *---------------------------------------------------------------------------
  *
  *	In this section, the routines deal with building and filling the
- *	element's data structures with transformed screen coordinates.  They
- *	are triggered from TranformLine which is called whenever the data or
- *	coordinates axes have changed and new screen coordinates need to be
- *	calculated.
+ *	element's data structures with transformed screen coordinates.
+ *	They are triggered from TranformLine which is called whenever the
+ *	data or coordinates axes have changed and new screen coordinates
+ *	need to be calculated.
  *
  *---------------------------------------------------------------------------
  */
@@ -1674,13 +1536,13 @@ Blt_CreateLinePen2(Graph *graphPtr, ClassId id, Blt_HashEntry *hPtr)
  *
  * ScaleSymbol --
  *
- *	Returns the scaled size for the line element. Scaling depends upon when
- *	the base line ranges for the element were set and the current range of
- *	the graph.
+ *	Returns the scaled size for the line element. Scaling depends upon
+ *	when the base line ranges for the element were set and the current
+ *	range of the graph.
  *
  * Results:
- *	The new size of the symbol, after considering how much the graph has
- *	been scaled, is returned.
+ *	The new size of the symbol, after considering how much the graph
+ *	has been scaled, is returned.
  *
  *---------------------------------------------------------------------------
  */
@@ -1763,7 +1625,7 @@ RemoveHead(LineElement *elemPtr, Trace *tracePtr)
  * FreeTrace --
  *
  *	Frees the memory assoicated with a trace.
- *	Note:  The points and segments of the trace are freed enmass when 
+ *	Note: The points and segments of the trace are freed enmass when
  *	       destroying the memory poll assoicated with the element.
  *
  * Results:
@@ -1867,8 +1729,8 @@ DumpFlags(unsigned int flags)
  *
  * DumpPoints --
  *
- *	Creates a new trace and prepends to the list of traces for 
- *	this element.
+ *	Creates a new trace and prepends to the list of traces for this
+ *	element.
  *
  * Results:
  *	Returns a pointer to the new trace.
@@ -1900,8 +1762,8 @@ DumpPoints(Trace *tracePtr)
  *
  * DumpTraces --
  *
- *	Creates a new trace and prepends to the list of traces for 
- *	this element.
+ *	Creates a new trace and prepends to the list of traces for this
+ *	element.
  *
  * Results:
  *	Returns a pointer to the new trace.
@@ -1924,8 +1786,8 @@ DumpTraces(LineElement *elemPtr)
  *
  * DumpSegments --
  *
- *	Creates a new trace and prepends to the list of traces for 
- *	this element.
+ *	Creates a new trace and prepends to the list of traces for this
+ *	element.
  *
  * Results:
  *	Returns a pointer to the new trace.
@@ -1956,8 +1818,8 @@ DumpSegments(Trace *tracePtr)
  *
  * NewTrace --
  *
- *	Creates a new trace and prepends to the list of traces for 
- *	this element.
+ *	Creates a new trace and prepends to the list of traces for this
+ *	element.
  *
  * Results:
  *	Returns a pointer to the new trace.
@@ -2230,7 +2092,7 @@ GenerateSteps(Trace *tracePtr)
 	 *         |
 	 *  p ---- t
 	 */
-	if (graphPtr->inverted) {
+	if (graphPtr->flags & INVERTED) {
 	    t = NewPoint(tracePtr->elemPtr, p->x, q->y, p->index);
 	} else {
 	    t = NewPoint(tracePtr->elemPtr, q->x, p->y, p->index);
@@ -2282,24 +2144,25 @@ GenerateSpline(Trace *tracePtr)
     q = tracePtr->tail;
     if (((p->x > (double)graphPtr->right)) || 
 	((q->x < (double)graphPtr->left))) {
-	return;				/* All points are clipped. This only
-					 * works if x is monotonically
+	return;				/* All points are clipped. This
+					 * only works if x is monotonically
 					 * increasing. */
     }
 
     /*
-     * The spline is computed in screen coordinates instead of data points so
-     * that we can select the abscissas of the interpolated points from each
-     * pixel horizontally across the plotting area.
+     * The spline is computed in screen coordinates instead of data points
+     * so that we can select the abscissas of the interpolated points from
+     * each pixel horizontally across the plotting area.
      */
     if (graphPtr->right <= graphPtr->left) {
 	return;
     }
     points = Blt_AssertMalloc(tracePtr->numPoints * sizeof(Point2d));
 
-    /* Populate the interpolated point array with the original x-coordinates
-     * and extra interpolated x-coordinates for each horizontal pixel that the
-     * line segment contains. Do this only for pixels that are on screen  */
+    /* Populate the interpolated point array with the original
+     * x-coordinates and extra interpolated x-coordinates for each
+     * horizontal pixel that the line segment contains. Do this only for
+     * pixels that are on screen */
     for (i = 0, p = tracePtr->head; p != NULL; p = p->next, i++) {
 	/* Add the original x-coordinate */
 	points[i].x = p->x;
@@ -2310,7 +2173,8 @@ GenerateSpline(Trace *tracePtr)
 	return;				/* Can't interpolate. */
     }
     for (i = 0, p = tracePtr->head, q = p->next; q != NULL; q = q->next, i++) {
-	/* Is any part of the interval (line segment) in the plotting area?  */
+	/* Is any part of the interval (line segment) in the plotting
+         * area?  */
 	if ((p->flags | q->flags) & VISIBLE) {
 	    TracePoint *lastp;
 	    double x, last;
@@ -2318,15 +2182,15 @@ GenerateSpline(Trace *tracePtr)
 	    /*  Interpolate segments that lie on the screen. */
 	    x = p->x + 1.0;
 	    /*
-	     * Since the line segment may be partially clipped on the left or
-	     * right side, the points to interpolate are always interior to
-	     * the plotting area.
+	     * Since the line segment may be partially clipped on the left
+	     * or right side, the points to interpolate are always interior
+	     * to the plotting area.
 	     *
 	     *           left			    right
 	     *      x1----|---------------------------|---x2
 	     *
-	     * Pick the max of the starting X-coordinate and the left edge and
-	     * the min of the last X-coordinate and the right edge.
+	     * Pick the max of the starting X-coordinate and the left edge
+	     * and the min of the last X-coordinate and the right edge.
 	     */
 	    x = MAX(x, (double)graphPtr->left);
 	    last = MIN(q->x, (double)graphPtr->right);
@@ -2362,18 +2226,19 @@ GenerateSpline(Trace *tracePtr)
  *
  * GenerateParametricSplineOld --
  *
- *	Computes a spline based upon the data points, returning a new (larger)
- *	coordinate array or points.
+ *	Computes a spline based upon the data points, returning a new
+ *	(larger) coordinate array or points.
  *
  * Results:
  *	None.
  *
  * Side Effects:
- *	The temporary arrays for screen coordinates and data map are updated
- *	based upon spline.
+ *	The temporary arrays for screen coordinates and data map are
+ *	updated based upon spline.
  *
- * FIXME:  Can't interpolate knots along the Y-axis.   Need to break
- *	   up point array into interchangable X and Y vectors earlier. *	   Pass extents (left/right or top/bottom) as parameters.
+ * FIXME: Can't interpolate knots along the Y-axis.  Need to break up point
+ *	   array into interchangable X and Y vectors earlier. Pass extents
+ *	   (left/right or top/bottom) as parameters.
  *
  *---------------------------------------------------------------------------
  */
@@ -2397,7 +2262,8 @@ GenerateParametricSplineOld(Trace *tracePtr)
 
     /* 
      * Populate the x2 array with both the original X-coordinates and extra
-     * X-coordinates for each horizontal pixel that the line segment contains.
+     * X-coordinates for each horizontal pixel that the line segment
+     * contains.
      */
     xpoints = Blt_Malloc(tracePtr->numPoints * sizeof(Point2d));
     ypoints = Blt_Malloc(tracePtr->numPoints * sizeof(Point2d));
@@ -2496,8 +2362,8 @@ GenerateParametricSplineOld(Trace *tracePtr)
  *
  * GenerateParametricSpline --
  *
- *	Computes a spline based upon the data points, returning a new (larger)
- *	coordinate array or points.
+ *	Computes a spline based upon the data points, returning a new
+ *	(larger) coordinate array or points.
  *
  * Results:
  *	None.
@@ -2526,7 +2392,8 @@ GenerateParametricCubicSpline(Trace *tracePtr)
 
     /* 
      * Populate the x2 array with both the original X-coordinates and extra
-     * X-coordinates for each horizontal pixel that the line segment contains.
+     * X-coordinates for each horizontal pixel that the line segment
+     * contains.
      */
     points = Blt_AssertMalloc(tracePtr->numPoints * sizeof(Point2d));
     p = tracePtr->head;
@@ -2665,18 +2532,19 @@ GenerateCatromSpline(Trace *tracePtr)
     int i;
 
     /*
-     * The spline is computed in screen coordinates instead of data points so
-     * that we can select the abscissas of the interpolated points from each
-     * pixel horizontally across the plotting area.
+     * The spline is computed in screen coordinates instead of data points
+     * so that we can select the abscissas of the interpolated points from
+     * each pixel horizontally across the plotting area.
      */
     if (graphPtr->right <= graphPtr->left) {
 	return;				/* No space in plotting area. */
     }
     points = Blt_AssertMalloc(tracePtr->numPoints * sizeof(Point2d));
 
-    /* Populate the interpolated point array with the original x-coordinates
-     * and extra interpolated x-coordinates for each horizontal pixel that the
-     * line segment contains. Do this only for pixels that are on screen  */
+    /* Populate the interpolated point array with the original
+     * x-coordinates and extra interpolated x-coordinates for each
+     * horizontal pixel that the line segment contains. Do this only for
+     * pixels that are on screen */
     p = tracePtr->head;
     points[0].x = p->x;
     points[0].y = p->y;
@@ -2704,7 +2572,7 @@ GenerateCatromSpline(Trace *tracePtr)
         d  = hypot(q->x - p->x, q->y - p->y);
 
         p1.x = p->x, p1.y = p->y;
-	p2.x = q->x, p2.y = q->y;
+ 	p2.x = q->x, p2.y = q->y;
 	Blt_LineRectClip(&exts, &p1, &p2);
 	
 	/* Distance from last knot to p (start of generated points). */
@@ -2719,8 +2587,8 @@ GenerateCatromSpline(Trace *tracePtr)
 	    Point2d p1;
 	    TracePoint *t;
 
-	    /* Point is indicated by its interval and parameter u which is the
-	     * distance [0..1] of the point on the line segment. */
+	    /* Point is indicated by its interval and parameter u which is
+	     * the distance [0..1] of the point on the line segment. */
 	    p1 = Blt_EvaluateCatromSpline(spline, i, dp / d);
 	    t = NewPoint(elemPtr, p1.x, p1.y, p->index);
 	    /* Insert the new point in to line segment. */
@@ -2742,7 +2610,7 @@ GenerateCatromSpline(Trace *tracePtr)
  *
  * SmoothElement --
  *
- *	Computes a cubic or quadratic spline and adds extra points to the 
+ *	Computes a cubic or quadratic spline and adds extra points to the
  *	list of coordinates for smoothing.
  *
  * Results:
@@ -3459,7 +3327,7 @@ MapAreaUnderTrace(Trace *tracePtr)
     n = tracePtr->numPoints + 3;
     points = Blt_AssertMalloc(sizeof(Point2d) * n);
     graphPtr = elemPtr->obj.graphPtr;
-    if (graphPtr->inverted) {
+    if (graphPtr->flags & INVERTED) {
 	double xMin;
 	TracePoint *p;
 	int count;
@@ -3718,7 +3586,7 @@ MapErrorBars(LineElement *elemPtr)
 		    AddSegment(tracePtr, stem);
 		}
 		/* Cap from high + errorCapWith  */
-		if (graphPtr->inverted) {
+		if (graphPtr->flags &  INVERTED) {
 		    p1.y = p2.y = high.y;
 		    p1.x = high.x-ec2;
 		    p2.x = high.x+ec2;
@@ -3762,7 +3630,7 @@ MapErrorBars(LineElement *elemPtr)
 		    AddSegment(tracePtr, stem);
 		}
 		/* Cap from low + errorCapWith  */
-		if (graphPtr->inverted) {
+		if (graphPtr->flags & INVERTED) {
 		    p1.y = p2.y = low.y;
 		    p1.x = low.x-ec2;
 		    p2.x = low.x+ec2;
@@ -3806,7 +3674,7 @@ MapErrorBars(LineElement *elemPtr)
 			p->flags | YHIGH);
 		    AddSegment(tracePtr, stem);
 		}
-		if (graphPtr->inverted) {
+		if (graphPtr->flags & INVERTED) {
 		    p1.x = p2.x = high.x;
 		    p1.y = high.y-ec2;
 		    p2.y = high.y+ec2;
@@ -3849,7 +3717,7 @@ MapErrorBars(LineElement *elemPtr)
 			p->flags | YLOW);
 		    AddSegment(tracePtr, stem);
 		}
-		if (graphPtr->inverted) {
+		if (graphPtr->flags & INVERTED) {
 		    p1.x = p2.x = low.x;
 		    p1.y = low.y-ec2;
 		    p2.y = low.y+ec2;
@@ -4129,7 +3997,7 @@ MapProc(Graph *graphPtr, Element *basePtr)
 	}
 #endif
     }
-    if ((elemPtr->fillBg != NULL) || (elemPtr->colormapPtr != NULL)) {
+    if ((elemPtr->fillBg != NULL) || (elemPtr->zAxisPtr != NULL)) {
 	MapAreaUnderCurve(elemPtr);
     }
     /* Split traces based upon style.  The pen associated with the trace
@@ -4154,22 +4022,22 @@ GradientColorProc(Blt_PaintBrush *brushPtr, int x, int y)
     Blt_Pixel color;
     Graph *graphPtr;
     LineElement *elemPtr = brushPtr->clientData;
-    GraphColormap *cmapPtr;
     double value;
     Point2d point;
-
+    AxisRange *rangePtr;
+    
     graphPtr = elemPtr->obj.graphPtr;
-    cmapPtr = elemPtr->colormapPtr;
     point = Blt_InvMap2D(graphPtr, x, y, &elemPtr->axes);
-    if (cmapPtr->axisPtr == elemPtr->axes.y) {
+    rangePtr = &elemPtr->zAxisPtr->valueRange;
+    if (elemPtr->zAxisPtr->obj.classId == CID_AXIS_Y) {
 	value = point.y;
-    } else if (cmapPtr->axisPtr == elemPtr->axes.x) {
+    } else if (elemPtr->zAxisPtr->obj.classId == CID_AXIS_X) {
 	value = point.x;
     } else {
 	return 0x0;
     }
-    color.u32 = Blt_Palette_GetAssociatedColorFromAbsoluteValue(brushPtr->palette, value,
-	cmapPtr->min, cmapPtr->max);
+    color.u32 = Blt_Palette_GetAssociatedColorFromAbsoluteValue(
+        brushPtr->palette, value, rangePtr->min, rangePtr->max);
     return color.u32;
 }
 
@@ -4225,18 +4093,19 @@ static void
 DrawGradientPolygon(Graph *graphPtr, Drawable drawable, LineElement *elemPtr, 
 		    int n, XPoint *points)
 {
+    AxisRange *rangePtr;
     Blt_PaintBrush brush;
-    Blt_Picture bg;
     Blt_Painter painter;
+    Blt_Picture bg;
+    Point2f *vertices;
     int i;
     int w, h;
     int x1, x2, y1, y2;
-    Point2f *vertices;
 
     if (n < 3) {
 	return;				/* Not enough points for polygon */
     }
-    if (elemPtr->colormapPtr->palette == NULL) {
+    if (elemPtr->zAxisPtr->palette == NULL) {
 	return;				/* No palette defined. */
     }
     /* Grab the rectangular background that covers the polygon. */
@@ -4253,10 +4122,13 @@ DrawGradientPolygon(Graph *graphPtr, Drawable drawable, LineElement *elemPtr,
 	vertices[i].x = (float)(points[i].x - x1);
 	vertices[i].y = (float)(points[i].y - y1);
     }
-    Blt_Colormap_Init(elemPtr->colormapPtr);
+    
+    rangePtr = &elemPtr->zAxisPtr->valueRange;
+    Blt_Palette_SetRange(elemPtr->zAxisPtr->palette,
+                         rangePtr->min, rangePtr->max);
     Blt_PaintBrush_Init(&brush);
     Blt_PaintBrush_SetOrigin(&brush, -x1, -y1);
-    Blt_PaintBrush_SetPalette(&brush, elemPtr->colormapPtr->palette);
+    Blt_PaintBrush_SetPalette(&brush, elemPtr->zAxisPtr->palette);
     Blt_PaintBrush_SetColorProc(&brush, GradientColorProc, elemPtr);
     Blt_PaintPolygon(bg, n, vertices, &brush);
     Blt_Free(vertices);
@@ -4281,7 +4153,7 @@ DrawAreaUnderCurve(Graph *graphPtr, Drawable drawable, LineElement *elemPtr)
 
 	tracePtr = Blt_Chain_GetValue(link);
 	if ((tracePtr->numFillPts > 0) && 
-	    ((elemPtr->fillBg != NULL) || (elemPtr->colormapPtr != NULL))) {
+	    ((elemPtr->fillBg != NULL) || (elemPtr->zAxisPtr != NULL))) {
 	    XPoint *points;
 	    int i;
 
@@ -4290,7 +4162,8 @@ DrawAreaUnderCurve(Graph *graphPtr, Drawable drawable, LineElement *elemPtr)
 		points[i].x = tracePtr->fillPts[i].x;
 		points[i].y = tracePtr->fillPts[i].y;
 	    }
-	    if (elemPtr->colormapPtr != NULL) {
+	    if ((elemPtr->zAxisPtr != NULL) &&
+                (elemPtr->zAxisPtr->palette != NULL)) {
 		DrawGradientPolygon(graphPtr, drawable, elemPtr,
 				    tracePtr->numFillPts, points);
 	    } else {

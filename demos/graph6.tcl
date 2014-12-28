@@ -8,7 +8,7 @@ set tcl_precision 15
 set graph .graph
 
 option add *BltGraph.Width			10i
-option add *BltGraph.leftMargin		.75i
+#option add *BltGraph.leftMargin		.75i
 option add *BltGraph.Height		6i
 option add *BltGraph.plotBackground	black
 

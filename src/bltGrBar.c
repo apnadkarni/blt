@@ -73,7 +73,6 @@ typedef struct {
     PenDestroyProc *destroyProc;
     Graph *graphPtr;			/* Graph that the pen is associated
 					 * with. */
-
     /* Barchart specific pen fields start here. */
     XColor *outlineColor;		/* Outline (foreground) color of
 					 * bar */
@@ -84,46 +83,36 @@ typedef struct {
     Pixmap stipple;			/* Stipple */
     GC fillGC;				/* Graphics context */
     GC outlineGC;			/* GC for outline of bar. */
-
     /* Error bar attributes. */
     int errorBarShow;			/* Describes which error bars to
 					 * display: none, x, y, or both. */
-
-    int errorBarLineWidth;		/* Width of the error bar segments. */
-
+    int errorBarLineWidth;		/* Width of the error bar
+                                         * segments. */
     int errorBarCapWidth;
     XColor *errorBarColor;		/* Color of the error bar. */
-
     GC errorBarGC;			/* Error bar graphics context. */
-
     /* Show value attributes. */
     int valueShow;			/* Indicates whether to display
 					 * data value.  Values are x, y, or
 					 * none. */
-
     const char *valueFormat;		/* A printf format string. */
     TextStyle valueStyle;		/* Text attributes (color, font,
 					 * rotation, etc.) of the value. */
-    
 } BarPen;
 
 typedef struct {
     Weight weight;			/* Weight range where this pen is
 					 * valid. */
     BarPen *penPtr;			/* Pen to use. */
-
     XRectangle *bars;			/* Indicates starting location in
 					 * bar array for this pen. */
     int numBars;                        /* # of bar segments in above
                                          * array. */
-
     GraphSegments xeb, yeb;		/* X and Y error bars. */
-
     int symbolSize;			/* Size of the pen's symbol scaled
 					 * to the current graph size. */
     int errorBarCapWidth;		/* Length of the cap ends on each
 					 * error bar. */
-
 } BarStyle;
 
 typedef struct {
@@ -169,8 +158,7 @@ typedef struct {
 					 * of element's symbol. */
     int state;
 
-    /* Fields specific to the barchart element */
-
+    /* Barchart-specific fields. */
     float barWidth;
     const char *groupName;
 
@@ -197,7 +185,7 @@ typedef struct {
     GraphSegments xeb, yeb;
 
     int errorBarCapWidth;		/* Length of cap on error bars */
-    GraphColormap *colormapPtr;
+    Axis *zAxisPtr;
 } BarElement;
 
 BLT_EXTERN Blt_CustomOption bltBarPenOption;
@@ -206,6 +194,7 @@ BLT_EXTERN Blt_CustomOption bltValuePairsOption;
 BLT_EXTERN Blt_CustomOption bltXAxisOption;
 BLT_EXTERN Blt_CustomOption bltYAxisOption;
 BLT_EXTERN Blt_CustomOption bltBarStylesOption;
+BLT_EXTERN Blt_CustomOption bltAxisOption;
 
 static Blt_OptionParseProc ObjToBarMode;
 static Blt_OptionPrintProc BarModeToObj;
@@ -217,14 +206,6 @@ static Blt_OptionParseProc ObjToPenColors;
 static Blt_OptionPrintProc PenColorsToObj;
 static Blt_CustomOption penColorsOption = {
     ObjToPenColors, PenColorsToObj, NULL, (ClientData)0
-};
-
-static Blt_OptionFreeProc FreeColormapProc;
-static Blt_OptionParseProc ObjToColormapProc;
-static Blt_OptionPrintProc ColormapToObjProc;
-static Blt_CustomOption colormapOption =
-{
-    ObjToColormapProc, ColormapToObjProc, FreeColormapProc, (ClientData)0
 };
 
 #define DEF_ACTIVE_PEN		"activeBar"
@@ -390,7 +371,7 @@ static Blt_ConfigSpec barElemConfigSpecs[] = {
     {BLT_CONFIG_SYNONYM, "-outline", "foreground", (char *)NULL,
 	(char *)NULL, 0, 0},
     {BLT_CONFIG_CUSTOM, "-colormap", "colormap", "Colormap", DEF_COLORMAP, 
-	Blt_Offset(BarElement, colormapPtr), 0, &colormapOption},
+	Blt_Offset(BarElement, zAxisPtr), 0, &bltAxisOption},
     {BLT_CONFIG_CUSTOM, "-pen", "pen", "Pen", (char *)NULL, 
 	Blt_Offset(BarElement, normalPenPtr), BLT_CONFIG_NULL_OK, 
 	&bltBarPenOption},
@@ -668,136 +649,6 @@ PenColorsToObj(
 
     return Tcl_NewStringObj(Tk_NameOfColor(penPtr->errorBarColor), -1);
 }
-
-
-/*
- *---------------------------------------------------------------------------
- *
- * ColormapChangedProc
- *
- *
- * Results:
- *	None.
- *
- *---------------------------------------------------------------------------
- */
-/* ARGSUSED */
-static void
-ColormapChangedProc(GraphColormap *cmapPtr, ClientData clientData, 
-		    unsigned int flags)
-{
-    BarElement *elemPtr = clientData;
-    Graph *graphPtr;
-
-    if (flags & COLORMAP_DELETE_NOTIFY) {
-	cmapPtr->palette = NULL;
-    }
-    elemPtr->flags |= MAP_ITEM;
-    graphPtr = cmapPtr->graphPtr;
-    graphPtr->flags |= CACHE_DIRTY;
-    Blt_EventuallyRedrawGraph(graphPtr);
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * FreeColormapProc --
- *
- *	Releases the colormap.  The notifier for the colormap component is
- *	deleted.
- *
- * Results:
- *	The return value is a standard TCL result.  The colormap token is
- *	written into the widget record.
- *
- *---------------------------------------------------------------------------
- */
-/*ARGSUSED*/
-static void
-FreeColormapProc(ClientData clientData, Display *display, char *widgRec,
-		 int offset)
-{
-    GraphColormap **cmapPtrPtr = (GraphColormap **)(widgRec + offset);
-    BarElement *elemPtr = (BarElement *)widgRec;
-    
-    Blt_Colormap_DeleteNotifier(*cmapPtrPtr, elemPtr);
-    *cmapPtrPtr = NULL;
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * ObjToColormapProc --
- *
- *	Convert the string representation of a colormap into its token.
- *
- * Results:
- *	The return value is a standard TCL result.  The colormap token is
- *	written into the widget record.
- *
- *---------------------------------------------------------------------------
- */
-/*ARGSUSED*/
-static int
-ObjToColormapProc(
-    ClientData clientData,		/* Not used. */
-    Tcl_Interp *interp,			/* Interpreter to send results back
-					 * to */
-    Tk_Window tkwin,			/* Not used. */
-    Tcl_Obj *objPtr,			/* String representing symbol type */
-    char *widgRec,			/* Element information record */
-    int offset,				/* Offset to field in structure */
-    int flags)				/* Not used. */
-{
-    GraphColormap **cmapPtrPtr = (GraphColormap **)(widgRec + offset);
-    BarElement *elemPtr = (BarElement *)widgRec;
-    const char *string;
-    
-    string = Tcl_GetString(objPtr);
-    if ((string == NULL) || (string[0] == '\0')) {
-	FreeColormapProc(clientData, Tk_Display(tkwin), widgRec, offset);
-	return TCL_OK;
-    }
-    if (Blt_Colormap_Get(interp, elemPtr->obj.graphPtr, objPtr, cmapPtrPtr) 
-	!= TCL_OK) {
-	return TCL_ERROR;
-    }
-    if (*cmapPtrPtr != NULL) {
-	Blt_Colormap_CreateNotifier(*cmapPtrPtr, ColormapChangedProc, elemPtr);
-    }
-    return TCL_OK;
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * ColormapToObjProc --
- *
- *	Convert the colormap token into a string.
- *
- * Results:
- *	The string representing the colormap is returned.
- *
- *---------------------------------------------------------------------------
- */
-/*ARGSUSED*/
-static Tcl_Obj *
-ColormapToObjProc(
-    ClientData clientData,		/* Not used. */
-    Tcl_Interp *interp,
-    Tk_Window tkwin,
-    char *widgRec,			/* Element information record */
-    int offset,				/* Offset to field in structure */
-    int flags)				/* Not used. */
-{
-    GraphColormap *cmapPtr = *(GraphColormap **)(widgRec + offset);
-
-    if (cmapPtr == NULL) {
-	return Tcl_NewStringObj("", -1);
-    } 
-    return Tcl_NewStringObj(cmapPtr->name, -1);
-}
-
 
 /* 
  * Zero out the style's number of bars and errorbars. 
@@ -1730,7 +1581,7 @@ MapProc(Graph *graphPtr, Element *basePtr)
 	 */
 
 	if ((graphPtr->numBarGroups > 0) && (graphPtr->mode != BARS_INFRONT) && 
-	    (!graphPtr->stackAxes)) {
+	    ((graphPtr->flags & STACK_AXES) == 0)) {
 	    Blt_HashEntry *hPtr;
 	    SetKey key;
 
@@ -1826,7 +1677,7 @@ MapProc(Graph *graphPtr, Element *basePtr)
 	}
 	/* Bound the bars horizontally by the width of the graph window */
 	/* Bound the bars vertically by the position of the axis. */
-	if (graphPtr->stackAxes) {
+	if (graphPtr->flags & STACK_AXES) {
 	    top = elemPtr->axes.y->screenMin;
 	    bottom = elemPtr->axes.y->screenMin + elemPtr->axes.y->screenRange;
 	    left = graphPtr->left;
@@ -1970,22 +1821,22 @@ GradientColorProc(Blt_PaintBrush *brushPtr, int x, int y)
     BarElement *elemPtr = brushPtr->clientData;
     Blt_Pixel color;
     Graph *graphPtr;
-    GraphColormap *cmapPtr;
     Point2d point;
     double value;
-
+    AxisRange *rangePtr;
+    
     graphPtr = elemPtr->obj.graphPtr;
-    cmapPtr = elemPtr->colormapPtr;
     point = Blt_InvMap2D(graphPtr, x, y, &elemPtr->axes);
-    if (cmapPtr->axisPtr == elemPtr->axes.y) {
+    if (elemPtr->zAxisPtr == elemPtr->axes.y) {
 	value = point.y;
-    } else if (cmapPtr->axisPtr == elemPtr->axes.x) {
+    } else if (elemPtr->zAxisPtr == elemPtr->axes.x) {
 	value = point.x;
     } else {
 	return 0x0;
     }
+    rangePtr = &elemPtr->zAxisPtr->axisRange;
     color.u32 = Blt_Palette_GetAssociatedColorFromAbsoluteValue(
-        brushPtr->palette, value, cmapPtr->min, cmapPtr->max);
+        brushPtr->palette, value, rangePtr->min, rangePtr->max);
     return color.u32;
 }
 
@@ -2003,11 +1854,12 @@ static void
 DrawGradientRectangle(Graph *graphPtr, Drawable drawable, BarElement *elemPtr, 
 		      XRectangle *rectPtr)
 {
+    AxisRange *rangePtr;
     Blt_PaintBrush brush;
-    Blt_Picture bg;
     Blt_Painter painter;
-
-    if (elemPtr->colormapPtr->palette == NULL) {
+    Blt_Picture bg;
+    
+    if ((elemPtr->zAxisPtr == NULL) || (elemPtr->zAxisPtr->palette == NULL)) {
 	return;				/* No palette defined. */
     }
     bg = Blt_DrawableToPicture(graphPtr->tkwin, drawable, rectPtr->x, 
@@ -2015,10 +1867,12 @@ DrawGradientRectangle(Graph *graphPtr, Drawable drawable, BarElement *elemPtr,
     if (bg == NULL) {
 	return;				/* Background is obscured. */
     }
-    Blt_Colormap_Init(elemPtr->colormapPtr);
+    rangePtr = &elemPtr->zAxisPtr->axisRange;
+    Blt_Palette_SetRange(elemPtr->zAxisPtr->palette,
+                         rangePtr->min, rangePtr->max);
     Blt_PaintBrush_Init(&brush);
     Blt_PaintBrush_SetOrigin(&brush, -rectPtr->x, -rectPtr->y); 
-    Blt_PaintBrush_SetPalette(&brush, elemPtr->colormapPtr->palette);
+    Blt_PaintBrush_SetPalette(&brush, elemPtr->zAxisPtr->palette);
     Blt_PaintBrush_SetColorProc(&brush, GradientColorProc, elemPtr);
     Blt_PaintRectangle(bg, 0, 0, rectPtr->width, rectPtr->height, 0, 0, &brush);
     painter = Blt_GetPainter(graphPtr->tkwin, 1.0);
@@ -2071,7 +1925,7 @@ DrawSegments(Graph *graphPtr, Drawable drawable, BarPen *penPtr,
 	    TkSetRegion(graphPtr->display, penPtr->outlineGC, rgn);
 	}
 	for (rp = bars, rend = rp + numBars; rp < rend; rp++) {
-	    if (elemPtr->colormapPtr != NULL) {
+	    if (elemPtr->zAxisPtr != NULL) {
 		DrawGradientRectangle(graphPtr, drawable, elemPtr, rp);
 	    } else if (penPtr->stipple != None) {
 		XFillRectangle(graphPtr->display, drawable, penPtr->fillGC, 
@@ -2145,7 +1999,7 @@ DrawValues(Graph *graphPtr, Drawable drawable, BarElement *elemPtr,
 	    strcat(string, ",");
 	    Blt_FormatString(string + strlen(string), TCL_DOUBLE_SPACE, fmt, y);
 	}
-	if (graphPtr->inverted) {
+	if (graphPtr->flags & INVERTED) {
 	    anchorPos.y = rp->y + rp->height * 0.5;
 	    anchorPos.x = rp->x + rp->width;
 	    if (x < graphPtr->baseline) {
@@ -2397,7 +2251,7 @@ ValuesToPostScript(Graph *graphPtr, Blt_Ps ps, BarElement *elemPtr,
 	    strcat(string, ",");
 	    Blt_FormatString(string + strlen(string), TCL_DOUBLE_SPACE, fmt, y);
 	}
-	if (graphPtr->inverted) {
+	if (graphPtr->flags & INVERTED) {
 	    anchorPos.y = rp->y + rp->height * 0.5;
 	    anchorPos.x = rp->x + rp->width;
 	    if (x < graphPtr->baseline) {

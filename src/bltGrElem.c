@@ -3961,7 +3961,7 @@ Blt_GraphExtents(void *ptr, Region2d *r)
     Axis *x, *y;
 
     graphPtr = elemPtr->obj.graphPtr;
-    if (graphPtr->inverted) {
+    if (graphPtr->flags & INVERTED) {
 	y = elemPtr->axes.x;
 	x = elemPtr->axes.y;
     } else {

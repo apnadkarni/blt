@@ -252,10 +252,6 @@ typedef struct {
 
 /*
  * GraphColormap --
- *
- *	Contains the line segments positions and graphics context used to
- *	simulate play (by XORing) on the graph.
- *
  */
 typedef struct {
     const char *name;
@@ -263,10 +259,11 @@ typedef struct {
     Graph *graphPtr;			/* Parent graph. */
     Blt_Palette palette;		/* Color palette to map colors
                                            to. */
-    Axis *axisPtr;			/* Axis to use for colormap range.
-					 * By default, the colormap range
-					 * is the range of values for all
-					 * elements mapped to this axis. */
+    Axis *axisPtr;			/* Axis representing the colormap's
+					 * range.  By default, the colormap
+					 * range is the range of values for
+					 * all elements mapped to this
+					 * axis. */
     double reqMin, reqMax;		/* Requested limits of the
 					 * colormap. These override the
 					 * computed limits of the axis
@@ -276,10 +273,6 @@ typedef struct {
 					 * callbacks to be made whenever
 					 * the colormap changes or is
 					 * deleted. */
-    unsigned int flags;
-    unsigned short width, height;       /* Size of colorbar + axis */
-    unsigned short thickness;
-    unsigned short side;
 } GraphColormap;
 
 typedef void (GraphColormapNotifyProc) (GraphColormap *cmapPtr, 
@@ -287,6 +280,7 @@ typedef void (GraphColormapNotifyProc) (GraphColormap *cmapPtr,
 
 #define COLORMAP_CHANGE_NOTIFY	(1<<0)
 #define COLORMAP_DELETE_NOTIFY	(1<<1)
+
 
 /*
  *---------------------------------------------------------------------------
@@ -302,7 +296,8 @@ typedef struct _Crosshairs Crosshairs;
 
 typedef struct {
     short int width, height;		/* Dimensions of the margin */
-    short int axesOffset;
+    short int axesOffset;               /* The width or height of the margin 
+                                         * depending upon the side. */
     short int axesTitleLength;		/* Width of the widest title to be
 					 * shown.  Multiple titles are
 					 * displayed in another
@@ -313,17 +308,22 @@ typedef struct {
     short int maxAxisLabelHeight;	/* Maximum height of all axis tick
 					 * labels in this margin. */
     unsigned int numAxes;		/* # of axes to be displayed */
-    Blt_Chain axes;			/* Axes associated with this
-                                           margin */
+    Blt_Chain axes;			/* List of axes associated with
+                                         * this margin */
     const char *varName;		/* If non-NULL, name of variable to
 					 * be updated when the margin size
 					 * changes */
     int reqSize;			/* Requested size of margin */
-    int site;				/* Indicates where margin is
-					 * located: left, right, top, or
-					 * bottom. */
-    int offset;				/* Offset of next axis in
-                                         * margin. */
+    int side;				/* Indicates the side where the
+					 * margin is located: left, right,
+					 * top, or bottom. */
+    unsigned short nextStackOffset;     /* For stacked axes, this is the
+                                         * offset of next axis (on top of
+                                         * the last axis) in the
+                                         * margin.  */
+    unsigned short nextLayerOffset;     /* This is the offset of the next
+                                         * axis outward from the last
+                                         * axis. */
 } Margin;
 
 #define MARGIN_NONE	-1
@@ -434,13 +434,6 @@ struct _Graph {
     int halo;				/* Maximum distance allowed between
 					 * points when searching for a
 					 * point */
-    int inverted;			/* If non-zero, indicates the x and
-					 * y axis positions should be
-					 * inverted. */
-    int stackAxes;			/* If non-zero, indicates to stack
-					 * mulitple axes in a margin,
-					 * rather than layering them one on
-					 * top of another. */
     GC drawGC;				/* GC for drawing on the
 					 * margins. This includes the axis
 					 * lines */  
@@ -467,10 +460,6 @@ struct _Graph {
 					 * horizontal axes */
     float vScale, hScale;
 
-    int doubleBuffer;			/* If non-zero, draw the graph into a
-					 * pixmap first to reduce flashing. */
-    int backingStore;			/* If non-zero, cache elements by
-					 * drawing them into a pixmap */
     Pixmap cache;			/* Pixmap used to cache elements
 					 * displayed.  If *backingStore* is
 					 * non-zero, each element is drawn
@@ -525,7 +514,6 @@ struct _Graph {
 					 * displayed. */
     Blt_HashTable meshTable;		/* Table of meshes. */
     unsigned int nextMeshId;
-
 };
 
 /*
@@ -640,6 +628,12 @@ struct _Graph {
 #define	MAP_WORLD		(MAP_ALL|RESET_AXES|GET_AXIS_GEOMETRY)
 #define REDRAW_WORLD		(DRAW_LEGEND)
 #define RESET_WORLD		(REDRAW_WORLD | MAP_WORLD)
+
+#define DOUBLE_BUFFER           (1<<18)
+#define BACKING_STORE           (1<<19)
+#define STACK_AXES              (1<<20)
+#define INVERTED                (1<<21)
+
 
 /*
  * ---------------------- Forward declarations ------------------------

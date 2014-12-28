@@ -7,15 +7,13 @@ $values set { 1 1 10 1 }
 
 blt::contour .g -highlightthickness 0
 
-.g colormap create myColormap -palette $palette
 .g element create myContour -mesh $mesh -values $values
 .g element isoline step myContour 20
 .g element configure myContour \
     -fill palette \
-    -outline black \
-    -colormap myColormap
+    -outline black 
 .g legend configure -hide yes
-
+.g axis configure z -palette $palette
 foreach key { hull values symbols isolines colormap symbols edges } {
     set show($key) [.g element cget myContour -display$key]
 }

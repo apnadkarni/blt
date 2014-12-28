@@ -23,11 +23,10 @@ foreach  i [$y2 values] {
 set mesh [blt::mesh create regular -y {0 100 100} -x {0 100 100}]
 
 blt::contour .g -highlightthickness 0
-.g colormap create myColormap -palette $palette 
-.g element create myContour -values $z -mesh $mesh -colormap myColormap
+.g element create myContour -values $z -mesh $mesh 
 .g element isoline steps myContour 10 
 .g legend configure -hide yes
-
+.g axis configure z -palette $palette
 proc UpdateColors {} {
      global usePaletteColors
      if { $usePaletteColors } {
@@ -38,7 +37,7 @@ proc UpdateColors {} {
 }
 proc FixPalette {} {
     global palette
-    .g colormap configure myColormap -palette $palette
+    .g axis configure z -palette $palette
 }
 
 proc Fix { what } {

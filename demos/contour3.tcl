@@ -36,11 +36,10 @@ for { set col 2 } { $col < [$table numcolumns] } { incr col } {
 	set allmax $max
     }
 }
-.g colormap create nanohub -palette $palette -min $allmin -max $allmax
+
 .g element create sine \
 	-values [list $table 1] \
-	-mesh $mesh \
-	-colormap nanohub 
+	-mesh $mesh 
 
 set tmp [blt::vector create \#auto]
 $tmp set [$table min]
@@ -49,7 +48,7 @@ $tmp set [$table max]
 set max [$tmp max]
 blt::vector destroy $tmp
 .g element isoline steps sine 10 -min $min -max $max 
-.g axis configure z -min $min -max $max
+.g axis configure z -min $min -max $max -palette $palette 
 
 proc Fix { what } {
     global show

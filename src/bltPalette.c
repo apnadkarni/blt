@@ -82,39 +82,39 @@ typedef struct {
     int opacity;			/* Overall opacity adjustment. */
 } PaletteCmd;
 
-static Blt_SwitchParseProc ObjToRGBColorsProc;
-static Blt_SwitchPrintProc ColorsToObjProc;
+static Blt_SwitchParseProc ObjToRGBColors;
+static Blt_SwitchPrintProc ColorsToObj;
 static Blt_SwitchCustom rgbColorsSwitch =
 {
-    ObjToRGBColorsProc, ColorsToObjProc, NULL, (ClientData)0
+    ObjToRGBColors, ColorsToObj, NULL, (ClientData)0
 };
 
-static Blt_SwitchParseProc ObjToXRGBColorsProc;
-static Blt_SwitchPrintProc ColorsToObjProc;
+static Blt_SwitchParseProc ObjToXRGBColors;
+static Blt_SwitchPrintProc ColorsToObj;
 static Blt_SwitchCustom xrgbColorsSwitch =
 {
-    ObjToXRGBColorsProc, ColorsToObjProc, NULL, (ClientData)0
+    ObjToXRGBColors, ColorsToObj, NULL, (ClientData)0
 };
 
-static Blt_SwitchParseProc ObjToColorsProc;
-static Blt_SwitchPrintProc ColorsToObjProc;
+static Blt_SwitchParseProc ObjToColors;
+static Blt_SwitchPrintProc ColorsToObj;
 static Blt_SwitchCustom colorsSwitch =
 {
-    ObjToColorsProc, ColorsToObjProc, NULL, (ClientData)0
+    ObjToColors, ColorsToObj, NULL, (ClientData)0
 };
 
-static Blt_SwitchParseProc ObjToOpacitiesProc;
-static Blt_SwitchPrintProc OpacitiesToObjProc;
+static Blt_SwitchParseProc ObjToOpacities;
+static Blt_SwitchPrintProc OpacitiesToObj;
 static Blt_SwitchCustom opacitiesSwitch =
 {
-    ObjToOpacitiesProc, OpacitiesToObjProc, NULL, (ClientData)0
+    ObjToOpacities, OpacitiesToObj, NULL, (ClientData)0
 };
 
-static Blt_SwitchParseProc ObjToBaseOpacityProc;
-static Blt_SwitchPrintProc BaseOpacityToObjProc;
-static Blt_SwitchCustom baseOpacitySwitch =
+static Blt_SwitchParseProc ObjToFade;
+static Blt_SwitchPrintProc FadeToObj;
+static Blt_SwitchCustom fadeSwitch =
 {
-    ObjToBaseOpacityProc, BaseOpacityToObjProc, NULL, (ClientData)0
+    ObjToFade, FadeToObj, NULL, (ClientData)0
 };
 
 static Blt_SwitchSpec paletteSpecs[] =
@@ -127,8 +127,8 @@ static Blt_SwitchSpec paletteSpecs[] =
 	Blt_Offset(PaletteCmd, colors), 0, 0, &rgbColorsSwitch},
     {BLT_SWITCH_CUSTOM, "-xrgbcolors", (char *)NULL, (char *)NULL, 
 	Blt_Offset(PaletteCmd, colors), 0, 0, &xrgbColorsSwitch},
-    {BLT_SWITCH_CUSTOM, "-baseopacity", (char *)NULL, (char *)NULL,
-        Blt_Offset(PaletteCmd, alpha), 0, 0, &baseOpacitySwitch},
+    {BLT_SWITCH_CUSTOM, "-fade", (char *)NULL, (char *)NULL,
+        Blt_Offset(PaletteCmd, alpha), 0, 0, &fadeSwitch},
     {BLT_SWITCH_END}
 };
 
@@ -715,7 +715,7 @@ ParseOpacityRanges(Tcl_Interp *interp, PaletteCmd *cmdPtr, int objc,
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToColorsProc --
+ * ObjToColors --
  *
  *	Converts the -colors string into its numeric representation.
  *
@@ -746,7 +746,7 @@ ParseOpacityRanges(Tcl_Interp *interp, PaletteCmd *cmdPtr, int objc,
  */
 /*ARGSUSED*/
 static int
-ObjToRGBColorsProc(
+ObjToRGBColors(
     ClientData clientData,		/* Not used. */
     Tcl_Interp *interp,			/* Interpreter to send results back
 					 * to */
@@ -788,7 +788,7 @@ ObjToRGBColorsProc(
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToXRGBColorsProc --
+ * ObjToXRGBColors --
  *
  * Results:
  *	A standard TCL result.
@@ -797,7 +797,7 @@ ObjToRGBColorsProc(
  */
 /*ARGSUSED*/
 static int
-ObjToXRGBColorsProc(
+ObjToXRGBColors(
     ClientData clientData,		/* Not used. */
     Tcl_Interp *interp,			/* Interpreter to send results back
 					 * to */
@@ -839,7 +839,7 @@ ObjToXRGBColorsProc(
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToColorsProc --
+ * ObjToColors --
  *
  *	Converts the -colors string into its numeric representation.
  *
@@ -870,7 +870,7 @@ ObjToXRGBColorsProc(
  */
 /*ARGSUSED*/
 static int
-ObjToColorsProc(
+ObjToColors(
     ClientData clientData,		/* Not used. */
     Tcl_Interp *interp,			/* Interpreter to send results back
 					 * to */
@@ -927,7 +927,7 @@ ObjToColorsProc(
 /*
  *---------------------------------------------------------------------------
  *
- * ColorsToObjProc --
+ * ColorsToObj --
  *
  *	Returns the palette style string based upon the mode flags.
  *
@@ -938,7 +938,7 @@ ObjToColorsProc(
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-ColorsToObjProc(
+ColorsToObj(
     ClientData clientData,		/* Not used. */
     Tcl_Interp *interp,
     char *record,			/* Row/column structure record */
@@ -986,7 +986,7 @@ ColorsToObjProc(
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToOpacitiesProc --
+ * ObjToOpacities --
  *
  *	Converts the -colors string into its numeric representation.
  *
@@ -1017,7 +1017,7 @@ ColorsToObjProc(
  */
 /*ARGSUSED*/
 static int
-ObjToOpacitiesProc(
+ObjToOpacities(
     ClientData clientData,		/* Not used. */
     Tcl_Interp *interp,			/* Interpreter to send results back
 					 * to */
@@ -1073,7 +1073,7 @@ ObjToOpacitiesProc(
 /*
  *---------------------------------------------------------------------------
  *
- * OpacitiesToObjProc --
+ * OpacitiesToObj --
  *
  *	Returns the palette style string based upon the mode flags.
  *
@@ -1084,7 +1084,7 @@ ObjToOpacitiesProc(
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-OpacitiesToObjProc(
+OpacitiesToObj(
     ClientData clientData,		/* Not used. */
     Tcl_Interp *interp,
     char *record,			/* PaletteCmd structure record */
@@ -1132,7 +1132,7 @@ OpacitiesToObjProc(
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToBaseOpacityProc --
+ * ObjToFade --
  *
  *	Convert the string representation of opacity (a percentage) to
  *	an alpha value 0..255.
@@ -1144,7 +1144,7 @@ OpacitiesToObjProc(
  */
 /*ARGSUSED*/
 static int
-ObjToBaseOpacityProc(
+ObjToFade(
     ClientData clientData,		/* Not used. */
     Tcl_Interp *interp,			/* Interpreter to send results back
 					 * to */
@@ -1155,17 +1155,17 @@ ObjToBaseOpacityProc(
     int flags)	
 {
     int *alphaPtr = (int *)(record + offset);
-    double opacity;
+    double fade, opacity;
 
-    if (Tcl_GetDoubleFromObj(interp, objPtr, &opacity) != TCL_OK) {
+    if (Tcl_GetDoubleFromObj(interp, objPtr, &fade) != TCL_OK) {
 	return TCL_ERROR;
     }
-    if ((opacity < 0.0) || (opacity > 100.0)) {
+    if ((fade < 0.0) || (fade > 100.0)) {
 	Tcl_AppendResult(interp, "invalid percent opacity \"", 
 		Tcl_GetString(objPtr), "\" should be 0 to 100", (char *)NULL);
 	return TCL_ERROR;
     }
-    opacity = (opacity / 100.0) * 255.0;
+    opacity = (1.0 - (fade / 100.0)) * 255.0;
     *alphaPtr = ROUND(opacity);
     return TCL_OK;
 }
@@ -1173,7 +1173,7 @@ ObjToBaseOpacityProc(
 /*
  *---------------------------------------------------------------------------
  *
- * BaseOpacityToObjProc --
+ * FadeToObj --
  *
  *	Convert the string representation of opacity (a percentage) to
  *	an alpha value 0..255.
@@ -1185,7 +1185,7 @@ ObjToBaseOpacityProc(
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-BaseOpacityToObjProc(
+FadeToObj(
     ClientData clientData,		/* Not used. */
     Tcl_Interp *interp,
     char *record,			/* PaletteCmd structure record */
@@ -1193,10 +1193,10 @@ BaseOpacityToObjProc(
     int flags)	
 {
     int *alphaPtr = (int *)(record + offset);
-    double opacity;
+    double fade;
 
-    opacity = (*alphaPtr / 255.0) * 100.0;
-    return Tcl_NewDoubleObj(opacity);
+    fade = (1.0 - (*alphaPtr / 255.0)) * 100.0;
+    return Tcl_NewDoubleObj(fade);
 }
 
 /*

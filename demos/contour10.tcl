@@ -29137,11 +29137,10 @@ set mesh [blt::mesh create regular regular -x "0 512 512" -y "0 512 512"]
 blt::contour .g -highlightthickness 0
 
 set palette spectral
-.g colormap create myColormap -palette $palette
-.g element create myContour -values dentalscan -mesh $mesh -colormap myColormap
+.g element create myContour -values dentalscan -mesh $mesh 
 .g element isoline steps myContour 6
 .g legend configure -hide yes
-
+.g axis configure z -palette $palette -use y -colorbarthickness 20 
 proc UpdateColors {} {
      global usePaletteColors
      if { $usePaletteColors } {
@@ -29152,8 +29151,8 @@ proc UpdateColors {} {
 }
 proc FixPalette {} {
     global usePalette
-    .g colormap configure myColormap -palette $usePalette
-    .g2 colormap configure myColormap -palette $usePalette
+    .g axis configure z -palette $usePalette
+    .g2 axis configure x -palette $usePalette
 }
 
 proc Fix { what } {
@@ -29184,7 +29183,6 @@ blt::tk::checkbutton .values -text "Values" \
     -variable show(values) -command "Fix values"
 blt::tk::checkbutton .symbols -text "Symbols" \
     -variable show(symbols) -command "Fix symbols"
-blt::tk::label .label -text ""
 blt::tk::checkbutton .interp -text "Use palette colors" \
     -variable usePaletteColors -command "UpdateColors"
 
@@ -29209,7 +29207,6 @@ foreach pal [blt::palette names] {
 set usePalette $palette
 
 blt::table . \
-    0,0 .label -fill x \
     1,0 .g -fill both -rowspan 10 \
     1,1 .hull -anchor w \
     2,1 .colormap -anchor w \
@@ -29240,10 +29237,9 @@ $x linspace [expr $min + ($w * 0.5)] [expr $max - ($w - 0.5)] $numBins
 
 blt::barchart .g2 \
     -barwidth $w  -height 1i -highlightthickness 0
-.g2 axis configure x -stepsize 0 
+.g2 axis configure x -stepsize 0  -palette $palette
 .g2 axis configure y -logscale yes -grid no -subdivisions 0
-.g2 colormap create myColormap -palette $palette -axis x 
-.g2 element create hist -x $x -y $freq -relief flat -colormap myColormap \
+.g2 element create hist -x $x -y $freq -relief flat -colormap x \
     -outline ""
 .g2 legend configure -hide yes
 Blt_ZoomStack .g2

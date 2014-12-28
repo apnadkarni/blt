@@ -63,38 +63,14 @@ if 1 {
     } 
     blt::palette create bluegreen -colors {
 	{ 100% "lightblue" } { 0% "navyblue" }
-    } -baseopacity 90 
-    $graph colormap create bluegreen \
-	-palette bluegreen \
-	-min -360.0 \
-	-max 360.0 \
-	-axis degrees
-    $graph colormap create green \
-	-palette green \
-	-min 0.0 \
-	-max 1.0 \
-	-axis y
-    $graph element configure line3 -colormap "bluegreen"
-    $graph element configure line1 -colormap "green"
+    } -fade 60 
+    $graph axis configure degrees -palette bluegreen
+    $graph axis configure y -palette green 
+    $graph element configure line1 -mapx degrees -colormap y
+    $graph element configure line3 -colormap degrees
 }
 
 
-
-if 0 {
-set fileName testImg.jpg
-if { [file exists $fileName] } {
-    set image [image create picture -file $fileName]
-    if 1 { 
-	puts stderr [time { 
-	    $graph marker create image -image $image -resamplefilter sinc \
-		-coords "-360.0 -1.0 360.0 1.0" \
-		-under yes \
-		-mapx degrees \
-		-name $fileName 
-	}]
-    }
-} 
-}
 
 bind $graph <Control-ButtonPress-3> { MakeSnapshot }
 bind $graph <Shift-ButtonPress-3> { 

@@ -38,7 +38,7 @@
  *	SOFTWARE.
  */
 
-#define _BSD_SOURCE 1
+#define _DEFAULT_SOURCE 1
 #define BUILD_BLT_TCL_PROCS 1
 #include "bltInt.h"
 #ifdef HAVE_STDLIB_H

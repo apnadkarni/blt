@@ -85,9 +85,9 @@ typedef int (GraphCmdProc)(Graph *graphPtr, Tcl_Interp *interp, int objc,
  */
 static const char *objectClassNames[] = {
     "unknown",
-    "XAxis", 
-    "YAxis",
-    "ZAxis",
+    "X", 
+    "Y",
+    "Z",
     "BarElement", 
     "ContourElement",
     "LineElement", 
@@ -106,148 +106,147 @@ BLT_EXTERN Blt_CustomOption bltLinePenOption;
 BLT_EXTERN Blt_CustomOption bltBarPenOption;
 BLT_EXTERN Blt_CustomOption bltBarModeOption;
 
-#define DEF_GRAPH_ASPECT_RATIO		"0.0"
-#define DEF_GRAPH_BAR_BASELINE		"0.0"
-#define DEF_GRAPH_BAR_MODE		"normal"
-#define DEF_GRAPH_BAR_WIDTH		"0.9"
-#define DEF_GRAPH_BACKGROUND		STD_NORMAL_BACKGROUND
-#define DEF_GRAPH_BORDERWIDTH		STD_BORDERWIDTH
-#define DEF_GRAPH_BUFFER_ELEMENTS	"yes"
-#define DEF_GRAPH_BUFFER_GRAPH		"1"
-#define DEF_GRAPH_CURSOR		"crosshair"
-#define DEF_GRAPH_FONT			"{Sans Serif} 12"
-#define DEF_GRAPH_HALO			"2m"
-#define DEF_GRAPH_HALO_BAR		"0.1i"
-#define DEF_GRAPH_HEIGHT		"4i"
-#define DEF_GRAPH_HIGHLIGHT_BACKGROUND	STD_NORMAL_BACKGROUND
-#define DEF_GRAPH_HIGHLIGHT_COLOR	RGB_BLACK
-#define DEF_GRAPH_HIGHLIGHT_WIDTH	"2"
-#define DEF_GRAPH_INVERT_XY		"0"
-#define DEF_GRAPH_JUSTIFY		"center"
-#define DEF_GRAPH_MARGIN		"0"
-#define DEF_GRAPH_MARGIN_VAR		(char *)NULL
-#define DEF_GRAPH_PLOT_BACKGROUND	RGB_WHITE
-#define DEF_GRAPH_PLOT_BORDERWIDTH	"1"
-#define DEF_GRAPH_PLOT_PADX		"0"
-#define DEF_GRAPH_PLOT_PADY		"0"
-#define DEF_GRAPH_PLOT_RELIEF		"solid"
-#define DEF_GRAPH_RELIEF		"flat"
-#define DEF_GRAPH_SHOW_VALUES		"no"
-#define DEF_GRAPH_STACK_AXES		"no"
-#define DEF_GRAPH_TAKE_FOCUS		""
-#define DEF_GRAPH_TITLE			(char *)NULL
-#define DEF_GRAPH_TITLE_COLOR		STD_NORMAL_FOREGROUND
-#define DEF_GRAPH_WIDTH			"5i"
-#define DEF_GRAPH_DATA			(char *)NULL
-#define DEF_GRAPH_DATA_COMMAND		(char *)NULL
-#define DEF_GRAPH_UNMAP_HIDDEN_ELEMENTS	"0"
+#define DEF_ASPECT_RATIO		"0.0"
+#define DEF_BAR_BASELINE		"0.0"
+#define DEF_BAR_MODE		"normal"
+#define DEF_BAR_WIDTH		"0.9"
+#define DEF_BACKGROUND		STD_NORMAL_BACKGROUND
+#define DEF_BORDERWIDTH		STD_BORDERWIDTH
+#define DEF_BUFFER_ELEMENTS	"yes"
+#define DEF_BUFFER_GRAPH		"1"
+#define DEF_CURSOR		"crosshair"
+#define DEF_FONT			"{Sans Serif} 12"
+#define DEF_HALO			"2m"
+#define DEF_HALO_BAR		"0.1i"
+#define DEF_HEIGHT		"4i"
+#define DEF_HIGHLIGHT_BACKGROUND	STD_NORMAL_BACKGROUND
+#define DEF_HIGHLIGHT_COLOR	RGB_BLACK
+#define DEF_HIGHLIGHT_WIDTH	"2"
+#define DEF_INVERT_XY		"0"
+#define DEF_JUSTIFY		"center"
+#define DEF_MARGIN		"0"
+#define DEF_MARGIN_VAR		(char *)NULL
+#define DEF_PLOT_BACKGROUND	RGB_WHITE
+#define DEF_PLOT_BORDERWIDTH	"1"
+#define DEF_PLOT_PADX		"0"
+#define DEF_PLOT_PADY		"0"
+#define DEF_PLOT_RELIEF		"solid"
+#define DEF_RELIEF		"flat"
+#define DEF_SHOW_VALUES		"no"
+#define DEF_STACK_AXES		"no"
+#define DEF_TAKE_FOCUS		""
+#define DEF_TITLE			(char *)NULL
+#define DEF_TITLE_COLOR		STD_NORMAL_FOREGROUND
+#define DEF_WIDTH			"5i"
+#define DEF_DATA			(char *)NULL
+#define DEF_DATA_COMMAND		(char *)NULL
+#define DEF_UNMAP_HIDDEN_ELEMENTS	"0"
+#define DEF_COLOR_BAR                   (char *)NULL
 
 static Blt_ConfigSpec configSpecs[] =
 {
-    {BLT_CONFIG_FLOAT, "-aspect", "aspect", "Aspect", DEF_GRAPH_ASPECT_RATIO, 
+    {BLT_CONFIG_FLOAT, "-aspect", "aspect", "Aspect", DEF_ASPECT_RATIO, 
 	Blt_Offset(Graph, aspect), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_BACKGROUND, "-background", "background", "Background",
-	DEF_GRAPH_BACKGROUND, Blt_Offset(Graph, normalBg), 0},
-    {BLT_CONFIG_CUSTOM, "-barmode", "barMode", "BarMode", DEF_GRAPH_BAR_MODE, 
+	DEF_BACKGROUND, Blt_Offset(Graph, normalBg), 0},
+    {BLT_CONFIG_CUSTOM, "-barmode", "barMode", "BarMode", DEF_BAR_MODE, 
 	Blt_Offset(Graph, mode), BLT_CONFIG_DONT_SET_DEFAULT, 
 	&bltBarModeOption},
     {BLT_CONFIG_FLOAT, "-barwidth", "barWidth", "BarWidth", 
-	DEF_GRAPH_BAR_WIDTH, Blt_Offset(Graph, barWidth), 0},
+	DEF_BAR_WIDTH, Blt_Offset(Graph, barWidth), 0},
     {BLT_CONFIG_FLOAT, "-baseline", "baseline", "Baseline",
-	DEF_GRAPH_BAR_BASELINE, Blt_Offset(Graph, baseline), 0},
+	DEF_BAR_BASELINE, Blt_Offset(Graph, baseline), 0},
     {BLT_CONFIG_SYNONYM, "-bd", "borderWidth", (char *)NULL, (char *)NULL,0, 0},
     {BLT_CONFIG_SYNONYM, "-bg", "background", (char *)NULL, (char *)NULL, 0, 0},
     {BLT_CONFIG_SYNONYM, "-bm", "bottomMargin", (char *)NULL, (char *)NULL, 
 	0, 0},
     {BLT_CONFIG_PIXELS_NNEG, "-borderwidth", "borderWidth", "BorderWidth",
-	DEF_GRAPH_BORDERWIDTH, Blt_Offset(Graph, borderWidth),
+	DEF_BORDERWIDTH, Blt_Offset(Graph, borderWidth),
 	BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_PIXELS_NNEG, "-bottommargin", "bottomMargin", "Margin",
-	DEF_GRAPH_MARGIN, Blt_Offset(Graph, bottomMargin.reqSize), 0},
+	DEF_MARGIN, Blt_Offset(Graph, bottomMargin.reqSize), 0},
     {BLT_CONFIG_STRING, "-bottomvariable", "bottomVariable", "BottomVariable",
-	DEF_GRAPH_MARGIN_VAR, Blt_Offset(Graph, bottomMargin.varName), 
+	DEF_MARGIN_VAR, Blt_Offset(Graph, bottomMargin.varName), 
 	BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_BOOLEAN, "-bufferelements", "bufferElements", "BufferElements",
-	DEF_GRAPH_BUFFER_ELEMENTS, Blt_Offset(Graph, backingStore),
-	BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_BOOLEAN, "-buffergraph", "bufferGraph", "BufferGraph",
-	DEF_GRAPH_BUFFER_GRAPH, Blt_Offset(Graph, doubleBuffer),
-	BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_BITMASK, "-bufferelements", "bufferElements", "BufferElements",
+	DEF_BUFFER_ELEMENTS, Blt_Offset(Graph, flags),
+        BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)BACKING_STORE},
+    {BLT_CONFIG_BITMASK, "-buffergraph", "bufferGraph", "BufferGraph",
+	DEF_BUFFER_GRAPH, Blt_Offset(Graph, flags),
+        BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)DOUBLE_BUFFER},
     {BLT_CONFIG_ACTIVE_CURSOR, "-cursor", "cursor", "Cursor",
-	DEF_GRAPH_CURSOR, Blt_Offset(Graph, cursor), BLT_CONFIG_NULL_OK},
+	DEF_CURSOR, Blt_Offset(Graph, cursor), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_STRING, "-data", "data", "Data", 
         (char *)NULL, Blt_Offset(Graph, data), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_STRING, "-datacommand", "dataCommand", "DataCommand", 
         (char *)NULL, Blt_Offset(Graph, dataCmd), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_SYNONYM, "-fg", "foreground", (char *)NULL, (char *)NULL, 0, 0},
     {BLT_CONFIG_FONT, "-font", "font", "Font",
-	DEF_GRAPH_FONT, Blt_Offset(Graph, titleTextStyle.font), 0},
+	DEF_FONT, Blt_Offset(Graph, titleTextStyle.font), 0},
     {BLT_CONFIG_COLOR, "-foreground", "foreground", "Foreground",
-	DEF_GRAPH_TITLE_COLOR, Blt_Offset(Graph, titleTextStyle.color), 0},
-    {BLT_CONFIG_PIXELS_NNEG, "-halo", "halo", "Halo", DEF_GRAPH_HALO, 
+	DEF_TITLE_COLOR, Blt_Offset(Graph, titleTextStyle.color), 0},
+    {BLT_CONFIG_PIXELS_NNEG, "-halo", "halo", "Halo", DEF_HALO, 
 	Blt_Offset(Graph, halo), 0},
-    {BLT_CONFIG_PIXELS_NNEG, "-height", "height", "Height", DEF_GRAPH_HEIGHT, 
+    {BLT_CONFIG_PIXELS_NNEG, "-height", "height", "Height", DEF_HEIGHT, 
 	Blt_Offset(Graph, reqHeight), 0},
     {BLT_CONFIG_COLOR, "-highlightbackground", "highlightBackground",
-	"HighlightBackground", DEF_GRAPH_HIGHLIGHT_BACKGROUND, 
+	"HighlightBackground", DEF_HIGHLIGHT_BACKGROUND, 
 	Blt_Offset(Graph, highlightBgColor), 0},
     {BLT_CONFIG_COLOR, "-highlightcolor", "highlightColor", "HighlightColor",
-	DEF_GRAPH_HIGHLIGHT_COLOR, Blt_Offset(Graph, highlightColor), 0},
+	DEF_HIGHLIGHT_COLOR, Blt_Offset(Graph, highlightColor), 0},
     {BLT_CONFIG_PIXELS_NNEG, "-highlightthickness", "highlightThickness",
-	"HighlightThickness", DEF_GRAPH_HIGHLIGHT_WIDTH, 
+	"HighlightThickness", DEF_HIGHLIGHT_WIDTH, 
 	Blt_Offset(Graph, highlightWidth), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_BITMASK, "-unmaphiddenelements", "unmapHiddenElements", 
-	"UnmapHiddenElements", DEF_GRAPH_UNMAP_HIDDEN_ELEMENTS, 
+	"UnmapHiddenElements", DEF_UNMAP_HIDDEN_ELEMENTS, 
 	Blt_Offset(Graph, flags), ALL_GRAPHS | BLT_CONFIG_DONT_SET_DEFAULT, 
 	(Blt_CustomOption *)UNMAP_HIDDEN},
-    {BLT_CONFIG_BOOLEAN, "-invertxy", "invertXY", "InvertXY", 
-	DEF_GRAPH_INVERT_XY, Blt_Offset(Graph, inverted),
-	BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_JUSTIFY, "-justify", "justify", "Justify", DEF_GRAPH_JUSTIFY, 
+    {BLT_CONFIG_BITMASK, "-invertxy", "invertXY", "InvertXY", DEF_INVERT_XY,
+        Blt_Offset(Graph, flags), BLT_CONFIG_DONT_SET_DEFAULT,
+        (Blt_CustomOption *)INVERTED},
+    {BLT_CONFIG_JUSTIFY, "-justify", "justify", "Justify", DEF_JUSTIFY, 
 	Blt_Offset(Graph, titleTextStyle.justify), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_PIXELS_NNEG, "-leftmargin", "leftMargin", "Margin", 
-	DEF_GRAPH_MARGIN, Blt_Offset(Graph, leftMargin.reqSize), 
+	DEF_MARGIN, Blt_Offset(Graph, leftMargin.reqSize), 
 	BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_STRING, "-leftvariable", "leftVariable", "LeftVariable",
-	DEF_GRAPH_MARGIN_VAR, Blt_Offset(Graph, leftMargin.varName), 
+	DEF_MARGIN_VAR, Blt_Offset(Graph, leftMargin.varName), 
 	BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_SYNONYM, "-lm", "leftMargin", (char *)NULL, (char *)NULL, 0, 0},
     {BLT_CONFIG_BACKGROUND, "-plotbackground", "plotBackground", "Background",
-	DEF_GRAPH_PLOT_BACKGROUND, Blt_Offset(Graph, plotBg), 0},
+	DEF_PLOT_BACKGROUND, Blt_Offset(Graph, plotBg), 0},
     {BLT_CONFIG_PIXELS_NNEG, "-plotborderwidth", "plotBorderWidth", 
-        "PlotBorderWidth", DEF_GRAPH_PLOT_BORDERWIDTH, 
+        "PlotBorderWidth", DEF_PLOT_BORDERWIDTH, 
 	Blt_Offset(Graph, plotBW), BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_PAD, "-plotpadx", "plotPadX", "PlotPad", DEF_GRAPH_PLOT_PADX, 
+    {BLT_CONFIG_PAD, "-plotpadx", "plotPadX", "PlotPad", DEF_PLOT_PADX, 
 	Blt_Offset(Graph, xPad), BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_PAD, "-plotpady", "plotPadY", "PlotPad", DEF_GRAPH_PLOT_PADY, 
+    {BLT_CONFIG_PAD, "-plotpady", "plotPadY", "PlotPad", DEF_PLOT_PADY, 
 	Blt_Offset(Graph, yPad), BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_RELIEF, "-plotrelief", "plotRelief", "Relief", 
-	DEF_GRAPH_PLOT_RELIEF, Blt_Offset(Graph, plotRelief),
-	BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_RELIEF, "-relief", "relief", "Relief", DEF_GRAPH_RELIEF, 
+    {BLT_CONFIG_RELIEF, "-plotrelief", "plotRelief", "Relief", DEF_PLOT_RELIEF,
+        Blt_Offset(Graph, plotRelief), BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_RELIEF, "-relief", "relief", "Relief", DEF_RELIEF, 
 	Blt_Offset(Graph, relief), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_PIXELS_NNEG, "-rightmargin", "rightMargin", "Margin",
-	DEF_GRAPH_MARGIN, Blt_Offset(Graph, rightMargin.reqSize),
+        DEF_MARGIN, Blt_Offset(Graph, rightMargin.reqSize),
 	BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_STRING, "-rightvariable", "rightVariable", "RightVariable",
-	DEF_GRAPH_MARGIN_VAR, Blt_Offset(Graph, rightMargin.varName), 
+	DEF_MARGIN_VAR, Blt_Offset(Graph, rightMargin.varName), 
 	BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_SYNONYM, "-rm", "rightMargin", (char *)NULL, (char *)NULL, 0,0},
-    {BLT_CONFIG_BOOLEAN, "-stackaxes", "stackAxes", "StackAxes", 
-	DEF_GRAPH_STACK_AXES, Blt_Offset(Graph, stackAxes),
-	BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_STRING, "-takefocus", "takeFocus", "TakeFocus",
-	DEF_GRAPH_TAKE_FOCUS, Blt_Offset(Graph, takeFocus), BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_STRING, "-title", "title", "Title", DEF_GRAPH_TITLE, 
-	Blt_Offset(Graph, title), BLT_CONFIG_NULL_OK},
+    {BLT_CONFIG_BITMASK, "-stackaxes", "stackAxes", "StackAxes", DEF_STACK_AXES,
+        Blt_Offset(Graph, flags), BLT_CONFIG_DONT_SET_DEFAULT,
+        (Blt_CustomOption *)STACK_AXES},
+    {BLT_CONFIG_STRING, "-takefocus", "takeFocus", "TakeFocus", DEF_TAKE_FOCUS,
+        Blt_Offset(Graph, takeFocus), BLT_CONFIG_NULL_OK},
+    {BLT_CONFIG_STRING, "-title", "title", "Title", DEF_TITLE,
+        Blt_Offset(Graph, title), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_SYNONYM, "-tm", "topMargin", (char *)NULL, (char *)NULL, 0, 0},
-    {BLT_CONFIG_PIXELS_NNEG, "-topmargin", "topMargin", "Margin", 
-	DEF_GRAPH_MARGIN, Blt_Offset(Graph, topMargin.reqSize), 
-	BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_PIXELS_NNEG, "-topmargin", "topMargin", "Margin", DEF_MARGIN,
+        Blt_Offset(Graph, topMargin.reqSize), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_STRING, "-topvariable", "topVariable", "TopVariable",
-	DEF_GRAPH_MARGIN_VAR, Blt_Offset(Graph, topMargin.varName), 
+	DEF_MARGIN_VAR, Blt_Offset(Graph, topMargin.varName), 
 	BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_PIXELS_NNEG, "-width", "width", "Width", DEF_GRAPH_WIDTH, 
+    {BLT_CONFIG_PIXELS_NNEG, "-width", "width", "Width", DEF_WIDTH, 
 	Blt_Offset(Graph, reqWidth), 0},
     {BLT_CONFIG_PIXELS_NNEG, "-plotwidth", "plotWidth", "PlotWidth", 
 	(char *)NULL, Blt_Offset(Graph, reqPlotWidth), 
@@ -476,7 +475,7 @@ GraphInstCmdDeleteProc(ClientData clientData) /* Pointer to widget record. */
  * AdjustAxisPointers --
  *
  *	Sets the axis pointers according to whether the axis is inverted on
- *	not.  The axis sites are also reset.
+ *	not.  The axis sides are also reset.
  *
  * Results:
  *	None.
@@ -486,7 +485,7 @@ GraphInstCmdDeleteProc(ClientData clientData) /* Pointer to widget record. */
 static void
 AdjustAxisPointers(Graph *graphPtr) 
 {
-    if (graphPtr->inverted) {
+    if (graphPtr->flags & INVERTED) {
 	graphPtr->leftMargin.axes   = graphPtr->axisChain[0];
 	graphPtr->bottomMargin.axes = graphPtr->axisChain[1];
 	graphPtr->rightMargin.axes  = graphPtr->axisChain[2];
@@ -579,6 +578,7 @@ Blt_GraphTags(
 	break;
     case CID_AXIS_X:
     case CID_AXIS_Y:
+    case CID_AXIS_Z:
 	tagProc = Blt_MakeAxisTag;
 	break;
     case CID_MARKER_BITMAP:
@@ -779,7 +779,7 @@ ConfigureGraph(Graph *graphPtr)
 	AdjustAxisPointers(graphPtr);
 	graphPtr->flags |= RESET_AXES;
     }
-    if ((!graphPtr->backingStore) && (graphPtr->cache != None)) {
+    if (((graphPtr->flags & BACKING_STORE) == 0) && (graphPtr->cache != None)) {
 	/*
 	 * Free the pixmap if we're not buffering the display of elements
 	 * anymore.
@@ -913,21 +913,19 @@ CreateGraph(Tcl_Interp *interp, int objc, Tcl_Obj *const *objv, ClassId classId)
     graphPtr->display = Tk_Display(tkwin);
     graphPtr->interp = interp;
     graphPtr->classId = classId;
-    graphPtr->backingStore = TRUE;
-    graphPtr->doubleBuffer = TRUE;
     graphPtr->borderWidth = 2;
     graphPtr->plotBW = 1;
     graphPtr->highlightWidth = 2;
     graphPtr->plotRelief = TK_RELIEF_SOLID;
     graphPtr->relief = TK_RELIEF_FLAT;
-    graphPtr->flags = RESET_WORLD;
+    graphPtr->flags = RESET_WORLD | DOUBLE_BUFFER | BACKING_STORE;
     graphPtr->nextMarkerId = 1;
     graphPtr->padLeft = graphPtr->padRight = 0;
     graphPtr->padTop = graphPtr->padBottom = 0;
-    graphPtr->bottomMargin.site = MARGIN_BOTTOM;
-    graphPtr->leftMargin.site = MARGIN_LEFT;
-    graphPtr->topMargin.site = MARGIN_TOP;
-    graphPtr->rightMargin.site = MARGIN_RIGHT;
+    graphPtr->bottomMargin.side = MARGIN_BOTTOM;
+    graphPtr->leftMargin.side = MARGIN_LEFT;
+    graphPtr->topMargin.side = MARGIN_TOP;
+    graphPtr->rightMargin.side = MARGIN_RIGHT;
     Blt_Ts_InitStyle(graphPtr->titleTextStyle);
     Blt_Ts_SetAnchor(graphPtr->titleTextStyle, TK_ANCHOR_N);
 
@@ -1014,7 +1012,7 @@ XAxisOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 {
     int margin;
 
-    margin = (graphPtr->inverted) ? MARGIN_LEFT : MARGIN_BOTTOM;
+    margin = (graphPtr->flags & INVERTED) ? MARGIN_LEFT : MARGIN_BOTTOM;
     return Blt_AxisOp(interp, graphPtr, margin, objc, objv);
 }
 
@@ -1023,7 +1021,7 @@ X2AxisOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 {
     int margin;
 
-    margin = (graphPtr->inverted) ? MARGIN_RIGHT : MARGIN_TOP;
+    margin = (graphPtr->flags & INVERTED) ? MARGIN_RIGHT : MARGIN_TOP;
     return Blt_AxisOp(interp, graphPtr, margin, objc, objv);
 }
 
@@ -1032,7 +1030,7 @@ YAxisOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 {
     int margin;
 
-    margin = (graphPtr->inverted) ? MARGIN_BOTTOM : MARGIN_LEFT;
+    margin = (graphPtr->flags & INVERTED) ? MARGIN_BOTTOM : MARGIN_LEFT;
     return Blt_AxisOp(interp, graphPtr, margin, objc, objv);
 }
 
@@ -1041,7 +1039,7 @@ Y2AxisOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 {
     int margin;
 
-    margin = (graphPtr->inverted) ? MARGIN_TOP : MARGIN_RIGHT;
+    margin = (graphPtr->flags & INVERTED) ? MARGIN_TOP : MARGIN_RIGHT;
     return Blt_AxisOp(interp, graphPtr, margin, objc, objv);
 }
 
@@ -1538,7 +1536,7 @@ Print2Op(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * ObjToFormat --
  *
- *	Convert a string represent a node number into its integer value.
+ *	Convert a string representing an output format.
  *
  * Results:
  *	The return value is a standard TCL result.
@@ -1589,9 +1587,9 @@ ObjToFormat(
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToFormat --
+ * ObjToElement --
  *
- *	Convert a string represent a node number into its integer value.
+ *	Convert a string representing an element name into its pointer.
  *
  * Results:
  *	The return value is a standard TCL result.
@@ -2337,8 +2335,8 @@ UpdateMarginTraces(Graph *graphPtr)
 	if (marginPtr->varName != NULL) { /* Trigger variable traces */
 	    int size;
 
-	    if ((marginPtr->site == MARGIN_LEFT) || 
-		(marginPtr->site == MARGIN_RIGHT)) {
+	    if ((marginPtr->side == MARGIN_LEFT) || 
+		(marginPtr->side == MARGIN_RIGHT)) {
 		size = marginPtr->width;
 	    } else {
 		size = marginPtr->height;
@@ -2396,13 +2394,13 @@ DisplayGraph(ClientData clientData)
 	return;
     }
     /* Create a pixmap the size of the window for double buffering. */
-    if (graphPtr->doubleBuffer) {
+    if (graphPtr->flags & DOUBLE_BUFFER) {
 	drawable = Blt_GetPixmap(graphPtr->display, Tk_WindowId(tkwin), 
 		graphPtr->width, graphPtr->height, Tk_Depth(tkwin));
     } else {
 	drawable = Tk_WindowId(tkwin);
     }
-    if (graphPtr->backingStore) {
+    if (graphPtr->flags & BACKING_STORE) {
 	if ((graphPtr->cache == None) || 
 	    (graphPtr->cacheWidth != graphPtr->width) ||
 	    (graphPtr->cacheHeight != graphPtr->height)) {
@@ -2420,7 +2418,7 @@ DisplayGraph(ClientData clientData)
 #ifdef WIN32
     assert(drawable != None);
 #endif
-    if (graphPtr->backingStore) {
+    if (graphPtr->flags & BACKING_STORE) {
 	if (graphPtr->flags & CACHE_DIRTY) {
 	    /* The backing store is new or out-of-date. */
 	    DrawPlot(graphPtr, graphPtr->cache);
@@ -2466,7 +2464,7 @@ DisplayGraph(ClientData clientData)
     XCopyArea(graphPtr->display, drawable, Tk_WindowId(tkwin),
 	graphPtr->drawGC, 0, 0, graphPtr->width, graphPtr->height, 0, 0);
     Blt_EnableCrosshairs(graphPtr);
-    if (graphPtr->doubleBuffer) {
+    if (graphPtr->flags & DOUBLE_BUFFER) {
 	Tk_FreePixmap(graphPtr->display, drawable);
     }
     graphPtr->flags &= ~RESET_WORLD;

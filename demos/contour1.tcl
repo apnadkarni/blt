@@ -1009,13 +1009,12 @@ particle set {
 blt::contour .g
 
 set elem substrate
-.g colormap create greyscale -palette greyscale
-.g element create substrate -mesh regular -values substrate -colormap greyscale
+.g element create substrate -mesh regular -values substrate 
 .g element isoline step substrate 10 
 set elem particle
-.g element create particle -mesh regular -values particle -colormap greyscale
+.g element create particle -mesh regular -values particle 
 .g element isoline step particle 10 
-
+.g axis configure z -palette greyscale
 foreach key { hull values symbols isolines colormap symbols edges } {
     set show($key) [.g element cget $elem -display$key]
 }

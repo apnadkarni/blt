@@ -1803,7 +1803,7 @@ GraphExtents(Marker *markerPtr, Region2d *r)
     Axis *x, *y;
 
     graphPtr = markerPtr->obj.graphPtr;
-    if (graphPtr->inverted) {
+    if (graphPtr->flags & INVERTED) {
 	y = markerPtr->axes.x;
 	x = markerPtr->axes.y;
     } else {
@@ -1837,7 +1837,7 @@ MapPoint(
     Point2d result;
     Graph *graphPtr = axesPtr->y->obj.graphPtr;
 
-    if (graphPtr->inverted) {
+    if (graphPtr->flags & INVERTED) {
 	result.x = HMap(axesPtr->y, pointPtr->y);
 	result.y = VMap(axesPtr->x, pointPtr->x);
     } else {

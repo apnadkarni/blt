@@ -1637,7 +1637,7 @@ ColorbarOffsets(
 	axisPtr->left = axisPtr->screenMin - inset - 2;
 	axisPtr->right = axisPtr->screenMin + axisPtr->screenRange + inset - 1;
 	axisPtr->top = graphPtr->bottom + labelOffset - t1;
-	if (graphPtr->stackAxes) {
+	if (graphPtr->flags & STACK_AXES) {
 	    axisPtr->bottom = mark + marginPtr->axesOffset - 1;
 	} else {
 	    axisPtr->bottom = mark + axisPtr->height - 1;
@@ -1648,7 +1648,7 @@ ColorbarOffsets(
 	    axisPtr->titleAnchor = TK_ANCHOR_W; 
 	} else {
 	    x = (axisPtr->right + axisPtr->left) / 2;
-	    if (graphPtr->stackAxes) {
+	    if (graphPtr->flags & STACK_AXES) {
 		y = mark + marginPtr->axesOffset - AXIS_PAD_TITLE;
 	    } else {
 		y = mark + axisPtr->height - AXIS_PAD_TITLE;
@@ -1713,7 +1713,7 @@ ColorbarOffsets(
 	}
 	mark = graphPtr->left - offset;
 	axisPtr->tickAnchor = TK_ANCHOR_E;
-	if (graphPtr->stackAxes) {
+	if (graphPtr->flags & STACK_AXES) {
 	    axisPtr->left = mark - marginPtr->axesOffset;
 	} else {
 	    axisPtr->left = mark - axisPtr->width;
@@ -1726,7 +1726,7 @@ ColorbarOffsets(
 	    y = graphPtr->top - AXIS_PAD_TITLE;
 	    axisPtr->titleAnchor = TK_ANCHOR_SW; 
 	} else {
-	    if (graphPtr->stackAxes) {
+	    if (graphPtr->flags & STACK_AXES) {
 		x = mark - marginPtr->axesOffset;
 	    } else {
 		x = mark - axisPtr->width + AXIS_PAD_TITLE;
@@ -3685,9 +3685,9 @@ UseOp(Tcl_Interp *interp, Axis *axisPtr, int objc, Tcl_Obj *const *objv)
 	return TCL_OK;
     }
     if ((lastMargin == MARGIN_BOTTOM) || (lastMargin == MARGIN_TOP)) {
-	classId = (graphPtr->inverted) ? CID_AXIS_Y : CID_AXIS_X;
+	classId = (graphPtr->flags & INVERTED) ? CID_AXIS_Y : CID_AXIS_X;
     } else {
-	classId = (graphPtr->inverted) ? CID_AXIS_X : CID_AXIS_Y;
+	classId = (graphPtr->flags & INVERTED) ? CID_AXIS_X : CID_AXIS_Y;
     }
     if (Tcl_ListObjGetElements(interp, objv[0], &axisObjc, &axisObjv) 
 	!= TCL_OK) {
@@ -5299,9 +5299,9 @@ static Blt_ConfigSpec configSpecs[] =
 	"UnmapHiddenElements", DEF_UNMAP_HIDDEN_ELEMENTS, 
 	Blt_Offset(Colorbar, flags), ALL_GRAPHS | BLT_CONFIG_DONT_SET_DEFAULT, 
 	(Blt_CustomOption *)UNMAP_HIDDEN},
-    {BLT_CONFIG_BOOLEAN, "-invertxy", "invertXY", "InvertXY", 
-	DEF_INVERT_XY, Blt_Offset(Colorbar, inverted),
-	BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_BITMASK, "-invertxy", "invertXY", "InvertXY", 
+	DEF_INVERT_XY, Blt_Offset(Colorbar, flags),
+        BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)INVERTED},
     {BLT_CONFIG_JUSTIFY, "-justify", "justify", "Justify", DEF_JUSTIFY, 
 	Blt_Offset(Colorbar, titleTextStyle.justify), 
 	BLT_CONFIG_DONT_SET_DEFAULT},
@@ -5333,9 +5333,9 @@ static Blt_ConfigSpec configSpecs[] =
 	DEF_MARGIN_VAR, Blt_Offset(Colorbar, rightMargin.varName), 
 	BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_SYNONYM, "-rm", "rightMargin", (char *)NULL, (char *)NULL, 0,0},
-    {BLT_CONFIG_BOOLEAN, "-stackaxes", "stackAxes", "StackAxes", 
-	DEF_STACK_AXES, Blt_Offset(Colorbar, stackAxes),
-	BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_BITMASK, "-stackaxes", "stackAxes", "StackAxes", 
+	DEF_STACK_AXES, Blt_Offset(Colorbar, flags),
+        BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)STACK_AXES},
     {BLT_CONFIG_STRING, "-takefocus", "takeFocus", "TakeFocus",
 	DEF_TAKE_FOCUS, Blt_Offset(Colorbar, takeFocus), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_STRING, "-title", "title", "Title", DEF_TITLE, 

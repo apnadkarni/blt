@@ -1009,19 +1009,9 @@ particle set {
 blt::contour .g
 
 set elem substrate
-.g colormap create nanohub -palette nanohub
-.g element create substrate -mesh regular -values substrate -pixels 5 \
-    -colormap nanohub
+.g element create substrate -mesh regular -values substrate -pixels 5 
 .g element isoline step substrate 16
-
-if 0 {
-    set elem particle
-    .g colormap create greyscale -palette greyscale
-    .g element create particle -mesh regular -values particle \
-	-colormap greyscale
-    .g element isoline step particle 10 
-    .g legend bind all <ButtonRelease-1> SetOpacity
-}
+.g axis configure z -palette nanohub
 
 foreach key { hull values symbols isolines colormap symbols edges } {
     set show($key) [.g element cget $elem -display$key]

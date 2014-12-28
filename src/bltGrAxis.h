@@ -138,6 +138,16 @@ typedef struct {
     Ticks ticks;
     Grid grid;                          /* Axis grid information. */
 } TickGrid;
+
+/*
+ * Colorbar --
+ */
+typedef struct {
+    Blt_Palette palette;		/* Color palette for colorbar. */
+    int thickness;
+    XRectangle rect;                    /* Location of colorbar. */
+} Colorbar;
+
 /*
  *---------------------------------------------------------------------------
  *
@@ -262,6 +272,8 @@ struct _Axis {
 
     /* The following fields are specific to logical axes */
 
+    Margin *marginPtr;                  /* If non-NULL, the margin the axis 
+                                         * is displayed in. */
     int margin;				/* Margin that contains this
                                          * axis. */
     Blt_ChainLink link;			/* Axis link in margin list. */
@@ -309,6 +321,8 @@ struct _Axis {
     int screenMin, screenRange;
     Blt_Palette palette;
     float weight;
+
+    Colorbar colorbar;
 };
 
 BLT_EXTERN void Blt_GetAxisGeometry(Graph *graphPtr, Axis *axisPtr);

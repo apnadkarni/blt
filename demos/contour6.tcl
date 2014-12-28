@@ -25,9 +25,8 @@ $zv set $z
 
 set mesh [blt::mesh create regular -y [list 0 100 100] -x [list 0 100 100]]
 blt::contour .g -highlightthickness 0
-.g colormap create myColormap -palette $palette
-.g element create myContour -values $zv -mesh $mesh -colormap myColormap
-.g axis configure z -logscale yes
+.g element create myContour -values $zv -mesh $mesh 
+.g axis configure z -logscale yes -palette $palette
 .g element isoline steps myContour 10 
 .g legend configure -hide yes
 
