@@ -50,6 +50,7 @@ $graph configure \
 $graph axis configure y \
     -titlefont "arial 10" \
     -title "Y Axis" \
+    -colorbarthickness 20 \
     -loose yes
 
 if 1 {
@@ -70,13 +71,14 @@ if 1 {
     $graph element configure line3 -colormap degrees
 }
 
-
-
 bind $graph <Control-ButtonPress-3> { MakeSnapshot }
 bind $graph <Shift-ButtonPress-3> { 
     %W postscript output demo2.ps 
     update
-    %W snap -format emf demo2.emf
+    global tcl_platform
+    if { $tcl_platform(platform) == "windows" } {
+	%W snap -format emf demo2.emf
+    }
 }
 
 $graph configure -title "This is the \nTitle\n"
@@ -85,7 +87,7 @@ proc MakeSnapshot {} {
     update idletasks
     global unique graph
     set top ".snapshot[incr unique]"
-    set im [image create photo]
+    set im [image create picture]
     $graph snap $im 210 150
 
     toplevel $top
@@ -103,6 +105,8 @@ proc DestroySnapshot { win } {
     destroy $win
     exit
 }
+
+after 2000 {$graph postscript output demo2.ps }
 
 if { $tcl_platform(platform) == "windows" } {
     if 0 {

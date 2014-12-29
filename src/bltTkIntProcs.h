@@ -805,17 +805,17 @@ BLT_EXTERN void		Blt_Ps_Free(Blt_Ps ps);
 #ifndef Blt_Ps_GetValue_DECLARED
 #define Blt_Ps_GetValue_DECLARED
 /* 132 */
-BLT_EXTERN const char *	 Blt_Ps_GetValue(Blt_Ps ps, int *lengthPtr);
+BLT_EXTERN const unsigned char *Blt_Ps_GetValue(Blt_Ps ps, int *lengthPtr);
 #endif
 #ifndef Blt_Ps_GetInterp_DECLARED
 #define Blt_Ps_GetInterp_DECLARED
 /* 133 */
 BLT_EXTERN Tcl_Interp *	 Blt_Ps_GetInterp(Blt_Ps ps);
 #endif
-#ifndef Blt_Ps_GetDString_DECLARED
-#define Blt_Ps_GetDString_DECLARED
+#ifndef Blt_Ps_GetDBuffer_DECLARED
+#define Blt_Ps_GetDBuffer_DECLARED
 /* 134 */
-BLT_EXTERN Tcl_DString * Blt_Ps_GetDString(Blt_Ps ps);
+BLT_EXTERN Blt_DBuffer Blt_Ps_GetDBuffer(Blt_Ps ps);
 #endif
 #ifndef Blt_Ps_GetScratchBuffer_DECLARED
 #define Blt_Ps_GetScratchBuffer_DECLARED

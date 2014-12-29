@@ -32,9 +32,8 @@
 
 struct _Blt_Ps {
     Tcl_Interp *interp;			/* Interpreter to report errors to. */
-
-    Tcl_DString ds;			/* Dynamic string used to contain the
-					 * PostScript generated. */
+    Blt_DBuffer dbuffer;                /* Dynamic buffer used to hold the
+					 * generated PostScript. */
     PageSetup *setupPtr;
 
 #define POSTSCRIPT_BUFSIZ	((BUFSIZ*2)-1)

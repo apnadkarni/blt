@@ -419,6 +419,31 @@ typedef int (GraphAxisProc)(Tcl_Interp *interp, Axis *axisPtr, int objc,
 typedef int (GraphVirtualAxisProc)(Tcl_Interp *interp, Graph *graphPtr, 
 	int objc, Tcl_Obj *const *objv);
 
+
+static Axis *
+FirstAxis(Margin *marginPtr)
+{
+    Blt_ChainLink link;
+    link = Blt_Chain_FirstLink(marginPtr->axes);
+    if (link != NULL) {
+        return Blt_Chain_GetValue(link);
+    }
+    return NULL;
+}
+
+static Axis *
+NextAxis(Axis *axisPtr)
+{
+    if (axisPtr != NULL) {
+        Blt_ChainLink link;
+        link = Blt_Chain_NextLink(axisPtr->link);
+        if (link != NULL) {
+            return Blt_Chain_GetValue(link);
+        }
+    }
+    return NULL;
+}
+
 static void
 FreeAxis(DestroyData data)
 {
@@ -862,8 +887,8 @@ ObjToUseProc(
     }
     axisPtr->chain = chain;
     axisPtr->flags |= USE;
-    axisPtr->margin = margin;
-    axisPtr->marginPtr = graphPtr->margins + margin;
+    axisPtr->margin = i;
+    axisPtr->marginPtr = graphPtr->margins + i;
  done:
     graphPtr->flags |= (GET_AXIS_GEOMETRY | LAYOUT_NEEDED | RESET_AXES);
     /* When any axis changes, we need to layout the entire graph.  */
@@ -2219,7 +2244,7 @@ DestroyAxis(Axis *axisPtr)
  *---------------------------------------------------------------------------
  */
 static void
-AxisOffsets(Axis *axisPtr, Margin *marginPtr, AxisInfo *infoPtr)
+AxisOffsets(Axis *axisPtr, AxisInfo *infoPtr)
 {
     Graph *graphPtr = axisPtr->obj.graphPtr;
     int pad;				/* Offset of axis from interior
@@ -2233,7 +2258,7 @@ AxisOffsets(Axis *axisPtr, Margin *marginPtr, AxisInfo *infoPtr)
     int x, y;
     float fangle;
 
-    axisPtr->titleAngle = titleAngle[marginPtr->side];
+    axisPtr->titleAngle = titleAngle[axisPtr->marginPtr->side];
     tickLabel = axisLine = t1 = t2 = 0;
     labelOffset = AXIS_PAD_TITLE;
     if (axisPtr->lineWidth > 0) {
@@ -2261,9 +2286,9 @@ AxisOffsets(Axis *axisPtr, Margin *marginPtr, AxisInfo *infoPtr)
      * and the individual major and minor ticks.
      */
     inset = pad + axisPtr->lineWidth / 2;
-    switch (marginPtr->side) {
+    switch (axisPtr->marginPtr->side) {
     case MARGIN_TOP:
-	axisLine = graphPtr->top - marginPtr->nextLayerOffset;
+	axisLine = graphPtr->top - axisPtr->marginPtr->nextLayerOffset;
         if (axisPtr->colorbar.thickness > 0) {
             axisLine -= axisPtr->colorbar.thickness + COLORBAR_PAD;
         }
@@ -2280,12 +2305,12 @@ AxisOffsets(Axis *axisPtr, Margin *marginPtr, AxisInfo *infoPtr)
 	    axisLine -= axisPad + axisPtr->lineWidth / 2;
 	    tickLabel = graphPtr->top -  graphPtr->plotBW - 2;
 	}
-	mark = graphPtr->top - marginPtr->nextLayerOffset - pad;
+	mark = graphPtr->top - axisPtr->marginPtr->nextLayerOffset - pad;
 	axisPtr->tickAnchor = TK_ANCHOR_S;
 	axisPtr->left = axisPtr->screenMin - inset - 2;
 	axisPtr->right = axisPtr->screenMin + axisPtr->screenRange + inset - 1;
 	if (graphPtr->flags & STACK_AXES) {
-	    axisPtr->top = mark - marginPtr->axesOffset;
+	    axisPtr->top = mark - axisPtr->marginPtr->axesOffset;
 	} else {
 	    axisPtr->top = mark - axisPtr->height;
 	}
@@ -2297,7 +2322,7 @@ AxisOffsets(Axis *axisPtr, Margin *marginPtr, AxisInfo *infoPtr)
 	} else {
 	    x = (axisPtr->right + axisPtr->left) / 2;
 	    if (graphPtr->flags & STACK_AXES) {
-		y = mark - marginPtr->axesOffset + AXIS_PAD_TITLE;
+		y = mark - axisPtr->marginPtr->axesOffset + AXIS_PAD_TITLE;
 	    } else {
 		y = mark - axisPtr->height + AXIS_PAD_TITLE;
 	    }
@@ -2322,7 +2347,7 @@ AxisOffsets(Axis *axisPtr, Margin *marginPtr, AxisInfo *infoPtr)
 	 *                   tick
 	 *		    title
 	 */
-	axisLine = graphPtr->bottom + marginPtr->nextLayerOffset;
+	axisLine = graphPtr->bottom + axisPtr->marginPtr->nextLayerOffset;
         if (axisPtr->colorbar.thickness > 0) {
             axisLine += axisPtr->colorbar.thickness + COLORBAR_PAD;
         }
@@ -2339,7 +2364,7 @@ AxisOffsets(Axis *axisPtr, Margin *marginPtr, AxisInfo *infoPtr)
             axisLine -= axisPad + axisPtr->lineWidth / 2;
 	    tickLabel = graphPtr->bottom +  graphPtr->plotBW + 2;
 	}
-	mark = graphPtr->bottom + marginPtr->nextLayerOffset;
+	mark = graphPtr->bottom + axisPtr->marginPtr->nextLayerOffset;
 	fangle = FMOD(axisPtr->tickAngle, 90.0f);
 	if (fangle == 0.0) {
 	    axisPtr->tickAnchor = TK_ANCHOR_N;
@@ -2357,7 +2382,7 @@ AxisOffsets(Axis *axisPtr, Margin *marginPtr, AxisInfo *infoPtr)
 	axisPtr->right = axisPtr->screenMin + axisPtr->screenRange + inset - 1;
 	axisPtr->top = graphPtr->bottom + labelOffset - t1;
 	if (graphPtr->flags & STACK_AXES) {
-	    axisPtr->bottom = mark + marginPtr->axesOffset - 1;
+	    axisPtr->bottom = mark + axisPtr->marginPtr->axesOffset - 1;
 	} else {
 	    axisPtr->bottom = mark + axisPtr->height - 1;
 	}
@@ -2368,7 +2393,7 @@ AxisOffsets(Axis *axisPtr, Margin *marginPtr, AxisInfo *infoPtr)
 	} else {
 	    x = (axisPtr->right + axisPtr->left) / 2;
 	    if (graphPtr->flags & STACK_AXES) {
-		y = mark + marginPtr->axesOffset - AXIS_PAD_TITLE;
+		y = mark + axisPtr->marginPtr->axesOffset - AXIS_PAD_TITLE;
 	    } else {
 		y = mark + axisPtr->height - AXIS_PAD_TITLE;
 	    }
@@ -2417,7 +2442,7 @@ AxisOffsets(Axis *axisPtr, Margin *marginPtr, AxisInfo *infoPtr)
 	 * G = graph border width
 	 * H = highlight thickness
 	 */
-	axisLine = graphPtr->left - marginPtr->nextLayerOffset;
+	axisLine = graphPtr->left - axisPtr->marginPtr->nextLayerOffset;
         if (axisPtr->colorbar.thickness > 0) {
             axisLine -= axisPtr->colorbar.thickness + COLORBAR_PAD;
         }
@@ -2434,10 +2459,10 @@ AxisOffsets(Axis *axisPtr, Margin *marginPtr, AxisInfo *infoPtr)
 	    axisLine += axisPad + axisPtr->lineWidth / 2;
 	    tickLabel = graphPtr->left - graphPtr->plotBW - 2;
 	}
-	mark = graphPtr->left - marginPtr->nextLayerOffset;
+	mark = graphPtr->left - axisPtr->marginPtr->nextLayerOffset;
 	axisPtr->tickAnchor = TK_ANCHOR_E;
 	if (graphPtr->flags & STACK_AXES) {
-	    axisPtr->left = mark - marginPtr->axesOffset;
+	    axisPtr->left = mark - axisPtr->marginPtr->axesOffset;
 	} else {
 	    axisPtr->left = mark - axisPtr->width;
 	}
@@ -2450,7 +2475,7 @@ AxisOffsets(Axis *axisPtr, Margin *marginPtr, AxisInfo *infoPtr)
 	    axisPtr->titleAnchor = TK_ANCHOR_SW; 
 	} else {
 	    if (graphPtr->flags & STACK_AXES) {
-		x = mark - marginPtr->axesOffset;
+		x = mark - axisPtr->marginPtr->axesOffset;
 	    } else {
 		x = mark - axisPtr->width + AXIS_PAD_TITLE;
 	    }
@@ -2463,7 +2488,7 @@ AxisOffsets(Axis *axisPtr, Margin *marginPtr, AxisInfo *infoPtr)
 	break;
 
     case MARGIN_RIGHT:
-	axisLine = graphPtr->right + marginPtr->nextLayerOffset;
+	axisLine = graphPtr->right + axisPtr->marginPtr->nextLayerOffset;
         if (axisPtr->colorbar.thickness > 0) {
             axisLine += axisPtr->colorbar.thickness + COLORBAR_PAD;
         }
@@ -2481,11 +2506,11 @@ AxisOffsets(Axis *axisPtr, Margin *marginPtr, AxisInfo *infoPtr)
 	    axisLine -= axisPad + axisPtr->lineWidth / 2;
 	    tickLabel = axisLine + 2;
 	}
-	mark = graphPtr->right + marginPtr->nextLayerOffset + pad;
+	mark = graphPtr->right + axisPtr->marginPtr->nextLayerOffset + pad;
 	axisPtr->tickAnchor = TK_ANCHOR_W;
 	axisPtr->left = mark;
 	if (graphPtr->flags & STACK_AXES) {
-	    axisPtr->right = mark + marginPtr->axesOffset - 1;
+	    axisPtr->right = mark + axisPtr->marginPtr->axesOffset - 1;
 	} else {
 	    axisPtr->right = mark + axisPtr->width - 1;
 	}
@@ -2497,7 +2522,7 @@ AxisOffsets(Axis *axisPtr, Margin *marginPtr, AxisInfo *infoPtr)
 	    axisPtr->titleAnchor = TK_ANCHOR_SE; 
 	} else {
 	    if (graphPtr->flags & STACK_AXES) {
-		x = mark + marginPtr->axesOffset - AXIS_PAD_TITLE;
+		x = mark + axisPtr->marginPtr->axesOffset - AXIS_PAD_TITLE;
 	    } else {
 		x = mark + axisPtr->width - AXIS_PAD_TITLE;
 	    }
@@ -2513,7 +2538,8 @@ AxisOffsets(Axis *axisPtr, Margin *marginPtr, AxisInfo *infoPtr)
 	axisLine = 0;
 	break;
     }
-    if ((marginPtr->side == MARGIN_LEFT) || (marginPtr->side == MARGIN_TOP)) {
+    if ((axisPtr->marginPtr->side == MARGIN_LEFT) ||
+        (axisPtr->marginPtr->side == MARGIN_TOP)) {
 	t1 = -t1, t2 = -t2;
 	labelOffset = -labelOffset;
     }
@@ -2706,7 +2732,7 @@ MakeSegments(Axis *axisPtr, AxisInfo *infoPtr)
  *---------------------------------------------------------------------------
  */
 static void
-MapAxis(Axis *axisPtr, Margin *marginPtr)
+MapAxis(Axis *axisPtr)
 {
     AxisInfo info;
     Graph *graphPtr = axisPtr->obj.graphPtr;
@@ -2721,7 +2747,7 @@ MapAxis(Axis *axisPtr, Margin *marginPtr)
 	axisPtr->screenRange = graphPtr->vRange;
     }
     axisPtr->screenScale = 1.0 / axisPtr->screenRange;
-    AxisOffsets(axisPtr, marginPtr, &info);
+    AxisOffsets(axisPtr, &info);
     MakeSegments(axisPtr, &info);
     if (axisPtr->colorbar.thickness > 0) {
         MakeColorbar(axisPtr, &info);
@@ -2752,7 +2778,7 @@ MapAxis(Axis *axisPtr, Margin *marginPtr)
  *---------------------------------------------------------------------------
  */
 static void
-MapStackedAxis(Axis *axisPtr, Margin *marginPtr, float totalWeight)
+MapStackedAxis(Axis *axisPtr, float totalWeight)
 {
     AxisInfo info;
     Graph *graphPtr = axisPtr->obj.graphPtr;
@@ -2778,12 +2804,13 @@ MapStackedAxis(Axis *axisPtr, Margin *marginPtr, float totalWeight)
 #define AXIS_PAD 2
     Blt_GetTextExtents(axisPtr->tickFont, 0, "0", 1, &w, &h);
     if (n > 1) {
-	axisPtr->screenMin += marginPtr->nextStackOffset + AXIS_PAD + h / 2;
+	axisPtr->screenMin += axisPtr->marginPtr->nextStackOffset +
+            AXIS_PAD + h / 2;
 	axisPtr->screenRange = slice - 2 * AXIS_PAD - h;
-	marginPtr->nextStackOffset += slice;
+	axisPtr->marginPtr->nextStackOffset += slice;
     }
     axisPtr->screenScale = 1.0f / axisPtr->screenRange;
-    AxisOffsets(axisPtr, marginPtr, &info);
+    AxisOffsets(axisPtr, &info);
     MakeSegments(axisPtr, &info);
 }
 
@@ -2927,7 +2954,38 @@ GradientColorProc(Blt_PaintBrush *brushPtr, int x, int y)
 /*
  *---------------------------------------------------------------------------
  *
- * DrawGradientRectangle --
+ * ColorbarToPicture --
+ *
+ * Results:
+ *	None.
+ *
+ *---------------------------------------------------------------------------
+ */
+static Blt_Picture
+ColorbarToPicture(Axis *axisPtr, int w, int h)
+{
+    Blt_Picture picture;
+
+    if (axisPtr->palette == NULL) {
+	return NULL;                    /* No palette defined. */
+    }
+    picture = Blt_CreatePicture(w, h);
+    if (picture != NULL) {
+        Blt_PaintBrush brush;
+
+        Blt_PaintBrush_Init(&brush);
+        Blt_PaintBrush_SetPalette(&brush, axisPtr->palette);
+        Blt_PaintBrush_SetColorProc(&brush, GradientColorProc, axisPtr);
+        Blt_PaintRectangle(picture, 0, 0, w, h, 0, 0, &brush);
+        return picture;
+    }
+    return NULL;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * DrawColorbar --
  *
  * Results:
  *	None.
@@ -2935,31 +2993,26 @@ GradientColorProc(Blt_PaintBrush *brushPtr, int x, int y)
  *---------------------------------------------------------------------------
  */
 static void
-DrawGradientRectangle(Axis *axisPtr, Drawable drawable)
+DrawColorbar(Axis *axisPtr, Drawable drawable)
 {
-    Blt_PaintBrush brush;
     Blt_Painter painter;
-    Blt_Picture bg;
-    XRectangle *rectPtr;
+    Blt_Picture picture;
     Graph *graphPtr;
+    XRectangle *rectPtr;
+
     if (axisPtr->palette == NULL) {
 	return;				/* No palette defined. */
     }
     graphPtr = axisPtr->obj.graphPtr;
     rectPtr = &axisPtr->colorbar.rect;
-    bg = Blt_CreatePicture(rectPtr->width, rectPtr->height);
-    if (bg == NULL) {
+    picture = ColorbarToPicture(axisPtr, rectPtr->width, rectPtr->height);
+    if (picture == NULL) {
  	return;				/* Background is obscured. */
     }
-    Blt_PaintBrush_Init(&brush);
-    Blt_PaintBrush_SetOrigin(&brush, -rectPtr->x, -rectPtr->y); 
-    Blt_PaintBrush_SetPalette(&brush, axisPtr->palette);
-    Blt_PaintBrush_SetColorProc(&brush, GradientColorProc, axisPtr);
-    Blt_PaintRectangle(bg, 0, 0, rectPtr->width, rectPtr->height, 0, 0, &brush);
     painter = Blt_GetPainter(graphPtr->tkwin, 1.0);
-    Blt_PaintPicture(painter, drawable, bg, 0, 0, rectPtr->width, 
+    Blt_PaintPicture(painter, drawable, picture, 0, 0, rectPtr->width, 
 		     rectPtr->height, rectPtr->x, rectPtr->y, 0);
-    Blt_FreePicture(bg);
+    Blt_FreePicture(picture);
 }
 
 /*
@@ -2995,7 +3048,7 @@ DrawAxis(Axis *axisPtr, Drawable drawable)
 		axisPtr->relief);
     }
     if (axisPtr->colorbar.thickness > 0) {
-        DrawGradientRectangle(axisPtr, drawable);
+        DrawColorbar(axisPtr, drawable);
     }
     if (axisPtr->title != NULL) {
 	TextStyle ts;
@@ -3120,6 +3173,24 @@ DrawAxis(Axis *axisPtr, Drawable drawable)
     }
 }
 
+static void
+ColorbarToPostScript(Axis *axisPtr, Blt_Ps ps)
+{
+    Blt_Picture picture;
+    XRectangle *rectPtr;
+
+    Blt_Ps_Format(ps, "%% Axis \"%s\" colorbar \n", axisPtr->obj.name);
+    if (axisPtr->palette == NULL) {
+	return;				/* No palette defined. */
+    }
+    rectPtr = &axisPtr->colorbar.rect;
+    picture = ColorbarToPicture(axisPtr, rectPtr->width, rectPtr->height);
+    if (picture != NULL) {
+        Blt_Ps_DrawPicture(ps, picture, rectPtr->x, rectPtr->y);
+        Blt_FreePicture(picture);
+    }
+}
+
 /*
  *---------------------------------------------------------------------------
  *
@@ -3140,7 +3211,7 @@ DrawAxis(Axis *axisPtr, Drawable drawable)
  */
 /* ARGSUSED */
 static void
-AxisToPostScript(Blt_Ps ps, Axis *axisPtr)
+AxisToPostScript(Axis *axisPtr, Blt_Ps ps)
 {
     Blt_Ps_Format(ps, "%% Axis \"%s\"\n", axisPtr->obj.name);
     if (axisPtr->normalBg != NULL) {
@@ -3184,6 +3255,9 @@ AxisToPostScript(Blt_Ps ps, Axis *axisPtr)
 	    Blt_Ps_DrawText(ps, labelPtr->string, &ts, labelPtr->anchorPos.x, 
 		labelPtr->anchorPos.y);
 	}
+    }
+    if (axisPtr->colorbar.thickness > 0) {
+	ColorbarToPostScript(axisPtr, ps);
     }
     if ((axisPtr->numSegments > 0) && (axisPtr->lineWidth > 0)) {
 	Blt_Ps_XSetLineAttributes(ps, axisPtr->tickColor, axisPtr->lineWidth, 
@@ -3449,7 +3523,7 @@ Blt_GetAxisGeometry(Graph *graphPtr, Axis *axisPtr)
 static int
 GetMarginGeometry(Graph *graphPtr, Margin *marginPtr)
 {
-    Blt_ChainLink link;
+    Axis *axisPtr;
     int l, w, h;			/* Length, width, and height. */
     int isHoriz;
     unsigned int numVisible;
@@ -3462,11 +3536,8 @@ GetMarginGeometry(Graph *graphPtr, Margin *marginPtr)
     /* Need to track the widest and tallest tick labels in the margin. */
     marginPtr->maxAxisLabelWidth = marginPtr->maxAxisLabelHeight = 0;
     if (graphPtr->flags & STACK_AXES) {
-	for (link = Blt_Chain_FirstLink(marginPtr->axes); link != NULL;
-	     link = Blt_Chain_NextLink(link)) {
-	    Axis *axisPtr;
-	    
-	    axisPtr = Blt_Chain_GetValue(link);
+	for (axisPtr = FirstAxis(marginPtr); axisPtr != NULL;
+	     axisPtr = NextAxis(axisPtr)) {
 	    if ((axisPtr->flags & (HIDE|USE)) == USE) {
 		numVisible++;
 		if (graphPtr->flags & GET_AXIS_GEOMETRY) {
@@ -3490,11 +3561,8 @@ GetMarginGeometry(Graph *graphPtr, Margin *marginPtr)
 	    }
 	}
     } else {
-	for (link = Blt_Chain_FirstLink(marginPtr->axes); link != NULL;
-	     link = Blt_Chain_NextLink(link)) {
-	    Axis *axisPtr;
-	    
-	    axisPtr = Blt_Chain_GetValue(link);
+	for (axisPtr = FirstAxis(marginPtr); axisPtr != NULL;
+	     axisPtr = NextAxis(axisPtr)) {
 	    if ((axisPtr->flags & (HIDE|USE)) == USE) {
 		numVisible++;
 		if (graphPtr->flags & GET_AXIS_GEOMETRY) {
@@ -4130,7 +4198,7 @@ Blt_DestroyAxes(Graph *graphPtr)
 {
     Blt_HashEntry *hPtr;
     Blt_HashSearch cursor;
-    int margin;
+    int i;
     
     for (hPtr = Blt_FirstHashEntry(&graphPtr->axes.nameTable, &cursor);
 	 hPtr != NULL; hPtr = Blt_NextHashEntry(&cursor)) {
@@ -4141,8 +4209,8 @@ Blt_DestroyAxes(Graph *graphPtr)
 	DestroyAxis(axisPtr);
     }
     Blt_DeleteHashTable(&graphPtr->axes.nameTable);
-    for (margin = 0; margin < 4; margin++) {
-	Blt_Chain_Destroy(graphPtr->axisChain[margin]);
+    for (i = 0; i < 4; i++) {
+	Blt_Chain_Destroy(graphPtr->axisChain[i]);
     }
     Blt_DeleteHashTable(&graphPtr->axes.bindTagTable);
     Blt_Chain_Destroy(graphPtr->axes.displayList);
@@ -4166,26 +4234,27 @@ Blt_ConfigureAxes(Graph *graphPtr)
 int
 Blt_DefaultAxes(Graph *graphPtr)
 {
-    int i, margin;
-    int flags;
+    int i;
+    unsigned int flags;
 
     flags = Blt_GraphType(graphPtr);
-    for (margin = 0; margin < 4; margin++) {
+    for (i = 0; i < 4; i++) {
 	Blt_Chain chain;
 	Axis *axisPtr;
 
 	chain = Blt_Chain_Create();
-	graphPtr->axisChain[margin] = chain;
+	graphPtr->axisChain[i] = chain;
 
 	/* Create a default axis for each chain. */
-	axisPtr = NewAxis(graphPtr, axisNames[margin].name, margin);
+	axisPtr = NewAxis(graphPtr, axisNames[i].name, i);
 	if (axisPtr == NULL) {
 	    return TCL_ERROR;
 	}
 	axisPtr->refCount = 1;	/* Default axes are assumed in use. */
-	axisPtr->margin = margin;
+	axisPtr->margin = i;
+        axisPtr->marginPtr = graphPtr->margins + i;
 	axisPtr->flags |= USE;
-	Blt_GraphSetObjectClass(&axisPtr->obj, axisNames[margin].classId);
+	Blt_GraphSetObjectClass(&axisPtr->obj, axisNames[i].classId);
  	if (Blt_ConfigureComponentFromObj(graphPtr->interp, graphPtr->tkwin,
 		axisPtr->obj.name, "Axis", configSpecs, 0, (Tcl_Obj **)NULL,
 		(char *)axisPtr, flags) != TCL_OK) {
@@ -4207,6 +4276,7 @@ Blt_DefaultAxes(Graph *graphPtr)
 	}
 	axisPtr->refCount = 1;		
 	axisPtr->margin = MARGIN_NONE;
+        axisPtr->marginPtr = NULL;
 	axisPtr->flags |= USE;
 	Blt_GraphSetObjectClass(&axisPtr->obj, axisNames[i].classId);
  	if (Blt_ConfigureComponentFromObj(graphPtr->interp, graphPtr->tkwin,
@@ -4566,22 +4636,21 @@ UseOp(Tcl_Interp *interp, Axis *axisPtr, int objc, Tcl_Obj *const *objv)
 {
     Graph *graphPtr = (Graph *)axisPtr;
     Blt_Chain chain;
-    Blt_ChainLink link;
+    Axis *nextPtr;
     Tcl_Obj **axisObjv;
     ClassId classId;
     int axisObjc;
     int i;
-
+    Margin *marginPtr;
+    
     chain = graphPtr->margins[lastMargin].axes;
+    marginPtr = graphPtr->margins + lastMargin;
     if (objc == 0) {
 	Tcl_Obj *listObjPtr;
 
 	listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
-	for (link = Blt_Chain_FirstLink(chain); link != NULL;
-	     link = Blt_Chain_NextLink(link)) {
-	    Axis *axisPtr;
-
-	    axisPtr = Blt_Chain_GetValue(link);
+	for (axisPtr = FirstAxis(marginPtr); axisPtr != NULL;
+	     axisPtr = NextAxis(axisPtr)) {
 	    Tcl_ListObjAppendElement(interp, listObjPtr,
 		Tcl_NewStringObj(axisPtr->obj.name, -1));
 	}
@@ -4597,11 +4666,8 @@ UseOp(Tcl_Interp *interp, Axis *axisPtr, int objc, Tcl_Obj *const *objv)
 	!= TCL_OK) {
 	return TCL_ERROR;
     }
-    for (link = Blt_Chain_FirstLink(chain); link!= NULL; 
-	 link = Blt_Chain_NextLink(link)) {
-	Axis *axisPtr;
-
-	axisPtr = Blt_Chain_GetValue(link);
+    for (axisPtr = FirstAxis(marginPtr); axisPtr != NULL; axisPtr = nextPtr) {
+        nextPtr = NextAxis(axisPtr);
 	axisPtr->link = NULL;
 	axisPtr->flags &= ~USE;
 	/* Clear the axis type if it's not currently used.*/
@@ -4634,6 +4700,7 @@ UseOp(Tcl_Interp *interp, Axis *axisPtr, int objc, Tcl_Obj *const *objv)
 	axisPtr->chain = chain;
 	axisPtr->flags |= USE;
 	axisPtr->margin = lastMargin;
+        axisPtr->marginPtr = graphPtr->margins + lastMargin;
     }
     graphPtr->flags |= (GET_AXIS_GEOMETRY | LAYOUT_NEEDED | RESET_AXES);
     /* When any axis changes, we need to layout the entire graph.  */
@@ -5305,7 +5372,7 @@ Blt_AxisOp(Tcl_Interp *interp, Graph *graphPtr, int margin, int objc,
     } else {
 	Axis *axisPtr;
 
-	axisPtr = Blt_GetFirstAxis(graphPtr->margins[margin].axes);
+	axisPtr = FirstAxis(graphPtr->margins + margin);
 	if (axisPtr == NULL) {
 	    return TCL_OK;
 	}
@@ -5320,21 +5387,18 @@ Blt_MapAxes(Graph *graphPtr)
     int i;
     
     for (i = 0; i < 4; i++) {
-	Blt_ChainLink link;
-	Margin *marginPtr;
-	float sum;
-
+        Axis *axisPtr;
+        Margin *marginPtr;
+        float sum;
+        
 	marginPtr = graphPtr->margins + i;
         /* Reset the margin offsets (stacked and layered). */
         marginPtr->nextStackOffset = marginPtr->nextLayerOffset = 0;
 	sum = 0.0;
 	if (graphPtr->flags & STACK_AXES) {
             /* For stacked axes figure out the sum of the weights.*/
-	    for (link = Blt_Chain_FirstLink(marginPtr->axes); link != NULL; 
-		 link = Blt_Chain_NextLink(link)) {
-		Axis *axisPtr;
-
-		axisPtr = Blt_Chain_GetValue(link);
+	    for (axisPtr = FirstAxis(marginPtr); axisPtr != NULL; 
+		 axisPtr = NextAxis(axisPtr)) {
 		if ((axisPtr->flags & (USE|DELETE_PENDING)) != USE) {
 		    continue;           /* Ignore axes that aren't in use
                                          * or have been deleted.  */
@@ -5342,11 +5406,8 @@ Blt_MapAxes(Graph *graphPtr)
 		sum += axisPtr->weight;
 	    }
 	}
-	for (link = Blt_Chain_FirstLink(marginPtr->axes); link != NULL; 
-	     link = Blt_Chain_NextLink(link)) {
-	    Axis *axisPtr;
-
-	    axisPtr = Blt_Chain_GetValue(link);
+	for (axisPtr = FirstAxis(marginPtr); axisPtr != NULL; 
+	     axisPtr = NextAxis(axisPtr)) {
 	    if ((axisPtr->flags & (USE|HIDE|DELETE_PENDING)) != USE) {
 		continue;               /* Don't map axes that aren't being
                                          * used or have been deleted. */
@@ -5355,12 +5416,12 @@ Blt_MapAxes(Graph *graphPtr)
 		if (axisPtr->reqNumMajorTicks <= 0) {
 		    axisPtr->reqNumMajorTicks = 4;
 		}
-		MapStackedAxis(axisPtr, marginPtr, sum);
+		MapStackedAxis(axisPtr, sum);
 	    } else {
 		if (axisPtr->reqNumMajorTicks <= 0) {
 		    axisPtr->reqNumMajorTicks = 4;
 		}
-		MapAxis(axisPtr, marginPtr);
+		MapAxis(axisPtr);
                 /* The next axis will start after the current axis. */
 		marginPtr->nextLayerOffset += (axisPtr->flags & HORIZONTAL) ? 
 		    axisPtr->height : axisPtr->width;
@@ -5376,18 +5437,15 @@ Blt_MapAxes(Graph *graphPtr)
 void
 Blt_DrawAxes(Graph *graphPtr, Drawable drawable)
 {
-    int margin;
+    int i;
 
-    for (margin = 0; margin < 4; margin++) {
-	Blt_ChainLink link;
+    for (i = 0; i < 4; i++) {
+	Axis *axisPtr;
 	Margin *marginPtr;
 
-	marginPtr = graphPtr->margins + margin;
-	for (link = Blt_Chain_LastLink(marginPtr->axes); link != NULL; 
-	     link = Blt_Chain_PrevLink(link)) {
-	    Axis *axisPtr;
-
-	    axisPtr = Blt_Chain_GetValue(link);
+	marginPtr = graphPtr->margins + i;
+	for (axisPtr = FirstAxis(marginPtr); axisPtr != NULL; 
+	     axisPtr = NextAxis(axisPtr)) {
 	    if ((axisPtr->flags & (DELETE_PENDING|HIDE|USE)) == USE) {
 		DrawAxis(axisPtr, drawable);
 	    }
@@ -5410,18 +5468,15 @@ Blt_DrawAxes(Graph *graphPtr, Drawable drawable)
 void
 Blt_DrawGrids(Graph *graphPtr, Drawable drawable) 
 {
-    int margin;
+    int i;
 
-    for (margin = 0; margin < 4; margin++) {
-	Blt_ChainLink link;
+    for (i = 0; i < 4; i++) {
+	Axis *axisPtr;
 	Margin *marginPtr;
 
-	marginPtr = graphPtr->margins + margin;
-	for (link = Blt_Chain_FirstLink(marginPtr->axes); link != NULL;
-	     link = Blt_Chain_NextLink(link)) {
-	    Axis *axisPtr;
-
-	    axisPtr = Blt_Chain_GetValue(link);
+	marginPtr = graphPtr->margins + i;
+	for (axisPtr = FirstAxis(marginPtr); axisPtr != NULL;
+	     axisPtr = NextAxis(axisPtr)) {
 	    if (axisPtr->flags & (DELETE_PENDING|HIDE)) {
 		continue;
 	    }
@@ -5456,18 +5511,15 @@ Blt_DrawGrids(Graph *graphPtr, Drawable drawable)
 void
 Blt_GridsToPostScript(Graph *graphPtr, Blt_Ps ps) 
 {
-    int margin;
+    int i;
 
-    for (margin = 0; margin < 4; margin++) {
-	Blt_ChainLink link;
+    for (i = 0; i < 4; i++) {
+	Axis *axisPtr;
 	Margin *marginPtr;
 
-	marginPtr = graphPtr->margins + margin;
-	for (link = Blt_Chain_FirstLink(marginPtr->axes); link != NULL;
-	     link = Blt_Chain_NextLink(link)) {
-	    Axis *axisPtr;
-
-	    axisPtr = Blt_Chain_GetValue(link);
+	marginPtr = graphPtr->margins + i;
+	for (axisPtr = FirstAxis(marginPtr); axisPtr != NULL;
+	     axisPtr = NextAxis(axisPtr)) {
 	    if ((axisPtr->flags & (DELETE_PENDING|HIDE|USE|GRID)) !=
 		(GRID|USE)) {
 		continue;
@@ -5497,20 +5549,17 @@ Blt_GridsToPostScript(Graph *graphPtr, Blt_Ps ps)
 void
 Blt_AxesToPostScript(Graph *graphPtr, Blt_Ps ps) 
 {
-    int margin;
+    int i;
 
-    for (margin = 0; margin < 4; margin++) {
-	Blt_ChainLink link;
+    for (i = 0; i < 4; i++) {
+	Axis *axisPtr;
 	Margin *marginPtr;
 	
-	marginPtr = graphPtr->margins + margin;
-	for (link = Blt_Chain_FirstLink(marginPtr->axes); link != NULL; 
-	     link = Blt_Chain_NextLink(link)) {
-	    Axis *axisPtr;
-
-	    axisPtr = Blt_Chain_GetValue(link);
+	marginPtr = graphPtr->margins + i;
+	for (axisPtr = FirstAxis(marginPtr); axisPtr != NULL; 
+	     axisPtr = NextAxis(axisPtr)) {
 	    if ((axisPtr->flags & (DELETE_PENDING|HIDE|USE)) == USE) {
-		AxisToPostScript(ps, axisPtr);
+		AxisToPostScript(axisPtr, ps);
 	    }
 	}
     }

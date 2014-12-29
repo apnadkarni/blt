@@ -777,8 +777,8 @@ proc Blt_PostScriptDialog { g } {
     set top $g.top
     toplevel $top
 
-    foreach var { center landscape maxpect preview decorations padx 
-	pady paperwidth paperheight width height colormode } {
+    foreach var { center landscape decorations padx 
+	pady paperwidth paperheight width height } {
 	global $g.$var
 	set $g.$var [$g postscript cget -$var]
     }
@@ -786,7 +786,7 @@ proc Blt_PostScriptDialog { g } {
     set col 0
     label $top.title -text "PostScript Options"
     blt::table $top $top.title -cspan 7
-    foreach bool { center landscape maxpect preview decorations } {
+    foreach bool { center landscape decorations } {
 	set w $top.$bool-label
 	label $w -text "-$bool" -font "courier 12"
 	blt::table $top $row,$col $w -anchor e -pady { 2 0 } -padx { 0 4 }
@@ -832,10 +832,11 @@ proc Blt_PostScriptDialog { g } {
 }
 
 proc blt::Graph::ResetPostScript { g } {
-    foreach var { center landscape maxpect preview decorations padx 
-	pady paperwidth paperheight width height colormode } {
+    foreach var { center landscape decorations padx 
+	pady paperwidth paperheight width height } {
 	global $g.$var
 	set old [$g postscript cget -$var]
+
 	if { [catch {$g postscript configure -$var [set $g.$var]}] != 0 } {
 	    $g postscript configure -$var $old
 	    set $g.$var $old

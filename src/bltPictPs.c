@@ -276,6 +276,7 @@ AddComments(Blt_Ps ps, const char **comments)
 	}
 	Blt_Ps_Format(ps, "%% %s: %s\n", *p, *(p+1));
     }
+    Blt_Ps_Append(ps, "%%EndComments\n\n");
 }
 
 /*
@@ -413,8 +414,9 @@ PostScriptPreamble(Tcl_Interp *interp, Picture *srcPtr,
     } else {
 	Blt_Ps_Append(ps, "%%Orientation: Portrait\n");
     }
-    AddComments(ps, setupPtr->comments);
-    Blt_Ps_Append(ps, "%%EndComments\n\n");
+    if (setupPtr->comments != NULL) {
+        AddComments(ps, setupPtr->comments);
+    }
     Blt_Ps_Append(ps, "%%BeginProlog\n");
     Blt_Ps_Append(ps, "%%EndProlog\n");
     Blt_Ps_Append(ps, "%%BeginSetup\n");

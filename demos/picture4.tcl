@@ -31,3 +31,4 @@ puts stderr [time {
 label .l -image $bg
 pack .l
 
+$bg export ps -file picture2.ps

@@ -65,4 +65,3 @@ $dest draw circle 200 200 100 -color yellow -shadow 0 \
 
 #$dest draw line -coords "200 200 500 200" -color black
 
-

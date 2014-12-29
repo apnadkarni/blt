@@ -91,7 +91,7 @@ static Blt_CustomOption padOption =
 #define DEF_PS_DECORATIONS	"no"
 #define DEF_PS_FONT_MAP		(char *)NULL
 #define DEF_PS_FOOTER		"no"
-#define DEF_PS_LEVEL		"2"
+#define DEF_PS_LEVEL		"1"
 #define DEF_PS_HEIGHT		"0"
 #define DEF_PS_LANDSCAPE	"no"
 #define DEF_PS_PADX		"1.0i"
@@ -373,12 +373,6 @@ PostScriptPreamble(Graph *graphPtr, const char *fileName, Blt_Ps ps)
 	    "%% Landscape orientation\n0 %g translate\n-90 rotate\n",
 	    ((double)graphPtr->width * setupPtr->scale));
     }
-#ifdef notdef
-    if (setupPtr->scale != 1.0f) {
-	Blt_Ps_Append(ps, "\n% Setting graph scale factor\n");
-	Blt_Ps_Format(ps, " %g %g scale\n", setupPtr->scale, setupPtr->scale);
-    }
-#endif
     Blt_Ps_Append(ps, "\n%%EndSetup\n\n");
     return TCL_OK;
 }
@@ -390,6 +384,7 @@ MarginsToPostScript(Graph *graphPtr, Blt_Ps ps)
     PageSetup *setupPtr = graphPtr->pageSetup;
     XRectangle margin[4];
 
+    Blt_Ps_Append(ps, "% Margins\n");
     margin[0].x = margin[0].y = margin[3].x = margin[1].x = 0;
     margin[0].width = margin[3].width = graphPtr->width;
     margin[0].height = graphPtr->top;
@@ -407,7 +402,6 @@ MarginsToPostScript(Graph *graphPtr, Blt_Ps ps)
     } else {
 	Blt_Ps_SetClearBackground(ps);
     }
-    Blt_Ps_Append(ps, "% Margins\n");
     Blt_Ps_XFillRectangles(ps, 4, margin);
     
     Blt_Ps_Append(ps, "% Interior 3D border\n");
@@ -499,14 +493,19 @@ GraphToPostScript(Graph *graphPtr, const char *ident, Blt_Ps ps)
 	/* Print legend underneath elements and markers */
 	Blt_LegendToPostScript(graphPtr, ps);
     }
+    Blt_Ps_Append(ps, "% Axis Limits\n");
     Blt_AxisLimitsToPostScript(graphPtr, ps);
+    Blt_Ps_Append(ps, "% Elements\n");
     Blt_ElementsToPostScript(graphPtr, ps);
+    Blt_Ps_Append(ps, "% Legend\n");
     if ((Blt_Legend_Site(graphPtr) & LEGEND_PLOTAREA_MASK) && 
 	(Blt_Legend_IsRaised(graphPtr))) {
 	/* Print legend above elements (but not markers) */
 	Blt_LegendToPostScript(graphPtr, ps);
     }
+    Blt_Ps_Append(ps, "% Markers\n");
     Blt_MarkersToPostScript(graphPtr, ps, FALSE);
+    Blt_Ps_Append(ps, "% Active Elements\n");
     Blt_ActiveElementsToPostScript(graphPtr, ps);
     Blt_Ps_VarAppend(ps, "\n",
 	"% Unset clipping\n",
@@ -692,7 +691,7 @@ Blt_CreatePageSetup(Graph *graphPtr)
 
     setupPtr = Blt_AssertCalloc(1, sizeof(PostScript));
     setupPtr->flags = PS_CENTER;
-    setupPtr->level = 2;
+    setupPtr->level = 1;
     graphPtr->pageSetup = setupPtr;
 
     if (Blt_ConfigureComponentFromObj(graphPtr->interp, graphPtr->tkwin,

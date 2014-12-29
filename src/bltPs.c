@@ -1,5 +1,4 @@
 /* -*- mode: c; c-basic-offset: 4; indent-tabs-mode: nil -*- */
-
 /*
  * bltPs.c --
  *
@@ -7,13 +6,13 @@
  *
  *	Copyright 1991-2004 George A Howlett.
  *
- *	Permission is hereby granted, free of charge, to any person obtaining
- *	a copy of this software and associated documentation files (the
- *	"Software"), to deal in the Software without restriction, including
- *	without limitation the rights to use, copy, modify, merge, publish,
- *	distribute, sublicense, and/or sell copies of the Software, and to
- *	permit persons to whom the Software is furnished to do so, subject to
- *	the following conditions:
+ *	Permission is hereby granted, free of charge, to any person
+ *	obtaining a copy of this software and associated documentation
+ *	files (the "Software"), to deal in the Software without
+ *	restriction, including without limitation the rights to use, copy,
+ *	modify, merge, publish, distribute, sublicense, and/or sell copies
+ *	of the Software, and to permit persons to whom the Software is
+ *	furnished to do so, subject to the following conditions:
  *
  *	The above copyright notice and this permission notice shall be
  *	included in all copies or substantial portions of the Software.
@@ -21,10 +20,11 @@
  *	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  *	EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  *	MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- *	NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
- *	LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
- *	OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
- *	WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *	NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+ *	BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ *	ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ *	CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ *	SOFTWARE.
  *
  */
 
@@ -60,8 +60,8 @@
 #include "tkIntBorder.h"
 #include "tkDisplay.h"
 #include "tkFont.h"
-#define PS_MAXPATH	1500		/* Maximum number of components in a
-					 * PostScript (level 1) path. */
+#define PS_MAXPATH	1500		/* Maximum number of components in
+					 * a PostScript (level 1) path. */
 
 #define PICA_MM		2.83464566929
 #define PICA_INCH	72.0
@@ -77,9 +77,9 @@
  *
  * Results:
  *	The return value is a standard TCL return result.  If TCL_OK is
- *	returned, then everything went well and the pixel distance is stored
- *	at *doublePtr; otherwise TCL_ERROR is returned and an error message is
- *	left in interp->result.
+ *	returned, then everything went well and the pixel distance is
+ *	stored at *doublePtr; otherwise TCL_ERROR is returned and an error
+ *	message is left in interp->result.
  *
  * Side effects:
  *	None.
@@ -91,7 +91,8 @@ Blt_Ps_GetPicaFromObj(
     Tcl_Interp *interp,			/* Use this for error reporting. */
     Tcl_Obj *objPtr,			/* String describing a number of
 					 * pixels. */
-    int *picaPtr)			/* Place to store converted result. */
+    int *picaPtr)			/* Place to store converted
+                                         * result. */
 {
     char *p;
     double pica;
@@ -167,21 +168,23 @@ Blt_Ps_GetPadFromObj(
  *
  * Blt_Ps_ComputeBoundingBox --
  *
- * 	Computes the bounding box for the PostScript plot.  First get the size
- * 	of the plot (by default, it's the size of graph's X window).  If the
- * 	plot plus the page border is bigger than the designated paper size, or
- * 	if the "-maxpect" option is turned on, scale the plot to the page.
+ * 	Computes the bounding box for the PostScript plot.  First get the
+ * 	size of the plot (by default, it's the size of graph's X window).
+ * 	If the plot plus the page border is bigger than the designated
+ * 	paper size, or if the "-maxpect" option is turned on, scale the
+ * 	plot to the page.
  *
- *	Note: All coordinates/sizes are in screen coordinates, not PostScript
- *	      coordinates.  This includes the computed bounding box and paper
- *	      size.  They will be scaled to printer points later.
+ *	Note: All coordinates/sizes are in screen coordinates, not
+ *	      PostScript coordinates.  This includes the computed bounding
+ *	      box and paper size.  They will be scaled to printer points
+ *	      later.
  *
  * Results:
  *	Returns the height of the paper in screen coordinates.
  *
  * Side Effects:
- *	The graph dimensions (width and height) are changed to the requested
- *	PostScript plot size.
+ *	The graph dimensions (width and height) are changed to the
+ *	requested PostScript plot size.
  *
  *---------------------------------------------------------------------------
  */
@@ -206,8 +209,8 @@ Blt_Ps_ComputeBoundingBox(PageSetup *setupPtr, int width, int height)
 	vSize = height;
     }
     /*
-     * If the paper size wasn't specified, set it to the graph size plus the
-     * paper border.
+     * If the paper size wasn't specified, set it to the graph size plus
+     * the paper border.
      */
     paperWidth = (setupPtr->reqPaperWidth > 0) ? setupPtr->reqPaperWidth :
 	hSize + hBorder;
@@ -256,7 +259,7 @@ Blt_Ps_Create(Tcl_Interp *interp, PageSetup *setupPtr)
     psPtr = Blt_AssertMalloc(sizeof(PostScript));
     psPtr->setupPtr = setupPtr;
     psPtr->interp = interp;
-    Tcl_DStringInit(&psPtr->ds);
+    psPtr->dbuffer = Blt_DBuffer_Create();
     return psPtr;
 }
 
@@ -269,21 +272,21 @@ Blt_Ps_SetPrinting(PostScript *psPtr, int state)
 void
 Blt_Ps_Free(PostScript *psPtr)
 {
-    Tcl_DStringFree(&psPtr->ds);
+    Blt_DBuffer_Destroy(psPtr->dbuffer);
     Blt_Free(psPtr);
 }
 
-const char *
+const unsigned char *
 Blt_Ps_GetValue(PostScript *psPtr, int *lengthPtr)
 {
-    *lengthPtr = strlen(Tcl_DStringValue(&psPtr->ds));
-    return Tcl_DStringValue(&psPtr->ds);
+    *lengthPtr = Blt_DBuffer_Length(psPtr->dbuffer);
+    return Blt_DBuffer_Bytes(psPtr->dbuffer);
 }
 
 void
 Blt_Ps_SetInterp(PostScript *psPtr, Tcl_Interp *interp)
 {
-    Tcl_DStringResult(interp, &psPtr->ds);
+    Tcl_SetObjResult(interp, Blt_DBuffer_StringObj(psPtr->dbuffer));
 }
 
 char *
@@ -298,35 +301,16 @@ Blt_Ps_GetInterp(PostScript *psPtr)
     return psPtr->interp;
 }
 
-Tcl_DString *
-Blt_Ps_GetDString(PostScript *psPtr)
+Blt_DBuffer
+Blt_Ps_GetDBuffer(PostScript *psPtr)
 {
-    return &psPtr->ds;
+    return psPtr->dbuffer;
 }
 
 int 
 Blt_Ps_SaveFile(Tcl_Interp *interp, PostScript *psPtr, const char *fileName)
 {
-    Tcl_Channel channel;
-    int numWritten, numBytes;
-    char *bytes;
-
-    channel = Tcl_OpenFileChannel(interp, fileName, "w", 0660);
-    if (channel == NULL) {
-	return TCL_ERROR;
-    }
-    numBytes = Tcl_DStringLength(&psPtr->ds);
-    bytes = Tcl_DStringValue(&psPtr->ds);
-    numWritten = Tcl_Write(channel, bytes, numBytes);
-    Tcl_Close(interp, channel);
-    if (numWritten != numBytes) {
-	Tcl_AppendResult(interp, "short file \"", fileName, (char *)NULL);
-	Tcl_AppendResult(interp, "\" : wrote ", Blt_Itoa(numWritten), " of ", 
-			 (char *)NULL);
-	Tcl_AppendResult(interp, Blt_Itoa(numBytes), " bytes.", (char *)NULL); 
-	return TCL_ERROR;
-    }	
-    return TCL_OK;
+    return Blt_DBuffer_SaveFile(interp, fileName, psPtr->dbuffer);
 }
 
 void
@@ -342,7 +326,7 @@ Blt_Ps_VarAppend(PostScript *psPtr, ...)
 	if (string == NULL) {
 	    break;
 	}
-	Tcl_DStringAppend(&psPtr->ds, string, -1);
+	Blt_Ps_AppendBytes(psPtr, string, -1);
     }
     va_end(args);
 }
@@ -350,13 +334,16 @@ Blt_Ps_VarAppend(PostScript *psPtr, ...)
 void
 Blt_Ps_AppendBytes(PostScript *psPtr, const char *bytes, int length)
 {
-    Tcl_DStringAppend(&psPtr->ds, bytes, length);
+    if (length < 0) {
+        length = strlen(bytes);
+    }
+    Blt_DBuffer_AppendData(psPtr->dbuffer, (unsigned char *)bytes, length);
 }
 
 void
 Blt_Ps_Append(PostScript *psPtr, const char *string)
 {
-    Tcl_DStringAppend(&psPtr->ds, string, -1);
+    Blt_Ps_AppendBytes(psPtr, string, -1);
 }
 
 void
@@ -367,7 +354,7 @@ Blt_Ps_Format(PostScript *psPtr, const char *fmt, ...)
     va_start(args, fmt);
     vsnprintf(psPtr->scratchArr, POSTSCRIPT_BUFSIZ, fmt, args);
     va_end(args);
-    Tcl_DStringAppend(&psPtr->ds, psPtr->scratchArr, -1);
+    Blt_Ps_AppendBytes(psPtr, psPtr->scratchArr, -1);
 }
 
 int
@@ -437,7 +424,8 @@ Blt_Ps_IncludeFile(Tcl_Interp *interp, Blt_Ps ps, const char *fileName)
  *
  *	Maps an X color intensity (0 to 2^16-1) to a floating point value
  *	[0..1].  Many versions of Tk don't properly handle the the lower 8
- *	bits of the color intensity, so we can only consider the upper 8 bits.
+ *	bits of the color intensity, so we can only consider the upper 8
+ *	bits.
  *
  * Results:
  *	The string representing the color mode is returned.
@@ -460,7 +448,8 @@ XColorToPostScript(Blt_Ps ps, XColor *colorPtr)
 void
 Blt_Ps_XSetBackground(PostScript *psPtr, XColor *colorPtr)
 {
-    /* If the color name exists in TCL array variable, use that translation */
+    /* If the color name exists in TCL array variable, use that
+     * translation */
     if ((psPtr->setupPtr != NULL) && (psPtr->setupPtr->colorVarName != NULL)) {
 	const char *psColor;
 
@@ -481,7 +470,8 @@ Blt_Ps_XSetBackground(PostScript *psPtr, XColor *colorPtr)
 void
 Blt_Ps_XSetForeground(PostScript *psPtr, XColor *colorPtr)
 {
-    /* If the color name exists in TCL array variable, use that translation */
+    /* If the color name exists in TCL array variable, use that
+     * translation */
     if ((psPtr->setupPtr != NULL) && (psPtr->setupPtr->colorVarName != NULL)) {
 	const char *psColor;
 
@@ -583,7 +573,7 @@ Blt_Ps_XSetBitmapData(
 	return;
     }
     Blt_Ps_Append(psPtr, "\t<");
-    byteCount = bitPos = 0;	/* Suppress compiler warning */
+    byteCount = bitPos = 0;             /* Suppress compiler warning */
     for (y = height - 1; y >= 0; y--) {
 	srcPtr = srcBits + (bytesPerRow * y);
 	byte = 0;
@@ -616,7 +606,7 @@ Blt_Ps_XSetBitmapData(
 	    Blt_Ps_Append(psPtr, string);
 	    byteCount++;
 	}
-    }				/* y */
+    }                           /* y */
     Blt_Free(srcBits);
     Blt_Ps_Append(psPtr, ">\n");
 }
@@ -788,41 +778,38 @@ Blt_Ps_XFillRectangle(Blt_Ps ps, double x, double y, int width, int height)
 void
 Blt_Ps_PolylineFromXPoints(Blt_Ps ps, int n, XPoint *points)
 {
-    XPoint *pp, *pend;
+    int i;
 
-    pp = points;
     Blt_Ps_Append(ps, "newpath\n");
-    Blt_Ps_Format(ps, "  %d %d moveto\n", pp->x, pp->y);
-    pp++;
-    for (pend = points + n; pp < pend; pp++) {
-	Blt_Ps_Format(ps, "  %d %d lineto\n", pp->x, pp->y);
+    Blt_Ps_Format(ps, "  %d %d moveto\n", points[0].x, points[0].y);
+    for (i = 1; i < n; i++) {
+	Blt_Ps_Format(ps, "  %d %d lineto\n", points[i].x, points[i].y);
     }
 }
 
 void
 Blt_Ps_Polyline(Blt_Ps ps, int numScreenPts, Point2d *screenPts)
 {
-    Point2d *pp, *pend;
+    int i;
 
-    pp = screenPts;
     Blt_Ps_Append(ps, "newpath\n");
-    Blt_Ps_Format(ps, "  %g %g moveto\n", pp->x, pp->y);
-    for (pp++, pend = screenPts + numScreenPts; pp < pend; pp++) {
-	Blt_Ps_Format(ps, "  %g %g lineto\n", pp->x, pp->y);
+    Blt_Ps_Format(ps, "  %g %g moveto\n", screenPts[0].x, screenPts[0].y);
+    for (i = 1; i < numScreenPts; i++) {
+	Blt_Ps_Format(ps, "  %g %g lineto\n", screenPts[i].x, screenPts[i].y);
     }
 }
 
 void
 Blt_Ps_Polygon(Blt_Ps ps, Point2d *screenPts, int numScreenPts)
 {
-    Point2d *pp, *pend;
+    int i;
 
-    pp = screenPts;
     Blt_Ps_Append(ps, "newpath\n");
-    Blt_Ps_Format(ps, "  %g %g moveto\n", pp->x, pp->y);
-    for (pp++, pend = screenPts + numScreenPts; pp < pend; pp++) {
-	Blt_Ps_Format(ps, "  %g %g lineto\n", pp->x, pp->y);
+    Blt_Ps_Format(ps, "  %g %g moveto\n", screenPts[0].x, screenPts[0].y);
+    for (i = 1; i < numScreenPts; i++) {
+	Blt_Ps_Format(ps, "  %g %g lineto\n", screenPts[i].x, screenPts[i].y);
     }
+    /* Close the path. */
     Blt_Ps_Format(ps, "  %g %g lineto\n", screenPts[0].x, screenPts[0].y);
     Blt_Ps_Append(ps, "closepath\n");
 }
@@ -871,7 +858,8 @@ Blt_Ps_Draw3DRectangle(
     int borderWidth,		/* Desired width for border, in pixels. */
     int relief)			/* Should be either TK_RELIEF_RAISED or
                                  * TK_RELIEF_SUNKEN; indicates position of
-                                 * interior of window relative to exterior. */
+                                 * interior of window relative to
+                                 * exterior. */
 {
     Point2d points[7];
     TkBorder *borderPtr = (TkBorder *) border;
@@ -951,8 +939,9 @@ Blt_Ps_Fill3DRectangle(
     int width, int height,	/* Dimension of border to be drawn. */
     int borderWidth,		/* Desired width for border, in pixels. */
     int relief)			/* Should be either TK_RELIEF_RAISED or
-                                 * TK_RELIEF_SUNKEN;  indicates position of
-                                 * interior of window relative to exterior. */
+                                 * TK_RELIEF_SUNKEN; indicates position of
+                                 * interior of window relative to
+                                 * exterior. */
 {
     TkBorder *borderPtr = (TkBorder *) border;
 
@@ -980,33 +969,33 @@ Blt_Ps_XSetStipple(Blt_Ps ps, Display *display, Pixmap bitmap)
 }
 
 static void
-Base85Encode(Blt_DBuffer dBuffer, Tcl_DString *resultPtr)
+Base85Encode(PostScript *psPtr, Blt_DBuffer dBuffer)
 {
-    char *dp; 
+    unsigned char *dp; 
     int count;
-    int length, numBytes, oldLength;
-    int n;
+    int extra, numBytes, oldLength;
+    int n, remainder;
     unsigned char *sp, *send;
 
-    oldLength = Tcl_DStringLength(resultPtr);
+    oldLength = Blt_DBuffer_Length(psPtr->dbuffer);
     numBytes = Blt_DBuffer_Length(dBuffer);
 
     /*
-     * Compute worst-case length of buffer needed for encoding. 
-     * That is 5 characters per 4 bytes.  There are newlines every
-     * 65 characters. The actual size can be smaller, depending upon
-     * the number of 0 tuples ('z' bytes).
+     * Compute worst-case length of buffer needed for encoding.  That is 5
+     * characters per 4 bytes.  There are newlines every 65 characters. The
+     * actual size can be smaller, depending upon the number of 0 tuples
+     * ('z' bytes).
      */
-    length = oldLength + numBytes;
-    length += ((numBytes + 3)/4) * 5;	/* 5 characters per 4 bytes. */
-    length += (numBytes+64) / 65;		/* # of newlines. */
-    Tcl_DStringSetLength(resultPtr, length);
+    extra = ((numBytes + 3)/4) * 5;	/* 5 characters per 4 bytes. */
+    remainder = extra % 4;
+    extra += (numBytes + 64) / 65;     /* # of newlines. */
+    Blt_DBuffer_SetLength(psPtr->dbuffer, extra + oldLength);
 
-
-    n = count = 0;
-    dp = Tcl_DStringValue(resultPtr) + oldLength;
-    for (sp = Blt_DBuffer_Bytes(dBuffer), send = sp + numBytes; sp < send; 
-	 sp += 4) {
+    n = oldLength;
+    count = 0;
+    dp = Blt_DBuffer_Bytes(psPtr->dbuffer) + oldLength;
+    for (sp = Blt_DBuffer_Bytes(dBuffer), send = sp + (numBytes - remainder);
+         sp < send; sp += 4) {
 	unsigned int tuple;
 	
 	tuple = 0;
@@ -1090,12 +1079,12 @@ Base85Encode(Blt_DBuffer dBuffer, Tcl_DString *resultPtr)
 	    *dp++ = '\n';
 	    n += 3;
 	}
-	Tcl_DStringSetLength(resultPtr, n);
+	Blt_DBuffer_SetLength(psPtr->dbuffer, n);
     }
 }
 
 static void
-AsciiHexEncode(Blt_DBuffer dBuffer, Tcl_DString *resultPtr)
+AsciiHexEncode(PostScript *psPtr, Blt_DBuffer dBuffer)
 {
     static char hexDigits[] = "0123456789ABCDEF";
     int length, oldLength;
@@ -1105,18 +1094,18 @@ AsciiHexEncode(Blt_DBuffer dBuffer, Tcl_DString *resultPtr)
      * Compute the length of the buffer needed for the encoding.  That is 2
      * characters per byte.  There are newlines every 64 characters.
      */
-    length = oldLength = Tcl_DStringLength(resultPtr);
+    length = oldLength = Blt_DBuffer_Length(psPtr->dbuffer);
     numBytes =  Blt_DBuffer_Length(dBuffer) * 2;  /* Two characters per byte */
     length += numBytes;		
     length += (numBytes+63)/64;	/* Number of newlines required. */
-    Tcl_DStringSetLength(resultPtr, length);
+    Blt_DBuffer_SetLength(psPtr->dbuffer, length);
     {
 	unsigned char *sp, *send;
-	char *bytes, *dp; 
+	unsigned char *dp; 
 	int count, n;
 
 	count = n = 0;
-	dp = bytes = Tcl_DStringValue(resultPtr) + oldLength;
+	dp = Blt_DBuffer_Bytes(psPtr->dbuffer) + oldLength;
 	for (sp = Blt_DBuffer_Bytes(dBuffer), 
 		 send = sp + Blt_DBuffer_Length(dBuffer); 
 	     sp < send; sp++) {
@@ -1130,10 +1119,6 @@ AsciiHexEncode(Blt_DBuffer dBuffer, Tcl_DString *resultPtr)
 		n++;
 	    }
 	}
-	*dp++ = '\0';
-#ifdef notdef
-	Tcl_DStringSetLength(resultPtr, n + oldLength);
-#endif
     }
 }
 
@@ -1142,8 +1127,8 @@ AsciiHexEncode(Blt_DBuffer dBuffer, Tcl_DString *resultPtr)
  *
  * Blt_Ps_DrawPicture --
  *
- *      Translates a picture into 3 component RGB PostScript output.  Uses PS
- *      Language Level 2 operator "colorimage".
+ *      Translates a picture into 3 component RGB PostScript output.  Uses
+ *      PS Language Level 2 operator "colorimage".
  *
  * Results:
  *      The dynamic string will contain the PostScript output.
@@ -1186,7 +1171,7 @@ Blt_Ps_DrawPicture(PostScript *psPtr, Blt_Picture picture, double x, double y)
 	    Blt_Ps_Append(psPtr, "false 3 colorimage\n");
 	    dBuffer = Blt_PictureToDBuffer(picture, 3);
 	}
-	AsciiHexEncode(dBuffer, &psPtr->ds);
+	AsciiHexEncode(psPtr, dBuffer);
 	Blt_DBuffer_Free(dBuffer);
     } else {
 	Blt_Ps_Format(psPtr, 
@@ -1202,7 +1187,7 @@ Blt_Ps_DrawPicture(PostScript *psPtr, Blt_Picture picture, double x, double y)
 	    ">>\n"
 	    "image\n", w, h, w, -h, h);
 	dBuffer = Blt_PictureToDBuffer(picture, 3);
-	Base85Encode(dBuffer, &psPtr->ds);
+	Base85Encode(psPtr, dBuffer);
 	Blt_DBuffer_Free(dBuffer);
     } 
     Blt_Ps_Append(psPtr, "\ngrestore\n\n");
@@ -1245,8 +1230,9 @@ Blt_Ps_XDrawWindow(Blt_Ps ps, Tk_Window tkwin, double x, double y)
  *
  * Blt_Ps_DrawPhoto --
  *
- *      Output a PostScript image string of the given photo image.  The photo
- *      is first converted into a picture and then translated into PostScript.
+ *      Output a PostScript image string of the given photo image.  The
+ *      photo is first converted into a picture and then translated into
+ *      PostScript.
  *
  * Results:
  *      None.
@@ -1274,21 +1260,21 @@ Blt_Ps_DrawPhoto(Blt_Ps ps, Tk_PhotoHandle photo, double x, double y)
  *
  *      Map the Tk font to a PostScript font and point size.
  *
- *	If a TCL array variable was specified, each element should be indexed
- *	by the X11 font name and contain a list of 1-2 elements; the
- *	PostScript font name and the desired point size.  The point size may
- *	be omitted and the X font point size will be used.
+ *	If a TCL array variable was specified, each element should be
+ *	indexed by the X11 font name and contain a list of 1-2 elements;
+ *	the PostScript font name and the desired point size.  The point
+ *	size may be omitted and the X font point size will be used.
  *
- *	Otherwise, if the foundry is "Adobe", we try to do a plausible mapping
- *	looking at the full name of the font and building a string in the form
- *	of "Family-TypeFace".
+ *	Otherwise, if the foundry is "Adobe", we try to do a plausible
+ *	mapping looking at the full name of the font and building a string
+ *	in the form of "Family-TypeFace".
  *
  * Returns:
  *      None.
  *
  * Side Effects:
- *      PostScript commands are output to change the type and the point size
- *      of the current font.
+ *      PostScript commands are output to change the type and the point
+ *      size of the current font.
  *
  *---------------------------------------------------------------------------
  */

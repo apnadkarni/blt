@@ -141,7 +141,7 @@ BltTkIntProcs bltTkIntProcs = {
     Blt_Ps_Free, /* 131 */
     Blt_Ps_GetValue, /* 132 */
     Blt_Ps_GetInterp, /* 133 */
-    Blt_Ps_GetDString, /* 134 */
+    Blt_Ps_GetDBuffer, /* 134 */
     Blt_Ps_GetScratchBuffer, /* 135 */
     Blt_Ps_SetInterp, /* 136 */
     Blt_Ps_Append, /* 137 */
