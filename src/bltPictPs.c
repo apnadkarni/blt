@@ -1,5 +1,4 @@
 /* -*- mode: c; c-basic-offset: 4; indent-tabs-mode: nil -*- */
-
 /*
  * bltPictPs.c --
  *
@@ -8,13 +7,13 @@
  *
  *	Copyright 2003-2007 George A Howlett.
  *
- *	Permission is hereby granted, free of charge, to any person obtaining
- *	a copy of this software and associated documentation files (the
- *	"Software"), to deal in the Software without restriction, including
- *	without limitation the rights to use, copy, modify, merge, publish,
- *	distribute, sublicense, and/or sell copies of the Software, and to
- *	permit persons to whom the Software is furnished to do so, subject to
- *	the following conditions:
+ *	Permission is hereby granted, free of charge, to any person
+ *	obtaining a copy of this software and associated documentation
+ *	files (the "Software"), to deal in the Software without
+ *	restriction, including without limitation the rights to use, copy,
+ *	modify, merge, publish, distribute, sublicense, and/or sell copies
+ *	of the Software, and to permit persons to whom the Software is
+ *	furnished to do so, subject to the following conditions:
  *
  *	The above copyright notice and this permission notice shall be
  *	included in all copies or substantial portions of the Software.
@@ -22,10 +21,11 @@
  *	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  *	EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  *	MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- *	NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
- *	LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
- *	OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
- *	WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *	NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+ *	BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ *	ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ *	CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ *	SOFTWARE.
  *
  */
 
@@ -281,9 +281,9 @@ AddComments(Blt_Ps ps, const char **comments)
 
 /*
  * Parse the lines that define the dimensions of the bitmap, plus the first
- * line that defines the bitmap data (it declares the name of a data variable
- * but doesn't include any actual data).  These lines look something like the
- * following:
+ * line that defines the bitmap data (it declares the name of a data
+ * variable but doesn't include any actual data).  These lines look
+ * something like the following:
  *
  *		#define foo_width 16
  *		#define foo_height 16
@@ -292,8 +292,8 @@ AddComments(Blt_Ps ps, const char **comments)
  *		static char foo_bits[] = {
  *
  * The x_hot and y_hot lines may or may not be present.  It's important to
- * check for "char" in the last line, in order to reject old X10-style bitmaps
- * that used shorts.
+ * check for "char" in the last line, in order to reject old X10-style
+ * bitmaps that used shorts.
  */
 
 #ifdef TIME_WITH_SYS_TIME
@@ -312,8 +312,8 @@ AddComments(Blt_Ps ps, const char **comments)
  *
  * PicaSwitchProc --
  *
- *	Convert a Tcl_Obj list of 2 or 4 numbers into representing a bounding
- *	box structure.
+ *	Convert a Tcl_Obj list of 2 or 4 numbers into representing a
+ *	bounding box structure.
  *
  * Results:
  *	The return value is a standard TCL result.
@@ -342,8 +342,8 @@ PicaSwitchProc(
  *
  * PadSwitchProc --
  *
- *	Convert a Tcl_Obj list of 2 or 4 numbers into representing a bounding
- *	box structure.
+ *	Convert a Tcl_Obj list of 2 or 4 numbers into representing a
+ *	bounding box structure.
  *
  * Results:
  *	The return value is a standard TCL result.
@@ -372,8 +372,8 @@ PadSwitchProc(
  *
  * PostScriptPreamble --
  *
- *    	The PostScript preamble calculates the needed translation and scaling
- *    	to make image coordinates compatible with PostScript.
+ *    	The PostScript preamble calculates the needed translation and
+ *    	scaling to make image coordinates compatible with PostScript.
  *
  * --------------------------------------------------------------------------
  */
@@ -383,7 +383,8 @@ PostScriptPreamble(Tcl_Interp *interp, Picture *srcPtr,
 {
     PageSetup *setupPtr = &switchesPtr->setup;
     time_t ticks;
-    char date[200];			/* Holds the date string from ctime */
+    char date[200];                     /* Holds the date string from
+                                         * ctime */
     const char *version;
     char *newline;
 
@@ -422,8 +423,8 @@ PostScriptPreamble(Tcl_Interp *interp, Picture *srcPtr,
     Blt_Ps_Append(ps, "%%BeginSetup\n");
     Blt_Ps_Append(ps, "gsave\n");
     /*
-     * Set the conversion from PostScript to X11 coordinates.  Scale pica to
-     * pixels and flip the y-axis (the origin is the upperleft corner).
+     * Set the conversion from PostScript to X11 coordinates.  Scale pica
+     * to pixels and flip the y-axis (the origin is the upperleft corner).
      */
     Blt_Ps_VarAppend(ps,
 	"% Transform coordinate system to use X11 coordinates\n"
@@ -719,7 +720,7 @@ PbmToPicture(Tcl_Interp *interp, Blt_DBuffer dbuffer)
 	    return NULL;
 	}
 	if (maxval > 255) {
-	    pbm.bitsPerPixel <<= 1;  /* 16-bit greyscale or 48 bit color. */
+	    pbm.bitsPerPixel <<= 1;     /* 16-bit greyscale or 48-bit color. */
 	}
     }
     pbm.data = (unsigned char *)p;
@@ -750,8 +751,8 @@ typedef struct {
  *
  * WriteBufferProc --
  *
- *	This function runs in a separate thread and write the data 
- *	buffer as input to the ghostscript process.
+ *	This function runs in a separate thread and write the data buffer
+ *	as input to the ghostscript process.
  *
  * Results:
  *	None.

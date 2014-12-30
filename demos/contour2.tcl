@@ -15,6 +15,7 @@ set mesh [blt::mesh create cloud -x $xv -y $yv]
 .g element isoline steps sine $numIsolines
 .g axis configure z -palette rainbow -colorbarthickness 15 -use y2 \
     -exterior yes -rotate -90 -title "Units"  
+.g legend configure -hide yes
 proc UpdateColors {} {
     global usePaletteColors
     if { $usePaletteColors } {
@@ -98,3 +99,5 @@ blt::table configure . r* c1 -resize none
 blt::table configure . r$count -resize both
 blt::table . \
     0,0 .g -fill both -rowspan [expr $count+1]
+
+.g postscript output contour2.ps -landscape yes

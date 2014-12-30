@@ -4685,7 +4685,8 @@ TrianglesToPostScript(Graph *graphPtr, Blt_Ps ps, ContourElement *elemPtr,
     Region2d exts;
     int x, y, w, h;
     int i;
-
+    Blt_Pixel color;
+    
     Blt_GraphExtents(elemPtr, &exts);
     w = (exts.right  - exts.left) + 1;
     h = (exts.bottom - exts.top)  + 1;
@@ -4693,7 +4694,8 @@ TrianglesToPostScript(Graph *graphPtr, Blt_Ps ps, ContourElement *elemPtr,
 	Blt_FreePicture(elemPtr->picture);
     }
     elemPtr->picture = Blt_CreatePicture(w, h);
-    Blt_BlankPicture(elemPtr->picture, 0x0);
+    color.u32 = Blt_XColorToPixel(Blt_Bg_BorderColor(graphPtr->plotBg));
+    Blt_BlankPicture(elemPtr->picture, color.u32);
     x = exts.left, y = exts.top;
     for (i = 0; i < elemPtr->numTriangles; i++) {
 	DrawTriangle(elemPtr, elemPtr->picture, elemPtr->triangles + i, x, y);

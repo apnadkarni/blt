@@ -1,5 +1,4 @@
 /* -*- mode: c; c-basic-offset: 4; indent-tabs-mode: nil -*- */
-
 /*
  * bltGrPs.c --
  *
@@ -7,13 +6,13 @@
  *
  *	Copyright 1991-2004 George A Howlett.
  *
- *	Permission is hereby granted, free of charge, to any person obtaining
- *	a copy of this software and associated documentation files (the
- *	"Software"), to deal in the Software without restriction, including
- *	without limitation the rights to use, copy, modify, merge, publish,
- *	distribute, sublicense, and/or sell copies of the Software, and to
- *	permit persons to whom the Software is furnished to do so, subject to
- *	the following conditions:
+ *	Permission is hereby granted, free of charge, to any person
+ *	obtaining a copy of this software and associated documentation
+ *	files (the "Software"), to deal in the Software without
+ *	restriction, including without limitation the rights to use, copy,
+ *	modify, merge, publish, distribute, sublicense, and/or sell copies
+ *	of the Software, and to permit persons to whom the Software is
+ *	furnished to do so, subject to the following conditions:
  *
  *	The above copyright notice and this permission notice shall be
  *	included in all copies or substantial portions of the Software.
@@ -21,10 +20,11 @@
  *	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  *	EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  *	MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- *	NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
- *	LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
- *	OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
- *	WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *	NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+ *	BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ *	ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ *	CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ *	SOFTWARE.
  */
 
 /*
@@ -263,8 +263,8 @@ AddComments(Blt_Ps ps, const char **comments)
  *
  * PostScriptPreamble
  *
- *    	The PostScript preamble calculates the needed translation and scaling
- *    	to make X11 coordinates compatible with PostScript.
+ *    	The PostScript preamble calculates the needed translation and
+ *    	scaling to make X11 coordinates compatible with PostScript.
  *
  *---------------------------------------------------------------------------
  */
@@ -297,14 +297,14 @@ PostScriptPreamble(Graph *graphPtr, const char *fileName, Blt_Ps ps)
 
     /*
      * The "BoundingBox" comment is required for EPS files. The box
-     * coordinates are integers, so we need round away from the center of the
-     * box.
+     * coordinates are integers, so we need round away from the center of
+     * the box.
      */
     Blt_Ps_Format(ps, "%%%%BoundingBox: %d %d %d %d\n",
 	setupPtr->left, setupPtr->paperHeight - setupPtr->top,
 	setupPtr->right, setupPtr->paperHeight - setupPtr->bottom);
 	
-    Blt_Ps_Append(ps, "%%Pages: 0\n");
+    Blt_Ps_Append(ps, "%%Pages: 1\n");
 
     version = Tcl_GetVar(graphPtr->interp, "blt_version", TCL_GLOBAL_ONLY);
     if (version == NULL) {
@@ -361,8 +361,8 @@ PostScriptPreamble(Graph *graphPtr, const char *fileName, Blt_Ps ps)
 	"% 2. Translate the origin to the other side of the page,\n",
 	"%    making the origin the upper left corner\n", (char *)NULL);
     Blt_Ps_Format(ps, "1 -1 scale\n");
-    /* Papersize is in pixels.  Translate the new origin *after* changing the
-     * scale. */
+    /* Papersize is in pixels.  Translate the new origin *after* changing
+     * the scale. */
     Blt_Ps_Format(ps, "0 %d translate\n\n", -setupPtr->paperHeight);
     Blt_Ps_VarAppend(ps, "% User defined page layout\n\n",
 		     "% Set color level\n", (char *)NULL);
@@ -376,7 +376,6 @@ PostScriptPreamble(Graph *graphPtr, const char *fileName, Blt_Ps ps)
     Blt_Ps_Append(ps, "\n%%EndSetup\n\n");
     return TCL_OK;
 }
-
 
 static void
 MarginsToPostScript(Graph *graphPtr, Blt_Ps ps)
@@ -442,10 +441,10 @@ GraphToPostScript(Graph *graphPtr, const char *ident, Blt_Ps ps)
     PageSetup *setupPtr = graphPtr->pageSetup;
 
     /*   
-     * We need to know how big a graph to print.  If the graph hasn't been drawn
-     * yet, the width and height will be 1.  Instead use the requested size of
-     * the widget.  The user can still override this with the -width and -height
-     * postscript options.
+     * We need to know how big a graph to print.  If the graph hasn't been
+     * drawn yet, the width and height will be 1.  Instead use the
+     * requested size of the widget.  The user can still override this with
+     * the -width and -height postscript options.
      */
     if (setupPtr->reqWidth > 0) {
 	graphPtr->width = setupPtr->reqWidth;
@@ -473,9 +472,10 @@ GraphToPostScript(Graph *graphPtr, const char *ident, Blt_Ps ps)
     x = graphPtr->left - graphPtr->plotBW;
     y = graphPtr->top - graphPtr->plotBW;
 
-    w = (graphPtr->right - graphPtr->left + 1) + (2*graphPtr->plotBW);
-    h = (graphPtr->bottom - graphPtr->top + 1) + (2*graphPtr->plotBW);
+    w = (graphPtr->right  - graphPtr->left + 1) + (2*graphPtr->plotBW);
+    h = (graphPtr->bottom - graphPtr->top  + 1) + (2*graphPtr->plotBW);
 
+    Blt_Ps_Append(ps, "%%Page: 1 1\n\n");
     Blt_Ps_XSetFont(ps, Blt_Ts_GetFont(graphPtr->titleTextStyle));
     if (graphPtr->pageSetup->flags & PS_DECORATIONS) {
 	Blt_Ps_XSetBackground(ps, Blt_Bg_BorderColor(graphPtr->plotBg));
@@ -493,19 +493,14 @@ GraphToPostScript(Graph *graphPtr, const char *ident, Blt_Ps ps)
 	/* Print legend underneath elements and markers */
 	Blt_LegendToPostScript(graphPtr, ps);
     }
-    Blt_Ps_Append(ps, "% Axis Limits\n");
     Blt_AxisLimitsToPostScript(graphPtr, ps);
-    Blt_Ps_Append(ps, "% Elements\n");
     Blt_ElementsToPostScript(graphPtr, ps);
-    Blt_Ps_Append(ps, "% Legend\n");
     if ((Blt_Legend_Site(graphPtr) & LEGEND_PLOTAREA_MASK) && 
 	(Blt_Legend_IsRaised(graphPtr))) {
 	/* Print legend above elements (but not markers) */
 	Blt_LegendToPostScript(graphPtr, ps);
     }
-    Blt_Ps_Append(ps, "% Markers\n");
     Blt_MarkersToPostScript(graphPtr, ps, FALSE);
-    Blt_Ps_Append(ps, "% Active Elements\n");
     Blt_ActiveElementsToPostScript(graphPtr, ps);
     Blt_Ps_VarAppend(ps, "\n",
 	"% Unset clipping\n",
@@ -516,7 +511,8 @@ GraphToPostScript(Graph *graphPtr, const char *ident, Blt_Ps ps)
 	"%Trailer\n",
 	"grestore\n",
 	"end\n",
-	"%EOF\n", (char *)NULL);
+	"%%Trailer\n",
+	"%%EOF\n", (char *)NULL);
   error:
     /* Reset height and width of graph window */
     graphPtr->width = Tk_Width(graphPtr->tkwin);
