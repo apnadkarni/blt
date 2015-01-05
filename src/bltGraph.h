@@ -623,7 +623,7 @@ struct _Graph {
 #define DRAW_MARGINS		(1<<13)
 #define	CACHE_DIRTY		(1<<14)
 #define REQ_BACKING_STORE	(1<<15)
-#define UNMAP_HIDDEN		(1<<16)
+#define MAP_VISIBLE		(1<<16)
 
 #define	MAP_WORLD		(MAP_ALL|RESET_AXES|GET_AXIS_GEOMETRY)
 #define REDRAW_WORLD		(DRAW_LEGEND)
@@ -633,12 +633,11 @@ struct _Graph {
 #define BACKING_STORE           (1<<19)
 #define STACK_AXES              (1<<20)
 #define INVERTED                (1<<21)
-
+#define STRETCH_TO_FIT		(1<<22)
 
 /*
  * ---------------------- Forward declarations ------------------------
  */
-
 BLT_EXTERN int Blt_CreatePageSetup(Graph *graphPtr);
 
 BLT_EXTERN int Blt_CreateCrosshairs(Graph *graphPtr);
