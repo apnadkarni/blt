@@ -102,6 +102,13 @@ static const char *objectClassNames[] = {
     "Isoline",
 };
 
+static Blt_OptionParseProc ObjToMapElements;
+static Blt_OptionPrintProc MapElementsToObj;
+static Blt_CustomOption mapElementsOption =
+{
+    ObjToMapElements, MapElementsToObj, NULL, (ClientData)0,
+};
+
 BLT_EXTERN Blt_CustomOption bltLinePenOption;
 BLT_EXTERN Blt_CustomOption bltBarPenOption;
 BLT_EXTERN Blt_CustomOption bltBarModeOption;
@@ -135,13 +142,14 @@ BLT_EXTERN Blt_CustomOption bltBarModeOption;
 #define DEF_SHOW_VALUES		"no"
 #define DEF_STACK_AXES		"no"
 #define DEF_TAKE_FOCUS		""
-#define DEF_TITLE			(char *)NULL
+#define DEF_TITLE               (char *)NULL
 #define DEF_TITLE_COLOR		STD_NORMAL_FOREGROUND
-#define DEF_WIDTH			"5i"
-#define DEF_DATA			(char *)NULL
-#define DEF_DATA_COMMAND		(char *)NULL
-#define DEF_UNMAP_HIDDEN_ELEMENTS	"0"
-#define DEF_COLOR_BAR                   (char *)NULL
+#define DEF_WIDTH               "5i"
+#define DEF_DATA                (char *)NULL
+#define DEF_DATA_COMMAND        (char *)NULL
+#define DEF_MAP_ELEMENTS	"all"
+#define DEF_STRETCH_TO_FIT	"1"
+#define DEF_COLOR_BAR           (char *)NULL
 
 static Blt_ConfigSpec configSpecs[] =
 {
@@ -197,10 +205,6 @@ static Blt_ConfigSpec configSpecs[] =
     {BLT_CONFIG_PIXELS_NNEG, "-highlightthickness", "highlightThickness",
 	"HighlightThickness", DEF_HIGHLIGHT_WIDTH, 
 	Blt_Offset(Graph, highlightWidth), BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_BITMASK, "-unmaphiddenelements", "unmapHiddenElements", 
-	"UnmapHiddenElements", DEF_UNMAP_HIDDEN_ELEMENTS, 
-	Blt_Offset(Graph, flags), ALL_GRAPHS | BLT_CONFIG_DONT_SET_DEFAULT, 
-	(Blt_CustomOption *)UNMAP_HIDDEN},
     {BLT_CONFIG_BITMASK, "-invertxy", "invertXY", "InvertXY", DEF_INVERT_XY,
         Blt_Offset(Graph, flags), BLT_CONFIG_DONT_SET_DEFAULT,
         (Blt_CustomOption *)INVERTED},
@@ -213,6 +217,9 @@ static Blt_ConfigSpec configSpecs[] =
 	DEF_MARGIN_VAR, Blt_Offset(Graph, leftMargin.varName), 
 	BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_SYNONYM, "-lm", "leftMargin", (char *)NULL, (char *)NULL, 0, 0},
+    {BLT_CONFIG_CUSTOM, "-mapelements", "mapElements", "MapElements",
+	DEF_MAP_ELEMENTS, Blt_Offset(Graph, flags),
+        ALL_GRAPHS | BLT_CONFIG_DONT_SET_DEFAULT, &mapElementsOption},
     {BLT_CONFIG_BACKGROUND, "-plotbackground", "plotBackground", "Background",
 	DEF_PLOT_BACKGROUND, Blt_Offset(Graph, plotBg), 0},
     {BLT_CONFIG_PIXELS_NNEG, "-plotborderwidth", "plotBorderWidth", 
@@ -236,6 +243,10 @@ static Blt_ConfigSpec configSpecs[] =
     {BLT_CONFIG_BITMASK, "-stackaxes", "stackAxes", "StackAxes", DEF_STACK_AXES,
         Blt_Offset(Graph, flags), BLT_CONFIG_DONT_SET_DEFAULT,
         (Blt_CustomOption *)STACK_AXES},
+    {BLT_CONFIG_BITMASK, "-stretchtofit", "stretchToFit", "StretchToFit",
+        DEF_STRETCH_TO_FIT, Blt_Offset(Graph, flags),
+        ALL_GRAPHS | BLT_CONFIG_DONT_SET_DEFAULT,
+        (Blt_CustomOption *)STRETCH_TO_FIT},
     {BLT_CONFIG_STRING, "-takefocus", "takeFocus", "TakeFocus", DEF_TAKE_FOCUS,
         Blt_Offset(Graph, takeFocus), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_STRING, "-title", "title", "Title", DEF_TITLE,
@@ -313,6 +324,59 @@ static Tcl_ObjCmdProc BarchartCmd;
 static Tcl_ObjCmdProc ContourCmd;
 static Tcl_ObjCmdProc GraphCmd;
 static Tcl_CmdDeleteProc GraphInstCmdDeleteProc;
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * ObjToMapElements --
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+ObjToMapElements(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+                 Tcl_Obj *objPtr, char *widgRec, int offset, int flags)
+{
+    int *flagsPtr = (int *)(widgRec + offset);
+    const char *string;
+    char c;
+    
+    string = Tcl_GetString(objPtr);
+    c = string[0];
+    if ((c == 'a') || (strcmp(string, "all") == 0)) {
+        *flagsPtr &= ~MAP_VISIBLE;
+    } else if ((c == 'v') || (strcmp(string, "visible") == 0)) {
+        *flagsPtr |= MAP_VISIBLE;
+    } else {
+	Tcl_AppendResult(interp, "bad value \"", string,
+                "\": should be all or visible", (char *)NULL);
+        return TCL_ERROR;
+    }
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * MapElementsToObj --
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static Tcl_Obj *
+MapElementsToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+                 char *widgRec, int offset, int flags)
+{
+    int mapflags = *(int *)(widgRec + offset);
+    const char *string;
+    
+    if (mapflags & MAP_VISIBLE) {
+        string = "visible";
+    } else {
+        string = "all";
+    }
+    return Tcl_NewStringObj(string, -1);
+}
 
 /*
  *---------------------------------------------------------------------------

@@ -527,19 +527,19 @@ static Blt_CustomOption colorOption = {
     ObjToColor, ColorToObj, FreeColor, (ClientData)0
 };
 
-static Blt_OptionFreeProc FreeSymbolProc;
-static Blt_OptionParseProc ObjToSymbolProc;
-static Blt_OptionPrintProc SymbolToObjProc;
+static Blt_OptionFreeProc FreeSymbol;
+static Blt_OptionParseProc ObjToSymbol;
+static Blt_OptionPrintProc SymbolToObj;
 static Blt_CustomOption symbolOption =
 {
-    ObjToSymbolProc, SymbolToObjProc, FreeSymbolProc, (ClientData)0
+    ObjToSymbol, SymbolToObj, FreeSymbol, (ClientData)0
 };
 
-static Blt_OptionFreeProc FreeMeshProc;
-static Blt_OptionParseProc ObjToMeshProc;
-static Blt_OptionPrintProc MeshToObjProc;
+static Blt_OptionFreeProc FreeMesh;
+static Blt_OptionParseProc ObjToMesh;
+static Blt_OptionPrintProc MeshToObj;
 static Blt_CustomOption meshOption = {
-    ObjToMeshProc, MeshToObjProc, FreeMeshProc, (ClientData)0
+    ObjToMesh, MeshToObj, FreeMesh, (ClientData)0
 };
 
 #define DEF_ACTIVE_PEN		"activeContour"
@@ -1009,7 +1009,7 @@ ColorToObj(
 
 /*ARGSUSED*/
 static void
-FreeSymbolProc(
+FreeSymbol(
     ClientData clientData,		/* Not used. */
     Display *display,			/* Not used. */
     char *widgRec,
@@ -1023,20 +1023,20 @@ FreeSymbolProc(
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToSymbolProc --
+ * ObjToSymbol --
  *
- *	Convert the string representation of a line style or symbol name into
- *	its numeric form.
+ *	Convert the string representation of a line style or symbol name
+ *	into its numeric form.
  *
  * Results:
- *	The return value is a standard TCL result.  The symbol type is written
- *	into the widget record.
+ *	The return value is a standard TCL result.  The symbol type is
+ *	written into the widget record.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
-ObjToSymbolProc(
+ObjToSymbol(
     ClientData clientData,		/* Not used. */
     Tcl_Interp *interp,			/* Interpreter to report results */
     Tk_Window tkwin,			/* Not used. */
@@ -1095,7 +1095,7 @@ ObjToSymbolProc(
 /*
  *---------------------------------------------------------------------------
  *
- * SymbolToObjProc --
+ * SymbolToObj --
  *
  *	Convert the symbol value into a string.
  *
@@ -1106,7 +1106,7 @@ ObjToSymbolProc(
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-SymbolToObjProc(
+SymbolToObj(
     ClientData clientData,		/* Not used. */
     Tcl_Interp *interp,
     Tk_Window tkwin,
@@ -1159,7 +1159,7 @@ MeshChangedProc(Mesh *meshPtr, ClientData clientData, unsigned int flags)
 
 /*ARGSUSED*/
 static void
-FreeMeshProc(
+FreeMesh(
     ClientData clientData,		/* Not used. */
     Display *display,			/* Not used. */
     char *widgRec,
@@ -1175,7 +1175,7 @@ FreeMeshProc(
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToMeshProc --
+ * ObjToMesh --
  *
  *	Convert the string representation of a mesh into its token.
  *
@@ -1187,7 +1187,7 @@ FreeMeshProc(
  */
 /*ARGSUSED*/
 static int
-ObjToMeshProc(
+ObjToMesh(
     ClientData clientData,		/* Not used. */
     Tcl_Interp *interp,			/* Interpreter to send results back
 					 * to */
@@ -1203,7 +1203,7 @@ ObjToMeshProc(
     
     string = Tcl_GetString(objPtr);
     if ((string == NULL) || (string[0] == '\0')) {
-	FreeMeshProc(clientData, Tk_Display(tkwin), widgRec, offset);
+	FreeMesh(clientData, Tk_Display(tkwin), widgRec, offset);
 	return TCL_OK;
     }
     if (Blt_GetMeshFromObj(interp, objPtr, meshPtrPtr) != TCL_OK) {
@@ -1216,7 +1216,7 @@ ObjToMeshProc(
 /*
  *---------------------------------------------------------------------------
  *
- * MeshToObjProc --
+ * MeshToObj --
  *
  *	Convert the mesh token into a string.
  *
@@ -1227,7 +1227,7 @@ ObjToMeshProc(
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-MeshToObjProc(
+MeshToObj(
     ClientData clientData,		/* Not used. */
     Tcl_Interp *interp,
     Tk_Window tkwin,
@@ -4685,15 +4685,21 @@ TrianglesToPostScript(Graph *graphPtr, Blt_Ps ps, ContourElement *elemPtr,
     Region2d exts;
     int x, y, w, h;
     int i;
-
+    Blt_Pixel color;
+    
     Blt_GraphExtents(elemPtr, &exts);
     w = (exts.right  - exts.left) + 1;
     h = (exts.bottom - exts.top)  + 1;
     if (elemPtr->picture != NULL) {
 	Blt_FreePicture(elemPtr->picture);
     }
+    /* This isn't exactly right.  It assumes there is nothing drawn under
+     * the triangles. There could be markers, grid lines, or other
+     * elements. PDF is a better solution since it allows transparent
+     * regions. */
     elemPtr->picture = Blt_CreatePicture(w, h);
-    Blt_BlankPicture(elemPtr->picture, 0x0);
+    color.u32 = Blt_XColorToPixel(Blt_Bg_BorderColor(graphPtr->plotBg));
+    Blt_BlankPicture(elemPtr->picture, color.u32);
     x = exts.left, y = exts.top;
     for (i = 0; i < elemPtr->numTriangles; i++) {
 	DrawTriangle(elemPtr, elemPtr->picture, elemPtr->triangles + i, x, y);
@@ -5139,7 +5145,6 @@ DistanceToIsoline(
  *
  *---------------------------------------------------------------------------
  */
-
 static Blt_ConfigSpec nearestSpecs[] = {
     {BLT_CONFIG_PIXELS_NNEG, "-halo", (char *)NULL, (char *)NULL,
 	(char *)NULL, Blt_Offset(NearestElement, halo), 0},

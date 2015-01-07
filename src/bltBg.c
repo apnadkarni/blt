@@ -191,20 +191,21 @@ typedef struct {
     Display *display;			/* Display of this background. */
     unsigned int flags;			/* See definitions below. */
     Blt_HashEntry *hashPtr;		/* Link to original client. */
-    Blt_Chain chain;			/* List of background tokens.  Used to
-					 * register callbacks for each client
-					 * of the background. */
-    Blt_ChainLink link;			/* Background token that is associated
-					 * with the background creation
-					 * "background create...". */
+    Blt_Chain chain;			/* List of background tokens.  Used
+					 * to register callbacks for each
+					 * client of the background. */
+    Blt_ChainLink link;			/* Background token that is
+					 * associated with the background
+					 * creation "background
+					 * create...". */
     Tk_3DBorder border;			/* 3D Border.  May be used for all
 					 * background types. */
-    Tk_Window refWindow;		/* Refer to coordinates in this window
-					 * when determining the tile/gradient
-					 * origin. */
+    Tk_Window refWindow;		/* Refer to coordinates in this
+					 * window when determining the
+					 * tile/gradient origin. */
     ReferenceType reference;		/* "self", "toplevel", or "window". */
-    Blt_HashTable pictTable;		/* Table of pictures cached for each
-					 * background reference. */
+    Blt_HashTable pictTable;		/* Table of pictures cached for
+					 * each background reference. */
     int xOrigin, yOrigin;
     Blt_PaintBrush brush;		/* Paint brush representing the
 					 * background color. */
@@ -219,34 +220,37 @@ typedef struct {
     BackgroundInterpData *dataPtr;
     Tk_Window tkwin;			/* Main window. Used to query
 					 * background options. */
-    Display *display;			/* Display of this background. Used to
-					 * free configuration options. */
+    Display *display;			/* Display of this background. Used
+					 * to free configuration
+					 * options. */
     unsigned int flags;			/* See definitions below. */
     Blt_HashEntry *hashPtr;		/* Link to original client. */
-    Blt_Chain chain;			/* List of background tokens.  Used to
-					 * register callbacks for each client of
-					 * the background. */
-    Blt_ChainLink link;			/* Background token that is associated
-					 * with the background creation
-					 * "background create...". */
+    Blt_Chain chain;			/* List of background tokens.  Used
+					 * to register callbacks for each
+					 * client of the background. */
+    Blt_ChainLink link;			/* Background token that is
+					 * associated with the background
+					 * creation "background
+					 * create...". */
     Tk_3DBorder border;			/* 3D Border.  May be used for all
 					 * background types. */
-    Tk_Window refWindow;		/* Refer to coordinates in this window
-					 * when determining the tile/gradient
-					 * origin. */
-    ReferenceType reference;		/* "self", "toplevel", or "window". */
-    Blt_HashTable pictTable;		/* Table of pictures cached for each
-					 * background reference. */
+    Tk_Window refWindow;		/* Refer to coordinates in this
+					 * window when determining the
+					 * tile/gradient origin. */
+    ReferenceType reference;		/* "self", "toplevel", or
+                                         * "window". */
+    Blt_HashTable pictTable;		/* Table of pictures cached for
+					 * each background reference. */
     int xOrigin, yOrigin;
     Blt_PaintBrush brush;		/* Paint brush representing the
 					 * background color. */
-
     /* Tile specific fields. */
     Tk_Image tkImage;			/* Original image (before
 					 * resampling). */
     Blt_Picture tile;
     Blt_ResampleFilter filter;		/* 1-D image filter to use to when
-					 * resizing the original picture. */
+					 * resizing the original
+					 * picture. */
     int alpha;				/* Transparency value. */
 } TileBackground;
 
