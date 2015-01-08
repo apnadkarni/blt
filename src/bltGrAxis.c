@@ -41,6 +41,7 @@
 #include "bltBind.h"
 #include "bltPs.h"
 #include "bltBg.h"
+#include "bltSwitch.h"
 #include "bltPicture.h"
 #include "bltTags.h"
 #include "bltGraph.h"
@@ -55,8 +56,6 @@
 
 #define AUTO_MAJOR	(1<<16)		/* Auto-generate major ticks. */
 #define AUTO_MINOR	(1<<17)		/* Auto-generate minor ticks. */
-#define USE		(1<<18)		/* Axis is displayed on the screen
-					 * via the "use" operation */
 #define GRID		(1<<19)		/* Display grid lines. */
 #define GRIDMINOR	(1<<20)		/* Display grid lines for minor
 					 * ticks. */
@@ -169,10 +168,10 @@ static Blt_CustomOption looseOption = {
     ObjToLooseProc, LooseToObjProc, NULL, (ClientData)0,
 };
 
-static Blt_OptionParseProc ObjToUseProc;
-static Blt_OptionPrintProc UseToObjProc;
-static Blt_CustomOption useOption = {
-    ObjToUseProc, UseToObjProc, NULL, (ClientData)0
+static Blt_OptionParseProc ObjToMargin;
+static Blt_OptionPrintProc MarginToObj;
+static Blt_CustomOption marginOption = {
+    ObjToMargin, MarginToObj, NULL, (ClientData)0
 };
 
 static Blt_OptionFreeProc FreePaletteProc;
@@ -332,6 +331,8 @@ static Blt_ConfigSpec configSpecs[] =
     {BLT_CONFIG_CUSTOM, "-majorticks", "majorTicks", "MajorTicks",
 	(char *)NULL, Blt_Offset(Axis, major),
 	BLT_CONFIG_NULL_OK | ALL_GRAPHS, &majorTicksOption},
+    {BLT_CONFIG_CUSTOM, "-margin", "margin", "Margin", (char *)NULL, 0,
+        ALL_GRAPHS, &marginOption},
     {BLT_CONFIG_CUSTOM, "-max", "max", "Max", (char *)NULL, 
 	Blt_Offset(Axis, reqMax), ALL_GRAPHS, &bltLimitOption},
     {BLT_CONFIG_CUSTOM, "-min", "min", "Min", (char *)NULL, 
@@ -395,8 +396,6 @@ static Blt_ConfigSpec configSpecs[] =
 	ALL_GRAPHS},
     {BLT_CONFIG_FONT, "-titlefont", "titleFont", "Font", DEF_TITLE_FONT, 
 	Blt_Offset(Axis, titleFont), ALL_GRAPHS},
-    {BLT_CONFIG_CUSTOM, "-use", "use", "Use", (char *)NULL, 0, ALL_GRAPHS, 
-	&useOption},
     {BLT_CONFIG_FLOAT, "-weight", "weight", "Weight", DEF_WEIGHT, 
 	Blt_Offset(Axis, weight), BLT_CONFIG_DONT_SET_DEFAULT | ALL_GRAPHS},
     {BLT_CONFIG_END, NULL, NULL, NULL, NULL, 0, 0}
@@ -808,7 +807,7 @@ LimitToObjProc(
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToUseProc --
+ * ObjToMargin --
  *
  *	Convert the string representation of the margin to use into its 
  *	numeric form.
@@ -821,7 +820,7 @@ LimitToObjProc(
  */
 /*ARGSUSED*/
 static int
-ObjToUseProc(
+ObjToMargin(
     ClientData clientData,		/* Not used. */
     Tcl_Interp *interp,		        /* Interpreter to send results. */
     Tk_Window tkwin,			/* Not used. */
@@ -831,11 +830,11 @@ ObjToUseProc(
     int flags)				/* Not used. */
 {
     Axis *axisPtr = (Axis *)(widgRec);
-    Blt_Chain chain;
     Graph *graphPtr;
     const char *string;
-    int i, margin;
+    int i;
     char c;
+    Margin *marginPtr;
 
     graphPtr = axisPtr->obj.graphPtr;
     if (axisPtr->refCount == 0) {
@@ -844,51 +843,33 @@ ObjToUseProc(
     }
     /* Remove the axis from the margin's use list and clear its use flag. */
     if (axisPtr->link != NULL) {
-	Blt_Chain_UnlinkLink(axisPtr->chain, axisPtr->link);
+	Blt_Chain_UnlinkLink(axisPtr->marginPtr->axes, axisPtr->link);
     }
-    axisPtr->flags &= ~USE;
+    axisPtr->marginPtr = NULL;
     string = Tcl_GetString(objPtr);
     if ((string == NULL) || (string[0] == '\0')) {
 	goto done;
     }
     c = string[0];
-    for (i = 0; i < numAxisNames; i++) {
-	if ((c == axisNames[i].name[0]) && 
-	    (strcmp(axisNames[i].name, string) == 0)) {
+    for (i = 0; i < 4; i++) {
+        marginPtr = graphPtr->margins + i;
+	if ((c == marginPtr->name[0]) &&
+            (strcmp(marginPtr->name, string) == 0)) {
 	    break;			/* Found the axis name. */
 	}
     }
-    if (i == numAxisNames) {
-	Tcl_AppendResult(interp, "unknown axis type \"", string, "\": "
+    if (i == 4) {
+	Tcl_AppendResult(interp, "unknown margin \"", string, "\": "
 			 "should be x, y, x1, y2, or \"\".", (char *)NULL);
 	return TCL_ERROR;
     }
-    /* Check the axis class. Can't use the axis if it's already being used as
-     * another type.  */
-    if (axisPtr->obj.classId == CID_NONE) {
-	Blt_GraphSetObjectClass(&axisPtr->obj, axisNames[i].classId);
-    } else if (axisPtr->obj.classId == CID_AXIS_Z) {
-	Blt_GraphSetObjectClass(&axisPtr->obj, axisNames[i].classId);
-    } else if (axisPtr->obj.classId != axisNames[i].classId) {
-	Tcl_AppendResult(interp, "wrong type for axis \"", 
-		axisPtr->obj.name, "\": can't use ", 
-                Blt_GraphClassName(axisNames[i].classId), " type axis.",
-                (char *)NULL); 
-	return TCL_ERROR;
-    }
-    margin = (graphPtr->flags & INVERTED) ? 
-	axisNames[i].invertMargin : axisNames[i].margin;
-    chain = graphPtr->margins[margin].axes;
     if (axisPtr->link != NULL) {
-	/* Move the axis from the old margin's "use" list to the new. */
-	Blt_Chain_AppendLink(chain, axisPtr->link);
+	/* Move the axis from the old margin's list to the new. */
+	Blt_Chain_AppendLink(marginPtr->axes, axisPtr->link);
     } else {
-	axisPtr->link = Blt_Chain_Append(chain, axisPtr);
+	axisPtr->link = Blt_Chain_Append(marginPtr->axes, axisPtr);
     }
-    axisPtr->chain = chain;
-    axisPtr->flags |= USE;
-    axisPtr->margin = i;
-    axisPtr->marginPtr = graphPtr->margins + i;
+    axisPtr->marginPtr = marginPtr;
  done:
     graphPtr->flags |= (GET_AXIS_GEOMETRY | LAYOUT_NEEDED | RESET_AXES);
     /* When any axis changes, we need to layout the entire graph.  */
@@ -900,18 +881,18 @@ ObjToUseProc(
 /*
  *---------------------------------------------------------------------------
  *
- * UseToObjProc --
+ * MarginToObj --
  *
- *	Convert the floating point axis limits into a string.
+ *	Convert the margin name into a string.
  *
  * Results:
- *	The string representation of the limits is returned.
+ *	The string representation of the margin is returned.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-UseToObjProc(
+MarginToObj(
     ClientData clientData,		/* Not used. */
     Tcl_Interp *interp,			/* Not used. */
     Tk_Window tkwin,			/* Not used. */
@@ -921,10 +902,10 @@ UseToObjProc(
 {
     Axis *axisPtr = (Axis *)(widgRec);
     
-    if (axisPtr->margin == MARGIN_NONE) {
+    if (axisPtr->marginPtr == NULL) {
 	return Tcl_NewStringObj("", -1);
     }
-    return Tcl_NewStringObj(axisNames[axisPtr->margin].name, -1);
+    return Tcl_NewStringObj(axisPtr->marginPtr->name, -1);
 }
 
 /*ARGSUSED*/
@@ -2075,7 +2056,7 @@ Blt_ResetAxes(Graph *graphPtr)
         } else {
             LinearAxis(axisPtr, min, max);
         }
-	if ((axisPtr->flags & (DIRTY|USE)) == (DIRTY|USE)) {
+	if ((axisPtr->marginPtr != NULL) && (axisPtr->flags & DIRTY)) {
 	    graphPtr->flags |= CACHE_DIRTY;
 	}
     }
@@ -2200,7 +2181,7 @@ DestroyAxis(Axis *axisPtr)
 	Blt_DeleteBindings(graphPtr->bindTable, axisPtr);
     }
     if (axisPtr->link != NULL) {
-	Blt_Chain_DeleteLink(axisPtr->chain, axisPtr->link);
+	Blt_Chain_DeleteLink(axisPtr->marginPtr->axes, axisPtr->link);
     }
     if (axisPtr->obj.name != NULL) {
 	Blt_Free(axisPtr->obj.name);
@@ -2784,8 +2765,8 @@ MapStackedAxis(Axis *axisPtr, float totalWeight)
     Graph *graphPtr = axisPtr->obj.graphPtr;
     unsigned int w, h, n, slice;
     float ratio;
-
-    n = graphPtr->margins[axisPtr->margin].axes->numLinks;
+    
+    n = axisPtr->marginPtr->axes->numLinks;
     if ((n > 1) || (axisPtr->reqNumMajorTicks <= 0)) {
 	axisPtr->reqNumMajorTicks = 4;
     }
@@ -2933,21 +2914,29 @@ GradientColorProc(Blt_PaintBrush *brushPtr, int x, int y)
 {
     Axis *axisPtr = brushPtr->clientData;
     Blt_Pixel color;
-    XRectangle *rectPtr;
-    double value;
+    double norm, value;
+    Graph *graphPtr;
 
-    rectPtr = &axisPtr->colorbar.rect;
-    if (axisPtr->obj.classId == CID_AXIS_Y) {
-	value = 1.0 - (double)(y - rectPtr->y) / (rectPtr->height - 1);
-    } else if (axisPtr->obj.classId == CID_AXIS_X) {
-	value = (double)(x - rectPtr->x) / (rectPtr->width - 1);
+    graphPtr = axisPtr->obj.graphPtr;
+    if ((axisPtr->marginPtr->side == MARGIN_Y) ||
+        (axisPtr->marginPtr->side == MARGIN_Y2)) {
+        if (graphPtr->flags & INVERTED) {
+            value = Blt_InvHMap(axisPtr, x + axisPtr->screenMin);
+        } else {
+            value = Blt_InvVMap(axisPtr, y + axisPtr->screenMin);
+        }
+    } else if ((axisPtr->marginPtr->side == MARGIN_X) ||
+               (axisPtr->marginPtr->side == MARGIN_X2)) {
+        if (graphPtr->flags & INVERTED) {
+            value = Blt_InvVMap(axisPtr, y + axisPtr->screenMin);
+        } else {
+            value = Blt_InvHMap(axisPtr, x + axisPtr->screenMin);
+        }
     } else {
-	return 0x0;
+        return 0x0;
     }
-    if (axisPtr->decreasing) {
-        value = 1.0 - value;
-    }
-    color.u32 = Blt_Palette_GetAssociatedColor(brushPtr->palette, value);
+    norm = (value - axisPtr->valueRange.min) / axisPtr->valueRange.range;
+    color.u32 = Blt_Palette_GetAssociatedColor(brushPtr->palette, norm);
     return color.u32;
 }
 
@@ -3538,51 +3527,53 @@ GetMarginGeometry(Graph *graphPtr, Margin *marginPtr)
     if (graphPtr->flags & STACK_AXES) {
 	for (axisPtr = FirstAxis(marginPtr); axisPtr != NULL;
 	     axisPtr = NextAxis(axisPtr)) {
-	    if ((axisPtr->flags & (HIDE|USE)) == USE) {
-		numVisible++;
-		if (graphPtr->flags & GET_AXIS_GEOMETRY) {
-		    Blt_GetAxisGeometry(graphPtr, axisPtr);
-		}
-		if (isHoriz) {
-		    if (h < axisPtr->height) {
-			h = axisPtr->height;
-		    }
-		} else {
-		    if (w < axisPtr->width) {
-			w = axisPtr->width;
-		    }
-		}
-		if (axisPtr->maxLabelWidth > marginPtr->maxAxisLabelWidth) {
-		    marginPtr->maxAxisLabelWidth = axisPtr->maxLabelWidth;
-		}
-		if (axisPtr->maxLabelHeight > marginPtr->maxAxisLabelHeight) {
-		    marginPtr->maxAxisLabelHeight = axisPtr->maxLabelHeight;
-		}
-	    }
+            if (axisPtr->flags & (HIDE|DELETE_PENDING)) {
+                continue;
+            }
+            numVisible++;
+            if (graphPtr->flags & GET_AXIS_GEOMETRY) {
+                Blt_GetAxisGeometry(graphPtr, axisPtr);
+            }
+            if (isHoriz) {
+                if (h < axisPtr->height) {
+                    h = axisPtr->height;
+                }
+            } else {
+                if (w < axisPtr->width) {
+                    w = axisPtr->width;
+                }
+            }
+            if (axisPtr->maxLabelWidth > marginPtr->maxAxisLabelWidth) {
+                marginPtr->maxAxisLabelWidth = axisPtr->maxLabelWidth;
+            }
+            if (axisPtr->maxLabelHeight > marginPtr->maxAxisLabelHeight) {
+                marginPtr->maxAxisLabelHeight = axisPtr->maxLabelHeight;
+            }
 	}
     } else {
 	for (axisPtr = FirstAxis(marginPtr); axisPtr != NULL;
 	     axisPtr = NextAxis(axisPtr)) {
-	    if ((axisPtr->flags & (HIDE|USE)) == USE) {
-		numVisible++;
-		if (graphPtr->flags & GET_AXIS_GEOMETRY) {
-		    Blt_GetAxisGeometry(graphPtr, axisPtr);
-		}
-		if ((axisPtr->titleAlternate) && (l < axisPtr->titleWidth)) {
-		    l = axisPtr->titleWidth;
-		}
-		if (isHoriz) {
-		    h += axisPtr->height;
-		} else {
-		    w += axisPtr->width;
-		}
-		if (axisPtr->maxLabelWidth > marginPtr->maxAxisLabelWidth) {
-		    marginPtr->maxAxisLabelWidth = axisPtr->maxLabelWidth;
-		}
-		if (axisPtr->maxLabelHeight > marginPtr->maxAxisLabelHeight) {
-		    marginPtr->maxAxisLabelHeight = axisPtr->maxLabelHeight;
-		}
-	    }
+            if (axisPtr->flags & (HIDE|DELETE_PENDING)) {
+                continue;
+            }
+            numVisible++;
+            if (graphPtr->flags & GET_AXIS_GEOMETRY) {
+                Blt_GetAxisGeometry(graphPtr, axisPtr);
+            }
+            if ((axisPtr->titleAlternate) && (l < axisPtr->titleWidth)) {
+                l = axisPtr->titleWidth;
+            }
+            if (isHoriz) {
+                h += axisPtr->height;
+            } else {
+                w += axisPtr->width;
+            }
+            if (axisPtr->maxLabelWidth > marginPtr->maxAxisLabelWidth) {
+                marginPtr->maxAxisLabelWidth = axisPtr->maxLabelWidth;
+            }
+            if (axisPtr->maxLabelHeight > marginPtr->maxAxisLabelHeight) {
+                marginPtr->maxAxisLabelHeight = axisPtr->maxLabelHeight;
+            }
 	}
     }
     /* Enforce a minimum size for margins. */
@@ -3702,14 +3693,14 @@ Blt_LayoutGraph(Graph *graphPtr)
      *		-leftmargin, -rightmargin, -bottommargin, and -topmargin
      *		graph options, respectively.
      */
-    left   = GetMarginGeometry(graphPtr, &graphPtr->leftMargin);
-    right  = GetMarginGeometry(graphPtr, &graphPtr->rightMargin);
-    top    = GetMarginGeometry(graphPtr, &graphPtr->topMargin);
-    bottom = GetMarginGeometry(graphPtr, &graphPtr->bottomMargin);
+    left   = GetMarginGeometry(graphPtr, graphPtr->leftMarginPtr);
+    right  = GetMarginGeometry(graphPtr, graphPtr->rightMarginPtr);
+    top    = GetMarginGeometry(graphPtr, graphPtr->topMarginPtr);
+    bottom = GetMarginGeometry(graphPtr, graphPtr->bottomMarginPtr);
 
-    pad = graphPtr->bottomMargin.maxAxisLabelWidth;
-    if (pad < graphPtr->topMargin.maxAxisLabelWidth) {
-	pad = graphPtr->topMargin.maxAxisLabelWidth;
+    pad = graphPtr->bottomMarginPtr->maxAxisLabelWidth;
+    if (pad < graphPtr->topMarginPtr->maxAxisLabelWidth) {
+	pad = graphPtr->topMarginPtr->maxAxisLabelWidth;
     }
     pad = pad / 2 + 3;
     if (right < pad) {
@@ -3718,9 +3709,9 @@ Blt_LayoutGraph(Graph *graphPtr)
     if (left < pad) {
 	left = pad;
     }
-    pad = graphPtr->leftMargin.maxAxisLabelHeight;
-    if (pad < graphPtr->rightMargin.maxAxisLabelHeight) {
-	pad = graphPtr->rightMargin.maxAxisLabelHeight;
+    pad = graphPtr->leftMarginPtr->maxAxisLabelHeight;
+    if (pad < graphPtr->rightMarginPtr->maxAxisLabelHeight) {
+	pad = graphPtr->rightMarginPtr->maxAxisLabelHeight;
     }
     pad = pad / 2;
     if (top < pad) {
@@ -3730,17 +3721,17 @@ Blt_LayoutGraph(Graph *graphPtr)
 	bottom = pad;
     }
 
-    if (graphPtr->leftMargin.reqSize > 0) {
-	left = graphPtr->leftMargin.reqSize;
+    if (graphPtr->leftMarginPtr->reqSize > 0) {
+	left = graphPtr->leftMarginPtr->reqSize;
     }
-    if (graphPtr->rightMargin.reqSize > 0) {
-	right = graphPtr->rightMargin.reqSize;
+    if (graphPtr->rightMarginPtr->reqSize > 0) {
+	right = graphPtr->rightMarginPtr->reqSize;
     }
-   if (graphPtr->topMargin.reqSize > 0) {
-	top = graphPtr->topMargin.reqSize;
+   if (graphPtr->topMarginPtr->reqSize > 0) {
+	top = graphPtr->topMarginPtr->reqSize;
     }
-    if (graphPtr->bottomMargin.reqSize > 0) {
-	bottom = graphPtr->bottomMargin.reqSize;
+    if (graphPtr->bottomMarginPtr->reqSize > 0) {
+	bottom = graphPtr->bottomMarginPtr->reqSize;
     }
 
     /* 
@@ -3852,55 +3843,55 @@ Blt_LayoutGraph(Graph *graphPtr)
      *	       displayed in the adjoining margins.  Make sure there's room 
      *	       for the longest axis titles.
      */
-    if (top < graphPtr->leftMargin.axesTitleLength) {
-	top = graphPtr->leftMargin.axesTitleLength;
+    if (top < graphPtr->leftMarginPtr->axesTitleLength) {
+	top = graphPtr->leftMarginPtr->axesTitleLength;
     }
-    if (right < graphPtr->bottomMargin.axesTitleLength) {
-	right = graphPtr->bottomMargin.axesTitleLength;
+    if (right < graphPtr->bottomMarginPtr->axesTitleLength) {
+	right = graphPtr->bottomMarginPtr->axesTitleLength;
     }
-    if (top < graphPtr->rightMargin.axesTitleLength) {
-	top = graphPtr->rightMargin.axesTitleLength;
+    if (top < graphPtr->rightMarginPtr->axesTitleLength) {
+	top = graphPtr->rightMarginPtr->axesTitleLength;
     }
-    if (right < graphPtr->topMargin.axesTitleLength) {
-	right = graphPtr->topMargin.axesTitleLength;
+    if (right < graphPtr->topMarginPtr->axesTitleLength) {
+	right = graphPtr->topMarginPtr->axesTitleLength;
     }
 
     /* 
      * Step 7: Override calculated values with requested margin sizes.
      */
-    if (graphPtr->leftMargin.reqSize > 0) {
-	left = graphPtr->leftMargin.reqSize;
+    if (graphPtr->leftMarginPtr->reqSize > 0) {
+	left = graphPtr->leftMarginPtr->reqSize;
     }
-    if (graphPtr->rightMargin.reqSize > 0) {
-	right = graphPtr->rightMargin.reqSize;
+    if (graphPtr->rightMarginPtr->reqSize > 0) {
+	right = graphPtr->rightMarginPtr->reqSize;
     }
-    if (graphPtr->topMargin.reqSize > 0) {
-	top = graphPtr->topMargin.reqSize;
+    if (graphPtr->topMarginPtr->reqSize > 0) {
+	top = graphPtr->topMarginPtr->reqSize;
     }
-    if (graphPtr->bottomMargin.reqSize > 0) {
-	bottom = graphPtr->bottomMargin.reqSize;
+    if (graphPtr->bottomMarginPtr->reqSize > 0) {
+	bottom = graphPtr->bottomMarginPtr->reqSize;
     }
     if (graphPtr->reqPlotWidth > 0) {	
 	int w;
 
 	/* 
-	 * Width of plotarea is constained.  If there's extra space, add it to
-	 * th left and/or right margins.  If there's too little, grow the
-	 * graph width to accomodate it.
+	 * Width of plotarea is constained.  If there's extra space, add it
+	 * to th left and/or right margins.  If there's too little, grow
+	 * the graph width to accomodate it.
 	 */
 	w = plotWidth + inset2 + left + right;
 	if (width > w) {		/* Extra space in window. */
 	    int extra;
 
 	    extra = (width - w) / 2;
-	    if (graphPtr->leftMargin.reqSize == 0) { 
+	    if (graphPtr->leftMarginPtr->reqSize == 0) { 
 		left += extra;
-		if (graphPtr->rightMargin.reqSize == 0) { 
+		if (graphPtr->rightMarginPtr->reqSize == 0) { 
 		    right += extra;
 		} else {
 		    left += extra;
 		}
-	    } else if (graphPtr->rightMargin.reqSize == 0) {
+	    } else if (graphPtr->rightMarginPtr->reqSize == 0) {
 		right += extra + extra;
 	    }
 	} else if (width < w) {
@@ -3911,23 +3902,23 @@ Blt_LayoutGraph(Graph *graphPtr)
 	int h;
 
 	/* 
-	 * Height of plotarea is constained.  If there's extra space, 
-	 * add it to th top and/or bottom margins.  If there's too little,
-	 * grow the graph height to accomodate it.
+	 * Height of plotarea is constained.  If there's extra space, add
+	 * it to th top and/or bottom margins.  If there's too little, grow
+	 * the graph height to accomodate it.
 	 */
 	h = plotHeight + inset2 + top + bottom;
 	if (height > h) {		/* Extra space in window. */
 	    int extra;
 
 	    extra = (height - h) / 2;
-	    if (graphPtr->topMargin.reqSize == 0) { 
+	    if (graphPtr->topMarginPtr->reqSize == 0) { 
 		top += extra;
-		if (graphPtr->bottomMargin.reqSize == 0) { 
+		if (graphPtr->bottomMarginPtr->reqSize == 0) { 
 		    bottom += extra;
 		} else {
 		    top += extra;
 		}
-	    } else if (graphPtr->bottomMargin.reqSize == 0) {
+	    } else if (graphPtr->bottomMarginPtr->reqSize == 0) {
 		bottom += extra + extra;
 	    }
 	} else if (height < h) {
@@ -3941,10 +3932,10 @@ Blt_LayoutGraph(Graph *graphPtr)
     graphPtr->right  = width - right - inset;
     graphPtr->bottom = height - bottom - inset;
 
-    graphPtr->leftMargin.width    = left   + graphPtr->inset;
-    graphPtr->rightMargin.width   = right  + graphPtr->inset;
-    graphPtr->topMargin.height    = top    + graphPtr->inset;
-    graphPtr->bottomMargin.height = bottom + graphPtr->inset;
+    graphPtr->leftMarginPtr->width    = left   + graphPtr->inset;
+    graphPtr->rightMarginPtr->width   = right  + graphPtr->inset;
+    graphPtr->topMarginPtr->height    = top    + graphPtr->inset;
+    graphPtr->bottomMarginPtr->height = bottom + graphPtr->inset;
 	    
     graphPtr->vOffset = graphPtr->top + graphPtr->padTop;
     graphPtr->vRange  = plotHeight - PADDING(graphPtr->yPad);
@@ -4111,7 +4102,6 @@ NewAxis(Graph *graphPtr, const char *name, int margin)
 	axisPtr->looseMin = axisPtr->looseMax = TIGHT;
 	axisPtr->reqNumMinorTicks = 2;
 	axisPtr->reqNumMajorTicks = 10;
-	axisPtr->margin = MARGIN_NONE;
 	axisPtr->tickLength = 8;
         axisPtr->colorbar.thickness = 0;
 	axisPtr->scrollUnits = 10;
@@ -4198,7 +4188,6 @@ Blt_DestroyAxes(Graph *graphPtr)
 {
     Blt_HashEntry *hPtr;
     Blt_HashSearch cursor;
-    int i;
     
     for (hPtr = Blt_FirstHashEntry(&graphPtr->axes.nameTable, &cursor);
 	 hPtr != NULL; hPtr = Blt_NextHashEntry(&cursor)) {
@@ -4209,9 +4198,6 @@ Blt_DestroyAxes(Graph *graphPtr)
 	DestroyAxis(axisPtr);
     }
     Blt_DeleteHashTable(&graphPtr->axes.nameTable);
-    for (i = 0; i < 4; i++) {
-	Blt_Chain_Destroy(graphPtr->axisChain[i]);
-    }
     Blt_DeleteHashTable(&graphPtr->axes.bindTagTable);
     Blt_Chain_Destroy(graphPtr->axes.displayList);
 }
@@ -4237,23 +4223,27 @@ Blt_DefaultAxes(Graph *graphPtr)
     int i;
     unsigned int flags;
 
+    for (i = 0; i < 4; i++) {
+        Margin *marginPtr;
+
+        marginPtr = graphPtr->margins + i;
+        marginPtr->axes = Blt_Chain_Create();
+        marginPtr->name = axisNames[i].name;
+        marginPtr->side = i;
+    }
     flags = Blt_GraphType(graphPtr);
     for (i = 0; i < 4; i++) {
-	Blt_Chain chain;
 	Axis *axisPtr;
+        Margin *marginPtr;
 
-	chain = Blt_Chain_Create();
-	graphPtr->axisChain[i] = chain;
-
+        marginPtr = graphPtr->margins + i;
 	/* Create a default axis for each chain. */
-	axisPtr = NewAxis(graphPtr, axisNames[i].name, i);
+	axisPtr = NewAxis(graphPtr, marginPtr->name, i);
 	if (axisPtr == NULL) {
 	    return TCL_ERROR;
 	}
 	axisPtr->refCount = 1;	/* Default axes are assumed in use. */
-	axisPtr->margin = i;
-        axisPtr->marginPtr = graphPtr->margins + i;
-	axisPtr->flags |= USE;
+        axisPtr->marginPtr = marginPtr;
 	Blt_GraphSetObjectClass(&axisPtr->obj, axisNames[i].classId);
  	if (Blt_ConfigureComponentFromObj(graphPtr->interp, graphPtr->tkwin,
 		axisPtr->obj.name, "Axis", configSpecs, 0, (Tcl_Obj **)NULL,
@@ -4263,8 +4253,7 @@ Blt_DefaultAxes(Graph *graphPtr)
 	if (ConfigureAxis(axisPtr) != TCL_OK) {
 	    return TCL_ERROR;
 	}
-	axisPtr->link = Blt_Chain_Append(chain, axisPtr);
-	axisPtr->chain = chain;
+	axisPtr->link = Blt_Chain_Append(marginPtr->axes, axisPtr);
     }
     /* The extra axes are not attached to a specific margin. */
     for (i = 4; i < numAxisNames; i++) {
@@ -4275,9 +4264,7 @@ Blt_DefaultAxes(Graph *graphPtr)
 	    return TCL_ERROR;
 	}
 	axisPtr->refCount = 1;		
-	axisPtr->margin = MARGIN_NONE;
         axisPtr->marginPtr = NULL;
-	axisPtr->flags |= USE;
 	Blt_GraphSetObjectClass(&axisPtr->obj, axisNames[i].classId);
  	if (Blt_ConfigureComponentFromObj(graphPtr->interp, graphPtr->tkwin,
 		axisPtr->obj.name, "Axis", configSpecs, 0, (Tcl_Obj **)NULL,
@@ -4319,7 +4306,7 @@ ActivateOp(Tcl_Interp *interp, Axis *axisPtr, int objc, Tcl_Obj *const *objv)
     } else {
 	axisPtr->flags &= ~ACTIVE;
     }
-    if ((axisPtr->flags & (USE|HIDE)) == USE) {
+    if ((axisPtr->marginPtr != NULL) && ((axisPtr->flags & HIDE) == 0)) {
 	graphPtr->flags |= DRAW_MARGINS | CACHE_DIRTY;
 	Blt_EventuallyRedrawGraph(graphPtr);
     }
@@ -4404,7 +4391,7 @@ ConfigureOp(Tcl_Interp *interp, Axis *axisPtr, int objc, Tcl_Obj *const *objv)
     if (ConfigureAxis(axisPtr) != TCL_OK) {
 	return TCL_ERROR;
     }
-    if (axisPtr->flags & USE) {
+    if (axisPtr->marginPtr != NULL) {
 	if (Blt_ConfigModified(configSpecs, "-autorange", "-bd", "-borderwidth",
 		"-command", "-decreasing", "-descending", "-hide", "-justify", 
 		"-labeloffset", 
@@ -4509,18 +4496,17 @@ InvTransformOp(Tcl_Interp *interp, Axis *axisPtr, int objc,
     return TCL_OK;
 }
 
-
 /*
  *---------------------------------------------------------------------------
  *
  * MarginOp --
  *
  *	This procedure returns a string representing the margin the axis
- *	resides.  The format of the string is { left top right bottom}.
+ *	resides.  The margin string is "x", "x2", "y", or "y2".
  *
  * Results:
- *	Always returns TCL_OK.  The interp->result field is
- *	a list of the graph axis limits.
+ *	Always returns TCL_OK.  interp->result contains the name of the
+ *	margin.
  *
  *---------------------------------------------------------------------------
  */
@@ -4528,13 +4514,13 @@ InvTransformOp(Tcl_Interp *interp, Axis *axisPtr, int objc,
 static int
 MarginOp(Tcl_Interp *interp, Axis *axisPtr, int objc, Tcl_Obj *const *objv)
 {
-    const char *marginName;
+    const char *name;
 
-    marginName = "";
-    if (axisPtr->flags & USE) {
-	marginName = axisNames[axisPtr->margin].name;
+    name = "";
+    if (axisPtr->marginPtr != NULL) {
+	name = axisPtr->marginPtr->name;
     }
-    Tcl_SetStringObj(Tcl_GetObjResult(interp), marginName, -1);
+    Tcl_SetStringObj(Tcl_GetObjResult(interp), name, -1);
     return TCL_OK;
 }
 
@@ -4543,13 +4529,13 @@ MarginOp(Tcl_Interp *interp, Axis *axisPtr, int objc, Tcl_Obj *const *objv)
  *
  * TransformOp --
  *
- *	Maps the given axis-value to a window coordinate.
+ *	Maps the given x or y graph coordinate into a window/screen
+ *	coordinate.
  *
  * Results:
- *	Returns a standard TCL result.  interp->result contains
- *	the window coordinate. If an error occurred, TCL_ERROR
- *	is returned and interp->result will contain an error
- *	message.
+ *	Returns a standard TCL result.  interp->result contains the window
+ *	coordinate. If an error occurred, TCL_ERROR is returned and
+ *	interp->result will contain an error message.
  *
  *---------------------------------------------------------------------------
  */
@@ -4575,7 +4561,6 @@ TransformOp(Tcl_Interp *interp, Axis *axisPtr, int objc, Tcl_Obj *const *objv)
     return TCL_OK;
 }
 
-
 /*
  *---------------------------------------------------------------------------
  *
@@ -4594,22 +4579,19 @@ TransformOp(Tcl_Interp *interp, Axis *axisPtr, int objc, Tcl_Obj *const *objv)
 static int
 TypeOp(Tcl_Interp *interp, Axis *axisPtr, int objc, Tcl_Obj *const *objv)
 {
-    const char *typeName;
+    const char *name;
 
-    typeName = "";
-    if (axisPtr->flags & USE) {
-	switch (axisPtr->obj.classId) {
-	case CID_AXIS_X:
-	    typeName = "x";	    break;
-	case CID_AXIS_Y:
-	    typeName = "y";	    break;
-	case CID_AXIS_Z:
-	    typeName = "z";	    break;
-	default:
-	    break;
-	}
+    switch (axisPtr->obj.classId) {
+    case CID_AXIS_X:
+        name = "x";	    break;
+    case CID_AXIS_Y:
+        name = "y";	    break;
+    case CID_AXIS_Z:
+        name = "z";	    break;
+    default:
+        name = "unknown";   break;
     }
-    Tcl_SetStringObj(Tcl_GetObjResult(interp), typeName, -1);
+    Tcl_SetStringObj(Tcl_GetObjResult(interp), name, -1);
     return TCL_OK;
 }
 
@@ -4635,7 +4617,6 @@ static int
 UseOp(Tcl_Interp *interp, Axis *axisPtr, int objc, Tcl_Obj *const *objv)
 {
     Graph *graphPtr = (Graph *)axisPtr;
-    Blt_Chain chain;
     Axis *nextPtr;
     Tcl_Obj **axisObjv;
     ClassId classId;
@@ -4643,7 +4624,6 @@ UseOp(Tcl_Interp *interp, Axis *axisPtr, int objc, Tcl_Obj *const *objv)
     int i;
     Margin *marginPtr;
     
-    chain = graphPtr->margins[lastMargin].axes;
     marginPtr = graphPtr->margins + lastMargin;
     if (objc == 0) {
 	Tcl_Obj *listObjPtr;
@@ -4668,39 +4648,24 @@ UseOp(Tcl_Interp *interp, Axis *axisPtr, int objc, Tcl_Obj *const *objv)
     }
     for (axisPtr = FirstAxis(marginPtr); axisPtr != NULL; axisPtr = nextPtr) {
         nextPtr = NextAxis(axisPtr);
+        Blt_Chain_UnlinkLink(axisPtr->marginPtr->axes, axisPtr->link);
 	axisPtr->link = NULL;
-	axisPtr->flags &= ~USE;
+        axisPtr->marginPtr = NULL;
 	/* Clear the axis type if it's not currently used.*/
 	if (axisPtr->refCount == 0) {
 	    Blt_GraphSetObjectClass(&axisPtr->obj, CID_NONE);
 	}
     }
-    Blt_Chain_Reset(chain);
+    Blt_Chain_Reset(marginPtr->axes);
     for (i = 0; i < axisObjc; i++) {
 	Axis *axisPtr;
 
 	if (GetAxisFromObj(interp, graphPtr, axisObjv[i], &axisPtr) != TCL_OK){
 	    return TCL_ERROR;
 	}
-	if (axisPtr->obj.classId == CID_NONE) {
-	    Blt_GraphSetObjectClass(&axisPtr->obj, classId);
-	} else if (axisPtr->obj.classId != classId) {
-	    Tcl_AppendResult(interp, "wrong type axis \"", 
-		axisPtr->obj.name, "\": can't use ", 
-		axisPtr->obj.className, " type axis.", (char *)NULL); 
-	    return TCL_ERROR;
-	}
-	if (axisPtr->link != NULL) {
-	    /* Move the axis from the old margin's "use" list to the new. */
-	    Blt_Chain_UnlinkLink(axisPtr->chain, axisPtr->link);
-	    Blt_Chain_AppendLink(chain, axisPtr->link);
-	} else {
-	    axisPtr->link = Blt_Chain_Append(chain, axisPtr);
-	}
-	axisPtr->chain = chain;
-	axisPtr->flags |= USE;
-	axisPtr->margin = lastMargin;
-        axisPtr->marginPtr = graphPtr->margins + lastMargin;
+        axisPtr->link = Blt_Chain_Append(marginPtr->axes, axisPtr);
+        axisPtr->marginPtr = marginPtr;
+        Blt_GraphSetObjectClass(&axisPtr->obj, classId);
     }
     graphPtr->flags |= (GET_AXIS_GEOMETRY | LAYOUT_NEEDED | RESET_AXES);
     /* When any axis changes, we need to layout the entire graph.  */
@@ -5038,11 +5003,7 @@ AxisFocusOp(Tcl_Interp *interp, Graph *graphPtr, int objc, Tcl_Obj *const *objv)
 	    (GetAxisFromObj(interp, graphPtr, objv[3], &axisPtr) != TCL_OK)) {
 	    return TCL_ERROR;
 	}
-	graphPtr->focusPtr = NULL;
-	if ((axisPtr != NULL) && 
-	    ((axisPtr->flags & (USE|HIDE)) == USE)) {
-	    graphPtr->focusPtr = axisPtr;
-	}
+	graphPtr->focusPtr = axisPtr;
 	Blt_SetFocusItem(graphPtr->bindTable, graphPtr->focusPtr, NULL);
     }
     /* Return the name of the axis that has focus. */
@@ -5174,6 +5135,22 @@ AxisMarginOp(Tcl_Interp *interp, Graph *graphPtr, int objc,
     return MarginOp(interp, axisPtr, objc - 4, objv + 4);
 }
 
+typedef struct {
+    int flags;
+} NamesArgs;
+
+#define ZOOM    (1<<0)
+#define VISIBLE (1<<1)
+
+static Blt_SwitchSpec namesSwitches[] = 
+{
+    {BLT_SWITCH_BITMASK, "-zoom", "", (char *)NULL,
+	Blt_Offset(NamesArgs, flags), 0, ZOOM},
+    {BLT_SWITCH_BITMASK, "-visible", "", (char *)NULL,
+	Blt_Offset(NamesArgs, flags), 0, VISIBLE},
+    {BLT_SWITCH_END}
+};
+
 /*
  *---------------------------------------------------------------------------
  *
@@ -5191,7 +5168,26 @@ static int
 AxisNamesOp(Tcl_Interp *interp, Graph *graphPtr, int objc, Tcl_Obj *const *objv)
 {
     Tcl_Obj *listObjPtr;
+    NamesArgs args;
+    int i, count;
+    
+    count = 0;
+    for (i = 3; i < objc; i++) {
+        const char *string;
 
+        string = Tcl_GetString(objv[i]);
+        if (string[0] != '-') {
+            break;
+        }
+        count++;
+    }
+    args.flags = 0;
+    if (Blt_ParseSwitches(interp, namesSwitches, count, objv + 3, &args,
+                          BLT_SWITCH_DEFAULTS) < 0) {
+	return TCL_ERROR;
+    }
+    objc -= count;
+    objv += count;
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
     if (objc == 3) {
 	Blt_HashEntry *hPtr;
@@ -5205,6 +5201,15 @@ AxisNamesOp(Tcl_Interp *interp, Graph *graphPtr, int objc, Tcl_Obj *const *objv)
 	    if (axisPtr->flags & DELETE_PENDING) {
 		continue;
 	    }
+            if (((axisPtr->flags & HIDE) || (axisPtr->marginPtr == NULL)) &&
+                (args.flags & (VISIBLE|ZOOM))) {
+                continue;
+            }
+            if ((axisPtr->obj.classId != CID_AXIS_X) &&
+                (axisPtr->obj.classId != CID_AXIS_Y) &&
+                (args.flags & ZOOM)) {
+                continue;
+            }
 	    Tcl_ListObjAppendElement(interp, listObjPtr, 
 		     Tcl_NewStringObj(axisPtr->obj.name, -1));
 	}
@@ -5218,7 +5223,16 @@ AxisNamesOp(Tcl_Interp *interp, Graph *graphPtr, int objc, Tcl_Obj *const *objv)
 	    int i;
 
 	    axisPtr = Blt_GetHashValue(hPtr);
-	    for (i = 3; i < objc; i++) {
+            if (((axisPtr->flags & HIDE) || (axisPtr->marginPtr == NULL)) &&
+                (args.flags & (VISIBLE|ZOOM))) {
+                continue;
+            }
+            if ((axisPtr->obj.classId != CID_AXIS_X) &&
+                (axisPtr->obj.classId != CID_AXIS_Y) &&
+                (args.flags & ZOOM)) {
+                continue;
+            }
+	    for (i = count + 3; i < objc; i++) {
 		const char *pattern;
 
 		pattern = Tcl_GetString(objv[i]);
@@ -5365,9 +5379,9 @@ Blt_AxisOp(Tcl_Interp *interp, Graph *graphPtr, int margin, int objc,
 	return TCL_ERROR;
     }
     if (proc == UseOp) {
-	lastMargin = margin;		/* Set global variable to the margin
-					 * in the argument list. Needed only
-					 * for UseOp. */
+	lastMargin = margin;		/* Set global variable to the
+					 * margin in the argument
+					 * list. Needed only for UseOp. */
 	result = (*proc)(interp, (Axis *)graphPtr, objc - 3, objv + 3);
     } else {
 	Axis *axisPtr;
@@ -5399,7 +5413,7 @@ Blt_MapAxes(Graph *graphPtr)
             /* For stacked axes figure out the sum of the weights.*/
 	    for (axisPtr = FirstAxis(marginPtr); axisPtr != NULL; 
 		 axisPtr = NextAxis(axisPtr)) {
-		if ((axisPtr->flags & (USE|DELETE_PENDING)) != USE) {
+                if (axisPtr->flags & (DELETE_PENDING|HIDE)) {
 		    continue;           /* Ignore axes that aren't in use
                                          * or have been deleted.  */
 		}
@@ -5408,7 +5422,7 @@ Blt_MapAxes(Graph *graphPtr)
 	}
 	for (axisPtr = FirstAxis(marginPtr); axisPtr != NULL; 
 	     axisPtr = NextAxis(axisPtr)) {
-	    if ((axisPtr->flags & (USE|HIDE|DELETE_PENDING)) != USE) {
+            if (axisPtr->flags & (HIDE|DELETE_PENDING)) {
 		continue;               /* Don't map axes that aren't being
                                          * used or have been deleted. */
 	    }
@@ -5446,9 +5460,10 @@ Blt_DrawAxes(Graph *graphPtr, Drawable drawable)
 	marginPtr = graphPtr->margins + i;
 	for (axisPtr = FirstAxis(marginPtr); axisPtr != NULL; 
 	     axisPtr = NextAxis(axisPtr)) {
-	    if ((axisPtr->flags & (DELETE_PENDING|HIDE|USE)) == USE) {
-		DrawAxis(axisPtr, drawable);
-	    }
+	    if (axisPtr->flags & (DELETE_PENDING|HIDE)) {
+                continue;
+            }
+            DrawAxis(axisPtr, drawable);
 	}
     }
 }
@@ -5480,7 +5495,7 @@ Blt_DrawGrids(Graph *graphPtr, Drawable drawable)
 	    if (axisPtr->flags & (DELETE_PENDING|HIDE)) {
 		continue;
 	    }
-	    if ((axisPtr->flags & USE) && (axisPtr->flags & GRID)) {
+	    if (axisPtr->flags & GRID) {
 		Blt_DrawSegments2d(graphPtr->display, drawable, 
 			axisPtr->major.grid.gc, 
                         axisPtr->major.grid.segments, 
@@ -5520,8 +5535,7 @@ Blt_GridsToPostScript(Graph *graphPtr, Blt_Ps ps)
 	marginPtr = graphPtr->margins + i;
 	for (axisPtr = FirstAxis(marginPtr); axisPtr != NULL;
 	     axisPtr = NextAxis(axisPtr)) {
-	    if ((axisPtr->flags & (DELETE_PENDING|HIDE|USE|GRID)) !=
-		(GRID|USE)) {
+	    if ((axisPtr->flags & (DELETE_PENDING|HIDE|GRID)) != GRID) {
 		continue;
 	    }
 	    Blt_Ps_Format(ps, "%% Axis %s: grid line attributes\n", 
@@ -5558,9 +5572,10 @@ Blt_AxesToPostScript(Graph *graphPtr, Blt_Ps ps)
 	marginPtr = graphPtr->margins + i;
 	for (axisPtr = FirstAxis(marginPtr); axisPtr != NULL; 
 	     axisPtr = NextAxis(axisPtr)) {
-	    if ((axisPtr->flags & (DELETE_PENDING|HIDE|USE)) == USE) {
-		AxisToPostScript(axisPtr, ps);
-	    }
+	    if (axisPtr->flags & (DELETE_PENDING|HIDE)) {
+                continue;
+            }
+            AxisToPostScript(axisPtr, ps);
 	}
     }
 }
@@ -5752,7 +5767,8 @@ Blt_NearestAxis(Graph *graphPtr, int x, int y)
 	Axis *axisPtr;
 
 	axisPtr = Blt_GetHashValue(hPtr);
-	if ((axisPtr->flags & (DELETE_PENDING|HIDE|USE)) != USE) {
+	if ((axisPtr->marginPtr == NULL) ||
+            (axisPtr->flags & (DELETE_PENDING|HIDE))) {
 	    continue;
 	}
 	if (axisPtr->flags & SHOWTICKS) {
@@ -5821,13 +5837,6 @@ Blt_MakeAxisTag(Graph *graphPtr, const char *tagName)
     hPtr = Blt_CreateHashEntry(&graphPtr->axes.bindTagTable, tagName, &isNew);
     return Blt_GetHashKey(&graphPtr->axes.bindTagTable, hPtr);
 }
-#ifdef notdef
-static void
-TimeAxis(Axis *axisPtr, double min, double max)
-{
-}
-#endif
-
 
 #include <time.h>
 #include <sys/time.h>

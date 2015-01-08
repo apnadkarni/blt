@@ -64,11 +64,12 @@ if 1 {
     } 
     blt::palette create bluegreen -colors {
 	{ 100% "lightblue" } { 0% "navyblue" }
-    } -fade 60 
-    $graph axis configure degrees -palette bluegreen
+    } 
+    $graph axis configure degrees -palette bluegreen -colorbarthickness 20
     $graph axis configure y -palette green 
     $graph element configure line1 -mapx degrees -colormap y
     $graph element configure line3 -colormap degrees
+    $graph element raise line1
 }
 
 bind $graph <Control-ButtonPress-3> { MakeSnapshot }

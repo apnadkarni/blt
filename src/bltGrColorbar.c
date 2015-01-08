@@ -2725,14 +2725,14 @@ Blt_LayoutGraph(Graph *graphPtr)
      *		-leftmargin, -rightmargin, -bottommargin, and -topmargin
      *		graph options, respectively.
      */
-    left   = GetMarginGeometry(graphPtr, &graphPtr->leftMargin);
-    right  = GetMarginGeometry(graphPtr, &graphPtr->rightMargin);
-    top    = GetMarginGeometry(graphPtr, &graphPtr->topMargin);
-    bottom = GetMarginGeometry(graphPtr, &graphPtr->bottomMargin);
+    left   = GetMarginGeometry(graphPtr, graphPtr->leftMarginPtr);
+    right  = GetMarginGeometry(graphPtr, graphPtr->rightMarginPtr);
+    top    = GetMarginGeometry(graphPtr, graphPtr->topMarginPtr);
+    bottom = GetMarginGeometry(graphPtr, graphPtr->bottomMarginPtr);
 
-    pad = graphPtr->bottomMargin.maxLabelWidth;
-    if (pad < graphPtr->topMargin.maxLabelWidth) {
-	pad = graphPtr->topMargin.maxLabelWidth;
+    pad = graphPtr->bottomMarginPtr->maxLabelWidth;
+    if (pad < graphPtr->topMarginPtr->maxLabelWidth) {
+	pad = graphPtr->topMarginPtr->maxLabelWidth;
     }
     pad = pad / 2 + 3;
     if (right < pad) {
@@ -2741,9 +2741,9 @@ Blt_LayoutGraph(Graph *graphPtr)
     if (left < pad) {
 	left = pad;
     }
-    pad = graphPtr->leftMargin.maxLabelHeight;
-    if (pad < graphPtr->rightMargin.maxLabelHeight) {
-	pad = graphPtr->rightMargin.maxLabelHeight;
+    pad = graphPtr->leftMarginPtr->maxLabelHeight;
+    if (pad < graphPtr->rightMarginPtr->maxLabelHeight) {
+	pad = graphPtr->rightMarginPtr->maxLabelHeight;
     }
     pad = pad / 2;
     if (top < pad) {
@@ -2753,17 +2753,17 @@ Blt_LayoutGraph(Graph *graphPtr)
 	bottom = pad;
     }
 
-    if (graphPtr->leftMargin.reqSize > 0) {
-	left = graphPtr->leftMargin.reqSize;
+    if (graphPtr->leftMarginPtr->reqSize > 0) {
+	left = graphPtr->leftMarginPtr->reqSize;
     }
-    if (graphPtr->rightMargin.reqSize > 0) {
-	right = graphPtr->rightMargin.reqSize;
+    if (graphPtr->rightMarginPtr->reqSize > 0) {
+	right = graphPtr->rightMarginPtr->reqSize;
     }
-   if (graphPtr->topMargin.reqSize > 0) {
-	top = graphPtr->topMargin.reqSize;
+   if (graphPtr->topMarginPtr->reqSize > 0) {
+	top = graphPtr->topMarginPtr->reqSize;
     }
-    if (graphPtr->bottomMargin.reqSize > 0) {
-	bottom = graphPtr->bottomMargin.reqSize;
+    if (graphPtr->bottomMarginPtr->reqSize > 0) {
+	bottom = graphPtr->bottomMarginPtr->reqSize;
     }
 
     /* 
@@ -2885,33 +2885,33 @@ Blt_LayoutGraph(Graph *graphPtr)
      *	       displayed in the adjoining margins.  Make sure there's room 
      *	       for the longest axis titles.
      */
-    if (top < graphPtr->leftMargin.axesTitleLength) {
-	top = graphPtr->leftMargin.axesTitleLength;
+    if (top < graphPtr->leftMarginPtr->axesTitleLength) {
+	top = graphPtr->leftMarginPtr->axesTitleLength;
     }
-    if (right < graphPtr->bottomMargin.axesTitleLength) {
-	right = graphPtr->bottomMargin.axesTitleLength;
+    if (right < graphPtr->bottomMarginPtr->axesTitleLength) {
+	right = graphPtr->bottomMarginPtr->axesTitleLength;
     }
-    if (top < graphPtr->rightMargin.axesTitleLength) {
-	top = graphPtr->rightMargin.axesTitleLength;
+    if (top < graphPtr->rightMarginPtr->axesTitleLength) {
+	top = graphPtr->rightMarginPtr->axesTitleLength;
     }
-    if (right < graphPtr->topMargin.axesTitleLength) {
-	right = graphPtr->topMargin.axesTitleLength;
+    if (right < graphPtr->topMarginPtr->axesTitleLength) {
+	right = graphPtr->topMarginPtr->axesTitleLength;
     }
 
     /* 
      * Step 7: Override calculated values with requested margin sizes.
      */
-    if (graphPtr->leftMargin.reqSize > 0) {
-	left = graphPtr->leftMargin.reqSize;
+    if (graphPtr->leftMarginPtr->reqSize > 0) {
+	left = graphPtr->leftMarginPtr->reqSize;
     }
-    if (graphPtr->rightMargin.reqSize > 0) {
-	right = graphPtr->rightMargin.reqSize;
+    if (graphPtr->rightMarginPtr->reqSize > 0) {
+	right = graphPtr->rightMarginPtr->reqSize;
     }
-    if (graphPtr->topMargin.reqSize > 0) {
-	top = graphPtr->topMargin.reqSize;
+    if (graphPtr->topMarginPtr->reqSize > 0) {
+	top = graphPtr->topMarginPtr->reqSize;
     }
-    if (graphPtr->bottomMargin.reqSize > 0) {
-	bottom = graphPtr->bottomMargin.reqSize;
+    if (graphPtr->bottomMarginPtr->reqSize > 0) {
+	bottom = graphPtr->bottomMarginPtr->reqSize;
     }
     if (graphPtr->reqPlotWidth > 0) {	
 	int w;
@@ -2926,14 +2926,14 @@ Blt_LayoutGraph(Graph *graphPtr)
 	    int extra;
 
 	    extra = (width - w) / 2;
-	    if (graphPtr->leftMargin.reqSize == 0) { 
+	    if (graphPtr->leftMarginPtr->reqSize == 0) { 
 		left += extra;
-		if (graphPtr->rightMargin.reqSize == 0) { 
+		if (graphPtr->rightMarginPtr->reqSize == 0) { 
 		    right += extra;
 		} else {
 		    left += extra;
 		}
-	    } else if (graphPtr->rightMargin.reqSize == 0) {
+	    } else if (graphPtr->rightMarginPtr->reqSize == 0) {
 		right += extra + extra;
 	    }
 	} else if (width < w) {
@@ -2953,14 +2953,14 @@ Blt_LayoutGraph(Graph *graphPtr)
 	    int extra;
 
 	    extra = (height - h) / 2;
-	    if (graphPtr->topMargin.reqSize == 0) { 
+	    if (graphPtr->topMarginPtr->reqSize == 0) { 
 		top += extra;
-		if (graphPtr->bottomMargin.reqSize == 0) { 
+		if (graphPtr->bottomMarginPtr->reqSize == 0) { 
 		    bottom += extra;
 		} else {
 		    top += extra;
 		}
-	    } else if (graphPtr->bottomMargin.reqSize == 0) {
+	    } else if (graphPtr->bottomMarginPtr->reqSize == 0) {
 		bottom += extra + extra;
 	    }
 	} else if (height < h) {
@@ -2974,10 +2974,10 @@ Blt_LayoutGraph(Graph *graphPtr)
     graphPtr->right  = width - right - inset;
     graphPtr->bottom = height - bottom - inset;
 
-    graphPtr->leftMargin.width    = left   + graphPtr->inset;
-    graphPtr->rightMargin.width   = right  + graphPtr->inset;
-    graphPtr->topMargin.height    = top    + graphPtr->inset;
-    graphPtr->bottomMargin.height = bottom + graphPtr->inset;
+    graphPtr->leftMarginPtr->width    = left   + graphPtr->inset;
+    graphPtr->rightMarginPtr->width   = right  + graphPtr->inset;
+    graphPtr->topMarginPtr->height    = top    + graphPtr->inset;
+    graphPtr->bottomMarginPtr->height = bottom + graphPtr->inset;
 	    
     graphPtr->vOffset = graphPtr->top + graphPtr->padTop;
     graphPtr->vRange  = plotHeight - PADDING(graphPtr->yPad);
@@ -5266,7 +5266,7 @@ static Blt_ConfigSpec configSpecs[] =
 	Blt_Offset(Colorbar, font), 0},
 
     {BLT_CONFIG_STRING, "-fonbottomvariable", "bottomVariable", "BottomVariable",
-	DEF_MARGIN_VAR, Blt_Offset(Colorbar, bottomMargin.varName), 
+	DEF_MARGIN_VAR, Blt_Offset(Colorbar, bottomMarginPtr->varName), 
 	BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_BOOLEAN, "-bufferelements", "bufferElements", "BufferElements",
 	DEF_BUFFER_ELEMENTS, Blt_Offset(Colorbar, backingStore),
@@ -5306,10 +5306,10 @@ static Blt_ConfigSpec configSpecs[] =
 	Blt_Offset(Colorbar, titleTextStyle.justify), 
 	BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_PIXELS_NNEG, "-leftmargin", "leftMargin", "Margin", 
-	DEF_MARGIN, Blt_Offset(Colorbar, leftMargin.reqSize), 
+	DEF_MARGIN, Blt_Offset(Colorbar, leftMarginPtr->reqSize), 
 	BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_STRING, "-leftvariable", "leftVariable", "LeftVariable",
-	DEF_MARGIN_VAR, Blt_Offset(Colorbar, leftMargin.varName), 
+	DEF_MARGIN_VAR, Blt_Offset(Colorbar, leftMarginPtr->varName), 
 	BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_SYNONYM, "-lm", "leftMargin", (char *)NULL, (char *)NULL, 0, 0},
     {BLT_CONFIG_BACKGROUND, "-plotbackground", "plotBackground", "Background",
@@ -5327,10 +5327,10 @@ static Blt_ConfigSpec configSpecs[] =
     {BLT_CONFIG_RELIEF, "-relief", "relief", "Relief", DEF_RELIEF, 
 	Blt_Offset(Colorbar, relief), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_PIXELS_NNEG, "-rightmargin", "rightMargin", "Margin",
-	DEF_MARGIN, Blt_Offset(Colorbar, rightMargin.reqSize),
+	DEF_MARGIN, Blt_Offset(Colorbar, rightMarginPtr->reqSize),
 	BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_STRING, "-rightvariable", "rightVariable", "RightVariable",
-	DEF_MARGIN_VAR, Blt_Offset(Colorbar, rightMargin.varName), 
+	DEF_MARGIN_VAR, Blt_Offset(Colorbar, rightMarginPtr->varName), 
 	BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_SYNONYM, "-rm", "rightMargin", (char *)NULL, (char *)NULL, 0,0},
     {BLT_CONFIG_BITMASK, "-stackaxes", "stackAxes", "StackAxes", 
@@ -5342,10 +5342,10 @@ static Blt_ConfigSpec configSpecs[] =
 	Blt_Offset(Colorbar, title), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_SYNONYM, "-tm", "topMargin", (char *)NULL, (char *)NULL, 0, 0},
     {BLT_CONFIG_PIXELS_NNEG, "-topmargin", "topMargin", "Margin", 
-	DEF_MARGIN, Blt_Offset(Colorbar, topMargin.reqSize), 
+	DEF_MARGIN, Blt_Offset(Colorbar, topMarginPtr->reqSize), 
 	BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_STRING, "-topvariable", "topVariable", "TopVariable",
-	DEF_MARGIN_VAR, Blt_Offset(Colorbar, topMargin.varName), 
+	DEF_MARGIN_VAR, Blt_Offset(Colorbar, topMarginPtr->varName), 
 	BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_PIXELS_NNEG, "-width", "width", "Width", DEF_WIDTH, 
 	Blt_Offset(Colorbar, reqWidth), 0},

@@ -55,6 +55,7 @@
 #include "bltMath.h"
 #include "bltHash.h"
 #include "bltChain.h"
+#include "bltConfig.h"
 #include "bltSwitch.h"
 #include "bltOp.h"
 #include "bltBind.h"
@@ -104,9 +105,21 @@ static const char *objectClassNames[] = {
 
 static Blt_OptionParseProc ObjToMapElements;
 static Blt_OptionPrintProc MapElementsToObj;
-static Blt_CustomOption mapElementsOption =
-{
+static Blt_CustomOption mapElementsOption = {
     ObjToMapElements, MapElementsToObj, NULL, (ClientData)0,
+};
+
+static Blt_OptionParseProc ObjToMarginSize;
+static Blt_OptionPrintProc MarginSizeToObj;
+static Blt_CustomOption marginSizeOption = {
+    ObjToMarginSize, MarginSizeToObj, NULL, (ClientData)0,
+};
+
+static Blt_OptionFreeProc FreeMarginVariable;
+static Blt_OptionParseProc ObjToMarginVariable;
+static Blt_OptionPrintProc MarginVariableToObj;
+static Blt_CustomOption marginVariableOption = {
+    ObjToMarginVariable, MarginVariableToObj, FreeMarginVariable, (ClientData)0,
 };
 
 BLT_EXTERN Blt_CustomOption bltLinePenOption;
@@ -131,7 +144,7 @@ BLT_EXTERN Blt_CustomOption bltBarModeOption;
 #define DEF_HIGHLIGHT_WIDTH	"2"
 #define DEF_INVERT_XY		"0"
 #define DEF_JUSTIFY		"center"
-#define DEF_MARGIN		"0"
+#define DEF_MARGIN_SIZE		"0"
 #define DEF_MARGIN_VAR		(char *)NULL
 #define DEF_PLOT_BACKGROUND	RGB_WHITE
 #define DEF_PLOT_BORDERWIDTH	"1"
@@ -171,11 +184,12 @@ static Blt_ConfigSpec configSpecs[] =
     {BLT_CONFIG_PIXELS_NNEG, "-borderwidth", "borderWidth", "BorderWidth",
 	DEF_BORDERWIDTH, Blt_Offset(Graph, borderWidth),
 	BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_PIXELS_NNEG, "-bottommargin", "bottomMargin", "Margin",
-	DEF_MARGIN, Blt_Offset(Graph, bottomMargin.reqSize), 0},
-    {BLT_CONFIG_STRING, "-bottomvariable", "bottomVariable", "BottomVariable",
-	DEF_MARGIN_VAR, Blt_Offset(Graph, bottomMargin.varName), 
-	BLT_CONFIG_NULL_OK},
+    {BLT_CONFIG_CUSTOM, "-bottommargin", "bottomMargin", "Margin",
+	DEF_MARGIN_SIZE, Blt_Offset(Graph, bottomMarginPtr),
+        BLT_CONFIG_DONT_SET_DEFAULT, &marginSizeOption},
+    {BLT_CONFIG_CUSTOM, "-bottomvariable", "bottomVariable", "BottomVariable",
+	DEF_MARGIN_VAR, Blt_Offset(Graph, bottomMarginPtr), 
+        BLT_CONFIG_NULL_OK, &marginVariableOption},
     {BLT_CONFIG_BITMASK, "-bufferelements", "bufferElements", "BufferElements",
 	DEF_BUFFER_ELEMENTS, Blt_Offset(Graph, flags),
         BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)BACKING_STORE},
@@ -210,12 +224,12 @@ static Blt_ConfigSpec configSpecs[] =
         (Blt_CustomOption *)INVERTED},
     {BLT_CONFIG_JUSTIFY, "-justify", "justify", "Justify", DEF_JUSTIFY, 
 	Blt_Offset(Graph, titleTextStyle.justify), BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_PIXELS_NNEG, "-leftmargin", "leftMargin", "Margin", 
-	DEF_MARGIN, Blt_Offset(Graph, leftMargin.reqSize), 
-	BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_STRING, "-leftvariable", "leftVariable", "LeftVariable",
-	DEF_MARGIN_VAR, Blt_Offset(Graph, leftMargin.varName), 
-	BLT_CONFIG_NULL_OK},
+    {BLT_CONFIG_CUSTOM, "-leftmargin", "leftMargin", "Margin", 
+	DEF_MARGIN_SIZE, Blt_Offset(Graph, leftMarginPtr), 
+        BLT_CONFIG_DONT_SET_DEFAULT, &marginSizeOption},
+    {BLT_CONFIG_CUSTOM, "-leftvariable", "leftVariable", "LeftVariable",
+	DEF_MARGIN_VAR, Blt_Offset(Graph, leftMarginPtr), BLT_CONFIG_NULL_OK,
+        &marginVariableOption},
     {BLT_CONFIG_SYNONYM, "-lm", "leftMargin", (char *)NULL, (char *)NULL, 0, 0},
     {BLT_CONFIG_CUSTOM, "-mapelements", "mapElements", "MapElements",
 	DEF_MAP_ELEMENTS, Blt_Offset(Graph, flags),
@@ -233,12 +247,12 @@ static Blt_ConfigSpec configSpecs[] =
         Blt_Offset(Graph, plotRelief), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_RELIEF, "-relief", "relief", "Relief", DEF_RELIEF, 
 	Blt_Offset(Graph, relief), BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_PIXELS_NNEG, "-rightmargin", "rightMargin", "Margin",
-        DEF_MARGIN, Blt_Offset(Graph, rightMargin.reqSize),
-	BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_STRING, "-rightvariable", "rightVariable", "RightVariable",
-	DEF_MARGIN_VAR, Blt_Offset(Graph, rightMargin.varName), 
-	BLT_CONFIG_NULL_OK},
+    {BLT_CONFIG_CUSTOM, "-rightmargin", "rightMargin", "Margin",
+        DEF_MARGIN_SIZE, Blt_Offset(Graph, rightMarginPtr),
+        BLT_CONFIG_DONT_SET_DEFAULT, &marginSizeOption},
+    {BLT_CONFIG_CUSTOM, "-rightvariable", "rightVariable", "RightVariable",
+	DEF_MARGIN_VAR, Blt_Offset(Graph, rightMarginPtr), 
+        BLT_CONFIG_NULL_OK, &marginVariableOption},
     {BLT_CONFIG_SYNONYM, "-rm", "rightMargin", (char *)NULL, (char *)NULL, 0,0},
     {BLT_CONFIG_BITMASK, "-stackaxes", "stackAxes", "StackAxes", DEF_STACK_AXES,
         Blt_Offset(Graph, flags), BLT_CONFIG_DONT_SET_DEFAULT,
@@ -252,11 +266,12 @@ static Blt_ConfigSpec configSpecs[] =
     {BLT_CONFIG_STRING, "-title", "title", "Title", DEF_TITLE,
         Blt_Offset(Graph, title), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_SYNONYM, "-tm", "topMargin", (char *)NULL, (char *)NULL, 0, 0},
-    {BLT_CONFIG_PIXELS_NNEG, "-topmargin", "topMargin", "Margin", DEF_MARGIN,
-        Blt_Offset(Graph, topMargin.reqSize), BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_STRING, "-topvariable", "topVariable", "TopVariable",
-	DEF_MARGIN_VAR, Blt_Offset(Graph, topMargin.varName), 
-	BLT_CONFIG_NULL_OK},
+    {BLT_CONFIG_CUSTOM, "-topmargin", "topMargin", "Margin", DEF_MARGIN_SIZE,
+        Blt_Offset(Graph, topMarginPtr), BLT_CONFIG_DONT_SET_DEFAULT,
+        &marginSizeOption},
+    {BLT_CONFIG_CUSTOM, "-topvariable", "topVariable", "TopVariable",
+        DEF_MARGIN_VAR, Blt_Offset(Graph, topMarginPtr), BLT_CONFIG_NULL_OK,
+        &marginVariableOption},
     {BLT_CONFIG_PIXELS_NNEG, "-width", "width", "Width", DEF_WIDTH, 
 	Blt_Offset(Graph, reqWidth), 0},
     {BLT_CONFIG_PIXELS_NNEG, "-plotwidth", "plotWidth", "PlotWidth", 
@@ -269,8 +284,7 @@ static Blt_ConfigSpec configSpecs[] =
 };
 
 static Blt_SwitchParseProc ObjToElement;
-static Blt_SwitchCustom elementSwitch =
-{
+static Blt_SwitchCustom elementSwitch = {
     ObjToElement, NULL, NULL, (ClientData)0,
 };
 
@@ -288,8 +302,7 @@ static Blt_SwitchSpec transformSpecs[] =
 
 
 static Blt_SwitchParseProc ObjToFormat;
-static Blt_SwitchCustom formatSwitch =
-{
+static Blt_SwitchCustom formatSwitch = {
     ObjToFormat, NULL, NULL, (ClientData)0,
 };
 
@@ -302,8 +315,7 @@ typedef struct {
 
 enum SnapFormats { FORMAT_PICTURE, FORMAT_PHOTO, FORMAT_EMF, FORMAT_WMF };
 
-static Blt_SwitchSpec snapSpecs[] = 
-{
+static Blt_SwitchSpec snapSpecs[] = {
     {BLT_SWITCH_INT_POS, "-width",  "width", (char *)NULL,
 	Blt_Offset(SnapArgs, width),  0},
     {BLT_SWITCH_INT_POS, "-height", "height", (char *)NULL,
@@ -376,6 +388,103 @@ MapElementsToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
         string = "all";
     }
     return Tcl_NewStringObj(string, -1);
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * ObjToMarginSize --
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+ObjToMarginSize(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+                Tcl_Obj *objPtr, char *widgRec, int offset, int flags)
+{
+    Graph *graphPtr = (Graph *)widgRec;
+    Margin *marginPtr = *(Margin **)(widgRec + offset);
+    int size;
+    
+    if (Blt_GetPixelsFromObj(interp, graphPtr->tkwin, objPtr, PIXELS_NNEG,
+                             &size) != TCL_OK) {
+        return TCL_ERROR;
+    }
+    marginPtr->reqSize = size;
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * MarginSizeToObj --
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static Tcl_Obj *
+MarginSizeToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+                char *widgRec, int offset, int flags)
+{
+    Margin *marginPtr = *(Margin **)(widgRec + offset);
+
+    return Tcl_NewIntObj(marginPtr->reqSize);
+}
+
+static void
+FreeMarginVariable(ClientData clientData, Display *display, char *widgRec,
+                   int offset)
+{
+    Margin *marginPtr = *(Margin **)(widgRec + offset);
+
+    if (marginPtr->varObjPtr != NULL) {
+        Tcl_DecrRefCount(marginPtr->varObjPtr);
+        marginPtr->varObjPtr = NULL;
+    }
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * ObjToMarginVariable --
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+ObjToMarginVariable(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+                    Tcl_Obj *objPtr, char *widgRec, int offset, int flags)
+{
+    Margin *marginPtr = *(Margin **)(widgRec + offset);
+
+    if (marginPtr->varObjPtr != NULL) {
+        Tcl_DecrRefCount(marginPtr->varObjPtr);
+    }
+    marginPtr->varObjPtr = objPtr;
+    if (marginPtr->varObjPtr != NULL) {
+        Tcl_IncrRefCount(marginPtr->varObjPtr);
+    }
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * MarginVariableToObj --
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static Tcl_Obj *
+MarginVariableToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+                 char *widgRec, int offset, int flags)
+{
+    Margin *marginPtr = *(Margin **)(widgRec + offset);
+
+    if (marginPtr->varObjPtr != NULL) {
+        return marginPtr->varObjPtr;
+    }
+    return Tcl_NewStringObj("", -1);
 }
 
 /*
@@ -536,10 +645,10 @@ GraphInstCmdDeleteProc(ClientData clientData) /* Pointer to widget record. */
 /*
  *---------------------------------------------------------------------------
  *
- * AdjustAxisPointers --
+ * AdjustMarginPointers --
  *
- *	Sets the axis pointers according to whether the axis is inverted on
- *	not.  The axis sides are also reset.
+ *	Sets the margin pointers according to whether the graph is inverted
+ *	or not.
  *
  * Results:
  *	None.
@@ -547,18 +656,18 @@ GraphInstCmdDeleteProc(ClientData clientData) /* Pointer to widget record. */
  *---------------------------------------------------------------------------
  */
 static void
-AdjustAxisPointers(Graph *graphPtr) 
+AdjustMarginPointers(Graph *graphPtr) 
 {
     if (graphPtr->flags & INVERTED) {
-	graphPtr->leftMargin.axes   = graphPtr->axisChain[0];
-	graphPtr->bottomMargin.axes = graphPtr->axisChain[1];
-	graphPtr->rightMargin.axes  = graphPtr->axisChain[2];
-	graphPtr->topMargin.axes    = graphPtr->axisChain[3];
+	graphPtr->bottomMarginPtr = graphPtr->margins + MARGIN_Y;
+	graphPtr->leftMarginPtr   = graphPtr->margins + MARGIN_X;
+	graphPtr->rightMarginPtr  = graphPtr->margins + MARGIN_X2;
+	graphPtr->topMarginPtr    = graphPtr->margins + MARGIN_Y2;
     } else {
-	graphPtr->leftMargin.axes   = graphPtr->axisChain[1];
-	graphPtr->bottomMargin.axes = graphPtr->axisChain[0];
-	graphPtr->rightMargin.axes  = graphPtr->axisChain[3];
-	graphPtr->topMargin.axes    = graphPtr->axisChain[2];
+	graphPtr->bottomMarginPtr = graphPtr->margins + MARGIN_X;
+	graphPtr->leftMarginPtr   = graphPtr->margins + MARGIN_Y;
+	graphPtr->rightMarginPtr  = graphPtr->margins + MARGIN_Y2;
+	graphPtr->topMarginPtr    = graphPtr->margins + MARGIN_X2;
     }
 }
 
@@ -840,7 +949,7 @@ ConfigureGraph(Graph *graphPtr)
 	 * pointers to the axes and recompute the their scales.
 	 */
 
-	AdjustAxisPointers(graphPtr);
+	AdjustMarginPointers(graphPtr);
 	graphPtr->flags |= RESET_AXES;
     }
     if (((graphPtr->flags & BACKING_STORE) == 0) && (graphPtr->cache != None)) {
@@ -986,10 +1095,7 @@ CreateGraph(Tcl_Interp *interp, int objc, Tcl_Obj *const *objv, ClassId classId)
     graphPtr->nextMarkerId = 1;
     graphPtr->padLeft = graphPtr->padRight = 0;
     graphPtr->padTop = graphPtr->padBottom = 0;
-    graphPtr->bottomMargin.side = MARGIN_BOTTOM;
-    graphPtr->leftMargin.side = MARGIN_LEFT;
-    graphPtr->topMargin.side = MARGIN_TOP;
-    graphPtr->rightMargin.side = MARGIN_RIGHT;
+    
     Blt_Ts_InitStyle(graphPtr->titleTextStyle);
     Blt_Ts_SetAnchor(graphPtr->titleTextStyle, TK_ANCHOR_N);
 
@@ -1028,6 +1134,7 @@ CreateGraph(Tcl_Interp *interp, int objc, Tcl_Obj *const *objv, ClassId classId)
     if (InitPens(graphPtr) != TCL_OK) {
 	goto error;
     }
+    AdjustMarginPointers(graphPtr);
     if (Blt_ConfigureWidgetFromObj(interp, tkwin, configSpecs, objc - 2, 
 		objv + 2, (char *)graphPtr, 0) != TCL_OK) {
 	goto error;
@@ -1035,7 +1142,7 @@ CreateGraph(Tcl_Interp *interp, int objc, Tcl_Obj *const *objv, ClassId classId)
     if (Blt_DefaultAxes(graphPtr) != TCL_OK) {
 	goto error;
     }
-    AdjustAxisPointers(graphPtr);
+    AdjustMarginPointers(graphPtr);
 
     if (Blt_CreatePageSetup(graphPtr) != TCL_OK) {
 	goto error;
@@ -1231,16 +1338,16 @@ ExtentsOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	Tcl_SetObjResult(interp, listObjPtr);
     } else if ((c == 'l') && (length > 2) &&
 	(strncmp("leftmargin", string, length) == 0)) {
-	Tcl_SetIntObj(Tcl_GetObjResult(interp), graphPtr->leftMargin.width);
+	Tcl_SetIntObj(Tcl_GetObjResult(interp), graphPtr->leftMarginPtr->width);
     } else if ((c == 'r') && (length > 1) &&
 	(strncmp("rightmargin", string, length) == 0)) {
-	Tcl_SetIntObj(Tcl_GetObjResult(interp), graphPtr->rightMargin.width);
+	Tcl_SetIntObj(Tcl_GetObjResult(interp), graphPtr->rightMarginPtr->width);
     } else if ((c == 't') && (length > 1) &&
 	(strncmp("topmargin", string, length) == 0)) {
-	Tcl_SetIntObj(Tcl_GetObjResult(interp), graphPtr->topMargin.height);
+	Tcl_SetIntObj(Tcl_GetObjResult(interp), graphPtr->topMarginPtr->height);
     } else if ((c == 'b') && (length > 1) &&
 	(strncmp("bottommargin", string, length) == 0)) {
-	Tcl_SetIntObj(Tcl_GetObjResult(interp), graphPtr->bottomMargin.height);
+	Tcl_SetIntObj(Tcl_GetObjResult(interp), graphPtr->bottomMarginPtr->height);
     } else {
 	Tcl_AppendResult(interp, "bad extent item \"", objv[2],
 	    "\": should be plotheight, plotwidth, leftmargin, rightmargin, \
@@ -1327,8 +1434,8 @@ InvtransformOp(Graph *graphPtr, Tcl_Interp *interp, int objc,
     }
     if (args.elemPtr == NULL) {
         /*  Pick the first pair of axes */
-        axes.x = Blt_GetFirstAxis(graphPtr->axisChain[0]);
-        axes.y = Blt_GetFirstAxis(graphPtr->axisChain[1]);
+        axes.x = Blt_GetFirstAxis(graphPtr->margins[MARGIN_X].axes);
+        axes.y = Blt_GetFirstAxis(graphPtr->margins[MARGIN_Y].axes);
         point = Blt_InvMap2D(graphPtr, x, y, &axes);
     } else {
         point = Blt_InvMap2D(graphPtr, x, y, &args.elemPtr->axes);
@@ -1381,8 +1488,8 @@ TransformOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     }
     if (args.elemPtr == NULL) {
         /*  Pick the first pair of axes */
-        axes.x = Blt_GetFirstAxis(graphPtr->axisChain[0]);
-        axes.y = Blt_GetFirstAxis(graphPtr->axisChain[1]);
+        axes.x = Blt_GetFirstAxis(graphPtr->margins[MARGIN_X].axes);
+        axes.y = Blt_GetFirstAxis(graphPtr->margins[MARGIN_Y].axes);
         point = Blt_Map2D(graphPtr, x, y, &axes);
     } else {
         point = Blt_Map2D(graphPtr, x, y, &args.elemPtr->axes);
@@ -2396,7 +2503,7 @@ UpdateMarginTraces(Graph *graphPtr)
 
     for (marginPtr = graphPtr->margins, endPtr = marginPtr + 4; 
 	 marginPtr < endPtr; marginPtr++) {
-	if (marginPtr->varName != NULL) { /* Trigger variable traces */
+	if (marginPtr->varObjPtr != NULL) { /* Trigger variable traces */
 	    int size;
 
 	    if ((marginPtr->side == MARGIN_LEFT) || 
@@ -2405,8 +2512,8 @@ UpdateMarginTraces(Graph *graphPtr)
 	    } else {
 		size = marginPtr->height;
 	    }
-	    Tcl_SetVar(graphPtr->interp, marginPtr->varName, Blt_Itoa(size), 
-		TCL_GLOBAL_ONLY);
+	    Tcl_ObjSetVar2(graphPtr->interp, marginPtr->varObjPtr, NULL,
+                           Tcl_NewIntObj(size), TCL_GLOBAL_ONLY);
 	}
     }
 }

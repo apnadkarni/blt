@@ -274,8 +274,6 @@ struct _Axis {
 
     Margin *marginPtr;                  /* If non-NULL, the margin the axis 
                                          * is displayed in. */
-    int margin;				/* Margin that contains this
-                                         * axis. */
     Blt_ChainLink link;			/* Axis link in margin list. */
     Blt_Chain chain;
     Segment2d *segments;		/* Array of line segments

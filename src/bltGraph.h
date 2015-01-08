@@ -295,6 +295,7 @@ typedef void (GraphColormapNotifyProc) (GraphColormap *cmapPtr,
 typedef struct _Crosshairs Crosshairs;
 
 typedef struct {
+    const char *name;
     short int width, height;		/* Dimensions of the margin */
     short int axesOffset;               /* The width or height of the margin 
                                          * depending upon the side. */
@@ -310,7 +311,7 @@ typedef struct {
     unsigned int numAxes;		/* # of axes to be displayed */
     Blt_Chain axes;			/* List of axes associated with
                                          * this margin */
-    const char *varName;		/* If non-NULL, name of variable to
+    Tcl_Obj *varObjPtr;                /* If non-NULL, name of variable to-
 					 * be updated when the margin size
 					 * changes */
     int reqSize;			/* Requested size of margin */
@@ -332,10 +333,10 @@ typedef struct {
 #define MARGIN_TOP	2		/* x2 */
 #define MARGIN_RIGHT	3		/* y2 */
 
-#define rightMargin	margins[MARGIN_RIGHT]
-#define leftMargin	margins[MARGIN_LEFT]
-#define topMargin	margins[MARGIN_TOP]
-#define bottomMargin	margins[MARGIN_BOTTOM]
+#define MARGIN_X	0		/* x */
+#define MARGIN_Y	1 		/* y */
+#define MARGIN_X2	2		/* x2 */
+#define MARGIN_Y2	3		/* y2 */
 
 /*
  *---------------------------------------------------------------------------
@@ -418,13 +419,12 @@ struct _Graph {
     Blt_BindTable bindTable;
     int nextMarkerId;			/* Tracks next marker identifier
 					 * available */
-    Blt_Chain axisChain[4];		/* Chain of axes for each of the
-					 * margins.  They're separate from
-					 * the margin structures to make it
-					 * easier to invert the X-Y axes by
-					 * simply switching chain
-					 * pointers. */
     Margin margins[4];
+    Margin *bottomMarginPtr;
+    Margin *leftMarginPtr;
+    Margin *rightMarginPtr;
+    Margin *topMarginPtr;
+
     PageSetup *pageSetup;		/* Page layout options: see
                                          * bltGrPS.c */
     Legend *legend;			/* Legend information: see

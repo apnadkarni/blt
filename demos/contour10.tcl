@@ -29140,7 +29140,7 @@ set palette spectral
 .g element create myContour -values dentalscan -mesh $mesh 
 .g element isoline steps myContour 6
 .g legend configure -hide yes
-.g axis configure z -palette $palette -use y -colorbarthickness 20 
+.g axis configure z -palette $palette -margin y -colorbarthickness 20 
 proc UpdateColors {} {
      global usePaletteColors
      if { $usePaletteColors } {

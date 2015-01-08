@@ -3785,9 +3785,9 @@ LayoutSlider(Slider *sliderPtr)
     top    = GetMarginGeometry(sliderPtr, &sliderPtr->topMargin);
     bottom = GetMarginGeometry(sliderPtr, &sliderPtr->bottomMargin);
 
-    pad = sliderPtr->bottomMargin.maxAxisLabelWidth;
-    if (pad < sliderPtr->topMargin.maxAxisLabelWidth) {
-	pad = sliderPtr->topMargin.maxAxisLabelWidth;
+    pad = sliderPtr->bottomMarginPtr->maxAxisLabelWidth;
+    if (pad < sliderPtr->topMarginPtr->maxAxisLabelWidth) {
+	pad = sliderPtr->topMarginPtr->maxAxisLabelWidth;
     }
     pad = pad / 2 + 3;
     if (right < pad) {
@@ -3796,9 +3796,9 @@ LayoutSlider(Slider *sliderPtr)
     if (left < pad) {
 	left = pad;
     }
-    pad = sliderPtr->leftMargin.maxAxisLabelHeight;
-    if (pad < sliderPtr->rightMargin.maxAxisLabelHeight) {
-	pad = sliderPtr->rightMargin.maxAxisLabelHeight;
+    pad = sliderPtr->leftMarginPtr->maxAxisLabelHeight;
+    if (pad < sliderPtr->rightMarginPtr->maxAxisLabelHeight) {
+	pad = sliderPtr->rightMarginPtr->maxAxisLabelHeight;
     }
     pad = pad / 2;
     if (top < pad) {
@@ -3808,17 +3808,17 @@ LayoutSlider(Slider *sliderPtr)
 	bottom = pad;
     }
 
-    if (sliderPtr->leftMargin.reqSize > 0) {
-	left = sliderPtr->leftMargin.reqSize;
+    if (sliderPtr->leftMarginPtr->reqSize > 0) {
+	left = sliderPtr->leftMarginPtr->reqSize;
     }
-    if (sliderPtr->rightMargin.reqSize > 0) {
-	right = sliderPtr->rightMargin.reqSize;
+    if (sliderPtr->rightMarginPtr->reqSize > 0) {
+	right = sliderPtr->rightMarginPtr->reqSize;
     }
-   if (sliderPtr->topMargin.reqSize > 0) {
-	top = sliderPtr->topMargin.reqSize;
+   if (sliderPtr->topMarginPtr->reqSize > 0) {
+	top = sliderPtr->topMarginPtr->reqSize;
     }
-    if (sliderPtr->bottomMargin.reqSize > 0) {
-	bottom = sliderPtr->bottomMargin.reqSize;
+    if (sliderPtr->bottomMarginPtr->reqSize > 0) {
+	bottom = sliderPtr->bottomMarginPtr->reqSize;
     }
 
     /* 
@@ -3939,33 +3939,33 @@ LayoutSlider(Slider *sliderPtr)
      *	       displayed in the adjoining margins.  Make sure there's room 
      *	       for the longest axis titles.
      */
-    if (top < sliderPtr->leftMargin.axesTitleLength) {
-	top = sliderPtr->leftMargin.axesTitleLength;
+    if (top < sliderPtr->leftMarginPtr->axesTitleLength) {
+	top = sliderPtr->leftMarginPtr->axesTitleLength;
     }
-    if (right < sliderPtr->bottomMargin.axesTitleLength) {
-	right = sliderPtr->bottomMargin.axesTitleLength;
+    if (right < sliderPtr->bottomMarginPtr->axesTitleLength) {
+	right = sliderPtr->bottomMarginPtr->axesTitleLength;
     }
-    if (top < sliderPtr->rightMargin.axesTitleLength) {
-	top = sliderPtr->rightMargin.axesTitleLength;
+    if (top < sliderPtr->rightMarginPtr->axesTitleLength) {
+	top = sliderPtr->rightMarginPtr->axesTitleLength;
     }
-    if (right < sliderPtr->topMargin.axesTitleLength) {
-	right = sliderPtr->topMargin.axesTitleLength;
+    if (right < sliderPtr->topMarginPtr->axesTitleLength) {
+	right = sliderPtr->topMarginPtr->axesTitleLength;
     }
 
     /* 
      * Step 7: Override calculated values with requested margin sizes.
      */
-    if (sliderPtr->leftMargin.reqSize > 0) {
-	left = sliderPtr->leftMargin.reqSize;
+    if (sliderPtr->leftMarginPtr->reqSize > 0) {
+	left = sliderPtr->leftMarginPtr->reqSize;
     }
-    if (sliderPtr->rightMargin.reqSize > 0) {
-	right = sliderPtr->rightMargin.reqSize;
+    if (sliderPtr->rightMarginPtr->reqSize > 0) {
+	right = sliderPtr->rightMarginPtr->reqSize;
     }
-    if (sliderPtr->topMargin.reqSize > 0) {
-	top = sliderPtr->topMargin.reqSize;
+    if (sliderPtr->topMarginPtr->reqSize > 0) {
+	top = sliderPtr->topMarginPtr->reqSize;
     }
-    if (sliderPtr->bottomMargin.reqSize > 0) {
-	bottom = sliderPtr->bottomMargin.reqSize;
+    if (sliderPtr->bottomMarginPtr->reqSize > 0) {
+	bottom = sliderPtr->bottomMarginPtr->reqSize;
     }
     if (sliderPtr->reqPlotWidth > 0) {	
 	int w;
@@ -3980,14 +3980,14 @@ LayoutSlider(Slider *sliderPtr)
 	    int extra;
 
 	    extra = (width - w) / 2;
-	    if (sliderPtr->leftMargin.reqSize == 0) { 
+	    if (sliderPtr->leftMarginPtr->reqSize == 0) { 
 		left += extra;
-		if (sliderPtr->rightMargin.reqSize == 0) { 
+		if (sliderPtr->rightMarginPtr->reqSize == 0) { 
 		    right += extra;
 		} else {
 		    left += extra;
 		}
-	    } else if (sliderPtr->rightMargin.reqSize == 0) {
+	    } else if (sliderPtr->rightMarginPtr->reqSize == 0) {
 		right += extra + extra;
 	    }
 	} else if (width < w) {
@@ -4007,14 +4007,14 @@ LayoutSlider(Slider *sliderPtr)
 	    int extra;
 
 	    extra = (height - h) / 2;
-	    if (sliderPtr->topMargin.reqSize == 0) { 
+	    if (sliderPtr->topMarginPtr->reqSize == 0) { 
 		top += extra;
-		if (sliderPtr->bottomMargin.reqSize == 0) { 
+		if (sliderPtr->bottomMarginPtr->reqSize == 0) { 
 		    bottom += extra;
 		} else {
 		    top += extra;
 		}
-	    } else if (sliderPtr->bottomMargin.reqSize == 0) {
+	    } else if (sliderPtr->bottomMarginPtr->reqSize == 0) {
 		bottom += extra + extra;
 	    }
 	} else if (height < h) {
@@ -4028,10 +4028,10 @@ LayoutSlider(Slider *sliderPtr)
     sliderPtr->right  = width - right - inset;
     sliderPtr->bottom = height - bottom - inset;
 
-    sliderPtr->leftMargin.width    = left   + sliderPtr->inset;
-    sliderPtr->rightMargin.width   = right  + sliderPtr->inset;
-    sliderPtr->topMargin.height    = top    + sliderPtr->inset;
-    sliderPtr->bottomMargin.height = bottom + sliderPtr->inset;
+    sliderPtr->leftMarginPtr->width    = left   + sliderPtr->inset;
+    sliderPtr->rightMarginPtr->width   = right  + sliderPtr->inset;
+    sliderPtr->topMarginPtr->height    = top    + sliderPtr->inset;
+    sliderPtr->bottomMarginPtr->height = bottom + sliderPtr->inset;
 	    
     sliderPtr->vOffset = sliderPtr->top + sliderPtr->padTop;
     sliderPtr->vRange  = plotHeight - PADDING(sliderPtr->yPad);

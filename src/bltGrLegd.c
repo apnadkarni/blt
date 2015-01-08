@@ -902,14 +902,14 @@ SetLegendOrigin(Legend *legdPtr)
     x = y = w = h = 0;			/* Suppress compiler warning. */
     switch (legdPtr->site) {
     case LEGEND_RIGHT:
-	w = graphPtr->rightMargin.width - graphPtr->rightMargin.axesOffset;
+	w = graphPtr->rightMarginPtr->width - graphPtr->rightMarginPtr->axesOffset;
 	h = graphPtr->bottom - graphPtr->top;
-	x = graphPtr->right + graphPtr->rightMargin.axesOffset;
+	x = graphPtr->right + graphPtr->rightMarginPtr->axesOffset;
 	y = graphPtr->top;
 	break;
 
     case LEGEND_LEFT:
-	w = graphPtr->leftMargin.width - graphPtr->leftMargin.axesOffset;
+	w = graphPtr->leftMarginPtr->width - graphPtr->leftMarginPtr->axesOffset;
 	h = graphPtr->bottom - graphPtr->top;
 	x = graphPtr->inset;
 	y = graphPtr->top;
@@ -917,7 +917,7 @@ SetLegendOrigin(Legend *legdPtr)
 
     case LEGEND_TOP:
 	w = graphPtr->right - graphPtr->left;
-	h = graphPtr->topMargin.height - graphPtr->topMargin.axesOffset;
+	h = graphPtr->topMarginPtr->height - graphPtr->topMarginPtr->axesOffset;
 	if (graphPtr->title != NULL) {
 	    h -= graphPtr->titleHeight;
 	}
@@ -930,9 +930,9 @@ SetLegendOrigin(Legend *legdPtr)
 
     case LEGEND_BOTTOM:
 	w = graphPtr->right - graphPtr->left;
-	h = graphPtr->bottomMargin.height - graphPtr->bottomMargin.axesOffset;
+	h = graphPtr->bottomMarginPtr->height - graphPtr->bottomMarginPtr->axesOffset;
 	x = graphPtr->left;
-	y = graphPtr->bottom + graphPtr->bottomMargin.axesOffset;
+	y = graphPtr->bottom + graphPtr->bottomMarginPtr->axesOffset;
 	break;
 
     case LEGEND_PLOT:

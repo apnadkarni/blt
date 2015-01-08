@@ -472,17 +472,13 @@ proc blt::Graph::MarkPoint { g index } {
     variable _private
 
     if { [llength [$g xaxis use]] > 0 } {
-puts stderr "axis=x type=[$g axis type y2]"
 	set x [$g xaxis invtransform $_private($g,$index,x)]
     } else if { [llength [$g x2axis use]] > 0 } {
-puts stderr "axis=x2 type=[$g axis type y2]"
 	set x [$g x2axis invtransform $_private($g,$index,x)]
     }
     if { [llength [$g yaxis use]] > 0 } {
 	set y [$g yaxis invtransform $_private($g,$index,y)]
-puts stderr "axis=y type=[$g axis type y2]"
     } else if { [llength [$g y2axis use]] > 0 } {
-puts stderr "axis=y2 type=[$g axis type y2]"
 	set y [$g y2axis invtransform $_private($g,$index,y)]
     }
     set marker "zoomText_$index"
@@ -552,19 +548,15 @@ proc blt::Graph::Push { g } {
 	return
     }
     set cmd {}
-    foreach axis [$g axis names] {
-	if { [$g axis cget $axis -hide] } {
-	    continue
-	}
-	puts stderr "axis=$axis type=[$g axis type $axis]"
+    foreach axis [$g axis names -zoom] {
 	set min [$g axis cget $axis -min] 
 	set max [$g axis cget $axis -max]
 	set logscale  [$g axis cget $axis -logscale]
 	# Save the current scale (log or linear) so that we can restore it.
 	# This is for the case where the user changes to logscale while
 	# zooming.  A previously pushed axis limit could be negative.  It
-	# seems better for popping the zoom stack to restore a previous view
-	# (not convert the ranges).
+	# seems better for popping the zoom stack to restore a previous
+	# view (not convert the ranges).
 	set c [list $g axis configure $axis]
 	lappend c -min $min -max $max -logscale $logscale
 	append cmd "$c\n"
@@ -574,10 +566,7 @@ proc blt::Graph::Push { g } {
     # zoom level onto the stack.  This is useful if the new axis ranges are
     # bad and we need to reset the zoom stack.
     set _private($g,stack) [linsert $_private($g,stack) 0 $cmd]
-    foreach axis [$g axis names] {
-	if { [$g axis cget $axis -hide] } {
-	    continue;			# Don't set zoom on axes not displayed.
-	}
+    foreach axis [$g axis names -zoom] {
 	set type [$g axis type $axis]
 	if { $type  == "x" } {
 	    set min [$g axis invtransform $axis $x1]
@@ -586,7 +575,7 @@ proc blt::Graph::Push { g } {
 	    set min [$g axis invtransform $axis $y1]
 	    set max [$g axis invtransform $axis $y2]
 	} else {
-	    continue;			# Axis is not bound to any margin.
+	    error "unknown type $type of zoomable axis $axis"
 	}
 	if { ![SetAxisRanges $g $axis $min $max] } {
 	    Pop $g
