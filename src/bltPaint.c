@@ -355,6 +355,10 @@ ImageChangedProc(
     if ((cmdPtr->brush.tile != NULL) && (cmdPtr->flags & FREE_PICTURE)) {
 	Blt_FreePicture(cmdPtr->brush.tile);
     }
+    if (Blt_Image_IsDeleted(cmdPtr->tkImage)) {
+	cmdPtr->tkImage = NULL;
+	return;                         /* Image was deleted. */
+    }
     cmdPtr->brush.tile = ImageToPicture(cmdPtr, &isNew);
     if (Blt_Picture_IsAssociated(cmdPtr->brush.tile)) {
         Blt_UnassociateColors(cmdPtr->brush.tile);
