@@ -2354,6 +2354,7 @@ GetTabIterator(Tcl_Interp *interp, Tabset *setPtr, Tcl_Obj *objPtr,
     iterPtr->startPtr = iterPtr->endPtr = setPtr->activePtr;
     tabPtr = NULL;
     iterPtr->type = ITER_SINGLE;
+    iterPtr->link = NULL;
     result = GetTabByIndex(interp, setPtr, string, length, &tabPtr);
     if (result == TCL_ERROR) {
 	return TCL_ERROR;

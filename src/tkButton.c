@@ -662,14 +662,14 @@ ObjToImageProc(
     Tk_Image *imagePtr = (Tk_Image *)(widgRec + offset);
     Tk_Image image;
     const char *string;
-    unsigned int length;
+    int length;
 
     string = Tcl_GetStringFromObj(objPtr, &length);
     if ((flags & BLT_CONFIG_NULL_OK) && (length == 0)) {
         image = NULL;
     } else {
-        image = Tk_GetImage(interp, butPtr->tkwin, Tcl_GetString(objPtr), 
-                            ImageChangedProc, butPtr);
+        image = Tk_GetImage(interp, butPtr->tkwin, string, ImageChangedProc,
+                butPtr);
         if (image == NULL) {
             return TCL_ERROR;
         }

@@ -311,13 +311,9 @@ typedef struct {
     unsigned int numAxes;		/* # of axes to be displayed */
     Blt_Chain axes;			/* List of axes associated with
                                          * this margin */
-    Tcl_Obj *varObjPtr;                /* If non-NULL, name of variable to-
-					 * be updated when the margin size
-					 * changes */
-    int reqSize;			/* Requested size of margin */
     int side;				/* Indicates the side where the
-					 * margin is located: left, right,
-					 * top, or bottom. */
+					 * margin is located: x, x1, y, or
+					 * y2. */
     unsigned short nextStackOffset;     /* For stacked axes, this is the
                                          * offset of next axis (on top of
                                          * the last axis) in the
@@ -425,6 +421,16 @@ struct _Graph {
     Margin *rightMarginPtr;
     Margin *topMarginPtr;
 
+    Tcl_Obj *leftMarginVarObjPtr;
+    Tcl_Obj *rightMarginVarObjPtr;
+    Tcl_Obj *topMarginVarObjPtr;
+    Tcl_Obj *bottomMarginVarObjPtr;
+
+    int reqLeftMarginSize;
+    int reqRightMarginSize;
+    int reqTopMarginSize;
+    int reqBottomMarginSize;
+    
     PageSetup *pageSetup;		/* Page layout options: see
                                          * bltGrPS.c */
     Legend *legend;			/* Legend information: see

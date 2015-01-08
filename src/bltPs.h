@@ -90,7 +90,7 @@ BLT_EXTERN Blt_Ps Blt_Ps_Create(Tcl_Interp *interp, PageSetup *setupPtr);
 
 BLT_EXTERN void Blt_Ps_Free(Blt_Ps ps);
 
-BLT_EXTERN const unsigned char *Blt_Ps_GetValue(Blt_Ps ps, int *lengthPtr);
+BLT_EXTERN const char *Blt_Ps_GetValue(Blt_Ps ps, int *lengthPtr);
 
 BLT_EXTERN Tcl_Interp *Blt_Ps_GetInterp(Blt_Ps ps);
 

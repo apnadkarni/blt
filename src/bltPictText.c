@@ -696,11 +696,8 @@ BlendPixels(Blt_Pixel *bgPtr, Blt_Pixel *colorPtr)
 }
 
 static void
-BlitGlyph(Pict *destPtr, 
-    FT_GlyphSlot slot, 
-    int dx, int dy,
-    int xx, int yy,
-    Blt_PaintBrush *brushPtr)
+BlitGlyph(Pict *destPtr, FT_GlyphSlot slot, int dx, int dy, int xx, int yy,
+          Blt_PaintBrush *brushPtr)
 {
     int x1, y1, x2, y2;
 #ifdef notdef

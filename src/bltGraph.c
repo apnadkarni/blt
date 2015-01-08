@@ -109,19 +109,6 @@ static Blt_CustomOption mapElementsOption = {
     ObjToMapElements, MapElementsToObj, NULL, (ClientData)0,
 };
 
-static Blt_OptionParseProc ObjToMarginSize;
-static Blt_OptionPrintProc MarginSizeToObj;
-static Blt_CustomOption marginSizeOption = {
-    ObjToMarginSize, MarginSizeToObj, NULL, (ClientData)0,
-};
-
-static Blt_OptionFreeProc FreeMarginVariable;
-static Blt_OptionParseProc ObjToMarginVariable;
-static Blt_OptionPrintProc MarginVariableToObj;
-static Blt_CustomOption marginVariableOption = {
-    ObjToMarginVariable, MarginVariableToObj, FreeMarginVariable, (ClientData)0,
-};
-
 BLT_EXTERN Blt_CustomOption bltLinePenOption;
 BLT_EXTERN Blt_CustomOption bltBarPenOption;
 BLT_EXTERN Blt_CustomOption bltBarModeOption;
@@ -184,12 +171,12 @@ static Blt_ConfigSpec configSpecs[] =
     {BLT_CONFIG_PIXELS_NNEG, "-borderwidth", "borderWidth", "BorderWidth",
 	DEF_BORDERWIDTH, Blt_Offset(Graph, borderWidth),
 	BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_CUSTOM, "-bottommargin", "bottomMargin", "Margin",
-	DEF_MARGIN_SIZE, Blt_Offset(Graph, bottomMarginPtr),
-        BLT_CONFIG_DONT_SET_DEFAULT, &marginSizeOption},
-    {BLT_CONFIG_CUSTOM, "-bottomvariable", "bottomVariable", "BottomVariable",
-	DEF_MARGIN_VAR, Blt_Offset(Graph, bottomMarginPtr), 
-        BLT_CONFIG_NULL_OK, &marginVariableOption},
+    {BLT_CONFIG_PIXELS_NNEG, "-bottommargin", "bottomMargin", "Margin",
+	DEF_MARGIN_SIZE, Blt_Offset(Graph, reqBottomMarginSize),
+        BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_OBJ, "-bottomvariable", "bottomVariable", "BottomVariable",
+	DEF_MARGIN_VAR, Blt_Offset(Graph, bottomMarginVarObjPtr), 
+        BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_BITMASK, "-bufferelements", "bufferElements", "BufferElements",
 	DEF_BUFFER_ELEMENTS, Blt_Offset(Graph, flags),
         BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)BACKING_STORE},
@@ -224,12 +211,12 @@ static Blt_ConfigSpec configSpecs[] =
         (Blt_CustomOption *)INVERTED},
     {BLT_CONFIG_JUSTIFY, "-justify", "justify", "Justify", DEF_JUSTIFY, 
 	Blt_Offset(Graph, titleTextStyle.justify), BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_CUSTOM, "-leftmargin", "leftMargin", "Margin", 
-	DEF_MARGIN_SIZE, Blt_Offset(Graph, leftMarginPtr), 
-        BLT_CONFIG_DONT_SET_DEFAULT, &marginSizeOption},
-    {BLT_CONFIG_CUSTOM, "-leftvariable", "leftVariable", "LeftVariable",
-	DEF_MARGIN_VAR, Blt_Offset(Graph, leftMarginPtr), BLT_CONFIG_NULL_OK,
-        &marginVariableOption},
+    {BLT_CONFIG_PIXELS_NNEG, "-leftmargin", "leftMargin", "Margin", 
+	DEF_MARGIN_SIZE, Blt_Offset(Graph, reqLeftMarginSize), 
+        BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_OBJ, "-leftvariable", "leftVariable", "LeftVariable",
+	DEF_MARGIN_VAR, Blt_Offset(Graph, leftMarginVarObjPtr),
+        BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_SYNONYM, "-lm", "leftMargin", (char *)NULL, (char *)NULL, 0, 0},
     {BLT_CONFIG_CUSTOM, "-mapelements", "mapElements", "MapElements",
 	DEF_MAP_ELEMENTS, Blt_Offset(Graph, flags),
@@ -247,12 +234,12 @@ static Blt_ConfigSpec configSpecs[] =
         Blt_Offset(Graph, plotRelief), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_RELIEF, "-relief", "relief", "Relief", DEF_RELIEF, 
 	Blt_Offset(Graph, relief), BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_CUSTOM, "-rightmargin", "rightMargin", "Margin",
-        DEF_MARGIN_SIZE, Blt_Offset(Graph, rightMarginPtr),
-        BLT_CONFIG_DONT_SET_DEFAULT, &marginSizeOption},
-    {BLT_CONFIG_CUSTOM, "-rightvariable", "rightVariable", "RightVariable",
-	DEF_MARGIN_VAR, Blt_Offset(Graph, rightMarginPtr), 
-        BLT_CONFIG_NULL_OK, &marginVariableOption},
+    {BLT_CONFIG_PIXELS_NNEG, "-rightmargin", "rightMargin", "Margin",
+        DEF_MARGIN_SIZE, Blt_Offset(Graph, reqRightMarginSize),
+        BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_OBJ, "-rightvariable", "rightVariable", "RightVariable",
+	DEF_MARGIN_VAR, Blt_Offset(Graph, rightMarginVarObjPtr), 
+        BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_SYNONYM, "-rm", "rightMargin", (char *)NULL, (char *)NULL, 0,0},
     {BLT_CONFIG_BITMASK, "-stackaxes", "stackAxes", "StackAxes", DEF_STACK_AXES,
         Blt_Offset(Graph, flags), BLT_CONFIG_DONT_SET_DEFAULT,
@@ -266,12 +253,12 @@ static Blt_ConfigSpec configSpecs[] =
     {BLT_CONFIG_STRING, "-title", "title", "Title", DEF_TITLE,
         Blt_Offset(Graph, title), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_SYNONYM, "-tm", "topMargin", (char *)NULL, (char *)NULL, 0, 0},
-    {BLT_CONFIG_CUSTOM, "-topmargin", "topMargin", "Margin", DEF_MARGIN_SIZE,
-        Blt_Offset(Graph, topMarginPtr), BLT_CONFIG_DONT_SET_DEFAULT,
-        &marginSizeOption},
-    {BLT_CONFIG_CUSTOM, "-topvariable", "topVariable", "TopVariable",
-        DEF_MARGIN_VAR, Blt_Offset(Graph, topMarginPtr), BLT_CONFIG_NULL_OK,
-        &marginVariableOption},
+    {BLT_CONFIG_PIXELS_NNEG, "-topmargin", "topMargin", "Margin",
+        DEF_MARGIN_SIZE, Blt_Offset(Graph, reqTopMarginSize),
+        BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_OBJ, "-topvariable", "topVariable", "TopVariable",
+        DEF_MARGIN_VAR, Blt_Offset(Graph, topMarginVarObjPtr),
+        BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_PIXELS_NNEG, "-width", "width", "Width", DEF_WIDTH, 
 	Blt_Offset(Graph, reqWidth), 0},
     {BLT_CONFIG_PIXELS_NNEG, "-plotwidth", "plotWidth", "PlotWidth", 
@@ -388,103 +375,6 @@ MapElementsToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
         string = "all";
     }
     return Tcl_NewStringObj(string, -1);
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * ObjToMarginSize --
- *
- *---------------------------------------------------------------------------
- */
-/*ARGSUSED*/
-static int
-ObjToMarginSize(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-                Tcl_Obj *objPtr, char *widgRec, int offset, int flags)
-{
-    Graph *graphPtr = (Graph *)widgRec;
-    Margin *marginPtr = *(Margin **)(widgRec + offset);
-    int size;
-    
-    if (Blt_GetPixelsFromObj(interp, graphPtr->tkwin, objPtr, PIXELS_NNEG,
-                             &size) != TCL_OK) {
-        return TCL_ERROR;
-    }
-    marginPtr->reqSize = size;
-    return TCL_OK;
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * MarginSizeToObj --
- *
- *---------------------------------------------------------------------------
- */
-/*ARGSUSED*/
-static Tcl_Obj *
-MarginSizeToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-                char *widgRec, int offset, int flags)
-{
-    Margin *marginPtr = *(Margin **)(widgRec + offset);
-
-    return Tcl_NewIntObj(marginPtr->reqSize);
-}
-
-static void
-FreeMarginVariable(ClientData clientData, Display *display, char *widgRec,
-                   int offset)
-{
-    Margin *marginPtr = *(Margin **)(widgRec + offset);
-
-    if (marginPtr->varObjPtr != NULL) {
-        Tcl_DecrRefCount(marginPtr->varObjPtr);
-        marginPtr->varObjPtr = NULL;
-    }
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * ObjToMarginVariable --
- *
- *---------------------------------------------------------------------------
- */
-/*ARGSUSED*/
-static int
-ObjToMarginVariable(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-                    Tcl_Obj *objPtr, char *widgRec, int offset, int flags)
-{
-    Margin *marginPtr = *(Margin **)(widgRec + offset);
-
-    if (marginPtr->varObjPtr != NULL) {
-        Tcl_DecrRefCount(marginPtr->varObjPtr);
-    }
-    marginPtr->varObjPtr = objPtr;
-    if (marginPtr->varObjPtr != NULL) {
-        Tcl_IncrRefCount(marginPtr->varObjPtr);
-    }
-    return TCL_OK;
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * MarginVariableToObj --
- *
- *---------------------------------------------------------------------------
- */
-/*ARGSUSED*/
-static Tcl_Obj *
-MarginVariableToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-                 char *widgRec, int offset, int flags)
-{
-    Margin *marginPtr = *(Margin **)(widgRec + offset);
-
-    if (marginPtr->varObjPtr != NULL) {
-        return marginPtr->varObjPtr;
-    }
-    return Tcl_NewStringObj("", -1);
 }
 
 /*
@@ -2499,22 +2389,25 @@ Blt_DrawGraph(Graph *graphPtr, Drawable drawable)
 static void
 UpdateMarginTraces(Graph *graphPtr)
 {
-    Margin *marginPtr, *endPtr;
-
-    for (marginPtr = graphPtr->margins, endPtr = marginPtr + 4; 
-	 marginPtr < endPtr; marginPtr++) {
-	if (marginPtr->varObjPtr != NULL) { /* Trigger variable traces */
-	    int size;
-
-	    if ((marginPtr->side == MARGIN_LEFT) || 
-		(marginPtr->side == MARGIN_RIGHT)) {
-		size = marginPtr->width;
-	    } else {
-		size = marginPtr->height;
-	    }
-	    Tcl_ObjSetVar2(graphPtr->interp, marginPtr->varObjPtr, NULL,
-                           Tcl_NewIntObj(size), TCL_GLOBAL_ONLY);
-	}
+    if (graphPtr->leftMarginVarObjPtr != NULL) { 
+        Tcl_ObjSetVar2(graphPtr->interp, graphPtr->leftMarginVarObjPtr, NULL,
+                Tcl_NewIntObj(graphPtr->leftMarginPtr->width),
+                TCL_GLOBAL_ONLY);
+    }
+    if (graphPtr->rightMarginVarObjPtr != NULL) { 
+        Tcl_ObjSetVar2(graphPtr->interp, graphPtr->rightMarginVarObjPtr, NULL,
+                Tcl_NewIntObj(graphPtr->rightMarginPtr->width),
+                TCL_GLOBAL_ONLY);
+    }
+    if (graphPtr->topMarginVarObjPtr != NULL) { 
+        Tcl_ObjSetVar2(graphPtr->interp, graphPtr->topMarginVarObjPtr, NULL,
+                Tcl_NewIntObj(graphPtr->topMarginPtr->height),
+                TCL_GLOBAL_ONLY);
+    }
+    if (graphPtr->bottomMarginVarObjPtr != NULL) { 
+        Tcl_ObjSetVar2(graphPtr->interp, graphPtr->bottomMarginVarObjPtr, NULL,
+                Tcl_NewIntObj(graphPtr->bottomMarginPtr->height),
+                TCL_GLOBAL_ONLY);
     }
 }
 

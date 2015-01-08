@@ -805,7 +805,7 @@ BLT_EXTERN void		Blt_Ps_Free(Blt_Ps ps);
 #ifndef Blt_Ps_GetValue_DECLARED
 #define Blt_Ps_GetValue_DECLARED
 /* 132 */
-BLT_EXTERN const unsigned char *Blt_Ps_GetValue(Blt_Ps ps, int *lengthPtr);
+BLT_EXTERN const char *Blt_Ps_GetValue(Blt_Ps ps, int *lengthPtr);
 #endif
 #ifndef Blt_Ps_GetInterp_DECLARED
 #define Blt_Ps_GetInterp_DECLARED

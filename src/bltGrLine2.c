@@ -3802,9 +3802,8 @@ MapPolyline(LineElement *elemPtr, Trace *tracePtr)
 	    if (Blt_LineRectClip(&exts, &p1, &p2)) {
 		p->x = p1.x;
 		p->y = p1.y;
-		/* The replaced point is now visible but longer a knot. */
+		/* The replaced point is now visible but no longer a knot. */
 		p->flags |= VISIBLE;
-                fprintf(stderr, "first point is offscreen removing knot\n");
 		p->flags &= ~KNOT;
 	    }
 	} else {

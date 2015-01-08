@@ -65,7 +65,7 @@ if 1 {
     blt::palette create bluegreen -colors {
 	{ 100% "lightblue" } { 0% "navyblue" }
     } 
-    $graph axis configure degrees -palette bluegreen -colorbarthickness 20
+    $graph axis configure degrees -palette red -colorbarthickness 20
     $graph axis configure y -palette green 
     $graph element configure line1 -mapx degrees -colormap y
     $graph element configure line3 -colormap degrees

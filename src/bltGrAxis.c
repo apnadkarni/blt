@@ -3721,17 +3721,17 @@ Blt_LayoutGraph(Graph *graphPtr)
 	bottom = pad;
     }
 
-    if (graphPtr->leftMarginPtr->reqSize > 0) {
-	left = graphPtr->leftMarginPtr->reqSize;
+    if (graphPtr->reqLeftMarginSize > 0) {
+	left = graphPtr->reqLeftMarginSize;
     }
-    if (graphPtr->rightMarginPtr->reqSize > 0) {
-	right = graphPtr->rightMarginPtr->reqSize;
+    if (graphPtr->reqRightMarginSize > 0) {
+	right = graphPtr->reqRightMarginSize;
     }
-   if (graphPtr->topMarginPtr->reqSize > 0) {
-	top = graphPtr->topMarginPtr->reqSize;
+   if (graphPtr->reqTopMarginSize > 0) {
+	top = graphPtr->reqTopMarginSize;
     }
-    if (graphPtr->bottomMarginPtr->reqSize > 0) {
-	bottom = graphPtr->bottomMarginPtr->reqSize;
+    if (graphPtr->reqBottomMarginSize > 0) {
+	bottom = graphPtr->reqBottomMarginSize;
     }
 
     /* 
@@ -3859,17 +3859,17 @@ Blt_LayoutGraph(Graph *graphPtr)
     /* 
      * Step 7: Override calculated values with requested margin sizes.
      */
-    if (graphPtr->leftMarginPtr->reqSize > 0) {
-	left = graphPtr->leftMarginPtr->reqSize;
+    if (graphPtr->reqLeftMarginSize > 0) {
+	left = graphPtr->reqLeftMarginSize;
     }
-    if (graphPtr->rightMarginPtr->reqSize > 0) {
-	right = graphPtr->rightMarginPtr->reqSize;
+    if (graphPtr->reqRightMarginSize > 0) {
+	right = graphPtr->reqRightMarginSize;
     }
-    if (graphPtr->topMarginPtr->reqSize > 0) {
-	top = graphPtr->topMarginPtr->reqSize;
+    if (graphPtr->reqTopMarginSize > 0) {
+	top = graphPtr->reqTopMarginSize;
     }
-    if (graphPtr->bottomMarginPtr->reqSize > 0) {
-	bottom = graphPtr->bottomMarginPtr->reqSize;
+    if (graphPtr->reqBottomMarginSize > 0) {
+	bottom = graphPtr->reqBottomMarginSize;
     }
     if (graphPtr->reqPlotWidth > 0) {	
 	int w;
@@ -3884,14 +3884,14 @@ Blt_LayoutGraph(Graph *graphPtr)
 	    int extra;
 
 	    extra = (width - w) / 2;
-	    if (graphPtr->leftMarginPtr->reqSize == 0) { 
+	    if (graphPtr->reqLeftMarginSize == 0) { 
 		left += extra;
-		if (graphPtr->rightMarginPtr->reqSize == 0) { 
+		if (graphPtr->reqRightMarginSize == 0) { 
 		    right += extra;
 		} else {
 		    left += extra;
 		}
-	    } else if (graphPtr->rightMarginPtr->reqSize == 0) {
+	    } else if (graphPtr->reqRightMarginSize == 0) {
 		right += extra + extra;
 	    }
 	} else if (width < w) {
@@ -3911,14 +3911,14 @@ Blt_LayoutGraph(Graph *graphPtr)
 	    int extra;
 
 	    extra = (height - h) / 2;
-	    if (graphPtr->topMarginPtr->reqSize == 0) { 
+	    if (graphPtr->reqTopMarginSize == 0) { 
 		top += extra;
-		if (graphPtr->bottomMarginPtr->reqSize == 0) { 
+		if (graphPtr->reqBottomMarginSize == 0) { 
 		    bottom += extra;
 		} else {
 		    top += extra;
 		}
-	    } else if (graphPtr->bottomMarginPtr->reqSize == 0) {
+	    } else if (graphPtr->reqBottomMarginSize == 0) {
 		bottom += extra + extra;
 	    }
 	} else if (height < h) {

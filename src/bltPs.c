@@ -276,11 +276,11 @@ Blt_Ps_Free(PostScript *psPtr)
     Blt_Free(psPtr);
 }
 
-const unsigned char *
+const char *
 Blt_Ps_GetValue(PostScript *psPtr, int *lengthPtr)
 {
     *lengthPtr = Blt_DBuffer_Length(psPtr->dbuffer);
-    return Blt_DBuffer_Bytes(psPtr->dbuffer);
+    return (const char *)Blt_DBuffer_Bytes(psPtr->dbuffer);
 }
 
 void

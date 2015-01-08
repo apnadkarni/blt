@@ -376,7 +376,7 @@ ParseXRGBColors(Tcl_Interp *interp, PaletteCmd *cmdPtr, int objc,
 	       Tcl_Obj *const *objv)
 {
     Blt_PaletteEntry *entries, *entryPtr;
-    int i, j, numEntries;
+    int i, numEntries;
     Blt_PalettePoint lastValue;
     Blt_Pixel lastColor;
     
