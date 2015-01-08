@@ -472,13 +472,17 @@ proc blt::Graph::MarkPoint { g index } {
     variable _private
 
     if { [llength [$g xaxis use]] > 0 } {
+puts stderr "axis=x type=[$g axis type y2]"
 	set x [$g xaxis invtransform $_private($g,$index,x)]
     } else if { [llength [$g x2axis use]] > 0 } {
+puts stderr "axis=x2 type=[$g axis type y2]"
 	set x [$g x2axis invtransform $_private($g,$index,x)]
     }
     if { [llength [$g yaxis use]] > 0 } {
 	set y [$g yaxis invtransform $_private($g,$index,y)]
+puts stderr "axis=y type=[$g axis type y2]"
     } else if { [llength [$g y2axis use]] > 0 } {
+puts stderr "axis=y2 type=[$g axis type y2]"
 	set y [$g y2axis invtransform $_private($g,$index,y)]
     }
     set marker "zoomText_$index"
