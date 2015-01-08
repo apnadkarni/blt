@@ -2340,7 +2340,7 @@ ProcessTriangle(ContourElement *elemPtr, Triangle *t, Isoline *isoPtr)
              * vertices. */
 	}
     } else {
-#ifndef notdef
+#ifdef notdef
 	fprintf(stderr,
 		"ignoring triangle %d a=%d b=%d c=%d value=%.17g a=%.17g b=%.17g c=%.17g\n",
 		t->index, t->a, t->b, t->c, isoPtr->value, Az, Bz, Cz);

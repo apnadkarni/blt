@@ -2042,7 +2042,7 @@ Blt_ResetAxes(Graph *graphPtr)
 	Element *elemPtr;
 
 	elemPtr = Blt_Chain_GetValue(link);
-	if ((graphPtr->flags & UNMAP_HIDDEN) && (elemPtr->flags & HIDE)) {
+	if ((graphPtr->flags & MAP_VISIBLE) && (elemPtr->flags & HIDE)) {
 	    continue;
 	}
 	(*elemPtr->procsPtr->extentsProc) (elemPtr);

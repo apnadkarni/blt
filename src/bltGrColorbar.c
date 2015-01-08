@@ -5067,7 +5067,7 @@ TimeCeil(double max, int unit)
 #define DEF_WIDTH			"5i"
 #define DEF_DATA			(char *)NULL
 #define DEF_DATA_COMMAND		(char *)NULL
-#define DEF_UNMAP_HIDDEN_ELEMENTS	"0"
+#define DEF_MAP_ELEMENTS	"all"
 
 /*
  * Colorbar --
