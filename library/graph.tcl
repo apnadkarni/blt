@@ -552,6 +552,7 @@ proc blt::Graph::Push { g } {
 	if { [$g axis cget $axis -hide] } {
 	    continue
 	}
+	puts stderr "axis=$axis type=[$g axis type $axis]"
 	set min [$g axis cget $axis -min] 
 	set max [$g axis cget $axis -max]
 	set logscale  [$g axis cget $axis -logscale]
