@@ -2948,6 +2948,7 @@ NewRow(TableView *viewPtr, BLT_TABLE_ROW row, Blt_HashEntry *hPtr)
     rowPtr->titleJustify = TK_JUSTIFY_RIGHT;
     rowPtr->titleRelief = rowPtr->activeTitleRelief = TK_RELIEF_RAISED;
     rowPtr->hashPtr = hPtr;
+    rowPtr->name = Tcl_GetHashKey(&viewPtr->rowTable, hPtr);
     ResetLimits(&rowPtr->reqHeight);
     Blt_SetHashValue(hPtr, rowPtr);
     return rowPtr;
@@ -3021,6 +3022,7 @@ NewColumn(TableView *viewPtr, BLT_TABLE_COLUMN col, Blt_HashEntry *hPtr)
     colPtr->titleJustify = TK_JUSTIFY_CENTER;
     colPtr->titleRelief = colPtr->activeTitleRelief = TK_RELIEF_RAISED;
     colPtr->hashPtr = hPtr;
+    colPtr->name = Tcl_GetHashKey(&viewPtr->columnTable, hPtr);
     Blt_SetHashValue(hPtr, colPtr);
     ResetLimits(&colPtr->reqWidth);
     return colPtr;
@@ -3284,7 +3286,8 @@ GetColumnByIndex(TableView *viewPtr, const char *string, Column **colPtrPtr)
     if (viewPtr->focusPtr != NULL) {
 	CellKey *keyPtr;
 	
-	keyPtr = Blt_GetHashKey(&viewPtr->cellTable,viewPtr->focusPtr->hashPtr);
+	keyPtr = Blt_GetHashKey(&viewPtr->cellTable,
+                                viewPtr->focusPtr->hashPtr);
 	focusPtr = keyPtr->colPtr;
     }
     c = string[0];
@@ -3513,7 +3516,8 @@ GetRowByIndex(TableView *viewPtr, Tcl_Obj *objPtr, Row **rowPtrPtr)
     if (viewPtr->focusPtr != NULL) {
 	CellKey *keyPtr;
 	
-	keyPtr = Blt_GetHashKey(&viewPtr->cellTable,viewPtr->focusPtr->hashPtr);
+	keyPtr = Blt_GetHashKey(&viewPtr->cellTable,
+                                viewPtr->focusPtr->hashPtr);
 	focusPtr = keyPtr->rowPtr;
     }
     string = Tcl_GetStringFromObj(objPtr, &length);
@@ -5351,13 +5355,13 @@ DrawColumnTitle(TableView *viewPtr, Column *colPtr, Drawable drawable, int x,
 		int y)
 {
     Blt_Bg bg;
-    XColor *fg;
     GC gc;
-    unsigned int wanted, igap, agap;
-    int relief;
-    unsigned int aw, ah, iw, ih, tw, th;
-    unsigned int colWidth, colHeight;
     SortInfo *sortPtr;
+    XColor *fg;
+    int relief;
+    int wanted, colWidth, colHeight;
+    unsigned int aw, ah, iw, ih, tw, th;
+    unsigned int igap, agap;
 
     sortPtr = &viewPtr->sort;
     if (viewPtr->colTitleHeight < 1) {
@@ -5969,8 +5973,8 @@ ActivateOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     activePtr = viewPtr->activePtr;
     viewPtr->activePtr = cellPtr;
-    /* If we aren't already queued to redraw the widget, try to directly draw
-     * into window. */
+    /* If we aren't already queued to redraw the widget, try to directly
+     * draw into window. */
     if ((viewPtr->flags & REDRAW_PENDING) == 0) {
 	Drawable drawable;
 
@@ -6009,9 +6013,9 @@ BboxOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (viewPtr->flags & (LAYOUT_PENDING|GEOMETRY)) {
 	/*
 	 * The layout is dirty.  Recompute it now, before we use the world
-	 * dimensions.  But remember that the "bbox" operation isn't valid for
-	 * hidden entries (since they're not visible, they don't have world
-	 * coordinates).
+	 * dimensions.  But remember that the "bbox" operation isn't valid
+	 * for hidden entries (since they're not visible, they don't have
+	 * world coordinates).
 	 */
 	ComputeGeometry(viewPtr);
     }
@@ -6113,12 +6117,12 @@ BindOp(TableView *viewPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * CellActivateOp --
  *
- * 	Turns on highlighting for a particular cell.  Only one cell
- *      can be active at a time.
+ * 	Turns on highlighting for a particular cell.  Only one cell can be
+ *      active at a time.
  *
  * Results:
- *	A standard TCL result.  If TCL_ERROR is returned, then interp->result
- *	contains an error message.
+ *	A standard TCL result.  If TCL_ERROR is returned, then
+ *	interp->result contains an error message.
  *
  *      .view cell activate ?cell?
  *
@@ -6144,8 +6148,8 @@ CellActivateOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     activePtr = viewPtr->activePtr;
     viewPtr->activePtr = cellPtr;
-    /* If we aren't already queued to redraw the widget, try to directly draw
-     * into window. */
+    /* If we aren't already queued to redraw the widget, try to directly
+     * draw into window. */
     if ((viewPtr->flags & REDRAW_PENDING) == 0) {
 	Drawable drawable;
 
@@ -6185,9 +6189,9 @@ CellBboxOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (viewPtr->flags & (LAYOUT_PENDING|GEOMETRY)) {
 	/*
 	 * The layout is dirty.  Recompute it now, before we use the world
-	 * dimensions.  But remember that the "bbox" operation isn't valid for
-	 * hidden entries (since they're not visible, they don't have world
-	 * coordinates).
+	 * dimensions.  But remember that the "bbox" operation isn't valid
+	 * for hidden entries (since they're not visible, they don't have
+	 * world coordinates).
 	 */
 	ComputeGeometry(viewPtr);
     }
@@ -7713,9 +7717,13 @@ UpdateColumnMark(TableView *viewPtr, int newMark)
     dx = newMark - viewPtr->colResizeAnchor; 
     width = colPtr->width;
     if ((colPtr->reqWidth.min > 0) && ((width + dx) < colPtr->reqWidth.min)) {
+        fprintf(stderr, "column %s: bounding min to %d\n", colPtr->title,
+                colPtr->reqWidth.min);
 	dx = colPtr->reqWidth.min - width;
     }
     if ((colPtr->reqWidth.max > 0) && ((width + dx) > colPtr->reqWidth.max)) {
+        fprintf(stderr, "column %s: bounding max to %d\n", colPtr->title,
+                colPtr->reqWidth.max);
 	dx = colPtr->reqWidth.max - width;
     }
     if ((width + dx) < 4) {
@@ -7764,7 +7772,7 @@ ColumnResizeActivateOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  *	Set the anchor for the resize.
  *
- *	.t column resize anchor x
+ *	.t column resize anchor ?x?
  *
  *---------------------------------------------------------------------------
  */
@@ -7774,14 +7782,19 @@ ColumnResizeAnchorOp(ClientData clientData, Tcl_Interp *interp, int objc,
 		  Tcl_Obj *const *objv)
 {
     TableView *viewPtr = clientData;
-    int y;
 
-    if (Tcl_GetIntFromObj(interp, objv[4], &y) != TCL_OK) {
-	return TCL_ERROR;
-    } 
-    viewPtr->colResizeAnchor = y;
-    viewPtr->flags |= COLUMN_RESIZE | REDRAW;
-    UpdateColumnMark(viewPtr, y);
+    if (objc == 4) {
+        Tcl_SetIntObj(Tcl_GetObjResult(interp), viewPtr->colResizeAnchor);
+    } else {
+        int y;
+
+        if (Tcl_GetIntFromObj(interp, objv[4], &y) != TCL_OK) {
+            return TCL_ERROR;
+        } 
+        viewPtr->colResizeAnchor = y;
+        viewPtr->flags |= COLUMN_RESIZE | REDRAW;
+        UpdateColumnMark(viewPtr, y);
+    }
     return TCL_OK;
 }
 
@@ -7816,7 +7829,7 @@ ColumnResizeDeactivateOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *	Sets the resize mark.  The distance between the mark and the anchor
  *	is the delta to change the width of the active column.
  *
- *	.t column resize mark x
+ *	.t column resize mark ?x?
  *
  *---------------------------------------------------------------------------
  */
@@ -7826,31 +7839,36 @@ ColumnResizeMarkOp(ClientData clientData, Tcl_Interp *interp, int objc,
 		   Tcl_Obj *const *objv)
 {
     TableView *viewPtr = clientData;
-    int y;
 
-    if (Tcl_GetIntFromObj(interp, objv[4], &y) != TCL_OK) {
-	return TCL_ERROR;
-    } 
-    viewPtr->flags |= COLUMN_RESIZE | REDRAW;
-    UpdateColumnMark(viewPtr, y);
+    if (objc == 4) {
+        Tcl_SetIntObj(Tcl_GetObjResult(interp), viewPtr->colResizeMark);
+    } else {
+        int y;
+
+        if (Tcl_GetIntFromObj(interp, objv[4], &y) != TCL_OK) {
+            return TCL_ERROR;
+        } 
+        viewPtr->flags |= COLUMN_RESIZE | REDRAW;
+        UpdateColumnMark(viewPtr, y);
+    }
     return TCL_OK;
 }
 
 /*
  *---------------------------------------------------------------------------
  *
- * ColumnResizeCurrentOp --
+ * ColumnResizeGetOp --
  *
  *	Returns the new width of the column including the resize delta.
  *
- *	.t column resize current
+ *	.t column resize get 
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
-ColumnResizeCurrentOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-		      Tcl_Obj *const *objv)
+ColumnResizeGetOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+                  Tcl_Obj *const *objv)
 {
     TableView *viewPtr = clientData;
 
@@ -7866,13 +7884,49 @@ ColumnResizeCurrentOp(ClientData clientData, Tcl_Interp *interp, int objc,
     return TCL_OK;
 }
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * ColumnResizeSetOp --
+ *
+ *	Sets the nominal width of the column currently being resized.
+ *
+ *	.t column resize set
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+ColumnResizeSetOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+                  Tcl_Obj *const *objv)
+{
+    TableView *viewPtr = clientData;
+    Column *colPtr;
+    
+    /* viewPtr->flags &= ~COLUMN_RESIZE; */
+    UpdateColumnMark(viewPtr, viewPtr->colResizeMark);
+    colPtr = viewPtr->colResizePtr;
+    if (colPtr != NULL) {
+	int dx;
+
+	dx = (viewPtr->colResizeMark - viewPtr->colResizeAnchor);
+        colPtr->reqWidth.nom = colPtr->width + dx;
+        colPtr->reqWidth.flags |= LIMITS_SET_NOM;
+        viewPtr->colResizeAnchor = viewPtr->colResizeMark;
+        viewPtr->flags |= LAYOUT_PENDING;
+        EventuallyRedraw(viewPtr);
+    }
+    return TCL_OK;
+}
+
 static Blt_OpSpec columnResizeOps[] =
 { 
     {"activate",   2, ColumnResizeActivateOp,   5, 5, "column"},
-    {"anchor",     2, ColumnResizeAnchorOp,     5, 5, "x"},
-    {"current",    1, ColumnResizeCurrentOp,    4, 4, "",},
+    {"anchor",     2, ColumnResizeAnchorOp,     4, 5, "?x?"},
     {"deactivate", 1, ColumnResizeDeactivateOp, 4, 4, ""},
-    {"mark",       1, ColumnResizeMarkOp,       5, 5, "x"},
+    {"get",        1, ColumnResizeGetOp,        4, 4, "",},
+    {"mark",       1, ColumnResizeMarkOp,       4, 5, "?x?"},
+    {"set",        1, ColumnResizeSetOp,        4, 4, ""},
 };
 
 static int numColumnResizeOps = sizeof(columnResizeOps) / sizeof(Blt_OpSpec);
@@ -10791,6 +10845,8 @@ StyleCreateOp(TableView *viewPtr, Tcl_Interp *interp, int objc,
 	type = STYLE_COMBOBOX;
     } else if ((c == 'i') && (strncmp(string, "imagebox", length) == 0)) {
 	type = STYLE_IMAGEBOX;
+    } else if ((c == 'p') && (strncmp(string, "pushbutton", length) == 0)) {
+	type = STYLE_PUSHBUTTON;
     } else {
 	Tcl_AppendResult(interp, "unknown style type \"", string, 
 		"\": should be textbox, checkbox, combobox, or imagebox.", 
@@ -11497,8 +11553,8 @@ ComputeLayout(TableView *viewPtr)
 	AdjustColumns(viewPtr);
     }
     viewPtr->height = viewPtr->worldHeight = y;
-    viewPtr->width = viewPtr->worldWidth =  x;
-    viewPtr->width += 2 * viewPtr->inset;
+    viewPtr->width  = viewPtr->worldWidth  = x;
+    viewPtr->width  += 2 * viewPtr->inset;
     viewPtr->height += 2 * viewPtr->inset;
     if (viewPtr->flags & COLUMN_TITLES) {
 	viewPtr->height += viewPtr->colTitleHeight;

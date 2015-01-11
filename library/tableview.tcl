@@ -410,11 +410,11 @@ proc blt::TableView::Initialize { w } {
     }
     $w column bind Resize <B1-Motion> {
 	%W column resize mark %x
-	%W column configure current -width [%W column resize current]
-	%W column resize anchor %x
+	%W column resize set 
     }
     $w column bind Resize <ButtonRelease-1> {
-	%W column configure current -width [%W column resize current]
+	%W column resize mark %x
+	%W column resize set 
     }
     # Row resize 
     $w row bind Resize <Enter> {
@@ -586,6 +586,44 @@ proc blt::TableView::Initialize { w } {
 	if { $blt::TableView::_private(activeSelection) } {
 	    %W selection mark @%x,%y
 	} else {
+	    %W invoke active
+	}
+    }
+
+    # PushButtonStyle
+    $w bind PushButtonStyle <Enter> { 
+	%W cell activate current 
+    }
+    $w bind PushButtonStyle <Leave> { 
+	%W cell deactivate 
+    }
+    $w bind PushButtonStyle <ButtonPress-1> { 	
+	#blt::TableView::SetSelectionAnchor %W current
+    }
+    $w bind PushButtonStyle <B1-Motion> { 
+	set blt::TableView::_private(x) %x
+	set blt::TableView::_private(y) %y
+	set cell [%W index @%x,%y]
+	set blt::TableView::_private(scroll) 1
+	if { 0 && $cell != "" } {
+	    if { $blt::TableView::_private(activeSelection) } {
+		%W selection mark $cell
+	    } else {
+		blt::TableView::SetSelectionAnchor %W $cell
+	    }
+	}
+    }
+    $w bind PushButtonStyle <ButtonRelease-1> { 
+	after cancel $blt::TableView::_private(afterId)
+	set blt::TableView::_private(afterId) -1
+	set blt::TableView::_private(scroll) 0
+	if { 0 && $blt::TableView::_private(activeSelection) } {
+	    %W selection mark @%x,%y
+	} else {
+            set style [%W style get active]
+            set var [%W style cget $style -variable]
+            foreach { row col } [%W index active] break
+            set $var $row
 	    %W invoke active
 	}
     }

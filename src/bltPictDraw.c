@@ -2538,7 +2538,7 @@ PaintPolygonAA2(Pict *destPtr, size_t numVertices, Point2f *vertices,
     TranslatePolygon(numVertices, vertices, 0.0f, 0.0f, 4.0f);
     Blt_BlankPicture(big, 0x0);
     GetPolygonBoundingBox(numVertices, vertices, &r2);
-    if ((shadowPtr != NULL) && (shadowPtr->offset > 0)) {
+    if ((shadowPtr != NULL) && (shadowPtr->width > 0)) {
 	PaintPolygonShadow(big, numVertices, vertices, &r2, shadowPtr);
     }
     Blt_PaintPolygon(big, numVertices, vertices, brushPtr);
@@ -3631,7 +3631,8 @@ Blt_PaintCheckbox(int w, int h, XColor *fillColorPtr, XColor *outlineColorPtr,
 	points[5].y = y + (0.7 * h);
 	points[6].x = points[0].x;
 	points[6].y = points[0].y;
-	shadow.width = shadow.offset = 2;
+	shadow.width = 2, shadow.offset = 2;
+        shadow.color.u32 = 0x5F000000;
 	r.left = x, r.right = x + w;
 	r.top = y, r.bottom = y + h;
 	Blt_PaintBrush_Init(&brush);

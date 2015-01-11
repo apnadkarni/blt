@@ -67,8 +67,8 @@
 
 #define STYLE_GAP		3
 #define ARROW_WIDTH		13
-#define FOCUS_PAD		3	/* 1 pixel either side of a 1 pixel
-					 * line */
+#define FOCUS_PAD		3               /* 1 pixel either side of a
+                                                 * 1 pixel line */
 #define CELL_PADX		2
 #define CELL_PADY		1
 #define SHOW_TEXT		(1<<0)
@@ -164,11 +164,25 @@
 #define DEF_IMAGEBOX_ACTIVE_COLORS	"0"
 #define DEF_TEXTBOX_ACTIVE_COLORS       "0"
 #define DEF_COMBOBOX_ACTIVE_COLORS      "0"
+#define DEF_PUSHBUTTON_ACTIVE_COLORS    "1"
 
 #define DEF_CHECKBOX_UNDERLINE_ACTIVE	"1"
 #define DEF_IMAGEBOX_UNDERLINE_ACTIVE	"1"
 #define DEF_TEXTBOX_UNDERLINE_ACTIVE    "1"
 #define DEF_COMBOBOX_UNDERLINE_ACTIVE   "1"
+#define DEF_PUSHBUTTON_UNDERLINE_ACTIVE "1"
+
+#define DEF_PUSHBUTTON_VARIABLE         (char *)NULL
+#define DEF_PUSHBUTTON_VALUE            (char *)NULL
+#define DEF_PUSHBUTTON_ACTIVE_RELIEF	"flat"
+#define DEF_PUSHBUTTON_BORDERWIDTH	"1"
+#define DEF_PUSHBUTTON_COMMAND		(char *)NULL
+#define DEF_PUSHBUTTON_CURSOR		(char *)NULL
+#define DEF_PUSHBUTTON_EDIT		"0"
+#define DEF_PUSHBUTTON_FONT		STD_FONT_SMALL
+#define DEF_PUSHBUTTON_RELIEF		"flat"
+#define DEF_PUSHBUTTON_PADX             "0"
+#define DEF_PUSHBUTTON_PADY             "0"
 
 static Blt_OptionParseProc ObjToIconProc;
 static Blt_OptionPrintProc IconToObjProc;
@@ -205,6 +219,13 @@ static Blt_CustomOption textOption = {
     ObjToTextProc, TextToObjProc, FreeTextProc, (ClientData)0
 };
 
+static Blt_OptionFreeProc FreePushButtonVarProc;
+static Blt_OptionParseProc ObjToPushButtonVarProc;
+static Blt_OptionPrintProc PushButtonVarToObjProc;
+static Blt_CustomOption pushButtonVarOption = {
+    ObjToPushButtonVarProc, PushButtonVarToObjProc, FreePushButtonVarProc,
+    (ClientData)0
+};
 
 /* 
  * Styles are the settings and attributes for cells.  They are separate
@@ -635,6 +656,105 @@ typedef struct {
 					 * in relation to the image.  */
 } ImageBoxStyle;
  
+/* 
+ * PushButtonStyle --
+ *
+ *	Treats the cell as a check box that can possibly be edited (via a
+ *	builtin check button).  The check box consists of the check
+ *	indicator (a box with or without a check), an option icon, and an
+ *	optional text string or image.  The icon may be to the left or
+ *	right of the text.  The check is always on the left.
+ *
+ *	When the check button is pressed, the table value associated with
+ *	the cell is toggled.  The on/off values may be specified, but
+ *	default to 1/0.
+ */
+typedef struct {
+    int refCount;			/* Usage reference count.  A
+					 * reference count of zero
+					 * indicates that the style may be
+					 * freed. */
+    unsigned int flags;			/* Bit field containing both the
+					 * style type and various flags. */
+    const char *name;			/* Instance name. */
+    CellStyleClass *classPtr;		/* Contains class-specific
+					 * information such as
+					 * configuration specifications and
+					 * configure, draw, layout,
+					 * etc. routines. */
+    Blt_HashEntry *hashPtr;		/* If non-NULL, points to the hash
+					 * table entry for the style.  A
+					 * style that's been deleted, but
+					 * still in use (non-zero reference
+					 * count) will have no hash table
+					 * entry. */
+    Blt_HashTable table;		/* Table of cells that have this
+					 * style. We use this to mark the
+					 * cells dirty when the style
+					 * changes. */
+    TableView *viewPtr;			/* Widget using this style. */
+    /* General style fields. */
+    Tk_Cursor cursor;			/* X Cursor */
+    Icon icon;				/* If non-NULL, is a Tk_Image to be
+					 * drawn in the cell. */
+    int gap;				/* # pixels gap between icon and
+					 * text. */
+    Blt_Font font;
+    XColor *normalFg;			/* Normal color of the text. */
+    XColor *activeFg;			/* Color of the text when the cell
+					 * is active. */
+    XColor *disableFg;			/* Color of the text when the cell
+					 * is disabled. */
+    XColor *highlightFg;		/* Color of the text when the cell
+					 * is highlighted. */
+    XColor *selectFg;			/* Color of the text when the cell
+					 * is selected. */
+    Blt_Bg normalBg;			/* Normal background color of
+                                         * cell. */
+    Blt_Bg activeBg;			/* Background color when the cell
+					 * is active. Textboxes are usually
+					 * never active. */
+    Blt_Bg altBg;			/* Alternative normal
+                                         * background. */
+    Blt_Bg disableBg;			/* Background color when the cell
+					 * is disabled. */
+    Blt_Bg highlightBg;			/* Background color when the cell
+					 * is highlighted. */
+    Blt_Bg selectBg;			/* Background color when the cell
+					 * is selected. */
+    GC normalGC;			/* Graphics context of normal
+                                         * text. */
+    GC activeGC;			/* Graphics context of active
+                                         * text. */
+    GC disableGC;			/* Graphics context of disabled
+                                         * text. */
+    GC highlightGC;			/* Graphics context of highlighted
+					 * text. */
+    GC selectGC;			/* Graphics context of selected
+					 * text. */
+    Tk_Justify justify;			/* Indicates how the text or icon
+					 * is justified within the
+					 * column. */
+    int borderWidth;			/* Width of outer border
+					 * surrounding the entire box. */
+    int relief, activeRelief;		/* Relief of outer border. */
+
+    Tcl_Obj *cmdObjPtr;			/* If non-NULL, TCL procedure
+					 * called to format the style is
+					 * invoked.*/
+    XColor *rowRuleColor;		/* Color of the row's rule. */
+    GC rowRuleGC;                       /* Graphics context of the row's
+                                         * rule. */
+    XColor *colRuleColor;		/* Color of the row's rule. */
+    GC colRuleGC;                       /* Graphics context of the row's
+                                         * rule. */
+    /* PushButton-specific fields. */
+    Tcl_Obj *varObjPtr;                 /* Name of variable to set with
+                                         * row index. */
+    BLT_TABLE_ROW row;
+    int xPad, yPad;
+} PushButtonStyle;
+
 static Blt_ConfigSpec textBoxStyleSpecs[] =
 {
     {BLT_CONFIG_BACKGROUND, "-activebackground", "activeBackground", 
@@ -1019,22 +1139,116 @@ static Blt_ConfigSpec imageBoxStyleSpecs[] =
 	0, 0}
 };
 
+static Blt_ConfigSpec pushButtonStyleSpecs[] =
+{
+    {BLT_CONFIG_BACKGROUND, "-activebackground", "activeBackground", 
+	"ActiveBackground", DEF_ACTIVE_BG, 
+	Blt_Offset(PushButtonStyle, activeBg), 0},
+    {BLT_CONFIG_SYNONYM, "-activebg", "activeBackground", 
+	(char *)NULL, (char *)NULL, 0, 0},
+    {BLT_CONFIG_BITMASK, "-activecolors", "activeColors", "ActiveColors", 
+        DEF_IMAGEBOX_ACTIVE_COLORS, Blt_Offset(PushButtonStyle, flags), 
+        BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)ACTIVE_COLORS},
+    {BLT_CONFIG_SYNONYM, "-activefg", "activeForeground", 
+        (char *)NULL, (char *)NULL, 0, 0},
+    {BLT_CONFIG_COLOR, "-activeforeground", "activeForeground", 
+	"ActiveForeground", DEF_ACTIVE_FG, 
+	Blt_Offset(PushButtonStyle, activeFg), 0},
+    {BLT_CONFIG_RELIEF, "-activerelief", "activeRelief", "ActiveRelief", 
+	DEF_IMAGEBOX_ACTIVE_RELIEF, Blt_Offset(PushButtonStyle, activeRelief), 
+	BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_SYNONYM, "-altbg", "alternateBackground", (char *)NULL,
+	(char *)NULL, 0, 0},
+    {BLT_CONFIG_BACKGROUND, "-alternatebackground", "alternateBackground", 
+	"Background", DEF_ALT_BG, Blt_Offset(PushButtonStyle, altBg), 
+	BLT_CONFIG_NULL_OK},
+    {BLT_CONFIG_BACKGROUND, "-background", "background", "Background",
+	DEF_NORMAL_BG, Blt_Offset(PushButtonStyle, normalBg), 0},
+    {BLT_CONFIG_SYNONYM, "-bd", "borderWidth", (char *)NULL, (char *)NULL, 
+	0, 0},
+    {BLT_CONFIG_SYNONYM, "-bg", "background", (char *)NULL, (char *)NULL, 
+	0, 0},
+    {BLT_CONFIG_PIXELS_NNEG, "-borderwidth", "borderWidth", "BorderWidth",
+	DEF_IMAGEBOX_BORDERWIDTH, Blt_Offset(PushButtonStyle, borderWidth),
+	BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_COLOR, "-columnrulecolor", "columnRuleColor", "ColumnRuleColor",
+        DEF_RULE_COLOR, Blt_Offset(PushButtonStyle, colRuleColor), 0},
+    {BLT_CONFIG_OBJ, "-command", "command", "Command", DEF_IMAGEBOX_COMMAND, 
+	Blt_Offset(PushButtonStyle, cmdObjPtr), 0},
+    {BLT_CONFIG_CURSOR, "-cursor", "cursor", "Cursor", DEF_IMAGEBOX_CURSOR, 
+	Blt_Offset(PushButtonStyle, cursor), 0},
+    {BLT_CONFIG_BACKGROUND, "-disabledbackground", "disabledBackground",
+	"DisabledBackground", DEF_DISABLE_BG, 
+        Blt_Offset(PushButtonStyle, disableBg), BLT_CONFIG_COLOR_ONLY},
+    {BLT_CONFIG_COLOR, "-disabledforeground", "disabledForeground", 
+       "DisabledForeground", DEF_DISABLE_FG, 
+	Blt_Offset(PushButtonStyle, disableFg), 0},
+    {BLT_CONFIG_SYNONYM, "-disabledbg", "disabledBackground", (char *)NULL, 
+	(char *)NULL, 0, 0},
+    {BLT_CONFIG_SYNONYM, "-disabledfg", "disabledForeground", (char *)NULL, 
+	(char *)NULL, 0, 0},
+    {BLT_CONFIG_BITMASK, "-edit", "edit", "Edit", DEF_IMAGEBOX_EDIT, 
+	Blt_Offset(PushButtonStyle, flags), BLT_CONFIG_DONT_SET_DEFAULT,
+	(Blt_CustomOption *)EDIT},
+    {BLT_CONFIG_SYNONYM, "-fg", "foreground", (char *)NULL, (char *)NULL, 
+	0, 0},
+    {BLT_CONFIG_FONT, "-font", "font", "Font", DEF_IMAGEBOX_FONT,
+	Blt_Offset(PushButtonStyle, font), 0},
+    {BLT_CONFIG_COLOR, "-foreground", "foreground", "Foreground", 
+	DEF_NORMAL_FG, Blt_Offset(PushButtonStyle, normalFg), 0},
+    {BLT_CONFIG_PIXELS_NNEG, "-gap", "gap", "Gap", DEF_GAP, 
+	Blt_Offset(PushButtonStyle, gap), BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_BACKGROUND, "-highlightbackground", "highlightBackground", 
+	"HighlightBackground", DEF_HIGHLIGHT_BG, 
+	Blt_Offset(PushButtonStyle, highlightBg), BLT_CONFIG_NULL_OK},
+    {BLT_CONFIG_SYNONYM, "-highlightbg", "highlightBackground", 
+	(char *)NULL, (char *)NULL, 0, 0},
+    {BLT_CONFIG_SYNONYM, "-highlightfg", "highlistFackground", 
+	(char *)NULL, (char *)NULL, 0, 0},
+    {BLT_CONFIG_COLOR, "-highlightforeground", "highlightForeground", 
+	"HighlightForeground", DEF_HIGHLIGHT_FG, 
+	Blt_Offset(PushButtonStyle, highlightFg), 0},
+    {BLT_CONFIG_CUSTOM, "-icon", "icon", "Icon", DEF_ICON, 
+	Blt_Offset(PushButtonStyle, icon), BLT_CONFIG_NULL_OK, &iconOption},
+    {BLT_CONFIG_JUSTIFY, "-justify", "justify", "Justify", DEF_JUSTIFY, 
+	Blt_Offset(PushButtonStyle, justify), BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_PIXELS_NNEG, "-padx", "padX", "PadX", DEF_PUSHBUTTON_PADX,
+        Blt_Offset(PushButtonStyle, xPad), BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_PIXELS_NNEG, "-pady", "padY", "PadY", DEF_PUSHBUTTON_PADY,
+        Blt_Offset(PushButtonStyle, yPad), BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_COLOR, "-rowrulecolor", "rowRuleColor", "RowRuleColor", 
+        DEF_RULE_COLOR, Blt_Offset(PushButtonStyle, rowRuleColor), 0},
+    {BLT_CONFIG_BACKGROUND, "-selectbackground", "selectBackground", 
+	"Foreground", DEF_SELECT_BG, Blt_Offset(PushButtonStyle, selectBg), 0},
+    {BLT_CONFIG_COLOR, "-selectforeground", "selectForeground", "Background",
+	DEF_SELECT_FG, Blt_Offset(PushButtonStyle, selectFg), 0},
+    {BLT_CONFIG_CUSTOM, "-variable", "variable", "Variable",
+        DEF_PUSHBUTTON_VARIABLE, Blt_Offset(PushButtonStyle, varObjPtr),
+        BLT_CONFIG_NULL_OK, &pushButtonVarOption},
+    {BLT_CONFIG_END, (char *)NULL, (char *)NULL, (char *)NULL, (char *)NULL, 
+	0, 0}
+};
+
 static CellStyleConfigureProc CheckBoxStyleConfigureProc;
 static CellStyleConfigureProc ComboBoxStyleConfigureProc;
 static CellStyleConfigureProc ImageBoxStyleConfigureProc;
 static CellStyleConfigureProc TextBoxStyleConfigureProc;
+static CellStyleConfigureProc PushButtonStyleConfigureProc;
 static CellStyleDrawProc CheckBoxStyleDrawProc;
 static CellStyleDrawProc ComboBoxStyleDrawProc;
 static CellStyleDrawProc ImageBoxStyleDrawProc;
 static CellStyleDrawProc TextBoxStyleDrawProc;
+static CellStyleDrawProc PushButtonStyleDrawProc;
 static CellStyleFreeProc CheckBoxStyleFreeProc;
 static CellStyleFreeProc ComboBoxStyleFreeProc;
 static CellStyleFreeProc ImageBoxStyleFreeProc;
 static CellStyleFreeProc TextBoxStyleFreeProc;
+static CellStyleFreeProc PushButtonStyleFreeProc;
 static CellStyleGeometryProc CheckBoxStyleGeometryProc;
 static CellStyleGeometryProc ComboBoxStyleGeometryProc;
 static CellStyleGeometryProc ImageBoxStyleGeometryProc;
 static CellStyleGeometryProc TextBoxStyleGeometryProc;
+static CellStyleGeometryProc PushButtonStyleGeometryProc;
 #ifdef notdef
 static CellStyleIdentifyProc CheckBoxStyleIdentifyProc;
 #endif
@@ -1087,6 +1301,57 @@ static CellStyleClass imageBoxStyleClass = {
     NULL,				/* identProc */
     ImageBoxStyleFreeProc,
 };
+
+/* PushButtonStyle */
+static CellStyleClass pushButtonStyleClass = {
+    "pushbutton", 
+    "PushButtonStyle",
+    pushButtonStyleSpecs,
+    PushButtonStyleConfigureProc,
+    PushButtonStyleGeometryProc,
+    PushButtonStyleDrawProc,
+    NULL,				/* identProc */
+    PushButtonStyleFreeProc,
+};
+
+static Tcl_Obj *
+GetFormattedCellObj(Tcl_Interp *interp, Cell *cellPtr, Row *rowPtr,
+                    Column *colPtr)
+{
+    Tcl_Obj *cmdObjPtr, *objPtr;
+    int result;
+    
+    /* command rowIndex columnIndex */
+    cmdObjPtr = Tcl_DuplicateObj(colPtr->fmtCmdObjPtr);
+    objPtr = Tcl_NewLongObj(blt_table_row_index(rowPtr->row));
+    Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
+    objPtr = Tcl_NewLongObj(blt_table_column_index(colPtr->column));
+    Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
+    Tcl_IncrRefCount(cmdObjPtr);
+    result = Tcl_EvalObjEx(interp, cmdObjPtr, TCL_EVAL_GLOBAL);
+    Tcl_DecrRefCount(cmdObjPtr);
+    if (result != TCL_OK) {
+        return NULL;
+    }
+    return Tcl_GetObjResult(interp);
+}
+
+static int
+GetFormattedCellString(Tcl_Interp *interp, Cell *cellPtr, Row *rowPtr,
+                       Column *colPtr)
+{
+    Tcl_Obj *objPtr;
+    const char *text;
+    
+    objPtr = GetFormattedCellObj(interp, cellPtr, rowPtr, colPtr);
+    if (objPtr == NULL) {
+        return TCL_ERROR;
+    }
+    text = Tcl_GetString(objPtr);
+    cellPtr->text = Blt_Strdup(text);
+    cellPtr->flags |= TEXTALLOC;
+    return TCL_OK;
+}
 
 static void
 FreeCell(Cell *cellPtr)
@@ -1449,9 +1714,9 @@ TextVarTraceProc(
      */
     if (flags & TCL_TRACE_UNSETS) {
 	if (flags & TCL_TRACE_DESTROYED) {
-	    Tcl_SetVar(interp, name1, stylePtr->text, TCL_GLOBAL_ONLY);
-	    Tcl_TraceVar(interp, name1, TRACE_VAR_FLAGS, TextVarTraceProc, 
-		clientData);
+	    Tcl_SetVar2(interp, name1, name2, stylePtr->text, TCL_GLOBAL_ONLY);
+	    Tcl_TraceVar2(interp, name1, name2, TRACE_VAR_FLAGS,
+                                TextVarTraceProc, clientData);
 	    stylePtr->flags |= TEXT_VAR_TRACED;
 	}
 	return NULL;
@@ -1465,8 +1730,8 @@ TextVarTraceProc(
 	 * variable changes value because we changed it because someone
 	 * typed in the entry).
 	 */
-	objPtr = Tcl_ObjGetVar2(interp, stylePtr->textVarObjPtr, NULL, 
-		TCL_GLOBAL_ONLY | TCL_LEAVE_ERR_MSG);
+	objPtr = Tcl_GetVar2Ex(interp, name1, name2,
+                               TCL_GLOBAL_ONLY | TCL_LEAVE_ERR_MSG);
 	if (objPtr == NULL) {
 	    return GetInterpResult(interp);
 	} else {
@@ -1512,9 +1777,10 @@ IconVarTraceProc(
      */
     if (flags & TCL_TRACE_UNSETS) {
 	if (flags & TCL_TRACE_DESTROYED) {
-	    Tcl_SetVar(interp, name1, IconName(stylePtr->icon),TCL_GLOBAL_ONLY);
-	    Tcl_TraceVar(interp, name1, TRACE_VAR_FLAGS, IconVarTraceProc, 
-		clientData);
+	    Tcl_SetVar2(interp, name1, name2, IconName(stylePtr->icon),
+                        TCL_GLOBAL_ONLY);
+	    Tcl_TraceVar2(interp, name1, name2, TRACE_VAR_FLAGS,
+                          IconVarTraceProc, clientData);
 	    stylePtr->flags |= ICON_VAR_TRACED;
 	}
 	return NULL;
@@ -1527,8 +1793,8 @@ IconVarTraceProc(
 	 * Update the style's icon with the image whose name is stored in
 	 * the variable.
 	 */
-	objPtr = Tcl_ObjGetVar2(interp, stylePtr->iconVarObjPtr, NULL, 
-		TCL_GLOBAL_ONLY | TCL_LEAVE_ERR_MSG);
+	objPtr = Tcl_GetVar2Ex(interp, name1, name2,
+                               TCL_GLOBAL_ONLY | TCL_LEAVE_ERR_MSG);
 	if (objPtr == NULL) {
 	    return GetInterpResult(interp);
 	}
@@ -1641,6 +1907,176 @@ ObjToIconVarProc(
 /*ARGSUSED*/
 static Tcl_Obj *
 IconVarToObjProc(
+    ClientData clientData,		/* Not used. */
+    Tcl_Interp *interp,
+    Tk_Window tkwin,			/* Not used. */
+    char *widgRec,			/* Widget information record */
+    int offset,				/* Offset to field in structure */
+    int flags)	
+{
+    Tcl_Obj *objPtr = *(Tcl_Obj **)(widgRec + offset);
+
+    if (objPtr == NULL) {
+	objPtr = Tcl_NewStringObj("", -1);
+    } 
+    return objPtr;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ * 
+ * PushButtonVarProc --
+ *
+ *	This procedure is invoked when someone changes the state
+ *	variable associated with a pushbutton. 
+ *
+ * Results:
+ *	NULL is always returned.
+ *
+ *---------------------------------------------------------------------------
+ */
+static char *
+PushButtonVarTraceProc(
+    ClientData clientData,		/* Information about the item. */
+    Tcl_Interp *interp,			/* Interpreter containing
+                                         * variable. */
+    const char *name1,			/* First part of variable's
+                                         * name. */
+    const char *name2,			/* Second part of variable's
+                                         * name. */
+    int flags)				/* Describes what just happened. */
+{
+    PushButtonStyle *stylePtr = clientData;
+    
+    assert(stylePtr->varObjPtr != NULL);
+    if (flags & TCL_INTERP_DESTROYED) {
+    	return NULL;			/* Interpreter is going away. */
+
+    }
+    /*
+     * If the variable is being unset, then re-establish the trace.
+     */
+    if (flags & TCL_TRACE_UNSETS) {
+	if (flags & TCL_TRACE_DESTROYED) {
+	    Tcl_SetVar2Ex(interp, name1, name2,
+                Tcl_NewLongObj(blt_table_row_index(stylePtr->row)),
+                TCL_GLOBAL_ONLY);
+	    Tcl_TraceVar2(interp, name1, name2, TRACE_VAR_FLAGS,
+                          PushButtonVarTraceProc, clientData);
+	    stylePtr->flags |= ICON_VAR_TRACED;
+	}
+	return NULL;
+    }
+    if (flags & TCL_TRACE_WRITES) {
+	Tcl_Obj *objPtr;
+        TableView *viewPtr;
+        
+	/*
+	 * Update the style's row with the index that is stored in the
+	 * variable.
+	 */
+	objPtr = Tcl_GetVar2Ex(interp, name1, name2,
+                               TCL_GLOBAL_ONLY | TCL_LEAVE_ERR_MSG);
+	if (objPtr == NULL) {
+	    return GetInterpResult(interp);
+	}
+        viewPtr = stylePtr->viewPtr;
+	stylePtr->row = blt_table_get_row(interp, viewPtr->table, objPtr);
+	Blt_TableView_EventuallyRedraw(viewPtr);
+    }
+    return NULL;
+}
+
+/*ARGSUSED*/
+static void
+FreePushButtonVarProc(
+    ClientData clientData,
+    Display *display,			/* Not used. */
+    char *widgRec,
+    int offset)
+{
+    Tcl_Obj **objPtrPtr = (Tcl_Obj **)(widgRec + offset);
+
+    if (*objPtrPtr != NULL) {
+	PushButtonStyle *stylePtr = (PushButtonStyle *)widgRec;
+
+	Tcl_UntraceVar(stylePtr->viewPtr->interp, Tcl_GetString(*objPtrPtr), 
+		TRACE_VAR_FLAGS, PushButtonVarTraceProc, stylePtr);
+	Tcl_DecrRefCount(*objPtrPtr);
+	*objPtrPtr = NULL;
+    }
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * ObjToPushButtonVarProc --
+ *
+ *	Convert the variable to a traced variable.
+ *
+ * Results:
+ *	The return value is a standard TCL result.  The variable is
+ *	written into the widget record.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+ObjToPushButtonVarProc(
+    ClientData clientData,		/* Not used. */
+    Tcl_Interp *interp,			/* Interpreter to report results. */
+    Tk_Window tkwin,			/* Not used. */
+    Tcl_Obj *objPtr,			/* String representing style. */
+    char *widgRec,			/* Widget record */
+    int offset,				/* Offset to field in structure */
+    int flags)	
+{
+    PushButtonStyle *stylePtr = (PushButtonStyle *)(widgRec);
+    Tcl_Obj **objPtrPtr = (Tcl_Obj **)(widgRec + offset);
+    char *varName;
+    Tcl_Obj *valueObjPtr;
+
+    /* Remove the current trace on the variable. */
+    if (*objPtrPtr != NULL) {
+	Tcl_UntraceVar(interp, Tcl_GetString(*objPtrPtr), TRACE_VAR_FLAGS, 
+		       PushButtonVarTraceProc, stylePtr);
+	Tcl_DecrRefCount(*objPtrPtr);
+	*objPtrPtr = NULL;
+    }
+    varName = Tcl_GetString(objPtr);
+    if ((varName[0] == '\0') && (flags & BLT_CONFIG_NULL_OK)) {
+        stylePtr->row = NULL;
+	return TCL_OK;
+    }
+    valueObjPtr = Tcl_ObjGetVar2(interp, objPtr, NULL, TCL_GLOBAL_ONLY);
+    if (valueObjPtr != NULL) {
+        TableView *viewPtr;
+
+        viewPtr = stylePtr->viewPtr;
+	stylePtr->row = blt_table_get_row(interp, viewPtr->table, valueObjPtr);
+    }
+    *objPtrPtr = objPtr;
+    Tcl_IncrRefCount(objPtr);
+    Tcl_TraceVar(interp, varName, TRACE_VAR_FLAGS, PushButtonVarTraceProc,
+                 stylePtr);
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * PushButtonVarToObjProc --
+ *
+ *	Return the name of the pushbutton variable.
+ *
+ * Results:
+ *	The name representing the push button variable is returned.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static Tcl_Obj *
+PushButtonVarToObjProc(
     ClientData clientData,		/* Not used. */
     Tcl_Interp *interp,
     Tk_Window tkwin,			/* Not used. */
@@ -2100,28 +2536,11 @@ TextBoxStyleGeometryProc(Cell *cellPtr, CellStyle *cellStylePtr)
     /* Get the actual text to be displayed. If the style has a -formatcommand
      * defined, call it to get the formatted text string. */
     if (colPtr->fmtCmdObjPtr != NULL) {
-	Tcl_Obj *cmdObjPtr, *objPtr;
-	int result;
-	Tcl_Interp *interp;
-	const char *text;
-
-	interp = viewPtr->interp;
-	/* command rowIndex columnIndex */
-	cmdObjPtr = Tcl_DuplicateObj(colPtr->fmtCmdObjPtr);
-	objPtr = Tcl_NewLongObj(blt_table_row_index(rowPtr->row));
-	Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
-	objPtr = Tcl_NewLongObj(blt_table_column_index(colPtr->column));
-	Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
-	Tcl_IncrRefCount(cmdObjPtr);
-	result = Tcl_EvalObjEx(interp, cmdObjPtr, TCL_EVAL_GLOBAL);
-	Tcl_DecrRefCount(cmdObjPtr);
-	if (result != TCL_OK) {
-	    Tcl_BackgroundError(interp);
+        if (GetFormattedCellString(viewPtr->interp, cellPtr, rowPtr, colPtr) !=
+            TCL_OK) {
+	    Tcl_BackgroundError(viewPtr->interp);
 	    return;
 	}
-	text = Tcl_GetString(Tcl_GetObjResult(interp));
-	cellPtr->text = Blt_Strdup(text);
-	cellPtr->flags |= TEXTALLOC;
     } else {
 	cellPtr->text = blt_table_get_string(viewPtr->table, rowPtr->row, 
 		colPtr->column);
@@ -2654,28 +3073,11 @@ CheckBoxStyleGeometryProc(Cell *cellPtr, CellStyle *cellStylePtr)
 
     if (blt_table_value_exists(viewPtr->table, rowPtr->row, colPtr->column)) {
 	if (colPtr->fmtCmdObjPtr != NULL) {
-	    Tcl_Obj *cmdObjPtr, *objPtr;
-	    int result;
-	    Tcl_Interp *interp;
-	    const char *text;
-	    
-	    interp = viewPtr->interp;
-	    /* command rowIndex columnIndex */
-	    cmdObjPtr = Tcl_DuplicateObj(colPtr->fmtCmdObjPtr);
-	    objPtr = Tcl_NewLongObj(blt_table_row_index(rowPtr->row));
-	    Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
-	    objPtr = Tcl_NewLongObj(blt_table_column_index(colPtr->column));
-	    Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
-	    Tcl_IncrRefCount(cmdObjPtr);
-	    result = Tcl_EvalObjEx(interp, cmdObjPtr, TCL_EVAL_GLOBAL);
-	    Tcl_DecrRefCount(cmdObjPtr);
-	    if (result != TCL_OK) {
-		Tcl_BackgroundError(interp);
+            if (GetFormattedCellString(viewPtr->interp, cellPtr, rowPtr,
+                colPtr) != TCL_OK) {
+		Tcl_BackgroundError(viewPtr->interp);
 		return;
 	    }
-	    text = Tcl_GetString(Tcl_GetObjResult(interp));
-	    cellPtr->text = Blt_Strdup(text);
-	    cellPtr->flags |= TEXTALLOC;
 	} else {
 	    cellPtr->text = blt_table_get_string(viewPtr->table, rowPtr->row, 
 		colPtr->column);
@@ -3686,25 +4088,29 @@ ParseImageFormat(Tcl_Interp *interp, TableView *viewPtr, Cell *cellPtr,
 {
     Tcl_Obj **objv;
     int objc;
-    const char *imageName;
-    Tk_Image tkImage;
 
     if (Tcl_ListObjGetElements(interp, objPtr, &objc, &objv) != TCL_OK) {
 	return TCL_ERROR;
     }
-    if ((objc < 1) || (objc > 2)) {
+    if (objc > 2) {
 	Tcl_AppendResult(interp, "wrong # of arguments in image result",
 			 (char *)NULL);
 	return TCL_ERROR;
     }
-    imageName = Tcl_GetString(objv[0]);
-    tkImage = Tk_GetImage(interp, viewPtr->tkwin, imageName, 
-			  CellImageChangedProc, (ClientData)cellPtr);
-    if (tkImage == NULL) {
-	return TCL_ERROR;
+    if (objc > 0) {
+        const char *imageName;
+        Tk_Image tkImage;
+
+        imageName = Tcl_GetString(objv[0]);
+        tkImage = Tk_GetImage(NULL, viewPtr->tkwin, imageName, 
+                CellImageChangedProc, (ClientData)cellPtr);
+        if (tkImage == NULL) {
+            cellPtr->text = Blt_Strdup(Tcl_GetString(objv[0]));
+            cellPtr->flags |= TEXTALLOC;
+        }
+        cellPtr->tkImage = tkImage;
     }
-    cellPtr->tkImage = tkImage;
-    if (objc == 2) {
+    if (objc > 1) {
 	cellPtr->text = Blt_Strdup(Tcl_GetString(objv[1]));
 	cellPtr->flags |= TEXTALLOC;
     }
@@ -3763,25 +4169,11 @@ ImageBoxStyleGeometryProc(Cell *cellPtr, CellStyle *cellStylePtr)
     FreeCell(cellPtr);
     interp = viewPtr->interp;
     if (colPtr->fmtCmdObjPtr != NULL) {
-	int result;
-	Tcl_Obj *cmdObjPtr;
-
-	/* Invoke the format command to return the image and title text
-	 * based upon the value in the cell.  */
-	/* command rowIndex columnIndex */
-	cmdObjPtr = Tcl_DuplicateObj(colPtr->fmtCmdObjPtr);  
-	objPtr = Tcl_NewLongObj(blt_table_row_index(rowPtr->row));
-	Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
-	objPtr = Tcl_NewLongObj(blt_table_column_index(colPtr->column));
-	Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
-	Tcl_IncrRefCount(cmdObjPtr);
-	result = Tcl_EvalObjEx(interp, cmdObjPtr, TCL_EVAL_GLOBAL);
-	Tcl_DecrRefCount(cmdObjPtr);
-	if (result != TCL_OK) {
+        objPtr = GetFormattedCellObj(interp, cellPtr, rowPtr, colPtr);
+	if (objPtr == NULL) {
 	    Tcl_BackgroundError(interp);
 	    return;
 	}
-	objPtr = Tcl_GetObjResult(interp);
     } else {
 	objPtr = blt_table_get_obj(viewPtr->table, rowPtr->row, colPtr->column);
     }
@@ -4004,34 +4396,6 @@ ImageBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
     }
 }
 
-#ifdef notdef
-/*
- *---------------------------------------------------------------------------
- *
- * ImageBoxStyleIdentifyProc --
- *
- * Results:
- *	None.
- *
- * Side Effects:
- *	The checkbox value is drawn.
- *
- *---------------------------------------------------------------------------
- */
-static int
-ImageBoxStyleIdentifyProc(TableView *viewPtr, Cell *cellPtr, 
-			  CellStyle *cellStylePtr, int x, int y)
-{
-    ImageBoxStyle *stylePtr = (ImageBoxStyle *)cellStylePtr;
-
-    /* Pick the image, image title, and icon. */
-    if ((x >= 0) && (x < width)) && (y >= 0) && (y < height)) {
-	return TRUE;
-    }
-    return FALSE;
-}
-#endif
-
 /*
  *---------------------------------------------------------------------------
  *
@@ -4051,6 +4415,450 @@ static void
 ImageBoxStyleFreeProc(CellStyle *cellStylePtr)
 {
     ImageBoxStyle *stylePtr = (ImageBoxStyle *)cellStylePtr;
+    TableView *viewPtr;
+
+    viewPtr = stylePtr->viewPtr;
+    iconOption.clientData = viewPtr;
+    Blt_FreeOptions(stylePtr->classPtr->specs, (char *)stylePtr, 
+	viewPtr->display, 0);
+    if (stylePtr->hashPtr != NULL) {
+	Blt_DeleteHashEntry(&viewPtr->styleTable, stylePtr->hashPtr);
+    } 
+    Blt_DeleteHashTable(&stylePtr->table);
+    if (stylePtr->selectGC != NULL) {
+	Tk_FreeGC(viewPtr->display, stylePtr->selectGC);
+    }
+    if (stylePtr->highlightGC != NULL) {
+	Tk_FreeGC(viewPtr->display, stylePtr->highlightGC);
+    }
+    if (stylePtr->disableGC != NULL) {
+	Tk_FreeGC(viewPtr->display, stylePtr->disableGC);
+    }
+    if (stylePtr->activeGC != NULL) {
+	Tk_FreeGC(viewPtr->display, stylePtr->activeGC);
+    }
+    if (stylePtr->normalGC != NULL) {
+	Tk_FreeGC(viewPtr->display, stylePtr->normalGC);
+    }
+    Blt_Free(stylePtr);
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * NewPushButtonStyle --
+ *
+ *	Creates a "imagebox" style.
+ *
+ * Results:
+ *	A pointer to the new style structure.
+ *
+ *---------------------------------------------------------------------------
+ */
+static CellStyle *
+NewPushButtonStyle(TableView *viewPtr, Blt_HashEntry *hPtr)
+{
+    PushButtonStyle *stylePtr;
+
+    stylePtr = Blt_AssertCalloc(1, sizeof(PushButtonStyle));
+    stylePtr->classPtr = &pushButtonStyleClass;
+    stylePtr->viewPtr = viewPtr;
+    stylePtr->gap = STYLE_GAP;
+    stylePtr->borderWidth = 1;
+    stylePtr->relief = stylePtr->activeRelief = TK_RELIEF_RAISED;
+    stylePtr->name = Blt_GetHashKey(&viewPtr->styleTable, hPtr);
+    stylePtr->hashPtr = hPtr;
+    stylePtr->xPad = stylePtr->yPad = 2;
+    stylePtr->flags = SHOW_TEXT | UNDERLINE_ACTIVE | ACTIVE_COLORS;
+    stylePtr->refCount = 1;
+    Blt_SetHashValue(hPtr, stylePtr);
+    Blt_InitHashTable(&stylePtr->table, sizeof(CellKey)/sizeof(int));
+    return (CellStyle *)stylePtr;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * PushButtonStyleConfigureProc --
+ *
+ *	Configures a "imagebox" style.  This routine performs generates the
+ *	GCs required for a combobox style.
+ *
+ * Results:
+ *	None.
+ *
+ * Side Effects:
+ *	GCs are created for the style.
+ *
+ *---------------------------------------------------------------------------
+ */
+static void
+PushButtonStyleConfigureProc(TableView *viewPtr, CellStyle *cellStylePtr)
+{
+    PushButtonStyle *stylePtr = (PushButtonStyle *)cellStylePtr;
+    GC newGC;
+    XGCValues gcValues;
+    unsigned long gcMask;
+
+    gcMask = GCForeground | GCFont | GCDashList | GCLineWidth | GCLineStyle;
+    gcValues.dashes = 1;
+    gcValues.font = Blt_Font_Id(stylePtr->font);
+    gcValues.line_width = 0;
+    gcValues.line_style = LineOnOffDash;
+
+    /* Normal text. */
+    gcValues.foreground = stylePtr->normalFg->pixel;
+    newGC = Tk_GetGC(viewPtr->tkwin, gcMask, &gcValues);
+    if (stylePtr->normalGC != NULL) {
+	Tk_FreeGC(viewPtr->display, stylePtr->normalGC);
+    }
+    stylePtr->normalGC = newGC;
+
+    /* Disabled text. */
+    gcValues.foreground = stylePtr->disableFg->pixel;
+    newGC = Tk_GetGC(viewPtr->tkwin, gcMask, &gcValues);
+    if (stylePtr->disableGC != NULL) {
+	Tk_FreeGC(viewPtr->display, stylePtr->disableGC);
+    }
+    stylePtr->disableGC = newGC;
+
+    /* Selected text. */
+    gcValues.foreground = stylePtr->selectFg->pixel;
+    newGC = Tk_GetGC(viewPtr->tkwin, gcMask, &gcValues);
+    if (stylePtr->selectGC != NULL) {
+	Tk_FreeGC(viewPtr->display, stylePtr->selectGC);
+    }
+    stylePtr->selectGC = newGC;
+
+    /* Active text. */
+    gcValues.foreground = stylePtr->activeFg->pixel;
+    newGC = Tk_GetGC(viewPtr->tkwin, gcMask, &gcValues);
+    if (stylePtr->activeGC != NULL) {
+	Tk_FreeGC(viewPtr->display, stylePtr->activeGC);
+    }
+    stylePtr->activeGC = newGC;
+
+    /* Highlight text. */
+    gcValues.foreground = stylePtr->highlightFg->pixel;
+    newGC = Tk_GetGC(viewPtr->tkwin, gcMask, &gcValues);
+    if (stylePtr->highlightGC != NULL) {
+	Tk_FreeGC(viewPtr->display, stylePtr->highlightGC);
+    }
+    stylePtr->highlightGC = newGC;
+
+    /* Row Rule GC */
+    gcMask = GCForeground;
+    gcValues.foreground = stylePtr->rowRuleColor->pixel;
+    newGC = Tk_GetGC(viewPtr->tkwin, gcMask, &gcValues);
+    if (stylePtr->rowRuleGC != NULL) {
+	Tk_FreeGC(viewPtr->display, stylePtr->rowRuleGC);
+    }
+    stylePtr->rowRuleGC = newGC;
+
+    /* Column Rule GC */
+    gcMask = GCForeground;
+    gcValues.foreground = stylePtr->colRuleColor->pixel;
+    newGC = Tk_GetGC(viewPtr->tkwin, gcMask, &gcValues);
+    if (stylePtr->colRuleGC != NULL) {
+	Tk_FreeGC(viewPtr->display, stylePtr->colRuleGC);
+    }
+    stylePtr->colRuleGC = newGC;
+
+    if (Blt_ConfigModified(stylePtr->classPtr->specs, "-font", (char *)NULL)) {
+	PropagateGeometryFlags(viewPtr, (CellStyle *)stylePtr);
+    }
+}
+
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * PushButtonStyleGeometryProc --
+ *
+ *	Determines the space requirements for the pushbox given the image,
+ *	text, and icon to be displayed.  
+ *
+ * Results:
+ *	None.
+ *
+ * Side Effects:
+ *	The width and height fields of *cellPtr* are set with the computed
+ *	dimensions.
+ *
+ *      +-------+
+ *	||Image||
+ *      || or  ||
+ *	||Text ||	
+ *      +-------+	
+ *
+ *---------------------------------------------------------------------------
+ */
+static void
+PushButtonStyleGeometryProc(Cell *cellPtr, CellStyle *cellStylePtr)
+{
+    CellKey *keyPtr;
+    Column *colPtr;
+    PushButtonStyle *stylePtr = (PushButtonStyle *)cellStylePtr;
+    Row *rowPtr;
+    TableView *viewPtr;
+    Tcl_Interp *interp;
+    Tk_Image tkImage;
+    unsigned int w, h;
+    
+    viewPtr = cellPtr->viewPtr;
+    keyPtr = GetKey(cellPtr);
+    rowPtr = keyPtr->rowPtr;
+    colPtr = keyPtr->colPtr;
+
+    cellPtr->flags &= ~GEOMETRY;	/* Remove the dirty flag from the
+					 * cell. */
+    w = h = 0;
+    cellPtr->width = cellPtr->height = 2 * (stylePtr->borderWidth + FOCUS_PAD);
+    cellPtr->width  += 2 * (CELL_PADX + stylePtr->xPad);
+    cellPtr->height += 2 * (CELL_PADY + stylePtr->yPad);
+    cellPtr->width  += colPtr->ruleWidth + PADDING(colPtr->pad);
+    cellPtr->height += rowPtr->ruleHeight;
+
+    FreeCell(cellPtr);
+    interp = viewPtr->interp;
+    if (colPtr->fmtCmdObjPtr != NULL) {
+        if (GetFormattedCellString(interp, cellPtr, rowPtr, colPtr) != 
+            TCL_OK) {
+	    Tcl_BackgroundError(interp);
+	    return;
+	}
+    } else {
+	cellPtr->text = blt_table_get_string(viewPtr->table, rowPtr->row, 
+		colPtr->column);
+    }
+    tkImage = Tk_GetImage(NULL, viewPtr->tkwin, cellPtr->text, 
+                CellImageChangedProc, (ClientData)cellPtr);
+    if (tkImage != NULL) {
+	Tk_SizeOfImage(tkImage, (int *)&w, (int *)&h);
+        cellPtr->tkImage = tkImage;
+    } else {
+	TextStyle ts;
+
+	Blt_Ts_InitStyle(ts);
+	Blt_Ts_SetFont(ts, stylePtr->font);
+	Blt_Ts_GetExtents(&ts, cellPtr->text, &w, &h);
+    }
+    cellPtr->width += w;
+    cellPtr->height += h;
+    if (stylePtr->icon != NULL) {
+	cellPtr->width += stylePtr->gap;
+    }
+    cellPtr->width  = ODD(cellPtr->width);
+    cellPtr->height = ODD(cellPtr->height);
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * PushButtonStyleDrawProc --
+ *
+ *	Draws the "imagebox" given the screen coordinates and the
+ *	value to be displayed.  
+ *
+ * Results:
+ *	None.
+ *
+ * Side Effects:
+ *	The imagebox value is drawn.
+ *
+ *      +-------+
+ *	||Image||
+ *      || or  ||
+ *	||Text ||	
+ *      +-------+	
+ *  
+ *---------------------------------------------------------------------------
+ */
+static void
+PushButtonStyleDrawProc(Cell *cellPtr, Drawable drawable,
+                        CellStyle *cellStylePtr, int x, int y)
+{
+    Blt_Bg bg;
+    Row *rowPtr;
+    Column *colPtr;
+    GC gc;
+    PushButtonStyle *stylePtr = (PushButtonStyle *)cellStylePtr;
+    int colWidth, rowHeight, cellWidth, cellHeight;
+    unsigned int w, h;
+    int relief;
+    CellKey *keyPtr;
+    TableView *viewPtr;
+
+    viewPtr = cellPtr->viewPtr;
+    keyPtr = GetKey(cellPtr);
+    rowPtr = keyPtr->rowPtr;
+    colPtr = keyPtr->colPtr;
+
+    relief = (stylePtr->row == rowPtr->row) ?
+        TK_RELIEF_SUNKEN : stylePtr->relief;
+    if ((rowPtr->flags|colPtr->flags|cellPtr->flags) & DISABLED) {
+	/* Disabled */
+	bg = stylePtr->disableBg;
+	gc = stylePtr->disableGC;
+    } else if ((stylePtr->flags & ACTIVE_COLORS) && 
+               (viewPtr->activePtr == cellPtr)) {
+	/* Active */
+	bg = stylePtr->activeBg;
+	gc = stylePtr->activeGC;
+	/* relief = stylePtr->activeRelief; */
+    } else if ((rowPtr->flags|colPtr->flags|cellPtr->flags) & SELECTED) { 
+	/* Selected */
+	bg = stylePtr->selectBg;
+	gc = stylePtr->selectGC;
+    } else if ((rowPtr->flags|colPtr->flags|cellPtr->flags) & HIGHLIGHT) { 
+	/* Highlighted */
+	bg = GetHighlightBg((CellStyle *)stylePtr, rowPtr);
+	gc = stylePtr->highlightGC;
+    } else {		
+	/* Normal */
+	bg = stylePtr->normalBg;
+	if ((stylePtr->altBg != NULL) && (rowPtr->visibleIndex & 0x1)) {
+	    bg = stylePtr->altBg;
+	}
+	gc = stylePtr->normalGC;
+    }
+
+    rowHeight = rowPtr->height - rowPtr->ruleHeight;
+    colWidth  = colPtr->width - colPtr->ruleWidth;
+
+    /* Draw background. */
+    Blt_Bg_FillRectangle(viewPtr->tkwin, drawable, bg, x, y, colWidth,
+	rowHeight, 0, TK_RELIEF_FLAT);
+
+    /* Draw Rule */
+    if (rowPtr->ruleHeight > 0) {
+	XFillRectangle(viewPtr->display, drawable, stylePtr->rowRuleGC, 
+                x, y + rowHeight, colWidth, rowPtr->ruleHeight);
+    }
+    if (colPtr->ruleWidth > 0) {
+	XFillRectangle(viewPtr->display, drawable, stylePtr->colRuleGC, 
+                x + colWidth, y, colPtr->ruleWidth, rowHeight);
+    }
+    rowHeight -= 2 * (stylePtr->borderWidth + stylePtr->yPad);
+    colWidth  -= 2 * (stylePtr->borderWidth + stylePtr->yPad) -
+        PADDING(colPtr->pad);
+
+    x += stylePtr->xPad;
+    y += stylePtr->yPad;
+    
+    /* Draw button. */
+    Blt_Bg_FillRectangle(viewPtr->tkwin, drawable, bg, x, y, colWidth,
+	rowHeight, stylePtr->borderWidth, relief);
+
+    x += stylePtr->borderWidth + colPtr->pad.side1;
+    y += stylePtr->borderWidth;
+
+    /* Draw the focus ring if this cell has focus. */
+    if ((viewPtr->flags & FOCUS) && (viewPtr->focusPtr == cellPtr)) {
+	XDrawRectangle(viewPtr->display, drawable, gc, x+2, y+2, colWidth - 5, 
+		       rowHeight - 4);
+    }
+
+    x += CELL_PADX + FOCUS_PAD;
+    y += CELL_PADY + FOCUS_PAD;
+    rowHeight -= 2 * (FOCUS_PAD + CELL_PADY);
+    colWidth  -= 2 * (FOCUS_PAD + CELL_PADX);
+
+    cellHeight = cellPtr->height - 
+        2 * (stylePtr->borderWidth + CELL_PADY + FOCUS_PAD + stylePtr->yPad);
+    cellWidth  = cellPtr->width  - PADDING(colPtr->pad) - 
+        2 * (stylePtr->borderWidth + CELL_PADX + FOCUS_PAD + stylePtr->xPad);
+
+    /* Justify (x) and center (y) the contents of the cell. */
+    if (rowHeight > cellHeight) {
+	y += (rowHeight - cellHeight) / 2;
+        rowHeight = cellHeight;
+    }
+    if (colWidth > cellWidth) {
+	switch(stylePtr->justify) {
+	case TK_JUSTIFY_RIGHT:
+	    x += (colWidth - cellWidth);
+	    break;
+	case TK_JUSTIFY_CENTER:
+	    x += (colWidth - cellWidth) / 2;
+	    break;
+	case TK_JUSTIFY_LEFT:
+	    break;
+	}
+    }
+    if (cellPtr->tkImage != NULL) {
+	Tk_SizeOfImage(cellPtr->tkImage, (int *)&w, (int *)&h);
+        if (rowHeight > h) {
+            y += (rowHeight - h) / 2;
+        }
+	Tk_RedrawImage(cellPtr->tkImage, 0, 0, w, h, drawable, x, y);
+    } else {
+	TextStyle ts;
+	int xMax;
+	TextLayout *textPtr;
+
+	Blt_Ts_InitStyle(ts);
+	Blt_Ts_SetFont(ts, stylePtr->font);
+	Blt_Ts_SetGC(ts, gc);
+	xMax = colWidth;
+	Blt_Ts_SetMaxLength(ts, xMax);
+	textPtr = Blt_Ts_CreateLayout(cellPtr->text, -1, &ts);
+	Blt_Ts_DrawLayout(viewPtr->tkwin, drawable, textPtr, &ts, x, y);
+	if ((stylePtr->flags & UNDERLINE_ACTIVE) && 
+            (viewPtr->activePtr == cellPtr)) {
+	    Blt_Ts_UnderlineLayout(viewPtr->tkwin, drawable, textPtr,&ts,x,y);
+	}
+	Blt_Free(textPtr);
+    }
+}
+
+#ifdef notdef
+/*
+ *---------------------------------------------------------------------------
+ *
+ * PushButtonStyleIdentifyProc --
+ *
+ * Results:
+ *	None.
+ *
+ * Side Effects:
+ *	The checkbox value is drawn.
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+PushButtonStyleIdentifyProc(TableView *viewPtr, Cell *cellPtr, 
+			  CellStyle *cellStylePtr, int x, int y)
+{
+    PushButtonStyle *stylePtr = (PushButtonStyle *)cellStylePtr;
+
+    /* Pick the image, image title, and icon. */
+    if ((x >= 0) && (x < width)) && (y >= 0) && (y < height)) {
+	return TRUE;
+    }
+    return FALSE;
+}
+#endif
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * PushButtonStyleFreeProc --
+ *
+ *	Releases resources allocated for the imagebox. 
+ *
+ * Results:
+ *	None.
+ *
+ * Side Effects:
+ *	GCs allocated for the combobox are freed.
+ *
+ *---------------------------------------------------------------------------
+ */
+static void
+PushButtonStyleFreeProc(CellStyle *cellStylePtr)
+{
+    PushButtonStyle *stylePtr = (PushButtonStyle *)cellStylePtr;
     TableView *viewPtr;
 
     viewPtr = stylePtr->viewPtr;
@@ -4106,9 +4914,9 @@ Blt_TableView_CreateCellStyle(
      Tcl_Interp *interp,
      TableView *viewPtr,		/* Blt_TableView_ widget. */
      int type,				/* Type of style: either
-					 * STYLE_TEXTBOX,
-					 * STYLE_COMBOBOX, or
-					 * STYLE_CHECKBOX */
+					 * STYLE_TEXTBOX, STYLE_COMBOBOX, 
+					 * STYLE_CHECKBOX, STYLE_IMAGEBOX,
+                                         * or STYLE_PUSHBUTTON */
      const char *styleName)		/* Name of the new style. */
 {    
     CellStyle *stylePtr;
@@ -4133,6 +4941,8 @@ Blt_TableView_CreateCellStyle(
 	stylePtr = NewCheckBoxStyle(viewPtr, hPtr);	break;
     case STYLE_IMAGEBOX:
 	stylePtr = NewImageBoxStyle(viewPtr, hPtr);	break;
+    case STYLE_PUSHBUTTON:
+	stylePtr = NewPushButtonStyle(viewPtr, hPtr);	break;
     default:
 	if (interp != NULL) {
 	    Tcl_AppendResult(interp, "unknown style type", (char *)NULL);
@@ -4150,3 +4960,4 @@ Blt_TableView_CreateCellStyle(
 }
 
 #endif /* NO_TABLEVIEW */
+

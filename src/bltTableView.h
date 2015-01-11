@@ -215,7 +215,8 @@ typedef struct {
 				 * partition has received any space yet */
 
 typedef enum CellStyleTypes {
-    STYLE_TEXTBOX, STYLE_CHECKBOX, STYLE_COMBOBOX, STYLE_IMAGEBOX
+    STYLE_TEXTBOX, STYLE_CHECKBOX, STYLE_COMBOBOX, STYLE_IMAGEBOX,
+    STYLE_PUSHBUTTON
 } CellStyleType;
 
 typedef struct _Cell Cell;
@@ -399,6 +400,7 @@ struct _CellStyle {
  */
 struct _Row {
     unsigned int flags;
+    const char *name;
     TableView *viewPtr;			/* The parent tableview widget that
 					 * manages this row. */
     Blt_HashEntry *hashPtr;
@@ -457,6 +459,7 @@ struct _Row {
  */
 struct _Column {
     unsigned int flags;
+    const char *name;
     TableView *viewPtr;			/* The parent tableview widget that
 					 * manages this column. */
     Blt_HashEntry *hashPtr;

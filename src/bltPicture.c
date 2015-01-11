@@ -5647,7 +5647,7 @@ Blt_BlurPicture(Pict *destPtr, Pict *srcPtr, int radius, int numPasses)
     if (radius < 1) {
 	return;
     }
-#ifndef notdef
+#ifdef notdef
     Blt_ResamplePicture(destPtr, srcPtr, bltGaussianFilter, bltGaussianFilter);
     return;
 #endif
