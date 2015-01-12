@@ -3920,7 +3920,6 @@ GetCellByIndex(Tcl_Interp *interp, TableView *viewPtr, Tcl_Obj *objPtr,
     return TCL_CONTINUE;
 }
 
-
 static int
 GetCellFromObj(Tcl_Interp *interp, TableView *viewPtr, Tcl_Obj *objPtr, 
 	       Cell **cellPtrPtr)
