@@ -718,10 +718,10 @@ static int GetRows(Tcl_Interp *interp, TableView *viewPtr, Tcl_Obj *objPtr,
 	Blt_Chain *rowsPtr);
 static int AttachTable(Tcl_Interp *interp, TableView *viewPtr);
 static void RebuildTableView(TableView *viewPtr);
-static void AddColumns(TableView *viewPtr, BLT_TABLE_NOTIFY_EVENT *eventPtr);
-static void AddRows(TableView *viewPtr, BLT_TABLE_NOTIFY_EVENT *eventPtr);
-static void DeleteColumns(TableView *viewPtr, BLT_TABLE_NOTIFY_EVENT *eventPtr);
-static void DeleteRows(TableView *viewPtr, BLT_TABLE_NOTIFY_EVENT *eventPtr);
+static Tcl_IdleProc AddRowsWhenIdleProc;
+static Tcl_IdleProc AddColumnsWhenIdleProc;
+static Tcl_IdleProc DeleteRowsWhenIdleProc;
+static Tcl_IdleProc DeleteColumnsWhenIdleProc;
 
 /*
  *---------------------------------------------------------------------------
@@ -791,6 +791,82 @@ PossiblyRedraw(TableView *viewPtr)
 	Tcl_DoWhenIdle(DisplayProc, viewPtr);
     }
 }
+
+static void
+EventuallyAddRows(TableView *viewPtr) 
+{
+    if ((viewPtr->tkwin != NULL) && 
+        ((viewPtr->flags & (DONT_UPDATE|ROWS_PENDING)) == 0)) {
+        viewPtr->flags |= ROWS_PENDING;
+        Tcl_DoWhenIdle(AddRowsWhenIdleProc, viewPtr);
+    }
+}
+
+static void
+EventuallyAddColumns(TableView *viewPtr) 
+{
+    if ((viewPtr->tkwin != NULL) && 
+        ((viewPtr->flags & (DONT_UPDATE|COLUMNS_PENDING)) == 0)) {
+        viewPtr->flags |= COLUMNS_PENDING;
+        Tcl_DoWhenIdle(AddColumnsWhenIdleProc, viewPtr);
+    }
+}
+
+static Row *
+GetRowContainer(TableView *viewPtr, BLT_TABLE_ROW row)
+{
+    Blt_HashEntry *hPtr;
+
+    hPtr = Blt_FindHashEntry(&viewPtr->rowTable, (char *)row);
+    if (hPtr == NULL) {
+	return NULL;
+    }
+    return Blt_GetHashValue(hPtr);
+}
+
+
+static Column *
+GetColumnContainer(TableView *viewPtr, BLT_TABLE_COLUMN col)
+{
+    Blt_HashEntry *hPtr;
+
+    hPtr = Blt_FindHashEntry(&viewPtr->columnTable, (char *)col);
+    if (hPtr == NULL) {
+	return NULL;
+    }
+    return Blt_GetHashValue(hPtr);
+}
+
+static void
+EventuallyDeleteRow(TableView *viewPtr, BLT_TABLE_ROW row) 
+{
+    Row *rowPtr;
+
+    rowPtr = GetRowContainer(viewPtr, row);
+    assert(rowPtr);
+    rowPtr->flags |= DELETED;
+    if ((viewPtr->tkwin != NULL) && 
+        ((viewPtr->flags & (DONT_UPDATE|ROWS_DELETED)) == 0)) {
+        viewPtr->flags |= ROWS_DELETED;
+        Tcl_DoWhenIdle(DeleteRowsWhenIdleProc, viewPtr);
+    }
+}
+
+static void
+EventuallyDeleteColumn(TableView *viewPtr, BLT_TABLE_COLUMN col) 
+{
+    Column *colPtr;
+
+    colPtr = GetColumnContainer(viewPtr, col);
+    assert(colPtr);
+    colPtr->flags |= DELETED;
+    if ((viewPtr->tkwin != NULL) && 
+        ((viewPtr->flags & (DONT_UPDATE|COLUMNS_DELETED)) == 0)) {
+        viewPtr->flags |= COLUMNS_DELETED;
+        Tcl_DoWhenIdle(DeleteColumnsWhenIdleProc, viewPtr);
+    }
+}
+
 
 /*
  *---------------------------------------------------------------------------
@@ -2663,31 +2739,6 @@ LimitsToObj(
     return NameOfLimits(interp, limitsPtr);
 }
 
-static Row *
-GetRowContainer(TableView *viewPtr, BLT_TABLE_ROW row)
-{
-    Blt_HashEntry *hPtr;
-
-    hPtr = Blt_FindHashEntry(&viewPtr->rowTable, (char *)row);
-    if (hPtr == NULL) {
-	return NULL;
-    }
-    return Blt_GetHashValue(hPtr);
-}
-
-
-static Column *
-GetColumnContainer(TableView *viewPtr, BLT_TABLE_COLUMN col)
-{
-    Blt_HashEntry *hPtr;
-
-    hPtr = Blt_FindHashEntry(&viewPtr->columnTable, (char *)col);
-    if (hPtr == NULL) {
-	return NULL;
-    }
-    return Blt_GetHashValue(hPtr);
-}
-
 static INLINE long
 GetLastVisibleColumnIndex(TableView *viewPtr)
 {
@@ -2948,7 +2999,6 @@ NewRow(TableView *viewPtr, BLT_TABLE_ROW row, Blt_HashEntry *hPtr)
     rowPtr->titleJustify = TK_JUSTIFY_RIGHT;
     rowPtr->titleRelief = rowPtr->activeTitleRelief = TK_RELIEF_RAISED;
     rowPtr->hashPtr = hPtr;
-    rowPtr->name = Tcl_GetHashKey(&viewPtr->rowTable, hPtr);
     ResetLimits(&rowPtr->reqHeight);
     Blt_SetHashValue(hPtr, rowPtr);
     return rowPtr;
@@ -3022,7 +3072,6 @@ NewColumn(TableView *viewPtr, BLT_TABLE_COLUMN col, Blt_HashEntry *hPtr)
     colPtr->titleJustify = TK_JUSTIFY_CENTER;
     colPtr->titleRelief = colPtr->activeTitleRelief = TK_RELIEF_RAISED;
     colPtr->hashPtr = hPtr;
-    colPtr->name = Tcl_GetHashKey(&viewPtr->columnTable, hPtr);
     Blt_SetHashValue(hPtr, colPtr);
     ResetLimits(&colPtr->reqWidth);
     return colPtr;
@@ -3176,7 +3225,7 @@ GetFirstColumn(TableView *viewPtr)
 	Column *colPtr;
 
 	colPtr = viewPtr->columns[i];
-	if ((colPtr->flags & (HIDDEN|DISABLED)) == 0) {
+	if ((colPtr->flags & (HIDDEN|DISABLED|DELETED)) == 0) {
 	    return colPtr;
 	}
     }
@@ -3191,7 +3240,7 @@ GetNextColumn(Column *colPtr)
 
     for (i = colPtr->index + 1; i < viewPtr->numColumns; i++) {
 	colPtr = viewPtr->columns[i];
-	if ((colPtr->flags & (HIDDEN|DISABLED)) == 0) {
+	if ((colPtr->flags & (HIDDEN|DISABLED|DELETED)) == 0) {
 	    return colPtr;
 	}
     }
@@ -3206,7 +3255,7 @@ GetPrevColumn(Column *colPtr)
 
     for (i = colPtr->index - 1; i >= 0; i--) {
 	colPtr = viewPtr->columns[i];
-	if ((colPtr->flags & (HIDDEN|DISABLED)) == 0) {
+	if ((colPtr->flags & (HIDDEN|DISABLED|DELETED)) == 0) {
 	    return colPtr;
 	}
     }
@@ -3222,7 +3271,7 @@ GetLastColumn(TableView *viewPtr)
 	Column *colPtr;
 
 	colPtr = viewPtr->columns[i];
-	if ((colPtr->flags & (HIDDEN|DISABLED)) == 0) {
+	if ((colPtr->flags & (HIDDEN|DISABLED|DELETED)) == 0) {
 	    return colPtr;
 	}
     }
@@ -3397,7 +3446,7 @@ GetFirstRow(TableView *viewPtr)
 	Row *rowPtr;
 
 	rowPtr = viewPtr->rows[i];
-	if ((rowPtr->flags & (HIDDEN|DISABLED)) == 0) {
+	if ((rowPtr->flags & (HIDDEN|DISABLED|DELETED)) == 0) {
 	    return rowPtr;
 	}
     }
@@ -3412,7 +3461,7 @@ GetNextRow(Row *rowPtr)
 
     for (i = rowPtr->index + 1; i < viewPtr->numRows; i++) {
 	rowPtr = viewPtr->rows[i];
-	if ((rowPtr->flags & (HIDDEN|DISABLED)) == 0) {
+	if ((rowPtr->flags & (HIDDEN|DISABLED|DELETED)) == 0) {
 	    return rowPtr;
 	}
     }
@@ -3427,7 +3476,7 @@ GetPrevRow(Row *rowPtr)
 
     for (i = rowPtr->index - 1; i >= 0; i--) {
 	rowPtr = viewPtr->rows[i];
-	if ((rowPtr->flags & (HIDDEN|DISABLED)) == 0) {
+	if ((rowPtr->flags & (HIDDEN|DISABLED|DELETED)) == 0) {
 	    return rowPtr;
 	}
     }
@@ -3443,7 +3492,7 @@ GetLastRow(TableView *viewPtr)
 	Row *rowPtr;
 
 	rowPtr = viewPtr->rows[i];
-	if ((rowPtr->flags & (HIDDEN|DISABLED)) == 0) {
+	if ((rowPtr->flags & (HIDDEN|DISABLED|DELETED)) == 0) {
 	    return rowPtr;
 	}
     }
@@ -4298,16 +4347,16 @@ TableEventProc(ClientData clientData, BLT_TABLE_NOTIFY_EVENT *eventPtr)
    if (eventPtr->type & (TABLE_NOTIFY_DELETE|TABLE_NOTIFY_CREATE)) {
        if (eventPtr->type == TABLE_NOTIFY_ROWS_CREATED) {
 	   if (viewPtr->flags & AUTO_ROWS) {
-	       AddRows(viewPtr, eventPtr);
+               EventuallyAddRows(viewPtr);
 	   }
        } else if (eventPtr->type == TABLE_NOTIFY_COLUMNS_CREATED) {
 	   if (viewPtr->flags & AUTO_COLUMNS) {
-	       AddColumns(viewPtr, eventPtr);
+               EventuallyAddColumns(viewPtr);
 	   }
-       } else if (eventPtr->type & TABLE_NOTIFY_ROWS_DELETED) {
-	   DeleteRows(viewPtr, eventPtr);
-       } else if (eventPtr->type & TABLE_NOTIFY_COLUMNS_DELETED) {
-	   DeleteColumns(viewPtr, eventPtr);
+       } else if (eventPtr->type == TABLE_NOTIFY_ROWS_DELETED) {
+	   EventuallyDeleteRow(viewPtr, eventPtr->row);
+       } else if (eventPtr->type == TABLE_NOTIFY_COLUMNS_DELETED) {
+	   EventuallyDeleteColumn(viewPtr, eventPtr->column);
        }
        return TCL_OK;
     } 
@@ -7791,7 +7840,6 @@ ColumnResizeAnchorOp(ClientData clientData, Tcl_Interp *interp, int objc,
             return TCL_ERROR;
         } 
         viewPtr->colResizeAnchor = y;
-        viewPtr->flags |= COLUMN_RESIZE | REDRAW;
         UpdateColumnMark(viewPtr, y);
     }
     return TCL_OK;
@@ -7847,7 +7895,6 @@ ColumnResizeMarkOp(ClientData clientData, Tcl_Interp *interp, int objc,
         if (Tcl_GetIntFromObj(interp, objv[4], &y) != TCL_OK) {
             return TCL_ERROR;
         } 
-        viewPtr->flags |= COLUMN_RESIZE | REDRAW;
         UpdateColumnMark(viewPtr, y);
     }
     return TCL_OK;
@@ -7871,7 +7918,6 @@ ColumnResizeGetOp(ClientData clientData, Tcl_Interp *interp, int objc,
 {
     TableView *viewPtr = clientData;
 
-    viewPtr->flags &= ~COLUMN_RESIZE;
     UpdateColumnMark(viewPtr, viewPtr->colResizeMark);
     if (viewPtr->colResizePtr != NULL) {
 	int width, delta;
@@ -7902,7 +7948,6 @@ ColumnResizeSetOp(ClientData clientData, Tcl_Interp *interp, int objc,
     TableView *viewPtr = clientData;
     Column *colPtr;
     
-    /* viewPtr->flags &= ~COLUMN_RESIZE; */
     UpdateColumnMark(viewPtr, viewPtr->colResizeMark);
     colPtr = viewPtr->colResizePtr;
     if (colPtr != NULL) {
@@ -9787,7 +9832,6 @@ RowResizeAnchorOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	return TCL_ERROR;
     } 
     viewPtr->rowResizeAnchor = y;
-    viewPtr->flags |= ROW_RESIZE;
     UpdateRowMark(viewPtr, y);
     return TCL_OK;
 }
@@ -9838,7 +9882,6 @@ RowResizeMarkOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (Tcl_GetIntFromObj(NULL, objv[4], &y) != TCL_OK) {
 	return TCL_ERROR;
     } 
-    viewPtr->flags |= ROW_RESIZE;
     UpdateRowMark(viewPtr, y);
     return TCL_OK;
 }
@@ -9859,7 +9902,6 @@ RowResizeCurrentOp(ClientData clientData, Tcl_Interp *interp, int objc,
 {
     TableView *viewPtr = clientData;
 
-    viewPtr->flags &= ~ROW_RESIZE;
     UpdateRowMark(viewPtr, viewPtr->rowResizeMark);
     if (viewPtr->rowResizePtr != NULL) {
 	int height, delta;
@@ -11714,6 +11756,7 @@ ComputeVisibleEntries(TableView *viewPtr)
     assert(viewPtr->numVisibleColumns <= viewPtr->numColumns);
 }
 
+
 static void
 RebuildTableView(TableView *viewPtr)
 {
@@ -11937,34 +11980,38 @@ AddRowGeometry(TableView *viewPtr, Row *rowPtr)
     }
 }
 
-static void
-DeleteColumns(TableView *viewPtr, BLT_TABLE_NOTIFY_EVENT *eventPtr)
+static long
+GetNumberOfColumns(TableView *viewPtr)
 {
-    long i, j, numColumns;
-    BLT_TABLE_COLUMN col;
-    Column **columns;
+    Blt_HashEntry *hPtr;
+    Blt_HashSearch iter;
 
-    /* Step 1: Mark all columns as to be deleted. */
-    for (i = 0; i < viewPtr->numColumns; i++) {
-	Column *colPtr;
-
-	colPtr = viewPtr->columns[i];
-	colPtr->flags |= DELETED;
-    }
-    /* Step 2: Unmark all the columns that still exist in the table. */
+    long numColumns;
     numColumns = 0;
-    for (col = blt_table_first_column(viewPtr->table); col != NULL;
-	 col = blt_table_next_column(viewPtr->table, col)) {
-	Blt_HashEntry *hPtr;
-	Column *colPtr;
+    for (hPtr = Blt_FirstHashEntry(&viewPtr->columnTable, &iter); hPtr != NULL;
+         hPtr = Blt_NextHashEntry(&iter)) {
+        Column *colPtr;
 
-	hPtr = Blt_FindHashEntry(&viewPtr->columnTable, col);
-	assert(hPtr != NULL);
-	colPtr = Blt_GetHashValue(hPtr);
-	colPtr->flags &= ~DELETED;
-	numColumns++;
+        colPtr = Blt_GetHashValue(hPtr);
+        if (colPtr->flags & DELETED) {
+            continue;
+        }
+        numColumns++;
     }
-    /* Step 3: Delete the marked columns, first removing all the associated
+    return numColumns;
+}
+
+
+static void
+DeleteColumnsWhenIdleProc(ClientData clientData)
+{
+    Column **columns;
+    TableView *viewPtr = clientData;
+    long i, j, numColumns;
+    
+    /* Step 1: Count the number of rows marked for deletion. */
+    numColumns = GetNumberOfColumns(viewPtr);
+    /* Step 2: Delete the marked columns, first removing all the associated
      * cells. */
     columns = Blt_AssertMalloc(sizeof(Column *) * numColumns);
     for (i = j = 0; i < viewPtr->numColumns; i++) {
@@ -11987,15 +12034,21 @@ DeleteColumns(TableView *viewPtr, BLT_TABLE_NOTIFY_EVENT *eventPtr)
     viewPtr->columns = columns;
     viewPtr->numColumns = numColumns;
     viewPtr->flags |= LAYOUT_PENDING;
+    viewPtr->flags &= ~COLUMNS_DELETED;
     EventuallyRedraw(viewPtr);
 }
 
 static void
-AddColumns(TableView *viewPtr, BLT_TABLE_NOTIFY_EVENT *eventPtr)
+AddColumnsWhenIdleProc(ClientData clientData)
 {
+    TableView *viewPtr = clientData;
     long i;
     unsigned long count, oldNumColumns, newNumColumns;
 
+    if (viewPtr->flags & COLUMNS_DELETED) {
+        Tcl_CancelIdleCall(DeleteColumnsWhenIdleProc, viewPtr);
+        DeleteColumnsWhenIdleProc(viewPtr);
+    }
     oldNumColumns = viewPtr->numColumns;
     newNumColumns = blt_table_num_columns(viewPtr->table);
     assert(newNumColumns > oldNumColumns);
@@ -12039,37 +12092,41 @@ AddColumns(TableView *viewPtr, BLT_TABLE_NOTIFY_EVENT *eventPtr)
     }
     viewPtr->numColumns = newNumColumns;
     viewPtr->flags |= LAYOUT_PENDING;
+    viewPtr->flags &= ~COLUMNS_PENDING;
     PossiblyRedraw(viewPtr);
 }
 
-static void
-DeleteRows(TableView *viewPtr, BLT_TABLE_NOTIFY_EVENT *eventPtr)
+static long
+GetNumberOfRows(TableView *viewPtr)
 {
-    long i, j, numRows;
-    BLT_TABLE_ROW row;
-    Row **rows;
+    Blt_HashEntry *hPtr;
+    Blt_HashSearch iter;
+    long numRows;
 
-    /* Step 1: Mark all rows as to be deleted. */
-    for (i = 0; i < viewPtr->numRows; i++) {
-	Row *rowPtr;
-
-	rowPtr = viewPtr->rows[i];
-	rowPtr->flags |= DELETED;
-    }
-    /* Step 2: Unmark all the rows that still exists in the table. */
     numRows = 0;
-    for (row = blt_table_first_row(viewPtr->table); row != NULL;
-	 row = blt_table_next_row(viewPtr->table, row)) {
-	Blt_HashEntry *hPtr;
-	Row *rowPtr;
+    for (hPtr = Blt_FirstHashEntry(&viewPtr->rowTable, &iter); hPtr != NULL;
+         hPtr = Blt_NextHashEntry(&iter)) {
+        Row *rowPtr;
 
-	hPtr = Blt_FindHashEntry(&viewPtr->rowTable, row);
-	assert(hPtr != NULL);
-	rowPtr = Blt_GetHashValue(hPtr);
-	rowPtr->flags &= ~DELETED;
-	numRows++;
+        rowPtr = Blt_GetHashValue(hPtr);
+        if (rowPtr->flags & DELETED) {
+            continue;
+        }
+        numRows++;
     }
-    /* Step 3: Delete the marked rows, first removing all the associated
+    return numRows;
+}
+
+static void
+DeleteRowsWhenIdleProc(ClientData clientData)
+{
+    Row **rows;
+    TableView *viewPtr = clientData;
+    long i, j, numRows;
+    
+    /* Step 1: Count the number of rows marked for deletion. */
+    numRows = GetNumberOfRows(viewPtr);
+    /* Step 2: Delete the marked rows, first removing all the associated
      * cells. */
     rows = Blt_AssertMalloc(sizeof(Row *) * numRows);
     for (i = j = 0; i < viewPtr->numRows; i++) {
@@ -12092,15 +12149,21 @@ DeleteRows(TableView *viewPtr, BLT_TABLE_NOTIFY_EVENT *eventPtr)
     viewPtr->rows = rows;
     viewPtr->numRows = numRows;
     viewPtr->flags |= LAYOUT_PENDING;
+    viewPtr->flags &= ~ROWS_DELETED;
     EventuallyRedraw(viewPtr);
 }
 
 static void
-AddRows(TableView *viewPtr, BLT_TABLE_NOTIFY_EVENT *eventPtr)
+AddRowsWhenIdleProc(ClientData clientData)
 {
+    TableView *viewPtr = clientData;
     long i;
     unsigned long count, newNumRows, oldNumRows;
 
+    if (viewPtr->flags & ROWS_DELETED) {
+        Tcl_CancelIdleCall(DeleteRowsWhenIdleProc, viewPtr);
+        DeleteRowsWhenIdleProc(viewPtr);
+    }
     oldNumRows = viewPtr->numRows;
     newNumRows = blt_table_num_rows(viewPtr->table);
     assert(newNumRows > oldNumRows);
@@ -12140,6 +12203,7 @@ AddRows(TableView *viewPtr, BLT_TABLE_NOTIFY_EVENT *eventPtr)
     }
     viewPtr->numRows = newNumRows;
     viewPtr->flags |= LAYOUT_PENDING;
+    viewPtr->flags &= ~COLUMNS_PENDING;
     PossiblyRedraw(viewPtr);
 }
 
@@ -12150,15 +12214,30 @@ AttachTable(Tcl_Interp *interp, TableView *viewPtr)
     long i;
     unsigned int flags;
 
+    if (viewPtr->flags & ROWS_PENDING) {
+        Tcl_CancelIdleCall(AddRowsWhenIdleProc, viewPtr);
+    }
+    if (viewPtr->flags & COLUMNS_PENDING) {
+        Tcl_CancelIdleCall(AddColumnsWhenIdleProc, viewPtr);
+    }
+    if (viewPtr->flags & ROWS_DELETED) {
+        Tcl_CancelIdleCall(DeleteRowsWhenIdleProc, viewPtr);
+    }
+    if (viewPtr->flags & COLUMNS_DELETED) {
+        Tcl_CancelIdleCall(DeleteColumnsWhenIdleProc, viewPtr);
+    }
+    if (viewPtr->flags & SELECT_PENDING) {
+        Tcl_CancelIdleCall(SelectCommandProc, viewPtr);
+    }
     /* Try to match the current rows and columns in the view with the new
      * table names. */
 
     ResetTableView(viewPtr);
     viewPtr->colNotifier = blt_table_create_column_notifier(interp, 
-	viewPtr->table, NULL, TABLE_NOTIFY_ALL_EVENTS | TABLE_NOTIFY_WHENIDLE, 
+	viewPtr->table, NULL, TABLE_NOTIFY_ALL_EVENTS, 
 	TableEventProc, NULL, viewPtr);
     viewPtr->rowNotifier = blt_table_create_row_notifier(interp, 
-	viewPtr->table, NULL, TABLE_NOTIFY_ALL_EVENTS | TABLE_NOTIFY_WHENIDLE, 
+	viewPtr->table, NULL, TABLE_NOTIFY_ALL_EVENTS, 
 	TableEventProc, NULL, viewPtr);
     viewPtr->numRows = viewPtr->numColumns = 0;
     /* Rows. */

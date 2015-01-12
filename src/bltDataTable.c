@@ -5187,9 +5187,9 @@ blt_table_extend_rows(Tcl_Interp *interp, Table *tablePtr, size_t numExtra,
 	if (rows != NULL) {
 	    rows[i] = row;
 	}
+        NotifyRowChanged(tablePtr, row, TABLE_NOTIFY_ROWS_CREATED);
     }
     assert(Blt_Chain_GetLength(chain) > 0);
-    NotifyRowChanged(tablePtr, NULL, TABLE_NOTIFY_ROWS_CREATED);
     Blt_Chain_Destroy(chain);
     return TCL_OK;
 }
@@ -5200,7 +5200,6 @@ blt_table_delete_row(Table *tablePtr, Row *rowPtr)
     DeleteHeader(&tablePtr->corePtr->rows, (Header *)rowPtr);
     UnsetRowValues(tablePtr, rowPtr);
     NotifyRowChanged(tablePtr, rowPtr, TABLE_NOTIFY_ROWS_DELETED);
-    NotifyColumnChanged(tablePtr, NULL, TABLE_NOTIFY_COLUMNS_DELETED);
     Blt_Tags_ClearTagsFromItem(tablePtr->rowTags, rowPtr);
     blt_table_clear_row_traces(tablePtr, rowPtr);
     ClearRowNotifiers(tablePtr, rowPtr);
@@ -5361,9 +5360,9 @@ blt_table_get_column_limits(Tcl_Interp *interp, Table *tablePtr, Column *colPtr,
  * blt_table_delete_column --
  *
  *	Remove the designated column from the table.  The actual space
- *	contained by the column isn't freed.  The map is compressed.  Tcl_Objs
- *	stored as column values are released.  Traces and tags associated with
- *	the column are removed.
+ *	contained by the column isn't freed.  The map is compressed.
+ *	Tcl_Objs stored as column values are released.  Traces and tags
+ *	associated with the column are removed.
  *
  * Side Effects:
  *	Traces may fire when column values are unset.  Also notifier events
@@ -5381,7 +5380,6 @@ blt_table_delete_column(Table *tablePtr, Column *colPtr)
     }
     UnsetColumnValues(tablePtr, colPtr);
     NotifyColumnChanged(tablePtr, colPtr, TABLE_NOTIFY_COLUMNS_DELETED);
-    NotifyRowChanged(tablePtr, NULL, TABLE_NOTIFY_ROWS_DELETED);
     blt_table_clear_column_traces(tablePtr, colPtr);
     Blt_Tags_ClearTagsFromItem(tablePtr->columnTags, colPtr);
     ClearColumnNotifiers(tablePtr, colPtr);
@@ -5410,7 +5408,7 @@ blt_table_delete_column(Table *tablePtr, Column *colPtr)
  */
 int
 blt_table_extend_columns(Tcl_Interp *interp, BLT_TABLE table, size_t numExtra, 
-			Column **columns)
+			BLT_TABLE_COLUMN *columns)
 {
     size_t i;
     Blt_Chain chain;
@@ -5427,15 +5425,14 @@ blt_table_extend_columns(Tcl_Interp *interp, BLT_TABLE table, size_t numExtra,
     }
     for (i = 0, link = Blt_Chain_FirstLink(chain); link != NULL; 
 	 link = Blt_Chain_NextLink(link), i++) {
-	Column *colPtr;
+	BLT_TABLE_COLUMN col;
 
-	colPtr = Blt_Chain_GetValue(link);
+	col = Blt_Chain_GetValue(link);
 	if (columns != NULL) {
-	    columns[i] = colPtr;
+	    columns[i] = col;
 	}
-	colPtr->type = TABLE_COLUMN_TYPE_STRING;
+        NotifyColumnChanged(table, col, TABLE_NOTIFY_COLUMNS_CREATED);
     }
-    NotifyColumnChanged(table, NULL, TABLE_NOTIFY_COLUMNS_CREATED);
     Blt_Chain_Destroy(chain);
     return TCL_OK;
 }

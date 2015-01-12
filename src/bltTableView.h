@@ -133,35 +133,39 @@
 #define SCROLL_PENDING	(SCROLLX|SCROLLY)
 #define SELECT_PENDING	(1<<17)		/* A "selection" command idle task is
 					 * pending.  */
-#define SELECT_SORTED	(1<<18)		/* Indicates if the entries in the
+#define ROWS_PENDING    (1<<18)
+#define COLUMNS_PENDING (1<<19)
+#define ROWS_DELETED    (1<<20)
+#define COLUMNS_DELETED (1<<21)
+
+#define SELECT_SORTED	(1<<22)		/* Indicates if the entries in the
 					 * selection should be sorted or
 					 * displayed in the order they were
 					 * selected. */
-#define SELECT_EXPORT	(1<<19)		/* Export the selection to X11. */
+#define SELECT_EXPORT	(1<<23)		/* Export the selection to X11. */
 
-#define DONT_UPDATE	(1<<20)
-#define COLUMN_RESIZE	(1<<21)
-#define ROW_RESIZE	(1<<22)
+#define DONT_UPDATE	(1<<24)
 
-#define COLUMN_TITLES	(1<<23)		/* Display a header/label for each
+#define COLUMN_TITLES	(1<<25)		/* Display a header/label for each
 					 * column. */
-#define ROW_TITLES	(1<<24)		/* Display a header/label for each
+#define ROW_TITLES	(1<<26)		/* Display a header/label for each
 					 * row. */
 #define TITLES_MASK	(COLUMN_TITLES|ROW_TITLES)
 
-#define AUTO_ROWS	(1<<25)		/* Create rows and columns as
+#define AUTO_ROWS	(1<<27)		/* Create rows and columns as
 					 * needed when attached a
 					 * datatable. */
-#define AUTO_COLUMNS    (1<<26)		/* Create rows and columns as
+#define AUTO_COLUMNS    (1<<28)		/* Create rows and columns as
 					 * needed when attached a
 					 * datatable. */
 #define AUTOCREATE	(AUTO_ROWS|AUTO_COLUMNS)
-#define COLUMN_FILTERS	(1<<27)		/* Display combobox below each
+#define COLUMN_FILTERS	(1<<29)		/* Display combobox below each
 					 * column title to filter row
 					 * values. */
-#define FILTERHIGHLIGHT (1<<28)		/* Display the filter with
+#define FILTERHIGHLIGHT (1<<30)		/* Display the filter with
 					 * highlighted
 					 * foreground/background colors */
+
 /* Sort-related flags */
 #define SORT_PENDING	(1<<0)		
 #define SORT_ALWAYS	(1<<1)
@@ -400,7 +404,6 @@ struct _CellStyle {
  */
 struct _Row {
     unsigned int flags;
-    const char *name;
     TableView *viewPtr;			/* The parent tableview widget that
 					 * manages this row. */
     Blt_HashEntry *hashPtr;
@@ -459,7 +462,6 @@ struct _Row {
  */
 struct _Column {
     unsigned int flags;
-    const char *name;
     TableView *viewPtr;			/* The parent tableview widget that
 					 * manages this column. */
     Blt_HashEntry *hashPtr;
