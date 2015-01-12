@@ -622,8 +622,7 @@ proc blt::TableView::Initialize { w } {
 	} else {
             set style [%W style get active]
             set var [%W style cget $style -variable]
-            foreach { row col } [%W index active] break
-            set $var $row
+            set $var [%W index active]
 	    %W invoke active
 	}
     }

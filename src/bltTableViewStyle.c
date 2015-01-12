@@ -752,6 +752,7 @@ typedef struct {
     Tcl_Obj *varObjPtr;                 /* Name of variable to set with
                                          * row index. */
     BLT_TABLE_ROW row;
+    BLT_TABLE_COLUMN col;
     int xPad, yPad;
 } PushButtonStyle;
 
@@ -1922,6 +1923,25 @@ IconVarToObjProc(
     return objPtr;
 }
 
+static int
+GetCellFromObj(Tcl_Interp *interp, TableView *viewPtr, Tcl_Obj *objPtr, 
+	       PushButtonStyle *stylePtr)
+{
+    int objc;
+    Tcl_Obj **objv;
+
+    stylePtr->row = NULL;
+    stylePtr->col = NULL;
+    if (Tcl_ListObjGetElements(interp, objPtr, &objc, &objv) != TCL_OK) {
+	return TCL_ERROR;
+    }
+    if (objc == 2) {
+        stylePtr->row = blt_table_get_row(interp, viewPtr->table, objv[0]);
+        stylePtr->col = blt_table_get_column(interp, viewPtr->table, objv[1]);
+    }
+    return TCL_OK;
+}
+
 /*
  *---------------------------------------------------------------------------
  * 
@@ -1969,7 +1989,6 @@ PushButtonVarTraceProc(
     }
     if (flags & TCL_TRACE_WRITES) {
 	Tcl_Obj *objPtr;
-        TableView *viewPtr;
         
 	/*
 	 * Update the style's row with the index that is stored in the
@@ -1980,9 +1999,8 @@ PushButtonVarTraceProc(
 	if (objPtr == NULL) {
 	    return GetInterpResult(interp);
 	}
-        viewPtr = stylePtr->viewPtr;
-	stylePtr->row = blt_table_get_row(interp, viewPtr->table, objPtr);
-	Blt_TableView_EventuallyRedraw(viewPtr);
+        GetCellFromObj(interp, stylePtr->viewPtr, objPtr, stylePtr);
+	Blt_TableView_EventuallyRedraw(stylePtr->viewPtr);
     }
     return NULL;
 }
@@ -2050,10 +2068,7 @@ ObjToPushButtonVarProc(
     }
     valueObjPtr = Tcl_ObjGetVar2(interp, objPtr, NULL, TCL_GLOBAL_ONLY);
     if (valueObjPtr != NULL) {
-        TableView *viewPtr;
-
-        viewPtr = stylePtr->viewPtr;
-	stylePtr->row = blt_table_get_row(interp, viewPtr->table, valueObjPtr);
+        GetCellFromObj(interp, stylePtr->viewPtr, valueObjPtr, stylePtr);
     }
     *objPtrPtr = objPtr;
     Tcl_IncrRefCount(objPtr);
@@ -4694,8 +4709,11 @@ PushButtonStyleDrawProc(Cell *cellPtr, Drawable drawable,
     rowPtr = keyPtr->rowPtr;
     colPtr = keyPtr->colPtr;
 
-    relief = (stylePtr->row == rowPtr->row) ?
-        TK_RELIEF_SUNKEN : stylePtr->relief;
+    if ((stylePtr->row == rowPtr->row) && (stylePtr->col == colPtr->column)) {
+        relief = TK_RELIEF_SUNKEN;
+    } else {
+        relief = stylePtr->relief;
+    }
     if ((rowPtr->flags|colPtr->flags|cellPtr->flags) & DISABLED) {
 	/* Disabled */
 	bg = stylePtr->disableBg;
