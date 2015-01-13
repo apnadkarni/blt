@@ -4135,8 +4135,8 @@ GetCurrentStyle(TableView *viewPtr, Row *rowPtr, Column *colPtr, Cell *cellPtr)
  *	None.
  *
  * Side effects:
- *	The existing selection is unhighlighted, and the window is
- *	marked as not containing a selection.
+ *	The existing selection is unhighlighted, and the window is marked
+ *	as not containing a selection.
  *
  *---------------------------------------------------------------------------
  */
@@ -4156,8 +4156,8 @@ LostSelection(ClientData clientData)
  *
  * SelectRow --
  *
- *	Adds the given row from the set of selected rows.  It's OK
- *	if the row has already been selected.
+ *	Adds the given row from the set of selected rows.  It's OK if the
+ *	row has already been selected.
  *
  *---------------------------------------------------------------------------
  */
@@ -4196,8 +4196,9 @@ DeselectRow(TableView *viewPtr, Row *rowPtr)
  *
  * SelectRows --
  *
- *	Sets the selection flag for a range of nodes.  The range is determined
- *	by two pointers which designate the first/last nodes of the range.
+ *	Sets the selection flag for a range of nodes.  The range is
+ *	determined by two pointers which designate the first/last nodes of
+ *	the range.
  *
  * Results:
  *	Always returns TCL_OK.
