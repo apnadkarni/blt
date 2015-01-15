@@ -6340,7 +6340,7 @@ if test "${blt_with_pq_include_dir}" != "no" ; then
     new_CPPFLAGS=""
     if test "$blt_with_pq_include_dir" != "yes" ; then
       for dir in $blt_with_pq_include_dir $blt_with_pq_include_dir/include ; do
-        if test -r "${dir}/libpq-fe.h" ; then
+        if test -r "${dir}/postgresql/libpq-fe.h" ; then
 	  new_CPPFLAGS="-I${dir}"
 	  PQ_INC_DIR="$dir"
 	  break
@@ -6348,7 +6348,7 @@ if test "${blt_with_pq_include_dir}" != "no" ; then
       done
     else
       for dir in $prefix $prefix/include ; do
-        if test -r "${dir}/libpq-fe.h" ; then
+        if test -r "${dir}/postgresql/libpq-fe.h" ; then
 	  if test "${dir}" = "/usr/include" ; then
             new_CPPFLAGS=""
           else
@@ -6361,12 +6361,12 @@ if test "${blt_with_pq_include_dir}" != "no" ; then
     fi
     save_CPPFLAGS=${CPPFLAGS}
     CPPFLAGS=" ${new_CPPFLAGS}"
-    for ac_header in libpq-fe.h
+    for ac_header in postgresql/libpq-fe.h
 do :
-  ac_fn_c_check_header_mongrel "$LINENO" "libpq-fe.h" "ac_cv_header_libpq_fe_h" "$ac_includes_default"
-if test "x$ac_cv_header_libpq_fe_h" = xyes; then :
+  ac_fn_c_check_header_mongrel "$LINENO" "postgresql/libpq-fe.h" "ac_cv_header_postgresql_libpq_fe_h" "$ac_includes_default"
+if test "x$ac_cv_header_postgresql_libpq_fe_h" = xyes; then :
   cat >>confdefs.h <<_ACEOF
-#define HAVE_LIBPQ_FE_H 1
+#define HAVE_POSTGRESQL_LIBPQ_FE_H 1
 _ACEOF
  PQ_INC_SPEC="${new_CPPFLAGS}"
 else

@@ -36,7 +36,9 @@
 #include <bltDataTable.h>
 #include <bltAlloc.h>
 #include <bltSwitch.h>
-#include <libpq-fe.h>
+#ifdef HAVE_POSTGRESQL_LIBPQ_FE_H
+#include <postgresql/libpq-fe.h>
+#endif /* HAVE_POSTGRESQL_LIBPQ_FE_H */
 #ifdef HAVE_MEMORY_H
 #  include <memory.h>
 #endif /* HAVE_MEMORY_H */

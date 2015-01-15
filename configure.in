@@ -468,7 +468,7 @@ fi
 
 # LIBPQ header
 if test "${blt_with_pq_include_dir}" != "no" ; then
-  BLT_CHECK_HEADER(PQ, libpq-fe.h, $blt_with_pq_include_dir)
+  BLT_CHECK_HEADER(PQ, postgresql/libpq-fe.h, $blt_with_pq_include_dir)
 fi
 
 # XPM header
