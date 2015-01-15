@@ -151,6 +151,12 @@
 /* Define to 1 if you have the `PNG' library (-lpng). */
 #undef HAVE_LIBPNG
 
+/* Define to 1 if you have the `PQ' library (-lpq). */
+#undef HAVE_LIBPQ
+
+/* Define to 1 if you have the <libpq-fe.h> header file. */
+#undef HAVE_LIBPQ_FE_H
+
 /* Define to 1 if you have the `socket' library (-lsocket). */
 #undef HAVE_LIBSOCKET
 

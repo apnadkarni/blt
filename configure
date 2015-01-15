@@ -7902,7 +7902,7 @@ if test "$blt_with_pq_lib_dir" != "no" ; then
   save_LIBS="${LIBS}"
   if test "$blt_with_pq_lib_dir" = "yes" ; then
     # Check standard system location
-    lib_spec="-llibpq"
+    lib_spec="-lpq"
     dir=""
     LIBS="${lib_spec} ${save_LIBS}"
     cat confdefs.h - <<_ACEOF >conftest.$ac_ext
@@ -7931,7 +7931,7 @@ rm -f core conftest.err conftest.$ac_objext \
     if test "${found}" = "no" ; then
       # Then check locations based on prefix
       dir=$prefix/lib
-      lib_spec="-L${dir} -llibpq "
+      lib_spec="-L${dir} -lpq "
       LIBS="${lib_spec} ${save_LIBS}"
       cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
@@ -7960,7 +7960,7 @@ rm -f core conftest.err conftest.$ac_objext \
   else
     # A path was specified.
     for dir in $blt_with_pq_lib_dir $blt_with_pq_lib_dir/lib ; do
-      lib_spec="-L${dir} -llibpq "
+      lib_spec="-L${dir} -lpq "
       LIBS="${lib_spec} ${save_LIBS}"
       cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
@@ -8000,8 +8000,8 @@ $as_echo "#define HAVE_LIBPQ 1" >>confdefs.h
     PQ_LIB_DIR="$dir"
     PQ_LIB_SPEC=$lib_spec
   fi
-  if test -r "${dir}/liblibpq.a" ; then
-    PQ_STATIC_LIB="${dir}/liblibpq.a"
+  if test -r "${dir}/libpq.a" ; then
+    PQ_STATIC_LIB="${dir}/libpq.a"
   fi
 
 

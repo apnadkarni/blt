@@ -1123,7 +1123,7 @@ fi
 
 if test "${blt_with_pq_lib_dir}" != "no" -a \
 	"${ac_cv_header_libpq-fe_h}" != "no" ; then
-  BLT_CHECK_LIBRARY(PQ, libpq, PQconnectdb, $blt_with_pq_lib_dir)
+  BLT_CHECK_LIBRARY(PQ, pq, PQconnectdb, $blt_with_pq_lib_dir)
 fi
 
 # TIFF library
