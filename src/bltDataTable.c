@@ -6183,7 +6183,7 @@ blt_table_get_double(Table *tablePtr, Row *rowPtr, Column *colPtr)
     }
     if (Blt_GetDoubleFromString(tablePtr->interp, GetString(valuePtr), &d) 
 	!= TCL_OK) {
-	return TCL_ERROR;
+	return Blt_NaN();
     }
     return d;
 }

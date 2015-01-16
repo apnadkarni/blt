@@ -54,7 +54,12 @@ option add *TextMarker.Background	{}
 option add *TextMarker.Foreground	white
 
 set table [blt::datatable create]
-$table restore -file graph4a.tab
+$table import csv -file graph4a.csv
+if { [$table row isheader 0] } {
+    set labels [$table row values 0]
+    $table column labels $labels
+    $table row delete 0
+}
 
 set attributes {
     V1	v1	red	red  

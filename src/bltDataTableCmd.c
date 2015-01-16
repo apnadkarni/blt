@@ -4428,12 +4428,13 @@ RowCreateOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * RowDeleteOp --
  *
- *	Deletes the rows designated.  One or more rows may be deleted using a
- *	tag.
+ *	Deletes the rows designated.  One or more rows may be deleted using
+ *	a tag.
  * 
  * Results:
- *	A standard TCL result. If the tag or row index is invalid, TCL_ERROR
- *	is returned and an error message is left in the interpreter result.
+ *	A standard TCL result. If the tag or row index is invalid,
+ *	TCL_ERROR is returned and an error message is left in the
+ *	interpreter result.
  *
  * Example:
  *	$t row delete ?row?...
@@ -4834,6 +4835,104 @@ RowIndicesOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     blt_table_free_iterator_objv(&ri);
     return TCL_OK;
 }
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * RowIsNumeric --
+ *
+ *	Returns a whether all the entries in the row are numeric.
+ * 
+ * Results:
+ *	A standard TCL result. 
+ *
+ * Example:
+ *	$t row isnumeric $row
+ *	
+ *---------------------------------------------------------------------------
+ */
+static int
+RowIsNumericOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+{
+    BLT_TABLE_COLUMN col;
+    BLT_TABLE_ROW row;
+    int state;
+    
+    row = blt_table_get_row(interp, cmdPtr->table, objv[3]);
+    if (row == NULL) {
+	return TCL_ERROR;
+    }
+    state = TRUE;
+    for (col = blt_table_first_column(cmdPtr->table); col != NULL; 
+	 col = blt_table_next_column(cmdPtr->table, col)) {
+        double d;
+        
+	d = blt_table_get_double(cmdPtr->table, row, col);
+        if (!FINITE(d)) {
+            state = FALSE;
+            break;
+        }
+    }
+    Tcl_SetBooleanObj(Tcl_GetObjResult(interp), state);
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * RowIsHeaderOp --
+ *
+ *	Returns a whether all the entries in the row are headers (column
+ *	labels).  We test first if the value starts with a number and then
+ *	if the value is unique.  Column header labels should ordinarily not
+ *	start with a number or be duplicated.
+ * 
+ * Results:
+ *	A standard TCL result. 
+ *
+ * Example:
+ *	$t row isalpha $row
+ *	
+ *---------------------------------------------------------------------------
+ */
+static int
+RowIsHeaderOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+{
+    BLT_TABLE_COLUMN col;
+    BLT_TABLE_ROW row;
+    int state;
+    Blt_HashTable table;
+    
+    row = blt_table_get_row(interp, cmdPtr->table, objv[3]);
+    if (row == NULL) {
+	return TCL_ERROR;
+    }
+    Blt_InitHashTable(&table, BLT_STRING_KEYS);
+    state = TRUE;
+    for (col = blt_table_first_column(cmdPtr->table); col != NULL; 
+	 col = blt_table_next_column(cmdPtr->table, col)) {
+        const char *value;
+        int isNew;
+        
+	value = blt_table_get_string(cmdPtr->table, row, col);
+        if (value == NULL) {
+            continue;                   /* Ignore empty cells. */
+        }
+        if (isdigit(value[0])) {
+            state = FALSE;              /* Can't start with a number. */
+            break;
+        }
+        Blt_CreateHashEntry(&table, value, &isNew);
+        if (!isNew) {
+            state = FALSE;              /* Must be unique. */
+            break;
+        }
+    }
+    Blt_DeleteHashTable(&table);
+    Tcl_SetBooleanObj(Tcl_GetObjResult(interp), state);
+    return TCL_OK;
+}
+
 /*
  *---------------------------------------------------------------------------
  *
@@ -6243,6 +6342,8 @@ static Blt_OpSpec rowOps[] =
     {"get",       1, RowGetOp,      4, 0, "row ?switches?",},
     {"index",     4, RowIndexOp,    4, 4, "row",},
     {"indices",   4, RowIndicesOp,  3, 0, "row ?row...?",},
+    {"isheader",  3, RowIsHeaderOp, 4, 4, "row",},
+    {"isnumeric", 3, RowIsNumericOp,4, 4, "row",},
     {"join",      1, RowJoinOp,     4, 0, "table ?switches?",},
     {"label",     5, RowLabelOp,    4, 0, "row ?label?",},
     {"labels",    6, RowLabelsOp,   3, 4, "?labelList?",},
