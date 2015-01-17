@@ -845,7 +845,7 @@ EntryIsHidden(Entry *entryPtr)
     if ((viewPtr->flags & HIDE_LEAVES) && (Blt_Tree_IsLeaf(entryPtr->node))) {
 	return TRUE;
     }
-    return (entryPtr->flags & ENTRY_HIDE) ? TRUE : FALSE;
+    return (entryPtr->flags & ENTRY_HIDDEN) ? TRUE : FALSE;
 }
 
 #ifdef notdef
@@ -864,7 +864,7 @@ EntryIsMapped(Entry *entryPtr)
     }
     entryPtr = ParentEntry(entryPtr);
     while (entryPtr != viewPtr->rootPtr) {
-	if (entryPtr->flags & (ENTRY_CLOSED | ENTRY_HIDE)) {
+	if (entryPtr->flags & (ENTRY_CLOSED | ENTRY_HIDDEN)) {
 	    return FALSE;
 	}
 	entryPtr = ParentEntry(entryPtr);
@@ -891,7 +891,7 @@ FirstChild(Entry *entryPtr, unsigned int mask)
     for (node = Blt_Tree_FirstChild(entryPtr->node); node != NULL; 
 	 node = Blt_Tree_NextSibling(node)) {
 	entryPtr = NodeToEntry(viewPtr, node);
-	if (((mask & ENTRY_HIDE) == 0) || (!EntryIsHidden(entryPtr))) {
+	if (((mask & ENTRY_HIDDEN) == 0) || (!EntryIsHidden(entryPtr))) {
 	    return entryPtr;
 	}
     }
@@ -907,7 +907,7 @@ LastChild(Entry *entryPtr, unsigned int mask)
     for (node = Blt_Tree_LastChild(entryPtr->node); node != NULL; 
 	 node = Blt_Tree_PrevSibling(node)) {
 	entryPtr = NodeToEntry(viewPtr, node);
-	if (((mask & ENTRY_HIDE) == 0) || (!EntryIsHidden(entryPtr))) {
+	if (((mask & ENTRY_HIDDEN) == 0) || (!EntryIsHidden(entryPtr))) {
 	    return entryPtr;
 	}
     }
@@ -923,7 +923,7 @@ NextSibling(Entry *entryPtr, unsigned int mask)
     for (node = Blt_Tree_NextSibling(entryPtr->node); node != NULL; 
 	 node = Blt_Tree_NextSibling(node)) {
 	entryPtr = NodeToEntry(viewPtr, node);
-	if (((mask & ENTRY_HIDE) == 0) || (!EntryIsHidden(entryPtr))) {
+	if (((mask & ENTRY_HIDDEN) == 0) || (!EntryIsHidden(entryPtr))) {
 	    return entryPtr;
 	}
     }
@@ -939,7 +939,7 @@ PrevSibling(Entry *entryPtr, unsigned int mask)
     for (node = Blt_Tree_PrevSibling(entryPtr->node); node != NULL; 
 	 node = Blt_Tree_PrevSibling(node)) {
 	entryPtr = NodeToEntry(viewPtr, node);
-	if (((mask & ENTRY_HIDE) == 0) ||
+	if (((mask & ENTRY_HIDDEN) == 0) ||
 	    (!EntryIsHidden(entryPtr))) {
 	    return entryPtr;
 	}
@@ -3437,10 +3437,10 @@ Apply(
     TreeViewApplyProc *proc,		/* Procedure called for each entry. */
     unsigned int flags)
 {
-    if ((flags & ENTRY_HIDE) && (EntryIsHidden(entryPtr))) {
+    if ((flags & ENTRY_HIDDEN) && (EntryIsHidden(entryPtr))) {
 	return TCL_OK;			/* Hidden node. */
     }
-    if ((flags & entryPtr->flags) & ENTRY_HIDE) {
+    if ((flags & entryPtr->flags) & ENTRY_HIDDEN) {
 	return TCL_OK;			/* Hidden node. */
     }
     if ((flags | entryPtr->flags) & ENTRY_CLOSED) {
@@ -3610,7 +3610,7 @@ LastEntry(TreeView *viewPtr, Entry *entryPtr, unsigned int mask)
 static int
 ShowEntryApplyProc(TreeView *viewPtr, Entry *entryPtr)
 {
-    entryPtr->flags &= ~ENTRY_HIDE;
+    entryPtr->flags &= ~ENTRY_HIDDEN;
     return TCL_OK;
 }
 
@@ -3628,7 +3628,7 @@ ShowEntryApplyProc(TreeView *viewPtr, Entry *entryPtr)
 static int
 HideEntryApplyProc(TreeView *viewPtr, Entry *entryPtr)
 {
-    entryPtr->flags |= ENTRY_HIDE;
+    entryPtr->flags |= ENTRY_HIDDEN;
     return TCL_OK;
 }
 
@@ -3638,9 +3638,9 @@ MapAncestors(TreeView *viewPtr, Entry *entryPtr)
 {
     while (entryPtr != viewPtr->rootPtr) {
 	entryPtr = ParentEntry(entryPtr);
-	if (entryPtr->flags & (ENTRY_CLOSED | ENTRY_HIDE)) {
+	if (entryPtr->flags & (ENTRY_CLOSED | ENTRY_HIDDEN)) {
 	    viewPtr->flags |= LAYOUT_PENDING;
-	    entryPtr->flags &= ~(ENTRY_CLOSED | ENTRY_HIDE);
+	    entryPtr->flags &= ~(ENTRY_CLOSED | ENTRY_HIDDEN);
 	} 
     }
 }
@@ -3668,10 +3668,10 @@ MapAncestorsApplyProc(TreeView *viewPtr, Entry *entryPtr)
      */
     while (entryPtr != viewPtr->rootPtr) {
 	entryPtr = ParentEntry(entryPtr);
-	if ((entryPtr->flags & (ENTRY_HIDE | ENTRY_CLOSED)) == 0) {
+	if ((entryPtr->flags & (ENTRY_HIDDEN | ENTRY_CLOSED)) == 0) {
 	    break;		/* Assume ancestors are also mapped. */
 	}
-	entryPtr->flags &= ~(ENTRY_HIDE | ENTRY_CLOSED);
+	entryPtr->flags &= ~(ENTRY_HIDDEN | ENTRY_CLOSED);
     }
     return TCL_OK;
 }
@@ -6658,8 +6658,8 @@ ResetCoordinates(TreeView *viewPtr, Entry *entryPtr, int *yPtr, long *indexPtr)
 
         /* Recursively handle each child of this node. */
 	bottomPtr = entryPtr;
-	for (childPtr = FirstChild(entryPtr, ENTRY_HIDE); childPtr != NULL; 
-	     childPtr = NextSibling(childPtr, ENTRY_HIDE)){
+	for (childPtr = FirstChild(entryPtr, ENTRY_HIDDEN); childPtr != NULL; 
+	     childPtr = NextSibling(childPtr, ENTRY_HIDDEN)){
 	    ResetCoordinates(viewPtr, childPtr, yPtr, indexPtr);
 	    bottomPtr = childPtr;
 	}
@@ -6735,8 +6735,8 @@ GetTreeCoordinates(TreeView *viewPtr, Entry *entryPtr, int *yPtr,
 
         /* Recursively handle each child of this node. */
 	bottomPtr = entryPtr;
-	for (childPtr = FirstChild(entryPtr, ENTRY_HIDE); childPtr != NULL; 
-	     childPtr = NextSibling(childPtr, ENTRY_HIDE)){
+	for (childPtr = FirstChild(entryPtr, ENTRY_HIDDEN); childPtr != NULL; 
+	     childPtr = NextSibling(childPtr, ENTRY_HIDDEN)){
 	    GetTreeCoordinates(viewPtr, childPtr, yPtr, indexPtr);
 	    bottomPtr = childPtr;
 	}
@@ -7066,7 +7066,7 @@ ComputeTreeLayout(TreeView *viewPtr)
         entryPtr->flags &= ~ENTRY_BUTTON;
         if ((entryPtr->flags & ENTRY_REQUEST_BUTTON) ||
             ((entryPtr->flags & ENTRY_AUTO_BUTTON) &&
-             (FirstChild(entryPtr, ENTRY_HIDE) != NULL))) {
+             (FirstChild(entryPtr, ENTRY_HIDDEN) != NULL))) {
             entryPtr->flags |= ENTRY_BUTTON;
         }
         depth = DEPTH(viewPtr, entryPtr->node);
@@ -7379,7 +7379,7 @@ ComputeVisibleEntries(TreeView *viewPtr)
     viewPtr->numVisibleEntries = 0;
     viewPtr->visibleEntries[numSlots] = viewPtr->visibleEntries[0] = NULL;
 
-    if (viewPtr->rootPtr->flags & ENTRY_HIDE) {
+    if (viewPtr->rootPtr->flags & ENTRY_HIDDEN) {
 	return TCL_OK;			/* Root node is hidden. */
     }
     /* Find the node where the view port starts. */
@@ -7429,8 +7429,8 @@ ComputeVisibleEntries(TreeView *viewPtr)
 
 	ep = viewPtr->rootPtr;
 	while ((ep->worldY + ep->height) <= viewPtr->yOffset) {
-	    for (ep = LastChild(ep, ENTRY_HIDE); ep != NULL; 
-		 ep = PrevSibling(ep, ENTRY_HIDE)) {
+	    for (ep = LastChild(ep, ENTRY_HIDDEN); ep != NULL; 
+		 ep = PrevSibling(ep, ENTRY_HIDDEN)) {
 		if (ep->worldY <= viewPtr->yOffset) {
 		    break;
 		}
@@ -9191,7 +9191,7 @@ BboxOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	if (entryPtr == NULL) {
 	    continue;
 	}
-	if (entryPtr->flags & ENTRY_HIDE) {
+	if (entryPtr->flags & ENTRY_HIDDEN) {
 	    continue;
 	}
 	yBot = entryPtr->worldY + entryPtr->height;
@@ -11308,7 +11308,7 @@ EntryIsExposedOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (GetEntry(viewPtr, objv[3], &entryPtr) != TCL_OK) {
 	return TCL_ERROR;
     }
-    bool = ((entryPtr->flags & ENTRY_HIDE) == 0);
+    bool = ((entryPtr->flags & ENTRY_HIDDEN) == 0);
     Tcl_SetBooleanObj(Tcl_GetObjResult(interp), bool);
     return TCL_OK;
 }
@@ -11334,7 +11334,7 @@ EntryIsHiddenOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (GetEntry(viewPtr, objv[3], &entryPtr) != TCL_OK) {
 	return TCL_ERROR;
     }
-    bool = (entryPtr->flags & ENTRY_HIDE);
+    bool = (entryPtr->flags & ENTRY_HIDDEN);
     Tcl_SetBooleanObj(Tcl_GetObjResult(interp), bool);
     return TCL_OK;
 }
@@ -11431,8 +11431,8 @@ EntryDegreeOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	return TCL_ERROR;
     }
     count = 0;
-    for (entryPtr = FirstChild(parentPtr, ENTRY_HIDE); entryPtr != NULL; 
-	 entryPtr = NextSibling(entryPtr, ENTRY_HIDE)) {
+    for (entryPtr = FirstChild(parentPtr, ENTRY_HIDDEN); entryPtr != NULL; 
+	 entryPtr = NextSibling(entryPtr, ENTRY_HIDDEN)) {
 	count++;
     }
     Tcl_SetLongObj(Tcl_GetObjResult(interp), count);
@@ -11952,7 +11952,7 @@ FocusOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	    return TCL_ERROR;
 	}
 	if ((entryPtr != NULL) && (entryPtr != viewPtr->focusPtr)) {
-	    if (entryPtr->flags & ENTRY_HIDE) {
+	    if (entryPtr->flags & ENTRY_HIDDEN) {
 		/* Doesn't make sense to set focus to a node you can't see. */
 		MapAncestors(viewPtr, entryPtr);
 	    }
@@ -12247,7 +12247,7 @@ SearchAndApplyToTree(TreeView *viewPtr, Tcl_Interp *interp, int objc,
 static int
 FixSelectionsApplyProc(TreeView *viewPtr, Entry *entryPtr)
 {
-    if (entryPtr->flags & ENTRY_HIDE) {
+    if (entryPtr->flags & ENTRY_HIDDEN) {
 	DeselectEntry(viewPtr, entryPtr);
 	if ((viewPtr->focusPtr != NULL) &&
 	    (Blt_Tree_IsAncestor(entryPtr->node, viewPtr->focusPtr->node))) {
@@ -12959,12 +12959,12 @@ RangeOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	lastPtr = LastEntry(viewPtr, firstPtr, mask);
     }    
     if (mask & ENTRY_CLOSED) {
-	if (firstPtr->flags & ENTRY_HIDE) {
+	if (firstPtr->flags & ENTRY_HIDDEN) {
 	    Tcl_AppendResult(interp, "first node \"", Tcl_GetString(objv[2]), 
 		"\" is hidden.", (char *)NULL);
 	    return TCL_ERROR;
 	}
-	if (lastPtr->flags & ENTRY_HIDE) {
+	if (lastPtr->flags & ENTRY_HIDDEN) {
 	    Tcl_AppendResult(interp, "last node \"", Tcl_GetString(objv[3]), 
 		"\" is hidden.", (char *)NULL);
 	    return TCL_ERROR;
@@ -13109,7 +13109,7 @@ SeeOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     if (entryPtr == NULL) {
 	return TCL_OK;
     }
-    if (entryPtr->flags & ENTRY_HIDE) {
+    if (entryPtr->flags & ENTRY_HIDDEN) {
 	/*
 	 * If the entry wasn't previously exposed, its world coordinates
 	 * aren't likely to be valid.  So re-compute the layout before we
@@ -13446,7 +13446,7 @@ SelectionSetOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	if (firstPtr == NULL) {
 	    return TCL_OK;		/* Didn't pick an entry. */
 	}
-	if ((firstPtr->flags & ENTRY_HIDE) && 
+	if ((firstPtr->flags & ENTRY_HIDDEN) && 
 	    (!(viewPtr->sel.flags & SELECT_CLEAR))) {
 	    if (objc > 4) {
 		Tcl_AppendResult(interp, "can't select hidden node \"", 
@@ -13461,7 +13461,7 @@ SelectionSetOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	    if (GetEntry(viewPtr, objv[4], &lastPtr) != TCL_OK) {
 		return TCL_ERROR;
 	    }
-	    if ((lastPtr->flags & ENTRY_HIDE) && 
+	    if ((lastPtr->flags & ENTRY_HIDDEN) && 
 		(!(viewPtr->sel.flags & SELECT_CLEAR))) {
 		Tcl_AppendResult(interp, "can't select hidden node \"", 
 			Tcl_GetString(objv[4]), "\"", (char *)NULL);
@@ -13487,7 +13487,7 @@ SelectionSetOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	}
 	for (entryPtr = FirstTaggedEntry(&iter); entryPtr != NULL; 
 	     entryPtr = NextTaggedEntry(&iter)) {
-	    if ((entryPtr->flags & ENTRY_HIDE) && 
+	    if ((entryPtr->flags & ENTRY_HIDDEN) && 
 		((viewPtr->sel.flags & SELECT_CLEAR) == 0)) {
 		continue;
 	    }
@@ -13727,8 +13727,8 @@ SortListOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	return TCL_ERROR;               /* Out of memory. */
     }
     count = 0;
-    for (childPtr = FirstChild(entryPtr, ENTRY_HIDE); childPtr != NULL; 
-	 childPtr = NextSibling(childPtr, ENTRY_HIDE)) {
+    for (childPtr = FirstChild(entryPtr, ENTRY_HIDDEN); childPtr != NULL; 
+	 childPtr = NextSibling(childPtr, ENTRY_HIDDEN)) {
 	nodes[count] = childPtr->node;
 	count++;
     }

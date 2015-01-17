@@ -306,7 +306,7 @@ static Blt_ConfigSpec configSpecs[] =
         BLT_CONFIG_DONT_SET_DEFAULT | ALL_GRAPHS},
     {BLT_CONFIG_BITMASK, "-hide", "hide", "Hide", DEF_HIDE, 
 	Blt_Offset(Axis, flags), ALL_GRAPHS | BLT_CONFIG_DONT_SET_DEFAULT, 
-        (Blt_CustomOption *)HIDE},
+        (Blt_CustomOption *)HIDDEN},
     {BLT_CONFIG_JUSTIFY, "-justify", "justify", "Justify",
 	DEF_JUSTIFY, Blt_Offset(Axis, titleJustify),
 	ALL_GRAPHS | BLT_CONFIG_DONT_SET_DEFAULT},
@@ -2023,7 +2023,7 @@ Blt_ResetAxes(Graph *graphPtr)
 	Element *elemPtr;
 
 	elemPtr = Blt_Chain_GetValue(link);
-	if ((graphPtr->flags & MAP_VISIBLE) && (elemPtr->flags & HIDE)) {
+	if ((graphPtr->flags & MAP_VISIBLE) && (elemPtr->flags & HIDDEN)) {
 	    continue;
 	}
 	(*elemPtr->procsPtr->extentsProc) (elemPtr);
@@ -2766,7 +2766,7 @@ MapStackedAxis(Axis *axisPtr, float totalWeight)
     unsigned int w, h, n, slice;
     float ratio;
     
-    n = axisPtr->marginPtr->axes->numLinks;
+    n = axisPtr->marginPtr->numAxes;
     if ((n > 1) || (axisPtr->reqNumMajorTicks <= 0)) {
 	axisPtr->reqNumMajorTicks = 4;
     }
@@ -3527,7 +3527,7 @@ GetMarginGeometry(Graph *graphPtr, Margin *marginPtr)
     if (graphPtr->flags & STACK_AXES) {
 	for (axisPtr = FirstAxis(marginPtr); axisPtr != NULL;
 	     axisPtr = NextAxis(axisPtr)) {
-            if (axisPtr->flags & (HIDE|DELETE_PENDING)) {
+            if (axisPtr->flags & (HIDDEN|DELETED)) {
                 continue;
             }
             numVisible++;
@@ -3553,7 +3553,7 @@ GetMarginGeometry(Graph *graphPtr, Margin *marginPtr)
     } else {
 	for (axisPtr = FirstAxis(marginPtr); axisPtr != NULL;
 	     axisPtr = NextAxis(axisPtr)) {
-            if (axisPtr->flags & (HIDE|DELETE_PENDING)) {
+            if (axisPtr->flags & (HIDDEN|DELETED)) {
                 continue;
             }
             numVisible++;
@@ -4081,13 +4081,13 @@ NewAxis(Graph *graphPtr, const char *name, int margin)
     hPtr = Blt_CreateHashEntry(&graphPtr->axes.nameTable, name, &isNew);
     if (!isNew) {
 	axisPtr = Blt_GetHashValue(hPtr);
-	if ((axisPtr->flags & DELETE_PENDING) == 0) {
+	if ((axisPtr->flags & DELETED) == 0) {
 	    Tcl_AppendResult(graphPtr->interp, "axis \"", name,
 		"\" already exists in \"", Tk_PathName(graphPtr->tkwin), "\"",
 		(char *)NULL);
 	    return NULL;
 	}
-	axisPtr->flags &= ~DELETE_PENDING;
+	axisPtr->flags &= ~DELETED;
     } else {
 	axisPtr = Blt_Calloc(1, sizeof(Axis));
 	if (axisPtr == NULL) {
@@ -4119,7 +4119,7 @@ NewAxis(Graph *graphPtr, const char *name, int margin)
 	    axisPtr->reqNumMinorTicks = 0;
 	} 
 	if ((margin == MARGIN_RIGHT) || (margin == MARGIN_TOP)) {
-	    axisPtr->flags |= HIDE;
+	    axisPtr->flags |= HIDDEN;
 	}
 	Blt_Ts_InitStyle(axisPtr->limitsTextStyle);
 	axisPtr->tickLabels = Blt_Chain_Create();
@@ -4143,7 +4143,7 @@ GetAxisFromObj(Tcl_Interp *interp, Graph *graphPtr, Tcl_Obj *objPtr,
 	Axis *axisPtr;
 
 	axisPtr = Blt_GetHashValue(hPtr);
-	if ((axisPtr->flags & DELETE_PENDING) == 0) {
+	if ((axisPtr->flags & DELETED) == 0) {
 	    *axisPtrPtr = axisPtr;
 	    return TCL_OK;
 	}
@@ -4306,7 +4306,7 @@ ActivateOp(Tcl_Interp *interp, Axis *axisPtr, int objc, Tcl_Obj *const *objv)
     } else {
 	axisPtr->flags &= ~ACTIVE;
     }
-    if ((axisPtr->marginPtr != NULL) && ((axisPtr->flags & HIDE) == 0)) {
+    if ((axisPtr->marginPtr != NULL) && ((axisPtr->flags & HIDDEN) == 0)) {
 	graphPtr->flags |= DRAW_MARGINS | CACHE_DIRTY;
 	Blt_EventuallyRedrawGraph(graphPtr);
     }
@@ -4966,7 +4966,7 @@ AxisDeleteOp(Tcl_Interp *interp, Graph *graphPtr, int objc,
 	if (GetAxisFromObj(interp, graphPtr, objv[i], &axisPtr) != TCL_OK) {
 	    return TCL_ERROR;
 	}
-	axisPtr->flags |= DELETE_PENDING;
+	axisPtr->flags |= DELETED;
 	if (axisPtr->refCount == 0) {
 	    DestroyAxis(axisPtr);
 	}
@@ -5170,6 +5170,8 @@ AxisNamesOp(Tcl_Interp *interp, Graph *graphPtr, int objc, Tcl_Obj *const *objv)
     Tcl_Obj *listObjPtr;
     NamesArgs args;
     int i, count;
+    Blt_HashEntry *hPtr;
+    Blt_HashSearch cursor;
     
     count = 0;
     for (i = 3; i < objc; i++) {
@@ -5189,62 +5191,41 @@ AxisNamesOp(Tcl_Interp *interp, Graph *graphPtr, int objc, Tcl_Obj *const *objv)
     objc -= count;
     objv += count;
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
-    if (objc == 3) {
-	Blt_HashEntry *hPtr;
-	Blt_HashSearch cursor;
+    for (hPtr = Blt_FirstHashEntry(&graphPtr->axes.nameTable, &cursor);
+         hPtr != NULL; hPtr = Blt_NextHashEntry(&cursor)) {
+        Axis *axisPtr;
+        int match;
+        
+        axisPtr = Blt_GetHashValue(hPtr);
+        if (axisPtr->flags & DELETED) {
+            continue;
+        }
+        if (((axisPtr->flags & HIDDEN) || (axisPtr->marginPtr == NULL)) &&
+            (args.flags & (VISIBLE|ZOOM))) {
+            continue;               /* Don't zoom hidden axes. */
+        }
+        if ((axisPtr->obj.classId != CID_AXIS_X) &&
+            (axisPtr->obj.classId != CID_AXIS_Y) &&
+            (args.flags & ZOOM)) {
+            continue;               /* Zoom only X or Y axes. */
+        }
+        if (axisPtr->marginPtr->numAxes > 1) {
+            continue;               /* Don't zoom stacked axes. */
+        }
+        match = FALSE;
+        for (i = 3; i < objc; i++) {
+            const char *pattern;
 
-	for (hPtr = Blt_FirstHashEntry(&graphPtr->axes.nameTable, &cursor);
-	     hPtr != NULL; hPtr = Blt_NextHashEntry(&cursor)) {
-	    Axis *axisPtr;
-
-	    axisPtr = Blt_GetHashValue(hPtr);
-	    if (axisPtr->flags & DELETE_PENDING) {
-		continue;
-	    }
-            if (((axisPtr->flags & HIDE) || (axisPtr->marginPtr == NULL)) &&
-                (args.flags & (VISIBLE|ZOOM))) {
-                continue;
+            pattern = Tcl_GetString(objv[i]);
+            if (Tcl_StringMatch(axisPtr->obj.name, pattern)) {
+                match = TRUE;
+                break;
             }
-            if ((axisPtr->obj.classId != CID_AXIS_X) &&
-                (axisPtr->obj.classId != CID_AXIS_Y) &&
-                (args.flags & ZOOM)) {
-                continue;
-            }
-	    Tcl_ListObjAppendElement(interp, listObjPtr, 
-		     Tcl_NewStringObj(axisPtr->obj.name, -1));
-	}
-    } else {
-	Blt_HashEntry *hPtr;
-	Blt_HashSearch cursor;
-
-	for (hPtr = Blt_FirstHashEntry(&graphPtr->axes.nameTable, &cursor);
-	     hPtr != NULL; hPtr = Blt_NextHashEntry(&cursor)) {
-	    Axis *axisPtr;
-	    int i;
-
-	    axisPtr = Blt_GetHashValue(hPtr);
-            if (((axisPtr->flags & HIDE) || (axisPtr->marginPtr == NULL)) &&
-                (args.flags & (VISIBLE|ZOOM))) {
-                continue;
-            }
-            if ((axisPtr->obj.classId != CID_AXIS_X) &&
-                (axisPtr->obj.classId != CID_AXIS_Y) &&
-                (args.flags & ZOOM)) {
-                continue;
-            }
-	    for (i = count + 3; i < objc; i++) {
-		const char *pattern;
-
-		pattern = Tcl_GetString(objv[i]);
-		if (Tcl_StringMatch(axisPtr->obj.name, pattern)) {
-		    Tcl_Obj *objPtr;
-
-		    objPtr = Tcl_NewStringObj(axisPtr->obj.name, -1);
-		    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-		    break;
-		}
-	    }
-	}
+        }
+        if ((objc == 3) || (match)) {
+            Tcl_ListObjAppendElement(interp, listObjPtr, 
+                Tcl_NewStringObj(axisPtr->obj.name, -1));
+        }
     }
     Tcl_SetObjResult(interp, listObjPtr);
     return TCL_OK;
@@ -5411,9 +5392,9 @@ Blt_MapAxes(Graph *graphPtr)
 	sum = 0.0;
 	if (graphPtr->flags & STACK_AXES) {
             /* For stacked axes figure out the sum of the weights.*/
-	    for (axisPtr = FirstAxis(marginPtr); axisPtr != NULL; 
+            for (axisPtr = FirstAxis(marginPtr); axisPtr != NULL; 
 		 axisPtr = NextAxis(axisPtr)) {
-                if (axisPtr->flags & (DELETE_PENDING|HIDE)) {
+                if (axisPtr->flags & (DELETED|HIDDEN)) {
 		    continue;           /* Ignore axes that aren't in use
                                          * or have been deleted.  */
 		}
@@ -5422,7 +5403,7 @@ Blt_MapAxes(Graph *graphPtr)
 	}
 	for (axisPtr = FirstAxis(marginPtr); axisPtr != NULL; 
 	     axisPtr = NextAxis(axisPtr)) {
-            if (axisPtr->flags & (HIDE|DELETE_PENDING)) {
+            if (axisPtr->flags & (HIDDEN|DELETED)) {
 		continue;               /* Don't map axes that aren't being
                                          * used or have been deleted. */
 	    }
@@ -5460,7 +5441,7 @@ Blt_DrawAxes(Graph *graphPtr, Drawable drawable)
 	marginPtr = graphPtr->margins + i;
 	for (axisPtr = FirstAxis(marginPtr); axisPtr != NULL; 
 	     axisPtr = NextAxis(axisPtr)) {
-	    if (axisPtr->flags & (DELETE_PENDING|HIDE)) {
+	    if (axisPtr->flags & (DELETED|HIDDEN)) {
                 continue;
             }
             DrawAxis(axisPtr, drawable);
@@ -5492,7 +5473,7 @@ Blt_DrawGrids(Graph *graphPtr, Drawable drawable)
 	marginPtr = graphPtr->margins + i;
 	for (axisPtr = FirstAxis(marginPtr); axisPtr != NULL;
 	     axisPtr = NextAxis(axisPtr)) {
-	    if (axisPtr->flags & (DELETE_PENDING|HIDE)) {
+	    if (axisPtr->flags & (DELETED|HIDDEN)) {
 		continue;
 	    }
 	    if (axisPtr->flags & GRID) {
@@ -5535,7 +5516,7 @@ Blt_GridsToPostScript(Graph *graphPtr, Blt_Ps ps)
 	marginPtr = graphPtr->margins + i;
 	for (axisPtr = FirstAxis(marginPtr); axisPtr != NULL;
 	     axisPtr = NextAxis(axisPtr)) {
-	    if ((axisPtr->flags & (DELETE_PENDING|HIDE|GRID)) != GRID) {
+	    if ((axisPtr->flags & (DELETED|HIDDEN|GRID)) != GRID) {
 		continue;
 	    }
 	    Blt_Ps_Format(ps, "%% Axis %s: grid line attributes\n", 
@@ -5572,7 +5553,7 @@ Blt_AxesToPostScript(Graph *graphPtr, Blt_Ps ps)
 	marginPtr = graphPtr->margins + i;
 	for (axisPtr = FirstAxis(marginPtr); axisPtr != NULL; 
 	     axisPtr = NextAxis(axisPtr)) {
-	    if (axisPtr->flags & (DELETE_PENDING|HIDE)) {
+	    if (axisPtr->flags & (DELETED|HIDDEN)) {
                 continue;
             }
             AxisToPostScript(axisPtr, ps);
@@ -5618,7 +5599,7 @@ Blt_DrawAxisLimits(Graph *graphPtr, Drawable drawable)
 	char *minPtr, *maxPtr;
 
 	axisPtr = Blt_GetHashValue(hPtr);
-	if (axisPtr->flags & DELETE_PENDING) {
+	if (axisPtr->flags & DELETED) {
 	    continue;
 	} 
 	if (axisPtr->numFormats == 0) {
@@ -5692,7 +5673,7 @@ Blt_AxisLimitsToPostScript(Graph *graphPtr, Blt_Ps ps)
 	unsigned int textWidth, textHeight;
 
 	axisPtr = Blt_GetHashValue(hPtr);
-	if (axisPtr->flags & DELETE_PENDING) {
+	if (axisPtr->flags & DELETED) {
 	    continue;
 	} 
 	if (axisPtr->numFormats == 0) {
@@ -5768,7 +5749,7 @@ Blt_NearestAxis(Graph *graphPtr, int x, int y)
 
 	axisPtr = Blt_GetHashValue(hPtr);
 	if ((axisPtr->marginPtr == NULL) ||
-            (axisPtr->flags & (DELETE_PENDING|HIDE))) {
+            (axisPtr->flags & (DELETED|HIDDEN))) {
 	    continue;
 	}
 	if (axisPtr->flags & SHOWTICKS) {

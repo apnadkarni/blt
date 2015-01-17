@@ -304,7 +304,7 @@ GetPenFromObj(Tcl_Interp *interp, Graph *graphPtr, Tcl_Obj *objPtr,
     hPtr = Blt_FindHashEntry(&graphPtr->penTable, name);
     if (hPtr != NULL) {
 	penPtr = Blt_GetHashValue(hPtr);
-	if (penPtr->flags & DELETE_PENDING) {
+	if (penPtr->flags & DELETED) {
 	    penPtr = NULL;
 	}
     }
@@ -337,7 +337,7 @@ Blt_FreePen(Pen *penPtr)
 {
     if (penPtr != NULL) {
 	penPtr->refCount--;
-	if ((penPtr->refCount == 0) && (penPtr->flags & DELETE_PENDING)) {
+	if ((penPtr->refCount == 0) && (penPtr->flags & DELETED)) {
 	    DestroyPen(penPtr);
 	}
     }
@@ -388,7 +388,7 @@ Blt_CreatePen(Graph *graphPtr, const char *penName, ClassId classId,
     hPtr = Blt_CreateHashEntry(&graphPtr->penTable, penName, &isNew);
     if (!isNew) {
 	penPtr = Blt_GetHashValue(hPtr);
-	if ((penPtr->flags & DELETE_PENDING) == 0) {
+	if ((penPtr->flags & DELETED) == 0) {
 	    Tcl_AppendResult(graphPtr->interp, "pen \"", penName,
 		"\" already exists in \"", Tk_PathName(graphPtr->tkwin), "\"",
 		(char *)NULL);
@@ -401,7 +401,7 @@ Blt_CreatePen(Graph *graphPtr, const char *penName, ClassId classId,
 		Blt_GraphClassName(classId), "\"", (char *)NULL);
 	    return NULL;
 	}
-	penPtr->flags &= ~DELETE_PENDING; /* Undelete the pen. */
+	penPtr->flags &= ~DELETED;      /* Undelete the pen. */
     } else {
 	if (classId == CID_ELEM_BAR) {
 	    penPtr = Blt_CreateBarPen(graphPtr, hPtr);
@@ -439,7 +439,7 @@ Blt_GetPenFromObj(Tcl_Interp *interp, Graph *graphPtr, Tcl_Obj *objPtr,
     hPtr = Blt_FindHashEntry(&graphPtr->penTable, name);
     if (hPtr != NULL) {
 	penPtr = Blt_GetHashValue(hPtr);
-	if (penPtr->flags & DELETE_PENDING) {
+	if (penPtr->flags & DELETED) {
 	    penPtr = NULL;
 	}
     }
@@ -658,13 +658,13 @@ DeleteOp(Tcl_Interp *interp, Graph *graphPtr, int objc, Tcl_Obj *const *objv)
 	if (GetPenFromObj(interp, graphPtr, objv[i], &penPtr) != TCL_OK) {
 	    return TCL_ERROR;
 	}
-	if (penPtr->flags & DELETE_PENDING) {
+	if (penPtr->flags & DELETED) {
 	    Tcl_AppendResult(interp, "can't find pen \"", 
 		Tcl_GetString(objv[i]), "\" in \"", 
 		Tk_PathName(graphPtr->tkwin), "\"", (char *)NULL);
 	    return TCL_ERROR;
 	}
-	penPtr->flags |= DELETE_PENDING;
+	penPtr->flags |= DELETED;
 	if (penPtr->refCount == 0) {
 	    DestroyPen(penPtr);
 	}
@@ -700,7 +700,7 @@ NamesOp(Tcl_Interp *interp, Graph *graphPtr, int objc, Tcl_Obj *const *objv)
 	    Pen *penPtr;
 
 	    penPtr = Blt_GetHashValue(hPtr);
-	    if ((penPtr->flags & DELETE_PENDING) == 0) {
+	    if ((penPtr->flags & DELETED) == 0) {
 		Tcl_ListObjAppendElement(interp, listObjPtr, 
 			Tcl_NewStringObj(penPtr->name, -1));
 	    }
@@ -714,7 +714,7 @@ NamesOp(Tcl_Interp *interp, Graph *graphPtr, int objc, Tcl_Obj *const *objv)
 	    Pen *penPtr;
 
 	    penPtr = Blt_GetHashValue(hPtr);
-	    if ((penPtr->flags & DELETE_PENDING) == 0) {
+	    if ((penPtr->flags & DELETED) == 0) {
 		int i;
 
 		for (i = 3; i < objc; i++) {

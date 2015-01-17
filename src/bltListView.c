@@ -131,7 +131,7 @@ static const char emptyString[] = "";
 #define ITEM_YPAD	   0
 
 #define ITEM_REDRAW	  (1<<2)	/* Item needs to be redrawn. */
-#define ITEM_HIDE	  (1<<5)	/* The item is hidden. */
+#define ITEM_HIDDEN	  (1<<5)	/* The item is hidden. */
 
 /* Item state. */
 #define ITEM_NORMAL	  (1<<8)	/* Draw item normally. */
@@ -1389,7 +1389,7 @@ NextItemAvailable(Item *itemPtr)
 {
     for (itemPtr = NextItem(itemPtr); itemPtr != NULL; 
 	 itemPtr = NextItem(itemPtr)) {
-	if ((itemPtr->flags & (ITEM_HIDE|ITEM_DISABLED)) == 0) {
+	if ((itemPtr->flags & (ITEM_HIDDEN|ITEM_DISABLED)) == 0) {
 	    return itemPtr;
 	}
     }
@@ -1401,7 +1401,7 @@ PrevItemAvailable(Item *itemPtr)
 {
     for (itemPtr = PrevItem(itemPtr); itemPtr != NULL; 
 	 itemPtr = PrevItem(itemPtr)) {
-	if ((itemPtr->flags & (ITEM_HIDE|ITEM_DISABLED)) == 0) {
+	if ((itemPtr->flags & (ITEM_HIDDEN|ITEM_DISABLED)) == 0) {
 	    return itemPtr;
 	}
     }
@@ -1661,7 +1661,7 @@ EventuallyRedrawItem(Item *itemPtr)
 {
     ListView *viewPtr;
 
-    if (itemPtr->flags & (ITEM_HIDE|ITEM_REDRAW)) {
+    if (itemPtr->flags & (ITEM_HIDDEN|ITEM_REDRAW)) {
 	return;
     }
     viewPtr = itemPtr->viewPtr;
@@ -1926,7 +1926,7 @@ ComputeIconsItemGeometry(ListView *viewPtr, Item *itemPtr)
     itemPtr->iconWidth = itemPtr->iconHeight = 0;
     itemPtr->height = itemPtr->width = 0;
 
-    if (itemPtr->flags & ITEM_HIDE) {
+    if (itemPtr->flags & ITEM_HIDDEN) {
 	return;
     }
     icon = itemPtr->bigIcon;
@@ -1992,7 +1992,7 @@ ComputeListItemGeometry(ListView *viewPtr, Item *itemPtr)
     itemPtr->iconWidth = itemPtr->iconHeight = 0;
     itemPtr->height = itemPtr->width = 0;
     itemPtr->worldWidth = itemPtr->worldHeight = 0;
-    if (itemPtr->flags & ITEM_HIDE) {
+    if (itemPtr->flags & ITEM_HIDDEN) {
 	return;
     }
     icon = (viewPtr->layoutMode == LAYOUT_ICONS) ? itemPtr->bigIcon :
@@ -2074,7 +2074,7 @@ ComputeRowLayout(ListView *viewPtr)
     viewPtr->itemHeight = 0;
     for (itemPtr = FirstItem(viewPtr); itemPtr != NULL; 
 	 itemPtr = NextItem(itemPtr)) {
-	if (itemPtr->flags & ITEM_HIDE) {
+	if (itemPtr->flags & ITEM_HIDDEN) {
 	    continue;
 	}
 	ComputeListItemGeometry(viewPtr, itemPtr);
@@ -2099,7 +2099,7 @@ ComputeRowLayout(ListView *viewPtr)
     x = y = 0;
     for (itemPtr = FirstItem(viewPtr); itemPtr != NULL; 
 	 itemPtr = NextItem(itemPtr)) {
-	if (itemPtr->flags & ITEM_HIDE) {
+	if (itemPtr->flags & ITEM_HIDDEN) {
 	    continue;
 	}
 	itemPtr->worldX = x;
@@ -2160,7 +2160,7 @@ ComputeColumnLayout(ListView *viewPtr)
     viewPtr->itemHeight = 0;
     for (itemPtr = FirstItem(viewPtr); itemPtr != NULL; 
 	 itemPtr = NextItem(itemPtr)) {
-	if (itemPtr->flags & ITEM_HIDE) {
+	if (itemPtr->flags & ITEM_HIDDEN) {
 	    continue;
 	}
 	ComputeListItemGeometry(viewPtr, itemPtr);
@@ -2192,7 +2192,7 @@ ComputeColumnLayout(ListView *viewPtr)
     lastMaxWidth = 0;
     for (itemPtr = FirstItem(viewPtr); itemPtr != NULL; 
 	 itemPtr = NextItem(itemPtr)) {
-	if (itemPtr->flags & ITEM_HIDE) {
+	if (itemPtr->flags & ITEM_HIDDEN) {
 	    continue;
 	}
 	itemPtr->worldX = x;
@@ -2262,7 +2262,7 @@ ComputeIconsLayout(ListView *viewPtr)
     numEntries = 0;
     for (itemPtr = FirstItem(viewPtr); itemPtr != NULL; 
 	 itemPtr = NextItem(itemPtr)) {
-	if (itemPtr->flags & ITEM_HIDE) {
+	if (itemPtr->flags & ITEM_HIDDEN) {
 	    continue;
 	}
 	ComputeIconsItemGeometry(viewPtr, itemPtr);
@@ -2300,7 +2300,7 @@ ComputeIconsLayout(ListView *viewPtr)
     maxHeight = 0;
     for (itemPtr = FirstItem(viewPtr); itemPtr != NULL; 
 	 itemPtr = NextItem(itemPtr)) {
-	if (itemPtr->flags & ITEM_HIDE) {
+	if (itemPtr->flags & ITEM_HIDDEN) {
 	    continue;
 	}
 	if (itemPtr->height > maxHeight) {
@@ -2423,7 +2423,7 @@ SearchForItem(ListView *viewPtr, int x, int y)
 
     for (itemPtr = FirstItem(viewPtr); itemPtr != NULL; 
 	 itemPtr = NextItem(itemPtr)) {
-	if (itemPtr->flags & ITEM_HIDE) {
+	if (itemPtr->flags & ITEM_HIDDEN) {
 	    continue;
 	}
 	if ((x >= itemPtr->worldX) && 
@@ -3970,7 +3970,8 @@ ActivateOp(ListView *viewPtr, Tcl_Interp *interp, int objc,
     }
     ActivateItem(viewPtr, NULL);
     viewPtr->activePtr = NULL;
-    if ((itemPtr != NULL) && ((itemPtr->flags & (ITEM_DISABLED|ITEM_HIDE))==0)){
+    if ((itemPtr != NULL) &&
+        ((itemPtr->flags & (ITEM_DISABLED|ITEM_HIDDEN)) == 0)) {
 	ActivateItem(viewPtr, itemPtr);
 	viewPtr->activePtr = itemPtr;
     }
@@ -4305,7 +4306,7 @@ FindOp(ListView *viewPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	    if ((prevPtr == NULL) && (switches.flags & FIND_WRAP)) {
 		itemPtr = LastItem(viewPtr);
 	    }
-	    if ((itemPtr->flags & ITEM_HIDE) && 
+	    if ((itemPtr->flags & ITEM_HIDDEN) && 
 		((switches.flags & FIND_HIDDEN) == 0)) {
 		continue;
 	    }
@@ -4346,7 +4347,7 @@ FindOp(ListView *viewPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	    if ((nextPtr == NULL) && (switches.flags & FIND_WRAP)) {
 		nextPtr = FirstItem(viewPtr);
 	    }
-	    if ((itemPtr->flags & ITEM_HIDE) && 
+	    if ((itemPtr->flags & ITEM_HIDDEN) && 
 		((switches.flags & FIND_HIDDEN) == 0)) {
 		continue;
 	    }
@@ -4808,7 +4809,7 @@ NextOp(ListView *viewPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     if (GetItemFromObj(NULL, viewPtr, objv[2], &itemPtr) == TCL_OK) {
 	for (itemPtr = NextItem(itemPtr); itemPtr != NULL; 
 	     itemPtr = NextItem(itemPtr)) {
-	    if ((itemPtr->flags & (ITEM_HIDE|ITEM_DISABLED)) == 0) {
+	    if ((itemPtr->flags & (ITEM_HIDDEN|ITEM_DISABLED)) == 0) {
 		break;
 	    }
 	}
@@ -4847,7 +4848,7 @@ PreviousOp(ListView *viewPtr, Tcl_Interp *interp, int objc,
     if (GetItemFromObj(NULL, viewPtr, objv[2], &itemPtr) == TCL_OK) {
 	for (itemPtr = PrevItem(itemPtr); itemPtr != NULL; 
 	     itemPtr = PrevItem(itemPtr)) {
-	    if ((itemPtr->flags & (ITEM_HIDE|ITEM_DISABLED)) == 0) {
+	    if ((itemPtr->flags & (ITEM_HIDDEN|ITEM_DISABLED)) == 0) {
 		break;
 	    }
 	}
@@ -4953,7 +4954,7 @@ SeeOp(ListView *viewPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     if (itemPtr == NULL) {
 	return TCL_OK;
     }
-    if (itemPtr->flags & ITEM_HIDE) {
+    if (itemPtr->flags & ITEM_HIDDEN) {
 	return TCL_OK;
     }
     width = VPORTWIDTH(viewPtr);
@@ -5256,8 +5257,8 @@ SelectionSetOp(ListView *viewPtr, Tcl_Interp *interp, int objc,
 	if (firstPtr == NULL) {
 	    return TCL_OK;		/* Didn't pick an entry. */
 	}
-	if ((firstPtr->flags & ITEM_HIDE) && 
-	    (!(viewPtr->flags & SELECT_CLEAR))) {
+	if ((firstPtr->flags & ITEM_HIDDEN) && 
+	    ((viewPtr->flags & SELECT_CLEAR) == 0)) {
 	    if (objc > 4) {
 		Tcl_AppendResult(interp, "can't select hidden node \"", 
 			Tcl_GetString(objv[3]), "\"", (char *)NULL);
@@ -5274,8 +5275,8 @@ SelectionSetOp(ListView *viewPtr, Tcl_Interp *interp, int objc,
 	    if (lastPtr == NULL) {
 		return TCL_OK;
 	    }
-	    if ((lastPtr->flags & ITEM_HIDE) && 
-		(!(viewPtr->flags & SELECT_CLEAR))) {
+	    if ((lastPtr->flags & ITEM_HIDDEN) && 
+		((viewPtr->flags & SELECT_CLEAR) == 0)) {
 		Tcl_AppendResult(interp, "can't select hidden node \"", 
 			Tcl_GetString(objv[4]), "\"", (char *)NULL);
 		return TCL_ERROR;
@@ -5300,7 +5301,7 @@ SelectionSetOp(ListView *viewPtr, Tcl_Interp *interp, int objc,
 	}
 	for (itemPtr = FirstTaggedItem(&iter); itemPtr != NULL; 
 	     itemPtr = NextTaggedItem(&iter)) {
-	    if ((itemPtr->flags & ITEM_HIDE) && 
+	    if ((itemPtr->flags & ITEM_HIDDEN) && 
 		((viewPtr->flags & SELECT_CLEAR) == 0)) {
 		continue;
 	    }
@@ -6384,7 +6385,7 @@ DrawListView(ListView *viewPtr, Drawable drawable)
 	 itemPtr = NextItem(itemPtr)) {
 	int x, y;
 	
-	if (itemPtr->flags & ITEM_HIDE) {
+	if (itemPtr->flags & ITEM_HIDDEN) {
 	    continue;
 	}
 	x = SCREENX(viewPtr, itemPtr->worldX);

@@ -251,7 +251,7 @@ struct _Drawer  {
 
 /* Drawer/handle flags.  */
 
-#define HIDE		(1<<8)		/* Do not display the drawer. */
+#define HIDDEN		(1<<8)		/* Do not display the drawer. */
 #define CLOSED		(1<<8)		/* Do not display the drawer. */
 #define DISABLED	(1<<9)		/* Handle is disabled. */
 #define ONSCREEN	(1<<10)		/* Drawer is on-screen. */
@@ -494,7 +494,7 @@ static Blt_ConfigSpec drawerSpecs[] =
 	Blt_Offset(Drawer, reqHeight), 0},
     {BLT_CONFIG_BITMASK, "-hide", "hide", "Hide", DEF_DRAWER_HIDE, 
         Blt_Offset(Drawer, flags), BLT_CONFIG_DONT_SET_DEFAULT, 
-        (Blt_CustomOption *)HIDE },
+        (Blt_CustomOption *)HIDDEN },
     {BLT_CONFIG_COLOR, "-highlightbackground", "highlightBackground",
 	"HighlightBackground", DEF_DRAWER_HIGHLIGHT_BACKGROUND, 
 	Blt_Offset(Drawer, highlightBgColor), 0},
@@ -1144,7 +1144,7 @@ EventuallyOpenDrawer(Drawer *drawPtr)
 {
     Drawerset *setPtr;
 
-    if ((drawPtr->flags & (CLOSED|DISABLED)) != HIDE) {
+    if ((drawPtr->flags & (CLOSED|DISABLED)) != HIDDEN) {
 	return;				/* Already open or disabled. */
     }
     setPtr = drawPtr->setPtr;
@@ -1696,7 +1696,7 @@ FirstDrawer(Drawerset *setPtr)
 	Drawer *drawPtr;
 
 	drawPtr = Blt_Chain_GetValue(link);
-	if ((drawPtr->flags & (HIDE|DISABLED)) == 0) {
+	if ((drawPtr->flags & (HIDDEN|DISABLED)) == 0) {
 	    return drawPtr;
 	}
     }
@@ -1713,7 +1713,7 @@ LastDrawer(Drawerset *setPtr)
 	Drawer *drawPtr;
 
 	drawPtr = Blt_Chain_GetValue(link);
-	if ((drawPtr->flags & (HIDE|DISABLED)) == 0) {
+	if ((drawPtr->flags & (HIDDEN|DISABLED)) == 0) {
 	    return drawPtr;
 	}
     }
@@ -1730,7 +1730,7 @@ NextDrawer(Drawer *drawPtr)
 	for (link = Blt_Chain_NextLink(drawPtr->link); link != NULL; 
 	     link = Blt_Chain_NextLink(link)) {
 	    drawPtr = Blt_Chain_GetValue(link);
-	    if ((drawPtr->flags & (HIDE|DISABLED)) == 0) {
+	    if ((drawPtr->flags & (HIDDEN|DISABLED)) == 0) {
 		return drawPtr;
 	    }
 	}
@@ -1748,7 +1748,7 @@ PrevDrawer(Drawer *drawPtr)
 	for (link = Blt_Chain_PrevLink(drawPtr->link); link != NULL; 
 	     link = Blt_Chain_PrevLink(link)) {
 	    drawPtr = Blt_Chain_GetValue(link);
-	    if ((drawPtr->flags & HIDE) == 0) {
+	    if ((drawPtr->flags & HIDDEN) == 0) {
 		return drawPtr;
 	    }
 	}
@@ -3521,7 +3521,7 @@ HandleActivateOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (GetDrawerFromObj(interp, setPtr, objv[3], &drawPtr) != TCL_OK) {
 	return TCL_ERROR;
     }
-    if ((drawPtr == NULL) || (drawPtr->flags & (DISABLED|HIDE))) {
+    if ((drawPtr == NULL) || (drawPtr->flags & (DISABLED|HIDDEN))) {
 	return TCL_OK;
     }
     if (drawPtr != setPtr->activePtr) {
@@ -3574,7 +3574,7 @@ HandleAnchorOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (GetDrawerFromObj(interp, setPtr, objv[3], &drawPtr) != TCL_OK) {
 	return TCL_ERROR;
     }
-    if ((drawPtr == NULL) || (drawPtr->flags & (DISABLED|HIDE))) {
+    if ((drawPtr == NULL) || (drawPtr->flags & (DISABLED|HIDDEN))) {
 	return TCL_OK;
     }
     if ((Tcl_GetIntFromObj(interp, objv[4], &x) != TCL_OK) ||
@@ -3649,7 +3649,7 @@ HandleMarkOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (GetDrawerFromObj(interp, setPtr, objv[3], &drawPtr) != TCL_OK) {
 	return TCL_ERROR;
     }
-    if ((drawPtr == NULL) || (drawPtr->flags & (DISABLED|HIDE))) {
+    if ((drawPtr == NULL) || (drawPtr->flags & (DISABLED|HIDDEN))) {
 	return TCL_OK;
     }
     if ((Tcl_GetIntFromObj(interp, objv[4], &x) != TCL_OK) ||
@@ -3690,7 +3690,7 @@ HandleMoveOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (GetDrawerFromObj(interp, setPtr, objv[3], &drawPtr) != TCL_OK) {
 	return TCL_ERROR;
     }
-    if ((drawPtr == NULL) || (drawPtr->flags & (DISABLED|HIDE))) {
+    if ((drawPtr == NULL) || (drawPtr->flags & (DISABLED|HIDDEN))) {
 	return TCL_OK;
     }
     if ((Tcl_GetIntFromObj(interp, objv[4], &x) != TCL_OK) ||
@@ -3735,7 +3735,7 @@ HandleSetOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (GetDrawerFromObj(interp, setPtr, objv[3], &drawPtr) != TCL_OK) {
 	return TCL_ERROR;
     }
-    if ((drawPtr == NULL) || (drawPtr->flags & (DISABLED|HIDE))) {
+    if ((drawPtr == NULL) || (drawPtr->flags & (DISABLED|HIDDEN))) {
 	return TCL_OK;
     }
     if ((Tcl_GetIntFromObj(interp, objv[4], &x) != TCL_OK) ||
@@ -3775,7 +3775,7 @@ HandleSizeOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (GetDrawerFromObj(interp, setPtr, objv[3], &drawPtr) != TCL_OK) {
 	return TCL_ERROR;
     }
-    if ((drawPtr == NULL) || (drawPtr->flags & (DISABLED|HIDE))) {
+    if ((drawPtr == NULL) || (drawPtr->flags & (DISABLED|HIDDEN))) {
 	return TCL_OK;
     }
     if (objc == 4) {
@@ -3997,7 +3997,7 @@ InvokeOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (GetDrawerFromObj(interp, setPtr, objv[2], &drawPtr) != TCL_OK) {
 	return TCL_ERROR;
     }
-    if ((drawPtr == NULL) || (drawPtr->flags & (DISABLED|HIDE))) {
+    if ((drawPtr == NULL) || (drawPtr->flags & (DISABLED|HIDDEN))) {
 	return TCL_OK;
     }
     cmdObjPtr = GETATTR(drawPtr, cmdObjPtr);
@@ -4069,7 +4069,7 @@ LowerOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     for (drawPtr = FirstTaggedDrawer(&iter); drawPtr != NULL; 
 	 drawPtr = NextTaggedDrawer(&iter)) {
-	if (drawPtr->flags & (DISABLED|HIDE)) {
+	if (drawPtr->flags & (DISABLED|HIDDEN)) {
 	    continue;
 	}
 	LowerDrawer(drawPtr);
@@ -4223,7 +4223,7 @@ OpenOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     for (drawPtr = FirstTaggedDrawer(&iter); drawPtr != NULL; 
 	 drawPtr = NextTaggedDrawer(&iter)) {
-	if (drawPtr->flags & (DISABLED|HIDE)) {
+	if (drawPtr->flags & (DISABLED|HIDDEN)) {
 	    continue;
 	}
         drawPtr->flags &= ~CLOSED;
@@ -4260,7 +4260,7 @@ RaiseOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     for (drawPtr = FirstTaggedDrawer(&iter); drawPtr != NULL; 
 	 drawPtr = NextTaggedDrawer(&iter)) {
-	if (drawPtr->flags & (DISABLED|HIDE)) {
+	if (drawPtr->flags & (DISABLED|HIDDEN)) {
 	    continue;
 	}
 	RaiseDrawer(drawPtr);

@@ -339,7 +339,7 @@ typedef struct {
     Blt_Pixel paletteColor;
 } Isoline;
 
-/* HIDE			(1<<0) */
+/* HIDDEN		(1<<0) */
 #define ABSOLUT		(1<<4)
 /* ACTIVE		(1<<6) */
 
@@ -655,7 +655,7 @@ static Blt_ConfigSpec contourSpecs[] =
 	BLT_CONFIG_NULL_OK, &colorOption},
     {BLT_CONFIG_BITMASK, "-hide", "hide", "Hide", DEF_HIDE, 
         Blt_Offset(ContourElement, flags), BLT_CONFIG_DONT_SET_DEFAULT,
-        (Blt_CustomOption *)HIDE},
+        (Blt_CustomOption *)HIDDEN},
     {BLT_CONFIG_STRING, "-label", "label", "Label", (char *)NULL, 
 	Blt_Offset(ContourElement, label), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_RELIEF, "-legendrelief", "legendRelief", "LegendRelief",
@@ -710,7 +710,7 @@ static Blt_ConfigSpec contourSpecs[] =
 	BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_BITMASK_INVERT, "-show", "show", "show", DEF_SHOW, 
         Blt_Offset(ContourElement, flags), BLT_CONFIG_DONT_SET_DEFAULT,
-        (Blt_CustomOption *)HIDE},
+        (Blt_CustomOption *)HIDDEN},
     {BLT_CONFIG_STATE, "-state", "state", "State", DEF_STATE, 
 	Blt_Offset(ContourElement, state), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_CUSTOM, "-symbol", "symbol", "Symbol", DEF_PEN_SYMBOL, 
@@ -768,7 +768,7 @@ static Blt_ConfigSpec isolineSpecs[] =
 	Blt_Offset(Isoline, obj.tags), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_BITMASK, "-hide", "hide", "Hide", DEF_HIDE, 
          Blt_Offset(Isoline, flags), BLT_CONFIG_DONT_SET_DEFAULT,
-        (Blt_CustomOption *)HIDE},
+        (Blt_CustomOption *)HIDDEN},
     {BLT_CONFIG_STRING, "-label", "label", "Label", (char *)NULL, 
 	Blt_Offset(Isoline, label), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_CUSTOM, "-pen", "pen", "Pen", (char *)NULL, 
@@ -780,7 +780,7 @@ static Blt_ConfigSpec isolineSpecs[] =
 	BLT_CONFIG_DONT_SET_DEFAULT, &bltLimitOption},
     {BLT_CONFIG_BITMASK_INVERT, "-show", "show", "Show", DEF_SHOW, 
          Blt_Offset(Isoline, flags), BLT_CONFIG_DONT_SET_DEFAULT,
-        (Blt_CustomOption *)HIDE},
+        (Blt_CustomOption *)HIDDEN},
     {BLT_CONFIG_DOUBLE, "-value", "value", "Value", "0.0",
 	Blt_Offset(Isoline, reqValue), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_END, NULL, NULL, NULL, NULL, 0, 0}
@@ -4466,7 +4466,7 @@ DrawProc(Graph *graphPtr, Drawable drawable, Element *basePtr)
 	Isoline *isoPtr;
 
 	isoPtr = Blt_GetHashValue(hPtr);
-	if (isoPtr->flags & HIDE) {
+	if (isoPtr->flags & HIDDEN) {
 	    continue;			/* Don't draw this isoline. */
 	}
 	if (elemPtr->flags & ISOLINES) {
@@ -5000,7 +5000,7 @@ NormalToPostScriptProc(Graph *graphPtr, Blt_Ps ps, Element *basePtr)
 	Isoline *isoPtr;
 
 	isoPtr = Blt_GetHashValue(hPtr);
-	if (isoPtr->flags & HIDE) {
+	if (isoPtr->flags & HIDDEN) {
 	    continue;			/* Don't draw this isoline. */
 	}
 	if (elemPtr->flags & ISOLINES) {
@@ -5169,7 +5169,7 @@ IsolineNearestOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (GetContourElement(interp, graphPtr, objv[4], &elemPtr) != TCL_OK) {
 	return TCL_ERROR;		/* Can't find named element */
     }
-    if (elemPtr->flags & (HIDE|MAP_ITEM)) {
+    if (elemPtr->flags & (HIDDEN|MAP_ITEM)) {
 	return TCL_OK;
     }
     if (Tcl_GetIntFromObj(interp, objv[5], &x) != TCL_OK) {

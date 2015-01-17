@@ -1798,7 +1798,7 @@ Blt_DrawElements(Graph *graphPtr, Drawable drawable)
 	Element *elemPtr;
 
 	elemPtr = Blt_Chain_GetValue(link);
-	if ((elemPtr->flags & HIDE) == 0) {
+	if ((elemPtr->flags & HIDDEN) == 0) {
 	    (*elemPtr->procsPtr->drawNormalProc)(graphPtr, drawable, elemPtr);
 	}
     }
@@ -1831,7 +1831,7 @@ Blt_DrawActiveElements(Graph *graphPtr, Drawable drawable)
 	Element *elemPtr;
 
 	elemPtr = Blt_Chain_GetValue(link);
-	if ((elemPtr->flags & (HIDE|ACTIVE)) == ACTIVE) {
+	if ((elemPtr->flags & (HIDDEN|ACTIVE)) == ACTIVE) {
 	    (*elemPtr->procsPtr->drawActiveProc)(graphPtr, drawable, elemPtr);
 	}
     }
@@ -1857,7 +1857,7 @@ Blt_ElementsToPostScript(Graph *graphPtr, Blt_Ps ps)
 	Element *elemPtr;
 
 	elemPtr = Blt_Chain_GetValue(link);
-	if (elemPtr->flags & HIDE) {
+	if (elemPtr->flags & HIDDEN) {
 	    continue;
 	}
 	/* Comment the PostScript to indicate the start of the element */
@@ -1883,7 +1883,7 @@ Blt_ActiveElementsToPostScript( Graph *graphPtr, Blt_Ps ps)
 	Element *elemPtr;
 
 	elemPtr = Blt_Chain_GetValue(link);
-	if ((elemPtr->flags & (HIDE|ACTIVE)) == ACTIVE) {
+	if ((elemPtr->flags & (HIDDEN|ACTIVE)) == ACTIVE) {
 	    Blt_Ps_Format(ps, "\n%% Active Element \"%s\"\n\n", 
 		elemPtr->obj.name);
 	    (*elemPtr->procsPtr->printActiveProc)(graphPtr, ps, elemPtr);
@@ -2470,7 +2470,7 @@ NearestOp(
 		if (IGNORE_ELEMENT(elemPtr)) {
 		    continue;
 		}
-		if (elemPtr->flags & (HIDE|MAP_ITEM)) {
+		if (elemPtr->flags & (HIDDEN|MAP_ITEM)) {
 		    continue;
 		}
 		(*elemPtr->procsPtr->nearestProc) (graphPtr, elemPtr, &nearest);
@@ -2488,7 +2488,7 @@ NearestOp(
 	for (link = Blt_Chain_LastLink(graphPtr->elements.displayList); 
 	     link != NULL; link = Blt_Chain_PrevLink(link)) {
 	    elemPtr = Blt_Chain_GetValue(link);
-	    if (elemPtr->flags & (HIDE|MAP_ITEM)) {
+	    if (elemPtr->flags & (HIDDEN|MAP_ITEM)) {
 		continue;
 	    }
 	    (*elemPtr->procsPtr->nearestProc)(graphPtr, elemPtr, &nearest);
@@ -2640,7 +2640,7 @@ ClosestOp(
 		if (IGNORE_ELEMENT(elemPtr)) {
 		    continue;
 		}
-		if (elemPtr->flags & (HIDE|MAP_ITEM)) {
+		if (elemPtr->flags & (HIDDEN|MAP_ITEM)) {
 		    continue;
 		}
 		(*elemPtr->procsPtr->nearestProc) (graphPtr, elemPtr, &nearest);
@@ -2660,7 +2660,7 @@ ClosestOp(
 	    Element *elemPtr;
 
 	    elemPtr = Blt_Chain_GetValue(link);
-	    if (elemPtr->flags & (HIDE|MAP_ITEM)) {
+	    if (elemPtr->flags & (HIDDEN|MAP_ITEM)) {
 		continue;
 	    }
 	    (*elemPtr->procsPtr->nearestProc)(graphPtr, elemPtr, &nearest);
@@ -3994,7 +3994,7 @@ Blt_NearestElement(Graph *graphPtr, int x, int y)
 	Element *elemPtr;
 
 	elemPtr = Blt_Chain_GetValue(link);
-	if (elemPtr->flags & (HIDE|MAP_ITEM)) {
+	if (elemPtr->flags & (HIDDEN|MAP_ITEM)) {
 	    continue;
 	}
 	(*elemPtr->procsPtr->nearestProc) (graphPtr, elemPtr, &nearest);

@@ -52,8 +52,8 @@
 
 #define MESH_THREAD_KEY "BLT Mesh Command Interface"
 
-#define DELETE_PENDING		(1<<1) /* 0x0002 */
-#define CONFIG_PENDING		(1<<2) /* 0x0002 */
+#define DELETED 		(1<<1) /* 0x0002 */
+#define CONFIG_PENDING		(1<<2) /* 0x0004 */
 
 /*
  * MeshCmdInterpData --
@@ -1984,7 +1984,7 @@ CreateOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (!isNew) {
 	Mesh *oldMeshPtr;
 	oldMeshPtr = Blt_GetHashValue(hPtr);
-	if ((oldMeshPtr->flags & DELETE_PENDING) == 0) {
+	if ((oldMeshPtr->flags & DELETED) == 0) {
 	    Tcl_AppendResult(interp, "mesh \"", meshPtr->name,
 		"\" already exists", (char *)NULL);
 	    DestroyMesh(meshPtr);

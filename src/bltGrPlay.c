@@ -387,7 +387,7 @@ MaxtimeOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	Element *elemPtr;
 
 	elemPtr = Blt_Chain_GetValue(link);
-	if ((elemPtr->flags & HIDE) == 0) {
+	if ((elemPtr->flags & HIDDEN) == 0) {
 	    int length;
 
 	    length = NUMBEROFPOINTS(elemPtr);

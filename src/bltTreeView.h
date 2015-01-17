@@ -180,8 +180,8 @@ typedef const char *UID;
 /* Entry flags */
 #define ENTRY_SELECTED		(1<<8)
 #define ENTRY_CLOSED		(1<<9)
-#define ENTRY_HIDE		(1<<10)
-#define ENTRY_MASK		(ENTRY_CLOSED | ENTRY_HIDE)
+#define ENTRY_HIDDEN		(1<<10)
+#define ENTRY_MASK		(ENTRY_CLOSED | ENTRY_HIDDEN)
 #define ENTRY_BUTTON            (1<<11)
 #define ENTRY_REDRAW		(1<<12) /* Not really used. */
 #define ENTRY_AUTO_BUTTON	(1<<13)

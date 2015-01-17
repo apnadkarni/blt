@@ -396,8 +396,8 @@ static Blt_ConfigSpec buttonSpecs[] =
 #define NORMAL		(0)
 #define ACTIVE		(1<<0)
 #define DISABLED	(1<<1)
-#define HIDE		(1<<2)
-#define STATE_MASK	(ACTIVE|DISABLED|HIDE)
+#define HIDDEN		(1<<2)
+#define STATE_MASK	(ACTIVE|DISABLED|HIDDEN)
 #define ONSCREEN	(1<<3)
 #define TEAROFF_REDRAW	(1<<4)
 
@@ -1621,7 +1621,7 @@ ObjToStateProc(
     } else if (strcmp(string, "disabled") == 0) {
 	flag = DISABLED;
     } else if (strcmp(string, "hidden") == 0) {
-	flag = HIDE;
+	flag = HIDDEN;
     } else if (strcmp(string, "normal") == 0) {
 	flag = NORMAL;
     } else {
@@ -1670,7 +1670,7 @@ StateToObjProc(
     unsigned int state = *(unsigned int *)(widgRec + offset);
     Tcl_Obj *objPtr;
 
-    if (state & HIDE) {
+    if (state & HIDDEN) {
 	objPtr = Tcl_NewStringObj("hidden", -1);
     } else if (state & DISABLED) {
 	objPtr = Tcl_NewStringObj("disabled", -1);
@@ -1888,8 +1888,8 @@ PickTabProc(ClientData clientData, int x, int y, ClientData *contextPtr)
     } else {
 	x -= (setPtr->flags & SLANT_LEFT) ? setPtr->tabHeight : setPtr->inset2;
     }
-    for (tabPtr = FirstTab(setPtr, HIDE); tabPtr != NULL;
-	 tabPtr = NextTab(tabPtr, HIDE)) {
+    for (tabPtr = FirstTab(setPtr, HIDDEN); tabPtr != NULL;
+	 tabPtr = NextTab(tabPtr, HIDDEN)) {
 	GadgetRegion *rPtr;
 
 	if ((tabPtr->flags & ONSCREEN) == 0) {
@@ -2208,11 +2208,11 @@ GetTabByIndex(Tcl_Interp *interp, Tabset *setPtr, const char *string,
     } else if ((c == 'f') && (strcmp(string, "focus") == 0)) {
 	tabPtr = setPtr->focusPtr;
     } else if ((c == 'f') && (strcmp(string, "first") == 0)) {
-	tabPtr = FirstTab(setPtr, HIDE | DISABLED);
+	tabPtr = FirstTab(setPtr, HIDDEN | DISABLED);
     } else if ((c == 's') && (strcmp(string, "selected") == 0)) {
 	tabPtr = setPtr->selectPtr;
     } else if ((c == 'l') && (strcmp(string, "last") == 0)) {
-	tabPtr = LastTab(setPtr, HIDE | DISABLED);
+	tabPtr = LastTab(setPtr, HIDDEN | DISABLED);
     } else if ((c == 'l') && (strcmp(string, "left") == 0)) {
 	switch (setPtr->side) {
 	case SIDE_LEFT:
@@ -2598,9 +2598,9 @@ PreviousOrFirstTab(Tab *tabPtr)
     Tabset *setPtr;
 
     setPtr = tabPtr->setPtr;
-    tabPtr = PrevTab(tabPtr, HIDE|DISABLED);
+    tabPtr = PrevTab(tabPtr, HIDDEN|DISABLED);
     if (tabPtr == NULL) {
-	return FirstTab(setPtr, HIDE|DISABLED);
+	return FirstTab(setPtr, HIDDEN|DISABLED);
     }
     return tabPtr;
 }
@@ -3013,7 +3013,7 @@ ConfigureTab(Tabset *setPtr, Tab *tabPtr)
 			   "-text", "-window*", (char *)NULL)) {
 	setPtr->flags |= (LAYOUT_PENDING | SCROLL_PENDING | REDRAW_ALL);
     }
-    if (tabPtr->flags & HIDE) {
+    if (tabPtr->flags & HIDDEN) {
 	if (setPtr->selectPtr == tabPtr) {
 	    setPtr->selectPtr = PreviousOrFirstTab(tabPtr);
 	}
@@ -3744,7 +3744,7 @@ ActivateOp(Tabset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     } else if (GetTabFromObj(interp, setPtr, objv[2], &tabPtr) != TCL_OK) {
 	return TCL_ERROR;
     }
-    if ((tabPtr != NULL) && (tabPtr->flags & (HIDE|DISABLED))) {
+    if ((tabPtr != NULL) && (tabPtr->flags & (HIDDEN|DISABLED))) {
 	tabPtr = NULL;
     }
     if (tabPtr != setPtr->activePtr) {
@@ -3863,7 +3863,7 @@ ButtonActivateOp(Tabset *setPtr, Tcl_Interp *interp, int objc,
     } else if (GetTabFromObj(interp, setPtr, objv[3], &tabPtr) != TCL_OK) {
 	return TCL_ERROR;
     }
-    if ((tabPtr != NULL) && (tabPtr->flags & (HIDE|DISABLED))) {
+    if ((tabPtr != NULL) && (tabPtr->flags & (HIDDEN|DISABLED))) {
 	tabPtr = NULL;
     }
     if (tabPtr != setPtr->activeButtonPtr) {
@@ -4007,7 +4007,7 @@ CloseOp(Tabset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     if (GetTabFromObj(interp, setPtr, objv[2], &tabPtr) != TCL_OK) {
 	return TCL_ERROR;
     }
-    if ((tabPtr != NULL) && (tabPtr->flags & (HIDE|DISABLED))) {
+    if ((tabPtr != NULL) && (tabPtr->flags & (HIDDEN|DISABLED))) {
 	return TCL_OK;
     }
     cmdObjPtr = (tabPtr->closeObjPtr == NULL) 
@@ -4262,7 +4262,7 @@ FocusOp(Tabset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	if (GetTabFromObj(interp, setPtr, objv[2], &tabPtr) != TCL_OK) {
 	    return TCL_ERROR;
 	}
-	if ((tabPtr != NULL) && ((tabPtr->flags & (DISABLED|HIDE)) == 0)) {
+	if ((tabPtr != NULL) && ((tabPtr->flags & (DISABLED|HIDDEN)) == 0)) {
 	    setPtr->focusPtr = tabPtr;
 	    Blt_SetFocusItem(setPtr->bindTable, setPtr->focusPtr, NULL);
 	    EventuallyRedraw(setPtr);
@@ -4467,7 +4467,7 @@ InvokeOp(Tabset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     if (GetTabFromObj(interp, setPtr, objv[2], &tabPtr) != TCL_OK) {
 	return TCL_ERROR;
     }
-    if ((tabPtr == NULL) || (tabPtr->flags & (DISABLED|HIDE))) {
+    if ((tabPtr == NULL) || (tabPtr->flags & (DISABLED|HIDDEN))) {
 	return TCL_OK;
     }
     SelectTab(setPtr, tabPtr);
@@ -4651,7 +4651,7 @@ SelectOp(Tabset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     if (GetTabFromObj(interp, setPtr, objv[2], &tabPtr) != TCL_OK) {
 	return TCL_ERROR;
     }
-    if ((tabPtr == NULL) || (tabPtr->flags & (HIDE|DISABLED))) {
+    if ((tabPtr == NULL) || (tabPtr->flags & (HIDDEN|DISABLED))) {
 	return TCL_OK;
     }
     SelectTab(setPtr, tabPtr);
@@ -5649,7 +5649,7 @@ TearoffOp(Tabset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	return TCL_ERROR;
     }
     if ((tabPtr == NULL) || (tabPtr->tkwin == NULL) || 
-	(tabPtr->flags & (DISABLED|HIDE))) {
+	(tabPtr->flags & (DISABLED|HIDDEN))) {
 	return TCL_OK;		/* No-op */
     }
     if (objc == 3) {
@@ -5757,7 +5757,7 @@ ComputeWorldGeometry(Tabset *setPtr)
 
 	/* Reset visibility flag and order of tabs. */
 	tabPtr->flags &= ~ONSCREEN;
-	if (tabPtr->flags & HIDE) {
+	if (tabPtr->flags & HIDDEN) {
 	    continue;
 	}
 	ComputeTabGeometry(setPtr, tabPtr);
@@ -5812,8 +5812,8 @@ ComputeWorldGeometry(Tabset *setPtr)
 	}
 	setPtr->tabWidth  = w;
 	setPtr->tabHeight = h;
-	for (tabPtr = FirstTab(setPtr, HIDE); tabPtr != NULL; 
-	     tabPtr = NextTab(tabPtr, HIDE)) {
+	for (tabPtr = FirstTab(setPtr, HIDDEN); tabPtr != NULL; 
+	     tabPtr = NextTab(tabPtr, HIDDEN)) {
 	    if (setPtr->plusPtr == tabPtr) {
 		tabPtr->worldWidth = tabPtr->labelWidth0;
 		tabPtr->worldWidth += (setPtr->flags & SLANT_LEFT)  
@@ -5832,8 +5832,8 @@ ComputeWorldGeometry(Tabset *setPtr)
 	int w, h;
 
 	tabWidth = tabHeight = 0;
-	for (tabPtr = FirstTab(setPtr, HIDE); tabPtr != NULL;
-	     tabPtr = NextTab(tabPtr, HIDE)) {
+	for (tabPtr = FirstTab(setPtr, HIDDEN); tabPtr != NULL;
+	     tabPtr = NextTab(tabPtr, HIDDEN)) {
 
 	    w = tabPtr->labelWidth0;
 	    h = maxTabHeight;
@@ -5896,7 +5896,7 @@ ShrinkTabs(Tabset *setPtr, Tab *startPtr, int numTabs, int shrink)
 	count = 0;
 	for (tabPtr = startPtr, i = 0; 
 	     (tabPtr != NULL) && (i < numTabs) && (shrink > 0); 
-	     tabPtr = NextTab(tabPtr, HIDE), i++) {
+	     tabPtr = NextTab(tabPtr, HIDDEN), i++) {
 	    if (tabPtr != setPtr->plusPtr) {
 		count++;
 	    }
@@ -5911,7 +5911,7 @@ ShrinkTabs(Tabset *setPtr, Tab *startPtr, int numTabs, int shrink)
 	
 	for (tabPtr = startPtr, i = 0; 
 	     (tabPtr != NULL) && (i < numTabs) && (shrink > 0); 
-	     tabPtr = NextTab(tabPtr, HIDE), i++) {
+	     tabPtr = NextTab(tabPtr, HIDDEN), i++) {
 	    if (tabPtr != setPtr->plusPtr) {
 		shrink -= ration;
 		tabPtr->worldWidth -= ration;
@@ -5925,7 +5925,7 @@ ShrinkTabs(Tabset *setPtr, Tab *startPtr, int numTabs, int shrink)
      */
     x = 0;
     for (tabPtr = startPtr, i = 0; (i < numTabs) && (tabPtr != NULL); 
-	 tabPtr = NextTab(tabPtr, HIDE), i++) {
+	 tabPtr = NextTab(tabPtr, HIDDEN), i++) {
 	tabPtr->worldX = x;
 	x += tabPtr->worldWidth + setPtr->gap - setPtr->overlap;
     }
@@ -5975,7 +5975,7 @@ ShrinkVariableSizeTabs(Tabset *setPtr, Tab *startPtr, int numTabs, int shrink)
     count = 0;
     tabs = Blt_AssertMalloc(numTabs * sizeof(Tab *));
     for (tabPtr = startPtr, i = 0; (tabPtr != NULL) && (i < numTabs); 
-	 tabPtr = NextTab(tabPtr, HIDE)) {
+	 tabPtr = NextTab(tabPtr, HIDDEN)) {
 	if (tabPtr != setPtr->plusPtr) {
 	    tabs[count] = tabPtr;
 	    count++;
@@ -6057,7 +6057,7 @@ ShrinkVariableSizeTabs(Tabset *setPtr, Tab *startPtr, int numTabs, int shrink)
      * changed.
      */
     x = 0;
-    for (tabPtr = startPtr; tabPtr != NULL; tabPtr = NextTab(tabPtr, HIDE)) {
+    for (tabPtr = startPtr; tabPtr != NULL; tabPtr = NextTab(tabPtr, HIDDEN)) {
 	tabPtr->worldX = x;
 #if DEBUG1
 	fprintf(stderr, "after: tab=%s width=%d\n", tabPtr->name,
@@ -6093,7 +6093,7 @@ GrowTabs(Tabset *setPtr, Tab *startPtr, int numTabs, int grow)
 	count = 0;
 	for (tabPtr = startPtr, i = 0; 
 	     (tabPtr != NULL) && (i < numTabs) && (grow > 0); 
-	     tabPtr = NextTab(tabPtr, HIDE), i++) {
+	     tabPtr = NextTab(tabPtr, HIDDEN), i++) {
 	    if (tabPtr != setPtr->plusPtr) {
 		count++;
 	    }
@@ -6105,7 +6105,7 @@ GrowTabs(Tabset *setPtr, Tab *startPtr, int numTabs, int grow)
 	
 	for (tabPtr = startPtr, i = 0; 
 	     (tabPtr != NULL) && (i < numTabs) && (grow > 0); 
-	     tabPtr = NextTab(tabPtr, HIDE), i++) {
+	     tabPtr = NextTab(tabPtr, HIDDEN), i++) {
 	    if (tabPtr != setPtr->plusPtr) {
 		tabPtr->worldWidth += ration;
 		assert(x == tabPtr->tier);
@@ -6119,7 +6119,7 @@ GrowTabs(Tabset *setPtr, Tab *startPtr, int numTabs, int grow)
      */
     x = 0;
     for (tabPtr = startPtr, i = 0; (i < numTabs) && (tabPtr != NULL); 
-	 tabPtr = NextTab(tabPtr, HIDE), i++) {
+	 tabPtr = NextTab(tabPtr, HIDDEN), i++) {
 	tabPtr->worldX = x;
 	x += tabPtr->worldWidth + setPtr->gap - setPtr->overlap;
     }
@@ -6147,7 +6147,7 @@ AdjustTabSizes(Tabset *setPtr, int numTabs)
 
 	    for (i = 0; i < tabsPerTier; i++) {
 		tabPtr = Blt_Chain_GetValue(link);
-		if ((tabPtr->flags & HIDE) == 0) {
+		if ((tabPtr->flags & HIDDEN) == 0) {
 		    tabPtr->tier = count;
 		    tabPtr->worldX = x;
 		    x += tabPtr->worldWidth + setPtr->gap - setPtr->overlap;
@@ -6178,8 +6178,8 @@ AdjustTabSizes(Tabset *setPtr, int numTabs)
 	plus += setPtr->inset2 * 2;
     }
 #endif
-    for (tabPtr = FirstTab(setPtr, HIDE); tabPtr != NULL;
-	 tabPtr = NextTab(tabPtr, HIDE)) {
+    for (tabPtr = FirstTab(setPtr, HIDDEN); tabPtr != NULL;
+	 tabPtr = NextTab(tabPtr, HIDDEN)) {
 	if (startPtr == NULL) {
 	    startPtr = tabPtr;
 	}
@@ -6238,7 +6238,7 @@ ComputeLayout(Tabset *setPtr)
     }
     /* Reset the pointers to the selected and starting tab. */
     if (setPtr->selectPtr == NULL) {
-	setPtr->selectPtr = FirstTab(setPtr, HIDE|DISABLED);
+	setPtr->selectPtr = FirstTab(setPtr, HIDDEN|DISABLED);
     }
     if (setPtr->startPtr == NULL) {
 	setPtr->startPtr = setPtr->selectPtr;
@@ -6269,8 +6269,8 @@ ComputeLayout(Tabset *setPtr)
 	/* Sum tab widths and determine the number of tiers needed. */
 	numTiers = 1;
 	total = x = 0;
-	for (tabPtr = FirstTab(setPtr, HIDE); tabPtr != NULL;
-		tabPtr = NextTab(tabPtr, HIDE)) {
+	for (tabPtr = FirstTab(setPtr, HIDDEN); tabPtr != NULL;
+		tabPtr = NextTab(tabPtr, HIDDEN)) {
 	    if ((x + tabPtr->worldWidth) > width) {
 		numTiers++;
 		x = 0;
@@ -6291,8 +6291,8 @@ ComputeLayout(Tabset *setPtr)
 	    width = ((total + setPtr->tabWidth) / setPtr->reqTiers);
 	    x = 0;
 	    numTiers = 1;
-	    for (tabPtr = FirstTab(setPtr, HIDE); tabPtr != NULL;
-		 tabPtr = NextTab(tabPtr, HIDE)) {
+	    for (tabPtr = FirstTab(setPtr, HIDDEN); tabPtr != NULL;
+		 tabPtr = NextTab(tabPtr, HIDDEN)) {
 		tabPtr->tier = numTiers;
 		/*
 		 * Keep adding tabs to a tier until we overfill it.
@@ -6335,8 +6335,8 @@ ComputeLayout(Tabset *setPtr)
 	 */
 	numTiers = 1;
 	x = 0;
-	for (tabPtr = FirstTab(setPtr, HIDE); tabPtr != NULL;
-	     tabPtr = NextTab(tabPtr, HIDE)) {
+	for (tabPtr = FirstTab(setPtr, HIDDEN); tabPtr != NULL;
+	     tabPtr = NextTab(tabPtr, HIDDEN)) {
 	    tabPtr->tier = numTiers;
 	    tabPtr->worldX = x;
 	    tabPtr->worldY = 0;
@@ -6368,16 +6368,16 @@ ComputeLayout(Tabset *setPtr)
     if (setPtr->side & (SIDE_LEFT | SIDE_RIGHT)) {
 	Tab *tabPtr;
 
-	for (tabPtr = FirstTab(setPtr, HIDE); tabPtr != NULL;
-	     tabPtr = NextTab(tabPtr, HIDE)) {
+	for (tabPtr = FirstTab(setPtr, HIDDEN); tabPtr != NULL;
+	     tabPtr = NextTab(tabPtr, HIDDEN)) {
 	    tabPtr->screenWidth = (short int)setPtr->tabHeight;
 	    tabPtr->screenHeight = (short int)tabPtr->worldWidth;
 	}
     } else {
 	Tab *tabPtr;
 
-	for (tabPtr = FirstTab(setPtr, HIDE); tabPtr != NULL;
-	     tabPtr = NextTab(tabPtr, HIDE)) {
+	for (tabPtr = FirstTab(setPtr, HIDDEN); tabPtr != NULL;
+	     tabPtr = NextTab(tabPtr, HIDDEN)) {
 	    tabPtr->screenWidth = (short int)tabPtr->worldWidth;
 	    tabPtr->screenHeight = (short int)setPtr->tabHeight;
 	}
@@ -6405,9 +6405,9 @@ ComputeVisibleTabs(Tabset *setPtr)
 	offset = setPtr->scrollOffset - (setPtr->outerPad + setPtr->xSelectPad);
 	width = VPORTWIDTH(setPtr) + setPtr->scrollOffset +
 	    2 * setPtr->outerPad;
-	for (tabPtr = FirstTab(setPtr, HIDE); tabPtr != NULL;
-	     tabPtr = NextTab(tabPtr, HIDE)) {
-	    if (tabPtr->flags & HIDE) {
+	for (tabPtr = FirstTab(setPtr, HIDDEN); tabPtr != NULL;
+	     tabPtr = NextTab(tabPtr, HIDDEN)) {
+	    if (tabPtr->flags & HIDDEN) {
 		tabPtr->flags &= ~ONSCREEN;
 		continue;
 	    }
@@ -6423,14 +6423,14 @@ ComputeVisibleTabs(Tabset *setPtr)
 	Tab *tabPtr;
 	/* Static multiple tier mode. */
 
-	for (tabPtr = FirstTab(setPtr, HIDE); tabPtr != NULL;
-	     tabPtr = NextTab(tabPtr, HIDE)) {
+	for (tabPtr = FirstTab(setPtr, HIDDEN); tabPtr != NULL;
+	     tabPtr = NextTab(tabPtr, HIDDEN)) {
 	    tabPtr->flags |= ONSCREEN;
 	    numVisibleTabs++;
 	}
     }
-    for (tabPtr = FirstTab(setPtr, HIDE); tabPtr != NULL;
-	 tabPtr = NextTab(tabPtr, HIDE)) {
+    for (tabPtr = FirstTab(setPtr, HIDDEN); tabPtr != NULL;
+	 tabPtr = NextTab(tabPtr, HIDDEN)) {
 	tabPtr->screenX = tabPtr->screenY = -1000;
 	if (tabPtr->flags & ONSCREEN) {
 	    WorldToScreen(setPtr, tabPtr->worldX, tabPtr->worldY,

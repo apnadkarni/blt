@@ -584,8 +584,8 @@ struct _Graph {
  *	GRAPH_FOCUS	
  */
 
-#define HIDE			(1<<0)
-#define DELETE_PENDING		(1<<1)
+#define HIDDEN			(1<<0)
+#define DELETED 		(1<<1)
 #define REDRAW_PENDING		(1<<2)  /* Indicates a DoWhenIdle handler
                                          * has already been queued to
                                          * redraw this window.  */

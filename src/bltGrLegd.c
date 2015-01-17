@@ -299,7 +299,7 @@ static Blt_ConfigSpec configSpecs[] =
 	DEF_FOREGROUND, Blt_Offset(Legend, fgColor), 0},
     {BLT_CONFIG_BITMASK, "-hide", "hide", "Hide", DEF_HIDE, 
 	Blt_Offset(Legend, flags), BLT_CONFIG_DONT_SET_DEFAULT, 
-	(Blt_CustomOption *)HIDE},
+	(Blt_CustomOption *)HIDDEN},
     {BLT_CONFIG_PAD, "-ipadx", "iPadX", "Pad", DEF_IPADX, 
 	Blt_Offset(Legend, ixPad), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_PAD, "-ipady", "iPadY", "Pad", DEF_IPADY, 
@@ -626,7 +626,7 @@ LegendEventProc(ClientData clientData, XEvent *eventPtr)
 	    legdPtr->flags &= ~REDRAW_PENDING;
 	}
 	legdPtr->site = LEGEND_RIGHT;
-	legdPtr->flags |= HIDE;
+	legdPtr->flags |= HIDDEN;
 	graphPtr->flags |= (MAP_WORLD | REDRAW_WORLD);
 	Blt_MoveBindingTable(legdPtr->bindTable, graphPtr->tkwin);
 	Blt_EventuallyRedrawGraph(graphPtr);
@@ -1410,7 +1410,7 @@ Blt_DrawLegend(Graph *graphPtr, Drawable drawable)
     int x, y, w, h;
     int xLabel, yStart, xSymbol, ySymbol;
 
-    if ((legdPtr->flags & HIDE) || (legdPtr->numEntries == 0)) {
+    if ((legdPtr->flags & HIDDEN) || (legdPtr->numEntries == 0)) {
 	return;
     }
     SetLegendOrigin(legdPtr);
@@ -1593,7 +1593,7 @@ Blt_LegendToPostScript(Graph *graphPtr, Blt_Ps ps)
     int width, height;
     Blt_FontMetrics fontMetrics;
 
-    if ((legdPtr->flags & HIDE) || (legdPtr->numEntries == 0)) {
+    if ((legdPtr->flags & HIDDEN) || (legdPtr->numEntries == 0)) {
 	return;
     }
     SetLegendOrigin(legdPtr);
@@ -2239,7 +2239,7 @@ ActivateOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	}
 	if ((elemPtr != NULL) && (elemPtr != legdPtr->activePtr)) {
 	    legdPtr->activePtr = elemPtr;
-	    if ((legdPtr->flags & HIDE) == 0) {
+	    if ((legdPtr->flags & HIDDEN) == 0) {
 		if ((legdPtr->site != LEGEND_WINDOW) && 
 		    (graphPtr->flags & REDRAW_PENDING)) {
 		    graphPtr->flags |= CACHE_DIRTY;
@@ -2422,7 +2422,7 @@ DeactivateOp(Graph *graphPtr, Tcl_Interp *interp, int objc,
 
     if (legdPtr->activePtr != NULL) {
 	legdPtr->activePtr = NULL;
-	if ((legdPtr->flags & HIDE) == 0) {
+	if ((legdPtr->flags & HIDDEN) == 0) {
 	    if ((legdPtr->site != LEGEND_WINDOW) && 
 		(graphPtr->flags & REDRAW_PENDING)) {
 		graphPtr->flags |= CACHE_DIRTY;
@@ -2487,7 +2487,7 @@ GetOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 {
     Legend *legdPtr = graphPtr->legend;
 
-    if (((legdPtr->flags & HIDE) == 0) && (legdPtr->numEntries > 0)) {
+    if (((legdPtr->flags & HIDDEN) == 0) && (legdPtr->numEntries > 0)) {
 	Element *elemPtr;
 
 	if (GetElementFromObj(graphPtr, objv[3], &elemPtr) != TCL_OK) {
@@ -2837,7 +2837,7 @@ SelectionSetOp(Graph *graphPtr, Tcl_Interp *interp, int objc,
     if (GetElementFromObj(graphPtr, objv[4], &firstPtr) != TCL_OK) {
 	return TCL_ERROR;
     }
-    if ((firstPtr->flags & HIDE) && ((legdPtr->flags & SELECT_CLEAR)==0)) {
+    if ((firstPtr->flags & HIDDEN) && ((legdPtr->flags & SELECT_CLEAR)==0)) {
 	Tcl_AppendResult(interp, "can't select hidden node \"", 
 		Tcl_GetString(objv[4]), "\"", (char *)NULL);
 	return TCL_ERROR;
@@ -2847,7 +2847,7 @@ SelectionSetOp(Graph *graphPtr, Tcl_Interp *interp, int objc,
 	if (GetElementFromObj(graphPtr, objv[5], &lastPtr) != TCL_OK) {
 	    return TCL_ERROR;
 	}
-	if ((lastPtr->flags & HIDE) && 
+	if ((lastPtr->flags & HIDDEN) && 
 	    ((legdPtr->flags & SELECT_CLEAR) == 0)) {
 	    Tcl_AppendResult(interp, "can't select hidden node \"", 
 		     Tcl_GetString(objv[5]), "\"", (char *)NULL);
@@ -2985,7 +2985,7 @@ Blt_Legend_Height(Graph *graphPtr)
 int 
 Blt_Legend_IsHidden(Graph *graphPtr)
 {
-    return (graphPtr->legend->flags & HIDE);
+    return (graphPtr->legend->flags & HIDDEN);
 }
 
 int 

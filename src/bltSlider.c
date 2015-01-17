@@ -4163,13 +4163,13 @@ NewSlider(const char *name, int margin)
     hPtr = Blt_CreateHashEntry(&sliderPtr->axes.nameTable, name, &isNew);
     if (!isNew) {
 	sliderPtr = Blt_GetHashValue(hPtr);
-	if ((sliderPtr->flags & DELETE_PENDING) == 0) {
+	if ((sliderPtr->flags & DELETED) == 0) {
 	    Tcl_AppendResult(sliderPtr->interp, "axis \"", name,
 		"\" already exists in \"", Tk_PathName(sliderPtr->tkwin), "\"",
 		(char *)NULL);
 	    return NULL;
 	}
-	sliderPtr->flags &= ~DELETE_PENDING;
+	sliderPtr->flags &= ~DELETED;
     } else {
 	sliderPtr = Blt_Calloc(1, sizeof(Axis));
 	if (sliderPtr == NULL) {
@@ -4199,7 +4199,7 @@ NewSlider(const char *name, int margin)
 	    sliderPtr->reqNumMinorTicks = 0;
 	} 
 	if ((margin == MARGIN_RIGHT) || (margin == MARGIN_TOP)) {
-	    sliderPtr->flags |= HIDE;
+	    sliderPtr->flags |= HIDDEN;
 	}
 	Blt_Ts_InitStyle(sliderPtr->limitsTextStyle);
 	sliderPtr->tickLabels = Blt_Chain_Create();
@@ -4747,7 +4747,7 @@ AxisDeleteOp(Tcl_Interp *interp, Graph *sliderPtr, int objc,
 	if (GetAxisFromObj(interp, sliderPtr, objv[i], &sliderPtr) != TCL_OK) {
 	    return TCL_ERROR;
 	}
-	sliderPtr->flags |= DELETE_PENDING;
+	sliderPtr->flags |= DELETED;
 	if (sliderPtr->refCount == 0) {
 	    DestroyAxis(sliderPtr);
 	}
@@ -4786,7 +4786,7 @@ AxisFocusOp(Tcl_Interp *interp, Graph *sliderPtr, int objc, Tcl_Obj *const *objv
 	}
 	sliderPtr->focusPtr = NULL;
 	if ((sliderPtr != NULL) && 
-	    ((sliderPtr->flags & (USE|HIDE)) == USE)) {
+	    ((sliderPtr->flags & (USE|HIDDEN)) == USE)) {
 	    sliderPtr->focusPtr = sliderPtr;
 	}
 	Blt_SetFocusItem(sliderPtr->bindTable, sliderPtr->focusPtr, NULL);
@@ -4950,7 +4950,7 @@ AxisNamesOp(Tcl_Interp *interp, Graph *sliderPtr, int objc, Tcl_Obj *const *objv
 	    Axis *sliderPtr;
 
 	    sliderPtr = Blt_GetHashValue(hPtr);
-	    if (sliderPtr->flags & DELETE_PENDING) {
+	    if (sliderPtr->flags & DELETED) {
 		continue;
 	    }
 	    Tcl_ListObjAppendElement(interp, listObjPtr, 
@@ -5102,7 +5102,7 @@ Blt_NearestAxis(Graph *sliderPtr, int x, int y)
 	Axis *sliderPtr;
 
 	sliderPtr = Blt_GetHashValue(hPtr);
-	if ((sliderPtr->flags & (DELETE_PENDING|HIDE|USE)) != USE) {
+	if ((sliderPtr->flags & (DELETED|HIDDEN|USE)) != USE) {
 	    continue;
 	}
 	if (sliderPtr->flags & SHOWTICKS) {

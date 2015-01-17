@@ -338,7 +338,6 @@ struct _Blt_Bg {
     Blt_ChainLink link;			/* Entry in notifier list. */
 };
 
-#define DELETE_PENDING		(1<<0)
 #define BG_CENTER		(1<<2)
 #define BG_SCALE		(1<<3)
 #define FREE_TILE		(1<<4)

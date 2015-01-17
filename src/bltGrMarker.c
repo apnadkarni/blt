@@ -297,7 +297,7 @@ static Blt_ConfigSpec bitmapConfigSpecs[] =
 	BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_BITMASK, "-hide", "hide", "Hide", DEF_MARKER_HIDE, 
 	Blt_Offset(BitmapMarker, flags), BLT_CONFIG_DONT_SET_DEFAULT,
-        (Blt_CustomOption *)HIDE},
+        (Blt_CustomOption *)HIDDEN},
     {BLT_CONFIG_CUSTOM, "-mapx", "mapX", "MapX", DEF_MARKER_MAP_X, 
 	Blt_Offset(BitmapMarker, axes.x), 0, &bltXAxisOption},
     {BLT_CONFIG_CUSTOM, "-mapy", "mapY", "MapY", DEF_MARKER_MAP_Y, 
@@ -409,7 +409,7 @@ static Blt_ConfigSpec imageConfigSpecs[] =
 	Blt_Offset(ImageMarker, elemName), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_BITMASK, "-hide", "hide", "Hide", DEF_MARKER_HIDE,	
 	Blt_Offset(ImageMarker, flags), BLT_CONFIG_DONT_SET_DEFAULT,
-        (Blt_CustomOption *)HIDE},
+        (Blt_CustomOption *)HIDDEN},
     {BLT_CONFIG_CUSTOM, "-image", "image", "Image", (char *)NULL, 
 	Blt_Offset(ImageMarker, picture), BLT_CONFIG_NULL_OK, &pictImageOption},
     {BLT_CONFIG_CUSTOM, "-mapx", "mapX", "MapX", DEF_MARKER_MAP_X, 
@@ -541,7 +541,7 @@ static Blt_ConfigSpec lineConfigSpecs[] =
 	BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_BITMASK, "-hide", "hide", "Hide", DEF_MARKER_HIDE, 
 	Blt_Offset(LineMarker, flags), BLT_CONFIG_DONT_SET_DEFAULT,
-        (Blt_CustomOption *)HIDE},
+        (Blt_CustomOption *)HIDDEN},
     {BLT_CONFIG_CUSTOM, "-mapx", "mapX", "MapX", DEF_MARKER_MAP_X, 
 	Blt_Offset(LineMarker, axes.x), 0, &bltXAxisOption},
     {BLT_CONFIG_CUSTOM, "-mapy", "mapY", "MapY", DEF_MARKER_MAP_Y, 
@@ -693,7 +693,7 @@ static Blt_ConfigSpec polygonConfigSpecs[] =
 	BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_BITMASK, "-hide", "hide", "Hide", DEF_MARKER_HIDE, 
 	Blt_Offset(PolygonMarker, flags), BLT_CONFIG_DONT_SET_DEFAULT,
-        (Blt_CustomOption *)HIDE},
+        (Blt_CustomOption *)HIDDEN},
     {BLT_CONFIG_CUSTOM, "-mapx", "mapX", "MapX", DEF_MARKER_MAP_X, 
 	Blt_Offset(PolygonMarker, axes.x), 0, &bltXAxisOption},
     {BLT_CONFIG_CUSTOM, "-mapy", "mapY", "MapY", DEF_MARKER_MAP_Y, 
@@ -820,7 +820,7 @@ static Blt_ConfigSpec textConfigSpecs[] =
 	BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_BITMASK, "-hide", "hide", "Hide", DEF_MARKER_HIDE, 
 	Blt_Offset(TextMarker, flags), BLT_CONFIG_DONT_SET_DEFAULT, 
-	(Blt_CustomOption *)HIDE},
+	(Blt_CustomOption *)HIDDEN},
     {BLT_CONFIG_CUSTOM, "-mapx", "mapX", "MapX", DEF_MARKER_MAP_X, 
 	Blt_Offset(TextMarker, axes.x), 0, &bltXAxisOption},
     {BLT_CONFIG_CUSTOM, "-mapy", "mapY", "MapY", DEF_MARKER_MAP_Y, 
@@ -941,7 +941,7 @@ static Blt_ConfigSpec windowConfigSpecs[] =
 	Blt_Offset(WindowMarker, reqHeight), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_BITMASK, "-hide", "hide", "Hide", DEF_MARKER_HIDE, 
         Blt_Offset(WindowMarker, flags), BLT_CONFIG_DONT_SET_DEFAULT,
-        (Blt_CustomOption *)HIDE},
+        (Blt_CustomOption *)HIDDEN},
     {BLT_CONFIG_CUSTOM, "-mapx", "mapX", "MapX", DEF_MARKER_MAP_X, 
 	Blt_Offset(WindowMarker, axes.x), 0, &bltXAxisOption},
     {BLT_CONFIG_CUSTOM, "-mapy", "mapY", "MapY", DEF_MARKER_MAP_Y, 
@@ -1689,7 +1689,7 @@ IsElementHidden(Marker *markerPtr)
 	Element *elemPtr;
 	
 	elemPtr = Blt_GetHashValue(hPtr);
-	if ((elemPtr->link == NULL) || (elemPtr->flags & HIDE)) {
+	if ((elemPtr->link == NULL) || (elemPtr->flags & HIDDEN)) {
 	    return TRUE;
 	}
     }
@@ -4786,7 +4786,7 @@ FindOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	Marker *markerPtr;
 
 	markerPtr = Blt_Chain_GetValue(link);
-	if (markerPtr->flags & HIDE) {
+	if (markerPtr->flags & HIDDEN) {
 	    continue;
 	}
 	if ((markerPtr->elemName != NULL) && (IsElementHidden(markerPtr))) {
@@ -4943,7 +4943,7 @@ Blt_MarkersToPostScript(Graph *graphPtr, Blt_Ps ps, int under)
 	if (markerPtr->drawUnder != under) {
 	    continue;
 	}
-	if (markerPtr->flags & HIDE) {
+	if (markerPtr->flags & HIDDEN) {
 	    continue;
 	}
 	if ((markerPtr->elemName != NULL) && (IsElementHidden(markerPtr))) {
@@ -5000,7 +5000,7 @@ Blt_DrawMarkers(Graph *graphPtr, Drawable drawable, int under)
 	if ((markerPtr->numWorldPts == 0) || 
 	    (markerPtr->drawUnder != under) ||
 	    (markerPtr->clipped) ||
-	    (markerPtr->flags & HIDE)) {
+	    (markerPtr->flags & HIDDEN)) {
 	    continue;
 	}
 	if ((markerPtr->elemName != NULL) && (IsElementHidden(markerPtr))) {
@@ -5037,7 +5037,7 @@ Blt_MapMarkers(Graph *graphPtr)
 	if (markerPtr->numWorldPts == 0) {
 	    continue;
 	}
-	if (markerPtr->flags & HIDE) {
+	if (markerPtr->flags & HIDDEN) {
 	    continue;
 	}
 	if ((graphPtr->flags & MAP_ALL) || (markerPtr->flags & MAP_ITEM)) {
@@ -5088,7 +5088,7 @@ Blt_NearestMarker(
 
 	markerPtr = Blt_Chain_GetValue(link);
 	if ((markerPtr->numWorldPts == 0) ||
-	    (markerPtr->flags & (HIDE|MAP_ITEM))) {
+	    (markerPtr->flags & (HIDDEN|MAP_ITEM))) {
 	    continue;			/* Don't consider markers that are
 					 * pending to be mapped. Even if the
 					 * marker has already been mapped, the

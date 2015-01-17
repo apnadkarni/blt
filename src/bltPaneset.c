@@ -443,7 +443,7 @@ struct _Pane  {
 
 /* Pane/handle flags.  */
 
-#define HIDE		(1<<8)		/* Do not display the pane. */
+#define HIDDEN		(1<<8)		/* Do not display the pane. */
 #define DISABLED	(1<<9)		/* Handle is disabled. */
 #define ONSCREEN	(1<<10)		/* Pane is on-screen. */
 #define HANDLE_ACTIVE	(1<<11)		/* Handle is currently active. */
@@ -526,7 +526,7 @@ static Blt_ConfigSpec paneSpecs[] =
 	Blt_Offset(Pane, reqHeight), 0},
     {BLT_CONFIG_BITMASK, "-hide", "hide", "Hide", DEF_PANE_HIDE, 
         Blt_Offset(Pane, flags), BLT_CONFIG_DONT_SET_DEFAULT, 
-	(Blt_CustomOption *)HIDE },
+	(Blt_CustomOption *)HIDDEN },
     {BLT_CONFIG_COLOR, "-highlightbackground", "highlightBackground",
 	"HighlightBackground", DEF_PANE_HIGHLIGHT_BACKGROUND, 
 	Blt_Offset(Pane, highlightBgColor), 0},
@@ -583,7 +583,7 @@ static Blt_ConfigSpec frameSpecs[] =
 	Blt_Offset(Pane, reqHeight), 0},
     {BLT_CONFIG_BITMASK, "-hide", "hide", "Hide", DEF_PANE_HIDE, 
 	Blt_Offset(Pane, flags), BLT_CONFIG_DONT_SET_DEFAULT, 
-	(Blt_CustomOption *)HIDE },
+	(Blt_CustomOption *)HIDDEN },
     {BLT_CONFIG_COLOR, "-highlightbackground", "highlightBackground",
 	"HighlightBackground", DEF_PANE_HIGHLIGHT_BACKGROUND, 
 	Blt_Offset(Pane, highlightBgColor), 0},
@@ -1450,7 +1450,7 @@ FirstPane(Paneset *setPtr)
 	Pane *panePtr;
 
 	panePtr = Blt_Chain_GetValue(link);
-	if ((panePtr->flags & (HIDE|DISABLED)) == 0) {
+	if ((panePtr->flags & (HIDDEN|DISABLED)) == 0) {
 	    return panePtr;
 	}
     }
@@ -1467,7 +1467,7 @@ LastPane(Paneset *setPtr)
 	Pane *panePtr;
 
 	panePtr = Blt_Chain_GetValue(link);
-	if ((panePtr->flags & (HIDE|DISABLED)) == 0) {
+	if ((panePtr->flags & (HIDDEN|DISABLED)) == 0) {
 	    return panePtr;
 	}
     }
@@ -1484,7 +1484,7 @@ NextPane(Pane *panePtr)
 	for (link = Blt_Chain_NextLink(panePtr->link); link != NULL; 
 	     link = Blt_Chain_NextLink(link)) {
 	    panePtr = Blt_Chain_GetValue(link);
-	    if ((panePtr->flags & (HIDE|DISABLED)) == 0) {
+	    if ((panePtr->flags & (HIDDEN|DISABLED)) == 0) {
 		return panePtr;
 	    }
 	}
@@ -1501,7 +1501,7 @@ PrevPane(Pane *panePtr)
 	for (link = Blt_Chain_PrevLink(panePtr->link); link != NULL; 
 	     link = Blt_Chain_PrevLink(link)) {
 	    panePtr = Blt_Chain_GetValue(link);
-	    if ((panePtr->flags & HIDE) == 0) {
+	    if ((panePtr->flags & HIDDEN) == 0) {
 		return panePtr;
 	    }
 	}
@@ -3269,7 +3269,7 @@ LayoutHorizontalPanes(Paneset *setPtr)
 	next = Blt_Chain_NextLink(link);
 	panePtr = Blt_Chain_GetValue(link);
 	panePtr->flags &= ~HANDLE;
-	if (panePtr->flags & HIDE) {
+	if (panePtr->flags & HIDDEN) {
 	    if (Tk_IsMapped(panePtr->tkwin)) {
 		Tk_UnmapWindow(panePtr->tkwin);
 	    }
@@ -3358,7 +3358,7 @@ LayoutVerticalPanes(Paneset *setPtr)
 	
 	next = Blt_Chain_NextLink(link);
 	panePtr = Blt_Chain_GetValue(link);
-	if (panePtr->flags & HIDE) {
+	if (panePtr->flags & HIDDEN) {
 	    if (Tk_IsMapped(panePtr->tkwin)) {
 		Tk_UnmapWindow(panePtr->tkwin);
 	    }
@@ -4182,7 +4182,7 @@ HandleActivateOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (GetPaneFromObj(interp, setPtr, objv[3], &panePtr) != TCL_OK) {
 	return TCL_ERROR;
     }
-    if (panePtr->flags & (DISABLED|HIDE)) {
+    if (panePtr->flags & (DISABLED|HIDDEN)) {
 	return TCL_OK;
     }
     if (panePtr != setPtr->activePtr) {
@@ -4235,7 +4235,7 @@ HandleAnchorOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (GetPaneFromObj(interp, setPtr, objv[3], &panePtr) != TCL_OK) {
 	return TCL_ERROR;
     }
-    if (panePtr->flags & (DISABLED|HIDE)) {
+    if (panePtr->flags & (DISABLED|HIDDEN)) {
 	return TCL_OK;
     }
     if ((Tcl_GetIntFromObj(interp, objv[4], &x) != TCL_OK) ||
@@ -4311,7 +4311,7 @@ HandleMarkOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (GetPaneFromObj(interp, setPtr, objv[3], &panePtr) != TCL_OK) {
 	return TCL_ERROR;
     }
-    if (panePtr->flags & (DISABLED|HIDE)) {
+    if (panePtr->flags & (DISABLED|HIDDEN)) {
 	return TCL_OK;
     }
     if ((Tcl_GetIntFromObj(interp, objv[4], &x) != TCL_OK) ||
@@ -4352,7 +4352,7 @@ HandleMoveOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const
     if (GetPaneFromObj(interp, setPtr, objv[3], &panePtr) != TCL_OK) {
 	return TCL_ERROR;
     }
-    if (panePtr->flags & (DISABLED|HIDE)) {
+    if (panePtr->flags & (DISABLED|HIDDEN)) {
 	return TCL_OK;
     }
     if ((Tcl_GetIntFromObj(interp, objv[4], &x) != TCL_OK) ||
@@ -4399,7 +4399,7 @@ HandleSetOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (GetPaneFromObj(interp, setPtr, objv[3], &panePtr) != TCL_OK) {
 	return TCL_ERROR;
     }
-    if (panePtr->flags & (DISABLED|HIDE)) {
+    if (panePtr->flags & (DISABLED|HIDDEN)) {
 	return TCL_OK;
     }
     if ((Tcl_GetIntFromObj(interp, objv[4], &x) != TCL_OK) ||
@@ -4608,7 +4608,7 @@ InvokeOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (GetPaneFromObj(interp, setPtr, objv[2], &panePtr) != TCL_OK) {
 	return TCL_ERROR;
     }
-    if ((panePtr == NULL) || (panePtr->flags & (DISABLED|HIDE))) {
+    if ((panePtr == NULL) || (panePtr->flags & (DISABLED|HIDDEN))) {
 	return TCL_OK;
     }
     cmdObjPtr = GETATTR(panePtr, cmdObjPtr);
@@ -4913,7 +4913,7 @@ SeeOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     if (GetPaneFromObj(interp, setPtr, objv[2], &panePtr) != TCL_OK) {
 	return TCL_ERROR;
     }
-    if ((panePtr == NULL) || (panePtr->flags & (HIDE|DISABLED))) {
+    if ((panePtr == NULL) || (panePtr->flags & (HIDDEN|DISABLED))) {
 	return TCL_OK;
     }
 

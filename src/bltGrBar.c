@@ -363,7 +363,7 @@ static Blt_ConfigSpec barElemConfigSpecs[] = {
 	BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_BITMASK, "-hide", "hide", "Hide", DEF_HIDE, 
          Blt_Offset(BarElement, flags), BLT_CONFIG_DONT_SET_DEFAULT,
-        (Blt_CustomOption *)HIDE},
+        (Blt_CustomOption *)HIDDEN},
     {BLT_CONFIG_CUSTOM, "-mapx", "mapX", "MapX", DEF_AXIS_X, 
 	Blt_Offset(BarElement, axes.x), 0, &bltXAxisOption},
     {BLT_CONFIG_CUSTOM, "-mapy", "mapY", "MapY", DEF_AXIS_Y, 
@@ -2516,7 +2516,8 @@ Blt_InitSetTable(Graph *graphPtr)
 	int i, numPoints;
 
 	elemPtr = Blt_Chain_GetValue(link);
-	if ((elemPtr->flags & HIDE) || (elemPtr->obj.classId != CID_ELEM_BAR)) {
+	if ((elemPtr->flags & HIDDEN) ||
+            (elemPtr->obj.classId != CID_ELEM_BAR)) {
 	    continue;
 	}
 	numSegs++;
@@ -2660,7 +2661,8 @@ Blt_ComputeStacks(Graph *graphPtr)
 	double *x, *y, *xend;
 
 	elemPtr = Blt_Chain_GetValue(link);
-	if ((elemPtr->flags & HIDE) || (elemPtr->obj.classId != CID_ELEM_BAR)) {
+	if ((elemPtr->flags & HIDDEN) ||
+            (elemPtr->obj.classId != CID_ELEM_BAR)) {
 	    continue;
 	}
 	for (x = elemPtr->x.values, y = elemPtr->y.values, 
