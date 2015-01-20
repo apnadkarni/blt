@@ -251,38 +251,6 @@ typedef struct {
 } Playback;
 
 /*
- * GraphColormap --
- */
-typedef struct {
-    const char *name;
-    Blt_HashEntry *hashPtr;
-    Graph *graphPtr;			/* Parent graph. */
-    Blt_Palette palette;		/* Color palette to map colors
-                                           to. */
-    Axis *axisPtr;			/* Axis representing the colormap's
-					 * range.  By default, the colormap
-					 * range is the range of values for
-					 * all elements mapped to this
-					 * axis. */
-    double reqMin, reqMax;		/* Requested limits of the
-					 * colormap. These override the
-					 * computed limits of the axis
-					 * above. */
-    double min, max;			/* Limits of the colormap */
-    Blt_HashTable notifierTable;	/* Table of registered client
-					 * callbacks to be made whenever
-					 * the colormap changes or is
-					 * deleted. */
-} GraphColormap;
-
-typedef void (GraphColormapNotifyProc) (GraphColormap *cmapPtr, 
-	ClientData clientData, unsigned int flags);
-
-#define COLORMAP_CHANGE_NOTIFY	(1<<0)
-#define COLORMAP_DELETE_NOTIFY	(1<<1)
-
-
-/*
  *---------------------------------------------------------------------------
  *
  * Crosshairs
@@ -838,22 +806,6 @@ BLT_EXTERN void Blt_HoldPlayback(Graph *graphPtr);
 BLT_EXTERN void Blt_ContinuePlayback(Graph *graphPtr);
 BLT_EXTERN void Blt_DestroyPlayback(Graph *graphPtr);
 BLT_EXTERN int Blt_CreatePlayback(Graph *graphPtr);
-
-BLT_EXTERN int Blt_Colormap_Get(Tcl_Interp *interp, Graph *graphPtr, 
-	Tcl_Obj *objPtr, GraphColormap **cmapPtrPtr);
-BLT_EXTERN void Blt_Colormap_Init(GraphColormap *cmapPtr);
-BLT_EXTERN void Blt_Colormap_CreateNotifier(GraphColormap *cmapPtr, 
-	GraphColormapNotifyProc *proc, ClientData clientData);
-BLT_EXTERN void Blt_Colormap_DeleteNotifier(GraphColormap *cmapPtr, 
-	ClientData clientData);
-
-#define Blt_Colormap_GetAssociatedColor(c, x) \
-    (((c)->palette != NULL) ? Blt_Palette_GetAssociatedColor((c)->palette, x): 0x0);
-
-BLT_EXTERN void Blt_DestroyColormaps(Graph *graphPtr);
-BLT_EXTERN void Blt_Colormap_Free(GraphColormap *cmapPtr);
-BLT_EXTERN int Blt_ColormapOp(ClientData clientData, Tcl_Interp *interp, 
-	int objc, Tcl_Obj *const *objv);
 
 /* ---------------------- Global declarations ------------------------ */
 

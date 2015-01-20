@@ -424,7 +424,6 @@ struct _ContourElement {
 					 * ranges: used to scale the size
 					 * of element's symbol. */
     int state;
-    GraphColormap *cmapPtr;
 
     /* Contour-specific fields. */
     ContourPen builtinPen;

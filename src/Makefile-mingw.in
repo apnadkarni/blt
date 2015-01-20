@@ -301,7 +301,6 @@ GRAPH_OBJS =		bltGrAxis.o \
 			bltGrPlay.o \
 			bltGrPs.o \
 			bltGrContour.o \
-			bltGrColormap.o \
 			bltGraph.o 
 
 TREEVIEW_OBJS =		bltTreeView.o \

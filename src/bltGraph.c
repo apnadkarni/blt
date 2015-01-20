@@ -914,7 +914,6 @@ DestroyGraph(DestroyData dataPtr)
      * the elements are destroyed.
      */
     Blt_DestroyElements(graphPtr);	/* Destroy elements before colormaps. */
-    Blt_DestroyColormaps(graphPtr);	/* Destroy colormaps before axes. */
     Blt_DestroyMarkers(graphPtr);
     Blt_DestroyLegend(graphPtr);
     Blt_DestroyAxes(graphPtr);
@@ -1960,7 +1959,6 @@ static Blt_OpSpec graphOps[] =
     {"axis",         1, Blt_VirtualAxisOp, 2, 0, "oper ?args?",},
     {"bar",          1, BarOp,             2, 0, "oper ?args?",},
     {"cget",         2, CgetOp,            3, 3, "option",},
-    {"colormap",     3, Blt_ColormapOp,    2, 0, "?option value?...",},
     {"configure",    3, ConfigureOp,       2, 0, "?option value?...",},
     {"crosshairs",   2, Blt_CrosshairsOp,  2, 0, "oper ?args?",},
     {"element",      2, ElementOp,         2, 0, "oper ?args?",},
