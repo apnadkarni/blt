@@ -13,7 +13,7 @@ blt::contour .g
 set mesh [blt::mesh create cloud -x $xv -y $yv]
 .g element create sine -values $zv -mesh $mesh 
 .g element isoline steps sine $numIsolines
-.g axis configure z -palette rainbow -colorbarthickness 15 -use y2 \
+.g axis configure z -palette rainbow -colorbarthickness 15 -margin y2 \
     -exterior yes -rotate -90 -title "Units"  
 .g legend configure -hide yes
 proc UpdateColors {} {
@@ -41,7 +41,7 @@ proc Fix { what } {
 	}
 	.g element configure sine -color $color
     }
-    .g element configure sine -display$what $bool
+    .g element configure sine -show$what $bool
 }
 
 array set show {
@@ -79,7 +79,7 @@ blt::table . \
     5,1 .values -anchor w \
     6,1 .interp -anchor w 
 foreach key [array names show] {
-    set show($key) [.g element cget sine -display$key]
+    set show($key) [.g element cget sine -show$key]
 }
 
 Blt_ZoomStack .g

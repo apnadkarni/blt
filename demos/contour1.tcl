@@ -1016,7 +1016,7 @@ set elem particle
 .g element isoline step particle 10 
 .g axis configure z -palette greyscale
 foreach key { hull values symbols isolines colormap symbols edges } {
-    set show($key) [.g element cget $elem -display$key]
+    set show($key) [.g element cget $elem -show$key]
 }
 
 proc SetOpacity {} {
@@ -1039,8 +1039,8 @@ proc SetOpacity {} {
 proc Fix { what } {
     global show elem
     set bool $show($what)
-    puts stderr ".g element configure sine -display$what $bool"
-    .g element configure $elem -display$what $bool
+    puts stderr ".g element configure sine -show$what $bool"
+    .g element configure $elem -show$what $bool
 }
 
 blt::tk::checkbutton .hull -text "Boundary" -variable show(hull) \

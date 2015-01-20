@@ -15,13 +15,13 @@ blt::contour .g -highlightthickness 0
 .g legend configure -hide yes
 .g axis configure z -palette $palette
 foreach key { hull values symbols isolines colormap symbols edges } {
-    set show($key) [.g element cget myContour -display$key]
+    set show($key) [.g element cget myContour -show$key]
 }
 
 proc Fix { what } {
     global show 
     set bool $show($what)
-    .g element configure myContour -display$what $bool
+    .g element configure myContour -show$what $bool
 }
 
 blt::tk::checkbutton .hull -text "Boundary" -variable show(hull) \

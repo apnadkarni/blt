@@ -29158,7 +29158,7 @@ proc FixPalette {} {
 proc Fix { what } {
     global show
     set bool $show($what)
-    .g element configure myContour -display$what $bool
+    .g element configure myContour -show$what $bool
 }
 
 array set show {
@@ -29219,7 +29219,7 @@ blt::table . \
     9,1 .palettes -fill x 
 
 foreach key [array names show] {
-    set show($key) [.g element cget myContour -display$key]
+    set show($key) [.g element cget myContour -show$key]
 }
 
 Blt_ZoomStack .g

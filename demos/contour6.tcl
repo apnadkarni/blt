@@ -34,7 +34,7 @@ proc Fix { what } {
     global show
 
     set bool $show($what)
-    .g element configure myContour -display$what $bool
+    .g element configure myContour -show$what $bool
 }
 
 proc UpdateColors {} {
@@ -86,7 +86,7 @@ blt::table . \
 blt::table configure . r* c1 -resize none
 blt::table configure . r9 -resize both
 foreach key [array names show] {
-    set show($key) [.g element cget myContour -display$key]
+    set show($key) [.g element cget myContour -show$key]
 }
 
 Blt_ZoomStack .g

@@ -546,12 +546,12 @@ static Blt_CustomOption meshOption = {
 #define DEF_AXIS_Y		"y"
 #define DEF_AXIS_Z		"z"
 #define DEF_BACKGROUND		"navyblue"
-#define DEF_DISPLAY_COLORMAP	"1"
-#define DEF_DISPLAY_EDGES	"0"
-#define DEF_DISPLAY_HULL	"1"
-#define DEF_DISPLAY_ISOLINES	"1"
-#define DEF_DISPLAY_SYMBOLS	"0"
-#define DEF_DISPLAY_VALUES	"0"
+#define DEF_SHOW_COLORMAP	"1"
+#define DEF_SHOW_EDGES          "0"
+#define DEF_SHOW_HULL           "1"
+#define DEF_SHOW_ISOLINES	"1"
+#define DEF_SHOW_SYMBOLS	"0"
+#define DEF_SHOW_VALUES 	"0"
 #define DEF_FOREGROUND		"blue"
 #define DEF_HIDE		"no"
 #define DEF_LABEL_RELIEF	"flat"
@@ -733,25 +733,25 @@ static Blt_ConfigSpec contourSpecs[] =
 	Blt_Offset(ContourElement, builtinPen.valueStyle.angle), 0},
     {BLT_CONFIG_CUSTOM, "-weights", "weights", "Weights", (char *)NULL, 
 	Blt_Offset(ContourElement, w), 0, &bltValuesOption},
-    {BLT_CONFIG_BITMASK, "-displayhull", "displayHull", 
-	"DisplayHull", DEF_DISPLAY_HULL, Blt_Offset(ContourElement, flags), 
+    {BLT_CONFIG_BITMASK, "-showhull", "showHull", 
+	"ShowHull", DEF_SHOW_HULL, Blt_Offset(ContourElement, flags), 
 	0, (Blt_CustomOption *)HULL},
-    {BLT_CONFIG_BITMASK, "-displaycolormap", "displayColormap", 
-	"DisplayColormap", DEF_DISPLAY_COLORMAP, 
+    {BLT_CONFIG_BITMASK, "-showcolormap", "showColormap", 
+	"ShowColormap", DEF_SHOW_COLORMAP, 
 	Blt_Offset(ContourElement, flags), BLT_CONFIG_DONT_SET_DEFAULT, 
 	(Blt_CustomOption *)COLORMAP},
-    {BLT_CONFIG_BITMASK, "-displayisolines", "displayIsolines", 
-	"DisplayIsolines", DEF_DISPLAY_ISOLINES, 
+    {BLT_CONFIG_BITMASK, "-showisolines", "showIsolines", 
+	"ShowIsolines", DEF_SHOW_ISOLINES, 
 	Blt_Offset(ContourElement, flags), BLT_CONFIG_DONT_SET_DEFAULT, 
 	(Blt_CustomOption *)ISOLINES},
-    {BLT_CONFIG_BITMASK, "-displayedges", "displayEdges", "DisplayEdges", 
-        DEF_DISPLAY_EDGES, Blt_Offset(ContourElement, flags), 
+    {BLT_CONFIG_BITMASK, "-showedges", "showEdges", "ShowEdges", 
+        DEF_SHOW_EDGES, Blt_Offset(ContourElement, flags), 
 	BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)WIRES},
-    {BLT_CONFIG_BITMASK, "-displaysymbols", "displaySymbols", "DisplaySymbols",
-	DEF_DISPLAY_SYMBOLS, Blt_Offset(ContourElement, flags), 
+    {BLT_CONFIG_BITMASK, "-showsymbols", "showSymbols", "ShowSymbols",
+	DEF_SHOW_SYMBOLS, Blt_Offset(ContourElement, flags), 
 	BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)SYMBOLS},
-    {BLT_CONFIG_BITMASK, "-displayvalues", "displayValues", "DisplayValues",
-	DEF_DISPLAY_VALUES, Blt_Offset(ContourElement, flags), 
+    {BLT_CONFIG_BITMASK, "-showvalues", "showValues", "ShowValues",
+	DEF_SHOW_VALUES, Blt_Offset(ContourElement, flags), 
 	BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)VALUES},
     {BLT_CONFIG_CUSTOM, "-values", "values", "Values", (char *)NULL, 
 	Blt_Offset(ContourElement, z), 0, &bltValuesOption},
@@ -4231,7 +4231,7 @@ ConfigureProc(Graph *graphPtr, Element *basePtr)
 	return TCL_ERROR;
     }
 
-    if (Blt_ConfigModified(elemPtr->configSpecs, "-*data", "-displayedges", 
+    if (Blt_ConfigModified(elemPtr->configSpecs, "-*data", "-showedges", 
 	    "-map*", "-label", "-hide", "-z", "-mesh", (char *)NULL)) {
 	elemPtr->flags |= MAP_ITEM;
     }

@@ -1014,7 +1014,7 @@ set elem substrate
 .g axis configure z -palette nanohub
 
 foreach key { hull values symbols isolines colormap symbols edges } {
-    set show($key) [.g element cget $elem -display$key]
+    set show($key) [.g element cget $elem -show$key]
 }
 
 proc SetOpacity {} {
@@ -1036,7 +1036,7 @@ proc SetOpacity {} {
 proc Fix { what } {
     global show elem
     set bool $show($what)
-    .g element configure $elem -display$what $bool
+    .g element configure $elem -show$what $bool
 }
 
 blt::tk::checkbutton .hull -text "Boundary" -variable show(hull) \

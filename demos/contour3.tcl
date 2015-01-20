@@ -54,8 +54,8 @@ proc Fix { what } {
     global show
 
     set bool $show($what)
-    puts stderr ".g element configure sine -display$what $bool"
-    .g element configure sine -display$what $bool
+    puts stderr ".g element configure sine -show$what $bool"
+    .g element configure sine -show$what $bool
 }
 
 array set show {
@@ -93,7 +93,7 @@ blt::table . \
 blt::table configure . r* c1 -resize none
 blt::table configure . r7 -resize both
 foreach key [array names show] {
-    set show($key) [.g element cget sine -display$key]
+    set show($key) [.g element cget sine -show$key]
 }
 
 Blt_ZoomStack .g
