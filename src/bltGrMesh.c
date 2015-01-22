@@ -2412,7 +2412,7 @@ Blt_GetMesh(Tcl_Interp *interp, const char *string, Mesh **meshPtrPtr)
 }
 
 void
-Blt_CreateMeshNotifier(Mesh *meshPtr, MeshNotifyProc *proc, 
+Blt_Mesh_CreateNotifier(Mesh *meshPtr, MeshNotifyProc *proc, 
 		       ClientData clientData)
 {
     Blt_HashEntry *hPtr;
@@ -2423,7 +2423,7 @@ Blt_CreateMeshNotifier(Mesh *meshPtr, MeshNotifyProc *proc,
 }
 
 void
-Blt_DeleteMeshNotifier(Mesh *meshPtr, ClientData clientData)
+Blt_Mesh_DeleteNotifier(Mesh *meshPtr, ClientData clientData)
 {
     Blt_HashEntry *hPtr;
 
@@ -2432,8 +2432,45 @@ Blt_DeleteMeshNotifier(Mesh *meshPtr, ClientData clientData)
 }
 
 const char *
-Blt_NameOfMesh(Mesh *meshPtr)
+Blt_Mesh_Name(Mesh *meshPtr)
 {
     return meshPtr->name;
 }
 
+const int
+Blt_Mesh_Type(Mesh *meshPtr)
+{
+    return meshPtr->classPtr->type;
+}
+
+
+#ifdef notdef
+/* 
+ * RegularMeshFindProc 
+ */
+static MeshTriangle *
+RegularMeshFindProc(Mesh *meshPtr, double x, double y)
+{
+    double xStep, yStep;
+    long xLoc, yLoc;
+
+    if ((x < meshPtr->xMin) || (x > meshPtr->xMax) ||
+        (y < meshPtr->yMin) || (y > meshPtr->yMax)) {
+        return NULL;                    /* Point is outside mesh. */
+    }
+    xStep = (meshPtr->xMax - meshPtr->xMin) / (double)(meshPtr->xNum - 1);
+    yStep = (meshPtr->yMax - meshPtr->yMin) / (double)(meshPtr->yNum - 1);
+
+    xLoc = floor((x - meshPtr->xMin) / xStep);
+    yLoc = floor((y - meshPtr->yMin) / yStep);
+    t = meshPtr->triangles + 
+        ((yLoc * meshPtr->xNum) + xLoc) * 2;
+    if (PointInTriangle(t, x, y) {
+       return t;
+    }
+    if (PointInTriangle(t+1, x, y)) {
+       return t+1;
+   } 
+   return NULL;
+}
+#endif

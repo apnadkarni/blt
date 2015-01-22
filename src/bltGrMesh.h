@@ -80,7 +80,8 @@ BLT_EXTERN int Blt_GetMesh(Tcl_Interp *interp, const char *string,
 	Mesh **meshPtrPtr);
 BLT_EXTERN int Blt_Triangulate(Tcl_Interp *interp, size_t numPoints, 
 	Point2d *points, int sorted, MeshTriangle *triangles);
-BLT_EXTERN void Blt_CreateMeshNotifier(Mesh *meshPtr, MeshNotifyProc *proc, 
+BLT_EXTERN void Blt_Mesh_CreateNotifier(Mesh *meshPtr, MeshNotifyProc *proc, 
 	ClientData clientData);
-BLT_EXTERN void Blt_DeleteMeshNotifier(Mesh *meshPtr, ClientData clientData);
-BLT_EXTERN const char *Blt_NameOfMesh(Mesh *meshPtr);
+BLT_EXTERN void Blt_Mesh_DeleteNotifier(Mesh *meshPtr, ClientData clientData);
+BLT_EXTERN const char *Blt_Mesh_Name(Mesh *meshPtr);
+BLT_EXTERN const int Blt_Mesh_Type(Mesh *meshPtr);

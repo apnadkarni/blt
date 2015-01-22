@@ -1164,7 +1164,7 @@ FreeMesh(
     Mesh **meshPtrPtr = (Mesh **)(widgRec + offset);
     ContourElement *elemPtr = (ContourElement *)widgRec;
 
-    Blt_DeleteMeshNotifier(*meshPtrPtr, elemPtr);
+    Blt_Mesh_DeleteNotifier(*meshPtrPtr, elemPtr);
     *meshPtrPtr = NULL;
 }
 
@@ -1205,7 +1205,7 @@ ObjToMesh(
     if (Blt_GetMeshFromObj(interp, objPtr, meshPtrPtr) != TCL_OK) {
 	return TCL_ERROR;
     }
-    Blt_CreateMeshNotifier(*meshPtrPtr, MeshChangedProc, elemPtr);
+    Blt_Mesh_CreateNotifier(*meshPtrPtr, MeshChangedProc, elemPtr);
     return TCL_OK;
 }
 
@@ -1235,7 +1235,7 @@ MeshToObj(
     if (meshPtr == NULL) {
 	return Tcl_NewStringObj("", -1);
     } 
-    return Tcl_NewStringObj(Blt_NameOfMesh(meshPtr), -1);
+    return Tcl_NewStringObj(Blt_Mesh_Name(meshPtr), -1);
 }
 
 /* Isoline procedures. */
@@ -4365,7 +4365,7 @@ DestroyProc(Graph *graphPtr, Element *basePtr)
 	Blt_FreePrivateGC(graphPtr->display, elemPtr->meshGC);
     }
     if (elemPtr->meshPtr != NULL) {
-	Blt_DeleteMeshNotifier(elemPtr->meshPtr, elemPtr);
+	Blt_Mesh_DeleteNotifier(elemPtr->meshPtr, elemPtr);
     }
 }
 
@@ -6997,3 +6997,4 @@ Blt_ContourElement(Graph *graphPtr, ClassId classId, Blt_HashEntry *hPtr)
     elemPtr->painter = Blt_GetPainter(graphPtr->tkwin, 1.0);
     return (Element *)elemPtr;
 }
+
