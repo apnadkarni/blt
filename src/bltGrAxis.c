@@ -5209,7 +5209,7 @@ AxisNamesOp(Tcl_Interp *interp, Graph *graphPtr, int objc, Tcl_Obj *const *objv)
             (args.flags & ZOOM)) {
             continue;               /* Zoom only X or Y axes. */
         }
-        if (axisPtr->marginPtr->numAxes > 1) {
+        if ((axisPtr->marginPtr != NULL) && (axisPtr->marginPtr->numAxes > 1)) {
             continue;               /* Don't zoom stacked axes. */
         }
         match = FALSE;

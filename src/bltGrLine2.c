@@ -4161,10 +4161,11 @@ DrawAreaUnderCurve(Graph *graphPtr, Drawable drawable, LineElement *elemPtr)
 		points[i].x = tracePtr->fillPts[i].x;
 		points[i].y = tracePtr->fillPts[i].y;
 	    }
-	    if ((elemPtr->zAxisPtr != NULL) &&
-                (elemPtr->zAxisPtr->palette != NULL)) {
-		DrawGradientPolygon(graphPtr, drawable, elemPtr,
+	    if (elemPtr->zAxisPtr != NULL) {
+                if (elemPtr->zAxisPtr->palette != NULL) {
+                        DrawGradientPolygon(graphPtr, drawable, elemPtr,
 				    tracePtr->numFillPts, points);
+                }
 	    } else {
 		Blt_Bg_SetOrigin(graphPtr->tkwin, elemPtr->fillBg, 0, 0);
 		Blt_Bg_FillPolygon(graphPtr->tkwin, drawable, elemPtr->fillBg, 
