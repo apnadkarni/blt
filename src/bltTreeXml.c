@@ -375,6 +375,39 @@ GetProcessingInstructionProc(
 }
 
 static void
+TrimWhitespace(XmlReader *readerPtr)
+{
+    Blt_TreeNode root, node;
+
+    root = Blt_Tree_RootNode(readerPtr->tree);
+    for (node = root; node != NULL; node = Blt_Tree_NextNode(root, node)) {
+        if (strcmp(Blt_Tree_NodeLabel(node), SYM_CDATA) == 0) {
+            Tcl_Obj *objPtr, *newPtr;
+            int length;
+            const char *first, *last, *pend, *string;
+            if (Blt_Tree_GetValue(readerPtr->interp, readerPtr->tree, node,
+                        SYM_CDATA, &objPtr) != TCL_OK) {
+                continue;
+            }
+            string = Tcl_GetStringFromObj(objPtr, &length);
+            for (first = string, pend = string+length; first < pend; first++) {
+                if (!isspace(*first)) {
+                    break;
+                }
+            }
+            for (last = pend - 1; last > first; last--) {
+                if (!isspace(*last)) {
+                    break;
+                }
+            }
+            newPtr = Tcl_NewStringObj(first, last - first + 1);
+            Blt_Tree_SetValue(readerPtr->interp, readerPtr->tree, node,
+                              SYM_CDATA, newPtr);
+        }
+    }
+}
+
+static void
 GetCharacterDataProc(void *userData, const XML_Char *string, int length) 
 {
     XmlReader *readerPtr = userData;
@@ -382,20 +415,6 @@ GetCharacterDataProc(void *userData, const XML_Char *string, int length)
     Blt_TreeNode child;
     Tcl_Obj *objPtr;
 
-    if (readerPtr->flags & IMPORT_TRIMCDATA) {
-	const char *p, *pend;
-
-	for (p = string, pend = p + length; p < pend; p++) {
-	    if (!isspace(UCHAR(*p))) {
-		break;
-	    }
-	}
-	if (p == pend) {
-	    return;
-	}
-	length = pend - p;
-	string = p;
-    }
     tree = readerPtr->tree;
     child = Blt_Tree_LastChild(readerPtr->parent);
     if ((child != NULL) && (strcmp(Blt_Tree_NodeLabel(child), SYM_CDATA)==0)) {
@@ -725,6 +744,9 @@ ImportXmlFile(
     }
     result = ReadXmlFromFile(interp, parser, fileName);
     XML_ParserFree(parser);
+    if (flags & IMPORT_TRIMCDATA) {
+        TrimWhitespace(&reader);
+    }
     DumpStringTable(&reader.stringTable);
     return (result) ? TCL_OK : TCL_ERROR;
 } 
