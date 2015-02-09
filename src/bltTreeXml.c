@@ -379,7 +379,7 @@ TrimWhitespace(XmlReader *readerPtr)
 {
     Blt_TreeNode root, node;
 
-    root = Blt_Tree_RootNode(readerPtr->tree);
+    root = readerPtr->root;
     for (node = root; node != NULL; node = Blt_Tree_NextNode(root, node)) {
         if (strcmp(Blt_Tree_NodeLabel(node), SYM_CDATA) == 0) {
             Tcl_Obj *objPtr, *newPtr;
