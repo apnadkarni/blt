@@ -395,12 +395,12 @@ TrimWhitespace(XmlReader *readerPtr)
                     break;
                 }
             }
-            for (last = pend - 1; last > first; last--) {
-                if (!isspace(*last)) {
+            for (last = pend; last > first; last--) {
+                if (!isspace(*(last - 1))) {
                     break;
                 }
             }
-            newPtr = Tcl_NewStringObj(first, last - first + 1);
+            newPtr = Tcl_NewStringObj(first, last - first);
             Blt_Tree_SetValue(readerPtr->interp, readerPtr->tree, node,
                               SYM_CDATA, newPtr);
         }
