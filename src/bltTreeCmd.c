@@ -3423,6 +3423,12 @@ GetOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     Blt_TreeNode node;
 
     if (GetNodeFromObj(interp, cmdPtr->tree, objv[2], &node) != TCL_OK) {
+        if (objc == 5) {
+            Tcl_SetObjResult(interp, objv[4]);
+            return TCL_OK;              /* If there's a default value,
+                                         * don't generate an error if we
+                                         * can't find the node. */
+        }
 	return TCL_ERROR;
     }
     if (objc == 3) {

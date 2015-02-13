@@ -815,6 +815,9 @@ ImportXmlData(
 		XML_ErrorString(XML_GetErrorCode(parser)),
 		(char *)NULL);
     }
+    if (flags & IMPORT_TRIMCDATA) {
+        TrimWhitespace(&reader);
+    }
     XML_ParserFree(parser);
     DumpStringTable(&reader.stringTable);
     return (result) ? TCL_OK : TCL_ERROR;

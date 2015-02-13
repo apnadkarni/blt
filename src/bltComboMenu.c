@@ -4591,6 +4591,7 @@ DeleteOp(
     for (i = 2; i < objc; i++) {
 	ItemIterator iter;
 	Item *itemPtr, *nextPtr;
+        long count;
 
 	if (GetItemIterator(interp, comboPtr, objv[i], &iter) != TCL_OK) {
 	    return TCL_ERROR;
@@ -4601,6 +4602,12 @@ DeleteOp(
 	    DestroyItem(itemPtr);
 	    comboPtr->flags |= LAYOUT_PENDING;
 	}
+        /* Renumber all the indices when a menu item is deleted. */
+	for (count = 0, itemPtr = FirstItem(comboPtr); itemPtr != NULL;
+             itemPtr = NextItem(itemPtr), count++) {
+            itemPtr->index = count;
+	}
+
     }
     EventuallyRedraw(comboPtr);
     return TCL_OK;
