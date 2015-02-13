@@ -276,7 +276,7 @@ typedef struct {
 					 * labels in this margin. */
     short int maxAxisLabelHeight;	/* Maximum height of all axis tick
 					 * labels in this margin. */
-    unsigned int numAxes;		/* # of axes to be displayed */
+    unsigned int numVisibleAxes;	/* # of axes to be displayed */
     Blt_Chain axes;			/* List of axes associated with
                                          * this margin */
     int side;				/* Indicates the side where the

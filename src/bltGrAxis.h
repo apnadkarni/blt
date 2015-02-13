@@ -272,6 +272,7 @@ struct _Axis {
 
     /* The following fields are specific to logical axes */
 
+    int margin;
     Margin *marginPtr;                  /* If non-NULL, the margin the axis 
                                          * is displayed in. */
     Blt_ChainLink link;			/* Axis link in margin list. */

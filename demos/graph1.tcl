@@ -19,10 +19,13 @@ set normalBg [blt::background create gradient -low grey60 -high grey90 \
 set graph .g
 blt::graph .g \
     -bg $normalBg \
+    -width 700 \
+    -height 300 \
     -plotrelief solid \
     -plotborderwidth 1 \
     -relief raised \
     -plotpadx 0 -plotpady 0 \
+    -invertxy no \
     -borderwidth 2
 
 blt::htext .header \

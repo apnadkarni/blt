@@ -65,7 +65,6 @@
 					 * limits. */
 #define LOGSCALE	(1<<24)
 #define DECREASING	(1<<25)
-#define HORIZONTAL	(1<<26)
 #define COLORBAR	(1<<27)
 
 #define MAXTICKS	10001
@@ -91,7 +90,7 @@ enum TickRange {
 #define TICK_PAD                2
 #define COLORBAR_PAD            4
 
-#define HORIZMARGIN(m)	(!((m)->side & 0x1)) /* Even sides are horizontal */
+#define HORIZONTAL(m)	(!((m)->side & 0x1)) /* Even sides are horizontal */
 
 /* Indicates how to rotate axis title for each margin. */
 static float titleAngle[4] = {
@@ -2005,11 +2004,6 @@ Blt_ResetAxes(Graph *graphPtr)
 	axisPtr = Blt_GetHashValue(hPtr);
 	axisPtr->min = axisPtr->valueRange.min = DBL_MAX;
 	axisPtr->max = axisPtr->valueRange.max = -DBL_MAX;
-	if (AxisIsHorizontal(axisPtr)) {
-	    axisPtr->flags |= HORIZONTAL;
-	} else {
-	    axisPtr->flags &= ~HORIZONTAL;
-	}
     }
 
     /*
@@ -2550,7 +2544,7 @@ MakeColorbar(Axis *axisPtr, AxisInfo *infoPtr)
 	min = EXP10(min);
 	max = EXP10(max);
     }
-    if (axisPtr->flags & HORIZONTAL) {
+    if (HORIZONTAL(axisPtr->marginPtr)) {
 	x2 = Blt_HMap(axisPtr, min);
 	x1 = Blt_HMap(axisPtr, max);
         axisPtr->colorbar.rect.x = MIN(x1, x2);
@@ -2578,7 +2572,7 @@ MakeAxisLine(Axis *axisPtr, int line, Segment2d *s)
 	min = EXP10(min);
 	max = EXP10(max);
     }
-    if (axisPtr->flags & HORIZONTAL) {
+    if (HORIZONTAL(axisPtr->marginPtr)) {
 	s->p.x = Blt_HMap(axisPtr, min);
 	s->q.x = Blt_HMap(axisPtr, max);
 	s->p.y = s->q.y = line;
@@ -2596,7 +2590,7 @@ MakeTick(Axis *axisPtr, double value, int tick, int line, Segment2d *s)
     if (axisPtr->logScale) {
 	value = EXP10(value);
     }
-    if (axisPtr->flags & HORIZONTAL) {
+    if (HORIZONTAL(axisPtr->marginPtr)) {
 	s->p.x = s->q.x = Blt_HMap(axisPtr, value);
 	s->p.y = line;
 	s->q.y = tick;
@@ -2672,7 +2666,7 @@ MakeSegments(Axis *axisPtr, AxisInfo *infoPtr)
                     link = Blt_Chain_NextLink(link);
                     
                     /* Set the position of the tick label. */
-                    if (axisPtr->flags & HORIZONTAL) {
+                    if (HORIZONTAL(axisPtr->marginPtr)) {
                         labelPtr->anchorPos.x = s->p.x;
                         labelPtr->anchorPos.y = labelPos;
                     } else {
@@ -2718,16 +2712,6 @@ MapAxis(Axis *axisPtr)
     AxisInfo info;
     Graph *graphPtr = axisPtr->obj.graphPtr;
     
-    if (axisPtr->flags & HORIZONTAL) {
-	axisPtr->screenMin = graphPtr->hOffset;
-	axisPtr->width = graphPtr->right - graphPtr->left;
-	axisPtr->screenRange = graphPtr->hRange;
-    } else {
-	axisPtr->screenMin = graphPtr->vOffset;
-	axisPtr->height = graphPtr->bottom - graphPtr->top;
-	axisPtr->screenRange = graphPtr->vRange;
-    }
-    axisPtr->screenScale = 1.0 / axisPtr->screenRange;
     AxisOffsets(axisPtr, &info);
     MakeSegments(axisPtr, &info);
     if (axisPtr->colorbar.thickness > 0) {
@@ -2766,12 +2750,12 @@ MapStackedAxis(Axis *axisPtr, float totalWeight)
     unsigned int w, h, n, slice;
     float ratio;
     
-    n = axisPtr->marginPtr->numAxes;
+    n = axisPtr->marginPtr->numVisibleAxes;
     if ((n > 1) || (axisPtr->reqNumMajorTicks <= 0)) {
 	axisPtr->reqNumMajorTicks = 4;
     }
     ratio = axisPtr->weight / totalWeight;
-    if (axisPtr->flags & HORIZONTAL) {
+    if (HORIZONTAL(axisPtr->marginPtr)) {
 	axisPtr->screenMin = graphPtr->hOffset;
 	axisPtr->screenRange = graphPtr->hRange;
 	slice = (int)(graphPtr->hRange * ratio);
@@ -2788,7 +2772,9 @@ MapStackedAxis(Axis *axisPtr, float totalWeight)
 	axisPtr->screenMin += axisPtr->marginPtr->nextStackOffset +
             AXIS_PAD + h / 2;
 	axisPtr->screenRange = slice - 2 * AXIS_PAD - h;
-	axisPtr->marginPtr->nextStackOffset += slice;
+        if ((axisPtr->flags & HIDDEN) == 0) {
+            axisPtr->marginPtr->nextStackOffset += slice;
+        }
     }
     axisPtr->screenScale = 1.0f / axisPtr->screenRange;
     AxisOffsets(axisPtr, &info);
@@ -3091,7 +3077,7 @@ DrawAxis(Axis *axisPtr, Drawable drawable)
 	}
 	worldWidth = worldMax - worldMin;	
 	viewWidth = viewMax - viewMin;
-	isHoriz = ((axisPtr->flags & HORIZONTAL) == HORIZONTAL);
+	isHoriz = HORIZONTAL(axisPtr->marginPtr);
 
 	if (isHoriz != axisPtr->decreasing) {
 	    fract = (viewMin - worldMin) / worldWidth;
@@ -3264,7 +3250,7 @@ MakeGridLine(Axis *axisPtr, double value, Segment2d *s)
 	value = EXP10(value);
     }
     /* Grid lines run orthogonally to the axis */
-    if (axisPtr->flags & HORIZONTAL) {
+    if (HORIZONTAL(axisPtr->marginPtr)) {
 	s->p.y = graphPtr->top;
 	s->q.y = graphPtr->bottom;
 	s->p.x = s->q.x = Blt_HMap(axisPtr, value);
@@ -3451,7 +3437,7 @@ Blt_GetAxisGeometry(Graph *graphPtr, Axis *axisPtr)
 	     * account for an extra 1.5 linewidth at the end of each line.  */
 	    pad = ((axisPtr->lineWidth * 12) / 8);
 	}
-	if (axisPtr->flags & HORIZONTAL) {
+	if (HORIZONTAL(axisPtr->marginPtr)) {
 	    y += axisPtr->maxLabelHeight + pad;
 	} else {
 	    y += axisPtr->maxLabelWidth + pad;
@@ -3480,7 +3466,7 @@ Blt_GetAxisGeometry(Graph *graphPtr, Axis *axisPtr)
         y += axisPtr->colorbar.thickness + 4;
     }
     /* Correct for orientation of the axis. */
-    if (axisPtr->flags & HORIZONTAL) {
+    if (HORIZONTAL(axisPtr->marginPtr)) {
 	axisPtr->height = y;
     } else {
 	axisPtr->width = y;
@@ -3517,7 +3503,7 @@ GetMarginGeometry(Graph *graphPtr, Margin *marginPtr)
     int isHoriz;
     unsigned int numVisible;
     
-    isHoriz = HORIZMARGIN(marginPtr);
+    isHoriz = HORIZONTAL(marginPtr);
 
     /* Count the visible axes. */
     numVisible = 0;
@@ -3527,13 +3513,16 @@ GetMarginGeometry(Graph *graphPtr, Margin *marginPtr)
     if (graphPtr->flags & STACK_AXES) {
 	for (axisPtr = FirstAxis(marginPtr); axisPtr != NULL;
 	     axisPtr = NextAxis(axisPtr)) {
-            if (axisPtr->flags & (HIDDEN|DELETED)) {
+            if (axisPtr->flags & DELETED) {
                 continue;
             }
-            numVisible++;
             if (graphPtr->flags & GET_AXIS_GEOMETRY) {
                 Blt_GetAxisGeometry(graphPtr, axisPtr);
             }
+            if (axisPtr->flags & HIDDEN) {
+                continue;
+            }
+            numVisible++;
             if (isHoriz) {
                 if (h < axisPtr->height) {
                     h = axisPtr->height;
@@ -3553,13 +3542,16 @@ GetMarginGeometry(Graph *graphPtr, Margin *marginPtr)
     } else {
 	for (axisPtr = FirstAxis(marginPtr); axisPtr != NULL;
 	     axisPtr = NextAxis(axisPtr)) {
-            if (axisPtr->flags & (HIDDEN|DELETED)) {
+            if (axisPtr->flags & DELETED) {
                 continue;
             }
-            numVisible++;
             if (graphPtr->flags & GET_AXIS_GEOMETRY) {
                 Blt_GetAxisGeometry(graphPtr, axisPtr);
             }
+            if (axisPtr->flags & HIDDEN) {
+                continue;
+            }
+            numVisible++;
             if ((axisPtr->titleAlternate) && (l < axisPtr->titleWidth)) {
                 l = axisPtr->titleWidth;
             }
@@ -3583,7 +3575,7 @@ GetMarginGeometry(Graph *graphPtr, Margin *marginPtr)
     if (h < 3) {
 	h = 3;
     }
-    marginPtr->numAxes = numVisible;
+    marginPtr->numVisibleAxes = numVisible;
     marginPtr->axesTitleLength = l;
     marginPtr->width = w;
     marginPtr->height = h;
@@ -4229,7 +4221,7 @@ Blt_DefaultAxes(Graph *graphPtr)
         marginPtr = graphPtr->margins + i;
         marginPtr->axes = Blt_Chain_Create();
         marginPtr->name = axisNames[i].name;
-        marginPtr->side = i;
+        marginPtr->side = 3;
     }
     flags = Blt_GraphType(graphPtr);
     for (i = 0; i < 4; i++) {
@@ -4487,7 +4479,7 @@ InvTransformOp(Tcl_Interp *interp, Axis *axisPtr, int objc,
      * virtual, all we have to go on is how it was mapped to an
      * element (using either -mapx or -mapy options).  
      */
-    if (axisPtr->flags & HORIZONTAL) {
+    if (HORIZONTAL(axisPtr->marginPtr)) {
 	y = Blt_InvHMap(axisPtr, (double)sy);
     } else {
 	y = Blt_InvVMap(axisPtr, (double)sy);
@@ -4502,7 +4494,7 @@ InvTransformOp(Tcl_Interp *interp, Axis *axisPtr, int objc,
  * MarginOp --
  *
  *	This procedure returns a string representing the margin the axis
- *	resides.  The margin string is "x", "x2", "y", or "y2".
+ *	resides.  The margin string is "left", "right", "top", or "bottom".
  *
  * Results:
  *	Always returns TCL_OK.  interp->result contains the name of the
@@ -4552,7 +4544,7 @@ TransformOp(Tcl_Interp *interp, Axis *axisPtr, int objc, Tcl_Obj *const *objv)
     if (Blt_ExprDoubleFromObj(interp, objv[0], &x) != TCL_OK) {
 	return TCL_ERROR;
     }
-    if (axisPtr->flags & HORIZONTAL) {
+    if (HORIZONTAL(axisPtr->marginPtr)) {
 	x = Blt_HMap(axisPtr, x);
     } else {
 	x = Blt_VMap(axisPtr, x);
@@ -5209,7 +5201,8 @@ AxisNamesOp(Tcl_Interp *interp, Graph *graphPtr, int objc, Tcl_Obj *const *objv)
             (args.flags & ZOOM)) {
             continue;               /* Zoom only X or Y axes. */
         }
-        if ((axisPtr->marginPtr != NULL) && (axisPtr->marginPtr->numAxes > 1)) {
+        if ((axisPtr->marginPtr != NULL) &&
+            (axisPtr->marginPtr->numVisibleAxes > 1)) {
             continue;               /* Don't zoom stacked axes. */
         }
         match = FALSE;
@@ -5403,11 +5396,24 @@ Blt_MapAxes(Graph *graphPtr)
 	}
 	for (axisPtr = FirstAxis(marginPtr); axisPtr != NULL; 
 	     axisPtr = NextAxis(axisPtr)) {
-            if (axisPtr->flags & (HIDDEN|DELETED)) {
+            if (axisPtr->flags & DELETED) {
 		continue;               /* Don't map axes that aren't being
                                          * used or have been deleted. */
 	    }
-	    if (graphPtr->flags & STACK_AXES) {
+            if (HORIZONTAL(marginPtr)) {
+                axisPtr->screenMin = graphPtr->hOffset;
+                axisPtr->width = graphPtr->right - graphPtr->left;
+                axisPtr->screenRange = graphPtr->hRange;
+            } else {
+                axisPtr->screenMin = graphPtr->vOffset;
+                axisPtr->height = graphPtr->bottom - graphPtr->top;
+                axisPtr->screenRange = graphPtr->vRange;
+            }
+            axisPtr->screenScale = 1.0 / axisPtr->screenRange;
+            if (axisPtr->flags & HIDDEN) {
+                continue;
+            }
+            if (graphPtr->flags & STACK_AXES) {
 		if (axisPtr->reqNumMajorTicks <= 0) {
 		    axisPtr->reqNumMajorTicks = 4;
 		}
@@ -5418,8 +5424,8 @@ Blt_MapAxes(Graph *graphPtr)
 		}
 		MapAxis(axisPtr);
                 /* The next axis will start after the current axis. */
-		marginPtr->nextLayerOffset += (axisPtr->flags & HORIZONTAL) ? 
-		    axisPtr->height : axisPtr->width;
+                marginPtr->nextLayerOffset += HORIZONTAL(axisPtr->marginPtr) ?
+                    axisPtr->height : axisPtr->width;
 	    }
 	    if (axisPtr->flags & GRID) {
 		MapGridlines(axisPtr);
@@ -5624,7 +5630,7 @@ Blt_DrawAxisLimits(Graph *graphPtr, Drawable drawable)
 	    tmp = minPtr, minPtr = maxPtr, maxPtr = tmp;
 	}
 	if (maxPtr != NULL) {
-	    if (axisPtr->flags & HORIZONTAL) {
+	    if (HORIZONTAL(axisPtr->marginPtr)) {
 		Blt_Ts_SetAngle(axisPtr->limitsTextStyle, 90.0);
 		Blt_Ts_SetAnchor(axisPtr->limitsTextStyle, TK_ANCHOR_SE);
 		Blt_DrawText2(graphPtr->tkwin, drawable, maxPtr,
@@ -5640,7 +5646,7 @@ Blt_DrawAxisLimits(Graph *graphPtr, Drawable drawable)
 	}
 	if (minPtr != NULL) {
 	    Blt_Ts_SetAnchor(axisPtr->limitsTextStyle, TK_ANCHOR_SW);
-	    if (axisPtr->flags & HORIZONTAL) {
+	    if (HORIZONTAL(axisPtr->marginPtr)) {
 		Blt_Ts_SetAngle(axisPtr->limitsTextStyle, 90.0);
 		Blt_DrawText2(graphPtr->tkwin, drawable, minPtr,
 		    &axisPtr->limitsTextStyle, graphPtr->left, hMin, &textDim);

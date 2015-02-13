@@ -548,6 +548,7 @@ GraphInstCmdDeleteProc(ClientData clientData) /* Pointer to widget record. */
 static void
 AdjustMarginPointers(Graph *graphPtr) 
 {
+    fprintf(stderr, "AdjustMarginPointers\n");
     if (graphPtr->flags & INVERTED) {
 	graphPtr->bottomMarginPtr = graphPtr->margins + MARGIN_Y;
 	graphPtr->leftMarginPtr   = graphPtr->margins + MARGIN_X;
@@ -559,6 +560,14 @@ AdjustMarginPointers(Graph *graphPtr)
 	graphPtr->rightMarginPtr  = graphPtr->margins + MARGIN_Y2;
 	graphPtr->topMarginPtr    = graphPtr->margins + MARGIN_X2;
     }
+    graphPtr->bottomMarginPtr->side = MARGIN_BOTTOM;
+    graphPtr->bottomMarginPtr->name = "bottom";
+    graphPtr->leftMarginPtr->side = MARGIN_LEFT;
+    graphPtr->leftMarginPtr->name = "left";
+    graphPtr->rightMarginPtr->side = MARGIN_RIGHT;
+    graphPtr->rightMarginPtr->name = "right";
+    graphPtr->topMarginPtr->side = MARGIN_TOP;
+    graphPtr->topMarginPtr->name = "top";
 }
 
 static int
@@ -1023,12 +1032,12 @@ CreateGraph(Tcl_Interp *interp, int objc, Tcl_Obj *const *objv, ClassId classId)
     if (InitPens(graphPtr) != TCL_OK) {
 	goto error;
     }
+    if (Blt_DefaultAxes(graphPtr) != TCL_OK) {
+	goto error;
+    }
     AdjustMarginPointers(graphPtr);
     if (Blt_ConfigureWidgetFromObj(interp, tkwin, configSpecs, objc - 2, 
 		objv + 2, (char *)graphPtr, 0) != TCL_OK) {
-	goto error;
-    }
-    if (Blt_DefaultAxes(graphPtr) != TCL_OK) {
 	goto error;
     }
     AdjustMarginPointers(graphPtr);
