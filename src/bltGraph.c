@@ -548,7 +548,6 @@ GraphInstCmdDeleteProc(ClientData clientData) /* Pointer to widget record. */
 static void
 AdjustMarginPointers(Graph *graphPtr) 
 {
-    fprintf(stderr, "AdjustMarginPointers\n");
     if (graphPtr->flags & INVERTED) {
 	graphPtr->bottomMarginPtr = graphPtr->margins + MARGIN_Y;
 	graphPtr->leftMarginPtr   = graphPtr->margins + MARGIN_X;
