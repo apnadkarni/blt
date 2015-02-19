@@ -66,6 +66,7 @@
 #define LOGSCALE	(1<<24)
 #define DECREASING	(1<<25)
 #define COLORBAR	(1<<27)
+#define TIMESCALE       (1<<28)
 
 #define MAXTICKS	10001
 
@@ -381,9 +382,9 @@ static Blt_ConfigSpec configSpecs[] =
     {BLT_CONFIG_INT, "-tickdefault", "tickDefault", "TickDefault",
 	DEF_DIVISIONS, Blt_Offset(Axis, reqNumMajorTicks),
 	ALL_GRAPHS | BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_BOOLEAN, "-timescale", "timeScale", "timeScale",
-	DEF_TIMESCALE, Blt_Offset(Axis, timeScale),
-	ALL_GRAPHS | BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_BITMASK, "-timescale", "timeScale", "TimeScale", DEF_TIMESCALE,
+	Blt_Offset(Axis, flags), ALL_GRAPHS | BLT_CONFIG_DONT_SET_DEFAULT, 
+ 	(Blt_CustomOption *)TIMESCALE},
     {BLT_CONFIG_STRING, "-title", "title", "Title",
 	(char *)NULL, Blt_Offset(Axis, title),
 	BLT_CONFIG_DONT_SET_DEFAULT | BLT_CONFIG_NULL_OK | ALL_GRAPHS},
@@ -1334,7 +1335,8 @@ MakeLabel(Axis *axisPtr, double value)
     } else if (axisPtr->logScale) {
 	Blt_FormatString(buffer, TICK_LABEL_SIZE, "1E%d", ROUND(value));
         string = buffer;
-    } else if (axisPtr->timeScale) {
+    } else if ((axisPtr->flags & TIMESCALE) &&
+               (axisPtr->major.ticks.fmt != NULL)) {
         Blt_DateTime date;
 
         Blt_SecondsToDate(value, &date);
@@ -2045,7 +2047,7 @@ Blt_ResetAxes(Graph *graphPtr)
 	}
         if (axisPtr->logScale) {
             LogAxis(axisPtr, min, max);
-        } else if (axisPtr->timeScale) {
+        } else if (axisPtr->flags & TIMESCALE) {
             TimeAxis(axisPtr, min, max);
         } else {
             LinearAxis(axisPtr, min, max);
@@ -5828,23 +5830,6 @@ Blt_MakeAxisTag(Graph *graphPtr, const char *tagName)
 #include <time.h>
 #include <sys/time.h>
 
-typedef enum _TimeUnits {
-    TIME_YEARS=1,
-    TIME_MONTHS,
-    TIME_WEEKS,
-    TIME_DAYS,
-    TIME_HOURS,
-    TIME_MINUTES,
-    TIME_SECONDS,
-    TIME_SUBSECONDS,
-} TimeUnits;
-
-enum TimeFormat {
-    TIME_FORMAT_YEARS1,
-    TIME_FORMAT_YEARS5,
-    TIME_FORMAT_YEARS10,
-};
-
 #define SECONDS_SECOND        (1)
 #define SECONDS_MINUTE        (60)
 #define SECONDS_HOUR          (SECONDS_MINUTE * 60)
@@ -6539,8 +6524,7 @@ FirstMajorTick(Axis *axisPtr)
                 axisPtr->minor.ticks.step = SECONDS_DAY;
             } 
             break;
-        case TIME_DAYS: 
-        case TIME_WEEKS:
+        default:
             break;
         }
         tick.value = ticksPtr->initial;
@@ -6643,6 +6627,7 @@ NextMajorTick(Axis *axisPtr)
             d = ticksPtr->index * ticksPtr->step;
             break;
         case TIME_SECONDS:
+        case TIME_SUBSECONDS:
             d = ticksPtr->index * ticksPtr->step;
             d = UROUND(d, ticksPtr->step);
             break;
@@ -6732,6 +6717,7 @@ FirstMinorTick(Axis *axisPtr)
             d = ticksPtr->step;
             break;
         case TIME_SECONDS:
+        case TIME_SUBSECONDS:
             /* The number of minor ticks has been computed in
              * LinearAxis. */
             d = ticksPtr->step;

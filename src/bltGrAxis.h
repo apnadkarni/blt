@@ -28,6 +28,24 @@
 #ifndef _BLT_GR_AXIS_H
 #define _BLT_GR_AXIS_H
 
+typedef enum _TimeUnits {
+    TIME_YEARS=1,
+    TIME_MONTHS,
+    TIME_WEEKS,
+    TIME_DAYS,
+    TIME_HOURS,
+    TIME_MINUTES,
+    TIME_SECONDS,
+    TIME_SUBSECONDS,
+} TimeUnits;
+
+typedef enum _TimeFormat {
+    TIME_FORMAT_SECONDS,
+    TIME_FORMAT_YEARS1,
+    TIME_FORMAT_YEARS5,
+    TIME_FORMAT_YEARS10,
+} TimeFormat;
+
 /*
  *---------------------------------------------------------------------------
  *
@@ -123,11 +141,11 @@ typedef struct {
     int index;                          /* Current index of iterator. */
     int isLeapYear;                     /* Indicates if the major tick
                                          * value is a leap year. */
-    int timeUnits;                      /* Indicates the time units of the
+    TimeUnits timeUnits;                /* Indicates the time units of the
                                          * sweep. */
     int month;
     int year;
-    int timeFormat;
+    TimeFormat timeFormat;
     const char *fmt;                    /* Default format for timescale
                                          * ticks. */
     double *values;                     /* Array of tick values
@@ -172,9 +190,6 @@ struct _Axis {
 					 * this axis. */
     int logScale;			/* If non-zero, generate log scale
 					 * ticks for the axis. */
-    int timeScale;			/* If non-zero, generate time scale
-					 * ticks for the axis. This option
-					 * is overridden by -logscale. */
     int decreasing;			/* If non-zero, display the range
 					 * of values on the axis in
 					 * descending order, from high to
