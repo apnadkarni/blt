@@ -107,8 +107,10 @@ ExportVectorProc(BLT_TABLE table, Tcl_Interp *interp, int objc,
  *
  * ImportVectorProc --
  *
- *	Parses the given command line and calls one of several
- *	export-specific operations.
+ *	Imports the given vector into the named column in the table.
+ *      If the column doesn't already exist, it is created.  The values
+ *      from the vector will overwrite any existing data in the column.
+ *      Any leftover values in the column will be unset.
  *	
  * Results:
  *	Returns a standard TCL result.  It is the result of import
@@ -147,6 +149,7 @@ ImportVectorProc(BLT_TABLE table, Tcl_Interp *interp, int objc,
 	if (col == NULL) {
             const char *name;
 
+            /* Create column if it doesn't already exist */
             name = Tcl_GetString(objv[i+1]);
 	    col = blt_table_create_column(interp, table, name);
 	    if (col == NULL) {
@@ -162,7 +165,7 @@ ImportVectorProc(BLT_TABLE table, Tcl_Interp *interp, int objc,
 	    }
 	}
 	array = Blt_VecData(vector);
-        /* Write the vector values into the table (possible overwriting
+        /* Write the vector values into the table (possibly overwriting
          * existing cell values).  */
 	for (j = 0; j < numElems; j++) {
 	    BLT_TABLE_ROW row;
