@@ -313,15 +313,9 @@ proc ::blt::ComboMenu::ButtonPressEvent { menu x y } {
     if { $item != -1 } {
 	return;				# Found it.
     }
+    # This is called only when the grab is on.  This means that menu will
+    # already be posted at this point.  On release, unpost the menu.
     set _private(popOnRelease) 1
-    if { [$menu overbutton $x $y] && ![winfo ismapped $menu] } {
-	set _private(popOnRelease) 0
-    }
-    if 0 {
-	# The button press event did not occur inside of any menu.
-	$menu unpost 
-	blt::grab pop $menu
-    }
 }
 
 #
@@ -386,7 +380,11 @@ proc ::blt::ComboMenu::ButtonReleaseEvent { menu x y } {
 	set popOnRelease 0
     }
     if { $popOnRelease } {
-	# The button press event did not occur inside of any menu.
+	# This isn't the first time the menu was posted.  That happens when
+	# thea menubutton is pressed, the menu is posted, and the grab is
+	# set on the menu.  This routine gets called on the button release.
+	# Any further button releases should unpost the menu.  Just not on
+	# the first release.
 	$menu unpost 
 	blt::grab pop $menu
     }

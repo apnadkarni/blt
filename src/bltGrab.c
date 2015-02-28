@@ -290,10 +290,26 @@ GetTopGrab(GrabCmdInterpData *dataPtr)
     return Blt_Chain_GetValue(link);
 }
 
+static int
+DumpStack(GrabCmdInterpData *dataPtr)
+{
+    Blt_ChainLink link;
+
+    fprintf(stderr, "Grab stack:\n");
+    for (link = Blt_Chain_FirstLink(dataPtr->chain); link != NULL;
+	 link = Blt_Chain_NextLink(link)) {
+	Grab *grabPtr;
+
+	grabPtr = Blt_Chain_GetValue(link);
+        fprintf(stderr, "  %s %s\n", Tk_PathName(grabPtr->entryPtr->tkwin), 
+                (grabPtr->flags & GRAB_GLOBAL) ? "global" : "local");
+    }
+}
+
 /*
  *---------------------------------------------------------------------------
  *
- * DumpStack --
+ * PopEntireStack --
  *
  * 	This routine is called when we find that the grab has been released
  *	by the Tk "grab" command.  We assume that the current stack is 
@@ -309,7 +325,7 @@ GetTopGrab(GrabCmdInterpData *dataPtr)
  *---------------------------------------------------------------------------
  */
 static void
-DumpStack(GrabCmdInterpData *dataPtr)
+PopEntireStack(GrabCmdInterpData *dataPtr)
 {
     Blt_ChainLink link, next;
 
@@ -472,7 +488,7 @@ GetGrabCmdInterpData(Tcl_Interp *interp)
 	Blt_InitHashTable(&dataPtr->entryTable, BLT_ONE_WORD_KEYS);
 	dataPtr->chain = Blt_Chain_Create();
 	dataPtr->tkwin = Tk_MainWindow(interp);
-	dataPtr->debug = 0;
+	dataPtr->debug = FALSE;
     }
     return dataPtr;
 }
@@ -525,10 +541,10 @@ FixCurrent(Tcl_Interp *interp, GrabCmdInterpData *dataPtr)
 				 (char *)NULL);
 	    } else {
 		Tcl_AppendResult(interp, 
-				 "no current grab: dumping grab stack: top=\"",
+				 "no current grab: popping grab stack: top=\"",
 				 Tk_PathName(grabPtr->entryPtr->tkwin),
 				 "\"", (char *)NULL);
-		DumpStack(dataPtr);
+		PopEntireStack(dataPtr);
 		return TCL_ERROR;
 	    }
 	    return TCL_OK;
@@ -678,6 +694,7 @@ PopOp(
     if (dataPtr->debug) {
 	fprintf(stderr, "grab pop %s\n", 
 		(objc == 3) ? Tcl_GetString(objv[2]) : "");
+	DumpStack(dataPtr);
     }
     grabPtr = GetTopGrab(dataPtr);
     if (grabPtr == NULL) {
@@ -731,6 +748,7 @@ PushOp(
     pathName = Tcl_GetString(objv[2]);
     if (dataPtr->debug) {
 	fprintf(stderr, "grab push %s\n", pathName);
+	DumpStack(dataPtr);
     }
     tkwin = Tk_NameToWindow(interp, pathName, dataPtr->tkwin);
     if (tkwin == NULL) {
@@ -763,6 +781,7 @@ ReleaseOp(
 
     if (dataPtr->debug) {
 	fprintf(stderr, "grab release %s\n", Tcl_GetString(objv[2]));
+	DumpStack(dataPtr);
     }
     grabPtr = GetTopGrab(dataPtr);
     if (grabPtr == NULL) {
@@ -833,6 +852,7 @@ SetOp(
     string = Tcl_GetString(objv[1]);
     if (dataPtr->debug) {
 	fprintf(stderr, "grab set %s\n", string);
+	DumpStack(dataPtr);
     }
     tkwin = Tk_NameToWindow(interp, string, dataPtr->tkwin);
     if (tkwin == NULL) {
