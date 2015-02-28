@@ -383,8 +383,8 @@ proc ::blt::ComboMenu::ButtonReleaseEvent { menu x y } {
 	# This isn't the first time the menu was posted.  That happens when
 	# thea menubutton is pressed, the menu is posted, and the grab is
 	# set on the menu.  This routine gets called on the button release.
-	# Any further button releases should unpost the menu.  Just not on
-	# the first release.
+	# Any further button releases should unpost the menu.
+	# Just not on the first release.
 	$menu unpost 
 	blt::grab pop $menu
     }

@@ -2660,8 +2660,8 @@ GetBoxFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, Box2d *boxPtr)
     }
     boxPtr->x1 = MIN(x1, x2);
     boxPtr->y1 = MIN(y1, y2);
-    boxPtr->x1 = MAX(x2, x1);
-    boxPtr->y1 = MAX(y2, y1);
+    boxPtr->x2 = MAX(x2, x1);
+    boxPtr->y2 = MAX(y2, y1);
     return TCL_OK;
 }
 
@@ -2835,7 +2835,7 @@ PostBoxSwitchProc(
     comboPtr->post.x1 = box.x1;
     comboPtr->post.y1 = box.y1;
     comboPtr->post.x2 = box.x2;
-    comboPtr->post.y1 = box.y2;
+    comboPtr->post.y2 = box.y2;
     comboPtr->post.flags = POST_REGION;
     return TCL_OK;
 }

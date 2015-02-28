@@ -37,6 +37,8 @@
 #
 # ======================================================================
 
+# FIXME: merge fixes from combomenu.tcl
+
 namespace eval blt {
     namespace eval ComboTree {
 	array set _private {

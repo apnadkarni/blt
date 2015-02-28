@@ -309,7 +309,7 @@ DumpStack(GrabCmdInterpData *dataPtr)
 /*
  *---------------------------------------------------------------------------
  *
- * PopEntireStack --
+ * ReleaseStack --
  *
  * 	This routine is called when we find that the grab has been released
  *	by the Tk "grab" command.  We assume that the current stack is 
@@ -325,7 +325,7 @@ DumpStack(GrabCmdInterpData *dataPtr)
  *---------------------------------------------------------------------------
  */
 static void
-PopEntireStack(GrabCmdInterpData *dataPtr)
+ReleaseStack(GrabCmdInterpData *dataPtr)
 {
     Blt_ChainLink link, next;
 
@@ -541,10 +541,10 @@ FixCurrent(Tcl_Interp *interp, GrabCmdInterpData *dataPtr)
 				 (char *)NULL);
 	    } else {
 		Tcl_AppendResult(interp, 
-				 "no current grab: popping grab stack: top=\"",
-				 Tk_PathName(grabPtr->entryPtr->tkwin),
-				 "\"", (char *)NULL);
-		PopEntireStack(dataPtr);
+                        "no current grab: releasing grab stack: top=\"",
+                        Tk_PathName(grabPtr->entryPtr->tkwin),
+                        "\"", (char *)NULL);
+		ReleaseStack(dataPtr);
 		return TCL_ERROR;
 	    }
 	    return TCL_OK;
