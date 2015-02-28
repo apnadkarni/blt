@@ -314,7 +314,7 @@ proc ::blt::ComboMenu::ButtonPressEvent { menu x y } {
 	return;				# Found it.
     }
     set _private(popOnRelease) 1
-    if { [$menu contains $x $y] && ![winfo ismapped $menu] } {
+    if { [$menu overbutton $x $y] && ![winfo ismapped $menu] } {
 	set _private(popOnRelease) 0
     }
     if 0 {

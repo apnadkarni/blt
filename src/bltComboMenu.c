@@ -5391,47 +5391,6 @@ InsertOp(ClientData clientData, Tcl_Interp *interp, int objc,
 /*
  *---------------------------------------------------------------------------
  *
- * ContainsOp --
- *      Returns whether the x, y coordinate is contained with in the
- *      calling region of the menu.
- * Results:
- *	Standard TCL result.  A list representing the bounding box is 
- *      returned.
- *
- *	.cm contains x y 
- *
- *---------------------------------------------------------------------------
- */
-static int
-ContainsOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-	   Tcl_Obj *const *objv)
-{
-    ComboMenu *comboPtr = clientData;
-    int x, y;
-    int state;
-    
-    if ((Tcl_GetIntFromObj(interp, objv[2], &x) != TCL_OK) ||
-        (Tcl_GetIntFromObj(interp, objv[3], &y) != TCL_OK)) {
-        return TCL_ERROR;
-    }
-    state = FALSE;
-    switch (comboPtr->post.flags) {
-    case POST_POPUP:
-    case POST_AT:
-        break;
-    default:
-        if ((x >= comboPtr->post.x1) && (x < comboPtr->post.x2) &&
-            (y >= comboPtr->post.y1) && (y < comboPtr->post.y2)) {
-            state = TRUE;
-        }
-    }
-    Tcl_SetBooleanObj(Tcl_GetObjResult(interp), state);
-    return TCL_OK;
-}
-
-/*
- *---------------------------------------------------------------------------
- *
  * ItemConfigureOp --
  *
  *	This procedure handles item operations.
@@ -5743,6 +5702,48 @@ NextOp(ClientData clientData, Tcl_Interp *interp, int objc,
 /*
  *---------------------------------------------------------------------------
  *
+ * OverButtonOp --
+ *
+ *      Returns whether the x, y coordinate is contained within the
+ *      region that represents the button that posted the menu.
+ *
+ * Results:
+ *	Standard TCL result.  A boolean is returned in the interpreter.
+ *
+ *	.cm overbutton x y 
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+OverButtonOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+	   Tcl_Obj *const *objv)
+{
+    ComboMenu *comboPtr = clientData;
+    int x, y;
+    int state;
+    
+    if ((Tcl_GetIntFromObj(interp, objv[2], &x) != TCL_OK) ||
+        (Tcl_GetIntFromObj(interp, objv[3], &y) != TCL_OK)) {
+        return TCL_ERROR;
+    }
+    state = FALSE;
+    switch (comboPtr->post.flags) {
+    case POST_POPUP:
+    case POST_AT:
+        break;
+    default:
+        if ((x >= comboPtr->post.x1) && (x < comboPtr->post.x2) &&
+            (y >= comboPtr->post.y1) && (y < comboPtr->post.y2)) {
+            state = TRUE;
+        }
+    }
+    Tcl_SetBooleanObj(Tcl_GetObjResult(interp), state);
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
  * PostOp --
  *
  *	Posts this menu at the given root window coordinates.
@@ -5759,7 +5760,7 @@ NextOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *---------------------------------------------------------------------------
  */
 static int
-Post2Op(ClientData clientData, Tcl_Interp *interp, int objc,
+PostOp(ClientData clientData, Tcl_Interp *interp, int objc,
         Tcl_Obj *const *objv)
 {
     ComboMenu *comboPtr = clientData;
@@ -5907,164 +5908,6 @@ Post2Op(ClientData clientData, Tcl_Interp *interp, int objc,
 #endif
     }
     comboPtr->flags |= POSTED;
-    return TCL_OK;
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * PostOp --
- *
- *	Posts this menu at the given root window coordinates.
- *
- *  .cm post align x y ?x2 y2?
- *   0   1     2   3 4   5  6 
- *
- *
- *      menu post -window button -align align 
- *      menu post -bbox "x1 y1 x2 y2" -align align
- *      menu post -at "x1 y1" 
- *      menu post (assume parent) -align bottom (default alignment is left).
- *
- *---------------------------------------------------------------------------
- */
-static int
-PostOp(ClientData clientData, Tcl_Interp *interp, int objc,
-       Tcl_Obj *const *objv)
-{
-    ComboMenu *comboPtr = clientData;
-    char c;
-    const char *string;
-    int length;
-    int x, y;
-
-    if ((Tcl_GetIntFromObj(interp, objv[3], &x) != TCL_OK) || 
-	(Tcl_GetIntFromObj(interp, objv[4], &y) != TCL_OK)) {
-	return TCL_ERROR;
-    } 
-    if (objc == 6) {
-	Tcl_AppendResult(interp, "wrong # of arguments: should be \"",
-		Tcl_GetString(objv[0]),  " post align x1 y2 ?x2 x2?\"",
-		(char *)NULL);
-	return TCL_ERROR;
-    }
-    if (objc == 7) {
-	int x2, y2;
-
-	if ((Tcl_GetIntFromObj(interp, objv[5], &x2) != TCL_OK) || 
-	    (Tcl_GetIntFromObj(interp, objv[6], &y2) != TCL_OK)) {
-	    return TCL_ERROR;
-	} 
-	comboPtr->post.menuWidth  = (x2  > x) ? x2 - x : x - x2;
-	comboPtr->post.menuHeight = (y2  > y) ? y2 - y : y - y2;
-	comboPtr->flags |= DROPDOWN;
-    } else {
-	Tk_Window parent;
-
-	parent = Tk_Parent(comboPtr->tkwin);
-	comboPtr->post.menuWidth = comboPtr->normalWidth;
-	comboPtr->post.menuHeight = Tk_Height(parent);
-    }
-    if ((comboPtr->post.menuWidth != comboPtr->post.lastMenuWidth) ||
-	(comboPtr->flags & LAYOUT_PENDING)) {
-	ComputeComboGeometry(comboPtr);
-    }
-    comboPtr->post.lastMenuWidth = comboPtr->post.menuWidth;
-    string = Tcl_GetStringFromObj(objv[2], &length);
-    c = string[0];
-    if ((c == 'l') && (strncmp(string, "left", length) == 0)) {
-	/* Do nothing. */
-    } else if ((c == 'r') && (strncmp(string, "right", length) == 0)) {
-	x -= GetWidth(comboPtr);
-    } else if ((c == 'c') && (strncmp(string, "center", length) == 0)) {
-	x -= GetWidth(comboPtr) / 2;
-    } else if ((c == 'p') && (strncmp(string, "popup", length) == 0)) {
-	/* Do nothing. */
-	comboPtr->flags &= ~DROPDOWN;
-    } else {
-	Tcl_AppendResult(interp, "bad alignment value \"", string, 
-		"\": should be left, right, center, or popup.", (char *)NULL);
-	return TCL_ERROR;
-    }
-    FixMenuCoords(comboPtr, &x, &y);
-    /*
-     * If there is a post command for the menu, execute it.  This may change
-     * the size of the menu, so be sure to recompute the menu's geometry if
-     * needed.
-     */
-    if (comboPtr->postCmdObjPtr != NULL) {
-	int result;
-
-	Tcl_IncrRefCount(comboPtr->postCmdObjPtr);
-	result = Tcl_EvalObjEx(interp, comboPtr->postCmdObjPtr, 
-		TCL_EVAL_GLOBAL);
-	Tcl_DecrRefCount(comboPtr->postCmdObjPtr);
-	if (result != TCL_OK) {
-	    return result;
-	}
-	/*
-	 * The post commands could have deleted the menu, which means we are
-	 * dead and should go away.
-	 */
-	if (comboPtr->tkwin == NULL) {
-	    return TCL_OK;
-	}
-	if (comboPtr->flags & LAYOUT_PENDING) {
-	    ComputeComboGeometry(comboPtr);
-	}
-    }
-
-    /*
-     * Adjust the position of the menu if necessary to keep it visible on the
-     * screen.  There are two special tricks to make this work right:
-     *
-     * 1. If a virtual root window manager is being used then
-     *    the coordinates are in the virtual root window of
-     *    menuPtr's parent;  since the menu uses override-redirect
-     *    mode it will be in the *real* root window for the screen,
-     *    so we have to map the coordinates from the virtual root
-     *    (if any) to the real root.  Can't get the virtual root
-     *    from the menu itself (it will never be seen by the wm)
-     *    so use its parent instead (it would be better to have an
-     *    an option that names a window to use for this...).
-     * 2. The menu may not have been mapped yet, so its current size
-     *    might be the default 1x1.  To compute how much space it
-     *    needs, use its requested size, not its actual size.
-     *
-     * Note that this code assumes square screen regions and all positive
-     * coordinates. This does not work on a Mac with multiple monitors. But
-     * then again, Tk has other problems with this.
-     */
-    {
-	int rootX, rootY, rootWidth, rootHeight;
-	int sw, sh;
-	Tk_Window parent;
-
-	parent = Tk_Parent(comboPtr->tkwin);
-	Blt_SizeOfScreen(comboPtr->tkwin, &sw, &sh);
-	Tk_GetVRootGeometry(parent, &rootX, &rootY, &rootWidth, &rootHeight);
-	x += rootX;
-	y += rootY;
-	if (x < 0) {
-	    x = 0;
-	}
-	if (y < 0) {
-	    y = 0;
-	}
-	if ((x + comboPtr->width) > sw) {
-	    x = sw - comboPtr->width;
-	}
-	if ((y + comboPtr->height) > sh) {
-	    y = sh - comboPtr->height;
-	}
-	Tk_MoveToplevelWindow(comboPtr->tkwin, x, y);
-	Tk_MapWindow(comboPtr->tkwin);
-	Blt_MapToplevelWindow(comboPtr->tkwin);
-	Blt_RaiseToplevelWindow(comboPtr->tkwin);
-#ifdef notdef
-	TkWmRestackToplevel(comboPtr->tkwin, Above, NULL);
-#endif
-    }
     return TCL_OK;
 }
 
@@ -7020,8 +6863,7 @@ static Blt_OpSpec menuOps[] =
     {"add",         2, AddOp,         2, 0, "?option value?",},
     {"bbox",        1, BboxOp,        3, 3, "item",},
     {"cget",        2, CgetOp,        3, 3, "option",},
-    {"configure",   4, ConfigureOp,   2, 0, "?option value?...",},
-    {"contains",    4, ContainsOp,    4, 4, "x y",},
+    {"configure",   2, ConfigureOp,   2, 0, "?option value?...",},
     {"delete",      3, DeleteOp,      2, 0, "items...",},
     {"deselect",    3, SelectOp,      3, 3, "item",},
     {"exists",      1, ExistsOp,      3, 3, "item",},
@@ -7035,7 +6877,8 @@ static Blt_OpSpec menuOps[] =
     {"names",       2, NamesOp,       2, 0, "?pattern...?",},
     {"nearest",     3, NearestOp,     4, 4, "x y",},
     {"next",        3, NextOp,        3, 3, "item",},
-    {"post",        4, Post2Op,       2, 0, "switches...",},
+    {"overbutton",  1, OverButtonOp,  4, 4, "x y",},
+    {"post",        4, PostOp,        2, 0, "switches...",},
     {"postcascade", 5, PostCascadeOp, 2, 3, "?item?",},
     {"previous",    2, PreviousOp,    3, 3, "item",},
     {"scan",        2, ScanOp,        5, 5, "dragto|mark x y",},
