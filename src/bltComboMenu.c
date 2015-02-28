@@ -57,38 +57,43 @@ static const char emptyString[] = "";
 
 #define MAXSCROLLBARTHICKNESS	100
 
-#define REDRAW_PENDING		(1<<0)	/* Indicates that the widget will be
-					 * redisplayed at the next idle
+#define REDRAW_PENDING		(1<<0)	/* Indicates that the widget will
+					 * be redisplayed at the next idle
 					 * point. */
-#define LAYOUT_PENDING		(1<<1)	/* Indicates that the widget's layout
-					 * is scheduled to be recomputed at
-					 * the next redraw. */
-#define UPDATE_PENDING		(1<<2)	/* Indicates that a component (window
-					 * or scrollbar) has changed and that
-					 * and update is pending.  */
+#define LAYOUT_PENDING		(1<<1)	/* Indicates that the widget's
+					 * layout is scheduled to be
+					 * recomputed at the next
+					 * redraw. */
+#define UPDATE_PENDING		(1<<2)	/* Indicates that a component
+					 * (window or scrollbar) has
+					 * changed and that and update is
+					 * pending.  */
 #define FOCUS			(1<<3)	/* Indicates that the combomenu
 					 * currently has focus. */
-#define DROPDOWN		(1<<4)	/* Indicates the combomenu is a drop
-					 * down menu as opposed to a
+#define DROPDOWN		(1<<4)	/* Indicates the combomenu is a
+					 * drop down menu as opposed to a
 					 * popup.  */
-#define SCROLLX			(1<<5)
-#define SCROLLY			(1<<6)
+#define POSTED                  (1<<5)	/* Indicates the combomenu is
+                                         * currently posted. */
+
+#define SCROLLX			(1<<6)
+#define SCROLLY			(1<<7)
 #define SCROLL_PENDING		(SCROLLX|SCROLLY)
 
-#define INSTALL_XSCROLLBAR	(1<<8)	/* Indicates that the x scrollbar is
-					 * scheduled to be installed at the
-					 * next idle point. */
-#define INSTALL_YSCROLLBAR	(1<<9)	/* Indicates that the y scrollbar is
-					 * scheduled to be installed at the
-					 * next idle point. */
-#define RESTRICT_MIN		(1<<10)	/* Indicates to constrain the width of
-					 * the menu to the minimum size of the
-					 * parent widget that posted the
-					 * menu. */
-#define RESTRICT_MAX		(1<<11)	/* Indicates to constrain the width of
-					 * the menu of the maximum size of the
-					 * parent widget that posted the
-					 * menu. */
+#define INSTALL_XSCROLLBAR	(1<<8)	/* Indicates that the x scrollbar
+					 * is scheduled to be installed at
+					 * the next idle point. */
+#define INSTALL_YSCROLLBAR	(1<<9)	/* Indicates that the y scrollbar
+					 * is scheduled to be installed at
+					 * the next idle point. */
+#define RESTRICT_MIN		(1<<10)	/* Indicates to constrain the width
+					 * of the menu to the minimum size
+					 * of the parent widget that posted
+					 * the menu. */
+#define RESTRICT_MAX		(1<<11)	/* Indicates to constrain the width
+					 * of the menu of the maximum size
+					 * of the parent widget that posted
+					 * the menu. */
 #define SORT_AUTO               (1<<12)
 #define SORT_BYVALUE            (1<<13)
 #define SORT_DECREASING         (1<<14)
@@ -518,6 +523,18 @@ static Blt_ConfigSpec itemConfigSpecs[] =
 	0, 0}
 };
 
+typedef struct {
+    unsigned int flags;                 /* Various flags: see below. */
+    int x1, y1, x2, y2;                 /* Coordinates of area representing
+                                         * the parent that posted this
+                                         * menu.  */
+    Tk_Window tkwin;                    /* Parent window that posted this
+                                         * menu. */
+    int menuWidth, menuHeight;
+    int lastMenuWidth;
+    int align;
+} PostInfo;
+
 struct _ComboMenu {
 
     /*
@@ -600,18 +617,16 @@ struct _ComboMenu {
     int xOffset, yOffset;		/* Scroll offsets of viewport in
 					 * world. */ 
     int worldWidth, worldHeight;	/* Dimension of entire menu. */
-    Tk_Window xScrollbar;		/* Horizontal scrollbar to be used if
-					 * necessary. If NULL, no x-scrollbar
-					 * is used. */
+    Tk_Window xScrollbar;		/* Horizontal scrollbar to be used
+					 * if necessary. If NULL, no
+					 * x-scrollbar is used. */
     Tk_Window yScrollbar;		/* Vertical scrollbar to be used if
-					 * necessary. If NULL, no y-scrollbar
-					 * is used. */
+					 * necessary. If NULL, no
+					 * y-scrollbar is used. */
     short int yScrollbarWidth, xScrollbarHeight;
     short int leftIndWidth, rightIndWidth;
     short int leftIndHeight, rightIndHeight;
     short int textWidth, iconWidth;
-    short int butWidth, butHeight;	/* Dimension of the button that posted
-					 * this menu. */
     Blt_HashTable styleTable;		/* Table of styles used. */
 
     Icon rbIcon;	
@@ -627,7 +642,6 @@ struct _ComboMenu {
     XColor *radioButtonOutlineColor;
     XColor *radioButtonColor;
     int radioButtonReqSize;
-    int lastButtonWidth;
     /*
      * Scanning Information:
      */
@@ -645,6 +659,7 @@ struct _ComboMenu {
     Blt_Painter painter;
     GC copyGC;
     int nextStyleId;
+    PostInfo post;
 };
 
 static Blt_ConfigSpec comboConfigSpecs[] =
@@ -866,6 +881,74 @@ static Blt_SwitchSpec findSwitches[] =
 	Blt_Offset(FindSwitches, type), 0, 0, &typeSwitch},
     {BLT_SWITCH_BITMASK, "-underline", "", (char *)NULL,
 	Blt_Offset(FindSwitches, mask), 0, FIND_UNDERLINE},
+    {BLT_SWITCH_END}
+};
+
+
+static Blt_SwitchParseProc PostPopupSwitchProc;
+static Blt_SwitchCustom postPopupSwitch = {
+    PostPopupSwitchProc, NULL, NULL, 0,
+};
+static Blt_SwitchParseProc PostAtSwitchProc;
+static Blt_SwitchCustom postAtSwitch = {
+    PostAtSwitchProc, NULL, NULL, 0,
+};
+static Blt_SwitchParseProc PostBoxSwitchProc;
+static Blt_SwitchCustom postBoxSwitch = {
+    PostBoxSwitchProc, NULL, NULL, 0, 
+};
+static Blt_SwitchParseProc PostAlignSwitchProc;
+static Blt_SwitchCustom postAlignSwitch = {
+    PostAlignSwitchProc, NULL, NULL, 0, 
+};
+static Blt_SwitchParseProc PostWindowSwitchProc;
+static Blt_SwitchCustom postWindowSwitch = {
+    PostWindowSwitchProc, NULL, NULL, 0, 
+};
+
+typedef struct {
+    unsigned int flags;                 /* Various flags: see below. */
+    int x1, y1, x2, y2;                 /* Coordinates of area representing
+                                         * the parent that posted this
+                                         * menu.  */
+    Tk_Window tkwin;                    /* Parent window that posted this
+                                         * menu. */
+} PostSwitches;
+
+#define ALIGN_LEFT	(0)             /* Menu is aligned to the center of
+                                         * the parent. */
+#define ALIGN_CENTER	(1)             /* Menu is aligned on the left side
+                                         * of the parent.  */
+#define ALIGN_RIGHT	(2)             /* Menu is aligned on the right
+                                         * side of the parent. */
+
+#define POST_PARENT     (0)             /* Use parent geometry for location
+                                         * of button. */
+#define POST_POPUP      (1)             /* x,y location of the menu in root
+                                         * coordinates. This menu is a
+                                         * popup.*/
+#define POST_AT         (2)             /* x,y location of the menu in root
+                                         * coordinates. This menu is a
+                                         * cascade.*/
+#define POST_WINDOW     (3)             /* Window representing the
+                                         * parent. */
+#define POST_REGION     (4)             /* Bounding box representing the
+                                         * parent area. The x1, y2, x2, y2
+                                         * coordinates are in root
+                                         * coordinates. */
+
+static Blt_SwitchSpec postSwitches[] = 
+{
+    {BLT_SWITCH_CUSTOM, "-align", "left|right|center", (char *)NULL,
+        Blt_Offset(ComboMenu, post.align), 0, 0, &postAlignSwitch},
+    {BLT_SWITCH_CUSTOM, "-at", "x y", (char *)NULL,
+        0, 0, 0, &postAtSwitch},
+    {BLT_SWITCH_CUSTOM, "-box", "x1 y1 x2 y2", (char *)NULL,
+        0, 0, 0, &postBoxSwitch},
+    {BLT_SWITCH_CUSTOM, "-popup", "x y", (char *)NULL,
+        0, 0, 0, &postPopupSwitch},
+    {BLT_SWITCH_CUSTOM, "-window", "path", (char *)NULL,
+	Blt_Offset(ComboMenu, post.tkwin), 0, 0, &postWindowSwitch},
     {BLT_SWITCH_END}
 };
 
@@ -1461,11 +1544,13 @@ GetBoundedWidth(ComboMenu *comboPtr, int w)
     }
     if ((comboPtr->flags & DROPDOWN) && 
 	(comboPtr->flags & (RESTRICT_MIN|RESTRICT_MAX))) {
-	if ((comboPtr->flags & RESTRICT_MIN) && (w < comboPtr->butWidth)) {
-	    w = comboPtr->butWidth;
+	if ((comboPtr->flags & RESTRICT_MIN) &&
+            (w < comboPtr->post.menuWidth)) {
+	    w = comboPtr->post.menuWidth;
 	}
-	if ((comboPtr->flags & RESTRICT_MAX) && (w > comboPtr->butWidth)) {
-	    w = comboPtr->butWidth;
+	if ((comboPtr->flags & RESTRICT_MAX) &&
+            (w > comboPtr->post.menuWidth)) {
+	    w = comboPtr->post.menuWidth;
 	}
     }
     {
@@ -1530,7 +1615,8 @@ FixMenuCoords(ComboMenu *comboPtr, int *xPtr, int *yPtr)
 	y -= h;				/* Shift the menu up by the height of
 					 * the menu. */
 	if (comboPtr->flags & DROPDOWN) {
-	    y -= comboPtr->butHeight;	/* Add the height of the parent if
+	    y -= comboPtr->post.menuHeight;
+                                        /* Add the height of the parent if
 					 * this is a dropdown menu.  */
 	}
 	if (y < 0) {
@@ -1539,7 +1625,8 @@ FixMenuCoords(ComboMenu *comboPtr, int *xPtr, int *yPtr)
     }
     if ((x + w) > sw) {
 	if (comboPtr->flags & DROPDOWN) {
-	    x = x + comboPtr->butWidth - w; /* Flip the menu anchor to the other
+	    x = x + comboPtr->post.menuWidth - w;
+                                        /* Flip the menu anchor to the other
 					 * end of the menu button/entry */
 	} else {
 	    x -= w;			/* Shift the menu to the left by the
@@ -1812,6 +1899,38 @@ NearestItem(ComboMenu *comboPtr, int x, int y, int selectOne)
     return itemPtr;
 }
 
+static Tcl_Obj *
+GetItemBBox(ComboMenu *comboPtr, Item *itemPtr)
+{
+    int rootX, rootY, x, y, w, h;
+    Tcl_Obj *listObjPtr, *objPtr;
+    Tcl_Interp *interp = comboPtr->interp;
+    
+    x = Tk_Width(comboPtr->tkwin);
+    y = SCREENY(comboPtr, itemPtr->worldY);
+    w = VPORTWIDTH(comboPtr);
+    w = MAX(comboPtr->worldWidth, w);
+    h = itemPtr->height;
+    Tk_GetRootCoords(comboPtr->tkwin, &rootX, &rootY);
+    if (rootX < 0) {
+	rootX = 0;
+    }
+    if (rootY < 0) {
+	rootY = 0;
+    }
+    x += rootX, y += rootY;
+    listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
+    objPtr = Tcl_NewIntObj(x);
+    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+    objPtr = Tcl_NewIntObj(y);
+    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+    objPtr = Tcl_NewIntObj(x + w);
+    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+    objPtr = Tcl_NewIntObj(y + h);
+    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+    return listObjPtr;
+}
+
 static void
 ComputeCascadeMenuCoords(ComboMenu *comboPtr, Item *itemPtr, int *xPtr, 
 			 int *yPtr)
@@ -1960,7 +2079,7 @@ PostCascade(
     Tk_CreateEventHandler(tkwin, CASCADE_EVENT_MASK,CascadeEventProc, comboPtr);
 
     if (Tk_IsMapped(comboPtr->tkwin)) {
-	Tcl_Obj *cmdObjPtr;
+	Tcl_Obj *cmdObjPtr, *objPtr, *listObjPtr;
 	int result, x, y;
 
 	/*
@@ -1970,12 +2089,17 @@ PostCascade(
 	 *
 	 * The menu has to redrawn so that the entry can change relief.
 	 */
+        /* menu post -at {x y}  */
 	ComputeCascadeMenuCoords(comboPtr, itemPtr, &x, &y);
 	cmdObjPtr = Tcl_DuplicateObj(itemPtr->menuObjPtr);
-	Tcl_ListObjAppendElement(interp, cmdObjPtr, Tcl_NewStringObj("post",4));
-	Tcl_ListObjAppendElement(interp, cmdObjPtr, Tcl_NewStringObj("left",4));
-	Tcl_ListObjAppendElement(interp, cmdObjPtr, Tcl_NewIntObj(x));
-	Tcl_ListObjAppendElement(interp, cmdObjPtr, Tcl_NewIntObj(y));
+        objPtr = Tcl_NewStringObj("post", 4);
+	Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
+        objPtr = Tcl_NewStringObj("-at", 3);
+	Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
+        listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
+        Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewIntObj(x));
+        Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewIntObj(y));
+	Tcl_ListObjAppendElement(interp, cmdObjPtr, listObjPtr);
 	Tcl_IncrRefCount(cmdObjPtr);
 	Tcl_Preserve(comboPtr);
 	result = Tcl_EvalObjEx(interp, cmdObjPtr, TCL_EVAL_GLOBAL);
@@ -2102,8 +2226,8 @@ ComputeComboGeometry(ComboMenu *comboPtr)
     if ((Blt_Chain_GetLength(comboPtr->chain) == 0) && (h < 20)) {
 	h = 20;
     }
-    if ((comboPtr->flags & DROPDOWN) && (w < comboPtr->butWidth)) {
-	w = comboPtr->butWidth;
+    if ((comboPtr->flags & DROPDOWN) && (w < comboPtr->post.menuWidth)) {
+	w = comboPtr->post.menuWidth;
     }
     comboPtr->width = w;
     comboPtr->height = h;
@@ -4293,6 +4417,306 @@ EnumToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*
  *---------------------------------------------------------------------------
  *
+ * GetCoordsFromObj --
+ *
+ *	Converts string into x and y coordinates.  Indicates that the
+ *      menu is a popup and will be popped at the given x, y coordinate.
+ *
+ * Results:
+ *	If the string is successfully converted, TCL_OK is returned.
+ *	Otherwise, TCL_ERROR is returned and an error message is left
+ *	in interpreter's result field.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+GetCoordsFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, int *xPtr, int *yPtr)
+{
+    int elc;
+    Tcl_Obj **elv;
+    int x, y;
+    
+    if (Tcl_ListObjGetElements(interp, objPtr, &elc, &elv) != TCL_OK) {
+	return TCL_ERROR;
+    }
+    if (elc != 2) {
+        Tcl_AppendResult(interp, "wrong # of arguments: should be \"x y\"",
+                (char *)NULL);
+        return TCL_ERROR;
+    }
+    if ((Tcl_GetIntFromObj(interp, elv[0], &x) != TCL_OK) ||
+        (Tcl_GetIntFromObj(interp, elv[1], &y) != TCL_OK)) {
+        return TCL_ERROR;
+    }
+    *xPtr = x;
+    *yPtr = y;
+    return TCL_OK;
+}
+
+    
+/*
+ *---------------------------------------------------------------------------
+ *
+ * GetBoxFromObj --
+ *
+ *	Converts string into x and y coordinates.  Indicates that the
+ *      menu is a popup and will be popped at the given x, y coordinate.
+ *
+ * Results:
+ *	If the string is successfully converted, TCL_OK is returned.
+ *	Otherwise, TCL_ERROR is returned and an error message is left
+ *	in interpreter's result field.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+GetAlignFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, int *alignPtr)
+{
+    char c;
+    const char *string;
+    int length;
+
+    string = Tcl_GetStringFromObj(objPtr, &length);
+    c = string[0];
+    if ((c == 'l') && (strncmp(string, "left", length) == 0)) {
+	*alignPtr = ALIGN_LEFT;
+    } else if ((c == 'r') && (strncmp(string, "right", length) == 0)) {
+	*alignPtr = ALIGN_RIGHT;
+    } else if ((c == 'c') && (strncmp(string, "center", length) == 0)) {
+	*alignPtr = ALIGN_CENTER;
+    } else {
+	Tcl_AppendResult(interp, "bad alignment value \"", string, 
+		"\": should be left, right, or center.", (char *)NULL);
+	return TCL_ERROR;
+    }
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * GetBoxFromObj --
+ *
+ *	Converts string into x and y coordinates.  Indicates that the
+ *      menu is a popup and will be popped at the given x, y coordinate.
+ *
+ * Results:
+ *	If the string is successfully converted, TCL_OK is returned.
+ *	Otherwise, TCL_ERROR is returned and an error message is left
+ *	in interpreter's result field.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+GetBoxFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, Box2d *boxPtr)
+{
+    int elc;
+    Tcl_Obj **elv;
+    int x1, y1, x2, y2;
+
+    if (Tcl_ListObjGetElements(interp, objPtr, &elc, &elv) != TCL_OK) {
+	return TCL_ERROR;
+    }
+    if (elc != 4) {
+        Tcl_AppendResult(interp,
+                "wrong # of arguments: should be \"x1 y1 x2 y2\"",
+                (char *)NULL);
+        return TCL_ERROR;
+    }
+    if ((Tcl_GetIntFromObj(interp, elv[0], &x1) != TCL_OK) ||
+        (Tcl_GetIntFromObj(interp, elv[1], &y1) != TCL_OK) ||
+        (Tcl_GetIntFromObj(interp, elv[2], &x2) != TCL_OK) ||
+        (Tcl_GetIntFromObj(interp, elv[3], &y2) != TCL_OK)) {
+        return TCL_ERROR;
+    }
+    boxPtr->x1 = MIN(x1, x2);
+    boxPtr->y1 = MIN(y1, y2);
+    boxPtr->x2 = MAX(x2, x1);
+    boxPtr->y2 = MAX(y2, y1);
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * PostWindowSwitchProc --
+ *
+ *	Converts a window name into Tk window.
+ *
+ * Results:
+ *	If the string is successfully converted, TCL_OK is returned.
+ *	Otherwise, TCL_ERROR is returned and an error message is left
+ *	in interpreter's result field.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+PostWindowSwitchProc(ClientData clientData, Tcl_Interp *interp,
+                    const char *switchName, Tcl_Obj *objPtr, char *record,
+                    int offset, int flags)
+{
+    ComboMenu *comboPtr = (ComboMenu *)record;
+    Tk_Window tkwin;
+    const char *string;
+
+    tkwin = NULL;
+    string = Tcl_GetString(objPtr);
+    if (string[0] == '\0') {
+        tkwin = NULL;
+    } else {
+	tkwin = Tk_NameToWindow(interp, string, comboPtr->tkwin);
+        if (tkwin == NULL) {
+	    return TCL_ERROR;
+	}
+    }
+    comboPtr->post.flags = POST_WINDOW;
+    comboPtr->post.tkwin = tkwin;
+    return TCL_OK;
+}
+
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * PostAlignSwitchProc --
+ *
+ *	Converts string into x and y coordinates.
+ *
+ * Results:
+ *	If the string is successfully converted, TCL_OK is returned.
+ *	Otherwise, TCL_ERROR is returned and an error message is left
+ *	in interpreter's result field.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+PostAlignSwitchProc(ClientData clientData, Tcl_Interp *interp,
+                    const char *switchName, Tcl_Obj *objPtr, char *record,
+                    int offset, int flags)
+{
+    ComboMenu *comboPtr = (ComboMenu *)record;
+    int align;
+    
+    if (GetAlignFromObj(interp, objPtr, &align) != TCL_OK) {
+        return TCL_ERROR;
+    }
+    comboPtr->post.align = align;
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * PostPopupSwitchProc --
+ *
+ *	Converts string into x and y coordinates.  Indicates that the
+ *      menu is a popup and will be popped at the given x, y coordinate.
+ *
+ * Results:
+ *	If the string is successfully converted, TCL_OK is returned.
+ *	Otherwise, TCL_ERROR is returned and an error message is left
+ *	in interpreter's result field.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+PostPopupSwitchProc(ClientData clientData, Tcl_Interp *interp,
+                    const char *switchName, Tcl_Obj *objPtr, char *record,
+                    int offset, int flags)
+{
+    ComboMenu *comboPtr = (ComboMenu *)record;
+    int x, y;
+    
+    if (GetCoordsFromObj(interp, objPtr, &x, &y) != TCL_OK) {
+	return TCL_ERROR;
+    }
+    comboPtr->post.x1 = comboPtr->post.x2 = x;
+    comboPtr->post.y1 = comboPtr->post.y2 = y;
+    comboPtr->post.flags = POST_POPUP;
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * PostAtSwitchProc --
+ *
+ *	Converts string into x and y coordinates.  Indicates that the
+ *      menu is a popup and will be popped at the given x, y coordinate.
+ *
+ * Results:
+ *	If the string is successfully converted, TCL_OK is returned.
+ *	Otherwise, TCL_ERROR is returned and an error message is left
+ *	in interpreter's result field.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+PostAtSwitchProc(ClientData clientData, Tcl_Interp *interp,
+                    const char *switchName, Tcl_Obj *objPtr, char *record,
+                    int offset, int flags)
+{
+    ComboMenu *comboPtr = (ComboMenu *)record;
+    int x, y;
+    
+    if (GetCoordsFromObj(interp, objPtr, &x, &y) != TCL_OK) {
+	return TCL_ERROR;
+    }
+    comboPtr->post.x1 = comboPtr->post.x2 = x;
+    comboPtr->post.y1 = comboPtr->post.y2 = y;
+    comboPtr->post.flags = POST_AT;
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * PostBoxSwitchProc --
+ *
+ *	Converts string into x1, y1, x2, and y2 coordinates.
+ *
+ * Results:
+ *	If the string is successfully converted, TCL_OK is returned.
+ *	Otherwise, TCL_ERROR is returned and an error message is left
+ *	in interpreter's result field.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+PostBoxSwitchProc(
+    ClientData clientData,		/* Not used. */
+    Tcl_Interp *interp,			/* Not used. */
+    const char *switchName,		/* Not used. */
+    Tcl_Obj *objPtr,			/* String representation */
+    char *record,			/* Structure record */
+    int offset,				/* Offset to field in structure */
+    int flags)				/* Not used. */
+{
+    ComboMenu *comboPtr = (ComboMenu *)record;
+    Box2d box;
+    
+    if (GetBoxFromObj(interp, objPtr, &box) != TCL_OK) {
+	return TCL_ERROR;
+    }
+    comboPtr->post.x1 = box.x1;
+    comboPtr->post.y1 = box.y1;
+    comboPtr->post.x2 = box.x2;
+    comboPtr->post.y2 = box.y2;
+    comboPtr->post.flags = POST_REGION;
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
  * TypeSwitch --
  *
  *	Convert a string representing an item type into its integer value.
@@ -4378,9 +4802,10 @@ ItemSwitch(
  *---------------------------------------------------------------------------
  */
 static int
-ActivateOp(ComboMenu *comboPtr, Tcl_Interp *interp, int objc, 
+ActivateOp(ClientData clientData, Tcl_Interp *interp, int objc, 
 	   Tcl_Obj *const *objv)
 {
+    ComboMenu *comboPtr = clientData;
     Item *itemPtr;
 
     if (GetItemFromObj(NULL, comboPtr, objv[2], &itemPtr) != TCL_OK) {
@@ -4418,8 +4843,9 @@ ActivateOp(ComboMenu *comboPtr, Tcl_Interp *interp, int objc,
  *---------------------------------------------------------------------------
  */
 static int
-AddOp(ComboMenu *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+AddOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 {
+    ComboMenu *comboPtr = clientData;
     Item *itemPtr;
 
     itemPtr = NewItem(comboPtr);
@@ -4455,9 +4881,10 @@ AddOp(ComboMenu *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *---------------------------------------------------------------------------
  */
 static int
-AddListOp(ComboMenu *comboPtr, Tcl_Interp *interp, int objc, 
+AddListOp(ClientData clientData, Tcl_Interp *interp, int objc, 
 	  Tcl_Obj *const *objv)
 {
+    ComboMenu *comboPtr = clientData;
     int i;
     int elc;
     Tcl_Obj **elv;
@@ -4493,6 +4920,34 @@ AddListOp(ComboMenu *comboPtr, Tcl_Interp *interp, int objc,
 /*
  *---------------------------------------------------------------------------
  *
+ * BboxOp --
+ *      Returns the bounding box of the given item.
+ *
+ * Results:
+ *	Standard TCL result.  A list representing the bounding box is 
+ *      returned.
+ *
+ *	.cm bbox item
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+BboxOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+       Tcl_Obj *const *objv)
+{
+    ComboMenu *comboPtr = clientData;
+    Item *itemPtr;
+    
+    if (GetItemFromObj(NULL, comboPtr, objv[2], &itemPtr) != TCL_OK) {
+	return TCL_ERROR;
+    }
+    Tcl_SetObjResult(interp, GetItemBBox(comboPtr, itemPtr));
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
  * ConfigureOp --
  *
  * Results:
@@ -4507,12 +4962,10 @@ AddListOp(ComboMenu *comboPtr, Tcl_Interp *interp, int objc,
  *---------------------------------------------------------------------------
  */
 static int
-ConfigureOp(
-    ComboMenu *comboPtr, 
-    Tcl_Interp *interp, 
-    int objc, 
-    Tcl_Obj *const *objv)
+ConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
+            Tcl_Obj *const *objv)
 {
+    ComboMenu *comboPtr = clientData;
     int result;
 
     iconOption.clientData = comboPtr;
@@ -4552,12 +5005,10 @@ ConfigureOp(
  *---------------------------------------------------------------------------
  */
 static int
-CgetOp(
-    ComboMenu *comboPtr, 
-    Tcl_Interp *interp, 
-    int objc, 
-    Tcl_Obj *const *objv)
+CgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
+       Tcl_Obj *const *objv)
 {
+    ComboMenu *comboPtr = clientData;
     iconOption.clientData = comboPtr;
     return Blt_ConfigureValueFromObj(interp, comboPtr->tkwin, comboConfigSpecs,
 	(char *)comboPtr, objv[2], 0);
@@ -4580,12 +5031,10 @@ CgetOp(
  *---------------------------------------------------------------------------
  */
 static int
-DeleteOp(
-    ComboMenu *comboPtr, 
-    Tcl_Interp *interp, 
-    int objc, 
-    Tcl_Obj *const *objv)
+DeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
+         Tcl_Obj *const *objv)
 {
+    ComboMenu *comboPtr = clientData;
     int i;
 
     for (i = 2; i < objc; i++) {
@@ -4631,8 +5080,10 @@ DeleteOp(
  *---------------------------------------------------------------------------
  */
 static int
-ExistsOp(ComboMenu *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+ExistsOp(ClientData clientData, Tcl_Interp *interp, int objc,
+         Tcl_Obj *const *objv)
 {
+    ComboMenu *comboPtr = clientData;
     Item *itemPtr;
     int state;
 
@@ -4662,8 +5113,10 @@ ExistsOp(ComboMenu *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv
  *---------------------------------------------------------------------------
  */
 static int
-FindOp(ComboMenu *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+FindOp(ClientData clientData, Tcl_Interp *interp, int objc,
+       Tcl_Obj *const *objv)
 {
+    ComboMenu *comboPtr = clientData;
     long index;
     FindSwitches switches;
     const char *pattern;
@@ -4789,8 +5242,10 @@ FindOp(ComboMenu *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *---------------------------------------------------------------------------
  */
 static int
-IndexOp(ComboMenu *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+IndexOp(ClientData clientData, Tcl_Interp *interp, int objc,
+        Tcl_Obj *const *objv)
 {
+    ComboMenu *comboPtr = clientData;
     int index;
     int isValue;
 
@@ -4857,9 +5312,10 @@ IndexOp(ComboMenu *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *---------------------------------------------------------------------------
  */
 static int
-InvokeOp(ComboMenu *comboPtr, Tcl_Interp *interp, int objc, 
+InvokeOp(ClientData clientData, Tcl_Interp *interp, int objc, 
 	 Tcl_Obj *const *objv)
 {
+    ComboMenu *comboPtr = clientData;
     int result;
     Item *itemPtr;
 
@@ -4903,9 +5359,10 @@ InvokeOp(ComboMenu *comboPtr, Tcl_Interp *interp, int objc,
  *---------------------------------------------------------------------------
  */
 static int
-InsertOp(ComboMenu *comboPtr, Tcl_Interp *interp, int objc, 
+InsertOp(ClientData clientData, Tcl_Interp *interp, int objc, 
 	 Tcl_Obj *const *objv)
 {
+    ComboMenu *comboPtr = clientData;
     Item *itemPtr, *wherePtr;
     int dir;
     static const char *dirs[] = { "after", "at", "before" , NULL};
@@ -4934,6 +5391,47 @@ InsertOp(ComboMenu *comboPtr, Tcl_Interp *interp, int objc,
 /*
  *---------------------------------------------------------------------------
  *
+ * ContainsOp --
+ *      Returns whether the x, y coordinate is contained with in the
+ *      calling region of the menu.
+ * Results:
+ *	Standard TCL result.  A list representing the bounding box is 
+ *      returned.
+ *
+ *	.cm contains x y 
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+ContainsOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+	   Tcl_Obj *const *objv)
+{
+    ComboMenu *comboPtr = clientData;
+    int x, y;
+    int state;
+    
+    if ((Tcl_GetIntFromObj(interp, objv[2], &x) != TCL_OK) ||
+        (Tcl_GetIntFromObj(interp, objv[3], &y) != TCL_OK)) {
+        return TCL_ERROR;
+    }
+    state = FALSE;
+    switch (comboPtr->post.flags) {
+    case POST_POPUP:
+    case POST_AT:
+        break;
+    default:
+        if ((x >= comboPtr->post.x1) && (x < comboPtr->post.x2) &&
+            (y >= comboPtr->post.y1) && (y < comboPtr->post.y2)) {
+            state = TRUE;
+        }
+    }
+    Tcl_SetBooleanObj(Tcl_GetObjResult(interp), state);
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
  * ItemConfigureOp --
  *
  *	This procedure handles item operations.
@@ -4946,9 +5444,10 @@ InsertOp(ComboMenu *comboPtr, Tcl_Interp *interp, int objc,
  *---------------------------------------------------------------------------
  */
 static int
-ItemConfigureOp(ComboMenu *comboPtr, Tcl_Interp *interp, int objc, 
+ItemConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc, 
 		Tcl_Obj *const *objv)
 {
+    ComboMenu *comboPtr = clientData;
     Item *itemPtr;
     ItemIterator iter;
 
@@ -4996,9 +5495,10 @@ ItemConfigureOp(ComboMenu *comboPtr, Tcl_Interp *interp, int objc,
  *---------------------------------------------------------------------------
  */
 static int
-ItemCgetOp(ComboMenu *comboPtr, Tcl_Interp *interp, int objc, 
+ItemCgetOp(ClientData clientData, Tcl_Interp *interp, int objc, 
 	   Tcl_Obj *const *objv)
 {
+    ComboMenu *comboPtr = clientData;
     Item *itemPtr;
 
     if (GetItemFromObj(interp, comboPtr, objv[3], &itemPtr) != TCL_OK) {
@@ -5034,8 +5534,10 @@ static Blt_OpSpec itemOps[] = {
 static int numItemOps = sizeof(itemOps) / sizeof(Blt_OpSpec);
 
 static int
-ItemOp(ComboMenu *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+ItemOp(ClientData clientData, Tcl_Interp *interp, int objc,
+       Tcl_Obj *const *objv)
 {
+    ComboMenu *comboPtr = clientData;
     ComboMenuCmdProc *proc;
     int result;
 
@@ -5059,8 +5561,10 @@ ItemOp(ComboMenu *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  */
 /*ARGSUSED*/
 static int
-NamesOp(ComboMenu *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+NamesOp(ClientData clientData, Tcl_Interp *interp, int objc,
+        Tcl_Obj *const *objv)
 {
+    ComboMenu *comboPtr = clientData;
     Tcl_Obj *listObjPtr;
     int i;
     Blt_ChainLink link;
@@ -5095,9 +5599,10 @@ NamesOp(ComboMenu *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 
 /*ARGSUSED*/
 static int
-NearestOp(ComboMenu *comboPtr, Tcl_Interp *interp, int objc, 
+NearestOp(ClientData clientData, Tcl_Interp *interp, int objc, 
 	  Tcl_Obj *const *objv)
 {
+    ComboMenu *comboPtr = clientData;
     int x, y;			
     int wx, wy;			
     Item *itemPtr;
@@ -5217,8 +5722,10 @@ NearestOp(ComboMenu *comboPtr, Tcl_Interp *interp, int objc,
  *---------------------------------------------------------------------------
  */
 static int
-NextOp(ComboMenu *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+NextOp(ClientData clientData, Tcl_Interp *interp, int objc,
+       Tcl_Obj *const *objv)
 {
+    ComboMenu *comboPtr = clientData;
     Item *itemPtr;
     int index;
 
@@ -5242,11 +5749,190 @@ NextOp(ComboMenu *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  *  .cm post align x y ?x2 y2?
  *   0   1     2   3 4   5  6 
+ *
+ *
+ *      menu post -window button -align align 
+ *      menu post -bbox "x1 y1 x2 y2" -align align
+ *      menu post -at "x1 y1" 
+ *      menu post (assume parent) -align bottom (default alignment is left).
+ *
  *---------------------------------------------------------------------------
  */
 static int
-PostOp(ComboMenu *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+Post2Op(ClientData clientData, Tcl_Interp *interp, int objc,
+        Tcl_Obj *const *objv)
 {
+    ComboMenu *comboPtr = clientData;
+    int x, y;
+
+    memset(&comboPtr->post, 0, sizeof(PostInfo));
+    comboPtr->post.tkwin = Tk_Parent(comboPtr->tkwin);
+    comboPtr->post.menuWidth = comboPtr->normalWidth;
+    /* Process switches  */
+    if (Blt_ParseSwitches(interp, postSwitches, objc - 2, objv + 2, comboPtr,
+	BLT_SWITCH_DEFAULTS) < 0) {
+	return TCL_ERROR;
+    }
+    comboPtr->flags |= DROPDOWN;
+    switch (comboPtr->post.flags) {
+    case POST_PARENT:
+    case POST_WINDOW:
+        {
+            Tk_Window tkwin;
+            int x, y, w, h;
+            int rootX, rootY;
+            
+            tkwin = comboPtr->post.tkwin;
+            w = Tk_Width(tkwin);
+            h = Tk_Height(tkwin);
+            x = Tk_X(tkwin);
+            y = Tk_Y(tkwin);
+            Tk_GetRootCoords(Tk_Parent(tkwin), &rootX, &rootY);
+            x += rootX;
+            y += rootY;
+            comboPtr->post.x1 = x;
+            comboPtr->post.y1 = y;
+            comboPtr->post.x2 = x + w;
+            comboPtr->post.y2 = y + h;
+        }
+        break;
+    case POST_REGION:
+    case POST_AT:
+        break;
+    case POST_POPUP:
+        comboPtr->flags &= ~DROPDOWN;
+        break;
+    }
+    comboPtr->post.menuWidth = comboPtr->post.x2 - comboPtr->post.x1;
+    comboPtr->post.menuHeight = comboPtr->post.y2 - comboPtr->post.y1;
+    if ((comboPtr->post.menuWidth != comboPtr->post.lastMenuWidth) ||
+	(comboPtr->flags & LAYOUT_PENDING)) {
+	ComputeComboGeometry(comboPtr);
+    }
+    comboPtr->post.lastMenuWidth = comboPtr->post.menuWidth;
+    y = comboPtr->post.y2;
+    switch (comboPtr->post.align) {
+    case ALIGN_LEFT:
+        x = comboPtr->post.x1;
+        break;
+    case ALIGN_CENTER:
+        {
+            int w;
+
+            w = comboPtr->post.x2 - comboPtr->post.x1;
+            x = comboPtr->post.x1 + (w - comboPtr->normalWidth) / 2; 
+        }
+        break;
+    case ALIGN_RIGHT:
+        x = comboPtr->post.x2 - comboPtr->normalWidth;
+        break;
+    }
+    FixMenuCoords(comboPtr, &x, &y);
+    /*
+     * If there is a post command for the menu, execute it.  This may change
+     * the size of the menu, so be sure to recompute the menu's geometry if
+     * needed.
+     */
+    if (comboPtr->postCmdObjPtr != NULL) {
+	int result;
+
+	Tcl_IncrRefCount(comboPtr->postCmdObjPtr);
+	result = Tcl_EvalObjEx(interp, comboPtr->postCmdObjPtr, 
+		TCL_EVAL_GLOBAL);
+	Tcl_DecrRefCount(comboPtr->postCmdObjPtr);
+	if (result != TCL_OK) {
+	    return result;
+	}
+	/*
+	 * The post commands could have deleted the menu, which means we are
+	 * dead and should go away.
+	 */
+	if (comboPtr->tkwin == NULL) {
+	    return TCL_OK;
+	}
+	if (comboPtr->flags & LAYOUT_PENDING) {
+	    ComputeComboGeometry(comboPtr);
+	}
+    }
+
+    /*
+     * Adjust the position of the menu if necessary to keep it visible on the
+     * screen.  There are two special tricks to make this work right:
+     *
+     * 1. If a virtual root window manager is being used then
+     *    the coordinates are in the virtual root window of
+     *    menuPtr's parent;  since the menu uses override-redirect
+     *    mode it will be in the *real* root window for the screen,
+     *    so we have to map the coordinates from the virtual root
+     *    (if any) to the real root.  Can't get the virtual root
+     *    from the menu itself (it will never be seen by the wm)
+     *    so use its parent instead (it would be better to have an
+     *    an option that names a window to use for this...).
+     * 2. The menu may not have been mapped yet, so its current size
+     *    might be the default 1x1.  To compute how much space it
+     *    needs, use its requested size, not its actual size.
+     *
+     * Note that this code assumes square screen regions and all positive
+     * coordinates. This does not work on a Mac with multiple monitors. But
+     * then again, Tk has other problems with this.
+     */
+    {
+	int rootX, rootY, rootWidth, rootHeight;
+	int sw, sh;
+	Tk_Window parent;
+
+	parent = Tk_Parent(comboPtr->tkwin);
+	Blt_SizeOfScreen(comboPtr->tkwin, &sw, &sh);
+	Tk_GetVRootGeometry(parent, &rootX, &rootY, &rootWidth, &rootHeight);
+	x += rootX;
+	y += rootY;
+	if (x < 0) {
+	    x = 0;
+	}
+	if (y < 0) {
+	    y = 0;
+	}
+	if ((x + comboPtr->width) > sw) {
+	    x = sw - comboPtr->width;
+	}
+	if ((y + comboPtr->height) > sh) {
+	    y = sh - comboPtr->height;
+	}
+	Tk_MoveToplevelWindow(comboPtr->tkwin, x, y);
+	Tk_MapWindow(comboPtr->tkwin);
+	Blt_MapToplevelWindow(comboPtr->tkwin);
+	Blt_RaiseToplevelWindow(comboPtr->tkwin);
+#ifdef notdef
+	TkWmRestackToplevel(comboPtr->tkwin, Above, NULL);
+#endif
+    }
+    comboPtr->flags |= POSTED;
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * PostOp --
+ *
+ *	Posts this menu at the given root window coordinates.
+ *
+ *  .cm post align x y ?x2 y2?
+ *   0   1     2   3 4   5  6 
+ *
+ *
+ *      menu post -window button -align align 
+ *      menu post -bbox "x1 y1 x2 y2" -align align
+ *      menu post -at "x1 y1" 
+ *      menu post (assume parent) -align bottom (default alignment is left).
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+PostOp(ClientData clientData, Tcl_Interp *interp, int objc,
+       Tcl_Obj *const *objv)
+{
+    ComboMenu *comboPtr = clientData;
     char c;
     const char *string;
     int length;
@@ -5269,21 +5955,21 @@ PostOp(ComboMenu *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	    (Tcl_GetIntFromObj(interp, objv[6], &y2) != TCL_OK)) {
 	    return TCL_ERROR;
 	} 
-	comboPtr->butWidth  = (x2  > x) ? x2 - x : x - x2;
-	comboPtr->butHeight = (y2  > y) ? y2 - y : y - y2;
+	comboPtr->post.menuWidth  = (x2  > x) ? x2 - x : x - x2;
+	comboPtr->post.menuHeight = (y2  > y) ? y2 - y : y - y2;
 	comboPtr->flags |= DROPDOWN;
     } else {
 	Tk_Window parent;
 
 	parent = Tk_Parent(comboPtr->tkwin);
-	comboPtr->butWidth = comboPtr->normalWidth;
-	comboPtr->butHeight = Tk_Height(parent);
+	comboPtr->post.menuWidth = comboPtr->normalWidth;
+	comboPtr->post.menuHeight = Tk_Height(parent);
     }
-    if ((comboPtr->butWidth != comboPtr->lastButtonWidth) ||
+    if ((comboPtr->post.menuWidth != comboPtr->post.lastMenuWidth) ||
 	(comboPtr->flags & LAYOUT_PENDING)) {
 	ComputeComboGeometry(comboPtr);
     }
-    comboPtr->lastButtonWidth = comboPtr->butWidth;
+    comboPtr->post.lastMenuWidth = comboPtr->post.menuWidth;
     string = Tcl_GetStringFromObj(objv[2], &length);
     c = string[0];
     if ((c == 'l') && (strncmp(string, "left", length) == 0)) {
@@ -5401,9 +6087,10 @@ PostOp(ComboMenu *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *---------------------------------------------------------------------------
  */
 static int
-PostCascadeOp(ComboMenu *comboPtr, Tcl_Interp *interp, int objc, 
+PostCascadeOp(ClientData clientData, Tcl_Interp *interp, int objc, 
 	      Tcl_Obj *const *objv)
 {
+    ComboMenu *comboPtr = clientData;
     Item *itemPtr;
 
     if (objc == 2) {
@@ -5446,9 +6133,10 @@ PostCascadeOp(ComboMenu *comboPtr, Tcl_Interp *interp, int objc,
  *---------------------------------------------------------------------------
  */
 static int
-PreviousOp(ComboMenu *comboPtr, Tcl_Interp *interp, int objc, 
+PreviousOp(ClientData clientData, Tcl_Interp *interp, int objc, 
 	   Tcl_Obj *const *objv)
 {
+    ComboMenu *comboPtr = clientData;
     Item *itemPtr;
     int index;
 
@@ -5474,8 +6162,10 @@ PreviousOp(ComboMenu *comboPtr, Tcl_Interp *interp, int objc,
  */
 /*ARGSUSED*/
 static int
-ScanOp(ComboMenu *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+ScanOp(ClientData clientData, Tcl_Interp *interp, int objc,
+       Tcl_Obj *const *objv)
 {
+    ComboMenu *comboPtr = clientData;
     int oper;
     int x, y;
 
@@ -5544,8 +6234,10 @@ ScanOp(ComboMenu *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 
 /*ARGSUSED*/
 static int
-SeeOp(ComboMenu *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+SeeOp(ClientData clientData, Tcl_Interp *interp, int objc,
+      Tcl_Obj *const *objv)
 {
+    ComboMenu *comboPtr = clientData;
     Item *itemPtr;
     int x, y, w, h;
     Tk_Anchor anchor;
@@ -5667,9 +6359,10 @@ SeeOp(ComboMenu *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *---------------------------------------------------------------------------
  */
 static int
-SelectOp(ComboMenu *comboPtr, Tcl_Interp *interp, int objc, 
+SelectOp(ClientData clientData, Tcl_Interp *interp, int objc, 
 	 Tcl_Obj *const *objv)
 {
+    ComboMenu *comboPtr = clientData;
     Item *itemPtr;
     const char *cmd;
     int result;
@@ -5689,8 +6382,10 @@ SelectOp(ComboMenu *comboPtr, Tcl_Interp *interp, int objc,
 
 /*ARGSUSED*/
 static int
-SizeOp(ComboMenu *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+SizeOp(ClientData clientData, Tcl_Interp *interp, int objc,
+       Tcl_Obj *const *objv)
 {
+    ComboMenu *comboPtr = clientData;
     Tcl_SetLongObj(Tcl_GetObjResult(interp), 
 		   Blt_Chain_GetLength(comboPtr->chain));
     return TCL_OK;
@@ -5816,9 +6511,10 @@ SortOp(ClientData clientData, Tcl_Interp *interp, int objc,
 /* .m style create ?name? option value option value */
     
 static int
-StyleCreateOp(ComboMenu *comboPtr, Tcl_Interp *interp, int objc, 
+StyleCreateOp(ClientData clientData, Tcl_Interp *interp, int objc, 
 	      Tcl_Obj *const *objv)
 {
+    ComboMenu *comboPtr = clientData;
     Style *stylePtr;
     Blt_HashEntry *hPtr;
     int isNew;
@@ -5855,9 +6551,10 @@ StyleCreateOp(ComboMenu *comboPtr, Tcl_Interp *interp, int objc,
 }
 
 static int
-StyleCgetOp(ComboMenu *comboPtr, Tcl_Interp *interp, int objc, 
+StyleCgetOp(ClientData clientData, Tcl_Interp *interp, int objc, 
 	    Tcl_Obj *const *objv)
 {
+    ComboMenu *comboPtr = clientData;
     Style *stylePtr;
 
     if (GetStyleFromObj(interp, comboPtr, objv[3], &stylePtr) != TCL_OK) {
@@ -5869,9 +6566,10 @@ StyleCgetOp(ComboMenu *comboPtr, Tcl_Interp *interp, int objc,
 }
 
 static int
-StyleConfigureOp(ComboMenu *comboPtr, Tcl_Interp *interp, int objc, 
+StyleConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc, 
 		 Tcl_Obj *const *objv)
 {
+    ComboMenu *comboPtr = clientData;
     int result, flags;
     Style *stylePtr;
 
@@ -5899,9 +6597,10 @@ StyleConfigureOp(ComboMenu *comboPtr, Tcl_Interp *interp, int objc,
 }
 
 static int
-StyleDeleteOp(ComboMenu *comboPtr, Tcl_Interp *interp, int objc, 
+StyleDeleteOp(ClientData clientData, Tcl_Interp *interp, int objc, 
 	      Tcl_Obj *const *objv)
 {
+    ComboMenu *comboPtr = clientData;
     Style *stylePtr;
 
     if (GetStyleFromObj(interp, comboPtr, objv[3], &stylePtr) != TCL_OK) {
@@ -5917,9 +6616,10 @@ StyleDeleteOp(ComboMenu *comboPtr, Tcl_Interp *interp, int objc,
 }
 
 static int
-StyleExistsOp(ComboMenu *comboPtr, Tcl_Interp *interp, int objc, 
+StyleExistsOp(ClientData clientData, Tcl_Interp *interp, int objc, 
 	      Tcl_Obj *const *objv)
 {
+    ComboMenu *comboPtr = clientData;
     Style *stylePtr;
     int state;
 
@@ -5932,9 +6632,10 @@ StyleExistsOp(ComboMenu *comboPtr, Tcl_Interp *interp, int objc,
 }
 
 static int
-StyleNamesOp(ComboMenu *comboPtr, Tcl_Interp *interp, int objc, 
+StyleNamesOp(ClientData clientData, Tcl_Interp *interp, int objc, 
 	     Tcl_Obj *const *objv)
 {
+    ComboMenu *comboPtr = clientData;
     Blt_HashEntry *hPtr;
     Blt_HashSearch iter;
     Tcl_Obj *listObjPtr;
@@ -5979,8 +6680,10 @@ static Blt_OpSpec styleOps[] =
 static int numStyleOps = sizeof(styleOps) / sizeof(Blt_OpSpec);
 
 static int
-StyleOp(ComboMenu *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+StyleOp(ClientData clientData, Tcl_Interp *interp, int objc,
+        Tcl_Obj *const *objv)
 {
+    ComboMenu *comboPtr = clientData;
     ComboMenuCmdProc *proc;
     int result;
 
@@ -5994,9 +6697,10 @@ StyleOp(ComboMenu *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 }
 
 static int
-TypeOp(ComboMenu *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+TypeOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 {
-    Item *itemPtr;
+     ComboMenu *comboPtr = clientData;
+   Item *itemPtr;
 
     if (GetItemFromObj(interp, comboPtr, objv[2], &itemPtr) != TCL_OK) {
 	return TCL_ERROR;
@@ -6022,9 +6726,11 @@ TypeOp(ComboMenu *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *---------------------------------------------------------------------------
  */
 static int
-UnpostOp(ComboMenu *comboPtr, Tcl_Interp *interp, int objc, 
+UnpostOp(ClientData clientData, Tcl_Interp *interp, int objc, 
 	 Tcl_Obj *const *objv)
 {
+    ComboMenu *comboPtr = clientData;
+
     if (!Tk_IsMapped(comboPtr->tkwin)) {
 	return TCL_OK;		/* This menu is already unposted. */
     }
@@ -6049,6 +6755,7 @@ UnpostOp(ComboMenu *comboPtr, Tcl_Interp *interp, int objc,
 	    return TCL_ERROR;
 	}
     }
+    comboPtr->flags &= ~POSTED;
     return TCL_OK;
 }
 
@@ -6069,8 +6776,10 @@ UnpostOp(ComboMenu *comboPtr, Tcl_Interp *interp, int objc,
  *---------------------------------------------------------------------------
  */
 static int
-ValueOp(ComboMenu *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+ValueOp(ClientData clientData, Tcl_Interp *interp, int objc,
+        Tcl_Obj *const *objv)
 {
+    ComboMenu *comboPtr = clientData;
     Item *itemPtr;
     Tcl_Obj *objPtr;
 
@@ -6091,9 +6800,10 @@ ValueOp(ComboMenu *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 
 
 static int
-XpositionOp(ComboMenu *comboPtr, Tcl_Interp *interp, int objc, 
+XpositionOp(ClientData clientData, Tcl_Interp *interp, int objc, 
 	    Tcl_Obj *const *objv)
 {
+    ComboMenu *comboPtr = clientData;
     Item *itemPtr;
 
     if (GetItemFromObj(interp, comboPtr, objv[3], &itemPtr) != TCL_OK) {
@@ -6109,8 +6819,10 @@ XpositionOp(ComboMenu *comboPtr, Tcl_Interp *interp, int objc,
 }
 
 static int
-XviewOp(ComboMenu *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+XviewOp(ClientData clientData, Tcl_Interp *interp, int objc,
+        Tcl_Obj *const *objv)
 {
+    ComboMenu *comboPtr = clientData;
     int w;
 
     w = VPORTWIDTH(comboPtr);
@@ -6144,9 +6856,10 @@ XviewOp(ComboMenu *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 }
 
 static int
-YpositionOp(ComboMenu *comboPtr, Tcl_Interp *interp, int objc, 
+YpositionOp(ClientData clientData, Tcl_Interp *interp, int objc, 
 	    Tcl_Obj *const *objv)
 {
+    ComboMenu *comboPtr = clientData;
     Item *itemPtr;
 
     if (GetItemFromObj(interp, comboPtr, objv[3], &itemPtr) != TCL_OK) {
@@ -6162,8 +6875,10 @@ YpositionOp(ComboMenu *comboPtr, Tcl_Interp *interp, int objc,
 }
 
 static int
-YviewOp(ComboMenu *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+YviewOp(ClientData clientData, Tcl_Interp *interp, int objc,
+        Tcl_Obj *const *objv)
 {
+    ComboMenu *comboPtr = clientData;
     int height;
 
     height = VPORTHEIGHT(comboPtr);
@@ -6303,8 +7018,10 @@ static Blt_OpSpec menuOps[] =
 {
     {"activate",    2, ActivateOp,    3, 3, "item",},
     {"add",         2, AddOp,         2, 0, "?option value?",},
+    {"bbox",        1, BboxOp,        3, 3, "item",},
     {"cget",        2, CgetOp,        3, 3, "option",},
-    {"configure",   2, ConfigureOp,   2, 0, "?option value?...",},
+    {"configure",   4, ConfigureOp,   2, 0, "?option value?...",},
+    {"contains",    4, ContainsOp,    4, 4, "x y",},
     {"delete",      3, DeleteOp,      2, 0, "items...",},
     {"deselect",    3, SelectOp,      3, 3, "item",},
     {"exists",      1, ExistsOp,      3, 3, "item",},
@@ -6318,7 +7035,7 @@ static Blt_OpSpec menuOps[] =
     {"names",       2, NamesOp,       2, 0, "?pattern...?",},
     {"nearest",     3, NearestOp,     4, 4, "x y",},
     {"next",        3, NextOp,        3, 3, "item",},
-    {"post",        4, PostOp,        5, 7, "align x y ?x2 y2?",},
+    {"post",        4, Post2Op,       2, 0, "switches...",},
     {"postcascade", 5, PostCascadeOp, 2, 3, "?item?",},
     {"previous",    2, PreviousOp,    3, 3, "item",},
     {"scan",        2, ScanOp,        5, 5, "dragto|mark x y",},

@@ -1565,20 +1565,12 @@ PostOp(ComboButton *comboPtr, Tcl_Interp *interp, int objc,
 	}
     }
     if (Tk_IsMapped(comboPtr->tkwin)) {
-	Tcl_Obj *cmdObjPtr;
+	Tcl_Obj *cmdObjPtr, *objPtr;
 	int result;
-	int x, y;
 
-	Tk_GetRootCoords(comboPtr->tkwin, &x, &y);
 	cmdObjPtr = Tcl_DuplicateObj(comboPtr->menuObjPtr);
-	Tcl_ListObjAppendElement(interp, cmdObjPtr, Tcl_NewStringObj("post",4));
-	Tcl_ListObjAppendElement(interp, cmdObjPtr, Tcl_NewStringObj("left",4));
-	Tcl_ListObjAppendElement(interp, cmdObjPtr, Tcl_NewIntObj(x));
-	Tcl_ListObjAppendElement(interp, cmdObjPtr, 
-		Tcl_NewIntObj(y + Tk_Height(comboPtr->tkwin)));
-	Tcl_ListObjAppendElement(interp, cmdObjPtr, 
-		Tcl_NewIntObj(x + Tk_Width(comboPtr->tkwin)));
-	Tcl_ListObjAppendElement(interp, cmdObjPtr, Tcl_NewIntObj(y));
+        objPtr = Tcl_NewStringObj("post", 4);
+        Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
 	Tcl_IncrRefCount(cmdObjPtr);
 	Tcl_Preserve(comboPtr);
 	result = Tcl_EvalObjEx(interp, cmdObjPtr, TCL_EVAL_GLOBAL);

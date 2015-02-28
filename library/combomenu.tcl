@@ -3,10 +3,10 @@ namespace eval blt {
     namespace eval ComboMenu {
 	variable _private
 	array set _private {
-	    afterId         -
-	    posted          ""
+	    afterId         -1
+	    popOnRelease    0
 	    trace           0
-	    ignoreRelease  0
+	    ignoreRelease   0
 	}
 	proc trace { mesg } {
 	    variable _private 
@@ -28,6 +28,7 @@ namespace eval blt {
 
 bind BltComboMenu <Enter> { 
     blt::ComboMenu::trace "blt::ComboMenu %# <Enter> %W"
+    after cancel $blt::ComboMenu::_private(afterId)
     focus %W
 }
 
@@ -49,7 +50,7 @@ bind BltComboMenu <ButtonPress-1> {
 }
 
 bind BltComboMenu <ButtonRelease-1> { 
-    blt::ComboMenu::trace "blt::ComboMenu %# ButtonRelease-1 %W %X,%Y"
+    blt::ComboMenu::trace "blt::ComboMenu %# <ButtonRelease-1> %W %X,%Y"
     blt::ComboMenu::ButtonReleaseEvent %W %X %Y
 }
 
@@ -64,7 +65,7 @@ bind BltComboMenu <B1-Enter> {
 }
 
 bind BltComboMenu <B1-Leave> {
-    blt::ComboMenu::trace "ComboMenu B1-Leave"
+    blt::ComboMenu::trace "ComboMenu <B1-Leave>"
     blt::ComboMenu::AutoScroll %W %x %y
 }
 
@@ -76,7 +77,7 @@ bind BltComboMenu <Unmap> {
 
 if 0 {
 bind BltComboMenu <ButtonPress-2> { 
-    blt::ComboMenu::trace "blt::ComboMenu %# ButtonPress-2 %W"
+    blt::ComboMenu::trace "blt::ComboMenu %# <ButtonPress-2> %W"
     %W configure -cursor diamond_cross
     update
     %W scan mark %x %y
@@ -87,7 +88,7 @@ bind BltComboMenu <B2-Motion> {
 }
 
 bind BltComboMenu <ButtonRelease-2> { 
-    blt::ComboMenu::trace "blt::ComboMenu %W ButtonRelease-2"
+    blt::ComboMenu::trace "blt::ComboMenu %W <ButtonRelease-2>"
     %W configure -cursor arrow
 }
 }
@@ -185,18 +186,35 @@ proc ::blt::ComboMenu::AutoScroll {w x y} {
 	return
     }
     set i -1
+    set scroll 0
+    if { ($x < 0) || ($x >= [winfo width $w]) } {
+	return;				# Not within width of menu
+    }
+    if { ($y >= 0) && ($y < [winfo height $w]) } {
+	return;				# Within height of menu
+    }
     if { $y >= [winfo height $w] } {
 	set i [$w next view.bottom]
+	if { ($i+1) < [$w size] } {
+	    set scroll 1;		# There's more to scroll
+	}
     } elseif { $y < 0 } {
 	set i [$w previous view.top]
+	if { $i > 0 } {
+	    set scroll 1;		# There's more to scroll 
+	}
+    } else {
+	return
     }
     if { $i > 0 } {
 	trace $i
 	$w activate $i
 	$w see $i
     }
-    set cmd [list blt::ComboMenu::AutoScroll $w $x $y]
-    set _private(afterId) [after 50 $cmd]
+    if { $scroll } {
+	set cmd [list blt::ComboMenu::AutoScroll $w $x $y]
+	set _private(afterId) [after 100 $cmd]
+    }
 }
 
 proc blt::ComboMenu::ConfigureScrollbars { menu } {
@@ -248,7 +266,7 @@ proc ::blt::ComboMenu::Popup { menu x y } {
 	$menu unpost
     } else {
 	blt::ComboMenu::trace "blt::ComboMenu::popup posting $menu"
-	$menu post popup $x $y 
+	$menu post -popup [list $x $y]
 	if { [winfo viewable $menu] } {
 	    trace "popup: setting global grab on $menu"
 	    blt::grab push $menu -global
@@ -278,7 +296,7 @@ proc ::blt::ComboMenu::FindCascades { menu } {
 #	the button press did not occur over a menu (cascade or not),
 #	this means the user is canceling the posting of all menus.
 #	Otherwise ignore it (we select menu items on button release
-#	events).
+#	events). The location is in root coordinates.
 #
 proc ::blt::ComboMenu::ButtonPressEvent { menu x y } {
     variable _private
@@ -290,16 +308,20 @@ proc ::blt::ComboMenu::ButtonPressEvent { menu x y } {
 	    return;			# Found it.
 	}
     }
-
     # Next handle top most menu.
     set item [$menu index @$x,$y]
     if { $item != -1 } {
 	return;				# Found it.
     }
-
-    # The button press event did not occur inside of any menu.
-    $menu unpost 
-    blt::grab pop $menu
+    set _private(popOnRelease) 1
+    if { [$menu contains $x $y] && ![winfo ismapped $menu] } {
+	set _private(popOnRelease) 0
+    }
+    if 0 {
+	# The button press event did not occur inside of any menu.
+	$menu unpost 
+	blt::grab pop $menu
+    }
 }
 
 #
@@ -321,6 +343,7 @@ proc ::blt::ComboMenu::ButtonReleaseEvent { menu x y } {
     set bool $_private(ignoreRelease)
     set _private(ignoreRelease) 0
     if { $bool } {
+	puts stderr "ignoring release event"
 	return
     }
     # Examine each of the cascaded menus first.
@@ -358,7 +381,16 @@ proc ::blt::ComboMenu::ButtonReleaseEvent { menu x y } {
 	$menu invoke $item
 	return
     }
-
+    set popOnRelease 1
+    if { !$_private(popOnRelease) } {
+	set popOnRelease 0
+    }
+    if { $popOnRelease } {
+	# The button press event did not occur inside of any menu.
+	$menu unpost 
+	blt::grab pop $menu
+    }
+    set _private(popOnRelease) 0
 }
 
 #

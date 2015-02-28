@@ -670,7 +670,7 @@ proc blt::TableView::PostComboBoxMenu { w cell } {
     incr y1 [winfo rooty $w]
     incr x2 [winfo rootx $w]
     incr y2 [winfo rooty $w]
-    $menu post right $x2 $y2 $x1 $y1
+    $menu post -align right -box [list $x2 $y2 $x1 $y1]
     blt::grab push $menu 
     bind $menu <Unmap> [list blt::TableView::UnpostComboBoxMenu $w]
 }

@@ -438,6 +438,18 @@ typedef struct {
     int labelWidth;
 } LevelInfo;
 
+typedef struct {
+    unsigned int flags;                 /* Various flags: see below. */
+    int x1, y1, x2, y2;                 /* Coordinates of area representing
+                                         * the parent that posted this
+                                         * menu.  */
+    Tk_Window tkwin;                    /* Parent window that posted this
+                                         * menu. */
+    int menuWidth, menuHeight;
+    int lastMenuWidth;
+    int align;
+} PostInfo;
+
 /*
  * ComboTree --
  *
@@ -560,7 +572,6 @@ struct _ComboTree {
 				 * origin. */
 
     LevelInfo *levelInfo;
-    int lastButtonWidth;
 
     /* Scanning information: */
     int scanAnchorX, scanAnchorY;	/* Scan anchor in screen
@@ -604,10 +615,9 @@ struct _ComboTree {
     short int minHeight;		/* Minimum entry height. Used to to
 					 * compute what the y-scroll unit
 					 * should * be. */
-    short int butWidth, butHeight;	/* Dimension of the button that posted
-					 * this menu. */
     short int width, height;
     GC copyGC;
+    PostInfo post;
 };
 
 /*
@@ -947,6 +957,73 @@ static Blt_ConfigSpec comboSpecs[] =
 	(char *)NULL, 0, 0}
 };
 
+static Blt_SwitchParseProc PostPopupSwitchProc;
+static Blt_SwitchCustom postPopupSwitch = {
+    PostPopupSwitchProc, NULL, NULL, 0,
+};
+static Blt_SwitchParseProc PostAtSwitchProc;
+static Blt_SwitchCustom postAtSwitch = {
+    PostAtSwitchProc, NULL, NULL, 0,
+};
+static Blt_SwitchParseProc PostBoxSwitchProc;
+static Blt_SwitchCustom postBoxSwitch = {
+    PostBoxSwitchProc, NULL, NULL, 0, 
+};
+static Blt_SwitchParseProc PostAlignSwitchProc;
+static Blt_SwitchCustom postAlignSwitch = {
+    PostAlignSwitchProc, NULL, NULL, 0, 
+};
+static Blt_SwitchParseProc PostWindowSwitchProc;
+static Blt_SwitchCustom postWindowSwitch = {
+    PostWindowSwitchProc, NULL, NULL, 0, 
+};
+
+typedef struct {
+    unsigned int flags;                 /* Various flags: see below. */
+    int x1, y1, x2, y2;                 /* Coordinates of area representing
+                                         * the parent that posted this
+                                         * menu.  */
+    Tk_Window tkwin;                    /* Parent window that posted this
+                                         * menu. */
+} PostSwitches;
+
+#define ALIGN_LEFT	(0)             /* Menu is aligned to the center of
+                                         * the parent. */
+#define ALIGN_CENTER	(1)             /* Menu is aligned on the left side
+                                         * of the parent.  */
+#define ALIGN_RIGHT	(2)             /* Menu is aligned on the right
+                                         * side of the parent. */
+
+#define POST_PARENT     (0)             /* Use parent geometry for location
+                                         * of button. */
+#define POST_POPUP      (1)             /* x,y location of the menu in root
+                                         * coordinates. This menu is a
+                                         * popup.*/
+#define POST_AT         (2)             /* x,y location of the menu in root
+                                         * coordinates. This menu is a
+                                         * cascade.*/
+#define POST_WINDOW     (3)             /* Window representing the
+                                         * parent. */
+#define POST_REGION     (4)             /* Bounding box representing the
+                                         * parent area. The x1, y2, x2, y2
+                                         * coordinates are in root
+                                         * coordinates. */
+
+static Blt_SwitchSpec postSwitches[] = 
+{
+    {BLT_SWITCH_CUSTOM, "-align", "left|right|center", (char *)NULL,
+        Blt_Offset(ComboTree, post.align), 0, 0, &postAlignSwitch},
+    {BLT_SWITCH_CUSTOM, "-at", "x y", (char *)NULL,
+        0, 0, 0, &postAtSwitch},
+    {BLT_SWITCH_CUSTOM, "-box", "x1 y1 x2 y2", (char *)NULL,
+        0, 0, 0, &postBoxSwitch},
+    {BLT_SWITCH_CUSTOM, "-popup", "x y", (char *)NULL,
+        0, 0, 0, &postPopupSwitch},
+    {BLT_SWITCH_CUSTOM, "-window", "path", (char *)NULL,
+	Blt_Offset(ComboTree, post.tkwin), 0, 0, &postWindowSwitch},
+    {BLT_SWITCH_END}
+};
+
 /* Forward Declarations */
 static Tcl_IdleProc ConfigureScrollbarsProc;
 static Blt_BindPickProc PickEntry;
@@ -1004,6 +1081,38 @@ GetHeight(ComboTree *comboPtr)
 	h = Tk_ReqHeight(comboPtr->tkwin);
     }
     return h;
+}
+
+static Tcl_Obj *
+GetEntryBBox(ComboTree *comboPtr, Entry *entryPtr)
+{
+    int rootX, rootY, x, y, w, h;
+    Tcl_Obj *listObjPtr, *objPtr;
+    Tcl_Interp *interp = comboPtr->interp;
+    
+    x = Tk_Width(comboPtr->tkwin);
+    y = SCREENY(comboPtr, entryPtr->worldY);
+    w = VPORTWIDTH(comboPtr);
+    w = MAX(comboPtr->worldWidth, w);
+    h = entryPtr->height;
+    Tk_GetRootCoords(comboPtr->tkwin, &rootX, &rootY);
+    if (rootX < 0) {
+	rootX = 0;
+    }
+    if (rootY < 0) {
+	rootY = 0;
+    }
+    x += rootX, y += rootY;
+    listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
+    objPtr = Tcl_NewIntObj(x);
+    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+    objPtr = Tcl_NewIntObj(y);
+    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+    objPtr = Tcl_NewIntObj(x + w);
+    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+    objPtr = Tcl_NewIntObj(y + h);
+    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+    return listObjPtr;
 }
 
 /*
@@ -2431,6 +2540,305 @@ GetStyleFromObj(
 }
 
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * GetCoordsFromObj --
+ *
+ *	Converts string into x and y coordinates.  Indicates that the
+ *      menu is a popup and will be popped at the given x, y coordinate.
+ *
+ * Results:
+ *	If the string is successfully converted, TCL_OK is returned.
+ *	Otherwise, TCL_ERROR is returned and an error message is left
+ *	in interpreter's result field.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+GetCoordsFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, int *xPtr, int *yPtr)
+{
+    int elc;
+    Tcl_Obj **elv;
+    int x, y;
+    
+    if (Tcl_ListObjGetElements(interp, objPtr, &elc, &elv) != TCL_OK) {
+	return TCL_ERROR;
+    }
+    if (elc != 2) {
+        Tcl_AppendResult(interp, "wrong # of arguments: should be \"x y\"",
+                (char *)NULL);
+        return TCL_ERROR;
+    }
+    if ((Tcl_GetIntFromObj(interp, elv[0], &x) != TCL_OK) ||
+        (Tcl_GetIntFromObj(interp, elv[1], &y) != TCL_OK)) {
+        return TCL_ERROR;
+    }
+    *xPtr = x;
+    *yPtr = y;
+    return TCL_OK;
+}
+
+    
+/*
+ *---------------------------------------------------------------------------
+ *
+ * GetBoxFromObj --
+ *
+ *	Converts string into x and y coordinates.  Indicates that the
+ *      menu is a popup and will be popped at the given x, y coordinate.
+ *
+ * Results:
+ *	If the string is successfully converted, TCL_OK is returned.
+ *	Otherwise, TCL_ERROR is returned and an error message is left
+ *	in interpreter's result field.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+GetAlignFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, int *alignPtr)
+{
+    char c;
+    const char *string;
+    int length;
+
+    string = Tcl_GetStringFromObj(objPtr, &length);
+    c = string[0];
+    if ((c == 'l') && (strncmp(string, "left", length) == 0)) {
+	*alignPtr = ALIGN_LEFT;
+    } else if ((c == 'r') && (strncmp(string, "right", length) == 0)) {
+	*alignPtr = ALIGN_RIGHT;
+    } else if ((c == 'c') && (strncmp(string, "center", length) == 0)) {
+	*alignPtr = ALIGN_CENTER;
+    } else {
+	Tcl_AppendResult(interp, "bad alignment value \"", string, 
+		"\": should be left, right, or center.", (char *)NULL);
+	return TCL_ERROR;
+    }
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * GetBoxFromObj --
+ *
+ *	Converts string into x and y coordinates.  Indicates that the
+ *      menu is a popup and will be popped at the given x, y coordinate.
+ *
+ * Results:
+ *	If the string is successfully converted, TCL_OK is returned.
+ *	Otherwise, TCL_ERROR is returned and an error message is left
+ *	in interpreter's result field.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+GetBoxFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, Box2d *boxPtr)
+{
+    int elc;
+    Tcl_Obj **elv;
+    int x1, y1, x2, y2;
+
+    if (Tcl_ListObjGetElements(interp, objPtr, &elc, &elv) != TCL_OK) {
+	return TCL_ERROR;
+    }
+    if (elc != 4) {
+        Tcl_AppendResult(interp,
+                "wrong # of arguments: should be \"x1 y1 x2 y2\"",
+                (char *)NULL);
+        return TCL_ERROR;
+    }
+    if ((Tcl_GetIntFromObj(interp, elv[0], &x1) != TCL_OK) ||
+        (Tcl_GetIntFromObj(interp, elv[1], &y1) != TCL_OK) ||
+        (Tcl_GetIntFromObj(interp, elv[2], &x2) != TCL_OK) ||
+        (Tcl_GetIntFromObj(interp, elv[3], &y2) != TCL_OK)) {
+        return TCL_ERROR;
+    }
+    boxPtr->x1 = MIN(x1, x2);
+    boxPtr->y1 = MIN(y1, y2);
+    boxPtr->x1 = MAX(x2, x1);
+    boxPtr->y1 = MAX(y2, y1);
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * PostWindowSwitchProc --
+ *
+ *	Converts a window name into Tk window.
+ *
+ * Results:
+ *	If the string is successfully converted, TCL_OK is returned.
+ *	Otherwise, TCL_ERROR is returned and an error message is left
+ *	in interpreter's result field.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+PostWindowSwitchProc(ClientData clientData, Tcl_Interp *interp,
+                    const char *switchName, Tcl_Obj *objPtr, char *record,
+                    int offset, int flags)
+{
+    ComboTree *comboPtr = (ComboTree *)record;
+    Tk_Window tkwin;
+    const char *string;
+
+    tkwin = NULL;
+    string = Tcl_GetString(objPtr);
+    if (string[0] == '\0') {
+        tkwin = NULL;
+    } else {
+	tkwin = Tk_NameToWindow(interp, string, comboPtr->tkwin);
+        if (tkwin == NULL) {
+	    return TCL_ERROR;
+	}
+    }
+    comboPtr->post.flags = POST_WINDOW;
+    comboPtr->post.tkwin = tkwin;
+    return TCL_OK;
+}
+
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * PostAlignSwitchProc --
+ *
+ *	Converts string into x and y coordinates.
+ *
+ * Results:
+ *	If the string is successfully converted, TCL_OK is returned.
+ *	Otherwise, TCL_ERROR is returned and an error message is left
+ *	in interpreter's result field.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+PostAlignSwitchProc(ClientData clientData, Tcl_Interp *interp,
+                    const char *switchName, Tcl_Obj *objPtr, char *record,
+                    int offset, int flags)
+{
+    ComboTree *comboPtr = (ComboTree *)record;
+    int align;
+    
+    if (GetAlignFromObj(interp, objPtr, &align) != TCL_OK) {
+        return TCL_ERROR;
+    }
+    comboPtr->post.align = align;
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * PostPopupSwitchProc --
+ *
+ *	Converts string into x and y coordinates.  Indicates that the
+ *      menu is a popup and will be popped at the given x, y coordinate.
+ *
+ * Results:
+ *	If the string is successfully converted, TCL_OK is returned.
+ *	Otherwise, TCL_ERROR is returned and an error message is left
+ *	in interpreter's result field.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+PostPopupSwitchProc(ClientData clientData, Tcl_Interp *interp,
+                    const char *switchName, Tcl_Obj *objPtr, char *record,
+                    int offset, int flags)
+{
+    ComboTree *comboPtr = (ComboTree *)record;
+    int x, y;
+    
+    if (GetCoordsFromObj(interp, objPtr, &x, &y) != TCL_OK) {
+	return TCL_ERROR;
+    }
+    comboPtr->post.x1 = comboPtr->post.x2 = x;
+    comboPtr->post.y1 = comboPtr->post.y2 = y;
+    comboPtr->post.flags = POST_POPUP;
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * PostAtSwitchProc --
+ *
+ *	Converts string into x and y coordinates.  Indicates that the
+ *      menu is a popup and will be popped at the given x, y coordinate.
+ *
+ * Results:
+ *	If the string is successfully converted, TCL_OK is returned.
+ *	Otherwise, TCL_ERROR is returned and an error message is left
+ *	in interpreter's result field.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+PostAtSwitchProc(ClientData clientData, Tcl_Interp *interp,
+                    const char *switchName, Tcl_Obj *objPtr, char *record,
+                    int offset, int flags)
+{
+    ComboTree *comboPtr = (ComboTree *)record;
+    int x, y;
+    
+    if (GetCoordsFromObj(interp, objPtr, &x, &y) != TCL_OK) {
+	return TCL_ERROR;
+    }
+    comboPtr->post.x1 = comboPtr->post.x2 = x;
+    comboPtr->post.y1 = comboPtr->post.y2 = y;
+    comboPtr->post.flags = POST_AT;
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * PostBoxSwitchProc --
+ *
+ *	Converts string into x1, y1, x2, and y2 coordinates.
+ *
+ * Results:
+ *	If the string is successfully converted, TCL_OK is returned.
+ *	Otherwise, TCL_ERROR is returned and an error message is left
+ *	in interpreter's result field.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+PostBoxSwitchProc(
+    ClientData clientData,		/* Not used. */
+    Tcl_Interp *interp,			/* Not used. */
+    const char *switchName,		/* Not used. */
+    Tcl_Obj *objPtr,			/* String representation */
+    char *record,			/* Structure record */
+    int offset,				/* Offset to field in structure */
+    int flags)				/* Not used. */
+{
+    ComboTree *comboPtr = (ComboTree *)record;
+    Box2d box;
+    
+    if (GetBoxFromObj(interp, objPtr, &box) != TCL_OK) {
+	return TCL_ERROR;
+    }
+    comboPtr->post.x1 = box.x1;
+    comboPtr->post.y1 = box.y1;
+    comboPtr->post.x2 = box.x2;
+    comboPtr->post.y1 = box.y2;
+    comboPtr->post.flags = POST_REGION;
+    return TCL_OK;
+}
 
 static void
 MapEntry(Entry *entryPtr)
@@ -2778,8 +3186,8 @@ ComputeComboGeometry(ComboTree *comboPtr)
     if ((comboPtr->worldHeight > h) && (comboPtr->yScrollbar != NULL)) {
 	comboPtr->yScrollbarWidth = Tk_ReqWidth(comboPtr->yScrollbar);
     }
-    if ((comboPtr->flags & DROPDOWN) && (w < comboPtr->butWidth)) {
-	w = comboPtr->butWidth;
+    if ((comboPtr->flags & DROPDOWN) && (w < comboPtr->post.menuWidth)) {
+	w = comboPtr->post.menuWidth;
     }
     if (comboPtr->reqHeight == 0) {
 	h += comboPtr->xScrollbarHeight;
@@ -4168,7 +4576,7 @@ FixMenuCoords(ComboTree *comboPtr, int *xPtr, int *yPtr)
 	y -= h;				/* Shift the menu up by the height of
 					 * the menu. */
 	if (comboPtr->flags & DROPDOWN) {
-	    y -= comboPtr->butHeight;	/* Add the height of the parent if
+	    y -= comboPtr->post.menuHeight;	/* Add the height of the parent if
 					 * this is a dropdown menu.  */
 	}
 	if (y < 0) {
@@ -4177,7 +4585,7 @@ FixMenuCoords(ComboTree *comboPtr, int *xPtr, int *yPtr)
     }
     if ((x + w) > screenWidth) {
 	if (comboPtr->flags & DROPDOWN) {
-	    x = x + comboPtr->butWidth - w; /* Flip the menu anchor to the other
+	    x = x + comboPtr->post.menuWidth - w; /* Flip the menu anchor to the other
 					 * end of the menu button/entry */
 	} else {
 	    x -= w;			/* Shift the menu to the left by the
@@ -5320,6 +5728,34 @@ CloseOp(ComboTree *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 /*
  *---------------------------------------------------------------------------
  *
+ * BboxOp --
+ *      Returns the bounding box of the given item.
+ *
+ * Results:
+ *	Standard TCL result.  A list representing the bounding box is 
+ *      returned.
+ *
+ *	.cm bbox item
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+BboxOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+       Tcl_Obj *const *objv)
+{
+    ComboTree *comboPtr = clientData;
+    Entry *entryPtr;
+    
+    if (GetEntryFromObj(NULL, comboPtr, objv[2], &entryPtr) != TCL_OK) {
+	return TCL_ERROR;
+    }
+    Tcl_SetObjResult(interp, GetEntryBBox(comboPtr, entryPtr));
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
  * ConfigureOp --
  *
  * 	This procedure is called to process an objv/objc list, plus the Tk
@@ -5356,6 +5792,46 @@ ConfigureOp(ComboTree *comboPtr, Tcl_Interp *interp, int objc,
     return TCL_OK;
 }
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * ContainsOp --
+ *      Returns whether the x, y coordinate is contained with in the
+ *      calling region of the menu.
+ * Results:
+ *	Standard TCL result.  A list representing the bounding box is 
+ *      returned.
+ *
+ *	.cm contains x y 
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+ContainsOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+	   Tcl_Obj *const *objv)
+{
+    ComboTree *comboPtr = clientData;
+    int x, y;
+    int state;
+    
+    if ((Tcl_GetIntFromObj(interp, objv[2], &x) != TCL_OK) ||
+        (Tcl_GetIntFromObj(interp, objv[3], &y) != TCL_OK)) {
+        return TCL_ERROR;
+    }
+    state = FALSE;
+    switch (comboPtr->post.flags) {
+    case POST_POPUP:
+    case POST_AT:
+        break;
+    default:
+        if ((x >= comboPtr->post.x1) && (x < comboPtr->post.x2) &&
+            (y >= comboPtr->post.y1) && (y < comboPtr->post.y2)) {
+            state = TRUE;
+        }
+    }
+    Tcl_SetBooleanObj(Tcl_GetObjResult(interp), state);
+    return TCL_OK;
+}
 
 /*
  *---------------------------------------------------------------------------
@@ -6248,6 +6724,175 @@ OpenOp(
  *
  *  .cm post align x y ?x2 y2?
  *   0   1     2   3 4   5  6 
+ *
+ *
+ *      menu post -window button -align align 
+ *      menu post -bbox "x1 y1 x2 y2" -align align
+ *      menu post -at "x1 y1" 
+ *      menu post (assume parent) -align bottom (default alignment is left).
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+Post2Op(ClientData clientData, Tcl_Interp *interp, int objc,
+        Tcl_Obj *const *objv)
+{
+    ComboTree *comboPtr = clientData;
+    int x, y;
+
+    memset(&comboPtr->post, 0, sizeof(PostInfo));
+    comboPtr->post.tkwin = Tk_Parent(comboPtr->tkwin);
+    comboPtr->post.menuWidth = comboPtr->normalWidth;
+    /* Process switches  */
+    if (Blt_ParseSwitches(interp, postSwitches, objc - 2, objv + 2, comboPtr,
+	BLT_SWITCH_DEFAULTS) < 0) {
+	return TCL_ERROR;
+    }
+    comboPtr->flags |= DROPDOWN;
+    switch (comboPtr->post.flags) {
+    case POST_PARENT:
+    case POST_WINDOW:
+        {
+            Tk_Window tkwin;
+            int x, y, w, h;
+            int rootX, rootY;
+            
+            tkwin = comboPtr->post.tkwin;
+            w = Tk_Width(tkwin);
+            h = Tk_Height(tkwin);
+            x = Tk_X(tkwin);
+            y = Tk_Y(tkwin);
+            Tk_GetRootCoords(Tk_Parent(tkwin), &rootX, &rootY);
+            x += rootX;
+            y += rootY;
+            comboPtr->post.x1 = x;
+            comboPtr->post.y1 = y;
+            comboPtr->post.x2 = x + w;
+            comboPtr->post.y2 = y + h;
+        }
+        break;
+    case POST_REGION:
+    case POST_AT:
+        break;
+    case POST_POPUP:
+        comboPtr->flags &= ~DROPDOWN;
+        break;
+    }
+    comboPtr->post.menuWidth = comboPtr->post.x2 - comboPtr->post.x1;
+    comboPtr->post.menuHeight = comboPtr->post.y2 - comboPtr->post.y1;
+    if ((comboPtr->post.menuWidth != comboPtr->post.lastMenuWidth) ||
+	(comboPtr->flags & LAYOUT_PENDING)) {
+	ComputeComboGeometry(comboPtr);
+    }
+    comboPtr->post.lastMenuWidth = comboPtr->post.menuWidth;
+    y = comboPtr->post.y2;
+    switch (comboPtr->post.align) {
+    case ALIGN_LEFT:
+        x = comboPtr->post.x1;
+        break;
+    case ALIGN_CENTER:
+        {
+            int w;
+
+            w = comboPtr->post.x2 - comboPtr->post.x1;
+            x = comboPtr->post.x1 + (w - comboPtr->normalWidth) / 2; 
+        }
+        break;
+    case ALIGN_RIGHT:
+        x = comboPtr->post.x2 - comboPtr->normalWidth;
+        break;
+    }
+    FixMenuCoords(comboPtr, &x, &y);
+    /*
+     * If there is a post command for the menu, execute it.  This may change
+     * the size of the menu, so be sure to recompute the menu's geometry if
+     * needed.
+     */
+    if (comboPtr->postCmdObjPtr != NULL) {
+	int result;
+
+	Tcl_IncrRefCount(comboPtr->postCmdObjPtr);
+	result = Tcl_EvalObjEx(interp, comboPtr->postCmdObjPtr, 
+		TCL_EVAL_GLOBAL);
+	Tcl_DecrRefCount(comboPtr->postCmdObjPtr);
+	if (result != TCL_OK) {
+	    return result;
+	}
+	/*
+	 * The post commands could have deleted the menu, which means we are
+	 * dead and should go away.
+	 */
+	if (comboPtr->tkwin == NULL) {
+	    return TCL_OK;
+	}
+	if (comboPtr->flags & LAYOUT_PENDING) {
+	    ComputeComboGeometry(comboPtr);
+	}
+    }
+
+    /*
+     * Adjust the position of the menu if necessary to keep it visible on the
+     * screen.  There are two special tricks to make this work right:
+     *
+     * 1. If a virtual root window manager is being used then
+     *    the coordinates are in the virtual root window of
+     *    menuPtr's parent;  since the menu uses override-redirect
+     *    mode it will be in the *real* root window for the screen,
+     *    so we have to map the coordinates from the virtual root
+     *    (if any) to the real root.  Can't get the virtual root
+     *    from the menu itself (it will never be seen by the wm)
+     *    so use its parent instead (it would be better to have an
+     *    an option that names a window to use for this...).
+     * 2. The menu may not have been mapped yet, so its current size
+     *    might be the default 1x1.  To compute how much space it
+     *    needs, use its requested size, not its actual size.
+     *
+     * Note that this code assumes square screen regions and all positive
+     * coordinates. This does not work on a Mac with multiple monitors. But
+     * then again, Tk has other problems with this.
+     */
+    {
+	int rootX, rootY, rootWidth, rootHeight;
+	int sw, sh;
+	Tk_Window parent;
+
+	parent = Tk_Parent(comboPtr->tkwin);
+	Blt_SizeOfScreen(comboPtr->tkwin, &sw, &sh);
+	Tk_GetVRootGeometry(parent, &rootX, &rootY, &rootWidth, &rootHeight);
+	x += rootX;
+	y += rootY;
+	if (x < 0) {
+	    x = 0;
+	}
+	if (y < 0) {
+	    y = 0;
+	}
+	if ((x + comboPtr->width) > sw) {
+	    x = sw - comboPtr->width;
+	}
+	if ((y + comboPtr->height) > sh) {
+	    y = sh - comboPtr->height;
+	}
+	Tk_MoveToplevelWindow(comboPtr->tkwin, x, y);
+	Tk_MapWindow(comboPtr->tkwin);
+	Blt_MapToplevelWindow(comboPtr->tkwin);
+	Blt_RaiseToplevelWindow(comboPtr->tkwin);
+#ifdef notdef
+	TkWmRestackToplevel(comboPtr->tkwin, Above, NULL);
+#endif
+    }
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * PostOp --
+ *
+ *	Posts this menu at the given root window coordinates.
+ *
+ *  .cm post align x y ?x2 y2?
+ *   0   1     2   3 4   5  6 
  *---------------------------------------------------------------------------
  */
 static int
@@ -6275,21 +6920,21 @@ PostOp(ComboTree *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	    (Tcl_GetIntFromObj(interp, objv[6], &y2) != TCL_OK)) {
 	    return TCL_ERROR;
 	} 
-	comboPtr->butWidth  = (x2  > x) ? x2 - x : x - x2;
-	comboPtr->butHeight = (y2  > y) ? y2 - y : y - y2;
+	comboPtr->post.menuWidth  = (x2  > x) ? x2 - x : x - x2;
+	comboPtr->post.menuHeight = (y2  > y) ? y2 - y : y - y2;
 	comboPtr->flags |= DROPDOWN;
     } else {
 	Tk_Window parent;
 
 	parent = Tk_Parent(comboPtr->tkwin);
-	comboPtr->butWidth = comboPtr->normalWidth;
-	comboPtr->butHeight = Tk_Height(parent);
+	comboPtr->post.menuWidth = comboPtr->normalWidth;
+	comboPtr->post.menuHeight = Tk_Height(parent);
     }
-    if ((comboPtr->butWidth != comboPtr->lastButtonWidth) ||
+    if ((comboPtr->post.menuWidth != comboPtr->post.lastMenuWidth) ||
 	(comboPtr->flags & LAYOUT_PENDING)) {
 	ComputeComboGeometry(comboPtr);
     }
-    comboPtr->lastButtonWidth = comboPtr->butWidth;
+    comboPtr->post.lastMenuWidth = comboPtr->post.menuWidth;
     string = Tcl_GetStringFromObj(objv[2], &length);
     c = string[0];
     if ((c == 'l') && (strncmp(string, "left", length) == 0)) {
@@ -6909,11 +7554,13 @@ YViewOp(ComboTree *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 static Blt_OpSpec comboOps[] =
 {
     {"activate",  1, ActivateOp,  3, 3, "entry",},
+    {"bbox",      2, BboxOp,      3, 3, "entry",},
     {"bind",      2, BindOp,      3, 5, "tagName ?sequence command?",}, 
     {"button",    2, ButtonOp,    2, 0, "args",},
     {"cget",      2, CgetOp,      3, 3, "option",}, 
     {"close",     2, CloseOp,     2, 4, "?-recurse? entry",}, 
-    {"configure", 2, ConfigureOp, 2, 0, "?option value?...",},
+    {"configure", 4, ConfigureOp, 2, 0, "?option value?...",},
+    {"contains",  4, ContainsOp,  4, 4, "x y",},
     {"entry",     1, EntryOp,     2, 0, "oper args",},
     {"get",       1, GetOp,       2, 0, "?-full? entry ?entry...?",},
     {"hide",      1, HideOp,      2, 0, "?-exact|-glob|-regexp? ?-nonmatching? ?-name string? ?-full string? ?-data string? ?--? ?entry...?",},
@@ -6921,7 +7568,7 @@ static Blt_OpSpec comboOps[] =
     {"invoke",    3, InvokeOp,    3, 3, "entry",},
     {"nearest",   1, NearestOp,   4, 5, "x y ?varName?",}, 
     {"open",      1, OpenOp,      2, 4, "?-recurse? entry",}, 
-    {"post",      1, PostOp,      5, 7, "align x y ?x2 y2?",},
+    {"post",      1, Post2Op,     2, 0, "switches",},
     {"scan",      2, ScanOp,      5, 5, "dragto|mark x y",},
     {"see",       2, SeeOp,       3, 0, "?-anchor anchor? entry",},
     {"show",      2, ShowOp,      2, 0, "?-exact? ?-glob? ?-regexp? ?-nonmatching? ?-name string? ?-full string? ?-data string? ?--? ?entry...?",},

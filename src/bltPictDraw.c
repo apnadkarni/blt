@@ -2715,39 +2715,38 @@ DrawCircle2(Blt_Picture picture, int x, int y, int radius,
 #endif
 
 static void
-DrawCircleShadow(Blt_Picture picture, int x, int y, float radius, 
+DrawCircleShadow(Blt_Picture picture, int x, int y, float r, 
 		 float lineWidth, int blend, Blt_Shadow *shadowPtr)
 {
     Pict *tmpPtr;
     int w, h;
     Blt_PaintBrush brush;
 
-    w = h = (radius * 2) + 1 + (shadowPtr->width + shadowPtr->offset) * 2;
+    w = h = (r * 2) + 1 + (shadowPtr->width + shadowPtr->offset) * 2;
     tmpPtr = Blt_CreatePicture(w, h);
 #ifdef notdef
-    fprintf(stderr, "radius=%g linewidth=%g offset=%d width=%d w=%d h=%d\n",
-	    radius, lineWidth, shadowPtr->offset, shadowPtr->width,
-	    w, h);
+    fprintf(stderr, "r=%g linewidth=%g offset=%d width=%d w=%d h=%d\n",
+	    r, lineWidth, shadowPtr->offset, shadowPtr->width, w, h);
 #endif
     Blt_BlankPicture(tmpPtr, 0x0);
     Blt_PaintBrush_Init(&brush);
     Blt_PaintBrush_SetColor(&brush, shadowPtr->color.u32);
     PaintCircle4(tmpPtr, 
-		 radius + shadowPtr->offset, 
-		 radius + shadowPtr->offset, 
-		 radius, 
+		 r + shadowPtr->offset, /* x */
+		 r + shadowPtr->offset, /* y */
+		 r,                     /* radius */
 		 lineWidth, 
 		 &brush, 
 		 TRUE);
     if (blend) {
-	Blt_BlurPicture(tmpPtr, tmpPtr, shadowPtr->width, 4);
+        Blt_BlurPicture(tmpPtr, tmpPtr, shadowPtr->width, 3);
 	Blt_BlendRegion(picture, tmpPtr, 0, 0, w, h, 
-			x - radius - shadowPtr->offset,
-			y - radius - shadowPtr->offset);
+			x - r,
+			y - r);
     } else {
 	Blt_CopyPictureBits(picture, tmpPtr, 0, 0, w, h, 
-			  x - radius - shadowPtr->offset,
-			  y - radius - shadowPtr->offset);
+			  x - r,
+			  y - r);
     }
     Blt_FreePicture(tmpPtr);
 }

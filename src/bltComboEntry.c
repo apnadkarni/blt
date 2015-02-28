@@ -2543,30 +2543,6 @@ ActivateOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc,
 /*
  *---------------------------------------------------------------------------
  *
- * BboxOp --
- *
- * Results:
- *	Standard TCL result.
- *
- * Side effects:
- *	Commands may get excecuted; variables may get set; sub-menus may
- *	get posted.
- *
- *	.cb bentry option
- *
- *---------------------------------------------------------------------------
- */
-static int
-BboxOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
-{
-    iconOption.clientData = comboPtr;
-    return Blt_ConfigureValueFromObj(interp, comboPtr->tkwin, configSpecs,
-	(char *)comboPtr, objv[2], 0);
-}
-
-/*
- *---------------------------------------------------------------------------
- *
  * ButtonCgetOp --
  *
  *---------------------------------------------------------------------------
@@ -3251,21 +3227,40 @@ PostOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	}
     }
     {
-	Tcl_Obj *cmdObjPtr;
+	Tcl_Obj *cmdObjPtr, *objPtr;
 	int result;
-	int x, y;
 
-	Tk_GetRootCoords(comboPtr->tkwin, &x, &y);
+        /* menu post -align right */
 	cmdObjPtr = Tcl_DuplicateObj(comboPtr->menuObjPtr);
-	Tcl_ListObjAppendElement(interp, cmdObjPtr, Tcl_NewStringObj("post",4));
-	Tcl_ListObjAppendElement(interp, cmdObjPtr,
-		Tcl_NewStringObj("right", 5));
-	Tcl_ListObjAppendElement(interp, cmdObjPtr, 
-		Tcl_NewIntObj(x + Tk_Width(comboPtr->tkwin)));
-	Tcl_ListObjAppendElement(interp, cmdObjPtr, 
-		Tcl_NewIntObj(y + Tk_Height(comboPtr->tkwin)));
-	Tcl_ListObjAppendElement(interp, cmdObjPtr, Tcl_NewIntObj(x));
-	Tcl_ListObjAppendElement(interp, cmdObjPtr, Tcl_NewIntObj(y));
+        objPtr = Tcl_NewStringObj("post", 4);
+	Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
+        objPtr = Tcl_NewStringObj("-align", 6);
+	Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
+        objPtr = Tcl_NewStringObj("right", 5);
+	Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
+        if (comboPtr->flags & ARROW) {
+            int x1, y1, x2, y2, rootX, rootY;
+            Tcl_Obj *listObjPtr;
+            
+            Tk_GetRootCoords(comboPtr->tkwin, &rootX, &rootY);
+            x1 = Tk_Width(comboPtr->tkwin) - 
+                (comboPtr->inset + comboPtr->arrowWidth);
+            if (x1 < 0) {
+                x1 = comboPtr->inset;
+            }
+            x1 += rootX;
+            x2 = Tk_Width(comboPtr->tkwin) + rootX;
+            y1 = comboPtr->inset + 1 + rootY;
+            y2 = Tk_Height(comboPtr->tkwin) + rootY;
+            objPtr = Tcl_NewStringObj("-box", 4);
+            Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
+            listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
+            Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewIntObj(x1));
+            Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewIntObj(y1));
+            Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewIntObj(x2));
+            Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewIntObj(y2));
+            Tcl_ListObjAppendElement(interp, cmdObjPtr, listObjPtr);
+	}
 	Tcl_IncrRefCount(cmdObjPtr);
 	Tcl_Preserve(comboPtr);
 	result = Tcl_EvalObjEx(interp, cmdObjPtr, TCL_EVAL_GLOBAL);
@@ -3926,7 +3921,6 @@ NewComboEntry(Tcl_Interp *interp, Tk_Window tkwin, int mask)
 static Blt_OpSpec comboEntryOps[] =
 {
     {"activate",  1, ActivateOp,  3, 3, "what",},
-    {"bbox",      2, BboxOp,      3, 3, "index",},
     {"button",    2, ButtonOp,    2, 0, "args",},
     {"cget",      2, CgetOp,      3, 3, "option",},
     {"closest",   2, ClosestOp,   3, 3, "x",},
@@ -3956,7 +3950,6 @@ static int numComboEntryOps = sizeof(comboEntryOps) / sizeof(Blt_OpSpec);
 static Blt_OpSpec textEntryOps[] =
 {
     {"activate",  1, ActivateOp,  3, 3, "what",},
-    {"bbox",      2, BboxOp,      3, 3, "index",},
     {"button",    2, ButtonOp,    2, 0, "args",},
     {"cget",      2, CgetOp,      3, 3, "option",},
     {"closest",   2, ClosestOp,   3, 3, "x",},

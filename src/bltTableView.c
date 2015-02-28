@@ -8575,17 +8575,25 @@ FilterPostOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	}
     }
     if (strcmp(Tk_Class(tkwin), "BltComboMenu") == 0) {
-	Tcl_Obj *cmdObjPtr;
+	Tcl_Obj *cmdObjPtr, *objPtr, *listObjPtr;
 	int result;
 
 	cmdObjPtr = Tcl_DuplicateObj(filterPtr->menuObjPtr);
-	Tcl_ListObjAppendElement(interp, cmdObjPtr, Tcl_NewStringObj("post",4));
-	Tcl_ListObjAppendElement(interp, cmdObjPtr,
-		Tcl_NewStringObj("right", 5));
-	Tcl_ListObjAppendElement(interp, cmdObjPtr, Tcl_NewIntObj(x2));
-	Tcl_ListObjAppendElement(interp, cmdObjPtr, Tcl_NewIntObj(y2));
-	Tcl_ListObjAppendElement(interp, cmdObjPtr, Tcl_NewIntObj(x1));
-	Tcl_ListObjAppendElement(interp, cmdObjPtr, Tcl_NewIntObj(y1));
+        /* menu post -align right -box {x1 y1 x2 y2}  */
+        objPtr = Tcl_NewStringObj("post", 4);
+	Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
+        objPtr = Tcl_NewStringObj("-align", 6);
+	Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
+        objPtr = Tcl_NewStringObj("right", 5);
+	Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
+        objPtr = Tcl_NewStringObj("-box", 4);
+	Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
+        listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
+	Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewIntObj(x2));
+	Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewIntObj(y2));
+	Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewIntObj(x1));
+	Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewIntObj(y1));
+	Tcl_ListObjAppendElement(interp, cmdObjPtr, listObjPtr);
 	Tcl_IncrRefCount(cmdObjPtr);
 	Tcl_Preserve(viewPtr);
 	result = Tcl_EvalObjEx(interp, cmdObjPtr, TCL_EVAL_GLOBAL);
