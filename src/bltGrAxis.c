@@ -6105,7 +6105,7 @@ MonthTicks(Axis *axisPtr, double min, double max)
     axisPtr->major.ticks.step = step;
     axisPtr->major.ticks.range = tickMax - tickMin;
     axisPtr->major.ticks.isLeapYear = left.isLeapYear;
-    axisPtr->major.ticks.fmt = "%h %Y";
+    axisPtr->major.ticks.fmt = "%h\n%Y";
     axisPtr->major.ticks.month = left.mon;
     axisPtr->major.ticks.year = left.year;
     axisPtr->major.ticks.timeUnits = TIME_MONTHS;
@@ -6291,7 +6291,7 @@ HourTicks(Axis *axisPtr, double min, double max)
     axisPtr->major.ticks.initial = tickMin;
     axisPtr->major.ticks.numSteps = numTicks;
     axisPtr->major.ticks.range = tickMax - tickMin;
-    axisPtr->major.ticks.fmt = "%h %d %H:%M";
+    axisPtr->major.ticks.fmt = "%H:%M\n%h %d";
     axisPtr->major.ticks.timeUnits = TIME_HOURS;
     axisPtr->major.ticks.scaleType = SCALE_TIME;
 

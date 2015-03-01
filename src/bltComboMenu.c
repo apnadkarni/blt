@@ -889,9 +889,10 @@ static Blt_SwitchParseProc PostPopupSwitchProc;
 static Blt_SwitchCustom postPopupSwitch = {
     PostPopupSwitchProc, NULL, NULL, 0,
 };
-static Blt_SwitchParseProc PostAtSwitchProc;
-static Blt_SwitchCustom postAtSwitch = {
-    PostAtSwitchProc, NULL, NULL, 0,
+
+static Blt_SwitchParseProc PostCascadeSwitchProc;
+static Blt_SwitchCustom postCascadeSwitch = {
+    PostCascadeSwitchProc, NULL, NULL, 0,
 };
 static Blt_SwitchParseProc PostBoxSwitchProc;
 static Blt_SwitchCustom postBoxSwitch = {
@@ -927,7 +928,7 @@ typedef struct {
 #define POST_POPUP      (1)             /* x,y location of the menu in root
                                          * coordinates. This menu is a
                                          * popup.*/
-#define POST_AT         (2)             /* x,y location of the menu in root
+#define POST_CASCADE    (2)             /* x,y location of the menu in root
                                          * coordinates. This menu is a
                                          * cascade.*/
 #define POST_WINDOW     (3)             /* Window representing the
@@ -941,10 +942,10 @@ static Blt_SwitchSpec postSwitches[] =
 {
     {BLT_SWITCH_CUSTOM, "-align", "left|right|center", (char *)NULL,
         Blt_Offset(ComboMenu, post.align), 0, 0, &postAlignSwitch},
-    {BLT_SWITCH_CUSTOM, "-at", "x y", (char *)NULL,
-        0, 0, 0, &postAtSwitch},
     {BLT_SWITCH_CUSTOM, "-box", "x1 y1 x2 y2", (char *)NULL,
         0, 0, 0, &postBoxSwitch},
+    {BLT_SWITCH_CUSTOM, "-cascade", "x y", (char *)NULL,
+        0, 0, 0, &postCascadeSwitch},
     {BLT_SWITCH_CUSTOM, "-popup", "x y", (char *)NULL,
         0, 0, 0, &postPopupSwitch},
     {BLT_SWITCH_CUSTOM, "-window", "path", (char *)NULL,
@@ -1606,11 +1607,11 @@ FixMenuCoords(ComboMenu *comboPtr, int *xPtr, int *yPtr)
     int sw, sh;
 
     Blt_SizeOfScreen(comboPtr->tkwin, &sw, &sh);
-    x = *xPtr, y = *yPtr;
-
-    /* Determine the size of the menu. */
+    x = *xPtr;
+    y = *yPtr;
     w = GetWidth(comboPtr);
     h = GetHeight(comboPtr);
+
     if ((y + h) > sh) {
 	y -= h;				/* Shift the menu up by the height of
 					 * the menu. */
@@ -2089,12 +2090,12 @@ PostCascade(
 	 *
 	 * The menu has to redrawn so that the entry can change relief.
 	 */
-        /* menu post -at {x y}  */
+        /* menu post -cascade {x y}  */
 	ComputeCascadeMenuCoords(comboPtr, itemPtr, &x, &y);
 	cmdObjPtr = Tcl_DuplicateObj(itemPtr->menuObjPtr);
         objPtr = Tcl_NewStringObj("post", 4);
 	Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
-        objPtr = Tcl_NewStringObj("-at", 3);
+        objPtr = Tcl_NewStringObj("-cascade", 8);
 	Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
         listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
         Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewIntObj(x));
@@ -3947,10 +3948,12 @@ ObjToStateProc(
 	return TCL_OK;			/* State is already set to value. */
     }
     comboPtr = itemPtr->comboPtr;
+#ifdef notdef
     if (comboPtr->activePtr != itemPtr) {
 	ActivateItem(comboPtr, NULL);
 	comboPtr->activePtr = NULL;
     }
+#endif
     *flagsPtr &= ~ITEM_STATE_MASK;
     *flagsPtr |= flag;
     return TCL_OK;
@@ -4645,7 +4648,7 @@ PostPopupSwitchProc(ClientData clientData, Tcl_Interp *interp,
 /*
  *---------------------------------------------------------------------------
  *
- * PostAtSwitchProc --
+ * PostCascadeSwitchProc --
  *
  *	Converts string into x and y coordinates.  Indicates that the
  *      menu is a popup and will be popped at the given x, y coordinate.
@@ -4659,9 +4662,9 @@ PostPopupSwitchProc(ClientData clientData, Tcl_Interp *interp,
  */
 /*ARGSUSED*/
 static int
-PostAtSwitchProc(ClientData clientData, Tcl_Interp *interp,
-                    const char *switchName, Tcl_Obj *objPtr, char *record,
-                    int offset, int flags)
+PostCascadeSwitchProc(ClientData clientData, Tcl_Interp *interp,
+                      const char *switchName, Tcl_Obj *objPtr, char *record,
+                      int offset, int flags)
 {
     ComboMenu *comboPtr = (ComboMenu *)record;
     int x, y;
@@ -4671,7 +4674,7 @@ PostAtSwitchProc(ClientData clientData, Tcl_Interp *interp,
     }
     comboPtr->post.x1 = comboPtr->post.x2 = x;
     comboPtr->post.y1 = comboPtr->post.y2 = y;
-    comboPtr->post.flags = POST_AT;
+    comboPtr->post.flags = POST_CASCADE;
     return TCL_OK;
 }
 
@@ -4814,10 +4817,10 @@ ActivateOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (comboPtr->activePtr == itemPtr) {
 	return TCL_OK;			/* Item is already active. */
     }
+    /* Deactivate any active item. */
     ActivateItem(comboPtr, NULL);
     comboPtr->activePtr = NULL;
-    if ((itemPtr != NULL) && 
-	((itemPtr->flags & (ITEM_DISABLED|ITEM_SEPARATOR)) == 0)) {
+    if ((itemPtr != NULL) && ((itemPtr->flags & ITEM_DISABLED) == 0)) {
 	ActivateItem(comboPtr, itemPtr);
 	comboPtr->activePtr = itemPtr;
     }
@@ -5040,7 +5043,6 @@ DeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
     for (i = 2; i < objc; i++) {
 	ItemIterator iter;
 	Item *itemPtr, *nextPtr;
-        long count;
 
 	if (GetItemIterator(interp, comboPtr, objv[i], &iter) != TCL_OK) {
 	    return TCL_ERROR;
@@ -5052,11 +5054,7 @@ DeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	    comboPtr->flags |= LAYOUT_PENDING;
 	}
         /* Renumber all the indices when a menu item is deleted. */
-	for (count = 0, itemPtr = FirstItem(comboPtr); itemPtr != NULL;
-             itemPtr = NextItem(itemPtr), count++) {
-            itemPtr->index = count;
-	}
-
+        RenumberItems(comboPtr);
     }
     EventuallyRedraw(comboPtr);
     return TCL_OK;
@@ -5729,7 +5727,7 @@ OverButtonOp(ClientData clientData, Tcl_Interp *interp, int objc,
     state = FALSE;
     switch (comboPtr->post.flags) {
     case POST_POPUP:
-    case POST_AT:
+    case POST_CASCADE:
         break;
     default:
         if ((x >= comboPtr->post.x1) && (x < comboPtr->post.x2) &&
@@ -5754,7 +5752,7 @@ OverButtonOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  *      menu post -window button -align align 
  *      menu post -bbox "x1 y1 x2 y2" -align align
- *      menu post -at "x1 y1" 
+ *      menu post -cascade "x1 y1" 
  *      menu post (assume parent) -align bottom (default alignment is left).
  *
  *---------------------------------------------------------------------------
@@ -5798,7 +5796,7 @@ PostOp(ClientData clientData, Tcl_Interp *interp, int objc,
         }
         break;
     case POST_REGION:
-    case POST_AT:
+    case POST_CASCADE:
         break;
     case POST_POPUP:
         comboPtr->flags &= ~DROPDOWN;
@@ -5830,9 +5828,9 @@ PostOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     FixMenuCoords(comboPtr, &x, &y);
     /*
-     * If there is a post command for the menu, execute it.  This may change
-     * the size of the menu, so be sure to recompute the menu's geometry if
-     * needed.
+     * If there is a post command for the menu, execute it.  This may
+     * change the size of the menu, so be sure to recompute the menu's
+     * geometry if needed.
      */
     if (comboPtr->postCmdObjPtr != NULL) {
 	int result;
@@ -5845,8 +5843,8 @@ PostOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	    return result;
 	}
 	/*
-	 * The post commands could have deleted the menu, which means we are
-	 * dead and should go away.
+	 * The post commands could have deleted the menu, which means we
+	 * are dead and should go away.
 	 */
 	if (comboPtr->tkwin == NULL) {
 	    return TCL_OK;
@@ -5916,8 +5914,8 @@ PostOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * PostCascadeOp --
  *
- *	Posts the menu of a cascade item.  If the item is a cascade menu, then
- *	the submenu is requested to be posted.
+ *	Posts the menu of a cascade item.  If the item is a cascade menu,
+ *	then the submenu is requested to be posted.
  *
  * Results: 
  *	A standard TCL result.
@@ -6643,7 +6641,7 @@ ValueOp(ClientData clientData, Tcl_Interp *interp, int objc,
 
 
 static int
-XpositionOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+XPositionOp(ClientData clientData, Tcl_Interp *interp, int objc, 
 	    Tcl_Obj *const *objv)
 {
     ComboMenu *comboPtr = clientData;
@@ -6662,7 +6660,7 @@ XpositionOp(ClientData clientData, Tcl_Interp *interp, int objc,
 }
 
 static int
-XviewOp(ClientData clientData, Tcl_Interp *interp, int objc,
+XViewOp(ClientData clientData, Tcl_Interp *interp, int objc,
         Tcl_Obj *const *objv)
 {
     ComboMenu *comboPtr = clientData;
@@ -6699,7 +6697,7 @@ XviewOp(ClientData clientData, Tcl_Interp *interp, int objc,
 }
 
 static int
-YpositionOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+YPositionOp(ClientData clientData, Tcl_Interp *interp, int objc, 
 	    Tcl_Obj *const *objv)
 {
     ComboMenu *comboPtr = clientData;
@@ -6718,7 +6716,7 @@ YpositionOp(ClientData clientData, Tcl_Interp *interp, int objc,
 }
 
 static int
-YviewOp(ClientData clientData, Tcl_Interp *interp, int objc,
+YViewOp(ClientData clientData, Tcl_Interp *interp, int objc,
         Tcl_Obj *const *objv)
 {
     ComboMenu *comboPtr = clientData;
@@ -6833,7 +6831,7 @@ NewComboMenu(Tcl_Interp *interp, Tk_Window tkwin)
     Blt_ResetLimits(&comboPtr->reqWidth);
     Blt_ResetLimits(&comboPtr->reqHeight);
     Blt_InitHashTable(&comboPtr->iconTable,  BLT_STRING_KEYS);
-    Blt_InitHashTable(&comboPtr->textTable, BLT_STRING_KEYS);
+    Blt_InitHashTable(&comboPtr->textTable,  BLT_STRING_KEYS);
     Blt_InitHashTable(&comboPtr->styleTable, BLT_STRING_KEYS);
     Blt_Tags_Init(&comboPtr->tags);
     AddDefaultStyle(interp, comboPtr);
@@ -6890,18 +6888,15 @@ static Blt_OpSpec menuOps[] =
     {"type",        1, TypeOp,        3, 3, "item",},
     {"unpost",      1, UnpostOp,      2, 2, "",},
     {"value",       1, ValueOp,       3, 3, "item",},
-    {"xposition",   2, XpositionOp,   3, 3, "item",},
-    {"xview",       2, XviewOp,       2, 5, 
+    {"xposition",   2, XPositionOp,   3, 3, "item",},
+    {"xview",       2, XViewOp,       2, 5, 
 	"?moveto fract? ?scroll number what?",},
-    {"yposition",   2, YpositionOp,   3, 3, "item",},
-    {"yview",       2, YviewOp,       2, 5, 
+    {"yposition",   2, YPositionOp,   3, 3, "item",},
+    {"yview",       2, YViewOp,       2, 5, 
 	"?moveto fract? ?scroll number what?",},
 };
 
 static int numMenuOps = sizeof(menuOps) / sizeof(Blt_OpSpec);
-
-typedef int (ComboInstOp)(ComboMenu *comboPtr, Tcl_Interp *interp, int objc,
-			  Tcl_Obj *const *objv);
 
 static int
 ComboMenuInstCmdProc(
@@ -6911,17 +6906,17 @@ ComboMenuInstCmdProc(
     int objc,				/* # of arguments. */
     Tcl_Obj *const *objv)		/* Argument vector. */
 {
-    ComboInstOp *proc;
+    Tcl_ObjCmdProc *proc;
     ComboMenu *comboPtr = clientData;
     int result;
 
-    proc = Blt_GetOpFromObj(interp, numMenuOps, menuOps, BLT_OP_ARG1, objc, objv,
-	0);
+    proc = Blt_GetOpFromObj(interp, numMenuOps, menuOps, BLT_OP_ARG1,
+        objc, objv, 0);
     if (proc == NULL) {
 	return TCL_ERROR;
     }
     Tcl_Preserve(comboPtr);
-    result = (*proc) (comboPtr, interp, objc, objv);
+    result = (*proc) (clientData, interp, objc, objv);
     Tcl_Release(comboPtr);
     return result;
 }
@@ -7134,7 +7129,9 @@ DrawItemBackground(Item *itemPtr, Drawable drawable, int x, int y)
     stylePtr = itemPtr->stylePtr;
     comboPtr = itemPtr->comboPtr;
     relief = itemPtr->relief;
-    if ((itemPtr->flags & (ITEM_DISABLED|ITEM_SEPARATOR)) == ITEM_DISABLED) {
+    if (itemPtr->flags & ITEM_SEPARATOR) {
+	bg = stylePtr->normalBg;
+    } else if (itemPtr->flags & ITEM_DISABLED) {
 	bg = stylePtr->disabledBg;
     } else if (comboPtr->activePtr == itemPtr) {
 	bg = stylePtr->activeBg;

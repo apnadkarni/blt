@@ -40,7 +40,9 @@ namespace eval blt {
 	    y	0
 	    activeSelection 0
 	    posting none
-	    icon blt::TableView::filter
+	    icon        blt::TableView::filter
+            textvariable ""
+            iconvariable ""
 	}
     }
 }
@@ -1110,35 +1112,74 @@ proc blt::TableView::BuildFiltersMenu { w col } {
 	return
     }
     set col [$w column index $col]
-    $menu configure -command [list blt::TableView::UpdateFilter $w $col]
+    $menu configure -command [list blt::TableView::UpdateFilter $w]
     $menu configure -font "Arial 9"
     if { ![$menu style exists mystyle] } {
 	$menu style create mystyle -font "Arial 9 italic"
     }
+    $menu configure \
+        -textvariable blt::TableView::_private(textvariable) \
+        -iconvariable blt::TableView::_private(iconvariable) 
+    set top10 $menu.top10
+    if { ![winfo exists $top10] } {
+        blt::combomenu $top10 \
+            -textvariable blt::TableView::_private(textvariable) \
+            -iconvariable blt::TableView::_private(iconvariable) \
+            -command [list blt::TableView::UpdateFilter $w]
+        if { ![$top10 style exists mystyle] } {
+            $top10 style create mystyle -font "Arial 9 italic"
+        }
+        $top10 add -text "Top 10 by value" \
+            -icon $_private(icon) \
+            -style mystyle \
+            -command [list blt::TableView::FilterTop10ByValue $w] 
+        $top10 add -text "Top 10 by frequency" \
+            -icon $_private(icon) \
+            -style mystyle \
+            -command [list blt::TableView::FilterTop10ByFrequency $w] 
+    } 
+    set bot10 $menu.bot10
+    if { ![winfo exists $bot10] } {
+        blt::combomenu $bot10 \
+            -textvariable blt::TableView::_private(textvariable) \
+            -iconvariable blt::TableView::_private(iconvariable) \
+            -command [list blt::TableView::UpdateFilter $w]
+        if { ![$bot10 style exists mystyle] } {
+            $bot10 style create mystyle -font "Arial 9 italic"
+        }
+        $bot10 add -text "Bottom 10 by value" \
+            -icon $_private(icon) \
+            -style mystyle \
+            -command [list blt::TableView::FilterBottom10ByValue $w] 
+        $bot10 add -text "Bottom 10 by frequency" \
+            -icon $_private(icon) \
+            -style mystyle \
+            -command [list blt::TableView::FilterBottom10ByFrequency $w] 
+    } 
     $menu delete all
     $menu add -text "All" \
-	-command [list blt::TableView::FilterAll $w $col] \
+	-command [list blt::TableView::FilterAll $w] \
 	-style mystyle \
 	-icon $_private(icon) 
-    $menu add -text "Top 10" \
-	-command [list blt::TableView::FilterTop10 $w $col] \
+    $menu add -type cascade -text "Top 10" \
+	-menu $top10 \
 	-style mystyle \
 	-icon $_private(icon)
-    $menu add -text "Bottom 10" \
-	-command [list blt::TableView::FilterBottom10 $w $col] \
+    $menu add -type cascade -text "Bottom 10" \
+	-menu $bot10 \
 	-style mystyle \
 	-icon $_private(icon)
     $menu add -text "Empty" \
-	-command [list blt::TableView::FilterEmpty $w $col] \
+	-command [list blt::TableView::FilterEmpty $w] \
 	-style mystyle \
 	-icon $_private(icon)
     $menu add -text "Nonempty" \
-	-command [list blt::TableView::FilterNonempty $w $col] \
+	-command [list blt::TableView::FilterNonempty $w] \
 	-style mystyle \
 	-icon $_private(icon)
     $menu add -text "Custom..." \
 	-style mystyle \
-	-command [list blt::TableView::CustomFilter $w $col] \
+	-command [list blt::TableView::CustomFilter $w] \
 	-icon $_private(icon)
     if { [llength [$table column empty $col]] > 0 } {
 	$menu item configure "Empty" -state normal
@@ -1179,11 +1220,14 @@ proc blt::TableView::BuildFiltersMenu { w col } {
     }
 }
 
-proc blt::TableView::UpdateFilter { w col } {
+proc blt::TableView::UpdateFilter { w } {
+    variable _private
+
+    set col $_private(column)
     set menu [$w filter cget -menu]
     set item [$menu index selected]
-    set text [$menu item cget $item -text]
-    set icon [$menu item cget $item -icon]
+    set text $_private(textvariable)
+    set icon $_private(iconvariable)
     if { $text == "All" } {
 	$w column configure $col -filterhighlight 0
 	$w column configure $col -filtertext "" -filtericon ""
@@ -1191,68 +1235,109 @@ proc blt::TableView::UpdateFilter { w col } {
 	$w column configure $col -filterhighlight 1
 	$w column configure $col -filtertext $text -filtericon $icon 
     }
-    set style [$menu item cget $item -style]
-    set font [$menu style cget $style -font]
-    $w column configure $col -filterfont $font
+    if { $item >= 0 } {
+        set style [$menu item cget $item -style]
+        set font [$menu style cget $style -font]
+        $w column configure $col -filterfont $font
+    }
 }
 
-proc blt::TableView::FilterAll { w col } {
+proc blt::TableView::FilterAll { w } {
+    variable _private
+
+    set col $_private(column)
     $w column configure $col -filterdata ""
     ApplyFilters $w
 }
 
-proc blt::TableView::FilterTop10 { w col } {
-    set index [$w column index $col]
+proc IsMember {  list row } {
+    puts stderr "IsMember row=$row list=$list"
+    set n [lsearch $list $row]
+    if { $n >= 0 } {
+        puts stderr "$row is true"
+    } else {
+        puts stderr "$row is false"
+    }
+    return $n
+}
+
+proc blt::TableView::FilterTop10ByFrequency { w } {
+    variable _private
+
+    set col $_private(column)
     set table [$w cget -table]
     set rows [GetColumnFilterRows $w $col]
-    set values [$table sort -columns $col -unique -values -row $rows \
-		    -decreasing]
-    set values [lrange $values 0 9]
-    set list {}
-    foreach value $values {
-	lappend list "(\$${index} == \"$value\")"
-    }
-    set expr "\[info exists ${index}\]"
-    if { [llength $list] > 0 } {
-	set expr "$expr && ([join $list " || "]) "
-    }
+    set rows [$table sort -frequency -columns $col -row $rows]
+    set numRows [llength $rows]
+    set rows [lrange $rows [expr $numRows - 10] end]
+    set expr "(\[lsearch {$rows} \${#}\] >= 0)"
     $w column configure $col -filterdata $expr
     ApplyFilters $w
 }
 
-proc blt::TableView::FilterBottom10 { w col } {
-    set index [$w column index $col]
+proc blt::TableView::FilterTop10ByValue { w } {
+    variable _private
+
+    set col $_private(column)
     set table [$w cget -table]
     set rows [GetColumnFilterRows $w $col]
-    set values [$table sort -columns $col -unique -values -row $rows]
-    set values [lrange $values 0 9]
-    set list {}
-    foreach value $values {
-	lappend list "(\$${index} == \"$value\")"
-    }
-    set expr "\[info exists ${index}\]"
-    if { [llength $list] > 0 } {
-	set expr "$expr && ([join $list " || "]) "
-    }
+    set rows [$table sort -columns $col -row $rows -nonempty]
+    set numRows [llength $rows]
+    set rows [lrange $rows [expr $numRows - 10] end]
+    set expr "(\[lsearch {$rows} \${#}\] >= 0)"
     $w column configure $col -filterdata $expr
     ApplyFilters $w
 }
 
-proc blt::TableView::FilterEmpty { w col } {
+proc blt::TableView::FilterBottom10ByFrequency { w } {
+    variable _private
+
+    set col $_private(column)
+    set table [$w cget -table]
+    set rows [GetColumnFilterRows $w $col]
+    set rows [$table sort -frequency -columns $col -row $rows -decreasing]
+    set numRows [llength $rows]
+    set rows [lrange $rows [expr $numRows - 10] end]
+    set expr "(\[lsearch {$rows} \${#}\] >= 0)"
+    $w column configure $col -filterdata $expr
+    ApplyFilters $w
+}
+
+proc blt::TableView::FilterBottom10ByValue { w } {
+    variable _private
+
+    set col $_private(column)
+    set table [$w cget -table]
+    set rows [GetColumnFilterRows $w $col]
+    set rows [$table sort -columns $col -row $rows -decreasing]
+    set numRows [llength $rows]
+    set rows [lrange $rows [expr $numRows - 10] end]
+    set expr "(\[lsearch {$rows} \${#}\] >= 0)"
+    $w column configure $col -filterdata $expr
+    ApplyFilters $w
+}
+
+proc blt::TableView::FilterEmpty { w } {
+    variable _private
+
+    set col $_private(column)
     set index [$w column index $col]
     set expr " (!\[info exists ${index}\]) "
     $w column configure $col -filterdata $expr
     ApplyFilters $w
 }
 
-proc blt::TableView::FilterNonempty { w col } {
+proc blt::TableView::FilterNonempty { w } {
+    variable _private
+
+    set col $_private(column)
     set index [$w column index $col]
     set expr " (\[info exists ${index}\]) "
     $w column configure $col -filterdata $expr
     ApplyFilters $w
 }
 
-proc blt::TableView::CustomFilter { w col } {
+proc blt::TableView::CustomFilter { w } {
     $w row show all
 }
     
@@ -1360,88 +1445,3 @@ proc ::blt::TableView::UnpostFilter { w } {
     blt::grab pop $menu
 }
 
-#
-# BuildFiltersMenu --
-#
-#   Builds a menu of filter options.  This is column-specific as the lower
-#   portion of the menu is filled with the unique values of the column.
-#
-proc blt::TableView::BuildVersion2FiltersMenu { w col } {
-    variable _private
-
-    set menu [$w filter cget -menu]
-    set table [$w cget -table]
-    if { $menu == "" || $table == "" } {
-	return
-    }
-    blt::tk::toplevel $w.filters
-    blt::tk::button $w.filters.all \
-	-text "All" \
-	-image $_private(icon) \
-	-command [list blt::TableView::FilterAll $w $col] \
-	-compound left
-    blt::tk::button $w.filters.topten \
-	-text "Top 10" \
-	-font "Arial 8 italic" \
-	-image $_private(icon) \
-	-command [list blt::TableView::FilterTop10 $w $col] \
-	-compound left
-    blt::tk::button $w.filters.bottomten \
-	-text "Bottom 10" \
-	-font "Arial 8 italic" \
-	-image $_private(icon)  \
-	-command [list blt::TableView::FilterBottom10 $w $col] \
-	-compound left
-    blt::tk::button $w.filters.empty \
-	-text "Empty" -command 
-	-font "Arial 8 italic" \
-	-image $_private(icon) 
-	-command [list blt::TableView::FilterEmpty $w $col] \
-	-compound left
-    blt::tk::button $w.filters.nonempty \
-	-text "(non-empty)" \
-	-image $_private(icon) \
-	-command [list blt::TableView::FilterNonEmpty $w $col] \
-	-compound left
-    blt::comboview $w.filter.view 
-    blt::tk::button $w.filters.apply \
-	-text "Apply" \
-	-command [list blt::TableView::FilterCancel $w $col] 
-    set col [$w column index $col]
-    $menu configure -command [list blt::TableView::UpdateFilter $w $col]
-    $menu delete all
-    $menu add -text "All" \
-	-command [list blt::TableView::FilterAll $w $col] \
-    $menu add -text "Top 10" \
-	-command [list blt::TableView::FilterTop10 $w $col] \
-	-icon $_private(icon)
-    $menu add -text "Bottom 10" \
-	-command [list blt::TableView::FilterBottom10 $w $col] \
-	-icon $_private(icon)
-    $menu add -text "Custom..." \
-	-command [list blt::TableView::CustomFilter $w $col] \
-	-icon $_private(icon)
-    set fmtcmd [$w column cget $col -formatcommand]
-    set rows [$w row expose]
-    set values [$table sort -columns $col -unique -values -rows $rows]
-    if { [llength $rows] > 0 } {
-	$menu add -type separator
-    }
-    if { $fmtcmd == "" } {
-	$menu listadd $values \
-		-command  [list blt::TableView::SetFilter $w $col]
-    } else {
-	foreach value $values {
-	    set fmt [eval $fmtcmd [list $value]]
-	    $menu add -text $fmt -value $value \
-		-command  [list blt::TableView::SetFilter $w $col]
-	}
-    }
-    set text [$w column cget $col -filtertext]
-    if { $text == "" } {
-	$menu select 0
-    } else {
-	set item [$menu index text:$text]
-	$menu select $item
-    }
-}

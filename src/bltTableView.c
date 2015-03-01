@@ -9481,7 +9481,8 @@ RowHideOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	int redraw;
 	Blt_Chain chain;
 	Blt_ChainLink link;
-	
+        long count;
+        
 	chain = IterateRowsObjv(interp, viewPtr, objc - 3, objv + 3);
 	if (chain == NULL) {
 	    return TCL_ERROR;
@@ -10717,7 +10718,7 @@ static Blt_OpSpec sortOps[] =
     {"auto",      1, SortAutoOp,      3, 4, "?boolean?",},
     {"cget",      2, SortCgetOp,      4, 4, "option",},
     {"configure", 2, SortConfigureOp, 3, 0, "?option value?...",},
-    {"once",      1, SortOnceOp,      3, 0, "node...",},
+    {"once",      1, SortOnceOp,      3, 3, "",},
 };
 static int numSortOps = sizeof(sortOps) / sizeof(Blt_OpSpec);
 
@@ -11620,6 +11621,23 @@ ComputeLayout(TableView *viewPtr)
 }
 
 static void
+ReorderVisibleIndices(TableView *viewPtr)
+{
+    long i, count;
+
+    /* Reorder visible indices. */
+    for (count = i = 0; i < viewPtr->numRows; i++) {
+        Row *rowPtr;
+        
+        rowPtr = viewPtr->rows[i];
+        if ((rowPtr->flags & HIDDEN) == 0) {
+            rowPtr->visibleIndex = count;
+            count++;
+        }
+    }
+}
+
+static void
 ComputeVisibleEntries(TableView *viewPtr)
 {
     unsigned int  viewWidth, viewHeight;
@@ -11642,7 +11660,7 @@ ComputeVisibleEntries(TableView *viewPtr)
     }
     viewWidth = VPORTWIDTH(viewPtr);
     viewHeight = VPORTHEIGHT(viewPtr);
-
+    ReorderVisibleIndices(viewPtr);
     first = 0, last = -1;
     /* FIXME: Handle hidden rows. */
     /* Find the row that contains the start of the viewport.  */
@@ -12455,7 +12473,6 @@ DisplayProc(ClientData clientData)
 	Row *rowPtr;
 
 	rowPtr = viewPtr->visibleRows[i];
-	rowPtr->visibleIndex = i;
 	/* Draw each cell in the row. */
 	for (j = 0; j < viewPtr->numVisibleColumns; j++) {
 	    Column *colPtr;

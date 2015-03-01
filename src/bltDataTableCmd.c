@@ -588,28 +588,32 @@ static Blt_SwitchSpec restoreSwitches[] =
 
 typedef struct {
     unsigned int flags;
+    unsigned int sortFlags;
     BLT_TABLE table;
     BLT_TABLE_ITERATOR ri, ci;
 } SortSwitches;
 
-#define SORT_UNIQUE	(1<<6)
-#define SORT_VALUES	(1<<7)
-#define SORT_LIST	(1<<8)
+#define SORT_UNIQUE	(1<<16)
+#define SORT_VALUES	(1<<17)
+#define SORT_LIST	(1<<18)
+#define SORT_NONEMPTY	(1<<19)
 
 static Blt_SwitchSpec sortSwitches[] = 
 {
     {BLT_SWITCH_BITMASK, "-ascii",	"", (char *)NULL,
-	Blt_Offset(SortSwitches, flags),  0, TABLE_SORT_ASCII},
+	Blt_Offset(SortSwitches, sortFlags),  0, TABLE_SORT_ASCII},
     {BLT_SWITCH_CUSTOM, "-columns", "", (char *)NULL,
         Blt_Offset(SortSwitches, ci), 0, 0, &columnIterSwitch},
     {BLT_SWITCH_BITMASK, "-decreasing", "", (char *)NULL,
-	Blt_Offset(SortSwitches, flags), 0, TABLE_SORT_DECREASING},
+	Blt_Offset(SortSwitches, sortFlags), 0, TABLE_SORT_DECREASING},
     {BLT_SWITCH_BITMASK, "-dictionary", "", (char *)NULL,
-	Blt_Offset(SortSwitches, flags), 0, TABLE_SORT_DICTIONARY},
+	Blt_Offset(SortSwitches, sortFlags), 0, TABLE_SORT_DICTIONARY},
     {BLT_SWITCH_BITMASK, "-frequency", "", (char *)NULL,
-	Blt_Offset(SortSwitches, flags), 0, TABLE_SORT_FREQUENCY},
+	Blt_Offset(SortSwitches, sortFlags), 0, TABLE_SORT_FREQUENCY},
     {BLT_SWITCH_BITMASK, "-list", "", (char *)NULL,
 	Blt_Offset(SortSwitches, flags), 0, SORT_LIST},
+    {BLT_SWITCH_BITMASK, "-nonempty", "", (char *)NULL,
+	Blt_Offset(SortSwitches, flags), 0, SORT_NONEMPTY|SORT_LIST},
     {BLT_SWITCH_CUSTOM, "-rows", "", (char *)NULL,
         Blt_Offset(SortSwitches, ri), 0, 0, &rowIterSwitch},
     {BLT_SWITCH_BITMASK, "-unique", "", (char *)NULL,
@@ -1717,7 +1721,8 @@ ColumnVarResolverProc(
     TableCmdInterpData *dataPtr;
     Tcl_Obj *valueObjPtr;
     long index;
-
+    char c;
+    
     dataPtr = GetTableCmdInterpData(interp);
     hPtr = Blt_FindHashEntry(&dataPtr->findTable, nsPtr);
     if (hPtr == NULL) {
@@ -1728,9 +1733,15 @@ ColumnVarResolverProc(
 	return TCL_CONTINUE;	
     }
     switchesPtr = Blt_GetHashValue(hPtr);
-
-    /* Look up the column from the variable name given. */
-    if (Blt_GetLong((Tcl_Interp *)NULL, (char *)name, &index) == TCL_OK) {
+    c = name[0];
+    if ((c == '#') && (strcmp(name, "#") == 0)) {
+        /* Look up the column from the variable name given. */
+        valueObjPtr = Tcl_NewLongObj(blt_table_row_index(switchesPtr->row));
+        *varPtr = Blt_GetCachedVar(&switchesPtr->varTable, name, valueObjPtr);
+        return TCL_OK;
+    } 
+    if ((isdigit(c)) && (Blt_GetLong((Tcl_Interp *)NULL, (char *)name,
+                                     &index) == TCL_OK)) {
  	col = blt_table_get_column_by_index(switchesPtr->table, index);
     } else {
 	col = blt_table_get_column_by_label(switchesPtr->table, name);
@@ -7287,7 +7298,7 @@ NumRowsOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 }
 
 static Tcl_Obj *
-PrintValues(Tcl_Interp *interp, BLT_TABLE table, long numRows, 
+PrintValues(Tcl_Interp *interp, Cmd *cmdPtr, long numRows, 
 	    BLT_TABLE_ROW *rows, BLT_TABLE_COLUMN col, unsigned int flags)
 {
     long i;
@@ -7296,10 +7307,18 @@ PrintValues(Tcl_Interp *interp, BLT_TABLE table, long numRows,
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
     for (i = 1; i < numRows; i++) {
 	Tcl_Obj *objPtr;
-	
-	/* Convert the table offset back to a client index. */
-	if (flags & SORT_VALUES) {
-	    objPtr = blt_table_get_obj(table, rows[i], col);
+	int isEmpty;
+        
+        isEmpty = !blt_table_value_exists(cmdPtr->table, rows[i], col);
+        if ((isEmpty) && (flags & SORT_NONEMPTY)) {
+            continue;
+        }
+        if (flags & SORT_VALUES) {
+            if (isEmpty) {
+                objPtr = Tcl_NewStringObj(cmdPtr->emptyValue, -1);
+            } else {
+                objPtr = blt_table_get_obj(cmdPtr->table, rows[i], col);
+            }
 	} else {
 	    objPtr = Tcl_NewLongObj(blt_table_row_index(rows[i]));
 	}
@@ -7308,8 +7327,9 @@ PrintValues(Tcl_Interp *interp, BLT_TABLE table, long numRows,
     return listObjPtr;
 }
 
+
 static Tcl_Obj *
-PrintUniqueValues(Tcl_Interp *interp, BLT_TABLE table, long numRows, 
+PrintUniqueValues(Tcl_Interp *interp, Cmd *cmdPtr, long numRows, 
 		  BLT_TABLE_ROW *rows, BLT_TABLE_COLUMN col, unsigned int flags)
 {
     BLT_TABLE_COMPARE_PROC *proc;
@@ -7317,32 +7337,36 @@ PrintUniqueValues(Tcl_Interp *interp, BLT_TABLE table, long numRows,
     long i;
     
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
+
     /* Get the compare procedure for the column. We'll use that to sift out
      * unique values. */
-    proc = blt_table_get_compare_proc(table, col, flags);
+    proc = blt_table_get_compare_proc(cmdPtr->table, col, flags);
+
+    /* Find the first non-empty value in the column.  */
     for (i = 0; i < numRows; i++) {
-        if (blt_table_value_exists(table, rows[i], col)) {
+        if (blt_table_value_exists(cmdPtr->table, rows[i], col)) {
             break;
         }
     }
     /* What if all the rows are empty? */
+    /* Is an empty row considered unique? */
     if (i == numRows) {
         return TCL_OK;
     }
-    /* Convert the table offset back to a client index. */
+    /* Append the row index or value onto the list. */
     if (flags & SORT_VALUES) {
-	objPtr = blt_table_get_obj(table, rows[i], col);
+	objPtr = blt_table_get_obj(cmdPtr->table, rows[i], col);
     } else {
 	/* Convert the table offset back to a client index. */
 	objPtr = Tcl_NewLongObj(blt_table_row_index(rows[i]));
     }
     Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
     for (i++; i < numRows; i++) {
-	if (((*proc)(table, col, rows[i-1], rows[i])) == 0) {
+	if (((*proc)(cmdPtr->table, col, rows[i-1], rows[i])) == 0) {
 	    continue;
 	}
 	if (flags & SORT_VALUES) {
-	    objPtr = blt_table_get_obj(table, rows[i], col);
+	    objPtr = blt_table_get_obj(cmdPtr->table, rows[i], col);
 	} else {
 	    /* Convert the table offset back to a client index. */
 	    objPtr = Tcl_NewLongObj(blt_table_row_index(rows[i]));
@@ -7381,7 +7405,7 @@ SortOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 
     /* Process switches  */
     memset(&switches, 0, sizeof(SortSwitches));
-    switches.flags = 0;
+    switches.sortFlags = TABLE_SORT_DICTIONARY;
     table = switches.table = cmdPtr->table;
     rowIterSwitch.clientData = cmdPtr->table;
     columnIterSwitch.clientData = cmdPtr->table;
@@ -7400,7 +7424,7 @@ SortOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	sp->column = col;
 	sp++;
     }
-    blt_table_sort_init(table, order, numColumns, switches.flags);
+    blt_table_sort_init(table, order, numColumns, switches.sortFlags);
     numRows = switches.ri.numEntries;
     if (numRows == 0) {
 	map = blt_table_sort_rows(table);
@@ -7431,11 +7455,11 @@ SortOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	/* Return the new row order as a list. */
 	col = order[0].column;
 	if (switches.flags & SORT_UNIQUE) {
-	    listObjPtr = PrintUniqueValues(interp, table, numRows, map, col, 
+	    listObjPtr = PrintUniqueValues(interp, cmdPtr, numRows, map, col, 
 		switches.flags);
 	} else {
-	    listObjPtr = PrintValues(interp, table, numRows, map, col, 
-		switches.flags);
+	    listObjPtr = PrintValues(interp, cmdPtr, numRows, map, col, 
+                                     switches.flags);
 	}
         if (listObjPtr != NULL) {
             Tcl_SetObjResult(interp, listObjPtr);

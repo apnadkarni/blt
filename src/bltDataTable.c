@@ -2008,7 +2008,7 @@ CompareDictionaryRows(ClientData clientData, Column *colPtr, Row *rowPtr1,
     } else if (IsEmpty(valuePtr2)) {
 	return -1;
     }
-    return Blt_DictionaryCompare(GetString(valuePtr2), GetString(valuePtr2));
+    return Blt_DictionaryCompare(GetString(valuePtr1), GetString(valuePtr2));
 }
 
 static int
@@ -5291,15 +5291,18 @@ blt_table_sort_init(BLT_TABLE table, BLT_TABLE_SORT_ORDER *order,
 	    long refCount;
 
 	    row = blt_table_row(table, i);
+            if (!blt_table_value_exists(table, row, col)) {
+                continue;
+            }
 	    string = blt_table_get_string(table, row, col);
-	    hPtr = Blt_CreateHashEntry(&sortData.freqTable, string, &isNew);
-	    if (isNew) {
-		refCount = 0;
-	    } else {
-		refCount = (long)Blt_GetHashValue(hPtr);
-	    }
-	    refCount++;
-	    Blt_SetHashValue(hPtr, refCount);
+            hPtr = Blt_CreateHashEntry(&sortData.freqTable, string, &isNew);
+            if (isNew) {
+                refCount = 0;
+            } else {
+                refCount = (long)Blt_GetHashValue(hPtr);
+            }
+            refCount++;
+            Blt_SetHashValue(hPtr, refCount);
 	}
     }
 }
