@@ -6702,45 +6702,6 @@ TreeInterpDeleteProc(
     Blt_Free(tdPtr);
 }
 
-/*ARGSUSED*/
-static int
-CompareDictionaryCmd(
-    ClientData clientData,	/* Not used. */
-    Tcl_Interp *interp,
-    int objc,			/* Not used. */
-    Tcl_Obj *const *objv)
-{
-    int result;
-    const char *s1, *s2;
-
-    s1 = Tcl_GetString(objv[1]);
-    s2 = Tcl_GetString(objv[2]);
-    result = Blt_DictionaryCompare(s1, s2);
-    Tcl_SetIntObj(Tcl_GetObjResult(interp), result);
-    return TCL_OK;
-}
-
-/*ARGSUSED*/
-static int
-ExitCmd(
-    ClientData clientData,	/* Not used. */
-    Tcl_Interp *interp,
-    int objc,			/* Not used. */
-    Tcl_Obj *const *objv)
-{
-    int code;
-
-    if (Tcl_GetIntFromObj(interp, objv[1], &code) != TCL_OK) {
-	return TCL_ERROR;
-    }
-#ifdef TCL_THREADS
-    Tcl_Exit(code);
-#else 
-    exit(code);
-#endif
-    /*NOTREACHED*/
-    return TCL_OK;
-}
 
 /*
  *---------------------------------------------------------------------------
@@ -6764,13 +6725,6 @@ Blt_TreeCmdInitProc(Tcl_Interp *interp)
     static Blt_CmdSpec cmdSpec = { 
 	"tree", TreeObjCmd, 
     };
-    static Blt_CmdSpec utilSpecs[] = { 
-	{ "compare", CompareDictionaryCmd, },
-	{ "_exit", ExitCmd, }
-    };
-    if (Blt_InitCmds(interp, "::blt::util", utilSpecs, 2) != TCL_OK) {
-	return TCL_ERROR;
-    }
     cmdSpec.clientData = GetTreeCmdInterpData(interp);
     return Blt_InitCmd(interp, "::blt", &cmdSpec);
 }

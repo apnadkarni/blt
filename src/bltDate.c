@@ -306,11 +306,11 @@ static Pattern datePatterns[] = {
     { 3, {_WEEK,  _WDAY }},             /* 8. yyyywwwd (2012W017) */
     { 4, {_MONTH, _MDAY,  _YEAR}},      /* 9. mm-dd-yy (01-31-99) */
     { 4, {_MDAY,  _MONTH, _YEAR}},      /* 10. dd-mon-yy (31-Jan-99) */
-    { 4, {_MDAY,  _DOT,   _MONTH}},     /* 11. dd-mon-yy (31-Jan-99) */
-    { 4, {_MONTH, _DOT,   _MDAY}},      /* 12. dd-mon-yy (31-Jan-99) */
+    { 4, {_MDAY,  _DOT,   _MONTH}},     /* 11. dd.mon (31.Jan) */
+    { 4, {_MONTH, _DOT,   _MDAY}},      /* 12. mon.dd (Jan.31) */
     { 5, {_MDAY, _DOT,   _MONTH, _DOT}}, /* 12. dd.mon.yyyy (31.Jan.1999) */
-    { 5, {_DOT, _MONTH, _DOT,   _MDAY}},        /* 13. dd-mon-yy (31-Jan-99) */
-    { 6, {_YEAR, _DOT, _MONTH, _DOT, _MDAY}}, /* 14. dd-mon-yy (31-Jan-99) */
+    { 5, {_DOT, _MONTH, _DOT,   _MDAY}}, /* 13. .mon.dd (.Jan.31) */
+    { 6, {_YEAR, _DOT, _MONTH, _DOT, _MDAY}}, /* 14. yy.mon.dd (1999.Jan.31) */
     { 1, {}}
 };
 
@@ -2405,7 +2405,7 @@ DateObjCmd(
 /*
  *---------------------------------------------------------------------------
  *
- * Blt_DateScanCmdInitProc --
+ * Blt_DateCmdInitProc --
  *
  *	This procedure is invoked to initialize the "date" command.
  *
@@ -2418,7 +2418,7 @@ DateObjCmd(
  *---------------------------------------------------------------------------
  */
 int
-Blt_DateScanCmdInitProc(Tcl_Interp *interp)
+Blt_DateCmdInitProc(Tcl_Interp *interp)
 {
     static Blt_CmdSpec cmdSpec = { 
 	"date", DateObjCmd, 

@@ -166,8 +166,11 @@ static Tcl_AppInitProc *cmdProcs[] =
 #ifndef NO_WATCH
     Blt_WatchCmdInitProc,
 #endif
-#ifndef NO_WATCH
-    Blt_DateScanCmdInitProc,
+#ifndef NO_DATE
+    Blt_DateCmdInitProc,
+#endif
+#ifndef NO_COMPARE
+    Blt_CompareCmdInitProc,
 #endif
     (Tcl_AppInitProc *) NULL
 };

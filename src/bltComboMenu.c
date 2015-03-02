@@ -105,6 +105,7 @@ static const char emptyString[] = "";
 
 #define RESTRICT_NONE		(0)
 #define COMBOMENU		(1<<20)
+#define INITIALIZED             (1<<22)
 
 #define VAR_FLAGS (TCL_GLOBAL_ONLY|TCL_TRACE_WRITES|TCL_TRACE_UNSETS)
 
@@ -218,7 +219,7 @@ static const char emptyString[] = "";
 #define DEF_STYLE_IND_COLOR	    (char *)NULL
 #define DEF_STYLE_IND_SIZE	    "12"
 #define DEF_STYLE_RELIEF	    "flat"
-#define DISABLED_BACKGROUND	    RGB_GREY90
+#define DISABLED_BACKGROUND	    RGB_GREY97
 #define DISABLED_FOREGROUND         RGB_GREY70
 
 static const char *sortTypeStrings[] = {
@@ -3931,7 +3932,6 @@ ObjToStateProc(
     Item *itemPtr = (Item *)(widgRec);
     unsigned int *flagsPtr = (unsigned int *)(widgRec + offset);
     char *string;
-    ComboMenu *comboPtr;
     int flag;
 
     string = Tcl_GetString(objPtr);
@@ -3947,13 +3947,6 @@ ObjToStateProc(
     if (itemPtr->flags & flag) {
 	return TCL_OK;			/* State is already set to value. */
     }
-    comboPtr = itemPtr->comboPtr;
-#ifdef notdef
-    if (comboPtr->activePtr != itemPtr) {
-	ActivateItem(comboPtr, NULL);
-	comboPtr->activePtr = NULL;
-    }
-#endif
     *flagsPtr &= ~ITEM_STATE_MASK;
     *flagsPtr |= flag;
     return TCL_OK;
@@ -5905,6 +5898,9 @@ PostOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	TkWmRestackToplevel(comboPtr->tkwin, Above, NULL);
 #endif
     }
+    if (comboPtr->activePtr == NULL) {
+        ActivateItem(comboPtr, comboPtr->firstPtr);
+    }
     comboPtr->flags |= POSTED;
     return TCL_OK;
 }
@@ -7631,10 +7627,7 @@ DisplayProc(ClientData clientData)
 	w, h, Tk_Depth(comboPtr->tkwin));
 #ifdef WIN32
     assert(drawable != None);
-#endif
-    if (comboPtr->activePtr == NULL) {
-	ActivateItem(comboPtr, comboPtr->firstPtr);
-    }
+#endif  /* WIN32 */
     /* 
      * Shadowed menu.  Request window size slightly bigger than menu.  Get
      * snapshot of background from root menu.

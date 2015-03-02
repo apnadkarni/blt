@@ -94,7 +94,11 @@ extern Tcl_AppInitProc Blt_TreeCmdInitProc;
 #endif
 
 #ifndef NO_DATE
-extern Tcl_AppInitProc Blt_DateObjCmdInitProc;
+extern Tcl_AppInitProc Blt_DateCmdInitProc;
+#endif
+
+#ifndef NO_COMPARE
+extern Tcl_AppInitProc Blt_CompareCmdInitProc;
 #endif
 
 #endif /*_BLT_TCL_INIT_H*/

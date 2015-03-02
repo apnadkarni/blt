@@ -378,7 +378,7 @@ proc blt::TableView::Initialize { w } {
     }
     $w column bind ColumnFilter <ButtonPress-1> { 
 	set blt::TableView::_private(column) [%W column index current]
-	blt::TableView::PostFilter %W current
+	blt::TableView::PostFilterMenu %W current
     }
     $w column bind ColumnFilter <B1-Motion> { 
 	break
@@ -1132,11 +1132,11 @@ proc blt::TableView::BuildFiltersMenu { w col } {
         $top10 add -text "Top 10 by value" \
             -icon $_private(icon) \
             -style mystyle \
-            -command [list blt::TableView::FilterTop10ByValue $w] 
+            -command [list blt::TableView::Top10ByValueFilter $w] 
         $top10 add -text "Top 10 by frequency" \
             -icon $_private(icon) \
             -style mystyle \
-            -command [list blt::TableView::FilterTop10ByFrequency $w] 
+            -command [list blt::TableView::Top10ByFrequencyFilter $w] 
     } 
     set bot10 $menu.bot10
     if { ![winfo exists $bot10] } {
@@ -1150,15 +1150,15 @@ proc blt::TableView::BuildFiltersMenu { w col } {
         $bot10 add -text "Bottom 10 by value" \
             -icon $_private(icon) \
             -style mystyle \
-            -command [list blt::TableView::FilterBottom10ByValue $w] 
+            -command [list blt::TableView::Bottom10ByValueFilter $w] 
         $bot10 add -text "Bottom 10 by frequency" \
             -icon $_private(icon) \
             -style mystyle \
-            -command [list blt::TableView::FilterBottom10ByFrequency $w] 
+            -command [list blt::TableView::Bottom10ByFrequencyFilter $w] 
     } 
     $menu delete all
     $menu add -text "All" \
-	-command [list blt::TableView::FilterAll $w] \
+	-command [list blt::TableView::AllFilter $w] \
 	-style mystyle \
 	-icon $_private(icon) 
     $menu add -type cascade -text "Top 10" \
@@ -1170,11 +1170,11 @@ proc blt::TableView::BuildFiltersMenu { w col } {
 	-style mystyle \
 	-icon $_private(icon)
     $menu add -text "Empty" \
-	-command [list blt::TableView::FilterEmpty $w] \
+	-command [list blt::TableView::EmptyFilter $w] \
 	-style mystyle \
 	-icon $_private(icon)
     $menu add -text "Nonempty" \
-	-command [list blt::TableView::FilterNonempty $w] \
+	-command [list blt::TableView::NonemptyFilter $w] \
 	-style mystyle \
 	-icon $_private(icon)
     $menu add -text "Custom..." \
@@ -1196,7 +1196,7 @@ proc blt::TableView::BuildFiltersMenu { w col } {
 	    $menu add -type separator
 	}
 	$menu listadd $values \
-		-command  [list blt::TableView::SetFilter $w $col]
+            -command  [list blt::TableView::SingleValueFilter $w]
     } else {
 	set rows [$table sort -columns $col -unique -rows $rows]
 	if { [llength $rows] > 0 } {
@@ -1205,8 +1205,10 @@ proc blt::TableView::BuildFiltersMenu { w col } {
 	foreach row $rows {
 	    set fmtvalue [eval $fmtcmd $row $col]
 	    set value [$table get $row $col]
-	    $menu add -text $fmtvalue -value $value \
-		-command  [list blt::TableView::SetFilter $w $col]
+	    $menu add \
+                -text $fmtvalue \
+                -value $value \
+		-command  [list blt::TableView::SingleValueFilter $w]
 	}
     }
     set text [$w column cget $col -filtertext]
@@ -1242,7 +1244,7 @@ proc blt::TableView::UpdateFilter { w } {
     }
 }
 
-proc blt::TableView::FilterAll { w } {
+proc blt::TableView::AllFilter { w } {
     variable _private
 
     set col $_private(column)
@@ -1261,7 +1263,7 @@ proc IsMember {  list row } {
     return $n
 }
 
-proc blt::TableView::FilterTop10ByFrequency { w } {
+proc blt::TableView::Top10ByFrequencyFilter { w } {
     variable _private
 
     set col $_private(column)
@@ -1269,13 +1271,15 @@ proc blt::TableView::FilterTop10ByFrequency { w } {
     set rows [GetColumnFilterRows $w $col]
     set rows [$table sort -frequency -columns $col -row $rows]
     set numRows [llength $rows]
-    set rows [lrange $rows [expr $numRows - 10] end]
+    if { $numRows > 10 } {
+        set rows [lrange $rows [expr $numRows - 10] end]
+    }
     set expr "(\[lsearch {$rows} \${#}\] >= 0)"
     $w column configure $col -filterdata $expr
     ApplyFilters $w
 }
 
-proc blt::TableView::FilterTop10ByValue { w } {
+proc blt::TableView::Top10ByValueFilter { w } {
     variable _private
 
     set col $_private(column)
@@ -1283,13 +1287,15 @@ proc blt::TableView::FilterTop10ByValue { w } {
     set rows [GetColumnFilterRows $w $col]
     set rows [$table sort -columns $col -row $rows -nonempty]
     set numRows [llength $rows]
-    set rows [lrange $rows [expr $numRows - 10] end]
+    if { $numRows > 10 } {
+        set rows [lrange $rows [expr $numRows - 10] end]
+    }
     set expr "(\[lsearch {$rows} \${#}\] >= 0)"
     $w column configure $col -filterdata $expr
     ApplyFilters $w
 }
 
-proc blt::TableView::FilterBottom10ByFrequency { w } {
+proc blt::TableView::Bottom10ByFrequencyFilter { w } {
     variable _private
 
     set col $_private(column)
@@ -1297,13 +1303,15 @@ proc blt::TableView::FilterBottom10ByFrequency { w } {
     set rows [GetColumnFilterRows $w $col]
     set rows [$table sort -frequency -columns $col -row $rows -decreasing]
     set numRows [llength $rows]
-    set rows [lrange $rows [expr $numRows - 10] end]
+    if { $numRows > 10 } {
+        set rows [lrange $rows [expr $numRows - 10] end]
+    }
     set expr "(\[lsearch {$rows} \${#}\] >= 0)"
     $w column configure $col -filterdata $expr
     ApplyFilters $w
 }
 
-proc blt::TableView::FilterBottom10ByValue { w } {
+proc blt::TableView::Bottom10ByValueFilter { w } {
     variable _private
 
     set col $_private(column)
@@ -1311,13 +1319,15 @@ proc blt::TableView::FilterBottom10ByValue { w } {
     set rows [GetColumnFilterRows $w $col]
     set rows [$table sort -columns $col -row $rows -decreasing]
     set numRows [llength $rows]
-    set rows [lrange $rows [expr $numRows - 10] end]
+    if { $numRows > 10 } {
+        set rows [lrange $rows [expr $numRows - 10] end]
+    }
     set expr "(\[lsearch {$rows} \${#}\] >= 0)"
     $w column configure $col -filterdata $expr
     ApplyFilters $w
 }
 
-proc blt::TableView::FilterEmpty { w } {
+proc blt::TableView::EmptyFilter { w } {
     variable _private
 
     set col $_private(column)
@@ -1327,7 +1337,7 @@ proc blt::TableView::FilterEmpty { w } {
     ApplyFilters $w
 }
 
-proc blt::TableView::FilterNonempty { w } {
+proc blt::TableView::NonemptyFilter { w } {
     variable _private
 
     set col $_private(column)
@@ -1337,11 +1347,169 @@ proc blt::TableView::FilterNonempty { w } {
     ApplyFilters $w
 }
 
+#
+# NumericSearch
+#
+#   Equals
+#   Does not equal
+#   Greater than
+#   Greater than or equal to
+#   Less than
+#   Less than or equal to
+#   Between
+#
+
+#
+# TextSearch
+#
+#   Equals
+#   Does not equal
+#   Begins with
+#   Ends with
+#   Contains
+#   Does not contain
+#   Between
+#
+proc blt::TableView::TextEqualsFilter { w } {
+    variable _private
+
+    set col $_private(column)
+    set index [$w column index $col]
+    set menu [$w filter cget -menu]
+    set item [$menu index selected]
+    set value [$menu item cget $item -value]
+    if { $value == "" } {
+	set value [$menu item cget $item -text]
+    }
+    set value [list $value]
+    set expr [format {[info exists ${index}] &&
+        ([blt::utils::string equals ${index} %s -trim both])] $value]
+    $w column configure $col -filterdata $expr
+    ApplyFilters $w
+}
+
+proc blt::TableView::TextNotEqualsFilter { w } {
+    variable _private
+
+    set col $_private(column)
+    set index [$w column index $col]
+    set menu [$w filter cget -menu]
+    set item [$menu index selected]
+    set value [$menu item cget $item -value]
+    if { $value == "" } {
+	set value [$menu item cget $item -text]
+    }
+    set value [list $value]
+    set expr [format {![info exists ${index}] ||
+        (![blt::utils::string equals ${index} %s -trim both])] $value]
+    $w column configure $col -filterdata $expr
+    ApplyFilters $w
+}
+
+proc blt::TableView::TextBeginsWithFilter { w } {
+    variable _private
+
+    set col $_private(column)
+    set index [$w column index $col]
+    set menu [$w filter cget -menu]
+    set item [$menu index selected]
+    set value [$menu item cget $item -value]
+    if { $value == "" } {
+	set value [$menu item cget $item -text]
+    }
+    set value [list $value]
+    set expr [format {[info exists ${index}] &&
+        ([blt::utils::string begins ${index} %s -trim right])] $value]
+    $w column configure $col -filterdata $expr
+    ApplyFilters $w
+}
+
+proc blt::TableView::TextEndsWithFilter { w } {
+    variable _private
+
+    set col $_private(column)
+    set index [$w column index $col]
+    set menu [$w filter cget -menu]
+    set item [$menu index selected]
+    set value [$menu item cget $item -value]
+    if { $value == "" } {
+	set value [$menu item cget $item -text]
+    }
+    set value [list $value]
+    set expr [format {[info exists ${index}] &&
+        ([blt::utils::string ends ${index} %s -trim right])] $value]
+    $w column configure $col -filterdata $expr
+    ApplyFilters $w
+}
+
+proc blt::TableView::TextContainsFilter { w } {
+    variable _private
+
+    set col $_private(column)
+    set index [$w column index $col]
+    set menu [$w filter cget -menu]
+    set item [$menu index selected]
+    set value [$menu item cget $item -value]
+    if { $value == "" } {
+	set value [$menu item cget $item -text]
+    }
+    set value [list $value]
+    set expr [format {[info exists ${index}] &&
+        ([blt::utils::string contains ${index} %s])] $value]
+    $w column configure $col -filterdata $expr
+    ApplyFilters $w
+}
+
+proc blt::TableView::TextNotContainsFilter { w } {
+    variable _private
+
+    set col $_private(column)
+    set index [$w column index $col]
+    set menu [$w filter cget -menu]
+    set item [$menu index selected]
+    set value [$menu item cget $item -value]
+    if { $value == "" } {
+	set value [$menu item cget $item -text]
+    }
+    set value [list $value]
+    set expr [format {![info exists ${index}] ||
+        (![blt::utils::string contains ${index} %s])] $value]
+    $w column configure $col -filterdata $expr
+    ApplyFilters $w
+}
+
+proc blt::TableView::TextBetweenFilter { w } {
+    variable _private
+
+    set col $_private(column)
+    set index [$w column index $col]
+    # get first and last
+    set first [list $first]
+    set last [list $last]
+    set expr [format {[info exists ${index}] &&
+        ([blt::utils::string between ${index} %s %s])] $first $last]
+    $w column configure $col -filterdata $expr
+    ApplyFilters $w
+}
+
+#
+# DateSearch
+#
+#   Equals
+#   Before
+#   After 
+#   After or equal to
+#   Before or equal to 
+#   Between
+#
 proc blt::TableView::CustomFilter { w } {
     $w row show all
 }
     
-proc blt::TableView::SetFilter { w col } {
+proc blt::TableView::SingleValueFilter { w } {
+    variable _private
+
+    set col $_private(column)
     set index [$w column index $col]
     set menu [$w filter cget -menu]
     set item [$menu index selected]
@@ -1387,7 +1555,7 @@ proc blt::TableView::ApplyFilters { w } {
 }
 
 #
-# PostFilter --
+# PostFilterMenu --
 #
 #   Posts the filter combo menu at the location of the column requesting
 #   it.  The menu is selected to the current cell value and we bind to the
@@ -1397,7 +1565,7 @@ proc blt::TableView::ApplyFilters { w } {
 #   force <ButtonRelease> events to be interpreted by the combo menu
 #   instead of the tableview widget.
 #
-proc blt::TableView::PostFilter { w col } {
+proc blt::TableView::PostFilterMenu { w col } {
     variable _private
 
     set menu [$w filter cget -menu]
@@ -1418,12 +1586,12 @@ proc blt::TableView::PostFilter { w col } {
     $w see [list view.top $col]
     $w filter post $col
     update
-    bind $menu <Unmap> [list blt::TableView::UnpostFilter $w]
+    bind $menu <Unmap> [list blt::TableView::UnpostFilterMenu $w]
     blt::grab push $menu -global
 }
 
 #
-# UnpostFilter --
+# UnpostFilterMenu --
 #
 #   Unposts the filter menu.  Note that the current value set in the cell
 #   style is not propagated to the table here.  This is done via a
@@ -1431,7 +1599,7 @@ proc blt::TableView::PostFilter { w col } {
 #   because a menu item was selected or if the user clicked outside of the
 #   menu to cancel the operation.
 #
-proc ::blt::TableView::UnpostFilter { w } {
+proc ::blt::TableView::UnpostFilterMenu { w } {
     variable _private
 
     # Restore focus right away (otherwise X will take focus away when the
