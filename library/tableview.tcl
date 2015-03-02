@@ -1383,7 +1383,7 @@ proc blt::TableView::TextEqualsFilter { w } {
     }
     set value [list $value]
     set expr [format {[info exists ${index}] &&
-        ([blt::utils::string equals ${index} %s -trim both])] $value]
+        ([blt::utils::string equals ${index} %s -trim both])} $value]
     $w column configure $col -filterdata $expr
     ApplyFilters $w
 }
@@ -1401,7 +1401,7 @@ proc blt::TableView::TextNotEqualsFilter { w } {
     }
     set value [list $value]
     set expr [format {![info exists ${index}] ||
-        (![blt::utils::string equals ${index} %s -trim both])] $value]
+        (![blt::utils::string equals ${index} %s -trim both])} $value]
     $w column configure $col -filterdata $expr
     ApplyFilters $w
 }
@@ -1419,7 +1419,7 @@ proc blt::TableView::TextBeginsWithFilter { w } {
     }
     set value [list $value]
     set expr [format {[info exists ${index}] &&
-        ([blt::utils::string begins ${index} %s -trim right])] $value]
+        ([blt::utils::string begins ${index} %s -trim right])} $value]
     $w column configure $col -filterdata $expr
     ApplyFilters $w
 }
@@ -1437,7 +1437,7 @@ proc blt::TableView::TextEndsWithFilter { w } {
     }
     set value [list $value]
     set expr [format {[info exists ${index}] &&
-        ([blt::utils::string ends ${index} %s -trim right])] $value]
+        ([blt::utils::string ends ${index} %s -trim right])} $value]
     $w column configure $col -filterdata $expr
     ApplyFilters $w
 }
@@ -1455,7 +1455,7 @@ proc blt::TableView::TextContainsFilter { w } {
     }
     set value [list $value]
     set expr [format {[info exists ${index}] &&
-        ([blt::utils::string contains ${index} %s])] $value]
+        ([blt::utils::string contains ${index} %s])} $value]
     $w column configure $col -filterdata $expr
     ApplyFilters $w
 }
@@ -1473,7 +1473,7 @@ proc blt::TableView::TextNotContainsFilter { w } {
     }
     set value [list $value]
     set expr [format {![info exists ${index}] ||
-        (![blt::utils::string contains ${index} %s])] $value]
+        (![blt::utils::string contains ${index} %s])} $value]
     $w column configure $col -filterdata $expr
     ApplyFilters $w
 }
@@ -1487,7 +1487,7 @@ proc blt::TableView::TextBetweenFilter { w } {
     set first [list $first]
     set last [list $last]
     set expr [format {[info exists ${index}] &&
-        ([blt::utils::string between ${index} %s %s])] $first $last]
+        ([blt::utils::string between ${index} %s %s])} $first $last]
     $w column configure $col -filterdata $expr
     ApplyFilters $w
 }

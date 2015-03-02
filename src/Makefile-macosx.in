@@ -337,6 +337,7 @@ BLT_TCL_SO_OBJS =	bltAlloc.o \
 			bltBase64.o \
 			bltBgexec.o \
 			bltChain.o \
+			bltCompare.o \
 			bltCrc32.o \
 			bltCsv.o \
 			$(DATATABLE_OBJS) \
