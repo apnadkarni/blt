@@ -36,6 +36,7 @@
 #endif /* HAVE_STDLIB_H */
 
 #ifdef HAVE_STRING_H
+#define __USE_GNU
 #include <string.h>
 #endif /* HAVE_STRING_H */
 

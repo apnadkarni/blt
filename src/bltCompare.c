@@ -40,7 +40,7 @@
   blt::utils::string contains str pattern -trim both -nocase
   blt::utils::string ends str pattern -trim both -nocase
   blt::utils::string equals str1 str2 -trim both -nocase 
-  blt::utils::string inlist str list -nocase -sorted decreasing|increasing
+  blt::utils::string inlist str list -nocase -sorted decreasing|increasing -dictionary -ascii
 */
 
 #define BUILD_BLT_TCL_PROCS 1
@@ -59,7 +59,6 @@
 
 typedef int (StringCompareProc)(const char *s1, const char *s2);
 
-#define EXACT		(1<<0)
 #define SORTED_NONE	  (0)
 #define SORTED_DECREASING (1)
 #define SORTED_INCREASING (2)
@@ -93,17 +92,8 @@ static Blt_SwitchCustom trimSwitch = {
     TrimSwitchProc, NULL, NULL, 0,
 };
 
-static Blt_SwitchSpec numberSwitches[] = 
-{
-    {BLT_SWITCH_BITMASK, "-exact", "", (char *)NULL,
-	Blt_Offset(NumberSwitches, flags), 0, EXACT},
-    {BLT_SWITCH_END}
-};
-
 static Blt_SwitchSpec numberInListSwitches[] = 
 {
-    {BLT_SWITCH_BITMASK, "-exact", "", (char *)NULL,
-	Blt_Offset(NumberSwitches, flags), 0, EXACT},
     {BLT_SWITCH_CUSTOM,  "-sorted",  "decreasing|increasing", (char *)NULL,
 	Blt_Offset(NumberSwitches, sorted),  0, 0, &sortedSwitch},
     {BLT_SWITCH_END}
@@ -135,6 +125,10 @@ static Blt_SwitchSpec stringInListSwitches[] =
 	Blt_Offset(StringSwitches, flags), 0, NOCASE},
     {BLT_SWITCH_CUSTOM,  "-sorted",  "decreasing|increasing", (char *)NULL,
 	Blt_Offset(StringSwitches, sorted),  0, 0, &sortedSwitch},
+    {BLT_SWITCH_BITMASK, "-dictionary", "", (char *)NULL,
+	Blt_Offset(StringSwitches, flags), 0, DICTIONARY},
+    {BLT_SWITCH_BITMASK, "-ascii", "", (char *)NULL,
+	Blt_Offset(StringSwitches, flags), 0, ASCII},
     {BLT_SWITCH_END}
 };
 
@@ -265,23 +259,167 @@ TrimString(const char *s, int *lenPtr, int flags)
 }
 
 static int
-LinearStringSearch(int objc, Tcl_Obj **objv, const char *s, int len, int flags)
+LinearNumberSearch(double value, int objc, Tcl_Obj **objv)
 {
+    int i;
+    
+    for (i = 0; i < objc; i++) {
+	double x;
+	
+	if ((Tcl_GetDoubleFromObj(NULL, objv[i], &x) == TCL_OK) &&
+            (Blt_AlmostEquals(value, x))) {
+	    return TRUE;
+	}
+    }
     return FALSE;
 }
 
 static int
-BinaryStringSearchUp(int objc, Tcl_Obj **objv, const char *s, int len,
-		     int flags)
+BinaryNumberSearchUp(double value, int objc, Tcl_Obj **objv)
 {
-    return TRUE;
+    int low, high;
+
+    low = 0;
+    high = objc - 1;
+    while (low <= high) {
+	int median;
+        double x;
+        
+	median = (low + high) >> 1;
+	if (Tcl_GetDoubleFromObj(NULL, objv[median], &x) != TCL_OK) {
+            return FALSE;
+        }
+        if (Blt_AlmostEquals(value, x)) {
+            return TRUE;
+        }
+        if (value < x) {
+	    high = median - 1;
+	} else if (value > x) {
+	    low = median + 1;
+	}
+    }
+    return FALSE;                       /* Can't find number. */
 }
 
 static int
-BinaryStringSearchDown(int objc, Tcl_Obj **objv, const char *s, int len,
+BinaryNumberSearchDown(double value, int objc, Tcl_Obj **objv)
+{
+    int low, high;
+
+    low = 0;
+    high = objc - 1;
+    while (low <= high) {
+	int median;
+        double x;
+        
+	median = (low + high) >> 1;
+	if (Tcl_GetDoubleFromObj(NULL, objv[median], &x) != TCL_OK) {
+            return FALSE;
+        }
+        if (Blt_AlmostEquals(value, x)) {
+            return TRUE;
+        }
+        if (value < x) {
+	    low = median + 1;
+	} else if (value > x) {
+	    high = median - 1;
+	}
+    }
+    return FALSE;                       /* Can't find number. */
+}
+
+static int
+LinearStringSearch(const char *str1, int len1, int objc, Tcl_Obj **objv, 
+                   int flags)
+{
+    int i;
+    StringCompareProc *proc;
+
+    if (flags & NOCASE) {
+        proc = strcasecmp;
+    } else if (flags & DICTIONARY) {
+        proc = Blt_DictionaryCompare;
+    } else {
+        proc = strcmp;
+    }
+    for (i = 0; i < objc; i++) {
+	const char *str2;
+	int len2;
+
+        str2 = Tcl_GetStringFromObj(objv[i], &len2);
+        if ((len1 == len2) && ((*proc)(str1, str2) == 0)) {
+            return TRUE;
+        }
+    }
+    return FALSE;
+}
+
+static int
+BinaryStringSearchUp(const char *str1, int len1, int objc, Tcl_Obj **objv, 
+		     int flags)
+{
+    int low, high;
+    StringCompareProc *proc;
+
+    if (flags & DICTIONARY) {
+        proc = Blt_DictionaryCompare;
+    } else {
+        proc = strcmp;
+    }
+    low = 0;
+    high = objc - 1;
+    while (low <= high) {
+	int comp;
+	int median;
+        const char *str2;
+        
+	median = (low + high) >> 1;
+        str2 = Tcl_GetString(objv[median]);
+        comp = (*proc)(str1, str2);
+        if (comp == 0) {
+            return TRUE;
+        }
+        if (comp < 0) {
+	    high = median - 1;
+	} else if (comp > 0) {
+	    low = median + 1;
+	}
+    }
+    return FALSE;                       /* Can't find number. */
+}
+
+static int
+BinaryStringSearchDown(const char *str1, int len1, int objc, Tcl_Obj **objv, 
 		       int flags)
 {
-    return TRUE;
+    int low, high;
+    StringCompareProc *proc;
+
+    if (flags & DICTIONARY) {
+        proc = Blt_DictionaryCompare;
+    } else {
+        proc = strcmp;
+    }
+    low = 0;
+    high = objc - 1;
+    while (low <= high) {
+	int comp;
+	int median;
+        const char *str2;
+        
+	median = (low + high) >> 1;
+        str2 = Tcl_GetString(objv[median]);
+        comp = (*proc)(str1, str2);
+        if (comp == 0) {
+            return TRUE;
+        }
+        if (comp < 0) {
+	    low = median + 1;
+	} else if (comp > 0) {
+	    high = median - 1;
+	}
+    }
+    return FALSE;                       /* Can't find number. */
 }
 
 /*
@@ -289,7 +427,7 @@ BinaryStringSearchDown(int objc, Tcl_Obj **objv, const char *s, int len,
  *
  * NumberBetweenOp --
  *
- *	blt::utils::number between value first last ?switches?
+ *	blt::utils::number between value first last
  *
  *---------------------------------------------------------------------------
  */
@@ -299,7 +437,6 @@ NumberBetweenOp(ClientData clientData, Tcl_Interp *interp, int objc,
 		Tcl_Obj *const *objv)
 {
     double value, first, last;
-    NumberSwitches switches;
     int state;
 
     if (Tcl_GetDoubleFromObj(interp, objv[2], &value) != TCL_OK) {
@@ -311,11 +448,6 @@ NumberBetweenOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (Tcl_GetDoubleFromObj(interp, objv[4], &last) != TCL_OK) {
 	return TCL_ERROR;
     }
-    memset(&switches, 0, sizeof(switches));
-    if (Blt_ParseSwitches(interp, numberSwitches, objc - 5, objv + 5,
-		&switches, BLT_SWITCH_DEFAULTS) < 0) {
-	return TCL_ERROR;
-    }
     state = FALSE;
     if (first > last) {
 	double tmp;
@@ -324,16 +456,11 @@ NumberBetweenOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	first = last;
 	last = tmp;
     }
-    if (switches.flags & EXACT) {
-	state = ((value >= first) && (value <= last));
+    if ((Blt_AlmostEquals(value, first)) || (Blt_AlmostEquals(value, last))) {
+        state = TRUE;
     } else {
-	if ((Blt_AlmostEquals(value, first)) ||
-	    (Blt_AlmostEquals(value, last))) {
-	    state = TRUE;
-	}
-	state = ((value >= first) && (value <= last));
+        state = ((value >= first) && (value <= last));
     }
-    Blt_FreeSwitches(numberSwitches, (char *)&switches, 0);
     Tcl_SetBooleanObj(Tcl_GetObjResult(interp), state);
     return TCL_OK;
 }
@@ -343,7 +470,7 @@ NumberBetweenOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * NumberEqualsOp --
  *
- *	blt::utils::number equals value1 value2 ?switches?
+ *	blt::utils::number equals value1 value2 
  *
  *---------------------------------------------------------------------------
  */
@@ -353,7 +480,6 @@ NumberEqualsOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	       Tcl_Obj *const *objv)
 {
     double value1, value2;
-    NumberSwitches switches;
     int state;
 
     if (Tcl_GetDoubleFromObj(interp, objv[2], &value1) != TCL_OK) {
@@ -362,16 +488,7 @@ NumberEqualsOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (Tcl_GetDoubleFromObj(interp, objv[3], &value2) != TCL_OK) {
 	return TCL_ERROR;
     }
-    memset(&switches, 0, sizeof(switches));
-    if (Blt_ParseSwitches(interp, numberSwitches, objc - 4, objv + 4,
-		&switches, BLT_SWITCH_DEFAULTS) < 0) {
-	return TCL_ERROR;
-    }
-    state = FALSE;
-    if (switches.flags & EXACT) {
-    } else {
-    }
-    Blt_FreeSwitches(numberSwitches, (char *)&switches, 0);
+    state = Blt_AlmostEquals(value1, value2);
     Tcl_SetBooleanObj(Tcl_GetObjResult(interp), state);
     return TCL_OK;
 }
@@ -381,7 +498,7 @@ NumberEqualsOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * NumberGreaterThanOrEqualsOp --
  *
- *	blt::utils::number ge value1 value2 ?switches?
+ *	blt::utils::number ge value1 value2 
  *
  *---------------------------------------------------------------------------
  */
@@ -391,7 +508,6 @@ NumberGreaterThanOrEqualsOp(ClientData clientData, Tcl_Interp *interp, int objc,
 			    Tcl_Obj *const *objv)
 {
     double value1, value2;
-    NumberSwitches switches;
     int state;
 
     if (Tcl_GetDoubleFromObj(interp, objv[2], &value1) != TCL_OK) {
@@ -400,16 +516,10 @@ NumberGreaterThanOrEqualsOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (Tcl_GetDoubleFromObj(interp, objv[3], &value2) != TCL_OK) {
 	return TCL_ERROR;
     }
-    memset(&switches, 0, sizeof(switches));
-    if (Blt_ParseSwitches(interp, numberSwitches, objc - 4, objv + 4,
-		&switches, BLT_SWITCH_DEFAULTS) < 0) {
-	return TCL_ERROR;
+    state = Blt_AlmostEquals(value1, value2);
+    if (!state) {
+        state = (value1 > value2);
     }
-    state = FALSE;
-    if (switches.flags & EXACT) {
-    } else {
-    }
-    Blt_FreeSwitches(numberSwitches, (char *)&switches, 0);
     Tcl_SetBooleanObj(Tcl_GetObjResult(interp), state);
     return TCL_OK;
 }
@@ -419,7 +529,7 @@ NumberGreaterThanOrEqualsOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * NumberGreaterThanOp --
  *
- *	blt::utils::number gt value1 value2 ?switches?
+ *	blt::utils::number gt value1 value2 
  *
  *---------------------------------------------------------------------------
  */
@@ -429,7 +539,6 @@ NumberGreaterThanOp(ClientData clientData, Tcl_Interp *interp, int objc,
 		    Tcl_Obj *const *objv)
 {
     double value1, value2;
-    NumberSwitches switches;
     int state;
 
     if (Tcl_GetDoubleFromObj(interp, objv[2], &value1) != TCL_OK) {
@@ -438,16 +547,7 @@ NumberGreaterThanOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (Tcl_GetDoubleFromObj(interp, objv[3], &value2) != TCL_OK) {
 	return TCL_ERROR;
     }
-    memset(&switches, 0, sizeof(switches));
-    if (Blt_ParseSwitches(interp, numberSwitches, objc - 4, objv + 4,
-		&switches, BLT_SWITCH_DEFAULTS) < 0) {
-	return TCL_ERROR;
-    }
-    state = FALSE;
-    if (switches.flags & EXACT) {
-    } else {
-    }
-    Blt_FreeSwitches(numberSwitches, (char *)&switches, 0);
+    state = (value1 > value2);
     Tcl_SetBooleanObj(Tcl_GetObjResult(interp), state);
     return TCL_OK;
 }
@@ -457,7 +557,7 @@ NumberGreaterThanOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * NumberLessThanOrEqualsOp --
  *
- *	blt::utils::number le value1 value2 ?switches?
+ *	blt::utils::number le value1 value2 
  *
  *---------------------------------------------------------------------------
  */
@@ -467,7 +567,6 @@ NumberLessThanOrEqualsOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	     Tcl_Obj *const *objv)
 {
     double value1, value2;
-    NumberSwitches switches;
     int state;
 
     if (Tcl_GetDoubleFromObj(interp, objv[2], &value1) != TCL_OK) {
@@ -476,16 +575,10 @@ NumberLessThanOrEqualsOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (Tcl_GetDoubleFromObj(interp, objv[3], &value2) != TCL_OK) {
 	return TCL_ERROR;
     }
-    memset(&switches, 0, sizeof(switches));
-    if (Blt_ParseSwitches(interp, numberSwitches, objc - 4, objv + 4,
-		&switches, BLT_SWITCH_DEFAULTS) < 0) {
-	return TCL_ERROR;
+    state = Blt_AlmostEquals(value1, value2);
+    if (!state) {
+        state = (value1 < value2);
     }
-    state = FALSE;
-    if (switches.flags & EXACT) {
-    } else {
-    }
-    Blt_FreeSwitches(numberSwitches, (char *)&switches, 0);
     Tcl_SetBooleanObj(Tcl_GetObjResult(interp), state);
     return TCL_OK;
 }
@@ -495,7 +588,7 @@ NumberLessThanOrEqualsOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * NumberLessThanOp --
  *
- *	blt::utils::number lt value1 value2 ?switches?
+ *	blt::utils::number lt value1 value2 
  *
  *---------------------------------------------------------------------------
  */
@@ -505,7 +598,6 @@ NumberLessThanOp(ClientData clientData, Tcl_Interp *interp, int objc,
 		 Tcl_Obj *const *objv)
 {
     double value1, value2;
-    NumberSwitches switches;
     int state;
 
     if (Tcl_GetDoubleFromObj(interp, objv[2], &value1) != TCL_OK) {
@@ -514,16 +606,7 @@ NumberLessThanOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (Tcl_GetDoubleFromObj(interp, objv[3], &value2) != TCL_OK) {
 	return TCL_ERROR;
     }
-    memset(&switches, 0, sizeof(switches));
-    if (Blt_ParseSwitches(interp, numberSwitches, objc - 4, objv + 4,
-		&switches, BLT_SWITCH_DEFAULTS) < 0) {
-	return TCL_ERROR;
-    }
-    state = FALSE;
-    if (switches.flags & EXACT) {
-    } else {
-    }
-    Blt_FreeSwitches(numberSwitches, (char *)&switches, 0);
+    state = (value1 < value2);
     Tcl_SetBooleanObj(Tcl_GetObjResult(interp), state);
     return TCL_OK;
 }
@@ -545,7 +628,7 @@ NumberInListOp(ClientData clientData, Tcl_Interp *interp, int objc,
     NumberSwitches switches;
     Tcl_Obj **elv;
     double value;
-    int elc, i, state;
+    int elc, state;
     
     if (Tcl_GetDoubleFromObj(interp, objv[2], &value) != TCL_OK) {
 	return TCL_ERROR;
@@ -558,21 +641,17 @@ NumberInListOp(ClientData clientData, Tcl_Interp *interp, int objc,
 		&switches, BLT_SWITCH_DEFAULTS) < 0) {
 	return TCL_ERROR;
     }
-    state = FALSE;
-    for (i = 0; i < elc; i++) {
-	double x;
-	
-	if (Tcl_GetDoubleFromObj(interp, elv[i], &x) != TCL_OK) {
-	    return TCL_ERROR;
-	}
-	if (switches.flags & EXACT) {
-	    state = (value == x);
-	} else {
-	    state = Blt_AlmostEquals(value, x);
-	}
-	if (state) {
-	    break;
-	}
+    state = FALSE;                      /* Suppress compiler warning. */
+    switch (switches.sorted) {
+    case SORTED_NONE:
+        state = LinearNumberSearch(value, elc, elv);
+        break;
+    case SORTED_INCREASING:
+        state = BinaryNumberSearchUp(value, elc, elv);
+        break;
+    case SORTED_DECREASING:
+        state = BinaryNumberSearchDown(value, elc, elv);
+        break;
     }
     Blt_FreeSwitches(numberInListSwitches, (char *)&switches, 0);
     Tcl_SetBooleanObj(Tcl_GetObjResult(interp), state);
@@ -588,13 +667,13 @@ NumberInListOp(ClientData clientData, Tcl_Interp *interp, int objc,
  */
 static Blt_OpSpec numberOps[] =
 {
-    {"between", 1, NumberBetweenOp, 5, 0, "value first last ?switches?",},
-    {"eq",      1, NumberEqualsOp,  4, 0, "value1 value2 ?switches?",},
-    {"ge",      2, NumberGreaterThanOrEqualsOp, 4, 0, "value1 value2 ?switches?",},
-    {"gt",      2, NumberGreaterThanOp,  4, 0, "value1 value2 ?switches?",},
+    {"between", 1, NumberBetweenOp, 5, 5, "value first last",},
+    {"eq",      1, NumberEqualsOp,  4, 4, "value1 value2",},
+    {"ge",      2, NumberGreaterThanOrEqualsOp, 4, 4, "value1 value2",},
+    {"gt",      2, NumberGreaterThanOp,  4, 4, "value1 value2",},
     {"inlist",  1, NumberInListOp,       4, 0, "value list ?switches?",},
-    {"le",      2, NumberLessThanOrEqualsOp, 4, 0, "value1 value2 ?switches?",},
-    {"lt",      2, NumberLessThanOp,     4, 0, "value1 value2 ?switches?",},
+    {"le",      2, NumberLessThanOrEqualsOp, 4, 4, "value1 value2",},
+    {"lt",      2, NumberLessThanOp,     4, 4, "value1 value2",},
 };
 int numNumberOps = sizeof(numberOps) / sizeof(Blt_OpSpec);
 
@@ -750,16 +829,17 @@ StringContainsOp(ClientData clientData, Tcl_Interp *interp, int objc,
     const char *s, *pattern;
     StringSwitches switches;
     int state;
+    int len1, len2;
     
-    s = Tcl_GetString(objv[2]);
-    pattern = Tcl_GetString(objv[3]);
+    s = Tcl_GetStringFromObj(objv[2], &len1);
+    pattern = Tcl_GetStringFromObj(objv[3], &len2);
     memset(&switches, 0, sizeof(switches));
     if (Blt_ParseSwitches(interp, stringSwitches, objc - 4, objv + 4,
 		&switches, BLT_SWITCH_DEFAULTS) < 0) {
 	return TCL_ERROR;
     }
     state = FALSE;
-    if (len1 > len2) {
+    if (len1 >= len2) {
 	if (switches.flags & NOCASE) {
 	    state = (strcasestr(s, pattern) != NULL);
 	} else {
@@ -896,16 +976,18 @@ StringInListOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	return TCL_ERROR;
     }
     state = FALSE;
+    if (switches.flags & NOCASE) {
+        switches.sorted = SORTED_NONE;
+    }
     switch (switches.sorted) {
     case SORTED_INCREASING:
-	state = BinaryStringSearchUp(elc, elv, s, len, switches.flags & NOCASE);
+	state = BinaryStringSearchUp(s, len, elc, elv, switches.flags);
 	break;
     case SORTED_DECREASING:
-	state = BinaryStringSearchDown(elc, elv, s, len,
-		switches.flags & NOCASE);
+	state = BinaryStringSearchDown(s, len, elc, elv, switches.flags);
 	break;
     case SORTED_NONE:
-	state = LinearStringSearch(elc, elv, s, len, switches.flags & NOCASE);
+	state = LinearStringSearch(s, len, elc, elv, switches.flags);
 	break;
     }
     Tcl_SetBooleanObj(Tcl_GetObjResult(interp), state);
@@ -917,11 +999,11 @@ StringInListOp(ClientData clientData, Tcl_Interp *interp, int objc,
 static Blt_OpSpec stringOps[] =
 {
     {"begins",    2, StringBeginsOp,    3, 0, "str pattern ?switches?",},
-    {"between",   2, StringBetweenOp,   4, 0, "str1 first last ?switches?",},
+    {"between",   2, StringBetweenOp,   4, 0, "str first last ?switches?",},
     {"contains",  1, StringContainsOp,  3, 0, "str pattern ?switches?",},
-    {"ends",      2, StringEndsOp,      3, 0, "str1 str2 ?switches?",},
-    {"equals",    2, StringEqualsOp,    3, 0, "str1 str2 ?switches?",},
-    {"inlist",    1, StringInListOp,    3, 0, "str1 list ?switches?",},
+    {"ends",      2, StringEndsOp,      3, 0, "str pattern ?switches?",},
+    {"equals",    2, StringEqualsOp,    3, 0, "str pattern ?switches?",},
+    {"inlist",    1, StringInListOp,    3, 0, "str list ?switches?",},
 };
 
 int numStringOps = sizeof(stringOps) / sizeof(Blt_OpSpec);
