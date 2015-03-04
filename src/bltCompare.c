@@ -40,7 +40,7 @@
   blt::utils::string contains str pattern -trim both -nocase
   blt::utils::string ends str pattern -trim both -nocase
   blt::utils::string equals str1 str2 -trim both -nocase 
-  blt::utils::string inlist str list -nocase -sorted decreasing|increasing -dictionary -ascii
+  blt::utils::string inlist str list -nocase -sorted decreasing|increasing -dictionary -ascii -trim both
 */
 
 #define BUILD_BLT_TCL_PROCS 1
@@ -129,6 +129,8 @@ static Blt_SwitchSpec stringInListSwitches[] =
 	Blt_Offset(StringSwitches, flags), 0, DICTIONARY},
     {BLT_SWITCH_BITMASK, "-ascii", "", (char *)NULL,
 	Blt_Offset(StringSwitches, flags), 0, ASCII},
+    {BLT_SWITCH_CUSTOM,  "-trim",  "left|right|both|none", (char *)NULL,
+	Blt_Offset(StringSwitches, trim),    0, 0, &trimSwitch},
     {BLT_SWITCH_END}
 };
 
@@ -234,7 +236,7 @@ TrimString(const char *s, int *lenPtr, int flags)
 		break;
 	    }
 	}
-	len = p - s;
+	len = p - s + 1;
 	break;
     case TRIM_BOTH:
 	for (p = s; *p != '\0'; p++) {
@@ -249,7 +251,7 @@ TrimString(const char *s, int *lenPtr, int flags)
 		break;
 	    }
 	}
-	len = p - s;
+	len = p - s + 1;
 	break;
     case TRIM_NONE:
 	break;
@@ -773,13 +775,12 @@ StringBetweenOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     if (switches.flags & DICTIONARY) {
 	proc = Blt_DictionaryCompare;
-    } else if (switches.flags & ASCII) {
-	if (switches.flags & NOCASE) {
-	    proc = strcasecmp;
-	} else {
-	    proc = strcmp;
-	}
+    } else if (switches.flags & NOCASE) {
+        proc = strcasecmp;
+    } else {
+        proc = strcmp;
     }
+        
     comp = (*proc)(first, last);
     if (comp < 0) {
 	const char *tmp;
@@ -791,13 +792,13 @@ StringBetweenOp(ClientData clientData, Tcl_Interp *interp, int objc,
     comp = (*proc)(s, first);
     if (comp == 0) {
 	state = TRUE;			/* Equal to first. */
-    } else if (comp < 0) {
+    } else if (comp > 0) {
 	state = FALSE;			/* Less than first. */
     } else {
 	comp = (*proc)(s, last);
 	if (comp == 0) {
 	    state = TRUE;		/* Equal to last. */
-	} else if (comp > 0) {
+	} else if (comp < 0) {
 	    state = FALSE;		/* Greater than last. */
 	} else {
 	    state = TRUE;		/* Between first and last. */
@@ -975,6 +976,7 @@ StringInListOp(ClientData clientData, Tcl_Interp *interp, int objc,
 		&switches, BLT_SWITCH_DEFAULTS) < 0) {
 	return TCL_ERROR;
     }
+    s = TrimString(s, &len, switches.trim);
     state = FALSE;
     if (switches.flags & NOCASE) {
         switches.sorted = SORTED_NONE;

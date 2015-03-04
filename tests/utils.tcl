@@ -185,3 +185,6 @@ test utils.38 {number inlist 100 "3 1 2 1e2" -badSwitch} {
 following switches are available:
    -sorted decreasing|increasing}}
 
+test utils.14 {string between d a z} {
+    list [catch {blt::utils::string between d a z} msg] $msg
+} {0 1}

@@ -1156,19 +1156,23 @@ proc blt::TableView::BuildFiltersMenu { w col } {
             -style mystyle \
             -command [list blt::TableView::Bottom10ByFrequencyFilter $w] 
     } 
+    set search $menu.search
+    if { [winfo exists $search] } {
+        destroy $search
+    }
+    switch [$table column type $col] {
+        "int" - "long" - "double" {
+            BuildNumberSearchFilterMenu $w $search
+        }
+        default {
+            BuildTextSearchFilterMenu $w $search
+        }
+    }
     $menu delete all
     $menu add -text "All" \
 	-command [list blt::TableView::AllFilter $w] \
 	-style mystyle \
 	-icon $_private(icon) 
-    $menu add -type cascade -text "Top 10" \
-	-menu $top10 \
-	-style mystyle \
-	-icon $_private(icon)
-    $menu add -type cascade -text "Bottom 10" \
-	-menu $bot10 \
-	-style mystyle \
-	-icon $_private(icon)
     $menu add -text "Empty" \
 	-command [list blt::TableView::EmptyFilter $w] \
 	-style mystyle \
@@ -1177,9 +1181,17 @@ proc blt::TableView::BuildFiltersMenu { w col } {
 	-command [list blt::TableView::NonemptyFilter $w] \
 	-style mystyle \
 	-icon $_private(icon)
-    $menu add -text "Custom..." \
+    $menu add -type cascade -text "Top 10" \
+	-menu $top10 \
 	-style mystyle \
-	-command [list blt::TableView::CustomFilter $w] \
+	-icon $_private(icon)
+    $menu add -type cascade -text "Bottom 10" \
+	-menu $bot10 \
+	-style mystyle \
+	-icon $_private(icon)
+    $menu add -type cascade -text "Custom" \
+	-menu $search \
+	-style mystyle \
 	-icon $_private(icon)
     if { [llength [$table column empty $col]] > 0 } {
 	$menu item configure "Empty" -state normal
@@ -1613,3 +1625,1133 @@ proc ::blt::TableView::UnpostFilterMenu { w } {
     blt::grab pop $menu
 }
 
+
+proc ::blt::TableView::BuildNumberSearchFilterMenu { w menu } {
+    variable _private
+
+    blt::combomenu $menu \
+        -textvariable blt::TableView::_private(textvariable) \
+        -iconvariable blt::TableView::_private(iconvariable) \
+        -command [list blt::TableView::UpdateFilter $w]
+
+    if { ![$menu style exists mystyle] } {
+        $menu style create mystyle -font "Arial 9 italic"
+    }
+    $menu add -text "Equals..." \
+        -icon $_private(icon) \
+        -style mystyle \
+        -command [list blt::TableView::EqualsNumberSearch $w] 
+    $menu add -text "Not equals..." \
+        -icon $_private(icon) \
+        -style mystyle \
+        -command [list blt::TableView::NotEqualsNumberSearch $w] 
+    $menu add -type separator
+    $menu add -text "Greater than..." \
+        -icon $_private(icon) \
+        -style mystyle \
+        -command [list blt::TableView::GreaterThanNumberSearch $w] 
+    $menu add -text "Greater than or equal to..." \
+        -icon $_private(icon) \
+        -style mystyle \
+        -command [list blt::TableView::GreaterThanOrEqualToNumberSearch $w] 
+    $menu add -text "Less than..." \
+        -icon $_private(icon) \
+        -style mystyle \
+        -command [list blt::TableView::LessThanNumberSearch $w] 
+    $menu add -text "Less than or equal to..." \
+        -icon $_private(icon) \
+        -style mystyle \
+        -command [list blt::TableView::LessThanOrEqualToNumberSearch $w] 
+    $menu add -type separator
+    $menu add -text "Between..." \
+        -icon $_private(icon) \
+        -style mystyle \
+        -command [list blt::TableView::BetweenNumberSearch $w] 
+}
+
+proc ::blt::TableView::BuildTextSearchFilterMenu { w menu } {
+    variable _private
+
+    blt::combomenu $menu \
+        -textvariable blt::TableView::_private(textvariable) \
+        -iconvariable blt::TableView::_private(iconvariable) \
+        -command [list blt::TableView::UpdateFilter $w]
+
+    if { ![$menu style exists mystyle] } {
+        $menu style create mystyle -font "Arial 9 italic"
+    }
+    $menu add -text "Equals..." \
+        -icon $_private(icon) \
+        -style mystyle \
+        -command [list blt::TableView::EqualsTextSearch $w] 
+    $menu add -text "Does not equal..." \
+        -icon $_private(icon) \
+        -style mystyle \
+        -command [list blt::TableView::NotEqualsTextSearch $w] 
+    $menu add -type separator
+    $menu add -text "Begins with..." \
+        -icon $_private(icon) \
+        -style mystyle \
+        -command [list blt::TableView::BeginsWithTextSearch $w] 
+    $menu add -text "Ends with..." \
+        -icon $_private(icon) \
+        -style mystyle \
+        -command [list blt::TableView::EndsWithTextSearch $w] 
+    $menu add -type separator
+    $menu add -text "Contains..." \
+        -icon $_private(icon) \
+        -style mystyle \
+        -command [list blt::TableView::ContainsTextSearch $w] 
+    $menu add -text "Does not contain..." \
+        -icon $_private(icon) \
+        -style mystyle \
+        -command [list blt::TableView::NotContainsTextSearch $w] 
+    $menu add -type separator
+    $menu add -text "Between..." \
+        -icon $_private(icon) \
+        -style mystyle \
+        -command [list blt::TableView::BetweenTextSearch $w] 
+}
+
+proc blt::TableView::EqualsNumberSearch { w } {
+    variable _private
+
+    set top $w.numberequals
+    toplevel $top -borderwidth 2 -relief raised -background grey80
+    wm overrideredirect $top true
+    wm withdraw $top
+    wm protocol $top WM_DELETE {
+        set blt::TableView::_private(search) 0
+    }        
+    set f [blt::tk::frame $top.frame]
+    blt::comboentry $f.entry -hidearrow yes 
+    blt::tk::label $f.label -text "Search for values that equal:" 
+    blt::tk::label $f.hint -text "(one or more values separated by commas)" \
+        -font "Arial 9 italic"
+    blt::tk::button $f.ok -text "Apply" -command {
+        set blt::TableView::_private(search) 1
+    }
+    blt::tk::button $f.cancel -text "Cancel" -command {
+        set blt::TableView::_private(search) 0
+    }
+    blt::table $f \
+        0,0 $f.label -cspan 2 -anchor w \
+        1,0 $f.entry -cspan 2 -fill x \
+        2,0 $f.hint -cspan 2 \
+        3,0 $f.cancel -width 1i \
+        3,1 $f.ok -width 1i 
+    blt::table configure $f r3 -pad 4
+    
+    blt::table $top \
+        0,0 $f -fill both -padx 4 -pady 4
+    update
+    set dw [winfo reqwidth $top]
+    set dh [winfo reqheight $top]
+    set vw [winfo width $w]
+    set vh [winfo height $w]
+    set rootx [winfo rootx $w]
+    set rooty [winfo rooty $w]
+    set x [expr $rootx + ($vw - $dw) / 2]
+    set y [expr $rooty + ($vh - $dh) / 2]
+    focus $f.entry
+    wm geometry $top +$x+$y
+    wm deiconify $top
+    
+    set _private(search) 0
+    tkwait variable blt::TableView::_private(search)
+    set value [$f.entry get]
+    destroy $top
+    if { $_private(search) && [string is double -strict $value] } {
+        set col $_private(column)
+        set index [$w column index $col]
+        set expr "\[info exists ${index}\] &&
+            (\[blt::utils::number eq \$${index} $value])"
+        $w column configure $col -filterdata $expr
+        ApplyFilters $w
+    } else {
+        set col $_private(column)
+	$w column configure $col -filterhighlight 0
+	$w column configure $col -filtertext "" -filtericon ""
+        AllFilter $w
+    }
+}
+
+proc blt::TableView::NotEqualsNumberSearch { w } {
+    variable _private
+
+    set col $_private(column)
+    set top $w.numberequals
+    toplevel $top -borderwidth 2 -relief raised -background grey80
+    wm overrideredirect $top true
+    wm withdraw $top
+    wm protocol $top WM_DELETE {
+        set blt::TableView::_private(search) 0
+    }        
+    set f [blt::tk::frame $top.frame]
+    blt::comboentry $f.entry -hidearrow yes 
+    blt::tk::label $f.label \
+        -text "Search for values that do not equal:" 
+    blt::tk::label $f.hint \
+        -text "(one or more values separated by commas)" \
+        -font "Arial 9 italic"
+    blt::tk::button $f.ok \
+        -text "Apply" -command { set blt::TableView::_private(search) 1 }
+    blt::tk::button $f.cancel \
+        -text "Cancel" \
+        -command { set blt::TableView::_private(search) 0 }
+    blt::table $f \
+        0,0 $f.label -cspan 2 -anchor w \
+        1,0 $f.entry -cspan 2 -fill x \
+        2,0 $f.hint -cspan 2 \
+        3,0 $f.cancel -width 1i \
+        3,1 $f.ok -width 1i 
+    blt::table configure $f r3 -pad 4
+
+    blt::table $top \
+        0,0 $f -fill both -padx 4 -pady 4
+    blt::table configure $f r3 -pad 2
+    update
+    set dw [winfo reqwidth $top]
+    set dh [winfo reqheight $top]
+    set vw [winfo width $w]
+    set vh [winfo height $w]
+    set rootx [winfo rootx $w]
+    set rooty [winfo rooty $w]
+    set x [expr $rootx + ($vw - $dw) / 2]
+    set y [expr $rooty + ($vh - $dh) / 2]
+    focus $f.entry
+    wm geometry $top +$x+$y
+    wm deiconify $top
+    
+    set _private(search) 0
+    tkwait variable blt::TableView::_private(search)
+    set list [$f.entry get]
+    destroy $top
+    if { $_private(search) } {
+        set col $_private(column)
+        set index [$w column index $col]
+        regsub -all , $list " " list
+        set list [list $list]
+        set expr "(!\[info exists ${index}\]) ||
+            (!\[blt::utils::number inlist \$${index} $list])"
+        puts stderr expr=$expr
+        $w column configure $col -filterdata $expr
+        ApplyFilters $w
+    } else {
+        set col $_private(column)
+	$w column configure $col -filterhighlight 0
+	$w column configure $col -filtertext "" -filtericon ""
+        AllFilter $w
+    }
+}
+
+proc blt::TableView::GreaterThanNumberSearch { w } {
+    variable _private
+
+    set top $w.numberequals
+    toplevel $top -borderwidth 2 -relief raised -background grey80
+    wm overrideredirect $top true
+    wm withdraw $top
+    wm protocol $top WM_DELETE {
+        set blt::TableView::_private(search) 0
+    }        
+    set f [blt::tk::frame $top.frame]
+    blt::comboentry $f.entry -hidearrow yes 
+    blt::tk::label $f.label -text "Search for values greater than:" 
+    blt::tk::button $f.ok -text "Apply" -command {
+        set blt::TableView::_private(search) 1
+    }
+    blt::tk::button $f.cancel -text "Cancel" -command {
+        set blt::TableView::_private(search) 0
+    }
+    blt::table $f \
+        0,0 $f.label -cspan 2 -anchor w \
+        1,0 $f.entry -cspan 2 -fill x -padx 0.1i \
+        2,0 $f.cancel -width 1i \
+        2,1 $f.ok -width 1i 
+    blt::table configure $f c0 c1 -width 1.25i
+    blt::table configure $f r2 -pad 4
+
+    blt::table $top \
+        0,0 $f -fill both -padx 4 -pady 4
+    update
+    set dw [winfo reqwidth $top]
+    set dh [winfo reqheight $top]
+    set vw [winfo width $w]
+    set vh [winfo height $w]
+    set rootx [winfo rootx $w]
+    set rooty [winfo rooty $w]
+    set x [expr $rootx + ($vw - $dw) / 2]
+    set y [expr $rooty + ($vh - $dh) / 2]
+    focus $f.entry
+    wm geometry $top +$x+$y
+    wm deiconify $top
+    
+    set _private(search) 0
+    tkwait variable blt::TableView::_private(search)
+    set value [$f.entry get]
+    destroy $top
+    if { $_private(search) && [string is double -strict $value] } {
+        set col $_private(column)
+        set index [$w column index $col]
+        set expr "\[info exists ${index}\] &&
+            (\[blt::utils::number gt \$${index} $value])"
+        $w column configure $col -filterdata $expr
+        ApplyFilters $w
+    } else {
+        set col $_private(column)
+	$w column configure $col -filterhighlight 0
+	$w column configure $col -filtertext "" -filtericon ""
+        AllFilter $w
+    }
+}
+
+proc blt::TableView::GreaterThanOrEqualToNumberSearch { w } {
+    variable _private
+
+    set top $w.numberequals
+    toplevel $top -borderwidth 2 -relief raised -background grey80
+    wm overrideredirect $top true
+    wm withdraw $top
+    wm protocol $top WM_DELETE {
+        set blt::TableView::_private(search) 0
+    }        
+    set f [blt::tk::frame $top.frame]
+    blt::comboentry $f.entry -hidearrow yes 
+    blt::tk::label $f.label -text "Search for values greater than or equal to:" 
+    blt::tk::button $f.ok -text "Apply" -command {
+        set blt::TableView::_private(search) 1
+    }
+    blt::tk::button $f.cancel -text "Cancel" -command {
+        set blt::TableView::_private(search) 0
+    }
+    blt::table $f \
+        0,0 $f.label -cspan 2 -anchor w \
+        1,0 $f.entry -cspan 2 -fill x -padx 0.1i \
+        2,0 $f.cancel -width 1i \
+        2,1 $f.ok -width 1i 
+    blt::table configure $f c0 c1 -width 1.25i
+    blt::table configure $f r2 -pad 4
+
+    blt::table $top \
+        0,0 $f -fill both -padx 4 -pady 4
+    update
+    set dw [winfo reqwidth $top]
+    set dh [winfo reqheight $top]
+    set vw [winfo width $w]
+    set vh [winfo height $w]
+    set rootx [winfo rootx $w]
+    set rooty [winfo rooty $w]
+    set x [expr $rootx + ($vw - $dw) / 2]
+    set y [expr $rooty + ($vh - $dh) / 2]
+    focus $f.entry
+    wm geometry $top +$x+$y
+    wm deiconify $top
+    
+    set _private(search) 0
+    tkwait variable blt::TableView::_private(search)
+    set value [$f.entry get]
+    destroy $top
+    if { $_private(search) && [string is double -strict $value] } {
+        set col $_private(column)
+        set index [$w column index $col]
+        set expr "\[info exists ${index}\] &&
+            (\[blt::utils::number ge \$${index} $value])"
+        $w column configure $col -filterdata $expr
+        ApplyFilters $w
+    } else {
+        set col $_private(column)
+	$w column configure $col -filterhighlight 0
+	$w column configure $col -filtertext "" -filtericon ""
+        AllFilter $w
+    }
+}
+
+proc blt::TableView::LessThanNumberSearch { w } {
+    variable _private
+
+    set top $w.numberequals
+    toplevel $top -borderwidth 2 -relief raised -background grey80
+    wm overrideredirect $top true
+    wm withdraw $top
+    wm protocol $top WM_DELETE {
+        set blt::TableView::_private(search) 0
+    }        
+    set f [blt::tk::frame $top.frame]
+    blt::comboentry $f.entry -hidearrow yes 
+    blt::tk::label $f.label -text "Search for values less than:" 
+    blt::tk::button $f.ok -text "Apply" -command {
+        set blt::TableView::_private(search) 1
+    }
+    blt::tk::button $f.cancel -text "Cancel" -command {
+        set blt::TableView::_private(search) 0
+    }
+    blt::table $f \
+        0,0 $f.label -cspan 2 -anchor w \
+        1,0 $f.entry -cspan 2 -fill x -padx 0.1i \
+        2,0 $f.cancel -width 1i \
+        2,1 $f.ok -width 1i 
+    blt::table configure $f c0 c1 -width 1.25i
+    blt::table configure $f r2 -pad 4
+
+    blt::table $top \
+        0,0 $f -fill both -padx 4 -pady 4
+    update
+    set dw [winfo reqwidth $top]
+    set dh [winfo reqheight $top]
+    set vw [winfo width $w]
+    set vh [winfo height $w]
+    set rootx [winfo rootx $w]
+    set rooty [winfo rooty $w]
+    set x [expr $rootx + ($vw - $dw) / 2]
+    set y [expr $rooty + ($vh - $dh) / 2]
+    focus $f.entry
+    wm geometry $top +$x+$y
+    wm deiconify $top
+    
+    set _private(search) 0
+    tkwait variable blt::TableView::_private(search)
+    set value [$f.entry get]
+    destroy $top
+    if { $_private(search) && [string is double -strict $value] } {
+        set col $_private(column)
+        set index [$w column index $col]
+        set expr "\[info exists ${index}\] &&
+            (\[blt::utils::number lt \$${index} $value])"
+        $w column configure $col -filterdata $expr
+        ApplyFilters $w
+    } else {
+        set col $_private(column)
+	$w column configure $col -filterhighlight 0
+	$w column configure $col -filtertext "" -filtericon ""
+        AllFilter $w
+    }
+}
+
+proc blt::TableView::LessThanOrEqualToNumberSearch { w } {
+    variable _private
+
+    set top $w.numberequals
+    toplevel $top -borderwidth 2 -relief raised -background grey80
+    wm overrideredirect $top true
+    wm withdraw $top
+    wm protocol $top WM_DELETE {
+        set blt::TableView::_private(search) 0
+    }        
+    set f [blt::tk::frame $top.frame]
+    blt::comboentry $f.entry -hidearrow yes 
+    blt::tk::label $f.label -text "Search for values less than or equal to:" 
+    blt::tk::button $f.ok -text "Apply" -command {
+        set blt::TableView::_private(search) 1
+    }
+    blt::tk::button $f.cancel -text "Cancel" -command {
+        set blt::TableView::_private(search) 0
+    }
+    blt::table $f \
+        0,0 $f.label -cspan 2 -anchor w \
+        1,0 $f.entry -cspan 2 -fill x -padx 0.1i \
+        2,0 $f.cancel -width 1i \
+        2,1 $f.ok -width 1i 
+    blt::table configure $f c0 c1 -width 1.25i
+    blt::table configure $f r2 -pad 4
+
+    blt::table $top \
+        0,0 $f -fill both -padx 4 -pady 4
+    update
+    set dw [winfo reqwidth $top]
+    set dh [winfo reqheight $top]
+    set vw [winfo width $w]
+    set vh [winfo height $w]
+    set rootx [winfo rootx $w]
+    set rooty [winfo rooty $w]
+    set x [expr $rootx + ($vw - $dw) / 2]
+    set y [expr $rooty + ($vh - $dh) / 2]
+    focus $f.entry
+    wm geometry $top +$x+$y
+    wm deiconify $top
+    
+    set _private(search) 0
+    tkwait variable blt::TableView::_private(search)
+    set value [$f.entry get]
+    destroy $top
+    if { $_private(search) && [string is double -strict $value] } {
+        set col $_private(column)
+        set index [$w column index $col]
+        set expr "\[info exists ${index}\] &&
+            (\[blt::utils::number le \$${index} $value])"
+        $w column configure $col -filterdata $expr
+        ApplyFilters $w
+    } else {
+        set col $_private(column)
+	$w column configure $col -filterhighlight 0
+	$w column configure $col -filtertext "" -filtericon ""
+        AllFilter $w
+    }
+}
+
+proc blt::TableView::BetweenNumberSearch { w } {
+    variable _private
+
+    set top $w.numberequals
+    toplevel $top -borderwidth 2 -relief raised -background grey80
+    wm overrideredirect $top true
+    wm withdraw $top
+    wm protocol $top WM_DELETE {
+        set blt::TableView::_private(search) 0
+    }        
+    set f [blt::tk::frame $top.frame]
+    blt::tk::label $f.first_l \
+        -text "First" 
+    blt::comboentry $f.first -hidearrow yes 
+    blt::tk::label $f.last_l \
+        -text "Last" 
+    blt::comboentry $f.last -hidearrow yes 
+    blt::tk::label $f.label \
+        -text "Search for values between first and last:" 
+    blt::tk::button $f.ok -text "Apply" -command {
+        set blt::TableView::_private(search) 1
+    }
+    blt::tk::button $f.cancel -text "Cancel" -command {
+        set blt::TableView::_private(search) 0
+    }
+    blt::table $f \
+        0,0 $f.label -cspan 3 -anchor w \
+        1,0 $f.first_l -anchor e \
+        1,1 $f.first -fill x -cspan 2 -padx 4 \
+        2,0 $f.last_l -anchor e \
+        2,1 $f.last -fill x -cspan 2 -padx 4 \
+        3,1 $f.cancel -width 1i \
+        3,2 $f.ok -width 1i 
+    blt::table configure $f c1 c2 -width 1.25i
+    blt::table configure $f c0 -resize none -width 0.5i
+    blt::table configure $f r3 -pad 4
+    
+    blt::table $top \
+        0,0 $f -fill both -padx 4 -pady 4
+    update
+    set dw [winfo reqwidth $top]
+    set dh [winfo reqheight $top]
+    set vw [winfo width $w]
+    set vh [winfo height $w]
+    set rootx [winfo rootx $w]
+    set rooty [winfo rooty $w]
+    set x [expr $rootx + ($vw - $dw) / 2]
+    set y [expr $rooty + ($vh - $dh) / 2]
+    focus $f.first
+    wm geometry $top +$x+$y
+    wm deiconify $top
+    
+    set _private(search) 0
+    tkwait variable blt::TableView::_private(search)
+    set first [$f.first get]
+    set last [$f.last get]
+    destroy $top
+    if { $_private(search) && [string is double -strict $first] &&
+         [string is double -strict $last] } {
+        set col $_private(column)
+        set index [$w column index $col]
+        set expr "\[info exists ${index}\] &&
+            (\[blt::utils::number between \$${index} $first $last])"
+        $w column configure $col -filterdata $expr
+        ApplyFilters $w
+    } else {
+        set col $_private(column)
+	$w column configure $col -filterhighlight 0
+	$w column configure $col -filtertext "" -filtericon ""
+        AllFilter $w
+    }
+}
+
+proc blt::TableView::EqualsTextSearch { w } {
+    variable _private
+
+    set col $_private(column)
+    puts stderr col=$col
+    set top $w.equals
+    blt::tk::toplevel $top -borderwidth 2 -relief raised -background grey80 
+    wm overrideredirect $top true
+    wm withdraw $top
+    wm protocol $top WM_DELETE {
+        set blt::TableView::_private(search) 0
+    }        
+    set bg [blt::background create gradient \
+		-high grey97 \
+		-low grey85 \
+		-jitter 10 \
+		-scale log \
+		-relativeto $top]
+    $top configure -bg $bg
+    set f [blt::tk::frame $top.frame -bg $bg]
+    set _private(ignoreCase) 0
+    set _private(trim) 0
+    blt::comboentry $f.entry \
+        -hidearrow yes  \
+        -bg $bg  
+    blt::tk::label $f.label \
+        -text "Search for values that equal:"  \
+        -bg $bg
+    blt::tk::label $f.hint \
+        -text "(one or more values separated by commas)" \
+        -font "Arial 9 italic" \
+        -bg $bg
+    blt::tk::checkbutton $f.ignore \
+        -text "Ignore case" \
+        -variable blt::TableView::_private(ignoreCase) \
+        -bg $bg  \
+        -highlightthickness 0
+    blt::tk::checkbutton $f.trim \
+        -text "Trim whitespace" \
+        -variable blt::TableView::_private(trim) \
+        -bg $bg  \
+        -highlightthickness 0
+    blt::tk::button $f.ok \
+        -text "Apply" -command { set blt::TableView::_private(search) 1 } \
+        -bg $bg
+    blt::tk::button $f.cancel \
+        -text "Cancel" \
+        -command { set blt::TableView::_private(search) 0 }  \
+        -bg $bg
+    blt::table $f \
+        0,0 $f.label -cspan 2 -anchor w \
+        1,0 $f.entry -cspan 2 -fill x \
+        2,0 $f.hint -cspan 2 \
+        3,0 $f.ignore -anchor w \
+        3,1 $f.trim -anchor w \
+        4,0 $f.cancel -width 1i \
+        4,1 $f.ok -width 1i
+    blt::table configure $f c0 c1 -width 1.25i
+    blt::table configure $f r4 -pad 4
+
+    blt::table $top \
+        0,0 $f -fill both -padx 4 -pady 4
+    update
+    set dw [winfo reqwidth $top]
+    set dh [winfo reqheight $top]
+    set vw [winfo width $w]
+    set vh [winfo height $w]
+    set rootx [winfo rootx $w]
+    set rooty [winfo rooty $w]
+    set x [expr $rootx + ($vw - $dw) / 2]
+    set y [expr $rooty + ($vh - $dh) / 2]
+    focus $f.entry
+    wm geometry $top +$x+$y
+    wm deiconify $top
+    blt::grab push $top
+    set _private(search) 0
+    tkwait variable blt::TableView::_private(search)
+    set list [$f.entry get]
+    blt::grab pop
+    destroy $top
+    blt::background delete $bg
+    set flags ""
+    if { $_private(trim) } {
+        append flags " -trim both"
+    }
+    if { $_private(ignoreCase) } {
+        append flags " -nocase"
+    }
+    if { $_private(search) } {
+        set col $_private(column)
+        set index [$w column index $col]
+        regsub -all , $list " " list
+        set list [list $list]
+        set expr "\[info exists ${index}\] &&
+            (\[blt::utils::string inlist \$${index} $list $flags])"
+        puts stderr expr=$expr
+        $w column configure $col -filterdata $expr
+        ApplyFilters $w
+    } else {
+        set col $_private(column)
+	$w column configure $col -filterhighlight 0
+	$w column configure $col -filtertext "" -filtericon ""
+        AllFilter $w
+    }
+}
+
+proc blt::TableView::NotEqualsTextSearch { w } {
+    variable _private
+
+    set col $_private(column)
+    set top $w.notequals
+    toplevel $top -borderwidth 2 -relief raised -background grey80
+    wm overrideredirect $top true
+    wm withdraw $top
+    wm protocol $top WM_DELETE {
+        set blt::TableView::_private(search) 0
+    }        
+    set f [blt::tk::frame $top.frame]
+    set _private(ignoreCase) 0
+    set _private(trim) 0
+    blt::comboentry $f.entry -hidearrow yes 
+    blt::tk::label $f.label -text "Search for values that do not equal:" 
+    blt::tk::label $f.hint -text "(one or more values separated by commas)" \
+        -font "Arial 9 italic"
+    blt::tk::checkbutton $f.ignore -text "Ignore case" \
+        -variable blt::TableView::_private(ignoreCase)
+    blt::tk::checkbutton $f.trim -text "Trim whitespace" \
+        -variable blt::TableView::_private(trim)
+    blt::tk::button $f.ok -text "Apply" -command {
+        set blt::TableView::_private(search) 1
+    }
+    blt::tk::button $f.cancel -text "Cancel" -command {
+        set blt::TableView::_private(search) 0
+    }
+    blt::table $f \
+        0,0 $f.label -cspan 2 -anchor w \
+        1,0 $f.entry -cspan 2 -fill x \
+        2,0 $f.hint -cspan 2 \
+        3,0 $f.ignore -anchor w \
+        3,1 $f.trim -anchor w \
+        4,0 $f.cancel -width 1i \
+        4,1 $f.ok -width 1i
+    blt::table configure $f c0 c1 -width 1.25i
+    blt::table configure $f r4 -pad 4
+    
+    blt::table $top \
+        0,0 $f -fill both -padx 4 -pady 4
+    update
+    set dw [winfo reqwidth $top]
+    set dh [winfo reqheight $top]
+    set vw [winfo width $w]
+    set vh [winfo height $w]
+    set rootx [winfo rootx $w]
+    set rooty [winfo rooty $w]
+    set x [expr $rootx + ($vw - $dw) / 2]
+    set y [expr $rooty + ($vh - $dh) / 2]
+    focus $f.entry
+    wm geometry $top +$x+$y
+    wm deiconify $top
+    
+    set _private(search) 0
+    tkwait variable blt::TableView::_private(search)
+    set list [$f.entry get]
+    destroy $top
+    set flags ""
+    if { $_private(trim) } {
+        append flags " -trim both"
+    }
+    if { $_private(ignoreCase) } {
+        append flags " -nocase"
+    }
+    if { $_private(search) && [llength $list] > 0 } {
+        set col $_private(column)
+        set index [$w column index $col]
+        regsub -all , $list " " list
+        set list [list $list]
+        set expr "(!\[info exists ${index}\]) ||
+            (!\[blt::utils::string inlist \$${index} $list $flags])"
+        puts stderr expr=$expr
+        $w column configure $col -filterdata $expr
+        ApplyFilters $w
+    } else {
+        set col $_private(column)
+	$w column configure $col -filterhighlight 0
+	$w column configure $col -filtertext "" -filtericon ""
+        AllFilter $w
+    }
+}
+
+proc blt::TableView::BeginsWithTextSearch { w } {
+    variable _private
+
+    set col $_private(column)
+    set top $w.beginswith
+    toplevel $top -borderwidth 2 -relief raised -background grey80
+    wm overrideredirect $top true
+    wm withdraw $top
+    wm protocol $top WM_DELETE {
+        set blt::TableView::_private(search) 0
+    }        
+    set f [blt::tk::frame $top.frame]
+    set _private(ignoreCase) 0
+    set _private(trim) 0
+    blt::comboentry $f.entry -hidearrow yes 
+    blt::tk::label $f.label \
+        -text "Search for values that begin with:" 
+    blt::tk::checkbutton $f.ignore \
+        -text "Ignore case" \
+        -variable blt::TableView::_private(ignoreCase)
+    blt::tk::checkbutton $f.trim \
+        -text "Trim whitespace" \
+        -variable blt::TableView::_private(trim)
+    blt::tk::button $f.ok \
+        -text "Apply" \
+        -command { set blt::TableView::_private(search) 1 }
+    blt::tk::button $f.cancel \
+        -text "Cancel" \
+        -command { set blt::TableView::_private(search) 0 }
+    blt::table $f \
+        0,0 $f.label -cspan 2 -anchor w \
+        1,0 $f.entry -cspan 2 -fill x \
+        2,0 $f.ignore -anchor w \
+        2,1 $f.trim -anchor w \
+        3,0 $f.cancel -width 1i \
+        3,1 $f.ok -width 1i
+    blt::table configure $f c0 c1 -width 1.25i
+    blt::table configure $f r3 -pad 4
+    
+    blt::table $top \
+        0,0 $f -fill both -padx 4 -pady 4
+    blt::table configure $f r3 -pad 2
+    update
+    set dw [winfo reqwidth $top]
+    set dh [winfo reqheight $top]
+    set vw [winfo width $w]
+    set vh [winfo height $w]
+    set rootx [winfo rootx $w]
+    set rooty [winfo rooty $w]
+    set x [expr $rootx + ($vw - $dw) / 2]
+    set y [expr $rooty + ($vh - $dh) / 2]
+    focus $f.entry
+    wm geometry $top +$x+$y
+    wm deiconify $top
+    
+    set _private(search) 0
+    tkwait variable blt::TableView::_private(search)
+    set value [$f.entry get]
+    destroy $top
+    set flags ""
+    if { $_private(trim) } {
+        append flags " -trim both"
+    }
+    if { $_private(ignoreCase) } {
+        append flags " -nocase"
+    }
+    if { $_private(search) && [string length $value] > 0 } {
+        set col $_private(column)
+        set index [$w column index $col]
+        set value [list $value]
+        set expr "(\[info exists ${index}\]) ||
+            (\[blt::utils::string begins \$${index} $value $flags])"
+        puts stderr expr=$expr
+        $w column configure $col -filterdata $expr
+        ApplyFilters $w
+    } else {
+        set col $_private(column)
+	$w column configure $col -filterhighlight 0
+	$w column configure $col -filtertext "" -filtericon ""
+        AllFilter $w
+    }
+}
+
+proc blt::TableView::EndsWithTextSearch { w } {
+    variable _private
+
+    set col $_private(column)
+    set top $w.endswidth
+    toplevel $top -borderwidth 2 -relief raised -background grey80
+    wm overrideredirect $top true
+    wm withdraw $top
+    wm protocol $top WM_DELETE {
+        set blt::TableView::_private(search) 0
+    }        
+    set f [blt::tk::frame $top.frame]
+    set _private(ignoreCase) 0
+    set _private(trim) 0
+    blt::comboentry $f.entry -hidearrow yes 
+    blt::tk::label $f.label \
+        -text "Search for values that end with:" 
+    blt::tk::checkbutton $f.ignore \
+        -text "Ignore case" \
+        -variable blt::TableView::_private(ignoreCase)
+    blt::tk::checkbutton $f.trim \
+        -text "Trim whitespace" \
+        -variable blt::TableView::_private(trim)
+    blt::tk::button $f.ok \
+        -text "Apply" \
+        -command { set blt::TableView::_private(search) 1 }
+    blt::tk::button $f.cancel \
+        -text "Cancel" \
+        -command { set blt::TableView::_private(search) 0 }
+    blt::table $f \
+        0,0 $f.label -cspan 2 -anchor w \
+        1,0 $f.entry -cspan 2 -fill x \
+        2,0 $f.ignore -anchor w \
+        2,1 $f.trim -anchor w \
+        3,0 $f.cancel -width 1i \
+        3,1 $f.ok -width 1i
+    blt::table configure $f c0 c1 -width 1.25i
+    blt::table configure $f r3 -pad 4
+
+    blt::table $top \
+        0,0 $f -fill both -padx 4 -pady 4
+    update
+    set dw [winfo reqwidth $top]
+    set dh [winfo reqheight $top]
+    set vw [winfo width $w]
+    set vh [winfo height $w]
+    set rootx [winfo rootx $w]
+    set rooty [winfo rooty $w]
+    set x [expr $rootx + ($vw - $dw) / 2]
+    set y [expr $rooty + ($vh - $dh) / 2]
+    focus $f.entry
+    wm geometry $top +$x+$y
+    wm deiconify $top
+    
+    set _private(search) 0
+    tkwait variable blt::TableView::_private(search)
+    set value [$f.entry get]
+    destroy $top
+    set flags ""
+    if { $_private(trim) } {
+        append flags " -trim both"
+    }
+    if { $_private(ignoreCase) } {
+        append flags " -nocase"
+    }
+    if { $_private(search) && [string length $value] > 0 } {
+        set col $_private(column)
+        set index [$w column index $col]
+        set value [list $value]
+        set expr "(\[info exists ${index}\]) &&
+            (\[blt::utils::string ends \$${index} $value $flags])"
+        puts stderr expr=$expr
+        $w column configure $col -filterdata $expr
+        ApplyFilters $w
+    } else {
+        set col $_private(column)
+	$w column configure $col -filterhighlight 0
+	$w column configure $col -filtertext "" -filtericon ""
+        AllFilter $w
+    }
+}
+
+proc blt::TableView::ContainsTextSearch { w } {
+    variable _private
+
+    set col $_private(column)
+    set top $w.endswidth
+    toplevel $top -borderwidth 2 -relief raised -background grey80
+    wm overrideredirect $top true
+    wm withdraw $top
+    wm protocol $top WM_DELETE {
+        set blt::TableView::_private(search) 0
+    }        
+    set f [blt::tk::frame $top.frame]
+    set _private(ignoreCase) 0
+    set _private(trim) 0
+    blt::comboentry $f.entry -hidearrow yes 
+    blt::tk::label $f.label \
+        -text "Search for values that contain:" 
+    blt::tk::checkbutton $f.ignore \
+        -text "Ignore case" \
+        -variable blt::TableView::_private(ignoreCase)
+    blt::tk::button $f.ok \
+        -text "Apply" \
+        -command { set blt::TableView::_private(search) 1 }
+    blt::tk::button $f.cancel \
+        -text "Cancel" \
+        -command { set blt::TableView::_private(search) 0 }
+    blt::table $f \
+        0,0 $f.label -cspan 2 -anchor w \
+        1,0 $f.entry -cspan 2 -fill x \
+        2,0 $f.ignore -cspan 2 \
+        3,0 $f.cancel -width 1i \
+        3,1 $f.ok -width 1i
+    blt::table configure $f c0 c1 -width 1.25i
+    blt::table configure $f r3 -pad 4
+
+    blt::table $top \
+        0,0 $f -fill both -padx 4 -pady 4
+    blt::table configure $f r3 -pad 2
+    update
+    set dw [winfo reqwidth $top]
+    set dh [winfo reqheight $top]
+    set vw [winfo width $w]
+    set vh [winfo height $w]
+    set rootx [winfo rootx $w]
+    set rooty [winfo rooty $w]
+    set x [expr $rootx + ($vw - $dw) / 2]
+    set y [expr $rooty + ($vh - $dh) / 2]
+    focus $f.entry
+    wm geometry $top +$x+$y
+    wm deiconify $top
+    
+    set _private(search) 0
+    tkwait variable blt::TableView::_private(search)
+    set value [$f.entry get]
+    destroy $top
+    set flags ""
+    if { $_private(ignoreCase) } {
+        append flags " -nocase"
+    }
+    if { $_private(search) && [string length $value] > 0 } {
+        set col $_private(column)
+        set index [$w column index $col]
+        set value [list $value]
+        set expr "(\[info exists ${index}\]) &&
+            (\[blt::utils::string contains \$${index} $value $flags])"
+        puts stderr expr=$expr
+        $w column configure $col -filterdata $expr
+        ApplyFilters $w
+    } else {
+        set col $_private(column)
+	$w column configure $col -filterhighlight 0
+	$w column configure $col -filtertext "" -filtericon ""
+        AllFilter $w
+    }
+}
+
+proc blt::TableView::NotContainsTextSearch { w } {
+    variable _private
+
+    set col $_private(column)
+    set top $w.endswidth
+    toplevel $top -borderwidth 2 -relief raised -background grey80
+    wm overrideredirect $top true
+    wm withdraw $top
+    wm protocol $top WM_DELETE {
+        set blt::TableView::_private(search) 0
+    }        
+    set f [blt::tk::frame $top.frame]
+    set _private(ignoreCase) 0
+    set _private(trim) 0
+    blt::comboentry $f.entry -hidearrow yes 
+    blt::tk::label $f.label \
+        -text "Search for values that do not contain:" 
+    blt::tk::checkbutton $f.ignore \
+        -text "Ignore case" \
+        -variable blt::TableView::_private(ignoreCase)
+    blt::tk::button $f.ok \
+        -text "Apply" \
+        -command { set blt::TableView::_private(search) 1 }
+    blt::tk::button $f.cancel \
+        -text "Cancel" \
+        -command { set blt::TableView::_private(search) 0 }
+    blt::table $f \
+        0,0 $f.label -cspan 2 -anchor w \
+        1,0 $f.entry -cspan 2 -fill x \
+        2,0 $f.ignore -cspan 2 -anchor w \
+        3,0 $f.cancel -width 1i \
+        3,1 $f.ok -width 1i
+    blt::table configure $f c0 c1 -width 1.25i
+    blt::table configure $f r3 -pad 4
+    
+    blt::table $top \
+        0,0 $f -fill both -padx 4 -pady 4
+    blt::table configure $f r3 -pad 2
+    update
+    set dw [winfo reqwidth $top]
+    set dh [winfo reqheight $top]
+    set vw [winfo width $w]
+    set vh [winfo height $w]
+    set rootx [winfo rootx $w]
+    set rooty [winfo rooty $w]
+    set x [expr $rootx + ($vw - $dw) / 2]
+    set y [expr $rooty + ($vh - $dh) / 2]
+    focus $f.entry
+    wm geometry $top +$x+$y
+    wm deiconify $top
+    
+    set _private(search) 0
+    tkwait variable blt::TableView::_private(search)
+    set value [$f.entry get]
+    destroy $top
+    set flags ""
+    if { $_private(ignoreCase) } {
+        append flags " -nocase"
+    }
+    if { $_private(search) && [string length $value] > 0 } {
+        set col $_private(column)
+        set index [$w column index $col]
+        set value [list $value]
+        set expr "(!\[info exists ${index}\]) ||
+            (!\[blt::utils::string contains \$${index} $value $flags])"
+        puts stderr expr=$expr
+        $w column configure $col -filterdata $expr
+        ApplyFilters $w
+    } else {
+        set col $_private(column)
+	$w column configure $col -filterhighlight 0
+	$w column configure $col -filtertext "" -filtericon ""
+        AllFilter $w
+    }
+}
+
+proc blt::TableView::BetweenTextSearch { w } {
+    variable _private
+
+    set col $_private(column)
+    set top $w.endswidth
+    toplevel $top -borderwidth 2 -relief raised -background grey80
+    wm overrideredirect $top true
+    wm withdraw $top
+    wm protocol $top WM_DELETE {
+        set blt::TableView::_private(search) 0
+    }        
+    set f [blt::tk::frame $top.frame]
+    set _private(ignoreCase) 0
+    set _private(trim) 0
+    blt::tk::label $f.first_l \
+        -text "First" 
+    blt::comboentry $f.first -hidearrow yes 
+    blt::tk::label $f.last_l \
+        -text "Last" 
+    blt::comboentry $f.last -hidearrow yes 
+    blt::tk::label $f.label \
+        -text "Search for values between first and last:" 
+    blt::tk::checkbutton $f.ignore \
+        -text "Ignore case" \
+        -variable blt::TableView::_private(ignoreCase) 
+    blt::tk::button $f.ok \
+        -text "Apply" \
+        -command { set blt::TableView::_private(search) 1 }
+    blt::tk::button $f.cancel \
+        -text "Cancel" \
+        -command { set blt::TableView::_private(search) 0 }
+    blt::table $f \
+        0,0 $f.label -cspan 3 -anchor w \
+        1,0 $f.first_l -anchor e \
+        1,1 $f.first -fill x -cspan 2 -padx 4 \
+        2,0 $f.last_l -anchor e \
+        2,1 $f.last -fill x -cspan 2 -padx 4 \
+        3,1 $f.ignore -cspan 2 -anchor w \
+        4,1 $f.cancel -width 1i \
+        4,2 $f.ok -width 1i   
+    blt::table configure $f c1 c2 -width 1.25i
+    blt::table configure $f r4 -pad 4
+
+    blt::table $top \
+        0,0 $f -fill both -padx 4 -pady 4
+    blt::table configure $f r3 -pad 2
+    blt::table configure $f c0 -resize none -width 0.5i
+    update
+    set dw [winfo reqwidth $top]
+    set dh [winfo reqheight $top]
+    set vw [winfo width $w]
+    set vh [winfo height $w]
+    set rootx [winfo rootx $w]
+    set rooty [winfo rooty $w]
+    set x [expr $rootx + ($vw - $dw) / 2]
+    set y [expr $rooty + ($vh - $dh) / 2]
+    focus $f.first
+    wm geometry $top +$x+$y
+    wm deiconify $top
+    
+    set _private(search) 0
+    tkwait variable blt::TableView::_private(search)
+    set first [$f.first get]
+    set last [$f.last get]
+    destroy $top
+    set flags ""
+    if { $_private(ignoreCase) } {
+        append flags " -nocase"
+    }
+    if { $_private(search) && [string length $first] > 0 &&
+         [string length $last] > 0} {
+        set col $_private(column)
+        set index [$w column index $col]
+        set first [list $first]
+        set last [list $last]
+        set expr "(\[info exists ${index}\]) &&
+            (\[blt::utils::string between \$${index} $first $last $flags])"
+        puts stderr expr=$expr
+        $w column configure $col -filterdata $expr
+        ApplyFilters $w
+    } else {
+        set col $_private(column)
+	$w column configure $col -filterhighlight 0
+	$w column configure $col -filtertext "" -filtericon ""
+        AllFilter $w
+    }
+}

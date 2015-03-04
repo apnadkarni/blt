@@ -570,7 +570,7 @@ blt_table_name_to_column_type(const char *string)
     c = string[0];
     if ((c == 's') && (strcmp(string, "string") == 0)) {
 	return TABLE_COLUMN_TYPE_STRING;
-    } else if ((c == 'i') && (strcmp(string, "integer") == 0)) {
+    } else if ((c == 'i') && (strcmp(string, "int") == 0)) {
 	return TABLE_COLUMN_TYPE_INT;
     } else if ((c == 'd') && (strcmp(string, "double") == 0)) {
 	return TABLE_COLUMN_TYPE_DOUBLE;
@@ -5114,6 +5114,9 @@ int
 blt_table_set_column_type(Table *tablePtr, Column *colPtr, 
 			  BLT_TABLE_COLUMN_TYPE type)
 {
+    if (type == colPtr->type) {
+	return TCL_OK;			/* Already the requested type. */
+    }
     return SetType(tablePtr, colPtr, type);
 }
 

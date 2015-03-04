@@ -3973,45 +3973,70 @@ ColumnTraceOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  * Example:
  *	$t column type column ?newType?
  *
+ *	$t column type column ?newType column newType?...
  *---------------------------------------------------------------------------
  */
 static int
 ColumnTypeOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 {
-    BLT_TABLE_ITERATOR ci;
-    Tcl_Obj *listObjPtr;
-    BLT_TABLE_COLUMN col;
     BLT_TABLE table;
-    BLT_TABLE_COLUMN_TYPE type;
-
+    int i;
+    
     table = cmdPtr->table;
-    if (blt_table_iterate_column(interp, table, objv[3], &ci) != TCL_OK) {
-	return TCL_ERROR;
-    }
-    listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
-    type = TABLE_COLUMN_TYPE_UNKNOWN;	/* Suppress compiler warning. */
-    if (objc == 5) {
-	type = blt_table_name_to_column_type(Tcl_GetString(objv[4]));
-	if (type == TABLE_COLUMN_TYPE_UNKNOWN) {
-	    Tcl_AppendResult(interp, "unknown column type \"", 
-			     Tcl_GetString(objv[4]), "\"", (char *)NULL);
-	    return TCL_ERROR;
-	}
-    }
-    for (col = blt_table_first_tagged_column(&ci); col != NULL; 
-	 col = blt_table_next_tagged_column(&ci)) {
-	Tcl_Obj *objPtr;
+    if (objc == 4) {
+        BLT_TABLE_ITERATOR ci;
+        BLT_TABLE_COLUMN col;
+        Tcl_Obj *listObjPtr;
 
-	if (objc == 5) {
-	    if (blt_table_set_column_type(table, col, type) != TCL_OK) {
-		return TCL_ERROR;
-	    }
-	}
-	type = blt_table_column_type(col);
-	objPtr = Tcl_NewStringObj(blt_table_column_type_to_name(type), -1);
-	Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+        listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
+        if (blt_table_iterate_column(interp, table, objv[3], &ci) != TCL_OK) {
+            return TCL_ERROR;
+        }
+        for (col = blt_table_first_tagged_column(&ci); col != NULL; 
+             col = blt_table_next_tagged_column(&ci)) {
+            Tcl_Obj *objPtr;
+            BLT_TABLE_COLUMN_TYPE type;
+            
+            type = blt_table_column_type(col);
+            objPtr = Tcl_NewStringObj(blt_table_column_type_to_name(type), -1);
+            Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+        }
+        Tcl_SetObjResult(interp, listObjPtr);
+        return TCL_OK;
     }
-    Tcl_SetObjResult(interp, listObjPtr);
+    objc -= 3;
+    objv += 3;
+    if (objc & 0x1) {
+        Tcl_AppendResult(interp, "wrong # arguments: missing type argument.", 
+                (char *)NULL);
+        return TCL_ERROR;
+    }
+    for (i = 0; i < objc; i += 2) {
+        BLT_TABLE_ITERATOR ci;
+        BLT_TABLE_COLUMN col;
+        BLT_TABLE_COLUMN_TYPE newType;
+
+        if (blt_table_iterate_column(interp, table, objv[i], &ci) != TCL_OK) {
+            return TCL_ERROR;
+        }
+        newType = blt_table_name_to_column_type(Tcl_GetString(objv[i+1]));
+        if (newType == TABLE_COLUMN_TYPE_UNKNOWN) {
+            Tcl_AppendResult(interp, "unknown column type \"", 
+                             Tcl_GetString(objv[i+1]), "\"", (char *)NULL);
+            return TCL_ERROR;
+        }
+        for (col = blt_table_first_tagged_column(&ci); col != NULL; 
+             col = blt_table_next_tagged_column(&ci)) {
+            BLT_TABLE_COLUMN_TYPE type;
+
+            type = blt_table_column_type(col);
+            if (newType != type) {
+                if (blt_table_set_column_type(table, col, newType) != TCL_OK) {
+                    return TCL_ERROR;
+                }
+            }
+        }
+    }
     return TCL_OK;
 }
 
@@ -4179,7 +4204,7 @@ static Blt_OpSpec columnOps[] =
     {"set",       1, ColumnSetOp,     5, 0, "column row value...",},
     {"tag",       2, ColumnTagOp,     3, 0, "op args...",},
     {"trace",     2, ColumnTraceOp,   6, 6, "column how command",},
-    {"type",      2, ColumnTypeOp,    4, 5, "column ?type?",},
+    {"type",      2, ColumnTypeOp,    4, 0, "column ?type column type?...",},
     {"unset",     1, ColumnUnsetOp,   4, 0, "column ?indices...?",},
     {"values",    1, ColumnValuesOp,  4, 5, "column ?valueList?",},
 };
