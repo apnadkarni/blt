@@ -176,7 +176,7 @@ typedef struct {
 					 * draw around widget when it has the
 					 * focus.  <= 0 means don't draw a
 					 * highlight. */
-    XColor *highlightBgColorPtr;	/* Color for drawing traversal
+    Blt_Bg *highlightBg;                /* Color for drawing traversal
 					 * highlight area when highlight is
 					 * off. */
     XColor *highlightColorPtr;		/* Color for drawing traversal
@@ -433,9 +433,9 @@ static Blt_ConfigSpec configSpecs[] =
 	DEF_BUTTON_FG, Blt_Offset(Button, normalFg), ALL_MASK},
     {BLT_CONFIG_STRING, "-height", "height", "Height",
 	DEF_BUTTON_HEIGHT, Blt_Offset(Button, heightString), ALL_MASK},
-    {BLT_CONFIG_COLOR, "-highlightbackground", "highlightBackground",
+    {BLT_CONFIG_BACKGROUND, "-highlightbackground", "highlightBackground",
 	"HighlightBackground", DEF_BUTTON_HIGHLIGHT_BG,
-	Blt_Offset(Button, highlightBgColorPtr), ALL_MASK},
+	Blt_Offset(Button, highlightBg), ALL_MASK},
     {BLT_CONFIG_COLOR, "-highlightcolor", "highlightColor", "HighlightColor",
 	DEF_BUTTON_HIGHLIGHT, Blt_Offset(Button, highlightColorPtr),
 	ALL_MASK},
@@ -1676,15 +1676,16 @@ DisplayButton(ClientData clientData)
 	    butPtr->borderWidth, relief);
     }
     if (butPtr->highlightWidth != 0) {
-	GC highlightGC;
-
 	if (butPtr->flags & GOT_FOCUS) {
+            GC highlightGC;
+
 	    highlightGC = Tk_GCForColor(butPtr->highlightColorPtr, pixmap);
+            Tk_DrawFocusHighlight(tkwin, highlightGC, butPtr->highlightWidth, 
+                pixmap);
 	} else {
-	    highlightGC = Tk_GCForColor(butPtr->highlightBgColorPtr, pixmap);
+            Blt_Bg_DrawFocus(tkwin, butPtr->highlightBg, butPtr->highlightWidth,
+                pixmap);
 	}
-	Tk_DrawFocusHighlight(tkwin, highlightGC, butPtr->highlightWidth, 
-		pixmap);
     }
     /*
      * Copy the information from the off-screen pixmap onto the screen,

@@ -9481,7 +9481,6 @@ RowHideOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	int redraw;
 	Blt_Chain chain;
 	Blt_ChainLink link;
-        long count;
         
 	chain = IterateRowsObjv(interp, viewPtr, objc - 3, objv + 3);
 	if (chain == NULL) {

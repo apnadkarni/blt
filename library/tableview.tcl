@@ -4,7 +4,7 @@
 #
 #   Event bindings for the BLT tableview widget.
 #
-#	Copyright 2012 George A Howlett.
+#       Copyright 2012 George A Howlett.
 #
 #   Permission is hereby granted, free of charge, to any person obtaining a
 #   copy of this software and associated documentation files (the
@@ -28,22 +28,23 @@
 
 namespace eval blt {
     namespace eval TableView {
-	variable _private
-	array set _private {
-	    bindtags ""
-	    afterId -1
-	    scroll	0
-	    column	""
-	    row     ""
-	    space   off
-	    x	0
-	    y	0
-	    activeSelection 0
-	    posting none
-	    icon        blt::TableView::filter
-            textvariable ""
-            iconvariable ""
-	}
+        variable _private
+        array set _private {
+            activeSelection     0
+            lastFilter          0
+            afterId             -1
+            bindtags            ""
+            column              ""
+            icon                blt::TableView::filter
+            iconvariable        ""
+            posting             none
+            row                 ""
+            scroll              0
+            space               off
+            textvariable        ""
+            x                   0
+
+        }
     }
 }
 
@@ -125,17 +126,17 @@ option add *BltTableView.ColumnCommand blt::TableView::SortColumn
 
 if { $tcl_platform(platform) == "windows" } {
     if { $tk_version >= 8.3 } {
-	set cursor "@[file join $blt_library tableview.cur]"
+        set cursor "@[file join $blt_library tableview.cur]"
     } else {
-	set cursor "size_we"
+        set cursor "size_we"
     }
     option add *BltTableView.ResizeCursor [list $cursor] widgetDefault
 
 } else {
     option add *BltTableView.ResizeCursor \
-	[list @$blt_library/tableview.xbm \
-	     $blt_library/tableview_m.xbm \
-	     black white] 
+        [list @$blt_library/tableview.xbm \
+             $blt_library/tableview_m.xbm \
+             black white] 
 }
 
 bind BltTableView <KeyPress-Up> {
@@ -157,14 +158,14 @@ bind BltTableView <KeyPress-Right> {
 
 bind BltTableView <KeyPress-space> {
     if { [%W cget -selectmode] == "single" } {
-	if { [%W selection includes focus] } {
-	    %W selection clearall
-	} else {
-	    %W selection clearall
-	    %W selection set focus
-	}
+        if { [%W selection includes focus] } {
+            %W selection clearall
+        } else {
+            %W selection clearall
+            %W selection set focus
+        }
     } else {
-	%W selection toggle focus
+        %W selection toggle focus
     }
     set blt::TableView::_private(space) on
 }
@@ -194,11 +195,11 @@ bind BltTableView <Control-KeyPress-a> {
 # 
 # ButtonPress assignments
 #
-#	B1-Enter	start auto-scrolling
-#	B1-Leave	stop auto-scrolling
-#	ButtonPress-2	start scan
-#	B2-Motion	adjust scan
-#	ButtonRelease-2 stop scan
+#       B1-Enter        start auto-scrolling
+#       B1-Leave        stop auto-scrolling
+#       ButtonPress-2   start scan
+#       B2-Motion       adjust scan
+#       ButtonRelease-2 stop scan
 #
 
 bind BltTableView <B1-Enter> {
@@ -207,7 +208,7 @@ bind BltTableView <B1-Enter> {
 }
 bind BltTableView <B1-Leave> {
     if { $blt::TableView::_private(scroll) } {
-	blt::TableView::AutoScroll %W 
+        blt::TableView::AutoScroll %W 
     }
 }
 bind BltTableView <ButtonPress-2> {
@@ -223,14 +224,14 @@ bind BltTableView <ButtonRelease-2> {
 }
 if {[string equal "x11" [tk windowingsystem]]} {
     bind BltTableView <4> {
-	%W yview scroll -5 units
+        %W yview scroll -5 units
     }
     bind BltTableView <5> {
-	%W yview scroll 5 units
+        %W yview scroll 5 units
     }
 } else {
     bind BltTableView <MouseWheel> {
-	%W yview scroll [expr {- (%D / 120) * 4}] units
+        %W yview scroll [expr {- (%D / 120) * 4}] units
     }
 }
 
@@ -249,139 +250,139 @@ proc blt::TableView::Initialize { w } {
 
     # B1-Motion
     #
-    #	For "multiple" mode only.  Saves the current location of the
-    #	pointer for auto-scrolling.  Resets the selection mark.  
+    #   For "multiple" mode only.  Saves the current location of the
+    #   pointer for auto-scrolling.  Resets the selection mark.  
     #
     # ButtonRelease-1
 
     # Shift-ButtonPress-1
     #
-    #	For "multiple" mode only.
+    #   For "multiple" mode only.
     #
     $w bind all <Shift-ButtonPress-1> { 
-	if { [%W cget -selectmode] == "multiple" } {
-	    if { [%W row index anchor] == -1 } {
-		%W selection anchor current
-	    }
-	    %W selection clearall
-	    %W selection set current
-	} else {
-	    blt::TableView::SetSelectionAnchor %W current
-	}
+        if { [%W cget -selectmode] == "multiple" } {
+            if { [%W row index anchor] == -1 } {
+                %W selection anchor current
+            }
+            %W selection clearall
+            %W selection set current
+        } else {
+            blt::TableView::SetSelectionAnchor %W current
+        }
     }
     $w bind all <Shift-Double-ButtonPress-1> {
-	# do nothing
+        # do nothing
     }
     $w bind all <Shift-B1-Motion> { 
-	# do nothing
+        # do nothing
     }
     $w bind all <Shift-ButtonRelease-1> { 
-	after cancel $blt::TableView::_private(afterId)
-	set blt::TableView::_private(afterId) -1
-	set blt::TableView::_private(scroll) 0
+        after cancel $blt::TableView::_private(afterId)
+        set blt::TableView::_private(afterId) -1
+        set blt::TableView::_private(scroll) 0
     }
 
     #
     # Control-ButtonPress-1
     #
-    #	For "multiple" mode only.  
+    #   For "multiple" mode only.  
     #
     $w bind all <Control-ButtonPress-1> { 
-	switch -- [%W cget -selectmode] {
-	    "multiple" {
-		%W selection toggle current
-		%W selection anchor current
-	    } 
-	    "single" {
-		blt::TableView::SetSelectionAnchor %W current
-	    }
-	}
+        switch -- [%W cget -selectmode] {
+            "multiple" {
+                %W selection toggle current
+                %W selection anchor current
+            } 
+            "single" {
+                blt::TableView::SetSelectionAnchor %W current
+            }
+        }
     }
     $w bind all <Control-Double-ButtonPress-1> {
-	# do nothing
+        # do nothing
     }
     $w bind all <Control-B1-Motion> { 
-	# do nothing
+        # do nothing
     }
     $w bind all <Control-ButtonRelease-1> { 
-	after cancel $blt::TableView::_private(afterId)
-	set blt::TableView::_private(afterId) -1
-	set blt::TableView::_private(scroll) 0
+        after cancel $blt::TableView::_private(afterId)
+        set blt::TableView::_private(afterId) -1
+        set blt::TableView::_private(scroll) 0
     }
 
     $w bind all <Control-Shift-ButtonPress-1> { 
-	switch [%W cget -selectmode] {
-	    "multiple" {
-		if { [%W selection present] } {
-		    if { [%W index anchor] == "" } {
-			%W selection anchor current
-		    }
-		    if { [%W selection includes anchor] } {
-			%W selection set anchor current
-		    } else {
-			%W selection clear anchor current
-			%W selection set current
-		    }
-		}
-	    }
-	    "single" {
-		blt::TableView::SetSelectionAnchor %W current
-	    }
-	}
+        switch [%W cget -selectmode] {
+            "multiple" {
+                if { [%W selection present] } {
+                    if { [%W index anchor] == "" } {
+                        %W selection anchor current
+                    }
+                    if { [%W selection includes anchor] } {
+                        %W selection set anchor current
+                    } else {
+                        %W selection clear anchor current
+                        %W selection set current
+                    }
+                }
+            }
+            "single" {
+                blt::TableView::SetSelectionAnchor %W current
+            }
+        }
     }
     $w bind all <Control-Shift-Double-ButtonPress-1> {
-	# do nothing
+        # do nothing
     }
     $w bind all <Control-Shift-B1-Motion> { 
-	# do nothing
+        # do nothing
     }
     # Column title 
     $w column bind all <Enter> {
-	%W column activate current
+        %W column activate current
     }
     $w column bind all <Leave> {
-	%W column deactivate
+        %W column deactivate
     }
     $w column bind all <ButtonPress-1> {
-	set blt::TableView::_private(column) [%W column index current]
-	%W column configure $blt::TableView::_private(column) \
-	    -activetitlerelief sunken
+        set blt::TableView::_private(column) [%W column index current]
+        %W column configure $blt::TableView::_private(column) \
+            -activetitlerelief sunken
     }
     $w column bind all <ButtonRelease-1> {
-	%W column invoke current
-	%W column configure $blt::TableView::_private(column) \
-	    -activetitlerelief raised
+        %W column invoke current
+        %W column configure $blt::TableView::_private(column) \
+            -activetitlerelief raised
     }
     # Row title
     $w row bind all <Enter> {
-	%W row activate current
+        %W row activate current
     }
     $w row bind all <Leave> {
-	%W row deactivate
+        %W row deactivate
     }
     $w row bind all <ButtonPress-1> {
-	set blt::TableView::_private(row) [%W row index current]
-	%W row configure $blt::TableView::_private(row) \
-	    -activetitlerelief sunken
+        set blt::TableView::_private(row) [%W row index current]
+        %W row configure $blt::TableView::_private(row) \
+            -activetitlerelief sunken
     }
     $w row bind all <ButtonRelease-1> {
-	%W row invoke current
-	%W row configure $blt::TableView::_private(row) \
-	    -activetitlerelief raised
+        %W row invoke current
+        %W row configure $blt::TableView::_private(row) \
+            -activetitlerelief raised
     }
     # Column filter 
     $w column bind ColumnFilter <Enter> {
-	%W filter activate current
+        %W filter activate current
     }
     $w column bind ColumnFilter <Leave> {
-	%W filter deactivate
+        %W filter deactivate
     }
     $w column bind ColumnFilter <ButtonPress-1> { 
-	set blt::TableView::_private(column) [%W column index current]
-	blt::TableView::PostFilterMenu %W current
+        set blt::TableView::_private(column) [%W column index current]
+        blt::TableView::PostFilterMenu %W current
     }
     $w column bind ColumnFilter <B1-Motion> { 
-	break
+        break
     }
     # We only get <ButtonRelease> events that are generated by the combomenu
     # because of the grab on the combomenu window.  The combomenu will get all
@@ -394,151 +395,151 @@ proc blt::TableView::Initialize { w } {
     # Otherwise unpost the menu.  The user clicked either on the menu
     # (selected an item) or outside the menu (canceling the operation).
     $w column bind ColumnFilter <ButtonRelease-1> { 
-	#empty
+        #empty
     }
 
 
     # Column resize 
     $w column bind Resize <Enter> {
-	%W column activate current
-	%W column resize activate current
+        %W column activate current
+        %W column resize activate current
     }
     $w column bind Resize <Leave> {
-	%W column deactivate
-	%W column resize deactivate 
+        %W column deactivate
+        %W column resize deactivate 
     }
     $w column bind Resize <ButtonPress-1> {
-	%W column resize anchor %x
+        %W column resize anchor %x
     }
     $w column bind Resize <B1-Motion> {
-	%W column resize mark %x
-	%W column resize set 
+        %W column resize mark %x
+        %W column resize set 
     }
     $w column bind Resize <ButtonRelease-1> {
-	%W column resize mark %x
-	%W column resize set 
+        %W column resize mark %x
+        %W column resize set 
     }
     # Row resize 
     $w row bind Resize <Enter> {
-	%W row activate current
-	%W row resize activate current
+        %W row activate current
+        %W row resize activate current
     }
     $w row bind Resize <Leave> {
-	%W row deactivate
-	%W row resize deactivate 
+        %W row deactivate
+        %W row resize deactivate 
     }
     $w row bind Resize <ButtonPress-1> {
-	%W row resize anchor %y
+        %W row resize anchor %y
     }
     $w row bind Resize <B1-Motion> {
-	%W row resize mark %y
-	%W row configure active -height [%W row resize current]
-	%W row resize anchor %y
+        %W row resize mark %y
+        %W row configure active -height [%W row resize current]
+        %W row resize anchor %y
     }
     $w row bind Resize <ButtonRelease-1> {
-	%W row configure active -height [%W row resize current]
+        %W row configure active -height [%W row resize current]
     }
     # TextBoxStyle
     $w bind TextBoxStyle <Enter> { 
-	%W activate current 
+        %W activate current 
     }
     $w bind TextBoxStyle <Leave> { 
-	%W deactivate 
+        %W deactivate 
     }
-    $w bind TextBoxStyle <ButtonPress-1> { 	
-	blt::TableView::SetSelectionAnchor %W current
+    $w bind TextBoxStyle <ButtonPress-1> {      
+        blt::TableView::SetSelectionAnchor %W current
     }
     $w bind TextBoxStyle <B1-Motion> { 
-	set blt::TableView::_private(x) %x
-	set blt::TableView::_private(y) %y
-	set cell [%W index @%x,%y]
-	set blt::TableView::_private(scroll) 1
-	if { $cell != "" } {
-	    if { $blt::TableView::_private(activeSelection) } {
-		%W selection mark $cell
-	    } else {
-		blt::TableView::SetSelectionAnchor %W $cell
-	    }
-	}
+        set blt::TableView::_private(x) %x
+        set blt::TableView::_private(y) %y
+        set cell [%W index @%x,%y]
+        set blt::TableView::_private(scroll) 1
+        if { $cell != "" } {
+            if { $blt::TableView::_private(activeSelection) } {
+                %W selection mark $cell
+            } else {
+                blt::TableView::SetSelectionAnchor %W $cell
+            }
+        }
     }
     $w bind TextBoxStyle <ButtonRelease-1> { 
-	after cancel $blt::TableView::_private(afterId)
-	set blt::TableView::_private(afterId) -1
-	set blt::TableView::_private(scroll) 0
-	if { $blt::TableView::_private(activeSelection) } {
-	    %W selection mark @%x,%y
-	} else {
-	    %W invoke active
-	}
+        after cancel $blt::TableView::_private(afterId)
+        set blt::TableView::_private(afterId) -1
+        set blt::TableView::_private(scroll) 0
+        if { $blt::TableView::_private(activeSelection) } {
+            %W selection mark @%x,%y
+        } else {
+            %W invoke active
+        }
     }
     $w bind TextBoxStyle <ButtonPress-3> { 
- 	if { [%W writable current] } {
-	    blt::TableView::PostEditor %W current
- 	    break
- 	}
+        if { [%W writable current] } {
+            blt::TableView::PostEditor %W current
+            break
+        }
     }
     $w bind TextBoxStyle <ButtonRelease-3> { 
- 	if { [%W writable @%x,%y] } {
-	    if { ![%W inside active %X %Y] } {
-		blt::TableView::UnpostEditor %W active
-	    }	
-	    break
-	}
+        if { [%W writable @%x,%y] } {
+            if { ![%W inside active %X %Y] } {
+                blt::TableView::UnpostEditor %W active
+            }   
+            break
+        }
     }
     # CheckBoxStyle
     $w bind CheckBoxStyle <Enter> { 
-	%W activate current 
+        %W activate current 
     }
     $w bind CheckBoxStyle <Leave> { 
-	%W deactivate 
+        %W deactivate 
     }
     $w bind CheckBoxStyle <ButtonPress-1> { 
-	if { [%W writable active] } {
-	    blt::TableView::ToggleValue %W active
-	} else {
-	    blt::TableView::SetSelectionAnchor %W current
-	}
+        if { [%W writable active] } {
+            blt::TableView::ToggleValue %W active
+        } else {
+            blt::TableView::SetSelectionAnchor %W current
+        }
     }
     $w bind CheckBoxStyle <B1-Motion> { 
-	break
+        break
     }
     $w bind CheckBoxStyle <ButtonRelease-1> { 
-	%W invoke current
+        %W invoke current
     }
     # ComboBoxStyle
     $w bind ComboBoxStyle <Enter> { 
-	if { [%W style cget [%W cell style current] -state] != "posted" } {
-	    %W cell activate current 
-	}
+        if { [%W style cget [%W cell style current] -state] != "posted" } {
+            %W cell activate current 
+        }
     }
     $w bind ComboBoxStyle <Leave> { 
-	if { [%W style cget [%W cell style current] -state] != "posted" } {
-	    %W cell deactivate 
-	}
+        if { [%W style cget [%W cell style current] -state] != "posted" } {
+            %W cell deactivate 
+        }
     }
     $w bind ComboBoxStyle <ButtonPress-1> { 
-	set blt::TableView::_private(activeSelection) 0
-	if { [%W cell identify current %X %Y] == "button" } {
-	    blt::TableView::PostComboBoxMenu %W current
-	} else {
-	    blt::TableView::SetSelectionAnchor %W current
-	}
+        set blt::TableView::_private(activeSelection) 0
+        if { [%W cell identify current %X %Y] == "button" } {
+            blt::TableView::PostComboBoxMenu %W current
+        } else {
+            blt::TableView::SetSelectionAnchor %W current
+        }
     }
     $w bind ComboBoxStyle <B1-Motion> { 
-	if { [%W style cget [%W cell style current] -state] != "posted" } {
-	    set blt::TableView::_private(x) %x
-	    set blt::TableView::_private(y) %y
-	    set cell [%W index @%x,%y]
-	    set blt::TableView::_private(scroll) 1
-	    if { $cell != "" } {
-		if { $blt::TableView::_private(activeSelection) } {
-		    %W selection mark $cell
-		} else {
-		    blt::TableView::SetSelectionAnchor %W $cell
-		}
-	    }
-	}
-	break
+        if { [%W style cget [%W cell style current] -state] != "posted" } {
+            set blt::TableView::_private(x) %x
+            set blt::TableView::_private(y) %y
+            set cell [%W index @%x,%y]
+            set blt::TableView::_private(scroll) 1
+            if { $cell != "" } {
+                if { $blt::TableView::_private(activeSelection) } {
+                    %W selection mark $cell
+                } else {
+                    blt::TableView::SetSelectionAnchor %W $cell
+                }
+            }
+        }
+        break
     }
     # We only get <ButtonRelease> events that are generated by the combomenu
     # because of the grab on the combomenu window.  The combomenu will get all
@@ -551,82 +552,82 @@ proc blt::TableView::Initialize { w } {
     # Otherwise unpost the menu.  The user clicked either on the menu
     # (selected an item) or outside the menu (canceling the operation).
     $w bind ComboBoxStyle <ButtonRelease-1> { 
-	after cancel $blt::TableView::_private(afterId)
-	set blt::TableView::_private(afterId) -1
-	set blt::TableView::_private(scroll) 0
-	if { $blt::TableView::_private(activeSelection) } {
-	    %W selection mark @%x,%y
-	}
+        after cancel $blt::TableView::_private(afterId)
+        set blt::TableView::_private(afterId) -1
+        set blt::TableView::_private(scroll) 0
+        if { $blt::TableView::_private(activeSelection) } {
+            %W selection mark @%x,%y
+        }
     }
     # ImageBoxStyle
     $w bind ImageBoxStyle <Enter> { 
-	%W cell activate current 
+        %W cell activate current 
     }
     $w bind ImageBoxStyle <Leave> { 
-	%W cell deactivate 
+        %W cell deactivate 
     }
-    $w bind ImageBoxStyle <ButtonPress-1> { 	
-	blt::TableView::SetSelectionAnchor %W current
+    $w bind ImageBoxStyle <ButtonPress-1> {     
+        blt::TableView::SetSelectionAnchor %W current
     }
     $w bind ImageBoxStyle <B1-Motion> { 
-	set blt::TableView::_private(x) %x
-	set blt::TableView::_private(y) %y
-	set cell [%W index @%x,%y]
-	set blt::TableView::_private(scroll) 1
-	if { $cell != "" } {
-	    if { $blt::TableView::_private(activeSelection) } {
-		%W selection mark $cell
-	    } else {
-		blt::TableView::SetSelectionAnchor %W $cell
-	    }
-	}
+        set blt::TableView::_private(x) %x
+        set blt::TableView::_private(y) %y
+        set cell [%W index @%x,%y]
+        set blt::TableView::_private(scroll) 1
+        if { $cell != "" } {
+            if { $blt::TableView::_private(activeSelection) } {
+                %W selection mark $cell
+            } else {
+                blt::TableView::SetSelectionAnchor %W $cell
+            }
+        }
     }
     $w bind ImageBoxStyle <ButtonRelease-1> { 
-	after cancel $blt::TableView::_private(afterId)
-	set blt::TableView::_private(afterId) -1
-	set blt::TableView::_private(scroll) 0
-	if { $blt::TableView::_private(activeSelection) } {
-	    %W selection mark @%x,%y
-	} else {
-	    %W invoke active
-	}
+        after cancel $blt::TableView::_private(afterId)
+        set blt::TableView::_private(afterId) -1
+        set blt::TableView::_private(scroll) 0
+        if { $blt::TableView::_private(activeSelection) } {
+            %W selection mark @%x,%y
+        } else {
+            %W invoke active
+        }
     }
 
     # PushButtonStyle
     $w bind PushButtonStyle <Enter> { 
-	%W cell activate current 
+        %W cell activate current 
     }
     $w bind PushButtonStyle <Leave> { 
-	%W cell deactivate 
+        %W cell deactivate 
     }
-    $w bind PushButtonStyle <ButtonPress-1> { 	
-	#blt::TableView::SetSelectionAnchor %W current
+    $w bind PushButtonStyle <ButtonPress-1> {   
+        #blt::TableView::SetSelectionAnchor %W current
     }
     $w bind PushButtonStyle <B1-Motion> { 
-	set blt::TableView::_private(x) %x
-	set blt::TableView::_private(y) %y
-	set cell [%W index @%x,%y]
-	set blt::TableView::_private(scroll) 1
-	if { 0 && $cell != "" } {
-	    if { $blt::TableView::_private(activeSelection) } {
-		%W selection mark $cell
-	    } else {
-		blt::TableView::SetSelectionAnchor %W $cell
-	    }
-	}
+        set blt::TableView::_private(x) %x
+        set blt::TableView::_private(y) %y
+        set cell [%W index @%x,%y]
+        set blt::TableView::_private(scroll) 1
+        if { 0 && $cell != "" } {
+            if { $blt::TableView::_private(activeSelection) } {
+                %W selection mark $cell
+            } else {
+                blt::TableView::SetSelectionAnchor %W $cell
+            }
+        }
     }
     $w bind PushButtonStyle <ButtonRelease-1> { 
-	after cancel $blt::TableView::_private(afterId)
-	set blt::TableView::_private(afterId) -1
-	set blt::TableView::_private(scroll) 0
-	if { 0 && $blt::TableView::_private(activeSelection) } {
-	    %W selection mark @%x,%y
-	} else {
+        after cancel $blt::TableView::_private(afterId)
+        set blt::TableView::_private(afterId) -1
+        set blt::TableView::_private(scroll) 0
+        if { 0 && $blt::TableView::_private(activeSelection) } {
+            %W selection mark @%x,%y
+        } else {
             set style [%W style get active]
             set var [%W style cget $style -variable]
             set $var [%W index active]
-	    %W invoke active
-	}
+            %W invoke active
+        }
     }
 }
 
@@ -647,8 +648,8 @@ proc blt::TableView::PostComboBoxMenu { w cell } {
     set style [$w cell style $cell]
     set menu  [$w style cget $style -menu]
     if { $menu == "" } {
-	puts stderr "no menu specified"
-	return;				# No menu specified.
+        puts stderr "no menu specified"
+        return;                         # No menu specified.
     }
     # Get the current value of the cell and select the corresponding menu
     # item.
@@ -657,14 +658,14 @@ proc blt::TableView::PostComboBoxMenu { w cell } {
     set value [$table get $row $col ""]
     set item [$menu index -value $value]
     if { $item >= 0 } {
-	$menu select $item
+        $menu select $item
     }
     $w cell configure $cell -state "posted"
     # Watch for <<MenuSelect>> events on the menu.  Set the cell value to
     # the selected value when we get one.
     set _private(posting) [$w index $cell]
     bind $menu <<MenuSelect>> \
-	[list blt::TableView::ImportFromComboBoxMenu $w $_private(posting) $menu]
+        [list blt::TableView::ImportFromComboBoxMenu $w $_private(posting) $menu]
 
     # Post the combo menu at the bottom of the cell.
     foreach { x1 y1 x2 y2 } [$w bbox $cell] break
@@ -688,8 +689,8 @@ proc blt::TableView::ImportFromComboBoxMenu { w cell menu } {
     set value [$menu value active]
     set table [$w cget -table]
     if { $table != "" } {
-	foreach { row col } [$w index $cell] break
-	$table set $row $col $value
+        foreach { row col } [$w index $cell] break
+        $table set $row $col $value
     }
     # Execute the callback associated with the style
     $w cell invoke $cell
@@ -719,14 +720,14 @@ proc ::blt::TableView::UnpostComboBoxMenu { w } {
     set style [$w cell style $cell]
     set menu  [$w style cget $style -menu]
     if { [info exists _private(cursor)] } {
-	$w style configure $style -cursor $_private(cursor)
+        $w style configure $style -cursor $_private(cursor)
     }
     $w cell configure $cell -state normal
     if { $menu != "" } {
-	# Release grab, if any, and restore the previous grab, if there was
-	# one.
-	$menu unpost
-	#blt::grab pop $menu
+        # Release grab, if any, and restore the previous grab, if there was
+        # one.
+        $menu unpost
+        #blt::grab pop $menu
     }
 }
 
@@ -745,7 +746,7 @@ proc blt::TableView::PostEditor { w cell } {
     set style [$w cell style $cell]
     set editor [$w style cget $style -editor]
     if { $editor == "" } {
-	return;				# No editor specified.
+        return;                         # No editor specified.
     }
     # Get the current value of the cell and copy it to the corresponding
     # editor.
@@ -758,7 +759,7 @@ proc blt::TableView::PostEditor { w cell } {
     # Watch for <<MenuSelect>> events on the menu.  Set the cell value to
     # the selected value when we get one.
     bind $editor <<Value>> \
-	[list blt::TableView::ImportFromEditor $w $cell $editor]
+        [list blt::TableView::ImportFromEditor $w $cell $editor]
 
     # Post the combo menu at the bottom of the cell.
     foreach { x1 y1 x2 y2 } [$w bbox $cell] break
@@ -781,8 +782,8 @@ proc blt::TableView::ImportFromEditor { w cell editor } {
     set value [$editor get 0 end]
     set table [$w cget -table]
     if { $table != "" } {
-	foreach { row col } [$w index $cell] break
-	$table set $row $col $value
+        foreach { row col } [$w index $cell] break
+        $table set $row $col $value
     }
     # Execute the callback associated with the cell
     $w cell invoke $cell
@@ -801,7 +802,7 @@ proc ::blt::TableView::UnpostEditor { w cell } {
     variable _private
 
     if { [$w type $cell] != "textbox" } {
-	return;				# Not a combobox style cell
+        return;                         # Not a combobox style cell
     }
 
     # Restore focus right away (otherwise X will take focus away when the
@@ -817,15 +818,15 @@ proc ::blt::TableView::UnpostEditor { w cell } {
     $w cell configure $cell -state normal
     set _private(posting) none
     if { [info exists _private(cursor)] } {
-	$w style configure $style -cursor $_private(cursor)
+        $w style configure $style -cursor $_private(cursor)
     }
     if { $editor != "" } {
-	# Release grab, if any, and restore the previous grab, if there was
-	# one.
-	set grab [blt::grab current]
-	if { $grab != "" } {
-	    blt::grab pop $grab
-	}
+        # Release grab, if any, and restore the previous grab, if there was
+        # one.
+        set grab [blt::grab current]
+        if { $grab != "" } {
+            blt::grab pop $grab
+        }
     }
 }
 
@@ -848,14 +849,14 @@ proc blt::TableView::ToggleValue { w cell } {
     foreach { row col } [$w index $cell] break
     set value [$table get $row $col ""]
     if { [string compare $value $on] == 0 } {
-	set value $off
+        set value $off
     } else {
-	set value $on
+        set value $on
     }
     set table [$w cget -table]
     if { $table != "" } {
-	foreach { row col } [$w index $cell] break
-	$table set $row $col $value
+        foreach { row col } [$w index $cell] break
+        $table set $row $col $value
     }
     # Execute the callback associated with the cell
     $w cell invoke $cell
@@ -872,10 +873,10 @@ proc blt::TableView::AutoScroll { w } {
     variable _private
 
     if { ![winfo exists $w] } {
-	return
+        return
     }
     if { !$_private(scroll) } {
-	return 
+        return 
     }
     set x $_private(x)
     set y $_private(y)
@@ -883,29 +884,29 @@ proc blt::TableView::AutoScroll { w } {
     set col [$w column nearest $x]
     set cell [list $row $col]
     if {$y >= [winfo height $w]} {
-	$w yview scroll 1 units
-	set neighbor down
+        $w yview scroll 1 units
+        set neighbor down
     } elseif {$y < 0} {
-	$w yview scroll -1 units
-	set neighbor up
+        $w yview scroll -1 units
+        set neighbor up
     } else {
-	set neighbor $cell
+        set neighbor $cell
     }
     if {$x >= [winfo width $w]} {
-	$w xview scroll 1 units
-	set neighbor left
+        $w xview scroll 1 units
+        set neighbor left
     } elseif {$x < 0} {
-	$w xview scroll -1 units
-	set neighbor right
+        $w xview scroll -1 units
+        set neighbor right
     } else {
-	set neighbor $cell
+        set neighbor $cell
     }
     if { [$w cget -selectmode] == "single" } {
-	SetSelectionAnchor $w $neighbor
+        SetSelectionAnchor $w $neighbor
     } else {
-	if { $cell != "" && [$w selection present] } {
-	    $w selection mark $cell
-	}
+        if { $cell != "" && [$w selection present] } {
+            $w selection mark $cell
+        }
     }
     set _private(afterId) [after 50 blt::TableView::AutoScroll $w]
 }
@@ -921,26 +922,26 @@ proc blt::TableView::SetSelectionAnchor { w cell } {
 
     set index [$w index $cell]
     if { $index == "" } {
-	return
+        return
     }
     foreach { row col } $index break
     set _private(activeSelection) 0
     switch -- [$w cget -selectmode] {
-	"cells" {
-	    $w selection clearall
-	    $w selection anchor $cell
-	} "single" {
-	    $w see $cell
-	    $w focus $cell
-	    $w selection clearall
-	    $w selection set $cell 
-	} "multiple" {
-	    $w see $cell
-	    $w focus $cell
-	    $w selection clearall
-	    $w selection set $cell 
-	    set _private(activeSelection) 1
-	}
+        "cells" {
+            $w selection clearall
+            $w selection anchor $cell
+        } "single" {
+            $w see $cell
+            $w focus $cell
+            $w selection clearall
+            $w selection set $cell 
+        } "multiple" {
+            $w see $cell
+            $w focus $cell
+            $w selection clearall
+            $w selection set $cell 
+            set _private(activeSelection) 1
+        }
     }
 }
 
@@ -955,7 +956,7 @@ proc blt::TableView::MoveFocus { w cell } {
     if { [$w cget -selectmode] == "single" } {
         $w selection clearall
         $w selection set focus
-	$w selection anchor focus
+        $w selection anchor focus
     }
     $w see focus
 }
@@ -973,11 +974,11 @@ proc blt::TableView::MovePage { w where } {
     # want to see the last entry on the next/last page.
     if { [$w index focus] == [$w index view.$where] } {
         if {$where == "top"} {
-	    $w yview scroll -1 pages
-	    $w yview scroll 1 units
+            $w yview scroll -1 pages
+            $w yview scroll 1 units
         } else {
-	    $w yview scroll 1 pages
-	    $w yview scroll -1 units
+            $w yview scroll 1 pages
+            $w yview scroll -1 units
         }
     }
     update
@@ -996,26 +997,26 @@ proc blt::TableView::MovePage { w where } {
 # 
 # KeyPress assignments
 #
-#	Up			
-#	Down
-#	Shift-Up
-#	Shift-Down
-#	Prior (PageUp)
-#	Next  (PageDn)
-#	Left
-#	Right
-#	space		Start selection toggle of entry currently with focus.
-#	Return		Start selection toggle of entry currently with focus.
-#	Home
-#	End
-#	F1
-#	F2
-#	ASCII char	Go to next open entry starting with character.
+#       Up                      
+#       Down
+#       Shift-Up
+#       Shift-Down
+#       Prior (PageUp)
+#       Next  (PageDn)
+#       Left
+#       Right
+#       space           Start selection toggle of entry currently with focus.
+#       Return          Start selection toggle of entry currently with focus.
+#       Home
+#       End
+#       F1
+#       F2
+#       ASCII char      Go to next open entry starting with character.
 #
 # KeyRelease
 #
-#	space		Stop selection toggle of entry currently with focus.
-#	Return		Stop selection toggle of entry currently with focus.
+#       space           Stop selection toggle of entry currently with focus.
+#       Return          Stop selection toggle of entry currently with focus.
 
 
 if 0 {
@@ -1057,12 +1058,12 @@ proc blt::TableView::SetGrab { w cell } {
 
     bind grabcell <ButtonPress> break
     bind grabcell <ButtonRelease> {
-	if { [%W inside $blt::TableView::_private(posting) %X %Y] } {
-	    %W invoke active
-	} else { 
-	    blt::TableView::UnpostComboBoxMenu %W
-	}
-	break
+        if { [%W inside $blt::TableView::_private(posting) %X %Y] } {
+            %W invoke active
+        } else { 
+            blt::TableView::UnpostComboBoxMenu %W
+        }
+        break
     }
     bind grabcell <KeyPress> break
     bind grabcell <Motion> break
@@ -1083,13 +1084,13 @@ proc blt::TableView::SortColumn { w col } {
     set old [$w sort cget -column]
     set decreasing 0
     if { $old == $col } {
-	set decreasing [$w sort cget -decreasing]
-	set decreasing [expr !$decreasing]
+        set decreasing [$w sort cget -decreasing]
+        set decreasing [expr !$decreasing]
     }
     $w sort configure \
-	-decreasing $decreasing \
-	-columns $col \
-	-mark $col
+        -decreasing $decreasing \
+        -columns $col \
+        -mark $col
     $w sort once
     $w see [list view.top $col]
     blt::busy hold $w
@@ -1109,13 +1110,17 @@ proc blt::TableView::BuildFiltersMenu { w col } {
     set menu [$w filter cget -menu]
     set table [$w cget -table]
     if { $menu == "" || $table == "" } {
-	return
+        return
     }
     set col [$w column index $col]
+    set _private(lastFilterText) [$w column cget $col -filtertext]
+    set _private(lastFilterIcon) [$w column cget $col -filtericon]
+    set _private(lastFilterHighlight) [$w column cget $col -filterhighlight]
+    
     $menu configure -command [list blt::TableView::UpdateFilter $w]
     $menu configure -font "Arial 9"
     if { ![$menu style exists mystyle] } {
-	$menu style create mystyle -font "Arial 9 italic"
+        $menu style create mystyle -font "Arial 9 italic"
     }
     $menu configure \
         -textvariable blt::TableView::_private(textvariable) \
@@ -1170,64 +1175,64 @@ proc blt::TableView::BuildFiltersMenu { w col } {
     }
     $menu delete all
     $menu add -text "All" \
-	-command [list blt::TableView::AllFilter $w] \
-	-style mystyle \
-	-icon $_private(icon) 
+        -command [list blt::TableView::AllFilter $w] \
+        -style mystyle \
+        -icon $_private(icon) 
     $menu add -text "Empty" \
-	-command [list blt::TableView::EmptyFilter $w] \
-	-style mystyle \
-	-icon $_private(icon)
+        -command [list blt::TableView::EmptyFilter $w] \
+        -style mystyle \
+        -icon $_private(icon)
     $menu add -text "Nonempty" \
-	-command [list blt::TableView::NonemptyFilter $w] \
-	-style mystyle \
-	-icon $_private(icon)
+        -command [list blt::TableView::NonemptyFilter $w] \
+        -style mystyle \
+        -icon $_private(icon)
     $menu add -type cascade -text "Top 10" \
-	-menu $top10 \
-	-style mystyle \
-	-icon $_private(icon)
+        -menu $top10 \
+        -style mystyle \
+        -icon $_private(icon)
     $menu add -type cascade -text "Bottom 10" \
-	-menu $bot10 \
-	-style mystyle \
-	-icon $_private(icon)
+        -menu $bot10 \
+        -style mystyle \
+        -icon $_private(icon)
     $menu add -type cascade -text "Custom" \
-	-menu $search \
-	-style mystyle \
-	-icon $_private(icon)
+        -menu $search \
+        -style mystyle \
+        -icon $_private(icon)
     if { [llength [$table column empty $col]] > 0 } {
-	$menu item configure "Empty" -state normal
+        $menu item configure "Empty" -state normal
     } else {
-	$menu item configure "Empty" -state disabled
+        $menu item configure "Empty" -state disabled
     }
     set fmtcmd [$w column cget $col -formatcommand]
     set table [$w cget -table]
     set list {}
     set rows [GetColumnFilterRows $w $col]
     if { $fmtcmd == "" } {
-	set values [$table sort -columns $col -values -unique -rows $rows]
-	if { [llength $values] > 0 } {
-	    $menu add -type separator
-	}
-	$menu listadd $values \
+        set values [$table sort -columns $col -values -unique -rows $rows]
+        if { [llength $values] > 0 } {
+            $menu add -type separator
+        }
+        $menu listadd $values \
             -command  [list blt::TableView::SingleValueFilter $w]
     } else {
-	set rows [$table sort -columns $col -unique -rows $rows]
-	if { [llength $rows] > 0 } {
-	    $menu add -type separator
-	}
-	foreach row $rows {
-	    set fmtvalue [eval $fmtcmd $row $col]
-	    set value [$table get $row $col]
-	    $menu add \
+        set rows [$table sort -columns $col -unique -rows $rows]
+        if { [llength $rows] > 0 } {
+            $menu add -type separator
+        }
+        foreach row $rows {
+            set fmtvalue [eval $fmtcmd $row $col]
+            set value [$table get $row $col]
+            $menu add \
                 -text $fmtvalue \
                 -value $value \
-		-command  [list blt::TableView::SingleValueFilter $w]
-	}
+                -command  [list blt::TableView::SingleValueFilter $w]
+        }
     }
     set text [$w column cget $col -filtertext]
     if { $text == "" } {
-	$menu select first
+        $menu select first
     } else {
-	set item [$menu index text:$text]
+        set item [$menu index text:$text]
         if { $item != -1 } {
             $menu select $item
         }
@@ -1243,11 +1248,11 @@ proc blt::TableView::UpdateFilter { w } {
     set text $_private(textvariable)
     set icon $_private(iconvariable)
     if { $text == "All" } {
-	$w column configure $col -filterhighlight 0
-	$w column configure $col -filtertext "" -filtericon ""
+        $w column configure $col \
+            -filtertext "" -filtericon "" -filterhighlight 0
     } else {
-	$w column configure $col -filterhighlight 1
-	$w column configure $col -filtertext $text -filtericon $icon 
+        $w column configure $col \
+            -filtertext $text -filtericon $icon -filterhighlight 1
     }
     if { $item >= 0 } {
         set style [$menu item cget $item -style]
@@ -1391,7 +1396,7 @@ proc blt::TableView::TextEqualsFilter { w } {
     set item [$menu index selected]
     set value [$menu item cget $item -value]
     if { $value == "" } {
-	set value [$menu item cget $item -text]
+        set value [$menu item cget $item -text]
     }
     set value [list $value]
     set expr [format {[info exists ${index}] &&
@@ -1409,7 +1414,7 @@ proc blt::TableView::TextNotEqualsFilter { w } {
     set item [$menu index selected]
     set value [$menu item cget $item -value]
     if { $value == "" } {
-	set value [$menu item cget $item -text]
+        set value [$menu item cget $item -text]
     }
     set value [list $value]
     set expr [format {![info exists ${index}] ||
@@ -1427,7 +1432,7 @@ proc blt::TableView::TextBeginsWithFilter { w } {
     set item [$menu index selected]
     set value [$menu item cget $item -value]
     if { $value == "" } {
-	set value [$menu item cget $item -text]
+        set value [$menu item cget $item -text]
     }
     set value [list $value]
     set expr [format {[info exists ${index}] &&
@@ -1445,7 +1450,7 @@ proc blt::TableView::TextEndsWithFilter { w } {
     set item [$menu index selected]
     set value [$menu item cget $item -value]
     if { $value == "" } {
-	set value [$menu item cget $item -text]
+        set value [$menu item cget $item -text]
     }
     set value [list $value]
     set expr [format {[info exists ${index}] &&
@@ -1463,7 +1468,7 @@ proc blt::TableView::TextContainsFilter { w } {
     set item [$menu index selected]
     set value [$menu item cget $item -value]
     if { $value == "" } {
-	set value [$menu item cget $item -text]
+        set value [$menu item cget $item -text]
     }
     set value [list $value]
     set expr [format {[info exists ${index}] &&
@@ -1481,7 +1486,7 @@ proc blt::TableView::TextNotContainsFilter { w } {
     set item [$menu index selected]
     set value [$menu item cget $item -value]
     if { $value == "" } {
-	set value [$menu item cget $item -text]
+        set value [$menu item cget $item -text]
     }
     set value [list $value]
     set expr [format {![info exists ${index}] ||
@@ -1527,7 +1532,7 @@ proc blt::TableView::SingleValueFilter { w } {
     set item [$menu index selected]
     set value [$menu item cget $item -value]
     if { $value == "" } {
-	set value [$menu item cget $item -text]
+        set value [$menu item cget $item -text]
     }
     set expr "\[info exists ${index}\] && (\$${index} == \"${value}\")"
     $w column configure $col -filterdata $expr
@@ -1538,19 +1543,19 @@ proc blt::TableView::GetColumnFilterRows { w col } {
     set table [$w cget -table]
     set list {}
     for { set c 0 } { $c < [$table numcolumns] } { incr c } {
-	set expr [$w column cget $c -filterdata]
-	if { $c == $col } {
-	    continue
-	}
-	if { $expr == "" } {
-	    continue
-	}
-	lappend list $expr
+        set expr [$w column cget $c -filterdata]
+        if { $c == $col } {
+            continue
+        }
+        if { $expr == "" } {
+            continue
+        }
+        lappend list $expr
     }
     set expr [join $list " && "]
     if { $expr != "" } {
-#	puts stderr "find \"$expr\" <= [$table find $expr]"
-	return [$table find $expr]
+#       puts stderr "find \"$expr\" <= [$table find $expr]"
+        return [$table find $expr]
     }
     return "all"
 }
@@ -1559,10 +1564,10 @@ proc blt::TableView::ApplyFilters { w } {
     set table [$w cget -table]
     set rows [GetColumnFilterRows $w -1]
     if { $rows == "all" } {
-	eval $w row expose all
+        eval $w row expose all
     } else {
-	eval $w row hide all
-	eval $w row expose $rows
+        eval $w row hide all
+        eval $w row expose $rows
     }
 }
 
@@ -1582,8 +1587,8 @@ proc blt::TableView::PostFilterMenu { w col } {
 
     set menu [$w filter cget -menu]
     if { $menu == "" } {
-	puts stderr "no menu specified"
-	return;				# No menu specified.
+        puts stderr "no menu specified"
+        return;                         # No menu specified.
     }
     BuildFiltersMenu $w $col
     update idletasks
@@ -1716,24 +1721,23 @@ proc ::blt::TableView::BuildTextSearchFilterMenu { w menu } {
 proc blt::TableView::EqualsNumberSearch { w } {
     variable _private
 
-    set top $w.numberequals
-    toplevel $top -borderwidth 2 -relief raised -background grey80
-    wm overrideredirect $top true
-    wm withdraw $top
-    wm protocol $top WM_DELETE {
-        set blt::TableView::_private(search) 0
-    }        
-    set f [blt::tk::frame $top.frame]
-    blt::comboentry $f.entry -hidearrow yes 
-    blt::tk::label $f.label -text "Search for values that equal:" 
-    blt::tk::label $f.hint -text "(one or more values separated by commas)" \
+    set top [CreateSearchDialog $w]
+    set bg [$top cget -bg]
+    set f $top.frame
+
+    blt::comboentry $f.entry \
+        -hidearrow yes 
+    blt::tk::label $f.label \
+        -text "Search for values that equal:" 
+    blt::tk::label $f.hint \
+        -text "(one or more values separated by commas)" \
         -font "Arial 9 italic"
-    blt::tk::button $f.ok -text "Apply" -command {
-        set blt::TableView::_private(search) 1
-    }
-    blt::tk::button $f.cancel -text "Cancel" -command {
-        set blt::TableView::_private(search) 0
-    }
+    blt::tk::button $f.ok \
+        -text "Apply" \
+        -command { set blt::TableView::_private(search) 1 }
+    blt::tk::button $f.cancel \
+        -text "Cancel" \
+        -command { set blt::TableView::_private(search) 0 }
     blt::table $f \
         0,0 $f.label -cspan 2 -anchor w \
         1,0 $f.entry -cspan 2 -fill x \
@@ -1742,37 +1746,34 @@ proc blt::TableView::EqualsNumberSearch { w } {
         3,1 $f.ok -width 1i 
     blt::table configure $f r3 -pad 4
     
-    blt::table $top \
-        0,0 $f -fill both -padx 4 -pady 4
     update
-    set dw [winfo reqwidth $top]
-    set dh [winfo reqheight $top]
-    set vw [winfo width $w]
-    set vh [winfo height $w]
-    set rootx [winfo rootx $w]
-    set rooty [winfo rooty $w]
-    set x [expr $rootx + ($vw - $dw) / 2]
-    set y [expr $rooty + ($vh - $dh) / 2]
     focus $f.entry
-    wm geometry $top +$x+$y
-    wm deiconify $top
-    
-    set _private(search) 0
-    tkwait variable blt::TableView::_private(search)
-    set value [$f.entry get]
-    destroy $top
-    if { $_private(search) && [string is double -strict $value] } {
+    set result [ActivateSearchDialog $w $top]
+    set list [$f.entry get]
+
+    DestroySearchDialog $top
+
+    regsub -all , $list " " list
+    foreach value $list {
+        if { ![string is double -strict $value] } {
+            set result 0
+            break
+        }
+    }
+    if { $result && [llength $list] > 0 } {
         set col $_private(column)
         set index [$w column index $col]
+        set list [list $list]
         set expr "\[info exists ${index}\] &&
-            (\[blt::utils::number eq \$${index} $value])"
+            (\[blt::utils::number inlist \$${index} $list])"
         $w column configure $col -filterdata $expr
         ApplyFilters $w
     } else {
         set col $_private(column)
-	$w column configure $col -filterhighlight 0
-	$w column configure $col -filtertext "" -filtericon ""
-        AllFilter $w
+        $w column configure $col \
+            -filtertext $_private(lastFilterText) \
+            -filtericon $_private(lastFilterIcon) \
+            -filterhighlight $_private(lastFilterHighlight)
     }
 }
 
@@ -1780,15 +1781,13 @@ proc blt::TableView::NotEqualsNumberSearch { w } {
     variable _private
 
     set col $_private(column)
-    set top $w.numberequals
-    toplevel $top -borderwidth 2 -relief raised -background grey80
-    wm overrideredirect $top true
-    wm withdraw $top
-    wm protocol $top WM_DELETE {
-        set blt::TableView::_private(search) 0
-    }        
-    set f [blt::tk::frame $top.frame]
-    blt::comboentry $f.entry -hidearrow yes 
+
+    set top [CreateSearchDialog $w]
+    set bg [$top cget -bg]
+    set f $top.frame
+
+    blt::comboentry $f.entry \
+        -hidearrow yes 
     blt::tk::label $f.label \
         -text "Search for values that do not equal:" 
     blt::tk::label $f.hint \
@@ -1807,30 +1806,22 @@ proc blt::TableView::NotEqualsNumberSearch { w } {
         3,1 $f.ok -width 1i 
     blt::table configure $f r3 -pad 4
 
-    blt::table $top \
-        0,0 $f -fill both -padx 4 -pady 4
-    blt::table configure $f r3 -pad 2
     update
-    set dw [winfo reqwidth $top]
-    set dh [winfo reqheight $top]
-    set vw [winfo width $w]
-    set vh [winfo height $w]
-    set rootx [winfo rootx $w]
-    set rooty [winfo rooty $w]
-    set x [expr $rootx + ($vw - $dw) / 2]
-    set y [expr $rooty + ($vh - $dh) / 2]
     focus $f.entry
-    wm geometry $top +$x+$y
-    wm deiconify $top
-    
-    set _private(search) 0
-    tkwait variable blt::TableView::_private(search)
+    set result [ActivateSearchDialog $w $top]
     set list [$f.entry get]
-    destroy $top
-    if { $_private(search) } {
+    DestroySearchDialog $top
+
+    regsub -all , $list " " list
+    foreach value $list {
+        if { ![string is double -strict $value] } {
+            set result 0
+            break
+        }
+    }
+    if { $result && [llength $list] > 0 } {
         set col $_private(column)
         set index [$w column index $col]
-        regsub -all , $list " " list
         set list [list $list]
         set expr "(!\[info exists ${index}\]) ||
             (!\[blt::utils::number inlist \$${index} $list])"
@@ -1839,31 +1830,30 @@ proc blt::TableView::NotEqualsNumberSearch { w } {
         ApplyFilters $w
     } else {
         set col $_private(column)
-	$w column configure $col -filterhighlight 0
-	$w column configure $col -filtertext "" -filtericon ""
-        AllFilter $w
+        $w column configure $col \
+            -filtertext $_private(lastFilterText) \
+            -filtericon $_private(lastFilterIcon) \
+            -filterhighlight $_private(lastFilterHighlight)
     }
 }
 
 proc blt::TableView::GreaterThanNumberSearch { w } {
     variable _private
 
-    set top $w.numberequals
-    toplevel $top -borderwidth 2 -relief raised -background grey80
-    wm overrideredirect $top true
-    wm withdraw $top
-    wm protocol $top WM_DELETE {
-        set blt::TableView::_private(search) 0
-    }        
-    set f [blt::tk::frame $top.frame]
-    blt::comboentry $f.entry -hidearrow yes 
-    blt::tk::label $f.label -text "Search for values greater than:" 
-    blt::tk::button $f.ok -text "Apply" -command {
-        set blt::TableView::_private(search) 1
-    }
-    blt::tk::button $f.cancel -text "Cancel" -command {
-        set blt::TableView::_private(search) 0
-    }
+    set top [CreateSearchDialog $w]
+    set bg [$top cget -bg]
+    set f $top.frame
+
+    blt::comboentry $f.entry \
+        -hidearrow yes 
+    blt::tk::label $f.label \
+        -text "Search for values greater than:" 
+    blt::tk::button $f.ok \
+        -text "Apply" \
+        -command { set blt::TableView::_private(search) 1 }
+    blt::tk::button $f.cancel \
+        -text "Cancel" \
+        -command { set blt::TableView::_private(search) 0 }
     blt::table $f \
         0,0 $f.label -cspan 2 -anchor w \
         1,0 $f.entry -cspan 2 -fill x -padx 0.1i \
@@ -1872,26 +1862,13 @@ proc blt::TableView::GreaterThanNumberSearch { w } {
     blt::table configure $f c0 c1 -width 1.25i
     blt::table configure $f r2 -pad 4
 
-    blt::table $top \
-        0,0 $f -fill both -padx 4 -pady 4
     update
-    set dw [winfo reqwidth $top]
-    set dh [winfo reqheight $top]
-    set vw [winfo width $w]
-    set vh [winfo height $w]
-    set rootx [winfo rootx $w]
-    set rooty [winfo rooty $w]
-    set x [expr $rootx + ($vw - $dw) / 2]
-    set y [expr $rooty + ($vh - $dh) / 2]
     focus $f.entry
-    wm geometry $top +$x+$y
-    wm deiconify $top
-    
-    set _private(search) 0
-    tkwait variable blt::TableView::_private(search)
+    set result [ActivateSearchDialog $w $top]
     set value [$f.entry get]
-    destroy $top
-    if { $_private(search) && [string is double -strict $value] } {
+    DestroySearchDialog $top
+
+    if { $result && [string is double -strict $value] } {
         set col $_private(column)
         set index [$w column index $col]
         set expr "\[info exists ${index}\] &&
@@ -1900,31 +1877,29 @@ proc blt::TableView::GreaterThanNumberSearch { w } {
         ApplyFilters $w
     } else {
         set col $_private(column)
-	$w column configure $col -filterhighlight 0
-	$w column configure $col -filtertext "" -filtericon ""
-        AllFilter $w
+        $w column configure $col \
+            -filtertext $_private(lastFilterText) \
+            -filtericon $_private(lastFilterIcon) \
+            -filterhighlight $_private(lastFilterHighlight)
     }
 }
 
 proc blt::TableView::GreaterThanOrEqualToNumberSearch { w } {
     variable _private
 
-    set top $w.numberequals
-    toplevel $top -borderwidth 2 -relief raised -background grey80
-    wm overrideredirect $top true
-    wm withdraw $top
-    wm protocol $top WM_DELETE {
-        set blt::TableView::_private(search) 0
-    }        
-    set f [blt::tk::frame $top.frame]
-    blt::comboentry $f.entry -hidearrow yes 
-    blt::tk::label $f.label -text "Search for values greater than or equal to:" 
-    blt::tk::button $f.ok -text "Apply" -command {
-        set blt::TableView::_private(search) 1
-    }
-    blt::tk::button $f.cancel -text "Cancel" -command {
-        set blt::TableView::_private(search) 0
-    }
+    set top [CreateSearchDialog $w]
+    set bg [$top cget -bg]
+    set f $top.frame
+
+    blt::comboentry $f.entry \
+        -hidearrow yes 
+    blt::tk::label $f.label \
+        -text "Search for values greater than or equal to:" 
+    blt::tk::button $f.ok \
+        -text "Apply" -command { set blt::TableView::_private(search) 1 }
+    blt::tk::button $f.cancel \
+        -text "Cancel" \
+        -command { set blt::TableView::_private(search) 0 }
     blt::table $f \
         0,0 $f.label -cspan 2 -anchor w \
         1,0 $f.entry -cspan 2 -fill x -padx 0.1i \
@@ -1933,26 +1908,13 @@ proc blt::TableView::GreaterThanOrEqualToNumberSearch { w } {
     blt::table configure $f c0 c1 -width 1.25i
     blt::table configure $f r2 -pad 4
 
-    blt::table $top \
-        0,0 $f -fill both -padx 4 -pady 4
     update
-    set dw [winfo reqwidth $top]
-    set dh [winfo reqheight $top]
-    set vw [winfo width $w]
-    set vh [winfo height $w]
-    set rootx [winfo rootx $w]
-    set rooty [winfo rooty $w]
-    set x [expr $rootx + ($vw - $dw) / 2]
-    set y [expr $rooty + ($vh - $dh) / 2]
     focus $f.entry
-    wm geometry $top +$x+$y
-    wm deiconify $top
-    
-    set _private(search) 0
-    tkwait variable blt::TableView::_private(search)
+    set result [ActivateSearchDialog $w $top]
     set value [$f.entry get]
-    destroy $top
-    if { $_private(search) && [string is double -strict $value] } {
+    DestroySearchDialog $top
+
+    if { $result && [string is double -strict $value] } {
         set col $_private(column)
         set index [$w column index $col]
         set expr "\[info exists ${index}\] &&
@@ -1961,31 +1923,30 @@ proc blt::TableView::GreaterThanOrEqualToNumberSearch { w } {
         ApplyFilters $w
     } else {
         set col $_private(column)
-	$w column configure $col -filterhighlight 0
-	$w column configure $col -filtertext "" -filtericon ""
-        AllFilter $w
+        $w column configure $col \
+            -filtertext $_private(lastFilterText) \
+            -filtericon $_private(lastFilterIcon) \
+            -filterhighlight $_private(lastFilterHighlight)
     }
 }
 
 proc blt::TableView::LessThanNumberSearch { w } {
     variable _private
 
-    set top $w.numberequals
-    toplevel $top -borderwidth 2 -relief raised -background grey80
-    wm overrideredirect $top true
-    wm withdraw $top
-    wm protocol $top WM_DELETE {
-        set blt::TableView::_private(search) 0
-    }        
-    set f [blt::tk::frame $top.frame]
-    blt::comboentry $f.entry -hidearrow yes 
-    blt::tk::label $f.label -text "Search for values less than:" 
-    blt::tk::button $f.ok -text "Apply" -command {
-        set blt::TableView::_private(search) 1
-    }
-    blt::tk::button $f.cancel -text "Cancel" -command {
-        set blt::TableView::_private(search) 0
-    }
+    set top [CreateSearchDialog $w]
+    set bg [$top cget -bg]
+    set f $top.frame
+
+    blt::comboentry $f.entry \
+        -hidearrow yes 
+    blt::tk::label $f.label \
+        -text "Search for values less than:" 
+    blt::tk::button $f.ok \
+        -text "Apply" \
+        -command { set blt::TableView::_private(search) 1 }
+    blt::tk::button $f.cancel \
+        -text "Cancel" \
+        -command { set blt::TableView::_private(search) 0 }
     blt::table $f \
         0,0 $f.label -cspan 2 -anchor w \
         1,0 $f.entry -cspan 2 -fill x -padx 0.1i \
@@ -1994,26 +1955,13 @@ proc blt::TableView::LessThanNumberSearch { w } {
     blt::table configure $f c0 c1 -width 1.25i
     blt::table configure $f r2 -pad 4
 
-    blt::table $top \
-        0,0 $f -fill both -padx 4 -pady 4
     update
-    set dw [winfo reqwidth $top]
-    set dh [winfo reqheight $top]
-    set vw [winfo width $w]
-    set vh [winfo height $w]
-    set rootx [winfo rootx $w]
-    set rooty [winfo rooty $w]
-    set x [expr $rootx + ($vw - $dw) / 2]
-    set y [expr $rooty + ($vh - $dh) / 2]
     focus $f.entry
-    wm geometry $top +$x+$y
-    wm deiconify $top
-    
-    set _private(search) 0
-    tkwait variable blt::TableView::_private(search)
+    set result [ActivateSearchDialog $w $top]
     set value [$f.entry get]
-    destroy $top
-    if { $_private(search) && [string is double -strict $value] } {
+    DestroySearchDialog $top
+
+    if { $result && [string is double -strict $value] } {
         set col $_private(column)
         set index [$w column index $col]
         set expr "\[info exists ${index}\] &&
@@ -2022,31 +1970,30 @@ proc blt::TableView::LessThanNumberSearch { w } {
         ApplyFilters $w
     } else {
         set col $_private(column)
-	$w column configure $col -filterhighlight 0
-	$w column configure $col -filtertext "" -filtericon ""
-        AllFilter $w
+        $w column configure $col \
+            -filtertext $_private(lastFilterText) \
+            -filtericon $_private(lastFilterIcon) \
+            -filterhighlight $_private(lastFilterHighlight)
     }
 }
 
 proc blt::TableView::LessThanOrEqualToNumberSearch { w } {
     variable _private
 
-    set top $w.numberequals
-    toplevel $top -borderwidth 2 -relief raised -background grey80
-    wm overrideredirect $top true
-    wm withdraw $top
-    wm protocol $top WM_DELETE {
-        set blt::TableView::_private(search) 0
-    }        
-    set f [blt::tk::frame $top.frame]
-    blt::comboentry $f.entry -hidearrow yes 
-    blt::tk::label $f.label -text "Search for values less than or equal to:" 
-    blt::tk::button $f.ok -text "Apply" -command {
-        set blt::TableView::_private(search) 1
-    }
-    blt::tk::button $f.cancel -text "Cancel" -command {
-        set blt::TableView::_private(search) 0
-    }
+    set top [CreateSearchDialog $w]
+    set bg [$top cget -bg]
+    set f $top.frame
+
+    blt::comboentry $f.entry \
+        -hidearrow yes 
+    blt::tk::label $f.label \
+        -text "Search for values less than or equal to:" 
+    blt::tk::button $f.ok \
+        -text "Apply" \
+        -command { set blt::TableView::_private(search) 1 }
+    blt::tk::button $f.cancel \
+        -text "Cancel" \
+        -command { set blt::TableView::_private(search) 0 }
     blt::table $f \
         0,0 $f.label -cspan 2 -anchor w \
         1,0 $f.entry -cspan 2 -fill x -padx 0.1i \
@@ -2055,26 +2002,13 @@ proc blt::TableView::LessThanOrEqualToNumberSearch { w } {
     blt::table configure $f c0 c1 -width 1.25i
     blt::table configure $f r2 -pad 4
 
-    blt::table $top \
-        0,0 $f -fill both -padx 4 -pady 4
     update
-    set dw [winfo reqwidth $top]
-    set dh [winfo reqheight $top]
-    set vw [winfo width $w]
-    set vh [winfo height $w]
-    set rootx [winfo rootx $w]
-    set rooty [winfo rooty $w]
-    set x [expr $rootx + ($vw - $dw) / 2]
-    set y [expr $rooty + ($vh - $dh) / 2]
     focus $f.entry
-    wm geometry $top +$x+$y
-    wm deiconify $top
-    
-    set _private(search) 0
-    tkwait variable blt::TableView::_private(search)
+    set result [ActivateSearchDialog $w $top]
     set value [$f.entry get]
-    destroy $top
-    if { $_private(search) && [string is double -strict $value] } {
+    DestroySearchDialog $top
+
+    if { $result && [string is double -strict $value] } {
         set col $_private(column)
         set index [$w column index $col]
         set expr "\[info exists ${index}\] &&
@@ -2083,37 +2017,37 @@ proc blt::TableView::LessThanOrEqualToNumberSearch { w } {
         ApplyFilters $w
     } else {
         set col $_private(column)
-	$w column configure $col -filterhighlight 0
-	$w column configure $col -filtertext "" -filtericon ""
-        AllFilter $w
+        $w column configure $col \
+            -filtertext $_private(lastFilterText) \
+            -filtericon $_private(lastFilterIcon) \
+            -filterhighlight $_private(lastFilterHighlight)
     }
 }
 
 proc blt::TableView::BetweenNumberSearch { w } {
     variable _private
 
-    set top $w.numberequals
-    toplevel $top -borderwidth 2 -relief raised -background grey80
-    wm overrideredirect $top true
-    wm withdraw $top
-    wm protocol $top WM_DELETE {
-        set blt::TableView::_private(search) 0
-    }        
-    set f [blt::tk::frame $top.frame]
-    blt::tk::label $f.first_l \
+    set top [CreateSearchDialog $w]
+    set bg [$top cget -bg]
+    set f $top.frame
+
+    blt::tk::label \
+        $f.first_l \
         -text "First" 
-    blt::comboentry $f.first -hidearrow yes 
+    blt::comboentry $f.first \
+        -hidearrow yes 
     blt::tk::label $f.last_l \
         -text "Last" 
-    blt::comboentry $f.last -hidearrow yes 
+    blt::comboentry $f.last \
+        -hidearrow yes 
     blt::tk::label $f.label \
         -text "Search for values between first and last:" 
-    blt::tk::button $f.ok -text "Apply" -command {
-        set blt::TableView::_private(search) 1
-    }
-    blt::tk::button $f.cancel -text "Cancel" -command {
-        set blt::TableView::_private(search) 0
-    }
+    blt::tk::button $f.ok \
+        -text "Apply" \
+        -command { set blt::TableView::_private(search) 1 }
+    blt::tk::button $f.cancel \
+        -text "Cancel" \
+        -command { set blt::TableView::_private(search) 0 }
     blt::table $f \
         0,0 $f.label -cspan 3 -anchor w \
         1,0 $f.first_l -anchor e \
@@ -2126,27 +2060,14 @@ proc blt::TableView::BetweenNumberSearch { w } {
     blt::table configure $f c0 -resize none -width 0.5i
     blt::table configure $f r3 -pad 4
     
-    blt::table $top \
-        0,0 $f -fill both -padx 4 -pady 4
     update
-    set dw [winfo reqwidth $top]
-    set dh [winfo reqheight $top]
-    set vw [winfo width $w]
-    set vh [winfo height $w]
-    set rootx [winfo rootx $w]
-    set rooty [winfo rooty $w]
-    set x [expr $rootx + ($vw - $dw) / 2]
-    set y [expr $rooty + ($vh - $dh) / 2]
     focus $f.first
-    wm geometry $top +$x+$y
-    wm deiconify $top
-    
-    set _private(search) 0
-    tkwait variable blt::TableView::_private(search)
+    set result [ActivateSearchDialog $w $top]
     set first [$f.first get]
     set last [$f.last get]
-    destroy $top
-    if { $_private(search) && [string is double -strict $first] &&
+    DestroySearchDialog $top
+
+    if { $result && [string is double -strict $first] &&
          [string is double -strict $last] } {
         set col $_private(column)
         set index [$w column index $col]
@@ -2156,9 +2077,10 @@ proc blt::TableView::BetweenNumberSearch { w } {
         ApplyFilters $w
     } else {
         set col $_private(column)
-	$w column configure $col -filterhighlight 0
-	$w column configure $col -filtertext "" -filtericon ""
-        AllFilter $w
+        $w column configure $col \
+            -filtertext $_private(lastFilterText) \
+            -filtericon $_private(lastFilterIcon) \
+            -filterhighlight $_private(lastFilterHighlight)
     }
 }
 
@@ -2166,51 +2088,32 @@ proc blt::TableView::EqualsTextSearch { w } {
     variable _private
 
     set col $_private(column)
-    puts stderr col=$col
-    set top $w.equals
-    blt::tk::toplevel $top -borderwidth 2 -relief raised -background grey80 
-    wm overrideredirect $top true
-    wm withdraw $top
-    wm protocol $top WM_DELETE {
-        set blt::TableView::_private(search) 0
-    }        
-    set bg [blt::background create gradient \
-		-high grey97 \
-		-low grey85 \
-		-jitter 10 \
-		-scale log \
-		-relativeto $top]
-    $top configure -bg $bg
-    set f [blt::tk::frame $top.frame -bg $bg]
+
+    set top [CreateSearchDialog $w]
+    set bg [$top cget -bg]
+    set f $top.frame
+
     set _private(ignoreCase) 0
     set _private(trim) 0
     blt::comboentry $f.entry \
-        -hidearrow yes  \
-        -bg $bg  
+        -hidearrow yes  
     blt::tk::label $f.label \
-        -text "Search for values that equal:"  \
-        -bg $bg
+        -text "Search for values that equal:"  
     blt::tk::label $f.hint \
         -text "(one or more values separated by commas)" \
-        -font "Arial 9 italic" \
-        -bg $bg
+        -font "Arial 9 italic" 
     blt::tk::checkbutton $f.ignore \
         -text "Ignore case" \
-        -variable blt::TableView::_private(ignoreCase) \
-        -bg $bg  \
-        -highlightthickness 0
+        -variable blt::TableView::_private(ignoreCase) 
     blt::tk::checkbutton $f.trim \
         -text "Trim whitespace" \
-        -variable blt::TableView::_private(trim) \
-        -bg $bg  \
-        -highlightthickness 0
+        -variable blt::TableView::_private(trim) 
     blt::tk::button $f.ok \
-        -text "Apply" -command { set blt::TableView::_private(search) 1 } \
-        -bg $bg
+        -text "Apply" \
+        -command { set blt::TableView::_private(search) 1 } 
     blt::tk::button $f.cancel \
         -text "Cancel" \
-        -command { set blt::TableView::_private(search) 0 }  \
-        -bg $bg
+        -command { set blt::TableView::_private(search) 0 } 
     blt::table $f \
         0,0 $f.label -cspan 2 -anchor w \
         1,0 $f.entry -cspan 2 -fill x \
@@ -2222,27 +2125,12 @@ proc blt::TableView::EqualsTextSearch { w } {
     blt::table configure $f c0 c1 -width 1.25i
     blt::table configure $f r4 -pad 4
 
-    blt::table $top \
-        0,0 $f -fill both -padx 4 -pady 4
     update
-    set dw [winfo reqwidth $top]
-    set dh [winfo reqheight $top]
-    set vw [winfo width $w]
-    set vh [winfo height $w]
-    set rootx [winfo rootx $w]
-    set rooty [winfo rooty $w]
-    set x [expr $rootx + ($vw - $dw) / 2]
-    set y [expr $rooty + ($vh - $dh) / 2]
     focus $f.entry
-    wm geometry $top +$x+$y
-    wm deiconify $top
-    blt::grab push $top
-    set _private(search) 0
-    tkwait variable blt::TableView::_private(search)
+    set result [ActivateSearchDialog $w $top]
     set list [$f.entry get]
-    blt::grab pop
-    destroy $top
-    blt::background delete $bg
+    DestroySearchDialog $top
+
     set flags ""
     if { $_private(trim) } {
         append flags " -trim both"
@@ -2250,7 +2138,7 @@ proc blt::TableView::EqualsTextSearch { w } {
     if { $_private(ignoreCase) } {
         append flags " -nocase"
     }
-    if { $_private(search) } {
+    if { $result && [length $list] > 0 } {
         set col $_private(column)
         set index [$w column index $col]
         regsub -all , $list " " list
@@ -2262,9 +2150,10 @@ proc blt::TableView::EqualsTextSearch { w } {
         ApplyFilters $w
     } else {
         set col $_private(column)
-	$w column configure $col -filterhighlight 0
-	$w column configure $col -filtertext "" -filtericon ""
-        AllFilter $w
+        $w column configure $col \
+            -filtertext $_private(lastFilterText) \
+            -filtericon $_private(lastFilterIcon) \
+            -filterhighlight $_private(lastFilterHighlight)
     }
 }
 
@@ -2272,30 +2161,31 @@ proc blt::TableView::NotEqualsTextSearch { w } {
     variable _private
 
     set col $_private(column)
-    set top $w.notequals
-    toplevel $top -borderwidth 2 -relief raised -background grey80
-    wm overrideredirect $top true
-    wm withdraw $top
-    wm protocol $top WM_DELETE {
-        set blt::TableView::_private(search) 0
-    }        
-    set f [blt::tk::frame $top.frame]
+    set top [CreateSearchDialog $w]
+    set bg [$top cget -bg]
+    set f $top.frame
+
     set _private(ignoreCase) 0
     set _private(trim) 0
-    blt::comboentry $f.entry -hidearrow yes 
-    blt::tk::label $f.label -text "Search for values that do not equal:" 
-    blt::tk::label $f.hint -text "(one or more values separated by commas)" \
+    blt::comboentry $f.entry \
+        -hidearrow yes 
+    blt::tk::label $f.label \
+        -text "Search for values that do not equal:" 
+    blt::tk::label $f.hint \
+        -text "(one or more values separated by commas)" \
         -font "Arial 9 italic"
-    blt::tk::checkbutton $f.ignore -text "Ignore case" \
+    blt::tk::checkbutton $f.ignore \
+        -text "Ignore case" \
         -variable blt::TableView::_private(ignoreCase)
-    blt::tk::checkbutton $f.trim -text "Trim whitespace" \
+    blt::tk::checkbutton $f.trim \
+        -text "Trim whitespace" \
         -variable blt::TableView::_private(trim)
-    blt::tk::button $f.ok -text "Apply" -command {
-        set blt::TableView::_private(search) 1
-    }
-    blt::tk::button $f.cancel -text "Cancel" -command {
-        set blt::TableView::_private(search) 0
-    }
+    blt::tk::button $f.ok \
+        -text "Apply" \
+        -command { set blt::TableView::_private(search) 1 }
+    blt::tk::button $f.cancel \
+        -text "Cancel" \
+        -command { set blt::TableView::_private(search) 0 }
     blt::table $f \
         0,0 $f.label -cspan 2 -anchor w \
         1,0 $f.entry -cspan 2 -fill x \
@@ -2307,25 +2197,12 @@ proc blt::TableView::NotEqualsTextSearch { w } {
     blt::table configure $f c0 c1 -width 1.25i
     blt::table configure $f r4 -pad 4
     
-    blt::table $top \
-        0,0 $f -fill both -padx 4 -pady 4
     update
-    set dw [winfo reqwidth $top]
-    set dh [winfo reqheight $top]
-    set vw [winfo width $w]
-    set vh [winfo height $w]
-    set rootx [winfo rootx $w]
-    set rooty [winfo rooty $w]
-    set x [expr $rootx + ($vw - $dw) / 2]
-    set y [expr $rooty + ($vh - $dh) / 2]
     focus $f.entry
-    wm geometry $top +$x+$y
-    wm deiconify $top
-    
-    set _private(search) 0
-    tkwait variable blt::TableView::_private(search)
+    set result [ActivateSearchDialog $w $top]
     set list [$f.entry get]
-    destroy $top
+    DestroySearchDialog $top
+
     set flags ""
     if { $_private(trim) } {
         append flags " -trim both"
@@ -2333,7 +2210,7 @@ proc blt::TableView::NotEqualsTextSearch { w } {
     if { $_private(ignoreCase) } {
         append flags " -nocase"
     }
-    if { $_private(search) && [llength $list] > 0 } {
+    if { $result && [llength $list] > 0 } {
         set col $_private(column)
         set index [$w column index $col]
         regsub -all , $list " " list
@@ -2345,9 +2222,10 @@ proc blt::TableView::NotEqualsTextSearch { w } {
         ApplyFilters $w
     } else {
         set col $_private(column)
-	$w column configure $col -filterhighlight 0
-	$w column configure $col -filtertext "" -filtericon ""
-        AllFilter $w
+        $w column configure $col \
+            -filtertext $_private(lastFilterText) \
+            -filtericon $_private(lastFilterIcon) \
+            -filterhighlight $_private(lastFilterHighlight)
     }
 }
 
@@ -2355,17 +2233,14 @@ proc blt::TableView::BeginsWithTextSearch { w } {
     variable _private
 
     set col $_private(column)
-    set top $w.beginswith
-    toplevel $top -borderwidth 2 -relief raised -background grey80
-    wm overrideredirect $top true
-    wm withdraw $top
-    wm protocol $top WM_DELETE {
-        set blt::TableView::_private(search) 0
-    }        
-    set f [blt::tk::frame $top.frame]
+    set top [CreateSearchDialog $w]
+    set bg [$top cget -bg]
+    set f $top.frame
+
     set _private(ignoreCase) 0
     set _private(trim) 0
-    blt::comboentry $f.entry -hidearrow yes 
+    blt::comboentry $f.entry \
+        -hidearrow yes 
     blt::tk::label $f.label \
         -text "Search for values that begin with:" 
     blt::tk::checkbutton $f.ignore \
@@ -2390,27 +2265,12 @@ proc blt::TableView::BeginsWithTextSearch { w } {
     blt::table configure $f c0 c1 -width 1.25i
     blt::table configure $f r3 -pad 4
     
-    blt::table $top \
-        0,0 $f -fill both -padx 4 -pady 4
-    blt::table configure $f r3 -pad 2
     update
-    set dw [winfo reqwidth $top]
-    set dh [winfo reqheight $top]
-    set vw [winfo width $w]
-    set vh [winfo height $w]
-    set rootx [winfo rootx $w]
-    set rooty [winfo rooty $w]
-    set x [expr $rootx + ($vw - $dw) / 2]
-    set y [expr $rooty + ($vh - $dh) / 2]
     focus $f.entry
-    wm geometry $top +$x+$y
-    wm deiconify $top
-    
-    set _private(search) 0
-    tkwait variable blt::TableView::_private(search)
+    set result [ActivateSearchDialog $w $top]
     set value [$f.entry get]
-    destroy $top
-    set flags ""
+    DestroySearchDialog $top
+
     if { $_private(trim) } {
         append flags " -trim both"
     }
@@ -2428,9 +2288,10 @@ proc blt::TableView::BeginsWithTextSearch { w } {
         ApplyFilters $w
     } else {
         set col $_private(column)
-	$w column configure $col -filterhighlight 0
-	$w column configure $col -filtertext "" -filtericon ""
-        AllFilter $w
+        $w column configure $col \
+            -filtertext $_private(lastFilterText) \
+            -filtericon $_private(lastFilterIcon) \
+            -filterhighlight $_private(lastFilterHighlight)
     }
 }
 
@@ -2438,17 +2299,14 @@ proc blt::TableView::EndsWithTextSearch { w } {
     variable _private
 
     set col $_private(column)
-    set top $w.endswidth
-    toplevel $top -borderwidth 2 -relief raised -background grey80
-    wm overrideredirect $top true
-    wm withdraw $top
-    wm protocol $top WM_DELETE {
-        set blt::TableView::_private(search) 0
-    }        
-    set f [blt::tk::frame $top.frame]
+    set top [CreateSearchDialog $w]
+    set bg [$top cget -bg]
+    set f $top.frame
+
     set _private(ignoreCase) 0
     set _private(trim) 0
-    blt::comboentry $f.entry -hidearrow yes 
+    blt::comboentry $f.entry \
+        -hidearrow yes 
     blt::tk::label $f.label \
         -text "Search for values that end with:" 
     blt::tk::checkbutton $f.ignore \
@@ -2473,25 +2331,12 @@ proc blt::TableView::EndsWithTextSearch { w } {
     blt::table configure $f c0 c1 -width 1.25i
     blt::table configure $f r3 -pad 4
 
-    blt::table $top \
-        0,0 $f -fill both -padx 4 -pady 4
     update
-    set dw [winfo reqwidth $top]
-    set dh [winfo reqheight $top]
-    set vw [winfo width $w]
-    set vh [winfo height $w]
-    set rootx [winfo rootx $w]
-    set rooty [winfo rooty $w]
-    set x [expr $rootx + ($vw - $dw) / 2]
-    set y [expr $rooty + ($vh - $dh) / 2]
     focus $f.entry
-    wm geometry $top +$x+$y
-    wm deiconify $top
-    
-    set _private(search) 0
-    tkwait variable blt::TableView::_private(search)
+    set result [ActivateSearchDialog $w $top]
     set value [$f.entry get]
-    destroy $top
+    DestroySearchDialog $top
+
     set flags ""
     if { $_private(trim) } {
         append flags " -trim both"
@@ -2510,9 +2355,10 @@ proc blt::TableView::EndsWithTextSearch { w } {
         ApplyFilters $w
     } else {
         set col $_private(column)
-	$w column configure $col -filterhighlight 0
-	$w column configure $col -filtertext "" -filtericon ""
-        AllFilter $w
+        $w column configure $col \
+            -filtertext $_private(lastFilterText) \
+            -filtericon $_private(lastFilterIcon) \
+            -filterhighlight $_private(lastFilterHighlight)
     }
 }
 
@@ -2520,17 +2366,14 @@ proc blt::TableView::ContainsTextSearch { w } {
     variable _private
 
     set col $_private(column)
-    set top $w.endswidth
-    toplevel $top -borderwidth 2 -relief raised -background grey80
-    wm overrideredirect $top true
-    wm withdraw $top
-    wm protocol $top WM_DELETE {
-        set blt::TableView::_private(search) 0
-    }        
-    set f [blt::tk::frame $top.frame]
+    set top [CreateSearchDialog $w]
+    set bg [$top cget -bg]
+    set f $top.frame
+
     set _private(ignoreCase) 0
     set _private(trim) 0
-    blt::comboentry $f.entry -hidearrow yes 
+    blt::comboentry $f.entry \
+        -hidearrow yes 
     blt::tk::label $f.label \
         -text "Search for values that contain:" 
     blt::tk::checkbutton $f.ignore \
@@ -2551,31 +2394,17 @@ proc blt::TableView::ContainsTextSearch { w } {
     blt::table configure $f c0 c1 -width 1.25i
     blt::table configure $f r3 -pad 4
 
-    blt::table $top \
-        0,0 $f -fill both -padx 4 -pady 4
-    blt::table configure $f r3 -pad 2
     update
-    set dw [winfo reqwidth $top]
-    set dh [winfo reqheight $top]
-    set vw [winfo width $w]
-    set vh [winfo height $w]
-    set rootx [winfo rootx $w]
-    set rooty [winfo rooty $w]
-    set x [expr $rootx + ($vw - $dw) / 2]
-    set y [expr $rooty + ($vh - $dh) / 2]
     focus $f.entry
-    wm geometry $top +$x+$y
-    wm deiconify $top
-    
-    set _private(search) 0
-    tkwait variable blt::TableView::_private(search)
+    set result [ActivateSearchDialog $w $top]
     set value [$f.entry get]
-    destroy $top
+    DestroySearchDialog $top
+
     set flags ""
     if { $_private(ignoreCase) } {
         append flags " -nocase"
     }
-    if { $_private(search) && [string length $value] > 0 } {
+    if { $result && [string length $value] > 0 } {
         set col $_private(column)
         set index [$w column index $col]
         set value [list $value]
@@ -2586,9 +2415,10 @@ proc blt::TableView::ContainsTextSearch { w } {
         ApplyFilters $w
     } else {
         set col $_private(column)
-	$w column configure $col -filterhighlight 0
-	$w column configure $col -filtertext "" -filtericon ""
-        AllFilter $w
+        $w column configure $col \
+            -filtertext $_private(lastFilterText) \
+            -filtericon $_private(lastFilterIcon) \
+            -filterhighlight $_private(lastFilterHighlight)
     }
 }
 
@@ -2596,62 +2426,44 @@ proc blt::TableView::NotContainsTextSearch { w } {
     variable _private
 
     set col $_private(column)
-    set top $w.endswidth
-    toplevel $top -borderwidth 2 -relief raised -background grey80
-    wm overrideredirect $top true
-    wm withdraw $top
-    wm protocol $top WM_DELETE {
-        set blt::TableView::_private(search) 0
-    }        
-    set f [blt::tk::frame $top.frame]
+    set top [CreateSearchDialog $w]
+    set bg [$top cget -bg]
+    set f $top.frame
+
     set _private(ignoreCase) 0
     set _private(trim) 0
-    blt::comboentry $f.entry -hidearrow yes 
-    blt::tk::label $f.label \
+    blt::comboentry $top.frame.entry -hidearrow yes 
+    blt::tk::label $top.frame.label \
         -text "Search for values that do not contain:" 
-    blt::tk::checkbutton $f.ignore \
+    blt::tk::checkbutton $top.frame.ignore \
         -text "Ignore case" \
         -variable blt::TableView::_private(ignoreCase)
-    blt::tk::button $f.ok \
+    blt::tk::button $top.frame.ok \
         -text "Apply" \
         -command { set blt::TableView::_private(search) 1 }
-    blt::tk::button $f.cancel \
+    blt::tk::button $top.frame.cancel \
         -text "Cancel" \
         -command { set blt::TableView::_private(search) 0 }
-    blt::table $f \
-        0,0 $f.label -cspan 2 -anchor w \
-        1,0 $f.entry -cspan 2 -fill x \
-        2,0 $f.ignore -cspan 2 -anchor w \
-        3,0 $f.cancel -width 1i \
-        3,1 $f.ok -width 1i
-    blt::table configure $f c0 c1 -width 1.25i
-    blt::table configure $f r3 -pad 4
+    blt::table $top.frame \
+        0,0 $top.frame.label -cspan 2 -anchor w \
+        1,0 $top.frame.entry -cspan 2 -fill x \
+        2,0 $top.frame.ignore -cspan 2 -anchor w \
+        3,0 $top.frame.cancel -width 1i \
+        3,1 $top.frame.ok -width 1i
+    blt::table configure $top.frame c0 c1 -width 1.25i
+    blt::table configure $top.frame r3 -pad 4
     
-    blt::table $top \
-        0,0 $f -fill both -padx 4 -pady 4
-    blt::table configure $f r3 -pad 2
     update
-    set dw [winfo reqwidth $top]
-    set dh [winfo reqheight $top]
-    set vw [winfo width $w]
-    set vh [winfo height $w]
-    set rootx [winfo rootx $w]
-    set rooty [winfo rooty $w]
-    set x [expr $rootx + ($vw - $dw) / 2]
-    set y [expr $rooty + ($vh - $dh) / 2]
     focus $f.entry
-    wm geometry $top +$x+$y
-    wm deiconify $top
-    
-    set _private(search) 0
-    tkwait variable blt::TableView::_private(search)
+    set result [ActivateSearchDialog $w $top]
     set value [$f.entry get]
-    destroy $top
+    DestroySearchDialog $top
+
     set flags ""
     if { $_private(ignoreCase) } {
         append flags " -nocase"
     }
-    if { $_private(search) && [string length $value] > 0 } {
+    if { $result && [string length $value] > 0 } {
         set col $_private(column)
         set index [$w column index $col]
         set value [list $value]
@@ -2662,9 +2474,10 @@ proc blt::TableView::NotContainsTextSearch { w } {
         ApplyFilters $w
     } else {
         set col $_private(column)
-	$w column configure $col -filterhighlight 0
-	$w column configure $col -filtertext "" -filtericon ""
-        AllFilter $w
+        $w column configure $col \
+            -filtertext $_private(lastFilterText) \
+            -filtericon $_private(lastFilterIcon) \
+            -filterhighlight $_private(lastFilterHighlight)
     }
 }
 
@@ -2672,22 +2485,21 @@ proc blt::TableView::BetweenTextSearch { w } {
     variable _private
 
     set col $_private(column)
-    set top $w.endswidth
-    toplevel $top -borderwidth 2 -relief raised -background grey80
-    wm overrideredirect $top true
-    wm withdraw $top
-    wm protocol $top WM_DELETE {
-        set blt::TableView::_private(search) 0
-    }        
-    set f [blt::tk::frame $top.frame]
+
+    set top [CreateSearchDialog $w]
+    set bg [$top cget -bg]
+    set f $top.frame
+
     set _private(ignoreCase) 0
     set _private(trim) 0
     blt::tk::label $f.first_l \
         -text "First" 
-    blt::comboentry $f.first -hidearrow yes 
+    blt::comboentry $f.first \
+        -hidearrow yes 
     blt::tk::label $f.last_l \
         -text "Last" 
-    blt::comboentry $f.last -hidearrow yes 
+    blt::comboentry $f.last \
+        -hidearrow yes 
     blt::tk::label $f.label \
         -text "Search for values between first and last:" 
     blt::tk::checkbutton $f.ignore \
@@ -2710,35 +2522,21 @@ proc blt::TableView::BetweenTextSearch { w } {
         4,2 $f.ok -width 1i   
     blt::table configure $f c1 c2 -width 1.25i
     blt::table configure $f r4 -pad 4
-
-    blt::table $top \
-        0,0 $f -fill both -padx 4 -pady 4
     blt::table configure $f r3 -pad 2
     blt::table configure $f c0 -resize none -width 0.5i
+
     update
-    set dw [winfo reqwidth $top]
-    set dh [winfo reqheight $top]
-    set vw [winfo width $w]
-    set vh [winfo height $w]
-    set rootx [winfo rootx $w]
-    set rooty [winfo rooty $w]
-    set x [expr $rootx + ($vw - $dw) / 2]
-    set y [expr $rooty + ($vh - $dh) / 2]
     focus $f.first
-    wm geometry $top +$x+$y
-    wm deiconify $top
-    
-    set _private(search) 0
-    tkwait variable blt::TableView::_private(search)
+    set result [ActivateSearchDialog $w $top]
     set first [$f.first get]
     set last [$f.last get]
-    destroy $top
+    DestroySearchDialog $top
+
     set flags ""
     if { $_private(ignoreCase) } {
         append flags " -nocase"
     }
-    if { $_private(search) && [string length $first] > 0 &&
-         [string length $last] > 0} {
+    if { $result && [string length $first] > 0 && [string length $last] > 0} {
         set col $_private(column)
         set index [$w column index $col]
         set first [list $first]
@@ -2750,8 +2548,66 @@ proc blt::TableView::BetweenTextSearch { w } {
         ApplyFilters $w
     } else {
         set col $_private(column)
-	$w column configure $col -filterhighlight 0
-	$w column configure $col -filtertext "" -filtericon ""
-        AllFilter $w
+        $w column configure $col \
+            -filtertext $_private(lastFilterText) \
+            -filtericon $_private(lastFilterIcon) \
+            -filterhighlight $_private(lastFilterHighlight)
     }
+}
+
+proc blt::TableView::CreateSearchDialog { w } {
+    variable _private
+    
+    set top $w.dialog
+    blt::tk::toplevel $top \
+        -borderwidth 2 \
+        -relief raised \
+        -class SearchDialog
+    wm overrideredirect $top true
+    wm withdraw $top
+    wm protocol $top WM_DELETE { set blt::TableView::_private(search) 0 }       
+
+    set bg [blt::background create gradient \
+                -high grey97 \
+                -low grey85 \
+                -jitter 10 \
+                -scale log \
+                -relativeto $top]
+    $top configure -bg $bg
+    blt::tk::frame $top.frame -bg $bg 
+    option add *SearchDialog.frame.BltTkLabel.background $bg 
+    option add *SearchDialog.frame.BltTkCheckbutton.background $bg 
+    option add *SearchDialog.frame.BltTkCheckbutton.highlightBackground $bg 
+    option add *SearchDialog.frame.BltTkButton.highlightBackground $bg 
+    option add *SearchDialog.frame.BltTkButton.background $bg 
+    blt::table $top \
+        0,0 $top.frame -padx 4 -pady 4
+    return $top
+}
+
+proc blt::TableView::ActivateSearchDialog { w top } {
+    variable _private
+    
+    set dw [winfo reqwidth $top]
+    set dh [winfo reqheight $top]
+    set vw [winfo width $w]
+    set vh [winfo height $w]
+    set rootx [winfo rootx $w]
+    set rooty [winfo rooty $w]
+    set x [expr $rootx + ($vw - $dw) / 2]
+    set y [expr $rooty + ($vh - $dh) / 2]
+    wm geometry $top +$x+$y
+    wm deiconify $top
+    
+    set _private(search) 0
+    blt::grab push $top
+    tkwait variable blt::TableView::_private(search)
+    blt::grab pop
+    return $_private(search)
+}
+
+proc blt::TableView::DestroySearchDialog { top } {
+    set bg [$top cget -background]
+    destroy $top
+#    blt::background delete $bg
 }
