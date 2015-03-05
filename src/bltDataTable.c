@@ -572,6 +572,10 @@ blt_table_name_to_column_type(const char *string)
 	return TABLE_COLUMN_TYPE_STRING;
     } else if ((c == 'i') && (strcmp(string, "int") == 0)) {
 	return TABLE_COLUMN_TYPE_INT;
+    } else if ((c == 'i') && (strcmp(string, "integer") == 0)) {
+	return TABLE_COLUMN_TYPE_INT;
+    } else if ((c == 'i') && (strcmp(string, "number") == 0)) {
+	return TABLE_COLUMN_TYPE_DOUBLE;
     } else if ((c == 'd') && (strcmp(string, "double") == 0)) {
 	return TABLE_COLUMN_TYPE_DOUBLE;
     } else if ((c == 'l') && (strcmp(string, "long") == 0)) {

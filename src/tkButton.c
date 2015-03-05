@@ -1,5 +1,4 @@
 /* -*- mode: c; c-basic-offset: 4; indent-tabs-mode: nil -*- */
-
 /*
  * tkButton.c --
  *
@@ -136,8 +135,8 @@ typedef struct {
     const char *text;		/* Text to display in button (malloc'ed)
 				 * or NULL. */
     int numChars;		/* # of characters in text. */
-    int underline;		/* Index of character to underline.  < 0 means
-				 * don't underline anything. */
+    int underline;		/* Index of character to underline.  < 0
+				 * means don't underline anything. */
     const char *textVarName;	/* Name of variable (malloc'ed) or NULL.
 				 * If non-NULL, button displays the contents
 				 * of this variable. */
@@ -176,7 +175,7 @@ typedef struct {
 					 * draw around widget when it has the
 					 * focus.  <= 0 means don't draw a
 					 * highlight. */
-    Blt_Bg *highlightBg;                /* Color for drawing traversal
+    Blt_Bg highlightBg;                 /* Color for drawing traversal
 					 * highlight area when highlight is
 					 * off. */
     XColor *highlightColorPtr;		/* Color for drawing traversal
@@ -187,64 +186,84 @@ typedef struct {
 					 * interior stuff * must be offset
 					 * from outside edges to leave * room
 					 * for borders. */
-    Blt_Font font;		/* Information about text font, or NULL. */
-    XColor *normalFg;		/* Foreground color in normal mode. */
-    XColor *activeFg;		/* Foreground color in active mode.  NULL
-				 * means use normalFg instead. */
-    XColor *disabledFg;		/* Foreground color when disabled.  NULL
-				 * means use normalFg with a 50% stipple
-				 * instead. */
-    GC normalTextGC;		/* GC for drawing text in normal mode.  Also
-				 * used to copy from off-screen pixmap onto
-				 * screen. */
-    GC activeTextGC;		/* GC for drawing text in active mode (NULL
-				 * means use normalTextGC). */
-    Pixmap gray;		/* Pixmap for displaying disabled text if
-				 * disabledFg is NULL. */
-    GC disabledGC;		/* Used to produce disabled effect.  If
-				 * disabledFg isn't NULL, this GC is used to
-				 * draw button text or icon.  Otherwise
-				 * text or icon is drawn with normalGC and
-				 * this GC is used to stipple background
-				 * across it.  For labels this is None. */
-    GC copyGC;			/* Used for copying information from an
-				 * off-screen pixmap to the screen. */
-    const char *widthString;	/* Value of -width option.  Malloc'ed. */
-    const char *heightString;	/* Value of -height option.  Malloc'ed. */
-    int width, height;		/* If > 0, these specify dimensions to request
-				 * for window, in characters for text and in
-				 * pixels for bitmaps.  In this case the actual
-				 * size of the text string or bitmap is
-				 * ignored in computing desired window size. */
-    int wrapLength;		/* Line length (in pixels) at which to wrap
-				 * onto next line.  <= 0 means don't wrap
-				 * except at newlines. */
-    int xPad, yPad;		/* Extra space around text (pixels to leave
-				 * on each side).  Ignored for bitmaps and
-				 * images. */
-    Tk_Anchor anchor;		/* Where text/bitmap should be displayed
-				 * inside button region. */
-    Tk_Justify justify;		/* Justification to use for multi-line text. */
-    int indicatorOn;		/* True means draw indicator, false means
-				 * don't draw it. */
-    Blt_Bg selectBg;	       /* For drawing indicator background, or perhaps
-				 * widget background, when selected. */
-    XColor *selectFg;		/* For drawing indicator background, or perhaps
-				 * widget background, when selected. */
-    int textWidth;		/* Width needed to display text as requested,
-				 * in pixels. */
-    int textHeight;		/* Height needed to display text as requested,
-				 * in pixels. */
-    Tk_TextLayout textLayout;	/* Saved text layout information. */
-    int indicatorSpace;		/* Horizontal space (in pixels) allocated for
-				 * display of indicator. */
-    int indicatorDiameter;	/* Diameter of indicator, in pixels. */
+    Blt_Font font;                      /* Information about text font, or
+                                         * NULL. */
+    XColor *normalFg;                   /* Foreground color in normal
+                                         * mode. */
+    XColor *activeFg;                   /* Foreground color in active mode.
+                                         * NULL means use normalFg instead. */
+    XColor *disabledFg;                 /* Foreground color when disabled.
+                                         * NULL means use normalFg with a
+                                         * 50% stipple instead. */
+    GC normalTextGC;                    /* GC for drawing text in normal
+                                         * mode.  Also used to copy from
+                                         * off-screen pixmap onto
+                                         * screen. */
+    GC activeTextGC;                    /* GC for drawing text in active
+                                         * mode (NULL means use
+                                         * normalTextGC). */
+    Pixmap gray;                        /* Pixmap for displaying disabled
+                                         * text if disabledFg is NULL. */
+    GC disabledGC;                      /* Used to produce disabled effect.
+                                         * If disabledFg isn't NULL, this
+                                         * GC is used to draw button text
+                                         * or icon.  Otherwise text or icon
+                                         * is drawn with normalGC and this
+                                         * GC is used to stipple background
+                                         * across it.  For labels this is
+                                         * None. */
+    GC copyGC;                          /* Used for copying information
+                                         * from an off-screen pixmap to the
+                                         * screen. */
+    const char *widthString;            /* Value of -width option.
+                                         * Malloc'ed. */
+    const char *heightString;           /* Value of -height option.
+                                         * Malloc'ed. */
+    int width, height;                  /* If > 0, these specify dimensions
+                                         * to request for window, in
+                                         * characters for text and in
+                                         * pixels for bitmaps.  In this
+                                         * case the actual size of the text
+                                         * string or bitmap is ignored in
+                                         * computing desired window
+                                         * size. */
+    int wrapLength;                     /* Line length (in pixels) at which
+                                         * to wrap onto next line.  <= 0
+                                         * means don't wrap except at
+                                         * newlines. */
+    int xPad, yPad;                     /* Extra space around text (pixels
+                                         * to leave on each side).  Ignored
+                                         * for bitmaps and images. */
+    Tk_Anchor anchor;                   /* Where text/bitmap should be
+                                         * displayed inside button
+                                         * region. */
+    Tk_Justify justify;                 /* Justification to use for
+                                         * multi-line text. */
+    int indicatorOn;                    /* True means draw indicator, false
+                                         * means don't draw it. */
+    Blt_Bg selectBg;                    /* For drawing indicator
+                                         * background, or perhaps widget
+                                         * background, when selected. */
+    XColor *selectFg;                   /* For drawing indicator
+                                         * background, or perhaps widget
+                                         * background, when selected. */
+    int textWidth;                      /* Width needed to display text as
+                                         * requested, in pixels. */
+    int textHeight;                     /* Height needed to display text as
+                                         * requested, in pixels. */
+    Tk_TextLayout textLayout;           /* Saved text layout
+                                         * information. */
+    int indicatorSpace;                 /* Horizontal space (in pixels)
+                                         * allocated for display of
+                                         * indicator. */
+    int indicatorDiameter;              /* Diameter of indicator, in
+                                         * pixels. */
 
-    int defaultState;		/* Used in 8.0 (not here)  */
+    int defaultState;                   /* Used in 8.0 (not here) */
 
     /*
-     * For check and radio buttons, the fields below are used
-     * to manage the variable indicating the button's state.
+     * For check and radio buttons, the fields below are used to manage the
+     * variable indicating the button's state.
      */
 
     const char *selVarName;		/* Name of variable used to control
@@ -264,24 +283,28 @@ typedef struct {
     /*
      * Miscellaneous information:
      */
-
-    Tk_Cursor cursor;		/* Current cursor for window, or None. */
-    const char *takeFocus;	/* Value of -takefocus option;  not used in
-				 * the C code, but used by keyboard traversal
-				 * scripts.  Malloc'ed, but may be NULL. */
+    Tk_Cursor cursor;                   /* Current cursor for window, or
+                                         * None. */
+    const char *takeFocus;              /* Value of -takefocus option; not
+                                         * used in the C code, but used by
+                                         * keyboard traversal scripts.
+                                         * Malloc'ed, but may be NULL. */
     Tcl_Obj *cmdObjPtr;			/* Command to execute when button is
 					 * invoked; valid for buttons only. */
-    const char *compound;      /* Value of -compound option; specifies whether
-				 * the button should show both an image and
-				 * text, and, if so, how. */
-    int repeatDelay;		/* Value of -repeatdelay option; specifies
-				 * the number of ms after which the button will
-				 * start to auto-repeat its command. */
-    int repeatInterval;		/* Value of -repeatinterval option; specifies
-				 * the number of ms between auto-repeat
-				 * invocataions of the button command. */
-    int flags;			/* Various flags;  see below for
-				 * definitions. */
+    const char *compound;               /* Value of -compound option;
+                                         * specifies whether the button
+                                         * should show both an image and
+                                         * text, and, if so, how. */
+    int repeatDelay;                    /* Value of -repeatdelay option;
+                                         * specifies the number of ms after
+                                         * which the button will start to
+                                         * auto-repeat its command. */
+    int repeatInterval;                 /* Value of -repeatinterval option;
+                                         * specifies the number of ms
+                                         * between auto-repeat invocataions
+                                         * of the button command. */
+    int flags;                          /* Various flags;  see below for
+                                         * definitions. */
     Blt_Picture selectedPicture;
     Blt_Picture normalPicture;
     Blt_Picture disabledPicture;
@@ -289,10 +312,9 @@ typedef struct {
 } Button;
 
 /*
- * Possible "type" values for buttons.  These are the kinds of
- * widgets supported by this file.  The ordering of the type
- * numbers is significant:  greater means more features and is
- * used in the code.
+ * Possible "type" values for buttons.  These are the kinds of widgets
+ * supported by this file.  The ordering of the type numbers is
+ * significant: greater means more features and is used in the code.
  */
 
 #define TYPE_LABEL		0
@@ -330,8 +352,8 @@ static const char *classNames[] = {
 #define GOT_FOCUS		4
 
 /*
- * Mask values used to selectively enable entries in the
- * configuration specs:
+ * Mask values used to selectively enable entries in the configuration
+ * specs:
  */
 
 #define LABEL_MASK		BLT_CONFIG_USER_BIT
@@ -548,8 +570,8 @@ static Blt_ConfigSpec configSpecs[] =
 };
 
 /*
- * String to print out in error messages, identifying options for
- * widget commands for different types of labels or buttons:
+ * String to print out in error messages, identifying options for widget
+ * commands for different types of labels or buttons:
  */
 
 static const char *optionStrings[] =
