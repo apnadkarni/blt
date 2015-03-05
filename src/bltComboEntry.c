@@ -83,7 +83,7 @@
 					 * change in its selection. */
 #define INVOKE_PENDING   (1<<6)		/* The widget is scheduled to invoke a
 					 * -command. */
-#define READONLY	 (1<<8)		/* The widget's editting functions
+#define READONLY	 (1<<8)		/* The widget's editing functions
 					 * are disabled. */
 #define EXPORT_SELECTION (1<<9)		/* The selection is exported to the
 					 * clipboard. */
@@ -2414,6 +2414,11 @@ ConfigureComboEntry(Tcl_Interp *interp, ComboEntry *comboPtr, int objc,
 		objv, (char *)comboPtr, comboPtr->mask | flags) != TCL_OK) {
 	return TCL_ERROR;
     }
+    if (comboPtr->flags & READONLY) {
+        comboPtr->flags &= ~ICURSOR;
+    } else {
+        comboPtr->flags |= ICURSOR;
+    }
     /* Text in/out focus GCs. */
     gcMask = GCForeground | GCFont;
     if (comboPtr->flags & DISABLED) {
@@ -3883,7 +3888,7 @@ NewComboEntry(Tcl_Interp *interp, Tk_Window tkwin, int mask)
     comboPtr->arrowRelief = TK_RELIEF_RAISED;
     comboPtr->borderWidth = 2;
     comboPtr->display = Tk_Display(tkwin);
-    comboPtr->flags |= (LAYOUT_PENDING|SCROLL_PENDING|EXPORT_SELECTION|ICURSOR);
+    comboPtr->flags |= (LAYOUT_PENDING|SCROLL_PENDING|EXPORT_SELECTION);
     comboPtr->highlightWidth = 2;
     comboPtr->insertOffTime = 300;
     comboPtr->insertOnTime = 600;
