@@ -2638,6 +2638,7 @@ ButtonInvokeOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc,
 	DeleteText(comboPtr, 0, comboPtr->numChars);
 	FreeRedoRecords(comboPtr);
     }
+    EventuallyRedraw(comboPtr);
     return TCL_OK;
 }
 
@@ -3882,7 +3883,7 @@ NewComboEntry(Tcl_Interp *interp, Tk_Window tkwin, int mask)
     comboPtr->arrowRelief = TK_RELIEF_RAISED;
     comboPtr->borderWidth = 2;
     comboPtr->display = Tk_Display(tkwin);
-    comboPtr->flags |= (LAYOUT_PENDING|SCROLL_PENDING|EXPORT_SELECTION);
+    comboPtr->flags |= (LAYOUT_PENDING|SCROLL_PENDING|EXPORT_SELECTION|ICURSOR);
     comboPtr->highlightWidth = 2;
     comboPtr->insertOffTime = 300;
     comboPtr->insertOnTime = 600;

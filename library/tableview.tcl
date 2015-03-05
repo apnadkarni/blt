@@ -119,6 +119,27 @@ image create picture blt::TableView::filter -data {
     WEZJTEUuAA==
 }
 
+image create picture blt::TableView::xbutton -data {
+    AAEBAAAHACAAAAAAEAAQAAgIAAAAywAAAAAAAAD9AAAAlwAAAP8AAAD7AAAAlQEB
+    AQEBAQEBAQEBAQEBAQEBAQADAQEBAQEBAQEDAAEBAQACAgMBAQEBAQEDAgIAAQED
+    AgQFBgEBAQEDAgQCAwEBAQYFBAUGAQEGBQQCAwEBAQEBBgUEBQYGBQQFAwEBAQEB
+    AQEGBQQEBAQFBgEBAQEBAQEBAQYEBAQEBgEBAQEBAQEBAQEGBAQEBAYBAQEBAQEB
+    AQEGBQQEBAQCAwEBAQEBAQEDBQQFBgMCBAIDAQEBAQEDAgQFBgEBAwIEAgMBAQED
+    AgQFBgEBAQEDAgQCAwEBAAIFBgEBAQEBAQMCAgABAQEABgEBAQEBAQEBAwABAQEB
+    AQEBAQEBAQEBAQEBAQHvAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+    AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+    AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+    AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+    AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+    AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+    AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+    AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAwAE
+    AN8HFQAHACEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+    AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+    AAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAuAQAAAAAAAFRSVUVWSVNJT04t
+    WEZJTEUuAA==
+}
+
 option add *BltTableView.IncreasingIcon blt::TableView::sortup
 option add *BltTableView.DecreasingIcon blt::TableView::sortdown
 #option add *BltTableView.Column.FilterIcon blt::TableView::filter
@@ -1364,165 +1385,6 @@ proc blt::TableView::NonemptyFilter { w } {
     ApplyFilters $w
 }
 
-#
-# NumericSearch
-#
-#   Equals
-#   Does not equal
-#   Greater than
-#   Greater than or equal to
-#   Less than
-#   Less than or equal to
-#   Between
-#
-
-#
-# TextSearch
-#
-#   Equals
-#   Does not equal
-#   Begins with
-#   Ends with
-#   Contains
-#   Does not contain
-#   Between
-#
-proc blt::TableView::TextEqualsFilter { w } {
-    variable _private
-
-    set col $_private(column)
-    set index [$w column index $col]
-    set menu [$w filter cget -menu]
-    set item [$menu index selected]
-    set value [$menu item cget $item -value]
-    if { $value == "" } {
-        set value [$menu item cget $item -text]
-    }
-    set value [list $value]
-    set expr [format {[info exists ${index}] &&
-        ([blt::utils::string equals ${index} %s -trim both])} $value]
-    $w column configure $col -filterdata $expr
-    ApplyFilters $w
-}
-
-proc blt::TableView::TextNotEqualsFilter { w } {
-    variable _private
-
-    set col $_private(column)
-    set index [$w column index $col]
-    set menu [$w filter cget -menu]
-    set item [$menu index selected]
-    set value [$menu item cget $item -value]
-    if { $value == "" } {
-        set value [$menu item cget $item -text]
-    }
-    set value [list $value]
-    set expr [format {![info exists ${index}] ||
-        (![blt::utils::string equals ${index} %s -trim both])} $value]
-    $w column configure $col -filterdata $expr
-    ApplyFilters $w
-}
-
-proc blt::TableView::TextBeginsWithFilter { w } {
-    variable _private
-
-    set col $_private(column)
-    set index [$w column index $col]
-    set menu [$w filter cget -menu]
-    set item [$menu index selected]
-    set value [$menu item cget $item -value]
-    if { $value == "" } {
-        set value [$menu item cget $item -text]
-    }
-    set value [list $value]
-    set expr [format {[info exists ${index}] &&
-        ([blt::utils::string begins ${index} %s -trim right])} $value]
-    $w column configure $col -filterdata $expr
-    ApplyFilters $w
-}
-
-proc blt::TableView::TextEndsWithFilter { w } {
-    variable _private
-
-    set col $_private(column)
-    set index [$w column index $col]
-    set menu [$w filter cget -menu]
-    set item [$menu index selected]
-    set value [$menu item cget $item -value]
-    if { $value == "" } {
-        set value [$menu item cget $item -text]
-    }
-    set value [list $value]
-    set expr [format {[info exists ${index}] &&
-        ([blt::utils::string ends ${index} %s -trim right])} $value]
-    $w column configure $col -filterdata $expr
-    ApplyFilters $w
-}
-
-proc blt::TableView::TextContainsFilter { w } {
-    variable _private
-
-    set col $_private(column)
-    set index [$w column index $col]
-    set menu [$w filter cget -menu]
-    set item [$menu index selected]
-    set value [$menu item cget $item -value]
-    if { $value == "" } {
-        set value [$menu item cget $item -text]
-    }
-    set value [list $value]
-    set expr [format {[info exists ${index}] &&
-        ([blt::utils::string contains ${index} %s])} $value]
-    $w column configure $col -filterdata $expr
-    ApplyFilters $w
-}
-
-proc blt::TableView::TextNotContainsFilter { w } {
-    variable _private
-
-    set col $_private(column)
-    set index [$w column index $col]
-    set menu [$w filter cget -menu]
-    set item [$menu index selected]
-    set value [$menu item cget $item -value]
-    if { $value == "" } {
-        set value [$menu item cget $item -text]
-    }
-    set value [list $value]
-    set expr [format {![info exists ${index}] ||
-        (![blt::utils::string contains ${index} %s])} $value]
-    $w column configure $col -filterdata $expr
-    ApplyFilters $w
-}
-
-proc blt::TableView::TextBetweenFilter { w } {
-    variable _private
-
-    set col $_private(column)
-    set index [$w column index $col]
-    # get first and last
-    set first [list $first]
-    set last [list $last]
-    set expr [format {[info exists ${index}] &&
-        ([blt::utils::string between ${index} %s %s])} $first $last]
-    $w column configure $col -filterdata $expr
-    ApplyFilters $w
-}
-
-#
-# DateSearch
-#
-#   Equals
-#   Before
-#   After 
-#   After or equal to
-#   Before or equal to 
-#   Between
-#
-proc blt::TableView::CustomFilter { w } {
-    $w row show all
-}
-    
 proc blt::TableView::SingleValueFilter { w } {
     variable _private
 
@@ -1726,7 +1588,8 @@ proc blt::TableView::EqualsNumberSearch { w } {
     set f $top.frame
 
     blt::comboentry $f.entry \
-        -hidearrow yes 
+        -hidearrow yes \
+        -clearbutton yes
     blt::tk::label $f.label \
         -text "Search for values that equal:" 
     blt::tk::label $f.hint \
@@ -1739,8 +1602,8 @@ proc blt::TableView::EqualsNumberSearch { w } {
         -text "Cancel" \
         -command { set blt::TableView::_private(search) 0 }
     blt::table $f \
-        0,0 $f.label -cspan 2 -anchor w \
-        1,0 $f.entry -cspan 2 -fill x \
+        0,0 $f.label -cspan 2 -anchor w -pady 4 \
+        1,0 $f.entry -cspan 2 -fill x -padx 0.1i \
         2,0 $f.hint -cspan 2 \
         3,0 $f.cancel -width 1i \
         3,1 $f.ok -width 1i 
@@ -1799,8 +1662,8 @@ proc blt::TableView::NotEqualsNumberSearch { w } {
         -text "Cancel" \
         -command { set blt::TableView::_private(search) 0 }
     blt::table $f \
-        0,0 $f.label -cspan 2 -anchor w \
-        1,0 $f.entry -cspan 2 -fill x \
+        0,0 $f.label -cspan 2 -anchor w -pady 4 \
+        1,0 $f.entry -cspan 2 -fill x -padx 0.1i \
         2,0 $f.hint -cspan 2 \
         3,0 $f.cancel -width 1i \
         3,1 $f.ok -width 1i 
@@ -1855,7 +1718,7 @@ proc blt::TableView::GreaterThanNumberSearch { w } {
         -text "Cancel" \
         -command { set blt::TableView::_private(search) 0 }
     blt::table $f \
-        0,0 $f.label -cspan 2 -anchor w \
+        0,0 $f.label -cspan 2 -anchor w -pady 4 \
         1,0 $f.entry -cspan 2 -fill x -padx 0.1i \
         2,0 $f.cancel -width 1i \
         2,1 $f.ok -width 1i 
@@ -1901,7 +1764,7 @@ proc blt::TableView::GreaterThanOrEqualToNumberSearch { w } {
         -text "Cancel" \
         -command { set blt::TableView::_private(search) 0 }
     blt::table $f \
-        0,0 $f.label -cspan 2 -anchor w \
+        0,0 $f.label -cspan 2 -anchor w -pady 4 \
         1,0 $f.entry -cspan 2 -fill x -padx 0.1i \
         2,0 $f.cancel -width 1i \
         2,1 $f.ok -width 1i 
@@ -1948,7 +1811,7 @@ proc blt::TableView::LessThanNumberSearch { w } {
         -text "Cancel" \
         -command { set blt::TableView::_private(search) 0 }
     blt::table $f \
-        0,0 $f.label -cspan 2 -anchor w \
+        0,0 $f.label -cspan 2 -anchor w -pady 4 \
         1,0 $f.entry -cspan 2 -fill x -padx 0.1i \
         2,0 $f.cancel -width 1i \
         2,1 $f.ok -width 1i 
@@ -1995,7 +1858,7 @@ proc blt::TableView::LessThanOrEqualToNumberSearch { w } {
         -text "Cancel" \
         -command { set blt::TableView::_private(search) 0 }
     blt::table $f \
-        0,0 $f.label -cspan 2 -anchor w \
+        0,0 $f.label -cspan 2 -anchor w -pady 4 \
         1,0 $f.entry -cspan 2 -fill x -padx 0.1i \
         2,0 $f.cancel -width 1i \
         2,1 $f.ok -width 1i 
@@ -2049,7 +1912,7 @@ proc blt::TableView::BetweenNumberSearch { w } {
         -text "Cancel" \
         -command { set blt::TableView::_private(search) 0 }
     blt::table $f \
-        0,0 $f.label -cspan 3 -anchor w \
+        0,0 $f.label -cspan 3 -anchor w -pady 4 \
         1,0 $f.first_l -anchor e \
         1,1 $f.first -fill x -cspan 2 -padx 4 \
         2,0 $f.last_l -anchor e \
@@ -2115,8 +1978,8 @@ proc blt::TableView::EqualsTextSearch { w } {
         -text "Cancel" \
         -command { set blt::TableView::_private(search) 0 } 
     blt::table $f \
-        0,0 $f.label -cspan 2 -anchor w \
-        1,0 $f.entry -cspan 2 -fill x \
+        0,0 $f.label -cspan 2 -anchor w -pady 4 \
+        1,0 $f.entry -cspan 2 -fill x -padx 0.1i \
         2,0 $f.hint -cspan 2 \
         3,0 $f.ignore -anchor w \
         3,1 $f.trim -anchor w \
@@ -2138,7 +2001,7 @@ proc blt::TableView::EqualsTextSearch { w } {
     if { $_private(ignoreCase) } {
         append flags " -nocase"
     }
-    if { $result && [length $list] > 0 } {
+    if { $result && [llength $list] > 0 } {
         set col $_private(column)
         set index [$w column index $col]
         regsub -all , $list " " list
@@ -2187,8 +2050,8 @@ proc blt::TableView::NotEqualsTextSearch { w } {
         -text "Cancel" \
         -command { set blt::TableView::_private(search) 0 }
     blt::table $f \
-        0,0 $f.label -cspan 2 -anchor w \
-        1,0 $f.entry -cspan 2 -fill x \
+        0,0 $f.label -cspan 2 -anchor w -pady 4 \
+        1,0 $f.entry -cspan 2 -fill x -padx 0.1i \
         2,0 $f.hint -cspan 2 \
         3,0 $f.ignore -anchor w \
         3,1 $f.trim -anchor w \
@@ -2256,8 +2119,8 @@ proc blt::TableView::BeginsWithTextSearch { w } {
         -text "Cancel" \
         -command { set blt::TableView::_private(search) 0 }
     blt::table $f \
-        0,0 $f.label -cspan 2 -anchor w \
-        1,0 $f.entry -cspan 2 -fill x \
+        0,0 $f.label -cspan 2 -anchor w -pady 4 \
+        1,0 $f.entry -cspan 2 -fill x -padx 0.1i \
         2,0 $f.ignore -anchor w \
         2,1 $f.trim -anchor w \
         3,0 $f.cancel -width 1i \
@@ -2322,8 +2185,8 @@ proc blt::TableView::EndsWithTextSearch { w } {
         -text "Cancel" \
         -command { set blt::TableView::_private(search) 0 }
     blt::table $f \
-        0,0 $f.label -cspan 2 -anchor w \
-        1,0 $f.entry -cspan 2 -fill x \
+        0,0 $f.label -cspan 2 -anchor w -pady 4 \
+        1,0 $f.entry -cspan 2 -fill x -padx 0.1i \
         2,0 $f.ignore -anchor w \
         2,1 $f.trim -anchor w \
         3,0 $f.cancel -width 1i \
@@ -2386,9 +2249,9 @@ proc blt::TableView::ContainsTextSearch { w } {
         -text "Cancel" \
         -command { set blt::TableView::_private(search) 0 }
     blt::table $f \
-        0,0 $f.label -cspan 2 -anchor w \
-        1,0 $f.entry -cspan 2 -fill x \
-        2,0 $f.ignore -cspan 2 \
+        0,0 $f.label -cspan 2 -anchor w -pady 4 \
+        1,0 $f.entry -cspan 2 -fill x -padx 0.1i \
+        2,0 $f.ignore -cspan 2 -anchor w \
         3,0 $f.cancel -width 1i \
         3,1 $f.ok -width 1i
     blt::table configure $f c0 c1 -width 1.25i
@@ -2445,8 +2308,8 @@ proc blt::TableView::NotContainsTextSearch { w } {
         -text "Cancel" \
         -command { set blt::TableView::_private(search) 0 }
     blt::table $top.frame \
-        0,0 $top.frame.label -cspan 2 -anchor w \
-        1,0 $top.frame.entry -cspan 2 -fill x \
+        0,0 $top.frame.label -cspan 2 -anchor w -pady 4 \
+        1,0 $top.frame.entry -cspan 2 -fill x -padx 0.1i \
         2,0 $top.frame.ignore -cspan 2 -anchor w \
         3,0 $top.frame.cancel -width 1i \
         3,1 $top.frame.ok -width 1i
@@ -2512,7 +2375,7 @@ proc blt::TableView::BetweenTextSearch { w } {
         -text "Cancel" \
         -command { set blt::TableView::_private(search) 0 }
     blt::table $f \
-        0,0 $f.label -cspan 3 -anchor w \
+        0,0 $f.label -cspan 3 -anchor w -pady 4 \
         1,0 $f.first_l -anchor e \
         1,1 $f.first -fill x -cspan 2 -padx 4 \
         2,0 $f.last_l -anchor e \
@@ -2574,6 +2437,10 @@ proc blt::TableView::CreateSearchDialog { w } {
                 -scale log \
                 -relativeto $top]
     $top configure -bg $bg
+    set img blt::TableView::xbutton
+    blt::tk::button $top.button -image $img -padx 0 -pady 0 \
+        -relief flat -bg $bg -overrelief flat -highlightthickness 0 \
+        -command { set blt::TableView::_private(search) 0 }
     blt::tk::frame $top.frame -bg $bg 
     option add *SearchDialog.frame.BltTkLabel.background $bg 
     option add *SearchDialog.frame.BltTkCheckbutton.background $bg 
@@ -2581,7 +2448,8 @@ proc blt::TableView::CreateSearchDialog { w } {
     option add *SearchDialog.frame.BltTkButton.highlightBackground $bg 
     option add *SearchDialog.frame.BltTkButton.background $bg 
     blt::table $top \
-        0,0 $top.frame -padx 4 -pady 4
+        0,0 $top.button -anchor e -padx 2 -pady 2 \
+        1,0 $top.frame -padx 4 -pady {0 4}
     return $top
 }
 
