@@ -1881,12 +1881,12 @@ GetScreenPoints(ContourElement *elemPtr)
 	if (PointInRegion(&exts, p.x, p.y)) {
 	    v->flags |= VISIBLE;
 	}
+	/* Map graph z-coordinate to normalized coordinates [0..1] */
 	z = elemPtr->z.values[i];
+	z = (z - rangePtr->min)  * rangePtr->scale;
 	if ((elemPtr->zAxisPtr->logScale) && (z != 0.0)) {
 	    z = log10(z);
 	} 
-	/* Map graph z-coordinate to normalized coordinates [0..1] */
-	z = (z - rangePtr->min)  * rangePtr->scale;
 	v->z = z;
 	if (zAxisPtr->palette != NULL) {
             v->color.u32 = Blt_Palette_GetAssociatedColor(zAxisPtr->palette,

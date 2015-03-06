@@ -142,7 +142,7 @@ static Blt_SwitchSpec paletteSpecs[] =
     {BLT_SWITCH_DOUBLE, "-min", "value", (char *)NULL, 
 	Blt_Offset(PaletteCmd, min),            0, 0},
     {BLT_SWITCH_DOUBLE, "-max", "value", (char *)NULL, 
-	Blt_Offset(PaletteCmd, min),             0, 0},
+	Blt_Offset(PaletteCmd, max),            0, 0},
     {BLT_SWITCH_END}
 };
 
@@ -170,6 +170,43 @@ Round(double x)
 
 #define MAXRELERROR 0.0005
 #define MAXABSERROR 0.0000005
+
+static void
+PrintEntries(size_t numEntries, Blt_PaletteEntry *entries)
+{
+    int i;
+    
+    for (i = 0; i < numEntries; i++) {
+	Blt_PaletteEntry *entryPtr;
+
+	entryPtr = entries + i;
+        fprintf(stderr, "entry %d: min=(%g)%g max=(%g)%g\n",
+                i, entryPtr->min.value, entryPtr->min.norm,
+                entryPtr->max.value, entryPtr->max.norm);
+    }
+}
+
+static int 
+CompareEntries(const void *a, const void *b)
+{
+    Blt_PaletteEntry *e1Ptr, *e2Ptr;
+
+    e1Ptr = a;
+    e2Ptr = b;
+    if (e1Ptr->min.norm < e2Ptr->min.norm) {
+        return -1;
+    } else if (e1Ptr->min.norm > e2Ptr->min.norm) {
+        return 1;
+    }
+    return 0;
+}
+
+static void
+SortEntries(size_t numEntries, Blt_PaletteEntry *entries)
+{
+    qsort((char *)entries, numEntries, sizeof(Blt_PaletteEntry),
+          CompareEntries);
+}
 
 static int 
 RelativeError(double x, double y) 
@@ -380,6 +417,7 @@ ParseRGBColors(Tcl_Interp *interp, PaletteCmd *cmdPtr, int objc,
     }
     cmdPtr->colors = entries;
     cmdPtr->numColors = numEntries;
+    SortEntries(cmdPtr->numColors, cmdPtr->colors);
     return TCL_OK;
  error:
     Blt_Free(entries);
@@ -424,6 +462,7 @@ ParseXRGBColors(Tcl_Interp *interp, PaletteCmd *cmdPtr, int objc,
     }
     cmdPtr->colors = entries;
     cmdPtr->numColors = numEntries;
+    SortEntries(cmdPtr->numColors, cmdPtr->colors);
     return TCL_OK;
  error:
     Blt_Free(entries);
@@ -466,6 +505,7 @@ ParseColors(Tcl_Interp *interp, PaletteCmd *cmdPtr, int objc,
     }
     cmdPtr->colors = entries;
     cmdPtr->numColors = numEntries;
+    SortEntries(cmdPtr->numColors, cmdPtr->colors);
     return TCL_OK;
  error:
     Blt_Free(entries);
@@ -529,6 +569,7 @@ ParseColorPoints(Tcl_Interp *interp, PaletteCmd *cmdPtr, int objc,
     }
     cmdPtr->colors = entries;
     cmdPtr->numColors = numEntries;
+    SortEntries(cmdPtr->numColors, cmdPtr->colors);
     return TCL_OK;
  error:
     Blt_Free(entries);
@@ -570,6 +611,7 @@ ParseColorRanges(Tcl_Interp *interp, PaletteCmd *cmdPtr, int objc,
     }
     cmdPtr->colors = entries;
     cmdPtr->numColors = numEntries;
+    SortEntries(cmdPtr->numColors, cmdPtr->colors);
     return TCL_OK;
  error:
     Blt_Free(entries);
@@ -612,6 +654,7 @@ ParseOpacities(Tcl_Interp *interp, PaletteCmd *cmdPtr, int objc,
     }
     cmdPtr->opacities = entries;
     cmdPtr->numOpacities = numEntries;
+    SortEntries(cmdPtr->numOpacities, cmdPtr->opacities);
     return TCL_OK;
  error:
     Blt_Free(entries);
@@ -673,6 +716,7 @@ ParseOpacityPoints(Tcl_Interp *interp, PaletteCmd *cmdPtr, int objc,
     }
     cmdPtr->opacities = entries;
     cmdPtr->numOpacities = numEntries;
+    SortEntries(cmdPtr->numOpacities, cmdPtr->opacities);
     return TCL_OK;
  error:
     Blt_Free(entries);
@@ -724,6 +768,7 @@ ParseOpacityRanges(Tcl_Interp *interp, PaletteCmd *cmdPtr, int objc,
     }
     cmdPtr->opacities = entries;
     cmdPtr->numOpacities = objc;
+    SortEntries(cmdPtr->numOpacities, cmdPtr->opacities);
     return TCL_OK;
  error:
     Blt_Free(entries);
@@ -1455,67 +1500,65 @@ NormalizePalette(PaletteCmd *cmdPtr, double min, double max)
     }
 }
 
-static int
-SearchForEntry(PaletteCmd *cmdPtr, double norm)
+static Blt_PaletteEntry * 
+SearchForEntry(size_t length, Blt_PaletteEntry *entries, double norm)
 {
     int low, high;
 
     low = 0;
-    high = cmdPtr->numColors - 1;
+    high = length - 1;
     while (low <= high) {
         Blt_PaletteEntry *entryPtr;
 	int median;
         
 	median = (low + high) >> 1;
-        entryPtr = cmdPtr->colors + median;
+        entryPtr = entries + median;
+        if (InRange(norm, entryPtr->min.norm, entryPtr->max.norm)) {
+	    return entryPtr;
+        }
         if (norm < entryPtr->min.norm) {
 	    high = median - 1;
         } else if (norm > entryPtr->max.norm) {
 	    low = median + 1;
-        } else if (InRange(norm, entryPtr->min.norm, entryPtr->max.norm)) {
-	    return median;
+        } else {
+            fprintf(stderr, "InRange(%g, %g, %g)=>$d\n",
+                    norm, entryPtr->min.norm, entryPtr->max.norm,
+                    InRange(norm, entryPtr->min.norm, entryPtr->max.norm));
         }
     }
-    return -1;                       /* Can't find number. */
+    return NULL;                       /* Can't find number. */
 }
 
 
 static int 
 Interpolate(PaletteCmd *cmdPtr, double norm, Blt_Pixel *colorPtr)
 {
-    int i, n;
-    double t;
-    Blt_Pixel color;
     Blt_PaletteEntry *entryPtr;
+    Blt_Pixel color;
+    double t;
 
     norm = RCLAMP(norm);
     color.u32 = 0x00;			/* Default to empty. */
-    n = SearchForEntry(cmdPtr, norm);
-    if (n < 0) {
+    entryPtr = SearchForEntry(cmdPtr->numColors, cmdPtr->colors, norm);
+    if (entryPtr == NULL) {
 #ifndef notdef
 	fprintf(stderr, "can't interpolate: norm=%.17g\n", norm);
 #endif
+        PrintEntries(cmdPtr->numColors, cmdPtr->colors);
 	abort();
 	return FALSE;
     }
-    entryPtr = cmdPtr->colors + n;
     t = (norm - entryPtr->min.norm) / (entryPtr->max.norm - entryPtr->min.norm);
     color.u32 = ColorLerp(entryPtr, t);
 
-    for (i = 0;  i < cmdPtr->numOpacities; i++) {
-        Blt_PaletteEntry *entryPtr;
+    entryPtr = SearchForEntry(cmdPtr->numOpacities, cmdPtr->opacities, norm);
+    if (entryPtr != NULL) {
+        unsigned int alpha;
 
-        entryPtr = cmdPtr->opacities + i;
-	if (InRange(norm, entryPtr->min.norm, entryPtr->max.norm)){
-	    double t;
-            unsigned int alpha;
-
-	    t = (norm - entryPtr->min.norm) / 
-		(entryPtr->max.norm - entryPtr->min.norm);
-	    alpha = OpacityLerp(entryPtr, t);
-            Blt_FadeColor(&color, alpha);
-	    break;
-	}
+        t = (norm - entryPtr->min.norm) /
+            (entryPtr->max.norm - entryPtr->min.norm);
+        alpha = OpacityLerp(entryPtr, t);
+        Blt_FadeColor(&color, alpha);
     }
     *colorPtr = color;
     return TRUE;
