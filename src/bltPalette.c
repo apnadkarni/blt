@@ -66,6 +66,7 @@ typedef struct {
 typedef struct {
     Blt_PaletteEntry *colors;		/* Array of color ranges. */
     Blt_PaletteEntry *opacities;	/* Array of opacity ranges. */
+    double min, max;
     int numColors;			/* # of entries in color array. */
     int numOpacities;			/* # of entries in opacity array. */
     int alpha;
@@ -117,8 +118,17 @@ static Blt_SwitchCustom fadeSwitch =
     ObjToFade, FadeToObj, NULL, (ClientData)0
 };
 
+static Blt_SwitchParseProc ObjToFile;
+static Blt_SwitchPrintProc FileToObj;
+static Blt_SwitchCustom fileSwitch =
+{
+    ObjToFile, FileToObj, NULL, (ClientData)0
+};
+
 static Blt_SwitchSpec paletteSpecs[] =
 {
+    {BLT_SWITCH_CUSTOM, "-file", (char *)NULL, (char *)NULL, 
+	Blt_Offset(PaletteCmd, colors), 0, 0, &fileSwitch},
     {BLT_SWITCH_CUSTOM, "-colors", (char *)NULL, (char *)NULL, 
 	Blt_Offset(PaletteCmd, colors), 0, 0, &colorsSwitch},
     {BLT_SWITCH_CUSTOM, "-opacities", (char *)NULL, (char *)NULL, 
@@ -129,6 +139,10 @@ static Blt_SwitchSpec paletteSpecs[] =
 	Blt_Offset(PaletteCmd, colors), 0, 0, &xrgbColorsSwitch},
     {BLT_SWITCH_CUSTOM, "-fade", (char *)NULL, (char *)NULL,
         Blt_Offset(PaletteCmd, alpha), 0, 0, &fadeSwitch},
+    {BLT_SWITCH_DOUBLE, "-min", "value", (char *)NULL, 
+	Blt_Offset(PaletteCmd, min),            0, 0},
+    {BLT_SWITCH_DOUBLE, "-max", "value", (char *)NULL, 
+	Blt_Offset(PaletteCmd, min),             0, 0},
     {BLT_SWITCH_END}
 };
 
@@ -292,38 +306,40 @@ GetOpacityFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, Blt_Pixel *pixelPtr)
 
 
 static int
-GetRGBFromObjv(Tcl_Interp *interp, Tcl_Obj *const *objv, Blt_Pixel *colorPtr) 
+GetRGBFromObjv(Tcl_Interp *interp, PaletteCmd *cmdPtr, Tcl_Obj *const *objv,
+               Blt_Pixel *colorPtr) 
 {
-    double r, g, b;
+    double r, g, b, range;
     Blt_Pixel color;
 
     if (Blt_GetDoubleFromObj(interp, objv[0], &r) != TCL_OK) {
 	return TCL_ERROR;
     }
-    if (r < 0.0) { 
-	r = 0.0;
-    } else if (r > 1.0) {
-	r = 1.0;
+    if (r < cmdPtr->min) { 
+	r = cmdPtr->min;
+    } else if (r > cmdPtr->max) {
+	r = cmdPtr->max;
     }
     if (Blt_GetDoubleFromObj(interp, objv[1], &g) != TCL_OK) {
 	return TCL_ERROR;
     }
-    if (g < 0.0) { 
-	g = 0.0;
-    } else if (g > 1.0) {
-	g = 1.0;
+    if (g < cmdPtr->min) { 
+	g = cmdPtr->min;
+    } else if (g > cmdPtr->max) {
+	g = cmdPtr->max;
     }
     if (Blt_GetDoubleFromObj(interp, objv[2], &b) != TCL_OK) {
 	return TCL_ERROR;
     }
-    if (b < 0.0) { 
-	b = 0.0;
-    } else if (b > 1.0) {
-	b = 1.0;
+    if (b < cmdPtr->min) { 
+	b = cmdPtr->min;
+    } else if (b > cmdPtr->max) {
+	b = cmdPtr->max;
     }
-    color.Red   = (int)(r * 255.0);
-    color.Green = (int)(g * 255.0);
-    color.Blue  = (int)(b * 255.0);
+    range = cmdPtr->max - cmdPtr->min;
+    color.Red   = (int)(((r - cmdPtr->min) / range) * 255.0);
+    color.Green = (int)(((g - cmdPtr->min) / range) * 255.0);
+    color.Blue  = (int)(((b - cmdPtr->min) / range) * 255.0);
     color.Alpha = 0xFF;
     colorPtr->u32 = color.u32;
     return TCL_OK;
@@ -349,8 +365,10 @@ ParseRGBColors(Tcl_Interp *interp, PaletteCmd *cmdPtr, int objc,
 	Blt_PaletteEntry *entryPtr;
 
 	entryPtr = entries + j;
-	if ((GetRGBFromObjv(interp, objv+i,     &entryPtr->low) != TCL_OK) ||
-            (GetRGBFromObjv(interp, objv+(i+3), &entryPtr->high) != TCL_OK)) {
+	if ((GetRGBFromObjv(interp, cmdPtr, objv+i, &entryPtr->low)
+             != TCL_OK) ||
+            (GetRGBFromObjv(interp, cmdPtr, objv+(i+3), &entryPtr->high)
+             != TCL_OK)) {
             goto error;
 	}
 	entryPtr->min.value = entryPtr->min.norm = j * step;
@@ -385,7 +403,7 @@ ParseXRGBColors(Tcl_Interp *interp, PaletteCmd *cmdPtr, int objc,
     if (GetPointFromObj(interp, objv[0], &lastValue) != TCL_OK) {
         goto error;
     }
-    if (GetRGBFromObjv(interp, objv + 1, &lastColor) != TCL_OK) {
+    if (GetRGBFromObjv(interp, cmdPtr, objv + 1, &lastColor) != TCL_OK) {
         goto error;
     }
     for (entryPtr = entries, i = 4; i < objc; i += 4, entryPtr++) {
@@ -394,7 +412,8 @@ ParseXRGBColors(Tcl_Interp *interp, PaletteCmd *cmdPtr, int objc,
         if (GetPointFromObj(interp, objv[i], &entryPtr->max) != TCL_OK) {
             goto error;
         }
-	if (GetRGBFromObjv(interp, objv+(i+1), &entryPtr->high) != TCL_OK) {
+	if (GetRGBFromObjv(interp, cmdPtr, objv+(i+1), &entryPtr->high)
+            != TCL_OK) {
             goto error;
 	}
         lastColor = entryPtr->high;
@@ -1202,6 +1221,61 @@ FadeToObj(
 /*
  *---------------------------------------------------------------------------
  *
+ * ObjToFile --
+ *
+ *	Convert the file contains the palette description into a palette.
+ *
+ * Results:
+ *	The return value is a standard TCL result.  
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+ObjToFile(
+    ClientData clientData,		/* Not used. */
+    Tcl_Interp *interp,			/* Interpreter to send results back
+					 * to */
+    const char *switchName,
+    Tcl_Obj *objPtr,			/* Opacity string */
+    char *record,			/* PaletteCmd structure record */
+    int offset,				/* Offset to field in structure */
+    int flags)	
+{
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * FileToObj --
+ *
+ *	Convert the palette file name in to a Tcl_Obj.
+ *
+ * Results:
+ *	The return value is a standard TCL result.  
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static Tcl_Obj *
+FileToObj(
+    ClientData clientData,		/* Not used. */
+    Tcl_Interp *interp,
+    char *record,			/* PaletteCmd structure record */
+    int offset,				/* Offset to field in structure */
+    int flags)	
+{
+    int *alphaPtr = (int *)(record + offset);
+    double fade;
+
+    fade = (1.0 - (*alphaPtr / 255.0)) * 100.0;
+    return Tcl_NewDoubleObj(fade);
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
  * NewPaletteCmd --
  *
  *	Creates a new palette command structure and inserts it into the
@@ -1227,6 +1301,8 @@ NewPaletteCmd(Tcl_Interp *interp, PaletteCmdInterpData *dataPtr,
     cmdPtr->alpha = 0xFF;
     cmdPtr->name = Blt_GetHashKey(&dataPtr->paletteTable, hPtr);
     Blt_SetHashValue(hPtr, cmdPtr);
+    cmdPtr->min = 0.0;
+    cmdPtr->max = 1.0;
     cmdPtr->hashPtr = hPtr;
     cmdPtr->dataPtr = dataPtr;
     Blt_InitHashTable(&cmdPtr->notifierTable, BLT_ONE_WORD_KEYS);
@@ -1379,34 +1455,53 @@ NormalizePalette(PaletteCmd *cmdPtr, double min, double max)
     }
 }
 
+static int
+SearchForEntry(PaletteCmd *cmdPtr, double norm)
+{
+    int low, high;
+
+    low = 0;
+    high = cmdPtr->numColors - 1;
+    while (low <= high) {
+        Blt_PaletteEntry *entryPtr;
+	int median;
+        
+	median = (low + high) >> 1;
+        entryPtr = cmdPtr->colors + median;
+        if (norm < entryPtr->min.norm) {
+	    high = median - 1;
+        } else if (norm > entryPtr->max.norm) {
+	    low = median + 1;
+        } else if (InRange(norm, entryPtr->min.norm, entryPtr->max.norm)) {
+	    return median;
+        }
+    }
+    return -1;                       /* Can't find number. */
+}
+
+
 static int 
 Interpolate(PaletteCmd *cmdPtr, double norm, Blt_Pixel *colorPtr)
 {
-    int i;
+    int i, n;
+    double t;
     Blt_Pixel color;
+    Blt_PaletteEntry *entryPtr;
 
     norm = RCLAMP(norm);
     color.u32 = 0x00;			/* Default to empty. */
-    for (i = 0; i < cmdPtr->numColors; i++) {
-        Blt_PaletteEntry *entryPtr;
-
-        entryPtr = cmdPtr->colors + i;
-	if (InRange(norm, entryPtr->min.norm, entryPtr->max.norm)){
-	    double t;
-	    
-	    t = (norm - entryPtr->min.norm) / 
-		(entryPtr->max.norm - entryPtr->min.norm);
-	    color.u32 = ColorLerp(entryPtr, t);
-	    break;
-	}
-    }
-    if (i == cmdPtr->numColors) {
+    n = SearchForEntry(cmdPtr, norm);
+    if (n < 0) {
 #ifndef notdef
 	fprintf(stderr, "can't interpolate: norm=%.17g\n", norm);
 #endif
 	abort();
 	return FALSE;
     }
+    entryPtr = cmdPtr->colors + n;
+    t = (norm - entryPtr->min.norm) / (entryPtr->max.norm - entryPtr->min.norm);
+    color.u32 = ColorLerp(entryPtr, t);
+
     for (i = 0;  i < cmdPtr->numOpacities; i++) {
         Blt_PaletteEntry *entryPtr;
 

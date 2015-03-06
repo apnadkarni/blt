@@ -29199,6 +29199,7 @@ blt::combomenu .palettes.menu \
     -background white \
     -textvariable usePalette 
 
+source ~/src/blt/library/palette2.tcl
 foreach pal [blt::palette names] {
     set pal [string trim $pal ::]
     lappend palettes $pal
