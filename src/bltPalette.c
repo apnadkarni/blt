@@ -384,8 +384,6 @@ GetRGBFromObjv(Tcl_Interp *interp, PaletteCmd *cmdPtr, Tcl_Obj *const *objv,
 
 /*
  *	-rgbcolors "c1 c2 c3 c4.."
- *	-colors "{v1 c1} {v2 c2} {v3 c3}..."
- *	-colors "{v1 c1 v2 c2} {v3 c3 v4 c4}..."
  */
 static int
 ParseRGBColors(Tcl_Interp *interp, PaletteCmd *cmdPtr, int objc, 
@@ -471,8 +469,6 @@ ParseXRGBColors(Tcl_Interp *interp, PaletteCmd *cmdPtr, int objc,
 
 /*
  *	-colors "c1 c2 c3 c4.."
- *	-colors "{v1 c1} {v2 c2} {v3 c3}..."
- *	-colors "{v1 c1 v2 c2} {v3 c3 v4 c4}..."
  */
 static int
 ParseColors(Tcl_Interp *interp, PaletteCmd *cmdPtr, int objc, 
@@ -909,12 +905,27 @@ ObjToXRGBColors(
  *
  *	Valid color strings are:
  *
+ *      -type interval -type regular -type irregular 
+ *      -color rgb -color name
+ *      -file -data
+ *
+ *      -colors 
  *      -colors "c1 c2 c3 c4..."   Color ramp evenly spaced.
+ *
+ *      -irregularcolors
+ *      -irregularrgb
+ *      -xcolors {z1 c1 z2 c2 z3 c3} 
+ *      -xcolors {z1 c1 z2 c2 z3 c3} 
  *
  * 	-colors "{c1 z1} {c2 z2} {c3 z3}..."   
  *			   Color ramp with relative/absolute points. 
  *
- * 	-colors "{c1 z1 c2 z2} {c3 z3 c4 z4}..."   
+ *      -colorintervals 
+ * 	-colorinterval "{c1 z1 c2 z2} {c3 z3 c4 z4}..."   
+ *			   Color ranges. 
+ *
+ *      -rgbintervals 
+ * 	-xrgbinterval "{z1 r g b z2 r g b} {z2 r g b z3 r g b}..."   
  *			   Color ranges. 
  *
  * 	-colors "{c1 z1 c2 z2} {c3 z3 c4 z4}..."   
