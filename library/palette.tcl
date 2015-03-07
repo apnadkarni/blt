@@ -1,11 +1,11 @@
 
-blt::palette create rainbow -colors {
+blt::palette create rainbow -colorformat name -cdata {
     "red" "#FFA500" "yellow" "#008000" "blue" "#4B0082" "#EE82EE"
 }
-blt::palette create greyscale -colors {
+blt::palette create greyscale -colorformat name -cdata {
     "black" "white"
 }
-blt::palette create blue-to-green -rgbcolors {
+blt::palette create blue-to-green -cdata {
    0.000   0.000   1.000
    0.200   0.200   1.000
    0.400   0.400   1.000
@@ -22,7 +22,7 @@ blt::palette create blue-to-green -rgbcolors {
    0.000   1.000   0.000
 }
 
-blt::palette create blue-to-gray -rgbcolors {
+blt::palette create blue-to-gray -cdata {
    0.000   0.600   0.800
    0.400   0.900   1.000
    0.600   1.000   1.000
@@ -32,7 +32,7 @@ blt::palette create blue-to-gray -rgbcolors {
    0.400   0.400   0.400
    0.200   0.200   0.200
 }
-blt::palette create blue -rgbcolors {
+blt::palette create blue -cdata {
    0.900   1.000   1.000
    0.800   0.983   1.000
    0.700   0.950   1.000
@@ -45,7 +45,7 @@ blt::palette create blue -rgbcolors {
    0.000   0.250   1.000
 } 
 
-blt::palette create blue-to-brown -rgbcolors {
+blt::palette create blue-to-brown -cdata  {
    0.200   0.100   0.000 
    0.400   0.187   0.000 
    0.600   0.379   0.210 
@@ -60,7 +60,7 @@ blt::palette create blue-to-brown -rgbcolors {
    0.000   0.480   0.600 
 }
 
-blt::palette create blue-to-orange -rgbcolors {
+blt::palette create blue-to-orange -cdata  {
    0.000   0.167   1.000
    0.100   0.400   1.000
    0.200   0.600   1.000
@@ -75,7 +75,7 @@ blt::palette create blue-to-orange -rgbcolors {
    1.000   0.167   0.000
 }
 
-blt::palette create spectral-scheme -rgbcolors {
+blt::palette create spectral-scheme -cdata  {
    0.650   0.000   0.130 
    0.850   0.150   0.196 
    0.970   0.430   0.370 
@@ -89,7 +89,7 @@ blt::palette create spectral-scheme -rgbcolors {
    0.150   0.300   1.000 
 }
 
-blt::palette create green-to-magenta -rgbcolors {
+blt::palette create green-to-magenta -cdata  {
    0.000   0.316   0.000 
    0.000   0.526   0.000 
    0.000   0.737   0.000 
@@ -107,9 +107,11 @@ blt::palette create green-to-magenta -rgbcolors {
    0.526   0.000   0.526 
    0.316   0.000   0.316 
 }
-blt::palette create nanohub  -colors { white yellow green cyan blue magenta }
+blt::palette create nanohub  -colorformat name -cdata {
+    white yellow green cyan blue magenta
+}
 
-blt::palette create "grey-to-blue" -rgbcolors {
+blt::palette create "grey-to-blue" -cdata  {
     0.200 0.200 0.200 
     0.400 0.400 0.400 
     0.600 0.600 0.600 
@@ -120,7 +122,7 @@ blt::palette create "grey-to-blue" -rgbcolors {
     0.000 0.600 0.800 
 }
 
-blt::palette create "blue-to-grey" -rgbcolors {
+blt::palette create "blue-to-grey" -cdata  {
     0.000 0.600 0.800  
     0.400 0.900 1.000  
     0.600 1.000 1.000  
@@ -132,7 +134,7 @@ blt::palette create "blue-to-grey" -rgbcolors {
 }
 
 
-blt::palette create "brown-to-blue" -rgbcolors { 
+blt::palette create "brown-to-blue" -cdata  { 
     0.200   0.100   0.000 
     0.400   0.187   0.000 
     0.600   0.379   0.210 
@@ -147,7 +149,7 @@ blt::palette create "brown-to-blue" -rgbcolors {
     0.000   0.480   0.600 
 }
  
-blt::palette create "orange-to-blue" -rgbcolors {
+blt::palette create "orange-to-blue" -cdata  {
     1.000   0.167   0.000 
     1.000   0.400   0.100 
     1.000   0.600   0.200 
@@ -163,7 +165,7 @@ blt::palette create "orange-to-blue" -rgbcolors {
 }
 
 if 0 {
-blt::palette create "rainbow" -colors {
+blt::palette create "rainbow" -colorformat name -cdata {
     "#EE82EE"
     "#4B0082" 
     "blue" 
@@ -174,7 +176,7 @@ blt::palette create "rainbow" -colors {
 }
 }
 
-blt::palette create "BGYOR" -colors {
+blt::palette create "BGYOR" -colorformat name -cdata {
     "blue" 
     "#008000" 
     "yellow" 
@@ -182,7 +184,7 @@ blt::palette create "BGYOR" -colors {
     "red" 
 }
 
-blt::palette create "ROYGB" -colors {
+blt::palette create "ROYGB" -colorformat name -cdata {
     "red" 
     "#FFA500" 
     "yellow" 
@@ -190,7 +192,7 @@ blt::palette create "ROYGB" -colors {
     "blue" 
 }
 
-blt::palette create "RYGCB" -colors {
+blt::palette create "RYGCB" -colorformat name -cdata {
     "red" 
     "yellow" 
     "green"
@@ -198,7 +200,7 @@ blt::palette create "RYGCB" -colors {
     "blue"
 }
 
-blt::palette create "BCGYR" -colors {
+blt::palette create "BCGYR" -colorformat name -cdata {
     "blue" 
     "cyan"
     "green"
@@ -206,7 +208,7 @@ blt::palette create "BCGYR" -colors {
     "red" 
 }
 
-blt::palette create "spectral" -rgbcolors {
+blt::palette create "spectral" -cdata  {
     0.150 0.300 1.000
     0.250 0.630 1.000
     0.450 0.850 1.000

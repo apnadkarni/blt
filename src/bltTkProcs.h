@@ -1,4 +1,5 @@
 /* -*- mode: c; c-basic-offset: 4; indent-tabs-mode: nil -*- */
+#include "bltPalette.h"
 #include "bltPicture.h"
 #include "bltPictFmts.h"
 

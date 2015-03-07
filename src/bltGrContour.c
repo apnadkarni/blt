@@ -6875,7 +6875,6 @@ DrawTriangle(ContourElement *elemPtr, Pict *destPtr, Triangle *t, int xoff,
     t1 = A1 * ren.x1 + B1 * ren.y1 + ren.edge[1].C;
     t2 = A2 * ren.x1 + B2 * ren.y1 + ren.edge[2].C;
     tz = ren.value[2];
-    Blt_Palette_SetRange(zAxisPtr->palette, rangePtr->min, rangePtr->max);
     destRowPtr = destPtr->bits + (destPtr->pixelsPerRow * (ren.y1-yoff));
     for (j = 0, y = ren.y1; y <= ren.y2; y++, j++) {
 	double e0, e1, e2;

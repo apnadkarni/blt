@@ -1,4 +1,4 @@
-blt::palette create 3gauss -max 255 -rgbcolors {
+blt::palette create 3gauss -max 255 -colordata {
     0 0 255
     0 0 255
     1 2 254
@@ -255,7 +255,7 @@ blt::palette create 3gauss -max 255 -rgbcolors {
     252 3 3
 }
 
-blt::palette create MPL_Reds -rgbcolors {
+blt::palette create MPL_Reds -colordata {
     0.999877 0.958201 0.937486
     0.999631 0.953033 0.930104
     0.999385 0.947866 0.922722

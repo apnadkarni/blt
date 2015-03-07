@@ -5,13 +5,13 @@
  *
  *	Copyright 1998-2004 George A Howlett.
  *
- *	Permission is hereby granted, free of charge, to any person obtaining
- *	a copy of this software and associated documentation files (the
- *	"Software"), to deal in the Software without restriction, including
- *	without limitation the rights to use, copy, modify, merge, publish,
- *	distribute, sublicense, and/or sell copies of the Software, and to
- *	permit persons to whom the Software is furnished to do so, subject to
- *	the following conditions:
+ *	Permission is hereby granted, free of charge, to any person
+ *	obtaining a copy of this software and associated documentation
+ *	files (the "Software"), to deal in the Software without
+ *	restriction, including without limitation the rights to use, copy,
+ *	modify, merge, publish, distribute, sublicense, and/or sell copies
+ *	of the Software, and to permit persons to whom the Software is
+ *	furnished to do so, subject to the following conditions:
  *
  *	The above copyright notice and this permission notice shall be
  *	included in all copies or substantial portions of the Software.
@@ -19,10 +19,11 @@
  *	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  *	EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  *	MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- *	NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
- *	LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
- *	OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
- *	WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *	NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+ *	BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ *	ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ *	CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ *	SOFTWARE.
  */
 
 /*
@@ -153,14 +154,14 @@ typedef struct {
     TreeCmdInterpData *tdPtr;		/*  */
     int traceCounter;			/* Used to generate trace id
 					 * strings.  */
-    Blt_HashTable traceTable;		/* Table of active traces. Maps trace
-					 * ids back to their TraceInfo
-					 * records. */
+    Blt_HashTable traceTable;		/* Table of active traces. Maps
+					 * trace ids back to their
+					 * TraceInfo records. */
     int notifyCounter;			/* Used to generate notify id
 					 * strings. */
     Blt_HashTable notifyTable;		/* Table of event handlers. Maps
-					 * notify ids back to their Notifier
-					 * records. */
+					 * notify ids back to their
+					 * Notifier records. */
     Blt_Chain notifiers;
     Tcl_Obj *defPathSepObjPtr;          /* Path separator. */
 } TreeCmd;
@@ -169,18 +170,19 @@ typedef struct {
     TreeCmd *cmdPtr;
     Blt_TreeNode node;
     Blt_TreeTrace traceToken;
-    const char *withTag;		/* If non-NULL, the event or trace was
-					 * specified with this tag.  This
-					 * value is saved for informational
-					 * purposes.  The tree's trace
-					 * matching routines do the real
-					 * checking, not the client's
-					 * callback.  */
+    const char *withTag;		/* If non-NULL, the event or trace
+					 * was specified with this tag.
+					 * This value is saved for
+					 * informational purposes.  The
+					 * tree's trace matching routines
+					 * do the real checking, not the
+					 * client's callback.  */
     char command[1];			/* Command prefix for the trace or
 					 * notify TCL callback.  Extra
-					 * arguments will be appended to the
-					 * end. Extra space will be allocated
-					 * for the length of the string */
+					 * arguments will be appended to
+					 * the end. Extra space will be
+					 * allocated for the length of the
+					 * string */
 } TraceInfo;
 
 typedef struct {
@@ -263,13 +265,14 @@ typedef struct {
 } InsertSwitches;
 
 typedef struct {
-    unsigned int perm, type;		/* Indicate the permission and type of
-					 * directory entries to search for.*/
-    unsigned int mask;			/* Indicates which fields to copy into
-					 * the tree node as data. */
-    Tcl_Obj *patternsObjPtr;		/* If non-NULL, is a list of patterns
-					 * to match contents of each
-					 * directory.  */
+    unsigned int perm, type;		/* Indicate the permission and type
+					 * of directory entries to search
+					 * for.*/
+    unsigned int mask;			/* Indicates which fields to copy
+					 * into the tree node as data. */
+    Tcl_Obj *patternsObjPtr;		/* If non-NULL, is a list of
+					 * patterns to match contents of
+					 * each directory.  */
     unsigned int flags;
 } DirSwitches;
 
@@ -367,23 +370,24 @@ static Blt_SwitchSpec insertSwitches[] =
 
 typedef struct {
     TreeCmd *cmdPtr;			/* Tree to examine. */
-    Tcl_Obj *listObjPtr;		/* List to accumulate the indices of
-					 * matching nodes. */
-    Tcl_Obj *cmdObjPtr;			/* If non-NULL, command to be executed
-					 * for each found node. */
+    Tcl_Obj *listObjPtr;		/* List to accumulate the indices
+					 * of matching nodes. */
+    Tcl_Obj *cmdObjPtr;			/* If non-NULL, command to be
+					 * executed for each found node. */
     unsigned int flags;			/* See flags definitions above. */
     size_t numMatches;			/* Current number of matches. */
     size_t maxMatches;			/* If > 0, stop after this many
 					 * matches. */
     unsigned int order;			/* Order of search: Can be either
 					 * TREE_PREORDER, TREE_POSTORDER,
-					 * TREE_INORDER, TREE_BREADTHFIRST. */
+					 * TREE_INORDER,
+					 * TREE_BREADTHFIRST. */
     long maxDepth;			/* If >= 0, don't descend more than
 					 * this many levels. */
     Blt_List patternList;		/* List of patterns to compare with
 					 * labels or values.  */
-    const char *addTag;			/* If non-NULL, tag added to selected
-					 * nodes. */
+    const char *addTag;			/* If non-NULL, tag added to
+					 * selected nodes. */
     Blt_List keyList;			/* List of key name patterns. */
     Blt_List tagList;			/* List of tag names. */
     Blt_HashTable excludeTable;		/* Table of nodes to exclude. */
@@ -511,7 +515,8 @@ typedef struct {
     long maxDepth;			/* If >= 0, don't descend more than
 					 * this many levels. */
     /* String options. */
-    Blt_List patternList;		/* List of label or value patterns. */
+    Blt_List patternList;		/* List of label or value
+                                           patterns. */
     Tcl_Obj *preCmdObjPtr;		/* Pre-command. */
     Tcl_Obj *postCmdObjPtr;		/* Post-command. */
     Blt_List keyList;			/* List of key-name patterns. */
@@ -598,8 +603,9 @@ static Blt_SwitchCustom formatSwitch =
 
 typedef struct {
     int sort;				/* If non-zero, sort the nodes.  */
-    int withParent;			/* If non-zero, add the parent node id
-					 * to the output of the command.*/
+    int withParent;			/* If non-zero, add the parent node
+					 * id to the output of the
+					 * command.*/
     int withId;				/* If non-zero, echo the node id in
 					 * the output of the command. */
 } PositionSwitches;
@@ -685,8 +691,6 @@ static Blt_TreeCompareNodesProc CompareNodes;
 
 static Tcl_ObjCmdProc TreeObjCmd;
 static Tcl_ObjCmdProc TreeInstObjCmd;
-static Tcl_ObjCmdProc CompareDictionaryCmd;
-static Tcl_ObjCmdProc ExitCmd;
 static Blt_TreeNotifyEventProc TreeEventProc;
 
 typedef int (TreeCmdProc)(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc,
@@ -784,7 +788,8 @@ ChildSwitch(
  *
  * Blt_TreeNodeSwitchProc --
  *
- *	Convert a Tcl_Obj representing a node number into its integer value.
+ *	Convert a Tcl_Obj representing a node number into its integer
+ *	value.
  *
  * Results:
  *	The return value is a standard TCL result.
@@ -881,13 +886,14 @@ OrderSwitch(
 /*ARGSUSED*/
 static int
 PatternSwitch(
-    ClientData clientData,	/* Flag indicating type of pattern. */
-    Tcl_Interp *interp,		/* Not used. */
-    const char *switchName,	/* Not used. */
-    Tcl_Obj *objPtr,		/* String representation */
-    char *record,		/* Structure record */
-    int offset,			/* Offset to field in structure */
-    int flags)			/* Not used. */
+    ClientData clientData,              /* Flag indicating type of
+                                         * pattern. */
+    Tcl_Interp *interp,                 /* Not used. */
+    const char *switchName,             /* Not used. */
+    Tcl_Obj *objPtr,                    /* String representation */
+    char *record,                       /* Structure record */
+    int offset,                         /* Offset to field in structure */
+    int flags)                          /* Not used. */
 {
     Blt_List *listPtr = (Blt_List *)(record + offset);
 
@@ -921,8 +927,8 @@ FreePatterns(ClientData clientData, char *record, int offset, int flags)
 	Blt_List_Destroy(*listPtr);
 	/* 
 	 * This routine can be called several times for each switch that
-	 * appends to this list. Mark it NULL, so we don't try to destroy the
-	 * list again.
+	 * appends to this list. Mark it NULL, so we don't try to destroy
+	 * the list again.
 	 */
 	*listPtr = NULL;
     }
@@ -1300,7 +1306,7 @@ ParseModifiers(Tcl_Interp *interp, Blt_Tree tree, Blt_TreeNode node,
 
     p = modifiers;
     do {
-	p += 2;			/* Skip the initial "->" */
+	p += 2;                         /* Skip the initial "->" */
 	token = strstr(p, "->");
 	if (token != NULL) {
 	    *token = '\0';
@@ -1348,14 +1354,14 @@ ParseModifiers(Tcl_Interp *interp, Blt_Tree tree, Blt_TreeNode node,
 	    goto error;
 	}
 	if (token != NULL) {
-	    *token = '-';	/* Repair the string */
+	    *token = '-';               /* Repair the string */
 	}
 	p = token;
     } while (token != NULL);
     return node;
  error:
     if (token != NULL) {
-	*token = '-';		/* Repair the string */
+	*token = '-';                   /* Repair the string */
     }
     return NULL;
 }
@@ -1376,7 +1382,7 @@ GetForeignNode(Tcl_Interp *interp, Blt_Tree tree, Tcl_Obj *objPtr,
     char *p;
     char save;
 
-    save = '\0';		/* Suppress compiler warning. */
+    save = '\0';                        /* Suppress compiler warning. */
     string = Tcl_GetString(objPtr);
 
     /* Check if modifiers are present. */
@@ -1413,7 +1419,7 @@ GetForeignNode(Tcl_Interp *interp, Blt_Tree tree, Tcl_Obj *objPtr,
 		Blt_Tree_Name(tree), "\"", (char *)NULL);
  error:
     if (p != NULL) {
-	*p = save;		/* Restore the string */
+	*p = save;                      /* Restore the string */
     }
     return TCL_ERROR;
 }
@@ -1434,7 +1440,7 @@ GetNodeFromObj(Tcl_Interp *interp, Blt_Tree tree, Tcl_Obj *objPtr,
     char *p;
     char save;
 
-    node = NULL;		/* Suppress compiler warnings. */
+    node = NULL;                        /* Suppress compiler warnings. */
     save = '\0';
 
     string = Tcl_GetString(objPtr);
@@ -1503,7 +1509,7 @@ GetNodeFromObj(Tcl_Interp *interp, Blt_Tree tree, Tcl_Obj *objPtr,
 	    node = ParseModifiers(interp, tree, node, p);
 	    if (node == NULL) {
 		if (interp != NULL) {
-		    *p = save;	/* Need entire string. */
+		    *p = save;          /* Need entire string. */
 		    Tcl_AppendResult(interp, "can't find tag or id \"", string, 
 			     "\" in ", Blt_Tree_Name(tree), (char *)NULL);
 		}
@@ -1540,11 +1546,11 @@ typedef struct {
  * FirstTaggedNode --
  *
  *	Returns the id of the first node tagged by the given tag in objPtr.
- *	It basically hides much of the cumbersome special case details.  For
- *	example, the special tags "root" and "all" always exist, so they don't
- *	have entries in the tag hashtable.  If it's a hashed tag (not "root"
- *	or "all"), we have to save the place of where we are in the table for
- *	the next call to NextTaggedNode.
+ *	It basically hides much of the cumbersome special case details.
+ *	For example, the special tags "root" and "all" always exist, so
+ *	they don't have entries in the tag hashtable.  If it's a hashed tag
+ *	(not "root" or "all"), we have to save the place of where we are in
+ *	the table for the next call to NextTaggedNode.
  *
  *---------------------------------------------------------------------------
  */
@@ -1619,8 +1625,8 @@ SkipSeparators(const char *path, const char *separator, int length)
  *
  * SplitPath --
  *
- *	Returns the trailing component of the given path.  Trailing separators
- *	are ignored.
+ *	Returns the trailing component of the given path.  Trailing
+ *	separators are ignored.
  *
  * Results:
  *	Returns the string of the tail component.
@@ -1932,12 +1938,13 @@ CompareTags(
  * GenerateName --
  *
  *	Generates an unique tree command name.  Tree names are in the form
- *	"treeN", where N is a non-negative integer. Check each name generated
- *	to see if it is already a tree. We want to recycle names if possible.
+ *	"treeN", where N is a non-negative integer. Check each name
+ *	generated to see if it is already a tree. We want to recycle names
+ *	if possible.
  *	
  * Results:
- *	Returns the unique name.  The string itself is stored in the dynamic
- *	string passed into the routine.
+ *	Returns the unique name.  The string itself is stored in the
+ *	dynamic string passed into the routine.
  *
  *---------------------------------------------------------------------------
  */
@@ -2260,7 +2267,7 @@ ApplyNodeProc(Blt_TreeNode node, ClientData clientData, int order)
 	Blt_TreeKey key;
 	Blt_TreeKeyIterator iter;
 
-	result = FALSE;		/* It's false if no keys match. */
+	result = FALSE;                 /* It's false if no keys match. */
 	for (key = Blt_Tree_FirstKey(cmdPtr->tree, node, &iter);
 	     key != NULL; key = Blt_Tree_NextKey(cmdPtr->tree, &iter)) {
 	    
@@ -2333,9 +2340,10 @@ ClearTracesAndEvents(TreeCmd *cmdPtr)
     Blt_ChainLink link, next;
 
     /* 
-     * When the tree token is released, all the traces and notification events
-     * are automatically removed.  But we still need to clean up the
-     * bookkeeping kept for traces. Clear all the tags and trace information.
+     * When the tree token is released, all the traces and notification
+     * events are automatically removed.  But we still need to clean up the
+     * bookkeeping kept for traces. Clear all the tags and trace
+     * information.
      */
     for (hPtr = Blt_FirstHashEntry(&cmdPtr->traceTable, &iter); hPtr != NULL;
 	hPtr = Blt_NextHashEntry(&iter)) {
@@ -2383,8 +2391,9 @@ static int
 TreeTraceProc(
     ClientData clientData,
     Tcl_Interp *interp,
-    Blt_TreeNode node,		/* Node that has just been updated. */
-    Blt_TreeKey key,		/* Field that's updated. */
+    Blt_TreeNode node,                  /* Node that has just been
+                                         * updated. */
+    Blt_TreeKey key,                    /* Field that's updated. */
     unsigned int flags)
 {
     TraceInfo *tracePtr = clientData; 
@@ -2483,7 +2492,7 @@ TreeEventProc(ClientData clientData, Blt_TreeNotifyEvent *eventPtr)
 	    }
 	    if (eventPtr->type == TREE_NOTIFY_DELETE) {
 		remove = TRUE;		/* Must destroy notifier. Node no
-					* longer exists. */
+                                         * longer exists. */
 	    }
 	}
 	if ((notifyPtr->tag != NULL) && 
@@ -2642,10 +2651,10 @@ AncestorOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     }
 
     /* 
-     * First find the mutual ancestor of both nodes.  Look at each preceding
-     * ancestor level-by-level for both nodes.  Eventually we'll find a node
-     * that's the parent of both ancestors.  Then find the first ancestor in
-     * the parent's list of subnodes.
+     * First find the mutual ancestor of both nodes.  Look at each
+     * preceding ancestor level-by-level for both nodes.  Eventually we'll
+     * find a node that's the parent of both ancestors.  Then find the
+     * first ancestor in the parent's list of subnodes.
      */
     for (i = minDepth; i > 0; i--) {
 	node1 = Blt_Tree_ParentNode(node1);
@@ -2818,10 +2827,11 @@ ChildrenOp(
 static Blt_TreeNode 
 CopyNodes(
     CopySwitches *switchesPtr,
-    Blt_TreeNode node,		/* Node to be copied. */
-    Blt_TreeNode parent)	/* New parent for the copied node. */
+    Blt_TreeNode node,                  /* Node to be copied. */
+    Blt_TreeNode parent)                /* New parent for the copied
+                                         * node. */
 {
-    Blt_TreeNode newNode;	/* Newly created copy. */
+    Blt_TreeNode newNode;               /* Newly created copy. */
     const char *label;
 
     newNode = NULL;
@@ -2841,10 +2851,10 @@ CopyNodes(
 	     key != NULL; key = Blt_Tree_NextKey(switchesPtr->srcTree, &iter)) {
 	    Tcl_Obj *objPtr;
 
-	    if (Blt_Tree_GetValueByKey((Tcl_Interp *)NULL, switchesPtr->srcTree, 
-			node, key, &objPtr) == TCL_OK) {
-		Blt_Tree_SetValueByKey((Tcl_Interp *)NULL, switchesPtr->destTree, 
-			newNode, key, objPtr);
+	    if (Blt_Tree_GetValueByKey((Tcl_Interp *)NULL,
+                        switchesPtr->srcTree, node, key, &objPtr) == TCL_OK) {
+		Blt_Tree_SetValueByKey((Tcl_Interp *)NULL,
+                        switchesPtr->destTree, newNode, key, objPtr);
 	    } 
 	}
     }
@@ -2861,7 +2871,8 @@ CopyNodes(
 	    tPtr = Blt_GetHashValue(hPtr);
 	    h2Ptr = Blt_FindHashEntry(&tPtr->nodeTable, (char *)node);
 	    if (h2Ptr != NULL) {
-		if (AddTag(switchesPtr->destPtr, newNode, tPtr->tagName)!= TCL_OK) {
+		if (AddTag(switchesPtr->destPtr, newNode, tPtr->tagName)
+                    != TCL_OK) {
 		    return NULL;
 		}
 	    }
@@ -2930,8 +2941,8 @@ CopyOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	char *string;
 
 	/* 
-	 * The tree name is either the name of a tree command (first choice)
-	 * or an internal tree object.
+	 * The tree name is either the name of a tree command (first
+	 * choice) or an internal tree object.
 	 */
 	string = Tcl_GetString(objv[3]);
 	srcPtr = GetTreeCmd(cmdPtr->tdPtr, interp, string);
@@ -2953,7 +2964,8 @@ CopyOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	    return TCL_ERROR;
 	}
     } else {
-	if (GetNodeFromObj(interp, srcPtr->tree, objv[3], &copyNode) != TCL_OK) {
+	if (GetNodeFromObj(interp, srcPtr->tree, objv[3], &copyNode)
+                != TCL_OK) {
 	    return TCL_ERROR;
 	}
     }
@@ -2964,8 +2976,8 @@ CopyOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     switches.srcTree = srcTree;
 
     /* Process switches  */
-    if (Blt_ParseSwitches(interp, copySwitches, numSwitches, objv + 4, &switches,
-	BLT_SWITCH_DEFAULTS) < 0) {
+    if (Blt_ParseSwitches(interp, copySwitches, numSwitches, objv + 4,
+                &switches, BLT_SWITCH_DEFAULTS) < 0) {
 	return TCL_ERROR;
     }
     if ((switches.flags & COPY_OVERWRITE) && 
@@ -3024,11 +3036,11 @@ DegreeOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *	
  *	Tags have to be handled carefully here.  We can't use the normal
  *	GetTaggedNode, NextTaggedNode, etc. routines because they walk
- *	hashtables while we're deleting nodes.  Also, remember that deleting a
- *	node recursively deletes all its children. If a parent and its
- *	children have the same tag, its possible that the tag list may contain
- *	nodes than no longer exist. So save the node indices in a list and
- *	then delete then in a second pass.
+ *	hashtables while we're deleting nodes.  Also, remember that
+ *	deleting a node recursively deletes all its children. If a parent
+ *	and its children have the same tag, its possible that the tag list
+ *	may contain nodes than no longer exist. So save the node indices in
+ *	a list and then delete then in a second pass.
  *
  *---------------------------------------------------------------------------
  */
@@ -3067,9 +3079,9 @@ DeleteOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 		goto error;
 	    }
 	    /* 
-	     * Generate a list of tagged nodes. Save the inode instead of the
-	     * node itself since a pruned branch may contain more tagged
-	     * nodes.
+	     * Generate a list of tagged nodes. Save the inode instead of
+	     * the node itself since a pruned branch may contain more
+	     * tagged nodes.
 	     */
 	    chain = Blt_Chain_Create();
 	    for (hPtr = Blt_FirstHashEntry(tablePtr, &iter); 
@@ -3080,8 +3092,8 @@ DeleteOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 		Blt_Chain_Append(chain, (ClientData)Blt_Tree_NodeId(node));
 	    }   
 	    /*  
-	     * Iterate through this list to delete the nodes.  By side-effect
-	     * the tag table is deleted and Uids are released.
+	     * Iterate through this list to delete the nodes.  By
+	     * side-effect the tag table is deleted and Uids are released.
 	     */
 	    for (link = Blt_Chain_FirstLink(chain); link != NULL;
 		 link = next) {
@@ -3562,8 +3574,8 @@ FillEntryData(Tcl_Interp *interp, Blt_Tree tree, Blt_TreeNode node,
  *
  * TreeReadDirectory --
  *
- *	Loads contents of directory into the specified node, creating
- *	a new node for each entry.
+ *	Loads contents of directory into the specified node, creating a new
+ *	node for each entry.
  *
  *---------------------------------------------------------------------------
  */
@@ -3820,7 +3832,7 @@ InsertOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     }
     /* Initialize switch flags */
     memset(&switches, 0, sizeof(switches));
-    switches.position = -1;	/* Default to append node. */
+    switches.position = -1;             /* Default to append node. */
     switches.parent = parent;
     switches.inode = -1;
 
@@ -4132,11 +4144,12 @@ LastChildOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * MoveOp --
  *
- *	The trick here is to not consider the node to be moved in determining
- *	it's new location.  Ideally, you would temporarily pull it from the
- *	tree and replace it (back in its old location if something went
- *	wrong), but you could still pick the node by its serial number.  So
- *	here we make lots of checks for the node to be moved.
+ *	The trick here is to not consider the node to be moved in
+ *	determining it's new location.  Ideally, you would temporarily pull
+ *	it from the tree and replace it (back in its old location if
+ *	something went wrong), but you could still pick the node by its
+ *	serial number.  So here we make lots of checks for the node to be
+ *	moved.
  * 
  *---------------------------------------------------------------------------
  */
@@ -4179,8 +4192,9 @@ MoveOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 		 Tcl_GetString(objv[3]), "\"", (char *)NULL);
 	return TCL_ERROR;
     }
-    before = NULL;		/* If before is NULL, this appends the node to
-				 * the parent's child list.  */
+    before = NULL;                      /* If before is NULL, this appends
+                                         * the node to the parent's child
+                                         * list.  */
 
     if (switches.node != NULL) {	/* -before or -after */
 	if (Blt_Tree_ParentNode(switches.node) != parent) {
@@ -4205,19 +4219,19 @@ MoveOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	    }
 	}
     } else if (switches.movePos >= 0) { /* -at */
-	int count;		/* Tracks the current list index. */
+	int count;                     /* Tracks the current list index. */
 	Blt_TreeNode child;
 
 	/* 
-	 * If the node is in the list, ignore it when determining the "before"
-	 * node using the -at index.  An index of -1 means to append the node
-	 * to the list.
+	 * If the node is in the list, ignore it when determining the
+	 * "before" node using the -at index.  An index of -1 means to
+	 * append the node to the list.
 	 */
 	count = 0;
 	for(child = Blt_Tree_FirstChild(parent); child != NULL; 
 	    child = Blt_Tree_NextSibling(child)) {
 	    if (child == node) {
-		continue;	/* Ignore the node to be moved. */
+		continue;               /* Ignore the node to be moved. */
 	    }
 	    if (count == switches.movePos) {
 		before = child;
@@ -4879,8 +4893,8 @@ PositionOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     }
     nodeArr[i] = NULL;
 
-    if (switches.sort) {		/* Sort the nodes by depth-first order 
-					 * if requested. */
+    if (switches.sort) {		/* Sort the nodes by depth-first
+					 * order if requested. */
 	qsort((char *)nodeArr, objc, sizeof(Blt_TreeNode), 
 	      (QSortCompareProc *)ComparePositions);
     }
@@ -4897,18 +4911,19 @@ PositionOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	    Blt_TreeNode node;
 
 	    /* 
-	     * Since we've sorted the nodes already, we can safely assume that
-	     * if two consecutive nodes have the same parent, the first node
-	     * came before the second. If this is the case, use the last node
-	     * as a starting point.
+	     * Since we've sorted the nodes already, we can safely assume
+	     * that if two consecutive nodes have the same parent, the
+	     * first node came before the second. If this is the case, use
+	     * the last node as a starting point.
 	     */
 	    
 	    /*
 	     * Note that we start comparing from the last node, not its
-	     * successor.  Some one may give us the same node more than once.
+	     * successor.  Some one may give us the same node more than
+	     * once.
 	     */
-	    node = *(nodePtr - 1); /* Can't get here unless there's more than
-				    * one node. */
+	    node = *(nodePtr - 1);      /* Can't get here unless there's
+                                         * more than one node. */
 	    for(/*empty*/; node != NULL; node = Blt_Tree_NextSibling(node)) {
 		if (node == *nodePtr) {
 		    break;
@@ -4917,9 +4932,10 @@ PositionOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	    }
 	} else {
 	    /* 
-	     * The fallback is to linearly search through the parent's list of
-	     * children, counting the number of preceding siblings. Except for
-	     * nodes with many siblings (100+), this should be okay.
+	     * The fallback is to linearly search through the parent's list
+	     * of children, counting the number of preceding
+	     * siblings. Except for nodes with many siblings (100+), this
+	     * should be okay.
 	     */
 	    position = Blt_Tree_NodePosition(*nodePtr);
 	}
@@ -4927,8 +4943,8 @@ PositionOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	    lastParent = parent; /* Update the last parent. */
 	}	    
 	/* 
-	 * Add an element in the form "parent -at position" to the list that
-	 * we're generating.
+	 * Add an element in the form "parent -at position" to the list
+	 * that we're generating.
 	 */
 	if (switches.withId) {
 	    objPtr = Tcl_NewLongObj(Blt_Tree_NodeId(*nodePtr));
@@ -5012,7 +5028,8 @@ PrevSiblingOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc,
 static int
 RestoreOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 {
-    Blt_TreeNode root;		/* Root node of restored subtree. */
+    Blt_TreeNode root;                  /* Root node of restored
+                                         * subtree. */
     RestoreSwitches switches;
     int result;
 
@@ -5265,8 +5282,8 @@ TagDumpOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * TagExistsOp --
  *
- *	Returns the existence of the one or more tags in the given node.  If
- *	the node has any the tags, true is return in the interpreter.
+ *	Returns the existence of the one or more tags in the given node.
+ *	If the node has any the tags, true is return in the interpreter.
  *
  *	.t tag exists tag1 node
  *
@@ -5328,8 +5345,8 @@ TagForgetOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * TagGetOp --
  *
- *	Returns tag names for a given node.  If one of more pattern arguments
- *	are provided, then only those matching tags are returned.
+ *	Returns tag names for a given node.  If one of more pattern
+ *	arguments are provided, then only those matching tags are returned.
  *
  *	.t tag get node pat1 pat2...
  *
@@ -5606,9 +5623,9 @@ TagNodesOp(
  *
  * TagSetOp --
  *
- *	Sets one or more tags for a given node.  Tag names can't start with a
- *	digit (to distinquish them from node ids) and can't be a reserved tag
- *	("root" or "all").
+ *	Sets one or more tags for a given node.  Tag names can't start with
+ *	a digit (to distinquish them from node ids) and can't be a reserved
+ *	tag ("root" or "all").
  *
  *	.t tag set node tag1 tag2...
  *
@@ -5654,9 +5671,9 @@ TagSetOp(
  *
  * TagUnsetOp --
  *
- *	Removes one or more tags from a given node. If a tag doesn't exist or
- *	is a reserved tag ("root" or "all"), nothing will be done and no error
- *	message will be returned.
+ *	Removes one or more tags from a given node. If a tag doesn't exist
+ *	or is a reserved tag ("root" or "all"), nothing will be done and no
+ *	error message will be returned.
  *
  *	.t tag unset node tag1 tag2...
  *
@@ -6208,7 +6225,6 @@ SortApplyProc(
     return TCL_OK;
 }
 
-
 /*
  *---------------------------------------------------------------------------
  *
@@ -6217,11 +6233,7 @@ SortApplyProc(
  *---------------------------------------------------------------------------
  */
 static int
-SortOp(
-    TreeCmd *cmdPtr,
-    Tcl_Interp *interp,
-    int objc,
-    Tcl_Obj *const *objv)
+SortOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 {
     Blt_TreeNode top;
     SortSwitches switches;
@@ -6412,10 +6424,11 @@ static int numTreeOps = sizeof(treeOps) / sizeof(Blt_OpSpec);
 
 static int
 TreeInstObjCmd(
-    ClientData clientData,	/* Information about the widget. */
-    Tcl_Interp *interp,		/* Interpreter to report errors back to. */
-    int objc,			/* Number of arguments. */
-    Tcl_Obj *const *objv)	/* Vector of argument strings. */
+    ClientData clientData,              /* Information about the widget. */
+    Tcl_Interp *interp,                 /* Interpreter to report errors
+                                         * back to. */
+    int objc,                           /* Number of arguments. */
+    Tcl_Obj *const *objv)               /* Vector of argument strings. */
 {
     TreeCmdProc *proc;
     TreeCmd *cmdPtr = clientData;
@@ -6474,7 +6487,7 @@ TreeInstDeleteProc(ClientData clientData)
 /*ARGSUSED*/
 static int
 TreeCreateOp(
-    ClientData clientData,	/* Interpreter-specific data. */
+    ClientData clientData,              /* Interpreter-specific data. */
     Tcl_Interp *interp,
     int objc,
     Tcl_Obj *const *objv)
@@ -6503,7 +6516,7 @@ TreeCreateOp(
 /*ARGSUSED*/
 static int
 TreeDestroyOp(
-    ClientData clientData,	/* Interpreter-specific data. */
+    ClientData clientData,              /* Interpreter-specific data. */
     Tcl_Interp *interp,
     int objc,
     Tcl_Obj *const *objv)
@@ -6537,7 +6550,7 @@ TreeDestroyOp(
 /*ARGSUSED*/
 static int
 TreeNamesOp(
-    ClientData clientData,	/* Interpreter-specific data. */
+    ClientData clientData,              /* Interpreter-specific data. */
     Tcl_Interp *interp,
     int objc,
     Tcl_Obj *const *objv)
@@ -6577,9 +6590,9 @@ TreeNamesOp(
 /*ARGSUSED*/
 static int
 TreeLoadOp(
-    ClientData clientData,	/* Interpreter-specific data. */
+    ClientData clientData,              /* Interpreter-specific data. */
     Tcl_Interp *interp,
-    int objc,			/* Not used. */
+    int objc,                           /* Not used. */
     Tcl_Obj *const *objv)
 {
     Blt_HashEntry *hPtr;
@@ -6593,7 +6606,8 @@ TreeLoadOp(
     fmt = Tcl_GetStringFromObj(objv[2], &length);
     hPtr = Blt_FindHashEntry(&dataPtr->fmtTable, fmt);
     if (hPtr != NULL) {
-	return TCL_OK;		/* Converter for format is already loaded. */
+	return TCL_OK;                  /* Converter for format is already
+                                         * loaded. */
     }
     Tcl_DStringInit(&libName);
     {
@@ -6621,7 +6635,8 @@ TreeLoadOp(
     initProcName = Blt_AssertMalloc(8 + length + 4 + 1);
     Blt_FormatString(initProcName, 8 + length + 4 + 1, "Blt_Tree%sInit", fmt);
     safeProcName = Blt_AssertMalloc(8 + length + 8 + 1);
-    Blt_FormatString(safeProcName, 8 + length + 8 + 1, "Blt_Tree%sSafeInit", fmt);
+    Blt_FormatString(safeProcName, 8 + length + 8 + 1, "Blt_Tree%sSafeInit",
+                     fmt);
     result = Blt_LoadLibrary(interp, Tcl_DStringValue(&libName), initProcName, 
 	safeProcName); 
     Tcl_DStringFree(&libName);
@@ -6654,7 +6669,7 @@ static int numCmdOps = sizeof(treeCmdOps) / sizeof(Blt_OpSpec);
 /*ARGSUSED*/
 static int
 TreeObjCmd(
-    ClientData clientData,	/* Interpreter-specific data. */
+    ClientData clientData,              /* Interpreter-specific data. */
     Tcl_Interp *interp,
     int objc,
     Tcl_Obj *const *objv)
@@ -6688,14 +6703,14 @@ TreeObjCmd(
 /* ARGSUSED */
 static void
 TreeInterpDeleteProc(
-    ClientData clientData,	/* Interpreter-specific data. */
+    ClientData clientData,              /* Interpreter-specific data. */
     Tcl_Interp *interp)
 {
     TreeCmdInterpData *tdPtr = clientData;
 
     /* 
      * All tree instances should already have been destroyed when their
-     * respective TCL commands were deleted. 
+     * respective TCL commands were deleted.
      */
     Blt_DeleteHashTable(&tdPtr->treeTable);
     Tcl_DeleteAssocData(interp, TREE_THREAD_KEY);
