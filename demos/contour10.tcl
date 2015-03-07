@@ -29197,10 +29197,15 @@ blt::tk::label .palettesl -text "Palettes"
 
 blt::combomenu .palettes.menu \
     -background white \
-    -textvariable usePalette 
+    -textvariable usePalette  \
+    -height 200 \
+    -yscrollbar .palettes.menu.ybar \
+    -xscrollbar .palettes.menu.xbar
 
-source ~/src/blt/library/palette2.tcl
-foreach pal [blt::palette names] {
+blt::tk::scrollbar .palettes.menu.xbar 
+blt::tk::scrollbar .palettes.menu.ybar
+
+foreach pal [lsort [blt::palette names]] {
     set pal [string trim $pal ::]
     lappend palettes $pal
 }
