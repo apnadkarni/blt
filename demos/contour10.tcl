@@ -29136,7 +29136,7 @@ set mesh [blt::mesh create regular regular -x "0 512 512" -y "0 512 512"]
 
 blt::contour .g -highlightthickness 0
 
-set palette spectral
+set palette spectral.rgb
 .g element create myContour -values dentalscan -mesh $mesh 
 .g element isoline steps myContour 6
 .g legend configure -hide yes
@@ -29205,11 +29205,11 @@ blt::combomenu .palettes.menu \
 blt::tk::scrollbar .palettes.menu.xbar 
 blt::tk::scrollbar .palettes.menu.ybar
 
-foreach pal [lsort [blt::palette names]] {
+foreach pal [blt::palette names] {
     set pal [string trim $pal ::]
     lappend palettes $pal
 }
-.palettes.menu listadd [lsort $palettes] -command FixPalette
+.palettes.menu listadd [lsort -dictionary $palettes] -command FixPalette
 set usePalette $palette
 
 blt::table . \

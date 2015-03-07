@@ -288,7 +288,7 @@ PrintEntries(size_t numEntries, PaletteInterval *entries)
 	PaletteInterval *entryPtr;
 
 	entryPtr = entries + i;
-        fprintf(stderr, "entry %d: min=(%g)%g max=(%g)%g\n",
+        fprintf(stderr, "entry %d: min (value=%g norm=%g) max (value=%g norm=%g)\n",
                 i, entryPtr->min.value, entryPtr->min.norm,
                 entryPtr->max.value, entryPtr->max.norm);
     }
@@ -1789,7 +1789,7 @@ DrawOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	    double value;
 	    Blt_Pixel color;
 
-	    value = ((double)h / (double)(h-1));
+	    value = ((double)y / (double)(h-1));
 	    Interpolate(cmdPtr, value, &color);
 	    /* Draw band. */
 	    for (x = 0; x < w; x++) {

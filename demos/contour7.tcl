@@ -1,7 +1,7 @@
 
 package require BLT
 
-set palette blue
+set palette blue.rgb
 set x [blt::vector create]
 set y [blt::vector create]
 $x linspace -2 2 100
@@ -22,7 +22,7 @@ foreach  i [$y2 values] {
 
 set mesh [blt::mesh create regular -y {0 100 100} -x {0 100 100}]
 
-blt::contour .g -highlightthickness 0
+blt::contour .g -highlightthickness 0 
 .g element create myContour -values $z -mesh $mesh 
 .g element isoline steps myContour 10 
 .g legend configure -hide yes
@@ -81,14 +81,20 @@ blt::combobutton .palettes \
 blt::tk::label .palettesl -text "Palettes" 
 blt::combomenu .palettes.menu \
     -background white \
-    -textvariable palette 
+    -textvariable palette \
+    -height 200 \
+    -yscrollbar .palettes.menu.ybar \
+    -xscrollbar .palettes.menu.xbar
+
+blt::tk::scrollbar .palettes.menu.xbar 
+blt::tk::scrollbar .palettes.menu.ybar
 
 foreach pal [blt::palette names] {
     set pal [string trim $pal ::]
     lappend palettes $pal
 }
 
-.palettes.menu listadd $palettes -command FixPalette
+.palettes.menu listadd [lsort -dictionary $palettes] -command FixPalette
 
 blt::table . \
     0,0 .label -fill x \

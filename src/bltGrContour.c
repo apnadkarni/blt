@@ -4124,6 +4124,7 @@ ConfigurePenProc(Graph *graphPtr, Pen *basePtr)
     gcMask = (GCLineWidth | GCForeground | GCLineStyle | GCCapStyle |
 	GCJoinStyle);
     gcValues.cap_style = CapButt;
+    gcValues.cap_style = CapRound;
     gcValues.join_style = JoinRound;
     gcValues.line_style = LineSolid;
     gcValues.line_width = LineWidth(penPtr->traceWidth);
@@ -6621,10 +6622,8 @@ DrawTriangle(ContourElement *elemPtr, Pict *destPtr, Triangle *t, int xoff,
     Blt_Pixel *destRowPtr;
     TriangleRenderer ren;
     Axis *zAxisPtr;
-    AxisRange *rangePtr;
     
     zAxisPtr = elemPtr->zAxisPtr;
-    rangePtr = &zAxisPtr->axisRange;
 #define A0	ren.edge[0].A
 #define B0	ren.edge[0].B
 #define C0	ren.edge[0].C
@@ -6845,10 +6844,8 @@ DrawTriangle(ContourElement *elemPtr, Pict *destPtr, Triangle *t, int xoff,
     Blt_Pixel *destRowPtr;
     TriangleRenderer ren;
     Axis *zAxisPtr;
-    AxisRange *rangePtr;
     
     zAxisPtr = elemPtr->zAxisPtr;
-    rangePtr = &zAxisPtr->axisRange;
 #define A0	ren.edge[0].A
 #define B0	ren.edge[0].B
 #define A1	ren.edge[1].A
