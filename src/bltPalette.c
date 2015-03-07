@@ -453,25 +453,72 @@ GetOpacity(Tcl_Interp *interp, Tcl_Obj *objPtr, Blt_Pixel *pixelPtr)
 }
 
 static int
-AutoTestRGBs(Tcl_Interp *interp, PaletteCmd *cmdPtr, int objc, Tcl_Obj **objv)
+AutoTestRGBs(Tcl_Interp *interp, PaletteCmd *cmdPtr, int numComponents,
+             int objc, Tcl_Obj **objv)
 {
     int i;
     double max;
     
     max = 0.0;
-    for (i = 0; i < objc; i++) {
-        double x;
-        
-        if (Blt_GetDoubleFromObj(interp, objv[i], &x) != TCL_OK) {
-            return TCL_ERROR;
+    switch (numComponents) {
+    case 3:                             /* Regular RGB triplets */
+        for (i = 0; i < objc; i++) {
+            double x;
+            
+            if (Blt_GetDoubleFromObj(interp, objv[i], &x) != TCL_OK) {
+                return TCL_ERROR;
+            }
+            if (x > max) {
+                max = x;
+            }
         }
-        if (x > max) {
-            max = x;
+        break;
+    case 4:                             /* Irregular RGB triplets */
+        for (i = 0; i < objc; i += 4) {
+            int j;
+            
+            for (j = 1; j < 4; j++) {
+                double x;
+                if (Blt_GetDoubleFromObj(interp, objv[i+j], &x) != TCL_OK) {
+                    return TCL_ERROR;
+                }
+                if (x > max) {
+                    max = x;
+                }
+            }
         }
+        break;
+    case 8:                             /* Interval RGB triplets  */
+        for (i = 0; i < objc; i += 8) {
+            int j;
+            
+            for (j = 1; j < 4; j++) {
+                double x;
+
+                if (Blt_GetDoubleFromObj(interp, objv[i+j], &x) != TCL_OK) {
+                    return TCL_ERROR;
+                }
+                if (x > max) {
+                    max = x;
+                }
+            }
+            for (j = 5; j < 8; j++) {
+                double x;
+
+                if (Blt_GetDoubleFromObj(interp, objv[i+j], &x) != TCL_OK) {
+                    return TCL_ERROR;
+                }
+                if (x > max) {
+                    max = x;
+                }
+            }
+        }
+        break;
     }
-    if (max > 255) {
+     
+    if (max > 255.0) {
         cmdPtr->colorMax = 65535;
-    } else if (max > 1) {
+    } else if (max > 1.0) {
         cmdPtr->colorMax = 255;
     } else {
         cmdPtr->colorMax = 1.0;
@@ -1076,7 +1123,7 @@ ParseColorData(Tcl_Interp *interp, PaletteCmd *cmdPtr, Tcl_Obj *objPtr)
         return TCL_ERROR;
     }
     if (cmdPtr->colorFlags & COLOR_RGB) {
-        if (AutoTestRGBs(interp, cmdPtr, objc, objv) != TCL_OK) {
+        if (AutoTestRGBs(interp, cmdPtr, numComponents, objc, objv) != TCL_OK) {
             return TCL_ERROR;
         }
     }
