@@ -490,22 +490,15 @@ AutoTestRGBs(Tcl_Interp *interp, PaletteCmd *cmdPtr, int numComponents,
         break;
     case 8:                             /* Interval RGB triplets  */
         for (i = 0; i < objc; i += 8) {
+            static int indices[] = { 1, 2, 3, 5, 6, 7 };
             int j;
             
-            for (j = 1; j < 4; j++) {
+            for (j = 0; j < 6; j++) {
                 double x;
+                int index;
 
-                if (Blt_GetDoubleFromObj(interp, objv[i+j], &x) != TCL_OK) {
-                    return TCL_ERROR;
-                }
-                if (x > max) {
-                    max = x;
-                }
-            }
-            for (j = 5; j < 8; j++) {
-                double x;
-
-                if (Blt_GetDoubleFromObj(interp, objv[i+j], &x) != TCL_OK) {
+                index = i + indices[j];
+                if (Blt_GetDoubleFromObj(interp, objv[index], &x) != TCL_OK) {
                     return TCL_ERROR;
                 }
                 if (x > max) {
