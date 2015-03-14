@@ -228,7 +228,6 @@ enum SortTypeValues {
     SORT_REAL, SORT_COMMAND, SORT_NONE, SORT_AUTO
 };
 
-
 static Blt_OptionParseProc ObjToAutoCreateProc;
 static Blt_OptionPrintProc AutoCreateToObjProc;
 static Blt_CustomOption autoCreateOption = {

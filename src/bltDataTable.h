@@ -732,7 +732,7 @@ typedef struct {
 #define TABLE_SORT_DECREASING		(1<<0)
 
 #define TABLE_SORT_TYPE_MASK		(3<<2)
-#define TABLE_SORT_NONE			(0)
+#define TABLE_SORT_AUTO			(0)
 #define TABLE_SORT_ASCII		(1<<2)
 #define TABLE_SORT_DICTIONARY		(2<<2)
 #define TABLE_SORT_FREQUENCY		(3<<2)

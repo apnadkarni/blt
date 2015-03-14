@@ -720,26 +720,19 @@ BLT_EXTERN int Blt_InitBarPens(Graph *graphPtr);
 
 BLT_EXTERN void Blt_FreePen(Pen *penPtr);
 
-BLT_EXTERN int Blt_VirtualAxisOp(Graph *graphPtr, Tcl_Interp *interp, 
-	int objc, Tcl_Obj *const *objv);
+BLT_EXTERN Tcl_ObjCmdProc Blt_VirtualAxisOp;
 
-BLT_EXTERN int Blt_AxisOp(Tcl_Interp *interp, Graph *graphPtr, int margin, 
-	int objc, Tcl_Obj *const *objv);
+BLT_EXTERN int Blt_AxisOp(ClientData clientData, Tcl_Interp *interp,
+        int margin, int objc, Tcl_Obj *const *objv);
 
 BLT_EXTERN int Blt_ElementOp(Graph *graphPtr, Tcl_Interp *interp, int objc, 
 	Tcl_Obj *const *objv, ClassId classId);
 
-BLT_EXTERN int Blt_CrosshairsOp(Graph *graphPtr, Tcl_Interp *interp, int objc, 
-	Tcl_Obj *const *objv);
-
-BLT_EXTERN int Blt_PlaybackOp(Graph *graphPtr, Tcl_Interp *interp, int objc, 
-	Tcl_Obj *const *objv);
-
-BLT_EXTERN int Blt_MarkerOp(Graph *graphPtr, Tcl_Interp *interp, int objc, 
-	Tcl_Obj *const *objv);
-
-BLT_EXTERN int Blt_PenOp(Graph *graphPtr, Tcl_Interp *interp, int objc, 
-	Tcl_Obj *const *objv);
+BLT_EXTERN Tcl_ObjCmdProc Blt_CrosshairsOp;
+BLT_EXTERN Tcl_ObjCmdProc Blt_PlaybackOp;
+BLT_EXTERN Tcl_ObjCmdProc Blt_MarkerOp;
+BLT_EXTERN Tcl_ObjCmdProc Blt_PenOp;
+BLT_EXTERN Tcl_ObjCmdProc Blt_PostScriptOp;
 
 BLT_EXTERN int Blt_PointInPolygon(Point2d *samplePtr, Point2d *points, 
 	int numPoints);
@@ -750,8 +743,6 @@ BLT_EXTERN int Blt_RegionInPolygon(Region2d *extsPtr, Point2d *points,
 BLT_EXTERN int Blt_PointInSegments(Point2d *samplePtr, Segment2d *segments, 
 	int numSegments, double halo);
 
-BLT_EXTERN int Blt_PostScriptOp(Graph *graphPtr, Tcl_Interp *interp, int objc, 
-	Tcl_Obj *const *objv);
 
 BLT_EXTERN int Blt_GraphUpdateNeeded(Graph *graphPtr);
 

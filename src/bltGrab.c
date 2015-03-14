@@ -290,7 +290,7 @@ GetTopGrab(GrabCmdInterpData *dataPtr)
     return Blt_Chain_GetValue(link);
 }
 
-static int
+static void
 DumpStack(GrabCmdInterpData *dataPtr)
 {
     Blt_ChainLink link;

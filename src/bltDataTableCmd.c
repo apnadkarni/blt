@@ -7430,7 +7430,7 @@ SortOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 
     /* Process switches  */
     memset(&switches, 0, sizeof(SortSwitches));
-    switches.sortFlags = TABLE_SORT_DICTIONARY;
+    switches.sortFlags = TABLE_SORT_AUTO;
     table = switches.table = cmdPtr->table;
     rowIterSwitch.clientData = cmdPtr->table;
     columnIterSwitch.clientData = cmdPtr->table;

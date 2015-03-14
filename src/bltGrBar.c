@@ -879,6 +879,8 @@ ConfigureProc(Graph *graphPtr, Element *basePtr)
     if (Blt_ConfigModified(elemPtr->configSpecs, "-barwidth", "-*data",
 	    "-map*", "-label", "-hide", "-x", "-y", (char *)NULL)) {
 	elemPtr->flags |= MAP_ITEM;
+        graphPtr->flags |= RESET_AXES;
+	Blt_EventuallyRedrawGraph(graphPtr);
     }
     return TCL_OK;
 }
@@ -922,12 +924,12 @@ ExtentsProc(Element *basePtr)
 	CheckStacks(graphPtr, &elemPtr->axes, &exts.top, &exts.bottom);
     }
     /* Warning: You get what you deserve if the x-axis is logScale */
-    if (elemPtr->axes.x->logScale) {
+    if (IsLogScale(elemPtr->axes.x)) {
 	exts.left = Blt_FindElemValuesMinimum(&elemPtr->x, DBL_MIN) + 
 	    middle;
     }
     /* Fix y-min limits for barchart */
-    if (elemPtr->axes.y->logScale) {
+    if (IsLogScale(elemPtr->axes.y)) {
  	if ((exts.top <= 0.0) || (exts.top > 1.0)) {
 	    exts.top = 1.0;
 	}
@@ -950,7 +952,7 @@ ExtentsProc(Element *basePtr)
 		exts.right = x;
 	    }
 	    x = elemPtr->x.values[i] - elemPtr->xError.values[i];
-	    if (elemPtr->axes.x->logScale) {
+	    if (IsLogScale(elemPtr->axes.x)) {
 		if (x < 0.0) {
 		    x = -x;		/* Mirror negative values, instead
 					 * of ignoring them. */
@@ -970,8 +972,7 @@ ExtentsProc(Element *basePtr)
 	if (elemPtr->xLow.numValues > 0) {
 	    double left;
 	    
-	    if ((elemPtr->xLow.min <= 0.0) && 
-		(elemPtr->axes.x->logScale)) {
+	    if ((elemPtr->xLow.min <= 0.0) && (IsLogScale(elemPtr->axes.x))) {
 		left = Blt_FindElemValuesMinimum(&elemPtr->xLow, DBL_MIN);
 	    } else {
 		left = elemPtr->xLow.min;
@@ -993,7 +994,7 @@ ExtentsProc(Element *basePtr)
 		exts.bottom = y;
 	    }
 	    y = elemPtr->y.values[i] - elemPtr->yError.values[i];
-	    if (elemPtr->axes.y->logScale) {
+	    if (IsLogScale(elemPtr->axes.y)) {
 		if (y < 0.0) {
 		    y = -y;		/* Mirror negative values, instead
 					 * of ignoring them. */
@@ -1013,8 +1014,7 @@ ExtentsProc(Element *basePtr)
 	if (elemPtr->yLow.numValues > 0) {
 	    double top;
 	    
-	    if ((elemPtr->yLow.min <= 0.0) && 
-		(elemPtr->axes.y->logScale)) {
+	    if ((elemPtr->yLow.min <= 0.0) && (IsLogScale(elemPtr->axes.y))) {
 		top = Blt_FindElemValuesMinimum(&elemPtr->yLow, DBL_MIN);
 	    } else {
 		top = elemPtr->yLow.min;
@@ -1545,9 +1545,8 @@ MapProc(Graph *graphPtr, Element *basePtr)
     }
     barWidth = (elemPtr->barWidth > 0.0) 
 	? elemPtr->barWidth : graphPtr->barWidth;
-    baseline = (elemPtr->axes.y->logScale) ? 0.0 : graphPtr->baseline;
-    barOffset = barWidth * 0.5;
-
+    baseline = (IsLogScale(elemPtr->axes.y)) ? 0.0 : graphPtr->baseline;
+    barOffset = (IsTimeScale(elemPtr->axes.x)) ? 0.0 : barWidth * 0.5;
     /*
      * Create an array of bars representing the screen coordinates of all
      * the segments in the bar.
@@ -1596,7 +1595,7 @@ MapProc(Graph *graphPtr, Element *basePtr)
 
 		tablePtr = Blt_GetHashValue(hPtr);
 		name = (elemPtr->groupName != NULL) ? elemPtr->groupName : 
-		    elemPtr->axes.y->obj.name;
+		    elemPtr->obj.name;
  		hPtr = Blt_FindHashEntry(tablePtr, name);
 		if (hPtr != NULL) {
 		    BarGroup *groupPtr;
@@ -1620,12 +1619,15 @@ MapProc(Graph *graphPtr, Element *basePtr)
 			break;
 			
 		    case BARS_ALIGNED:
-#ifdef notdef
-			slice /= groupPtr->numSegments;
+#ifndef notdef
+			slice = barWidth / groupPtr->numSegments;
 #else
 			slice /= Blt_Chain_GetLength(graphPtr->elements.displayList);
 #endif
-			c1.x += offset + (slice * groupPtr->count);
+#ifdef notef
+                        fprintf(stderr, "aligned bars barWidth=%g, slice=%g numSegments=%d\n", barWidth, slice, groupPtr->numSegments);
+#endif
+                        c1.x = x[i] - barOffset + (groupPtr->index * slice);
 			c2.x = c1.x + slice;
 			groupPtr->count++;
 			break;
@@ -1659,7 +1661,7 @@ MapProc(Graph *graphPtr, Element *basePtr)
 	ybot = c2.y;
 	c1 = Blt_Map2D(graphPtr, c1.x, c1.y, &elemPtr->axes);
 	c2 = Blt_Map2D(graphPtr, c2.x, c2.y, &elemPtr->axes);
-	if ((ybot == 0.0) && (elemPtr->axes.y->logScale)) {
+	if ((ybot == 0.0) && (IsLogScale(elemPtr->axes.y))) {
 	    c2.y = graphPtr->bottom;
 	}
 	    
@@ -2527,13 +2529,14 @@ Blt_InitSetTable(Graph *graphPtr)
 	    Blt_HashTable *tablePtr;
 	    SetKey key;
 	    int isNew;
-	    size_t count;
 	    const char *name;
-
+            
             memset(&key, 0, sizeof(key));
             key.value = elemPtr->x.values[i];
 	    key.axes = elemPtr->axes;
 	    key.axes.y = NULL;
+
+            /* Create a hash table for each unique value/axis pairing. */
 	    hPtr = Blt_CreateHashEntry(&setTable, (char *)&key, &isNew);
 	    if (isNew) {
 		tablePtr = Blt_AssertMalloc(sizeof(Blt_HashTable));
@@ -2543,21 +2546,17 @@ Blt_InitSetTable(Graph *graphPtr)
 		tablePtr = Blt_GetHashValue(hPtr);
 	    }
 	    name = (elemPtr->groupName != NULL) ? elemPtr->groupName : 
-		elemPtr->axes.y->obj.name;
+		elemPtr->obj.name;
+            /* Create an entry in the hash table for each element. */
 	    hPtr = Blt_CreateHashEntry(tablePtr, name, &isNew);
-	    if (isNew) {
-		count = 1;
-	    } else {
-		count = (size_t)Blt_GetHashValue(hPtr);
- 		count++;
-	    }		
-	    Blt_SetHashValue(hPtr, (ClientData)count);
 	}
     }
     if (setTable.numEntries == 0) {
         Blt_DeleteHashTable(&setTable);
 	return;				/* No bar elements to be displayed */
     }
+    /* Determine the biggest group of elements for each unique value.
+     * We'll use that to figure out how to slice or stack the bars. */
     sum = max = 0;
     for (hPtr = Blt_FirstHashEntry(&setTable, &iter); hPtr != NULL;
 	 hPtr = Blt_NextHashEntry(&iter)) {
@@ -2571,11 +2570,10 @@ Blt_InitSetTable(Graph *graphPtr)
 	tablePtr = Blt_GetHashValue(hPtr);
 	Blt_SetHashValue(hPtr2, tablePtr);
 	if (max < tablePtr->numEntries) {
-	    max = tablePtr->numEntries;         /* # of stacks in group. */
+	    max = tablePtr->numEntries; /* # of stacks in group. */
 	}
 	sum += tablePtr->numEntries;
     }
-    Blt_DeleteHashTable(&setTable);
     if (sum > 0) {
 	BarGroup *groupPtr;
 	Blt_HashEntry *hPtr;
@@ -2596,10 +2594,11 @@ Blt_InitSetTable(Graph *graphPtr)
 	    xcount = 0;
 	    for (hPtr2 = Blt_FirstHashEntry(tablePtr, &iter2); hPtr2!=NULL;
 		 hPtr2 = Blt_NextHashEntry(&iter2)) {
-		size_t count;
 
-		count = (size_t)Blt_GetHashValue(hPtr2);
-		groupPtr->numSegments = count;
+		groupPtr->numSegments = tablePtr->numEntries;
+#ifdef notdef
+                fprintf(stderr, "group max=%d numSegments=%d\n", max, groupPtr->numSegments);
+#endif
 		groupPtr->axes = keyPtr->axes;
 		Blt_SetHashValue(hPtr2, groupPtr);
 		groupPtr->index = xcount++;
@@ -2607,6 +2606,7 @@ Blt_InitSetTable(Graph *graphPtr)
 	    }
 	}
     }
+    Blt_DeleteHashTable(&setTable);
     graphPtr->maxSetSize = max;
     graphPtr->numBarGroups = sum;
 }

@@ -337,6 +337,7 @@ ObjToMapElements(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
                  Tcl_Obj *objPtr, char *widgRec, int offset, int flags)
 {
     int *flagsPtr = (int *)(widgRec + offset);
+    Graph *graphPtr = (Graph *)widgRec;
     const char *string;
     char c;
     
@@ -351,6 +352,7 @@ ObjToMapElements(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
                 "\": should be all or visible", (char *)NULL);
         return TCL_ERROR;
     }
+    graphPtr->flags |= RESET_AXES;
     return TCL_OK;
 }
 
@@ -1081,7 +1083,7 @@ XAxisOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     int margin;
 
     margin = (graphPtr->flags & INVERTED) ? MARGIN_LEFT : MARGIN_BOTTOM;
-    return Blt_AxisOp(interp, graphPtr, margin, objc, objv);
+    return Blt_AxisOp(graphPtr, interp, margin, objc, objv);
 }
 
 static int
@@ -1090,7 +1092,7 @@ X2AxisOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     int margin;
 
     margin = (graphPtr->flags & INVERTED) ? MARGIN_RIGHT : MARGIN_TOP;
-    return Blt_AxisOp(interp, graphPtr, margin, objc, objv);
+    return Blt_AxisOp(graphPtr, interp, margin, objc, objv);
 }
 
 static int
@@ -1099,7 +1101,7 @@ YAxisOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     int margin;
 
     margin = (graphPtr->flags & INVERTED) ? MARGIN_BOTTOM : MARGIN_LEFT;
-    return Blt_AxisOp(interp, graphPtr, margin, objc, objv);
+    return Blt_AxisOp(graphPtr, interp, margin, objc, objv);
 }
 
 static int
@@ -1108,7 +1110,7 @@ Y2AxisOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     int margin;
 
     margin = (graphPtr->flags & INVERTED) ? MARGIN_TOP : MARGIN_RIGHT;
-    return Blt_AxisOp(interp, graphPtr, margin, objc, objv);
+    return Blt_AxisOp(graphPtr, interp, margin, objc, objv);
 }
 
 static int

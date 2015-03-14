@@ -68,9 +68,6 @@
 #define MM_INCH		25.4
 #define PICA_INCH	72.0
 
-typedef int (GraphPsProc)(Graph *graphPtr, Tcl_Interp *interp, int objc, 
-	Tcl_Obj *const *objv);
-
 static Blt_OptionParseProc ObjToPicaProc;
 static Blt_OptionPrintProc PicaToObjProc;
 static Blt_CustomOption picaOption =
@@ -539,8 +536,10 @@ GraphToPostScript(Graph *graphPtr, const char *ident, Blt_Ps ps)
  */
 /*ARGSUSED*/
 static int
-CgetOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+CgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
+       Tcl_Obj *const *objv)
 {
+    Graph *graphPtr = clientData;
     PageSetup *setupPtr = graphPtr->pageSetup;
 
     if (Blt_ConfigureValueFromObj(interp, graphPtr->tkwin, configSpecs, 
@@ -566,8 +565,10 @@ CgetOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *---------------------------------------------------------------------------
  */
 static int
-ConfigureOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+ConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
+            Tcl_Obj *const *objv)
 {
+    Graph *graphPtr = clientData;
     int flags = BLT_CONFIG_OBJV_ONLY;
     PageSetup *setupPtr = graphPtr->pageSetup;
 
@@ -602,8 +603,10 @@ ConfigureOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *---------------------------------------------------------------------------
  */
 static int
-OutputOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+OutputOp(ClientData clientData, Tcl_Interp *interp, int objc,
+         Tcl_Obj *const *objv)
 {
+    Graph *graphPtr = clientData;
     const char *buffer;
     PostScript *psPtr;
     Tcl_Channel channel;
@@ -725,17 +728,18 @@ static Blt_OpSpec psOps[] =
 static int numPsOps = sizeof(psOps) / sizeof(Blt_OpSpec);
 
 int
-Blt_PostScriptOp(Graph *graphPtr, Tcl_Interp *interp, int objc, 
-	Tcl_Obj *const *objv)
+Blt_PostScriptOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+                 Tcl_Obj *const *objv)
 {
-    GraphPsProc *proc;
+    Tcl_ObjCmdProc *proc;
     int result;
 
-    proc = Blt_GetOpFromObj(interp, numPsOps, psOps, BLT_OP_ARG2, objc, objv, 0);
+    proc = Blt_GetOpFromObj(interp, numPsOps, psOps, BLT_OP_ARG2, objc,
+        objv, 0);
     if (proc == NULL) {
 	return TCL_ERROR;
     }
-    result = (*proc) (graphPtr, interp, objc, objv);
+    result = (*proc) (clientData, interp, objc, objv);
     return result;
 }
 

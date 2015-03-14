@@ -5802,6 +5802,7 @@ PostOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	ComputeComboGeometry(comboPtr);
     }
     comboPtr->post.lastMenuWidth = comboPtr->post.menuWidth;
+    x = 0;                              /* Suppress compiler warning; */
     y = comboPtr->post.y2;
     switch (comboPtr->post.align) {
     case ALIGN_LEFT:

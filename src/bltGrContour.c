@@ -1884,7 +1884,7 @@ GetScreenPoints(ContourElement *elemPtr)
 	/* Map graph z-coordinate to normalized coordinates [0..1] */
 	z = elemPtr->z.values[i];
 	z = (z - rangePtr->min)  * rangePtr->scale;
-	if ((elemPtr->zAxisPtr->logScale) && (z != 0.0)) {
+	if ((IsLogScale(elemPtr->zAxisPtr)) && (z != 0.0)) {
 	    z = log10(z);
 	} 
 	v->z = z;

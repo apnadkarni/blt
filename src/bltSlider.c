@@ -208,7 +208,6 @@ typedef struct {
 } TickSweep;
 
 #define LOGSCALE		(1<<0)
-#define TIMESCALE		(1<<1)
 #define LABELOFFSET		(1<<2)
 
 /*
@@ -1183,7 +1182,7 @@ MakeLabel(Axis *axisPtr, double value)
     TickLabel *labelPtr;
 
     /* Generate a default tick label based upon the tick value.  */
-    if (axisPtr->logScale) {
+    if (IsLogScale(axisPtr)) {
 	Blt_FormatString(string, TICK_LABEL_SIZE, "1E%d", ROUND(value));
     } else {
 	Blt_FormatString(string, TICK_LABEL_SIZE, "%.*G", NUMDIGITS, value);
@@ -1760,9 +1759,9 @@ ResetAxes(Slider *sliderPtr)
     /* Calculate min/max tick (major/minor) layouts */
     min = sliderPtr->outerMin;
     max = sliderPtr->outerMax;
-    if (sliderPtr->flags & LOGSCALE) {
+    if (IsLogScale(sliderPtr)) {
 	LogAxis(sliderPtr, min, max);
-    } else if (sliderPtr->flags & TIMESCALE) {
+    } else if (IsTimeScale(sliderPtr)) {
 	TimeAxis(sliderPtr, min, max);
     } else {
 	LinearAxis(sliderPtr, min, max);
@@ -2614,7 +2613,7 @@ DrawAxis(Slider *sliderPtr, Drawable drawable)
 	if (viewMax > worldMax) {
 	    viewMax = worldMax;
 	}
-	if (sliderPtr->logScale) {
+	if (IsLogScale(sliderPtr)) {
 	    worldMin = log10(worldMin);
 	    worldMax = log10(worldMax);
 	    viewMin = log10(viewMin);
@@ -2636,7 +2635,7 @@ DrawAxis(Slider *sliderPtr, Drawable drawable)
 	    sliderPtr->min = viewMin + worldMin;
 	    sliderPtr->max = sliderPtr->min + viewWidth;
 	    viewMax = viewMin + viewWidth;
-	    if (sliderPtr->logScale) {
+	    if (IsLogScale(sliderPtr)) {
 		sliderPtr->min = EXP10(sliderPtr->min);
 		sliderPtr->max = EXP10(sliderPtr->max);
 	    }
@@ -2647,7 +2646,7 @@ DrawAxis(Slider *sliderPtr, Drawable drawable)
 	    sliderPtr->max = worldMax - viewMax;
 	    sliderPtr->min = sliderPtr->max - viewWidth;
 	    viewMin = viewMax + viewWidth;
-	    if (sliderPtr->logScale) {
+	    if (IsLogScale(sliderPtr)) {
 		sliderPtr->min = EXP10(sliderPtr->min);
 		sliderPtr->max = EXP10(sliderPtr->max);
 	    }
@@ -2877,7 +2876,7 @@ DrawHorizontalAxis(Slider *sliderPtr, Drawable drawable)
 static void
 MakeGridLine(Axis *sliderPtr, double value, Segment2d *s)
 {
-    if (sliderPtr->logScale) {
+    if (IsLogScale(sliderPtr)) {
 	value = EXP10(value);
     }
     /* Grid lines run orthogonally to the axis */
@@ -4409,7 +4408,7 @@ LimitsOp(ClientData clientData, Tcl_Interp *interp, int objc,
     Tcl_Obj *listObjPtr;
     double min, max;
 
-    if (sliderPtr->logScale) {
+    if (IsLogScale(sliderPtr)) {
 	min = EXP10(sliderPtr->axisRange.min);
 	max = EXP10(sliderPtr->axisRange.max);
     } else {
@@ -4514,7 +4513,7 @@ ViewOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (viewMax > worldMax) {
 	viewMax = worldMax;
     }
-    if (sliderPtr->logScale) {
+    if (IsLogScale(sliderPtr)) {
 	worldMin = log10(worldMin);
 	worldMax = log10(worldMax);
 	viewMin  = log10(viewMin);
@@ -4561,7 +4560,7 @@ ViewOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	sliderPtr->reqMax = worldMax - (fract * worldWidth);
 	sliderPtr->reqMin = sliderPtr->reqMax - viewWidth;
     }
-    if (sliderPtr->logScale) {
+    if (IsLogScale(sliderPtr)) {
 	sliderPtr->reqMin = EXP10(sliderPtr->reqMin);
 	sliderPtr->reqMax = EXP10(sliderPtr->reqMax);
     }

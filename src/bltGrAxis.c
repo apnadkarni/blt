@@ -66,7 +66,6 @@
 #define LOGSCALE	(1<<24)
 #define DECREASING	(1<<25)
 #define COLORBAR	(1<<27)
-#define TIMESCALE       (1<<28)
 
 #define MAXTICKS	10001
 
@@ -124,48 +123,66 @@ static AxisName axisNames[] = {
 } ;
 static int numAxisNames = sizeof(axisNames) / sizeof(AxisName);
 
-static Blt_OptionParseProc ObjToLimitProc;
-static Blt_OptionPrintProc LimitToObjProc;
+static Blt_OptionParseProc ObjToLimit;
+static Blt_OptionPrintProc LimitToObj;
 Blt_CustomOption bltLimitOption = {
-    ObjToLimitProc, LimitToObjProc, NULL, (ClientData)0
+    ObjToLimit, LimitToObj, NULL, (ClientData)0
 };
 
-static Blt_OptionFreeProc  FreeTicksProc;
-static Blt_OptionParseProc ObjToTicksProc;
-static Blt_OptionPrintProc TicksToObjProc;
+static Blt_OptionFreeProc  FreeTicks;
+static Blt_OptionParseProc ObjToTicks;
+static Blt_OptionPrintProc TicksToObj;
 static Blt_CustomOption majorTicksOption = {
-    ObjToTicksProc, TicksToObjProc, FreeTicksProc, (ClientData)AUTO_MAJOR,
+    ObjToTicks, TicksToObj, FreeTicks, (ClientData)AUTO_MAJOR,
 };
 static Blt_CustomOption minorTicksOption = {
-    ObjToTicksProc, TicksToObjProc, FreeTicksProc, (ClientData)AUTO_MINOR,
+    ObjToTicks, TicksToObj, FreeTicks, (ClientData)AUTO_MINOR,
 };
-static Blt_OptionFreeProc  FreeAxisProc;
-static Blt_OptionPrintProc AxisToObjProc;
-static Blt_OptionParseProc ObjToAxisProc;
+static Blt_OptionFreeProc  FreeAxis;
+static Blt_OptionPrintProc AxisToObj;
+static Blt_OptionParseProc ObjToAxis;
 Blt_CustomOption bltXAxisOption = {
-    ObjToAxisProc, AxisToObjProc, FreeAxisProc, (ClientData)CID_AXIS_X
+    ObjToAxis, AxisToObj, FreeAxis, (ClientData)CID_AXIS_X
 };
 Blt_CustomOption bltYAxisOption = {
-    ObjToAxisProc, AxisToObjProc, FreeAxisProc, (ClientData)CID_AXIS_Y
+    ObjToAxis, AxisToObj, FreeAxis, (ClientData)CID_AXIS_Y
 };
 Blt_CustomOption bltZAxisOption = {
-    ObjToAxisProc, AxisToObjProc, FreeAxisProc, (ClientData)CID_AXIS_Z
+    ObjToAxis, AxisToObj, FreeAxis, (ClientData)CID_AXIS_Z
 };
 
 Blt_CustomOption bltAxisOption = {
-    ObjToAxisProc, AxisToObjProc, FreeAxisProc, (ClientData)CID_NONE
+    ObjToAxis, AxisToObj, FreeAxis, (ClientData)CID_NONE
 };
 
-static Blt_OptionFreeProc  FreeFormatProc;
-static Blt_OptionParseProc ObjToFormatProc;
-static Blt_OptionPrintProc FormatToObjProc;
-static Blt_CustomOption formatOption = {
-    ObjToFormatProc, FormatToObjProc, FreeFormatProc, (ClientData)0,
+static Blt_OptionParseProc ObjToScale;
+static Blt_OptionPrintProc ScaleToObj;
+static Blt_CustomOption scaleOption = {
+    ObjToScale, ScaleToObj, NULL, (ClientData)0,
 };
-static Blt_OptionParseProc ObjToLooseProc;
-static Blt_OptionPrintProc LooseToObjProc;
+
+static Blt_OptionParseProc ObjToTimeScale;
+static Blt_OptionPrintProc TimeScaleToObj;
+static Blt_CustomOption timeScaleOption = {
+    ObjToTimeScale, TimeScaleToObj, NULL, (ClientData)0,
+};
+
+static Blt_OptionParseProc ObjToLogScale;
+static Blt_OptionPrintProc LogScaleToObj;
+static Blt_CustomOption logScaleOption = {
+    ObjToLogScale, LogScaleToObj, NULL, (ClientData)0,
+};
+
+static Blt_OptionFreeProc  FreeFormat;
+static Blt_OptionParseProc ObjToFormat;
+static Blt_OptionPrintProc FormatToObj;
+static Blt_CustomOption formatOption = {
+    ObjToFormat, FormatToObj, FreeFormat, (ClientData)0,
+};
+static Blt_OptionParseProc ObjToLoose;
+static Blt_OptionPrintProc LooseToObj;
 static Blt_CustomOption looseOption = {
-    ObjToLooseProc, LooseToObjProc, NULL, (ClientData)0,
+    ObjToLoose, LooseToObj, NULL, (ClientData)0,
 };
 
 static Blt_OptionParseProc ObjToMargin;
@@ -174,12 +191,12 @@ static Blt_CustomOption marginOption = {
     ObjToMargin, MarginToObj, NULL, (ClientData)0
 };
 
-static Blt_OptionFreeProc FreePaletteProc;
-static Blt_OptionParseProc ObjToPaletteProc;
-static Blt_OptionPrintProc PaletteToObjProc;
+static Blt_OptionFreeProc FreePalette;
+static Blt_OptionParseProc ObjToPalette;
+static Blt_OptionPrintProc PaletteToObj;
 static Blt_CustomOption paletteOption =
 {
-    ObjToPaletteProc, PaletteToObjProc, FreePaletteProc, (ClientData)0
+    ObjToPalette, PaletteToObj, FreePalette, (ClientData)0
 };
 
 #define DEF_ACTIVEBACKGROUND	STD_ACTIVE_BACKGROUND
@@ -189,40 +206,41 @@ static Blt_CustomOption paletteOption =
 #define DEF_BACKGROUND		(char *)NULL
 #define DEF_BORDERWIDTH		"0"
 #define DEF_CHECKLIMITS		"0"
-#define DEF_COMMAND		(char *)NULL
 #define DEF_COLORBAR_THICKNESS	"20"
+#define DEF_COMMAND		(char *)NULL
 #define DEF_DECREASING		"0"
+#define DEF_DIVISIONS		"10"
+#define DEF_EXTERIOR		"1"
 #define DEF_FOREGROUND		RGB_BLACK
-#define DEF_GRID_BARCHART	"1"
 #define DEF_GRIDCOLOR		RGB_GREY40
 #define DEF_GRIDDASHES		"dot"
-#define DEF_GRID_GRAPH		"0"
 #define DEF_GRIDLINEWIDTH	"0"
 #define DEF_GRIDMINOR		"1"
 #define DEF_GRIDMINOR_COLOR	RGB_GREY77
+#define DEF_GRID_BARCHART	"1"
+#define DEF_GRID_GRAPH		"0"
 #define DEF_HIDE		"0"
 #define DEF_JUSTIFY		"c"
+#define DEF_LIMITS_FONT		STD_FONT_NUMBERS
 #define DEF_LIMITS_FORMAT	(char *)NULL
 #define DEF_LINEWIDTH		"1"
 #define DEF_LOGSCALE		"0"
-#define DEF_TIMESCALE		"0"
 #define DEF_LOOSE		"0"
 #define DEF_PALETTE		(char *)NULL
 #define DEF_RANGE		"0.0"
 #define DEF_RELIEF		"flat"
+#define DEF_SCALE		"linear"
 #define DEF_SCROLL_INCREMENT 	"10"
 #define DEF_SHIFTBY		"0.0"
 #define DEF_SHOWTICKS		"1"
 #define DEF_STEP		"0.0"
 #define DEF_SUBDIVISIONS	"2"
 #define DEF_TAGS		"all"
-#define DEF_EXTERIOR		"1"
-#define DEF_TICK_ANCHOR		"c"
-#define DEF_LIMITS_FONT		STD_FONT_NUMBERS
-#define DEF_TICKFONT_GRAPH	STD_FONT_NUMBERS
 #define DEF_TICKFONT_BARCHART	STD_FONT_SMALL
+#define DEF_TICKFONT_GRAPH	STD_FONT_NUMBERS
 #define DEF_TICKLENGTH		"4"
-#define DEF_DIVISIONS		"10"
+#define DEF_TICK_ANCHOR		"c"
+#define DEF_TIMESCALE		"0"
 #define DEF_TITLE_ALTERNATE	"0"
 #define DEF_TITLE_FG		RGB_BLACK
 #define DEF_TITLE_FONT		"{Sans Serif} 10"
@@ -323,9 +341,8 @@ static Blt_ConfigSpec configSpecs[] =
     {BLT_CONFIG_PIXELS_NNEG, "-linewidth", "lineWidth", "LineWidth",
 	DEF_LINEWIDTH, Blt_Offset(Axis, lineWidth),
 	ALL_GRAPHS | BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_BOOLEAN, "-logscale", "logScale", "LogScale",
-	DEF_LOGSCALE, Blt_Offset(Axis, logScale),
-	ALL_GRAPHS | BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_CUSTOM, "-logscale", "logScale", "LogScale", DEF_LOGSCALE, 0,
+        ALL_GRAPHS | BLT_CONFIG_DONT_SET_DEFAULT, &logScaleOption},
     {BLT_CONFIG_CUSTOM, "-loose", "loose", "Loose", DEF_LOOSE, 0, 
 	ALL_GRAPHS | BLT_CONFIG_DONT_SET_DEFAULT, &looseOption},
     {BLT_CONFIG_CUSTOM, "-majorticks", "majorTicks", "MajorTicks",
@@ -350,6 +367,8 @@ static Blt_ConfigSpec configSpecs[] =
     {BLT_CONFIG_OBJ, "-scrollcommand", "scrollCommand", "ScrollCommand",
 	(char *)NULL, Blt_Offset(Axis, scrollCmdObjPtr),
 	ALL_GRAPHS | BLT_CONFIG_NULL_OK},
+    {BLT_CONFIG_CUSTOM, "-scale", "scale", "Scale", DEF_SCALE, 0,
+        ALL_GRAPHS | BLT_CONFIG_DONT_SET_DEFAULT, &scaleOption},
     {BLT_CONFIG_PIXELS_POS, "-scrollincrement", "scrollIncrement", 
 	"ScrollIncrement", DEF_SCROLL_INCREMENT, 
 	Blt_Offset(Axis, scrollUnits), ALL_GRAPHS|BLT_CONFIG_DONT_SET_DEFAULT},
@@ -382,9 +401,8 @@ static Blt_ConfigSpec configSpecs[] =
     {BLT_CONFIG_INT, "-tickdefault", "tickDefault", "TickDefault",
 	DEF_DIVISIONS, Blt_Offset(Axis, reqNumMajorTicks),
 	ALL_GRAPHS | BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_BITMASK, "-timescale", "timeScale", "TimeScale", DEF_TIMESCALE,
-	Blt_Offset(Axis, flags), ALL_GRAPHS | BLT_CONFIG_DONT_SET_DEFAULT, 
- 	(Blt_CustomOption *)TIMESCALE},
+    {BLT_CONFIG_CUSTOM, "-timescale", "timeScale", "TimeScale", DEF_TIMESCALE,
+	0, ALL_GRAPHS | BLT_CONFIG_DONT_SET_DEFAULT, &timeScaleOption},
     {BLT_CONFIG_STRING, "-title", "title", "Title",
 	(char *)NULL, Blt_Offset(Axis, title),
 	BLT_CONFIG_DONT_SET_DEFAULT | BLT_CONFIG_NULL_OK | ALL_GRAPHS},
@@ -403,7 +421,7 @@ static Blt_ConfigSpec configSpecs[] =
 
 /* Forward declarations */
 static void DestroyAxis(Axis *axisPtr);
-static Tcl_FreeProc FreeAxis;
+static Tcl_FreeProc FreeAxisProc;
 static int GetAxisByClass(Tcl_Interp *interp, Graph *graphPtr, Tcl_Obj *objPtr,
 	ClassId classId, Axis **axisPtrPtr);
 static void TimeAxis(Axis *axisPtr, double min, double max);
@@ -412,12 +430,6 @@ static Tick NextMajorTick(Axis *axisPtr);
 static Tick FirstMinorTick(Axis *axisPtr);
 static Tick NextMinorTick(Axis *axisPtr);
 static int lastMargin;
-
-typedef int (GraphAxisProc)(Tcl_Interp *interp, Axis *axisPtr, int objc, 
-	Tcl_Obj *const *objv);
-typedef int (GraphVirtualAxisProc)(Tcl_Interp *interp, Graph *graphPtr, 
-	int objc, Tcl_Obj *const *objv);
-
 
 static Axis *
 FirstAxis(Margin *marginPtr)
@@ -444,7 +456,7 @@ NextAxis(Axis *axisPtr)
 }
 
 static void
-FreeAxis(DestroyData data)
+FreeAxisProc(DestroyData data)
 {
     Blt_Free(data);
 }
@@ -538,7 +550,7 @@ ReleaseAxis(Axis *axisPtr)
 
 /*ARGSUSED*/
 static void
-FreeAxisProc(
+FreeAxis(
     ClientData clientData,		/* Not used. */
     Display *display,			/* Not used. */
     char *widgRec,
@@ -555,7 +567,7 @@ FreeAxisProc(
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToAxisProc --
+ * ObjToAxis --
  *
  *	Converts the name of an axis to a pointer to its axis structure.
  *
@@ -567,7 +579,7 @@ FreeAxisProc(
  */
 /*ARGSUSED*/
 static int
-ObjToAxisProc(
+ObjToAxis(
     ClientData clientData,		/* Class identifier of the type of
 					 * axis we are looking for. */
     Tcl_Interp *interp,			/* Interpreter to report results. */
@@ -608,7 +620,7 @@ ObjToAxisProc(
 /*
  *---------------------------------------------------------------------------
  *
- * AxisToObjProc --
+ * AxisToObj --
  *
  *	Convert the window coordinates into a string.
  *
@@ -619,7 +631,7 @@ ObjToAxisProc(
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-AxisToObjProc(
+AxisToObj(
     ClientData clientData,		/* Not used. */
     Tcl_Interp *interp,			/* Not used. */
     Tk_Window tkwin,			/* Not used. */
@@ -634,9 +646,181 @@ AxisToObjProc(
     return Tcl_NewStringObj(name, -1);
 }
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * ObjToScale --
+ *
+ *	Convert the string obj to indicate if the axis is scaled as time,
+ *      log, or linear.
+ *
+ * Results:
+ *	The return value is a standard TCL result.  
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+ObjToScale(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+                   Tcl_Obj *objPtr, char *widgRec, int offset, int flags)
+{
+    Axis *axisPtr = (Axis *)(widgRec);
+    char c;
+    const char *string;
+    
+    string = Tcl_GetString(objPtr);
+    c = string[0];
+    if ((c == 'l') && ((strcmp(string, "linear") == 0))) {
+        axisPtr->scale = SCALE_LINEAR;
+    } else if ((c == 'l') && ((strcmp(string, "log") == 0))) {
+        axisPtr->scale = SCALE_LOG;
+    } else if ((c == 't') && ((strcmp(string, "time") == 0))) {
+        axisPtr->scale = SCALE_TIME;
+    } else {
+        Tcl_AppendResult(interp, "bad scale value \"", string, "\": should be"
+                         " log, linear, or time", (char *)NULL);
+	return TCL_ERROR;
+    }
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * ScaleToObj --
+ *
+ *	Convert the scale to string obj.
+ *
+ * Results:
+ *	The string representing if the axis scale.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static Tcl_Obj *
+ScaleToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+               char *widgRec, int offset, int flags)
+{
+    Axis *axisPtr = (Axis *)(widgRec);
+    Tcl_Obj *objPtr;
+    
+    switch (axisPtr->scale) {
+    case SCALE_LOG:
+        objPtr = Tcl_NewStringObj("log", 3);
+        break;
+    case SCALE_LINEAR:
+        objPtr = Tcl_NewStringObj("linear", 6);
+        break;
+    case SCALE_TIME:
+        objPtr = Tcl_NewStringObj("time", 4);
+        break;
+    default:
+        objPtr = Tcl_NewStringObj("???", 3);
+        break;
+    }
+    return objPtr;
+}
+
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * ObjToTimeScale --
+ *
+ *	Convert the boolean obj to indicate if the axis in scale as time.
+ *
+ * Results:
+ *	The return value is a standard TCL result.  
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+ObjToTimeScale(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+                   Tcl_Obj *objPtr, char *widgRec, int offset, int flags)
+{
+    Axis *axisPtr = (Axis *)(widgRec);
+    int state;
+
+    if (Tcl_GetBooleanFromObj(interp, objPtr, &state) != TCL_OK) {
+	return TCL_ERROR;
+    }
+    axisPtr->scale = (state) ? SCALE_TIME : SCALE_LINEAR;
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * TimeScaleToObj --
+ *
+ *	Convert the time scale to boolean obj.
+ *
+ * Results:
+ *	The string representing if the axis is timescale.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static Tcl_Obj *
+TimeScaleToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+                char *widgRec, int offset, int flags)
+{
+    Axis *axisPtr = (Axis *)(widgRec);
+    return Tcl_NewBooleanObj(axisPtr->scale == SCALE_TIME);
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * ObjToLogScale --
+ *
+ *	Convert the boolean obj to indicate if the axis in scale as log.
+ *
+ * Results:
+ *	The return value is a standard TCL result.  
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+ObjToLogScale(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+                   Tcl_Obj *objPtr, char *widgRec, int offset, int flags)
+{
+    Axis *axisPtr = (Axis *)(widgRec);
+    int state;
+
+    if (Tcl_GetBooleanFromObj(interp, objPtr, &state) != TCL_OK) {
+	return TCL_ERROR;
+    }
+    axisPtr->scale = (state) ? SCALE_LOG : SCALE_LINEAR;
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * LogScaleToObj --
+ *
+ *	Convert the log scale to boolean obj.
+ *
+ * Results:
+ *	The string representing if the axis is logscale.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static Tcl_Obj *
+LogScaleToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+                char *widgRec, int offset, int flags)
+{
+    Axis *axisPtr = (Axis *)(widgRec);
+    return Tcl_NewBooleanObj(axisPtr->scale == SCALE_LOG);
+}
+
 /*ARGSUSED*/
 static void
-FreeFormatProc(
+FreeFormat(
     ClientData clientData,		/* Not used. */
     Display *display,			/* Not used. */
     char *widgRec,
@@ -655,7 +839,7 @@ FreeFormatProc(
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToFormatProc --
+ * ObjToFormat --
  *
  *	Convert the name of virtual axis to an pointer.
  *
@@ -667,7 +851,7 @@ FreeFormatProc(
  */
 /*ARGSUSED*/
 static int
-ObjToFormatProc(
+ObjToFormat(
     ClientData clientData,		/* Not used. */
     Tcl_Interp *interp,			/* Interpreter to report results. */
     Tk_Window tkwin,			/* Not used. */
@@ -700,7 +884,7 @@ ObjToFormatProc(
 /*
  *---------------------------------------------------------------------------
  *
- * FormatToObjProc --
+ * FormatToObj --
  *
  *	Convert the window coordinates into a string.
  *
@@ -711,7 +895,7 @@ ObjToFormatProc(
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-FormatToObjProc(
+FormatToObj(
     ClientData clientData,		/* Not used. */
     Tcl_Interp *interp,			/* Not used. */
     Tk_Window tkwin,			/* Not used. */
@@ -737,7 +921,7 @@ FormatToObjProc(
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToLimitProc --
+ * ObjToLimit --
  *
  *	Convert the string representation of an axis limit into its numeric
  *	form.
@@ -750,7 +934,7 @@ FormatToObjProc(
  */
 /*ARGSUSED*/
 static int
-ObjToLimitProc(
+ObjToLimit(
     ClientData clientData,		/* Not used. */
     Tcl_Interp *interp,			/* Interpreter to send results. */
     Tk_Window tkwin,			/* Not used. */
@@ -774,7 +958,7 @@ ObjToLimitProc(
 /*
  *---------------------------------------------------------------------------
  *
- * LimitToObjProc --
+ * LimitToObj --
  *
  *	Convert the floating point axis limits into a string.
  *
@@ -785,7 +969,7 @@ ObjToLimitProc(
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-LimitToObjProc(
+LimitToObj(
     ClientData clientData,		/* Not used. */
     Tcl_Interp *interp,			/* Not used. */
     Tk_Window tkwin,			/* Not used. */
@@ -910,7 +1094,7 @@ MarginToObj(
 
 /*ARGSUSED*/
 static void
-FreeTicksProc(
+FreeTicks(
     ClientData clientData,		/* Either AUTO_MAJOR or AUTO_MINOR. */
     Display *display,			/* Not used. */
     char *widgRec,
@@ -932,7 +1116,7 @@ FreeTicksProc(
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToTicksProc --
+ * ObjToTicks --
  *
  *
  * Results:
@@ -941,7 +1125,7 @@ FreeTicksProc(
  */
 /*ARGSUSED*/
 static int
-ObjToTicksProc(
+ObjToTicks(
     ClientData clientData,		/* Either AUTO_MAJOR or AUTO_MINOR. */
     Tcl_Interp *interp,		        /* Interpreter to send results. */
     Tk_Window tkwin,			/* Not used. */
@@ -998,7 +1182,7 @@ ObjToTicksProc(
 /*
  *---------------------------------------------------------------------------
  *
- * TicksToObjProc --
+ * TicksToObj --
  *
  *	Convert array of tick coordinates to a list.
  *
@@ -1008,7 +1192,7 @@ ObjToTicksProc(
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-TicksToObjProc(
+TicksToObj(
     ClientData clientData,		/* Either AUTO_MAJOR or AUTO_MINOR. */
     Tcl_Interp *interp,
     Tk_Window tkwin,			/* Not used. */
@@ -1041,7 +1225,7 @@ TicksToObjProc(
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToLooseProc --
+ * ObjToLoose --
  *
  *	Convert a string to one of three values.
  *		0 - false, no, off
@@ -1056,7 +1240,7 @@ TicksToObjProc(
  */
 /*ARGSUSED*/
 static int
-ObjToLooseProc(
+ObjToLoose(
     ClientData clientData,		/* Not used. */
     Tcl_Interp *interp,		        /* Interpreter to send results. */
     Tk_Window tkwin,			/* Not used. */
@@ -1104,7 +1288,7 @@ ObjToLooseProc(
 /*
  *---------------------------------------------------------------------------
  *
- * LooseToObjProc --
+ * LooseToObj --
  *
  * Results:
  *	The string representation of the auto boolean is returned.
@@ -1113,7 +1297,7 @@ ObjToLooseProc(
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-LooseToObjProc(
+LooseToObj(
     ClientData clientData,		/* Not used. */
     Tcl_Interp *interp,
     Tk_Window tkwin,			/* Not used. */
@@ -1176,7 +1360,7 @@ PaletteChangedProc(Blt_Palette palette, ClientData clientData,
 
 /*ARGSUSED*/
 static void
-FreePaletteProc(
+FreePalette(
     ClientData clientData,		/* Not used. */
     Display *display,			/* Not used. */
     char *widgRec,
@@ -1192,7 +1376,7 @@ FreePaletteProc(
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToPaletteProc --
+ * ObjToPalette --
  *
  *	Convert the string representation of a palette into its token.
  *
@@ -1204,7 +1388,7 @@ FreePaletteProc(
  */
 /*ARGSUSED*/
 static int
-ObjToPaletteProc(
+ObjToPalette(
     ClientData clientData,		/* Not used. */
     Tcl_Interp *interp,			/* Interpreter to send results back
 					 * to */
@@ -1220,7 +1404,7 @@ ObjToPaletteProc(
     
     string = Tcl_GetString(objPtr);
     if ((string == NULL) || (string[0] == '\0')) {
-	FreePaletteProc(clientData, Tk_Display(tkwin), widgRec, offset);
+	FreePalette(clientData, Tk_Display(tkwin), widgRec, offset);
 	return TCL_OK;
     }
     if (Blt_Palette_GetFromObj(interp, objPtr, palPtr) != TCL_OK) {
@@ -1233,7 +1417,7 @@ ObjToPaletteProc(
 /*
  *---------------------------------------------------------------------------
  *
- * PaletteToObjProc --
+ * PaletteToObj --
  *
  *	Convert the palette token into a string.
  *
@@ -1244,7 +1428,7 @@ ObjToPaletteProc(
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-PaletteToObjProc(
+PaletteToObj(
     ClientData clientData,		/* Not used. */
     Tcl_Interp *interp,
     Tk_Window tkwin,
@@ -1332,11 +1516,10 @@ MakeLabel(Axis *axisPtr, double value)
 	} 
         Tcl_DStringGetResult(interp, &ds);
         string = Tcl_DStringValue(&ds);
-    } else if (axisPtr->logScale) {
+    } else if (IsLogScale(axisPtr)) {
 	Blt_FormatString(buffer, TICK_LABEL_SIZE, "1E%d", ROUND(value));
         string = buffer;
-    } else if ((axisPtr->flags & TIMESCALE) &&
-               (axisPtr->major.ticks.fmt != NULL)) {
+    } else if ((IsTimeScale(axisPtr)) && (axisPtr->major.ticks.fmt != NULL)) {
         Blt_DateTime date;
 
         Blt_SecondsToDate(value, &date);
@@ -1377,7 +1560,7 @@ Blt_InvHMap(Axis *axisPtr, double x)
 	x = 1.0 - x;
     }
     value = (x * axisPtr->axisRange.range) + axisPtr->axisRange.min;
-    if (axisPtr->logScale) {
+    if (IsLogScale(axisPtr)) {
 	value = EXP10(value);
     }
     return value;
@@ -1407,7 +1590,7 @@ Blt_InvVMap(Axis *axisPtr, double y) /* Screen coordinate */
 	y = 1.0 - y;
     }
     value = ((1.0 - y) * axisPtr->axisRange.range) + axisPtr->axisRange.min;
-    if (axisPtr->logScale) {
+    if (IsLogScale(axisPtr)) {
 	value = EXP10(value);
     }
     return value;
@@ -1430,7 +1613,7 @@ Blt_InvVMap(Axis *axisPtr, double y) /* Screen coordinate */
 double
 Blt_HMap(Axis *axisPtr, double x)
 {
-    if ((axisPtr->logScale) && (x != 0.0)) {
+    if ((IsLogScale(axisPtr)) && (x != 0.0)) {
 	x = log10(FABS(x));
     }
     /* Map graph coordinate to normalized coordinates [0..1] */
@@ -1458,7 +1641,7 @@ Blt_HMap(Axis *axisPtr, double x)
 double
 Blt_VMap(Axis *axisPtr, double y)
 {
-    if ((axisPtr->logScale) && (y > 0.0)) {
+    if ((IsLogScale(axisPtr)) && (y > 0.0)) {
 	y = log10(FABS(y));
     }
     /* Map graph coordinate to normalized coordinates [0..1] */
@@ -1546,7 +1729,7 @@ FixAxisRange(Axis *axisPtr)
 	(axisPtr->reqMin >= axisPtr->reqMax)) {
 	axisPtr->reqMin = axisPtr->reqMax = Blt_NaN();
     }
-    if (axisPtr->logScale) {
+    if (IsLogScale(axisPtr)) {
 	if ((DEFINED(axisPtr->reqMin)) && (axisPtr->reqMin <= 0.0)) {
 	    axisPtr->reqMin = Blt_NaN();
 	}
@@ -1559,7 +1742,7 @@ FixAxisRange(Axis *axisPtr)
 	if (DEFINED(axisPtr->reqMin)) {
 	    min = axisPtr->reqMin;
 	} else {
-	    min = (axisPtr->logScale) ? 0.001 : 0.0;
+	    min = (IsLogScale(axisPtr)) ? 0.001 : 0.0;
 	}
     }
     if (max == -DBL_MAX) {
@@ -2045,9 +2228,9 @@ Blt_ResetAxes(Graph *graphPtr)
 	if ((DEFINED(axisPtr->scrollMax)) && (max > axisPtr->scrollMax)) {
 	    max = axisPtr->scrollMax;
 	}
-        if (axisPtr->logScale) {
+        if (IsLogScale(axisPtr)) {
             LogAxis(axisPtr, min, max);
-        } else if (axisPtr->flags & TIMESCALE) {
+        } else if (IsTimeScale(axisPtr)) {
             TimeAxis(axisPtr, min, max);
         } else {
             LinearAxis(axisPtr, min, max);
@@ -2204,7 +2387,7 @@ DestroyAxis(Axis *axisPtr)
     if (axisPtr->segments != NULL) {
 	Blt_Free(axisPtr->segments);
     }
-    Tcl_EventuallyFree(axisPtr, FreeAxis);
+    Tcl_EventuallyFree(axisPtr, FreeAxisProc);
 }
 
 /*
@@ -2542,7 +2725,7 @@ MakeColorbar(Axis *axisPtr, AxisInfo *infoPtr)
     int x1, y1, x2, y2;
     min = axisPtr->axisRange.min;
     max = axisPtr->axisRange.max;
-    if (axisPtr->logScale) {
+    if (IsLogScale(axisPtr)) {
 	min = EXP10(min);
 	max = EXP10(max);
     }
@@ -2570,7 +2753,7 @@ MakeAxisLine(Axis *axisPtr, int line, Segment2d *s)
 
     min = axisPtr->axisRange.min;
     max = axisPtr->axisRange.max;
-    if (axisPtr->logScale) {
+    if (IsLogScale(axisPtr)) {
 	min = EXP10(min);
 	max = EXP10(max);
     }
@@ -2589,7 +2772,7 @@ MakeAxisLine(Axis *axisPtr, int line, Segment2d *s)
 static void
 MakeTick(Axis *axisPtr, double value, int tick, int line, Segment2d *s)
 {
-    if (axisPtr->logScale) {
+    if (IsLogScale(axisPtr)) {
 	value = EXP10(value);
     }
     if (HORIZONTAL(axisPtr->marginPtr)) {
@@ -2712,7 +2895,6 @@ static void
 MapAxis(Axis *axisPtr)
 {
     AxisInfo info;
-    Graph *graphPtr = axisPtr->obj.graphPtr;
     
     AxisOffsets(axisPtr, &info);
     MakeSegments(axisPtr, &info);
@@ -3071,7 +3253,7 @@ DrawAxis(Axis *axisPtr, Drawable drawable)
 	if (viewMax > worldMax) {
 	    viewMax = worldMax;
 	}
-	if (axisPtr->logScale) {
+	if (IsLogScale(axisPtr)) {
 	    worldMin = log10(worldMin);
 	    worldMax = log10(worldMax);
 	    viewMin = log10(viewMin);
@@ -3093,7 +3275,7 @@ DrawAxis(Axis *axisPtr, Drawable drawable)
 	    axisPtr->min = viewMin + worldMin;
 	    axisPtr->max = axisPtr->min + viewWidth;
 	    viewMax = viewMin + viewWidth;
-	    if (axisPtr->logScale) {
+	    if (IsLogScale(axisPtr)) {
 		axisPtr->min = EXP10(axisPtr->min);
 		axisPtr->max = EXP10(axisPtr->max);
 	    }
@@ -3104,7 +3286,7 @@ DrawAxis(Axis *axisPtr, Drawable drawable)
 	    axisPtr->max = worldMax - viewMax;
 	    axisPtr->min = axisPtr->max - viewWidth;
 	    viewMin = viewMax + viewWidth;
-	    if (axisPtr->logScale) {
+	    if (IsLogScale(axisPtr)) {
 		axisPtr->min = EXP10(axisPtr->min);
 		axisPtr->max = EXP10(axisPtr->max);
 	    }
@@ -3248,7 +3430,7 @@ MakeGridLine(Axis *axisPtr, double value, Segment2d *s)
 {
     Graph *graphPtr = axisPtr->obj.graphPtr;
 
-    if (axisPtr->logScale) {
+    if (IsLogScale(axisPtr)) {
 	value = EXP10(value);
     }
     /* Grid lines run orthogonally to the axis */
@@ -3989,7 +4171,7 @@ ConfigureAxis(Axis *axisPtr)
     }
     axisPtr->scrollMin = axisPtr->reqScrollMin;
     axisPtr->scrollMax = axisPtr->reqScrollMax;
-    if (axisPtr->logScale) {
+    if (IsLogScale(axisPtr)) {
 	if (axisPtr->flags & CHECK_LIMITS) {
 	    /* Check that the logscale limits are positive.  */
 	    if ((DEFINED(axisPtr->reqMin)) && (axisPtr->reqMin <= 0.0)) {
@@ -4289,8 +4471,10 @@ Blt_DefaultAxes(Graph *graphPtr)
  *---------------------------------------------------------------------------
  */
 static int
-ActivateOp(Tcl_Interp *interp, Axis *axisPtr, int objc, Tcl_Obj *const *objv)
+ActivateOp(ClientData clientData, Tcl_Interp *interp, int objc,
+           Tcl_Obj *const *objv)
 {
+    Axis *axisPtr = clientData;
     Graph *graphPtr = axisPtr->obj.graphPtr;
     const char *string;
 
@@ -4316,8 +4500,10 @@ ActivateOp(Tcl_Interp *interp, Axis *axisPtr, int objc, Tcl_Obj *const *objv)
  *---------------------------------------------------------------------------
  */
 static int
-BindOp(Tcl_Interp *interp, Axis *axisPtr, int objc, Tcl_Obj *const *objv)
+BindOp(ClientData clientData, Tcl_Interp *interp, int objc,
+       Tcl_Obj *const *objv)
 {
+    Axis *axisPtr = clientData;
     Graph *graphPtr = axisPtr->obj.graphPtr;
 
     return Blt_ConfigureBindingsFromObj(interp, graphPtr->bindTable,
@@ -4339,8 +4525,10 @@ BindOp(Tcl_Interp *interp, Axis *axisPtr, int objc, Tcl_Obj *const *objv)
  */
 /* ARGSUSED */
 static int
-CgetOp(Tcl_Interp *interp, Axis *axisPtr, int objc, Tcl_Obj *const *objv)
+CgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
+       Tcl_Obj *const *objv)
 {
+    Axis *axisPtr = clientData;
     Graph *graphPtr = axisPtr->obj.graphPtr;
 
     return Blt_ConfigureValueFromObj(interp, graphPtr->tkwin, configSpecs,
@@ -4365,8 +4553,10 @@ CgetOp(Tcl_Interp *interp, Axis *axisPtr, int objc, Tcl_Obj *const *objv)
  *---------------------------------------------------------------------------
  */
 static int
-ConfigureOp(Tcl_Interp *interp, Axis *axisPtr, int objc, Tcl_Obj *const *objv)
+ConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
+            Tcl_Obj *const *objv)
 {
+    Axis *axisPtr = clientData;
     Graph *graphPtr = axisPtr->obj.graphPtr;
     int flags;
 
@@ -4422,8 +4612,10 @@ ConfigureOp(Tcl_Interp *interp, Axis *axisPtr, int objc, Tcl_Obj *const *objv)
  */
 /*ARGSUSED*/
 static int
-LimitsOp(Tcl_Interp *interp, Axis *axisPtr, int objc, Tcl_Obj *const *objv)
+LimitsOp(ClientData clientData, Tcl_Interp *interp, int objc,
+         Tcl_Obj *const *objv)
 {
+    Axis *axisPtr = clientData;
     Graph *graphPtr = axisPtr->obj.graphPtr;
     Tcl_Obj *listObjPtr;
     double min, max;
@@ -4431,7 +4623,7 @@ LimitsOp(Tcl_Interp *interp, Axis *axisPtr, int objc, Tcl_Obj *const *objv)
     if (graphPtr->flags & RESET_AXES) {
 	Blt_ResetAxes(graphPtr);
     }
-    if (axisPtr->logScale) {
+    if (IsLogScale(axisPtr)) {
 	min = EXP10(axisPtr->axisRange.min);
 	max = EXP10(axisPtr->axisRange.max);
     } else {
@@ -4461,9 +4653,10 @@ LimitsOp(Tcl_Interp *interp, Axis *axisPtr, int objc, Tcl_Obj *const *objv)
  */
 /*ARGSUSED*/
 static int
-InvTransformOp(Tcl_Interp *interp, Axis *axisPtr, int objc, 
+InvTransformOp(ClientData clientData, Tcl_Interp *interp, int objc, 
 	       Tcl_Obj *const *objv)
 {
+    Axis *axisPtr = clientData;
     Graph *graphPtr = axisPtr->obj.graphPtr;
     double y;				/* Real graph coordinate */
     int sy;				/* Integer window coordinate*/
@@ -4506,8 +4699,10 @@ InvTransformOp(Tcl_Interp *interp, Axis *axisPtr, int objc,
  */
 /*ARGSUSED*/
 static int
-MarginOp(Tcl_Interp *interp, Axis *axisPtr, int objc, Tcl_Obj *const *objv)
+MarginOp(ClientData clientData, Tcl_Interp *interp, int objc,
+         Tcl_Obj *const *objv)
 {
+    Axis *axisPtr = clientData;
     const char *name;
 
     name = "";
@@ -4535,8 +4730,10 @@ MarginOp(Tcl_Interp *interp, Axis *axisPtr, int objc, Tcl_Obj *const *objv)
  */
 /*ARGSUSED*/
 static int
-TransformOp(Tcl_Interp *interp, Axis *axisPtr, int objc, Tcl_Obj *const *objv)
+TransformOp(ClientData clientData, Tcl_Interp *interp, int objc,
+            Tcl_Obj *const *objv)
 {
+    Axis *axisPtr = clientData;
     Graph *graphPtr = axisPtr->obj.graphPtr;
     double x;
 
@@ -4571,8 +4768,10 @@ TransformOp(Tcl_Interp *interp, Axis *axisPtr, int objc, Tcl_Obj *const *objv)
  */
 /*ARGSUSED*/
 static int
-TypeOp(Tcl_Interp *interp, Axis *axisPtr, int objc, Tcl_Obj *const *objv)
+TypeOp(ClientData clientData, Tcl_Interp *interp, int objc,
+       Tcl_Obj *const *objv)
 {
+    Axis *axisPtr = clientData;
     const char *name;
 
     switch (axisPtr->obj.classId) {
@@ -4608,8 +4807,10 @@ TypeOp(Tcl_Interp *interp, Axis *axisPtr, int objc, Tcl_Obj *const *objv)
  */
 /*ARGSUSED*/
 static int
-UseOp(Tcl_Interp *interp, Axis *axisPtr, int objc, Tcl_Obj *const *objv)
+UseOp(ClientData clientData, Tcl_Interp *interp, int objc,
+      Tcl_Obj *const *objv)
 {
+    Axis *axisPtr = clientData;
     Graph *graphPtr = (Graph *)axisPtr;
     Axis *nextPtr;
     Tcl_Obj **axisObjv;
@@ -4669,8 +4870,10 @@ UseOp(Tcl_Interp *interp, Axis *axisPtr, int objc, Tcl_Obj *const *objv)
 }
 
 static int
-ViewOp(Tcl_Interp *interp, Axis *axisPtr, int objc, Tcl_Obj *const *objv)
+ViewOp(ClientData clientData, Tcl_Interp *interp, int objc,
+       Tcl_Obj *const *objv)
 {
+    Axis *axisPtr = clientData;
     Graph *graphPtr;
     double axisOffset, axisScale;
     double fract;
@@ -4696,7 +4899,7 @@ ViewOp(Tcl_Interp *interp, Axis *axisPtr, int objc, Tcl_Obj *const *objv)
     if (viewMax > worldMax) {
 	viewMax = worldMax;
     }
-    if (axisPtr->logScale) {
+    if (IsLogScale(axisPtr)) {
 	worldMin = log10(worldMin);
 	worldMax = log10(worldMax);
 	viewMin  = log10(viewMin);
@@ -4739,7 +4942,7 @@ ViewOp(Tcl_Interp *interp, Axis *axisPtr, int objc, Tcl_Obj *const *objv)
 	axisPtr->reqMax = worldMax - (fract * worldWidth);
 	axisPtr->reqMin = axisPtr->reqMax - viewWidth;
     }
-    if (axisPtr->logScale) {
+    if (IsLogScale(axisPtr)) {
 	axisPtr->reqMin = EXP10(axisPtr->reqMin);
 	axisPtr->reqMax = EXP10(axisPtr->reqMax);
     }
@@ -4762,9 +4965,10 @@ ViewOp(Tcl_Interp *interp, Axis *axisPtr, int objc, Tcl_Obj *const *objv)
  */
 /*ARGSUSED*/
 static int
-AxisCreateOp(Tcl_Interp *interp, Graph *graphPtr, int objc, 
+AxisCreateOp(ClientData clientData, Tcl_Interp *interp, int objc, 
 	     Tcl_Obj *const *objv)
 {
+    Graph *graphPtr = clientData;
     Axis *axisPtr;
     int flags;
 
@@ -4800,15 +5004,16 @@ AxisCreateOp(Tcl_Interp *interp, Graph *graphPtr, int objc,
  *---------------------------------------------------------------------------
  */
 static int
-AxisActivateOp(Tcl_Interp *interp, Graph *graphPtr, int objc, 
+AxisActivateOp(ClientData clientData, Tcl_Interp *interp, int objc, 
 	       Tcl_Obj *const *objv)
 {
+    Graph *graphPtr = clientData;
     Axis *axisPtr;
 
     if (GetAxisFromObj(interp, graphPtr, objv[3], &axisPtr) != TCL_OK) {
 	return TCL_ERROR;
     }
-    return ActivateOp(interp, axisPtr, objc, objv);
+    return ActivateOp(axisPtr, interp, objc, objv);
 }
 
 
@@ -4822,9 +5027,10 @@ AxisActivateOp(Tcl_Interp *interp, Graph *graphPtr, int objc,
  */
 /*ARGSUSED*/
 static int
-AxisBindOp(Tcl_Interp *interp, Graph *graphPtr, int objc, 
-	      Tcl_Obj *const *objv)
+AxisBindOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+           Tcl_Obj *const *objv)
 {
+    Graph *graphPtr = clientData;
     if (objc == 3) {
 	Blt_HashEntry *hPtr;
 	Blt_HashSearch cursor;
@@ -4863,14 +5069,16 @@ AxisBindOp(Tcl_Interp *interp, Graph *graphPtr, int objc,
  */
 /* ARGSUSED */
 static int
-AxisCgetOp(Tcl_Interp *interp, Graph *graphPtr, int objc, Tcl_Obj *const *objv)
+AxisCgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
+           Tcl_Obj *const *objv)
 {
+    Graph *graphPtr = clientData;
     Axis *axisPtr;
 
     if (GetAxisFromObj(interp, graphPtr, objv[3], &axisPtr) != TCL_OK) {
 	return TCL_ERROR;
     }
-    return CgetOp(interp, axisPtr, objc - 4, objv + 4);
+    return CgetOp(axisPtr, interp, objc - 4, objv + 4);
 }
 
 /*
@@ -4891,9 +5099,10 @@ AxisCgetOp(Tcl_Interp *interp, Graph *graphPtr, int objc, Tcl_Obj *const *objv)
  *---------------------------------------------------------------------------
  */
 static int
-AxisConfigureOp(Tcl_Interp *interp, Graph *graphPtr, int objc, 
+AxisConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc, 
 		Tcl_Obj *const *objv)
 {
+    Graph *graphPtr = clientData;
     Tcl_Obj *const *options;
     int i;
     int numNames, numOpts;
@@ -4923,7 +5132,7 @@ AxisConfigureOp(Tcl_Interp *interp, Graph *graphPtr, int objc,
 	if (GetAxisFromObj(interp, graphPtr, objv[i], &axisPtr) != TCL_OK) {
 	    return TCL_ERROR;
 	}
-	if (ConfigureOp(interp, axisPtr, numOpts, options) != TCL_OK) {
+	if (ConfigureOp(axisPtr, interp, numOpts, options) != TCL_OK) {
 	    break;
 	}
     }
@@ -4949,9 +5158,10 @@ AxisConfigureOp(Tcl_Interp *interp, Graph *graphPtr, int objc,
  */
 /*ARGSUSED*/
 static int
-AxisDeleteOp(Tcl_Interp *interp, Graph *graphPtr, int objc, 
+AxisDeleteOp(ClientData clientData, Tcl_Interp *interp, int objc, 
 	     Tcl_Obj *const *objv)
 {
+    Graph *graphPtr = clientData;
     int i;
 
     for (i = 3; i < objc; i++) {
@@ -4985,8 +5195,11 @@ AxisDeleteOp(Tcl_Interp *interp, Graph *graphPtr, int objc,
  *---------------------------------------------------------------------------
  */
 static int
-AxisFocusOp(Tcl_Interp *interp, Graph *graphPtr, int objc, Tcl_Obj *const *objv)
+AxisFocusOp(ClientData clientData, Tcl_Interp *interp, int objc,
+            Tcl_Obj *const *objv)
 {
+    Graph *graphPtr = clientData;
+
     if (objc > 3) {
 	Axis *axisPtr;
 	const char *string;
@@ -5025,8 +5238,10 @@ AxisFocusOp(Tcl_Interp *interp, Graph *graphPtr, int objc, Tcl_Obj *const *objv)
  */
 /*ARGSUSED*/
 static int
-AxisGetOp(Tcl_Interp *interp, Graph *graphPtr, int objc, Tcl_Obj *const *objv)
+AxisGetOp(ClientData clientData, Tcl_Interp *interp, int objc,
+          Tcl_Obj *const *objv)
 {
+    Graph *graphPtr = clientData;
     GraphObj *objPtr;
 
     objPtr = Blt_GetCurrentItem(graphPtr->bindTable);
@@ -5066,15 +5281,16 @@ AxisGetOp(Tcl_Interp *interp, Graph *graphPtr, int objc, Tcl_Obj *const *objv)
  *---------------------------------------------------------------------------
  */
 static int
-AxisInvTransformOp(Tcl_Interp *interp, Graph *graphPtr, int objc, 
+AxisInvTransformOp(ClientData clientData, Tcl_Interp *interp, int objc, 
 		   Tcl_Obj *const *objv)
 {
+    Graph *graphPtr = clientData;
     Axis *axisPtr;
 
     if (GetAxisFromObj(interp, graphPtr, objv[3], &axisPtr) != TCL_OK) {
 	return TCL_ERROR;
     }
-    return InvTransformOp(interp, axisPtr, objc - 4, objv + 4);
+    return InvTransformOp(axisPtr, interp, objc - 4, objv + 4);
 }
 
 /*
@@ -5092,15 +5308,16 @@ AxisInvTransformOp(Tcl_Interp *interp, Graph *graphPtr, int objc,
  *---------------------------------------------------------------------------
  */
 static int
-AxisLimitsOp(Tcl_Interp *interp, Graph *graphPtr, int objc, 
+AxisLimitsOp(ClientData clientData, Tcl_Interp *interp, int objc, 
 	     Tcl_Obj *const *objv)
 {
+    Graph *graphPtr = clientData;
     Axis *axisPtr;
 
     if (GetAxisFromObj(interp, graphPtr, objv[3], &axisPtr) != TCL_OK) {
 	return TCL_ERROR;
     }
-    return LimitsOp(interp, axisPtr, objc - 4, objv + 4);
+    return LimitsOp(axisPtr, interp, objc - 4, objv + 4);
 }
 
 /*
@@ -5118,15 +5335,16 @@ AxisLimitsOp(Tcl_Interp *interp, Graph *graphPtr, int objc,
  *---------------------------------------------------------------------------
  */
 static int
-AxisMarginOp(Tcl_Interp *interp, Graph *graphPtr, int objc, 
+AxisMarginOp(ClientData clientData, Tcl_Interp *interp, int objc, 
 	     Tcl_Obj *const *objv)
 {
+    Graph *graphPtr = clientData;
     Axis *axisPtr;
 
     if (GetAxisFromObj(interp, graphPtr, objv[3], &axisPtr) != TCL_OK) {
 	return TCL_ERROR;
     }
-    return MarginOp(interp, axisPtr, objc - 4, objv + 4);
+    return MarginOp(axisPtr, interp, objc - 4, objv + 4);
 }
 
 typedef struct {
@@ -5159,8 +5377,10 @@ static Blt_SwitchSpec namesSwitches[] =
  */
 /*ARGSUSED*/
 static int
-AxisNamesOp(Tcl_Interp *interp, Graph *graphPtr, int objc, Tcl_Obj *const *objv)
+AxisNamesOp(ClientData clientData, Tcl_Interp *interp, int objc,
+            Tcl_Obj *const *objv)
 {
+    Graph *graphPtr = clientData;
     Tcl_Obj *listObjPtr;
     NamesArgs args;
     int i, count;
@@ -5240,15 +5460,16 @@ AxisNamesOp(Tcl_Interp *interp, Graph *graphPtr, int objc, Tcl_Obj *const *objv)
  *---------------------------------------------------------------------------
  */
 static int
-AxisTransformOp(Tcl_Interp *interp, Graph *graphPtr, int objc, 
+AxisTransformOp(ClientData clientData, Tcl_Interp *interp, int objc, 
 		Tcl_Obj *const *objv)
 {
+    Graph *graphPtr = clientData;
     Axis *axisPtr;
 
     if (GetAxisFromObj(interp, graphPtr, objv[3], &axisPtr) != TCL_OK) {
 	return TCL_ERROR;
     }
-    return TransformOp(interp, axisPtr, objc - 4, objv + 4);
+    return TransformOp(axisPtr, interp, objc - 4, objv + 4);
 }
 
 /*
@@ -5266,27 +5487,30 @@ AxisTransformOp(Tcl_Interp *interp, Graph *graphPtr, int objc,
  *---------------------------------------------------------------------------
  */
 static int
-AxisTypeOp(Tcl_Interp *interp, Graph *graphPtr, int objc, 
-	     Tcl_Obj *const *objv)
+AxisTypeOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+           Tcl_Obj *const *objv)
 {
+    Graph *graphPtr = clientData;
     Axis *axisPtr;
 
     if (GetAxisFromObj(interp, graphPtr, objv[3], &axisPtr) != TCL_OK) {
 	return TCL_ERROR;
     }
-    return TypeOp(interp, axisPtr, objc - 4, objv + 4);
+    return TypeOp(axisPtr, interp, objc - 4, objv + 4);
 }
 
 
 static int
-AxisViewOp(Tcl_Interp *interp, Graph *graphPtr, int objc, Tcl_Obj *const *objv)
+AxisViewOp(ClientData clientData, Tcl_Interp *interp, int objc,
+           Tcl_Obj *const *objv)
 {
+    Graph *graphPtr = clientData;
     Axis *axisPtr;
 
     if (GetAxisFromObj(interp, graphPtr, objv[3], &axisPtr) != TCL_OK) {
 	return TCL_ERROR;
     }
-    return ViewOp(interp, axisPtr, objc - 4, objv + 4);
+    return ViewOp(axisPtr, interp, objc - 4, objv + 4);
 }
 
 static Blt_OpSpec virtAxisOps[] = {
@@ -5312,10 +5536,10 @@ static Blt_OpSpec virtAxisOps[] = {
 static int numVirtAxisOps = sizeof(virtAxisOps) / sizeof(Blt_OpSpec);
 
 int
-Blt_VirtualAxisOp(Graph *graphPtr, Tcl_Interp *interp, int objc, 
+Blt_VirtualAxisOp(ClientData clientData, Tcl_Interp *interp, int objc, 
 		  Tcl_Obj *const *objv)
 {
-    GraphVirtualAxisProc *proc;
+    Tcl_ObjCmdProc *proc;
     int result;
 
     proc = Blt_GetOpFromObj(interp, numVirtAxisOps, virtAxisOps, BLT_OP_ARG2, 
@@ -5323,7 +5547,7 @@ Blt_VirtualAxisOp(Graph *graphPtr, Tcl_Interp *interp, int objc,
     if (proc == NULL) {
 	return TCL_ERROR;
     }
-    result = (*proc) (interp, graphPtr, objc, objv);
+    result = (*proc) (clientData, interp, objc, objv);
     return result;
 }
 
@@ -5343,11 +5567,12 @@ static Blt_OpSpec axisOps[] = {
 static int numAxisOps = sizeof(axisOps) / sizeof(Blt_OpSpec);
 
 int
-Blt_AxisOp(Tcl_Interp *interp, Graph *graphPtr, int margin, int objc,
+Blt_AxisOp(ClientData clientData, Tcl_Interp *interp, int margin, int objc,
 	   Tcl_Obj *const *objv)
 {
+    Graph *graphPtr = clientData;
     int result;
-    GraphAxisProc *proc;
+    Tcl_ObjCmdProc *proc;
 
     proc = Blt_GetOpFromObj(interp, numAxisOps, axisOps, BLT_OP_ARG2, 
 	objc, objv, 0);
@@ -5358,7 +5583,7 @@ Blt_AxisOp(Tcl_Interp *interp, Graph *graphPtr, int margin, int objc,
 	lastMargin = margin;		/* Set global variable to the
 					 * margin in the argument
 					 * list. Needed only for UseOp. */
-	result = (*proc)(interp, (Axis *)graphPtr, objc - 3, objv + 3);
+	result = (*proc)(clientData, interp, objc - 3, objv + 3);
     } else {
 	Axis *axisPtr;
 
@@ -5366,7 +5591,7 @@ Blt_AxisOp(Tcl_Interp *interp, Graph *graphPtr, int margin, int objc,
 	if (axisPtr == NULL) {
 	    return TCL_OK;
 	}
-	result = (*proc)(interp, axisPtr, objc - 3, objv + 3);
+	result = (*proc)(axisPtr, interp, objc - 3, objv + 3);
     }
     return result;
 }
@@ -6598,6 +6823,9 @@ NextMajorTick(Axis *axisPtr)
                     }
                 }
                 break;
+            case TIME_FORMAT_SECONDS:
+            default:
+                break;
             }
             break;
         case TIME_MONTHS:
@@ -6806,6 +7034,7 @@ NextMinorTick(Axis *axisPtr)
             d = (ticksPtr->index + 1) * ticksPtr->step;
             break;
         case TIME_SECONDS:
+        case TIME_SUBSECONDS:
             d = (ticksPtr->range * ticksPtr->step * ticksPtr->index);
             break;
         }

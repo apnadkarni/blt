@@ -2032,9 +2032,9 @@ GetScreenPoints(LineElement *elemPtr)
 	     * ignore non-positive values when the axis is log scale. */
 	    if ((!FINITE(x[j]))||(!FINITE(y[j]))) {
 		j++;
-	    } else if (elemPtr->axes.y->logScale & (y[j] <= 0.0)) {
+	    } else if ((IsLogScale(elemPtr->axes.y)) & (y[j] <= 0.0)) {
 		j++;			
-	    } else if (elemPtr->axes.x->logScale & (x[j] <= 0.0)) {
+	    } else if ((IsLogScale(elemPtr->axes.x)) & (x[j] <= 0.0)) {
 		j++;
 	    } else {
 		break;
@@ -3079,13 +3079,13 @@ ExtentsProc(Element *basePtr)
 	}
     }
     exts.right = xMax;
-    if ((xMin <= 0.0) && (elemPtr->axes.x->logScale)) {
+    if ((xMin <= 0.0) && (IsLogScale(elemPtr->axes.x))) {
 	exts.left = xPosMin;
     } else {
 	exts.left = xMin;
     }
     exts.bottom = yMax;
-    if ((yMin <= 0.0) && (elemPtr->axes.y->logScale)) {
+    if ((yMin <= 0.0) && (IsLogScale(elemPtr->axes.y))) {
 	exts.top = yPosMin;
     } else {
 	exts.top = yMin;
@@ -3104,7 +3104,7 @@ ExtentsProc(Element *basePtr)
 		exts.right = x;
 	    }
 	    x = elemPtr->x.values[i] - elemPtr->xError.values[i];
-	    if (elemPtr->axes.x->logScale) {
+	    if (IsLogScale(elemPtr->axes.x)) {
 		if (x < 0.0) {
 		    x = -x;		/* Mirror negative values, instead of
 					 * ignoring them. */
@@ -3124,8 +3124,7 @@ ExtentsProc(Element *basePtr)
 	if (elemPtr->xLow.numValues > 0) {
 	    double left;
 	    
-	    if ((elemPtr->xLow.min <= 0.0) && 
-		(elemPtr->axes.x->logScale)) {
+	    if ((elemPtr->xLow.min <= 0.0) && (IsLogScale(elemPtr->axes.x))) {
 		left = Blt_FindElemValuesMinimum(&elemPtr->xLow, DBL_MIN);
 	    } else {
 		left = elemPtr->xLow.min;
@@ -3148,7 +3147,7 @@ ExtentsProc(Element *basePtr)
 		exts.bottom = y;
 	    }
 	    y = elemPtr->y.values[i] - elemPtr->yError.values[i];
-	    if (elemPtr->axes.y->logScale) {
+	    if (IsLogScale(elemPtr->axes.y)) {
 		if (y < 0.0) {
 		    y = -y;		/* Mirror negative values, instead of
 					 * ignoring them. */
@@ -3168,8 +3167,7 @@ ExtentsProc(Element *basePtr)
 	if (elemPtr->yLow.numValues > 0) {
 	    double top;
 	    
-	    if ((elemPtr->yLow.min <= 0.0) && 
-		(elemPtr->axes.y->logScale)) {
+	    if ((elemPtr->yLow.min <= 0.0) && (IsLogScale(elemPtr->axes.y))) {
 		top = Blt_FindElemValuesMinimum(&elemPtr->yLow, DBL_MIN);
 	    } else {
 		top = elemPtr->yLow.min;
