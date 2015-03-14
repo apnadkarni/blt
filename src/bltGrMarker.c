@@ -51,9 +51,6 @@
 #include "bltGrLegd.h"
 #include "bltGrElem.h"
 
-typedef int (GraphMarkerProc)(Graph *graphPtr, Tcl_Interp *interp, int objc, 
-	Tcl_Obj *const *objv);
-
 #define GETBITMAP(b) \
 	(((b)->destBitmap == None) ? (b)->srcBitmap : (b)->destBitmap)
 
@@ -219,10 +216,11 @@ typedef struct {
 
     Blt_ChainLink link;
 
-    const char *elemName;		/* Element associated with marker. Let's
-					 * you link a marker to an element. The
-					 * marker is drawn only if the element
-					 * is also visible. */
+    const char *elemName;		/* Element associated with
+					 * marker. Let's you link a marker
+					 * to an element. The marker is
+					 * drawn only if the element is
+					 * also visible. */
     Axis2d axes;
 
     Point2d *worldPts;			/* Coordinate array to position
@@ -230,18 +228,21 @@ typedef struct {
     int numWorldPts;			/* # of points in above array. */
 
     int drawUnder;			/* If non-zero, draw the marker
-					 * underneath any elements. This can be
-					 * a performance penalty because the
-					 * graph must be redraw entirely each
-					 * time the marker is redrawn. */
+					 * underneath any elements. This
+					 * can be a performance penalty
+					 * because the graph must be redraw
+					 * entirely each time the marker is
+					 * redrawn. */
 
-    int clipped;			/* Indicates if the marker is totally
-					 * clipped by the plotting area. */
+    int clipped;			/* Indicates if the marker is
+					 * totally clipped by the plotting
+					 * area. */
 
     unsigned int flags;		
 
 
-    int xOffset, yOffset;		/* Pixel offset from graph position */
+    int xOffset, yOffset;		/* Pixel offset from graph
+                                         * position */
 
     int state;
 
@@ -249,14 +250,16 @@ typedef struct {
 
     Pixmap srcBitmap;			/* Original bitmap. May be further
 					 * scaled or rotated. */
-    float reqAngle;			/* Requested rotation of the bitmap */
+    float reqAngle;			/* Requested rotation of the
+                                           bitmap */
     float angle;			/* Normalized rotation (0..360
 					 * degrees) */
-    Tk_Anchor anchor;			/* If only one X-Y coordinate is given,
-					* indicates how to translate the given
-					* marker position.  Otherwise, if there
-					* are two X-Y coordinates, then this
-					* value is ignored. */
+    Tk_Anchor anchor;			/* If only one X-Y coordinate is
+					 * given, indicates how to
+					 * translate the given marker
+					 * position.  Otherwise, if there
+					 * are two X-Y coordinates, then
+					 * this value is ignored. */
     Point2d anchorPt;			/* Translated anchor point. */
 
     XColor *outlineColor;		/* Foreground color */
@@ -265,10 +268,11 @@ typedef struct {
     GC gc;				/* Private graphic context */
     GC fillGC;				/* Shared graphic context */
     Pixmap destBitmap;			/* Bitmap to be drawn. */
-    int destWidth, destHeight;		/* Dimensions of the final bitmap */
+    int destWidth, destHeight;		/* Dimensions of the final
+                                         * bitmap */
 
-    Point2d outline[MAX_OUTLINE_POINTS];/* Polygon representing the background
-					 * of the bitmap. */
+    Point2d outline[MAX_OUTLINE_POINTS];/* Polygon representing the
+					 * background of the bitmap. */
     int numOutlinePts;
 } BitmapMarker;
 
@@ -348,51 +352,45 @@ static MarkerClass bitmapMarkerClass = {
  */
 typedef struct {
     GraphObj obj;			/* Must be first field in marker. */
-
     MarkerClass *classPtr;
-
     Blt_HashEntry *hashPtr;
-
     Blt_ChainLink link;
-
-    const char *elemName;		/* Element associated with marker. Let's
-					 * you link a marker to an element. The
-					 * marker is drawn only if the element
-					 * is also visible. */
+    const char *elemName;		/* Element associated with
+					 * marker. Let's you link a marker
+					 * to an element. The marker is
+					 * drawn only if the element is
+					 * also visible. */
     Axis2d axes;
-
     Point2d *worldPts;			/* Coordinate array to position
 					 * marker. */
-
     int numWorldPts;			/* # of points in above array. */
 
     int drawUnder;			/* If non-zero, draw the marker
-					 * underneath any elements. This can be
-					 * a performance penalty because the
-					 * graph must be redraw entirely each
-					 * time the marker is redrawn. */
+					 * underneath any elements. This
+					 * can be a performance penalty
+					 * because the graph must be redraw
+					 * entirely each time the marker is
+					 * redrawn. */
 
-    int clipped;			/* Indicates if the marker is totally
-					 * clipped by the plotting area. */
-
+    int clipped;			/* Indicates if the marker is
+					 * totally clipped by the plotting
+					 * area. */
     unsigned int flags;		
-
-
-    int xOffset, yOffset;		/* Pixel offset from graph position */
-
+    int xOffset, yOffset;		/* Pixel offset from graph
+                                           position */
     int state;
-
     Tk_Image tkImage;			/* Tk image to be displayed. */
-    Tk_Anchor anchor;			/* Indicates how to translate the given
-					 * marker position. */
+    Tk_Anchor anchor;			/* Indicates how to translate the
+					 * given marker position. */
     Point2d anchorPt;			/* Translated anchor point. */
-    int width, height;			/* Dimensions of the possibly scaled
-					 * image. */
+    int width, height;			/* Dimensions of the possibly
+					 * scaled image. */
     Blt_Painter painter;
     Blt_Picture picture;
     Blt_ResampleFilter filter;
     int pictX, pictY;			/*  */
-    Blt_Picture scaled;			/* Pixmap containing the scaled image */
+    Blt_Picture scaled;			/* Pixmap containing the scaled
+                                         * image */
     GC gc;
 
 } ImageMarker;
@@ -1719,7 +1717,7 @@ HMap(Axis *axisPtr, double x)
     } else if (x == -DBL_MAX) {
 	x = 0.0;
     } else {
-	if (axisPtr->logScale) {
+	if (IsLogScale(axisPtr)) {
 	    if (x > 0.0) {
 		x = log10(x);
 	    } else if (x < 0.0) {
@@ -1758,7 +1756,7 @@ VMap(Axis *axisPtr, double y)
     } else if (y == -DBL_MAX) {
 	y = 0.0;
     } else {
-	if (axisPtr->logScale) {
+	if (IsLogScale(axisPtr)) {
 	    if (y > 0.0) {
 		y = log10(y);
 	    } else if (y < 0.0) {
@@ -4308,8 +4306,10 @@ RenameMarker(Graph *graphPtr, Marker *markerPtr, const char *oldName,
  *---------------------------------------------------------------------------
  */
 static int
-NamesOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+NamesOp(ClientData clientData, Tcl_Interp *interp, int objc,
+        Tcl_Obj *const *objv)
 {
+    Graph *graphPtr = clientData;
     Tcl_Obj *listObjPtr;
 
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
@@ -4360,8 +4360,11 @@ NamesOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  */
 /*ARGSUSED*/
 static int
-BindOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+BindOp(ClientData clientData, Tcl_Interp *interp, int objc,
+       Tcl_Obj *const *objv)
 {
+    Graph *graphPtr = clientData;
+
     if (objc == 3) {
 	Blt_HashEntry *hp;
 	Blt_HashSearch iter;
@@ -4394,8 +4397,10 @@ BindOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  */
 /*ARGSUSED*/
 static int
-CgetOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+CgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
+       Tcl_Obj *const *objv)
 {
+    Graph *graphPtr = clientData;
     Marker *markerPtr;
 
     if (GetMarkerFromObj(interp, graphPtr, objv[3], &markerPtr) != TCL_OK) {
@@ -4422,8 +4427,10 @@ CgetOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *---------------------------------------------------------------------------
  */
 static int
-ConfigureOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+ConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
+            Tcl_Obj *const *objv)
 {
+    Graph *graphPtr = clientData;
     Marker *markerPtr;
     Tcl_Obj *const *options;
     const char *oldName;
@@ -4506,8 +4513,10 @@ ConfigureOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *---------------------------------------------------------------------------
  */
 static int
-CreateOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+CreateOp(ClientData clientData, Tcl_Interp *interp, int objc,
+         Tcl_Obj *const *objv)
 {
+    Graph *graphPtr = clientData;
     Marker *markerPtr;
     Blt_HashEntry *hPtr;
     int isNew;
@@ -4610,8 +4619,10 @@ CreateOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  */
 /*ARGSUSED*/
 static int
-DeleteOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+DeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
+         Tcl_Obj *const *objv)
 {
+    Graph *graphPtr = clientData;
     int i;
 
     for (i = 3; i < objc; i++) {
@@ -4645,8 +4656,10 @@ DeleteOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  */
 /*ARGSUSED*/
 static int
-GetOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+GetOp(ClientData clientData, Tcl_Interp *interp, int objc,
+      Tcl_Obj *const *objv)
 {
+    Graph *graphPtr = clientData;
     const char *string;
 
     string = Tcl_GetString(objv[3]);
@@ -4686,8 +4699,10 @@ GetOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  */
 /*ARGSUSED*/
 static int
-RelinkOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+RelinkOp(ClientData clientData, Tcl_Interp *interp, int objc,
+         Tcl_Obj *const *objv)
 {
+    Graph *graphPtr = clientData;
     Blt_ChainLink link, place;
     Marker *markerPtr;
     const char *string;
@@ -4738,8 +4753,10 @@ RelinkOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  */
 /*ARGSUSED*/
 static int
-FindOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+FindOp(ClientData clientData, Tcl_Interp *interp, int objc,
+       Tcl_Obj *const *objv)
 {
+    Graph *graphPtr = clientData;
     Blt_ChainLink link;
     Region2d extents;
     const char *string;
@@ -4818,8 +4835,10 @@ FindOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  */
 /*ARGSUSED*/
 static int
-ExistsOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+ExistsOp(ClientData clientData, Tcl_Interp *interp, int objc,
+         Tcl_Obj *const *objv)
 {
+    Graph *graphPtr = clientData;
     Blt_HashEntry *hPtr;
     const char *name;
 
@@ -4844,8 +4863,10 @@ ExistsOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  */
 /*ARGSUSED*/
 static int
-TypeOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+TypeOp(ClientData clientData, Tcl_Interp *interp, int objc,
+       Tcl_Obj *const *objv)
 {
+    Graph *graphPtr = clientData;
     Marker *markerPtr;
     const char *type;
 
@@ -4904,10 +4925,10 @@ static int numMarkerOps = sizeof(markerOps) / sizeof(Blt_OpSpec);
 
 /*ARGSUSED*/
 int
-Blt_MarkerOp(Graph *graphPtr, Tcl_Interp *interp, int objc, 
+Blt_MarkerOp(ClientData clientData, Tcl_Interp *interp, int objc, 
 	     Tcl_Obj *const *objv)
 {
-    GraphMarkerProc *proc;
+    Tcl_ObjCmdProc *proc;
     int result;
 
     proc = Blt_GetOpFromObj(interp, numMarkerOps, markerOps, BLT_OP_ARG2, 
@@ -4915,7 +4936,7 @@ Blt_MarkerOp(Graph *graphPtr, Tcl_Interp *interp, int objc,
     if (proc == NULL) {
 	return TCL_ERROR;
     }
-    result = (*proc) (graphPtr, interp, objc, objv);
+    result = (*proc)(clientData, interp, objc, objv);
     return result;
 }
 

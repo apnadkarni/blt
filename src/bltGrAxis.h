@@ -120,6 +120,9 @@ typedef enum  _AxisScaleType {
     SCALE_LINEAR, SCALE_LOG, SCALE_TIME, SCALE_CUSTOM
 }  AxisScaleType;
 
+#define IsLogScale(axisPtr) ((axisPtr)->scale == SCALE_LOG)
+#define IsTimeScale(axisPtr) ((axisPtr)->scale == SCALE_TIME)
+
 /*
  *---------------------------------------------------------------------------
  *
@@ -188,8 +191,8 @@ struct _Axis {
     const char *detail;
     int refCount;                       /* Number of elements referencing
 					 * this axis. */
-    int logScale;			/* If non-zero, generate log scale
-					 * ticks for the axis. */
+    AxisScaleType scale;                /* How to scale the axis: linear,
+					 * logrithmic, or time. */
     int decreasing;			/* If non-zero, display the range
 					 * of values on the axis in
 					 * descending order, from high to

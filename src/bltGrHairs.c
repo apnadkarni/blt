@@ -44,9 +44,6 @@
 #include "bltGrAxis.h"
 #include "bltGrLegd.h"
 
-typedef int (GraphCrosshairProc)(Graph *graphPtr, Tcl_Interp *interp, 
-	int objc, Tcl_Obj *const *objv);
-
 /*
  *---------------------------------------------------------------------------
  *
@@ -347,12 +344,10 @@ Blt_CreateCrosshairs(Graph *graphPtr)
  */
 /* ARGSUSED */
 static int
-CgetOp(
-    Graph *graphPtr,
-    Tcl_Interp *interp,
-    int objc,			/* Not used. */
-    Tcl_Obj *const *objv)
+CgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
+       Tcl_Obj *const *objv)
 {
+    Graph *graphPtr = clientData;
     Crosshairs *chPtr = graphPtr->crosshairs;
 
     return Blt_ConfigureValueFromObj(interp, graphPtr->tkwin, configSpecs,
@@ -376,12 +371,10 @@ CgetOp(
  *---------------------------------------------------------------------------
  */
 static int
-ConfigureOp(
-    Graph *graphPtr,
-    Tcl_Interp *interp,
-    int objc,
-    Tcl_Obj *const *objv)
+ConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
+            Tcl_Obj *const *objv)
 {
+    Graph *graphPtr = clientData;
     Crosshairs *chPtr = graphPtr->crosshairs;
 
     if (objc == 3) {
@@ -416,12 +409,9 @@ ConfigureOp(
  */
 /*ARGSUSED*/
 static int
-OnOp(
-    Graph *graphPtr,
-    Tcl_Interp *interp,		/* Not used. */
-    int objc,			/* Not used. */
-    Tcl_Obj *const *objv)	/* Not used. */
+OnOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 {
+    Graph *graphPtr = clientData;
     Crosshairs *chPtr = graphPtr->crosshairs;
 
     if (chPtr->hidden) {
@@ -448,12 +438,9 @@ OnOp(
  */
 /*ARGSUSED*/
 static int
-OffOp(
-    Graph *graphPtr,
-    Tcl_Interp *interp,		/* Not used. */
-    int objc,			/* Not used. */
-    Tcl_Obj *const *objv)	/* Not used. */
+OffOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 {
+    Graph *graphPtr = clientData;
     Crosshairs *chPtr = graphPtr->crosshairs;
 
     if (!chPtr->hidden) {
@@ -480,12 +467,10 @@ OffOp(
  */
 /*ARGSUSED*/
 static int
-ToggleOp(
-    Graph *graphPtr,
-    Tcl_Interp *interp,		/* Not used. */
-    int objc,			/* Not used. */
-    Tcl_Obj *const *objv)	/* Not used. */
+ToggleOp(ClientData clientData, Tcl_Interp *interp, int objc,
+         Tcl_Obj *const *objv)
 {
+    Graph *graphPtr = clientData;
     Crosshairs *chPtr = graphPtr->crosshairs;
 
     chPtr->hidden = (chPtr->hidden == 0);
@@ -529,18 +514,15 @@ static int numXhairOps = sizeof(xhairOps) / sizeof(Blt_OpSpec);
  *---------------------------------------------------------------------------
  */
 int
-Blt_CrosshairsOp(
-    Graph *graphPtr,
-    Tcl_Interp *interp,
-    int objc,
-    Tcl_Obj *const *objv)
+Blt_CrosshairsOp(ClientData clientData, Tcl_Interp *interp, int objc,
+                 Tcl_Obj *const *objv)
 {
-    GraphCrosshairProc *proc;
+    Tcl_ObjCmdProc *proc;
 
     proc = Blt_GetOpFromObj(interp, numXhairOps, xhairOps, BLT_OP_ARG2, 
 	objc, objv, 0);
     if (proc == NULL) {
 	return TCL_ERROR;
     }
-    return (*proc) (graphPtr, interp, objc, objv);
+    return (*proc) (clientData, interp, objc, objv);
 }

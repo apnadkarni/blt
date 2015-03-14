@@ -44,7 +44,7 @@
 #include "bltOp.h"
 #include "bltInitCmd.h"
 
-#define YPAD		1		/* External pad between components. */
+#define YPAD		3		/* External pad between components. */
 #define XPAD		3		/* External pad between border and
 					 * button. */
 #define MENU_EVENT_MASK (ExposureMask|StructureNotifyMask)
@@ -208,7 +208,7 @@ typedef struct  {
      */
     XColor *highlightColor;
     GC highlightGC;
-    XColor *highlightBgColor;
+    Blt_Bg highlightBg;
     GC highlightBgGC;
     int highlightWidth;
 
@@ -322,9 +322,9 @@ static Blt_ConfigSpec configSpecs[] =
 	DEF_NORMAL_FG, Blt_Offset(ComboButton, textNormalColor), 0},
     {BLT_CONFIG_PIXELS_NNEG, "-height", "height", "Height", DEF_HEIGHT, 
 	Blt_Offset(ComboButton, reqHeight), BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_COLOR, "-highlightbackground", "highlightBackground", 
+    {BLT_CONFIG_BACKGROUND, "-highlightbackground", "highlightBackground", 
 	"HighlightBackground", DEF_HIGHLIGHTBACKGROUND, 
-	Blt_Offset(ComboButton, highlightBgColor), BLT_CONFIG_NULL_OK},
+	Blt_Offset(ComboButton, highlightBg), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_COLOR, "-highlightcolor", "highlightColor", "HighlightColor",
 	DEF_HIGHLIGHTCOLOR, Blt_Offset(ComboButton, highlightColor), 0},
     {BLT_CONFIG_PIXELS_NNEG, "-highlightthickness", "highlightThickness",
@@ -1347,16 +1347,6 @@ ConfigureComboButton(
 	Tk_FreeGC(comboPtr->display, comboPtr->highlightGC);
     }
     comboPtr->highlightGC = newGC;
-    if (comboPtr->highlightBgColor != NULL) {
-	gcValues.foreground = comboPtr->highlightBgColor->pixel;
-	newGC = Tk_GetGC(comboPtr->tkwin, gcMask, &gcValues);
-    } else {
-	newGC = NULL;
-    }
-    if (comboPtr->highlightBgGC != NULL) {
-	Tk_FreeGC(comboPtr->display, comboPtr->highlightBgGC);
-    }
-    comboPtr->highlightBgGC = newGC;
     ComputeGeometry(comboPtr);
     return TCL_OK;
 }
@@ -1659,9 +1649,6 @@ DestroyComboButton(DestroyData dataPtr)	/* Pointer to the widget record. */
     Blt_FreeOptions(configSpecs, (char *)comboPtr, comboPtr->display, 0);
     if (comboPtr->highlightGC != NULL) {
 	Tk_FreeGC(comboPtr->display, comboPtr->highlightGC);
-    }
-    if (comboPtr->highlightBgGC != NULL) {
-	Tk_FreeGC(comboPtr->display, comboPtr->highlightBgGC);
     }
     if (comboPtr->menuWin != NULL) {
 	Tk_DeleteEventHandler(comboPtr->menuWin, MENU_EVENT_MASK, 
@@ -2014,17 +2001,13 @@ DrawComboButton(ComboButton *comboPtr, Drawable drawable)
 	    Tk_DrawFocusHighlight(comboPtr->tkwin, comboPtr->highlightGC, 
 		comboPtr->highlightWidth, drawable);
 	} else {
-	    Blt_Bg bg;
-
-	    if (comboPtr->flags & STATE_POSTED) {
-		bg = comboPtr->postedBg;
-	    } else if (comboPtr->flags & STATE_DISABLED) {
-		bg = comboPtr->disabledBg;
-	    } else {
-		bg = comboPtr->normalBg;
-	    }
-	    Blt_Bg_DrawFocus(comboPtr->tkwin, bg, 
-		comboPtr->highlightWidth, drawable);
+            if (comboPtr->highlightBg != NULL) {
+                Blt_Bg_DrawFocus(comboPtr->tkwin, comboPtr->highlightBg, 
+                                 comboPtr->highlightWidth, drawable);
+            } else {
+                Blt_Bg_DrawFocus(comboPtr->tkwin, bg, 
+                                 comboPtr->highlightWidth, drawable);
+            }
 	}	    
     }
     if (comboPtr->flags & STATE_POSTED) {

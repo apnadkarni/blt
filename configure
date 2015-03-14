@@ -10218,7 +10218,7 @@ esac
 # List of files to have be generated from <name>.in files with
 # autoconf substitutions.
 # --------------------------------------------------------------
-ac_config_files="$ac_config_files Makefile bltConfig.sh ${src_Makefile} demos/Makefile demos/bitmaps/Makefile demos/bitmaps/fish/Makefile demos/bitmaps/hand/Makefile demos/images/Makefile demos/scripts/Makefile library/Makefile library/afm/Makefile library/dd_protocols/Makefile man/Makefile src/bltHash.h"
+ac_config_files="$ac_config_files Makefile bltConfig.sh ${src_Makefile} demos/Makefile demos/bitmaps/Makefile demos/bitmaps/fish/Makefile demos/bitmaps/hand/Makefile demos/images/Makefile demos/scripts/Makefile library/Makefile library/afm/Makefile library/dd_protocols/Makefile library/palettes/Makefile man/Makefile src/bltHash.h"
 
 
 
@@ -10843,6 +10843,7 @@ do
     "library/Makefile") CONFIG_FILES="$CONFIG_FILES library/Makefile" ;;
     "library/afm/Makefile") CONFIG_FILES="$CONFIG_FILES library/afm/Makefile" ;;
     "library/dd_protocols/Makefile") CONFIG_FILES="$CONFIG_FILES library/dd_protocols/Makefile" ;;
+    "library/palettes/Makefile") CONFIG_FILES="$CONFIG_FILES library/palettes/Makefile" ;;
     "man/Makefile") CONFIG_FILES="$CONFIG_FILES man/Makefile" ;;
     "src/bltHash.h") CONFIG_FILES="$CONFIG_FILES src/bltHash.h" ;;
 

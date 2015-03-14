@@ -1,6 +1,6 @@
 package require BLT
 
-set palette "spectral"
+set palette "spectral.rgb"
 set mesh [blt::mesh create regular -x "0 100 2" -y "0 100 2"]
 set values [blt::vector create]
 $values set { 1 1 10 1 }

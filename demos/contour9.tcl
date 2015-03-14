@@ -1,7 +1,7 @@
 
 package require BLT
 
-set palette blue
+set palette blue.rgb
 set pi2 [expr 3.14159265358979323846 * 2]
 
 set x [blt::vector create]
@@ -80,13 +80,19 @@ blt::combobutton .palettes \
 blt::tk::label .palettesl -text "Palettes" 
 blt::combomenu .palettes.menu \
     -background white \
-    -textvariable palette 
+    -textvariable palette \
+    -height 200 \
+    -yscrollbar .palettes.menu.ybar \
+    -xscrollbar .palettes.menu.xbar
+
+blt::tk::scrollbar .palettes.menu.xbar 
+blt::tk::scrollbar .palettes.menu.ybar
 
 foreach pal [blt::palette names] {
     set pal [string trim $pal ::]
     lappend palettes $pal
 }
-.palettes.menu listadd $palettes -command FixPalette
+.palettes.menu listadd [lsort -dictionary $palettes] -command FixPalette
 
 blt::table . \
     0,0 .label -fill x \

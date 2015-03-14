@@ -228,7 +228,6 @@ enum SortTypeValues {
     SORT_REAL, SORT_COMMAND, SORT_NONE, SORT_AUTO
 };
 
-
 static Blt_OptionParseProc ObjToAutoCreateProc;
 static Blt_OptionPrintProc AutoCreateToObjProc;
 static Blt_CustomOption autoCreateOption = {
@@ -3721,6 +3720,12 @@ GetColumns(Tcl_Interp *interp, TableView *viewPtr, Tcl_Obj *objPtr,
     Blt_Chain chain;
     Column *colPtr;
 
+    if (viewPtr->table == NULL) {
+	if (interp != NULL) {
+	    Tcl_AppendResult(interp, "no datatable configured.", (char *)NULL);
+	}
+	return TCL_ERROR;
+    }
     chain = Blt_Chain_Create();
     /* First check if it's a column that we know about (to handle special
      * tableview-specific indices like "focus" or "current").  */
@@ -7091,9 +7096,9 @@ ColumnCgetOp(TableView *viewPtr, Tcl_Interp *interp, int objc,
  *
  * ColumnConfigureOp --
  *
- * 	This procedure is called to process a list of configuration
- *	options database, in order to reconfigure the one of more
- *	entries in the widget.
+ * 	This procedure is called to process a list of configuration options
+ *	database, in order to reconfigure the one of more entries in the
+ *	widget.
  *
  *	  .tv column configure $col option value
  *
@@ -7103,10 +7108,11 @@ ColumnCgetOp(TableView *viewPtr, Tcl_Interp *interp, int objc,
  *
  * Side effects:
  *	Configuration information, such as text string, colors, font,
- *	etc. get set for viewPtr; old resources get freed, if there
- *	were any.  
+ *	etc. get set for viewPtr; old resources get freed, if there were
+ *	any.
  *
  *	.tv column configure col ?option value?
+ *
  *---------------------------------------------------------------------------
  */
 static int

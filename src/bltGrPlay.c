@@ -60,10 +60,6 @@
 #define BACK		1
 #define BOTH		2
 
-typedef int (GraphPlayProc)(Graph *graphPtr, Tcl_Interp *interp, 
-	int objc, Tcl_Obj *const *objv);
-
-
 #define DEF_PLAY_START		"-1"
 #define DEF_PLAY_END		"-1"
 #define DEF_PLAY_LOOP		"0"
@@ -314,8 +310,10 @@ Blt_CreatePlayback(Graph *graphPtr)
  */
 /* ARGSUSED */
 static int
-CgetOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+CgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
+       Tcl_Obj *const *objv)
 {
+    Graph *graphPtr = clientData;
     Playback *playPtr = &graphPtr->play;
     
     return Blt_ConfigureValueFromObj(interp, graphPtr->tkwin, configSpecs,
@@ -338,8 +336,10 @@ CgetOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *---------------------------------------------------------------------------
  */
 static int
-ConfigureOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+ConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
+            Tcl_Obj *const *objv)
 {
+    Graph *graphPtr = clientData;
     Playback *playPtr = &graphPtr->play;
 
     if (objc == 3) {
@@ -375,8 +375,10 @@ ConfigureOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  */
 /* ARGSUSED */
 static int
-MaxtimeOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+MaxtimeOp(ClientData clientData, Tcl_Interp *interp, int objc,
+          Tcl_Obj *const *objv)
 {
+    Graph *graphPtr = clientData;
     Blt_ChainLink link;
     int maxNumPts;
 
@@ -422,15 +424,15 @@ static int numPlayOps = sizeof(playOps) / sizeof(Blt_OpSpec);
  *---------------------------------------------------------------------------
  */
 int
-Blt_PlaybackOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj 
-	       *const *objv)
+Blt_PlaybackOp(ClientData clientData, Tcl_Interp *interp, int objc,
+               Tcl_Obj *const *objv)
 {
-    GraphPlayProc *proc;
+    Tcl_ObjCmdProc *proc;
 
     proc = Blt_GetOpFromObj(interp, numPlayOps, playOps, BLT_OP_ARG2, 
 	objc, objv, 0);
     if (proc == NULL) {
 	return TCL_ERROR;
     }
-    return (*proc) (graphPtr, interp, objc, objv);
+    return (*proc) (clientData, interp, objc, objv);
 }

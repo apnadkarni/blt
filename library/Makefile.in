@@ -62,7 +62,7 @@ FILES = \
 		$(cursors) \
 		pkgIndex.tcl
 
-subdirs =	dd_protocols afm
+subdirs =	dd_protocols afm palettes
 
 all: pkgIndex
 	for i in $(subdirs); do \

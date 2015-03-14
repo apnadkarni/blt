@@ -1,7 +1,7 @@
 package require BLT
 blt::contour .g
 
-set palette spectral
+set palette spectral.rgb
 
 # All the data fits the same grid: a uniform rectangular grid 68x37
 set xGridSize 68

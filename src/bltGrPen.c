@@ -48,9 +48,6 @@
 #include "bltGrAxis.h"
 #include "bltGrLegd.h"
 
-typedef int (GraphPenProc)(Tcl_Interp *interp, Graph *graphPtr, int objc, 
-	Tcl_Obj *const *objv);
-
 static Blt_OptionFreeProc FreeColor;
 static Blt_OptionParseProc ObjToColor;
 static Blt_OptionPrintProc ColorToObj;
@@ -515,8 +512,10 @@ Blt_DestroyPens(Graph *graphPtr)
  */
 /* ARGSUSED */
 static int
-CgetOp(Tcl_Interp *interp, Graph *graphPtr, int objc, Tcl_Obj *const *objv)
+CgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
+       Tcl_Obj *const *objv)
 {
+    Graph *graphPtr = clientData;
     Pen *penPtr;
     unsigned int configFlags;
 
@@ -545,8 +544,10 @@ CgetOp(Tcl_Interp *interp, Graph *graphPtr, int objc, Tcl_Obj *const *objv)
  *---------------------------------------------------------------------------
  */
 static int
-ConfigureOp(Tcl_Interp *interp, Graph *graphPtr, int objc, Tcl_Obj *const *objv)
+ConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
+            Tcl_Obj *const *objv)
 {
+    Graph *graphPtr = clientData;
     Pen *penPtr;
     int numNames, numOpts;
     int redraw;
@@ -619,8 +620,10 @@ ConfigureOp(Tcl_Interp *interp, Graph *graphPtr, int objc, Tcl_Obj *const *objv)
  *---------------------------------------------------------------------------
  */
 static int
-CreateOp(Tcl_Interp *interp, Graph *graphPtr, int objc, Tcl_Obj *const *objv)
+CreateOp(ClientData clientData, Tcl_Interp *interp, int objc,
+         Tcl_Obj *const *objv)
 {
+    Graph *graphPtr = clientData;
     Pen *penPtr;
 
     penPtr = Blt_CreatePen(graphPtr, Tcl_GetString(objv[3]), graphPtr->classId,
@@ -648,8 +651,10 @@ CreateOp(Tcl_Interp *interp, Graph *graphPtr, int objc, Tcl_Obj *const *objv)
 
 /*ARGSUSED*/
 static int
-DeleteOp(Tcl_Interp *interp, Graph *graphPtr, int objc, Tcl_Obj *const *objv)
+DeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
+         Tcl_Obj *const *objv)
 {
+    Graph *graphPtr = clientData;
     int i;
 
     for (i = 3; i < objc; i++) {
@@ -686,8 +691,10 @@ DeleteOp(Tcl_Interp *interp, Graph *graphPtr, int objc, Tcl_Obj *const *objv)
  */
 /*ARGSUSED*/
 static int
-NamesOp(Tcl_Interp *interp, Graph *graphPtr, int objc, Tcl_Obj *const *objv)
+NamesOp(ClientData clientData, Tcl_Interp *interp, int objc,
+        Tcl_Obj *const *objv)
 {
+    Graph *graphPtr = clientData;
     Tcl_Obj *listObjPtr;
 
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
@@ -748,8 +755,10 @@ NamesOp(Tcl_Interp *interp, Graph *graphPtr, int objc, Tcl_Obj *const *objv)
  */
 /*ARGSUSED*/
 static int
-TypeOp(Tcl_Interp *interp, Graph *graphPtr, int objc, Tcl_Obj *const *objv)
+TypeOp(ClientData clientData, Tcl_Interp *interp, int objc,
+       Tcl_Obj *const *objv)
 {
+    Graph *graphPtr = clientData;
     Pen *penPtr;
 
     if (GetPenFromObj(interp, graphPtr, objv[3], &penPtr) != TCL_OK) {
@@ -772,14 +781,15 @@ static Blt_OpSpec penOps[] =
 static int numPenOps = sizeof(penOps) / sizeof(Blt_OpSpec);
 
 int
-Blt_PenOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+Blt_PenOp(ClientData clientData, Tcl_Interp *interp, int objc,
+          Tcl_Obj *const *objv)
 {
-    GraphPenProc *proc;
+    Tcl_ObjCmdProc *proc;
 
     proc = Blt_GetOpFromObj(interp, numPenOps, penOps, BLT_OP_ARG2, 
 	objc, objv, 0);
     if (proc == NULL) {
 	return TCL_ERROR;
     }
-    return (*proc) (interp, graphPtr, objc, objv);
+    return (*proc) (clientData, interp, objc, objv);
 }

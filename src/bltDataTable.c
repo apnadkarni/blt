@@ -563,24 +563,24 @@ ExtendColumns(Table *tablePtr, long n, Blt_Chain chain)
 }
 
 BLT_TABLE_COLUMN_TYPE
-blt_table_name_to_column_type(const char *string)
+blt_table_name_to_column_type(const char *s)
 {
     char c;
-
-    c = string[0];
-    if ((c == 's') && (strcmp(string, "string") == 0)) {
+    size_t len;
+    
+    c = s[0];
+    len = strlen(s);
+    if ((c == 's') && (len > 2) && (strncmp(s, "string", len) == 0)) {
 	return TABLE_COLUMN_TYPE_STRING;
-    } else if ((c == 'i') && (strcmp(string, "int") == 0)) {
+    } else if ((c == 'i') && (len > 2) && (strncmp(s, "integer", len) == 0)) {
 	return TABLE_COLUMN_TYPE_INT;
-    } else if ((c == 'i') && (strcmp(string, "integer") == 0)) {
-	return TABLE_COLUMN_TYPE_INT;
-    } else if ((c == 'i') && (strcmp(string, "number") == 0)) {
+    } else if ((c == 'n') && (len > 2) && (strncmp(s, "number", len) == 0)) {
 	return TABLE_COLUMN_TYPE_DOUBLE;
-    } else if ((c == 'd') && (strcmp(string, "double") == 0)) {
+    } else if ((c == 'd') && (strcmp(s, "double") == 0)) {
 	return TABLE_COLUMN_TYPE_DOUBLE;
-    } else if ((c == 'l') && (strcmp(string, "long") == 0)) {
+    } else if ((c == 'l') && (strcmp(s, "long") == 0)) {
 	return TABLE_COLUMN_TYPE_LONG;
-    } else if ((c == 't') && (strcmp(string, "time") == 0)) {
+    } else if ((c == 't') && (strcmp(s, "time") == 0)) {
 	return TABLE_COLUMN_TYPE_TIME;
     } else {
 	return TABLE_COLUMN_TYPE_UNKNOWN;
@@ -2177,7 +2177,7 @@ blt_table_get_compare_proc(Table *tablePtr, Column *colPtr, unsigned int flags)
 {
     BLT_TABLE_COMPARE_PROC *proc;
 
-    if ((flags & TABLE_SORT_TYPE_MASK) == TABLE_SORT_NONE) {
+    if ((flags & TABLE_SORT_TYPE_MASK) == TABLE_SORT_AUTO) {
 	switch (colPtr->type) {
 	case TABLE_COLUMN_TYPE_INT:
 	case TABLE_COLUMN_TYPE_LONG:
@@ -2190,7 +2190,7 @@ blt_table_get_compare_proc(Table *tablePtr, Column *colPtr, unsigned int flags)
 	case TABLE_COLUMN_TYPE_STRING:
 	case TABLE_COLUMN_TYPE_UNKNOWN:
 	default:
-	    proc = CompareAsciiRows;
+	    proc = CompareDictionaryRows;
 	    break;
 	}
     } else {

@@ -320,6 +320,7 @@ GuessSeparator(ImportArgs *argsPtr)
     Tcl_Obj *objPtr;
     
     pos = Tcl_Tell(argsPtr->channel);
+    string = NULL;                      /* Suppress compiler warning. */
     if (argsPtr->channel != NULL) {
         objPtr = Tcl_NewStringObj("", -1);
         Tcl_ReadChars(argsPtr->channel, objPtr, 2000, FALSE);
