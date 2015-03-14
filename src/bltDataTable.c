@@ -2998,8 +2998,8 @@ blt_table_iterate_row(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr,
 	    iterPtr->tag = tag;
 	} else if (strcmp(tag, "end") == 0) {
 	    iterPtr->tag = tag;
-	    iterPtr->start = blt_table_num_rows(table) - 1;
-	    iterPtr->end = iterPtr->start + 1;
+	    iterPtr->end = blt_table_num_rows(table);
+	    iterPtr->start = iterPtr->end - 1;
 	    iterPtr->numEntries = 1;
 	} else {
             Blt_Chain chain;
