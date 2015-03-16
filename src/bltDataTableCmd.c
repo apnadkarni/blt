@@ -6850,7 +6850,6 @@ KeysOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 
     if (objc == 2) {
 	Tcl_Obj *listObjPtr;
-	Blt_ChainLink link;
 
 	numKeys = blt_table_get_keys(cmdPtr->table, &keys);
 	listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);

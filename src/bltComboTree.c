@@ -4567,17 +4567,18 @@ FixMenuCoords(ComboTree *comboPtr, int *xPtr, int *yPtr)
     int screenWidth, screenHeight;
 
     Blt_SizeOfScreen(comboPtr->tkwin, &screenWidth, &screenHeight);
-    x = *xPtr, y = *yPtr;
+    x = *xPtr;
+    y = *yPtr;
 
     /* Determine the size of the menu. */
     w = Tk_ReqWidth(comboPtr->tkwin);
     h = Tk_ReqHeight(comboPtr->tkwin);
     if ((y + h) > screenHeight) {
-	y -= h;				/* Shift the menu up by the height of
-					 * the menu. */
+	y -= h;                         /* Shift the menu up by the height
+					 * of the menu. */
 	if (comboPtr->flags & DROPDOWN) {
-	    y -= comboPtr->post.menuHeight;	/* Add the height of the parent if
-					 * this is a dropdown menu.  */
+            /* Add the height of the parent if this is a dropdown menu.  */
+	    y -= comboPtr->post.menuHeight; 
 	}
 	if (y < 0) {
 	    y = 0;
@@ -4585,8 +4586,9 @@ FixMenuCoords(ComboTree *comboPtr, int *xPtr, int *yPtr)
     }
     if ((x + w) > screenWidth) {
 	if (comboPtr->flags & DROPDOWN) {
-	    x = x + comboPtr->post.menuWidth - w; /* Flip the menu anchor to the other
-					 * end of the menu button/entry */
+            /* Flip the menu anchor to the other end of the menu
+             * button/entry */
+	    x = x + comboPtr->post.menuWidth - w; 
 	} else {
 	    x -= w;			/* Shift the menu to the left by the
 					 * width of the menu. */
@@ -6789,9 +6791,6 @@ PostOp(ClientData clientData, Tcl_Interp *interp, int objc,
     comboPtr->post.lastMenuWidth = comboPtr->post.menuWidth;
     y = comboPtr->post.y2;
     switch (comboPtr->post.align) {
-    case ALIGN_LEFT:
-        x = comboPtr->post.x1;
-        break;
     case ALIGN_CENTER:
         {
             int w;
@@ -6802,6 +6801,10 @@ PostOp(ClientData clientData, Tcl_Interp *interp, int objc,
         break;
     case ALIGN_RIGHT:
         x = comboPtr->post.x2 - comboPtr->normalWidth;
+        break;
+    default:
+    case ALIGN_LEFT:
+        x = comboPtr->post.x1;
         break;
     }
     FixMenuCoords(comboPtr, &x, &y);

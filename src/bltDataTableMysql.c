@@ -148,14 +148,13 @@ static BLT_TABLE_COLUMN_TYPE
 MySqlFieldToColumnType(int type) 
 {
     switch (type) {
-    case FIELD_TYPE_LONG:
-    case FIELD_TYPE_LONGLONG:
-	return TABLE_COLUMN_TYPE_LONG;
     case FIELD_TYPE_DECIMAL:
     case FIELD_TYPE_TINY:
     case FIELD_TYPE_SHORT:
     case FIELD_TYPE_INT24:
-	return TABLE_COLUMN_TYPE_INT;
+    case FIELD_TYPE_LONG:
+    case FIELD_TYPE_LONGLONG:
+	return TABLE_COLUMN_TYPE_LONG;
     case FIELD_TYPE_FLOAT:
     case FIELD_TYPE_DOUBLE:
 	return TABLE_COLUMN_TYPE_DOUBLE;

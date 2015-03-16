@@ -5816,6 +5816,7 @@ MakeKeyTables(Tcl_Interp *interp, Table *tablePtr)
         case TABLE_COLUMN_TYPE_LONG:
             size = BLT_ONE_WORD_KEYS;
             break;
+        default:
         case TABLE_COLUMN_TYPE_STRING:
         case TABLE_COLUMN_TYPE_UNKNOWN:
             size = BLT_STRING_KEYS;
@@ -5921,9 +5922,9 @@ int
 blt_table_key_lookup(Tcl_Interp *interp, Table *tablePtr, int objc, 
                      Tcl_Obj *const *objv, Row **rowPtrPtr)
 {
-    long i;
+    int i;
     Blt_HashEntry *hPtr;
-
+    
     *rowPtrPtr = NULL;
     if (objc != tablePtr->numKeys) {
 	if (interp != NULL) {
@@ -5957,6 +5958,7 @@ blt_table_key_lookup(Tcl_Interp *interp, Table *tablePtr, int objc,
     for (i = 0; i < tablePtr->numKeys; i++) {
         Blt_HashTable *keyTablePtr;
         Column *colPtr;
+        Blt_HashEntry *hPtr;
 
         colPtr = tablePtr->primaryKeys[i];
         keyTablePtr = tablePtr->keyTables + i;
@@ -5982,6 +5984,7 @@ blt_table_key_lookup(Tcl_Interp *interp, Table *tablePtr, int objc,
                 hPtr = Blt_FindHashEntry(keyTablePtr, (char *)lval);
             }
             break;
+        default:
         case TABLE_COLUMN_TYPE_UNKNOWN:
         case TABLE_COLUMN_TYPE_STRING:
             {
