@@ -3424,6 +3424,9 @@ GetColumn(Tcl_Interp *interp, TableView *viewPtr, Tcl_Obj *objPtr,
     if (col == NULL) {
 	return TCL_ERROR;
     }
+    if (viewPtr->flags & COLUMNS_PENDING) {
+        AddColumnsWhenIdleProc(viewPtr);
+    }
     hPtr = Blt_FindHashEntry(&viewPtr->columnTable, (char *)col);
     if (hPtr == NULL) {
 	if (interp != NULL) {
@@ -3658,6 +3661,9 @@ GetRow(Tcl_Interp *interp, TableView *viewPtr, Tcl_Obj *objPtr, Row **rowPtrPtr)
     row = blt_table_get_row(interp, viewPtr->table, objPtr);
     if (row == NULL) {
 	return TCL_ERROR;
+    }
+    if (viewPtr->flags & ROWS_PENDING) {
+        AddRowsWhenIdleProc(viewPtr);
     }
     hPtr = Blt_FindHashEntry(&viewPtr->rowTable, (char *)row);
     if (hPtr == NULL) {
@@ -12083,7 +12089,7 @@ AddColumnsWhenIdleProc(ClientData clientData)
     }
     oldNumColumns = viewPtr->numColumns;
     newNumColumns = blt_table_num_columns(viewPtr->table);
-    assert(newNumColumns > oldNumColumns);
+    assert(newNumColumns >= oldNumColumns);
     viewPtr->columns = Blt_AssertRealloc(viewPtr->columns, 
         sizeof(Column *) * newNumColumns);
     
