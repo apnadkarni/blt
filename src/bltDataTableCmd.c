@@ -6843,7 +6843,8 @@ ExportOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 static int
 KeysOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 {
-    Blt_Chain keys;
+    BLT_TABLE_COLUMN *keys;
+    int numKeys;
     BLT_TABLE table;
     int i;
 
@@ -6851,14 +6852,13 @@ KeysOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	Tcl_Obj *listObjPtr;
 	Blt_ChainLink link;
 
-	keys = blt_table_get_keys(cmdPtr->table);
+	numKeys = blt_table_get_keys(cmdPtr->table, &keys);
 	listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
-	for (link = Blt_Chain_FirstLink(keys); link != NULL; 
-	     link = Blt_Chain_NextLink(link)) {
+	for (i = 0; i < numKeys; i++) {
 	    BLT_TABLE_COLUMN col;
 	    Tcl_Obj *objPtr;
 	    
-	    col = Blt_Chain_GetValue(link);
+	    col = keys[i];
 	    objPtr = Tcl_NewStringObj(blt_table_column_label(col), -1);
 	    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
 	}
@@ -6866,18 +6866,18 @@ KeysOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	return TCL_OK;
     }
     table = cmdPtr->table;
-    keys = Blt_Chain_Create();
-    for (i = 2; i < objc; i++) {
+    keys = Blt_AssertMalloc(sizeof(BLT_TABLE_COLUMN) * (objc - 2));
+    for (numKeys = 0, i = 2; i < objc; i++, numKeys++) {
 	BLT_TABLE_COLUMN col;
 
 	col = blt_table_get_column(interp, table, objv[i]);
 	if (col == NULL) {
-	    Blt_Chain_Destroy(keys);
+	    Blt_Free(keys);
 	    return TCL_ERROR;
 	}
-	Blt_Chain_Append(keys, col);
+	keys[numKeys] = col;
     }
-    blt_table_set_keys(table, keys, 0);
+    blt_table_set_keys(table, numKeys, keys, 0);
     return TCL_OK;
 }
 
@@ -6945,31 +6945,24 @@ LappendOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 static int
 LookupOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 {
-    long numKeys;
-    Blt_Chain keys;
+    int numKeys;
+    BLT_TABLE_COLUMN *keys;
     BLT_TABLE_ROW row;
     BLT_TABLE table;
     long i;
 
-    keys = blt_table_get_keys(cmdPtr->table);
-    numKeys = Blt_Chain_GetLength(keys);
+    numKeys = blt_table_get_keys(cmdPtr->table, &keys);
     if ((objc - 2) != numKeys) {
-	Blt_ChainLink link;
-
 	Tcl_AppendResult(interp, "wrong # of keys: should be \"", (char *)NULL);
-	for (link = Blt_Chain_FirstLink(keys); link != NULL; 
-	     link = Blt_Chain_NextLink(link)) {
-	    BLT_TABLE_COLUMN col;
-
-	    col = Blt_Chain_GetValue(link);
-	    Tcl_AppendResult(interp, blt_table_column_label(col), " ", 
+	for (i = 0; i < numKeys; i++) {
+	    Tcl_AppendResult(interp, blt_table_column_label(keys[i]), " ", 
 			     (char *)NULL);
 	}
 	Tcl_AppendResult(interp, "\"", (char *)NULL);
 	return TCL_ERROR;
     }
     table = cmdPtr->table;
-    if (blt_table_key_lookup(interp, table, objc - 2, objv + 2, &row)!=TCL_OK) {
+    if (blt_table_key_lookup(interp, table, objc-2, objv+2, &row) != TCL_OK) {
 	return TCL_ERROR;
     }
     i = (row == NULL) ? -1 : blt_table_row_index(row);

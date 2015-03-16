@@ -804,13 +804,14 @@ BLT_EXTERN void		blt_table_unset_keys(BLT_TABLE table);
 #ifndef blt_table_get_keys_DECLARED
 #define blt_table_get_keys_DECLARED
 /* 123 */
-BLT_EXTERN Blt_Chain	blt_table_get_keys(BLT_TABLE table);
+BLT_EXTERN int          blt_table_get_keys(BLT_TABLE table,
+                               BLT_TABLE_COLUMN **keysPtr);
 #endif
 #ifndef blt_table_set_keys_DECLARED
 #define blt_table_set_keys_DECLARED
 /* 124 */
-BLT_EXTERN int		blt_table_set_keys(BLT_TABLE table, Blt_Chain keys,
-				int unique);
+BLT_EXTERN int		blt_table_set_keys(BLT_TABLE table, int numKeys,
+                                BLT_TABLE_COLUMN *keys, int unique);
 #endif
 #ifndef blt_table_key_lookup_DECLARED
 #define blt_table_key_lookup_DECLARED
@@ -1767,8 +1768,8 @@ typedef struct BltTclProcs {
     int (*blt_table_file_restore) (Tcl_Interp *interp, BLT_TABLE table, const char *fileName, unsigned int flags); /* 120 */
     int (*blt_table_register_format) (Tcl_Interp *interp, const char *name, BLT_TABLE_IMPORT_PROC *importProc, BLT_TABLE_EXPORT_PROC *exportProc); /* 121 */
     void (*blt_table_unset_keys) (BLT_TABLE table); /* 122 */
-    Blt_Chain (*blt_table_get_keys) (BLT_TABLE table); /* 123 */
-    int (*blt_table_set_keys) (BLT_TABLE table, Blt_Chain keys, int unique); /* 124 */
+    int (*blt_table_get_keys) (BLT_TABLE table, BLT_TABLE_COLUMN **keysPtr); /* 123 */
+    int (*blt_table_set_keys) (BLT_TABLE table, int numKeys, BLT_TABLE_COLUMN *keys, int unique); /* 124 */
     int (*blt_table_key_lookup) (Tcl_Interp *interp, BLT_TABLE table, int objc, Tcl_Obj *const *objv, BLT_TABLE_ROW *rowPtr); /* 125 */
     int (*blt_table_get_column_limits) (Tcl_Interp *interp, BLT_TABLE table, BLT_TABLE_COLUMN col, Tcl_Obj **minObjPtrPtr, Tcl_Obj **maxObjPtrPtr); /* 126 */
     void (*blt_InitHashTable) (Blt_HashTable *tablePtr, size_t keyType); /* 127 */

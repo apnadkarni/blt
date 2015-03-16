@@ -36,7 +36,6 @@ typedef struct _BLT_TABLE_TAGS *BLT_TABLE_TAGS;
 typedef enum {
     TABLE_COLUMN_TYPE_UNKNOWN=-1, 
     TABLE_COLUMN_TYPE_STRING, 
-    TABLE_COLUMN_TYPE_INT, 
     TABLE_COLUMN_TYPE_DOUBLE, 
     TABLE_COLUMN_TYPE_LONG, 
     TABLE_COLUMN_TYPE_TIME, 
@@ -210,12 +209,15 @@ typedef struct _BLT_TABLE {
     Blt_Chain rowNotifiers;		/* Chain of event handlers. */
     BLT_TABLE_TAGS tags;
 
-    Blt_HashTable *keyTables;		/* Array of primary keys. */
-    long numKeys;			/* Length of the above array. */
-
+    Blt_HashTable *keyTables;		/* Array of primary key
+                                         * hashtables. */
     BLT_TABLE_ROW *masterKey;		/* Master key entry. */
     Blt_HashTable masterKeyTable;
-    Blt_Chain primaryKeys;
+    BLT_TABLE_COLUMN *primaryKeys;      /* Array of columns acting as
+                                         * primary keys for table
+                                         * lookups. */
+    int numKeys;			/* # of primary keys. */
+
     unsigned int flags;
 } *BLT_TABLE;
 
@@ -770,8 +772,9 @@ BLT_EXTERN int blt_table_register_format(Tcl_Interp *interp, const char *name,
 	BLT_TABLE_IMPORT_PROC *importProc, BLT_TABLE_EXPORT_PROC *exportProc);
 
 BLT_EXTERN void blt_table_unset_keys(BLT_TABLE table);
-BLT_EXTERN Blt_Chain blt_table_get_keys(BLT_TABLE table);
-BLT_EXTERN int blt_table_set_keys(BLT_TABLE table, Blt_Chain keys, int unique);
+BLT_EXTERN int blt_table_get_keys(BLT_TABLE table, BLT_TABLE_COLUMN **keysPtr);
+BLT_EXTERN int blt_table_set_keys(BLT_TABLE table, int numKeys,
+        BLT_TABLE_COLUMN *keys, int unique);
 BLT_EXTERN int blt_table_key_lookup(Tcl_Interp *interp, BLT_TABLE table,
 	int objc, Tcl_Obj *const *objv, BLT_TABLE_ROW *rowPtr);
 

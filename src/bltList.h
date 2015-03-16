@@ -42,11 +42,11 @@ typedef struct _Blt_ListNode *Blt_ListNode;
 
 typedef union {			/* Key has one of these forms: */
     const void *oneWordValue;	/* One-word value for key. */
-    unsigned int words[1];	/* Multiple integer words for key.  The actual
-				 * size will be as large as necessary for this
-				 * table's keys. */
-    char string[4];		/* String for key.  The actual size will be as
-				 * large as needed to hold the key. */
+    unsigned int words[1];	/* Multiple integer words for key.  The
+				 * actual size will be as large as
+				 * necessary for this table's keys. */
+    char string[4];		/* String for key.  The actual size will be
+				 * as large as needed to hold the key. */
 } Blt_ListKey;
 
 /*
@@ -67,9 +67,12 @@ typedef int (Blt_ListCompareProc)(Blt_ListNode *node1Ptr,
  * A Blt_List is a doubly chained list structure.
  */
 struct _Blt_List {
-    Blt_ListNode head;			/* Pointer to first element in list */
-    Blt_ListNode tail;			/* Pointer to last element in list */
-    size_t numNodes;			/* # of nodes currently in the list. */
+    Blt_ListNode head;			/* Pointer to first element in
+                                         * list */
+    Blt_ListNode tail;			/* Pointer to last element in
+                                         * list */
+    size_t numNodes;			/* # of nodes currently in the
+                                         * list. */
     size_t type;			/* Type of keys in list. */
 };
 

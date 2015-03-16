@@ -987,7 +987,7 @@ CompareValues(Column *colPtr, const Row *r1Ptr, const Row *r2Ptr)
 	switch (blt_table_column_type(col)) {
 	case TABLE_COLUMN_TYPE_STRING:
 	    sortType = SORT_DICTIONARY;	break;
-	case TABLE_COLUMN_TYPE_INT:
+	case TABLE_COLUMN_TYPE_LONG:
 	    sortType = SORT_INTEGER;	break;
 	case TABLE_COLUMN_TYPE_DOUBLE:
 	    sortType = SORT_REAL;	break;

@@ -752,8 +752,8 @@ struct _TableView {
 
     Blt_HashTable rowTable;		/* Hash table of rows keyed by the
 					 * BLT_TABLE_ROW. */
-    Blt_HashTable columnTable;		/* Hash table of columns keyed by the
-					 * BLT_TABLE_COLUMN. */
+    Blt_HashTable columnTable;		/* Hash table of columns keyed by
+					 * the BLT_TABLE_COLUMN. */
     Blt_HashTable cellTable;		/* Hash table of cells keys by the
 					 * combination of the Row and
 					 * Column pointer addresses. */

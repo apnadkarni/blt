@@ -573,7 +573,7 @@ blt_table_name_to_column_type(const char *s)
     if ((c == 's') && (len > 2) && (strncmp(s, "string", len) == 0)) {
 	return TABLE_COLUMN_TYPE_STRING;
     } else if ((c == 'i') && (len > 2) && (strncmp(s, "integer", len) == 0)) {
-	return TABLE_COLUMN_TYPE_INT;
+	return TABLE_COLUMN_TYPE_LONG;
     } else if ((c == 'n') && (len > 2) && (strncmp(s, "number", len) == 0)) {
 	return TABLE_COLUMN_TYPE_DOUBLE;
     } else if ((c == 'd') && (strcmp(s, "double") == 0)) {
@@ -674,9 +674,6 @@ GetObjFromValue(BLT_TABLE_COLUMN_TYPE type, Value *valuePtr)
     case TABLE_COLUMN_TYPE_LONG:	/* long */
 	objPtr = Tcl_NewLongObj(valuePtr->datum.l);
 	break;
-    case TABLE_COLUMN_TYPE_INT:		/* int */
-	objPtr = Tcl_NewIntObj((int)valuePtr->datum.l);
-	break;
     }
     return objPtr;
 }
@@ -705,7 +702,6 @@ SetValueFromObj(Tcl_Interp *interp, BLT_TABLE_COLUMN_TYPE type,
 	}
 	break;
     case TABLE_COLUMN_TYPE_LONG:	/* long */
-    case TABLE_COLUMN_TYPE_INT:		/* int */
 	if (Blt_GetLongFromObj(interp, objPtr, &valuePtr->datum.l) != TCL_OK) {
 	    return TCL_ERROR;
 	}
@@ -759,7 +755,6 @@ SetValueFromString(Tcl_Interp *interp, BLT_TABLE_COLUMN_TYPE type,
 	valuePtr->datum.d = d;
 	break;
     case TABLE_COLUMN_TYPE_LONG:	/* long */
-    case TABLE_COLUMN_TYPE_INT:		/* int */
 	if (Blt_GetLongFromObj(interp, objPtr, &l) != TCL_OK) {
 	    Tcl_DecrRefCount(objPtr);
 	    return TCL_ERROR;
@@ -2179,7 +2174,6 @@ blt_table_get_compare_proc(Table *tablePtr, Column *colPtr, unsigned int flags)
 
     if ((flags & TABLE_SORT_TYPE_MASK) == TABLE_SORT_AUTO) {
 	switch (colPtr->type) {
-	case TABLE_COLUMN_TYPE_INT:
 	case TABLE_COLUMN_TYPE_LONG:
 	    proc = CompareIntegerRows;
 	    break;
@@ -5694,37 +5688,36 @@ blt_table_file_restore(Tcl_Interp *interp, BLT_TABLE table,
 static void
 FreePrimaryKeys(Table *tablePtr)
 {
-    Blt_ChainLink link;
+    int i;
     
-    for (link = Blt_Chain_FirstLink(tablePtr->primaryKeys); link != NULL;
-	 link = Blt_Chain_NextLink(link)) {
+    for (i = 0; i < tablePtr->numKeys; i++) {
 	Column *colPtr;
 	
-	colPtr = Blt_Chain_GetValue(link);
+	colPtr = tablePtr->primaryKeys[i];
 	colPtr->flags &= ~TABLE_COLUMN_PRIMARY_KEY;
     }
-    Blt_Chain_Destroy(tablePtr->primaryKeys);
+    Blt_Free(tablePtr->primaryKeys);
     tablePtr->primaryKeys = NULL;
+    tablePtr->numKeys = 0;
 }
 
 static void
 FreeKeyTables(Table *tablePtr)
 {
-    long i;
-
-    for (i = 0; i < tablePtr->numKeys; i++) {
-	Blt_DeleteHashTable(tablePtr->keyTables + i);
-    }
     if (tablePtr->keyTables != NULL) {
+        int i;
+
+        for (i = 0; i < tablePtr->numKeys; i++) {
+            Blt_DeleteHashTable(tablePtr->keyTables + i);
+        }
 	Blt_Free(tablePtr->keyTables);
+        tablePtr->keyTables = NULL;
     }
     if (tablePtr->masterKey != NULL) {
 	Blt_Free(tablePtr->masterKey);
 	Blt_DeleteHashTable(&tablePtr->masterKeyTable);
+        tablePtr->masterKey = NULL;
     }
-    tablePtr->keyTables = NULL;
-    tablePtr->numKeys = 0;
-    tablePtr->masterKey = NULL;
 }
 
 void
@@ -5735,31 +5728,53 @@ blt_table_unset_keys(Table *tablePtr)
     tablePtr->flags &= ~(TABLE_KEYS_DIRTY | TABLE_KEYS_UNIQUE);
 }
 
-Blt_Chain 
-blt_table_get_keys(Table *tablePtr)
+int
+blt_table_get_keys(Table *tablePtr, BLT_TABLE_COLUMN **keysPtr)
 {
-    return tablePtr->primaryKeys;
+    *keysPtr = tablePtr->primaryKeys;
+    return tablePtr->numKeys;
+}
+
+static int
+SameKeys(int len1, BLT_TABLE_COLUMN *keys1, int len2, BLT_TABLE_COLUMN *keys2)
+{
+    int i;
+    
+    if (len1 != len2) {
+        return FALSE;
+    }
+    for (i = 0; i < len1; i++) {
+        if (keys1[i] != keys2[i]) {
+            fprintf(stderr, "different keys\n");
+            return FALSE;
+        }
+    } 
+    return TRUE;
 }
 
 int
-blt_table_set_keys(Table *tablePtr, Blt_Chain primaryKeys, int unique)
+blt_table_set_keys(Table *tablePtr, int numKeys, BLT_TABLE_COLUMN *keys,
+                   int unique)
 {
-    Blt_ChainLink link;
-
+    int i;
+    
+    if (SameKeys(tablePtr->numKeys, tablePtr->primaryKeys, numKeys, keys)) {
+        return TCL_OK;
+    }
     if (tablePtr->primaryKeys != NULL) {
 	FreePrimaryKeys(tablePtr);
     }
-    tablePtr->primaryKeys = primaryKeys;
-
+    tablePtr->primaryKeys = keys;
+    tablePtr->numKeys = numKeys;
+    
     /* Mark the designated columns as primary keys.  This flag is used to
      * check if a primary column is deleted, it's rows are added or
      * changed, or it's values set or unset.  The generated keytables are
      * invalid and need to be regenerated. */
-    for (link = Blt_Chain_FirstLink(tablePtr->primaryKeys); link != NULL; 
-	 link = Blt_Chain_NextLink(link)) {
+    for (i = 0; i < numKeys; i++) {
 	Column *colPtr;
 	
-	colPtr = Blt_Chain_GetValue(link);
+	colPtr = keys[i];
 	colPtr->flags |= TABLE_COLUMN_PRIMARY_KEY;
     }
     tablePtr->flags |= TABLE_KEYS_DIRTY;
@@ -5772,62 +5787,94 @@ blt_table_set_keys(Table *tablePtr, Blt_Chain primaryKeys, int unique)
 static int
 MakeKeyTables(Tcl_Interp *interp, Table *tablePtr)
 {
-    long i;
+    int i;
     size_t masterKeySize;
-    long numKeys;
 
     FreeKeyTables(tablePtr);
     tablePtr->flags &= ~TABLE_KEYS_DIRTY;
 
-    numKeys = Blt_Chain_GetLength(tablePtr->primaryKeys);
-
     /* Create a hashtable for each key. */
-    tablePtr->keyTables = Blt_Malloc(sizeof(Blt_HashTable) * numKeys);
+    tablePtr->keyTables =
+        Blt_Malloc(sizeof(Blt_HashTable) * tablePtr->numKeys);
     if (tablePtr->keyTables == NULL) {
 	if (interp != NULL) {
 	    Tcl_AppendResult(interp, "can't allocated keytables for ",
-		Blt_Itoa(numKeys), " keys.", (char *)NULL);
+		Blt_Itoa(tablePtr->numKeys), " keys.", (char *)NULL);
 	}
 	return TCL_ERROR;
     }
-    tablePtr->numKeys = numKeys;
-    for (i = 0; i < numKeys; i++) {
-	Blt_InitHashTable(tablePtr->keyTables + i, BLT_STRING_KEYS);
+    for (i = 0; i < tablePtr->numKeys; i++) {
+        size_t size;
+        Column *colPtr;
+
+        colPtr = tablePtr->primaryKeys[i];
+        switch (colPtr->type) {
+        case TABLE_COLUMN_TYPE_DOUBLE:
+        case TABLE_COLUMN_TYPE_TIME:
+            size = sizeof(double)/sizeof(int);
+            break;
+        case TABLE_COLUMN_TYPE_LONG:
+            size = BLT_ONE_WORD_KEYS;
+            break;
+        case TABLE_COLUMN_TYPE_STRING:
+        case TABLE_COLUMN_TYPE_UNKNOWN:
+            size = BLT_STRING_KEYS;
+            break;
+        }
+	Blt_InitHashTable(tablePtr->keyTables + i, size);
     }
-    masterKeySize = sizeof(BLT_TABLE_ROW) * numKeys;
+    /* Generate a master table of key tuple combinations for each row.  
+     * We uniquely identify the key by its row in the column. The combination
+     * of these keys (in the exact order) is how we find the row. */
+    masterKeySize = sizeof(BLT_TABLE_ROW) * tablePtr->numKeys;
     tablePtr->masterKey = Blt_AssertMalloc(masterKeySize);
     Blt_InitHashTable(&tablePtr->masterKeyTable, masterKeySize / sizeof(int));
 
-    /* For each row, create hash entries the the individual key columns,
+    /* For each row, create hash entries for the individual key columns,
      * but also for the combined keys for the row.  The hash of the
      * combined keys must be unique. */
     for (i = 0; i < blt_table_num_rows(tablePtr); i++) {
-	Blt_ChainLink link;
 	Row *rowPtr;
-	long j;
+	int j;
 
 	rowPtr = blt_table_row(tablePtr, i);
-	for (j = 0, link = Blt_Chain_FirstLink(tablePtr->primaryKeys); 
-	     link != NULL; link = Blt_Chain_NextLink(link), j++) {
-	    Column *colPtr;
-	    Blt_HashEntry *hPtr;
-	    int isNew;
-	    Value *valuePtr;
-
-	    colPtr = Blt_Chain_GetValue(link);
+	for (j = 0; j < tablePtr->numKeys; j++) {
+            Blt_HashTable *keyTablePtr;
+            Column *colPtr;
+            Value *valuePtr;
+            int isNew;
+            Blt_HashEntry *hPtr;
+        
+	    colPtr = tablePtr->primaryKeys[j];
 	    valuePtr = GetValue(tablePtr, rowPtr, colPtr);
-	    if (IsEmpty(valuePtr)) {
+    	    if (IsEmpty(valuePtr)) {
 		break;                  /* Skip this row since one of the
                                          * key values is empty. */
 	    }
-	    hPtr = Blt_CreateHashEntry(tablePtr->keyTables + j, 
-		GetString(valuePtr), &isNew);
+            keyTablePtr = tablePtr->keyTables + j;
+            switch (colPtr->type) {
+            case TABLE_COLUMN_TYPE_DOUBLE:
+            case TABLE_COLUMN_TYPE_TIME:
+                hPtr = Blt_CreateHashEntry(keyTablePtr,
+                        (char *)&valuePtr->datum.d, &isNew);
+                break;
+            case TABLE_COLUMN_TYPE_LONG:
+                hPtr = Blt_CreateHashEntry(keyTablePtr,
+                        (char *)valuePtr->datum.l, &isNew);
+                break;
+            case TABLE_COLUMN_TYPE_STRING:
+            case TABLE_COLUMN_TYPE_UNKNOWN:
+            default:
+                hPtr = Blt_CreateHashEntry(keyTablePtr, GetString(valuePtr),
+                        &isNew);
+                break;
+            }
 	    if (isNew) {
 		Blt_SetHashValue(hPtr, rowPtr);
 	    }
 	    tablePtr->masterKey[j] = Blt_GetHashValue(hPtr);
 	}
-	if (j == numKeys) {
+	if (j == tablePtr->numKeys) {
 	    Blt_HashEntry *hPtr;
 	    int isNew;
 
@@ -5856,54 +5903,95 @@ MakeKeyTables(Tcl_Interp *interp, Table *tablePtr)
     return TCL_OK;
 }
 	    
+/*
+ *---------------------------------------------------------------------------
+ *
+ * blt_table_key_lookup --
+ *
+ *	Look up the (hopefully) unique row that matches all the values
+ *	for each of the key columns.  
+ *
+ * Results:
+ *	Returns a standard TCL result.  *rowPtrPtr will return the 
+ *      pointer to the found row.  NULL is the row wasn't found.
+ *
+ *---------------------------------------------------------------------------
+ */
 int
 blt_table_key_lookup(Tcl_Interp *interp, Table *tablePtr, int objc, 
-		 Tcl_Obj *const *objv, Row **rowPtrPtr)
+                     Tcl_Obj *const *objv, Row **rowPtrPtr)
 {
     long i;
     Blt_HashEntry *hPtr;
 
     *rowPtrPtr = NULL;
-    if (objc != Blt_Chain_GetLength(tablePtr->primaryKeys)) {
+    if (objc != tablePtr->numKeys) {
 	if (interp != NULL) {
-	    Blt_ChainLink link;
-
 	    Tcl_AppendResult(interp, "wrong # of values: should be ",
 		Blt_Itoa(tablePtr->numKeys), " value(s) of ", (char *)NULL);
-	    for (link = Blt_Chain_FirstLink(tablePtr->primaryKeys);
-		 link != NULL; link = Blt_Chain_NextLink(link)) {
+	    for (i = 0; i < tablePtr->numKeys; i++) {
 		BLT_TABLE_COLUMN col;
 
-		col = Blt_Chain_GetValue(link);
+		col = tablePtr->primaryKeys[i];
 		Tcl_AppendResult(interp, blt_table_column_label(col), " ", 
 				 (char *)NULL);
 	    }
 	}
-	return TCL_ERROR;               /* Bad number of keys supplied. */
+	return TCL_ERROR;               /* Wrong # of keys supplied. */
     }
-    if (tablePtr->primaryKeys == NULL) {
+    if (tablePtr->numKeys == 0) {
 	if (interp != NULL) {
 	    Tcl_AppendResult(interp, "no primary keys designated",
 			 (char *)NULL);
 	}
 	return TCL_ERROR;
     }
-    if ((tablePtr->flags & TABLE_KEYS_DIRTY) && 
-	(MakeKeyTables(interp, tablePtr) != TCL_OK)) {
-	return TCL_ERROR;
+    if (tablePtr->flags & TABLE_KEYS_DIRTY) {
+	if (MakeKeyTables(interp, tablePtr) != TCL_OK) {
+            return TCL_ERROR;
+        }
     }
-    if (tablePtr->numKeys == 0) {
-	if (interp != NULL) {
-	    Tcl_AppendResult(interp, "failed to generate key tables",
-			     (char *)NULL);
-	}
-	return TCL_ERROR;
-    }
+    /* Create a master search key by getting the rows from the individual
+     * key hash tables for each key.  Use this key to search the master
+     * table. */
     for (i = 0; i < tablePtr->numKeys; i++) {
-	const char *string;
+        Blt_HashTable *keyTablePtr;
+        Column *colPtr;
 
-	string = Tcl_GetString(objv[i]);
-	hPtr = Blt_FindHashEntry(tablePtr->keyTables + i, string);
+        colPtr = tablePtr->primaryKeys[i];
+        keyTablePtr = tablePtr->keyTables + i;
+        switch (colPtr->type) {
+        case TABLE_COLUMN_TYPE_DOUBLE:
+        case TABLE_COLUMN_TYPE_TIME:
+            {
+                double dval;
+
+                if (Blt_GetDoubleFromObj(interp, objv[i], &dval) != TCL_OK) {
+                    return TCL_ERROR;
+                }
+                hPtr = Blt_FindHashEntry(keyTablePtr, (char *)&dval);
+            }
+            break;
+        case TABLE_COLUMN_TYPE_LONG:
+            {
+                long lval;
+
+                if (Blt_GetLongFromObj(interp, objv[i], &lval) != TCL_OK) {
+                    return TCL_ERROR;
+                }
+                hPtr = Blt_FindHashEntry(keyTablePtr, (char *)lval);
+            }
+            break;
+        case TABLE_COLUMN_TYPE_UNKNOWN:
+        case TABLE_COLUMN_TYPE_STRING:
+            {
+                const char *string;
+
+                string = Tcl_GetString(objv[i]);
+                hPtr = Blt_FindHashEntry(keyTablePtr, string);
+            }
+            break;
+        }
 	if (hPtr == NULL) {
 	    return TCL_OK;              /* Can't find one of the keys, so
                                          * the whole search fails. */
@@ -5911,7 +5999,7 @@ blt_table_key_lookup(Tcl_Interp *interp, Table *tablePtr, int objc,
 	tablePtr->masterKey[i] = Blt_GetHashValue(hPtr);
     }
     hPtr = Blt_FindHashEntry(&tablePtr->masterKeyTable, 
-			     (char *)tablePtr->masterKey);
+                (char *)tablePtr->masterKey);
     if (hPtr == NULL) {
 	Blt_Warn("can't find master key\n");
 	return TCL_OK;
@@ -6057,7 +6145,6 @@ blt_table_append_string(Tcl_Interp *interp, Table *tablePtr, Row *rowPtr,
 	valuePtr->datum.d = d;
 	break;
     case TABLE_COLUMN_TYPE_LONG:	/* long */
-    case TABLE_COLUMN_TYPE_INT:		/* int */
 	if (Blt_GetLongFromObj(interp, objPtr, &l) != TCL_OK) {
 	    Tcl_DecrRefCount(objPtr);
 	    return TCL_ERROR;

@@ -219,7 +219,7 @@ static const char emptyString[] = "";
 #define DEF_STYLE_IND_COLOR	    (char *)NULL
 #define DEF_STYLE_IND_SIZE	    "12"
 #define DEF_STYLE_RELIEF	    "flat"
-#define DISABLED_BACKGROUND	    RGB_GREY97
+#define DISABLED_BACKGROUND	    RGB_WHITE
 #define DISABLED_FOREGROUND         RGB_GREY70
 
 static const char *sortTypeStrings[] = {

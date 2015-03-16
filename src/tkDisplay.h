@@ -206,7 +206,8 @@ struct _TkDisplay {
 				 * such modifier, then this is zero. */
     enum {
 	LU_IGNORE, LU_CAPS, LU_SHIFT
-    } lockUsage;		/* Indicates how to interpret lock modifier. */
+    } lockUsage;		/* Indicates how to interpret lock
+                                 * modifier. */
     int numModKeyCodes;		/* Number of entries in modKeyCodes array
 				 * below. */
     KeyCode *modKeyCodes;	/* Pointer to an array giving keycodes for
