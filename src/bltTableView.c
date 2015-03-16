@@ -4,59 +4,59 @@
  *
  * This module implements an table viewer widget for the BLT toolkit.
  *
- *	Copyright 1998-2004 George A Howlett.
+ *      Copyright 1998-2004 George A Howlett.
  *
- *	Permission is hereby granted, free of charge, to any person
- *	obtaining a copy of this software and associated documentation
- *	files (the "Software"), to deal in the Software without
- *	restriction, including without limitation the rights to use, copy,
- *	modify, merge, publish, distribute, sublicense, and/or sell copies
- *	of the Software, and to permit persons to whom the Software is
- *	furnished to do so, subject to the following conditions:
+ *      Permission is hereby granted, free of charge, to any person
+ *      obtaining a copy of this software and associated documentation
+ *      files (the "Software"), to deal in the Software without
+ *      restriction, including without limitation the rights to use, copy,
+ *      modify, merge, publish, distribute, sublicense, and/or sell copies
+ *      of the Software, and to permit persons to whom the Software is
+ *      furnished to do so, subject to the following conditions:
  *
- *	The above copyright notice and this permission notice shall be
- *	included in all copies or substantial portions of the Software.
+ *      The above copyright notice and this permission notice shall be
+ *      included in all copies or substantial portions of the Software.
  *
- *	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- *	EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- *	MERCANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- *	NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
- *	BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
- *	ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
- *	CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- *	SOFTWARE.
+ *      THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ *      EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ *      MERCANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ *      NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+ *      BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ *      ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ *      CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ *      SOFTWARE.
  */
 
 /* 
  * TODO:
- *	o -autocreate rows|columns|both|none for new table
- *	x Focus ring on cells.
- *	x Rules for row/columns (-rulewidth > 0)
+ *      o -autocreate rows|columns|both|none for new table
+ *      x Focus ring on cells.
+ *      x Rules for row/columns (-rulewidth > 0)
  *      o Dashes for row/column rules.
- *	o -span for rows/columns titles 
- *	o Printing PS/PDF 
- *	x Underline text for active cells.
- *	x Imagebox cells
- *	x Combobox cells
- *	x Combobox column filters
- *	o Text editor widget for cells
- *	o XCopyArea for scrolling non-damaged areas.
- *	o Manage scrollbars geometry.
- *	o -padx -pady for styles 
- *	o -titlefont, -titlecolor, -activetitlecolor, -disabledtitlecolor 
- *	   for columns?
- *	o -justify period (1.23), comma (1,23), space (1.23 ev)
- *	o color icons for resize cursors
+ *      o -span for rows/columns titles 
+ *      o Printing PS/PDF 
+ *      x Underline text for active cells.
+ *      x Imagebox cells
+ *      x Combobox cells
+ *      x Combobox column filters
+ *      o Text editor widget for cells
+ *      o XCopyArea for scrolling non-damaged areas.
+ *      o Manage scrollbars geometry.
+ *      o -padx -pady for styles 
+ *      o -titlefont, -titlecolor, -activetitlecolor, -disabledtitlecolor 
+ *         for columns?
+ *      o -justify period (1.23), comma (1,23), space (1.23 ev)
+ *      o color icons for resize cursors
  */
 /*
  * Known Bugs:
- *	o Row and column titles sometimes get drawn in the wrong location.
- *	o Don't handle hidden rows and columns in ComputeVisibility.
- *	o Too slow loading.  
- *	o Should be told what rows and columns are being added instead
- *	  of checking. Make that work with -whenidle.
- *	o Overallocate row and column arrays so that you don't have to
- *	  keep allocating a new array everytime.
+ *      o Row and column titles sometimes get drawn in the wrong location.
+ *      o Don't handle hidden rows and columns in ComputeVisibility.
+ *      o Too slow loading.  
+ *      o Should be told what rows and columns are being added instead
+ *        of checking. Make that work with -whenidle.
+ *      o Overallocate row and column arrays so that you don't have to
+ *        keep allocating a new array everytime.
  */
 #define BUILD_BLT_TK_PROCS 1
 #include "bltInt.h"
@@ -65,7 +65,7 @@
 
 #ifdef HAVE_CTYPE_H
 #  include <ctype.h>
-#endif	/* HAVE_CTYPE_H */
+#endif  /* HAVE_CTYPE_H */
 
 #ifdef HAVE_STDLIB_H
 #  include <stdlib.h> 
@@ -77,7 +77,7 @@
 
 #ifdef HAVE_LIMITS_H
 #  include <limits.h>
-#endif	/* HAVE_LIMITS_H */
+#endif  /* HAVE_LIMITS_H */
 
 #include <X11/Xutil.h>
 #include <X11/Xatom.h>
@@ -99,125 +99,125 @@
 
 #define TABLEVIEW_FIND_KEY "BLT TableView Find Command Interface"
 
-#define TITLE_PADX		2
-#define TITLE_PADY		1
-#define FILTER_GAP		3
+#define TITLE_PADX              2
+#define TITLE_PADY              1
+#define FILTER_GAP              3
 
-#define COLUMN_PAD		2
-#define FOCUS_WIDTH		1
-#define ICON_PADX		2
-#define ICON_PADY		1
-#define INSET_PAD		0
-#define LABEL_PADX		0
-#define LABEL_PADY		0
+#define COLUMN_PAD              2
+#define FOCUS_WIDTH             1
+#define ICON_PADX               2
+#define ICON_PADY               1
+#define INSET_PAD               0
+#define LABEL_PADX              0
+#define LABEL_PADY              0
 
 #include <X11/Xutil.h>
 #include <X11/Xatom.h>
 
-#define RESIZE_AREA		(8)
-#define FCLAMP(x)	((((x) < 0.0) ? 0.0 : ((x) > 1.0) ? 1.0 : (x)))
-#define CHOOSE(default, override)	\
+#define RESIZE_AREA             (8)
+#define FCLAMP(x)       ((((x) < 0.0) ? 0.0 : ((x) > 1.0) ? 1.0 : (x)))
+#define CHOOSE(default, override)       \
 	(((override) == NULL) ? (default) : (override))
 
 typedef ClientData (TagProc)(TableView *viewPtr, const char *string);
 
-#define DEF_CELL_STATE			"normal"
-#define DEF_CELL_STYLE			(char *)NULL
+#define DEF_CELL_STATE                  "normal"
+#define DEF_CELL_STYLE                  (char *)NULL
 
-#define DEF_ACTIVE_TITLE_BG		STD_ACTIVE_BACKGROUND
-#define DEF_ACTIVE_TITLE_FG		STD_ACTIVE_FOREGROUND
-#define DEF_AUTO_CREATE			"0"
-#define DEF_COLUMN_FILTERS		"0"
-#define DEF_BACKGROUND			STD_NORMAL_BACKGROUND
-#define DEF_BIND_TAGS			"all"
-#define DEF_BORDERWIDTH			STD_BORDERWIDTH
-#define DEF_COLUMN_ACTIVE_TITLE_RELIEF	"raised"
-#define DEF_COLUMN_COMMAND		(char *)NULL
-#define DEF_COLUMN_EDIT			"yes"
-#define DEF_COLUMN_FORMAT_COMMAND	(char *)NULL
-#define DEF_COLUMN_HIDE			"no"
-#define DEF_COLUMN_ICON			(char *)NULL
-#define DEF_COLUMN_MAX			"0"		
-#define DEF_COLUMN_MIN			"0"
-#define DEF_COLUMN_NORMAL_TITLE_BG	STD_NORMAL_BACKGROUND
-#define DEF_COLUMN_NORMAL_TITLE_FG	STD_NORMAL_FOREGROUND
-#define DEF_COLUMN_RESIZE_CURSOR	"arrow"
-#define DEF_COLUMN_PAD			"2"
-#define DEF_COLUMN_SHOW			"yes"
-#define DEF_COLUMN_STATE		"normal"
-#define DEF_COLUMN_STYLE		(char *)NULL
-#define DEF_COLUMN_TITLE_BORDERWIDTH	STD_BORDERWIDTH
-#define DEF_COLUMN_TITLE_FONT		STD_FONT_NORMAL
-#define DEF_COLUMN_TITLE_JUSTIFY	"center"
-#define DEF_COLUMN_TITLE_RELIEF		"raised"
-#define DEF_COLUMN_WEIGHT		"1.0"
-#define DEF_COLUMN_WIDTH		"0"
-#define DEF_DISABLED_TITLE_BG		STD_DISABLED_BACKGROUND
-#define DEF_DISABLED_TITLE_FG		STD_DISABLED_FOREGROUND
-#define DEF_EXPORT_SELECTION		"no"
-#define DEF_FILTER_ACTIVE_BG		STD_ACTIVE_BACKGROUND
-#define DEF_FILTER_ACTIVE_FG		RGB_BLACK
-#define DEF_FILTER_ACTIVE_RELIEF	"raised"
-#define DEF_FILTER_BORDERWIDTH		"1"
-#define DEF_FILTER_HIGHLIGHT		"0"
-#define DEF_FILTER_DISABLED_BG		STD_DISABLED_BACKGROUND
-#define DEF_FILTER_DISABLED_FG		STD_DISABLED_FOREGROUND
-#define DEF_FILTER_HIGHLIGHT_BG		RGB_GREY97 /*"#FFFFDD"*/
-#define DEF_FILTER_HIGHLIGHT_FG		STD_NORMAL_FOREGROUND
-#define DEF_FILTER_FONT			STD_FONT_NORMAL
-#define DEF_FILTER_ICON			(char *)NULL
-#define DEF_FILTER_MENU			(char *)NULL
-#define DEF_FILTER_NORMAL_BG		RGB_WHITE
-#define DEF_FILTER_NORMAL_FG		RGB_BLACK
-#define DEF_FILTER_SELECT_BG		STD_SELECT_BACKGROUND
-#define DEF_FILTER_SELECT_FG		STD_SELECT_FOREGROUND
-#define DEF_FILTER_SELECT_RELIEF	"sunken"
-#define DEF_FILTER_RELIEF		"solid"
-#define DEF_FILTER_SHOW			"yes"
-#define DEF_FILTER_STATE		"normal"
-#define DEF_FILTER_TEXT			""
-#define DEF_FOCUS_HIGHLIGHT_BG		STD_NORMAL_BACKGROUND
-#define DEF_FOCUS_HIGHLIGHT_COLOR	RGB_BLACK
-#define DEF_FOCUS_HIGHLIGHT_WIDTH	"2"
-#define DEF_HEIGHT			"400"
-#define DEF_RELIEF			"sunken"
-#define DEF_ROW_ACTIVE_TITLE_RELIEF	"raised"
-#define DEF_ROW_COMMAND			(char *)NULL
-#define DEF_ROW_EDIT			"yes"
-#define DEF_ROW_HEIGHT			"0"
-#define DEF_ROW_HIDE			"no"
-#define DEF_ROW_ICON			(char *)NULL
-#define DEF_ROW_MAX			"0"		
-#define DEF_ROW_MIN			"0"
-#define DEF_ROW_NORMAL_TITLE_BG		STD_NORMAL_BACKGROUND
-#define DEF_ROW_NORMAL_TITLE_FG		STD_NORMAL_FOREGROUND
-#define DEF_ROW_RESIZE_CURSOR		"arrow"
-#define DEF_ROW_SHOW			"yes"
-#define DEF_ROW_STATE			"normal"
-#define DEF_ROW_STYLE			(char *)NULL
-#define DEF_ROW_TITLE_BORDERWIDTH	STD_BORDERWIDTH
-#define DEF_ROW_TITLE_FONT		STD_FONT_SMALL
-#define DEF_ROW_TITLE_JUSTIFY		"center"
-#define DEF_ROW_TITLE_RELIEF		"raised"
-#define DEF_ROW_WEIGHT			"1.0"
-#define DEF_RULE_HEIGHT			"0"
-#define DEF_RULE_WIDTH			"0"
-#define DEF_SCROLL_INCREMENT		"20"
-#define DEF_SCROLL_MODE			"hierbox"
-#define DEF_SELECT_MODE			"single"
-#define DEF_SORT_COLUMN			(char *)NULL
-#define DEF_SORT_COLUMNS		(char *)NULL
-#define DEF_SORT_COMMAND		(char *)NULL
-#define DEF_SORT_DECREASING		"no"
-#define DEF_SORT_DOWN_ICON		(char *)NULL
-#define DEF_SORT_SELECTION		"no"
-#define DEF_SORT_TYPE			"auto"
-#define DEF_SORT_UP_ICON		(char *)NULL
-#define DEF_STYLE			"default"
-#define DEF_TABLE			(char *)NULL
-#define DEF_TAKE_FOCUS			"1"
-#define DEF_TITLES			"column"
-#define DEF_WIDTH			"200"
+#define DEF_ACTIVE_TITLE_BG             STD_ACTIVE_BACKGROUND
+#define DEF_ACTIVE_TITLE_FG             STD_ACTIVE_FOREGROUND
+#define DEF_AUTO_CREATE                 "0"
+#define DEF_COLUMN_FILTERS              "0"
+#define DEF_BACKGROUND                  STD_NORMAL_BACKGROUND
+#define DEF_BIND_TAGS                   "all"
+#define DEF_BORDERWIDTH                 STD_BORDERWIDTH
+#define DEF_COLUMN_ACTIVE_TITLE_RELIEF  "raised"
+#define DEF_COLUMN_COMMAND              (char *)NULL
+#define DEF_COLUMN_EDIT                 "yes"
+#define DEF_COLUMN_FORMAT_COMMAND       (char *)NULL
+#define DEF_COLUMN_HIDE                 "no"
+#define DEF_COLUMN_ICON                 (char *)NULL
+#define DEF_COLUMN_MAX                  "0"             
+#define DEF_COLUMN_MIN                  "0"
+#define DEF_COLUMN_NORMAL_TITLE_BG      STD_NORMAL_BACKGROUND
+#define DEF_COLUMN_NORMAL_TITLE_FG      STD_NORMAL_FOREGROUND
+#define DEF_COLUMN_RESIZE_CURSOR        "arrow"
+#define DEF_COLUMN_PAD                  "2"
+#define DEF_COLUMN_SHOW                 "yes"
+#define DEF_COLUMN_STATE                "normal"
+#define DEF_COLUMN_STYLE                (char *)NULL
+#define DEF_COLUMN_TITLE_BORDERWIDTH    STD_BORDERWIDTH
+#define DEF_COLUMN_TITLE_FONT           STD_FONT_NORMAL
+#define DEF_COLUMN_TITLE_JUSTIFY        "center"
+#define DEF_COLUMN_TITLE_RELIEF         "raised"
+#define DEF_COLUMN_WEIGHT               "1.0"
+#define DEF_COLUMN_WIDTH                "0"
+#define DEF_DISABLED_TITLE_BG           STD_DISABLED_BACKGROUND
+#define DEF_DISABLED_TITLE_FG           STD_DISABLED_FOREGROUND
+#define DEF_EXPORT_SELECTION            "no"
+#define DEF_FILTER_ACTIVE_BG            STD_ACTIVE_BACKGROUND
+#define DEF_FILTER_ACTIVE_FG            RGB_BLACK
+#define DEF_FILTER_ACTIVE_RELIEF        "raised"
+#define DEF_FILTER_BORDERWIDTH          "1"
+#define DEF_FILTER_HIGHLIGHT            "0"
+#define DEF_FILTER_DISABLED_BG          STD_DISABLED_BACKGROUND
+#define DEF_FILTER_DISABLED_FG          STD_DISABLED_FOREGROUND
+#define DEF_FILTER_HIGHLIGHT_BG         RGB_GREY97 /*"#FFFFDD"*/
+#define DEF_FILTER_HIGHLIGHT_FG         STD_NORMAL_FOREGROUND
+#define DEF_FILTER_FONT                 STD_FONT_NORMAL
+#define DEF_FILTER_ICON                 (char *)NULL
+#define DEF_FILTER_MENU                 (char *)NULL
+#define DEF_FILTER_NORMAL_BG            RGB_WHITE
+#define DEF_FILTER_NORMAL_FG            RGB_BLACK
+#define DEF_FILTER_SELECT_BG            STD_SELECT_BACKGROUND
+#define DEF_FILTER_SELECT_FG            STD_SELECT_FOREGROUND
+#define DEF_FILTER_SELECT_RELIEF        "sunken"
+#define DEF_FILTER_RELIEF               "solid"
+#define DEF_FILTER_SHOW                 "yes"
+#define DEF_FILTER_STATE                "normal"
+#define DEF_FILTER_TEXT                 ""
+#define DEF_FOCUS_HIGHLIGHT_BG          STD_NORMAL_BACKGROUND
+#define DEF_FOCUS_HIGHLIGHT_COLOR       RGB_BLACK
+#define DEF_FOCUS_HIGHLIGHT_WIDTH       "2"
+#define DEF_HEIGHT                      "400"
+#define DEF_RELIEF                      "sunken"
+#define DEF_ROW_ACTIVE_TITLE_RELIEF     "raised"
+#define DEF_ROW_COMMAND                 (char *)NULL
+#define DEF_ROW_EDIT                    "yes"
+#define DEF_ROW_HEIGHT                  "0"
+#define DEF_ROW_HIDE                    "no"
+#define DEF_ROW_ICON                    (char *)NULL
+#define DEF_ROW_MAX                     "0"             
+#define DEF_ROW_MIN                     "0"
+#define DEF_ROW_NORMAL_TITLE_BG         STD_NORMAL_BACKGROUND
+#define DEF_ROW_NORMAL_TITLE_FG         STD_NORMAL_FOREGROUND
+#define DEF_ROW_RESIZE_CURSOR           "arrow"
+#define DEF_ROW_SHOW                    "yes"
+#define DEF_ROW_STATE                   "normal"
+#define DEF_ROW_STYLE                   (char *)NULL
+#define DEF_ROW_TITLE_BORDERWIDTH       STD_BORDERWIDTH
+#define DEF_ROW_TITLE_FONT              STD_FONT_SMALL
+#define DEF_ROW_TITLE_JUSTIFY           "center"
+#define DEF_ROW_TITLE_RELIEF            "raised"
+#define DEF_ROW_WEIGHT                  "1.0"
+#define DEF_RULE_HEIGHT                 "0"
+#define DEF_RULE_WIDTH                  "0"
+#define DEF_SCROLL_INCREMENT            "20"
+#define DEF_SCROLL_MODE                 "hierbox"
+#define DEF_SELECT_MODE                 "single"
+#define DEF_SORT_COLUMN                 (char *)NULL
+#define DEF_SORT_COLUMNS                (char *)NULL
+#define DEF_SORT_COMMAND                (char *)NULL
+#define DEF_SORT_DECREASING             "no"
+#define DEF_SORT_DOWN_ICON              (char *)NULL
+#define DEF_SORT_SELECTION              "no"
+#define DEF_SORT_TYPE                   "auto"
+#define DEF_SORT_UP_ICON                (char *)NULL
+#define DEF_STYLE                       "default"
+#define DEF_TABLE                       (char *)NULL
+#define DEF_TAKE_FOCUS                  "1"
+#define DEF_TITLES                      "column"
+#define DEF_WIDTH                       "200"
 
 static const char *sortTypeStrings[] = {
     "dictionary", "ascii", "integer", "real", "command", "none", "auto", NULL
@@ -264,7 +264,7 @@ static Blt_OptionPrintProc IconToObjProc;
 static Blt_OptionFreeProc FreeIconProc;
 static Blt_CustomOption iconOption = {
     ObjToIconProc, IconToObjProc, FreeIconProc, 
-    (ClientData)0,			/* Needs to point to the tableview
+    (ClientData)0,                      /* Needs to point to the tableview
 					 * widget before calling routines. */
 };
 static Blt_OptionParseProc ObjToRowTitleProc;
@@ -309,7 +309,7 @@ static Blt_OptionPrintProc StyleToObjProc;
 static Blt_OptionFreeProc FreeStyleProc;
 static Blt_CustomOption styleOption = {
     ObjToStyleProc, StyleToObjProc, FreeStyleProc, 
-    (ClientData)0,			/* Needs to point to the tableview
+    (ClientData)0,                      /* Needs to point to the tableview
 					 * widget before calling routines. */
 };
 
@@ -349,10 +349,10 @@ static Blt_ConfigSpec tableSpecs[] =
 	DEF_ACTIVE_TITLE_FG, Blt_Offset(TableView, rowActiveTitleFg), 0},
     {BLT_CONFIG_CUSTOM, "-autocreate", "autoCreate", "AutoCreate",
 	DEF_AUTO_CREATE, Blt_Offset(TableView, flags), 
-        BLT_CONFIG_DONT_SET_DEFAULT, &autoCreateOption},
+	BLT_CONFIG_DONT_SET_DEFAULT, &autoCreateOption},
     {BLT_CONFIG_BITMASK, "-columnfilters", "columnFilters", "ColumnFilters",
 	DEF_COLUMN_FILTERS, Blt_Offset(TableView, flags), 
-        BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)COLUMN_FILTERS},
+	BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)COLUMN_FILTERS},
     {BLT_CONFIG_BACKGROUND, "-background", "background", "Background", 
 	DEF_BACKGROUND, Blt_Offset(TableView, bg), 0},
     {BLT_CONFIG_SYNONYM, "-bd", "borderWidth", (char *)NULL, (char *)NULL, 
@@ -366,7 +366,7 @@ static Blt_ConfigSpec tableSpecs[] =
 	DEF_COLUMN_COMMAND, Blt_Offset(TableView, colCmdObjPtr),
 	BLT_CONFIG_DONT_SET_DEFAULT | BLT_CONFIG_NULL_OK}, 
     {BLT_CONFIG_CURSOR, "-columnresizecursor", "columnResizeCursor", 
-        "ResizeCursor", DEF_COLUMN_RESIZE_CURSOR, 
+	"ResizeCursor", DEF_COLUMN_RESIZE_CURSOR, 
 	Blt_Offset(TableView, colResizeCursor), 0},
     {BLT_CONFIG_BACKGROUND, "-columntitlebackground", "columnTitleBackground",
 	"TitleBackground", DEF_COLUMN_NORMAL_TITLE_BG, 
@@ -407,7 +407,7 @@ static Blt_ConfigSpec tableSpecs[] =
 	Blt_Offset(TableView, reqHeight), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_COLOR, "-highlightbackground", "highlightBackground",
 	"HighlightBackground", DEF_FOCUS_HIGHLIGHT_BG, 
-        Blt_Offset(TableView, highlightBgColor), 0},
+	Blt_Offset(TableView, highlightBgColor), 0},
     {BLT_CONFIG_COLOR, "-highlightcolor", "highlightColor", "HighlightColor",
 	DEF_FOCUS_HIGHLIGHT_COLOR, Blt_Offset(TableView, highlightColor), 0},
     {BLT_CONFIG_PIXELS_NNEG, "-highlightthickness", "highlightThickness",
@@ -446,7 +446,7 @@ static Blt_ConfigSpec tableSpecs[] =
 	Blt_Offset(TableView, relief), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_BITMASK, "-sortselection", "sortSelection", "SortSelection",
 	DEF_SORT_SELECTION, Blt_Offset(TableView, flags), 
-        BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)SELECT_SORTED},
+	BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)SELECT_SORTED},
     {BLT_CONFIG_CUSTOM, "-style", "style", "Style", DEF_STYLE, 
 	Blt_Offset(TableView, stylePtr), BLT_CONFIG_DONT_SET_DEFAULT, 
 	&styleOption},
@@ -492,7 +492,7 @@ static Blt_ConfigSpec columnSpecs[] =
     {BLT_CONFIG_OBJ, "-filterdata", "filterData", "FilterData", (char *)NULL,
 	Blt_Offset(Column, filterDataObjPtr), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_FONT, "-filterfont", "filterFont", "FilterFont", 
-        DEF_FILTER_FONT, Blt_Offset(Column, filterFont), 0},
+	DEF_FILTER_FONT, Blt_Offset(Column, filterFont), 0},
     {BLT_CONFIG_CUSTOM, "-filtericon", "filterIcon", "FilterIcon",
 	DEF_FILTER_ICON, Blt_Offset(Column, filterIcon), 
 	BLT_CONFIG_NULL_OK | BLT_CONFIG_DONT_SET_DEFAULT, &iconOption},
@@ -517,7 +517,7 @@ static Blt_ConfigSpec columnSpecs[] =
 	Blt_Offset(Column, flags), BLT_CONFIG_DONT_SET_DEFAULT,
 	(Blt_CustomOption *)HIDDEN},
     {BLT_CONFIG_PIXELS_NNEG, "-rulewidth", "ruleWidth", "RuleWidth",
-        DEF_RULE_WIDTH, Blt_Offset(Column, ruleWidth), 
+	DEF_RULE_WIDTH, Blt_Offset(Column, ruleWidth), 
 	BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_OBJ, "-sortcommand", "sortCommand", "SortCommand",
 	DEF_SORT_COMMAND, Blt_Offset(Column, sortCmdObjPtr),
@@ -533,7 +533,7 @@ static Blt_ConfigSpec columnSpecs[] =
 	Blt_Offset(Column, title), 
 	BLT_CONFIG_NULL_OK | BLT_CONFIG_DONT_SET_DEFAULT, &columnTitleOption},
     {BLT_CONFIG_JUSTIFY, "-titlejustify", "titleJustify", "TitleJustify", 
-        DEF_COLUMN_TITLE_JUSTIFY, Blt_Offset(Column, titleJustify), 
+	DEF_COLUMN_TITLE_JUSTIFY, Blt_Offset(Column, titleJustify), 
 	BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_RELIEF, "-titlerelief", "titleRelief", "TitleRelief", 
 	DEF_COLUMN_TITLE_RELIEF, Blt_Offset(Column, titleRelief), 
@@ -541,8 +541,8 @@ static Blt_ConfigSpec columnSpecs[] =
     {BLT_CONFIG_DOUBLE, "-weight", "weight", "Weight", DEF_COLUMN_WEIGHT, 
 	Blt_Offset(Column, weight), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_CUSTOM, "-width", "width", "Width", DEF_COLUMN_WIDTH, 
-        Blt_Offset(Column, reqWidth), BLT_CONFIG_DONT_SET_DEFAULT, 
-        &limitsOption},
+	Blt_Offset(Column, reqWidth), BLT_CONFIG_DONT_SET_DEFAULT, 
+	&limitsOption},
     {BLT_CONFIG_END, (char *)NULL, (char *)NULL, (char *)NULL,
 	(char *)NULL, 0, 0}
 };
@@ -567,14 +567,14 @@ static Blt_ConfigSpec rowSpecs[] =
     {BLT_CONFIG_CUSTOM, "-bindtags", "bindTags", "BindTags", DEF_BIND_TAGS, 
 	Blt_Offset(Row, bindTags), BLT_CONFIG_NULL_OK, &uidOption},
     {BLT_CONFIG_STRING, "-command", "command", "Command", DEF_ROW_COMMAND, 
-        Blt_Offset(Row, cmdObjPtr), 
-        BLT_CONFIG_DONT_SET_DEFAULT | BLT_CONFIG_NULL_OK}, 
+	Blt_Offset(Row, cmdObjPtr), 
+	BLT_CONFIG_DONT_SET_DEFAULT | BLT_CONFIG_NULL_OK}, 
     {BLT_CONFIG_BITMASK_INVERT, "-edit", "edit", "Edit", DEF_ROW_EDIT, 
 	Blt_Offset(Row, flags), BLT_CONFIG_DONT_SET_DEFAULT, 
 	(Blt_CustomOption *)EDIT},
     {BLT_CONFIG_CUSTOM, "-height", "height", "Height", DEF_ROW_HEIGHT, 
-        Blt_Offset(Row, reqHeight), BLT_CONFIG_DONT_SET_DEFAULT, 
-        &limitsOption},
+	Blt_Offset(Row, reqHeight), BLT_CONFIG_DONT_SET_DEFAULT, 
+	&limitsOption},
     {BLT_CONFIG_BITMASK, "-hide", "hide", "Hide", DEF_ROW_HIDE, 
 	Blt_Offset(Row, flags), BLT_CONFIG_DONT_SET_DEFAULT, 
 	(Blt_CustomOption *)HIDDEN},
@@ -582,7 +582,7 @@ static Blt_ConfigSpec rowSpecs[] =
 	Blt_Offset(Row, icon), 
 	BLT_CONFIG_NULL_OK | BLT_CONFIG_DONT_SET_DEFAULT, &iconOption},
     {BLT_CONFIG_PIXELS_NNEG, "-ruleheight", "ruleHeight", "RuleHeight",
-        DEF_RULE_HEIGHT, Blt_Offset(Row, ruleHeight), 
+	DEF_RULE_HEIGHT, Blt_Offset(Row, ruleHeight), 
 	BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_BITMASK_INVERT, "-show", "show", "Show", DEF_ROW_SHOW, 
 	Blt_Offset(Row, flags), BLT_CONFIG_DONT_SET_DEFAULT,
@@ -595,11 +595,11 @@ static Blt_ConfigSpec rowSpecs[] =
 	Blt_Offset(Row, title), 
 	BLT_CONFIG_NULL_OK | BLT_CONFIG_DONT_SET_DEFAULT, &rowTitleOption},
     {BLT_CONFIG_JUSTIFY, "-titlejustify", "titleJustify", "TitleJustify", 
-        DEF_ROW_TITLE_JUSTIFY, Blt_Offset(Row, titleJustify), 
+	DEF_ROW_TITLE_JUSTIFY, Blt_Offset(Row, titleJustify), 
 	BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_RELIEF, "-titlerelief", "titleRelief", "TitleRelief",
 	DEF_ROW_TITLE_RELIEF, Blt_Offset(Row, titleRelief), 
-        BLT_CONFIG_DONT_SET_DEFAULT},
+	BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_DOUBLE, "-weight", "weight", "Weight", DEF_ROW_WEIGHT, 
 	Blt_Offset(Row, weight), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_END, (char *)NULL, (char *)NULL, (char *)NULL,
@@ -610,13 +610,13 @@ static Blt_ConfigSpec sortSpecs[] =
 {
     {BLT_CONFIG_CUSTOM, "-columns", "columns", "columns",
 	DEF_SORT_COLUMNS, Blt_Offset(TableView, sort.order),
-        BLT_CONFIG_NULL_OK | BLT_CONFIG_DONT_SET_DEFAULT, &sortOrderOption},
+	BLT_CONFIG_NULL_OK | BLT_CONFIG_DONT_SET_DEFAULT, &sortOrderOption},
     {BLT_CONFIG_BOOLEAN, "-decreasing", "decreasing", "Decreasing",
 	DEF_SORT_DECREASING, Blt_Offset(TableView, sort.decreasing),
-        BLT_CONFIG_DONT_SET_DEFAULT}, 
+	BLT_CONFIG_DONT_SET_DEFAULT}, 
     {BLT_CONFIG_CUSTOM, "-mark", "mark", "mark",
 	DEF_SORT_COLUMN, Blt_Offset(TableView, sort.firstPtr),
-        BLT_CONFIG_NULL_OK | BLT_CONFIG_DONT_SET_DEFAULT, &sortColumnOption},
+	BLT_CONFIG_NULL_OK | BLT_CONFIG_DONT_SET_DEFAULT, &sortColumnOption},
     {BLT_CONFIG_END, (char *)NULL, (char *)NULL, (char *)NULL,
 	(char *)NULL, 0, 0}
 };
@@ -658,7 +658,7 @@ static Blt_ConfigSpec filterSpecs[] =
 	DEF_FILTER_NORMAL_FG, Blt_Offset(TableView, filter.normalFg), 0},
     {BLT_CONFIG_BITMASK, "-hide", "hide", "Hide",
 	DEF_COLUMN_FILTERS, Blt_Offset(TableView, flags), 
-        BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)COLUMN_FILTERS},
+	BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)COLUMN_FILTERS},
     {BLT_CONFIG_BACKGROUND, "-highlightbackground", "highlightBackground", 
 	"HighlightBackground", DEF_FILTER_HIGHLIGHT_BG, 
 	Blt_Offset(TableView, filter.highlightBg), 0},
@@ -727,19 +727,19 @@ static Tcl_IdleProc DeleteColumnsWhenIdleProc;
  *
  * EventuallyRedraw --
  *
- *	Queues a request to redraw the widget at the next idle point.  A
- *	new idle event procedure is queued only if the there's isn't one
- *	already queued and updates are turned on.
+ *      Queues a request to redraw the widget at the next idle point.  A
+ *      new idle event procedure is queued only if the there's isn't one
+ *      already queued and updates are turned on.
  *
- *	The DONT_UPDATE flag lets the user to turn off redrawing the
- *	tableview while changes are happening to the table itself.
+ *      The DONT_UPDATE flag lets the user to turn off redrawing the
+ *      tableview while changes are happening to the table itself.
  *
  * Results:
- *	None.
+ *      None.
  *
  * Side effects:
- *	Information gets redisplayed.  Right now we don't do selective
- *	redisplays:  the whole window will be redrawn.
+ *      Information gets redisplayed.  Right now we don't do selective
+ *      redisplays:  the whole window will be redrawn.
  *
  *---------------------------------------------------------------------------
  */
@@ -765,19 +765,19 @@ Blt_TableView_EventuallyRedraw(TableView *viewPtr)
  *
  * PossiblyRedraw --
  *
- *	Queues a request to redraw the widget at the next idle point.  A
- *	new idle event procedure is queued only if the there's isn't one
- *	already queued and updates are turned on.
+ *      Queues a request to redraw the widget at the next idle point.  A
+ *      new idle event procedure is queued only if the there's isn't one
+ *      already queued and updates are turned on.
  *
- *	The DONT_UPDATE flag lets the user to turn off redrawing the
- *	tableview while changes are happening to the table itself.
+ *      The DONT_UPDATE flag lets the user to turn off redrawing the
+ *      tableview while changes are happening to the table itself.
  *
  * Results:
- *	None.
+ *      None.
  *
  * Side effects:
- *	Information gets redisplayed.  Right now we don't do selective
- *	redisplays:  the whole window will be redrawn.
+ *      Information gets redisplayed.  Right now we don't do selective
+ *      redisplays:  the whole window will be redrawn.
  *
  *---------------------------------------------------------------------------
  */
@@ -795,9 +795,9 @@ static void
 EventuallyAddRows(TableView *viewPtr) 
 {
     if ((viewPtr->tkwin != NULL) && 
-        ((viewPtr->flags & (DONT_UPDATE|ROWS_PENDING)) == 0)) {
-        viewPtr->flags |= ROWS_PENDING;
-        Tcl_DoWhenIdle(AddRowsWhenIdleProc, viewPtr);
+	((viewPtr->flags & (DONT_UPDATE|ROWS_PENDING)) == 0)) {
+	viewPtr->flags |= ROWS_PENDING;
+	Tcl_DoWhenIdle(AddRowsWhenIdleProc, viewPtr);
     }
 }
 
@@ -805,9 +805,9 @@ static void
 EventuallyAddColumns(TableView *viewPtr) 
 {
     if ((viewPtr->tkwin != NULL) && 
-        ((viewPtr->flags & (DONT_UPDATE|COLUMNS_PENDING)) == 0)) {
-        viewPtr->flags |= COLUMNS_PENDING;
-        Tcl_DoWhenIdle(AddColumnsWhenIdleProc, viewPtr);
+	((viewPtr->flags & (DONT_UPDATE|COLUMNS_PENDING)) == 0)) {
+	viewPtr->flags |= COLUMNS_PENDING;
+	Tcl_DoWhenIdle(AddColumnsWhenIdleProc, viewPtr);
     }
 }
 
@@ -845,9 +845,9 @@ EventuallyDeleteRow(TableView *viewPtr, BLT_TABLE_ROW row)
     assert(rowPtr);
     rowPtr->flags |= DELETED;
     if ((viewPtr->tkwin != NULL) && 
-        ((viewPtr->flags & (DONT_UPDATE|ROWS_DELETED)) == 0)) {
-        viewPtr->flags |= ROWS_DELETED;
-        Tcl_DoWhenIdle(DeleteRowsWhenIdleProc, viewPtr);
+	((viewPtr->flags & (DONT_UPDATE|ROWS_DELETED)) == 0)) {
+	viewPtr->flags |= ROWS_DELETED;
+	Tcl_DoWhenIdle(DeleteRowsWhenIdleProc, viewPtr);
     }
 }
 
@@ -860,9 +860,9 @@ EventuallyDeleteColumn(TableView *viewPtr, BLT_TABLE_COLUMN col)
     assert(colPtr);
     colPtr->flags |= DELETED;
     if ((viewPtr->tkwin != NULL) && 
-        ((viewPtr->flags & (DONT_UPDATE|COLUMNS_DELETED)) == 0)) {
-        viewPtr->flags |= COLUMNS_DELETED;
-        Tcl_DoWhenIdle(DeleteColumnsWhenIdleProc, viewPtr);
+	((viewPtr->flags & (DONT_UPDATE|COLUMNS_DELETED)) == 0)) {
+	viewPtr->flags |= COLUMNS_DELETED;
+	Tcl_DoWhenIdle(DeleteColumnsWhenIdleProc, viewPtr);
     }
 }
 
@@ -986,13 +986,13 @@ CompareValues(Column *colPtr, const Row *r1Ptr, const Row *r2Ptr)
     if (sortType == SORT_AUTO) {
 	switch (blt_table_column_type(col)) {
 	case TABLE_COLUMN_TYPE_STRING:
-	    sortType = SORT_DICTIONARY;	break;
+	    sortType = SORT_DICTIONARY; break;
 	case TABLE_COLUMN_TYPE_LONG:
-	    sortType = SORT_INTEGER;	break;
+	    sortType = SORT_INTEGER;    break;
 	case TABLE_COLUMN_TYPE_DOUBLE:
-	    sortType = SORT_REAL;	break;
+	    sortType = SORT_REAL;       break;
 	default:
-	    sortType = SORT_DICTIONARY;	break;
+	    sortType = SORT_DICTIONARY; break;
 	}
     }
     switch (sortType) {
@@ -1026,11 +1026,11 @@ CompareValues(Column *colPtr, const Row *r1Ptr, const Row *r2Ptr)
  *
  * CompareRows --
  *
- *	Comparison routine (used by qsort) to sort a chain of subnodes.
+ *      Comparison routine (used by qsort) to sort a chain of subnodes.
  *
  * Results:
- *	1 is the first is greater, -1 is the second is greater, 0
- *	if equal.
+ *      1 is the first is greater, -1 is the second is greater, 0
+ *      if equal.
  *
  *---------------------------------------------------------------------------
  */
@@ -1046,7 +1046,7 @@ CompareRows(const void *a, const void *b)
 
     viewPtr = tableViewInstance;
     sortPtr = &viewPtr->sort;
-    result = 0;				/* Suppress compiler warning. */
+    result = 0;                         /* Suppress compiler warning. */
     for (link = Blt_Chain_FirstLink(sortPtr->order); link != NULL;
 	 link = Blt_Chain_NextLink(link)) {
 	Column *colPtr;
@@ -1104,7 +1104,7 @@ CompareRows(const void *a, const void *b)
  *
  * SortTableView --
  *
- *	Sorts the flatten array of entries.
+ *      Sorts the flatten array of entries.
  *
  *---------------------------------------------------------------------------
  */
@@ -1128,7 +1128,7 @@ SortTableView(TableView *viewPtr)
 	 * The view is already sorted but in the wrong direction.  Reverse
 	 * the entries in the array.
 	 */
- 	for (first = 0, last = viewPtr->numRows - 1; last > first; 
+	for (first = 0, last = viewPtr->numRows - 1; last > first; 
 	     first++, last--) {
 	    Row *hold;
 
@@ -1193,12 +1193,12 @@ GetStyle(Tcl_Interp *interp, TableView *viewPtr, Tcl_Obj *objPtr,
  *
  * GetUid --
  *
- *	Gets or creates a unique string identifier.  Strings are reference
- *	counted.  The string is placed into a hashed table local to the
- *	tableview.
+ *      Gets or creates a unique string identifier.  Strings are reference
+ *      counted.  The string is placed into a hashed table local to the
+ *      tableview.
  *
  * Results:
- *	Returns the pointer to the hashed string.
+ *      Returns the pointer to the hashed string.
  *
  *---------------------------------------------------------------------------
  */
@@ -1225,12 +1225,12 @@ GetUid(TableView *viewPtr, const char *string)
  *
  * FreeUid --
  *
- *	Releases the uid.  Uids are reference counted, so only when the
- *	reference count is zero (i.e. no one else is using the string) is
- *	the entry removed from the hash table.
+ *      Releases the uid.  Uids are reference counted, so only when the
+ *      reference count is zero (i.e. no one else is using the string) is
+ *      the entry removed from the hash table.
  *
  * Results:
- *	None.
+ *      None.
  *
  *---------------------------------------------------------------------------
  */
@@ -1257,14 +1257,14 @@ FreeUid(TableView *viewPtr, UID uid)
  * IconChangedProc
  *
  * Results:
- *	None.
+ *      None.
  *
  *---------------------------------------------------------------------------
  */
 /* ARGSUSED */
 static void
 IconChangedProc(ClientData clientData, int x, int y, int width, int height,
-		int imageWidth, int imageHeight)	
+		int imageWidth, int imageHeight)        
 {
     TableView *viewPtr = clientData;
 
@@ -1348,7 +1348,7 @@ DestroyIcons(TableView *viewPtr)
 /*ARGSUSED*/
 static int
 ObjToAutoCreateProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-		    Tcl_Obj *objPtr, char *widgRec, int offset, int flags)	
+		    Tcl_Obj *objPtr, char *widgRec, int offset, int flags)      
 {
     char c;
     const char *string;
@@ -1380,17 +1380,17 @@ ObjToAutoCreateProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  *
  * AutoCreateToObjProc --
  *
- *	Returns the current -autocreate value as a string.
+ *      Returns the current -autocreate value as a string.
  *
  * Results:
- *	The TCL string object is returned.
+ *      The TCL string object is returned.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static Tcl_Obj *
 AutoCreateToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-		     char *widgRec, int offset, int flags)	
+		     char *widgRec, int offset, int flags)      
 {
     int mask = *(int *)(widgRec + offset);
     const char *string;
@@ -1436,7 +1436,7 @@ FreeColumnTitleProc(ClientData clientData, Display *display, char *widgRec,
 /*ARGSUSED*/
 static int
 ObjToColumnTitleProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-		     Tcl_Obj *objPtr, char *widgRec, int offset, int flags)	
+		     Tcl_Obj *objPtr, char *widgRec, int offset, int flags)     
 {
     Column *colPtr = (Column *)widgRec;
     const char **stringPtr = (const char **)(widgRec + offset);
@@ -1447,7 +1447,7 @@ ObjToColumnTitleProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
     if (colPtr->flags & TEXTALLOC) {
 	Blt_Free(*stringPtr);
     }
-    if (length == 0) {			/* Revert back to the row title */
+    if (length == 0) {                  /* Revert back to the row title */
 	*stringPtr = blt_table_column_label(colPtr->column);
 	colPtr->flags &= ~TEXTALLOC;
 	return TCL_OK;
@@ -1463,17 +1463,17 @@ ObjToColumnTitleProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  *
  * ColumnTitleToObjProc --
  *
- *	Returns the current column title as a string.
+ *      Returns the current column title as a string.
  *
  * Results:
- *	The title is returned.
+ *      The title is returned.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static Tcl_Obj *
 ColumnTitleToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-		     char *widgRec, int offset, int flags)	
+		     char *widgRec, int offset, int flags)      
 {
     const char *string = *(char **)(widgRec + offset);
 
@@ -1485,19 +1485,19 @@ ColumnTitleToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  *
  * ObjToSortColumnProc --
  *
- *	Convert the string reprsenting a column, to its numeric form.
+ *      Convert the string reprsenting a column, to its numeric form.
  *
  * Results:
- *	If the string is successfully converted, TCL_OK is returned.
- *	Otherwise, TCL_ERROR is returned and an error message is left in
- *	interpreter's result field.
+ *      If the string is successfully converted, TCL_OK is returned.
+ *      Otherwise, TCL_ERROR is returned and an error message is left in
+ *      interpreter's result field.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
 ObjToSortColumnProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-		    Tcl_Obj *objPtr, char *widgRec, int offset, int flags)	
+		    Tcl_Obj *objPtr, char *widgRec, int offset, int flags)      
 {
     TableView *viewPtr = (TableView *)widgRec;
     Column **colPtrPtr = (Column **)(widgRec + offset);
@@ -1516,14 +1516,14 @@ ObjToSortColumnProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  * SortColumnToObjProc --
  *
  * Results:
- *	The string representation of the column is returned.
+ *      The string representation of the column is returned.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static Tcl_Obj *
 SortColumnToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-		    char *widgRec, int offset, int flags)	
+		    char *widgRec, int offset, int flags)       
 {
     Column *colPtr = *(Column **)(widgRec + offset);
 
@@ -1552,19 +1552,19 @@ FreeSortOrderProc(ClientData clientData, Display *display, char *widgRec,
  *
  * ObjToSortOrderProc --
  *
- *	Convert the string reprsenting a column, to its numeric form.
+ *      Convert the string reprsenting a column, to its numeric form.
  *
  * Results:
- *	If the string is successfully converted, TCL_OK is returned.
- *	Otherwise, TCL_ERROR is returned and an error message is left
- *	in interpreter's result field.
+ *      If the string is successfully converted, TCL_OK is returned.
+ *      Otherwise, TCL_ERROR is returned and an error message is left
+ *      in interpreter's result field.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
 ObjToSortOrderProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-		   Tcl_Obj *objPtr, char *widgRec, int offset, int flags)	
+		   Tcl_Obj *objPtr, char *widgRec, int offset, int flags)       
 {
     TableView *viewPtr = (TableView *)widgRec;
     Blt_Chain *chainPtr = (Blt_Chain *)(widgRec + offset);
@@ -1602,14 +1602,14 @@ ObjToSortOrderProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  * SortOrderToObjProc --
  *
  * Results:
- *	The string representation of the column is returned.
+ *      The string representation of the column is returned.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static Tcl_Obj *
 SortOrderToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-		   char *widgRec, int offset, int flags)	
+		   char *widgRec, int offset, int flags)        
 {
     Blt_Chain chain = *(Blt_Chain *)(widgRec + offset);
     Blt_ChainLink link;
@@ -1633,7 +1633,7 @@ SortOrderToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  *
  * ObjToEnumProc --
  *
- *	Converts the string into its enumerated type.
+ *      Converts the string into its enumerated type.
  *
  *---------------------------------------------------------------------------
  */
@@ -1681,14 +1681,14 @@ ObjToEnumProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  *
  * EnumToObjProc --
  *
- *	Returns the string associated with the enumerated type.
+ *      Returns the string associated with the enumerated type.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static Tcl_Obj *
 EnumToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-	      char *widgRec, int offset, int flags)	
+	      char *widgRec, int offset, int flags)     
 {
     int value = *(int *)(widgRec + offset);
     char **strings = (char **)clientData;
@@ -1722,19 +1722,19 @@ FreeIconProc(ClientData clientData, Display *display, char *widgRec, int offset)
  *
  * ObjToIconProc --
  *
- *	Convert the name of an icon into a Tk image.
+ *      Convert the name of an icon into a Tk image.
  *
  * Results:
- *	If the string is successfully converted, TCL_OK is returned.
- *	Otherwise, TCL_ERROR is returned and an error message is left in
- *	interpreter's result field.
+ *      If the string is successfully converted, TCL_OK is returned.
+ *      Otherwise, TCL_ERROR is returned and an error message is left in
+ *      interpreter's result field.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
 ObjToIconProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-	      Tcl_Obj *objPtr, char *widgRec, int offset, int flags)	
+	      Tcl_Obj *objPtr, char *widgRec, int offset, int flags)    
 {
     TableView *viewPtr = clientData;
     Icon *iconPtr = (Icon *)(widgRec + offset);
@@ -1762,17 +1762,17 @@ ObjToIconProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  *
  * IconToObjProc --
  *
- *	Converts the icon into its string representation (its name).
+ *      Converts the icon into its string representation (its name).
  *
  * Results:
- *	The name of the icon is returned.
+ *      The name of the icon is returned.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static Tcl_Obj *
 IconToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-	  char *widgRec, int offset, int flags)	
+	  char *widgRec, int offset, int flags) 
 {
     Icon icon = *(Icon *)(widgRec + offset);
 
@@ -1808,7 +1808,7 @@ FreeRowTitleProc(ClientData clientData, Display *display, char *widgRec,
 /*ARGSUSED*/
 static int
 ObjToRowTitleProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-		  Tcl_Obj *objPtr, char *widgRec, int offset, int flags)	
+		  Tcl_Obj *objPtr, char *widgRec, int offset, int flags)        
 {
     Row *rowPtr = (Row *)widgRec;
     const char **stringPtr = (const char **)(widgRec + offset);
@@ -1820,7 +1820,7 @@ ObjToRowTitleProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 	Blt_Free(*stringPtr);
 	rowPtr->flags &= ~TEXTALLOC;
     }
-    if (length == 0) {			/* Revert back to the row title */
+    if (length == 0) {                  /* Revert back to the row title */
 	*stringPtr = blt_table_row_label(rowPtr->row);
 	rowPtr->flags &= ~TEXTALLOC;
 	return TCL_OK;
@@ -1836,17 +1836,17 @@ ObjToRowTitleProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  *
  * RowTitleToObjProc --
  *
- *	Returns the current row title as a string.
+ *      Returns the current row title as a string.
  *
  * Results:
- *	The title is returned.
+ *      The title is returned.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static Tcl_Obj *
 RowTitleToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-		char *widgRec, int offset, int flags)	
+		char *widgRec, int offset, int flags)   
 {
     const char *string = *(char **)(widgRec + offset);
 
@@ -1858,19 +1858,19 @@ RowTitleToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  *
  * ObjToScrollModeProc --
  *
- *	Convert the string reprsenting a scroll mode, to its numeric form.
+ *      Convert the string reprsenting a scroll mode, to its numeric form.
  *
  * Results:
- *	If the string is successfully converted, TCL_OK is returned.
- *	Otherwise, TCL_ERROR is returned and an error message is left in
- *	interpreter's result field.
+ *      If the string is successfully converted, TCL_OK is returned.
+ *      Otherwise, TCL_ERROR is returned and an error message is left in
+ *      interpreter's result field.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
 ObjToScrollModeProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-		    Tcl_Obj *objPtr, char *widgRec, int offset, int flags)	
+		    Tcl_Obj *objPtr, char *widgRec, int offset, int flags)      
 {
     char c;
     const char *string;
@@ -1899,14 +1899,14 @@ ObjToScrollModeProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  * ScrollModeToObjProc --
  *
  * Results:
- *	The string representation of the scroll mode is returned.
+ *      The string representation of the scroll mode is returned.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static Tcl_Obj *
 ScrollModeToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin, 
-		    char *widgRec, int offset, int flags)	
+		    char *widgRec, int offset, int flags)       
 {
     int mode = *(int *)(widgRec + offset);
 
@@ -1927,19 +1927,19 @@ ScrollModeToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  *
  * ObjToSelectModeProc --
  *
- *	Convert the string reprsenting a scroll mode, to its numeric form.
+ *      Convert the string reprsenting a scroll mode, to its numeric form.
  *
  * Results:
- *	If the string is successfully converted, TCL_OK is returned.
- *	Otherwise, TCL_ERROR is returned and an error message is left
- *	in interpreter's result field.
+ *      If the string is successfully converted, TCL_OK is returned.
+ *      Otherwise, TCL_ERROR is returned and an error message is left
+ *      in interpreter's result field.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
 ObjToSelectModeProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-		    Tcl_Obj *objPtr, char *widgRec, int offset, int flags)	
+		    Tcl_Obj *objPtr, char *widgRec, int offset, int flags)      
 {
     const char *string;
     char c;
@@ -1968,14 +1968,14 @@ ObjToSelectModeProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  * SelectModeToObjProc --
  *
  * Results:
- *	The string representation of the select mode is returned.
+ *      The string representation of the select mode is returned.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static Tcl_Obj *
 SelectModeToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-		    char *widgRec, int offset, int flags)	
+		    char *widgRec, int offset, int flags)       
 {
     int mode = *(int *)(widgRec + offset);
 
@@ -1996,19 +1996,19 @@ SelectModeToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  *
  * ObjToStateProc --
  *
- *	Convert the name of a state into an integer.
+ *      Convert the name of a state into an integer.
  *
  * Results:
- *	If the string is successfully converted, TCL_OK is returned.
- *	Otherwise, TCL_ERROR is returned and an error message is left in
- *	interpreter's result field.
+ *      If the string is successfully converted, TCL_OK is returned.
+ *      Otherwise, TCL_ERROR is returned and an error message is left in
+ *      interpreter's result field.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
 ObjToStateProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-	       Tcl_Obj *objPtr, char *widgRec, int offset, int flags)	
+	       Tcl_Obj *objPtr, char *widgRec, int offset, int flags)   
 {
     int *flagsPtr = (int *)(widgRec + offset);
     const char *string;
@@ -2038,17 +2038,17 @@ ObjToStateProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  *
  * StateToObjProc --
  *
- *	Converts the state into its string representation.
+ *      Converts the state into its string representation.
  *
  * Results:
- *	The name of the state is returned.
+ *      The name of the state is returned.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static Tcl_Obj *
 StateToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-	       char *widgRec, int offset, int flags)	
+	       char *widgRec, int offset, int flags)    
 {
     int state = *(int *)(widgRec + offset);
 
@@ -2067,25 +2067,25 @@ StateToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  *
  * ObjToCellStateProc --
  *
- *	Converts the string representing a cell state into a bitflag.
+ *      Converts the string representing a cell state into a bitflag.
  *
  * Results:
- *	The return value is a standard TCL result.  The state flags are
- *	updated.
+ *      The return value is a standard TCL result.  The state flags are
+ *      updated.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
 ObjToCellStateProc(
-    ClientData clientData,		/* Not used. */
-    Tcl_Interp *interp,			/* Interpreter to report
-                                         * results. */
-    Tk_Window tkwin,			/* Not used. */
-    Tcl_Obj *objPtr,			/* String representing state. */
-    char *widgRec,			/* Widget record */
-    int offset,				/* Offset to field in structure */
-    int flags)	
+    ClientData clientData,              /* Not used. */
+    Tcl_Interp *interp,                 /* Interpreter to report
+					 * results. */
+    Tk_Window tkwin,                    /* Not used. */
+    Tcl_Obj *objPtr,                    /* String representing state. */
+    char *widgRec,                      /* Widget record */
+    int offset,                         /* Offset to field in structure */
+    int flags)  
 {
     Cell *cellPtr = (Cell *)widgRec;
     unsigned int *flagsPtr = (unsigned int *)(widgRec + offset);
@@ -2097,9 +2097,9 @@ ObjToCellStateProc(
     c = string[0];
     if ((c == 'n') && (strncmp(string, "normal", length) == 0)) {
 	mask = 0;
-        if (cellPtr == cellPtr->viewPtr->postPtr) {
-            cellPtr->viewPtr->postPtr = NULL;
-        }
+	if (cellPtr == cellPtr->viewPtr->postPtr) {
+	    cellPtr->viewPtr->postPtr = NULL;
+	}
     } else if ((c == 'p') && (strncmp(string, "disabled", length) == 0)) {
 	mask = DISABLED;
     } else if ((c == 'h') && (strncmp(string, "highlighted", length) == 0)) {
@@ -2112,10 +2112,10 @@ ObjToCellStateProc(
 	return TCL_ERROR;
     }
     if (cellPtr == cellPtr->viewPtr->postPtr) {
-        cellPtr->viewPtr->postPtr = NULL;
+	cellPtr->viewPtr->postPtr = NULL;
     }
     if (mask & POSTED) {
-            cellPtr->viewPtr->postPtr = cellPtr;
+	    cellPtr->viewPtr->postPtr = cellPtr;
     }        
     *flagsPtr &= ~CELL_FLAGS_MASK;
     *flagsPtr |= mask;
@@ -2127,22 +2127,22 @@ ObjToCellStateProc(
  *
  * CellStateToObjProc --
  *
- *	Return the name of the style.
+ *      Return the name of the style.
  *
  * Results:
- *	The name representing the style is returned.
+ *      The name representing the style is returned.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static Tcl_Obj *
 CellStateToObjProc(
-    ClientData clientData,		/* Not used. */
+    ClientData clientData,              /* Not used. */
     Tcl_Interp *interp,
-    Tk_Window tkwin,			/* Not used. */
-    char *widgRec,			/* Widget information record */
-    int offset,				/* Offset to field in structure */
-    int flags)	
+    Tk_Window tkwin,                    /* Not used. */
+    char *widgRec,                      /* Widget information record */
+    int offset,                         /* Offset to field in structure */
+    int flags)  
 {
     unsigned int state = *(unsigned int *)(widgRec + offset);
     const char *string;
@@ -2182,19 +2182,19 @@ FreeStyleProc(ClientData clientData, Display *display, char *widgRec,
  *
  * ObjToStyleProc --
  *
- *	Convert the name of an icon into a tableview style.
+ *      Convert the name of an icon into a tableview style.
  *
  * Results:
- *	If the string is successfully converted, TCL_OK is returned.
- *	Otherwise, TCL_ERROR is returned and an error message is left in
- *	interpreter's result field.
+ *      If the string is successfully converted, TCL_OK is returned.
+ *      Otherwise, TCL_ERROR is returned and an error message is left in
+ *      interpreter's result field.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
 ObjToStyleProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-	       Tcl_Obj *objPtr, char *widgRec, int offset, int flags)	
+	       Tcl_Obj *objPtr, char *widgRec, int offset, int flags)   
 {
     CellStyle **stylePtrPtr = (CellStyle **)(widgRec + offset);
     CellStyle *stylePtr;
@@ -2208,7 +2208,7 @@ ObjToStyleProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 	if (GetStyle(interp, viewPtr, objPtr, &stylePtr) != TCL_OK) {
 	    return TCL_ERROR;
 	}
-	stylePtr->refCount++;		/* Increment the reference count to
+	stylePtr->refCount++;           /* Increment the reference count to
 					 * indicate that we are using this
 					 * style. */
     }
@@ -2228,17 +2228,17 @@ ObjToStyleProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  *
  * StyleToObjProc --
  *
- *	Converts the style into its string representation (its name).
+ *      Converts the style into its string representation (its name).
  *
  * Results:
- *	The name of the style is returned.
+ *      The name of the style is returned.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static Tcl_Obj *
 StyleToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-	       char *widgRec, int offset, int flags)	
+	       char *widgRec, int offset, int flags)    
 {
     CellStyle *stylePtr = *(CellStyle **)(widgRec + offset);
 
@@ -2275,20 +2275,20 @@ FreeTableProc(ClientData clientData, Display *display, char *widgRec,
  *
  * ObjToTableProc --
  *
- *	Convert the string representing the name of a table object into a
- *	table token.
+ *      Convert the string representing the name of a table object into a
+ *      table token.
  *
  * Results:
- *	If the string is successfully converted, TCL_OK is returned.
- *	Otherwise, TCL_ERROR is returned and an error message is left in
- *	interpreter's result field.
+ *      If the string is successfully converted, TCL_OK is returned.
+ *      Otherwise, TCL_ERROR is returned and an error message is left in
+ *      interpreter's result field.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
 ObjToTableProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-	       Tcl_Obj *objPtr, char *widgRec, int offset, int flags)	
+	       Tcl_Obj *objPtr, char *widgRec, int offset, int flags)   
 {
     TableView *viewPtr = (TableView *)widgRec;
     BLT_TABLE *tablePtr = (BLT_TABLE *)(widgRec + offset);
@@ -2298,7 +2298,7 @@ ObjToTableProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 	return TCL_ERROR;
     }
     if (*tablePtr != NULL) {
-        FreeTableProc(clientData, viewPtr->display, widgRec, offset);
+	FreeTableProc(clientData, viewPtr->display, widgRec, offset);
 	viewPtr->rowNotifier = NULL;
 	viewPtr->colNotifier = NULL;
     }
@@ -2313,14 +2313,14 @@ ObjToTableProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  * TableToObjProc --
  *
  * Results:
- *	The string representation of the table is returned.
+ *      The string representation of the table is returned.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static Tcl_Obj *
 TableToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin, 
-	       char *widgRec, int offset, int flags)	
+	       char *widgRec, int offset, int flags)    
 {
     BLT_TABLE table = *(BLT_TABLE *)(widgRec + offset);
     const char *name;
@@ -2339,14 +2339,14 @@ TableToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  *
  * ObjToTitlesProc --
  *
- *	Converts the string to a titles flag: ROW_TITLES or COLUMN_TITLES. 
+ *      Converts the string to a titles flag: ROW_TITLES or COLUMN_TITLES. 
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
 ObjToTitlesProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-		Tcl_Obj *objPtr, char *widgRec, int offset, int flags)	
+		Tcl_Obj *objPtr, char *widgRec, int offset, int flags)  
 {
     int *flagsPtr = (int *)(widgRec + offset);
     const char *string;
@@ -2379,31 +2379,31 @@ ObjToTitlesProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  *
  * TitlesToObjProc --
  *
- *	Returns the titles flags as a string.
+ *      Returns the titles flags as a string.
  *
  * Results:
- *	The fill style string is returned.
+ *      The fill style string is returned.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static Tcl_Obj *
 TitlesToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-		char *widgRec, int offset, int flags)	
+		char *widgRec, int offset, int flags)   
 {
     int titles = *(int *)(widgRec + offset);
     const char *string;
 
-    string = NULL;			/* Suppress compiler warning. */
+    string = NULL;                      /* Suppress compiler warning. */
     switch (titles & TITLES_MASK) {
     case ROW_TITLES:
-	string = "rows";	break;
+	string = "rows";        break;
     case COLUMN_TITLES:
-	string = "columns";	break;
+	string = "columns";     break;
     case 0:
-	string = "none";	break;
+	string = "none";        break;
     case (ROW_TITLES|COLUMN_TITLES):
-	string = "both";	break;
+	string = "both";        break;
     }
     return Tcl_NewStringObj(string, -1);
 }
@@ -2413,15 +2413,15 @@ TitlesToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  *
  * ObjToUidProc --
  *
- *	Converts the string to a Uid. Uid's are hashed, reference counted
- *	strings.
+ *      Converts the string to a Uid. Uid's are hashed, reference counted
+ *      strings.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
 ObjToUidProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-	     Tcl_Obj *objPtr, char *widgRec, int offset, int flags)	
+	     Tcl_Obj *objPtr, char *widgRec, int offset, int flags)     
 {
     TableView *viewPtr = clientData;
     UID *uidPtr = (UID *)(widgRec + offset);
@@ -2435,17 +2435,17 @@ ObjToUidProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  *
  * UidToObjProc --
  *
- *	Returns the uid as a string.
+ *      Returns the uid as a string.
  *
  * Results:
- *	The fill style string is returned.
+ *      The fill style string is returned.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static Tcl_Obj *
 UidToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-	     char *widgRec, int offset, int flags)	
+	     char *widgRec, int offset, int flags)      
 {
     UID uid = *(UID *)(widgRec + offset);
 
@@ -2460,10 +2460,10 @@ UidToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  *
  * FreeUidProc --
  *
- *	Free the UID from the widget record, setting it to NULL.
+ *      Free the UID from the widget record, setting it to NULL.
  *
  * Results:
- *	The UID in the widget record is set to NULL.
+ *      The UID in the widget record is set to NULL.
  *
  *---------------------------------------------------------------------------
  */
@@ -2486,17 +2486,17 @@ FreeUidProc(ClientData clientData, Display *display, char *widgRec, int offset)
  *
  * GetBoundedWidth --
  *
- *	Bounds a given width value to the limits described in the limit
- *	structure.  The initial starting value may be overridden by the
- *	nominal value in the limits.
+ *      Bounds a given width value to the limits described in the limit
+ *      structure.  The initial starting value may be overridden by the
+ *      nominal value in the limits.
  *
  * Results:
- *	Returns the constrained value.
+ *      Returns the constrained value.
  *
  *---------------------------------------------------------------------------
  */
 static int
-GetBoundedWidth(int w, Limits *limitsPtr)		
+GetBoundedWidth(int w, Limits *limitsPtr)               
 {
     if (limitsPtr->flags & LIMITS_SET_NOM) {
 	w = limitsPtr->nom;         /* Override initial value */
@@ -2514,12 +2514,12 @@ GetBoundedWidth(int w, Limits *limitsPtr)
  *
  * GetBoundedHeight --
  *
- *	Bounds a given value to the limits described in the limit structure.
- *	The initial starting value may be overridden by the nominal value in
- *	the limits.
+ *      Bounds a given value to the limits described in the limit structure.
+ *      The initial starting value may be overridden by the nominal value in
+ *      the limits.
  *
  * Results:
- *	Returns the constrained value.
+ *      Returns the constrained value.
  *
  *---------------------------------------------------------------------------
  */
@@ -2542,39 +2542,39 @@ GetBoundedHeight(int h, Limits *limitsPtr)
  *
  * ObjToLimits --
  *
- *	Converts the list of elements into zero or more pixel values which
- *	determine the range of pixel values possible.  An element can be in
- *	any form accepted by Tk_GetPixels. The list has a different meaning
- *	based upon the number of elements.
+ *      Converts the list of elements into zero or more pixel values which
+ *      determine the range of pixel values possible.  An element can be in
+ *      any form accepted by Tk_GetPixels. The list has a different meaning
+ *      based upon the number of elements.
  *
- *	    # of elements:
+ *          # of elements:
  *
- *	    0 - the limits are reset to the defaults.
- *	    1 - the minimum and maximum values are set to this
- *		value, freezing the range at a single value.
- *	    2 - first element is the minimum, the second is the
- *		maximum.
- *	    3 - first element is the minimum, the second is the
- *		maximum, and the third is the nominal value.
+ *          0 - the limits are reset to the defaults.
+ *          1 - the minimum and maximum values are set to this
+ *              value, freezing the range at a single value.
+ *          2 - first element is the minimum, the second is the
+ *              maximum.
+ *          3 - first element is the minimum, the second is the
+ *              maximum, and the third is the nominal value.
  *
- *	Any element may be the empty string which indicates the default.
+ *      Any element may be the empty string which indicates the default.
  *
  * Results:
- *	The return value is a standard TCL result.  The min and max fields
- *	of the range are set.
+ *      The return value is a standard TCL result.  The min and max fields
+ *      of the range are set.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
 ObjToLimits(
-    ClientData clientData,	/* Not used. */
-    Tcl_Interp *interp,		/* Interpreter to send results back to */
-    Tk_Window tkwin,		/* Widget of table */
-    Tcl_Obj *objPtr,		/* New width list */
-    char *widgRec,		/* Widget record */
-    int offset,			/* Offset to field in structure */
-    int flags)	
+    ClientData clientData,      /* Not used. */
+    Tcl_Interp *interp,         /* Interpreter to send results back to */
+    Tk_Window tkwin,            /* Widget of table */
+    Tcl_Obj *objPtr,            /* New width list */
+    char *widgRec,              /* Widget record */
+    int offset,                 /* Offset to field in structure */
+    int flags)  
 {
     Limits *limitsPtr = (Limits *)(widgRec + offset);
     Tcl_Obj **elv;
@@ -2599,26 +2599,26 @@ ObjToLimits(
 	}
 	if (elc > 3) {
 	    Tcl_AppendResult(interp, "wrong # limits \"", 
-                        Tcl_GetString(objPtr), "\"", (char *)NULL);
+			Tcl_GetString(objPtr), "\"", (char *)NULL);
 	    return TCL_ERROR;
 	}
 	for (i = 0; i < elc; i++) {
-            int length, size;
+	    int length, size;
 
-            Tcl_GetStringFromObj(elv[i], &length);
+	    Tcl_GetStringFromObj(elv[i], &length);
 	    if (length == 0) {
 		continue;             /* Empty string: use default value */
 	    }
 	    limitsFlags |= (LIMITS_SET_BIT << i);
-            if (Tk_GetPixelsFromObj(interp, tkwin, elv[i], &size) != TCL_OK) {
-                return TCL_ERROR;
-            }
-            if ((size < LIMITS_MIN) || (size > LIMITS_MAX)) {
-                Tcl_AppendResult(interp, "bad limits \"", 
-                        Tcl_GetString(objPtr), "\"", (char *)NULL);
-                return TCL_ERROR;
-            }
-            limits[i] = size;
+	    if (Tk_GetPixelsFromObj(interp, tkwin, elv[i], &size) != TCL_OK) {
+		return TCL_ERROR;
+	    }
+	    if ((size < LIMITS_MIN) || (size > LIMITS_MAX)) {
+		Tcl_AppendResult(interp, "bad limits \"", 
+			Tcl_GetString(objPtr), "\"", (char *)NULL);
+		return TCL_ERROR;
+	    }
+	    limits[i] = size;
 	}
     }
     /*
@@ -2628,30 +2628,30 @@ ObjToLimits(
     switch (elc) {
     case 1:
 	limitsFlags |= (LIMITS_SET_MIN | LIMITS_SET_MAX);
-        limits[1] = limits[0];       /* Set minimum and maximum to value */
+	limits[1] = limits[0];       /* Set minimum and maximum to value */
 	break;
 
     case 2:
-        if (limits[1] < limits[0]) {
+	if (limits[1] < limits[0]) {
 	    Tcl_AppendResult(interp, "bad range \"", Tcl_GetString(objPtr),
 		"\": min > max", (char *)NULL);
 	    return TCL_ERROR;         /* Minimum is greater than maximum */
 	}
 	break;
     case 3:
-        if (limits[1] < limits[0]) {
-            Tcl_AppendResult(interp, "bad range \"", Tcl_GetString(objPtr),
-                             "\": min > max", (char *)NULL);
-            return TCL_ERROR;         /* Minimum is greater than maximum */
-        }
-        if ((limits[2] < limits[0]) || (limits[2] > limits[1])) {
-            Tcl_AppendResult(interp, "nominal value \"", 
-                             Tcl_GetString(objPtr),
-                             "\" out of range", (char *)NULL);
-            return TCL_ERROR;        /* Nominal is outside of range defined
-                                      * by minimum and maximum */
-        }
-        break;
+	if (limits[1] < limits[0]) {
+	    Tcl_AppendResult(interp, "bad range \"", Tcl_GetString(objPtr),
+			     "\": min > max", (char *)NULL);
+	    return TCL_ERROR;         /* Minimum is greater than maximum */
+	}
+	if ((limits[2] < limits[0]) || (limits[2] > limits[1])) {
+	    Tcl_AppendResult(interp, "nominal value \"", 
+			     Tcl_GetString(objPtr),
+			     "\" out of range", (char *)NULL);
+	    return TCL_ERROR;        /* Nominal is outside of range defined
+				      * by minimum and maximum */
+	}
+	break;
     }
     limitsPtr->min = limits[0];
     limitsPtr->max = limits[1];
@@ -2665,15 +2665,15 @@ ObjToLimits(
  *
  * ResetLimits --
  *
- *	Resets the limits to their default values.
+ *      Resets the limits to their default values.
  *
  * Results:
- *	None.
+ *      None.
  *
  *---------------------------------------------------------------------------
  */
 INLINE static void
-ResetLimits(Limits *limitsPtr)	/* Limits to be imposed on the value */
+ResetLimits(Limits *limitsPtr)  /* Limits to be imposed on the value */
 {
     limitsPtr->flags = 0;
     limitsPtr->min = LIMITS_MIN;
@@ -2686,10 +2686,10 @@ ResetLimits(Limits *limitsPtr)	/* Limits to be imposed on the value */
  *
  * NameOfLimits --
  *
- *	Convert the values into a list representing the limits.
+ *      Convert the values into a list representing the limits.
  *
  * Results:
- *	The static string representation of the limits is returned.
+ *      The static string representation of the limits is returned.
  *
  *---------------------------------------------------------------------------
  */
@@ -2700,13 +2700,13 @@ NameOfLimits(Tcl_Interp *interp, Limits *limitsPtr)
 
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
     objPtr = (limitsPtr->flags & LIMITS_SET_MIN) ? 
-        Tcl_NewIntObj(limitsPtr->min) : Tcl_NewStringObj("", 0);
+	Tcl_NewIntObj(limitsPtr->min) : Tcl_NewStringObj("", 0);
     Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
     objPtr = (limitsPtr->flags & LIMITS_SET_MAX) ? 
-        Tcl_NewIntObj(limitsPtr->max) : Tcl_NewStringObj("", 0);
+	Tcl_NewIntObj(limitsPtr->max) : Tcl_NewStringObj("", 0);
     Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
     objPtr = (limitsPtr->flags & LIMITS_SET_NOM) ? 
-        Tcl_NewIntObj(limitsPtr->nom) : Tcl_NewStringObj("", 0);
+	Tcl_NewIntObj(limitsPtr->nom) : Tcl_NewStringObj("", 0);
     Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
     return listObjPtr;
 }
@@ -2716,22 +2716,22 @@ NameOfLimits(Tcl_Interp *interp, Limits *limitsPtr)
  *
  * LimitsToObj --
  *
- *	Convert the limits of the pixel values allowed into a list.
+ *      Convert the limits of the pixel values allowed into a list.
  *
  * Results:
- *	The string representation of the limits is returned.
+ *      The string representation of the limits is returned.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static Tcl_Obj *
 LimitsToObj(
-    ClientData clientData,	/* Not used. */
-    Tcl_Interp *interp,		/* Not used. */
-    Tk_Window tkwin,		/* Not used. */
-    char *widgRec,		/* Row/column structure record */
-    int offset,			/* Offset to field in structure */
-    int flags)	
+    ClientData clientData,      /* Not used. */
+    Tcl_Interp *interp,         /* Not used. */
+    Tk_Window tkwin,            /* Not used. */
+    char *widgRec,              /* Row/column structure record */
+    int offset,                 /* Offset to field in structure */
+    int flags)  
 {
     Limits *limitsPtr = (Limits *)(widgRec + offset);
 
@@ -2744,10 +2744,10 @@ GetLastVisibleColumnIndex(TableView *viewPtr)
     long index;
     index = -1;
     if (viewPtr->numVisibleColumns > 0) {
-        Column *colPtr;
+	Column *colPtr;
 
-        colPtr = viewPtr->visibleColumns[viewPtr->numVisibleColumns - 1];
-        index = colPtr->index;
+	colPtr = viewPtr->visibleColumns[viewPtr->numVisibleColumns - 1];
+	index = colPtr->index;
     }
     return index;
 }
@@ -2759,10 +2759,10 @@ GetLastVisibleRowIndex(TableView *viewPtr)
 
     index = -1;
     if (viewPtr->numVisibleRows > 0) {
-        Row *rowPtr;
+	Row *rowPtr;
 
-        rowPtr = viewPtr->visibleRows[viewPtr->numVisibleRows - 1];
-        index = rowPtr->index;
+	rowPtr = viewPtr->visibleRows[viewPtr->numVisibleRows - 1];
+	index = rowPtr->index;
     }
     return index;
 }
@@ -2773,7 +2773,7 @@ GetLastVisibleRowIndex(TableView *viewPtr)
  * RowTraceProc --
  *
  * Results:
- *	Returns TCL_OK.
+ *      Returns TCL_OK.
  *
  *---------------------------------------------------------------------------
  */
@@ -2785,26 +2785,26 @@ RowTraceProc(ClientData clientData, BLT_TABLE_TRACE_EVENT *eventPtr)
 
     if (eventPtr->mask & (TABLE_TRACE_WRITES | TABLE_TRACE_UNSETS)) {
 	Column *colPtr;
-        Row *rowPtr;
-        long row, col;
+	Row *rowPtr;
+	long row, col;
 
 	colPtr = GetColumnContainer(viewPtr, eventPtr->column);
-        rowPtr = GetRowContainer(viewPtr, eventPtr->row);
-        row = col = -1;
+	rowPtr = GetRowContainer(viewPtr, eventPtr->row);
+	row = col = -1;
 	if (colPtr != NULL) {
-            col = colPtr->index;
-        }
+	    col = colPtr->index;
+	}
 	if (rowPtr != NULL) {
 	    rowPtr->flags |= GEOMETRY | REDRAW;
-            row = rowPtr->index;
-        }
+	    row = rowPtr->index;
+	}
 	viewPtr->flags |= GEOMETRY | LAYOUT_PENDING;
-        /* Check if the event's row or column occur outside of the range of
-         * visible cells. */
-        if ((row > GetLastVisibleRowIndex(viewPtr)) ||
-            (col > GetLastVisibleColumnIndex(viewPtr))) {
-            return TCL_OK;
-        }
+	/* Check if the event's row or column occur outside of the range of
+	 * visible cells. */
+	if ((row > GetLastVisibleRowIndex(viewPtr)) ||
+	    (col > GetLastVisibleColumnIndex(viewPtr))) {
+	    return TCL_OK;
+	}
 	PossiblyRedraw(viewPtr);
     }
     return TCL_OK;
@@ -2816,7 +2816,7 @@ RowTraceProc(ClientData clientData, BLT_TABLE_TRACE_EVENT *eventPtr)
  * ColumnTraceProc --
  *
  * Results:
- *	Returns TCL_OK.
+ *      Returns TCL_OK.
  *
  *---------------------------------------------------------------------------
  */
@@ -2828,26 +2828,26 @@ ColumnTraceProc(ClientData clientData, BLT_TABLE_TRACE_EVENT *eventPtr)
 
     if (eventPtr->mask & (TABLE_TRACE_WRITES | TABLE_TRACE_UNSETS)) {
 	Column *colPtr;
-        Row *rowPtr;
-        long row, col;
+	Row *rowPtr;
+	long row, col;
 
 	colPtr = GetColumnContainer(viewPtr, eventPtr->column);
-        rowPtr = GetRowContainer(viewPtr, eventPtr->row);
-        row = col = -1;
+	rowPtr = GetRowContainer(viewPtr, eventPtr->row);
+	row = col = -1;
 	if (colPtr != NULL) {
 	    colPtr->flags |= GEOMETRY | REDRAW;
-            col = colPtr->index;
-        }
+	    col = colPtr->index;
+	}
 	if (rowPtr != NULL) {
-            row = rowPtr->index;
-        }
+	    row = rowPtr->index;
+	}
 	viewPtr->flags |= GEOMETRY | LAYOUT_PENDING;
-        /* Check if the event's row or column occur outside of the range of
-         * visible cells. */
-        if ((row > GetLastVisibleRowIndex(viewPtr)) ||
-            (col > GetLastVisibleColumnIndex(viewPtr))) {
-            return TCL_OK;
-        }
+	/* Check if the event's row or column occur outside of the range of
+	 * visible cells. */
+	if ((row > GetLastVisibleRowIndex(viewPtr)) ||
+	    (col > GetLastVisibleColumnIndex(viewPtr))) {
+	    return TCL_OK;
+	}
 	PossiblyRedraw(viewPtr);
     }
     return TCL_OK;
@@ -3120,8 +3120,8 @@ GetColumnTitleGeometry(TableView *viewPtr, Column *colPtr)
 /*
  * GetColumnFiltersGeometry -- 
  *
- *      +---------------------------+	
- *	|b|x|icon|x|text|x|arrow|x|b|	
+ *      +---------------------------+   
+ *      |b|x|icon|x|text|x|arrow|x|b|   
  *      +---------------------------+
  *
  * b = filter borderwidth
@@ -3150,22 +3150,22 @@ GetColumnFiltersGeometry(TableView *viewPtr)
 	}
 	if (colPtr->filterText != NULL) {
 	    TextStyle ts;
-            Blt_Font font;
+	    Blt_Font font;
 
 	    Blt_Ts_InitStyle(ts);
-            font = CHOOSE(filterPtr->font, colPtr->filterFont);
+	    font = CHOOSE(filterPtr->font, colPtr->filterFont);
 	    Blt_Ts_SetFont(ts, font);
 	    Blt_Ts_GetExtents(&ts, colPtr->filterText, &tw, &th);
 	    colPtr->filterTextWidth = tw;
 	    colPtr->filterTextHeight = th;
 	} else {
 	    Blt_FontMetrics fm;
-            Blt_Font font;
+	    Blt_Font font;
 
-            font = CHOOSE(filterPtr->font, colPtr->filterFont);
+	    font = CHOOSE(filterPtr->font, colPtr->filterFont);
 	    Blt_Font_GetMetrics(font, &fm);
 	    th = fm.linespace;
-            colPtr->filterTextWidth = 0, colPtr->filterTextHeight = th;
+	    colPtr->filterTextWidth = 0, colPtr->filterTextHeight = th;
 	}
 	
 	colPtr->filterHeight = MAX3(ah, th, ih);
@@ -3282,12 +3282,12 @@ GetLastColumn(TableView *viewPtr)
  *
  * NearestColumn --
  *
- *	Finds the row closest to the given screen Y-coordinate in the
- *	viewport.
+ *      Finds the row closest to the given screen Y-coordinate in the
+ *      viewport.
  *
  * Results:
- *	Returns the pointer to the closest row.  If no row is visible (rows
- *	may be hidden), NULL is returned.
+ *      Returns the pointer to the closest row.  If no row is visible (rows
+ *      may be hidden), NULL is returned.
  *
  *---------------------------------------------------------------------------
  */
@@ -3307,7 +3307,7 @@ NearestColumn(TableView *viewPtr, int x, int selectOne)
      * too.
      */
     x = WORLDX(viewPtr, x);
-    lastPtr = NULL;			/* Suppress compiler warning. */
+    lastPtr = NULL;                     /* Suppress compiler warning. */
     /* FIXME: This can be a binary search. */
     for (i = 0; i < viewPtr->numVisibleColumns; i++) {
 	Column *colPtr;
@@ -3317,7 +3317,7 @@ NearestColumn(TableView *viewPtr, int x, int selectOne)
 	    return (selectOne) ? colPtr : NULL;
 	}
 	if (x < (colPtr->worldX + colPtr->width)) {
-	    return colPtr;		/* Found it. */
+	    return colPtr;              /* Found it. */
 	}
 	lastPtr = colPtr;
     }
@@ -3335,7 +3335,7 @@ GetColumnByIndex(TableView *viewPtr, const char *string, Column **colPtrPtr)
 	CellKey *keyPtr;
 	
 	keyPtr = Blt_GetHashKey(&viewPtr->cellTable,
-                                viewPtr->focusPtr->hashPtr);
+				viewPtr->focusPtr->hashPtr);
 	focusPtr = keyPtr->colPtr;
     }
     c = string[0];
@@ -3425,7 +3425,7 @@ GetColumn(Tcl_Interp *interp, TableView *viewPtr, Tcl_Obj *objPtr,
 	return TCL_ERROR;
     }
     if (viewPtr->flags & COLUMNS_PENDING) {
-        AddColumnsWhenIdleProc(viewPtr);
+	AddColumnsWhenIdleProc(viewPtr);
     }
     hPtr = Blt_FindHashEntry(&viewPtr->columnTable, (char *)col);
     if (hPtr == NULL) {
@@ -3506,12 +3506,12 @@ GetLastRow(TableView *viewPtr)
  *
  * NearestRow --
  *
- *	Finds the row closest to the given screen Y-coordinate in the
- *	viewport.
+ *      Finds the row closest to the given screen Y-coordinate in the
+ *      viewport.
  *
  * Results:
- *	Returns the pointer to the closest row.  If no row is visible (rows
- *	may be hidden), NULL is returned.
+ *      Returns the pointer to the closest row.  If no row is visible (rows
+ *      may be hidden), NULL is returned.
  *
  *---------------------------------------------------------------------------
  */
@@ -3532,7 +3532,7 @@ NearestRow(TableView *viewPtr, int y, int selectOne)
     if (y < (viewPtr->colTitleHeight + viewPtr->colFilterHeight)) {
 	return (selectOne) ? viewPtr->visibleRows[0] : NULL;
     }
-    lastPtr = NULL;			/* Suppress compiler warning. */
+    lastPtr = NULL;                     /* Suppress compiler warning. */
     /*
      * Since the entry positions were previously computed in world
      * coordinates, convert Y-coordinate from screen to world coordinates
@@ -3548,7 +3548,7 @@ NearestRow(TableView *viewPtr, int y, int selectOne)
 	    return (selectOne) ? rowPtr : NULL;
 	}
 	if (y < (rowPtr->worldY + rowPtr->height)) {
-	    return rowPtr;		/* Found it. */
+	    return rowPtr;              /* Found it. */
 	}
 	lastPtr = rowPtr;
     }
@@ -3568,7 +3568,7 @@ GetRowByIndex(TableView *viewPtr, Tcl_Obj *objPtr, Row **rowPtrPtr)
 	CellKey *keyPtr;
 	
 	keyPtr = Blt_GetHashKey(&viewPtr->cellTable,
-                                viewPtr->focusPtr->hashPtr);
+				viewPtr->focusPtr->hashPtr);
 	focusPtr = keyPtr->rowPtr;
     }
     string = Tcl_GetStringFromObj(objPtr, &length);
@@ -3663,7 +3663,7 @@ GetRow(Tcl_Interp *interp, TableView *viewPtr, Tcl_Obj *objPtr, Row **rowPtrPtr)
 	return TCL_ERROR;
     }
     if (viewPtr->flags & ROWS_PENDING) {
-        AddRowsWhenIdleProc(viewPtr);
+	AddRowsWhenIdleProc(viewPtr);
     }
     hPtr = Blt_FindHashEntry(&viewPtr->rowTable, (char *)row);
     if (hPtr == NULL) {
@@ -4139,15 +4139,15 @@ GetCurrentStyle(TableView *viewPtr, Row *rowPtr, Column *colPtr, Cell *cellPtr)
  *
  * LostSelection --
  *
- *	This procedure is called back by Tk when the selection is grabbed
- *	away.
+ *      This procedure is called back by Tk when the selection is grabbed
+ *      away.
  *
  * Results:
- *	None.
+ *      None.
  *
  * Side effects:
- *	The existing selection is unhighlighted, and the window is marked
- *	as not containing a selection.
+ *      The existing selection is unhighlighted, and the window is marked
+ *      as not containing a selection.
  *
  *---------------------------------------------------------------------------
  */
@@ -4167,8 +4167,8 @@ LostSelection(ClientData clientData)
  *
  * SelectRow --
  *
- *	Adds the given row from the set of selected rows.  It's OK if the
- *	row has already been selected.
+ *      Adds the given row from the set of selected rows.  It's OK if the
+ *      row has already been selected.
  *
  *---------------------------------------------------------------------------
  */
@@ -4188,8 +4188,8 @@ SelectRow(TableView *viewPtr, Row *rowPtr)
  *
  * DeselectRow --
  *
- *	Removes the given row from the set of selected rows. It's OK
- *	if the row isn't already selected.
+ *      Removes the given row from the set of selected rows. It's OK
+ *      if the row isn't already selected.
  *
  *---------------------------------------------------------------------------
  */
@@ -4207,12 +4207,12 @@ DeselectRow(TableView *viewPtr, Row *rowPtr)
  *
  * SelectRows --
  *
- *	Sets the selection flag for a range of nodes.  The range is
- *	determined by two pointers which designate the first/last nodes of
- *	the range.
+ *      Sets the selection flag for a range of nodes.  The range is
+ *      determined by two pointers which designate the first/last nodes of
+ *      the range.
  *
  * Results:
- *	Always returns TCL_OK.
+ *      Always returns TCL_OK.
  *
  *---------------------------------------------------------------------------
  */
@@ -4224,15 +4224,15 @@ SelectRows(TableView *viewPtr, Row *fromPtr, Row *toPtr)
     from = fromPtr->index;
     to = toPtr->index;
     if (from > to) {
-        int i;
+	int i;
 
 	for (i = from; i >= to; i--) {
 	    Row *rowPtr;
 
 	    rowPtr = viewPtr->rows[i];
-            if (rowPtr->flags & HIDDEN) {
-                continue;
-            }
+	    if (rowPtr->flags & HIDDEN) {
+		continue;
+	    }
 	    switch (viewPtr->selectRows.flags & SELECT_MASK) {
 	    case SELECT_CLEAR:
 		DeselectRow(viewPtr, rowPtr); break;
@@ -4248,20 +4248,20 @@ SelectRows(TableView *viewPtr, Row *fromPtr, Row *toPtr)
 	    }
 	}
     } else {
-        int i;
+	int i;
 
 	for (i = from; i <= to; i++) {
 	    Row *rowPtr;
 
 	    rowPtr = viewPtr->rows[i];
-            if (rowPtr->flags & HIDDEN) {
-                continue;
-            }
+	    if (rowPtr->flags & HIDDEN) {
+		continue;
+	    }
 	    switch (viewPtr->selectRows.flags & SELECT_MASK) {
 	    case SELECT_CLEAR:
 		DeselectRow(viewPtr, rowPtr);   break;
 	    case SELECT_SET:
-		SelectRow(viewPtr, rowPtr);	break;
+		SelectRow(viewPtr, rowPtr);     break;
 	    case SELECT_TOGGLE:
 		if (rowPtr->flags & SELECTED) {
 		    DeselectRow(viewPtr, rowPtr);
@@ -4359,11 +4359,11 @@ TableEventProc(ClientData clientData, BLT_TABLE_NOTIFY_EVENT *eventPtr)
    if (eventPtr->type & (TABLE_NOTIFY_DELETE|TABLE_NOTIFY_CREATE)) {
        if (eventPtr->type == TABLE_NOTIFY_ROWS_CREATED) {
 	   if (viewPtr->flags & AUTO_ROWS) {
-               EventuallyAddRows(viewPtr);
+	       EventuallyAddRows(viewPtr);
 	   }
        } else if (eventPtr->type == TABLE_NOTIFY_COLUMNS_CREATED) {
 	   if (viewPtr->flags & AUTO_COLUMNS) {
-               EventuallyAddColumns(viewPtr);
+	       EventuallyAddColumns(viewPtr);
 	   }
        } else if (eventPtr->type == TABLE_NOTIFY_ROWS_DELETED) {
 	   EventuallyDeleteRow(viewPtr, eventPtr->row);
@@ -4383,7 +4383,7 @@ TableEventProc(ClientData clientData, BLT_TABLE_NOTIFY_EVENT *eventPtr)
 	} else if (eventPtr->type & TABLE_NOTIFY_MOVE) {
 	    RebuildTableView(viewPtr);
 	    /* FIXME: handle column moves */
-	}	
+	}       
     }
     if (eventPtr->type & TABLE_NOTIFY_ROW_CHANGED) {
 	if (eventPtr->type & TABLE_NOTIFY_RELABEL) {
@@ -4396,7 +4396,7 @@ TableEventProc(ClientData clientData, BLT_TABLE_NOTIFY_EVENT *eventPtr)
 	} else if (eventPtr->type & TABLE_NOTIFY_MOVE) {
 	    RebuildTableView(viewPtr);
 	    /* FIXME: handle row moves */
-	}	
+	}       
     }
     return TCL_OK;
 }
@@ -4405,7 +4405,7 @@ static ClientData
 RowBindTagProc(TableView *viewPtr, const char *key)
 {
     Blt_HashEntry *hPtr;
-    int isNew;				/* Not used. */
+    int isNew;                          /* Not used. */
 
     hPtr = Blt_CreateHashEntry(&viewPtr->rowBindTagTable, key, &isNew);
     return Blt_GetHashKey(&viewPtr->rowBindTagTable, hPtr);
@@ -4415,7 +4415,7 @@ static ClientData
 ColumnBindTagProc(TableView *viewPtr, const char *key)
 {
     Blt_HashEntry *hPtr;
-    int isNew;				/* Not used. */
+    int isNew;                          /* Not used. */
 
     hPtr = Blt_CreateHashEntry(&viewPtr->colBindTagTable, key, &isNew);
     return Blt_GetHashKey(&viewPtr->colBindTagTable, hPtr);
@@ -4425,7 +4425,7 @@ static ClientData
 CellBindTagProc(TableView *viewPtr, const char *key)
 {
     Blt_HashEntry *hPtr;
-    int isNew;				/* Not used. */
+    int isNew;                          /* Not used. */
 
     hPtr = Blt_CreateHashEntry(&viewPtr->cellBindTagTable, key, &isNew);
     return Blt_GetHashKey(&viewPtr->cellBindTagTable, hPtr);
@@ -4493,7 +4493,7 @@ AppendTagsProc(Blt_BindTable table, ClientData object, ClientData hint,
 	    Blt_Chain_Append(tags, CellBindTagProc(viewPtr, stylePtr->name));
 	}
 	Blt_Chain_Append(tags, 
-                CellBindTagProc(viewPtr, stylePtr->classPtr->className));
+		CellBindTagProc(viewPtr, stylePtr->classPtr->className));
 	Blt_Chain_Append(tags, CellBindTagProc(viewPtr, "all"));
     } else {
 	fprintf(stderr, "unknown object %lx\n", (unsigned long)object);
@@ -4504,9 +4504,9 @@ AppendTagsProc(Blt_BindTable table, ClientData object, ClientData hint,
 static ClientData
 TableViewPickProc(
     ClientData clientData,
-    int x, int y,			/* Screen coordinates of the test
+    int x, int y,                       /* Screen coordinates of the test
 					 * point. */
-    ClientData *hintPtr)		/* (out) Context of item selected:
+    ClientData *hintPtr)                /* (out) Context of item selected:
 					 * should be ITEM_CELL,
 					 * ITEM_ROW_TITLE, ITEM_ROW_RESIZE,
 					 * ITEM_COLUMN_TITLE, or
@@ -4543,7 +4543,7 @@ TableViewPickProc(
     }
     if (viewPtr->flags & GEOMETRY) {
 	ComputeGeometry(viewPtr);
-    }	
+    }   
     if (viewPtr->flags & LAYOUT_PENDING) {
 	/* Can't trust the selected items if rows/columns have been added
 	 * or deleted. So recompute the layout. */
@@ -4570,7 +4570,7 @@ TableViewPickProc(
 		}
 		*hintPtr = (ClientData)flags;
 	    }
-	    return colPtr;		/* We're picking the filter. */
+	    return colPtr;              /* We're picking the filter. */
 	}
 	if (y < (viewPtr->inset + viewPtr->colTitleHeight + 
 		 viewPtr->colFilterHeight)) {
@@ -4580,7 +4580,7 @@ TableViewPickProc(
 		flags = ITEM_COLUMN_FILTER;
 		*hintPtr = (ClientData)flags;
 	    }
-	    return colPtr;		/* We're picking the title/resize. */
+	    return colPtr;              /* We're picking the title/resize. */
 	}
     }
     /* Determine if we're picking a row heading as opposed a cell.  */
@@ -4596,13 +4596,13 @@ TableViewPickProc(
 	    }
 	    *hintPtr = (ClientData)flags;
 	}
-	return rowPtr;			/* We're picking the title/resize. */
+	return rowPtr;                  /* We're picking the title/resize. */
     }
     if ((colPtr == NULL) || (colPtr->flags & (DISABLED|HIDDEN))) {
-	return NULL;			/* Ignore disabled columns. */
+	return NULL;                    /* Ignore disabled columns. */
     }
     if ((rowPtr == NULL) || (rowPtr->flags & (DISABLED|HIDDEN))) {
-	return NULL;			/* Ignore disabled rows. */
+	return NULL;                    /* Ignore disabled rows. */
     }
     cellPtr = GetCell(viewPtr, rowPtr, colPtr);
 
@@ -4631,7 +4631,7 @@ ResetTableView(TableView *viewPtr)
 
 	colPtr = Blt_GetHashValue(hPtr);
 	colPtr->hashPtr = NULL;
-	colPtr->flags |= DELETED;	/* Mark the column as deleted. This
+	colPtr->flags |= DELETED;       /* Mark the column as deleted. This
 					 * prevents DestroyColumn from pruning
 					 * out cells that reside in this
 					 * column. We'll delete the entire
@@ -4644,7 +4644,7 @@ ResetTableView(TableView *viewPtr)
 
 	rowPtr = Blt_GetHashValue(hPtr);
 	rowPtr->hashPtr = NULL;
-	rowPtr->flags |= DELETED;	/* Mark the row as deleted. This
+	rowPtr->flags |= DELETED;       /* Mark the row as deleted. This
 					 * prevents DestroyRow from pruning
 					 * out cells that reside in this
 					 * row. We'll delete the entire
@@ -4691,15 +4691,15 @@ ResetTableView(TableView *viewPtr)
  *
  * TableViewFreeProc --
  *
- * 	This procedure is invoked by Tcl_EventuallyFree or Tcl_Release to
- * 	clean up the internal structure of a TableView at a safe time (when
- * 	no-one is using it anymore).
+ *      This procedure is invoked by Tcl_EventuallyFree or Tcl_Release to
+ *      clean up the internal structure of a TableView at a safe time (when
+ *      no-one is using it anymore).
  *
  * Results:
- *	None.
+ *      None.
  *
  * Side effects:
- *	Everything associated with the widget is freed up.
+ *      Everything associated with the widget is freed up.
  *
  *---------------------------------------------------------------------------
  */
@@ -4747,15 +4747,15 @@ TableViewFreeProc(DestroyData dataPtr) /* Pointer to the widget record. */
  *
  * TableViewEventProc --
  *
- * 	This procedure is invoked by the Tk dispatcher for various events on
- * 	tableview widgets.
+ *      This procedure is invoked by the Tk dispatcher for various events on
+ *      tableview widgets.
  *
  * Results:
- *	None.
+ *      None.
  *
  * Side effects:
- *	When the window gets deleted, internal structures get cleaned up.
- *	When it gets exposed, it is redisplayed.
+ *      When the window gets deleted, internal structures get cleaned up.
+ *      When it gets exposed, it is redisplayed.
  *
  *---------------------------------------------------------------------------
  */
@@ -4909,29 +4909,29 @@ CsvAppendRow(CsvWriter *writerPtr, TableView *viewPtr, Row *rowPtr)
  *
  * SelectionProc --
  *
- *	This procedure is called back by Tk when the selection is requested by
- *	someone.  It returns part or all of the selection in a buffer provided
- *	by the caller.
+ *      This procedure is called back by Tk when the selection is requested by
+ *      someone.  It returns part or all of the selection in a buffer provided
+ *      by the caller.
  *
  * Results:
- *	The return value is the number of non-NULL bytes stored at buffer.
- *	Buffer is filled (or partially filled) with a NUL-terminated string
- *	containing part or all of the selection, as given by offset and
- *	maxBytes.
+ *      The return value is the number of non-NULL bytes stored at buffer.
+ *      Buffer is filled (or partially filled) with a NUL-terminated string
+ *      containing part or all of the selection, as given by offset and
+ *      maxBytes.
  *
  * Side effects:
- *	None.
+ *      None.
  *
  *---------------------------------------------------------------------------
  */
 static int
 SelectionProc(
-    ClientData clientData,		/* Information about the widget. */
-    int offset,				/* Offset within selection of first
+    ClientData clientData,              /* Information about the widget. */
+    int offset,                         /* Offset within selection of first
 					 * character to be returned. */
-    char *buffer,			/* Location in which to place
+    char *buffer,                       /* Location in which to place
 					 * selection. */
-    int maxBytes)			/* Maximum number of bytes to place at
+    int maxBytes)                       /* Maximum number of bytes to place at
 					 * buffer, not including terminating
 					 * NULL character. */
 {
@@ -5006,22 +5006,22 @@ SelectionProc(
  *
  * ConfigureTableView --
  *
- *	Updates the GCs and other information associated with the tableview
- *	widget.
+ *      Updates the GCs and other information associated with the tableview
+ *      widget.
  *
  * Results:
- *	The return value is a standard TCL result.  If TCL_ERROR is returned,
- *	then interp->result contains an error message.
+ *      The return value is a standard TCL result.  If TCL_ERROR is returned,
+ *      then interp->result contains an error message.
  *
  * Side effects:
- *	Configuration information, such as text string, colors, font, etc. get
- *	set for viewPtr; old resources get freed, if there were any.  The widget
- *	is redisplayed.
+ *      Configuration information, such as text string, colors, font, etc. get
+ *      set for viewPtr; old resources get freed, if there were any.  The widget
+ *      is redisplayed.
  *
  *---------------------------------------------------------------------------
  */
 static int
-ConfigureTableView(Tcl_Interp *interp, TableView *viewPtr)	
+ConfigureTableView(Tcl_Interp *interp, TableView *viewPtr)      
 {
     GC newGC;
     XGCValues gcValues;
@@ -5109,22 +5109,22 @@ ConfigureTableView(Tcl_Interp *interp, TableView *viewPtr)
  *
  * ConfigureFilters --
  *
- *	Updates the GCs and other information associated with the tableview
- *	widget.
+ *      Updates the GCs and other information associated with the tableview
+ *      widget.
  *
  * Results:
- *	The return value is a standard TCL result.  If TCL_ERROR is returned,
- *	then interp->result contains an error message.
+ *      The return value is a standard TCL result.  If TCL_ERROR is returned,
+ *      then interp->result contains an error message.
  *
  * Side effects:
- *	Configuration information, such as text string, colors, font, etc. get
- *	set for viewPtr; old resources get freed, if there were any.  The widget
- *	is redisplayed.
+ *      Configuration information, such as text string, colors, font, etc. get
+ *      set for viewPtr; old resources get freed, if there were any.  The widget
+ *      is redisplayed.
  *
  *---------------------------------------------------------------------------
  */
 static int
-ConfigureFilters(Tcl_Interp *interp, TableView *viewPtr)	
+ConfigureFilters(Tcl_Interp *interp, TableView *viewPtr)        
 {
     GC newGC;
     XGCValues gcValues;
@@ -5193,17 +5193,17 @@ ConfigureFilters(Tcl_Interp *interp, TableView *viewPtr)
  *
  * DrawColumnFilter --
  *
- *	Draws the combo filter button given the screen coordinates and the
- *	value to be displayed.  
+ *      Draws the combo filter button given the screen coordinates and the
+ *      value to be displayed.  
  *
  * Results:
- *	None.
+ *      None.
  *
  * Side Effects:
- *	The combo filter button value is drawn.
+ *      The combo filter button value is drawn.
  *
- *      +---------------------------+	
- *	|b|x|icon|x|text|x|arrow|x|b|	
+ *      +---------------------------+   
+ *      |b|x|icon|x|text|x|arrow|x|b|   
  *      +---------------------------+
  *
  * b = filter borderwidth
@@ -5226,17 +5226,17 @@ DrawColumnFilter(TableView *viewPtr, Column *colPtr, Drawable drawable,
 	return;
     }
     relief = filterPtr->relief;
-    if (colPtr->flags & DISABLED) {	/* Disabled  */
+    if (colPtr->flags & DISABLED) {     /* Disabled  */
 	filterBg = bg = filterPtr->disabledBg;
 	gc = filterPtr->disabledGC;
 	fg = filterPtr->disabledFg;
-    } else if (colPtr == filterPtr->postPtr) {	 /* Selected */
+    } else if (colPtr == filterPtr->postPtr) {   /* Selected */
 	filterBg = bg = filterPtr->selectBg;
 	gc = filterPtr->selectGC;
 	relief = filterPtr->selectRelief;
 	fg = filterPtr->selectFg;
     } else if (colPtr == filterPtr->activePtr) {  /* Active */
-        filterBg = filterPtr->normalBg;
+	filterBg = filterPtr->normalBg;
 	bg = filterPtr->activeBg;
 	gc = filterPtr->activeGC;
 	relief = filterPtr->activeRelief;
@@ -5246,7 +5246,7 @@ DrawColumnFilter(TableView *viewPtr, Column *colPtr, Drawable drawable,
 	gc = filterPtr->highlightGC;
 	fg = filterPtr->highlightFg;
 	relief = TK_RELIEF_FLAT;
-    } else {				/* Normal */
+    } else {                            /* Normal */
 	filterBg = bg = filterPtr->normalBg;
 	gc = filterPtr->normalGC;
 	fg = filterPtr->normalFg;
@@ -5309,9 +5309,9 @@ DrawColumnFilter(TableView *viewPtr, Column *colPtr, Drawable drawable,
 	if (maxLength > 0) {
 	    TextStyle ts;
 	    TextLayout *textPtr;
-            Blt_Font font;
+	    Blt_Font font;
 
-            font = CHOOSE(filterPtr->font, colPtr->filterFont);
+	    font = CHOOSE(filterPtr->font, colPtr->filterFont);
 	    Blt_Ts_InitStyle(ts);
 	    Blt_Ts_SetFont(ts, font);
 	    Blt_Ts_SetGC(ts, gc);
@@ -5364,7 +5364,7 @@ DisplayCell(Cell *cellPtr, Drawable drawable, int buffer)
 	(x2 <= (viewPtr->inset + viewPtr->rowTitleWidth)) ||
 	(y2 <= (viewPtr->inset + + viewPtr->colFilterHeight +
 		viewPtr->colTitleHeight))) {
-	return;				/* Cell isn't in viewport.  This can
+	return;                         /* Cell isn't in viewport.  This can
 					 * happen when the active cell is
 					 * scrolled off screen. */
     }
@@ -5428,7 +5428,7 @@ DrawColumnTitle(TableView *viewPtr, Column *colPtr, Drawable drawable, int x,
 	return;
     }
     relief = colPtr->titleRelief;
-    if (colPtr->flags & DISABLED) {	/* Disabled  */
+    if (colPtr->flags & DISABLED) {     /* Disabled  */
 	bg = viewPtr->colDisabledTitleBg;
 	gc = viewPtr->colDisabledTitleGC;
 	fg = viewPtr->colDisabledTitleFg;
@@ -5437,7 +5437,7 @@ DrawColumnTitle(TableView *viewPtr, Column *colPtr, Drawable drawable, int x,
 	gc = viewPtr->colActiveTitleGC;
 	relief = colPtr->activeTitleRelief;
 	fg = viewPtr->colActiveTitleFg;
-    } else {				/* Normal */
+    } else {                            /* Normal */
 	bg = viewPtr->colNormalTitleBg;
 	gc = viewPtr->colNormalTitleGC;
 	fg = viewPtr->colNormalTitleFg;
@@ -5550,14 +5550,14 @@ DrawRowTitle(TableView *viewPtr, Row *rowPtr, Drawable drawable, int x, int y)
 	return;
     }
     relief = rowPtr->titleRelief;
-    if (rowPtr->flags & DISABLED) {	/* Disabled  */
+    if (rowPtr->flags & DISABLED) {     /* Disabled  */
 	bg = viewPtr->rowDisabledTitleBg;
 	gc = viewPtr->rowDisabledTitleGC;
     } else if (rowPtr == viewPtr->rowActiveTitlePtr) {  /* Active */
 	bg = viewPtr->rowActiveTitleBg;
 	gc = viewPtr->rowActiveTitleGC;
 	relief = rowPtr->activeTitleRelief;
-    } else {				/* Normal */
+    } else {                            /* Normal */
 	bg = viewPtr->rowNormalTitleBg;
 	gc = viewPtr->rowNormalTitleGC;
     }
@@ -5630,7 +5630,7 @@ DisplayRowTitle(TableView *viewPtr, Row *rowPtr, Drawable drawable)
     if ((y1 >= (Tk_Height(viewPtr->tkwin) - viewPtr->inset)) ||
 	(y2 <= (viewPtr->inset + viewPtr->colFilterHeight +
 		viewPtr->colTitleHeight))) {
-	return;				/* Row starts after the window or ends
+	return;                         /* Row starts after the window or ends
 					 * before the window. */
     }
     clipped = FALSE;
@@ -5672,7 +5672,7 @@ DisplayColumnTitle(TableView *viewPtr, Column *colPtr, Drawable drawable)
     x2 = x1 + colPtr->width;
     if ((x1 >= (Tk_Width(viewPtr->tkwin) - viewPtr->inset)) ||
 	(x2 <= (viewPtr->inset + viewPtr->rowTitleWidth))) {
-	return;				/* Column starts after the window or
+	return;                         /* Column starts after the window or
 					 * ends before the the window. */
     }
     clipped = FALSE;
@@ -5713,7 +5713,7 @@ DisplayColumnFilter(TableView *viewPtr, Column *colPtr, Drawable drawable)
     x2 = x1 + colPtr->width;
     if ((x1 >= (Tk_Width(viewPtr->tkwin) - viewPtr->inset)) ||
 	(x2 <= (viewPtr->inset + viewPtr->rowTitleWidth))) {
-	return;				/* Column starts after the window or
+	return;                         /* Column starts after the window or
 					 * ends before the the window. */
     }
     clipped = FALSE;
@@ -5877,7 +5877,7 @@ AdjustColumns(TableView *viewPtr)
 
 	colPtr = viewPtr->columns[i];
 	if (colPtr->flags & HIDDEN) {
-	    continue;			/* Ignore hidden columns. */
+	    continue;                   /* Ignore hidden columns. */
 	}
 	colPtr->worldX = x;
 	x += colPtr->width;
@@ -5966,7 +5966,7 @@ AdjustRows(TableView *viewPtr)
 
 	rowPtr = viewPtr->rows[i];
 	if (rowPtr->flags & HIDDEN) {
-	    continue;			/* Ignore hidden columns. */
+	    continue;                   /* Ignore hidden columns. */
 	}
 	rowPtr->worldY = y;
 	y += rowPtr->height;
@@ -6007,9 +6007,9 @@ NewCell(TableView *viewPtr, Blt_HashEntry *hashPtr)
  *
  * ActivateOp --
  *
- *	Makes the cell appear active.
+ *      Makes the cell appear active.
  *
- *	.t activate cell
+ *      .t activate cell
  *
  *---------------------------------------------------------------------------
  */
@@ -6052,7 +6052,7 @@ ActivateOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * BboxOp --
  *
- *	.t bbox cell ?cell?...
+ *      .t bbox cell ?cell?...
  *
  *---------------------------------------------------------------------------
  */
@@ -6145,8 +6145,8 @@ BboxOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * BindOp --
  *
- *	.t bind tag sequence command
- *	.t bindtags idOrTag idOrTag...
+ *      .t bind tag sequence command
+ *      .t bindtags idOrTag idOrTag...
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
@@ -6177,12 +6177,12 @@ BindOp(TableView *viewPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * CellActivateOp --
  *
- * 	Turns on highlighting for a particular cell.  Only one cell can be
+ *      Turns on highlighting for a particular cell.  Only one cell can be
  *      active at a time.
  *
  * Results:
- *	A standard TCL result.  If TCL_ERROR is returned, then
- *	interp->result contains an error message.
+ *      A standard TCL result.  If TCL_ERROR is returned, then
+ *      interp->result contains an error message.
  *
  *      .view cell activate ?cell?
  *
@@ -6191,7 +6191,7 @@ BindOp(TableView *viewPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 /*ARGSUSED*/
 static int
 CellActivateOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-               Tcl_Obj *const *objv)
+	       Tcl_Obj *const *objv)
 {
     TableView *viewPtr = clientData;
     Cell *cellPtr, *activePtr;
@@ -6337,7 +6337,7 @@ CellCgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	return TCL_ERROR;
     }
     if (cellPtr == NULL) {
-        return TCL_OK;
+	return TCL_OK;
     }
     return Blt_ConfigureValueFromObj(interp, viewPtr->tkwin, cellSpecs,
 	(char *)cellPtr, objv[4], 0);
@@ -6348,24 +6348,24 @@ CellCgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * CellConfigureOp --
  *
- * 	This procedure is called to process an objv/objc list, plus the Tk
- * 	option database, in order to configure (or reconfigure) the widget.
+ *      This procedure is called to process an objv/objc list, plus the Tk
+ *      option database, in order to configure (or reconfigure) the widget.
  *
  * Results:
- *	A standard TCL result.  If TCL_ERROR is returned, then
- *	interp->result contains an error message.
+ *      A standard TCL result.  If TCL_ERROR is returned, then
+ *      interp->result contains an error message.
  *
  * Side effects:
- *	Configuration information, such as text string, colors, font,
- *	etc. get set for viewPtr; old resources get freed, if there were
- *	any.  The widget is redisplayed.
+ *      Configuration information, such as text string, colors, font,
+ *      etc. get set for viewPtr; old resources get freed, if there were
+ *      any.  The widget is redisplayed.
  *
  *      .view cell configure $cell ?option value?
  *---------------------------------------------------------------------------
  */
 static int
 CellConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-                Tcl_Obj *const *objv)
+		Tcl_Obj *const *objv)
 {
     TableView *viewPtr = clientData;
     Cell *cellPtr;
@@ -6375,7 +6375,7 @@ CellConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	return TCL_ERROR;
     }
     if (cellPtr == NULL) {
-        return TCL_OK;
+	return TCL_OK;
     }
     if (objc == 4) {
 	return Blt_ConfigureInfoFromObj(interp, viewPtr->tkwin, 
@@ -6392,31 +6392,31 @@ CellConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	return TCL_ERROR;
     }
     if ((Blt_ConfigModified(cellSpecs, "-style", (char *)NULL)) &&
-        (oldStylePtr != cellPtr->stylePtr)) {
-        CellKey *keyPtr;
+	(oldStylePtr != cellPtr->stylePtr)) {
+	CellKey *keyPtr;
 
 	keyPtr = GetKey(cellPtr);
-        if (cellPtr->stylePtr != NULL) {
-            int isNew;
+	if (cellPtr->stylePtr != NULL) {
+	    int isNew;
 
-            cellPtr->stylePtr->refCount++;	
+	    cellPtr->stylePtr->refCount++;      
 	    Blt_CreateHashEntry(&cellPtr->stylePtr->table, (char *)keyPtr, 
-                &isNew);
-        }
-        if (oldStylePtr != NULL) {
-            Blt_HashEntry *hPtr;
+		&isNew);
+	}
+	if (oldStylePtr != NULL) {
+	    Blt_HashEntry *hPtr;
 
-            /* Remove the cell from old style's table of cells. */
-            oldStylePtr->refCount--;
-            hPtr = Blt_FindHashEntry(&oldStylePtr->table, (char *)keyPtr);
-            if (hPtr != NULL) {
-                Blt_DeleteHashEntry(&oldStylePtr->table, hPtr);
-            }
-            if (oldStylePtr->refCount <= 0) {
-                (*oldStylePtr->classPtr->freeProc)(oldStylePtr);
-            }
-        }
-        cellPtr->flags |= GEOMETRY;	/* Assume that the new style
+	    /* Remove the cell from old style's table of cells. */
+	    oldStylePtr->refCount--;
+	    hPtr = Blt_FindHashEntry(&oldStylePtr->table, (char *)keyPtr);
+	    if (hPtr != NULL) {
+		Blt_DeleteHashEntry(&oldStylePtr->table, hPtr);
+	    }
+	    if (oldStylePtr->refCount <= 0) {
+		(*oldStylePtr->classPtr->freeProc)(oldStylePtr);
+	    }
+	}
+	cellPtr->flags |= GEOMETRY;     /* Assume that the new style
 					 * changes the geometry of the
 					 * cell. */
     }
@@ -6429,20 +6429,20 @@ CellConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * CellDeactivateOp --
  *
- * 	Deactivates all cells.
+ *      Deactivates all cells.
  *
  * Results:
- *	A standard TCL result.  If TCL_ERROR is returned, then
- *	interp->result contains an error message.
+ *      A standard TCL result.  If TCL_ERROR is returned, then
+ *      interp->result contains an error message.
  *
- *	  .view deactivate 
+ *        .view deactivate 
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
 CellDeactivateOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-                 Tcl_Obj *const *objv)
+		 Tcl_Obj *const *objv)
 {
     TableView *viewPtr = clientData;
     Cell *activePtr;
@@ -6467,20 +6467,20 @@ CellDeactivateOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * CellFocusOp --
  *
- * 	Gets or sets focus on a cell.
+ *      Gets or sets focus on a cell.
  *
  * Results:
- *	A standard TCL result.  If TCL_ERROR is returned, then
- *	interp->result contains an error message.
+ *      A standard TCL result.  If TCL_ERROR is returned, then
+ *      interp->result contains an error message.
  *
- *	  .view cell focus ?cell?
+ *        .view cell focus ?cell?
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
 CellFocusOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-            Tcl_Obj *const *objv)
+	    Tcl_Obj *const *objv)
 {
     TableView *viewPtr = clientData;
     Cell *cellPtr;
@@ -6518,7 +6518,7 @@ CellFocusOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	rowPtr = keyPtr->rowPtr;
 	colPtr = keyPtr->colPtr;
 	if ((rowPtr->flags|colPtr->flags) & (HIDDEN|DISABLED)) {
-	    return TCL_OK;		/* Can't set focus to hidden or
+	    return TCL_OK;              /* Can't set focus to hidden or
 					 * disabled cell */
 	}
 	if (cellPtr != viewPtr->focusPtr) {
@@ -6535,7 +6535,7 @@ CellFocusOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * CellIdentifyOp --
  *
- *	.t cell identify cell x y 
+ *      .t cell identify cell x y 
  *
  *---------------------------------------------------------------------------
  */
@@ -6587,13 +6587,13 @@ CellIdentifyOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * CellIndexOp --
  *
- *	Converts the string representing a cell index into their respective
+ *      Converts the string representing a cell index into their respective
  *      "node field" identifiers.
  *
  * Results: 
  *      A standard TCL result.  Interp->result will contain the identifier
- *	of each inode found. If an inode could not be found, then the
- *	serial identifier will be the empty string.
+ *      of each inode found. If an inode could not be found, then the
+ *      serial identifier will be the empty string.
  *
  *      .view cell index $cell
  *
@@ -6638,7 +6638,7 @@ CellIndexOp(ClientData clientData, Tcl_Interp *interp, int objc,
 /*ARGSUSED*/
 static int
 CellInvokeOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-             Tcl_Obj *const *objv)
+	     Tcl_Obj *const *objv)
 {
     TableView *viewPtr = clientData;
     Row *rowPtr;
@@ -6689,7 +6689,7 @@ CellInvokeOp(ClientData clientData, Tcl_Interp *interp, int objc,
 /*ARGSUSED*/
 static int
 CellSeeOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-          Tcl_Obj *const *objv)
+	  Tcl_Obj *const *objv)
 {
     Cell *cellPtr;
     CellKey *keyPtr;
@@ -6759,16 +6759,16 @@ CellStyleOp(ClientData clientData, Tcl_Interp *interp, int objc,
     Cell *cellPtr;
     CellKey *keyPtr;
 
-    cellPtr = NULL;			/* Suppress compiler warning. */
+    cellPtr = NULL;                     /* Suppress compiler warning. */
     if (GetCellFromObj(interp, viewPtr, objv[3], &cellPtr) != TCL_OK) {
 	return TCL_ERROR;
     }
     if (cellPtr == NULL) {
-        return TCL_OK;
+	return TCL_OK;
     }
     keyPtr = GetKey(cellPtr);
     stylePtr = GetCurrentStyle(viewPtr, keyPtr->rowPtr, keyPtr->colPtr, 
-                cellPtr);
+		cellPtr);
     Tcl_SetStringObj(Tcl_GetObjResult(interp), stylePtr->name, -1);
     return TCL_OK;
 }
@@ -6779,14 +6779,14 @@ CellStyleOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * CellWritableOp --
  *
- *	  .view cell writable $cell
+ *        .view cell writable $cell
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
 CellWritableOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-               Tcl_Obj *const *objv)
+	       Tcl_Obj *const *objv)
 {
     Cell *cellPtr;
     TableView *viewPtr = clientData;
@@ -6818,10 +6818,10 @@ CellWritableOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * CellOp --
  *
- *	This procedure handles cell operations.
+ *      This procedure handles cell operations.
  *
  * Results:
- *	A standard TCL result.
+ *      A standard TCL result.
  *
  *---------------------------------------------------------------------------
  */
@@ -6864,7 +6864,7 @@ CellOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * CgetOp --
  *
- *	.t cget option
+ *      .t cget option
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
@@ -6886,17 +6886,17 @@ CgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * ConfigureOp --
  *
- * 	This procedure is called to process an objv/objc list, plus the Tk
- * 	option database, in order to configure (or reconfigure) the widget.
+ *      This procedure is called to process an objv/objc list, plus the Tk
+ *      option database, in order to configure (or reconfigure) the widget.
  *
  * Results:
- *	A standard TCL result.  If TCL_ERROR is returned, then interp->result
- *	contains an error message.
+ *      A standard TCL result.  If TCL_ERROR is returned, then interp->result
+ *      contains an error message.
  *
  * Side effects:
- *	Configuration information, such as text string, colors, font, etc. get
- *	set for viewPtr; old resources get freed, if there were any.  The widget
- *	is redisplayed.
+ *      Configuration information, such as text string, colors, font, etc. get
+ *      set for viewPtr; old resources get freed, if there were any.  The widget
+ *      is redisplayed.
  *
  *---------------------------------------------------------------------------
  */
@@ -6930,7 +6930,7 @@ ConfigureOp(TableView *viewPtr, Tcl_Interp *interp, int objc,
  *
  * CurselectionOp --
  *
- *	.t curselection
+ *      .t curselection
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
@@ -6964,7 +6964,7 @@ CurselectionOp(TableView *viewPtr, Tcl_Interp *interp, int objc,
 	    
 	    for (link = Blt_Chain_FirstLink(viewPtr->selectRows.list); 
 		 link != NULL; link = Blt_Chain_NextLink(link)) {
- 		Row *rowPtr;
+		Row *rowPtr;
 		Tcl_Obj *objPtr;
 		
 		rowPtr = Blt_Chain_GetValue(link);
@@ -6996,9 +6996,9 @@ CurselectionOp(TableView *viewPtr, Tcl_Interp *interp, int objc,
  *
  * ColumnActivateOp --
  *
- *	Selects the button to appear active.
+ *      Selects the button to appear active.
  *
- *	.t column activate ?col?
+ *      .t column activate ?col?
  *
  *---------------------------------------------------------------------------
  */
@@ -7019,7 +7019,7 @@ fprintf(stderr, "ColumnActivate: Column %s is NULL\n", Tcl_GetString(objv[3]));
     }
     if (((viewPtr->flags & COLUMN_TITLES) == 0) || 
 	(colPtr->flags & (HIDDEN | DISABLED))) {
-	return TCL_OK;			/* Disabled or hidden row. */
+	return TCL_OK;                  /* Disabled or hidden row. */
     }
     activePtr = viewPtr->colActiveTitlePtr;
     viewPtr->colActiveTitlePtr = colPtr;
@@ -7043,9 +7043,9 @@ fprintf(stderr, "ColumnActivate: Column %s is NULL\n", Tcl_GetString(objv[3]));
  *
  * ColumnBindOp --
  *
- *	Bind a callback to an event on a column title.
+ *      Bind a callback to an event on a column title.
  *
- *	  .t column bind tag sequence command
+ *        .t column bind tag sequence command
  *
  *---------------------------------------------------------------------------
  */
@@ -7096,22 +7096,22 @@ ColumnCgetOp(TableView *viewPtr, Tcl_Interp *interp, int objc,
  *
  * ColumnConfigureOp --
  *
- * 	This procedure is called to process a list of configuration options
- *	database, in order to reconfigure the one of more entries in the
- *	widget.
+ *      This procedure is called to process a list of configuration options
+ *      database, in order to reconfigure the one of more entries in the
+ *      widget.
  *
- *	  .tv column configure $col option value
+ *        .tv column configure $col option value
  *
  * Results:
- *	A standard TCL result.  If TCL_ERROR is returned, then
- *	interp->result contains an error message.
+ *      A standard TCL result.  If TCL_ERROR is returned, then
+ *      interp->result contains an error message.
  *
  * Side effects:
- *	Configuration information, such as text string, colors, font,
- *	etc. get set for viewPtr; old resources get freed, if there were
- *	any.
+ *      Configuration information, such as text string, colors, font,
+ *      etc. get set for viewPtr; old resources get freed, if there were
+ *      any.
  *
- *	.tv column configure col ?option value?
+ *      .tv column configure col ?option value?
  *
  *---------------------------------------------------------------------------
  */
@@ -7185,9 +7185,9 @@ ColumnConfigureOp(TableView *viewPtr, Tcl_Interp *interp, int objc,
  *
  * ColumnDeactivateOp --
  *
- *	Selects the column to appear normally.
+ *      Selects the column to appear normally.
  *
- *	.t column deactivate
+ *      .t column deactivate
  *
  *---------------------------------------------------------------------------
  */
@@ -7200,7 +7200,7 @@ ColumnDeactivateOp(ClientData clientData, Tcl_Interp *interp, int objc,
     Column *activePtr;
     
     if ((viewPtr->flags & COLUMN_TITLES) == 0) {
-	return TCL_OK;			/* Disabled or hidden row. */
+	return TCL_OK;                  /* Disabled or hidden row. */
     }
     activePtr = viewPtr->colActiveTitlePtr;
     viewPtr->colActiveTitlePtr = NULL;
@@ -7222,7 +7222,7 @@ ColumnDeactivateOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * ColumnDeleteOp --
  *
- *	.t column delete col col col 
+ *      .t column delete col col col 
  *
  *---------------------------------------------------------------------------
  */
@@ -7275,7 +7275,7 @@ ColumnDeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * ColumnExistsOp --
  *
- *	.tv column exists col
+ *      .tv column exists col
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
@@ -7300,7 +7300,7 @@ ColumnExistsOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * ColumnExposeOp --
  *
- *	.tv column expose ?col...?
+ *      .tv column expose ?col...?
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
@@ -7361,7 +7361,7 @@ ColumnExposeOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * ColumnHideOp --
  *
- *	.tv column hide ?col...?
+ *      .tv column hide ?col...?
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
@@ -7422,7 +7422,7 @@ ColumnHideOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * ColumnIndexOp --
  *
- *	.t colun index col
+ *      .t colun index col
  *
  *---------------------------------------------------------------------------
  */
@@ -7449,9 +7449,9 @@ ColumnIndexOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * ColumnInsertOp --
  *
- *	Add new columns to the table.
+ *      Add new columns to the table.
  *
- *	.tv column insert name position ?option values?
+ *      .tv column insert name position ?option values?
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
@@ -7494,13 +7494,13 @@ ColumnInsertOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	insertPos = viewPtr->numColumns; /* Insert at end of list. */
     }
     colPtr = NewColumn(viewPtr, col, hPtr);
-    colPtr->flags |= STICKY;		/* Don't allow column to be reset. */
+    colPtr->flags |= STICKY;            /* Don't allow column to be reset. */
     iconOption.clientData = viewPtr;
     uidOption.clientData = viewPtr;
     styleOption.clientData = viewPtr;
     if (Blt_ConfigureComponentFromObj(viewPtr->interp, viewPtr->tkwin, 
 	colPtr->title, "Column", columnSpecs, objc - 5, objv + 5, 
-	(char *)colPtr, 0) != TCL_OK) {	
+	(char *)colPtr, 0) != TCL_OK) { 
 	DestroyColumn(colPtr);
 	return TCL_ERROR;
     }
@@ -7512,10 +7512,10 @@ ColumnInsertOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (insertPos < viewPtr->numColumns) {
 	memcpy(columns + insertPos + 1, viewPtr->columns + insertPos, 
 	       (viewPtr->numColumns - insertPos) * sizeof(Column *));
-    }	
+    }   
     viewPtr->numColumns++;
     if (viewPtr->columns != NULL) {
-        Blt_Free(viewPtr->columns);
+	Blt_Free(viewPtr->columns);
     }
     viewPtr->columns = columns;
     key.colPtr = colPtr;
@@ -7542,13 +7542,13 @@ ColumnInsertOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * ColumnInvokeOp --
  *
- * 	This procedure is called to invoke a column command.
+ *      This procedure is called to invoke a column command.
  *
- *	  .h column invoke columnName
+ *        .h column invoke columnName
  *
  * Results:
- *	A standard TCL result.  If TCL_ERROR is returned, then
- *	interp->result contains an error message.
+ *      A standard TCL result.  If TCL_ERROR is returned, then
+ *      interp->result contains an error message.
  *
  *---------------------------------------------------------------------------
  */
@@ -7590,7 +7590,7 @@ ColumnInvokeOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * ColumnMoveOp --
  *
- *	Move a column.
+ *      Move a column.
  *
  * .    h column move field1 position 
  *---------------------------------------------------------------------------
@@ -7612,17 +7612,17 @@ ColumnMoveOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	return TCL_ERROR;
     }
     for (i = 0; i < viewPtr->numColumns; i++) {
-        Column *colPtr;
-        
-        colPtr = viewPtr->columns[i];
-        colPtr->index = i;
+	Column *colPtr;
+	
+	colPtr = viewPtr->columns[i];
+	colPtr->index = i;
     }
     src = colPtr->index;
     if ((dest < 0) || (dest >= viewPtr->numColumns)) {
-        dest = viewPtr->numColumns - 1;
+	dest = viewPtr->numColumns - 1;
     } 
     if (src == dest) {
-        return TCL_OK;
+	return TCL_OK;
     }
     count = 1;
     columns = Blt_AssertCalloc(viewPtr->numColumns, sizeof(Column *));
@@ -7684,14 +7684,14 @@ ColumnMoveOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	}
     }
     if (viewPtr->columns != NULL) {
-        Blt_Free(viewPtr->columns);
+	Blt_Free(viewPtr->columns);
     }
     viewPtr->columns = columns;
     for (i = 0; i < viewPtr->numColumns; i++) {
-        Column *colPtr;
-        
-        colPtr = viewPtr->columns[i];
-        colPtr->index = i;
+	Column *colPtr;
+	
+	colPtr = viewPtr->columns[i];
+	colPtr->index = i;
     }
     viewPtr->flags |= GEOMETRY;
     EventuallyRedraw(viewPtr);
@@ -7733,7 +7733,7 @@ ColumnNearestOp(ClientData clientData, Tcl_Interp *interp, int objc,
 		Tcl_Obj *const *objv)
 {
     TableView *viewPtr = clientData;
-    int x;			   /* Screen coordinates of the test point. */
+    int x;                         /* Screen coordinates of the test point. */
     Column *colPtr;
     long index;
 
@@ -7778,13 +7778,13 @@ UpdateColumnMark(TableView *viewPtr, int newMark)
     dx = newMark - viewPtr->colResizeAnchor; 
     width = colPtr->width;
     if ((colPtr->reqWidth.min > 0) && ((width + dx) < colPtr->reqWidth.min)) {
-        fprintf(stderr, "column %s: bounding min to %d\n", colPtr->title,
-                colPtr->reqWidth.min);
+	fprintf(stderr, "column %s: bounding min to %d\n", colPtr->title,
+		colPtr->reqWidth.min);
 	dx = colPtr->reqWidth.min - width;
     }
     if ((colPtr->reqWidth.max > 0) && ((width + dx) > colPtr->reqWidth.max)) {
-        fprintf(stderr, "column %s: bounding max to %d\n", colPtr->title,
-                colPtr->reqWidth.max);
+	fprintf(stderr, "column %s: bounding max to %d\n", colPtr->title,
+		colPtr->reqWidth.max);
 	dx = colPtr->reqWidth.max - width;
     }
     if ((width + dx) < 4) {
@@ -7798,9 +7798,9 @@ UpdateColumnMark(TableView *viewPtr, int newMark)
  *
  * ColumnResizeActivateOp --
  *
- *	Turns on/off the resize cursor.
+ *      Turns on/off the resize cursor.
  *
- *	.t column resize activate col 
+ *      .t column resize activate col 
  *
  *---------------------------------------------------------------------------
  */
@@ -7831,9 +7831,9 @@ ColumnResizeActivateOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * ColumnResizeAnchorOp --
  *
- *	Set the anchor for the resize.
+ *      Set the anchor for the resize.
  *
- *	.t column resize anchor ?x?
+ *      .t column resize anchor ?x?
  *
  *---------------------------------------------------------------------------
  */
@@ -7845,15 +7845,15 @@ ColumnResizeAnchorOp(ClientData clientData, Tcl_Interp *interp, int objc,
     TableView *viewPtr = clientData;
 
     if (objc == 4) {
-        Tcl_SetIntObj(Tcl_GetObjResult(interp), viewPtr->colResizeAnchor);
+	Tcl_SetIntObj(Tcl_GetObjResult(interp), viewPtr->colResizeAnchor);
     } else {
-        int y;
+	int y;
 
-        if (Tcl_GetIntFromObj(interp, objv[4], &y) != TCL_OK) {
-            return TCL_ERROR;
-        } 
-        viewPtr->colResizeAnchor = y;
-        UpdateColumnMark(viewPtr, y);
+	if (Tcl_GetIntFromObj(interp, objv[4], &y) != TCL_OK) {
+	    return TCL_ERROR;
+	} 
+	viewPtr->colResizeAnchor = y;
+	UpdateColumnMark(viewPtr, y);
     }
     return TCL_OK;
 }
@@ -7863,9 +7863,9 @@ ColumnResizeAnchorOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * ColumnResizeDeactiveOp --
  *
- *	Turns off the resize cursor.
+ *      Turns off the resize cursor.
  *
- *	.t column resize deactivate 
+ *      .t column resize deactivate 
  *
  *---------------------------------------------------------------------------
  */
@@ -7886,10 +7886,10 @@ ColumnResizeDeactivateOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * ColumnResizeMarkOp --
  *
- *	Sets the resize mark.  The distance between the mark and the anchor
- *	is the delta to change the width of the active column.
+ *      Sets the resize mark.  The distance between the mark and the anchor
+ *      is the delta to change the width of the active column.
  *
- *	.t column resize mark ?x?
+ *      .t column resize mark ?x?
  *
  *---------------------------------------------------------------------------
  */
@@ -7901,14 +7901,14 @@ ColumnResizeMarkOp(ClientData clientData, Tcl_Interp *interp, int objc,
     TableView *viewPtr = clientData;
 
     if (objc == 4) {
-        Tcl_SetIntObj(Tcl_GetObjResult(interp), viewPtr->colResizeMark);
+	Tcl_SetIntObj(Tcl_GetObjResult(interp), viewPtr->colResizeMark);
     } else {
-        int y;
+	int y;
 
-        if (Tcl_GetIntFromObj(interp, objv[4], &y) != TCL_OK) {
-            return TCL_ERROR;
-        } 
-        UpdateColumnMark(viewPtr, y);
+	if (Tcl_GetIntFromObj(interp, objv[4], &y) != TCL_OK) {
+	    return TCL_ERROR;
+	} 
+	UpdateColumnMark(viewPtr, y);
     }
     return TCL_OK;
 }
@@ -7918,16 +7918,16 @@ ColumnResizeMarkOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * ColumnResizeGetOp --
  *
- *	Returns the new width of the column including the resize delta.
+ *      Returns the new width of the column including the resize delta.
  *
- *	.t column resize get 
+ *      .t column resize get 
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
 ColumnResizeGetOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-                  Tcl_Obj *const *objv)
+		  Tcl_Obj *const *objv)
 {
     TableView *viewPtr = clientData;
 
@@ -7947,16 +7947,16 @@ ColumnResizeGetOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * ColumnResizeSetOp --
  *
- *	Sets the nominal width of the column currently being resized.
+ *      Sets the nominal width of the column currently being resized.
  *
- *	.t column resize set
+ *      .t column resize set
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
 ColumnResizeSetOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-                  Tcl_Obj *const *objv)
+		  Tcl_Obj *const *objv)
 {
     TableView *viewPtr = clientData;
     Column *colPtr;
@@ -7967,11 +7967,11 @@ ColumnResizeSetOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	int dx;
 
 	dx = (viewPtr->colResizeMark - viewPtr->colResizeAnchor);
-        colPtr->reqWidth.nom = colPtr->width + dx;
-        colPtr->reqWidth.flags |= LIMITS_SET_NOM;
-        viewPtr->colResizeAnchor = viewPtr->colResizeMark;
-        viewPtr->flags |= LAYOUT_PENDING;
-        EventuallyRedraw(viewPtr);
+	colPtr->reqWidth.nom = colPtr->width + dx;
+	colPtr->reqWidth.flags |= LIMITS_SET_NOM;
+	viewPtr->colResizeAnchor = viewPtr->colResizeMark;
+	viewPtr->flags |= LAYOUT_PENDING;
+	EventuallyRedraw(viewPtr);
     }
     return TCL_OK;
 }
@@ -8015,7 +8015,7 @@ ColumnResizeOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * ColumnSeeOp --
  *
- *	.t column see col
+ *      .t column see col
  *
  *---------------------------------------------------------------------------
  */
@@ -8056,7 +8056,7 @@ ColumnSeeOp(ClientData clientData, Tcl_Interp *interp, int objc,
 static Blt_OpSpec columnOps[] = {
     {"activate",   1, ColumnActivateOp,   4, 4, "col",}, 
     {"bind",       1, ColumnBindOp,       4, 6, "tagName ?sequence command?",},
-    {"cget",       2, ColumnCgetOp,       5, 5, "col option",},	
+    {"cget",       2, ColumnCgetOp,       5, 5, "col option",}, 
     {"configure",  2, ColumnConfigureOp,  4, 0, "coltag ?option value?...",}, 
     {"deactivate", 2, ColumnDeactivateOp, 3, 3, "",},
     {"delete",     2, ColumnDeleteOp,     3, 0, "coltag...",}, 
@@ -8101,9 +8101,9 @@ ColumnOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * DeactivateOp --
  *
- *	Makes the formerly active cell appear normal.
+ *      Makes the formerly active cell appear normal.
  *
- *	.t deactivate 
+ *      .t deactivate 
  *
  *---------------------------------------------------------------------------
  */
@@ -8131,9 +8131,9 @@ DeactivateOp(ClientData clientData, Tcl_Interp *interp, int objc,
 }
 
 typedef struct {
-    BLT_TABLE table;			/* Table to be evaluated */
-    BLT_TABLE_ROW row;			/* Current row. */
-    Blt_HashTable varTable;		/* Variable cache. */
+    BLT_TABLE table;                    /* Table to be evaluated */
+    BLT_TABLE_ROW row;                  /* Current row. */
+    Blt_HashTable varTable;             /* Variable cache. */
     TableView *viewPtr;
 
     /* Public values */
@@ -8142,11 +8142,11 @@ typedef struct {
     unsigned int flags;
 } FindSwitches;
 
-#define FIND_INVERT	(1<<0)
+#define FIND_INVERT     (1<<0)
 
 static Blt_SwitchSpec findSwitches[] = 
 {
-    {BLT_SWITCH_OBJ, "-emptyvalue", "string",	(char *)NULL,
+    {BLT_SWITCH_OBJ, "-emptyvalue", "string",   (char *)NULL,
 	Blt_Offset(FindSwitches, emptyValueObjPtr), 0},
     {BLT_SWITCH_STRING, "-addtag", "tagName", (char *)NULL,
 	Blt_Offset(FindSwitches, tag), 0},
@@ -8157,12 +8157,12 @@ static Blt_SwitchSpec findSwitches[] =
 
 static int
 ColumnVarResolverProc(
-    Tcl_Interp *interp,			/* Current interpreter. */
-    const char *name,			/* Variable name being resolved. */
-    Tcl_Namespace *nsPtr,		/* Current namespace context. */
-    int flags,				/* TCL_LEAVE_ERR_MSG => leave error
+    Tcl_Interp *interp,                 /* Current interpreter. */
+    const char *name,                   /* Variable name being resolved. */
+    Tcl_Namespace *nsPtr,               /* Current namespace context. */
+    int flags,                          /* TCL_LEAVE_ERR_MSG => leave error
 					 * message. */
-    Tcl_Var *varPtr)			/* (out) Resolved variable. */ 
+    Tcl_Var *varPtr)                    /* (out) Resolved variable. */ 
 {
     Blt_HashEntry *hPtr;
     BLT_TABLE_COLUMN col;
@@ -8179,13 +8179,13 @@ ColumnVarResolverProc(
 	 * current namespace.  But this routine should never be called unless
 	 * we're in a namespace that with linked with this variable
 	 * resolver. */
-	return TCL_CONTINUE;	
+	return TCL_CONTINUE;    
     }
     switchesPtr = Blt_GetHashValue(hPtr);
 
     /* Look up the column from the variable name given. */
     if (Blt_GetLong((Tcl_Interp *)NULL, (char *)name, &index) == TCL_OK) {
- 	col = blt_table_get_column_by_index(switchesPtr->table, index);
+	col = blt_table_get_column_by_index(switchesPtr->table, index);
     } else {
 	col = blt_table_get_column_by_label(switchesPtr->table, name);
     }
@@ -8256,7 +8256,7 @@ FindRows(Tcl_Interp *interp, TableView *viewPtr, Tcl_Obj *objPtr,
 	
 	rowPtr = viewPtr->rows[i];
 	if (rowPtr->flags & HIDDEN) {
-	    continue;			/* Ignore hidden rows. */
+	    continue;                   /* Ignore hidden rows. */
 	}
 	switchesPtr->row = rowPtr->row;
 	result = EvaluateExpr(interp, objPtr, &bool);
@@ -8301,9 +8301,9 @@ FindRows(Tcl_Interp *interp, TableView *viewPtr, Tcl_Obj *objPtr,
  *
  * FilterActivateOp --
  *
- *	Selects the filter to appear active.
+ *      Selects the filter to appear active.
  *
- *	.t filter activate ?col?
+ *      .t filter activate ?col?
  *
  *---------------------------------------------------------------------------
  */
@@ -8322,7 +8322,7 @@ FilterActivateOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (((viewPtr->flags & COLUMN_TITLES) == 0) || (colPtr == NULL) ||
 	(colPtr->flags & (HIDDEN | DISABLED))) {
 fprintf(stderr, "FilterActivate: Column %s is NULL\n", Tcl_GetString(objv[3])); 
-	return TCL_OK;			/* Disabled or hidden row. */
+	return TCL_OK;                  /* Disabled or hidden row. */
     }
     filterPtr = &viewPtr->filter;
     activePtr = filterPtr->activePtr;
@@ -8347,7 +8347,7 @@ fprintf(stderr, "FilterActivate: Column %s is NULL\n", Tcl_GetString(objv[3]));
  *
  * FilterCgetOp --
  *
- *	.t filter cget -option
+ *      .t filter cget -option
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
@@ -8366,17 +8366,17 @@ FilterCgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * FilterConfigureOp --
  *
- * 	This procedure is called to process a list of configuration
- *	options database, in order to reconfigure the one of more
- *	entries in the widget.
+ *      This procedure is called to process a list of configuration
+ *      options database, in order to reconfigure the one of more
+ *      entries in the widget.
  *
- *	  .t filter configure option value
+ *        .t filter configure option value
  *
  * Results:
- *	A standard TCL result.  If TCL_ERROR is returned, then
- *	interp->result contains an error message.
+ *      A standard TCL result.  If TCL_ERROR is returned, then
+ *      interp->result contains an error message.
  *
- *	.t filter configure 
+ *      .t filter configure 
  *---------------------------------------------------------------------------
  */
 static int
@@ -8406,9 +8406,9 @@ FilterConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * FilterDeactivateOp --
  *
- *	Selects the filter to appear normally.
+ *      Selects the filter to appear normally.
  *
- *	.t filter deactivate
+ *      .t filter deactivate
  *
  *---------------------------------------------------------------------------
  */
@@ -8422,7 +8422,7 @@ FilterDeactivateOp(ClientData clientData, Tcl_Interp *interp, int objc,
     FilterInfo *filterPtr;
     
     if ((viewPtr->flags & COLUMN_TITLES) == 0) {
-	return TCL_OK;			/* Disabled or hidden row. */
+	return TCL_OK;                  /* Disabled or hidden row. */
     }
     filterPtr = &viewPtr->filter;
     activePtr = filterPtr->activePtr;
@@ -8445,7 +8445,7 @@ FilterDeactivateOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * FilterInsideOp --
  *
- *	.t filter inside cell x y
+ *      .t filter inside cell x y
  *
  *---------------------------------------------------------------------------
  */
@@ -8491,16 +8491,16 @@ FilterInsideOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * FilterPostOp --
  *
- *	Posts the filter menu associated with this widget.
+ *      Posts the filter menu associated with this widget.
  *
  * Results:
- *	Standard TCL result.
+ *      Standard TCL result.
  *
  * Side effects:
- *	Commands may get excecuted; variables may get set; sub-menus may
- *	get posted.
+ *      Commands may get excecuted; variables may get set; sub-menus may
+ *      get posted.
  *
- *	.view filter post col
+ *      .view filter post col
  *
  *---------------------------------------------------------------------------
  */
@@ -8535,15 +8535,15 @@ FilterPostOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	return TCL_OK;
     }
     if (filterPtr->postPtr != NULL) {
-	return TCL_OK;		       /* Another filter's menu is currently
+	return TCL_OK;                 /* Another filter's menu is currently
 					* posted. */
     }
     if (colPtr->flags & (DISABLED|HIDDEN)) {
-	return TCL_OK;		       /* Filter's menu is in a column that is
+	return TCL_OK;                 /* Filter's menu is in a column that is
 					* hidden or disabled. */
     }
     if (filterPtr->menuObjPtr == NULL) {
-	return TCL_OK;			/* No menu associated with filter. */
+	return TCL_OK;                  /* No menu associated with filter. */
     }
     menuName = Tcl_GetString(filterPtr->menuObjPtr);
     tkwin = Tk_NameToWindow(interp, menuName, viewPtr->tkwin);
@@ -8591,16 +8591,16 @@ FilterPostOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	int result;
 
 	cmdObjPtr = Tcl_DuplicateObj(filterPtr->menuObjPtr);
-        /* menu post -align right -box {x1 y1 x2 y2}  */
-        objPtr = Tcl_NewStringObj("post", 4);
+	/* menu post -align right -box {x1 y1 x2 y2}  */
+	objPtr = Tcl_NewStringObj("post", 4);
 	Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
-        objPtr = Tcl_NewStringObj("-align", 6);
+	objPtr = Tcl_NewStringObj("-align", 6);
 	Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
-        objPtr = Tcl_NewStringObj("right", 5);
+	objPtr = Tcl_NewStringObj("right", 5);
 	Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
-        objPtr = Tcl_NewStringObj("-box", 4);
+	objPtr = Tcl_NewStringObj("-box", 4);
 	Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
-        listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
+	listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
 	Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewIntObj(x2));
 	Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewIntObj(y2));
 	Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewIntObj(x1));
@@ -8625,11 +8625,11 @@ FilterPostOp(ClientData clientData, Tcl_Interp *interp, int objc,
  * FilterUnpostOp --
  *
  * Results:
- *	Standard TCL result.
+ *      Standard TCL result.
  *
  * Side effects:
- *	Commands may get excecuted; variables may get set; sub-menus may
- *	get posted.
+ *      Commands may get excecuted; variables may get set; sub-menus may
+ *      get posted.
  *
  *  .view filter unpost
  *
@@ -8676,11 +8676,11 @@ FilterUnpostOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * FilterOp --
  *
- *	Comparison routine (used by qsort) to sort a chain of subnodes.
- *	A simple string comparison is performed on each node name.
+ *      Comparison routine (used by qsort) to sort a chain of subnodes.
+ *      A simple string comparison is performed on each node name.
  *
- *	.h filter configure col
- *	.h filter cget col -recurse root
+ *      .h filter configure col
+ *      .h filter cget col -recurse root
  *
  *---------------------------------------------------------------------------
  */
@@ -8716,14 +8716,14 @@ FilterOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * FindOp --
  *
- *	Find rows based upon the expression provided.
+ *      Find rows based upon the expression provided.
  *
  * Results:
- *	A standard TCL result.  The interpreter result will contain a list of
- *	the node serial identifiers.
+ *      A standard TCL result.  The interpreter result will contain a list of
+ *      the node serial identifiers.
  *
- *	.t find expr 
- *	
+ *      .t find expr 
+ *      
  *---------------------------------------------------------------------------
  */
 static int
@@ -8755,7 +8755,7 @@ FindOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * FocusOp --
  *
- *	.t focus ?cell?
+ *      .t focus ?cell?
  *
  *---------------------------------------------------------------------------
  */
@@ -8800,7 +8800,7 @@ FocusOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	rowPtr = keyPtr->rowPtr;
 	colPtr = keyPtr->colPtr;
 	if ((rowPtr->flags|colPtr->flags) & (HIDDEN|DISABLED)) {
-	    return TCL_OK;		/* Can't set focus to hidden or
+	    return TCL_OK;              /* Can't set focus to hidden or
 					 * disabled cell */
 	}
 	if (cellPtr != viewPtr->focusPtr) {
@@ -8817,7 +8817,7 @@ FocusOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * GrabOp --
  *
- *	.t grab ?cell?
+ *      .t grab ?cell?
  *
  *---------------------------------------------------------------------------
  */
@@ -8863,10 +8863,10 @@ GrabOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * HighlightOp --
  *
- *	Makes the cell appear highlighted.  The cell is redrawn in its
- *	highlighted foreground and background colors.
+ *      Makes the cell appear highlighted.  The cell is redrawn in its
+ *      highlighted foreground and background colors.
  *
- *	.t highlight cell
+ *      .t highlight cell
  *
  *---------------------------------------------------------------------------
  */
@@ -8907,7 +8907,7 @@ HighlightOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * IdentifyOp --
  *
- *	.t identify cell x y 
+ *      .t identify cell x y 
  *
  *---------------------------------------------------------------------------
  */
@@ -8959,7 +8959,7 @@ IdentifyOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * IndexOp --
  *
- *	.t index cell
+ *      .t index cell
  *
  *---------------------------------------------------------------------------
  */
@@ -8996,7 +8996,7 @@ IndexOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * InsideOp --
  *
- *	.t inside cell x y
+ *      .t inside cell x y
  *
  *---------------------------------------------------------------------------
  */
@@ -9046,7 +9046,7 @@ InsideOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * InvokeOp --
  *
- *	.t invoke cell
+ *      .t invoke cell
  *
  *---------------------------------------------------------------------------
  */
@@ -9099,7 +9099,7 @@ InvokeOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * IsHiddenOp --
  *
- *	.t ishidden cell
+ *      .t ishidden cell
  *
  *---------------------------------------------------------------------------
  */
@@ -9135,9 +9135,9 @@ IsHiddenOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * RowActivateOp --
  *
- *	Selects the button to appear active.
+ *      Selects the button to appear active.
  *
- *	.t row activate row
+ *      .t row activate row
  *
  *---------------------------------------------------------------------------
  */
@@ -9158,7 +9158,7 @@ RowActivateOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     if (((viewPtr->flags & ROW_TITLES) == 0) || 
 	(rowPtr->flags & (HIDDEN | DISABLED))) {
-	return TCL_OK;			/* Disabled or hidden row. */
+	return TCL_OK;                  /* Disabled or hidden row. */
     }
     activePtr = viewPtr->rowActiveTitlePtr;
     viewPtr->rowActiveTitlePtr = rowPtr;
@@ -9179,7 +9179,7 @@ RowActivateOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * RowBindOp --
  *
- *	  .t row bind tag sequence command
+ *        .t row bind tag sequence command
  *
  *---------------------------------------------------------------------------
  */
@@ -9230,20 +9230,20 @@ RowCgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * RowConfigureOp --
  *
- * 	This procedure is called to process a list of configuration
- *	options database, in order to reconfigure the one of more
- *	entries in the widget.
+ *      This procedure is called to process a list of configuration
+ *      options database, in order to reconfigure the one of more
+ *      entries in the widget.
  *
  * Results:
- *	A standard TCL result.  If TCL_ERROR is returned, then
- *	interp->result contains an error message.
+ *      A standard TCL result.  If TCL_ERROR is returned, then
+ *      interp->result contains an error message.
  *
  * Side effects:
- *	Configuration information, such as text string, colors, font,
- *	etc. get set for viewPtr; old resources get freed, if there
- *	were any.  The hypertext is redisplayed.
+ *      Configuration information, such as text string, colors, font,
+ *      etc. get set for viewPtr; old resources get freed, if there
+ *      were any.  The hypertext is redisplayed.
  *
- *	.tv row configure row ?option value?
+ *      .tv row configure row ?option value?
  *
  *---------------------------------------------------------------------------
  */
@@ -9286,9 +9286,9 @@ RowConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * RowDeactivateOp --
  *
- *	Turn off active highlighting for all row titles.
+ *      Turn off active highlighting for all row titles.
  *
- *	.t row deactivate
+ *      .t row deactivate
  *
  *---------------------------------------------------------------------------
  */
@@ -9302,7 +9302,7 @@ RowDeactivateOp(ClientData clientData, Tcl_Interp *interp, int objc,
     Row *activePtr;
     
     if ((viewPtr->flags & TITLES_MASK) == 0) {
-	return TCL_OK;			/* Not displaying row titles. */
+	return TCL_OK;                  /* Not displaying row titles. */
     } /*  */
     activePtr = viewPtr->rowActiveTitlePtr;
     viewPtr->rowActiveTitlePtr = NULL;
@@ -9323,7 +9323,7 @@ RowDeactivateOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * RowDeleteOp --
  *
- *	.t row delete row row row 
+ *      .t row delete row row row 
  *
  *---------------------------------------------------------------------------
  */
@@ -9376,7 +9376,7 @@ RowDeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * RowExistsOp --
  *
- *	.tv row exists row
+ *      .tv row exists row
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
@@ -9401,7 +9401,7 @@ RowExistsOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * RowExposeOp --
  *
- *	.tv row expose ?row...?
+ *      .tv row expose ?row...?
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
@@ -9462,7 +9462,7 @@ RowExposeOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * RowHideOp --
  *
- *	.tv row hide ?row...?
+ *      .tv row hide ?row...?
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
@@ -9493,7 +9493,7 @@ RowHideOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	int redraw;
 	Blt_Chain chain;
 	Blt_ChainLink link;
-        
+	
 	chain = IterateRowsObjv(interp, viewPtr, objc - 3, objv + 3);
 	if (chain == NULL) {
 	    return TCL_ERROR;
@@ -9523,7 +9523,7 @@ RowHideOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * RowIndexOp --
  *
- *	.t row index row
+ *      .t row index row
  *
  *---------------------------------------------------------------------------
  */
@@ -9549,9 +9549,9 @@ RowIndexOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * RowInsertOp --
  *
- *	Add new rows to the displayed in the tableview widget.  
+ *      Add new rows to the displayed in the tableview widget.  
  *
- *	.t row insert row position ?option values?
+ *      .t row insert row position ?option values?
  *
  *---------------------------------------------------------------------------
  */
@@ -9588,7 +9588,7 @@ RowInsertOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	return TCL_ERROR;
     }
     if ((insertPos == -1) || (insertPos >= viewPtr->numRows)) {
-	insertPos = viewPtr->numRows;		/* Insert at end of list. */
+	insertPos = viewPtr->numRows;           /* Insert at end of list. */
     }
     rowPtr = NewRow(viewPtr, row, hPtr);
     iconOption.clientData = viewPtr;
@@ -9608,10 +9608,10 @@ RowInsertOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (insertPos < viewPtr->numRows) {
 	memcpy(rows + insertPos + 1, viewPtr->rows + insertPos, 
 	       (viewPtr->numRows - insertPos) * sizeof(Row *));
-    }	
+    }   
     EventuallyRedraw(viewPtr);
     if (viewPtr->rows != NULL) {
-        Blt_Free(viewPtr->rows);
+	Blt_Free(viewPtr->rows);
     }
     viewPtr->rows = rows;
     key.rowPtr = rowPtr;
@@ -9637,15 +9637,15 @@ RowInsertOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * RowInvokeOp --
  *
- * 	This procedure is called to invoke a command associated with the
- *	row title.  The title must be not disabled or hidden for the 
- *	command to be executed.
+ *      This procedure is called to invoke a command associated with the
+ *      row title.  The title must be not disabled or hidden for the 
+ *      command to be executed.
  *
  * Results:
- *	A standard TCL result.  If TCL_ERROR is returned, then interp->result
- *	contains an error message.
+ *      A standard TCL result.  If TCL_ERROR is returned, then interp->result
+ *      contains an error message.
  *
- *	.t row invoke rowName
+ *      .t row invoke rowName
  *
  *---------------------------------------------------------------------------
  */
@@ -9684,9 +9684,9 @@ RowInvokeOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * RowMoveOp --
  *
- *	Move one or more rows.
+ *      Move one or more rows.
  *
- *	.t row move first last newPos
+ *      .t row move first last newPos
  *
  *---------------------------------------------------------------------------
  */
@@ -9696,7 +9696,7 @@ RowInvokeOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * RowNamesOp --
  *
- *	.t row names ?pattern...?
+ *      .t row names ?pattern...?
  *
  *---------------------------------------------------------------------------
  */
@@ -9727,7 +9727,7 @@ RowNamesOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * RowNearestOp --
  *
- *	.t row nearest y ?-root?
+ *      .t row nearest y ?-root?
  *
  *---------------------------------------------------------------------------
  */
@@ -9737,7 +9737,7 @@ RowNearestOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	     Tcl_Obj *const *objv)
 {
     TableView *viewPtr = clientData;
-    int y;			   /* Screen coordinates of the test point. */
+    int y;                         /* Screen coordinates of the test point. */
     Row *rowPtr;
     long index;
 
@@ -9783,7 +9783,7 @@ UpdateRowMark(TableView *viewPtr, int newMark)
     int height;
 
     if (viewPtr->rowResizePtr == NULL) {
-	return;				/* No row being resized. */
+	return;                         /* No row being resized. */
     }
     rowPtr = viewPtr->rowResizePtr;
     dy = newMark - viewPtr->rowResizeAnchor; 
@@ -9805,9 +9805,9 @@ UpdateRowMark(TableView *viewPtr, int newMark)
  *
  * RowResizeActivateOp --
  *
- *	Turns on/off the resize cursor.
+ *      Turns on/off the resize cursor.
  *
- *	.t row resize activate row 
+ *      .t row resize activate row 
  *
  *---------------------------------------------------------------------------
  */
@@ -9837,7 +9837,7 @@ RowResizeActivateOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * RowResizeAnchorOp --
  *
- *	Set the anchor for the resize.
+ *      Set the anchor for the resize.
  *
  *---------------------------------------------------------------------------
  */
@@ -9862,9 +9862,9 @@ RowResizeAnchorOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * RowResizeDeactiveOp --
  *
- *	Turns off the resize cursor.
+ *      Turns off the resize cursor.
  *
- *	.t row resize deactivate 
+ *      .t row resize deactivate 
  *
  *---------------------------------------------------------------------------
  */
@@ -9885,10 +9885,10 @@ RowResizeDeactivateOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * RowResizeMarkOp --
  *
- *	Sets the resize mark.  The distance between the mark and the anchor
- *	is the delta to change the width of the active row.
+ *      Sets the resize mark.  The distance between the mark and the anchor
+ *      is the delta to change the width of the active row.
  *
- *	.t row resize mark x 
+ *      .t row resize mark x 
  *
  *---------------------------------------------------------------------------
  */
@@ -9912,7 +9912,7 @@ RowResizeMarkOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * RowResizeCurrentOp --
  *
- *	Returns the new width of the row including the resize delta.
+ *      Returns the new width of the row including the resize delta.
  *
  *---------------------------------------------------------------------------
  */
@@ -9971,9 +9971,9 @@ RowResizeOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * RowSeeOp --
  *
- *	Implements the quick scan.
+ *      Implements the quick scan.
  *
- *	.t row see row
+ *      .t row see row
  *
  *---------------------------------------------------------------------------
  */
@@ -10057,7 +10057,7 @@ RowOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * ScanOp --
  *
- *	Implements the quick scan.
+ *      Implements the quick scan.
  *
  *---------------------------------------------------------------------------
  */
@@ -10072,8 +10072,8 @@ ScanOp(TableView *viewPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     char *string;
     Tk_Window tkwin;
 
-#define SCAN_MARK	1
-#define SCAN_DRAGTO	2
+#define SCAN_MARK       1
+#define SCAN_DRAGTO     2
     string = Tcl_GetStringFromObj(objv[2], &length);
     c = string[0];
     tkwin = viewPtr->tkwin;
@@ -10129,9 +10129,9 @@ ScanOp(TableView *viewPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * SeeOp --
  *
- *	Changes to view to encompass the specified cell.
+ *      Changes to view to encompass the specified cell.
  *
- *	.t see cell
+ *      .t see cell
  *
  *---------------------------------------------------------------------------
  */
@@ -10193,18 +10193,18 @@ SeeOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * SelectionAnchorOp --
  *
- *	Sets the selection anchor to the element given by a index.  The
- *	selection anchor is the end of the selection that is fixed while
- *	dragging out a selection with the mouse.  The index "anchor" may be
- *	used to refer to the anchor element.
+ *      Sets the selection anchor to the element given by a index.  The
+ *      selection anchor is the end of the selection that is fixed while
+ *      dragging out a selection with the mouse.  The index "anchor" may be
+ *      used to refer to the anchor element.
  *
  * Results:
- *	None.
+ *      None.
  *
  * Side effects:
- *	The selection changes.
+ *      The selection changes.
  *
- *	.t selection anchor cell
+ *      .t selection anchor cell
  *
  *---------------------------------------------------------------------------
  */
@@ -10249,15 +10249,15 @@ SelectionAnchorOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * SelectionClearallOp
  *
- *	Clears the entire selection.
+ *      Clears the entire selection.
  *
  * Results:
- *	None.
+ *      None.
  *
  * Side effects:
- *	The selection changes.
+ *      The selection changes.
  *
- *	.t selection clearall
+ *      .t selection clearall
  *
  *---------------------------------------------------------------------------
  */
@@ -10277,16 +10277,16 @@ SelectionClearallOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * SelectionIncludesOp
  *
- *	Returns 1 if the element indicated by index is currently
- *	selected, 0 if it isn't.
+ *      Returns 1 if the element indicated by index is currently
+ *      selected, 0 if it isn't.
  *
  * Results:
- *	None.
+ *      None.
  *
  * Side effects:
- *	The selection changes.
+ *      The selection changes.
  *
- *	.t selection includes cell
+ *      .t selection includes cell
  *
  *---------------------------------------------------------------------------
  */
@@ -10338,18 +10338,18 @@ SelectionIncludesOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * SelectionMarkOp --
  *
- *	Sets the selection mark to the element given by a index.  The
- *	selection anchor is the end of the selection that is movable while
- *	dragging out a selection with the mouse.  The index "mark" may be used
- *	to refer to the anchor element.
+ *      Sets the selection mark to the element given by a index.  The
+ *      selection anchor is the end of the selection that is movable while
+ *      dragging out a selection with the mouse.  The index "mark" may be used
+ *      to refer to the anchor element.
  *
  * Results:
- *	None.
+ *      None.
  *
  * Side effects:
- *	The selection changes.
+ *      The selection changes.
  *
- *	.t selection mark cell
+ *      .t selection mark cell
  *
  *---------------------------------------------------------------------------
  */
@@ -10422,13 +10422,13 @@ SelectionMarkOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * SelectionPresentOp
  *
- *	Returns 1 if there is a selection and 0 if it isn't.
+ *      Returns 1 if there is a selection and 0 if it isn't.
  *
  * Results:
- *	A standard TCL result.  interp->result will contain a boolean string
- *	indicating if there is a selection.
+ *      A standard TCL result.  interp->result will contain a boolean string
+ *      indicating if there is a selection.
  *
- *	.t selection present 
+ *      .t selection present 
  *
  *---------------------------------------------------------------------------
  */
@@ -10454,17 +10454,17 @@ SelectionPresentOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * SelectionSetOp
  *
- *	Selects, deselects, or toggles all of the elements in the range
- *	between first and last, inclusive, without affecting the selection
- *	state of elements outside that range.
+ *      Selects, deselects, or toggles all of the elements in the range
+ *      between first and last, inclusive, without affecting the selection
+ *      state of elements outside that range.
  *
  * Results:
- *	None.
+ *      None.
  *
  * Side effects:
- *	The selection changes.
+ *      The selection changes.
  *
- *	.t selection set cell ?cell?
+ *      .t selection set cell ?cell?
  *
  *---------------------------------------------------------------------------
  */
@@ -10532,11 +10532,11 @@ SelectionSetOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	string = Tcl_GetString(objv[2]);
 	switch (string[0]) {
 	case 's':
-	    selectPtr->flags |= SELECT_SET;	break;
+	    selectPtr->flags |= SELECT_SET;     break;
 	case 'c':
-	    selectPtr->flags |= SELECT_CLEAR;	break;
+	    selectPtr->flags |= SELECT_CLEAR;   break;
 	case 't':
-	    selectPtr->flags |= SELECT_TOGGLE;	 break;
+	    selectPtr->flags |= SELECT_TOGGLE;   break;
 	}
 	SelectRows(viewPtr, rowAnchorPtr, rowMarkPtr);
 	selectPtr->flags &= ~SELECT_MASK;
@@ -10558,17 +10558,17 @@ SelectionSetOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * SelectionOp --
  *
- *	This procedure handles the individual options for text selections.
- *	The selected text is designated by start and end indices into the text
- *	pool.  The selected segment has both a anchored and unanchored ends.
+ *      This procedure handles the individual options for text selections.
+ *      The selected text is designated by start and end indices into the text
+ *      pool.  The selected segment has both a anchored and unanchored ends.
  *
  * Results:
- *	None.
+ *      None.
  *
  * Side effects:
- *	The selection changes.
+ *      The selection changes.
  *
- *	.t selection op args
+ *      .t selection op args
  *
  *---------------------------------------------------------------------------
  */
@@ -10653,15 +10653,15 @@ SortCgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * SortConfigureOp --
  *
- * 	This procedure is called to process a list of configuration
- *	options database, in order to reconfigure the one of more
- *	entries in the widget.
+ *      This procedure is called to process a list of configuration
+ *      options database, in order to reconfigure the one of more
+ *      entries in the widget.
  *
- *	  .t sort configure option value
+ *        .t sort configure option value
  *
  * Results:
- *	A standard TCL result.  If TCL_ERROR is returned, then
- *	interp->result contains an error message.
+ *      A standard TCL result.  If TCL_ERROR is returned, then
+ *      interp->result contains an error message.
  *
  *---------------------------------------------------------------------------
  */
@@ -10712,15 +10712,15 @@ SortOnceOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * SortOp --
  *
- *	Comparison routine (used by qsort) to sort a chain of subnodes.
- *	A simple string comparison is performed on each node name.
+ *      Comparison routine (used by qsort) to sort a chain of subnodes.
+ *      A simple string comparison is performed on each node name.
  *
- *	.h sort auto
- *	.h sort once -recurse root
+ *      .h sort auto
+ *      .h sort once -recurse root
  *
  * Results:
- *	1 is the first is greater, -1 is the second is greater, 0
- *	if equal.
+ *      1 is the first is greater, -1 is the second is greater, 0
+ *      if equal.
  *
  *---------------------------------------------------------------------------
  */
@@ -10753,7 +10753,7 @@ SortOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * StyleApplyOp --
  *
- *	  .t style apply styleName cell...
+ *        .t style apply styleName cell...
  *
  *---------------------------------------------------------------------------
  */
@@ -10792,10 +10792,10 @@ StyleApplyOp(TableView *viewPtr, Tcl_Interp *interp, int objc,
 		    (*cellPtr->stylePtr->classPtr->freeProc)(cellPtr->stylePtr);
 		}
 	    }
-	    stylePtr->refCount++;	
+	    stylePtr->refCount++;       
 	    cellPtr->stylePtr = stylePtr;
 	    Blt_CreateHashEntry(&stylePtr->table, (char *)keyPtr, &isNew);
-	    cellPtr->flags |= GEOMETRY;	/* Assume that the new style
+	    cellPtr->flags |= GEOMETRY; /* Assume that the new style
 					 * changes the geometry of the
 					 * cell. */
 	}
@@ -10809,7 +10809,7 @@ StyleApplyOp(TableView *viewPtr, Tcl_Interp *interp, int objc,
  *
  * StyleCgetOp --
  *
- *	  .t style cget "styleName" -background
+ *        .t style cget "styleName" -background
  *
  *---------------------------------------------------------------------------
  */
@@ -10833,18 +10833,18 @@ StyleCgetOp(TableView *viewPtr, Tcl_Interp *interp, int objc,
  *
  * StyleConfigureOp --
  *
- * 	This procedure is called to process a list of configuration options
- * 	database, in order to reconfigure a style.
+ *      This procedure is called to process a list of configuration options
+ *      database, in order to reconfigure a style.
  *
  * Results:
- *	A standard TCL result.  If TCL_ERROR is returned, then interp->result
- *	contains an error message.
+ *      A standard TCL result.  If TCL_ERROR is returned, then interp->result
+ *      contains an error message.
  *
  * Side effects:
- *	Configuration information, such as text string, colors, font, etc. get
- *	set for stylePtr; old resources get freed, if there were any.
+ *      Configuration information, such as text string, colors, font, etc. get
+ *      set for stylePtr; old resources get freed, if there were any.
  *
- *	.t style configure styleName ?option value?..
+ *      .t style configure styleName ?option value?..
  *
  *---------------------------------------------------------------------------
  */
@@ -10881,7 +10881,7 @@ StyleConfigureOp(TableView *viewPtr, Tcl_Interp *interp, int objc,
  *
  * StyleCreateOp --
  *
- *	  .t style create combobox "styleName" -background blue
+ *        .t style create combobox "styleName" -background blue
  *
  *---------------------------------------------------------------------------
  */
@@ -10938,16 +10938,16 @@ StyleCreateOp(TableView *viewPtr, Tcl_Interp *interp, int objc,
  *
  * StyleDeleteOp --
  *
- * 	Eliminates one or more style names.  A style still may be in use after
- * 	its name has been officially removed.  Only its hash table entry is
- * 	removed.  The style itself remains until its reference count returns
- * 	to zero (i.e. no one else is using it).
+ *      Eliminates one or more style names.  A style still may be in use after
+ *      its name has been officially removed.  Only its hash table entry is
+ *      removed.  The style itself remains until its reference count returns
+ *      to zero (i.e. no one else is using it).
  *
  * Results:
- *	A standard TCL result.  If TCL_ERROR is returned, then interp->result
- *	contains an error message.
+ *      A standard TCL result.  If TCL_ERROR is returned, then interp->result
+ *      contains an error message.
  *
- *	.t style forget styleName...
+ *      .t style forget styleName...
  *
  *---------------------------------------------------------------------------
  */
@@ -10971,7 +10971,7 @@ StyleDeleteOp(TableView *viewPtr, Tcl_Interp *interp, int objc,
 	if (stylePtr->hashPtr != NULL) {
 	    Blt_DeleteHashEntry(&viewPtr->styleTable, stylePtr->hashPtr);
 	    stylePtr->hashPtr = NULL;
-	    stylePtr->name = NULL;	/* Name points to hash key. */
+	    stylePtr->name = NULL;      /* Name points to hash key. */
 	} 
 	stylePtr->refCount--;
 	if (stylePtr->refCount <= 0) {
@@ -10987,7 +10987,7 @@ StyleDeleteOp(TableView *viewPtr, Tcl_Interp *interp, int objc,
  *
  * StyleExistsOp --
  *
- *	.tv style exists $name
+ *      .tv style exists $name
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
@@ -11012,10 +11012,10 @@ StyleExistsOp(TableView *viewPtr, Tcl_Interp *interp, int objc,
  * StyleGetOp --
  *
  * Results:
- *	A standard TCL result.  If TCL_ERROR is returned, then interp->result
- *	contains an error message.
+ *      A standard TCL result.  If TCL_ERROR is returned, then interp->result
+ *      contains an error message.
  *
- *	.t style get cell
+ *      .t style get cell
  *
  *---------------------------------------------------------------------------
  */
@@ -11050,12 +11050,12 @@ StyleGetOp(TableView *viewPtr, Tcl_Interp *interp, int objc,
  *
  * StyleNamesOp --
  *
- * 	Lists the names of all the current styles in the tableview widget.
+ *      Lists the names of all the current styles in the tableview widget.
  *
- *	  .t style names
+ *        .t style names
  *
  * Results:
- *	Always TCL_OK.
+ *      Always TCL_OK.
  *
  *---------------------------------------------------------------------------
  */
@@ -11074,7 +11074,7 @@ StyleNamesOp(TableView *viewPtr, Tcl_Interp *interp, int objc,
 	 hPtr = Blt_NextHashEntry(&cursor)) {
 	stylePtr = Blt_GetHashValue(hPtr);
 	if (stylePtr->name == NULL) {
-	    continue;			/* Style has been deleted, but is
+	    continue;                   /* Style has been deleted, but is
 					 * still in use. */
 	}
 	objPtr = Tcl_NewStringObj(stylePtr->name, -1);
@@ -11089,7 +11089,7 @@ StyleNamesOp(TableView *viewPtr, Tcl_Interp *interp, int objc,
  *
  * StyleTypeOp --
  *
- *	  .t style type styleName
+ *        .t style type styleName
  *
  *---------------------------------------------------------------------------
  */
@@ -11112,14 +11112,14 @@ StyleTypeOp(TableView *viewPtr, Tcl_Interp *interp, int objc,
  *
  * StyleOp --
  *
- *	.t style apply 
- *	.t style cget styleName -foreground
- *	.t style configure styleName -fg blue -bg green
- *	.t style create type styleName ?options?
- *	.t style delete styleName
- *	.t style get cell
- *	.t style names ?pattern?
- *	.t style type styleName 
+ *      .t style apply 
+ *      .t style cget styleName -foreground
+ *      .t style configure styleName -fg blue -bg green
+ *      .t style create type styleName ?options?
+ *      .t style delete styleName
+ *      .t style get cell
+ *      .t style names ?pattern?
+ *      .t style type styleName 
  *
  *---------------------------------------------------------------------------
  */
@@ -11159,10 +11159,10 @@ StyleOp(ClientData clientData, Tcl_Interp *interp, int objc,
  * TypeOp --
  *
  * Results:
- *	A standard TCL result.  If TCL_ERROR is returned, then interp->result
- *	contains an error message.
+ *      A standard TCL result.  If TCL_ERROR is returned, then interp->result
+ *      contains an error message.
  *
- *	.t type cell
+ *      .t type cell
  *
  *---------------------------------------------------------------------------
  */
@@ -11196,7 +11196,7 @@ TypeOp(TableView *viewPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * UpdatesOp --
  *
- *	.tv updates false
+ *      .tv updates false
  *
  *---------------------------------------------------------------------------
  */
@@ -11231,7 +11231,7 @@ UpdatesOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * WritableOp --
  *
- *	  .t writable cell
+ *        .t writable cell
  *
  *---------------------------------------------------------------------------
  */
@@ -11346,11 +11346,11 @@ static Blt_OpSpec viewOps[] =
     {"bind",         2, BindOp,          3, 5, "cell ?sequence command?",}, 
     {"cell",         2, CellOp,          2, 0, "args",}, 
     {"cget",         2, CgetOp,          3, 3, "option",}, 
-    {"column",       3, ColumnOp,	 2, 0, "oper args",}, 
+    {"column",       3, ColumnOp,        2, 0, "oper args",}, 
     {"configure",    3, ConfigureOp,     2, 0, "?option value?...",},
     {"curselection", 2, CurselectionOp,  2, 2, "",},
     {"deactivate",   1, DeactivateOp,    2, 2, ""},
-    {"filter",       3, FilterOp,	 2, 0, "args",},
+    {"filter",       3, FilterOp,        2, 0, "args",},
     {"find",         3, FindOp,          2, 0, "expr",}, 
     {"focus",        2, FocusOp,         2, 3, "?cell?",}, 
     {"grab",         1, GrabOp,          2, 3, "?cell?",}, 
@@ -11360,11 +11360,11 @@ static Blt_OpSpec viewOps[] =
     {"inside",       3, InsideOp,        5, 5, "cell x y",}, 
     {"invoke",       3, InvokeOp,        3, 3, "cell",}, 
     {"ishidden",     2, IsHiddenOp,      3, 3, "cell",},
-    {"row",          1, RowOp,		 2, 0, "oper args",}, 
+    {"row",          1, RowOp,           2, 0, "oper args",}, 
     {"scan",         2, ScanOp,          5, 5, "dragto|mark x y",},
     {"see",          3, SeeOp,           3, 3, "cell",},
     {"selection",    3, SelectionOp,     2, 0, "oper args",},
-    {"sort",         2, SortOp,		 2, 0, "args",},
+    {"sort",         2, SortOp,          2, 0, "args",},
     {"style",        2, StyleOp,         2, 0, "args",},
     {"type",         1, TypeOp,          3, 3, "cell",},
     {"unhighlight",  3, HighlightOp,     3, 3, "cell",}, 
@@ -11381,14 +11381,14 @@ static int numViewOps = sizeof(viewOps) / sizeof(Blt_OpSpec);
  *
  * TableViewInstObjCmdProc --
  *
- * 	This procedure is invoked to process commands on behalf of the
- * 	tableview widget.
+ *      This procedure is invoked to process commands on behalf of the
+ *      tableview widget.
  *
  * Results:
- *	A standard TCL result.
+ *      A standard TCL result.
  *
  * Side effects:
- *	See the user documentation.
+ *      See the user documentation.
  *
  *---------------------------------------------------------------------------
  */
@@ -11416,15 +11416,15 @@ TableViewInstObjCmdProc(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * TableViewInstCmdDeleteProc --
  *
- *	This procedure is invoked when a widget command is deleted.  If the
- *	widget isn't already in the process of being destroyed, this command
- *	destroys it.
+ *      This procedure is invoked when a widget command is deleted.  If the
+ *      widget isn't already in the process of being destroyed, this command
+ *      destroys it.
  *
  * Results:
- *	None.
+ *      None.
  *
  * Side effects:
- *	The widget is destroyed.
+ *      The widget is destroyed.
  *
  *---------------------------------------------------------------------------
  */
@@ -11485,7 +11485,7 @@ ComputeGeometry(TableView *viewPtr)
 		colPtr->titleWidth = colPtr->titleHeight = 0;
 	    }
 	}
-        colPtr->index = i;
+	colPtr->index = i;
 	colPtr->nom = colPtr->titleWidth;
 	if ((colPtr->flags & HIDDEN) == 0) {
 	    if (colPtr->titleHeight > viewPtr->colTitleHeight) {
@@ -11504,7 +11504,7 @@ ComputeGeometry(TableView *viewPtr)
 		rowPtr->titleHeight = rowPtr->titleWidth = 0;
 	    }
 	}
-        rowPtr->index = i;
+	rowPtr->index = i;
 	rowPtr->nom = rowPtr->titleHeight;
 	if ((rowPtr->flags & HIDDEN) == 0) {
 	    if (rowPtr->titleWidth > viewPtr->rowTitleWidth) {
@@ -11554,10 +11554,10 @@ ComputeLayout(TableView *viewPtr)
 	Row *rowPtr;
 
 	rowPtr = viewPtr->rows[i];
-	rowPtr->flags &= ~GEOMETRY;	/* Always remove the geometry
-                                         * flag. */
-	rowPtr->index = i;		/* Reset the index. */
-        rowPtr->height = GetBoundedHeight(rowPtr->nom, &rowPtr->reqHeight);
+	rowPtr->flags &= ~GEOMETRY;     /* Always remove the geometry
+					 * flag. */
+	rowPtr->index = i;              /* Reset the index. */
+	rowPtr->height = GetBoundedHeight(rowPtr->nom, &rowPtr->reqHeight);
 	if (rowPtr->reqHeight.flags & LIMITS_SET_NOM) {
 	    /*
 	     * This could be done more cleanly.  We want to ensure that the
@@ -11587,12 +11587,12 @@ ComputeLayout(TableView *viewPtr)
 	Column *colPtr;
 
 	colPtr = viewPtr->columns[i];
-	colPtr->flags &= ~GEOMETRY; 	/* Always remove the geometry
-                                         * flag. */
-	colPtr->index = i;		/* Reset the index. */
+	colPtr->flags &= ~GEOMETRY;     /* Always remove the geometry
+					 * flag. */
+	colPtr->index = i;              /* Reset the index. */
 	colPtr->width = 0;
 	colPtr->worldX = x;
-        colPtr->width = GetBoundedWidth(colPtr->nom, &colPtr->reqWidth);
+	colPtr->width = GetBoundedWidth(colPtr->nom, &colPtr->reqWidth);
 	if (colPtr->reqWidth.flags & LIMITS_SET_NOM) {
 	    /*
 	     * This could be done more cleanly.  We want to ensure that the
@@ -11627,7 +11627,7 @@ ComputeLayout(TableView *viewPtr)
     if (viewPtr->flags & ROW_TITLES) {
 	viewPtr->width += viewPtr->rowTitleWidth;
     }
-    viewPtr->flags |= SCROLL_PENDING;	/* Flag to recompute visible rows
+    viewPtr->flags |= SCROLL_PENDING;   /* Flag to recompute visible rows
 					 * and columns. */
 }
 
@@ -11638,13 +11638,13 @@ ReorderVisibleIndices(TableView *viewPtr)
 
     /* Reorder visible indices. */
     for (count = i = 0; i < viewPtr->numRows; i++) {
-        Row *rowPtr;
-        
-        rowPtr = viewPtr->rows[i];
-        if ((rowPtr->flags & HIDDEN) == 0) {
-            rowPtr->visibleIndex = count;
-            count++;
-        }
+	Row *rowPtr;
+	
+	rowPtr = viewPtr->rows[i];
+	if ((rowPtr->flags & HIDDEN) == 0) {
+	    rowPtr->visibleIndex = count;
+	    count++;
+	}
     }
 }
 
@@ -11702,7 +11702,7 @@ ComputeVisibleEntries(TableView *viewPtr)
 	    continue;
 	}
 	if (rowPtr->worldY >= (viewPtr->yOffset + viewHeight)) {
-	    break;			/* Row starts after the end of the
+	    break;                      /* Row starts after the end of the
 					 * viewport. */
 	}
 	last = i + 1;
@@ -11762,7 +11762,7 @@ ComputeVisibleEntries(TableView *viewPtr)
 	    continue;
 	}
 	if ((colPtr->worldX) >= (viewPtr->xOffset + viewWidth)) {
-	    break;			/* Column starts after the end of the
+	    break;                      /* Column starts after the end of the
 					 * viewport. */
 	}
 	last = i + 1;
@@ -12027,14 +12027,14 @@ GetNumberOfColumns(TableView *viewPtr)
     long numColumns;
     numColumns = 0;
     for (hPtr = Blt_FirstHashEntry(&viewPtr->columnTable, &iter); hPtr != NULL;
-         hPtr = Blt_NextHashEntry(&iter)) {
-        Column *colPtr;
+	 hPtr = Blt_NextHashEntry(&iter)) {
+	Column *colPtr;
 
-        colPtr = Blt_GetHashValue(hPtr);
-        if (colPtr->flags & DELETED) {
-            continue;
-        }
-        numColumns++;
+	colPtr = Blt_GetHashValue(hPtr);
+	if (colPtr->flags & DELETED) {
+	    continue;
+	}
+	numColumns++;
     }
     return numColumns;
 }
@@ -12067,7 +12067,7 @@ DeleteColumnsWhenIdleProc(ClientData clientData)
 	}
     }
     if (viewPtr->columns != NULL) {
-        Blt_Free(viewPtr->columns);
+	Blt_Free(viewPtr->columns);
     }
     viewPtr->columns = columns;
     viewPtr->numColumns = numColumns;
@@ -12084,14 +12084,14 @@ AddColumnsWhenIdleProc(ClientData clientData)
     unsigned long count, oldNumColumns, newNumColumns;
 
     if (viewPtr->flags & COLUMNS_DELETED) {
-        Tcl_CancelIdleCall(DeleteColumnsWhenIdleProc, viewPtr);
-        DeleteColumnsWhenIdleProc(viewPtr);
+	Tcl_CancelIdleCall(DeleteColumnsWhenIdleProc, viewPtr);
+	DeleteColumnsWhenIdleProc(viewPtr);
     }
     oldNumColumns = viewPtr->numColumns;
     newNumColumns = blt_table_num_columns(viewPtr->table);
     assert(newNumColumns >= oldNumColumns);
     viewPtr->columns = Blt_AssertRealloc(viewPtr->columns, 
-        sizeof(Column *) * newNumColumns);
+	sizeof(Column *) * newNumColumns);
     
     count = oldNumColumns;
     /* Loop through the table looking for new columns (i.e. columns that
@@ -12124,8 +12124,8 @@ AddColumnsWhenIdleProc(ClientData clientData)
 		AddCellGeometry(viewPtr, cellPtr);
 		Blt_SetHashValue(h2Ptr, cellPtr);
 	    }
-            viewPtr->columns[count] = colPtr;
-            count++;
+	    viewPtr->columns[count] = colPtr;
+	    count++;
 	}
     }
     viewPtr->numColumns = newNumColumns;
@@ -12143,14 +12143,14 @@ GetNumberOfRows(TableView *viewPtr)
 
     numRows = 0;
     for (hPtr = Blt_FirstHashEntry(&viewPtr->rowTable, &iter); hPtr != NULL;
-         hPtr = Blt_NextHashEntry(&iter)) {
-        Row *rowPtr;
+	 hPtr = Blt_NextHashEntry(&iter)) {
+	Row *rowPtr;
 
-        rowPtr = Blt_GetHashValue(hPtr);
-        if (rowPtr->flags & DELETED) {
-            continue;
-        }
-        numRows++;
+	rowPtr = Blt_GetHashValue(hPtr);
+	if (rowPtr->flags & DELETED) {
+	    continue;
+	}
+	numRows++;
     }
     return numRows;
 }
@@ -12182,7 +12182,7 @@ DeleteRowsWhenIdleProc(ClientData clientData)
 	}
     }
     if (viewPtr->rows != NULL) {
-        Blt_Free(viewPtr->rows);
+	Blt_Free(viewPtr->rows);
     }
     viewPtr->rows = rows;
     viewPtr->numRows = numRows;
@@ -12199,8 +12199,8 @@ AddRowsWhenIdleProc(ClientData clientData)
     unsigned long count, newNumRows, oldNumRows;
 
     if (viewPtr->flags & ROWS_DELETED) {
-        Tcl_CancelIdleCall(DeleteRowsWhenIdleProc, viewPtr);
-        DeleteRowsWhenIdleProc(viewPtr);
+	Tcl_CancelIdleCall(DeleteRowsWhenIdleProc, viewPtr);
+	DeleteRowsWhenIdleProc(viewPtr);
     }
     oldNumRows = viewPtr->numRows;
     newNumRows = blt_table_num_rows(viewPtr->table);
@@ -12235,8 +12235,8 @@ AddRowsWhenIdleProc(ClientData clientData)
 		AddCellGeometry(viewPtr, cellPtr);
 		Blt_SetHashValue(h2Ptr, cellPtr);
 	    }
-            viewPtr->rows[count] = rowPtr;
-            count++;
+	    viewPtr->rows[count] = rowPtr;
+	    count++;
 	}
     }
     viewPtr->numRows = newNumRows;
@@ -12253,19 +12253,19 @@ AttachTable(Tcl_Interp *interp, TableView *viewPtr)
     unsigned int flags;
 
     if (viewPtr->flags & ROWS_PENDING) {
-        Tcl_CancelIdleCall(AddRowsWhenIdleProc, viewPtr);
+	Tcl_CancelIdleCall(AddRowsWhenIdleProc, viewPtr);
     }
     if (viewPtr->flags & COLUMNS_PENDING) {
-        Tcl_CancelIdleCall(AddColumnsWhenIdleProc, viewPtr);
+	Tcl_CancelIdleCall(AddColumnsWhenIdleProc, viewPtr);
     }
     if (viewPtr->flags & ROWS_DELETED) {
-        Tcl_CancelIdleCall(DeleteRowsWhenIdleProc, viewPtr);
+	Tcl_CancelIdleCall(DeleteRowsWhenIdleProc, viewPtr);
     }
     if (viewPtr->flags & COLUMNS_DELETED) {
-        Tcl_CancelIdleCall(DeleteColumnsWhenIdleProc, viewPtr);
+	Tcl_CancelIdleCall(DeleteColumnsWhenIdleProc, viewPtr);
     }
     if (viewPtr->flags & SELECT_PENDING) {
-        Tcl_CancelIdleCall(SelectCommandProc, viewPtr);
+	Tcl_CancelIdleCall(SelectCommandProc, viewPtr);
     }
     /* Try to match the current rows and columns in the view with the new
      * table names. */
@@ -12360,27 +12360,27 @@ AttachTable(Tcl_Interp *interp, TableView *viewPtr)
  *
  * DisplayProc --
  *
- * 	This procedure is invoked to display the widget.
+ *      This procedure is invoked to display the widget.
  *
  *      Recompute the layout of the text if necessary. This is necessary if
  *      the world coordinate system has changed.  Specifically, the
  *      following may have occurred:
  *
- *	  1.  a text attribute has changed (font, linespacing, etc.).
- *	  2.  an entry's option changed, possibly resizing the entry.
+ *        1.  a text attribute has changed (font, linespacing, etc.).
+ *        2.  an entry's option changed, possibly resizing the entry.
  *
  *      This is deferred to the display routine since potentially many of
  *      these may occur.
  *
- *	Set the vertical and horizontal scrollbars.  This is done here
- *	since the window width and height are needed for the scrollbar
- *	calculations.
+ *      Set the vertical and horizontal scrollbars.  This is done here
+ *      since the window width and height are needed for the scrollbar
+ *      calculations.
  *
  * Results:
- *	None.
+ *      None.
  *
  * Side effects:
- * 	The widget is redisplayed.
+ *      The widget is redisplayed.
  *
  *---------------------------------------------------------------------------
  */
@@ -12394,7 +12394,7 @@ DisplayProc(ClientData clientData)
 
     viewPtr->flags &= ~REDRAW_PENDING;
     if (viewPtr->tkwin == NULL) {
-	return;				/* Window has been destroyed. */
+	return;                         /* Window has been destroyed. */
     }
 #ifdef notdef
     fprintf(stderr, "DisplayProc %s\n", Tk_PathName(viewPtr->tkwin));
@@ -12402,11 +12402,11 @@ DisplayProc(ClientData clientData)
     if (viewPtr->sort.flags & SORT_PENDING) {
 	/* If the table needs resorting do it now before recalculating the
 	 * geometry. */
-	SortTableView(viewPtr);	
+	SortTableView(viewPtr); 
     }
     if (viewPtr->flags & GEOMETRY) {
 	ComputeGeometry(viewPtr);
-    }	
+    }   
     if (viewPtr->flags & LAYOUT_PENDING) {
 	ComputeLayout(viewPtr);
     }
@@ -12583,26 +12583,26 @@ NewTableView(Tcl_Interp *interp, Tk_Window tkwin)
  *
  * TableViewCmdProc --
  *
- * 	This procedure is invoked to process the TCL command that
- * 	corresponds to a widget managed by this module. See the user
- * 	documentation for details on what it does.
+ *      This procedure is invoked to process the TCL command that
+ *      corresponds to a widget managed by this module. See the user
+ *      documentation for details on what it does.
  *
  * Results:
- *	A standard TCL result.
+ *      A standard TCL result.
  *
  * Side effects:
- *	See the user documentation.
+ *      See the user documentation.
  *
  *---------------------------------------------------------------------------
  */
 /* ARGSUSED */
 static int
 TableViewCmdProc(
-    ClientData clientData,		/* Main window associated with
+    ClientData clientData,              /* Main window associated with
 					 * interpreter. */
-    Tcl_Interp *interp,			/* Current interpreter. */
-    int objc,				/* Number of arguments. */
-    Tcl_Obj *const *objv)		/* Argument strings. */
+    Tcl_Interp *interp,                 /* Current interpreter. */
+    int objc,                           /* Number of arguments. */
+    Tcl_Obj *const *objv)               /* Argument strings. */
 {
     TableView *viewPtr;
     Tcl_Obj *cmdObjPtr, *objPtr;
@@ -12630,7 +12630,7 @@ TableViewCmdProc(
 	    char info[200];
 
 	    Blt_FormatString(info, 200, 
-                             "\n    (while loading bindings for %.50s)", 
+			     "\n    (while loading bindings for %.50s)", 
 		    Tcl_GetString(objv[0]));
 	    Tcl_AddErrorInfo(interp, info);
 	    return TCL_ERROR;

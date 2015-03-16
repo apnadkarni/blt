@@ -73,7 +73,7 @@
 	-image $image
 	-bg $color
   paintbrush create picture 
-        -image $image
+	-image $image
 	-filter $filterName
 	-bg $color
   paintbrush create gradient 
@@ -145,12 +145,12 @@ typedef struct {
 } PaintBrushCmd;
 
 #define FREE_PICTURE		(1<<0)  /* Indicates we need to free the
-                                         * temporary picture (associated
-                                         * with the Tk image to be tiled)
-                                         * when the picture is no longer in
-                                         * use.  This happens when the
-                                         * picture is converted from a Tk
-                                         * photo image. */
+					 * temporary picture (associated
+					 * with the Tk image to be tiled)
+					 * when the picture is no longer in
+					 * use.  This happens when the
+					 * picture is converted from a Tk
+					 * photo image. */
 
 #define DEF_OPACITY		"100.0"
 #define DEF_ORIGIN_X		"0"
@@ -227,7 +227,7 @@ static Blt_ConfigSpec solidConfigSpecs[] =
 static Blt_ConfigSpec tileConfigSpecs[] =
 {
     {BLT_CONFIG_CUSTOM, "-image", "image", "Image", (char *)NULL,
-        Blt_Offset(PaintBrushCmd, tkImage), BLT_CONFIG_DONT_SET_DEFAULT, 
+	Blt_Offset(PaintBrushCmd, tkImage), BLT_CONFIG_DONT_SET_DEFAULT, 
 	&imageOption},
     {BLT_CONFIG_CUSTOM, "-opacity", "opacity", "Opacity", DEF_OPACITY, 
 	Blt_Offset(PaintBrushCmd, brush.alpha), BLT_CONFIG_DONT_SET_DEFAULT, 
@@ -238,7 +238,7 @@ static Blt_ConfigSpec tileConfigSpecs[] =
 static Blt_ConfigSpec gradientConfigSpecs[] =
 {
     {BLT_CONFIG_PIX32, "-high", "high", "High", DEF_GRADIENT_HIGH,
-        Blt_Offset(PaintBrushCmd, brush.high), 0},
+	Blt_Offset(PaintBrushCmd, brush.high), 0},
     {BLT_CONFIG_CUSTOM, "-jitter", "jitter", "Jitter", DEF_GRADIENT_JITTER, 
 	Blt_Offset(PaintBrushCmd, brush.jitter.range), 
 	BLT_CONFIG_DONT_SET_DEFAULT, &jitterOption},
@@ -259,12 +259,12 @@ static Blt_ConfigSpec gradientConfigSpecs[] =
 static Blt_ConfigSpec textureConfigSpecs[] =
 {
     {BLT_CONFIG_PIX32, "-high", "high", "High", DEF_GRADIENT_HIGH,
-        Blt_Offset(PaintBrushCmd, brush.high), 0},
+	Blt_Offset(PaintBrushCmd, brush.high), 0},
     {BLT_CONFIG_CUSTOM, "-jitter", "jitter", "Jitter", DEF_TEXTURE_JITTER, 
 	Blt_Offset(PaintBrushCmd, brush.jitter.range), 
-        BLT_CONFIG_DONT_SET_DEFAULT, &jitterOption},
+	BLT_CONFIG_DONT_SET_DEFAULT, &jitterOption},
     {BLT_CONFIG_PIX32, "-low", "low", "Low", DEF_GRADIENT_LOW,
-        Blt_Offset(PaintBrushCmd, brush.low), 0},
+	Blt_Offset(PaintBrushCmd, brush.low), 0},
     {BLT_CONFIG_CUSTOM, "-opacity", "opacity", "Opacity", DEF_OPACITY, 
 	Blt_Offset(PaintBrushCmd, brush.alpha), BLT_CONFIG_DONT_SET_DEFAULT, 
 	&opacityOption},
@@ -361,7 +361,7 @@ ImageChangedProc(
     }
     cmdPtr->brush.tile = ImageToPicture(cmdPtr, &isNew);
     if (Blt_Picture_IsAssociated(cmdPtr->brush.tile)) {
-        Blt_UnassociateColors(cmdPtr->brush.tile);
+	Blt_UnassociateColors(cmdPtr->brush.tile);
     }
     if (isNew) {
 	cmdPtr->flags |= FREE_PICTURE;
@@ -1151,9 +1151,9 @@ ConfigurePaintBrushCmd(Tcl_Interp *interp, PaintBrushCmd *cmdPtr, int objc,
 	    Blt_FreePicture(cmdPtr->brush.tile);
 	}
 	cmdPtr->brush.tile = ImageToPicture(cmdPtr, &isNew);
-        if (Blt_Picture_IsAssociated(cmdPtr->brush.tile)) {
-            Blt_UnassociateColors(cmdPtr->brush.tile);
-        }
+	if (Blt_Picture_IsAssociated(cmdPtr->brush.tile)) {
+	    Blt_UnassociateColors(cmdPtr->brush.tile);
+	}
 	if (isNew) {
 	    cmdPtr->flags |= FREE_PICTURE;
 	} else {
@@ -1471,7 +1471,7 @@ Blt_PaintBrush_SetTile(Blt_PaintBrush *brushPtr, Blt_Picture picture)
     brushPtr->type = BLT_PAINTBRUSH_TILE;
     brushPtr->tile = picture;
     if (Blt_Picture_IsAssociated(brushPtr->tile)) {
-        Blt_UnassociateColors(brushPtr->tile);
+	Blt_UnassociateColors(brushPtr->tile);
     }
 }
 
@@ -1500,7 +1500,7 @@ Blt_PaintBrush_SetGradient(Blt_PaintBrush *brushPtr, Blt_GradientType type)
 
 void
 Blt_PaintBrush_SetColors(Blt_PaintBrush *brushPtr, Blt_Pixel *lowPtr, 
-                         Blt_Pixel *highPtr)
+			 Blt_Pixel *highPtr)
 {
     brushPtr->low.u32 = lowPtr->u32;
     brushPtr->high.u32 = highPtr->u32;
@@ -1626,31 +1626,31 @@ Blt_PaintBrush_GetAssociatedColor(Blt_PaintBrush *brushPtr, int x, int y)
 	    y = -y;
 	}
 	pixelPtr = Blt_Picture_Pixel(brushPtr->tile, x, y);
-        /* Pixel of tile is unassociated so that we can override the
-         * opacity. */
+	/* Pixel of tile is unassociated so that we can override the
+	 * opacity. */
 	color.u32 = pixelPtr->u32;
 	color.Alpha = brushPtr->alpha;
-        Blt_AssociateColor(&color);
+	Blt_AssociateColor(&color);
 	return color.u32;
     case BLT_PAINTBRUSH_TEXTURE:
     case BLT_PAINTBRUSH_GRADIENT:
 	if (brushPtr->colorProc == NULL) {
-            return brushPtr->solidColor.u32;
+	    return brushPtr->solidColor.u32;
 	} 
-        /* Factor in the gradient origin when computing the pixel. */
-        x = (x - brushPtr->xOrigin);
-        if (x < 0) {
-            x = -x;
-        }
-        y = (y - brushPtr->yOrigin);
-        if (y < 0) {
-            y = -y;
-        }
-        /* Need window or object width/height to compute color value. */
-        color.u32 = (*brushPtr->colorProc)(brushPtr, x, y);
-        /* Texture and gradient colors are always associated. */
-        Blt_AssociateColor(&color);
-        return color.u32;
+	/* Factor in the gradient origin when computing the pixel. */
+	x = (x - brushPtr->xOrigin);
+	if (x < 0) {
+	    x = -x;
+	}
+	y = (y - brushPtr->yOrigin);
+	if (y < 0) {
+	    y = -y;
+	}
+	/* Need window or object width/height to compute color value. */
+	color.u32 = (*brushPtr->colorProc)(brushPtr, x, y);
+	/* Texture and gradient colors are always associated. */
+	Blt_AssociateColor(&color);
+	return color.u32;
     }
     return 0;
 }
@@ -1720,7 +1720,7 @@ Blt_PaintBrush_GetFromString(Tcl_Interp *interp, const char *string,
 	    goto error;			/* Can't allocate new color. */
 	}
 	cmdPtr->brush.solidColor.u32 = color.u32;
-        Blt_AssociateColor(&cmdPtr->brush.solidColor);
+	Blt_AssociateColor(&cmdPtr->brush.solidColor);
 	cmdPtr->refCount = 1;
 	cmdPtr->hashPtr = hPtr;
 	cmdPtr->name = Blt_GetHashKey(&dataPtr->instTable, hPtr);

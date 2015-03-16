@@ -168,7 +168,7 @@ HashString(const char *string)		/* String from which to compute
 static Blt_HashEntry *
 StringFind(
     Blt_HashTable *tablePtr,		/* Table in which to lookup
-                                           entry. */
+					   entry. */
     const void *key)			/* Key to find matching entry. */
 {
     Blt_Hash hval;
@@ -221,7 +221,7 @@ StringFind(
 static Blt_HashEntry *
 StringCreate(
     Blt_HashTable *tablePtr,		/* Table in which to lookup
-                                           entry. */
+					   entry. */
     const void *key,			/* Key to use to find or create
 					 * matching entry. */
     int *isNewPtr)			/* Store info here telling whether
@@ -410,7 +410,7 @@ OneWordFind(
 static Blt_HashEntry *
 OneWordCreate(
     Blt_HashTable *tablePtr,		/* Table in which to lookup
-                                           entry. */
+					   entry. */
     const void *key,			/* Key to use to find or create
 					 * matching entry. */
     int *isNewPtr)			/* Store info here telling whether

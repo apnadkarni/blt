@@ -30,7 +30,7 @@
 
 typedef struct {
     int a, b, c;			/* Indices of the vectices that 
- 					 * form the triangle. */
+					 * form the triangle. */
 } MeshTriangle;
 
 typedef struct _DataSource DataSource;

@@ -441,10 +441,10 @@ typedef struct {
 typedef struct {
     unsigned int flags;                 /* Various flags: see below. */
     int x1, y1, x2, y2;                 /* Coordinates of area representing
-                                         * the parent that posted this
-                                         * menu.  */
+					 * the parent that posted this
+					 * menu.  */
     Tk_Window tkwin;                    /* Parent window that posted this
-                                         * menu. */
+					 * menu. */
     int menuWidth, menuHeight;
     int lastMenuWidth;
     int align;
@@ -811,7 +811,7 @@ static Blt_ConfigSpec entrySpecs[] =
 	(char *)NULL, Blt_Offset(Entry, closeCmdObjPtr), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_PIXELS_NNEG, "-height", (char *)NULL, (char *)NULL, 
 	(char *)NULL, Blt_Offset(Entry, reqHeight), 
-        BLT_CONFIG_DONT_SET_DEFAULT},
+	BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_CUSTOM, "-label", (char *)NULL, (char *)NULL, (char *)NULL, 
 	Blt_Offset(Entry, labelUid), 0, &labelOption},
     {BLT_CONFIG_OBJ, "-opencommand", (char *)NULL, (char *)NULL, 
@@ -862,7 +862,7 @@ static Blt_ConfigSpec comboSpecs[] =
 	Blt_Offset(ComboTree, defStyle.activeBg), 0},
     {BLT_CONFIG_COLOR, "-activeforeground", "activeForeground", 
 	"ActiveForeground", DEF_STYLE_ACTIVE_FG, 
-        Blt_Offset(ComboTree, defStyle.labelActiveColor), 0},
+	Blt_Offset(ComboTree, defStyle.labelActiveColor), 0},
     {BLT_CONFIG_BACKGROUND, "-alternatebackground", "alternateBackground", 
 	"Background", DEF_STYLE_ALT_BG, Blt_Offset(ComboTree, defStyle.altBg), 
 	 0},
@@ -902,7 +902,7 @@ static Blt_ConfigSpec comboSpecs[] =
 	BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)HIDE_ROOT},
     {BLT_CONFIG_OBJ, "-iconvariable", "iconVariable", "IconVariable", 
 	DEF_COMBO_ICON_VARIABLE, Blt_Offset(ComboTree, iconVarObjPtr), 
-        BLT_CONFIG_NULL_OK},
+	BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_CUSTOM, "-icons", "icons", "Icons", DEF_STYLE_ICONS, 
 	Blt_Offset(ComboTree, defStyle.icons), BLT_CONFIG_NULL_OK, 
 	&iconsOption},
@@ -930,7 +930,7 @@ static Blt_ConfigSpec comboSpecs[] =
 	BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_OBJ, "-textvariable", "textVariable", "TextVariable", 
 	DEF_COMBO_TEXT_VARIABLE, Blt_Offset(ComboTree, textVarObjPtr), 
-        BLT_CONFIG_NULL_OK},
+	BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_STRING, "-tree", "tree", "Tree", (char *)NULL, 
 	Blt_Offset(ComboTree, treeName), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_PIXELS, "-width", "width", "Width", DEF_COMBO_WIDTH, 
@@ -981,44 +981,44 @@ static Blt_SwitchCustom postWindowSwitch = {
 typedef struct {
     unsigned int flags;                 /* Various flags: see below. */
     int x1, y1, x2, y2;                 /* Coordinates of area representing
-                                         * the parent that posted this
-                                         * menu.  */
+					 * the parent that posted this
+					 * menu.  */
     Tk_Window tkwin;                    /* Parent window that posted this
-                                         * menu. */
+					 * menu. */
 } PostSwitches;
 
 #define ALIGN_LEFT	(0)             /* Menu is aligned to the center of
-                                         * the parent. */
+					 * the parent. */
 #define ALIGN_CENTER	(1)             /* Menu is aligned on the left side
-                                         * of the parent.  */
+					 * of the parent.  */
 #define ALIGN_RIGHT	(2)             /* Menu is aligned on the right
-                                         * side of the parent. */
+					 * side of the parent. */
 
 #define POST_PARENT     (0)             /* Use parent geometry for location
-                                         * of button. */
+					 * of button. */
 #define POST_POPUP      (1)             /* x,y location of the menu in root
-                                         * coordinates. This menu is a
-                                         * popup.*/
+					 * coordinates. This menu is a
+					 * popup.*/
 #define POST_AT         (2)             /* x,y location of the menu in root
-                                         * coordinates. This menu is a
-                                         * cascade.*/
+					 * coordinates. This menu is a
+					 * cascade.*/
 #define POST_WINDOW     (3)             /* Window representing the
-                                         * parent. */
+					 * parent. */
 #define POST_REGION     (4)             /* Bounding box representing the
-                                         * parent area. The x1, y2, x2, y2
-                                         * coordinates are in root
-                                         * coordinates. */
+					 * parent area. The x1, y2, x2, y2
+					 * coordinates are in root
+					 * coordinates. */
 
 static Blt_SwitchSpec postSwitches[] = 
 {
     {BLT_SWITCH_CUSTOM, "-align", "left|right|center", (char *)NULL,
-        Blt_Offset(ComboTree, post.align), 0, 0, &postAlignSwitch},
+	Blt_Offset(ComboTree, post.align), 0, 0, &postAlignSwitch},
     {BLT_SWITCH_CUSTOM, "-at", "x y", (char *)NULL,
-        0, 0, 0, &postAtSwitch},
+	0, 0, 0, &postAtSwitch},
     {BLT_SWITCH_CUSTOM, "-box", "x1 y1 x2 y2", (char *)NULL,
-        0, 0, 0, &postBoxSwitch},
+	0, 0, 0, &postBoxSwitch},
     {BLT_SWITCH_CUSTOM, "-popup", "x y", (char *)NULL,
-        0, 0, 0, &postPopupSwitch},
+	0, 0, 0, &postPopupSwitch},
     {BLT_SWITCH_CUSTOM, "-window", "path", (char *)NULL,
 	Blt_Offset(ComboTree, post.tkwin), 0, 0, &postWindowSwitch},
     {BLT_SWITCH_END}
@@ -2122,7 +2122,7 @@ GetEntryIterator(
 	}
 	iterPtr->first = entryPtr;
     } else if ((c == 'n') && (strcmp(string, "next") == 0)) {
-        entryPtr = NextEntry(fromPtr, ENTRY_MASK);
+	entryPtr = NextEntry(fromPtr, ENTRY_MASK);
 	if (entryPtr == NULL) {
 	    if (comboPtr->flags & HIDE_ROOT) {
 		entryPtr = NextEntry(comboPtr->rootPtr,ENTRY_MASK);
@@ -2567,13 +2567,13 @@ GetCoordsFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, int *xPtr, int *yPtr)
 	return TCL_ERROR;
     }
     if (elc != 2) {
-        Tcl_AppendResult(interp, "wrong # of arguments: should be \"x y\"",
-                (char *)NULL);
-        return TCL_ERROR;
+	Tcl_AppendResult(interp, "wrong # of arguments: should be \"x y\"",
+		(char *)NULL);
+	return TCL_ERROR;
     }
     if ((Tcl_GetIntFromObj(interp, elv[0], &x) != TCL_OK) ||
-        (Tcl_GetIntFromObj(interp, elv[1], &y) != TCL_OK)) {
-        return TCL_ERROR;
+	(Tcl_GetIntFromObj(interp, elv[1], &y) != TCL_OK)) {
+	return TCL_ERROR;
     }
     *xPtr = x;
     *yPtr = y;
@@ -2647,16 +2647,16 @@ GetBoxFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, Box2d *boxPtr)
 	return TCL_ERROR;
     }
     if (elc != 4) {
-        Tcl_AppendResult(interp,
-                "wrong # of arguments: should be \"x1 y1 x2 y2\"",
-                (char *)NULL);
-        return TCL_ERROR;
+	Tcl_AppendResult(interp,
+		"wrong # of arguments: should be \"x1 y1 x2 y2\"",
+		(char *)NULL);
+	return TCL_ERROR;
     }
     if ((Tcl_GetIntFromObj(interp, elv[0], &x1) != TCL_OK) ||
-        (Tcl_GetIntFromObj(interp, elv[1], &y1) != TCL_OK) ||
-        (Tcl_GetIntFromObj(interp, elv[2], &x2) != TCL_OK) ||
-        (Tcl_GetIntFromObj(interp, elv[3], &y2) != TCL_OK)) {
-        return TCL_ERROR;
+	(Tcl_GetIntFromObj(interp, elv[1], &y1) != TCL_OK) ||
+	(Tcl_GetIntFromObj(interp, elv[2], &x2) != TCL_OK) ||
+	(Tcl_GetIntFromObj(interp, elv[3], &y2) != TCL_OK)) {
+	return TCL_ERROR;
     }
     boxPtr->x1 = MIN(x1, x2);
     boxPtr->y1 = MIN(y1, y2);
@@ -2682,8 +2682,8 @@ GetBoxFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, Box2d *boxPtr)
 /*ARGSUSED*/
 static int
 PostWindowSwitchProc(ClientData clientData, Tcl_Interp *interp,
-                    const char *switchName, Tcl_Obj *objPtr, char *record,
-                    int offset, int flags)
+		    const char *switchName, Tcl_Obj *objPtr, char *record,
+		    int offset, int flags)
 {
     ComboTree *comboPtr = (ComboTree *)record;
     Tk_Window tkwin;
@@ -2692,10 +2692,10 @@ PostWindowSwitchProc(ClientData clientData, Tcl_Interp *interp,
     tkwin = NULL;
     string = Tcl_GetString(objPtr);
     if (string[0] == '\0') {
-        tkwin = NULL;
+	tkwin = NULL;
     } else {
 	tkwin = Tk_NameToWindow(interp, string, comboPtr->tkwin);
-        if (tkwin == NULL) {
+	if (tkwin == NULL) {
 	    return TCL_ERROR;
 	}
     }
@@ -2722,14 +2722,14 @@ PostWindowSwitchProc(ClientData clientData, Tcl_Interp *interp,
 /*ARGSUSED*/
 static int
 PostAlignSwitchProc(ClientData clientData, Tcl_Interp *interp,
-                    const char *switchName, Tcl_Obj *objPtr, char *record,
-                    int offset, int flags)
+		    const char *switchName, Tcl_Obj *objPtr, char *record,
+		    int offset, int flags)
 {
     ComboTree *comboPtr = (ComboTree *)record;
     int align;
     
     if (GetAlignFromObj(interp, objPtr, &align) != TCL_OK) {
-        return TCL_ERROR;
+	return TCL_ERROR;
     }
     comboPtr->post.align = align;
     return TCL_OK;
@@ -2753,8 +2753,8 @@ PostAlignSwitchProc(ClientData clientData, Tcl_Interp *interp,
 /*ARGSUSED*/
 static int
 PostPopupSwitchProc(ClientData clientData, Tcl_Interp *interp,
-                    const char *switchName, Tcl_Obj *objPtr, char *record,
-                    int offset, int flags)
+		    const char *switchName, Tcl_Obj *objPtr, char *record,
+		    int offset, int flags)
 {
     ComboTree *comboPtr = (ComboTree *)record;
     int x, y;
@@ -2786,8 +2786,8 @@ PostPopupSwitchProc(ClientData clientData, Tcl_Interp *interp,
 /*ARGSUSED*/
 static int
 PostAtSwitchProc(ClientData clientData, Tcl_Interp *interp,
-                    const char *switchName, Tcl_Obj *objPtr, char *record,
-                    int offset, int flags)
+		    const char *switchName, Tcl_Obj *objPtr, char *record,
+		    int offset, int flags)
 {
     ComboTree *comboPtr = (ComboTree *)record;
     int x, y;
@@ -4577,7 +4577,7 @@ FixMenuCoords(ComboTree *comboPtr, int *xPtr, int *yPtr)
 	y -= h;                         /* Shift the menu up by the height
 					 * of the menu. */
 	if (comboPtr->flags & DROPDOWN) {
-            /* Add the height of the parent if this is a dropdown menu.  */
+	    /* Add the height of the parent if this is a dropdown menu.  */
 	    y -= comboPtr->post.menuHeight; 
 	}
 	if (y < 0) {
@@ -4586,8 +4586,8 @@ FixMenuCoords(ComboTree *comboPtr, int *xPtr, int *yPtr)
     }
     if ((x + w) > screenWidth) {
 	if (comboPtr->flags & DROPDOWN) {
-            /* Flip the menu anchor to the other end of the menu
-             * button/entry */
+	    /* Flip the menu anchor to the other end of the menu
+	     * button/entry */
 	    x = x + comboPtr->post.menuWidth - w; 
 	} else {
 	    x -= w;			/* Shift the menu to the left by the
@@ -6701,19 +6701,19 @@ OverButtonOp(ClientData clientData, Tcl_Interp *interp, int objc,
     int state;
     
     if ((Tcl_GetIntFromObj(interp, objv[2], &x) != TCL_OK) ||
-        (Tcl_GetIntFromObj(interp, objv[3], &y) != TCL_OK)) {
-        return TCL_ERROR;
+	(Tcl_GetIntFromObj(interp, objv[3], &y) != TCL_OK)) {
+	return TCL_ERROR;
     }
     state = FALSE;
     switch (comboPtr->post.flags) {
     case POST_POPUP:
     case POST_AT:
-        break;
+	break;
     default:
-        if ((x >= comboPtr->post.x1) && (x < comboPtr->post.x2) &&
-            (y >= comboPtr->post.y1) && (y < comboPtr->post.y2)) {
-            state = TRUE;
-        }
+	if ((x >= comboPtr->post.x1) && (x < comboPtr->post.x2) &&
+	    (y >= comboPtr->post.y1) && (y < comboPtr->post.y2)) {
+	    state = TRUE;
+	}
     }
     Tcl_SetBooleanObj(Tcl_GetObjResult(interp), state);
     return TCL_OK;
@@ -6739,7 +6739,7 @@ OverButtonOp(ClientData clientData, Tcl_Interp *interp, int objc,
  */
 static int
 PostOp(ClientData clientData, Tcl_Interp *interp, int objc,
-        Tcl_Obj *const *objv)
+	Tcl_Obj *const *objv)
 {
     ComboTree *comboPtr = clientData;
     int x, y;
@@ -6756,31 +6756,31 @@ PostOp(ClientData clientData, Tcl_Interp *interp, int objc,
     switch (comboPtr->post.flags) {
     case POST_PARENT:
     case POST_WINDOW:
-        {
-            Tk_Window tkwin;
-            int x, y, w, h;
-            int rootX, rootY;
-            
-            tkwin = comboPtr->post.tkwin;
-            w = Tk_Width(tkwin);
-            h = Tk_Height(tkwin);
-            x = Tk_X(tkwin);
-            y = Tk_Y(tkwin);
-            Tk_GetRootCoords(Tk_Parent(tkwin), &rootX, &rootY);
-            x += rootX;
-            y += rootY;
-            comboPtr->post.x1 = x;
-            comboPtr->post.y1 = y;
-            comboPtr->post.x2 = x + w;
-            comboPtr->post.y2 = y + h;
-        }
-        break;
+	{
+	    Tk_Window tkwin;
+	    int x, y, w, h;
+	    int rootX, rootY;
+	    
+	    tkwin = comboPtr->post.tkwin;
+	    w = Tk_Width(tkwin);
+	    h = Tk_Height(tkwin);
+	    x = Tk_X(tkwin);
+	    y = Tk_Y(tkwin);
+	    Tk_GetRootCoords(Tk_Parent(tkwin), &rootX, &rootY);
+	    x += rootX;
+	    y += rootY;
+	    comboPtr->post.x1 = x;
+	    comboPtr->post.y1 = y;
+	    comboPtr->post.x2 = x + w;
+	    comboPtr->post.y2 = y + h;
+	}
+	break;
     case POST_REGION:
     case POST_AT:
-        break;
+	break;
     case POST_POPUP:
-        comboPtr->flags &= ~DROPDOWN;
-        break;
+	comboPtr->flags &= ~DROPDOWN;
+	break;
     }
     comboPtr->post.menuWidth = comboPtr->post.x2 - comboPtr->post.x1;
     comboPtr->post.menuHeight = comboPtr->post.y2 - comboPtr->post.y1;
@@ -6792,20 +6792,20 @@ PostOp(ClientData clientData, Tcl_Interp *interp, int objc,
     y = comboPtr->post.y2;
     switch (comboPtr->post.align) {
     case ALIGN_CENTER:
-        {
-            int w;
+	{
+	    int w;
 
-            w = comboPtr->post.x2 - comboPtr->post.x1;
-            x = comboPtr->post.x1 + (w - comboPtr->normalWidth) / 2; 
-        }
-        break;
+	    w = comboPtr->post.x2 - comboPtr->post.x1;
+	    x = comboPtr->post.x1 + (w - comboPtr->normalWidth) / 2; 
+	}
+	break;
     case ALIGN_RIGHT:
-        x = comboPtr->post.x2 - comboPtr->normalWidth;
-        break;
+	x = comboPtr->post.x2 - comboPtr->normalWidth;
+	break;
     default:
     case ALIGN_LEFT:
-        x = comboPtr->post.x1;
-        break;
+	x = comboPtr->post.x1;
+	break;
     }
     FixMenuCoords(comboPtr, &x, &y);
     /*

@@ -523,7 +523,7 @@ static Blt_ConfigSpec tabSpecs[] =
     {BLT_CONFIG_OBJ, "-closecommand", "closeCommand", "CloseCommand",
 	DEF_CLOSECOMMAND, Blt_Offset(Tab, closeObjPtr), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_OBJ, "-command", "command", "Command", DEF_TAB_COMMAND, 
-        Blt_Offset(Tab, cmdObjPtr), BLT_CONFIG_NULL_OK},
+	Blt_Offset(Tab, cmdObjPtr), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_STRING, "-data", "data", "data", DEF_TAB_DATA, 
 	Blt_Offset(Tab, data), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_SYNONYM, "-fg", "foreground", (char *)NULL, (char *)NULL, 0, 0},
@@ -807,7 +807,7 @@ static Blt_ConfigSpec configSpecs[] =
 	Blt_Offset(Tabset, highlightWidth), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_SIDE, "-iconposition", "iconPosition", "IconPosition", 
 	DEF_ICONPOSITION, Blt_Offset(Tabset, iconPos),
-        BLT_CONFIG_DONT_SET_DEFAULT},
+	BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_JUSTIFY, "-justify", "Justify", "Justify", DEF_JUSTIFY, 
 	Blt_Offset(Tabset, justify), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_PIXELS_NNEG, "-outerborderwidth", "outerBorderWidth", 
@@ -837,7 +837,7 @@ static Blt_ConfigSpec configSpecs[] =
 	(char *)NULL, Blt_Offset(Tabset, scrollCmdObjPtr),BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_PIXELS_POS, "-scrollincrement", "scrollIncrement",
 	"ScrollIncrement", DEF_SCROLLINCREMENT, 
-        Blt_Offset(Tabset, scrollUnits), BLT_CONFIG_DONT_SET_DEFAULT},
+	Blt_Offset(Tabset, scrollUnits), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_BITMASK, "-scrolltabs", "scrollTabs", "ScrollTabs", 
 	DEF_SCROLLTABS, Blt_Offset(Tabset, flags), 
 	BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)SCROLL_TABS},
@@ -2387,7 +2387,7 @@ GetTabIterator(Tcl_Interp *interp, Tabset *setPtr, Tcl_Obj *objPtr,
 	iterPtr->startPtr = iterPtr->endPtr = tabPtr;
     } else if ((c == 't') && (length > 4) && 
 	       (strncmp(string, "tag:", 4) == 0)) {
-        Blt_Chain chain;
+	Blt_Chain chain;
 
 	chain = Blt_Tags_GetItemList(&setPtr->tags, string + 4);
 	if (chain == NULL) {
@@ -3605,7 +3605,7 @@ static int
 ConfigureTabset(
     Tcl_Interp *interp,		/* Interpreter to report errors. */
     Tabset *setPtr,		/* Information about widget; may or may not
-			         * already have values for some fields. */
+				 * already have values for some fields. */
     int objc,
     Tcl_Obj *const *objv,
     int flags)
@@ -5188,19 +5188,19 @@ TagDeleteOp(Tabset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     if (strcmp(tag, "all") == 0) {
 	Tcl_AppendResult(interp, "can't delete reserved tag \"", tag, "\"", 
 			 (char *)NULL);
-        return TCL_ERROR;
+	return TCL_ERROR;
     }
     for (i = 4; i < objc; i++) {
-        Tab *tabPtr;
-        TabIterator iter;
-        
-        if (GetTabIterator(interp, setPtr, objv[i], &iter) != TCL_OK) {
-            return TCL_ERROR;
-        }
-        for (tabPtr = FirstTaggedTab(&iter); tabPtr != NULL; 
-             tabPtr = NextTaggedTab(&iter)) {
-            Blt_Tags_RemoveItemFromTag(&setPtr->tags, tag, tabPtr);
-        }
+	Tab *tabPtr;
+	TabIterator iter;
+	
+	if (GetTabIterator(interp, setPtr, objv[i], &iter) != TCL_OK) {
+	    return TCL_ERROR;
+	}
+	for (tabPtr = FirstTaggedTab(&iter); tabPtr != NULL; 
+	     tabPtr = NextTaggedTab(&iter)) {
+	    Blt_Tags_RemoveItemFromTag(&setPtr->tags, tag, tabPtr);
+	}
     }
     return TCL_OK;
 }
@@ -5303,7 +5303,7 @@ TagGetOp(Tabset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     for (tabPtr = FirstTaggedTab(&iter); tabPtr != NULL; 
 	 tabPtr = NextTaggedTab(&iter)) {
 	if (objc == 4) {
-            Blt_Tags_AppendTagsToObj(&setPtr->tags, tabPtr, listObjPtr);
+	    Blt_Tags_AppendTagsToObj(&setPtr->tags, tabPtr, listObjPtr);
 	    Tcl_ListObjAppendElement(interp, listObjPtr, 
 				     Tcl_NewStringObj("all", 3));
 	} else {
@@ -5326,24 +5326,24 @@ TagGetOp(Tabset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	    for (i = 4; i < objc; i++) {
 		Blt_ChainLink link;
 		const char *pattern;
-                Blt_Chain chain;
+		Blt_Chain chain;
 
-                chain = Blt_Chain_Create();
-                Blt_Tags_AppendTagsToChain(&setPtr->tags, tabPtr, chain);
+		chain = Blt_Chain_Create();
+		Blt_Tags_AppendTagsToChain(&setPtr->tags, tabPtr, chain);
 		pattern = Tcl_GetString(objv[i]);
 		for (link = Blt_Chain_FirstLink(chain); link != NULL; 
-                     link = Blt_Chain_NextLink(link)) {
+		     link = Blt_Chain_NextLink(link)) {
 		    const char *tag;
-                    Tcl_Obj *objPtr;
+		    Tcl_Obj *objPtr;
 
 		    tag = (const char *)Blt_Chain_GetValue(link);
 		    if (!Tcl_StringMatch(tag, pattern)) {
 			continue;
 		    }
-                    objPtr = Tcl_NewStringObj(tag, -1);
-                    Tcl_ListObjAppendElement(interp, listObjPtr,objPtr);
-                }
-                Blt_Chain_Destroy(chain);
+		    objPtr = Tcl_NewStringObj(tag, -1);
+		    Tcl_ListObjAppendElement(interp, listObjPtr,objPtr);
+		}
+		Blt_Chain_Destroy(chain);
 	    }
 	}    
     }
@@ -5373,7 +5373,7 @@ TagNamesOp(Tabset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     objPtr = Tcl_NewStringObj("all", -1);
     Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
     if (objc == 3) {
-        Blt_Tags_AppendAllTagsToObj(&setPtr->tags, listObjPtr);
+	Blt_Tags_AppendAllTagsToObj(&setPtr->tags, listObjPtr);
     } else {
 	Blt_HashTable uniqTable;
 	int i;
@@ -5389,19 +5389,19 @@ TagNamesOp(Tabset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	    for (tabPtr = FirstTaggedTab(&iter); tabPtr != NULL; 
 		 tabPtr = NextTaggedTab(&iter)) {
 		Blt_ChainLink link;
-                Blt_Chain chain;
+		Blt_Chain chain;
 
-                chain = Blt_Chain_Create();
-                Blt_Tags_AppendTagsToChain(&setPtr->tags, tabPtr, chain);
+		chain = Blt_Chain_Create();
+		Blt_Tags_AppendTagsToChain(&setPtr->tags, tabPtr, chain);
 		for (link = Blt_Chain_FirstLink(chain); link != NULL; 
-                     link = Blt_Chain_NextLink(link)) {
+		     link = Blt_Chain_NextLink(link)) {
 		    const char *tag;
-                    int isNew;
+		    int isNew;
 
 		    tag = Blt_Chain_GetValue(link);
-                    Blt_CreateHashEntry(&uniqTable, tag, &isNew);
+		    Blt_CreateHashEntry(&uniqTable, tag, &isNew);
 		}
-                Blt_Chain_Destroy(chain);
+		Blt_Chain_Destroy(chain);
 	    }
 	}
 	{
@@ -5455,22 +5455,22 @@ TagIndicesOp(Tabset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	if (strcmp(tag, "all") == 0) {
 	    break;
 	} else {
-            Blt_Chain chain;
+	    Blt_Chain chain;
 
-            chain = Blt_Tags_GetItemList(&setPtr->tags, tag);
-            if (chain != NULL) {
-                Blt_ChainLink link;
+	    chain = Blt_Tags_GetItemList(&setPtr->tags, tag);
+	    if (chain != NULL) {
+		Blt_ChainLink link;
 
-                for (link = Blt_Chain_FirstLink(chain); link != NULL; 
-                     link = Blt_Chain_NextLink(link)) {
-                    Tab *tabPtr;
-                    int isNew;
-                    
-                    tabPtr = Blt_Chain_GetValue(link);
-                    Blt_CreateHashEntry(&tabTable, (char *)tabPtr, &isNew);
-                }
-            }
-            continue;
+		for (link = Blt_Chain_FirstLink(chain); link != NULL; 
+		     link = Blt_Chain_NextLink(link)) {
+		    Tab *tabPtr;
+		    int isNew;
+		    
+		    tabPtr = Blt_Chain_GetValue(link);
+		    Blt_CreateHashEntry(&tabTable, (char *)tabPtr, &isNew);
+		}
+	    }
+	    continue;
 	}
 	Tcl_AppendResult(interp, "can't find a tag \"", tag, "\"",
 			 (char *)NULL);
@@ -5573,10 +5573,10 @@ TagUnsetOp(Tabset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	 tabPtr = NextTaggedTab(&iter)) {
 	int i;
 	for (i = 4; i < objc; i++) {
-            const char *tag;
+	    const char *tag;
 
-            tag = Tcl_GetString(objv[i]);
-            Blt_Tags_RemoveItemFromTag(&setPtr->tags, tag, tabPtr);
+	    tag = Tcl_GetString(objv[i]);
+	    Blt_Tags_RemoveItemFromTag(&setPtr->tags, tag, tabPtr);
 	}    
     }
     return TCL_OK;
@@ -6254,10 +6254,10 @@ ComputeLayout(Tabset *setPtr)
 					 * one tab.*/
     }
     if (setPtr->side & (SIDE_LEFT | SIDE_RIGHT)) {
-        width = Tk_ReqHeight(setPtr->tkwin) - 2 * 
+	width = Tk_ReqHeight(setPtr->tkwin) - 2 * 
 	    (setPtr->inset2 + setPtr->xSelectPad);
     } else {
-        width = Tk_ReqWidth(setPtr->tkwin) - (2 * setPtr->inset) -
+	width = Tk_ReqWidth(setPtr->tkwin) - (2 * setPtr->inset) -
 		setPtr->xSelectPad - setPtr->inset2;
     }
     if (setPtr->reqTiers > 1) {
@@ -6286,7 +6286,7 @@ ComputeLayout(Tabset *setPtr)
 	    Tab *tabPtr;
 	    /*
 	     * The tabs do not fit into the requested number of tiers.
-             * Go into scrolling mode.
+	     * Go into scrolling mode.
 	     */
 	    width = ((total + setPtr->tabWidth) / setPtr->reqTiers);
 	    x = 0;
@@ -7818,7 +7818,7 @@ DrawLabel(Tabset *setPtr, Tab *tabPtr, Drawable drawable)
 
 	tkImage = IconBits(tabPtr->icon);
 	if (setPtr->angle == 0.0) {
- 	    Tk_RedrawImage(tkImage, 0, 0, rPtr->w, rPtr->h, drawable, 
+	    Tk_RedrawImage(tkImage, 0, 0, rPtr->w, rPtr->h, drawable, 
 		x + rPtr->x, y + rPtr->y);
 	} else {
 	    struct _Icon *iconPtr;

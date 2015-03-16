@@ -87,7 +87,7 @@ typedef struct {
     int errorBarShow;			/* Describes which error bars to
 					 * display: none, x, y, or both. */
     int errorBarLineWidth;		/* Width of the error bar
-                                         * segments. */
+					 * segments. */
     int errorBarCapWidth;
     XColor *errorBarColor;		/* Color of the error bar. */
     GC errorBarGC;			/* Error bar graphics context. */
@@ -107,7 +107,7 @@ typedef struct {
     XRectangle *bars;			/* Indicates starting location in
 					 * bar array for this pen. */
     int numBars;                        /* # of bar segments in above
-                                         * array. */
+					 * array. */
     GraphSegments xeb, yeb;		/* X and Y error bars. */
     int symbolSize;			/* Size of the pen's symbol scaled
 					 * to the current graph size. */
@@ -164,8 +164,8 @@ typedef struct {
 
     int *barToData;
     XRectangle *bars;                   /* Array of rectangles comprising
-                                         * the bar segments of the
-                                         * element. */
+					 * the bar segments of the
+					 * element. */
     int *activeToData;
     XRectangle *activeRects;
     int numBars;                        /* # of visible bar segments for
@@ -173,9 +173,9 @@ typedef struct {
     int numActive;
     int xPad;				/* Spacing on either side of bar */
     ElemValues xError;			/* Relative/symmetric X error
-                                         * values. */
+					 * values. */
     ElemValues yError;			/* Relative/symmetric Y error
-                                         * values. */
+					 * values. */
     ElemValues xHigh, xLow;		/* Absolute/asymmetric X-coordinate
 					 * high/low error values. */
     ElemValues yHigh, yLow;		/* Absolute/asymmetric Y-coordinate
@@ -247,7 +247,7 @@ static Blt_CustomOption penColorsOption = {
 static Blt_ConfigSpec penSpecs[] =
 {
     {BLT_CONFIG_CUSTOM, "-color", "color", "Color", DEF_PEN_ACTIVE_COLOR, 
-        0,  BLT_CONFIG_DONT_SET_DEFAULT | ACTIVE_PEN, &penColorsOption},
+	0,  BLT_CONFIG_DONT_SET_DEFAULT | ACTIVE_PEN, &penColorsOption},
     {BLT_CONFIG_CUSTOM, "-color", "color", "Color", DEF_PEN_NORMAL_COLOR, 
 	0, BLT_CONFIG_DONT_SET_DEFAULT | NORMAL_PEN,  &penColorsOption},
     {BLT_CONFIG_BACKGROUND, "-background", "background", "Background",
@@ -270,10 +270,10 @@ static Blt_ConfigSpec penSpecs[] =
 	NORMAL_PEN},
     {BLT_CONFIG_PIXELS_NNEG, "-errorbarwidth", "errorBarWidth","ErrorBarWidth",
 	DEF_ERRORBAR_LINE_WIDTH, Blt_Offset(BarPen, errorBarLineWidth),
-        ALL_PENS | BLT_CONFIG_DONT_SET_DEFAULT},
+	ALL_PENS | BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_PIXELS_NNEG, "-errorbarcap", "errorBarCap", "ErrorBarCap", 
 	DEF_ERRORBAR_CAP_WIDTH, Blt_Offset(BarPen, errorBarCapWidth),
-        ALL_PENS | BLT_CONFIG_DONT_SET_DEFAULT},
+	ALL_PENS | BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_SYNONYM, "-fg", "foreground", (char *)NULL,
 	(char *)NULL, 0, ALL_PENS},
     {BLT_CONFIG_SYNONYM, "-fill", "background", (char *)NULL,
@@ -293,7 +293,7 @@ static Blt_ConfigSpec penSpecs[] =
 	BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_FILL, "-showvalues", "showValues", "ShowValues",
 	DEF_PEN_SHOW_VALUES, Blt_Offset(BarPen, valueShow),
-        ALL_PENS | BLT_CONFIG_DONT_SET_DEFAULT},
+	ALL_PENS | BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_BITMAP, "-stipple", "stipple", "Stipple", DEF_PEN_STIPPLE, 
 	Blt_Offset(BarPen, stipple), ALL_PENS | BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_STRING, "-type", (char *)NULL, (char *)NULL, DEF_PEN_TYPE, 
@@ -347,7 +347,7 @@ static Blt_ConfigSpec barElemConfigSpecs[] = {
     {BLT_CONFIG_PIXELS_NNEG, "-errorbarcap", "errorBarCap", "ErrorBarCap", 
 	DEF_ERRORBAR_CAP_WIDTH, 
 	Blt_Offset(BarElement, builtinPen.errorBarCapWidth),
-        BLT_CONFIG_DONT_SET_DEFAULT},
+	BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_SYNONYM, "-fg", "foreground", (char *)NULL, (char *)NULL, 0, 0},
     {BLT_CONFIG_CUSTOM, "-data", "data", "Data", (char *)NULL, 0, 0, 
 	&bltValuePairsOption},
@@ -362,8 +362,8 @@ static Blt_ConfigSpec barElemConfigSpecs[] = {
 	DEF_LABEL_RELIEF, Blt_Offset(BarElement, legendRelief),
 	BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_BITMASK, "-hide", "hide", "Hide", DEF_HIDE, 
-         Blt_Offset(BarElement, flags), BLT_CONFIG_DONT_SET_DEFAULT,
-        (Blt_CustomOption *)HIDDEN},
+	 Blt_Offset(BarElement, flags), BLT_CONFIG_DONT_SET_DEFAULT,
+	(Blt_CustomOption *)HIDDEN},
     {BLT_CONFIG_CUSTOM, "-mapx", "mapX", "MapX", DEF_AXIS_X, 
 	Blt_Offset(BarElement, axes.x), 0, &bltXAxisOption},
     {BLT_CONFIG_CUSTOM, "-mapy", "mapY", "MapY", DEF_AXIS_Y, 
@@ -403,7 +403,7 @@ static Blt_ConfigSpec barElemConfigSpecs[] = {
 	Blt_Offset(BarElement, builtinPen.valueStyle.font), 0},
     {BLT_CONFIG_STRING, "-valueformat", "valueFormat", "ValueFormat",
 	DEF_PEN_VALUE_FORMAT, Blt_Offset(BarElement, builtinPen.valueFormat),
-        BLT_CONFIG_NULL_OK},
+	BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_FLOAT, "-valuerotate", "valueRotate", "ValueRotate",
 	(char *)NULL, Blt_Offset(BarElement, builtinPen.valueStyle.angle), 0},
     {BLT_CONFIG_CUSTOM, "-weights", "weights", "Weights", (char *)NULL, 
@@ -812,11 +812,11 @@ CheckStacks(Graph *graphPtr, Axis2d *pairPtr, double *minPtr, double *maxPtr)
 	return;
     }
     for (i = 0; i < graphPtr->numBarGroups; i++) {
-        BarGroup *groupPtr;
+	BarGroup *groupPtr;
 
-        groupPtr = graphPtr->barGroups + i;
+	groupPtr = graphPtr->barGroups + i;
 	if ((groupPtr->axes.x == pairPtr->x) && 
-            (groupPtr->axes.y == pairPtr->y)) {
+	    (groupPtr->axes.y == pairPtr->y)) {
 	    /*
 	     * Check if any of the y-values (because of stacking) are
 	     * greater than the current limits of the graph.
@@ -879,7 +879,7 @@ ConfigureProc(Graph *graphPtr, Element *basePtr)
     if (Blt_ConfigModified(elemPtr->configSpecs, "-barwidth", "-*data",
 	    "-map*", "-label", "-hide", "-x", "-y", (char *)NULL)) {
 	elemPtr->flags |= MAP_ITEM;
-        graphPtr->flags |= RESET_AXES;
+	graphPtr->flags |= RESET_AXES;
 	Blt_EventuallyRedrawGraph(graphPtr);
     }
     return TCL_OK;
@@ -930,7 +930,7 @@ ExtentsProc(Element *basePtr)
     }
     /* Fix y-min limits for barchart */
     if (IsLogScale(elemPtr->axes.y)) {
- 	if ((exts.top <= 0.0) || (exts.top > 1.0)) {
+	if ((exts.top <= 0.0) || (exts.top > 1.0)) {
 	    exts.top = 1.0;
 	}
     } else {
@@ -1531,7 +1531,7 @@ MapProc(Graph *graphPtr, Element *basePtr)
     double barWidth, barOffset;
     double baseline, ybot;
     int *barToData;			/* Maps bars to data point
-                                         * indices. */
+					 * indices. */
     int invertBar;
     int numPoints, count;
     XRectangle *rp, *bars;
@@ -1584,7 +1584,7 @@ MapProc(Graph *graphPtr, Element *basePtr)
 	    Blt_HashEntry *hPtr;
 	    SetKey key;
 
-            memset(&key, 0, sizeof(key));
+	    memset(&key, 0, sizeof(key));
 	    key.value = (float)x[i];
 	    key.axes = elemPtr->axes;
 	    key.axes.y = NULL;
@@ -1596,7 +1596,7 @@ MapProc(Graph *graphPtr, Element *basePtr)
 		tablePtr = Blt_GetHashValue(hPtr);
 		name = (elemPtr->groupName != NULL) ? elemPtr->groupName : 
 		    elemPtr->obj.name;
- 		hPtr = Blt_FindHashEntry(tablePtr, name);
+		hPtr = Blt_FindHashEntry(tablePtr, name);
 		if (hPtr != NULL) {
 		    BarGroup *groupPtr;
 		    double slice, width, offset;
@@ -1625,9 +1625,9 @@ MapProc(Graph *graphPtr, Element *basePtr)
 			slice /= Blt_Chain_GetLength(graphPtr->elements.displayList);
 #endif
 #ifdef notef
-                        fprintf(stderr, "aligned bars barWidth=%g, slice=%g numSegments=%d\n", barWidth, slice, groupPtr->numSegments);
+			fprintf(stderr, "aligned bars barWidth=%g, slice=%g numSegments=%d\n", barWidth, slice, groupPtr->numSegments);
 #endif
-                        c1.x = x[i] - barOffset + (groupPtr->index * slice);
+			c1.x = x[i] - barOffset + (groupPtr->index * slice);
 			c2.x = c1.x + slice;
 			groupPtr->count++;
 			break;
@@ -1838,7 +1838,7 @@ GradientColorProc(Blt_PaintBrush *brushPtr, int x, int y)
     }
     rangePtr = &elemPtr->zAxisPtr->axisRange;
     color.u32 = Blt_Palette_GetAssociatedColorFromAbsoluteValue(
-        brushPtr->palette, value, rangePtr->min, rangePtr->max);
+	brushPtr->palette, value, rangePtr->min, rangePtr->max);
     return color.u32;
 }
 
@@ -1871,7 +1871,7 @@ DrawGradientRectangle(Graph *graphPtr, Drawable drawable, BarElement *elemPtr,
     }
     rangePtr = &elemPtr->zAxisPtr->axisRange;
     Blt_Palette_SetRange(elemPtr->zAxisPtr->palette,
-                         rangePtr->min, rangePtr->max);
+			 rangePtr->min, rangePtr->max);
     Blt_PaintBrush_Init(&brush);
     Blt_PaintBrush_SetOrigin(&brush, -rectPtr->x, -rectPtr->y); 
     Blt_PaintBrush_SetPalette(&brush, elemPtr->zAxisPtr->palette);
@@ -2519,7 +2519,7 @@ Blt_InitSetTable(Graph *graphPtr)
 
 	elemPtr = Blt_Chain_GetValue(link);
 	if ((elemPtr->flags & HIDDEN) ||
-            (elemPtr->obj.classId != CID_ELEM_BAR)) {
+	    (elemPtr->obj.classId != CID_ELEM_BAR)) {
 	    continue;
 	}
 	numSegs++;
@@ -2530,13 +2530,13 @@ Blt_InitSetTable(Graph *graphPtr)
 	    SetKey key;
 	    int isNew;
 	    const char *name;
-            
-            memset(&key, 0, sizeof(key));
-            key.value = elemPtr->x.values[i];
+	    
+	    memset(&key, 0, sizeof(key));
+	    key.value = elemPtr->x.values[i];
 	    key.axes = elemPtr->axes;
 	    key.axes.y = NULL;
 
-            /* Create a hash table for each unique value/axis pairing. */
+	    /* Create a hash table for each unique value/axis pairing. */
 	    hPtr = Blt_CreateHashEntry(&setTable, (char *)&key, &isNew);
 	    if (isNew) {
 		tablePtr = Blt_AssertMalloc(sizeof(Blt_HashTable));
@@ -2547,12 +2547,12 @@ Blt_InitSetTable(Graph *graphPtr)
 	    }
 	    name = (elemPtr->groupName != NULL) ? elemPtr->groupName : 
 		elemPtr->obj.name;
-            /* Create an entry in the hash table for each element. */
+	    /* Create an entry in the hash table for each element. */
 	    hPtr = Blt_CreateHashEntry(tablePtr, name, &isNew);
 	}
     }
     if (setTable.numEntries == 0) {
-        Blt_DeleteHashTable(&setTable);
+	Blt_DeleteHashTable(&setTable);
 	return;				/* No bar elements to be displayed */
     }
     /* Determine the biggest group of elements for each unique value.
@@ -2597,7 +2597,7 @@ Blt_InitSetTable(Graph *graphPtr)
 
 		groupPtr->numSegments = tablePtr->numEntries;
 #ifdef notdef
-                fprintf(stderr, "group max=%d numSegments=%d\n", max, groupPtr->numSegments);
+		fprintf(stderr, "group max=%d numSegments=%d\n", max, groupPtr->numSegments);
 #endif
 		groupPtr->axes = keyPtr->axes;
 		Blt_SetHashValue(hPtr2, groupPtr);
@@ -2662,7 +2662,7 @@ Blt_ComputeStacks(Graph *graphPtr)
 
 	elemPtr = Blt_Chain_GetValue(link);
 	if ((elemPtr->flags & HIDDEN) ||
-            (elemPtr->obj.classId != CID_ELEM_BAR)) {
+	    (elemPtr->obj.classId != CID_ELEM_BAR)) {
 	    continue;
 	}
 	for (x = elemPtr->x.values, y = elemPtr->y.values, 

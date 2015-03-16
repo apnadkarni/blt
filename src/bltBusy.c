@@ -1907,8 +1907,8 @@ DisplayBusy(ClientData clientData)
 	}
     }
     XCopyArea(busyPtr->display, drawable, Tk_WindowId(tkwin), 
-              DefaultGC(busyPtr->display, Tk_ScreenNumber(tkwin)), 
-              0, 0, busyPtr->width, busyPtr->height, 0, 0);
+	      DefaultGC(busyPtr->display, Tk_ScreenNumber(tkwin)), 
+	      0, 0, busyPtr->width, busyPtr->height, 0, 0);
     Tk_FreePixmap(busyPtr->display, drawable);
 }
 

@@ -1065,7 +1065,7 @@ PictureToPdf(Tcl_Interp *interp, Blt_Picture original, Pdf *pdfPtr,
 		       "    /Resources %d 0 R\n"
 		       "    /MediaBox [ 0 0 %d %d ]\n"
 		       "    /Contents %d 0 R\n"
-                       "  >>\n"
+		       "  >>\n"
 		       "endobj\n", 
 		       OBJ_PAGE, 
 		       OBJ_PAGES,
@@ -1125,7 +1125,7 @@ PictureToPdf(Tcl_Interp *interp, Blt_Picture original, Pdf *pdfPtr,
 	background = Blt_CreatePicture(srcPtr->width, srcPtr->height);
 	Blt_BlankPicture(background, switchesPtr->bg.u32);
 	Blt_BlendRegion(background, srcPtr, 0, 0, srcPtr->width, srcPtr->height,
-                        0, 0);
+			0, 0);
 	srcPtr = background;
     }
 #endif
@@ -1258,7 +1258,7 @@ PictureToPdf(Tcl_Interp *interp, Blt_Picture original, Pdf *pdfPtr,
 	Blt_DBuffer_VarAppend(pdfPtr->dbuffer, "stream\n", (char *)NULL);
 	Blt_DBuffer_AppendBase85(pdfPtr->dbuffer, maskData,
 		srcPtr->width * srcPtr->height);
-        length = Blt_DBuffer_Length(pdfPtr->dbuffer);
+	length = Blt_DBuffer_Length(pdfPtr->dbuffer);
 	Blt_DBuffer_VarAppend(pdfPtr->dbuffer, 
 			      "\n"
 			      "endstream\n", 

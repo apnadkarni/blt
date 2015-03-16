@@ -372,7 +372,7 @@ CgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
  */
 static int
 ConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
-            Tcl_Obj *const *objv)
+	    Tcl_Obj *const *objv)
 {
     Graph *graphPtr = clientData;
     Crosshairs *chPtr = graphPtr->crosshairs;
@@ -468,7 +468,7 @@ OffOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 /*ARGSUSED*/
 static int
 ToggleOp(ClientData clientData, Tcl_Interp *interp, int objc,
-         Tcl_Obj *const *objv)
+	 Tcl_Obj *const *objv)
 {
     Graph *graphPtr = clientData;
     Crosshairs *chPtr = graphPtr->crosshairs;
@@ -515,7 +515,7 @@ static int numXhairOps = sizeof(xhairOps) / sizeof(Blt_OpSpec);
  */
 int
 Blt_CrosshairsOp(ClientData clientData, Tcl_Interp *interp, int objc,
-                 Tcl_Obj *const *objv)
+		 Tcl_Obj *const *objv)
 {
     Tcl_ObjCmdProc *proc;
 

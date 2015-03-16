@@ -70,36 +70,36 @@ typedef struct _Blt_CustomOption {
 
 typedef struct {
     int type;                           /* Type of option, such as
-                                         * BLT_CONFIG_COLOR; see
-                                         * definitions below.  Last option
-                                         * in table must have type
-                                         * BLT_CONFIG_END. */
+					 * BLT_CONFIG_COLOR; see
+					 * definitions below.  Last option
+					 * in table must have type
+					 * BLT_CONFIG_END. */
 
     const char *switchName;             /* Switch used to specify option in
-                                         * argv.  NULL means this spec is
-                                         * part of a group. */
+					 * argv.  NULL means this spec is
+					 * part of a group. */
 
     Tk_Uid dbName;                      /* Name for option in option
-                                         * database. */
+					 * database. */
 
     Tk_Uid dbClass;                     /* Class for option in database. */
 
     Tk_Uid defValue;                    /* Default value for option if not
-                                         * specified in command line or
-                                         * database. */
+					 * specified in command line or
+					 * database. */
 
     int offset;                         /* Where in widget record to store
-                                         * value; use Blt_Offset macro to
-                                         * generate values for this. */
+					 * value; use Blt_Offset macro to
+					 * generate values for this. */
 
     int specFlags;                      /* Any combination of the values
-                                         * defined below; other bits are used
-                                         * internally by tkConfig.c. */
+					 * defined below; other bits are used
+					 * internally by tkConfig.c. */
 
     Blt_CustomOption *customPtr;       /* If type is BLT_CONFIG_CUSTOM then
-                                        * this is a pointer to info about how
-                                        * to parse and print the option.
-                                        * Otherwise it is irrelevant. */
+					* this is a pointer to info about how
+					* to parse and print the option.
+					* Otherwise it is irrelevant. */
 } Blt_ConfigSpec;
 
 /*

@@ -273,7 +273,7 @@ static Tk_ConfigSpec configSpecs[] =
     {TK_CONFIG_STRING, (char *)"-file", (char *)NULL, (char *)NULL,
 	DEF_FILE_NAME, Blt_Offset(EpsItem, fileName), TK_CONFIG_NULL_OK},
     {TK_CONFIG_CUSTOM, (char *)"-font", "font", "Font",
-        DEF_FONT, Blt_Offset(EpsItem, font), 0, &bltFontOption},
+	DEF_FONT, Blt_Offset(EpsItem, font), 0, &bltFontOption},
     {TK_CONFIG_COLOR, (char *)"-fill", "fill", (char *)NULL,
 	DEF_FILL_COLOR, Blt_Offset(EpsItem, fillColor), 0},
     {TK_CONFIG_CUSTOM, (char *)"-height", (char *)NULL, (char *)NULL,

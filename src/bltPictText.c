@@ -129,7 +129,7 @@ static Blt_SwitchCustom paintbrushSwitch =
 
 typedef struct {
     int kerning;			/* Indicates whether to kern
-                                           text. */
+					   text. */
     Blt_PaintBrush *brushPtr;		/* Color of text. */
     Blt_Shadow shadow;			/*  */
     int fontSize;			/* Size of requested font. */
@@ -162,7 +162,7 @@ static Blt_SwitchSpec textSwitches[] =
     {BLT_SWITCH_INT,     "-size",     "number", (char *)NULL,
 	Blt_Offset(TextSwitches, fontSize),  0}, 
     {BLT_SWITCH_CUSTOM, "-shadow", "offset", (char *)NULL,
-        Blt_Offset(TextSwitches, shadow), 0, 0, &shadowSwitch},
+	Blt_Offset(TextSwitches, shadow), 0, 0, &shadowSwitch},
     {BLT_SWITCH_END}
 };
 
@@ -478,7 +478,7 @@ CreateSimpleTextLayout(TextFont *fontPtr, const char *text, int textLen,
 	    fp++;
 	    numFrags++;
 	    start = p + 1;		/* Start the text on the next
-                                         * line */
+					 * line */
 	    count = 0;			/* Reset to indicate the start of a
 					 * new line */
 	    continue;
@@ -697,7 +697,7 @@ BlendPixels(Blt_Pixel *bgPtr, Blt_Pixel *colorPtr)
 
 static void
 BlitGlyph(Pict *destPtr, FT_GlyphSlot slot, int dx, int dy, int xx, int yy,
-          Blt_PaintBrush *brushPtr)
+	  Blt_PaintBrush *brushPtr)
 {
     int x1, y1, x2, y2;
 #ifdef notdef
@@ -752,7 +752,7 @@ BlitGlyph(Pict *destPtr, FT_GlyphSlot slot, int dx, int dy, int xx, int yy,
 		    Blt_Pixel color;
 
 		    color.u32 = Blt_PaintBrush_GetAssociatedColor(brushPtr, 
-                        x, y);
+			x, y);
 		    BlendPixels(dp, &color);
 		}
 	    }
@@ -777,8 +777,8 @@ BlitGlyph(Pict *destPtr, FT_GlyphSlot slot, int dx, int dy, int xx, int yy,
 		    Blt_Pixel color;
 
 		    color.u32 = Blt_PaintBrush_GetAssociatedColor(brushPtr, 
-                        x, y);
-                    Blt_FadeColor(&color, *sp);
+			x, y);
+		    Blt_FadeColor(&color, *sp);
 		    BlendPixels(dp, &color);
 		}
 	    }
@@ -847,8 +847,8 @@ CopyGrayGlyph(Pict *destPtr, FT_GlyphSlot slot, int xx, int yy,
 		    Blt_Pixel color;
 
 		    color.u32 = Blt_PaintBrush_GetAssociatedColor(brushPtr, 
-                        x, y);
-                    Blt_FadeColor(&color, *sp);
+			x, y);
+		    Blt_FadeColor(&color, *sp);
 		    dp->u32 = color.u32;
 		}
 	    }
@@ -917,8 +917,8 @@ PaintGrayGlyph(Pict *destPtr, FT_GlyphSlot slot, int xx, int yy,
 		    Blt_Pixel color;
 
 		    color.u32 = Blt_PaintBrush_GetAssociatedColor(brushPtr, 
-                        x, y);
-                    Blt_FadeColor(&color, *sp);
+			x, y);
+		    Blt_FadeColor(&color, *sp);
 		    BlendPixels(dp, &color);
 		}
 	    }
@@ -1322,7 +1322,7 @@ TextOp(ClientData clientData, Tcl_Interp *interp, int objc,
 		PaintText(tmpPtr, fontPtr, fp->text, fp->count, 
 		    fp->x + shadowPtr->width - shadowPtr->offset,
 		    fp->y + shadowPtr->width - shadowPtr->offset, 
-                    switches.kerning, switches.brushPtr);
+		    switches.kerning, switches.brushPtr);
 	    }
 #endif
 	    Blt_BlendRegion(destPtr, tmpPtr, 0, 0, tmpPtr->width, 

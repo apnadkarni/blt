@@ -139,20 +139,20 @@ typedef struct {
     double range;                       /* Range of entire sweep. */
     AxisScaleType scaleType;            /* Scale type. */
     time_t numDaysFromInitial;          /* Number of days from the initial
-                                         * tick. */
+					 * tick. */
     int numSteps;			/* Number of intervals. */
     int index;                          /* Current index of iterator. */
     int isLeapYear;                     /* Indicates if the major tick
-                                         * value is a leap year. */
+					 * value is a leap year. */
     TimeUnits timeUnits;                /* Indicates the time units of the
-                                         * sweep. */
+					 * sweep. */
     int month;
     int year;
     TimeFormat timeFormat;
     const char *fmt;                    /* Default format for timescale
-                                         * ticks. */
+					 * ticks. */
     double *values;                     /* Array of tick values
-                                         * (malloc-ed). */
+					 * (malloc-ed). */
 } Ticks;
 
 typedef struct {
@@ -229,9 +229,9 @@ struct _Axis {
 					 * display the latest values in
 					 * this range. */
     double shiftBy;			/* Shift maximum by this
-                                         * interval. */
+					 * interval. */
     int tickLength;			/* Length of major ticks in
-                                         * pixels */
+					 * pixels */
     Tcl_Obj *fmtCmdObjPtr;		/* Specifies a TCL command, to be
 					 * invoked by the axis whenever it
 					 * has to generate tick labels. */
@@ -292,7 +292,7 @@ struct _Axis {
 
     int margin;
     Margin *marginPtr;                  /* If non-NULL, the margin the axis 
-                                         * is displayed in. */
+					 * is displayed in. */
     Blt_ChainLink link;			/* Axis link in margin list. */
     Blt_Chain chain;
     Segment2d *segments;		/* Array of line segments

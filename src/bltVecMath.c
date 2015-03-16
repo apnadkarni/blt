@@ -1555,7 +1555,7 @@ NextValue(
 	     */
 	    scalar = vPtr->valueArr[0];
 	    length = v2Ptr->length;
- 	    values = Blt_AssertMalloc(sizeof(double) * length);
+	    values = Blt_AssertMalloc(sizeof(double) * length);
 	    memcpy(values, v2Ptr->valueArr, sizeof(double) * length);
 	    switch (operator) {
 	    case MULT:

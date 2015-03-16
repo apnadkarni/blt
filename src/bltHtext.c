@@ -241,8 +241,8 @@ typedef struct {
     XColor *selFgColor;		/* Text foreground color */
     GC selectGC;		/* GC for drawing selected text */
     int selAnchor;		/* Fixed end of selection
-			         * (i.e. "selection to" operation will
-			         * use this as one end of the selection).*/
+				 * (i.e. "selection to" operation will
+				 * use this as one end of the selection).*/
     int selFirst;		/* The index of first character in the
 				 * text array selected */
     int selLast;		/* The index of the last character selected */
@@ -1472,7 +1472,7 @@ EmbeddedWidgetCustodyProc(
 static void
 EmbeddedWidgetGeometryProc(
     ClientData clientData,	/* Information about window that got new
-			         * preferred geometry.  */
+				 * preferred geometry.  */
     Tk_Window tkwin)		/* Not used. */
 {
     EmbeddedWidget *winPtr = clientData;
@@ -2291,7 +2291,7 @@ static int
 ConfigureText(
     Tcl_Interp *interp,		/* Used for error reporting. */
     HText *htPtr)		/* Information about widget; may or may not
-			         * already have values for some fields. */
+				 * already have values for some fields. */
 {
     XGCValues gcValues;
     unsigned long gcMask;

@@ -81,10 +81,10 @@ typedef struct {
     int mon;				/* Month 0-11. */
     int week;                           /* Ordinal week. 1-53. */
     int yday;                           /* Day of the year. 0-365. Jan 1st
-                                         * is 0. */
+					 * is 0. */
     int mday;                           /* Day of the month. 1-31. */
     int wday;                           /* Day of week. 0-6. Sunday is
-                                         * zero. */
+					 * zero. */
     int wyear;                          /* Year of ordinal week. 0-9999. */
     int hour;                           /* Hour 0-23. */
     int min;				/* Minute 0-59 */
@@ -174,20 +174,20 @@ BLT_EXTERN Tcl_Obj *Blt_Base64_DecodeToObj(Tcl_Interp *interp,
 	const char *string, size_t length);
 
 BLT_EXTERN Tcl_Obj *Blt_Base64_EncodeToObj(const unsigned char *buffer, 
-        size_t bufsize);
+	size_t bufsize);
 
 BLT_EXTERN size_t Blt_Base64_MaxBufferLength(size_t bufsize);
 
 BLT_EXTERN size_t Blt_Base64_Encode(const unsigned char *buffer, 
-        size_t bufsize, unsigned char *destBytes);
+	size_t bufsize, unsigned char *destBytes);
 
 BLT_EXTERN size_t Blt_Base85_MaxBufferLength(size_t bufsize);
 
 BLT_EXTERN size_t Blt_Base85_Encode(const unsigned char *buffer, size_t bufsize,
-        unsigned char *destBytes);
+	unsigned char *destBytes);
 
 BLT_EXTERN const char *Blt_Base16_Encode(const unsigned char *buffer, 
-        size_t bufsize);
+	size_t bufsize);
 
 BLT_EXTERN int Blt_IsBase64(const char *buf, size_t length);
 
@@ -204,7 +204,7 @@ BLT_EXTERN int Blt_GetTime(Tcl_Interp *interp, const char *string,
 BLT_EXTERN void Blt_SecondsToDate(double seconds, Blt_DateTime *datePtr);
 BLT_EXTERN void Blt_DateToSeconds(Blt_DateTime *datePtr, double *secondsPtr);
 BLT_EXTERN void Blt_FormatDate(Blt_DateTime *datePtr, const char *format, 
-        Tcl_DString *resultPtr);
+	Tcl_DString *resultPtr);
 
 BLT_EXTERN int Blt_GetPositionFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, 
 	long *indexPtr);

@@ -332,7 +332,7 @@ typedef struct {
     Display *display;			/* Used to free the pixmap below
 					 * when the entry is destroyed. */
     Blt_HashEntry *hashPtr;		/* These two fields allow the
-                                         * cache */
+					 * cache */
     Blt_HashTable *tablePtr;		/* Entry to be deleted from the
 					 * picture image's table of
 					 * entries. */
@@ -558,7 +558,7 @@ static Blt_SwitchSpec resampleSwitches[] = {
     {BLT_SWITCH_CUSTOM, "-from",   "bbox", (char *)NULL,
 	Blt_Offset(ResampleSwitches, from), 0, 0, &bboxSwitch},
     {BLT_SWITCH_CUSTOM, "-height",  "int", (char *)NULL,
-        Blt_Offset(ResampleSwitches, height),  0, 0, &pixelsSwitch},
+	Blt_Offset(ResampleSwitches, height),  0, 0, &pixelsSwitch},
     {BLT_SWITCH_CUSTOM, "-hfilter", "filter", (char *)NULL,
 	Blt_Offset(ResampleSwitches, hFilter), 0, 0, &filterSwitch},
     {BLT_SWITCH_BITMASK, "-maxpect", "", (char *)NULL, 
@@ -566,7 +566,7 @@ static Blt_SwitchSpec resampleSwitches[] = {
     {BLT_SWITCH_CUSTOM, "-vfilter", "filter", (char *)NULL,
 	Blt_Offset(ResampleSwitches, vFilter), 0, 0, &filterSwitch},
     {BLT_SWITCH_CUSTOM, "-width",   "int", (char *)NULL,
-        Blt_Offset(ResampleSwitches, width),  0, 0, &pixelsSwitch},
+	Blt_Offset(ResampleSwitches, width),  0, 0, &pixelsSwitch},
     {BLT_SWITCH_END}
 };
 
@@ -1812,7 +1812,7 @@ FreeInstanceProc(
 	 * Right now no one is using the entry. But delay the removal of the
 	 * cache entry in case it's reused shortly afterwards.
 	 */
- 	Tcl_EventuallyFree(cachePtr, DestroyCache);
+	Tcl_EventuallyFree(cachePtr, DestroyCache);
     }    
 }
 
@@ -1880,41 +1880,41 @@ ConfigureImage(Tcl_Interp *interp, PictImage *imgPtr, int objc,
     }
     imgPtr->picture = PictureFromPictImage(imgPtr);
     if (imgPtr->picture == NULL) {
-        int w, h;
+	int w, h;
 
 	w = (imgPtr->reqWidth == 0) ? 16 : imgPtr->reqWidth;
 	h = (imgPtr->reqHeight == 0) ? 16 : imgPtr->reqHeight;
 	ReplacePicture(imgPtr, Blt_CreatePicture(w, h));
     }
     if (Blt_ConfigModified(configSpecs, "-rotate", (char *)NULL)) {
-        if (imgPtr->angle != 0.0) {
-            Blt_Picture rotate;
+	if (imgPtr->angle != 0.0) {
+	    Blt_Picture rotate;
 
-            /* Rotate the picture */
-            rotate = Blt_RotatePicture(imgPtr->picture, imgPtr->angle);
-            ReplacePicture(imgPtr, rotate);
-        }
+	    /* Rotate the picture */
+	    rotate = Blt_RotatePicture(imgPtr->picture, imgPtr->angle);
+	    ReplacePicture(imgPtr, rotate);
+	}
     }
     if (Blt_ConfigModified(configSpecs, "-width", "-height", (char *)NULL)) {
-        int w, h;
+	int w, h;
 
-        w = (imgPtr->reqWidth == 0) ? 
-            Blt_Picture_Width(imgPtr->picture) : imgPtr->reqWidth;
-        h = (imgPtr->reqHeight == 0) ? 
-            Blt_Picture_Height(imgPtr->picture) : imgPtr->reqHeight;
-        
-        if (imgPtr->flags & MAXPECT) {
-            double sx, sy, scale;
-            
-            sx = (double)w / (double)Blt_Picture_Width(imgPtr->picture);
-            sy = (double)h / (double)Blt_Picture_Height(imgPtr->picture);
-            scale = MIN(sx, sy);
-            w = (int)(Blt_Picture_Width(imgPtr->picture) * scale + 0.5);
-            h = (int)(Blt_Picture_Height(imgPtr->picture) * scale + 0.5);
-        }	    
-        if ((Blt_Picture_Width(imgPtr->picture) != w) || 
-            (Blt_Picture_Height(imgPtr->picture) != h)) {
-            Blt_Picture resize;
+	w = (imgPtr->reqWidth == 0) ? 
+	    Blt_Picture_Width(imgPtr->picture) : imgPtr->reqWidth;
+	h = (imgPtr->reqHeight == 0) ? 
+	    Blt_Picture_Height(imgPtr->picture) : imgPtr->reqHeight;
+	
+	if (imgPtr->flags & MAXPECT) {
+	    double sx, sy, scale;
+	    
+	    sx = (double)w / (double)Blt_Picture_Width(imgPtr->picture);
+	    sy = (double)h / (double)Blt_Picture_Height(imgPtr->picture);
+	    scale = MIN(sx, sy);
+	    w = (int)(Blt_Picture_Width(imgPtr->picture) * scale + 0.5);
+	    h = (int)(Blt_Picture_Height(imgPtr->picture) * scale + 0.5);
+	}	    
+	if ((Blt_Picture_Width(imgPtr->picture) != w) || 
+	    (Blt_Picture_Height(imgPtr->picture) != h)) {
+	    Blt_Picture resize;
 
 	    /* Scale the picture */
 	    if (imgPtr->filter == NULL) {
@@ -1927,12 +1927,12 @@ ConfigureImage(Tcl_Interp *interp, PictImage *imgPtr, int objc,
 			imgPtr->filter);
 	    }	
 	    ReplacePicture(imgPtr, resize);
-        }
+	}
     }
     if (Blt_ConfigModified(configSpecs, "-sharpen", (char *)NULL)) {
-        if (imgPtr->flags & SHARPEN) {
-            Blt_SharpenPicture(imgPtr->picture, imgPtr->picture);
-        }
+	if (imgPtr->flags & SHARPEN) {
+	    Blt_SharpenPicture(imgPtr->picture, imgPtr->picture);
+	}
     }
     Blt_NotifyImageChanged(imgPtr);
     return TCL_OK;
@@ -2255,7 +2255,7 @@ PixelsSwitchProc(
     int *pixelsPtr = (int *)(record + offset);
 
     return Blt_GetPixelsFromObj(interp, Tk_MainWindow(interp), objPtr, 
-        PIXELS_NNEG, pixelsPtr);
+	PIXELS_NNEG, pixelsPtr);
 }
 
 /*
@@ -2998,10 +2998,10 @@ EmbossOp(
     azimuth = 30.0;
     elevation = 30.0;
     if (objc == 5) {
-        if ((Tcl_GetDoubleFromObj(interp, objv[3], &azimuth) != TCL_OK) ||
-            (Tcl_GetDoubleFromObj(interp, objv[4], &elevation) != TCL_OK)) {
-            return TCL_ERROR;
-        }
+	if ((Tcl_GetDoubleFromObj(interp, objv[3], &azimuth) != TCL_OK) ||
+	    (Tcl_GetDoubleFromObj(interp, objv[4], &elevation) != TCL_OK)) {
+	    return TCL_ERROR;
+	}
     }
     dst = Blt_EmbossPicture(src, azimuth, elevation, 1.0);
     ReplacePicture(imgPtr, dst);
@@ -3386,7 +3386,7 @@ ImportOp(
     imgPtr->flags &= ~IMPORTED_MASK;
     if (imgPtr->name != NULL) {
 	Blt_Free(imgPtr->name);
-        imgPtr->name = NULL;
+	imgPtr->name = NULL;
     }
     if (fileName == NULL) {
 	imgPtr->name = NULL;
@@ -3499,7 +3499,7 @@ InfoOp(
 /*ARGSUSED*/
 static int 
 MultiplyOp(ClientData clientData, Tcl_Interp *interp, int objc,
-           Tcl_Obj *const *objv)
+	   Tcl_Obj *const *objv)
 {
     PictImage *imgPtr = clientData;
     double scalar;
@@ -3549,7 +3549,7 @@ GetImageIndex(Tcl_Interp *interp, PictImage *imgPtr, Tcl_Obj *objPtr,
 /*ARGSUSED*/
 static int 
 ListAnimateOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-              Tcl_Obj *const *objv)
+	      Tcl_Obj *const *objv)
 {
     PictImage *imgPtr = clientData;
     const char *string;
@@ -3594,7 +3594,7 @@ ListAnimateOp(ClientData clientData, Tcl_Interp *interp, int objc,
 /*ARGSUSED*/
 static int 
 ListAppendOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-             Tcl_Obj *const *objv)
+	     Tcl_Obj *const *objv)
 {
     PictImage *imgPtr = clientData;
     int i;
@@ -3654,7 +3654,7 @@ ListCurrentOp(ClientData clientData, Tcl_Interp *interp, int objc,
 /*ARGSUSED*/
 static int 
 ListDeleteOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-             Tcl_Obj *const *objv)
+	     Tcl_Obj *const *objv)
 {
     PictImage *imgPtr = clientData;
     int first;
@@ -3715,7 +3715,7 @@ ListDeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
 /*ARGSUSED*/
 static int 
 ListLengthOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-             Tcl_Obj *const *objv)
+	     Tcl_Obj *const *objv)
 {
     PictImage *imgPtr = clientData;
     int count;
@@ -3737,7 +3737,7 @@ ListLengthOp(ClientData clientData, Tcl_Interp *interp, int objc,
 /*ARGSUSED*/
 static int 
 ListNextOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-           Tcl_Obj *const *objv)
+	   Tcl_Obj *const *objv)
 {
     PictImage *imgPtr = clientData;
     
@@ -3784,7 +3784,7 @@ ListPreviousOp(ClientData clientData, Tcl_Interp *interp, int objc,
 /*ARGSUSED*/
 static int 
 ListReplaceOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-              Tcl_Obj *const *objv)
+	      Tcl_Obj *const *objv)
 {
     PictImage *imgPtr = clientData;
     int i;
@@ -3916,7 +3916,7 @@ ListOp(ClientData clientData, Tcl_Interp *interp, int objc,
 /*ARGSUSED*/
 static int 
 ProjectOp(ClientData clientData, Tcl_Interp *interp, int objc,
-          Tcl_Obj *const *objv)
+	  Tcl_Obj *const *objv)
 {
     Blt_Picture src, dest;
     PictImage *imgPtr = clientData;
@@ -4005,7 +4005,7 @@ PutOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 /*ARGSUSED*/
 static int 
 QuantizeOp(ClientData clientData, Tcl_Interp *interp, int objc,
-           Tcl_Obj *const *objv)
+	   Tcl_Obj *const *objv)
 {
     Blt_Picture src, dest;
     PictImage *imgPtr = clientData;
@@ -4036,7 +4036,7 @@ QuantizeOp(ClientData clientData, Tcl_Interp *interp, int objc,
 /*ARGSUSED*/
 static int 
 ReflectOp(ClientData clientData, Tcl_Interp *interp, int objc,
-          Tcl_Obj *const *objv)
+	  Tcl_Obj *const *objv)
 {
     Pict *srcPtr, *destPtr, *tmpPtr;
     PictImage *imgPtr = clientData;
@@ -4155,7 +4155,7 @@ ReflectOp(ClientData clientData, Tcl_Interp *interp, int objc,
 /*ARGSUSED*/
 static int 
 ResampleOp(ClientData clientData, Tcl_Interp *interp, int objc,
-           Tcl_Obj *const *objv)
+	   Tcl_Obj *const *objv)
 {
     Blt_Picture src, tmp;
     PictImage *imgPtr = clientData;
@@ -4194,10 +4194,10 @@ ResampleOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	Blt_AdjustPictureSize(imgPtr->picture, switches.width, switches.height);
     }
     if (switches.vFilter == NULL) {
-        switches.vFilter = switches.filter;
+	switches.vFilter = switches.filter;
     }
     if (switches.hFilter == NULL) {
-        switches.hFilter = switches.filter;
+	switches.hFilter = switches.filter;
     }
     if (switches.hFilter == NULL) {
 	switches.hFilter = (switches.from.w < switches.width) ?
@@ -4211,7 +4211,7 @@ ResampleOp(ClientData clientData, Tcl_Interp *interp, int objc,
     Blt_CopyPictureBits(tmp, src, switches.from.x, switches.from.y, 
 	switches.from.w, switches.from.h, 0, 0);
     Blt_ResamplePicture(imgPtr->picture, tmp, switches.vFilter, 
-        switches.hFilter);
+	switches.hFilter);
     Blt_FreePicture(tmp);
     Blt_NotifyImageChanged(imgPtr);
     return TCL_OK;
@@ -4229,7 +4229,7 @@ ResampleOp(ClientData clientData, Tcl_Interp *interp, int objc,
 /*ARGSUSED*/
 static int 
 RotateOp(ClientData clientData, Tcl_Interp *interp, int objc,
-         Tcl_Obj *const *objv)
+	 Tcl_Obj *const *objv)
 {
     Blt_Picture src, dst;
     PictImage *imgPtr = clientData;
@@ -4267,7 +4267,7 @@ RotateOp(ClientData clientData, Tcl_Interp *interp, int objc,
  */
 static int
 SelectOp(ClientData clientData, Tcl_Interp *interp, int objc,
-         Tcl_Obj *const *objv)
+	 Tcl_Obj *const *objv)
 {
     Blt_Picture src;
     PictImage *imgPtr = clientData;
@@ -4360,36 +4360,36 @@ SnapOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	classUid = Tk_Class(tkwin);
     }
     if ((classUid != NULL) && (strcmp(classUid, "Canvas") == 0)) {
-        int w, h;
+	int w, h;
 
-        w = Tk_Width(tkwin);
-        h = Tk_Height(tkwin);
-        switches.from.x = switches.from.y = 0;
-        switches.from.w = w;
-        switches.from.h = h;
-        if (Blt_ParseSwitches(interp, snapSwitches, objc - 3, objv + 3, 
-                              &switches, BLT_SWITCH_DEFAULTS) < 0) {
-            return TCL_ERROR;
-        }
-        if ((switches.from.w + switches.from.x) > w) {
-            switches.from.w = (w - switches.from.x);
-        }
-        if ((switches.from.h + switches.from.y) > h) {
-            switches.from.h = (h - switches.from.y);
-        }
+	w = Tk_Width(tkwin);
+	h = Tk_Height(tkwin);
+	switches.from.x = switches.from.y = 0;
+	switches.from.w = w;
+	switches.from.h = h;
+	if (Blt_ParseSwitches(interp, snapSwitches, objc - 3, objv + 3, 
+			      &switches, BLT_SWITCH_DEFAULTS) < 0) {
+	    return TCL_ERROR;
+	}
+	if ((switches.from.w + switches.from.x) > w) {
+	    switches.from.w = (w - switches.from.x);
+	}
+	if ((switches.from.h + switches.from.y) > h) {
+	    switches.from.h = (h - switches.from.y);
+	}
 	picture = Blt_CanvasToPicture(interp, string, imgPtr->gamma);
-        if (Blt_SwitchChanged(snapSwitches, "-bbox", (char *)NULL)) {
-            Blt_Picture dst;
+	if (Blt_SwitchChanged(snapSwitches, "-bbox", (char *)NULL)) {
+	    Blt_Picture dst;
 
-            dst = Blt_CreatePicture(switches.from.w, switches.from.h);
-            Blt_CopyPictureBits(dst, picture, switches.from.x, switches.from.y, 
-                switches.from.w, switches.from.h, 0, 0);
-            Blt_FreePicture(picture);
-            picture = dst;
-        }
+	    dst = Blt_CreatePicture(switches.from.w, switches.from.h);
+	    Blt_CopyPictureBits(dst, picture, switches.from.x, switches.from.y, 
+		switches.from.w, switches.from.h, 0, 0);
+	    Blt_FreePicture(picture);
+	    picture = dst;
+	}
     } else {
 	Window window;
-        int w, h;
+	int w, h;
 
 	if (Blt_GetWindowFromObj(interp, objv[2], &window) != TCL_OK) {
 	    return TCL_ERROR;
@@ -4400,22 +4400,22 @@ SnapOp(ClientData clientData, Tcl_Interp *interp, int objc,
 		Tcl_GetString(objv[2]), "\"", (char *)NULL);
 	    return TCL_ERROR;
 	}
-        switches.from.x = switches.from.y = 0;
-        switches.from.w = w;
-        switches.from.h = h;
-        if (Blt_ParseSwitches(interp, snapSwitches, objc - 3, objv + 3, 
-                              &switches, BLT_SWITCH_DEFAULTS) < 0) {
-            return TCL_ERROR;
-        }
-        if ((switches.from.w + switches.from.x) > w) {
-            switches.from.w = (w - switches.from.x);
-        }
-        if ((switches.from.h + switches.from.y) > h) {
-            switches.from.h = (h - switches.from.y);
-        }
-        if (switches.raise) {
-            XRaiseWindow(imgPtr->display, window);
-        }
+	switches.from.x = switches.from.y = 0;
+	switches.from.w = w;
+	switches.from.h = h;
+	if (Blt_ParseSwitches(interp, snapSwitches, objc - 3, objv + 3, 
+			      &switches, BLT_SWITCH_DEFAULTS) < 0) {
+	    return TCL_ERROR;
+	}
+	if ((switches.from.w + switches.from.x) > w) {
+	    switches.from.w = (w - switches.from.x);
+	}
+	if ((switches.from.h + switches.from.y) > h) {
+	    switches.from.h = (h - switches.from.y);
+	}
+	if (switches.raise) {
+	    XRaiseWindow(imgPtr->display, window);
+	}
 	/* Depth, visual, colormap */
 	picture = Blt_WindowToPicture(imgPtr->display, window, 
 		switches.from.x, switches.from.y, switches.from.w, 

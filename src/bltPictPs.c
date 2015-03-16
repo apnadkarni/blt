@@ -384,7 +384,7 @@ PostScriptPreamble(Tcl_Interp *interp, Picture *srcPtr,
     PageSetup *setupPtr = &switchesPtr->setup;
     time_t ticks;
     char date[200];                     /* Holds the date string from
-                                         * ctime */
+					 * ctime */
     const char *version;
     char *newline;
 
@@ -416,7 +416,7 @@ PostScriptPreamble(Tcl_Interp *interp, Picture *srcPtr,
 	Blt_Ps_Append(ps, "%%Orientation: Portrait\n");
     }
     if (setupPtr->comments != NULL) {
-        AddComments(ps, setupPtr->comments);
+	AddComments(ps, setupPtr->comments);
     }
     Blt_Ps_Append(ps, "%%BeginProlog\n");
     Blt_Ps_Append(ps, "%%EndProlog\n");

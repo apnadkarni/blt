@@ -316,7 +316,7 @@ static Blt_ConfigSpec configSpecs[] =
 	Blt_Offset(Legend, yPad), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_CUSTOM, "-position", "position", "Position", 
 	DEF_POSITION, 0, BLT_CONFIG_DONT_SET_DEFAULT, 
-        &legendPositionOption},
+	&legendPositionOption},
     {BLT_CONFIG_BITMASK, "-raised", "raised", "Raised", DEF_RAISED, 
 	Blt_Offset(Legend, flags), BLT_CONFIG_DONT_SET_DEFAULT,
 	(Blt_CustomOption *)RAISED},
@@ -329,7 +329,7 @@ static Blt_ConfigSpec configSpecs[] =
 	"Background", DEF_SELECTBACKGROUND, 
 	Blt_Offset(Legend, selInFocusBg), 0},
     {BLT_CONFIG_PIXELS_NNEG, "-selectborderwidth", "selectBorderWidth", 
-        "BorderWidth", DEF_SELECTBORDERWIDTH, 
+	"BorderWidth", DEF_SELECTBORDERWIDTH, 
 	Blt_Offset(Legend, selBW), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_OBJ, "-selectcommand", "selectCommand", "SelectCommand",
 	(char *)NULL, Blt_Offset(Legend, selCmdObjPtr), BLT_CONFIG_NULL_OK},
@@ -803,10 +803,10 @@ PositionToObj(
 	    char string[200];
 
 	    Blt_FormatString(string, 200, "@%d,%d", legdPtr->xReq, 
-                             legdPtr->yReq);
+			     legdPtr->yReq);
 	    objPtr = Tcl_NewStringObj(string, -1);
 	}
-        break;
+	break;
 
     default:
 	objPtr = Tcl_NewStringObj("unknown legend position", -1);
@@ -1440,10 +1440,10 @@ Blt_DrawLegend(Graph *graphPtr, Drawable drawable)
 	if (graphPtr->cache != None) {
 	    XCopyArea(graphPtr->display, graphPtr->cache, pixmap, 
 		graphPtr->drawGC, legdPtr->x, legdPtr->y, w, h, 0, 0);
-        } else {
+	} else {
 	    Blt_Bg_FillRectangle(tkwin, pixmap, graphPtr->plotBg, 0, 0, 
 		w, h, TK_RELIEF_FLAT, 0);
- 	}
+	}
     } else {
 	int x0, y0;
 	/* 

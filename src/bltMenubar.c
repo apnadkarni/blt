@@ -362,7 +362,7 @@ static Blt_ConfigSpec menubarSpecs[] =
     {BLT_CONFIG_CUSTOM, "-orient", "orient", "Orient", DEF_ORIENT, 
 	Blt_Offset(Menubar, flags), BLT_CONFIG_DONT_SET_DEFAULT, &orientOption},
     {BLT_CONFIG_BACKGROUND, "-postedbackground", "postedBackground",
-        "PostedBackground", DEF_POSTED_BG, Blt_Offset(Menubar, postedBg),0},
+	"PostedBackground", DEF_POSTED_BG, Blt_Offset(Menubar, postedBg),0},
     {BLT_CONFIG_COLOR, "-postedforeground", "postedForeground",
 	"PostedForeground", DEF_POSTED_FG, 
 	Blt_Offset(Menubar, textPostedColor), 0},

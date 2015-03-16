@@ -2889,16 +2889,16 @@ Blt_Vec_FFT(
 	}
     }
     if( phasesPtr != NULL ){
-        for (i = 0 + noconstant; i < pow2len / 2 + middle; i++) {
+	for (i = 0 + noconstant; i < pow2len / 2 + middle; i++) {
 	    phasesPtr->valueArr[i-noconstant] = paddedData[2*i+1];
 	}
     }
     
     /* Compute frequencies */
     if (freqPtr != NULL) {
-        double N = pow2len;
+	double N = pow2len;
 	double denom = 1.0 / N / delta;
-        for( i=0+noconstant; i<pow2len/2+middle; i++ ){
+	for( i=0+noconstant; i<pow2len/2+middle; i++ ){
 	    freqPtr->valueArr[i-noconstant] = ((double) i) * denom;
 	}
     }

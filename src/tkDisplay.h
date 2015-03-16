@@ -207,7 +207,7 @@ struct _TkDisplay {
     enum {
 	LU_IGNORE, LU_CAPS, LU_SHIFT
     } lockUsage;		/* Indicates how to interpret lock
-                                 * modifier. */
+				 * modifier. */
     int numModKeyCodes;		/* Number of entries in modKeyCodes array
 				 * below. */
     KeyCode *modKeyCodes;	/* Pointer to an array giving keycodes for
@@ -554,15 +554,15 @@ struct _TkDisplay {
 #endif /* TK_USE_INPUT_METHODS */
     Tcl_HashTable winTable;	/* Maps from X window ids to TkWindow ptrs. */
     int refCount;		/* Reference count of how many Tk applications
-                                 * are using this display. Used to clean up
-                                 * the display when we no longer have any
-                                 * Tk applications using it.
-                                 */
+				 * are using this display. Used to clean up
+				 * the display when we no longer have any
+				 * Tk applications using it.
+				 */
     /*
      * The following field were all added for Tk8.3
      */
     int mouseButtonState;       /* current mouse button state for this
-                                 * display */
+				 * display */
 
 #if (_TK_VERSION < _VERSION(8,4,0))
     int warpInProgress;
@@ -753,7 +753,7 @@ typedef struct _TkDisplay {
     /* First in list of chunks of free resource
 				 * identifiers, or NULL if there are no free
 				 * resources. */
-              XID(*defaultAllocProc)(Display *display);
+	      XID(*defaultAllocProc)(Display *display);
     /* Default resource allocator for display. */
      TkIdStack *windowStackPtr;
     /* First in list of chunks of window
@@ -830,10 +830,10 @@ typedef struct _TkDisplay {
 #endif /* TK_USE_INPUT_METHODS */
     Tcl_HashTable winTable;	/* Maps from X window ids to TkWindow ptrs. */
     int refCount;		/* Reference count of how many Tk applications
-                                 * are using this display. Used to clean up
-                                 * the display when we no longer have any
-                                 * Tk applications using it.
-                                 */
+				 * are using this display. Used to clean up
+				 * the display when we no longer have any
+				 * Tk applications using it.
+				 */
 } TkDisplay;
 
 #endif /* _TK_VERSION >= _VERSION(8,1,0) */

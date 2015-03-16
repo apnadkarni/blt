@@ -282,21 +282,21 @@ XpmToPicture(Tcl_Interp *interp, const char *fileName, Blt_DBuffer buffer,
     }
     maskColorIndex = -1;
     for (i = 0; i < xpm.ncolors; i++) {
-        char *colorName;
+	char *colorName;
 
-        if (xpm.colorTable[i].c_color) {
-             colorName = xpm.colorTable[i].c_color;
+	if (xpm.colorTable[i].c_color) {
+	     colorName = xpm.colorTable[i].c_color;
 	} else if (xpm.colorTable[i].g_color) {
-             colorName = xpm.colorTable[i].g_color;
+	     colorName = xpm.colorTable[i].g_color;
 	} else if (xpm.colorTable[i].g4_color) {
-             colorName = xpm.colorTable[i].g4_color;
+	     colorName = xpm.colorTable[i].g4_color;
 	} else if (xpm.colorTable[i].m_color) {
-             colorName = xpm.colorTable[i].m_color;
+	     colorName = xpm.colorTable[i].m_color;
 	} else if (xpm.colorTable[i].symbolic) {
 	    colorName = xpm.colorTable[i].symbolic;
 	} else {
 	    palette[i].u32 = 0xFFBEBEBE;
-            continue;
+	    continue;
 	}
 	if (strncmp(colorName, "None", 4) == 0) {
 	    maskColorIndex = i;
@@ -338,7 +338,7 @@ XpmToPicture(Tcl_Interp *interp, const char *fileName, Blt_DBuffer buffer,
     if (destPtr != NULL) {
 	Blt_Chain chain;
 
-        destPtr->flags &= ~BLT_PIC_UNINITIALIZED;
+	destPtr->flags &= ~BLT_PIC_UNINITIALIZED;
 	chain = Blt_Chain_Create();
 	Blt_Chain_Append(chain, destPtr);
 	return chain;

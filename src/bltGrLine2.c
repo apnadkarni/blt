@@ -191,9 +191,9 @@ typedef struct _LineElement LineElement;
 
 typedef struct {
     SymbolType type;			/* Type of symbol to be
-                                         * drawn/printed */
+					 * drawn/printed */
     int size;				/* Requested size of symbol in
-                                         * pixels */
+					 * pixels */
     XColor *outlineColor;		/* Outline color */
     int outlineWidth;			/* Width of the outline */
     GC outlineGC;			/* Outline graphics context */
@@ -356,9 +356,9 @@ struct _LineElement {
 
     /* Line-specific fields. */
     ElemValues xError;			/* Relative/symmetric X error
-                                         * values. */
+					 * values. */
     ElemValues yError;			/* Relative/symmetric Y error
-                                         * values. */
+					 * values. */
     ElemValues xHigh, xLow;		/* Absolute/asymmetric X-coordinate
 					 * high/low error values. */
     ElemValues yHigh, yLow;		/* Absolute/asymmetric Y-coordinate
@@ -510,24 +510,24 @@ static Blt_ConfigSpec lineSpecs[] =
 	&bltValuePairsOption},
     {BLT_CONFIG_CUSTOM, "-errorbars", "errorBars", "ErrorBars",
 	DEF_PEN_ERRORBARS, Blt_Offset(LineElement, builtinPen.errorFlags), 
-        BLT_CONFIG_DONT_SET_DEFAULT, &errorbarsOption},
+	BLT_CONFIG_DONT_SET_DEFAULT, &errorbarsOption},
     {BLT_CONFIG_CUSTOM, "-errorbarcolor", "errorBarColor", "ErrorBarColor",
 	DEF_PEN_ERRORBAR_COLOR, 
 	Blt_Offset(LineElement, builtinPen.errorColor), 0, &bltColorOption},
     {BLT_CONFIG_PIXELS_NNEG,"-errorbarlinewidth", "errorBarLineWidth", 
 	"ErrorBarLineWidth", DEF_PEN_ERRORBAR_LINEWIDTH, 
 	Blt_Offset(LineElement, builtinPen.errorLineWidth),
-        BLT_CONFIG_DONT_SET_DEFAULT},
+	BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_PIXELS_NNEG, "-errorbarcapwith", "errorBarCapWidth", 
 	"ErrorBarCapWidth", DEF_PEN_ERRORBAR_CAPWIDTH, 
 	Blt_Offset(LineElement, builtinPen.errorCapWidth),
-        BLT_CONFIG_DONT_SET_DEFAULT},
+	BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_CUSTOM, "-fill", "fill", "Fill", DEF_PEN_FILL_COLOR, 
 	Blt_Offset(LineElement, builtinPen.symbol.fillColor), 
 	BLT_CONFIG_NULL_OK, &bltColorOption},
     {BLT_CONFIG_BITMASK, "-hide", "hide", "Hide", DEF_HIDE, 
-        Blt_Offset(LineElement, flags), BLT_CONFIG_DONT_SET_DEFAULT,
-        (Blt_CustomOption *)HIDDEN},
+	Blt_Offset(LineElement, flags), BLT_CONFIG_DONT_SET_DEFAULT,
+	(Blt_CustomOption *)HIDDEN},
     {BLT_CONFIG_STRING, "-label", "label", "Label", (char *)NULL, 
 	Blt_Offset(LineElement, label), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_RELIEF, "-legendrelief", "legendRelief", "LegendRelief",
@@ -535,9 +535,9 @@ static Blt_ConfigSpec lineSpecs[] =
 	BLT_CONFIG_DONT_SET_DEFAULT}, 
     {BLT_CONFIG_PIXELS_NNEG, "-linewidth", "lineWidth", "LineWidth",
 	DEF_PEN_LINEWIDTH, Blt_Offset(LineElement, builtinPen.traceWidth),
-        BLT_CONFIG_DONT_SET_DEFAULT},
+	BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_CUSTOM, "-mapx", "mapX", "MapX",
-        DEF_AXIS_X, Blt_Offset(LineElement, axes.x), 0, &bltXAxisOption},
+	DEF_AXIS_X, Blt_Offset(LineElement, axes.x), 0, &bltXAxisOption},
     {BLT_CONFIG_CUSTOM, "-mapy", "mapY", "MapY",
 	DEF_AXIS_Y, Blt_Offset(LineElement, axes.y), 0, &bltYAxisOption},
     {BLT_CONFIG_INT_NNEG, "-maxsymbols", "maxSymbols", "MaxSymbols",
@@ -602,7 +602,7 @@ static Blt_ConfigSpec lineSpecs[] =
     {BLT_CONFIG_CUSTOM, "-weights", "weights", "Weights", (char *)NULL, 
 	Blt_Offset(LineElement, w), 0, &bltValuesOption},
     {BLT_CONFIG_CUSTOM, "-x", "xData", "XData", (char *)NULL, 
-        Blt_Offset(LineElement, x), 0, &bltValuesOption},
+	Blt_Offset(LineElement, x), 0, &bltValuesOption},
     {BLT_CONFIG_CUSTOM, "-xdata", "xData", "XData", (char *)NULL, 
 	Blt_Offset(LineElement, x), 0, &bltValuesOption},
     {BLT_CONFIG_CUSTOM, "-xerror", "xError", "XError", (char *)NULL, 
@@ -645,24 +645,24 @@ static Blt_ConfigSpec stripSpecs[] =
 	&bltValuePairsOption},
     {BLT_CONFIG_CUSTOM, "-errorbars", "errorBars", "ErrorBars",
 	DEF_PEN_ERRORBARS, Blt_Offset(LineElement, builtinPen.errorFlags), 
-        BLT_CONFIG_DONT_SET_DEFAULT, &errorbarsOption},
+	BLT_CONFIG_DONT_SET_DEFAULT, &errorbarsOption},
     {BLT_CONFIG_CUSTOM, "-errorbarcolor", "errorBarColor", "ErrorBarColor",
 	DEF_PEN_ERRORBAR_COLOR, 
 	Blt_Offset(LineElement, builtinPen.errorColor), 0, &bltColorOption},
     {BLT_CONFIG_PIXELS_NNEG, "-errorbarlinewidth", "errorBarLineWidth", 
 	"ErrorBarLineWidth", DEF_PEN_ERRORBAR_LINEWIDTH, 
 	Blt_Offset(LineElement, builtinPen.errorLineWidth),
-        BLT_CONFIG_DONT_SET_DEFAULT},
+	BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_PIXELS_NNEG, "-errorbarcapwidth", "errorBarCapWidth", 
 	"ErrorBarCapWidth", DEF_PEN_ERRORBAR_CAPWIDTH, 
 	Blt_Offset(LineElement, builtinPen.errorCapWidth), 
-        BLT_CONFIG_DONT_SET_DEFAULT},
+	BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_CUSTOM, "-fill", "fill", "Fill", DEF_PEN_FILL_COLOR, 
 	Blt_Offset(LineElement, builtinPen.symbol.fillColor),
 	BLT_CONFIG_NULL_OK, &bltColorOption},
     {BLT_CONFIG_BITMASK, "-hide", "hide", "Hide", DEF_HIDE, 
 	Blt_Offset(LineElement, flags), BLT_CONFIG_DONT_SET_DEFAULT,
-        (Blt_CustomOption *)HIDDEN},
+	(Blt_CustomOption *)HIDDEN},
     {BLT_CONFIG_STRING, "-label", "label", "Label", (char *)NULL, 
 	Blt_Offset(LineElement, label), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_RELIEF, "-legendrelief", "legendRelief", "LegendRelief",
@@ -670,7 +670,7 @@ static Blt_ConfigSpec stripSpecs[] =
 	BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_PIXELS_NNEG, "-linewidth", "lineWidth", "LineWidth", 
 	DEF_PEN_LINEWIDTH, Blt_Offset(LineElement, builtinPen.traceWidth), 
-        BLT_CONFIG_DONT_SET_DEFAULT},
+	BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_CUSTOM, "-mapx", "mapX", "MapX", DEF_AXIS_X, 
 	Blt_Offset(LineElement, axes.x), 0, &bltXAxisOption},
     {BLT_CONFIG_CUSTOM, "-mapy", "mapY", "MapY", DEF_AXIS_Y, 
@@ -702,7 +702,7 @@ static Blt_ConfigSpec stripSpecs[] =
 	DEF_PEN_SHOW_VALUES, Blt_Offset(LineElement, builtinPen.valueFlags),
 	BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_CUSTOM, "-smooth", "smooth", "Smooth", DEF_SMOOTH, 
-        Blt_Offset(LineElement, reqSmooth), BLT_CONFIG_DONT_SET_DEFAULT, 
+	Blt_Offset(LineElement, reqSmooth), BLT_CONFIG_DONT_SET_DEFAULT, 
 	&smoothOption},
     {BLT_CONFIG_CUSTOM, "-styles", "styles", "Styles", DEF_STYLES, 
 	Blt_Offset(LineElement, styles), 0, &bltLineStylesOption},
@@ -711,7 +711,7 @@ static Blt_ConfigSpec stripSpecs[] =
 	BLT_CONFIG_DONT_SET_DEFAULT, &symbolOption},
     {BLT_CONFIG_ANCHOR, "-valueanchor", "valueAnchor", "ValueAnchor",
 	DEF_PEN_VALUE_ANCHOR, 
-        Blt_Offset(LineElement, builtinPen.valueStyle.anchor), 0},
+	Blt_Offset(LineElement, builtinPen.valueStyle.anchor), 0},
     {BLT_CONFIG_COLOR, "-valuecolor", "valueColor", "ValueColor",
 	DEF_PEN_VALUE_COLOR, 
 	Blt_Offset(LineElement, builtinPen.valueStyle.color), 0},
@@ -759,14 +759,14 @@ static Blt_ConfigSpec penSpecs[] =
 	Blt_Offset(LinePen, traceDashes), BLT_CONFIG_NULL_OK | ALL_PENS},
     {BLT_CONFIG_CUSTOM, "-errorbars", "errorBars", "ErrorBars",
 	DEF_PEN_ERRORBARS, Blt_Offset(LinePen, errorFlags),
-        BLT_CONFIG_DONT_SET_DEFAULT, &errorbarsOption},
+	BLT_CONFIG_DONT_SET_DEFAULT, &errorbarsOption},
     {BLT_CONFIG_CUSTOM, "-errorbarcolor", "errorBarColor", "ErrorBarColor",
 	DEF_PEN_ERRORBAR_COLOR, Blt_Offset(LinePen, errorColor), 
 	ALL_PENS, &bltColorOption},
     {BLT_CONFIG_PIXELS_NNEG, "-errorbarlinewidth", "errorBarLineWidth", 
-        "ErrorBarLineWidth", DEF_PEN_ERRORBAR_LINEWIDTH, 
+	"ErrorBarLineWidth", DEF_PEN_ERRORBAR_LINEWIDTH, 
 	Blt_Offset(LinePen, errorLineWidth), 
-        ALL_PENS | BLT_CONFIG_DONT_SET_DEFAULT},
+	ALL_PENS | BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_CUSTOM, "-fill", "fill", "Fill", DEF_PEN_FILL_COLOR, 
 	Blt_Offset(LinePen, symbol.fillColor), BLT_CONFIG_NULL_OK | ALL_PENS, 
 	&bltColorOption},
@@ -2097,7 +2097,7 @@ GenerateSteps(Trace *tracePtr)
 	} else {
 	    t = NewPoint(tracePtr->elemPtr, q->x, p->y, p->index);
 	}
- 	/* Insert the new point between the two knots. */
+	/* Insert the new point between the two knots. */
 	t->next = q;
 	p->next = t;
 	tracePtr->numPoints++;
@@ -2174,7 +2174,7 @@ GenerateSpline(Trace *tracePtr)
     }
     for (i = 0, p = tracePtr->head, q = p->next; q != NULL; q = q->next, i++) {
 	/* Is any part of the interval (line segment) in the plotting
-         * area?  */
+	 * area?  */
 	if ((p->flags | q->flags) & VISIBLE) {
 	    TracePoint *lastp;
 	    double x, last;
@@ -2284,9 +2284,9 @@ GenerateParametricSplineOld(Trace *tracePtr)
 	/* Distance of original point to p. */
 	d = hypot(q->x - p->x, q->y - p->y);
 	total += d;
-        xpoints[count].x = ypoints[count].x = total;
-        xpoints[count].y = q->x;
-        ypoints[count].y = q->y;
+	xpoints[count].x = ypoints[count].x = total;
+	xpoints[count].y = q->x;
+	ypoints[count].y = q->y;
 	distance[count] = total;
 	count++;
 	p = q;
@@ -2307,7 +2307,7 @@ GenerateParametricSplineOld(Trace *tracePtr)
 	    continue;			/* Line segment isn't visible. */
 	}
 
-        p1.x = p->x, p1.y = p->y;
+	p1.x = p->x, p1.y = p->y;
 	p2.x = q->x, p2.y = q->y;
 	Blt_LineRectClip(&exts, &p1, &p2);
 	
@@ -2403,13 +2403,13 @@ GenerateParametricCubicSpline(Trace *tracePtr)
     for (i = 1, q = p->next; q != NULL; q = q->next, i++) {
 	Point2d p1, p2;
 
-        points[i].x = q->x;
-        points[i].y = q->y;
+	points[i].x = q->x;
+	points[i].y = q->y;
 
-        p1.x = p->x, p1.y = p->y;
-        p2.x = q->x, p2.y = q->y;
+	p1.x = p->x, p1.y = p->y;
+	p2.x = q->x, p2.y = q->y;
 	count++;
-        if (Blt_LineRectClip(&exts, &p1, &p2)) {
+	if (Blt_LineRectClip(&exts, &p1, &p2)) {
 	    count += (int)(hypot(p2.x - p1.x, p2.y - p1.y) * 0.5);
 	}
 	p = q;
@@ -2425,22 +2425,22 @@ GenerateParametricCubicSpline(Trace *tracePtr)
 	    p = q;
 	    continue;
 	}
-        p1.x = p->x, p1.y = p->y;
+	p1.x = p->x, p1.y = p->y;
 	p2.x = q->x, p2.y = q->y;
 
-        /* Add the original x-coordinate */
-        iPts[count].x = (double)i;
-        iPts[count].y = 0.0;
-        count++;
+	/* Add the original x-coordinate */
+	iPts[count].x = (double)i;
+	iPts[count].y = 0.0;
+	count++;
 
-        if (Blt_LineRectClip(&exts, &p1, &p2)) {
+	if (Blt_LineRectClip(&exts, &p1, &p2)) {
 	    double dp, dq;
 
 	    /* Distance of original point to p. */
-            dp = hypot(p1.x - p->x, p1.y - p->y);
+	    dp = hypot(p1.x - p->x, p1.y - p->y);
 	    /* Distance of original point to q. */
-            dq = hypot(p2.x - p->x, p2.y - p->y);
-            dp += 2.0;
+	    dq = hypot(p2.x - p->x, p2.y - p->y);
+	    dp += 2.0;
 	    while(dp <= dq) {
 		/* Point is indicated by its interval and parameter t. */
 		iPts[count].x = (double)i;
@@ -2459,10 +2459,10 @@ GenerateParametricCubicSpline(Trace *tracePtr)
     result = Blt_ComputeNaturalParametricSpline(points, tracePtr->numPoints, 
 	&exts, FALSE, iPts, niPts);
     if (!result) {
-        /* The spline interpolation failed.  We will fall back to the current
-         * coordinates and do no smoothing (standard line segments).  */
-        elemPtr->smooth = SMOOTH_NONE;
-        Blt_Free(iPts);
+	/* The spline interpolation failed.  We will fall back to the current
+	 * coordinates and do no smoothing (standard line segments).  */
+	elemPtr->smooth = SMOOTH_NONE;
+	Blt_Free(iPts);
 	return;
     } 
     for (i = 0; i < tracePtr->numPoints; i++) {
@@ -2569,10 +2569,10 @@ GenerateCatromSpline(Trace *tracePtr)
 	}
 
 	/* Distance of the line entire segment. */
-        d  = hypot(q->x - p->x, q->y - p->y);
+	d  = hypot(q->x - p->x, q->y - p->y);
 
-        p1.x = p->x, p1.y = p->y;
- 	p2.x = q->x, p2.y = q->y;
+	p1.x = p->x, p1.y = p->y;
+	p2.x = q->x, p2.y = q->y;
 	Blt_LineRectClip(&exts, &p1, &p2);
 	
 	/* Distance from last knot to p (start of generated points). */
@@ -3770,7 +3770,7 @@ MapPolyline(LineElement *elemPtr, Trace *tracePtr)
 	if (p->flags & VISIBLE) {	/* Last point is off screen. */
 	    Point2d p1, p2;
 
- 	    p1.x = p->x, p1.y = p->y;
+	    p1.x = p->x, p1.y = p->y;
 	    p2.x = q->x, p2.y = q->y;
 	    if (Blt_LineRectClip(&exts, &p1, &p2)) {
 		TracePoint *t;
@@ -4034,7 +4034,7 @@ GradientColorProc(Blt_PaintBrush *brushPtr, int x, int y)
 	return 0x0;
     }
     color.u32 = Blt_Palette_GetAssociatedColorFromAbsoluteValue(
-        brushPtr->palette, value, rangePtr->min, rangePtr->max);
+	brushPtr->palette, value, rangePtr->min, rangePtr->max);
     return color.u32;
 }
 
@@ -4122,7 +4122,7 @@ DrawGradientPolygon(Graph *graphPtr, Drawable drawable, LineElement *elemPtr,
     
     rangePtr = &elemPtr->zAxisPtr->valueRange;
     Blt_Palette_SetRange(elemPtr->zAxisPtr->palette,
-                         rangePtr->min, rangePtr->max);
+			 rangePtr->min, rangePtr->max);
     Blt_PaintBrush_Init(&brush);
     Blt_PaintBrush_SetOrigin(&brush, -x1, -y1);
     Blt_PaintBrush_SetPalette(&brush, elemPtr->zAxisPtr->palette);
@@ -4160,10 +4160,10 @@ DrawAreaUnderCurve(Graph *graphPtr, Drawable drawable, LineElement *elemPtr)
 		points[i].y = tracePtr->fillPts[i].y;
 	    }
 	    if (elemPtr->zAxisPtr != NULL) {
-                if (elemPtr->zAxisPtr->palette != NULL) {
-                        DrawGradientPolygon(graphPtr, drawable, elemPtr,
+		if (elemPtr->zAxisPtr->palette != NULL) {
+			DrawGradientPolygon(graphPtr, drawable, elemPtr,
 				    tracePtr->numFillPts, points);
-                }
+		}
 	    } else {
 		Blt_Bg_SetOrigin(graphPtr->tkwin, elemPtr->fillBg, 0, 0);
 		Blt_Bg_FillPolygon(graphPtr->tkwin, drawable, elemPtr->fillBg, 
@@ -5114,7 +5114,7 @@ DrawActiveTrace(Graph *graphPtr, Drawable drawable, Trace *tracePtr)
     if (penPtr->symbol.type != SYMBOL_NONE) {
 	if (tracePtr->elemPtr->numActiveIndices >= 0) {
 	    /* Indicate that we only want to draw active symbols. */
- 	    tracePtr->drawFlags |= ACTIVE_POINT;
+	    tracePtr->drawFlags |= ACTIVE_POINT;
 	}
 	DrawSymbols(graphPtr, drawable, tracePtr, penPtr);
 	tracePtr->drawFlags &= ~ACTIVE_POINT;

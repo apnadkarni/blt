@@ -350,10 +350,10 @@ static Blt_ConfigSpec styleSpecs[] =
     {BLT_CONFIG_COLOR, "-foreground", (char *)NULL, (char *)NULL, DEF_STYLE_FG, 
 	Blt_Offset(Style, textNormalColor), 0},
     {BLT_CONFIG_FONT, "-font", (char *)NULL, (char *)NULL, DEF_STYLE_FONT, 
-        Blt_Offset(Style, textFont), 0},
+	Blt_Offset(Style, textFont), 0},
     {BLT_CONFIG_RELIEF, "-relief", (char *)NULL, (char *)NULL, 
 	DEF_STYLE_RELIEF, Blt_Offset(Style, relief), 
-        BLT_CONFIG_DONT_SET_DEFAULT},
+	BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_BACKGROUND, "-selectbackground", (char *)NULL, (char *)NULL, 
 	DEF_STYLE_SELECT_BG, Blt_Offset(Style, selectBg), 0},
     {BLT_CONFIG_COLOR, "-selectforeground", (char *)NULL, (char *)NULL, 
@@ -425,13 +425,13 @@ static Blt_ConfigSpec itemSpecs[] =
     {BLT_CONFIG_CUSTOM, "-style", (char *)NULL, (char *)NULL, DEF_ITEM_STYLE, 
 	Blt_Offset(Item, stylePtr), 0, &styleOption},
      {BLT_CONFIG_CUSTOM, "-tags", (char *)NULL, (char *)NULL,
-        DEF_ITEM_TAGS, 0, BLT_CONFIG_NULL_OK, &tagsOption},
+	DEF_ITEM_TAGS, 0, BLT_CONFIG_NULL_OK, &tagsOption},
     {BLT_CONFIG_CUSTOM, "-text", (char *)NULL, (char *)NULL, DEF_ITEM_TEXT, 
-        Blt_Offset(Item, text), BLT_CONFIG_NULL_OK, &textOption},
+	Blt_Offset(Item, text), BLT_CONFIG_NULL_OK, &textOption},
     {BLT_CONFIG_OBJ, "-tooltip", (char *)NULL, (char *)NULL, DEF_ITEM_TIP, 
-         Blt_Offset(Item, tipObjPtr), BLT_CONFIG_NULL_OK},
+	 Blt_Offset(Item, tipObjPtr), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_STRING, "-type", (char *)NULL, (char *)NULL, DEF_ITEM_TYPE, 
-         Blt_Offset(Item, type), BLT_CONFIG_NULL_OK},
+	 Blt_Offset(Item, type), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_END, (char *)NULL, (char *)NULL, (char *)NULL, (char *)NULL, 
 	0, 0}
 };
@@ -607,12 +607,12 @@ static Blt_ConfigSpec listViewSpecs[] =
 	Blt_Offset(ListView, cursor), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_BACKGROUND, "-disabledbackground", "disabledBackground",
 	"DisabledBackground", DEF_STYLE_DISABLED_BG, 
-        Blt_Offset(ListView, defStyle.disabledBg), 0},
+	Blt_Offset(ListView, defStyle.disabledBg), 0},
     {BLT_CONFIG_COLOR, "-disabledforeground", "disabledForeground",
 	"DisabledForeground", DEF_STYLE_DISABLED_FG, 
 	Blt_Offset(ListView, defStyle.textDisabledColor), 0},
     {BLT_CONFIG_BITMASK, "-exportselection", "exportSelection",
-        "ExportSelection", DEF_EXPORT_SELECTION, Blt_Offset(ListView, flags),
+	"ExportSelection", DEF_EXPORT_SELECTION, Blt_Offset(ListView, flags),
 	BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)SELECT_EXPORT},
     {BLT_CONFIG_SYNONYM, "-fg", "foreground", (char *)NULL, (char *)NULL, 0, 0},
     {BLT_CONFIG_COLOR, "-focuscolor", "focusColor", "FocusColor",
@@ -633,7 +633,7 @@ static Blt_ConfigSpec listViewSpecs[] =
 	DEF_MAXWIDTH, Blt_Offset(ListView, maxWidth), 0},
     {BLT_CONFIG_OBJ, "-iconvariable", "iconVariable", "IconVariable", 
 	DEF_ICON_VARIABLE, Blt_Offset(ListView, iconVarObjPtr), 
-        BLT_CONFIG_NULL_OK},
+	BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_PIXELS_NNEG, "-itemborderwidth", "itemBorderWidth", 
 	"ItemBorderWidth", DEF_STYLE_BORDERWIDTH, 
 	Blt_Offset(ListView, defStyle.borderWidth), 
@@ -661,22 +661,22 @@ static Blt_ConfigSpec listViewSpecs[] =
 	BLT_CONFIG_DONT_SET_DEFAULT, &selectModeOption},
     {BLT_CONFIG_BITMASK, "-orderselection", "orderSelection", "OrderSelection",
 	DEF_SORT_SELECTION, Blt_Offset(ListView, flags), 
-        BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)SELECT_ORDERED},
+	BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)SELECT_ORDERED},
     {BLT_CONFIG_OBJ, "-textvariable", "textVariable", "TextVariable", 
 	DEF_TEXTVARIABLE, Blt_Offset(ListView, textVarObjPtr), 
-        BLT_CONFIG_NULL_OK},
+	BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_OBJ, "-xscrollcommand", "xScrollCommand", "ScrollCommand",
-        DEF_XSCROLLCOMMAND, Blt_Offset(ListView, xScrollCmdObjPtr), 
+	DEF_XSCROLLCOMMAND, Blt_Offset(ListView, xScrollCmdObjPtr), 
 	BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_PIXELS_POS, "-xscrollincrement", "xScrollIncrement",
 	"ScrollIncrement", DEF_XSCROLLINCREMENT, 
-         Blt_Offset(ListView, xScrollUnits), BLT_CONFIG_DONT_SET_DEFAULT},
+	 Blt_Offset(ListView, xScrollUnits), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_OBJ, "-yscrollcommand", "yScrollCommand", "ScrollCommand",
-        DEF_YSCROLLCOMMAND, Blt_Offset(ListView, yScrollCmdObjPtr), 
+	DEF_YSCROLLCOMMAND, Blt_Offset(ListView, yScrollCmdObjPtr), 
 	BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_PIXELS_POS, "-yscrollincrement", "yScrollIncrement",
 	"ScrollIncrement", DEF_YSCROLLINCREMENT, 
-         Blt_Offset(ListView, yScrollUnits),BLT_CONFIG_DONT_SET_DEFAULT},
+	 Blt_Offset(ListView, yScrollUnits),BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_OBJ, "-takefocus", "takeFocus", "TakeFocus",
 	DEF_TAKEFOCUS, Blt_Offset(ListView, takeFocusObjPtr), 
 	BLT_CONFIG_NULL_OK},
@@ -3971,7 +3971,7 @@ ActivateOp(ListView *viewPtr, Tcl_Interp *interp, int objc,
     ActivateItem(viewPtr, NULL);
     viewPtr->activePtr = NULL;
     if ((itemPtr != NULL) &&
-        ((itemPtr->flags & (ITEM_DISABLED|ITEM_HIDDEN)) == 0)) {
+	((itemPtr->flags & (ITEM_DISABLED|ITEM_HIDDEN)) == 0)) {
 	ActivateItem(viewPtr, itemPtr);
 	viewPtr->activePtr = itemPtr;
     }
@@ -4527,7 +4527,7 @@ InsertOp(ListView *viewPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     if (wherePtr == NULL) {
 	Tcl_AppendResult(interp, "can't insert item: no index \"", 
 			 Tcl_GetString(objv[3]), "\"", (char *)NULL);
-    	return TCL_ERROR;		/* No item. */
+	return TCL_ERROR;		/* No item. */
     }
     itemPtr = NewItem(viewPtr);
     if (ConfigureItem(interp, itemPtr, objc - 4, objv + 4, 0) != TCL_OK) {

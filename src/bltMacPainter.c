@@ -93,11 +93,11 @@ DrawableToPicture(
     destPtr = Blt_CreatePicture(width, height);
     {
 	Rect srcRect, destRect;
-        MacDrawable dstDraw = (MacDrawable)drawable;
-        PixMap pm;
+	MacDrawable dstDraw = (MacDrawable)drawable;
+	PixMap pm;
       
 	SetRect(&srcRect, x, y, x + width, y + height);
-        SetRect(&destRect, 0, 0, width, height);
+	SetRect(&destRect, 0, 0, width, height);
 
 	GetGWorld(&saveWorld, &saveDevice);
 	SetGWorld(srcPort, NULL);
@@ -535,10 +535,10 @@ Blt_RotateBitmap(
 	destBitmap = None;
     }
     if (destBits != NULL) {
-         Blt_Free(destBits);
+	 Blt_Free(destBits);
     }
     if (srcBits != NULL) {
-         Blt_Free(srcBits);
+	 Blt_Free(srcBits);
     }
 
     *destWidthPtr = destWidth;
@@ -852,10 +852,10 @@ Blt_ScaleRotateBitmapArea(
 	destBitmap = None;
     }
     if (destBits != NULL) {
-         Blt_Free(destBits);
+	 Blt_Free(destBits);
     }
     if (srcBits != NULL) {
-         Blt_Free(srcBits);
+	 Blt_Free(srcBits);
     }
     return destBitmap;
 }
@@ -915,9 +915,9 @@ Blt_JPEGToPicture(interp, fileName)
 
     default:
 	/* This catches everything else, but no color twist will be
-           performed by the IJL. */
+	   performed by the IJL. */
 	jpgProps.DIBColor = (IJL_COLOR)IJL_OTHER;
- 	jpgProps.JPGColor = (IJL_COLOR)IJL_OTHER;
+	jpgProps.JPGColor = (IJL_COLOR)IJL_OTHER;
 	jpgProps.DIBChannels = jpgProps.JPGChannels;
 	break;
     }
@@ -1149,11 +1149,11 @@ DrawCGImage(
     MacDrawable *macDraw = (MacDrawable *) d;
 
     if (macDraw && context && image) {
-        CGImageRef subImage = NULL;
+	CGImageRef subImage = NULL;
 
-        if (!CGRectEqualToRect(imageBounds, srcBounds)) {
-            if (!CGRectContainsRect(imageBounds, srcBounds)) {
-                TkMacOSXDbgMsg("Mismatch of sub CGImage bounds");
+	if (!CGRectEqualToRect(imageBounds, srcBounds)) {
+	    if (!CGRectContainsRect(imageBounds, srcBounds)) {
+		TkMacOSXDbgMsg("Mismatch of sub CGImage bounds");
 
 
 /*
@@ -1218,7 +1218,7 @@ PaintPicture(
 #else
 	flags |= kCGBitmapByteOrder32Little;
 #endif
-        bits = Blt_AssetMalloc(numBytes);
+	bits = Blt_AssetMalloc(numBytes);
 	memcpy(data, srcPtr->bits, numBytes);
 	provider = CGDataProviderCreateWithData(bits, bits, numBytes, 
 		releaseData);

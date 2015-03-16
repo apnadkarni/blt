@@ -378,10 +378,10 @@ Blt_RotateBitmap(
 	destBitmap = None;
     }
     if (destBits != NULL) {
-         Blt_Free(destBits);
+	 Blt_Free(destBits);
     }
     if (srcBits != NULL) {
-         Blt_Free(srcBits);
+	 Blt_Free(srcBits);
     }
 
     *destWidthPtr = destWidth;
@@ -695,10 +695,10 @@ Blt_ScaleRotateBitmapArea(
 	destBitmap = None;
     }
     if (destBits != NULL) {
-         Blt_Free(destBits);
+	 Blt_Free(destBits);
     }
     if (srcBits != NULL) {
-         Blt_Free(srcBits);
+	 Blt_Free(srcBits);
     }
     return destBitmap;
 }

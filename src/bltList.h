@@ -68,11 +68,11 @@ typedef int (Blt_ListCompareProc)(Blt_ListNode *node1Ptr,
  */
 struct _Blt_List {
     Blt_ListNode head;			/* Pointer to first element in
-                                         * list */
+					 * list */
     Blt_ListNode tail;			/* Pointer to last element in
-                                         * list */
+					 * list */
     size_t numNodes;			/* # of nodes currently in the
-                                         * list. */
+					 * list. */
     size_t type;			/* Type of keys in list. */
 };
 

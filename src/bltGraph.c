@@ -6,27 +6,27 @@
  *
  * The graph widget was created by Sani Nassif and George Howlett.
  *
- *	Copyright 1991-2004 George A Howlett.
+ *      Copyright 1991-2004 George A Howlett.
  *
- *	Permission is hereby granted, free of charge, to any person
- *	obtaining a copy of this software and associated documentation
- *	files (the "Software"), to deal in the Software without
- *	restriction, including without limitation the rights to use, copy,
- *	modify, merge, publish, distribute, sublicense, and/or sell copies
- *	of the Software, and to permit persons to whom the Software is
- *	furnished to do so, subject to the following conditions:
+ *      Permission is hereby granted, free of charge, to any person
+ *      obtaining a copy of this software and associated documentation
+ *      files (the "Software"), to deal in the Software without
+ *      restriction, including without limitation the rights to use, copy,
+ *      modify, merge, publish, distribute, sublicense, and/or sell copies
+ *      of the Software, and to permit persons to whom the Software is
+ *      furnished to do so, subject to the following conditions:
  *
- *	The above copyright notice and this permission notice shall be
- *	included in all copies or substantial portions of the Software.
+ *      The above copyright notice and this permission notice shall be
+ *      included in all copies or substantial portions of the Software.
  *
- *	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- *	EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- *	MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- *	NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
- *	BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
- *	ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
- *	CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- *	SOFTWARE.
+ *      THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ *      EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ *      MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ *      NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+ *      BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ *      ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ *      CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ *      SOFTWARE.
  */
 
 /*
@@ -77,8 +77,8 @@ typedef int (GraphCmdProc)(Graph *graphPtr, Tcl_Interp *interp, int objc,
  * Objects in the graph have their own class names.  These class names are
  * used for the resource database and bindings.  Example.
  *
- *	option add *X.title "X Axis Title" widgetDefault
- *	.g marker bind BitmapMarker <Enter> { ... }
+ *      option add *X.title "X Axis Title" widgetDefault
+ *      .g marker bind BitmapMarker <Enter> { ... }
  *
  * The option database trick is performed by creating a temporary window
  * when an object is initially configured.  The class name of the temporary
@@ -113,42 +113,42 @@ BLT_EXTERN Blt_CustomOption bltLinePenOption;
 BLT_EXTERN Blt_CustomOption bltBarPenOption;
 BLT_EXTERN Blt_CustomOption bltBarModeOption;
 
-#define DEF_ASPECT_RATIO		"0.0"
-#define DEF_BAR_BASELINE		"0.0"
-#define DEF_BAR_MODE		"normal"
-#define DEF_BAR_WIDTH		"0.9"
-#define DEF_BACKGROUND		STD_NORMAL_BACKGROUND
-#define DEF_BORDERWIDTH		STD_BORDERWIDTH
-#define DEF_BUFFER_ELEMENTS	"yes"
-#define DEF_BUFFER_GRAPH		"1"
-#define DEF_CURSOR		"crosshair"
-#define DEF_FONT			"{Sans Serif} 12"
-#define DEF_HALO			"2m"
-#define DEF_HALO_BAR		"0.1i"
-#define DEF_HEIGHT		"4i"
-#define DEF_HIGHLIGHT_BACKGROUND	STD_NORMAL_BACKGROUND
-#define DEF_HIGHLIGHT_COLOR	RGB_BLACK
-#define DEF_HIGHLIGHT_WIDTH	"2"
-#define DEF_INVERT_XY		"0"
-#define DEF_JUSTIFY		"center"
-#define DEF_MARGIN_SIZE		"0"
-#define DEF_MARGIN_VAR		(char *)NULL
-#define DEF_PLOT_BACKGROUND	RGB_WHITE
-#define DEF_PLOT_BORDERWIDTH	"1"
-#define DEF_PLOT_PADX		"0"
-#define DEF_PLOT_PADY		"0"
-#define DEF_PLOT_RELIEF		"solid"
-#define DEF_RELIEF		"flat"
-#define DEF_SHOW_VALUES		"no"
-#define DEF_STACK_AXES		"no"
-#define DEF_TAKE_FOCUS		""
+#define DEF_ASPECT_RATIO                "0.0"
+#define DEF_BAR_BASELINE                "0.0"
+#define DEF_BAR_MODE            "normal"
+#define DEF_BAR_WIDTH           "0.9"
+#define DEF_BACKGROUND          STD_NORMAL_BACKGROUND
+#define DEF_BORDERWIDTH         STD_BORDERWIDTH
+#define DEF_BUFFER_ELEMENTS     "yes"
+#define DEF_BUFFER_GRAPH                "1"
+#define DEF_CURSOR              "crosshair"
+#define DEF_FONT                        "{Sans Serif} 12"
+#define DEF_HALO                        "2m"
+#define DEF_HALO_BAR            "0.1i"
+#define DEF_HEIGHT              "4i"
+#define DEF_HIGHLIGHT_BACKGROUND        STD_NORMAL_BACKGROUND
+#define DEF_HIGHLIGHT_COLOR     RGB_BLACK
+#define DEF_HIGHLIGHT_WIDTH     "2"
+#define DEF_INVERT_XY           "0"
+#define DEF_JUSTIFY             "center"
+#define DEF_MARGIN_SIZE         "0"
+#define DEF_MARGIN_VAR          (char *)NULL
+#define DEF_PLOT_BACKGROUND     RGB_WHITE
+#define DEF_PLOT_BORDERWIDTH    "1"
+#define DEF_PLOT_PADX           "0"
+#define DEF_PLOT_PADY           "0"
+#define DEF_PLOT_RELIEF         "solid"
+#define DEF_RELIEF              "flat"
+#define DEF_SHOW_VALUES         "no"
+#define DEF_STACK_AXES          "no"
+#define DEF_TAKE_FOCUS          ""
 #define DEF_TITLE               (char *)NULL
-#define DEF_TITLE_COLOR		STD_NORMAL_FOREGROUND
+#define DEF_TITLE_COLOR         STD_NORMAL_FOREGROUND
 #define DEF_WIDTH               "5i"
 #define DEF_DATA                (char *)NULL
 #define DEF_DATA_COMMAND        (char *)NULL
-#define DEF_MAP_ELEMENTS	"all"
-#define DEF_STRETCH_TO_FIT	"1"
+#define DEF_MAP_ELEMENTS        "all"
+#define DEF_STRETCH_TO_FIT      "1"
 #define DEF_COLOR_BAR           (char *)NULL
 
 static Blt_ConfigSpec configSpecs[] =
@@ -173,22 +173,22 @@ static Blt_ConfigSpec configSpecs[] =
 	BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_PIXELS_NNEG, "-bottommargin", "bottomMargin", "Margin",
 	DEF_MARGIN_SIZE, Blt_Offset(Graph, reqBottomMarginSize),
-        BLT_CONFIG_DONT_SET_DEFAULT},
+	BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_OBJ, "-bottomvariable", "bottomVariable", "BottomVariable",
 	DEF_MARGIN_VAR, Blt_Offset(Graph, bottomMarginVarObjPtr), 
-        BLT_CONFIG_NULL_OK},
+	BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_BITMASK, "-bufferelements", "bufferElements", "BufferElements",
 	DEF_BUFFER_ELEMENTS, Blt_Offset(Graph, flags),
-        BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)BACKING_STORE},
+	BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)BACKING_STORE},
     {BLT_CONFIG_BITMASK, "-buffergraph", "bufferGraph", "BufferGraph",
 	DEF_BUFFER_GRAPH, Blt_Offset(Graph, flags),
-        BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)DOUBLE_BUFFER},
+	BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)DOUBLE_BUFFER},
     {BLT_CONFIG_ACTIVE_CURSOR, "-cursor", "cursor", "Cursor",
 	DEF_CURSOR, Blt_Offset(Graph, cursor), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_STRING, "-data", "data", "Data", 
-        (char *)NULL, Blt_Offset(Graph, data), BLT_CONFIG_DONT_SET_DEFAULT},
+	(char *)NULL, Blt_Offset(Graph, data), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_STRING, "-datacommand", "dataCommand", "DataCommand", 
-        (char *)NULL, Blt_Offset(Graph, dataCmd), BLT_CONFIG_DONT_SET_DEFAULT},
+	(char *)NULL, Blt_Offset(Graph, dataCmd), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_SYNONYM, "-fg", "foreground", (char *)NULL, (char *)NULL, 0, 0},
     {BLT_CONFIG_FONT, "-font", "font", "Font",
 	DEF_FONT, Blt_Offset(Graph, titleTextStyle.font), 0},
@@ -207,58 +207,58 @@ static Blt_ConfigSpec configSpecs[] =
 	"HighlightThickness", DEF_HIGHLIGHT_WIDTH, 
 	Blt_Offset(Graph, highlightWidth), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_BITMASK, "-invertxy", "invertXY", "InvertXY", DEF_INVERT_XY,
-        Blt_Offset(Graph, flags), BLT_CONFIG_DONT_SET_DEFAULT,
-        (Blt_CustomOption *)INVERTED},
+	Blt_Offset(Graph, flags), BLT_CONFIG_DONT_SET_DEFAULT,
+	(Blt_CustomOption *)INVERTED},
     {BLT_CONFIG_JUSTIFY, "-justify", "justify", "Justify", DEF_JUSTIFY, 
 	Blt_Offset(Graph, titleTextStyle.justify), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_PIXELS_NNEG, "-leftmargin", "leftMargin", "Margin", 
 	DEF_MARGIN_SIZE, Blt_Offset(Graph, reqLeftMarginSize), 
-        BLT_CONFIG_DONT_SET_DEFAULT},
+	BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_OBJ, "-leftvariable", "leftVariable", "LeftVariable",
 	DEF_MARGIN_VAR, Blt_Offset(Graph, leftMarginVarObjPtr),
-        BLT_CONFIG_NULL_OK},
+	BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_SYNONYM, "-lm", "leftMargin", (char *)NULL, (char *)NULL, 0, 0},
     {BLT_CONFIG_CUSTOM, "-mapelements", "mapElements", "MapElements",
 	DEF_MAP_ELEMENTS, Blt_Offset(Graph, flags),
-        ALL_GRAPHS | BLT_CONFIG_DONT_SET_DEFAULT, &mapElementsOption},
+	ALL_GRAPHS | BLT_CONFIG_DONT_SET_DEFAULT, &mapElementsOption},
     {BLT_CONFIG_BACKGROUND, "-plotbackground", "plotBackground", "Background",
 	DEF_PLOT_BACKGROUND, Blt_Offset(Graph, plotBg), 0},
     {BLT_CONFIG_PIXELS_NNEG, "-plotborderwidth", "plotBorderWidth", 
-        "PlotBorderWidth", DEF_PLOT_BORDERWIDTH, 
+	"PlotBorderWidth", DEF_PLOT_BORDERWIDTH, 
 	Blt_Offset(Graph, plotBW), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_PAD, "-plotpadx", "plotPadX", "PlotPad", DEF_PLOT_PADX, 
 	Blt_Offset(Graph, xPad), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_PAD, "-plotpady", "plotPadY", "PlotPad", DEF_PLOT_PADY, 
 	Blt_Offset(Graph, yPad), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_RELIEF, "-plotrelief", "plotRelief", "Relief", DEF_PLOT_RELIEF,
-        Blt_Offset(Graph, plotRelief), BLT_CONFIG_DONT_SET_DEFAULT},
+	Blt_Offset(Graph, plotRelief), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_RELIEF, "-relief", "relief", "Relief", DEF_RELIEF, 
 	Blt_Offset(Graph, relief), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_PIXELS_NNEG, "-rightmargin", "rightMargin", "Margin",
-        DEF_MARGIN_SIZE, Blt_Offset(Graph, reqRightMarginSize),
-        BLT_CONFIG_DONT_SET_DEFAULT},
+	DEF_MARGIN_SIZE, Blt_Offset(Graph, reqRightMarginSize),
+	BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_OBJ, "-rightvariable", "rightVariable", "RightVariable",
 	DEF_MARGIN_VAR, Blt_Offset(Graph, rightMarginVarObjPtr), 
-        BLT_CONFIG_NULL_OK},
+	BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_SYNONYM, "-rm", "rightMargin", (char *)NULL, (char *)NULL, 0,0},
     {BLT_CONFIG_BITMASK, "-stackaxes", "stackAxes", "StackAxes", DEF_STACK_AXES,
-        Blt_Offset(Graph, flags), BLT_CONFIG_DONT_SET_DEFAULT,
-        (Blt_CustomOption *)STACK_AXES},
+	Blt_Offset(Graph, flags), BLT_CONFIG_DONT_SET_DEFAULT,
+	(Blt_CustomOption *)STACK_AXES},
     {BLT_CONFIG_BITMASK, "-stretchtofit", "stretchToFit", "StretchToFit",
-        DEF_STRETCH_TO_FIT, Blt_Offset(Graph, flags),
-        ALL_GRAPHS | BLT_CONFIG_DONT_SET_DEFAULT,
-        (Blt_CustomOption *)STRETCH_TO_FIT},
+	DEF_STRETCH_TO_FIT, Blt_Offset(Graph, flags),
+	ALL_GRAPHS | BLT_CONFIG_DONT_SET_DEFAULT,
+	(Blt_CustomOption *)STRETCH_TO_FIT},
     {BLT_CONFIG_STRING, "-takefocus", "takeFocus", "TakeFocus", DEF_TAKE_FOCUS,
-        Blt_Offset(Graph, takeFocus), BLT_CONFIG_NULL_OK},
+	Blt_Offset(Graph, takeFocus), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_STRING, "-title", "title", "Title", DEF_TITLE,
-        Blt_Offset(Graph, title), BLT_CONFIG_NULL_OK},
+	Blt_Offset(Graph, title), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_SYNONYM, "-tm", "topMargin", (char *)NULL, (char *)NULL, 0, 0},
     {BLT_CONFIG_PIXELS_NNEG, "-topmargin", "topMargin", "Margin",
-        DEF_MARGIN_SIZE, Blt_Offset(Graph, reqTopMarginSize),
-        BLT_CONFIG_DONT_SET_DEFAULT},
+	DEF_MARGIN_SIZE, Blt_Offset(Graph, reqTopMarginSize),
+	BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_OBJ, "-topvariable", "topVariable", "TopVariable",
-        DEF_MARGIN_VAR, Blt_Offset(Graph, topMarginVarObjPtr),
-        BLT_CONFIG_NULL_OK},
+	DEF_MARGIN_VAR, Blt_Offset(Graph, topMarginVarObjPtr),
+	BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_PIXELS_NNEG, "-width", "width", "Width", DEF_WIDTH, 
 	Blt_Offset(Graph, reqWidth), 0},
     {BLT_CONFIG_PIXELS_NNEG, "-plotwidth", "plotWidth", "PlotWidth", 
@@ -334,7 +334,7 @@ static Tcl_CmdDeleteProc GraphInstCmdDeleteProc;
 /*ARGSUSED*/
 static int
 ObjToMapElements(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-                 Tcl_Obj *objPtr, char *widgRec, int offset, int flags)
+		 Tcl_Obj *objPtr, char *widgRec, int offset, int flags)
 {
     int *flagsPtr = (int *)(widgRec + offset);
     Graph *graphPtr = (Graph *)widgRec;
@@ -344,13 +344,13 @@ ObjToMapElements(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
     string = Tcl_GetString(objPtr);
     c = string[0];
     if ((c == 'a') || (strcmp(string, "all") == 0)) {
-        *flagsPtr &= ~MAP_VISIBLE;
+	*flagsPtr &= ~MAP_VISIBLE;
     } else if ((c == 'v') || (strcmp(string, "visible") == 0)) {
-        *flagsPtr |= MAP_VISIBLE;
+	*flagsPtr |= MAP_VISIBLE;
     } else {
 	Tcl_AppendResult(interp, "bad value \"", string,
-                "\": should be all or visible", (char *)NULL);
-        return TCL_ERROR;
+		"\": should be all or visible", (char *)NULL);
+	return TCL_ERROR;
     }
     graphPtr->flags |= RESET_AXES;
     return TCL_OK;
@@ -366,15 +366,15 @@ ObjToMapElements(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*ARGSUSED*/
 static Tcl_Obj *
 MapElementsToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-                 char *widgRec, int offset, int flags)
+		 char *widgRec, int offset, int flags)
 {
     int mapflags = *(int *)(widgRec + offset);
     const char *string;
     
     if (mapflags & MAP_VISIBLE) {
-        string = "visible";
+	string = "visible";
     } else {
-        string = "all";
+	string = "all";
     }
     return Tcl_NewStringObj(string, -1);
 }
@@ -384,14 +384,14 @@ MapElementsToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  *
  * Blt_UpdateGraph --
  *
- *	Tells the Tk dispatcher to call the graph display routine at the
- *	next idle point.  This request is made only if the window is
- *	displayed and no other redraw request is pending.
+ *      Tells the Tk dispatcher to call the graph display routine at the
+ *      next idle point.  This request is made only if the window is
+ *      displayed and no other redraw request is pending.
  *
  * Results: None.
  *
  * Side effects:
- *	The window is eventually redisplayed.
+ *      The window is eventually redisplayed.
  *
  *---------------------------------------------------------------------------
  */
@@ -412,14 +412,14 @@ Blt_UpdateGraph(ClientData clientData)
  *
  * Blt_EventuallyRedrawGraph --
  *
- *	Tells the Tk dispatcher to call the graph display routine at the
- *	next idle point.  This request is made only if the window is
- *	displayed and no other redraw request is pending.
+ *      Tells the Tk dispatcher to call the graph display routine at the
+ *      next idle point.  This request is made only if the window is
+ *      displayed and no other redraw request is pending.
  *
  * Results: None.
  *
  * Side effects:
- *	The window is eventually redisplayed.
+ *      The window is eventually redisplayed.
  *
  *---------------------------------------------------------------------------
  */
@@ -453,15 +453,15 @@ Blt_GraphSetObjectClass(GraphObj *graphObjPtr, ClassId classId)
  *
  * GraphEventProc --
  *
- *	This procedure is invoked by the Tk dispatcher for various events
- *	on graphs.
+ *      This procedure is invoked by the Tk dispatcher for various events
+ *      on graphs.
  *
  * Results:
- *	None.
+ *      None.
  *
  * Side effects:
- *	When the window gets deleted, internal structures get cleaned up.
- *	When it gets exposed, the graph is eventually redisplayed.
+ *      When the window gets deleted, internal structures get cleaned up.
+ *      When it gets exposed, the graph is eventually redisplayed.
  *
  *---------------------------------------------------------------------------
  */
@@ -506,15 +506,15 @@ GraphEventProc(ClientData clientData, XEvent *eventPtr)
  *
  * GraphInstCmdDeleteProc --
  *
- *	This procedure is invoked when a widget command is deleted.  If the
- *	widget isn't already in the process of being destroyed, this
- *	command destroys it.
+ *      This procedure is invoked when a widget command is deleted.  If the
+ *      widget isn't already in the process of being destroyed, this
+ *      command destroys it.
  *
  * Results:
- *	None.
+ *      None.
  *
  * Side effects:
- *	The widget is destroyed.
+ *      The widget is destroyed.
  *
  *---------------------------------------------------------------------------
  */
@@ -523,7 +523,7 @@ GraphInstCmdDeleteProc(ClientData clientData) /* Pointer to widget record. */
 {
     Graph *graphPtr = clientData;
 
-    if (graphPtr->tkwin != NULL) {	/* NULL indicates window has
+    if (graphPtr->tkwin != NULL) {      /* NULL indicates window has
 					 * already been destroyed. */
 	Tk_Window tkwin;
 
@@ -539,11 +539,11 @@ GraphInstCmdDeleteProc(ClientData clientData) /* Pointer to widget record. */
  *
  * AdjustMarginPointers --
  *
- *	Sets the margin pointers according to whether the graph is inverted
- *	or not.
+ *      Sets the margin pointers according to whether the graph is inverted
+ *      or not.
  *
  * Results:
- *	None.
+ *      None.
  *
  *---------------------------------------------------------------------------
  */
@@ -576,14 +576,14 @@ InitPens(Graph *graphPtr)
 {
     Blt_InitHashTable(&graphPtr->penTable, BLT_STRING_KEYS);
     if (Blt_CreatePen(graphPtr, "activeLine", CID_ELEM_LINE, 0, NULL) == NULL) {
-  	return TCL_ERROR;
+	return TCL_ERROR;
     }
     if (Blt_CreatePen(graphPtr, "activeBar", CID_ELEM_BAR, 0, NULL) == NULL) {
-  	return TCL_ERROR;
+	return TCL_ERROR;
     }
     if (Blt_CreatePen(graphPtr, "activeContour", CID_ELEM_CONTOUR, 0, NULL) 
 	== NULL) {
-  	return TCL_ERROR;
+	return TCL_ERROR;
     }
     return TCL_OK;
 }
@@ -593,29 +593,29 @@ InitPens(Graph *graphPtr)
  *
  * Blt_GraphTags --
  *
- *	Sets the binding tags for a graph obj. This routine is called by Tk
- *	when an event occurs in the graph.  It fills an array of pointers
- *	with bind tag addresses.
+ *      Sets the binding tags for a graph obj. This routine is called by Tk
+ *      when an event occurs in the graph.  It fills an array of pointers
+ *      with bind tag addresses.
  *
- *	The object addresses are strings hashed in one of two tag tables:
- *	one for elements and the another for markers.  Note that there's
- *	only one binding table for elements and markers.  [We don't want to
- *	trigger both a marker and element bind command for the same event.]
- *	But we don't want a marker and element with the same tag name to
- *	activate the others bindings. A tag "all" for markers should mean
- *	all markers, not all markers and elements.  As a result, element
- *	and marker tags are stored in separate hash tables, which means we
- *	can't generate the same tag address for both an elements and
- *	marker, even if they have the same name.
+ *      The object addresses are strings hashed in one of two tag tables:
+ *      one for elements and the another for markers.  Note that there's
+ *      only one binding table for elements and markers.  [We don't want to
+ *      trigger both a marker and element bind command for the same event.]
+ *      But we don't want a marker and element with the same tag name to
+ *      activate the others bindings. A tag "all" for markers should mean
+ *      all markers, not all markers and elements.  As a result, element
+ *      and marker tags are stored in separate hash tables, which means we
+ *      can't generate the same tag address for both an elements and
+ *      marker, even if they have the same name.
  *
  * Results:
- *	None.
+ *      None.
  *
  * Side effects:
- *	This information will be used by the binding code in bltUtil.c to
- *	determine what graph objects match the current event.  The tags are
- *	placed in tagArr and *nTagsPtr is set with the number of tags
- *	found.
+ *      This information will be used by the binding code in bltUtil.c to
+ *      determine what graph objects match the current event.  The tags are
+ *      placed in tagArr and *nTagsPtr is set with the number of tags
+ *      found.
  *
  *---------------------------------------------------------------------------
  */
@@ -624,7 +624,7 @@ void
 Blt_GraphTags(
     Blt_BindTable table,
     ClientData object,
-    ClientData context,		/* Not used. */
+    ClientData context,         /* Not used. */
     Blt_Chain tags)
 {
     GraphObj *objPtr;
@@ -640,10 +640,10 @@ Blt_GraphTags(
      */
     objPtr = object;
     if (objPtr->deleted) {
-	return;				/* Don't pick deleted objects. */
+	return;                         /* Don't pick deleted objects. */
     }
     switch (objPtr->classId) {
-    case CID_ELEM_BAR:		
+    case CID_ELEM_BAR:          
     case CID_ELEM_CONTOUR:
     case CID_ELEM_LINE: 
     case CID_ELEM_STRIP: 
@@ -690,21 +690,21 @@ Blt_GraphTags(
  *
  * GraphExtents --
  *
- *	Generates a bounding box representing the plotting area of the
- *	graph. This data structure is used to clip the points and line
- *	segments of the line element.
+ *      Generates a bounding box representing the plotting area of the
+ *      graph. This data structure is used to clip the points and line
+ *      segments of the line element.
  *
- *	The clip region is the plotting area plus such arbitrary extra
- *	space.  The reason we clip with a bounding box larger than the plot
- *	area is so that symbols will be drawn even if their center point
- *	isn't in the plotting area.
+ *      The clip region is the plotting area plus such arbitrary extra
+ *      space.  The reason we clip with a bounding box larger than the plot
+ *      area is so that symbols will be drawn even if their center point
+ *      isn't in the plotting area.
  *
  * Results:
- *	None.
+ *      None.
  *
  * Side Effects:
- *	The bounding box is filled with the dimensions of the plotting
- *	area.
+ *      The bounding box is filled with the dimensions of the plotting
+ *      area.
  *
  *---------------------------------------------------------------------------
  */
@@ -721,10 +721,10 @@ GraphExtents(Graph *graphPtr, Region2d *regionPtr)
 
 
 /*
- *	Find the closest point from the set of displayed elements,
- *	searching the display list from back to front.  That way, if the
- *	points from two different elements overlay each other exactly, the
- *	one that's on top (visible) is picked.
+ *      Find the closest point from the set of displayed elements,
+ *      searching the display list from back to front.  That way, if the
+ *      points from two different elements overlay each other exactly, the
+ *      one that's on top (visible) is picked.
  */
 /*ARGSUSED*/
 static ClientData
@@ -736,7 +736,7 @@ PickEntry(ClientData clientData, int x, int y, ClientData *contextPtr)
     Region2d exts;
 
     if (graphPtr->flags & MAP_ALL) {
-	return NULL;			/* Don't pick anything until the
+	return NULL;                    /* Don't pick anything until the
 					 * next redraw occurs. */
     }
     GraphExtents(graphPtr, &exts);
@@ -751,13 +751,13 @@ PickEntry(ClientData clientData, int x, int y, ClientData *contextPtr)
     }
     /* 
      * From top-to-bottom check:
-     *	1. markers drawn on top (-under false).
-     *	2. elements using its display list back to front.
+     *  1. markers drawn on top (-under false).
+     *  2. elements using its display list back to front.
      *  3. markers drawn under element (-under true).
      */
     markerPtr = Blt_NearestMarker(graphPtr, x, y, FALSE);
     if (markerPtr != NULL) {
-	return markerPtr;		/* Found a marker (-under false). */
+	return markerPtr;               /* Found a marker (-under false). */
     }
     elemPtr = Blt_NearestElement(graphPtr, x, y);
     if (elemPtr != NULL) {
@@ -765,9 +765,9 @@ PickEntry(ClientData clientData, int x, int y, ClientData *contextPtr)
     }
     markerPtr = Blt_NearestMarker(graphPtr, x, y, TRUE);
     if (markerPtr != NULL) {
-	return markerPtr;		/* Found a marker (-under true) */
+	return markerPtr;               /* Found a marker (-under true) */
     }
-    return NULL;			/* Nothing found. */
+    return NULL;                        /* Nothing found. */
 }
 
 /*
@@ -775,20 +775,20 @@ PickEntry(ClientData clientData, int x, int y, ClientData *contextPtr)
  *
  * ConfigureGraph --
  *
- *	Allocates resources for the graph.
+ *      Allocates resources for the graph.
  *
  * Results:
- *	None.
+ *      None.
  *
  * Side effects:
- *	Configuration information, such as text string, colors, font,
- *	etc. get set for graphPtr; old resources get freed, if there were
- *	any.  The graph is redisplayed.
+ *      Configuration information, such as text string, colors, font,
+ *      etc. get set for graphPtr; old resources get freed, if there were
+ *      any.  The graph is redisplayed.
  *
  *---------------------------------------------------------------------------
  */
 static void
-ConfigureGraph(Graph *graphPtr)	
+ConfigureGraph(Graph *graphPtr) 
 {
     XColor *colorPtr;
     GC newGC;
@@ -871,13 +871,13 @@ ConfigureGraph(Graph *graphPtr)
      *  the following graph options which affect the size of the plotting
      *  area has changed.
      *
-     *	    -aspect
+     *      -aspect
      *      -borderwidth, -plotborderwidth
-     *	    -font, -title
-     *	    -width, -height
-     *	    -invertxy
-     *	    -bottommargin, -leftmargin, -rightmargin, -topmargin,
-     *	    -barmode, -barwidth
+     *      -font, -title
+     *      -width, -height
+     *      -invertxy
+     *      -bottommargin, -leftmargin, -rightmargin, -topmargin,
+     *      -barmode, -barwidth
      */
     if (Blt_ConfigModified(configSpecs, "-invertxy", "-title", "-font",
 		"-*margin", "-*width", "-height", "-barmode", "-*pad*", 
@@ -897,15 +897,15 @@ ConfigureGraph(Graph *graphPtr)
  *
  * DestroyGraph --
  *
- *	This procedure is invoked by Tcl_EventuallyFree or Tcl_Release to
- *	clean up the internal structure of a graph at a safe time (when
- *	no-one is using it anymore).
+ *      This procedure is invoked by Tcl_EventuallyFree or Tcl_Release to
+ *      clean up the internal structure of a graph at a safe time (when
+ *      no-one is using it anymore).
  *
  * Results:
- *	None.
+ *      None.
  *
  * Side effects:
- *	Everything associated with the widget is freed up.
+ *      Everything associated with the widget is freed up.
  *
  *---------------------------------------------------------------------------
  */
@@ -923,7 +923,7 @@ DestroyGraph(DestroyData dataPtr)
      * the legend and pens (they use elements), so can't be removed until
      * the elements are destroyed.
      */
-    Blt_DestroyElements(graphPtr);	/* Destroy elements before colormaps. */
+    Blt_DestroyElements(graphPtr);      /* Destroy elements before colormaps. */
     Blt_DestroyMarkers(graphPtr);
     Blt_DestroyLegend(graphPtr);
     Blt_DestroyAxes(graphPtr);
@@ -954,15 +954,15 @@ DestroyGraph(DestroyData dataPtr)
  *
  * CreateGraph --
  *
- *	This procedure creates and initializes a new widget.
+ *      This procedure creates and initializes a new widget.
  *
  * Results:
- *	The return value is a pointer to a structure describing the new
- *	widget.  If an error occurred, then the return value is NULL and an
- *	error message is left in interp->result.
+ *      The return value is a pointer to a structure describing the new
+ *      widget.  If an error occurred, then the return value is NULL and an
+ *      error message is left in interp->result.
  *
  * Side effects:
- *	Memory is allocated, a Tk_Window is created, etc.
+ *      Memory is allocated, a Tk_Window is created, etc.
  *
  *---------------------------------------------------------------------------
  */
@@ -1168,20 +1168,20 @@ CgetOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * ExtentsOp --
  *
- *	Reports the size of one of several items within the graph.  The
- *	following are valid items:
+ *      Reports the size of one of several items within the graph.  The
+ *      following are valid items:
  *
- *	  "bottommargin"	Height of the bottom margin
- *	  "leftmargin"		Width of the left margin
- *	  "legend"		x y w h of the legend
- *	  "plotarea"		x y w h of the plotarea
- *	  "plotheight"		Height of the plot area
- *	  "rightmargin"		Width of the right margin
- *	  "topmargin"		Height of the top margin
- *        "plotwidth"		Width of the plot area
+ *        "bottommargin"        Height of the bottom margin
+ *        "leftmargin"          Width of the left margin
+ *        "legend"              x y w h of the legend
+ *        "plotarea"            x y w h of the plotarea
+ *        "plotheight"          Height of the plot area
+ *        "rightmargin"         Width of the right margin
+ *        "topmargin"           Height of the top margin
+ *        "plotwidth"           Width of the plot area
  *
  * Results:
- *	Always returns TCL_OK.
+ *      Always returns TCL_OK.
  *
  *---------------------------------------------------------------------------
  */
@@ -1261,12 +1261,12 @@ topmargin, bottommargin, plotarea, or legend", (char *)NULL);
  *
  * InsideOp --
  *
- *	Returns true of false whether the given point is inside the
- *	plotting area (defined by left,bottom right, top).
+ *      Returns true of false whether the given point is inside the
+ *      plotting area (defined by left,bottom right, top).
  *
  * Results:
- *	Always returns TCL_OK.  interp->result will contain the boolean
- *	string representation.
+ *      Always returns TCL_OK.  interp->result will contain the boolean
+ *      string representation.
  *
  *---------------------------------------------------------------------------
  */
@@ -1296,14 +1296,14 @@ InsideOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * InvtransformOp --
  *
- *	This procedure returns a list of the graph coordinate values
- *	corresponding with the given window X and Y coordinate positions.
+ *      This procedure returns a list of the graph coordinate values
+ *      corresponding with the given window X and Y coordinate positions.
  *
  * Results:
- *	Returns a standard TCL result.  If an error occurred while parsing
- *	the window positions, TCL_ERROR is returned, and interp->result
- *	will contain the error message.  Otherwise interp->result will
- *	contain a TCL list of the x and y coordinates.
+ *      Returns a standard TCL result.  If an error occurred while parsing
+ *      the window positions, TCL_ERROR is returned, and interp->result
+ *      will contain the error message.  Otherwise interp->result will
+ *      contain a TCL list of the x and y coordinates.
  *
  *---------------------------------------------------------------------------
  */
@@ -1328,16 +1328,16 @@ InvtransformOp(Graph *graphPtr, Tcl_Interp *interp, int objc,
     args.elemPtr = NULL;
     args.graphPtr = graphPtr;
     if (Blt_ParseSwitches(interp, transformSpecs, objc - 4, objv + 4, &args, 
-        BLT_SWITCH_DEFAULTS) < 0) {
-        return TCL_ERROR;
+	BLT_SWITCH_DEFAULTS) < 0) {
+	return TCL_ERROR;
     }
     if (args.elemPtr == NULL) {
-        /*  Pick the first pair of axes */
-        axes.x = Blt_GetFirstAxis(graphPtr->margins[MARGIN_X].axes);
-        axes.y = Blt_GetFirstAxis(graphPtr->margins[MARGIN_Y].axes);
-        point = Blt_InvMap2D(graphPtr, x, y, &axes);
+	/*  Pick the first pair of axes */
+	axes.x = Blt_GetFirstAxis(graphPtr->margins[MARGIN_X].axes);
+	axes.y = Blt_GetFirstAxis(graphPtr->margins[MARGIN_Y].axes);
+	point = Blt_InvMap2D(graphPtr, x, y, &axes);
     } else {
-        point = Blt_InvMap2D(graphPtr, x, y, &args.elemPtr->axes);
+	point = Blt_InvMap2D(graphPtr, x, y, &args.elemPtr->axes);
     }
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
     Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewDoubleObj(point.x));
@@ -1351,14 +1351,14 @@ InvtransformOp(Graph *graphPtr, Tcl_Interp *interp, int objc,
  *
  * TransformOp --
  *
- *	This procedure returns a list of the window coordinates
- *	corresponding with the given graph x and y coordinates.
+ *      This procedure returns a list of the window coordinates
+ *      corresponding with the given graph x and y coordinates.
  *
  * Results:
- *	Returns a standard TCL result.  interp->result contains the list of
- *	the graph coordinates. If an error occurred while parsing the
- *	window positions, TCL_ERROR is returned, then interp->result will
- *	contain an error message.
+ *      Returns a standard TCL result.  interp->result contains the list of
+ *      the graph coordinates. If an error occurred while parsing the
+ *      window positions, TCL_ERROR is returned, then interp->result will
+ *      contain an error message.
  *
  *---------------------------------------------------------------------------
  */
@@ -1382,16 +1382,16 @@ TransformOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     args.elemPtr = NULL;
     args.graphPtr = graphPtr;
     if (Blt_ParseSwitches(interp, snapSpecs, objc - 4, objv + 4, &args, 
-        BLT_SWITCH_DEFAULTS) < 0) {
-        return TCL_ERROR;
+	BLT_SWITCH_DEFAULTS) < 0) {
+	return TCL_ERROR;
     }
     if (args.elemPtr == NULL) {
-        /*  Pick the first pair of axes */
-        axes.x = Blt_GetFirstAxis(graphPtr->margins[MARGIN_X].axes);
-        axes.y = Blt_GetFirstAxis(graphPtr->margins[MARGIN_Y].axes);
-        point = Blt_Map2D(graphPtr, x, y, &axes);
+	/*  Pick the first pair of axes */
+	axes.x = Blt_GetFirstAxis(graphPtr->margins[MARGIN_X].axes);
+	axes.y = Blt_GetFirstAxis(graphPtr->margins[MARGIN_Y].axes);
+	point = Blt_Map2D(graphPtr, x, y, &axes);
     } else {
-        point = Blt_Map2D(graphPtr, x, y, &args.elemPtr->axes);
+	point = Blt_Map2D(graphPtr, x, y, &args.elemPtr->axes);
     }
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
     Tcl_ListObjAppendElement(interp, listObjPtr, 
@@ -1409,12 +1409,12 @@ TransformOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * Print1Op --
  *
- *	Prints the equivalent of a screen snapshot of the graph to the
- *	designated printer.
+ *      Prints the equivalent of a screen snapshot of the graph to the
+ *      designated printer.
  *
  * Results:
- *	Returns a standard TCL result.  If an error occurred TCL_ERROR is
- *	returned and interp->result will contain an error message.
+ *      Returns a standard TCL result.  If an error occurred TCL_ERROR is
+ *      returned and interp->result will contain an error message.
  *
  *---------------------------------------------------------------------------
  */
@@ -1537,11 +1537,11 @@ Print1Op(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * Print2Op --
  *
- *	Prints directly to the designated printer device.
+ *      Prints directly to the designated printer device.
  *
  * Results:
- *	Returns a standard TCL result.  If an error occurred, TCL_ERROR is
- *	returned and interp->result will contain an error message.
+ *      Returns a standard TCL result.  If an error occurred, TCL_ERROR is
+ *      returned and interp->result will contain an error message.
  *
  *---------------------------------------------------------------------------
  */
@@ -1606,24 +1606,24 @@ Print2Op(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * ObjToFormat --
  *
- *	Convert a string representing an output format.
+ *      Convert a string representing an output format.
  *
  * Results:
- *	The return value is a standard TCL result.
+ *      The return value is a standard TCL result.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
 ObjToFormat(
-    ClientData clientData,		/* Not used.*/
-    Tcl_Interp *interp,			/* Interpreter to send results back
-                                         * to */
-    const char *switchName,		/* Not used. */
-    Tcl_Obj *objPtr,			/* String representation */
-    char *record,			/* Structure record */
-    int offset,				/* Offset to field in structure */
-    int flags)				/* Not used. */
+    ClientData clientData,              /* Not used.*/
+    Tcl_Interp *interp,                 /* Interpreter to send results back
+					 * to */
+    const char *switchName,             /* Not used. */
+    Tcl_Obj *objPtr,                    /* String representation */
+    char *record,                       /* Structure record */
+    int offset,                         /* Offset to field in structure */
+    int flags)                          /* Not used. */
 {
     int *formatPtr = (int *)(record + offset);
     char c;
@@ -1659,24 +1659,24 @@ ObjToFormat(
  *
  * ObjToElement --
  *
- *	Convert a string representing an element name into its pointer.
+ *      Convert a string representing an element name into its pointer.
  *
  * Results:
- *	The return value is a standard TCL result.
+ *      The return value is a standard TCL result.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
 ObjToElement(
-    ClientData clientData,		/* Not used.*/
-    Tcl_Interp *interp,			/* Interpreter to send results back
-                                         * to */
-    const char *switchName,		/* Not used. */
-    Tcl_Obj *objPtr,			/* String representation */
-    char *record,			/* Structure record */
-    int offset,				/* Offset to field in structure */
-    int flags)				/* Not used. */
+    ClientData clientData,              /* Not used.*/
+    Tcl_Interp *interp,                 /* Interpreter to send results back
+					 * to */
+    const char *switchName,             /* Not used. */
+    Tcl_Obj *objPtr,                    /* String representation */
+    char *record,                       /* Structure record */
+    int offset,                         /* Offset to field in structure */
+    int flags)                          /* Not used. */
 {
     TransformArgs *argsPtr = (TransformArgs *)record;
     Element **elemPtrPtr = (Element **)(record + offset);
@@ -1685,11 +1685,11 @@ ObjToElement(
 
     string = Tcl_GetString(objPtr);
     if (string[0] == '\0') {
-        *elemPtrPtr = NULL;
-        return TCL_OK;
+	*elemPtrPtr = NULL;
+	return TCL_OK;
     }
     if (Blt_GetElement(interp, argsPtr->graphPtr, objPtr, &elemPtr) != TCL_OK) {
-        return TCL_ERROR;
+	return TCL_ERROR;
     }
     *elemPtrPtr = elemPtr;
     return TCL_OK;
@@ -1703,7 +1703,7 @@ static int InitMetaFileHeader(
 {
     unsigned int *p;
     unsigned int sum;
-#define MM_INCH		25.4
+#define MM_INCH         25.4
     int xdpi, ydpi;
 
     mfhPtr->key = 0x9ac6cdd7L;
@@ -1737,13 +1737,13 @@ CreateAPMetaFile(Tcl_Interp *interp, HANDLE hMetaFile, HDC hDC,
     result = TCL_ERROR;
     hMem = NULL;
     hFile = CreateFile(
-       fileName,			/* File path */
-       GENERIC_WRITE,			/* Access mode */
-       0,				/* No sharing. */
-       NULL,				/* Security attributes */
-       CREATE_ALWAYS,			/* Overwrite any existing file */
+       fileName,                        /* File path */
+       GENERIC_WRITE,                   /* Access mode */
+       0,                               /* No sharing. */
+       NULL,                            /* Security attributes */
+       CREATE_ALWAYS,                   /* Overwrite any existing file */
        FILE_ATTRIBUTE_NORMAL,
-       NULL);				/* No template file */
+       NULL);                           /* No template file */
     if (hFile == INVALID_HANDLE_VALUE) {
 	Tcl_AppendResult(interp, "can't create metafile \"", fileName, 
 		"\":", Blt_LastError(), (char *)NULL);
@@ -1790,13 +1790,13 @@ CreateAPMetaFile(Tcl_Interp *interp, HANDLE hMetaFile, HDC hDC,
  *
  * SnapOp --
  *
- *	Snaps a picture of the graph and stores it in the specified image.
+ *      Snaps a picture of the graph and stores it in the specified image.
  *
  * Results:
- *	Returns a standard TCL result.  interp->result contains the list of
- *	the graph coordinates. If an error occurred while parsing the
- *	window positions, TCL_ERROR is returned, then interp->result will
- *	contain an error message.
+ *      Returns a standard TCL result.  interp->result contains the list of
+ *      the graph coordinates. If an error occurred while parsing the
+ *      window positions, TCL_ERROR is returned, then interp->result will
+ *      contain an error message.
  *
  *---------------------------------------------------------------------------
  */
@@ -1857,11 +1857,11 @@ SnapOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	if (args.format == FORMAT_PICTURE) {
 	    result = Blt_SnapPicture(interp, graphPtr->tkwin, drawable, 0, 0, 
 		args.width, args.height, args.width, args.height, args.name,
-                1.0);
+		1.0);
 	} else {
 	    result = Blt_SnapPhoto(interp, graphPtr->tkwin, drawable, 0, 0, 
 		args.width, args.height, args.width, args.height, args.name,
-                1.0);
+		1.0);
 	}
 	Tk_FreePixmap(graphPtr->display, drawable);
 	break;
@@ -1952,15 +1952,15 @@ SnapOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * GraphWidgetCmd --
  *
- *	This procedure is invoked to process the TCL command that
- *	corresponds to a widget managed by this module.  See the user
- *	documentation for details on what it does.
+ *      This procedure is invoked to process the TCL command that
+ *      corresponds to a widget managed by this module.  See the user
+ *      documentation for details on what it does.
  *
  * Results:
- *	A standard TCL result.
+ *      A standard TCL result.
  *
  * Side effects:
- *	See the user documentation.
+ *      See the user documentation.
  *
  *---------------------------------------------------------------------------
  */
@@ -2018,14 +2018,14 @@ Blt_GraphInstCmdProc(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * NewGraph --
  *
- *	Creates a new window and TCL command representing an instance of a
- *	graph widget.
+ *      Creates a new window and TCL command representing an instance of a
+ *      graph widget.
  *
  * Results:
- *	A standard TCL result.
+ *      A standard TCL result.
  *
  * Side effects:
- *	See the user documentation.
+ *      See the user documentation.
  *
  *---------------------------------------------------------------------------
  */
@@ -2052,14 +2052,14 @@ NewGraph(Tcl_Interp *interp, int objc, Tcl_Obj *const *objv, ClassId classId)
  *
  * GraphCmd --
  *
- *	Creates a new window and TCL command representing an instance of a
- *	graph widget.
+ *      Creates a new window and TCL command representing an instance of a
+ *      graph widget.
  *
  * Results:
- *	A standard TCL result.
+ *      A standard TCL result.
  *
  * Side effects:
- *	See the user documentation.
+ *      See the user documentation.
  *
  *---------------------------------------------------------------------------
  */
@@ -2076,14 +2076,14 @@ GraphCmd(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * BarchartCmd --
  *
- *	Creates a new window and TCL command representing an instance of a
- *	barchart widget.
+ *      Creates a new window and TCL command representing an instance of a
+ *      barchart widget.
  *
  * Results:
- *	A standard TCL result.
+ *      A standard TCL result.
  *
  * Side effects:
- *	See the user documentation.
+ *      See the user documentation.
  *
  *---------------------------------------------------------------------------
  */
@@ -2100,14 +2100,14 @@ BarchartCmd(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * StripchartCmd --
  *
- *	Creates a new window and TCL command representing an instance of a
- *	barchart widget.
+ *      Creates a new window and TCL command representing an instance of a
+ *      barchart widget.
  *
  * Results:
- *	A standard TCL result.
+ *      A standard TCL result.
  *
  * Side effects:
- *	See the user documentation.
+ *      See the user documentation.
  *
  *---------------------------------------------------------------------------
  */
@@ -2124,14 +2124,14 @@ StripchartCmd(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * ContourCmd --
  *
- *	Creates a new window and TCL command representing an instance of a
- *	graph widget.
+ *      Creates a new window and TCL command representing an instance of a
+ *      graph widget.
  *
  * Results:
- *	A standard TCL result.
+ *      A standard TCL result.
  *
  * Side effects:
- *	See the user documentation.
+ *      See the user documentation.
  *
  *---------------------------------------------------------------------------
  */
@@ -2149,15 +2149,15 @@ ContourCmd(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * DrawMargins --
  *
- * 	Draws the exterior region of the graph (axes, ticks, titles, etc)
- * 	onto a pixmap. The interior region is defined by the given
- * 	rectangle structure.
+ *      Draws the exterior region of the graph (axes, ticks, titles, etc)
+ *      onto a pixmap. The interior region is defined by the given
+ *      rectangle structure.
  *
- *	---------------------------------
+ *      ---------------------------------
  *      |                               |
  *      |           rectArr[0]          |
  *      |                               |
- *	---------------------------------
+ *      ---------------------------------
  *      |     |top           right|     |
  *      |     |                   |     |
  *      |     |                   |     |
@@ -2168,24 +2168,24 @@ ContourCmd(ClientData clientData, Tcl_Interp *interp, int objc,
  *      |     |                   |     |
  *      |     |                   |     |
  *      |     |left         bottom|     |
- *	---------------------------------
+ *      ---------------------------------
  *      |                               |
  *      |          rectArr[3]           |
  *      |                               |
- *	---------------------------------
+ *      ---------------------------------
  *
- *		X coordinate axis
- *		Y coordinate axis
- *		legend
- *		interior border
- *		exterior border
- *		titles (X and Y axis, graph)
+ *              X coordinate axis
+ *              Y coordinate axis
+ *              legend
+ *              interior border
+ *              exterior border
+ *              titles (X and Y axis, graph)
  *
  * Returns:
- *	None.
+ *      None.
  *
  * Side Effects:
- *	Exterior of graph is displayed in its window.
+ *      Exterior of graph is displayed in its window.
  *
  *---------------------------------------------------------------------------
  */
@@ -2257,13 +2257,13 @@ DrawMargins(Graph *graphPtr, Drawable drawable)
  *
  * DrawPlotRegion --
  *
- *	Draws the contents of the plotting area.  This consists of the
- *	elements, markers (draw under elements), axis limits, and possibly
- *	the legend.  Typically, the output will be cached into a backing
- *	store pixmap, so that redraws can occur quickly.
+ *      Draws the contents of the plotting area.  This consists of the
+ *      elements, markers (draw under elements), axis limits, and possibly
+ *      the legend.  Typically, the output will be cached into a backing
+ *      store pixmap, so that redraws can occur quickly.
  *
  * Results:
- *	None.
+ *      None.
  *
  *---------------------------------------------------------------------------
  */
@@ -2300,13 +2300,13 @@ DrawPlotRegion(Graph *graphPtr, Drawable drawable)
  *
  * DrawPlot --
  *
- *	Draws the contents of the plotting area.  This consists of the
- *	elements, markers (draw under elements), axis limits, and possibly
- *	the legend.  Typically, the output will be cached into a backing
- *	store pixmap, so that redraws can occur quickly.
+ *      Draws the contents of the plotting area.  This consists of the
+ *      elements, markers (draw under elements), axis limits, and possibly
+ *      the legend.  Typically, the output will be cached into a backing
+ *      store pixmap, so that redraws can occur quickly.
  *
  * Results:
- *	None.
+ *      None.
  *
  *---------------------------------------------------------------------------
  */
@@ -2380,7 +2380,7 @@ Blt_DrawGraph(Graph *graphPtr, Drawable drawable)
 	Blt_Bg_DrawRectangle(graphPtr->tkwin, drawable, 
 		graphPtr->normalBg, graphPtr->highlightWidth, 
 		graphPtr->highlightWidth, 
-	 	graphPtr->width  - 2 * graphPtr->highlightWidth, 
+		graphPtr->width  - 2 * graphPtr->highlightWidth, 
 		graphPtr->height - 2 * graphPtr->highlightWidth, 
 		graphPtr->borderWidth, graphPtr->relief);
     }
@@ -2398,24 +2398,24 @@ static void
 UpdateMarginTraces(Graph *graphPtr)
 {
     if (graphPtr->leftMarginVarObjPtr != NULL) { 
-        Tcl_ObjSetVar2(graphPtr->interp, graphPtr->leftMarginVarObjPtr, NULL,
-                Tcl_NewIntObj(graphPtr->leftMarginPtr->width),
-                TCL_GLOBAL_ONLY);
+	Tcl_ObjSetVar2(graphPtr->interp, graphPtr->leftMarginVarObjPtr, NULL,
+		Tcl_NewIntObj(graphPtr->leftMarginPtr->width),
+		TCL_GLOBAL_ONLY);
     }
     if (graphPtr->rightMarginVarObjPtr != NULL) { 
-        Tcl_ObjSetVar2(graphPtr->interp, graphPtr->rightMarginVarObjPtr, NULL,
-                Tcl_NewIntObj(graphPtr->rightMarginPtr->width),
-                TCL_GLOBAL_ONLY);
+	Tcl_ObjSetVar2(graphPtr->interp, graphPtr->rightMarginVarObjPtr, NULL,
+		Tcl_NewIntObj(graphPtr->rightMarginPtr->width),
+		TCL_GLOBAL_ONLY);
     }
     if (graphPtr->topMarginVarObjPtr != NULL) { 
-        Tcl_ObjSetVar2(graphPtr->interp, graphPtr->topMarginVarObjPtr, NULL,
-                Tcl_NewIntObj(graphPtr->topMarginPtr->height),
-                TCL_GLOBAL_ONLY);
+	Tcl_ObjSetVar2(graphPtr->interp, graphPtr->topMarginVarObjPtr, NULL,
+		Tcl_NewIntObj(graphPtr->topMarginPtr->height),
+		TCL_GLOBAL_ONLY);
     }
     if (graphPtr->bottomMarginVarObjPtr != NULL) { 
-        Tcl_ObjSetVar2(graphPtr->interp, graphPtr->bottomMarginVarObjPtr, NULL,
-                Tcl_NewIntObj(graphPtr->bottomMarginPtr->height),
-                TCL_GLOBAL_ONLY);
+	Tcl_ObjSetVar2(graphPtr->interp, graphPtr->bottomMarginVarObjPtr, NULL,
+		Tcl_NewIntObj(graphPtr->bottomMarginPtr->height),
+		TCL_GLOBAL_ONLY);
     }
 }
 
@@ -2424,13 +2424,13 @@ UpdateMarginTraces(Graph *graphPtr)
  *
  * DisplayGraph --
  *
- *	This procedure is invoked to display a graph widget.
+ *      This procedure is invoked to display a graph widget.
  *
  * Results:
- *	None.
+ *      None.
  *
  * Side effects:
- *	Commands are output to X to display the graph in its current mode.
+ *      Commands are output to X to display the graph in its current mode.
  *
  *---------------------------------------------------------------------------
  */
@@ -2444,7 +2444,7 @@ DisplayGraph(ClientData clientData)
 
     graphPtr->flags &= ~REDRAW_PENDING;
     if (graphPtr->tkwin == NULL) {
-	return;				/* Window has been destroyed (we
+	return;                         /* Window has been destroyed (we
 					 * should not get here) */
     }
     tkwin = graphPtr->tkwin;
@@ -2519,7 +2519,7 @@ DisplayGraph(ClientData clientData)
 	Blt_Bg_DrawRectangle(graphPtr->tkwin, drawable, 
 		graphPtr->normalBg, graphPtr->highlightWidth, 
 		graphPtr->highlightWidth, 
-	 	graphPtr->width - 2 * graphPtr->highlightWidth, 
+		graphPtr->width - 2 * graphPtr->highlightWidth, 
 		graphPtr->height - 2 * graphPtr->highlightWidth, 
 		graphPtr->borderWidth, graphPtr->relief);
     }
@@ -2594,12 +2594,12 @@ Blt_GraphType(Graph *graphPtr)
  *
  * Blt_ReconfigureGraph --
  *
- *	Allocates resources for the graph.
+ *      Allocates resources for the graph.
  *
  *---------------------------------------------------------------------------
  */
 void
-Blt_ReconfigureGraph(Graph *graphPtr)	
+Blt_ReconfigureGraph(Graph *graphPtr)   
 {
     ConfigureGraph(graphPtr);
     Blt_ConfigureLegend(graphPtr);

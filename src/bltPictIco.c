@@ -320,7 +320,7 @@ static void
 IcoAssert(const char *testExpr, const char *fileName, int lineNumber)
 {
     IcoError("line %d of %s: Assert \"%s\" failed\n", lineNumber, fileName, 
-             testExpr);
+	     testExpr);
 }
 
 static INLINE unsigned int

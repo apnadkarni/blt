@@ -397,10 +397,10 @@ static void
 SetArcBallBounds(ArcBall *arcPtr, double w, double h)
 {
     if (w <= 1.0 ) {
-        w = 2.0;
+	w = 2.0;
     }
     if (h <= 1.0 ) {
-        h = 2.0;
+	h = 2.0;
     }
     /* Set adjustment factor for width/height */
     arcPtr->xScale = 1.0 / ((w - 1.0) * 0.5);
@@ -435,21 +435,21 @@ PointOnSphere(ArcBall *arcPtr, double x, double y, Point3d *p)
      * (length > radius squared)
      */
     if (d2 > 1.0) {
-        double scale;
+	double scale;
 
-        /* Compute a normalizing factor (radius / sqrt(length)) */
-        scale = 1.0 / sqrt(d2);
+	/* Compute a normalizing factor (radius / sqrt(length)) */
+	scale = 1.0 / sqrt(d2);
 
-        /* Return the "normalized" vector, a point on the sphere */
-        p->x = sx * scale;
-        p->y = sy * scale;
-        p->z = 0.0;
+	/* Return the "normalized" vector, a point on the sphere */
+	p->x = sx * scale;
+	p->y = sy * scale;
+	p->z = 0.0;
     } else {				/* else it's on the inside */
-        /* Return a vector to a point mapped inside the sphere
-         * sqrt(radius squared - length) */
-        p->x = sx;
-        p->y = sy;
-        p->z = sqrt(1.0 - d2);
+	/* Return a vector to a point mapped inside the sphere
+	 * sqrt(radius squared - length) */
+	p->x = sx;
+	p->y = sy;
+	p->z = sqrt(1.0 - d2);
     }
 }
 
@@ -469,26 +469,26 @@ DragArcBall(ArcBall *arcPtr, double x, double y, Quaternion *q)
 
     /* Return the quaternion equivalent to the rotation. */
     if (q != NULL) {
-        Point3d perp;
+	Point3d perp;
 
-        /* Compute the vector perpendicular to the begin and end vectors. */
-        CrossProduct(&arcPtr->click, &arcPtr->drag, &perp);
+	/* Compute the vector perpendicular to the begin and end vectors. */
+	CrossProduct(&arcPtr->click, &arcPtr->drag, &perp);
 
-        /* Compute the length of the perpendicular vector. */
-        if (Length(&perp) > DBL_EPSILON) {
-            /* If its non-zero, we're ok, so return the perpendicular
-             * vector as the transform after all. */
-            q->x = perp.x;
-            q->y = perp.y;
-            q->z = perp.z;
-            /* In the quaternion values, w is cosine (theta / 2), where theta
-             * is rotation angle. */
-            q->w = DotProduct(&arcPtr->click, &arcPtr->drag);
-        } else {
-            /* If it is zero, the begin and end vectors coincide, so return an
-             * identity transform. */
+	/* Compute the length of the perpendicular vector. */
+	if (Length(&perp) > DBL_EPSILON) {
+	    /* If its non-zero, we're ok, so return the perpendicular
+	     * vector as the transform after all. */
+	    q->x = perp.x;
+	    q->y = perp.y;
+	    q->z = perp.z;
+	    /* In the quaternion values, w is cosine (theta / 2), where theta
+	     * is rotation angle. */
+	    q->w = DotProduct(&arcPtr->click, &arcPtr->drag);
+	} else {
+	    /* If it is zero, the begin and end vectors coincide, so return an
+	     * identity transform. */
 	    SetIdentity(q);
-        }
+	}
     }
 }
 
@@ -534,7 +534,7 @@ GetEulerAnglesFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, EulerAngles *e)
  */
 static int
 EulerOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-        Tcl_Obj *const *objv)
+	Tcl_Obj *const *objv)
 {
     ArcBall *ballPtr = clientData;
 
@@ -607,7 +607,7 @@ EulerOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
 	objPtr = Tcl_NewDoubleObj(x);
 	Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
- 	objPtr = Tcl_NewDoubleObj(y);
+	objPtr = Tcl_NewDoubleObj(y);
 	Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
 	objPtr = Tcl_NewDoubleObj(z);
 	Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
@@ -684,7 +684,7 @@ MatrixOp(ClientData clientData, Tcl_Interp *interp, int objc,
  */
 static int
 QuaternionOp(ClientData clientData, Tcl_Interp *interp, int objc,
-             Tcl_Obj *const *objv)
+	     Tcl_Obj *const *objv)
 {
     ArcBall *ballPtr = clientData;
 
@@ -701,7 +701,7 @@ QuaternionOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
 	objPtr = Tcl_NewDoubleObj(ballPtr->q.w);
 	Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
- 	objPtr = Tcl_NewDoubleObj(ballPtr->q.x);
+	objPtr = Tcl_NewDoubleObj(ballPtr->q.x);
 	Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
 	objPtr = Tcl_NewDoubleObj(ballPtr->q.y);
 	Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
@@ -729,7 +729,7 @@ QuaternionOp(ClientData clientData, Tcl_Interp *interp, int objc,
  */
 static int
 ResetOp(ClientData clientData, Tcl_Interp *interp, int objc,
-        Tcl_Obj *const *objv)
+	Tcl_Obj *const *objv)
 {
     ArcBall *ballPtr = clientData;
 
@@ -753,7 +753,7 @@ ResetOp(ClientData clientData, Tcl_Interp *interp, int objc,
  */
 static int
 ResizeOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-         Tcl_Obj *const *objv)
+	 Tcl_Obj *const *objv)
 {
     ArcBall *ballPtr = clientData;
     int w, h;
@@ -790,7 +790,7 @@ ResizeOp(ClientData clientData, Tcl_Interp *interp, int objc,
  */
 static int
 RotateOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-         Tcl_Obj *const *objv)
+	 Tcl_Obj *const *objv)
 {
     ArcBall *ballPtr = clientData;
     Quaternion q, p;
@@ -964,7 +964,7 @@ GenerateName(Tcl_Interp *interp, const char *prefix, const char *suffix,
 /*ARGSUSED*/
 static int
 CreateOp(ClientData clientData, Tcl_Interp *interp, int objc,
-         Tcl_Obj *const *objv)
+	 Tcl_Obj *const *objv)
 {
     ArcBallCmdInterpData *dataPtr = clientData;
     const char *name;
@@ -1023,7 +1023,7 @@ CreateOp(ClientData clientData, Tcl_Interp *interp, int objc,
 		ArcBallInstObjCmd, ballPtr, ArcBallInstDeleteProc);
 	ballPtr->tablePtr = &dataPtr->arcballTable;
 	ballPtr->hashPtr = Blt_CreateHashEntry(ballPtr->tablePtr,
-                (char *)ballPtr, &isNew);
+		(char *)ballPtr, &isNew);
 	Blt_SetHashValue(ballPtr->hashPtr, ballPtr);
 	Tcl_SetStringObj(Tcl_GetObjResult(interp), name, -1);
 	Tcl_DStringFree(&ds);
@@ -1044,7 +1044,7 @@ CreateOp(ClientData clientData, Tcl_Interp *interp, int objc,
 /*ARGSUSED*/
 static int
 DestroyOp(ClientData clientData, Tcl_Interp *interp, int objc,
-          Tcl_Obj *const *objv)
+	  Tcl_Obj *const *objv)
 {
     ArcBallCmdInterpData *dataPtr = clientData;
     int i;
@@ -1073,7 +1073,7 @@ DestroyOp(ClientData clientData, Tcl_Interp *interp, int objc,
 /*ARGSUSED*/
 static int
 NamesOp(ClientData clientData, Tcl_Interp *interp, int objc,
-        Tcl_Obj *const *objv)
+	Tcl_Obj *const *objv)
 {
     ArcBallCmdInterpData *dataPtr = clientData;
     Blt_HashEntry *hPtr;

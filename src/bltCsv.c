@@ -410,13 +410,13 @@ CsvCmd(ClientData clientData, Tcl_Interp *interp, int objc,
     if (objc == 3) {
 	char *string;
 
-        string = Tcl_GetString(objv[1]);
-        if (strcmp(string, "-data") == 0) {
+	string = Tcl_GetString(objv[1]);
+	if (strcmp(string, "-data") == 0) {
 	    return  ParseCsvData(interp, objv[2]);
 	} 
     }
     Tcl_AppendResult(interp, "wrong # args: should be \"", 
-        Tcl_GetString(objv[0]), " ?fileName? ?-data dataString?", (char *)NULL);
+	Tcl_GetString(objv[0]), " ?fileName? ?-data dataString?", (char *)NULL);
     return TCL_ERROR;
 }
     

@@ -514,9 +514,9 @@ static Blt_ConfigSpec configSpecs[] =
 	DEF_ARROW_RELIEF, Blt_Offset(ComboEntry, activeArrowRelief), 
 	BLT_CONFIG_DONT_SET_DEFAULT | COMBO_ENTRY_MASK},
     {BLT_CONFIG_PIXELS_NNEG, "-arrowborderwidth", "arrowBorderWidth", 
-        "ArrowBorderWidth", DEF_ARROW_BORDERWIDTH, 
+	"ArrowBorderWidth", DEF_ARROW_BORDERWIDTH, 
 	Blt_Offset(ComboEntry, arrowBorderWidth), 
-        BLT_CONFIG_DONT_SET_DEFAULT | ALL_MASK },
+	BLT_CONFIG_DONT_SET_DEFAULT | ALL_MASK },
     {BLT_CONFIG_PIXELS_NNEG, "-arrowpad", "arrowPad", "ArrowPad", 
 	DEF_ARROW_PAD, Blt_Offset(ComboEntry, arrowPad), 
 	BLT_CONFIG_DONT_SET_DEFAULT | COMBO_ENTRY_MASK},
@@ -525,7 +525,7 @@ static Blt_ConfigSpec configSpecs[] =
 	BLT_CONFIG_DONT_SET_DEFAULT | COMBO_ENTRY_MASK},
     {BLT_CONFIG_PIXELS_NNEG, "-arrowwidth", "arrowWidth","ArrowWidth",
 	DEF_ARROW_WIDTH, Blt_Offset(ComboEntry, reqArrowWidth), 
-        BLT_CONFIG_DONT_SET_DEFAULT | COMBO_ENTRY_MASK},
+	BLT_CONFIG_DONT_SET_DEFAULT | COMBO_ENTRY_MASK},
     {BLT_CONFIG_BACKGROUND, "-background", "background", "Background", 
 	DEF_NORMAL_BG, Blt_Offset(ComboEntry, normalBg), ALL_MASK },
     {BLT_CONFIG_SYNONYM, "-bd", "borderWidth", (char *)NULL, (char *)NULL, 0,
@@ -555,8 +555,8 @@ static Blt_ConfigSpec configSpecs[] =
 	"DisabledForeground", DEF_DISABLED_FG, 
 	Blt_Offset(ComboEntry, disabledColor), ALL_MASK, },
     {BLT_CONFIG_BITMASK, "-exportselection", "exportSelection", 
-        "ExportSelection", DEF_EXPORTSELECTION, Blt_Offset(ComboEntry, flags),
-        BLT_CONFIG_DONT_SET_DEFAULT | ALL_MASK, 
+	"ExportSelection", DEF_EXPORTSELECTION, Blt_Offset(ComboEntry, flags),
+	BLT_CONFIG_DONT_SET_DEFAULT | ALL_MASK, 
 	(Blt_CustomOption *)EXPORT_SELECTION},
     {BLT_CONFIG_SYNONYM, "-fg", "foreground", (char *)NULL, (char *)NULL, 0, 
 	ALL_MASK},
@@ -585,7 +585,7 @@ static Blt_ConfigSpec configSpecs[] =
 	&iconOption},
     {BLT_CONFIG_CUSTOM, "-iconvariable", "iconVariable", "IconVariable", 
 	DEF_TEXT_VARIABLE, Blt_Offset(ComboEntry, iconVarObjPtr), 
-        BLT_CONFIG_NULL_OK | ALL_MASK, &iconVarOption},
+	BLT_CONFIG_NULL_OK | ALL_MASK, &iconVarOption},
     {BLT_CONFIG_PIXELS_NNEG, "-iconwidth", "iconWidth", "IconWidth",
 	DEF_WIDTH, Blt_Offset(ComboEntry, prefIconWidth), 
 	BLT_CONFIG_DONT_SET_DEFAULT | ALL_MASK},
@@ -632,7 +632,7 @@ static Blt_ConfigSpec configSpecs[] =
 	BLT_CONFIG_DONT_SET_DEFAULT | ALL_MASK},
     {BLT_CONFIG_STRING, "-show", "show", "Show", DEF_SHOW, 
 	Blt_Offset(ComboEntry, cipher), 
-        BLT_CONFIG_NULL_OK | BLT_CONFIG_DONT_SET_DEFAULT | ALL_MASK},
+	BLT_CONFIG_NULL_OK | BLT_CONFIG_DONT_SET_DEFAULT | ALL_MASK},
     {BLT_CONFIG_CUSTOM, "-state", "state", "State", DEF_STATE, 
 	Blt_Offset(ComboEntry, flags), 
 	BLT_CONFIG_DONT_SET_DEFAULT | ALL_MASK, &stateOption},
@@ -654,7 +654,7 @@ static Blt_ConfigSpec configSpecs[] =
 	ALL_MASK},
     {BLT_CONFIG_CUSTOM, "-textvariable", "textVariable", "TextVariable", 
 	DEF_TEXT_VARIABLE, Blt_Offset(ComboEntry, textVarObjPtr), 
-        BLT_CONFIG_NULL_OK | ALL_MASK, &textVarOption},
+	BLT_CONFIG_NULL_OK | ALL_MASK, &textVarOption},
     {BLT_CONFIG_PIXELS_NNEG, "-textwidth", "textWidth", "TextWidth",
 	DEF_WIDTH, Blt_Offset(ComboEntry, prefTextWidth), 
 	BLT_CONFIG_DONT_SET_DEFAULT | ALL_MASK},
@@ -662,7 +662,7 @@ static Blt_ConfigSpec configSpecs[] =
 	DEF_WIDTH, Blt_Offset(ComboEntry, reqWidth), 
 	BLT_CONFIG_DONT_SET_DEFAULT | ALL_MASK},
     {BLT_CONFIG_OBJ, "-xscrollcommand", "xScrollCommand", "ScrollCommand",
-        DEF_SCROLL_CMD, Blt_Offset(ComboEntry, scrollCmdObjPtr), 
+	DEF_SCROLL_CMD, Blt_Offset(ComboEntry, scrollCmdObjPtr), 
 	BLT_CONFIG_NULL_OK | ALL_MASK},
     {BLT_CONFIG_PIXELS_POS, "-xscrollincrement", "xScrollIncrement",
 	"ScrollIncrement", DEF_SCROLL_INCR, Blt_Offset(ComboEntry, scrollUnits),
@@ -1608,7 +1608,7 @@ TextVarTraceProc(
 
     assert(comboPtr->textVarObjPtr != NULL);
     if (flags & TCL_INTERP_DESTROYED) {
-    	return NULL;			/* Interpreter is going away. */
+	return NULL;			/* Interpreter is going away. */
     }
     /*
      * If the variable is being unset, then re-establish the trace.
@@ -1677,7 +1677,7 @@ IconVarTraceProc(
 
     assert(comboPtr->iconVarObjPtr != NULL);
     if (flags & TCL_INTERP_DESTROYED) {
-    	return NULL;			/* Interpreter is going away. */
+	return NULL;			/* Interpreter is going away. */
 
     }
     /*
@@ -2415,9 +2415,9 @@ ConfigureComboEntry(Tcl_Interp *interp, ComboEntry *comboPtr, int objc,
 	return TCL_ERROR;
     }
     if (comboPtr->flags & READONLY) {
-        comboPtr->flags &= ~ICURSOR;
+	comboPtr->flags &= ~ICURSOR;
     } else {
-        comboPtr->flags |= ICURSOR;
+	comboPtr->flags |= ICURSOR;
     }
     /* Text in/out focus GCs. */
     gcMask = GCForeground | GCFont;
@@ -3236,36 +3236,36 @@ PostOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	Tcl_Obj *cmdObjPtr, *objPtr;
 	int result;
 
-        /* menu post -align right */
+	/* menu post -align right */
 	cmdObjPtr = Tcl_DuplicateObj(comboPtr->menuObjPtr);
-        objPtr = Tcl_NewStringObj("post", 4);
+	objPtr = Tcl_NewStringObj("post", 4);
 	Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
-        objPtr = Tcl_NewStringObj("-align", 6);
+	objPtr = Tcl_NewStringObj("-align", 6);
 	Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
-        objPtr = Tcl_NewStringObj("right", 5);
+	objPtr = Tcl_NewStringObj("right", 5);
 	Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
-        if (comboPtr->flags & ARROW) {
-            int x1, y1, x2, y2, rootX, rootY;
-            Tcl_Obj *listObjPtr;
-            
-            Tk_GetRootCoords(comboPtr->tkwin, &rootX, &rootY);
-            x1 = Tk_Width(comboPtr->tkwin) - 
-                (comboPtr->inset + comboPtr->arrowWidth);
-            if (x1 < 0) {
-                x1 = comboPtr->inset;
-            }
-            x1 += rootX;
-            x2 = Tk_Width(comboPtr->tkwin) + rootX;
-            y1 = comboPtr->inset + 1 + rootY;
-            y2 = Tk_Height(comboPtr->tkwin) + rootY;
-            objPtr = Tcl_NewStringObj("-box", 4);
-            Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
-            listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
-            Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewIntObj(x1));
-            Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewIntObj(y1));
-            Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewIntObj(x2));
-            Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewIntObj(y2));
-            Tcl_ListObjAppendElement(interp, cmdObjPtr, listObjPtr);
+	if (comboPtr->flags & ARROW) {
+	    int x1, y1, x2, y2, rootX, rootY;
+	    Tcl_Obj *listObjPtr;
+	    
+	    Tk_GetRootCoords(comboPtr->tkwin, &rootX, &rootY);
+	    x1 = Tk_Width(comboPtr->tkwin) - 
+		(comboPtr->inset + comboPtr->arrowWidth);
+	    if (x1 < 0) {
+		x1 = comboPtr->inset;
+	    }
+	    x1 += rootX;
+	    x2 = Tk_Width(comboPtr->tkwin) + rootX;
+	    y1 = comboPtr->inset + 1 + rootY;
+	    y2 = Tk_Height(comboPtr->tkwin) + rootY;
+	    objPtr = Tcl_NewStringObj("-box", 4);
+	    Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
+	    listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
+	    Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewIntObj(x1));
+	    Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewIntObj(y1));
+	    Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewIntObj(x2));
+	    Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewIntObj(y2));
+	    Tcl_ListObjAppendElement(interp, cmdObjPtr, listObjPtr);
 	}
 	Tcl_IncrRefCount(cmdObjPtr);
 	Tcl_Preserve(comboPtr);

@@ -68,11 +68,11 @@ typedef struct {
 } GraphObj;
 
 #define MARKER_UNDER	1               /* Draw markers designated to lie
-                                         * underneath elements, grids,
-                                         * legend, etc. */
+					 * underneath elements, grids,
+					 * legend, etc. */
 #define MARKER_ABOVE	0               /* Draw markers designated to rest
-                                         * above elements, grids, legend,
-                                         * etc. */
+					 * above elements, grids, legend,
+					 * etc. */
 #define PADX		2               /* Padding between labels/titles */
 #define PADY    	2               /* Padding between labels */
 
@@ -266,7 +266,7 @@ typedef struct {
     const char *name;
     short int width, height;		/* Dimensions of the margin */
     short int axesOffset;               /* The width or height of the margin 
-                                         * depending upon the side. */
+					 * depending upon the side. */
     short int axesTitleLength;		/* Width of the widest title to be
 					 * shown.  Multiple titles are
 					 * displayed in another
@@ -278,17 +278,17 @@ typedef struct {
 					 * labels in this margin. */
     unsigned int numVisibleAxes;	/* # of axes to be displayed */
     Blt_Chain axes;			/* List of axes associated with
-                                         * this margin */
+					 * this margin */
     int side;				/* Indicates the side where the
 					 * margin is located: x, x1, y, or
 					 * y2. */
     unsigned short nextStackOffset;     /* For stacked axes, this is the
-                                         * offset of next axis (on top of
-                                         * the last axis) in the
-                                         * margin.  */
+					 * offset of next axis (on top of
+					 * the last axis) in the
+					 * margin.  */
     unsigned short nextLayerOffset;     /* This is the offset of the next
-                                         * axis outward from the last
-                                         * axis. */
+					 * axis outward from the last
+					 * axis. */
 } Margin;
 
 #define MARGIN_NONE	-1
@@ -313,9 +313,9 @@ typedef struct {
  */
 struct _Graph {
     unsigned int flags;			/* Flags; see below for
-                                         * definitions. */
+					 * definitions. */
     Tcl_Interp *interp;			/* Interpreter associated with
-                                         * graph */
+					 * graph */
     Tk_Window tkwin;			/* Window that embodies the graph.
 					 * NULL means that the window has
 					 * been destroyed but the data
@@ -325,7 +325,7 @@ struct _Graph {
 					 * to release resources after tkwin
 					 * has already gone away. */
     Tcl_Command cmdToken;		/* Token for graph's widget
-                                         * command. */
+					 * command. */
     const char *data;			/* This value isn't used in C code.
 					 * It may be used in TCL bindings
 					 * to associate extra data. */
@@ -358,10 +358,10 @@ struct _Graph {
 					 * widget should be included in
 					 * focus traversal. */
     Axis *focusPtr;			/* The axis that currently has
-                                         * focus. */
+					 * focus. */
     
     int reqWidth, reqHeight;		/* Requested size of graph
-                                         * window */
+					 * window */
     int reqPlotWidth, reqPlotHeight;	/* Requested size of plot
 					 * area. Zero means to adjust the
 					 * dimension according to the
@@ -378,7 +378,7 @@ struct _Graph {
     } elements, markers, axes;
 
     Blt_HashTable dataTables;		/* Hash table of datatable
-                                         * clients. */
+					 * clients. */
     ClassId classId;			/* Default element type */
     Blt_BindTable bindTable;
     int nextMarkerId;			/* Tracks next marker identifier
@@ -400,7 +400,7 @@ struct _Graph {
     int reqBottomMarginSize;
     
     PageSetup *pageSetup;		/* Page layout options: see
-                                         * bltGrPS.c */
+					 * bltGrPS.c */
     Legend *legend;			/* Legend information: see
 					 * bltGrLegd.c */
     Crosshairs *crosshairs;		/* Crosshairs information: see
@@ -413,7 +413,7 @@ struct _Graph {
 					 * lines */  
     int plotBW;				/* Width of interior 3-D border. */
     int plotRelief;			/* 3-d effect: TK_RELIEF_RAISED
-                                         * etc. */
+					 * etc. */
     Blt_Bg plotBg;			/* Color of plotting surface */
 
     /* If non-zero, force plot to conform to aspect ratio W/H */
@@ -555,41 +555,41 @@ struct _Graph {
 #define HIDDEN			(1<<0)
 #define DELETED 		(1<<1)
 #define REDRAW_PENDING		(1<<2)  /* Indicates a DoWhenIdle handler
-                                         * has already been queued to
-                                         * redraw this window.  */
+					 * has already been queued to
+					 * redraw this window.  */
 
 #define	ACTIVE_PENDING		(1<<3)
 #define	MAP_ITEM		(1<<4)  /* Indicates that the
-                                         * element/marker/axis
-                                         * configuration has changed such
-                                         * that its layout of the item
-                                         * (i.e. its position in the graph
-                                         * window) needs to be
-                                         * recalculated. */
+					 * element/marker/axis
+					 * configuration has changed such
+					 * that its layout of the item
+					 * (i.e. its position in the graph
+					 * window) needs to be
+					 * recalculated. */
 #define DIRTY			(1<<5)
 #define ACTIVE			(1<<6)
 #define FOCUS			(1<<7)
 
 #define	MAP_ALL			(1<<8)  /* Indicates that the layout of the
-                                         * axes and all elements and
-                                         * markers and the graph need to be
-                                         * recalculated. Otherwise, the
-                                         * layout of only those markers and
-                                         * elements that have changed will
-                                         * be reset. */
+					 * axes and all elements and
+					 * markers and the graph need to be
+					 * recalculated. Otherwise, the
+					 * layout of only those markers and
+					 * elements that have changed will
+					 * be reset. */
 
 #define LAYOUT_NEEDED		(1<<9)
 #define RESET_AXES		(1<<10) /* Flag to call to Blt_ResetAxes
-                                         * routine.  This routine
-                                         * recalculates the scale offset
-                                         * (used for mapping coordinates)
-                                         * of each axis.  If an axis limit
-                                         * has changed, then it sets flags
-                                         * to re-layout and redraw the
-                                         * entire graph.  This needs to
-                                         * happend before the axis can
-                                         * compute transformations between
-                                         * graph and screen coordinates. */
+					 * routine.  This routine
+					 * recalculates the scale offset
+					 * (used for mapping coordinates)
+					 * of each axis.  If an axis limit
+					 * has changed, then it sets flags
+					 * to re-layout and redraw the
+					 * entire graph.  This needs to
+					 * happend before the axis can
+					 * compute transformations between
+					 * graph and screen coordinates. */
 
 #define	GET_AXIS_GEOMETRY	(1<<11)
 
@@ -723,7 +723,7 @@ BLT_EXTERN void Blt_FreePen(Pen *penPtr);
 BLT_EXTERN Tcl_ObjCmdProc Blt_VirtualAxisOp;
 
 BLT_EXTERN int Blt_AxisOp(ClientData clientData, Tcl_Interp *interp,
-        int margin, int objc, Tcl_Obj *const *objv);
+	int margin, int objc, Tcl_Obj *const *objv);
 
 BLT_EXTERN int Blt_ElementOp(Graph *graphPtr, Tcl_Interp *interp, int objc, 
 	Tcl_Obj *const *objv, ClassId classId);

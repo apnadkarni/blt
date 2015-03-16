@@ -47,9 +47,9 @@ typedef int (Blt_ChainCompareProc)(Blt_ChainLink *l1Ptr, Blt_ChainLink *l2Ptr);
  */
 struct _Blt_Chain {
     Blt_ChainLink head;                 /* Pointer to first element in
-                                         * chain. */
+					 * chain. */
     Blt_ChainLink tail;                 /* Pointer to last element in
-                                         * chain. */
+					 * chain. */
     long numLinks;                      /* Number of elements in chain. */
 };
 
@@ -82,7 +82,7 @@ BLT_EXTERN int Blt_Chain_IsBefore(Blt_ChainLink first, Blt_ChainLink last);
 #define Blt_Chain_NextLink(l) 	((l)->next)
 #define Blt_Chain_GetValue(l)  	((l)->clientData)
 #define Blt_Chain_FirstValue(c)	\
-        (((c)->head == NULL) ? NULL : (c)->head->clientData)
+	(((c)->head == NULL) ? NULL : (c)->head->clientData)
 #define Blt_Chain_SetValue(l, value) ((l)->clientData = (ClientData)(value))
 #define Blt_Chain_AppendLink(c, l) \
 	(Blt_Chain_LinkAfter((c), (l), (Blt_ChainLink)NULL))

@@ -866,17 +866,17 @@ GetProperty(Display *display, Window window, Atom atom)
     }
     data = NULL;
     result = XGetWindowProperty(
-        display,		/* Display of window. */
+	display,		/* Display of window. */
 	window,			/* Window holding the property. */
-        atom,			/* Name of property. */
-        0,			/* Offset of data (for multiple reads). */
+	atom,			/* Name of property. */
+	0,			/* Offset of data (for multiple reads). */
 	GetMaxPropertySize(display), /* Maximum number of items to read. */
 	False,			/* If true, delete the property. */
-        XA_STRING,		/* Desired type of property. */
-        &typeAtom,		/* (out) Actual type of the property. */
-        &format,		/* (out) Actual format of the property. */
-        &numItems,		/* (out) # of items in specified format. */
-        &bytesAfter,		/* (out) # of bytes remaining to be read. */
+	XA_STRING,		/* Desired type of property. */
+	&typeAtom,		/* (out) Actual type of the property. */
+	&format,		/* (out) Actual format of the property. */
+	&numItems,		/* (out) # of items in specified format. */
+	&bytesAfter,		/* (out) # of bytes remaining to be read. */
 	&data);
     if ((result != Success) || (format != 8) || (typeAtom != XA_STRING)) {
 	if (data != NULL) {
@@ -2222,20 +2222,20 @@ TargetPropertyEventProc(
     Tcl_DeleteTimerHandler(pendingPtr->timerToken);
     data = NULL;
     result = XGetWindowProperty(
-        eventPtr->xproperty.display,	/* Display of window. */
+	eventPtr->xproperty.display,	/* Display of window. */
 	eventPtr->xproperty.window,     /* Window holding the property. */
-        eventPtr->xproperty.atom,	/* Name of property. */
-        0,				/* Offset of data (for multiple
+	eventPtr->xproperty.atom,	/* Name of property. */
+	0,				/* Offset of data (for multiple
 					 * reads). */
 	pendingPtr->packetSize,		/* Maximum number of items to read. */
 	False,				/* If true, delete the property. */
-        XA_STRING,			/* Desired type of property. */
-        &typeAtom,			/* (out) Actual type of the property. */
-        &format,			/* (out) Actual format of the
+	XA_STRING,			/* Desired type of property. */
+	&typeAtom,			/* (out) Actual type of the property. */
+	&format,			/* (out) Actual format of the
 					 * property. */
-        &numItems,			/* (out) # of items in specified
+	&numItems,			/* (out) # of items in specified
 					 * format. */
-        &bytesAfter,			/* (out) # of bytes remaining to be
+	&bytesAfter,			/* (out) # of bytes remaining to be
 					 * read. */
 	&data);
 #ifdef notdef
@@ -2408,20 +2408,20 @@ SourcePropertyEventProc(
     Tcl_DeleteTimerHandler(pendingPtr->timerToken);
     data = NULL;
     result = XGetWindowProperty(
-        eventPtr->xproperty.display,	/* Display of window. */
+	eventPtr->xproperty.display,	/* Display of window. */
 	eventPtr->xproperty.window,     /* Window holding the property. */
-        eventPtr->xproperty.atom,	/* Name of property. */
-        0,				/* Offset of data (for multiple
+	eventPtr->xproperty.atom,	/* Name of property. */
+	0,				/* Offset of data (for multiple
 					 * reads). */
 	pendingPtr->packetSize,		/* Maximum number of items to read. */
 	True,				/* If true, delete the property. */
-        XA_STRING,			/* Desired type of property. */
-        &typeAtom,			/* (out) Actual type of the property. */
-        &format,			/* (out) Actual format of the
+	XA_STRING,			/* Desired type of property. */
+	&typeAtom,			/* (out) Actual type of the property. */
+	&format,			/* (out) Actual format of the
 					 * property. */
-        &numItems,			/* (out) # of items in specified
+	&numItems,			/* (out) # of items in specified
 					 * format. */
-        &bytesAfter,			/* (out) # of bytes remaining to be
+	&bytesAfter,			/* (out) # of bytes remaining to be
 					 * read. */
 	&data);
 

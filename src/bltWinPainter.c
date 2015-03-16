@@ -819,12 +819,12 @@ Blt_PaintPicture(
      *
      */
     if (ax < 0) {		
-        aw += ax;
-        ax = 0;
+	aw += ax;
+	ax = 0;
     }
     if (ay < 0) {
-        ah += ay;
-        ay = 0;
+	ah += ay;
+	ay = 0;
     }
     /* 
      * Check that the given area does not extend beyond the end of the
@@ -918,12 +918,12 @@ Blt_PaintPictureWithBlend(
      *
      */
     if (x < 0) {		
-        w += x;
-        x = 0;
+	w += x;
+	x = 0;
     }
     if (y < 0) {
-        h += y;
-        y = 0;
+	h += y;
+	y = 0;
     }
 
     /* 

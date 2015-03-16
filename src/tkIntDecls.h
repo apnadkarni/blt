@@ -371,7 +371,7 @@ extern TkIntStubs *tkIntStubsPtr;
 
 #ifndef TkWmRestackToplevel
 #define TkWmRestackToplevel \
-        (tkIntStubsPtr->tkWmRestackToplevel) /* 95 */
+	(tkIntStubsPtr->tkWmRestackToplevel) /* 95 */
 #endif
 
 #ifndef TkFindStateNumObj
@@ -381,38 +381,38 @@ extern TkIntStubs *tkIntStubsPtr;
 
 #ifndef TkGetDisplayList
 #define TkGetDisplayList \
-        (tkIntStubsPtr->tkGetDisplayList) /* 106 */
+	(tkIntStubsPtr->tkGetDisplayList) /* 106 */
 #endif
 
 
 #if defined(WIN32) || defined(MAC_TCL) || defined(MAC_OSX_TCL)
 #ifndef TkClipBox
 #define TkClipBox \
-        (tkIntStubsPtr->tkClipBox)	/* 113 */
+	(tkIntStubsPtr->tkClipBox)	/* 113 */
 #endif
 #ifndef TkCreateRegion
 #define TkCreateRegion \
-        (tkIntStubsPtr->tkCreateRegion) /* 114 */
+	(tkIntStubsPtr->tkCreateRegion) /* 114 */
 #endif
 #ifndef TkDestroyRegion
 #define TkDestroyRegion \
-        (tkIntStubsPtr->tkDestroyRegion) /* 115 */
+	(tkIntStubsPtr->tkDestroyRegion) /* 115 */
 #endif
 #ifndef TkIntersectRegion
 #define TkIntersectRegion \
-        (tkIntStubsPtr->tkIntersectRegion) /* 116 */
+	(tkIntStubsPtr->tkIntersectRegion) /* 116 */
 #endif
 #ifndef TkRectInRegion
 #define TkRectInRegion \
-        (tkIntStubsPtr->tkRectInRegion) /* 117 */
+	(tkIntStubsPtr->tkRectInRegion) /* 117 */
 #endif
 #ifndef TkSetRegion
 #define TkSetRegion \
-        (tkIntStubsPtr->tkSetRegion)	/* 118 */
+	(tkIntStubsPtr->tkSetRegion)	/* 118 */
 #endif
 #ifndef TkUnionRectWithRegion
 #define TkUnionRectWithRegion \
-        (tkIntStubsPtr->tkUnionRectWithRegion)	/* 119 */
+	(tkIntStubsPtr->tkUnionRectWithRegion)	/* 119 */
 #endif
 #endif	/* WIN32 */
 

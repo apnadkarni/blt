@@ -194,7 +194,7 @@ Blt_PhotoAreaToPicture(Tk_PhotoHandle photo, int x, int y, int w, int h)
 	int x, y;
 
 	destRowPtr = destPtr->bits;
-        for (y = 0; y < h; y++) {
+	for (y = 0; y < h; y++) {
 	    Blt_Pixel *dp;
 	    unsigned char *bits;
 
@@ -202,7 +202,7 @@ Blt_PhotoAreaToPicture(Tk_PhotoHandle photo, int x, int y, int w, int h)
 	    bits = src.pixelPtr + offset;
 	    for (x = 0; x < w; x++) {
 
-	        dp->Alpha = bits[ia];
+		dp->Alpha = bits[ia];
 
 		if (dp->Alpha == 0xFF) {
 		    dp->Red = bits[ir];
@@ -227,53 +227,53 @@ Blt_PhotoAreaToPicture(Tk_PhotoHandle photo, int x, int y, int w, int h)
 			(BLT_PIC_BLEND | BLT_PIC_ASSOCIATED_COLORS);
 		}
 		bits += src.pixelSize;
-	        dp++;
+		dp++;
 	    }
 	    offset += src.pitch;
 	    destRowPtr += destPtr->pixelsPerRow;
-        }
+	}
     } else if (src.pixelSize == 3) {
 	Blt_Pixel *destRowPtr;
 	int x, y;
 
 	destRowPtr = destPtr->bits;
-        for (y = 0; y < h; y++) {
+	for (y = 0; y < h; y++) {
 	    Blt_Pixel *dp;
 	    unsigned char *bits;
 
 	    dp = destRowPtr;
 	    bits = src.pixelPtr + offset;
 	    for (x = 0; x < w; x++) {
-	        dp->Red = bits[ir];
-	        dp->Green = bits[ig];
-	        dp->Blue = bits[ib];
-	        dp->Alpha = ALPHA_OPAQUE;
-	        bits += src.pixelSize;
-	        dp++;
+		dp->Red = bits[ir];
+		dp->Green = bits[ig];
+		dp->Blue = bits[ib];
+		dp->Alpha = ALPHA_OPAQUE;
+		bits += src.pixelSize;
+		dp++;
 	    }
 	    offset += src.pitch;
 	    destRowPtr += destPtr->pixelsPerRow;
-        }
+	}
     } else {
 	Blt_Pixel *destRowPtr;
 	int x, y;
 
 	destRowPtr = destPtr->bits;
-        for (y = 0; y < h; y++) {
+	for (y = 0; y < h; y++) {
 	    Blt_Pixel *dp;
 	    unsigned char *bits;
 
 	    dp = destRowPtr;
 	    bits = src.pixelPtr + offset;
 	    for (x = 0; x < w; x++) {
-	        dp->Red = dp->Green = dp->Blue = bits[ir];
-	        dp->Alpha = ALPHA_OPAQUE;
-	        bits += src.pixelSize;
-	        dp++;
+		dp->Red = dp->Green = dp->Blue = bits[ir];
+		dp->Alpha = ALPHA_OPAQUE;
+		bits += src.pixelSize;
+		dp++;
 	    }
 	    offset += src.pitch;
 	    destRowPtr += destPtr->pixelsPerRow;
-        }
+	}
     } 
     return destPtr;
 }
@@ -316,14 +316,14 @@ Blt_PhotoToPicture(Tk_PhotoHandle photo) /* Source photo to convert. */
 	
 	srcRowPtr = src.pixelPtr;
 	destRowPtr = destPtr->bits;
-        for (y = 0; y < sh; y++) {
+	for (y = 0; y < sh; y++) {
 	    Blt_Pixel *dp;
 	    unsigned char *bits, *bend;
 
 	    dp = destRowPtr;
 	    for (bits = srcRowPtr, bend = bits + bytesPerRow; bits < bend; 
 		bits += src.pixelSize) {
-	        dp->Alpha = bits[ia];
+		dp->Alpha = bits[ia];
 		if (dp->Alpha == 0xFF) {
 		    dp->Red = bits[ir];
 		    dp->Green = bits[ig];
@@ -339,11 +339,11 @@ Blt_PhotoToPicture(Tk_PhotoHandle photo) /* Source photo to convert. */
 		    dp->Blue = bits[ib];
 		    destPtr->flags |= BLT_PIC_BLEND;
 		}
-	        dp++;
+		dp++;
 	    }
 	    srcRowPtr += src.pitch;
 	    destRowPtr += destPtr->pixelsPerRow;
-        }
+	}
     } else if (src.pixelSize == 3) {
 	Blt_Pixel *destRowPtr;
 	int y;
@@ -351,22 +351,22 @@ Blt_PhotoToPicture(Tk_PhotoHandle photo) /* Source photo to convert. */
 
 	srcRowPtr = src.pixelPtr;
 	destRowPtr = destPtr->bits;
-        for (y = 0; y < sh; y++) {
+	for (y = 0; y < sh; y++) {
 	    Blt_Pixel *dp;
 	    unsigned char *bits, *bend;
 
 	    dp = destRowPtr;
 	    for (bits = srcRowPtr, bend = bits + bytesPerRow; bits < bend; 
 		bits += src.pixelSize) {
-	        dp->Red = bits[ir];
-	        dp->Green = bits[ig];
-	        dp->Blue = bits[ib];
-	        dp->Alpha = ALPHA_OPAQUE;
-	        dp++;
+		dp->Red = bits[ir];
+		dp->Green = bits[ig];
+		dp->Blue = bits[ib];
+		dp->Alpha = ALPHA_OPAQUE;
+		dp++;
 	    }
 	    srcRowPtr += src.pitch;
 	    destRowPtr += destPtr->pixelsPerRow;
-        }
+	}
     } else {
 	Blt_Pixel *destRowPtr;
 	int y;
@@ -374,20 +374,20 @@ Blt_PhotoToPicture(Tk_PhotoHandle photo) /* Source photo to convert. */
 
 	srcRowPtr = src.pixelPtr;
 	destRowPtr = destPtr->bits;
-        for (y = 0; y < sh; y++) {
+	for (y = 0; y < sh; y++) {
 	    Blt_Pixel *dp;
 	    unsigned char *bits, *bend;
 
 	    dp = destRowPtr;
 	    for (bits = srcRowPtr, bend = bits + bytesPerRow; bits < bend; 
 		bits += src.pixelSize) {
-	        dp->Red = dp->Green = dp->Blue = bits[ir];
-	        dp->Alpha = ALPHA_OPAQUE;
-	        dp++;
+		dp->Red = dp->Green = dp->Blue = bits[ir];
+		dp->Alpha = ALPHA_OPAQUE;
+		dp++;
 	    }
 	    srcRowPtr += src.pitch;
 	    destRowPtr += destPtr->pixelsPerRow;
-        }
+	}
     } 
     destPtr->flags &= ~BLT_PIC_UNINITIALIZED;
     return destPtr;

@@ -4,27 +4,27 @@
  *
  * This module implements the "postscript" operation for BLT graph widget.
  *
- *	Copyright 1991-2004 George A Howlett.
+ *      Copyright 1991-2004 George A Howlett.
  *
- *	Permission is hereby granted, free of charge, to any person
- *	obtaining a copy of this software and associated documentation
- *	files (the "Software"), to deal in the Software without
- *	restriction, including without limitation the rights to use, copy,
- *	modify, merge, publish, distribute, sublicense, and/or sell copies
- *	of the Software, and to permit persons to whom the Software is
- *	furnished to do so, subject to the following conditions:
+ *      Permission is hereby granted, free of charge, to any person
+ *      obtaining a copy of this software and associated documentation
+ *      files (the "Software"), to deal in the Software without
+ *      restriction, including without limitation the rights to use, copy,
+ *      modify, merge, publish, distribute, sublicense, and/or sell copies
+ *      of the Software, and to permit persons to whom the Software is
+ *      furnished to do so, subject to the following conditions:
  *
- *	The above copyright notice and this permission notice shall be
- *	included in all copies or substantial portions of the Software.
+ *      The above copyright notice and this permission notice shall be
+ *      included in all copies or substantial portions of the Software.
  *
- *	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- *	EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- *	MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- *	NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
- *	BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
- *	ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
- *	CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- *	SOFTWARE.
+ *      THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ *      EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ *      MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ *      NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+ *      BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ *      ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ *      CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ *      SOFTWARE.
  */
 
 /*
@@ -43,7 +43,7 @@
 
 #ifdef HAVE_STDARG_H
 #  include <stdarg.h>
-#endif	/* HAVE_STDARG_H */
+#endif  /* HAVE_STDARG_H */
 
 #ifdef HAVE_STDLIB_H
 #  include <stdlib.h>
@@ -65,8 +65,8 @@
 #include "bltGrLegd.h"
 #include "bltOp.h"
 
-#define MM_INCH		25.4
-#define PICA_INCH	72.0
+#define MM_INCH         25.4
+#define PICA_INCH       72.0
 
 static Blt_OptionParseProc ObjToPicaProc;
 static Blt_OptionPrintProc PicaToObjProc;
@@ -82,27 +82,27 @@ static Blt_CustomOption padOption =
     ObjToPad, PadToObj, NULL, (ClientData)0,
 };
 
-#define DEF_PS_CENTER		"yes"
-#define DEF_PS_COLOR_MAP	(char *)NULL
-#define DEF_PS_GREYSCALE	"no"
-#define DEF_PS_DECORATIONS	"no"
-#define DEF_PS_FONT_MAP		(char *)NULL
-#define DEF_PS_FOOTER		"no"
-#define DEF_PS_LEVEL		"1"
-#define DEF_PS_HEIGHT		"0"
-#define DEF_PS_LANDSCAPE	"no"
-#define DEF_PS_PADX		"1.0i"
-#define DEF_PS_PADY		"1.0i"
-#define DEF_PS_PAPERHEIGHT	"11.0i"
-#define DEF_PS_PAPERWIDTH	"8.5i"
-#define DEF_PS_WIDTH		"0"
-#define DEF_PS_COMMENTS		""
+#define DEF_PS_CENTER           "yes"
+#define DEF_PS_COLOR_MAP        (char *)NULL
+#define DEF_PS_GREYSCALE        "no"
+#define DEF_PS_DECORATIONS      "no"
+#define DEF_PS_FONT_MAP         (char *)NULL
+#define DEF_PS_FOOTER           "no"
+#define DEF_PS_LEVEL            "1"
+#define DEF_PS_HEIGHT           "0"
+#define DEF_PS_LANDSCAPE        "no"
+#define DEF_PS_PADX             "1.0i"
+#define DEF_PS_PADY             "1.0i"
+#define DEF_PS_PAPERHEIGHT      "11.0i"
+#define DEF_PS_PAPERWIDTH       "8.5i"
+#define DEF_PS_WIDTH            "0"
+#define DEF_PS_COMMENTS         ""
 
 static Blt_ConfigSpec configSpecs[] =
 {
     {BLT_CONFIG_BITMASK, "-center", "center", "Center", DEF_PS_CENTER, 
 	Blt_Offset(PageSetup, flags), BLT_CONFIG_DONT_SET_DEFAULT, 
-        (Blt_CustomOption *)PS_CENTER},
+	(Blt_CustomOption *)PS_CENTER},
     {BLT_CONFIG_STRING, "-colormap", "colorMap", "ColorMap",
 	DEF_PS_COLOR_MAP, Blt_Offset(PageSetup, colorVarName),
 	BLT_CONFIG_NULL_OK},
@@ -115,8 +115,8 @@ static Blt_ConfigSpec configSpecs[] =
 	DEF_PS_FONT_MAP, Blt_Offset(PageSetup, fontVarName),
 	BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_BITMASK, "-footer", "footer", "Footer", DEF_PS_FOOTER, 
-        Blt_Offset(PageSetup, flags), BLT_CONFIG_DONT_SET_DEFAULT,
-        (Blt_CustomOption *)PS_FOOTER},
+	Blt_Offset(PageSetup, flags), BLT_CONFIG_DONT_SET_DEFAULT,
+	(Blt_CustomOption *)PS_FOOTER},
     {BLT_CONFIG_BITMASK, "-greyscale", "greyscale", "Greyscale",
 	DEF_PS_GREYSCALE, Blt_Offset(PageSetup, flags),
 	BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)PS_GREYSCALE},
@@ -139,7 +139,7 @@ static Blt_ConfigSpec configSpecs[] =
 	DEF_PS_PAPERWIDTH, Blt_Offset(PageSetup, reqPaperWidth), 0,
 	&picaOption},
     {BLT_CONFIG_CUSTOM, "-width", "width", "Width", DEF_PS_WIDTH, 
-        Blt_Offset(PageSetup, reqWidth), BLT_CONFIG_DONT_SET_DEFAULT, 
+	Blt_Offset(PageSetup, reqWidth), BLT_CONFIG_DONT_SET_DEFAULT, 
 	&picaOption},
     {BLT_CONFIG_END, NULL, NULL, NULL, NULL, 0, 0}
 };
@@ -154,14 +154,14 @@ static Blt_ConfigSpec configSpecs[] =
 /*ARGSUSED*/
 static int
 ObjToPicaProc(
-    ClientData clientData,		/* Not used. */
-    Tcl_Interp *interp,			/* Interpreter to send results back
+    ClientData clientData,              /* Not used. */
+    Tcl_Interp *interp,                 /* Interpreter to send results back
 					 * to */
-    Tk_Window tkwin,			/* Not used. */
-    Tcl_Obj *objPtr,			/* New value. */
-    char *widgRec,			/* Widget record */
-    int offset,				/* Offset to field in structure */
-    int flags)				/* Not used. */
+    Tk_Window tkwin,                    /* Not used. */
+    Tcl_Obj *objPtr,                    /* New value. */
+    char *widgRec,                      /* Widget record */
+    int offset,                         /* Offset to field in structure */
+    int flags)                          /* Not used. */
 {
     int *picaPtr = (int *)(widgRec + offset);
 
@@ -178,12 +178,12 @@ ObjToPicaProc(
 /*ARGSUSED*/
 static Tcl_Obj *
 PicaToObjProc(
-    ClientData clientData,		/* Not used. */
-    Tcl_Interp *interp,			/* Not used. */
-    Tk_Window tkwin,			/* Not used. */
-    char *widgRec,			/* PostScript structure record */
-    int offset,				/* Offset to field in structure */
-    int flags)				/* Not used. */
+    ClientData clientData,              /* Not used. */
+    Tcl_Interp *interp,                 /* Not used. */
+    Tk_Window tkwin,                    /* Not used. */
+    char *widgRec,                      /* PostScript structure record */
+    int offset,                         /* Offset to field in structure */
+    int flags)                          /* Not used. */
 {
     int pica = *(int *)(widgRec + offset);
 
@@ -200,14 +200,14 @@ PicaToObjProc(
 /*ARGSUSED*/
 static int
 ObjToPad(
-    ClientData clientData,		/* Not used. */
-    Tcl_Interp *interp,			/* Interpreter to send results back
+    ClientData clientData,              /* Not used. */
+    Tcl_Interp *interp,                 /* Interpreter to send results back
 					 * to */
-    Tk_Window tkwin,			/* Not used. */
-    Tcl_Obj *objPtr,			/* New value. */
-    char *widgRec,			/* Widget record */
-    int offset,				/* Offset to field in structure */
-    int flags)				/* Not used. */
+    Tk_Window tkwin,                    /* Not used. */
+    Tcl_Obj *objPtr,                    /* New value. */
+    char *widgRec,                      /* Widget record */
+    int offset,                         /* Offset to field in structure */
+    int flags)                          /* Not used. */
 {
     Blt_Pad *padPtr = (Blt_Pad *) (widgRec + offset);
 
@@ -224,12 +224,12 @@ ObjToPad(
 /*ARGSUSED*/
 static Tcl_Obj *
 PadToObj(
-    ClientData clientData,	/* Not used. */
+    ClientData clientData,      /* Not used. */
     Tcl_Interp *interp,
-    Tk_Window tkwin,		/* Not used. */
-    char *widgRec,		/* PostScript structure record */
-    int offset,			/* Offset to field in structure */
-    int flags)			/* Not used. */
+    Tk_Window tkwin,            /* Not used. */
+    char *widgRec,              /* PostScript structure record */
+    int offset,                 /* Offset to field in structure */
+    int flags)                  /* Not used. */
 {
     Blt_Pad *padPtr = (Blt_Pad *)(widgRec + offset);
     Tcl_Obj *objPtr, *listObjPtr;
@@ -260,8 +260,8 @@ AddComments(Blt_Ps ps, const char **comments)
  *
  * PostScriptPreamble
  *
- *    	The PostScript preamble calculates the needed translation and
- *    	scaling to make X11 coordinates compatible with PostScript.
+ *      The PostScript preamble calculates the needed translation and
+ *      scaling to make X11 coordinates compatible with PostScript.
  *
  *---------------------------------------------------------------------------
  */
@@ -283,7 +283,7 @@ PostScriptPreamble(Graph *graphPtr, const char *fileName, Blt_Ps ps)
 {
     PageSetup *setupPtr = graphPtr->pageSetup;
     time_t ticks;
-    char date[200];			/* Holds the date string from ctime() */
+    char date[200];                     /* Holds the date string from ctime() */
     const char *version;
     char *newline;
 
@@ -566,7 +566,7 @@ CgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
  */
 static int
 ConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
-            Tcl_Obj *const *objv)
+	    Tcl_Obj *const *objv)
 {
     Graph *graphPtr = clientData;
     int flags = BLT_CONFIG_OBJV_ONLY;
@@ -604,23 +604,23 @@ ConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
  */
 static int
 OutputOp(ClientData clientData, Tcl_Interp *interp, int objc,
-         Tcl_Obj *const *objv)
+	 Tcl_Obj *const *objv)
 {
     Graph *graphPtr = clientData;
     const char *buffer;
     PostScript *psPtr;
     Tcl_Channel channel;
-    const char *fileName;		/* Name of file to write PostScript
+    const char *fileName;               /* Name of file to write PostScript
 					 * output If NULL, output is returned
 					 * via interp->result. */
     int length;
 
-    fileName = NULL;			/* Used to identify the output sink. */
+    fileName = NULL;                    /* Used to identify the output sink. */
     channel = NULL;
     if (objc > 3) {
 	fileName = Tcl_GetString(objv[3]);
 	if (fileName[0] != '-') {
-	    objv++, objc--;		/* First argument is the file name. */
+	    objv++, objc--;             /* First argument is the file name. */
 	    channel = Tcl_OpenFileChannel(interp, fileName, "w", 0666);
 	    if (channel == NULL) {
 		return TCL_ERROR;
@@ -653,7 +653,7 @@ OutputOp(ClientData clientData, Tcl_Interp *interp, int objc,
 		Tcl_PosixError(interp), (char *)NULL);
 	    goto error;
 	}
-        Tcl_Close(interp, channel);
+	Tcl_Close(interp, channel);
     } else {
 	Tcl_SetStringObj(Tcl_GetObjResult(interp), buffer, length);
     }
@@ -662,7 +662,7 @@ OutputOp(ClientData clientData, Tcl_Interp *interp, int objc,
 
   error:
     if (channel != NULL) {
-        Tcl_Close(interp, channel);
+	Tcl_Close(interp, channel);
     }
     Blt_Ps_Free(psPtr);
     return TCL_ERROR;
@@ -706,15 +706,15 @@ Blt_CreatePageSetup(Graph *graphPtr)
  *
  * Blt_PostScriptOp --
  *
- *	This procedure is invoked to process the TCL command that corresponds
- *	to a widget managed by this module.  See the user documentation for
- *	details on what it does.
+ *      This procedure is invoked to process the TCL command that corresponds
+ *      to a widget managed by this module.  See the user documentation for
+ *      details on what it does.
  *
  * Results:
- *	A standard TCL result.
+ *      A standard TCL result.
  *
  * Side effects:
- *	See the user documentation.
+ *      See the user documentation.
  *
  *---------------------------------------------------------------------------
  */
@@ -729,13 +729,13 @@ static int numPsOps = sizeof(psOps) / sizeof(Blt_OpSpec);
 
 int
 Blt_PostScriptOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-                 Tcl_Obj *const *objv)
+		 Tcl_Obj *const *objv)
 {
     Tcl_ObjCmdProc *proc;
     int result;
 
     proc = Blt_GetOpFromObj(interp, numPsOps, psOps, BLT_OP_ARG2, objc,
-        objv, 0);
+	objv, 0);
     if (proc == NULL) {
 	return TCL_ERROR;
     }

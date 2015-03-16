@@ -412,10 +412,10 @@ struct _Parser {
     Tcl_DString errors;			/* Contains error message. */
     int numErrors;
     int argc;				/* # arguments (word) of last
-                                         * line.  */
+					 * line.  */
     const char **argv;			/* Split of last line. */
     Tcl_DString lastLine;               /* Contains last line read from
-                                         * file. */
+					 * file. */
     int lineNumber;
 };
 
@@ -1178,7 +1178,7 @@ ParseStartKernPairs(Parser *parserPtr, char *record, int offset)
 
     assert(*valuePtr == 0);
     if (Tcl_GetInt(NULL, parserPtr->argv[1], &n) != TCL_OK) {
- 	ParserError(parserPtr, "can't convert \"%s\" to integer.", 
+	ParserError(parserPtr, "can't convert \"%s\" to integer.", 
 		    parserPtr->argv[1]);
     }
     n++;
@@ -1945,7 +1945,7 @@ Blt_Afm_GetPostscriptName(const char *family, int flags,
 		ch = Tcl_UniCharToUpper(ch);
 		upper = FALSE;
 	    } else {
-	        ch = Tcl_UniCharToLower(ch);
+		ch = Tcl_UniCharToLower(ch);
 	    }
 	    dest += Tcl_UniCharToUtf(ch, dest);
 	}

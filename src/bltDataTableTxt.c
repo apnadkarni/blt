@@ -151,9 +151,9 @@ static Blt_SwitchSpec exportSwitches[] =
     {BLT_SWITCH_OBJ,    "-file",      "fileName", (char *)NULL,
 	Blt_Offset(ExportSwitches, fileObjPtr), 0},
     {BLT_SWITCH_BITMASK, "-rowlabels",  "", (char *)NULL,
-        Blt_Offset(ExportSwitches, flags), 0, EXPORT_ROWLABELS},
+	Blt_Offset(ExportSwitches, flags), 0, EXPORT_ROWLABELS},
     {BLT_SWITCH_BITMASK, "-columnlabels",  "", (char *)NULL,
-        Blt_Offset(ExportSwitches, flags), 0, EXPORT_COLUMNLABELS},
+	Blt_Offset(ExportSwitches, flags), 0, EXPORT_COLUMNLABELS},
     {BLT_SWITCH_STRING, "-quote",     "char", (char *)NULL,
 	Blt_Offset(ExportSwitches, quote),   0},
     {BLT_SWITCH_CUSTOM, "-rows",      "rows", (char *)NULL,
@@ -607,7 +607,7 @@ Import(Tcl_Interp *interp, BLT_TABLE table, ImportSwitches *importPtr)
 	}
 	bend = bp + numBytes;
 	while ((bp < bend) && (isspace(*bp))) {
- 	    bp++;			/* Skip leading spaces. */
+	    bp++;			/* Skip leading spaces. */
 	}
 	if ((*bp == '\0') || (*bp == comment)) {
 	    continue;			/* Ignore blank or comment lines */
@@ -818,7 +818,7 @@ blt_table_txt_init(Tcl_Interp *interp)
 	return TCL_ERROR;
     }
     return blt_table_register_format(interp,
-        "txt",			/* Name of format. */
+	"txt",			/* Name of format. */
 	ImportProc,		/* Import procedure. */
 	ExportProc);		/* Export procedure. */
 

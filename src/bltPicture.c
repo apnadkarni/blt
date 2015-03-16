@@ -769,7 +769,7 @@ BlendRegion(Pict *destPtr, Pict *srcPtr, int sx, int sy, int w, int h,
     }
     if (dx < 0) {
 	w += dx;
-        sx -= dx;
+	sx -= dx;
 	dx = 0;
     }
     if (dy < 0) {
@@ -2095,7 +2095,7 @@ ShearY(
     srcRowPtr = srcPtr->bits + (y * srcPtr->pixelsPerRow);
 
     for (dp = destRowPtr, x = 0; x < offset; x++, dp++) { 
-        dp->u32 = bg->u32;
+	dp->u32 = bg->u32;
     }
     dp = destRowPtr + offset;
     sp = srcRowPtr;
@@ -2115,7 +2115,7 @@ ShearY(
 	right.Green = imul8x8(alpha, sp->Green, t);
 	right.Blue  = imul8x8(alpha, sp->Blue, t);
 	right.Alpha = imul8x8(alpha, sp->Alpha, t);
-        if ((dx >= 0) && (dx < destPtr->width)) {
+	if ((dx >= 0) && (dx < destPtr->width)) {
 	    int r, b, g, a;
 
 	    r = sp->Red   - (right.Red   - left.Red);
@@ -2129,7 +2129,7 @@ ShearY(
 	    dp->Green = UCLAMP(g);
 	    dp->Blue  = UCLAMP(b);
 	    dp->Alpha = UCLAMP(a);
-        }
+	}
 	left.u32 = right.u32;
 	sp++, dp++;
     }
@@ -2140,7 +2140,7 @@ ShearY(
 	dp++;
     }
     for (x++; x < destPtr->width; x++, dp++) {
-        dp->u32 = bg->u32;
+	dp->u32 = bg->u32;
     }
 }  
 
@@ -2179,7 +2179,7 @@ ShearX(
     assert(frac >= 0.0 && frac <= 1.0);
     dp = destPtr->bits + x;
     for (y = 0; y < offset; y++) {
-        dp->u32 = bg->u32;
+	dp->u32 = bg->u32;
 	dp += destPtr->pixelsPerRow;
     }
 
@@ -2199,7 +2199,7 @@ ShearX(
 	right.Green = imul8x8(alpha, sp->Green, t);
 	right.Blue  = imul8x8(alpha, sp->Blue, t);
 	right.Alpha = imul8x8(alpha, sp->Alpha, t);
-        if ((dy >= 0) && (dy < destPtr->height)) {
+	if ((dy >= 0) && (dy < destPtr->height)) {
 	    int r, g, b, a;
 
 	    r = sp->Red   - (right.Red   - left.Red);
@@ -2213,7 +2213,7 @@ ShearX(
 	    dp->Green = UCLAMP(g);
 	    dp->Blue  = UCLAMP(b);
 	    dp->Alpha = UCLAMP(a);
-        }
+	}
 	left.u32 = right.u32;
 	sp += srcPtr->pixelsPerRow; 
 	dp += destPtr->pixelsPerRow;
@@ -2292,13 +2292,13 @@ Rotate45(Pict *srcPtr, float angle, Blt_Pixel *bg)
     /* 2nd shear */
 
     if (sinTheta > 0.0) {		/* Positive angle */
-        skewf = (srcPtr->width - 1) * sinTheta;
+	skewf = (srcPtr->width - 1) * sinTheta;
     } else {				/* Negative angle */
-        skewf = (srcPtr->width - shearWidth) * -sinTheta;
+	skewf = (srcPtr->width - shearWidth) * -sinTheta;
     }
     for (x = 0; x < shearWidth; x++) {
 	skewi = (int)floor(skewf);
-        ShearX(shear2Ptr, shear1Ptr, x, skewi, skewf - skewi, bg);
+	ShearX(shear2Ptr, shear1Ptr, x, skewi, skewf - skewi, bg);
 	skewf -= sinTheta;
     }
 
@@ -2311,13 +2311,13 @@ Rotate45(Pict *srcPtr, float angle, Blt_Pixel *bg)
 
     destPtr = Blt_CreatePicture(shearWidth, shearHeight);
     if (sinTheta >= 0.0) {		/* Positive angle */
-        skewf = (srcPtr->width - 1) * sinTheta * -tanTheta;
+	skewf = (srcPtr->width - 1) * sinTheta * -tanTheta;
     } else {				/* Negative angle */
-        skewf = tanTheta * ((srcPtr->width - 1) * -sinTheta - (shearHeight-1));
+	skewf = tanTheta * ((srcPtr->width - 1) * -sinTheta - (shearHeight-1));
     }
     for (y = 0; y < shearHeight; y++) {
 	skewi = (int)floor(skewf);
-        ShearY(destPtr, shear2Ptr, y, skewi, skewf - skewi, bg);
+	ShearY(destPtr, shear2Ptr, y, skewi, skewf - skewi, bg);
 	skewf += tanTheta;
     }
     Blt_FreePicture(shear2Ptr);
@@ -2546,8 +2546,8 @@ RotateByAreaMapping(Pict *srcPtr, float angle, Blt_Pixel *bg)
 	int deltaY;
 	int x;
 
-        deltaY = destCy - y;
-        for (x = 0, dp = destRowPtr, dend = dp + destPtr->width; dp < dend; 
+	deltaY = destCy - y;
+	for (x = 0, dp = destRowPtr, dend = dp + destPtr->width; dp < dend; 
 	     dp++, x++) {
 	    int r, g, b, a;
 	    Blt_Pixel  *p00, *p01, *p10, *p11;
@@ -2556,33 +2556,33 @@ RotateByAreaMapping(Pict *srcPtr, float angle, Blt_Pixel *bg)
 	    int deltaX;
 	    int xpm, ypm, xf, yf;
 
-            deltaX = destCx - x;
-            xpm = (int)(-deltaX * cosTheta - deltaY * sinTheta);
-            ypm = (int)(-deltaY * cosTheta + deltaX * sinTheta);
-            srcX = srcCx + (xpm >> 4);
-            srcY = srcCy + (ypm >> 4);
-            xf = xpm & 0x0f;
-            yf = ypm & 0x0f;
+	    deltaX = destCx - x;
+	    xpm = (int)(-deltaX * cosTheta - deltaY * sinTheta);
+	    ypm = (int)(-deltaY * cosTheta + deltaX * sinTheta);
+	    srcX = srcCx + (xpm >> 4);
+	    srcY = srcCy + (ypm >> 4);
+	    xf = xpm & 0x0f;
+	    yf = ypm & 0x0f;
 
 	    /* If outside of the source image, use the default color. */
-            if ((srcX < 0) || (srcY < 0) || (srcX > wm2) || (srcY > hm2)) {
-                dp->u32 = bg->u32;
-                continue;
-            }
-            srcRowPtr = srcPtr->bits + srcY * srcPtr->pixelsPerRow;
+	    if ((srcX < 0) || (srcY < 0) || (srcX > wm2) || (srcY > hm2)) {
+		dp->u32 = bg->u32;
+		continue;
+	    }
+	    srcRowPtr = srcPtr->bits + srcY * srcPtr->pixelsPerRow;
 	    /* do area weighting.  Without this, we would
 	     * simply do:
 	     *   *(lined + x) = *(lines + srcX);
 	     * which is faster but gives lousy results!
 	     */
-            p00 = srcRowPtr + srcX;
-            p01 = p00 + 1;
-            p10 = p00 + srcPtr->pixelsPerRow;
-            p11 = p01 + srcPtr->pixelsPerRow;
-            r = ((16 - xf) * (16 - yf) * p00->Red + 
+	    p00 = srcRowPtr + srcX;
+	    p01 = p00 + 1;
+	    p10 = p00 + srcPtr->pixelsPerRow;
+	    p11 = p01 + srcPtr->pixelsPerRow;
+	    r = ((16 - xf) * (16 - yf) * p00->Red + 
 		 xf * (16 - yf) * p01->Red + (16 - xf) * yf * p10->Red +
 		 xf * yf * p11->Red + 128) / 256;
-            g = ((16 - xf) * (16 - yf) * p00->Green +
+	    g = ((16 - xf) * (16 - yf) * p00->Green +
 		 xf * (16 - yf) * p01->Green + (16 - xf) * yf * p10->Green +
 		 xf * yf * p11->Green + 128) / 256;
 	    b = ((16 - xf) * (16 - yf) * p00->Blue +
@@ -2628,14 +2628,14 @@ Blt_RotatePictureByShear(Pict *srcPtr, float angle)
     }
     quadrant = ROTATE_0;
     if ((angle > 45.0) && (angle <= 135.0)) {
-        quadrant = ROTATE_90;
-        angle -= 90.0;
+	quadrant = ROTATE_90;
+	angle -= 90.0;
     } else if ((angle > 135.0) && (angle <= 225.0)) { 
-        quadrant = ROTATE_180;
-        angle -= 180.0;
+	quadrant = ROTATE_180;
+	angle -= 180.0;
     } else if ((angle > 225.0) && (angle <= 315.0)) { 
-        quadrant = ROTATE_270;
-        angle -= 270.0;
+	quadrant = ROTATE_270;
+	angle -= 270.0;
     } else if (angle > 315.0) {
 	angle -= 360.0;
     }
@@ -4218,7 +4218,7 @@ ShiftCarryBuffers(double (**cl0)[3], double (**cl1)[3], int width)
 
     /* Clear c11 */
     for (i = 0; i < width; ++i) {
-        (*cl1)[i][0] = (*cl1)[i][1] = (*cl1)[i][2] = 0.0;
+	(*cl1)[i][0] = (*cl1)[i][1] = (*cl1)[i][2] = 0.0;
     }
 }
 
@@ -4273,40 +4273,40 @@ Blt_DitherPicture(Pict *srcPtr, Blt_Pixel *palette)
 	int start, finish, step;
 	int x;
 
-        if (y & 1) {
-            start = srcPtr->width - 1;
-            finish = -1;
-            step = -1;
-        } else {
-            start = 0;
-            finish = srcPtr->width;
-            step = 1;
-        }
+	if (y & 1) {
+	    start = srcPtr->width - 1;
+	    finish = -1;
+	    step = -1;
+	} else {
+	    start = 0;
+	    finish = srcPtr->width;
+	    step = 1;
+	}
 	sp = srcRowPtr + start, dp = destRowPtr + start;
-        for (x = start; x != finish; x += step) {
-            double rCorrected, gCorrected, bCorrected;
-            double rDiff, gDiff, bDiff;
+	for (x = start; x != finish; x += step) {
+	    double rCorrected, gCorrected, bCorrected;
+	    double rDiff, gDiff, bDiff;
 	    int rIntensity, gIntensity, bIntensity;
 
-            rCorrected = sp->Red +   cl0[x][0];
-            gCorrected = sp->Green + cl0[x][1];
-            bCorrected = sp->Blue +  cl0[x][2];
+	    rCorrected = sp->Red +   cl0[x][0];
+	    gCorrected = sp->Green + cl0[x][1];
+	    bCorrected = sp->Blue +  cl0[x][2];
 
 	    rIntensity = palette[(int)CLAMP(rCorrected)].Red;
 	    gIntensity = palette[(int)CLAMP(gCorrected)].Green;
 	    bIntensity = palette[(int)CLAMP(bCorrected)].Blue;
 
-            rDiff = rCorrected - rIntensity;
-            gDiff = gCorrected - gIntensity;
-            bDiff = bCorrected - bIntensity;
+	    rDiff = rCorrected - rIntensity;
+	    gDiff = gCorrected - gIntensity;
+	    bDiff = bCorrected - bIntensity;
 
-            DistributeError(cl0, cl1, x, rDiff, gDiff, bDiff, step, sp); 
+	    DistributeError(cl0, cl1, x, rDiff, gDiff, bDiff, step, sp); 
 	    dp->Red = rIntensity;
 	    dp->Green = gIntensity;
 	    dp->Blue = bIntensity;
 	    dp += step, sp += step;
-        }
-        ShiftCarryBuffers(&cl0, &cl1, srcPtr->width);
+	}
+	ShiftCarryBuffers(&cl0, &cl1, srcPtr->width);
 	srcRowPtr += srcPtr->pixelsPerRow;
 	destRowPtr += destPtr->pixelsPerRow;
     }
@@ -6159,57 +6159,57 @@ SolveMatrix(float a[8][8], float b[8])
 	float pivinv;
 	float big;
 
-        big = 0.0;
-        for (j = 0; j < 8; j++) {
-            if (ipivot[j] != 1) {
-                for (k = 0; k < 8; k++) {
-                    if (ipivot[k] == 0) {
-                        if (fabs(a[j][k]) >= big) {
-                            big = fabs(a[j][k]);
-                            irow = j;
-                            icol = k;
-                        }
-                    } else if (ipivot[k] > 1) {
-                        return FALSE;
+	big = 0.0;
+	for (j = 0; j < 8; j++) {
+	    if (ipivot[j] != 1) {
+		for (k = 0; k < 8; k++) {
+		    if (ipivot[k] == 0) {
+			if (fabs(a[j][k]) >= big) {
+			    big = fabs(a[j][k]);
+			    irow = j;
+			    icol = k;
+			}
+		    } else if (ipivot[k] > 1) {
+			return FALSE;
 		    }
 		}
 	    }
-        }
-        ++(ipivot[icol]);
-        if (irow != icol) {
-            for (l = 0; l < 8; l++) {
-                SWAP(a[irow][l], a[icol][l]);
+	}
+	++(ipivot[icol]);
+	if (irow != icol) {
+	    for (l = 0; l < 8; l++) {
+		SWAP(a[irow][l], a[icol][l]);
 	    }
-            SWAP(b[irow], b[icol]);
-        }
-        indexr[i] = irow;
-        indexc[i] = icol;
-        if (a[icol][icol] == 0.0) {
-            return FALSE;
+	    SWAP(b[irow], b[icol]);
 	}
-        pivinv = 1.0 / a[icol][icol];
-        a[icol][icol] = 1.0;
-        for (l = 0; l < 8; l++) {
-            a[icol][l] *= pivinv;
+	indexr[i] = irow;
+	indexc[i] = icol;
+	if (a[icol][icol] == 0.0) {
+	    return FALSE;
 	}
-        b[icol] *= pivinv;
-        for (ll = 0; ll < 8; ll++) {
-            if (ll != icol) {
+	pivinv = 1.0 / a[icol][icol];
+	a[icol][icol] = 1.0;
+	for (l = 0; l < 8; l++) {
+	    a[icol][l] *= pivinv;
+	}
+	b[icol] *= pivinv;
+	for (ll = 0; ll < 8; ll++) {
+	    if (ll != icol) {
 		float dum;
 
-                dum = a[ll][icol];
-                a[ll][icol] = 0.0;
-                for (l = 0; l < 8; l++) {
-                    a[ll][l] -= a[icol][l] * dum;
+		dum = a[ll][icol];
+		a[ll][icol] = 0.0;
+		for (l = 0; l < 8; l++) {
+		    a[ll][l] -= a[icol][l] * dum;
 		}
-                b[ll] -= b[icol] * dum;
-            }
+		b[ll] -= b[icol] * dum;
+	    }
 	}
     }
     for (l = 7; l >= 0; l--) {
-        if (indexr[l] != indexc[l]) {
-            for (k = 0; k < 8; k++) {
-                SWAP(a[k][indexr[l]], a[k][indexc[l]]);
+	if (indexr[l] != indexc[l]) {
+	    for (k = 0; k < 8; k++) {
+		SWAP(a[k][indexr[l]], a[k][indexc[l]]);
 	    }
 	}
     }
@@ -6397,7 +6397,7 @@ Blt_ProjectPicture(Pict *srcPtr, float *srcPts, float *destPts, Blt_Pixel *bg)
 	Blt_Pixel *dp, *dend;
 	int x;
 
-        for (x = 0, dp = destRowPtr, dend = dp + destPtr->width; dp < dend; 
+	for (x = 0, dp = destRowPtr, dend = dp + destPtr->width; dp < dend; 
 	     dp++, x++) {
 	    int r, g, b, a;
 	    Blt_Pixel  *p00, *p01, *p10, *p11;
@@ -6419,14 +6419,14 @@ Blt_ProjectPicture(Pict *srcPtr, float *srcPts, float *destPts, Blt_Pixel *bg)
 	    xf = xpm & 0x0f;
 	    yf = ypm & 0x0f;
 
-            p00 = GetSrcPixel(srcPtr, sx,   sy,   bg);
-            p01 = GetSrcPixel(srcPtr, sx+1, sy,   bg);
-            p10 = GetSrcPixel(srcPtr, sx,   sy+1, bg);
-            p11 = GetSrcPixel(srcPtr, sx+1, sy+1, bg);
-            r = ((16 - xf) * (16 - yf) * p00->Red + 
+	    p00 = GetSrcPixel(srcPtr, sx,   sy,   bg);
+	    p01 = GetSrcPixel(srcPtr, sx+1, sy,   bg);
+	    p10 = GetSrcPixel(srcPtr, sx,   sy+1, bg);
+	    p11 = GetSrcPixel(srcPtr, sx+1, sy+1, bg);
+	    r = ((16 - xf) * (16 - yf) * p00->Red + 
 		 xf * (16 - yf) * p01->Red + (16 - xf) * yf * p10->Red +
 		 xf * yf * p11->Red + 128) / 256;
-            g = ((16 - xf) * (16 - yf) * p00->Green +
+	    g = ((16 - xf) * (16 - yf) * p00->Green +
 		 xf * (16 - yf) * p01->Green + (16 - xf) * yf * p10->Green +
 		 xf * yf * p11->Green + 128) / 256;
 	    b = ((16 - xf) * (16 - yf) * p00->Blue +
@@ -6439,7 +6439,7 @@ Blt_ProjectPicture(Pict *srcPtr, float *srcPts, float *destPts, Blt_Pixel *bg)
 	    dp->Green = UCLAMP(g);
 	    dp->Blue  = UCLAMP(b);
 	    dp->Alpha = UCLAMP(a);
-        }
+	}
 	destRowPtr += destPtr->pixelsPerRow;
     }
     destPtr->flags |= BLT_PIC_BLEND;
@@ -6457,7 +6457,7 @@ Blt_SubtractColor(Pict *srcPtr, Blt_Pixel *colorPtr)
     for (y = 0; y < srcPtr->height; y++) {
 	Blt_Pixel *sp, *send;
 
-        for (sp = srcRowPtr, send = sp + srcPtr->width; sp < send; sp++) {
+	for (sp = srcRowPtr, send = sp + srcPtr->width; sp < send; sp++) {
 	    int r, g, b, t, beta;
 
 	    beta = sp->Alpha ^ 0xFF;	/* beta = 1 - alpha */
@@ -6478,7 +6478,7 @@ Blt_SubtractColor(Pict *srcPtr, Blt_Pixel *colorPtr)
 			sp->Blue);
 		
 	    }
-        }
+	}
 	srcRowPtr += srcPtr->pixelsPerRow;
     }
 }    
@@ -6486,7 +6486,7 @@ Blt_SubtractColor(Pict *srcPtr, Blt_Pixel *colorPtr)
 Blt_Picture
 Blt_EmbossPicture(
     Pict *srcPtr,                       /* Source picture treated as
-                                         * alphamap. */
+					 * alphamap. */
     double azimuth, double elevation,	/* Light source direction */
     unsigned short width45)             /* Filter width */
 {
@@ -6529,15 +6529,15 @@ Blt_EmbossPicture(
     destRowPtr = destPtr->bits + destPtr->pixelsPerRow;
     srcRowPtr = srcPtr->bits;
     for (y = 1; y < (destPtr->height - 2); y++) {
-        Blt_Pixel *dp;
-        int x;
+	Blt_Pixel *dp;
+	int x;
 
-        dp = destRowPtr;
+	dp = destRowPtr;
 	for (x = 1; x < (destPtr->width-1); x++, dp++) {
-            Blt_Pixel *s1     = srcRowPtr + x;
-            Blt_Pixel *s2     = s1 + srcPtr->pixelsPerRow;
-            Blt_Pixel *s3     = s2 + srcPtr->pixelsPerRow;
-            unsigned char  shade  = 0;
+	    Blt_Pixel *s1     = srcRowPtr + x;
+	    Blt_Pixel *s2     = s1 + srcPtr->pixelsPerRow;
+	    Blt_Pixel *s3     = s2 + srcPtr->pixelsPerRow;
+	    unsigned char  shade  = 0;
 
 	    /*
 	     * Compute the normal from the bump map. the type of the
@@ -6546,29 +6546,29 @@ Blt_EmbossPicture(
 	     * cast to signed.
 	     */
 	    Nx = (int)(s1[-1].Alpha + s2[-1].Alpha + 
-                       s3[-1].Alpha - s1[1].Alpha  - 
-                       s2[1].Alpha  - s3[1].Alpha);
+		       s3[-1].Alpha - s1[1].Alpha  - 
+		       s2[1].Alpha  - s3[1].Alpha);
 	    Ny = (int)(s3[-1].Alpha + s3[0].Alpha  + 
-                       s3[1].Alpha  - s1[-1].Alpha - 
-                       s1[0].Alpha - s1[1].Alpha);
+		       s3[1].Alpha  - s1[-1].Alpha - 
+		       s1[0].Alpha - s1[1].Alpha);
 
 	    /* Shade with distant light source. */
 	    if ((Nx == 0) && (Ny == 0)) {
 		shade = background;
-            } else {
-                NdotL = (Nx*Lx + Ny*Ly + NzLz);
-                if (NdotL < 0) {
-                    shade = 0;
-                } else {
-                    shade = NdotL / sqrt(Nx*Nx + Ny*Ny + Nz2);
-                }
-            }
+	    } else {
+		NdotL = (Nx*Lx + Ny*Ly + NzLz);
+		if (NdotL < 0) {
+		    shade = 0;
+		} else {
+		    shade = NdotL / sqrt(Nx*Nx + Ny*Ny + Nz2);
+		}
+	    }
 	    /* Do something with the shading result. */
-            dp->Red = dp->Green = dp->Blue = shade;
-            dp->Alpha = 0xFF;
+	    dp->Red = dp->Green = dp->Blue = shade;
+	    dp->Alpha = 0xFF;
 	}
-        srcRowPtr  += srcPtr->pixelsPerRow;
-        destRowPtr += destPtr->pixelsPerRow;
+	srcRowPtr  += srcPtr->pixelsPerRow;
+	destRowPtr += destPtr->pixelsPerRow;
     }
     destPtr->flags |= BLT_PIC_BLEND;
     return destPtr;

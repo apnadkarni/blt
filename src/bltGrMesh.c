@@ -349,30 +349,30 @@ ObjToTrianglesProc(
     reqTriangles = Blt_Malloc(sizeof(MeshTriangle) * numReqTriangles);
     if (reqTriangles == NULL) {
 	Tcl_AppendResult(interp, "can't allocate array of ",
-                Blt_Itoa(numReqTriangles), " triangles.", (char *)NULL);
+		Blt_Itoa(numReqTriangles), " triangles.", (char *)NULL);
 	return TCL_ERROR;
     }
     t = reqTriangles;
     for (i = 0; i < objc; i += 3) {
 	int a, b, c;
 
-        /* We assume that user-defined triangle indices start from 1. */
+	/* We assume that user-defined triangle indices start from 1. */
 	if ((Tcl_GetIntFromObj(interp, objv[i], &a) != TCL_OK) || (a <= 0)) {
 	    Tcl_AppendResult(interp, "bad triangle index \"", 
-                Tcl_GetString(objv[i]), "\"", (char *)NULL);
+		Tcl_GetString(objv[i]), "\"", (char *)NULL);
 	    goto error;
 	}
 	if ((Tcl_GetIntFromObj(interp, objv[i+1], &b) != TCL_OK) || (b <= 0)) {
 	    Tcl_AppendResult(interp, "bad triangle index \"", 
-                Tcl_GetString(objv[i+1]), "\"", (char *)NULL);
+		Tcl_GetString(objv[i+1]), "\"", (char *)NULL);
 	    goto error;
 	}
 	if ((Tcl_GetIntFromObj(interp, objv[i+2], &c) != TCL_OK) || (c <= 0)) {
 	    Tcl_AppendResult(interp, "bad triangle index \"", 
-                Tcl_GetString(objv[i+2]), "\"", (char *)NULL);
+		Tcl_GetString(objv[i+2]), "\"", (char *)NULL);
 	    goto error;
 	}
-        /* But our triangle indices start from 0. */
+	/* But our triangle indices start from 0. */
 	t->a = a - 1;
 	t->b = b - 1;
 	t->c = c - 1;
@@ -434,7 +434,7 @@ TrianglesToObjProc(
     for (i = 0; i < meshPtr->numReqTriangles; i++) {
 	Tcl_Obj *objPtr;
 	
-        objPtr = TriangleToObj(interp, meshPtr->reqTriangles + i);
+	objPtr = TriangleToObj(interp, meshPtr->reqTriangles + i);
 	Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
     }
     return listObjPtr;
@@ -642,9 +642,9 @@ ListDataSourcePrintProc(DataSource *basePtr)
     interp = meshPtr->interp;
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
     for (i = 0; i < srcPtr->numValues; i++) {
-        Tcl_Obj *objPtr;
+	Tcl_Obj *objPtr;
 
-        objPtr = Tcl_NewDoubleObj(srcPtr->values[i]);
+	objPtr = Tcl_NewDoubleObj(srcPtr->values[i]);
 	Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
     }
     return listObjPtr;
@@ -970,7 +970,7 @@ ObjToDataSourceProc(
     if ((objc == 1) && (Blt_VectorExists2(interp, string))) {
 	srcPtr = NewVectorDataSource(interp, meshPtr, string);
     } else if ((objc == 2) && (blt_table_exists(interp, string))) {
- 	srcPtr = NewTableDataSource(interp, meshPtr, string, objv[1]);
+	srcPtr = NewTableDataSource(interp, meshPtr, string, objv[1]);
     } else {
 	srcPtr = NewListDataSource(interp, meshPtr, objc, objv);
     }
@@ -1179,7 +1179,7 @@ ChainHull2d(int numPoints, HullVertex *points, int *hull)
 
     /* Step 3. Compute the upper hull on the stack above the bottom hull. */
     if (maxMax != maxMin)  {		/* if distinct xMax points */
-        PUSH(maxMax);			/* Push maxMax point onto stack. */
+	PUSH(maxMax);			/* Push maxMax point onto stack. */
     }
 
     bot = top;				/* The bottom point of the upper hull
@@ -1187,26 +1187,26 @@ ChainHull2d(int numPoints, HullVertex *points, int *hull)
     i = maxMin;
 
     while (--i >= minMax) {
-        /* The upper line joins points[maxMax] with points[minMax]. */
-        if ((IsLeft(points + maxMax, points + minMax, points + i) >= 0.0) && 
+	/* The upper line joins points[maxMax] with points[minMax]. */
+	if ((IsLeft(points + maxMax, points + minMax, points + i) >= 0.0) && 
 	    (i > minMax)) {
-            continue;			/* Ignore points[i] below or on the
+	    continue;			/* Ignore points[i] below or on the
 					 * upper line. */
 	}
-        while (top > bot) {		/* At least 2 points on the upper
+	while (top > bot) {		/* At least 2 points on the upper
 					 * stack. */
 
-            /*  Test if points[i] is left of the line at the stack top. */
-            if (IsLeft(points+hull[top-1], points+hull[top], points+i) > 0.0) {
-                break;			/* v[i] is a new hull vertex. */
+	    /*  Test if points[i] is left of the line at the stack top. */
+	    if (IsLeft(points+hull[top-1], points+hull[top], points+i) > 0.0) {
+		break;			/* v[i] is a new hull vertex. */
 	    } else {
-                POP();			/* Pop top point off stack. */
+		POP();			/* Pop top point off stack. */
 	    }
-        }
-        PUSH(i);			/* Push points[i] onto stack. */
+	}
+	PUSH(i);			/* Push points[i] onto stack. */
     }
     if (minMax != minMin) {
-        PUSH(minMin);		       /* Push joining endpoint onto stack. */
+	PUSH(minMin);		       /* Push joining endpoint onto stack. */
     }
     return top + 1;
 }
@@ -2172,7 +2172,7 @@ TrianglesOp(ClientData clientData, Tcl_Interp *interp, int objc,
     for (i = 0; i < meshPtr->numTriangles; i++) {
 	Tcl_Obj *objPtr;
 	
-        objPtr = TriangleToObj(interp, meshPtr->triangles + i);
+	objPtr = TriangleToObj(interp, meshPtr->triangles + i);
 	Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
 
     }
@@ -2455,8 +2455,8 @@ RegularMeshFindProc(Mesh *meshPtr, double x, double y)
     long xLoc, yLoc;
 
     if ((x < meshPtr->xMin) || (x > meshPtr->xMax) ||
-        (y < meshPtr->yMin) || (y > meshPtr->yMax)) {
-        return NULL;                    /* Point is outside mesh. */
+	(y < meshPtr->yMin) || (y > meshPtr->yMax)) {
+	return NULL;                    /* Point is outside mesh. */
     }
     xStep = (meshPtr->xMax - meshPtr->xMin) / (double)(meshPtr->xNum - 1);
     yStep = (meshPtr->yMax - meshPtr->yMin) / (double)(meshPtr->yNum - 1);
@@ -2464,7 +2464,7 @@ RegularMeshFindProc(Mesh *meshPtr, double x, double y)
     xLoc = floor((x - meshPtr->xMin) / xStep);
     yLoc = floor((y - meshPtr->yMin) / yStep);
     t = meshPtr->triangles + 
-        ((yLoc * meshPtr->xNum) + xLoc) * 2;
+	((yLoc * meshPtr->xNum) + xLoc) * 2;
     if (PointInTriangle(t, x, y) {
        return t;
     }

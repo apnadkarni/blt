@@ -93,27 +93,27 @@ set blt_library {}\n\
 set path {}\n\
 foreach var { env(BLT_LIBRARY) blt_libPath tcl_library env(TCL_LIBRARY) } { \n\
     if { ![info exists $var] } { \n\
-        continue \n\
+	continue \n\
     } \n\
     set path [set $var] \n\
     if { [file readable [file join $path bltGraph.pro]] } { \n\
-        set blt_library $path\n\
-        break \n\
+	set blt_library $path\n\
+	break \n\
     } \n\
     set path [file join $path blt$blt_version ] \n\
     if { [file readable [file join $path bltGraph.pro]] } { \n\
-        set blt_library $path\n\
-        break \n\
+	set blt_library $path\n\
+	break \n\
     } \n\
     set path [file dirname [set $var]] \n\
     if { [file readable [file join $path bltGraph.pro]] } { \n\
-        set blt_library $path\n\
-        break \n\
+	set blt_library $path\n\
+	break \n\
     } \n\
     set path [file join $path blt$blt_version ] \n\
     if { [file readable [file join $path bltGraph.pro]] } { \n\
-        set blt_library $path\n\
-        break \n\
+	set blt_library $path\n\
+	break \n\
     } \n\
 } \n\
 if { $blt_library != \"\" } { \n\

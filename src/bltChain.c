@@ -522,10 +522,10 @@ Blt_Chain_Reverse(Chain *chainPtr)
 
     lastPtr = NULL;
     for (linkPtr = chainPtr->head; linkPtr != NULL; linkPtr = nextPtr) { 
-        nextPtr = linkPtr->next;
-        linkPtr->next = lastPtr;
-        linkPtr->prev = nextPtr;
-        lastPtr = linkPtr;
+	nextPtr = linkPtr->next;
+	linkPtr->next = lastPtr;
+	linkPtr->prev = nextPtr;
+	lastPtr = linkPtr;
     }
     /* Swap head and tail pointers. */
     linkPtr = chainPtr->head;

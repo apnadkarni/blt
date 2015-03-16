@@ -1746,12 +1746,12 @@ Blt_PaintPicture(
      *
      */
     if (x1 < 0) {		
-        x2 += x1;
-        x1 = 0;
+	x2 += x1;
+	x1 = 0;
     }
     if (y1 < 0) {
-        y2 += y1;
-        y1 = 0;
+	y2 += y1;
+	y1 = 0;
     }
     /* 
      * Check that the given area does not extend beyond the end of the
@@ -1852,12 +1852,12 @@ Blt_PaintPictureWithBlend(
      *
      */
     if (x1 < 0) {		
-        x2 += x1;
-        x1 = 0;
+	x2 += x1;
+	x1 = 0;
     }
     if (y1 < 0) {
-        y2 += y2;
-        y1 = 0;
+	y2 += y2;
+	y1 = 0;
     }
     /* 
      * Check that the given area does not extend beyond the end of the

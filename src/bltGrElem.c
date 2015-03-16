@@ -77,7 +77,7 @@ typedef enum {
 
 typedef struct _Iterator {
     Graph *graphPtr;		        /* Graph that we're iterating
-                                         * over. */
+					 * over. */
 
     IteratorType type;			/* Type of iteration:
 					 * ITER_TAG	 By item tag.
@@ -233,14 +233,14 @@ FetchVectorValues(Tcl_Interp *interp, ElemValues *valuesPtr, Blt_Vector *vector)
 
     size = Blt_VecLength(vector) * sizeof(double);
     if (size == 0) {
-        if (valuesPtr->values != NULL) {
-            Blt_Free(valuesPtr->values);
-         }
-        valuesPtr->min = 0.0;
-        valuesPtr->min = 1.0;
-        valuesPtr->values = NULL;
-        valuesPtr->numValues = 0;
-        return TCL_OK;
+	if (valuesPtr->values != NULL) {
+	    Blt_Free(valuesPtr->values);
+	 }
+	valuesPtr->min = 0.0;
+	valuesPtr->min = 1.0;
+	valuesPtr->values = NULL;
+	valuesPtr->numValues = 0;
+	return TCL_OK;
     }
     if (valuesPtr->values == NULL) {
 	array = Blt_Malloc(size);
@@ -337,16 +337,16 @@ FetchTableValues(Tcl_Interp *interp, ElemValues *valuesPtr,
 
     table = valuesPtr->tableSource.table;
     if (objPtr != NULL) {
-        if (blt_table_iterate_row(interp, table, objPtr, &ri) != TCL_OK) {
-            return TCL_ERROR;
-        }
-        if (ri.numEntries == 0) {
-            Tcl_AppendResult(interp, "no values in tag \"", 
-                Tcl_GetString(objPtr), "\"", (char *)NULL);
-            return TCL_ERROR;
-        }
+	if (blt_table_iterate_row(interp, table, objPtr, &ri) != TCL_OK) {
+	    return TCL_ERROR;
+	}
+	if (ri.numEntries == 0) {
+	    Tcl_AppendResult(interp, "no values in tag \"", 
+		Tcl_GetString(objPtr), "\"", (char *)NULL);
+	    return TCL_ERROR;
+	}
     } else {
-        blt_table_iterate_all_rows(table, &ri);
+	blt_table_iterate_all_rows(table, &ri);
     }
     array = Blt_Malloc(sizeof(double) * ri.numEntries);
     if (array == NULL) {
@@ -354,9 +354,9 @@ FetchTableValues(Tcl_Interp *interp, ElemValues *valuesPtr,
     }
     i = 0;
     for (row = blt_table_first_tagged_row(&ri); row != NULL; 
-         row = blt_table_next_tagged_row(&ri)) {
+	 row = blt_table_next_tagged_row(&ri)) {
 	array[i] = blt_table_get_double(table, row, col);
-        i++;
+	i++;
     }
     if (valuesPtr->values != NULL) {
 	Blt_Free(valuesPtr->values);
@@ -423,7 +423,7 @@ TableNotifyProc(ClientData clientData, BLT_TABLE_NOTIFY_EVENT *eventPtr)
     graphPtr = elemPtr->obj.graphPtr;
     if ((eventPtr->type == TABLE_NOTIFY_COLUMNS_DELETED) || 
 	(FetchTableValues(graphPtr->interp, valuesPtr, 
-                eventPtr->column, NULL)) != TCL_OK) {
+		eventPtr->column, NULL)) != TCL_OK) {
 	FreeTableSource(valuesPtr);
 	return TCL_ERROR;
     } 
@@ -477,7 +477,7 @@ TableTraceProc(ClientData clientData, BLT_TABLE_TRACE_EVENT *eventPtr)
 
 static int
 GetTableData(Tcl_Interp *interp, ElemValues *valuesPtr, int objc, 
-             Tcl_Obj **objv)
+	     Tcl_Obj **objv)
 {
     TableDataSource *srcPtr;
     TableClient *clientPtr;
@@ -490,10 +490,10 @@ GetTableData(Tcl_Interp *interp, ElemValues *valuesPtr, int objc,
     graphPtr = valuesPtr->elemPtr->obj.graphPtr;
     /* See if the graph is already using this table. */
     srcPtr->hashPtr = Blt_CreateHashEntry(&graphPtr->dataTables, 
-        Tcl_GetString(objv[0]), &isNew);
+	Tcl_GetString(objv[0]), &isNew);
     if (isNew) {
 	if (blt_table_open(interp, Tcl_GetString(objv[0]), &srcPtr->table) 
-            != TCL_OK) {
+	    != TCL_OK) {
 	    return TCL_ERROR;
 	}
 	clientPtr = Blt_AssertMalloc(sizeof(TableClient));
@@ -511,7 +511,7 @@ GetTableData(Tcl_Interp *interp, ElemValues *valuesPtr, int objc,
     }
     tagObjPtr = (objc == 3) ? objv[2] : NULL;
     if (FetchTableValues(interp, valuesPtr, srcPtr->column, tagObjPtr) 
-        != TCL_OK) {
+	!= TCL_OK) {
 	goto error;
     }
     srcPtr->notifier = blt_table_create_column_notifier(interp, srcPtr->table, 
@@ -736,7 +736,7 @@ ObjToValues(
     if ((objc == 1) && (Blt_VectorExists2(interp, string))) {
 	result = GetVectorData(interp, valuesPtr, string);
     } else if (((objc == 2) || (objc == 3)) && 
-               (blt_table_exists(interp, string))) {
+	       (blt_table_exists(interp, string))) {
 	result = GetTableData(interp, valuesPtr, objc, objv);
     } else {
 	double *values;
@@ -1347,7 +1347,7 @@ GetElementByName(Tcl_Interp *interp, Graph *graphPtr, const char *name,
     hPtr = Blt_FindHashEntry(&graphPtr->elements.nameTable, name);
     if (hPtr == NULL) {
 	if (interp != NULL) {
- 	    Tcl_AppendResult(interp, "can't find element \"", name,
+	    Tcl_AppendResult(interp, "can't find element \"", name,
 		"\" in \"", Tk_PathName(graphPtr->tkwin), "\"", (char *)NULL);
 	}
 	return TCL_ERROR;
@@ -1447,7 +1447,7 @@ GetElementIterator(Tcl_Interp *interp, Graph *graphPtr, Tcl_Obj *objPtr,
 	iterPtr->type = ITER_SINGLE;
 	iterPtr->elemPtr = elemPtr;
     } else if ((chain = Blt_Tags_GetItemList(&graphPtr->elements.tags, string)) 
-               != NULL) {
+	       != NULL) {
 	iterPtr->tagName = string;
 	iterPtr->link = Blt_Chain_FirstLink(chain);
 	iterPtr->type = ITER_TAG;
@@ -3386,19 +3386,19 @@ TagDeleteOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     if (strcmp(tag, "all") == 0) {
 	Tcl_AppendResult(interp, "can't delete reserved tag \"", tag, "\"", 
 			 (char *)NULL);
-        return TCL_ERROR;
+	return TCL_ERROR;
     }
     for (i = 4; i < objc; i++) {
-        Element *elemPtr;
-        ElementIterator iter;
-        
-        if (GetElementIterator(interp, graphPtr, objv[i], &iter) != TCL_OK){
-            return TCL_ERROR;
-        }
-        for (elemPtr = FirstTaggedElement(&iter); elemPtr != NULL; 
-             elemPtr = NextTaggedElement(&iter)) {
-            Blt_Tags_RemoveItemFromTag(&graphPtr->elements.tags, tag, elemPtr);
-        }
+	Element *elemPtr;
+	ElementIterator iter;
+	
+	if (GetElementIterator(interp, graphPtr, objv[i], &iter) != TCL_OK){
+	    return TCL_ERROR;
+	}
+	for (elemPtr = FirstTaggedElement(&iter); elemPtr != NULL; 
+	     elemPtr = NextTaggedElement(&iter)) {
+	    Blt_Tags_RemoveItemFromTag(&graphPtr->elements.tags, tag, elemPtr);
+	}
     }
     return TCL_OK;
 }
@@ -3495,8 +3495,8 @@ TagGetOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     for (elemPtr = FirstTaggedElement(&iter); elemPtr != NULL; 
 	 elemPtr = NextTaggedElement(&iter)) {
 	if (objc == 5) {
-            Blt_Tags_AppendTagsToObj(&graphPtr->elements.tags, elemPtr, 
-                listObjPtr);
+	    Blt_Tags_AppendTagsToObj(&graphPtr->elements.tags, elemPtr, 
+		listObjPtr);
 	    Tcl_ListObjAppendElement(interp, listObjPtr, 
 		Tcl_NewStringObj("all", 3));
 	} else {
@@ -3519,25 +3519,25 @@ TagGetOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	    for (i = 5; i < objc; i++) {
 		Blt_ChainLink link;
 		const char *pattern;
-                Blt_Chain chain;
+		Blt_Chain chain;
 
-                chain = Blt_Chain_Create();
-                Blt_Tags_AppendTagsToChain(&graphPtr->elements.tags, elemPtr, 
-                        chain);
+		chain = Blt_Chain_Create();
+		Blt_Tags_AppendTagsToChain(&graphPtr->elements.tags, elemPtr, 
+			chain);
 		pattern = Tcl_GetString(objv[i]);
 		for (link = Blt_Chain_FirstLink(chain); link != NULL; 
-                     link = Blt_Chain_NextLink(link)) {
+		     link = Blt_Chain_NextLink(link)) {
 		    const char *tag;
-                    Tcl_Obj *objPtr;
+		    Tcl_Obj *objPtr;
 
 		    tag = (const char *)Blt_Chain_GetValue(link);
 		    if (!Tcl_StringMatch(tag, pattern)) {
 			continue;
 		    }
-                    objPtr = Tcl_NewStringObj(tag, -1);
-                    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-                }
-                Blt_Chain_Destroy(chain);
+		    objPtr = Tcl_NewStringObj(tag, -1);
+		    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+		}
+		Blt_Chain_Destroy(chain);
 	    }
 	}    
     }
@@ -3567,7 +3567,7 @@ TagNamesOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     objPtr = Tcl_NewStringObj("all", -1);
     Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
     if (objc == 4) {
-        Blt_Tags_AppendAllTagsToObj(&graphPtr->elements.tags, listObjPtr);
+	Blt_Tags_AppendAllTagsToObj(&graphPtr->elements.tags, listObjPtr);
     } else {
 	Blt_HashTable selected;
 	int i;
@@ -3583,20 +3583,20 @@ TagNamesOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	    for (elemPtr = FirstTaggedElement(&iter); elemPtr != NULL; 
 		 elemPtr = NextTaggedElement(&iter)) {
 		Blt_ChainLink link;
-                Blt_Chain chain;
+		Blt_Chain chain;
 
-                chain = Blt_Chain_Create();
-                Blt_Tags_AppendTagsToChain(&graphPtr->elements.tags, elemPtr, 
-                        chain);
+		chain = Blt_Chain_Create();
+		Blt_Tags_AppendTagsToChain(&graphPtr->elements.tags, elemPtr, 
+			chain);
 		for (link = Blt_Chain_FirstLink(chain); link != NULL; 
-                     link = Blt_Chain_NextLink(link)) {
+		     link = Blt_Chain_NextLink(link)) {
 		    const char *tag;
-                    int isNew;
+		    int isNew;
 
 		    tag = Blt_Chain_GetValue(link);
-                    Blt_CreateHashEntry(&selected, tag, &isNew);
+		    Blt_CreateHashEntry(&selected, tag, &isNew);
 		}
-                Blt_Chain_Destroy(chain);
+		Blt_Chain_Destroy(chain);
 	    }
 	}
 	{
@@ -3645,22 +3645,22 @@ TagIndicesOp(Graph *graphPtr, Tcl_Interp *interp, int objc,
 	if (strcmp(tag, "all") == 0) {
 	    break;
 	} else {
-            Blt_Chain chain;
+	    Blt_Chain chain;
 
-            chain = Blt_Tags_GetItemList(&graphPtr->elements.tags, tag);
-            if (chain != NULL) {
-                Blt_ChainLink link;
+	    chain = Blt_Tags_GetItemList(&graphPtr->elements.tags, tag);
+	    if (chain != NULL) {
+		Blt_ChainLink link;
 
-                for (link = Blt_Chain_FirstLink(chain); link != NULL; 
-                     link = Blt_Chain_NextLink(link)) {
-                    Element *elemPtr;
-                    int isNew;
-                    
-                    elemPtr = Blt_Chain_GetValue(link);
-                    Blt_CreateHashEntry(&selected, (char *)elemPtr, &isNew);
-                }
-            }
-            continue;
+		for (link = Blt_Chain_FirstLink(chain); link != NULL; 
+		     link = Blt_Chain_NextLink(link)) {
+		    Element *elemPtr;
+		    int isNew;
+		    
+		    elemPtr = Blt_Chain_GetValue(link);
+		    Blt_CreateHashEntry(&selected, (char *)elemPtr, &isNew);
+		}
+	    }
+	    continue;
 	}
 	Tcl_AppendResult(interp, "can't find a tag \"", tag, "\"",
 			 (char *)NULL);
@@ -3758,9 +3758,9 @@ TagUnsetOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	int i;
 
 	for (i = 5; i < objc; i++) {
-            const char *tag;
+	    const char *tag;
 
-            tag = Tcl_GetString(objv[i]);
+	    tag = Tcl_GetString(objv[i]);
 	    Blt_Tags_RemoveItemFromTag(&graphPtr->elements.tags, tag, elemPtr);
 	}    
     }
@@ -3842,15 +3842,15 @@ TypeOp(
     }
     switch (elemPtr->obj.classId) {
     case CID_ELEM_BAR:		
-    	string = "bar";		break;
+	string = "bar";		break;
     case CID_ELEM_CONTOUR:	
-    	string = "contour";	break;
+	string = "contour";	break;
     case CID_ELEM_LINE:		
-    	string = "line";	break;
+	string = "line";	break;
     case CID_ELEM_STRIP:	
-    	string = "strip";	break;
+	string = "strip";	break;
     default:			
-    	string = "???";		break;
+	string = "???";		break;
     }
     Tcl_SetStringObj(Tcl_GetObjResult(interp), string, -1);
     return TCL_OK;
@@ -3879,7 +3879,7 @@ static Blt_OpSpec elemOps[] = {
     {"lower",      1, LowerOp,       3, 0, "?elemName?..."},
     {"names",      2, NamesOp,       3, 0, "?pattern?..."},
     {"nearest",    2, NearestOp,     5, 0,
-        "x y ?option value?... ?elemName?..."},
+	"x y ?option value?... ?elemName?..."},
     {"raise",      1, RaiseOp,       3, 0, "?elemName?..."},
     {"show",       1, ShowOp,        3, 4, "?elemList?"},
     {"tag",        2, TagOp,         2, 0, "args"},

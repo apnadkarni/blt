@@ -1128,11 +1128,11 @@ DrawableToPicture(
     destPtr = Blt_CreatePicture(w, height);
     {
 	Rect srcRect, destRect;
-        MacDrawable dstDraw = (MacDrawable)drawable;
-        PixMap pm;
+	MacDrawable dstDraw = (MacDrawable)drawable;
+	PixMap pm;
       
 	SetRect(&srcRect, x, y, x + w, y + height);
-        SetRect(&destRect, 0, 0, w, height);
+	SetRect(&destRect, 0, 0, w, height);
 
 	GetGWorld(&saveWorld, &saveDevice);
 	SetGWorld(srcPort, NULL);
@@ -1570,10 +1570,10 @@ Blt_RotateBitmap(
 	destBitmap = None;
     }
     if (destBits != NULL) {
-         Blt_Free(destBits);
+	 Blt_Free(destBits);
     }
     if (srcBits != NULL) {
-         Blt_Free(srcBits);
+	 Blt_Free(srcBits);
     }
 
     *destWidthPtr = destWidth;
@@ -1887,10 +1887,10 @@ Blt_ScaleRotateBitmapRegion(
 	destBitmap = None;
     }
     if (destBits != NULL) {
-         Blt_Free(destBits);
+	 Blt_Free(destBits);
     }
     if (srcBits != NULL) {
-         Blt_Free(srcBits);
+	 Blt_Free(srcBits);
     }
     return destBitmap;
 }
@@ -1950,9 +1950,9 @@ Blt_JPEGToPicture(interp, fileName)
 
     default:
 	/* This catches everything else, but no color twist will be
-           performed by the IJL. */
+	   performed by the IJL. */
 	jpgProps.DIBColor = (IJL_COLOR)IJL_OTHER;
- 	jpgProps.JPGColor = (IJL_COLOR)IJL_OTHER;
+	jpgProps.JPGColor = (IJL_COLOR)IJL_OTHER;
 	jpgProps.DIBChannels = jpgProps.JPGChannels;
 	break;
     }
@@ -2217,14 +2217,14 @@ PaintPicture(
     destPort = TkMacOSXGetDrawablePort(drawable);
     {
 	Rect srcRect, destRect;
-        MacDrawable dstDraw = (MacDrawable)drawable;
-        PixMap pm;
+	MacDrawable dstDraw = (MacDrawable)drawable;
+	PixMap pm;
       
 	SetRect(&srcRect, sx, sy, sx + width, sy + height);
-        SetRect(&destRect, 
+	SetRect(&destRect, 
 	    dx + dstDraw->xOffset, 
 	    dy + dstDraw->yOffset, 
-            dx + width + dstDraw->xOffset, 
+	    dx + width + dstDraw->xOffset, 
 	    dy + height + dstDraw->yOffset);
 
 	GetGWorld(&saveWorld, &saveDevice);
@@ -2261,7 +2261,7 @@ PaintPicture(
 		 &srcRect, &destRect, srcCopy, NULL);
     }
     if (ditherPtr != NULL) {
-        Blt_FreePicture(ditherPtr);
+	Blt_FreePicture(ditherPtr);
     }
     SetGWorld(saveWorld, saveDevice);
     return TRUE;

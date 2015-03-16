@@ -42,13 +42,13 @@ typedef void (Blt_VectorChangedProc)(Tcl_Interp *interp, ClientData clientData,
 
 typedef struct {
     double *valueArr;                   /* Array of values (possibly
-                                         * malloc-ed) */
+					 * malloc-ed) */
     int numValues;                      /* Number of values in the array */
     int arraySize;      		/* Size of the allocated space */
     double min, max;            	/* Minimum and maximum values in
-                                         * the vector */
+					 * the vector */
     int dirty;  			/* Indicates if the vector has been
-                                         * updated */
+					 * updated */
     int reserved;                       /* Reserved for future use */
 } Blt_Vector;
 
@@ -56,9 +56,9 @@ typedef double (Blt_VectorIndexProc)(Blt_Vector * vecPtr);
 
 typedef enum {
     BLT_MATH_FUNC_SCALAR = 1,           /* The function returns a single
-                                         * double precision value. */
+					 * double precision value. */
     BLT_MATH_FUNC_VECTOR                /* The function processes the
-                                         * entire vector. */
+					 * entire vector. */
 } Blt_MathFuncType;
 
 /*

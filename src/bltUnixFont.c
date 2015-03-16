@@ -343,7 +343,7 @@ PointsToPixels(Tk_Window tkwin, double size)
     double d;
 
     if (size < 0) {
-        return (int)(-size);
+	return (int)(-size);
     }
     d = size * 25.4 / 72.0;
     d *= WidthOfScreen(Tk_Screen(tkwin));
@@ -2570,7 +2570,7 @@ FreetypeDrawProc(
 #if 0
 	printf("Switch to drawable 0x%x\n", drawable);
 #endif
-        handler = Tk_CreateErrorHandler(display, -1, -1, -1, 
+	handler = Tk_CreateErrorHandler(display, -1, -1, -1, 
 		(Tk_ErrorProc *)NULL, (ClientData) NULL);
 	XftDrawChange(setPtr->draw, drawable);
 	setPtr->drawable = drawable;
@@ -2615,7 +2615,7 @@ FreetypeDrawProc(
 		/* This should not happen, but it can. */
 		fprintf(stderr, "charLen=%d, source=%s, numBytes=%d\n",
 			charLen, source, numBytes);
-                abort();
+		abort();
 		return;
 	    }
 	    source += charLen;

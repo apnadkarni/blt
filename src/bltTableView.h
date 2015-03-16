@@ -78,11 +78,11 @@
  * cells.
  */
 #define GEOMETRY	(1<<0)		/* Forces the geometry of the
-                                         * cell/row/column/view to be
-                                         * recomputed.  */
+					 * cell/row/column/view to be
+					 * recomputed.  */
 #define VISIBILITY	(1<<1)          /* Indicates that the visibility
-                                         * of the cells in the widget need
-                                         * to be recomputed. */
+					 * of the cells in the widget need
+					 * to be recomputed. */
 #define HIDDEN		(1<<2)		/* The row or column is hidden. No
 					 * geometry is computed for cells in
 					 * hidden rows and columns. */
@@ -109,14 +109,14 @@
 					 * must be freed. */
 #define FOCUS		(1<<8)
 #define REDRAW		(1<<9)          /* Indicates the widget needs to be
-                                         * redrawn. Some changes may occur
-                                         * to cells that are off-screen and
-                                         * don't affect the cells that are
-                                         * on screen (e.g. adding columns
-                                         * or rows). Don't redraw the table
-                                         * unless there are cells in the
-                                         * visible portion that need to be
-                                         * redrawn. */
+					 * redrawn. Some changes may occur
+					 * to cells that are off-screen and
+					 * don't affect the cells that are
+					 * on screen (e.g. adding columns
+					 * or rows). Don't redraw the table
+					 * unless there are cells in the
+					 * visible portion that need to be
+					 * redrawn. */
 
 /* Row and column only flags */
 #define DELETED		(1<<10)		/* The row or column has been
@@ -249,9 +249,9 @@ typedef struct _Icon {
     Blt_HashEntry *hashPtr;	        /* Pointer to this entry in the
 					 * image cache hash table. */
     int refCount;			/* Reference count for this
-                                         * image. */
+					 * image. */
     short int width, height;		/* Dimensions of the cached
-                                         * image. */
+					 * image. */
 } *Icon;
 
 #define IconHeight(icon)	((icon)->height)
@@ -355,12 +355,12 @@ struct _CellStyle {
     XColor *selectFg;			/* Color of the text when the cell
 					 * is selected. */
     Blt_Bg normalBg;			/* Normal background color of
-                                         * cell. */
+					 * cell. */
     Blt_Bg activeBg;			/* Background color when the cell
 					 * is active. Textboxes are usually
 					 * never active. */
     Blt_Bg altBg;			/* Alternative normal
-                                         * background. */
+					 * background. */
     Blt_Bg disableBg;			/* Background color when the cell
 					 * is disabled. */
     Blt_Bg highlightBg;			/* Background color when the cell
@@ -368,11 +368,11 @@ struct _CellStyle {
     Blt_Bg selectBg;			/* Background color when the cell
 					 * is selected. */
     GC normalGC;			/* Graphics context of normal
-                                         * text. */
+					 * text. */
     GC activeGC;			/* Graphics context of active
-                                         * text. */
+					 * text. */
     GC disableGC;			/* Graphics context of disabled
-                                         * text. */
+					 * text. */
     GC highlightGC;			/* Graphics context of highlighted
 					 * text. */
     GC selectGC;			/* Graphics context of selected
@@ -388,10 +388,10 @@ struct _CellStyle {
 					 * invoked.*/
     XColor *rowRuleColor;		/* Color of the row's rule. */
     GC rowRuleGC;                       /* Graphics context of the row's
-                                         * rule. */
+					 * rule. */
     XColor *colRuleColor;		/* Color of the row's rule. */
     GC colRuleGC;                       /* Graphics context of the row's
-                                         * rule. */
+					 * rule. */
 };
 
 /*
@@ -699,7 +699,7 @@ typedef struct {
 					 * filter when the filter is
 					 * highlighted. */
     XColor *normalFg;			/* Text color of the column
-                                         * title. */
+					 * title. */
     XColor *activeFg;			/* Text color of the column title
 					 * when the title is active */
     XColor *disabledFg;			/* Text color of the column title
@@ -730,9 +730,9 @@ typedef struct {
  */
 struct _TableView {
     Tcl_Interp *interp;			/* Interpreter to return
-                                         * results. */
+					 * results. */
     Tcl_Command cmdToken;		/* Token for widget's TCL
-                                         * command. */
+					 * command. */
     BLT_TABLE table;			/* Token holding internal table. */
     Blt_HashEntry *hashPtr;		/* Pointer to this entry in the
 					 * interpreter-specific hash table
@@ -799,7 +799,7 @@ struct _TableView {
     Blt_Pool cellPool;			/* Memory pool for cells. */ 
     Blt_Pool rowPool;			/* Memory pool for row headers. */
     Blt_Pool columnPool;		/* Memory pool for column
-                                         * headers. */
+					 * headers. */
 
     /*
      * Selection Information:
@@ -817,7 +817,7 @@ struct _TableView {
 					 * whenever the selection
 					 * changes. */
     Cell *activePtr;			/* The cell that is currently
-                                         * active. */
+					 * active. */
     Cell *focusPtr;			/* The cell that currently have
 					 * focus */
     Cell *postPtr;			/* If non-NULL, this is the cell to
@@ -830,11 +830,11 @@ struct _TableView {
 
     /* Attributes for row titles. */
     Row *rowActiveTitlePtr;		/* Row title that's currently
-                                         * active.*/
+					 * active.*/
     Row *rowResizePtr;			/* Row that is being resized. */
     Blt_Font rowTitleFont;		/* Font to display row titles. */
     int rowTitleBorderWidth;		/* Border width of the row
-                                         * title. */
+					 * title. */
     Blt_Bg rowNormalTitleBg;		/* Background color of the row
 					 * title. */
     Blt_Bg rowActiveTitleBg;		/* Background color of the row

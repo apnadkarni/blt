@@ -178,9 +178,9 @@ typedef struct {
     const char *withTag;
     Tree *treePtr;
     Blt_ChainLink readLink;		/* Pointer to list of read
-                                         * traces. */
+					 * traces. */
     Blt_ChainLink writeLink;		/* Pointer to list of write
-                                         * traces. */
+					 * traces. */
     Blt_HashTable idleTable;		/* Table of do-when-idle event
 					 * callbacks. */
     Tcl_Interp *interp;
@@ -1869,7 +1869,7 @@ RestoreNode5(Tcl_Interp *interp, int argc, const char **argv,
 	 * means there were two nodes in the dump with the same id.
 	 */
 	hPtr = Blt_FindHashEntry(&restorePtr->idTable, (char *)id);
- 	if (hPtr != NULL) {
+	if (hPtr != NULL) {
 	    Tcl_AppendResult(interp, "node \"", Blt_Ltoa(id), 
 		"\" has already been restored", (char *)NULL);
 	    goto error;
@@ -3296,7 +3296,7 @@ Blt_Tree_IsAncestor(Node *n1Ptr, Node *n2Ptr)
  */
 int
 Blt_Tree_SortNode(Tree *treePtr, Node *parentPtr, 
-                  Blt_TreeCompareNodesProc *proc)
+		  Blt_TreeCompareNodesProc *proc)
 {
     Node **nodes, *childPtr;
     long numNodes, i;
@@ -3312,14 +3312,14 @@ Blt_Tree_SortNode(Tree *treePtr, Node *parentPtr,
 	return TCL_ERROR;               /* Out of memory. */
     }
     for (i = 0, childPtr = parentPtr->first; childPtr != NULL; 
-         childPtr = childPtr->next, i++) {
+	 childPtr = childPtr->next, i++) {
 	nodes[i] = childPtr;
     }
     qsort(nodes, numNodes, sizeof(Node *), (QSortCompareProc *)proc);
     for (i = 0; i < numNodes; i++) {
-        Node *nodePtr;
+	Node *nodePtr;
 
-        nodePtr = nodes[i];
+	nodePtr = nodes[i];
 	UnlinkNode(nodePtr);
 	LinkBefore(parentPtr, nodePtr, (Blt_TreeNode)NULL);
     }

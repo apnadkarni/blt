@@ -165,7 +165,7 @@ Blt_Base64_Decode(Tcl_Interp *interp, const char *string, size_t *lengthPtr)
 		return NULL;
 	    }
 	    break;
-        }
+	}
 
 	/*
 	 * in:     a      b      c     d
@@ -232,7 +232,7 @@ Blt_Base85_MaxBufferLength(size_t bufsize)
 
 size_t
 Blt_Base64_Encode(const unsigned char *buffer, size_t bufsize, 
-                  unsigned char *destBytes) 
+		  unsigned char *destBytes) 
 {
     unsigned char *dp;
     int count, remainder;
@@ -306,7 +306,7 @@ Blt_Base64_Encode(const unsigned char *buffer, size_t bufsize,
 
 size_t 
 Blt_Base85_Encode(const unsigned char *buffer, size_t bufsize, 
-                  unsigned char *destBytes) 
+		  unsigned char *destBytes) 
 {
     unsigned char *dp; 
     size_t count, length, numBytes;

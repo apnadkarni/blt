@@ -262,7 +262,7 @@ static void
 ConsolePrint(interp, devId, buffer, size)
     Tcl_Interp *interp;		/* Main interpreter. */
     int devId;			/* TCL_STDOUT for stdout, TCL_STDERR for
-                                 * stderr. */
+				 * stderr. */
     const char *buffer;		/* Text buffer. */
     long size;			/* Size of text buffer. */
 {
@@ -360,7 +360,7 @@ ConsoleInput(instanceData, buf, bufSize, errorCode)
     ClientData instanceData;	/* Not Used.. */
     char *buf;			/* Where to store data read. */
     int bufSize;		/* How much space is available
-                                         * in the buffer? */
+					 * in the buffer? */
     int *errorCode;		/* Where to store error code. */
 {
     return 0;			/* Always return EOF. */
@@ -414,9 +414,9 @@ static void
 ConsoleWatch(instanceData, mask)
     ClientData instanceData;	/* Device ID for the channel. */
     int mask;			/* OR-ed combination of
-                                         * TCL_READABLE, TCL_WRITABLE and
-                                         * TCL_EXCEPTION, for the events
-                                         * we are interested in. */
+					 * TCL_READABLE, TCL_WRITABLE and
+					 * TCL_EXCEPTION, for the events
+					 * we are interested in. */
 {
 }
 
@@ -634,11 +634,11 @@ ConsoleEventProc(ClientData clientData, XEvent *eventPtr)
 	consoleInterp = info->consoleInterp;
 
 	/*
-         * It is possible that the console interpreter itself has
-         * already been deleted. In that case the consoleInterp
-         * field will be set to NULL. If the interpreter is already
-         * gone, we do not have to do any work here.
-         */
+	 * It is possible that the console interpreter itself has
+	 * already been deleted. In that case the consoleInterp
+	 * field will be set to NULL. If the interpreter is already
+	 * gone, we do not have to do any work here.
+	 */
 
 	if (consoleInterp == (Tcl_Interp *)NULL) {
 	    return;

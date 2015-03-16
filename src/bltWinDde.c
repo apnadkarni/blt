@@ -357,7 +357,7 @@ ExecuteRemoteObject(
 	Tcl_ListObjAppendElement(NULL, listObjPtr, objPtr);
 	value = Tcl_GetVar2(interp, "errorInfo", NULL, TCL_GLOBAL_ONLY);
 	objPtr = Tcl_NewStringObj(value, -1);
-        Tcl_ListObjAppendElement(NULL, listObjPtr, objPtr);
+	Tcl_ListObjAppendElement(NULL, listObjPtr, objPtr);
     }
     return listObjPtr;
 }
@@ -579,7 +579,7 @@ ServerProc (
 	    returnPackagePtr = ExecuteRemoteObject(convPtr->riPtr->interp, 
 		objPtr);
 	    for (convPtr = conversations; (convPtr != NULL)
- 		    && (convPtr->hConv != hConv); convPtr = convPtr->nextPtr) {
+		    && (convPtr->hConv != hConv); convPtr = convPtr->nextPtr) {
 		/*
 		 * Empty loop body.
 		 */
@@ -623,9 +623,9 @@ ServerProc (
 	    for (i = 0, riPtr = interps; i < numItems; 
 		    i++, riPtr = riPtr->nextPtr) {
 		returnPtr[i].hszSvc = DdeCreateStringHandle(
-                        instance, "TclEval", CP_WINANSI);
+			instance, "TclEval", CP_WINANSI);
 		returnPtr[i].hszTopic = DdeCreateStringHandle(
-                        instance, riPtr->name, CP_WINANSI);
+			instance, riPtr->name, CP_WINANSI);
 	    }
 	    returnPtr[i].hszSvc = NULL;
 	    returnPtr[i].hszTopic = NULL;
@@ -1083,7 +1083,7 @@ DdeObjCmd(
 	    
 	    convInfo.cb = sizeof(CONVINFO);
 	    hConvList = DdeConnectList(instance, service, 
-                    topic, 0, NULL);
+		    topic, 0, NULL);
 	    DdeFreeStringHandle(instance, service);
 	    DdeFreeStringHandle(instance, topic);
 	    hConv = 0;
@@ -1094,7 +1094,7 @@ DdeObjCmd(
 		elementObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
 		DdeQueryConvInfo(hConv, QID_SYNC, &convInfo);
 		length = (int)DdeQueryString(instance, 
-                        convInfo.hszSvcPartner, NULL, 0, CP_WINANSI);
+			convInfo.hszSvcPartner, NULL, 0, CP_WINANSI);
 		Tcl_DStringSetLength(&ds, length);
 		name = Tcl_DStringValue(&ds);
 		DdeQueryString(instance, convInfo.hszSvcPartner, (char *)name, 
@@ -1122,7 +1122,7 @@ DdeObjCmd(
 	    objc -= (async + 3);
 	    objv += (async + 3);
 
-            /*
+	    /*
 	     * See if the target interpreter is local.  If so, execute
 	     * the command directly without going through the DDE
 	     * server.  Don't exchange objects between interps.  The

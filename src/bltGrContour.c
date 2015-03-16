@@ -104,7 +104,7 @@
 #define ISOLINES	(1<<12)		/* Draw isolines on top of the
 					 * mesh. */
 #define COLORMAP	(1<<13)		/* Fill the triangles of the
-                                         * mesh. */
+					 * mesh. */
 #define HULL		(1<<14)		/* Draw the convex hull
 					 * representing the outer boundary
 					 * of the mesh. */
@@ -223,9 +223,9 @@ typedef struct _TracePoint {
  */
 typedef struct _TraceSegment {
     struct _TraceSegment *next;		/* Points to next point in
-                                         * trace. */
+					 * trace. */
     float x1, y1, x2, y2;		/* Screen coordinate of the
-                                         * point. */
+					 * point. */
     int index;				/* Index of this coordinate
 					 * pointing back to the raw world
 					 * values in the individual data
@@ -294,9 +294,9 @@ static SymbolTable symbolTable[] = {
 
 typedef struct {
     SymbolType type;			/* Type of symbol to be
-                                         * drawn/printed */
+					 * drawn/printed */
     int size;				/* Requested size of symbol in
-                                         * pixels. */
+					 * pixels. */
     XColor *outlineColor;		/* Outline color */
     int outlineWidth;			/* Width of the outline */
     GC outlineGC;			/* Outline graphics context */
@@ -317,10 +317,10 @@ typedef struct {
 typedef struct {
     GraphObj obj;
     ContourElement *elemPtr;		/* Element this isoline belongs
-                                         * to. */
+					 * to. */
     unsigned int flags;
     const char *label;			/* Label to be displayed for
-                                         * isoline. */
+					 * isoline. */
     double reqValue;			/* Requested isoline value.  Could
 					 * be either absolute or
 					 * relative. */
@@ -450,7 +450,7 @@ struct _ContourElement {
     int numWires;			/* # of segments in above array. */
     int numVertices;			/* # of vertices in above array. */
     int numTriangles;			/* # of triangles in the above
-                                         * array. */
+					 * array. */
     int nextIsoline;
     const char *valueFormat;		/* A printf format string. */
     TextStyle valueStyle;		/* Text attributes (color, font,
@@ -653,8 +653,8 @@ static Blt_ConfigSpec contourSpecs[] =
 	Blt_Offset(ContourElement, builtinPen.symbol.fillColor), 
 	BLT_CONFIG_NULL_OK, &colorOption},
     {BLT_CONFIG_BITMASK, "-hide", "hide", "Hide", DEF_HIDE, 
-        Blt_Offset(ContourElement, flags), BLT_CONFIG_DONT_SET_DEFAULT,
-        (Blt_CustomOption *)HIDDEN},
+	Blt_Offset(ContourElement, flags), BLT_CONFIG_DONT_SET_DEFAULT,
+	(Blt_CustomOption *)HIDDEN},
     {BLT_CONFIG_STRING, "-label", "label", "Label", (char *)NULL, 
 	Blt_Offset(ContourElement, label), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_RELIEF, "-legendrelief", "legendRelief", "LegendRelief",
@@ -662,7 +662,7 @@ static Blt_ConfigSpec contourSpecs[] =
 	BLT_CONFIG_DONT_SET_DEFAULT}, 
     {BLT_CONFIG_PIXELS_NNEG, "-linewidth", "lineWidth", "LineWidth",
 	DEF_PEN_LINEWIDTH, Blt_Offset(ContourElement, builtinPen.traceWidth),
-        BLT_CONFIG_DONT_SET_DEFAULT},
+	BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_CUSTOM, "-mapx", "mapX", "MapX", DEF_AXIS_X, 
 	Blt_Offset(ContourElement, axes.x), 0, &bltXAxisOption},
     {BLT_CONFIG_CUSTOM, "-mapy", "mapY", "MapY", DEF_AXIS_Y, 
@@ -681,10 +681,10 @@ static Blt_ConfigSpec contourSpecs[] =
 	Blt_Offset(ContourElement, meshOffColor), BLT_CONFIG_NULL_OK}, 
     {BLT_CONFIG_PIXELS_NNEG, "-meshlinewidth", "meshLineWidth", "MeshLineWidth",
 	DEF_MESH_LINEWIDTH, Blt_Offset(ContourElement, meshWidth),
-        BLT_CONFIG_DONT_SET_DEFAULT},
+	BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_DASHES, "-meshdashes", "meshDashes", "MeshDashes", 
 	DEF_MESH_DASHES, Blt_Offset(ContourElement, meshDashes), 
-        BLT_CONFIG_NULL_OK},
+	BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_CUSTOM, "-offdash", "offDash", "OffDash", 
 	DEF_PEN_OFFDASH_COLOR, 
 	Blt_Offset(ContourElement, builtinPen.traceOffColor),
@@ -708,8 +708,8 @@ static Blt_ConfigSpec contourSpecs[] =
 	DEF_SCALE_SYMBOLS, Blt_Offset(ContourElement, scaleSymbols),
 	BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_BITMASK_INVERT, "-show", "show", "show", DEF_SHOW, 
-        Blt_Offset(ContourElement, flags), BLT_CONFIG_DONT_SET_DEFAULT,
-        (Blt_CustomOption *)HIDDEN},
+	Blt_Offset(ContourElement, flags), BLT_CONFIG_DONT_SET_DEFAULT,
+	(Blt_CustomOption *)HIDDEN},
     {BLT_CONFIG_STATE, "-state", "state", "State", DEF_STATE, 
 	Blt_Offset(ContourElement, state), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_CUSTOM, "-symbol", "symbol", "Symbol", DEF_PEN_SYMBOL, 
@@ -734,15 +734,15 @@ static Blt_ConfigSpec contourSpecs[] =
     {BLT_CONFIG_CUSTOM, "-weights", "weights", "Weights", (char *)NULL, 
 	Blt_Offset(ContourElement, w), 0, &bltValuesOption},
     {BLT_CONFIG_BITMASK, "-showhull", "showHull", "ShowHull", DEF_SHOW_HULL,
-        Blt_Offset(ContourElement, flags), 0, (Blt_CustomOption *)HULL},
+	Blt_Offset(ContourElement, flags), 0, (Blt_CustomOption *)HULL},
     {BLT_CONFIG_BITMASK, "-showcolormap", "showColormap", "ShowColormap",
-        DEF_SHOW_COLORMAP, Blt_Offset(ContourElement, flags),
-        BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)COLORMAP},
+	DEF_SHOW_COLORMAP, Blt_Offset(ContourElement, flags),
+	BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)COLORMAP},
     {BLT_CONFIG_BITMASK, "-showisolines", "showIsolines", "ShowIsolines",
-        DEF_SHOW_ISOLINES, Blt_Offset(ContourElement, flags),
-        BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)ISOLINES},
+	DEF_SHOW_ISOLINES, Blt_Offset(ContourElement, flags),
+	BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)ISOLINES},
     {BLT_CONFIG_BITMASK, "-showedges", "showEdges", "ShowEdges",
-        DEF_SHOW_EDGES, Blt_Offset(ContourElement, flags), 
+	DEF_SHOW_EDGES, Blt_Offset(ContourElement, flags), 
 	BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)WIRES},
     {BLT_CONFIG_BITMASK, "-showsymbols", "showSymbols", "ShowSymbols",
 	DEF_SHOW_SYMBOLS, Blt_Offset(ContourElement, flags), 
@@ -763,8 +763,8 @@ static Blt_ConfigSpec isolineSpecs[] =
     {BLT_CONFIG_LIST, "-bindtags", "bindTags", "BindTags", DEF_TAGS, 
 	Blt_Offset(Isoline, obj.tags), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_BITMASK, "-hide", "hide", "Hide", DEF_HIDE, 
-         Blt_Offset(Isoline, flags), BLT_CONFIG_DONT_SET_DEFAULT,
-        (Blt_CustomOption *)HIDDEN},
+	 Blt_Offset(Isoline, flags), BLT_CONFIG_DONT_SET_DEFAULT,
+	(Blt_CustomOption *)HIDDEN},
     {BLT_CONFIG_STRING, "-label", "label", "Label", (char *)NULL, 
 	Blt_Offset(Isoline, label), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_CUSTOM, "-pen", "pen", "Pen", (char *)NULL, 
@@ -775,8 +775,8 @@ static Blt_ConfigSpec isolineSpecs[] =
     {BLT_CONFIG_CUSTOM, "-max", "max", "Max", "", Blt_Offset(Isoline, reqMax), 
 	BLT_CONFIG_DONT_SET_DEFAULT, &bltLimitOption},
     {BLT_CONFIG_BITMASK_INVERT, "-show", "show", "Show", DEF_SHOW, 
-         Blt_Offset(Isoline, flags), BLT_CONFIG_DONT_SET_DEFAULT,
-        (Blt_CustomOption *)HIDDEN},
+	 Blt_Offset(Isoline, flags), BLT_CONFIG_DONT_SET_DEFAULT,
+	(Blt_CustomOption *)HIDDEN},
     {BLT_CONFIG_DOUBLE, "-value", "value", "Value", "0.0",
 	Blt_Offset(Isoline, reqValue), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_END, NULL, NULL, NULL, NULL, 0, 0}
@@ -1387,7 +1387,7 @@ GetIsolineIterator(Tcl_Interp *interp, ContourElement *elemPtr, Tcl_Obj *objPtr,
 	iterPtr->startPtr = iterPtr->endPtr = isoPtr;
 	iterPtr->type = ITER_SINGLE;
     } else if ((chain = Blt_Tags_GetItemList(&elemPtr->isoTags, string)) 
-               != NULL) {
+	       != NULL) {
 	iterPtr->tagName = string;
 	iterPtr->link = Blt_Chain_FirstLink(chain);
 	iterPtr->type = ITER_TAG;
@@ -1889,8 +1889,8 @@ GetScreenPoints(ContourElement *elemPtr)
 	} 
 	v->z = z;
 	if (zAxisPtr->palette != NULL) {
-            v->color.u32 = Blt_Palette_GetAssociatedColor(zAxisPtr->palette,
-                v->z);
+	    v->color.u32 = Blt_Palette_GetAssociatedColor(zAxisPtr->palette,
+		v->z);
 	}
     }
     elemPtr->vertices = vertices;
@@ -1898,7 +1898,7 @@ GetScreenPoints(ContourElement *elemPtr)
     tracePtr = NewTrace(&elemPtr->traces);
     tracePtr->elemPtr = elemPtr;
     for (i = 0; i < elemPtr->meshPtr->numHullPts; i++) {
-    	TracePoint *p;
+	TracePoint *p;
 	int j;
 
 	j = elemPtr->meshPtr->hull[i];
@@ -2039,7 +2039,7 @@ MapTrace(ContourElement *elemPtr, Blt_Chain *tracesPtr, Trace *tracePtr)
 	if (p->flags & VISIBLE) {	/* Last point is off screen. */
 	    Point2d p1, p2;
 
- 	    p1.x = p->x, p1.y = p->y;
+	    p1.x = p->x, p1.y = p->y;
 	    p2.x = q->x, p2.y = q->y;
 	    if (Blt_LineRectClip(&exts, &p1, &p2)) {
 		TracePoint *t;
@@ -2054,7 +2054,7 @@ MapTrace(ContourElement *elemPtr, Blt_Chain *tracesPtr, Trace *tracePtr)
 		p->next = t;		/* Point t terminates the trace. */
 
 		/* Create a new trace and attach the current chain to
-                 * it. */
+		 * it. */
 		newPtr = NewTrace(tracesPtr);
 		newPtr->elemPtr = elemPtr;
 		newPtr->flags |= RECOUNT;
@@ -2167,58 +2167,58 @@ MapMesh(ContourElement *elemPtr)
     
 static int triangleIntersections[3][3][3] = {
     {
-        { 
-            0,			/* 0: 0,0,0 */
-            0,			/* 1: 0,0,1	AC vertex.*/
-            0			/* 2: 0,0,2	AC interpolated point. */
-        },
-        { 
-            0,			/* 3: 0,1,0	BC vertex. */
-            1,			/* 4: 0,1,1	BC and AC vertices. */
-            1			/* 5: 0,1,2	BC vertex, 
-                                 *		AC interpolated point. */
-        },
-        { 
-            0,			/* 6: 0,2,0	BC interpolated point.*/
-            1,			/* 7: 0,2,1     BC interpolated point, 
-                                 *		AC vertex. */
-            1			/* 8: 0,2,2	BC interpolated point, 
-                                 *		AC interpolated point. */
-        }
+	{ 
+	    0,			/* 0: 0,0,0 */
+	    0,			/* 1: 0,0,1	AC vertex.*/
+	    0			/* 2: 0,0,2	AC interpolated point. */
+	},
+	{ 
+	    0,			/* 3: 0,1,0	BC vertex. */
+	    1,			/* 4: 0,1,1	BC and AC vertices. */
+	    1			/* 5: 0,1,2	BC vertex, 
+				 *		AC interpolated point. */
+	},
+	{ 
+	    0,			/* 6: 0,2,0	BC interpolated point.*/
+	    1,			/* 7: 0,2,1     BC interpolated point, 
+				 *		AC vertex. */
+	    1			/* 8: 0,2,2	BC interpolated point, 
+				 *		AC interpolated point. */
+	}
     },
     {
-        { 
-            0,			/* 9: 1,0,0	AB vertex. */
-            1,			/* 10: 1,0,1 */
-            1			/* 11: 1,0,2 */
-        },
-        { 
-            1,			/* 12: 1,1,0 */
-            0,			/* 13: 1,1,1 */
-            1			/* 14: 1,1,2 */
-        },
-        { 
-            1,			/* 15: 1,2,0 */
-            1,			/* 16: 1,2,1 */
-            0			/* 17: 1,2,2	Not possible. */
-        }
+	{ 
+	    0,			/* 9: 1,0,0	AB vertex. */
+	    1,			/* 10: 1,0,1 */
+	    1			/* 11: 1,0,2 */
+	},
+	{ 
+	    1,			/* 12: 1,1,0 */
+	    0,			/* 13: 1,1,1 */
+	    1			/* 14: 1,1,2 */
+	},
+	{ 
+	    1,			/* 15: 1,2,0 */
+	    1,			/* 16: 1,2,1 */
+	    0			/* 17: 1,2,2	Not possible. */
+	}
     },
     {
-        { 
-            0,			/* 18: 2,0,0 */
-            1,			/* 19: 2,0,1 */
-            1			/* 20: 2,0,2 */
-        },
-        { 
-            1,			/* 21: 2,1,0 */
-            1,			/* 22: 2,1,1 */
-            0			/* 23: 2,1,2 */
-        },
-        { 
-            1,			/* 24: 2,2,0 */
-            0,			/* 25: 2,2,1 */
-            0			/* 26: 2,2,2 */
-        }
+	{ 
+	    0,			/* 18: 2,0,0 */
+	    1,			/* 19: 2,0,1 */
+	    1			/* 20: 2,0,2 */
+	},
+	{ 
+	    1,			/* 21: 2,1,0 */
+	    1,			/* 22: 2,1,1 */
+	    0			/* 23: 2,1,2 */
+	},
+	{ 
+	    1,			/* 24: 2,2,0 */
+	    0,			/* 25: 2,2,1 */
+	    0			/* 26: 2,2,2 */
+	}
     }
 };
 
@@ -2333,7 +2333,7 @@ ProcessTriangle(ContourElement *elemPtr, Triangle *t, Isoline *isoPtr)
 	    }
 	} else {
 	    /* Can't happen. Must have two interpolated points or
-             * vertices. */
+	     * vertices. */
 	}
     } else {
 #ifdef notdef
@@ -2383,8 +2383,8 @@ MapIsoline(Isoline *isoPtr)
 	isoPtr->value = isoPtr->reqValue;
     }
     if (zAxisPtr->palette != NULL) {
-        isoPtr->paletteColor.u32 = Blt_Palette_GetAssociatedColor(
-                zAxisPtr->palette, isoPtr->value);
+	isoPtr->paletteColor.u32 = Blt_Palette_GetAssociatedColor(
+		zAxisPtr->palette, isoPtr->value);
     } else {
 	isoPtr->paletteColor.u32 = 0xFF000000; /* Solid black. */
     }
@@ -2393,9 +2393,9 @@ MapIsoline(Isoline *isoPtr)
     Blt_InitHashTable(&isoPtr->pointTable, sizeof(PointKey) / sizeof(int));
     for (i = 0; i < elemPtr->numTriangles; i++) {
 	double norm, range;
-        Triangle *t;
+	Triangle *t;
 
-        t = elemPtr->triangles + i;
+	t = elemPtr->triangles + i;
 	range = t->max - t->min;
 	if (fabs(range) < DBL_EPSILON) {
 	    continue;			/* All three vertices have the same 
@@ -4859,7 +4859,7 @@ IsolineToPostScript(Graph *graphPtr, Blt_Ps ps, ContourElement *elemPtr,
  */
 static void
 SymbolsToPostScript(Graph *graphPtr, Blt_Ps ps, Isoline *isoPtr,
-                    ContourPen *penPtr)
+		    ContourPen *penPtr)
 {
 #ifdef notdef
     TracePoint *p;
@@ -5027,7 +5027,7 @@ NormalToPostScriptProc(Graph *graphPtr, Blt_Ps ps, Element *basePtr)
  */
 static int
 IsolineActivateOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-                  Tcl_Obj *const *objv)
+		  Tcl_Obj *const *objv)
 {
     Graph *graphPtr = clientData;
     ContourElement *elemPtr;
@@ -5708,19 +5708,19 @@ IsoTagDeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (strcmp(tag, "all") == 0) {
 	Tcl_AppendResult(interp, "can't delete reserved tag \"", tag, "\"", 
 			 (char *)NULL);
-        return TCL_ERROR;
+	return TCL_ERROR;
     }
     for (i = 6; i < objc; i++) {
-        Isoline *isoPtr;
-        IsolineIterator iter;
-        
-        if (GetIsolineIterator(interp, elemPtr, objv[i], &iter) != TCL_OK) {
-            return TCL_ERROR;
-        }
-        for (isoPtr = FirstTaggedIsoline(&iter); isoPtr != NULL; 
-             isoPtr = NextTaggedIsoline(&iter)) {
-            Blt_Tags_RemoveItemFromTag(&elemPtr->isoTags, tag, isoPtr);
-        }
+	Isoline *isoPtr;
+	IsolineIterator iter;
+	
+	if (GetIsolineIterator(interp, elemPtr, objv[i], &iter) != TCL_OK) {
+	    return TCL_ERROR;
+	}
+	for (isoPtr = FirstTaggedIsoline(&iter); isoPtr != NULL; 
+	     isoPtr = NextTaggedIsoline(&iter)) {
+	    Blt_Tags_RemoveItemFromTag(&elemPtr->isoTags, tag, isoPtr);
+	}
     }
     return TCL_OK;
 }
@@ -5756,13 +5756,13 @@ IsoTagExistsOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	Isoline *isoPtr;
 
 	tag = Tcl_GetString(objv[i]);
-        if (strcmp(tag, "all") == 0) {
-            Tcl_SetBooleanObj(Tcl_GetObjResult(interp), TRUE);
-            return TCL_OK;
-        }
+	if (strcmp(tag, "all") == 0) {
+	    Tcl_SetBooleanObj(Tcl_GetObjResult(interp), TRUE);
+	    return TCL_OK;
+	}
 	for (isoPtr = FirstTaggedIsoline(&iter); isoPtr != NULL; 
 	     isoPtr = NextTaggedIsoline(&iter)) {
-            if (Blt_Tags_ItemHasTag(&elemPtr->isoTags, isoPtr, tag)) {
+	    if (Blt_Tags_ItemHasTag(&elemPtr->isoTags, isoPtr, tag)) {
 		Tcl_SetBooleanObj(Tcl_GetObjResult(interp), TRUE);
 		return TCL_OK;
 	    }
@@ -5795,10 +5795,10 @@ IsoTagForgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	const char *tag;
 
 	tag = Tcl_GetString(objv[i]);
-        if (strcmp(tag, "all") == 0) {
-            continue;                   /* Can't remove tag "all". */
-        }
-        Blt_Tags_ForgetTag(&elemPtr->isoTags, tag);
+	if (strcmp(tag, "all") == 0) {
+	    continue;                   /* Can't remove tag "all". */
+	}
+	Blt_Tags_ForgetTag(&elemPtr->isoTags, tag);
     }
     return TCL_OK;
 }
@@ -5831,7 +5831,7 @@ IsoTagGetOp(ClientData clientData, Tcl_Interp *interp, int objc,
     for (isoPtr = FirstTaggedIsoline(&iter); isoPtr != NULL; 
 	 isoPtr = NextTaggedIsoline(&iter)) {
 	if (objc == 6) {
-            Blt_Tags_AppendTagsToObj(&elemPtr->isoTags, isoPtr, listObjPtr);
+	    Blt_Tags_AppendTagsToObj(&elemPtr->isoTags, isoPtr, listObjPtr);
 	    Tcl_ListObjAppendElement(interp, listObjPtr, 
 		Tcl_NewStringObj("all", 3));
 	} else {
@@ -5854,25 +5854,25 @@ IsoTagGetOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	    for (i = 7; i < objc; i++) {
 		Blt_ChainLink link;
 		const char *pattern;
-                Blt_Chain chain;
+		Blt_Chain chain;
 
-                chain = Blt_Chain_Create();
-                Blt_Tags_AppendTagsToChain(&elemPtr->isoTags, isoPtr, chain);
+		chain = Blt_Chain_Create();
+		Blt_Tags_AppendTagsToChain(&elemPtr->isoTags, isoPtr, chain);
 		pattern = Tcl_GetString(objv[i]);
 		for (link = Blt_Chain_FirstLink(chain); link != NULL; 
-                     link = Blt_Chain_NextLink(link)) {
+		     link = Blt_Chain_NextLink(link)) {
 		    const char *tag;
-                    Tcl_Obj *objPtr;
+		    Tcl_Obj *objPtr;
 
 		    tag = (const char *)Blt_Chain_GetValue(link);
 		    if (!Tcl_StringMatch(tag, pattern)) {
 			continue;
 		    }
-                    objPtr = Tcl_NewStringObj(tag, -1);
-                    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-                }
-                Blt_Chain_Destroy(chain);
-            }
+		    objPtr = Tcl_NewStringObj(tag, -1);
+		    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+		}
+		Blt_Chain_Destroy(chain);
+	    }
 	}    
     }
     Tcl_SetObjResult(interp, listObjPtr);
@@ -5903,7 +5903,7 @@ IsoTagNamesOp(ClientData clientData, Tcl_Interp *interp, int objc,
     objPtr = Tcl_NewStringObj("all", -1);
     Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
     if (objc == 5) {
-        Blt_Tags_AppendAllTagsToObj(&elemPtr->isoTags, listObjPtr);
+	Blt_Tags_AppendAllTagsToObj(&elemPtr->isoTags, listObjPtr);
     } else {
 	Blt_HashTable uniqTable;
 	int i;
@@ -5919,19 +5919,19 @@ IsoTagNamesOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	    for (isoPtr = FirstTaggedIsoline(&iter); isoPtr != NULL; 
 		 isoPtr = NextTaggedIsoline(&iter)) {
 		Blt_ChainLink link;
-                Blt_Chain chain;
+		Blt_Chain chain;
 
-                chain = Blt_Chain_Create();
-                Blt_Tags_AppendTagsToChain(&elemPtr->isoTags, isoPtr, chain);
+		chain = Blt_Chain_Create();
+		Blt_Tags_AppendTagsToChain(&elemPtr->isoTags, isoPtr, chain);
 		for (link = Blt_Chain_FirstLink(chain); link != NULL; 
-                     link = Blt_Chain_NextLink(link)) {
+		     link = Blt_Chain_NextLink(link)) {
 		    const char *tag;
-                    int isNew;
+		    int isNew;
 
 		    tag = Blt_Chain_GetValue(link);
-                    Blt_CreateHashEntry(&uniqTable, tag, &isNew);
+		    Blt_CreateHashEntry(&uniqTable, tag, &isNew);
 		}
-                Blt_Chain_Destroy(chain);
+		Blt_Chain_Destroy(chain);
 	    }
 	}
 	{
@@ -5967,7 +5967,7 @@ IsoTagNamesOp(ClientData clientData, Tcl_Interp *interp, int objc,
  */
 static int
 IsoTagSetOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-            Tcl_Obj *const *objv)
+	    Tcl_Obj *const *objv)
 {
     int i;
     IsolineIterator iter;
@@ -6022,10 +6022,10 @@ IsoTagUnsetOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	 isoPtr = NextTaggedIsoline(&iter)) {
 	int i;
 	for (i = 6; i < objc; i++) {
-            const char *tag;
+	    const char *tag;
 
-            tag = Tcl_GetString(objv[i]);
-            Blt_Tags_RemoveItemFromTag(&elemPtr->isoTags, tag, isoPtr);
+	    tag = Tcl_GetString(objv[i]);
+	    Blt_Tags_RemoveItemFromTag(&elemPtr->isoTags, tag, isoPtr);
 	}    
     }
     return TCL_OK;
@@ -6165,7 +6165,7 @@ FreeStitch(Stitches *stitchesPtr, pool, Stitch *s)
 
 static void
 AddCutlineSegment(Stitches *stitchesPtr, EdgeKey *key1Ptr, EdgeKey *key2Ptr,
-                  Point2d *p, Point2d *q)
+		  Point2d *p, Point2d *q)
 {
     Stitch *p1, *p2;
     Blt_HashEntry *hPtr;
@@ -6178,42 +6178,42 @@ AddCutlineSegment(Stitches *stitchesPtr, EdgeKey *key1Ptr, EdgeKey *key2Ptr,
     
     hPtr = Blt_CreateHashEntry(&stitchesPtr->edgeTable, key1Ptr, &isNew);
     if (isNew) {
-        Blt_SetHashValue(hPtr, p1);
+	Blt_SetHashValue(hPtr, p1);
     } else {
-        Stitch *old;
+	Stitch *old;
 
-        /* Merge new and old segments. */
-        old = Blt_GetHashValue(hPtr);
-        if (old->next == NULL) {
-            p1->last = old->last;
-            p1->last->next = p1;
-        } else if (old->last == NULL) {
-            p1->next = old->next;
-            p1->next->last = p1;
-        }
-        /* Remove the point from the table and the duplicate point. */
-        FreeStitch(stitchePtr, old);
-        Blt_DeleteHashEntry(&stitchesPtr->edgeTable, hPtr);
+	/* Merge new and old segments. */
+	old = Blt_GetHashValue(hPtr);
+	if (old->next == NULL) {
+	    p1->last = old->last;
+	    p1->last->next = p1;
+	} else if (old->last == NULL) {
+	    p1->next = old->next;
+	    p1->next->last = p1;
+	}
+	/* Remove the point from the table and the duplicate point. */
+	FreeStitch(stitchePtr, old);
+	Blt_DeleteHashEntry(&stitchesPtr->edgeTable, hPtr);
     }
 
     hPtr = Blt_CreateHashEntry(&stitchesPtr->edgeTable, key2Ptr, &isNew);
     if (isNew) {
-        Blt_SetHashValue(hPtr, p2);
+	Blt_SetHashValue(hPtr, p2);
     } else {
-        Stitch *old;
+	Stitch *old;
 
-        /* Merge new and old segments. */
-        old = Blt_GetHashValue(hPtr);
-        if (old->next == NULL) {
-            p2->last = old->last;
-            p2->last->next = p2;
-        } else if (old->last == NULL) {
-            p2->next = old->next;
-            p2->next->last = p2;
-        }
-        /* Remove the point from the table and the duplicate point. */
-        FreeStitch(stitchesPtr, old);
-        Blt_DeleteHashEntry(&stitchesPtr->edgeTable, hPtr);
+	/* Merge new and old segments. */
+	old = Blt_GetHashValue(hPtr);
+	if (old->next == NULL) {
+	    p2->last = old->last;
+	    p2->last->next = p2;
+	} else if (old->last == NULL) {
+	    p2->next = old->next;
+	    p2->next->last = p2;
+	}
+	/* Remove the point from the table and the duplicate point. */
+	FreeStitch(stitchesPtr, old);
+	Blt_DeleteHashEntry(&stitchesPtr->edgeTable, hPtr);
     }
 }
 
@@ -6283,30 +6283,30 @@ CutTriangleAlongX(Stitches *stitchesPtr, Triangle *t, double x)
 	if (ab > 0) {
 	    if (bc > 0) {
 		Point2d p, q;
-                EdgeKey key1, key2;
+		EdgeKey key1, key2;
 
 		/* Compute interpolated points ab and bc */
 		p.y = Az + t1 * (Bz - Az);
 		p.x = Ay + t1 * (By - Ay);
 		q.y = Bz + t2 * (Cz - Bz);
 		q.x = By + t2 * (Cy - By);
-                /* Key is edge index ab and bc */
-                MakeEdgeKey(&key1, t->a, t->b);
-                MakeEdgeKey(&key2, t->b, t->c);
-                AddCutlineSegment(stitchesPtr, key1, key2, &p, &q);
+		/* Key is edge index ab and bc */
+		MakeEdgeKey(&key1, t->a, t->b);
+		MakeEdgeKey(&key2, t->b, t->c);
+		AddCutlineSegment(stitchesPtr, key1, key2, &p, &q);
 	    } else if (ca > 0) {
 		Point2d p, q;
-                EdgeKey key1, key2;
-                
+		EdgeKey key1, key2;
+		
 		/* Compute interpolated points ab and ac */
 		p.y = Az + t1 * (Bz - Az);
 		p.x = Ay + t1 * (By - Ay);
 		q.y = Cz + t3 * (Az - Cz);
 		q.x = Cy + t3 * (Ay - Cy);
-                /* Key is edge index ab and ac */
-                MakeEdgeKey(&key1, t->a, t->b);
-                MakeEdgeKey(&key2, t->a, t->c);
-                AddCutlineSegment(stitchesPtr, key1, key2, &p, &q);
+		/* Key is edge index ab and ac */
+		MakeEdgeKey(&key1, t->a, t->b);
+		MakeEdgeKey(&key2, t->a, t->c);
+		AddCutlineSegment(stitchesPtr, key1, key2, &p, &q);
 	    }
 	} else if (bc > 0) {
 	    if (ca > 0) {
@@ -6318,14 +6318,14 @@ CutTriangleAlongX(Stitches *stitchesPtr, Triangle *t, double x)
 		p.x = By + t2 * (Cy - By);
 		q.y = Cz + t3 * (Az - Cz);
 		q.x = Cy + t3 * (Ay - Cy);
-                /* Key is edge index bc and ac */
-                MakeEdgeKey(&key1, t->b, t->c);
-                MakeEdgeKey(&key2, t->a, t->c);
-                AddCutlineSegment(stitchesPtr, key1, key2, &p, &q);
+		/* Key is edge index bc and ac */
+		MakeEdgeKey(&key1, t->b, t->c);
+		MakeEdgeKey(&key2, t->a, t->c);
+		AddCutlineSegment(stitchesPtr, key1, key2, &p, &q);
 	    }
 	} else {
 	    /* Can't happen. Must have two interpolated points or
-             * vertices. */
+	     * vertices. */
 	}
     } else {
 #ifndef notdef
@@ -6342,7 +6342,7 @@ CutTriangleAlongX(Stitches *stitchesPtr, Triangle *t, double x)
 
 static int
 XCutline(Tcl_Interp *interp, ContourElement *elemPtr, double x,
-         Blt_Vector *xVectorPtr, Blt_Vector *yVectorPtr)
+	 Blt_Vector *xVectorPtr, Blt_Vector *yVectorPtr)
 {
     int i;
     Stitches stitches;
@@ -6352,13 +6352,13 @@ XCutline(Tcl_Interp *interp, ContourElement *elemPtr, double x,
     Blt_InitHashTable(&stitches.edgeTable, sizeof(EdgeKey) / sizeof(int));
     stitches.pool = Blt_Pool_Create(BLT_FIXED_SIZE_ITEMS);
     for (i = 0; i < elemPtr->numTriangles; i++) {
-        Triangle *t;
-        
-        t = elemPtr->triangles + i;
-        if ((x < MIN3(Ax,Bx,Cx)) || (x > MAX3(Ax,Bx,Cx))) {
-            continue;
-        }
-        CutTriangleAlongX(&stitches, t, x);
+	Triangle *t;
+	
+	t = elemPtr->triangles + i;
+	if ((x < MIN3(Ax,Bx,Cx)) || (x > MAX3(Ax,Bx,Cx))) {
+	    continue;
+	}
+	CutTriangleAlongX(&stitches, t, x);
     }
     /* 
      * The Edge table should have entries for ends of each polyline.
@@ -6367,19 +6367,19 @@ XCutline(Tcl_Interp *interp, ContourElement *elemPtr, double x,
     Blt_Vec_ChangeLength(interp, yVectorPtr, stitches.numPoints);
     count = 0;
     for (hPtr = Blt_FirstHashEntry(&stitches.edgeTable, &iter); hPtr != NULL;
-         hPtr = Blt_NextHashEntry(&iter)) {
-        Stitch *p;
+	 hPtr = Blt_NextHashEntry(&iter)) {
+	Stitch *p;
 
-        p = Blt_GetHashValue(hPtr);
-        if (p->next == NULL) {
-            continue;                   /* Stitch runs in other direction. */
-        }
-        while (p != NULL) {
-            xVectorPtr->valueArr[count] = p->x;
-            yVectorPtr->valueArr[count] = p->y;
-            count++;
-            p = p->next;
-        }
+	p = Blt_GetHashValue(hPtr);
+	if (p->next == NULL) {
+	    continue;                   /* Stitch runs in other direction. */
+	}
+	while (p != NULL) {
+	    xVectorPtr->valueArr[count] = p->x;
+	    yVectorPtr->valueArr[count] = p->y;
+	    count++;
+	    p = p->next;
+	}
     }
     Blt_Vec_NotifyClients(xVectorPtr);
     Blt_Vec_NotifyClients(yVectorPtr);
@@ -6419,9 +6419,9 @@ Blt_CutlineOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     string = Tcl_GetString(objv[2]);
     if (string[0] == 'x') {
-        XCutline(interp, graphPtr, elemPtr, value, xVectorPtr, yVectorPtr);
+	XCutline(interp, graphPtr, elemPtr, value, xVectorPtr, yVectorPtr);
     } else {
-        YCutline(interp, graphPtr, elemPtr, value, xVectorPtr, yVectorPtr);
+	YCutline(interp, graphPtr, elemPtr, value, xVectorPtr, yVectorPtr);
     }
     return TCL_OK;
 }
@@ -6433,7 +6433,7 @@ Blt_CutlineOp(ClientData clientData, Tcl_Interp *interp, int objc,
 
 typedef struct {
     int64_t A, B, C;                    /* C is the signed area of the
-                                         * triangle. */
+					 * triangle. */
     int flag;
 } EdgeEquation;
 

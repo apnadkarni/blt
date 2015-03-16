@@ -95,7 +95,7 @@ ExportVectorProc(BLT_TABLE table, Tcl_Interp *interp, int objc,
 	    array[k] = blt_table_get_double(table, row, col);
 	}
 	if (Blt_ResetVector(vector, array, numRows, size, TCL_STATIC) 
-            != TCL_OK) {
+	    != TCL_OK) {
 	    return TCL_ERROR;
 	}
     }
@@ -144,13 +144,13 @@ ImportVectorProc(BLT_TABLE table, Tcl_Interp *interp, int objc,
 	    return TCL_ERROR;
 	}
 	numElems = Blt_VecLength(vector);
-        numRows = blt_table_num_rows(table);
+	numRows = blt_table_num_rows(table);
 	col = blt_table_get_column(NULL, table, objv[i+1]);
 	if (col == NULL) {
-            const char *name;
+	    const char *name;
 
-            /* Create column if it doesn't already exist */
-            name = Tcl_GetString(objv[i+1]);
+	    /* Create column if it doesn't already exist */
+	    name = Tcl_GetString(objv[i+1]);
 	    col = blt_table_create_column(interp, table, name);
 	    if (col == NULL) {
 		return TCL_ERROR;
@@ -165,8 +165,8 @@ ImportVectorProc(BLT_TABLE table, Tcl_Interp *interp, int objc,
 	    }
 	}
 	array = Blt_VecData(vector);
-        /* Write the vector values into the table (possibly overwriting
-         * existing cell values).  */
+	/* Write the vector values into the table (possibly overwriting
+	 * existing cell values).  */
 	for (j = 0; j < numElems; j++) {
 	    BLT_TABLE_ROW row;
 
@@ -175,16 +175,16 @@ ImportVectorProc(BLT_TABLE table, Tcl_Interp *interp, int objc,
 		return TCL_ERROR;
 	    }
 	}
-        /* Unset any remaining cells. */
+	/* Unset any remaining cells. */
 	for (j = numElems; j < numRows; j++) {
 	    BLT_TABLE_ROW row;
 
 	    row = blt_table_row(table, j);
 	    if (blt_table_unset_value(table, row, col) != TCL_OK) {
-                return TCL_ERROR;
-            }
-        }
-        blt_table_set_column_type(table, col, TABLE_COLUMN_TYPE_DOUBLE);
+		return TCL_ERROR;
+	    }
+	}
+	blt_table_set_column_type(table, col, TABLE_COLUMN_TYPE_DOUBLE);
     }
     return TCL_OK;
 }
@@ -210,7 +210,7 @@ blt_table_vector_init(Tcl_Interp *interp)
 	return TCL_ERROR;
     }
     return blt_table_register_format(interp,
-        "vector",			/* Name of format. */
+	"vector",			/* Name of format. */
 	ImportVectorProc,		/* Import procedure. */
 	ExportVectorProc);		/* Export procedure. */
 }

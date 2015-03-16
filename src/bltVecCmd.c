@@ -264,9 +264,9 @@ GetValues(Vector *vPtr, int first, int last)
 
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
     for (i = first; i <= last; i++) {
-        Tcl_Obj *objPtr;
-        
-        objPtr = Tcl_NewDoubleObj(vPtr->valueArr[i]);
+	Tcl_Obj *objPtr;
+	
+	objPtr = Tcl_NewDoubleObj(vPtr->valueArr[i]);
 	Tcl_ListObjAppendElement(vPtr->interp, listObjPtr, objPtr);
     } 
     return listObjPtr;
@@ -645,12 +645,12 @@ FFTOp(Vector *vPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     v2Ptr = Blt_Vec_Create(vPtr->dataPtr, realVecName, realVecName, 
 	realVecName, &isNew);
     if (v2Ptr == NULL) {
-        return TCL_ERROR;
+	return TCL_ERROR;
     }
     if (v2Ptr == vPtr) {
 	Tcl_AppendResult(interp, "real vector \"", realVecName, "\"", 
 		" can't be the same as the source", (char *)NULL);
-        return TCL_ERROR;
+	return TCL_ERROR;
     }
     if (Blt_ParseSwitches(interp, fftSwitches, objc - 3, objv + 3, &data, 
 	BLT_SWITCH_DEFAULTS) < 0) {
@@ -668,16 +668,16 @@ FFTOp(Vector *vPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	Blt_Vec_UpdateClients(v2Ptr);
     }
     if (data.imagPtr != NULL) {
-        if (data.imagPtr->flush) {
-            Blt_Vec_FlushCache(data.imagPtr);
-        }
-        Blt_Vec_UpdateClients(data.imagPtr);
+	if (data.imagPtr->flush) {
+	    Blt_Vec_FlushCache(data.imagPtr);
+	}
+	Blt_Vec_UpdateClients(data.imagPtr);
     }
     if (data.freqPtr != NULL) {
-        if (data.freqPtr->flush) {
-            Blt_Vec_FlushCache(data.freqPtr);
-        }
-        Blt_Vec_UpdateClients(data.freqPtr);
+	if (data.freqPtr->flush) {
+	    Blt_Vec_FlushCache(data.freqPtr);
+	}
+	Blt_Vec_UpdateClients(data.freqPtr);
     }
     return TCL_OK;
 }	
@@ -2013,9 +2013,9 @@ PrintOp(Vector *vPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     fmt = Tcl_GetString(objv[2]);
     ParseFormat(fmt, &argc, &argv);
     if (argc == 0) {
-        Tcl_AppendResult(interp, "format \"", fmt, "\" contains no specifiers", 
-                         (char *)NULL);
-        return TCL_ERROR;
+	Tcl_AppendResult(interp, "format \"", fmt, "\" contains no specifiers", 
+			 (char *)NULL);
+	return TCL_ERROR;
     }
     if (Blt_ParseSwitches(interp, printSwitches, objc - 3, objv + 3, &switches,
 	BLT_SWITCH_DEFAULTS) < 0) {
@@ -2767,7 +2767,7 @@ SearchOp(Vector *vPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     }
     max = min;
     if (objc > 4) {
- 	Tcl_AppendResult(interp, "wrong # arguments: should be \"",
+	Tcl_AppendResult(interp, "wrong # arguments: should be \"",
 		Tcl_GetString(objv[0]), " search ?-value? min ?max?", 
 		(char *)NULL);
 	return TCL_ERROR;
@@ -3329,7 +3329,7 @@ SortOp(Vector *vPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 
 	listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
 	if (switches.flags & SORT_INDICES) {
-            size_t i;
+	    size_t i;
 
 	    for (i = 0; i < sortLength; i++) {
 		Tcl_Obj *objPtr;
@@ -3338,7 +3338,7 @@ SortOp(Vector *vPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 		Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
 	    }
 	} else {
-            size_t i;
+	    size_t i;
 
 	    for (i = 0; i < sortLength; i++) {
 		Tcl_Obj *objPtr;

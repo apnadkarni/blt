@@ -32,10 +32,10 @@
 #define LEGEND_LEFT	(1<<1)          /* Left margin */
 #define LEGEND_BOTTOM	(1<<2)          /* Bottom margin */
 #define LEGEND_TOP	(1<<3)          /* Top margin, below the graph
-                                         * title. */
+					 * title. */
 #define LEGEND_PLOT	(1<<4)          /* Plot area */
 #define LEGEND_XY	(1<<5)          /* Screen coordinates in the
-                                         * plotting area. */
+					 * plotting area. */
 #define LEGEND_WINDOW	(1<<6)          /* External window. */
 #define LEGEND_MARGIN_MASK \
 	(LEGEND_RIGHT | LEGEND_LEFT | LEGEND_BOTTOM | LEGEND_TOP)

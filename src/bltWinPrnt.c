@@ -507,7 +507,7 @@ OpenQueue(
     ZeroMemory(&pd, sizeof(pd));
     pd.DesiredAccess = PRINTER_ALL_ACCESS;
     if (!OpenPrinter(queuePtr->printerName, &hPrinter, &pd)) {
-        Tcl_AppendResult(interp, "can't open printer \"", 
+	Tcl_AppendResult(interp, "can't open printer \"", 
 		queuePtr->printerName, "\": ", Blt_LastError(), (char *)NULL);
 	queuePtr->hPrinter = NULL;
 	return TCL_ERROR;
@@ -708,20 +708,20 @@ GetPrinterAttributes(Tcl_Interp *interp, PrinterQueue *queuePtr,
 
     hMem1 = GlobalAlloc(GHND, bytesNeeded);
     if (hMem1 == NULL) {
-        Tcl_AppendResult(interp, "can't allocate memory for printer \"", 
+	Tcl_AppendResult(interp, "can't allocate memory for printer \"", 
 		queuePtr->name, "\": ", Blt_LastError(), (char *)NULL);
 	goto error;
     }
     buffer = (LPVOID)GlobalLock(hMem1);
     if (!GetPrinter(queuePtr->hPrinter, 2, buffer, bytesNeeded, 
 	&bytesNeeded)) {
-        Tcl_AppendResult(interp, "can't get printer \"", queuePtr->name, "\": ",
+	Tcl_AppendResult(interp, "can't get printer \"", queuePtr->name, "\": ",
 	    Blt_LastError(), (char *)NULL);
 	goto error;
     }
     hMem2 = GetQueueProperties(queuePtr, &dmPtr);
     if (hMem2 == NULL) {
-        Tcl_AppendResult(interp, "can't allocate memory for printer \"", 
+	Tcl_AppendResult(interp, "can't allocate memory for printer \"", 
 		queuePtr->name, "\" properties: ", Blt_LastError(), 
 		(char *)NULL);
 	goto error;
@@ -1075,8 +1075,8 @@ OpenOp(
 		    &bytesNeeded)) {
 	Tcl_AppendResult(interp, "can't get printer attributes for \"",
 	    name, "\": ", Blt_LastError(), (char *)NULL);
-        GlobalUnlock(hMem);
-        GlobalFree(hMem);
+	GlobalUnlock(hMem);
+	GlobalFree(hMem);
 	return TCL_ERROR;
     }
     pi2Ptr = (PRINTER_INFO_2 *)buffer;
@@ -1154,7 +1154,7 @@ NamesOp(
 	const unsigned char *p;
 
 	p = buffer;
-        pattern = Tcl_GetString(objv[2]);
+	pattern = Tcl_GetString(objv[2]);
 	for (i = 0; i < numPrinters; i++) {
 	    if (Tcl_StringMatch((char *)p, pattern)) {
 		Tcl_AppendElement(interp, *(char **)p);
@@ -1645,7 +1645,7 @@ Blt_StartPrintJob(
     jobId = StartDoc(drawPtr->hDC, &di);
     if (jobId == 0) {
 	Tcl_AppendResult(interp, "error starting document: ",
- 			 Blt_LastError(), (char *)NULL);
+			 Blt_LastError(), (char *)NULL);
 	return TCL_ERROR;
     }
     return TCL_OK;

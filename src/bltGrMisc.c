@@ -341,7 +341,7 @@ int
 Blt_PointInPolygon(
     Point2d *s,                         /* Sample point. */
     Point2d *points,                    /* Points representing the
-                                         * polygon. */
+					 * polygon. */
     int numPoints)                      /* # of points in above array. */
 {
     Point2d *p, *q, *qend;
@@ -580,7 +580,7 @@ Blt_PolyRectClip(
 	if (tin1 <= 1.0) {
 	    if (tin1 > 0.0) {
 		AddVertex(xin, yin);
-            }
+	    }
 	    if (tin2 <= 1.0) {
 		double toutx, touty, tout1;
 
@@ -615,7 +615,7 @@ Blt_PolyRectClip(
 
 		    }
 		}
-            }
+	    }
 	}
     }
     if (count > 0) {

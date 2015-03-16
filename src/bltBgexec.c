@@ -308,12 +308,12 @@ typedef struct {
 					 * point of the buffer. */
 
     size_t mark;                        /* # of bytes translated
-                                         * (cooked). */
+					 * (cooked). */
     size_t lastMark;                    /* # of bytes as of the last
-                                         * read. This indicates the start
-                                         * of the new data in the buffer
-                                         * since the last time the "update"
-                                         * variable was set. */
+					 * read. This indicates the start
+					 * of the new data in the buffer
+					 * since the last time the "update"
+					 * variable was set. */
     unsigned char staticSpace[DEF_BUFFER_SIZE];	/* Static space */
 
 } Sink;
@@ -395,7 +395,7 @@ static Blt_SwitchSpec switchSpecs[] =
     {BLT_SWITCH_BOOLEAN, "-detach",		"bool", (char *)NULL,
 	Blt_Offset(Bgexec, flags),	    0, DONTKILL},
     {BLT_SWITCH_BOOLEAN, "-echo",		"bool",  (char *)NULL,
-         Blt_Offset(Bgexec, err.echo),	    0},
+	 Blt_Offset(Bgexec, err.echo),	    0},
     {BLT_SWITCH_STRING,  "-error",		"variable", (char *)NULL,
 	Blt_Offset(Bgexec, err.doneVar),    0},
     {BLT_SWITCH_BOOLEAN, "-ignoreexitcode",	"bool", (char *)NULL,
@@ -678,7 +678,7 @@ ResetSink(Sink *sinkPtr)
 	 * read before we see the next newline.  So move the bytes to the
 	 * front of the array. */
 
- 	for (i = 0, j = sinkPtr->lastMark; j < sinkPtr->fill; i++, j++) {
+	for (i = 0, j = sinkPtr->lastMark; j < sinkPtr->fill; i++, j++) {
 	    sinkPtr->bytes[i] = sinkPtr->bytes[j];
 	}
 	/* Move back the fill point and processed point. */
@@ -1325,7 +1325,7 @@ CollectData(Bgexec *bgPtr, Sink *sinkPtr)
 	     * complete line.  */
 	    while ((data = NextLine(sinkPtr, &length)) != NULL) {
 		NotifyOnUpdate(bgPtr->interp, sinkPtr, data, length);
- 	    }
+	    }
 	} else {
 	    int length;
 	    unsigned char *data;
@@ -1477,11 +1477,11 @@ KillProcesses(Bgexec *bgPtr)		/* Background info record. */
 	    tclPid = (Tcl_Pid)bgPtr->procIds[i].pid;
 #else
 	    {
-	    	unsigned long pid;
+		unsigned long pid;
 
-	    	pid = (long)bgPtr->procIds[i].pid;
-	    	tclPid = (Tcl_Pid)pid;
-            }
+		pid = (long)bgPtr->procIds[i].pid;
+		tclPid = (Tcl_Pid)pid;
+	    }
 #endif /* WIN32 */
 	    Tcl_DetachPids(1, &tclPid);
 	}
@@ -1596,7 +1596,7 @@ TimerProc(ClientData clientData)
     int code;
     int i;
     int numLeft;                        /* # of processes still not
-                                         * reaped. */
+					 * reaped. */
     unsigned int lastPid;
 
     interp = bgPtr->interp;
@@ -1916,7 +1916,7 @@ BgexecCmdProc(
     }
     if ((bgPtr->err.fd != -1) &&
 	(CreateSinkHandler(bgPtr, &bgPtr->err, StderrProc) != TCL_OK)) {
- 	goto error;
+	goto error;
     }
     if (isDetached) {	
 	Tcl_Obj *listObjPtr;

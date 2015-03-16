@@ -80,7 +80,7 @@ FreeColor(
 
     if ((colorPtr != NULL) && (colorPtr != COLOR_DEFAULT)) {
 	Tk_FreeColor(colorPtr);
-        colorPtr = NULL;
+	colorPtr = NULL;
     }
 }
 
@@ -545,7 +545,7 @@ CgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
  */
 static int
 ConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
-            Tcl_Obj *const *objv)
+	    Tcl_Obj *const *objv)
 {
     Graph *graphPtr = clientData;
     Pen *penPtr;
@@ -621,7 +621,7 @@ ConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
  */
 static int
 CreateOp(ClientData clientData, Tcl_Interp *interp, int objc,
-         Tcl_Obj *const *objv)
+	 Tcl_Obj *const *objv)
 {
     Graph *graphPtr = clientData;
     Pen *penPtr;
@@ -652,7 +652,7 @@ CreateOp(ClientData clientData, Tcl_Interp *interp, int objc,
 /*ARGSUSED*/
 static int
 DeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
-         Tcl_Obj *const *objv)
+	 Tcl_Obj *const *objv)
 {
     Graph *graphPtr = clientData;
     int i;
@@ -692,7 +692,7 @@ DeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
 /*ARGSUSED*/
 static int
 NamesOp(ClientData clientData, Tcl_Interp *interp, int objc,
-        Tcl_Obj *const *objv)
+	Tcl_Obj *const *objv)
 {
     Graph *graphPtr = clientData;
     Tcl_Obj *listObjPtr;
@@ -782,7 +782,7 @@ static int numPenOps = sizeof(penOps) / sizeof(Blt_OpSpec);
 
 int
 Blt_PenOp(ClientData clientData, Tcl_Interp *interp, int objc,
-          Tcl_Obj *const *objv)
+	  Tcl_Obj *const *objv)
 {
     Tcl_ObjCmdProc *proc;
 

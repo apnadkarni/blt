@@ -121,7 +121,7 @@ static Blt_ConfigSpec configSpecs[] =
 {
     {BLT_CONFIG_OBJ, "-command", "command", "Command", (char *)NULL,
 	Blt_Offset(Kiosk, cmdObjPtr), 
-        BLT_CONFIG_DONT_SET_DEFAULT | BLT_CONFIG_NULL_OK},
+	BLT_CONFIG_DONT_SET_DEFAULT | BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_END}
 };
 
@@ -164,7 +164,7 @@ ResizeKiosk(Kiosk *kioskPtr)
 	(Tk_Width(kioskPtr->tkwin) != w) || 
 	(Tk_Height(kioskPtr->tkwin) != h)) {
 	/* This will cause the kiosk to be redrawn. */
- 	Blt_MoveResizeToplevelWindow(kioskPtr->tkwin, 0, 0, w, h);
+	Blt_MoveResizeToplevelWindow(kioskPtr->tkwin, 0, 0, w, h);
     }
     Blt_LowerToplevelWindow(kioskPtr->tkwin); 
 }
@@ -194,17 +194,17 @@ GetWmProtocols(Client *clientPtr)
     protocolsPtr = NULL;
     if (XGetWMProtocols (kioskPtr->display, clientPtr->id, &protocolsPtr, 
 	&numProtocols)) {
-        Atom *p, *pend;
+	Atom *p, *pend;
 
-        for (p = protocolsPtr, pend = p + numProtocols; p < pend; p++) {
-            if (*p == takeFocusAtom) {
+	for (p = protocolsPtr, pend = p + numProtocols; p < pend; p++) {
+	    if (*p == takeFocusAtom) {
 		clientPtr->flags |= CLIENT_TAKE_FOCUS;
 	    } else if (*p == saveYourselfAtom) {
 		clientPtr->flags |= CLIENT_SAVE_YOURSELF;
 	    } else if (*p == deleteWindowAtom) {
 		clientPtr->flags |= CLIENT_DELETE_WINDOW;
 	    }
-        }
+	}
 	XFree ((char *)protocolsPtr);
     }
 }
@@ -334,10 +334,10 @@ GetWmState(Client *clientPtr)
 	return;
     }
     if (numItems <= 2) {		/* "suggested" by ICCCM version 1 */
-        unsigned int *array = (unsigned int *)property;
+	unsigned int *array = (unsigned int *)property;
 	int state;
 
-        state = (int)array[0];
+	state = (int)array[0];
 	clientPtr->flags &= ~CLIENT_STATE_MASK;	 /* Clear the state flags. */
 	if (state == NormalState) {
 	    clientPtr->flags |= CLIENT_STATE_NORMAL;
@@ -656,22 +656,22 @@ ConfigureRequestEvent(Kiosk *kioskPtr, XEvent *eventPtr)
 #ifndef notdef
     fprintf(stderr, "ConfigureRequest %x\n", (unsigned int)evPtr->window);
     if (evPtr->value_mask & CWX) {
-        fprintf(stderr, "  x = %d\n", evPtr->x);
+	fprintf(stderr, "  x = %d\n", evPtr->x);
     }
     if (evPtr->value_mask & CWY) {
-        fprintf(stderr, "  y = %d\n", evPtr->y);
+	fprintf(stderr, "  y = %d\n", evPtr->y);
     }
     if (evPtr->value_mask & CWWidth) {
-        fprintf(stderr, "  width = %d\n", evPtr->width);
+	fprintf(stderr, "  width = %d\n", evPtr->width);
     }
     if (evPtr->value_mask & CWHeight) {
-        fprintf(stderr, "  height = %d\n", evPtr->height);
+	fprintf(stderr, "  height = %d\n", evPtr->height);
     }
     if (evPtr->value_mask & CWSibling) {
-        fprintf(stderr, "  above = 0x%x\n", (unsigned int)evPtr->above);
+	fprintf(stderr, "  above = 0x%x\n", (unsigned int)evPtr->above);
     }
     if (evPtr->value_mask & CWStackMode) {
-        fprintf(stderr, "  stack = %d\n", evPtr->detail);
+	fprintf(stderr, "  stack = %d\n", evPtr->detail);
     }
 #endif
     tkwin = Tk_IdToWindow(kioskPtr->display, id);
@@ -693,7 +693,7 @@ ConfigureRequestEvent(Kiosk *kioskPtr, XEvent *eventPtr)
 	changes.width = evPtr->width;
 	changes.height = evPtr->height;
 	mask = (CWWidth | CWHeight);
-        XConfigureWindow (kioskPtr->display, clientPtr->id, mask, &changes);
+	XConfigureWindow (kioskPtr->display, clientPtr->id, mask, &changes);
     }
 #ifdef notdef
     contPtr = NULL;
@@ -710,15 +710,15 @@ ConfigureRequestEvent(Kiosk *kioskPtr, XEvent *eventPtr)
 	changes.sibling = evPtr->above;
 	changes.stack_mode = evPtr->detail;
 	mask = (CWSibling | CWStackMode);
-        if (evPtr->value_mask & CWSibling) {
+	if (evPtr->value_mask & CWSibling) {
 	    Container *contPtr;
 
-            if (XFindContext(kioskPtr->display, evPtr->above, 
+	    if (XFindContext(kioskPtr->display, evPtr->above, 
 			     kioskPtr->context, &contPtr) == 0) {
 		changes.sibling = Tk_WindowId(contPtr->tkwin);
 	    }
 	}
-        XConfigureWindow (kioskPtr->display, kioskPtr->frame,
+	XConfigureWindow (kioskPtr->display, kioskPtr->frame,
 		evPtr->value_mask & mask, &changes);
     }
 #endif

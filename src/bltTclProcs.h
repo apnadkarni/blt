@@ -805,13 +805,13 @@ BLT_EXTERN void		blt_table_unset_keys(BLT_TABLE table);
 #define blt_table_get_keys_DECLARED
 /* 123 */
 BLT_EXTERN int          blt_table_get_keys(BLT_TABLE table,
-                               BLT_TABLE_COLUMN **keysPtr);
+			       BLT_TABLE_COLUMN **keysPtr);
 #endif
 #ifndef blt_table_set_keys_DECLARED
 #define blt_table_set_keys_DECLARED
 /* 124 */
 BLT_EXTERN int		blt_table_set_keys(BLT_TABLE table, int numKeys,
-                                BLT_TABLE_COLUMN *keys, int unique);
+				BLT_TABLE_COLUMN *keys, int unique);
 #endif
 #ifndef blt_table_key_lookup_DECLARED
 #define blt_table_key_lookup_DECLARED
@@ -994,7 +994,7 @@ BLT_EXTERN void		Blt_Tags_AddTag(Blt_Tags tags, const char *tag);
 #define Blt_Tags_AddItemToTag_DECLARED
 /* 157 */
 BLT_EXTERN void		Blt_Tags_AddItemToTag(Blt_Tags tags, const char *tag, 
-                                ClientData item);
+				ClientData item);
 #endif
 #ifndef Blt_Tags_ForgetTag_DECLARED
 #define Blt_Tags_ForgetTag_DECLARED
@@ -1005,7 +1005,7 @@ BLT_EXTERN void		Blt_Tags_ForgetTag(Blt_Tags tags, const char *tag);
 #define Blt_Tags_RemoveItemFromTag_DECLARED
 /* 159 */
 BLT_EXTERN void		Blt_Tags_RemoveItemFromTag(Blt_Tags tags,
-                                const char *tag, ClientData item);
+				const char *tag, ClientData item);
 #endif
 #ifndef Blt_Tags_ClearTagsFromItem_DECLARED
 #define Blt_Tags_ClearTagsFromItem_DECLARED

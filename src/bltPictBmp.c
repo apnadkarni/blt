@@ -312,7 +312,7 @@ static void
 BmpAssert(const char *testExpr, const char *fileName, int lineNumber)
 {
     BmpError("line %d of %s: Assert \"%s\" failed\n", lineNumber, fileName, 
-             testExpr);
+	     testExpr);
 }
 
 static INLINE unsigned int
@@ -451,9 +451,9 @@ BmpHeaderInfo(Blt_DBuffer dbuffer, Bmp *bmpPtr)
 	break;
     default:
 	BmpError("invalid BMP bitmap header size '%d' (should be %d, %d, %d, %d, or %d).", 
-                 bmpPtr->bmih.biSize, SIZEOF_BITMAPOS2V1HEADER, 
-                 SIZEOF_BITMAPOS2V2HEADER, SIZEOF_BITMAPV3HEADER, 
-                 SIZEOF_BITMAPV4HEADER, SIZEOF_BITMAPV5HEADER);
+		 bmpPtr->bmih.biSize, SIZEOF_BITMAPOS2V1HEADER, 
+		 SIZEOF_BITMAPOS2V2HEADER, SIZEOF_BITMAPV3HEADER, 
+		 SIZEOF_BITMAPV4HEADER, SIZEOF_BITMAPV5HEADER);
     }
     if (bmpPtr->bmih.biSize == SIZEOF_BITMAPOS2V1HEADER) {
 	bmpPtr->bmih.biWidth         = (int)BmpGetShort(bp + OFF_OSV1_WIDTH);

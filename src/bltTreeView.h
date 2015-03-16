@@ -108,7 +108,7 @@ typedef const char *UID;
 #define DISABLED                (1<<0)  /* Draw cell as disabled. */
 #define HIDDEN                  (1<<1)  /* Don't draw cell. */
 #define GEOMETRY		(1<<2)	/* Cell/entry/tree geometry needs to be
-                                         * recomputed. */
+					 * recomputed. */
 #define FOCUS   		(1<<3)	/* Cell/entry has focus. */
 #define DELETED                 (1<<4)  /* Object has been deleted.  */
 #define HIGHLIGHT               (1<<5)  /* Cell is highlighted. */
@@ -118,8 +118,8 @@ typedef const char *UID;
  *  Internal treeview widget-specific flags:
  */
 #define VISIBILITY              (1<<7) /* The visible rows and columns need
-                                         * to be recomputed.  Scrolling does
-                                         * this. Layout changes to this. */
+					 * to be recomputed.  Scrolling does
+					 * this. Layout changes to this. */
 #define LAYOUT_PENDING		(1<<8)	/* The layout of the hierarchy
 					 * needs to be recomputed.  The
 					 * hierarchy has changed. It may
@@ -256,11 +256,11 @@ typedef struct _Icon {
     TreeView *viewPtr;			/* Widget using this icon. */
     Tk_Image tkImage;			/* The Tk image being cached. */
     Blt_HashEntry *hashPtr;		/* Hash table pointer to the
-                                         * image. */
+					 * image. */
     int refCount;			/* Reference count for this
-                                         * image. */
+					 * image. */
     short int width, height;		/* Dimensions of the cached
-                                         * image. */
+					 * image. */
 } *Icon;
 
 #define IconHeight(icon)	((icon)->height)
@@ -309,7 +309,7 @@ struct _Column {
     XColor *titleFgColor;		/* Foreground color of text
 					 * displayed in the heading */
     Blt_Bg titleBg;			/* Background color of the
-                                         * heading. */
+					 * heading. */
     GC titleGC;
     XColor *activeTitleFgColor;		/* Foreground color of the heading
 					 * when the column is activated.*/
@@ -397,7 +397,7 @@ struct _CellStyle {
 					 * count) will have no hash table
 					 * entry. */
     TreeView *viewPtr;                  /* Treeview widget containing this 
-                                         * style. */
+					 * style. */
     Blt_ChainLink link;			/* If non-NULL, pointer of the
 					 * style in a list of all newly
 					 * created styles. */
@@ -415,7 +415,7 @@ struct _CellStyle {
     XColor *highlightFg;		/* Foreground color of cell when
 					 * highlighted. */
     XColor *normalFg;			/* Normal foreground color of
-                                         * cell. */
+					 * cell. */
     XColor *selectedFg;			/* Foreground color of a selected
 					 * cell. If non-NULL, overrides
 					 * default foreground color
@@ -424,23 +424,23 @@ struct _CellStyle {
     Blt_Bg activeBg;			/* Background color of cell when
 					 * active. */
     Blt_Bg disabledBg;                  /* Background color of cell when
-                                         * disabled. */
+					 * disabled. */
     Blt_Bg highlightBg;			/* Background color of cell when
 					 * highlighted. */
     Blt_Bg normalBg;                    /* Normal background color of
-                                         * cell. */
+					 * cell. */
     Blt_Bg selectedBg;			/* Background color of a selected
 					 * cell.  If non-NULL, overrides
 					 * the default background * color
 					 * specification. */
     GC activeGC;			/* Graphics context of active
-                                         * text. */
+					 * text. */
     GC disabledGC;			/* Graphics context of disabled
-                                         * text. */
+					 * text. */
     GC highlightGC;			/* Graphics context of highlighted
 					 * text. */
     GC normalGC;			/* Graphics context of normal
-                                         * text. */
+					 * text. */
     GC selectedGC;			/* Graphics context of selected
 					 * text. */
     Tk_Justify justify;			/* Indicates how the text or icon
@@ -450,9 +450,9 @@ struct _CellStyle {
 					 * the entire box. */
     int relief, activeRelief;		/* Relief of outer border. */
     Tcl_Obj *fmtCmdObjPtr;              /* If non-NULL, command called to
-                                         * format the cell. */
+					 * format the cell. */
     Blt_TreeKey key;			/* Actual data resides in this tree
-                                         * cell. */
+					 * cell. */
     Tcl_Obj *cmdObjPtr;                 /* Command associated with cell. */
 };
 
@@ -460,13 +460,13 @@ typedef struct _Cell {
     TreeView *viewPtr;
     unsigned int flags;                 /* Flags for cell.*/
     Entry *entryPtr;                    /* Entry where the cell is
-                                         * located. */
+					 * located. */
     Column *colPtr;			/* Column where the cell is
 					 * located. */
     Tcl_Obj *dataObjPtr;                /* If non-NULL, represents the
-                                         * (possibly) formatted text
-                                         * string. May point to tree's
-                                         * Tcl_obj value directly. */
+					 * (possibly) formatted text
+					 * string. May point to tree's
+					 * Tcl_obj value directly. */
     Tk_Image tkImage;			/* If non-NULL, represents a
 					 * Tk_Image image of the cell
 					 * value. */
@@ -484,11 +484,11 @@ typedef struct _Cell {
 
 typedef void (CellStyleConfigureProc)(CellStyle *stylePtr);
 typedef void (CellStyleDrawProc)(Cell *cellPtr, Drawable drawable, 
-        CellStyle *stylePtr, int x, int y);
+	CellStyle *stylePtr, int x, int y);
 typedef void (CellStyleFreeProc)(CellStyle *stylePtr);
 typedef void (CellStyleGeometryProc)(Cell *cellPtr, CellStyle *cellStylePtr);
 typedef const char * (CellStyleIdentifyProc)(Cell *cellPtr, 
-        CellStyle *stylePtr, int x, int y);
+	CellStyle *stylePtr, int x, int y);
 
 struct _CellStyleClass {
     const char *type;			/* Name of style class type. */
@@ -596,7 +596,7 @@ struct _Entry {
 					 * entry when the view is flat. */
     Tcl_Obj *dataObjPtr;		/* Pre-fetched data for sorting */
     Cell *cells;			/* List of cells representing data
-                                         * fields for this entry. */
+					 * fields for this entry. */
     XColor *ruleColor;			/* Color of the entry's rule. */
     GC ruleGC;                          /* Graphics context of the rule. */
     Blt_Font font;			/* Font of label. Overrides global
@@ -714,7 +714,7 @@ typedef struct {
 struct _TreeView {
     Tcl_Interp *interp;
     Tcl_Command cmdToken;		/* Token for widget's TCL
-                                         * command. */
+					 * command. */
     Blt_Tree tree;			/* Token holding internal tree. */
     const char *treeName;		/* In non-NULL, is the name of the
 					 * tree we are attached to */
@@ -760,11 +760,11 @@ struct _TreeView {
     Blt_Bg activeBg;			/* Background color of cell when
 					 * active. */
     Blt_Bg disabledBg;                  /* Background color of cell when
-                                         * disabled. */
+					 * disabled. */
     Blt_Bg highlightBg;			/* Background color of cell when
 					 * highlighted. */
     Blt_Bg normalBg;                    /* Normal background color of
-                                         * cell. */
+					 * cell. */
     Blt_Bg selectedBg;			/* Background color of a selected
 					 * cell.  If non-NULL, overrides
 					 * the default background * color
@@ -814,7 +814,7 @@ struct _TreeView {
     Tk_Cursor cursor;			/* X Cursor */
     Tk_Cursor resizeCursor;		/* Resize Cursor */
     int reqWidth, reqHeight;            /* Requested dimensions of the
-                                         * treeview widget's window. */
+					 * treeview widget's window. */
     GC selectedGC;                      /* Graphics context for the
 					 * selection text. */
     GC lineGC;				/* GC for drawing dotted lines
@@ -867,7 +867,7 @@ struct _TreeView {
     Entry *rootPtr;			/* Root entry of tree. */
     Entry **visibleEntries;             /* Array of visible entries. */
     int numVisibleEntries;              /* # of entries in the visible
-                                         * array. */
+					 * array. */
     int numEntries;			/* # of entries in tree. */
     int treeWidth;			/* Computed width of the tree. */
 
@@ -897,7 +897,7 @@ struct _TreeView {
     ClientData clientData;
 
     Blt_BindTable bindTable;		/* Binding information for
-                                         * entries. */
+					 * entries. */
 
     Blt_HashTable entryTagTable;
     Blt_HashTable buttonTagTable;
@@ -913,7 +913,7 @@ struct _TreeView {
 					 * tree has been flattened. */
     Entry **flatArr;			/* Flattened array of entries. */
     SortInfo sort;			/* Information about sorting the
-                                         * tree.*/
+					 * tree.*/
 
     Tcl_Obj *iconVarObjPtr;		/* Name of TCL variable.  If
 					 * non-NULL, this variable will be
@@ -952,8 +952,8 @@ BLT_EXTERN int Blt_TreeView_SetEntryValue(Tcl_Interp *interp, TreeView *viewPtr,
 BLT_EXTERN void Blt_TreeView_EventuallyRedraw(TreeView *viewPtr);
 
 BLT_EXTERN CellStyle *Blt_TreeView_CreateStyle(Tcl_Interp *interp,
-        TreeView *viewPtr, int type, const char *styleName, int objc, 
-        Tcl_Obj *const *objv);
+	TreeView *viewPtr, int type, const char *styleName, int objc, 
+	Tcl_Obj *const *objv);
 
 
 #define CHOOSE(default, override)	\

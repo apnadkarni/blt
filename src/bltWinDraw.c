@@ -200,7 +200,7 @@ FreeDCState(DCState *statePtr)
 {
     if ((statePtr->clipPtr != NULL) && 
 	(statePtr->clipPtr->type==TKP_CLIP_REGION)) {
-        SelectClipRgn(statePtr->dc, NULL);
+	SelectClipRgn(statePtr->dc, NULL);
     }
     TkWinReleaseDrawableDC(statePtr->drawable, statePtr->dc, &statePtr->state);
 }
@@ -381,18 +381,18 @@ Blt_GetBitmapData(
     GlobalUnlock(hMem);
     bytesPerRow = ((w + 31) & ~31) / 8;
     if (imageSize == 0) {
-         imageSize = bytesPerRow * h;
+	 imageSize = bytesPerRow * h;
     }	
     hMem2 = GlobalReAlloc(hMem, size + imageSize, 0);
     if (hMem2 == NULL) {
 	GlobalFree(hMem);
-        return NULL;
+	return NULL;
     }
     hMem = hMem2;
     bmihPtr = (BITMAPINFOHEADER *)GlobalLock(hMem);
     hDC = TkWinGetDrawableDC(display, bitmap, &state);
     result = GetDIBits(hDC, hBitmap, 0, h, (unsigned char *)bmihPtr + size,
-        (BITMAPINFO *)bmihPtr, DIB_RGB_COLORS);
+	(BITMAPINFO *)bmihPtr, DIB_RGB_COLORS);
     TkWinReleaseDrawableDC(bitmap, hDC, &state);
     bits = NULL;
     if (!result) {
@@ -666,7 +666,7 @@ Blt_EmulateXCreateGC(
 	return None;
     }
     if (mask & GCFunction) {
-        destPtr->function = srcPtr->function;
+	destPtr->function = srcPtr->function;
     }
     if (mask & GCPlaneMask) {
 	destPtr->plane_mask = srcPtr->plane_mask;
@@ -675,7 +675,7 @@ Blt_EmulateXCreateGC(
 	destPtr->foreground = srcPtr->foreground;
     }
     if (mask & GCBackground) {
-        destPtr->background = srcPtr->background;
+	destPtr->background = srcPtr->background;
     }
     if (mask & GCLineWidth) {
 	destPtr->line_width = srcPtr->line_width;
@@ -693,16 +693,16 @@ Blt_EmulateXCreateGC(
 	destPtr->fill_style = srcPtr->fill_style;
     }
     if (mask & GCFillRule) {
-        destPtr->fill_rule = srcPtr->fill_rule;
+	destPtr->fill_rule = srcPtr->fill_rule;
     }
     if (mask & GCArcMode) {
-        destPtr->arc_mode = srcPtr->arc_mode;
+	destPtr->arc_mode = srcPtr->arc_mode;
     }
     if (mask & GCTile) {
 	destPtr->tile = srcPtr->tile;
     }
     if (mask & GCStipple) {
-        destPtr->stipple = srcPtr->stipple;
+	destPtr->stipple = srcPtr->stipple;
     }
     if (mask & GCTileStipXOrigin) {
 	destPtr->ts_x_origin = srcPtr->ts_x_origin;
@@ -711,7 +711,7 @@ Blt_EmulateXCreateGC(
 	destPtr->ts_y_origin = srcPtr->ts_y_origin;
     }
     if (mask & GCFont) {
-        destPtr->font = srcPtr->font;
+	destPtr->font = srcPtr->font;
     }
     if (mask & GCSubwindowMode) {
 	destPtr->subwindow_mode = srcPtr->subwindow_mode;
@@ -729,7 +729,7 @@ Blt_EmulateXCreateGC(
 	destPtr->dash_offset = srcPtr->dash_offset;
     }
     if (mask & GCDashList) {
-        destPtr->dashes = srcPtr->dashes;
+	destPtr->dashes = srcPtr->dashes;
     }
     if (mask & GCClipMask) {
 	TkpClipMask *clipPtr;
@@ -1782,13 +1782,13 @@ Blt_EmulateXFillRectangles(Display *display, Drawable drawable, GC gc,
     case FillTiled:
 	if (gc->tile == None) {
 	    goto fillSolid;
-        }
+	}
 #ifdef notdef
 	if ((GetDeviceCaps(hDC, RASTERCAPS) & RC_BITBLT) == 0) {
 	    goto fillSolid;
 	}
 #endif
-        twdPtr = (TkWinDrawable *)gc->tile;
+	twdPtr = (TkWinDrawable *)gc->tile;
 	{
 	    HBITMAP oldBitmap;
 	    BITMAP bm;
@@ -1805,14 +1805,14 @@ Blt_EmulateXFillRectangles(Display *display, Drawable drawable, GC gc,
 	    (void)SelectBitmap(memDC, oldBitmap);
 	    DeleteDC(memDC);
 	}
-        break; 
+	break; 
 
     case FillOpaqueStippled:
     case FillStippled:
 	if (gc->stipple == None) {
 	    goto fillSolid;
 	}
-        twdPtr = (TkWinDrawable *)gc->stipple;
+	twdPtr = (TkWinDrawable *)gc->stipple;
 	if (twdPtr->type != TWD_BITMAP) {
 	    panic("unexpected drawable type in stipple");
 	}
@@ -1826,9 +1826,9 @@ Blt_EmulateXFillRectangles(Display *display, Drawable drawable, GC gc,
 	 * the rectangle and fill it with the background color.  Then merge the
 	 * result with the stipple pattern.
 	 */
-        hFgBrush = CreateSolidBrush(gc->foreground);
+	hFgBrush = CreateSolidBrush(gc->foreground);
 	hBgBrush = CreateSolidBrush(gc->background);
-        for (rp = rectangles, rend = rp + numRectangles; rp < rend; rp++) {
+	for (rp = rectangles, rend = rp + numRectangles; rp < rend; rp++) {
 	    RECT rect;
 	    HBITMAP oldBitmap, hBitmap;
 
@@ -1853,15 +1853,15 @@ Blt_EmulateXFillRectangles(Display *display, Drawable drawable, GC gc,
 	DeleteDC(memDC);
 	(void)SelectBrush(hDC, oldBrush);
 	DeleteBrush(hBrush);
- 	break;
+	break;
 
     case FillSolid:
 	fillSolid:
 #ifdef notdef
 	memDC = CreateCompatibleDC(hDC);
 #endif
-        hFgBrush = CreateSolidBrush(gc->foreground);
-        for (rp = rectangles, rend = rp + numRectangles; rp < rend; rp++) {
+	hFgBrush = CreateSolidBrush(gc->foreground);
+	for (rp = rectangles, rend = rp + numRectangles; rp < rend; rp++) {
 	    RECT rect;
 #ifdef notdef
 	    HBITMAP oldBitmap, hBitmap;
@@ -1886,7 +1886,7 @@ Blt_EmulateXFillRectangles(Display *display, Drawable drawable, GC gc,
 #ifdef notdef
 	DeleteDC(memDC);
 #endif
- 	break;
+	break;
     }
     FreeDCState(&state);
 }
@@ -2207,40 +2207,40 @@ PixelateBitmap(
     }
     hDC = TkWinGetDrawableDC(display, drawable, &state);
     if (maskBitmap != None) {
-        unsigned char *maskPtr;
-        unsigned char *maskBits;
-        maskBits = Blt_GetBitmapData(display, maskBitmap, width, height,
+	unsigned char *maskPtr;
+	unsigned char *maskBits;
+	maskBits = Blt_GetBitmapData(display, maskBitmap, width, height,
 	    &bytesPerRow);
-        bytesPerRow = ((width + 31) & ~31) / 8;
-        for (dy = destY, y = height - 1; y >= 0; y--, dy++) {
+	bytesPerRow = ((width + 31) & ~31) / 8;
+	for (dy = destY, y = height - 1; y >= 0; y--, dy++) {
 	    maskPtr = maskBits + (bytesPerRow * y);
 	    srcPtr = srcBits + (bytesPerRow * y);
 	    for (dx = destX, x = 0; x < width; x++, dx++) {
-	        bitPos = x % 8;
-	        pixel = (*maskPtr & (0x80 >> bitPos));
-	        if (pixel) {
+		bitPos = x % 8;
+		pixel = (*maskPtr & (0x80 >> bitPos));
+		if (pixel) {
 		    pixel = (*srcPtr & (0x80 >> bitPos));
 		    DrawPixel(hDC, dx, dy, 
-		        (pixel) ? gc->foreground : gc->background);
-	        }
-	        if (bitPos == 7) {
+			(pixel) ? gc->foreground : gc->background);
+		}
+		if (bitPos == 7) {
 		    srcPtr++, maskPtr++;
-	        }
+		}
 	    }			/* x */
-        }
-        Blt_Free(maskBits);
+	}
+	Blt_Free(maskBits);
     } else {
-        bytesPerRow = ((width + 31) & ~31) / 8;
-        for (dy = destY, y = height - 1; y >= 0; y--, dy++) {
+	bytesPerRow = ((width + 31) & ~31) / 8;
+	for (dy = destY, y = height - 1; y >= 0; y--, dy++) {
 	    srcPtr = srcBits + (bytesPerRow * y);
 	    for (dx = destX, x = 0; x < width; x++, dx++) {
-	        bitPos = x % 8;
+		bitPos = x % 8;
 		pixel = (*srcPtr & (0x80 >> bitPos));
 		DrawPixel(hDC, dx, dy, 
-		        (pixel) ? gc->foreground : gc->background);
-	        if (bitPos == 7) {
+			(pixel) ? gc->foreground : gc->background);
+		if (bitPos == 7) {
 		    srcPtr++;
-	        }
+		}
 	    }
 	}
     }
@@ -2320,7 +2320,7 @@ Blt_EmulateXCopyPlane(
 	    SRCCOPY);
 	if ((clipPtr != NULL) && (clipPtr->type == TKP_CLIP_REGION)) {
 	    SelectClipRgn(destDC, NULL);
-        }
+	}
     } else if (clipPtr->type == TKP_CLIP_PIXMAP) {
 	Drawable mask;
 	/*
@@ -2436,7 +2436,7 @@ Blt_EmulateXCopyArea(
     BitBlt(destDC, destX, destY, width, height, srcDC, srcX, srcY, 
 		bltModes[gc->function]);
     if ((clipPtr != NULL) && (clipPtr->type == TKP_CLIP_REGION)) {
-        SelectClipRgn(destDC, NULL);
+	SelectClipRgn(destDC, NULL);
     }
     if (src != dest) {
 	TkWinReleaseDrawableDC(dest, destDC, &destState);
@@ -2566,7 +2566,7 @@ StippleArea(
 	    } else if (gc->fill_style == FillOpaqueStippled) { /* Opaque. */
 		SetBkColor(hDC, gc->foreground);
 		SetTextColor(hDC, gc->background);
-	        BitBlt(hDC, destX, destY, destWidth, destHeight, memDC, 
+		BitBlt(hDC, destX, destY, destWidth, destHeight, memDC, 
 			srcX, srcY, SRCCOPY);
 	    }
 	}
@@ -2804,7 +2804,7 @@ Blt_TextOut(
     SetROP2(hDC, bltModes[gc->function]);
     if ((gc->clip_mask != None) && 
 	((TkpClipMask*)gc->clip_mask)->type == TKP_CLIP_REGION) {
-        SelectClipRgn(hDC, (HRGN)((TkpClipMask*)gc->clip_mask)->value.region);
+	SelectClipRgn(hDC, (HRGN)((TkpClipMask*)gc->clip_mask)->value.region);
     }
     if (((gc->fill_style == FillStippled) || 
 	 (gc->fill_style == FillOpaqueStippled)) && 

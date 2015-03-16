@@ -246,7 +246,7 @@ PointsToPixels(Tk_Window tkwin, int size)
     double d;
 
     if (size < 0) {
-        return -size;
+	return -size;
     }
     d = size * 25.4 / 72.0;
     d *= WidthOfScreen(Tk_Screen(tkwin));
@@ -1474,7 +1474,7 @@ WinDrawProc(
 	if (hPtr == NULL) {
 	    Blt_Warn("can't find font %s at %g rotated\n", setPtr->name, 
 		angle);
-           return;			/* Can't find instance at requested
+	   return;			/* Can't find instance at requested
 					 * angle. */
 	}
 	display->request++;
@@ -1797,7 +1797,7 @@ GetFile(Tcl_Interp *interp, const char *fontName, Tcl_DString *namePtr,
 	NULL,				/* Security descriptor. */
 	NULL);				/* Last write time. */
     if (result != ERROR_SUCCESS) {
-        Tcl_AppendResult(interp, "can't query registry info: ", 
+	Tcl_AppendResult(interp, "can't query registry info: ", 
 		Blt_LastError(), (char *)NULL);
 	goto error;
     }
@@ -1810,8 +1810,8 @@ GetFile(Tcl_Interp *interp, const char *fontName, Tcl_DString *namePtr,
 	unsigned long numBytesName, numBytesValue;
 	unsigned long regType;
 
-   	numBytesName = maxBytesName;	
-   	numBytesValue = maxBytesValue;	
+	numBytesName = maxBytesName;	
+	numBytesValue = maxBytesValue;	
 	result = RegEnumValue(
 		hkey, 
 		i, 
@@ -1826,7 +1826,7 @@ GetFile(Tcl_Interp *interp, const char *fontName, Tcl_DString *namePtr,
 		Blt_LastError(), (char *)NULL);
 	    goto error;
 	}
-      	/* Perform anchored case-insensitive string comparison. */
+	/* Perform anchored case-insensitive string comparison. */
 	if (strncasecmp(name, fontName, length) == 0) {
 	    fileName = value;
 	    break;
@@ -1878,7 +1878,7 @@ Blt_Font_GetFile(Tcl_Interp *interp, Tcl_Obj *objPtr, double *sizePtr)
 	    root = "c:/WINDOWS";
 	}
 	fileObjPtr = Tcl_NewStringObj(root, -1);
-        Tcl_IncrRefCount(fileObjPtr);
+	Tcl_IncrRefCount(fileObjPtr);
 	Tcl_AppendToObj(fileObjPtr, "/fonts/", -1);
 	Tcl_AppendToObj(fileObjPtr, Tcl_DStringValue(&valueStr),
 			Tcl_DStringLength(&valueStr));

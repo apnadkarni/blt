@@ -84,7 +84,7 @@
 #define DECREASING	(1<<8)		/* Axis is decreasing */
 
 #define SIDE_TOP	(1<<9)		/* Axis is at the top of the
-                                         * widget. */
+					 * widget. */
 #define SIDE_BOTTOM	(1<<9)		/* Axis is at the bottom. */
 #define SIDE_LEFT	(1<<9)		/* Axis is on the left side. */
 #define SIDE_RIGHT	(1<<9)		/* Axis is on the right side. */
@@ -192,7 +192,7 @@ typedef struct {
 typedef struct {
     int numTicks;			/* # of ticks on axis */
     double values[1];                   /* Array of tick values
-                                         * (malloc-ed). */
+					 * (malloc-ed). */
 } Ticks;
 
 /*
@@ -380,7 +380,7 @@ typedef struct {
 					 * the axis. */
     short int axisLeft, axisRight;
     short int axisTop, axisBottom;	/* Region occupied by the of
-                                         * axis. */
+					 * axis. */
     short int width, height;		/* Extents of axis */
     short int leftTickLabelWidth;	/* Maximum width of all ticks
 					 * labels. */
@@ -456,7 +456,7 @@ static Blt_ConfigSpec configSpecs[] =
     {BLT_CONFIG_JUSTIFY, "-justify", "justify", "Justify", DEF_JUSTIFY, 
 	Blt_Offset(Slider, titleJustify), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_BOOLEAN, "-labeloffset", "labelOffset", "LabelOffset",
-        (char *)NULL, Blt_Offset(Slider, labelOffset), 0}, 
+	(char *)NULL, Blt_Offset(Slider, labelOffset), 0}, 
     {BLT_CONFIG_PIXELS_NNEG, "-linewidth", "lineWidth", "LineWidth",
 	DEF_LINEWIDTH, Blt_Offset(Slider, lineWidth),
 	BLT_CONFIG_DONT_SET_DEFAULT},
@@ -514,10 +514,10 @@ static Blt_ConfigSpec configSpecs[] =
 
     {BLT_CONFIG_OBJ, "-sliderlength", "sliderLength", "SliderLength",
 	DEF_SLIDER_LENGTH, Blt_Offset(Slider, sliderLength),
-        BLT_CONFIG_DONT_SET_DEFAULT},
+	BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_OPTION_RELIEF, "-sliderrelief", "sliderRelief", "SliderRelief",
 	DEF_SLIDER_RELIEF, -1, Blt_Offset(Slider, sliderRelief),
-        BLT_CONFIG_DONT_SET_DEFAULT},
+	BLT_CONFIG_DONT_SET_DEFAULT},
 
     {BLT_CONFIG_COLOR, "-tickcolor", "tickColor", "TickColor",
 	DEF_FOREGROUND, Blt_Offset(Slider, tickFg), 0},
@@ -531,7 +531,7 @@ static Blt_ConfigSpec configSpecs[] =
 	Blt_Offset(Slider, labelObjPtr), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_COLOR, "-highlightbackground", "highlightBackground",
 	"HighlightBackground", DEF_HIGHLIGHT_BG, 
-        Blt_Offset(Slider, highlightBgColor), 0},
+	Blt_Offset(Slider, highlightBgColor), 0},
     {BLT_CONFIG_COLOR, "-highlightcolor", "highlightColor", "HighlightColor",
 	DEF_FOCUS_HIGHLIGHT_COLOR, Blt_Offset(TableView, highlightFg), 0},
     {BLT_CONFIG_PIXELS_NNEG, "-highlightthickness", "highlightThickness",
@@ -578,7 +578,7 @@ static Blt_ConfigSpec configSpecs[] =
 	DEF_TICKFONT, Blt_Offset(Slider, tickFont), 0},
     {BLT_CONFIG_PIXELS_NNEG, "-ticklength", "tickLength", "TickLength",
 	DEF_TICKLENGTH, Blt_Offset(Slider, tickLength), 
-        BLT_CONFIG_DONT_SET_DEFAULT},
+	BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_INT, "-tickdefault", "tickDefault", "TickDefault",
 	DEF_DIVISIONS, Blt_Offset(Slider, reqNumMajorTicks),
 	BLT_CONFIG_DONT_SET_DEFAULT},
@@ -3195,36 +3195,36 @@ ComputeHorizontalLayout(Slider *sliderPtr)
     law = raw = lah = rah = 0;
     h = 0;
     if (sliderPtr->flags & SHOW_ARROWS) {
-        if (sliderPtr->leftArrow != NULL) {
-            law = Blt_Picture_Width(sliderPtr->leftArrow);
-            lah = Blt_Picture_Height(sliderPtr->leftArrow);
-            if (h < lah) {
-                h = lah;
-            }
-            left += law + PADX;
-        }
-        if (sliderPtr->rightArrow != NULL) {
-            rbw = Blt_Picture_Width(sliderPtr->rightArrow);
-            rbh = Blt_Picture_Height(sliderPtr->leftArrow);
-            if (h < rbh) {
-                h = rbh;
-            }
-            right += raw + PADX;
-        }
+	if (sliderPtr->leftArrow != NULL) {
+	    law = Blt_Picture_Width(sliderPtr->leftArrow);
+	    lah = Blt_Picture_Height(sliderPtr->leftArrow);
+	    if (h < lah) {
+		h = lah;
+	    }
+	    left += law + PADX;
+	}
+	if (sliderPtr->rightArrow != NULL) {
+	    rbw = Blt_Picture_Width(sliderPtr->rightArrow);
+	    rbh = Blt_Picture_Height(sliderPtr->leftArrow);
+	    if (h < rbh) {
+		h = rbh;
+	    }
+	    right += raw + PADX;
+	}
     }
     ih1 = ih2 = ih3 = ICON_HEIGHT;
     iw1 = iw2 = iw3 = ICON_WIDTH;
     if (sliderPtr->minIcon != NULL) {
-        ih1 = Blt_Picture_Height(sliderPtr->minIcon);
-        iw1 = Blt_Picture_Width(sliderPtr->minIcon);
+	ih1 = Blt_Picture_Height(sliderPtr->minIcon);
+	iw1 = Blt_Picture_Width(sliderPtr->minIcon);
     }
     if (sliderPtr->maxIcon != NULL) {
-        ih2 = Blt_Picture_Height(sliderPtr->maxIcon);
-        iw2 = Blt_Picture_Width(sliderPtr->maxIcon);
+	ih2 = Blt_Picture_Height(sliderPtr->maxIcon);
+	iw2 = Blt_Picture_Width(sliderPtr->maxIcon);
     }
     if (sliderPtr->nomIcon != NULL) {
-        ih3 = Blt_Picture_Height(sliderPtr->nomIcon);
-        iw3 = Blt_Picture_Width(sliderPtr->nomIcon);
+	ih3 = Blt_Picture_Height(sliderPtr->nomIcon);
+	iw3 = Blt_Picture_Width(sliderPtr->nomIcon);
     }
     ih = MAX3(ih1, ih2, ih2);
     iw = MAX3(iw1, iw2, iw3);
@@ -3233,11 +3233,11 @@ ComputeHorizontalLayout(Slider *sliderPtr)
     left += miw
 
     if (h < (sliderPtr->sliderRadius * 2)) {
-        h = sliderPtr->sliderRadius * 2;
+	h = sliderPtr->sliderRadius * 2;
     }
     if (sliderPtr->flags & SHOW_TICKS) {
-        Blt_ChainLink link;
-        TickLabel *labelPtr;
+	Blt_ChainLink link;
+	TickLabel *labelPtr;
 
 	    /* First tick. */
 	    link = Blt_Chain_FirstLink(sliderPtr->ticks);
@@ -3325,16 +3325,16 @@ DrawHorizontalTrough(Slider *sliderPtr, Drawable drawable)
     y = sliderPtr->valueHeight + PAD;
     x = sliderPtr->leftArrowWidth + PAD;
     w = Tk_Width(sliderPtr->tkwin) - 
-        (sliderPtr->leftArrowWidth + sliderPtr->rightArrowHeight + 
-         2 * sliderPtr->inset + 2 * PAD);
+	(sliderPtr->leftArrowWidth + sliderPtr->rightArrowHeight + 
+	 2 * sliderPtr->inset + 2 * PAD);
     h = MAX3(sliderPtr->troughHeight, sliderPtr->leftControlHeight, 
-            sliderPtr->rightControlHeight);
+	    sliderPtr->rightControlHeight);
     
-        (sliderPtr->valueHeight + PAD + sliderPtr->axisHeight + PAD +
-         2 * sliderPtr->inset);
+	(sliderPtr->valueHeight + PAD + sliderPtr->axisHeight + PAD +
+	 2 * sliderPtr->inset);
     r = 8;
     Blt_PaintRectangle(sliderPtr->painter, sliderPtr->trough, 
-                       w, slidePtr->throughHeight + 3);
+		       w, slidePtr->throughHeight + 3);
     brushPtr = Blt_Bg_PaintBrush(sliderPtr->bgnormalBg);
     Blt_PaintBrush_SetOrigin(brushPtr, -x, -y);
     Blt_PaintRectangle(picture, 0, 0, sliderPtr->troughWidth,
@@ -3389,42 +3389,42 @@ DrawHorizontalSlider(Slider *sliderPtr)
     law = raw = lah = rah = 0;
     h = 0;
     if (sliderPtr->flags & SHOW_ARROWS) {
-        ax = x, ay = y;
-        if (sliderPtr->leftArrow != NULL) {
-            aw = Blt_Picture_Width(sliderPtr->leftArrow);
-            ah = Blt_Picture_Height(sliderPtr->leftArrow);
-            if (h > ah) {
-                ay += (h - ah) / 2;
-            }
-            Tk_RedrawImage(IconBits(sliderPtr->leftArrow), 0, 0, aw, ah, 
-                           drawable, ax, ay);
-            x += aw + PADX;
-        }
-        ax = width, ay = y;
-        if (sliderPtr->rightArrow != NULL) {
-            aw = Blt_Picture_Width(sliderPtr->rightArrow);
-            ah = Blt_Picture_Height(sliderPtr->rightArrow);
-            if (h > ah) {
-                ay += (h - ah) / 2;
-            }
-            ax -= aw + PADX;
-            Tk_RedrawImage(IconBits(sliderPtr->rightArrow), 0, 0, aw, ah, 
-                           drawable, ax, ay);
-        }
+	ax = x, ay = y;
+	if (sliderPtr->leftArrow != NULL) {
+	    aw = Blt_Picture_Width(sliderPtr->leftArrow);
+	    ah = Blt_Picture_Height(sliderPtr->leftArrow);
+	    if (h > ah) {
+		ay += (h - ah) / 2;
+	    }
+	    Tk_RedrawImage(IconBits(sliderPtr->leftArrow), 0, 0, aw, ah, 
+			   drawable, ax, ay);
+	    x += aw + PADX;
+	}
+	ax = width, ay = y;
+	if (sliderPtr->rightArrow != NULL) {
+	    aw = Blt_Picture_Width(sliderPtr->rightArrow);
+	    ah = Blt_Picture_Height(sliderPtr->rightArrow);
+	    if (h > ah) {
+		ay += (h - ah) / 2;
+	    }
+	    ax -= aw + PADX;
+	    Tk_RedrawImage(IconBits(sliderPtr->rightArrow), 0, 0, aw, ah, 
+			   drawable, ax, ay);
+	}
     }
     ih1 = ih2 = ih3 = ICON_HEIGHT;
     iw1 = iw2 = iw3 = ICON_WIDTH;
     if (sliderPtr->minIcon != NULL) {
-        ih1 = Blt_Picture_Height(sliderPtr->minIcon);
-        iw1 = Blt_Picture_Width(sliderPtr->minIcon);
+	ih1 = Blt_Picture_Height(sliderPtr->minIcon);
+	iw1 = Blt_Picture_Width(sliderPtr->minIcon);
     }
     if (sliderPtr->maxIcon != NULL) {
-        ih2 = Blt_Picture_Height(sliderPtr->maxIcon);
-        iw2 = Blt_Picture_Width(sliderPtr->maxIcon);
+	ih2 = Blt_Picture_Height(sliderPtr->maxIcon);
+	iw2 = Blt_Picture_Width(sliderPtr->maxIcon);
     }
     if (sliderPtr->nomIcon != NULL) {
-        ih3 = Blt_Picture_Height(sliderPtr->nomIcon);
-        iw3 = Blt_Picture_Width(sliderPtr->nomIcon);
+	ih3 = Blt_Picture_Height(sliderPtr->nomIcon);
+	iw3 = Blt_Picture_Width(sliderPtr->nomIcon);
     }
     ih = MAX3(ih1, ih2, ih2);
     iw = MAX3(iw1, iw2, iw3);
@@ -3435,11 +3435,11 @@ DrawHorizontalSlider(Slider *sliderPtr)
     left += miw
 
     if (h < (sliderPtr->sliderRadius * 2)) {
-        h = sliderPtr->sliderRadius * 2;
+	h = sliderPtr->sliderRadius * 2;
     }
     if (sliderPtr->flags & SHOW_TICKS) {
-        Blt_ChainLink link;
-        TickLabel *labelPtr;
+	Blt_ChainLink link;
+	TickLabel *labelPtr;
 
 	    /* First tick. */
 	    link = Blt_Chain_FirstLink(sliderPtr->ticks);
@@ -4232,7 +4232,7 @@ Blt_DefaultAxes(Graph *sliderPtr)
 	sliderPtr->margin = margin;
 	sliderPtr->flags |= USE;
 	Blt_GraphSetObjectClass(&sliderPtr->obj, axisNames[margin].classId);
- 	if (Blt_ConfigureComponentFromObj(sliderPtr->interp, sliderPtr->tkwin,
+	if (Blt_ConfigureComponentFromObj(sliderPtr->interp, sliderPtr->tkwin,
 		sliderPtr->obj.name, "Axis", configSpecs, 0, (Tcl_Obj **)NULL,
 		(char *)sliderPtr, flags) != TCL_OK) {
 	    return TCL_ERROR;
@@ -4255,7 +4255,7 @@ Blt_DefaultAxes(Graph *sliderPtr)
 	sliderPtr->margin = MARGIN_NONE;
 	sliderPtr->flags |= USE;
 	Blt_GraphSetObjectClass(&sliderPtr->obj, axisNames[i].classId);
- 	if (Blt_ConfigureComponentFromObj(sliderPtr->interp, sliderPtr->tkwin,
+	if (Blt_ConfigureComponentFromObj(sliderPtr->interp, sliderPtr->tkwin,
 		sliderPtr->obj.name, "Axis", configSpecs, 0, (Tcl_Obj **)NULL,
 		(char *)sliderPtr, flags) != TCL_OK) {
 	    return TCL_ERROR;
@@ -4318,7 +4318,7 @@ BindOp(ClientData clientData, Tcl_Interp *interp, int objc,
     return Blt_ConfigureBindingsFromObj(interp, sliderPtr->bindTable,
 	Blt_MakeAxisTag(sliderPtr, sliderPtr->name), objc, objv);
 }
-          
+	  
 /*
  *---------------------------------------------------------------------------
  *
@@ -5743,11 +5743,11 @@ DisplayProc(ClientData clientData)
 	ComputeGeometry(sliderPtr);
     }
     if (sliderPtr->flags & LAYOUT_PENDING) {
-        if (sliderPtr->flags & HORIZONTAL) {
-            ComputeHorizontalLayout(sliderPtr);
-        } else {
-            ComputeVerticalLayout(sliderPtr);
-        }
+	if (sliderPtr->flags & HORIZONTAL) {
+	    ComputeHorizontalLayout(sliderPtr);
+	} else {
+	    ComputeVerticalLayout(sliderPtr);
+	}
     }
     if ((sliderPtr->reqHeight == 0) || (sliderPtr->reqWidth == 0)) {
 	if ((Tk_ReqWidth(sliderPtr->tkwin) != width) ||
@@ -5773,9 +5773,9 @@ DisplayProc(ClientData clientData)
 
     /* Draw the through. */
     if (sliderPtr->flags & HORIZONTAL) {
-        DrawHorizontalSlider(sliderPtr, pixamp);
+	DrawHorizontalSlider(sliderPtr, pixamp);
     } else {
-        DrawVerticalSlider(sliderPtr, pixamp);
+	DrawVerticalSlider(sliderPtr, pixamp);
     }
     /* Draw focus highlight ring. */
     if ((sliderPtr->highlightWidth > 0) && (sliderPtr->flags & FOCUS)) {

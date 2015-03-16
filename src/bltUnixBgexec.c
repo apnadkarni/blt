@@ -391,7 +391,7 @@ static Blt_SwitchSpec switchSpecs[] =
     {BLT_SWITCH_CUSTOM,  "-decodeerror",   "encoding", (char *)NULL,
 	 Blt_Offset(Bgexec, err.encoding),  0, 0, &encodingSwitch},
     {BLT_SWITCH_BOOLEAN, "-echo",           "bool",  (char *)NULL,
-         Blt_Offset(Bgexec, err.echo),	 0},
+	 Blt_Offset(Bgexec, err.echo),	 0},
     {BLT_SWITCH_STRING,  "-error",          "variable", (char *)NULL,
 	Blt_Offset(Bgexec, err.doneVar),   0},
     {BLT_SWITCH_STRING,  "-update",         "variable", (char *)NULL,
@@ -676,7 +676,7 @@ ResetSink(Sink *sinkPtr)
 	 * before we see the next newline.  So move the bytes to the front of
 	 * the array. */
 
- 	for (i = 0, j = sinkPtr->lastMark; j < sinkPtr->fill; i++, j++) {
+	for (i = 0, j = sinkPtr->lastMark; j < sinkPtr->fill; i++, j++) {
 	    sinkPtr->bytes[i] = sinkPtr->bytes[j];
 	}
 	/* Move back the fill point and processed point. */
@@ -1267,7 +1267,7 @@ CollectData(Bgexec *execPtr, Sink *sinkPtr)
 	     * complete line.  */
 	    while ((data = NextLine(sinkPtr, &length)) != NULL) {
 		NotifyOnUpdate(execPtr->interp, sinkPtr, data, length);
- 	    }
+	    }
 	} else {
 	    size_t length;
 	    unsigned char *data;
@@ -1277,7 +1277,7 @@ CollectData(Bgexec *execPtr, Sink *sinkPtr)
 #endif
 	    length = 0;			/* Suppress compiler warning. */
 	    data = NextBlock(sinkPtr, &length);
- 	    #ifdef notdef
+	    #ifdef notdef
 	    count = 0;
 	    for (i = 0; i < length; i++) {
 		if (data[i] == '\r') {
@@ -1956,7 +1956,7 @@ CheckPipeline(Bgexec *execPtr, Tcl_Obj **objPtrPtr)
     int code;
     int i;
     int numLeft;                        /* # of processes still not
-                                         * reaped */
+					 * reaped */
     unsigned int lastPid;
 
     mesg = NULL;                        /* Suppress compiler warning. */

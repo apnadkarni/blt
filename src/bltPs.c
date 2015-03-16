@@ -92,7 +92,7 @@ Blt_Ps_GetPicaFromObj(
     Tcl_Obj *objPtr,			/* String describing a number of
 					 * pixels. */
     int *picaPtr)			/* Place to store converted
-                                         * result. */
+					 * result. */
 {
     char *p;
     double pica;
@@ -335,7 +335,7 @@ void
 Blt_Ps_AppendBytes(PostScript *psPtr, const char *bytes, int length)
 {
     if (length < 0) {
-        length = strlen(bytes);
+	length = strlen(bytes);
     }
     Blt_DBuffer_AppendData(psPtr->dbuffer, (unsigned char *)bytes, length);
 }
@@ -569,7 +569,7 @@ Blt_Ps_XSetBitmapData(
 
     srcBits = Blt_GetBitmapData(display, bitmap, width, height, &bytesPerRow);
     if (srcBits == NULL) {
-        OutputDebugString("Can't get bitmap data");
+	OutputDebugString("Can't get bitmap data");
 	return;
     }
     Blt_Ps_Append(psPtr, "\t<");
@@ -857,9 +857,9 @@ Blt_Ps_Draw3DRectangle(
     int width, int height,	/* Region to be drawn. */
     int borderWidth,		/* Desired width for border, in pixels. */
     int relief)			/* Should be either TK_RELIEF_RAISED or
-                                 * TK_RELIEF_SUNKEN; indicates position of
-                                 * interior of window relative to
-                                 * exterior. */
+				 * TK_RELIEF_SUNKEN; indicates position of
+				 * interior of window relative to
+				 * exterior. */
 {
     Point2d points[7];
     TkBorder *borderPtr = (TkBorder *) border;
@@ -900,7 +900,7 @@ Blt_Ps_Draw3DRectangle(
 	    width, height, halfWidth, 
 	    (relief == TK_RELIEF_GROOVE) ? TK_RELIEF_SUNKEN : TK_RELIEF_RAISED);
 	Blt_Ps_Draw3DRectangle(ps, border, 
-  	    (double)(x + insideOffset), (double)(y + insideOffset), 
+	    (double)(x + insideOffset), (double)(y + insideOffset), 
 	    width - insideOffset * 2, height - insideOffset * 2, halfWidth,
 	    (relief == TK_RELIEF_GROOVE) ? TK_RELIEF_RAISED : TK_RELIEF_SUNKEN);
 	return;
@@ -939,9 +939,9 @@ Blt_Ps_Fill3DRectangle(
     int width, int height,	/* Dimension of border to be drawn. */
     int borderWidth,		/* Desired width for border, in pixels. */
     int relief)			/* Should be either TK_RELIEF_RAISED or
-                                 * TK_RELIEF_SUNKEN; indicates position of
-                                 * interior of window relative to
-                                 * exterior. */
+				 * TK_RELIEF_SUNKEN; indicates position of
+				 * interior of window relative to
+				 * exterior. */
 {
     TkBorder *borderPtr = (TkBorder *) border;
 
@@ -959,13 +959,13 @@ Blt_Ps_XSetStipple(Blt_Ps ps, Display *display, Pixmap bitmap)
     Tk_SizeOfBitmap(display, bitmap, &width, &height);
     Blt_Ps_Format(ps, 
 	"gsave\n"
-        "  clip\n"
-        "  %d %d\n", 
+	"  clip\n"
+	"  %d %d\n", 
 	width, height);
     Blt_Ps_XSetBitmapData(ps, display, bitmap, width, height);
     Blt_Ps_VarAppend(ps, 
-        "  StippleFill\n"
-        "grestore\n", (char *)NULL);
+	"  StippleFill\n"
+	"grestore\n", (char *)NULL);
 }
 
 static void
@@ -995,7 +995,7 @@ Base85Encode(PostScript *psPtr, Blt_DBuffer dBuffer)
     count = 0;
     dp = Blt_DBuffer_Bytes(psPtr->dbuffer) + oldLength;
     for (sp = Blt_DBuffer_Bytes(dBuffer), send = sp + (numBytes - remainder);
-         sp < send; sp += 4) {
+	 sp < send; sp += 4) {
 	unsigned int tuple;
 	
 	tuple = 0;
@@ -1157,9 +1157,9 @@ Blt_Ps_DrawPicture(PostScript *psPtr, Blt_Picture picture, double x, double y)
 	    "/picstr %d string def\n"
 	    "%d %d 8\n" 
 	    "[%d 0 0 %d 0 %d]\n"
-            "{\n"
+	    "{\n"
 	    "  currentfile picstr readhexstring pop\n"
-            "}\n", strSize, w, h, w, -h, h);
+	    "}\n", strSize, w, h, w, -h, h);
 	if (setupPtr->flags & PS_GREYSCALE) {
 	    Blt_Picture greyscale;
 	    

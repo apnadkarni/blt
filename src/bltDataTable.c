@@ -3,26 +3,26 @@
  *
  * bltDataTable.c --
  *
- *	Copyright 1998-2005 George A Howlett.
+ *      Copyright 1998-2005 George A Howlett.
  *
- *	Permission is hereby granted, free of charge, to any person obtaining
- *	a copy of this software and associated documentation files (the
- *	"Software"), to deal in the Software without restriction, including
- *	without limitation the rights to use, copy, modify, merge, publish,
- *	distribute, sublicense, and/or sell copies of the Software, and to
- *	permit persons to whom the Software is furnished to do so, subject to
- *	the following conditions:
+ *      Permission is hereby granted, free of charge, to any person obtaining
+ *      a copy of this software and associated documentation files (the
+ *      "Software"), to deal in the Software without restriction, including
+ *      without limitation the rights to use, copy, modify, merge, publish,
+ *      distribute, sublicense, and/or sell copies of the Software, and to
+ *      permit persons to whom the Software is furnished to do so, subject to
+ *      the following conditions:
  *
- *	The above copyright notice and this permission notice shall be
- *	included in all copies or substantial portions of the Software.
+ *      The above copyright notice and this permission notice shall be
+ *      included in all copies or substantial portions of the Software.
  *
- *	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- *	EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- *	MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- *	NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
- *	LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
- *	OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
- *	WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *      THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ *      EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ *      MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ *      NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+ *      LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+ *      OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+ *      WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
 #define BUILD_BLT_TCL_PROCS 1
@@ -48,80 +48,80 @@
 /*
  * Row and Column Information Structures
  *
- *	Map:	Array of pointers to headers, representing the logical 
- *		view of row/column.  
+ *      Map:    Array of pointers to headers, representing the logical 
+ *              view of row/column.  
  * 
- *	x = pointer to row/column header.
- *	y = row/column header.
- *		label
- *		index:  logical location of row/column.
- *		offset: physical location of row/column in table storage.
- *		type:   column type.
- *		flags:  
+ *      x = pointer to row/column header.
+ *      y = row/column header.
+ *              label
+ *              index:  logical location of row/column.
+ *              offset: physical location of row/column in table storage.
+ *              type:   column type.
+ *              flags:  
  *
- *	[x] [x] [x] [x] [x] [x] [x] [x] [ ] [ ] [ ]
- *	 |   |   |   |   |   |   |   |
+ *      [x] [x] [x] [x] [x] [x] [x] [x] [ ] [ ] [ ]
+ *       |   |   |   |   |   |   |   |
  *       v   v   v   v   v   v   v   v 
  *      [y] [y] [y] [y] [y] [y] [y] [y]
  *
  *
- *	Free list:  Chain of free locations. Holds the physical offset
- *		    of next free row or column.  The offsets of deleted 
- *		    rows/columns are prepended to this list.
+ *      Free list:  Chain of free locations. Holds the physical offset
+ *                  of next free row or column.  The offsets of deleted 
+ *                  rows/columns are prepended to this list.
  *
- *	x = offset of free row/column in table storage.
+ *      x = offset of free row/column in table storage.
  *
  *      [x]->[x]->[x]->[x]->[x]
  *
- *	Header pool: Pool of row/column headers.  Act as smart pointers
- *		     to row/column locations.  Will remain valid even if 
- *		     the logical view is changed (i.e. sorting) or physical 
- *		     storage is compacted.
+ *      Header pool: Pool of row/column headers.  Act as smart pointers
+ *                   to row/column locations.  Will remain valid even if 
+ *                   the logical view is changed (i.e. sorting) or physical 
+ *                   storage is compacted.
  *
  *  Data Vectors.
- *	Vectors: array of Value arrays.  
+ *      Vectors: array of Value arrays.  
  *
- *	    x = pointer to Value array.
- *	    y = array of Values.
+ *          x = pointer to Value array.
+ *          y = array of Values.
  *
- *	Array of vectors: [x] [x] [x] [x] [x] [ ] [x] [x] [x] [ ] [ ] [ ]
- *			  [y] [y] [y] [y] [y]     [y] [y] [y]
- *			  [y] [y] [y] [y] [y]     [y] [y] [y]
- *			  [y] [y] [ ] [y] [y]     [y] [y] [y]
- *			  [y] [y] [y] [y] [y]     [y] [y] [y]
- *			  [y] [y] [y] [y] [y]     [y] [y] [y]
- *			  [y] [y] [y] [ ] [y]     [y] [y] [y]
- *			  [y] [y] [y] [y] [y]     [y] [y] [y]
- *			  [y] [y] [y] [y] [y]     [y] [ ] [y]
- *			  [y] [y] [y] [y] [y]     [y] [y] [y]
- *			  [y] [y] [y] [y] [y]     [y] [y] [y]
- *			  [y] [y] [y] [y] [y]     [y] [y] [y]
- *			  [y] [y] [y] [y] [y]     [y] [y] [y]
- *			  [y] [y] [y] [y] [y]     [y] [y] [y]
- *			  [y] [y] [y] [y] [y]     [y] [y] [y]
- *			  [ ] [ ] [ ] [ ] [ ]     [ ] [ ] [ ]
- *			  [ ] [ ] [ ] [ ] [ ]     [ ] [ ] [ ]
- *			  [ ] [ ] [ ] [ ] [ ]     [ ] [ ] [ ]
- *			  [ ] [ ] [ ] [ ] [ ]     [ ] [ ] [ ]
- *			  [ ] [ ] [ ] [ ] [ ]     [ ] [ ] [ ]
+ *      Array of vectors: [x] [x] [x] [x] [x] [ ] [x] [x] [x] [ ] [ ] [ ]
+ *                        [y] [y] [y] [y] [y]     [y] [y] [y]
+ *                        [y] [y] [y] [y] [y]     [y] [y] [y]
+ *                        [y] [y] [ ] [y] [y]     [y] [y] [y]
+ *                        [y] [y] [y] [y] [y]     [y] [y] [y]
+ *                        [y] [y] [y] [y] [y]     [y] [y] [y]
+ *                        [y] [y] [y] [ ] [y]     [y] [y] [y]
+ *                        [y] [y] [y] [y] [y]     [y] [y] [y]
+ *                        [y] [y] [y] [y] [y]     [y] [ ] [y]
+ *                        [y] [y] [y] [y] [y]     [y] [y] [y]
+ *                        [y] [y] [y] [y] [y]     [y] [y] [y]
+ *                        [y] [y] [y] [y] [y]     [y] [y] [y]
+ *                        [y] [y] [y] [y] [y]     [y] [y] [y]
+ *                        [y] [y] [y] [y] [y]     [y] [y] [y]
+ *                        [y] [y] [y] [y] [y]     [y] [y] [y]
+ *                        [ ] [ ] [ ] [ ] [ ]     [ ] [ ] [ ]
+ *                        [ ] [ ] [ ] [ ] [ ]     [ ] [ ] [ ]
+ *                        [ ] [ ] [ ] [ ] [ ]     [ ] [ ] [ ]
+ *                        [ ] [ ] [ ] [ ] [ ]     [ ] [ ] [ ]
+ *                        [ ] [ ] [ ] [ ] [ ]     [ ] [ ] [ ]
  *
  */
 
-#define NumColumnsAllocated(t)		((t)->corePtr->columns.numAllocated)
-#define NumRowsAllocated(t)		((t)->corePtr->rows.numAllocated)
+#define NumColumnsAllocated(t)          ((t)->corePtr->columns.numAllocated)
+#define NumRowsAllocated(t)             ((t)->corePtr->rows.numAllocated)
 
-#define TABLE_THREAD_KEY		"BLT DataTable Data"
-#define TABLE_MAGIC			((unsigned int) 0xfaceface)
-#define TABLE_DESTROYED			(1<<0)
+#define TABLE_THREAD_KEY                "BLT DataTable Data"
+#define TABLE_MAGIC                     ((unsigned int) 0xfaceface)
+#define TABLE_DESTROYED                 (1<<0)
 
-#define TABLE_ALLOC_MAX_DOUBLE_SIZE	(1<<16)
-#define TABLE_ALLOC_MAX_CHUNK		(1<<16)
+#define TABLE_ALLOC_MAX_DOUBLE_SIZE     (1<<16)
+#define TABLE_ALLOC_MAX_CHUNK           (1<<16)
 
-#define TABLE_KEYS_DIRTY		(1<<0)
-#define TABLE_KEYS_UNIQUE		(1<<1)
+#define TABLE_KEYS_DIRTY                (1<<0)
+#define TABLE_KEYS_UNIQUE               (1<<1)
 
 /* Column flag. */
-#define TABLE_COLUMN_PRIMARY_KEY	(1<<0)
+#define TABLE_COLUMN_PRIMARY_KEY        (1<<0)
 
 typedef struct _BLT_TABLE_VALUE Value;
 
@@ -148,34 +148,34 @@ static const char *valueTypes[] = {
 /*
  * _BLT_TABLE_TAGS --
  *
- *	Structure representing tags used by a client of the table.
+ *      Structure representing tags used by a client of the table.
  *
- *	Table rows and columns may be tagged with strings.  A row may have
- *	many tags.  The same tag may be used for many rows.  Tags are used and
- *	stored by clients of a table.  Tags can also be shared between clients
- *	of the same table.
- *	
- *	Both rowTable and columnTable are hash tables keyed by the physical
- *	row or column location in the table respectively.  This is not the
- *	same as the client's view (the order of rows or columns as seen by the
- *	client).  This is so that clients (which may have different views) can
- *	share tags without sharing the same view.
+ *      Table rows and columns may be tagged with strings.  A row may have
+ *      many tags.  The same tag may be used for many rows.  Tags are used and
+ *      stored by clients of a table.  Tags can also be shared between clients
+ *      of the same table.
+ *      
+ *      Both rowTable and columnTable are hash tables keyed by the physical
+ *      row or column location in the table respectively.  This is not the
+ *      same as the client's view (the order of rows or columns as seen by the
+ *      client).  This is so that clients (which may have different views) can
+ *      share tags without sharing the same view.
  */
 struct _BLT_TABLE_TAGS {
-    struct _Blt_Tags rowTags;		/* Table of row indices.  Each entry
+    struct _Blt_Tags rowTags;           /* Table of row indices.  Each entry
 					 * is itself a hash table of tag
 					 * names. */
     struct _Blt_Tags columnTags;        /* Table of column indices.  Each
 					 * entry is itself a hash table of tag
 					 * names. */
-    int refCount;			/* Tracks the number of clients
+    int refCount;                       /* Tracks the number of clients
 					 * currently using these tags. If
 					 * refCount goes to zero, this means
 					 * the table can safely be freed. */
 };
 
 typedef struct {
-    Blt_HashTable clientTable;		/* Tracks all table clients. */
+    Blt_HashTable clientTable;          /* Tracks all table clients. */
     unsigned int nextId;
     Tcl_Interp *interp;
 } InterpData;
@@ -251,7 +251,7 @@ UnsetLabel(RowColumn *rcPtr, Header *headerPtr)
 	    Blt_DeleteHashTable(tablePtr);
 	    Blt_Free(tablePtr);
 	}
-    }	
+    }   
     headerPtr->label = NULL;
 }
 
@@ -260,18 +260,18 @@ UnsetLabel(RowColumn *rcPtr, Header *headerPtr)
  *
  * SetLabel --
  *
- *	Changes the label for the row or column.  Labels aren't necessarily
- *	unique. It's not enforced.  The rationale is that it is convenient
- *	to be able to add rows/columns to a table, and then change the 
- *	labels.  For example, when importing table data from a file,
- *	you can't apriori change the labels.  We could add #n to make the 
- *	label unique, but detecting and changing them is a pain.
- *	
+ *      Changes the label for the row or column.  Labels aren't necessarily
+ *      unique. It's not enforced.  The rationale is that it is convenient
+ *      to be able to add rows/columns to a table, and then change the 
+ *      labels.  For example, when importing table data from a file,
+ *      you can't apriori change the labels.  We could add #n to make the 
+ *      label unique, but detecting and changing them is a pain.
+ *      
  *
  * Results:
- *	Returns a pointer to the new object is successful, NULL otherwise.  If
- *	a table object can't be generated, interp->result will contain an
- *	error message.
+ *      Returns a pointer to the new object is successful, NULL otherwise.  If
+ *      a table object can't be generated, interp->result will contain an
+ *      error message.
  *
  * -------------------------------------------------------------------------- 
  */
@@ -280,7 +280,7 @@ SetLabel(RowColumn *rcPtr, Header *headerPtr, const char *newLabel)
 {
     Blt_HashEntry *hPtr;
     int isNew;
-    Blt_HashTable *tablePtr;		/* Secondary table. */
+    Blt_HashTable *tablePtr;            /* Secondary table. */
 
     if (headerPtr->label != NULL) {
 	UnsetLabel(rcPtr, headerPtr);
@@ -302,7 +302,7 @@ SetLabel(RowColumn *rcPtr, Header *headerPtr, const char *newLabel)
     /* Now look the header in the secondary table. */
     hPtr = Blt_CreateHashEntry(tablePtr, (char *)headerPtr, &isNew);
     if (!isNew) {
-	return;				/* It's already there. */
+	return;                         /* It's already there. */
     }
     /* Add it to the secondary table. */
     Blt_SetHashValue(hPtr, headerPtr);
@@ -348,9 +348,9 @@ SetHeaderLabel(Tcl_Interp *interp, RowColumn *rcPtr, Header *headerPtr,
 }
 
 #if (SIZEOF_VOID_P == 8)  
-#define LABEL_FMT	"%c%ld"
+#define LABEL_FMT       "%c%ld"
 #else
-#define LABEL_FMT	"%c%d" 
+#define LABEL_FMT       "%c%d" 
 #endif
 
 static void
@@ -418,7 +418,7 @@ GrowHeaders(RowColumn *rcPtr, long extra)
 	 * them the free list. */
 	for (i = oldSize, mp = map + oldSize; i < newSize; i++, mp++) {
 	    Blt_Chain_Append(rcPtr->freeList, (ClientData)i); 
-	    *mp = NULL;		       /* Initialize new slots in the map.  */
+	    *mp = NULL;                /* Initialize new slots in the map.  */
 	}
     }
     rcPtr->map = map;
@@ -661,17 +661,17 @@ GetObjFromValue(BLT_TABLE_COLUMN_TYPE type, Value *valuePtr)
     if (IsEmpty(valuePtr)) {
 	return NULL;
     } 
-    objPtr = NULL;			/* Suppress compiler warning. */
+    objPtr = NULL;                      /* Suppress compiler warning. */
     switch (type) {
     case TABLE_COLUMN_TYPE_UNKNOWN:
-    case TABLE_COLUMN_TYPE_STRING:	/* string */
+    case TABLE_COLUMN_TYPE_STRING:      /* string */
 	objPtr = Tcl_NewStringObj(GetString(valuePtr), -1);
 	break;
-    case TABLE_COLUMN_TYPE_TIME:	/* time */
-    case TABLE_COLUMN_TYPE_DOUBLE:	/* double */
+    case TABLE_COLUMN_TYPE_TIME:        /* time */
+    case TABLE_COLUMN_TYPE_DOUBLE:      /* double */
 	objPtr = Tcl_NewDoubleObj(valuePtr->datum.d);
 	break;
-    case TABLE_COLUMN_TYPE_LONG:	/* long */
+    case TABLE_COLUMN_TYPE_LONG:        /* long */
 	objPtr = Tcl_NewLongObj(valuePtr->datum.l);
 	break;
     }
@@ -690,18 +690,18 @@ SetValueFromObj(Tcl_Interp *interp, BLT_TABLE_COLUMN_TYPE type,
     }
     ResetValue(valuePtr);
     switch (type) {
-    case TABLE_COLUMN_TYPE_TIME:	/* double */
+    case TABLE_COLUMN_TYPE_TIME:        /* double */
 	if (Blt_GetTimeFromObj(interp, objPtr, &valuePtr->datum.d) != TCL_OK) {
 	    return TCL_ERROR;
 	}
 	break;
 
-    case TABLE_COLUMN_TYPE_DOUBLE:	/* double */
+    case TABLE_COLUMN_TYPE_DOUBLE:      /* double */
 	if (Blt_GetDoubleFromObj(interp, objPtr, &valuePtr->datum.d)!=TCL_OK) {
 	    return TCL_ERROR;
 	}
 	break;
-    case TABLE_COLUMN_TYPE_LONG:	/* long */
+    case TABLE_COLUMN_TYPE_LONG:        /* long */
 	if (Blt_GetLongFromObj(interp, objPtr, &valuePtr->datum.l) != TCL_OK) {
 	    return TCL_ERROR;
 	}
@@ -739,7 +739,7 @@ SetValueFromString(Tcl_Interp *interp, BLT_TABLE_COLUMN_TYPE type,
     Tcl_IncrRefCount(objPtr);
 
     switch (type) {
-    case TABLE_COLUMN_TYPE_TIME:	/* time */
+    case TABLE_COLUMN_TYPE_TIME:        /* time */
 	if (Blt_GetTimeFromObj(interp, objPtr, &d) != TCL_OK) {
 	    Tcl_DecrRefCount(objPtr);
 	    return TCL_ERROR;
@@ -747,14 +747,14 @@ SetValueFromString(Tcl_Interp *interp, BLT_TABLE_COLUMN_TYPE type,
 	valuePtr->datum.d = d;
 	break;
 
-    case TABLE_COLUMN_TYPE_DOUBLE:	/* double */
+    case TABLE_COLUMN_TYPE_DOUBLE:      /* double */
 	if (Blt_GetDoubleFromObj(interp, objPtr, &d) != TCL_OK) {
 	    Tcl_DecrRefCount(objPtr);
 	    return TCL_ERROR;
 	}
 	valuePtr->datum.d = d;
 	break;
-    case TABLE_COLUMN_TYPE_LONG:	/* long */
+    case TABLE_COLUMN_TYPE_LONG:        /* long */
 	if (Blt_GetLongFromObj(interp, objPtr, &l) != TCL_OK) {
 	    Tcl_DecrRefCount(objPtr);
 	    return TCL_ERROR;
@@ -787,12 +787,12 @@ SetValueFromString(Tcl_Interp *interp, BLT_TABLE_COLUMN_TYPE type,
  *
  * NewTableObject --
  *
- *	Creates and initializes a new table object. 
+ *      Creates and initializes a new table object. 
  *
  * Results:
- *	Returns a pointer to the new object is successful, NULL otherwise.  If
- *	a table object can't be generated, interp->result will contain an
- *	error message.
+ *      Returns a pointer to the new object is successful, NULL otherwise.  If
+ *      a table object can't be generated, interp->result will contain an
+ *      error message.
  *
  * -------------------------------------------------------------------------- 
  */
@@ -843,26 +843,26 @@ DestroyTraces(Table *tablePtr)
  *
  * DoTrace --
  *
- *	Fires a trace set by a client of the table object.  Trace procedures
- *	should return a standard TCL result.
+ *      Fires a trace set by a client of the table object.  Trace procedures
+ *      should return a standard TCL result.
  *
- *	   TCL_OK	procedure executed successfully.
- *	   TCL_ERROR	procedure failed.
- *	   TCL_BREAK	don't execute any further trace procedures.
- *	   TCL_CONTINUE	treat like TCL_OK.
+ *         TCL_OK       procedure executed successfully.
+ *         TCL_ERROR    procedure failed.
+ *         TCL_BREAK    don't execute any further trace procedures.
+ *         TCL_CONTINUE treat like TCL_OK.
  *
- *	A trace procedure can in turn trigger more traces.  Traces are
- *	prohibited from recursively reentering their own trace procedures.  A
- *	hash table in the trace structure tracks the cells currently actively
- *	traced.  If a cell is already being traced, the trace procedure is not
- *	called and TCL_OK is blindly returned.
+ *      A trace procedure can in turn trigger more traces.  Traces are
+ *      prohibited from recursively reentering their own trace procedures.  A
+ *      hash table in the trace structure tracks the cells currently actively
+ *      traced.  If a cell is already being traced, the trace procedure is not
+ *      called and TCL_OK is blindly returned.
  *
  * Results:
- *	Returns the result of trace procedure.  If the trace is already
- *	active, then TCL_OK is returned.
+ *      Returns the result of trace procedure.  If the trace is already
+ *      active, then TCL_OK is returned.
  *
  * Side Effects:
- *	Traces on the table location may be fired.
+ *      Traces on the table location may be fired.
  *
  *---------------------------------------------------------------------------
  */
@@ -884,7 +884,7 @@ DoTrace(Trace *tracePtr, BLT_TABLE_TRACE_EVENT *eventPtr)
 
     if (result == TCL_ERROR) {
 	Blt_Warn("error in trace callback: %s\n", 
-                 Tcl_GetString(Tcl_GetObjResult(eventPtr->interp)));
+		 Tcl_GetString(Tcl_GetObjResult(eventPtr->interp)));
 	Tcl_BackgroundError(eventPtr->interp);
     }
     return result;
@@ -895,12 +895,12 @@ DoTrace(Trace *tracePtr, BLT_TABLE_TRACE_EVENT *eventPtr)
  *
  * TraceIdleProc --
  *
- *	Used to invoke a table trace handler routines at some idle point.  
- *	This routine is called from the TCL event loop.  Errors generated 
- *	by the event handler routines are backgrounded.
- *	
+ *      Used to invoke a table trace handler routines at some idle point.  
+ *      This routine is called from the TCL event loop.  Errors generated 
+ *      by the event handler routines are backgrounded.
+ *      
  * Results:
- *	None.
+ *      None.
  *
  *---------------------------------------------------------------------------
  */
@@ -922,12 +922,12 @@ TraceIdleProc(ClientData clientData)
  *
  * NotifyIdleProc --
  *
- *	Used to invoke event handler routines at some idle point.  This
- *	routine is called from the TCL event loop.  Errors generated by the
- *	event handler routines are backgrounded.
- *	
+ *      Used to invoke event handler routines at some idle point.  This
+ *      routine is called from the TCL event loop.  Errors generated by the
+ *      event handler routines are backgrounded.
+ *      
  * Results:
- *	None.
+ *      None.
  *
  *---------------------------------------------------------------------------
  */
@@ -983,11 +983,11 @@ DestroyNotifiers(Table *tablePtr, Blt_Chain chain)
  *
  * DestroyTableObject --
  *
- *	Destroys the table object.  This is the final clean up of the object.
- *	The object's entry is removed from the hash table of tables.
+ *      Destroys the table object.  This is the final clean up of the object.
+ *      The object's entry is removed from the hash table of tables.
  *
  * Results: 
- *	None.
+ *      None.
  *
  * -------------------------------------------------------------------------- 
  */
@@ -1023,15 +1023,15 @@ DestroyTableObject(TableObject *corePtr)
  *
  * TableInterpDeleteProc --
  *
- *	This is called when the interpreter hosting the table object is
- *	deleted from the interpreter.
+ *      This is called when the interpreter hosting the table object is
+ *      deleted from the interpreter.
  *
  * Results:
- *	None.
+ *      None.
  *
  * Side effects:
- *	Destroys all remaining tables and removes the hash table used to
- *	register table names.
+ *      Destroys all remaining tables and removes the hash table used to
+ *      register table names.
  *
  *---------------------------------------------------------------------------
  */
@@ -1071,11 +1071,11 @@ TableInterpDeleteProc(ClientData clientData, Tcl_Interp *interp)
  *
  * GetInterpData --
  *
- *	Creates or retrieves data associated with tuple data objects for a
- *	particular interpreter.  
+ *      Creates or retrieves data associated with tuple data objects for a
+ *      particular interpreter.  
  *
  * Results:
- *	Returns a pointer to the tuple interpreter data.
+ *      Returns a pointer to the tuple interpreter data.
  *
  * -------------------------------------------------------------------------- 
  */
@@ -1157,10 +1157,10 @@ ShareTags(Table *srcPtr, Table *destPtr)
  *
  * FindClientInNamespace --
  *
- *	Searches for a table client in a given namespace.
+ *      Searches for a table client in a given namespace.
  *
  * Results:
- *	Returns a pointer to the table client if found, otherwise NULL.
+ *      Returns a pointer to the table client if found, otherwise NULL.
  *
  *---------------------------------------------------------------------------
  */
@@ -1190,10 +1190,10 @@ FindClientInNamespace(InterpData *dataPtr, Blt_ObjectName *namePtr)
  *
  * GetTable --
  *
- *	Searches for the table client associated by the name given.
+ *      Searches for the table client associated by the name given.
  *
  * Results:
- *	Returns a pointer to the table client if found, otherwise NULL.
+ *      Returns a pointer to the table client if found, otherwise NULL.
  *
  *---------------------------------------------------------------------------
  */
@@ -1261,27 +1261,27 @@ DestroyClient(Table *tablePtr)
  *
  * NewTable --
  *
- *	Creates a new table client.  Clients shared a tuple data object.  They
- *	individually manage traces and events on tuple objects.  Returns a
- *	pointer to the malloc'ed structure.  This is passed to the client as a
- *	tuple token.
- *	
+ *      Creates a new table client.  Clients shared a tuple data object.  They
+ *      individually manage traces and events on tuple objects.  Returns a
+ *      pointer to the malloc'ed structure.  This is passed to the client as a
+ *      tuple token.
+ *      
  * Results:
- *	A pointer to a Table is returned.  If one can't be allocated, NULL
- *	is returned.
+ *      A pointer to a Table is returned.  If one can't be allocated, NULL
+ *      is returned.
  *
  *---------------------------------------------------------------------------
  */
 static Table *
 NewTable(
     InterpData *dataPtr, 
-    TableObject *corePtr,	        /* Table object serving this
+    TableObject *corePtr,               /* Table object serving this
 					 * client. */
-    const char *qualName)		/* Full namespace qualified name of
+    const char *qualName)               /* Full namespace qualified name of
 					 * table. A table by this name may
 					 * already exist. */
 {
-    Blt_Chain chain;			/* List of clients using the same
+    Blt_Chain chain;                    /* List of clients using the same
 					 * name. */
     Table *tablePtr;
     int isNew;
@@ -1361,7 +1361,7 @@ SetType(Table *tablePtr, struct _BLT_TABLE_COLUMN *colPtr,
     int i;
 
     if (type == colPtr->type) {
-	return TCL_OK;			/* Already the requested type. */
+	return TCL_OK;                  /* Already the requested type. */
     }
     /* Test first that every value in the column can be converted. */
     for (i = 0; i < blt_table_num_rows(tablePtr); i++) {
@@ -1439,9 +1439,9 @@ DeleteHeader(RowColumn *rcPtr, Header *headerPtr)
  *
  * ClearRowNotifiers --
  *
- *	Removes all event handlers set for the designated row.  Note that this
- *	doesn't remove handlers triggered by row or column tags.  Row and
- *	column event notifiers are stored in a chain.
+ *      Removes all event handlers set for the designated row.  Note that this
+ *      doesn't remove handlers triggered by row or column tags.  Row and
+ *      column event notifiers are stored in a chain.
  *
  *---------------------------------------------------------------------------
  */
@@ -1467,9 +1467,9 @@ ClearRowNotifiers(Table *tablePtr, Row *rowPtr)
  *
  * ClearColumnNotifiers --
  *
- *	Removes all event handlers set for the designated row.  Note that this
- *	doesn't remove handlers triggered by row or column tags.  Row and
- *	column event notifiers are stored in a chain.
+ *      Removes all event handlers set for the designated row.  Note that this
+ *      doesn't remove handlers triggered by row or column tags.  Row and
+ *      column event notifiers are stored in a chain.
  *
  *---------------------------------------------------------------------------
  */
@@ -1495,18 +1495,18 @@ ClearColumnNotifiers(Table *tablePtr, Column *colPtr)
  *
  * DoNotify --
  *
- *	Traverses the client's list of event callbacks and checks if one
- *	matches the given event.  A client may trigger an action that causes
- *	the itself to be notified again.  This can be prevented by setting the
- *	TABLE_NOTIFY_FOREIGN_ONLY bit in the event handler.
+ *      Traverses the client's list of event callbacks and checks if one
+ *      matches the given event.  A client may trigger an action that causes
+ *      the itself to be notified again.  This can be prevented by setting the
+ *      TABLE_NOTIFY_FOREIGN_ONLY bit in the event handler.
  *
- *	If a matching handler is found, a callback may be called either
- *	immediately or at the next idle time depending upon the
- *	TABLE_NOTIFY_WHENIDLE bit.
+ *      If a matching handler is found, a callback may be called either
+ *      immediately or at the next idle time depending upon the
+ *      TABLE_NOTIFY_WHENIDLE bit.
  *
- *	Since a handler routine may trigger yet another call to itself,
- *	callbacks are ignored while the event handler is executing.
- *	
+ *      Since a handler routine may trigger yet another call to itself,
+ *      callbacks are ignored while the event handler is executing.
+ *      
  *---------------------------------------------------------------------------
  */
 static void
@@ -1526,14 +1526,14 @@ DoNotify(Table *tablePtr, Blt_Chain notifiers,
 
 	notifierPtr = Blt_Chain_GetValue(link);
 	if ((notifierPtr->flags & eventMask) == 0) {
-	    continue;			/* Event type doesn't match */
+	    continue;                   /* Event type doesn't match */
 	}
 	if ((eventPtr->self) && 
 	    (notifierPtr->flags & TABLE_NOTIFY_FOREIGN_ONLY)) {
-	    continue;			/* Don't notify yourself. */
+	    continue;                   /* Don't notify yourself. */
 	}
 	if (notifierPtr->flags & TABLE_NOTIFY_ACTIVE) {
-	    continue;			/* Ignore callbacks that are generated
+	    continue;                   /* Ignore callbacks that are generated
 					 * inside of a notify handler
 					 * routine. */
 	}
@@ -1553,14 +1553,14 @@ DoNotify(Table *tablePtr, Blt_Chain notifiers,
 	} else if ((notifierPtr->flags & TABLE_NOTIFY_ROW) && 
 		   ((notifierPtr->row == NULL) || 
 		    (notifierPtr->row == eventPtr->row))) {
-	    match++;			/* Offsets match. */
+	    match++;                    /* Offsets match. */
 	} else if ((notifierPtr->flags & TABLE_NOTIFY_COLUMN) && 
 		   ((notifierPtr->column == NULL) ||
 		    (notifierPtr->column == eventPtr->column))) {
-	    match++;			/* Offsets match. */
+	    match++;                    /* Offsets match. */
 	}
 	if (!match) {
-	    continue;			/* Row or column doesn't match. */
+	    continue;                   /* Row or column doesn't match. */
 	}
 	if (notifierPtr->flags & TABLE_NOTIFY_WHENIDLE) {
 	    if ((notifierPtr->flags & TABLE_NOTIFY_PENDING) == 0) {
@@ -1589,18 +1589,18 @@ InitNotifyEvent(Table *tablePtr, BLT_TABLE_NOTIFY_EVENT *eventPtr)
  *
  * NotifyClients --
  *
- *	Traverses the list of event callbacks and checks if one matches the
- *	given event.  A client may trigger an action that causes the table
- *	object to notify it.  This can be prevented by setting the
- *	TABLE_NOTIFY_FOREIGN_ONLY bit in the event handler.
+ *      Traverses the list of event callbacks and checks if one matches the
+ *      given event.  A client may trigger an action that causes the table
+ *      object to notify it.  This can be prevented by setting the
+ *      TABLE_NOTIFY_FOREIGN_ONLY bit in the event handler.
  *
- *	If a matching handler is found, a callback may be called either
- *	immediately or at the next idle time depending upon the
- *	TABLE_NOTIFY_WHENIDLE bit.
+ *      If a matching handler is found, a callback may be called either
+ *      immediately or at the next idle time depending upon the
+ *      TABLE_NOTIFY_WHENIDLE bit.
  *
- *	Since a handler routine may trigger yet another call to itself,
- *	callbacks are ignored while the event handler is executing.
- *	
+ *      Since a handler routine may trigger yet another call to itself,
+ *      callbacks are ignored while the event handler is executing.
+ *      
  *---------------------------------------------------------------------------
  */
 static void
@@ -1629,18 +1629,18 @@ NotifyClients(Table *tablePtr, BLT_TABLE_NOTIFY_EVENT *eventPtr)
  *
  * NotifyColumnChanged --
  *
- *	Traverses the list of event callbacks and checks if one matches the
- *	given event.  A client may trigger an action that causes the table
- *	object to notify it.  This can be prevented by setting the
- *	TABLE_NOTIFY_FOREIGN_ONLY bit in the event handler.
+ *      Traverses the list of event callbacks and checks if one matches the
+ *      given event.  A client may trigger an action that causes the table
+ *      object to notify it.  This can be prevented by setting the
+ *      TABLE_NOTIFY_FOREIGN_ONLY bit in the event handler.
  *
- *	If a matching handler is found, a callback may be called either
- *	immediately or at the next idle time depending upon the
- *	TABLE_NOTIFY_WHENIDLE bit.
+ *      If a matching handler is found, a callback may be called either
+ *      immediately or at the next idle time depending upon the
+ *      TABLE_NOTIFY_WHENIDLE bit.
  *
- *	Since a handler routine may trigger yet another call to itself,
- *	callbacks are ignored while the event handler is executing.
- *	
+ *      Since a handler routine may trigger yet another call to itself,
+ *      callbacks are ignored while the event handler is executing.
+ *      
  *---------------------------------------------------------------------------
  */
 static void
@@ -1659,18 +1659,18 @@ NotifyColumnChanged(Table *tablePtr, Column *colPtr, unsigned int flags)
  *
  * NotifyRowChanged --
  *
- *	Traverses the list of event callbacks and checks if one matches the
- *	given event.  A client may trigger an action that causes the table
- *	object to notify it.  This can be prevented by setting the
- *	TABLE_NOTIFY_FOREIGN_ONLY bit in the event handler.
+ *      Traverses the list of event callbacks and checks if one matches the
+ *      given event.  A client may trigger an action that causes the table
+ *      object to notify it.  This can be prevented by setting the
+ *      TABLE_NOTIFY_FOREIGN_ONLY bit in the event handler.
  *
- *	If a matching handler is found, a callback may be called either
- *	immediately or at the next idle time depending upon the
- *	TABLE_NOTIFY_WHENIDLE bit.
+ *      If a matching handler is found, a callback may be called either
+ *      immediately or at the next idle time depending upon the
+ *      TABLE_NOTIFY_WHENIDLE bit.
  *
- *	Since a handler routine may trigger yet another call to itself,
- *	callbacks are ignored while the event handler is executing.
- *	
+ *      Since a handler routine may trigger yet another call to itself,
+ *      callbacks are ignored while the event handler is executing.
+ *      
  *---------------------------------------------------------------------------
  */
 static void
@@ -1689,9 +1689,9 @@ NotifyRowChanged(Table *tablePtr, Row *rowPtr, unsigned int flags)
  *
  * blt_table_clear_row_traces --
  *
- *	Removes all traces set for this row.  Note that this doesn't remove
- *	traces set for specific cells (row,column).  Row traces are stored in
- *	a chain, which in turn is held in a hash table, keyed by the row.
+ *      Removes all traces set for this row.  Note that this doesn't remove
+ *      traces set for specific cells (row,column).  Row traces are stored in
+ *      a chain, which in turn is held in a hash table, keyed by the row.
  *
  *---------------------------------------------------------------------------
  */
@@ -1727,10 +1727,10 @@ blt_table_clear_row_traces(Table *tablePtr, Row *rowPtr)
  *
  * blt_table_clear_column_traces --
  *
- *	Removes all traces set for this column.  Note that this doesn't remove
- *	traces set for specific cells (row,column).  Column traces are stored
- *	in a chain, which in turn is held in a hash table, keyed by the
- *	column.
+ *      Removes all traces set for this column.  Note that this doesn't remove
+ *      traces set for specific cells (row,column).  Column traces are stored
+ *      in a chain, which in turn is held in a hash table, keyed by the
+ *      column.
  *
  *---------------------------------------------------------------------------
  */
@@ -1767,26 +1767,26 @@ blt_table_clear_column_traces(Table *tablePtr, BLT_TABLE_COLUMN column)
  *
  * CallClientTraces --
  *
- *	Examines the traces set for a specific client of the table object and
- *	fires any matching traces.
+ *      Examines the traces set for a specific client of the table object and
+ *      fires any matching traces.
  *
- *	Traces match on row and column tag and indices and flags.
- *	Traces can match on
- *	     flag		type of trace (read, write, unset, create)
- *	     row index
- *	     column index
- *	     row tag
- *	     column tag
+ *      Traces match on row and column tag and indices and flags.
+ *      Traces can match on
+ *           flag               type of trace (read, write, unset, create)
+ *           row index
+ *           column index
+ *           row tag
+ *           column tag
  *
- *	If the TABLE_TRACE_FOREIGN_ONLY is set in the handler, it means to
- *	ignore actions that are initiated by that client of the object.  Only
- *	actions by other clients are handled.
+ *      If the TABLE_TRACE_FOREIGN_ONLY is set in the handler, it means to
+ *      ignore actions that are initiated by that client of the object.  Only
+ *      actions by other clients are handled.
  *
  * Results:
- *	Always returns TCL_OK.
+ *      Always returns TCL_OK.
  *
  * Side Effects:
- *	Traces on the tuple table location may be fired.
+ *      Traces on the tuple table location may be fired.
  *
  *---------------------------------------------------------------------------
  */
@@ -1824,8 +1824,8 @@ CallClientTraces(Table *tablePtr, Table *clientPtr, Row *rowPtr, Column *colPtr,
 	}
 	if (tracePtr->flags & TABLE_TRACE_ACTIVE) {
 	    continue;                   /* Ignore callbacks that were
-                                         * triggered from the active trace
-                                         * handler routine. */
+					 * triggered from the active trace
+					 * handler routine. */
 	}
 	match = 0;
 	if (tracePtr->colTag != NULL) {
@@ -1845,7 +1845,7 @@ CallClientTraces(Table *tablePtr, Table *clientPtr, Row *rowPtr, Column *colPtr,
 	}
 	if (match < 2) {
 	    continue;                   /* Must match both row and
-                                         * column.  */
+					 * column.  */
 	}
 	if (tracePtr->flags & TABLE_TRACE_WHENIDLE) {
 	    if ((tracePtr->flags & TABLE_TRACE_PENDING) == 0) {
@@ -1856,7 +1856,7 @@ CallClientTraces(Table *tablePtr, Table *clientPtr, Row *rowPtr, Column *colPtr,
 	} else {
 	    if (DoTrace(tracePtr, &event) == TCL_BREAK) {
 		return;                 /* Don't complete traces on
-                                         * break. */
+					 * break. */
 	    }
 	}
     }
@@ -1867,27 +1867,27 @@ CallClientTraces(Table *tablePtr, Table *clientPtr, Row *rowPtr, Column *colPtr,
  *
  * CallTraces --
  *
- *	Examines the traces set for each client of the table object and fires
- *	any matching traces.
+ *      Examines the traces set for each client of the table object and fires
+ *      any matching traces.
  *
- *	Traces match on row and column indices and flags.
- *	The order is 
- *	  1. column traces.
- *	  2. row traces.
- *	  3. cell (row,column) traces.
+ *      Traces match on row and column indices and flags.
+ *      The order is 
+ *        1. column traces.
+ *        2. row traces.
+ *        3. cell (row,column) traces.
  *
- *	If no matching criteria is specified (no tag, key, or tuple address)
- *	then only the bit flag has to match.
+ *      If no matching criteria is specified (no tag, key, or tuple address)
+ *      then only the bit flag has to match.
  *
- *	If the TABLE_TRACE_FOREIGN_ONLY is set in the handler, it means to
- *	ignore actions that are initiated by that client of the object.  Only
- *	actions by other clients are handled.
+ *      If the TABLE_TRACE_FOREIGN_ONLY is set in the handler, it means to
+ *      ignore actions that are initiated by that client of the object.  Only
+ *      actions by other clients are handled.
  *
  * Results:
- *	Always returns TCL_OK.
+ *      Always returns TCL_OK.
  *
  * Side Effects:
- *	Traces on the tuple table location may be fired.
+ *      Traces on the tuple table location may be fired.
  *
  *---------------------------------------------------------------------------
  */
@@ -1912,15 +1912,15 @@ CallTraces(Table *tablePtr, Row *rowPtr, Column *colPtr,
  *
  * UnsetValue --
  *
- *	Removes the value from the selected row, column location in the table.
- *	The row, column location must be within the actual table limits, but
- *	it's okay if there isn't a value there to remove.
+ *      Removes the value from the selected row, column location in the table.
+ *      The row, column location must be within the actual table limits, but
+ *      it's okay if there isn't a value there to remove.
  *
  * Results:
- *	None.
+ *      None.
  *
  * Side Effects:
- *	The objPtr representing the value is released.
+ *      The objPtr representing the value is released.
  *
  *---------------------------------------------------------------------------
  */
@@ -2234,11 +2234,11 @@ ReplaceMap(RowColumn *rcPtr, Header **map)
 static int
 MoveIndices(
     RowColumn *rcPtr,
-    Header *srcPtr,		/* Starting source index.  */
-    Header *destPtr,		/* Starting destination index. */
-    long count)			/* # of rows or columns to move. */
+    Header *srcPtr,             /* Starting source index.  */
+    Header *destPtr,            /* Starting destination index. */
+    long count)                 /* # of rows or columns to move. */
 {
-    Header **newMap;		/* Resulting reordered map. */
+    Header **newMap;            /* Resulting reordered map. */
     long src, dest;
 
     if (srcPtr == destPtr) {
@@ -2317,21 +2317,21 @@ MoveIndices(
  *
  * ParseDumpRecord --
  *
- *	Gets the next full record in the dump string, returning the
- *	record as a list. Blank lines and comments are ignored.
+ *      Gets the next full record in the dump string, returning the
+ *      record as a list. Blank lines and comments are ignored.
  *
  * Results: 
- *	TCL_RETURN	The end of the string is reached.
- *	TCL_ERROR	An error occurred and an error message 
- *			is left in the interpreter result.  
- *	TCL_OK		The next record has been successfully parsed.
+ *      TCL_RETURN      The end of the string is reached.
+ *      TCL_ERROR       An error occurred and an error message 
+ *                      is left in the interpreter result.  
+ *      TCL_OK          The next record has been successfully parsed.
  *
  *---------------------------------------------------------------------------
  */
 static int
 ParseDumpRecord(
     Tcl_Interp *interp,
-    char **sp,				/* (in/out) points to current location
+    char **sp,                          /* (in/out) points to current location
 					 * in in dump string. Updated after
 					 * parsing record. */
     RestoreData *restorePtr)
@@ -2351,7 +2351,7 @@ ParseDumpRecord(
 	/* Find the end of the first line. */
 	for (eol = entry; (*eol != '\n') && (*eol != '\0'); eol++) {
 	    if ((first == NULL) && (!isspace(UCHAR(*eol)))) {
-		first = eol;	/* Track first non-whitespace
+		first = eol;    /* Track first non-whitespace
 				 * character. */
 	    }
 	}
@@ -2360,7 +2360,7 @@ ParseDumpRecord(
 		return TCL_RETURN;
 	    }
 	} else if (*first != '#') {
-	    break;		/* Not a comment or blank line. */
+	    break;              /* Not a comment or blank line. */
 	}
 	entry = eol + 1;
     }
@@ -2371,7 +2371,7 @@ ParseDumpRecord(
 	if (*eol == '\0') {
 	    Tcl_AppendResult(interp, "incomplete dump record: \"", entry, 
 		"\"", (char *)NULL);
-	    return TCL_ERROR;		/* Found EOF (incomplete
+	    return TCL_ERROR;           /* Found EOF (incomplete
 					 * entry) or error. */
 	}
 	/* Get the next line. */
@@ -2396,14 +2396,14 @@ ParseDumpRecord(
  *
  * ReadDumpRecord --
  *
- *	Reads the next full record from the given channel, returning the
- *	record as a list. Blank lines and comments are ignored.
+ *      Reads the next full record from the given channel, returning the
+ *      record as a list. Blank lines and comments are ignored.
  *
  * Results: 
- *	TCL_RETURN	The end of the file has been reached.
- *	TCL_ERROR	A read error has occurred and an error message 
- *			is left in the interpreter result.  
- *	TCL_OK		The next record has been successfully parsed.
+ *      TCL_RETURN      The end of the file has been reached.
+ *      TCL_ERROR       A read error has occurred and an error message 
+ *                      is left in the interpreter result.  
+ *      TCL_OK          The next record has been successfully parsed.
  *
  *---------------------------------------------------------------------------
  */
@@ -2434,7 +2434,7 @@ ReadDumpRecord(Tcl_Interp *interp, Tcl_Channel channel, RestoreData *restorePtr)
 	    }
 	}
 	if ((*cp != '\0') && (*cp != '#')) {
-	    break;		/* Not a comment or blank line. */
+	    break;              /* Not a comment or blank line. */
 	}
     }
 
@@ -2448,7 +2448,7 @@ ReadDumpRecord(Tcl_Interp *interp, Tcl_Channel channel, RestoreData *restorePtr)
 	    Tcl_AppendResult(interp, "error reading file: ", 
 			     Tcl_PosixError(interp), (char *)NULL);
 	    Tcl_DStringFree(&ds);
-	    return TCL_ERROR;		/* Found EOF (incomplete
+	    return TCL_ERROR;           /* Found EOF (incomplete
 					 * entry) or error. */
 	}
 	restorePtr->numLines++;
@@ -2485,7 +2485,7 @@ RestoreHeader(Tcl_Interp *interp, BLT_TABLE table, RestoreData *restorePtr)
 	Tcl_AppendResult(interp, "wrong # of elements in restore header.", 
 		(char *)NULL);
 	return TCL_ERROR;
-    }	
+    }   
     if (Blt_GetLong(interp, restorePtr->argv[1], &count) != TCL_OK) {
 	RestoreError(interp, restorePtr);
 	return TCL_ERROR;
@@ -2563,7 +2563,7 @@ RestoreColumn(Tcl_Interp *interp, BLT_TABLE table, RestoreData *restorePtr)
 	Tcl_AppendResult(interp, "wrong # elements in restore column entry", 
 		(char *)NULL);
 	return TCL_ERROR;
-    }	
+    }   
     if (Blt_GetLong(interp, restorePtr->argv[1], &index) != TCL_OK) {
 	RestoreError(interp, restorePtr);
 	return TCL_ERROR;
@@ -2636,7 +2636,7 @@ RestoreRow(Tcl_Interp *interp, BLT_TABLE table, RestoreData *restorePtr)
 	Tcl_AppendResult(interp, "wrong # of elements in restore row entry", 
 			 (char *)NULL);
 	return TCL_ERROR;
-    }	
+    }   
     if (Blt_GetLong(interp, restorePtr->argv[1], &index) != TCL_OK) {
 	RestoreError(interp, restorePtr);
 	return TCL_ERROR;
@@ -2695,7 +2695,7 @@ RestoreValue(Tcl_Interp *interp, BLT_TABLE table, RestoreData *restorePtr)
 	Tcl_AppendResult(interp, "wrong # elements in restore data entry", 
 		(char *)NULL);
 	return TCL_ERROR;
-    }	
+    }   
     if (Blt_GetLong(interp, restorePtr->argv[1], &index) != TCL_OK) {
 	RestoreError(interp, restorePtr);
 	return TCL_ERROR;
@@ -2830,11 +2830,11 @@ blt_table_row_spec(BLT_TABLE table, Tcl_Obj *objPtr, const char **sp)
 	*sp = string + 4;
 	return TABLE_SPEC_TAG;
     } else if (blt_table_get_row_by_label(table, string) != NULL) {
-        Blt_HashTable *tablePtr;
+	Blt_HashTable *tablePtr;
 
 	tablePtr = blt_table_row_get_label_table(table, string);
-        if (tablePtr->numEntries > 1) {
-            return TABLE_SPEC_LABELS;
+	if (tablePtr->numEntries > 1) {
+	    return TABLE_SPEC_LABELS;
 	}
 	return TABLE_SPEC_LABEL;
     } else if (blt_table_get_tagged_rows(table, string) != NULL) {
@@ -2848,7 +2848,7 @@ blt_table_row_spec(BLT_TABLE table, Tcl_Obj *objPtr, const char **sp)
 	rangeObjPtr = Tcl_NewStringObj(string, p - string);
 	row = blt_table_get_row((Tcl_Interp *)NULL, table, rangeObjPtr);
 	Tcl_DecrRefCount(rangeObjPtr);
-        if (row != NULL) {
+	if (row != NULL) {
 	    rangeObjPtr = Tcl_NewStringObj(p + 1, -1);
 	    row = blt_table_get_row((Tcl_Interp *)NULL, table, rangeObjPtr);
 	    Tcl_DecrRefCount(rangeObjPtr);
@@ -2907,13 +2907,13 @@ blt_table_next_row(Table *tablePtr, Row *rowPtr)
  *
  * blt_table_iterate_row --
  *
- *	Returns the id of the first row derived from the given tag,
- *	label or index represented in objPtr.  
+ *      Returns the id of the first row derived from the given tag,
+ *      label or index represented in objPtr.  
  *
  * Results:
- *	Returns the row location of the first item.  If no row 
- *	can be found, then -1 is returned and an error message is
- *	left in the interpreter.
+ *      Returns the row location of the first item.  If no row 
+ *      can be found, then -1 is returned and an error message is
+ *      left in the interpreter.
  *
  *---------------------------------------------------------------------------
  */
@@ -2955,7 +2955,7 @@ blt_table_iterate_row(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr,
 			Tcl_GetString(objPtr), "\"", (char *)NULL);
 	    }
 	    return TCL_ERROR;
-	}		
+	}               
 	iterPtr->start = index;
 	iterPtr->end = iterPtr->start + 1;
 	iterPtr->tag = tag;
@@ -2963,8 +2963,8 @@ blt_table_iterate_row(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr,
 	return TCL_OK;
 
     case TABLE_SPEC_LABEL:
-        from = blt_table_get_row_by_label(table, tag);
-        index = blt_table_row_index(from);
+	from = blt_table_get_row_by_label(table, tag);
+	index = blt_table_row_index(from);
 	iterPtr->start = index;
 	iterPtr->end = index + 1;
 	iterPtr->numEntries = 1;
@@ -2996,12 +2996,12 @@ blt_table_iterate_row(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr,
 	    iterPtr->start = iterPtr->end - 1;
 	    iterPtr->numEntries = 1;
 	} else {
-            Blt_Chain chain;
+	    Blt_Chain chain;
 
-            chain = blt_table_get_tagged_rows(iterPtr->table, tag);
-            if (chain == NULL) {
-                return TCL_OK;
-            }
+	    chain = blt_table_get_tagged_rows(iterPtr->table, tag);
+	    if (chain == NULL) {
+		return TCL_OK;
+	    }
 	    iterPtr->link = Blt_Chain_FirstLink(chain);
 	    iterPtr->type = TABLE_ITERATOR_TAG;
 	    iterPtr->tag = tag;
@@ -3021,13 +3021,13 @@ blt_table_iterate_row(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr,
 	rangeObjPtr = Tcl_NewStringObj(tag, p - tag);
 	from = blt_table_get_row(interp, table, rangeObjPtr);
 	Tcl_DecrRefCount(rangeObjPtr);
-        if (from == NULL) {
+	if (from == NULL) {
 	    return TCL_ERROR;
 	}
 	rangeObjPtr = Tcl_NewStringObj(p + 1, -1);
 	to = blt_table_get_row(interp, table, rangeObjPtr);
 	Tcl_DecrRefCount(rangeObjPtr);
-        if (to == NULL) {
+	if (to == NULL) {
 	    return TCL_ERROR;
 	}
 	iterPtr->start = blt_table_row_index(from);
@@ -3053,11 +3053,11 @@ blt_table_iterate_row(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr,
  *
  * blt_table_first_tagged_row --
  *
- *	Returns the id of the next row derived from the given tag.
+ *      Returns the id of the next row derived from the given tag.
  *
  * Results:
- *	Returns the row location of the first item.  If no more rows
- *	can be found, then -1 is returned.
+ *      Returns the row location of the first item.  If no more rows
+ *      can be found, then -1 is returned.
  *
  *---------------------------------------------------------------------------
  */
@@ -3070,29 +3070,29 @@ blt_table_first_tagged_row(BLT_TABLE_ITERATOR *iterPtr)
     case TABLE_ITERATOR_TAG:
     case TABLE_ITERATOR_CHAIN:
 	if (iterPtr->link != NULL) {
-            row = Blt_Chain_GetValue(iterPtr->link);
-            iterPtr->link = Blt_Chain_NextLink(iterPtr->link);
-            return row;
-        }
-        break;
+	    row = Blt_Chain_GetValue(iterPtr->link);
+	    iterPtr->link = Blt_Chain_NextLink(iterPtr->link);
+	    return row;
+	}
+	break;
     case TABLE_ITERATOR_LABEL:
-        {
-            Blt_HashEntry *hPtr;
-            
-            hPtr = Blt_FirstHashEntry(iterPtr->tablePtr, &iterPtr->cursor);
-            if (hPtr == NULL) {
-                return NULL;
-            }
-            return Blt_GetHashValue(hPtr);
-        }
-        break;
+	{
+	    Blt_HashEntry *hPtr;
+	    
+	    hPtr = Blt_FirstHashEntry(iterPtr->tablePtr, &iterPtr->cursor);
+	    if (hPtr == NULL) {
+		return NULL;
+	    }
+	    return Blt_GetHashValue(hPtr);
+	}
+	break;
 
     default:
-        if (iterPtr->start < iterPtr->end) {
-            row = blt_table_row(iterPtr->table, iterPtr->start);
-            iterPtr->next = iterPtr->start + 1;
-            return row;
-        } 
+	if (iterPtr->start < iterPtr->end) {
+	    row = blt_table_row(iterPtr->table, iterPtr->start);
+	    iterPtr->next = iterPtr->start + 1;
+	    return row;
+	} 
     }
     return NULL;
 }
@@ -3102,11 +3102,11 @@ blt_table_first_tagged_row(BLT_TABLE_ITERATOR *iterPtr)
  *
  * blt_table_next_tagged_row --
  *
- *	Returns the id of the next row derived from the given tag.
+ *      Returns the id of the next row derived from the given tag.
  *
  * Results:
- *	Returns the row location of the first item.  If no more rows
- *	can be found, then -1 is returned.
+ *      Returns the row location of the first item.  If no more rows
+ *      can be found, then -1 is returned.
  *
  *---------------------------------------------------------------------------
  */
@@ -3114,33 +3114,33 @@ BLT_TABLE_ROW
 blt_table_next_tagged_row(BLT_TABLE_ITERATOR *iterPtr)
 {
     BLT_TABLE_ROW row;
-            
+	    
     switch (iterPtr->type) {
     case TABLE_ITERATOR_CHAIN:
     case TABLE_ITERATOR_TAG:
 	if (iterPtr->link != NULL) {
-            row = Blt_Chain_GetValue(iterPtr->link);
-            iterPtr->link = Blt_Chain_NextLink(iterPtr->link);
-            return row;
-        }
-        break;
-    case TABLE_ITERATOR_LABEL:
-        {
-            Blt_HashEntry *hPtr;
-
-            hPtr = Blt_NextHashEntry(&iterPtr->cursor); 
-            if (hPtr == NULL) {
-                return NULL;
-            }
-            return Blt_GetHashValue(hPtr);
+	    row = Blt_Chain_GetValue(iterPtr->link);
+	    iterPtr->link = Blt_Chain_NextLink(iterPtr->link);
+	    return row;
 	}
-        break;
+	break;
+    case TABLE_ITERATOR_LABEL:
+	{
+	    Blt_HashEntry *hPtr;
+
+	    hPtr = Blt_NextHashEntry(&iterPtr->cursor); 
+	    if (hPtr == NULL) {
+		return NULL;
+	    }
+	    return Blt_GetHashValue(hPtr);
+	}
+	break;
     default:
-        if (iterPtr->next < iterPtr->end) {
-            row = blt_table_row(iterPtr->table, iterPtr->next);
-            iterPtr->next++;
-            return row;
-        }	
+	if (iterPtr->next < iterPtr->end) {
+	    row = blt_table_row(iterPtr->table, iterPtr->next);
+	    iterPtr->next++;
+	    return row;
+	}       
     }
     return NULL;
 }
@@ -3150,11 +3150,11 @@ blt_table_next_tagged_row(BLT_TABLE_ITERATOR *iterPtr)
  *
  * blt_table_get_row --
  *
- *	Gets the row offset associated the given row index, tag, or
- *	label.  This routine is used when you want only one row index.
- *	It's an error if more than one row is specified (e.g. "all"
- *	tag or range "1-4").  It's also an error if the row tag is
- *	empty (no rows are currently tagged).
+ *      Gets the row offset associated the given row index, tag, or
+ *      label.  This routine is used when you want only one row index.
+ *      It's an error if more than one row is specified (e.g. "all"
+ *      tag or range "1-4").  It's also an error if the row tag is
+ *      empty (no rows are currently tagged).
  *
  *---------------------------------------------------------------------------
  */
@@ -3230,7 +3230,7 @@ blt_table_column_spec(BLT_TABLE table, Tcl_Obj *objPtr, const char **sp)
 	Tcl_IncrRefCount(objPtr);
 	col = blt_table_get_column(NULL, table, objPtr);
 	Tcl_DecrRefCount(objPtr);
-        if (col != NULL) {
+	if (col != NULL) {
 	    objPtr = Tcl_NewStringObj(p + 1, -1);
 	    col = blt_table_get_column(NULL, table, objPtr);
 	    Tcl_DecrRefCount(objPtr);
@@ -3247,13 +3247,13 @@ blt_table_column_spec(BLT_TABLE table, Tcl_Obj *objPtr, const char **sp)
  *
  * blt_table_iterate_column --
  *
- *	Returns the id of the first column derived from the given tag,
- *	label or index represented in objPtr.  
+ *      Returns the id of the first column derived from the given tag,
+ *      label or index represented in objPtr.  
  *
  * Results:
- *	Returns the column location of the first item.  If no column 
- *	can be found, then -1 is returned and an error message is
- *	left in the interpreter.
+ *      Returns the column location of the first item.  If no column 
+ *      can be found, then -1 is returned and an error message is
+ *      left in the interpreter.
  *
  *---------------------------------------------------------------------------
  */
@@ -3294,7 +3294,7 @@ blt_table_iterate_column(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr,
 			Tcl_GetString(objPtr), "\"", (char *)NULL);
 	    }
 	    return TCL_ERROR;
-	}		
+	}               
 	iterPtr->start = index;
 	iterPtr->end = iterPtr->start + 1;
 	iterPtr->tag = tag;
@@ -3327,9 +3327,9 @@ blt_table_iterate_column(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr,
 	    iterPtr->end = iterPtr->start + 1;
 	    iterPtr->numEntries = 1;
 	} else {
-            Blt_Chain chain;
+	    Blt_Chain chain;
 
-            chain = blt_table_get_tagged_columns(iterPtr->table, tag);
+	    chain = blt_table_get_tagged_columns(iterPtr->table, tag);
 	    if (chain == NULL) {
 		return TCL_OK;
 	    }
@@ -3352,13 +3352,13 @@ blt_table_iterate_column(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr,
 	fromObjPtr = Tcl_NewStringObj(tag, p - tag);
 	from = blt_table_get_column(interp, table, fromObjPtr);
 	Tcl_DecrRefCount(fromObjPtr);
-        if (from == NULL) {
+	if (from == NULL) {
 	    return TCL_ERROR;
 	}
 	toObjPtr = Tcl_NewStringObj(p + 1, -1);
 	to = blt_table_get_column(interp, table, toObjPtr);
 	Tcl_DecrRefCount(toObjPtr);
-        if (to == NULL) {
+	if (to == NULL) {
 	    return TCL_ERROR;
 	}
 	iterPtr->start = blt_table_column_index(from);
@@ -3382,11 +3382,11 @@ blt_table_iterate_column(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr,
  *
  * blt_table_first_tagged_column --
  *
- *	Returns the first column based upon given iterator.
+ *      Returns the first column based upon given iterator.
  *
  * Results:
- *	Returns the column location of the first item.  If no more columns
- *	can be found, then -1 is returned.
+ *      Returns the column location of the first item.  If no more columns
+ *      can be found, then -1 is returned.
  *
  *---------------------------------------------------------------------------
  */
@@ -3399,29 +3399,29 @@ blt_table_first_tagged_column(BLT_TABLE_ITERATOR *iterPtr)
     case TABLE_ITERATOR_TAG:
     case TABLE_ITERATOR_CHAIN:
 	if (iterPtr->link != NULL) {
-            col = Blt_Chain_GetValue(iterPtr->link);
-            iterPtr->link = Blt_Chain_NextLink(iterPtr->link);
-            return col;
-        }
-        break;
+	    col = Blt_Chain_GetValue(iterPtr->link);
+	    iterPtr->link = Blt_Chain_NextLink(iterPtr->link);
+	    return col;
+	}
+	break;
     case TABLE_ITERATOR_LABEL:
-        {
-            Blt_HashEntry *hPtr;
-            
-            hPtr = Blt_FirstHashEntry(iterPtr->tablePtr, &iterPtr->cursor);
-            if (hPtr == NULL) {
-                return NULL;
-            }
-            return Blt_GetHashValue(hPtr);
-        }
-        break;
+	{
+	    Blt_HashEntry *hPtr;
+	    
+	    hPtr = Blt_FirstHashEntry(iterPtr->tablePtr, &iterPtr->cursor);
+	    if (hPtr == NULL) {
+		return NULL;
+	    }
+	    return Blt_GetHashValue(hPtr);
+	}
+	break;
     default:
-        if (iterPtr->start < iterPtr->end) {
-            col = blt_table_column(iterPtr->table, iterPtr->start);
-            iterPtr->next = iterPtr->start + 1;
-            return col;
-        } 
-        break;
+	if (iterPtr->start < iterPtr->end) {
+	    col = blt_table_column(iterPtr->table, iterPtr->start);
+	    iterPtr->next = iterPtr->start + 1;
+	    return col;
+	} 
+	break;
     }
     return NULL;
 }
@@ -3431,12 +3431,12 @@ blt_table_first_tagged_column(BLT_TABLE_ITERATOR *iterPtr)
  *
  * blt_table_next_tagged_column --
  *
- *	Returns the column location of the next column using the given
- *	iterator.
+ *      Returns the column location of the next column using the given
+ *      iterator.
  *
  * Results:
- *	Returns the column location of the next item.  If no more columns can
- *	be found, then -1 is returned.
+ *      Returns the column location of the next item.  If no more columns can
+ *      be found, then -1 is returned.
  *
  *---------------------------------------------------------------------------
  */
@@ -3444,34 +3444,34 @@ BLT_TABLE_COLUMN
 blt_table_next_tagged_column(BLT_TABLE_ITERATOR *iterPtr)
 {
     BLT_TABLE_COLUMN col;
-            
+	    
     switch (iterPtr->type) {
     case TABLE_ITERATOR_TAG:
     case TABLE_ITERATOR_CHAIN:
 	if (iterPtr->link != NULL) {
-            col = Blt_Chain_GetValue(iterPtr->link);
-            iterPtr->link = Blt_Chain_NextLink(iterPtr->link);
-            return col;
-        }
-        break;
-    case TABLE_ITERATOR_LABEL:
-        {
-            Blt_HashEntry *hPtr;
-
-            hPtr = Blt_NextHashEntry(&iterPtr->cursor); 
-            if (hPtr == NULL) {
-                return NULL;
-            }
-            return Blt_GetHashValue(hPtr);
+	    col = Blt_Chain_GetValue(iterPtr->link);
+	    iterPtr->link = Blt_Chain_NextLink(iterPtr->link);
+	    return col;
 	}
-        break;
+	break;
+    case TABLE_ITERATOR_LABEL:
+	{
+	    Blt_HashEntry *hPtr;
+
+	    hPtr = Blt_NextHashEntry(&iterPtr->cursor); 
+	    if (hPtr == NULL) {
+		return NULL;
+	    }
+	    return Blt_GetHashValue(hPtr);
+	}
+	break;
     default:
-        if (iterPtr->next < iterPtr->end) {
-            col = blt_table_column(iterPtr->table, iterPtr->next);
-            iterPtr->next++;
-            return col;
-        }	
-        break;
+	if (iterPtr->next < iterPtr->end) {
+	    col = blt_table_column(iterPtr->table, iterPtr->next);
+	    iterPtr->next++;
+	    return col;
+	}       
+	break;
     }
     return NULL;
 }
@@ -3678,10 +3678,10 @@ blt_table_free_iterator_objv(BLT_TABLE_ITERATOR *iterPtr)
  *
  * FreeTrace --
  *
- *	Memory is deallocated for the trace.
+ *      Memory is deallocated for the trace.
  *
  * Results:
- *	None.
+ *      None.
  *
  *---------------------------------------------------------------------------
  */
@@ -3702,13 +3702,13 @@ FreeTrace(Trace *tracePtr)
  *
  * blt_table_delete_trace --
  *
- *	Deletes a trace.
+ *      Deletes a trace.
  *
  * Results:
- *	None.
+ *      None.
  *
  * Side Effects:
- *	Memory is deallocated for the trace.
+ *      Memory is deallocated for the trace.
  *
  *---------------------------------------------------------------------------
  */
@@ -3719,7 +3719,7 @@ blt_table_delete_trace(Table *tablePtr, Trace *tracePtr)
 
     hPtr = Blt_FindHashEntry(&tablePtr->traces, tracePtr);
     if (hPtr == NULL) {
-	return;				/* Invalid trace token. */
+	return;                         /* Invalid trace token. */
     }
     Blt_DeleteHashEntry(&tablePtr->traces, hPtr);
     if ((tracePtr->flags & TABLE_TRACE_DESTROYED) == 0) {
@@ -3743,7 +3743,7 @@ blt_table_delete_trace(Table *tablePtr, Trace *tracePtr)
 	    Blt_Chain_DeleteLink(tablePtr->writeTraces, tracePtr->writeLink);
 	    tracePtr->writeLink = NULL;
 	}
-	tracePtr->flags = TABLE_TRACE_DESTROYED;	
+	tracePtr->flags = TABLE_TRACE_DESTROYED;        
 	Tcl_EventuallyFree(tracePtr, (Tcl_FreeProc *)FreeTrace);
     }
 }
@@ -3753,36 +3753,36 @@ blt_table_delete_trace(Table *tablePtr, Trace *tracePtr)
  *
  * blt_table_create_trace --
  *
- *	Creates a trace for one or more rows/columns in the table based
- *	upon the given criteria.  Whenever a matching action occurs in the
- *	table object, the specified procedure is executed.
+ *      Creates a trace for one or more rows/columns in the table based
+ *      upon the given criteria.  Whenever a matching action occurs in the
+ *      table object, the specified procedure is executed.
  *
- *	The trace may be put into 1 or 2 callback lists: one for read
- *	traces and another for write, create, and/or unset traces.  This is
- *	done to improve performance on reads.  We only examine the list of
- *	read traces, which in most cases will me empty.
+ *      The trace may be put into 1 or 2 callback lists: one for read
+ *      traces and another for write, create, and/or unset traces.  This is
+ *      done to improve performance on reads.  We only examine the list of
+ *      read traces, which in most cases will me empty.
  *
  * Results:
- *	Returns a token for the trace.
+ *      Returns a token for the trace.
  *
  * Side Effects:
- *	Memory is allocated for the trace.
+ *      Memory is allocated for the trace.
  *
  *---------------------------------------------------------------------------
  */
 BLT_TABLE_TRACE
 blt_table_create_trace(
-    Table *tablePtr,			/* Table to be traced. */
+    Table *tablePtr,                    /* Table to be traced. */
     Row *rowPtr, 
-    Column *colPtr,			/* Cell in table. */
+    Column *colPtr,                     /* Cell in table. */
     const char *rowTag, 
     const char *colTag,
-    unsigned int flags,			/* Bit mask indicating what actions
+    unsigned int flags,                 /* Bit mask indicating what actions
 					 * to trace. */
-    BLT_TABLE_TRACE_PROC *proc,	        /* Callback procedure for the
-                                         * trace. */
+    BLT_TABLE_TRACE_PROC *proc,         /* Callback procedure for the
+					 * trace. */
     BLT_TABLE_TRACE_DELETE_PROC *deleteProc, 
-    ClientData clientData)		/* One-word of data passed along
+    ClientData clientData)              /* One-word of data passed along
 					 * when the callback is
 					 * executed. */
 {
@@ -3822,14 +3822,14 @@ blt_table_create_trace(
 
 void
 blt_table_trace_column(
-    Table *tablePtr,			/* Table to be traced. */
-    Column *colPtr,			/* Cell in table. */
-    unsigned int flags,			/* Bit mask indicating what actions
+    Table *tablePtr,                    /* Table to be traced. */
+    Column *colPtr,                     /* Cell in table. */
+    unsigned int flags,                 /* Bit mask indicating what actions
 					 * to trace. */
-    BLT_TABLE_TRACE_PROC *proc,	       /* Callback procedure for the
-                                        * trace. */
+    BLT_TABLE_TRACE_PROC *proc,        /* Callback procedure for the
+					* trace. */
     BLT_TABLE_TRACE_DELETE_PROC *deleteProc, 
-    ClientData clientData)		/* One-word of data passed along
+    ClientData clientData)              /* One-word of data passed along
 					 * when the callback is
 					 * executed. */
 {
@@ -3839,14 +3839,14 @@ blt_table_trace_column(
 
 BLT_TABLE_TRACE
 blt_table_create_column_trace(
-    Table *tablePtr,			/* Table to be traced. */
-    Column *colPtr,			/* Cell in table. */
-    unsigned int flags,			/* Bit mask indicating what actions
+    Table *tablePtr,                    /* Table to be traced. */
+    Column *colPtr,                     /* Cell in table. */
+    unsigned int flags,                 /* Bit mask indicating what actions
 					 * to trace. */
-    BLT_TABLE_TRACE_PROC *proc,	        /* Callback procedure for the
-                                         * trace. */
+    BLT_TABLE_TRACE_PROC *proc,         /* Callback procedure for the
+					 * trace. */
     BLT_TABLE_TRACE_DELETE_PROC *deleteProc, 
-    ClientData clientData)		/* One-word of data passed along
+    ClientData clientData)              /* One-word of data passed along
 					 * when the callback is
 					 * executed. */
 {
@@ -3856,14 +3856,14 @@ blt_table_create_column_trace(
 
 BLT_TABLE_TRACE
 blt_table_create_column_tag_trace(
-    Table *tablePtr,			/* Table to be traced. */
-    const char *colTag,			/* Cell in table. */
-    unsigned int flags,			/* Bit mask indicating what actions
+    Table *tablePtr,                    /* Table to be traced. */
+    const char *colTag,                 /* Cell in table. */
+    unsigned int flags,                 /* Bit mask indicating what actions
 					 * to trace. */
-    BLT_TABLE_TRACE_PROC *proc,	        /* Callback procedure for the
-                                         * trace. */
+    BLT_TABLE_TRACE_PROC *proc,         /* Callback procedure for the
+					 * trace. */
     BLT_TABLE_TRACE_DELETE_PROC *deleteProc, 
-    ClientData clientData)		/* One-word of data passed along
+    ClientData clientData)              /* One-word of data passed along
 					 * when the callback is
 					 * executed. */
 {
@@ -3873,37 +3873,37 @@ blt_table_create_column_tag_trace(
 
 void
 blt_table_trace_row(
-    Table *tablePtr,			/* Table to be traced. */
-    Row *rowPtr,			/* Cell in table. */
-    unsigned int flags,			/* Bit mask indicating what actions to
+    Table *tablePtr,                    /* Table to be traced. */
+    Row *rowPtr,                        /* Cell in table. */
+    unsigned int flags,                 /* Bit mask indicating what actions to
 					 * trace. */
-    BLT_TABLE_TRACE_PROC *proc,	        /* Callback procedure for the
+    BLT_TABLE_TRACE_PROC *proc,         /* Callback procedure for the
 					 * trace. */
     BLT_TABLE_TRACE_DELETE_PROC *deleteProc, 
-    ClientData clientData)		/* One-word of data passed along when
+    ClientData clientData)              /* One-word of data passed along when
 					 * the callback is executed. */
 {
     blt_table_create_trace(tablePtr, 
-	rowPtr, 			/* Row */
-	(BLT_TABLE_COLUMN)NULL, 	/* Column */
-	(const char *)NULL, 		/* Row tag. */
-	(const char *)NULL, 		/* Column tag. */
-	flags,				/* Flags. */
-	proc, 				/* Callback procedure. */
-	deleteProc, 			/* Delete callback procedure. */
-	clientData);			/* Data passed to callbacks. */
+	rowPtr,                         /* Row */
+	(BLT_TABLE_COLUMN)NULL,         /* Column */
+	(const char *)NULL,             /* Row tag. */
+	(const char *)NULL,             /* Column tag. */
+	flags,                          /* Flags. */
+	proc,                           /* Callback procedure. */
+	deleteProc,                     /* Delete callback procedure. */
+	clientData);                    /* Data passed to callbacks. */
 }
 
 BLT_TABLE_TRACE
 blt_table_create_row_trace(
-    Table *tablePtr,			/* Table to be traced. */
-    Row *rowPtr,			/* Cell in table. */
-    unsigned int flags,			/* Bit mask indicating what actions to
+    Table *tablePtr,                    /* Table to be traced. */
+    Row *rowPtr,                        /* Cell in table. */
+    unsigned int flags,                 /* Bit mask indicating what actions to
 					 * trace. */
-    BLT_TABLE_TRACE_PROC *proc,	        /* Callback procedure for the
+    BLT_TABLE_TRACE_PROC *proc,         /* Callback procedure for the
 					 * trace. */
     BLT_TABLE_TRACE_DELETE_PROC *deleteProc, 
-    ClientData clientData)		/* One-word of data passed along when
+    ClientData clientData)              /* One-word of data passed along when
 					 * the callback is executed. */
 {
     return blt_table_create_trace(tablePtr, 
@@ -3919,13 +3919,13 @@ blt_table_create_row_trace(
 
 BLT_TABLE_TRACE
 blt_table_create_row_tag_trace(
-    Table *tablePtr,			/* Table to be traced. */
-    const char *rowTag,			/* Cell in table. */
-    unsigned int flags,			/* Bit mask indicating what actions to
+    Table *tablePtr,                    /* Table to be traced. */
+    const char *rowTag,                 /* Cell in table. */
+    unsigned int flags,                 /* Bit mask indicating what actions to
 					 * trace. */
-    BLT_TABLE_TRACE_PROC *proc,	        /* Callback procedure for the trace. */
+    BLT_TABLE_TRACE_PROC *proc,         /* Callback procedure for the trace. */
     BLT_TABLE_TRACE_DELETE_PROC *deleteProc, 
-    ClientData clientData)		/* One-word of data passed along when
+    ClientData clientData)              /* One-word of data passed along when
 					 * the callback is executed. */
 {
     return blt_table_create_trace(tablePtr, NULL, NULL, rowTag, NULL, flags,
@@ -3937,13 +3937,13 @@ blt_table_create_row_tag_trace(
  *
  * blt_table_release_tags --
  *
- *	Releases the tag table used by this client.  
+ *      Releases the tag table used by this client.  
  *
  * Results:
- *	None.
+ *      None.
  *
  * Side Effects:
- *	If no client is using the table, then it is freed.
+ *      If no client is using the table, then it is freed.
  *
  *---------------------------------------------------------------------------
  */
@@ -3955,9 +3955,9 @@ blt_table_release_tags(Table *tablePtr)
     tagsPtr = tablePtr->tags;
     tagsPtr->refCount--;
     if (tagsPtr->refCount <= 0) {
-        Blt_Tags_Reset(&tagsPtr->rowTags);
+	Blt_Tags_Reset(&tagsPtr->rowTags);
 	tablePtr->rowTags = NULL;
-        Blt_Tags_Reset(&tagsPtr->columnTags);
+	Blt_Tags_Reset(&tagsPtr->columnTags);
 	tablePtr->columnTags = NULL;
 	Blt_Free(tagsPtr);
     }
@@ -3968,11 +3968,11 @@ blt_table_release_tags(Table *tablePtr)
  *
  * blt_table_tags_are_shared --
  *
- *	Returns whether the tag table is shared with another client.
+ *      Returns whether the tag table is shared with another client.
  *
  * Results:
- *	Returns TRUE if the current tag table is shared with another
- *	client, FALSE otherwise.
+ *      Returns TRUE if the current tag table is shared with another
+ *      client, FALSE otherwise.
  *
  *---------------------------------------------------------------------------
  */
@@ -3987,15 +3987,15 @@ blt_table_tags_are_shared(Table *tablePtr)
  *
  * blt_table_new_tags --
  *
- *	Releases the old tag table (if it exists) and creates a new empty
- *	tag table.  
+ *      Releases the old tag table (if it exists) and creates a new empty
+ *      tag table.  
  *
  * Results:
- *	None.
+ *      None.
  *
  * Side Effects:
- *	Possible frees memory for the old tag table (if no one else is 
- *	using it) and resets the pointers to the new tag tables.
+ *      Possible frees memory for the old tag table (if no one else is 
+ *      using it) and resets the pointers to the new tag tables.
  *
  *---------------------------------------------------------------------------
  */
@@ -4015,24 +4015,24 @@ blt_table_new_tags(Table *tablePtr)
  *
  * blt_table_forget_row_tag --
  *
- *	Removes a tag from the row tag table.  Row tags are contained in
- *	hash tables keyed by the tag name.  Each table is in turn hashed by
- *	the row index in the row tag table.
+ *      Removes a tag from the row tag table.  Row tags are contained in
+ *      hash tables keyed by the tag name.  Each table is in turn hashed by
+ *      the row index in the row tag table.
  *
  * Results:
- *	None.
+ *      None.
  *
  * Side Effects:
- *	Entries for the given tag in the corresponding row in hash tables may
- *	be removed.
- *	
+ *      Entries for the given tag in the corresponding row in hash tables may
+ *      be removed.
+ *      
  *---------------------------------------------------------------------------
  */
 int
 blt_table_forget_row_tag(Tcl_Interp *interp, Table *tablePtr, const char *tag)
 {
     if ((strcmp(tag, "all") == 0) || (strcmp(tag, "end") == 0)) {
-	return TCL_OK;			/* Can't forget reserved tags. */
+	return TCL_OK;                  /* Can't forget reserved tags. */
     }
     Blt_Tags_ForgetTag(tablePtr->rowTags, tag);
     return TCL_OK;
@@ -4043,25 +4043,25 @@ blt_table_forget_row_tag(Tcl_Interp *interp, Table *tablePtr, const char *tag)
  *
  * blt_table_forget_column_tag --
  *
- *	Removes a tag from the column tag table.  Column tags are contained
- *	in hash tables keyed by the tag name.  Each table is in turn hashed
- *	by the column offset in the column tag table.
+ *      Removes a tag from the column tag table.  Column tags are contained
+ *      in hash tables keyed by the tag name.  Each table is in turn hashed
+ *      by the column offset in the column tag table.
  *
  * Results:
- *	None.
+ *      None.
  *
  * Side Effects:
- *	Entries for the given tag in the corresponding column in hash tables
- *	may be removed.
- *	
+ *      Entries for the given tag in the corresponding column in hash tables
+ *      may be removed.
+ *      
  *---------------------------------------------------------------------------
  */
 int
 blt_table_forget_column_tag(Tcl_Interp *interp, Table *tablePtr, 
-                            const char *tag)
+			    const char *tag)
 {
     if ((strcmp(tag, "all") == 0) || (strcmp(tag, "end") == 0)) {
-	return TCL_OK;			/* Can't forget reserved tags. */
+	return TCL_OK;                  /* Can't forget reserved tags. */
     }
     Blt_Tags_ForgetTag(tablePtr->columnTags, tag);
     return TCL_OK;
@@ -4072,16 +4072,16 @@ blt_table_forget_column_tag(Tcl_Interp *interp, Table *tablePtr,
  *
  * blt_table_set_row_tag --
  *
- *	Associates a tag with a given row.  Individual row tags are stored
- *	in hash tables keyed by the tag name.  Each table is in turn stored
- *	in a hash table keyed by the row location. If the row is NULL, this 
+ *      Associates a tag with a given row.  Individual row tags are stored
+ *      in hash tables keyed by the tag name.  Each table is in turn stored
+ *      in a hash table keyed by the row location. If the row is NULL, this 
  *      indicates to simply create the tag entry.
  *
  * Results:
- *	None.
+ *      None.
  *
  * Side Effects:
- *	A tag is stored for a particular row.
+ *      A tag is stored for a particular row.
  *
  *---------------------------------------------------------------------------
  */
@@ -4092,7 +4092,7 @@ blt_table_set_row_tag(Tcl_Interp *interp, Table *tablePtr, Row *rowPtr,
     long dummy;
 
     if ((strcmp(tag, "all") == 0) || (strcmp(tag, "end") == 0)) {
-	return TCL_OK;		/* Don't need to create reserved tags. */
+	return TCL_OK;          /* Don't need to create reserved tags. */
     }
     if (tag[0] == '\0') {
 	if (interp != NULL) {
@@ -4104,7 +4104,7 @@ blt_table_set_row_tag(Tcl_Interp *interp, Table *tablePtr, Row *rowPtr,
     if (tag[0] == '-') {
 	if (interp != NULL) {
 	    Tcl_AppendResult(interp, "tag \"", tag, 
-                "\" can't start with a '-'.", (char *)NULL);
+		"\" can't start with a '-'.", (char *)NULL);
 	}
 	return TCL_ERROR;
     }
@@ -4116,9 +4116,9 @@ blt_table_set_row_tag(Tcl_Interp *interp, Table *tablePtr, Row *rowPtr,
 	return TCL_ERROR;
     }
     if (rowPtr == NULL) {
-        Blt_Tags_AddTag(tablePtr->rowTags, tag);
+	Blt_Tags_AddTag(tablePtr->rowTags, tag);
     } else {
-        Blt_Tags_AddItemToTag(tablePtr->rowTags, tag, rowPtr);
+	Blt_Tags_AddItemToTag(tablePtr->rowTags, tag, rowPtr);
     }
     return TCL_OK;
 }
@@ -4128,27 +4128,27 @@ blt_table_set_row_tag(Tcl_Interp *interp, Table *tablePtr, Row *rowPtr,
  *
  * blt_table_set_column_tag --
  *
- *	Associates a tag with a given column.  Individual column tags are
- *	stored in hash tables keyed by the tag name.  Each table is in turn
- *	stored in a hash table keyed by the column location.  If the column
+ *      Associates a tag with a given column.  Individual column tags are
+ *      stored in hash tables keyed by the tag name.  Each table is in turn
+ *      stored in a hash table keyed by the column location.  If the column
  *      is NULL, then this means to simply create the tag.
  *
  * Results:
- *	None.
+ *      None.
  *
  * Side Effects:
- *	A tag is stored for a particular column.
+ *      A tag is stored for a particular column.
  *
  *---------------------------------------------------------------------------
  */
 int
 blt_table_set_column_tag(Tcl_Interp *interp, Table *tablePtr, Column *colPtr, 
-                         const char *tag)
+			 const char *tag)
 {
     long dummy;
 
     if ((strcmp(tag, "all") == 0) || (strcmp(tag, "end") == 0)) {
-	return TCL_OK;			/* Don't create reserved tags. */
+	return TCL_OK;                  /* Don't create reserved tags. */
     }
     if (tag[0] == '\0') {
 	if (interp != NULL) {
@@ -4172,9 +4172,9 @@ blt_table_set_column_tag(Tcl_Interp *interp, Table *tablePtr, Column *colPtr,
 	return TCL_ERROR;
     }
     if (colPtr == NULL) {
-        Blt_Tags_AddTag(tablePtr->columnTags, tag);
+	Blt_Tags_AddTag(tablePtr->columnTags, tag);
     } else {
-        Blt_Tags_AddItemToTag(tablePtr->columnTags, tag, colPtr);
+	Blt_Tags_AddItemToTag(tablePtr->columnTags, tag, colPtr);
     }
     return TCL_OK;
 }
@@ -4184,10 +4184,10 @@ blt_table_set_column_tag(Tcl_Interp *interp, Table *tablePtr, Column *colPtr,
  *
  * blt_table_row_has_tag --
  *
- *	Checks if a tag is associated with the given row.  
+ *      Checks if a tag is associated with the given row.  
  *
  * Results:
- *	Returns TRUE if the tag is found, FALSE otherwise.
+ *      Returns TRUE if the tag is found, FALSE otherwise.
  *
  *---------------------------------------------------------------------------
  */
@@ -4195,7 +4195,7 @@ int
 blt_table_row_has_tag(Table *tablePtr, Row *rowPtr, const char *tag)
 {
     if (strcmp(tag, "all") == 0) {
-	return TRUE;		/* "all" tags matches every row. */
+	return TRUE;            /* "all" tags matches every row. */
     }
     if (strcmp(tag, "end") == 0) {
 	return (blt_table_row_index(rowPtr)==(blt_table_num_rows(tablePtr)-1));
@@ -4208,10 +4208,10 @@ blt_table_row_has_tag(Table *tablePtr, Row *rowPtr, const char *tag)
  *
  * blt_table_column_has_tag --
  *
- *	Checks if a tag is associated with the given column.  
+ *      Checks if a tag is associated with the given column.  
  *
  * Results:
- *	Returns TRUE if the tag is found, FALSE otherwise.
+ *      Returns TRUE if the tag is found, FALSE otherwise.
  *
  *---------------------------------------------------------------------------
  */
@@ -4219,7 +4219,7 @@ int
 blt_table_column_has_tag(Table *tablePtr, Column *colPtr, const char *tag)
 {
     if (strcmp(tag, "all") == 0) {
-	return TRUE;			/* "all" tags matches every column. */
+	return TRUE;                    /* "all" tags matches every column. */
     }
     if (strcmp(tag, "end") == 0) {
 	return (blt_table_column_index(colPtr) == 
@@ -4233,11 +4233,11 @@ blt_table_column_has_tag(Table *tablePtr, Column *colPtr, const char *tag)
  *
  * blt_table_unset_row_tag --
  *
- *	Removes a tag from a given row.  
+ *      Removes a tag from a given row.  
  *
  * Results:
- *	A standard TCL result.  If an error occurred, TCL_ERROR is returned
- *	and the interpreter result contains the error message.
+ *      A standard TCL result.  If an error occurred, TCL_ERROR is returned
+ *      and the interpreter result contains the error message.
  *
  * Side Effects:
  *      The tag associated with the row is freed.
@@ -4246,10 +4246,10 @@ blt_table_column_has_tag(Table *tablePtr, Column *colPtr, const char *tag)
  */
 int
 blt_table_unset_row_tag(Tcl_Interp *interp, Table *tablePtr, Row *rowPtr, 
-                        const char *tag)
+			const char *tag)
 {
     if ((strcmp(tag, "all") == 0) || (strcmp(tag, "end") == 0)) {
-	return TCL_OK;			/* Can't remove reserved tags. */
+	return TCL_OK;                  /* Can't remove reserved tags. */
     } 
     Blt_Tags_RemoveItemFromTag(tablePtr->rowTags, tag, rowPtr);
     return TCL_OK;
@@ -4260,12 +4260,12 @@ blt_table_unset_row_tag(Tcl_Interp *interp, Table *tablePtr, Row *rowPtr,
  *
  * blt_table_unset_column_tag --
  *
- *	Removes a tag from a given column.  
+ *      Removes a tag from a given column.  
  *
  * Results:
- *	A standard TCL result.  If an error occurred, TCL_ERROR
- *	is returned and the interpreter result contains the error
- *	message.
+ *      A standard TCL result.  If an error occurred, TCL_ERROR
+ *      is returned and the interpreter result contains the error
+ *      message.
  *
  * Side Effects:
  *      The tag associated with the column is freed.
@@ -4277,7 +4277,7 @@ blt_table_unset_column_tag(Tcl_Interp *interp, Table *tablePtr, Column *colPtr,
 			 const char *tag)
 {
     if ((strcmp(tag, "all") == 0) || (strcmp(tag, "end") == 0)) {
-	return TCL_OK;			/* Can't remove reserved tags. */
+	return TCL_OK;                  /* Can't remove reserved tags. */
     } 
     Blt_Tags_RemoveItemFromTag(tablePtr->columnTags, tag, colPtr);
     return TCL_OK;
@@ -4288,10 +4288,10 @@ blt_table_unset_column_tag(Tcl_Interp *interp, Table *tablePtr, Column *colPtr,
  *
  * blt_table_clear_row_tags --
  *
- *	Removes all tags for a given row.  
+ *      Removes all tags for a given row.  
  *
  * Results:
- *	None.
+ *      None.
  *
  * Side Effects:
  *      All tags associated with the row are freed.
@@ -4309,10 +4309,10 @@ blt_table_clear_row_tags(Table *tablePtr, Row *rowPtr)
  *
  * blt_table_clear_column_tags --
  *
- *	Removes all tags for a given column.  
+ *      Removes all tags for a given column.  
  *
  * Results:
- *	None.
+ *      None.
  *
  * Side Effects:
  *      All tags associated with the column are freed.
@@ -4330,15 +4330,15 @@ blt_table_clear_column_tags(Table *tablePtr, Column *colPtr)
  *
  * blt_table_get_value --
  *
- *	Gets a scalar Tcl_Obj value from the table at the designated
- *	row, column location.  "Read" traces may be fired *before* the
- *	value is retrieved.  If no value exists at that location,
- *	*objPtrPtr is set to NULL.
+ *      Gets a scalar Tcl_Obj value from the table at the designated
+ *      row, column location.  "Read" traces may be fired *before* the
+ *      value is retrieved.  If no value exists at that location,
+ *      *objPtrPtr is set to NULL.
  *
  * Results:
- *	A standard TCL result.  Returns TCL_OK if successful accessing
- *	the table location.  If an error occurs, TCL_ERROR is returned
- *	and an error message is left in the interpreter.
+ *      A standard TCL result.  Returns TCL_OK if successful accessing
+ *      the table location.  If an error occurs, TCL_ERROR is returned
+ *      and an error message is left in the interpreter.
  *
  * -------------------------------------------------------------------------- 
  */
@@ -4353,15 +4353,15 @@ blt_table_get_value(Table *tablePtr, Row *rowPtr, Column *colPtr)
  *
  * blt_table_set_value --
  *
- *	Sets a scalar Tcl_Obj value in the table at the designated row and
- *	column.  "Write" and possibly "create" or "unset" traces may be fired
- *	*after* the value is set.  If valuePtr is NULL, this indicates to
- *	unset the old value.
+ *      Sets a scalar Tcl_Obj value in the table at the designated row and
+ *      column.  "Write" and possibly "create" or "unset" traces may be fired
+ *      *after* the value is set.  If valuePtr is NULL, this indicates to
+ *      unset the old value.
  *
  * Results:
- *	A standard TCL result.  Returns TCL_OK if successful setting the value
- *	at the table location.  If an error occurs, TCL_ERROR is returned and
- *	an error message is left in the interpreter.
+ *      A standard TCL result.  Returns TCL_OK if successful setting the value
+ *      at the table location.  If an error occurs, TCL_ERROR is returned and
+ *      an error message is left in the interpreter.
  *
  * -------------------------------------------------------------------------- 
  */
@@ -4373,15 +4373,15 @@ blt_table_set_value(Table *tablePtr, Row *rowPtr, Column *colPtr, Value *newPtr)
 
     valuePtr = GetValue(tablePtr, rowPtr, colPtr);
     flags = TABLE_TRACE_WRITES;
-    if (IsEmpty(newPtr)) {		/* New value is empty. Effectively
+    if (IsEmpty(newPtr)) {              /* New value is empty. Effectively
 					 * unsetting the value. */
 	flags |= TABLE_TRACE_UNSETS;
     } else if (IsEmpty(valuePtr)) {
-	flags |= TABLE_TRACE_CREATES;	/* Old value was empty. */
+	flags |= TABLE_TRACE_CREATES;   /* Old value was empty. */
     } 
     if (newPtr != valuePtr) {
 	ResetValue(valuePtr);
-	*valuePtr = *newPtr;		/* Copy the value. */
+	*valuePtr = *newPtr;            /* Copy the value. */
 	if ((newPtr->string != NULL) && 
 	    (newPtr->string != BLT_TABLE_VALUE_STATIC)) {
 	    valuePtr->string = Blt_AssertStrdup(newPtr->string);
@@ -4397,15 +4397,15 @@ blt_table_set_value(Table *tablePtr, Row *rowPtr, Column *colPtr, Value *newPtr)
  *
  * blt_table_get_obj --
  *
- *	Gets a scalar Tcl_Obj value from the table at the designated row,
- *	column location.  "Read" traces may be fired *before* the value is
- *	retrieved.  If no value exists at that location, *objPtrPtr is set to
- *	NULL.
+ *      Gets a scalar Tcl_Obj value from the table at the designated row,
+ *      column location.  "Read" traces may be fired *before* the value is
+ *      retrieved.  If no value exists at that location, *objPtrPtr is set to
+ *      NULL.
  *
  * Results:
- *	A standard TCL result.  Returns TCL_OK if successful accessing the
- *	table location.  If an error occurs, TCL_ERROR is returned and an
- *	error message is left in the interpreter.
+ *      A standard TCL result.  Returns TCL_OK if successful accessing the
+ *      table location.  If an error occurs, TCL_ERROR is returned and an
+ *      error message is left in the interpreter.
  *
  * -------------------------------------------------------------------------- 
  */
@@ -4429,15 +4429,15 @@ blt_table_get_obj(Table *tablePtr, Row *rowPtr, Column *colPtr)
  *
  * blt_table_set_obj --
  *
- *	Sets a scalar Tcl_Obj value in the table at the designated row and
- *	column.  "Write" and possibly "create" or "unset" traces may be fired
- *	*after* the value is set.  If valueObjPtr is NULL, this indicates to
- *	unset the old value.
+ *      Sets a scalar Tcl_Obj value in the table at the designated row and
+ *      column.  "Write" and possibly "create" or "unset" traces may be fired
+ *      *after* the value is set.  If valueObjPtr is NULL, this indicates to
+ *      unset the old value.
  *
  * Results:
- *	A standard TCL result.  Returns TCL_OK if successful setting the value
- *	at the table location.  If an error occurs, TCL_ERROR is returned and
- *	an error message is left in the interpreter.
+ *      A standard TCL result.  Returns TCL_OK if successful setting the value
+ *      at the table location.  If an error occurs, TCL_ERROR is returned and
+ *      an error message is left in the interpreter.
  *
  * -------------------------------------------------------------------------- 
  */
@@ -4450,7 +4450,7 @@ blt_table_set_obj(Table *tablePtr, Row *rowPtr, Column *colPtr,
 
     valuePtr = GetValue(tablePtr, rowPtr, colPtr);
     flags = TABLE_TRACE_WRITES;
-    if (objPtr == NULL) {		/* New value is empty. Effectively
+    if (objPtr == NULL) {               /* New value is empty. Effectively
 					 * unsetting the value. */
 	flags |= TABLE_TRACE_UNSETS;
     } else if (IsEmpty(valuePtr)) {
@@ -4469,14 +4469,14 @@ blt_table_set_obj(Table *tablePtr, Row *rowPtr, Column *colPtr,
  *
  * blt_table_unset_value --
  *
- *	Unsets a scalar Tcl_Obj value in the table at the designated row,
- *	column location.  It's okay is there is presently no value at the
- *	location. Unset traces may be fired *before* the value is unset.
+ *      Unsets a scalar Tcl_Obj value in the table at the designated row,
+ *      column location.  It's okay is there is presently no value at the
+ *      location. Unset traces may be fired *before* the value is unset.
  *
  * Results:
- *	A standard TCL result.  Returns TCL_OK if successful unsetting the
- *	value at the table location.  If an error occurs, TCL_ERROR is
- *	returned and an error message is left in the interpreter.
+ *      A standard TCL result.  Returns TCL_OK if successful unsetting the
+ *      value at the table location.  If an error occurs, TCL_ERROR is
+ *      returned and an error message is left in the interpreter.
  *
  * -------------------------------------------------------------------------- 
  */
@@ -4502,27 +4502,27 @@ blt_table_unset_value(Table *tablePtr, Row *rowPtr, Column *colPtr)
  *
  * blt_table_create --
  *
- *	Creates a table object by the designated name.  It's an error if a
- *	table object already exists by that name.
+ *      Creates a table object by the designated name.  It's an error if a
+ *      table object already exists by that name.
  *
  * Results:
- *	A standard TCL result.  If successful, a new table object is created
- *	and TCL_OK is returned.  If an object already exists or the table
- *	object can't be allocated, then TCL_ERROR is returned and an error
- *	message is left in the interpreter.
+ *      A standard TCL result.  If successful, a new table object is created
+ *      and TCL_OK is returned.  If an object already exists or the table
+ *      object can't be allocated, then TCL_ERROR is returned and an error
+ *      message is left in the interpreter.
  *
  * Side Effects:
- *	A new table object is created.
+ *      A new table object is created.
  *
  *---------------------------------------------------------------------------
  */
 int
 blt_table_create(
-    Tcl_Interp *interp,			/* Interpreter to report errors back
+    Tcl_Interp *interp,                 /* Interpreter to report errors back
 					 * to. */
-    const char *name,			/* Name of tuple in namespace.  Object
+    const char *name,                   /* Name of tuple in namespace.  Object
 					 * must not already exist. */
-    Table **tablePtrPtr)		/* (out) Client token of newly created
+    Table **tablePtrPtr)                /* (out) Client token of newly created
 					 * table object.  Releasing the token
 					 * will free the tuple.  If NULL, no
 					 * token is generated. */
@@ -4583,25 +4583,25 @@ blt_table_create(
  *
  * blt_table_open --
  *
- *	Allocates a token for the table object designated by name.  It's an
- *	error if no table object exists by that name.  The token returned is
- *	passed to various routines to manipulate the object.  Traces and event
- *	notifications are also made through the token.
+ *      Allocates a token for the table object designated by name.  It's an
+ *      error if no table object exists by that name.  The token returned is
+ *      passed to various routines to manipulate the object.  Traces and event
+ *      notifications are also made through the token.
  *
  * Results:
- *	A new token is returned representing the table object.  
+ *      A new token is returned representing the table object.  
  *
  * Side Effects:
- *	If this is the remaining client, then the table object itself is
- *	freed.
+ *      If this is the remaining client, then the table object itself is
+ *      freed.
  *
  *---------------------------------------------------------------------------
  */
 int
 blt_table_open(
-    Tcl_Interp *interp,			/* Interpreter to report errors back
+    Tcl_Interp *interp,                 /* Interpreter to report errors back
 					 * to. */
-    const char *name,			/* Name of table object in
+    const char *name,                   /* Name of table object in
 					 * namespace. */
     Table **tablePtrPtr)
 {
@@ -4633,17 +4633,17 @@ blt_table_open(
  *
  * blt_table_close --
  *
- *	Releases the tuple token, indicating this the client is no longer
- *	using the object. The client is removed from the tuple object's client
- *	list.  If this is the last client, then the object itself is destroyed
- *	and memory is freed.
+ *      Releases the tuple token, indicating this the client is no longer
+ *      using the object. The client is removed from the tuple object's client
+ *      list.  If this is the last client, then the object itself is destroyed
+ *      and memory is freed.
  *
  * Results:
- *	None.
+ *      None.
  *
  * Side Effects:
- *	If this is the remaining client, then the table object itself
- *	is freed.
+ *      If this is the remaining client, then the table object itself
+ *      is freed.
  *
  *---------------------------------------------------------------------------
  */
@@ -4664,7 +4664,7 @@ blt_table_close(Table *tablePtr)
 	Blt_Chain_DeleteLink(chain, tablePtr->link2);
 	if (Blt_Chain_GetLength(chain) == 0) {
 	    /* If no more clients are using this name, then remove it from the
-	     * interpreter-specific hash table. */	
+	     * interpreter-specific hash table. */      
 	    Blt_DeleteHashEntry(tablePtr->clientTablePtr, tablePtr->hPtr);
 	}
     }
@@ -4676,11 +4676,11 @@ blt_table_close(Table *tablePtr)
  *
  * blt_table_exists --
  *
- *	Indicates if a table object by the given name exists in either the
- *	current or global namespace.
+ *      Indicates if a table object by the given name exists in either the
+ *      current or global namespace.
  *
  * Results:
- *	Returns 1 if a table object exists and 0 otherwise.
+ *      Returns 1 if a table object exists and 0 otherwise.
  *
  *---------------------------------------------------------------------------
  */
@@ -4706,9 +4706,9 @@ CreateNotifier(Tcl_Interp *interp, Blt_Chain chain, unsigned int mask,
     notifierPtr->deleteProc = deleteProc;
     notifierPtr->chain = chain;
     notifierPtr->clientData = clientData;
-    notifierPtr->column = NULL;		/* All columns. */
-    notifierPtr->row = NULL;		/* All rows. */
-    notifierPtr->tag = NULL;		/* No tag. */
+    notifierPtr->column = NULL;         /* All columns. */
+    notifierPtr->row = NULL;            /* All rows. */
+    notifierPtr->tag = NULL;            /* No tag. */
     notifierPtr->flags = mask | TABLE_NOTIFY_COLUMN | TABLE_NOTIFY_ROW;
     notifierPtr->interp = interp;
     notifierPtr->link = Blt_Chain_Append(chain, notifierPtr);
@@ -4764,20 +4764,20 @@ CreateNotifierForColumns(Tcl_Interp *interp, Blt_Chain chain, unsigned int mask,
  *
  * blt_table_create_notifier --
  *
- *	Creates an event handler using the following three pieces of
- *	information: 
- *		1. C function pointer, 
- *		2. one-word of data passed on each call, and 
- *		3. event mask indicating which events are of interest.  
- *	If an event already exists matching all of the above criteria,
- *	it is repositioned on the end of the event handler list.  This
- *	means that it will be the last to fire.
+ *      Creates an event handler using the following three pieces of
+ *      information: 
+ *              1. C function pointer, 
+ *              2. one-word of data passed on each call, and 
+ *              3. event mask indicating which events are of interest.  
+ *      If an event already exists matching all of the above criteria,
+ *      it is repositioned on the end of the event handler list.  This
+ *      means that it will be the last to fire.
  *
  * Results:
  *      Returns a pointer to the event handler.
  *
  * Side Effects:
- *	Memory for the event handler is possibly allocated.
+ *      Memory for the event handler is possibly allocated.
  *
  *---------------------------------------------------------------------------
  */
@@ -4796,20 +4796,20 @@ blt_table_create_notifier(Tcl_Interp *interp, Table *tablePtr,
  *
  * blt_table_create_column_notifier --
  *
- *	Creates an event handler using the following three pieces of
- *	information: 
- *		1. C function pointer, 
- *		2. one-word of data passed on each call, and 
- *		3. event mask indicating which events are of interest.  
- *	If an event already exists matching all of the above criteria,
- *	it is repositioned on the end of the event handler list.  This
- *	means that it will be the last to fire.
+ *      Creates an event handler using the following three pieces of
+ *      information: 
+ *              1. C function pointer, 
+ *              2. one-word of data passed on each call, and 
+ *              3. event mask indicating which events are of interest.  
+ *      If an event already exists matching all of the above criteria,
+ *      it is repositioned on the end of the event handler list.  This
+ *      means that it will be the last to fire.
  *
  * Results:
  *      Returns a pointer to the event handler.
  *
  * Side Effects:
- *	Memory for the event handler is possibly allocated.
+ *      Memory for the event handler is possibly allocated.
  *
  *---------------------------------------------------------------------------
  */
@@ -4829,20 +4829,20 @@ blt_table_create_column_notifier(Tcl_Interp *interp, Table *tablePtr,
  *
  * blt_table_create_column_tag_notifier --
  *
- *	Creates an event handler using the following three pieces of
- *	information: 
- *		1. C function pointer, 
- *		2. one-word of data passed on each call, and 
- *		3. event mask indicating which events are of interest.  
- *	If an event already exists matching all of the above criteria,
- *	it is repositioned on the end of the event handler list.  This
- *	means that it will be the last to fire.
+ *      Creates an event handler using the following three pieces of
+ *      information: 
+ *              1. C function pointer, 
+ *              2. one-word of data passed on each call, and 
+ *              3. event mask indicating which events are of interest.  
+ *      If an event already exists matching all of the above criteria,
+ *      it is repositioned on the end of the event handler list.  This
+ *      means that it will be the last to fire.
  *
  * Results:
  *      Returns a pointer to the event handler.
  *
  * Side Effects:
- *	Memory for the event handler is possibly allocated.
+ *      Memory for the event handler is possibly allocated.
  *
  *---------------------------------------------------------------------------
  */
@@ -4862,20 +4862,20 @@ blt_table_create_column_tag_notifier(Tcl_Interp *interp, Table *tablePtr,
  *
  * blt_table_create_row_notifier --
  *
- *	Creates an event handler using the following three pieces of
- *	information: 
- *		1. C function pointer, 
- *		2. one-word of data passed on each call, and 
- *		3. event mask indicating which events are of interest.  
- *	If an event already exists matching all of the above criteria,
- *	it is repositioned on the end of the event handler list.  This
- *	means that it will be the last to fire.
+ *      Creates an event handler using the following three pieces of
+ *      information: 
+ *              1. C function pointer, 
+ *              2. one-word of data passed on each call, and 
+ *              3. event mask indicating which events are of interest.  
+ *      If an event already exists matching all of the above criteria,
+ *      it is repositioned on the end of the event handler list.  This
+ *      means that it will be the last to fire.
  *
  * Results:
  *      Returns a pointer to the event handler.
  *
  * Side Effects:
- *	Memory for the event handler is possibly allocated.
+ *      Memory for the event handler is possibly allocated.
  *
  *---------------------------------------------------------------------------
  */
@@ -4895,20 +4895,20 @@ blt_table_create_row_notifier(Tcl_Interp *interp, Table *tablePtr,
  *
  * blt_table_create_column_tag_notifier --
  *
- *	Creates an event handler using the following three pieces of
- *	information: 
- *		1. C function pointer, 
- *		2. one-word of data passed on each call, and 
- *		3. event mask indicating which events are of interest.  
- *	If an event already exists matching all of the above criteria,
- *	it is repositioned on the end of the event handler list.  This
- *	means that it will be the last to fire.
+ *      Creates an event handler using the following three pieces of
+ *      information: 
+ *              1. C function pointer, 
+ *              2. one-word of data passed on each call, and 
+ *              3. event mask indicating which events are of interest.  
+ *      If an event already exists matching all of the above criteria,
+ *      it is repositioned on the end of the event handler list.  This
+ *      means that it will be the last to fire.
  *
  * Results:
  *      Returns a pointer to the event handler.
  *
  * Side Effects:
- *	Memory for the event handler is possibly allocated.
+ *      Memory for the event handler is possibly allocated.
  *
  *---------------------------------------------------------------------------
  */
@@ -4928,17 +4928,17 @@ blt_table_create_row_tag_notifier(Tcl_Interp *interp, Table *tablePtr,
  *
  * blt_table_delete_notifier --
  *
- *	Removes the event handler designated by following three pieces
- *	of information: 
- *	   1. C function pointer, 
- *	   2. one-word of data passed on each call, and 
- *	   3. event mask indicating which events are of interest.
+ *      Removes the event handler designated by following three pieces
+ *      of information: 
+ *         1. C function pointer, 
+ *         2. one-word of data passed on each call, and 
+ *         3. event mask indicating which events are of interest.
  *
  * Results:
  *      Nothing.
  *
  * Side Effects:
- *	Memory for the event handler is freed.
+ *      Memory for the event handler is freed.
  *
  *---------------------------------------------------------------------------
  */
@@ -4963,11 +4963,11 @@ blt_table_delete_notifier(Table *tablePtr, Notifier *notifierPtr)
  *
  * blt_table_get_row_by_label --
  *
- *	Returns the offset of the row given its label.  If the row label is
- *	invalid, then -1 is returned.
+ *      Returns the offset of the row given its label.  If the row label is
+ *      invalid, then -1 is returned.
  *
  * Results:
- *	Returns the offset of the row or -1 if not found.
+ *      Returns the offset of the row or -1 if not found.
  *
  *---------------------------------------------------------------------------
  */
@@ -4983,11 +4983,11 @@ blt_table_get_row_by_label(Table *tablePtr, const char *label)
  *
  * blt_table_get_column_by_label --
  *
- *	Returns the offset of the column given its label.  If the column label
- *	is invalid, then -1 is returned.
+ *      Returns the offset of the column given its label.  If the column label
+ *      is invalid, then -1 is returned.
  *
  * Results:
- *	Returns the offset of the column or -1 if not found.
+ *      Returns the offset of the column or -1 if not found.
  *
  *---------------------------------------------------------------------------
  */
@@ -5002,11 +5002,11 @@ blt_table_get_column_by_label(Table *tablePtr, const char *label)
  *
  * blt_table_column_get_label_table --
  *
- *	Returns the offset of the column given its label.  If the column label
- *	is invalid, then -1 is returned.
+ *      Returns the offset of the column given its label.  If the column label
+ *      is invalid, then -1 is returned.
  *
  * Results:
- *	Returns the offset of the column or -1 if not found.
+ *      Returns the offset of the column or -1 if not found.
  *
  *---------------------------------------------------------------------------
  */
@@ -5021,11 +5021,11 @@ blt_table_column_get_label_table(Table *tablePtr, const char *label)
  *
  * blt_table_row_get_label_table --
  *
- *	Returns the offset of the column given its label.  If the column label
- *	is invalid, then -1 is returned.
+ *      Returns the offset of the column given its label.  If the column label
+ *      is invalid, then -1 is returned.
  *
  * Results:
- *	Returns the offset of the column or -1 if not found.
+ *      Returns the offset of the column or -1 if not found.
  *
  *---------------------------------------------------------------------------
  */
@@ -5040,11 +5040,11 @@ blt_table_row_get_label_table(Table *tablePtr, const char *label)
  *
  * blt_table_set_row_label --
  *
- *	Returns the label of the row.  If the row offset is invalid or the row
- *	has no label, then NULL is returned.
+ *      Returns the label of the row.  If the row offset is invalid or the row
+ *      has no label, then NULL is returned.
  *
  * Results:
- *	Returns the label of the row.
+ *      Returns the label of the row.
  *
  *---------------------------------------------------------------------------
  */
@@ -5070,11 +5070,11 @@ blt_table_set_row_label(Tcl_Interp *interp, Table *tablePtr, Row *rowPtr,
  *
  * blt_table_set_column_label --
  *
- *	Sets the label of the column.  If the column offset is invalid, then
- *	no label is set.
+ *      Sets the label of the column.  If the column offset is invalid, then
+ *      no label is set.
  *
  * Results:
- *	None.
+ *      None.
  *
  *---------------------------------------------------------------------------
  */
@@ -5101,10 +5101,10 @@ blt_table_set_column_label(Tcl_Interp *interp, Table *tablePtr, Column *colPtr,
  *
  * blt_table_set_column_type --
  *
- *	Sets the type of the given column.  
+ *      Sets the type of the given column.  
  *
  * Results:
- *	None.
+ *      None.
  *
  *---------------------------------------------------------------------------
  */
@@ -5113,7 +5113,7 @@ blt_table_set_column_type(Table *tablePtr, Column *colPtr,
 			  BLT_TABLE_COLUMN_TYPE type)
 {
     if (type == colPtr->type) {
-	return TCL_OK;			/* Already the requested type. */
+	return TCL_OK;                  /* Already the requested type. */
     }
     return SetType(tablePtr, colPtr, type);
 }
@@ -5123,11 +5123,11 @@ blt_table_set_column_type(Table *tablePtr, Column *colPtr,
  *
  * blt_table_value_exists --
  *
- *	Indicates if a value exists for a given row,column offset in the
- *	tuple.  Note that this routine does not fire read traces.
+ *      Indicates if a value exists for a given row,column offset in the
+ *      tuple.  Note that this routine does not fire read traces.
  *
  * Results:
- *	Returns 1 is a value exists, 0 otherwise.
+ *      Returns 1 is a value exists, 0 otherwise.
  *
  *---------------------------------------------------------------------------
  */
@@ -5146,17 +5146,17 @@ blt_table_value_exists(Table *tablePtr, Row *rowPtr, Column *colPtr)
  *
  * blt_table_extend_rows --
  *
- *	Adds new rows to the table.  Rows are slots in an array of Rows.  The
- *	array grows by doubling its size, so there may be more slots than
- *	needed (# rows).
+ *      Adds new rows to the table.  Rows are slots in an array of Rows.  The
+ *      array grows by doubling its size, so there may be more slots than
+ *      needed (# rows).
  *
  * Results:
- *	Returns TCL_OK is the tuple is resized and TCL_ERROR if an not enough
- *	memory was available.
+ *      Returns TCL_OK is the tuple is resized and TCL_ERROR if an not enough
+ *      memory was available.
  *
  * Side Effects:
- *	If more rows are needed, the array which holds the tuples is
- *	reallocated by doubling its size.
+ *      If more rows are needed, the array which holds the tuples is
+ *      reallocated by doubling its size.
  *
  *---------------------------------------------------------------------------
  */
@@ -5188,7 +5188,7 @@ blt_table_extend_rows(Tcl_Interp *interp, Table *tablePtr, size_t numExtra,
 	if (rows != NULL) {
 	    rows[i] = row;
 	}
-        NotifyRowChanged(tablePtr, row, TABLE_NOTIFY_ROWS_CREATED);
+	NotifyRowChanged(tablePtr, row, TABLE_NOTIFY_ROWS_CREATED);
     }
     assert(Blt_Chain_GetLength(chain) > 0);
     Blt_Chain_Destroy(chain);
@@ -5231,7 +5231,7 @@ blt_table_create_row(Tcl_Interp *interp, BLT_TABLE table, const char *label)
  *
  * blt_table_move_row --
  *
- *	Move one of more rows to a new location in the tuple.
+ *      Move one of more rows to a new location in the tuple.
  *
  *---------------------------------------------------------------------------
  */
@@ -5241,7 +5241,7 @@ blt_table_move_row(Tcl_Interp *interp, Table *tablePtr, Row *srcPtr,
 		   Row *destPtr, size_t count)
 {
     if (srcPtr == destPtr) {
-	return TCL_OK;		/* Move to the same location. */
+	return TCL_OK;          /* Move to the same location. */
     }
     if (!MoveIndices(&tablePtr->corePtr->rows, (Header *)srcPtr, 
 		     (Header *)destPtr, count)) {
@@ -5292,18 +5292,18 @@ blt_table_sort_init(BLT_TABLE table, BLT_TABLE_SORT_ORDER *order,
 	    long refCount;
 
 	    row = blt_table_row(table, i);
-            if (!blt_table_value_exists(table, row, col)) {
-                continue;
-            }
+	    if (!blt_table_value_exists(table, row, col)) {
+		continue;
+	    }
 	    string = blt_table_get_string(table, row, col);
-            hPtr = Blt_CreateHashEntry(&sortData.freqTable, string, &isNew);
-            if (isNew) {
-                refCount = 0;
-            } else {
-                refCount = (long)Blt_GetHashValue(hPtr);
-            }
-            refCount++;
-            Blt_SetHashValue(hPtr, refCount);
+	    hPtr = Blt_CreateHashEntry(&sortData.freqTable, string, &isNew);
+	    if (isNew) {
+		refCount = 0;
+	    } else {
+		refCount = (long)Blt_GetHashValue(hPtr);
+	    }
+	    refCount++;
+	    Blt_SetHashValue(hPtr, refCount);
 	}
     }
 }
@@ -5363,14 +5363,14 @@ blt_table_get_column_limits(Tcl_Interp *interp, Table *tablePtr, Column *colPtr,
  *
  * blt_table_delete_column --
  *
- *	Remove the designated column from the table.  The actual space
- *	contained by the column isn't freed.  The map is compressed.
- *	Tcl_Objs stored as column values are released.  Traces and tags
- *	associated with the column are removed.
+ *      Remove the designated column from the table.  The actual space
+ *      contained by the column isn't freed.  The map is compressed.
+ *      Tcl_Objs stored as column values are released.  Traces and tags
+ *      associated with the column are removed.
  *
  * Side Effects:
- *	Traces may fire when column values are unset.  Also notifier events
- *	may be triggered, indicating the column has been deleted.
+ *      Traces may fire when column values are unset.  Also notifier events
+ *      may be triggered, indicating the column has been deleted.
  *
  *---------------------------------------------------------------------------
  */
@@ -5396,17 +5396,17 @@ blt_table_delete_column(Table *tablePtr, Column *colPtr)
  *
  * blt_table_extend_columns --
  *
- *	Adds new columns to the table.  Columns are slots in an array of
- *	Columns.  The array columns by doubling its size, so there may be more
- *	slots than needed (# columns).
+ *      Adds new columns to the table.  Columns are slots in an array of
+ *      Columns.  The array columns by doubling its size, so there may be more
+ *      slots than needed (# columns).
  *
  * Results:
- *	Returns TCL_OK is the tuple is resized and TCL_ERROR if an
- *	not enough memory was available.
+ *      Returns TCL_OK is the tuple is resized and TCL_ERROR if an
+ *      not enough memory was available.
  *
  * Side Effects:
- *	If more columns are needed, the array which holds the tuples is
- *	reallocated by doubling its size.  
+ *      If more columns are needed, the array which holds the tuples is
+ *      reallocated by doubling its size.  
  *
  *---------------------------------------------------------------------------
  */
@@ -5435,7 +5435,7 @@ blt_table_extend_columns(Tcl_Interp *interp, BLT_TABLE table, size_t numExtra,
 	if (columns != NULL) {
 	    columns[i] = col;
 	}
-        NotifyColumnChanged(table, col, TABLE_NOTIFY_COLUMNS_CREATED);
+	NotifyColumnChanged(table, col, TABLE_NOTIFY_COLUMNS_CREATED);
     }
     Blt_Chain_Destroy(chain);
     return TCL_OK;
@@ -5471,7 +5471,7 @@ blt_table_set_column_map(Table *tablePtr, Column **map)
  *
  * blt_table_move_column --
  *
- *	Move one of more rows to a new location in the tuple.
+ *      Move one of more rows to a new location in the tuple.
  *
  *---------------------------------------------------------------------------
  */
@@ -5481,7 +5481,7 @@ blt_table_move_column(Tcl_Interp *interp, Table *tablePtr, Column *srcPtr,
 		      Column *destPtr, size_t count)
 {
     if (srcPtr == destPtr) {
-	return TCL_OK;		/* Move to the same location. */
+	return TCL_OK;          /* Move to the same location. */
     }
     if (!MoveIndices(&tablePtr->corePtr->columns, (Header *)srcPtr, 
 		(Header *)destPtr, count)) {
@@ -5498,22 +5498,22 @@ blt_table_move_column(Tcl_Interp *interp, Table *tablePtr, Column *srcPtr,
  *
  * blt_table_restore --
  *
- *	Restores data to the given table based upon the dump string.
- *	The dump string should have been generated by blt_table_dump.
- *	Two bit flags may be set.
- *	
- *	TABLE_RESTORE_NO_TAGS	Don't restore tag information.
- *	TABLE_RESTORE_OVERWRITE	Look for row and columns with the 
- *				same label. Overwrite if necessary.
+ *      Restores data to the given table based upon the dump string.
+ *      The dump string should have been generated by blt_table_dump.
+ *      Two bit flags may be set.
+ *      
+ *      TABLE_RESTORE_NO_TAGS   Don't restore tag information.
+ *      TABLE_RESTORE_OVERWRITE Look for row and columns with the 
+ *                              same label. Overwrite if necessary.
  *
  * Results:
- *	A standard TCL result.  If the restore was successful, TCL_OK
- *	is returned.  Otherwise, TCL_ERROR is returned and an error
- *	message is left in the interpreter result.
+ *      A standard TCL result.  If the restore was successful, TCL_OK
+ *      is returned.  Otherwise, TCL_ERROR is returned and an error
+ *      message is left in the interpreter result.
  *
  * Side Effects:
- *	New row and columns are created in the table and may possibly
- *	generate event notifier or trace callbacks.
+ *      New row and columns are created in the table and may possibly
+ *      generate event notifier or trace callbacks.
  *
  *---------------------------------------------------------------------------
  */
@@ -5579,31 +5579,31 @@ blt_table_restore(Tcl_Interp *interp, BLT_TABLE table, char *data,
  *
  * blt_table_file_restore --
  *
- *	Restores data to the given table based upon the dump file
- *	provided. The dump file should have been generated by
- *	blt_table_dump or blt_table_file_dump.
+ *      Restores data to the given table based upon the dump file
+ *      provided. The dump file should have been generated by
+ *      blt_table_dump or blt_table_file_dump.
  *
- *	If the filename starts with an '@', then it is the name of an
- *	already opened channel to be used. Two bit flags may be set.
- *	
- *	TABLE_RESTORE_NO_TAGS	Don't restore tag information.
- *	TABLE_RESTORE_OVERWRITE	Look for row and columns with 
- *				the same label. Overwrite if necessary.
+ *      If the filename starts with an '@', then it is the name of an
+ *      already opened channel to be used. Two bit flags may be set.
+ *      
+ *      TABLE_RESTORE_NO_TAGS   Don't restore tag information.
+ *      TABLE_RESTORE_OVERWRITE Look for row and columns with 
+ *                              the same label. Overwrite if necessary.
  *
  * Results:
- *	A standard TCL result.  If the restore was successful, TCL_OK
- *	is returned.  Otherwise, TCL_ERROR is returned and an error
- *	message is left in the interpreter result.
+ *      A standard TCL result.  If the restore was successful, TCL_OK
+ *      is returned.  Otherwise, TCL_ERROR is returned and an error
+ *      message is left in the interpreter result.
  *
  * Side Effects:
- *	Row and columns are created in the table and may possibly
- *	generate trace or notifier event callbacks.
+ *      Row and columns are created in the table and may possibly
+ *      generate trace or notifier event callbacks.
  *
  *---------------------------------------------------------------------------
  */
 int
 blt_table_file_restore(Tcl_Interp *interp, BLT_TABLE table, 
-                       const char *fileName, unsigned int flags)
+		       const char *fileName, unsigned int flags)
 {
     RestoreData restore;
     Tcl_Channel channel;
@@ -5627,7 +5627,7 @@ blt_table_file_restore(Tcl_Interp *interp, BLT_TABLE table,
     } else {
 	channel = Tcl_OpenFileChannel(interp, fileName, "r", 0);
 	if (channel == NULL) {
-	    return TCL_ERROR;	/* Can't open dump file. */
+	    return TCL_ERROR;   /* Can't open dump file. */
 	}
     }
     restore.argc = 0;
@@ -5705,18 +5705,18 @@ static void
 FreeKeyTables(Table *tablePtr)
 {
     if (tablePtr->keyTables != NULL) {
-        int i;
+	int i;
 
-        for (i = 0; i < tablePtr->numKeys; i++) {
-            Blt_DeleteHashTable(tablePtr->keyTables + i);
-        }
+	for (i = 0; i < tablePtr->numKeys; i++) {
+	    Blt_DeleteHashTable(tablePtr->keyTables + i);
+	}
 	Blt_Free(tablePtr->keyTables);
-        tablePtr->keyTables = NULL;
+	tablePtr->keyTables = NULL;
     }
     if (tablePtr->masterKey != NULL) {
 	Blt_Free(tablePtr->masterKey);
 	Blt_DeleteHashTable(&tablePtr->masterKeyTable);
-        tablePtr->masterKey = NULL;
+	tablePtr->masterKey = NULL;
     }
 }
 
@@ -5741,25 +5741,25 @@ SameKeys(int len1, BLT_TABLE_COLUMN *keys1, int len2, BLT_TABLE_COLUMN *keys2)
     int i;
     
     if (len1 != len2) {
-        return FALSE;
+	return FALSE;
     }
     for (i = 0; i < len1; i++) {
-        if (keys1[i] != keys2[i]) {
-            fprintf(stderr, "different keys\n");
-            return FALSE;
-        }
+	if (keys1[i] != keys2[i]) {
+	    fprintf(stderr, "different keys\n");
+	    return FALSE;
+	}
     } 
     return TRUE;
 }
 
 int
 blt_table_set_keys(Table *tablePtr, int numKeys, BLT_TABLE_COLUMN *keys,
-                   int unique)
+		   int unique)
 {
     int i;
     
     if (SameKeys(tablePtr->numKeys, tablePtr->primaryKeys, numKeys, keys)) {
-        return TCL_OK;
+	return TCL_OK;
     }
     if (tablePtr->primaryKeys != NULL) {
 	FreePrimaryKeys(tablePtr);
@@ -5795,7 +5795,7 @@ MakeKeyTables(Tcl_Interp *interp, Table *tablePtr)
 
     /* Create a hashtable for each key. */
     tablePtr->keyTables =
-        Blt_Malloc(sizeof(Blt_HashTable) * tablePtr->numKeys);
+	Blt_Malloc(sizeof(Blt_HashTable) * tablePtr->numKeys);
     if (tablePtr->keyTables == NULL) {
 	if (interp != NULL) {
 	    Tcl_AppendResult(interp, "can't allocated keytables for ",
@@ -5804,24 +5804,24 @@ MakeKeyTables(Tcl_Interp *interp, Table *tablePtr)
 	return TCL_ERROR;
     }
     for (i = 0; i < tablePtr->numKeys; i++) {
-        size_t size;
-        Column *colPtr;
+	size_t size;
+	Column *colPtr;
 
-        colPtr = tablePtr->primaryKeys[i];
-        switch (colPtr->type) {
-        case TABLE_COLUMN_TYPE_DOUBLE:
-        case TABLE_COLUMN_TYPE_TIME:
-            size = sizeof(double)/sizeof(int);
-            break;
-        case TABLE_COLUMN_TYPE_LONG:
-            size = BLT_ONE_WORD_KEYS;
-            break;
-        default:
-        case TABLE_COLUMN_TYPE_STRING:
-        case TABLE_COLUMN_TYPE_UNKNOWN:
-            size = BLT_STRING_KEYS;
-            break;
-        }
+	colPtr = tablePtr->primaryKeys[i];
+	switch (colPtr->type) {
+	case TABLE_COLUMN_TYPE_DOUBLE:
+	case TABLE_COLUMN_TYPE_TIME:
+	    size = sizeof(double)/sizeof(int);
+	    break;
+	case TABLE_COLUMN_TYPE_LONG:
+	    size = BLT_ONE_WORD_KEYS;
+	    break;
+	default:
+	case TABLE_COLUMN_TYPE_STRING:
+	case TABLE_COLUMN_TYPE_UNKNOWN:
+	    size = BLT_STRING_KEYS;
+	    break;
+	}
 	Blt_InitHashTable(tablePtr->keyTables + i, size);
     }
     /* Generate a master table of key tuple combinations for each row.  
@@ -5840,36 +5840,36 @@ MakeKeyTables(Tcl_Interp *interp, Table *tablePtr)
 
 	rowPtr = blt_table_row(tablePtr, i);
 	for (j = 0; j < tablePtr->numKeys; j++) {
-            Blt_HashTable *keyTablePtr;
-            Column *colPtr;
-            Value *valuePtr;
-            int isNew;
-            Blt_HashEntry *hPtr;
-        
+	    Blt_HashTable *keyTablePtr;
+	    Column *colPtr;
+	    Value *valuePtr;
+	    int isNew;
+	    Blt_HashEntry *hPtr;
+	
 	    colPtr = tablePtr->primaryKeys[j];
 	    valuePtr = GetValue(tablePtr, rowPtr, colPtr);
-    	    if (IsEmpty(valuePtr)) {
+	    if (IsEmpty(valuePtr)) {
 		break;                  /* Skip this row since one of the
-                                         * key values is empty. */
+					 * key values is empty. */
 	    }
-            keyTablePtr = tablePtr->keyTables + j;
-            switch (colPtr->type) {
-            case TABLE_COLUMN_TYPE_DOUBLE:
-            case TABLE_COLUMN_TYPE_TIME:
-                hPtr = Blt_CreateHashEntry(keyTablePtr,
-                        (char *)&valuePtr->datum.d, &isNew);
-                break;
-            case TABLE_COLUMN_TYPE_LONG:
-                hPtr = Blt_CreateHashEntry(keyTablePtr,
-                        (char *)valuePtr->datum.l, &isNew);
-                break;
-            case TABLE_COLUMN_TYPE_STRING:
-            case TABLE_COLUMN_TYPE_UNKNOWN:
-            default:
-                hPtr = Blt_CreateHashEntry(keyTablePtr, GetString(valuePtr),
-                        &isNew);
-                break;
-            }
+	    keyTablePtr = tablePtr->keyTables + j;
+	    switch (colPtr->type) {
+	    case TABLE_COLUMN_TYPE_DOUBLE:
+	    case TABLE_COLUMN_TYPE_TIME:
+		hPtr = Blt_CreateHashEntry(keyTablePtr,
+			(char *)&valuePtr->datum.d, &isNew);
+		break;
+	    case TABLE_COLUMN_TYPE_LONG:
+		hPtr = Blt_CreateHashEntry(keyTablePtr,
+			(char *)valuePtr->datum.l, &isNew);
+		break;
+	    case TABLE_COLUMN_TYPE_STRING:
+	    case TABLE_COLUMN_TYPE_UNKNOWN:
+	    default:
+		hPtr = Blt_CreateHashEntry(keyTablePtr, GetString(valuePtr),
+			&isNew);
+		break;
+	    }
 	    if (isNew) {
 		Blt_SetHashValue(hPtr, rowPtr);
 	    }
@@ -5887,7 +5887,7 @@ MakeKeyTables(Tcl_Interp *interp, Table *tablePtr)
 		Blt_SetHashValue(hPtr, rowPtr);
 	    } else if (tablePtr->flags & TABLE_KEYS_UNIQUE) {
 		if (interp != NULL) {
-                    BLT_TABLE_ROW dupRow;
+		    BLT_TABLE_ROW dupRow;
 	
 		    dupRow = Blt_GetHashValue(hPtr);
 		    Tcl_AppendResult(interp, "primary keys are not unique:",
@@ -5909,18 +5909,18 @@ MakeKeyTables(Tcl_Interp *interp, Table *tablePtr)
  *
  * blt_table_key_lookup --
  *
- *	Look up the (hopefully) unique row that matches all the values
- *	for each of the key columns.  
+ *      Look up the (hopefully) unique row that matches all the values
+ *      for each of the key columns.  
  *
  * Results:
- *	Returns a standard TCL result.  *rowPtrPtr will return the 
+ *      Returns a standard TCL result.  *rowPtrPtr will return the 
  *      pointer to the found row.  NULL is the row wasn't found.
  *
  *---------------------------------------------------------------------------
  */
 int
 blt_table_key_lookup(Tcl_Interp *interp, Table *tablePtr, int objc, 
-                     Tcl_Obj *const *objv, Row **rowPtrPtr)
+		     Tcl_Obj *const *objv, Row **rowPtrPtr)
 {
     int i;
     Blt_HashEntry *hPtr;
@@ -5949,60 +5949,60 @@ blt_table_key_lookup(Tcl_Interp *interp, Table *tablePtr, int objc,
     }
     if (tablePtr->flags & TABLE_KEYS_DIRTY) {
 	if (MakeKeyTables(interp, tablePtr) != TCL_OK) {
-            return TCL_ERROR;
-        }
+	    return TCL_ERROR;
+	}
     }
     /* Create a master search key by getting the rows from the individual
      * key hash tables for each key.  Use this key to search the master
      * table. */
     for (i = 0; i < tablePtr->numKeys; i++) {
-        Blt_HashTable *keyTablePtr;
-        Column *colPtr;
-        Blt_HashEntry *hPtr;
+	Blt_HashTable *keyTablePtr;
+	Column *colPtr;
+	Blt_HashEntry *hPtr;
 
-        colPtr = tablePtr->primaryKeys[i];
-        keyTablePtr = tablePtr->keyTables + i;
-        switch (colPtr->type) {
-        case TABLE_COLUMN_TYPE_DOUBLE:
-        case TABLE_COLUMN_TYPE_TIME:
-            {
-                double dval;
+	colPtr = tablePtr->primaryKeys[i];
+	keyTablePtr = tablePtr->keyTables + i;
+	switch (colPtr->type) {
+	case TABLE_COLUMN_TYPE_DOUBLE:
+	case TABLE_COLUMN_TYPE_TIME:
+	    {
+		double dval;
 
-                if (Blt_GetDoubleFromObj(interp, objv[i], &dval) != TCL_OK) {
-                    return TCL_ERROR;
-                }
-                hPtr = Blt_FindHashEntry(keyTablePtr, (char *)&dval);
-            }
-            break;
-        case TABLE_COLUMN_TYPE_LONG:
-            {
-                long lval;
+		if (Blt_GetDoubleFromObj(interp, objv[i], &dval) != TCL_OK) {
+		    return TCL_ERROR;
+		}
+		hPtr = Blt_FindHashEntry(keyTablePtr, (char *)&dval);
+	    }
+	    break;
+	case TABLE_COLUMN_TYPE_LONG:
+	    {
+		long lval;
 
-                if (Blt_GetLongFromObj(interp, objv[i], &lval) != TCL_OK) {
-                    return TCL_ERROR;
-                }
-                hPtr = Blt_FindHashEntry(keyTablePtr, (char *)lval);
-            }
-            break;
-        default:
-        case TABLE_COLUMN_TYPE_UNKNOWN:
-        case TABLE_COLUMN_TYPE_STRING:
-            {
-                const char *string;
+		if (Blt_GetLongFromObj(interp, objv[i], &lval) != TCL_OK) {
+		    return TCL_ERROR;
+		}
+		hPtr = Blt_FindHashEntry(keyTablePtr, (char *)lval);
+	    }
+	    break;
+	default:
+	case TABLE_COLUMN_TYPE_UNKNOWN:
+	case TABLE_COLUMN_TYPE_STRING:
+	    {
+		const char *string;
 
-                string = Tcl_GetString(objv[i]);
-                hPtr = Blt_FindHashEntry(keyTablePtr, string);
-            }
-            break;
-        }
+		string = Tcl_GetString(objv[i]);
+		hPtr = Blt_FindHashEntry(keyTablePtr, string);
+	    }
+	    break;
+	}
 	if (hPtr == NULL) {
 	    return TCL_OK;              /* Can't find one of the keys, so
-                                         * the whole search fails. */
+					 * the whole search fails. */
 	}
 	tablePtr->masterKey[i] = Blt_GetHashValue(hPtr);
     }
     hPtr = Blt_FindHashEntry(&tablePtr->masterKeyTable, 
-                (char *)tablePtr->masterKey);
+		(char *)tablePtr->masterKey);
     if (hPtr == NULL) {
 	Blt_Warn("can't find master key\n");
 	return TCL_OK;
@@ -6016,15 +6016,15 @@ blt_table_key_lookup(Tcl_Interp *interp, Table *tablePtr, int objc,
  *
  * blt_table_set_long --
  *
- *	Sets the long interger value of the selected row, column location
- *	in the table.  The row, column location must be within the actual
- *	table limits.
+ *      Sets the long interger value of the selected row, column location
+ *      in the table.  The row, column location must be within the actual
+ *      table limits.
  *
  * Results:
- *	Returns a standard TCL result.
+ *      Returns a standard TCL result.
  *
  * Side Effects:
- *	New tuples may be allocated created.
+ *      New tuples may be allocated created.
  *
  *---------------------------------------------------------------------------
  */
@@ -6037,7 +6037,7 @@ blt_table_set_long(Table *tablePtr, Row *rowPtr, Column *colPtr, long value)
     if (colPtr->type != TABLE_COLUMN_TYPE_LONG) {
 	Tcl_AppendResult(tablePtr->interp, "wrong column type \"",
 		blt_table_column_type_to_name(colPtr->type), 
-                "\": should be \"int\"", (char *)NULL);
+		"\": should be \"int\"", (char *)NULL);
 	return TCL_ERROR;
     }
     valuePtr = GetValue(tablePtr, rowPtr, colPtr);
@@ -6062,20 +6062,20 @@ blt_table_set_long(Table *tablePtr, Row *rowPtr, Column *colPtr, long value)
  *
  * blt_table_set_string --
  *
- *	Sets the value of the selected row, column location in the table.
- *	The row, column location must be within the actual table limits.
+ *      Sets the value of the selected row, column location in the table.
+ *      The row, column location must be within the actual table limits.
  *
  * Results:
- *	Returns a standard TCL result.
+ *      Returns a standard TCL result.
  *
  * Side Effects:
- *	New tuples may be allocated created.
+ *      New tuples may be allocated created.
  *
  *---------------------------------------------------------------------------
  */
 int
 blt_table_set_string(Table *tablePtr, Row *rowPtr, Column *colPtr, 
-                     const char *string, int length)
+		     const char *string, int length)
 {
     Value *valuePtr;
 
@@ -6103,14 +6103,14 @@ blt_table_set_string(Table *tablePtr, Row *rowPtr, Column *colPtr,
  *
  * blt_table_append_string --
  *
- *	Sets the value of the selected row, column location in the table.
- *	The row, column location must be within the actual table limits.
+ *      Sets the value of the selected row, column location in the table.
+ *      The row, column location must be within the actual table limits.
  *
  * Results:
- *	Returns a standard TCL result.
+ *      Returns a standard TCL result.
  *
  * Side Effects:
- *	New tuples may be allocated created.
+ *      New tuples may be allocated created.
  *
  *---------------------------------------------------------------------------
  */
@@ -6132,7 +6132,7 @@ blt_table_append_string(Tcl_Interp *interp, Table *tablePtr, Row *rowPtr,
     }
     Tcl_IncrRefCount(objPtr);
     switch (colPtr->type) {
-    case TABLE_COLUMN_TYPE_TIME:	/* double */
+    case TABLE_COLUMN_TYPE_TIME:        /* double */
 	if (Blt_GetTimeFromObj(interp, objPtr, &d) != TCL_OK) {
 	    Tcl_DecrRefCount(objPtr);
 	    return TCL_ERROR;
@@ -6140,14 +6140,14 @@ blt_table_append_string(Tcl_Interp *interp, Table *tablePtr, Row *rowPtr,
 	valuePtr->datum.d = d;
 	break;
 
-    case TABLE_COLUMN_TYPE_DOUBLE:	/* double */
+    case TABLE_COLUMN_TYPE_DOUBLE:      /* double */
 	if (Blt_GetDoubleFromObj(interp, objPtr, &d) != TCL_OK) {
 	    Tcl_DecrRefCount(objPtr);
 	    return TCL_ERROR;
 	}
 	valuePtr->datum.d = d;
 	break;
-    case TABLE_COLUMN_TYPE_LONG:	/* long */
+    case TABLE_COLUMN_TYPE_LONG:        /* long */
 	if (Blt_GetLongFromObj(interp, objPtr, &l) != TCL_OK) {
 	    Tcl_DecrRefCount(objPtr);
 	    return TCL_ERROR;
@@ -6185,11 +6185,11 @@ blt_table_append_string(Tcl_Interp *interp, Table *tablePtr, Row *rowPtr,
  *
  * blt_table_set_double --
  *
- *	Sets the value of the selected row, column location in the table.
- *	The row, column location must be within the actual table limits.
+ *      Sets the value of the selected row, column location in the table.
+ *      The row, column location must be within the actual table limits.
  *
  * Results:
- *	Returns a standard TCL result.
+ *      Returns a standard TCL result.
  *
  *---------------------------------------------------------------------------
  */
@@ -6231,12 +6231,12 @@ blt_table_set_double(Table *tablePtr, Row *rowPtr, Column *colPtr, double value)
  *
  * blt_table_get_string --
  *
- *	Sets the value of the selected row, column location in the table.
- *	The row, column location must be within the actual table limits.
+ *      Sets the value of the selected row, column location in the table.
+ *      The row, column location must be within the actual table limits.
  *
  * Results:
- *	Returns a string value.  If the value is empty, the default value 
- *	is returned.
+ *      Returns a string value.  If the value is empty, the default value 
+ *      is returned.
  *
  *---------------------------------------------------------------------------
  */
@@ -6257,13 +6257,13 @@ blt_table_get_string(Table *tablePtr, Row *rowPtr, Column *colPtr)
  *
  * blt_table_get_double --
  *
- *	Gets the double value of the selected row, column location in the
- *	table.  The row, column location must be within the actual table
- *	limits.
+ *      Gets the double value of the selected row, column location in the
+ *      table.  The row, column location must be within the actual table
+ *      limits.
  *
  * Results:
- *	Returns a double value.  If the value is empty, the default value 
- *	is returned (NaN).
+ *      Returns a double value.  If the value is empty, the default value 
+ *      is returned (NaN).
  *
  *---------------------------------------------------------------------------
  */
@@ -6293,13 +6293,13 @@ blt_table_get_double(Table *tablePtr, Row *rowPtr, Column *colPtr)
  *
  * blt_table_get_long --
  *
- *	Gets the long integer value of the selected row, column location in
- *	the table.  The row, column location must be within the actual
- *	table limits.
+ *      Gets the long integer value of the selected row, column location in
+ *      the table.  The row, column location must be within the actual
+ *      table limits.
  *
  * Results:
- *	Returns a long value.  If the value is empty, the default value 
- *	is returned.
+ *      Returns a long value.  If the value is empty, the default value 
+ *      is returned.
  *
  *---------------------------------------------------------------------------
  */

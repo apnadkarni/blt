@@ -487,21 +487,21 @@ GetProperty(Display *display, Window window, Atom atom)
     }
     data = NULL;
     result = XGetWindowProperty(
-        display,			/* Display of window. */
+	display,			/* Display of window. */
 	window,				/* Window holding the property. */
-        atom,				/* Name of property. */
-        0,				/* Offset of data (for multiple
+	atom,				/* Name of property. */
+	0,				/* Offset of data (for multiple
 					 * reads). */
 	GetMaxPropertySize(display),	/* Maximum number of items to read. */
 	False,				/* If true, delete the property. */
-        XA_STRING,			/* Desired type of property. */
-        &typeAtom,			/* (out) Actual type of the
+	XA_STRING,			/* Desired type of property. */
+	&typeAtom,			/* (out) Actual type of the
 					 * property. */
-        &format,			/* (out) Actual format of the
+	&format,			/* (out) Actual format of the
 					 * property. */
-        &numItems,			/* (out) # of items in specified
+	&numItems,			/* (out) # of items in specified
 					 * format. */
-        &bytesAfter,			/* (out) # of bytes remaining to be
+	&bytesAfter,			/* (out) # of bytes remaining to be
 					 * read. */
 	&data);
     if ((result != Success) || (format != 8) /*|| (typeAtom != XA_STRING)*/) {
@@ -1122,7 +1122,7 @@ AdoptedWindowEventProc(ClientData clientData, XEvent *eventPtr)
 	return 1;
     }
     if (eventPtr->xany.window != conPtr->adopted) {
-        return 0;
+	return 0;
     }
     if (eventPtr->type == ConfigureNotify) {
 	XConfigureEvent *evPtr = &eventPtr->xconfigure;
@@ -1468,7 +1468,7 @@ ContainerCmd(
     }
     {
 #ifdef notdef
-    	XSetWindowAttributes attr;
+	XSetWindowAttributes attr;
 	attr.event_mask = SubstructureRedirectMask | SubstructureNotifyMask;
 	    
 	XChangeWindowAttributes(conPtr->display, Tk_RootWindow(tkwin), 
@@ -1851,19 +1851,19 @@ FillTree(Container *conPtr, Window window, Blt_Tree tree, Blt_TreeNode parent)
 		conPtr->display,	/* Display of window. */
 		window,			/* Window holding the property. */
 		atoms[i],		/* Name of property. */
-	        0,			/* Offset of data (for multiple
+		0,			/* Offset of data (for multiple
 					 * reads). */
 		GetMaxPropertySize(conPtr->display), 
 					/* Maximum number of items to read. */
 		False,			/* If true, delete the property. */
-	        XA_STRING,		/* Desired type of property. */
-	        &typeAtom,		/* (out) Actual type of the
+		XA_STRING,		/* Desired type of property. */
+		&typeAtom,		/* (out) Actual type of the
 					 * property. */
-	        &format,		/* (out) Actual format of the
+		&format,		/* (out) Actual format of the
 					 * property. */
-	        &numItems,		/* (out) # of items in specified
+		&numItems,		/* (out) # of items in specified
 					 * format. */
-	        &bytesAfter,		/* (out) # of bytes remaining to be
+		&bytesAfter,		/* (out) # of bytes remaining to be
 					 * read. */
 		(unsigned char **)&data);
 #ifdef notdef

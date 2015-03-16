@@ -242,7 +242,7 @@ typedef struct {
 
 
     int xOffset, yOffset;		/* Pixel offset from graph
-                                         * position */
+					 * position */
 
     int state;
 
@@ -251,7 +251,7 @@ typedef struct {
     Pixmap srcBitmap;			/* Original bitmap. May be further
 					 * scaled or rotated. */
     float reqAngle;			/* Requested rotation of the
-                                           bitmap */
+					   bitmap */
     float angle;			/* Normalized rotation (0..360
 					 * degrees) */
     Tk_Anchor anchor;			/* If only one X-Y coordinate is
@@ -269,7 +269,7 @@ typedef struct {
     GC fillGC;				/* Shared graphic context */
     Pixmap destBitmap;			/* Bitmap to be drawn. */
     int destWidth, destHeight;		/* Dimensions of the final
-                                         * bitmap */
+					 * bitmap */
 
     Point2d outline[MAX_OUTLINE_POINTS];/* Polygon representing the
 					 * background of the bitmap. */
@@ -301,7 +301,7 @@ static Blt_ConfigSpec bitmapConfigSpecs[] =
 	BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_BITMASK, "-hide", "hide", "Hide", DEF_MARKER_HIDE, 
 	Blt_Offset(BitmapMarker, flags), BLT_CONFIG_DONT_SET_DEFAULT,
-        (Blt_CustomOption *)HIDDEN},
+	(Blt_CustomOption *)HIDDEN},
     {BLT_CONFIG_CUSTOM, "-mapx", "mapX", "MapX", DEF_MARKER_MAP_X, 
 	Blt_Offset(BitmapMarker, axes.x), 0, &bltXAxisOption},
     {BLT_CONFIG_CUSTOM, "-mapy", "mapY", "MapY", DEF_MARKER_MAP_Y, 
@@ -377,7 +377,7 @@ typedef struct {
 					 * area. */
     unsigned int flags;		
     int xOffset, yOffset;		/* Pixel offset from graph
-                                           position */
+					   position */
     int state;
     Tk_Image tkImage;			/* Tk image to be displayed. */
     Tk_Anchor anchor;			/* Indicates how to translate the
@@ -390,7 +390,7 @@ typedef struct {
     Blt_ResampleFilter filter;
     int pictX, pictY;			/*  */
     Blt_Picture scaled;			/* Pixmap containing the scaled
-                                         * image */
+					 * image */
     GC gc;
 
 } ImageMarker;
@@ -407,7 +407,7 @@ static Blt_ConfigSpec imageConfigSpecs[] =
 	Blt_Offset(ImageMarker, elemName), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_BITMASK, "-hide", "hide", "Hide", DEF_MARKER_HIDE,	
 	Blt_Offset(ImageMarker, flags), BLT_CONFIG_DONT_SET_DEFAULT,
-        (Blt_CustomOption *)HIDDEN},
+	(Blt_CustomOption *)HIDDEN},
     {BLT_CONFIG_CUSTOM, "-image", "image", "Image", (char *)NULL, 
 	Blt_Offset(ImageMarker, picture), BLT_CONFIG_NULL_OK, &pictImageOption},
     {BLT_CONFIG_CUSTOM, "-mapx", "mapX", "MapX", DEF_MARKER_MAP_X, 
@@ -417,7 +417,7 @@ static Blt_ConfigSpec imageConfigSpecs[] =
     {BLT_CONFIG_STRING, "-name", (char *)NULL, (char *)NULL, DEF_MARKER_NAME, 
 	Blt_Offset(ImageMarker, obj.name), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_CUSTOM, "-resamplefilter", "resampleFilter", "ResampleFilter", 
-        DEF_MARKER_FILTER, Blt_Offset(ImageMarker, filter), 
+	DEF_MARKER_FILTER, Blt_Offset(ImageMarker, filter), 
 	BLT_CONFIG_NULL_OK | BLT_CONFIG_DONT_SET_DEFAULT, &bltFilterOption},
     {BLT_CONFIG_STATE, "-state", "state", "State", DEF_MARKER_STATE, 
 	Blt_Offset(ImageMarker, state), BLT_CONFIG_DONT_SET_DEFAULT},
@@ -426,7 +426,7 @@ static Blt_ConfigSpec imageConfigSpecs[] =
     {BLT_CONFIG_PIXELS, "-xoffset", "xOffset", "XOffset", DEF_MARKER_X_OFFSET, 
 	Blt_Offset(ImageMarker, xOffset), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_PIXELS, "-yoffset", "yOffset", "YOffset", DEF_MARKER_Y_OFFSET, 
-        Blt_Offset(ImageMarker, yOffset), BLT_CONFIG_DONT_SET_DEFAULT},
+	Blt_Offset(ImageMarker, yOffset), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_END, NULL, NULL, NULL, NULL, 0, 0}
 };
 
@@ -539,7 +539,7 @@ static Blt_ConfigSpec lineConfigSpecs[] =
 	BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_BITMASK, "-hide", "hide", "Hide", DEF_MARKER_HIDE, 
 	Blt_Offset(LineMarker, flags), BLT_CONFIG_DONT_SET_DEFAULT,
-        (Blt_CustomOption *)HIDDEN},
+	(Blt_CustomOption *)HIDDEN},
     {BLT_CONFIG_CUSTOM, "-mapx", "mapX", "MapX", DEF_MARKER_MAP_X, 
 	Blt_Offset(LineMarker, axes.x), 0, &bltXAxisOption},
     {BLT_CONFIG_CUSTOM, "-mapy", "mapY", "MapY", DEF_MARKER_MAP_Y, 
@@ -691,7 +691,7 @@ static Blt_ConfigSpec polygonConfigSpecs[] =
 	BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_BITMASK, "-hide", "hide", "Hide", DEF_MARKER_HIDE, 
 	Blt_Offset(PolygonMarker, flags), BLT_CONFIG_DONT_SET_DEFAULT,
-        (Blt_CustomOption *)HIDDEN},
+	(Blt_CustomOption *)HIDDEN},
     {BLT_CONFIG_CUSTOM, "-mapx", "mapX", "MapX", DEF_MARKER_MAP_X, 
 	Blt_Offset(PolygonMarker, axes.x), 0, &bltXAxisOption},
     {BLT_CONFIG_CUSTOM, "-mapy", "mapY", "MapY", DEF_MARKER_MAP_Y, 
@@ -802,10 +802,10 @@ static Blt_ConfigSpec textConfigSpecs[] =
 	Blt_Offset(TextMarker, obj.tags), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_CUSTOM, "-coords", "coords", "Coords", DEF_MARKER_COORDS, 
 	Blt_Offset(TextMarker, worldPts), BLT_CONFIG_NULL_OK, 
-        &coordsOption},
+	&coordsOption},
     {BLT_CONFIG_STRING, "-element", "element", "Element",
 	DEF_MARKER_ELEMENT, Blt_Offset(TextMarker, elemName), 
-        BLT_CONFIG_NULL_OK},
+	BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_SYNONYM, "-fg", "foreground", "Foreground", (char *)NULL, 0, 0},
     {BLT_CONFIG_SYNONYM, "-fill", "background", (char *)NULL, (char *)NULL, 
 	0, 0},
@@ -938,8 +938,8 @@ static Blt_ConfigSpec windowConfigSpecs[] =
     {BLT_CONFIG_PIXELS_POS, "-height", "height", "Height", DEF_MARKER_HEIGHT, 
 	Blt_Offset(WindowMarker, reqHeight), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_BITMASK, "-hide", "hide", "Hide", DEF_MARKER_HIDE, 
-        Blt_Offset(WindowMarker, flags), BLT_CONFIG_DONT_SET_DEFAULT,
-        (Blt_CustomOption *)HIDDEN},
+	Blt_Offset(WindowMarker, flags), BLT_CONFIG_DONT_SET_DEFAULT,
+	(Blt_CustomOption *)HIDDEN},
     {BLT_CONFIG_CUSTOM, "-mapx", "mapX", "MapX", DEF_MARKER_MAP_X, 
 	Blt_Offset(WindowMarker, axes.x), 0, &bltXAxisOption},
     {BLT_CONFIG_CUSTOM, "-mapy", "mapY", "MapY", DEF_MARKER_MAP_Y, 
@@ -4307,7 +4307,7 @@ RenameMarker(Graph *graphPtr, Marker *markerPtr, const char *oldName,
  */
 static int
 NamesOp(ClientData clientData, Tcl_Interp *interp, int objc,
-        Tcl_Obj *const *objv)
+	Tcl_Obj *const *objv)
 {
     Graph *graphPtr = clientData;
     Tcl_Obj *listObjPtr;
@@ -4428,7 +4428,7 @@ CgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
  */
 static int
 ConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
-            Tcl_Obj *const *objv)
+	    Tcl_Obj *const *objv)
 {
     Graph *graphPtr = clientData;
     Marker *markerPtr;
@@ -4514,7 +4514,7 @@ ConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
  */
 static int
 CreateOp(ClientData clientData, Tcl_Interp *interp, int objc,
-         Tcl_Obj *const *objv)
+	 Tcl_Obj *const *objv)
 {
     Graph *graphPtr = clientData;
     Marker *markerPtr;
@@ -4620,7 +4620,7 @@ CreateOp(ClientData clientData, Tcl_Interp *interp, int objc,
 /*ARGSUSED*/
 static int
 DeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
-         Tcl_Obj *const *objv)
+	 Tcl_Obj *const *objv)
 {
     Graph *graphPtr = clientData;
     int i;
@@ -4700,7 +4700,7 @@ GetOp(ClientData clientData, Tcl_Interp *interp, int objc,
 /*ARGSUSED*/
 static int
 RelinkOp(ClientData clientData, Tcl_Interp *interp, int objc,
-         Tcl_Obj *const *objv)
+	 Tcl_Obj *const *objv)
 {
     Graph *graphPtr = clientData;
     Blt_ChainLink link, place;
@@ -4836,7 +4836,7 @@ FindOp(ClientData clientData, Tcl_Interp *interp, int objc,
 /*ARGSUSED*/
 static int
 ExistsOp(ClientData clientData, Tcl_Interp *interp, int objc,
-         Tcl_Obj *const *objv)
+	 Tcl_Obj *const *objv)
 {
     Graph *graphPtr = clientData;
     Blt_HashEntry *hPtr;

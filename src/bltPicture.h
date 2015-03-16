@@ -90,7 +90,7 @@ struct _Blt_Picture {
 };
 
 #define BLT_PIC_COLOR  (1<<0)		/* Indicates if color or
-                                         * greyscale. */
+					 * greyscale. */
 #define BLT_PIC_BLEND  (1<<1)		/* Picture has partial opaque
 					 * pixels. */
 #define BLT_PIC_MASK   (1<<2)		/* Pixels are either 100% opaque or
@@ -109,8 +109,8 @@ struct _Blt_Picture {
 					 * to premultiply alphas again. */ 
 
 #define BLT_PIC_UNINITIALIZED (1<<5)    /* Indicates that the contents of
-                                         * the picture haven't been
-                                         * initialized yet. */
+					 * the picture haven't been
+					 * initialized yet. */
 
 #define BLT_PAINTER_DITHER		(1<<10)
 
@@ -395,7 +395,7 @@ BLT_EXTERN Blt_Picture Blt_PhotoToPicture (Tk_PhotoHandle photo);
 BLT_EXTERN Blt_Picture Blt_PhotoAreaToPicture (Tk_PhotoHandle photo, 
 	int x, int y, int w, int h);
 BLT_EXTERN Blt_Picture Blt_DrawableToPicture(Tk_Window tkwin, 
- 	Drawable drawable, int x, int y, int w, int h, float gamma);
+	Drawable drawable, int x, int y, int w, int h, float gamma);
 BLT_EXTERN Blt_Picture Blt_WindowToPicture(Display *display, 
 	Drawable drawable, int x, int y, int w, int h, float gamma);
 BLT_EXTERN void Blt_PictureToPhoto(Blt_Picture picture, Tk_PhotoHandle photo);
@@ -531,15 +531,15 @@ typedef enum Blt_PaintBrushTypes {
  */
 struct _Blt_PaintBrush {
     Blt_PaintBrushType type;		/* Type of paintbrush:
-    					 * BLT_PAINTBRUSH_SOLID,
-    					 * BLT_PAINTBRUSH_TILE,
-    					 * BLT_PAINTBRUSH_GRADIENT, * or
-    					 * BLT_PAINTBRUSH_TEXTURE. */
+					 * BLT_PAINTBRUSH_SOLID,
+					 * BLT_PAINTBRUSH_TILE,
+					 * BLT_PAINTBRUSH_GRADIENT, * or
+					 * BLT_PAINTBRUSH_TEXTURE. */
     int alpha;				/* Base opacity. 0-255 */
     /* Solid color specific fields. */
     Blt_Pixel solidColor;		/* Color to use if
-    					 * BLT_PAINTBRUSH_SOLID. May be
-    					 * translucent. */
+					 * BLT_PAINTBRUSH_SOLID. May be
+					 * translucent. */
     /*  Tile-specific fields. */
     Blt_Picture tile;			/* If non-NULL, picture to use for
 					 * tiling. */
@@ -596,7 +596,7 @@ BLT_EXTERN void Blt_PaintPolygon(Blt_Picture picture, int n, Point2f *vertices,
 #endif
 
 BLT_EXTERN Blt_Picture Blt_EmbossPicture(Blt_Picture picture, double azimuth, 
-        double elevation, unsigned short width45);
+	double elevation, unsigned short width45);
 BLT_EXTERN void Blt_FadeColor(Blt_Pixel *colorPtr, unsigned int alpha);
 
 #endif /*_BLT_PICTURE_H*/

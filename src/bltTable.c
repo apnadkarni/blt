@@ -108,11 +108,11 @@ static Tk_GeomLostSlaveProc WidgetCustodyProc;
 static Tk_GeomMgr tableMgrInfo =
 {
     (char *)"table",                    /* Name of geometry manager used by
-                                         * winfo */
+					 * winfo */
     WidgetGeometryProc,                 /* Procedure to for new geometry
-                                         * requests */
+					 * requests */
     WidgetCustodyProc,                  /* Procedure when widget is taken
-                                         * away */
+					 * away */
 };
 
 static Blt_OptionParseProc ObjToLimits;
@@ -932,7 +932,7 @@ WidgetGeometryProc(
     ClientData clientData,	/* Information about widget that got new
 				 * preferred geometry.  */
     Tk_Window tkwin)		/* Other Tk-related information about the
-			         * widget. */
+				 * widget. */
 {
     TableEntry *tePtr = (TableEntry *) clientData;
 
@@ -3217,7 +3217,7 @@ SetNominalSizes(Table *tablePtr, PartitionInfo *piPtr)
 	    }
 	    rcPtr->nom = size;
 	}
- 	total += rcPtr->nom;
+	total += rcPtr->nom;
     }
     return total;
 }
@@ -3475,7 +3475,7 @@ ArrangeEntries(Table *tablePtr)		/* Table widget structure */
 	if ((x >= xMax) || (y >= yMax)) {
 #ifdef notdef
  fprintf(stderr, "arrange entries: unmapping window %s %d>=%d %d>=%d\n", 
-         Tk_PathName(tePtr->tkwin), x, xMax, y, yMax);
+	 Tk_PathName(tePtr->tkwin), x, xMax, y, yMax);
 #endif
 	    if (Tk_IsMapped(tePtr->tkwin)) {
 		if (Tk_Parent(tePtr->tkwin) != tablePtr->tkwin) {
@@ -3560,9 +3560,9 @@ ArrangeEntries(Table *tablePtr)		/* Table widget structure */
 	tePtr->y = y;
 
 #ifdef notdef
-        fprintf(stderr, "ArrangeEntries: %s rw=%d rh=%d w=%d h=%d\n",
-                Tk_PathName(tePtr->tkwin), Tk_ReqWidth(tePtr->tkwin),
-                Tk_ReqHeight(tePtr->tkwin), winWidth, winHeight);
+	fprintf(stderr, "ArrangeEntries: %s rw=%d rh=%d w=%d h=%d\n",
+		Tk_PathName(tePtr->tkwin), Tk_ReqWidth(tePtr->tkwin),
+		Tk_ReqHeight(tePtr->tkwin), winWidth, winHeight);
 #endif
 	if (tablePtr->tkwin != Tk_Parent(tePtr->tkwin)) {
 	    Tk_MaintainGeometry(tePtr->tkwin, tablePtr->tkwin, x, y,

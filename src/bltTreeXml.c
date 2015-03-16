@@ -381,29 +381,29 @@ TrimWhitespace(XmlReader *readerPtr)
 
     root = readerPtr->root;
     for (node = root; node != NULL; node = Blt_Tree_NextNode(root, node)) {
-        if (strcmp(Blt_Tree_NodeLabel(node), SYM_CDATA) == 0) {
-            Tcl_Obj *objPtr, *newPtr;
-            int length;
-            const char *first, *last, *pend, *string;
-            if (Blt_Tree_GetValue(readerPtr->interp, readerPtr->tree, node,
-                        SYM_CDATA, &objPtr) != TCL_OK) {
-                continue;
-            }
-            string = Tcl_GetStringFromObj(objPtr, &length);
-            for (first = string, pend = string+length; first < pend; first++) {
-                if (!isspace(*first)) {
-                    break;
-                }
-            }
-            for (last = pend; last > first; last--) {
-                if (!isspace(*(last - 1))) {
-                    break;
-                }
-            }
-            newPtr = Tcl_NewStringObj(first, last - first);
-            Blt_Tree_SetValue(readerPtr->interp, readerPtr->tree, node,
-                              SYM_CDATA, newPtr);
-        }
+	if (strcmp(Blt_Tree_NodeLabel(node), SYM_CDATA) == 0) {
+	    Tcl_Obj *objPtr, *newPtr;
+	    int length;
+	    const char *first, *last, *pend, *string;
+	    if (Blt_Tree_GetValue(readerPtr->interp, readerPtr->tree, node,
+			SYM_CDATA, &objPtr) != TCL_OK) {
+		continue;
+	    }
+	    string = Tcl_GetStringFromObj(objPtr, &length);
+	    for (first = string, pend = string+length; first < pend; first++) {
+		if (!isspace(*first)) {
+		    break;
+		}
+	    }
+	    for (last = pend; last > first; last--) {
+		if (!isspace(*(last - 1))) {
+		    break;
+		}
+	    }
+	    newPtr = Tcl_NewStringObj(first, last - first);
+	    Blt_Tree_SetValue(readerPtr->interp, readerPtr->tree, node,
+			      SYM_CDATA, newPtr);
+	}
     }
 }
 
@@ -422,7 +422,7 @@ GetCharacterDataProc(void *userData, const XML_Char *string, int length)
 	/* Last child added was a CDATA node, append new data to it.  */
 	
 	if (Blt_Tree_GetValue(readerPtr->interp, tree, child, SYM_CDATA, 
-                              &objPtr) == TCL_OK) {
+			      &objPtr) == TCL_OK) {
 	    Tcl_AppendToObj(objPtr, string, length);
 	    return;
 	}
@@ -745,7 +745,7 @@ ImportXmlFile(
     result = ReadXmlFromFile(interp, parser, fileName);
     XML_ParserFree(parser);
     if (flags & IMPORT_TRIMCDATA) {
-        TrimWhitespace(&reader);
+	TrimWhitespace(&reader);
     }
     DumpStringTable(&reader.stringTable);
     return (result) ? TCL_OK : TCL_ERROR;
@@ -816,7 +816,7 @@ ImportXmlData(
 		(char *)NULL);
     }
     if (flags & IMPORT_TRIMCDATA) {
-        TrimWhitespace(&reader);
+	TrimWhitespace(&reader);
     }
     XML_ParserFree(parser);
     DumpStringTable(&reader.stringTable);
@@ -965,10 +965,10 @@ XmlEndElement(XmlWriter *writerPtr, Blt_TreeNode node)
 {
 
     if ((writerPtr->flags & EXPORT_CDATA) == 0) {
-        long i;
-        for (i = 0; i < Blt_Tree_NodeDepth(node); i++) {
-            Tcl_DStringAppend(writerPtr->dsPtr, "  ", 2);
-        }
+	long i;
+	for (i = 0; i < Blt_Tree_NodeDepth(node); i++) {
+	    Tcl_DStringAppend(writerPtr->dsPtr, "  ", 2);
+	}
     }
     writerPtr->flags &= ~EXPORT_CDATA;
     Tcl_DStringAppend(writerPtr->dsPtr, "</", 2);
@@ -1037,7 +1037,7 @@ XmlExportElement(Blt_Tree tree, Blt_TreeNode parent, XmlWriter *writerPtr)
 	return TCL_OK;
     } 
     if (Blt_Tree_NodeDepth(parent) != writerPtr->lastDepth) {
-        Tcl_DStringAppend(writerPtr->dsPtr, "\n", 1);
+	Tcl_DStringAppend(writerPtr->dsPtr, "\n", 1);
     }
     writerPtr->lastDepth = Blt_Tree_NodeDepth(parent);
     XmlOpenStartElement(writerPtr, parent);
@@ -1167,7 +1167,7 @@ Blt_TreeXmlInit(Tcl_Interp *interp)
 	return TCL_ERROR;
     }
     return Blt_Tree_RegisterFormat(interp,
-        "xml",			/* Name of format. */
+	"xml",			/* Name of format. */
 #ifdef HAVE_LIBEXPAT
 	ImportXmlProc,		/* Import procedure. */
 #else

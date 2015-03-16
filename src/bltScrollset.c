@@ -246,30 +246,30 @@ static Blt_ConfigSpec scrollsetSpecs[] =
     {BLT_CONFIG_OBJ, "-xscrollbar", "xScrollbar", "Scrollbar", DEF_XSCROLLBAR, 
 	Blt_Offset(Scrollset, xScrollbarObjPtr), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_OBJ, "-xscrollcommand", "xScrollCommand", "ScrollCommand",
-        DEF_XSCROLLCOMMAND, Blt_Offset(Scrollset, xReqScrollCmdObjPtr), 
+	DEF_XSCROLLCOMMAND, Blt_Offset(Scrollset, xReqScrollCmdObjPtr), 
 	BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_PIXELS_POS, "-xscrollincrement", "xScrollIncrement",
 	"ScrollIncrement", DEF_XSCROLLINCREMENT, 
 	Blt_Offset(Scrollset, xScrollUnits), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_OBJ, "-xviewcommand", "xViewCommand", "ViewCommand",
-        DEF_XVIEWCOMMAND, Blt_Offset(Scrollset, xViewCmdObjPtr), 
+	DEF_XVIEWCOMMAND, Blt_Offset(Scrollset, xViewCmdObjPtr), 
 	BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_OBJ, "-yscrollbar", "yScrollbar", "Scrollbar", DEF_YSCROLLBAR, 
 	Blt_Offset(Scrollset, yScrollbarObjPtr), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_OBJ, "-yscrollcommand", "yScrollCommand", "ScrollCommand",
-        DEF_YSCROLLCOMMAND, Blt_Offset(Scrollset, yReqScrollCmdObjPtr), 
+	DEF_YSCROLLCOMMAND, Blt_Offset(Scrollset, yReqScrollCmdObjPtr), 
 	BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_PIXELS_POS, "-yscrollincrement", "yScrollIncrement",
 	"ScrollIncrement", DEF_YSCROLLINCREMENT, 
-         Blt_Offset(Scrollset, yScrollUnits),BLT_CONFIG_DONT_SET_DEFAULT},
+	 Blt_Offset(Scrollset, yScrollUnits),BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_OBJ, "-yviewcommand", "yViewCommand", "ViewCommand",
-        DEF_YVIEWCOMMAND, Blt_Offset(Scrollset, yViewCmdObjPtr), 
+	DEF_YVIEWCOMMAND, Blt_Offset(Scrollset, yViewCmdObjPtr), 
 	BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_PIXELS, "-width", "width", "Width", DEF_WIDTH, 
 	Blt_Offset(Scrollset, reqWidth), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_OBJ, "-window", "window", "Window", DEF_WINDOW, 
 	Blt_Offset(Scrollset, slaveObjPtr), 
-        BLT_CONFIG_NULL_OK | BLT_CONFIG_DONT_SET_DEFAULT},
+	BLT_CONFIG_NULL_OK | BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_END, (char *)NULL, (char *)NULL, (char *)NULL, (char *)NULL, 
 	0, 0}
 };
@@ -1369,7 +1369,7 @@ SetOp(Scrollset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     if (string[0] == 'x') {
 	if (setPtr->xScrollbar != NULL) {
 	    scrollbar = Tk_PathName(setPtr->xScrollbar);
-        }
+	}
 	useX = TRUE;
 	if (setPtr->flags & SLAVE_XVIEW) {
 	    flag = DISPLAY_X;
@@ -1377,7 +1377,7 @@ SetOp(Scrollset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     } else if (string[0] == 'y') {
 	if (setPtr->yScrollbar != NULL) {
 	    scrollbar = Tk_PathName(setPtr->yScrollbar);
-        }
+	}
 	useX = FALSE;
 	if (setPtr->flags & SLAVE_YVIEW) {
 	    flag = DISPLAY_Y;
@@ -1407,14 +1407,14 @@ SetOp(Scrollset *setPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	} else if (useX) {
 	    setPtr->worldWidth = 0;
 	    if ((last > first) && (Tk_Width(setPtr->slave) > 1)) {
-	        setPtr->worldWidth = 
+		setPtr->worldWidth = 
 		    (int)((double)Tk_Width(setPtr->slave) / (last - first));
 	    } 
 	    setPtr->flags |= DISPLAY_X; /* Display x-scrollbar. */
 	} else {
 	    setPtr->worldHeight = 0;
 	    if ((last > first) && (Tk_Height(setPtr->slave) > 1)) {
-	        setPtr->worldHeight = 
+		setPtr->worldHeight = 
 		    (int)((double)Tk_Height(setPtr->slave) / (last - first));
 	    }
 	    setPtr->flags |= DISPLAY_Y; /* Display y-scrollbar. */

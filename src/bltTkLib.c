@@ -66,15 +66,15 @@ Blt_InitTkStubs(Tcl_Interp *interp, const char *version, int exact)
 	return NULL;
     }
     if (exact) {
-        const char *p;
-        int count = 0;
+	const char *p;
+	int count = 0;
 
 	p = version;
 	count = 0;
-        while (*p != '\0') {
-            count += !IsDigit(*p++);
-        }
-        if (count == 1) {
+	while (*p != '\0') {
+	    count += !IsDigit(*p++);
+	}
+	if (count == 1) {
 	    const char *q;
 
 	    q = actual;
@@ -82,19 +82,19 @@ Blt_InitTkStubs(Tcl_Interp *interp, const char *version, int exact)
 	    while (*p && (*p == *q)) {
 		p++; q++;
 	    }
-            if (*p) {
+	    if (*p) {
 		/* Construct error message */
 		Tcl_PkgRequireEx(interp, "blt_tk", version, PKG_EXACT, NULL);
-                return NULL;
+		return NULL;
 
-            }
-        } else {
-            actual = Tcl_PkgRequireEx(interp, "blt_tk", version, PKG_EXACT, 
+	    }
+	} else {
+	    actual = Tcl_PkgRequireEx(interp, "blt_tk", version, PKG_EXACT, 
 		NULL);
-            if (actual == NULL) {
-                return NULL;
-            }
-        }
+	    if (actual == NULL) {
+		return NULL;
+	    }
+	}
     }
 
     if (clientData == NULL) {

@@ -301,8 +301,8 @@ DumpStack(GrabCmdInterpData *dataPtr)
 	Grab *grabPtr;
 
 	grabPtr = Blt_Chain_GetValue(link);
-        fprintf(stderr, "  %s %s\n", Tk_PathName(grabPtr->entryPtr->tkwin), 
-                (grabPtr->flags & GRAB_GLOBAL) ? "global" : "local");
+	fprintf(stderr, "  %s %s\n", Tk_PathName(grabPtr->entryPtr->tkwin), 
+		(grabPtr->flags & GRAB_GLOBAL) ? "global" : "local");
     }
 }
 
@@ -541,9 +541,9 @@ FixCurrent(Tcl_Interp *interp, GrabCmdInterpData *dataPtr)
 				 (char *)NULL);
 	    } else {
 		Tcl_AppendResult(interp, 
-                        "no current grab: releasing grab stack: top=\"",
-                        Tk_PathName(grabPtr->entryPtr->tkwin),
-                        "\"", (char *)NULL);
+			"no current grab: releasing grab stack: top=\"",
+			Tk_PathName(grabPtr->entryPtr->tkwin),
+			"\"", (char *)NULL);
 		ReleaseStack(dataPtr);
 		return TCL_ERROR;
 	    }

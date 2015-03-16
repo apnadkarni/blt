@@ -337,7 +337,7 @@ CgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
  */
 static int
 ConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
-            Tcl_Obj *const *objv)
+	    Tcl_Obj *const *objv)
 {
     Graph *graphPtr = clientData;
     Playback *playPtr = &graphPtr->play;
@@ -376,7 +376,7 @@ ConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
 /* ARGSUSED */
 static int
 MaxtimeOp(ClientData clientData, Tcl_Interp *interp, int objc,
-          Tcl_Obj *const *objv)
+	  Tcl_Obj *const *objv)
 {
     Graph *graphPtr = clientData;
     Blt_ChainLink link;
@@ -425,7 +425,7 @@ static int numPlayOps = sizeof(playOps) / sizeof(Blt_OpSpec);
  */
 int
 Blt_PlaybackOp(ClientData clientData, Tcl_Interp *interp, int objc,
-               Tcl_Obj *const *objv)
+	       Tcl_Obj *const *objv)
 {
     Tcl_ObjCmdProc *proc;
 

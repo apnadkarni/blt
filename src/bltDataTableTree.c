@@ -75,7 +75,7 @@ static Blt_SwitchSpec importSwitches[] =
     {BLT_SWITCH_INT_NNEG, "-depth", "number", (char *)NULL,
 	Blt_Offset(ImportSwitches, maxDepth), 0},
     {BLT_SWITCH_BITMASK, "-inodes",  "", (char *)NULL,
-        Blt_Offset(ImportSwitches, flags), 0, IMPORT_INODES},
+	Blt_Offset(ImportSwitches, flags), 0, IMPORT_INODES},
     {BLT_SWITCH_END}
 };
 
@@ -112,7 +112,7 @@ static Blt_SwitchSpec exportSwitches[] =
     {BLT_SWITCH_OBJ, "-node", "node", (char *)NULL,
 	Blt_Offset(ExportSwitches, nodeObjPtr), 0},
     {BLT_SWITCH_CUSTOM, "-rows", "rows", (char *)NULL,
-        Blt_Offset(ExportSwitches, rIter), 0, 0, &rowIterSwitch},
+	Blt_Offset(ExportSwitches, rIter), 0, 0, &rowIterSwitch},
     {BLT_SWITCH_END}
 };
 
@@ -496,7 +496,7 @@ blt_table_tree_init(Tcl_Interp *interp)
 	return TCL_ERROR;
     }
     return blt_table_register_format(interp,
-        "tree",			/* Name of format. */
+	"tree",			/* Name of format. */
 	ImportTreeProc,		/* Import procedure. */
 	ExportTreeProc);	/* Export procedure. */
 

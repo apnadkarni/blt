@@ -375,7 +375,7 @@ Blt_RelinkWindow2(
 
     winPtr->flags &= ~TK_REPARENTED;
     UnlinkWindow(winPtr);	/* Remove the window from its parent's
-                                 * list */
+				 * list */
 
     /* Append the window onto the end of the parent's list of children */
     winPtr->parentPtr = parentWinPtr;
@@ -404,7 +404,7 @@ Blt_UnlinkWindow(Tk_Window tkwin)       /* Child window to be linked. */
     winPtr->flags &= ~TK_REPARENTED;
 #ifdef notdef
     UnlinkWindow(winPtr);               /* Remove the window from its
-                                         * parent's list */
+					 * parent's list */
 #endif
 }
 #endif
@@ -428,8 +428,8 @@ Blt_Toplevel(Tk_Window tkwin)
     while (!Tk_IsTopLevel(tkwin)) {
 	tkwin = Tk_Parent(tkwin);
 	 if (tkwin == NULL) {
-             return NULL;
-         }
+	     return NULL;
+	 }
     }
     return tkwin;
 }

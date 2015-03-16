@@ -87,7 +87,7 @@ typedef struct {
 static Blt_SwitchSpec importSwitches[] = 
 {
     {BLT_SWITCH_OBJ, "-data", "string", (char *)NULL,
-         Blt_Offset(ImportSwitches, dataObj), 0, 0},
+	 Blt_Offset(ImportSwitches, dataObj), 0, 0},
     {BLT_SWITCH_OBJ, "-file", "fileName", (char *)NULL,
 	Blt_Offset(ImportSwitches, fileObj), 0, 0},
     {BLT_SWITCH_BITMASK_INVERT,"-noattrs", "", (char *)NULL,
@@ -940,7 +940,7 @@ blt_table_xml_init(Tcl_Interp *interp)
 	return TCL_ERROR;
     }
     return blt_table_register_format(interp,
-        "xml",			/* Name of format. */
+	"xml",			/* Name of format. */
 #ifdef HAVE_LIBEXPAT
 	ImportXmlProc,		/* Import procedure. */
 #else

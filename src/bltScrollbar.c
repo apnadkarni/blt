@@ -306,7 +306,7 @@ static Blt_ConfigSpec configSpecs[] =
 	"Foreground", DEF_SELECT_BACKGROUND, Blt_Offset(Scrollbar, selBg), 0},
     {BLT_CONFIG_RELIEF, "-selectrelief", "selectRelief", "Relief", 
 	DEF_ACTIVE_RELIEF, Blt_Offset(Scrollbar, selRelief), 
-        BLT_CONFIG_DONT_SET_DEFAULT},
+	BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_STRING, "-takefocus", "takeFocus", "TakeFocus",
 	DEF_TAKE_FOCUS, Blt_Offset(Scrollbar, takeFocus),
 	BLT_CONFIG_NULL_OK},

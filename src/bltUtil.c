@@ -416,12 +416,12 @@ Tcl_GetVar2Ex(
 int
 Blt_GetLong(interp, string, longPtr)
     Tcl_Interp *interp;                 /* Interpreter used for error
-                                         * reporting if not NULL. */
+					 * reporting if not NULL. */
     const char *string;                 /* String containing a (possibly
-                                         * signed) long integer in a form
-                                         * acceptable to strtoul. */
+					 * signed) long integer in a form
+					 * acceptable to strtoul. */
     long *longPtr;                      /* Place to store converted long
-                                         * result. */
+					 * result. */
 {
     char *end;
     const char *p;
@@ -447,20 +447,20 @@ Blt_GetLong(interp, string, longPtr)
     }
     if (end == p) {
 	badInteger:
-        if (interp != (Tcl_Interp *) NULL) {
+	if (interp != (Tcl_Interp *) NULL) {
 	    Tcl_AppendResult(interp, "expected integer but got \"", string,
 		    "\"", (char *) NULL);
-        }
+	}
 	return TCL_ERROR;
     }
     if (errno == ERANGE) {
-        if (interp != (Tcl_Interp *) NULL) {
+	if (interp != (Tcl_Interp *) NULL) {
 	    Tcl_SetResult(interp, 
-                          (char *)"integer value too large to represent",
-                          TCL_STATIC);
-            Tcl_SetErrorCode(interp, "ARITH", "IOVERFLOW",
-                    Tcl_GetStringResult(interp), (char *) NULL);
-        }
+			  (char *)"integer value too large to represent",
+			  TCL_STATIC);
+	    Tcl_SetErrorCode(interp, "ARITH", "IOVERFLOW",
+		    Tcl_GetStringResult(interp), (char *) NULL);
+	}
 	return TCL_ERROR;
     }
     while ((*end != '\0') && isspace(UCHAR(*end))) { /* INTL: ISO space. */
@@ -542,21 +542,21 @@ Blt_GetDoubleFromString(Tcl_Interp *interp, const char *s, double *valuePtr)
     d = strtod(s, &end); /* INTL: TCL source. */
     if (end == s) {
 	badDouble:
-        if (interp != (Tcl_Interp *) NULL) {
-            Tcl_AppendResult(interp,
+	if (interp != (Tcl_Interp *) NULL) {
+	    Tcl_AppendResult(interp,
 		"expected floating-point number but got \"", s, "\"", 
 		(char *) NULL);
-        }
+	}
 	return TCL_ERROR;
     }
     if (errno != 0 && (d == HUGE_VAL || d == -HUGE_VAL || d == 0)) {
-        if (interp != (Tcl_Interp *) NULL) {
+	if (interp != (Tcl_Interp *) NULL) {
 	    char msg[64 + TCL_INTEGER_SPACE];
 	
 	    sprintf(msg, "unknown floating-point error, errno = %d", errno);
 	    Tcl_AppendToObj(Tcl_GetObjResult(interp), msg, -1);
 	    Tcl_SetErrorCode(interp, "ARITH", "UNKNOWN", msg, (char *) NULL);
-        }
+	}
 	return TCL_ERROR;
     }
     while ((*end != 0) && isspace(UCHAR(*end))) { /* INTL: ISO space. */
@@ -727,8 +727,8 @@ Blt_DictionaryCompare(const char *left, const char *right)
 	    break;
 	}
 
-        diff = uniLeftLower - uniRightLower;
-        if (diff) {
+	diff = uniLeftLower - uniRightLower;
+	if (diff) {
 	    return diff;
 	} else if (secondaryDiff == 0) {
 	    if (Tcl_UniCharIsUpper(uniLeft) &&
@@ -738,7 +738,7 @@ Blt_DictionaryCompare(const char *left, const char *right)
 		    && Tcl_UniCharIsLower(uniLeft)) {
 		secondaryDiff = 1;
 	    }
-        }
+	}
     }
     if (diff == 0) {
 	diff = secondaryDiff;
@@ -816,31 +816,31 @@ Blt_DictionaryCompare(const char *left, const char *right)
 	    }
 	    continue;
 	}
-        diff = UCHAR(*left) - UCHAR(*right);
-        if (diff) {
-            if (isupper(UCHAR(*left)) && islower(UCHAR(*right))) {
-                diff = UCHAR(tolower(*left)) - UCHAR(*right);
-                if (diff) {
+	diff = UCHAR(*left) - UCHAR(*right);
+	if (diff) {
+	    if (isupper(UCHAR(*left)) && islower(UCHAR(*right))) {
+		diff = UCHAR(tolower(*left)) - UCHAR(*right);
+		if (diff) {
 		    return diff;
-                } else if (secondaryDiff == 0) {
+		} else if (secondaryDiff == 0) {
 		    secondaryDiff = -1;
-                }
-            } else if (isupper(UCHAR(*right)) && islower(UCHAR(*left))) {
-                diff = UCHAR(*left) - UCHAR(tolower(UCHAR(*right)));
-                if (diff) {
+		}
+	    } else if (isupper(UCHAR(*right)) && islower(UCHAR(*left))) {
+		diff = UCHAR(*left) - UCHAR(tolower(UCHAR(*right)));
+		if (diff) {
 		    return diff;
-                } else if (secondaryDiff == 0) {
+		} else if (secondaryDiff == 0) {
 		    secondaryDiff = 1;
-                }
-            } else {
-                return diff;
-            }
-        }
-        if (*left == 0) {
+		}
+	    } else {
+		return diff;
+	    }
+	}
+	if (*left == 0) {
 	    break;
 	}
-        left++;
-        right++;
+	left++;
+	right++;
     }
     if (diff == 0) {
 	diff = secondaryDiff;
@@ -1167,11 +1167,11 @@ Blt_GetPosition(
 int
 Blt_GetPositionFromObj(
     Tcl_Interp *interp,                 /* Interpreter to report results
-                                         * back to. */
+					 * back to. */
     Tcl_Obj *objPtr,                    /* Tcl_Obj representation of the
-                                         * index.  Can be an integer or
-                                         * "end" to refer to the last
-                                         * index. */
+					 * index.  Can be an integer or
+					 * "end" to refer to the last
+					 * index. */
     long *indexPtr)                     /* Holds the converted index. */
 {
     const char *string;
@@ -1179,7 +1179,7 @@ Blt_GetPositionFromObj(
     string = Tcl_GetString(objPtr);
     if ((string[0] == 'e') && (strcmp(string, "end") == 0)) {
 	*indexPtr = -1;                 /* Indicates last position in
-                                         * hierarchy. */
+					 * hierarchy. */
     } else {
 	long position;
 
@@ -1444,7 +1444,7 @@ BinaryOpSearch(Blt_OpSpec *specs, int low, int high, const char *string,
 void *
 Blt_GetOpFromObj(
     Tcl_Interp *interp,			/* Interpreter to report errors
-                                         * to */
+					 * to */
     int numSpecs,			/* # of specifications in array */
     Blt_OpSpec *specs,			/* Op specification array */
     int operPos,			/* Position of operation in
@@ -1510,7 +1510,7 @@ Blt_GetOpFromObj(
 	return NULL;
 
     } else if (n == -1) {               /* Can't find operation, display
-                                         * help */
+					 * help */
 	if (interp != NULL) {
 	    Tcl_AppendResult(interp, "bad", (char *)NULL);
 	    if (operPos > 2) {
@@ -1568,12 +1568,12 @@ Blt_LoadLibrary(Tcl_Interp *interp, const char *libPath,
 	goto done;
     }
     if (Tcl_IsSafe(interp)) {
-        if (safeProc == NULL) {
-            Tcl_AppendResult(interp, 
+	if (safeProc == NULL) {
+	    Tcl_AppendResult(interp, 
 		"can't use package in a safe interpreter: no ", safeProcName, 
 		" procedure", (char *) NULL);
 	    result = TCL_ERROR;
-            goto done;
+	    goto done;
 	}
 	result = (*safeProc)(interp);
     } else {
@@ -1610,12 +1610,12 @@ Blt_LoadLibrary(Tcl_Interp *interp, const char *libPath,
 	goto done;
     }
     if (Tcl_IsSafe(interp)) {
-        if (safeProc == NULL) {
-            Tcl_AppendResult(interp, 
+	if (safeProc == NULL) {
+	    Tcl_AppendResult(interp, 
 		"can't use package in a safe interpreter: ", "no ", 
 		safeProcName, " procedure", (char *) NULL);
 	    result = TCL_ERROR;
-            goto done;
+	    goto done;
 	}
 	result = (*safeProc)(interp);
     } else {
@@ -1764,7 +1764,7 @@ IsInfinite(double A)
     /* An infinity has an exponent of 255 (shift left 23 positions) and a
      * zero mantissa. There are two infinities - positive and negative. */
     if ((*longPtr & 0x7FFFFFFFFFFFFFFFL) == kInfAsInt)
-        return TRUE;
+	return TRUE;
     return FALSE;
 }
 #endif /*INFINITYCHECK*/
@@ -1781,7 +1781,7 @@ IsNan(double A)
     exp = *longPtr & 0x7F80000000000000L;
     mantissa = *longPtr & 0x007FFFFFFFFFFFFFL;
     if (exp == 0x7F80000000000000L && mantissa != 0) {
-        return TRUE;
+	return TRUE;
     }
     return FALSE;
 }
@@ -1817,7 +1817,7 @@ Blt_AlmostEquals2(double A, double B)
      * be generating infinities and you don't want them 'close' to numbers
      * near FLT_MAX. */
     if (IsInfinite(A) || IsInfinite(B))
-        return A == B;
+	return A == B;
 #endif
 
 #ifdef  NANCHECK
@@ -1826,7 +1826,7 @@ Blt_AlmostEquals2(double A, double B)
      * generating NANs and you use a maxUlps greater than 4 million or you
      * want to ensure that a NAN does not equal itself. */
     if (IsNan(A) || IsNan(B))
-        return FALSE;
+	return FALSE;
 #endif
 
 #ifdef  SIGNCHECK
@@ -1839,18 +1839,18 @@ Blt_AlmostEquals2(double A, double B)
      * and negative zero have different signs but are equal to each
      * other. */
     if (Sign(A) != Sign(B))
-        return A == B;
+	return A == B;
 #endif
     longPtr = (long *)&A;
     aInt = *longPtr;
     /* Make aInt lexicographically ordered as a twos-complement int */
     if (aInt < 0)
-        aInt = 0x8000000000000000 - aInt;
+	aInt = 0x8000000000000000 - aInt;
     /* Make bInt lexicographically ordered as a twos-complement int */
     longPtr = (long *)&B;
     bInt = *longPtr;
     if (bInt < 0)
-        bInt = 0x8000000000000000 - bInt;
+	bInt = 0x8000000000000000 - bInt;
 
     /* Now we can compare aInt and bInt to find out how far apart A and B
      * are. */
@@ -1862,7 +1862,7 @@ Blt_AlmostEquals2(double A, double B)
     }
 #endif
     if (intDiff <= MAXULPS)
-        return TRUE;
+	return TRUE;
     return FALSE;
 }
 #endif
@@ -1898,11 +1898,11 @@ Blt_NameOfSide(int side)
 int
 Blt_GetSideFromObj(
     Tcl_Interp *interp,                 /* Interpreter to send results back
-                                         * to */
+					 * to */
     Tcl_Obj *objPtr,                    /* Value string */
     int *sidePtr)                       /* (out) Token representing side:
-                                         * either SIDE_LEFT, SIDE_RIGHT,
-                                         * SIDE_TOP, or SIDE_BOTTOM. */
+					 * either SIDE_LEFT, SIDE_RIGHT,
+					 * SIDE_TOP, or SIDE_BOTTOM. */
 {
     char c;
     const char *string;
@@ -1942,7 +1942,7 @@ FindSplit(Point2d *points, int i, int j, int *split)
 	 *		  |  1  P(j).x  P(j).y  |
 	 *                |  1  P(k).x  P(k).y  |
 	 *       ------------------------------------------
- 	 *       (P(i).x - P(j).x)^2 + (P(i).y - P(j).y)^2
+	 *       (P(i).x - P(j).x)^2 + (P(i).y - P(j).y)^2
 	 */
 
 	a = points[i].y - points[j].y;

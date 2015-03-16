@@ -96,13 +96,13 @@ Blt_DBuffer_Resize(DBuffer *srcPtr, size_t newSize)
 	    size += srcPtr->chunk;
 	}
 	if (srcPtr->bytes == NULL) {
- 	    bytes = Blt_Malloc(size);
- 	} else {
+	    bytes = Blt_Malloc(size);
+	} else {
 	    bytes = Blt_Realloc(srcPtr->bytes, size);
 	}
 	if (bytes == NULL) {
 	    return FALSE;
- 	}
+	}
 	srcPtr->bytes = bytes;
 	srcPtr->size = size;
     }
@@ -482,7 +482,7 @@ Blt_DBuffer_Base64EncodeToObj(
 
 int
 Blt_DBuffer_AppendBase64(DBuffer *destPtr, const unsigned char *buffer, 
-        size_t bufsize) 
+	size_t bufsize) 
 {
     size_t oldLength, numBytes, length;
     unsigned char *destBytes;
@@ -502,7 +502,7 @@ Blt_DBuffer_AppendBase64(DBuffer *destPtr, const unsigned char *buffer,
 
 int 
 Blt_DBuffer_AppendBase85(DBuffer *destPtr, const unsigned char *buffer, 
-        size_t bufsize) 
+	size_t bufsize) 
 {
     size_t oldLength, numBytes, length;
     unsigned char *destBytes;

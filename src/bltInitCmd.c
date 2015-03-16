@@ -76,7 +76,7 @@ Blt_InitCmd(Tcl_Interp *interp, const char *nsName, Blt_CmdSpec *specPtr)
 	return TCL_OK;		/* Assume command was already initialized */
     }
     Tcl_CreateObjCommand(interp, cmdPath, specPtr->cmdProc, specPtr->clientData,
-                         specPtr->cmdDeleteProc);
+			 specPtr->cmdDeleteProc);
     Tcl_DStringFree(&ds);
     nsPtr = Tcl_FindNamespace(interp, nsName, (Tcl_Namespace *)NULL,
 	TCL_LEAVE_ERR_MSG);

@@ -79,8 +79,8 @@ extern char *		TclpRealloc(char * ptr, unsigned int size);
 /* 11 */
 extern void             Tcl_AddInterpResolvers(Tcl_Interp *interp, 
 				const char *name, Tcl_ResolveCmdProc *cmdProc,
-                                Tcl_ResolveVarProc *varProc,
-                                Tcl_ResolveCompiledVarProc *compiledVarProc);
+				Tcl_ResolveVarProc *varProc,
+				Tcl_ResolveCompiledVarProc *compiledVarProc);
 #if (_TCL_VERSION < _VERSION(8,5,0)) 
 /* 113 */
 extern Tcl_Namespace *	Tcl_CreateNamespace(Tcl_Interp * interp, 

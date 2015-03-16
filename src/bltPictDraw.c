@@ -159,7 +159,7 @@ static Blt_SwitchSpec circleSwitches[] =
     {BLT_SWITCH_FLOAT, "-linewidth", "value", (char *)NULL,
 	Blt_Offset(CircleSwitches, lineWidth), 0},
     {BLT_SWITCH_CUSTOM, "-shadow", "offset", (char *)NULL,
-        Blt_Offset(CircleSwitches, shadow), 0, 0, &shadowSwitch},
+	Blt_Offset(CircleSwitches, shadow), 0, 0, &shadowSwitch},
     {BLT_SWITCH_END}
 };
 
@@ -191,7 +191,7 @@ static Blt_SwitchSpec circleSwitches2[] =
     {BLT_SWITCH_FLOAT, "-linewidth", "value", (char *)NULL,
 	Blt_Offset(CircleSwitches2, lineWidth), 0},
     {BLT_SWITCH_CUSTOM, "-shadow", "offset", (char *)NULL,
-        Blt_Offset(CircleSwitches2, shadow), 0, 0, &shadowSwitch},
+	Blt_Offset(CircleSwitches2, shadow), 0, 0, &shadowSwitch},
     {BLT_SWITCH_END}
 };
 
@@ -217,7 +217,7 @@ static Blt_SwitchSpec ellipseSwitches[] =
     {BLT_SWITCH_INT_NNEG, "-linewidth", "value", (char *)NULL,
 	Blt_Offset(EllipseSwitches, lineWidth), 0},
     {BLT_SWITCH_CUSTOM, "-shadow", "offset", (char *)NULL,
-        Blt_Offset(EllipseSwitches, shadow), 0, 0, &shadowSwitch},
+	Blt_Offset(EllipseSwitches, shadow), 0, 0, &shadowSwitch},
     {BLT_SWITCH_END}
 };
 
@@ -253,7 +253,7 @@ static Blt_SwitchSpec polygonSwitches[] =
     {BLT_SWITCH_CUSTOM, "-y", "{x0 x1 ... xn}", (char *)NULL,
 	Blt_Offset(PolygonSwitches, y), 0, 0, &arraySwitch},
     {BLT_SWITCH_CUSTOM, "-shadow", "offset", (char *)NULL,
-        Blt_Offset(PolygonSwitches, shadow), 0, 0, &shadowSwitch},
+	Blt_Offset(PolygonSwitches, shadow), 0, 0, &shadowSwitch},
     {BLT_SWITCH_INT_POS, "-linewidth", "int", (char *)NULL,
 	Blt_Offset(PolygonSwitches, lineWidth), 0},
     {BLT_SWITCH_END}
@@ -293,7 +293,7 @@ static Blt_SwitchSpec rectangleSwitches[] =
     {BLT_SWITCH_INT_NNEG, "-radius", "number", (char *)NULL,
 	Blt_Offset(RectangleSwitches, radius), 0},
     {BLT_SWITCH_CUSTOM, "-shadow", "offset", (char *)NULL,
-        Blt_Offset(RectangleSwitches, shadow), 0, 0, &shadowSwitch},
+	Blt_Offset(RectangleSwitches, shadow), 0, 0, &shadowSwitch},
     {BLT_SWITCH_INT_NNEG, "-linewidth", "number", (char *)NULL,
 	Blt_Offset(RectangleSwitches, lineWidth), 0}, 
     {BLT_SWITCH_END}
@@ -327,7 +327,7 @@ static Blt_SwitchSpec textSwitches[] =
     {BLT_SWITCH_INT,     "-size",     "number", (char *)NULL,
 	Blt_Offset(TextSwitches, fontSize),  0}, 
     {BLT_SWITCH_CUSTOM, "-shadow", "offset", (char *)NULL,
-        Blt_Offset(TextSwitches, shadow), 0, 0, &shadowSwitch},
+	Blt_Offset(TextSwitches, shadow), 0, 0, &shadowSwitch},
     {BLT_SWITCH_END}
 };
 
@@ -995,7 +995,7 @@ PutPixel2(Pict *destPtr, int x, int y, Blt_Pixel *colorPtr,
 	Blt_Pixel *dp;
 
 	dp = Blt_Picture_Pixel(destPtr, x, y);
-        BlendPixels(dp, colorPtr);
+	BlendPixels(dp, colorPtr);
     }
 }
 
@@ -1479,7 +1479,7 @@ BlitGlyph(Pict *destPtr,
 		    Blt_Pixel color;
 
 		    color.u32 = Blt_PaintBrush_GetAssociatedColor(brushPtr, 
-                        x, y);
+			x, y);
 		    BlendPixels(dp, &color);
 		}
 	    }
@@ -1504,8 +1504,8 @@ BlitGlyph(Pict *destPtr,
 		    Blt_Pixel color;
 
 		    color.u32 = Blt_PaintBrush_GetAssociatedColor(brushPtr, 
-                        x, y);
-                    Blt_FadeColor(&color, *sp);
+			x, y);
+		    Blt_FadeColor(&color, *sp);
 		    BlendPixels(dp, &color);
 		}
 	    }
@@ -1590,7 +1590,7 @@ CopyGrayGlyph(
 		    Blt_Pixel color;
 
 		    color.u32 = Blt_PaintBrush_GetAssociatedColor(brushPtr, 
-                        x, y);
+			x, y);
 		    color.Alpha = imul8x8(*sp, color.Alpha, t);
 		    dp->u32 = color.u32;
 		}
@@ -1670,9 +1670,9 @@ PaintGrayGlyph(
 		    Blt_Pixel color;
 
 		    color.u32 = Blt_PaintBrush_GetAssociatedColor(brushPtr, 
-                        x, y);
-                    Blt_FadeColor(&color, *sp);
-                    BlendPixels(dp, &color);
+			x, y);
+		    Blt_FadeColor(&color, *sp);
+		    BlendPixels(dp, &color);
 		}
 	    }
 	    srcRowPtr += slot->bitmap.pitch;
@@ -1990,17 +1990,17 @@ PaintText(
 #ifdef notdef
 	    fprintf(stderr, "h=%d, slot->bitmap_top=%d\n", h, slot->bitmap_top);
 #endif
-            {
-                int xx, yy;
+	    {
+		int xx, yy;
 
-                xx = slot->bitmap_left;
-                yy = h - slot->bitmap_top;
-                if ((xx < destPtr->width) && ((xx + slot->bitmap.width) >= 0) &&
-                    (yy < destPtr->height) && ((yy + slot->bitmap.rows) >= 0)) {
-                    PaintGrayGlyph(destPtr, slot, slot->bitmap_left, 
-                                   h - slot->bitmap_top, brushPtr);
-                }
-            }
+		xx = slot->bitmap_left;
+		yy = h - slot->bitmap_top;
+		if ((xx < destPtr->width) && ((xx + slot->bitmap.width) >= 0) &&
+		    (yy < destPtr->height) && ((yy + slot->bitmap.rows) >= 0)) {
+		    PaintGrayGlyph(destPtr, slot, slot->bitmap_left, 
+				   h - slot->bitmap_top, brushPtr);
+		}
+	    }
 	case FT_PIXEL_MODE_GRAY2:
 	case FT_PIXEL_MODE_GRAY4:
 	    break;
@@ -2080,7 +2080,7 @@ xPaintArc(Pict *destPtr, int x1, int y1, int x2, int y2, int lineWidth,
 	double z;
 	double d, q;
 	unsigned char a;
-        Blt_Pixel color;
+	Blt_Pixel color;
 	y++;
 	z = sqrt(r2 - (y * y));
 	d = floor(z) - z;
@@ -2090,13 +2090,13 @@ xPaintArc(Pict *destPtr, int x1, int y1, int x2, int y2, int lineWidth,
 	dp = Blt_Picture_Pixel(destPtr, x + xoff, y + yoff);
 	q = FABS(d * 255.0);
 	a = (unsigned int)CLAMP(q);
-        color.u32 = colorPtr->u32;
-        Blt_FadeColor(&color, a);
+	color.u32 = colorPtr->u32;
+	Blt_FadeColor(&color, a);
 	BlendPixels(dp, &color);
 	dp--;			/* x - 1 */
 	a = (unsigned int)CLAMP(255.0 - q);
-        color.u32 = colorPtr->u32;
-        Blt_FadeColor(&color, a);
+	color.u32 = colorPtr->u32;
+	Blt_FadeColor(&color, a);
 	BlendPixels(dp, &color);
 	t = d;
 	x1++;
@@ -2206,12 +2206,12 @@ BrushHorizontalLine(Pict *destPtr, int x1, int x2, int y,
 
 typedef struct {                        /* A polygon edge */
     double x;                           /* X coordinate of edge's
-                                         * intersection with current
-                                         * scanline. */
+					 * intersection with current
+					 * scanline. */
     double dx;                          /* Change in x with respect to
-                                           y. */
+					   y. */
     int i;                              /* Edge number: edge i goes from
-                                         * pt[i] to pt[i+1] */
+					 * pt[i] to pt[i+1] */
 } ActiveEdge;
 
 typedef struct {
@@ -2384,7 +2384,7 @@ Blt_PaintPolygon(Pict *destPtr, int numVertices, Point2f *vertices,
 
 static void
 GetPolygonBoundingBox(size_t numVertices, Point2f *vertices, 
-                      Region2f *regionPtr)
+		      Region2f *regionPtr)
 {
     Point2f *pp, *pend;
 
@@ -2560,7 +2560,7 @@ DrawCircle2(Blt_Picture picture, int x, int y, int radius,
     if (switchesPtr->antialiased) {
 	int numSamples = 4; 
 	Pict *bigPtr, *tmpPtr;
- 	int w, h;
+	int w, h;
 	Blt_Pixel color;
 	int offset, r, lw;
 	int cx, cy;
@@ -2739,7 +2739,7 @@ DrawCircleShadow(Blt_Picture picture, int x, int y, float r,
 		 &brush, 
 		 TRUE);
     if (blend) {
-        Blt_BlurPicture(tmpPtr, tmpPtr, shadowPtr->width, 3);
+	Blt_BlurPicture(tmpPtr, tmpPtr, shadowPtr->width, 3);
 	Blt_BlendRegion(picture, tmpPtr, 0, 0, w, h, 
 			x - r,
 			y - r);
@@ -3438,7 +3438,7 @@ Blt_Picture_TextOp(ClientData clientData, Tcl_Interp *interp, int objc,
 		PaintText(destPtr, fontPtr, fp->text, fp->count, 
 		    x + fp->x + shadowPtr->width - shadowPtr->offset,
 		    y + fp->y + shadowPtr->width - shadowPtr->offset, 
-                    switches.kerning, switches.brushPtr);
+		    switches.kerning, switches.brushPtr);
 	    }
 	    Blt_FreePicture(tmpPtr);
 	} else {
@@ -3631,7 +3631,7 @@ Blt_PaintCheckbox(int w, int h, XColor *fillColorPtr, XColor *outlineColorPtr,
 	points[6].x = points[0].x;
 	points[6].y = points[0].y;
 	shadow.width = 2, shadow.offset = 2;
-        shadow.color.u32 = 0x5F000000;
+	shadow.color.u32 = 0x5F000000;
 	r.left = x, r.right = x + w;
 	r.top = y, r.bottom = y + h;
 	Blt_PaintBrush_Init(&brush);

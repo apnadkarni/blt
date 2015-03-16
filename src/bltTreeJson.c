@@ -91,7 +91,7 @@ typedef struct {
     Tcl_Interp *interp;			/* TCL Interpreter associated with
 					 * command importing data. */
     Tcl_Obj *fileObjPtr;		/* Name of file containing JSON data. 
- 					 * Indicates to read data from file. */
+					 * Indicates to read data from file. */
     Tcl_Obj *dataObjPtr;		/* Data object holding the string to
 					 * be parsed. */
     Tcl_Channel channel;		/* If non-NULL, channel to file. */
@@ -1260,7 +1260,7 @@ Blt_TreeJsonInit(Tcl_Interp *interp)
 	return TCL_ERROR;
     }
     return Blt_Tree_RegisterFormat(interp,
-        "json",				/* Name of format. */
+	"json",				/* Name of format. */
 	ImportJsonProc,			/* Import procedure. */
 	ExportJsonProc);		/* Export procedure. */
 

@@ -408,12 +408,12 @@ PaintCircle4(Pict *destPtr, float cx, float cy, float r, float lineWidth,
 		}
 #endif
 		color.u32 = Blt_PaintBrush_GetAssociatedColor(brushPtr, x, y);
-                Blt_FadeColor(&color, a);
+		Blt_FadeColor(&color, a);
 		BlendPixels(dp, &color);
 	    } else {
 		int t;
-                /* FIXME: This is overriding the alpha of a premultipled
-                 * color. */
+		/* FIXME: This is overriding the alpha of a premultipled
+		 * color. */
 		a = UCLAMP(a);
 		dp->u32 = Blt_PaintBrush_GetAssociatedColor(brushPtr, x, y);
 		dp->Alpha = imul8x8(a, dp->Alpha, t);
@@ -669,11 +669,11 @@ PaintArc(Pict *destPtr, int x1, int y1, int x2, int y2, int lineWidth,
 	dp = Blt_Picture_Pixel(destPtr, x + xoff, y + yoff);
 	q = FABS(d * 255.0);
 	a = (unsigned int)CLAMP(q);
-        Blt_FadeColor(colorPtr, a);
+	Blt_FadeColor(colorPtr, a);
 	BlendPixels(dp, colorPtr);
 	dp--;			/* x - 1 */
 	a = (unsigned int)CLAMP(255.0 - q);
-        Blt_FadeColor(colorPtr, a);
+	Blt_FadeColor(colorPtr, a);
 	BlendPixels(dp, colorPtr);
 	t = d;
 	x1++;
@@ -1002,13 +1002,13 @@ PaintEllipseAA(
 	 * ellipse is the center of the picture. */
 	Blt_BlankPicture(big, 0x0);
 	color.u32 = 0xFF000000;
-        Blt_AssociateColor(&color);
+	Blt_AssociateColor(&color);
 	PaintEllipse(big, 
 	    cx * numSamples,	/* Center of ellipse. */
 	    cy * numSamples, 
-            a * numSamples,	
-            b * numSamples, 
-            lineWidth * numSamples, /* Scaled line width. */
+	    a * numSamples,	
+	    b * numSamples, 
+	    lineWidth * numSamples, /* Scaled line width. */
 		&color,
 		blend); 
 	    
@@ -1216,14 +1216,14 @@ PaintCorner(Pict *destPtr, int x, int y, int r, int lineWidth, int corner,
 		
 		a = UCLAMP(a);
 		color.u32 = Blt_PaintBrush_GetAssociatedColor(brushPtr, 
-                        x+dx, y+dy);
-                Blt_FadeColor(&color, a);
+			x+dx, y+dy);
+		Blt_FadeColor(&color, a);
 		BlendPixels(dp, &color);
 	    } else {
 		a = UCLAMP(a);
 		dp->u32 = Blt_PaintBrush_GetAssociatedColor(brushPtr, 
-                        x+dx, y+dy);
-                Blt_FadeColor(dp, a);
+			x+dx, y+dy);
+		Blt_FadeColor(dp, a);
 	    }
 	}
     }

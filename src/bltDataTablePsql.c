@@ -69,16 +69,16 @@ DLLEXPORT extern Tcl_AppInitProc blt_table_psql_safe_init;
  */
 typedef struct {
     Tcl_Obj *hostObjPtr;                /* If non-NULL, name of remote host
-                                         * of Postgres server.  Otherwise
-                                         * "localhost" is used. */
+					 * of Postgres server.  Otherwise
+					 * "localhost" is used. */
     Tcl_Obj *userObjPtr;                /* If non-NULL, name of user
-                                         * account to access Postgres server.
-                                         * Otherwise the current username
-                                         * is used. */
+					 * account to access Postgres server.
+					 * Otherwise the current username
+					 * is used. */
     Tcl_Obj *pwObjPtr;                  /* If non-NULL, is password to use
-                                         * to access Postgres server. */
+					 * to access Postgres server. */
     Tcl_Obj *dbObjPtr;                  /* If non-NULL, name of Postgres SQL
-                                         * database to access. */
+					 * database to access. */
     Tcl_Obj *queryObjPtr;               /* If non-NULL, query to make. */
     Tcl_Obj *optionsObjPtr;             /* If non-NULL, query to make. */
     Tcl_Obj *portObjPtr;                /* Port number to use. */
@@ -152,12 +152,12 @@ static BLT_TABLE_IMPORT_PROC ImportPsqlProc;
 
 static int
 PsqlImportLabels(Tcl_Interp *interp, BLT_TABLE table, PGresult *res, 
-                 size_t numCols, BLT_TABLE_COLUMN *cols) 
+		 size_t numCols, BLT_TABLE_COLUMN *cols) 
 {
     size_t i;
 
     for (i = 0; i < numCols; i++) {
-        const char *label;
+	const char *label;
 
 	label = PQfname(res, i);
 	if (blt_table_set_column_label(interp, table, cols[i], label) 
@@ -193,10 +193,10 @@ PsqlImportRows(Tcl_Interp *interp, BLT_TABLE table, PGresult *res,
 	    int length;
 	    const char *value;
 
-            value = PQgetvalue(res, i, j);
-            length = PQgetlength(res, i, j);
+	    value = PQgetvalue(res, i, j);
+	    length = PQgetlength(res, i, j);
 	    if (blt_table_set_string(table, row, cols[j], value, length) !=
-                TCL_OK) {
+		TCL_OK) {
 		return TCL_ERROR;
 	    }
 	}
@@ -222,7 +222,7 @@ PsqlQuery(Tcl_Interp *interp, PGconn *conn, Tcl_Obj *objPtr)
     if (PQresultStatus(res) != PGRES_COMMAND_OK) {
 	Tcl_AppendResult(interp, "error in query \"", query, "\": ", 
 			 PQerrorMessage(conn), (char *)NULL);
-        PQclear(res);
+	PQclear(res);
 	return NULL;
     }
     return res;
@@ -238,37 +238,37 @@ PsqlConnect(Tcl_Interp *interp, ImportArgs *argsPtr, PGconn **connPtr)
     Tcl_IncrRefCount(objPtr);
     Tcl_AppendToObj(objPtr, " host=", 6);
     if (argsPtr->hostObjPtr != NULL) {
-        Tcl_AppendObjToObj(objPtr, argsPtr->hostObjPtr);
+	Tcl_AppendObjToObj(objPtr, argsPtr->hostObjPtr);
     } else {
-        Tcl_AppendToObj(objPtr, "localhost", 9);
+	Tcl_AppendToObj(objPtr, "localhost", 9);
     }
     if (argsPtr->userObjPtr != NULL) {
-        Tcl_AppendToObj(objPtr, " user=", 6);
-        Tcl_AppendObjToObj(objPtr, argsPtr->userObjPtr);
+	Tcl_AppendToObj(objPtr, " user=", 6);
+	Tcl_AppendObjToObj(objPtr, argsPtr->userObjPtr);
     }
     if (argsPtr->pwObjPtr != NULL) {
-        Tcl_AppendToObj(objPtr, " password=", 10);
-        Tcl_AppendObjToObj(objPtr, argsPtr->pwObjPtr);
+	Tcl_AppendToObj(objPtr, " password=", 10);
+	Tcl_AppendObjToObj(objPtr, argsPtr->pwObjPtr);
     }
     if (argsPtr->dbObjPtr != NULL) {
-        Tcl_AppendToObj(objPtr, " dbname=", 8);
-        Tcl_AppendObjToObj(objPtr, argsPtr->dbObjPtr);
+	Tcl_AppendToObj(objPtr, " dbname=", 8);
+	Tcl_AppendObjToObj(objPtr, argsPtr->dbObjPtr);
     }
     if (argsPtr->portObjPtr != NULL) {
-        Tcl_AppendToObj(objPtr, " port=", 6);
-        Tcl_AppendObjToObj(objPtr, argsPtr->portObjPtr);
+	Tcl_AppendToObj(objPtr, " port=", 6);
+	Tcl_AppendObjToObj(objPtr, argsPtr->portObjPtr);
     }
     if (argsPtr->optionsObjPtr != NULL) {
-        Tcl_AppendToObj(objPtr, " ", 1);
-        Tcl_AppendObjToObj(objPtr, argsPtr->optionsObjPtr);
+	Tcl_AppendToObj(objPtr, " ", 1);
+	Tcl_AppendObjToObj(objPtr, argsPtr->optionsObjPtr);
     }
     conn = PQconnectdb(Tcl_GetString(objPtr)); 
     Tcl_DecrRefCount(objPtr);
     if (PQstatus(conn) != CONNECTION_OK) {
 	Tcl_AppendResult(interp, "can't connect to psql server on \"",
-                (argsPtr->hostObjPtr != NULL) ?
-                         Tcl_GetString(argsPtr->hostObjPtr) : "localhost", 
-                         "\": ", PQerrorMessage(conn), (char *)NULL);
+		(argsPtr->hostObjPtr != NULL) ?
+			 Tcl_GetString(argsPtr->hostObjPtr) : "localhost", 
+			 "\": ", PQerrorMessage(conn), (char *)NULL);
 	return TCL_ERROR;
     }
     *connPtr = conn;
@@ -277,7 +277,7 @@ PsqlConnect(Tcl_Interp *interp, ImportArgs *argsPtr, PGconn **connPtr)
 
 static int
 ImportPsqlProc(BLT_TABLE table, Tcl_Interp *interp, int objc, 
-               Tcl_Obj *const *objv)
+	       Tcl_Obj *const *objv)
 {
     BLT_TABLE_COLUMN *cols;
     ImportArgs args;
@@ -299,7 +299,7 @@ ImportPsqlProc(BLT_TABLE table, Tcl_Interp *interp, int objc,
 	goto error;
     }
     if (args.queryObjPtr == NULL) {
-        result = TCL_OK;
+	result = TCL_OK;
 	goto error;
     }
     res = PsqlQuery(interp, conn, args.queryObjPtr);
@@ -308,17 +308,17 @@ ImportPsqlProc(BLT_TABLE table, Tcl_Interp *interp, int objc,
     }
     numCols = PQnfields(res);
     if (numCols < 1) {
-        Tcl_AppendResult(interp,
-                "server returned invalid number of columns", (char *)NULL);
+	Tcl_AppendResult(interp,
+		"server returned invalid number of columns", (char *)NULL);
 	goto error;
     }
     cols = Blt_AssertMalloc(numCols * sizeof(BLT_TABLE_COLUMN));
     result = blt_table_extend_columns(interp, table, numCols, cols);
     if (result == TCL_OK) {
-        result = PsqlImportLabels(interp, table, res, numCols, cols);
+	result = PsqlImportLabels(interp, table, res, numCols, cols);
     }
     if (result == TCL_OK) {
-        result = PsqlImportRows(interp, table, res, numCols, cols);
+	result = PsqlImportRows(interp, table, res, numCols, cols);
     }
  error:
     PsqlDisconnect(conn);
@@ -329,7 +329,7 @@ ImportPsqlProc(BLT_TABLE table, Tcl_Interp *interp, int objc,
 	PQclear(res);
     }
     if (conn != NULL) {
-        PQfinish(conn);
+	PQfinish(conn);
     }
     Blt_FreeSwitches(importSwitches, &args, 0);
     return result;
@@ -365,7 +365,7 @@ blt_table_psql_init(Tcl_Interp *interp)
 	return TCL_ERROR;
     }
     return blt_table_register_format(interp,
-        "psql",                         /* Name of format. */
+	"psql",                         /* Name of format. */
 	ImportPsqlProc,                 /* Import procedure. */
 	NULL);                          /* Export procedure. */
 

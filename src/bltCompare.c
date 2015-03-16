@@ -3,26 +3,26 @@
  *
  * bltCompare.c --
  *
- *	Copyright 1998-2004 George A Howlett.
+ *      Copyright 2015 George A Howlett.
  *
- *	Permission is hereby granted, free of charge, to any person obtaining
- *	a copy of this software and associated documentation files (the
- *	"Software"), to deal in the Software without restriction, including
- *	without limitation the rights to use, copy, modify, merge, publish,
- *	distribute, sublicense, and/or sell copies of the Software, and to
- *	permit persons to whom the Software is furnished to do so, subject to
- *	the following conditions:
+ *      Permission is hereby granted, free of charge, to any person obtaining
+ *      a copy of this software and associated documentation files (the
+ *      "Software"), to deal in the Software without restriction, including
+ *      without limitation the rights to use, copy, modify, merge, publish,
+ *      distribute, sublicense, and/or sell copies of the Software, and to
+ *      permit persons to whom the Software is furnished to do so, subject to
+ *      the following conditions:
  *
- *	The above copyright notice and this permission notice shall be
- *	included in all copies or substantial portions of the Software.
+ *      The above copyright notice and this permission notice shall be
+ *      included in all copies or substantial portions of the Software.
  *
- *	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- *	EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- *	MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- *	NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
- *	LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
- *	OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
- *	WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *      THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ *      EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ *      MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ *      NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+ *      LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+ *      OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+ *      WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
 /*
@@ -59,17 +59,17 @@
 
 typedef int (StringCompareProc)(const char *s1, const char *s2);
 
-#define SORTED_NONE	  (0)
+#define SORTED_NONE       (0)
 #define SORTED_DECREASING (1)
 #define SORTED_INCREASING (2)
 
-#define NOCASE		(1<<0)
-#define DICTIONARY	(1<<1)
-#define ASCII		(1<<2)
-#define TRIM_NONE	(0)
-#define TRIM_LEFT	(1)
-#define TRIM_RIGHT	(2)
-#define TRIM_BOTH	(3)
+#define NOCASE          (1<<0)
+#define DICTIONARY      (1<<1)
+#define ASCII           (1<<2)
+#define TRIM_NONE       (0)
+#define TRIM_LEFT       (1)
+#define TRIM_RIGHT      (2)
+#define TRIM_BOTH       (3)
 
 typedef struct {
     int flags;
@@ -139,10 +139,10 @@ static Blt_SwitchSpec stringInListSwitches[] =
  *
  * SortedSwitch --
  *
- *	Convert a Tcl_Obj representing the sort direction.
+ *      Convert a Tcl_Obj representing the sort direction.
  *
  * Results:
- *	The return value is a standard TCL result.
+ *      The return value is a standard TCL result.
  *
  *---------------------------------------------------------------------------
  */
@@ -167,9 +167,9 @@ SortedSwitchProc(ClientData clientData, Tcl_Interp *interp,
     } else {
 	Tcl_AppendResult(interp, "bad sorted value \"", string, 
 		 "\": should be decreasing, increasing, or none",
-		 (char *)NULL);	 
+		 (char *)NULL);  
 	return TCL_ERROR;
-    }			  
+    }                     
     return TCL_OK;
 }
 
@@ -178,10 +178,10 @@ SortedSwitchProc(ClientData clientData, Tcl_Interp *interp,
  *
  * TrimSwitchProc --
  *
- *	Convert a Tcl_Obj representing the trim direction.
+ *      Convert a Tcl_Obj representing the trim direction.
  *
  * Results:
- *	The return value is a standard TCL result.
+ *      The return value is a standard TCL result.
  *
  *---------------------------------------------------------------------------
  */
@@ -207,9 +207,9 @@ TrimSwitchProc(ClientData clientData, Tcl_Interp *interp,
 	*trimPtr = TRIM_NONE;
     } else {
 	Tcl_AppendResult(interp, "bad trim value \"", string, 
-		 "\": should be left, right, both, or none", (char *)NULL);	 
+		 "\": should be left, right, both, or none", (char *)NULL);      
 	return TCL_ERROR;
-    }			  
+    }                     
     return TCL_OK;
 }
 
@@ -269,7 +269,7 @@ LinearNumberSearch(double value, int objc, Tcl_Obj **objv)
 	double x;
 	
 	if ((Tcl_GetDoubleFromObj(NULL, objv[i], &x) == TCL_OK) &&
-            (Blt_AlmostEquals(value, x))) {
+	    (Blt_AlmostEquals(value, x))) {
 	    return TRUE;
 	}
     }
@@ -285,16 +285,16 @@ BinaryNumberSearchUp(double value, int objc, Tcl_Obj **objv)
     high = objc - 1;
     while (low <= high) {
 	int median;
-        double x;
-        
+	double x;
+	
 	median = (low + high) >> 1;
 	if (Tcl_GetDoubleFromObj(NULL, objv[median], &x) != TCL_OK) {
-            return FALSE;
-        }
-        if (Blt_AlmostEquals(value, x)) {
-            return TRUE;
-        }
-        if (value < x) {
+	    return FALSE;
+	}
+	if (Blt_AlmostEquals(value, x)) {
+	    return TRUE;
+	}
+	if (value < x) {
 	    high = median - 1;
 	} else if (value > x) {
 	    low = median + 1;
@@ -312,16 +312,16 @@ BinaryNumberSearchDown(double value, int objc, Tcl_Obj **objv)
     high = objc - 1;
     while (low <= high) {
 	int median;
-        double x;
-        
+	double x;
+	
 	median = (low + high) >> 1;
 	if (Tcl_GetDoubleFromObj(NULL, objv[median], &x) != TCL_OK) {
-            return FALSE;
-        }
-        if (Blt_AlmostEquals(value, x)) {
-            return TRUE;
-        }
-        if (value < x) {
+	    return FALSE;
+	}
+	if (Blt_AlmostEquals(value, x)) {
+	    return TRUE;
+	}
+	if (value < x) {
 	    low = median + 1;
 	} else if (value > x) {
 	    high = median - 1;
@@ -332,26 +332,26 @@ BinaryNumberSearchDown(double value, int objc, Tcl_Obj **objv)
 
 static int
 LinearStringSearch(const char *str1, int len1, int objc, Tcl_Obj **objv, 
-                   int flags)
+		   int flags)
 {
     int i;
     StringCompareProc *proc;
 
     if (flags & NOCASE) {
-        proc = strcasecmp;
+	proc = strcasecmp;
     } else if (flags & DICTIONARY) {
-        proc = Blt_DictionaryCompare;
+	proc = Blt_DictionaryCompare;
     } else {
-        proc = strcmp;
+	proc = strcmp;
     }
     for (i = 0; i < objc; i++) {
 	const char *str2;
 	int len2;
 
-        str2 = Tcl_GetStringFromObj(objv[i], &len2);
-        if ((len1 == len2) && ((*proc)(str1, str2) == 0)) {
-            return TRUE;
-        }
+	str2 = Tcl_GetStringFromObj(objv[i], &len2);
+	if ((len1 == len2) && ((*proc)(str1, str2) == 0)) {
+	    return TRUE;
+	}
     }
     return FALSE;
 }
@@ -364,24 +364,24 @@ BinaryStringSearchUp(const char *str1, int len1, int objc, Tcl_Obj **objv,
     StringCompareProc *proc;
 
     if (flags & DICTIONARY) {
-        proc = Blt_DictionaryCompare;
+	proc = Blt_DictionaryCompare;
     } else {
-        proc = strcmp;
+	proc = strcmp;
     }
     low = 0;
     high = objc - 1;
     while (low <= high) {
 	int comp;
 	int median;
-        const char *str2;
-        
+	const char *str2;
+	
 	median = (low + high) >> 1;
-        str2 = Tcl_GetString(objv[median]);
-        comp = (*proc)(str1, str2);
-        if (comp == 0) {
-            return TRUE;
-        }
-        if (comp < 0) {
+	str2 = Tcl_GetString(objv[median]);
+	comp = (*proc)(str1, str2);
+	if (comp == 0) {
+	    return TRUE;
+	}
+	if (comp < 0) {
 	    high = median - 1;
 	} else if (comp > 0) {
 	    low = median + 1;
@@ -398,24 +398,24 @@ BinaryStringSearchDown(const char *str1, int len1, int objc, Tcl_Obj **objv,
     StringCompareProc *proc;
 
     if (flags & DICTIONARY) {
-        proc = Blt_DictionaryCompare;
+	proc = Blt_DictionaryCompare;
     } else {
-        proc = strcmp;
+	proc = strcmp;
     }
     low = 0;
     high = objc - 1;
     while (low <= high) {
 	int comp;
 	int median;
-        const char *str2;
-        
+	const char *str2;
+	
 	median = (low + high) >> 1;
-        str2 = Tcl_GetString(objv[median]);
-        comp = (*proc)(str1, str2);
-        if (comp == 0) {
-            return TRUE;
-        }
-        if (comp < 0) {
+	str2 = Tcl_GetString(objv[median]);
+	comp = (*proc)(str1, str2);
+	if (comp == 0) {
+	    return TRUE;
+	}
+	if (comp < 0) {
 	    low = median + 1;
 	} else if (comp > 0) {
 	    high = median - 1;
@@ -429,7 +429,7 @@ BinaryStringSearchDown(const char *str1, int len1, int objc, Tcl_Obj **objv,
  *
  * NumberBetweenOp --
  *
- *	blt::utils::number between value first last
+ *      blt::utils::number between value first last
  *
  *---------------------------------------------------------------------------
  */
@@ -459,9 +459,9 @@ NumberBetweenOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	last = tmp;
     }
     if ((Blt_AlmostEquals(value, first)) || (Blt_AlmostEquals(value, last))) {
-        state = TRUE;
+	state = TRUE;
     } else {
-        state = ((value >= first) && (value <= last));
+	state = ((value >= first) && (value <= last));
     }
     Tcl_SetBooleanObj(Tcl_GetObjResult(interp), state);
     return TCL_OK;
@@ -472,7 +472,7 @@ NumberBetweenOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * NumberEqualsOp --
  *
- *	blt::utils::number equals value1 value2 
+ *      blt::utils::number equals value1 value2 
  *
  *---------------------------------------------------------------------------
  */
@@ -500,7 +500,7 @@ NumberEqualsOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * NumberGreaterThanOrEqualsOp --
  *
- *	blt::utils::number ge value1 value2 
+ *      blt::utils::number ge value1 value2 
  *
  *---------------------------------------------------------------------------
  */
@@ -520,7 +520,7 @@ NumberGreaterThanOrEqualsOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     state = Blt_AlmostEquals(value1, value2);
     if (!state) {
-        state = (value1 > value2);
+	state = (value1 > value2);
     }
     Tcl_SetBooleanObj(Tcl_GetObjResult(interp), state);
     return TCL_OK;
@@ -531,7 +531,7 @@ NumberGreaterThanOrEqualsOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * NumberGreaterThanOp --
  *
- *	blt::utils::number gt value1 value2 
+ *      blt::utils::number gt value1 value2 
  *
  *---------------------------------------------------------------------------
  */
@@ -559,7 +559,7 @@ NumberGreaterThanOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * NumberLessThanOrEqualsOp --
  *
- *	blt::utils::number le value1 value2 
+ *      blt::utils::number le value1 value2 
  *
  *---------------------------------------------------------------------------
  */
@@ -579,7 +579,7 @@ NumberLessThanOrEqualsOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     state = Blt_AlmostEquals(value1, value2);
     if (!state) {
-        state = (value1 < value2);
+	state = (value1 < value2);
     }
     Tcl_SetBooleanObj(Tcl_GetObjResult(interp), state);
     return TCL_OK;
@@ -590,7 +590,7 @@ NumberLessThanOrEqualsOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * NumberLessThanOp --
  *
- *	blt::utils::number lt value1 value2 
+ *      blt::utils::number lt value1 value2 
  *
  *---------------------------------------------------------------------------
  */
@@ -618,7 +618,7 @@ NumberLessThanOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * NumberInListOp --
  *
- *	blt::utils::number inlist value list ?switches?
+ *      blt::utils::number inlist value list ?switches?
  *
  *---------------------------------------------------------------------------
  */
@@ -646,14 +646,14 @@ NumberInListOp(ClientData clientData, Tcl_Interp *interp, int objc,
     state = FALSE;                      /* Suppress compiler warning. */
     switch (switches.sorted) {
     case SORTED_NONE:
-        state = LinearNumberSearch(value, elc, elv);
-        break;
+	state = LinearNumberSearch(value, elc, elv);
+	break;
     case SORTED_INCREASING:
-        state = BinaryNumberSearchUp(value, elc, elv);
-        break;
+	state = BinaryNumberSearchUp(value, elc, elv);
+	break;
     case SORTED_DECREASING:
-        state = BinaryNumberSearchDown(value, elc, elv);
-        break;
+	state = BinaryNumberSearchDown(value, elc, elv);
+	break;
     }
     Blt_FreeSwitches(numberInListSwitches, (char *)&switches, 0);
     Tcl_SetBooleanObj(Tcl_GetObjResult(interp), state);
@@ -701,12 +701,12 @@ NumberObjCmd(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * StringBeginsOp --
  *
- *	Returns if the given string begin with the pattern.
+ *      Returns if the given string begin with the pattern.
  *
- *	-nocase		Ignore case.
- *	-trim		Trim whitespace from the string.
+ *      -nocase         Ignore case.
+ *      -trim           Trim whitespace from the string.
  *
- *	blt::utils::string begins str pattern ?switches?
+ *      blt::utils::string begins str pattern ?switches?
  *
  *---------------------------------------------------------------------------
  */
@@ -743,14 +743,14 @@ StringBeginsOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * StringBetweenOp --
  *
- *	Returns if the given string is between the first and last 
- *	strings, either using a dictionary or ASCII comparsion.
+ *      Returns if the given string is between the first and last 
+ *      strings, either using a dictionary or ASCII comparsion.
  *
- *	-nocase		Ignore case.
- *	-dictionary	Use a dictionary comparsion.
- *	-ascii		Use an ASCII comparsion.
+ *      -nocase         Ignore case.
+ *      -dictionary     Use a dictionary comparsion.
+ *      -ascii          Use an ASCII comparsion.
  *
- *	blt::utils::string between str first last ?switches?
+ *      blt::utils::string between str first last ?switches?
  *
  *---------------------------------------------------------------------------
  */
@@ -776,11 +776,11 @@ StringBetweenOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (switches.flags & DICTIONARY) {
 	proc = Blt_DictionaryCompare;
     } else if (switches.flags & NOCASE) {
-        proc = strcasecmp;
+	proc = strcasecmp;
     } else {
-        proc = strcmp;
+	proc = strcmp;
     }
-        
+	
     comp = (*proc)(first, last);
     if (comp < 0) {
 	const char *tmp;
@@ -791,17 +791,17 @@ StringBetweenOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     comp = (*proc)(s, first);
     if (comp == 0) {
-	state = TRUE;			/* Equal to first. */
+	state = TRUE;                   /* Equal to first. */
     } else if (comp > 0) {
-	state = FALSE;			/* Less than first. */
+	state = FALSE;                  /* Less than first. */
     } else {
 	comp = (*proc)(s, last);
 	if (comp == 0) {
-	    state = TRUE;		/* Equal to last. */
+	    state = TRUE;               /* Equal to last. */
 	} else if (comp < 0) {
-	    state = FALSE;		/* Greater than last. */
+	    state = FALSE;              /* Greater than last. */
 	} else {
-	    state = TRUE;		/* Between first and last. */
+	    state = TRUE;               /* Between first and last. */
 	}
     }
     Blt_FreeSwitches(stringBetweenSwitches, (char *)&switches, 0);
@@ -814,11 +814,11 @@ StringBetweenOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * StringContainsOp --
  *
- *	Returns if the pattern is contained within the given string.
+ *      Returns if the pattern is contained within the given string.
  *
- *	-nocase		Ignore case of strings.
+ *      -nocase         Ignore case of strings.
  *
- *	blt::utils::string contains str pattern ?switches?
+ *      blt::utils::string contains str pattern ?switches?
  *
  *---------------------------------------------------------------------------
  */
@@ -857,12 +857,12 @@ StringContainsOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * StringEndsOp --
  *
- *	Returns if the given string ends with the pattern.
+ *      Returns if the given string ends with the pattern.
  *
- *	-nocase		Ignore case of strings.
- *	-trim		Trim whitespace from the string.
+ *      -nocase         Ignore case of strings.
+ *      -trim           Trim whitespace from the string.
  *
- *	blt::utils::string ends str pattern ?switches?
+ *      blt::utils::string ends str pattern ?switches?
  *
  *---------------------------------------------------------------------------
  */
@@ -902,12 +902,12 @@ StringEndsOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * StringEqualsOp --
  *
- *	Returns if the two strings are equal.
+ *      Returns if the two strings are equal.
  *
- *	-nocase		Ignore case of strings.
- *	-trim		Trim whitespace from the string.
+ *      -nocase         Ignore case of strings.
+ *      -trim           Trim whitespace from the string.
  *
- *	blt::utils::string equals str1 str2 ?switches?
+ *      blt::utils::string equals str1 str2 ?switches?
  *
  *---------------------------------------------------------------------------
  */
@@ -947,11 +947,11 @@ StringEqualsOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * StringInListOp --
  *
- *	Returns if the string is a member of the given list.
+ *      Returns if the string is a member of the given list.
  *
- *	-nocase		Ignore case of strings.
+ *      -nocase         Ignore case of strings.
  *
- *	blt::utils::string inlist str list ?switches?
+ *      blt::utils::string inlist str list ?switches?
  *
  *---------------------------------------------------------------------------
  */
@@ -979,7 +979,7 @@ StringInListOp(ClientData clientData, Tcl_Interp *interp, int objc,
     s = TrimString(s, &len, switches.trim);
     state = FALSE;
     if (switches.flags & NOCASE) {
-        switches.sorted = SORTED_NONE;
+	switches.sorted = SORTED_NONE;
     }
     switch (switches.sorted) {
     case SORTED_INCREASING:
@@ -1029,9 +1029,9 @@ StringObjCmd(ClientData clientData, Tcl_Interp *interp, int objc,
 /*ARGSUSED*/
 static int
 CompareDictionaryCmd(
-    ClientData clientData,	/* Not used. */
+    ClientData clientData,      /* Not used. */
     Tcl_Interp *interp,
-    int objc,			/* Not used. */
+    int objc,                   /* Not used. */
     Tcl_Obj *const *objv)
 {
     int result;
@@ -1047,9 +1047,9 @@ CompareDictionaryCmd(
 /*ARGSUSED*/
 static int
 ExitCmd(
-    ClientData clientData,	/* Not used. */
+    ClientData clientData,      /* Not used. */
     Tcl_Interp *interp,
-    int objc,			/* Not used. */
+    int objc,                   /* Not used. */
     Tcl_Obj *const *objv)
 {
     int code;
@@ -1071,11 +1071,11 @@ ExitCmd(
  *
  * Blt_CompareCmdInitProc --
  *
- *	This procedure is invoked to initialize the "number" and
- *	"string" commands.
+ *      This procedure is invoked to initialize the "number" and
+ *      "string" commands.
  *
  * Results:
- *	None.
+ *      None.
  *
  *---------------------------------------------------------------------------
  */

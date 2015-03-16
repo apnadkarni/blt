@@ -71,7 +71,7 @@ typedef struct _BLT_TABLE_VALUE {
 typedef struct _BLT_TABLE_HEADER {
     const char *label;			/* Label of row or column. */
     long index;				/* Reverse lookup
-                                         * offset-to-index. */
+					 * offset-to-index. */
     long offset;
     unsigned int flags;
 } *BLT_TABLE_HEADER;
@@ -79,7 +79,7 @@ typedef struct _BLT_TABLE_HEADER {
 typedef struct _BLT_TABLE_ROW {
     const char *label;			/* Label of row or column. */
     long index;				/* Reverse lookup
-                                         * offset-to-index. */
+					 * offset-to-index. */
     long offset;
     unsigned int flags;
 } *BLT_TABLE_ROW;
@@ -87,7 +87,7 @@ typedef struct _BLT_TABLE_ROW {
 typedef struct _BLT_TABLE_COLUMN {
     const char *label;			/* Label of row or column. */
     long index;				/* Reverse lookup
-                                         * offset-to-index. */
+					 * offset-to-index. */
     long offset;
     unsigned short flags;
     BLT_TABLE_COLUMN_TYPE type;
@@ -210,12 +210,12 @@ typedef struct _BLT_TABLE {
     BLT_TABLE_TAGS tags;
 
     Blt_HashTable *keyTables;		/* Array of primary key
-                                         * hashtables. */
+					 * hashtables. */
     BLT_TABLE_ROW *masterKey;		/* Master key entry. */
     Blt_HashTable masterKeyTable;
     BLT_TABLE_COLUMN *primaryKeys;      /* Array of columns acting as
-                                         * primary keys for table
-                                         * lookups. */
+					 * primary keys for table
+					 * lookups. */
     int numKeys;			/* # of primary keys. */
 
     unsigned int flags;
@@ -318,14 +318,14 @@ BLT_EXTERN int blt_table_value_exists(BLT_TABLE table, BLT_TABLE_ROW row,
 BLT_EXTERN int blt_table_tags_are_shared(BLT_TABLE table);
 BLT_EXTERN void blt_table_clear_row_tags(BLT_TABLE table, BLT_TABLE_ROW row);
 BLT_EXTERN void blt_table_clear_column_tags(BLT_TABLE table, 
-        BLT_TABLE_COLUMN col);
+	BLT_TABLE_COLUMN col);
 BLT_EXTERN Blt_Chain blt_table_get_row_tags(BLT_TABLE table, BLT_TABLE_ROW row);
 BLT_EXTERN Blt_Chain blt_table_get_column_tags(BLT_TABLE table, 
 	BLT_TABLE_COLUMN column);
 BLT_EXTERN Blt_Chain blt_table_get_tagged_rows(BLT_TABLE table, 
-        const char *tag);
+	const char *tag);
 BLT_EXTERN Blt_Chain blt_table_get_tagged_columns(BLT_TABLE table, 
-        const char *tag);
+	const char *tag);
 BLT_EXTERN int blt_table_row_has_tag(BLT_TABLE table, BLT_TABLE_ROW row, 
 	const char *tag);
 BLT_EXTERN int blt_table_column_has_tag(BLT_TABLE table, 
@@ -774,7 +774,7 @@ BLT_EXTERN int blt_table_register_format(Tcl_Interp *interp, const char *name,
 BLT_EXTERN void blt_table_unset_keys(BLT_TABLE table);
 BLT_EXTERN int blt_table_get_keys(BLT_TABLE table, BLT_TABLE_COLUMN **keysPtr);
 BLT_EXTERN int blt_table_set_keys(BLT_TABLE table, int numKeys,
-        BLT_TABLE_COLUMN *keys, int unique);
+	BLT_TABLE_COLUMN *keys, int unique);
 BLT_EXTERN int blt_table_key_lookup(Tcl_Interp *interp, BLT_TABLE table,
 	int objc, Tcl_Obj *const *objv, BLT_TABLE_ROW *rowPtr);
 

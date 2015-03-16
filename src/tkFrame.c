@@ -230,7 +230,7 @@ int TkCreateFrame (ClientData clientData, Tcl_Interp *interp, int objc,
 
 #ifndef USE_TK_STUBS
 BLT_EXTERN void TkSetWindowMenuBar (Tcl_Interp *interp, Tk_Window tkwin,
-        char *oldMenuName, char *menuName);
+	char *oldMenuName, char *menuName);
 
 BLT_EXTERN Tk_Window TkCreateMainWindow (Tcl_Interp * interp, 
 	char *screenName, char *baseName);

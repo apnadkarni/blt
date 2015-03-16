@@ -4,26 +4,26 @@
  *
  * This module implements a combomenu widget for the BLT toolkit.
  *
- *	Copyright 2006 George A Howlett.
+ *      Copyright 2006 George A Howlett.
  *
- *	Permission is hereby granted, free of charge, to any person obtaining
- *	a copy of this software and associated documentation files (the
- *	"Software"), to deal in the Software without restriction, including
- *	without limitation the rights to use, copy, modify, merge, publish,
- *	distribute, sublicense, and/or sell copies of the Software, and to
- *	permit persons to whom the Software is furnished to do so, subject to
- *	the following conditions:
+ *      Permission is hereby granted, free of charge, to any person obtaining
+ *      a copy of this software and associated documentation files (the
+ *      "Software"), to deal in the Software without restriction, including
+ *      without limitation the rights to use, copy, modify, merge, publish,
+ *      distribute, sublicense, and/or sell copies of the Software, and to
+ *      permit persons to whom the Software is furnished to do so, subject to
+ *      the following conditions:
  *
- *	The above copyright notice and this permission notice shall be
- *	included in all copies or substantial portions of the Software.
+ *      The above copyright notice and this permission notice shall be
+ *      included in all copies or substantial portions of the Software.
  *
- *	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- *	EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- *	MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- *	NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
- *	LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
- *	OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
- *	WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *      THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ *      EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ *      MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ *      NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+ *      LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+ *      OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+ *      WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
 #define BUILD_BLT_TK_PROCS 1
@@ -55,101 +55,101 @@ static const char emptyString[] = "";
 
 #define CASCADE_EVENT_MASK (ExposureMask|StructureNotifyMask)
 
-#define MAXSCROLLBARTHICKNESS	100
+#define MAXSCROLLBARTHICKNESS   100
 
-#define REDRAW_PENDING		(1<<0)	/* Indicates that the widget will
+#define REDRAW_PENDING          (1<<0)  /* Indicates that the widget will
 					 * be redisplayed at the next idle
 					 * point. */
-#define LAYOUT_PENDING		(1<<1)	/* Indicates that the widget's
+#define LAYOUT_PENDING          (1<<1)  /* Indicates that the widget's
 					 * layout is scheduled to be
 					 * recomputed at the next
 					 * redraw. */
-#define UPDATE_PENDING		(1<<2)	/* Indicates that a component
+#define UPDATE_PENDING          (1<<2)  /* Indicates that a component
 					 * (window or scrollbar) has
 					 * changed and that and update is
 					 * pending.  */
-#define FOCUS			(1<<3)	/* Indicates that the combomenu
+#define FOCUS                   (1<<3)  /* Indicates that the combomenu
 					 * currently has focus. */
-#define DROPDOWN		(1<<4)	/* Indicates the combomenu is a
+#define DROPDOWN                (1<<4)  /* Indicates the combomenu is a
 					 * drop down menu as opposed to a
 					 * popup.  */
-#define POSTED                  (1<<5)	/* Indicates the combomenu is
-                                         * currently posted. */
+#define POSTED                  (1<<5)  /* Indicates the combomenu is
+					 * currently posted. */
 
-#define SCROLLX			(1<<6)
-#define SCROLLY			(1<<7)
-#define SCROLL_PENDING		(SCROLLX|SCROLLY)
+#define SCROLLX                 (1<<6)
+#define SCROLLY                 (1<<7)
+#define SCROLL_PENDING          (SCROLLX|SCROLLY)
 
-#define INSTALL_XSCROLLBAR	(1<<8)	/* Indicates that the x scrollbar
+#define INSTALL_XSCROLLBAR      (1<<8)  /* Indicates that the x scrollbar
 					 * is scheduled to be installed at
 					 * the next idle point. */
-#define INSTALL_YSCROLLBAR	(1<<9)	/* Indicates that the y scrollbar
+#define INSTALL_YSCROLLBAR      (1<<9)  /* Indicates that the y scrollbar
 					 * is scheduled to be installed at
 					 * the next idle point. */
-#define RESTRICT_MIN		(1<<10)	/* Indicates to constrain the width
+#define RESTRICT_MIN            (1<<10) /* Indicates to constrain the width
 					 * of the menu to the minimum size
 					 * of the parent widget that posted
 					 * the menu. */
-#define RESTRICT_MAX		(1<<11)	/* Indicates to constrain the width
+#define RESTRICT_MAX            (1<<11) /* Indicates to constrain the width
 					 * of the menu of the maximum size
 					 * of the parent widget that posted
 					 * the menu. */
 #define SORT_AUTO               (1<<12)
 #define SORT_BYVALUE            (1<<13)
 #define SORT_DECREASING         (1<<14)
-#define SORT_PENDING            (1<<15)		
-#define SORTED                  (1<<17)	/* The menu is currently sorted.
+#define SORT_PENDING            (1<<15)         
+#define SORTED                  (1<<17) /* The menu is currently sorted.
 					 * This is used to simply reverse
 					 * the menu when the sort
 					 * -decreasing flag is changed. */
 
-#define RESTRICT_NONE		(0)
-#define COMBOMENU		(1<<20)
+#define RESTRICT_NONE           (0)
+#define COMBOMENU               (1<<20)
 #define INITIALIZED             (1<<22)
 
 #define VAR_FLAGS (TCL_GLOBAL_ONLY|TCL_TRACE_WRITES|TCL_TRACE_UNSETS)
 
-#define PIXMAPX(cm, wx)	((wx) - (cm)->xOffset)
-#define PIXMAPY(cm, wy)	((wy) - (cm)->yOffset)
+#define PIXMAPX(cm, wx) ((wx) - (cm)->xOffset)
+#define PIXMAPY(cm, wy) ((wy) - (cm)->yOffset)
 
-#define SCREENX(cm, wx)	((wx) - (cm)->xOffset + (cm)->borderWidth)
-#define SCREENY(cm, wy)	((wy) - (cm)->yOffset + (cm)->borderWidth)
+#define SCREENX(cm, wx) ((wx) - (cm)->xOffset + (cm)->borderWidth)
+#define SCREENY(cm, wy) ((wy) - (cm)->yOffset + (cm)->borderWidth)
 
-#define WORLDX(cm, sx)	((sx) - (cm)->borderWidth + (cm)->xOffset)
-#define WORLDY(cm, sy)	((sy) - (cm)->borderWidth + (cm)->yOffset)
+#define WORLDX(cm, sx)  ((sx) - (cm)->borderWidth + (cm)->xOffset)
+#define WORLDY(cm, sy)  ((sy) - (cm)->borderWidth + (cm)->yOffset)
 
-#define VPORTWIDTH(cm)	\
+#define VPORTWIDTH(cm)  \
     (Tk_Width((cm)->tkwin) - 2 * (cm)->borderWidth - (cm)->yScrollbarWidth)
 #define VPORTHEIGHT(cm) \
     (Tk_Height((cm)->tkwin) - 2 * (cm)->borderWidth - (cm)->xScrollbarHeight)
 
-#define FCLAMP(x)	((((x) < 0.0) ? 0.0 : ((x) > 1.0) ? 1.0 : (x)))
+#define FCLAMP(x)       ((((x) < 0.0) ? 0.0 : ((x) > 1.0) ? 1.0 : (x)))
 #define CLAMP(x,min,max) ((((x) < (min)) ? (min) : ((x) > (max)) ? (max) : (x)))
 
-#define ITEM_PADX	   3
-#define ITEM_PADY	   1
-#define ITEM_SEP_HEIGHT	   8
+#define ITEM_PADX          3
+#define ITEM_PADY          1
+#define ITEM_SEP_HEIGHT    8
 #define ITEM_L_IND_WIDTH  19
 #define ITEM_L_IND_HEIGHT 19
 #define ITEM_R_IND_WIDTH  13
 #define ITEM_R_IND_HEIGHT 13
 
-#define ITEM_MAP	  (1<<1)	/* Item needs to be remapped  */
-#define ITEM_REDRAW	  (1<<2)	/* Item needs to be redrawn. */
-#define ITEM_SELECTED	  (1<<4)	/* Radiobutton/checkbutton is
+#define ITEM_MAP          (1<<1)        /* Item needs to be remapped  */
+#define ITEM_REDRAW       (1<<2)        /* Item needs to be redrawn. */
+#define ITEM_SELECTED     (1<<4)        /* Radiobutton/checkbutton is
 					 * selected. */
 
 /* Item state. */
-#define ITEM_NORMAL	  (1<<5)	/* Draw item normally. */
-#define ITEM_DISABLED	  (1<<6)	/* Item is disabled. */
+#define ITEM_NORMAL       (1<<5)        /* Draw item normally. */
+#define ITEM_DISABLED     (1<<6)        /* Item is disabled. */
 #define ITEM_STATE_MASK   ((ITEM_DISABLED)|(ITEM_NORMAL))
 
 /* Item type. */
-#define ITEM_BUTTON	  (1<<9)	/* Item is command button. */
-#define ITEM_RADIOBUTTON  (1<<10)	/* Item is radiobutton. */
-#define ITEM_CHECKBUTTON  (1<<11)	/* Item is checkbutton. */
-#define ITEM_CASCADE	  (1<<12)	/* Item is cascade. */
-#define ITEM_SEPARATOR	  (1<<13)	/* Item is separator. */
+#define ITEM_BUTTON       (1<<9)        /* Item is command button. */
+#define ITEM_RADIOBUTTON  (1<<10)       /* Item is radiobutton. */
+#define ITEM_CHECKBUTTON  (1<<11)       /* Item is checkbutton. */
+#define ITEM_CASCADE      (1<<12)       /* Item is cascade. */
+#define ITEM_SEPARATOR    (1<<13)       /* Item is separator. */
 #define ITEM_TYPE_MASK    ((ITEM_BUTTON)|(ITEM_RADIOBUTTON)|(ITEM_CHECKBUTTON)|\
 			   (ITEM_CASCADE)|(ITEM_SEPARATOR))
 
@@ -173,53 +173,53 @@ static const char emptyString[] = "";
 #define DEF_UNPOSTCOMMAND               ((char *)NULL)
 #define DEF_WIDTH                       "0"
 
-#define	DEF_CHECKBUTTON_FILL_COLOR	(char *)NULL
-#define	DEF_CHECKBUTTON_OUTLINE_COLOR	(char *)NULL
-#define	DEF_CHECKBUTTON_COLOR		STD_INDICATOR_COLOR
-#define DEF_CHECKBUTTON_SIZE		"12"
-#define DEF_RADIOBUTTON_FILL_COLOR	RGB_WHITE
-#define	DEF_RADIOBUTTON_OUTLINE_COLOR	RGB_GREY50
-#define DEF_RADIOBUTTON_COLOR		STD_INDICATOR_COLOR
-#define DEF_RADIOBUTTON_SIZE		"12"
+#define DEF_CHECKBUTTON_FILL_COLOR      (char *)NULL
+#define DEF_CHECKBUTTON_OUTLINE_COLOR   (char *)NULL
+#define DEF_CHECKBUTTON_COLOR           STD_INDICATOR_COLOR
+#define DEF_CHECKBUTTON_SIZE            "12"
+#define DEF_RADIOBUTTON_FILL_COLOR      RGB_WHITE
+#define DEF_RADIOBUTTON_OUTLINE_COLOR   RGB_GREY50
+#define DEF_RADIOBUTTON_COLOR           STD_INDICATOR_COLOR
+#define DEF_RADIOBUTTON_SIZE            "12"
 
-#define DEF_ITEM_ACCELERATOR	    ((char *)NULL)
+#define DEF_ITEM_ACCELERATOR        ((char *)NULL)
 #define DEF_ITEM_BITMAP             ((char *)NULL)
-#define DEF_ITEM_COMMAND	    ((char *)NULL)
-#define DEF_ITEM_DATA		    ((char *)NULL)
+#define DEF_ITEM_COMMAND            ((char *)NULL)
+#define DEF_ITEM_DATA               ((char *)NULL)
 #define DEF_ITEM_ICON               ((char *)NULL)
 #define DEF_ITEM_IMAGE              ((char *)NULL)
-#define DEF_ITEM_INDENT		    "0"
+#define DEF_ITEM_INDENT             "0"
 #define DEF_ITEM_MENU               ((char *)NULL)
 #define DEF_ITEM_OFF_VALUE          "0"
 #define DEF_ITEM_ON_VALUE           "1"
-#define DEF_ITEM_STATE		    "normal"
-#define DEF_ITEM_STYLE		    "default"
-#define DEF_ITEM_TAGS		    ((char *)NULL)
+#define DEF_ITEM_STATE              "normal"
+#define DEF_ITEM_STYLE              "default"
+#define DEF_ITEM_TAGS               ((char *)NULL)
 #define DEF_ITEM_TEXT               ((char *)NULL)
-#define DEF_ITEM_TIP		    ((char *)NULL)
-#define DEF_ITEM_TYPE		    "command"
-#define DEF_ITEM_UNDERLINE	    "-1"
+#define DEF_ITEM_TIP                ((char *)NULL)
+#define DEF_ITEM_TYPE               "command"
+#define DEF_ITEM_UNDERLINE          "-1"
 #define DEF_ITEM_VALUE              ((char *)NULL)
-#define DEF_ITEM_VARIABLE	    ((char *)NULL)
+#define DEF_ITEM_VARIABLE           ((char *)NULL)
 #define DEF_STYLE_ACCEL_ACTIVE_FG   RGB_WHITE
-#define DEF_STYLE_ACCEL_FG	    RGB_BLACK
-#define DEF_STYLE_ACCEL_FONT	    STD_FONT_SMALL
-#define DEF_STYLE_ACTIVE_BG	    RGB_SKYBLUE4
-#define DEF_STYLE_ACTIVE_FG	    RGB_WHITE
-#define DEF_STYLE_ACTIVE_RELIEF	    "flat"
-#define DEF_STYLE_BG		    RGB_WHITE
-#define DEF_STYLE_BORDERWIDTH	    "0"
+#define DEF_STYLE_ACCEL_FG          RGB_BLACK
+#define DEF_STYLE_ACCEL_FONT        STD_FONT_SMALL
+#define DEF_STYLE_ACTIVE_BG         RGB_SKYBLUE4
+#define DEF_STYLE_ACTIVE_FG         RGB_WHITE
+#define DEF_STYLE_ACTIVE_RELIEF     "flat"
+#define DEF_STYLE_BG                RGB_WHITE
+#define DEF_STYLE_BORDERWIDTH       "0"
 #define DEF_STYLE_DISABLED_ACCEL_FG STD_DISABLED_FOREGROUND
 #define DEF_STYLE_DISABLED_BG       DISABLED_BACKGROUND
 #define DEF_STYLE_DISABLED_FG       DISABLED_FOREGROUND
 #define DEF_STYLE_FG                RGB_BLACK
-#define DEF_STYLE_FONT		    STD_FONT_NORMAL
+#define DEF_STYLE_FONT              STD_FONT_NORMAL
 #define DEF_STYLE_IND_FILL_COLOR    (char *)NULL
 #define DEF_STYLE_IND_OUTLINE_COLOR (char *)NULL
-#define DEF_STYLE_IND_COLOR	    (char *)NULL
-#define DEF_STYLE_IND_SIZE	    "12"
-#define DEF_STYLE_RELIEF	    "flat"
-#define DISABLED_BACKGROUND	    RGB_WHITE
+#define DEF_STYLE_IND_COLOR         (char *)NULL
+#define DEF_STYLE_IND_SIZE          "12"
+#define DEF_STYLE_RELIEF            "flat"
+#define DISABLED_BACKGROUND         RGB_WHITE
 #define DISABLED_FOREGROUND         RGB_GREY70
 
 static const char *sortTypeStrings[] = {
@@ -295,36 +295,36 @@ typedef struct _ComboMenu ComboMenu;
 /*
  * Icon --
  *
- *	Since instances of the same Tk image can be displayed in different
- *	windows with possibly different color palettes, Tk internally stores
- *	each instance in a linked list.  But if the instances are used in the
- *	same widget and therefore use the same color palette, this adds a lot
- *	of overhead, especially when deleting instances from the linked list.
+ *      Since instances of the same Tk image can be displayed in different
+ *      windows with possibly different color palettes, Tk internally stores
+ *      each instance in a linked list.  But if the instances are used in the
+ *      same widget and therefore use the same color palette, this adds a lot
+ *      of overhead, especially when deleting instances from the linked list.
  *
- *	For the combomenu widget, we never need more than a single instance of
- *	an image, regardless of how many times it's used.  Cache the image,
- *	maintaining a reference count for each image used in the widget.  It's
- *	likely that the combomenu widget will use many instances of the same
- *	image.
+ *      For the combomenu widget, we never need more than a single instance of
+ *      an image, regardless of how many times it's used.  Cache the image,
+ *      maintaining a reference count for each image used in the widget.  It's
+ *      likely that the combomenu widget will use many instances of the same
+ *      image.
  */
 
 typedef struct _Icon {
-    Tk_Image tkImage;			/* The Tk image being cached. */
-    Blt_HashEntry *hPtr;		/* Hash table pointer to the image. */
-    int refCount;			/* Reference count for this image. */
-    short int width, height;		/* Dimensions of the cached image. */
+    Tk_Image tkImage;                   /* The Tk image being cached. */
+    Blt_HashEntry *hPtr;                /* Hash table pointer to the image. */
+    int refCount;                       /* Reference count for this image. */
+    short int width, height;            /* Dimensions of the cached image. */
 } *Icon;
 
-#define IconHeight(i)	((i)->height)
-#define IconWidth(i)	((i)->width)
-#define IconImage(i)	((i)->tkImage)
-#define IconName(i)	(Blt_Image_Name(IconImage(i)))
+#define IconHeight(i)   ((i)->height)
+#define IconWidth(i)    ((i)->width)
+#define IconImage(i)    ((i)->tkImage)
+#define IconName(i)     (Blt_Image_Name(IconImage(i)))
 
 typedef struct {
     const char *name;
     Blt_HashEntry *hPtr;
     ComboMenu *comboPtr;
-    int refCount;			/* Indicates if the style is currently
+    int refCount;                       /* Indicates if the style is currently
 					 * in use in the combomenu. */
     int borderWidth;
     int relief;
@@ -335,15 +335,15 @@ typedef struct {
     Blt_Bg activeBg;
     Blt_Bg disabledBg;
 
-    Blt_Font accelFont;			/* Font of accelerator text. */
-    XColor *normalAccelFg;		/* Normal accelerator text color. */
-    XColor *disabledAccelFg;		/* Disabled accelerator text color.*/
-    XColor *activeAccelFg;		/* Active accelerator text color. */
+    Blt_Font accelFont;                 /* Font of accelerator text. */
+    XColor *normalAccelFg;              /* Normal accelerator text color. */
+    XColor *disabledAccelFg;            /* Disabled accelerator text color.*/
+    XColor *activeAccelFg;              /* Active accelerator text color. */
 
-    Blt_Font textFont;			/* Font of the label text. */
-    XColor *normalTextFg;		/* Normal label text color. */
-    XColor *disabledTextFg;		/* Disable label text color. */
-    XColor *activeTextFg;		/* Active label text color. */
+    Blt_Font textFont;                  /* Font of the label text. */
+    XColor *normalTextFg;               /* Normal label text color. */
+    XColor *disabledTextFg;             /* Disable label text color. */
+    XColor *activeTextFg;               /* Active label text color. */
 
     /* Radiobuttons, checkbuttons, and cascades. */
     Blt_Picture checkbutton[3];
@@ -395,22 +395,22 @@ static Blt_ConfigSpec styleConfigSpecs[] =
     {BLT_CONFIG_COLOR, "-foreground", (char *)NULL, (char *)NULL, DEF_STYLE_FG, 
 	Blt_Offset(Style, normalTextFg), 0},
     {BLT_CONFIG_FONT, "-font", (char *)NULL, (char *)NULL, DEF_STYLE_FONT, 
-        Blt_Offset(Style, textFont), 0},
+	Blt_Offset(Style, textFont), 0},
     {BLT_CONFIG_COLOR, "-indicatorfillcolor", (char *)NULL, (char *)NULL, 
-        DEF_STYLE_IND_FILL_COLOR, Blt_Offset(Style, indFillColor), 
-        BLT_CONFIG_NULL_OK},
+	DEF_STYLE_IND_FILL_COLOR, Blt_Offset(Style, indFillColor), 
+	BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_COLOR, "-indicatoroutlinecolor", (char *)NULL, (char *)NULL, 
 	DEF_STYLE_IND_OUTLINE_COLOR, Blt_Offset(Style, indOutlineColor), 
-        BLT_CONFIG_NULL_OK},
+	BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_COLOR, "-indicatorcolor", (char *)NULL, (char *)NULL, 
 	DEF_STYLE_IND_COLOR, Blt_Offset(Style, indColor), 
-        BLT_CONFIG_NULL_OK},
+	BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_PIXELS_NNEG, "-indicatorsize", (char *)NULL, (char *)NULL, 
 	DEF_STYLE_IND_SIZE, Blt_Offset(Style, reqIndWidth), 
-        BLT_CONFIG_DONT_SET_DEFAULT},
+	BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_RELIEF, "-relief", (char *)NULL, (char *)NULL, 
 	DEF_STYLE_RELIEF, Blt_Offset(Style, relief), 
-        BLT_CONFIG_DONT_SET_DEFAULT},
+	BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_END, (char *)NULL, (char *)NULL, (char *)NULL, (char *)NULL, 
 	0, 0}
 };
@@ -420,54 +420,54 @@ typedef struct {
     int type;                           /* Type of sort. */
     int isDecreasing;                   /* Current sorting direction */
     Tcl_Obj *cmdObjPtr;                 /* If non-NULL, custom command to
-                                         * sort menu items. */
+					 * sort menu items. */
 } SortInfo;
 
 /*
  *
  *  [left indicator] [icon] [text] [right indicator/accel] [scrollbar]
  *   
- * left indicator:	checkbutton or radiobutton entries.
- * icon:		all entries.
- * text:		all entries.
- * accel:		checkbutton, radiobutton, or button entries.
+ * left indicator:      checkbutton or radiobutton entries.
+ * icon:                all entries.
+ * text:                all entries.
+ * accel:               checkbutton, radiobutton, or button entries.
  * right indicator:     cascade item only.
  */
 typedef struct  {
-    ComboMenu *comboPtr;		/* Combomenu containing this item. */
-    long index;				/* Index of the item (numbered from 0)*/
-    int worldX, worldY;			/* Upper left world-coordinate of item
+    ComboMenu *comboPtr;                /* Combomenu containing this item. */
+    long index;                         /* Index of the item (numbered from 0)*/
+    int worldX, worldY;                 /* Upper left world-coordinate of item
 					 * in menu. */
-    Style *stylePtr;			/* Style used by this item. */
-    unsigned int flags;			/* Contains various bits of
+    Style *stylePtr;                    /* Style used by this item. */
+    unsigned int flags;                 /* Contains various bits of
 					 * information about the item, such as
 					 * type, state. */
     Blt_ChainLink link;
     int relief;
-    int underline;			/* Underlined character. */
-    int indent;				/* # of pixels to indent the icon. */
-    Icon image;				/* If non-NULL, image to be displayed
+    int underline;                      /* Underlined character. */
+    int indent;                         /* # of pixels to indent the icon. */
+    Icon image;                         /* If non-NULL, image to be displayed
 					 * instead of label text. */
-    Icon icon;				/* Button, RadioButton, and
+    Icon icon;                          /* Button, RadioButton, and
 					 * CheckButton entries. */
-    const char *text;			/* Text label to be displayed. */
-    const char *accel;			/* Accelerator text. May be NULL.*/
-    Tcl_Obj *cmdObjPtr;			/* Command to be invoked when item is
+    const char *text;                   /* Text label to be displayed. */
+    const char *accel;                  /* Accelerator text. May be NULL.*/
+    Tcl_Obj *cmdObjPtr;                 /* Command to be invoked when item is
 					 * clicked. */
-    Tcl_Obj *dataObjPtr;		/* User-data associated with this
+    Tcl_Obj *dataObjPtr;                /* User-data associated with this
 					 * item. */
-    Tcl_Obj *variableObjPtr;		/* Name of TCL variable.  If non-NULL,
+    Tcl_Obj *variableObjPtr;            /* Name of TCL variable.  If non-NULL,
 					 * this variable will be set to the
 					 * value string of the selected
 					 * item. */
-    Tcl_Obj *valueObjPtr;		/* Radiobutton value. */
+    Tcl_Obj *valueObjPtr;               /* Radiobutton value. */
 
     /* Checkbutton on and off values. */
-    Tcl_Obj *onValueObjPtr;		/* Checkbutton on-value. */
-    Tcl_Obj *offValueObjPtr;		/* Checkbutton off-value. */
+    Tcl_Obj *onValueObjPtr;             /* Checkbutton on-value. */
+    Tcl_Obj *offValueObjPtr;            /* Checkbutton off-value. */
 
     /* Cascade menu. */
-    Tcl_Obj *menuObjPtr;		/* Name of the sub-menu. */
+    Tcl_Obj *menuObjPtr;                /* Name of the sub-menu. */
     Tcl_Obj *tagsObjPtr;
 
     Tcl_Obj *tipObjPtr;
@@ -505,18 +505,18 @@ static Blt_ConfigSpec itemConfigSpecs[] =
     {BLT_CONFIG_CUSTOM, "-style", (char *)NULL, (char *)NULL, DEF_ITEM_STYLE, 
 	Blt_Offset(Item, stylePtr), 0, &styleOption},
      {BLT_CONFIG_CUSTOM, "-tags", (char *)NULL, (char *)NULL,
-        DEF_ITEM_TAGS, 0, BLT_CONFIG_NULL_OK, &tagsOption},
+	DEF_ITEM_TAGS, 0, BLT_CONFIG_NULL_OK, &tagsOption},
     {BLT_CONFIG_CUSTOM, "-text", (char *)NULL, (char *)NULL, DEF_ITEM_TEXT, 
-        Blt_Offset(Item, text), BLT_CONFIG_NULL_OK, &textOption},
+	Blt_Offset(Item, text), BLT_CONFIG_NULL_OK, &textOption},
     {BLT_CONFIG_OBJ, "-tooltip", (char *)NULL, (char *)NULL, DEF_ITEM_TIP, 
-         Blt_Offset(Item, tipObjPtr), BLT_CONFIG_NULL_OK},
+	 Blt_Offset(Item, tipObjPtr), BLT_CONFIG_NULL_OK},
      {BLT_CONFIG_CUSTOM, "-type", (char *)NULL, (char *)NULL, DEF_ITEM_TYPE, 
 	Blt_Offset(Item, flags), BLT_CONFIG_DONT_SET_DEFAULT, &typeOption},
     {BLT_CONFIG_INT, "-underline", (char *)NULL, (char *)NULL, 
 	DEF_ITEM_UNDERLINE, Blt_Offset(Item, underline), 
 	BLT_CONFIG_DONT_SET_DEFAULT },
     {BLT_CONFIG_OBJ, "-value", (char *)NULL, (char *)NULL, DEF_ITEM_VALUE, 
-         Blt_Offset(Item, valueObjPtr), BLT_CONFIG_NULL_OK},
+	 Blt_Offset(Item, valueObjPtr), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_CUSTOM, "-variable", (char *)NULL, (char *)NULL, 
 	DEF_ITEM_VARIABLE, Blt_Offset(Item, variableObjPtr), BLT_CONFIG_NULL_OK,
 	&traceVarOption},
@@ -527,10 +527,10 @@ static Blt_ConfigSpec itemConfigSpecs[] =
 typedef struct {
     unsigned int flags;                 /* Various flags: see below. */
     int x1, y1, x2, y2;                 /* Coordinates of area representing
-                                         * the parent that posted this
-                                         * menu.  */
+					 * the parent that posted this
+					 * menu.  */
     Tk_Window tkwin;                    /* Parent window that posted this
-                                         * menu. */
+					 * menu. */
     int menuWidth, menuHeight;
     int lastMenuWidth;
     int align;
@@ -546,39 +546,39 @@ struct _ComboMenu {
      * same offset in the structure.
      */
 
-    Tk_Window tkwin;			/* Window that embodies the frame.
+    Tk_Window tkwin;                    /* Window that embodies the frame.
 					 * NULL means that the window has been
 					 * destroyed but the data structures
 					 * haven't yet been cleaned up. */
-    Display *display;			/* Display containing widget.  Used,
+    Display *display;                   /* Display containing widget.  Used,
 					 * among other things, so that
 					 * resources can be freed even after
 					 * tkwin has gone away. */
-    Tcl_Interp *interp;			/* Interpreter associated with widget.
+    Tcl_Interp *interp;                 /* Interpreter associated with widget.
 					 * Used to delete widget command. */
-    Tcl_Command cmdToken;		/* Token for widget's command. */
-    Tcl_Obj *cmdObjPtr;			/* If non-NULL, command to be executed
+    Tcl_Command cmdToken;               /* Token for widget's command. */
+    Tcl_Obj *cmdObjPtr;                 /* If non-NULL, command to be executed
 					 * when this menu item is selected. */
-    Tcl_Obj *postCmdObjPtr;		/* If non-NULL, command to be executed
+    Tcl_Obj *postCmdObjPtr;             /* If non-NULL, command to be executed
 					 * when this menu is posted. */
-    Tcl_Obj *unpostCmdObjPtr;		/* If non-NULL, command to be executed
+    Tcl_Obj *unpostCmdObjPtr;           /* If non-NULL, command to be executed
 					 * when this menu is posted. */
     unsigned int flags;
-    Tcl_Obj *iconVarObjPtr;		/* Name of TCL variable.  If non-NULL,
+    Tcl_Obj *iconVarObjPtr;             /* Name of TCL variable.  If non-NULL,
 					 * this variable will be set to the
 					 * name of the Tk image representing
 					 * the icon of the selected item.  */
-    Tcl_Obj *textVarObjPtr;		/* Name of TCL variable.  If non-NULL,
+    Tcl_Obj *textVarObjPtr;             /* Name of TCL variable.  If non-NULL,
 					 * this variable will be set to the
 					 * text string of the text of the
 					 * selected item. */
-    Tcl_Obj *takeFocusObjPtr;		/* Value of -takefocus option; not
+    Tcl_Obj *takeFocusObjPtr;           /* Value of -takefocus option; not
 					 * used in the C code, but used by
 					 * keyboard * traversal scripts. */
-    const char *menuName;		/* Textual description of menu to use
+    const char *menuName;               /* Textual description of menu to use
 					 * for menubar. Malloc-ed, may be
 					 * NULL. */
-    Tk_Cursor cursor;			/* Current cursor for window or None. */
+    Tk_Cursor cursor;                   /* Current cursor for window or None. */
 
     Tk_Anchor anchor;
 
@@ -586,7 +586,7 @@ struct _ComboMenu {
     int relief;
     int borderWidth;
 
-    Style defStyle;			/* Default style. */
+    Style defStyle;                     /* Default style. */
 
     SortInfo sort;
 
@@ -600,39 +600,39 @@ struct _ComboMenu {
     /* Commands to control horizontal and vertical scrollbars. */
     Tcl_Obj *xScrollCmdObjPtr, *yScrollCmdObjPtr;
 
-    struct _Blt_Tags tags;		/* Table of tags. */
-    Blt_HashTable textTable;		/* Table of labels (hashtables). */
-    Blt_HashTable iconTable;		/* Table of icons. */
+    struct _Blt_Tags tags;              /* Table of tags. */
+    Blt_HashTable textTable;            /* Table of labels (hashtables). */
+    Blt_HashTable iconTable;            /* Table of icons. */
 
     Blt_Chain chain;
-    Item *activePtr;			/* If non-NULL, menu item that is
+    Item *activePtr;                    /* If non-NULL, menu item that is
 					 * currently active.  If a cascade
 					 * item, a submenu may be posted. */
-    Item *postedPtr;			/* If non-NULL, menu item that has
+    Item *postedPtr;                    /* If non-NULL, menu item that has
 					 * currently has a cascade menu
 					 * posted. */
-    Tk_Window menuWin;			/* Cascade menu window. */
-    Item *selectPtr;			/* Last item selected. */
-    Item *firstPtr, *lastPtr;		/* Defines the range of visible
+    Tk_Window menuWin;                  /* Cascade menu window. */
+    Item *selectPtr;                    /* Last item selected. */
+    Item *firstPtr, *lastPtr;           /* Defines the range of visible
 					 * menu items. */
-    int xOffset, yOffset;		/* Scroll offsets of viewport in
+    int xOffset, yOffset;               /* Scroll offsets of viewport in
 					 * world. */ 
-    int worldWidth, worldHeight;	/* Dimension of entire menu. */
-    Tk_Window xScrollbar;		/* Horizontal scrollbar to be used
+    int worldWidth, worldHeight;        /* Dimension of entire menu. */
+    Tk_Window xScrollbar;               /* Horizontal scrollbar to be used
 					 * if necessary. If NULL, no
 					 * x-scrollbar is used. */
-    Tk_Window yScrollbar;		/* Vertical scrollbar to be used if
+    Tk_Window yScrollbar;               /* Vertical scrollbar to be used if
 					 * necessary. If NULL, no
 					 * y-scrollbar is used. */
     short int yScrollbarWidth, xScrollbarHeight;
     short int leftIndWidth, rightIndWidth;
     short int leftIndHeight, rightIndHeight;
     short int textWidth, iconWidth;
-    Blt_HashTable styleTable;		/* Table of styles used. */
+    Blt_HashTable styleTable;           /* Table of styles used. */
 
-    Icon rbIcon;	
-    Icon cbIcon;	
-    Icon casIcon;	
+    Icon rbIcon;        
+    Icon cbIcon;        
+    Icon casIcon;       
 
     XColor *checkButtonFillColor;
     XColor *checkButtonOutlineColor;
@@ -646,14 +646,14 @@ struct _ComboMenu {
     /*
      * Scanning Information:
      */
-    int scanAnchorX;			/* Horizontal scan anchor in screen
+    int scanAnchorX;                    /* Horizontal scan anchor in screen
 					 * x-coordinates. */
-    int scanX;				/* x-offset of the start of the
+    int scanX;                          /* x-offset of the start of the
 					 * horizontal scan in world
 					 * coordinates.*/
-    int scanAnchorY;			/* Vertical scan anchor in screen
+    int scanAnchorY;                    /* Vertical scan anchor in screen
 					 * y-coordinates. */
-    int scanY;				/* y-offset of the start of the
+    int scanY;                          /* y-offset of the start of the
 					 * vertical scan in world
 					 * coordinates.*/
     short int width, height;
@@ -700,7 +700,7 @@ static Blt_ConfigSpec comboConfigSpecs[] =
 	Blt_Offset(ComboMenu, defStyle.disabledAccelFg), 0},
     {BLT_CONFIG_BACKGROUND, "-disabledbackground", "disabledBackground",
 	"DisabledBackground", DEF_STYLE_DISABLED_BG, 
-        Blt_Offset(ComboMenu, defStyle.disabledBg), 0},
+	Blt_Offset(ComboMenu, defStyle.disabledBg), 0},
     {BLT_CONFIG_COLOR, "-disabledforeground", "disabledForeground",
 	"DisabledForeground", DEF_STYLE_DISABLED_FG, 
 	Blt_Offset(ComboMenu, defStyle.disabledTextFg), 0},
@@ -714,7 +714,7 @@ static Blt_ConfigSpec comboConfigSpecs[] =
 	&bltLimitsOption},
     {BLT_CONFIG_OBJ, "-iconvariable", "iconVariable", "IconVariable", 
 	DEF_ICON_VARIABLE, Blt_Offset(ComboMenu, iconVarObjPtr), 
-        BLT_CONFIG_NULL_OK},
+	BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_PIXELS_NNEG, "-itemborderwidth", "itemBorderWidth", 
 	"ItemBorderWidth", DEF_STYLE_BORDERWIDTH, 
 	Blt_Offset(ComboMenu, defStyle.borderWidth), 
@@ -729,25 +729,25 @@ static Blt_ConfigSpec comboConfigSpecs[] =
 	&restrictOption},
     {BLT_CONFIG_OBJ, "-textvariable", "textVariable", "TextVariable", 
 	DEF_TEXT_VARIABLE, Blt_Offset(ComboMenu, textVarObjPtr), 
-        BLT_CONFIG_NULL_OK},
+	BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_OBJ, "-xscrollbar", "xScrollbar", "Scrollbar", 
 	DEF_SCROLLBAR, Blt_Offset(ComboMenu, xScrollbarObjPtr), 
 	BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_OBJ, "-xscrollcommand", "xScrollCommand", "ScrollCommand",
-        DEF_SCROLL_CMD, Blt_Offset(ComboMenu, xScrollCmdObjPtr), 
+	DEF_SCROLL_CMD, Blt_Offset(ComboMenu, xScrollCmdObjPtr), 
 	BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_PIXELS_POS, "-xscrollincrement", "xScrollIncrement",
 	"ScrollIncrement", DEF_SCROLL_INCR, 
-         Blt_Offset(ComboMenu, xScrollUnits), BLT_CONFIG_DONT_SET_DEFAULT},
+	 Blt_Offset(ComboMenu, xScrollUnits), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_OBJ, "-yscrollbar", "yScrollbar", "Scrollbar", 
 	DEF_SCROLLBAR, Blt_Offset(ComboMenu, yScrollbarObjPtr), 
 	BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_OBJ, "-yscrollcommand", "yScrollCommand", "ScrollCommand",
-        DEF_SCROLL_CMD, Blt_Offset(ComboMenu, yScrollCmdObjPtr), 
+	DEF_SCROLL_CMD, Blt_Offset(ComboMenu, yScrollCmdObjPtr), 
 	BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_PIXELS_POS, "-yscrollincrement", "yScrollIncrement",
 	"ScrollIncrement", DEF_SCROLL_INCR, 
-         Blt_Offset(ComboMenu, yScrollUnits),BLT_CONFIG_DONT_SET_DEFAULT},
+	 Blt_Offset(ComboMenu, yScrollUnits),BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_OBJ, "-takefocus", "takeFocus", "TakeFocus",
 	DEF_TAKE_FOCUS, Blt_Offset(ComboMenu, takeFocusObjPtr), 
 	BLT_CONFIG_NULL_OK},
@@ -760,17 +760,17 @@ static Blt_ConfigSpec comboConfigSpecs[] =
 #ifdef notdef
     {BLT_CONFIG_CUSTOM, "-radioimage", (char *)NULL, (char *)NULL, 
 	DEF_ITEM_IMAGE, Blt_Offset(ComboMenu, rbIcon), BLT_CONFIG_NULL_OK, 
-        &iconOption},
+	&iconOption},
     {BLT_CONFIG_CUSTOM, "-checkimage", (char *)NULL, (char *)NULL, 
 	DEF_ITEM_IMAGE, Blt_Offset(ComboMenu, cbIcon), BLT_CONFIG_NULL_OK, 
-        &iconOption},
+	&iconOption},
     {BLT_CONFIG_CUSTOM, "-cascadeimage", (char *)NULL, (char *)NULL, 
 	DEF_ITEM_IMAGE, Blt_Offset(ComboMenu, casIcon), BLT_CONFIG_NULL_OK,
-        &iconOption},
+	&iconOption},
 #endif
     {BLT_CONFIG_COLOR, "-checkbuttonfillcolor", (char *)NULL, (char *)NULL, 
 	DEF_CHECKBUTTON_FILL_COLOR, 
-        Blt_Offset(ComboMenu, checkButtonFillColor), BLT_CONFIG_NULL_OK},
+	Blt_Offset(ComboMenu, checkButtonFillColor), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_COLOR, "-checkbuttonoutlinecolor", (char *)NULL, (char *)NULL, 
 	DEF_CHECKBUTTON_OUTLINE_COLOR,
 	Blt_Offset(ComboMenu, checkButtonOutlineColor), BLT_CONFIG_NULL_OK},
@@ -778,18 +778,18 @@ static Blt_ConfigSpec comboConfigSpecs[] =
 	DEF_CHECKBUTTON_COLOR, Blt_Offset(ComboMenu, checkButtonColor),0},
     {BLT_CONFIG_PIXELS_NNEG, "-checkbuttonsize", (char *)NULL, (char *)NULL, 
 	DEF_CHECKBUTTON_SIZE, Blt_Offset(ComboMenu, checkButtonReqSize), 
-        BLT_CONFIG_DONT_SET_DEFAULT},
+	BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_COLOR, "-radiobuttonfillcolor", (char *)NULL, (char *)NULL, 
 	DEF_RADIOBUTTON_FILL_COLOR, 
-        Blt_Offset(ComboMenu, radioButtonFillColor), BLT_CONFIG_NULL_OK},
+	Blt_Offset(ComboMenu, radioButtonFillColor), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_COLOR, "-radiobuttonoutlinecolor", (char *)NULL, (char *)NULL, 
 	DEF_RADIOBUTTON_OUTLINE_COLOR, 
-        Blt_Offset(ComboMenu, radioButtonOutlineColor), BLT_CONFIG_NULL_OK},
+	Blt_Offset(ComboMenu, radioButtonOutlineColor), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_COLOR, "-radiobuttoncolor", (char *)NULL, (char *)NULL, 
 	DEF_RADIOBUTTON_COLOR, Blt_Offset(ComboMenu, radioButtonColor),0},
     {BLT_CONFIG_PIXELS_NNEG, "-radiobuttonsize", (char *)NULL, (char *)NULL, 
 	DEF_RADIOBUTTON_SIZE, Blt_Offset(ComboMenu, radioButtonReqSize), 
-        BLT_CONFIG_DONT_SET_DEFAULT},
+	BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_END, (char *)NULL, (char *)NULL, (char *)NULL, (char *)NULL, 
 	0, 0}
 };
@@ -797,9 +797,9 @@ static Blt_ConfigSpec comboConfigSpecs[] =
 /*
  * ItemIterator --
  *
- *	Items may be tagged with strings.  An item may have many tags.  The
- *	same tag may be used for many items.
- *	
+ *      Items may be tagged with strings.  An item may have many tags.  The
+ *      same tag may be used for many items.
+ *      
  */
 
 typedef enum { 
@@ -807,31 +807,31 @@ typedef enum {
 } IteratorType;
 
 typedef struct _Iterator {
-    ComboMenu *comboPtr;		/* ComboMenu that we're iterating
+    ComboMenu *comboPtr;                /* ComboMenu that we're iterating
 					 * over. */
 
-    IteratorType type;			/* Type of iteration:
-					 * ITER_TAG	By item tag.
-					 * ITER_ALL	By every item.
-					 * ITER_SINGLE	Single item: either 
-					 *		tag or index.
-					 * ITER_TYPE	Over a single item 
-					 *		type.
+    IteratorType type;                  /* Type of iteration:
+					 * ITER_TAG     By item tag.
+					 * ITER_ALL     By every item.
+					 * ITER_SINGLE  Single item: either 
+					 *              tag or index.
+					 * ITER_TYPE    Over a single item 
+					 *              type.
 					 */
 
-    Item *startPtr, *last;		/* Starting and ending item.  Starting
+    Item *startPtr, *last;              /* Starting and ending item.  Starting
 					 * point of search, saved if iterator
 					 * is reused.  Used for ITER_ALL and
 					 * ITER_SINGLE searches. */
-    Item *endPtr;			/* Ending item (inclusive). */
-    Item *nextPtr;			/* Next item. */
-    int itemType;			/* For tag-based searches. */
-    char *tagName;			/* If non-NULL, is the tag that we are
+    Item *endPtr;                       /* Ending item (inclusive). */
+    Item *nextPtr;                      /* Next item. */
+    int itemType;                       /* For tag-based searches. */
+    char *tagName;                      /* If non-NULL, is the tag that we are
 					 * currently iterating over. */
 
-    Blt_HashTable *tablePtr;		/* Pointer to tag hash table. */
+    Blt_HashTable *tablePtr;            /* Pointer to tag hash table. */
 
-    Blt_HashSearch cursor;		/* Search iterator for tag hash
+    Blt_HashSearch cursor;              /* Search iterator for tag hash
 					 * table. */
     Blt_ChainLink link;
 } ItemIterator;
@@ -839,11 +839,11 @@ typedef struct _Iterator {
 static Tk_GeomRequestProc ScrollbarGeometryProc;
 static Tk_GeomLostSlaveProc ScrollbarCustodyProc;
 static Tk_GeomMgr comboMgrInfo = {
-    (char *)"combomenu",		/* Name of geometry manager used by
+    (char *)"combomenu",                /* Name of geometry manager used by
 					 * winfo. */
-    ScrollbarGeometryProc,		/* Procedure to for new geometry
+    ScrollbarGeometryProc,              /* Procedure to for new geometry
 					 * requests. */
-    ScrollbarCustodyProc,		/* Procedure when scrollbar is taken
+    ScrollbarCustodyProc,               /* Procedure when scrollbar is taken
 					 * away. */
 };
 
@@ -856,10 +856,10 @@ static Blt_SwitchCustom itemSwitch = {
     ItemSwitch, NULL, NULL, 0, 
 };
 
-#define FIND_DECREASING	(1<<0)
-#define FIND_UNDERLINE	(1<<1)
-#define FIND_GLOB	1
-#define FIND_REGEXP	2
+#define FIND_DECREASING (1<<0)
+#define FIND_UNDERLINE  (1<<1)
+#define FIND_GLOB       1
+#define FIND_REGEXP     2
 
 typedef struct {
     unsigned int mask;
@@ -911,44 +911,44 @@ static Blt_SwitchCustom postWindowSwitch = {
 typedef struct {
     unsigned int flags;                 /* Various flags: see below. */
     int x1, y1, x2, y2;                 /* Coordinates of area representing
-                                         * the parent that posted this
-                                         * menu.  */
+					 * the parent that posted this
+					 * menu.  */
     Tk_Window tkwin;                    /* Parent window that posted this
-                                         * menu. */
+					 * menu. */
 } PostSwitches;
 
-#define ALIGN_LEFT	(0)             /* Menu is aligned to the center of
-                                         * the parent. */
-#define ALIGN_CENTER	(1)             /* Menu is aligned on the left side
-                                         * of the parent.  */
-#define ALIGN_RIGHT	(2)             /* Menu is aligned on the right
-                                         * side of the parent. */
+#define ALIGN_LEFT      (0)             /* Menu is aligned to the center of
+					 * the parent. */
+#define ALIGN_CENTER    (1)             /* Menu is aligned on the left side
+					 * of the parent.  */
+#define ALIGN_RIGHT     (2)             /* Menu is aligned on the right
+					 * side of the parent. */
 
 #define POST_PARENT     (0)             /* Use parent geometry for location
-                                         * of button. */
+					 * of button. */
 #define POST_POPUP      (1)             /* x,y location of the menu in root
-                                         * coordinates. This menu is a
-                                         * popup.*/
+					 * coordinates. This menu is a
+					 * popup.*/
 #define POST_CASCADE    (2)             /* x,y location of the menu in root
-                                         * coordinates. This menu is a
-                                         * cascade.*/
+					 * coordinates. This menu is a
+					 * cascade.*/
 #define POST_WINDOW     (3)             /* Window representing the
-                                         * parent. */
+					 * parent. */
 #define POST_REGION     (4)             /* Bounding box representing the
-                                         * parent area. The x1, y2, x2, y2
-                                         * coordinates are in root
-                                         * coordinates. */
+					 * parent area. The x1, y2, x2, y2
+					 * coordinates are in root
+					 * coordinates. */
 
 static Blt_SwitchSpec postSwitches[] = 
 {
     {BLT_SWITCH_CUSTOM, "-align", "left|right|center", (char *)NULL,
-        Blt_Offset(ComboMenu, post.align), 0, 0, &postAlignSwitch},
+	Blt_Offset(ComboMenu, post.align), 0, 0, &postAlignSwitch},
     {BLT_SWITCH_CUSTOM, "-box", "x1 y1 x2 y2", (char *)NULL,
-        0, 0, 0, &postBoxSwitch},
+	0, 0, 0, &postBoxSwitch},
     {BLT_SWITCH_CUSTOM, "-cascade", "x y", (char *)NULL,
-        0, 0, 0, &postCascadeSwitch},
+	0, 0, 0, &postCascadeSwitch},
     {BLT_SWITCH_CUSTOM, "-popup", "x y", (char *)NULL,
-        0, 0, 0, &postPopupSwitch},
+	0, 0, 0, &postPopupSwitch},
     {BLT_SWITCH_CUSTOM, "-window", "path", (char *)NULL,
 	Blt_Offset(ComboMenu, post.tkwin), 0, 0, &postWindowSwitch},
     {BLT_SWITCH_END}
@@ -957,17 +957,17 @@ static Blt_SwitchSpec postSwitches[] =
 static Blt_ConfigSpec sortSpecs[] =
 {
     {BLT_CONFIG_BITMASK, "-auto", "auto", "Auto", DEF_SORT_AUTO, 
-        Blt_Offset(ComboMenu, sort.flags), BLT_CONFIG_DONT_SET_DEFAULT, 
-        (Blt_CustomOption *)SORT_AUTO},
+	Blt_Offset(ComboMenu, sort.flags), BLT_CONFIG_DONT_SET_DEFAULT, 
+	(Blt_CustomOption *)SORT_AUTO},
     {BLT_CONFIG_BITMASK, "-byvalue", "byValue", "ByValue", DEF_SORT_BYVALUE, 
-        Blt_Offset(ComboMenu, sort.flags), BLT_CONFIG_DONT_SET_DEFAULT, 
-        (Blt_CustomOption *)SORT_BYVALUE},
+	Blt_Offset(ComboMenu, sort.flags), BLT_CONFIG_DONT_SET_DEFAULT, 
+	(Blt_CustomOption *)SORT_BYVALUE},
     {BLT_CONFIG_BITMASK, "-decreasing", "decreasing", "Decreasing", 
-        DEF_SORT_DECREASING, Blt_Offset(ComboMenu, sort.flags), 
-        BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)SORT_DECREASING},
+	DEF_SORT_DECREASING, Blt_Offset(ComboMenu, sort.flags), 
+	BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)SORT_DECREASING},
     {BLT_CONFIG_CUSTOM, "-type", "type", "Type", DEF_SORT_TYPE, 
-        Blt_Offset(ComboMenu, sort.type), BLT_CONFIG_DONT_SET_DEFAULT, 
-        &sortTypeOption},
+	Blt_Offset(ComboMenu, sort.type), BLT_CONFIG_DONT_SET_DEFAULT, 
+	&sortTypeOption},
     {BLT_CONFIG_END, (char *)NULL, (char *)NULL, (char *)NULL,
 	(char *)NULL, 0, 0}
 };
@@ -998,11 +998,11 @@ RenumberItems(ComboMenu *comboPtr)
     long count;
     
     for (count = 0, link = Blt_Chain_FirstLink(comboPtr->chain); 
-         link != NULL; link = Blt_Chain_NextLink(link), count++) {
-        Item *itemPtr;
-        
-        itemPtr = Blt_Chain_GetValue(link);
-        itemPtr->index = count;
+	 link != NULL; link = Blt_Chain_NextLink(link), count++) {
+	Item *itemPtr;
+	
+	itemPtr = Blt_Chain_GetValue(link);
+	itemPtr->index = count;
     }
 }
 
@@ -1041,14 +1041,14 @@ GetHeight(ComboMenu *comboPtr)
  *
  * EventuallyRedraw --
  *
- *	Tells the Tk dispatcher to call the combomenu display routine at the
- *	next idle point.  This request is made only if the window is displayed
- *	and no other redraw request is pending.
+ *      Tells the Tk dispatcher to call the combomenu display routine at the
+ *      next idle point.  This request is made only if the window is displayed
+ *      and no other redraw request is pending.
  *
  * Results: None.
  *
  * Side effects:
- *	The window is eventually redisplayed.
+ *      The window is eventually redisplayed.
  *
  *---------------------------------------------------------------------------
  */
@@ -1066,14 +1066,14 @@ EventuallyRedraw(ComboMenu *comboPtr)
  *
  * EventuallyRedrawItem --
  *
- *	Tells the Tk dispatcher to call the combomenu display routine at the
- *	next idle point.  This request is made only if the window is displayed
- *	and no other redraw request is pending.
+ *      Tells the Tk dispatcher to call the combomenu display routine at the
+ *      next idle point.  This request is made only if the window is displayed
+ *      and no other redraw request is pending.
  *
  * Results: None.
  *
  * Side effects:
- *	The window is eventually redisplayed.
+ *      The window is eventually redisplayed.
  *
  *---------------------------------------------------------------------------
  */
@@ -1352,11 +1352,11 @@ static ComboMenu *comboMenuInstance;
  *
  * CompareItems --
  *
- *	Comparison routine (used by qsort) to sort a chain of subnodes.
+ *      Comparison routine (used by qsort) to sort a chain of subnodes.
  *
  * Results:
- *	1 is the first is greater, -1 is the second is greater, 0
- *	if equal.
+ *      1 is the first is greater, -1 is the second is greater, 0
+ *      if equal.
  *
  *---------------------------------------------------------------------------
  */
@@ -1377,12 +1377,12 @@ CompareItems(Blt_ChainLink *link1Ptr, Blt_ChainLink *link2Ptr)
     s1 = item1Ptr->text;
     s2 = item2Ptr->text;
     if (sortPtr->flags & SORT_BYVALUE) {
-        if (item1Ptr->valueObjPtr != NULL) {
-            s1 = Tcl_GetString(item1Ptr->valueObjPtr);
-        }
-        if (item1Ptr->valueObjPtr != NULL) {
-            s2 = Tcl_GetString(item2Ptr->valueObjPtr);
-        }
+	if (item1Ptr->valueObjPtr != NULL) {
+	    s1 = Tcl_GetString(item1Ptr->valueObjPtr);
+	}
+	if (item1Ptr->valueObjPtr != NULL) {
+	    s2 = Tcl_GetString(item2Ptr->valueObjPtr);
+	}
     }
     result = 0;
     switch (sortPtr->type) {
@@ -1393,56 +1393,56 @@ CompareItems(Blt_ChainLink *link1Ptr, Blt_ChainLink *link2Ptr)
 	result = Blt_DictionaryCompare(s1, s2);
 	break;
     case SORT_INTEGER:
-        {
-            long l1, l2;
+	{
+	    long l1, l2;
 
-            if ((Blt_GetLong(NULL, s1, &l1) != TCL_OK) ||
-                (Blt_GetLong(NULL, s2, &l2) != TCL_OK)) {
-                return 0;
-            }
-            result = l1 - l2;
-        }
-        break;
+	    if ((Blt_GetLong(NULL, s1, &l1) != TCL_OK) ||
+		(Blt_GetLong(NULL, s2, &l2) != TCL_OK)) {
+		return 0;
+	    }
+	    result = l1 - l2;
+	}
+	break;
     case SORT_REAL:
-        {
-            double d1, d2;
+	{
+	    double d1, d2;
 
-            if ((Tcl_GetDouble(NULL, s1, &d1) != TCL_OK) ||
-                (Tcl_GetDouble(NULL, s2, &d2) != TCL_OK)) {
-                return 0;
-            }
-            result = (d1 > d2) ? 1 : (d1 < d2) ? -1 : 0;
-        }
-        break;
+	    if ((Tcl_GetDouble(NULL, s1, &d1) != TCL_OK) ||
+		(Tcl_GetDouble(NULL, s2, &d2) != TCL_OK)) {
+		return 0;
+	    }
+	    result = (d1 > d2) ? 1 : (d1 < d2) ? -1 : 0;
+	}
+	break;
     case SORT_COMMAND:
-        if (sortPtr->cmdObjPtr != NULL) {
-            Tcl_Interp *interp;
-            Tcl_Obj *objPtr, *cmdObjPtr, *resultObjPtr;
-            
-            interp = comboPtr->interp;
-            cmdObjPtr = Tcl_DuplicateObj(sortPtr->cmdObjPtr);
-            if (sortPtr->flags & SORT_BYVALUE) {
-                objPtr = Tcl_NewStringObj(s1, -1);
-                Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
-                objPtr = Tcl_NewStringObj(s2, -1);
-                Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
-            } else {
-                objPtr = Tcl_NewStringObj(s1, -1);
-                Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
-                objPtr = Tcl_NewStringObj(s1, -1);
-                Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
-            }
-            Tcl_IncrRefCount(cmdObjPtr);
-            result = Tcl_EvalObjEx(interp, cmdObjPtr, TCL_EVAL_GLOBAL);
-            Tcl_DecrRefCount(cmdObjPtr);
-            if (result != TCL_OK) {
-                Tcl_BackgroundError(interp);
-            }
-            resultObjPtr = Tcl_GetObjResult(interp);
-            if (Tcl_GetIntFromObj(interp, resultObjPtr, &result) != TCL_OK) {
-                Tcl_BackgroundError(interp);
-            }
-        }
+	if (sortPtr->cmdObjPtr != NULL) {
+	    Tcl_Interp *interp;
+	    Tcl_Obj *objPtr, *cmdObjPtr, *resultObjPtr;
+	    
+	    interp = comboPtr->interp;
+	    cmdObjPtr = Tcl_DuplicateObj(sortPtr->cmdObjPtr);
+	    if (sortPtr->flags & SORT_BYVALUE) {
+		objPtr = Tcl_NewStringObj(s1, -1);
+		Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
+		objPtr = Tcl_NewStringObj(s2, -1);
+		Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
+	    } else {
+		objPtr = Tcl_NewStringObj(s1, -1);
+		Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
+		objPtr = Tcl_NewStringObj(s1, -1);
+		Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
+	    }
+	    Tcl_IncrRefCount(cmdObjPtr);
+	    result = Tcl_EvalObjEx(interp, cmdObjPtr, TCL_EVAL_GLOBAL);
+	    Tcl_DecrRefCount(cmdObjPtr);
+	    if (result != TCL_OK) {
+		Tcl_BackgroundError(interp);
+	    }
+	    resultObjPtr = Tcl_GetObjResult(interp);
+	    if (Tcl_GetIntFromObj(interp, resultObjPtr, &result) != TCL_OK) {
+		Tcl_BackgroundError(interp);
+	    }
+	}
     }
     if (sortPtr->flags & SORT_DECREASING) {
 	return -result;
@@ -1455,7 +1455,7 @@ CompareItems(Blt_ChainLink *link1Ptr, Blt_ChainLink *link2Ptr)
  *
  * SortItems --
  *
- *	Sorts the menu items.
+ *      Sorts the menu items.
  *
  *---------------------------------------------------------------------------
  */
@@ -1473,9 +1473,9 @@ SortItems(ComboMenu *comboPtr)
 	if ((sortPtr->flags & SORT_DECREASING) == sortPtr->isDecreasing) {
 	    return;
 	}
-        Blt_Chain_Reverse(comboPtr->chain);
+	Blt_Chain_Reverse(comboPtr->chain);
     } else {
-        Blt_Chain_Sort(comboPtr->chain, CompareItems);
+	Blt_Chain_Sort(comboPtr->chain, CompareItems);
     }
     sortPtr->isDecreasing = (sortPtr->flags & SORT_DECREASING);
     sortPtr->flags |= SORTED;
@@ -1488,15 +1488,15 @@ SortItems(ComboMenu *comboPtr)
  *
  * ActivateItem --
  *
- *	Marks the designated item as active.  The item is redrawn with its
- *	active colors.  The previously active item is deactivated.  If the new
- *	item is NULL, then this means that no new item is to be activated.
+ *      Marks the designated item as active.  The item is redrawn with its
+ *      active colors.  The previously active item is deactivated.  If the new
+ *      item is NULL, then this means that no new item is to be activated.
  *
  * Results:
- *	None.
+ *      None.
  *
  * Side effects:
- *	Menu items may be scheduled to be drawn.
+ *      Menu items may be scheduled to be drawn.
  *
  *---------------------------------------------------------------------------
  */
@@ -1504,7 +1504,7 @@ static void
 ActivateItem(ComboMenu *comboPtr, Item *itemPtr) 
 {
     if ((comboPtr->activePtr == itemPtr) && (itemPtr != NULL)) {
-	return;		/* Item is already active. */
+	return;         /* Item is already active. */
     }
     if (comboPtr->activePtr != NULL) {
 	EventuallyRedrawItem(comboPtr->activePtr);
@@ -1520,38 +1520,38 @@ ActivateItem(ComboMenu *comboPtr, Item *itemPtr)
  *
  * GetBoundedWidth --
  *
- *	Bounds a given width value to the limits described in the limit
- *	structure.  The initial starting value may be overridden by the nominal
- *	value in the limits.
+ *      Bounds a given width value to the limits described in the limit
+ *      structure.  The initial starting value may be overridden by the nominal
+ *      value in the limits.
  *
  * Results:
- *	Returns the constrained value.
+ *      Returns the constrained value.
  *
  *---------------------------------------------------------------------------
  */
 static int
-GetBoundedWidth(ComboMenu *comboPtr, int w)	
+GetBoundedWidth(ComboMenu *comboPtr, int w)     
 {
     /*
      * Check widgets for requested width values;
      */
     if (comboPtr->reqWidth.flags & LIMITS_NOM_SET) {
-	w = comboPtr->reqWidth.nom;	/* Override initial value */
+	w = comboPtr->reqWidth.nom;     /* Override initial value */
     }
     if (w < comboPtr->reqWidth.min) {
-	w = comboPtr->reqWidth.min;	/* Bounded by minimum value */
+	w = comboPtr->reqWidth.min;     /* Bounded by minimum value */
     }
     if (w > comboPtr->reqWidth.max) {
-	w = comboPtr->reqWidth.max;	/* Bounded by maximum value */
+	w = comboPtr->reqWidth.max;     /* Bounded by maximum value */
     }
     if ((comboPtr->flags & DROPDOWN) && 
 	(comboPtr->flags & (RESTRICT_MIN|RESTRICT_MAX))) {
 	if ((comboPtr->flags & RESTRICT_MIN) &&
-            (w < comboPtr->post.menuWidth)) {
+	    (w < comboPtr->post.menuWidth)) {
 	    w = comboPtr->post.menuWidth;
 	}
 	if ((comboPtr->flags & RESTRICT_MAX) &&
-            (w > comboPtr->post.menuWidth)) {
+	    (w > comboPtr->post.menuWidth)) {
 	    w = comboPtr->post.menuWidth;
 	}
     }
@@ -1571,29 +1571,29 @@ GetBoundedWidth(ComboMenu *comboPtr, int w)
  *
  * GetBoundedHeight --
  *
- *	Bounds a given value to the limits described in the limit structure.
- *	The initial starting value may be overridden by the nominal value in
- *	the limits.
+ *      Bounds a given value to the limits described in the limit structure.
+ *      The initial starting value may be overridden by the nominal value in
+ *      the limits.
  *
  * Results:
- *	Returns the constrained value.
+ *      Returns the constrained value.
  *
  *---------------------------------------------------------------------------
  */
 static int
-GetBoundedHeight(ComboMenu *comboPtr, int h)	
+GetBoundedHeight(ComboMenu *comboPtr, int h)    
 {
     /*
      * Check widgets for requested height values;
      */
     if (comboPtr->reqHeight.flags & LIMITS_NOM_SET) {
-	h = comboPtr->reqHeight.nom;	/* Override initial value */
+	h = comboPtr->reqHeight.nom;    /* Override initial value */
     }
     if (h < comboPtr->reqHeight.min) {
-	h = comboPtr->reqHeight.min;	/* Bounded by minimum value */
+	h = comboPtr->reqHeight.min;    /* Bounded by minimum value */
     }
     if (h > comboPtr->reqHeight.max) {
-	h = comboPtr->reqHeight.max;	/* Bounded by maximum value */
+	h = comboPtr->reqHeight.max;    /* Bounded by maximum value */
     }
     if (h > HeightOfScreen(Tk_Screen(comboPtr->tkwin))) {
 	h = HeightOfScreen(Tk_Screen(comboPtr->tkwin));
@@ -1614,11 +1614,11 @@ FixMenuCoords(ComboMenu *comboPtr, int *xPtr, int *yPtr)
     h = GetHeight(comboPtr);
 
     if ((y + h) > sh) {
-	y -= h;				/* Shift the menu up by the height of
+	y -= h;                         /* Shift the menu up by the height of
 					 * the menu. */
 	if (comboPtr->flags & DROPDOWN) {
 	    y -= comboPtr->post.menuHeight;
-                                        /* Add the height of the parent if
+					/* Add the height of the parent if
 					 * this is a dropdown menu.  */
 	}
 	if (y < 0) {
@@ -1628,10 +1628,10 @@ FixMenuCoords(ComboMenu *comboPtr, int *xPtr, int *yPtr)
     if ((x + w) > sw) {
 	if (comboPtr->flags & DROPDOWN) {
 	    x = x + comboPtr->post.menuWidth - w;
-                                        /* Flip the menu anchor to the other
+					/* Flip the menu anchor to the other
 					 * end of the menu button/entry */
 	} else {
-	    x -= w;			/* Shift the menu to the left by the
+	    x -= w;                     /* Shift the menu to the left by the
 					 * width of the menu. */
 	}
 	if (x < 0) {
@@ -1715,7 +1715,7 @@ ComputeItemGeometry(ComboMenu *comboPtr, Item *itemPtr)
 	    h = fm.linespace;
 	    Blt_GetTextExtents(itemPtr->stylePtr->textFont, 0, itemPtr->text,
 		 -1, &tw, &th);
-            itemPtr->textWidth = tw;
+	    itemPtr->textWidth = tw;
 	    itemPtr->textHeight = MAX(th, h);
 	}
 	if (itemPtr->flags & ITEM_CASCADE) {
@@ -1740,13 +1740,13 @@ ComputeItemGeometry(ComboMenu *comboPtr, Item *itemPtr)
  *
  * SearchForItem --
  *
- *	Performs a binary search for the item at the given y-offset in world
- *	coordinates.  The range of items is specified by menu indices (high
- *	and low).  The item must be (visible) in the viewport.
+ *      Performs a binary search for the item at the given y-offset in world
+ *      coordinates.  The range of items is specified by menu indices (high
+ *      and low).  The item must be (visible) in the viewport.
  *
  * Results:
- *	Returns 0 if no item is found, other the index of the item (menu
- *	indices start from 1).
+ *      Returns 0 if no item is found, other the index of the item (menu
+ *      indices start from 1).
  *
  *---------------------------------------------------------------------------
  */
@@ -1854,13 +1854,13 @@ ComputeVisibleItems(ComboMenu *comboPtr)
  *
  * NearestItem --
  *
- *	Find the item closest to the x-y screen coordinate given.  The item
- *	must be (visible) in the viewport.
+ *      Find the item closest to the x-y screen coordinate given.  The item
+ *      must be (visible) in the viewport.
  *
  * Results:
- *	Returns the closest item.  If selectOne is set, then always returns an
- *	item (unless the menu is empty).  Otherwise, NULL is returned is the
- *	pointer is not over an item.
+ *      Returns the closest item.  If selectOne is set, then always returns an
+ *      item (unless the menu is empty).  Otherwise, NULL is returned is the
+ *      pointer is not over an item.
  *
  *---------------------------------------------------------------------------
  */
@@ -1876,11 +1876,11 @@ NearestItem(ComboMenu *comboPtr, int x, int y, int selectOne)
     x -= rootX;
     y -= rootY;
     if (comboPtr->firstPtr == NULL) {
-	return NULL;			/* No visible entries. */
+	return NULL;                    /* No visible entries. */
     }
     if ((x < 0) || (x >= Tk_Width(comboPtr->tkwin)) || 
 	(y < 0) || (y >= Tk_Height(comboPtr->tkwin))) {
-	return NULL;			/* Screen coordinates are outside of
+	return NULL;                    /* Screen coordinates are outside of
 					 * menu. */
     }
     /*
@@ -1974,16 +1974,16 @@ ComputeCascadeMenuCoords(ComboMenu *comboPtr, Item *itemPtr, int *xPtr,
  *
  * UnpostCascade --
  *
- *	This procedure arranges for the currently active item's cascade menu
- *	to be unposted (i.e. the submenu is unmapped).  Only the active item
- *	can have it's submenu unposted.
+ *      This procedure arranges for the currently active item's cascade menu
+ *      to be unposted (i.e. the submenu is unmapped).  Only the active item
+ *      can have it's submenu unposted.
  *
  * Results:
- *	A standard TCL return result.  Errors may occur in the TCL commands
- *	generated to unpost submenus.
+ *      A standard TCL return result.  Errors may occur in the TCL commands
+ *      generated to unpost submenus.
  *
  * Side effects:
- *	The currently active item's submenu is unposted.
+ *      The currently active item's submenu is unposted.
  *
  *---------------------------------------------------------------------------
  */
@@ -1993,7 +1993,7 @@ UnpostCascade(ComboMenu *comboPtr)
     Item *itemPtr = comboPtr->postedPtr;
 
     if ((itemPtr == NULL) || (comboPtr->menuWin == NULL)) {
-	return;				/* No item currenly posted or no menu
+	return;                         /* No item currenly posted or no menu
 					 * designated for cascade item. */
     }
     comboPtr->postedPtr = NULL;
@@ -2026,31 +2026,31 @@ UnpostCascade(ComboMenu *comboPtr)
  *
  * PostCascade --
  *
- *	This procedure arranges for the currently active item's cascade menu
- *	to be posted.  Only the active item can have it's submenu posted.
+ *      This procedure arranges for the currently active item's cascade menu
+ *      to be posted.  Only the active item can have it's submenu posted.
  *
  * Results:
- *	A standard TCL return result.  Errors may occur in the TCL commands
- *	generated to post submenus.
+ *      A standard TCL return result.  Errors may occur in the TCL commands
+ *      generated to post submenus.
  *
  * Side effects:
- *	The new submenu is posted.
+ *      The new submenu is posted.
  *
  *---------------------------------------------------------------------------
  */
 static int
 PostCascade(
-    Tcl_Interp *interp,			/* Used for invoking "post" command
+    Tcl_Interp *interp,                 /* Used for invoking "post" command
 					 * and reporting errors. */
-    ComboMenu *comboPtr,		/* Information about the menu. */
-    Item *itemPtr)			/* Cascade item   */
+    ComboMenu *comboPtr,                /* Information about the menu. */
+    Item *itemPtr)                      /* Cascade item   */
 {
     char *menuName;
     Tk_Window tkwin;
 
     assert((itemPtr != NULL) && (itemPtr->flags & ITEM_CASCADE));
     if (itemPtr->menuObjPtr == NULL) {
-	return TCL_OK;			/* No menu was designated for this
+	return TCL_OK;                  /* No menu was designated for this
 					 * cascade item. */
     }
     if (comboPtr->postedPtr == itemPtr) {
@@ -2058,7 +2058,7 @@ PostCascade(
 	Blt_Warn("postcascade: %s is already posted\n", 
 		 Tcl_GetString(itemPtr->menuObjPtr));
 #endif
-	return TCL_OK;			/* Item is already posted. */
+	return TCL_OK;                  /* Item is already posted. */
     }
     menuName = Tcl_GetString(itemPtr->menuObjPtr);
     tkwin = Tk_NameToWindow(interp, menuName, comboPtr->tkwin);
@@ -2091,16 +2091,16 @@ PostCascade(
 	 *
 	 * The menu has to redrawn so that the entry can change relief.
 	 */
-        /* menu post -cascade {x y}  */
+	/* menu post -cascade {x y}  */
 	ComputeCascadeMenuCoords(comboPtr, itemPtr, &x, &y);
 	cmdObjPtr = Tcl_DuplicateObj(itemPtr->menuObjPtr);
-        objPtr = Tcl_NewStringObj("post", 4);
+	objPtr = Tcl_NewStringObj("post", 4);
 	Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
-        objPtr = Tcl_NewStringObj("-cascade", 8);
+	objPtr = Tcl_NewStringObj("-cascade", 8);
 	Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
-        listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
-        Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewIntObj(x));
-        Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewIntObj(y));
+	listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
+	Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewIntObj(x));
+	Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewIntObj(y));
 	Tcl_ListObjAppendElement(interp, cmdObjPtr, listObjPtr);
 	Tcl_IncrRefCount(cmdObjPtr);
 	Tcl_Preserve(comboPtr);
@@ -2114,6 +2114,21 @@ PostCascade(
     }
     comboPtr->postedPtr = itemPtr;
     return TCL_OK;
+}
+
+static int
+WithdrawMenu(ComboMenu *comboPtr)
+{
+    if (!Tk_IsMapped(comboPtr->tkwin)) {
+	return FALSE;                 /* This menu is already withdrawn. */
+    }
+    /* Deactivate the current item. */
+    UnpostCascade(comboPtr);
+    comboPtr->postedPtr = NULL;
+    if ((comboPtr->flags & COMBOMENU) && (Tk_IsMapped(comboPtr->tkwin))) {
+	Tk_UnmapWindow(comboPtr->tkwin);
+    }
+    return TRUE;
 }
 
 static void
@@ -2133,7 +2148,7 @@ ComputeComboGeometry(ComboMenu *comboPtr)
     comboPtr->xScrollbarHeight = comboPtr->yScrollbarWidth = 0;
     /* 
      * Step 1.  Collect the maximum widths of the items in their individual
-     *		columns.
+     *          columns.
      */
     maxLabelWidth = 0;
     worldX = worldY = 0;
@@ -2340,7 +2355,7 @@ DestroyStyles(ComboMenu *comboPtr)
  *
  * GetStyleFromObj --
  *
- *	Gets the style associated with the given name.  
+ *      Gets the style associated with the given name.  
  *
  *---------------------------------------------------------------------------
  */
@@ -2368,15 +2383,15 @@ GetStyleFromObj(Tcl_Interp *interp, ComboMenu *comboPtr, Tcl_Obj *objPtr,
  *
  * SetTag --
  *
- *	Associates a tag with a given row.  Individual row tags are
- *	stored in hash tables keyed by the tag name.  Each table is in
- *	turn stored in a hash table keyed by the row location.
+ *      Associates a tag with a given row.  Individual row tags are
+ *      stored in hash tables keyed by the tag name.  Each table is in
+ *      turn stored in a hash table keyed by the row location.
  *
  * Results:
- *	None.
+ *      None.
  *
  * Side Effects:
- *	A tag is stored for a particular row.
+ *      A tag is stored for a particular row.
  *
  *---------------------------------------------------------------------------
  */
@@ -2387,7 +2402,7 @@ SetTag(Tcl_Interp *interp, Item *itemPtr, const char *tagName)
     long dummy;
     
     if ((strcmp(tagName, "all") == 0) || (strcmp(tagName, "end") == 0)) {
-	return TCL_OK;			/* Don't need to create reserved
+	return TCL_OK;                  /* Don't need to create reserved
 					 * tags. */
     }
     if (tagName[0] == '\0') {
@@ -2444,21 +2459,21 @@ ManageScrollbar(ComboMenu *comboPtr, Tk_Window scrollbar)
  *
  * InstallScrollbar --
  *
- *	Convert the string representation of a color into a XColor pointer.
+ *      Convert the string representation of a color into a XColor pointer.
  *
  * Results:
- *	The return value is a standard TCL result.  The color pointer is
- *	written into the widget record.
+ *      The return value is a standard TCL result.  The color pointer is
+ *      written into the widget record.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static void
 InstallScrollbar(
-    Tcl_Interp *interp,			/* Interpreter to send results back
+    Tcl_Interp *interp,                 /* Interpreter to send results back
 					 * to */
     ComboMenu *comboPtr,
-    Tcl_Obj *objPtr,			/* String representing scrollbar
+    Tcl_Obj *objPtr,                    /* String representing scrollbar
 					 * window. */
     Tk_Window *tkwinPtr)
 {
@@ -2661,18 +2676,18 @@ static void
 MoveItem(ComboMenu *comboPtr, Item *itemPtr, int dir, Item *wherePtr)
 {
     if (Blt_Chain_GetLength(comboPtr->chain) == 1) {
-	return;				/* Can't rearrange one item. */
+	return;                         /* Can't rearrange one item. */
     }
     Blt_Chain_UnlinkLink(comboPtr->chain, itemPtr->link);
     switch(dir) {
-    case 0:				/* After */
+    case 0:                             /* After */
 	Blt_Chain_LinkAfter(comboPtr->chain, itemPtr->link, wherePtr->link);
 	break;
-    case 1:				/* At */
+    case 1:                             /* At */
 	Blt_Chain_LinkAfter(comboPtr->chain, itemPtr->link, wherePtr->link);
 	break;
     default:
-    case 2:				/* Before */
+    case 2:                             /* Before */
 	Blt_Chain_LinkBefore(comboPtr->chain, itemPtr->link, wherePtr->link);
 	break;
     }
@@ -2735,18 +2750,18 @@ NameOfType(unsigned int flags)
 	return "separator";
     }
     return "???";
-}	
+}       
 
 /*
  *---------------------------------------------------------------------------
  *
  * NextTaggedItem --
  *
- *	Returns the next item derived from the given tag.
+ *      Returns the next item derived from the given tag.
  *
  * Results:
- *	Returns the row location of the first item.  If no more rows can be
- *	found, then NULL is returned.
+ *      Returns the row location of the first item.  If no more rows can be
+ *      found, then NULL is returned.
  *
  *---------------------------------------------------------------------------
  */
@@ -2802,7 +2817,7 @@ NextTaggedItem(ItemIterator *iterPtr)
 	}
     default:
 	break;
-    }	
+    }   
     return NULL;
 }
 
@@ -2811,11 +2826,11 @@ NextTaggedItem(ItemIterator *iterPtr)
  *
  * FirstTaggedItem --
  *
- *	Returns the first item derived from the given tag.
+ *      Returns the first item derived from the given tag.
  *
  * Results:
- *	Returns the row location of the first item.  If no more rows can be
- *	found, then -1 is returned.
+ *      Returns the row location of the first item.  If no more rows can be
+ *      found, then -1 is returned.
  *
  *---------------------------------------------------------------------------
  */
@@ -2882,10 +2897,10 @@ FirstTaggedItem(ItemIterator *iterPtr)
  *
  * GetItemFromObj --
  *
- *	Get the item associated the given index, tag, or text.  This routine
- *	is used when you want only one item.  It's an error if more than one
- *	item is specified (e.g. "all" tag).  It's also an error if the tag is
- *	empty (no items are currently tagged).
+ *      Get the item associated the given index, tag, or text.  This routine
+ *      is used when you want only one item.  It's an error if more than one
+ *      item is specified (e.g. "all" tag).  It's also an error if the tag is
+ *      empty (no items are currently tagged).
  *
  *---------------------------------------------------------------------------
  */
@@ -2939,7 +2954,7 @@ GetItemByIndex(Tcl_Interp *interp, ComboMenu *comboPtr, const char *string,
 			string, "\"", (char *)NULL);
 	    }
 	    return TCL_ERROR;
-	}		
+	}               
     } else if ((c == 'n') && (strcmp(string, "next") == 0)) {
 	itemPtr = NextItem(comboPtr->activePtr);
 	if (itemPtr == NULL) {
@@ -3017,37 +3032,37 @@ GetItemByText(ComboMenu *comboPtr, const char *string)
  *
  * GetItemIterator --
  *
- *	Converts a string representing a item index into an item pointer.  The
- *	index may be in one of the following forms:
+ *      Converts a string representing a item index into an item pointer.  The
+ *      index may be in one of the following forms:
  *
- *	 number		Item at index in the list of items.
- *	 @x,y		Item closest to the specified X-Y screen coordinates.
- *	 "active"	Item where mouse pointer is located.
- *	 "posted"       Item is the currently posted cascade item.
- *	 "next"		Next item from the focus item.
- *	 "previous"	Previous item from the focus item.
- *	 "end"		Last item.
- *	 "none"		No item.
+ *       number         Item at index in the list of items.
+ *       @x,y           Item closest to the specified X-Y screen coordinates.
+ *       "active"       Item where mouse pointer is located.
+ *       "posted"       Item is the currently posted cascade item.
+ *       "next"         Next item from the focus item.
+ *       "previous"     Previous item from the focus item.
+ *       "end"          Last item.
+ *       "none"         No item.
  *
- *	 number		Item at position in the list of items.
- *	 @x,y		Item closest to the specified X-Y screen coordinates.
- *	 "active"	Item mouse is located over.
- *	 "focus"	Item is the widget's focus.
- *	 "select"	Currently selected item.
- *	 "right"	Next item from the focus item.
- *	 "left"		Previous item from the focus item.
- *	 "up"		Next item from the focus item.
- *	 "down"		Previous item from the focus item.
- *	 "end"		Last item in list.
- *	"index:number"  Item at index number in list of items.
- *	"tag:string"	Item(s) tagged by "string".
- *	"text:pattern"	Item(s) with text matching "pattern".
- *	
+ *       number         Item at position in the list of items.
+ *       @x,y           Item closest to the specified X-Y screen coordinates.
+ *       "active"       Item mouse is located over.
+ *       "focus"        Item is the widget's focus.
+ *       "select"       Currently selected item.
+ *       "right"        Next item from the focus item.
+ *       "left"         Previous item from the focus item.
+ *       "up"           Next item from the focus item.
+ *       "down"         Previous item from the focus item.
+ *       "end"          Last item in list.
+ *      "index:number"  Item at index number in list of items.
+ *      "tag:string"    Item(s) tagged by "string".
+ *      "text:pattern"  Item(s) with text matching "pattern".
+ *      
  * Results:
- *	If the string is successfully converted, TCL_OK is returned.  The
- *	pointer to the node is returned via itemPtrPtr.  Otherwise, TCL_ERROR
- *	is returned and an error message is left in interpreter's result
- *	field.
+ *      If the string is successfully converted, TCL_OK is returned.  The
+ *      pointer to the node is returned via itemPtrPtr.  Otherwise, TCL_ERROR
+ *      is returned and an error message is left in interpreter's result
+ *      field.
  *
  *---------------------------------------------------------------------------
  */
@@ -3116,7 +3131,7 @@ GetItemIterator(Tcl_Interp *interp, ComboMenu *comboPtr, Tcl_Obj *objPtr,
     } else if ((itemPtr = GetItemByText(comboPtr, string)) != NULL) {
 	iterPtr->startPtr = iterPtr->endPtr = itemPtr;
     } else if ((chain = Blt_Tags_GetItemList(&comboPtr->tags, string)) 
-               != NULL) {
+	       != NULL) {
 	iterPtr->tagName = string;
 	iterPtr->link = Blt_Chain_FirstLink(chain);
 	iterPtr->type = ITER_TAG;
@@ -3127,7 +3142,7 @@ GetItemIterator(Tcl_Interp *interp, ComboMenu *comboPtr, Tcl_Obj *objPtr,
 			     (char *)NULL);
 	}
 	return TCL_ERROR;
-    }	
+    }   
     return TCL_OK;
 }
     
@@ -3136,9 +3151,9 @@ GetItemIterator(Tcl_Interp *interp, ComboMenu *comboPtr, Tcl_Obj *objPtr,
  *
  * CheckVariable --
  *
- * 	Checks the variable associated with the item to establish its
- *	state.  This called whenever the item is configured and when 
- *	the trace on its variable is triggered.
+ *      Checks the variable associated with the item to establish its
+ *      state.  This called whenever the item is configured and when 
+ *      the trace on its variable is triggered.
  *
  *---------------------------------------------------------------------------
  */
@@ -3149,7 +3164,7 @@ CheckVariable(Tcl_Interp *interp, Item *itemPtr)
     int bool;
 
     if ((itemPtr->flags & (ITEM_RADIOBUTTON|ITEM_CHECKBUTTON|ITEM_BUTTON))==0) {
-	return FALSE;		       /* Not a radiobutton or checkbutton. */
+	return FALSE;                  /* Not a radiobutton or checkbutton. */
     }
     /*
      * Use the value of the variable to update the selected status of the
@@ -3158,7 +3173,7 @@ CheckVariable(Tcl_Interp *interp, Item *itemPtr)
     objPtr = Tcl_ObjGetVar2(interp, itemPtr->variableObjPtr, NULL, 
 			    TCL_GLOBAL_ONLY);
     if (objPtr == NULL) {
-	return FALSE;			/* Can't get value of variable. */
+	return FALSE;                   /* Can't get value of variable. */
     }
     bool = 0;
     if (itemPtr->flags & (ITEM_BUTTON|ITEM_RADIOBUTTON)) {
@@ -3187,7 +3202,7 @@ CheckVariable(Tcl_Interp *interp, Item *itemPtr)
 	ComboMenu *comboPtr;
 
 	if (itemPtr->flags & ITEM_SELECTED) {
-	    return FALSE;			/* Already selected. */
+	    return FALSE;                       /* Already selected. */
 	}
 	comboPtr = itemPtr->comboPtr;
 	if ((comboPtr->textVarObjPtr != NULL) && 
@@ -3204,7 +3219,7 @@ CheckVariable(Tcl_Interp *interp, Item *itemPtr)
     } else if (itemPtr->flags & ITEM_SELECTED) {
 	itemPtr->flags &= ~ITEM_SELECTED;
     } else {
-	return FALSE;			/* Already deselected. */
+	return FALSE;                   /* Already deselected. */
     }
     return TRUE;
 }
@@ -3335,7 +3350,7 @@ ConfigureComboMenu(Tcl_Interp *interp, ComboMenu *comboPtr, int objc,
     if (ConfigureStyle(interp, &comboPtr->defStyle, 0, NULL, 
 		       BLT_CONFIG_OBJV_ONLY) != TCL_OK) {
 	return TCL_ERROR;
-    }	
+    }   
     gcMask = 0;
     newGC = Tk_GetGC(comboPtr->tkwin, gcMask, &gcValues);
     if (comboPtr->copyGC != NULL) {
@@ -3357,7 +3372,7 @@ ConfigureComboMenu(Tcl_Interp *interp, ComboMenu *comboPtr, int objc,
 	if ((comboPtr->flags & INSTALL_XSCROLLBAR) == 0) {
 	    Tcl_DoWhenIdle(InstallXScrollbar, comboPtr);
 	    comboPtr->flags |= INSTALL_XSCROLLBAR;
-	}	    
+	}           
 	updateNeeded = TRUE;
     }
     if (Blt_ConfigModified(comboConfigSpecs, "-yscrollbar", (char *)NULL)) {
@@ -3368,14 +3383,14 @@ ConfigureComboMenu(Tcl_Interp *interp, ComboMenu *comboPtr, int objc,
 	if ((comboPtr->flags & INSTALL_YSCROLLBAR) == 0) {
 	    Tcl_DoWhenIdle(InstallYScrollbar, comboPtr);
 	    comboPtr->flags |= INSTALL_YSCROLLBAR;
-	}	    
+	}           
 	updateNeeded = TRUE;
     }
     if (updateNeeded) {
 	if ((comboPtr->flags & UPDATE_PENDING) == 0) {
 	    Tcl_DoWhenIdle(ConfigureScrollbarsProc, comboPtr);
 	    comboPtr->flags |= UPDATE_PENDING;
-	}	    
+	}           
     }
     return TCL_OK;
 }
@@ -3387,15 +3402,15 @@ ConfigureComboMenu(Tcl_Interp *interp, ComboMenu *comboPtr, int objc,
  *
  * ComboMenuEventProc --
  *
- * 	This procedure is invoked by the Tk dispatcher for various events on
- * 	comboentry widgets.
+ *      This procedure is invoked by the Tk dispatcher for various events on
+ *      comboentry widgets.
  *
  * Results:
- *	None.
+ *      None.
  *
  * Side effects:
- *	When the window gets deleted, internal structures get cleaned up.
- *	When it gets exposed, it is redisplayed.
+ *      When the window gets deleted, internal structures get cleaned up.
+ *      When it gets exposed, it is redisplayed.
  *
  *---------------------------------------------------------------------------
  */
@@ -3441,15 +3456,15 @@ ComboMenuEventProc(ClientData clientData, XEvent *eventPtr)
  *
  * CascadeEventProc --
  *
- * 	This procedure is invoked by the Tk dispatcher for various events on
- * 	sub-menus of cascaded combomenu windows.
+ *      This procedure is invoked by the Tk dispatcher for various events on
+ *      sub-menus of cascaded combomenu windows.
  *
  * Results:
- *	None.
+ *      None.
  *
  * Side effects:
- *	When the window gets deleted, internal structures get cleaned up.
- *	When it gets exposed, it is redisplayed.
+ *      When the window gets deleted, internal structures get cleaned up.
+ *      When it gets exposed, it is redisplayed.
  *
  *---------------------------------------------------------------------------
  */
@@ -3481,19 +3496,19 @@ CascadeEventProc(ClientData clientData, XEvent *eventPtr)
  *
  * ScrollbarEventProc --
  *
- *	This procedure is invoked by the Tk event handler when StructureNotify
- *	events occur in a scrollbar managed by the widget.
+ *      This procedure is invoked by the Tk event handler when StructureNotify
+ *      events occur in a scrollbar managed by the widget.
  *
  * Results:
- *	None.
+ *      None.
  *
  *---------------------------------------------------------------------------
  */
 static void
 ScrollbarEventProc(
-    ClientData clientData,		/* Pointer to Entry structure for
+    ClientData clientData,              /* Pointer to Entry structure for
 					 * widget referred to by eventPtr. */
-    XEvent *eventPtr)			/* Describes what just happened. */
+    XEvent *eventPtr)                   /* Describes what just happened. */
 {
     ComboMenu *comboPtr = clientData;
 
@@ -3502,10 +3517,10 @@ ScrollbarEventProc(
 	EventuallyRedraw(comboPtr);
     } else if (eventPtr->type == DestroyNotify) {
 	if ((comboPtr->yScrollbar != NULL) &&
-            (eventPtr->xany.window == Tk_WindowId(comboPtr->yScrollbar))) {
+	    (eventPtr->xany.window == Tk_WindowId(comboPtr->yScrollbar))) {
 	    comboPtr->yScrollbar = NULL;
 	} else if ((comboPtr->xScrollbar != NULL) && 
-                (eventPtr->xany.window == Tk_WindowId(comboPtr->xScrollbar))) {
+		(eventPtr->xany.window == Tk_WindowId(comboPtr->xScrollbar))) {
 	    comboPtr->xScrollbar = NULL;
 	} 
 	comboPtr->flags |= LAYOUT_PENDING;
@@ -3518,23 +3533,23 @@ ScrollbarEventProc(
  *
  * ScrollbarCustodyProc --
  *
- * 	This procedure is invoked when a scrollbar has been stolen by another
- * 	geometry manager.
+ *      This procedure is invoked when a scrollbar has been stolen by another
+ *      geometry manager.
  *
  * Results:
- *	None.
+ *      None.
  *
  * Side effects:
-  *	Arranges for the combomenu to have its layout re-arranged at the next
- *	idle point.
+  *     Arranges for the combomenu to have its layout re-arranged at the next
+ *      idle point.
  *
  *---------------------------------------------------------------------------
  */
 /* ARGSUSED */
 static void
 ScrollbarCustodyProc(
-    ClientData clientData,		/* Information about the combomenu. */
-    Tk_Window tkwin)			/* Scrollbar stolen by another geometry
+    ClientData clientData,              /* Information about the combomenu. */
+    Tk_Window tkwin)                    /* Scrollbar stolen by another geometry
 					 * manager. */
 {
     ComboMenu *comboPtr = (ComboMenu *)clientData;
@@ -3546,7 +3561,7 @@ ScrollbarCustodyProc(
 	comboPtr->xScrollbar = NULL;
 	comboPtr->xScrollbarHeight = 0;
     } else {
-	return;		
+	return;         
     }
     Tk_UnmaintainGeometry(tkwin, comboPtr->tkwin);
     comboPtr->flags |= LAYOUT_PENDING;
@@ -3558,22 +3573,22 @@ ScrollbarCustodyProc(
  *
  * ScrollbarGeometryProc --
  *
- *	This procedure is invoked by Tk_GeometryRequest for scrollbars managed
- *	by the combomenu.
+ *      This procedure is invoked by Tk_GeometryRequest for scrollbars managed
+ *      by the combomenu.
  *
  * Results:
- *	None.
+ *      None.
  *
  * Side effects:
- *	Arranges for the combomenu to have its layout re-computed and
- *	re-arranged at the next idle point.
+ *      Arranges for the combomenu to have its layout re-computed and
+ *      re-arranged at the next idle point.
  *
  * -------------------------------------------------------------------------- */
 /* ARGSUSED */
 static void
 ScrollbarGeometryProc(
-    ClientData clientData,		/* ComboMenu widget record.  */
-    Tk_Window tkwin)			/* Scrollbar whose geometry has
+    ClientData clientData,              /* ComboMenu widget record.  */
+    Tk_Window tkwin)                    /* Scrollbar whose geometry has
 					 * changed. */
 {
     ComboMenu *comboPtr = (ComboMenu *)clientData;
@@ -3587,31 +3602,31 @@ ScrollbarGeometryProc(
  * 
  * ItemVarTraceProc --
  *
- *	This procedure is invoked when someone changes the state variable
- *	associated with a radiobutton or checkbutton entry.  The entry's
- *	selected state is set to match the value of the variable.
+ *      This procedure is invoked when someone changes the state variable
+ *      associated with a radiobutton or checkbutton entry.  The entry's
+ *      selected state is set to match the value of the variable.
  *
  * Results:
- *	NULL is always returned.
+ *      NULL is always returned.
  *
  * Side effects:
- *	The combobox entry may become selected or deselected.
+ *      The combobox entry may become selected or deselected.
  *
  *---------------------------------------------------------------------------
  */
 static char *
 ItemVarTraceProc(
-    ClientData clientData,		/* Information about the item. */
-    Tcl_Interp *interp,			/* Interpreter containing variable. */
-    const char *name1,			/* First part of variable's name. */
-    const char *name2,			/* Second part of variable's name. */
-    int flags)				/* Describes what just happened. */
+    ClientData clientData,              /* Information about the item. */
+    Tcl_Interp *interp,                 /* Interpreter containing variable. */
+    const char *name1,                  /* First part of variable's name. */
+    const char *name2,                  /* Second part of variable's name. */
+    int flags)                          /* Describes what just happened. */
 {
     Item *itemPtr = clientData;
 
     assert(itemPtr->variableObjPtr != NULL);
     if (flags & TCL_INTERP_DESTROYED) {
-    	return NULL;			/* Interpreter is going away. */
+	return NULL;                    /* Interpreter is going away. */
 
     }
     /*
@@ -3630,14 +3645,14 @@ ItemVarTraceProc(
     }
 
     if ((itemPtr->flags & (ITEM_RADIOBUTTON|ITEM_CHECKBUTTON|ITEM_BUTTON))==0) {
-	return NULL;		       /* Not a radiobutton or checkbutton. */
+	return NULL;                   /* Not a radiobutton or checkbutton. */
     }
     if (!CheckVariable(interp, itemPtr)) {
 	return NULL;
     }
  done:
     EventuallyRedraw(itemPtr->comboPtr);
-    return NULL;			/* Done. */
+    return NULL;                        /* Done. */
 }
 
 /*ARGSUSED*/
@@ -3665,25 +3680,25 @@ FreeTraceVarProc(ClientData clientData, Display *display, char *widgRec,
 
  * ObjToTraceVarProc --
  *
- *	Convert the string representation of a color into a XColor pointer.
+ *      Convert the string representation of a color into a XColor pointer.
  *
  * Results:
- *	The return value is a standard TCL result.  The color pointer is
- *	written into the widget record.
+ *      The return value is a standard TCL result.  The color pointer is
+ *      written into the widget record.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
 ObjToTraceVarProc(
-    ClientData clientData,		/* Not used. */
-    Tcl_Interp *interp,			/* Interpreter to send results back
+    ClientData clientData,              /* Not used. */
+    Tcl_Interp *interp,                 /* Interpreter to send results back
 					 * to */
-    Tk_Window tkwin,			/* Not used. */
-    Tcl_Obj *objPtr,			/* String representing style. */
-    char *widgRec,			/* Widget record */
-    int offset,				/* Offset to field in structure */
-    int flags)	
+    Tk_Window tkwin,                    /* Not used. */
+    Tcl_Obj *objPtr,                    /* String representing style. */
+    char *widgRec,                      /* Widget record */
+    int offset,                         /* Offset to field in structure */
+    int flags)  
 {
     Item *itemPtr = (Item *)(widgRec);
     const char *varName;
@@ -3710,22 +3725,22 @@ ObjToTraceVarProc(
  *
  * TraceVarToObjProc --
  *
- *	Return the name of the style.
+ *      Return the name of the style.
  *
  * Results:
- *	The name representing the style is returned.
+ *      The name representing the style is returned.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static Tcl_Obj *
 TraceVarToObjProc(
-    ClientData clientData,		/* Not used. */
+    ClientData clientData,              /* Not used. */
     Tcl_Interp *interp,
-    Tk_Window tkwin,			/* Not used. */
-    char *widgRec,			/* Widget information record */
-    int offset,				/* Offset to field in structure */
-    int flags)	
+    Tk_Window tkwin,                    /* Not used. */
+    char *widgRec,                      /* Widget information record */
+    int offset,                         /* Offset to field in structure */
+    int flags)  
 {
     Item *itemPtr = (Item *)(widgRec);
     Tcl_Obj *objPtr;
@@ -3743,25 +3758,25 @@ TraceVarToObjProc(
  *
  * ObjToStyleProc --
  *
- *	Convert the string representation of a color into a XColor pointer.
+ *      Convert the string representation of a color into a XColor pointer.
  *
  * Results:
- *	The return value is a standard TCL result.  The color pointer is
- *	written into the widget record.
+ *      The return value is a standard TCL result.  The color pointer is
+ *      written into the widget record.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
 ObjToStyleProc(
-    ClientData clientData,		/* Not used. */
-    Tcl_Interp *interp,			/* Interpreter to send results back
+    ClientData clientData,              /* Not used. */
+    Tcl_Interp *interp,                 /* Interpreter to send results back
 					 * to */
-    Tk_Window tkwin,			/* Not used. */
-    Tcl_Obj *objPtr,			/* String representing style. */
-    char *widgRec,			/* Widget record */
-    int offset,				/* Offset to field in structure */
-    int flags)	
+    Tk_Window tkwin,                    /* Not used. */
+    Tcl_Obj *objPtr,                    /* String representing style. */
+    char *widgRec,                      /* Widget record */
+    int offset,                         /* Offset to field in structure */
+    int flags)  
 {
     ComboMenu *comboPtr;
     Item *itemPtr = (Item *)widgRec;
@@ -3791,22 +3806,22 @@ ObjToStyleProc(
  *
  * StyleToObjProc --
  *
- *	Return the name of the style.
+ *      Return the name of the style.
  *
  * Results:
- *	The name representing the style is returned.
+ *      The name representing the style is returned.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static Tcl_Obj *
 StyleToObjProc(
-    ClientData clientData,		/* Not used. */
+    ClientData clientData,              /* Not used. */
     Tcl_Interp *interp,
-    Tk_Window tkwin,			/* Not used. */
-    char *widgRec,			/* Widget information record */
-    int offset,				/* Offset to field in structure */
-    int flags)	
+    Tk_Window tkwin,                    /* Not used. */
+    char *widgRec,                      /* Widget information record */
+    int offset,                         /* Offset to field in structure */
+    int flags)  
 {
     Style *stylePtr = *(Style **)(widgRec + offset);
     Tcl_Obj *objPtr;
@@ -3824,25 +3839,25 @@ StyleToObjProc(
  *
  * ObjToRestrictProc --
  *
- *	Convert the string representation of an item state into a flag.
+ *      Convert the string representation of an item state into a flag.
  *
  * Results:
- *	The return value is a standard TCL result.  The state flags are
- *	updated.
+ *      The return value is a standard TCL result.  The state flags are
+ *      updated.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
 ObjToRestrictProc(
-    ClientData clientData,		/* Not used. */
-    Tcl_Interp *interp,			/* Interpreter to send results back
+    ClientData clientData,              /* Not used. */
+    Tcl_Interp *interp,                 /* Interpreter to send results back
 					 * to */
-    Tk_Window tkwin,			/* Not used. */
-    Tcl_Obj *objPtr,			/* String representing state. */
-    char *widgRec,			/* Widget record */
-    int offset,				/* Offset to field in structure */
-    int flags)	
+    Tk_Window tkwin,                    /* Not used. */
+    Tcl_Obj *objPtr,                    /* String representing state. */
+    char *widgRec,                      /* Widget record */
+    int offset,                         /* Offset to field in structure */
+    int flags)  
 {
     unsigned int *flagsPtr = (unsigned int *)(widgRec + offset);
     char *string;
@@ -3872,28 +3887,28 @@ ObjToRestrictProc(
  *
  * RestrictToObjProc --
  *
- *	Return the string representation of the restrict flags.
+ *      Return the string representation of the restrict flags.
  *
  * Results:
- *	The name representing the style is returned.
+ *      The name representing the style is returned.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static Tcl_Obj *
 RestrictToObjProc(
-    ClientData clientData,		/* Not used. */
+    ClientData clientData,              /* Not used. */
     Tcl_Interp *interp,
-    Tk_Window tkwin,			/* Not used. */
-    char *widgRec,			/* Widget information record */
-    int offset,				/* Offset to field in structure */
-    int flags)	
+    Tk_Window tkwin,                    /* Not used. */
+    char *widgRec,                      /* Widget information record */
+    int offset,                         /* Offset to field in structure */
+    int flags)  
 {
     unsigned int *flagsPtr = (unsigned int *)(widgRec + offset);
 
     switch (*flagsPtr & (RESTRICT_MIN|RESTRICT_MAX)) {
     case RESTRICT_MIN:
-	return Tcl_NewStringObj("min", -1);	
+	return Tcl_NewStringObj("min", -1);     
     case RESTRICT_MAX:
 	return Tcl_NewStringObj("max", -1);
     case (RESTRICT_MIN|RESTRICT_MAX):
@@ -3909,25 +3924,25 @@ RestrictToObjProc(
  *
  * ObjToStateProc --
  *
- *	Convert the string representation of an item state into a flag.
+ *      Convert the string representation of an item state into a flag.
  *
  * Results:
- *	The return value is a standard TCL result.  The state flags are
- *	updated.
+ *      The return value is a standard TCL result.  The state flags are
+ *      updated.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
 ObjToStateProc(
-    ClientData clientData,		/* Not used. */
-    Tcl_Interp *interp,			/* Interpreter to send results back
+    ClientData clientData,              /* Not used. */
+    Tcl_Interp *interp,                 /* Interpreter to send results back
 					 * to */
-    Tk_Window tkwin,			/* Not used. */
-    Tcl_Obj *objPtr,			/* String representing state. */
-    char *widgRec,			/* Widget record */
-    int offset,				/* Offset to field in structure */
-    int flags)	
+    Tk_Window tkwin,                    /* Not used. */
+    Tcl_Obj *objPtr,                    /* String representing state. */
+    char *widgRec,                      /* Widget record */
+    int offset,                         /* Offset to field in structure */
+    int flags)  
 {
     Item *itemPtr = (Item *)(widgRec);
     unsigned int *flagsPtr = (unsigned int *)(widgRec + offset);
@@ -3945,7 +3960,7 @@ ObjToStateProc(
 	return TCL_ERROR;
     }
     if (itemPtr->flags & flag) {
-	return TCL_OK;			/* State is already set to value. */
+	return TCL_OK;                  /* State is already set to value. */
     }
     *flagsPtr &= ~ITEM_STATE_MASK;
     *flagsPtr |= flag;
@@ -3957,22 +3972,22 @@ ObjToStateProc(
  *
  * StateToObjProc --
  *
- *	Return the name of the style.
+ *      Return the name of the style.
  *
  * Results:
- *	The name representing the style is returned.
+ *      The name representing the style is returned.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static Tcl_Obj *
 StateToObjProc(
-    ClientData clientData,		/* Not used. */
+    ClientData clientData,              /* Not used. */
     Tcl_Interp *interp,
-    Tk_Window tkwin,			/* Not used. */
-    char *widgRec,			/* Widget information record */
-    int offset,				/* Offset to field in structure */
-    int flags)	
+    Tk_Window tkwin,                    /* Not used. */
+    char *widgRec,                      /* Widget information record */
+    int offset,                         /* Offset to field in structure */
+    int flags)  
 {
     unsigned int state = *(unsigned int *)(widgRec + offset);
     Tcl_Obj *objPtr;
@@ -3992,7 +4007,7 @@ StateToObjProc(
 static void
 FreeTagsProc(
     ClientData clientData,
-    Display *display,		/* Not used. */
+    Display *display,           /* Not used. */
     char *widgRec,
     int offset)
 {
@@ -4008,25 +4023,25 @@ FreeTagsProc(
  *
  * ObjToTagsProc --
  *
- *	Convert the string representation of a list of tags.
+ *      Convert the string representation of a list of tags.
  *
  * Results:
- *	The return value is a standard TCL result.  The tags are
- *	save in the widget.
+ *      The return value is a standard TCL result.  The tags are
+ *      save in the widget.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
 ObjToTagsProc(
-    ClientData clientData,		/* Not used. */
-    Tcl_Interp *interp,			/* Interpreter to send results back
+    ClientData clientData,              /* Not used. */
+    Tcl_Interp *interp,                 /* Interpreter to send results back
 					 * to */
-    Tk_Window tkwin,			/* Not used. */
-    Tcl_Obj *objPtr,			/* String representing style. */
-    char *widgRec,			/* Widget record */
-    int offset,				/* Offset to field in structure */
-    int flags)	
+    Tk_Window tkwin,                    /* Not used. */
+    Tcl_Obj *objPtr,                    /* String representing style. */
+    char *widgRec,                      /* Widget record */
+    int offset,                         /* Offset to field in structure */
+    int flags)  
 {
     ComboMenu *comboPtr;
     Item *itemPtr = (Item *)widgRec;
@@ -4055,22 +4070,22 @@ ObjToTagsProc(
  *
  * TagsToObjProc --
  *
- *	Return the name of the style.
+ *      Return the name of the style.
  *
  * Results:
- *	The name representing the style is returned.
+ *      The name representing the style is returned.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static Tcl_Obj *
 TagsToObjProc(
-    ClientData clientData,		/* Not used. */
+    ClientData clientData,              /* Not used. */
     Tcl_Interp *interp,
-    Tk_Window tkwin,			/* Not used. */
-    char *widgRec,			/* Widget information record */
-    int offset,				/* Offset to field in structure */
-    int flags)	
+    Tk_Window tkwin,                    /* Not used. */
+    char *widgRec,                      /* Widget information record */
+    int offset,                         /* Offset to field in structure */
+    int flags)  
 {
     ComboMenu *comboPtr;
     Item *itemPtr = (Item *)widgRec;
@@ -4088,7 +4103,7 @@ TagsToObjProc(
  * IconChangedProc
  *
  * Results:
- *	None.
+ *      None.
  *
  *---------------------------------------------------------------------------
  */
@@ -4096,8 +4111,8 @@ TagsToObjProc(
 static void
 IconChangedProc(
     ClientData clientData,
-    int x, int y, int w, int h,		/* Not used. */
-    int imageWidth, int imageHeight)	/* Not used. */
+    int x, int y, int w, int h,         /* Not used. */
+    int imageWidth, int imageHeight)    /* Not used. */
 {
     ComboMenu *comboPtr = clientData;
 
@@ -4110,27 +4125,27 @@ IconChangedProc(
  *
  * ObjToIconProc --
  *
- *	Convert a image into a hashed icon.
+ *      Convert a image into a hashed icon.
  *
  * Results:
- *	If the string is successfully converted, TCL_OK is returned.
- *	Otherwise, TCL_ERROR is returned and an error message is left in
- *	interpreter's result field.
+ *      If the string is successfully converted, TCL_OK is returned.
+ *      Otherwise, TCL_ERROR is returned and an error message is left in
+ *      interpreter's result field.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
 ObjToIconProc(
-    ClientData clientData,		/* Not used. */
-    Tcl_Interp *interp,			/* Interpreter to send results back
+    ClientData clientData,              /* Not used. */
+    Tcl_Interp *interp,                 /* Interpreter to send results back
 					 * to */
-    Tk_Window tkwin,			/* Not used. */
-    Tcl_Obj *objPtr,			/* Tcl_Obj representing the new
+    Tk_Window tkwin,                    /* Not used. */
+    Tcl_Obj *objPtr,                    /* Tcl_Obj representing the new
 					 * value. */
     char *widgRec,
-    int offset,				/* Offset to field in structure */
-    int flags)	
+    int offset,                         /* Offset to field in structure */
+    int flags)  
 {
     ComboMenu *comboPtr = clientData;
     Icon *iconPtr = (Icon *)(widgRec + offset);
@@ -4151,22 +4166,22 @@ ObjToIconProc(
  *
  * IconToObjProc --
  *
- *	Converts the icon into its string representation (its name).
+ *      Converts the icon into its string representation (its name).
  *
  * Results:
- *	The name of the icon is returned.
+ *      The name of the icon is returned.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static Tcl_Obj *
 IconToObjProc(
-    ClientData clientData,		/* Not used. */
+    ClientData clientData,              /* Not used. */
     Tcl_Interp *interp,
-    Tk_Window tkwin,			/* Not used. */
+    Tk_Window tkwin,                    /* Not used. */
     char *widgRec,
-    int offset,				/* Offset to field in structure */
-    int flags)	
+    int offset,                         /* Offset to field in structure */
+    int flags)  
 {
     Icon icon = *(Icon *)(widgRec + offset);
     Tcl_Obj *objPtr;
@@ -4209,24 +4224,24 @@ FreeTextProc(ClientData clientData, Display *display, char *widgRec, int offset)
  *
  * ObjToTextProc --
  *
- *	Save the text and add the item to the text hashtable.
+ *      Save the text and add the item to the text hashtable.
  *
  * Results:
- *	A standard TCL result. 
+ *      A standard TCL result. 
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
 ObjToTextProc(
-    ClientData clientData,		/* Not used. */
-    Tcl_Interp *interp,			/* Interpreter to send results back
+    ClientData clientData,              /* Not used. */
+    Tcl_Interp *interp,                 /* Interpreter to send results back
 					 * to */
-    Tk_Window tkwin,			/* Not used. */
-    Tcl_Obj *objPtr,			/* String representing style. */
-    char *widgRec,			/* Widget record */
-    int offset,				/* Offset to field in structure */
-    int flags)	
+    Tk_Window tkwin,                    /* Not used. */
+    Tcl_Obj *objPtr,                    /* String representing style. */
+    char *widgRec,                      /* Widget record */
+    int offset,                         /* Offset to field in structure */
+    int flags)  
 {
     Item *itemPtr = (Item *)(widgRec);
     char *string;
@@ -4247,22 +4262,22 @@ ObjToTextProc(
  *
  * TextToObjProc --
  *
- *	Return the text of the item.
+ *      Return the text of the item.
  *
  * Results:
- *	The text is returned.
+ *      The text is returned.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static Tcl_Obj *
 TextToObjProc(
-    ClientData clientData,		/* Not used. */
+    ClientData clientData,              /* Not used. */
     Tcl_Interp *interp,
-    Tk_Window tkwin,			/* Not used. */
-    char *widgRec,			/* Widget information record */
-    int offset,				/* Offset to field in structure */
-    int flags)	
+    Tk_Window tkwin,                    /* Not used. */
+    char *widgRec,                      /* Widget information record */
+    int offset,                         /* Offset to field in structure */
+    int flags)  
 {
     Item *itemPtr = (Item *)(widgRec);
 
@@ -4274,25 +4289,25 @@ TextToObjProc(
  *
  * ObjToTypeProc --
  *
- *	Convert the string representation of an item into a value.
+ *      Convert the string representation of an item into a value.
  *
  * Results:
- *	A standard TCL result.  The type pointer is written into the
- *	widget record.
+ *      A standard TCL result.  The type pointer is written into the
+ *      widget record.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
 ObjToTypeProc(
-    ClientData clientData,		/* Not used. */
-    Tcl_Interp *interp,			/* Interpreter to send results back
+    ClientData clientData,              /* Not used. */
+    Tcl_Interp *interp,                 /* Interpreter to send results back
 					 * to */
-    Tk_Window tkwin,			/* Not used. */
-    Tcl_Obj *objPtr,			/* String representing type. */
-    char *widgRec,			/* Widget record */
-    int offset,				/* Offset to field in structure */
-    int flags)	
+    Tk_Window tkwin,                    /* Not used. */
+    Tcl_Obj *objPtr,                    /* String representing type. */
+    char *widgRec,                      /* Widget record */
+    int offset,                         /* Offset to field in structure */
+    int flags)  
 {
     unsigned int *typePtr = (unsigned int *)(widgRec + offset);
     int flag;
@@ -4310,22 +4325,22 @@ ObjToTypeProc(
  *
  * TypeToObjProc --
  *
- *	Return the name of the type.
+ *      Return the name of the type.
  *
  * Results:
- *	The name representing the style is returned.
+ *      The name representing the style is returned.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static Tcl_Obj *
 TypeToObjProc(
-    ClientData clientData,		/* Not used. */
+    ClientData clientData,              /* Not used. */
     Tcl_Interp *interp,
-    Tk_Window tkwin,			/* Not used. */
-    char *widgRec,			/* Widget information record */
-    int offset,				/* Offset to field in structure */
-    int flags)	
+    Tk_Window tkwin,                    /* Not used. */
+    char *widgRec,                      /* Widget information record */
+    int offset,                         /* Offset to field in structure */
+    int flags)  
 {
     int type = *(int *)(widgRec + offset);
     
@@ -4338,7 +4353,7 @@ TypeToObjProc(
  *
  * ObjToEnumProc --
  *
- *	Converts the string into its enumerated type.
+ *      Converts the string into its enumerated type.
  *
  *---------------------------------------------------------------------------
  */
@@ -4386,14 +4401,14 @@ ObjToEnumProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  *
  * EnumToObjProc --
  *
- *	Returns the string associated with the enumerated type.
+ *      Returns the string associated with the enumerated type.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static Tcl_Obj *
 EnumToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-	      char *widgRec, int offset, int flags)	
+	      char *widgRec, int offset, int flags)     
 {
     int value = *(int *)(widgRec + offset);
     char **strings = (char **)clientData;
@@ -4415,13 +4430,13 @@ EnumToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  *
  * GetCoordsFromObj --
  *
- *	Converts string into x and y coordinates.  Indicates that the
+ *      Converts string into x and y coordinates.  Indicates that the
  *      menu is a popup and will be popped at the given x, y coordinate.
  *
  * Results:
- *	If the string is successfully converted, TCL_OK is returned.
- *	Otherwise, TCL_ERROR is returned and an error message is left
- *	in interpreter's result field.
+ *      If the string is successfully converted, TCL_OK is returned.
+ *      Otherwise, TCL_ERROR is returned and an error message is left
+ *      in interpreter's result field.
  *
  *---------------------------------------------------------------------------
  */
@@ -4437,13 +4452,13 @@ GetCoordsFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, int *xPtr, int *yPtr)
 	return TCL_ERROR;
     }
     if (elc != 2) {
-        Tcl_AppendResult(interp, "wrong # of arguments: should be \"x y\"",
-                (char *)NULL);
-        return TCL_ERROR;
+	Tcl_AppendResult(interp, "wrong # of arguments: should be \"x y\"",
+		(char *)NULL);
+	return TCL_ERROR;
     }
     if ((Tcl_GetIntFromObj(interp, elv[0], &x) != TCL_OK) ||
-        (Tcl_GetIntFromObj(interp, elv[1], &y) != TCL_OK)) {
-        return TCL_ERROR;
+	(Tcl_GetIntFromObj(interp, elv[1], &y) != TCL_OK)) {
+	return TCL_ERROR;
     }
     *xPtr = x;
     *yPtr = y;
@@ -4456,13 +4471,13 @@ GetCoordsFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, int *xPtr, int *yPtr)
  *
  * GetBoxFromObj --
  *
- *	Converts string into x and y coordinates.  Indicates that the
+ *      Converts string into x and y coordinates.  Indicates that the
  *      menu is a popup and will be popped at the given x, y coordinate.
  *
  * Results:
- *	If the string is successfully converted, TCL_OK is returned.
- *	Otherwise, TCL_ERROR is returned and an error message is left
- *	in interpreter's result field.
+ *      If the string is successfully converted, TCL_OK is returned.
+ *      Otherwise, TCL_ERROR is returned and an error message is left
+ *      in interpreter's result field.
  *
  *---------------------------------------------------------------------------
  */
@@ -4495,13 +4510,13 @@ GetAlignFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, int *alignPtr)
  *
  * GetBoxFromObj --
  *
- *	Converts string into x and y coordinates.  Indicates that the
+ *      Converts string into x and y coordinates.  Indicates that the
  *      menu is a popup and will be popped at the given x, y coordinate.
  *
  * Results:
- *	If the string is successfully converted, TCL_OK is returned.
- *	Otherwise, TCL_ERROR is returned and an error message is left
- *	in interpreter's result field.
+ *      If the string is successfully converted, TCL_OK is returned.
+ *      Otherwise, TCL_ERROR is returned and an error message is left
+ *      in interpreter's result field.
  *
  *---------------------------------------------------------------------------
  */
@@ -4517,16 +4532,16 @@ GetBoxFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, Box2d *boxPtr)
 	return TCL_ERROR;
     }
     if (elc != 4) {
-        Tcl_AppendResult(interp,
-                "wrong # of arguments: should be \"x1 y1 x2 y2\"",
-                (char *)NULL);
-        return TCL_ERROR;
+	Tcl_AppendResult(interp,
+		"wrong # of arguments: should be \"x1 y1 x2 y2\"",
+		(char *)NULL);
+	return TCL_ERROR;
     }
     if ((Tcl_GetIntFromObj(interp, elv[0], &x1) != TCL_OK) ||
-        (Tcl_GetIntFromObj(interp, elv[1], &y1) != TCL_OK) ||
-        (Tcl_GetIntFromObj(interp, elv[2], &x2) != TCL_OK) ||
-        (Tcl_GetIntFromObj(interp, elv[3], &y2) != TCL_OK)) {
-        return TCL_ERROR;
+	(Tcl_GetIntFromObj(interp, elv[1], &y1) != TCL_OK) ||
+	(Tcl_GetIntFromObj(interp, elv[2], &x2) != TCL_OK) ||
+	(Tcl_GetIntFromObj(interp, elv[3], &y2) != TCL_OK)) {
+	return TCL_ERROR;
     }
     boxPtr->x1 = MIN(x1, x2);
     boxPtr->y1 = MIN(y1, y2);
@@ -4540,20 +4555,20 @@ GetBoxFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, Box2d *boxPtr)
  *
  * PostWindowSwitchProc --
  *
- *	Converts a window name into Tk window.
+ *      Converts a window name into Tk window.
  *
  * Results:
- *	If the string is successfully converted, TCL_OK is returned.
- *	Otherwise, TCL_ERROR is returned and an error message is left
- *	in interpreter's result field.
+ *      If the string is successfully converted, TCL_OK is returned.
+ *      Otherwise, TCL_ERROR is returned and an error message is left
+ *      in interpreter's result field.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
 PostWindowSwitchProc(ClientData clientData, Tcl_Interp *interp,
-                    const char *switchName, Tcl_Obj *objPtr, char *record,
-                    int offset, int flags)
+		    const char *switchName, Tcl_Obj *objPtr, char *record,
+		    int offset, int flags)
 {
     ComboMenu *comboPtr = (ComboMenu *)record;
     Tk_Window tkwin;
@@ -4562,10 +4577,10 @@ PostWindowSwitchProc(ClientData clientData, Tcl_Interp *interp,
     tkwin = NULL;
     string = Tcl_GetString(objPtr);
     if (string[0] == '\0') {
-        tkwin = NULL;
+	tkwin = NULL;
     } else {
 	tkwin = Tk_NameToWindow(interp, string, comboPtr->tkwin);
-        if (tkwin == NULL) {
+	if (tkwin == NULL) {
 	    return TCL_ERROR;
 	}
     }
@@ -4580,26 +4595,26 @@ PostWindowSwitchProc(ClientData clientData, Tcl_Interp *interp,
  *
  * PostAlignSwitchProc --
  *
- *	Converts string into x and y coordinates.
+ *      Converts string into x and y coordinates.
  *
  * Results:
- *	If the string is successfully converted, TCL_OK is returned.
- *	Otherwise, TCL_ERROR is returned and an error message is left
- *	in interpreter's result field.
+ *      If the string is successfully converted, TCL_OK is returned.
+ *      Otherwise, TCL_ERROR is returned and an error message is left
+ *      in interpreter's result field.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
 PostAlignSwitchProc(ClientData clientData, Tcl_Interp *interp,
-                    const char *switchName, Tcl_Obj *objPtr, char *record,
-                    int offset, int flags)
+		    const char *switchName, Tcl_Obj *objPtr, char *record,
+		    int offset, int flags)
 {
     ComboMenu *comboPtr = (ComboMenu *)record;
     int align;
     
     if (GetAlignFromObj(interp, objPtr, &align) != TCL_OK) {
-        return TCL_ERROR;
+	return TCL_ERROR;
     }
     comboPtr->post.align = align;
     return TCL_OK;
@@ -4610,21 +4625,21 @@ PostAlignSwitchProc(ClientData clientData, Tcl_Interp *interp,
  *
  * PostPopupSwitchProc --
  *
- *	Converts string into x and y coordinates.  Indicates that the
+ *      Converts string into x and y coordinates.  Indicates that the
  *      menu is a popup and will be popped at the given x, y coordinate.
  *
  * Results:
- *	If the string is successfully converted, TCL_OK is returned.
- *	Otherwise, TCL_ERROR is returned and an error message is left
- *	in interpreter's result field.
+ *      If the string is successfully converted, TCL_OK is returned.
+ *      Otherwise, TCL_ERROR is returned and an error message is left
+ *      in interpreter's result field.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
 PostPopupSwitchProc(ClientData clientData, Tcl_Interp *interp,
-                    const char *switchName, Tcl_Obj *objPtr, char *record,
-                    int offset, int flags)
+		    const char *switchName, Tcl_Obj *objPtr, char *record,
+		    int offset, int flags)
 {
     ComboMenu *comboPtr = (ComboMenu *)record;
     int x, y;
@@ -4643,21 +4658,21 @@ PostPopupSwitchProc(ClientData clientData, Tcl_Interp *interp,
  *
  * PostCascadeSwitchProc --
  *
- *	Converts string into x and y coordinates.  Indicates that the
+ *      Converts string into x and y coordinates.  Indicates that the
  *      menu is a popup and will be popped at the given x, y coordinate.
  *
  * Results:
- *	If the string is successfully converted, TCL_OK is returned.
- *	Otherwise, TCL_ERROR is returned and an error message is left
- *	in interpreter's result field.
+ *      If the string is successfully converted, TCL_OK is returned.
+ *      Otherwise, TCL_ERROR is returned and an error message is left
+ *      in interpreter's result field.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
 PostCascadeSwitchProc(ClientData clientData, Tcl_Interp *interp,
-                      const char *switchName, Tcl_Obj *objPtr, char *record,
-                      int offset, int flags)
+		      const char *switchName, Tcl_Obj *objPtr, char *record,
+		      int offset, int flags)
 {
     ComboMenu *comboPtr = (ComboMenu *)record;
     int x, y;
@@ -4676,25 +4691,25 @@ PostCascadeSwitchProc(ClientData clientData, Tcl_Interp *interp,
  *
  * PostBoxSwitchProc --
  *
- *	Converts string into x1, y1, x2, and y2 coordinates.
+ *      Converts string into x1, y1, x2, and y2 coordinates.
  *
  * Results:
- *	If the string is successfully converted, TCL_OK is returned.
- *	Otherwise, TCL_ERROR is returned and an error message is left
- *	in interpreter's result field.
+ *      If the string is successfully converted, TCL_OK is returned.
+ *      Otherwise, TCL_ERROR is returned and an error message is left
+ *      in interpreter's result field.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
 PostBoxSwitchProc(
-    ClientData clientData,		/* Not used. */
-    Tcl_Interp *interp,			/* Not used. */
-    const char *switchName,		/* Not used. */
-    Tcl_Obj *objPtr,			/* String representation */
-    char *record,			/* Structure record */
-    int offset,				/* Offset to field in structure */
-    int flags)				/* Not used. */
+    ClientData clientData,              /* Not used. */
+    Tcl_Interp *interp,                 /* Not used. */
+    const char *switchName,             /* Not used. */
+    Tcl_Obj *objPtr,                    /* String representation */
+    char *record,                       /* Structure record */
+    int offset,                         /* Offset to field in structure */
+    int flags)                          /* Not used. */
 {
     ComboMenu *comboPtr = (ComboMenu *)record;
     Box2d box;
@@ -4715,23 +4730,23 @@ PostBoxSwitchProc(
  *
  * TypeSwitch --
  *
- *	Convert a string representing an item type into its integer value.
+ *      Convert a string representing an item type into its integer value.
  *
  * Results:
- *	The return value is a standard TCL result.
+ *      The return value is a standard TCL result.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
 TypeSwitch(
-    ClientData clientData,		/* Not used. */
-    Tcl_Interp *interp,			/* Not used. */
-    const char *switchName,		/* Not used. */
-    Tcl_Obj *objPtr,			/* String representation */
-    char *record,			/* Structure record */
-    int offset,				/* Offset to field in structure */
-    int flags)				/* Not used. */
+    ClientData clientData,              /* Not used. */
+    Tcl_Interp *interp,                 /* Not used. */
+    const char *switchName,             /* Not used. */
+    Tcl_Obj *objPtr,                    /* String representation */
+    char *record,                       /* Structure record */
+    int offset,                         /* Offset to field in structure */
+    int flags)                          /* Not used. */
 {
     unsigned int *typePtr = (unsigned int *)(record + offset);
     int flag;
@@ -4749,23 +4764,23 @@ TypeSwitch(
  *
  * ItemSwitch --
  *
- *	Convert a string representing an item into its pointer.
+ *      Convert a string representing an item into its pointer.
  *
  * Results:
- *	The return value is a standard TCL result.
+ *      The return value is a standard TCL result.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
 ItemSwitch(
-    ClientData clientData,		/* Not used. */
-    Tcl_Interp *interp,			/* Not used. */
-    const char *switchName,		/* Not used. */
-    Tcl_Obj *objPtr,			/* String representation */
-    char *record,			/* Structure record */
-    int offset,				/* Offset to field in structure */
-    int flags)				/* Not used. */
+    ClientData clientData,              /* Not used. */
+    Tcl_Interp *interp,                 /* Not used. */
+    const char *switchName,             /* Not used. */
+    Tcl_Obj *objPtr,                    /* String representation */
+    char *record,                       /* Structure record */
+    int offset,                         /* Offset to field in structure */
+    int flags)                          /* Not used. */
 {
     Item **itemPtrPtr = (Item **)(record + offset);
     ComboMenu *comboPtr = clientData;
@@ -4787,13 +4802,13 @@ ItemSwitch(
  * ActivateOp --
  *
  * Results:
- *	Standard TCL result.
+ *      Standard TCL result.
  *
  * Side effects:
- *	Commands may get excecuted; variables may get set; sub-menus may
- *	get posted.
+ *      Commands may get excecuted; variables may get set; sub-menus may
+ *      get posted.
  *
- *	.cm activate item
+ *      .cm activate item
  *
  *---------------------------------------------------------------------------
  */
@@ -4808,7 +4823,7 @@ ActivateOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	return TCL_ERROR;
     } 
     if (comboPtr->activePtr == itemPtr) {
-	return TCL_OK;			/* Item is already active. */
+	return TCL_OK;                  /* Item is already active. */
     }
     /* Deactivate any active item. */
     ActivateItem(comboPtr, NULL);
@@ -4826,13 +4841,13 @@ ActivateOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * AddOp --
  *
- *	Appends a new item to the combomenu.
+ *      Appends a new item to the combomenu.
  *
  * Results:
- *	NULL is always returned.
+ *      NULL is always returned.
  *
  * Side effects:
- *	The combomenu entry may become selected or deselected.
+ *      The combomenu entry may become selected or deselected.
  *
  *   .cm add radiobutton -text "fred" -tags ""
  *
@@ -4847,11 +4862,11 @@ AddOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     itemPtr = NewItem(comboPtr);
     if (ConfigureItem(interp, itemPtr, objc - 2, objv + 2, 0) != TCL_OK) {
 	DestroyItem(itemPtr);
-	return TCL_ERROR;		/* Error configuring the entry. */
+	return TCL_ERROR;               /* Error configuring the entry. */
     }
     comboPtr->flags |= LAYOUT_PENDING;
     if (comboPtr->sort.flags & SORT_AUTO) {
-        comboPtr->flags |= SORT_PENDING;
+	comboPtr->flags |= SORT_PENDING;
     }
     comboPtr->sort.flags &= ~SORTED;
     EventuallyRedraw(comboPtr);
@@ -4864,13 +4879,13 @@ AddOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * AddListOp --
  *
- *	Appends a list of items to the combomenu.
+ *      Appends a list of items to the combomenu.
  *
  * Results:
- *	A standard TCL result.
+ *      A standard TCL result.
  *
  * Side effects:
- *	New items are added to the combomenu.
+ *      New items are added to the combomenu.
  *
  *   .cm add textList -type radiobutton -text "fred" -tags ""
  *
@@ -4897,7 +4912,7 @@ AddListOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	itemPtr = NewItem(comboPtr);
 	if (ConfigureItem(interp, itemPtr, objc - 3, objv + 3, 0) != TCL_OK) {
 	    DestroyItem(itemPtr);
-	    return TCL_ERROR;	
+	    return TCL_ERROR;   
 	}
 	itemPtr->text = NewText(itemPtr, Tcl_GetString(elv[i]));
 	objPtr = Tcl_NewLongObj(itemPtr->index);
@@ -4905,7 +4920,7 @@ AddListOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     comboPtr->flags |= LAYOUT_PENDING;
     if (comboPtr->sort.flags & SORT_AUTO) {
-        comboPtr->flags |= SORT_PENDING;
+	comboPtr->flags |= SORT_PENDING;
     }
     comboPtr->sort.flags &= ~SORTED;
     EventuallyRedraw(comboPtr);
@@ -4920,10 +4935,10 @@ AddListOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      Returns the bounding box of the given item.
  *
  * Results:
- *	Standard TCL result.  A list representing the bounding box is 
+ *      Standard TCL result.  A list representing the bounding box is 
  *      returned.
  *
- *	.cm bbox item
+ *      .cm bbox item
  *
  *---------------------------------------------------------------------------
  */
@@ -4947,19 +4962,19 @@ BboxOp(ClientData clientData, Tcl_Interp *interp, int objc,
  * ConfigureOp --
  *
  * Results:
- *	Standard TCL result.
+ *      Standard TCL result.
  *
  * Side effects:
- *	Commands may get excecuted; variables may get set; sub-menus may
- *	get posted.
+ *      Commands may get excecuted; variables may get set; sub-menus may
+ *      get posted.
  *
- *	.cm configure ?option value?...
+ *      .cm configure ?option value?...
  *
  *---------------------------------------------------------------------------
  */
 static int
 ConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
-            Tcl_Obj *const *objv)
+	    Tcl_Obj *const *objv)
 {
     ComboMenu *comboPtr = clientData;
     int result;
@@ -4990,13 +5005,13 @@ ConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
  * CgetOp --
  *
  * Results:
- *	Standard TCL result.
+ *      Standard TCL result.
  *
  * Side effects:
- *	Commands may get excecuted; variables may get set; sub-menus may
- *	get posted.
+ *      Commands may get excecuted; variables may get set; sub-menus may
+ *      get posted.
  *
- *	.cm cget option
+ *      .cm cget option
  *
  *---------------------------------------------------------------------------
  */
@@ -5016,19 +5031,19 @@ CgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
  * DeleteOp --
  *
  * Results:
- *	Standard TCL result.
+ *      Standard TCL result.
  *
  * Side effects:
- *	Commands may get excecuted; variables may get set; sub-menus may
- *	get posted.
+ *      Commands may get excecuted; variables may get set; sub-menus may
+ *      get posted.
  *
- *	.cm delete item...
+ *      .cm delete item...
  *
  *---------------------------------------------------------------------------
  */
 static int
 DeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
-         Tcl_Obj *const *objv)
+	 Tcl_Obj *const *objv)
 {
     ComboMenu *comboPtr = clientData;
     int i;
@@ -5046,8 +5061,8 @@ DeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	    DestroyItem(itemPtr);
 	    comboPtr->flags |= LAYOUT_PENDING;
 	}
-        /* Renumber all the indices when a menu item is deleted. */
-        RenumberItems(comboPtr);
+	/* Renumber all the indices when a menu item is deleted. */
+	RenumberItems(comboPtr);
     }
     EventuallyRedraw(comboPtr);
     return TCL_OK;
@@ -5060,19 +5075,19 @@ DeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
  * ExistsOp --
  *
  * Results:
- *	Standard TCL result.
+ *      Standard TCL result.
  *
  * Side effects:
- *	Commands may get excecuted; variables may get set; sub-menus may
- *	get posted.
+ *      Commands may get excecuted; variables may get set; sub-menus may
+ *      get posted.
  *
- *	.cm exists item 
+ *      .cm exists item 
  *
  *---------------------------------------------------------------------------
  */
 static int
 ExistsOp(ClientData clientData, Tcl_Interp *interp, int objc,
-         Tcl_Obj *const *objv)
+	 Tcl_Obj *const *objv)
 {
     ComboMenu *comboPtr = clientData;
     Item *itemPtr;
@@ -5093,11 +5108,11 @@ ExistsOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * FindOp --
  *
- *	Search for an item according to the string given.
+ *      Search for an item according to the string given.
  *
  * Results:
- *	The index of the found item is returned.  If no item is found
- *	-1 is returned.
+ *      The index of the found item is returned.  If no item is found
+ *      -1 is returned.
  *
  *    .cm find string -from active -previous -underline -type separator 
  *
@@ -5222,19 +5237,19 @@ FindOp(ClientData clientData, Tcl_Interp *interp, int objc,
  * IndexOp --
  *
  * Results:
- *	Standard TCL result.
+ *      Standard TCL result.
  *
  * Side effects:
- *	Commands may get excecuted; variables may get set; sub-menus may
- *	get posted.
+ *      Commands may get excecuted; variables may get set; sub-menus may
+ *      get posted.
  *
- *	.cm index item ?-value?
+ *      .cm index item ?-value?
  *
  *---------------------------------------------------------------------------
  */
 static int
 IndexOp(ClientData clientData, Tcl_Interp *interp, int objc,
-        Tcl_Obj *const *objv)
+	Tcl_Obj *const *objv)
 {
     ComboMenu *comboPtr = clientData;
     int index;
@@ -5292,11 +5307,11 @@ IndexOp(ClientData clientData, Tcl_Interp *interp, int objc,
  * InvokeOp --
  *
  * Results:
- *	Standard TCL result.
+ *      Standard TCL result.
  *
  * Side effects:
- *	Commands may get excecuted; variables may get set; sub-menus may
- *	get posted.
+ *      Commands may get excecuted; variables may get set; sub-menus may
+ *      get posted.
  *
  *  .cm invoke item 
  *
@@ -5314,7 +5329,7 @@ InvokeOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	return TCL_ERROR;
     }
     if ((itemPtr == NULL) || (itemPtr->flags & ITEM_DISABLED)) {
-	return TCL_OK;		/* Item is currently disabled. */
+	return TCL_OK;          /* Item is currently disabled. */
     }
     result = TCL_OK;
     Tcl_Preserve(itemPtr);
@@ -5337,13 +5352,13 @@ InvokeOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * InsertOp --
  *
- *	Inserts a new item into the combomenu at the given index.
+ *      Inserts a new item into the combomenu at the given index.
  *
  * Results:
- *	NULL is always returned.
+ *      NULL is always returned.
  *
  * Side effects:
- *	The combomenu gets a new item.
+ *      The combomenu gets a new item.
  *
  *   .cm insert before 0 after 1 -text text 
  *
@@ -5367,12 +5382,12 @@ InsertOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (wherePtr == NULL) {
 	Tcl_AppendResult(interp, "can't insert item: no index \"", 
 			 Tcl_GetString(objv[3]), "\"", (char *)NULL);
-    	return TCL_ERROR;		/* No item. */
+	return TCL_ERROR;               /* No item. */
     }
     itemPtr = NewItem(comboPtr);
     if (ConfigureItem(interp, itemPtr, objc - 4, objv + 4, 0) != TCL_OK) {
 	DestroyItem(itemPtr);
-	return TCL_ERROR;		/* Error configuring the entry. */
+	return TCL_ERROR;               /* Error configuring the entry. */
     }
     MoveItem(comboPtr, itemPtr, dir, wherePtr);
     EventuallyRedraw(comboPtr);
@@ -5384,12 +5399,12 @@ InsertOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * ItemConfigureOp --
  *
- *	This procedure handles item operations.
+ *      This procedure handles item operations.
  *
  * Results:
- *	A standard TCL result.
+ *      A standard TCL result.
  *
- *	.cm item configure item ?option value?...
+ *      .cm item configure item ?option value?...
  *
  *---------------------------------------------------------------------------
  */
@@ -5435,12 +5450,12 @@ ItemConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * ItemCgetOp --
  *
- *	This procedure handles item operations.
+ *      This procedure handles item operations.
  *
  * Results:
- *	A standard TCL result.
+ *      A standard TCL result.
  *
- *	.cm item cget item option
+ *      .cm item cget item option
  *
  *---------------------------------------------------------------------------
  */
@@ -5469,10 +5484,10 @@ ItemCgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * ItemOp --
  *
- *	This procedure handles item operations.
+ *      This procedure handles item operations.
  *
  * Results:
- *	A standard TCL result.
+ *      A standard TCL result.
  *
  *---------------------------------------------------------------------------
  */
@@ -5505,14 +5520,14 @@ ItemOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * NamesOp --
  *
- *	.cm names ?pattern?
+ *      .cm names ?pattern?
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
 NamesOp(ClientData clientData, Tcl_Interp *interp, int objc,
-        Tcl_Obj *const *objv)
+	Tcl_Obj *const *objv)
 {
     ComboMenu *comboPtr = clientData;
     Tcl_Obj *listObjPtr;
@@ -5553,8 +5568,8 @@ NearestOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	  Tcl_Obj *const *objv)
 {
     ComboMenu *comboPtr = clientData;
-    int x, y;			
-    int wx, wy;			
+    int x, y;                   
+    int wx, wy;                 
     Item *itemPtr;
     int rootX, rootY;
 
@@ -5598,7 +5613,7 @@ NearestOp(ClientData clientData, Tcl_Interp *interp, int objc,
 		    where = "radiobutton";
 		} else {
 		    where = "checkbutton";
-		}		    
+		}                   
 		goto done;
 	    }
 	} 
@@ -5661,13 +5676,13 @@ NearestOp(ClientData clientData, Tcl_Interp *interp, int objc,
  * NextOp --
  *
  * Results:
- *	Standard TCL result.
+ *      Standard TCL result.
  *
  * Side effects:
- *	Commands may get excecuted; variables may get set; sub-menus may
- *	get posted.
+ *      Commands may get excecuted; variables may get set; sub-menus may
+ *      get posted.
  *
- *	.cm next item 
+ *      .cm next item 
  *
  *---------------------------------------------------------------------------
  */
@@ -5699,9 +5714,9 @@ NextOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      region that represents the button that posted the menu.
  *
  * Results:
- *	Standard TCL result.  A boolean is returned in the interpreter.
+ *      Standard TCL result.  A boolean is returned in the interpreter.
  *
- *	.cm overbutton x y 
+ *      .cm overbutton x y 
  *
  *---------------------------------------------------------------------------
  */
@@ -5714,19 +5729,19 @@ OverButtonOp(ClientData clientData, Tcl_Interp *interp, int objc,
     int state;
     
     if ((Tcl_GetIntFromObj(interp, objv[2], &x) != TCL_OK) ||
-        (Tcl_GetIntFromObj(interp, objv[3], &y) != TCL_OK)) {
-        return TCL_ERROR;
+	(Tcl_GetIntFromObj(interp, objv[3], &y) != TCL_OK)) {
+	return TCL_ERROR;
     }
     state = FALSE;
     switch (comboPtr->post.flags) {
     case POST_POPUP:
     case POST_CASCADE:
-        break;
+	break;
     default:
-        if ((x >= comboPtr->post.x1) && (x < comboPtr->post.x2) &&
-            (y >= comboPtr->post.y1) && (y < comboPtr->post.y2)) {
-            state = TRUE;
-        }
+	if ((x >= comboPtr->post.x1) && (x < comboPtr->post.x2) &&
+	    (y >= comboPtr->post.y1) && (y < comboPtr->post.y2)) {
+	    state = TRUE;
+	}
     }
     Tcl_SetBooleanObj(Tcl_GetObjResult(interp), state);
     return TCL_OK;
@@ -5737,7 +5752,7 @@ OverButtonOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * PostOp --
  *
- *	Posts this menu at the given root window coordinates.
+ *      Posts this menu at the given root window coordinates.
  *
  *  .cm post align x y ?x2 y2?
  *   0   1     2   3 4   5  6 
@@ -5752,7 +5767,7 @@ OverButtonOp(ClientData clientData, Tcl_Interp *interp, int objc,
  */
 static int
 PostOp(ClientData clientData, Tcl_Interp *interp, int objc,
-        Tcl_Obj *const *objv)
+	Tcl_Obj *const *objv)
 {
     ComboMenu *comboPtr = clientData;
     int x, y;
@@ -5769,31 +5784,31 @@ PostOp(ClientData clientData, Tcl_Interp *interp, int objc,
     switch (comboPtr->post.flags) {
     case POST_PARENT:
     case POST_WINDOW:
-        {
-            Tk_Window tkwin;
-            int x, y, w, h;
-            int rootX, rootY;
-            
-            tkwin = comboPtr->post.tkwin;
-            w = Tk_Width(tkwin);
-            h = Tk_Height(tkwin);
-            x = Tk_X(tkwin);
-            y = Tk_Y(tkwin);
-            Tk_GetRootCoords(Tk_Parent(tkwin), &rootX, &rootY);
-            x += rootX;
-            y += rootY;
-            comboPtr->post.x1 = x;
-            comboPtr->post.y1 = y;
-            comboPtr->post.x2 = x + w;
-            comboPtr->post.y2 = y + h;
-        }
-        break;
+	{
+	    Tk_Window tkwin;
+	    int x, y, w, h;
+	    int rootX, rootY;
+	    
+	    tkwin = comboPtr->post.tkwin;
+	    w = Tk_Width(tkwin);
+	    h = Tk_Height(tkwin);
+	    x = Tk_X(tkwin);
+	    y = Tk_Y(tkwin);
+	    Tk_GetRootCoords(Tk_Parent(tkwin), &rootX, &rootY);
+	    x += rootX;
+	    y += rootY;
+	    comboPtr->post.x1 = x;
+	    comboPtr->post.y1 = y;
+	    comboPtr->post.x2 = x + w;
+	    comboPtr->post.y2 = y + h;
+	}
+	break;
     case POST_REGION:
     case POST_CASCADE:
-        break;
+	break;
     case POST_POPUP:
-        comboPtr->flags &= ~DROPDOWN;
-        break;
+	comboPtr->flags &= ~DROPDOWN;
+	break;
     }
     comboPtr->post.menuWidth = comboPtr->post.x2 - comboPtr->post.x1;
     comboPtr->post.menuHeight = comboPtr->post.y2 - comboPtr->post.y1;
@@ -5806,19 +5821,19 @@ PostOp(ClientData clientData, Tcl_Interp *interp, int objc,
     y = comboPtr->post.y2;
     switch (comboPtr->post.align) {
     case ALIGN_LEFT:
-        x = comboPtr->post.x1;
-        break;
+	x = comboPtr->post.x1;
+	break;
     case ALIGN_CENTER:
-        {
-            int w;
+	{
+	    int w;
 
-            w = comboPtr->post.x2 - comboPtr->post.x1;
-            x = comboPtr->post.x1 + (w - comboPtr->normalWidth) / 2; 
-        }
-        break;
+	    w = comboPtr->post.x2 - comboPtr->post.x1;
+	    x = comboPtr->post.x1 + (w - comboPtr->normalWidth) / 2; 
+	}
+	break;
     case ALIGN_RIGHT:
-        x = comboPtr->post.x2 - comboPtr->normalWidth;
-        break;
+	x = comboPtr->post.x2 - comboPtr->normalWidth;
+	break;
     }
     FixMenuCoords(comboPtr, &x, &y);
     /*
@@ -5900,7 +5915,7 @@ PostOp(ClientData clientData, Tcl_Interp *interp, int objc,
 #endif
     }
     if (comboPtr->activePtr == NULL) {
-        ActivateItem(comboPtr, comboPtr->firstPtr);
+	ActivateItem(comboPtr, comboPtr->firstPtr);
     }
     comboPtr->flags |= POSTED;
     return TCL_OK;
@@ -5911,14 +5926,14 @@ PostOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * PostCascadeOp --
  *
- *	Posts the menu of a cascade item.  If the item is a cascade menu,
- *	then the submenu is requested to be posted.
+ *      Posts the menu of a cascade item.  If the item is a cascade menu,
+ *      then the submenu is requested to be posted.
  *
  * Results: 
- *	A standard TCL result.
+ *      A standard TCL result.
  *
  * Side effects:  
- *	The item's submenu may be posted.
+ *      The item's submenu may be posted.
  *
  *  .cm postcascade ?item?
  *
@@ -5943,7 +5958,7 @@ PostCascadeOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	return TCL_ERROR;
     }
     if (itemPtr == comboPtr->postedPtr) {
-	return TCL_OK;			/* Nothing to do, submenu is already
+	return TCL_OK;                  /* Nothing to do, submenu is already
 					 * posted. */
     }
     UnpostCascade(comboPtr);
@@ -5951,7 +5966,7 @@ PostCascadeOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	((itemPtr->flags & (ITEM_CASCADE|ITEM_DISABLED)) == ITEM_CASCADE)) {
 	return PostCascade(interp, comboPtr, itemPtr);
     }
-    return TCL_OK;			/* No menu to post. */
+    return TCL_OK;                      /* No menu to post. */
 }
 
 /*
@@ -5960,13 +5975,13 @@ PostCascadeOp(ClientData clientData, Tcl_Interp *interp, int objc,
  * PreviousOp --
  *
  * Results:
- *	Standard TCL result.
+ *      Standard TCL result.
  *
  * Side effects:
- *	Commands may get excecuted; variables may get set; sub-menus may
- *	get posted.
+ *      Commands may get excecuted; variables may get set; sub-menus may
+ *      get posted.
  *
- *	.cm previous item 
+ *      .cm previous item 
  *
  *---------------------------------------------------------------------------
  */
@@ -5994,7 +6009,7 @@ PreviousOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * ScanOp --
  *
- *	Implements the quick scan.
+ *      Implements the quick scan.
  *
  *---------------------------------------------------------------------------
  */
@@ -6007,8 +6022,8 @@ ScanOp(ClientData clientData, Tcl_Interp *interp, int objc,
     int oper;
     int x, y;
 
-#define SCAN_MARK	1
-#define SCAN_DRAGTO	2
+#define SCAN_MARK       1
+#define SCAN_DRAGTO     2
     {
 	char *string;
 	char c;
@@ -6083,7 +6098,7 @@ SeeOp(ClientData clientData, Tcl_Interp *interp, int objc,
     char *string;
 
     string = Tcl_GetString(objv[2]);
-    anchor = TK_ANCHOR_W;		/* Default anchor is West */
+    anchor = TK_ANCHOR_W;               /* Default anchor is West */
     if ((string[0] == '-') && (strcmp(string, "-anchor") == 0)) {
 	if (objc == 3) {
 	    Tcl_AppendResult(interp, "missing \"-anchor\" argument",
@@ -6111,9 +6126,9 @@ SeeOp(ClientData clientData, Tcl_Interp *interp, int objc,
     h = VPORTHEIGHT(comboPtr);
 
     /*
-     * XVIEW:	If the entry is left or right of the current view, adjust
-     *		the offset.  If the entry is nearby, adjust the view just
-     *		a bit.  Otherwise, center the entry.
+     * XVIEW:   If the entry is left or right of the current view, adjust
+     *          the offset.  If the entry is nearby, adjust the view just
+     *          a bit.  Otherwise, center the entry.
      */
     left = comboPtr->xOffset;
     right = comboPtr->xOffset + w;
@@ -6141,9 +6156,9 @@ SeeOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
 
     /*
-     * YVIEW:	If the entry is above or below the current view, adjust
-     *		the offset.  If the entry is nearby, adjust the view just
-     *		a bit.  Otherwise, center the entry.
+     * YVIEW:   If the entry is above or below the current view, adjust
+     *          the offset.  If the entry is nearby, adjust the view just
+     *          a bit.  Otherwise, center the entry.
      */
     top = comboPtr->yOffset;
     bottom = comboPtr->yOffset + h;
@@ -6186,11 +6201,11 @@ SeeOp(ClientData clientData, Tcl_Interp *interp, int objc,
  * SelectOp --
  *
  * Results:
- *	Standard TCL result.
+ *      Standard TCL result.
  *
  * Side effects:
- *	Commands may get excecuted; variables may get set; sub-menus may
- *	get posted.
+ *      Commands may get excecuted; variables may get set; sub-menus may
+ *      get posted.
  *
  *  .cm select item 
  *
@@ -6209,7 +6224,7 @@ SelectOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	return TCL_ERROR;
     }
     if ((itemPtr == NULL) || (itemPtr->flags & ITEM_DISABLED)) {
-	return TCL_OK;			/* Item is currently disabled. */
+	return TCL_OK;                  /* Item is currently disabled. */
     }
     cmd = Tcl_GetString(objv[1]);
     Tcl_Preserve(itemPtr);
@@ -6252,15 +6267,15 @@ SortCgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * SortConfigureOp --
  *
- * 	This procedure is called to process a list of configuration
- *	options database, in order to reconfigure the one of more
- *	entries in the widget.
+ *      This procedure is called to process a list of configuration
+ *      options database, in order to reconfigure the one of more
+ *      entries in the widget.
  *
- *	  .t sort configure option value
+ *        .t sort configure option value
  *
  * Results:
- *	A standard TCL result.  If TCL_ERROR is returned, then
- *	interp->result contains an error message.
+ *      A standard TCL result.  If TCL_ERROR is returned, then
+ *      interp->result contains an error message.
  *
  *---------------------------------------------------------------------------
  */
@@ -6310,16 +6325,16 @@ SortOnceOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * SortOp --
  *
- *	Comparison routine (used by qsort) to sort a chain of subnodes.
- *	A simple string comparison is performed on each node name.
+ *      Comparison routine (used by qsort) to sort a chain of subnodes.
+ *      A simple string comparison is performed on each node name.
  *
- *	.h sort once
- *	.h sort configure -option value
- *	.h sort cget -option
+ *      .h sort once
+ *      .h sort configure -option value
+ *      .h sort cget -option
  *
  * Results:
- *	1 is the first is greater, -1 is the second is greater, 0
- *	if equal.
+ *      1 is the first is greater, -1 is the second is greater, 0
+ *      if equal.
  *
  *---------------------------------------------------------------------------
  */
@@ -6519,7 +6534,7 @@ static int numStyleOps = sizeof(styleOps) / sizeof(Blt_OpSpec);
 
 static int
 StyleOp(ClientData clientData, Tcl_Interp *interp, int objc,
-        Tcl_Obj *const *objv)
+	Tcl_Obj *const *objv)
 {
     ComboMenu *comboPtr = clientData;
     ComboMenuCmdProc *proc;
@@ -6557,7 +6572,7 @@ TypeOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv
  *
  * UnpostOp --
  *
- *	Unposts this menu.
+ *      Unposts this menu.
  *
  *  .cm post 
  *
@@ -6569,15 +6584,8 @@ UnpostOp(ClientData clientData, Tcl_Interp *interp, int objc,
 {
     ComboMenu *comboPtr = clientData;
 
-    if (!Tk_IsMapped(comboPtr->tkwin)) {
-	return TCL_OK;		/* This menu is already unposted. */
-    }
-    /* Deactivate the current item. */
-    UnpostCascade(comboPtr);
-    comboPtr->postedPtr = NULL;
-
-    if ((comboPtr->flags & COMBOMENU) && (Tk_IsMapped(comboPtr->tkwin))) {
-	Tk_UnmapWindow(comboPtr->tkwin);
+    if (!WithdrawMenu(comboPtr)) {
+	return TCL_OK;          /* This menu is already unposted. */
     }
     /*
      * If there is a unpost command for the menu, execute it.  
@@ -6603,19 +6611,19 @@ UnpostOp(ClientData clientData, Tcl_Interp *interp, int objc,
  * ValueOp --
  *
  * Results:
- *	Standard TCL result.
+ *      Standard TCL result.
  *
  * Side effects:
- *	Commands may get excecuted; variables may get set; sub-menus may
- *	get posted.
+ *      Commands may get excecuted; variables may get set; sub-menus may
+ *      get posted.
  *
- *	.cm value item 
+ *      .cm value item 
  *
  *---------------------------------------------------------------------------
  */
 static int
 ValueOp(ClientData clientData, Tcl_Interp *interp, int objc,
-        Tcl_Obj *const *objv)
+	Tcl_Obj *const *objv)
 {
     ComboMenu *comboPtr = clientData;
     Item *itemPtr;
@@ -6636,6 +6644,28 @@ ValueOp(ClientData clientData, Tcl_Interp *interp, int objc,
     return TCL_OK;
 }
 
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * WithdrawOp --
+ *
+ *      Hides the menu but doesn't call the unpost command. Technically
+ *      the menu is still posted.
+ *
+ *  .cm withdraw 
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+WithdrawOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+	 Tcl_Obj *const *objv)
+{
+    ComboMenu *comboPtr = clientData;
+
+    WithdrawMenu(comboPtr);
+    return TCL_OK;      
+}
 
 static int
 XPositionOp(ClientData clientData, Tcl_Interp *interp, int objc, 
@@ -6658,7 +6688,7 @@ XPositionOp(ClientData clientData, Tcl_Interp *interp, int objc,
 
 static int
 XViewOp(ClientData clientData, Tcl_Interp *interp, int objc,
-        Tcl_Obj *const *objv)
+	Tcl_Obj *const *objv)
 {
     ComboMenu *comboPtr = clientData;
     int w;
@@ -6714,7 +6744,7 @@ YPositionOp(ClientData clientData, Tcl_Interp *interp, int objc,
 
 static int
 YViewOp(ClientData clientData, Tcl_Interp *interp, int objc,
-        Tcl_Obj *const *objv)
+	Tcl_Obj *const *objv)
 {
     ComboMenu *comboPtr = clientData;
     int height;
@@ -6754,20 +6784,20 @@ YViewOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * DestroyComboMenu --
  *
- * 	This procedure is invoked by Tcl_EventuallyFree or Tcl_Release to
- * 	clean up the internal structure of the widget at a safe time (when
- * 	no-one is using it anymore).
+ *      This procedure is invoked by Tcl_EventuallyFree or Tcl_Release to
+ *      clean up the internal structure of the widget at a safe time (when
+ *      no-one is using it anymore).
  *
  * Results:
- *	None.
+ *      None.
  *
  * Side Effects:
- *	Everything associated with the widget is freed up.
+ *      Everything associated with the widget is freed up.
  *
  *---------------------------------------------------------------------------
  */
 static void
-DestroyComboMenu(DestroyData dataPtr)	/* Pointer to the widget record. */
+DestroyComboMenu(DestroyData dataPtr)   /* Pointer to the widget record. */
 {
     ComboMenu *comboPtr = (ComboMenu *)dataPtr;
 
@@ -6776,10 +6806,10 @@ DestroyComboMenu(DestroyData dataPtr)	/* Pointer to the widget record. */
     }
     if (comboPtr->flags & INSTALL_XSCROLLBAR) {
 	Tcl_CancelIdleCall(InstallXScrollbar, comboPtr);
-    }	    
+    }       
     if (comboPtr->flags & INSTALL_YSCROLLBAR) {
 	Tcl_CancelIdleCall(InstallYScrollbar, comboPtr);
-    }	    
+    }       
     if (comboPtr->flags & UPDATE_PENDING) {
 	Tcl_CancelIdleCall(ConfigureScrollbarsProc, comboPtr);
     }
@@ -6841,14 +6871,14 @@ NewComboMenu(Tcl_Interp *interp, Tk_Window tkwin)
  *
  * ComboMenuCmd --
  *
- * 	This procedure is invoked to process the "combomenu" command.  See the
- * 	user documentation for details on what it does.
+ *      This procedure is invoked to process the "combomenu" command.  See the
+ *      user documentation for details on what it does.
  *
  * Results:
- *	A standard TCL result.
+ *      A standard TCL result.
  *
  * Side effects:
- *	See the user documentation.
+ *      See the user documentation.
  *
  *---------------------------------------------------------------------------
  */
@@ -6880,11 +6910,12 @@ static Blt_OpSpec menuOps[] =
     {"see",         3, SeeOp,         3, 5, "item",},
     {"select",      3, SelectOp,      3, 3, "item",},
     {"size",        2, SizeOp,        2, 2, "",},
-    {"sort",        2, SortOp,	      2, 0, "args",},
+    {"sort",        2, SortOp,        2, 0, "args",},
     {"style",       2, StyleOp,       2, 0, "op ?args...?",},
     {"type",        1, TypeOp,        3, 3, "item",},
     {"unpost",      1, UnpostOp,      2, 2, "",},
     {"value",       1, ValueOp,       3, 3, "item",},
+    {"withdraw",    1, WithdrawOp,    2, 2, "",},
     {"xposition",   2, XPositionOp,   3, 3, "item",},
     {"xview",       2, XViewOp,       2, 5, 
 	"?moveto fract? ?scroll number what?",},
@@ -6897,18 +6928,18 @@ static int numMenuOps = sizeof(menuOps) / sizeof(Blt_OpSpec);
 
 static int
 ComboMenuInstCmdProc(
-    ClientData clientData,		/* Information about the widget. */
-    Tcl_Interp *interp,			/* Interpreter to report errors back
+    ClientData clientData,              /* Information about the widget. */
+    Tcl_Interp *interp,                 /* Interpreter to report errors back
 					 * to. */
-    int objc,				/* # of arguments. */
-    Tcl_Obj *const *objv)		/* Argument vector. */
+    int objc,                           /* # of arguments. */
+    Tcl_Obj *const *objv)               /* Argument vector. */
 {
     Tcl_ObjCmdProc *proc;
     ComboMenu *comboPtr = clientData;
     int result;
 
     proc = Blt_GetOpFromObj(interp, numMenuOps, menuOps, BLT_OP_ARG1,
-        objc, objv, 0);
+	objc, objv, 0);
     if (proc == NULL) {
 	return TCL_ERROR;
     }
@@ -6923,25 +6954,25 @@ ComboMenuInstCmdProc(
  *
  * ComboMenuInstCmdDeletedProc --
  *
- *	This procedure can be called if the window was destroyed (tkwin will
- *	be NULL) and the command was deleted automatically.  In this case, we
- *	need to do nothing.
+ *      This procedure can be called if the window was destroyed (tkwin will
+ *      be NULL) and the command was deleted automatically.  In this case, we
+ *      need to do nothing.
  *
- *	Otherwise this routine was called because the command was deleted.
- *	Then we need to clean-up and destroy the widget.
+ *      Otherwise this routine was called because the command was deleted.
+ *      Then we need to clean-up and destroy the widget.
  *
  * Results:
- *	None.
+ *      None.
  *
  * Side Effects:
- *	The widget is destroyed.
+ *      The widget is destroyed.
  *
  *---------------------------------------------------------------------------
  */
 static void
 ComboMenuInstCmdDeletedProc(ClientData clientData)
 {
-    ComboMenu *comboPtr = clientData;	/* Pointer to widget record. */
+    ComboMenu *comboPtr = clientData;   /* Pointer to widget record. */
 
     if (comboPtr->tkwin != NULL) {
 	Tk_Window tkwin;
@@ -6957,26 +6988,26 @@ ComboMenuInstCmdDeletedProc(ClientData clientData)
  *
  * ComboMenuCmd --
  *
- * 	This procedure is invoked to process the TCL command that corresponds
- * 	to a widget managed by this module. See the user documentation for
- * 	details on what it does.
+ *      This procedure is invoked to process the TCL command that corresponds
+ *      to a widget managed by this module. See the user documentation for
+ *      details on what it does.
  *
  * Results:
- *	A standard TCL result.
+ *      A standard TCL result.
  *
  * Side Effects:
- *	See the user documentation.
+ *      See the user documentation.
  *
  *---------------------------------------------------------------------------
  */
 /* ARGSUSED */
 static int
 ComboMenuCmd(
-    ClientData clientData,		/* Main window associated with
+    ClientData clientData,              /* Main window associated with
 					 * interpreter. */
-    Tcl_Interp *interp,			/* Current interpreter. */
-    int objc,				/* Number of arguments. */
-    Tcl_Obj *const *objv)		/* Argument strings. */
+    Tcl_Interp *interp,                 /* Current interpreter. */
+    int objc,                           /* Number of arguments. */
+    Tcl_Obj *const *objv)               /* Argument strings. */
 {
     ComboMenu *comboPtr;
     Tk_Window tkwin;
@@ -7043,26 +7074,26 @@ ComboMenuCmd(
  *
  * ComboViewCmd --
  *
- * 	This procedure is invoked to process the TCL command that corresponds
- * 	to a widget managed by this module. See the user documentation for
- * 	details on what it does.
+ *      This procedure is invoked to process the TCL command that corresponds
+ *      to a widget managed by this module. See the user documentation for
+ *      details on what it does.
  *
  * Results:
- *	A standard TCL result.
+ *      A standard TCL result.
  *
  * Side Effects:
- *	See the user documentation.
+ *      See the user documentation.
  *
  *---------------------------------------------------------------------------
  */
 /* ARGSUSED */
 static int
 ComboViewCmd(
-    ClientData clientData,		/* Main window associated with
+    ClientData clientData,              /* Main window associated with
 					 * interpreter. */
-    Tcl_Interp *interp,			/* Current interpreter. */
-    int objc,				/* # of arguments. */
-    Tcl_Obj *const *objv)		/* Argument strings. */
+    Tcl_Interp *interp,                 /* Current interpreter. */
+    int objc,                           /* # of arguments. */
+    Tcl_Obj *const *objv)               /* Argument strings. */
 {
     ComboMenu *comboPtr;
     Tk_Window tkwin;
@@ -7135,7 +7166,7 @@ DrawItemBackground(Item *itemPtr, Drawable drawable, int x, int y)
 	relief = stylePtr->activeRelief;
     } else {
 	bg = stylePtr->normalBg;
-    }	    
+    }       
     w = VPORTWIDTH(comboPtr);
     w = MAX(comboPtr->worldWidth, w);
 #ifdef notdef
@@ -7231,7 +7262,7 @@ DrawRadioButton(Item *itemPtr, Drawable drawable, int x, int y, int w, int h)
 	bg = stylePtr->activeBg;
     } else {
 	bg = stylePtr->normalBg;
-    }	    
+    }       
     state = (itemPtr->flags & ITEM_SELECTED);
     if (itemPtr->flags & ITEM_DISABLED) {
 	picture = Blt_PaintRadioButton(w, h, bg,
@@ -7270,7 +7301,7 @@ DrawItem(Item *itemPtr, Drawable drawable, int x, int y)
     if (itemPtr->flags & ITEM_SEPARATOR) {
 	DrawSeparator(itemPtr, drawable, x, y, w, h);
 	y += ITEM_SEP_HEIGHT;
-    } else {	    
+    } else {        
 	int ww;
 	int ix, iy;
 
@@ -7288,7 +7319,7 @@ DrawItem(Item *itemPtr, Drawable drawable, int x, int y)
 	    } else if (itemPtr->flags & ITEM_CHECKBUTTON) {
 		DrawCheckButton(itemPtr, drawable, ix, iy, 
 			itemPtr->leftIndWidth, itemPtr->leftIndHeight);
-	    }		
+	    }           
 	}
 	ww += comboPtr->leftIndWidth;
 	x += comboPtr->leftIndWidth;
@@ -7494,13 +7525,13 @@ DrawComboMenu(ComboMenu *comboPtr, Drawable drawable)
  *
  * DisplayItem --
  *
- *	This procedure is invoked to display an item in the combomenu widget.
+ *      This procedure is invoked to display an item in the combomenu widget.
  *
  * Results:
- *	None.
+ *      None.
  *
  * Side effects:
- *	Commands are output to X to display the item.
+ *      Commands are output to X to display the item.
  *
  *---------------------------------------------------------------------------
  */
@@ -7549,13 +7580,13 @@ DisplayItem(ClientData clientData)
  *
  * DisplayProc --
  *
- *	This procedure is invoked to display a combomenu widget.
+ *      This procedure is invoked to display a combomenu widget.
  *
  * Results:
- *	None.
+ *      None.
  *
  * Side effects:
- *	Commands are output to X to display the menu.
+ *      Commands are output to X to display the menu.
  *
  *---------------------------------------------------------------------------
  */
@@ -7564,12 +7595,12 @@ DisplayProc(ClientData clientData)
 {
     ComboMenu *comboPtr = clientData;
     Pixmap drawable;
-    int w, h;				/* Window width and height. */
+    int w, h;                           /* Window width and height. */
     int screenWidth, screenHeight;
 
     comboPtr->flags &= ~REDRAW_PENDING;
     if (comboPtr->tkwin == NULL) {
-	return;				/* Window destroyed (should not get
+	return;                         /* Window destroyed (should not get
 					 * here) */
     }
 #ifdef notdef
@@ -7580,8 +7611,8 @@ DisplayProc(ClientData clientData)
     if (comboPtr->flags & SORT_PENDING) {
 	/* If the table needs resorting do it now before recalculating the
 	 * geometry. */
-	SortItems(comboPtr);	
-        comboPtr->flags |= LAYOUT_PENDING;
+	SortItems(comboPtr);    
+	comboPtr->flags |= LAYOUT_PENDING;
     }
     if (comboPtr->flags & LAYOUT_PENDING) {
 	ComputeComboGeometry(comboPtr);
@@ -7598,7 +7629,7 @@ DisplayProc(ClientData clientData)
 	return;
     }
     if (comboPtr->flags & SCROLL_PENDING) {
-	int vw, vh;			/* Viewport width and height. */
+	int vw, vh;                     /* Viewport width and height. */
 	/* 
 	 * The view port has changed. The visible items need to be recomputed
 	 * and the scrollbars updated.

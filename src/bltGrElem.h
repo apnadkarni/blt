@@ -100,7 +100,7 @@ typedef struct {
  */
 typedef struct {
     Weight weight;                      /* Weight range where this pen is
-                                         * valid. */
+					 * valid. */
     Pen *penPtr;                        /* Pen to use. */
 } PenStyle;
 
@@ -108,10 +108,10 @@ typedef struct {
 typedef struct {
     XColor *color;                      /* Color of error bar */
     int lineWidth;                      /* Width of the error bar
-                                         * segments. */
+					 * segments. */
     GC gc;
     int show;                           /* Flags for errorbars: none, x, y,
-                                         * or both */
+					 * or both */
 } ErrorBarAttributes;
 
 typedef struct {
@@ -127,7 +127,7 @@ typedef struct {
 					 * indicating to choose how to
 					 * search.*/
     int x, y;				/* Screen coordinates of test
-                                         * point */
+					 * point */
     int along;				/* Indicates to let search run
 					 * along a particular axis: x, y,
 					 * or both. */
@@ -204,7 +204,7 @@ typedef struct {
 					 * ELEM_SOURCE_TABLE, or
 					 * ELEM_SOURCE_VALUES */
     Element *elemPtr;			/* Element associated with
-                                         * vector. */
+					 * vector. */
     union {
 	TableDataSource tableSource;
 	VectorDataSource vectorSource;
@@ -218,13 +218,13 @@ typedef struct {
 
 struct _Element {
     GraphObj obj;                       /* Must be first field in
-                                         * element. */
+					 * element. */
     unsigned int flags;		
     Blt_HashEntry *hashPtr;
 
     /* Fields specific to elements. */
     Blt_ChainLink link;			/* Element's link in display
-                                         * list. */
+					 * list. */
     const char *label;			/* Label displayed in legend */
     unsigned short row, col;		/* Position of the entry in the
 					 * legend. */

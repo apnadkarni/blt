@@ -78,7 +78,7 @@
 	-image $image
 	-bg $color
   blt::background create picture 
-        -image $image
+	-image $image
 	-filter $filterName
 	-bg $color
   blt::background create gradient 
@@ -238,7 +238,7 @@ typedef struct {
 					 * window when determining the
 					 * tile/gradient origin. */
     ReferenceType reference;		/* "self", "toplevel", or
-                                         * "window". */
+					 * "window". */
     Blt_HashTable pictTable;		/* Table of pictures cached for
 					 * each background reference. */
     int xOrigin, yOrigin;
@@ -276,7 +276,7 @@ typedef struct {
 					 * window when determining the
 					 * tile/gradient origin. */
     ReferenceType reference;		/* "self", "toplevel", or
-                                           "window". */
+					   "window". */
     Blt_HashTable pictTable;		/* Table of pictures cached for
 					 * each background reference. */
     int xOrigin, yOrigin;
@@ -314,7 +314,7 @@ typedef struct {
 					 * window when determining the
 					 * tile/gradient origin. */
     ReferenceType reference;		/* "self", "toplevel", or
-                                           "window". */
+					   "window". */
     Blt_HashTable pictTable;		/* Table of pictures cached for
 					 * each background reference. */
     int xOrigin, yOrigin;
@@ -417,7 +417,7 @@ static Blt_CustomOption textureTypeOption =
 static Blt_ConfigSpec solidConfigSpecs[] =
 {
     {BLT_CONFIG_SYNONYM, "-background", "color", (char *)NULL, (char *)NULL, 
-        0, 0},
+	0, 0},
     {BLT_CONFIG_SYNONYM, "-bg", "color", (char *)NULL, (char *)NULL, 0, 0},
     {BLT_CONFIG_BORDER, "-color", "color", "Color", DEF_BORDER, 
 	Blt_Offset(SolidBackground, border), 0},
@@ -430,7 +430,7 @@ static Blt_ConfigSpec solidConfigSpecs[] =
 static Blt_ConfigSpec tileConfigSpecs[] =
 {
     {BLT_CONFIG_BITMASK, "-center", "center", "Center", DEF_CENTER,
-        Blt_Offset(TileBackground, flags), BLT_CONFIG_DONT_SET_DEFAULT, 
+	Blt_Offset(TileBackground, flags), BLT_CONFIG_DONT_SET_DEFAULT, 
 	(Blt_CustomOption *)BG_CENTER},
     {BLT_CONFIG_BORDER, "-color", "color", "Color", DEF_BORDER, 
 	Blt_Offset(TileBackground, border), 0},
@@ -439,7 +439,7 @@ static Blt_ConfigSpec tileConfigSpecs[] =
     {BLT_CONFIG_CUSTOM, "-filter", "filter", "Filter", DEF_RESAMPLE_FILTER, 
 	Blt_Offset(TileBackground, filter), 0, &bltFilterOption},
     {BLT_CONFIG_CUSTOM, "-image", "image", "Image", (char *)NULL,
-        Blt_Offset(TileBackground, tkImage), BLT_CONFIG_DONT_SET_DEFAULT, 
+	Blt_Offset(TileBackground, tkImage), BLT_CONFIG_DONT_SET_DEFAULT, 
 	&imageOption},
     {BLT_CONFIG_BORDER, "-lightcolor", "lightColor", "LightColor", DEF_BORDER, 
 	Blt_Offset(TileBackground, border), 0},
@@ -450,12 +450,12 @@ static Blt_ConfigSpec tileConfigSpecs[] =
 	DEF_REFERENCE, Blt_Offset(TileBackground, reference), 
 	BLT_CONFIG_DONT_SET_DEFAULT, &referenceTypeOption},
     {BLT_CONFIG_BITMASK, "-scale", "scale", "scale", DEF_SCALE,
-        Blt_Offset(TileBackground, flags), BLT_CONFIG_DONT_SET_DEFAULT, 
+	Blt_Offset(TileBackground, flags), BLT_CONFIG_DONT_SET_DEFAULT, 
 	(Blt_CustomOption *)BG_SCALE},
     {BLT_CONFIG_PIXELS, "-xorigin", "xOrigin", "XOrigin", DEF_ORIGIN_X,
-        Blt_Offset(TileBackground, xOrigin), BLT_CONFIG_DONT_SET_DEFAULT},
+	Blt_Offset(TileBackground, xOrigin), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_PIXELS, "-yorigin", "yOrigin", "YOrigin", DEF_ORIGIN_Y,
-        Blt_Offset(TileBackground, yOrigin), BLT_CONFIG_DONT_SET_DEFAULT},
+	Blt_Offset(TileBackground, yOrigin), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_END, NULL, NULL, NULL, NULL, 0, 0}
 };
 
@@ -465,12 +465,12 @@ static Blt_ConfigSpec gradientConfigSpecs[] =
 	Blt_Offset(GradientBackground, border), 0},
     {BLT_CONFIG_SYNONYM, "-bg", "background", (char *)NULL, (char *)NULL, 0, 0},
     {BLT_CONFIG_PIX32, "-high", "high", "High", DEF_GRADIENT_HIGH,
-        Blt_Offset(GradientBackground, high), 0},
+	Blt_Offset(GradientBackground, high), 0},
     {BLT_CONFIG_CUSTOM, "-jitter", "jitter", "Jitter", DEF_GRADIENT_JITTER, 
 	Blt_Offset(GradientBackground, jitter.range), 
-        BLT_CONFIG_DONT_SET_DEFAULT, &jitterOption},
+	BLT_CONFIG_DONT_SET_DEFAULT, &jitterOption},
     {BLT_CONFIG_PIX32, "-low", "low", "Low", DEF_GRADIENT_LOW,
-        Blt_Offset(GradientBackground, low), 0},
+	Blt_Offset(GradientBackground, low), 0},
     {BLT_CONFIG_CUSTOM, "-opacity", "opacity", "Opacity", "100.0", 
 	Blt_Offset(GradientBackground, alpha), BLT_CONFIG_DONT_SET_DEFAULT, 
 	&opacityOption},
@@ -484,9 +484,9 @@ static Blt_ConfigSpec gradientConfigSpecs[] =
 	Blt_Offset(GradientBackground, gradient.type), 
 	BLT_CONFIG_DONT_SET_DEFAULT, &gradientTypeOption},
     {BLT_CONFIG_PIXELS, "-xorigin", "xOrigin", "XOrigin", DEF_ORIGIN_X,
-        Blt_Offset(GradientBackground, xOrigin), BLT_CONFIG_DONT_SET_DEFAULT},
+	Blt_Offset(GradientBackground, xOrigin), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_PIXELS, "-yorigin", "yOrigin", "YOrigin", DEF_ORIGIN_Y,
-        Blt_Offset(GradientBackground, yOrigin), BLT_CONFIG_DONT_SET_DEFAULT},
+	Blt_Offset(GradientBackground, yOrigin), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_END, NULL, NULL, NULL, NULL, 0, 0}
 };
 
@@ -496,12 +496,12 @@ static Blt_ConfigSpec textureConfigSpecs[] =
 	Blt_Offset(TextureBackground, border), 0},
     {BLT_CONFIG_SYNONYM, "-bg", "background", (char *)NULL, (char *)NULL, 0, 0},
     {BLT_CONFIG_PIX32, "-high", "high", "High", DEF_GRADIENT_HIGH,
-        Blt_Offset(TextureBackground, high), 0},
+	Blt_Offset(TextureBackground, high), 0},
     {BLT_CONFIG_CUSTOM, "-jitter", "jitter", "Jitter", DEF_TEXTURE_JITTER, 
 	Blt_Offset(TextureBackground, jitter.range), 
-        BLT_CONFIG_DONT_SET_DEFAULT, &jitterOption},
+	BLT_CONFIG_DONT_SET_DEFAULT, &jitterOption},
     {BLT_CONFIG_PIX32, "-low", "low", "Low", DEF_GRADIENT_LOW,
-        Blt_Offset(TextureBackground, low), 0},
+	Blt_Offset(TextureBackground, low), 0},
     {BLT_CONFIG_CUSTOM, "-opacity", "opacity", "Opacity", "100.0", 
 	Blt_Offset(TextureBackground, alpha), BLT_CONFIG_DONT_SET_DEFAULT, 
 	&opacityOption},
@@ -2119,8 +2119,8 @@ SolidBackgroundConfigureProc(BackgroundObject *basePtr)
  */
 static void
 SolidBackgroundDrawRectangleProc(Tk_Window tkwin, Drawable drawable, 
-                                 BackgroundObject *basePtr, int x, int y, 
-                                 int w, int h)
+				 BackgroundObject *basePtr, int x, int y, 
+				 int w, int h)
 {
     SolidBackground *corePtr = (SolidBackground *)basePtr;
 
@@ -2162,7 +2162,7 @@ SolidBackgroundDrawRectangleProc(Tk_Window tkwin, Drawable drawable,
  */
 static void
 SolidBackgroundDrawPolygonProc(Tk_Window tkwin, Drawable drawable, 
-                               BackgroundObject *basePtr, int n, XPoint *points)
+			       BackgroundObject *basePtr, int n, XPoint *points)
 {
     SolidBackground *corePtr = (SolidBackground *)basePtr;
 
@@ -2936,7 +2936,7 @@ CreateOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     if (Blt_ConfigureWidgetFromObj(interp, corePtr->tkwin, 
 	corePtr->classPtr->configSpecs, objc - 3, objv + 3, (char *)corePtr, 
-        0) != TCL_OK) {
+	0) != TCL_OK) {
 	DestroyBackgroundObject(corePtr);
 	return TCL_ERROR;
     }
@@ -3017,14 +3017,14 @@ ConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
 		corePtr->classPtr->configSpecs, (char *)corePtr, objv[3], 
 		flags);
     } else {
-        if (Blt_ConfigureWidgetFromObj(interp, corePtr->tkwin, 
-                corePtr->classPtr->configSpecs, objc - 3, objv + 3, 
-                (char *)corePtr, flags) != TCL_OK) {
-            return TCL_ERROR;
-        }
-        if ((*corePtr->classPtr->configProc)(corePtr) != TCL_OK) {
-            return TCL_ERROR;
-        }
+	if (Blt_ConfigureWidgetFromObj(interp, corePtr->tkwin, 
+		corePtr->classPtr->configSpecs, objc - 3, objv + 3, 
+		(char *)corePtr, flags) != TCL_OK) {
+	    return TCL_ERROR;
+	}
+	if ((*corePtr->classPtr->configProc)(corePtr) != TCL_OK) {
+	    return TCL_ERROR;
+	}
 	ClearCache(corePtr);
 	NotifyClients(corePtr);
 	return TCL_OK;
@@ -3286,18 +3286,18 @@ Blt_GetBg(Tcl_Interp *interp, Tk_Window tkwin, const char *name)
 	    Tk_Free3DBorder(border);
 	    goto error;			/* Can't allocate new background. */
 	}
-        corePtr->border = border;
+	corePtr->border = border;
 	corePtr->hashPtr = hPtr;
 	corePtr->name = Blt_GetHashKey(&dataPtr->instTable, hPtr);
 	corePtr->link = NULL;
 	Blt_SetHashValue(hPtr, corePtr);
-        /* The tricky part here is that we don't look at configure options
-         * because we already created the border for the solid
-         * backrground. */
-        if ((*corePtr->classPtr->configProc)(corePtr) != TCL_OK) {
-            DestroyBackgroundObject(corePtr);
-            goto error;
-        }
+	/* The tricky part here is that we don't look at configure options
+	 * because we already created the border for the solid
+	 * backrground. */
+	if ((*corePtr->classPtr->configProc)(corePtr) != TCL_OK) {
+	    DestroyBackgroundObject(corePtr);
+	    goto error;
+	}
     } else {
 	corePtr = Blt_GetHashValue(hPtr);
 	assert(corePtr != NULL);

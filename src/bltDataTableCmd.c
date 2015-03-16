@@ -3,27 +3,27 @@
  *
  * bltDataTableCmd.c --
  *
- *	Copyright 1998-2005 George A Howlett.
+ *      Copyright 1998-2005 George A Howlett.
  *
- *	Permission is hereby granted, free of charge, to any person
- *	obtaining a copy of this software and associated documentation
- *	files (the "Software"), to deal in the Software without
- *	restriction, including without limitation the rights to use, copy,
- *	modify, merge, publish, distribute, sublicense, and/or sell copies
- *	of the Software, and to permit persons to whom the Software is
- *	furnished to do so, subject to the following conditions:
+ *      Permission is hereby granted, free of charge, to any person
+ *      obtaining a copy of this software and associated documentation
+ *      files (the "Software"), to deal in the Software without
+ *      restriction, including without limitation the rights to use, copy,
+ *      modify, merge, publish, distribute, sublicense, and/or sell copies
+ *      of the Software, and to permit persons to whom the Software is
+ *      furnished to do so, subject to the following conditions:
  *
- *	The above copyright notice and this permission notice shall be
- *	included in all copies or substantial portions of the Software.
+ *      The above copyright notice and this permission notice shall be
+ *      included in all copies or substantial portions of the Software.
  *
- *	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- *	EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- *	MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- *	NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
- *	BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
- *	ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
- *	CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- *	SOFTWARE.
+ *      THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ *      EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ *      MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ *      NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+ *      BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ *      ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ *      CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ *      SOFTWARE.
  */
 
 /*
@@ -36,20 +36,20 @@
 
   table move node after|before|into t2@node
 
-  $t apply -recurse $root command arg arg			
+  $t apply -recurse $root command arg arg                       
 
-  $t attach tablename				
+  $t attach tablename                           
 
   $t children $n
   t0 copy node1 node2 node3 node4 node5 destName 
-  $t delete $n...				
+  $t delete $n...                               
   $t delete 0 
   $t delete 0 10
   $t delete all
   $t depth $n
   $t dump 
   $t dump -file fileName
-  $t dup $t2		
+  $t dup $t2            
   $t find $root -name pat -name pattern
   $t firstchild $n
   $t get $n $key
@@ -72,8 +72,8 @@
 
   $t set $n $key $value ?$key $value?
   $t size $n
-  $t slink $n $t2@$node				???
-  $t sort -recurse $root		
+  $t slink $n $t2@$node                         ???
+  $t sort -recurse $root                
 
   $t tag delete tag1 tag2 tag3...
   $t tag names
@@ -81,7 +81,7 @@
   $t tag set $n tag1 tag2 tag3...
   $t tag unset $n tag1 tag2 tag3...
 
-  $t trace create $n $key how command		
+  $t trace create $n $key how command           
   $t trace delete id1 id2 id3...
   $t trace names
   $t trace info $id
@@ -97,7 +97,7 @@
   $t notify info id
 
   for { set n [$t firstchild $node] } { $n >= 0 } { 
-        set n [$t nextsibling $n] } {
+	set n [$t nextsibling $n] } {
   }
   foreach n [$t children $node] { 
 	  
@@ -191,7 +191,7 @@
  * $vector attach "$t c $column"
  * $vector detach 
  * $graph element create x -x "${table} column ${column}" \
- *		"table0 r abc"
+ *              "table0 r abc"
  * $tree attach 0 $t
  */
 
@@ -205,7 +205,7 @@
 
 #ifdef HAVE_SYS_STAT_H
 #  include <sys/stat.h>
-#endif	/* HAVE_SYS_STAT_H */
+#endif  /* HAVE_SYS_STAT_H */
 
 #ifdef HAVE_CTYPE_H
 #  include <ctype.h>
@@ -219,17 +219,17 @@
 /*
  * TableCmdInterpData --
  *
- *	Structure containing global data, used on a interpreter by interpreter
- *	basis.
+ *      Structure containing global data, used on a interpreter by interpreter
+ *      basis.
  *
- *	This structure holds the hash table of instances of datatable commands
- *	associated with a particular interpreter.
+ *      This structure holds the hash table of instances of datatable commands
+ *      associated with a particular interpreter.
  */
 typedef struct {
-    Blt_HashTable instTable;		/* Tracks tables in use. */
+    Blt_HashTable instTable;            /* Tracks tables in use. */
     Tcl_Interp *interp;
     Blt_HashTable fmtTable;
-    Blt_HashTable findTable;		/* Tracks temporary "find" search
+    Blt_HashTable findTable;            /* Tracks temporary "find" search
 					 * information keyed by a specific
 					 * namespace. */
 } TableCmdInterpData;
@@ -237,79 +237,79 @@ typedef struct {
 /*
  * Cmd --
  *
- *	Structure representing the TCL command used to manipulate the
- *	underlying table object.
+ *      Structure representing the TCL command used to manipulate the
+ *      underlying table object.
  *
- *	This structure acts as a shell for a table object.  A table object
- *	maybe shared by more than one client.  This shell provides Tcl
- *	commands to access and change values as well as the structure of
- *	the table itself.  It manages the traces and notifier events that
- *	it creates, providing a TCL interface to those facilities. It also
- *	provides a user-selectable value for empty-cell values.
+ *      This structure acts as a shell for a table object.  A table object
+ *      maybe shared by more than one client.  This shell provides Tcl
+ *      commands to access and change values as well as the structure of
+ *      the table itself.  It manages the traces and notifier events that
+ *      it creates, providing a TCL interface to those facilities. It also
+ *      provides a user-selectable value for empty-cell values.
  */
 typedef struct {
-    Tcl_Interp *interp;			/* Interpreter this command is
+    Tcl_Interp *interp;                 /* Interpreter this command is
 					 * associated with. */
-    BLT_TABLE table;			/* Handle representing the client
+    BLT_TABLE table;                    /* Handle representing the client
 					 * table. */
-    Tcl_Command cmdToken;		/* Token for TCL command
+    Tcl_Command cmdToken;               /* Token for TCL command
 					 * representing this table. */
-    const char *emptyValue;		/* String representing an empty
+    const char *emptyValue;             /* String representing an empty
 					 * value in the table. */
-    Blt_HashTable *tablePtr;		/* Pointer to hash table containing
+    Blt_HashTable *tablePtr;            /* Pointer to hash table containing
 					 * a pointer to this structure.
 					 * Used to delete * this table
 					 * entry from the table. */
-    Blt_HashEntry *hPtr;		/* Pointer to the hash table entry
+    Blt_HashEntry *hPtr;                /* Pointer to the hash table entry
 					 * for this table in the
 					 * interpreter specific hash
 					 * table. */
-    int nextTraceId;			/* Used to generate trace id
+    int nextTraceId;                    /* Used to generate trace id
 					 * strings.  */
-    Blt_HashTable traceTable;		/* Table of active traces. Maps
+    Blt_HashTable traceTable;           /* Table of active traces. Maps
 					 * trace ids back to their
 					 * TraceInfo records. */
-    int nextNotifyId;			/* Used to generate notify id
+    int nextNotifyId;                   /* Used to generate notify id
 					 * strings. */
-    Blt_HashTable notifyTable;		/* Table of event handlers. Maps
+    Blt_HashTable notifyTable;          /* Table of event handlers. Maps
 					 * notify ids back to their
 					 * NotifyInfo records. */
 } Cmd;
 
 typedef struct {
-    const char *name;			/* Name of format. */
-    unsigned int flags;			/*  */
+    const char *name;                   /* Name of format. */
+    unsigned int flags;                 /*  */
     BLT_TABLE_IMPORT_PROC *importProc;
     BLT_TABLE_EXPORT_PROC *exportProc;
 } DataFormat;
 
-#define FMT_LOADED	(1<<0)		/* Format is loaded. */
-#define FMT_STATIC	(1<<1)		/* Format is static. */
+#define FMT_LOADED      (1<<0)          /* Format is loaded. */
+#define FMT_STATIC      (1<<1)          /* Format is static. */
 
 enum DataFormats {
-    FMT_TXT,				/* Comma separated values */
-    FMT_CSV,				/* Comma separated values */
+    FMT_TXT,                            /* Comma separated values */
+    FMT_CSV,                            /* Comma separated values */
 #ifdef HAVE_LIBMYSQL
-    FMT_MYSQL,				/* MYSQL client library. */
+    FMT_MYSQL,                          /* MYSQL client library. */
 #endif
-    FMT_TREE,				/* BLT Tree object. */
-    FMT_VECTOR,				/* BLT Vector object. */
+    FMT_TREE,                           /* BLT Tree object. */
+    FMT_VECTOR,                         /* BLT Vector object. */
 #ifdef HAVE_EXPAT
-    FMT_XML,				/* XML */
+    FMT_XML,                            /* XML */
 #endif
     NUMFMTS
 };
 
 static DataFormat dataFormats[] = {
-    { "txt" },				/* White space separated values */
-    { "csv" },				/* Comma separated values */
+    { "txt" },                          /* White space separated values */
+    { "csv" },                          /* Comma separated values */
 #ifdef HAVE_LIBMYSQL
-    { "mysql" },			/* MYSQL client library. */
+    { "mysql" },                        /* MYSQL client library. */
 #endif
-    { "tree" },				/* BLT Tree object.*/
-    { "vector" }, 			/* BLT Vector object.*/
+    { "tree" },                         /* BLT Tree object.*/
+    { "vector" },                       /* BLT Vector object.*/
 #ifdef HAVE_EXPAT
-    { "xml" },				/* XML */
+    { "xml" },                          /* XML */
 #endif
 };
 
@@ -321,13 +321,13 @@ typedef struct {
 /*
  * TraceInfo --
  *
- *	Structure containing information about a trace set from this command
- *	shell.
+ *      Structure containing information about a trace set from this command
+ *      shell.
  *
- *	This auxillary structure houses data to be used for a callback to a
- *	TCL procedure when a table object trace fires.  It is stored in a hash
- *	table in the Dt_Cmd structure to keep track of traces issued by this
- *	shell.
+ *      This auxillary structure houses data to be used for a callback to a
+ *      TCL procedure when a table object trace fires.  It is stored in a hash
+ *      table in the Dt_Cmd structure to keep track of traces issued by this
+ *      shell.
  */
 typedef struct {
     BLT_TABLE_TRACE trace;
@@ -341,13 +341,13 @@ typedef struct {
 /*
  * NotifierInfo --
  *
- *	Structure containing information about a notifier set from this
- *	command shell.
+ *      Structure containing information about a notifier set from this
+ *      command shell.
  *
- *	This auxillary structure houses data to be used for a callback to a
- *	TCL procedure when a table object notify event fires.  It is stored in
- *	a hash table in the Dt_Cmd structure to keep track of notifiers issued
- *	by this shell.
+ *      This auxillary structure houses data to be used for a callback to a
+ *      TCL procedure when a table object notify event fires.  It is stored in
+ *      a hash table in the Dt_Cmd structure to keep track of notifiers issued
+ *      by this shell.
  */
 typedef struct {
     BLT_TABLE_NOTIFIER notifier;
@@ -394,11 +394,11 @@ static Blt_SwitchCustom rowsSwitch = {
 
 #endif
 
-#define INSERT_BEFORE	(ClientData)(1<<0)
-#define INSERT_AFTER	(ClientData)(1<<1)
+#define INSERT_BEFORE   (ClientData)(1<<0)
+#define INSERT_AFTER    (ClientData)(1<<1)
 
-#define INSERT_ROW	(BLT_SWITCH_USER_BIT<<1)
-#define INSERT_COL	(BLT_SWITCH_USER_BIT<<2)
+#define INSERT_ROW      (BLT_SWITCH_USER_BIT<<1)
+#define INSERT_COL      (BLT_SWITCH_USER_BIT<<2)
 
 static Blt_SwitchCustom beforeSwitch = {
     PositionSwitch, NULL, NULL, INSERT_BEFORE,
@@ -437,30 +437,30 @@ static Blt_SwitchSpec dirSwitches[] =
 
 typedef struct {
     Cmd *cmdPtr;
-    BLT_TABLE_ROW row;			/* Index where to install new row or
+    BLT_TABLE_ROW row;                  /* Index where to install new row or
 					 * column. */
     BLT_TABLE_COLUMN column;
-    const char *label;			/* New label. */
-    Tcl_Obj *tags;			/* List of tags to be applied to
+    const char *label;                  /* New label. */
+    Tcl_Obj *tags;                      /* List of tags to be applied to
 					 * this row or column. */
     BLT_TABLE_COLUMN_TYPE type;
 } InsertSwitches;
 
 static Blt_SwitchSpec insertSwitches[] = 
 {
-    {BLT_SWITCH_CUSTOM, "-after",  "column",	(char *)NULL,
+    {BLT_SWITCH_CUSTOM, "-after",  "column",    (char *)NULL,
 	Blt_Offset(InsertSwitches, column), INSERT_COL, 0, &afterSwitch},
-    {BLT_SWITCH_CUSTOM, "-after",  "row",	(char *)NULL,
+    {BLT_SWITCH_CUSTOM, "-after",  "row",       (char *)NULL,
 	Blt_Offset(InsertSwitches, row),    INSERT_ROW, 0, &afterSwitch},
-    {BLT_SWITCH_CUSTOM, "-before", "column",	(char *)NULL,
+    {BLT_SWITCH_CUSTOM, "-before", "column",    (char *)NULL,
 	Blt_Offset(InsertSwitches, column), INSERT_COL, 0, &beforeSwitch},
-    {BLT_SWITCH_CUSTOM, "-before", "row",	(char *)NULL,
-         Blt_Offset(InsertSwitches, row),   INSERT_ROW, 0, &beforeSwitch},
-    {BLT_SWITCH_STRING, "-label",  "string",	(char *)NULL,
+    {BLT_SWITCH_CUSTOM, "-before", "row",       (char *)NULL,
+	 Blt_Offset(InsertSwitches, row),   INSERT_ROW, 0, &beforeSwitch},
+    {BLT_SWITCH_STRING, "-label",  "string",    (char *)NULL,
 	Blt_Offset(InsertSwitches, label),  INSERT_ROW | INSERT_COL},
-    {BLT_SWITCH_OBJ,    "-tags",   "tags",	(char *)NULL,
+    {BLT_SWITCH_OBJ,    "-tags",   "tags",      (char *)NULL,
 	Blt_Offset(InsertSwitches, tags),   INSERT_ROW | INSERT_COL},
-    {BLT_SWITCH_CUSTOM, "-type",   "type",	(char *)NULL,
+    {BLT_SWITCH_CUSTOM, "-type",   "type",      (char *)NULL,
 	Blt_Offset(InsertSwitches, type),   INSERT_COL, 0, &typeSwitch},
     {BLT_SWITCH_END}
 };
@@ -474,9 +474,9 @@ typedef struct {
 
 static Blt_SwitchSpec indicesSwitches[] = 
 {
-    {BLT_SWITCH_BITMASK, "-duplicates",  "",	(char *)NULL,
+    {BLT_SWITCH_BITMASK, "-duplicates",  "",    (char *)NULL,
 	Blt_Offset(IndicesSwitches, flags), 0, INDICES_DUPLICATES},
-    {BLT_SWITCH_BITMASK, "-empty",  "",	(char *)NULL,
+    {BLT_SWITCH_BITMASK, "-empty",  "", (char *)NULL,
 	Blt_Offset(IndicesSwitches, flags), 0, INDICES_EMPTY},
     {BLT_SWITCH_END}
 };
@@ -486,10 +486,10 @@ typedef struct {
     BLT_TABLE table;
 } CopySwitches;
 
-#define COPY_NOTAGS	(1<<1)
-#define COPY_LABEL	(1<<3)
-#define COPY_APPEND	(1<<3)
-#define COPY_NEW	(1<<4)
+#define COPY_NOTAGS     (1<<1)
+#define COPY_LABEL      (1<<3)
+#define COPY_APPEND     (1<<3)
+#define COPY_NEW        (1<<4)
 
 static Blt_SwitchSpec copySwitches[] = 
 {
@@ -509,10 +509,10 @@ typedef struct {
     BLT_TABLE_ITERATOR ri, ci;
 } JoinSwitches;
 
-#define JOIN_ROW	(BLT_SWITCH_USER_BIT)
-#define JOIN_COLUMN	(BLT_SWITCH_USER_BIT<<1)
-#define JOIN_BOTH	(JOIN_ROW|JOIN_COLUMN)
-#define JOIN_NOTAGS	(1<<1)
+#define JOIN_ROW        (BLT_SWITCH_USER_BIT)
+#define JOIN_COLUMN     (BLT_SWITCH_USER_BIT<<1)
+#define JOIN_BOTH       (JOIN_ROW|JOIN_COLUMN)
+#define JOIN_NOTAGS     (1<<1)
 
 static Blt_SwitchSpec joinSwitches[] = 
 {
@@ -530,7 +530,7 @@ typedef struct {
     BLT_TABLE_ITERATOR ri, ci;
 } AddSwitches;
 
-#define ADD_NOTAGS	(1<<1)
+#define ADD_NOTAGS      (1<<1)
 
 static Blt_SwitchSpec addSwitches[] = 
 {
@@ -593,17 +593,17 @@ typedef struct {
     BLT_TABLE_ITERATOR ri, ci;
 } SortSwitches;
 
-#define SORT_UNIQUE	(1<<16)
-#define SORT_VALUES	(1<<17)
-#define SORT_LIST	(1<<18)
-#define SORT_NONEMPTY	(1<<19)
+#define SORT_UNIQUE     (1<<16)
+#define SORT_VALUES     (1<<17)
+#define SORT_LIST       (1<<18)
+#define SORT_NONEMPTY   (1<<19)
 
 static Blt_SwitchSpec sortSwitches[] = 
 {
-    {BLT_SWITCH_BITMASK, "-ascii",	"", (char *)NULL,
+    {BLT_SWITCH_BITMASK, "-ascii",      "", (char *)NULL,
 	Blt_Offset(SortSwitches, sortFlags),  0, TABLE_SORT_ASCII},
     {BLT_SWITCH_CUSTOM, "-columns", "", (char *)NULL,
-        Blt_Offset(SortSwitches, ci), 0, 0, &columnIterSwitch},
+	Blt_Offset(SortSwitches, ci), 0, 0, &columnIterSwitch},
     {BLT_SWITCH_BITMASK, "-decreasing", "", (char *)NULL,
 	Blt_Offset(SortSwitches, sortFlags), 0, TABLE_SORT_DECREASING},
     {BLT_SWITCH_BITMASK, "-dictionary", "", (char *)NULL,
@@ -615,7 +615,7 @@ static Blt_SwitchSpec sortSwitches[] =
     {BLT_SWITCH_BITMASK, "-nonempty", "", (char *)NULL,
 	Blt_Offset(SortSwitches, flags), 0, SORT_NONEMPTY|SORT_LIST},
     {BLT_SWITCH_CUSTOM, "-rows", "", (char *)NULL,
-        Blt_Offset(SortSwitches, ri), 0, 0, &rowIterSwitch},
+	Blt_Offset(SortSwitches, ri), 0, 0, &rowIterSwitch},
     {BLT_SWITCH_BITMASK, "-unique", "", (char *)NULL,
 	Blt_Offset(SortSwitches, flags), 0, SORT_UNIQUE|SORT_LIST},
     {BLT_SWITCH_BITMASK, "-values", "", (char *)NULL,
@@ -645,11 +645,11 @@ static Blt_SwitchSpec notifySwitches[] =
 };
 
 typedef struct {
-    BLT_TABLE table;			/* Table to be evaluated */
-    BLT_TABLE_ROW row;			/* Current row. */
-    Blt_HashTable varTable;		/* Variable cache. */
+    BLT_TABLE table;                    /* Table to be evaluated */
+    BLT_TABLE_ROW row;                  /* Current row. */
+    Blt_HashTable varTable;             /* Variable cache. */
     BLT_TABLE_ITERATOR iter;
-    Tcl_Namespace *nsPtr;		/* Old namespace. */
+    Tcl_Namespace *nsPtr;               /* Old namespace. */
 
     /* Public values */
     Tcl_Obj *emptyValueObjPtr;
@@ -658,7 +658,7 @@ typedef struct {
     long maxMatches;
 } FindSwitches;
 
-#define FIND_INVERT	(1<<0)
+#define FIND_INVERT     (1<<0)
 
 static Blt_SwitchSpec findSwitches[] = 
 {
@@ -714,25 +714,25 @@ LoadFormat(Tcl_Interp *interp, const char *name)
  *
  * PositionSwitch --
  *
- *	Convert a Tcl_Obj representing an offset in the table.
+ *      Convert a Tcl_Obj representing an offset in the table.
  *
  * Results:
- *	The return value is a standard TCL result.
+ *      The return value is a standard TCL result.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
 PositionSwitch(
-    ClientData clientData,		/* Flag indicating if the node is
+    ClientData clientData,              /* Flag indicating if the node is
 					 * considered before or after the
 					 * insertion position. */
-    Tcl_Interp *interp,			/* Interpreter to report results. */
-    const char *switchName,		/* Not used. */
-    Tcl_Obj *objPtr,			/* String representation */
-    char *record,			/* Structure record */
-    int offset,				/* Not used. */
-    int flags)				/* Indicates whether this is a row or
+    Tcl_Interp *interp,                 /* Interpreter to report results. */
+    const char *switchName,             /* Not used. */
+    Tcl_Obj *objPtr,                    /* String representation */
+    char *record,                       /* Structure record */
+    int offset,                         /* Not used. */
+    int flags)                          /* Indicates whether this is a row or
 					 * column index. */
 {
     InsertSwitches *insertPtr = (InsertSwitches *)record;
@@ -771,10 +771,10 @@ PositionSwitch(
  *
  * blt_table_get_column_iter_free_proc --
  *
- *	Free the storage associated with the -columns switch.
+ *      Free the storage associated with the -columns switch.
  *
  * Results:
- *	None.
+ *      None.
  *
  *---------------------------------------------------------------------------
  */
@@ -793,25 +793,25 @@ blt_table_column_iter_free_proc(ClientData clientData, char *record,
  *
  * blt_table_column_iter_switch_proc --
  *
- *	Convert a Tcl_Obj representing an offset in the table.
+ *      Convert a Tcl_Obj representing an offset in the table.
  *
  * Results:
- *	The return value is a standard TCL result.
+ *      The return value is a standard TCL result.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 int
 blt_table_column_iter_switch_proc(
-    ClientData clientData,		/* Flag indicating if the node is
+    ClientData clientData,              /* Flag indicating if the node is
 					 * considered before or after the
 					 * insertion position. */
-    Tcl_Interp *interp,			/* Interpreter to report results. */
-    const char *switchName,		/* Not used. */
-    Tcl_Obj *objPtr,			/* String representation */
-    char *record,			/* Structure record */
-    int offset,				/* Offset to field in structure */
-    int flags)				/* Not used. */
+    Tcl_Interp *interp,                 /* Interpreter to report results. */
+    const char *switchName,             /* Not used. */
+    Tcl_Obj *objPtr,                    /* String representation */
+    char *record,                       /* Structure record */
+    int offset,                         /* Offset to field in structure */
+    int flags)                          /* Not used. */
 {
     BLT_TABLE_ITERATOR *iterPtr = (BLT_TABLE_ITERATOR *)(record + offset);
     BLT_TABLE table;
@@ -835,10 +835,10 @@ blt_table_column_iter_switch_proc(
  *
  * ColumnsFreeProc --
  *
- *	Free the storage associated with the -rows switch.
+ *      Free the storage associated with the -rows switch.
  *
  * Results:
- *	None.
+ *      None.
  *
  *---------------------------------------------------------------------------
  */
@@ -859,25 +859,25 @@ ColumnsFreeProc(ClientData clientData, char *record, int offset, int flags)
  *
  * ColumnsSwitchProc --
  *
- *	Convert a Tcl_Obj representing an list of columns in the table.
+ *      Convert a Tcl_Obj representing an list of columns in the table.
  *
  * Results:
- *	The return value is a standard TCL result.
+ *      The return value is a standard TCL result.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
 ColumnsSwitchProc(
-    ClientData clientData,		/* Flag indicating if the node is
+    ClientData clientData,              /* Flag indicating if the node is
 					 * considered before or after the
 					 * insertion position. */
-    Tcl_Interp *interp,			/* Interpreter to report results. */
-    const char *switchName,		/* Not used. */
-    Tcl_Obj *objPtr,			/* String representation */
-    char *record,			/* Structure record */
-    int offset,				/* Not used. */
-    int flags)				/* Indicates whether this is a row or
+    Tcl_Interp *interp,                 /* Interpreter to report results. */
+    const char *switchName,             /* Not used. */
+    Tcl_Obj *objPtr,                    /* String representation */
+    char *record,                       /* Structure record */
+    int offset,                         /* Not used. */
+    int flags)                          /* Indicates whether this is a row or
 					 * column index. */
 {
     SortSwitches *sortPtr = (SortSwitches *)record;
@@ -912,10 +912,10 @@ ColumnsSwitchProc(
  *
  * blt_table_row_iter_free_proc --
  *
- *	Free the storage associated with the -rows switch.
+ *      Free the storage associated with the -rows switch.
  *
  * Results:
- *	None.
+ *      None.
  *
  *---------------------------------------------------------------------------
  */
@@ -934,25 +934,25 @@ blt_table_row_iter_free_proc(ClientData clientData, char *record, int offset,
  *
  * blt_table_row_iter_switch_proc --
  *
- *	Convert a Tcl_Obj representing an offset in the table.
+ *      Convert a Tcl_Obj representing an offset in the table.
  *
  * Results:
- *	The return value is a standard TCL result.
+ *      The return value is a standard TCL result.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 int
 blt_table_row_iter_switch_proc(
-    ClientData clientData,		/* Flag indicating if the node is
+    ClientData clientData,              /* Flag indicating if the node is
 					 * considered before or after the
 					 * insertion position. */
-    Tcl_Interp *interp,			/* Interpreter to report results. */
-    const char *switchName,		/* Not used. */
-    Tcl_Obj *objPtr,			/* String representation */
-    char *record,			/* Structure record */
-    int offset,				/* Offset to field in structure */
-    int flags)				/* Not used. */
+    Tcl_Interp *interp,                 /* Interpreter to report results. */
+    const char *switchName,             /* Not used. */
+    Tcl_Obj *objPtr,                    /* String representation */
+    char *record,                       /* Structure record */
+    int offset,                         /* Offset to field in structure */
+    int flags)                          /* Not used. */
 {
     BLT_TABLE_ITERATOR *iterPtr = (BLT_TABLE_ITERATOR *)(record + offset);
     BLT_TABLE table;
@@ -976,10 +976,10 @@ blt_table_row_iter_switch_proc(
  *
  * RowsFreeProc --
  *
- *	Free the storage associated with the -rows switch.
+ *      Free the storage associated with the -rows switch.
  *
  * Results:
- *	None.
+ *      None.
  *
  *---------------------------------------------------------------------------
  */
@@ -1000,25 +1000,25 @@ RowsFreeProc(ClientData clientData, char *record, int offset, int flags)
  *
  * RowsSwitchProc --
  *
- *	Convert a Tcl_Obj representing an list of rows in the table.
+ *      Convert a Tcl_Obj representing an list of rows in the table.
  *
  * Results:
- *	The return value is a standard TCL result.
+ *      The return value is a standard TCL result.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
 RowsSwitchProc(
-    ClientData clientData,		/* Flag indicating if the node is
+    ClientData clientData,              /* Flag indicating if the node is
 					 * considered before or after the
 					 * insertion position. */
-    Tcl_Interp *interp,			/* Interpreter to report results. */
-    const char *switchName,		/* Not used. */
-    Tcl_Obj *objPtr,			/* String representation */
-    char *record,			/* Structure record */
-    int offset,				/* Not used. */
-    int flags)				/* Indicates whether this is a row or
+    Tcl_Interp *interp,                 /* Interpreter to report results. */
+    const char *switchName,             /* Not used. */
+    Tcl_Obj *objPtr,                    /* String representation */
+    char *record,                       /* Structure record */
+    int offset,                         /* Not used. */
+    int flags)                          /* Indicates whether this is a row or
 					 * column index. */
 {
     SortSwitches *sortPtr = (SortSwitches *)record;
@@ -1053,23 +1053,23 @@ RowsSwitchProc(
  *
  * TableSwitchProc --
  *
- *	Convert a Tcl_Obj representing an offset in the table.
+ *      Convert a Tcl_Obj representing an offset in the table.
  *
  * Results:
- *	The return value is a standard TCL result.
+ *      The return value is a standard TCL result.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
 TableSwitchProc(
-    ClientData clientData,		/* Not used. */
-    Tcl_Interp *interp,			/* Interpreter to report result. */
-    const char *switchName,		/* Not used. */
-    Tcl_Obj *objPtr,			/* String representation */
-    char *record,			/* Structure record */
-    int offset,				/* Offset to field in structure */
-    int flags)				/* Not used. */
+    ClientData clientData,              /* Not used. */
+    Tcl_Interp *interp,                 /* Interpreter to report result. */
+    const char *switchName,             /* Not used. */
+    Tcl_Obj *objPtr,                    /* String representation */
+    char *record,                       /* Structure record */
+    int offset,                         /* Offset to field in structure */
+    int flags)                          /* Not used. */
 {
     BLT_TABLE *tablePtr = (BLT_TABLE *)(record + offset);
     BLT_TABLE table;
@@ -1086,10 +1086,10 @@ TableSwitchProc(
  *
  * TableFreeProc --
  *
- *	Free the storage associated with the -table switch.
+ *      Free the storage associated with the -table switch.
  *
  * Results:
- *	None.
+ *      None.
  *
  *---------------------------------------------------------------------------
  */
@@ -1107,24 +1107,24 @@ TableFreeProc(ClientData clientData, char *record, int offset, int flags)
  *
  * TypeSwitchProc --
  *
- *	Convert a Tcl_Obj representing the type of the values in a table
- *	column.
+ *      Convert a Tcl_Obj representing the type of the values in a table
+ *      column.
  *
  * Results:
- *	The return value is a standard TCL result.
+ *      The return value is a standard TCL result.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
 TypeSwitchProc(
-    ClientData clientData,		/* Not used. */
-    Tcl_Interp *interp,			/* Interpreter to report results. */
-    const char *switchName,		/* Not used. */
-    Tcl_Obj *objPtr,			/* String representation */
-    char *record,			/* Structure record */
-    int offset,				/* Offset to field in structure */
-    int flags)				/* Not used. */
+    ClientData clientData,              /* Not used. */
+    Tcl_Interp *interp,                 /* Interpreter to report results. */
+    const char *switchName,             /* Not used. */
+    Tcl_Obj *objPtr,                    /* String representation */
+    char *record,                       /* Structure record */
+    int offset,                         /* Offset to field in structure */
+    int flags)                          /* Not used. */
 {
     BLT_TABLE_COLUMN_TYPE *typePtr = (BLT_TABLE_COLUMN_TYPE *)(record + offset);
     BLT_TABLE_COLUMN_TYPE type;
@@ -1273,18 +1273,18 @@ GetTableCmdInterpData(Tcl_Interp *interp)
  *
  * NewTableCmd --
  *
- *	This is a helper routine used by TableCreateOp.  It create a
- *	new instance of a table command.  Memory is allocated for the
- *	command structure and a new TCL command is created (same as
- *	the instance name).  All table commands have hash table
- *	entries in a global (interpreter-specific) registry.
- *	
+ *      This is a helper routine used by TableCreateOp.  It create a
+ *      new instance of a table command.  Memory is allocated for the
+ *      command structure and a new TCL command is created (same as
+ *      the instance name).  All table commands have hash table
+ *      entries in a global (interpreter-specific) registry.
+ *      
  * Results:
- *	Returns a pointer to the newly allocated table command structure.
+ *      Returns a pointer to the newly allocated table command structure.
  *
  * Side Effects:
- *	Memory is allocated for the structure and a hash table entry is
- *	added.  
+ *      Memory is allocated for the structure and a hash table entry is
+ *      added.  
  *
  *---------------------------------------------------------------------------
  */
@@ -1317,14 +1317,14 @@ NewTableCmd(Tcl_Interp *interp, BLT_TABLE table, const char *name)
  *
  * GenerateName --
  *
- *	Generates an unique table command name.  Table names are in the form
- *	"datatableN", where N is a non-negative integer. Check each name
- *	generated to see if it is already a table. We want to recycle names if
- *	possible.
- *	
+ *      Generates an unique table command name.  Table names are in the form
+ *      "datatableN", where N is a non-negative integer. Check each name
+ *      generated to see if it is already a table. We want to recycle names if
+ *      possible.
+ *      
  * Results:
- *	Returns the unique name.  The string itself is stored in the dynamic
- *	string passed into the routine.
+ *      Returns the unique name.  The string itself is stored in the dynamic
+ *      string passed into the routine.
  *
  *---------------------------------------------------------------------------
  */
@@ -1339,12 +1339,12 @@ GenerateName(Tcl_Interp *interp, const char *prefix, const char *suffix,
     /* 
      * Parse the command and put back so that it's in a consistent format.
      *
-     *	t1         <current namespace>::t1
-     *	n1::t1     <current namespace>::n1::t1
-     *	::t1	   ::t1
+     *  t1         <current namespace>::t1
+     *  n1::t1     <current namespace>::n1::t1
+     *  ::t1       ::t1
      *  ::n1::t1   ::n1::t1
      */
-    instName = NULL;			/* Suppress compiler warning. */
+    instName = NULL;                    /* Suppress compiler warning. */
     for (n = 0; n < INT_MAX; n++) {
 	Blt_ObjectName objName;
 	Tcl_DString ds;
@@ -1384,27 +1384,27 @@ GenerateName(Tcl_Interp *interp, const char *prefix, const char *suffix,
  *
  * GetTableCmd --
  *
- *	Find the table command associated with the TCL command "string".
- *	
- *	We have to perform multiple lookups to get this right.  
+ *      Find the table command associated with the TCL command "string".
+ *      
+ *      We have to perform multiple lookups to get this right.  
  *
- *	The first step is to generate a canonical command name.  If an
- *	unqualified command name (i.e. no namespace qualifier) is given, we
- *	should search first the current namespace and then the global one.
- *	Most TCL commands (like Tcl_GetCmdInfo) look only at the global
- *	namespace.
+ *      The first step is to generate a canonical command name.  If an
+ *      unqualified command name (i.e. no namespace qualifier) is given, we
+ *      should search first the current namespace and then the global one.
+ *      Most TCL commands (like Tcl_GetCmdInfo) look only at the global
+ *      namespace.
  *
- *	Next check if the string is 
- *		a) a TCL command and 
- *		b) really is a command for a table object.  
- *	Tcl_GetCommandInfo will get us the objClientData field that should be
- *	a cmdPtr.  We verify that by searching our hashtable of cmdPtr
- *	addresses.
+ *      Next check if the string is 
+ *              a) a TCL command and 
+ *              b) really is a command for a table object.  
+ *      Tcl_GetCommandInfo will get us the objClientData field that should be
+ *      a cmdPtr.  We verify that by searching our hashtable of cmdPtr
+ *      addresses.
  *
  * Results:
- *	A pointer to the table command.  If no associated table command can be
- *	found, NULL is returned.  It's up to the calling routines to generate
- *	an error message.
+ *      A pointer to the table command.  If no associated table command can be
+ *      found, NULL is returned.  It's up to the calling routines to generate
+ *      an error message.
  *
  *---------------------------------------------------------------------------
  */
@@ -1420,7 +1420,7 @@ GetTableCmd(Tcl_Interp *interp, const char *name)
     /* Put apart the table name and put is back together in a standard
      * format. */
     if (!Blt_ParseObjectName(interp, name, &objName, BLT_NO_ERROR_MSG)) {
-	return NULL;		/* No such parent namespace. */
+	return NULL;            /* No such parent namespace. */
     }
     /* Rebuild the fully qualified name. */
     qualName = Blt_MakeQualifiedName(&objName, &ds);
@@ -1438,11 +1438,11 @@ GetTableCmd(Tcl_Interp *interp, const char *name)
  *
  * GetTraceFlags --
  *
- *	Parses a string representation of the trace bit flags and returns the
- *	mask.
+ *      Parses a string representation of the trace bit flags and returns the
+ *      mask.
  *
  * Results:
- *	The trace mask is returned.
+ *      The trace mask is returned.
  *
  *---------------------------------------------------------------------------
  */
@@ -1456,13 +1456,13 @@ GetTraceFlags(const char *string)
     for (p = string; *p != '\0'; p++) {
 	switch (toupper(UCHAR(*p))) {
 	case 'R':
-	    flags |= TABLE_TRACE_READS;	break;
+	    flags |= TABLE_TRACE_READS; break;
 	case 'W':
-	    flags |= TABLE_TRACE_WRITES;	break;
+	    flags |= TABLE_TRACE_WRITES;        break;
 	case 'U':
-	    flags |= TABLE_TRACE_UNSETS;	break;
+	    flags |= TABLE_TRACE_UNSETS;        break;
 	case 'C':
-	    flags |= TABLE_TRACE_CREATES;	break;
+	    flags |= TABLE_TRACE_CREATES;       break;
 	default:
 	    return -1;
 	}
@@ -1475,14 +1475,14 @@ GetTraceFlags(const char *string)
  *
  * PrintTraceFlags --
  *
- *	Generates a string representation of the trace bit flags.  It's
- *	assumed that the provided string is at least 5 bytes.
+ *      Generates a string representation of the trace bit flags.  It's
+ *      assumed that the provided string is at least 5 bytes.
  *
  * Results:
- *	None.
+ *      None.
  *
  * Side Effects:
- *	The bitflag information is written to the provided string.
+ *      The bitflag information is written to the provided string.
  *
  *---------------------------------------------------------------------------
  */
@@ -1555,15 +1555,15 @@ PrintTraceInfo(Tcl_Interp *interp, TraceInfo *tiPtr, Tcl_Obj *listObjPtr)
  *
  * FreeNotifierInfo --
  *
- *	This is a helper routine used to delete notifiers.  It releases the
- *	Tcl_Objs used in the notification callback command and the actual
- *	table notifier.  Memory for the notifier is also freed.
+ *      This is a helper routine used to delete notifiers.  It releases the
+ *      Tcl_Objs used in the notification callback command and the actual
+ *      table notifier.  Memory for the notifier is also freed.
  *
  * Results:
- *	None.
+ *      None.
  *
  * Side Effects:
- *	Memory is deallocated and the notitifer is no longer active.
+ *      Memory is deallocated and the notitifer is no longer active.
  *
  *---------------------------------------------------------------------------
  */
@@ -1692,7 +1692,7 @@ NotifyProc(ClientData clientData, BLT_TABLE_NOTIFY_EVENT *eventPtr)
 	index = blt_table_row_index(eventPtr->row);
     } else {
 	index = blt_table_column_index(eventPtr->column);
-    }	
+    }   
     objPtr = Tcl_NewLongObj(index);
     Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
     Tcl_IncrRefCount(cmdObjPtr);
@@ -1708,12 +1708,12 @@ NotifyProc(ClientData clientData, BLT_TABLE_NOTIFY_EVENT *eventPtr)
 
 static int
 ColumnVarResolverProc(
-    Tcl_Interp *interp,			/* Current interpreter. */
-    const char *name,			/* Variable name being resolved. */
-    Tcl_Namespace *nsPtr,		/* Current namespace context. */
-    int flags,				/* TCL_LEAVE_ERR_MSG => leave error
+    Tcl_Interp *interp,                 /* Current interpreter. */
+    const char *name,                   /* Variable name being resolved. */
+    Tcl_Namespace *nsPtr,               /* Current namespace context. */
+    int flags,                          /* TCL_LEAVE_ERR_MSG => leave error
 					 * message. */
-    Tcl_Var *varPtr)			/* (out) Resolved variable. */ 
+    Tcl_Var *varPtr)                    /* (out) Resolved variable. */ 
 {
     Blt_HashEntry *hPtr;
     BLT_TABLE_COLUMN col;
@@ -1730,19 +1730,19 @@ ColumnVarResolverProc(
 	 * current namespace.  But this routine should never be called unless
 	 * we're in a namespace that with linked with this variable
 	 * resolver. */
-	return TCL_CONTINUE;	
+	return TCL_CONTINUE;    
     }
     switchesPtr = Blt_GetHashValue(hPtr);
     c = name[0];
     if ((c == '#') && (strcmp(name, "#") == 0)) {
-        /* Look up the column from the variable name given. */
-        valueObjPtr = Tcl_NewLongObj(blt_table_row_index(switchesPtr->row));
-        *varPtr = Blt_GetCachedVar(&switchesPtr->varTable, name, valueObjPtr);
-        return TCL_OK;
+	/* Look up the column from the variable name given. */
+	valueObjPtr = Tcl_NewLongObj(blt_table_row_index(switchesPtr->row));
+	*varPtr = Blt_GetCachedVar(&switchesPtr->varTable, name, valueObjPtr);
+	return TCL_OK;
     } 
     if ((isdigit(c)) && (Blt_GetLong((Tcl_Interp *)NULL, (char *)name,
-                                     &index) == TCL_OK)) {
- 	col = blt_table_get_column_by_index(switchesPtr->table, index);
+				     &index) == TCL_OK)) {
+	col = blt_table_get_column_by_index(switchesPtr->table, index);
     } else {
 	col = blt_table_get_column_by_label(switchesPtr->table, name);
     }
@@ -1756,8 +1756,8 @@ ColumnVarResolverProc(
     if (valueObjPtr == NULL) {
 	valueObjPtr = switchesPtr->emptyValueObjPtr;
 	if (valueObjPtr != NULL) {
-            Tcl_IncrRefCount(valueObjPtr);
-        } else {
+	    Tcl_IncrRefCount(valueObjPtr);
+	} else {
 	    return TCL_CONTINUE;
 	}
     }
@@ -1797,7 +1797,7 @@ FindRows(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr,
     int result = TCL_OK;
 
     Tcl_AddInterpResolvers(interp, TABLE_FIND_KEY, (Tcl_ResolveCmdProc*)NULL,
-        ColumnVarResolverProc, (Tcl_ResolveCompiledVarProc*)NULL);
+	ColumnVarResolverProc, (Tcl_ResolveCompiledVarProc*)NULL);
 
     dataPtr = GetTableCmdInterpData(interp);
     nsPtr = Tcl_GetCurrentNamespace(interp);
@@ -1857,8 +1857,8 @@ FindRows(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr,
 
 static int
 AppendColumn(Tcl_Interp *interp, BLT_TABLE src, BLT_TABLE dst,
-    BLT_TABLE_COLUMN srcCol,		/* Column in the source table. */
-    BLT_TABLE_COLUMN dstCol)		/* Column in the dstination table. */
+    BLT_TABLE_COLUMN srcCol,            /* Column in the source table. */
+    BLT_TABLE_COLUMN dstCol)            /* Column in the dstination table. */
 {
     long i, j, oldNumRows, need;
 
@@ -1883,17 +1883,17 @@ AppendColumn(Tcl_Interp *interp, BLT_TABLE src, BLT_TABLE dst,
     }
     blt_table_set_column_type(dst, dstCol, blt_table_column_type(dstCol));
     return TCL_OK;
-}	    
+}           
 
 static int
 CopyColumn(Tcl_Interp *interp, BLT_TABLE src, BLT_TABLE dst,
-    BLT_TABLE_COLUMN c1,		/* Column in the source table. */
-    BLT_TABLE_COLUMN c2)		/* Column in the destination table. */
+    BLT_TABLE_COLUMN c1,                /* Column in the source table. */
+    BLT_TABLE_COLUMN c2)                /* Column in the destination table. */
 {
     long i, srcNumRows, dstNumRows;
 
     if ((blt_table_same_object(src, dst)) && (c1 == c2)) {
-	return TCL_OK;			/* Source and destination columns are
+	return TCL_OK;                  /* Source and destination columns are
 					 * the same column in the same
 					 * table. */
     }
@@ -1929,12 +1929,12 @@ CopyColumn(Tcl_Interp *interp, BLT_TABLE src, BLT_TABLE dst,
 	blt_table_unset_value(dst, r2, c2);
     }
     return TCL_OK;
-}	    
+}           
 
 static void
 CopyColumnTags(BLT_TABLE src, BLT_TABLE dst,
-    BLT_TABLE_COLUMN c1,	/* Column in the source table. */
-    BLT_TABLE_COLUMN c2)	/* Column in the dstination table. */
+    BLT_TABLE_COLUMN c1,        /* Column in the source table. */
+    BLT_TABLE_COLUMN c2)        /* Column in the dstination table. */
 {
     Blt_Chain chain;
     Blt_ChainLink link;
@@ -1942,13 +1942,13 @@ CopyColumnTags(BLT_TABLE src, BLT_TABLE dst,
     /* Find all tags for with this column index. */
     chain = blt_table_get_column_tags(src, c1);
     for (link = Blt_Chain_FirstLink(chain); link != NULL;
-         link = Blt_Chain_NextLink(link)) {
-        const char *tag;
+	 link = Blt_Chain_NextLink(link)) {
+	const char *tag;
 
-        tag = Blt_Chain_GetValue(link);
-        blt_table_set_column_tag(NULL, dst, c2, tag);
+	tag = Blt_Chain_GetValue(link);
+	blt_table_set_column_tag(NULL, dst, c2, tag);
     }
-}	    
+}           
 
 static void
 ClearTable(BLT_TABLE table) 
@@ -1985,7 +1985,7 @@ CopyTable(Tcl_Interp *interp, BLT_TABLE src, BLT_TABLE dst)
     long i;
     long count;
     if (blt_table_same_object(src, dst)) {
-	return TCL_OK;			/* Source and destination are the
+	return TCL_OK;                  /* Source and destination are the
 					 * same table. */
     }
     ClearTable(dst);
@@ -2021,19 +2021,19 @@ CopyTable(Tcl_Interp *interp, BLT_TABLE src, BLT_TABLE dst)
  *
  * ColumnCopyOp --
  *
- *	Copies the specified columns to the table.  A different table may be
- *	selected as the source.
+ *      Copies the specified columns to the table.  A different table may be
+ *      selected as the source.
  * 
  * Results:
- *	A standard TCL result. If the tag or column index is invalid,
- *	TCL_ERROR is returned and an error message is left in the interpreter
- *	result.
+ *      A standard TCL result. If the tag or column index is invalid,
+ *      TCL_ERROR is returned and an error message is left in the interpreter
+ *      result.
  *
  * Example:
- *	$dst column copy $srccol $dstcol ?-table srcTable?
+ *      $dst column copy $srccol $dstcol ?-table srcTable?
  *
- *	-append    yes 
- *	-new	   yes
+ *      -append    yes 
+ *      -new       yes
  *
  *---------------------------------------------------------------------------
  */
@@ -2094,17 +2094,17 @@ ColumnCopyOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * ColumnJoinOp --
  *
- *	Joins by column the source table onto the destination.  Duplicate
- *	column labels are allowed.
+ *      Joins by column the source table onto the destination.  Duplicate
+ *      column labels are allowed.
  * 
  * Results:
- *	A standard TCL result. If the tag or column index is invalid,
- *	TCL_ERROR is returned and an error message is left in the interpreter
- *	result.
+ *      A standard TCL result. If the tag or column index is invalid,
+ *      TCL_ERROR is returned and an error message is left in the interpreter
+ *      result.
  *
  * Example:
  *
- *	$dst column join $src -columns $columns  
+ *      $dst column join $src -columns $columns  
  *
  *---------------------------------------------------------------------------
  */
@@ -2198,16 +2198,16 @@ ColumnJoinOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * ColumnDeleteOp --
  *
- *	Deletes the columns designated.  One or more columns may be deleted
- *	using a tag.
+ *      Deletes the columns designated.  One or more columns may be deleted
+ *      using a tag.
  * 
  * Results:
- *	A standard TCL result. If the tag or column index is invalid,
- *	TCL_ERROR is returned and an error message is left in the interpreter
- *	result.
+ *      A standard TCL result. If the tag or column index is invalid,
+ *      TCL_ERROR is returned and an error message is left in the interpreter
+ *      result.
  *
  * Example:
- *	$t column delete ?column?...
+ *      $t column delete ?column?...
  *
  *---------------------------------------------------------------------------
  */
@@ -2243,16 +2243,16 @@ ColumnDeleteOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * ColumnDupOp --
  *
- *	Duplicates the specified columns in the table.  This differs from
- *	ColumnCopyOp, since the same table is the source and destination.
+ *      Duplicates the specified columns in the table.  This differs from
+ *      ColumnCopyOp, since the same table is the source and destination.
  * 
  * Results:
- *	A standard TCL result. If the tag or column index is invalid,
- *	TCL_ERROR is returned and an error message is left in the interpreter
- *	result.
+ *      A standard TCL result. If the tag or column index is invalid,
+ *      TCL_ERROR is returned and an error message is left in the interpreter
+ *      result.
  *
  * Example:
- *	$dst column dup column... 
+ *      $dst column dup column... 
  *
  *---------------------------------------------------------------------------
  */
@@ -2304,16 +2304,16 @@ ColumnDupOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * ColumnEmptyOp --
  *
- *	Returns a list of the rows with empty values in the given column.
+ *      Returns a list of the rows with empty values in the given column.
  *
  * Results:
- *	A standard TCL result. If the tag or column index is invalid,
- *	TCL_ERROR is returned and an error message is left in the
- *	interpreter result.
+ *      A standard TCL result. If the tag or column index is invalid,
+ *      TCL_ERROR is returned and an error message is left in the
+ *      interpreter result.
  *
  * Example:
- *	$t column empty column
- *	
+ *      $t column empty column
+ *      
  *---------------------------------------------------------------------------
  */
 static int
@@ -2330,13 +2330,13 @@ ColumnEmptyOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     }
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
     for (row = blt_table_first_row(cmdPtr->table); row != NULL;
-         row = blt_table_next_row(cmdPtr->table, row)) {
-        if (!blt_table_value_exists(cmdPtr->table, row, col))  {
-            Tcl_Obj *objPtr;
-            
-            objPtr = Tcl_NewLongObj(blt_table_row_index(row));
-            Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-        }
+	 row = blt_table_next_row(cmdPtr->table, row)) {
+	if (!blt_table_value_exists(cmdPtr->table, row, col))  {
+	    Tcl_Obj *objPtr;
+	    
+	    objPtr = Tcl_NewLongObj(blt_table_row_index(row));
+	    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+	}
     }
     Tcl_SetObjResult(interp, listObjPtr);
     return TCL_OK;
@@ -2347,21 +2347,21 @@ ColumnEmptyOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * ColumnExistsOp --
  *
- *	Indicates is the given column exists.  The column description can be
- *	either an index, label, or single tag.
+ *      Indicates is the given column exists.  The column description can be
+ *      either an index, label, or single tag.
  *
- *	Problem: The blt_table_iterate_column function checks both for
- *		 1) valid/invalid indices, labels, and tags and 2) 
- *		 syntax errors.
+ *      Problem: The blt_table_iterate_column function checks both for
+ *               1) valid/invalid indices, labels, and tags and 2) 
+ *               syntax errors.
  * 
  * Results:
- *	A standard TCL result. If the tag or column index is invalid,
- *	TCL_ERROR is returned and an error message is left in the interpreter
- *	result.
+ *      A standard TCL result. If the tag or column index is invalid,
+ *      TCL_ERROR is returned and an error message is left in the interpreter
+ *      result.
  *
  * Example:
- *	$t column exists n
- *	
+ *      $t column exists n
+ *      
  *---------------------------------------------------------------------------
  */
 static int
@@ -2381,16 +2381,16 @@ ColumnExistsOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * ColumnExtendOp --
  *
- *	Extends the table by the given number of columns.
+ *      Extends the table by the given number of columns.
  * 
  * Results:
- *	A standard TCL result. If the tag or column index is invalid,
- *	TCL_ERROR is returned and an error message is left in the interpreter
- *	result.
+ *      A standard TCL result. If the tag or column index is invalid,
+ *      TCL_ERROR is returned and an error message is left in the interpreter
+ *      result.
  *
  * Example:
- *	$t column extend n 
- *	
+ *      $t column extend n 
+ *      
  *---------------------------------------------------------------------------
  */
 static int
@@ -2425,7 +2425,7 @@ ColumnExtendOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     } else {
 	addLabels = TRUE;
 	n = objc - 3;
-    }	    
+    }       
     if (n == 0) {
 	return TCL_OK;
     }
@@ -2463,18 +2463,18 @@ ColumnExtendOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * ColumnGetOp --
  *
- *	Retrieves a column of values.  The column argument can be either a
- *	tag, label, or column index.  If it is a tag, it must refer to exactly
- *	one column.  If row arguments exist they must refer to label or row.
- *	We always return the row label.
+ *      Retrieves a column of values.  The column argument can be either a
+ *      tag, label, or column index.  If it is a tag, it must refer to exactly
+ *      one column.  If row arguments exist they must refer to label or row.
+ *      We always return the row label.
  * 
  * Results:
- *	A standard TCL result.  If successful, a list of values is returned in
- *	the interpreter result.  If the column index is invalid, TCL_ERROR is
- *	returned and an error message is left in the interpreter result.
- *	
+ *      A standard TCL result.  If successful, a list of values is returned in
+ *      the interpreter result.  If the column index is invalid, TCL_ERROR is
+ *      returned and an error message is left in the interpreter result.
+ *      
  * Example:
- *	$t column get -labels $c ?row...? 
+ *      $t column get -labels $c ?row...? 
  *
  *---------------------------------------------------------------------------
  */
@@ -2542,7 +2542,7 @@ ColumnGetOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	    }
 	    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
 	}
-        blt_table_free_iterator_objv(&ri);
+	blt_table_free_iterator_objv(&ri);
     }
     Tcl_SetObjResult(interp, listObjPtr);
     return TCL_OK;
@@ -2553,17 +2553,17 @@ ColumnGetOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * ColumnIndexOp --
  *
- *	Returns the column index of the given column tag, label, or index.  A
- *	tag can't represent more than one column.
+ *      Returns the column index of the given column tag, label, or index.  A
+ *      tag can't represent more than one column.
  * 
  * Results:
- *	A standard TCL result. If the tag or column index is invalid,
- *	TCL_ERROR is returned and an error message is left in the interpreter
- *	result.
+ *      A standard TCL result. If the tag or column index is invalid,
+ *      TCL_ERROR is returned and an error message is left in the interpreter
+ *      result.
  *
  * Example:
- *	$t column index $column
- *	
+ *      $t column index $column
+ *      
  *---------------------------------------------------------------------------
  */
 static int
@@ -2586,16 +2586,16 @@ ColumnIndexOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * ColumnIndicesOp --
  *
- *	Returns a list of indices for the given columns.  
+ *      Returns a list of indices for the given columns.  
  * 
  * Results:
- *	A standard TCL result. If the tag or column index is invalid,
- *	TCL_ERROR is returned and an error message is left in the interpreter
- *	result.
+ *      A standard TCL result. If the tag or column index is invalid,
+ *      TCL_ERROR is returned and an error message is left in the interpreter
+ *      result.
  *
  * Example:
- *	$t column indices patterns...
- *	
+ *      $t column indices patterns...
+ *      
  *---------------------------------------------------------------------------
  */
 static int
@@ -2608,7 +2608,7 @@ ColumnIndicesOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 
     switches.flags = 0;
     i = Blt_ParseSwitches(interp, indicesSwitches, objc - 3, objv + 3, 
-        &switches, BLT_SWITCH_OBJV_PARTIAL);
+	&switches, BLT_SWITCH_OBJV_PARTIAL);
     if (i < 0)  {
 	return TCL_ERROR;
     }
@@ -2621,34 +2621,34 @@ ColumnIndicesOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	int i;
 
 	label = blt_table_column_label(col);
-        if (switches.flags & INDICES_DUPLICATES) {
-            Blt_HashTable *tablePtr;
+	if (switches.flags & INDICES_DUPLICATES) {
+	    Blt_HashTable *tablePtr;
 
-            tablePtr = blt_table_column_get_label_table(cmdPtr->table, label);
-            if (tablePtr->numEntries == 1) {
-                continue;
-            }
-        }
-        if (switches.flags & INDICES_EMPTY) {
-            BLT_TABLE_ROW row;
+	    tablePtr = blt_table_column_get_label_table(cmdPtr->table, label);
+	    if (tablePtr->numEntries == 1) {
+		continue;
+	    }
+	}
+	if (switches.flags & INDICES_EMPTY) {
+	    BLT_TABLE_ROW row;
 
-            for (row = blt_table_first_row(cmdPtr->table); row != NULL;
-                 row = blt_table_next_row(cmdPtr->table, row)) {
-                if (blt_table_value_exists(cmdPtr->table, row, col)) {
-                    break;
-                }
-            }
-            if (row != NULL) {
-                continue;
-            }
-        }
+	    for (row = blt_table_first_row(cmdPtr->table); row != NULL;
+		 row = blt_table_next_row(cmdPtr->table, row)) {
+		if (blt_table_value_exists(cmdPtr->table, row, col)) {
+		    break;
+		}
+	    }
+	    if (row != NULL) {
+		continue;
+	    }
+	}
 	match = (objc == 3);
 	for (i = 3; i < objc; i++) {
 	    char *pattern;
 
 	    pattern = Tcl_GetString(objv[i]);
 	    if (Tcl_StringMatch(label, pattern)) {
-                    
+		    
 		match = TRUE;
 		break;
 	    }
@@ -2669,18 +2669,18 @@ ColumnIndicesOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * ColumnCreateOp --
  *
- *	Creates a single new column in the table.  The location of the new
- *	column may be specified by -before or -after switches.  By default the
- *	new column is added to the end of the table.
+ *      Creates a single new column in the table.  The location of the new
+ *      column may be specified by -before or -after switches.  By default the
+ *      new column is added to the end of the table.
  * 
  * Results:
- *	A standard TCL result. If the tag or column index is invalid,
- *	TCL_ERROR is returned and an error message is left in the interpreter
- *	result.
+ *      A standard TCL result. If the tag or column index is invalid,
+ *      TCL_ERROR is returned and an error message is left in the interpreter
+ *      result.
  *
  * Example:
- *	$t column create -before 0 -after 1 -label label
- *	
+ *      $t column create -before 0 -after 1 -label label
+ *      
  *---------------------------------------------------------------------------
  */
 static int
@@ -2739,19 +2739,19 @@ ColumnCreateOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * ColumnLabelOp --
  *
- *	Gets/sets one or more column labels.  
+ *      Gets/sets one or more column labels.  
  * 
  * Results:
- *	A standard TCL result.  If successful, the old column label is
- *	returned in the interpreter result.  If the column index is invalid,
- *	TCL_ERROR is returned and an error message is left in the interpreter
- *	result.
- *	
+ *      A standard TCL result.  If successful, the old column label is
+ *      returned in the interpreter result.  If the column index is invalid,
+ *      TCL_ERROR is returned and an error message is left in the interpreter
+ *      result.
+ *      
  * Example:
- *	$t column label column ?label? ?column label? 
- *	$t column label 0
- *	$t column label 0 newLabel 
- *	$t column label 0 lab1 1 lab2 2 lab3 4 lab5
+ *      $t column label column ?label? ?column label? 
+ *      $t column label 0
+ *      $t column label 0 newLabel 
+ *      $t column label 0 lab1 1 lab2 2 lab3 4 lab5
  *
  *---------------------------------------------------------------------------
  */
@@ -2790,7 +2790,7 @@ ColumnLabelOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	    }
 	    label = Tcl_GetString(objv[i+1]);
 	    if (label[0] == '\0') {
-		continue;		/* Don't set empty labels. */
+		continue;               /* Don't set empty labels. */
 	    }
 	    if (blt_table_set_column_label(interp, table, col, label) != TCL_OK) {
 		return TCL_ERROR;
@@ -2806,14 +2806,14 @@ ColumnLabelOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * ColumnLabelsOp --
  *
- *	Gets/sets all the column labels in the table.  
+ *      Gets/sets all the column labels in the table.  
  * 
  * Results:
- *	A standard TCL result.  If successful, a list of values is returned in
- *	the interpreter result.  
- *	
+ *      A standard TCL result.  If successful, a list of values is returned in
+ *      the interpreter result.  
+ *      
  * Example:
- *	$t column labels ?labelList? 
+ *      $t column labels ?labelList? 
  *
  *---------------------------------------------------------------------------
  */
@@ -2869,16 +2869,16 @@ ColumnLabelsOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * ColumnCountOp --
  *
- *	Returns the number of columns the client sees.
+ *      Returns the number of columns the client sees.
  * 
  * Results:
- *	A standard TCL result.  If successful, the old column label is
- *	returned in the interpreter result.  If the column index is invalid,
- *	TCL_ERROR is returned and an error message is left in the interpreter
- *	result.
- *	
+ *      A standard TCL result.  If successful, the old column label is
+ *      returned in the interpreter result.  If the column index is invalid,
+ *      TCL_ERROR is returned and an error message is left in the interpreter
+ *      result.
+ *      
  * Example:
- *	$t column count ?$column? 
+ *      $t column count ?$column? 
  *
  *---------------------------------------------------------------------------
  */
@@ -2897,7 +2897,7 @@ ColumnCountOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	if (col == NULL) {
 	    return TCL_ERROR;
 	}
-	count = 0;		
+	count = 0;              
 	for (row = blt_table_first_row(cmdPtr->table); row != NULL;
 	     row = blt_table_next_row(cmdPtr->table, row)) {
 	    if (blt_table_value_exists(cmdPtr->table, row, col)) {
@@ -2915,14 +2915,14 @@ ColumnCountOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * ColumnMoveOp --
  *
- *	Moves the given number of columns to another location in the table.
+ *      Moves the given number of columns to another location in the table.
  * 
  * Results:
- *	A standard TCL result. If the column index is invalid, TCL_ERROR is
- *	returned and an error message is left in the interpreter result.
- *	
+ *      A standard TCL result. If the column index is invalid, TCL_ERROR is
+ *      returned and an error message is left in the interpreter result.
+ *      
  * Example:
- *	$t column move from to ?n?
+ *      $t column move from to ?n?
  *
  *---------------------------------------------------------------------------
  */
@@ -2967,14 +2967,14 @@ ColumnMoveOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * ColumnNamesOp --
  *
- *	Reports the labels of all columns.  
+ *      Reports the labels of all columns.  
  * 
  * Results:
- *	Always returns TCL_OK.  The interpreter result is a list of column
- *	labels.
- *	
+ *      Always returns TCL_OK.  The interpreter result is a list of column
+ *      labels.
+ *      
  * Example:
- *	$t column names -duplicates ?pattern...?
+ *      $t column names -duplicates ?pattern...?
  *
  *---------------------------------------------------------------------------
  */
@@ -3019,16 +3019,16 @@ ColumnNamesOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * ColumnNonEmptyOp --
  *
- *	Returns a list of the rows with empty values in the given column.
+ *      Returns a list of the rows with empty values in the given column.
  *
  * Results:
- *	A standard TCL result. If the tag or column index is invalid,
- *	TCL_ERROR is returned and an error message is left in the interpreter
- *	result.
+ *      A standard TCL result. If the tag or column index is invalid,
+ *      TCL_ERROR is returned and an error message is left in the interpreter
+ *      result.
  *
  * Example:
- *	$t column nonempty column
- *	
+ *      $t column nonempty column
+ *      
  *---------------------------------------------------------------------------
  */
 static int
@@ -3045,13 +3045,13 @@ ColumnNonEmptyOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc,
     }
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
     for (row = blt_table_first_row(cmdPtr->table); row != NULL;
-         row = blt_table_next_row(cmdPtr->table, row)) {
-        if (blt_table_value_exists(cmdPtr->table, row, col))  {
-            Tcl_Obj *objPtr;
-            
-            objPtr = Tcl_NewLongObj(blt_table_row_index(row));
-            Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-        }
+	 row = blt_table_next_row(cmdPtr->table, row)) {
+	if (blt_table_value_exists(cmdPtr->table, row, col))  {
+	    Tcl_Obj *objPtr;
+	    
+	    objPtr = Tcl_NewLongObj(blt_table_row_index(row));
+	    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+	}
     }
     Tcl_SetObjResult(interp, listObjPtr);
     return TCL_OK;
@@ -3062,21 +3062,21 @@ ColumnNonEmptyOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc,
  *
  * ColumnNotifyOp --
  *
- *	Creates a notifier for this instance.  Notifiers represent a bitmask
- *	of events and a command prefix to be invoked when a matching event
- *	occurs.
+ *      Creates a notifier for this instance.  Notifiers represent a bitmask
+ *      of events and a command prefix to be invoked when a matching event
+ *      occurs.
  *
- *	The command prefix is parsed and saved in an array of Tcl_Objs. Extra
- *	slots are allocated for the
+ *      The command prefix is parsed and saved in an array of Tcl_Objs. Extra
+ *      slots are allocated for the
  *
  * Results:
- *	A standard TCL result.  The name of the new notifier is returned in
- *	the interpreter result.  Otherwise, if it failed to parse a switch,
- *	then TCL_ERROR is returned and an error message is left in the
- *	interpreter result.
+ *      A standard TCL result.  The name of the new notifier is returned in
+ *      the interpreter result.  Otherwise, if it failed to parse a switch,
+ *      then TCL_ERROR is returned and an error message is left in the
+ *      interpreter result.
  *
  * Example:
- *	table0 column notify col ?flags? command arg
+ *      table0 column notify col ?flags? command arg
  *
  *---------------------------------------------------------------------------
  */
@@ -3129,7 +3129,7 @@ ColumnNotifyOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	notifyPtr->notifier = blt_table_create_column_tag_notifier(interp, 
 		cmdPtr->table, tag, switches.flags, NotifyProc, 
 		NotifierDeleteProc, notifyPtr);
-    }	
+    }   
     /* Stash away the command in structure and pass that to the notifier. */
     notifyPtr->cmdObjPtr = Tcl_NewListObj(objc - i, objv + i);
     Tcl_IncrRefCount(notifyPtr->cmdObjPtr);
@@ -3155,17 +3155,17 @@ ColumnNotifyOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * ColumnSetOp --
  *
- *	Sets one of values in a column.  One or more columns may be set using
- *	a tag.  The row order is always the table's current view of the table.
- *	There may be less values than needed.
+ *      Sets one of values in a column.  One or more columns may be set using
+ *      a tag.  The row order is always the table's current view of the table.
+ *      There may be less values than needed.
  * 
  * Results:
- *	A standard TCL result. If the tag or column index is invalid,
- *	TCL_ERROR is returned and an error message is left in the interpreter
- *	result.
- *	
+ *      A standard TCL result. If the tag or column index is invalid,
+ *      TCL_ERROR is returned and an error message is left in the interpreter
+ *      result.
+ *      
  * Example:
- *	$t column set $column a 1 b 2 c 3
+ *      $t column set $column a 1 b 2 c 3
  *
  *---------------------------------------------------------------------------
  */
@@ -3220,11 +3220,11 @@ ColumnSetOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * ColumnTagAddOp --
  *
- *	Adds a given tag to one or more columns.  Tag names can't start with a
- *	digit (to distinquish them from node ids) and can't be a reserved tag
- *	("all", "add", or "end").
+ *      Adds a given tag to one or more columns.  Tag names can't start with a
+ *      digit (to distinquish them from node ids) and can't be a reserved tag
+ *      ("all", "add", or "end").
  *
- *	.t column tag add tag ?column...?
+ *      .t column tag add tag ?column...?
  *
  *---------------------------------------------------------------------------
  */
@@ -3262,11 +3262,11 @@ ColumnTagAddOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * ColumnTagDeleteOp --
  *
- *	Removes a given tag from one or more columns. If a tag doesn't exist or
- *	is a reserved tag ("all" or "end"), nothing will be done and no error
- *	message will be returned.
+ *      Removes a given tag from one or more columns. If a tag doesn't exist or
+ *      is a reserved tag ("all" or "end"), nothing will be done and no error
+ *      message will be returned.
  *
- *	.t column tag delete tag ?column...?
+ *      .t column tag delete tag ?column...?
  *
  *---------------------------------------------------------------------------
  */
@@ -3302,10 +3302,10 @@ ColumnTagDeleteOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc,
  *
  * ColumnTagExistsOp --
  *
- *	Returns the existence of a tag in the table.  If a column is 
- *	specified then the tag is search for for that column.
+ *      Returns the existence of a tag in the table.  If a column is 
+ *      specified then the tag is search for for that column.
  *
- *	.t tag column exists tag ?column?
+ *      .t tag column exists tag ?column?
  *
  *---------------------------------------------------------------------------
  */
@@ -3340,10 +3340,10 @@ ColumnTagExistsOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc,
  *
  * ColumnTagForgetOp --
  *
- *	Removes the given tags from all nodes.
+ *      Removes the given tags from all nodes.
  *
  * Example:
- *	$t column tag forget tag1 tag2 tag3...
+ *      $t column tag forget tag1 tag2 tag3...
  *
  *---------------------------------------------------------------------------
  */
@@ -3368,10 +3368,10 @@ ColumnTagForgetOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc,
  *
  * ColumnTagGetOp --
  *
- *	Returns the tag names for a given column.  If one of more pattern
- *	arguments are provided, then only those matching tags are returned.
+ *      Returns the tag names for a given column.  If one of more pattern
+ *      arguments are provided, then only those matching tags are returned.
  *
- *	.t column tag get column pat1 pat2...
+ *      .t column tag get column pat1 pat2...
  *
  *---------------------------------------------------------------------------
  */
@@ -3461,7 +3461,7 @@ GetColumnTagMatches(Tcl_Interp *interp, BLT_TABLE table, int objc,
 	    for (j = 0; j < numCols; j++) {
 		matches[j] = TRUE;
 	    }
-	    return matches;		/* Don't care other tags. */
+	    return matches;             /* Don't care other tags. */
 	} 
 	if (strcmp("end", tag) == 0) {
 	    matches[numCols - 1] = TRUE;
@@ -3470,7 +3470,7 @@ GetColumnTagMatches(Tcl_Interp *interp, BLT_TABLE table, int objc,
     /* Now check user-defined tags. */
     for (i = 0; i < objc; i++) {
 	Blt_Chain chain;
-        Blt_ChainLink link;
+	Blt_ChainLink link;
 	const char *tag;
 	
 	tag = Tcl_GetString(objv[i]);
@@ -3504,11 +3504,11 @@ GetColumnTagMatches(Tcl_Interp *interp, BLT_TABLE table, int objc,
  *
  * ColumnTagIndicesOp --
  *
- *	Returns column indices names for the given tags.  If one of more tag
- *	names are provided, then only those matching indices are returned.
+ *      Returns column indices names for the given tags.  If one of more tag
+ *      names are provided, then only those matching indices are returned.
  *
  * Example:
- *	.t column tag indices tag1 tag2...
+ *      .t column tag indices tag1 tag2...
  *
  *---------------------------------------------------------------------------
  */
@@ -3540,11 +3540,11 @@ ColumnTagIndicesOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc,
  *
  * ColumnTagLabelsOp --
  *
- *	Returns column labels for the given tags.  If one of more tag
- *	names are provided, then only those matching indices are returned.
+ *      Returns column labels for the given tags.  If one of more tag
+ *      names are provided, then only those matching indices are returned.
  *
  * Example:
- *	.t column tag labels tag1 tag2...
+ *      .t column tag labels tag1 tag2...
  *
  *---------------------------------------------------------------------------
  */
@@ -3582,12 +3582,12 @@ ColumnTagLabelsOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc,
  *
  * ColumnTagRangeOp --
  *
- *	Adds one or more tags for a given column.  Tag names can't start with
- *	a digit (to distinquish them from node ids) and can't be a reserved
- *	tag ("all" or "end").
+ *      Adds one or more tags for a given column.  Tag names can't start with
+ *      a digit (to distinquish them from node ids) and can't be a reserved
+ *      tag ("all" or "end").
  *
  * Example:
- *	.t column tag range $from $to tag1 tag2...
+ *      .t column tag range $from $to tag1 tag2...
  *
  *---------------------------------------------------------------------------
  */
@@ -3634,11 +3634,11 @@ ColumnTagRangeOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc,
  *
  * ColumnTagSearchOp --
  *
- *	Returns tag names for a given column.  If one of more pattern
- *	arguments are provided, then only those matching tags are returned.
+ *      Returns tag names for a given column.  If one of more pattern
+ *      arguments are provided, then only those matching tags are returned.
  *
  * Example:
- *	.t column tag find $column pat1 pat2...
+ *      .t column tag find $column pat1 pat2...
  *
  *---------------------------------------------------------------------------
  */
@@ -3657,36 +3657,36 @@ ColumnTagSearchOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc,
     }
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
     for (col = blt_table_first_tagged_column(&ci); col != NULL; 
-         col = blt_table_next_tagged_column(&ci)) {
-        Blt_Chain chain;
-        Blt_ChainLink link;
+	 col = blt_table_next_tagged_column(&ci)) {
+	Blt_Chain chain;
+	Blt_ChainLink link;
 
-        chain = blt_table_get_column_tags(table, col);
-        for (link = Blt_Chain_FirstLink(chain); link != NULL; 
-             link = Blt_Chain_NextLink(link)) {
-            const char *tag;
-            int match;
-            int i;
+	chain = blt_table_get_column_tags(table, col);
+	for (link = Blt_Chain_FirstLink(chain); link != NULL; 
+	     link = Blt_Chain_NextLink(link)) {
+	    const char *tag;
+	    int match;
+	    int i;
 
-            tag = Blt_Chain_GetValue(link);
-            match = (objc == 5);
-            for (i = 5; i < objc; i++) {
-                if (Tcl_StringMatch(tag, Tcl_GetString(objv[i]))) {
-                    match = TRUE;
-                    break;                  /* Found match. */
-                }
-            }
-            if (match) {
-                Tcl_Obj *objPtr;
-                
-                objPtr = Tcl_NewStringObj(tag, -1);
-                Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-                break;                      /* Tag matches this column. Don't
-                                             * care if it matches any other
-                                             * columns. */
-            }
-        }
-        Blt_Chain_Destroy(chain);
+	    tag = Blt_Chain_GetValue(link);
+	    match = (objc == 5);
+	    for (i = 5; i < objc; i++) {
+		if (Tcl_StringMatch(tag, Tcl_GetString(objv[i]))) {
+		    match = TRUE;
+		    break;                  /* Found match. */
+		}
+	    }
+	    if (match) {
+		Tcl_Obj *objPtr;
+		
+		objPtr = Tcl_NewStringObj(tag, -1);
+		Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+		break;                      /* Tag matches this column. Don't
+					     * care if it matches any other
+					     * columns. */
+	    }
+	}
+	Blt_Chain_Destroy(chain);
     }
 
     /* Handle reserved tags specially. */
@@ -3730,11 +3730,11 @@ ColumnTagSearchOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc,
  *
  * ColumnTagSetOp --
  *
- *	Adds one or more tags for a given column.  Tag names can't start with a
- *	digit (to distinquish them from node ids) and can't be a reserved tag
- *	("all" or "end").
+ *      Adds one or more tags for a given column.  Tag names can't start with a
+ *      digit (to distinquish them from node ids) and can't be a reserved tag
+ *      ("all" or "end").
  *
- *	.t column tag set $column tag1 tag2...
+ *      .t column tag set $column tag1 tag2...
  *
  *---------------------------------------------------------------------------
  */
@@ -3770,11 +3770,11 @@ ColumnTagSetOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * ColumnTagUnsetOp --
  *
- *	Removes one or more tags from a given column. If a tag doesn't exist or
- *	is a reserved tag ("all" or "end"), nothing will be done and no error
- *	message will be returned.
+ *      Removes one or more tags from a given column. If a tag doesn't exist or
+ *      is a reserved tag ("all" or "end"), nothing will be done and no error
+ *      message will be returned.
  *
- *	.t column tag unset $column tag1 tag2...
+ *      .t column tag unset $column tag1 tag2...
  *
  *---------------------------------------------------------------------------
  */
@@ -3811,13 +3811,13 @@ ColumnTagUnsetOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc,
  *
  * ColumnTagOp --
  *
- * 	This procedure is invoked to process tag operations.
+ *      This procedure is invoked to process tag operations.
  *
  * Results:
- *	A standard TCL result.
+ *      A standard TCL result.
  *
  * Side Effects:
- *	See the user documentation.
+ *      See the user documentation.
  *
  *---------------------------------------------------------------------------
  */
@@ -3859,21 +3859,21 @@ ColumnTagOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * ColumnTraceOp --
  *
- *	Creates a trace for this instance.  Traces represent list of keys, a
- *	bitmask of trace flags, and a command prefix to be invoked when a
- *	matching trace event occurs.
+ *      Creates a trace for this instance.  Traces represent list of keys, a
+ *      bitmask of trace flags, and a command prefix to be invoked when a
+ *      matching trace event occurs.
  *
- *	The command prefix is parsed and saved in an array of Tcl_Objs. The
- *	qualified name of the instance is saved also.
+ *      The command prefix is parsed and saved in an array of Tcl_Objs. The
+ *      qualified name of the instance is saved also.
  *
  * Results:
- *	A standard TCL result.  The name of the new trace is returned in the
- *	interpreter result.  Otherwise, if it failed to parse a switch, then
- *	TCL_ERROR is returned and an error message is left in the interpreter
- *	result.
+ *      A standard TCL result.  The name of the new trace is returned in the
+ *      interpreter result.  Otherwise, if it failed to parse a switch, then
+ *      TCL_ERROR is returned and an error message is left in the interpreter
+ *      result.
  *
  * Example:
- *	$t column trace tag rwx proc 
+ *      $t column trace tag rwx proc 
  *
  *---------------------------------------------------------------------------
  */
@@ -3905,15 +3905,15 @@ ColumnTraceOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     case TABLE_SPEC_RANGE:
     case TABLE_SPEC_LABELS:
 	Tcl_AppendResult(interp, "can't trace multiple columns \"",
-                         Tcl_GetString(objv[3]), "\": use a tag instead", 
-                         (char *)NULL);
+			 Tcl_GetString(objv[3]), "\": use a tag instead", 
+			 (char *)NULL);
 	return TCL_ERROR;
     case TABLE_SPEC_INDEX:
     case TABLE_SPEC_LABEL:
-        col = blt_table_get_column(interp, table, objv[3]);
-        break;
+	col = blt_table_get_column(interp, table, objv[3]);
+	break;
     default:
-        colTag = colName;
+	colTag = colName;
     }
     tracePtr = Blt_AssertMalloc(sizeof(TraceInfo));
     if (tracePtr == NULL) {
@@ -3962,18 +3962,18 @@ ColumnTraceOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * ColumnTypeOp --
  *
- *	Reports and/or sets the type of a column.  
+ *      Reports and/or sets the type of a column.  
  * 
  * Results:
- *	A standard TCL result.  If successful, the old column label is
- *	returned in the interpreter result.  If the column index is invalid,
- *	TCL_ERROR is returned and an error message is left in the interpreter
- *	result.
- *	
+ *      A standard TCL result.  If successful, the old column label is
+ *      returned in the interpreter result.  If the column index is invalid,
+ *      TCL_ERROR is returned and an error message is left in the interpreter
+ *      result.
+ *      
  * Example:
- *	$t column type column ?newType?
+ *      $t column type column ?newType?
  *
- *	$t column type column ?newType column newType?...
+ *      $t column type column ?newType column newType?...
  *---------------------------------------------------------------------------
  */
 static int
@@ -3984,58 +3984,58 @@ ColumnTypeOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     
     table = cmdPtr->table;
     if (objc == 4) {
-        BLT_TABLE_ITERATOR ci;
-        BLT_TABLE_COLUMN col;
-        Tcl_Obj *listObjPtr;
+	BLT_TABLE_ITERATOR ci;
+	BLT_TABLE_COLUMN col;
+	Tcl_Obj *listObjPtr;
 
-        listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
-        if (blt_table_iterate_column(interp, table, objv[3], &ci) != TCL_OK) {
-            return TCL_ERROR;
-        }
-        for (col = blt_table_first_tagged_column(&ci); col != NULL; 
-             col = blt_table_next_tagged_column(&ci)) {
-            Tcl_Obj *objPtr;
-            BLT_TABLE_COLUMN_TYPE type;
-            
-            type = blt_table_column_type(col);
-            objPtr = Tcl_NewStringObj(blt_table_column_type_to_name(type), -1);
-            Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-        }
-        Tcl_SetObjResult(interp, listObjPtr);
-        return TCL_OK;
+	listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
+	if (blt_table_iterate_column(interp, table, objv[3], &ci) != TCL_OK) {
+	    return TCL_ERROR;
+	}
+	for (col = blt_table_first_tagged_column(&ci); col != NULL; 
+	     col = blt_table_next_tagged_column(&ci)) {
+	    Tcl_Obj *objPtr;
+	    BLT_TABLE_COLUMN_TYPE type;
+	    
+	    type = blt_table_column_type(col);
+	    objPtr = Tcl_NewStringObj(blt_table_column_type_to_name(type), -1);
+	    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+	}
+	Tcl_SetObjResult(interp, listObjPtr);
+	return TCL_OK;
     }
     objc -= 3;
     objv += 3;
     if (objc & 0x1) {
-        Tcl_AppendResult(interp, "wrong # arguments: missing type argument.", 
-                (char *)NULL);
-        return TCL_ERROR;
+	Tcl_AppendResult(interp, "wrong # arguments: missing type argument.", 
+		(char *)NULL);
+	return TCL_ERROR;
     }
     for (i = 0; i < objc; i += 2) {
-        BLT_TABLE_ITERATOR ci;
-        BLT_TABLE_COLUMN col;
-        BLT_TABLE_COLUMN_TYPE newType;
+	BLT_TABLE_ITERATOR ci;
+	BLT_TABLE_COLUMN col;
+	BLT_TABLE_COLUMN_TYPE newType;
 
-        if (blt_table_iterate_column(interp, table, objv[i], &ci) != TCL_OK) {
-            return TCL_ERROR;
-        }
-        newType = blt_table_name_to_column_type(Tcl_GetString(objv[i+1]));
-        if (newType == TABLE_COLUMN_TYPE_UNKNOWN) {
-            Tcl_AppendResult(interp, "unknown column type \"", 
-                             Tcl_GetString(objv[i+1]), "\"", (char *)NULL);
-            return TCL_ERROR;
-        }
-        for (col = blt_table_first_tagged_column(&ci); col != NULL; 
-             col = blt_table_next_tagged_column(&ci)) {
-            BLT_TABLE_COLUMN_TYPE type;
+	if (blt_table_iterate_column(interp, table, objv[i], &ci) != TCL_OK) {
+	    return TCL_ERROR;
+	}
+	newType = blt_table_name_to_column_type(Tcl_GetString(objv[i+1]));
+	if (newType == TABLE_COLUMN_TYPE_UNKNOWN) {
+	    Tcl_AppendResult(interp, "unknown column type \"", 
+			     Tcl_GetString(objv[i+1]), "\"", (char *)NULL);
+	    return TCL_ERROR;
+	}
+	for (col = blt_table_first_tagged_column(&ci); col != NULL; 
+	     col = blt_table_next_tagged_column(&ci)) {
+	    BLT_TABLE_COLUMN_TYPE type;
 
-            type = blt_table_column_type(col);
-            if (newType != type) {
-                if (blt_table_set_column_type(table, col, newType) != TCL_OK) {
-                    return TCL_ERROR;
-                }
-            }
-        }
+	    type = blt_table_column_type(col);
+	    if (newType != type) {
+		if (blt_table_set_column_type(table, col, newType) != TCL_OK) {
+		    return TCL_ERROR;
+		}
+	    }
+	}
     }
     return TCL_OK;
 }
@@ -4045,17 +4045,17 @@ ColumnTypeOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * ColumnUnsetOp --
  *
- *	Unsets one or more columns of values.  One or more columns may be
- *	unset (using tags or multiple arguments). It's an error if the
- *	column doesn't exist.
+ *      Unsets one or more columns of values.  One or more columns may be
+ *      unset (using tags or multiple arguments). It's an error if the
+ *      column doesn't exist.
  * 
  * Results:
- *	A standard TCL result. If the tag or column index is invalid,
- *	TCL_ERROR is returned and an error message is left in the
- *	interpreter result.
- *	
+ *      A standard TCL result. If the tag or column index is invalid,
+ *      TCL_ERROR is returned and an error message is left in the
+ *      interpreter result.
+ *      
  * Example:
- *	$t column unset $col ?indices?
+ *      $t column unset $col ?indices?
  *
  *---------------------------------------------------------------------------
  */
@@ -4072,7 +4072,7 @@ ColumnUnsetOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	return TCL_ERROR;
     }
     if (blt_table_iterate_row_objv(interp, table, objc - 4, objv + 4 , &ri) 
-        != TCL_OK) {
+	!= TCL_OK) {
 	return TCL_ERROR;
     }
     result = TCL_ERROR;
@@ -4099,17 +4099,17 @@ ColumnUnsetOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * ColumnValuesOp --
  *
- *	Retrieves a column of values.  The column argument can be either a
- *	tag, label, or column index.  If it is a tag, it must refer to exactly
- *	one column.
+ *      Retrieves a column of values.  The column argument can be either a
+ *      tag, label, or column index.  If it is a tag, it must refer to exactly
+ *      one column.
  * 
  * Results:
- *	A standard TCL result.  If successful, a list of values is returned in
- *	the interpreter result.  If the column index is invalid, TCL_ERROR is
- *	returned and an error message is left in the interpreter result.
- *	
+ *      A standard TCL result.  If successful, a list of values is returned in
+ *      the interpreter result.  If the column index is invalid, TCL_ERROR is
+ *      returned and an error message is left in the interpreter result.
+ *      
  * Example:
- *	$t column values column ?valueList?
+ *      $t column values column ?valueList?
  *
  *---------------------------------------------------------------------------
  */
@@ -4173,11 +4173,11 @@ ColumnValuesOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * ColumnOp --
  *
- *	Parses the given command line and calls one of several column-specific
- *	operations.
- *	
+ *      Parses the given command line and calls one of several column-specific
+ *      operations.
+ *      
  * Results:
- *	Returns a standard TCL result.  It is the result of operation called.
+ *      Returns a standard TCL result.  It is the result of operation called.
  *
  *---------------------------------------------------------------------------
  */
@@ -4231,14 +4231,14 @@ ColumnOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 
 static int
 CopyRow(Tcl_Interp *interp, BLT_TABLE srcTable, BLT_TABLE destTable,
-    BLT_TABLE_ROW srcRow,		/* Row offset in the source table. */
-    BLT_TABLE_ROW destRow)		/* Row offset in the destination. */
+    BLT_TABLE_ROW srcRow,               /* Row offset in the source table. */
+    BLT_TABLE_ROW destRow)              /* Row offset in the destination. */
 {
     long i;
 
     if ((blt_table_same_object(srcTable, destTable)) && 
 	(srcRow == destRow)) {
-	return TCL_OK;		/* Source and destination are the same. */
+	return TCL_OK;          /* Source and destination are the same. */
     }
     if (blt_table_num_columns(srcTable) > blt_table_num_columns(destTable)) {
 	long needed;
@@ -4261,12 +4261,12 @@ CopyRow(Tcl_Interp *interp, BLT_TABLE srcTable, BLT_TABLE destTable,
 	}
     }
     return TCL_OK;
-}	    
+}           
 
 static void
 CopyRowTags(BLT_TABLE srcTable, BLT_TABLE destTable,
-    BLT_TABLE_ROW srcRow,		/* Row in the source table. */
-    BLT_TABLE_ROW destRow)		/* Row in the destination table. */
+    BLT_TABLE_ROW srcRow,               /* Row in the source table. */
+    BLT_TABLE_ROW destRow)              /* Row in the destination table. */
 {
     Blt_Chain chain;
     Blt_ChainLink link;
@@ -4274,29 +4274,29 @@ CopyRowTags(BLT_TABLE srcTable, BLT_TABLE destTable,
     /* Get all tags for this particular row in the source table. */
     chain = blt_table_get_row_tags(srcTable, srcRow);
     for (link = Blt_Chain_FirstLink(chain); link != NULL; 
-         link = Blt_Chain_NextLink(link)) {
-        const char *tag;
+	 link = Blt_Chain_NextLink(link)) {
+	const char *tag;
 
-        tag = Blt_Chain_GetValue(link);
-        blt_table_set_row_tag(NULL, destTable, destRow, tag);
+	tag = Blt_Chain_GetValue(link);
+	blt_table_set_row_tag(NULL, destTable, destRow, tag);
     }
     Blt_Chain_Destroy(chain);
-}	    
+}           
 
 /*
  *---------------------------------------------------------------------------
  *
  * RowCopyOp --
  *
- *	Copies the specified rows to the table.  A different table may be
- *	selected as the source.
+ *      Copies the specified rows to the table.  A different table may be
+ *      selected as the source.
  * 
  * Results:
- *	A standard TCL result. If the tag or row index is invalid, TCL_ERROR
- *	is returned and an error message is left in the interpreter result.
+ *      A standard TCL result. If the tag or row index is invalid, TCL_ERROR
+ *      is returned and an error message is left in the interpreter result.
  *
  * Example:
- *	$dest row copy $srcrow $destrow ?-table srcTable?
+ *      $dest row copy $srcrow $destrow ?-table srcTable?
  *
  *---------------------------------------------------------------------------
  */
@@ -4349,15 +4349,15 @@ RowCopyOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * RowCountOp --
  *
- *	Returns the number of (non-empty) rows in the column.
+ *      Returns the number of (non-empty) rows in the column.
  * 
  * Results:
- *	A standard TCL result.  If successful, the old row label is returned
- *	in the interpreter result.  If the row index is invalid, TCL_ERROR is
- *	returned and an error message is left in the interpreter result.
- *	
+ *      A standard TCL result.  If successful, the old row label is returned
+ *      in the interpreter result.  If the row index is invalid, TCL_ERROR is
+ *      returned and an error message is left in the interpreter result.
+ *      
  * Example:
- *	$t row count ?row?
+ *      $t row count ?row?
  *
  *---------------------------------------------------------------------------
  */
@@ -4394,17 +4394,17 @@ RowCountOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * RowCreateOp --
  *
- *	Creates a single new row into the table.  The location of the new row
- *	may be specified by -before or -after switches.  By default the new
- *	row is added to to the end of the table.
+ *      Creates a single new row into the table.  The location of the new row
+ *      may be specified by -before or -after switches.  By default the new
+ *      row is added to to the end of the table.
  * 
  * Results:
- *	A standard TCL result. If the tag or row index is invalid, TCL_ERROR
- *	is returned and an error message is left in the interpreter result.
+ *      A standard TCL result. If the tag or row index is invalid, TCL_ERROR
+ *      is returned and an error message is left in the interpreter result.
  *
  * Example:
- *	$t row create -before 0 -after 1 -label label
- *	
+ *      $t row create -before 0 -after 1 -label label
+ *      
  *---------------------------------------------------------------------------
  */
 static int
@@ -4464,16 +4464,16 @@ RowCreateOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * RowDeleteOp --
  *
- *	Deletes the rows designated.  One or more rows may be deleted using
- *	a tag.
+ *      Deletes the rows designated.  One or more rows may be deleted using
+ *      a tag.
  * 
  * Results:
- *	A standard TCL result. If the tag or row index is invalid,
- *	TCL_ERROR is returned and an error message is left in the
- *	interpreter result.
+ *      A standard TCL result. If the tag or row index is invalid,
+ *      TCL_ERROR is returned and an error message is left in the
+ *      interpreter result.
  *
  * Example:
- *	$t row delete ?row?...
+ *      $t row delete ?row?...
  *
  *---------------------------------------------------------------------------
  */
@@ -4507,15 +4507,15 @@ RowDeleteOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * RowDupOp --
  *
- *	Duplicates the specified rows in the table.  This differs from
- *	RowCopyOp, since the same table is always the source and destination.
+ *      Duplicates the specified rows in the table.  This differs from
+ *      RowCopyOp, since the same table is always the source and destination.
  * 
  * Results:
- *	A standard TCL result. If the tag or row index is invalid, TCL_ERROR
- *	is returned and an error message is left in the interpreter result.
+ *      A standard TCL result. If the tag or row index is invalid, TCL_ERROR
+ *      is returned and an error message is left in the interpreter result.
  *
  * Example:
- *	$dest row dup label ?label?... 
+ *      $dest row dup label ?label?... 
  *
  *---------------------------------------------------------------------------
  */
@@ -4566,16 +4566,16 @@ RowDupOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * RowEmptyOp --
  *
- *	Returns a list of the columns with empty values in the given row.
+ *      Returns a list of the columns with empty values in the given row.
  *
  * Results:
- *	A standard TCL result. If the tag or row index is invalid,
- *	TCL_ERROR is returned and an error message is left in the interpreter
- *	result.
+ *      A standard TCL result. If the tag or row index is invalid,
+ *      TCL_ERROR is returned and an error message is left in the interpreter
+ *      result.
  *
  * Example:
- *	$t row empty row
- *	
+ *      $t row empty row
+ *      
  *---------------------------------------------------------------------------
  */
 static int
@@ -4615,15 +4615,15 @@ RowEmptyOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * RowExistsOp --
  *
- *	Indicates is the given row exists.
+ *      Indicates is the given row exists.
  * 
  * Results:
- *	A standard TCL result. If the tag or row index is invalid, TCL_ERROR
- *	is returned and an error message is left in the interpreter result.
+ *      A standard TCL result. If the tag or row index is invalid, TCL_ERROR
+ *      is returned and an error message is left in the interpreter result.
  *
  * Example:
- *	$t row exists n
- *	
+ *      $t row exists n
+ *      
  *---------------------------------------------------------------------------
  */
 static int
@@ -4643,15 +4643,15 @@ RowExistsOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * RowExtendOp --
  *
- *	Extends the table by the given number of rows.
+ *      Extends the table by the given number of rows.
  * 
  * Results:
- *	A standard TCL result. If the tag or row index is invalid, TCL_ERROR
- *	is returned and an error message is left in the interpreter result.
+ *      A standard TCL result. If the tag or row index is invalid, TCL_ERROR
+ *      is returned and an error message is left in the interpreter result.
  *
  * Example:
- *	$t row extend n
- *	
+ *      $t row extend n
+ *      
  *---------------------------------------------------------------------------
  */
 static int
@@ -4670,7 +4670,7 @@ RowExtendOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     if ((objc > 4) || (Blt_GetLongFromObj(NULL, objv[3], &n) != TCL_OK)) {
 	n = objc - 3;
 	addLabels = TRUE;
-    }	    
+    }       
     if (n == 0) {
 	return TCL_OK;
     }
@@ -4714,18 +4714,18 @@ RowExtendOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * RowGetOp --
  *
- *	Retrieves the values from a given row.  The row argument can be either
- *	a tag, label, or row index.  If it is a tag, it must refer to exactly
- *	one row.  An optional argument specifies how to return empty values.
- *	By default, the global empty value representation is used.
+ *      Retrieves the values from a given row.  The row argument can be either
+ *      a tag, label, or row index.  If it is a tag, it must refer to exactly
+ *      one row.  An optional argument specifies how to return empty values.
+ *      By default, the global empty value representation is used.
  * 
  * Results:
- *	A standard TCL result.  If successful, a list of values is returned in
- *	the interpreter result.  If the row index is invalid, TCL_ERROR is
- *	returned and an error message is left in the interpreter result.
- *	
+ *      A standard TCL result.  If successful, a list of values is returned in
+ *      the interpreter result.  If the row index is invalid, TCL_ERROR is
+ *      returned and an error message is left in the interpreter result.
+ *      
  * Example:
- *	$t row get ?-labels? row ?col...?
+ *      $t row get ?-labels? row ?col...?
  *
  *---------------------------------------------------------------------------
  */
@@ -4793,7 +4793,7 @@ RowGetOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	    }
 	    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
 	}
-        blt_table_free_iterator_objv(&ci);
+	blt_table_free_iterator_objv(&ci);
     }
     Tcl_SetObjResult(interp, listObjPtr);
     return TCL_OK;
@@ -4805,16 +4805,16 @@ RowGetOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * RowIndexOp --
  *
- *	Returns the row index of the given row tag, label, or index.  A tag
- *	can't represent more than one row.
+ *      Returns the row index of the given row tag, label, or index.  A tag
+ *      can't represent more than one row.
  * 
  * Results:
- *	A standard TCL result. If the tag or row index is invalid, TCL_ERROR
- *	is returned and an error message is left in the interpreter result.
+ *      A standard TCL result. If the tag or row index is invalid, TCL_ERROR
+ *      is returned and an error message is left in the interpreter result.
  *
  * Example:
- *	$t row index $row
- *	
+ *      $t row index $row
+ *      
  *---------------------------------------------------------------------------
  */
 static int
@@ -4837,15 +4837,15 @@ RowIndexOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * RowIndicesOp --
  *
- *	Returns a list of indices for the given rows.  
+ *      Returns a list of indices for the given rows.  
  * 
  * Results:
- *	A standard TCL result. If the tag or row index is invalid, TCL_ERROR
- *	is returned and an error message is left in the interpreter result.
+ *      A standard TCL result. If the tag or row index is invalid, TCL_ERROR
+ *      is returned and an error message is left in the interpreter result.
  *
  * Example:
- *	$t row indices $row $row
- *	
+ *      $t row indices $row $row
+ *      
  *---------------------------------------------------------------------------
  */
 static int
@@ -4877,14 +4877,14 @@ RowIndicesOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * RowIsNumeric --
  *
- *	Returns a whether all the entries in the row are numeric.
+ *      Returns a whether all the entries in the row are numeric.
  * 
  * Results:
- *	A standard TCL result. 
+ *      A standard TCL result. 
  *
  * Example:
- *	$t row isnumeric $row
- *	
+ *      $t row isnumeric $row
+ *      
  *---------------------------------------------------------------------------
  */
 static int
@@ -4901,13 +4901,13 @@ RowIsNumericOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     state = TRUE;
     for (col = blt_table_first_column(cmdPtr->table); col != NULL; 
 	 col = blt_table_next_column(cmdPtr->table, col)) {
-        double d;
-        
+	double d;
+	
 	d = blt_table_get_double(cmdPtr->table, row, col);
-        if (!FINITE(d)) {
-            state = FALSE;
-            break;
-        }
+	if (!FINITE(d)) {
+	    state = FALSE;
+	    break;
+	}
     }
     Tcl_SetBooleanObj(Tcl_GetObjResult(interp), state);
     return TCL_OK;
@@ -4918,17 +4918,17 @@ RowIsNumericOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * RowIsHeaderOp --
  *
- *	Returns a whether all the entries in the row are headers (column
- *	labels).  We test first if the value starts with a number and then
- *	if the value is unique.  Column header labels should ordinarily not
- *	start with a number or be duplicated.
+ *      Returns a whether all the entries in the row are headers (column
+ *      labels).  We test first if the value starts with a number and then
+ *      if the value is unique.  Column header labels should ordinarily not
+ *      start with a number or be duplicated.
  * 
  * Results:
- *	A standard TCL result. 
+ *      A standard TCL result. 
  *
  * Example:
- *	$t row isalpha $row
- *	
+ *      $t row isalpha $row
+ *      
  *---------------------------------------------------------------------------
  */
 static int
@@ -4947,22 +4947,22 @@ RowIsHeaderOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     state = TRUE;
     for (col = blt_table_first_column(cmdPtr->table); col != NULL; 
 	 col = blt_table_next_column(cmdPtr->table, col)) {
-        const char *value;
-        int isNew;
-        
+	const char *value;
+	int isNew;
+	
 	value = blt_table_get_string(cmdPtr->table, row, col);
-        if (value == NULL) {
-            continue;                   /* Ignore empty cells. */
-        }
-        if (isdigit(value[0])) {
-            state = FALSE;              /* Can't start with a number. */
-            break;
-        }
-        Blt_CreateHashEntry(&table, value, &isNew);
-        if (!isNew) {
-            state = FALSE;              /* Must be unique. */
-            break;
-        }
+	if (value == NULL) {
+	    continue;                   /* Ignore empty cells. */
+	}
+	if (isdigit(value[0])) {
+	    state = FALSE;              /* Can't start with a number. */
+	    break;
+	}
+	Blt_CreateHashEntry(&table, value, &isNew);
+	if (!isNew) {
+	    state = FALSE;              /* Must be unique. */
+	    break;
+	}
     }
     Blt_DeleteHashTable(&table);
     Tcl_SetBooleanObj(Tcl_GetObjResult(interp), state);
@@ -4974,16 +4974,16 @@ RowIsHeaderOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * RowJoinOp --
  *
- *	Joins the rows of the source table onto the destination.
+ *      Joins the rows of the source table onto the destination.
  * 
  * Results:
- *	A standard TCL result. If the tag or column index is invalid,
- *	TCL_ERROR is returned and an error message is left in the interpreter
- *	result.
+ *      A standard TCL result. If the tag or column index is invalid,
+ *      TCL_ERROR is returned and an error message is left in the interpreter
+ *      result.
  *
  * Example:
  *
- *	$dst row concat $src -rows $rows  
+ *      $dst row concat $src -rows $rows  
  *
  *---------------------------------------------------------------------------
  */
@@ -5074,18 +5074,18 @@ RowJoinOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * RowLabelOp --
  *
- *	Gets/sets a label for one or more rows.  
+ *      Gets/sets a label for one or more rows.  
  * 
  * Results:
- *	A standard TCL result.  If successful, the old row label is returned
- *	in the interpreter result.  If the row index is invalid, TCL_ERROR is
- *	returned and an error message is left in the interpreter result.
- *	
+ *      A standard TCL result.  If successful, the old row label is returned
+ *      in the interpreter result.  If the row index is invalid, TCL_ERROR is
+ *      returned and an error message is left in the interpreter result.
+ *      
  * Example:
- *	$t row label row ?label? ?row label? 
- *	$t row label 0
- *	$t row label 0 newLabel 
- *	$t row label 0 lab1 1 lab2 2 lab3 4 lab5
+ *      $t row label row ?label? ?row label? 
+ *      $t row label 0
+ *      $t row label 0 newLabel 
+ *      $t row label 0 lab1 1 lab2 2 lab3 4 lab5
  *
  *---------------------------------------------------------------------------
  */
@@ -5137,15 +5137,15 @@ RowLabelOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * RowLabelsOp --
  *
- *	Gets/sets all the row label in the table.  
+ *      Gets/sets all the row label in the table.  
  * 
  * Results:
- *	A standard TCL result.  If successful, a list of values is returned in
- *	the interpreter result.  If the row index is invalid, TCL_ERROR is
- *	returned and an error message is left in the interpreter result.
- *	
+ *      A standard TCL result.  If successful, a list of values is returned in
+ *      the interpreter result.  If the row index is invalid, TCL_ERROR is
+ *      returned and an error message is left in the interpreter result.
+ *      
  * Example:
- *	$t row labels ?labelList?
+ *      $t row labels ?labelList?
  *
  *---------------------------------------------------------------------------
  */
@@ -5197,15 +5197,15 @@ RowLabelsOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * RowMoveOp --
  *
- *	Moves the given number of rows to another location in the table.
+ *      Moves the given number of rows to another location in the table.
  * 
  * Results:
- *	A standard TCL result.  If successful, a list of values is returned in
- *	the interpreter result.  If the row index is invalid, TCL_ERROR is
- *	returned and an error message is left in the interpreter result.
- *	
+ *      A standard TCL result.  If successful, a list of values is returned in
+ *      the interpreter result.  If the row index is invalid, TCL_ERROR is
+ *      returned and an error message is left in the interpreter result.
+ *      
  * Example:
- *	$t row move from to ?n?
+ *      $t row move from to ?n?
  *
  *---------------------------------------------------------------------------
  */
@@ -5250,14 +5250,14 @@ RowMoveOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * RowNamesOp --
  *
- *	Reports the labels of all rows.  
+ *      Reports the labels of all rows.  
  * 
  * Results:
- *	Always returns TCL_OK.  The interpreter result is a list of row
- *	labels.
- *	
+ *      Always returns TCL_OK.  The interpreter result is a list of row
+ *      labels.
+ *      
  * Example:
- *	$t row names pattern...
+ *      $t row names pattern...
  *
  *---------------------------------------------------------------------------
  */
@@ -5303,16 +5303,16 @@ RowNamesOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * RowNonEmptyOp --
  *
- *	Returns a list of the columns with non-empty values in the given row.
+ *      Returns a list of the columns with non-empty values in the given row.
  *
  * Results:
- *	A standard TCL result. If the tag or row index is invalid,
- *	TCL_ERROR is returned and an error message is left in the interpreter
- *	result.
+ *      A standard TCL result. If the tag or row index is invalid,
+ *      TCL_ERROR is returned and an error message is left in the interpreter
+ *      result.
  *
  * Example:
- *	$t row empty row
- *	
+ *      $t row empty row
+ *      
  *---------------------------------------------------------------------------
  */
 static int
@@ -5352,21 +5352,21 @@ RowNonEmptyOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * RowNotifyOp --
  *
- *	Creates a notifier for this instance.  Notifiers represent a bitmask
- *	of events and a command prefix to be invoked when a matching event
- *	occurs.
+ *      Creates a notifier for this instance.  Notifiers represent a bitmask
+ *      of events and a command prefix to be invoked when a matching event
+ *      occurs.
  *
- *	The command prefix is parsed and saved in an array of Tcl_Objs. Extra
- *	slots are allocated for the
+ *      The command prefix is parsed and saved in an array of Tcl_Objs. Extra
+ *      slots are allocated for the
  *
  * Results:
- *	A standard TCL result.  The name of the new notifier is returned in
- *	the interpreter result.  Otherwise, if it failed to parse a switch,
- *	then TCL_ERROR is returned and an error message is left in the
- *	interpreter result.
+ *      A standard TCL result.  The name of the new notifier is returned in
+ *      the interpreter result.  Otherwise, if it failed to parse a switch,
+ *      then TCL_ERROR is returned and an error message is left in the
+ *      interpreter result.
  *
  * Example:
- *	table0 row notify row ?flags? command arg
+ *      table0 row notify row ?flags? command arg
  *
  *---------------------------------------------------------------------------
  */
@@ -5420,7 +5420,7 @@ RowNotifyOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	notifyPtr->notifier = blt_table_create_row_tag_notifier(interp, 
 		cmdPtr->table, tag, switches.flags, NotifyProc, 
 		NotifierDeleteProc, notifyPtr);
-    }	
+    }   
     /* Stash away the command in structure and pass that to the notifier. */
     notifyPtr->cmdObjPtr = Tcl_NewListObj(objc - i, objv + i);
     Tcl_IncrRefCount(notifyPtr->cmdObjPtr);
@@ -5446,17 +5446,17 @@ RowNotifyOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * RowSetOp --
  *
- *	Sets a row of values.  One or more rows may be set using a tag.  The
- *	column order is always the table's current view of the table.  There
- *	may be less values than needed.
+ *      Sets a row of values.  One or more rows may be set using a tag.  The
+ *      column order is always the table's current view of the table.  There
+ *      may be less values than needed.
  * 
  * Results:
- *	A standard TCL result. If the tag or row index is invalid, TCL_ERROR
- *	is returned and an error message is left in the interpreter result.
- *	
+ *      A standard TCL result. If the tag or row index is invalid, TCL_ERROR
+ *      is returned and an error message is left in the interpreter result.
+ *      
  * Example:
- *	$t row set row ?switches? ?column value?...
- *	$t row set row ?switches? ?column value?...
+ *      $t row set row ?switches? ?column value?...
+ *      $t row set row ?switches? ?column value?...
  *
  *---------------------------------------------------------------------------
  */
@@ -5513,11 +5513,11 @@ RowSetOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * RowTagAddOp --
  *
- *	Adds a given tag to one or more rows.  Tag names can't start with a
- *	digit (to distinquish them from node ids) and can't be a reserved
- *	tag ("all" or "end").
+ *      Adds a given tag to one or more rows.  Tag names can't start with a
+ *      digit (to distinquish them from node ids) and can't be a reserved
+ *      tag ("all" or "end").
  *
- *	.t row tag add tag ?row...?
+ *      .t row tag add tag ?row...?
  *
  *---------------------------------------------------------------------------
  */
@@ -5558,11 +5558,11 @@ RowTagAddOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * RowTagDeleteOp --
  *
- *	Removes a given tag from one or more rows. If a tag doesn't exist or
- *	is a reserved tag ("all" or "end"), nothing will be done and no error
- *	message will be returned.
+ *      Removes a given tag from one or more rows. If a tag doesn't exist or
+ *      is a reserved tag ("all" or "end"), nothing will be done and no error
+ *      message will be returned.
  *
- *	.t row tag delete tag ?row...?
+ *      .t row tag delete tag ?row...?
  *
  *---------------------------------------------------------------------------
  */
@@ -5597,10 +5597,10 @@ RowTagDeleteOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * RowTagExistsOp --
  *
- *	Returns the existence of a tag in the table.  If a row is specified
- *	then the tag is search for for that row.
+ *      Returns the existence of a tag in the table.  If a row is specified
+ *      then the tag is search for for that row.
  *
- *	.t tag row exists tag ?row?
+ *      .t tag row exists tag ?row?
  *
  *---------------------------------------------------------------------------
  */
@@ -5632,9 +5632,9 @@ RowTagExistsOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * RowTagForgetOp --
  *
- *	Removes the given tags from all nodes.
+ *      Removes the given tags from all nodes.
  *
- *	$t row tag forget tag1 tag2 tag3...
+ *      $t row tag forget tag1 tag2 tag3...
  *
  *---------------------------------------------------------------------------
  */
@@ -5660,10 +5660,10 @@ RowTagForgetOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * RowTagGetOp --
  *
- *	Returns the tag names for a given row.  If one of more pattern
- *	arguments are provided, then only those matching tags are returned.
+ *      Returns the tag names for a given row.  If one of more pattern
+ *      arguments are provided, then only those matching tags are returned.
  *
- *	.t row tag get row pat1 pat2...
+ *      .t row tag get row pat1 pat2...
  *
  *---------------------------------------------------------------------------
  */
@@ -5751,7 +5751,7 @@ GetRowTagMatches(BLT_TABLE table, int objc, Tcl_Obj *const *objv)
 	    for (j = 0; j < blt_table_num_rows(table); j++) {
 		matches[j] = TRUE;
 	    }
-	    return matches;		/* Don't care about other tags. */
+	    return matches;             /* Don't care about other tags. */
 	} 
 	if (strcmp("end", tag) == 0) {
 	    matches[numRows - 1] = TRUE;
@@ -5759,8 +5759,8 @@ GetRowTagMatches(BLT_TABLE table, int objc, Tcl_Obj *const *objv)
     }
     /* Now check user-defined tags. */
     for (i = 0; i < objc; i++) {
-        Blt_Chain chain;
-        Blt_ChainLink link;
+	Blt_Chain chain;
+	Blt_ChainLink link;
 	const char *tag;
 	
 	tag = Tcl_GetString(objv[i]);
@@ -5791,10 +5791,10 @@ GetRowTagMatches(BLT_TABLE table, int objc, Tcl_Obj *const *objv)
  *
  * RowTagIndicesOp --
  *
- *	Returns row indices names for the given tags.  If one of more tag
- *	names are provided, then only those matching indices are returned.
+ *      Returns row indices names for the given tags.  If one of more tag
+ *      names are provided, then only those matching indices are returned.
  *
- *	.t row tag indices tag1 tag2...
+ *      .t row tag indices tag1 tag2...
  *
  *---------------------------------------------------------------------------
  */
@@ -5824,11 +5824,11 @@ RowTagIndicesOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * RowTagLabelsOp --
  *
- *	Returns row labels for the given tags.  If one of more tag
- *	names are provided, then only those matching indices are returned.
+ *      Returns row labels for the given tags.  If one of more tag
+ *      names are provided, then only those matching indices are returned.
  *
  * Example:
- *	.t row tag labels tag1 tag2...
+ *      .t row tag labels tag1 tag2...
  *
  *---------------------------------------------------------------------------
  */
@@ -5864,11 +5864,11 @@ RowTagLabelsOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * RowTagRangeOp --
  *
- *	Adds one or more tags for a given row.  Tag names can't start with a
- *	digit (to distinquish them from node ids) and can't be a reserved tag
- *	("all" or "end").
+ *      Adds one or more tags for a given row.  Tag names can't start with a
+ *      digit (to distinquish them from node ids) and can't be a reserved tag
+ *      ("all" or "end").
  *
- *	.t row tag range $from $to tag1 tag2...
+ *      .t row tag range $from $to tag1 tag2...
  *
  *---------------------------------------------------------------------------
  */
@@ -5913,10 +5913,10 @@ RowTagRangeOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * RowTagSearchOp --
  *
- *	Returns tag names for a given row.  If one of more pattern arguments
- *	are provided, then only those matching tags are returned.
+ *      Returns tag names for a given row.  If one of more pattern arguments
+ *      are provided, then only those matching tags are returned.
  *
- *	.t row tag find $row pat1 pat2...
+ *      .t row tag find $row pat1 pat2...
  *
  *---------------------------------------------------------------------------
  */
@@ -5934,36 +5934,36 @@ RowTagSearchOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     }
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
     for (row = blt_table_first_tagged_row(&ri); row != NULL; 
-         row = blt_table_next_tagged_row(&ri)) {
-        Blt_Chain chain;
-        Blt_ChainLink link;
+	 row = blt_table_next_tagged_row(&ri)) {
+	Blt_Chain chain;
+	Blt_ChainLink link;
 
-        chain = blt_table_get_row_tags(table, row);
-        for (link = Blt_Chain_FirstLink(chain); link != NULL; 
-             link = Blt_Chain_NextLink(link)) {
-            const char *tag;
-            int match;
-            int i;
+	chain = blt_table_get_row_tags(table, row);
+	for (link = Blt_Chain_FirstLink(chain); link != NULL; 
+	     link = Blt_Chain_NextLink(link)) {
+	    const char *tag;
+	    int match;
+	    int i;
 
-            tag = Blt_Chain_GetValue(link);
-            match = (objc == 5);
-            for (i = 5; i < objc; i++) {
-                if (Tcl_StringMatch(tag, Tcl_GetString(objv[i]))) {
-                    match = TRUE;
-                    break;                  /* Found match. */
-                }
-            }
-            if (match) {
-                Tcl_Obj *objPtr;
-                
-                objPtr = Tcl_NewStringObj(tag, -1);
-                Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-                break;                      /* Tag matches this column. Don't
-                                             * care if it matches any other
-                                             * columns. */
-            }
-        }
-        Blt_Chain_Destroy(chain);
+	    tag = Blt_Chain_GetValue(link);
+	    match = (objc == 5);
+	    for (i = 5; i < objc; i++) {
+		if (Tcl_StringMatch(tag, Tcl_GetString(objv[i]))) {
+		    match = TRUE;
+		    break;                  /* Found match. */
+		}
+	    }
+	    if (match) {
+		Tcl_Obj *objPtr;
+		
+		objPtr = Tcl_NewStringObj(tag, -1);
+		Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+		break;                      /* Tag matches this column. Don't
+					     * care if it matches any other
+					     * columns. */
+	    }
+	}
+	Blt_Chain_Destroy(chain);
     }
 
     /* Handle reserved tags specially. */
@@ -6007,9 +6007,9 @@ RowTagSearchOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * RowTagSetOp --
  *
- *	Adds one or more tags for a given row.  
+ *      Adds one or more tags for a given row.  
  *
- *	.t row tag set $row tag1 tag2...
+ *      .t row tag set $row tag1 tag2...
  *
  *---------------------------------------------------------------------------
  */
@@ -6045,9 +6045,9 @@ RowTagSetOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * RowTagUnsetOp --
  *
- *	Removes one or more tags from a given row. 
+ *      Removes one or more tags from a given row. 
  *
- *	.t row tag unset $row tag1 tag2...
+ *      .t row tag unset $row tag1 tag2...
  *
  *---------------------------------------------------------------------------
  */
@@ -6082,13 +6082,13 @@ RowTagUnsetOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * RowTagOp --
  *
- * 	This procedure is invoked to process tag operations.
+ *      This procedure is invoked to process tag operations.
  *
  * Results:
- *	A standard TCL result.
+ *      A standard TCL result.
  *
  * Side Effects:
- *	See the user documentation.
+ *      See the user documentation.
  *
  *---------------------------------------------------------------------------
  */
@@ -6129,21 +6129,21 @@ RowTagOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * RowTraceOp --
  *
- *	Creates a trace for this instance.  Traces represent list of keys,
- *	a bitmask of trace flags, and a command prefix to be invoked when a
- *	matching trace event occurs.
+ *      Creates a trace for this instance.  Traces represent list of keys,
+ *      a bitmask of trace flags, and a command prefix to be invoked when a
+ *      matching trace event occurs.
  *
- *	The command prefix is parsed and saved in an array of Tcl_Objs. The
- *	qualified name of the instance is saved also.
+ *      The command prefix is parsed and saved in an array of Tcl_Objs. The
+ *      qualified name of the instance is saved also.
  *
  * Results:
- *	A standard TCL result.  The name of the new trace is returned in
- *	the interpreter result.  Otherwise, if it failed to parse a switch,
- *	then TCL_ERROR is returned and an error message is left in the
- *	interpreter result.
+ *      A standard TCL result.  The name of the new trace is returned in
+ *      the interpreter result.  Otherwise, if it failed to parse a switch,
+ *      then TCL_ERROR is returned and an error message is left in the
+ *      interpreter result.
  *
  * Example:
- *	$t row trace tag rwx proc 
+ *      $t row trace tag rwx proc 
  *
  *---------------------------------------------------------------------------
  */
@@ -6173,15 +6173,15 @@ RowTraceOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     case TABLE_SPEC_RANGE:
     case TABLE_SPEC_LABELS:
 	Tcl_AppendResult(interp, "can't trace multiple rows \"",
-                         Tcl_GetString(objv[3]), "\": use a tag instead", 
-                         (char *)NULL);
+			 Tcl_GetString(objv[3]), "\": use a tag instead", 
+			 (char *)NULL);
 	return TCL_ERROR;
     case TABLE_SPEC_INDEX:
     case TABLE_SPEC_LABEL:
-        row = blt_table_get_row(interp, table, objv[3]);
-        break;
+	row = blt_table_get_row(interp, table, objv[3]);
+	break;
     default:
-        rowTag = rowName;
+	rowTag = rowName;
     }
     tracePtr = Blt_Malloc(sizeof(TraceInfo));
     if (tracePtr == NULL) {
@@ -6219,7 +6219,7 @@ RowTraceOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 
 	Blt_FormatString(traceId, 200, "trace%d", cmdPtr->nextTraceId++);
 	tracePtr->hPtr = Blt_CreateHashEntry(&cmdPtr->traceTable, traceId, 
-                &isNew);
+		&isNew);
 	Blt_SetHashValue(tracePtr->hPtr, tracePtr);
 	Tcl_SetStringObj(Tcl_GetObjResult(interp), traceId, -1);
     }
@@ -6231,15 +6231,15 @@ RowTraceOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * RowUnsetOp --
  *
- *	Unsets one or more rows of values.  One or more rows may be unset
- *	(using tags or multiple arguments).
+ *      Unsets one or more rows of values.  One or more rows may be unset
+ *      (using tags or multiple arguments).
  * 
  * Results:
- *	A standard TCL result. If the tag or row index is invalid, TCL_ERROR
- *	is returned and an error message is left in the interpreter result.
- *	
+ *      A standard TCL result. If the tag or row index is invalid, TCL_ERROR
+ *      is returned and an error message is left in the interpreter result.
+ *      
  * Example:
- *	$t row unset $row ?indices...?
+ *      $t row unset $row ?indices...?
  *
  *---------------------------------------------------------------------------
  */
@@ -6282,17 +6282,17 @@ RowUnsetOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * RowValuesOp --
  *
- *	Retrieves a row of values.  The row argument can be either a tag,
- *	label, or row index.  If it is a tag, it must refer to exactly one
- *	row.
+ *      Retrieves a row of values.  The row argument can be either a tag,
+ *      label, or row index.  If it is a tag, it must refer to exactly one
+ *      row.
  * 
  * Results:
- *	A standard TCL result.  If successful, a list of values is returned in
- *	the interpreter result.  If the row index is invalid, TCL_ERROR is
- *	returned and an error message is left in the interpreter result.
- *	
+ *      A standard TCL result.  If successful, a list of values is returned in
+ *      the interpreter result.  If the row index is invalid, TCL_ERROR is
+ *      returned and an error message is left in the interpreter result.
+ *      
  * Example:
- *	$t row listget row ?defValue?
+ *      $t row listget row ?defValue?
  *
  *---------------------------------------------------------------------------
  */
@@ -6357,11 +6357,11 @@ RowValuesOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * RowOp --
  *
- *	Parses the given command line and calls one of several row-specific
- *	operations.
- *	
+ *      Parses the given command line and calls one of several row-specific
+ *      operations.
+ *      
  * Results:
- *	Returns a standard TCL result.  It is the result of operation called.
+ *      Returns a standard TCL result.  It is the result of operation called.
  *
  *---------------------------------------------------------------------------
  */
@@ -6416,16 +6416,16 @@ RowOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * AddOp --
  *
- *	Concatenates the source table onto the destination.
+ *      Concatenates the source table onto the destination.
  * 
  * Results:
- *	A standard TCL result. If the tag or column index is invalid,
- *	TCL_ERROR is returned and an error message is left in the interpreter
- *	result.
+ *      A standard TCL result. If the tag or column index is invalid,
+ *      TCL_ERROR is returned and an error message is left in the interpreter
+ *      result.
  *
  * Example:
  *
- *	$dest add $src ?switches?
+ *      $dest add $src ?switches?
  *
  *---------------------------------------------------------------------------
  */
@@ -6513,16 +6513,16 @@ AddOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * AppendOp --
  *
- *	Appends one or more values to the current value at the given
- *	location. If the column or row doesn't already exist, it will
- *	automatically be created.
+ *      Appends one or more values to the current value at the given
+ *      location. If the column or row doesn't already exist, it will
+ *      automatically be created.
  * 
  * Results:
- *	A standard TCL result. If the tag or index is invalid, TCL_ERROR is
- *	returned and an error message is left in the interpreter result.
- *	
+ *      A standard TCL result. If the tag or index is invalid, TCL_ERROR is
+ *      returned and an error message is left in the interpreter result.
+ *      
  * Example:
- *	$t append $row $column $value ?value...?
+ *      $t append $row $column $value ?value...?
  *
  *---------------------------------------------------------------------------
  */
@@ -6570,7 +6570,7 @@ AppendOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 		}
 	    }
 	}
-    }	    
+    }       
     return TCL_OK;
 }
 
@@ -6584,9 +6584,9 @@ GetTypeFromMode(int mode)
    } else if (mode & FILE_ATTRIBUTE_DIRECTORY) {
 	return "directory";
    } else if (mode &  FILE_ATTRIBUTE_HIDDEN) {
-        return "hidden";
+	return "hidden";
    } else if (mode &  FILE_ATTRIBUTE_READONLY) {
-        return "readonly";
+	return "readonly";
    } else {
        return "file";
    }
@@ -6701,7 +6701,7 @@ ExportToTable(Tcl_Interp *interp, BLT_TABLE table, const char *fileName,
  *
  * DirOp --
  *
- *	table dir $path ?switches?
+ *      table dir $path ?switches?
  *
  *---------------------------------------------------------------------------
  */
@@ -6769,11 +6769,11 @@ DirOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * ExportOp --
  *
- *	Parses the given command line and calls one of several export-specific
- *	operations.
- *	
+ *      Parses the given command line and calls one of several export-specific
+ *      operations.
+ *      
  * Results:
- *	Returns a standard TCL result.  It is the result of operation called.
+ *      Returns a standard TCL result.  It is the result of operation called.
  *
  *---------------------------------------------------------------------------
  */
@@ -6826,17 +6826,17 @@ ExportOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * KeysOp --
  *
- * 	This procedure is invoked to process key operations.
+ *      This procedure is invoked to process key operations.
  *
  * Results:
- *	A standard TCL result.
+ *      A standard TCL result.
  *
  * Side Effects:
- *	See the user documentation.
+ *      See the user documentation.
  *
  * Example:
- *	$t keys key key key key
- *	$t keys 
+ *      $t keys key key key key
+ *      $t keys 
  *
  *---------------------------------------------------------------------------
  */
@@ -6887,16 +6887,16 @@ KeysOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  * LappendOp --
  *
  *
- *	Appends one or more elements to the list at the given row, column
- *	location. If the column or row doesn't already exist, it will
- *	automatically be created.
+ *      Appends one or more elements to the list at the given row, column
+ *      location. If the column or row doesn't already exist, it will
+ *      automatically be created.
  * 
  * Results:
- *	A standard TCL result. If the tag or index is invalid, TCL_ERROR is
- *	returned and an error message is left in the interpreter result.
- *	
+ *      A standard TCL result. If the tag or index is invalid, TCL_ERROR is
+ *      returned and an error message is left in the interpreter result.
+ *      
  * Example:
- *	$t append $row $column $value ?value...?
+ *      $t append $row $column $value ?value...?
  *
  *---------------------------------------------------------------------------
  */
@@ -6937,7 +6937,7 @@ LappendOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 		return TCL_ERROR;
 	    }
 	}
-    }	    
+    }       
     return TCL_OK;
 }
 
@@ -6974,11 +6974,11 @@ LookupOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * ImportOp --
  *
- *	Parses the given command line and calls one of several import-specific
- *	operations.
- *	
+ *      Parses the given command line and calls one of several import-specific
+ *      operations.
+ *      
  * Results:
- *	Returns a standard TCL result.  It is the result of operation called.
+ *      Returns a standard TCL result.  It is the result of operation called.
  *
  *---------------------------------------------------------------------------
  */
@@ -7033,12 +7033,12 @@ ImportOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * NotifyDeleteOp --
  *
- *	Deletes one or more notifiers.  
+ *      Deletes one or more notifiers.  
  *
  * Results:
- *	A standard TCL result.  If a name given doesn't represent a notifier,
- *	then TCL_ERROR is returned and an error message is left in the
- *	interpreter result.
+ *      A standard TCL result.  If a name given doesn't represent a notifier,
+ *      then TCL_ERROR is returned and an error message is left in the
+ *      interpreter result.
  *
  *---------------------------------------------------------------------------
  */
@@ -7070,15 +7070,15 @@ NotifyDeleteOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc,
  *
  * NotifierInfoOp --
  *
- *	Returns the details for a given notifier.  The string id of the
- *	notifier is passed as an argument.
+ *      Returns the details for a given notifier.  The string id of the
+ *      notifier is passed as an argument.
  *
  * Results:
- *	A standard TCL result.  If the name given doesn't represent a
- *	notifier, then TCL_ERROR is returned and an error message is left in
- *	the interpreter result.  Otherwise the details of the notifier handler
- *	are returned as a list of three elements: notifier id, flags, and
- *	command.
+ *      A standard TCL result.  If the name given doesn't represent a
+ *      notifier, then TCL_ERROR is returned and an error message is left in
+ *      the interpreter result.  Otherwise the details of the notifier handler
+ *      are returned as a list of three elements: notifier id, flags, and
+ *      command.
  *
  *---------------------------------------------------------------------------
  */
@@ -7152,13 +7152,13 @@ NotifyInfoOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * NotifyNamesOp --
  *
- *	Returns the names of all the notifiers in use by this instance.
- *	Notifiers issues by other instances or object clients are not
- *	reported.
+ *      Returns the names of all the notifiers in use by this instance.
+ *      Notifiers issues by other instances or object clients are not
+ *      reported.
  *
  * Results:
- *	Always TCL_OK.  A list of notifier names is left in the interpreter
- *	result.
+ *      Always TCL_OK.  A list of notifier names is left in the interpreter
+ *      result.
  *
  *---------------------------------------------------------------------------
  */
@@ -7189,11 +7189,11 @@ NotifyNamesOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * NotifyOp --
  *
- *	Parses the given command line and calls one of several notifier
- *	specific operations.
- *	
+ *      Parses the given command line and calls one of several notifier
+ *      specific operations.
+ *      
  * Results:
- *	Returns a standard TCL result.  It is the result of operation called.
+ *      Returns a standard TCL result.  It is the result of operation called.
  *
  *---------------------------------------------------------------------------
  */
@@ -7226,7 +7226,7 @@ NotifyOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * NumColumnsOp --
  *  
- *	$t numcolumns 
+ *      $t numcolumns 
  *
  *---------------------------------------------------------------------------
  */
@@ -7272,8 +7272,8 @@ NumColumnsOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * NumRowsOp --
  *  
- *	$t numrows
- *	$t numcolumns 
+ *      $t numrows
+ *      $t numcolumns 
  *
  *---------------------------------------------------------------------------
  */
@@ -7325,17 +7325,17 @@ PrintValues(Tcl_Interp *interp, Cmd *cmdPtr, long numRows,
     for (i = 1; i < numRows; i++) {
 	Tcl_Obj *objPtr;
 	int isEmpty;
-        
-        isEmpty = !blt_table_value_exists(cmdPtr->table, rows[i], col);
-        if ((isEmpty) && (flags & SORT_NONEMPTY)) {
-            continue;
-        }
-        if (flags & SORT_VALUES) {
-            if (isEmpty) {
-                objPtr = Tcl_NewStringObj(cmdPtr->emptyValue, -1);
-            } else {
-                objPtr = blt_table_get_obj(cmdPtr->table, rows[i], col);
-            }
+	
+	isEmpty = !blt_table_value_exists(cmdPtr->table, rows[i], col);
+	if ((isEmpty) && (flags & SORT_NONEMPTY)) {
+	    continue;
+	}
+	if (flags & SORT_VALUES) {
+	    if (isEmpty) {
+		objPtr = Tcl_NewStringObj(cmdPtr->emptyValue, -1);
+	    } else {
+		objPtr = blt_table_get_obj(cmdPtr->table, rows[i], col);
+	    }
 	} else {
 	    objPtr = Tcl_NewLongObj(blt_table_row_index(rows[i]));
 	}
@@ -7361,14 +7361,14 @@ PrintUniqueValues(Tcl_Interp *interp, Cmd *cmdPtr, long numRows,
 
     /* Find the first non-empty value in the column.  */
     for (i = 0; i < numRows; i++) {
-        if (blt_table_value_exists(cmdPtr->table, rows[i], col)) {
-            break;
-        }
+	if (blt_table_value_exists(cmdPtr->table, rows[i], col)) {
+	    break;
+	}
     }
     /* What if all the rows are empty? */
     /* Is an empty row considered unique? */
     if (i == numRows) {
-        return TCL_OK;
+	return TCL_OK;
     }
     /* Append the row index or value onto the list. */
     if (flags & SORT_VALUES) {
@@ -7388,9 +7388,9 @@ PrintUniqueValues(Tcl_Interp *interp, Cmd *cmdPtr, long numRows,
 	    /* Convert the table offset back to a client index. */
 	    objPtr = Tcl_NewLongObj(blt_table_row_index(rows[i]));
 	}
-        if (objPtr != NULL) {
-            Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-        }
+	if (objPtr != NULL) {
+	    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+	}
     }
     return listObjPtr;
 }
@@ -7400,8 +7400,8 @@ PrintUniqueValues(Tcl_Interp *interp, Cmd *cmdPtr, long numRows,
  *
  * SortOp --
  *  
- *	$t sort -dictionary -values -unique -decreasing -list -ascii \
- *		-columns { a b c } -frequency 
+ *      $t sort -dictionary -values -unique -decreasing -list -ascii \
+ *              -columns { a b c } -frequency 
  *
  *---------------------------------------------------------------------------
  */
@@ -7428,11 +7428,11 @@ SortOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     columnIterSwitch.clientData = cmdPtr->table;
     if (Blt_ParseSwitches(interp, sortSwitches, objc - 2, objv + 2, &switches, 
 	BLT_SWITCH_DEFAULTS) < 0) {
-	return TCL_ERROR;		
+	return TCL_ERROR;               
     }
     numColumns = switches.ci.numEntries;
     if (numColumns == 0) {
-	return TCL_OK;			/* Nothing to sort. */
+	return TCL_OK;                  /* Nothing to sort. */
     }
     sp = order = Blt_AssertCalloc(numColumns, sizeof(BLT_TABLE_SORT_ORDER));
     /* Then add the secondary sorting columns. */
@@ -7453,14 +7453,14 @@ SortOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	numRows = blt_table_num_rows(table);
     } else {
 	long i;
-        BLT_TABLE_ROW row;
+	BLT_TABLE_ROW row;
 
-        i = 0;
+	i = 0;
 	map = Blt_AssertCalloc(numRows, sizeof(BLT_TABLE_ROW));
 	for (row = blt_table_first_tagged_row(&switches.ri); row != NULL; 
 	     row = blt_table_next_tagged_row(&switches.ri)) {
 	    map[i] = row;
-            i++;
+	    i++;
 	}
 	blt_table_sort_rows_subset(table, numRows, map);
 	switches.flags |= SORT_LIST;
@@ -7476,11 +7476,11 @@ SortOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 		switches.flags);
 	} else {
 	    listObjPtr = PrintValues(interp, cmdPtr, numRows, map, col, 
-                                     switches.flags);
+				     switches.flags);
 	}
-        if (listObjPtr != NULL) {
-            Tcl_SetObjResult(interp, listObjPtr);
-        }
+	if (listObjPtr != NULL) {
+	    Tcl_SetObjResult(interp, listObjPtr);
+	}
 	Blt_Free(map);
     } else {
 	/* Make row order permanent. */
@@ -7510,8 +7510,8 @@ SortOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * MinMaxOp --
  *  
- *	$t min $column
- *	$t max $column 
+ *      $t min $column
+ *      $t max $column 
  *
  *---------------------------------------------------------------------------
  */
@@ -7525,11 +7525,11 @@ MinMaxOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     int length;
     int flags;
 
-#define GET_MIN		(1<<0)
-#define GET_MAX		(1<<1)
+#define GET_MIN         (1<<0)
+#define GET_MAX         (1<<1)
     string = Tcl_GetStringFromObj(objv[1], &length);
     c = string[0];
-    flags = 0;				/* Suppress compiler warning. */
+    flags = 0;                          /* Suppress compiler warning. */
     if ((c == 'l') && (strncmp(string, "limits", length) == 0)) {
 	flags = (GET_MIN | GET_MAX);
     } else if ((c == 'm') && (strncmp(string, "min", length) == 0)) {
@@ -7591,21 +7591,21 @@ MinMaxOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * TraceCreateOp --
  *
- *	Creates a trace for this instance.  Traces represent list of keys, a
- *	bitmask of trace flags, and a command prefix to be invoked when a
- *	matching trace event occurs.
+ *      Creates a trace for this instance.  Traces represent list of keys, a
+ *      bitmask of trace flags, and a command prefix to be invoked when a
+ *      matching trace event occurs.
  *
- *	The command prefix is parsed and saved in an array of Tcl_Objs. The
- *	qualified name of the instance is saved also.
+ *      The command prefix is parsed and saved in an array of Tcl_Objs. The
+ *      qualified name of the instance is saved also.
  *
  * Results:
- *	A standard TCL result.  The name of the new trace is returned in the
- *	interpreter result.  Otherwise, if it failed to parse a switch, then
- *	TCL_ERROR is returned and an error message is left in the interpreter
- *	result.
+ *      A standard TCL result.  The name of the new trace is returned in the
+ *      interpreter result.  Otherwise, if it failed to parse a switch, then
+ *      TCL_ERROR is returned and an error message is left in the interpreter
+ *      result.
  *
  * Example:
- *	$t trace create row column how command
+ *      $t trace create row column how command
  *
  *---------------------------------------------------------------------------
  */
@@ -7638,29 +7638,29 @@ TraceCreateOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     case TABLE_SPEC_RANGE:
     case TABLE_SPEC_LABELS:
 	Tcl_AppendResult(interp, "can't trace multiple rows \"",
-                         Tcl_GetString(objv[3]), "\": use a tag instead", 
-                         (char *)NULL);
+			 Tcl_GetString(objv[3]), "\": use a tag instead", 
+			 (char *)NULL);
 	return TCL_ERROR;
     case TABLE_SPEC_INDEX:
     case TABLE_SPEC_LABEL:
-        row = blt_table_get_row(interp, table, objv[3]);
-        break;
+	row = blt_table_get_row(interp, table, objv[3]);
+	break;
     default:
-        rowTag = rowName;
+	rowTag = rowName;
     }
     switch (colSpec) {
     case TABLE_SPEC_RANGE:
     case TABLE_SPEC_LABELS:
 	Tcl_AppendResult(interp, "can't trace multiple columns \"",
-                         Tcl_GetString(objv[4]), "\": use a tag instead", 
-                         (char *)NULL);
+			 Tcl_GetString(objv[4]), "\": use a tag instead", 
+			 (char *)NULL);
 	return TCL_ERROR;
     case TABLE_SPEC_INDEX:
     case TABLE_SPEC_LABEL:
-        col = blt_table_get_column(interp, table, objv[4]);
-        break;
+	col = blt_table_get_column(interp, table, objv[4]);
+	break;
     default:
-        colTag = colName;
+	colTag = colName;
     }
     tracePtr = Blt_Malloc(sizeof(TraceInfo));
     if (tracePtr == NULL) {
@@ -7669,7 +7669,7 @@ TraceCreateOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	return TCL_ERROR;
     }
     trace = blt_table_create_trace(table, row, col, rowTag, colTag, flags, 
-        TraceProc, TraceDeleteProc, tracePtr);
+	TraceProc, TraceDeleteProc, tracePtr);
     if (trace == NULL) {
 	Tcl_AppendResult(interp, "can't create individual trace: out of memory",
 		(char *)NULL);
@@ -7713,15 +7713,15 @@ TraceCreateOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * TraceDeleteOp --
  *
- *	Deletes one or more traces.  Can be any type of trace.
+ *      Deletes one or more traces.  Can be any type of trace.
  *
  * Results:
- *	A standard TCL result.  If a name given doesn't represent a trace,
- *	then TCL_ERROR is returned and an error message is left in the
- *	interpreter result.
+ *      A standard TCL result.  If a name given doesn't represent a trace,
+ *      then TCL_ERROR is returned and an error message is left in the
+ *      interpreter result.
  *
  * Example:
- *	$t trace delete $id...
+ *      $t trace delete $id...
  *---------------------------------------------------------------------------
  */
 static int
@@ -7750,18 +7750,18 @@ TraceDeleteOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * TraceInfoOp --
  *
- *	Returns the details for a given trace.  The name of the trace is
- *	passed as an argument.  The details are returned as a list of
- *	key-value pairs: trace name, tag, row index, keys, flags, and the
- *	command prefix.
+ *      Returns the details for a given trace.  The name of the trace is
+ *      passed as an argument.  The details are returned as a list of
+ *      key-value pairs: trace name, tag, row index, keys, flags, and the
+ *      command prefix.
  *
  * Results:
- *	A standard TCL result.  If the name given doesn't represent a trace,
- *	then TCL_ERROR is returned and an error message is left in the
- *	interpreter result.
+ *      A standard TCL result.  If the name given doesn't represent a trace,
+ *      then TCL_ERROR is returned and an error message is left in the
+ *      interpreter result.
  *
  * Example:
- *	$t trace info $trace
+ *      $t trace info $trace
  *
  *---------------------------------------------------------------------------
  */
@@ -7791,12 +7791,12 @@ TraceInfoOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * TraceNamesOp --
  *
- *	Returns the names of all the traces in use by this instance.  Traces
- *	created by other instances or object clients are not reported.
+ *      Returns the names of all the traces in use by this instance.  Traces
+ *      created by other instances or object clients are not reported.
  *
  * Results:
- *	Always TCL_OK.  A list of trace names is left in the interpreter
- *	result.
+ *      Always TCL_OK.  A list of trace names is left in the interpreter
+ *      result.
  *
  *---------------------------------------------------------------------------
  */
@@ -7825,13 +7825,13 @@ TraceNamesOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * TraceOp --
  *
- * 	This procedure is invoked to process trace operations.
+ *      This procedure is invoked to process trace operations.
  *
  * Results:
- *	A standard TCL result.
+ *      A standard TCL result.
  *
  * Side Effects:
- *	See the user documentation.
+ *      See the user documentation.
  *
  *---------------------------------------------------------------------------
  */
@@ -7865,18 +7865,18 @@ TraceOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * SetOp --
  *
- *	Sets one or more key-value pairs for tables.  One or more tables may
- *	be set.  If any of the columns (keys) given don't already exist, the
- *	columns will be automatically created.  The same holds true for rows.
- *	If a row index is beyond the end of the table (tags are always in
- *	range), new rows are allocated.
+ *      Sets one or more key-value pairs for tables.  One or more tables may
+ *      be set.  If any of the columns (keys) given don't already exist, the
+ *      columns will be automatically created.  The same holds true for rows.
+ *      If a row index is beyond the end of the table (tags are always in
+ *      range), new rows are allocated.
  * 
  * Results:
- *	A standard TCL result. If the tag or index is invalid, TCL_ERROR is
- *	returned and an error message is left in the interpreter result.
- *	
+ *      A standard TCL result. If the tag or index is invalid, TCL_ERROR is
+ *      returned and an error message is left in the interpreter result.
+ *      
  * Example:
- *	$t set $row $column $value ?row column value?...
+ *      $t set $row $column $value ?row column value?...
  *
  *---------------------------------------------------------------------------
  */
@@ -7913,7 +7913,7 @@ SetOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 		    return TCL_ERROR;
 		}
 	    }
-	}	    
+	}           
     }
     return TCL_OK;
 }
@@ -7924,17 +7924,17 @@ SetOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * UnsetOp --
  *
- *	$t unset row column ?row column?
+ *      $t unset row column ?row column?
  *
- *	Unsets one or more values.  One or more tables may be unset (using
- *	tags).  It's not an error if one of the key names (columns) doesn't
- *	exist.  The same holds true for rows.  If a row index is beyond the
- *	end of the table (tags are always in range), it is also ignored.
+ *      Unsets one or more values.  One or more tables may be unset (using
+ *      tags).  It's not an error if one of the key names (columns) doesn't
+ *      exist.  The same holds true for rows.  If a row index is beyond the
+ *      end of the table (tags are always in range), it is also ignored.
  * 
  * Results:
- *	A standard TCL result. If the tag or index is invalid, TCL_ERROR is
- *	returned and an error message is left in the interpreter result.
- *	
+ *      A standard TCL result. If the tag or index is invalid, TCL_ERROR is
+ *      returned and an error message is left in the interpreter result.
+ *      
  *---------------------------------------------------------------------------
  */
 static int
@@ -7971,7 +7971,7 @@ UnsetOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 		    return TCL_ERROR;
 		}
 	    }
-	}	    
+	}           
     }
     return TCL_OK;
 }
@@ -8046,11 +8046,11 @@ WriteRecord(Tcl_Channel channel, Tcl_DString *dsPtr)
  *
  * DumpHeader --
  *
- *	Prints the info associated with a column into a dynamic
- *	string.
+ *      Prints the info associated with a column into a dynamic
+ *      string.
  *
  * Results:
- *	None.
+ *      None.
  *
  *---------------------------------------------------------------------------
  */
@@ -8079,10 +8079,10 @@ DumpHeader(DumpSwitches *dumpPtr, long numRows, long numCols)
  *
  * DumpValue --
  *
- *	Retrieves all tags for a given row or column into a tcl list.  
+ *      Retrieves all tags for a given row or column into a tcl list.  
  *
  * Results:
- *	None.
+ *      None.
  *
  *---------------------------------------------------------------------------
  */
@@ -8113,7 +8113,7 @@ DumpValue(BLT_TABLE table, DumpSwitches *dumpPtr, BLT_TABLE_ROW row,
  *
  * DumpColumn --
  *
- *	Prints the info associated with a column into a dynamic string.
+ *      Prints the info associated with a column into a dynamic string.
  *
  *---------------------------------------------------------------------------
  */
@@ -8158,7 +8158,7 @@ DumpColumn(BLT_TABLE table, DumpSwitches *dumpPtr, BLT_TABLE_COLUMN col)
  *
  * DumpRow --
  *
- *	Prints the info associated with a row into a dynamic string.
+ *      Prints the info associated with a row into a dynamic string.
  *
  *---------------------------------------------------------------------------
  */
@@ -8196,19 +8196,19 @@ DumpRow(BLT_TABLE table, DumpSwitches *dumpPtr, BLT_TABLE_ROW row)
  *
  * DumpTable --
  *
- *	Dumps data from the given table based upon the row and column maps
- *	provided which describe what rows and columns are to be dumped. The
- *	dump information is written to the file named. If the file name starts
- *	with an '@', then it is the name of an already opened channel to be
- *	used.
- *	
+ *      Dumps data from the given table based upon the row and column maps
+ *      provided which describe what rows and columns are to be dumped. The
+ *      dump information is written to the file named. If the file name starts
+ *      with an '@', then it is the name of an already opened channel to be
+ *      used.
+ *      
  * Results:
- *	A standard TCL result.  If the dump was successful, TCL_OK is
- *	returned.  Otherwise, TCL_ERROR is returned and an error message is
- *	left in the interpreter result.
+ *      A standard TCL result.  If the dump was successful, TCL_OK is
+ *      returned.  Otherwise, TCL_ERROR is returned and an error message is
+ *      left in the interpreter result.
  *
  * Side Effects:
- *	Dump information is written to the named file.
+ *      Dump information is written to the named file.
  *
  *---------------------------------------------------------------------------
  */
@@ -8258,10 +8258,10 @@ DumpTable(BLT_TABLE table, DumpSwitches *dumpPtr)
  *
  * CopyOp --
  *
- *	Copies the rows and columns from the source table given.  Any data 
- *	in the table is first deleted.
+ *      Copies the rows and columns from the source table given.  Any data 
+ *      in the table is first deleted.
  *
- *	datatable0 copy datatable1
+ *      datatable0 copy datatable1
  *
  *---------------------------------------------------------------------------
  */
@@ -8285,10 +8285,10 @@ CopyOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * DupOp --
  *
- *	Duplicates the rows and columns from the source table given into
- *	a new table.  
+ *      Duplicates the rows and columns from the source table given into
+ *      a new table.  
  *
- *	datatable0 dup ?table?
+ *      datatable0 dup ?table?
  *
  *---------------------------------------------------------------------------
  */
@@ -8416,9 +8416,9 @@ DumpOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * EmptyValueOp --
  *
- *	$t emptyvalue ?$value?
+ *      $t emptyvalue ?$value?
  *
- *	isempty($0) 
+ *      isempty($0) 
  *---------------------------------------------------------------------------
  */
 static int
@@ -8439,7 +8439,7 @@ EmptyValueOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * ExistsOp --
  *
- *	$t exists $row $column
+ *      $t exists $row $column
  *
  *---------------------------------------------------------------------------
  */
@@ -8465,14 +8465,14 @@ ExistsOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * FindOp --
  *
- *	Parses the given command line and calls one of several export-specific
- *	operations.
- *	
+ *      Parses the given command line and calls one of several export-specific
+ *      operations.
+ *      
  * Results:
- *	Returns a standard TCL result.  It is the result of operation called.
+ *      Returns a standard TCL result.  It is the result of operation called.
  *
  * Example:
- *	$t find expr ?switches?
+ *      $t find expr ?switches?
  *
  *---------------------------------------------------------------------------
  */
@@ -8505,19 +8505,19 @@ FindOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * GetOp --
  *
- *	Retrieves the value from a given table for a designated row,column
- *	location.
+ *      Retrieves the value from a given table for a designated row,column
+ *      location.
  *
- *	Normally it's an error if the column or row key is invalid or the data
- *	slot is empty (the Tcl_Obj is NULL). But if an extra argument is
- *	provided, then it is returned as a default value.
+ *      Normally it's an error if the column or row key is invalid or the data
+ *      slot is empty (the Tcl_Obj is NULL). But if an extra argument is
+ *      provided, then it is returned as a default value.
  * 
  * Results:
- *	A standard TCL result. If the tag or index is invalid, TCL_ERROR is
- *	returned and an error message is left in the interpreter result.
- *	
+ *      A standard TCL result. If the tag or index is invalid, TCL_ERROR is
+ *      returned and an error message is left in the interpreter result.
+ *      
  * Example:
- *	$t get row column ?defValue?
+ *      $t get row column ?defValue?
  *
  *---------------------------------------------------------------------------
  */
@@ -8562,7 +8562,7 @@ GetOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * AttachOp --
  *
- *	$table attach newTable
+ *      $table attach newTable
  *
  *---------------------------------------------------------------------------
  */
@@ -8632,7 +8632,7 @@ static Blt_OpSpec tableOps[] =
     {"emptyvalue", 2, EmptyValueOp, 2, 3, "?newValue?",},
     {"exists",     3, ExistsOp,     4, 4, "row column",},
     {"export",     3, ExportOp,     2, 0, "format args...",},
-    {"find",	   1, FindOp,	    3, 0, "expr ?switches?",},
+    {"find",       1, FindOp,       3, 0, "expr ?switches?",},
     {"get",        1, GetOp,        4, 5, "row column ?defValue?",},
     {"import",     1, ImportOp,     2, 0, "format args...",},
     {"keys",       1, KeysOp,       2, 0, "?column...?",},
@@ -8662,24 +8662,24 @@ static int numTableOps = sizeof(tableOps) / sizeof(Blt_OpSpec);
  *
  * TableInstObjCmd --
  *
- * 	This procedure is invoked to process commands on behalf of * the
- * 	instance of the table-object.
+ *      This procedure is invoked to process commands on behalf of * the
+ *      instance of the table-object.
  *
  * Results:
- *	A standard TCL result.
+ *      A standard TCL result.
  *
  * Side Effects:
- *	See the user documentation.
+ *      See the user documentation.
  *
  *---------------------------------------------------------------------------
  */
 static int
 TableInstObjCmd(
-    ClientData clientData,		/* Pointer to the datatable command
+    ClientData clientData,              /* Pointer to the datatable command
 					 * structure. */
-    Tcl_Interp *interp,			/* Interpreter to report errors. */
-    int objc,				/* # of arguments. */
-    Tcl_Obj *const *objv)		/* Vector of argument strings. */
+    Tcl_Interp *interp,                 /* Interpreter to report errors. */
+    int objc,                           /* # of arguments. */
+    Tcl_Obj *const *objv)               /* Vector of argument strings. */
 {
     CmdProc *proc;
     Cmd *cmdPtr = clientData;
@@ -8701,15 +8701,15 @@ TableInstObjCmd(
  *
  * TableInstDeleteProc --
  *
- *	Deletes the command associated with the table.  This is called only
- *	when the command associated with the table is destroyed.
+ *      Deletes the command associated with the table.  This is called only
+ *      when the command associated with the table is destroyed.
  *
  * Results:
- *	None.
+ *      None.
  *
  * Side Effects:
- *	The table object is released and bookkeeping data for traces and
- *	notifiers are freed.
+ *      The table object is released and bookkeeping data for traces and
+ *      notifiers are freed.
  *
  *---------------------------------------------------------------------------
  */
@@ -8751,25 +8751,25 @@ TableInstDeleteProc(ClientData clientData)
  *
  * TableCreateOp --
  *
- *	Creates a new instance of a table object.  
+ *      Creates a new instance of a table object.  
  *
- *	This routine insures that instance and object names are the same.  For
- *	example, you can't create an instance with the name of an object that
- *	already exists.  And because each instance has a TCL command
- *	associated with it (used to access the object), we additionally check
- *	more that it's not an existing TCL command.
+ *      This routine insures that instance and object names are the same.  For
+ *      example, you can't create an instance with the name of an object that
+ *      already exists.  And because each instance has a TCL command
+ *      associated with it (used to access the object), we additionally check
+ *      more that it's not an existing TCL command.
  *
- *	Instance names are namespace-qualified.  If the given name doesn't
- *	have a namespace qualifier, that instance will be created in the
- *	current namespace (not the global namespace).
- *	
+ *      Instance names are namespace-qualified.  If the given name doesn't
+ *      have a namespace qualifier, that instance will be created in the
+ *      current namespace (not the global namespace).
+ *      
  * Results:
- *	A standard TCL result.  If the instance is successfully created, the
- *	namespace-qualified name of the instance is returned. If not, then
- *	TCL_ERROR is returned and an error message is left in the interpreter
- *	result.
+ *      A standard TCL result.  If the instance is successfully created, the
+ *      namespace-qualified name of the instance is returned. If not, then
+ *      TCL_ERROR is returned and an error message is left in the interpreter
+ *      result.
  *
- *	blt::datatable create 
+ *      blt::datatable create 
  * 
  *---------------------------------------------------------------------------
  */
@@ -8804,9 +8804,9 @@ TableCreateOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	     * Parse the command and put back so that it's in a consistent
 	     * format.  
 	     *
-	     *	t1         <current namespace>::t1
-	     *	n1::t1     <current namespace>::n1::t1
-	     *	::t1	   ::t1
+	     *  t1         <current namespace>::t1
+	     *  n1::t1     <current namespace>::n1::t1
+	     *  ::t1       ::t1
 	     *  ::n1::t1   ::n1::t1
 	     */
 	    if (!Blt_ParseObjectName(interp, instName, &objName, 0)) {
@@ -8847,13 +8847,13 @@ TableCreateOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * TableDestroyOp --
  *
- *	Deletes one or more instances of table objects.  The deletion process
- *	is done by deleting the TCL command associated with the object.
- *	
+ *      Deletes one or more instances of table objects.  The deletion process
+ *      is done by deleting the TCL command associated with the object.
+ *      
  * Results:
- *	A standard TCL result.  If one of the names given doesn't represent an
- *	instance, TCL_ERROR is returned and an error message is left in the
- *	interpreter result.
+ *      A standard TCL result.  If one of the names given doesn't represent an
+ *      instance, TCL_ERROR is returned and an error message is left in the
+ *      interpreter result.
  *
  *---------------------------------------------------------------------------
  */
@@ -8882,12 +8882,12 @@ TableDestroyOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * TableExistsOp --
  *
- *	Indicates if the table object exists.  
- *	
+ *      Indicates if the table object exists.  
+ *      
  * Results:
- *	A standard TCL result.  If one of the names given doesn't represent an
- *	instance, TCL_ERROR is returned and an error message is left in the
- *	interpreter result.
+ *      A standard TCL result.  If one of the names given doesn't represent an
+ *      instance, TCL_ERROR is returned and an error message is left in the
+ *      interpreter result.
  *
  *---------------------------------------------------------------------------
  */
@@ -8910,16 +8910,16 @@ TableExistsOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * TableNamesOp --
  *
- *	Returns the names of all the table-object instances matching a given
- *	pattern.  If no pattern argument is provided, then all object names
- *	are returned.  The names returned are namespace qualified.
- *	
+ *      Returns the names of all the table-object instances matching a given
+ *      pattern.  If no pattern argument is provided, then all object names
+ *      are returned.  The names returned are namespace qualified.
+ *      
  * Results:
- *	Always returns TCL_OK.  The names of the matching objects is returned
- *	via the interpreter result.
+ *      Always returns TCL_OK.  The names of the matching objects is returned
+ *      via the interpreter result.
  *
  * Example:
- *	$t names ?pattern?
+ *      $t names ?pattern?
  *
  *---------------------------------------------------------------------------
  */
@@ -8977,7 +8977,7 @@ TableLoadOp(ClientData clientData, Tcl_Interp *interp, int objc,
 
 	fmtPtr = Blt_GetHashValue(hPtr);
 	if (fmtPtr->flags & FMT_LOADED) {
-	    return TCL_OK;		/* Converter is already loaded. */
+	    return TCL_OK;              /* Converter is already loaded. */
 	}
     }
     Tcl_DStringInit(&libName);
@@ -9059,14 +9059,14 @@ TableObjCmd(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * TableInterpDeleteProc --
  *
- *	This is called when the interpreter registering the "datatable"
- *	command is deleted.
+ *      This is called when the interpreter registering the "datatable"
+ *      command is deleted.
  *
  * Results:
- *	None.
+ *      None.
  *
  * Side Effects:
- *	Removes the hash table managing all table names.
+ *      Removes the hash table managing all table names.
  *
  *---------------------------------------------------------------------------
  */
@@ -9090,14 +9090,14 @@ TableInterpDeleteProc(ClientData clientData, Tcl_Interp *interp)
  *
  * Blt_TableCmdInitProc --
  *
- *	This procedure is invoked to initialize the "dtable" command.
+ *      This procedure is invoked to initialize the "dtable" command.
  *
  * Results:
- *	None.
+ *      None.
  *
  * Side Effects:
- *	Creates the new command and adds a new entry into a global Tcl
- *	associative array.
+ *      Creates the new command and adds a new entry into a global Tcl
+ *      associative array.
  *
  *---------------------------------------------------------------------------
  */

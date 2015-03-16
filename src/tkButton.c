@@ -187,77 +187,77 @@ typedef struct {
 					 * from outside edges to leave * room
 					 * for borders. */
     Blt_Font font;                      /* Information about text font, or
-                                         * NULL. */
+					 * NULL. */
     XColor *normalFg;                   /* Foreground color in normal
-                                         * mode. */
+					 * mode. */
     XColor *activeFg;                   /* Foreground color in active mode.
-                                         * NULL means use normalFg instead. */
+					 * NULL means use normalFg instead. */
     XColor *disabledFg;                 /* Foreground color when disabled.
-                                         * NULL means use normalFg with a
-                                         * 50% stipple instead. */
+					 * NULL means use normalFg with a
+					 * 50% stipple instead. */
     GC normalTextGC;                    /* GC for drawing text in normal
-                                         * mode.  Also used to copy from
-                                         * off-screen pixmap onto
-                                         * screen. */
+					 * mode.  Also used to copy from
+					 * off-screen pixmap onto
+					 * screen. */
     GC activeTextGC;                    /* GC for drawing text in active
-                                         * mode (NULL means use
-                                         * normalTextGC). */
+					 * mode (NULL means use
+					 * normalTextGC). */
     Pixmap gray;                        /* Pixmap for displaying disabled
-                                         * text if disabledFg is NULL. */
+					 * text if disabledFg is NULL. */
     GC disabledGC;                      /* Used to produce disabled effect.
-                                         * If disabledFg isn't NULL, this
-                                         * GC is used to draw button text
-                                         * or icon.  Otherwise text or icon
-                                         * is drawn with normalGC and this
-                                         * GC is used to stipple background
-                                         * across it.  For labels this is
-                                         * None. */
+					 * If disabledFg isn't NULL, this
+					 * GC is used to draw button text
+					 * or icon.  Otherwise text or icon
+					 * is drawn with normalGC and this
+					 * GC is used to stipple background
+					 * across it.  For labels this is
+					 * None. */
     GC copyGC;                          /* Used for copying information
-                                         * from an off-screen pixmap to the
-                                         * screen. */
+					 * from an off-screen pixmap to the
+					 * screen. */
     const char *widthString;            /* Value of -width option.
-                                         * Malloc'ed. */
+					 * Malloc'ed. */
     const char *heightString;           /* Value of -height option.
-                                         * Malloc'ed. */
+					 * Malloc'ed. */
     int width, height;                  /* If > 0, these specify dimensions
-                                         * to request for window, in
-                                         * characters for text and in
-                                         * pixels for bitmaps.  In this
-                                         * case the actual size of the text
-                                         * string or bitmap is ignored in
-                                         * computing desired window
-                                         * size. */
+					 * to request for window, in
+					 * characters for text and in
+					 * pixels for bitmaps.  In this
+					 * case the actual size of the text
+					 * string or bitmap is ignored in
+					 * computing desired window
+					 * size. */
     int wrapLength;                     /* Line length (in pixels) at which
-                                         * to wrap onto next line.  <= 0
-                                         * means don't wrap except at
-                                         * newlines. */
+					 * to wrap onto next line.  <= 0
+					 * means don't wrap except at
+					 * newlines. */
     int xPad, yPad;                     /* Extra space around text (pixels
-                                         * to leave on each side).  Ignored
-                                         * for bitmaps and images. */
+					 * to leave on each side).  Ignored
+					 * for bitmaps and images. */
     Tk_Anchor anchor;                   /* Where text/bitmap should be
-                                         * displayed inside button
-                                         * region. */
+					 * displayed inside button
+					 * region. */
     Tk_Justify justify;                 /* Justification to use for
-                                         * multi-line text. */
+					 * multi-line text. */
     int indicatorOn;                    /* True means draw indicator, false
-                                         * means don't draw it. */
+					 * means don't draw it. */
     Blt_Bg selectBg;                    /* For drawing indicator
-                                         * background, or perhaps widget
-                                         * background, when selected. */
+					 * background, or perhaps widget
+					 * background, when selected. */
     XColor *selectFg;                   /* For drawing indicator
-                                         * background, or perhaps widget
-                                         * background, when selected. */
+					 * background, or perhaps widget
+					 * background, when selected. */
     int textWidth;                      /* Width needed to display text as
-                                         * requested, in pixels. */
+					 * requested, in pixels. */
     int textHeight;                     /* Height needed to display text as
-                                         * requested, in pixels. */
+					 * requested, in pixels. */
     Tk_TextLayout textLayout;           /* Saved text layout
-                                         * information. */
+					 * information. */
     int indicatorSpace;                 /* Horizontal space (in pixels)
-                                         * allocated for display of
-                                         * indicator. */
+					 * allocated for display of
+					 * indicator. */
     int indicatorDiameter;              /* Diameter of indicator, in
-                                         * pixels. */
+					 * pixels. */
 
     int defaultState;                   /* Used in 8.0 (not here) */
 
@@ -284,27 +284,27 @@ typedef struct {
      * Miscellaneous information:
      */
     Tk_Cursor cursor;                   /* Current cursor for window, or
-                                         * None. */
+					 * None. */
     const char *takeFocus;              /* Value of -takefocus option; not
-                                         * used in the C code, but used by
-                                         * keyboard traversal scripts.
-                                         * Malloc'ed, but may be NULL. */
+					 * used in the C code, but used by
+					 * keyboard traversal scripts.
+					 * Malloc'ed, but may be NULL. */
     Tcl_Obj *cmdObjPtr;			/* Command to execute when button is
 					 * invoked; valid for buttons only. */
     const char *compound;               /* Value of -compound option;
-                                         * specifies whether the button
-                                         * should show both an image and
-                                         * text, and, if so, how. */
+					 * specifies whether the button
+					 * should show both an image and
+					 * text, and, if so, how. */
     int repeatDelay;                    /* Value of -repeatdelay option;
-                                         * specifies the number of ms after
-                                         * which the button will start to
-                                         * auto-repeat its command. */
+					 * specifies the number of ms after
+					 * which the button will start to
+					 * auto-repeat its command. */
     int repeatInterval;                 /* Value of -repeatinterval option;
-                                         * specifies the number of ms
-                                         * between auto-repeat invocataions
-                                         * of the button command. */
+					 * specifies the number of ms
+					 * between auto-repeat invocataions
+					 * of the button command. */
     int flags;                          /* Various flags;  see below for
-                                         * definitions. */
+					 * definitions. */
     Blt_Picture selectedPicture;
     Blt_Picture normalPicture;
     Blt_Picture disabledPicture;
@@ -392,7 +392,7 @@ static Blt_ConfigSpec configSpecs[] =
     {BLT_CONFIG_BACKGROUND, "-activebackground", "activeBackground", "Foreground",
 	DEF_BUTTON_ACTIVE_BACKGROUND, Blt_Offset(Button, activeBg),
 	BUTTON_MASK | CHECK_BUTTON_MASK | RADIO_BUTTON_MASK | PUSH_BUTTON_MASK |
-        BLT_CONFIG_COLOR_ONLY},
+	BLT_CONFIG_COLOR_ONLY},
     {BLT_CONFIG_BACKGROUND, "-activebackground", "activeBackground", "Foreground",
 	DEF_BUTTON_ACTIVE_BG_MONO, Blt_Offset(Button, activeBg),
 	BUTTON_MASK | CHECK_BUTTON_MASK | RADIO_BUTTON_MASK | PUSH_BUTTON_MASK
@@ -429,7 +429,7 @@ static Blt_ConfigSpec configSpecs[] =
     {BLT_CONFIG_OBJ, "-command", "command", "Command",
 	DEF_BUTTON_COMMAND, Blt_Offset(Button, cmdObjPtr),
 	BUTTON_MASK | CHECK_BUTTON_MASK | RADIO_BUTTON_MASK | PUSH_BUTTON_MASK |
-        BLT_CONFIG_NULL_OK},
+	BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_STRING, "-compound", "compound", "Compound",
 	DEF_BUTTON_COMPOUND, Blt_Offset(Button, compound), 
 	ALL_MASK | BLT_CONFIG_NULL_OK},
@@ -442,7 +442,7 @@ static Blt_ConfigSpec configSpecs[] =
 	"DisabledForeground", DEF_BUTTON_DISABLED_FOREGROUND,
 	Blt_Offset(Button, disabledFg), BUTTON_MASK | CHECK_BUTTON_MASK | 
 	RADIO_BUTTON_MASK | PUSH_BUTTON_MASK | BLT_CONFIG_COLOR_ONLY | 
-        BLT_CONFIG_NULL_OK},
+	BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_COLOR, "-disabledforeground", "disabledForeground",
 	"DisabledForeground", DEF_BUTTON_DISABLED_FG_MONO,
 	Blt_Offset(Button, disabledFg), BUTTON_MASK | CHECK_BUTTON_MASK
@@ -514,7 +514,7 @@ static Blt_ConfigSpec configSpecs[] =
 	LABEL_MASK | CHECK_BUTTON_MASK | RADIO_BUTTON_MASK},
     {BLT_CONFIG_INT, "-repeatdelay", "repeatDelay", "RepeatDelay",
 	DEF_BUTTON_REPEAT_DELAY, Blt_Offset(Button, repeatDelay),
- 	BUTTON_MASK | CHECK_BUTTON_MASK | RADIO_BUTTON_MASK | PUSH_BUTTON_MASK},
+	BUTTON_MASK | CHECK_BUTTON_MASK | RADIO_BUTTON_MASK | PUSH_BUTTON_MASK},
     {BLT_CONFIG_COLOR, "-selectforeground", "selectForeground", 
 	"SelectForeground", DEF_BUTTON_SELECT_FOREGROUND, 
 	Blt_Offset(Button, selectFg),
@@ -522,13 +522,13 @@ static Blt_ConfigSpec configSpecs[] =
 	BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_BACKGROUND, "-selectbackground", "selectBackground", 
 	"SelectBackground", DEF_BUTTON_SELECT_BACKGROUND, 
-        Blt_Offset(Button, selectBg),
+	Blt_Offset(Button, selectBg),
 	CHECK_BUTTON_MASK | RADIO_BUTTON_MASK | PUSH_BUTTON_MASK | 
 	BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_SYNONYM, "-selectcolor", "selectBackground", (char *)NULL,
 	(char *)NULL, 0, 
 	CHECK_BUTTON_MASK | RADIO_BUTTON_MASK | PUSH_BUTTON_MASK | 
-        BLT_CONFIG_NULL_OK},
+	BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_CUSTOM, "-selectimage", "selectImage", "SelectImage",
 	DEF_BUTTON_SELECT_IMAGE, Blt_Offset(Button, selectImage),
 	CHECK_BUTTON_MASK | RADIO_BUTTON_MASK | PUSH_BUTTON_MASK | 
@@ -688,16 +688,16 @@ ObjToImageProc(
 
     string = Tcl_GetStringFromObj(objPtr, &length);
     if ((flags & BLT_CONFIG_NULL_OK) && (length == 0)) {
-        image = NULL;
+	image = NULL;
     } else {
-        image = Tk_GetImage(interp, butPtr->tkwin, string, ImageChangedProc,
-                butPtr);
-        if (image == NULL) {
-            return TCL_ERROR;
-        }
+	image = Tk_GetImage(interp, butPtr->tkwin, string, ImageChangedProc,
+		butPtr);
+	if (image == NULL) {
+	    return TCL_ERROR;
+	}
     }
     if (*imagePtr != NULL) {
-        Tk_FreeImage(*imagePtr);
+	Tk_FreeImage(*imagePtr);
     }
     *imagePtr = image;
     return TCL_OK;
@@ -1699,14 +1699,14 @@ DisplayButton(ClientData clientData)
     }
     if (butPtr->highlightWidth != 0) {
 	if (butPtr->flags & GOT_FOCUS) {
-            GC highlightGC;
+	    GC highlightGC;
 
 	    highlightGC = Tk_GCForColor(butPtr->highlightColorPtr, pixmap);
-            Tk_DrawFocusHighlight(tkwin, highlightGC, butPtr->highlightWidth, 
-                pixmap);
+	    Tk_DrawFocusHighlight(tkwin, highlightGC, butPtr->highlightWidth, 
+		pixmap);
 	} else {
-            Blt_Bg_DrawFocus(tkwin, butPtr->highlightBg, butPtr->highlightWidth,
-                pixmap);
+	    Blt_Bg_DrawFocus(tkwin, butPtr->highlightBg, butPtr->highlightWidth,
+		pixmap);
 	}
     }
     /*

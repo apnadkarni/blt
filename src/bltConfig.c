@@ -123,10 +123,10 @@ int
 Tk_GetAnchorFromObj(
     Tcl_Interp *interp,                 /* Used for error reporting. */
     Tcl_Obj *objPtr,                    /* The object we are trying to get
-                                         * the value from. */
+					 * the value from. */
     Tk_Anchor *anchorPtr)               /* Where to place the Tk_Anchor
-                                         * that corresponds to the string
-                                         * value of objPtr. */
+					 * that corresponds to the string
+					 * value of objPtr. */
 {
     return Tk_GetAnchor(interp, Tcl_GetString(objPtr), anchorPtr);
 }
@@ -152,10 +152,10 @@ int
 Tk_GetJustifyFromObj(
     Tcl_Interp *interp,                 /* Used for error reporting. */
     Tcl_Obj *objPtr,                    /* The object we are trying to get
-                                         * the value from. */
+					 * the value from. */
     Tk_Justify *justifyPtr)             /* Where to place the Tk_Justify
-                                         * that corresponds to the string
-                                         * value of objPtr. */
+					 * that corresponds to the string
+					 * value of objPtr. */
 {
     return Tk_GetJustify(interp, Tcl_GetString(objPtr), justifyPtr);
 }
@@ -180,7 +180,7 @@ int
 Tk_GetReliefFromObj(
     Tcl_Interp *interp,                 /* Used for error reporting. */
     Tcl_Obj *objPtr,                    /* The object we are trying to get
-                                         * the value from. */
+					 * the value from. */
     int *reliefPtr)                     /* Where to place the answer. */
 {
     return Tk_GetRelief(interp, Tcl_GetString(objPtr), reliefPtr);
@@ -214,9 +214,9 @@ Tk_3DBorder
 Tk_Alloc3DBorderFromObj(
     Tcl_Interp *interp,                 /* Interp for error results. */
     Tk_Window tkwin,                    /* Need the screen the border is
-                                         * used on.*/
+					 * used on.*/
     Tcl_Obj *objPtr)                    /* Object giving name of color for
-                                         * window background. */
+					 * window background. */
 {
     return Tk_Get3DBorder(interp, tkwin, Tcl_GetString(objPtr));
 }
@@ -247,12 +247,12 @@ Tk_Alloc3DBorderFromObj(
 Pixmap
 Tk_AllocBitmapFromObj(
     Tcl_Interp *interp,                 /* Interp for error results. This
-                                         * may be NULL. */
+					 * may be NULL. */
     Tk_Window tkwin,                    /* Need the screen the bitmap is
-                                         * used on.*/
+					 * used on.*/
     Tcl_Obj *objPtr)                    /* Object describing bitmap; see
-                                         * manual entry for legal syntax of
-                                         * string value. */
+					 * manual entry for legal syntax of
+					 * string value. */
 {
     return Tk_GetBitmap(interp, tkwin, Tcl_GetString(objPtr));
 }
@@ -281,12 +281,12 @@ Tk_AllocBitmapFromObj(
 Tk_Font
 Tk_AllocFontFromObj(
     Tcl_Interp *interp,                 /* Interp for database and error
-                                         * return. */
+					 * return. */
     Tk_Window tkwin,                    /* For screen on which font will be
-                                         * used. */
+					 * used. */
     Tcl_Obj *objPtr)                    /* Object describing font, as:
-                                         * named font, native format, or
-                                         * parseable string. */
+					 * named font, native format, or
+					 * parseable string. */
 {
     return Tk_GetFont(interp, tkwin, Tcl_GetString(objPtr));
 }
@@ -319,11 +319,11 @@ Tk_Cursor
 Tk_AllocCursorFromObj(
     Tcl_Interp *interp,                 /* Interp for error results. */
     Tk_Window tkwin,                    /* Window in which the cursor will
-                                         * be used.*/
+					 * be used.*/
     Tcl_Obj *objPtr)                    /* Object describing cursor; see
-                                         * manual entry for description of
-                                         * legal syntax of this obj's
-                                         * string rep. */
+					 * manual entry for description of
+					 * legal syntax of this obj's
+					 * string rep. */
 {
     return Tk_GetCursor(interp, tkwin, Tcl_GetString(objPtr));
 }
@@ -689,7 +689,7 @@ Blt_GetDashesFromObj(
 	dashesPtr->values[2] = 0;
     } else if ((c == 'd') && (strcmp(string, "dashdot") == 0)) { 
 	/* 2 4 2 */
- 	dashesPtr->values[0] = 2;
+	dashesPtr->values[0] = 2;
 	dashesPtr->values[1] = 4;
 	dashesPtr->values[2] = 2;
 	dashesPtr->values[3] = 0;
@@ -1812,9 +1812,9 @@ FindConfigSpec(
 	}
 	if (matchPtr != NULL) {
 	    if (interp != NULL) {
-	        Tcl_AppendResult(interp, "ambiguous option \"", string, "\"", 
+		Tcl_AppendResult(interp, "ambiguous option \"", string, "\"", 
 			(char *)NULL);
-            }
+	    }
 	    return (Blt_ConfigSpec *)NULL;
 	}
 	matchPtr = sp;
@@ -1839,7 +1839,7 @@ FindConfigSpec(
 	for (sp = specs; /*empty*/; sp++) {
 	    if (sp->type == BLT_CONFIG_END) {
 		if (interp != NULL) {
-   		    Tcl_AppendResult(interp, 
+		    Tcl_AppendResult(interp, 
 			"couldn't find synonym for option \"", string, "\"", 
 			(char *)NULL);
 		}
@@ -2237,16 +2237,16 @@ Blt_FreeOptions(
 
 	case BLT_CONFIG_FONT:
 	    if (*((Blt_Font *) ptr) != NULL) {
-	        Blt_Font_Free(*((Blt_Font *) ptr));
-  	        *((Blt_Font *) ptr) = NULL;
-            }
+		Blt_Font_Free(*((Blt_Font *) ptr));
+		*((Blt_Font *) ptr) = NULL;
+	    }
 	    break;
 
 	case BLT_CONFIG_TK_FONT:
 	    if (*((Tk_Font *) ptr) != None) {
-	        Tk_FreeFont(*((Tk_Font *) ptr));
-  	        *((Tk_Font *) ptr) = NULL;
-            }
+		Tk_FreeFont(*((Tk_Font *) ptr));
+		*((Tk_Font *) ptr) = NULL;
+	    }
 	    break;
 
 	case BLT_CONFIG_BITMAP:

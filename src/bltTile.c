@@ -112,12 +112,12 @@ static Blt_ConfigSpec configSpecs[] =
 	DEF_TILE_BORDERWIDTH, Blt_Offset(Tile, borderWidth),
 	BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_CUSTOM, "-image", "image", "Image", (char *)NULL,
-        Blt_Offset(Tile, image), BLT_CONFIG_DONT_SET_DEFAULT, &imageOption},
+	Blt_Offset(Tile, image), BLT_CONFIG_DONT_SET_DEFAULT, &imageOption},
     {BLT_CONFIG_CUSTOM, "-relativeto", "relativeTo", "RelativeTo", (char *)NULL,
-        Blt_Offset(Tile, relative), BLT_CONFIG_DONT_SET_DEFAULT, 
+	Blt_Offset(Tile, relative), BLT_CONFIG_DONT_SET_DEFAULT, 
 	&relativeOption},
     {BLT_CONFIG_CUSTOM, "-resize", "resize", "Resize", (char *)NULL,
-        Blt_Offset(Tile, resize), BLT_CONFIG_DONT_SET_DEFAULT, 
+	Blt_Offset(Tile, resize), BLT_CONFIG_DONT_SET_DEFAULT, 
 	&resizeOption},
     {BLT_CONFIG_INT, "-xorigin", "xOrigin", "Origin", DEF_TILE_X_ORIGIN, 
 	Blt_Offset(Tile, xOrigin), BLT_CONFIG_DONT_SET_DEFAULT},
@@ -864,7 +864,7 @@ TileArea(
 		TkWinReleaseDrawableDC(tilePtr->mask, maskDC, &maskState);
 #endif
 	    } else {		/* Opaque tile. */
-	        BitBlt(destDC, destX, destY, destWidth, destHeight, 
+		BitBlt(destDC, destX, destY, destWidth, destHeight, 
 		       srcDC, srcX, srcY, SRCCOPY);
 	    }
 	}

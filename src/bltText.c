@@ -769,7 +769,7 @@ Blt_DrawLayout(Tk_Window tkwin, Drawable drawable, GC gc, Blt_Font font,
 	    Blt_DrawWithEllipsis(tkwin, drawable, gc, font, depth, angle, 
 		fp->text, fp->count, sx, sy, maxLength - fp->x);
 	} else {
- 	    Blt_Font_Draw(Tk_Display(tkwin), drawable, gc, font, depth, angle, 
+	    Blt_Font_Draw(Tk_Display(tkwin), drawable, gc, font, depth, angle, 
 		fp->text, fp->count, sx, sy);
 	}
     }
@@ -1175,11 +1175,11 @@ Blt_Ts_DrawLayout(
 	DrawStandardLayout(tkwin, drawable, stylePtr, layoutPtr, x, y);
     } else if (Blt_Font_CanRotate(stylePtr->font, angle)) {
 	Blt_DrawTextWithRotatedFont(tkwin, drawable, angle, stylePtr, 
-                layoutPtr, x, y);
+		layoutPtr, x, y);
     } else {
-        stylePtr->angle = (float)angle;
-        Blt_DrawTextWithRotatedBitmap(tkwin, drawable, angle, stylePtr, 
-                layoutPtr, x, y);
+	stylePtr->angle = (float)angle;
+	Blt_DrawTextWithRotatedBitmap(tkwin, drawable, angle, stylePtr, 
+		layoutPtr, x, y);
     }
     Blt_Font_SetClipRegion(stylePtr->font, NULL);
 }
@@ -1701,7 +1701,7 @@ Blt_ComputeTextLayout(
 	    }
 	}
 
-        wrapLine: 
+	wrapLine: 
 	flags |= TK_AT_LEAST_ONE;
 
 	/*

@@ -291,13 +291,13 @@ static Blt_ConfigSpec configSpecs[] =
 	DEF_ARROW_ON, Blt_Offset(ComboButton, flags), 
 	BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)ARROW},
     {BLT_CONFIG_PIXELS_NNEG, "-arrowborderwidth", "arrowBorderWidth", 
-        "ArrowBorderWidth", DEF_ARROW_BORDERWIDTH, 
+	"ArrowBorderWidth", DEF_ARROW_BORDERWIDTH, 
 	Blt_Offset(ComboButton, arrowBW), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_RELIEF, "-arrowrelief", "arrowRelief","ArrowRelief",
 	DEF_ARROW_RELIEF, Blt_Offset(ComboButton, arrowRelief), 0},
     {BLT_CONFIG_PIXELS_NNEG, "-arrowwidth", "arrowWidth","ArrowWidth",
 	DEF_ARROW_WIDTH, Blt_Offset(ComboButton, reqArrowWidth), 
-        BLT_CONFIG_DONT_SET_DEFAULT},
+	BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_BACKGROUND, "-background", "background", "Background",
 	DEF_NORMAL_BG, Blt_Offset(ComboButton, normalBg), 0},
     {BLT_CONFIG_SYNONYM, "-bd", "borderWidth", (char *)NULL, (char *)NULL, 0,0},
@@ -334,7 +334,7 @@ static Blt_ConfigSpec configSpecs[] =
 	Blt_Offset(ComboButton, icon), BLT_CONFIG_NULL_OK, &iconOption},
     {BLT_CONFIG_CUSTOM, "-iconvariable", "iconVariable", "IconVariable", 
 	DEF_TEXT_VARIABLE, Blt_Offset(ComboButton, iconVarObjPtr), 
-        BLT_CONFIG_NULL_OK, &iconVarOption},
+	BLT_CONFIG_NULL_OK, &iconVarOption},
     {BLT_CONFIG_CUSTOM, "-image", "image", "Image", DEF_IMAGE, 
 	Blt_Offset(ComboButton, image), BLT_CONFIG_NULL_OK, &iconOption},
     {BLT_CONFIG_JUSTIFY, "-justify", "justify", "Justify", DEF_JUSTIFY, 
@@ -347,7 +347,7 @@ static Blt_ConfigSpec configSpecs[] =
     {BLT_CONFIG_OBJ, "-postcommand", "postCommand", "PostCommand", 
 	DEF_CMD, Blt_Offset(ComboButton, postCmdObjPtr), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_BACKGROUND, "-postedbackground", "postedBackground",
-        "PostedBackground", DEF_POSTED_BG, Blt_Offset(ComboButton, postedBg),0},
+	"PostedBackground", DEF_POSTED_BG, Blt_Offset(ComboButton, postedBg),0},
     {BLT_CONFIG_COLOR, "-postedforeground", "postedForeground",
 	"PostedForeground", DEF_POSTED_FG, 
 	Blt_Offset(ComboButton, textPostedColor), 0},
@@ -365,7 +365,7 @@ static Blt_ConfigSpec configSpecs[] =
 	Blt_Offset(ComboButton, text), 0, &textOption},
     {BLT_CONFIG_CUSTOM, "-textvariable", "textVariable", "TextVariable", 
 	DEF_TEXT_VARIABLE, Blt_Offset(ComboButton, textVarObjPtr), 
-        BLT_CONFIG_NULL_OK, &textVarOption},
+	BLT_CONFIG_NULL_OK, &textVarOption},
     {BLT_CONFIG_INT, "-underline", "underline", "Underline", DEF_UNDERLINE, 
 	Blt_Offset(ComboButton, underline), BLT_CONFIG_DONT_SET_DEFAULT },
     {BLT_CONFIG_PIXELS_NNEG, "-width", "width", "Width", DEF_WIDTH, 
@@ -642,7 +642,7 @@ TextVarTraceProc(
 
     assert(comboPtr->textVarObjPtr != NULL);
     if (flags & TCL_INTERP_DESTROYED) {
-    	return NULL;			/* Interpreter is going away. */
+	return NULL;			/* Interpreter is going away. */
 
     }
     /*
@@ -669,7 +669,7 @@ TextVarTraceProc(
 	valueObjPtr = Tcl_ObjGetVar2(interp, comboPtr->textVarObjPtr, NULL, 
 		TCL_GLOBAL_ONLY | TCL_LEAVE_ERR_MSG);
 	if (valueObjPtr == NULL) {
- 	    return GetInterpResult(interp);
+	    return GetInterpResult(interp);
 	} else {
 	    SetTextFromObj(comboPtr, valueObjPtr);
 	}
@@ -703,7 +703,7 @@ IconVarTraceProc(
 
     assert(comboPtr->iconVarObjPtr != NULL);
     if (flags & TCL_INTERP_DESTROYED) {
-    	return NULL;			/* Interpreter is going away. */
+	return NULL;			/* Interpreter is going away. */
 
     }
     /*
@@ -1559,8 +1559,8 @@ PostOp(ComboButton *comboPtr, Tcl_Interp *interp, int objc,
 	int result;
 
 	cmdObjPtr = Tcl_DuplicateObj(comboPtr->menuObjPtr);
-        objPtr = Tcl_NewStringObj("post", 4);
-        Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
+	objPtr = Tcl_NewStringObj("post", 4);
+	Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
 	Tcl_IncrRefCount(cmdObjPtr);
 	Tcl_Preserve(comboPtr);
 	result = Tcl_EvalObjEx(interp, cmdObjPtr, TCL_EVAL_GLOBAL);
@@ -1981,7 +1981,7 @@ DrawComboButton(ComboButton *comboPtr, Drawable drawable)
 	}
 	Blt_Bg_FillRectangle(comboPtr->tkwin, drawable, bg, x, y, 
 	    comboPtr->arrowWidth, comboPtr->arrowHeight, comboPtr->arrowBW,
-            comboPtr->arrowRelief);
+	    comboPtr->arrowRelief);
 	if (comboPtr->flags & STATE_POSTED) {
 	    color = comboPtr->textPostedColor;
 	} else if (comboPtr->flags & STATE_ACTIVE) {
@@ -2001,13 +2001,13 @@ DrawComboButton(ComboButton *comboPtr, Drawable drawable)
 	    Tk_DrawFocusHighlight(comboPtr->tkwin, comboPtr->highlightGC, 
 		comboPtr->highlightWidth, drawable);
 	} else {
-            if (comboPtr->highlightBg != NULL) {
-                Blt_Bg_DrawFocus(comboPtr->tkwin, comboPtr->highlightBg, 
-                                 comboPtr->highlightWidth, drawable);
-            } else {
-                Blt_Bg_DrawFocus(comboPtr->tkwin, bg, 
-                                 comboPtr->highlightWidth, drawable);
-            }
+	    if (comboPtr->highlightBg != NULL) {
+		Blt_Bg_DrawFocus(comboPtr->tkwin, comboPtr->highlightBg, 
+				 comboPtr->highlightWidth, drawable);
+	    } else {
+		Blt_Bg_DrawFocus(comboPtr->tkwin, bg, 
+				 comboPtr->highlightWidth, drawable);
+	    }
 	}	    
     }
     if (comboPtr->flags & STATE_POSTED) {

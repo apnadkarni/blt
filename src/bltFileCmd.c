@@ -203,12 +203,12 @@ Crc32Op(ClientData clientData, Tcl_Interp *interp, int objc,
     } else if (objc == 4) {
 	char *string;
 
-        string = Tcl_GetString(objv[2]);
-        if (strcmp(string, "-data") == 0) {
+	string = Tcl_GetString(objv[2]);
+	if (strcmp(string, "-data") == 0) {
 	    if (Crc32FromObj(objv[3], &crc) != TCL_OK) {
 		return TCL_ERROR;
 	    }
-         } else { 
+	 } else { 
 	    Tcl_AppendResult(interp, "wrong # args: should be \"", 
 		Tcl_GetString(objv[0]), " crc32 ?fileName? ?-data dataString?", 
 			     (char *)NULL);
@@ -658,8 +658,8 @@ CsvOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (objc == 4) {
 	char *string;
 
-        string = Tcl_GetString(objv[2]);
-        if (strcmp(string, "-data") == 0) {
+	string = Tcl_GetString(objv[2]);
+	if (strcmp(string, "-data") == 0) {
 	    return  ParseCsvData(interp, objv[3]);
 	} 
     }

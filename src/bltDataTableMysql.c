@@ -336,7 +336,7 @@ MySqlConnect(Tcl_Interp *interp, const char *host, const char *user,
 	if (mysql_select_db(cp, db) != 0) {
 	    Tcl_AppendResult(interp, "can't select database \"", db, "\": ", 
 			     mysql_error(cp), (char *)NULL);
-            mysql_close(cp);
+	    mysql_close(cp);
 	    cp = NULL;
 	    return TCL_ERROR;
 	}
@@ -439,7 +439,7 @@ blt_table_mysql_init(Tcl_Interp *interp)
 	return TCL_ERROR;
     }
     return blt_table_register_format(interp,
-        "mysql",		/* Name of format. */
+	"mysql",		/* Name of format. */
 	ImportMysqlProc,	/* Import procedure. */
 	NULL);			/* Export procedure. */
 

@@ -103,113 +103,113 @@ typedef struct {
      */
 
     Tk_Window tkwin;                    /* Window that embodies the frame.
-                                         * NULL means that the window has
-                                         * been destroyed but the data
-                                         * structures haven't yet been
-                                         * cleaned up. */
+					 * NULL means that the window has
+					 * been destroyed but the data
+					 * structures haven't yet been
+					 * cleaned up. */
     Display *display;                   /* Display containing widget.
-                                         * Used, among other things, so
-                                         * that resources can be freed even
-                                         * after tkwin has gone away. */
+					 * Used, among other things, so
+					 * that resources can be freed even
+					 * after tkwin has gone away. */
     Tcl_Interp *interp;                 /* Interpreter associated with
-                                         * widget.  Used to delete widget
-                                         * command. */
+					 * widget.  Used to delete widget
+					 * command. */
     Tcl_Command widgetCmd;              /* Token for frame's widget
-                                         * command. */
+					 * command. */
     char *className;                    /* Class name for widget (from
-                                         * configuration option).
-                                         * Malloc-ed. */
+					 * configuration option).
+					 * Malloc-ed. */
     int mask;                           /* Either FRAME or TOPLEVEL; used
-                                         * to select which configuration
-                                         * options are valid for widget. */
+					 * to select which configuration
+					 * options are valid for widget. */
     char *screenName;                   /* Screen on which widget is
-                                         * created.  Non-null only for
-                                         * top-levels.  Malloc-ed, may be
-                                         * NULL. */
+					 * created.  Non-null only for
+					 * top-levels.  Malloc-ed, may be
+					 * NULL. */
     char *visualName;                   /* Textual description of visual
-                                         * for window, from -visual option.
-                                         * Malloc-ed, may be NULL. */
+					 * for window, from -visual option.
+					 * Malloc-ed, may be NULL. */
     char *colormapName;                 /* Textual description of colormap
-                                         * for window, from -colormap
-                                         * option.  Malloc-ed, may be
-                                         * NULL. */
+					 * for window, from -colormap
+					 * option.  Malloc-ed, may be
+					 * NULL. */
     char *menuName;                     /* Textual description of menu to
-                                         * use for menubar. Malloc-ed, may
-                                         * be NULL. */
+					 * use for menubar. Malloc-ed, may
+					 * be NULL. */
     Colormap colormap;                  /* If not None, identifies a
-                                         * colormap allocated for this
-                                         * window, which must be freed when
-                                         * the window is deleted. */
+					 * colormap allocated for this
+					 * window, which must be freed when
+					 * the window is deleted. */
     Tk_3DBorder border;                 /* Structure used to draw 3-D
-                                         * border and background.  NULL
-                                         * means no background or
-                                         * border. */
+					 * border and background.  NULL
+					 * means no background or
+					 * border. */
     int borderWidth;                    /* Width of 3-D border (if any). */
     int relief;                         /* 3-d effect: TK_RELIEF_RAISED etc. */
     int highlightWidth;                 /* Width in pixels of highlight to
-                                         * draw around widget when it has
-                                         * the focus.  0 means don't draw a
-                                         * highlight. */
+					 * draw around widget when it has
+					 * the focus.  0 means don't draw a
+					 * highlight. */
     int width;                          /* Width to request for window.  <=
-                                         * 0 means don't request any
-                                         * size. */
+					 * 0 means don't request any
+					 * size. */
     int height;                         /* Height to request for window.
-                                         * <= 0 means don't request any
-                                         * size. */
+					 * <= 0 means don't request any
+					 * size. */
     Tk_Cursor cursor;                   /* Current cursor for window, or
-                                         * None. */
+					 * None. */
     char *takeFocus;                    /* Value of -takefocus option; not
-                                         * used in the C code, but used by
-                                         * keyboard traversal scripts.
-                                         * Malloc'ed, but may be NULL. */
+					 * used in the C code, but used by
+					 * keyboard traversal scripts.
+					 * Malloc'ed, but may be NULL. */
     int isContainer;                    /* 1 means this window is a
-                                         * container, 0 means that it
-                                         * isn't. */
+					 * container, 0 means that it
+					 * isn't. */
     char *useThis;                      /* If the window is embedded, this
-                                         * points to the name of the window
-                                         * in which it is embedded
-                                         * (malloc'ed).  For non-embedded
-                                         * windows this is NULL. */
+					 * points to the name of the window
+					 * in which it is embedded
+					 * (malloc'ed).  For non-embedded
+					 * windows this is NULL. */
     int flags;                          /* Various flags; see below for
-                                         * definitions. */
+					 * definitions. */
 
     /* Textbox-specific fields */
     TreeView *viewPtr;
     int x, y;                           /* Position of window. */
 
     int active;                         /* Indicates that the frame is
-                                         * active. */
+					 * active. */
     int exportSelection;
 
     int insertPos;                      /* Position of the cursor within
-                                         * the array of bytes of the
-                                         * entry's label. */
+					 * the array of bytes of the
+					 * entry's label. */
 
     int cursorX, cursorY;               /* Position of the insertion cursor
-                                         * in the textbox window. */
+					 * in the textbox window. */
     short int cursorWidth;              /* Size of the insertion cursor
-                                         *    symbol. */
+					 *    symbol. */
     short int cursorHeight;
 
     int selAnchor;                      /* Fixed end of selection. Used to
-                                         * extend the selection while
-                                         * maintaining the other end of the
-                                         * selection. */
+					 * extend the selection while
+					 * maintaining the other end of the
+					 * selection. */
     int selFirst;                       /* Position of the first character
-                                         * in the selection. */
+					 * in the selection. */
     int selLast;                        /* Position of the last character
-                                         * in the selection. */
+					 * in the selection. */
 
     int cursorOn;                       /* Indicates if the cursor is
-                                         * displayed. */
+					 * displayed. */
     int onTime, offTime;                /* Time in milliseconds to wait
-                                         * before changing the cursor from
-                                         * off-to-on and on-to-off. Setting
-                                         * offTime to 0 makes the cursor
-                                         * steady. */
+					 * before changing the cursor from
+					 * off-to-on and on-to-off. Setting
+					 * offTime to 0 makes the cursor
+					 * steady. */
     Tcl_TimerToken timerToken;          /* Handle for a timer event called
-                                         * periodically to blink the
-                                         * cursor. */
+					 * periodically to blink the
+					 * cursor. */
     /* Data-specific fields. */
     Entry *entryPtr;                    /* Selected entry */
     Column *colPtr;                     /* Column of entry to be edited */
@@ -225,7 +225,7 @@ typedef struct {
     int selRelief;
     int selBW;
     XColor *selFgColor;                 /* Text color of a selected
-                                         * entry. */
+					 * entry. */
     int buttonBW;
     Tk_3DBorder buttonBorder;
     int buttonRelief;
@@ -288,7 +288,7 @@ static Blt_ConfigSpec textboxConfigSpecs[] =
 	DEF_TEXTBOX_SELECT_BACKGROUND, Blt_Offset(Textbox, selBorder),
 	BLT_CONFIG_COLOR_ONLY},
     {BLT_CONFIG_PIXELS_NNEG, "-selectborderwidth", "selectBorderWidth", 
-        "BorderWidth", DEF_TEXTBOX_SELECT_BORDERWIDTH, 
+	"BorderWidth", DEF_TEXTBOX_SELECT_BORDERWIDTH, 
 	Blt_Offset(Textbox, selBW), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_COLOR, "-selectforeground", "selectForeground", "Foreground",
 
@@ -689,7 +689,7 @@ InsertText(Textbox *tbPtr, char *insertText, int insertPos, int numBytes)
 	Blt_FormatString(newText, newSize, "%s%s", insertText, oldText);
     } else {			/* Insert into existing. */
 	Blt_FormatString(newText, newSize, "%.*s%s%s", insertPos, oldText, 
-                         insertText, oldText + insertPos);
+			 insertText, oldText + insertPos);
     }
 
     /* 
@@ -727,7 +727,7 @@ DeleteText(Textbox *tbPtr, int firstPos, int lastPos)
 	return TCL_OK;
     }
     lastPos++;                          /* Now is the position after the
-                                         * last character. */
+					 * last character. */
 
     numBytes = lastPos - firstPos;
     oldSize = strlen(oldText) + 1;
@@ -772,7 +772,7 @@ DeleteText(Textbox *tbPtr, int firstPos, int lastPos)
     }
     if (tbPtr->selLast <= tbPtr->selFirst) {
 	tbPtr->selFirst = tbPtr->selLast = -1; /* Cut away the entire
-                                                * selection. */ 
+						* selection. */ 
     }
     if (tbPtr->selAnchor >= firstPos) {
 	if (tbPtr->selAnchor >= lastPos) {
@@ -1025,12 +1025,12 @@ static int
 TextboxSelectionProc(
     ClientData clientData,              /* Information about the widget. */
     int offset,                         /* Offset within selection of first
-                                         * character to be returned. */
+					 * character to be returned. */
     char *buffer,                       /* Location in which to place
-                                         * selection. */
+					 * selection. */
     int maxBytes)                       /* Maximum number of bytes to place
-                                         * at buffer, not including
-                                         * terminating NULL character. */
+					 * at buffer, not including
+					 * terminating NULL character. */
 {
     Textbox *tbPtr = clientData;
     int size;
@@ -1255,7 +1255,7 @@ DisplayTextbox(ClientData clientData)
 	x1 = x;
 
 	if (selStart > leftPos) {       /* Normal text preceding the
-                                         * selection */
+					 * selection */
 	    numChars = (selStart - leftPos);
 	    Blt_Font_Measure(font, tbPtr->string + leftPos, numChars, 10000, 
 		DEF_TEXT_FLAGS, &x1);
@@ -1270,7 +1270,7 @@ DisplayTextbox(ClientData clientData)
 	    width = (x2 - x1) + 1;
 	    Blt_Fill3DRectangle(tbPtr->tkwin, drawable, tbPtr->selBorder,
 		x1, y + fragPtr->y - fontMetrics.ascent, 
-	        width, fontMetrics.linespace,
+		width, fontMetrics.linespace,
 		tbPtr->selBW, tbPtr->selRelief);
 	}
 	Blt_Font_Draw(Tk_Display(tbPtr->tkwin), drawable, tbPtr->gc, font, 
@@ -1535,7 +1535,7 @@ InsertOp(Textbox *tbPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     }
     string = Tcl_GetStringFromObj(objv[3], &extra);
     if (extra == 0) {                   /* Nothing to insert. Move the
-                                         * cursor anyways. */
+					 * cursor anyways. */
 	tbPtr->insertPos = insertPos;
     } else {
 	InsertText(tbPtr, string, insertPos, extra);

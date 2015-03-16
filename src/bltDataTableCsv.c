@@ -158,9 +158,9 @@ static Blt_SwitchSpec exportSwitches[] =
     {BLT_SWITCH_OBJ,    "-file",      "fileName", (char *)NULL,
 	Blt_Offset(ExportArgs, fileObjPtr), 0},
     {BLT_SWITCH_BITMASK, "-rowlabels",  "", (char *)NULL,
-        Blt_Offset(ExportArgs, flags), 0, EXPORT_ROWLABELS},
+	Blt_Offset(ExportArgs, flags), 0, EXPORT_ROWLABELS},
     {BLT_SWITCH_BITMASK, "-columnlabels",  "", (char *)NULL,
-        Blt_Offset(ExportArgs, flags), 0, EXPORT_COLUMNLABELS},
+	Blt_Offset(ExportArgs, flags), 0, EXPORT_COLUMNLABELS},
     {BLT_SWITCH_STRING, "-quote",     "char", (char *)NULL,
 	Blt_Offset(ExportArgs, reqQuote),   0},
     {BLT_SWITCH_CUSTOM, "-rows",      "rows", (char *)NULL,
@@ -322,36 +322,36 @@ GuessSeparator(ImportArgs *argsPtr)
     pos = Tcl_Tell(argsPtr->channel);
     string = NULL;                      /* Suppress compiler warning. */
     if (argsPtr->channel != NULL) {
-        objPtr = Tcl_NewStringObj("", -1);
-        Tcl_ReadChars(argsPtr->channel, objPtr, 2000, FALSE);
-        string = Tcl_GetStringFromObj(objPtr, &length);
+	objPtr = Tcl_NewStringObj("", -1);
+	Tcl_ReadChars(argsPtr->channel, objPtr, 2000, FALSE);
+	string = Tcl_GetStringFromObj(objPtr, &length);
     } else if (argsPtr->numBytes > 0) {
-        string = argsPtr->buffer;
+	string = argsPtr->buffer;
     }
     for (i = 0; i < 4; i++) {
-        charCounts[i] = 0;
-        map[i] = i;
+	charCounts[i] = 0;
+	map[i] = i;
     }
     for (p = string; (*p != '\0') && (p - string) < 2000; p++) {
-        switch (*p) {
-        case ',':                       /* Comma */
-            charCounts[0]++;         break;
-        case '\t':                      /* Tab */
-            charCounts[1]++;         break;
-        case '|':                       /* Pipe */
-            charCounts[2]++;         break;
-        case ';':                       /* Semicolon */
-            charCounts[3]++;         break;
-        }
+	switch (*p) {
+	case ',':                       /* Comma */
+	    charCounts[0]++;         break;
+	case '\t':                      /* Tab */
+	    charCounts[1]++;         break;
+	case '|':                       /* Pipe */
+	    charCounts[2]++;         break;
+	case ';':                       /* Semicolon */
+	    charCounts[3]++;         break;
+	}
     }
     if (argsPtr->channel != NULL) {
-        Tcl_Seek(argsPtr->channel, pos, SEEK_SET);
-        Tcl_DecrRefCount(objPtr);
+	Tcl_Seek(argsPtr->channel, pos, SEEK_SET);
+	Tcl_DecrRefCount(objPtr);
     }
     qsort(map, 4, sizeof(int), CompareCounts);
     argsPtr->separatorChar = sepTokens[map[0]];
 }
-        
+	
 static void
 StartCsvRecord(ExportArgs *argsPtr)
 {
@@ -548,10 +548,10 @@ ExportCsvProc(BLT_TABLE table, Tcl_Interp *interp, int objc,
     args.dsPtr = &ds;
     args.channel = channel;
     if ((args.reqSeparator != NULL) && (args.reqSeparator[0] != '\0')) {
-        args.separatorChar = args.reqSeparator[0];
+	args.separatorChar = args.reqSeparator[0];
     }
     if ((args.reqQuote != NULL) && (args.reqQuote[0] != '\0')) {
-        args.quoteChar = args.reqQuote[0];
+	args.quoteChar = args.reqQuote[0];
     }
     result = ExportCsvColumns(&args); 
     if (result == TCL_OK) {
@@ -580,11 +580,11 @@ IsEmpty(ImportArgs *argsPtr, const char *field, size_t count)
     int length;
 
     if (argsPtr->emptyValueObjPtr == NULL) {
-        return FALSE;                   /* No empty value defined. */
+	return FALSE;                   /* No empty value defined. */
     }
     value = Tcl_GetStringFromObj(argsPtr->emptyValueObjPtr, &length);
     if (count > 0) {
-        return (strncmp(field, value, count) == 0); /* Matches empty value. */
+	return (strncmp(field, value, count) == 0); /* Matches empty value. */
     }
     return (length == 0);               /* Check if count==length==0 */
 }
@@ -641,8 +641,8 @@ ImportGetLine(Tcl_Interp *interp, ImportArgs *argsPtr, char **bufferPtr,
 	numBytes = bp - argsPtr->buffer;
 	*numBytesPtr = numBytes;
 	argsPtr->numBytes -= numBytes; /* Important to reduce bytes left
-                                          * regardless of trailing
-                                          * newline. */
+					  * regardless of trailing
+					  * newline. */
 	if (numBytes > 0) {
 	    if (*(bp-1) != '\n') {
 		/* The last newline has been trimmed.  Append a newline.
@@ -749,11 +749,11 @@ ImportCsv(Tcl_Interp *interp, BLT_TABLE table, ImportArgs *argsPtr)
 			col = blt_table_column(table, i);
 		    }
 		    if (((last > field) || (isQuoted)) && 
-                        (!IsEmpty(argsPtr, field, last - field))) {
-                        if (blt_table_set_string(table, row, col, field,
-                                last - field) != TCL_OK) {             
-                            goto error;
-                        }
+			(!IsEmpty(argsPtr, field, last - field))) {
+			if (blt_table_set_string(table, row, col, field,
+				last - field) != TCL_OK) {             
+			    goto error;
+			}
 		    }
 		    i++;
 		    if (*bp == '\n') {
@@ -845,12 +845,12 @@ ImportCsv(Tcl_Interp *interp, BLT_TABLE table, ImportArgs *argsPtr)
 			goto error;
 		    }
 		}			
-                if (((last > field) || (isQuoted)) && 
-                    (!IsEmpty(argsPtr, field, last - field))) {
-                    if (blt_table_set_string(table, row, col, field, 
-                        last - field) != TCL_OK) {
-                        goto error;
-                    }
+		if (((last > field) || (isQuoted)) && 
+		    (!IsEmpty(argsPtr, field, last - field))) {
+		    if (blt_table_set_string(table, row, col, field, 
+			last - field) != TCL_OK) {
+			goto error;
+		    }
 		}		
 	    }    
 	    break;
@@ -885,10 +885,10 @@ ImportCsvProc(BLT_TABLE table, Tcl_Interp *interp, int objc,
 	goto error;
     }
     if ((args.reqQuote != NULL) && (args.reqQuote[0] != '\0')) {
-        args.quoteChar = args.reqQuote[0];
+	args.quoteChar = args.reqQuote[0];
     }
     if ((args.reqComment != NULL) && (args.reqComment[0] != '\0')) {
-        args.commentChar = args.reqComment[0];
+	args.commentChar = args.reqComment[0];
     }
     if (args.dataObjPtr != NULL) {
 	int numBytes;
@@ -897,11 +897,11 @@ ImportCsvProc(BLT_TABLE table, Tcl_Interp *interp, int objc,
 	args.buffer = Tcl_GetStringFromObj(args.dataObjPtr, &numBytes);
 	args.numBytes = numBytes;
 	args.fileObjPtr = NULL;
-        if ((args.reqSeparator == NULL) || (args.reqSeparator[0] == '\0')) {
-            GuessSeparator(&args);
-        } else {
-            args.separatorChar = args.reqSeparator[0];
-        }
+	if ((args.reqSeparator == NULL) || (args.reqSeparator[0] == '\0')) {
+	    GuessSeparator(&args);
+	} else {
+	    args.separatorChar = args.reqSeparator[0];
+	}
 	Tcl_DStringInit(&args.ds);
 	result = ImportCsv(interp, table, &args);
 	Tcl_DStringFree(&args.ds);
@@ -935,19 +935,19 @@ ImportCsvProc(BLT_TABLE table, Tcl_Interp *interp, int objc,
 		goto error;
 	    }
 	}
-        if (args.encodingObjPtr != NULL) {
-            if (Tcl_SetChannelOption(interp, channel, "-encoding", 
-                Tcl_GetString(args.encodingObjPtr)) != TCL_OK) {
-                goto error;
-            }
-        }
+	if (args.encodingObjPtr != NULL) {
+	    if (Tcl_SetChannelOption(interp, channel, "-encoding", 
+		Tcl_GetString(args.encodingObjPtr)) != TCL_OK) {
+		goto error;
+	    }
+	}
 	args.channel = channel;
 	Tcl_DStringInit(&args.ds);
-        if ((args.reqSeparator == NULL) || (args.reqSeparator[0] == '\0')) {
-            GuessSeparator(&args);
-        } else {
-            args.separatorChar = args.reqSeparator[0];
-        }
+	if ((args.reqSeparator == NULL) || (args.reqSeparator[0] == '\0')) {
+	    GuessSeparator(&args);
+	} else {
+	    args.separatorChar = args.reqSeparator[0];
+	}
 	result = ImportCsv(interp, table, &args);
 	Tcl_DStringFree(&args.ds);
 	if (closeChannel) {
@@ -981,7 +981,7 @@ blt_table_csv_init(Tcl_Interp *interp)
 	return TCL_ERROR;
     }
     return blt_table_register_format(interp,
-        "csv",			/* Name of format. */
+	"csv",			/* Name of format. */
 	ImportCsvProc,		/* Import procedure. */
 	ExportCsvProc);		/* Export procedure. */
 

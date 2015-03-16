@@ -359,10 +359,10 @@ SetupStdFile(
 		return 0;
 	    }
 	    /*
-             * Must clear the close-on-exec flag for the target FD, since some
-             * systems (e.g. Ultrix) do not clear the CLOEXEC flag on the
-             * target FD.
-             */
+	     * Must clear the close-on-exec flag for the target FD, since some
+	     * systems (e.g. Ultrix) do not clear the CLOEXEC flag on the
+	     * target FD.
+	     */
 
 	    fcntl(targetFd, F_SETFD, 0);
 	} else {
@@ -491,7 +491,7 @@ CreateProcess(
 	execvp(argv[0], &argv[0]);
 	Blt_FormatString(errSpace, 200, "%dcan't execute \"%.150s\": ", errno, argv[0]);
 	length = strlen(errSpace);
- 	numWritten = write(fd, errSpace, (size_t)strlen(errSpace));
+	numWritten = write(fd, errSpace, (size_t)strlen(errSpace));
 	assert(numWritten == length);
 	_exit(1);
     }
@@ -756,7 +756,7 @@ Blt_CreatePipeline(
     int pipeIn;
     int isOpen[3];
     int curFd[3];		/* If non-zero, then fd should be closed
-    				 * when cleaning up. */
+				 * when cleaning up. */
     int fd[3];
     
     char **argv;

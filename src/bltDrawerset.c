@@ -244,9 +244,9 @@ struct _Drawer  {
     Tcl_Obj *closeValueObjPtr;		/* Drawer close-value. */
 
     Tcl_Obj *openCmdObjPtr;             /* Command to be invoked whenever
-                                         * the drawer has been opened. */
+					 * the drawer has been opened. */
     Tcl_Obj *closeCmdObjPtr;            /* Command to be invoked whenever
-                                         * the drawer has been closed. */
+					 * the drawer has been closed. */
 };
 
 /* Drawer/handle flags.  */
@@ -291,7 +291,7 @@ struct _Drawer  {
 
 struct _Drawerset {
     int flags;				/* See the flags definitions
-                                         * below. */
+					 * below. */
     Display *display;			/* Display of the widget. */
     Tk_Window tkwin;			/* The container window into which
 					 * other widgets are arranged. */
@@ -373,7 +373,7 @@ struct _Drawerset {
     Drawer *activePtr;			/* Indicates the drawer with the
 					 * active handle. */
     Drawer *anchorPtr;			/* Drawer that is currently
-                                         * anchored */
+					 * anchored */
     int bearing;			/* Location of the split
 					 * (drawerset).  the drawer
 					 * (drawer). */
@@ -468,7 +468,7 @@ static Blt_ConfigSpec drawerSpecs[] =
 {
     {BLT_CONFIG_BACKGROUND, "-activehandlecolor", "activeHandleColor", 
 	"HandleColor", DEF_ACTIVEHANDLECOLOR, Blt_Offset(Drawer, activeHandleBg), 
-        BLT_CONFIG_DONT_SET_DEFAULT | BLT_CONFIG_NULL_OK},
+	BLT_CONFIG_DONT_SET_DEFAULT | BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_ANCHOR, "-anchor", (char *)NULL, (char *)NULL, 
 	DEF_DRAWER_ANCHOR, Blt_Offset(Drawer, anchor), 
 	BLT_CONFIG_DONT_SET_DEFAULT},
@@ -478,23 +478,23 @@ static Blt_ConfigSpec drawerSpecs[] =
     {BLT_CONFIG_SYNONYM, "-bg", "background", (char *)NULL, (char *)NULL, 
 	0, 0},
     {BLT_CONFIG_OBJ, "-closecommand", "closeCommand", "CloseCommand", 
-        DEF_DRAWER_CLOSE_COMMAND, Blt_Offset(Drawer, closeCmdObjPtr), 
-        BLT_CONFIG_NULL_OK},
+	DEF_DRAWER_CLOSE_COMMAND, Blt_Offset(Drawer, closeCmdObjPtr), 
+	BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_OBJ, "-closevalue", "closeValue", "CloseValue",
 	DEF_DRAWER_CLOSEVALUE, Blt_Offset(Drawer, closeValueObjPtr), 
 	BLT_CONFIG_NULL_OK },
     {BLT_CONFIG_CURSOR, "-cursor", "cursor", "Cursor",
-        DEF_DRAWER_CURSOR, Blt_Offset(Drawer, cursor), BLT_CONFIG_NULL_OK},
+	DEF_DRAWER_CURSOR, Blt_Offset(Drawer, cursor), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_FILL, "-fill", "fill", "Fill", DEF_DRAWER_FILL, 
 	Blt_Offset(Drawer, fill), BLT_CONFIG_DONT_SET_DEFAULT },
     {BLT_CONFIG_BACKGROUND, "-handlecolor", "handleColor", "HandleColor",
 	DEF_HANDLECOLOR, Blt_Offset(Drawer, handleBg), 
-        BLT_CONFIG_DONT_SET_DEFAULT | BLT_CONFIG_NULL_OK},
+	BLT_CONFIG_DONT_SET_DEFAULT | BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_SYNONYM, "-height", "reqHeight", (char *)NULL, (char *)NULL, 
 	Blt_Offset(Drawer, reqHeight), 0},
     {BLT_CONFIG_BITMASK, "-hide", "hide", "Hide", DEF_DRAWER_HIDE, 
-        Blt_Offset(Drawer, flags), BLT_CONFIG_DONT_SET_DEFAULT, 
-        (Blt_CustomOption *)HIDDEN },
+	Blt_Offset(Drawer, flags), BLT_CONFIG_DONT_SET_DEFAULT, 
+	(Blt_CustomOption *)HIDDEN },
     {BLT_CONFIG_COLOR, "-highlightbackground", "highlightBackground",
 	"HighlightBackground", DEF_DRAWER_HIGHLIGHT_BACKGROUND, 
 	Blt_Offset(Drawer, highlightBgColor), 0},
@@ -508,8 +508,8 @@ static Blt_ConfigSpec drawerSpecs[] =
     {BLT_CONFIG_PIXELS_NNEG, "-ipady", (char *)NULL, (char *)NULL, 
 	(char *)NULL, Blt_Offset(Drawer, iPadY), 0},
     {BLT_CONFIG_OBJ, "-opencommand", "openCommand", "OpenCommand", 
-        DEF_DRAWER_OPEN_COMMAND, Blt_Offset(Drawer, openCmdObjPtr), 
-        BLT_CONFIG_NULL_OK},
+	DEF_DRAWER_OPEN_COMMAND, Blt_Offset(Drawer, openCmdObjPtr), 
+	BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_OBJ, "-openvalue", "openValue", "OpenValue", 
 	DEF_DRAWER_OPENVALUE, Blt_Offset(Drawer, openValueObjPtr), 
 	BLT_CONFIG_NULL_OK },
@@ -526,7 +526,7 @@ static Blt_ConfigSpec drawerSpecs[] =
 	DEF_DRAWER_SHRINK, Blt_Offset(Drawer, flags), 
 	BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)SHRINK },
     {BLT_CONFIG_SIDE, "-side", (char *)NULL, (char *)NULL, DEF_SIDE, 
-        Blt_Offset(Drawer, side), BLT_CONFIG_DONT_SET_DEFAULT},
+	Blt_Offset(Drawer, side), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_CUSTOM, "-size", (char *)NULL, (char *)NULL, (char *)NULL, 
 	Blt_Offset(Drawer, reqSize), 0, &bltLimitsOption},
     {BLT_CONFIG_STRING, "-takefocus", "takeFocus", "TakeFocus",
@@ -539,11 +539,11 @@ static Blt_ConfigSpec drawerSpecs[] =
     {BLT_CONFIG_CUSTOM, "-window", "window", "Window", (char *)NULL, 
 	Blt_Offset(Drawer, tkwin), BLT_CONFIG_NULL_OK, &childOption },
     {BLT_CONFIG_PIXELS_NNEG, "-xoffset", "xOffset", "XOffset", 
-        DEF_DRAWER_XOFFSET, Blt_Offset(Drawer, xOffset), 
-        BLT_CONFIG_DONT_SET_DEFAULT},
+	DEF_DRAWER_XOFFSET, Blt_Offset(Drawer, xOffset), 
+	BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_PIXELS_NNEG, "-yoffset", "yOffset", "YOffset", 
-        DEF_DRAWER_YOFFSET, Blt_Offset(Drawer, yOffset), 
-        BLT_CONFIG_DONT_SET_DEFAULT},
+	DEF_DRAWER_YOFFSET, Blt_Offset(Drawer, yOffset), 
+	BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_END, NULL, NULL, NULL, NULL, 0, 0}
 };
 
@@ -586,7 +586,7 @@ static Blt_ConfigSpec drawersetSpecs[] =
     {BLT_CONFIG_CUSTOM, "-reqwidth", (char *)NULL, (char *)NULL,
 	(char *)NULL, Blt_Offset(Drawerset, reqWidth), 0, &bltLimitsOption},
     {BLT_CONFIG_PIXELS_NNEG, "-handleborderwidth", "handleBorderWidth", 
-        "HandleBorderWidth", DEF_HANDLEBORDERWIDTH, 
+	"HandleBorderWidth", DEF_HANDLEBORDERWIDTH, 
 	Blt_Offset(Drawerset, handleBW), BLT_CONFIG_DONT_SET_DEFAULT },
     {BLT_CONFIG_BACKGROUND, "-handlecolor", "handleColor", "HandleColor",
 	DEF_HANDLECOLOR, Blt_Offset(Drawerset, handleBg), 0},
@@ -603,7 +603,7 @@ static Blt_ConfigSpec drawersetSpecs[] =
 	Blt_Offset(Drawerset,scrollUnits), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_INT_NNEG, "-scrolldelay", "scrollDelay", "ScrollDelay",
 	DEF_SCROLLDELAY, Blt_Offset(Drawerset, interval),
-        BLT_CONFIG_DONT_SET_DEFAULT},
+	BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_PIXELS_NNEG, "-width", "width", "Width", DEF_WIDTH,
 	Blt_Offset(Drawerset, reqWidth), BLT_CONFIG_DONT_SET_DEFAULT },
     {BLT_CONFIG_OBJ, "-window", "window", "Window", (char *)NULL, 
@@ -918,7 +918,7 @@ RaiseDrawer(Drawer *drawPtr)
 	setPtr = drawPtr->setPtr;
 	Blt_Chain_UnlinkLink(setPtr->chain, drawPtr->link);
 	Blt_Chain_AppendLink(setPtr->chain, drawPtr->link);
-        setPtr->flags |= RESTACK;
+	setPtr->flags |= RESTACK;
     }
 }
 
@@ -946,7 +946,7 @@ LowerDrawer(Drawer *drawPtr)
 	setPtr = drawPtr->setPtr;
 	Blt_Chain_UnlinkLink(setPtr->chain, drawPtr->link);
 	Blt_Chain_PrependLink(setPtr->chain, drawPtr->link);
-        setPtr->flags |= RESTACK;
+	setPtr->flags |= RESTACK;
     }
 }
 
@@ -1127,15 +1127,15 @@ OpenDrawer(Drawer *drawPtr)
     }
     drawPtr->flags &= ~CLOSED;
     if (drawPtr->openCmdObjPtr != NULL) {
-        int result;
-        Drawerset *setPtr;
+	int result;
+	Drawerset *setPtr;
 
-        setPtr = drawPtr->setPtr;
-        result = InvokeDrawerCommand(setPtr->interp, drawPtr, 
-                drawPtr->openCmdObjPtr);
-        if (result != TCL_OK) {
-            Tcl_BackgroundError(setPtr->interp);
-        }
+	setPtr = drawPtr->setPtr;
+	result = InvokeDrawerCommand(setPtr->interp, drawPtr, 
+		drawPtr->openCmdObjPtr);
+	if (result != TCL_OK) {
+	    Tcl_BackgroundError(setPtr->interp);
+	}
     }
 }
 
@@ -1214,15 +1214,15 @@ CloseDrawer(Drawer *drawPtr)
     }
     drawPtr->flags |= CLOSED;
     if (drawPtr->closeCmdObjPtr != NULL) {
-        int result;
-        Drawerset *setPtr;
+	int result;
+	Drawerset *setPtr;
 
-        setPtr = drawPtr->setPtr;
-        result = InvokeDrawerCommand(setPtr->interp, drawPtr, 
-                                     drawPtr->closeCmdObjPtr);
-        if (result != TCL_OK) {
-            Tcl_BackgroundError(setPtr->interp);
-        }
+	setPtr = drawPtr->setPtr;
+	result = InvokeDrawerCommand(setPtr->interp, drawPtr, 
+				     drawPtr->closeCmdObjPtr);
+	if (result != TCL_OK) {
+	    Tcl_BackgroundError(setPtr->interp);
+	}
     }
 }
 
@@ -1262,27 +1262,27 @@ SetDrawerVariable(Drawer *drawPtr)
     state = (drawPtr->flags & CLOSED) ? FALSE : TRUE;
     result = TCL_OK;
     if (drawPtr->variableObjPtr == NULL) { 
-        /* No variable set. No trace to trigger open/close of the drawer. */
-        if (state) {
-            EventuallyOpenDrawer(drawPtr);
-        } else {
-            EventuallyCloseDrawer(drawPtr);
-        }
+	/* No variable set. No trace to trigger open/close of the drawer. */
+	if (state) {
+	    EventuallyOpenDrawer(drawPtr);
+	} else {
+	    EventuallyCloseDrawer(drawPtr);
+	}
     } else {
-        Tcl_Obj *objPtr;
-        Drawerset *setPtr;
+	Tcl_Obj *objPtr;
+	Drawerset *setPtr;
 
-        objPtr = (state) ? drawPtr->openValueObjPtr : drawPtr->closeValueObjPtr;
-        if (objPtr == NULL) {
-            objPtr = Tcl_NewBooleanObj(state);
-        }
-        setPtr = drawPtr->setPtr;
-        Tcl_IncrRefCount(objPtr);
-        if (Tcl_ObjSetVar2(setPtr->interp, drawPtr->variableObjPtr, NULL, 
-                           objPtr, TCL_GLOBAL_ONLY|TCL_LEAVE_ERR_MSG) == NULL) {
-            result = TCL_ERROR;
-        }
-        Tcl_DecrRefCount(objPtr);
+	objPtr = (state) ? drawPtr->openValueObjPtr : drawPtr->closeValueObjPtr;
+	if (objPtr == NULL) {
+	    objPtr = Tcl_NewBooleanObj(state);
+	}
+	setPtr = drawPtr->setPtr;
+	Tcl_IncrRefCount(objPtr);
+	if (Tcl_ObjSetVar2(setPtr->interp, drawPtr->variableObjPtr, NULL, 
+			   objPtr, TCL_GLOBAL_ONLY|TCL_LEAVE_ERR_MSG) == NULL) {
+	    result = TCL_ERROR;
+	}
+	Tcl_DecrRefCount(objPtr);
     }
     return result;
 }
@@ -1385,8 +1385,8 @@ DrawerTimerProc(ClientData clientData)
 	if (*anchorPtr < 0) {
 	    CloseDrawer(drawPtr);
 	} else {
-            OpenDrawer(drawPtr);
-        }
+	    OpenDrawer(drawPtr);
+	}
     } else if (setPtr->flags & ANIMATE) {
 	drawPtr->scrollIncr += drawPtr->scrollIncr;
 	drawPtr->timerToken = Tcl_CreateTimerHandler(setPtr->interval, 
@@ -1426,7 +1426,7 @@ DrawerVarTraceProc(
 
     assert(drawPtr->variableObjPtr != NULL);
     if (flags & TCL_INTERP_DESTROYED) {
-    	return NULL;			/* Interpreter is going away. */
+	return NULL;			/* Interpreter is going away. */
     }
     /*
      * If the variable is being unset, then re-establish the trace.
@@ -2292,8 +2292,8 @@ GetDrawerIterator(Tcl_Interp *interp, Drawerset *setPtr, Tcl_Obj *objPtr,
 	    iterPtr->type = ITER_SINGLE;
 	    return TCL_OK;
 	}
-        Tcl_AppendResult(interp, "unknown handle window \"", string, "\"",
-                         (char *)NULL);
+	Tcl_AppendResult(interp, "unknown handle window \"", string, "\"",
+			 (char *)NULL);
 	return TCL_ERROR;
     } else if ((c == 'a') && (strcmp(iterPtr->tagName, "all") == 0)) {
 	iterPtr->type  = ITER_ALL;
@@ -2387,7 +2387,7 @@ NewDrawer(Tcl_Interp *interp, Drawerset *setPtr, const char *name)
     path = Blt_AssertMalloc(strlen(Tk_PathName(setPtr->tkwin)) + 200);
     do {
 	sprintf(string, "drawer%lu", (unsigned long)setPtr->nextId++);
- 	sprintf(path, "%s.%s", Tk_PathName(setPtr->tkwin), string);
+	sprintf(path, "%s.%s", Tk_PathName(setPtr->tkwin), string);
     } while (Tk_NameToWindow(interp, path, setPtr->tkwin) != NULL);
     Blt_Free(path);
     handleName = string;
@@ -2790,26 +2790,26 @@ ArrangeDrawer(Drawer *drawPtr)
 
     if (drawPtr->side & SIDE_VERTICAL) {
 	if ((drawPtr->fill & FILL_Y) || 
-            ((ch < h) && (drawPtr->flags & SHRINK))) {
+	    ((ch < h) && (drawPtr->flags & SHRINK))) {
 	    h = ch;		
 	}
-        h = BoundHeight(h, &drawPtr->reqSize);
+	h = BoundHeight(h, &drawPtr->reqSize);
 	if ((cw < w) || (drawPtr->fill & FILL_X)) {
-            /* -fill x overrides -reqwidth. */
+	    /* -fill x overrides -reqwidth. */
 	    w = cw;
 	} 
-        drawPtr->size = h;
+	drawPtr->size = h;
     } else {
 	if ((drawPtr->fill & FILL_X) ||
-            ((cw < w) && (drawPtr->flags & SHRINK))) {
+	    ((cw < w) && (drawPtr->flags & SHRINK))) {
 	    w = cw;
 	}
-        w = BoundWidth(w, &drawPtr->reqSize);
+	w = BoundWidth(w, &drawPtr->reqSize);
 	if ((ch < h) || (drawPtr->fill & FILL_Y)) {
-            /* -fill y overrides -reqheight. */
+	    /* -fill y overrides -reqheight. */
 	    h = ch;
 	}
-        drawPtr->size = w;
+	drawPtr->size = w;
     }
     x = ScreenX(drawPtr) + Tk_Changes(drawPtr->tkwin)->border_width;
     y = ScreenY(drawPtr) + Tk_Changes(drawPtr->tkwin)->border_width;
@@ -2852,25 +2852,25 @@ ArrangeDrawer(Drawer *drawPtr)
     }
     switch (drawPtr->side) {
     case SIDE_BOTTOM:
-        if (ch > (drawPtr->yOffset + h)) {
-            y -= drawPtr->yOffset;
-        }
-        break;
+	if (ch > (drawPtr->yOffset + h)) {
+	    y -= drawPtr->yOffset;
+	}
+	break;
     case SIDE_TOP:
-        if (ch > (drawPtr->yOffset + h)) {
-            y += drawPtr->yOffset;
-        }
-        break;
+	if (ch > (drawPtr->yOffset + h)) {
+	    y += drawPtr->yOffset;
+	}
+	break;
     case SIDE_LEFT:
-        if (cw > (drawPtr->xOffset + w)) {
-            x += drawPtr->xOffset;
-        }
-        break;
+	if (cw > (drawPtr->xOffset + w)) {
+	    x += drawPtr->xOffset;
+	}
+	break;
     case SIDE_RIGHT:
-        if (cw > (drawPtr->xOffset + w)) {
-            x -= drawPtr->xOffset;
-        }
-        break;
+	if (cw > (drawPtr->xOffset + w)) {
+	    x -= drawPtr->xOffset;
+	}
+	break;
     }
     if (drawPtr->flags & HANDLE) {
 	/* Make room for the handle if one if needed. Adjust the window's
@@ -2905,8 +2905,8 @@ ArrangeDrawer(Drawer *drawPtr)
 	 * Resize and/or move the widget as necessary.
 	 */
 #ifdef notdef
-        fprintf(stderr, "drawer %s, x=%d y=%d w=%d h=%d cw=%d ch=%d\n",
-                Tk_PathName(drawPtr->tkwin), x, y, w, h, cw, ch);
+	fprintf(stderr, "drawer %s, x=%d y=%d w=%d h=%d cw=%d ch=%d\n",
+		Tk_PathName(drawPtr->tkwin), x, y, w, h, cw, ch);
 #endif
 	if ((x != Tk_X(drawPtr->tkwin)) || 
 	    (y != Tk_Y(drawPtr->tkwin)) ||
@@ -3033,27 +3033,27 @@ RestackDrawers(Drawerset *setPtr)
 
 	prev = Blt_Chain_PrevLink(link);
 	drawPtr = Blt_Chain_GetValue(link);
-        if (drawPtr->tkwin != NULL) {
-            if (Tk_WindowId(drawPtr->tkwin) == None) {
-                Tk_MakeWindowExist(drawPtr->tkwin);
-            }
-            windows[numWindows] = Tk_WindowId(drawPtr->tkwin);
-            numWindows++;
-        }
-        if ((drawPtr->flags & SHOW_HANDLE) && (drawPtr->handle != NULL)) {
-            if (Tk_WindowId(drawPtr->handle) == None) {
-                Tk_MakeWindowExist(drawPtr->handle);
-            }
-            windows[numWindows] = Tk_WindowId(drawPtr->handle);
-            numWindows++;
-        }
+	if (drawPtr->tkwin != NULL) {
+	    if (Tk_WindowId(drawPtr->tkwin) == None) {
+		Tk_MakeWindowExist(drawPtr->tkwin);
+	    }
+	    windows[numWindows] = Tk_WindowId(drawPtr->tkwin);
+	    numWindows++;
+	}
+	if ((drawPtr->flags & SHOW_HANDLE) && (drawPtr->handle != NULL)) {
+	    if (Tk_WindowId(drawPtr->handle) == None) {
+		Tk_MakeWindowExist(drawPtr->handle);
+	    }
+	    windows[numWindows] = Tk_WindowId(drawPtr->handle);
+	    numWindows++;
+	}
     }
     if (setPtr->base != NULL) {
-        if (Tk_WindowId(setPtr->base) == None) {
-            Tk_MakeWindowExist(setPtr->base);
-        }
-        windows[numWindows] = Tk_WindowId(setPtr->base);
-        numWindows++;
+	if (Tk_WindowId(setPtr->base) == None) {
+	    Tk_MakeWindowExist(setPtr->base);
+	}
+	windows[numWindows] = Tk_WindowId(setPtr->base);
+	numWindows++;
     }
     XRestackWindows(setPtr->display, windows, numWindows);
     Blt_Free(windows);
@@ -3077,7 +3077,7 @@ ComputeGeometry(Drawerset *setPtr)
     }
     if ((setPtr->normalWidth != Tk_ReqWidth(setPtr->tkwin)) || 
 	(setPtr->normalHeight != Tk_ReqHeight(setPtr->tkwin))) {
-        Tk_GeometryRequest(setPtr->tkwin, setPtr->normalWidth,
+	Tk_GeometryRequest(setPtr->tkwin, setPtr->normalWidth,
 			   setPtr->normalHeight);
     }	    
     setPtr->flags &= ~LAYOUT_PENDING;
@@ -3242,7 +3242,7 @@ CgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
     Drawerset *setPtr = clientData;
 
     return Blt_ConfigureValueFromObj(interp, setPtr->tkwin, drawersetSpecs, 
-        (char *)setPtr, objv[2], 0);
+	(char *)setPtr, objv[2], 0);
 }
 
 /*
@@ -3273,8 +3273,8 @@ CloseOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     for (drawPtr = FirstTaggedDrawer(&iter); drawPtr != NULL; 
 	 drawPtr = NextTaggedDrawer(&iter)) {
-        drawPtr->flags |= CLOSED;
-        SetDrawerVariable(drawPtr);
+	drawPtr->flags |= CLOSED;
+	SetDrawerVariable(drawPtr);
     }
     return TCL_OK;
 }
@@ -3301,10 +3301,10 @@ ConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
 
     if (objc == 2) {
 	return Blt_ConfigureInfoFromObj(interp, setPtr->tkwin, drawersetSpecs, 
-                (char *)setPtr, (Tcl_Obj *)NULL, 0);
+		(char *)setPtr, (Tcl_Obj *)NULL, 0);
     } else if (objc == 3) {
 	return Blt_ConfigureInfoFromObj(interp, setPtr->tkwin, drawersetSpecs, 
-                (char *)setPtr, objv[2], 0);
+		(char *)setPtr, objv[2], 0);
     }
     if (Blt_ConfigureWidgetFromObj(interp, setPtr->tkwin, drawersetSpecs,
 	objc - 2, objv + 2, (char *)setPtr, BLT_CONFIG_OBJV_ONLY) 
@@ -3379,7 +3379,7 @@ DrawerCgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	return TCL_ERROR;
     }
     return Blt_ConfigureValueFromObj(interp, setPtr->tkwin, drawerSpecs, 
-        (char *)drawPtr, objv[4], 0);
+	(char *)drawPtr, objv[4], 0);
 }
 
 /*
@@ -4002,7 +4002,7 @@ InvokeOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     cmdObjPtr = GETATTR(drawPtr, cmdObjPtr);
     if (cmdObjPtr != NULL) {
-        return InvokeDrawerCommand(interp, drawPtr, cmdObjPtr);
+	return InvokeDrawerCommand(interp, drawPtr, cmdObjPtr);
     }
     return TCL_OK;
 }
@@ -4226,8 +4226,8 @@ OpenOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	if (drawPtr->flags & (DISABLED|HIDDEN)) {
 	    continue;
 	}
-        drawPtr->flags &= ~CLOSED;
-        SetDrawerVariable(drawPtr);
+	drawPtr->flags &= ~CLOSED;
+	SetDrawerVariable(drawPtr);
     }
     return TCL_OK;
 }
@@ -4314,7 +4314,7 @@ SizeOp(ClientData clientData, Tcl_Interp *interp, int objc,
  */
 static int
 TagAddOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-         Tcl_Obj *const *objv)
+	 Tcl_Obj *const *objv)
 {
     Drawerset *setPtr = clientData;
     const char *tag;
@@ -4381,19 +4381,19 @@ TagDeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (strcmp(tag, "all") == 0) {
 	Tcl_AppendResult(interp, "can't delete reserved tag \"", tag, "\"", 
 			 (char *)NULL);
-        return TCL_ERROR;
+	return TCL_ERROR;
     }
     for (i = 4; i < objc; i++) {
-        Drawer *drawPtr;
-        DrawerIterator iter;
-        
-        if (GetDrawerIterator(interp, setPtr, objv[i], &iter) != TCL_OK) {
-            return TCL_ERROR;
-        }
-        for (drawPtr = FirstTaggedDrawer(&iter); drawPtr != NULL; 
-             drawPtr = NextTaggedDrawer(&iter)) {
-            Blt_Tags_RemoveItemFromTag(&setPtr->tags, tag, drawPtr);
-        }
+	Drawer *drawPtr;
+	DrawerIterator iter;
+	
+	if (GetDrawerIterator(interp, setPtr, objv[i], &iter) != TCL_OK) {
+	    return TCL_ERROR;
+	}
+	for (drawPtr = FirstTaggedDrawer(&iter); drawPtr != NULL; 
+	     drawPtr = NextTaggedDrawer(&iter)) {
+	    Blt_Tags_RemoveItemFromTag(&setPtr->tags, tag, drawPtr);
+	}
     }
     return TCL_OK;
 }
@@ -4414,7 +4414,7 @@ TagDeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
 /*ARGSUSED*/
 static int
 TagExistsOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-            Tcl_Obj *const *objv)
+	    Tcl_Obj *const *objv)
 {
     DrawerIterator iter;
     Drawerset *setPtr = clientData;
@@ -4454,7 +4454,7 @@ TagExistsOp(ClientData clientData, Tcl_Interp *interp, int objc,
 /*ARGSUSED*/
 static int
 TagForgetOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-            Tcl_Obj *const *objv)
+	    Tcl_Obj *const *objv)
 {
     Drawerset *setPtr = clientData;
     int i;
@@ -4488,7 +4488,7 @@ TagForgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
  */
 static int
 TagGetOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-         Tcl_Obj *const *objv)
+	 Tcl_Obj *const *objv)
 {
     Drawerset *setPtr = clientData;
     Drawer *drawPtr; 
@@ -4502,7 +4502,7 @@ TagGetOp(ClientData clientData, Tcl_Interp *interp, int objc,
     for (drawPtr = FirstTaggedDrawer(&iter); drawPtr != NULL; 
 	 drawPtr = NextTaggedDrawer(&iter)) {
 	if (objc == 4) {
-            Blt_Tags_AppendTagsToObj(&setPtr->tags, drawPtr, listObjPtr);
+	    Blt_Tags_AppendTagsToObj(&setPtr->tags, drawPtr, listObjPtr);
 	    Tcl_ListObjAppendElement(interp, listObjPtr, 
 				     Tcl_NewStringObj("all", 3));
 	} else {
@@ -4525,24 +4525,24 @@ TagGetOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	    for (i = 4; i < objc; i++) {
 		Blt_ChainLink link;
 		const char *pattern;
-                Blt_Chain chain;
+		Blt_Chain chain;
 
-                chain = Blt_Chain_Create();
-                Blt_Tags_AppendTagsToChain(&setPtr->tags, drawPtr, chain);
+		chain = Blt_Chain_Create();
+		Blt_Tags_AppendTagsToChain(&setPtr->tags, drawPtr, chain);
 		pattern = Tcl_GetString(objv[i]);
 		for (link = Blt_Chain_FirstLink(chain); link != NULL; 
-                     link = Blt_Chain_NextLink(link)) {
+		     link = Blt_Chain_NextLink(link)) {
 		    const char *tag;
-                    Tcl_Obj *objPtr;
+		    Tcl_Obj *objPtr;
 
 		    tag = (const char *)Blt_Chain_GetValue(link);
 		    if (!Tcl_StringMatch(tag, pattern)) {
 			continue;
 		    }
-                    objPtr = Tcl_NewStringObj(tag, -1);
-                    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-                }
-                Blt_Chain_Destroy(chain);
+		    objPtr = Tcl_NewStringObj(tag, -1);
+		    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+		}
+		Blt_Chain_Destroy(chain);
 	    }
 	}    
     }
@@ -4565,7 +4565,7 @@ TagGetOp(ClientData clientData, Tcl_Interp *interp, int objc,
  */
 static int
 TagNamesOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-           Tcl_Obj *const *objv)
+	   Tcl_Obj *const *objv)
 {
     Drawerset *setPtr = clientData;
     Tcl_Obj *listObjPtr, *objPtr;
@@ -4574,7 +4574,7 @@ TagNamesOp(ClientData clientData, Tcl_Interp *interp, int objc,
     objPtr = Tcl_NewStringObj("all", -1);
     Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
     if (objc == 3) {
-        Blt_Tags_AppendAllTagsToObj(&setPtr->tags, listObjPtr);
+	Blt_Tags_AppendAllTagsToObj(&setPtr->tags, listObjPtr);
     } else {
 	Blt_HashTable uniqTable;
 	int i;
@@ -4590,19 +4590,19 @@ TagNamesOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	    for (drawPtr = FirstTaggedDrawer(&iter); drawPtr != NULL; 
 		 drawPtr = NextTaggedDrawer(&iter)) {
 		Blt_ChainLink link;
-                Blt_Chain chain;
+		Blt_Chain chain;
 
-                chain = Blt_Chain_Create();
-                Blt_Tags_AppendTagsToChain(&setPtr->tags, drawPtr, chain);
+		chain = Blt_Chain_Create();
+		Blt_Tags_AppendTagsToChain(&setPtr->tags, drawPtr, chain);
 		for (link = Blt_Chain_FirstLink(chain); link != NULL; 
-                     link = Blt_Chain_NextLink(link)) {
+		     link = Blt_Chain_NextLink(link)) {
 		    const char *tag;
-                    int isNew;
+		    int isNew;
 
 		    tag = Blt_Chain_GetValue(link);
-                    Blt_CreateHashEntry(&uniqTable, tag, &isNew);
+		    Blt_CreateHashEntry(&uniqTable, tag, &isNew);
 		}
-                Blt_Chain_Destroy(chain);
+		Blt_Chain_Destroy(chain);
 	    }
 	}
 	{
@@ -4639,7 +4639,7 @@ TagNamesOp(ClientData clientData, Tcl_Interp *interp, int objc,
  */
 static int
 TagIndicesOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-             Tcl_Obj *const *objv)
+	     Tcl_Obj *const *objv)
 {
     Drawerset *setPtr = clientData;
     Blt_HashTable drawerTable;
@@ -4659,22 +4659,22 @@ TagIndicesOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	if (strcmp(tag, "all") == 0) {
 	    break;
 	} else {
-            Blt_Chain chain;
+	    Blt_Chain chain;
 
-            chain = Blt_Tags_GetItemList(&setPtr->tags, tag);
-            if (chain != NULL) {
-                Blt_ChainLink link;
+	    chain = Blt_Tags_GetItemList(&setPtr->tags, tag);
+	    if (chain != NULL) {
+		Blt_ChainLink link;
 
-                for (link = Blt_Chain_FirstLink(chain); link != NULL; 
-                     link = Blt_Chain_NextLink(link)) {
-                    Drawer *drawPtr;
-                    int isNew;
-                    
-                    drawPtr = Blt_Chain_GetValue(link);
-                    Blt_CreateHashEntry(&drawerTable, (char *)drawPtr, &isNew);
-                }
-            }
-            continue;
+		for (link = Blt_Chain_FirstLink(chain); link != NULL; 
+		     link = Blt_Chain_NextLink(link)) {
+		    Drawer *drawPtr;
+		    int isNew;
+		    
+		    drawPtr = Blt_Chain_GetValue(link);
+		    Blt_CreateHashEntry(&drawerTable, (char *)drawPtr, &isNew);
+		}
+	    }
+	    continue;
 	}
 	Tcl_AppendResult(interp, "can't find a tag \"", tag, "\"",
 			 (char *)NULL);
@@ -4720,7 +4720,7 @@ TagIndicesOp(ClientData clientData, Tcl_Interp *interp, int objc,
  */
 static int
 TagSetOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-         Tcl_Obj *const *objv)
+	 Tcl_Obj *const *objv)
 {
     Drawerset *setPtr = clientData;
     int i;
@@ -4768,7 +4768,7 @@ TagSetOp(ClientData clientData, Tcl_Interp *interp, int objc,
  */
 static int
 TagUnsetOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-           Tcl_Obj *const *objv)
+	   Tcl_Obj *const *objv)
 {
     Drawerset *setPtr = clientData;
     Drawer *drawPtr;
@@ -4781,10 +4781,10 @@ TagUnsetOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	 drawPtr = NextTaggedDrawer(&iter)) {
 	int i;
 	for (i = 4; i < objc; i++) {
-            const char *tag;
+	    const char *tag;
 
-            tag = Tcl_GetString(objv[i]);
-            Blt_Tags_RemoveItemFromTag(&setPtr->tags, tag, drawPtr);
+	    tag = Tcl_GetString(objv[i]);
+	    Blt_Tags_RemoveItemFromTag(&setPtr->tags, tag, drawPtr);
 	}    
     }
     return TCL_OK;
@@ -5036,7 +5036,7 @@ DrawersetCmdProc(
     }
 
     if (Blt_ConfigureWidgetFromObj(interp, setPtr->tkwin, drawersetSpecs, 
-        objc - 2, objv + 2, (char *)setPtr, 0) != TCL_OK) {
+	objc - 2, objv + 2, (char *)setPtr, 0) != TCL_OK) {
 	goto error;
     }
     ConfigureDrawerset(setPtr);
@@ -5103,7 +5103,7 @@ DisplayProc(ClientData clientData)
     if ((Tk_Width(setPtr->tkwin) <= 1) || (Tk_Height(setPtr->tkwin) <=1)) {
 	/* Don't bother computing the layout until the size of the window
 	 * is something reasonable. */
-        return;
+	return;
     }
     if (!Tk_IsMapped(setPtr->tkwin)) {
 	/* The drawerset's window isn't displayed, so don't bother drawing
@@ -5130,8 +5130,8 @@ DisplayProc(ClientData clientData)
 	ArrangeDrawers(setPtr);
     }
     if (setPtr->flags & RESTACK) {
-        setPtr->flags &= ~RESTACK;
-        RestackDrawers(setPtr);
+	setPtr->flags &= ~RESTACK;
+	RestackDrawers(setPtr);
     }
 }
 

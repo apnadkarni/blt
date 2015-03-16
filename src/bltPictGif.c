@@ -337,7 +337,7 @@ static void
 GifAssert(const char *testExpr, const char *fileName, int lineNumber)
 {
     GifError("line %d of %s: Assert \"%s\" failed\n", lineNumber, fileName, 
-             testExpr);
+	     testExpr);
 }
 
 /*
@@ -492,7 +492,7 @@ GifReadImageDescriptor(Blt_DBuffer dbuffer, Gif *gifPtr)
     gifPtr->imageSortFlag =       (bp[8] & 0x20) >> 5;
     size =                        (bp[8] & 0x07);
     if (size > 0) {
-        size = 1 << (size + 1);
+	size = 1 << (size + 1);
     }
     gifPtr->localColorTableSize = size;
     Blt_DBuffer_IncrCursor(dbuffer, 9);
@@ -731,10 +731,10 @@ typedef struct {
    LZW is an extension of Limpel-Ziv.  The two extensions are:
 
      1) in Limpel-Ziv, codes are all the same number of bits.  In
-        LZW, they start out small and increase as the stream progresses.
+	LZW, they start out small and increase as the stream progresses.
 
      2) LZW has a clear code that resets the string table and code
-        size.
+	size.
 
    The LZW code space is allocated as follows:
 
@@ -750,7 +750,7 @@ typedef struct {
    elements:
 
    max_dataVal + 1 is the clear code.
-         
+	 
    max_dataVal + 2 is the end code.
 
    max_dataVal + 3 and up are string codes.  Each string code represents a
@@ -820,14 +820,14 @@ LzwGetAnotherBlock(Blt_DBuffer dbuffer, LzwCodeState *statePtr)
 
     statePtr->curbit -= (statePtr->bufCount-2)*8;
     statePtr->bufCount = 2;
-        
+	
     /* Add the next block to the buffer */
     count = GifReadDataBlock(dbuffer, statePtr->buf  + statePtr->bufCount);
     if (count == -1) {
-        GifWarning("EOF encountered in image before EOD marker.  The GIF file is malformed, but we are proceeding anyway as if an EOD marker were at the end of the file.");
-        assumed_count = 0;
+	GifWarning("EOF encountered in image before EOD marker.  The GIF file is malformed, but we are proceeding anyway as if an EOD marker were at the end of the file.");
+	assumed_count = 0;
     } else {
-        assumed_count = count;
+	assumed_count = count;
     }
     statePtr->streamExhausted = (assumed_count == 0);
     statePtr->bufCount += assumed_count;
@@ -840,37 +840,37 @@ LzwNextCode(Blt_DBuffer dbuffer, int codeSize, LzwCodeState *statePtr)
 
     if (((statePtr->curbit + codeSize) > (statePtr->bufCount * 8)) && 
 	(!statePtr->streamExhausted)) {
-        /* 
+	/* 
 	 * Not enough left in buffer to satisfy request.  Get the next
 	 * data block into the buffer.
 	 */
-        LzwGetAnotherBlock(dbuffer, statePtr);
+	LzwGetAnotherBlock(dbuffer, statePtr);
     }
     if ((statePtr->curbit + codeSize) > (statePtr->bufCount * 8)) {
-        /* 
+	/* 
 	 * If the buffer still doesn't have enough bits in it, that means
 	 * there were no data blocks left to read.
 	 */
 	result = -1;  /* EOF */
 
-        {
-            int const bitsUnused = (statePtr->bufCount * 8) - statePtr->curbit;
-            if (bitsUnused > 0) {
-                GifWarning("Stream ends with a partial code (%d bits left in file; expected a %d bit code). Ignoring.", bitsUnused, codeSize);
+	{
+	    int const bitsUnused = (statePtr->bufCount * 8) - statePtr->curbit;
+	    if (bitsUnused > 0) {
+		GifWarning("Stream ends with a partial code (%d bits left in file; expected a %d bit code). Ignoring.", bitsUnused, codeSize);
 	    }
-        }
-    } else {
-        int i, j;
-        int code;
-        unsigned char *bp;
-
-        bp = statePtr->buf;
-        code = 0;		/* Initial value */
-        for (i = statePtr->curbit, j = 0; j < codeSize; ++i, ++j) {
-            code |= ((bp[ i / 8 ] & (1 << (i % 8))) != 0) << j;
 	}
-        statePtr->curbit += codeSize;
-        result = code;
+    } else {
+	int i, j;
+	int code;
+	unsigned char *bp;
+
+	bp = statePtr->buf;
+	code = 0;		/* Initial value */
+	for (i = statePtr->curbit, j = 0; j < codeSize; ++i, ++j) {
+	    code |= ((bp[ i / 8 ] & (1 << (i % 8))) != 0) << j;
+	}
+	statePtr->curbit += codeSize;
+	result = code;
     }
     return result;
 }
@@ -897,8 +897,8 @@ LzwGetCode(
     static LzwCodeState state;
 
     if (init) {
-        LzwInitCodeState(&state);
-        return 0;
+	LzwInitCodeState(&state);
+	return 0;
     } 
     return LzwNextCode(dbuffer, codeSize, &state);
 }
@@ -910,7 +910,7 @@ LzwInitStack(
 {
     lzwPtr->stack.stack = Blt_Malloc(size * sizeof(int));
     if (lzwPtr->stack.stack == NULL) {
-        GifError("Unable to allocate %d -word stack.", size);
+	GifError("Unable to allocate %d -word stack.", size);
     }
     lzwPtr->stack.sp = lzwPtr->stack.stack;
     lzwPtr->stack.top = lzwPtr->stack.stack + size;
@@ -920,7 +920,7 @@ static void
 LzwPushStack(LzwDecompressor *lzwPtr, int const value) 
 {
     if (lzwPtr->stack.sp >= lzwPtr->stack.top) {
-        GifError("stack overflow");
+	GifError("stack overflow");
     }
     *(lzwPtr->stack.sp++) = value;
 }
@@ -935,7 +935,7 @@ static int
 LzwPopStack(LzwDecompressor *lzwPtr) 
 {
     if (lzwPtr->stack.sp <= lzwPtr->stack.stack) {
-        GifError("stack underflow");
+	GifError("stack underflow");
     }
     return *(--lzwPtr->stack.sp);
 }
@@ -970,12 +970,12 @@ LzwInitDecompressor(Blt_DBuffer dbuffer, int codeSize, LzwDecompressor *lzwPtr)
      * throughout the stream.  We set them now and they never change.
      */
     {
-        int i;
+	int i;
 
-        for (i = 0; i <= lzwPtr->max_dataVal; ++i) {
-            lzwPtr->table[0][i] = 0;
-            lzwPtr->table[1][i] = i;
-        }
+	for (i = 0; i <= lzwPtr->max_dataVal; ++i) {
+	    lzwPtr->table[0][i] = 0;
+	    lzwPtr->table[1][i] = i;
+	}
     }
     LzwResetDecompressor(lzwPtr);
     LzwGetCode(dbuffer, 0, TRUE);
@@ -1018,52 +1018,52 @@ LzwExpandCodeOntoStack(LzwDecompressor *lzwPtr, int incode)
 
     error = FALSE;
     if (incode < lzwPtr->next_tableSlot) {
-        code = incode;
+	code = incode;
     } else {
-        /* It's a code that isn't in our translation table yet */
-        LzwPushStack(lzwPtr, lzwPtr->firstcode);
-        code = lzwPtr->prevcode;
+	/* It's a code that isn't in our translation table yet */
+	LzwPushStack(lzwPtr, lzwPtr->firstcode);
+	code = lzwPtr->prevcode;
     }
 
     {
-        /* 
+	/* 
 	 * Get the whole string that this compression code represents and push
 	 * it onto the code stack so the leftmost code is on top.  Set
 	 * lzwPtr->firstcode to the first (leftmost) code in that string.
 	 */
-        unsigned int stringCount;
-        stringCount = 0;
+	unsigned int stringCount;
+	stringCount = 0;
 
-        while ((code > lzwPtr->max_dataVal) && (!error)) {
-            if (stringCount > LZW_MAX_CODE) {
-                GifError("contains LZW string loop");
-            } 
+	while ((code > lzwPtr->max_dataVal) && (!error)) {
+	    if (stringCount > LZW_MAX_CODE) {
+		GifError("contains LZW string loop");
+	    } 
 	    ++stringCount;
 	    LzwPushStack(lzwPtr, lzwPtr->table[1][code]);
 	    code = lzwPtr->table[0][code];
-        }
-        lzwPtr->firstcode = lzwPtr->table[1][code];
-        LzwPushStack(lzwPtr, lzwPtr->firstcode);
+	}
+	lzwPtr->firstcode = lzwPtr->table[1][code];
+	LzwPushStack(lzwPtr, lzwPtr->firstcode);
     }
 
     if (lzwPtr->next_tableSlot < LZW_MAX_CODE) {
 
-        lzwPtr->table[0][lzwPtr->next_tableSlot] = lzwPtr->prevcode;
-        lzwPtr->table[1][lzwPtr->next_tableSlot] = lzwPtr->firstcode;
-        ++lzwPtr->next_tableSlot;
+	lzwPtr->table[0][lzwPtr->next_tableSlot] = lzwPtr->prevcode;
+	lzwPtr->table[1][lzwPtr->next_tableSlot] = lzwPtr->firstcode;
+	++lzwPtr->next_tableSlot;
 
-        if (lzwPtr->next_tableSlot >= lzwPtr->maxnum_code) {
-            /* 
+	if (lzwPtr->next_tableSlot >= lzwPtr->maxnum_code) {
+	    /* 
 	     * We've used up all the codes of the current code size.  Future
 	     * codes in the stream will have codes one bit longer.  But
 	     * there's an exception if we're already at the LZW maximum, in
 	     * which case the codes will simply continue the same size.
 	     */
-            if (lzwPtr->codeSize < LZW_MAX_BITS) {
-                ++lzwPtr->codeSize;
-                lzwPtr->maxnum_code = 1 << lzwPtr->codeSize;
-            }
-        }
+	    if (lzwPtr->codeSize < LZW_MAX_BITS) {
+		++lzwPtr->codeSize;
+		lzwPtr->maxnum_code = 1 << lzwPtr->codeSize;
+	    }
+	}
     }
     lzwPtr->prevcode = incode;
     return error == 0;
@@ -1097,22 +1097,22 @@ LzwReadByte(LzwDecompressor *lzwPtr)
     int code;
 
     if (!LzwStackIsEmpty(lzwPtr)) {
-        return LzwPopStack(lzwPtr);
+	return LzwPopStack(lzwPtr);
     }
     if (lzwPtr->fresh) {
-        lzwPtr->fresh = FALSE;
-        /* 
+	lzwPtr->fresh = FALSE;
+	/* 
 	 * Read off all initial clear codes, read the first non-clear code,
 	 * and return it.  There are no strings in the table yet, so the next
 	 * code must be a direct true data code.
 	 */
-        do {
-            lzwPtr->firstcode = LzwGetCode(lzwPtr->dbuffer, lzwPtr->codeSize, 
+	do {
+	    lzwPtr->firstcode = LzwGetCode(lzwPtr->dbuffer, lzwPtr->codeSize, 
 		FALSE);
-            lzwPtr->prevcode = lzwPtr->firstcode; 
+	    lzwPtr->prevcode = lzwPtr->firstcode; 
 	} while (lzwPtr->firstcode == lzwPtr->clear_code);
 
-        return lzwPtr->firstcode;
+	return lzwPtr->firstcode;
     } 
     code = LzwGetCode(lzwPtr->dbuffer, lzwPtr->codeSize, FALSE);
     if (code < 0) {
@@ -1219,7 +1219,7 @@ GifCreatePictureFromData(Blt_DBuffer dbuffer, Gif *gifPtr)
     }
  done:
     if (v == -3) {
-        GifError("Error in GIF input stream");
+	GifError("Error in GIF input stream");
     } 
     if (LzwReadByte(&lzw) >= 0) {
 	GifWarning("too much input data, ignoring extra...");
@@ -1704,16 +1704,16 @@ LzwPutCode(LzwCompressor *lzwPtr, int code)
     assert(code <= lzwPtr->maxCode);
     lzwPtr->curAccum &= (1 << lzwPtr->curBits) - 1;
     if (lzwPtr->curBits > 0) {
-        lzwPtr->curAccum |= ((unsigned long)code << lzwPtr->curBits);
+	lzwPtr->curAccum |= ((unsigned long)code << lzwPtr->curBits);
     } else {
-        lzwPtr->curAccum = code;
+	lzwPtr->curAccum = code;
     }
     lzwPtr->curBits += lzwPtr->numBits;
 
     while (lzwPtr->curBits >= 8) {
-        LzwAccum(lzwPtr, (unsigned int)lzwPtr->curAccum & 0xff);
-        lzwPtr->curAccum >>= 8;
-        lzwPtr->curBits -= 8;
+	LzwAccum(lzwPtr, (unsigned int)lzwPtr->curAccum & 0xff);
+	lzwPtr->curAccum >>= 8;
+	lzwPtr->curBits -= 8;
     }
     lzwPtr->codeCount++;
 }
@@ -1949,8 +1949,8 @@ PictureToGif(Tcl_Interp *interp, Blt_Picture original, Blt_DBuffer dbuffer,
 	    
 	    /* Blend picture with solid color background. */
 	    background = Blt_CreatePicture(srcPtr->width, srcPtr->height);
-            readerPtr->bg.Alpha = 0xFF; /* Background color must be
-                                         * solid. */
+	    readerPtr->bg.Alpha = 0xFF; /* Background color must be
+					 * solid. */
 	    Blt_BlankPicture(background, readerPtr->bg.u32); 
 	    Blt_BlendRegion(background, srcPtr, 0, 0, srcPtr->width, 
 			    srcPtr->height, 0, 0);
@@ -1960,8 +1960,8 @@ PictureToGif(Tcl_Interp *interp, Blt_Picture original, Blt_DBuffer dbuffer,
 	    srcPtr = background;
 	    numColors = Blt_QueryColors(srcPtr, (Blt_HashTable *)NULL);
 	} else {
-            maxColors--;
-        }
+	    maxColors--;
+	}
     }
     if (numColors > maxColors) {
 	Blt_Picture quant;
@@ -2063,7 +2063,7 @@ PicturesToAnimatedGif(Tcl_Interp *interp, Blt_Chain chain, Blt_DBuffer dbuffer,
     }
     frames = Blt_Calloc(numFrames, sizeof(Frame));
     if (frames == NULL) {
-        GifError("can't allocates %d frames for animated file", numFrames);
+	GifError("can't allocates %d frames for animated file", numFrames);
     }
     link = Blt_Chain_FirstLink(chain);
     fp = frames;

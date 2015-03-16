@@ -312,7 +312,7 @@ typedef struct VarInHash {
 
 #define TclGetVarNsPtr(varPtr) \
     (TclIsVarInHash(varPtr) \
-         ? ((TclVarHashTable *) ((((VarInHash *) (varPtr))->entry.tablePtr)))->nsPtr \
+	 ? ((TclVarHashTable *) ((((VarInHash *) (varPtr))->entry.tablePtr)))->nsPtr \
 	 : NULL)
 
 #define VarHashRefCount(varPtr) \
@@ -335,15 +335,15 @@ typedef struct VarInHash {
 
 #define TclIsVarDirectReadable2(varPtr, arrayPtr) \
     (TclIsVarDirectReadable(varPtr) &&\
-        (!(arrayPtr) || !((arrayPtr)->flags & VAR_TRACED_READ)))
+	(!(arrayPtr) || !((arrayPtr)->flags & VAR_TRACED_READ)))
 
 #define TclIsVarDirectWritable2(varPtr, arrayPtr) \
     (TclIsVarDirectWritable(varPtr) &&\
-        (!(arrayPtr) || !((arrayPtr)->flags & VAR_TRACED_WRITE)))
+	(!(arrayPtr) || !((arrayPtr)->flags & VAR_TRACED_WRITE)))
 
 #define TclIsVarDirectModifyable2(varPtr, arrayPtr) \
     (TclIsVarDirectModifyable(varPtr) &&\
-        (!(arrayPtr) || !((arrayPtr)->flags & (VAR_TRACED_READ|VAR_TRACED_WRITE))))
+	(!(arrayPtr) || !((arrayPtr)->flags & (VAR_TRACED_READ|VAR_TRACED_WRITE))))
 
 #define VarHashGetValue(hPtr) \
     ((Var *) ((char *)hPtr - Blt_Offset(VarInHash, entry)))

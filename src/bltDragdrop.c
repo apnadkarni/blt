@@ -1686,9 +1686,9 @@ DndSend(Source *srcPtr)		/* drag&drop source record */
 	status = Tcl_Eval(srcPtr->interp, 
 		ExpandPercents(cmd, subs, 3, &ds2));
 	Tcl_DStringFree(&ds2);
-        if (status != TCL_OK) {
+	if (status != TCL_OK) {
 	    goto reject;
-        }
+	}
 	Tcl_DStringAppendElement(&ds, Tcl_GetStringResult(srcPtr->interp));
     } else {
 	Tcl_DStringAppendElement(&ds, srcPtr->pkgCmdResult);

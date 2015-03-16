@@ -250,16 +250,16 @@ JpgSkipInputData(j_decompress_ptr commPtr, long numBytes)
 
 	if ((readerPtr->pub.next_input_byte + numBytes) >= 
 	    (Blt_DBuffer_Bytes(readerPtr->dBuffer) + 
-             Blt_DBuffer_Length(readerPtr->dBuffer))) {
-            char mesg[200];
-            JpgErrorHandler *errorPtr = (JpgErrorHandler *)commPtr->err;
-            
-            sprintf(mesg, "short buffer: wanted %lu bytes, bytes left is %lu",
-                    numBytes, Blt_DBuffer_Length(readerPtr->dBuffer));
-            Tcl_DStringAppend(&errorPtr->ds, " ", -1);
-            Tcl_DStringAppend(&errorPtr->ds, mesg, -1);
-            ERREXIT(commPtr, 10);
-        }
+	     Blt_DBuffer_Length(readerPtr->dBuffer))) {
+	    char mesg[200];
+	    JpgErrorHandler *errorPtr = (JpgErrorHandler *)commPtr->err;
+	    
+	    sprintf(mesg, "short buffer: wanted %lu bytes, bytes left is %lu",
+		    numBytes, Blt_DBuffer_Length(readerPtr->dBuffer));
+	    Tcl_DStringAppend(&errorPtr->ds, " ", -1);
+	    Tcl_DStringAppend(&errorPtr->ds, mesg, -1);
+	    ERREXIT(commPtr, 10);
+	}
 	readerPtr->pub.next_input_byte += (size_t)numBytes;
 	readerPtr->pub.bytes_in_buffer -= (size_t)numBytes;
     }
@@ -498,7 +498,7 @@ JpgToPicture(
 	    }
 	    destRowPtr += destPtr->pixelsPerRow;
 	}
-        break;
+	break;
     case 3:
 	while (cinfo.output_scanline < height) {
 	    JSAMPLE *bp;
@@ -518,7 +518,7 @@ JpgToPicture(
 	    destRowPtr += destPtr->pixelsPerRow;
 	}
 	destPtr->flags |= BLT_PIC_COLOR;
-        break;
+	break;
     case 4:
 	while (cinfo.output_scanline < height) {
 	    JSAMPLE *bp;
@@ -538,14 +538,14 @@ JpgToPicture(
 	    destRowPtr += destPtr->pixelsPerRow;
 	}
 	destPtr->flags |= BLT_PIC_COLOR | BLT_PIC_BLEND;
-        break;
+	break;
     default:
 	Tcl_AppendResult(interp, "\"", fileName, "\": ",
-                         "don't know how to handle JPEG image with ", 
-                        Blt_Itoa(cinfo.output_components), 
-                        " output components.", (char *)NULL);
-        Blt_FreePicture(destPtr);
-        goto error;
+			 "don't know how to handle JPEG image with ", 
+			Blt_Itoa(cinfo.output_components), 
+			" output components.", (char *)NULL);
+	Blt_FreePicture(destPtr);
+	goto error;
     }
     jpeg_finish_decompress(&cinfo);
     jpeg_destroy_decompress(&cinfo);
@@ -636,7 +636,7 @@ PictureToJpg(
 	background = Blt_CreatePicture(srcPtr->width, srcPtr->height);
 	Blt_BlankPicture(background, switchesPtr->bg.u32); 
 	Blt_BlendRegion(background, srcPtr, 0, 0, srcPtr->width, srcPtr->height,
-                        0, 0);
+			0, 0);
 	if (srcPtr != original) {
 	    Blt_FreePicture(srcPtr);
 	}
@@ -943,7 +943,7 @@ Blt_PictureJpgInit(Tcl_Interp *interp)
 	return TCL_ERROR;
     }
     return Blt_PictureRegisterFormat(interp,
-        "jpg",				/* Name of format. */
+	"jpg",				/* Name of format. */
 	IsJpg,				/* Format discovery procedure. */
 	ReadJpg,			/* Read format procedure. */
 	WriteJpg,			/* Write format procedure. */

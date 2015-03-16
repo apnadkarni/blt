@@ -76,12 +76,12 @@ typedef struct {
     Tcl_Trace trace;		/* Trace handler which activates "pre"
 				 * command procedures */
     Tcl_AsyncHandler asyncHandle;       /* Async handler which triggers the
-                                         * "post" command procedure (if one
-                                         * exists) */
+					 * "post" command procedure (if one
+					 * exists) */
     int active;                         /* Indicates if a trace is
-                                         * currently active.  This prevents
-                                         * recursive tracing of the "pre"
-                                         * and "post" procedures. */
+					 * currently active.  This prevents
+					 * recursive tracing of the "pre"
+					 * and "post" procedures. */
     int level;			/* Current level of traced command. */
     char *cmdPtr;		/* Command string before substitutions.
 				 * Points to a original command buffer. */

@@ -146,7 +146,7 @@ Blt_MakeTransparentWindowExist(Tk_Window tkwin, Window parent, int isBusy)
 	winPtr->depth,		/* depth */
 	InputOnly,		/* class */
 	winPtr->visual,		/* visual */
-        mask,			/* valuemask */
+	mask,			/* valuemask */
 	&winPtr->atts		/* attributes */ );
 #endif
     dispPtr = winPtr->dispPtr;

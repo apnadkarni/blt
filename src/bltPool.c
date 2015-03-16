@@ -152,7 +152,7 @@ VariablePoolAllocItem(
 	 * single item and immediately placing it into the in-use list.
 	 */
 	chainPtr = Blt_AssertMalloc(sizeof(PoolChain) + size);
-        if (poolPtr->headPtr == NULL) {
+	if (poolPtr->headPtr == NULL) {
 	    poolPtr->headPtr = chainPtr;
 	} else {
 	    chainPtr->nextPtr = poolPtr->headPtr->nextPtr;
@@ -230,7 +230,7 @@ StringPoolAllocItem(Blt_Pool pool, size_t size)
 	 * single item and immediately placing it into the in-use list.
 	 */
 	chainPtr = Blt_AssertMalloc(sizeof(PoolChain) + size);
-        if (poolPtr->headPtr == NULL) {
+	if (poolPtr->headPtr == NULL) {
 	    poolPtr->headPtr = chainPtr;
 	} else {
 	    chainPtr->nextPtr = poolPtr->headPtr->nextPtr;
@@ -435,7 +435,7 @@ Blt_Pool_Create(int type)
 	poolPtr->freeProc = FixedPoolFreeItem;
 	break;
     case BLT_STRING_ITEMS:
- 	poolPtr->allocProc = StringPoolAllocItem;
+	poolPtr->allocProc = StringPoolAllocItem;
 	poolPtr->freeProc = StringPoolFreeItem;
 	break;
     }
