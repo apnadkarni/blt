@@ -292,6 +292,12 @@ enum DataFormats {
 #ifdef HAVE_LIBMYSQL
     FMT_MYSQL,                          /* MYSQL client library. */
 #endif
+#ifdef HAVE_LIBSQLITE
+    FMT_SQLIT,                          /* SQLITE library. */
+#endif
+#ifdef HAVE_LIBPQ
+    FMT_PSQL,                           /* Postgres library. */
+#endif
     FMT_TREE,                           /* BLT Tree object. */
     FMT_VECTOR,                         /* BLT Vector object. */
 #ifdef HAVE_EXPAT
@@ -305,6 +311,12 @@ static DataFormat dataFormats[] = {
     { "csv" },                          /* Comma separated values */
 #ifdef HAVE_LIBMYSQL
     { "mysql" },                        /* MYSQL client library. */
+#endif
+#ifdef HAVE_LIBSQLITE
+    { "sqlite" },                       /* SQLITE library. */
+#endif
+#ifdef HAVE_LIBPQ
+    { "psql" },                         /* Postgres library. */
 #endif
     { "tree" },                         /* BLT Tree object.*/
     { "vector" },                       /* BLT Vector object.*/

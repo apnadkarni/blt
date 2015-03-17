@@ -51,6 +51,12 @@ package ifneeded blt_datatable_csv $version \
 package ifneeded blt_datatable_mysql $version \
 	[list blt::datatable load mysql "$dir"]
 
+package ifneeded blt_datatable_sqlite $version \
+	[list blt::datatable load sqlite "$dir"]
+
+package ifneeded blt_datatable_psql $version \
+	[list blt::datatable load psql "$dir"]
+
 package ifneeded blt_datatable_tree $version \
 	[list blt::datatable load tree "$dir"]
 
