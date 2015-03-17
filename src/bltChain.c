@@ -6,13 +6,13 @@
  *
  *	Copyright 1991-2004 George A Howlett.
  *
- *	Permission is hereby granted, free of charge, to any person obtaining
- *	a copy of this software and associated documentation files (the
- *	"Software"), to deal in the Software without restriction, including
- *	without limitation the rights to use, copy, modify, merge, publish,
- *	distribute, sublicense, and/or sell copies of the Software, and to
- *	permit persons to whom the Software is furnished to do so, subject to
- *	the following conditions:
+ *	Permission is hereby granted, free of charge, to any person
+ *	obtaining a copy of this software and associated documentation
+ *	files (the "Software"), to deal in the Software without
+ *	restriction, including without limitation the rights to use, copy,
+ *	modify, merge, publish, distribute, sublicense, and/or sell copies
+ *	of the Software, and to permit persons to whom the Software is
+ *	furnished to do so, subject to the following conditions:
  *
  *	The above copyright notice and this permission notice shall be
  *	included in all copies or substantial portions of the Software.
@@ -20,10 +20,11 @@
  *	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  *	EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  *	MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- *	NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
- *	LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
- *	OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
- *	WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *	NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+ *	BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ *	ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ *	CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ *	SOFTWARE.
  */
 
 #define BUILD_BLT_TCL_PROCS 1
@@ -73,8 +74,8 @@ Blt_Chain_Create(void)
  *
  * Blt_Chain_AllocLink --
  *
- *	Creates a new chain link.  Unlink Blt_Chain_NewLink, this routine also
- *	allocates extra memory in the node for data.
+ *	Creates a new chain link.  Unlink Blt_Chain_NewLink, this routine
+ *	also allocates extra memory in the node for data.
  *
  * Results:
  *	The return value is the pointer to the newly created entry.
@@ -101,8 +102,8 @@ Blt_Chain_AllocLink(size_t extraSize)
  *
  * Blt_Chain_InitLink --
  *
- *	Initializes the new link.  This routine is for applications that use
- *	their own memory allocation procedures to allocate links.
+ *	Initializes the new link.  This routine is for applications that
+ *	use their own memory allocation procedures to allocate links.
  *
  * Results:
  *	None.
@@ -144,9 +145,9 @@ Blt_Chain_NewLink(void)
  *
  * Blt_Chain_Reset --
  *
- *	Removes all the links in the chain, freeing the memory used for each
- *	link.  Memory pointed to by the link (clientData) is not freed.  It's
- *	the caller's responsibility to deallocate it.
+ *	Removes all the links in the chain, freeing the memory used for
+ *	each link.  Memory pointed to by the link (clientData) is not
+ *	freed.  It's the caller's responsibility to deallocate it.
  *
  * Results:
  *	None.
@@ -154,7 +155,7 @@ Blt_Chain_NewLink(void)
  *---------------------------------------------------------------------------
  */
 void
-Blt_Chain_Reset(Chain *chainPtr) /* Chain to clear */
+Blt_Chain_Reset(Chain *chainPtr)        /* Chain to clear */
 {
     if (chainPtr != NULL) {
 	ChainLink *oldPtr;
@@ -175,8 +176,8 @@ Blt_Chain_Reset(Chain *chainPtr) /* Chain to clear */
  * Blt_Chain_Destroy
  *
  *     Frees all the nodes in the chain and deallocates the memory used for
- *     the chain structure itself.  It's assumed that the chain was previously
- *     allocated by Blt_Chain_Create.
+ *     the chain structure itself.  It's assumed that the chain was
+ *     previously allocated by Blt_Chain_Create.
  *
  * Results:
  *	None.
@@ -216,8 +217,8 @@ Blt_Chain_Init(Chain *chainPtr)
  *
  * Blt_Chain_LinkAfter --
  *
- *	Inserts a link after another link.  If afterPtr is NULL, then the new
- *	link is prepended to the beginning of the chain.
+ *	Inserts a link after another link.  If afterPtr is NULL, then the
+ *	new link is prepended to the beginning of the chain.
  *
  * Results:
  *	None.
@@ -257,8 +258,8 @@ Blt_Chain_LinkAfter(Chain *chainPtr, ChainLink *linkPtr, ChainLink *afterPtr)
  *
  * Blt_Chain_LinkBefore --
  *
- *	Inserts a new link preceding a given link in a chain.  If beforePtr is
- *	NULL, then the new link is placed at the beginning of the list.
+ *	Inserts a new link preceding a given link in a chain.  If beforePtr
+ *	is NULL, then the new link is placed at the beginning of the list.
  *
  * Results:
  *	None.
@@ -298,8 +299,8 @@ Blt_Chain_LinkBefore(Chain *chainPtr, ChainLink *linkPtr, ChainLink *beforePtr)
  *
  * Blt_Chain_UnlinkLink --
  *
- *	Unlinks a link from the chain. The link is not deallocated, but only
- *	removed from the chain.
+ *	Unlinks a link from the chain. The link is not deallocated, but
+ *	only removed from the chain.
  *
  * Results:
  *	None.
@@ -309,9 +310,9 @@ Blt_Chain_LinkBefore(Chain *chainPtr, ChainLink *linkPtr, ChainLink *beforePtr)
 void
 Blt_Chain_UnlinkLink(Chain *chainPtr, ChainLink *linkPtr)
 {
-    int unlinked;		/* Indicates if the link is actually removed
-				 * from the chain. */
-
+    int unlinked;                       /* Indicates if the link is
+                                         * actually removed from the
+                                         * chain. */
     unlinked = FALSE;
     if (chainPtr->head == linkPtr) {
 	chainPtr->head = linkPtr->next;
@@ -341,8 +342,8 @@ Blt_Chain_UnlinkLink(Chain *chainPtr, ChainLink *linkPtr)
  * Blt_Chain_DeleteLink --
  *
  *	Unlinks and frees the given link from the chain.  It's assumed that
- *	the link belong to the chain. No error checking is performed to verify
- *	this.
+ *	the link belong to the chain. No error checking is performed to
+ *	verify this.
  *
  * Results:
  *	None.
@@ -361,8 +362,8 @@ Blt_Chain_DeleteLink(Blt_Chain chain, Blt_ChainLink link)
  *
  * Blt_Chain_Append
  *
- *	Creates and new link with the given data and appends it to the end of
- *	the chain.
+ *	Creates and new link with the given data and appends it to the end
+ *	of the chain.
  *
  * Results:
  *	Returns a pointer to the link created.
@@ -385,8 +386,8 @@ Blt_Chain_Append(Blt_Chain chain, ClientData clientData)
  *
  * Blt_Chain_Prepend
  *
- *	Creates and new link with the given data and prepends it to beginning
- *	of the chain.
+ *	Creates and new link with the given data and prepends it to
+ *	beginning of the chain.
  *
  * Results:
  *	Returns a pointer to the link created.
@@ -409,9 +410,9 @@ Blt_Chain_Prepend(Blt_Chain chain, ClientData clientData)
  *
  * Blt_Chain_GetNthLink --
  *
- *	Find the link at the given position in the chain.  The position
- *	is number from 0.  If position is negative is returns the nth
- *	link from the back of the chain.
+ *	Find the link at the given position in the chain.  The position is
+ *	number from 0.  If position is negative is returns the nth link
+ *	from the back of the chain.
  *
  * Results:
  *	Returns the pointer to the link, if that numbered link
@@ -476,7 +477,7 @@ Blt_Chain_Sort(Chain *chainPtr, Blt_ChainCompareProc *proc)
     }
     linkArr = Blt_Malloc(sizeof(Blt_ChainLink) * (chainPtr->numLinks + 1));
     if (linkArr == NULL) {
-	return;			/* Out of memory. */
+	return;                         /* Out of memory. */
     }
     i = 0;
     for (linkPtr = chainPtr->head; linkPtr != NULL; 

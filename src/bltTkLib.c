@@ -21,6 +21,9 @@
  */
 #include "bltInt.h"
 
+extern const char *Blt_InitTkStubs(Tcl_Interp *interp, const char *version,
+        int exact);
+
 BltTkProcs *bltTkProcsPtr = NULL;
 BltTkIntProcs *bltTkIntProcsPtr = NULL;
 

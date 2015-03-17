@@ -321,10 +321,8 @@ Blt_DBuffer_LoadFile(Tcl_Interp *interp, const char *fileName,
 #else
 
 int
-Blt_DBuffer_LoadFile(
-    Tcl_Interp *interp, 
-    const char *fileName, 
-    Blt_DBuffer dBuffer)
+Blt_DBuffer_LoadFile(Tcl_Interp *interp, const char *fileName,
+                     Blt_DBuffer dBuffer)
 {
     int numBytes;
     Tcl_Channel channel;
@@ -498,7 +496,6 @@ Blt_DBuffer_AppendBase64(DBuffer *destPtr, const unsigned char *buffer,
     Blt_DBuffer_SetLength(destPtr, oldLength + numBytes);
     return TRUE;
 }
-
 
 int 
 Blt_DBuffer_AppendBase85(DBuffer *destPtr, const unsigned char *buffer, 

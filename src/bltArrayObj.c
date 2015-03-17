@@ -1,5 +1,4 @@
 /* -*- mode: c; c-basic-offset: 4; indent-tabs-mode: nil -*- */
-
 /*
  * bltArrayObj.c --
  *
@@ -7,13 +6,13 @@
  *
  *	Copyright (c) 2000 George A. Howlett
  *
- *	Permission is hereby granted, free of charge, to any person obtaining
- *	a copy of this software and associated documentation files (the
- *	"Software"), to deal in the Software without restriction, including
- *	without limitation the rights to use, copy, modify, merge, publish,
- *	distribute, sublicense, and/or sell copies of the Software, and to
- *	permit persons to whom the Software is furnished to do so, subject to
- *	the following conditions:
+ *	Permission is hereby granted, free of charge, to any person
+ *	obtaining a copy of this software and associated documentation
+ *	files (the "Software"), to deal in the Software without
+ *	restriction, including without limitation the rights to use, copy,
+ *	modify, merge, publish, distribute, sublicense, and/or sell copies
+ *	of the Software, and to permit persons to whom the Software is
+ *	furnished to do so, subject to the following conditions:
  *
  *	The above copyright notice and this permission notice shall be
  *	included in all copies or substantial portions of the Software.
@@ -21,10 +20,11 @@
  *	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  *	EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  *	MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- *	NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
- *	LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
- *	OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
- *	WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *	NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+ *	BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ *	ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ *	CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ *	SOFTWARE.
  */
 
 #define BUILD_BLT_TCL_PROCS 1
@@ -43,13 +43,17 @@ static Tcl_SetFromAnyProc SetArrayFromAny;
 
 static Tcl_ObjType arrayObjType = {
     (char *)"array",
-    FreeArrayInternalRep,	/* Called when an object is freed. */
-    DupArrayInternalRep,	/* Copies an internal representation from one
-				 * object to another. */
-    UpdateStringOfArray,	/* Creates string representation from an
-				 * object's internal representation. */
-    SetArrayFromAny,		/* Creates valid internal representation from
-				 * an object's string representation. */
+    FreeArrayInternalRep,               /* Called when an object is
+                                         * freed. */
+    DupArrayInternalRep,                /* Copies an internal
+                                         * representation from one object
+                                         * to another. */
+    UpdateStringOfArray,                /* Creates string representation
+                                         * from an object's internal
+                                         * representation. */
+    SetArrayFromAny,                    /* Creates valid internal
+                                         * representation from an object's
+                                         * string representation. */
 };
 
 static int
@@ -94,8 +98,10 @@ SetArrayFromAny(Tcl_Interp *interp, Tcl_Obj *objPtr)
 
 static void
 DupArrayInternalRep(
-    Tcl_Obj *srcPtr,		/* Object with internal rep to copy. */
-    Tcl_Obj *destPtr)		/* Object with internal rep to set. */
+    Tcl_Obj *srcPtr,                    /* Object with internal rep to
+                                         * copy. */
+    Tcl_Obj *destPtr)                   /* Object with internal rep to
+                                         * set. */
 {
     Blt_HashEntry *hp;
     Blt_HashSearch iter;
@@ -125,7 +131,8 @@ DupArrayInternalRep(
 }
 
 static void
-UpdateStringOfArray(Tcl_Obj *objPtr) /* Array object w/ string rep to update. */
+UpdateStringOfArray(Tcl_Obj *objPtr)    /* Array object w/ string rep to
+                                           update. */
 {
     Tcl_DString ds;
     Blt_HashTable *tablePtr;
@@ -148,7 +155,7 @@ UpdateStringOfArray(Tcl_Obj *objPtr) /* Array object w/ string rep to update. */
 }
 
 static void
-FreeArrayInternalRep(Tcl_Obj *objPtr) /* Array object to release. */
+FreeArrayInternalRep(Tcl_Obj *objPtr)   /* Array object to release. */
 {
     Blt_HashEntry *hp;
     Blt_HashSearch iter;
@@ -213,8 +220,8 @@ Blt_NewArrayObj(int objc, Tcl_Obj **objv)
     arrayObjPtr = Tcl_NewObj(); 
     /* 
      * Reference counts for entry objects are initialized to 0. They are
-     * incremented as they are inserted into the tree via the Blt_Tree_SetValue
-     * call.
+     * incremented as they are inserted into the tree via the
+     * Blt_Tree_SetValue call.
      */
     arrayObjPtr->refCount = 0;	
     arrayObjPtr->internalRep.otherValuePtr = (VOID *)tablePtr;
