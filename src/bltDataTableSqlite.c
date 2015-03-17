@@ -430,6 +430,9 @@ SqliteCreateTable(Tcl_Interp *interp, sqlite3 *db, BLT_TABLE table,
     dbuffer = Blt_DBuffer_Create();
     Blt_DBuffer_Format(dbuffer, "CREATE TABLE IF NOT EXISTS %s (",
                        argsPtr->tableName);
+    if (argsPtr->flags & EXPORT_ROWLABELS) {
+        Blt_DBuffer_Format(dbuffer, "_rowId TEXT, ");
+    }        
     first = TRUE;
     for (col = blt_table_first_tagged_column(&argsPtr->ci); col != NULL; 
 	 col = blt_table_next_tagged_column(&argsPtr->ci)) {
@@ -486,21 +489,27 @@ SqliteExportValues(Tcl_Interp *interp, sqlite3 *db, BLT_TABLE table,
     const char *query;
     int length;
     int result;
-    long i;
+    long count;
     sqlite3_stmt *stmt;
     
     dbuffer = Blt_DBuffer_Create();
     dbuffer2 = Blt_DBuffer_Create();
     Blt_DBuffer_Format(dbuffer, "INSERT INTO %s (", argsPtr->tableName);
     Blt_DBuffer_Format(dbuffer2, "(");
-    for (i  = 0, col = blt_table_first_tagged_column(&argsPtr->ci);
-         col != NULL; col = blt_table_next_tagged_column(&argsPtr->ci), i++) {
+    count = 1;
+    if (argsPtr->flags & EXPORT_ROWLABELS) {
+        Blt_DBuffer_Format(dbuffer, "_rowId TEXT ");
+        Blt_DBuffer_Format(dbuffer2, "?%d", count);
+        count++;
+    }        
+    for (col = blt_table_first_tagged_column(&argsPtr->ci); col != NULL;
+         col = blt_table_next_tagged_column(&argsPtr->ci)) {
         int type;
         const char *label;
         
         type = blt_table_column_type(col);
         label = blt_table_column_label(col);
-        if (i > 0) {
+        if (count > 1) {
             Blt_DBuffer_Format(dbuffer, ", ");
             Blt_DBuffer_Format(dbuffer2, ", ");
         }
@@ -515,7 +524,8 @@ SqliteExportValues(Tcl_Interp *interp, sqlite3 *db, BLT_TABLE table,
         case TABLE_COLUMN_TYPE_STRING:
             Blt_DBuffer_Format(dbuffer, "TEXT");        break;
         }
-        Blt_DBuffer_Format(dbuffer2, "?%d", i + 1);
+        Blt_DBuffer_Format(dbuffer2, "?%d", count);
+        count++;
     }
     Blt_DBuffer_Format(dbuffer2, ");");
     Blt_DBuffer_Format(dbuffer, ") values ");
@@ -538,46 +548,54 @@ SqliteExportValues(Tcl_Interp *interp, sqlite3 *db, BLT_TABLE table,
     }
     for (row = blt_table_first_tagged_row(&argsPtr->ri); row != NULL; 
 	 row = blt_table_next_tagged_row(&argsPtr->ri)) {
-        int i;
+        int count;                          /* sqlite3 column index. */
         
-        for (i = 0, col = blt_table_first_tagged_column(&argsPtr->ci);
-             col != NULL; col = blt_table_next_tagged_column(&argsPtr->ci),
-                 i++) {
-            int type;
-            
-            type = blt_table_column_type(col);
+        count = 0;
+        if (argsPtr->flags & EXPORT_ROWLABELS) {
+            const char *label;
+                    
+            label = blt_table_row_label(row);
+            sqlite3_bind_text(stmt, count, label, -1, NULL);
+            count++;
+        }
+        for (col = blt_table_first_tagged_column(&argsPtr->ci); col != NULL;
+             col = blt_table_next_tagged_column(&argsPtr->ci)) {
             if (!blt_table_value_exists(table, row, col)) {
-                sqlite3_bind_null(stmt, i);
-                continue;
+                sqlite3_bind_null(stmt, count);
+            } else {
+                int type;
+            
+                type = blt_table_column_type(col);
+                switch(type) {
+                case TABLE_COLUMN_TYPE_LONG:
+                    {
+                        long lval;
+                        
+                        lval = blt_table_get_long(table, row, col, 0);
+                        sqlite3_bind_int64(stmt, count, lval);
+                    }
+                    break;
+                case TABLE_COLUMN_TYPE_DOUBLE:
+                    {
+                        double dval;
+                        
+                        dval = blt_table_get_double(table, row, col);
+                        sqlite3_bind_double(stmt, count, dval);
+                    }
+                    break;
+                default:
+                case TABLE_COLUMN_TYPE_UNKNOWN:
+                case TABLE_COLUMN_TYPE_STRING:
+                    {
+                        const char *sval;
+                        
+                        sval = blt_table_get_string(table, row, col);
+                        sqlite3_bind_text(stmt, count, sval, -1, NULL);
+                    }
+                    break;
+                }
             }
-            switch(type) {
-            case TABLE_COLUMN_TYPE_LONG:
-                {
-                    long lval;
-                    
-                    lval = blt_table_get_long(table, row, col, 0);
-                    sqlite3_bind_int64(stmt, i, lval);
-                }
-                break;
-            case TABLE_COLUMN_TYPE_DOUBLE:
-                {
-                    double dval;
-                    
-                    dval = blt_table_get_double(table, row, col);
-                    sqlite3_bind_double(stmt, i, dval);
-                }
-                break;
-            default:
-            case TABLE_COLUMN_TYPE_UNKNOWN:
-            case TABLE_COLUMN_TYPE_STRING:
-                {
-                    const char *sval;
-                    
-                    sval = blt_table_get_string(table, row, col);
-                    sqlite3_bind_text(stmt, i, sval, -1, NULL);
-                }
-                break;
-            }
+            count++;
         }
         do {
             result = sqlite3_step(stmt);
