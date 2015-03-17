@@ -4,16 +4,16 @@ define([AC_CACHE_SAVE], )dnl
 AC_INIT(src/bltInitCmd.c)
 AC_CONFIG_HEADER(src/config.h)
 AC_CONFIG_AUX_DIR(cf)
-AC_PREREQ(2.0)	
+AC_PREREQ(2.0)  
 
 # -----------------------------------------------------------------------
 #
-# 	Handle command line options
+#       Handle command line options
 #
-#		--with-tcl=DIR
-#		--with-tk=DIR
-#		--with-cflags=flags	This is probably for me only
-#		--with-gnu-ld 
+#               --with-tcl=DIR
+#               --with-tk=DIR
+#               --with-cflags=flags     This is probably for me only
+#               --with-gnu-ld 
 #
 # -----------------------------------------------------------------------
 
@@ -37,6 +37,8 @@ blt_with_png_include_dir="yes"
 blt_with_png_lib_dir="yes"
 blt_with_pq_include_dir="yes"
 blt_with_pq_lib_dir="yes"
+blt_with_sqlite_include_dir="yes"
+blt_with_sqlite_lib_dir="yes"
 blt_with_z_lib_dir="yes"
 blt_with_scriptdir=""
 blt_with_tcl=""
@@ -162,6 +164,14 @@ AC_ARG_WITH(pqincdir,
 AC_ARG_WITH(pqlibdir,      
   [AS_HELP_STRING([--with-pqlibdir=DIR],[find Postgres libraries in DIR])],
   [blt_with_pq_lib_dir=$withval])
+# --with-sqliteincdir
+AC_ARG_WITH(sqliteincdir,      
+  [AS_HELP_STRING([--with-sqliteincdir=DIR],[find sqlite headers in DIR])],
+  [blt_with_sqlite_include_dir=$withval])
+# --with-sqlitellibdir
+AC_ARG_WITH(sqlitelibdir,      
+  [AS_HELP_STRING([--with-sqlitelibdir=DIR],[find sqlite libraries in DIR])],
+  [blt_with_sqlite_lib_dir=$withval])
 AC_ARG_WITH(libssh2incdir,      
   [AS_HELP_STRING([--with-libssh2incdir=DIR],[find libssh2 headers in DIR])],
   [blt_with_libssh2_include_dir=$withval])
@@ -202,6 +212,8 @@ PNG_INC_SPEC=""
 PNG_LIB_SPEC=""
 PQ_INC_SPEC=""
 PQ_LIB_SPEC=""
+SQLITE_INC_SPEC=""
+SQLITE_LIB_SPEC=""
 TCL_INC_SPEC=""
 TCL_LIB_SPEC=""
 TIF_INC_SPEC=""
@@ -223,17 +235,17 @@ AC_CANONICAL_TARGET
 AC_PREFIX_PROGRAM(wish)
 
 # -----------------------------------------------------------------------
-# 	Set a variable containing current working directory if /bin/sh
-#	doesn't do it already.
+#       Set a variable containing current working directory if /bin/sh
+#       doesn't do it already.
 # -----------------------------------------------------------------------
 
 PWD=`pwd`
 
 # -----------------------------------------------------------------------
-# Programs:	Check for existence of ranlib and install programs
+# Programs:     Check for existence of ranlib and install programs
 # -----------------------------------------------------------------------
 # -----------------------------------------------------------------------
-# 	C compiler and debugging flags
+#       C compiler and debugging flags
 # -----------------------------------------------------------------------
 
 
@@ -260,7 +272,7 @@ case $host_os in
     blt_platform_win32="no"
     blt_platform_macosx="yes"
     ;;
-  * )		
+  * )           
     blt_platform_win32="no"
     blt_platform_macosx="no"
     ;;
@@ -285,7 +297,7 @@ AC_PROG_RANLIB
 AC_PROG_LN_S
 AC_PROG_MKDIR_P
 AC_EGREP_CPP
-	
+        
 #
 # CFLAGS search order
 #
@@ -347,7 +359,7 @@ case $target in
     SO_PREFIX="lib"
     IMPLIB_SUFFIX=""
     IMPLIB_EXT=""
-    ;;	
+    ;;  
   *-*-darwin*)
     BLT_PLATFORM="macosx"
     SO_EXT=".dylib"
@@ -370,7 +382,7 @@ if test $blt_enable_symbols = "yes" ; then
 fi
 
 # -----------------------------------------------------------------------
-# Hardware characteristics:	
+# Hardware characteristics:     
 # -----------------------------------------------------------------------
 
 AC_C_BIGENDIAN
@@ -390,7 +402,7 @@ AC_SUBST(SIZEOF_VOID_P, ${ac_cv_sizeof_void_p})
 AC_SUBST(SIZEOF_FLOAT, ${ac_cv_sizeof_float})
 
 # -----------------------------------------------------------------------
-# Libraries:	
+# Libraries:    
 # -----------------------------------------------------------------------
 AC_CHECK_LIB(m, main)
 AC_CHECK_LIB(nsl, main)
@@ -405,7 +417,7 @@ if test "x${x_libraries}" != "x" ; then
 fi
 
 # -----------------------------------------------------------------------
-# Headers:	
+# Headers:      
 # -----------------------------------------------------------------------
 AC_HEADER_STDC
 AC_HEADER_SYS_WAIT
@@ -416,7 +428,7 @@ if test "${ac_cv_header_inttypes_h}" = "yes" ; then
   AC_SUBST(HAVE_INTTYPES_H, ["#define HAVE_INTTYPES_H 1"])
 else
   AC_SUBST(HAVE_INTTYPES_H, ["/* can't find inttypes.h */"])
-fi	
+fi      
 AC_CHECK_HEADERS(limits.h sys/param.h)
 AC_CHECK_HEADERS(sys/types.h)
 AC_CHECK_HEADERS(fcntl.h signal.h time.h)
@@ -471,6 +483,11 @@ if test "${blt_with_pq_include_dir}" != "no" ; then
   BLT_CHECK_HEADER(PQ, postgresql/libpq-fe.h, $blt_with_pq_include_dir)
 fi
 
+# SQLITE header
+if test "${blt_with_sqlite_include_dir}" != "no" ; then
+  BLT_CHECK_HEADER(MYSQL, sqlite3.h, $blt_with_sqlite_include_dir)
+fi
+
 # XPM header
 if test "${blt_with_xpm_include_dir}" != "no" ; then
   BLT_CHECK_HEADER(XPM, X11/xpm.h, $blt_with_xpm_include_dir)
@@ -508,17 +525,17 @@ AC_CACHE_VAL(blt_cv_struct_wait_works,
     AC_TRY_COMPILE([#include <sys/types.h> 
 #include <sys/wait.h>], [
     /* 
-     *	Check whether <sys/wait.h> defines the type "union wait" 
-     *	correctly.  It's needed because of weirdness in HP-UX where 
-     *	"union wait" is defined in both the BSD and SYS-V  environments.  
-     *	Checking the usability of WIFEXITED seems to do	the trick.
+     *  Check whether <sys/wait.h> defines the type "union wait" 
+     *  correctly.  It's needed because of weirdness in HP-UX where 
+     *  "union wait" is defined in both the BSD and SYS-V  environments.  
+     *  Checking the usability of WIFEXITED seems to do the trick.
      */
     union wait x;
-    WIFEXITED(x);	/* Generates compiler error if WIFEXITED
-			 * uses an int. */
+    WIFEXITED(x);       /* Generates compiler error if WIFEXITED
+                         * uses an int. */
 ], 
-    	[blt_cv_struct_wait_works="yes"], 
-	[blt_cv_struct_wait_works="no"]))
+        [blt_cv_struct_wait_works="yes"], 
+        [blt_cv_struct_wait_works="no"]))
 
 if test "${blt_cv_struct_wait_works}" = "yes"; then
     AC_DEFINE([HAVE_UNION_WAIT], 1, [Define if 'wait' is a union.])
@@ -528,7 +545,7 @@ AC_MSG_RESULT([$blt_cv_struct_wait_works])
 
 # -----------------------------------------------------------------------
 #
-# Library Functions: 	Check for  drand48, and srand48.
+# Library Functions:    Check for  drand48, and srand48.
 #
 # -----------------------------------------------------------------------
 
@@ -551,8 +568,8 @@ AC_MSG_RESULT([$blt_cv_have_isfinite])
 
 # -----------------------------------------------------------------------
 #
-# 	Check the smallest value such that 1.0 + x != 1.0.
-#	For ANSI compilers this is DBL_EPSILON in float.h
+#       Check the smallest value such that 1.0 + x != 1.0.
+#       For ANSI compilers this is DBL_EPSILON in float.h
 #
 #--------------------------------------------------------------------
 
@@ -581,14 +598,14 @@ if test "${blt_cv_found_dbl_epsilon}" = "no" ; then
 main () {
     double e, u;
     /* 
-     *	Check the smallest value such that 1.0 + x != 1.0.
-     *	For ANSI compilers this is DBL_EPSILON in float.h
+     *  Check the smallest value such that 1.0 + x != 1.0.
+     *  For ANSI compilers this is DBL_EPSILON in float.h
      */
     u = 1.0;
     for(;;) {
        u *= 0.5;
        if ((1.0 + u) == 1.0) {
-	   break;
+           break;
        }
     }
     e = u * 2.0;
@@ -597,7 +614,7 @@ main () {
 }])
     CFLAGS="$old_flags"
     AC_DEFINE_UNQUOTED([BLT_DBL_EPSILON], ${blt_cv_dbl_epsilon}, 
-	[Define the smallest machine value DBL_EPILSON.])
+        [Define the smallest machine value DBL_EPILSON.])
     AC_MSG_RESULT([${blt_cv_dbl_epsilon}])
 )
 fi
@@ -639,7 +656,7 @@ AC_CHECK_DECLS(strtolower)
 
 # -----------------------------------------------------------------------
 #
-# System services: 	X, Tcl, Tk
+# System services:      X, Tcl, Tk
 #
 # -----------------------------------------------------------------------
 
@@ -664,7 +681,7 @@ esac
 
 # -----------------------------------------------------------------------
 #
-#	Find the Tcl build configuration file "tclConfig.sh"
+#       Find the Tcl build configuration file "tclConfig.sh"
 #
 # -----------------------------------------------------------------------
 
@@ -690,7 +707,7 @@ if test "x$blt_with_tcl" != "x" ; then
     fi
   done
 elif test "${blt_with_tcl_include_dir}" = "yes" -a \
-	  "${blt_with_tcl_lib_dir}" = "yes" ; then 
+          "${blt_with_tcl_lib_dir}" = "yes" ; then 
 
   # Otherwise, search for Tcl configuration file.  
 
@@ -725,8 +742,8 @@ elif test "${blt_with_tcl_include_dir}" = "yes" -a \
      ../../../tcl 
     do
       if test -r "$dir/$BLT_PLATFORM/tclConfig.sh" ; then
-	tcl_config_sh="$dir/$BLT_PLATFORM/tclConfig.sh"
-	break
+        tcl_config_sh="$dir/$BLT_PLATFORM/tclConfig.sh"
+        break
       fi
     done
   fi
@@ -739,11 +756,11 @@ elif test "${blt_with_tcl_include_dir}" = "yes" -a \
      /usr
     do
       if test -r "$dir/tclConfig.sh" ; then
-	tcl_config_sh="$dir/tclConfig.sh"
-	break
+        tcl_config_sh="$dir/tclConfig.sh"
+        break
       elif test -r "$dir/lib/tclConfig.sh" ; then
-	tcl_config_sh="$dir/lib/tclConfig.sh"
-	break
+        tcl_config_sh="$dir/lib/tclConfig.sh"
+        break
       fi
     done
   fi
@@ -754,7 +771,7 @@ AC_MSG_RESULT([${tcl_config_sh}])
 
 # -----------------------------------------------------------------------
 #
-#	Find the Tk build configuration file "tkConfig.sh"
+#       Find the Tk build configuration file "tkConfig.sh"
 #
 # -----------------------------------------------------------------------
 
@@ -781,7 +798,7 @@ if test "x$blt_with_tk" != "x" -o "x$blt_with_tcl" != "x"; then
     fi
   done
 elif test "${blt_with_tk_include_dir}" = "yes" -a \
-	  "${blt_with_tk_lib_dir}" = "yes" ; then 
+          "${blt_with_tk_lib_dir}" = "yes" ; then 
 
   # Search for Tk configuration file.  
 
@@ -817,8 +834,8 @@ elif test "${blt_with_tk_include_dir}" = "yes" -a \
      `ls -dr ../../../tk[[4-9]].[[0-9]]* 2>/dev/null`
     do
       if test -r "$dir/$BLT_PLATFORM/tkConfig.sh"; then
-	tk_config_sh="$dir/$BLT_PLATFORM/tkConfig.sh"
-	break
+        tk_config_sh="$dir/$BLT_PLATFORM/tkConfig.sh"
+        break
       fi
     done
   fi
@@ -832,11 +849,11 @@ elif test "${blt_with_tk_include_dir}" = "yes" -a \
      /usr
     do
       if test -r "$dir/tkConfig.sh" ; then
-	tk_config_sh="$dir/tkConfig.sh"
-	break
+        tk_config_sh="$dir/tkConfig.sh"
+        break
       elif test -r "$dir/lib/tkConfig.sh" ; then
-	tk_config_sh="$dir/lib/tkConfig.sh"
-	break
+        tk_config_sh="$dir/lib/tkConfig.sh"
+        break
       fi
     done
   fi
@@ -845,11 +862,11 @@ AC_MSG_RESULT([${tk_config_sh}])
 
 # -----------------------------------------------------------------------
 #
-#	Source in the Tcl/Tk configuration scripts.  
+#       Source in the Tcl/Tk configuration scripts.  
 #
 #
-#	Check for tclConfig.sh and tkConfig.sh.  If found use values
-#	in file, but don't check if libraries exist.  
+#       Check for tclConfig.sh and tkConfig.sh.  If found use values
+#       in file, but don't check if libraries exist.  
 #
 # -----------------------------------------------------------------------
 
@@ -875,9 +892,9 @@ elif test "${blt_with_tcl_include_dir}" != "yes" ; then
     tcl_includes_dir=${blt_with_tcl_include_dir}
     TCL_INC_SPEC="-I${tcl_includes_dir}"
     BLT_GET_SYMBOL(TCL_MAJOR_VERSION, TCL_MAJOR_VERSION, 
-	[${tcl_includes_dir}/tcl.h])
+        [${tcl_includes_dir}/tcl.h])
     BLT_GET_SYMBOL(TCL_MINOR_VERSION, TCL_MINOR_VERSION, 
-	[${tcl_includes_dir}/tcl.h])
+        [${tcl_includes_dir}/tcl.h])
     TCL_VERSION=${TCL_MAJOR_VERSION}.${TCL_MINOR_VERSION}
   else
     AC_ERROR([Can't find tcl.h in \"${blt_with_tcl_include_dir}\"])
@@ -906,9 +923,9 @@ elif test "${blt_with_tk_include_dir}" != "yes" ; then
     tk_includes_dir=${blt_with_tk_include_dir}
     TK_INC_SPEC="-I${tk_includes_dir}"
     BLT_GET_SYMBOL(TK_MAJOR_VERSION, TK_MAJOR_VERSION, 
-	${tk_includes_dir}/tk.h)
+        ${tk_includes_dir}/tk.h)
     BLT_GET_SYMBOL(TK_MINOR_VERSION, TK_MINOR_VERSION, 
-	${tk_includes_dir}/tk.h)
+        ${tk_includes_dir}/tk.h)
     TK_VERSION=${TK_MAJOR_VERSION}.${TK_MINOR_VERSION}
   else
     AC_ERROR([Can't find tk.h in \"${blt_with_tk_include_dir}\"])
@@ -957,7 +974,7 @@ elif test "${blt_with_tcl_lib_dir}" = "yes" ; then
         TCL_LIB_SPEC="-ltcl${TCL_LIB_VERSION}"
       else 
         TCL_LIB_SPEC="-L${TCL_LIB_DIR} -ltcl${TCL_LIB_VERSION}"
-      fi	 
+      fi         
       break
     fi
   done
@@ -974,7 +991,7 @@ else
         TCL_LIB_SPEC="-ltcl${TCL_LIB_VERSION}"
       else 
         TCL_LIB_SPEC="-L${TCL_LIB_DIR} -ltcl${TCL_LIB_VERSION}"
-      fi	 
+      fi         
       break
     fi
   done
@@ -998,7 +1015,7 @@ elif test "${blt_with_tk_lib_dir}" = "yes" ; then
         TK_LIB_SPEC="-ltk${TK_LIB_VERSION}"
       else 
         TK_LIB_SPEC="-L${TK_LIB_DIR} -ltk${TK_LIB_VERSION}"
-      fi	 
+      fi         
       break
     fi
   done
@@ -1015,7 +1032,7 @@ else
         TK_LIB_SPEC="-ltk${TK_LIB_VERSION}"
       else 
         TK_LIB_SPEC="-L${TK_LIB_DIR} -ltk${TK_LIB_VERSION}"
-      fi	 
+      fi         
       break
     fi
   done
@@ -1028,8 +1045,8 @@ fi
 #
 # Include files
 #
-#	Append to INC_SPECS the various include files specifications
-#	(built fromt the include directory information).
+#       Append to INC_SPECS the various include files specifications
+#       (built fromt the include directory information).
 #
 # -----------------------------------------------------------------------
 
@@ -1040,10 +1057,10 @@ fi
 
 # Tcl include files
 #
-#	Add the include directory specification only if the Tcl
-#	headers reside in a different directory from Tk's.  
+#       Add the include directory specification only if the Tcl
+#       headers reside in a different directory from Tk's.  
 if test "${tcl_includes_dir}" != "/usr/include" -a \
-	"${tcl_includes_dir}" != "${tk_includes_dir}" ; then
+        "${tcl_includes_dir}" != "${tk_includes_dir}" ; then
   INC_SPECS="${INC_SPECS} ${TCL_INC_SPEC}"
 fi
 
@@ -1055,10 +1072,10 @@ fi
 
 # X11 include files
 if test "x${x_includes}" != "x" -a \
-	"${x_includes}" != "NONE" -a \
-	"${x_includes}" != "/usr/include" -a \
-	"${x_includes}" != "${tk_includes_dir}" -a \
-	"${x_includes}" != "${tcl_includes_dir}" ; then
+        "${x_includes}" != "NONE" -a \
+        "${x_includes}" != "/usr/include" -a \
+        "${x_includes}" != "${tk_includes_dir}" -a \
+        "${x_includes}" != "${tcl_includes_dir}" ; then
   INC_SPECS="${INC_SPECS} -I${x_includes}"
 fi
 
@@ -1066,8 +1083,8 @@ fi
 #
 # Libraries
 #
-#	Append to LIB the various library specifications 
-#	(built from the library directory information).
+#       Append to LIB the various library specifications 
+#       (built from the library directory information).
 #
 # -----------------------------------------------------------------------
 
@@ -1079,11 +1096,11 @@ if test "${BLT_PLATFORM}" = "unix"; then
   # Add specification for X11 library only on Unix platforms.
 
   if test "x${x_libraries}" = "x"  -o \
-	  "x${x_libraries}" = "NONE"  -o \
-  	  "${x_libraries}" = "/usr/lib" -o  \
-  	  "${x_libraries}" = "/usr/lib64" -o  \
-	  "${x_libraries}" = "${TK_LIB_DIR}"  -o \
-	  "${x_libraries}" = "${TCL_LIB_DIR}" ; then
+          "x${x_libraries}" = "NONE"  -o \
+          "${x_libraries}" = "/usr/lib" -o  \
+          "${x_libraries}" = "/usr/lib64" -o  \
+          "${x_libraries}" = "${TK_LIB_DIR}"  -o \
+          "${x_libraries}" = "${TCL_LIB_DIR}" ; then
     x_lib_spec=""
     aix_lib_specs="-lX11 ${aix_lib_specs}"
   else 
@@ -1101,42 +1118,49 @@ fi
 # EXPAT library
 
 if test "${blt_with_expat_lib_dir}" != "no" -a \
-	"${ac_cv_header_expat_h}" != "no" ; then
+        "${ac_cv_header_expat_h}" != "no" ; then
   BLT_CHECK_LIBRARY(EXPAT, expat, XML_ParserCreate, $blt_with_expat_lib_dir)
 fi
 
 # MYSQL client library
 
 if test "${blt_with_mysql_lib_dir}" != "no" -a \
-	"${ac_cv_header_mysql_mysql_h}" != "no" ; then
+        "${ac_cv_header_mysql_mysql_h}" != "no" ; then
   BLT_CHECK_LIBRARY(MYSQL, mysqlclient, mysql_init, $blt_with_mysql_lib_dir)
 fi
 
 # JPEG library
 
 if test "${blt_with_jpeg_lib_dir}" != "no" -a \
-	"${ac_cv_header_jpeglib_h}" != "no" ; then
+        "${ac_cv_header_jpeglib_h}" != "no" ; then
   BLT_CHECK_LIBRARY(JPG, jpeg, jpeg_read_header, $blt_with_jpeg_lib_dir)
 fi
 
 # Postgres client library
 
 if test "${blt_with_pq_lib_dir}" != "no" -a \
-	"${ac_cv_header_libpq-fe_h}" != "no" ; then
+        "${ac_cv_header_libpq-fe_h}" != "no" ; then
   BLT_CHECK_LIBRARY(PQ, pq, PQconnectdb, $blt_with_pq_lib_dir)
+fi
+
+# SQLITE library
+
+if test "${blt_with_sqlite_lib_dir}" != "no" -a \
+        "${ac_cv_header_sqlite3_h}" != "no" ; then
+  BLT_CHECK_LIBRARY(SQLITE, sqlite3, sqlite3_open, $blt_with_sqlite_lib_dir)
 fi
 
 # TIFF library
 
 if test "${blt_with_tiff_lib_dir}" != "no" -a \
-	"${ac_cv_header_tiff_h}" != "no" ; then
+        "${ac_cv_header_tiff_h}" != "no" ; then
   BLT_CHECK_LIBRARY(TIF, tiff, TIFFReadRGBAImage, $blt_with_tiff_lib_dir, -lz)
 fi
 
 # PNG library
 
 if test "${blt_with_png_lib_dir}" != "no" -a \
-	"${ac_cv_header_png_h}" != "no" ; then
+        "${ac_cv_header_png_h}" != "no" ; then
   BLT_CHECK_LIBRARY(PNG, png, png_read_png, $blt_with_png_lib_dir, -lz)
 fi
 
@@ -1148,7 +1172,7 @@ fi
 # FREETYPE library
 
 if test "${blt_with_ft2_lib_dir}" != "no" -a \
-	"${ac_cv_header_ft2build_h}" != "no" ; then
+        "${ac_cv_header_ft2build_h}" != "no" ; then
   BLT_CHECK_LIBRARY(FT2, freetype, FT_Init_FreeType, $blt_with_ft2_lib_dir)
 fi
 
@@ -1160,14 +1184,14 @@ old_CPPFLAGS=$CPPFLAGS
 LDFLAGS=$X11_LIB_SPEC
 CPPFLAGS=$X11_INC_SPEC
 if test "${blt_with_xpm_lib_dir}" != "no" -a \
-	"${ac_cv_header_xpm_h}" != "no" ; then
+        "${ac_cv_header_xpm_h}" != "no" ; then
   BLT_CHECK_LIBRARY(XPM, Xpm, XpmCreateXpmImageFromBuffer, $blt_with_xpm_lib_dir)
 fi
 
 # Xft library
 
 if test "${blt_with_xft2_lib_dir}" != "no" -a \
-	"${ac_cv_header_x11_xft_xft_h}" != "no" ; then
+        "${ac_cv_header_x11_xft_xft_h}" != "no" ; then
   BLT_CHECK_LIBRARY(XFT, [Xft -lexpat], XftFontOpenPattern, $blt_with_xft_lib_dir)
   BLT_CHECK_LIBRARY(FTCFG, fontconfig, FcPatternCreate, yes)
   BLT_CHECK_LIBRARY(XRENDER, Xrender, XRenderQueryExtension, yes)
@@ -1190,8 +1214,8 @@ LDFLAGS=$old_LDFLAGS
 CPPFLAGS=$old_CPPFLAGS
 # Tcl libraries
 if test "${TCL_LIB_DIR}" != "/usr/lib" -a \
-	"${TCL_LIB_DIR}" != "/usr/lib64" -a \
-	"${TCL_LIB_DIR}" != "${TK_LIB_DIR}" ; then
+        "${TCL_LIB_DIR}" != "/usr/lib64" -a \
+        "${TCL_LIB_DIR}" != "${TK_LIB_DIR}" ; then
   if test "x${loader_run_path}" = "x" ; then
     loader_run_path="${TCL_LIB_DIR}"
   else
@@ -1201,7 +1225,7 @@ fi
 
 # Tk libraries
 if test "${TK_LIB_DIR}" != "/usr/lib" -a \
-	"${TK_LIB_DIR}" != "/usr/lib64" ; then
+        "${TK_LIB_DIR}" != "/usr/lib64" ; then
   if test "x${loader_run_path}" = "x" ; then
     loader_run_path="${TK_LIB_DIR}"
   else
@@ -1221,10 +1245,10 @@ fi
 
 # -----------------------------------------------------------------------
 #
-# 	Set up a new default prefix to installation path.  The ways
-#	the prefix can be set and their precedence are as follows:
+#       Set up a new default prefix to installation path.  The ways
+#       the prefix can be set and their precedence are as follows:
 #
-#	1. --prefix option given to ./configure. (prefix != NONE)
+#       1. --prefix option given to ./configure. (prefix != NONE)
 #       2. use previously configured Tk prefix
 #
 # -----------------------------------------------------------------------
@@ -1239,7 +1263,7 @@ fi
 
 # -------------------------------------------------------------------------
 #
-#	Extract the BLT version number for the blt.h header
+#       Extract the BLT version number for the blt.h header
 #
 # -------------------------------------------------------------------------
 # Major version
@@ -1295,11 +1319,11 @@ BLT_IMPLIB_EXT=${IMLIB_EXT}
 BLT_EXEC_EXT=${EXEC_EXT}
 
 if test "x${libdir}" != "x"  -a \
-	"${libdir}" != "/usr/lib" -a  \
-	"${libdir}" != "/usr/lib64" -a  \
-	"${libdir}" != "${x_libraries}" -a  \
-	"${libdir}" != "${TK_LIB_DIR}"  -a \
-	"${libdir}" != "${TCL_LIB_DIR}" ; then
+        "${libdir}" != "/usr/lib" -a  \
+        "${libdir}" != "/usr/lib64" -a  \
+        "${libdir}" != "${x_libraries}" -a  \
+        "${libdir}" != "${TK_LIB_DIR}"  -a \
+        "${libdir}" != "${TCL_LIB_DIR}" ; then
   if test "x${loader_run_path}" = "x" ; then
     loader_run_path="${libdir}"
   else
@@ -1309,7 +1333,7 @@ fi
 
 # -------------------------------------------------------------------------
 #
-#	Extract the Tcl version number for the tcl.h header
+#       Extract the Tcl version number for the tcl.h header
 #
 # -------------------------------------------------------------------------
 
@@ -1486,7 +1510,7 @@ case $target in
       SO_CFLAGS="-mabi=n32 $SO_CFLAGS"
       SO_LDFLAGS="-mabi=n32 $SO_LDFLAGS"
       LDFLAGS="-mabi=n32 $LDFLAGS"
-    else	
+    else        
       CFLAGS="-n32 $CFLAGS"
       LDFLAGS="-n32 $LDFLAGS"
     fi
@@ -1550,7 +1574,7 @@ case $target in
     SO_CFLAGS=""
 
     # Warning: Ugly Makefile Hack 
-    #	Make package name same as library name
+    #   Make package name same as library name
 
     SO_LD='ld -R -export $@:'
     ;;
@@ -1683,13 +1707,13 @@ if test "${blt_enable_stubs}" = "yes" ; then
     TCL_STUBS_SPEC="-ltclstub${TCL_LIB_VERSION}"
   else 
     TCL_STUBS_SPEC="-L${TCL_LIB_DIR} -ltclstub${TCL_LIB_VERSION}"
-  fi	 
+  fi     
   AC_SUBST(TCL_STUBS_SPEC)
   if test "${TK_LIB_DIR}" = "/usr/lib" ; then
     TK_STUBS_SPEC="-ltkstub${TK_LIB_VERSION}"
   else 
     TK_STUBS_SPEC="-L${TK_LIB_DIR} -ltkstub${TK_LIB_VERSION}"
-  fi	 
+  fi     
   AC_SUBST(TK_STUBS_SPEC)
   BLT_STUBS_ENABLED=1
   AC_SUBST(BLT_STUBS_ENABLED)
@@ -1751,6 +1775,9 @@ AC_SUBST(PNG_LIB_SPEC)
 AC_SUBST(PQ_INC_SPEC)
 AC_SUBST(PQ_LIB_DIR)
 AC_SUBST(PQ_LIB_SPEC)
+AC_SUBST(SQLITE_INC_SPEC)
+AC_SUBST(SQLITE_LIB_DIR)
+AC_SUBST(SQLITE_LIB_SPEC)
 AC_SUBST(TCL_DBGX)
 AC_SUBST(TCL_INC_SPEC)
 AC_SUBST(TCL_LIB_DIR)
@@ -1788,8 +1815,8 @@ AC_SUBST(Z_LIB_SPEC)
 
 
 #--------------------------------------------------------------------
-#	The BLT script directory was either specified or we 
-#	assume <prefix>/lib
+#       The BLT script directory was either specified or we 
+#       assume <prefix>/lib
 #--------------------------------------------------------------------
 if test "x${blt_with_scriptdir}" = "x" ; then 
   BLT_LIBRARY="${prefix}/lib/blt${BLT_VERSION}"
@@ -1799,7 +1826,7 @@ fi
 AC_SUBST(BLT_LIBRARY)
 
 #--------------------------------------------------------------------
-#	Print out some of the more important settings 
+#       Print out some of the more important settings 
 #--------------------------------------------------------------------
 echo ""
 echo "Configuration results:"
@@ -1821,36 +1848,38 @@ echo "  libraries    to be installed in  $libdir"
 echo "  scripts      to be installed in  $BLT_LIBRARY"
 echo "  manual pages to be installed in  $mandir"
 echo "Optional packages:"
-echo "  PQ library		$PQ_LIB_SPEC"
-echo "  PQ headers		$PQ_INC_SPEC"
-echo "  MYSQL library		$MYSQL_LIB_SPEC"
-echo "  MYSQL headers		$MYSQL_INC_SPEC"
-echo "  EXPAT library		$EXPAT_LIB_SPEC"
-echo "  EXPAT headers		$EXPAT_INC_SPEC"
-echo "  FREETYPE library	$FT2_LIB_SPEC"
-echo "  FREETYPE headers	$FT2_INC_SPEC"
-echo "  JPEG library		$JPG_LIB_SPEC"
-echo "  JPEG headers		$JPG_INC_SPEC"
+echo "  PQ library              $PQ_LIB_SPEC"
+echo "  PQ headers              $PQ_INC_SPEC"
+echo "  MYSQL library           $MYSQL_LIB_SPEC"
+echo "  MYSQL headers           $MYSQL_INC_SPEC"
+echo "  EXPAT library           $EXPAT_LIB_SPEC"
+echo "  EXPAT headers           $EXPAT_INC_SPEC"
+echo "  FREETYPE library        $FT2_LIB_SPEC"
+echo "  FREETYPE headers        $FT2_INC_SPEC"
+echo "  JPEG library            $JPG_LIB_SPEC"
+echo "  JPEG headers            $JPG_INC_SPEC"
 echo "  LIBSSH2 library         $LIBSSH2_LIB_SPEC"
 echo "  LIBSSH2 headers         $LIBSSH2_INC_SPEC"
-echo "  PNG library		$PNG_LIB_SPEC"
-echo "  PNG headers		$PNG_INC_SPEC"
-echo "  TIFF library 		$TIF_LIB_SPEC"
-echo "  TIFF headers		$TIF_INC_SPEC"
-echo "  XPM library 		$XPM_LIB_SPEC"
-echo "  XPM headers		$XPM_INC_SPEC"
+echo "  PNG library             $PNG_LIB_SPEC"
+echo "  PNG headers             $PNG_INC_SPEC"
+echo "  SQLITE library          $SQLITE_LIB_SPEC"
+echo "  SQLITE headers          $SQLITE_INC_SPEC"
+echo "  TIFF library            $TIF_LIB_SPEC"
+echo "  TIFF headers            $TIF_INC_SPEC"
+echo "  XPM library             $XPM_LIB_SPEC"
+echo "  XPM headers             $XPM_INC_SPEC"
 echo ""
 
 #--------------------------------------------------------------------
 #
-#	Generate the following Makefiles
+#       Generate the following Makefiles
 #
-#	   ./Makefile
-#	   ./src/Makefile
-#	   ./src/shared/Makefile
-#	   ./man/Makefile
-#	   ./library/Makefile
-#	   ./demos/Makefile
+#          ./Makefile
+#          ./src/Makefile
+#          ./src/shared/Makefile
+#          ./man/Makefile
+#          ./library/Makefile
+#          ./demos/Makefile
 #
 #--------------------------------------------------------------------
 src_Makefile="src/Makefile"
