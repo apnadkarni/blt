@@ -1516,7 +1516,7 @@ FormatLong(Tcl_Interp *interp, double d, FormatParser *parserPtr)
 	}
     } else if (parserPtr->flags & FMT_SHORT) {
 	s = (unsigned short int)d;
-	if (d < 0) {
+	if (s < 0) {
 	    parserPtr->flags |= FMT_ISNEGATIVE;
 	}
     } else {

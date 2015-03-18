@@ -430,8 +430,8 @@ SqliteCreateTable(Tcl_Interp *interp, sqlite3 *db, BLT_TABLE table,
     sqlite3_stmt *stmt;
     
     dbuffer = Blt_DBuffer_Create();
-    Blt_DBuffer_Format(dbuffer, "CREATE TABLE IF NOT EXISTS %s (",
-                       argsPtr->tableName);
+    Blt_DBuffer_Format(dbuffer, "DROP TABLE IF EXISTS %s; CREATE TABLE %s (",
+                       argsPtr->tableName, argsPtr->tableName);
     if (argsPtr->flags & EXPORT_ROWLABELS) {
         Blt_DBuffer_Format(dbuffer, "_rowId TEXT, ");
     }        

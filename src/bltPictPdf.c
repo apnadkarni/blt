@@ -144,6 +144,7 @@ static Blt_SwitchCustom colorSwitch = {
     ColorSwitchProc, NULL, NULL, (ClientData)0
 };
 
+#ifdef notdef
 static Blt_SwitchParseProc PicaSwitchProc;
 static Blt_SwitchCustom picaSwitch = {
     PicaSwitchProc, NULL, NULL, (ClientData)0
@@ -153,6 +154,7 @@ static Blt_SwitchParseProc PadSwitchProc;
 static Blt_SwitchCustom padSwitch = {
     PadSwitchProc, NULL, NULL, (ClientData)0
 };
+#endif
 
 static Blt_SwitchSpec exportSwitches[] = 
 {
