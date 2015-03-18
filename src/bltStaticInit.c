@@ -34,6 +34,7 @@ extern Tcl_AppInitProc Blt_TclInit;
 extern Tcl_AppInitProc Blt_TclPkgsInit;
 extern Tcl_AppInitProc Blt_TkInit;
 extern Tcl_AppInitProc Blt_TkPkgsInit;
+extern Tcl_AppInitProc Blt_StaticInit;
 
 int
 Blt_StaticInit(Tcl_Interp *interp)	/* Interpreter for application. */

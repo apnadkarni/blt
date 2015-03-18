@@ -48,6 +48,7 @@
 #include "bltBg.h"
 #include "bltOp.h"
 #include "bltImage.h"
+#include "bltPalette.h"
 #include "bltPicture.h"
 #include "bltPainter.h"
 #include "tkDisplay.h"

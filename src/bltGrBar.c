@@ -39,6 +39,7 @@
 #include "bltBind.h"
 #include "bltPs.h"
 #include "bltBg.h"
+#include "bltPalette.h"
 #include "bltPicture.h"
 #include "bltGraph.h"
 #include "bltGrAxis.h"

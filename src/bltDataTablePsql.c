@@ -195,8 +195,8 @@ PsqlImportRows(Tcl_Interp *interp, BLT_TABLE table, PGresult *res,
 
 	    value = PQgetvalue(res, i, j);
 	    length = PQgetlength(res, i, j);
-	    if (blt_table_set_string(table, row, cols[j], value, length) !=
-		TCL_OK) {
+	    if (blt_table_set_string_rep(table, row, cols[j], value, length)
+                != TCL_OK) {
 		return TCL_ERROR;
 	    }
 	}

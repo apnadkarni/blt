@@ -63,77 +63,98 @@ DLLEXPORT extern Tcl_AppInitProc blt_table_mysql_safe_init;
  * $table import mysql -host $host -password $pw -db $db -port $port 
  */
 /*
- * ImportSwitches --
+ * ImportArgs --
  */
 typedef struct {
-    char *host;			/* If non-NULL, name of remote host of
-				 * MySql server.  Otherwise "localhost"
-				 * is used. */
-    char *user;			/* If non-NULL, name of user account
-				 * to access MySql server.  Otherwise
-				 * the current username is used. */
-    char *pw;			/* If non-NULL, is password to use to
-				 * access MySql server. */
-    char *db;			/* If non-NULL, name of MySql database
-				 * to access. */
-    Tcl_Obj *query;		/* If non-NULL, query to make. */
-    int port;			/* Port number to use. */
+    char *host;                         /* If non-NULL, name of remote host
+                                         * of mysql server.  Otherwise
+                                         * "localhost" is used. */
+    char *user;                         /* If non-NULL, name of user
+                                         * account to access mysql server.
+                                         * Otherwise the current username
+                                         * is used. */
+    char *pw;                           /* If non-NULL, is password to use
+                                         * to access mysql server. */
+    char *db;                           /* If non-NULL, name of mysql
+                                         * database to access. */
+    Tcl_Obj *queryObjPtr;               /* If non-NULL, query to make. */
+    int port;                           /* Port number to use. */
 
     /* Private data. */
     Tcl_Interp *interp;
     unsigned int flags;
-    char *buffer;		/* Buffer to read data into. */
+    char *buffer;                       /* Buffer to read data into. */
     int numBytes;			/* # of bytes in the buffer. */
-} ImportSwitches;
+} ImportArgs;
 
 static Blt_SwitchSpec importSwitches[] = 
 {
     {BLT_SWITCH_STRING, "-db",       "dbName", (char *)NULL,
-	Blt_Offset(ImportSwitches, db), 0, 0},
+	Blt_Offset(ImportArgs, db), 0, 0},
     {BLT_SWITCH_STRING, "-host",     "hostName", (char *)NULL,
-	Blt_Offset(ImportSwitches, host), 0, 0},
+	Blt_Offset(ImportArgs, host), 0, 0},
     {BLT_SWITCH_STRING, "-user",     "userName", (char *)NULL,
-	Blt_Offset(ImportSwitches, user), 0, 0},
+	Blt_Offset(ImportArgs, user), 0, 0},
     {BLT_SWITCH_STRING, "-password", "password", (char *)NULL,
-	Blt_Offset(ImportSwitches, pw), 0, 0},
+	Blt_Offset(ImportArgs, pw), 0, 0},
     {BLT_SWITCH_INT_NNEG, "-port",     "number", (char *)NULL,
-	Blt_Offset(ImportSwitches, port), 0, 0},
+	Blt_Offset(ImportArgs, port), 0, 0},
     {BLT_SWITCH_OBJ,    "-query",    "string", (char *)NULL,
-	Blt_Offset(ImportSwitches, query), 0, 0},
+	Blt_Offset(ImportArgs, queryObjPtr), 0, 0},
     {BLT_SWITCH_END}
 };
 
 #ifdef EXPORT_MYSQL
 /*
- * ExportSwitches --
+ * ExportArgs --
  */
 typedef struct {
-    Blt_Chain rowChain;
-    Blt_Chain colChain;
-    Tcl_Obj *rows, *cols;	/* Selected rows and columns to export. */
+    char *host;                         /* If non-NULL, name of remote host
+                                         * of mysql server.  Otherwise
+                                         * "localhost" is used. */
+    char *user;                         /* If non-NULL, name of user
+                                         * account to access mysql server.
+                                         * Otherwise the current username
+                                         * is used. */
+    char *pw;                           /* If non-NULL, is password to use
+                                         * to access mysql server. */
+    char *db;                           /* If non-NULL, name of mysql
+                                         * database to access. */
+    int port;                           /* Port number to use. */
+
+    BLT_TABLE_ITERATOR ri, ci;
     unsigned int flags;
-    Tcl_Obj *fileObj;
-    Tcl_Channel channel;	/* If non-NULL, channel to write output to. */
-    Tcl_DString *dsPtr;
-    int length;			/* Length of dynamic string. */
-    int count;			/* Number of fields in current record. */
-    Tcl_Interp *interp;
-    char *quote;		/* Quoted string delimiter. */
-    char *sep;			/* Separator character. */
-} ExportSwitches;
+} ExportArgs;
+
+#define EXPORT_ROWLABELS	(1<<0)
+
+static Blt_SwitchFreeProc ColumnIterFreeProc;
+static Blt_SwitchParseProc ColumnIterSwitchProc;
+static Blt_SwitchCustom columnIterSwitch = {
+    ColumnIterSwitchProc, NULL, ColumnIterFreeProc, 0,
+};
+static Blt_SwitchFreeProc RowIterFreeProc;
+static Blt_SwitchParseProc RowIterSwitchProc;
+static Blt_SwitchCustom rowIterSwitch = {
+    RowIterSwitchProc, NULL, RowIterFreeProc, 0,
+};
 
 static Blt_SwitchSpec exportSwitches[] = 
 {
-    {BLT_SWITCH_OBJ, "-columns", "columns", (char *)NULL,
-	Blt_Offset(ExportSwitches, cols), 0, 0},
-    {BLT_SWITCH_OBJ, "-file", "fileName", (char *)NULL,
-	Blt_Offset(ExportSwitches, fileObj), 0, 0},
-    {BLT_SWITCH_STRING, "-quote", "char", (char *)NULL,
-	Blt_Offset(ExportSwitches, quote), 0, 0},
-    {BLT_SWITCH_OBJ, "-rows", "rows", (char *)NULL,
-	Blt_Offset(ExportSwitches, rows), 0, 0},
-    {BLT_SWITCH_STRING, "-separator", "char", (char *)NULL,
-	Blt_Offset(ExportSwitches, sep), 0, 0},
+    {BLT_SWITCH_STRING, "-db",       "dbName", (char *)NULL,
+	Blt_Offset(ExportArgs, db), 0, 0},
+    {BLT_SWITCH_STRING, "-host",     "hostName", (char *)NULL,
+	Blt_Offset(ExportArgs, host), 0, 0},
+    {BLT_SWITCH_STRING, "-user",     "userName", (char *)NULL,
+	Blt_Offset(ExportArgs, user), 0, 0},
+    {BLT_SWITCH_STRING, "-password", "password", (char *)NULL,
+	Blt_Offset(ExportArgs, pw), 0, 0},
+    {BLT_SWITCH_INT_NNEG, "-port",     "number", (char *)NULL,
+	Blt_Offset(ExportArgs, port), 0, 0},
+    {BLT_SWITCH_CUSTOM, "-columns",   "columns" ,(char *)NULL,
+	Blt_Offset(ExportArgs, ci),   0, 0, &columnIterSwitch},
+    {BLT_SWITCH_CUSTOM, "-rows",      "rows", (char *)NULL,
+	Blt_Offset(ExportArgs, ri),   0, 0, &rowIterSwitch},
     {BLT_SWITCH_END}
 };
 
@@ -219,7 +240,6 @@ MySqlImportRows(Tcl_Interp *interp, BLT_TABLE table, MYSQL_RES *myResults,
         return TCL_ERROR;
     }
     for (i = 0; /*empty*/; i++) {
-	BLT_TABLE_ROW row;
 	size_t j;
 	MYSQL_ROW myRow;
 	unsigned long *fieldLengths;
@@ -235,18 +255,11 @@ MySqlImportRows(Tcl_Interp *interp, BLT_TABLE table, MYSQL_RES *myResults,
 	}
 	fieldLengths = mysql_fetch_lengths(myResults);
 	for (j = 0; j < numCols; j++) {
-	    int result;
-	    Tcl_Obj *objPtr;
-
 	    if (myRow[j] == NULL) {
 		continue;		/* Empty value. */
 	    }
-	    objPtr = Tcl_NewByteArrayObj((unsigned char *)myRow[j], 
-					 (int)fieldLengths[j]);
-	    Tcl_IncrRefCount(objPtr);
-	    result = blt_table_set_obj(table, rows[i], cols[j], objPtr);
-	    Tcl_DecrRefCount(objPtr);
-	    if (result != TCL_OK) {
+	    if (blt_table_set_string_rep(table, rows[i], cols[j], myRow[j],
+                        fieldLengths[j]) != TCL_OK) {
 		return TCL_ERROR;
 	    }
 	}
@@ -283,15 +296,15 @@ MySqlFreeResults(MYSQL_RES *myResults)
 
 static int
 MySqlResults(Tcl_Interp *interp, MYSQL *cp, MYSQL_RES **resultsPtr, 
-	     long *nFieldsPtr) 
+	     long *numFieldsPtr) 
 {
     MYSQL_RES *results;
 
     results = mysql_store_result(cp);
     if (results != NULL) {
-	*nFieldsPtr = mysql_num_fields(results);
+	*numFieldsPtr = mysql_num_fields(results);
     } else if (mysql_field_count(cp) == 0) {
-	*nFieldsPtr = 0;
+	*numFieldsPtr = 0;
     } else {
 	Tcl_AppendResult(interp, "error collecting results: ", mysql_error(cp), 
 			 (char *)NULL);
@@ -348,63 +361,53 @@ static int
 ImportMysqlProc(BLT_TABLE table, Tcl_Interp *interp, int objc, 
 		Tcl_Obj *const *objv)
 {
-    ImportSwitches switches;
-    MYSQL *cp;
+    ImportArgs args;
+    MYSQL *conn;
     MYSQL_RES *myResults;
     long numCols;
-    BLT_TABLE_COLUMN *cols;
-
-    myResults = NULL;
-    cp = NULL;
-    cols = NULL;
-    memset(&switches, 0, sizeof(switches));
+    int result;
+    
+    conn = NULL;
+    memset(&args, 0, sizeof(args));
     if (Blt_ParseSwitches(interp, importSwitches, objc - 3, objv + 3, 
-		&switches, BLT_SWITCH_DEFAULTS) < 0) {
+		&args, BLT_SWITCH_DEFAULTS) < 0) {
 	return TCL_ERROR;
     }
-    if (MySqlConnect(interp, switches.host, switches.user, switches.pw,
-	switches.db, switches.port, DEF_CLIENT_FLAGS, &cp) != TCL_OK) {
-	goto error;
+    if (args.queryObjPtr == NULL) {
+        Tcl_AppendResult(interp, "-query switch is required.", (char *)NULL);
+	return TCL_ERROR;
     }
-    if (switches.query == NULL) {
-	goto done;
+    if (MySqlConnect(interp, args.host, args.user, args.pw,
+	args.db, args.port, DEF_CLIENT_FLAGS, &conn) != TCL_OK) {
+        Blt_FreeSwitches(importSwitches, &args, 0);
+	return TCL_ERROR;
     }
-    if (MySqlQueryFromObj(interp, cp, switches.query) != TCL_OK) {
-	goto error;
+    myResults = NULL;
+    result = MySqlQueryFromObj(interp, conn, args.queryObjPtr);
+    if (result == TCL_OK) {
+        result = MySqlResults(interp, conn, &myResults, &numCols);
     }
-    if (MySqlResults(interp, cp, &myResults, &numCols) != TCL_OK) {
-	goto error;
+    if (result == TCL_OK) {
+        BLT_TABLE_COLUMN *cols;
+
+        /* Step 1. Create columns to hold the new values.  Label the columns
+         *	       using the title. */
+        cols = Blt_AssertMalloc(numCols * sizeof(BLT_TABLE_COLUMN));
+        result = blt_table_extend_columns(interp, table, numCols, cols);
+        if (result == TCL_OK) {
+            result = MySqlImportLabels(interp, table, myResults, numCols, cols);
+        }
+        if (result == TCL_OK) {
+            result = MySqlImportRows(interp, table, myResults, numCols, cols);
+        }
+        Blt_Free(cols);
     }
-    /* Step 1. Create columns to hold the new values.  Label
-     *	       the columns using the title. */
-    cols = Blt_AssertMalloc(numCols * sizeof(BLT_TABLE_COLUMN));
-    if (blt_table_extend_columns(interp, table, numCols, cols) != TCL_OK) {
-	goto error;
-    }
-    if (MySqlImportLabels(interp, table, myResults, numCols, cols) != TCL_OK) {
-	goto error;
-    }
-    if (MySqlImportRows(interp, table, myResults, numCols, cols) != TCL_OK) {
-	goto error;
-    }
-    Blt_Free(cols);
-    MySqlFreeResults(myResults);
- done:
-    MySqlDisconnect(cp);
-    Blt_FreeSwitches(importSwitches, &switches, 0);
-    return TCL_OK;
- error:
     if (myResults != NULL) {
-	MySqlFreeResults(myResults);
+        MySqlFreeResults(myResults);
     }
-    if (cols != NULL) {
-	Blt_Free(cols);
-    }
-    if (cp != NULL) {
-	MySqlDisconnect(cp);
-    }
-    Blt_FreeSwitches(importSwitches, &switches, 0);
-    return TCL_ERROR;
+    MySqlDisconnect(conn);
+    Blt_FreeSwitches(importSwitches, &args, 0);
+    return result;
 }
 
 #ifdef EXPORT_MYSQL

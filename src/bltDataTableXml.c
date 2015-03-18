@@ -419,7 +419,7 @@ StartXmlTag(void *userData, const char *element, const char **attr)
 		col = Blt_GetHashValue(hPtr);
 	    }
 	    /* Set the attribute value as the cell value. */
-	    if (blt_table_set_string(table, row, col, value, -1)!=TCL_OK) {
+	    if (blt_table_set_string_rep(table, row, col, value, -1)!=TCL_OK) {
 		goto error;
 	    }
 	}

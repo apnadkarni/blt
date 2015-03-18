@@ -41,6 +41,7 @@
 #include "bltBg.h"
 #include "tkDisplay.h"
 #include "bltImage.h"
+#include "bltPalette.h"
 #include "bltPicture.h"
 #include "bltGraph.h"
 #include "bltGrAxis.h"

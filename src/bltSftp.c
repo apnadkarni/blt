@@ -2465,7 +2465,7 @@ ExportToTable(DirectoryReader *readerPtr, const char *bytes,
 	if (col == NULL) {
 	    col = blt_table_create_column(interp, table, "name");
 	}
-	blt_table_set_string(table, row, col, bytes, -1);
+	blt_table_set_string_rep(table, row, col, bytes, -1);
     }
     /* type */
     if (readerPtr->flags & DIR_TYPE) {
@@ -2474,7 +2474,8 @@ ExportToTable(DirectoryReader *readerPtr, const char *bytes,
 	    col = blt_table_create_column(interp, table, "type");
 	}
 	if (attrsPtr->flags & LIBSSH2_SFTP_ATTR_PERMISSIONS) {
-	    blt_table_set_string(table, row, col, GetFileTypeFromAttributes(attrsPtr), -1);
+	    blt_table_set_string_rep(table, row, col,
+                GetFileTypeFromAttributes(attrsPtr), -1);
 	}
     }
     /* size */ 
@@ -2550,7 +2551,7 @@ ExportToTable(DirectoryReader *readerPtr, const char *bytes,
 	if (col == NULL) {
 	    col = blt_table_create_column(interp, table, "longentry");
 	}
-	blt_table_set_string(table, row, col, longentry, -1);
+	blt_table_set_string_rep(table, row, col, longentry, -1);
     }
 }
     

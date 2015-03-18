@@ -2,8 +2,9 @@
 #define BUILD_BLT_TK_PROCS 1
 #include <bltInt.h>
 
-/* !BEGIN!: Do not edit below this line. */
 extern BltTkIntProcs bltTkIntProcs;
+
+/* !BEGIN!: Do not edit below this line. */
 
 static BltTkStubHooks bltTkStubHooks = {
     &bltTkIntProcs
@@ -46,83 +47,77 @@ BltTkProcs bltTkProcs = {
     Blt_GetPictureFromObj, /* 31 */
     Blt_GetResampleFilterFromObj, /* 32 */
     Blt_NameOfResampleFilter, /* 33 */
-    Blt_AssociateColors, /* 34 */
-    Blt_UnassociateColors, /* 35 */
-    Blt_MultiplyPixels, /* 36 */
-    Blt_GetBBoxFromObjv, /* 37 */
-    Blt_AdjustRegionToPicture, /* 38 */
-    Blt_GetPixelFromObj, /* 39 */
-    Blt_GetPixel, /* 40 */
-    Blt_NameOfPixel, /* 41 */
-    Blt_NotifyImageChanged, /* 42 */
-    Blt_QueryColors, /* 43 */
-    Blt_ClassifyPicture, /* 44 */
-    Blt_TentHorizontally, /* 45 */
-    Blt_TentVertically, /* 46 */
-    Blt_ZoomHorizontally, /* 47 */
-    Blt_ZoomVertically, /* 48 */
-    Blt_BlendRegion, /* 49 */
-    Blt_BlendPicturesByMode, /* 50 */
-    Blt_FadePicture, /* 51 */
-    Blt_CopyPictureBits, /* 52 */
-    Blt_GammaCorrectPicture, /* 53 */
-    Blt_SharpenPicture, /* 54 */
-    Blt_ApplyColorToPicture, /* 55 */
-    Blt_SizeOfPicture, /* 56 */
-    Blt_PictureToDBuffer, /* 57 */
-    Blt_ResetPicture, /* 58 */
-    Blt_MapColors, /* 59 */
-    Blt_GetColorLookupTable, /* 60 */
-    Blt_FadePictureWithGradient, /* 61 */
-    Blt_ReflectPicture2, /* 62 */
-    Blt_SubtractColor, /* 63 */
-    Blt_PhotoToPicture, /* 64 */
-    Blt_PhotoAreaToPicture, /* 65 */
-    Blt_DrawableToPicture, /* 66 */
-    Blt_WindowToPicture, /* 67 */
-    Blt_PictureToPhoto, /* 68 */
-    Blt_SnapPhoto, /* 69 */
-    Blt_SnapPicture, /* 70 */
-    Blt_XColorToPixel, /* 71 */
-    Blt_IsPicture, /* 72 */
-    Blt_GetPictureFromImage, /* 73 */
-    Blt_GetPictureFromPictureImage, /* 74 */
-    Blt_GetPicturesFromPictureImage, /* 75 */
-    Blt_GetPictureFromPhotoImage, /* 76 */
-    Blt_CanvasToPicture, /* 77 */
-    Blt_PictureRegisterProc, /* 78 */
-    Blt_Shadow_Set, /* 79 */
-    Blt_Palette_GetFromObj, /* 80 */
-    Blt_Palette_GetFromString, /* 81 */
-    Blt_Palette_GetAssociatedColorFromAbsoluteValue, /* 82 */
-    Blt_Palette_SetRange, /* 83 */
-    Blt_Palette_GetAssociatedColor, /* 84 */
-    Blt_Palette_CreateNotifier, /* 85 */
-    Blt_Palette_DeleteNotifier, /* 86 */
-    Blt_Palette_Name, /* 87 */
-    Blt_Palette_TwoColorPalette, /* 88 */
-    Blt_Palette_Free, /* 89 */
-    Blt_GradientPicture, /* 90 */
-    Blt_TexturePicture, /* 91 */
-    Blt_PaintBrush_Init, /* 92 */
-    Blt_PaintBrush_Free, /* 93 */
-    Blt_PaintBrush_Get, /* 94 */
-    Blt_PaintBrush_GetFromString, /* 95 */
-    Blt_PaintBrush_SetPalette, /* 96 */
-    Blt_PaintBrush_SetColorProc, /* 97 */
-    Blt_PaintBrush_SetColors, /* 98 */
-    Blt_PaintBrush_Region, /* 99 */
-    Blt_PaintBrush_SetTile, /* 100 */
-    Blt_PaintBrush_SetTexture, /* 101 */
-    Blt_PaintBrush_SetGradient, /* 102 */
-    Blt_PaintBrush_SetColor, /* 103 */
-    Blt_PaintBrush_SetOrigin, /* 104 */
-    Blt_PaintBrush_GetAssociatedColor, /* 105 */
-    Blt_PaintRectangle, /* 106 */
-    Blt_PaintPolygon, /* 107 */
-    Blt_PictureRegisterFormat, /* 108 */
-    Blt_GetNthPicture, /* 109 */
-    Blt_FindPictureFormat, /* 110 */
+    Blt_AssociateColor, /* 34 */
+    Blt_UnassociateColor, /* 35 */
+    Blt_AssociateColors, /* 36 */
+    Blt_UnassociateColors, /* 37 */
+    Blt_MultiplyPixels, /* 38 */
+    Blt_GetBBoxFromObjv, /* 39 */
+    Blt_AdjustRegionToPicture, /* 40 */
+    Blt_GetPixelFromObj, /* 41 */
+    Blt_GetPixel, /* 42 */
+    Blt_NameOfPixel, /* 43 */
+    Blt_NotifyImageChanged, /* 44 */
+    Blt_QueryColors, /* 45 */
+    Blt_ClassifyPicture, /* 46 */
+    Blt_TentHorizontally, /* 47 */
+    Blt_TentVertically, /* 48 */
+    Blt_ZoomHorizontally, /* 49 */
+    Blt_ZoomVertically, /* 50 */
+    Blt_BlendRegion, /* 51 */
+    Blt_BlendPicturesByMode, /* 52 */
+    Blt_FadePicture, /* 53 */
+    Blt_CopyPictureBits, /* 54 */
+    Blt_GammaCorrectPicture, /* 55 */
+    Blt_SharpenPicture, /* 56 */
+    Blt_ApplyColorToPicture, /* 57 */
+    Blt_SizeOfPicture, /* 58 */
+    Blt_PictureToDBuffer, /* 59 */
+    Blt_ResetPicture, /* 60 */
+    Blt_MapColors, /* 61 */
+    Blt_GetColorLookupTable, /* 62 */
+    Blt_FadePictureWithGradient, /* 63 */
+    Blt_ReflectPicture2, /* 64 */
+    Blt_SubtractColor, /* 65 */
+    Blt_PhotoToPicture, /* 66 */
+    Blt_PhotoAreaToPicture, /* 67 */
+    Blt_DrawableToPicture, /* 68 */
+    Blt_WindowToPicture, /* 69 */
+    Blt_PictureToPhoto, /* 70 */
+    Blt_SnapPhoto, /* 71 */
+    Blt_SnapPicture, /* 72 */
+    Blt_XColorToPixel, /* 73 */
+    Blt_IsPicture, /* 74 */
+    Blt_GetPictureFromImage, /* 75 */
+    Blt_GetPictureFromPictureImage, /* 76 */
+    Blt_GetPicturesFromPictureImage, /* 77 */
+    Blt_GetPictureFromPhotoImage, /* 78 */
+    Blt_CanvasToPicture, /* 79 */
+    Blt_PictureRegisterProc, /* 80 */
+    Blt_Shadow_Set, /* 81 */
+    Blt_GradientPicture, /* 82 */
+    Blt_TexturePicture, /* 83 */
+    Blt_PaintBrush_Init, /* 84 */
+    Blt_PaintBrush_Free, /* 85 */
+    Blt_PaintBrush_Get, /* 86 */
+    Blt_PaintBrush_GetFromString, /* 87 */
+    Blt_PaintBrush_SetPalette, /* 88 */
+    Blt_PaintBrush_SetColorProc, /* 89 */
+    Blt_PaintBrush_SetColors, /* 90 */
+    Blt_PaintBrush_Region, /* 91 */
+    Blt_PaintBrush_SetTile, /* 92 */
+    Blt_PaintBrush_SetTexture, /* 93 */
+    Blt_PaintBrush_SetGradient, /* 94 */
+    Blt_PaintBrush_SetColor, /* 95 */
+    Blt_PaintBrush_SetOrigin, /* 96 */
+    Blt_PaintBrush_GetAssociatedColor, /* 97 */
+    Blt_PaintRectangle, /* 98 */
+    Blt_PaintPolygon, /* 99 */
+    Blt_EmbossPicture, /* 100 */
+    Blt_FadeColor, /* 101 */
+    Blt_PictureRegisterFormat, /* 102 */
+    Blt_GetNthPicture, /* 103 */
+    Blt_FindPictureFormat, /* 104 */
 };
 
 /* !END!: Do not edit above this line. */

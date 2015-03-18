@@ -301,7 +301,7 @@ ImportTree(Tcl_Interp *interp, BLT_TABLE table, Blt_Tree tree,
 
 	    col = blt_table_column(table, colIndex);
 	    label = Blt_Tree_NodeLabel(parent);
-	    if (blt_table_set_string(table, row, col, label, -1) !=TCL_OK) {
+	    if (blt_table_set_string_rep(table, row, col, label, -1) !=TCL_OK) {
 		return TCL_ERROR;
 	    }
 	    if (switchesPtr->flags & IMPORT_INODES) {

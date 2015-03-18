@@ -687,10 +687,21 @@ BLT_TCL_HEADERS = \
 		$(srcdir)/bltTree.h \
 		$(srcdir)/bltVector.h
 
-BLT_TK_INT_HEADERS =	bltTkInt.h bltFont.h bltBg.h bltBind.h bltAfm.h \
-			bltConfig.h bltImage.h bltPainter.h bltPs.h bltText.h
+BLT_TK_INT_HEADERS = \
+		$(srcdir)/bltTkInt.h \
+		$(srcdir)/bltFont.h \
+		$(srcdir)/bltBg.h \
+		$(srcdir)/bltBind.h \
+		$(srcdir)/bltAfm.h \
+		$(srcdir)/bltConfig.h \
+		$(srcdir)/bltImage.h \
+		$(srcdir)/bltPainter.h \
+		$(srcdir)/bltPs.h \
+		$(srcdir)/bltText.h
 
-BLT_TK_HEADERS =	bltPicture.h bltPictFmts.h
+BLT_TK_HEADERS = \
+		$(srcdir)/bltPicture.h \
+		$(srcdir)/bltPictFmts.h
 
 build-tcl-stubs:
 	$(RM) bltTclInt.decls bltTcl.decls
@@ -705,8 +716,10 @@ build-tk-stubs:
 	$(RM) bltTkInt.decls bltTk.decls
 	tclsh $(srcdir)/bltdecls.tcl -interface bltTkInt -- \
 		$(BLT_TK_INT_HEADERS)
+	tclsh $(srcdir)/bltprocs.tcl /tmp bltTkInt.decls
 	tclsh $(srcdir)/bltdecls.tcl -interface bltTk -hooks bltTkInt -- \
 		$(BLT_TK_HEADERS)
+	tclsh $(srcdir)/bltprocs.tcl /tmp bltTk.decls
 
 install: install-demos install-libs install-headers install-packages
 

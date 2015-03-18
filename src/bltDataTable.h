@@ -157,6 +157,10 @@ typedef struct _BLT_TABLE_CORE {
     int notifyHold;
 } BLT_TABLE_CORE;
 
+#ifndef _BLT_TAGS_H
+typedef struct _Blt_Tags *Blt_Tags;
+#endif  /* _BLT_TAGS_H */
+
 /*
  * BLT_TABLE --
  *
@@ -297,6 +301,8 @@ BLT_EXTERN int blt_table_set_obj(BLT_TABLE table, BLT_TABLE_ROW row,
 
 BLT_EXTERN const char *blt_table_get_string(BLT_TABLE table, BLT_TABLE_ROW row, 
 	BLT_TABLE_COLUMN column);
+BLT_EXTERN int blt_table_set_string_rep(BLT_TABLE table, BLT_TABLE_ROW row,
+	BLT_TABLE_COLUMN column, const char *string, int length);
 BLT_EXTERN int blt_table_set_string(BLT_TABLE table, BLT_TABLE_ROW row,
 	BLT_TABLE_COLUMN column, const char *string, int length);
 BLT_EXTERN int blt_table_append_string(Tcl_Interp *interp, BLT_TABLE table, 

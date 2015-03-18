@@ -647,8 +647,8 @@ Import(Tcl_Interp *interp, BLT_TABLE table, ImportSwitches *importPtr)
 			    col = blt_table_column(table, i);
 			}
 			i++;
-			if (blt_table_set_string(table, row, col, field, 
-						 fp - field) != TCL_OK) {
+			if (blt_table_set_string_rep(table, row, col, field, 
+                                fp - field) != TCL_OK) {
 			    goto error;
 			}
 		    }
@@ -710,8 +710,8 @@ Import(Tcl_Interp *interp, BLT_TABLE table, ImportSwitches *importPtr)
 			goto error;
 		    }
 		}			
-		if (blt_table_set_string(table, row, col, field, fp - field) 
-		    != TCL_OK) {
+		if (blt_table_set_string_rep(table, row, col, field,
+                        fp - field) != TCL_OK) {
 		    goto error;
 		}
 	    }		

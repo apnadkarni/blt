@@ -329,7 +329,7 @@ SqliteImportRow(Tcl_Interp *interp, BLT_TABLE table, sqlite3_stmt *stmt,
                 
                 sval = (const char *)sqlite3_column_text(stmt, i);
                 length = sqlite3_column_bytes(stmt, i);
-                if (blt_table_set_string(table, row, cols[i], sval, length)
+                if (blt_table_set_string_rep(table, row, cols[i], sval, length)
                     != TCL_OK) {
                     return TCL_ERROR;
                 }

@@ -42,6 +42,7 @@
 #include "bltAlloc.h"
 #include "bltMath.h"
 #include "bltConfig.h"
+#include "bltPalette.h"
 #include "bltPicture.h"
 #include "bltPictInt.h"
 #include "bltImage.h"

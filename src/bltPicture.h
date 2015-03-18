@@ -529,6 +529,11 @@ typedef enum Blt_PaintBrushTypes {
  *
  *---------------------------------------------------------------------------
  */
+
+#ifndef _BLT_PALETTE_H
+typedef struct _Blt_Palette *Blt_Palette;
+#endif  /* _BLT_PALTTE_H */
+
 struct _Blt_PaintBrush {
     Blt_PaintBrushType type;		/* Type of paintbrush:
 					 * BLT_PAINTBRUSH_SOLID,

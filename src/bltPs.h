@@ -92,6 +92,8 @@ BLT_EXTERN void Blt_Ps_Free(Blt_Ps ps);
 
 BLT_EXTERN const char *Blt_Ps_GetValue(Blt_Ps ps, int *lengthPtr);
 
+BLT_EXTERN Blt_DBuffer Blt_Ps_GetDBuffer(Blt_Ps ps);
+
 BLT_EXTERN Tcl_Interp *Blt_Ps_GetInterp(Blt_Ps ps);
 
 BLT_EXTERN Blt_DBuffer Blt_Ps_DBuffer(Blt_Ps ps);

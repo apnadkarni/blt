@@ -750,7 +750,7 @@ ImportCsv(Tcl_Interp *interp, BLT_TABLE table, ImportArgs *argsPtr)
 		    }
 		    if (((last > field) || (isQuoted)) && 
 			(!IsEmpty(argsPtr, field, last - field))) {
-			if (blt_table_set_string(table, row, col, field,
+			if (blt_table_set_string_rep(table, row, col, field,
 				last - field) != TCL_OK) {             
 			    goto error;
 			}

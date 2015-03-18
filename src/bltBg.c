@@ -47,6 +47,7 @@
 #include "bltChain.h"
 #include "bltHash.h"
 #include "bltImage.h"
+#include "bltPalette.h"
 #include "bltPicture.h"
 #include "bltBg.h"
 #include "bltPainter.h"

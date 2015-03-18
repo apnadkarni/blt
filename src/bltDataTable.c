@@ -6085,6 +6085,42 @@ blt_table_set_long(Table *tablePtr, Row *rowPtr, Column *colPtr, long value)
 /*
  *---------------------------------------------------------------------------
  *
+ * blt_table_set_string_rep --
+ *
+ *      Sets the value of the selected row, column location in the table.
+ *      The row, column location must be within the actual table limits.
+ *
+ * Results:
+ *      Returns a standard TCL result.
+ *
+ * Side Effects:
+ *      New tuples may be allocated created.
+ *
+ *---------------------------------------------------------------------------
+ */
+int
+blt_table_set_string_rep(Table *tablePtr, Row *rowPtr, Column *colPtr, 
+		     const char *string, int length)
+{
+    Value *valuePtr;
+
+    valuePtr = GetValue(tablePtr, rowPtr, colPtr);
+    ResetValue(valuePtr);
+    if (SetValueFromString(tablePtr->interp, colPtr->type, string, length, 
+		valuePtr) != TCL_OK) {
+	return TCL_ERROR;
+    }
+    /* Indicate the keytables need to be regenerated. */
+    if (colPtr->flags & TABLE_COLUMN_PRIMARY_KEY) {
+	tablePtr->flags |= TABLE_KEYS_DIRTY;
+    }
+    return TCL_OK;
+}
+
+
+/*
+ *---------------------------------------------------------------------------
+ *
  * blt_table_set_string --
  *
  *      Sets the value of the selected row, column location in the table.
@@ -6102,24 +6138,12 @@ int
 blt_table_set_string(Table *tablePtr, Row *rowPtr, Column *colPtr, 
 		     const char *string, int length)
 {
-    Value *valuePtr;
-
     if (colPtr->type != TABLE_COLUMN_TYPE_STRING) {
 	Tcl_AppendResult(tablePtr->interp, "column \"", colPtr->label, 
 			 "\" is not type string.", (char *)NULL);
 	return TCL_ERROR;
     }
-    valuePtr = GetValue(tablePtr, rowPtr, colPtr);
-    ResetValue(valuePtr);
-    if (SetValueFromString(tablePtr->interp, colPtr->type, string, length, 
-		valuePtr) != TCL_OK) {
-	return TCL_ERROR;
-    }
-    /* Indicate the keytables need to be regenerated. */
-    if (colPtr->flags & TABLE_COLUMN_PRIMARY_KEY) {
-	tablePtr->flags |= TABLE_KEYS_DIRTY;
-    }
-    return TCL_OK;
+    return blt_table_set_string_rep(tablePtr, rowPtr, colPtr, string, length);
 }
 
 /*
