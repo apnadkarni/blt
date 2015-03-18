@@ -989,6 +989,7 @@ CompareValues(Column *colPtr, const Row *r1Ptr, const Row *r2Ptr)
 	    sortType = SORT_DICTIONARY; break;
 	case TABLE_COLUMN_TYPE_LONG:
 	    sortType = SORT_INTEGER;    break;
+	case TABLE_COLUMN_TYPE_TIME:
 	case TABLE_COLUMN_TYPE_DOUBLE:
 	    sortType = SORT_REAL;       break;
 	default:

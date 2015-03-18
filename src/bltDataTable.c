@@ -582,6 +582,8 @@ blt_table_name_to_column_type(const char *s)
 	return TABLE_COLUMN_TYPE_LONG;
     } else if ((c == 't') && (strcmp(s, "time") == 0)) {
 	return TABLE_COLUMN_TYPE_TIME;
+    } else if ((c == 'b') && (strcmp(s, "blob") == 0)) {
+	return TABLE_COLUMN_TYPE_BLOB;
     } else {
 	return TABLE_COLUMN_TYPE_UNKNOWN;
     }
@@ -600,6 +602,14 @@ GetString(Value *valuePtr)
 	valuePtr->staticSpace : valuePtr->string;
 }
 
+static INLINE const unsigned char *
+GetBytes(Value *valuePtr)
+{
+    return (valuePtr->string == BLT_TABLE_VALUE_STATIC) ? 
+	(const unsigned char *)valuePtr->staticSpace :
+        (const unsigned char *)valuePtr->string;
+}
+
 static INLINE void
 ResetValue(Value *valuePtr)
 {
@@ -607,6 +617,7 @@ ResetValue(Value *valuePtr)
 	(valuePtr->string != BLT_TABLE_VALUE_STATIC)) {
 	Blt_Free(valuePtr->string);
     }
+    valuePtr->length = 0;
     valuePtr->string = NULL;
 }
 
@@ -662,10 +673,10 @@ GetObjFromValue(BLT_TABLE_COLUMN_TYPE type, Value *valuePtr)
 	return NULL;
     } 
     objPtr = NULL;                      /* Suppress compiler warning. */
+    assert(type != TABLE_COLUMN_TYPE_UNKNOWN);
     switch (type) {
-    case TABLE_COLUMN_TYPE_UNKNOWN:
-    case TABLE_COLUMN_TYPE_STRING:      /* string */
-	objPtr = Tcl_NewStringObj(GetString(valuePtr), -1);
+    case TABLE_COLUMN_TYPE_BLOB:
+        objPtr = Tcl_NewByteArrayObj(GetBytes(valuePtr), valuePtr->length);
 	break;
     case TABLE_COLUMN_TYPE_TIME:        /* time */
     case TABLE_COLUMN_TYPE_DOUBLE:      /* double */
@@ -673,6 +684,10 @@ GetObjFromValue(BLT_TABLE_COLUMN_TYPE type, Value *valuePtr)
 	break;
     case TABLE_COLUMN_TYPE_LONG:        /* long */
 	objPtr = Tcl_NewLongObj(valuePtr->datum.l);
+	break;
+    default:
+    case TABLE_COLUMN_TYPE_STRING:      /* string */
+        objPtr = Tcl_NewStringObj(GetString(valuePtr), valuePtr->length);
 	break;
     }
     return objPtr;
@@ -717,10 +732,12 @@ SetValueFromObj(Tcl_Interp *interp, BLT_TABLE_COLUMN_TYPE type,
 	strncpy(string, s, length);
 	string[length] = '\0';
 	valuePtr->string = string;
+        valuePtr->length = length;
     } else {
 	strncpy(valuePtr->staticSpace, s, length);
 	valuePtr->staticSpace[length] = '\0';
 	valuePtr->string = BLT_TABLE_VALUE_STATIC;
+        valuePtr->length = length;
     }
     return TCL_OK;
 }
@@ -734,51 +751,63 @@ SetValueFromString(Tcl_Interp *interp, BLT_TABLE_COLUMN_TYPE type,
     long l;
     Tcl_Obj *objPtr;
 
-    /* Make a copy of the string, eventually used for string rep.  */
-    objPtr = Tcl_NewStringObj(s, length);
-    Tcl_IncrRefCount(objPtr);
+    objPtr = NULL;
+    if ((type != TABLE_COLUMN_TYPE_STRING) ||
+        (type != TABLE_COLUMN_TYPE_BLOB)) {
 
-    switch (type) {
-    case TABLE_COLUMN_TYPE_TIME:        /* time */
-	if (Blt_GetTimeFromObj(interp, objPtr, &d) != TCL_OK) {
-	    Tcl_DecrRefCount(objPtr);
-	    return TCL_ERROR;
-	}
-	valuePtr->datum.d = d;
-	break;
+        /* For the non-string types, make a copy of the string as a
+         * Tcl_Obj.  This will give us a canonical string representation
+         * and also verify that the string is valid.  */
+        objPtr = Tcl_NewStringObj(s, length);
+        Tcl_IncrRefCount(objPtr);
+        
+        switch (type) {
+        case TABLE_COLUMN_TYPE_TIME:        /* Time */
+            if (Blt_GetTimeFromObj(interp, objPtr, &d) != TCL_OK) {
+                Tcl_DecrRefCount(objPtr);
+                return TCL_ERROR;
+            }
+            valuePtr->datum.d = d;
+            break;
+            
+        case TABLE_COLUMN_TYPE_DOUBLE:      /* Double */
+            if (Blt_GetDoubleFromObj(interp, objPtr, &d) != TCL_OK) {
+                Tcl_DecrRefCount(objPtr);
+                return TCL_ERROR;
+            }
+            valuePtr->datum.d = d;
+            break;
+        case TABLE_COLUMN_TYPE_LONG:        /* Long */
+            if (Blt_GetLongFromObj(interp, objPtr, &l) != TCL_OK) {
+                Tcl_DecrRefCount(objPtr);
+                return TCL_ERROR;
+            }
+            valuePtr->datum.l = l;
+            break;
+        default:
+            break;
+        }
+        s = Tcl_GetStringFromObj(objPtr, &length);
+    }        
 
-    case TABLE_COLUMN_TYPE_DOUBLE:      /* double */
-	if (Blt_GetDoubleFromObj(interp, objPtr, &d) != TCL_OK) {
-	    Tcl_DecrRefCount(objPtr);
-	    return TCL_ERROR;
-	}
-	valuePtr->datum.d = d;
-	break;
-    case TABLE_COLUMN_TYPE_LONG:        /* long */
-	if (Blt_GetLongFromObj(interp, objPtr, &l) != TCL_OK) {
-	    Tcl_DecrRefCount(objPtr);
-	    return TCL_ERROR;
-	}
-	valuePtr->datum.l = l;
-	break;
-    default:
-	break;
-    }
-    s = Tcl_GetStringFromObj(objPtr, &length);
     ResetValue(valuePtr);
     if (length >= BLT_TABLE_VALUE_LENGTH) {
-	char *copy;
-
-	copy = Blt_AssertMalloc(length + 1);
-	strncpy(copy, s, length);
-	copy[length] = '\0';
-	valuePtr->string = copy;
+        char *copy;
+        
+        copy = Blt_AssertMalloc(length + 1);
+        strncpy(copy, s, length);
+        copy[length] = '\0';
+        valuePtr->string = copy;
+        valuePtr->length = length;
     } else {
-	strncpy(valuePtr->staticSpace, s, length);
-	valuePtr->staticSpace[length] = '\0';
-	valuePtr->string = BLT_TABLE_VALUE_STATIC;
+        strncpy(valuePtr->staticSpace, s, length);
+        valuePtr->staticSpace[length] = '\0';
+        valuePtr->string = BLT_TABLE_VALUE_STATIC;
+        valuePtr->length = length;
     }
-    Tcl_DecrRefCount(objPtr);
+    if (objPtr != NULL) {
+        Tcl_DecrRefCount(objPtr);
+    }
     return TCL_OK;
 }
 
@@ -1372,10 +1401,10 @@ SetType(Table *tablePtr, struct _BLT_TABLE_COLUMN *colPtr,
 	valuePtr = GetValue(tablePtr, rowPtr, colPtr);
 	if (!IsEmpty(valuePtr)) {
 	    Value value;
-
+            
 	    memset(&value, 0, sizeof(Value));
 	    if (SetValueFromString(tablePtr->interp, type, GetString(valuePtr),
-			-1, &value) != TCL_OK) {
+                valuePtr->length, &value) != TCL_OK) {
 		return TCL_ERROR;
 	    }
 	    ResetValue(&value);
@@ -1385,12 +1414,11 @@ SetType(Table *tablePtr, struct _BLT_TABLE_COLUMN *colPtr,
     for (i = 0; i < blt_table_num_rows(tablePtr); i++) {
 	Row *rowPtr;
 	Value *valuePtr;
-
 	rowPtr = blt_table_row(tablePtr, i);
 	valuePtr = GetValue(tablePtr, rowPtr, colPtr);
 	if (!IsEmpty(valuePtr)) {
 	    if (SetValueFromString(tablePtr->interp, type, GetString(valuePtr),
-		-1, valuePtr) != TCL_OK) {
+                        valuePtr->length, valuePtr) != TCL_OK) {
 		return TCL_ERROR;
 	    }
 	}
@@ -1980,12 +2008,12 @@ static TableSortData sortData;
 
 
 static int
-CompareDictionaryRows(ClientData clientData, Column *colPtr, Row *rowPtr1, 
-		      Row *rowPtr2)
+CompareDictionaryStrings(ClientData clientData, Column *colPtr, Row *rowPtr1, 
+                         Row *rowPtr2)
 {
     Value *valuePtr1, *valuePtr2, *vector;
     Table *tablePtr;
-
+    
     tablePtr = sortData.table;
     valuePtr1 = valuePtr2 = NULL;
     vector = tablePtr->corePtr->data[colPtr->offset];
@@ -2040,6 +2068,7 @@ CompareFrequencyRows(ClientData clientData, Column *colPtr, Row *rowPtr1,
     } else if (IsEmpty(valuePtr2)) {
 	return -1;
     }
+    /* FIXME: Frequency only works for string types. */
     hPtr1 = Blt_FindHashEntry(&sortData.freqTable, GetString(valuePtr1));
     hPtr2 = Blt_FindHashEntry(&sortData.freqTable, GetString(valuePtr2));
     f1 = (long)Blt_GetHashValue(hPtr1);
@@ -2048,8 +2077,8 @@ CompareFrequencyRows(ClientData clientData, Column *colPtr, Row *rowPtr1,
 }
 
 static int
-CompareAsciiRows(ClientData clientData, Column *colPtr, Row *rowPtr1, 
-		 Row *rowPtr2)
+CompareAsciiStrings(ClientData clientData, Column *colPtr, Row *rowPtr1, 
+                    Row *rowPtr2)
 {
     Value *valuePtr1, *valuePtr2, *vector;
     Table *tablePtr;
@@ -2079,8 +2108,8 @@ CompareAsciiRows(ClientData clientData, Column *colPtr, Row *rowPtr1,
 }
 
 static int
-CompareIntegerRows(ClientData clientData, Column *colPtr, Row *rowPtr1, 
-		   Row *rowPtr2)
+CompareIntegers(ClientData clientData, Column *colPtr, Row *rowPtr1, 
+                Row *rowPtr2)
 {
     Value *valuePtr1, *valuePtr2, *vector;
     Table *tablePtr;
@@ -2110,8 +2139,8 @@ CompareIntegerRows(ClientData clientData, Column *colPtr, Row *rowPtr1,
 }
 
 static int
-CompareDoubleRows(ClientData clientData, Column *colPtr, Row *rowPtr1, 
-		  Row *rowPtr2)
+CompareDoubles(ClientData clientData, Column *colPtr, Row *rowPtr1, 
+                    Row *rowPtr2)
 {
     Value *valuePtr1, *valuePtr2, *vector;
     Table *tablePtr;
@@ -2175,29 +2204,28 @@ blt_table_get_compare_proc(Table *tablePtr, Column *colPtr, unsigned int flags)
     if ((flags & TABLE_SORT_TYPE_MASK) == TABLE_SORT_AUTO) {
 	switch (colPtr->type) {
 	case TABLE_COLUMN_TYPE_LONG:
-	    proc = CompareIntegerRows;
+	    proc = CompareIntegers;
 	    break;
 	case TABLE_COLUMN_TYPE_TIME:
 	case TABLE_COLUMN_TYPE_DOUBLE:
-	    proc = CompareDoubleRows;
+	    proc = CompareDoubles;
 	    break;
 	case TABLE_COLUMN_TYPE_STRING:
-	case TABLE_COLUMN_TYPE_UNKNOWN:
 	default:
-	    proc = CompareDictionaryRows;
+	    proc = CompareDictionaryStrings;
 	    break;
 	}
     } else {
 	switch (flags & TABLE_SORT_TYPE_MASK) {
 	case TABLE_SORT_DICTIONARY:
-	    proc = CompareDictionaryRows;
+	    proc = CompareDictionaryStrings;
 	    break;
 	case TABLE_SORT_FREQUENCY:
 	    proc = CompareFrequencyRows;
 	    break;
 	default:
 	case TABLE_SORT_ASCII:
-	    proc = CompareAsciiRows;
+	    proc = CompareAsciiStrings;
 	    break;
 	}
     }
@@ -4450,7 +4478,7 @@ blt_table_set_obj(Table *tablePtr, Row *rowPtr, Column *colPtr,
 
     valuePtr = GetValue(tablePtr, rowPtr, colPtr);
     flags = TABLE_TRACE_WRITES;
-    if (objPtr == NULL) {               /* New value is empty. Effectively
+    if (objPtr == NULL) {               /* New value is empty, effectively
 					 * unsetting the value. */
 	flags |= TABLE_TRACE_UNSETS;
     } else if (IsEmpty(valuePtr)) {
@@ -5818,7 +5846,6 @@ MakeKeyTables(Tcl_Interp *interp, Table *tablePtr)
 	    break;
 	default:
 	case TABLE_COLUMN_TYPE_STRING:
-	case TABLE_COLUMN_TYPE_UNKNOWN:
 	    size = BLT_STRING_KEYS;
 	    break;
 	}
@@ -5864,7 +5891,6 @@ MakeKeyTables(Tcl_Interp *interp, Table *tablePtr)
 			(char *)valuePtr->datum.l, &isNew);
 		break;
 	    case TABLE_COLUMN_TYPE_STRING:
-	    case TABLE_COLUMN_TYPE_UNKNOWN:
 	    default:
 		hPtr = Blt_CreateHashEntry(keyTablePtr, GetString(valuePtr),
 			&isNew);
@@ -5985,7 +6011,6 @@ blt_table_key_lookup(Tcl_Interp *interp, Table *tablePtr, int objc,
 	    }
 	    break;
 	default:
-	case TABLE_COLUMN_TYPE_UNKNOWN:
 	case TABLE_COLUMN_TYPE_STRING:
 	    {
 		const char *string;
@@ -6037,13 +6062,13 @@ blt_table_set_long(Table *tablePtr, Row *rowPtr, Column *colPtr, long value)
     if (colPtr->type != TABLE_COLUMN_TYPE_LONG) {
 	Tcl_AppendResult(tablePtr->interp, "wrong column type \"",
 		blt_table_column_type_to_name(colPtr->type), 
-		"\": should be \"int\"", (char *)NULL);
+		"\": should be \"integer\"", (char *)NULL);
 	return TCL_ERROR;
     }
     valuePtr = GetValue(tablePtr, rowPtr, colPtr);
     ResetValue(valuePtr);
     valuePtr->datum.l = value;
-    sprintf(string, "%ld", value);
+    valuePtr->length = sprintf(string, "%ld", value);
     if (strlen(string) >= BLT_TABLE_VALUE_LENGTH) {
 	valuePtr->string = Blt_AssertStrdup(string);
     } else {
@@ -6088,7 +6113,6 @@ blt_table_set_string(Table *tablePtr, Row *rowPtr, Column *colPtr,
     ResetValue(valuePtr);
     if (SetValueFromString(tablePtr->interp, colPtr->type, string, length, 
 		valuePtr) != TCL_OK) {
-
 	return TCL_ERROR;
     }
     /* Indicate the keytables need to be regenerated. */
@@ -6132,7 +6156,7 @@ blt_table_append_string(Tcl_Interp *interp, Table *tablePtr, Row *rowPtr,
     }
     Tcl_IncrRefCount(objPtr);
     switch (colPtr->type) {
-    case TABLE_COLUMN_TYPE_TIME:        /* double */
+    case TABLE_COLUMN_TYPE_TIME:        /* Time: is a double */
 	if (Blt_GetTimeFromObj(interp, objPtr, &d) != TCL_OK) {
 	    Tcl_DecrRefCount(objPtr);
 	    return TCL_ERROR;
@@ -6166,10 +6190,12 @@ blt_table_append_string(Tcl_Interp *interp, Table *tablePtr, Row *rowPtr,
 	strncpy(string, s, length);
 	string[length] = '\0';
 	valuePtr->string = string;
+        valuePtr->length = length;
     } else {
 	strncpy(valuePtr->staticSpace, s, length);
 	valuePtr->staticSpace[length] = '\0';
 	valuePtr->string = BLT_TABLE_VALUE_STATIC;
+        valuePtr->length = length;
     }
     Tcl_DecrRefCount(objPtr);
 
@@ -6210,7 +6236,7 @@ blt_table_set_double(Table *tablePtr, Row *rowPtr, Column *colPtr, double value)
     ResetValue(valuePtr);
     if (!isnan(value)) {
 	valuePtr->datum.d = value;
-	sprintf(string, "%.17g", value);
+	valuePtr->length = sprintf(string, "%.17g", value);
 	if (strlen(string) >= BLT_TABLE_VALUE_LENGTH) {
 	    valuePtr->string = Blt_AssertStrdup(string);
 	} else {
@@ -6223,6 +6249,46 @@ blt_table_set_double(Table *tablePtr, Row *rowPtr, Column *colPtr, double value)
 	tablePtr->flags |= TABLE_KEYS_DIRTY;
     }
     CallTraces(tablePtr, rowPtr, colPtr, TABLE_TRACE_WRITES);
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * blt_table_set_bytes --
+ *
+ *      Sets the value of the selected row, column location in the table.
+ *      The row, column location must be within the actual table limits.
+ *
+ * Results:
+ *      Returns a standard TCL result.
+ *
+ * Side Effects:
+ *      New tuples may be allocated created.
+ *
+ *---------------------------------------------------------------------------
+ */
+int
+blt_table_set_bytes(Table *tablePtr, Row *rowPtr, Column *colPtr, 
+		     const unsigned char *bytes, int numBytes)
+{
+    Value *valuePtr;
+
+    if (colPtr->type != TABLE_COLUMN_TYPE_BLOB) {
+	Tcl_AppendResult(tablePtr->interp, "column \"", colPtr->label, 
+			 "\" is not type blob.", (char *)NULL);
+	return TCL_ERROR;
+    }
+    valuePtr = GetValue(tablePtr, rowPtr, colPtr);
+    ResetValue(valuePtr);
+    if (SetValueFromString(tablePtr->interp, colPtr->type, (const char *)bytes,
+                numBytes, valuePtr) != TCL_OK) {
+	return TCL_ERROR;
+    }
+    /* Indicate the keytables need to be regenerated. */
+    if (colPtr->flags & TABLE_COLUMN_PRIMARY_KEY) {
+	tablePtr->flags |= TABLE_KEYS_DIRTY;
+    }
     return TCL_OK;
 }
 

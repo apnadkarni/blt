@@ -39,7 +39,7 @@ typedef enum {
     TABLE_COLUMN_TYPE_DOUBLE, 
     TABLE_COLUMN_TYPE_LONG, 
     TABLE_COLUMN_TYPE_TIME, 
-
+    TABLE_COLUMN_TYPE_BLOB, 
 } BLT_TABLE_COLUMN_TYPE;
 
 #define BLT_TABLE_VALUE_LENGTH 16
@@ -59,13 +59,18 @@ typedef struct _BLT_TABLE_VALUE {
      * will be that we don't have to allocate space for each string
      * representation.
      */
-    const char *string;			/* String representation of value.
-					 * Used first to see if the value
-					 * is empty. The pointer will be
-					 * NULL.  If the pointer is equal
-					 * to BLT_TABLE_VALUE_STATIC, this
-					 * indicates to look at staticSpace
-					 * for the value string. */
+    size_t length;                      /* Number of bytes in string
+                                         * below. */
+    const char *string;			/* String representation of the
+                                         * value. This can store store
+                                         * strings and blobs.  If NULL,
+                                         * this indicated the value is
+                                         * empty.  If equal to
+                                         * BLT_TABLE_VALUE_STATIC then the
+                                         * actual storage is the
+                                         * staticSpace variable
+                                         * below. Otherwise, the string is
+                                         * malloc'ed.*/
     char staticSpace[BLT_TABLE_VALUE_LENGTH];
 } *BLT_TABLE_VALUE;
 
@@ -297,6 +302,8 @@ BLT_EXTERN int blt_table_set_string(BLT_TABLE table, BLT_TABLE_ROW row,
 BLT_EXTERN int blt_table_append_string(Tcl_Interp *interp, BLT_TABLE table, 
 	BLT_TABLE_ROW row, BLT_TABLE_COLUMN column, const char *string, 
 	int length);
+BLT_EXTERN int blt_table_set_bytes(BLT_TABLE table, BLT_TABLE_ROW row,
+	BLT_TABLE_COLUMN column, const unsigned char *string, int length);
 
 BLT_EXTERN double blt_table_get_double(BLT_TABLE table, BLT_TABLE_ROW row, 
 	BLT_TABLE_COLUMN column);

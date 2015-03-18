@@ -162,7 +162,7 @@ MySqlFieldToColumnType(int type)
     case FIELD_TYPE_MEDIUM_BLOB:
     case FIELD_TYPE_LONG_BLOB:
     case FIELD_TYPE_BLOB:
-	return TABLE_COLUMN_TYPE_UNKNOWN;
+	return TABLE_COLUMN_TYPE_BLOB;
     case FIELD_TYPE_NULL:
     case FIELD_TYPE_TIMESTAMP:
     case FIELD_TYPE_DATE:
@@ -208,16 +208,15 @@ MySqlImportRows(Tcl_Interp *interp, BLT_TABLE table, MYSQL_RES *myResults,
 {
     size_t numRows;
     size_t i;
-
+    BLT_TABLE_ROW *rows;
+    
     numRows = mysql_num_rows(myResults);
-    if (numRows > blt_table_num_rows(table)) {
-	size_t needed;
-
-	/* Add the number of rows needed */
-	needed = numRows - blt_table_num_rows(table);
-	if (blt_table_extend_rows(interp, table, needed, NULL) != TCL_OK) {
-	    return TCL_ERROR;
-	}
+    rows = Blt_Malloc(sizeof(BLT_TABLE_ROW) * numRows);
+    if (rows == NULL) {
+        return TCL_ERROR;
+    }
+    if (blt_table_extend_rows(interp, table, numRows, rows) != TCL_OK) {
+        return TCL_ERROR;
     }
     for (i = 0; /*empty*/; i++) {
 	BLT_TABLE_ROW row;
@@ -235,7 +234,6 @@ MySqlImportRows(Tcl_Interp *interp, BLT_TABLE table, MYSQL_RES *myResults,
 	    break;
 	}
 	fieldLengths = mysql_fetch_lengths(myResults);
-	row = blt_table_row(table, i);
 	for (j = 0; j < numCols; j++) {
 	    int result;
 	    Tcl_Obj *objPtr;
@@ -246,7 +244,7 @@ MySqlImportRows(Tcl_Interp *interp, BLT_TABLE table, MYSQL_RES *myResults,
 	    objPtr = Tcl_NewByteArrayObj((unsigned char *)myRow[j], 
 					 (int)fieldLengths[j]);
 	    Tcl_IncrRefCount(objPtr);
-	    result = blt_table_set_obj(table, row, cols[j], objPtr);
+	    result = blt_table_set_obj(table, rows[i], cols[j], objPtr);
 	    Tcl_DecrRefCount(objPtr);
 	    if (result != TCL_OK) {
 		return TCL_ERROR;

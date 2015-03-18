@@ -231,7 +231,7 @@ SqliteTypeToColumnType(int type)
 {
     switch(type) {
     case SQLITE_BLOB: 
-	return TABLE_COLUMN_TYPE_UNKNOWN;
+	return TABLE_COLUMN_TYPE_BLOB;
     case SQLITE_INTEGER: 
         return TABLE_COLUMN_TYPE_LONG;
     case SQLITE_FLOAT: 
@@ -508,10 +508,8 @@ SqliteExportValues(Tcl_Interp *interp, sqlite3 *db, BLT_TABLE table,
     }        
     for (col = blt_table_first_tagged_column(&argsPtr->ci); col != NULL;
          col = blt_table_next_tagged_column(&argsPtr->ci)) {
-        int type;
         const char *label;
         
-        type = blt_table_column_type(col);
         label = blt_table_column_label(col);
         if (count > 1) {
             Blt_DBuffer_Format(dbuffer, ", ");
@@ -581,7 +579,6 @@ SqliteExportValues(Tcl_Interp *interp, sqlite3 *db, BLT_TABLE table,
                     }
                     break;
                 default:
-                case TABLE_COLUMN_TYPE_UNKNOWN:
                 case TABLE_COLUMN_TYPE_STRING:
                     {
                         const char *sval;
