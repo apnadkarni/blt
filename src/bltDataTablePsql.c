@@ -1,9 +1,8 @@
 /* -*- mode: c; c-basic-offset: 4; indent-tabs-mode: nil -*- */
 /*
- *
  * bltDataTablePsql.c --
  *
- *	Copyright 1998-2005 George A Howlett.
+ *	Copyright 2015 George A Howlett.
  *
  *	Permission is hereby granted, free of charge, to any person
  *	obtaining a copy of this software and associated documentation
@@ -47,40 +46,25 @@ DLLEXPORT extern Tcl_AppInitProc blt_table_psql_init;
 DLLEXPORT extern Tcl_AppInitProc blt_table_psql_safe_init;
 
 /*
- * Format	Import		Export
- * csv		file/data	file/data
- * tree		data		data
- * vector	data		data
- * xml		file/data	file/data
- * psql	data		data
- *
- * $table import csv -file fileName -data dataString 
- * $table export csv -file defaultFileName 
- * $table import tree $treeName $node ?switches? 
- * $table export tree $treeName $node "label" "label" "label"
- * $table import vector $vecName label $vecName label...
- * $table export vector label $vecName label $vecName...
- * $table import xml -file fileName -data dataString ?switches?
- * $table export xml -file fileName -data dataString ?switches?
  * $table import psql -host $host -password $pw -db $db -port $port 
  */
 /*
  * ImportSwitches --
  */
 typedef struct {
-    const char *host;                /* If non-NULL, name of remote host
+    const char *host;                   /* If non-NULL, name of remote host
 					 * of Postgres server.  Otherwise
 					 * "localhost" is used. */
-    const char *user;                /* If non-NULL, name of user
+    const char *user;                   /* If non-NULL, name of user
 					 * account to access Postgres server.
 					 * Otherwise the current username
 					 * is used. */
-    const char *pw;                  /* If non-NULL, is password to use
+    const char *pw;                     /* If non-NULL, is password to use
 					 * to access Postgres server. */
-    const char *db;                  /* If non-NULL, name of Postgres SQL
-					 * database to access. */
-    const char *query;               /* If non-NULL, query to make. */
-    const char *options;             /* If non-NULL, query to make. */
+    const char *db;                     /* If non-NULL, name of Postgres
+					 * SQL database to access. */
+    const char *query;                  /* If non-NULL, query to make. */
+    const char *options;                /* If non-NULL, query to make. */
     int port;                           /* Port number to use. */
 
     /* Private data. */
@@ -92,19 +76,19 @@ typedef struct {
 
 static Blt_SwitchSpec importSwitches[] = 
 {
-    {BLT_SWITCH_STRING, "-db",       "dbName", (char *)NULL,
+    {BLT_SWITCH_STRING, "-db",        "dbName", (char *)NULL,
 	Blt_Offset(ImportArgs, db), 0, 0},
-    {BLT_SWITCH_STRING, "-host",     "hostName", (char *)NULL,
+    {BLT_SWITCH_STRING, "-host",      "hostName", (char *)NULL,
 	Blt_Offset(ImportArgs, host), 0, 0},
-    {BLT_SWITCH_STRING, "-user",     "userName", (char *)NULL,
+    {BLT_SWITCH_STRING, "-user",      "userName", (char *)NULL,
 	Blt_Offset(ImportArgs, user), 0, 0},
-    {BLT_SWITCH_STRING, "-password", "password", (char *)NULL,
+    {BLT_SWITCH_STRING, "-password",  "password", (char *)NULL,
 	Blt_Offset(ImportArgs, pw), 0, 0},
-    {BLT_SWITCH_INT_NNEG, "-port",     "number", (char *)NULL,
+    {BLT_SWITCH_INT_NNEG, "-port",    "number", (char *)NULL,
 	Blt_Offset(ImportArgs, port), 0, 0},
-    {BLT_SWITCH_STRING,    "-query",    "string", (char *)NULL,
+    {BLT_SWITCH_STRING,    "-query",  "string", (char *)NULL,
 	Blt_Offset(ImportArgs, query), 0, 0},
-    {BLT_SWITCH_STRING,    "-options",    "string", (char *)NULL,
+    {BLT_SWITCH_STRING,    "-options", "string", (char *)NULL,
 	Blt_Offset(ImportArgs, options), 0, 0},
     {BLT_SWITCH_END}
 };
@@ -114,22 +98,22 @@ static Blt_SwitchSpec importSwitches[] =
  * ExportArgs --
  */
 typedef struct {
-    const char *host;                /* If non-NULL, name of remote host
+    const char *host;                   /* If non-NULL, name of remote host
 					 * of Postgres server.  Otherwise
 					 * "localhost" is used. */
-    const char *user;                /* If non-NULL, name of user
+    const char *user;                   /* If non-NULL, name of user
 					 * account to access Postgres server.
 					 * Otherwise the current username
 					 * is used. */
-    const char *pw;                  /* If non-NULL, is password to use
+    const char *pw;                     /* If non-NULL, is password to use
 					 * to access Postgres server. */
-    const char *db;                  /* If non-NULL, name of Postgres SQL
-					 * database to access. */
-    const char *query;               /* If non-NULL, query to make. */
-    const char *options;             /* If non-NULL, query to make. */
+    const char *db;                     /* If non-NULL, name of Postgres
+					 * SQL database to access. */
+    const char *query;                  /* If non-NULL, query to make. */
+    const char *options;                /* If non-NULL, query to make. */
     int port;                           /* Port number to use. */
 
-    const char *table;               /* Name of table. */
+    const char *table;                  /* Name of table. */
     const char *tableName;
     BLT_TABLE_ITERATOR ri, ci;
     unsigned int flags;
