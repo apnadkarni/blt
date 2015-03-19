@@ -601,7 +601,7 @@ MysqlExportValues(Tcl_Interp *interp, MYSQL *conn, BLT_TABLE table,
             bind[count].buffer_type = MYSQL_TYPE_STRING;
             bind[count].buffer = (char *)label;
             bind[count].buffer_length = strlen(label);
-            bind[count].is_null = (my_bool *)0;
+            bind[count].is_null = &false;
             count++;
         }
         for (col = blt_table_first_tagged_column(&argsPtr->ci); col != NULL;
@@ -613,15 +613,12 @@ MysqlExportValues(Tcl_Interp *interp, MYSQL *conn, BLT_TABLE table,
                 bind[count].is_null = &true;
             } else {
                 struct _BLT_TABLE_VALUE *valuePtr;
-                const char *string;
 
                 /* Let mysql do the conversions.  This is the safest
                  * way to push data out. */
                 valuePtr = blt_table_get_value(table, row, col);
-                string = (valuePtr->string == BLT_TABLE_VALUE_STATIC) ? 
-                    valuePtr->staticSpace : valuePtr->string;
                 bind[count].buffer_type = MYSQL_TYPE_STRING;
-                bind[count].buffer = (char *)string;
+                bind[count].buffer = (char *)valuePtr->string;
                 bind[count].buffer_length = valuePtr->length;
                 bind[count].is_null = &false;
             }

@@ -595,26 +595,16 @@ IsEmpty(Value *valuePtr)
     return ((valuePtr == NULL) || (valuePtr->string == NULL));
 }
 
-static INLINE const char *
-GetString(Value *valuePtr)
-{
-    return (valuePtr->string == BLT_TABLE_VALUE_STATIC) ? 
-	valuePtr->staticSpace : valuePtr->string;
-}
-
 static INLINE const unsigned char *
 GetBytes(Value *valuePtr)
 {
-    return (valuePtr->string == BLT_TABLE_VALUE_STATIC) ? 
-	(const unsigned char *)valuePtr->staticSpace :
-        (const unsigned char *)valuePtr->string;
+    return (const unsigned char *)valuePtr->string;
 }
 
 static INLINE void
 ResetValue(Value *valuePtr)
 {
-    if ((valuePtr->string != NULL) && 
-	(valuePtr->string != BLT_TABLE_VALUE_STATIC)) {
+    if ((valuePtr->string != NULL) && (valuePtr->string != valuePtr->store)) {
 	Blt_Free(valuePtr->string);
     }
     valuePtr->length = 0;
@@ -687,7 +677,7 @@ GetObjFromValue(BLT_TABLE_COLUMN_TYPE type, Value *valuePtr)
 	break;
     default:
     case TABLE_COLUMN_TYPE_STRING:      /* string */
-        objPtr = Tcl_NewStringObj(GetString(valuePtr), valuePtr->length);
+        objPtr = Tcl_NewStringObj(valuePtr->string, valuePtr->length);
 	break;
     }
     return objPtr;
@@ -734,9 +724,9 @@ SetValueFromObj(Tcl_Interp *interp, BLT_TABLE_COLUMN_TYPE type,
 	valuePtr->string = string;
         valuePtr->length = length;
     } else {
-	strncpy(valuePtr->staticSpace, s, length);
-	valuePtr->staticSpace[length] = '\0';
-	valuePtr->string = BLT_TABLE_VALUE_STATIC;
+	strncpy(valuePtr->store, s, length);
+	valuePtr->store[length] = '\0';
+	valuePtr->string = valuePtr->store;
         valuePtr->length = length;
     }
     return TCL_OK;
@@ -800,9 +790,9 @@ SetValueFromString(Tcl_Interp *interp, BLT_TABLE_COLUMN_TYPE type,
         valuePtr->string = copy;
         valuePtr->length = length;
     } else {
-        strncpy(valuePtr->staticSpace, s, length);
-        valuePtr->staticSpace[length] = '\0';
-        valuePtr->string = BLT_TABLE_VALUE_STATIC;
+        strncpy(valuePtr->store, s, length);
+        valuePtr->store[length] = '\0';
+        valuePtr->string = valuePtr->store;
         valuePtr->length = length;
     }
     if (objPtr != NULL) {
@@ -1403,7 +1393,7 @@ SetType(Table *tablePtr, struct _BLT_TABLE_COLUMN *colPtr,
 	    Value value;
             
 	    memset(&value, 0, sizeof(Value));
-	    if (SetValueFromString(tablePtr->interp, type, GetString(valuePtr),
+	    if (SetValueFromString(tablePtr->interp, type, valuePtr->string,
                 valuePtr->length, &value) != TCL_OK) {
 		return TCL_ERROR;
 	    }
@@ -1417,7 +1407,7 @@ SetType(Table *tablePtr, struct _BLT_TABLE_COLUMN *colPtr,
 	rowPtr = blt_table_row(tablePtr, i);
 	valuePtr = GetValue(tablePtr, rowPtr, colPtr);
 	if (!IsEmpty(valuePtr)) {
-	    if (SetValueFromString(tablePtr->interp, type, GetString(valuePtr),
+	    if (SetValueFromString(tablePtr->interp, type, valuePtr->string,
                         valuePtr->length, valuePtr) != TCL_OK) {
 		return TCL_ERROR;
 	    }
@@ -2035,7 +2025,7 @@ CompareDictionaryStrings(ClientData clientData, Column *colPtr, Row *rowPtr1,
     } else if (IsEmpty(valuePtr2)) {
 	return -1;
     }
-    return Blt_DictionaryCompare(GetString(valuePtr1), GetString(valuePtr2));
+    return Blt_DictionaryCompare(valuePtr1->string, valuePtr2->string);
 }
 
 static int
@@ -2069,8 +2059,8 @@ CompareFrequencyRows(ClientData clientData, Column *colPtr, Row *rowPtr1,
 	return -1;
     }
     /* FIXME: Frequency only works for string types. */
-    hPtr1 = Blt_FindHashEntry(&sortData.freqTable, GetString(valuePtr1));
-    hPtr2 = Blt_FindHashEntry(&sortData.freqTable, GetString(valuePtr2));
+    hPtr1 = Blt_FindHashEntry(&sortData.freqTable, valuePtr1->string);
+    hPtr2 = Blt_FindHashEntry(&sortData.freqTable, valuePtr2->string);
     f1 = (long)Blt_GetHashValue(hPtr1);
     f2 = (long)Blt_GetHashValue(hPtr2);
     return f1 - f2;
@@ -2104,7 +2094,7 @@ CompareAsciiStrings(ClientData clientData, Column *colPtr, Row *rowPtr1,
     } else if (IsEmpty(valuePtr2)) {
 	return -1;
     }
-    return strcmp(GetString(valuePtr1), GetString(valuePtr2));
+    return strcmp(valuePtr1->string, valuePtr2->string);
 }
 
 static int
@@ -4410,8 +4400,7 @@ blt_table_set_value(Table *tablePtr, Row *rowPtr, Column *colPtr, Value *newPtr)
     if (newPtr != valuePtr) {
 	ResetValue(valuePtr);
 	*valuePtr = *newPtr;            /* Copy the value. */
-	if ((newPtr->string != NULL) && 
-	    (newPtr->string != BLT_TABLE_VALUE_STATIC)) {
+	if ((newPtr->string != NULL) && (newPtr->string != valuePtr->store)) {
 	    valuePtr->string = Blt_AssertStrdup(newPtr->string);
 	}
 	CallTraces(tablePtr, rowPtr, colPtr, flags);
@@ -5892,7 +5881,7 @@ MakeKeyTables(Tcl_Interp *interp, Table *tablePtr)
 		break;
 	    case TABLE_COLUMN_TYPE_STRING:
 	    default:
-		hPtr = Blt_CreateHashEntry(keyTablePtr, GetString(valuePtr),
+		hPtr = Blt_CreateHashEntry(keyTablePtr, valuePtr->string,
 			&isNew);
 		break;
 	    }
@@ -6072,8 +6061,8 @@ blt_table_set_long(Table *tablePtr, Row *rowPtr, Column *colPtr, long value)
     if (strlen(string) >= BLT_TABLE_VALUE_LENGTH) {
 	valuePtr->string = Blt_AssertStrdup(string);
     } else {
-	strcpy(valuePtr->staticSpace, string);
-	valuePtr->string = BLT_TABLE_VALUE_STATIC;
+	strcpy(valuePtr->store, string);
+	valuePtr->string = valuePtr->store;
     }
     /* Indicate the keytables need to be regenerated. */
     if (colPtr->flags & TABLE_COLUMN_PRIMARY_KEY) {
@@ -6175,7 +6164,7 @@ blt_table_append_string(Tcl_Interp *interp, Table *tablePtr, Row *rowPtr,
     if (IsEmpty(valuePtr)) {
 	objPtr = Tcl_NewStringObj(s, length);
     } else {
-	objPtr = Tcl_NewStringObj(GetString(valuePtr), -1);
+	objPtr = Tcl_NewStringObj(valuePtr->string, valuePtr->length);
 	Tcl_AppendToObj(objPtr, s, length);
     }
     Tcl_IncrRefCount(objPtr);
@@ -6216,9 +6205,9 @@ blt_table_append_string(Tcl_Interp *interp, Table *tablePtr, Row *rowPtr,
 	valuePtr->string = string;
         valuePtr->length = length;
     } else {
-	strncpy(valuePtr->staticSpace, s, length);
-	valuePtr->staticSpace[length] = '\0';
-	valuePtr->string = BLT_TABLE_VALUE_STATIC;
+	strncpy(valuePtr->store, s, length);
+	valuePtr->store[length] = '\0';
+	valuePtr->string = valuePtr->store;
         valuePtr->length = length;
     }
     Tcl_DecrRefCount(objPtr);
@@ -6264,8 +6253,8 @@ blt_table_set_double(Table *tablePtr, Row *rowPtr, Column *colPtr, double value)
 	if (strlen(string) >= BLT_TABLE_VALUE_LENGTH) {
 	    valuePtr->string = Blt_AssertStrdup(string);
 	} else {
-	    strcpy(valuePtr->staticSpace, string);
-	    valuePtr->string = BLT_TABLE_VALUE_STATIC;
+	    strcpy(valuePtr->store, string);
+	    valuePtr->string = valuePtr->store;
 	}
     }
     /* Indicate the keytables need to be regenerated. */
@@ -6339,7 +6328,7 @@ blt_table_get_string(Table *tablePtr, Row *rowPtr, Column *colPtr)
     if (IsEmpty(valuePtr)) {
 	return NULL;
     }
-    return GetString(valuePtr);
+    return valuePtr->string;
 }
 
 /*
@@ -6371,7 +6360,7 @@ blt_table_get_double(Table *tablePtr, Row *rowPtr, Column *colPtr)
 	(colPtr->type == TABLE_COLUMN_TYPE_TIME)) {
 	return valuePtr->datum.d;
     }
-    if (Blt_GetDoubleFromString(tablePtr->interp, GetString(valuePtr), &d) 
+    if (Blt_GetDoubleFromString(tablePtr->interp, valuePtr->string, &d) 
 	!= TCL_OK) {
 	return Blt_NaN();
     }
@@ -6406,7 +6395,7 @@ blt_table_get_long(Table *tablePtr, Row *rowPtr, Column *colPtr, long defVal)
     if (colPtr->type == TABLE_COLUMN_TYPE_LONG) {
 	return valuePtr->datum.l;
     }
-    if (Blt_GetLong(tablePtr->interp, GetString(valuePtr), &l) != TCL_OK) {
+    if (Blt_GetLong(tablePtr->interp, valuePtr->string, &l) != TCL_OK) {
 	return TCL_ERROR;
     }
     return l;

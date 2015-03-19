@@ -43,7 +43,6 @@ typedef enum {
 } BLT_TABLE_COLUMN_TYPE;
 
 #define BLT_TABLE_VALUE_LENGTH 16
-#define BLT_TABLE_VALUE_STATIC ((char *)1)
 
 typedef struct _BLT_TABLE_VALUE {
     union {				
@@ -62,16 +61,14 @@ typedef struct _BLT_TABLE_VALUE {
     size_t length;                      /* Number of bytes in string
                                          * below. */
     const char *string;			/* String representation of the
-                                         * value. This can store store
-                                         * strings and blobs.  If NULL,
-                                         * this indicated the value is
-                                         * empty.  If equal to
-                                         * BLT_TABLE_VALUE_STATIC then the
-                                         * actual storage is the
-                                         * staticSpace variable
-                                         * below. Otherwise, the string is
-                                         * malloc'ed.*/
-    char staticSpace[BLT_TABLE_VALUE_LENGTH];
+                                         * value. This can store strings
+                                         * and blobs.  If NULL, this
+                                         * indicates the value is empty.
+                                         * Will point to *store* if the
+                                         * string is small enough.
+                                         * Otherwise, points to malloc'ed
+                                         * memory.*/
+    char store[BLT_TABLE_VALUE_LENGTH];
 } *BLT_TABLE_VALUE;
 
 typedef struct _BLT_TABLE_HEADER {
