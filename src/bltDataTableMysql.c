@@ -423,21 +423,25 @@ MysqlImportRows(Tcl_Interp *interp, BLT_TABLE table, MYSQL_RES *myResults,
 {
     size_t numRows;
     size_t i;
-    BLT_TABLE_ROW *rows;
     
     numRows = mysql_num_rows(myResults);
-    rows = Blt_Malloc(sizeof(BLT_TABLE_ROW) * numRows);
-    if (rows == NULL) {
-        return TCL_ERROR;
-    }
-    if (blt_table_extend_rows(interp, table, numRows, rows) != TCL_OK) {
-        return TCL_ERROR;
+    /* First check that there are enough rows in the table to accomodate
+     * the new data. Add more if necessary. */
+    if (numRows  > blt_table_num_rows(table)) {
+        size_t needed;
+
+        needed = numRows - blt_table_num_rows(table);
+        if (blt_table_extend_rows(interp, table, needed, NULL) != TCL_OK) {
+            return TCL_ERROR;
+        }
     }
     for (i = 0; /*empty*/; i++) {
-	size_t j;
-	MYSQL_ROW myRow;
-	unsigned long *fieldLengths;
+        BLT_TABLE_ROW row;
+        MYSQL_ROW myRow;
+        size_t j;
+        unsigned long *lengths;
 
+        row = blt_table_row(table, i);
 	myRow = mysql_fetch_row(myResults);
 	if (myRow == NULL) {
 	    if (i < numRows) {
@@ -447,13 +451,13 @@ MysqlImportRows(Tcl_Interp *interp, BLT_TABLE table, MYSQL_RES *myResults,
 	    }
 	    break;
 	}
-	fieldLengths = mysql_fetch_lengths(myResults);
+	lengths = mysql_fetch_lengths(myResults);
 	for (j = 0; j < numCols; j++) {
 	    if (myRow[j] == NULL) {
 		continue;		/* Empty value. */
 	    }
-	    if (blt_table_set_string_rep(table, rows[i], cols[j], myRow[j],
-                        fieldLengths[j]) != TCL_OK) {
+	    if (blt_table_set_string_rep(table, row, cols[j], myRow[j],
+                        lengths[j]) != TCL_OK) {
 		return TCL_ERROR;
 	    }
 	}
@@ -531,11 +535,11 @@ MysqlExportValues(Tcl_Interp *interp, MYSQL *conn, BLT_TABLE table,
     BLT_TABLE_COLUMN col;
     BLT_TABLE_ROW row;
     Blt_DBuffer dbuffer, dbuffer2;
-    const char *query;
-    int length, result;
-    int count, numParams;
-    MYSQL_STMT *stmt;
     MYSQL_BIND *bind;
+    MYSQL_STMT *stmt;
+    const char *query;
+    int count, numParams;
+    int length, result;
     
     stmt = mysql_stmt_init(conn);
     if (stmt == NULL) {

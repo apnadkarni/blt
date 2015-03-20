@@ -620,8 +620,8 @@ BLT_EXTERN void		Blt_FadeColor(Blt_Pixel *colorPtr,
 BLT_EXTERN int		Blt_PictureRegisterFormat(Tcl_Interp *interp,
 				const char *name,
 				Blt_PictureIsFmtProc *isFmtProc,
-				Blt_PictureReadDataProc *readProc,
-				Blt_PictureWriteDataProc *writeProc,
+				Blt_PictureReadProc *readProc,
+				Blt_PictureWriteProc *writeProc,
 				Blt_PictureImportProc *importProc,
 				Blt_PictureExportProc *exportProc);
 #endif
@@ -747,7 +747,7 @@ typedef struct BltTkProcs {
     void (*blt_PaintPolygon) (Blt_Picture picture, int n, Point2f *vertices, Blt_PaintBrush *brushPtr); /* 99 */
     Blt_Picture (*blt_EmbossPicture) (Blt_Picture picture, double azimuth, double elevation, unsigned short width45); /* 100 */
     void (*blt_FadeColor) (Blt_Pixel *colorPtr, unsigned int alpha); /* 101 */
-    int (*blt_PictureRegisterFormat) (Tcl_Interp *interp, const char *name, Blt_PictureIsFmtProc *isFmtProc, Blt_PictureReadDataProc *readProc, Blt_PictureWriteDataProc *writeProc, Blt_PictureImportProc *importProc, Blt_PictureExportProc *exportProc); /* 102 */
+    int (*blt_PictureRegisterFormat) (Tcl_Interp *interp, const char *name, Blt_PictureIsFmtProc *isFmtProc, Blt_PictureReadProc *readProc, Blt_PictureWriteProc *writeProc, Blt_PictureImportProc *importProc, Blt_PictureExportProc *exportProc); /* 102 */
     Blt_Picture (*blt_GetNthPicture) (Blt_Chain chain, size_t index); /* 103 */
     Blt_PictFormat * (*blt_FindPictureFormat) (Tcl_Interp *interp, const char *ext); /* 104 */
 } BltTkProcs;

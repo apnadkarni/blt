@@ -287,21 +287,21 @@ typedef struct {
 #define FMT_STATIC      (1<<1)          /* Format is static. */
 
 enum DataFormats {
-    FMT_TXT,                            /* Comma separated values */
-    FMT_CSV,                            /* Comma separated values */
+    FMT_TXT,                            /* Comma separated value files */
+    FMT_CSV,                            /* Comma separated value files r/w */
 #ifdef HAVE_LIBMYSQL
-    FMT_MYSQL,                          /* MYSQL client library. */
+    FMT_MYSQL,                          /* Mysql r/w */
 #endif
 #ifdef HAVE_LIBSQLITE
-    FMT_SQLIT,                          /* SQLITE library. */
+    FMT_SQLITE,                          /* Sqlite3 r/w */
 #endif
 #ifdef HAVE_LIBPQ
-    FMT_PSQL,                           /* Postgres library. */
+    FMT_POSTGRESQL,                     /* Postgres r/w. */
 #endif
-    FMT_TREE,                           /* BLT Tree object. */
-    FMT_VECTOR,                         /* BLT Vector object. */
+    FMT_TREE,                           /* BLT Tree object r/w. */
+    FMT_VECTOR,                         /* BLT Vector object r/w. */
 #ifdef HAVE_EXPAT
-    FMT_XML,                            /* XML */
+    FMT_XML,                            /* XML r/w*/
 #endif
     NUMFMTS
 };
@@ -310,13 +310,13 @@ static DataFormat dataFormats[] = {
     { "txt" },                          /* White space separated values */
     { "csv" },                          /* Comma separated values */
 #ifdef HAVE_LIBMYSQL
-    { "mysql" },                        /* MYSQL client library. */
+    { "mysql" },                        /* mysql client library. */
 #endif
 #ifdef HAVE_LIBSQLITE
-    { "sqlite" },                       /* SQLITE library. */
+    { "sqlite" },                       /* sqlite3 library. */
 #endif
 #ifdef HAVE_LIBPQ
-    { "psql" },                         /* Postgres library. */
+    { "postgresql" },                   /* postgres library. */
 #endif
     { "tree" },                         /* BLT Tree object.*/
     { "vector" },                       /* BLT Vector object.*/

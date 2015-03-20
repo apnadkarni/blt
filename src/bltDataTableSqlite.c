@@ -285,14 +285,19 @@ SqliteImportLabel(Tcl_Interp *interp, BLT_TABLE table, BLT_TABLE_COLUMN col,
 
 static int
 SqliteImportRow(Tcl_Interp *interp, BLT_TABLE table, sqlite3_stmt *stmt,
-                int numColumns, BLT_TABLE_COLUMN *cols)
+                long numColumns, BLT_TABLE_COLUMN *cols, long index)
 {
     BLT_TABLE_ROW row;
     int i;
     
-    if (blt_table_extend_rows(interp, table, 1, &row) != TCL_OK) {
-        return TCL_ERROR;
+    /* First check that there are enough rows in the table to accomodate
+     * the new data. Add more if necessary. */
+    if (index >= blt_table_num_rows(table)) {
+        if (blt_table_extend_rows(interp, table, 1, &row) != TCL_OK) {
+            return TCL_ERROR;
+        }
     }
+    row = blt_table_row(table, index);
     for (i = 0; i < numColumns; i++) {
         int type;
             
@@ -346,7 +351,7 @@ SqliteImport(Tcl_Interp *interp, BLT_TABLE table, sqlite3 *db,
     BLT_TABLE_COLUMN *cols;
     const char *query, *left;
     int initialized, length, result;
-    long numColumns;
+    long numColumns, count;
     sqlite3_stmt *stmt;
     
 
@@ -379,6 +384,7 @@ SqliteImport(Tcl_Interp *interp, BLT_TABLE table, sqlite3 *db,
     }
     initialized = FALSE;
     result = SQLITE_OK;
+    count = 0;
     do {
         result = sqlite3_step(stmt);
         if ((result == SQLITE_OK) || (result == SQLITE_ROW)) {
@@ -394,7 +400,7 @@ SqliteImport(Tcl_Interp *interp, BLT_TABLE table, sqlite3 *db,
                 }
                 initialized = TRUE;
             }
-            if (SqliteImportRow(interp, table, stmt, numColumns, cols)
+            if (SqliteImportRow(interp, table, stmt, numColumns, cols, count)
                 != TCL_OK) {
                 goto error;
             }

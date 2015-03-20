@@ -4828,8 +4828,8 @@ Blt_PictureRegisterFormat(
     Tcl_Interp *interp, 			  
     const char *fmt,
     Blt_PictureIsFmtProc  *isProc,
-    Blt_PictureReadDataProc *readProc,
-    Blt_PictureWriteDataProc *writeProc,
+    Blt_PictureReadProc *readProc,
+    Blt_PictureWriteProc *writeProc,
     Blt_PictureImportProc *importProc,
     Blt_PictureExportProc *exportProc)
 {

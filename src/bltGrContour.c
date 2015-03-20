@@ -6525,13 +6525,11 @@ InitRenderer(ContourElement *elemPtr, Triangle *t, TriangleRenderer *renPtr)
     InitEdgeEquation(renPtr->edge + 2, v3, v1);
     scale = 0.0;
     /*
-      Trick #1: Orient edges so that the
-      triangle's interior lies within all
-      of their positive half-spaces.
-      
-      Assuring that the area is positive
-      accomplishes this
-    */
+     * Orient edges so that the triangle's interior lies within all of
+     * their positive half-spaces.
+     * 
+     * Assuring that the area is positive accomplishes this.
+     */
     area = renPtr->edge[0].C + renPtr->edge[1].C + renPtr->edge[2].C;
     if (area == 0.0) {
 	return FALSE;			/* Degenerate triangle. */
@@ -6716,7 +6714,7 @@ typedef struct {
 } EdgeEquation;
 
 typedef struct { 
-    EdgeEquation edge[3];
+    EdgeEquation eq[3];
     double value[3];
     int x1, x2, y1, y2;
     int xOffset, yOffset;
@@ -6797,28 +6795,25 @@ InitRenderer(ContourElement *elemPtr, Triangle *t, TriangleRenderer *renPtr)
     renPtr->y1 = (int64_t)(bbox.top + ((bbox.top < 0.0) ? -0.5 : 0.5));
 
     /* Compute the three edge equations */
-    InitEdgeEquation(renPtr->edge + 0, v1, v2);
-    InitEdgeEquation(renPtr->edge + 1, v2, v3);
-    InitEdgeEquation(renPtr->edge + 2, v3, v1);
+    InitEdgeEquation(renPtr->eq + 0, v1, v2);
+    InitEdgeEquation(renPtr->eq + 1, v2, v3);
+    InitEdgeEquation(renPtr->eq + 2, v3, v1);
     scale = 0.0;
     /*
-      Trick #1: Orient edges so that the
-      triangle's interior lies within all
-      of their positive half-spaces.
-      
-      Assuring that the area is positive
-      accomplishes this
-    */
-    area = renPtr->edge[0].C + renPtr->edge[1].C + renPtr->edge[2].C;
+     * Orient edges so that the triangle's interior lies within all of
+     * their positive half-spaces. Assuring that the area is positive
+     * accomplishes this.
+     */
+    area = renPtr->eq[0].C + renPtr->eq[1].C + renPtr->eq[2].C;
     if (area == 0.0) {
 	fprintf(stderr, "deciding not to draw triangle: area is 0 (%g %g %g)\n",
-		renPtr->edge[0].C, renPtr->edge[1].C, renPtr->edge[2].C);
+		renPtr->eq[0].C, renPtr->eq[1].C, renPtr->eq[2].C);
 	return FALSE;			/* Degenerate triangle. */
     }
     if (area < 0.0) {
-	FlipEquation(renPtr->edge + 0);
-	FlipEquation(renPtr->edge + 1);
-	FlipEquation(renPtr->edge + 2);
+	FlipEquation(renPtr->eq + 0);
+	FlipEquation(renPtr->eq + 1);
+	FlipEquation(renPtr->eq + 2);
 	area = -area;
     }
     if (scale <= 0.0) {
@@ -6827,15 +6822,27 @@ InitRenderer(ContourElement *elemPtr, Triangle *t, TriangleRenderer *renPtr)
     sp0 = scale * Az;
     sp1 = scale * Bz;
     sp2 = scale * Cz;
-    a = renPtr->edge[0].A*sp2 + renPtr->edge[1].A*sp0 + renPtr->edge[2].A*sp1;
-    b = renPtr->edge[0].B*sp2 + renPtr->edge[1].B*sp0 + renPtr->edge[2].B*sp1;
-    c = renPtr->edge[0].C*sp2 + renPtr->edge[1].C*sp0 + renPtr->edge[2].C*sp1;
+    a = renPtr->eq[0].A*sp2 + renPtr->eq[1].A*sp0 + renPtr->eq[2].A*sp1;
+    b = renPtr->eq[0].B*sp2 + renPtr->eq[1].B*sp0 + renPtr->eq[2].B*sp1;
+    c = renPtr->eq[0].C*sp2 + renPtr->eq[1].C*sp0 + renPtr->eq[2].C*sp1;
     renPtr->value[0] = a;
     renPtr->value[1] = b;
     renPtr->value[2] = a * renPtr->x1 + b * renPtr->y1 + c;
     return TRUE;
 }
  
+/*
+ *---------------------------------------------------------------------------
+ *
+ * DrawTriangle --
+ *
+ *	Performs a scanline fill of the triangle.  The difference between
+ *      this an the previous version is that here we do a palette color
+ *      lookup for each pixel, instead of interpolating the color from the
+ *      triangle vertices.
+ *
+ *---------------------------------------------------------------------------
+ */
 static void 
 DrawTriangle(ContourElement *elemPtr, Pict *destPtr, Triangle *t, int xoff, 
 	     int yoff)
@@ -6847,20 +6854,12 @@ DrawTriangle(ContourElement *elemPtr, Pict *destPtr, Triangle *t, int xoff,
     Axis *zAxisPtr;
     
     zAxisPtr = elemPtr->zAxisPtr;
-#define A0	ren.edge[0].A
-#define B0	ren.edge[0].B
-#define A1	ren.edge[1].A
-#define B1	ren.edge[1].B
-#define A2	ren.edge[2].A 
-#define B2	ren.edge[2].B        
-#define Ar	ren.red[0]
-#define Br	ren.red[1]
-#define Ag	ren.green[0]
-#define Bg	ren.green[1]
-#define Ab	ren.blue[0]
-#define Bb	ren.blue[1]
-#define Aa	ren.alpha[0]
-#define Ba	ren.alpha[1]
+#define A0	ren.eq[0].A
+#define B0	ren.eq[0].B
+#define A1	ren.eq[1].A
+#define B1	ren.eq[1].B
+#define A2	ren.eq[2].A 
+#define B2	ren.eq[2].B        
 #define Av	ren.value[0]
 #define Bv	ren.value[1]
     if (zAxisPtr->palette == NULL) {
@@ -6869,9 +6868,9 @@ DrawTriangle(ContourElement *elemPtr, Pict *destPtr, Triangle *t, int xoff,
     if (!InitRenderer(elemPtr, t, &ren)) {
 	return;
     }
-    t0 = A0 * ren.x1 + B0 * ren.y1 + ren.edge[0].C;
-    t1 = A1 * ren.x1 + B1 * ren.y1 + ren.edge[1].C;
-    t2 = A2 * ren.x1 + B2 * ren.y1 + ren.edge[2].C;
+    t0 = A0 * ren.x1 + B0 * ren.y1 + ren.eq[0].C;
+    t1 = A1 * ren.x1 + B1 * ren.y1 + ren.eq[1].C;
+    t2 = A2 * ren.x1 + B2 * ren.y1 + ren.eq[2].C;
     tz = ren.value[2];
     destRowPtr = destPtr->bits + (destPtr->pixelsPerRow * (ren.y1-yoff));
     for (j = 0, y = ren.y1; y <= ren.y2; y++, j++) {

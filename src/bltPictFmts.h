@@ -81,11 +81,11 @@
 
 typedef int (Blt_PictureIsFmtProc)(Blt_DBuffer buffer);
 
-typedef Blt_Chain (Blt_PictureReadDataProc)(Tcl_Interp *interp, 
+typedef Blt_Chain (Blt_PictureReadProc)(Tcl_Interp *interp, 
 	const char *fileName, Blt_DBuffer buffer);
 
-typedef Tcl_Obj *(Blt_PictureWriteDataProc)(Tcl_Interp *interp, 
-	Blt_Picture picture);
+typedef Tcl_Obj *(Blt_PictureWriteProc)(Tcl_Interp *interp,
+        Blt_Picture picture);
 
 typedef Blt_Chain (Blt_PictureImportProc)(Tcl_Interp *interp, int objc, 
 	Tcl_Obj *const *objv, const char **fileNamePtr);
@@ -95,9 +95,9 @@ typedef int (Blt_PictureExportProc)(Tcl_Interp *interp, unsigned int index,
 
 BLT_EXTERN int Blt_PictureRegisterFormat(Tcl_Interp *interp, 
 	const char *name, 
-	Blt_PictureIsFmtProc *isFmtProc,
-	Blt_PictureReadDataProc *readProc, 
-	Blt_PictureWriteDataProc *writeProc,
+	Blt_PictureIsFmtProc  *isFmtProc,
+	Blt_PictureReadProc   *readProc, 
+	Blt_PictureWriteProc  *writeProc,
 	Blt_PictureImportProc *importProc, 
 	Blt_PictureExportProc *exportProc);
 
@@ -107,9 +107,9 @@ typedef struct {
     const char *name;			/* Name of format. */
     unsigned int flags;
     Blt_PictureIsFmtProc *isFmtProc;
-    Blt_PictureReadDataProc *readProc;	/* Used for -file and -data
+    Blt_PictureReadProc *readProc;	/* Used for -file and -data
 					 * configuration options. */
-    Blt_PictureWriteDataProc *writeProc; /* Used for cget -data. */
+    Blt_PictureWriteProc *writeProc;    /* Used for cget -data. */
     Blt_PictureImportProc *importProc;
     Blt_PictureExportProc *exportProc;
 } Blt_PictFormat;

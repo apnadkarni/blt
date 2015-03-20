@@ -395,8 +395,8 @@ declare 108 generic {
    int Blt_PictureRegisterFormat(Tcl_Interp *interp, 
 	const char *name, 
 	Blt_PictureIsFmtProc *isFmtProc,
-	Blt_PictureReadDataProc *readProc, 
-	Blt_PictureWriteDataProc *writeProc,
+	Blt_PictureReadProc *readProc, 
+	Blt_PictureWriteProc *writeProc,
 	Blt_PictureImportProc *importProc, 
 	Blt_PictureExportProc *exportProc)
 }

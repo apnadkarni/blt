@@ -5687,15 +5687,19 @@ ActiveToPostScriptProc(Graph *graphPtr, Blt_Ps ps, Element *basePtr)
 
 #ifdef WIN32
 /* 
+ *---------------------------------------------------------------------------
+ *
  * DrawCircleSymbol --
  *
- *	Draws the symbols of the trace as circles.  The outlines of circles
- *	are drawn after circles are filled.  This is speed tradeoff: drawn
+ *	Draws a circle symbol centered at x, y.  The outlines of circles
+ *	are drawn after circles are filled.  This is speed tradeoff: draw
  *	many circles at once, or drawn one symbol at a time.
  *
- *	Symbols are only drawn at the knots of the trace (i.e. original points,
- *	not generated).  The "play" function can limit what circles are drawn.
+ *	Symbols are only drawn at the knots of the trace (i.e. original
+ *	points, not generated).  The "play" function can limit what circles
+ *	are drawn.
  *
+ *---------------------------------------------------------------------------
  */
 static void
 DrawCircleSymbol(Graph *graphPtr, Drawable drawable, LinePen *penPtr, 
@@ -5738,15 +5742,19 @@ DrawCircleSymbol(Graph *graphPtr, Drawable drawable, LinePen *penPtr,
 #else
 
 /* 
+ *---------------------------------------------------------------------------
+ *
  * DrawCircleSymbol --
  *
- *	Draws the symbols of the trace as circles.  The outlines of circles
+ *	Draws a circle symbol centered at x, y.  The outlines of circles
  *	are drawn after circles are filled.  This is speed tradeoff: draw
  *	many circles at once, or drawn one symbol at a time.
  *
- *	Symbols are only drawn at the knots of the trace (i.e. original points,
- *	not generated).  The "play" function can limit what circles are drawn.
+ *	Symbols are only drawn at the knots of the trace (i.e. original
+ *	points, not generated).  The "play" function can limit what circles
+ *	are drawn.
  *
+ *---------------------------------------------------------------------------
  */
 static void
 DrawCircleSymbol(Graph *graphPtr, Drawable drawable, LinePen *penPtr, 
@@ -5769,15 +5777,19 @@ DrawCircleSymbol(Graph *graphPtr, Drawable drawable, LinePen *penPtr,
 #endif	/* WIN32 */
 
 /* 
+ *---------------------------------------------------------------------------
+ *
  * DrawSquareSymbol --
  *
- *	Draws the symbols of the trace as squares.  The outlines of squares
- *	are drawn after squares are filled.  This is speed tradeoff: draw
- *	many squares at once, or drawn one symbol at a time.
+ *	Draws a square plus symbol centered at x, y.  The outlines of
+ *	squares are drawn after squares are filled.  This is speed
+ *	tradeoff: draw many squares at once, or drawn one symbol at a time.
  *
- *	Symbols are only drawn at the knots of the trace (i.e. original points,
- *	not generated).  The "play" function can limit what squares are drawn.
+ *	Symbols are only drawn at the knots of the trace (i.e. original
+ *	points, not generated).  The "play" function can limit what squares
+ *	are drawn.
  *
+ *---------------------------------------------------------------------------
  */
 static void
 DrawSquareSymbol(Graph *graphPtr, Drawable drawable, LinePen *penPtr, 
@@ -5798,12 +5810,17 @@ DrawSquareSymbol(Graph *graphPtr, Drawable drawable, LinePen *penPtr,
 }
 
 /* 
+ *---------------------------------------------------------------------------
+ *
  * DrawSkinnyCrossPlusSymbol --
  *
- *	Draws the symbols of the trace as single line crosses or pluses.  
+ *	Draws a single line cross or plus symbol centered at x, y. 
  *
- *	Symbols are only drawn at the knots of the trace (i.e. original points,
- *	not generated).  The "play" function can limit what symbols are drawn.
+ *	Symbols are only drawn at the knots of the trace (i.e. original
+ *	points, not generated).  The "play" function can limit what symbols
+ *	are drawn.
+ *
+ *---------------------------------------------------------------------------
  */
 static void
 DrawSkinnyCrossPlusSymbol(Graph *graphPtr, Drawable drawable, LinePen *penPtr, 
@@ -5835,6 +5852,15 @@ DrawSkinnyCrossPlusSymbol(Graph *graphPtr, Drawable drawable, LinePen *penPtr,
 	segments, 2);
 }
 
+/* 
+ *---------------------------------------------------------------------------
+ *
+ * DrawCrossPlusSymbol --
+ *
+ *	Draws a cross or plus symbol centered at x, y. 
+ *
+ *---------------------------------------------------------------------------
+ */
 static void
 DrawCrossPlusSymbol(Graph *graphPtr, Drawable drawable, LinePen *penPtr, 
 		    int x, int y, int size)
@@ -5895,6 +5921,15 @@ DrawCrossPlusSymbol(Graph *graphPtr, Drawable drawable, LinePen *penPtr,
     }
 }
 
+/* 
+ *---------------------------------------------------------------------------
+ *
+ * DrawTriangleArrowSymbol --
+ *
+ *	Draws the a triangle or arrow symbol centered at x, y.
+ *
+ *---------------------------------------------------------------------------
+ */
 static void
 DrawTriangleArrowSymbol(Graph *graphPtr, Drawable drawable, LinePen *penPtr, 
 			int x, int y, int size)
@@ -5950,6 +5985,15 @@ DrawTriangleArrowSymbol(Graph *graphPtr, Drawable drawable, LinePen *penPtr,
     }
 }
 
+/* 
+ *---------------------------------------------------------------------------
+ *
+ * DrawDiamondSymbol --
+ *
+ *	Draws a diamond symbol centered at x, y.
+ *
+ *---------------------------------------------------------------------------
+ */
 static void
 DrawDiamondSymbol(Graph *graphPtr, Drawable drawable, LinePen *penPtr, 
 		  int x, int y, int size)
@@ -5988,6 +6032,15 @@ DrawDiamondSymbol(Graph *graphPtr, Drawable drawable, LinePen *penPtr,
     }
 }
 
+/* 
+ *---------------------------------------------------------------------------
+ *
+ * DrawImageSymbol --
+ *
+ *	Draws the image symbol centered at x, y.
+ *
+ *---------------------------------------------------------------------------
+ */
 static void
 DrawImageSymbol(Graph *graphPtr, Drawable drawable, LinePen *penPtr, 
 		int x, int y, int size)
