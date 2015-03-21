@@ -3646,8 +3646,9 @@ ColumnTagRangeOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc,
  *
  * ColumnTagSearchOp --
  *
- *      Returns tag names for a given column.  If one of more pattern
- *      arguments are provided, then only those matching tags are returned.
+ *      Searches for tags in a given column.  One of more tag pattern
+ *      arguments can be given.  Returns 1 is any tag is found, 0 
+ *      otherwise.
  *
  * Example:
  *      .t column tag search $column pat1 pat2...
