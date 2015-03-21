@@ -43,6 +43,7 @@ typedef enum {
 } BLT_TABLE_COLUMN_TYPE;
 
 #define BLT_TABLE_VALUE_LENGTH 16
+#define BLT_TABLE_VALUE_STORE ((char *)1)
 
 typedef struct _BLT_TABLE_VALUE {
     union {				
@@ -61,13 +62,17 @@ typedef struct _BLT_TABLE_VALUE {
     size_t length;                      /* Number of bytes in string
                                          * below. */
     const char *string;			/* String representation of the
-                                         * value. This can store strings
-                                         * and blobs.  If NULL, this
-                                         * indicates the value is empty.
-                                         * Will point to *store* if the
-                                         * string is small enough.
-                                         * Otherwise, points to malloc'ed
-                                         * memory.*/
+                                         * value. If NULL, the value is
+                                         * empty.  If
+                                         * BLT_TABLE_VALUE_STORE, the
+                                         * string is stored in *store*.
+                                         * Otherwise this points to
+                                         * malloc'ed memory.  Note: We
+                                         * can't point directly to store,
+                                         * because we realloc the column
+                                         * values.  This changes the
+                                         * address of store for all
+                                         * values. */
     char store[BLT_TABLE_VALUE_LENGTH];
 } *BLT_TABLE_VALUE;
 
@@ -325,6 +330,9 @@ BLT_EXTERN int blt_table_unset_value(BLT_TABLE table, BLT_TABLE_ROW row,
 	BLT_TABLE_COLUMN column);
 BLT_EXTERN int blt_table_value_exists(BLT_TABLE table, BLT_TABLE_ROW row, 
 	BLT_TABLE_COLUMN column);
+BLT_EXTERN const char *blt_table_value_string(BLT_TABLE_VALUE value);
+BLT_EXTERN const unsigned char *blt_table_value_bytes(BLT_TABLE_VALUE value);
+BLT_EXTERN size_t blt_table_value_length(BLT_TABLE_VALUE value);
 
 BLT_EXTERN int blt_table_tags_are_shared(BLT_TABLE table);
 BLT_EXTERN void blt_table_clear_row_tags(BLT_TABLE table, BLT_TABLE_ROW row);

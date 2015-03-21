@@ -2606,7 +2606,7 @@ ColumnIndexOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *      result.
  *
  * Example:
- *      $t column indices patterns...
+ *      $t column indices label label label 
  *      
  *---------------------------------------------------------------------------
  */
@@ -2614,7 +2614,6 @@ static int
 ColumnIndicesOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 {
     Tcl_Obj *listObjPtr;
-    BLT_TABLE_COLUMN col;
     IndicesSwitches switches;
     int i;
 
@@ -2626,51 +2625,45 @@ ColumnIndicesOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     }
     objc -= i, objv += i;
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
-    for (col = blt_table_first_column(cmdPtr->table); col != NULL;
-	 col = blt_table_next_column(cmdPtr->table, col)) {
-	const char *label;
-	int match;
-	int i;
-
-	label = blt_table_column_label(col);
-	if (switches.flags & INDICES_DUPLICATES) {
-	    Blt_HashTable *tablePtr;
-
-	    tablePtr = blt_table_column_get_label_table(cmdPtr->table, label);
-	    if (tablePtr->numEntries == 1) {
-		continue;
-	    }
-	}
-	if (switches.flags & INDICES_EMPTY) {
-	    BLT_TABLE_ROW row;
-
-	    for (row = blt_table_first_row(cmdPtr->table); row != NULL;
-		 row = blt_table_next_row(cmdPtr->table, row)) {
-		if (blt_table_value_exists(cmdPtr->table, row, col)) {
-		    break;
-		}
-	    }
-	    if (row != NULL) {
-		continue;
-	    }
-	}
-	match = (objc == 3);
-	for (i = 3; i < objc; i++) {
-	    char *pattern;
-
-	    pattern = Tcl_GetString(objv[i]);
-	    if (Tcl_StringMatch(label, pattern)) {
-		    
-		match = TRUE;
-		break;
-	    }
-	}
-	if (match) {
-	    Tcl_Obj *objPtr;
-
-	    objPtr = Tcl_NewLongObj(blt_table_column_index(col));
+    for (i = 3; i < objc; i++) {
+        Blt_HashTable *tablePtr;
+        Blt_HashEntry *hPtr;
+        Blt_HashSearch iter;
+        const char *label;
+        
+        label = Tcl_GetString(objv[i]);
+        tablePtr = blt_table_column_get_label_table(cmdPtr->table, label);
+        if (tablePtr == NULL) {
+            Tcl_Obj *objPtr;
+            objPtr = Tcl_NewLongObj(-1);
 	    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-	}
+            continue;
+        }
+        if (objc == 4) {
+            for (hPtr = Blt_FirstHashEntry(tablePtr, &iter); hPtr != NULL;
+                 hPtr = Blt_NextHashEntry(&iter)) {
+                BLT_TABLE_COLUMN col;
+                Tcl_Obj *objPtr;
+                
+                col = Blt_GetHashValue(hPtr);
+                objPtr = Tcl_NewLongObj(blt_table_column_index(col));
+                Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+            }
+        } else {
+            Tcl_Obj *subListObjPtr;
+
+            subListObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
+            for (hPtr = Blt_FirstHashEntry(tablePtr, &iter); hPtr != NULL;
+                 hPtr = Blt_NextHashEntry(&iter)) {
+                BLT_TABLE_COLUMN col;
+                Tcl_Obj *objPtr;
+                
+                col = Blt_GetHashValue(hPtr);
+                objPtr = Tcl_NewLongObj(blt_table_column_index(col));
+                Tcl_ListObjAppendElement(interp, subListObjPtr, objPtr);
+            }
+            Tcl_ListObjAppendElement(interp, listObjPtr, subListObjPtr);
+        }
     }
     Tcl_SetObjResult(interp, listObjPtr);
     return TCL_OK;
@@ -3397,7 +3390,9 @@ ColumnTagGetOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     BLT_TABLE_COLUMN col;
     BLT_TABLE_ITERATOR ci;
     Tcl_Obj *listObjPtr;
-
+    int isNew;
+    long lastIndex;
+    
     table = cmdPtr->table;
     if (blt_table_iterate_column(interp, table, objv[4], &ci) != TCL_OK) {
 	return TCL_ERROR;
@@ -3405,18 +3400,23 @@ ColumnTagGetOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
 
     Blt_InitHashTable(&tagTable, BLT_STRING_KEYS);
+    Blt_CreateHashEntry(&tagTable, "all", &isNew);
     
     /* Collect all the tags into a hash table. */
+    lastIndex = blt_table_num_columns(table) - 1;
     for (col = blt_table_first_tagged_column(&ci); col != NULL; 
 	 col = blt_table_next_tagged_column(&ci)) {
 	Blt_Chain chain;
 	Blt_ChainLink link;
-
+        int isNew;
+        
+        if (blt_table_column_index(col) == lastIndex) {
+            Blt_CreateHashEntry(&tagTable, "end", &isNew);
+        }
 	chain = blt_table_get_column_tags(table, col);
 	for (link = Blt_Chain_FirstLink(chain); link != NULL;
 	     link = Blt_Chain_NextLink(link)) {
 	    const char *tag;
-	    int isNew;
 
 	    tag = Blt_Chain_GetValue(link);
 	    Blt_CreateHashEntry(&tagTable, tag, &isNew);
@@ -3650,7 +3650,7 @@ ColumnTagRangeOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc,
  *      arguments are provided, then only those matching tags are returned.
  *
  * Example:
- *      .t column tag find $column pat1 pat2...
+ *      .t column tag search $column pat1 pat2...
  *
  *---------------------------------------------------------------------------
  */
@@ -3672,8 +3672,9 @@ ColumnTagSearchOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc,
 	 col = blt_table_next_tagged_column(&ci)) {
 	Blt_Chain chain;
 	Blt_ChainLink link;
-
+        int count = 0;
 	chain = blt_table_get_column_tags(table, col);
+        fprintf(stderr, "found %d tags\n", Blt_Chain_GetLength(chain));
 	for (link = Blt_Chain_FirstLink(chain); link != NULL; 
 	     link = Blt_Chain_NextLink(link)) {
 	    const char *tag;
@@ -3681,6 +3682,8 @@ ColumnTagSearchOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc,
 	    int i;
 
 	    tag = Blt_Chain_GetValue(link);
+            fprintf(stderr, "%d search tag=%s\n", count, tag);
+            count++;
 	    match = (objc == 5);
 	    for (i = 5; i < objc; i++) {
 		if (Tcl_StringMatch(tag, Tcl_GetString(objv[i]))) {
@@ -3688,6 +3691,7 @@ ColumnTagSearchOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc,
 		    break;                  /* Found match. */
 		}
 	    }
+            fprintf(stderr, "search tag=%s match=%d\n", tag, match);
 	    if (match) {
 		Tcl_Obj *objPtr;
 		
@@ -4019,7 +4023,7 @@ ColumnTypeOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     objc -= 3;
     objv += 3;
     if (objc & 0x1) {
-	Tcl_AppendResult(interp, "wrong # arguments: missing type argument.", 
+	Tcl_AppendResult(interp, "odd # of arguments: should ?index type?...", 
 		(char *)NULL);
 	return TCL_ERROR;
     }

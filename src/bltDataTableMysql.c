@@ -616,14 +616,14 @@ MysqlExportValues(Tcl_Interp *interp, MYSQL *conn, BLT_TABLE table,
                 bind[count].buffer_length = 0;
                 bind[count].is_null = &true;
             } else {
-                struct _BLT_TABLE_VALUE *valuePtr;
+                BLT_TABLE_VALUE value;
 
                 /* Let mysql do the conversions.  This is the safest
                  * way to push data out. */
-                valuePtr = blt_table_get_value(table, row, col);
+                value = blt_table_get_value(table, row, col);
                 bind[count].buffer_type = MYSQL_TYPE_STRING;
-                bind[count].buffer = (char *)valuePtr->string;
-                bind[count].buffer_length = valuePtr->length;
+                bind[count].buffer = (char *)blt_table_value_string(value);
+                bind[count].buffer_length = blt_table_value_length(value);
                 bind[count].is_null = &false;
             }
             count++;

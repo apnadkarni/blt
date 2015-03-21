@@ -470,12 +470,13 @@ Blt_Tags_AppendTagsToChain(Tags *tagsPtr, ClientData item, Blt_Chain list)
     for (hPtr = Blt_FirstHashEntry(&tagsPtr->table, &iter); hPtr != NULL;
 	 hPtr = Blt_NextHashEntry(&iter)) {
 	TagTable *tagTablePtr;
+        const char *tag;
 	
 	tagTablePtr = Blt_GetHashValue(hPtr);
+        tag = Blt_GetHashKey(&tagsPtr->table, hPtr);
+        fprintf(stderr, "found tag=%s\n", tag);
 	if (Blt_FindHashEntry(&tagTablePtr->table, (char *)item) != NULL) {
-	    const char *tag;
-
-	    tag = Blt_GetHashKey(&tagsPtr->table, hPtr);
+            fprintf(stderr, "adding tag=%s\n", tag);
 	    Blt_Chain_Append(list, (ClientData)tag);
 	}
     }
