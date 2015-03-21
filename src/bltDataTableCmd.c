@@ -3674,7 +3674,6 @@ ColumnTagSearchOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc,
 	Blt_ChainLink link;
         int count = 0;
 	chain = blt_table_get_column_tags(table, col);
-        fprintf(stderr, "found %d tags\n", Blt_Chain_GetLength(chain));
 	for (link = Blt_Chain_FirstLink(chain); link != NULL; 
 	     link = Blt_Chain_NextLink(link)) {
 	    const char *tag;
@@ -3682,7 +3681,6 @@ ColumnTagSearchOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc,
 	    int i;
 
 	    tag = Blt_Chain_GetValue(link);
-            fprintf(stderr, "%d search tag=%s\n", count, tag);
             count++;
 	    match = (objc == 5);
 	    for (i = 5; i < objc; i++) {
@@ -3691,7 +3689,6 @@ ColumnTagSearchOp(Cmd *cmdPtr, Tcl_Interp *interp, int objc,
 		    break;                  /* Found match. */
 		}
 	    }
-            fprintf(stderr, "search tag=%s match=%d\n", tag, match);
 	    if (match) {
 		Tcl_Obj *objPtr;
 		
