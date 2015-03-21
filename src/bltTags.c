@@ -474,9 +474,7 @@ Blt_Tags_AppendTagsToChain(Tags *tagsPtr, ClientData item, Blt_Chain list)
 	
 	tagTablePtr = Blt_GetHashValue(hPtr);
         tag = Blt_GetHashKey(&tagsPtr->table, hPtr);
-        fprintf(stderr, "found tag=%s\n", tag);
 	if (Blt_FindHashEntry(&tagTablePtr->table, (char *)item) != NULL) {
-            fprintf(stderr, "adding tag=%s\n", tag);
 	    Blt_Chain_Append(list, (ClientData)tag);
 	}
     }
