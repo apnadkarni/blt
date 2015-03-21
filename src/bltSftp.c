@@ -2465,7 +2465,7 @@ ExportToTable(DirectoryReader *readerPtr, const char *bytes,
 	if (col == NULL) {
 	    col = blt_table_create_column(interp, table, "name");
 	}
-	blt_table_set_string_rep(table, row, col, bytes, -1);
+	blt_table_set_string_rep(interp, table, row, col, bytes, -1);
     }
     /* type */
     if (readerPtr->flags & DIR_TYPE) {
@@ -2474,7 +2474,7 @@ ExportToTable(DirectoryReader *readerPtr, const char *bytes,
 	    col = blt_table_create_column(interp, table, "type");
 	}
 	if (attrsPtr->flags & LIBSSH2_SFTP_ATTR_PERMISSIONS) {
-	    blt_table_set_string_rep(table, row, col,
+	    blt_table_set_string_rep(interp, table, row, col,
                 GetFileTypeFromAttributes(attrsPtr), -1);
 	}
     }
@@ -2483,10 +2483,11 @@ ExportToTable(DirectoryReader *readerPtr, const char *bytes,
 	col = blt_table_get_column_by_label(table, "size");
 	if (col == NULL) {
 	    col = blt_table_create_column(interp, table, "size");
-	    blt_table_set_column_type(table, col, TABLE_COLUMN_TYPE_LONG);
+	    blt_table_set_column_type(interp, table, col,
+                TABLE_COLUMN_TYPE_LONG);
 	}
 	if (attrsPtr->flags & LIBSSH2_SFTP_ATTR_SIZE) {
-	    blt_table_set_long(table, row, col, attrsPtr->filesize);
+	    blt_table_set_long(interp, table, row, col, attrsPtr->filesize);
 	}
     }
     /* uid */
@@ -2494,10 +2495,11 @@ ExportToTable(DirectoryReader *readerPtr, const char *bytes,
 	col = blt_table_get_column_by_label(table, "uid");
 	if (col == NULL) {
 	    col = blt_table_create_column(interp, table, "uid"); 
-	    blt_table_set_column_type(table, col, TABLE_COLUMN_TYPE_LONG);
+	    blt_table_set_column_type(interp, table, col,
+                        TABLE_COLUMN_TYPE_LONG);
 	}
 	if (attrsPtr->flags & LIBSSH2_SFTP_ATTR_UIDGID) {
-	    blt_table_set_long(table, row, col, attrsPtr->uid);
+	    blt_table_set_long(interp, table, row, col, attrsPtr->uid);
 	}
     }
     /* gid */
@@ -2505,10 +2507,11 @@ ExportToTable(DirectoryReader *readerPtr, const char *bytes,
 	col = blt_table_get_column_by_label(table, "gid");
 	if (col == NULL) {
 	    col = blt_table_create_column(interp, table, "gid");
-	    blt_table_set_column_type(table, col, TABLE_COLUMN_TYPE_LONG);
+	    blt_table_set_column_type(interp, table, col,
+                        TABLE_COLUMN_TYPE_LONG);
 	}
 	if (attrsPtr->flags & LIBSSH2_SFTP_ATTR_UIDGID) {
-	    blt_table_set_long(table, row, col, attrsPtr->gid);
+	    blt_table_set_long(interp, table, row, col, attrsPtr->gid);
 	}
     }
     /* atime */
@@ -2516,10 +2519,11 @@ ExportToTable(DirectoryReader *readerPtr, const char *bytes,
 	col = blt_table_get_column_by_label(table, "atime");
 	if (col == NULL) {
 	    col = blt_table_create_column(interp, table, "atime");
-	    blt_table_set_column_type(table, col, TABLE_COLUMN_TYPE_LONG);
+	    blt_table_set_column_type(interp, table, col,
+                TABLE_COLUMN_TYPE_LONG);
 	}
 	if (attrsPtr->flags & LIBSSH2_SFTP_ATTR_ACMODTIME) {
-	    blt_table_set_long(table, row, col, attrsPtr->atime);
+	    blt_table_set_long(interp, table, row, col, attrsPtr->atime);
 	}
     }
     /* mtime */
@@ -2527,10 +2531,11 @@ ExportToTable(DirectoryReader *readerPtr, const char *bytes,
 	col = blt_table_get_column_by_label(table, "mtime");
 	if (col == NULL) {
 	    col = blt_table_create_column(interp, table, "mtime");
-	    blt_table_set_column_type(table, col, TABLE_COLUMN_TYPE_LONG);
+	    blt_table_set_column_type(interp, table, col,
+                TABLE_COLUMN_TYPE_LONG);
 	}
 	if (attrsPtr->flags & LIBSSH2_SFTP_ATTR_ACMODTIME) {
-	    blt_table_set_long(table, row, col, attrsPtr->mtime);
+	    blt_table_set_long(interp, table, row, col, attrsPtr->mtime);
 	}
     }
     /* mode */
@@ -2538,10 +2543,11 @@ ExportToTable(DirectoryReader *readerPtr, const char *bytes,
 	col = blt_table_get_column_by_label(table, "mode");
 	if (col == NULL) {
 	    col = blt_table_create_column(interp, table, "mode");
-	    blt_table_set_column_type(table, col, TABLE_COLUMN_TYPE_LONG);
+	    blt_table_set_column_type(interp, table, col,
+                        TABLE_COLUMN_TYPE_LONG);
 	}
 	if (attrsPtr->flags & LIBSSH2_SFTP_ATTR_PERMISSIONS) {
-	    blt_table_set_long(table, row, col, 
+	    blt_table_set_long(interp, table, row, col, 
 			       attrsPtr->permissions & 07777);
 	}
     }
@@ -2551,7 +2557,7 @@ ExportToTable(DirectoryReader *readerPtr, const char *bytes,
 	if (col == NULL) {
 	    col = blt_table_create_column(interp, table, "longentry");
 	}
-	blt_table_set_string_rep(table, row, col, longentry, -1);
+	blt_table_set_string_rep(interp, table, row, col, longentry, -1);
     }
 }
     

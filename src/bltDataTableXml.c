@@ -209,7 +209,7 @@ ColumnIterSwitchProc(
     if (Tcl_ListObjGetElements(interp, objPtr, &objc, &objv) != TCL_OK) {
 	return TCL_ERROR;
     }
-    if (blt_table_iterate_column_objv(interp, table, objc, objv, iterPtr)
+    if (blt_table_iterate_columns_objv(interp, table, objc, objv, iterPtr)
 	!= TCL_OK) {
 	return TCL_ERROR;
     }
@@ -273,7 +273,7 @@ RowIterSwitchProc(
     if (Tcl_ListObjGetElements(interp, objPtr, &objc, &objv) != TCL_OK) {
 	return TCL_ERROR;
     }
-    if (blt_table_iterate_row_objv(interp, table, objc, objv, iterPtr)
+    if (blt_table_iterate_rows_objv(interp, table, objc, objv, iterPtr)
 	!= TCL_OK) {
 	return TCL_ERROR;
     }
@@ -347,8 +347,8 @@ GetXmlCharacterData(void *userData, const XML_Char *string, int length)
 
 	    objPtr = Blt_List_GetValue(node);
 	    col = (BLT_TABLE_COLUMN)Blt_List_GetKey(node);
-	    if (blt_table_set_obj(importPtr->table, importPtr->row, col, 
-		objPtr) != TCL_OK) {
+	    if (blt_table_set_obj(importPtr->interp, importPtr->table,
+                        importPtr->row, col, objPtr) != TCL_OK) {
 		Tcl_BackgroundError(importPtr->interp);
 	    }
 	}
@@ -419,7 +419,8 @@ StartXmlTag(void *userData, const char *element, const char **attr)
 		col = Blt_GetHashValue(hPtr);
 	    }
 	    /* Set the attribute value as the cell value. */
-	    if (blt_table_set_string_rep(table, row, col, value, -1)!=TCL_OK) {
+	    if (blt_table_set_string_rep(interp, table, row, col, value, -1)
+                != TCL_OK) {
 		goto error;
 	    }
 	}

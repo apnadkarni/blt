@@ -891,7 +891,7 @@ TableDataSourceGetProc(Tcl_Interp *interp, DataSource *basePtr,
 	BLT_TABLE_ROW row;
 
 	row = blt_table_row(table, i);
-	values[i] = blt_table_get_double(table, row, srcPtr->column);
+	values[i] = blt_table_get_double(interp, table, row, srcPtr->column);
 	if (values[i] < minValue) {
 	    minValue = values[i];
 	}

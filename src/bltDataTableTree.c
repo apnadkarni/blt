@@ -178,7 +178,7 @@ ColumnIterSwitchProc(
     if (Tcl_ListObjGetElements(interp, objPtr, &objc, &objv) != TCL_OK) {
 	return TCL_ERROR;
     }
-    if (blt_table_iterate_column_objv(interp, table, objc, objv, iterPtr)
+    if (blt_table_iterate_columns_objv(interp, table, objc, objv, iterPtr)
 	!= TCL_OK) {
 	return TCL_ERROR;
     }
@@ -242,7 +242,7 @@ RowIterSwitchProc(
     if (Tcl_ListObjGetElements(interp, objPtr, &objc, &objv) != TCL_OK) {
 	return TCL_ERROR;
     }
-    if (blt_table_iterate_row_objv(interp, table, objc, objv, iterPtr)
+    if (blt_table_iterate_rows_objv(interp, table, objc, objv, iterPtr)
 	!= TCL_OK) {
 	return TCL_ERROR;
     }
@@ -301,7 +301,8 @@ ImportTree(Tcl_Interp *interp, BLT_TABLE table, Blt_Tree tree,
 
 	    col = blt_table_column(table, colIndex);
 	    label = Blt_Tree_NodeLabel(parent);
-	    if (blt_table_set_string_rep(table, row, col, label, -1) !=TCL_OK) {
+	    if (blt_table_set_string_rep(interp, table, row, col, label, -1)
+                != TCL_OK) {
 		return TCL_ERROR;
 	    }
 	    if (switchesPtr->flags & IMPORT_INODES) {
@@ -317,7 +318,8 @@ ImportTree(Tcl_Interp *interp, BLT_TABLE table, Blt_Tree tree,
 		    }
 		}
 		objPtr = Tcl_NewLongObj(Blt_Tree_NodeId(node));
-		if (blt_table_set_obj(table, row, col, objPtr) != TCL_OK) {
+		if (blt_table_set_obj(interp, table, row, col, objPtr)
+                    != TCL_OK) {
 		    return TCL_ERROR;
 		}
 	    }
@@ -354,7 +356,7 @@ ImportTree(Tcl_Interp *interp, BLT_TABLE table, Blt_Tree tree,
 		    return TCL_ERROR;
 		}
 	    }
-	    if (blt_table_set_obj(table, row, col, objPtr) != TCL_OK) {
+	    if (blt_table_set_obj(interp, table, row, col, objPtr) != TCL_OK) {
 		return TCL_ERROR;
 	    }
 	}

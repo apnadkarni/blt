@@ -228,7 +228,7 @@ ColumnIterSwitchProc(
     if (Tcl_ListObjGetElements(interp, objPtr, &objc, &objv) != TCL_OK) {
 	return TCL_ERROR;
     }
-    if (blt_table_iterate_column_objv(interp, table, objc, objv, iterPtr)
+    if (blt_table_iterate_columns_objv(interp, table, objc, objv, iterPtr)
 	!= TCL_OK) {
 	return TCL_ERROR;
     }
@@ -291,7 +291,7 @@ RowIterSwitchProc(
     if (Tcl_ListObjGetElements(interp, objPtr, &objc, &objv) != TCL_OK) {
 	return TCL_ERROR;
     }
-    if (blt_table_iterate_row_objv(interp, table, objc, objv, iterPtr)
+    if (blt_table_iterate_rows_objv(interp, table, objc, objv, iterPtr)
 	!= TCL_OK) {
 	return TCL_ERROR;
     }
@@ -750,8 +750,8 @@ ImportCsv(Tcl_Interp *interp, BLT_TABLE table, ImportArgs *argsPtr)
 		    }
 		    if (((last > field) || (isQuoted)) && 
 			(!IsEmpty(argsPtr, field, last - field))) {
-			if (blt_table_set_string_rep(table, row, col, field,
-				last - field) != TCL_OK) {             
+			if (blt_table_set_string_rep(interp, table, row, col,
+                                field, last - field) != TCL_OK) {             
 			    goto error;
 			}
 		    }
@@ -847,7 +847,7 @@ ImportCsv(Tcl_Interp *interp, BLT_TABLE table, ImportArgs *argsPtr)
 		}			
 		if (((last > field) || (isQuoted)) && 
 		    (!IsEmpty(argsPtr, field, last - field))) {
-		    if (blt_table_set_string(table, row, col, field, 
+		    if (blt_table_set_string(interp, table, row, col, field, 
 			last - field) != TCL_OK) {
 			goto error;
 		    }

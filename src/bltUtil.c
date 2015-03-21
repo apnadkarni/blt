@@ -447,16 +447,16 @@ Blt_GetLong(interp, string, longPtr)
     }
     if (end == p) {
 	badInteger:
-	if (interp != (Tcl_Interp *) NULL) {
+	if (interp != NULL) {
 	    Tcl_AppendResult(interp, "expected integer but got \"", string,
 		    "\"", (char *) NULL);
 	}
 	return TCL_ERROR;
     }
     if (errno == ERANGE) {
-	if (interp != (Tcl_Interp *) NULL) {
-	    Tcl_SetResult(interp, 
-			  (char *)"integer value too large to represent",
+	if (interp != NULL) {
+	    Tcl_SetResult(interp,
+                        (char *)"integer value too large to represent",
 			  TCL_STATIC);
 	    Tcl_SetErrorCode(interp, "ARITH", "IOVERFLOW",
 		    Tcl_GetStringResult(interp), (char *) NULL);
@@ -542,15 +542,14 @@ Blt_GetDoubleFromString(Tcl_Interp *interp, const char *s, double *valuePtr)
     d = strtod(s, &end); /* INTL: TCL source. */
     if (end == s) {
 	badDouble:
-	if (interp != (Tcl_Interp *) NULL) {
-	    Tcl_AppendResult(interp,
-		"expected floating-point number but got \"", s, "\"", 
-		(char *) NULL);
+	if (interp != NULL) {
+	    Tcl_AppendResult(interp, "expected floating-point number "
+                "but got \"", s, "\"", (char *) NULL);
 	}
 	return TCL_ERROR;
     }
     if (errno != 0 && (d == HUGE_VAL || d == -HUGE_VAL || d == 0)) {
-	if (interp != (Tcl_Interp *) NULL) {
+	if (interp != NULL) {
 	    char msg[64 + TCL_INTEGER_SPACE];
 	
 	    sprintf(msg, "unknown floating-point error, errno = %d", errno);
@@ -1067,15 +1066,19 @@ Blt_GetCountFromObj(
     switch (check) {
     case COUNT_NNEG:
 	if (count < 0) {
-	    Tcl_AppendResult(interp, "bad value \"", Tcl_GetString(objPtr), 
-		"\": can't be negative", (char *)NULL);
+            if (interp != NULL) {
+                Tcl_AppendResult(interp, "bad value \"", Tcl_GetString(objPtr), 
+                                 "\": can't be negative", (char *)NULL);
+            }
 	    return TCL_ERROR;
 	}
 	break;
     case COUNT_POS:
 	if (count <= 0) {
-	    Tcl_AppendResult(interp, "bad value \"", Tcl_GetString(objPtr), 
-		"\": must be positive", (char *)NULL);
+            if (interp != NULL) {
+                Tcl_AppendResult(interp, "bad value \"", Tcl_GetString(objPtr), 
+                                 "\": must be positive", (char *)NULL);
+            }
 	    return TCL_ERROR;
 	}
 	break;
@@ -1131,8 +1134,10 @@ Blt_GetPosition(
 	    return TCL_ERROR;
 	}
 	if (position < 0) {
-	    Tcl_AppendResult(interp, "bad position \"", string, "\"",
-		(char *)NULL);
+            if (interp != NULL) {
+                Tcl_AppendResult(interp, "bad position \"", string, "\"",
+                                 (char *)NULL);
+            }
 	    return TCL_ERROR;
 	}
 	*indexPtr = position;
@@ -1187,8 +1192,10 @@ Blt_GetPositionFromObj(
 	    return TCL_ERROR;
 	}
 	if (position < 0) {
-	    Tcl_AppendResult(interp, "bad position \"", string, "\"",
-		(char *)NULL);
+            if (interp != NULL) {
+                Tcl_AppendResult(interp, "bad position \"", string, "\"",
+                                 (char *)NULL);
+            }
 	    return TCL_ERROR;
 	}
 	*indexPtr = position;

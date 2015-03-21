@@ -1008,13 +1008,13 @@ CompareValues(Column *colPtr, const Row *r1Ptr, const Row *r2Ptr)
 	result = Blt_DictionaryCompare(s1, s2);
 	break;
     case SORT_INTEGER:
-	l1 = blt_table_get_long(viewPtr->table, r1, col, 0);
-	l2 = blt_table_get_long(viewPtr->table, r2, col, 0);
+	l1 = blt_table_get_long(NULL, viewPtr->table, r1, col, 0);
+	l2 = blt_table_get_long(NULL, viewPtr->table, r2, col, 0);
 	result = l1 - l2;
 	break;
     case SORT_REAL:
-	d1 = blt_table_get_double(viewPtr->table, r1, col);
-	d2 = blt_table_get_double(viewPtr->table, r2, col);
+	d1 = blt_table_get_double(NULL, viewPtr->table, r1, col);
+	d2 = blt_table_get_double(NULL, viewPtr->table, r2, col);
 	result = (d1 > d2) ? 1 : (d1 < d2) ? -1 : 0;
 	break;
     }
@@ -3699,7 +3699,7 @@ GetRows(Tcl_Interp *interp, TableView *viewPtr, Tcl_Obj *objPtr,
 	BLT_TABLE_ROW row;
 
 	/* Process the name as a row tag. */
-	if (blt_table_iterate_row(interp, viewPtr->table, objPtr, &iter) 
+	if (blt_table_iterate_rows(interp, viewPtr->table, objPtr, &iter) 
 	    != TCL_OK){
 	    Blt_Chain_Destroy(chain);
 	    return TCL_ERROR;
@@ -3739,7 +3739,7 @@ GetColumns(Tcl_Interp *interp, TableView *viewPtr, Tcl_Obj *objPtr,
 	BLT_TABLE_COLUMN col;
 
 	/* Process the name as a column tag. */
-	if (blt_table_iterate_column(interp, viewPtr->table, objPtr, &iter) 
+	if (blt_table_iterate_columns(interp, viewPtr->table, objPtr, &iter) 
 	    != TCL_OK){
 	    Blt_Chain_Destroy(chain);
 	    return TCL_ERROR;
@@ -3780,7 +3780,7 @@ IterateRowsObjv(Tcl_Interp *interp, TableView *viewPtr, int objc,
 	    }
 	    continue;
 	}
-	if (blt_table_iterate_row(interp, viewPtr->table, objv[i], &iter) 
+	if (blt_table_iterate_rows(interp, viewPtr->table, objv[i], &iter) 
 	    != TCL_OK){
 	    Blt_DeleteHashTable(&rowTable);
 	    Blt_Chain_Destroy(chain);
@@ -3827,7 +3827,7 @@ IterateColumnsObjv(Tcl_Interp *interp, TableView *viewPtr, int objc,
 	    }
 	    continue;
 	}
-	if (blt_table_iterate_column(interp, viewPtr->table, objv[i], &iter) 
+	if (blt_table_iterate_columns(interp, viewPtr->table, objv[i], &iter) 
 	    != TCL_OK){
 	    Blt_DeleteHashTable(&colTable);
 	    Blt_Chain_Destroy(chain);

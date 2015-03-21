@@ -43,8 +43,8 @@ typedef enum {
     TABLE_COLUMN_TYPE_BLOB, 
 } BLT_TABLE_COLUMN_TYPE;
 
-#define BLT_TABLE_VALUE_LENGTH 16
-#define BLT_TABLE_VALUE_STORE ((char *)1)
+#define TABLE_VALUE_LENGTH      16
+#define TABLE_VALUE_STORE      ((char *)1)
 
 typedef struct _BLT_TABLE_VALUE {
     union {				
@@ -74,7 +74,7 @@ typedef struct _BLT_TABLE_VALUE {
                                          * values.  This changes the
                                          * address of store for all
                                          * values. */
-    char store[BLT_TABLE_VALUE_LENGTH];
+    char store[TABLE_VALUE_LENGTH];
 } *BLT_TABLE_VALUE;
 
 typedef struct _BLT_TABLE_HEADER {
@@ -271,7 +271,7 @@ BLT_EXTERN int blt_table_set_column_label(Tcl_Interp *interp, BLT_TABLE table,
 
 BLT_EXTERN BLT_TABLE_COLUMN_TYPE blt_table_name_to_column_type(
 	const char *typeName);
-BLT_EXTERN int blt_table_set_column_type(BLT_TABLE table, 
+BLT_EXTERN int blt_table_set_column_type(Tcl_Interp *interp, BLT_TABLE table, 
 	BLT_TABLE_COLUMN column, BLT_TABLE_COLUMN_TYPE type);
 BLT_EXTERN const char *blt_table_column_type_to_name(
 	BLT_TABLE_COLUMN_TYPE type);
@@ -299,29 +299,36 @@ BLT_EXTERN int blt_table_move_column(Tcl_Interp *interp, BLT_TABLE table,
 
 BLT_EXTERN Tcl_Obj *blt_table_get_obj(BLT_TABLE table, BLT_TABLE_ROW row, 
 	BLT_TABLE_COLUMN column);
-BLT_EXTERN int blt_table_set_obj(BLT_TABLE table, BLT_TABLE_ROW row,
-	BLT_TABLE_COLUMN column, Tcl_Obj *objPtr);
+BLT_EXTERN int blt_table_set_obj(Tcl_Interp *interp, BLT_TABLE table,
+        BLT_TABLE_ROW row, BLT_TABLE_COLUMN column, Tcl_Obj *objPtr);
 
-BLT_EXTERN const char *blt_table_get_string(BLT_TABLE table, BLT_TABLE_ROW row, 
-	BLT_TABLE_COLUMN column);
-BLT_EXTERN int blt_table_set_string_rep(BLT_TABLE table, BLT_TABLE_ROW row,
-	BLT_TABLE_COLUMN column, const char *string, int length);
-BLT_EXTERN int blt_table_set_string(BLT_TABLE table, BLT_TABLE_ROW row,
-	BLT_TABLE_COLUMN column, const char *string, int length);
+BLT_EXTERN const char *blt_table_get_string(BLT_TABLE table,
+        BLT_TABLE_ROW row, BLT_TABLE_COLUMN column);
+BLT_EXTERN int blt_table_set_string_rep(Tcl_Interp *interp, BLT_TABLE table,
+        BLT_TABLE_ROW row, BLT_TABLE_COLUMN column, const char *string,
+        int length);
+BLT_EXTERN int blt_table_set_string(Tcl_Interp *interp, BLT_TABLE table,
+        BLT_TABLE_ROW row, BLT_TABLE_COLUMN column, const char *string,
+        int length);
 BLT_EXTERN int blt_table_append_string(Tcl_Interp *interp, BLT_TABLE table, 
 	BLT_TABLE_ROW row, BLT_TABLE_COLUMN column, const char *string, 
 	int length);
-BLT_EXTERN int blt_table_set_bytes(BLT_TABLE table, BLT_TABLE_ROW row,
-	BLT_TABLE_COLUMN column, const unsigned char *string, int length);
+BLT_EXTERN int blt_table_set_bytes(Tcl_Interp *interp, BLT_TABLE table,
+        BLT_TABLE_ROW row, BLT_TABLE_COLUMN column,
+        const unsigned char *string, int length);
 
-BLT_EXTERN double blt_table_get_double(BLT_TABLE table, BLT_TABLE_ROW row, 
-	BLT_TABLE_COLUMN column);
-BLT_EXTERN int blt_table_set_double(BLT_TABLE table, BLT_TABLE_ROW row, 
-	BLT_TABLE_COLUMN column, double value);
-BLT_EXTERN long blt_table_get_long(BLT_TABLE table, BLT_TABLE_ROW row, 
-	BLT_TABLE_COLUMN column, long defValue);
-BLT_EXTERN int blt_table_set_long(BLT_TABLE table, BLT_TABLE_ROW row, 
-	BLT_TABLE_COLUMN column, long value);
+BLT_EXTERN double blt_table_get_double(Tcl_Interp *interp, BLT_TABLE table,
+        BLT_TABLE_ROW row, BLT_TABLE_COLUMN column);
+BLT_EXTERN int blt_table_set_double(Tcl_Interp *interp, BLT_TABLE table,
+        BLT_TABLE_ROW row, BLT_TABLE_COLUMN column, double value);
+BLT_EXTERN long blt_table_get_long(Tcl_Interp *interp, BLT_TABLE table,
+        BLT_TABLE_ROW row, BLT_TABLE_COLUMN column, long defValue);
+BLT_EXTERN int blt_table_set_long(Tcl_Interp *interp, BLT_TABLE table,
+        BLT_TABLE_ROW row, BLT_TABLE_COLUMN column, long value);
+BLT_EXTERN int blt_table_get_boolean(Tcl_Interp *interp, BLT_TABLE table,
+        BLT_TABLE_ROW row, BLT_TABLE_COLUMN column, int defValue);
+BLT_EXTERN int blt_table_set_boolean(Tcl_Interp *interp, BLT_TABLE table,
+        BLT_TABLE_ROW row, BLT_TABLE_COLUMN column, int value);
 
 BLT_EXTERN BLT_TABLE_VALUE blt_table_get_value(BLT_TABLE table, 
 	BLT_TABLE_ROW row, BLT_TABLE_COLUMN column);
@@ -366,12 +373,11 @@ BLT_EXTERN BLT_TABLE_ROW blt_table_first_row(BLT_TABLE table);
 BLT_EXTERN BLT_TABLE_ROW blt_table_next_row(BLT_TABLE table, BLT_TABLE_ROW row);
 
 typedef enum { 
-    TABLE_SPEC_UNKNOWN, 
-    TABLE_SPEC_INDEX, 
-    TABLE_SPEC_RANGE, 
-    TABLE_SPEC_LABEL, 
-    TABLE_SPEC_LABELS, 
-    TABLE_SPEC_TAG, 
+    TABLE_SPEC_UNKNOWN,                 /* 0 */
+    TABLE_SPEC_INDEX,                   /* 1 */
+    TABLE_SPEC_RANGE,                   /* 2 */
+    TABLE_SPEC_LABEL,                   /* 3 */
+    TABLE_SPEC_TAG,                     /* 4 */
 } BLT_TABLE_ROWCOLUMN_SPEC;
 
 BLT_EXTERN BLT_TABLE_ROWCOLUMN_SPEC blt_table_row_spec(BLT_TABLE table, 
@@ -448,16 +454,16 @@ typedef struct _BLT_TABLE_ITERATOR {
     Blt_ChainLink link;			/* Search iterator for chain. */
 } BLT_TABLE_ITERATOR;
 
-BLT_EXTERN int blt_table_iterate_row(Tcl_Interp *interp, BLT_TABLE table, 
+BLT_EXTERN int blt_table_iterate_rows(Tcl_Interp *interp, BLT_TABLE table, 
 	Tcl_Obj *objPtr, BLT_TABLE_ITERATOR *iter);
 
-BLT_EXTERN int blt_table_iterate_column(Tcl_Interp *interp, BLT_TABLE table, 
+BLT_EXTERN int blt_table_iterate_columns(Tcl_Interp *interp, BLT_TABLE table, 
 	Tcl_Obj *objPtr, BLT_TABLE_ITERATOR *iter);
 
-BLT_EXTERN int blt_table_iterate_row_objv(Tcl_Interp *interp, BLT_TABLE table, 
+BLT_EXTERN int blt_table_iterate_rows_objv(Tcl_Interp *interp, BLT_TABLE table, 
 	int objc, Tcl_Obj *const *objv, BLT_TABLE_ITERATOR *iterPtr);
 
-BLT_EXTERN int blt_table_iterate_column_objv(Tcl_Interp *interp, 
+BLT_EXTERN int blt_table_iterate_columns_objv(Tcl_Interp *interp, 
 	BLT_TABLE table, int objc, Tcl_Obj *const *objv, 
 	BLT_TABLE_ITERATOR *iterPtr);
 

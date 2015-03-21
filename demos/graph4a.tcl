@@ -200,22 +200,6 @@ $graph element bind all <Leave> {
     %W legend deactivate [%W element get current]
 }
 
-if 0 {
-$table column extend "x"
-$table import vector "x" 1
-$table column type "x" double
-set col 1
-foreach vector [lsort -dictionary [blt::vector names ::v*]] {
-    set name [string trim $vector ::]
-    $table column extend $name
-    $table column type $name double
-    incr col
-    $table import vector $vector $col
-}
-
-$table dump -file graph4.tab
-}
-
 #blt::LegendSelections $graph
 focus $graph
 toplevel .top

@@ -92,7 +92,7 @@ ExportVectorProc(BLT_TABLE table, Tcl_Interp *interp, int objc,
 	    BLT_TABLE_ROW row;
 
 	    row = blt_table_row(table, k);
-	    array[k] = blt_table_get_double(table, row, col);
+	    array[k] = blt_table_get_double(interp, table, row, col);
 	}
 	if (Blt_ResetVector(vector, array, numRows, size, TCL_STATIC) 
 	    != TCL_OK) {
@@ -171,7 +171,8 @@ ImportVectorProc(BLT_TABLE table, Tcl_Interp *interp, int objc,
 	    BLT_TABLE_ROW row;
 
 	    row = blt_table_row(table, j);
-	    if (blt_table_set_double(table, row, col, array[j]) != TCL_OK) {
+	    if (blt_table_set_double(interp, table, row, col, array[j])
+                != TCL_OK) {
 		return TCL_ERROR;
 	    }
 	}
@@ -184,7 +185,10 @@ ImportVectorProc(BLT_TABLE table, Tcl_Interp *interp, int objc,
 		return TCL_ERROR;
 	    }
 	}
-	blt_table_set_column_type(table, col, TABLE_COLUMN_TYPE_DOUBLE);
+	if (blt_table_set_column_type(interp, table, col,
+                TABLE_COLUMN_TYPE_DOUBLE) != TCL_OK) {
+            return TCL_ERROR;
+        }
     }
     return TCL_OK;
 }

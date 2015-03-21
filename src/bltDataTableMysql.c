@@ -204,7 +204,7 @@ ColumnIterSwitchProc(ClientData clientData, Tcl_Interp *interp,
     if (Tcl_ListObjGetElements(interp, objPtr, &objc, &objv) != TCL_OK) {
 	return TCL_ERROR;
     }
-    if (blt_table_iterate_column_objv(interp, table, objc, objv, iterPtr)
+    if (blt_table_iterate_columns_objv(interp, table, objc, objv, iterPtr)
 	!= TCL_OK) {
 	return TCL_ERROR;
     }
@@ -260,7 +260,7 @@ RowIterSwitchProc(ClientData clientData, Tcl_Interp *interp,
     if (Tcl_ListObjGetElements(interp, objPtr, &objc, &objv) != TCL_OK) {
 	return TCL_ERROR;
     }
-    if (blt_table_iterate_row_objv(interp, table, objc, objv, iterPtr)
+    if (blt_table_iterate_rows_objv(interp, table, objc, objv, iterPtr)
 	!= TCL_OK) {
 	return TCL_ERROR;
     }
@@ -410,7 +410,7 @@ MysqlImportLabels(Tcl_Interp *interp, BLT_TABLE table, MYSQL_RES *myResults,
 	    return TCL_ERROR;
 	}
 	type = MysqlFieldToColumnType(fp->type);
-	if (blt_table_set_column_type(table, cols[i], type) != TCL_OK) {
+	if (blt_table_set_column_type(interp, table, cols[i], type) != TCL_OK) {
 	    return TCL_ERROR;
 	}
     }
@@ -456,7 +456,7 @@ MysqlImportRows(Tcl_Interp *interp, BLT_TABLE table, MYSQL_RES *myResults,
 	    if (myRow[j] == NULL) {
 		continue;		/* Empty value. */
 	    }
-	    if (blt_table_set_string_rep(table, row, cols[j], myRow[j],
+	    if (blt_table_set_string_rep(interp, table, row, cols[j], myRow[j],
                         lengths[j]) != TCL_OK) {
 		return TCL_ERROR;
 	    }

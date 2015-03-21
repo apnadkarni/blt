@@ -337,7 +337,7 @@ FetchTableValues(Tcl_Interp *interp, ElemValues *valuesPtr,
 
     table = valuesPtr->tableSource.table;
     if (objPtr != NULL) {
-	if (blt_table_iterate_row(interp, table, objPtr, &ri) != TCL_OK) {
+	if (blt_table_iterate_rows(interp, table, objPtr, &ri) != TCL_OK) {
 	    return TCL_ERROR;
 	}
 	if (ri.numEntries == 0) {
@@ -355,7 +355,7 @@ FetchTableValues(Tcl_Interp *interp, ElemValues *valuesPtr,
     i = 0;
     for (row = blt_table_first_tagged_row(&ri); row != NULL; 
 	 row = blt_table_next_tagged_row(&ri)) {
-	array[i] = blt_table_get_double(table, row, col);
+	array[i] = blt_table_get_double(interp, table, row, col);
 	i++;
     }
     if (valuesPtr->values != NULL) {

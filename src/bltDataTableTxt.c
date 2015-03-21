@@ -221,7 +221,7 @@ ColumnIterSwitchProc(
     if (Tcl_ListObjGetElements(interp, objPtr, &objc, &objv) != TCL_OK) {
 	return TCL_ERROR;
     }
-    if (blt_table_iterate_column_objv(interp, table, objc, objv, iterPtr)
+    if (blt_table_iterate_columns_objv(interp, table, objc, objv, iterPtr)
 	!= TCL_OK) {
 	return TCL_ERROR;
     }
@@ -285,7 +285,7 @@ RowIterSwitchProc(
     if (Tcl_ListObjGetElements(interp, objPtr, &objc, &objv) != TCL_OK) {
 	return TCL_ERROR;
     }
-    if (blt_table_iterate_row_objv(interp, table, objc, objv, iterPtr)
+    if (blt_table_iterate_rows_objv(interp, table, objc, objv, iterPtr)
 	!= TCL_OK) {
 	return TCL_ERROR;
     }
@@ -647,8 +647,8 @@ Import(Tcl_Interp *interp, BLT_TABLE table, ImportSwitches *importPtr)
 			    col = blt_table_column(table, i);
 			}
 			i++;
-			if (blt_table_set_string_rep(table, row, col, field, 
-                                fp - field) != TCL_OK) {
+			if (blt_table_set_string_rep(interp, table, row, col,
+                                field, fp - field) != TCL_OK) {
 			    goto error;
 			}
 		    }
@@ -710,7 +710,7 @@ Import(Tcl_Interp *interp, BLT_TABLE table, ImportSwitches *importPtr)
 			goto error;
 		    }
 		}			
-		if (blt_table_set_string_rep(table, row, col, field,
+		if (blt_table_set_string_rep(interp, table, row, col, field,
                         fp - field) != TCL_OK) {
 		    goto error;
 		}

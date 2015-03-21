@@ -162,18 +162,18 @@ typedef struct PsqlTypeConvert {
 } PsqlTypeConvert;
 
 static PsqlTypeConvert psqlTypeConverts[] = {
-    "bigint",           TABLE_COLUMN_TYPE_LONG,
-    "bigserial",        TABLE_COLUMN_TYPE_LONG,
-    "boolean",          TABLE_COLUMN_TYPE_BOOLEAN,
-    "date",             TABLE_COLUMN_TYPE_STRING,
-    "double precision", TABLE_COLUMN_TYPE_DOUBLE,
-    "float4",           TABLE_COLUMN_TYPE_DOUBLE,
-    "float8",           TABLE_COLUMN_TYPE_DOUBLE,
-    "int8",             TABLE_COLUMN_TYPE_LONG,
-    "integer",          TABLE_COLUMN_TYPE_LONG,
-    "real",             TABLE_COLUMN_TYPE_DOUBLE,
-    "smallint",         TABLE_COLUMN_TYPE_LONG,
-    "text",             TABLE_COLUMN_TYPE_STRING,
+    { "bigint",           TABLE_COLUMN_TYPE_LONG,    },
+    { "bigserial",        TABLE_COLUMN_TYPE_LONG,    },
+    { "boolean",          TABLE_COLUMN_TYPE_BOOLEAN, },
+    { "date",             TABLE_COLUMN_TYPE_STRING,  },
+    { "double precision", TABLE_COLUMN_TYPE_DOUBLE,  },
+    { "float4",           TABLE_COLUMN_TYPE_DOUBLE,  },
+    { "float8",           TABLE_COLUMN_TYPE_DOUBLE,  },
+    { "int8",             TABLE_COLUMN_TYPE_LONG,    },
+    { "integer",          TABLE_COLUMN_TYPE_LONG,    },
+    { "real",             TABLE_COLUMN_TYPE_DOUBLE,  },
+    { "smallint",         TABLE_COLUMN_TYPE_LONG,    },
+    { "text",             TABLE_COLUMN_TYPE_STRING,  },
 };
 static int numTypeConverts = sizeof(psqlTypeConverts) / sizeof(PsqlTypeConvert);
 
@@ -225,7 +225,7 @@ ColumnIterSwitchProc(ClientData clientData, Tcl_Interp *interp,
     if (Tcl_ListObjGetElements(interp, objPtr, &objc, &objv) != TCL_OK) {
 	return TCL_ERROR;
     }
-    if (blt_table_iterate_column_objv(interp, table, objc, objv, iterPtr)
+    if (blt_table_iterate_columns_objv(interp, table, objc, objv, iterPtr)
 	!= TCL_OK) {
 	return TCL_ERROR;
     }
@@ -281,7 +281,7 @@ RowIterSwitchProc(ClientData clientData, Tcl_Interp *interp,
     if (Tcl_ListObjGetElements(interp, objPtr, &objc, &objv) != TCL_OK) {
 	return TCL_ERROR;
     }
-    if (blt_table_iterate_row_objv(interp, table, objc, objv, iterPtr)
+    if (blt_table_iterate_rows_objv(interp, table, objc, objv, iterPtr)
 	!= TCL_OK) {
 	return TCL_ERROR;
     }
@@ -485,8 +485,8 @@ PsqlImportValues(Tcl_Interp *interp, BLT_TABLE table, PGresult *result,
 
 	    value = PQgetvalue(result, i, j);
 	    length = PQgetlength(result, i, j);
-	    if (blt_table_set_string_rep(table, row, cols[j], value, length)
-                != TCL_OK) {
+	    if (blt_table_set_string_rep(interp, table, row, cols[j], value,
+                        length) != TCL_OK) {
 		return TCL_ERROR;
 	    }
 	}
@@ -577,7 +577,7 @@ PsqlImportColumnTypes(Tcl_Interp *interp, BLT_TABLE table, PGconn *conn,
         col = Blt_GetHashValue(hPtr);
         length = PQgetlength(result, i, 1);
         type = PsqlConvertToColumnType(typeName, length);
-        if (blt_table_set_column_type(table, col, type) != TCL_OK) {
+        if (blt_table_set_column_type(interp, table, col, type) != TCL_OK) {
             Blt_DeleteHashTable(&nameTable);
             PQclear(result);
             return TCL_ERROR;           /* Failed to convert column values

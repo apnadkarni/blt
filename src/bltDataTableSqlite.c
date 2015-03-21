@@ -163,7 +163,7 @@ ColumnIterSwitchProc(ClientData clientData, Tcl_Interp *interp,
     if (Tcl_ListObjGetElements(interp, objPtr, &objc, &objv) != TCL_OK) {
 	return TCL_ERROR;
     }
-    if (blt_table_iterate_column_objv(interp, table, objc, objv, iterPtr)
+    if (blt_table_iterate_columns_objv(interp, table, objc, objv, iterPtr)
 	!= TCL_OK) {
 	return TCL_ERROR;
     }
@@ -219,7 +219,7 @@ RowIterSwitchProc(ClientData clientData, Tcl_Interp *interp,
     if (Tcl_ListObjGetElements(interp, objPtr, &objc, &objv) != TCL_OK) {
 	return TCL_ERROR;
     }
-    if (blt_table_iterate_row_objv(interp, table, objc, objv, iterPtr)
+    if (blt_table_iterate_rows_objv(interp, table, objc, objv, iterPtr)
 	!= TCL_OK) {
 	return TCL_ERROR;
     }
@@ -278,7 +278,7 @@ SqliteImportLabel(Tcl_Interp *interp, BLT_TABLE table, BLT_TABLE_COLUMN col,
     }
     type = sqlite3_column_type(stmt, index);
     type = SqliteTypeToColumnType(type);
-    if (blt_table_set_column_type(table, col, type) != TCL_OK) {
+    if (blt_table_set_column_type(interp, table, col, type) != TCL_OK) {
         return TCL_ERROR;
     }
     return TCL_OK;
@@ -309,7 +309,8 @@ SqliteImportRow(Tcl_Interp *interp, BLT_TABLE table, sqlite3_stmt *stmt,
                 long lval;
                 
                 lval = sqlite3_column_int64(stmt, i);
-                if (blt_table_set_long(table, row, cols[i], lval) != TCL_OK) {
+                if (blt_table_set_long(interp, table, row, cols[i], lval)
+                    != TCL_OK) {
                     return TCL_ERROR;
                 }
             }
@@ -319,7 +320,8 @@ SqliteImportRow(Tcl_Interp *interp, BLT_TABLE table, sqlite3_stmt *stmt,
                 double dval;
                 
                 dval = sqlite3_column_double(stmt, i);
-                if (blt_table_set_double(table, row, cols[i], dval) != TCL_OK) {
+                if (blt_table_set_double(interp, table, row, cols[i], dval)
+                    != TCL_OK) {
                     return TCL_ERROR;
                 }
             }
@@ -335,8 +337,8 @@ SqliteImportRow(Tcl_Interp *interp, BLT_TABLE table, sqlite3_stmt *stmt,
                 
                 sval = (const char *)sqlite3_column_text(stmt, i);
                 length = sqlite3_column_bytes(stmt, i);
-                if (blt_table_set_string_rep(table, row, cols[i], sval, length)
-                    != TCL_OK) {
+                if (blt_table_set_string_rep(interp, table, row, cols[i], sval,
+                        length) != TCL_OK) {
                     return TCL_ERROR;
                 }
             }
@@ -578,7 +580,7 @@ SqliteExportValues(Tcl_Interp *interp, sqlite3 *conn, BLT_TABLE table,
                     {
                         long lval;
                         
-                        lval = blt_table_get_long(table, row, col, 0);
+                        lval = blt_table_get_long(interp, table, row, col, 0);
                         sqlite3_bind_int64(stmt, count, lval);
                     }
                     break;
@@ -586,7 +588,7 @@ SqliteExportValues(Tcl_Interp *interp, sqlite3 *conn, BLT_TABLE table,
                     {
                         double dval;
                         
-                        dval = blt_table_get_double(table, row, col);
+                        dval = blt_table_get_double(interp, table, row, col);
                         sqlite3_bind_double(stmt, count, dval);
                     }
                     break;

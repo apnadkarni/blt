@@ -594,7 +594,7 @@ blt_table_name_to_column_type(const char *s)
 static INLINE const char *
 GetValueString(Value *valuePtr)
 {
-    if (valuePtr->string == BLT_TABLE_VALUE_STORE) {
+    if (valuePtr->string == TABLE_VALUE_STORE) {
         return (const char *)valuePtr->store;
     }
     return valuePtr->string;
@@ -603,7 +603,7 @@ GetValueString(Value *valuePtr)
 static INLINE const unsigned char *
 GetValueBytes(Value *valuePtr)
 {
-    if (valuePtr->string == BLT_TABLE_VALUE_STORE) {
+    if (valuePtr->string == TABLE_VALUE_STORE) {
         return (const unsigned char *)valuePtr->store;
     }
     return (const unsigned char *)valuePtr->string;
@@ -643,7 +643,7 @@ static INLINE void
 ResetValue(Value *valuePtr)
 {
     if ((valuePtr->string != NULL) &&
-        (valuePtr->string != BLT_TABLE_VALUE_STORE)) {
+        (valuePtr->string != TABLE_VALUE_STORE)) {
 	Blt_Free(valuePtr->string);
     }
     valuePtr->length = 0;
@@ -768,7 +768,7 @@ SetValueFromObj(Tcl_Interp *interp, BLT_TABLE_COLUMN_TYPE type,
 	break;
     }
     s = Tcl_GetStringFromObj(objPtr, &length);
-    if (length >= BLT_TABLE_VALUE_LENGTH) {
+    if (length >= TABLE_VALUE_LENGTH) {
 	char *string;
 
 	string = Blt_AssertMalloc(length + 1);
@@ -779,7 +779,7 @@ SetValueFromObj(Tcl_Interp *interp, BLT_TABLE_COLUMN_TYPE type,
     } else {
 	strncpy(valuePtr->store, s, length);
 	valuePtr->store[length] = '\0';
-	valuePtr->string = BLT_TABLE_VALUE_STORE;
+	valuePtr->string = TABLE_VALUE_STORE;
         valuePtr->length = length;
     }
     return TCL_OK;
@@ -847,7 +847,7 @@ SetValueFromString(Tcl_Interp *interp, BLT_TABLE_COLUMN_TYPE type,
     }        
 
     ResetValue(valuePtr);
-    if (length >= BLT_TABLE_VALUE_LENGTH) {
+    if (length >= TABLE_VALUE_LENGTH) {
         char *copy;
         
         copy = Blt_AssertMalloc(length + 1);
@@ -858,7 +858,7 @@ SetValueFromString(Tcl_Interp *interp, BLT_TABLE_COLUMN_TYPE type,
     } else {
         strncpy(valuePtr->store, s, length);
         valuePtr->store[length] = '\0';
-        valuePtr->string = BLT_TABLE_VALUE_STORE;
+        valuePtr->string = TABLE_VALUE_STORE;
         valuePtr->length = length;
     }
     if (objPtr != NULL) {
@@ -1440,7 +1440,7 @@ FindLabel(RowColumn *rcPtr, const char *label)
 }
 
 static int
-SetType(Table *tablePtr, struct _BLT_TABLE_COLUMN *colPtr, 
+SetType(Tcl_Interp *interp, Table *tablePtr, struct _BLT_TABLE_COLUMN *colPtr, 
 	BLT_TABLE_COLUMN_TYPE type)
 {
     int i;
@@ -1459,10 +1459,8 @@ SetType(Table *tablePtr, struct _BLT_TABLE_COLUMN *colPtr,
 	    Value value;
             
 	    memset(&value, 0, sizeof(Value));
-	    if (SetValueFromString(tablePtr->interp, type,
-                                   GetValueString(valuePtr),
-                                   GetValueLength(valuePtr),
-                                   &value) != TCL_OK) {
+	    if (SetValueFromString(interp, type, GetValueString(valuePtr),
+                        GetValueLength(valuePtr), &value) != TCL_OK) {
 		return TCL_ERROR;
 	    }
 	    ResetValue(&value);
@@ -1475,10 +1473,8 @@ SetType(Table *tablePtr, struct _BLT_TABLE_COLUMN *colPtr,
 	rowPtr = blt_table_row(tablePtr, i);
 	valuePtr = GetValue(tablePtr, rowPtr, colPtr);
 	if (!IsEmpty(valuePtr)) {
-	    if (SetValueFromString(tablePtr->interp, type,
-                                   GetValueString(valuePtr),
-                                   GetValueLength(valuePtr),
-                                   valuePtr) != TCL_OK) {
+	    if (SetValueFromString(interp, type, GetValueString(valuePtr),
+                GetValueLength(valuePtr), valuePtr) != TCL_OK) {
 		return TCL_ERROR;
 	    }
 	}
@@ -2918,16 +2914,10 @@ blt_table_row_spec(BLT_TABLE table, Tcl_Obj *objPtr, const char **sp)
     } else if ((c == 't') && (strncmp(string, "tag:", 4) == 0)) {
 	*sp = string + 4;
 	return TABLE_SPEC_TAG;
-    } else if (blt_table_get_row_by_label(table, string) != NULL) {
-	Blt_HashTable *tablePtr;
-
-	tablePtr = blt_table_row_get_label_table(table, string);
-	if (tablePtr->numEntries > 1) {
-	    return TABLE_SPEC_LABELS;
-	}
-	return TABLE_SPEC_LABEL;
     } else if (blt_table_get_tagged_rows(table, string) != NULL) {
 	return TABLE_SPEC_TAG;
+    } else if (blt_table_get_row_by_label(table, string) != NULL) {
+	return TABLE_SPEC_LABEL;
     }
     p = strchr(string, '-');
     if (p != NULL) {
@@ -2994,7 +2984,7 @@ blt_table_next_row(Table *tablePtr, Row *rowPtr)
 /*
  *---------------------------------------------------------------------------
  *
- * blt_table_iterate_row --
+ * blt_table_iterate_rows --
  *
  *      Returns the id of the first row derived from the given tag,
  *      label or index represented in objPtr.  
@@ -3007,7 +2997,7 @@ blt_table_next_row(Table *tablePtr, Row *rowPtr)
  *---------------------------------------------------------------------------
  */
 int
-blt_table_iterate_row(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr, 
+blt_table_iterate_rows(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr, 
 		      BLT_TABLE_ITERATOR *iterPtr)
 {
     BLT_TABLE_ROW from, to;
@@ -3052,14 +3042,6 @@ blt_table_iterate_row(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr,
 	return TCL_OK;
 
     case TABLE_SPEC_LABEL:
-	from = blt_table_get_row_by_label(table, tag);
-	index = blt_table_row_index(from);
-	iterPtr->start = index;
-	iterPtr->end = index + 1;
-	iterPtr->numEntries = 1;
-	return TCL_OK;
-
-    case TABLE_SPEC_LABELS:
 	iterPtr->tablePtr = blt_table_row_get_label_table(table, tag);
 	if (iterPtr->tablePtr == NULL) {
 	    if (interp != NULL) {
@@ -3068,7 +3050,7 @@ blt_table_iterate_row(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr,
 	    }
 	    return TCL_ERROR;
 	}
-	iterPtr->type = TABLE_ITERATOR_TAG;
+	iterPtr->type = TABLE_ITERATOR_LABEL;
 	iterPtr->tag = tag;
 	iterPtr->numEntries = iterPtr->tablePtr->numEntries;
 	return TCL_OK;
@@ -3167,7 +3149,7 @@ blt_table_first_tagged_row(BLT_TABLE_ITERATOR *iterPtr)
     case TABLE_ITERATOR_LABEL:
 	{
 	    Blt_HashEntry *hPtr;
-	    
+
 	    hPtr = Blt_FirstHashEntry(iterPtr->tablePtr, &iterPtr->cursor);
 	    if (hPtr == NULL) {
 		return NULL;
@@ -3216,7 +3198,7 @@ blt_table_next_tagged_row(BLT_TABLE_ITERATOR *iterPtr)
     case TABLE_ITERATOR_LABEL:
 	{
 	    Blt_HashEntry *hPtr;
-
+            
 	    hPtr = Blt_NextHashEntry(&iterPtr->cursor); 
 	    if (hPtr == NULL) {
 		return NULL;
@@ -3253,7 +3235,7 @@ blt_table_get_row(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr)
     BLT_TABLE_ITERATOR iter;
     BLT_TABLE_ROW first, next;
 
-    if (blt_table_iterate_row(interp, table, objPtr, &iter) != TCL_OK) {
+    if (blt_table_iterate_rows(interp, table, objPtr, &iter) != TCL_OK) {
 	return NULL;
     }
     first = blt_table_first_tagged_row(&iter);
@@ -3334,7 +3316,7 @@ blt_table_column_spec(BLT_TABLE table, Tcl_Obj *objPtr, const char **sp)
 /*
  *---------------------------------------------------------------------------
  *
- * blt_table_iterate_column --
+ * blt_table_iterate_columns --
  *
  *      Returns the id of the first column derived from the given tag,
  *      label or index represented in objPtr.  
@@ -3347,7 +3329,7 @@ blt_table_column_spec(BLT_TABLE table, Tcl_Obj *objPtr, const char **sp)
  *---------------------------------------------------------------------------
  */
 int
-blt_table_iterate_column(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr, 
+blt_table_iterate_columns(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr, 
 			 BLT_TABLE_ITERATOR *iterPtr)
 {
     BLT_TABLE_COLUMN from, to;
@@ -3578,7 +3560,7 @@ blt_table_get_column(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr)
     BLT_TABLE_ITERATOR iter;
     BLT_TABLE_COLUMN first, next;
 
-    if (blt_table_iterate_column(interp, table, objPtr, &iter) != TCL_OK) {
+    if (blt_table_iterate_columns(interp, table, objPtr, &iter) != TCL_OK) {
 	return NULL;
     }
     first = blt_table_first_tagged_column(&iter);
@@ -3624,7 +3606,7 @@ blt_table_list_columns(Tcl_Interp *interp, BLT_TABLE table, int objc,
 	BLT_TABLE_ITERATOR iter;
 	BLT_TABLE_COLUMN col;
 
-	if (blt_table_iterate_column(interp, table, objv[i], &iter) 
+	if (blt_table_iterate_columns(interp, table, objv[i], &iter) 
 	    != TCL_OK) {
 	    Blt_DeleteHashTable(&cols);
 	    return TCL_ERROR;
@@ -3665,7 +3647,7 @@ blt_table_list_rows(Tcl_Interp *interp, BLT_TABLE table, int objc,
 	BLT_TABLE_ITERATOR iter;
 	BLT_TABLE_ROW row;
 
-	if (blt_table_iterate_row(interp, table, objv[i], &iter) != TCL_OK){
+	if (blt_table_iterate_rows(interp, table, objv[i], &iter) != TCL_OK){
 	    Blt_DeleteHashTable(&rows);
 	    return TCL_ERROR;
 	}
@@ -3685,7 +3667,7 @@ blt_table_list_rows(Tcl_Interp *interp, BLT_TABLE table, int objc,
 }
 
 int
-blt_table_iterate_row_objv(Tcl_Interp *interp, BLT_TABLE table, int objc, 
+blt_table_iterate_rows_objv(Tcl_Interp *interp, BLT_TABLE table, int objc, 
 			  Tcl_Obj *const *objv, BLT_TABLE_ITERATOR *iterPtr)
 {
     Blt_Chain chain;
@@ -3719,7 +3701,7 @@ blt_table_iterate_all_rows(BLT_TABLE table, BLT_TABLE_ITERATOR *iterPtr)
 }
 
 int
-blt_table_iterate_column_objv(Tcl_Interp *interp, BLT_TABLE table, int objc, 
+blt_table_iterate_columns_objv(Tcl_Interp *interp, BLT_TABLE table, int objc, 
 			     Tcl_Obj *const *objv, BLT_TABLE_ITERATOR *iterPtr)
 {
     Blt_Chain chain;
@@ -4472,7 +4454,7 @@ blt_table_set_value(Table *tablePtr, Row *rowPtr, Column *colPtr, Value *newPtr)
 	ResetValue(valuePtr);
 	*valuePtr = *newPtr;            /* Copy the value. */
 	if ((newPtr->string != NULL) &&
-            (newPtr->string != BLT_TABLE_VALUE_STORE)) {
+            (newPtr->string != TABLE_VALUE_STORE)) {
 	    valuePtr->string = Blt_AssertStrdup(newPtr->string);
 	}
 	CallTraces(tablePtr, rowPtr, colPtr, flags);
@@ -4488,13 +4470,12 @@ blt_table_set_value(Table *tablePtr, Row *rowPtr, Column *colPtr, Value *newPtr)
  *
  *      Gets a scalar Tcl_Obj value from the table at the designated row,
  *      column location.  "Read" traces may be fired *before* the value is
- *      retrieved.  If no value exists at that location, *objPtrPtr is set to
- *      NULL.
+ *      retrieved.  If no value exists at that location, the return value
+ *      is NULL.
  *
  * Results:
  *      A standard TCL result.  Returns TCL_OK if successful accessing the
- *      table location.  If an error occurs, TCL_ERROR is returned and an
- *      error message is left in the interpreter.
+ *      table location.  If an error occurs, TCL_ERROR is returned.
  *
  * -------------------------------------------------------------------------- 
  */
@@ -4531,8 +4512,8 @@ blt_table_get_obj(Table *tablePtr, Row *rowPtr, Column *colPtr)
  * -------------------------------------------------------------------------- 
  */
 int
-blt_table_set_obj(Table *tablePtr, Row *rowPtr, Column *colPtr, 
-		 Tcl_Obj *objPtr)
+blt_table_set_obj(Tcl_Interp *interp, Table *tablePtr, Row *rowPtr,
+                  Column *colPtr, Tcl_Obj *objPtr)
 {
     unsigned int flags;
     Value *valuePtr;
@@ -4545,8 +4526,7 @@ blt_table_set_obj(Table *tablePtr, Row *rowPtr, Column *colPtr,
     } else if (IsEmpty(valuePtr)) {
 	flags |= TABLE_TRACE_CREATES;
     } 
-    if (SetValueFromObj(tablePtr->interp, colPtr->type, objPtr, valuePtr) 
-	!= TCL_OK) {
+    if (SetValueFromObj(interp, colPtr->type, objPtr, valuePtr) != TCL_OK) {
 	return TCL_ERROR;
     }
     CallTraces(tablePtr, rowPtr, colPtr, flags);
@@ -5198,13 +5178,13 @@ blt_table_set_column_label(Tcl_Interp *interp, Table *tablePtr, Column *colPtr,
  *---------------------------------------------------------------------------
  */
 int
-blt_table_set_column_type(Table *tablePtr, Column *colPtr, 
+blt_table_set_column_type(Tcl_Interp *interp, Table *tablePtr, Column *colPtr, 
 			  BLT_TABLE_COLUMN_TYPE type)
 {
     if (type == colPtr->type) {
 	return TCL_OK;                  /* Already the requested type. */
     }
-    return SetType(tablePtr, colPtr, type);
+    return SetType(interp, tablePtr, colPtr, type);
 }
 
 /*
@@ -6116,9 +6096,10 @@ blt_table_key_lookup(Tcl_Interp *interp, Table *tablePtr, int objc,
  *
  * blt_table_set_long --
  *
- *      Sets the long interger value of the selected row, column location
- *      in the table.  The row, column location must be within the actual
- *      table limits.
+ *      Sets the double value of the selected row, column location in the
+ *      table.  No checking is done the see if row and column are valid
+ *      (it's assumed they are).  The column type must be "integer" or
+ *      "string", otherwise an error is returned.
  *
  * Results:
  *      Returns a standard TCL result.
@@ -6129,26 +6110,30 @@ blt_table_key_lookup(Tcl_Interp *interp, Table *tablePtr, int objc,
  *---------------------------------------------------------------------------
  */
 int
-blt_table_set_long(Table *tablePtr, Row *rowPtr, Column *colPtr, long value)
+blt_table_set_long(Tcl_Interp *interp, Table *tablePtr, Row *rowPtr,
+                   Column *colPtr, long value)
 {
     Value *valuePtr;
     char string[200];
 
-    if (colPtr->type != TABLE_COLUMN_TYPE_LONG) {
-	Tcl_AppendResult(tablePtr->interp, "wrong column type \"",
-		blt_table_column_type_to_name(colPtr->type), 
-		"\": should be \"integer\"", (char *)NULL);
-	return TCL_ERROR;
+    if ((colPtr->type != TABLE_COLUMN_TYPE_LONG) &&
+        (colPtr->type != TABLE_COLUMN_TYPE_STRING)) {
+        if (interp != NULL) {
+            Tcl_AppendResult(interp, "wrong column type \"",
+                             blt_table_column_type_to_name(colPtr->type), 
+                             "\": should be \"integer\"", (char *)NULL);
+        }
+        return TCL_ERROR;
     }
     valuePtr = GetValue(tablePtr, rowPtr, colPtr);
     ResetValue(valuePtr);
     valuePtr->datum.l = value;
     valuePtr->length = sprintf(string, "%ld", value);
-    if (strlen(string) >= BLT_TABLE_VALUE_LENGTH) {
+    if (strlen(string) >= TABLE_VALUE_LENGTH) {
 	valuePtr->string = Blt_AssertStrdup(string);
     } else {
 	strcpy(valuePtr->store, string);
-	valuePtr->string = BLT_TABLE_VALUE_STORE;
+	valuePtr->string = TABLE_VALUE_STORE;
     }
     /* Indicate the keytables need to be regenerated. */
     if (colPtr->flags & TABLE_COLUMN_PRIMARY_KEY) {
@@ -6162,9 +6147,10 @@ blt_table_set_long(Table *tablePtr, Row *rowPtr, Column *colPtr, long value)
  *
  * blt_table_set_boolean --
  *
- *      Sets the boolean value of the selected row, column location
- *      in the table.  The row, column location must be within the actual
- *      table limits.
+ *      Sets the double value of the selected row, column location in the
+ *      table.  No checking is done the see if row and column are valid
+ *      (it's assumed they are).  The column type must be "boolean" or
+ *      "string", otherwise an error is returned.
  *
  * Results:
  *      Returns a standard TCL result.
@@ -6175,22 +6161,26 @@ blt_table_set_long(Table *tablePtr, Row *rowPtr, Column *colPtr, long value)
  *---------------------------------------------------------------------------
  */
 int
-blt_table_set_boolean(Table *tablePtr, Row *rowPtr, Column *colPtr, long value)
+blt_table_set_boolean(Tcl_Interp *interp, Table *tablePtr, Row *rowPtr,
+                      Column *colPtr, int value)
 {
     Value *valuePtr;
     char string[200];
 
-    if (colPtr->type != TABLE_COLUMN_TYPE_LONG) {
-	Tcl_AppendResult(tablePtr->interp, "wrong column type \"",
-		blt_table_column_type_to_name(colPtr->type), 
-		"\": should be \"boolean\"", (char *)NULL);
+    if ((colPtr->type != TABLE_COLUMN_TYPE_BOOLEAN) &&
+        (colPtr->type != TABLE_COLUMN_TYPE_STRING)) {
+        if (interp != NULL) {
+            Tcl_AppendResult(interp, "wrong column type \"",
+                             blt_table_column_type_to_name(colPtr->type), 
+                             "\": should be \"boolean\"", (char *)NULL);
+        }
 	return TCL_ERROR;
     }
     valuePtr = GetValue(tablePtr, rowPtr, colPtr);
     ResetValue(valuePtr);
-    valuePtr->datum.l = value;
-    valuePtr->length = sprintf(string, "%ld", value);
-    if (strlen(string) >= BLT_TABLE_VALUE_LENGTH) {
+    valuePtr->datum.l = (long)value;
+    valuePtr->length = sprintf(string, "%d", value);
+    if (strlen(string) >= TABLE_VALUE_LENGTH) {
 	valuePtr->string = Blt_AssertStrdup(string);
     } else {
 	strcpy(valuePtr->store, string);
@@ -6220,15 +6210,15 @@ blt_table_set_boolean(Table *tablePtr, Row *rowPtr, Column *colPtr, long value)
  *---------------------------------------------------------------------------
  */
 int
-blt_table_set_string_rep(Table *tablePtr, Row *rowPtr, Column *colPtr, 
-		     const char *string, int length)
+blt_table_set_string_rep(Tcl_Interp *interp, Table *tablePtr, Row *rowPtr,
+                         Column *colPtr, const char *string, int length)
 {
     Value *valuePtr;
 
     valuePtr = GetValue(tablePtr, rowPtr, colPtr);
     ResetValue(valuePtr);
-    if (SetValueFromString(tablePtr->interp, colPtr->type, string, length, 
-		valuePtr) != TCL_OK) {
+    if (SetValueFromString(interp, colPtr->type, string, length, valuePtr)
+        != TCL_OK) {
 	return TCL_ERROR;
     }
     /* Indicate the keytables need to be regenerated. */
@@ -6244,8 +6234,10 @@ blt_table_set_string_rep(Table *tablePtr, Row *rowPtr, Column *colPtr,
  *
  * blt_table_set_string --
  *
- *      Sets the value of the selected row, column location in the table.
- *      The row, column location must be within the actual table limits.
+ *      Sets the string value of the selected row, column location in the
+ *      table.  No checking is done the see if row and column are valid
+ *      (it's assumed they are).  The column type must be "string",
+ *      otherwise an error is returned.
  *
  * Results:
  *      Returns a standard TCL result.
@@ -6256,15 +6248,18 @@ blt_table_set_string_rep(Table *tablePtr, Row *rowPtr, Column *colPtr,
  *---------------------------------------------------------------------------
  */
 int
-blt_table_set_string(Table *tablePtr, Row *rowPtr, Column *colPtr, 
-		     const char *string, int length)
+blt_table_set_string(Tcl_Interp *interp, Table *tablePtr, Row *rowPtr,
+                     Column *colPtr, const char *string, int length)
 {
     if (colPtr->type != TABLE_COLUMN_TYPE_STRING) {
-	Tcl_AppendResult(tablePtr->interp, "column \"", colPtr->label, 
+        if (interp != NULL) {
+            Tcl_AppendResult(interp, "column \"", colPtr->label, 
 			 "\" is not type string.", (char *)NULL);
+        }
 	return TCL_ERROR;
     }
-    return blt_table_set_string_rep(tablePtr, rowPtr, colPtr, string, length);
+    return blt_table_set_string_rep(interp, tablePtr, rowPtr, colPtr, string,
+        length);
 }
 
 /*
@@ -6272,8 +6267,10 @@ blt_table_set_string(Table *tablePtr, Row *rowPtr, Column *colPtr,
  *
  * blt_table_append_string --
  *
- *      Sets the value of the selected row, column location in the table.
- *      The row, column location must be within the actual table limits.
+ *      Append the string value of the selected row, column location in the
+ *      table.  No checking is done the see if row and column are valid
+ *      (it's assumed they are).  After the string is appended, the column 
+ *      is reconverted to its designated type.
  *
  * Results:
  *      Returns a standard TCL result.
@@ -6340,7 +6337,7 @@ blt_table_append_string(Tcl_Interp *interp, Table *tablePtr, Row *rowPtr,
     }
     s = Tcl_GetStringFromObj(objPtr, &length);
     ResetValue(valuePtr);
-    if (length >= BLT_TABLE_VALUE_LENGTH) {
+    if (length >= TABLE_VALUE_LENGTH) {
 	char *string;
 
 	string = Blt_AssertMalloc(length + 1);
@@ -6351,7 +6348,7 @@ blt_table_append_string(Tcl_Interp *interp, Table *tablePtr, Row *rowPtr,
     } else {
 	strncpy(valuePtr->store, s, length);
 	valuePtr->store[length] = '\0';
-	valuePtr->string = BLT_TABLE_VALUE_STORE;
+	valuePtr->string = TABLE_VALUE_STORE;
         valuePtr->length = length;
     }
     Tcl_DecrRefCount(objPtr);
@@ -6368,8 +6365,10 @@ blt_table_append_string(Tcl_Interp *interp, Table *tablePtr, Row *rowPtr,
  *
  * blt_table_set_double --
  *
- *      Sets the value of the selected row, column location in the table.
- *      The row, column location must be within the actual table limits.
+ *      Sets the double value of the selected row, column location in the
+ *      table.  No checking is done the see if row and column are valid
+ *      (it's assumed they are).  The column type must be "double", "time",
+ *      or "string", otherwise an error is returned.
  *
  * Results:
  *      Returns a standard TCL result.
@@ -6377,7 +6376,8 @@ blt_table_append_string(Tcl_Interp *interp, Table *tablePtr, Row *rowPtr,
  *---------------------------------------------------------------------------
  */
 int
-blt_table_set_double(Table *tablePtr, Row *rowPtr, Column *colPtr, double value)
+blt_table_set_double(Tcl_Interp *interp, Table *tablePtr, Row *rowPtr,
+                     Column *colPtr, double value)
 {
     Value *valuePtr;
     char string[200];
@@ -6385,8 +6385,10 @@ blt_table_set_double(Table *tablePtr, Row *rowPtr, Column *colPtr, double value)
     if ((colPtr->type != TABLE_COLUMN_TYPE_DOUBLE) &&
 	(colPtr->type != TABLE_COLUMN_TYPE_STRING) &&
 	(colPtr->type != TABLE_COLUMN_TYPE_TIME)) {
-	Tcl_AppendResult(tablePtr->interp, "column \"", colPtr->label, 
-			 "\" is not type double.", (char *)NULL);
+        if (interp != NULL) {
+            Tcl_AppendResult(interp, "column \"", colPtr->label,
+                             "\" is not type double.", (char *)NULL);
+        }
 	return TCL_ERROR;
     }
     valuePtr = GetValue(tablePtr, rowPtr, colPtr);
@@ -6394,11 +6396,11 @@ blt_table_set_double(Table *tablePtr, Row *rowPtr, Column *colPtr, double value)
     if (!isnan(value)) {
 	valuePtr->datum.d = value;
 	valuePtr->length = sprintf(string, "%.17g", value);
-	if (strlen(string) >= BLT_TABLE_VALUE_LENGTH) {
+	if (strlen(string) >= TABLE_VALUE_LENGTH) {
 	    valuePtr->string = Blt_AssertStrdup(string);
 	} else {
 	    strcpy(valuePtr->store, string);
-	    valuePtr->string = BLT_TABLE_VALUE_STORE;
+	    valuePtr->string = TABLE_VALUE_STORE;
 	}
     }
     /* Indicate the keytables need to be regenerated. */
@@ -6414,32 +6416,36 @@ blt_table_set_double(Table *tablePtr, Row *rowPtr, Column *colPtr, double value)
  *
  * blt_table_set_bytes --
  *
- *      Sets the value of the selected row, column location in the table.
- *      The row, column location must be within the actual table limits.
+ *      Sets the blob value of the selected row, column location in the
+ *      table.  No checking is done the see if row and column are valid
+ *      (it's assumed they are).  The column type must be "blob" or an
+ *      error is returned.
  *
  * Results:
  *      Returns a standard TCL result.
  *
  * Side Effects:
- *      New tuples may be allocated created.
+ *      New tuples may be allocated created.  
  *
  *---------------------------------------------------------------------------
  */
 int
-blt_table_set_bytes(Table *tablePtr, Row *rowPtr, Column *colPtr, 
-		     const unsigned char *bytes, int numBytes)
+blt_table_set_bytes(Tcl_Interp *interp, Table *tablePtr, Row *rowPtr,
+                    Column *colPtr, const unsigned char *bytes, int numBytes)
 {
     Value *valuePtr;
 
     if (colPtr->type != TABLE_COLUMN_TYPE_BLOB) {
-	Tcl_AppendResult(tablePtr->interp, "column \"", colPtr->label, 
+        if (interp != NULL) {
+            Tcl_AppendResult(interp, "column \"", colPtr->label, 
 			 "\" is not type blob.", (char *)NULL);
+        }
 	return TCL_ERROR;
     }
     valuePtr = GetValue(tablePtr, rowPtr, colPtr);
     ResetValue(valuePtr);
-    if (SetValueFromString(tablePtr->interp, colPtr->type, (const char *)bytes,
-                numBytes, valuePtr) != TCL_OK) {
+    if (SetValueFromString(interp, colPtr->type, (const char *)bytes, numBytes,
+                           valuePtr) != TCL_OK) {
 	return TCL_ERROR;
     }
     /* Indicate the keytables need to be regenerated. */
@@ -6454,8 +6460,10 @@ blt_table_set_bytes(Table *tablePtr, Row *rowPtr, Column *colPtr,
  *
  * blt_table_get_string --
  *
- *      Sets the value of the selected row, column location in the table.
- *      The row, column location must be within the actual table limits.
+ *      Retrieves the string value of the selected row, column location in
+ *      the table.  No checking is done the see if row and column are valid
+ *      (it's assumed they are).  The current string representation of the
+ *      value is returned.
  *
  * Results:
  *      Returns a string value.  If the value is empty, the default value 
@@ -6480,9 +6488,10 @@ blt_table_get_string(Table *tablePtr, Row *rowPtr, Column *colPtr)
  *
  * blt_table_get_double --
  *
- *      Gets the double value of the selected row, column location in the
- *      table.  The row, column location must be within the actual table
- *      limits.
+ *      Retrieves the double value of the selected row, column location in
+ *      the table.  No checking is done the see if row and column are valid
+ *      (it's assumed they are).  If the current type of the column isn't
+ *      "double", the double value is computed.
  *
  * Results:
  *      Returns a double value.  If the value is empty, the default value 
@@ -6491,7 +6500,8 @@ blt_table_get_string(Table *tablePtr, Row *rowPtr, Column *colPtr)
  *---------------------------------------------------------------------------
  */
 double
-blt_table_get_double(Table *tablePtr, Row *rowPtr, Column *colPtr)
+blt_table_get_double(Tcl_Interp *interp, Table *tablePtr, Row *rowPtr,
+                     Column *colPtr)
 {
     Value *valuePtr;
     double d;
@@ -6504,8 +6514,8 @@ blt_table_get_double(Table *tablePtr, Row *rowPtr, Column *colPtr)
 	(colPtr->type == TABLE_COLUMN_TYPE_TIME)) {
 	return valuePtr->datum.d;
     }
-    if (Blt_GetDoubleFromString(tablePtr->interp, GetValueString(valuePtr),
-                &d) != TCL_OK) {
+    if (Blt_GetDoubleFromString(interp, GetValueString(valuePtr), &d)
+        != TCL_OK) {
 	return Blt_NaN();
     }
     return d;
@@ -6516,9 +6526,10 @@ blt_table_get_double(Table *tablePtr, Row *rowPtr, Column *colPtr)
  *
  * blt_table_get_long --
  *
- *      Gets the long integer value of the selected row, column location in
- *      the table.  The row, column location must be within the actual
- *      table limits.
+ *      Retrieves the long integer value of the selected row, column
+ *      location in the table.  No checking is done the see if row and
+ *      column are valid (it's assumed they are).  If the current type of
+ *      the column isn't "integer", the long value is computed.
  *
  * Results:
  *      Returns a long value.  If the value is empty, the default value 
@@ -6527,7 +6538,8 @@ blt_table_get_double(Table *tablePtr, Row *rowPtr, Column *colPtr)
  *---------------------------------------------------------------------------
  */
 long
-blt_table_get_long(Table *tablePtr, Row *rowPtr, Column *colPtr, long defVal)
+blt_table_get_long(Tcl_Interp *interp, Table *tablePtr, Row *rowPtr,
+                   Column *colPtr, long defVal)
 {
     Value *valuePtr;
     long l;
@@ -6539,9 +6551,44 @@ blt_table_get_long(Table *tablePtr, Row *rowPtr, Column *colPtr, long defVal)
     if (colPtr->type == TABLE_COLUMN_TYPE_LONG) {
 	return valuePtr->datum.l;
     }
-    if (Blt_GetLong(tablePtr->interp, GetValueString(valuePtr), &l)
-        != TCL_OK) {
+    if (Blt_GetLong(interp, GetValueString(valuePtr), &l) != TCL_OK) {
 	return TCL_ERROR;
     }
     return l;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * blt_table_get_boolean --
+ *
+ *      Retrieves the boolean integer value of the selected row, column
+ *      location in the table.  No checking is done the see if row and
+ *      column are valid (it's assumed they are).  If the current type of
+ *      the column isn't "boolean", the boolean value is computed.
+ *
+ * Results:
+ *      Returns a boolean value.  If the value is empty, the default value 
+ *      is returned.
+ *
+ *---------------------------------------------------------------------------
+ */
+int
+blt_table_get_boolean(Tcl_Interp *interp, Table *tablePtr, Row *rowPtr,
+                      Column *colPtr, int defVal)
+{
+    Value *valuePtr;
+    int state;
+
+    valuePtr = GetValue(tablePtr, rowPtr, colPtr);
+    if (IsEmpty(valuePtr)) {
+	return defVal;
+    }
+    if (colPtr->type == TABLE_COLUMN_TYPE_BOOLEAN) {
+	return (int)valuePtr->datum.l;
+    }
+    if (Tcl_GetBoolean(interp, GetValueString(valuePtr), &state) != TCL_OK) {
+	return TCL_ERROR;
+    }
+    return state;
 }
