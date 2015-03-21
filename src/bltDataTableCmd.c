@@ -7702,7 +7702,6 @@ TraceCellOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	Blt_HashEntry *hPtr;
 
 	do {
-            fprintf(stderr, "3. nextTraceId=%d\n", cmdPtr->nextTraceId);
 	    Blt_FormatString(traceId, 200, "trace%d", cmdPtr->nextTraceId);
             cmdPtr->nextTraceId++;
 	    hPtr = Blt_CreateHashEntry(&cmdPtr->traceTable, traceId, &isNew);
@@ -7809,7 +7808,6 @@ TraceColumnOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	char traceId[200];
 	int isNew;
 
-        fprintf(stderr, "1. nextTraceId=%d\n", cmdPtr->nextTraceId);
 	Blt_FormatString(traceId, 200, "trace%d", cmdPtr->nextTraceId);
         cmdPtr->nextTraceId++;
 	tracePtr->hPtr = Blt_CreateHashEntry(&cmdPtr->traceTable, traceId, 
@@ -8034,7 +8032,6 @@ TraceRowOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	char traceId[200];
 	int isNew;
 
-        fprintf(stderr, "2. nextTraceId=%d\n", cmdPtr->nextTraceId);
 	Blt_FormatString(traceId, 200, "trace%d", cmdPtr->nextTraceId);
         cmdPtr->nextTraceId++;
 	tracePtr->hPtr = Blt_CreateHashEntry(&cmdPtr->traceTable, traceId, 
