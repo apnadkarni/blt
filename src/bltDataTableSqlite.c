@@ -230,38 +230,39 @@ static BLT_TABLE_COLUMN_TYPE
 SqliteTypeToColumnType(int type) 
 {
     switch(type) {
-    case SQLITE_BLOB: 
+    case SQLITE_BLOB:                   /* 4 */
 	return TABLE_COLUMN_TYPE_BLOB;
-    case SQLITE_INTEGER: 
+    case SQLITE_INTEGER:                /* 1 */
         return TABLE_COLUMN_TYPE_LONG;
-    case SQLITE_FLOAT: 
+    case SQLITE_FLOAT:                  /* 2 */
 	return TABLE_COLUMN_TYPE_DOUBLE;
-    case SQLITE_NULL: 
+    case SQLITE_NULL:                   /* 0 */
         return TABLE_COLUMN_TYPE_STRING;
+    case SQLITE_TEXT:                   /* 3 */
     default: 
         return TABLE_COLUMN_TYPE_STRING;
     }
 }
 
 static int
-SqliteConnect(Tcl_Interp *interp, const char *fileName, sqlite3 **dbPtr)
+SqliteConnect(Tcl_Interp *interp, const char *fileName, sqlite3 **connPtr)
 {
-    sqlite3  *db;			/* Connection handler. */
+    sqlite3  *conn;			/* Connection handler. */
 
-    if (sqlite3_open(fileName, &db) != SQLITE_OK) {
+    if (sqlite3_open(fileName, &conn) != SQLITE_OK) {
 	Tcl_AppendResult(interp, "can't open sqlite database", "\"",
-                fileName, "\": ", sqlite3_errmsg(db), (char *)NULL);
-	sqlite3_close(db);
+                fileName, "\": ", sqlite3_errmsg(conn), (char *)NULL);
+	sqlite3_close(conn);
 	return TCL_ERROR;
     }
-    *dbPtr = db;
+    *connPtr = conn;
     return TCL_OK;
 }
 
 static void
-SqliteDisconnect(sqlite3 *db) 
+SqliteDisconnect(sqlite3 *conn) 
 {
-    sqlite3_close(db);
+    sqlite3_close(conn);
 }
 
 static int
@@ -345,7 +346,7 @@ SqliteImportRow(Tcl_Interp *interp, BLT_TABLE table, sqlite3_stmt *stmt,
 }
 
 static int
-SqliteImport(Tcl_Interp *interp, BLT_TABLE table, sqlite3 *db, 
+SqliteImport(Tcl_Interp *interp, BLT_TABLE table, sqlite3 *conn, 
              ImportArgs *argsPtr) 
 {
     BLT_TABLE_COLUMN *cols;
@@ -357,19 +358,19 @@ SqliteImport(Tcl_Interp *interp, BLT_TABLE table, sqlite3 *db,
 
     stmt = NULL;
     query = Tcl_GetStringFromObj(argsPtr->queryObjPtr, &length);
-    if (sqlite3_prepare_v2(db, query, length, &stmt, &left) != SQLITE_OK) {
+    if (sqlite3_prepare_v2(conn, query, length, &stmt, &left) != SQLITE_OK) {
         Tcl_AppendResult(interp, "error in query \"", query, "\": ", 
-                         sqlite3_errmsg(db), (char *)NULL);
+                         sqlite3_errmsg(conn), (char *)NULL);
         return TCL_ERROR;
     }
     if (stmt == NULL) {
         Tcl_AppendResult(interp, "empty statement in query \"", query, "\": ", 
-                         sqlite3_errmsg(db), (char *)NULL);
+                         sqlite3_errmsg(conn), (char *)NULL);
         return TCL_ERROR;
     }
     if ((left != NULL) && (left[0] != '\0')) {
         Tcl_AppendResult(interp, "extra statements follow query \"", left,
-                         "\": ", sqlite3_errmsg(db), (char *)NULL);
+                         "\": ", sqlite3_errmsg(conn), (char *)NULL);
         return TCL_ERROR;
     }
     numColumns = sqlite3_column_count(stmt);
@@ -406,7 +407,7 @@ SqliteImport(Tcl_Interp *interp, BLT_TABLE table, sqlite3 *db,
             }
         } else if (result != SQLITE_DONE) {
             Tcl_AppendResult(interp, "step failed \": ", 
-                             sqlite3_errmsg(db), (char *)NULL);
+                             sqlite3_errmsg(conn), (char *)NULL);
             goto error;
         }
     } while ((result == SQLITE_OK) || (result == SQLITE_ROW)) ;
@@ -424,7 +425,7 @@ SqliteImport(Tcl_Interp *interp, BLT_TABLE table, sqlite3 *db,
 }
 
 static int
-SqliteCreateTable(Tcl_Interp *interp, sqlite3 *db, BLT_TABLE table,
+SqliteCreateTable(Tcl_Interp *interp, sqlite3 *conn, BLT_TABLE table,
                   ExportArgs *argsPtr)
 {
     BLT_TABLE_COLUMN col;
@@ -454,11 +455,15 @@ SqliteCreateTable(Tcl_Interp *interp, sqlite3 *db, BLT_TABLE table,
         }
         Blt_DBuffer_Format(dbuffer, "[%s] ", label);
         switch(type) {
+        case TABLE_COLUMN_TYPE_BOOLEAN:
         case TABLE_COLUMN_TYPE_LONG:
             Blt_DBuffer_Format(dbuffer, "INTEGER");     break;
         case TABLE_COLUMN_TYPE_DOUBLE:
-            Blt_DBuffer_Format(dbuffer, "FLOAT");       break;
+            Blt_DBuffer_Format(dbuffer, "REAL");        break;
+        case TABLE_COLUMN_TYPE_BLOB:
+            Blt_DBuffer_Format(dbuffer, "BLOB");        break;
         default:
+        case TABLE_COLUMN_TYPE_TIME:
         case TABLE_COLUMN_TYPE_STRING:
             Blt_DBuffer_Format(dbuffer, "TEXT");        break;
         }
@@ -467,10 +472,10 @@ SqliteCreateTable(Tcl_Interp *interp, sqlite3 *db, BLT_TABLE table,
     Blt_DBuffer_Format(dbuffer, ");"); 
     query = (const char *)Blt_DBuffer_String(dbuffer);
     length = Blt_DBuffer_Length(dbuffer);
-    result = sqlite3_prepare_v2(db, query, length, &stmt, NULL);
+    result = sqlite3_prepare_v2(conn, query, length, &stmt, NULL);
     if (result != SQLITE_OK) {
         Tcl_AppendResult(interp, "error in table create \"", query, "\": ", 
-                         sqlite3_errmsg(db), (char *)NULL);
+                         sqlite3_errmsg(conn), (char *)NULL);
     }
     Blt_DBuffer_Destroy(dbuffer);
     if (result != SQLITE_OK) {
@@ -490,7 +495,7 @@ SqliteCreateTable(Tcl_Interp *interp, sqlite3 *db, BLT_TABLE table,
 }
 
 static int
-SqliteExportValues(Tcl_Interp *interp, sqlite3 *db, BLT_TABLE table,
+SqliteExportValues(Tcl_Interp *interp, sqlite3 *conn, BLT_TABLE table,
                    ExportArgs *argsPtr)
 {
     BLT_TABLE_COLUMN col;
@@ -531,17 +536,17 @@ SqliteExportValues(Tcl_Interp *interp, sqlite3 *db, BLT_TABLE table,
     Blt_DBuffer_Destroy(dbuffer2);
     query = Blt_DBuffer_String(dbuffer);
     length = Blt_DBuffer_Length(dbuffer);
-    result = sqlite3_prepare_v2(db, query, length, &stmt, NULL);
+    result = sqlite3_prepare_v2(conn, query, length, &stmt, NULL);
 
     if (result != SQLITE_OK) {
         Tcl_AppendResult(interp, "error in insert statment \"", query, "\": ", 
-                         sqlite3_errmsg(db), (char *)NULL);
+                         sqlite3_errmsg(conn), (char *)NULL);
         Blt_DBuffer_Destroy(dbuffer);
         goto error;
     }
     if (stmt == NULL) {
         Tcl_AppendResult(interp, "empty statement in query \"", query, "\": ", 
-                         sqlite3_errmsg(db), (char *)NULL);
+                         sqlite3_errmsg(conn), (char *)NULL);
         Blt_DBuffer_Destroy(dbuffer);
         goto error;
     }
@@ -569,6 +574,7 @@ SqliteExportValues(Tcl_Interp *interp, sqlite3 *db, BLT_TABLE table,
                 type = blt_table_column_type(col);
                 switch(type) {
                 case TABLE_COLUMN_TYPE_LONG:
+                case TABLE_COLUMN_TYPE_BOOLEAN:
                     {
                         long lval;
                         
@@ -616,7 +622,7 @@ ImportSqliteProc(BLT_TABLE table, Tcl_Interp *interp, int objc,
 		Tcl_Obj *const *objv)
 {
     ImportArgs args;
-    sqlite3 *db;
+    sqlite3 *conn;
     const char *fileName;
     int result;
     
@@ -633,13 +639,13 @@ ImportSqliteProc(BLT_TABLE table, Tcl_Interp *interp, int objc,
         Tcl_AppendResult(interp, "no -query switch found.", (char *)NULL);
 	return TCL_ERROR;
     }
-    db = NULL;                          /* Suppress compiler warning. */
+    conn = NULL;                          /* Suppress compiler warning. */
     fileName = Tcl_GetString(args.fileObjPtr);
-    result = SqliteConnect(interp, fileName, &db);
+    result = SqliteConnect(interp, fileName, &conn);
     if (result == TCL_OK) {
-        result = SqliteImport(interp, table, db, &args);
+        result = SqliteImport(interp, table, conn, &args);
     }
-    SqliteDisconnect(db);
+    SqliteDisconnect(conn);
     Blt_FreeSwitches(importSwitches, &args, 0);
     return result;
 }
@@ -649,7 +655,7 @@ ExportSqliteProc(BLT_TABLE table, Tcl_Interp *interp, int objc,
 		Tcl_Obj *const *objv)
 {
     ExportArgs args;
-    sqlite3 *db;
+    sqlite3 *conn;
     int result;
     const char *fileName;
     
@@ -675,16 +681,16 @@ ExportSqliteProc(BLT_TABLE table, Tcl_Interp *interp, int objc,
         Tcl_AppendResult(interp, "-file switch is required.", (char *)NULL);
         return TCL_ERROR;
     }
-    db = NULL;                          /* Suppress compiler warning. */
+    conn = NULL;                          /* Suppress compiler warning. */
     fileName = Tcl_GetString(args.fileObjPtr);
-    result = SqliteConnect(interp, fileName, &db);
+    result = SqliteConnect(interp, fileName, &conn);
     if (result == TCL_OK) {
-        result = SqliteCreateTable(interp, db, table, &args);
+        result = SqliteCreateTable(interp, conn, table, &args);
     }
     if (result == TCL_OK) {
-        result = SqliteExportValues(interp, db, table, &args);
+        result = SqliteExportValues(interp, conn, table, &args);
     }
-    SqliteDisconnect(db);
+    SqliteDisconnect(conn);
     Blt_FreeSwitches(exportSwitches, &args, 0);
     return result;
 }

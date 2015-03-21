@@ -102,7 +102,7 @@ static Blt_SwitchSpec importSwitches[] =
 	Blt_Offset(ImportArgs, params.options), 0, 0},
     {BLT_SWITCH_STRING,    "-query",  "string", (char *)NULL,
 	Blt_Offset(ImportArgs, query), 0, 0},
-    {BLT_SWITCH_STRING, "-name",        "tableName", (char *)NULL,
+    {BLT_SWITCH_STRING, "-table",     "tableName", (char *)NULL,
 	Blt_Offset(ImportArgs, table), 0, 0},
     {BLT_SWITCH_END}
 };
@@ -148,13 +148,34 @@ static Blt_SwitchSpec exportSwitches[] =
 	Blt_Offset(ExportArgs, ci),   0, 0, &columnIterSwitch},
     {BLT_SWITCH_CUSTOM, "-rows",      "rows", (char *)NULL,
 	Blt_Offset(ExportArgs, ri),   0, 0, &rowIterSwitch},
-    {BLT_SWITCH_STRING, "-name",        "tableName", (char *)NULL,
+    {BLT_SWITCH_STRING, "-table",    "tableName", (char *)NULL,
 	Blt_Offset(ExportArgs, table), 0, 0},
     {BLT_SWITCH_END}
 };
 
 static BLT_TABLE_EXPORT_PROC ExportPsqlProc;
 static BLT_TABLE_IMPORT_PROC ImportPsqlProc;
+
+typedef struct PsqlTypeConvert {
+    const char *string;
+    BLT_TABLE_COLUMN_TYPE type;
+} PsqlTypeConvert;
+
+static PsqlTypeConvert psqlTypeConverts[] = {
+    "bigint",           TABLE_COLUMN_TYPE_LONG,
+    "bigserial",        TABLE_COLUMN_TYPE_LONG,
+    "boolean",          TABLE_COLUMN_TYPE_BOOLEAN,
+    "date",             TABLE_COLUMN_TYPE_STRING,
+    "double precision", TABLE_COLUMN_TYPE_DOUBLE,
+    "float4",           TABLE_COLUMN_TYPE_DOUBLE,
+    "float8",           TABLE_COLUMN_TYPE_DOUBLE,
+    "int8",             TABLE_COLUMN_TYPE_LONG,
+    "integer",          TABLE_COLUMN_TYPE_LONG,
+    "real",             TABLE_COLUMN_TYPE_DOUBLE,
+    "smallint",         TABLE_COLUMN_TYPE_LONG,
+    "text",             TABLE_COLUMN_TYPE_STRING,
+};
+static int numTypeConverts = sizeof(psqlTypeConverts) / sizeof(PsqlTypeConvert);
 
 /*
  *---------------------------------------------------------------------------
@@ -283,8 +304,26 @@ RowIterSwitchProc(ClientData clientData, Tcl_Interp *interp,
 static BLT_TABLE_COLUMN_TYPE
 PsqlConvertToColumnType(const char *string, size_t length)
 {
-    fprintf(stderr, "Postgres column type is \"%s\"\n", string);
-    return TABLE_COLUMN_TYPE_STRING;
+    int low, high;
+
+    low = 0;
+    high = numTypeConverts - 1;
+    while (low <= high) {
+	int comp;
+	int median;
+	
+	median = (low + high) >> 1;
+	comp = strcasecmp(string, psqlTypeConverts[median].string);
+	if (comp == 0) {
+	    return psqlTypeConverts[median].type;
+	}
+	if (comp < 0) {
+	    high = median - 1;
+	} else if (comp > 0) {
+	    low = median + 1;
+	}
+    }
+    return TABLE_COLUMN_TYPE_STRING;        /* Default to string. */
 }
 
 /*
@@ -506,9 +545,9 @@ PsqlImportColumnTypes(Tcl_Interp *interp, BLT_TABLE table, PGconn *conn,
 
     /* Create a hash table of the new column labels. We'll use it to search
      * for column_name entries that we get back from postgres. [Note: We
-     * could use the table itself to look up column names, but there could
-     * be duplicate column names and we don't want to reset the type of an
-     * existing column.] */
+     * could use the datatable itself to look up column names, but there
+     * could be duplicate column names and we don't want to reset the type
+     * of an existing column.] */
     Blt_InitHashTable(&nameTable, BLT_STRING_KEYS);
     for (i = 0; i < numCols; i++) {
         Blt_HashEntry *hPtr;
@@ -520,26 +559,27 @@ PsqlImportColumnTypes(Tcl_Interp *interp, BLT_TABLE table, PGconn *conn,
         assert(isNew);
         Blt_SetHashValue(hPtr, cols[i]);
     }            
-    for (i = 0; i < numCols; i++) {
+    for (i = 0; i < numRows; i++) {
         BLT_TABLE_COLUMN col;
         BLT_TABLE_COLUMN_TYPE type;
         Blt_HashEntry *hPtr;
-        const char *label, *string;
+        const char *label, *typeName;
         int length;
         
         /* Column label */
         label = PQgetvalue(result, i, 0);
+        typeName = PQgetvalue(result, i, 1);
         hPtr = Blt_FindHashEntry(&nameTable, label);
         if (hPtr == NULL) {
             continue;                   /* Not a column we know about. */
         }
         /* Column type */
         col = Blt_GetHashValue(hPtr);
-        string = PQgetvalue(result, i, 1);
         length = PQgetlength(result, i, 1);
-        type = PsqlConvertToColumnType(string, length);
+        type = PsqlConvertToColumnType(typeName, length);
         if (blt_table_set_column_type(table, col, type) != TCL_OK) {
             Blt_DeleteHashTable(&nameTable);
+            PQclear(result);
             return TCL_ERROR;           /* Failed to convert column values
                                          * to the requested type.*/
         }
@@ -578,14 +618,18 @@ PsqlCreateTable(Tcl_Interp *interp, PGconn *conn, BLT_TABLE table,
         }
         Blt_DBuffer_Format(dbuffer, "[%s] ", label);
         switch(type) {
+        case TABLE_COLUMN_TYPE_BOOLEAN:
+            Blt_DBuffer_Format(dbuffer, "boolean");     break;
         case TABLE_COLUMN_TYPE_LONG:
-            Blt_DBuffer_Format(dbuffer, "INTEGER");     break;
+            Blt_DBuffer_Format(dbuffer, "int8");        break;
         case TABLE_COLUMN_TYPE_DOUBLE:
-            Blt_DBuffer_Format(dbuffer, "FLOAT");       break;
+            Blt_DBuffer_Format(dbuffer, "float8");      break;
         default:
         case TABLE_COLUMN_TYPE_TIME:
         case TABLE_COLUMN_TYPE_STRING:
-            Blt_DBuffer_Format(dbuffer, "TEXT");        break;
+            Blt_DBuffer_Format(dbuffer, "text");        break;
+        case TABLE_COLUMN_TYPE_BLOB:
+            Blt_DBuffer_Format(dbuffer, "bytea");       break;
         }
         first = FALSE;
     }
@@ -632,7 +676,7 @@ PsqlExportValues(Tcl_Interp *interp, PGconn *conn, BLT_TABLE table,
     Blt_DBuffer_Format(dbuffer2, " VALUES (");
     count = 0;
     if (argsPtr->flags & EXPORT_ROWLABELS) {
-        Blt_DBuffer_Format(dbuffer, "_rowId TEXT ");
+        Blt_DBuffer_Format(dbuffer, "_rowId");
         Blt_DBuffer_Format(dbuffer2, "?%d", count);
         count++;
     }        
@@ -856,7 +900,8 @@ blt_table_psql_init(Tcl_Interp *interp)
 	return TCL_ERROR;
     }
 #endif    
-    if (Tcl_PkgProvide(interp, "blt_datatable_psql", BLT_VERSION) != TCL_OK) { 
+    if (Tcl_PkgProvide(interp, "blt_datatable_psql", BLT_VERSION)
+        != TCL_OK) { 
 	return TCL_ERROR;
     }
     return blt_table_register_format(interp,

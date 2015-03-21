@@ -316,7 +316,7 @@ static DataFormat dataFormats[] = {
     { "sqlite" },                       /* sqlite3 library. */
 #endif
 #ifdef HAVE_LIBPQ
-    { "postgresql" },                   /* postgres library. */
+    { "psql" },                         /* postgres library. */
 #endif
     { "tree" },                         /* BLT Tree object.*/
     { "vector" },                       /* BLT Vector object.*/

@@ -505,11 +505,14 @@ MysqlCreateTable(Tcl_Interp *interp, MYSQL *conn, BLT_TABLE table,
         }
         Blt_DBuffer_Format(dbuffer, "[%s] ", label);
         switch(type) {
+        case TABLE_COLUMN_TYPE_BOOLEAN:
+            Blt_DBuffer_Format(dbuffer, "TINYINT(1)");  break;
         case TABLE_COLUMN_TYPE_LONG:
-            Blt_DBuffer_Format(dbuffer, "INTEGER");     break;
+            Blt_DBuffer_Format(dbuffer, "BIGINT");      break;
         case TABLE_COLUMN_TYPE_DOUBLE:
-            Blt_DBuffer_Format(dbuffer, "FLOAT");       break;
+            Blt_DBuffer_Format(dbuffer, "DOUBLE");      break;
         default:
+        case TABLE_COLUMN_TYPE_TIME:
         case TABLE_COLUMN_TYPE_STRING:
             Blt_DBuffer_Format(dbuffer, "TEXT");        break;
         }

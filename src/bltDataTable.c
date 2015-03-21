@@ -584,6 +584,8 @@ blt_table_name_to_column_type(const char *s)
 	return TABLE_COLUMN_TYPE_TIME;
     } else if ((c == 'b') && (strcmp(s, "blob") == 0)) {
 	return TABLE_COLUMN_TYPE_BLOB;
+    } else if ((c == 'b') && (strcmp(s, "boolean") == 0)) {
+	return TABLE_COLUMN_TYPE_BOOLEAN;
     } else {
 	return TABLE_COLUMN_TYPE_UNKNOWN;
     }
@@ -675,6 +677,9 @@ GetObjFromValue(BLT_TABLE_COLUMN_TYPE type, Value *valuePtr)
     case TABLE_COLUMN_TYPE_LONG:        /* long */
 	objPtr = Tcl_NewLongObj(valuePtr->datum.l);
 	break;
+    case TABLE_COLUMN_TYPE_BOOLEAN:      /* boolean */
+        objPtr = Tcl_NewBooleanObj(valuePtr->datum.l);
+	break;
     default:
     case TABLE_COLUMN_TYPE_STRING:      /* string */
         objPtr = Tcl_NewStringObj(valuePtr->string, valuePtr->length);
@@ -700,6 +705,17 @@ SetValueFromObj(Tcl_Interp *interp, BLT_TABLE_COLUMN_TYPE type,
 	    return TCL_ERROR;
 	}
 	break;
+
+    case TABLE_COLUMN_TYPE_BOOLEAN:     /* boolean */
+        { 
+            int i;
+            
+            if (Tcl_GetBooleanFromObj(interp, objPtr, &i) != TCL_OK) {
+                return TCL_ERROR;
+            }
+            valuePtr->datum.l = i;
+        }
+        break;
 
     case TABLE_COLUMN_TYPE_DOUBLE:      /* double */
 	if (Blt_GetDoubleFromObj(interp, objPtr, &valuePtr->datum.d)!=TCL_OK) {
@@ -767,12 +783,25 @@ SetValueFromString(Tcl_Interp *interp, BLT_TABLE_COLUMN_TYPE type,
             }
             valuePtr->datum.d = d;
             break;
+
         case TABLE_COLUMN_TYPE_LONG:        /* Long */
             if (Blt_GetLongFromObj(interp, objPtr, &l) != TCL_OK) {
                 Tcl_DecrRefCount(objPtr);
                 return TCL_ERROR;
             }
             valuePtr->datum.l = l;
+            break;
+
+        case TABLE_COLUMN_TYPE_BOOLEAN:        /* Long */
+            {
+                int ival;
+                
+                if (Tcl_GetBooleanFromObj(interp, objPtr, &ival) != TCL_OK) {
+                    Tcl_DecrRefCount(objPtr);
+                    return TCL_ERROR;
+                }
+                valuePtr->datum.l = ival;
+            }
             break;
         default:
             break;
@@ -2194,6 +2223,7 @@ blt_table_get_compare_proc(Table *tablePtr, Column *colPtr, unsigned int flags)
     if ((flags & TABLE_SORT_TYPE_MASK) == TABLE_SORT_AUTO) {
 	switch (colPtr->type) {
 	case TABLE_COLUMN_TYPE_LONG:
+	case TABLE_COLUMN_TYPE_BOOLEAN:
 	    proc = CompareIntegers;
 	    break;
 	case TABLE_COLUMN_TYPE_TIME:
@@ -5830,6 +5860,7 @@ MakeKeyTables(Tcl_Interp *interp, Table *tablePtr)
 	case TABLE_COLUMN_TYPE_TIME:
 	    size = sizeof(double)/sizeof(int);
 	    break;
+	case TABLE_COLUMN_TYPE_BOOLEAN:
 	case TABLE_COLUMN_TYPE_LONG:
 	    size = BLT_ONE_WORD_KEYS;
 	    break;
@@ -5875,6 +5906,7 @@ MakeKeyTables(Tcl_Interp *interp, Table *tablePtr)
 		hPtr = Blt_CreateHashEntry(keyTablePtr,
 			(char *)&valuePtr->datum.d, &isNew);
 		break;
+	    case TABLE_COLUMN_TYPE_BOOLEAN:
 	    case TABLE_COLUMN_TYPE_LONG:
 		hPtr = Blt_CreateHashEntry(keyTablePtr,
 			(char *)valuePtr->datum.l, &isNew);
@@ -5989,6 +6021,18 @@ blt_table_key_lookup(Tcl_Interp *interp, Table *tablePtr, int objc,
 		hPtr = Blt_FindHashEntry(keyTablePtr, (char *)&dval);
 	    }
 	    break;
+	case TABLE_COLUMN_TYPE_BOOLEAN:
+	    {
+		int ival;
+                long lval;
+                
+		if (Tcl_GetBooleanFromObj(interp, objv[i], &ival) != TCL_OK) {
+		    return TCL_ERROR;
+		}
+                lval = ival;
+		hPtr = Blt_FindHashEntry(keyTablePtr, (char *)lval);
+	    }
+	    break;
 	case TABLE_COLUMN_TYPE_LONG:
 	    {
 		long lval;
@@ -6052,6 +6096,52 @@ blt_table_set_long(Table *tablePtr, Row *rowPtr, Column *colPtr, long value)
 	Tcl_AppendResult(tablePtr->interp, "wrong column type \"",
 		blt_table_column_type_to_name(colPtr->type), 
 		"\": should be \"integer\"", (char *)NULL);
+	return TCL_ERROR;
+    }
+    valuePtr = GetValue(tablePtr, rowPtr, colPtr);
+    ResetValue(valuePtr);
+    valuePtr->datum.l = value;
+    valuePtr->length = sprintf(string, "%ld", value);
+    if (strlen(string) >= BLT_TABLE_VALUE_LENGTH) {
+	valuePtr->string = Blt_AssertStrdup(string);
+    } else {
+	strcpy(valuePtr->store, string);
+	valuePtr->string = valuePtr->store;
+    }
+    /* Indicate the keytables need to be regenerated. */
+    if (colPtr->flags & TABLE_COLUMN_PRIMARY_KEY) {
+	tablePtr->flags |= TABLE_KEYS_DIRTY;
+    }
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * blt_table_set_boolean --
+ *
+ *      Sets the boolean value of the selected row, column location
+ *      in the table.  The row, column location must be within the actual
+ *      table limits.
+ *
+ * Results:
+ *      Returns a standard TCL result.
+ *
+ * Side Effects:
+ *      New tuples may be allocated created.
+ *
+ *---------------------------------------------------------------------------
+ */
+int
+blt_table_set_boolean(Table *tablePtr, Row *rowPtr, Column *colPtr, long value)
+{
+    Value *valuePtr;
+    char string[200];
+
+    if (colPtr->type != TABLE_COLUMN_TYPE_LONG) {
+	Tcl_AppendResult(tablePtr->interp, "wrong column type \"",
+		blt_table_column_type_to_name(colPtr->type), 
+		"\": should be \"boolean\"", (char *)NULL);
 	return TCL_ERROR;
     }
     valuePtr = GetValue(tablePtr, rowPtr, colPtr);
@@ -6183,6 +6273,17 @@ blt_table_append_string(Tcl_Interp *interp, Table *tablePtr, Row *rowPtr,
 	    return TCL_ERROR;
 	}
 	valuePtr->datum.d = d;
+	break;
+    case TABLE_COLUMN_TYPE_BOOLEAN:      /* boolean */
+        {
+            int ival;
+            
+            if (Tcl_GetBooleanFromObj(interp, objPtr, &ival) != TCL_OK) {
+                Tcl_DecrRefCount(objPtr);
+                return TCL_ERROR;
+            }
+            valuePtr->datum.l = ival;
+        }
 	break;
     case TABLE_COLUMN_TYPE_LONG:        /* long */
 	if (Blt_GetLongFromObj(interp, objPtr, &l) != TCL_OK) {
