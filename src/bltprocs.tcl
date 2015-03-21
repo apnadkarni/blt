@@ -209,7 +209,7 @@ proc genProcs::rewriteFile {file text} {
     }
     set in [open ${file} r]
     set out [open ${file}.new w]
-
+    puts $out "/* -*- mode: c; c-basic-offset: 4; indent-tabs-mode: nil -*- */"
     while {![eof $in]} {
 	set line [gets $in]
 	if {[string match "*!BEGIN!*" $line]} {

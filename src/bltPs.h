@@ -96,8 +96,6 @@ BLT_EXTERN Blt_DBuffer Blt_Ps_GetDBuffer(Blt_Ps ps);
 
 BLT_EXTERN Tcl_Interp *Blt_Ps_GetInterp(Blt_Ps ps);
 
-BLT_EXTERN Blt_DBuffer Blt_Ps_DBuffer(Blt_Ps ps);
-
 BLT_EXTERN char *Blt_Ps_GetScratchBuffer(Blt_Ps ps);
 
 BLT_EXTERN void Blt_Ps_SetInterp(Blt_Ps ps, Tcl_Interp *interp);
