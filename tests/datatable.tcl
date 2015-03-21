@@ -256,7 +256,7 @@ test datatable.27 {datatable0 column badOp} {
   datatable0 column extend label ?label...?
   datatable0 column get column ?switches?
   datatable0 column index column
-  datatable0 column indices column ?column...?
+  datatable0 column indices ?pattern...?
   datatable0 column join table ?switches?
   datatable0 column label column ?label?
   datatable0 column labels ?labelList?
@@ -267,7 +267,7 @@ test datatable.27 {datatable0 column badOp} {
   datatable0 column set column row value...
   datatable0 column tag op args...
   datatable0 column trace column how command
-  datatable0 column type column ?type?
+  datatable0 column type column ?type column type?...
   datatable0 column unset column ?indices...?
   datatable0 column values column ?valueList?}}
 
@@ -294,6 +294,8 @@ test datatable.29 {datatable0 row badOp} {
   datatable0 row get row ?switches?
   datatable0 row index row
   datatable0 row indices row ?row...?
+  datatable0 row isheader row
+  datatable0 row isnumeric row
   datatable0 row join table ?switches?
   datatable0 row label row ?label?
   datatable0 row labels ?labelList?
@@ -332,7 +334,7 @@ test datatable.33 {datatable0 column -label xyz create} {
   datatable0 column extend label ?label...?
   datatable0 column get column ?switches?
   datatable0 column index column
-  datatable0 column indices column ?column...?
+  datatable0 column indices ?pattern...?
   datatable0 column join table ?switches?
   datatable0 column label column ?label?
   datatable0 column labels ?labelList?
@@ -343,7 +345,7 @@ test datatable.33 {datatable0 column -label xyz create} {
   datatable0 column set column row value...
   datatable0 column tag op args...
   datatable0 column trace column how command
-  datatable0 column type column ?type?
+  datatable0 column type column ?type column type?...
   datatable0 column unset column ?indices...?
   datatable0 column values column ?valueList?}}
 
@@ -375,37 +377,53 @@ test datatable.40 {column index all} {
     list [catch {datatable0 column index all} msg] $msg
 } {0 -1}
 
-test datatable.41 {column indices all} {
-    list [catch {datatable0 column indices all} msg] $msg
-} {0 {0 1 2 3 4}}
+test datatable.40 {column names} {
+    list [catch {datatable0 column names} msg] $msg
+} {0 {c1 c2 c3 c4 c5}}
 
-test datatable.42 {column indices 0-end} {
-    list [catch {datatable0 column indices 0-end} msg] $msg
-} {0 {0 1 2 3 4}}
-
-test datatable.43 {column indices range=0-end} {
-    list [catch {datatable0 column indices range=0-end} msg] $msg
-} {0 {0 1 2 3 4}}
-
-test datatable.44 {column indices 0-all} {
-    list [catch {datatable0 column indices 0-all} msg] $msg
-} {1 {unknown column specification "0-all" in ::datatable0}}
-
-test datatable.45 {column indices range=0-all} {
-    list [catch {datatable0 column indices range=0-all} msg] $msg
-} {1 {multiple columns specified by "all"}}
-
-test datatable.46 {column indices 1-4} {
-    list [catch {datatable0 column indices 1-4} msg] $msg
-} {0 {1 2 3 4}}
-
-test datatable.47 {column indices 5-2} {
-    list [catch {datatable0 column indices 5-2} msg] $msg
-} {1 {unknown column specification "5-2" in ::datatable0}}
-
-test datatable.48 {column indices 4-2} {
-    list [catch {datatable0 column indices 4-2} msg] $msg
+test datatable.41 {column indices (no args) } {
+    list [catch {datatable0 column indices} msg] $msg
 } {0 {}}
+
+test datatable.42 {column indices c1} {
+    list [catch {datatable0 column indices c1} msg] $msg
+} {0 0}
+
+test datatable.43 {column indices c1 c2 c3} {
+    list [catch {datatable0 column indices c1 c2 c3} msg] $msg
+} {0 {0 1 2}}
+
+test datatable.44 {column indices c3 c2 c1} {
+    list [catch {datatable0 column indices c3 c2 c1} msg] $msg
+} {0 {2 1 0}}
+
+test datatable.45 {column indices c5 c4 c1} {
+    list [catch {datatable0 column indices c5 c4 c1} msg] $msg
+} {0 {4 3 0}}
+
+test datatable.46 {column indices c5 c4 badLabel} {
+    list [catch {datatable0 column indices c5 c4 badLabel} msg] $msg
+} {0 {4 3 -1}}
+
+test datatable.47 {column indices c5 c5 c5} {
+    list [catch {datatable0 column indices c5 c5 c5} msg] $msg
+} {0 {4 4 4}}
+
+test datatable.47 {column create -label c5} {
+    list [catch {datatable0 column create -label c5} msg] $msg
+} {0 5}
+
+test datatable.48 {column indices c5} {
+    list [catch {datatable0 column indices c5} msg] [lsort $msg]
+} {0 {4 5}}
+
+test datatable.47 {column delete 4} {
+    list [catch {datatable0 column delete 4} msg] $msg
+} {0 {}}
+
+test datatable.48 {column indices c5} {
+    list [catch {datatable0 column indices c5} msg] [lsort $msg]
+} {0 4}
 
 test datatable.49 {column index end} {
     list [catch {datatable0 column index end} msg] $msg
@@ -483,13 +501,18 @@ test datatable.67 {column label end -abc} {
     list [catch {datatable0 column label end -abc} msg] $msg
 } {1 {column label "-abc" can't start with a '-'.}}
 
-test datatable.68 {column indices 0-4} {
-    list [catch {datatable0 column indices 0-4} msg] $msg
-} {0 {0 1 2 3 4}}
 
-test datatable.69 {column indices range=0-4} {
-    list [catch {datatable0 column indices range=0-4} msg] $msg
-} {0 {0 1 2 3 4}}
+test datatable.40 {column names} {
+    list [catch {datatable0 column names} msg] $msg
+} {0 {newLabel myLabel2 c3 c4 1abc}}
+
+test datatable.68 {column indices newLabel} {
+    list [catch {datatable0 column indices newLabel} msg] $msg
+} {0 0}
+
+test datatable.69 {column indices newLabel1} {
+    list [catch {datatable0 column indices newLabel1} msg] $msg
+} {0 -1}
 
 test datatable.70 {column label 0-4 c1 } {
     list [catch {datatable0 column label 0-4 c1} msg] $msg
@@ -637,10 +660,6 @@ test datatable.104 {column index c5} {
     list [catch {datatable0 column index c5} msg] $msg
 } {0 4}
 
-test datatable.105 {column indices all} {
-    list [catch {datatable0 column indices all} msg] $msg
-} {0 {0 1 2 3 4}}
-
 test datatable.106 {column index -1} {
     list [catch {datatable0 column index -1} msg] $msg
 } {0 -1}
@@ -659,15 +678,15 @@ test datatable.109 {column type 1 integer} {
 
 test datatable.110 {column type 3 double} {
     list [catch {datatable0 column type 3 double} msg] $msg
-} {0 double}
+} {0 {}}
 
 test datatable.111 {column type 0 string} {
     list [catch {datatable0 column type 0 string} msg] $msg
-} {0 string}
+} {0 {}}
 
 test datatable.112 {column type 0 string badArg} {
     list [catch {datatable0 column type 0 string badArg} msg] $msg
-} {1 {wrong # args: should be "datatable0 column type column ?type?"}}
+} {1 {odd # of arguments: should ?index type?...}}
 
 test datatable.113 {column type badTag string} {
     list [catch {datatable0 column type badTag string} msg] $msg
@@ -675,7 +694,7 @@ test datatable.113 {column type badTag string} {
 
 test datatable.114 {column type all string} {
     list [catch {datatable0 column type all string} msg] $msg
-} {0 {string string string string string}}
+} {0 {}}
 
 test datatable.115 {column tag badOp} {
     list [catch {datatable0 column tag badOp} msg] $msg
@@ -738,9 +757,25 @@ test datatable.121 {datatable0 column tag add newTag 0} {
     list [catch {datatable0 column tag add newTag 0} msg] $msg
 } {0 {}}
 
+test datatable.125 {datatable0 column tag search 0} {
+    list [catch {datatable0 column tag search 0} msg] [lsort $msg]
+} {0 {all newTag}}
+
+test datatable.125 {datatable0 column tag get 0} {
+    list [catch {datatable0 column tag get 0} msg] [lsort $msg]
+} {0 {all newTag}}
+
 test datatable.122 {datatable0 column tag add newTag1 0 1 2} {
     list [catch {datatable0 column tag add newTag1 0 1 2} msg] $msg
 } {0 {}}
+
+test datatable.125 {datatable0 column tag search 0} {
+    list [catch {datatable0 column tag search 0} msg] [lsort $msg]
+} {0 {all newTag newTag1}}
+
+test datatable.125 {datatable0 column tag get 0} {
+    list [catch {datatable0 column tag get 0} msg] [lsort $msg]
+} {0 {all newTag newTag1}}
 
 test datatable.123 {datatable0 column tag add newTag2 all} {
     list [catch {datatable0 column tag add newTag2 all} msg] $msg

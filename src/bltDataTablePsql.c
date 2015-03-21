@@ -736,15 +736,15 @@ PsqlExportValues(Tcl_Interp *interp, PGconn *conn, BLT_TABLE table,
         }
         for (col = blt_table_first_tagged_column(&argsPtr->ci); col != NULL;
              col = blt_table_next_tagged_column(&argsPtr->ci)) {
-            struct _BLT_TABLE_VALUE *valuePtr;
+            BLT_TABLE_VALUE value;
 
-            valuePtr = blt_table_get_value(table, row, col);
-            if (valuePtr == NULL) {
+            value = blt_table_get_value(table, row, col);
+            if (value == NULL) {
                 values[count] = NULL;
                 lengths[count] = 0;
             } else {
-                values[count] = (char *)valuePtr->string;
-                lengths[count] = valuePtr->length;
+                values[count] = (char *)blt_table_value_string(value);
+                lengths[count] = blt_table_value_length(value);
             }
             count++;
         }
