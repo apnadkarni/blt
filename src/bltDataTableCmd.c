@@ -88,13 +88,11 @@
 
   $t unset $n key1 key2 key3...
   
-  $t row notify $row ?flags? command 
-  $t column notify $column ?flags? command arg arg arg 
-  $t notify create -oncreate -ondelete -onmove command 
-  $t notify create -oncreate -ondelete -onmove -onsort command arg arg arg 
-  $t notify delete id1 id2 id3
-  $t notify names
-  $t notify info id
+  $t watch create -oncreate -ondelete -onmove command 
+  $t watch create -oncreate -ondelete -onmove -onsort command arg arg arg 
+  $t watch delete id1 id2 id3
+  $t watch names
+  $t watch info id
 
   for { set n [$t firstchild $node] } { $n >= 0 } { 
 	set n [$t nextsibling $n] } {
@@ -269,11 +267,11 @@ typedef struct {
     Blt_HashTable traceTable;           /* Table of active traces. Maps
 					 * trace ids back to their
 					 * TraceInfo records. */
-    int nextNotifyId;                   /* Used to generate notify id
+    int nextWatch;                      /* Used to generate watch name
 					 * strings. */
-    Blt_HashTable notifyTable;          /* Table of event handlers. Maps
-					 * notify ids back to their
-					 * NotifyInfo records. */
+    Blt_HashTable watchTable;           /* Table of event handlers. Maps
+					 * watch names back to their
+					 * WatchInfo records. */
 } Cmd;
 
 typedef struct {
@@ -333,13 +331,13 @@ typedef struct {
 /*
  * TraceInfo --
  *
- *      Structure containing information about a trace set from this command
- *      shell.
+ *      Structure containing information about a trace set from this
+ *      command shell.
  *
  *      This auxillary structure houses data to be used for a callback to a
- *      TCL procedure when a table object trace fires.  It is stored in a hash
- *      table in the Dt_Cmd structure to keep track of traces issued by this
- *      shell.
+ *      TCL procedure when a table object trace fires.  It is stored in a
+ *      hash table in the Dt_Cmd structure to keep track of traces issued
+ *      by this shell.
  */
 typedef struct {
     BLT_TABLE_TRACE trace;
@@ -351,22 +349,22 @@ typedef struct {
 } TraceInfo;
 
 /*
- * NotifierInfo --
+ * WatchInfo --
  *
  *      Structure containing information about a notifier set from this
  *      command shell.
  *
  *      This auxillary structure houses data to be used for a callback to a
- *      TCL procedure when a table object notify event fires.  It is stored in
- *      a hash table in the Dt_Cmd structure to keep track of notifiers issued
- *      by this shell.
+ *      TCL procedure when a table object notify event fires.  It is stored
+ *      in a hash table in the Dt_Cmd structure to keep track of notifiers
+ *      issued by this shell.
  */
 typedef struct {
     BLT_TABLE_NOTIFIER notifier;
     Cmd *cmdPtr;
     Blt_HashEntry *hPtr;
     Tcl_Obj *cmdObjPtr;
-} NotifierInfo;
+} WatchInfo;
 
 BLT_EXTERN Blt_SwitchFreeProc blt_table_column_iter_free_proc;
 BLT_EXTERN Blt_SwitchFreeProc blt_table_row_iter_free_proc;
@@ -449,8 +447,8 @@ static Blt_SwitchSpec dirSwitches[] =
 
 typedef struct {
     Cmd *cmdPtr;
-    BLT_TABLE_ROW row;                  /* Index where to install new row or
-					 * column. */
+    BLT_TABLE_ROW row;                  /* Index where to install new row
+					 * or column. */
     BLT_TABLE_COLUMN column;
     const char *label;                  /* New label. */
     Tcl_Obj *tags;                      /* List of tags to be applied to
@@ -646,22 +644,22 @@ static Blt_SwitchSpec sortSwitches[] =
 
 typedef struct {
     unsigned int flags;
-} NotifySwitches;
+} WatchSwitches;
 
-static Blt_SwitchSpec notifySwitches[] = 
+static Blt_SwitchSpec watchSwitches[] = 
 {
     {BLT_SWITCH_BITMASK, "-allevents", "", (char *)NULL,
-	Blt_Offset(NotifySwitches, flags), 0, TABLE_NOTIFY_ALL_EVENTS},
+	Blt_Offset(WatchSwitches, flags), 0, TABLE_NOTIFY_ALL_EVENTS},
     {BLT_SWITCH_BITMASK, "-create", "", (char *)NULL,
-	Blt_Offset(NotifySwitches, flags), 0, TABLE_NOTIFY_CREATE},
+	Blt_Offset(WatchSwitches, flags), 0, TABLE_NOTIFY_CREATE},
     {BLT_SWITCH_BITMASK, "-delete", "", (char *)NULL,
-	Blt_Offset(NotifySwitches, flags), 0, TABLE_NOTIFY_DELETE},
+	Blt_Offset(WatchSwitches, flags), 0, TABLE_NOTIFY_DELETE},
     {BLT_SWITCH_BITMASK, "-move", "",  (char *)NULL,
-	Blt_Offset(NotifySwitches, flags), 0, TABLE_NOTIFY_MOVE},
+	Blt_Offset(WatchSwitches, flags), 0, TABLE_NOTIFY_MOVE},
     {BLT_SWITCH_BITMASK, "-relabel", "", (char *)NULL,
-	Blt_Offset(NotifySwitches, flags), 0, TABLE_NOTIFY_RELABEL},
+	Blt_Offset(WatchSwitches, flags), 0, TABLE_NOTIFY_RELABEL},
     {BLT_SWITCH_BITMASK, "-whenidle", "", (char *)NULL,
-	Blt_Offset(NotifySwitches, flags), 0, TABLE_NOTIFY_WHENIDLE},
+	Blt_Offset(WatchSwitches, flags), 0, TABLE_NOTIFY_WHENIDLE},
     {BLT_SWITCH_END}
 };
 
@@ -988,84 +986,6 @@ blt_table_row_iter_switch_proc(
     return TCL_OK;
 }
 
-#ifdef notdef
-/*
- *---------------------------------------------------------------------------
- *
- * RowsFreeProc --
- *
- *      Free the storage associated with the -rows switch.
- *
- * Results:
- *      None.
- *
- *---------------------------------------------------------------------------
- */
-/*ARGSUSED*/
-static void
-RowsFreeProc(ClientData clientData, char *record, int offset, int flags)
-{
-    Blt_Chain *chainPtr = (Blt_Chain *)(record + offset);
-
-    if (*chainPtr != NULL) {
-	Blt_Chain_Destroy(*chainPtr);
-	*chainPtr = NULL;
-    }
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * RowsSwitchProc --
- *
- *      Convert a Tcl_Obj representing an list of rows in the table.
- *
- * Results:
- *      The return value is a standard TCL result.
- *
- *---------------------------------------------------------------------------
- */
-/*ARGSUSED*/
-static int
-RowsSwitchProc(
-    ClientData clientData,              /* Flag indicating if the node is
-					 * considered before or after the
-					 * insertion position. */
-    Tcl_Interp *interp,                 /* Interpreter to report results. */
-    const char *switchName,             /* Not used. */
-    Tcl_Obj *objPtr,                    /* String representation */
-    char *record,                       /* Structure record */
-    int offset,                         /* Not used. */
-    int flags)                          /* Indicates whether this is a row or
-					 * column index. */
-{
-    SortSwitches *sortPtr = (SortSwitches *)record;
-    Blt_Chain *chainPtr = (Blt_Chain *)(record + offset);
-    Blt_Chain chain;
-    int i, objc;
-    Tcl_Obj **objv;
-
-    if (Tcl_ListObjGetElements(interp, objPtr, &objc, &objv) != TCL_OK) {
-	return TCL_ERROR;
-    }
-    chain = Blt_Chain_Create();
-    for (i = 0; i < objc; i++) {
-	BLT_TABLE_ROW row;
-
-	row = blt_table_get_row(interp, sortPtr->table, objv[i]);
-	if (row == NULL) {
-	    return TCL_ERROR;
-	}
-	Blt_Chain_Append(chain, row);
-    }
-    if (*chainPtr != NULL) {
-	Blt_Chain_Destroy(*chainPtr);
-    }
-    *chainPtr = chain;
-    return TCL_OK;
-}
-#endif
-
 /*
  *---------------------------------------------------------------------------
  *
@@ -1191,18 +1111,22 @@ static int
 IterateRows(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr, 
 	    BLT_TABLE_ITERATOR *iterPtr)
 {
-    if (blt_table_iterate_rows(interp, table, objPtr, iterPtr) != TCL_OK) {
+    BLT_TABLE_ROWCOLUMN_SPEC spec;
+    const char *string;
+    
+    spec = blt_table_row_spec(table, objPtr, &string);
+    if (spec == TABLE_SPEC_UNKNOWN)  {
 	/* 
-	 * We could not parse the row descriptor. If the row specification is
-	 * a label or index that doesn't exist, create the new rows and try to
-	 * load the iterator again.
+	 * We could not parse the row descriptor. If the row specification
+	 * is a label or index that doesn't exist, create the new rows and
+	 * try to load the iterator again.
 	 */
 	if (MakeRows(interp, table, objPtr) != TCL_OK) {
 	    return TCL_ERROR;
 	}
-	if (blt_table_iterate_rows(interp, table, objPtr, iterPtr) != TCL_OK) {
-	    return TCL_ERROR;
-	}
+    }
+    if (blt_table_iterate_rows(interp, table, objPtr, iterPtr) != TCL_OK) {
+        return TCL_ERROR;
     }
     return TCL_OK;
 }
@@ -1241,7 +1165,11 @@ static int
 IterateColumns(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr, 
 	       BLT_TABLE_ITERATOR *iterPtr)
 {
-    if (blt_table_iterate_columns(interp, table, objPtr, iterPtr) != TCL_OK) {
+    BLT_TABLE_ROWCOLUMN_SPEC spec;
+    const char *string;
+    
+    spec = blt_table_column_spec(table, objPtr, &string);
+    if (spec == TABLE_SPEC_UNKNOWN)  {
 	/* 
 	 * We could not parse column descriptor.  If the column specification
 	 * is a label that doesn't exist, create a new column with that label
@@ -1250,10 +1178,9 @@ IterateColumns(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr,
 	if (MakeColumns(interp, table, objPtr) != TCL_OK) {
 	    return TCL_ERROR;
 	}
-	if (blt_table_iterate_columns(interp, table, objPtr, iterPtr) 
-	    != TCL_OK) {
-	    return TCL_ERROR;
-	}
+    }
+    if (blt_table_iterate_columns(interp, table, objPtr, iterPtr) != TCL_OK) {
+        return TCL_ERROR;
     }
     return TCL_OK;
 }
@@ -1319,7 +1246,7 @@ NewTableCmd(Tcl_Interp *interp, BLT_TABLE table, const char *name)
     cmdPtr->emptyValue = Blt_AssertStrdup("");
 
     Blt_InitHashTable(&cmdPtr->traceTable, BLT_STRING_KEYS);
-    Blt_InitHashTable(&cmdPtr->notifyTable, BLT_STRING_KEYS);
+    Blt_InitHashTable(&cmdPtr->watchTable, BLT_STRING_KEYS);
 
     cmdPtr->cmdToken = Tcl_CreateObjCommand(interp, name, TableInstObjCmd, 
 	cmdPtr, TableInstDeleteProc);
@@ -1571,7 +1498,7 @@ PrintTraceInfo(Tcl_Interp *interp, TraceInfo *tiPtr, Tcl_Obj *listObjPtr)
 /*
  *---------------------------------------------------------------------------
  *
- * FreeNotifierInfo --
+ * FreeWatchInfo --
  *
  *      This is a helper routine used to delete notifiers.  It releases the
  *      Tcl_Objs used in the notification callback command and the actual
@@ -1586,11 +1513,11 @@ PrintTraceInfo(Tcl_Interp *interp, TraceInfo *tiPtr, Tcl_Obj *listObjPtr)
  *---------------------------------------------------------------------------
  */
 static void
-FreeNotifierInfo(NotifierInfo *notifyPtr)
+FreeWatchInfo(WatchInfo *watchPtr)
 {
-    Tcl_DecrRefCount(notifyPtr->cmdObjPtr);
-    blt_table_delete_notifier(notifyPtr->cmdPtr->table, notifyPtr->notifier);
-    Blt_Free(notifyPtr);
+    Tcl_DecrRefCount(watchPtr->cmdObjPtr);
+    blt_table_delete_notifier(watchPtr->cmdPtr->table, watchPtr->notifier);
+    Blt_Free(watchPtr);
 }
 
 /*
@@ -1678,10 +1605,9 @@ GetEventName(int type)
 static void
 NotifierDeleteProc(ClientData clientData)
 {
-    NotifierInfo *notifyPtr; 
+    WatchInfo *watchPtr = clientData;
 
-    notifyPtr = clientData; 
-    FreeNotifierInfo(notifyPtr);
+    FreeWatchInfo(watchPtr);
 }
 
 /*
@@ -1694,16 +1620,15 @@ NotifierDeleteProc(ClientData clientData)
 static int
 NotifyProc(ClientData clientData, BLT_TABLE_NOTIFY_EVENT *eventPtr)
 {
-    NotifierInfo *notifyPtr; 
+    WatchInfo *watchPtr = clientData; 
     Tcl_Interp *interp;
     int result;
     long index;
     Tcl_Obj *objPtr, *cmdObjPtr;
 
-    notifyPtr = clientData; 
-    interp = notifyPtr->cmdPtr->interp;
+    interp = watchPtr->cmdPtr->interp;
 
-    cmdObjPtr = Tcl_DuplicateObj(notifyPtr->cmdObjPtr);
+    cmdObjPtr = Tcl_DuplicateObj(watchPtr->cmdObjPtr);
     objPtr = Tcl_NewStringObj(GetEventName(eventPtr->type), -1);
     Tcl_ListObjAppendElement(interp, cmdObjPtr, objPtr);
     if (eventPtr->type & TABLE_NOTIFY_ROW) {
@@ -3125,100 +3050,6 @@ ColumnNonEmptyOp(ClientData clientData, Tcl_Interp *interp, int objc,
     return TCL_OK;
 }
 
-/*
- *---------------------------------------------------------------------------
- *
- * ColumnNotifyOp --
- *
- *      Creates a notifier for this instance.  Notifiers represent a bitmask
- *      of events and a command prefix to be invoked when a matching event
- *      occurs.
- *
- *      The command prefix is parsed and saved in an array of Tcl_Objs. Extra
- *      slots are allocated for the
- *
- * Results:
- *      A standard TCL result.  The name of the new notifier is returned in
- *      the interpreter result.  Otherwise, if it failed to parse a switch,
- *      then TCL_ERROR is returned and an error message is left in the
- *      interpreter result.
- *
- * Example:
- *      table0 column notify col ?flags? command arg
- *
- *---------------------------------------------------------------------------
- */
-static int
-ColumnNotifyOp(ClientData clientData, Tcl_Interp *interp, int objc,
-               Tcl_Obj *const *objv)
-{
-    Cmd *cmdPtr = clientData;
-    BLT_TABLE table;
-    BLT_TABLE_COLUMN col;
-    BLT_TABLE_ROWCOLUMN_SPEC spec;
-    NotifierInfo *notifyPtr;
-    NotifySwitches switches;
-    const char *tag, *string;
-    int count, i;
-
-    table = cmdPtr->table;
-    spec = blt_table_column_spec(table, objv[3], &string);
-    col = NULL;
-    tag = NULL;
-    if (spec == TABLE_SPEC_TAG) {
-	tag = string;
-    } else {
-	col = blt_table_get_column(interp, table, objv[3]);
-	if (col == NULL) {
-	    return TCL_ERROR;
-	}
-    }
-    count = 0;
-    for (i = 4; i < objc; i++) {
-	const char *string;
-
-	string = Tcl_GetString(objv[i]);
-	if (string[0] != '-') {
-	    break;
-	}
-	count++;
-    }
-    switches.flags = 0;
-    /* Process switches  */
-    if (Blt_ParseSwitches(interp, notifySwitches, count, objv + 4, &switches, 
-	0) < 0) {
-	return TCL_ERROR;
-    }
-    notifyPtr = Blt_AssertMalloc(sizeof(NotifierInfo));
-    notifyPtr->cmdPtr = cmdPtr;
-    if (tag == NULL) {
-	notifyPtr->notifier = blt_table_create_column_notifier(interp, 
-		cmdPtr->table, col, switches.flags, NotifyProc, 
-		NotifierDeleteProc, notifyPtr);
-    } else {
-	notifyPtr->notifier = blt_table_create_column_tag_notifier(interp, 
-		cmdPtr->table, tag, switches.flags, NotifyProc, 
-		NotifierDeleteProc, notifyPtr);
-    }   
-    /* Stash away the command in structure and pass that to the notifier. */
-    notifyPtr->cmdObjPtr = Tcl_NewListObj(objc - i, objv + i);
-    Tcl_IncrRefCount(notifyPtr->cmdObjPtr);
-    if (switches.flags == 0) {
-	switches.flags = TABLE_NOTIFY_ALL_EVENTS;
-    }
-    {
-	char notifyId[200];
-	Blt_HashEntry *hPtr;
-	int isNew;
-
-	Blt_FormatString(notifyId, 200, "notify%d", cmdPtr->nextNotifyId++);
-	hPtr = Blt_CreateHashEntry(&cmdPtr->notifyTable, notifyId, &isNew);
-	assert(isNew);
-	Blt_SetHashValue(hPtr, notifyPtr);
-	Tcl_SetStringObj(Tcl_GetObjResult(interp), notifyId, -1);
-    }
-    return TCL_OK;
-}
 
 /*
  *---------------------------------------------------------------------------
@@ -3352,23 +3183,20 @@ ColumnTagDeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
     Cmd *cmdPtr = clientData;
     BLT_TABLE table;
     BLT_TABLE_ITERATOR ci;
-    int i;
+    BLT_TABLE_COLUMN col;
     const char *tag;
-
+    
     table = cmdPtr->table;
     tag = Tcl_GetString(objv[4]);
-    for (i = 5; i < objc; i++) {
-	BLT_TABLE_COLUMN col;
-	
-	if (blt_table_iterate_columns(interp, table, objv[i], &ci) != TCL_OK) {
-	    return TCL_ERROR;
-	}
-	for (col = blt_table_first_tagged_column(&ci); col != NULL; 
-	     col = blt_table_next_tagged_column(&ci)) {
-	    if (blt_table_unset_column_tag(interp, table, col, tag) != TCL_OK) {
-		return TCL_ERROR;
-	    }
-	}
+    if (blt_table_iterate_columns_objv(interp, table, objc - 5, objv + 5, &ci)
+        != TCL_OK) {
+        return TCL_ERROR;
+    }
+    for (col = blt_table_first_tagged_column(&ci); col != NULL; 
+         col = blt_table_next_tagged_column(&ci)) {
+        if (blt_table_unset_column_tag(interp, table, col, tag) != TCL_OK) {
+            return TCL_ERROR;
+        }
     }
     return TCL_OK;
 }
@@ -3722,92 +3550,79 @@ ColumnTagRangeOp(ClientData clientData, Tcl_Interp *interp, int objc,
 /*
  *---------------------------------------------------------------------------
  *
- * ColumnTagSearchOp --
+ * ColumnTagNamesOp --
  *
- *      Searches for tags in a given column.  One of more tag pattern
- *      arguments can be given.  Returns 1 is any tag is found, 0 
- *      otherwise.
+ *      Returns a list of all the column tags.  One of more tag pattern
+ *      arguments can be given.  
  *
  * Example:
- *      .t column tag search $column pat1 pat2...
+ *      .t column tag names pat1 pat2...
  *
  *---------------------------------------------------------------------------
  */
 static int
-ColumnTagSearchOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+ColumnTagNamesOp(ClientData clientData, Tcl_Interp *interp, int objc, 
 		  Tcl_Obj *const *objv)
 {
+    Blt_HashTable *tablePtr;
+    Blt_HashEntry *hPtr;
+    Blt_HashSearch iter;
     Cmd *cmdPtr = clientData;
-    BLT_TABLE table;
-    BLT_TABLE_ITERATOR ci;
-    BLT_TABLE_COLUMN col;
-    int i, endMatch;
+    Tcl_Obj *listObjPtr;
+    int allMatch, endMatch;
+    int i;
     
-    table = cmdPtr->table;
-    if (blt_table_iterate_columns(interp, table, objv[4], &ci) != TCL_OK) {
-	return TCL_ERROR;
+    tablePtr = blt_table_get_column_tag_table(cmdPtr->table);
+    listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
+    for (hPtr = Blt_FirstHashEntry(tablePtr, &iter); hPtr != NULL;
+         hPtr = Blt_NextHashEntry(&iter)) {
+        const char *tag;
+        int i;
+        int match;
+        
+        tag = Blt_GetHashKey(tablePtr, hPtr);
+        match = (objc == 4);
+        for (i = 4; i < objc; i++) {
+            const char *pattern;
+
+            pattern = Tcl_GetString(objv[i]);
+            if (Tcl_StringMatch(tag, pattern)) {
+                match = TRUE;
+                break;                  /* Found match. */
+            }
+        }
+        if (match) {
+            Tcl_Obj *objPtr;
+
+            objPtr = Tcl_NewStringObj(tag, -1);
+            Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+        }
     }
-    /* Look for "all" and "end" patterns. */
-    endMatch = FALSE;
-    for (i = 5; i < objc; i++) {
+    allMatch = endMatch = (objc == 4);
+    for (i = 4; i < objc; i++) {
         const char *pattern;
 
         pattern = Tcl_GetString(objv[i]);
         if (Tcl_StringMatch("all", pattern)) {
-            Tcl_SetBooleanObj(Tcl_GetObjResult(interp), TRUE);
-            return TCL_OK;
+           allMatch = TRUE;
         }
         if (Tcl_StringMatch("end", pattern)) {
-            endMatch = TRUE;
+           endMatch = TRUE;
         }
     }
-    for (col = blt_table_first_tagged_column(&ci); col != NULL; 
-	 col = blt_table_next_tagged_column(&ci)) {
-	Blt_Chain chain;
-	Blt_ChainLink link;
-        int count = 0;
-	chain = blt_table_get_column_tags(table, col);
-	for (link = Blt_Chain_FirstLink(chain); link != NULL; 
-	     link = Blt_Chain_NextLink(link)) {
-	    const char *tag;
-	    int match;
-	    int i;
+    if (allMatch) {
+        Tcl_Obj *objPtr;
 
-	    tag = Blt_Chain_GetValue(link);
-            count++;
-	    match = FALSE;
-	    for (i = 5; i < objc; i++) {
-                const char *pattern;
-
-                pattern = Tcl_GetString(objv[i]);
-                if (Tcl_StringMatch(tag, pattern)) {
-		    match = TRUE;
-		    break;                  /* Found match. */
-		}
-	    }
-	    if (match) {
-                Tcl_SetBooleanObj(Tcl_GetObjResult(interp), TRUE);
-                Blt_Chain_Destroy(chain);
-                return TCL_OK;
-	    }
-	}
-	Blt_Chain_Destroy(chain);
+        objPtr = Tcl_NewStringObj("all", 3);
+        Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
     }
-
-    /* Handle "end" tag specially. */
     if (endMatch) {
-        BLT_TABLE_COLUMN col, lastCol;
-	
-        lastCol = blt_table_column(table, blt_table_num_columns(table) - 1);
-        for (col = blt_table_first_tagged_column(&ci); col != NULL; 
-             col = blt_table_next_tagged_column(&ci)) {
-            if (col == lastCol) {
-                Tcl_SetBooleanObj(Tcl_GetObjResult(interp), TRUE);
-                return TCL_OK;
-            }
-        }
+        Tcl_Obj *objPtr;
+
+        objPtr = Tcl_NewStringObj("end", 3);
+        Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
     }
-    Tcl_SetBooleanObj(Tcl_GetObjResult(interp), FALSE);
+    Tcl_SetObjResult(interp, listObjPtr);
     return TCL_OK;
 }
 
@@ -3919,9 +3734,9 @@ static Blt_OpSpec columnTagOps[] =
     {"get",     1, ColumnTagGetOp,     5, 0, "column ?pattern...?",},
     {"indices", 1, ColumnTagIndicesOp, 4, 0, "?tag...?",},
     {"labels",  1, ColumnTagLabelsOp,  4, 0, "?tag...?",},
+    {"names",   1, ColumnTagNamesOp,   4, 0, "?pattern...?",},
     {"range",   1, ColumnTagRangeOp,   6, 0, "from to ?tag...?",},
-    {"search",  3, ColumnTagSearchOp,  5, 6, "column ?pattern?",},
-    {"set",     3, ColumnTagSetOp,     5, 0, "column tag...",},
+    {"set",     1, ColumnTagSetOp,     5, 0, "column tag...",},
     {"unset",   1, ColumnTagUnsetOp,   5, 0, "column tag...",},
 
 };
@@ -4195,7 +4010,6 @@ static Blt_OpSpec columnOps[] =
     {"move",      1, ColumnMoveOp,    5, 6, "from to ?count?",},
     {"names",     2, ColumnNamesOp,   3, 0, "?pattern...?",},
     {"nonempty",  3, ColumnNonEmptyOp,4, 4, "column",},
-    {"notify",    3, ColumnNotifyOp,  5, 0, "column ?flags? command",},
     {"set",       1, ColumnSetOp,     5, 0, "column row value...",},
     {"tag",       2, ColumnTagOp,     3, 0, "op args...",},
     {"type",      2, ColumnTypeOp,    4, 0, "column ?type column type?...",},
@@ -5396,101 +5210,6 @@ RowNonEmptyOp(ClientData clientData, Tcl_Interp *interp, int objc,
     return TCL_OK;
 }
 
-/*
- *---------------------------------------------------------------------------
- *
- * RowNotifyOp --
- *
- *      Creates a notifier for this instance.  Notifiers represent a bitmask
- *      of events and a command prefix to be invoked when a matching event
- *      occurs.
- *
- *      The command prefix is parsed and saved in an array of Tcl_Objs. Extra
- *      slots are allocated for the
- *
- * Results:
- *      A standard TCL result.  The name of the new notifier is returned in
- *      the interpreter result.  Otherwise, if it failed to parse a switch,
- *      then TCL_ERROR is returned and an error message is left in the
- *      interpreter result.
- *
- * Example:
- *      table0 row notify row ?flags? command arg
- *
- *---------------------------------------------------------------------------
- */
-static int
-RowNotifyOp(ClientData clientData, Tcl_Interp *interp, int objc,
-            Tcl_Obj *const *objv)
-{
-    Cmd *cmdPtr = clientData;
-    BLT_TABLE table;
-    NotifierInfo *notifyPtr;
-    NotifySwitches switches;
-    const char *tag, *string;
-    int count;
-    int i;
-    BLT_TABLE_ROW row;
-    BLT_TABLE_ROWCOLUMN_SPEC spec;
-
-    table = cmdPtr->table;
-    spec = blt_table_row_spec(table, objv[3], &string);
-    row = NULL;
-    tag = NULL;
-    if (spec == TABLE_SPEC_TAG) {
-	tag = string;
-    } else {
-	row = blt_table_get_row(interp, table, objv[3]);
-	if (row == NULL) {
-	    return TCL_ERROR;
-	}
-    }
-    count = 0;
-    for (i = 4; i < objc; i++) {
-	const char *string;
-
-	string = Tcl_GetString(objv[i]);
-	if (string[0] != '-') {
-	    break;
-	}
-	count++;
-    }
-    switches.flags = 0;
-    /* Process switches  */
-    if (Blt_ParseSwitches(interp, notifySwitches, count, objv + 4, 
-	     &switches, 0) < 0) {
-	return TCL_ERROR;
-    }
-    notifyPtr = Blt_AssertMalloc(sizeof(NotifierInfo));
-    notifyPtr->cmdPtr = cmdPtr;
-    if (tag == NULL) {
-	notifyPtr->notifier = blt_table_create_row_notifier(interp, 
-		cmdPtr->table, row, switches.flags, NotifyProc, 
-		NotifierDeleteProc, notifyPtr);
-    } else {
-	notifyPtr->notifier = blt_table_create_row_tag_notifier(interp, 
-		cmdPtr->table, tag, switches.flags, NotifyProc, 
-		NotifierDeleteProc, notifyPtr);
-    }   
-    /* Stash away the command in structure and pass that to the notifier. */
-    notifyPtr->cmdObjPtr = Tcl_NewListObj(objc - i, objv + i);
-    Tcl_IncrRefCount(notifyPtr->cmdObjPtr);
-    if (switches.flags == 0) {
-	switches.flags = TABLE_NOTIFY_ALL_EVENTS;
-    }
-    {
-	char notifyId[200];
-	Blt_HashEntry *hPtr;
-	int isNew;
-
-	Blt_FormatString(notifyId, 200, "notify%d", cmdPtr->nextNotifyId++);
-	hPtr = Blt_CreateHashEntry(&cmdPtr->notifyTable, notifyId, &isNew);
-	assert(isNew);
-	Blt_SetHashValue(hPtr, notifyPtr);
-	Tcl_SetStringObj(Tcl_GetObjResult(interp), notifyId, -1);
-    }
-    return TCL_OK;
-}
 
 /*
  *---------------------------------------------------------------------------
@@ -5981,90 +5700,78 @@ RowTagRangeOp(ClientData clientData, Tcl_Interp *interp, int objc,
 /*
  *---------------------------------------------------------------------------
  *
- * RowTagSearchOp --
+ * RowTagNamesOp --
  *
  *      Returns tag names for a given row.  If one of more pattern arguments
  *      are provided, then only those matching tags are returned.
  *
- *      .t row tag find $row pat1 pat2...
+ *      .t row tag names pat1 pat2...
  *
  *---------------------------------------------------------------------------
  */
 static int
-RowTagSearchOp(ClientData clientData, Tcl_Interp *interp, int objc,
-               Tcl_Obj *const *objv)
+RowTagNamesOp(ClientData clientData, Tcl_Interp *interp, int objc,
+              Tcl_Obj *const *objv)
 {
+    Blt_HashTable *tablePtr;
+    Blt_HashEntry *hPtr;
+    Blt_HashSearch iter;
     Cmd *cmdPtr = clientData;
-    BLT_TABLE table;
-    BLT_TABLE_ITERATOR ri;
-    BLT_TABLE_ROW row;
-    int i, endMatch;
+    Tcl_Obj *listObjPtr;
+    int allMatch, endMatch;
+    int i;
     
-    table = cmdPtr->table;
-    if (blt_table_iterate_rows(interp, table, objv[4], &ri) != TCL_OK) {
-	return TCL_ERROR;
+    tablePtr = blt_table_get_row_tag_table(cmdPtr->table);
+    listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
+    for (hPtr = Blt_FirstHashEntry(tablePtr, &iter); hPtr != NULL;
+         hPtr = Blt_NextHashEntry(&iter)) {
+        const char *tag;
+        int i;
+        int match;
+        
+        tag = Blt_GetHashKey(tablePtr, hPtr);
+        match = (objc == 4);
+        for (i = 4; i < objc; i++) {
+            const char *pattern;
+
+            pattern = Tcl_GetString(objv[i]);
+            if (Tcl_StringMatch(tag, pattern)) {
+                match = TRUE;
+                break;                  /* Found match. */
+            }
+        }
+        if (match) {
+            Tcl_Obj *objPtr;
+
+            objPtr = Tcl_NewStringObj(tag, -1);
+            Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+        }
     }
-    /* Look for "all" and "end" patterns. */
-    endMatch = FALSE;
-    for (i = 5; i < objc; i++) {
+    allMatch = endMatch = (objc == 4);
+    for (i = 4; i < objc; i++) {
         const char *pattern;
 
         pattern = Tcl_GetString(objv[i]);
         if (Tcl_StringMatch("all", pattern)) {
-            Tcl_SetBooleanObj(Tcl_GetObjResult(interp), TRUE);
-            return TCL_OK;
+           allMatch = TRUE;
         }
         if (Tcl_StringMatch("end", pattern)) {
-            endMatch = TRUE;
+           endMatch = TRUE;
         }
     }
-    for (row = blt_table_first_tagged_row(&ri); row != NULL; 
-	 row = blt_table_next_tagged_row(&ri)) {
-	Blt_Chain chain;
-	Blt_ChainLink link;
-        int count = 0;
-	chain = blt_table_get_row_tags(table, row);
-	for (link = Blt_Chain_FirstLink(chain); link != NULL; 
-	     link = Blt_Chain_NextLink(link)) {
-	    const char *tag;
-	    int match;
-	    int i;
+    if (allMatch) {
+        Tcl_Obj *objPtr;
 
-	    tag = Blt_Chain_GetValue(link);
-            count++;
-	    match = FALSE;
-	    for (i = 5; i < objc; i++) {
-                const char *pattern;
-
-                pattern = Tcl_GetString(objv[i]);
-                if (Tcl_StringMatch(tag, pattern)) {
-		    match = TRUE;
-		    break;                  /* Found match. */
-		}
-	    }
-	    if (match) {
-                Tcl_SetBooleanObj(Tcl_GetObjResult(interp), TRUE);
-                Blt_Chain_Destroy(chain);
-                return TCL_OK;
-	    }
-	}
-	Blt_Chain_Destroy(chain);
+        objPtr = Tcl_NewStringObj("all", 3);
+        Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
     }
-
-    /* Handle "end" tag specially. */
     if (endMatch) {
-        BLT_TABLE_ROW row, lastRow;
-	
-        lastRow = blt_table_row(table, blt_table_num_rows(table) - 1);
-        for (row = blt_table_first_tagged_row(&ri); row != NULL; 
-             row = blt_table_next_tagged_row(&ri)) {
-            if (row == lastRow) {
-                Tcl_SetBooleanObj(Tcl_GetObjResult(interp), TRUE);
-                return TCL_OK;
-            }
-        }
+        Tcl_Obj *objPtr;
+
+        objPtr = Tcl_NewStringObj("end", 3);
+        Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
     }
-    Tcl_SetBooleanObj(Tcl_GetObjResult(interp), FALSE);
+    Tcl_SetObjResult(interp, listObjPtr);
     return TCL_OK;
 }
 
@@ -6171,9 +5878,9 @@ static Blt_OpSpec rowTagOps[] =
     {"get",     1, RowTagGetOp,     5, 0, "row ?pattern...?",},
     {"indices", 1, RowTagIndicesOp, 4, 0, "?tag...?",},
     {"labels",  1, RowTagLabelsOp,  4, 0, "?tag...?",},
+    {"names",   1, RowTagNamesOp,   4, 0, "?pattern?",},
     {"range",   1, RowTagRangeOp,   6, 0, "from to ?tag...?",},
-    {"search",  3, RowTagSearchOp,  5, 6, "row ?pattern?",},
-    {"set",     3, RowTagSetOp,     5, 0, "row tag...",},
+    {"set",     1, RowTagSetOp,     5, 0, "row tag...",},
     {"unset",   1, RowTagUnsetOp,   5, 0, "row tag...",},
 };
 
@@ -6187,7 +5894,7 @@ RowTagOp(ClientData clientData, Tcl_Interp *interp, int objc,
     int result;
 
     proc = Blt_GetOpFromObj(interp, numRowTagOps, rowTagOps, BLT_OP_ARG3, 
-			    objc, objv, 0);
+                objc, objv, 0);
     if (proc == NULL) {
 	return TCL_ERROR;
     }
@@ -6358,7 +6065,6 @@ static Blt_OpSpec rowOps[] =
     {"move",      1, RowMoveOp,     5, 6, "from to ?count?",},
     {"names",     2, RowNamesOp,    3, 0, "?pattern...?",},
     {"nonempty",  3, RowNonEmptyOp, 4, 4, "row",},
-    {"notify",    3, RowNotifyOp,   5, 0, "row ?flags? command",},
     {"set",       1, RowSetOp,      5, 0, "row column value...",},
     {"tag",       1, RowTagOp,      3, 0, "op args...",},
     {"unset",     1, RowUnsetOp,    4, 0, "row ?indices...?",},
@@ -7016,12 +6722,107 @@ ImportOp(ClientData clientData, Tcl_Interp *interp, int objc,
     return (*fmtPtr->importProc) (cmdPtr->table, interp, objc, objv);
 }
 
-/**************** Notify Operations *******************/
+/**************** Watch Operations *******************/
 
 /*
  *---------------------------------------------------------------------------
  *
- * NotifyDeleteOp --
+ * WatchColumnOp --
+ *
+ *      Creates a notifier for this instance.  Notifiers represent a bitmask
+ *      of events and a command prefix to be invoked when a matching event
+ *      occurs.
+ *
+ *      The command prefix is parsed and saved in an array of Tcl_Objs. Extra
+ *      slots are allocated for the
+ *
+ * Results:
+ *      A standard TCL result.  The name of the new notifier is returned in
+ *      the interpreter result.  Otherwise, if it failed to parse a switch,
+ *      then TCL_ERROR is returned and an error message is left in the
+ *      interpreter result.
+ *
+ * Example:
+ *      table0 column watch col ?flags? command arg
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+WatchColumnOp(ClientData clientData, Tcl_Interp *interp, int objc,
+               Tcl_Obj *const *objv)
+{
+    Cmd *cmdPtr = clientData;
+    BLT_TABLE table;
+    BLT_TABLE_COLUMN col;
+    BLT_TABLE_ROWCOLUMN_SPEC spec;
+    WatchInfo *watchPtr;
+    WatchSwitches switches;
+    const char *tag, *string;
+    int count, i;
+
+    table = cmdPtr->table;
+    spec = blt_table_column_spec(table, objv[3], &string);
+    col = NULL;
+    tag = NULL;
+    if (spec == TABLE_SPEC_TAG) {
+	tag = string;
+    } else {
+	col = blt_table_get_column(interp, table, objv[3]);
+	if (col == NULL) {
+	    return TCL_ERROR;
+	}
+    }
+    count = 0;
+    for (i = 4; i < objc; i++) {
+	const char *string;
+
+	string = Tcl_GetString(objv[i]);
+	if (string[0] != '-') {
+	    break;
+	}
+	count++;
+    }
+    switches.flags = 0;
+    /* Process switches  */
+    if (Blt_ParseSwitches(interp, watchSwitches, count, objv + 4, &switches, 
+	0) < 0) {
+	return TCL_ERROR;
+    }
+    watchPtr = Blt_AssertMalloc(sizeof(WatchInfo));
+    watchPtr->cmdPtr = cmdPtr;
+    if (tag == NULL) {
+	watchPtr->notifier = blt_table_create_column_notifier(interp, 
+		cmdPtr->table, col, switches.flags, NotifyProc, 
+		NotifierDeleteProc, watchPtr);
+    } else {
+	watchPtr->notifier = blt_table_create_column_tag_notifier(interp, 
+		cmdPtr->table, tag, switches.flags, NotifyProc, 
+		NotifierDeleteProc, watchPtr);
+    }   
+    /* Stash away the command in structure and pass that to the notifier. */
+    watchPtr->cmdObjPtr = Tcl_NewListObj(objc - i, objv + i);
+    Tcl_IncrRefCount(watchPtr->cmdObjPtr);
+    if (switches.flags == 0) {
+	switches.flags = TABLE_NOTIFY_ALL_EVENTS;
+    }
+    {
+	char name[200];
+	Blt_HashEntry *hPtr;
+	int isNew;
+
+	Blt_FormatString(name, 200, "watch%d", cmdPtr->nextWatch++);
+	hPtr = Blt_CreateHashEntry(&cmdPtr->watchTable, name, &isNew);
+	assert(isNew);
+	Blt_SetHashValue(hPtr, watchPtr);
+	Tcl_SetStringObj(Tcl_GetObjResult(interp), name, -1);
+    }
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * WatchDeleteOp --
  *
  *      Deletes one or more notifiers.  
  *
@@ -7033,7 +6834,7 @@ ImportOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *---------------------------------------------------------------------------
  */
 static int
-NotifyDeleteOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+WatchDeleteOp(ClientData clientData, Tcl_Interp *interp, int objc, 
 	       Tcl_Obj *const *objv)
 {
     Cmd *cmdPtr = clientData;
@@ -7041,17 +6842,17 @@ NotifyDeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
 
     for (i = 3; i < objc; i++) {
 	Blt_HashEntry *hPtr;
-	NotifierInfo *notifyPtr;
+	WatchInfo *watchPtr;
 
-	hPtr = Blt_FindHashEntry(&cmdPtr->notifyTable, Tcl_GetString(objv[i]));
+	hPtr = Blt_FindHashEntry(&cmdPtr->watchTable, Tcl_GetString(objv[i]));
 	if (hPtr == NULL) {
-	    Tcl_AppendResult(interp, "unknown notifier id \"", 
+	    Tcl_AppendResult(interp, "unknown watch id \"", 
 		Tcl_GetString(objv[i]), "\"", (char *)NULL);
 	    return TCL_ERROR;
 	}
-	notifyPtr = Blt_GetHashValue(hPtr);
-	Blt_DeleteHashEntry(&cmdPtr->notifyTable, hPtr);
-	FreeNotifierInfo(notifyPtr);
+	watchPtr = Blt_GetHashValue(hPtr);
+	Blt_DeleteHashEntry(&cmdPtr->watchTable, hPtr);
+	FreeWatchInfo(watchPtr);
     }
     return TCL_OK;
 }
@@ -7059,7 +6860,7 @@ NotifyDeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
 /*
  *---------------------------------------------------------------------------
  *
- * NotifierInfoOp --
+ * WatchInfoOp --
  *
  *      Returns the details for a given notifier.  The string id of the
  *      notifier is passed as an argument.
@@ -7075,26 +6876,26 @@ NotifyDeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
  */
 /*ARGSUSED*/
 static int
-NotifyInfoOp(ClientData clientData, Tcl_Interp *interp, int objc,
+WatchInfoOp(ClientData clientData, Tcl_Interp *interp, int objc,
              Tcl_Obj *const *objv)
 {
     Cmd *cmdPtr = clientData;
     Blt_HashEntry *hPtr;
-    NotifierInfo *notifyPtr;
+    WatchInfo *watchPtr;
     Tcl_Obj *listObjPtr, *subListObjPtr, *objPtr;
     struct _BLT_TABLE_NOTIFIER *notifierPtr;
 
-    hPtr = Blt_FindHashEntry(&cmdPtr->notifyTable, Tcl_GetString(objv[3]));
+    hPtr = Blt_FindHashEntry(&cmdPtr->watchTable, Tcl_GetString(objv[3]));
     if (hPtr == NULL) {
-	Tcl_AppendResult(interp, "unknown notifier id \"", 
+	Tcl_AppendResult(interp, "unknown watch id \"", 
 		Tcl_GetString(objv[3]), "\"", (char *)NULL);
 	return TCL_ERROR;
     }
-    notifyPtr = Blt_GetHashValue(hPtr);
-    notifierPtr = notifyPtr->notifier;
+    watchPtr = Blt_GetHashValue(hPtr);
+    notifierPtr = watchPtr->notifier;
 
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
-    Tcl_ListObjAppendElement(interp, listObjPtr, objv[3]); /* Copy notify Id */
+    Tcl_ListObjAppendElement(interp, listObjPtr, objv[3]); /* Copy watch Id */
 
     subListObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
     if (notifierPtr->flags & TABLE_NOTIFY_CREATE) {
@@ -7135,7 +6936,7 @@ NotifyInfoOp(ClientData clientData, Tcl_Interp *interp, int objc,
 		Tcl_NewLongObj(blt_table_column_index(notifierPtr->column)));
 	}
     }
-    Tcl_ListObjAppendElement(interp, listObjPtr, notifyPtr->cmdObjPtr);
+    Tcl_ListObjAppendElement(interp, listObjPtr, watchPtr->cmdObjPtr);
     Tcl_SetObjResult(interp, listObjPtr);
     return TCL_OK;
 }
@@ -7143,7 +6944,7 @@ NotifyInfoOp(ClientData clientData, Tcl_Interp *interp, int objc,
 /*
  *---------------------------------------------------------------------------
  *
- * NotifyNamesOp --
+ * WatchNamesOp --
  *
  *      Returns the names of all the notifiers in use by this instance.
  *      Notifiers issues by other instances or object clients are not
@@ -7157,7 +6958,7 @@ NotifyInfoOp(ClientData clientData, Tcl_Interp *interp, int objc,
  */
 /*ARGSUSED*/
 static int
-NotifyNamesOp(ClientData clientData, Tcl_Interp *interp, int objc,
+WatchNamesOp(ClientData clientData, Tcl_Interp *interp, int objc,
               Tcl_Obj *const *objv)
 {
     Cmd *cmdPtr = clientData;
@@ -7166,12 +6967,12 @@ NotifyNamesOp(ClientData clientData, Tcl_Interp *interp, int objc,
     Tcl_Obj *listObjPtr;
 
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
-    for (hPtr = Blt_FirstHashEntry(&cmdPtr->notifyTable, &iter); hPtr != NULL;
+    for (hPtr = Blt_FirstHashEntry(&cmdPtr->watchTable, &iter); hPtr != NULL;
 	 hPtr = Blt_NextHashEntry(&iter)) {
 	Tcl_Obj *objPtr;
 	const char *name;
 
-	name = Blt_GetHashKey(&cmdPtr->notifyTable, hPtr);
+	name = Blt_GetHashKey(&cmdPtr->watchTable, hPtr);
 	objPtr = Tcl_NewStringObj(name, -1);
 	Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
     }
@@ -7182,7 +6983,103 @@ NotifyNamesOp(ClientData clientData, Tcl_Interp *interp, int objc,
 /*
  *---------------------------------------------------------------------------
  *
- * NotifyOp --
+ * WatchRowOp --
+ *
+ *      Creates a notifier for this instance.  Notifiers represent a bitmask
+ *      of events and a command prefix to be invoked when a matching event
+ *      occurs.
+ *
+ *      The command prefix is parsed and saved in an array of Tcl_Objs. Extra
+ *      slots are allocated for the
+ *
+ * Results:
+ *      A standard TCL result.  The name of the new notifier is returned in
+ *      the interpreter result.  Otherwise, if it failed to parse a switch,
+ *      then TCL_ERROR is returned and an error message is left in the
+ *      interpreter result.
+ *
+ * Example:
+ *      table0 row watch row ?flags? command arg
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+WatchRowOp(ClientData clientData, Tcl_Interp *interp, int objc,
+           Tcl_Obj *const *objv)
+{
+    Cmd *cmdPtr = clientData;
+    BLT_TABLE table;
+    WatchInfo *watchPtr;
+    WatchSwitches switches;
+    const char *tag, *string;
+    int count;
+    int i;
+    BLT_TABLE_ROW row;
+    BLT_TABLE_ROWCOLUMN_SPEC spec;
+
+    table = cmdPtr->table;
+    spec = blt_table_row_spec(table, objv[3], &string);
+    row = NULL;
+    tag = NULL;
+    if (spec == TABLE_SPEC_TAG) {
+	tag = string;
+    } else {
+	row = blt_table_get_row(interp, table, objv[3]);
+	if (row == NULL) {
+	    return TCL_ERROR;
+	}
+    }
+    count = 0;
+    for (i = 4; i < objc; i++) {
+	const char *string;
+
+	string = Tcl_GetString(objv[i]);
+	if (string[0] != '-') {
+	    break;
+	}
+	count++;
+    }
+    switches.flags = 0;
+    /* Process switches  */
+    if (Blt_ParseSwitches(interp, watchSwitches, count, objv + 4, 
+	     &switches, 0) < 0) {
+	return TCL_ERROR;
+    }
+    watchPtr = Blt_AssertMalloc(sizeof(WatchInfo));
+    watchPtr->cmdPtr = cmdPtr;
+    if (tag == NULL) {
+	watchPtr->notifier = blt_table_create_row_notifier(interp, 
+		cmdPtr->table, row, switches.flags, NotifyProc, 
+		NotifierDeleteProc, watchPtr);
+    } else {
+	watchPtr->notifier = blt_table_create_row_tag_notifier(interp, 
+		cmdPtr->table, tag, switches.flags, NotifyProc, 
+		NotifierDeleteProc, watchPtr);
+    }   
+    /* Stash away the command in structure and pass that to the notifier. */
+    watchPtr->cmdObjPtr = Tcl_NewListObj(objc - i, objv + i);
+    Tcl_IncrRefCount(watchPtr->cmdObjPtr);
+    if (switches.flags == 0) {
+	switches.flags = TABLE_NOTIFY_ALL_EVENTS;
+    }
+    {
+	char name[200];
+	Blt_HashEntry *hPtr;
+	int isNew;
+
+	Blt_FormatString(name, 200, "watch%d", cmdPtr->nextWatch++);
+	hPtr = Blt_CreateHashEntry(&cmdPtr->watchTable, name, &isNew);
+	assert(isNew);
+	Blt_SetHashValue(hPtr, watchPtr);
+	Tcl_SetStringObj(Tcl_GetObjResult(interp), name, -1);
+    }
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * WatchOp --
  *
  *      Parses the given command line and calls one of several notifier
  *      specific operations.
@@ -7192,23 +7089,25 @@ NotifyNamesOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  *---------------------------------------------------------------------------
  */
-static Blt_OpSpec notifyOps[] =
+static Blt_OpSpec watchOps[] =
 {
-    {"delete", 1, NotifyDeleteOp, 3, 0, "notifyId...",},
-    {"info",   1, NotifyInfoOp,   4, 4, "notifyId",},
-    {"names",  1, NotifyNamesOp,  3, 3, "",},
+    {"column", 1, WatchColumnOp, 5, 0, "column ?flags? command",},
+    {"delete", 1, WatchDeleteOp, 3, 0, "watchName...",},
+    {"info",   1, WatchInfoOp,   4, 4, "watchName",},
+    {"names",  1, WatchNamesOp,  3, 3, "",},
+    {"row",    1, WatchRowOp,    5, 0, "row ?flags? command",},
 };
 
-static int numNotifyOps = sizeof(notifyOps) / sizeof(Blt_OpSpec);
+static int numWatchOps = sizeof(watchOps) / sizeof(Blt_OpSpec);
 
 static int
-NotifyOp(ClientData clientData, Tcl_Interp *interp, int objc,
+WatchOp(ClientData clientData, Tcl_Interp *interp, int objc,
          Tcl_Obj *const *objv)
 {
     Tcl_ObjCmdProc *proc;
     int result;
 
-    proc = Blt_GetOpFromObj(interp, numNotifyOps, notifyOps, BLT_OP_ARG2, objc, 
+    proc = Blt_GetOpFromObj(interp, numWatchOps, watchOps, BLT_OP_ARG2, objc, 
 	objv, 0);
     if (proc == NULL) {
 	return TCL_ERROR;
@@ -8230,10 +8129,11 @@ RestoreOp(ClientData clientData, Tcl_Interp *interp, int objc,
 		&switches, BLT_SWITCH_DEFAULTS) < 0) {
 	return TCL_ERROR;
     }
+    result = TCL_ERROR;
     if ((switches.dataObjPtr != NULL) && (switches.fileObjPtr != NULL)) {
 	Tcl_AppendResult(interp, "can't set both -file and -data switches.",
 			 (char *)NULL);
-	return TCL_ERROR;
+	goto error;
     }
     if (switches.dataObjPtr != NULL) {
 	result = blt_table_restore(interp, cmdPtr->table, 
@@ -8242,9 +8142,10 @@ RestoreOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	result = blt_table_file_restore(interp, cmdPtr->table, 
 		Tcl_GetString(switches.fileObjPtr), switches.flags);
     } else {
-	result = blt_table_file_restore(interp, cmdPtr->table, "out.dump", 
-		switches.flags);
+	Tcl_AppendResult(interp, "must set either -file and -data switch.",
+			 (char *)NULL);
     }
+ error:
     Blt_FreeSwitches(restoreSwitches, &switches, 0);
     return result;
 }
@@ -8851,15 +8752,15 @@ AttachOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	    }
 	    Blt_DeleteHashTable(&cmdPtr->traceTable);
 	    Blt_InitHashTable(&cmdPtr->traceTable, TCL_STRING_KEYS);
-	    for (hPtr = Blt_FirstHashEntry(&cmdPtr->notifyTable, &iter); 
+	    for (hPtr = Blt_FirstHashEntry(&cmdPtr->watchTable, &iter); 
 		hPtr != NULL; hPtr = Blt_NextHashEntry(&iter)) {
-		NotifierInfo *notifyPtr;
+		WatchInfo *watchPtr;
 
-		notifyPtr = Blt_GetHashValue(hPtr);
-		FreeNotifierInfo(notifyPtr);
+		watchPtr = Blt_GetHashValue(hPtr);
+		FreeWatchInfo(watchPtr);
 	    }
-	    Blt_DeleteHashTable(&cmdPtr->notifyTable);
-	    Blt_InitHashTable(&cmdPtr->notifyTable, TCL_STRING_KEYS);
+	    Blt_DeleteHashTable(&cmdPtr->watchTable);
+	    Blt_InitHashTable(&cmdPtr->watchTable, TCL_STRING_KEYS);
 	}
 	cmdPtr->table = table;
     }
@@ -8890,7 +8791,6 @@ static Blt_OpSpec tableOps[] =
     {"lookup",     2, LookupOp,     2, 0, "?value...?",},
     {"maximum",    2, MinMaxOp,     2, 3, "?column?",},
     {"minimum",    2, MinMaxOp,     2, 3, "?column?",},
-    {"notify",     2, NotifyOp,     2, 0, "op args...",},
     {"numcolumns", 4, NumColumnsOp, 2, 3, "?number?",},
     {"numrows",    4, NumRowsOp,    2, 3, "?number?",},
     {"restore",    2, RestoreOp,    2, 0, "?switches?",},
@@ -8899,6 +8799,7 @@ static Blt_OpSpec tableOps[] =
     {"sort",       2, SortOp,       3, 0, "?flags...?",},
     {"trace",      2, TraceOp,      2, 0, "op args...",},
     {"unset",      1, UnsetOp,      4, 0, "row column ?row column?",},
+    {"watch",      1, WatchOp,      2, 0, "op args...",},
 #ifdef notplanned
     {"-apply",     1, ApplyOp,      3, 0, "first last ?switches?",},
 #endif
@@ -8977,17 +8878,17 @@ TableInstDeleteProc(ClientData clientData)
 	blt_table_delete_trace(cmdPtr->table, tracePtr->trace);
     }
     Blt_DeleteHashTable(&cmdPtr->traceTable);
-    for (hPtr = Blt_FirstHashEntry(&cmdPtr->notifyTable, &iter); hPtr != NULL;
+    for (hPtr = Blt_FirstHashEntry(&cmdPtr->watchTable, &iter); hPtr != NULL;
 	 hPtr = Blt_NextHashEntry(&iter)) {
-	NotifierInfo *notifyPtr;
+	WatchInfo *watchPtr;
 
-	notifyPtr = Blt_GetHashValue(hPtr);
-	FreeNotifierInfo(notifyPtr);
+	watchPtr = Blt_GetHashValue(hPtr);
+	FreeWatchInfo(watchPtr);
     }
     if (cmdPtr->emptyValue != NULL) {
 	Blt_Free(cmdPtr->emptyValue);
     }
-    Blt_DeleteHashTable(&cmdPtr->notifyTable);
+    Blt_DeleteHashTable(&cmdPtr->watchTable);
     if (cmdPtr->hPtr != NULL) {
 	Blt_DeleteHashEntry(cmdPtr->tablePtr, cmdPtr->hPtr);
     }

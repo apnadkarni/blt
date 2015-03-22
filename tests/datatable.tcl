@@ -1,5 +1,4 @@
 
-
 package require BLT
 
 if {[info procs test] != "test"} {
@@ -190,7 +189,6 @@ test datatable.28 {datatable0} {
   datatable0 lookup ?value...?
   datatable0 maximum ?column?
   datatable0 minimum ?column?
-  datatable0 notify op args...
   datatable0 numcolumns ?number?
   datatable0 numrows ?number?
   datatable0 restore ?switches?
@@ -198,7 +196,8 @@ test datatable.28 {datatable0} {
   datatable0 set ?row column value?...
   datatable0 sort ?flags...?
   datatable0 trace op args...
-  datatable0 unset row column ?row column?}}
+  datatable0 unset row column ?row column?
+  datatable0 watch op args...}}
 
 test datatable.29 {datatable0 badOp} {
     list [catch {
@@ -225,7 +224,6 @@ test datatable.29 {datatable0 badOp} {
   datatable0 lookup ?value...?
   datatable0 maximum ?column?
   datatable0 minimum ?column?
-  datatable0 notify op args...
   datatable0 numcolumns ?number?
   datatable0 numrows ?number?
   datatable0 restore ?switches?
@@ -233,7 +231,8 @@ test datatable.29 {datatable0 badOp} {
   datatable0 set ?row column value?...
   datatable0 sort ?flags...?
   datatable0 trace op args...
-  datatable0 unset row column ?row column?}}
+  datatable0 unset row column ?row column?
+  datatable0 watch op args...}}
 
 test datatable.30 {datatable0 column (wrong \# args)} {
     list [catch {
@@ -264,7 +263,6 @@ test datatable.31 {datatable0 column badOp} {
   datatable0 column move from to ?count?
   datatable0 column names ?pattern...?
   datatable0 column nonempty column
-  datatable0 column notify column ?flags? command
   datatable0 column set column row value...
   datatable0 column tag op args...
   datatable0 column type column ?type column type?...
@@ -302,7 +300,6 @@ test datatable.33 {datatable0 row badOp} {
   datatable0 row move from to ?count?
   datatable0 row names ?pattern...?
   datatable0 row nonempty row
-  datatable0 row notify row ?flags? command
   datatable0 row set row column value...
   datatable0 row tag op args...
   datatable0 row unset row ?indices...?
@@ -340,7 +337,6 @@ test datatable.37 {datatable0 column -label xyz create} {
   datatable0 column move from to ?count?
   datatable0 column names ?pattern...?
   datatable0 column nonempty column
-  datatable0 column notify column ?flags? command
   datatable0 column set column row value...
   datatable0 column tag op args...
   datatable0 column type column ?type column type?...
@@ -690,11 +686,15 @@ test datatable.121 {column type badTag string} {
     list [catch {datatable0 column type badTag string} msg] $msg
 } {1 {unknown column specification "badTag" in ::datatable0}}
 
-test datatable.122 {column type all string} {
+test datatable.122 {column tag names} {
+    list [catch {datatable0 column tag names} msg] $msg
+} {0 {all end}}
+
+test datatable.123 {column type all string} {
     list [catch {datatable0 column type all string} msg] $msg
 } {0 {}}
 
-test datatable.123 {column tag badOp} {
+test datatable.124 {column tag badOp} {
     list [catch {datatable0 column tag badOp} msg] $msg
 } {1 {bad tag operation "badOp": should be one of...
   datatable0 column tag add tag ?column...?
@@ -704,12 +704,12 @@ test datatable.123 {column tag badOp} {
   datatable0 column tag get column ?pattern...?
   datatable0 column tag indices ?tag...?
   datatable0 column tag labels ?tag...?
+  datatable0 column tag names ?pattern...?
   datatable0 column tag range from to ?tag...?
-  datatable0 column tag search column ?pattern?
   datatable0 column tag set column tag...
   datatable0 column tag unset column tag...}}
 
-test datatable.124 {column tag (missing args)} {
+test datatable.125 {column tag (missing args)} {
     list [catch {datatable0 column tag} msg] $msg
 } {1 {wrong # args: should be one of...
   datatable0 column tag add tag ?column...?
@@ -719,12 +719,12 @@ test datatable.124 {column tag (missing args)} {
   datatable0 column tag get column ?pattern...?
   datatable0 column tag indices ?tag...?
   datatable0 column tag labels ?tag...?
+  datatable0 column tag names ?pattern...?
   datatable0 column tag range from to ?tag...?
-  datatable0 column tag search column ?pattern?
   datatable0 column tag set column tag...
   datatable0 column tag unset column tag...}}
 
-test datatable.125 {datatable0 column tag badOp} {
+test datatable.126 {datatable0 column tag badOp} {
     list [catch {datatable0 column tag badOp} msg] $msg
 } {1 {bad tag operation "badOp": should be one of...
   datatable0 column tag add tag ?column...?
@@ -734,287 +734,297 @@ test datatable.125 {datatable0 column tag badOp} {
   datatable0 column tag get column ?pattern...?
   datatable0 column tag indices ?tag...?
   datatable0 column tag labels ?tag...?
+  datatable0 column tag names ?pattern...?
   datatable0 column tag range from to ?tag...?
-  datatable0 column tag search column ?pattern?
   datatable0 column tag set column tag...
   datatable0 column tag unset column tag...}}
 
-test datatable.126 {datatable0 column tag add} {
+test datatable.127 {datatable0 column tag add} {
     list [catch {datatable0 column tag add} msg] $msg
 } {1 {wrong # args: should be "datatable0 column tag add tag ?column...?"}}
 
-test datatable.127 {datatable0 column tag add newTag (no columns)} {
+test datatable.128 {datatable0 column tag add newTag (no columns)} {
     list [catch {datatable0 column tag add newTag} msg] $msg
 } {0 {}}
 
-test datatable.128 {datatable0 column tag add newTag badIndex} {
+test datatable.129 {datatable0 column tag add newTag badIndex} {
     list [catch {datatable0 column tag add newTag badIndex} msg] $msg
 } {1 {unknown column specification "badIndex" in ::datatable0}}
     
-test datatable.129 {datatable0 column tag add newTag 0} {
+test datatable.130 {datatable0 column tag add newTag 0} {
     list [catch {datatable0 column tag add newTag 0} msg] $msg
 } {0 {}}
 
-test datatable.130 {datatable0 column tag search 0 (no tags)} {
-    list [catch {datatable0 column tag search 0} msg] [lsort $msg]
-} {0 0}
+test datatable.131 {datatable0 column tag names} {
+    list [catch {datatable0 column tag names} msg] $msg
+} {0 {newTag all end}}
 
-test datatable.131 {datatable0 column tag get 0} {
+
+test datatable.132 {datatable0 column tag get 0} {
     list [catch {datatable0 column tag get 0} msg] [lsort $msg]
 } {0 {all newTag}}
 
-test datatable.132 {datatable0 column tag add newTag1 0 1 2} {
+test datatable.133 {datatable0 column tag add newTag1 0 1 2} {
     list [catch {datatable0 column tag add newTag1 0 1 2} msg] $msg
 } {0 {}}
 
-test datatable.133 {datatable0 column tag search 0 newTag1} {
-    list [catch {datatable0 column tag search 0 newTag1} msg] [lsort $msg]
-} {0 1}
+test datatable.134 {datatable0 column tag names newTag1} {
+    list [catch {datatable0 column tag names newTag1} msg] $msg
+} {0 newTag1}
 
-test datatable.134 {datatable0 column tag search 0 newTag} {
-    list [catch {datatable0 column tag search 0 newTag} msg] [lsort $msg]
-} {0 1}
+test datatable.135 {datatable0 column tag names newTag} {
+    list [catch {datatable0 column tag names newTag} msg] $msg
+} {0 newTag}
 
-test datatable.135 {datatable0 column tag get 0} {
-    list [catch {datatable0 column tag get 0} msg] [lsort $msg]
+test datatable.136 {datatable0 column tag get 0} {
+    list [catch {datatable0 column tag get 0} msg] $msg
 } {0 {all newTag newTag1}}
 
-test datatable.136 {datatable0 column tag add newTag2 all} {
+test datatable.137 {datatable0 column tag add newTag2 all} {
     list [catch {datatable0 column tag add newTag2 all} msg] $msg
 } {0 {}}
 
-test datatable.137 {datatable0 column tag search} {
-    list [catch {datatable0 column tag search} msg] $msg
-} {1 {wrong # args: should be "datatable0 column tag search column ?pattern?"}}
+test datatable.138 {datatable0 column tag names} {
+    list [catch {datatable0 column tag names} msg] $msg
+} {0 {newTag2 newTag newTag1 all end}}
 
-test datatable.138 {datatable0 column tag search 0 newTag2} {
-    list [catch {datatable0 column tag search 0 newTag2} msg] [lsort $msg]
-} {0 1}
+test datatable.139 {datatable0 column tag names newTag2} {
+    list [catch {datatable0 column tag names newTag2} msg] $msg
+} {0 newTag2}
 
-test datatable.139 {datatable0 column tag search 0 *Tag*} {
-    list [catch {datatable0 column tag search 0 *Tag*} msg] [lsort $msg]
-} {0 1}
+test datatable.140 {datatable0 column tag names *Tag*} {
+    list [catch {datatable0 column tag names *Tag*} msg] $msg
+} {0 {newTag2 newTag newTag1}}
 
-test datatable.140 {datatable0 column tag search all (no tags)} {
-    list [catch {datatable0 column tag search all} msg] $msg
-} {0 0}
+test datatable.141 {datatable0 column tag names all} {
+    list [catch {datatable0 column tag names all} msg] $msg
+} {0 all}
 
-test datatable.141 {datatable0 column tag search end end} {
-    list [catch {datatable0 column tag search end end} msg] $msg
-} {0 1}
+test datatable.142 {datatable0 column tag names end} {
+    list [catch {datatable0 column tag names end} msg] $msg
+} {0 end}
 
-test datatable.142 {datatable0 column tag search all all} {
-    list [catch {datatable0 column tag search all all} msg] $msg
-} {0 1}
+test datatable.143 {datatable0 column tag names all} {
+    list [catch {datatable0 column tag names all} msg] $msg
+} {0 all}
 
-test datatable.143 {datatable0 column tag search end e*} {
-    list [catch {datatable0 column tag search end e*} msg] $msg
-} {0 1}
+test datatable.144 {datatable0 column tag names e*} {
+    list [catch {datatable0 column tag names e*} msg] $msg
+} {0 end}
 
-test datatable.144 {datatable0 column tag delete} {
+test datatable.145 {datatable0 column tag delete} {
     list [catch {datatable0 column tag delete} msg] $msg
 } {1 {wrong # args: should be "datatable0 column tag delete tag ?column...?"}}
 
-test datatable.145 {datatable0 column tag delete badTag} {
+test datatable.146 {datatable0 column tag delete badTag} {
     list [catch {datatable0 column tag delete badTag} msg] $msg
 } {0 {}}
 
-test datatable.146 {datatable0 column tag delete newTag1} {
+test datatable.147 {column tag names} {
+    list [catch {datatable0 column tag names} msg] $msg
+} {0 {newTag2 newTag newTag1 all end}}
+
+test datatable.148 {datatable0 column tag delete newTag1} {
     list [catch {datatable0 column tag delete newTag1} msg] $msg
 } {0 {}}
 
-test datatable.147 {datatable0 column tag delete newTags1 1} {
+test datatable.149 {datatable0 column tag delete newTags1 1} {
     list [catch {datatable0 column tag delete newTag1 1} msg] $msg
 } {0 {}}
 
-test datatable.148 {column tag delete newTag2 1} {
+test datatable.150 {column tag delete newTag2 1} {
     list [catch {datatable0 column tag delete newTag2 1} msg] $msg
 } {0 {}}
 
 # Don't care if column tag doesn't exist.
-test datatable.149 {column tag delete badTag 1} {
+test datatable.151 {column tag delete badTag 1} {
     list [catch {datatable0 column tag delete badTag 1} msg] $msg
 } {0 {}}
 
-test datatable.150 {column tag delete someTag 1000} {
+test datatable.152 {column tag names} {
+    list [catch {datatable0 column tag names} msg] $msg
+} {0 {newTag2 newTag newTag1 all end}}
+
+
+test datatable.153 {column tag delete someTag 1000} {
     list [catch {datatable0 column tag delete someTag 1000} msg] $msg
 } {1 {bad column index "1000"}}
 
-test datatable.151 {column tag delete end 1} {
+test datatable.154 {column tag delete end 1} {
     list [catch {datatable0 column tag delete end 1} msg] $msg
 } {0 {}}
 
-test datatable.152 {column tag delete all 1} {
+test datatable.155 {column tag delete all 1} {
     list [catch {datatable0 column tag delete all 1} msg] $msg
 } {0 {}}
 
-test datatable.153 {column tag forget} {
+test datatable.156 {column tag forget} {
     list [catch {datatable0 column tag forget} msg] $msg
 } {0 {}}
 
-test datatable.154 {column tag forget all} {
+test datatable.157 {column tag forget all} {
     list [catch {datatable0 column tag forget all} msg] $msg
 } {0 {}}
 
-test datatable.155 {column tag forget newTag1} {
+test datatable.158 {column tag forget newTag1} {
     list [catch {datatable0 column tag forget newTag1} msg] $msg
 } {0 {}}
 
 # Don't care if column tag doesn't exist.
-test datatable.156 {column tag forget newTag1} {
+test datatable.159 {column tag forget newTag1} {
     list [catch {datatable0 column tag forget newTag1} msg] $msg
 } {0 {}}
 
-test datatable.157 {column tag indices} {
+test datatable.160 {column tag indices} {
     list [catch {datatable0 column tag indices} msg] $msg
 } {0 {}}
 
-test datatable.158 {column tag indices all} {
+test datatable.161 {column tag indices all} {
     list [catch {datatable0 column tag indices all} msg] $msg
 } {0 {0 1 2 3 4}}
 
-test datatable.159 {column tag indices end} {
+test datatable.162 {column tag indices end} {
     list [catch {datatable0 column tag indices end} msg] $msg
 } {0 4}
 
-test datatable.160 {column tag indices newTag} {
+test datatable.163 {column tag indices newTag} {
     list [catch {datatable0 column tag indices newTag} msg] $msg
 } {0 0}
 
-test datatable.161 {column tag range 0 2 midTag} {
+test datatable.164 {column tag range 0 2 midTag} {
     list [catch {datatable0 column tag range 0 2 midTag} msg] $msg
 } {0 {}}
 
-test datatable.162 {column tag indices midTag} {
+test datatable.165 {column tag indices midTag} {
     list [catch {datatable0 column tag indices midTag} msg] $msg
 } {0 {0 1 2}}
 
-test datatable.163 {column tag range 0 end myTag} {
+test datatable.166 {column tag range 0 end myTag} {
     list [catch {datatable0 column tag range 0 end myTag} msg] $msg
 } {0 {}}
 
-test datatable.164 {column tag indices myTag} {
+test datatable.167 {column tag indices myTag} {
     list [catch {datatable0 column tag indices myTag} msg] $msg
 } {0 {0 1 2 3 4}}
 
-test datatable.165 {column tag range -1 0 myTag} {
+test datatable.168 {column tag range -1 0 myTag} {
     list [catch {datatable0 column tag range -1 0 myTag} msg] $msg
 } {1 {unknown column specification "-1" in ::datatable0}}
 
-test datatable.166 {column tag range 0 -1 myTag} {
+test datatable.169 {column tag range 0 -1 myTag} {
     list [catch {datatable0 column tag range 0 -1 myTag} msg] $msg
 } {1 {unknown column specification "-1" in ::datatable0}}
 
-test datatable.167 {column tag range 0 1000 myTag} {
+test datatable.170 {column tag range 0 1000 myTag} {
     list [catch {datatable0 column tag range 0 1000 myTag} msg] $msg
 } {1 {bad column index "1000"}}
 
-test datatable.168 {column unset} {
+test datatable.171 {column unset} {
     list [catch {datatable0 column unset} msg] $msg
 } {1 {wrong # args: should be "datatable0 column unset column ?indices...?"}}
 
-test datatable.169 {column unset 0} {
+test datatable.172 {column unset 0} {
     list [catch {datatable0 column unset 0} msg] $msg
 } {0 {}}
 
-test datatable.170 {column unset 0 end} {
+test datatable.173 {column unset 0 end} {
     list [catch {datatable0 column unset 0 end} msg] $msg
 } {0 {}}
 
-test datatable.171 {column names} {
+test datatable.174 {column names} {
     list [catch {datatable0 column names} msg] $msg
 } {0 {c1 c2 c3 c4 c5}}
 
-test datatable.172 {column extend 4 badSwitch } {
+test datatable.175 {column extend 4 badSwitch } {
     list [catch {datatable0 column extend 4 badSwitch} msg] $msg
 } {1 {unknown switch "badSwitch"
 following switches are available:
    -labels list}}
 
-test datatable.173 {column names} {
+test datatable.176 {column names} {
     list [catch {datatable0 column names} msg] $msg
 } {0 {c1 c2 c3 c4 c5}}
 
-test datatable.174 {column extend} {
+test datatable.177 {column extend} {
     list [catch {datatable0 column extend} msg] $msg
 } {1 {wrong # args: should be "datatable0 column extend number ?switches?"}}
 
-test datatable.175 {column extend -1} {
+test datatable.178 {column extend -1} {
     list [catch {datatable0 column extend -1} msg] $msg
 } {1 {bad value "-1": can't be negative}}
 
-test datatable.176 {column extend 0} {
+test datatable.179 {column extend 0} {
     list [catch {datatable0 column extend 0} msg] $msg
 } {0 {}}
 
 if 0 {
-test datatable.177 {column extend 10000000000 } {
+test datatable.180 {column extend 10000000000 } {
     list [catch {datatable0 column extend 10000000000} msg] $msg
 } {1 {can't extend table by 10000000000 columns: out of memory.}}
 }
-test datatable.178 {column extend -10 } {
+test datatable.181 {column extend -10 } {
     list [catch {datatable0 column extend -10} msg] $msg
 } {1 {bad value "-10": can't be negative}}
 
 
-test datatable.179 {column extend 10 } {
+test datatable.182 {column extend 10 } {
     list [catch {datatable0 column extend 10} msg] $msg
 } {0 {5 6 7 8 9 10 11 12 13 14}}
 
-test datatable.180 {column label 5 c6 6 c7 7 c8...} {
+test datatable.183 {column label 5 c6 6 c7 7 c8...} {
     list [catch {
 	datatable0 column label \
 		5 x6 6 x7 7 x8 8 x9 9 x10 10 x11 11 x12 12 x13 13 x14 14 x15
     } msg] $msg
 } {0 {}}
 
-test datatable.181 {column names} {
+test datatable.184 {column names} {
     list [catch {datatable0 column names} msg] $msg
 } {0 {c1 c2 c3 c4 c5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15}}
 
-test datatable.182 {column delete 9 } {
+test datatable.185 {column delete 9 } {
     list [catch {datatable0 column delete 9} msg] $msg
 } {0 {}}
 
-test datatable.183 {column names} {
+test datatable.186 {column names} {
     list [catch {datatable0 column names} msg] $msg
 } {0 {c1 c2 c3 c4 c5 x6 x7 x8 x9 x11 x12 x13 x14 x15}}
 
-test datatable.184 {column delete 10 } {
+test datatable.187 {column delete 10 } {
     list [catch {datatable0 column delete 10} msg] $msg
 } {0 {}}
 
-test datatable.185 {column names} {
+test datatable.188 {column names} {
     list [catch {datatable0 column names} msg] $msg
 } {0 {c1 c2 c3 c4 c5 x6 x7 x8 x9 x11 x13 x14 x15}}
 
-test datatable.186 {numcolumns} {
+test datatable.189 {numcolumns} {
     list [catch {datatable0 numcolumns} msg] $msg
 } {0 13}
 
-test datatable.187 {column create} {
+test datatable.190 {column create} {
     list [catch {datatable0 column create} msg] $msg
 } {0 13}
 
-test datatable.188 {column names} {
+test datatable.191 {column names} {
     list [catch {datatable0 column names} msg] $msg
 } {0 {c1 c2 c3 c4 c5 x6 x7 x8 x9 x11 x13 x14 x15 c17}}
 
-test datatable.189 {column label end fred} {
+test datatable.192 {column label end fred} {
     list [catch {
 	datatable0 column label end fred
 	datatable0 column names
     } msg] $msg
 } {0 {c1 c2 c3 c4 c5 x6 x7 x8 x9 x11 x13 x14 x15 fred}}
 
-test datatable.190 {column label end c18} {
+test datatable.193 {column label end c18} {
     list [catch {
 	datatable0 column label end c18
 	datatable0 column names
     } msg] $msg
 } {0 {c1 c2 c3 c4 c5 x6 x7 x8 x9 x11 x13 x14 x15 c18}}
 
-test datatable.191 {column create -before 1 -badSwitch} {
+test datatable.194 {column create -before 1 -badSwitch} {
     list [catch {datatable0 column create -badSwitch} msg] $msg
 } {1 {unknown switch "-badSwitch"
 following switches are available:
@@ -1026,7 +1036,7 @@ following switches are available:
    -tags tags
    -type type}}
 
-test datatable.192 {datatable0 column create -badSwitch -before 1} {
+test datatable.195 {datatable0 column create -badSwitch -before 1} {
     list [catch {datatable0 column create -badSwitch} msg] $msg
 } {1 {unknown switch "-badSwitch"
 following switches are available:
@@ -1038,7 +1048,7 @@ following switches are available:
    -tags tags
    -type type}}
 
-test datatable.193 {datatable0 column create -before 1 -badSwitch arg} {
+test datatable.196 {datatable0 column create -before 1 -badSwitch arg} {
     list [catch {datatable0 column create -badSwitch arg} msg] $msg
 } {1 {unknown switch "-badSwitch"
 following switches are available:
@@ -1050,108 +1060,108 @@ following switches are available:
    -tags tags
    -type type}}
 
-test datatable.194 {datatable0 column create -before 1 -label nc1} {
+test datatable.197 {datatable0 column create -before 1 -label nc1} {
     list [catch {datatable0 column create -before 1 -label nc1} msg] $msg
 } {0 1}
 
-test datatable.195 {datatable0 column create -before 2 -label nc2} {
+test datatable.198 {datatable0 column create -before 2 -label nc2} {
     list [catch {datatable0 column create -before 2 -label nc2} msg] $msg
 } {0 2}
 
-test datatable.196 {datatable0 column create -after 2 -label nc3} {
+test datatable.199 {datatable0 column create -after 2 -label nc3} {
     list [catch {datatable0 column create -after 2 -label nc3} msg] $msg
 } {0 3}
 
-test datatable.197 {datatable0 numcolumns} {
+test datatable.200 {datatable0 numcolumns} {
     list [catch {datatable0 numcolumns} msg] $msg
 } {0 17}
 
-test datatable.198 {datatable0 column index end} {
+test datatable.201 {datatable0 column index end} {
     list [catch {datatable0 column index end} msg] $msg
 } {0 16}
 
-test datatable.199 {datatable0 column names} {
+test datatable.202 {datatable0 column names} {
     list [catch {datatable0 column names} msg] $msg
 } {0 {c1 nc1 nc2 nc3 c2 c3 c4 c5 x6 x7 x8 x9 x11 x13 x14 x15 c18}}
 
-test datatable.200 {datatable0 column create -after end} {
+test datatable.203 {datatable0 column create -after end} {
     list [catch {datatable0 column create -after end} msg] $msg
 } {0 17}
 
-test datatable.201 {datatable0 column create -after 0} {
+test datatable.204 {datatable0 column create -after 0} {
     list [catch {datatable0 column create -after 0} msg] $msg
 } {0 1}
 
-test datatable.202 {datatable0 column create -label -one} {
+test datatable.205 {datatable0 column create -label -one} {
     list [catch {datatable0 column create -label -one} msg] $msg
 } {1 {column label "-one" can't start with a '-'.}}
 
-test datatable.203 {datatable0 column create -label abc-one} {
+test datatable.206 {datatable0 column create -label abc-one} {
     list [catch {datatable0 column create -label abc-one} msg] $msg
 } {0 19}
 
-test datatable.204 {datatable0 column create -label} {
+test datatable.207 {datatable0 column create -label} {
     list [catch {datatable0 column create -label} msg] $msg
 } {1 {value for "-label" missing}}
 
 
-test datatable.205 {datatable0 column create -before -1} {
+test datatable.208 {datatable0 column create -before -1} {
     list [catch {datatable0 column create -before -1} msg] $msg
 } {1 {unknown column specification "-1" in ::datatable0}}
 
-test datatable.206 {datatable0 numcolumns} {
+test datatable.209 {datatable0 numcolumns} {
     list [catch {datatable0 numcolumns} msg] $msg
 } {0 20}
 
-test datatable.207 {datatable0 column index fred} {
+test datatable.210 {datatable0 column index fred} {
     list [catch {datatable0 column index fred} msg] $msg
 } {0 -1}
 
-test datatable.208 {datatable0 column index one} {
+test datatable.211 {datatable0 column index one} {
     list [catch {datatable0 column index one} msg] $msg
 } {0 -1}
 
-test datatable.209 {datatable0 column index end} {
+test datatable.212 {datatable0 column index end} {
     list [catch {datatable0 column index end} msg] $msg
 } {0 19}
 
-test datatable.210 {datatable0 column create -after 40} {
+test datatable.213 {datatable0 column create -after 40} {
     list [catch {datatable0 column create -after 40} msg] $msg
 } {1 {bad column index "40"}}
 
-test datatable.211 {datatable0 column create -tags {myTag1 myTag2}} {
+test datatable.214 {datatable0 column create -tags {myTag1 myTag2}} {
     list [catch {
 	datatable0 column create -tags {myTag1 myTag2}
     } msg] $msg
 } {0 20}
 
-test datatable.212 {datatable0 column create -after end -tags {myTag1 myTag2}} {
+test datatable.215 {datatable0 column create -after end -tags {myTag1 myTag2}} {
     list [catch {
 	datatable0 column create -after end -tags {myTag1 myTag2} 
     } msg] $msg
 } {0 21}
 
-test datatable.213 {datatable0 column tag indices myTag1 myTag2} {
+test datatable.216 {datatable0 column tag indices myTag1 myTag2} {
     list [catch {
 	datatable0 column tag indices myTag1 myTag2
     } msg] $msg
 } {0 {20 21}}
 
-test datatable.214 {datatable0 column tag indices myTag1 myTag2} {
+test datatable.217 {datatable0 column tag indices myTag1 myTag2} {
     list [catch {
 	datatable0 column tag indices myTag1 myTag2
     } msg] $msg
 } {0 {20 21}}
 
-test datatable.215 {blt::datatable create} {
+test datatable.218 {blt::datatable create} {
     list [catch { blt::datatable create } msg] $msg
 } {0 ::datatable1}
 
-test datatable.216 {datatable1 numrows} {
+test datatable.219 {datatable1 numrows} {
     list [catch { datatable1 numrows } msg] $msg
 } {0 0}
 
-test datatable.217 {datatable1 numcolumns} {
+test datatable.220 {datatable1 numcolumns} {
     list [catch { datatable1 numrows } msg] $msg
 } {0 0}
 
@@ -1202,7 +1212,7 @@ $orig restore -data {
 }
 
 if 0 {
-test datatable.218 {datatable1 dump} {
+test datatable.221 {datatable1 dump} {
     list [catch {
 	datatable1 import csv -file t2.csv
 	datatable1 dump
@@ -1252,7 +1262,7 @@ d 4 5 5.5
 }}
 
 }
-test datatable.219 {datatable1 restore -data} {
+test datatable.222 {datatable1 restore -data} {
     list [catch {
 	set table [blt::datatable create]
 	$table restore -data {
@@ -1302,27 +1312,27 @@ test datatable.219 {datatable1 restore -data} {
     } msg] $msg
 } {0 {}}
 
-test datatable.220 {datatable0 column move} {
+test datatable.223 {datatable0 column move} {
     list [catch {datatable0 column move} msg] $msg
 } {1 {wrong # args: should be "datatable0 column move from to ?count?"}}
 
-test datatable.221 {datatable0 column move -1} {
+test datatable.224 {datatable0 column move -1} {
     list [catch {datatable0 column move -1} msg] $msg
 } {1 {wrong # args: should be "datatable0 column move from to ?count?"}}
 
-test datatable.222 {datatable0 column move 50 50} {
+test datatable.225 {datatable0 column move 50 50} {
     list [catch {datatable0 column move 50 50} msg] $msg
 } {1 {bad column index "50"}}
 
-test datatable.223 {datatable0 column move 10 50} {
+test datatable.226 {datatable0 column move 10 50} {
     list [catch {datatable0 column move 10 50} msg] $msg
 } {1 {bad column index "50"}}
 
-test datatable.224 {datatable0 column move all 10} {
+test datatable.227 {datatable0 column move all 10} {
     list [catch {datatable0 column move all 10} msg] $msg
 } {1 {multiple columns specified by "all"}}
 
-test datatable.225 {column label} {
+test datatable.228 {column label} {
     list [catch {
 	set nCols [datatable0 numcolumns]
 	for { set i 0 } { $i < $nCols } { incr i } {
@@ -1331,7 +1341,7 @@ test datatable.225 {column label} {
     } msg] $msg
 } {0 {}}
 
-test datatable.226 {duplicate} {
+test datatable.229 {duplicate} {
     list [catch { 
 	set before [$orig column names]
 	set dup [$orig duplicate]
@@ -1341,19 +1351,19 @@ test datatable.226 {duplicate} {
     } msg] $msg
 } {0 1}
 
-test datatable.227 {duplicate} {
+test datatable.230 {duplicate} {
     list [catch { datatable1 duplicate datatable1 } msg] $msg
 } {0 {}}
 
-test datatable.228 {column names} {
+test datatable.231 {column names} {
     list [catch { $orig column names } msg] $msg
 } {0 {c1 c2 c3 c4 c5 c6}}
 
-test datatable.229 {row names} {
+test datatable.232 {row names} {
     list [catch { $orig row names } msg] $msg
 } {0 {r1 r2 r3 r4 r5}}
 
-test datatable.230 {duplicate} {
+test datatable.233 {duplicate} {
     list [catch { 
 	set before [datatable1 column names]
 	datatable1 duplicate datatable1 
@@ -1362,7 +1372,7 @@ test datatable.230 {duplicate} {
     } msg] $msg
 } {0 1}
 
-test datatable.231 {duplicate} {
+test datatable.234 {duplicate} {
     list [catch { 
 	set dup [$orig duplicate]
 	set list [$dup column names]
@@ -1371,14 +1381,14 @@ test datatable.231 {duplicate} {
     } msg] $msg
 } {0 {c1 c2 c3 c4 c5 c6}}
 
-test datatable.232 {duplicate} {
+test datatable.235 {duplicate} {
     list [catch { 
 	datatable1 duplicate $orig
 	datatable1 numcolumns
     } msg] $msg
 } {0 6}
 
-test datatable.233 {duplicate} {
+test datatable.236 {duplicate} {
     list [catch { 
 	datatable1 duplicate $orig
 	datatable1 numrows
@@ -1386,14 +1396,14 @@ test datatable.233 {duplicate} {
 } {0 5}
 
 
-test datatable.234 {duplicate} {
+test datatable.237 {duplicate} {
     list [catch { 
 	datatable1 duplicate $orig
 	datatable1 column names
     } msg] $msg
 } {0 {c1 c2 c3 c4 c5 c6}}
 
-test datatable.235 {datatable1 column move 0 9  0} {
+test datatable.238 {datatable1 column move 0 9  0} {
     list [catch { 
 	# This should be a no-op.
 	datatable1 duplicate $orig
@@ -1404,7 +1414,7 @@ test datatable.235 {datatable1 column move 0 9  0} {
     } msg] $msg
 } {0 1}
 
-test datatable.236 {column move 0 0} {
+test datatable.239 {column move 0 0} {
     list [catch { 
 	# This should be a no-op.
 	datatable1 duplicate $orig
@@ -1415,7 +1425,7 @@ test datatable.236 {column move 0 0} {
     } msg] $msg
 } {0 1}
 
-test datatable.237 {duplicate} {
+test datatable.240 {duplicate} {
     list [catch { 
 	set before [$orig column names]
 	set dup [$orig duplicate]
@@ -1425,19 +1435,19 @@ test datatable.237 {duplicate} {
     } msg] $msg
 } {0 1}
 
-test datatable.238 {duplicate} {
+test datatable.241 {duplicate} {
     list [catch { datatable1 duplicate datatable1 } msg] $msg
 } {0 {}}
 
-test datatable.239 {column names} {
+test datatable.242 {column names} {
     list [catch { $orig column names } msg] $msg
 } {0 {c1 c2 c3 c4 c5 c6}}
 
-test datatable.240 {row names} {
+test datatable.243 {row names} {
     list [catch { $orig row names } msg] $msg
 } {0 {r1 r2 r3 r4 r5}}
 
-test datatable.241 {duplicate} {
+test datatable.244 {duplicate} {
     list [catch { 
 	set before [datatable1 column names]
 	datatable1 duplicate datatable1 
@@ -1446,7 +1456,7 @@ test datatable.241 {duplicate} {
     } msg] $msg
 } {0 1}
 
-test datatable.242 {duplicate} {
+test datatable.245 {duplicate} {
     list [catch { 
 	set dup [$orig duplicate]
 	set list [$dup column names]
@@ -1455,14 +1465,14 @@ test datatable.242 {duplicate} {
     } msg] $msg
 } {0 {c1 c2 c3 c4 c5 c6}}
 
-test datatable.243 {duplicate} {
+test datatable.246 {duplicate} {
     list [catch { 
 	datatable1 duplicate $orig
 	datatable1 numcolumns
     } msg] $msg
 } {0 6}
 
-test datatable.244 {duplicate} {
+test datatable.247 {duplicate} {
     list [catch { 
 	datatable1 duplicate $orig
 	datatable1 numrows
@@ -1470,7 +1480,7 @@ test datatable.244 {duplicate} {
 } {0 5}
 
 
-test datatable.245 {duplicate} {
+test datatable.248 {duplicate} {
     list [catch { 
 	datatable1 duplicate $orig
 	datatable1 column names
@@ -1478,14 +1488,14 @@ test datatable.245 {duplicate} {
 } {0 {c1 c2 c3 c4 c5 c6}}
 
 
-test datatable.246 {duplicate} {
+test datatable.249 {duplicate} {
     list [catch { 
 	datatable1 duplicate $orig
 	datatable1 column names
     } msg] $msg
 } {0 {c1 c2 c3 c4 c5 c6}}
 
-test datatable.247 {column move 0 2} {
+test datatable.250 {column move 0 2} {
     list [catch {
 	datatable1 duplicate $orig
 	datatable1 column move 0 2
@@ -1493,11 +1503,11 @@ test datatable.247 {column move 0 2} {
     } msg] $msg
 } {0 {c2 c3 c1 c4 c5 c6}}
 
-test datatable.248 {datatable0 column move -1 2} {
+test datatable.251 {datatable0 column move -1 2} {
     list [catch {datatable0 column move -1 2} msg] $msg
 } {1 {unknown column specification "-1" in ::datatable0}}
 
-test datatable.249 {datatable0 column move 0 end} {
+test datatable.252 {datatable0 column move 0 end} {
     list [catch {
 	datatable1 duplicate $orig
 	datatable1 column move 0 end
@@ -1505,25 +1515,25 @@ test datatable.249 {datatable0 column move 0 end} {
     } msg] $msg
 } {0 {c2 c3 c4 c5 c6 c1}}
 
-test datatable.250 {find expr} {
+test datatable.253 {find expr} {
     list [catch {
 	datatable1 find { $c1 > 3.1 }
     } msg] $msg
 } {0 {3 4}}
 
-test datatable.251 {find expr} {
+test datatable.254 {find expr} {
     list [catch {
 	datatable1 find { $0 > 3.1 }
     } msg] $msg
 } {0 {3 4}}
 
-test datatable.252 {column values} {
+test datatable.255 {column values} {
     list [catch {
 	datatable1 column values c1
     } msg] $msg
 } {0 {1.0 2.0 3.0 4.0 5.0}}
 
-test datatable.253 {column label all sameLabel} {
+test datatable.256 {column label all sameLabel} {
     list [catch {
 	datatable1 column label 0 sameLabel
 	datatable1 column label 1 sameLabel
@@ -1531,33 +1541,33 @@ test datatable.253 {column label all sameLabel} {
     } msg] $msg
 } {0 {}}
 
-test datatable.254 {column indices sameLabel} {
+test datatable.257 {column indices sameLabel} {
     list [catch {
 	datatable1 column indices sameLabel
     } msg] [lsort $msg]
 } {0 {0 1 2}}
 
-test datatable.255 {datatable0 trace column} {
+test datatable.258 {datatable0 trace column} {
     list [catch {datatable0 trace column} msg] $msg
 } {1 {wrong # args: should be "datatable0 trace column column how command"}}
 
-test datatable.256 {trace column all} {
+test datatable.259 {trace column all} {
     list [catch {datatable0 trace column all} msg] $msg
 } {1 {wrong # args: should be "datatable0 trace column column how command"}}
     
-test datatable.257 {trace column end} {
+test datatable.260 {trace column end} {
     list [catch {datatable0 trace column end} msg] $msg
 } {1 {wrong # args: should be "datatable0 trace column column how command"}}
 
-test datatable.258 {trace column 1} {
+test datatable.261 {trace column 1} {
     list [catch {datatable0 trace column 1} msg] $msg
 } {1 {wrong # args: should be "datatable0 trace column column how command"}}
 
-test datatable.259 {trace column 1 rwuc} {
+test datatable.262 {trace column 1 rwuc} {
     list [catch {datatable0 trace column 1 rwuc} msg] $msg
 } {1 {wrong # args: should be "datatable0 trace column column how command"}}
 
-test datatable.260 {trace column all rwuc} {
+test datatable.263 {trace column all rwuc} {
     list [catch {datatable0 trace column all rwuc} msg] $msg
 } {1 {wrong # args: should be "datatable0 trace column column how command"}}
 
@@ -1565,15 +1575,15 @@ proc Doit { args } {
     global mylist; lappend mylist $args 
 }
 
-test datatable.261 {trace column all rwuc Doit} {
+test datatable.264 {trace column all rwuc Doit} {
     list [catch {datatable1 trace column all rwuc Doit} msg] $msg
 } {0 trace0}
 
-test datatable.262 {trace info trace0} {
+test datatable.265 {trace info trace0} {
     list [catch {datatable1 trace info trace0} msg] $msg
 } {0 {id trace0 column all flags rwuc command {Doit ::datatable1}}}
 
-test datatable.263 {test create trace} {
+test datatable.266 {test create trace} {
     list [catch {
 	set mylist {}
 	datatable1 set all 0 20
@@ -1581,7 +1591,7 @@ test datatable.263 {test create trace} {
     } msg] $msg
 } {0 {{::datatable1 0 0 w} {::datatable1 1 0 w} {::datatable1 2 0 w} {::datatable1 3 0 w} {::datatable1 4 0 w}}}
 
-test datatable.264 {test read trace} {
+test datatable.267 {test read trace} {
     list [catch {
 	set mylist {}
 	datatable1 column get 0
@@ -1589,7 +1599,7 @@ test datatable.264 {test read trace} {
 	} msg] $msg
 } {0 {{::datatable1 0 0 r} {::datatable1 1 0 r} {::datatable1 2 0 r} {::datatable1 3 0 r} {::datatable1 4 0 r}}}
 
-test datatable.265 {test write trace} {
+test datatable.268 {test write trace} {
     list [catch {
 	set mylist {}
 	datatable1 column set 1 1 a 2 b 3 c 4 d 5 e
@@ -1597,7 +1607,7 @@ test datatable.265 {test write trace} {
 	} msg] $msg
 } {0 {{::datatable1 1 1 w} {::datatable1 2 1 w} {::datatable1 3 1 w} {::datatable1 4 1 w} {::datatable1 5 1 wc}}}
 
-test datatable.266 {test unset trace} {
+test datatable.269 {test unset trace} {
     list [catch {
 	set mylist {}
 	datatable1 column unset 0 all
@@ -1605,7 +1615,7 @@ test datatable.266 {test unset trace} {
 	} msg] $msg
 } {0 {{::datatable1 0 0 u} {::datatable1 1 0 u} {::datatable1 2 0 u} {::datatable1 3 0 u} {::datatable1 4 0 u}}}
 
-test datatable.267 {trace delete} {
+test datatable.270 {trace delete} {
     list [catch {datatable1 trace delete} msg] $msg
 } {0 {}}
 
@@ -1618,43 +1628,43 @@ puts stderr [datatable0 export csv]
 puts stderr [datatable0 export xml]
 puts stderr 1,1=[datatable0 get 1 1]
 }
-test datatable.268 {trace delete badId} {
+test datatable.271 {trace delete badId} {
     list [catch {datatable1 trace delete badId} msg] $msg
 } {1 {unknown trace "badId"}}
 
-test datatable.269 {trace delete trace0} {
+test datatable.272 {trace delete trace0} {
     list [catch {datatable1 trace delete trace0} msg] $msg
 } {0 {}}
 
-test datatable.270 {export -file} {
+test datatable.273 {export -file} {
     list [catch {datatable1 export -file} msg] $msg
 } {1 {can't export "-file": format not registered}}
 
-test datatable.271 {export csv -file} {
+test datatable.274 {export csv -file} {
     list [catch {datatable1 export csv -file} msg] $msg
 } {1 {value for "-file" missing}}
 
-test datatable.272 {exportfile csv -file /badDir/badFile } {
+test datatable.275 {exportfile csv -file /badDir/badFile } {
     list [catch {datatable1 export csv -file /badDir/badFile} msg] $msg
 } {1 {couldn't open "/badDir/badFile": no such file or directory}}
 
-test datatable.273 {exportfile csv -file @badChannel } {
+test datatable.276 {exportfile csv -file @badChannel } {
     list [catch {datatable1 export csv -file @badChannel} msg] $msg
 } {1 {can not find channel named "badChannel"}}
 
-test datatable.274 {export csv -file table.csv} {
+test datatable.277 {export csv -file table.csv} {
     list [catch {datatable1 export csv -file table.csv} msg] $msg
 } {0 {}}
 
-test datatable.275 {dup} {
+test datatable.278 {dup} {
     list [catch {datatable1 duplicate $orig} msg] $msg
 } {0 {}}
 
-test datatable.276 {column type all double} {
+test datatable.279 {column type all double} {
     list [catch {datatable1 column type all double} msg] $msg
 } {0 {}}
 
-test datatable.277 {export csv -rowlabels -columnlabels} {
+test datatable.280 {export csv -rowlabels -columnlabels} {
     list [catch {datatable1 export csv -rowlabels -columnlabels} msg] $msg
 } {0 {"*BLT*","c1","c2","c3","c4","c5","c6"
 "r57",1.0,1.1,1.2,1.3,1.4,1.5
@@ -1664,237 +1674,237 @@ test datatable.277 {export csv -rowlabels -columnlabels} {
 "r61",5.0,5.1,5.2,5.3,5.4,5.5
 }}
 
-test datatable.278 {column type all string} {
+test datatable.281 {column type all string} {
     list [catch {datatable0 column type all string} msg] $msg
 } {0 {}}
 
 
-test datatable.279 {dump -file table.dump} {
+test datatable.282 {dump -file table.dump} {
     list [catch {datatable0 dump -file table.dump} msg] $msg
 } {0 {}}
 
-test datatable.280 {datatable0 set (no args)} {
+test datatable.283 {datatable0 set (no args)} {
     list [catch { datatable0 set } msg] $msg
 } {1 {wrong # args: should be "datatable0 set ?row column value?..."}}
 
-test datatable.281 {datatable0 set 1 (no column)} {
+test datatable.284 {datatable0 set 1 (no column)} {
     list [catch { datatable0 set 1 } msg] $msg
 } {1 {wrong # args: should be "datatable0 set ?row column value?..."}}
 
-test datatable.282 {datatable0 set 1 1 (no value)} {
+test datatable.285 {datatable0 set 1 1 (no value)} {
     list [catch { datatable0 set 1 1 } msg] $msg
 } {1 {wrong # args: should be "datatable0 set ?row column value?..."}}
 
-test datatable.283 {datatable0 set 1 1 1.0 3.0 (too many args)} {
+test datatable.286 {datatable0 set 1 1 1.0 3.0 (too many args)} {
     list [catch { datatable0 set 1 1 1.0 3.0} msg] $msg
 } {1 {wrong # args: should be "datatable0 set ?row column value?..."}}
 
-test datatable.284 {datatable0 set 1 1 1.0} {
+test datatable.287 {datatable0 set 1 1 1.0} {
     list [catch { datatable0 set 1 1 1.0 }  msg] $msg
 } {0 {}}
 
-test datatable.285 {datatable0 get 1 1} {
+test datatable.288 {datatable0 get 1 1} {
     list [catch { datatable0 get 1 1 }  msg] $msg
 } {0 1.0}
 
-test datatable.286 {datatable0 row exists newRow} {
+test datatable.289 {datatable0 row exists newRow} {
     list [catch { datatable0 row exists newRow } msg] $msg
 } {0 0}
 
-test datatable.287 {datatable0 set newRow 1 abc} {
+test datatable.290 {datatable0 set newRow 1 abc} {
     list [catch { datatable0 set newRow 1 abc } msg] $msg
 } {0 {}}
 
-test datatable.288 {datatable0 get newRow 1} {
+test datatable.291 {datatable0 get newRow 1} {
     list [catch { datatable0 get newRow 1 } msg] $msg
 } {0 abc}
 
-test datatable.289 {datatable0 row exists newRow} {
+test datatable.292 {datatable0 row exists newRow} {
     list [catch { datatable0 row exists newRow } msg] $msg
 } {0 1}
 
-test datatable.290 {datatable0 column exists newColumn} {
+test datatable.293 {datatable0 column exists newColumn} {
     list [catch { datatable0 column exists newColumn } msg] $msg
 } {0 0}
 
-test datatable.291 {datatable0 set 1 newColumn def} {
+test datatable.294 {datatable0 set 1 newColumn def} {
     list [catch { datatable0 set 1 newColumn def } msg] $msg
 } {0 {}}
 
-test datatable.292 {datatable0 get 1 newColumn} {
+test datatable.295 {datatable0 get 1 newColumn} {
     list [catch { datatable0 get 1 newColumn } msg] $msg
 } {0 def}
 
-test datatable.293 {datatable0 row delete newRow} {
+test datatable.296 {datatable0 row delete newRow} {
     list [catch { datatable0 row delete newRow } msg] $msg
 } {0 {}}
 
-test datatable.294 {datatable0 row exists newRow} {
+test datatable.297 {datatable0 row exists newRow} {
     list [catch { datatable0 row exists newRow } msg] $msg
 } {0 0}
 
-test datatable.295 {datatable0 column delete newColumn} {
+test datatable.298 {datatable0 column delete newColumn} {
     list [catch { datatable0 column delete newColumn } msg] $msg
 } {0 {}}
 
-test datatable.296 {datatable0 column exists newColumn} {
+test datatable.299 {datatable0 column exists newColumn} {
     list [catch { datatable0 row exists newRow } msg] $msg
 } {0 0}
 
-test datatable.297 {datatable0 set newRow newColumn abc} {
+test datatable.300 {datatable0 set newRow newColumn abc} {
     list [catch { datatable0 set newRow newColumn abc } msg] $msg
 } {0 {}}
 
-test datatable.298 {datatable0 row delete newRow} {
+test datatable.301 {datatable0 row delete newRow} {
     list [catch { datatable0 row delete newRow } msg] $msg
 } {0 {}}
 
-test datatable.299 {datatable0 column delete newColumn} {
+test datatable.302 {datatable0 column delete newColumn} {
     list [catch { datatable0 column delete newColumn } msg] $msg
 } {0 {}}
 
-test datatable.300 {datatable0 column type 1 double} {
+test datatable.303 {datatable0 column type 1 double} {
     list [catch { datatable0 column type 1 double } msg] $msg
 } {0 {}}
 
-test datatable.301 {datatable0 set 1 1 1.0} {
+test datatable.304 {datatable0 set 1 1 1.0} {
     list [catch { 
 	datatable0 set 1 1 1.0 
 	datatable0 get 1 1
     } msg] $msg
 } {0 1.0}
 
-test datatable.302 {datatable0 set end 1 1.0 end 2 2.0 end 3 3.0 end 4 4.0 } {
+test datatable.305 {datatable0 set end 1 1.0 end 2 2.0 end 3 3.0 end 4 4.0 } {
     list [catch { 
 	datatable0 set end 1 1.0  end 2 2.0 end 3 3.0 end 4 4.0 
     } msg] $msg
 } {0 {}}
 
-test datatable.303 {datatable0 set 6 1 1.0 6 } {
+test datatable.306 {datatable0 set 6 1 1.0 6 } {
     list [catch { 
 	datatable0 set 6 1 1.0  6
     } msg] $msg
 } {1 {wrong # args: should be "datatable0 set ?row column value?..."}}
 
-test datatable.304 {datatable0 set 1 1 abc} {
+test datatable.307 {datatable0 set 1 1 abc} {
     list [catch { datatable0 set 1 1 abc } msg] $msg
 } {1 {expected floating-point number but got "abc"}}
 
-test datatable.305 {datatable0 column type 1 string} {
+test datatable.308 {datatable0 column type 1 string} {
     list [catch { datatable0 column type 1 string } msg] $msg
 } {0 {}}
 
-test datatable.306 {datatable0 unset 1 1} {
+test datatable.309 {datatable0 unset 1 1} {
     list [catch { datatable0 unset 1 1} msg] $msg
 } {0 {}}
 
-test datatable.307 {datatable0 append 1 1 abc (from empty)} {
+test datatable.310 {datatable0 append 1 1 abc (from empty)} {
     list [catch { datatable0 append 1 1 abc} msg] $msg
 } {0 {}}
 
-test datatable.308 {datatable0 get 1 1} {
+test datatable.311 {datatable0 get 1 1} {
     list [catch { datatable0 get 1 1 } msg] $msg
 } {0 abc}
 
-test datatable.309 {datatable0 append 1 1 def (from empty)} {
+test datatable.312 {datatable0 append 1 1 def (from empty)} {
     list [catch { datatable0 append 1 1 def} msg] $msg
 } {0 {}}
 
-test datatable.310 {datatable0 get 1 1} {
+test datatable.313 {datatable0 get 1 1} {
     list [catch { datatable0 get 1 1 } msg] $msg
 } {0 abcdef}
 
-test datatable.311 {datatable0 get 1 2 defValue } {
+test datatable.314 {datatable0 get 1 2 defValue } {
     list [catch { datatable0 get 2 1 defValue } msg] $msg
 } {0 defValue}
 
-test datatable.312 {datatable0 get 1 2 defValue (too many args) } {
+test datatable.315 {datatable0 get 1 2 defValue (too many args) } {
     list [catch { datatable0 get 2 1 defValue extraArg } msg] $msg
 } {1 {wrong # args: should be "datatable0 get row column ?defValue?"}}
 
-test datatable.313 {datatable0 append 1 1 123 456 789 (from empty)} {
+test datatable.316 {datatable0 append 1 1 123 456 789 (from empty)} {
     list [catch { datatable0 append 1 1 123 456 789 } msg] $msg
 } {0 {}}
 
-test datatable.314 {datatable0 get 1 1} {
+test datatable.317 {datatable0 get 1 1} {
     list [catch { datatable0 get 1 1 } msg] $msg
 } {0 abcdef123456789}
 
-test datatable.315 {datatable0 unset 1 1} {
+test datatable.318 {datatable0 unset 1 1} {
     list [catch { datatable0 unset 1 1} msg] $msg
 } {0 {}}
 
-test datatable.316 {datatable0 unset 1 1} {
+test datatable.319 {datatable0 unset 1 1} {
     list [catch { datatable0 unset 1 1} msg] $msg
 } {0 {}}
 
-test datatable.317 {datatable0 unset 1 1 1 } {
+test datatable.320 {datatable0 unset 1 1 1 } {
     list [catch { datatable0 unset 1 1 1 } msg] $msg
 } {1 {wrong # args: should be "datatable0 unset ?row column?...}}
 
-test datatable.318 {datatable0 unset end 1 end 2 end 3 end 4 } {
+test datatable.321 {datatable0 unset end 1 end 2 end 3 end 4 } {
     list [catch { datatable0 unset end 1  end 2 end 3 end 4 } msg] $msg
 } {0 {}}
 
-test datatable.319 {datatable0 unset 0 0 } {
+test datatable.322 {datatable0 unset 0 0 } {
     list [catch { datatable0 unset 0 0 } msg] $msg
 } {0 {}}
 
-test datatable.320 {datatable0 unset 10000 10000 } {
+test datatable.323 {datatable0 unset 10000 10000 } {
     list [catch { datatable0 unset 10000 10000 } msg] $msg
 } {0 {}}
 
-test datatable.321 {datatable0 unset 10000 10000 } {
+test datatable.324 {datatable0 unset 10000 10000 } {
     list [catch { datatable0 unset 10000 10000 } msg] $msg
 } {0 {}}
 
 #---------------------
 
-test datatable.322 {blt::datatable create} {
+test datatable.325 {blt::datatable create} {
     list [catch {blt::datatable create} msg] $msg
 } {0 ::datatable4}
 
-test datatable.323 {column extend 5} {
+test datatable.326 {column extend 5} {
     list [catch {datatable4 column extend 5} msg] $msg
 } {0 {0 1 2 3 4}}
 
-test datatable.324 {numrows} {
+test datatable.327 {numrows} {
     list [catch {datatable4 numrows} msg] $msg
 } {0 0}
 
-test datatable.325 {numrows -10} {
+test datatable.328 {numrows -10} {
     list [catch {datatable4 numrows -10} msg] $msg
 } {1 {bad count "-10": # columns can't be negative.}}
 
-test datatable.326 {numrows badArg} {
+test datatable.329 {numrows badArg} {
     list [catch {datatable4 numrows badArg} msg] $msg
 } {1 {expected integer but got "badArg"}}
 
-test datatable.327 {numrows 10} {
+test datatable.330 {numrows 10} {
     list [catch {datatable4 numrows 10} msg] $msg
 } {0 10}
 
-test datatable.328 {numcolumns 10} {
+test datatable.331 {numcolumns 10} {
     list [catch {datatable4 numrows 10} msg] $msg
 } {0 10}
 
-test datatable.329 {numrows 0} {
+test datatable.332 {numrows 0} {
     list [catch {datatable4 numrows 0} msg] $msg
 } {0 0}
 
-test datatable.330 {numcolumns 0} {
+test datatable.333 {numcolumns 0} {
     list [catch {datatable4 numcolumns 0} msg] $msg
 } {0 0}
 
-test datatable.331 {column names} {
+test datatable.334 {column names} {
     list [catch {datatable4 column names} msg] $msg
 } {0 {}}
 
-test datatable.332 {row names} {
+test datatable.335 {row names} {
     list [catch {datatable4 row names} msg] $msg
 } {0 {}}
 
-test datatable.333 {row -label xyz create} {
+test datatable.336 {row -label xyz create} {
     list [catch {datatable4 row -label xyz create} msg] $msg
 } {1 {bad operation "-label": should be one of...
   datatable4 row copy src dest ?switches...?
@@ -1916,202 +1926,201 @@ test datatable.333 {row -label xyz create} {
   datatable4 row move from to ?count?
   datatable4 row names ?pattern...?
   datatable4 row nonempty row
-  datatable4 row notify row ?flags? command
   datatable4 row set row column value...
   datatable4 row tag op args...
   datatable4 row unset row ?indices...?
   datatable4 row values row ?valueList?}}
 
-test datatable.334 {row extend 5} {
+test datatable.337 {row extend 5} {
     list [catch {datatable4 row extend 5} msg] $msg
 } {0 {0 1 2 3 4}}
 
-test datatable.335 {numrows} {
+test datatable.338 {numrows} {
     list [catch {datatable4 numrows} msg] $msg
 } {0 5}
 
-test datatable.336 {row index end} {
+test datatable.339 {row index end} {
     list [catch {datatable4 row index end} msg] $msg
 } {0 4}
 
-test datatable.337 {row indices all} {
+test datatable.340 {row indices all} {
     list [catch {datatable1 row indices all} msg] $msg
 } {0 {0 1 2 3 4}}
 
-test datatable.338 {row indices 0-end} {
+test datatable.341 {row indices 0-end} {
     list [catch {datatable1 row indices "0-end" } msg] $msg
 } {0 {0 1 2 3 4}}
 
-test datatable.339 {row indices 1-all} {
+test datatable.342 {row indices 1-all} {
     list [catch {datatable1 row indices "0-all" } msg] $msg
 } {1 {unknown row specification "0-all" in ::datatable1}}
 
-test datatable.340 {row indices 2-4} {
+test datatable.343 {row indices 2-4} {
     list [catch {datatable1 row indices 2-4} msg] $msg
 } {0 {2 3 4}}
 
-test datatable.341 {row indices 2-5} {
+test datatable.344 {row indices 2-5} {
     list [catch {datatable1 row indices 2-5} msg] $msg
 } {1 {unknown row specification "2-5" in ::datatable1}}
 
-test datatable.342 {row indices 5-2} {
+test datatable.345 {row indices 5-2} {
     list [catch {datatable1 row indices 5-2} msg] $msg
 } {1 {unknown row specification "5-2" in ::datatable1}}
 
-test datatable.343 {row indices 4-2} {
+test datatable.346 {row indices 4-2} {
     list [catch {datatable1 row indices 4-2} msg] $msg
 } {0 {}}
 
-test datatable.344 {row index end} {
+test datatable.347 {row index end} {
     list [catch {datatable1 row index end} msg] $msg
 } {0 4}
 
-test datatable.345 {blt::datatable create} {
+test datatable.348 {blt::datatable create} {
     list [catch {datatable4 duplicate $orig} msg] $msg
 } {0 {}}
 
 
-test datatable.346 {row index end badArg} {
+test datatable.349 {row index end badArg} {
     list [catch {datatable1 row index end badArg} msg] $msg
 } {1 {wrong # args: should be "datatable1 row index row"}}
 
-test datatable.347 {row label 0} {
+test datatable.350 {row label 0} {
     list [catch {datatable1 row label 0} msg] $msg
 } {0 r57}
 
-test datatable.348 {row label 0 myLabel} {
+test datatable.351 {row label 0 myLabel} {
     list [catch {datatable1 row label 0 myLabel} msg] $msg
 } {0 {}}
 
-test datatable.349 {row label 0} {
+test datatable.352 {row label 0} {
     list [catch {datatable1 row label 0} msg] $msg
 } {0 myLabel}
 
-test datatable.350 {row label 1 myLabel} {
+test datatable.353 {row label 1 myLabel} {
     list [catch {datatable1 row label 1 myLabel} msg] $msg
 } {0 {}}
 
-test datatable.351 {row label 0} {
+test datatable.354 {row label 0} {
     list [catch {datatable1 row label 0} msg] $msg
 } {0 myLabel}
 
-test datatable.352 {row label end end} {
+test datatable.355 {row label end end} {
     list [catch {datatable1 row label end end} msg] $msg
 } {0 {}}
 
-test datatable.353 {row label end endLabel} {
+test datatable.356 {row label end endLabel} {
     list [catch {datatable1 row label end endLabel} msg] $msg
 } {0 {}}
 
-test datatable.354 {row label end 1abc} {
+test datatable.357 {row label end 1abc} {
     list [catch {datatable1 row label end 1abc} msg] $msg
 } {0 {}}
 
-test datatable.355 {row label end label-with-minus} {
+test datatable.358 {row label end label-with-minus} {
     list [catch {datatable1 row label end label-with-minus} msg] $msg
 } {0 {}}
 
-test datatable.356 {row label end -abc} {
+test datatable.359 {row label end -abc} {
     list [catch {datatable1 row label end -abc} msg] $msg
 } {1 {row label "-abc" can't start with a '-'.}}
 
-test datatable.357 {row names *Label} {
+test datatable.360 {row names *Label} {
     list [catch {datatable1 row names *Label} msg] $msg
 } {0 {myLabel myLabel}}
 
-test datatable.358 {row names r*} {
+test datatable.361 {row names r*} {
     list [catch {datatable1 row names r*} msg] $msg
 } {0 {r59 r60}}
 
-test datatable.359 {row names *-with-*} {
+test datatable.362 {row names *-with-*} {
     list [catch {datatable1 row names *-with-*} msg] $msg
 } {0 label-with-minus}
 
-test datatable.360 {datatable1 row names badPattern} {
+test datatable.363 {datatable1 row names badPattern} {
     list [catch {datatable1 row names badPattern} msg] $msg
 } {0 {}}
 
-test datatable.361 {datatable1 row get myLabel} {
+test datatable.364 {datatable1 row get myLabel} {
     list [catch {datatable1 row get myLabel} msg] $msg
 } {1 {multiple rows specified by "myLabel"}}
 
-test datatable.362 {datatable1 row get} {
+test datatable.365 {datatable1 row get} {
     list [catch {datatable1 row get} msg] $msg
 } {1 {wrong # args: should be "datatable1 row get row ?switches?"}}
 
-test datatable.363 {datatable1 row set myLabel} {
+test datatable.366 {datatable1 row set myLabel} {
     list [catch {datatable1 row set myLabel} msg] $msg
 } {1 {wrong # args: should be "datatable1 row set row column value..."}}
 
-test datatable.364 {row set all 1 1.0 2 2.0 3 3.0 4 4.0 5 5.0} {
+test datatable.367 {row set all 1 1.0 2 2.0 3 3.0 4 4.0 5 5.0} {
     list [catch {
 	datatable1 row set all 1 1.0 2 2.0 3 3.0 4 4.0 5 5.0
     } msg] $msg
 } {0 {}}
 
-test datatable.365 {datatable1 row values 1} {
+test datatable.368 {datatable1 row values 1} {
     list [catch {datatable1 row values 1} msg] $msg
 } {0 {2.0 1.0 2.0 3.0 4.0 5.0}}
 
-test datatable.366 {datatable1 row values all} {
+test datatable.369 {datatable1 row values all} {
     list [catch {datatable1 row values all} msg] $msg
 } {1 {multiple rows specified by "all"}}
 
-test datatable.367 {datatable1 row values 1-2} {
+test datatable.370 {datatable1 row values 1-2} {
     list [catch {datatable1 row values 1-2} msg] $msg
 } {1 {multiple rows specified by "1-2"}}
 
-test datatable.368 {datatable1 row values 2} {
+test datatable.371 {datatable1 row values 2} {
     list [catch {datatable1 row values 2} msg] $msg
 } {0 {3.0 1.0 2.0 3.0 4.0 5.0}}
 
-test datatable.369 {datatable1 row values 3} {
+test datatable.372 {datatable1 row values 3} {
     list [catch {datatable1 row values 3} msg] $msg
 } {0 {4.0 1.0 2.0 3.0 4.0 5.0}}
 
-test datatable.370 {datatable1 row values end} {
+test datatable.373 {datatable1 row values end} {
     list [catch {datatable1 row values end} msg] $msg
 } {0 {5.0 1.0 2.0 3.0 4.0 5.0}}
 
 datatable1 duplicate $orig
 datatable1 column type 0 double
-test datatable.371 {datatable1 row values 0 { a b c }} {
+test datatable.374 {datatable1 row values 0 { a b c }} {
     list [catch {datatable1 row values 0 { a b c }} msg] $msg
 } {1 {expected floating-point number but got "a"}}
 
-test datatable.372 {datatable1 row values 0 { 11.1 12.2 13.3 }} {
+test datatable.375 {datatable1 row values 0 { 11.1 12.2 13.3 }} {
     list [catch {datatable1 row values 0 { 11.1 12.2 13.3 }} msg] $msg
 } {0 {}}
 
-test datatable.373 {datatable1 row values 1} {
+test datatable.376 {datatable1 row values 1} {
     list [catch {datatable1 row values 1} msg] $msg
 } {0 {2.0 2.1 2.2 2.3 2.4 2.5}}
 
-test datatable.374 {datatable1 row values end { -1 -2 }} {
+test datatable.377 {datatable1 row values end { -1 -2 }} {
     list [catch {datatable1 row values end { -1 -2 }} msg] $msg
 } {0 {}}
 
-test datatable.375 {datatable1 row values end} {
+test datatable.378 {datatable1 row values end} {
     list [catch {datatable1 row values end} msg] $msg
 } {0 {-1.0 -2 5.2 5.3 5.4 5.5}}
 
-test datatable.376 {datatable1 row index label-with-minus} {
+test datatable.379 {datatable1 row index label-with-minus} {
     list [catch {datatable1 row index label-with-minus} msg] $msg
 } {0 -1}
 
-test datatable.377 {datatable1 row indices all} {
+test datatable.380 {datatable1 row indices all} {
     list [catch {datatable1 row indices all} msg] $msg
 } {0 {0 1 2 3 4}}
 
-test datatable.378 {datatable1 row index -1} {
+test datatable.381 {datatable1 row index -1} {
     list [catch {datatable1 row index -1} msg] $msg
 } {0 -1}
 
-test datatable.379 {datatable1 row index 1000} {
+test datatable.382 {datatable1 row index 1000} {
     list [catch {datatable1 row index 1000} msg] $msg
 } {0 -1}
 
-test datatable.380 {datatable1 row tag badOp} {
+test datatable.383 {datatable1 row tag badOp} {
     list [catch {datatable1 row tag badOp} msg] $msg
 } {1 {bad tag operation "badOp": should be one of...
   datatable1 row tag add tag ?row...?
@@ -2121,12 +2130,12 @@ test datatable.380 {datatable1 row tag badOp} {
   datatable1 row tag get row ?pattern...?
   datatable1 row tag indices ?tag...?
   datatable1 row tag labels ?tag...?
+  datatable1 row tag names ?pattern?
   datatable1 row tag range from to ?tag...?
-  datatable1 row tag search row ?pattern?
   datatable1 row tag set row tag...
   datatable1 row tag unset row tag...}}
 
-test datatable.381 {datatable1 row tag (missing args)} {
+test datatable.384 {datatable1 row tag (missing args)} {
     list [catch {datatable1 row tag} msg] $msg
 } {1 {wrong # args: should be one of...
   datatable1 row tag add tag ?row...?
@@ -2136,12 +2145,12 @@ test datatable.381 {datatable1 row tag (missing args)} {
   datatable1 row tag get row ?pattern...?
   datatable1 row tag indices ?tag...?
   datatable1 row tag labels ?tag...?
+  datatable1 row tag names ?pattern?
   datatable1 row tag range from to ?tag...?
-  datatable1 row tag search row ?pattern?
   datatable1 row tag set row tag...
   datatable1 row tag unset row tag...}}
 
-test datatable.382 {datatable1 row tag badOp} {
+test datatable.385 {datatable1 row tag badOp} {
     list [catch {datatable1 row tag badOp} msg] $msg
 } {1 {bad tag operation "badOp": should be one of...
   datatable1 row tag add tag ?row...?
@@ -2151,182 +2160,183 @@ test datatable.382 {datatable1 row tag badOp} {
   datatable1 row tag get row ?pattern...?
   datatable1 row tag indices ?tag...?
   datatable1 row tag labels ?tag...?
+  datatable1 row tag names ?pattern?
   datatable1 row tag range from to ?tag...?
-  datatable1 row tag search row ?pattern?
   datatable1 row tag set row tag...
   datatable1 row tag unset row tag...}}
 
-test datatable.383 {datatable1 row tag add} {
+test datatable.386 {datatable1 row tag add} {
     list [catch {datatable1 row tag add} msg] $msg
 } {1 {wrong # args: should be "datatable1 row tag add tag ?row...?"}}
 
-test datatable.384 {datatable1 row tag add 1} {
+test datatable.387 {datatable1 row tag add 1} {
     list [catch {datatable1 row tag add 1} msg] $msg
 } {1 {tag "1" can't be a number.}}
 
-test datatable.385 {datatable1 row tag add tag badIndex} {
+test datatable.388 {datatable1 row tag add tag badIndex} {
     list [catch {datatable1 row tag add tag badIndex} msg] $msg
 } {1 {unknown row specification "badIndex" in ::datatable1}}
 
-test datatable.386 {datatable1 row tag add newTag 1} {
+test datatable.389 {datatable1 row tag add newTag 1} {
     list [catch {datatable1 row tag add newTag 1} msg] $msg
 } {0 {}}
 
-test datatable.387 {datatable1 row tag add newTag1 1} {
+test datatable.390 {datatable1 row tag add newTag1 1} {
     list [catch {datatable1 row tag add newTag1 1} msg] $msg
 } {0 {}}
 
-test datatable.388 {datatable1 row tag add newTag2 1} {
+test datatable.391 {datatable1 row tag add newTag2 1} {
     list [catch {datatable1 row tag add newTag2 1} msg] $msg
 } {0 {}}
 
-test datatable.389 {datatable1 row tag search} {
-    list [catch {datatable1 row tag search} msg] $msg
-} {1 {wrong # args: should be "datatable1 row tag search row ?pattern?"}}
+test datatable.392 {datatable1 row tag names} {
+    list [catch {datatable1 row tag names} msg] $msg
+} {0 {newTag2 tag newTag newTag1 all end}}
 
-test datatable.390 {datatable1 row tag search 1 (no tags)} {
-    list [catch {datatable1 row tag search 1} msg] [lsort $msg]
-} {0 0}
 
-test datatable.391 {datatable1 row tag search 1 *Tag*} {
-    list [catch {datatable1 row tag search 1 *Tag*} msg] [lsort $msg]
-} {0 1}
+test datatable.393 {datatable1 row tag names *Tag*} {
+    list [catch {datatable1 row tag names *Tag*} msg] [lsort $msg]
+} {0 {newTag newTag1 newTag2}}
 
-test datatable.392 {datatable1 row tag search all all} {
-    list [catch {datatable1 row tag search all all} msg] $msg
-} {0 1}
+test datatable.394 {datatable1 row tag names all} {
+    list [catch {datatable1 row tag names all} msg] $msg
+} {0 all}
 
-test datatable.393 {datatable1 row tag search end end} {
-    list [catch {datatable1 row tag search end end} msg] $msg
-} {0 1}
+test datatable.395 {datatable1 row tag names end} {
+    list [catch {datatable1 row tag names end} msg] $msg
+} {0 end}
 
-test datatable.394 {datatable1 row tag search 0 all} {
-    list [catch {datatable1 row tag search 0 all} msg] $msg
-} {0 1}
+test datatable.396 {datatable1 row tag names all} {
+    list [catch {datatable1 row tag names all} msg] $msg
+} {0 all}
 
-test datatable.395 {datatable1 row tag search end all} {
-    list [catch {datatable1 row tag search end all} msg] $msg
-} {0 1}
+test datatable.397 {datatable1 row tag names end} {
+    list [catch {datatable1 row tag names end} msg] $msg
+} {0 end}
 
-test datatable.396 {datatable1 row tag search end e*} {
-    list [catch {datatable1 row tag search end e*} msg] $msg
-} {0 1}
+test datatable.398 {datatable1 row tag nameds e*} {
+    list [catch {datatable1 row tag names e*} msg] $msg
+} {0 end}
 
-test datatable.397 {datatable1 row tag delete} {
+test datatable.399 {datatable1 row tag delete} {
     list [catch {datatable1 row tag delete} msg] $msg
 } {1 {wrong # args: should be "datatable1 row tag delete tag ?row...?"}}
 
-test datatable.398 {datatable1 row tag delete someTag} {
+test datatable.400 {datatable1 row tag delete someTag} {
     list [catch {datatable1 row tag delete someTag} msg] $msg
 } {0 {}}
 
-test datatable.399 {datatable1 row tag delete newTag1 1} {
+test datatable.401 {datatable1 row tag delete newTag1 1} {
     list [catch {datatable1 row tag delete newTag1 1} msg] $msg
 } {0 {}}
 
-test datatable.400 {datatable1 row tag delete newTag1 1} {
+test datatable.402 {datatable1 row tag delete newTag1 1} {
     list [catch {datatable1 row tag delete newTag1 1} msg] $msg
 } {0 {}}
 
-test datatable.401 {datatable1 row tag delete newTag2 1} {
+test datatable.403 {datatable1 row tag delete newTag2 1} {
     list [catch {datatable1 row tag delete newTag2 1} msg] $msg
 } {0 {}}
 
 # It's okay to delete a row tag that doesn't exist.
-test datatable.402 {datatable1 row tag delete badTag 1} {
+test datatable.404 {datatable1 row tag delete badTag 1} {
     list [catch {datatable1 row tag delete badTag 1} msg] $msg
 } {0 {}}
 
-test datatable.403 {datatable1 row tag delete someTag 1000} {
+test datatable.405 {row tag names} {
+    list [catch {datatable0 row tag names} msg] $msg
+} {0 {all end}}
+
+test datatable.406 {datatable1 row tag delete someTag 1000} {
     list [catch {datatable1 row tag delete someTag 1000} msg] $msg
 } {1 {bad row index "1000"}}
 
-test datatable.404 {datatable1 row tag delete end 1} {
+test datatable.407 {datatable1 row tag delete end 1} {
     list [catch {datatable1 row tag delete end 1} msg] $msg
 } {0 {}}
 
-test datatable.405 {datatable1 row tag delete all 1} {
+test datatable.408 {datatable1 row tag delete all 1} {
     list [catch {datatable1 row tag delete all 1} msg] $msg
 } {0 {}}
 
-test datatable.406 {datatable1 row tag forget} {
+test datatable.409 {datatable1 row tag forget} {
     list [catch {datatable1 row tag forget} msg] $msg
 } {0 {}}
 
-test datatable.407 {row tag forget all} {
+test datatable.410 {row tag forget all} {
     list [catch {datatable1 row tag forget all} msg] $msg
 } {0 {}}
 
-test datatable.408 {row tag forget newTag1} {
+test datatable.411 {row tag forget newTag1} {
     list [catch {datatable1 row tag forget newTag1} msg] $msg
 } {0 {}}
 
 # It's okay to forget a row tag that doesn't exist.
-test datatable.409 {row tag forget newTag1} {
+test datatable.412 {row tag forget newTag1} {
     list [catch {datatable1 row tag forget newTag1} msg] $msg
 } {0 {}}
 
-test datatable.410 {row tag indices} {
+test datatable.413 {row tag indices} {
     list [catch {datatable1 row tag indices} msg] $msg
 } {0 {}}
 
-test datatable.411 {row tag indices all} {
+test datatable.414 {row tag indices all} {
     list [catch {datatable1 row tag indices all} msg] $msg
 } {0 {0 1 2 3 4}}
 
-test datatable.412 {row tag indices end} {
+test datatable.415 {row tag indices end} {
     list [catch {datatable1 row tag indices end} msg] $msg
 } {0 4}
 
-test datatable.413 {row tag indices newTag} {
+test datatable.416 {row tag indices newTag} {
     list [catch {datatable1 row tag indices newTag} msg] $msg
 } {0 1}
 
-test datatable.414 {row tag range 1 3 midTag} {
+test datatable.417 {row tag range 1 3 midTag} {
     list [catch {datatable1 row tag range 1 3 midTag} msg] $msg
 } {0 {}}
 
-test datatable.415 {row tag indices midTag} {
+test datatable.418 {row tag indices midTag} {
     list [catch {datatable1 row tag indices midTag} msg] $msg
 } {0 {1 2 3}}
 
-test datatable.416 {row tag range 0 end myTag} {
+test datatable.419 {row tag range 0 end myTag} {
     list [catch {datatable1 row tag range 0 end myTag} msg] $msg
 } {0 {}}
 
-test datatable.417 {row tag indices myTag} {
+test datatable.420 {row tag indices myTag} {
     list [catch {datatable1 row tag indices myTag} msg] $msg
 } {0 {0 1 2 3 4}}
 
-test datatable.418 {row tag range -1 0 myTag} {
+test datatable.421 {row tag range -1 0 myTag} {
     list [catch {datatable1 row tag range -1 0 myTag} msg] $msg
 } {1 {unknown row specification "-1" in ::datatable1}}
 
-test datatable.419 {row tag range 0 -1 myTag} {
+test datatable.422 {row tag range 0 -1 myTag} {
     list [catch {datatable1 row tag range 0 -1 myTag} msg] $msg
 } {1 {unknown row specification "-1" in ::datatable1}}
 
-test datatable.420 {row tag range 0 1000 myTag} {
+test datatable.423 {row tag range 0 1000 myTag} {
     list [catch {datatable1 row tag range 0 1000 myTag} msg] $msg
 } {1 {bad row index "1000"}}
 
-test datatable.421 {row unset} {
+test datatable.424 {row unset} {
     list [catch {datatable1 row unset} msg] $msg
 } {1 {wrong # args: should be "datatable1 row unset row ?indices...?"}}
 
-test datatable.422 {row unset 0 all} {
+test datatable.425 {row unset 0 all} {
     list [catch {datatable1 row unset 0 all} msg] $msg
 } {0 {}}
 
-test datatable.423 {row values 0} {
+test datatable.426 {row values 0} {
     list [catch {datatable1 row values 0} msg] $msg
 } {0 {{} {} {} {} {} {}}}
 
-test datatable.424 {row get 0} {
+test datatable.427 {row get 0} {
     list [catch {datatable1 row values 0} msg] $msg
 } {0 {{} {} {} {} {} {}}}
 
-test datatable.425 {dump } {
+test datatable.428 {dump } {
     list [catch {datatable1 dump} msg] $msg
 } {0 {i 5 6 0 0
 c 0 c1 int {}
@@ -2366,7 +2376,7 @@ d 3 5 4.5
 d 4 5 5.5
 }}
 
-test datatable.426 {export csv} {
+test datatable.429 {export csv} {
     list [catch {datatable1 export csv} msg] $msg
 } {0 {"c1","c2","c3","c4","c5","c6"
 ,,,,,
@@ -2376,7 +2386,7 @@ test datatable.426 {export csv} {
 -1,"-2","5.2","5.3","5.4","5.5"
 }}
 
-test datatable.427 {export xml} {
+test datatable.430 {export xml} {
     list [catch {datatable1 export xml} msg] $msg
 } {0 {<root>
   <row name="r62"/>
@@ -2387,7 +2397,7 @@ test datatable.427 {export xml} {
 </root>
 }}
 
-test datatable.428 {dump} {
+test datatable.431 {dump} {
     list [catch {datatable1 dump} msg] $msg
 } {0 {i 5 6 0 0
 c 0 c1 int {}
@@ -2427,7 +2437,7 @@ d 3 5 4.5
 d 4 5 5.5
 }}
 
-test datatable.429 {datatable1 row get 1 defValue} {
+test datatable.432 {datatable1 row get 1 defValue} {
     list [catch {
 	datatable1 emptyvalue defValue
 	set out [datatable1 row get 1]
@@ -2436,65 +2446,65 @@ test datatable.429 {datatable1 row get 1 defValue} {
     } msg] $msg
 } {0 {0 2.0 1 2.1 2 2.2 3 2.3 4 2.4 5 2.5}}
 
-test datatable.430 {datatable1 row unset 1 end} {
+test datatable.433 {datatable1 row unset 1 end} {
     list [catch {datatable1 row unset 1 end} msg] $msg
 } {0 {}}
 
-test datatable.431 {datatable1 row extend 5 badArg } {
+test datatable.434 {datatable1 row extend 5 badArg } {
     list [catch {datatable1 row extend 5 badArg} msg] $msg
 } {1 {unknown switch "badArg"
 following switches are available:
    -labels list}}
 
 
-test datatable.432 {datatable1 row extend} {
+test datatable.435 {datatable1 row extend} {
     list [catch {datatable1 row extend} msg] $msg
 } {1 {wrong # args: should be "datatable1 row extend number ?switches?"}}
 
-test datatable.433 {datatable1 row extend 1 -labels myRow} {
+test datatable.436 {datatable1 row extend 1 -labels myRow} {
     list [catch {datatable1 row extend 1 -labels myRow} msg] $msg
 } {0 5}
 
 if 0 {
-test datatable.434 {datatable1 row extend 10000000000 } {
+test datatable.437 {datatable1 row extend 10000000000 } {
     list [catch {datatable1 row extend 10000000000} msg] $msg
 } {1 {can't extend table by 10000000000 rows: out of memory.}}
 }
 
-test datatable.435 {datatable1 row extend -10 } {
+test datatable.438 {datatable1 row extend -10 } {
     list [catch {datatable1 row extend -10} msg] $msg
 } {1 {bad value "-10": can't be negative}}
 
-test datatable.436 {datatable1 row extend 10 } {
+test datatable.439 {datatable1 row extend 10 } {
     list [catch {datatable1 row extend 10} msg] $msg
 } {0 {6 7 8 9 10 11 12 13 14 15}}
 
-test datatable.437 {datatable1 row names} {
+test datatable.440 {datatable1 row names} {
     list [catch {datatable1 row names} msg] $msg
 } {0 {r62 r63 r64 r65 r66 myRow r68 r69 r70 r71 r72 r73 r74 r75 r76 r77}}
 
-test datatable.438 {datatable1 row delete 10 } {
+test datatable.441 {datatable1 row delete 10 } {
     list [catch {datatable1 row delete 10} msg] $msg
 } {0 {}}
 
-test datatable.439 {datatable1 row names} {
+test datatable.442 {datatable1 row names} {
     list [catch {datatable1 row names} msg] $msg
 } {0 {r62 r63 r64 r65 r66 myRow r68 r69 r70 r71 r73 r74 r75 r76 r77}}
 
 
-test datatable.440 {datatable1 row delete 10 } {
+test datatable.443 {datatable1 row delete 10 } {
     list [catch {datatable1 row delete 10} msg] $msg
 } {0 {}}
 
-test datatable.441 {datatable1 numrows} {
+test datatable.444 {datatable1 numrows} {
     list [catch {datatable1 numrows} msg] $msg
 } {0 14}
 
-test datatable.442 {datatable1 row create} {
+test datatable.445 {datatable1 row create} {
     list [catch {datatable1 row create} msg] $msg
 } {0 14}
 
-test datatable.443 {datatable1 row create -before 1 -badSwitch} {
+test datatable.446 {datatable1 row create -before 1 -badSwitch} {
     list [catch {datatable1 row create -badSwitch} msg] $msg
 } {1 {unknown switch "-badSwitch"
 following switches are available:
@@ -2506,7 +2516,7 @@ following switches are available:
    -tags tags
    -type type}}
 
-test datatable.444 {datatable1 row create -badSwitch -before 1} {
+test datatable.447 {datatable1 row create -badSwitch -before 1} {
     list [catch {datatable1 row create -badSwitch} msg] $msg
 } {1 {unknown switch "-badSwitch"
 following switches are available:
@@ -2518,7 +2528,7 @@ following switches are available:
    -tags tags
    -type type}}
 
-test datatable.445 {datatable1 row create -before 1 -badSwitch arg} {
+test datatable.448 {datatable1 row create -before 1 -badSwitch arg} {
     list [catch {datatable1 row create -badSwitch arg} msg] $msg
 } {1 {unknown switch "-badSwitch"
 following switches are available:
@@ -2531,156 +2541,156 @@ following switches are available:
    -type type}}
 
 
-test datatable.446 {datatable1 row create -before 1 -label one} {
+test datatable.449 {datatable1 row create -before 1 -label one} {
     list [catch {datatable1 row create -before 1 -label one} msg] $msg
 } {0 1}
 
-test datatable.447 {datatable1 row create -before 2 -label two} {
+test datatable.450 {datatable1 row create -before 2 -label two} {
     list [catch {datatable1 row create -before 2 -label two} msg] $msg
 } {0 2}
 
-test datatable.448 {datatable1 row create -after 3 -label three} {
+test datatable.451 {datatable1 row create -after 3 -label three} {
     list [catch {datatable1 row create -after 3 -label three} msg] $msg
 } {0 4}
 
-test datatable.449 {datatable1 numrows} {
+test datatable.452 {datatable1 numrows} {
     list [catch {datatable1 numrows} msg] $msg
 } {0 18}
 
-test datatable.450 {datatable1 row names} {
+test datatable.453 {datatable1 row names} {
     list [catch {datatable1 row names} msg] $msg
 } {0 {r62 one two r63 three r64 r65 r66 myRow r68 r69 r70 r71 r74 r75 r76 r77 r78}}
 
-test datatable.451 {datatable1 row index end} {
+test datatable.454 {datatable1 row index end} {
     list [catch {datatable1 row index end} msg] $msg
 } {0 17}
 
-test datatable.452 {datatable1 row names} {
+test datatable.455 {datatable1 row names} {
     list [catch {datatable1 row names} msg] $msg
 } {0 {r62 one two r63 three r64 r65 r66 myRow r68 r69 r70 r71 r74 r75 r76 r77 r78}}
 
-test datatable.453 {datatable1 row create -after end} {
+test datatable.456 {datatable1 row create -after end} {
     list [catch {datatable1 row create -after end} msg] $msg
 } {0 18}
 
-test datatable.454 {datatable1 row create -after 1} {
+test datatable.457 {datatable1 row create -after 1} {
     list [catch {datatable1 row create -after 1} msg] $msg
 } {0 2}
 
-test datatable.455 {datatable1 row create -label one} {
+test datatable.458 {datatable1 row create -label one} {
     list [catch {datatable1 row create -label one} msg] $msg
 } {0 20}
 
-test datatable.456 {datatable1 row create -label} {
+test datatable.459 {datatable1 row create -label} {
     list [catch {datatable1 row create -label} msg] $msg
 } {1 {value for "-label" missing}}
 
-test datatable.457 {datatable1 row create -before 0} {
+test datatable.460 {datatable1 row create -before 0} {
     list [catch {datatable1 row create -before 0} msg] $msg
 } {0 0}
 
-test datatable.458 {datatable1 numrows} {
+test datatable.461 {datatable1 numrows} {
     list [catch {datatable1 numrows} msg] $msg
 } {0 22}
 
-test datatable.459 {datatable1 row index fred} {
+test datatable.462 {datatable1 row index fred} {
     list [catch {datatable1 row index fred} msg] $msg
 } {0 -1}
 
-test datatable.460 {datatable1 row index one} {
+test datatable.463 {datatable1 row index one} {
     list [catch {datatable1 row index one} msg] $msg
 } {1 {multiple rows specified by "one"}}
 
-test datatable.461 {datatable1 row indices one} {
+test datatable.464 {datatable1 row indices one} {
     list [catch {datatable1 row indices one} msg] [lsort $msg]
 } {0 {2 21}}
 
-test datatable.462 {datatable1 row index end} {
+test datatable.465 {datatable1 row index end} {
     list [catch {datatable1 row index end} msg] $msg
 } {0 21}
 
-test datatable.463 {datatable1 row create -after 40} {
+test datatable.466 {datatable1 row create -after 40} {
     list [catch {datatable1 row create -after 40} msg] $msg
 } {1 {bad row index "40"}}
 
-test datatable.464 {datatable1 row create -tags {myTag1 myTag2}} {
+test datatable.467 {datatable1 row create -tags {myTag1 myTag2}} {
     list [catch {
 	datatable1 row create -tags {myTag1 myTag2}
     } msg] $msg
 } {0 22}
 
-test datatable.465 {datatable1 row create -after end -tags {myTag1 myTag2}} {
+test datatable.468 {datatable1 row create -after end -tags {myTag1 myTag2}} {
     list [catch {
 	datatable1 row create -after end -tags {myTag1 myTag2} 
     } msg] $msg
 } {0 23}
 
-test datatable.466 {datatable1 row tag indices myTag1 myTag2} {
+test datatable.469 {datatable1 row tag indices myTag1 myTag2} {
     list [catch {
 	datatable1 row tag indices myTag1 myTag2
     } msg] $msg
 } {0 {22 23}}
 
-test datatable.467 {datatable1 row tag indices myTag2 myTag1} {
+test datatable.470 {datatable1 row tag indices myTag2 myTag1} {
     list [catch {
 	datatable1 row tag indices myTag2 myTag1 
     } msg] $msg
 } {0 {22 23}}
 
-test datatable.468 {datatable1 row move} {
+test datatable.471 {datatable1 row move} {
     list [catch {datatable1 row move} msg] $msg
 } {1 {wrong # args: should be "datatable1 row move from to ?count?"}}
 
-test datatable.469 {datatable1 row move 0} {
+test datatable.472 {datatable1 row move 0} {
     list [catch {datatable1 row move 0} msg] $msg
 } {1 {wrong # args: should be "datatable1 row move from to ?count?"}}
 
 # Source equals destination.
-test datatable.470 {datatable1 row move 0 0} {
+test datatable.473 {datatable1 row move 0 0} {
     list [catch {datatable1 row move 0 0} msg] $msg
 } {0 {}}
 
-test datatable.471 {datatable1 row names} {
+test datatable.474 {datatable1 row names} {
     list [catch {datatable1 row names} msg] $msg
 } {0 {r85 r62 one r83 two r63 three r64 r65 r66 myRow r68 r69 r70 r71 r74 r75 r76 r77 r78 r82 one r86 r87}}
 
-test datatable.471 {datatable1 row names} {
+test datatable.475 {datatable1 row names} {
     list [catch {datatable1 row names} msg] $msg
 } {0 {r85 r62 one r83 two r63 three r64 r65 r66 myRow r68 r69 r70 r71 r74 r75 r76 r77 r78 r82 one r86 r87}}
 
-test datatable.471 {datatable1 row names} {
+test datatable.476 {datatable1 row names} {
     list [catch {datatable1 row names} msg] $msg
 } {0 {r85 r62 one r83 two r63 three r64 r65 r66 myRow r68 r69 r70 r71 r74 r75 r76 r77 r78 r82 one r86 r87}}
 
 # Move 10 to 0. The row is labeled "myRow"
-test datatable.472 {datatable1 row move 10 0} {
+test datatable.477 {datatable1 row move 10 0} {
     list [catch {datatable1 row move 10 0} msg] $msg
 } {0 {}}
 
-test datatable.473 {datatable1 row names} {
+test datatable.478 {datatable1 row names} {
     list [catch {datatable1 row names} msg] $msg
 } {0 {myRow r85 r62 one r83 two r63 three r64 r65 r66 r68 r69 r70 r71 r74 r75 r76 r77 r78 r82 one r86 r87}}
 
 # Can't move all rows.
-test datatable.474 {datatable1 row move all 10} {
+test datatable.479 {datatable1 row move all 10} {
     list [catch {datatable1 row move all 10} msg] $msg
 } {1 {multiple rows specified by "all"}}
 
 # Move 1 to 10, 0 rows. Does nothing.
-test datatable.475 {datatable1 row move 1 10 0} {
+test datatable.480 {datatable1 row move 1 10 0} {
     list [catch { 
 	datatable1 row move 1 10 0
 	datatable1 row names
     } msg] $msg
 } {0 {myRow r85 r62 one r83 two r63 three r64 r65 r66 r68 r69 r70 r71 r74 r75 r76 r77 r78 r82 one r86 r87}}
 
-test datatable.476 {datatable1 row names} {
+test datatable.481 {datatable1 row names} {
     list [catch {datatable1 row names} msg] $msg
 } {0 {myRow r85 r62 one r83 two r63 three r64 r65 r66 r68 r69 r70 r71 r74 r75 r76 r77 r78 r82 one r86 r87}}
 
 
 # Move 1 to 1. Does nothing.
-test datatable.477 {datatable1 row move 1 1} {
+test datatable.482 {datatable1 row move 1 1} {
     list [catch { 
 	datatable1 row move 1 1 
 	datatable1 row names
@@ -2688,7 +2698,7 @@ test datatable.477 {datatable1 row move 1 1} {
 } {0 {myRow r85 r62 one r83 two r63 three r64 r65 r66 r68 r69 r70 r71 r74 r75 r76 r77 r78 r82 one r86 r87}}
 
 # Move 1 to 10 (1 row)
-test datatable.478 {datatable1 row move 1 10} {
+test datatable.483 {datatable1 row move 1 10} {
     list [catch { 
 	datatable1 row move 1 10 
 	datatable1 row names
@@ -2696,7 +2706,7 @@ test datatable.478 {datatable1 row move 1 10} {
 } {0 {myRow r62 one r83 two r63 three r64 r65 r66 r85 r68 r69 r70 r71 r74 r75 r76 r77 r78 r82 one r86 r87}}
 
 # Move 1 to 2 (1 row)
-test datatable.479 {datatable1 row move 1 2} {
+test datatable.484 {datatable1 row move 1 2} {
     list [catch {
 	datatable1 row move 1 2
 	datatable1 row names
@@ -2704,14 +2714,14 @@ test datatable.479 {datatable1 row move 1 2} {
 } {0 {myRow one r62 r83 two r63 three r64 r65 r66 r85 r68 r69 r70 r71 r74 r75 r76 r77 r78 r82 one r86 r87}}
 
 # Move 1 to 10 (5 rows)
-test datatable.479 {datatable1 row move 1 10 5} {
+test datatable.485 {datatable1 row move 1 10 5} {
     list [catch {
 	datatable1 row move 1 10 5
 	datatable1 row names
     } msg] $msg
 } {0 {myRow three r64 r65 r66 r85 r68 r69 r70 r71 one r62 r83 two r63 r74 r75 r76 r77 r78 r82 one r86 r87}}
 
-test datatable.480 {export csv} {
+test datatable.486 {export csv} {
     list [catch {datatable1 export csv} msg] $msg
 } {0 {"c1","c2","c3","c4","c5","c6"
 ,,,,,
@@ -2740,39 +2750,39 @@ test datatable.480 {export csv} {
 ,,,,,
 }}
 
-test datatable.481 {datatable1 row move 0 2} {
+test datatable.487 {datatable1 row move 0 2} {
     list [catch {datatable1 row move 0 2} msg] $msg
 } {0 {}}
 
-test datatable.482 {datatable1 row move 1 17} {
+test datatable.488 {datatable1 row move 1 17} {
     list [catch {datatable1 row move 1 17} msg] $msg
 } {0 {}}
 
-test datatable.483 {datatable1 trace row} {
+test datatable.489 {datatable1 trace row} {
     list [catch {datatable1 trace row} msg] $msg
 } {1 {wrong # args: should be "datatable1 trace row row how command"}}
 
-test datatable.484 {datatable1 trace row all} {
+test datatable.490 {datatable1 trace row all} {
     list [catch {datatable1 trace row all} msg] $msg
 } {1 {wrong # args: should be "datatable1 trace row row how command"}}
     
-test datatable.485 {datatable1 trace row end} {
+test datatable.491 {datatable1 trace row end} {
     list [catch {datatable1 trace row end} msg] $msg
 } {1 {wrong # args: should be "datatable1 trace row row how command"}}
 
-test datatable.486 {datatable1 trace row 1} {
+test datatable.492 {datatable1 trace row 1} {
     list [catch {datatable1 trace row 1} msg] $msg
 } {1 {wrong # args: should be "datatable1 trace row row how command"}}
 
-test datatable.487 {datatable1 trace row 1 rwuc} {
+test datatable.493 {datatable1 trace row 1 rwuc} {
     list [catch {datatable1 trace row 1 rwuc} msg] $msg
 } {1 {wrong # args: should be "datatable1 trace row row how command"}}
 
-test datatable.488 {datatable1 trace row all rwuc} {
+test datatable.494 {datatable1 trace row all rwuc} {
     list [catch {datatable1 trace row all rwuc} msg] $msg
 } {1 {wrong # args: should be "datatable1 trace row row how command"}}
 
-test datatable.489 {datatable1 trace names} {
+test datatable.495 {datatable1 trace names} {
     list [catch {datatable1 trace names} msg] $msg
 } {0 {}}
 
@@ -2780,20 +2790,20 @@ proc Doit { args } {
     global mylist; lappend mylist $args 
 }
 
-test datatable.489 {datatable1 trace row all rwuc Doit} {
+test datatable.496 {datatable1 trace row all rwuc Doit} {
     list [catch {datatable1 trace row all rwuc Doit} msg] $msg
 } {0 trace1}
 
-test datatable.489 {datatable1 trace names} {
+test datatable.497 {datatable1 trace names} {
     list [catch {datatable1 trace names} msg] $msg
 } {0 trace1}
 
 
-test datatable.490 {datatable1 trace info trace1} {
+test datatable.498 {datatable1 trace info trace1} {
     list [catch {datatable1 trace info trace1} msg] $msg
 } {0 {id trace1 row all flags rwuc command {Doit ::datatable1}}}
 
-test datatable.491 {test create trace} {
+test datatable.499 {test create trace} {
     list [catch {
 	set mylist {}
 	datatable1 set all 1 20
@@ -2801,7 +2811,7 @@ test datatable.491 {test create trace} {
     } msg] $msg
 } {0 {{::datatable1 0 1 wc} {::datatable1 1 1 wc} {::datatable1 2 1 w} {::datatable1 3 1 w} {::datatable1 4 1 wc} {::datatable1 5 1 wc} {::datatable1 6 1 wc} {::datatable1 7 1 wc} {::datatable1 8 1 wc} {::datatable1 9 1 wc} {::datatable1 10 1 wc} {::datatable1 11 1 wc} {::datatable1 12 1 wc} {::datatable1 13 1 w} {::datatable1 14 1 wc} {::datatable1 15 1 wc} {::datatable1 16 1 wc} {::datatable1 17 1 w} {::datatable1 18 1 wc} {::datatable1 19 1 wc} {::datatable1 20 1 wc} {::datatable1 21 1 wc} {::datatable1 22 1 wc} {::datatable1 23 1 wc}}}
 
-test datatable.492 {test read trace} {
+test datatable.500 {test read trace} {
     list [catch {
 	set mylist {}
 	datatable1 row get 1
@@ -2809,7 +2819,7 @@ test datatable.492 {test read trace} {
 	} msg] $msg
 } {0 {{::datatable1 1 0 r} {::datatable1 1 1 r} {::datatable1 1 2 r} {::datatable1 1 3 r} {::datatable1 1 4 r} {::datatable1 1 5 r}}}
 
-test datatable.493 {test write trace} {
+test datatable.501 {test write trace} {
     list [catch {
 	set mylist {}
 	datatable1 row values 1 {101 102 103 104 105}
@@ -2817,7 +2827,7 @@ test datatable.493 {test write trace} {
 	} msg] $msg
 } {0 {{::datatable1 1 0 wc} {::datatable1 1 1 w} {::datatable1 1 2 wc} {::datatable1 1 3 wc} {::datatable1 1 4 wc}}}
 
-test datatable.494 {test unset trace} {
+test datatable.502 {test unset trace} {
     list [catch {
 	set mylist {}
 	datatable1 row unset 1 all
@@ -2825,13 +2835,13 @@ test datatable.494 {test unset trace} {
 	} msg] $msg
 } {0 {{::datatable1 1 0 u} {::datatable1 1 1 u} {::datatable1 1 2 u} {::datatable1 1 3 u} {::datatable1 1 4 u}}}
 
-test datatable.495 {datatable1 trace delete} {
+test datatable.503 {datatable1 trace delete} {
     list [catch {datatable1 trace delete} msg] $msg
 } {0 {}}
 
 #---------------------
 
-test datatable.496 {datatable1 trace} {
+test datatable.504 {datatable1 trace} {
     list [catch {datatable1 trace} msg] $msg
 } {1 {wrong # args: should be one of...
   datatable1 trace cell row column how command
@@ -2841,41 +2851,41 @@ test datatable.496 {datatable1 trace} {
   datatable1 trace names 
   datatable1 trace row row how command}}
 
-test datatable.497 {datatable1 trace cell} {
+test datatable.505 {datatable1 trace cell} {
     list [catch {datatable1 trace cell} msg] $msg
 } {1 {wrong # args: should be "datatable1 trace cell row column how command"}}
 
-test datatable.498 {datatable1 trace cell 1} {
+test datatable.506 {datatable1 trace cell 1} {
     list [catch {datatable1 trace cell 1} msg] $msg
 } {1 {wrong # args: should be "datatable1 trace cell row column how command"}}
 
-test datatable.499 {datatable1 trace cell 1 1 } {
+test datatable.507 {datatable1 trace cell 1 1 } {
     list [catch {datatable1 trace cell 1 1 } msg] $msg
 } {1 {wrong # args: should be "datatable1 trace cell row column how command"}}
 
-test datatable.500 {datatable1 trace cell 1 1 rwuc} {
+test datatable.508 {datatable1 trace cell 1 1 rwuc} {
     list [catch {datatable1 trace cell 1 1 rwuc} msg] $msg
 } {1 {wrong # args: should be "datatable1 trace cell row column how command"}}
 
 proc Doit args { global mylist; lappend mylist $args }
 
-test datatable.501 {datatable1 trace names} {
+test datatable.509 {datatable1 trace names} {
     list [catch {datatable1 trace names} msg] $msg
 } {0 trace1}
 
-test datatable.502 {datatable1 trace cell 1 1 rwuc Doit} {
+test datatable.510 {datatable1 trace cell 1 1 rwuc Doit} {
     list [catch {datatable1 trace cell 1 1 rwuc Doit} msg] $msg
 } {0 trace2}
 
-test datatable.503 {datatable1 trace names} {
+test datatable.511 {datatable1 trace names} {
     list [catch {datatable1 trace names} msg] $msg
 } {0 {trace1 trace2}}
 
-test datatable.504 {datatable1 trace info trace1} {
+test datatable.512 {datatable1 trace info trace1} {
     list [catch {datatable1 trace info trace1} msg] $msg
 } {0 {id trace1 row all flags rwuc command {Doit ::datatable1}}}
 
-test datatable.505 {test create trace} {
+test datatable.513 {test create trace} {
     list [catch {
 	set mylist {}
 	datatable1 set 1 1 "newValue"
@@ -2883,7 +2893,7 @@ test datatable.505 {test create trace} {
 	} msg] $msg
 } {0 {{::datatable1 1 1 wc} {::datatable1 1 1 wc}}}
 
-test datatable.506 {test read trace} {
+test datatable.514 {test read trace} {
     list [catch {
 	set mylist {}
 	datatable1 get 1 1
@@ -2891,7 +2901,7 @@ test datatable.506 {test read trace} {
 	} msg] $msg
 } {0 {{::datatable1 1 1 r} {::datatable1 1 1 r}}}
 
-test datatable.507 {test write trace} {
+test datatable.515 {test write trace} {
     list [catch {
 	set mylist {}
 	datatable1 column values 1 { a b c e d }
@@ -2899,11 +2909,11 @@ test datatable.507 {test write trace} {
 	} msg] $msg
 } {0 {{::datatable1 0 1 w} {::datatable1 1 1 w} {::datatable1 1 1 w} {::datatable1 2 1 w} {::datatable1 3 1 w} {::datatable1 4 1 w}}}
 
-test datatable.508 {trace delete trace1} {
+test datatable.516 {trace delete trace1} {
     list [catch {datatable1 trace delete trace1} msg] $msg
 } {0 {}}
 
-test datatable.509 {test write trace} {
+test datatable.517 {test write trace} {
     list [catch {
 	set mylist {}
 	datatable1 row values 1 { 1.01 2.02 3.03 4.04 5.05 }
@@ -2911,7 +2921,7 @@ test datatable.509 {test write trace} {
 	} msg] $msg
 } {0 {{::datatable1 1 1 w}}}
 
-test datatable.510 {test write trace} {
+test datatable.518 {test write trace} {
     list [catch {
 	set mylist {}
 	datatable1 set 1 1 "nextValue"
@@ -2919,7 +2929,7 @@ test datatable.510 {test write trace} {
 	} msg] $msg
 } {0 {{::datatable1 1 1 w}}}
 
-test datatable.511 {test unset trace} {
+test datatable.519 {test unset trace} {
     list [catch {
 	set mylist {}
 	datatable1 unset 1 1
@@ -2927,27 +2937,27 @@ test datatable.511 {test unset trace} {
 	} msg] $msg
 } {0 {{::datatable1 1 1 u}}}
 
-test datatable.512 {datatable1 trace delete} {
+test datatable.520 {datatable1 trace delete} {
     list [catch {datatable1 trace delete} msg] $msg
 } {0 {}}
 
-test datatable.513 {datatable1 trace delete badId} {
+test datatable.521 {datatable1 trace delete badId} {
     list [catch {datatable1 trace delete badId} msg] $msg
 } {1 {unknown trace "badId"}}
 
-test datatable.514 {datatable1 trace names} {
+test datatable.522 {datatable1 trace names} {
     list [catch {datatable1 trace names} msg] $msg
 } {0 trace2}
 
-test datatable.515 {datatable1 trace names badArg} {
+test datatable.523 {datatable1 trace names badArg} {
     list [catch {datatable1 trace names badArg} msg] $msg
 } {1 {wrong # args: should be "datatable1 trace names "}}
 
-test datatable.516 {datatable1 trace delete trace2} {
+test datatable.524 {datatable1 trace delete trace2} {
     list [catch {datatable1 trace delete trace2} msg] $msg
 } {0 {}}
 
-test datatable.517 {test create trace} {
+test datatable.525 {test create trace} {
     list [catch {
 	set mylist {}
 	datatable0 set all newKey 20
@@ -2955,7 +2965,7 @@ test datatable.517 {test create trace} {
 	} msg] $msg
 } {0 {}}
 
-test datatable.518 {test unset trace} {
+test datatable.526 {test unset trace} {
     list [catch {
 	set mylist {}
 	datatable0 unset all newKey
@@ -2963,7 +2973,7 @@ test datatable.518 {test unset trace} {
 	} msg] $msg
 } {0 {}}
 
-test datatable.519 {datatable0 dump -badSwitch} {
+test datatable.527 {datatable0 dump -badSwitch} {
     list [catch {datatable0 dump -badSwitch} msg] $msg
 } {1 {unknown switch "-badSwitch"
 following switches are available:
@@ -2972,7 +2982,7 @@ following switches are available:
    -file fileName}}
 
 
-test datatable.520 {datatable0 dump -rows 1} {
+test datatable.528 {datatable0 dump -rows 1} {
     list [catch {datatable0 dump -rows 1} msg] $msg
 } {0 {i 1 23 0 0
 c 0 c0 string {newTag2 myTag midTag newTag}
@@ -3002,7 +3012,7 @@ r 1 r2 {}
 }}
 
 
-test datatable.521 {datatable0 dump -columns 1} {
+test datatable.529 {datatable0 dump -columns 1} {
     list [catch {datatable0 dump -columns 1} msg] $msg
 } {0 {i 5 1 0 0
 c 1 c1 string {}
@@ -3013,416 +3023,452 @@ r 3 r4 {}
 r 4 r5 {}
 }}
 
-# If you specify a row tag that doesn't exist, it's the same as no rows.
-test datatable.522 {dump -rows unknownTag} {
-    list [catch {datatable0 dump -rows unknownTag} msg] $msg
+test datatable.530 {dump -rows badTag} {
+    list [catch {datatable0 dump -rows badTag} msg] $msg
 } {1 {unknown row specification "badTag" in ::datatable0}}
 
-# If you specify a column tag that doesn't exist, it's the same as no columns.
-test datatable.523 {dump -columns badTag} {
-    list [catch {datatable0 dump -columns badTag} msg] $msg
-} {1 {can't find column tag "badTag" in ::datatable0}}
+test datatable.531 {column tag names} {
+    list [catch {datatable0 column tag names} msg] $msg
+} {0 {myTag2 newTag2 myTag midTag newTag myTag1 all end}}
 
-test datatable.524 {dump -rows 1 -columns 1} {
+test datatable.532 {dump -columns badTag} {
+    list [catch {datatable0 dump -columns badTag} msg] $msg
+} {1 {unknown column specification "badTag" in ::datatable0}}
+
+test datatable.533 {dump -rows 1 -columns 1} {
     list [catch {datatable0 dump -rows 1 -columns 1} msg] $msg
 } {0 {i 1 1 0 0
-c 1 one string
-r 1 r1
+c 1 c1 string {}
+r 1 r2 {}
 }}
 
-test datatable.525 {dump -file myout.dump} {
+test datatable.534 {dump -file myout.dump} {
     list [catch {datatable0 dump -file myout.dump} msg] $msg
 } {0 {}}
 
-test datatable.526 {blt::datatable destroy datatable0} {
+test datatable.535 {blt::datatable destroy datatable0} {
     list [catch {blt::datatable destroy datatable0} msg] $msg
 } {0 {}}
 
-test datatable.527 {blt::datatable create} {
+test datatable.536 {blt::datatable create} {
     list [catch {blt::datatable create} msg] $msg
 } {0 ::datatable0}
 
-test datatable.528 {datatable0 column names} {
+test datatable.537 {datatable0 column names} {
     list [catch {datatable0 column names} msg] $msg
 } {0 {}}
 
-test datatable.529 {datatable0 dump} {
+test datatable.538 {datatable0 dump} {
     list [catch {datatable0 dump} msg] $msg
 } {0 {i 0 0 0 0
 }}
 
-test datatable.530 {datatable0 restore} {
+test datatable.539 {datatable0 restore} {
     list [catch {datatable0 restore} msg] $msg
-} {0 {}}
+} {1 {must set either -file and -data switch.}}
 
-test datatable.531 {datatable0 dump} {
-    list [catch {datatable0 dump} msg] $msg
-} {0 {i 5 22 0 0
-c 1 one string
-c 2 c14 string
-c 3 two string
-c 4 myLabel image {myTag midTag newTag}
-c 5 three string
-c 6 c2 image {myTag midTag}
-c 7 c3 image {myTag midTag}
-c 8 c4 image myTag
-c 9 endLabel image myTag
-c 10 c1 string
-c 11 c5 string
-c 12 c6 string
-c 13 c7 string
-c 14 c10 string
-c 15 c11 string
-c 16 c12 string
-c 17 c13 string
-c 18 c8 string
-c 19 c9 string
-c 20 c15 string
-c 21 c16 string {myTag2 myTag1}
-c 22 c17 string {myTag2 myTag1}
-r 1 r1
-r 2 r2
-r 3 r3
-r 4 r4
-r 5 r5
-d 1 6 1.0
-d 1 7 1.0
-d 1 8 1.0
-d 2 6 2.0
-d 2 7 2.0
-d 2 8 2.0
-d 3 6 3.0
-d 3 7 3.0
-d 3 8 3.0
-d 4 6 4.0
-d 4 7 4.0
-d 4 8 4.0
-d 5 6 5.0
-d 5 7 5.0
-d 5 8 5.0
+test datatable.540 {datatable1 dump} {
+    list [catch {datatable1 dump} msg] $msg
+} {0 {i 24 6 0 0
+c 0 c1 int {}
+c 1 c2 string {}
+c 2 c3 string {}
+c 3 c4 string {}
+c 4 c5 string {}
+c 5 c6 string {}
+r 0 three {}
+r 1 myRow {}
+r 2 r65 {myTag midTag}
+r 3 r66 {myTag}
+r 4 r85 {}
+r 5 r68 {}
+r 6 r69 {}
+r 7 r70 {}
+r 8 r71 {}
+r 9 one {}
+r 10 r62 {myTag}
+r 11 r83 {}
+r 12 two {}
+r 13 r63 {myTag midTag newTag}
+r 14 r74 {}
+r 15 r75 {}
+r 16 r76 {}
+r 17 r64 {myTag midTag}
+r 18 r77 {}
+r 19 r78 {}
+r 20 r82 {}
+r 21 one {}
+r 22 r86 {myTag2 myTag1}
+r 23 r87 {myTag2 myTag1}
+d 1 0 1.01
+d 2 0 4.0
+d 3 0 -1
+d 13 0 2.0
+d 17 0 3.0
+d 0 1 a
+d 2 1 c
+d 3 1 e
+d 4 1 d
+d 5 1 20
+d 6 1 20
+d 7 1 20
+d 8 1 20
+d 9 1 20
+d 10 1 20
+d 11 1 20
+d 12 1 20
+d 13 1 20
+d 14 1 20
+d 15 1 20
+d 16 1 20
+d 17 1 20
+d 18 1 20
+d 19 1 20
+d 20 1 20
+d 21 1 20
+d 22 1 20
+d 23 1 20
+d 1 2 3.03
+d 2 2 4.2
+d 3 2 5.2
+d 13 2 2.2
+d 17 2 3.2
+d 1 3 4.04
+d 2 3 4.3
+d 3 3 5.3
+d 13 3 2.3
+d 17 3 3.3
+d 1 4 5.05
+d 2 4 4.4
+d 3 4 5.4
+d 13 4 2.4
+d 17 4 3.4
+d 2 5 4.5
+d 3 5 5.5
+d 17 5 3.5
 }}
 
-exit 0
 #----------------------
+exit 0
 
-test datatable.532 {datatable0 column tag names badNode} {
+test datatable.541 {datatable0 column tag names badNode} {
     list [catch {datatable0 column tag names badNode} msg] $msg
 } {1 {can't find tag or id "badNode" in ::datatable0}}
 
-test datatable.533 {datatable0 column tag names all} {
+test datatable.542 {datatable0 column tag names all} {
     list [catch {datatable0 column tag names all} msg] $msg
 } {1 {multiple columns specified by "all"}}
 
-test datatable.534 {datatable0 column tag names root} {
+test datatable.543 {datatable0 column tag names root} {
     list [catch {datatable0 column tag names root} msg] $msg
 } {0 {all hi newTag root tag2}}
 
-test datatable.535 {datatable0 column tag names 0 1} {
+test datatable.544 {datatable0 column tag names 0 1} {
     list [catch {datatable0 column tag names 0 1} msg] $msg
 } {0 {all hi newTag root tag2}}
 
-test datatable.536 {datatable0 column tag nodes (missing arg)} {
+test datatable.545 {datatable0 column tag nodes (missing arg)} {
     list [catch {datatable0 column tag nodes} msg] $msg
 } {1 {wrong # args: should be "datatable0 column tag nodes tag ?tag...?"}}
 
-test datatable.537 {datatable0 column tag nodes root badTag} {
+test datatable.546 {datatable0 column tag nodes root badTag} {
     list [catch {datatable0 column tag nodes root badTag} msg] $msg
 } {1 {can't find a tag "badTag"}}
 
-test datatable.538 {datatable0 column tag nodes root tag2} {
+test datatable.547 {datatable0 column tag nodes root tag2} {
     list [catch {datatable0 column tag nodes root tag2} msg] $msg
 } {0 {0 1 2 3 4}}
 
 
-test datatable.539 {datatable0 create 0} {
+test datatable.548 {datatable0 create 0} {
     list [catch {datatable0 create 0} msg] $msg
 } {0 2}
 
-test datatable.540 {datatable0 create root} {
+test datatable.549 {datatable0 create root} {
     list [catch {datatable0 create root} msg] $msg
 } {0 3}
 
-test datatable.541 {datatable0 create all} {
+test datatable.550 {datatable0 create all} {
     list [catch {datatable0 create all} msg] $msg
 } {1 {multiple columns specified by "all"}}
 
-test datatable.542 {datatable0 create 0 -at badPosition} {
+test datatable.551 {datatable0 create 0 -at badPosition} {
     list [catch {datatable0 create 0 -at badPosition} msg] $msg
 } {1 {expected integer but got "badPosition"}}
 
-test datatable.543 {datatable0 create 0 -at -1} {
+test datatable.552 {datatable0 create 0 -at -1} {
     list [catch {datatable0 create 0 -at -1} msg] $msg
 } {1 {bad value "-1": can't be negative}}
 
-test datatable.544 {datatable0 create 0 -at 1000} {
+test datatable.553 {datatable0 create 0 -at 1000} {
     list [catch {datatable0 create 0 -at 1000} msg] $msg
 } {0 4}
 
-test datatable.545 {datatable0 create 0 -at (no arg)} {
+test datatable.554 {datatable0 create 0 -at (no arg)} {
     list [catch {datatable0 create 0 -at} msg] $msg
 } {1 {value for "-at" missing}}
 
-test datatable.546 {datatable0 create 0 -tags myTag} {
+test datatable.555 {datatable0 create 0 -tags myTag} {
     list [catch {datatable0 create 0 -tags myTag} msg] $msg
 } {0 5}
 
-test datatable.547 {datatable0 insert 0 -tags {myTag1 myTag2} } {
+test datatable.556 {datatable0 insert 0 -tags {myTag1 myTag2} } {
     list [catch {datatable0 insert 0 -tags {myTag1 myTag2}} msg] $msg
 } {0 6}
 
-test datatable.548 {datatable0 insert 0 -tags root} {
+test datatable.557 {datatable0 insert 0 -tags root} {
     list [catch {datatable0 insert 0 -tags root} msg] $msg
 } {1 {can't add reserved tag "root"}}
 
-test datatable.549 {datatable0 insert 0 -tags (missing arg)} {
+test datatable.558 {datatable0 insert 0 -tags (missing arg)} {
     list [catch {datatable0 insert 0 -tags} msg] $msg
 } {1 {value for "-tags" missing}}
 
-test datatable.550 {datatable0 insert 0 -label myLabel -tags thisTag} {
+test datatable.559 {datatable0 insert 0 -label myLabel -tags thisTag} {
     list [catch {datatable0 insert 0 -label myLabel -tags thisTag} msg] $msg
 } {0 8}
 
-test datatable.551 {datatable0 insert 0 -label (missing arg)} {
+test datatable.560 {datatable0 insert 0 -label (missing arg)} {
     list [catch {datatable0 insert 0 -label} msg] $msg
 } {1 {value for "-label" missing}}
 
-test datatable.552 {datatable0 insert 1 -tags thisTag} {
+test datatable.561 {datatable0 insert 1 -tags thisTag} {
     list [catch {datatable0 insert 1 -tags thisTag} msg] $msg
 } {0 9}
 
-test datatable.553 {datatable0 insert 1 -data key (missing value)} {
+test datatable.562 {datatable0 insert 1 -data key (missing value)} {
     list [catch {datatable0 insert 1 -data key} msg] $msg
 } {1 {missing value for "key"}}
 
-test datatable.554 {datatable0 insert 1 -data {key value}} {
+test datatable.563 {datatable0 insert 1 -data {key value}} {
     list [catch {datatable0 insert 1 -data {key value}} msg] $msg
 } {0 11}
 
-test datatable.555 {datatable0 insert 1 -data {key1 value1 key2 value2}} {
+test datatable.564 {datatable0 insert 1 -data {key1 value1 key2 value2}} {
     list [catch {datatable0 insert 1 -data {key1 value1 key2 value2}} msg] $msg
 } {0 12}
 
-test datatable.556 {get} {
+test datatable.565 {get} {
     list [catch {
 	datatable0 get 12
     } msg] $msg
 } {0 {key1 value1 key2 value2}}
 
-test datatable.557 {datatable0 children} {
+test datatable.566 {datatable0 children} {
     list [catch {datatable0 children} msg] $msg
 } {1 {wrong # args: should be "datatable0 children node ?first? ?last?"}}
 
-test datatable.558 {datatable0 children 0} {
+test datatable.567 {datatable0 children 0} {
     list [catch {datatable0 children 0} msg] $msg
 } {0 {1 2 3 4 5 6 8}}
 
-test datatable.559 {datatable0 children root} {
+test datatable.568 {datatable0 children root} {
     list [catch {datatable0 children root} msg] $msg
 } {0 {1 2 3 4 5 6 8}}
 
-test datatable.560 {datatable0 children 1} {
+test datatable.569 {datatable0 children 1} {
     list [catch {datatable0 children 1} msg] $msg
 } {0 {9 11 12}}
 
-test datatable.561 {datatable0 insert myTag} {
+test datatable.570 {datatable0 insert myTag} {
     list [catch {datatable0 insert myTag} msg] $msg
 } {0 13}
 
-test datatable.562 {datatable0 children myTag} {
+test datatable.571 {datatable0 children myTag} {
     list [catch {datatable0 children myTag} msg] $msg
 } {0 13}
 
-test datatable.563 {datatable0 children root 0 end} {
+test datatable.572 {datatable0 children root 0 end} {
     list [catch {datatable0 children root 0 end} msg] $msg
 } {0 {1 2 3 4 5 6 8}}
 
-test datatable.564 {datatable0 children root 2} {
+test datatable.573 {datatable0 children root 2} {
     list [catch {datatable0 children root 2} msg] $msg
 } {0 3}
 
-test datatable.565 {datatable0 children root 2 end} {
+test datatable.574 {datatable0 children root 2 end} {
     list [catch {datatable0 children root 2 end} msg] $msg
 } {0 {3 4 5 6 8}}
 
-test datatable.566 {datatable0 children root end end} {
+test datatable.575 {datatable0 children root end end} {
     list [catch {datatable0 children root end end} msg] $msg
 } {0 8}
 
-test datatable.567 {datatable0 children root 0 2} {
+test datatable.576 {datatable0 children root 0 2} {
     list [catch {datatable0 children root 0 2} msg] $msg
 } {0 {1 2 3}}
 
-test datatable.568 {datatable0 children root -1 -20} {
+test datatable.577 {datatable0 children root -1 -20} {
     list [catch {datatable0 children root -1 -20} msg] $msg
 } {0 {}}
 
-test datatable.569 {datatable0 firstchild (missing arg)} {
+test datatable.578 {datatable0 firstchild (missing arg)} {
     list [catch {datatable0 firstchild} msg] $msg
 } {1 {wrong # args: should be "datatable0 firstchild node"}}
 
-test datatable.570 {datatable0 firstchild root} {
+test datatable.579 {datatable0 firstchild root} {
     list [catch {datatable0 firstchild root} msg] $msg
 } {0 1}
 
-test datatable.571 {datatable0 lastchild (missing arg)} {
+test datatable.580 {datatable0 lastchild (missing arg)} {
     list [catch {datatable0 lastchild} msg] $msg
 } {1 {wrong # args: should be "datatable0 lastchild node"}}
 
-test datatable.572 {datatable0 lastchild root} {
+test datatable.581 {datatable0 lastchild root} {
     list [catch {datatable0 lastchild root} msg] $msg
 } {0 8}
 
-test datatable.573 {datatable0 nextsibling (missing arg)} {
+test datatable.582 {datatable0 nextsibling (missing arg)} {
     list [catch {datatable0 nextsibling} msg] $msg
 } {1 {wrong # args: should be "datatable0 nextsibling node"}}
 
-test datatable.574 {datatable0 nextsibling 1)} {
+test datatable.583 {datatable0 nextsibling 1)} {
     list [catch {datatable0 nextsibling 1} msg] $msg
 } {0 2}
 
-test datatable.575 {datatable0 nextsibling 2)} {
+test datatable.584 {datatable0 nextsibling 2)} {
     list [catch {datatable0 nextsibling 2} msg] $msg
 } {0 3}
 
-test datatable.576 {datatable0 nextsibling 3)} {
+test datatable.585 {datatable0 nextsibling 3)} {
     list [catch {datatable0 nextsibling 3} msg] $msg
 } {0 4}
 
-test datatable.577 {datatable0 nextsibling 4)} {
+test datatable.586 {datatable0 nextsibling 4)} {
     list [catch {datatable0 nextsibling 4} msg] $msg
 } {0 5}
 
-test datatable.578 {datatable0 nextsibling 5)} {
+test datatable.587 {datatable0 nextsibling 5)} {
     list [catch {datatable0 nextsibling 5} msg] $msg
 } {0 6}
 
-test datatable.579 {datatable0 nextsibling 6)} {
+test datatable.588 {datatable0 nextsibling 6)} {
     list [catch {datatable0 nextsibling 6} msg] $msg
 } {0 8}
 
-test datatable.580 {datatable0 nextsibling 8)} {
+test datatable.589 {datatable0 nextsibling 8)} {
     list [catch {datatable0 nextsibling 8} msg] $msg
 } {0 -1}
 
-test datatable.581 {datatable0 nextsibling all)} {
+test datatable.590 {datatable0 nextsibling all)} {
     list [catch {datatable0 nextsibling all} msg] $msg
 } {1 { than one node tagged as "all"}}
 
-test datatable.582 {datatable0 nextsibling badTag)} {
+test datatable.591 {datatable0 nextsibling badTag)} {
     list [catch {datatable0 nextsibling badTag} msg] $msg
 } {1 {can't find tag or id "badTag" in ::datatable0}}
 
-test datatable.583 {datatable0 nextsibling -1)} {
+test datatable.592 {datatable0 nextsibling -1)} {
     list [catch {datatable0 nextsibling -1} msg] $msg
 } {1 {can't find tag or id "-1" in ::datatable0}}
 
-test datatable.584 {datatable0 prevsibling 2)} {
+test datatable.593 {datatable0 prevsibling 2)} {
     list [catch {datatable0 prevsibling 2} msg] $msg
 } {0 1}
 
-test datatable.585 {datatable0 prevsibling 1)} {
+test datatable.594 {datatable0 prevsibling 1)} {
     list [catch {datatable0 prevsibling 1} msg] $msg
 } {0 -1}
 
-test datatable.586 {datatable0 prevsibling -1)} {
+test datatable.595 {datatable0 prevsibling -1)} {
     list [catch {datatable0 prevsibling -1} msg] $msg
 } {1 {can't find tag or id "-1" in ::datatable0}}
 
-test datatable.587 {datatable0 root)} {
+test datatable.596 {datatable0 root)} {
     list [catch {datatable0 root} msg] $msg
 } {0 0}
 
-test datatable.588 {datatable0 root badArg)} {
+test datatable.597 {datatable0 root badArg)} {
     list [catch {datatable0 root badArgs} msg] $msg
 } {1 {wrong # args: should be "datatable0 root "}}
 
-test datatable.589 {datatable0 parent (missing arg))} {
+test datatable.598 {datatable0 parent (missing arg))} {
     list [catch {datatable0 parent} msg] $msg
 } {1 {wrong # args: should be "datatable0 parent node"}}
 
-test datatable.590 {datatable0 parent root)} {
+test datatable.599 {datatable0 parent root)} {
     list [catch {datatable0 parent root} msg] $msg
 } {0 -1}
 
-test datatable.591 {datatable0 parent 1)} {
+test datatable.600 {datatable0 parent 1)} {
     list [catch {datatable0 parent 1} msg] $msg
 } {0 0}
 
-test datatable.592 {datatable0 parent myTag)} {
+test datatable.601 {datatable0 parent myTag)} {
     list [catch {datatable0 parent myTag} msg] $msg
 } {0 0}
 
-test datatable.593 {datatable0 next (missing arg))} {
+test datatable.602 {datatable0 next (missing arg))} {
     list [catch {datatable0 next} msg] $msg
 } {1 {wrong # args: should be "datatable0 next node"}}
 
 
-test datatable.594 {datatable0 next (extra arg))} {
+test datatable.603 {datatable0 next (extra arg))} {
     list [catch {datatable0 next root root} msg] $msg
 } {1 {wrong # args: should be "datatable0 next node"}}
 
-test datatable.595 {datatable0 next root} {
+test datatable.604 {datatable0 next root} {
     list [catch {datatable0 next root} msg] $msg
 } {0 1}
 
-test datatable.596 {datatable0 next 1)} {
+test datatable.605 {datatable0 next 1)} {
     list [catch {datatable0 next 1} msg] $msg
 } {0 9}
 
-test datatable.597 {datatable0 next 2)} {
+test datatable.606 {datatable0 next 2)} {
     list [catch {datatable0 next 2} msg] $msg
 } {0 3}
 
-test datatable.598 {datatable0 next 3)} {
+test datatable.607 {datatable0 next 3)} {
     list [catch {datatable0 next 3} msg] $msg
 } {0 4}
 
-test datatable.599 {datatable0 next 4)} {
+test datatable.608 {datatable0 next 4)} {
     list [catch {datatable0 next 4} msg] $msg
 } {0 5}
 
-test datatable.600 {datatable0 next 5)} {
+test datatable.609 {datatable0 next 5)} {
     list [catch {datatable0 next 5} msg] $msg
 } {0 13}
 
-test datatable.601 {datatable0 next 6)} {
+test datatable.610 {datatable0 next 6)} {
     list [catch {datatable0 next 6} msg] $msg
 } {0 8}
 
-test datatable.602 {datatable0 next 8)} {
+test datatable.611 {datatable0 next 8)} {
     list [catch {datatable0 next 8} msg] $msg
 } {0 -1}
 
-test datatable.603 {datatable0 previous 1)} {
+test datatable.612 {datatable0 previous 1)} {
     list [catch {datatable0 previous 1} msg] $msg
 } {0 0}
 
-test datatable.604 {datatable0 previous 0)} {
+test datatable.613 {datatable0 previous 0)} {
     list [catch {datatable0 previous 0} msg] $msg
 } {0 -1}
 
-test datatable.605 {datatable0 previous 8)} {
+test datatable.614 {datatable0 previous 8)} {
     list [catch {datatable0 previous 8} msg] $msg
 } {0 6}
 
-test datatable.606 {datatable0 depth (no arg))} {
+test datatable.615 {datatable0 depth (no arg))} {
     list [catch {datatable0 depth} msg] $msg
 } {1 {wrong # args: should be "datatable0 depth node"}}
 
-test datatable.607 {datatable0 depth root))} {
+test datatable.616 {datatable0 depth root))} {
     list [catch {datatable0 depth root} msg] $msg
 } {0 0}
 
-test datatable.608 {datatable0 depth myTag))} {
+test datatable.617 {datatable0 depth myTag))} {
     list [catch {datatable0 depth myTag} msg] $msg
 } {0 1}
 
-test datatable.609 {datatable0 depth myTag))} {
+test datatable.618 {datatable0 depth myTag))} {
     list [catch {datatable0 depth myTag} msg] $msg
 } {0 1}
 
 
-test datatable.610 {datatable0 dumpdata 1} {
+test datatable.619 {datatable0 dumpdata 1} {
     list [catch {datatable0 dumpdata 1} msg] $msg
 } {0 {-1 1 {node1} {} {}
 1 9 {node1 node9} {} {thisTag}
@@ -3430,98 +3476,98 @@ test datatable.610 {datatable0 dumpdata 1} {
 1 12 {node1 node12} {key1 value1 key2 value2} {}
 }}
 
-test datatable.611 {datatable0 dumpdata this} {
+test datatable.620 {datatable0 dumpdata this} {
     list [catch {datatable0 dumpdata myTag} msg] $msg
 } {0 {-1 5 {node5} {} {myTag}
 5 13 {node5 node13} {} {}
 }}
 
-test datatable.612 {datatable0 dumpdata 1 badArg (too many args)} {
+test datatable.621 {datatable0 dumpdata 1 badArg (too many args)} {
     list [catch {datatable0 dumpdata 1 badArg} msg] $msg
 } {1 {wrong # args: should be "datatable0 dumpdata node"}}
 
-test datatable.613 {datatable0 dumpdata 11} {
+test datatable.622 {datatable0 dumpdata 11} {
     list [catch {datatable0 dumpdata 11} msg] $msg
 } {0 {-1 11 {node11} {key value} {}
 }}
 
-test datatable.614 {datatable0 dumpdata all} {
+test datatable.623 {datatable0 dumpdata all} {
     list [catch {datatable0 dumpdata all} msg] $msg
 } {1 {more than one node tagged as "all"}}
 
-test datatable.615 {datatable0 dumpdata all} {
+test datatable.624 {datatable0 dumpdata all} {
     list [catch {datatable0 dumpdata all} msg] $msg
 } {1 {more than one node tagged as "all"}}
 
-test datatable.616 {datatable0 dumpfile 0 test.dump} {
+test datatable.625 {datatable0 dumpfile 0 test.dump} {
     list [catch {datatable0 dumpfile 0 test.dump} msg] $msg
 } {0 {}}
 
-test datatable.617 {datatable0 get 9} {
+test datatable.626 {datatable0 get 9} {
     list [catch {datatable0 get 9} msg] $msg
 } {0 {}}
 
-test datatable.618 {datatable0 get all} {
+test datatable.627 {datatable0 get all} {
     list [catch {datatable0 get all} msg] $msg
 } {1 {more than one node tagged as "all"}}
 
-test datatable.619 {datatable0 get root} {
+test datatable.628 {datatable0 get root} {
     list [catch {datatable0 get root} msg] $msg
 } {0 {}}
 
-test datatable.620 {datatable0 get 9 key} {
+test datatable.629 {datatable0 get 9 key} {
     list [catch {datatable0 get root} msg] $msg
 } {0 {}}
 
-test datatable.621 {datatable0 get 12} {
+test datatable.630 {datatable0 get 12} {
     list [catch {datatable0 get 12} msg] $msg
 } {0 {key1 value1 key2 value2}}
 
-test datatable.622 {datatable0 get 12 key1} {
+test datatable.631 {datatable0 get 12 key1} {
     list [catch {datatable0 get 12 key1} msg] $msg
 } {0 value1}
 
-test datatable.623 {datatable0 get 12 key2} {
+test datatable.632 {datatable0 get 12 key2} {
     list [catch {datatable0 get 12 key2} msg] $msg
 } {0 value2}
 
-test datatable.624 {datatable0 get 12 key1 defValue } {
+test datatable.633 {datatable0 get 12 key1 defValue } {
     list [catch {datatable0 get 12 key1 defValue} msg] $msg
 } {0 value1}
 
-test datatable.625 {datatable0 get 12 key100 defValue } {
+test datatable.634 {datatable0 get 12 key100 defValue } {
     list [catch {datatable0 get 12 key100 defValue} msg] $msg
 } {0 defValue}
 
-test datatable.626 {datatable0 index (missing arg) } {
+test datatable.635 {datatable0 index (missing arg) } {
     list [catch {datatable0 index} msg] $msg
 } {1 {wrong # args: should be "datatable0 index name"}}
 
-test datatable.627 {datatable0 index 0 10 (extra arg) } {
+test datatable.636 {datatable0 index 0 10 (extra arg) } {
     list [catch {datatable0 index 0 10} msg] $msg
 } {1 {wrong # args: should be "datatable0 index name"}}
 
-test datatable.628 {datatable0 index 0} {
+test datatable.637 {datatable0 index 0} {
     list [catch {datatable0 index 0} msg] $msg
 } {0 0}
 
-test datatable.629 {datatable0 index root} {
+test datatable.638 {datatable0 index root} {
     list [catch {datatable0 index root} msg] $msg
 } {0 0}
 
-test datatable.630 {datatable0 index all} {
+test datatable.639 {datatable0 index all} {
     list [catch {datatable0 index all} msg] $msg
 } {0 -1}
 
-test datatable.631 {datatable0 index myTag} {
+test datatable.640 {datatable0 index myTag} {
     list [catch {datatable0 index myTag} msg] $msg
 } {0 5}
 
-test datatable.632 {datatable0 index thisTag} {
+test datatable.641 {datatable0 index thisTag} {
     list [catch {datatable0 index thisTag} msg] $msg
 } {0 -1}
 
-test datatable.633 {datatable0 is (no args)} {
+test datatable.642 {datatable0 is (no args)} {
     list [catch {datatable0 is} msg] $msg
 } {1 {wrong # args: should be one of...
   datatable0 is ancestor node1 node2
@@ -3530,7 +3576,7 @@ test datatable.633 {datatable0 is (no args)} {
   datatable0 is link node
   datatable0 is root node}}
 
-test datatable.634 {datatable0 is badOp} {
+test datatable.643 {datatable0 is badOp} {
     list [catch {datatable0 is badOp} msg] $msg
 } {1 {bad operation "badOp": should be one of...
   datatable0 is ancestor node1 node2
@@ -3539,171 +3585,171 @@ test datatable.634 {datatable0 is badOp} {
   datatable0 is link node
   datatable0 is root node}}
 
-test datatable.635 {datatable0 is before} {
+test datatable.644 {datatable0 is before} {
     list [catch {datatable0 is before} msg] $msg
 } {1 {wrong # args: should be "datatable0 is before node1 node2"}}
 
-test datatable.636 {datatable0 is before 0 10 20} {
+test datatable.645 {datatable0 is before 0 10 20} {
     list [catch {datatable0 is before 0 10 20} msg] $msg
 } {1 {wrong # args: should be "datatable0 is before node1 node2"}}
 
-test datatable.637 {datatable0 is before 0 12} {
+test datatable.646 {datatable0 is before 0 12} {
     list [catch {datatable0 is before 0 12} msg] $msg
 } {0 1}
 
-test datatable.638 {datatable0 is before 12 0} {
+test datatable.647 {datatable0 is before 12 0} {
     list [catch {datatable0 is before 12 0} msg] $msg
 } {0 0}
 
-test datatable.639 {datatable0 is before 0 0} {
+test datatable.648 {datatable0 is before 0 0} {
     list [catch {datatable0 is before 0 0} msg] $msg
 } {0 0}
 
-test datatable.640 {datatable0 is before root 0} {
+test datatable.649 {datatable0 is before root 0} {
     list [catch {datatable0 is before root 0} msg] $msg
 } {0 0}
 
-test datatable.641 {datatable0 is before 0 all} {
+test datatable.650 {datatable0 is before 0 all} {
     list [catch {datatable0 is before 0 all} msg] $msg
 } {1 {more than one node tagged as "all"}}
 
-test datatable.642 {datatable0 is ancestor} {
+test datatable.651 {datatable0 is ancestor} {
     list [catch {datatable0 is ancestor} msg] $msg
 } {1 {wrong # args: should be "datatable0 is ancestor node1 node2"}}
 
-test datatable.643 {datatable0 is ancestor 0 12 20} {
+test datatable.652 {datatable0 is ancestor 0 12 20} {
     list [catch {datatable0 is ancestor 0 12 20} msg] $msg
 } {1 {wrong # args: should be "datatable0 is ancestor node1 node2"}}
 
-test datatable.644 {datatable0 is ancestor 0 12} {
+test datatable.653 {datatable0 is ancestor 0 12} {
     list [catch {datatable0 is ancestor 0 12} msg] $msg
 } {0 1}
 
-test datatable.645 {datatable0 is ancestor 12 0} {
+test datatable.654 {datatable0 is ancestor 12 0} {
     list [catch {datatable0 is ancestor 12 0} msg] $msg
 } {0 0}
 
-test datatable.646 {datatable0 is ancestor 1 2} {
+test datatable.655 {datatable0 is ancestor 1 2} {
     list [catch {datatable0 is ancestor 1 2} msg] $msg
 } {0 0}
 
-test datatable.647 {datatable0 is ancestor root 0} {
+test datatable.656 {datatable0 is ancestor root 0} {
     list [catch {datatable0 is ancestor root 0} msg] $msg
 } {0 0}
 
-test datatable.648 {datatable0 is ancestor 0 all} {
+test datatable.657 {datatable0 is ancestor 0 all} {
     list [catch {datatable0 is ancestor 0 all} msg] $msg
 } {1 {more than one node tagged as "all"}}
 
-test datatable.649 {datatable0 is root (missing arg)} {
+test datatable.658 {datatable0 is root (missing arg)} {
     list [catch {datatable0 is root} msg] $msg
 } {1 {wrong # args: should be "datatable0 is root node"}}
 
-test datatable.650 {datatable0 is root 0 20 (extra arg)} {
+test datatable.659 {datatable0 is root 0 20 (extra arg)} {
     list [catch {datatable0 is root 0 20} msg] $msg
 } {1 {wrong # args: should be "datatable0 is root node"}}
 
-test datatable.651 {datatable0 is root 0} {
+test datatable.660 {datatable0 is root 0} {
     list [catch {datatable0 is root 0} msg] $msg
 } {0 1}
 
-test datatable.652 {datatable0 is root 12} {
+test datatable.661 {datatable0 is root 12} {
     list [catch {datatable0 is root 12} msg] $msg
 } {0 0}
 
-test datatable.653 {datatable0 is root 1} {
+test datatable.662 {datatable0 is root 1} {
     list [catch {datatable0 is root 1} msg] $msg
 } {0 0}
 
-test datatable.654 {datatable0 is root root} {
+test datatable.663 {datatable0 is root root} {
     list [catch {datatable0 is root root} msg] $msg
 } {0 1}
 
-test datatable.655 {datatable0 is root all} {
+test datatable.664 {datatable0 is root all} {
     list [catch {datatable0 is root all} msg] $msg
 } {1 {more than one node tagged as "all"}}
 
-test datatable.656 {datatable0 is leaf (missing arg)} {
+test datatable.665 {datatable0 is leaf (missing arg)} {
     list [catch {datatable0 is leaf} msg] $msg
 } {1 {wrong # args: should be "datatable0 is leaf node"}}
 
-test datatable.657 {datatable0 is leaf 0 20 (extra arg)} {
+test datatable.666 {datatable0 is leaf 0 20 (extra arg)} {
     list [catch {datatable0 is leaf 0 20} msg] $msg
 } {1 {wrong # args: should be "datatable0 is leaf node"}}
 
-test datatable.658 {datatable0 is leaf 0} {
+test datatable.667 {datatable0 is leaf 0} {
     list [catch {datatable0 is leaf 0} msg] $msg
 } {0 0}
 
-test datatable.659 {datatable0 is leaf 12} {
+test datatable.668 {datatable0 is leaf 12} {
     list [catch {datatable0 is leaf 12} msg] $msg
 } {0 1}
 
-test datatable.660 {datatable0 is leaf 1} {
+test datatable.669 {datatable0 is leaf 1} {
     list [catch {datatable0 is leaf 1} msg] $msg
 } {0 0}
 
-test datatable.661 {datatable0 is leaf root} {
+test datatable.670 {datatable0 is leaf root} {
     list [catch {datatable0 is leaf root} msg] $msg
 } {0 0}
 
-test datatable.662 {datatable0 is leaf all} {
+test datatable.671 {datatable0 is leaf all} {
     list [catch {datatable0 is leaf all} msg] $msg
 } {1 {more than one node tagged as "all"}}
 
-test datatable.663 {datatable0 is leaf 1000} {
+test datatable.672 {datatable0 is leaf 1000} {
     list [catch {datatable0 is leaf 1000} msg] $msg
 } {1 {can't find tag or id "1000" in ::datatable0}}
 
-test datatable.664 {datatable0 is leaf badTag} {
+test datatable.673 {datatable0 is leaf badTag} {
     list [catch {datatable0 is leaf badTag} msg] $msg
 } {1 {can't find tag or id "badTag" in ::datatable0}}
 
-test datatable.665 {datatable0 set (missing arg)} {
+test datatable.674 {datatable0 set (missing arg)} {
     list [catch {datatable0 set} msg] $msg
 } {1 {wrong # args: should be "datatable0 set node ?key value...?"}}
 
-test datatable.666 {datatable0 set 0 (missing arg)} {
+test datatable.675 {datatable0 set 0 (missing arg)} {
     list [catch {datatable0 set 0} msg] $msg
 } {0 {}}
 
-test datatable.667 {datatable0 set 0 key (missing arg)} {
+test datatable.676 {datatable0 set 0 key (missing arg)} {
     list [catch {datatable0 set 0 key} msg] $msg
 } {1 {missing value for field "key"}}
 
-test datatable.668 {datatable0 set 0 key value} {
+test datatable.677 {datatable0 set 0 key value} {
     list [catch {datatable0 set 0 key value} msg] $msg
 } {0 {}}
 
-test datatable.669 {datatable0 set 0 key1 value1 key2 value2 key3 value3} {
+test datatable.678 {datatable0 set 0 key1 value1 key2 value2 key3 value3} {
     list [catch {datatable0 set 0 key1 value1 key2 value2 key3 value3} msg] $msg
 } {0 {}}
 
-test datatable.670 {datatable0 set 0 key1 value1 key2 (missing arg)} {
+test datatable.679 {datatable0 set 0 key1 value1 key2 (missing arg)} {
     list [catch {datatable0 set 0 key1 value1 key2} msg] $msg
 } {1 {missing value for field "key2"}}
 
-test datatable.671 {datatable0 set 0 key value} {
+test datatable.680 {datatable0 set 0 key value} {
     list [catch {datatable0 set 0 key value} msg] $msg
 } {0 {}}
 
-test datatable.672 {datatable0 set 0 key1 value1 key2 (missing arg)} {
+test datatable.681 {datatable0 set 0 key1 value1 key2 (missing arg)} {
     list [catch {datatable0 set 0 key1 value1 key2} msg] $msg
 } {1 {missing value for field "key2"}}
 
-test datatable.673 {datatable0 set all} {
+test datatable.682 {datatable0 set all} {
     list [catch {datatable0 set all} msg] $msg
 } {0 {}}
 
-test datatable.674 {datatable0 set all abc 123} {
+test datatable.683 {datatable0 set all abc 123} {
     list [catch {datatable0 set all abc 123} msg] $msg
 } {0 {}}
 
-test datatable.675 {datatable0 set root} {
+test datatable.684 {datatable0 set root} {
     list [catch {datatable0 set root} msg] $msg
 } {0 {}}
 
-test datatable.676 {datatable0 restore stuff} {
+test datatable.685 {datatable0 restore stuff} {
     list [catch {
 	set data [datatable0 dumpdata root]
 	blt::datatable create
@@ -3726,7 +3772,7 @@ test datatable.676 {datatable0 restore stuff} {
 0 8 {::datatable0 myLabel} {abc 123} {thisTag}
 }}
 
-test datatable.677 {datatable0 restorefile 0 test.dump} {
+test datatable.686 {datatable0 restorefile 0 test.dump} {
     list [catch {
 	blt::datatable create
 	datatable1 restorefile root test.dump
@@ -3749,35 +3795,35 @@ test datatable.677 {datatable0 restorefile 0 test.dump} {
 }}
 
 
-test datatable.678 {datatable0 unset 0 key1} {
+test datatable.687 {datatable0 unset 0 key1} {
     list [catch {datatable0 unset 0 key1} msg] $msg
 } {0 {}}
 
-test datatable.679 {datatable0 get 0} {
+test datatable.688 {datatable0 get 0} {
     list [catch {datatable0 get 0} msg] $msg
 } {0 {key value key2 value2 key3 value3 abc 123}}
 
-test datatable.680 {datatable0 unset 0 key2 key3} {
+test datatable.689 {datatable0 unset 0 key2 key3} {
     list [catch {datatable0 unset 0 key2 key3} msg] $msg
 } {0 {}}
 
-test datatable.681 {datatable0 get 0} {
+test datatable.690 {datatable0 get 0} {
     list [catch {datatable0 get 0} msg] $msg
 } {0 {key value abc 123}}
 
-test datatable.682 {datatable0 unset 0} {
+test datatable.691 {datatable0 unset 0} {
     list [catch {datatable0 unset 0} msg] $msg
 } {0 {}}
 
-test datatable.683 {datatable0 get 0} {
+test datatable.692 {datatable0 get 0} {
     list [catch {datatable0 get 0} msg] $msg
 } {0 {}}
 
-test datatable.684 {datatable0 unset all abc} {
+test datatable.693 {datatable0 unset all abc} {
     list [catch {datatable0 unset all abc} msg] $msg
 } {0 {}}
 
-test datatable.685 {datatable0 restore stuff} {
+test datatable.694 {datatable0 restore stuff} {
     list [catch {
 	set data [datatable0 dumpdata root]
 	blt::datatable create datatable1
@@ -3800,52 +3846,52 @@ test datatable.685 {datatable0 restore stuff} {
 0 8 {::datatable0 myLabel} {} {thisTag}
 }}
 
-test datatable.686 {datatable0 restore (missing arg)} {
+test datatable.695 {datatable0 restore (missing arg)} {
     list [catch {datatable0 restore} msg] $msg
 } {1 {wrong # args: should be "datatable0 restore node dataString ?switches?"}}
 
-test datatable.687 {datatable0 restore 0 badString} {
+test datatable.696 {datatable0 restore 0 badString} {
     list [catch {datatable0 restore 0 badString} msg] $msg
 } {1 {line #1: wrong # elements in restore entry}}
 
-test datatable.688 {datatable0 restore 0 {} arg (extra arg)} {
+test datatable.697 {datatable0 restore 0 {} arg (extra arg)} {
     list [catch {datatable0 restore 0 {} arg} msg] $msg
 } {1 {unknown option "arg"}}
 
 
-test datatable.689 {datatable0 size (missing arg)} {
+test datatable.698 {datatable0 size (missing arg)} {
     list [catch {datatable0 size} msg] $msg
 } {1 {wrong # args: should be "datatable0 size node"}}
 
-test datatable.690 {datatable0 size 0} {
+test datatable.699 {datatable0 size 0} {
     list [catch {datatable0 size 0} msg] $msg
 } {0 12}
 
-test datatable.691 {datatable0 size all} {
+test datatable.700 {datatable0 size all} {
     list [catch {datatable0 size all} msg] $msg
 } {1 {more than one node tagged as "all"}}
 
-test datatable.692 {datatable0 size 0 10 (extra arg)} {
+test datatable.701 {datatable0 size 0 10 (extra arg)} {
     list [catch {datatable0 size 0 10} msg] $msg
 } {1 {wrong # args: should be "datatable0 size node"}}
 
-test datatable.693 {datatable0 delete (missing arg)} {
+test datatable.702 {datatable0 delete (missing arg)} {
     list [catch {datatable0 delete} msg] $msg
 } {1 {wrong # args: should be "datatable0 delete node ?node...?"}}
 
-test datatable.694 {datatable0 delete 11} {
+test datatable.703 {datatable0 delete 11} {
     list [catch {datatable0 delete 11} msg] $msg
 } {0 {}}
 
-test datatable.695 {datatable0 delete 11} {
+test datatable.704 {datatable0 delete 11} {
     list [catch {datatable0 delete 11} msg] $msg
 } {1 {can't find tag or id "11" in ::datatable0}}
 
-test datatable.696 {datatable0 delete 9 12} {
+test datatable.705 {datatable0 delete 9 12} {
     list [catch {datatable0 delete 9 12} msg] $msg
 } {0 {}}
 
-test datatable.697 {datatable0 dumpdata 0} {
+test datatable.706 {datatable0 dumpdata 0} {
     list [catch {datatable0 dump 0} msg] $msg
 } {0 {-1 0 {::datatable0} {} {}
 0 1 {::datatable0 node1} {} {}
@@ -3858,7 +3904,7 @@ test datatable.697 {datatable0 dumpdata 0} {
 0 8 {::datatable0 myLabel} {} {thisTag}
 }}
 
-test datatable.698 {delete all} {
+test datatable.707 {delete all} {
     list [catch {
 	set data [datatable0 dump root]
 	blt::datatable create
@@ -3871,7 +3917,7 @@ test datatable.698 {delete all} {
 } {0 {-1 0 {::datatable0} {} {}
 }}
 
-test datatable.699 {delete all all} {
+test datatable.708 {delete all all} {
     list [catch {
 	set data [datatable0 dump root]
 	blt::datatable create
@@ -3884,27 +3930,27 @@ test datatable.699 {delete all all} {
 } {0 {-1 0 {::datatable0} {} {}
 }}
 
-test datatable.700 {datatable0 apply (missing arg)} {
+test datatable.709 {datatable0 apply (missing arg)} {
     list [catch {datatable0 apply} msg] $msg
 } {1 {wrong # args: should be "datatable0 apply node ?switches?"}}
 
-test datatable.701 {datatable0 apply 0} {
+test datatable.710 {datatable0 apply 0} {
     list [catch {datatable0 apply 0} msg] $msg
 } {0 {}}
 
-test datatable.702 {datatable0 apply 0 -badOption} {
+test datatable.711 {datatable0 apply 0 -badOption} {
     list [catch {datatable0 apply 0 -badOption} msg] $msg
 } {1 {unknown option "-badOption"}}
 
-test datatable.703 {datatable0 apply badTag} {
+test datatable.712 {datatable0 apply badTag} {
     list [catch {datatable0 apply badTag} msg] $msg
 } {1 {can't find tag or id "badTag" in ::datatable0}}
 
-test datatable.704 {datatable0 apply all} {
+test datatable.713 {datatable0 apply all} {
     list [catch {datatable0 apply all} msg] $msg
 } {1 {more than one node tagged as "all"}}
 
-test datatable.705 {datatable0 apply myTag -precommand lappend} {
+test datatable.714 {datatable0 apply myTag -precommand lappend} {
     list [catch {
 	set mylist {}
 	datatable0 apply myTag -precommand {lappend mylist}
@@ -3912,7 +3958,7 @@ test datatable.705 {datatable0 apply myTag -precommand lappend} {
     } msg] $msg
 } {0 {5 13}}
 
-test datatable.706 {datatable0 apply root -precommand lappend} {
+test datatable.715 {datatable0 apply root -precommand lappend} {
     list [catch {
 	set mylist {}
 	datatable0 apply root -precommand {lappend mylist}
@@ -3920,7 +3966,7 @@ test datatable.706 {datatable0 apply root -precommand lappend} {
     } msg] $msg
 } {0 {0 1 2 3 4 5 13 6 8}}
 
-test datatable.707 {datatable0 apply -precommand -postcommand} {
+test datatable.716 {datatable0 apply -precommand -postcommand} {
     list [catch {
 	set mylist {}
 	datatable0 apply root -precommand {lappend mylist} \
@@ -3929,7 +3975,7 @@ test datatable.707 {datatable0 apply -precommand -postcommand} {
     } msg] $msg
 } {0 {0 1 1 2 2 3 3 4 4 5 13 13 5 6 6 8 8 0}}
 
-test datatable.708 {datatable0 apply root -precommand lappend -depth 1} {
+test datatable.717 {datatable0 apply root -precommand lappend -depth 1} {
     list [catch {
 	set mylist {}
 	datatable0 apply root -precommand {lappend mylist} -depth 1
@@ -3938,7 +3984,7 @@ test datatable.708 {datatable0 apply root -precommand lappend -depth 1} {
 } {0 {0 1 2 3 4 5 6 8}}
 
 
-test datatable.709 {datatable0 apply root -precommand -depth 0} {
+test datatable.718 {datatable0 apply root -precommand -depth 0} {
     list [catch {
 	set mylist {}
 	datatable0 apply root -precommand {lappend mylist} -depth 0
@@ -3946,7 +3992,7 @@ test datatable.709 {datatable0 apply root -precommand -depth 0} {
     } msg] $msg
 } {0 0}
 
-test datatable.710 {datatable0 apply root -precommand -tag myTag} {
+test datatable.719 {datatable0 apply root -precommand -tag myTag} {
     list [catch {
 	set mylist {}
 	datatable0 apply root -precommand {lappend mylist} -tag myTag
@@ -3955,7 +4001,7 @@ test datatable.710 {datatable0 apply root -precommand -tag myTag} {
 } {0 5}
 
 
-test datatable.711 {datatable0 apply root -precommand -key key1} {
+test datatable.720 {datatable0 apply root -precommand -key key1} {
     list [catch {
 	set mylist {}
 	datatable0 set myTag key1 0.0
@@ -3965,7 +4011,7 @@ test datatable.711 {datatable0 apply root -precommand -key key1} {
     } msg] $msg
 } {0 5}
 
-test datatable.712 {datatable0 apply root -postcommand -regexp node.*} {
+test datatable.721 {datatable0 apply root -postcommand -regexp node.*} {
     list [catch {
 	set mylist {}
 	datatable0 set myTag key1 0.0
@@ -3975,131 +4021,131 @@ test datatable.712 {datatable0 apply root -postcommand -regexp node.*} {
     } msg] $msg
 } {0 5}
 
-test datatable.713 {datatable0 find (missing arg)} {
+test datatable.722 {datatable0 find (missing arg)} {
     list [catch {datatable0 find} msg] $msg
 } {1 {wrong # args: should be "datatable0 find node ?switches?"}}
 
-test datatable.714 {datatable0 find 0} {
+test datatable.723 {datatable0 find 0} {
     list [catch {datatable0 find 0} msg] $msg
 } {0 {1 2 3 4 13 5 6 8 0}}
 
-test datatable.715 {datatable0 find root} {
+test datatable.724 {datatable0 find root} {
     list [catch {datatable0 find root} msg] $msg
 } {0 {1 2 3 4 13 5 6 8 0}}
 
-test datatable.716 {datatable0 find 0 -glob node*} {
+test datatable.725 {datatable0 find 0 -glob node*} {
     list [catch {datatable0 find root -glob node*} msg] $msg
 } {0 {1 2 3 4 13 5 6}}
 
-test datatable.717 {datatable0 find 0 -glob nobody} {
+test datatable.726 {datatable0 find 0 -glob nobody} {
     list [catch {datatable0 find root -glob nobody} msg] $msg
 } {0 {}}
 
-test datatable.718 {datatable0 find 0 -regexp {node[0-3]}} {
+test datatable.727 {datatable0 find 0 -regexp {node[0-3]}} {
     list [catch {datatable0 find root -regexp {node[0-3]}} msg] $msg
 } {0 {1 2 3 13}}
 
-test datatable.719 {datatable0 find 0 -regexp {.*[A-Z].*}} {
+test datatable.728 {datatable0 find 0 -regexp {.*[A-Z].*}} {
     list [catch {datatable0 find root -regexp {.*[A-Z].*}} msg] $msg
 } {0 8}
 
-test datatable.720 {datatable0 find 0 -exact myLabel} {
+test datatable.729 {datatable0 find 0 -exact myLabel} {
     list [catch {datatable0 find root -exact myLabel} msg] $msg
 } {0 8}
 
-test datatable.721 {datatable0 find 0 -exact myLabel -invert} {
+test datatable.730 {datatable0 find 0 -exact myLabel -invert} {
     list [catch {datatable0 find root -exact myLabel -invert} msg] $msg
 } {0 {1 2 3 4 13 5 6 0}}
 
-test datatable.722 {datatable0 find 3 -exact node3} {
+test datatable.731 {datatable0 find 3 -exact node3} {
     list [catch {datatable0 find 3 -exact node3} msg] $msg
 } {0 3}
 
-test datatable.723 {datatable0 find 0 -nocase -exact mylabel} {
+test datatable.732 {datatable0 find 0 -nocase -exact mylabel} {
     list [catch {datatable0 find 0 -nocase -exact mylabel} msg] $msg
 } {0 8}
 
-test datatable.724 {datatable0 find 0 -nocase} {
+test datatable.733 {datatable0 find 0 -nocase} {
     list [catch {datatable0 find 0 -nocase} msg] $msg
 } {0 {1 2 3 4 13 5 6 8 0}}
 
-test datatable.725 {datatable0 find 0 -path -nocase -glob *node1* } {
+test datatable.734 {datatable0 find 0 -path -nocase -glob *node1* } {
     list [catch {datatable0 find 0 -path -nocase -glob *node1*} msg] $msg
 } {0 {1 13}}
 
-test datatable.726 {datatable0 find 0 -count 5 } {
+test datatable.735 {datatable0 find 0 -count 5 } {
     list [catch {datatable0 find 0 -count 5} msg] $msg
 } {0 {1 2 3 4 13}}
 
-test datatable.727 {datatable0 find 0 -count -5 } {
+test datatable.736 {datatable0 find 0 -count -5 } {
     list [catch {datatable0 find 0 -count -5} msg] $msg
 } {1 {bad value "-5": can't be negative}}
 
-test datatable.728 {datatable0 find 0 -count badValue } {
+test datatable.737 {datatable0 find 0 -count badValue } {
     list [catch {datatable0 find 0 -count badValue} msg] $msg
 } {1 {expected integer but got "badValue"}}
 
-test datatable.729 {datatable0 find 0 -count badValue } {
+test datatable.738 {datatable0 find 0 -count badValue } {
     list [catch {datatable0 find 0 -count badValue} msg] $msg
 } {1 {expected integer but got "badValue"}}
 
-test datatable.730 {datatable0 find 0 -leafonly} {
+test datatable.739 {datatable0 find 0 -leafonly} {
     list [catch {datatable0 find 0 -leafonly} msg] $msg
 } {0 {1 2 3 4 13 6 8}}
 
-test datatable.731 {datatable0 find 0 -leafonly -glob {node[18]}} {
+test datatable.740 {datatable0 find 0 -leafonly -glob {node[18]}} {
     list [catch {datatable0 find 0 -glob {node[18]} -leafonly} msg] $msg
 } {0 1}
 
-test datatable.732 {datatable0 find 0 -depth 0} {
+test datatable.741 {datatable0 find 0 -depth 0} {
     list [catch {datatable0 find 0 -depth 0} msg] $msg
 } {0 0}
 
-test datatable.733 {datatable0 find 0 -depth 1} {
+test datatable.742 {datatable0 find 0 -depth 1} {
     list [catch {datatable0 find 0 -depth 1} msg] $msg
 } {0 {1 2 3 4 5 6 8 0}}
 
-test datatable.734 {datatable0 find 0 -depth 2} {
+test datatable.743 {datatable0 find 0 -depth 2} {
     list [catch {datatable0 find 0 -depth 2} msg] $msg
 } {0 {1 2 3 4 13 5 6 8 0}}
 
-test datatable.735 {datatable0 find 0 -depth 20} {
+test datatable.744 {datatable0 find 0 -depth 20} {
     list [catch {datatable0 find 0 -depth 20} msg] $msg
 } {0 {1 2 3 4 13 5 6 8 0}}
 
-test datatable.736 {datatable0 find 1 -depth 0} {
+test datatable.745 {datatable0 find 1 -depth 0} {
     list [catch {datatable0 find 1 -depth 0} msg] $msg
 } {0 1}
 
-test datatable.737 {datatable0 find 1 -depth 1} {
+test datatable.746 {datatable0 find 1 -depth 1} {
     list [catch {datatable0 find 1 -depth 1} msg] $msg
 } {0 1}
 
-test datatable.738 {datatable0 find 1 -depth 2} {
+test datatable.747 {datatable0 find 1 -depth 2} {
     list [catch {datatable0 find 1 -depth 2} msg] $msg
 } {0 1}
 
-test datatable.739 {datatable0 find all} {
+test datatable.748 {datatable0 find all} {
     list [catch {datatable0 find all} msg] $msg
 } {1 {more than one node tagged as "all"}}
 
-test datatable.740 {datatable0 find badTag} {
+test datatable.749 {datatable0 find badTag} {
     list [catch {datatable0 find badTag} msg] $msg
 } {1 {can't find tag or id "badTag" in ::datatable0}}
 
-test datatable.741 {datatable0 find 0 -addtag hi} {
+test datatable.750 {datatable0 find 0 -addtag hi} {
     list [catch {datatable0 find 0 -addtag hi} msg] $msg
 } {0 {1 2 3 4 13 5 6 8 0}}
 
-test datatable.742 {datatable0 find 0 -addtag all} {
+test datatable.751 {datatable0 find 0 -addtag all} {
     list [catch {datatable0 find 0 -addtag all} msg] $msg
 } {0 {1 2 3 4 13 5 6 8 0}}
 
-test datatable.743 {datatable0 find 0 -addtag root} {
+test datatable.752 {datatable0 find 0 -addtag root} {
     list [catch {datatable0 find 0 -addtag root} msg] $msg
 } {1 {can't add reserved tag "root"}}
 
-test datatable.744 {datatable0 find 0 -exec {lappend list} -leafonly} {
+test datatable.753 {datatable0 find 0 -exec {lappend list} -leafonly} {
     list [catch {
 	set list {}
 	datatable0 find 0 -exec {lappend list} -leafonly
@@ -4107,23 +4153,23 @@ test datatable.744 {datatable0 find 0 -exec {lappend list} -leafonly} {
 	} msg] $msg
 } {0 {1 2 3 4 13 6 8}}
 
-test datatable.745 {datatable0 find 0 -tag root} {
+test datatable.754 {datatable0 find 0 -tag root} {
     list [catch {datatable0 find 0 -tag root} msg] $msg
 } {0 0}
 
-test datatable.746 {datatable0 find 0 -tag myTag} {
+test datatable.755 {datatable0 find 0 -tag myTag} {
     list [catch {datatable0 find 0 -tag myTag} msg] $msg
 } {0 5}
 
-test datatable.747 {datatable0 find 0 -tag badTag} {
+test datatable.756 {datatable0 find 0 -tag badTag} {
     list [catch {datatable0 find 0 -tag badTag} msg] $msg
 } {0 {}}
 
-test datatable.748 {datatable0 tag (missing args)} {
+test datatable.757 {datatable0 tag (missing args)} {
     list [catch {datatable0 tag} msg] $msg
 } {1 {wrong # args: should be "datatable0 tag args"}}
 
-test datatable.749 {datatable0 tag badOp} {
+test datatable.758 {datatable0 tag badOp} {
     list [catch {datatable0 tag badOp} msg] $msg
 } {1 {bad operation "badOp": should be one of...
   datatable0 tag add tag node...
@@ -4137,99 +4183,99 @@ test datatable.749 {datatable0 tag badOp} {
   datatable0 tag set node tag...
   datatable0 tag unset node tag...}}
 
-test datatable.750 {datatable0 tag add} {
+test datatable.759 {datatable0 tag add} {
     list [catch {datatable0 tag add} msg] $msg
 } {1 {wrong # args: should be "datatable0 tag add tag node..."}}
 
-test datatable.751 {datatable0 tag add tag} {
+test datatable.760 {datatable0 tag add tag} {
     list [catch {datatable0 tag add tag} msg] $msg
 } {1 {wrong # args: should be "datatable0 tag add tag node..."}}
 
-test datatable.752 {datatable0 tag add tag badNode} {
+test datatable.761 {datatable0 tag add tag badNode} {
     list [catch {datatable0 tag add tag badNode} msg] $msg
 } {1 {can't find tag or id "badNode" in ::datatable0}}
 
-test datatable.753 {datatable0 tag add newTag root} {
+test datatable.762 {datatable0 tag add newTag root} {
     list [catch {datatable0 tag add newTag root} msg] $msg
 } {0 {}}
 
-test datatable.754 {datatable0 tag add newTag all} {
+test datatable.763 {datatable0 tag add newTag all} {
     list [catch {datatable0 tag add newTag all} msg] $msg
 } {0 {}}
 
-test datatable.755 {datatable0 tag add tag2 0 1 2 3 4} {
+test datatable.764 {datatable0 tag add tag2 0 1 2 3 4} {
     list [catch {datatable0 tag add tag2 0 1 2 3 4} msg] $msg
 } {0 {}}
 
-test datatable.756 {datatable0 tag add tag2 0 1 2 3 4 1000} {
+test datatable.765 {datatable0 tag add tag2 0 1 2 3 4 1000} {
     list [catch {datatable0 tag add tag2 0 1 2 3 4 1000} msg] $msg
 } {1 {can't find tag or id "1000" in ::datatable0}}
 
-test datatable.757 {datatable0 tag names} {
+test datatable.766 {datatable0 tag names} {
     list [catch {datatable0 tag names} msg] $msg
 } {0 {all hi myTag myTag1 myTag2 newTag root tag2 thisTag}}
 
-test datatable.758 {datatable0 tag names badNode} {
+test datatable.767 {datatable0 tag names badNode} {
     list [catch {datatable0 tag names badNode} msg] $msg
 } {1 {can't find tag or id "badNode" in ::datatable0}}
 
-test datatable.759 {datatable0 tag names all} {
+test datatable.768 {datatable0 tag names all} {
     list [catch {datatable0 tag names all} msg] $msg
 } {1 {more than one node tagged as "all"}}
 
-test datatable.760 {datatable0 tag names root} {
+test datatable.769 {datatable0 tag names root} {
     list [catch {datatable0 tag names root} msg] $msg
 } {0 {all hi newTag root tag2}}
 
-test datatable.761 {datatable0 tag names 0 1} {
+test datatable.770 {datatable0 tag names 0 1} {
     list [catch {datatable0 tag names 0 1} msg] $msg
 } {0 {all hi newTag root tag2}}
 
-test datatable.762 {datatable0 tag nodes (missing arg)} {
+test datatable.771 {datatable0 tag nodes (missing arg)} {
     list [catch {datatable0 tag nodes} msg] $msg
 } {1 {wrong # args: should be "datatable0 tag nodes tag ?tag...?"}}
 
-test datatable.763 {datatable0 tag nodes root badTag} {
+test datatable.772 {datatable0 tag nodes root badTag} {
     list [catch {datatable0 tag nodes root badTag} msg] $msg
 } {1 {can't find a tag "badTag"}}
 
-test datatable.764 {datatable0 tag nodes root tag2} {
+test datatable.773 {datatable0 tag nodes root tag2} {
     list [catch {datatable0 tag nodes root tag2} msg] $msg
 } {0 {0 1 2 3 4}}
 
-test datatable.765 {datatable0 ancestor (missing arg)} {
+test datatable.774 {datatable0 ancestor (missing arg)} {
     list [catch {datatable0 ancestor} msg] $msg
 } {1 {wrong # args: should be "datatable0 ancestor node1 node2"}}
 
-test datatable.766 {datatable0 ancestor 0 (missing arg)} {
+test datatable.775 {datatable0 ancestor 0 (missing arg)} {
     list [catch {datatable0 ancestor 0} msg] $msg
 } {1 {wrong # args: should be "datatable0 ancestor node1 node2"}}
 
-test datatable.767 {datatable0 ancestor 0 10} {
+test datatable.776 {datatable0 ancestor 0 10} {
     list [catch {datatable0 ancestor 0 10} msg] $msg
 } {1 {can't find tag or id "10" in ::datatable0}}
 
-test datatable.768 {datatable0 ancestor 0 4} {
+test datatable.777 {datatable0 ancestor 0 4} {
     list [catch {datatable0 ancestor 0 4} msg] $msg
 } {0 0}
 
-test datatable.769 {datatable0 ancestor 1 8} {
+test datatable.778 {datatable0 ancestor 1 8} {
     list [catch {datatable0 ancestor 1 8} msg] $msg
 } {0 0}
 
-test datatable.770 {datatable0 ancestor root 0} {
+test datatable.779 {datatable0 ancestor root 0} {
     list [catch {datatable0 ancestor root 0} msg] $msg
 } {0 0}
 
-test datatable.771 {datatable0 ancestor 8 8} {
+test datatable.780 {datatable0 ancestor 8 8} {
     list [catch {datatable0 ancestor 8 8} msg] $msg
 } {0 8}
 
-test datatable.772 {datatable0 ancestor 0 all} {
+test datatable.781 {datatable0 ancestor 0 all} {
     list [catch {datatable0 ancestor 0 all} msg] $msg
 } {1 {more than one node tagged as "all"}}
 
-test datatable.773 {datatable0 ancestor 7 9} {
+test datatable.782 {datatable0 ancestor 7 9} {
     list [catch {
 	set n1 1; set n2 1;
 	for { set i 0 } { $i < 4 } { incr i } {
@@ -4240,94 +4286,94 @@ test datatable.773 {datatable0 ancestor 7 9} {
 	} msg] $msg
 } {0 1}
 
-test datatable.774 {datatable0 path (missing arg)} {
+test datatable.783 {datatable0 path (missing arg)} {
     list [catch {datatable0 path} msg] $msg
 } {1 {wrong # args: should be "datatable0 path node"}}
 
-test datatable.775 {datatable0 path root} {
+test datatable.784 {datatable0 path root} {
     list [catch {datatable0 path root} msg] $msg
 } {0 {}}
 
-test datatable.776 {datatable0 path 0} {
+test datatable.785 {datatable0 path 0} {
     list [catch {datatable0 path 0} msg] $msg
 } {0 {}}
 
-test datatable.777 {datatable0 path 15} {
+test datatable.786 {datatable0 path 15} {
     list [catch {datatable0 path 15} msg] $msg
 } {0 {node1 node15}}
 
-test datatable.778 {datatable0 path all} {
+test datatable.787 {datatable0 path all} {
     list [catch {datatable0 path all} msg] $msg
 } {1 {more than one node tagged as "all"}}
 
-test datatable.779 {datatable0 path 0 1 2 4 (extra args)} {
+test datatable.788 {datatable0 path 0 1 2 4 (extra args)} {
     list [catch {datatable0 path 0 1 2 4} msg] $msg
 } {1 {wrong # args: should be "datatable0 path node"}}
 
-test datatable.780 {datatable0 tag forget} {
+test datatable.789 {datatable0 tag forget} {
     list [catch {datatable0 tag forget} msg] $msg
 } {1 {wrong # args: should be "datatable0 tag forget tag..."}}
 
-test datatable.781 {datatable0 tag forget badTag} {
+test datatable.790 {datatable0 tag forget badTag} {
     list [catch {
 	datatable0 tag forget badTag
 	lsort [datatable0 tag names]
     } msg] $msg
 } {0 {all hi myTag myTag1 myTag2 newTag root tag2 thisTag}}
 
-test datatable.782 {datatable0 tag forget hi} {
+test datatable.791 {datatable0 tag forget hi} {
     list [catch {
 	datatable0 tag forget hi
 	lsort [datatable0 tag names]
     } msg] $msg
 } {0 {all myTag myTag1 myTag2 newTag root tag2 thisTag}}
 
-test datatable.783 {datatable0 tag forget tag1 tag2} {
+test datatable.792 {datatable0 tag forget tag1 tag2} {
     list [catch {
 	datatable0 tag forget myTag1 myTag2
 	lsort [datatable0 tag names]
     } msg] $msg
 } {0 {all myTag newTag root tag2 thisTag}}
 
-test datatable.784 {datatable0 tag forget all} {
+test datatable.793 {datatable0 tag forget all} {
     list [catch {
 	datatable0 tag forget all
 	lsort [datatable0 tag names]
     } msg] $msg
 } {0 {all myTag newTag root tag2 thisTag}}
 
-test datatable.785 {datatable0 tag forget root} {
+test datatable.794 {datatable0 tag forget root} {
     list [catch {
 	datatable0 tag forget root
 	lsort [datatable0 tag names]
     } msg] $msg
 } {0 {all myTag newTag root tag2 thisTag}}
 
-test datatable.786 {datatable0 tag delete} {
+test datatable.795 {datatable0 tag delete} {
     list [catch {datatable0 tag delete} msg] $msg
 } {1 {wrong # args: should be "datatable0 tag delete tag node..."}}
 
-test datatable.787 {datatable0 tag delete tag} {
+test datatable.796 {datatable0 tag delete tag} {
     list [catch {datatable0 tag delete tag} msg] $msg
 } {1 {wrong # args: should be "datatable0 tag delete tag node..."}}
 
-test datatable.788 {datatable0 tag delete tag 0} {
+test datatable.797 {datatable0 tag delete tag 0} {
     list [catch {datatable0 tag delete tag 0} msg] $msg
 } {0 {}}
 
-test datatable.789 {datatable0 tag delete root 0} {
+test datatable.798 {datatable0 tag delete root 0} {
     list [catch {datatable0 tag delete root 0} msg] $msg
 } {1 {can't delete reserved tag "root"}}
 
-test datatable.790 {datatable0 attach} {
+test datatable.799 {datatable0 attach} {
     list [catch {datatable0 attach} msg] $msg
 } {0 ::datatable0}
 
-test datatable.791 {datatable0 attach datatable2 datatable3} {
+test datatable.800 {datatable0 attach datatable2 datatable3} {
     list [catch {datatable0 attach datatable2 datatable3} msg] $msg
 } {1 {wrong # args: should be "datatable0 attach ?datatable?"}}
 
-test datatable.792 {datatable1 attach datatable0} {
+test datatable.801 {datatable1 attach datatable0} {
     list [catch {
 	blt::datatable create
 	datatable1 attach datatable0
@@ -4352,120 +4398,120 @@ test datatable.792 {datatable1 attach datatable0} {
 0 8 {::datatable0 myLabel} {} {}
 }}
 
-test datatable.793 {datatable1 attach} {
+test datatable.802 {datatable1 attach} {
     list [catch {datatable1 attach} msg] $msg
 } {0 ::datatable0}
 
 
-test datatable.794 {blt::datatable destroy datatable1} {
+test datatable.803 {blt::datatable destroy datatable1} {
     list [catch {blt::datatable destroy datatable1} msg] $msg
 } {0 {}}
 
-test datatable.795 {datatable0 find root -badFlag} {
+test datatable.804 {datatable0 find root -badFlag} {
     list [catch {datatable0 find root -badFlag} msg] $msg
 } {1 {unknown option "-badFlag"}}
 
-test datatable.796 {datatable0 find root -order} {
+test datatable.805 {datatable0 find root -order} {
     list [catch {datatable0 find root -order} msg] $msg
 } {1 {value for "-order" missing}}
 
-test datatable.797 {datatable0 find root ...} {
+test datatable.806 {datatable0 find root ...} {
     list [catch {datatable0 find root -order preorder -order postorder -order inorder} msg] $msg
 } {0 {20 18 16 14 1 21 19 17 15 2 0 3 4 13 5 6 8}}
 
-test datatable.798 {datatable0 find root -order preorder} {
+test datatable.807 {datatable0 find root -order preorder} {
     list [catch {datatable0 find root -order preorder} msg] $msg
 } {0 {0 2 1 14 16 18 20 15 17 19 21 3 4 5 13 6 8}}
 
-test datatable.799 {datatable0 find root -order postorder} {
+test datatable.808 {datatable0 find root -order postorder} {
     list [catch {datatable0 find root -order postorder} msg] $msg
 } {0 {20 18 16 14 21 19 17 15 1 2 3 4 13 5 6 8 0}}
 
-test datatable.800 {datatable0 find root -order inorder} {
+test datatable.809 {datatable0 find root -order inorder} {
     list [catch {datatable0 find root -order inorder} msg] $msg
 } {0 {20 18 16 14 1 21 19 17 15 2 0 3 4 13 5 6 8}}
 
-test datatable.801 {datatable0 find root -order breadthfirst} {
+test datatable.810 {datatable0 find root -order breadthfirst} {
     list [catch {datatable0 find root -order breadthfirst} msg] $msg
 } {0 {0 2 3 4 5 6 8 1 13 14 15 16 17 18 19 20 21}}
 
-test datatable.802 {datatable0 set all key1 myValue} {
+test datatable.811 {datatable0 set all key1 myValue} {
     list [catch {datatable0 set all key1 myValue} msg] $msg
 } {0 {}}
 
-test datatable.803 {datatable0 set 15 key1 123} {
+test datatable.812 {datatable0 set 15 key1 123} {
     list [catch {datatable0 set 15 key1 123} msg] $msg
 } {0 {}}
 
-test datatable.804 {datatable0 set 16 key1 1234 key2 abc} {
+test datatable.813 {datatable0 set 16 key1 1234 key2 abc} {
     list [catch {datatable0 set 16 key1 123 key2 abc} msg] $msg
 } {0 {}}
 
-test datatable.805 {datatable0 find root -key } {
+test datatable.814 {datatable0 find root -key } {
     list [catch {datatable0 find root -key} msg] $msg
 } {1 {value for "-key" missing}}
 
-test datatable.806 {datatable0 find root -key noKey} {
+test datatable.815 {datatable0 find root -key noKey} {
     list [catch {datatable0 find root -key noKey} msg] $msg
 } {0 {}}
 
-test datatable.807 {datatable0 find root -key key1} {
+test datatable.816 {datatable0 find root -key key1} {
     list [catch {datatable0 find root -key key1} msg] $msg
 } {0 {20 18 16 14 21 19 17 15 1 2 3 4 13 5 6 8 0}}
 
-test datatable.808 {datatable0 find root -key key2} {
+test datatable.817 {datatable0 find root -key key2} {
     list [catch {datatable0 find root -key key2} msg] $msg
 } {0 16}
 
-test datatable.809 {datatable0 find root -key key2 -exact notThere } {
+test datatable.818 {datatable0 find root -key key2 -exact notThere } {
     list [catch {datatable0 find root -key key2 -exact notThere } msg] $msg
 } {0 {}}
 
-test datatable.810 {datatable0 find root -key key1 -glob notThere } {
+test datatable.819 {datatable0 find root -key key1 -glob notThere } {
     list [catch {datatable0 find root -key key2 -exact notThere } msg] $msg
 } {0 {}}
 
-test datatable.811 {datatable0 find root -key badKey -regexp notThere } {
+test datatable.820 {datatable0 find root -key badKey -regexp notThere } {
     list [catch {datatable0 find root -key key2 -exact notThere } msg] $msg
 } {0 {}}
 
-test datatable.812 {datatable0 find root -key key1 -glob 12*} {
+test datatable.821 {datatable0 find root -key key1 -glob 12*} {
     list [catch {datatable0 find root -key key1 -glob 12*} msg] $msg
 } {0 {16 15}}
 
-test datatable.813 {datatable0 sort} {
+test datatable.822 {datatable0 sort} {
     list [catch {datatable0 sort} msg] $msg
 } {1 {wrong # args: should be "datatable0 sort ?flags...?"}}
 
-test datatable.814 {datatable0 sort all} {
+test datatable.823 {datatable0 sort all} {
     list [catch {datatable0 sort all} msg] $msg
 } {1 {more than one node tagged as "all"}}
 
-test datatable.815 {datatable0 sort -recurse} {
+test datatable.824 {datatable0 sort -recurse} {
     list [catch {datatable0 sort -recurse} msg] $msg
 } {1 {can't find tag or id "-recurse" in ::datatable0}}
 
-test datatable.816 {datatable0 sort 0} {
+test datatable.825 {datatable0 sort 0} {
     list [catch {datatable0 sort 0} msg] $msg
 } {0 {8 2 3 4 5 6}}
 
-test datatable.817 {datatable0 sort 0 -recurse} {
+test datatable.826 {datatable0 sort 0 -recurse} {
     list [catch {datatable0 sort 0 -recurse} msg] $msg
 } {0 {0 8 1 2 3 4 5 6 13 14 15 16 17 18 19 20 21}}
 
-test datatable.818 {datatable0 sort 0 -decreasing -key} {
+test datatable.827 {datatable0 sort 0 -decreasing -key} {
     list [catch {datatable0 sort 0 -decreasing -key} msg] $msg
 } {1 {value for "-key" missing}}
 
-test datatable.819 {datatable0 sort 0 -re} {
+test datatable.828 {datatable0 sort 0 -re} {
     list [catch {datatable0 sort 0 -re} msg] $msg
 } {1 {ambiguous option "-re"}}
 
-test datatable.820 {datatable0 sort 0 -decreasing} {
+test datatable.829 {datatable0 sort 0 -decreasing} {
     list [catch {datatable0 sort 0 -decreasing} msg] $msg
 } {0 {6 5 4 3 2 8}}
 
-test datatable.821 {datatable0 sort 0} {
+test datatable.830 {datatable0 sort 0} {
     list [catch {
 	set list {}
 	foreach n [datatable0 sort 0] {
@@ -4475,24 +4521,24 @@ test datatable.821 {datatable0 sort 0} {
     } msg] $msg
 } {0 {myLabel node2 node3 node4 node5 node6}}
 
-test datatable.822 {datatable0 sort 0 -decreasing} {
+test datatable.831 {datatable0 sort 0 -decreasing} {
     list [catch {datatable0 sort 0 -decreasing} msg] $msg
 } {0 {6 5 4 3 2 8}}
 
 
-test datatable.823 {datatable0 sort 0 -decreasing -key} {
+test datatable.832 {datatable0 sort 0 -decreasing -key} {
     list [catch {datatable0 sort 0 -decreasing -key} msg] $msg
 } {1 {value for "-key" missing}}
 
-test datatable.824 {datatable0 sort 0 -decreasing -key key1} {
+test datatable.833 {datatable0 sort 0 -decreasing -key key1} {
     list [catch {datatable0 sort 0 -decreasing -key key1} msg] $msg
 } {0 {8 6 5 4 3 2}}
 
-test datatable.825 {datatable0 sort 0 -decreasing -recurse -key key1} {
+test datatable.834 {datatable0 sort 0 -decreasing -recurse -key key1} {
     list [catch {datatable0 sort 0 -decreasing -recurse -key key1} msg] $msg
 } {0 {15 16 0 1 2 3 4 5 6 8 13 14 17 18 19 20 21}}
 
-test datatable.826 {datatable0 sort 0 -decreasing -key key1} {
+test datatable.835 {datatable0 sort 0 -decreasing -key key1} {
     list [catch {
 	set list {}
 	foreach n [datatable0 sort 0 -decreasing -key key1] {
@@ -4503,55 +4549,55 @@ test datatable.826 {datatable0 sort 0 -decreasing -key key1} {
 } {0 {myValue myValue myValue myValue myValue myValue}}
 
 
-test datatable.827 {datatable0 index 1-firstchild} {
+test datatable.836 {datatable0 index 1-firstchild} {
     list [catch {datatable0 index 1-firstchild} msg] $msg
 } {0 14}
 
-test datatable.828 {datatable0 index root-to-firstchild} {
+test datatable.837 {datatable0 index root-to-firstchild} {
     list [catch {datatable0 index root-to-firstchild} msg] $msg
 } {0 2}
 
-test datatable.829 {datatable0 label root-to-parent} {
+test datatable.838 {datatable0 label root-to-parent} {
     list [catch {datatable0 label root-to-parent} msg] $msg
 } {1 {can't find tag or id "root-to-parent" in ::datatable0}}
 
-test datatable.830 {datatable0 index root-to-parent} {
+test datatable.839 {datatable0 index root-to-parent} {
     list [catch {datatable0 index root-to-parent} msg] $msg
 } {0 -1}
 
-test datatable.831 {datatable0 index root-to-lastchild} {
+test datatable.840 {datatable0 index root-to-lastchild} {
     list [catch {datatable0 index root-to-lastchild} msg] $msg
 } {0 8}
 
-test datatable.832 {datatable0 index root-to-next} {
+test datatable.841 {datatable0 index root-to-next} {
     list [catch {datatable0 index root-to-next} msg] $msg
 } {0 2}
 
-test datatable.833 {datatable0 index root-to-previous} {
+test datatable.842 {datatable0 index root-to-previous} {
     list [catch {datatable0 index root-to-previous} msg] $msg
 } {0 -1}
 
-test datatable.834 {datatable0 label root-to-previous} {
+test datatable.843 {datatable0 label root-to-previous} {
     list [catch {datatable0 label root-to-previous} msg] $msg
 } {1 {can't find tag or id "root-to-previous" in ::datatable0}}
 
-test datatable.835 {datatable0 index 1-previous} {
+test datatable.844 {datatable0 index 1-previous} {
     list [catch {datatable0 index 1-previous} msg] $msg
 } {0 2}
 
-test datatable.836 {datatable0 label root-to-badModifier} {
+test datatable.845 {datatable0 label root-to-badModifier} {
     list [catch {datatable0 label root-to-badModifier} msg] $msg
 } {1 {can't find tag or id "root-to-badModifier" in ::datatable0}}
 
-test datatable.837 {datatable0 index root-to-badModifier} {
+test datatable.846 {datatable0 index root-to-badModifier} {
     list [catch {datatable0 index root-to-badModifier} msg] $msg
 } {0 -1}
 
-test datatable.838 {datatable0 index root-to-firstchild-to-parent} {
+test datatable.847 {datatable0 index root-to-firstchild-to-parent} {
     list [catch {datatable0 index root-to-firstchild-to-parent} msg] $msg
 } {0 0}
 
-test datatable.839 {datatable0 trace} {
+test datatable.848 {datatable0 trace} {
     list [catch {datatable0 trace} msg] $msg
 } {1 {wrong # args: should be one of...
   datatable0 trace create node key how command
@@ -4560,33 +4606,33 @@ test datatable.839 {datatable0 trace} {
   datatable0 trace names }}
 
 
-test datatable.840 {datatable0 trace create} {
+test datatable.849 {datatable0 trace create} {
     list [catch {datatable0 trace create} msg] $msg
 } {1 {wrong # args: should be "datatable0 trace create node key how command"}}
 
-test datatable.841 {datatable0 trace create root} {
+test datatable.850 {datatable0 trace create root} {
     list [catch {datatable0 trace create root} msg] $msg
 } {1 {wrong # args: should be "datatable0 trace create node key how command"}}
 
-test datatable.842 {datatable0 trace create root * } {
+test datatable.851 {datatable0 trace create root * } {
     list [catch {datatable0 trace create root * } msg] $msg
 } {1 {wrong # args: should be "datatable0 trace create node key how command"}}
 
-test datatable.843 {datatable0 trace create root * rwuc} {
+test datatable.852 {datatable0 trace create root * rwuc} {
     list [catch {datatable0 trace create root * rwuc} msg] $msg
 } {1 {wrong # args: should be "datatable0 trace create node key how command"}}
 
 proc Doit args { global mylist; lappend mylist $args }
 
-test datatable.844 {datatable0 trace create all newKey rwuc Doit} {
+test datatable.853 {datatable0 trace create all newKey rwuc Doit} {
     list [catch {datatable0 trace create all newKey rwuc Doit} msg] $msg
 } {0 trace0}
 
-test datatable.845 {datatable0 trace info trace0} {
+test datatable.854 {datatable0 trace info trace0} {
     list [catch {datatable0 trace info trace0} msg] $msg
 } {0 {all newKey {} Doit}}
 
-test datatable.846 {test create trace} {
+test datatable.855 {test create trace} {
     list [catch {
 	set mylist {}
 	datatable0 set all newKey 20
@@ -4594,7 +4640,7 @@ test datatable.846 {test create trace} {
 	} msg] $msg
 } {0 {{::datatable0 0 newKey wc} {::datatable0 2 newKey wc} {::datatable0 1 newKey wc} {::datatable0 14 newKey wc} {::datatable0 16 newKey wc} {::datatable0 18 newKey wc} {::datatable0 20 newKey wc} {::datatable0 15 newKey wc} {::datatable0 17 newKey wc} {::datatable0 19 newKey wc} {::datatable0 21 newKey wc} {::datatable0 3 newKey wc} {::datatable0 4 newKey wc} {::datatable0 5 newKey wc} {::datatable0 13 newKey wc} {::datatable0 6 newKey wc} {::datatable0 8 newKey wc}}}
 
-test datatable.847 {test read trace} {
+test datatable.856 {test read trace} {
     list [catch {
 	set mylist {}
 	datatable0 get root newKey
@@ -4602,7 +4648,7 @@ test datatable.847 {test read trace} {
 	} msg] $msg
 } {0 {{::datatable0 0 newKey r}}}
 
-test datatable.848 {test write trace} {
+test datatable.857 {test write trace} {
     list [catch {
 	set mylist {}
 	datatable0 set all newKey 21
@@ -4610,7 +4656,7 @@ test datatable.848 {test write trace} {
 	} msg] $msg
 } {0 {{::datatable0 0 newKey w} {::datatable0 2 newKey w} {::datatable0 1 newKey w} {::datatable0 14 newKey w} {::datatable0 16 newKey w} {::datatable0 18 newKey w} {::datatable0 20 newKey w} {::datatable0 15 newKey w} {::datatable0 17 newKey w} {::datatable0 19 newKey w} {::datatable0 21 newKey w} {::datatable0 3 newKey w} {::datatable0 4 newKey w} {::datatable0 5 newKey w} {::datatable0 13 newKey w} {::datatable0 6 newKey w} {::datatable0 8 newKey w}}}
 
-test datatable.849 {test unset trace} {
+test datatable.858 {test unset trace} {
     list [catch {
 	set mylist {}
 	datatable0 set all newKey 21
@@ -4618,19 +4664,19 @@ test datatable.849 {test unset trace} {
 	} msg] $msg
 } {0 {{::datatable0 0 newKey w} {::datatable0 2 newKey w} {::datatable0 1 newKey w} {::datatable0 14 newKey w} {::datatable0 16 newKey w} {::datatable0 18 newKey w} {::datatable0 20 newKey w} {::datatable0 15 newKey w} {::datatable0 17 newKey w} {::datatable0 19 newKey w} {::datatable0 21 newKey w} {::datatable0 3 newKey w} {::datatable0 4 newKey w} {::datatable0 5 newKey w} {::datatable0 13 newKey w} {::datatable0 6 newKey w} {::datatable0 8 newKey w}}}
 
-test datatable.850 {datatable0 trace delete} {
+test datatable.859 {datatable0 trace delete} {
     list [catch {datatable0 trace delete} msg] $msg
 } {0 {}}
 
-test datatable.851 {datatable0 trace delete badId} {
+test datatable.860 {datatable0 trace delete badId} {
     list [catch {datatable0 trace delete badId} msg] $msg
 } {1 {unknown trace "badId"}}
 
-test datatable.852 {datatable0 trace delete trace0} {
+test datatable.861 {datatable0 trace delete trace0} {
     list [catch {datatable0 trace delete trace0} msg] $msg
 } {0 {}}
 
-test datatable.853 {test create trace} {
+test datatable.862 {test create trace} {
     list [catch {
 	set mylist {}
 	datatable0 set all newKey 20
@@ -4638,7 +4684,7 @@ test datatable.853 {test create trace} {
 	} msg] $msg
 } {0 {}}
 
-test datatable.854 {test unset trace} {
+test datatable.863 {test unset trace} {
     list [catch {
 	set mylist {}
 	datatable0 unset all newKey
@@ -4647,7 +4693,7 @@ test datatable.854 {test unset trace} {
 } {0 {}}
 
 
-test datatable.855 {datatable0 notify} {
+test datatable.864 {datatable0 notify} {
     list [catch {datatable0 notify} msg] $msg
 } {1 {wrong # args: should be one of...
   datatable0 notify create ?flags? command
@@ -4656,32 +4702,32 @@ test datatable.855 {datatable0 notify} {
   datatable0 notify names }}
 
 
-test datatable.856 {datatable0 notify create} {
+test datatable.865 {datatable0 notify create} {
     list [catch {datatable0 notify create} msg] $msg
 } {1 {wrong # args: should be "datatable0 notify create ?flags? command"}}
 
-test datatable.857 {datatable0 notify create -allevents} {
+test datatable.866 {datatable0 notify create -allevents} {
     list [catch {datatable0 notify create -allevents Doit} msg] $msg
 } {0 notify0}
 
-test datatable.858 {datatable0 notify info notify0} {
+test datatable.867 {datatable0 notify info notify0} {
     list [catch {datatable0 notify info notify0} msg] $msg
 } {0 {notify0 {-create -delete -move -sort -relabel} {Doit}}}
 
-test datatable.859 {datatable0 notify info badId} {
+test datatable.868 {datatable0 notify info badId} {
     list [catch {datatable0 notify info badId} msg] $msg
 } {1 {unknown notify name "badId"}}
 
-test datatable.860 {datatable0 notify info} {
+test datatable.869 {datatable0 notify info} {
     list [catch {datatable0 notify info} msg] $msg
 } {1 {wrong # args: should be "datatable0 notify info notifyId"}}
 
-test datatable.861 {datatable0 notify names} {
+test datatable.870 {datatable0 notify names} {
     list [catch {datatable0 notify names} msg] $msg
 } {0 notify0}
 
 
-test datatable.862 {test create notify} {
+test datatable.871 {test create notify} {
     list [catch {
 	set mylist {}
 	datatable0 insert 1 -tags test
@@ -4689,7 +4735,7 @@ test datatable.862 {test create notify} {
 	} msg] $msg
 } {0 {{-create 22}}}
 
-test datatable.863 {test move notify} {
+test datatable.872 {test move notify} {
     list [catch {
 	set mylist {}
 	datatable0 move 8 test
@@ -4697,7 +4743,7 @@ test datatable.863 {test move notify} {
 	} msg] $msg
 } {0 {{-move 8}}}
 
-test datatable.864 {test sort notify} {
+test datatable.873 {test sort notify} {
     list [catch {
 	set mylist {}
 	datatable0 sort 0 -reorder 
@@ -4705,7 +4751,7 @@ test datatable.864 {test sort notify} {
 	} msg] $msg
 } {0 {{-sort 0}}}
 
-test datatable.865 {test relabel notify} {
+test datatable.874 {test relabel notify} {
     list [catch {
 	set mylist {}
 	datatable0 label test "newLabel"
@@ -4713,7 +4759,7 @@ test datatable.865 {test relabel notify} {
 	} msg] $msg
 } {0 {{-relabel 22}}}
 
-test datatable.866 {test delete notify} {
+test datatable.875 {test delete notify} {
     list [catch {
 	set mylist {}
 	datatable0 delete test
@@ -4722,12 +4768,12 @@ test datatable.866 {test delete notify} {
 } {0 {{-delete 8} {-delete 22}}}
 
 
-test datatable.867 {datatable0 notify delete badId} {
+test datatable.876 {datatable0 notify delete badId} {
     list [catch {datatable0 notify delete badId} msg] $msg
 } {1 {unknown notify name "badId"}}
 
 
-test datatable.868 {test create notify} {
+test datatable.877 {test create notify} {
     list [catch {
 	set mylist {}
 	datatable0 set all newKey 20
@@ -4735,7 +4781,7 @@ test datatable.868 {test create notify} {
 	} msg] $msg
 } {0 {}}
 
-test datatable.869 {test delete notify} {
+test datatable.878 {test delete notify} {
     list [catch {
 	set mylist {}
 	datatable0 unset all newKey
@@ -4743,7 +4789,7 @@ test datatable.869 {test delete notify} {
 	} msg] $msg
 } {0 {}}
 
-test datatable.870 {test delete notify} {
+test datatable.879 {test delete notify} {
     list [catch {
 	set mylist {}
 	datatable0 unset all newKey
@@ -4751,31 +4797,31 @@ test datatable.870 {test delete notify} {
 	} msg] $msg
 } {0 {}}
 
-test datatable.871 {datatable0 copy} {
+test datatable.880 {datatable0 copy} {
     list [catch {datatable0 copy} msg] $msg
 } {1 {wrong # args: should be "datatable0 copy srcNode ?destDatatable? destNode ?switches?"}}
 
-test datatable.872 {datatable0 copy root} {
+test datatable.881 {datatable0 copy root} {
     list [catch {datatable0 copy root} msg] $msg
 } {1 {wrong # args: should be "datatable0 copy srcNode ?destDatatable? destNode ?switches?"}}
 
-test datatable.873 {datatable0 copy root 14} {
+test datatable.882 {datatable0 copy root 14} {
     list [catch {datatable0 copy root 14} msg] $msg
 } {0 23}
 
-test datatable.874 {datatable0 copy 14 root} {
+test datatable.883 {datatable0 copy 14 root} {
     list [catch {datatable0 copy 14 root} msg] $msg
 } {0 24}
 
-test datatable.875 {datatable0 copy root 14 -recurse} {
+test datatable.884 {datatable0 copy root 14 -recurse} {
     list [catch {datatable0 copy root 14 -recurse} msg] $msg
 } {1 {can't make cyclic copy: source node is an ancestor of the destination}}
 
-test datatable.876 {datatable0 copy 2 3 -recurse -tags} {
+test datatable.885 {datatable0 copy 2 3 -recurse -tags} {
     list [catch {datatable0 copy 2 3 -recurse -tags} msg] $msg
 } {0 25}
 
-test datatable.877 {datatable0 copy 2 3 -recurse -overwrite} {
+test datatable.886 {datatable0 copy 2 3 -recurse -overwrite} {
     list [catch {
 	blt::datatable create datatable1
 	foreach node [datatable0 children root] {
@@ -4848,6 +4894,7 @@ test datatable.877 {datatable0 copy 2 3 -recurse -overwrite} {
 puts stderr "done testing datatablecmd.tcl"
 
 exit 0
+
 
 
 

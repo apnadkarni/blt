@@ -54,5 +54,6 @@ BLT_EXTERN void Blt_Tags_AppendTagsToObj(Blt_Tags tags, ClientData item,
 	Tcl_Obj *objPtr);
 BLT_EXTERN void Blt_Tags_AppendAllTagsToObj(Blt_Tags tags, Tcl_Obj *objPtr);
 BLT_EXTERN Blt_Chain Blt_Tags_GetItemList(Blt_Tags tags, const char *tag);
+BLT_EXTERN Blt_HashTable *Blt_Tags_GetTable(Blt_Tags tags);
 
 #endif /* _BLT_TAGS_H */

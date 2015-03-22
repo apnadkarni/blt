@@ -413,10 +413,13 @@ Blt_Tags_ForgetTag(Tags *tagsPtr, const char *tag)
 void
 Blt_Tags_RemoveItemFromTag(Tags *tagsPtr, const char *tag, ClientData item)
 {
-    TagTable *tagTablePtr;
-
-    tagTablePtr = GetTagTable(tagsPtr, tag);
-    if (tagTablePtr != NULL) {
+    Blt_HashEntry *hPtr;
+    
+    hPtr = Blt_FindHashEntry(&tagsPtr->table, tag);
+    if (hPtr != NULL) {
+        TagTable *tagTablePtr;
+    
+        tagTablePtr = Blt_GetHashValue(hPtr);
 	DeleteTagEntry(tagTablePtr, item);
     }
 }
@@ -514,6 +517,12 @@ Blt_Tags_AppendTagsToObj(Tags *tagsPtr, ClientData item,
 	    Tcl_ListObjAppendElement(NULL, listObjPtr, objPtr);
 	}
     }
+}
+
+Blt_HashTable *
+Blt_Tags_GetTable(Tags *tagsPtr)
+{
+    return &tagsPtr->table;
 }
 
 /*

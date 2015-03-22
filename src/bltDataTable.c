@@ -2837,6 +2837,18 @@ blt_table_get_row_tags(Table *tablePtr, Row *rowPtr)
     return chain;
 }
 
+Blt_HashTable *
+blt_table_get_row_tag_table(Table *tablePtr)  
+{
+    return Blt_Tags_GetTable(tablePtr->rowTags);
+}
+
+Blt_HashTable *
+blt_table_get_column_tag_table(Table *tablePtr)  
+{
+    return Blt_Tags_GetTable(tablePtr->columnTags);
+}
+
 Blt_Chain
 blt_table_get_column_tags(Table *tablePtr, Column *colPtr)  
 {
@@ -3043,43 +3055,44 @@ blt_table_iterate_rows(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr,
 
     case TABLE_SPEC_LABEL:
 	iterPtr->tablePtr = blt_table_row_get_label_table(table, tag);
-	if (iterPtr->tablePtr == NULL) {
-	    if (interp != NULL) {
-		Tcl_AppendResult(interp, "can't find row label \"", tag, 
-			"\" in ", blt_table_name(table), (char *)NULL);
-	    }
-	    return TCL_ERROR;
-	}
-	iterPtr->type = TABLE_ITERATOR_LABEL;
-	iterPtr->tag = tag;
-	iterPtr->numEntries = iterPtr->tablePtr->numEntries;
-	return TCL_OK;
-
+	if (iterPtr->tablePtr != NULL) {
+            iterPtr->type = TABLE_ITERATOR_LABEL;
+            iterPtr->tag = tag;
+            iterPtr->numEntries = iterPtr->tablePtr->numEntries;
+            return TCL_OK;
+        }
+        break;
+        
     case TABLE_SPEC_TAG:
+
 	if (strcmp(tag, "all") == 0) {
 	    iterPtr->type = TABLE_ITERATOR_ALL;
 	    iterPtr->start = 0;
 	    iterPtr->end = iterPtr->numEntries = blt_table_num_rows(table);
 	    iterPtr->tag = tag;
-	} else if (strcmp(tag, "end") == 0) {
+            return TCL_OK;
+	}
+        if (strcmp(tag, "end") == 0) {
 	    iterPtr->tag = tag;
 	    iterPtr->end = blt_table_num_rows(table);
 	    iterPtr->start = iterPtr->end - 1;
 	    iterPtr->numEntries = 1;
-	} else {
+            return TCL_OK;
+	}
+        {
 	    Blt_Chain chain;
 
 	    chain = blt_table_get_tagged_rows(iterPtr->table, tag);
 	    if (chain == NULL) {
-		return TCL_OK;
-	    }
-	    iterPtr->link = Blt_Chain_FirstLink(chain);
-	    iterPtr->type = TABLE_ITERATOR_TAG;
-	    iterPtr->tag = tag;
-	    iterPtr->numEntries = Blt_Chain_GetLength(chain);
+                iterPtr->link = Blt_Chain_FirstLink(chain);
+                iterPtr->type = TABLE_ITERATOR_TAG;
+                iterPtr->tag = tag;
+                iterPtr->numEntries = Blt_Chain_GetLength(chain);
+            }
+            return TCL_OK;
 	}
-	return TCL_OK;
-
+        break;
+        
     case TABLE_SPEC_RANGE:
 	p = strchr(tag, '-');
 	if (p == NULL) {
@@ -3111,10 +3124,11 @@ blt_table_iterate_rows(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr,
 	return TCL_OK;
 
     default:
-	if (interp != NULL) {
-	    Tcl_AppendResult(interp, "unknown row specification \"", tag, 
-		"\" in ", blt_table_name(table), (char *)NULL);
-	}
+        break;
+    }
+    if (interp != NULL) {
+        Tcl_AppendResult(interp, "unknown row specification \"", tag, 
+                         "\" in ", blt_table_name(table), (char *)NULL);
     }
     return TCL_ERROR;
 }
@@ -3344,6 +3358,9 @@ blt_table_iterate_columns(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr,
     iterPtr->link = NULL;
 
     spec = blt_table_column_spec(table, objPtr, &tag);
+#ifdef notdef
+    fprintf(stderr, "iterate_column: tag=%s spec=%d\n", tag, spec);
+#endif
     switch (spec) {
     case TABLE_SPEC_INDEX:
 	p = Tcl_GetString(objPtr);
@@ -3374,42 +3391,42 @@ blt_table_iterate_columns(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr,
 
     case TABLE_SPEC_LABEL:
 	iterPtr->tablePtr = blt_table_column_get_label_table(table, tag);
-	if (iterPtr->tablePtr == NULL) {
-	    if (interp != NULL) {
-		Tcl_AppendResult(interp, "can't find column label \"", tag, 
-			"\" in ", blt_table_name(table), (char *)NULL);
-	    }
-	    return TCL_ERROR;
-	}
-	iterPtr->type = TABLE_ITERATOR_LABEL;
-	iterPtr->tag = tag;
-	iterPtr->numEntries = iterPtr->tablePtr->numEntries;
-	return TCL_OK;
-
+	if (iterPtr->tablePtr != NULL) {
+            iterPtr->type = TABLE_ITERATOR_LABEL;
+            iterPtr->tag = tag;
+            iterPtr->numEntries = iterPtr->tablePtr->numEntries;
+            return TCL_OK;
+        }
+        break;
+        
     case TABLE_SPEC_TAG:
 	if (strcmp(tag, "all") == 0) {
 	    iterPtr->type = TABLE_ITERATOR_ALL;
 	    iterPtr->start = 0;
 	    iterPtr->end = iterPtr->numEntries = blt_table_num_columns(table);
 	    iterPtr->tag = tag;
-	} else if (strcmp(tag, "end") == 0) {
+            return TCL_OK;
+        }
+        if (strcmp(tag, "end") == 0) {
 	    iterPtr->tag = tag;
 	    iterPtr->start = blt_table_num_columns(table) - 1;
 	    iterPtr->end = iterPtr->start + 1;
 	    iterPtr->numEntries = 1;
-	} else {
+            return TCL_OK;
+	}
+        {
 	    Blt_Chain chain;
 
 	    chain = blt_table_get_tagged_columns(iterPtr->table, tag);
-	    if (chain == NULL) {
+	    if (chain != NULL) {
+                iterPtr->link = Blt_Chain_FirstLink(chain);
+                iterPtr->type = TABLE_ITERATOR_TAG;
+                iterPtr->tag = tag;
+                iterPtr->numEntries = Blt_Chain_GetLength(chain);
 		return TCL_OK;
 	    }
-	    iterPtr->link = Blt_Chain_FirstLink(chain);
-	    iterPtr->type = TABLE_ITERATOR_TAG;
-	    iterPtr->tag = tag;
-	    iterPtr->numEntries = Blt_Chain_GetLength(chain);
 	}
-	return TCL_OK;
+	break;
 
     case TABLE_SPEC_RANGE:
 	p = strchr(tag, '-');
@@ -3440,10 +3457,11 @@ blt_table_iterate_columns(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr,
 	return TCL_OK;
 
     default:
-	if (interp != NULL) {
-	    Tcl_AppendResult(interp, "unknown column specification \"", 
-		tag, "\" in ", blt_table_name(table),(char *)NULL);
-	}
+        break;
+    }
+    if (interp != NULL) {
+        Tcl_AppendResult(interp, "unknown column specification \"", 
+                         tag, "\" in ", blt_table_name(table),(char *)NULL);
     }
     return TCL_ERROR;
 }
@@ -3627,7 +3645,7 @@ blt_table_list_columns(Tcl_Interp *interp, BLT_TABLE table, int objc,
 
 int
 blt_table_list_rows(Tcl_Interp *interp, BLT_TABLE table, int objc, 
-		   Tcl_Obj *const *objv, Blt_Chain chain)
+                    Tcl_Obj *const *objv, Blt_Chain chain)
 {
     Blt_ChainLink link;
     Blt_HashTable rows;
@@ -3668,7 +3686,7 @@ blt_table_list_rows(Tcl_Interp *interp, BLT_TABLE table, int objc,
 
 int
 blt_table_iterate_rows_objv(Tcl_Interp *interp, BLT_TABLE table, int objc, 
-			  Tcl_Obj *const *objv, BLT_TABLE_ITERATOR *iterPtr)
+                            Tcl_Obj *const *objv, BLT_TABLE_ITERATOR *iterPtr)
 {
     Blt_Chain chain;
 
