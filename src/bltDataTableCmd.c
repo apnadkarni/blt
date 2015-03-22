@@ -2842,61 +2842,14 @@ ColumnLabelsOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	    if (label[0] == '\0') {
 		continue;
 	    }
-	    if (blt_table_set_column_label(interp, table, col, label) != TCL_OK) {
+	    if (blt_table_set_column_label(interp, table, col, label)
+                != TCL_OK) {
 		return TCL_ERROR;
 	    }
 	}
     }
     return TCL_OK;
 }
-
-/*
- *---------------------------------------------------------------------------
- *
- * ColumnCountOp --
- *
- *      Returns the number of columns the client sees.
- * 
- * Results:
- *      A standard TCL result.  If successful, the old column label is
- *      returned in the interpreter result.  If the column index is invalid,
- *      TCL_ERROR is returned and an error message is left in the interpreter
- *      result.
- *      
- * Example:
- *      $t column count ?$column? 
- *
- *---------------------------------------------------------------------------
- */
-static int
-ColumnCountOp(ClientData clientData, Tcl_Interp *interp, int objc,
-              Tcl_Obj *const *objv)
-{
-    Cmd *cmdPtr = clientData;
-    long count;
-
-    if (objc == 3) {
-	count = blt_table_num_columns(cmdPtr->table);
-    }  else {
-	BLT_TABLE_COLUMN col;
-	BLT_TABLE_ROW row;
-
-	col = blt_table_get_column(interp, cmdPtr->table, objv[3]);
-	if (col == NULL) {
-	    return TCL_ERROR;
-	}
-	count = 0;              
-	for (row = blt_table_first_row(cmdPtr->table); row != NULL;
-	     row = blt_table_next_row(cmdPtr->table, row)) {
-	    if (blt_table_value_exists(cmdPtr->table, row, col)) {
-		count++;
-	    }
-	}
-    }
-    Tcl_SetLongObj(Tcl_GetObjResult(interp), count);
-    return TCL_OK;
-}
-
 
 /*
  *---------------------------------------------------------------------------
@@ -3993,8 +3946,7 @@ ColumnValuesOp(ClientData clientData, Tcl_Interp *interp, int objc,
  */
 static Blt_OpSpec columnOps[] =
 {
-    {"copy",      3, ColumnCopyOp,    4, 0, "src dest ?switches...?",},
-    {"count",     3, ColumnCountOp,   3, 4, "?column?",},
+    {"copy",      2, ColumnCopyOp,    4, 0, "src dest ?switches...?",},
     {"create",    2, ColumnCreateOp,  3, 0, "?switches?",},
     {"delete",    2, ColumnDeleteOp,  3, 0, "column...",},
     {"duplicate", 2, ColumnDupOp,     3, 0, "column...",},
@@ -4154,53 +4106,6 @@ RowCopyOp(ClientData clientData, Tcl_Interp *interp, int objc,
     return result;
     
 }
-
-/*
- *---------------------------------------------------------------------------
- *
- * RowCountOp --
- *
- *      Returns the number of (non-empty) rows in the column.
- * 
- * Results:
- *      A standard TCL result.  If successful, the old row label is returned
- *      in the interpreter result.  If the row index is invalid, TCL_ERROR is
- *      returned and an error message is left in the interpreter result.
- *      
- * Example:
- *      $t row count ?row?
- *
- *---------------------------------------------------------------------------
- */
-static int
-RowCountOp(ClientData clientData, Tcl_Interp *interp, int objc,
-           Tcl_Obj *const *objv)
-{
-    Cmd *cmdPtr = clientData;
-    long count;
-
-    if (objc == 3) {
-	count = blt_table_num_rows(cmdPtr->table);
-    }  else {
-	BLT_TABLE_COLUMN col;
-	BLT_TABLE_ROW row;
-
-	row = blt_table_get_row(interp, cmdPtr->table, objv[3]);
-	if (row == NULL) {
-	    return TCL_ERROR;
-	}
-	count = 0;
-	for (col = blt_table_first_column(cmdPtr->table); col != NULL;
-	     col = blt_table_next_column(cmdPtr->table, col)) {
-	    if (blt_table_value_exists(cmdPtr->table, row, col)) {
-		count++;
-	    }
-	}
-    }
-    Tcl_SetLongObj(Tcl_GetObjResult(interp), count);
-    return TCL_OK;
-}
-
 
 /*
  *---------------------------------------------------------------------------
@@ -6047,7 +5952,6 @@ RowValuesOp(ClientData clientData, Tcl_Interp *interp, int objc,
 static Blt_OpSpec rowOps[] =
 {
     {"copy",      3, RowCopyOp,     4, 0, "src dest ?switches...?",},
-    {"count",     3, RowCountOp,    3, 4, "?row?",},
     {"create",    2, RowCreateOp,   3, 0, "?switches...?",},
     {"delete",    2, RowDeleteOp,   3, 0, "?row...?",},
     {"duplicate", 2, RowDupOp,      3, 0, "?row...?",},
@@ -6094,7 +5998,9 @@ RowOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * AddOp --
  *
- *      Concatenates the source table onto the destination.
+ *      Adds to rows from the source table onto the destination. If
+ *      the destination table doesn't already have a column, one is
+ *      automatically created.
  * 
  * Results:
  *      A standard TCL result. If the tag or column index is invalid,
@@ -6152,7 +6058,7 @@ AddOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 		!= TCL_OK) {
 		goto error;
 	    }
-	    if (blt_table_set_column_label(interp, cmdPtr->table, dstCol, label) 
+	    if (blt_table_set_column_label(interp, cmdPtr->table, dstCol, label)
 		!= TCL_OK) {
 		goto error;
 	    }
@@ -6400,8 +6306,8 @@ DirOp(ClientData clientData, Tcl_Interp *interp, int objc,
     Tcl_Obj **items;
     DirSwitches switches;
     const char *pattern;
-    Tcl_GlobTypeData readableFiles = {
-	0, TCL_GLOB_PERM_R, NULL, NULL
+    Tcl_GlobTypeData globParams = {
+	0, TCL_GLOB_PERM_R, /* macType*/NULL, /*macCreator*/NULL
     };
 
     memset(&switches, 0, sizeof(switches));
@@ -6409,8 +6315,8 @@ DirOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	BLT_SWITCH_DEFAULTS) < 0) {
 	return TCL_ERROR;
     }
-    readableFiles.type = switches.type;
-    readableFiles.perm = switches.perm;
+    globParams.type = switches.type;
+    globParams.perm = switches.perm;
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
     if (switches.pattern == NULL) {
 	pattern = "*";
@@ -6418,7 +6324,7 @@ DirOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	pattern = switches.pattern;
     }
     if (Tcl_FSMatchInDirectory(interp, listObjPtr, objv[2], pattern, 
-	&readableFiles) != TCL_OK) {
+	&globParams) != TCL_OK) {
     }
     if (Tcl_ListObjGetElements(interp, listObjPtr, &n, &items) != TCL_OK) {
 	return TCL_OK;

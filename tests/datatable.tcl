@@ -247,7 +247,6 @@ test datatable.31 {datatable0 column badOp} {
     } msg] $msg
 } {1 {bad operation "badOp": should be one of...
   datatable0 column copy src dest ?switches...?
-  datatable0 column count ?column?
   datatable0 column create ?switches?
   datatable0 column delete column...
   datatable0 column duplicate column...
@@ -282,7 +281,6 @@ test datatable.33 {datatable0 row badOp} {
     } msg] $msg
 } {1 {bad operation "badOp": should be one of...
   datatable0 row copy src dest ?switches...?
-  datatable0 row count ?row?
   datatable0 row create ?switches...?
   datatable0 row delete ?row...?
   datatable0 row duplicate ?row...?
@@ -321,7 +319,6 @@ test datatable.37 {datatable0 column -label xyz create} {
     list [catch {datatable0 column -label xyz create} msg] $msg
 } {1 {bad operation "-label": should be one of...
   datatable0 column copy src dest ?switches...?
-  datatable0 column count ?column?
   datatable0 column create ?switches?
   datatable0 column delete column...
   datatable0 column duplicate column...
@@ -1908,7 +1905,6 @@ test datatable.336 {row -label xyz create} {
     list [catch {datatable4 row -label xyz create} msg] $msg
 } {1 {bad operation "-label": should be one of...
   datatable4 row copy src dest ?switches...?
-  datatable4 row count ?row?
   datatable4 row create ?switches...?
   datatable4 row delete ?row...?
   datatable4 row duplicate ?row...?
@@ -3147,6 +3143,17 @@ d 2 5 4.5
 d 3 5 5.5
 d 17 5 3.5
 }}
+
+test datatable.541 {dirtest dir /tmp} {
+    list [catch {
+	set table [blt::datatable create]
+	$table dir /tmp -readonly -readable
+	set out [$table export csv]
+	blt::datatable destroy $table
+	set out
+    } msg] $msg
+} {1 {can't find tag or id "badNode" in ::datatable0}}
+
 
 #----------------------
 exit 0
