@@ -865,14 +865,22 @@ the command.  The operations available for datatables are listed below.
 
 *tableName* **row values**  *row* ?\ *valueList* \?
 
-  Gets or sets the values of the specified row.  *Row* may be a
-  label, index, or tag, but may not represent more than one row.
-  If *valueList* is present, then the values of the table are
-  set from the elements of the list.  If there are more values in the
-  list than columns in the table, the table is extended.  If there
-  are less, the remaining columns remain the same.
+  Gets or sets the values of the specified row.  *Row* may be a label,
+  index, or tag, but may not represent more than one row.  If *valueList*
+  is present, then the values of the table are set from the elements of the
+  list.  If there are more values in the list than columns in the table,
+  the table is extended.  If there are less, the remaining columns remain
+  the same.
 
 *tableName* **set** *row* *column* *value* 
+
+  Sets the value at *row*, *column* in *tableName*.  *Row* and *column* may
+  be a label, index, or tag and may refer to multiple rows (example:
+  `all`). If either *row* or *column* does not exist, the row or column is
+  automatically created.  If the row or column is an index, the table may
+  be grown. *Value* is the value to be set.  If the type of *column* is not
+  *string*, *value* is converted into the correct type.  If the conversion
+  fails, an error will be returned.
 
 *tableName* **sort** ?\ *switches*...\ ?
 
@@ -994,195 +1002,236 @@ Handlers for various datatable formats can be loaded using the TCL
 **package** mechanism.  The formats supported are `csv`, `xml`, `sqlite`,
 `mysql`, `psql`, `vector`, and `tree`.
 
-To use the XML handler you must first require the package.
+**csv**
+ To use the CSV handler you must first require the package.
 
-  **package require blt_datatable_xml**
+   **package require blt_datatable_xml**
 
-Then the following **import** and **export** commands become available.
+ Then the following **import** and **export** commands become available.
 
-*tableName* **import csv** ?\ *switches..*\ ?
+ *tableName* **import csv** ?\ *switches..*\ ?
 
   Imports the CSV data into the datatable. 
   The following import switches are supported:
 
-    **-file** *fileName*
-      Read the CSV file *fileName* to load the table.
+  **-file** *fileName*
+   Read the CSV file *fileName* to load the table.
 
-    **-data** *string*
-      Read the CSV information from *string*.
+  **-data** *string*
+   Read the CSV information from *string*.
 
-    **-separator** *char*
-      Specifies the separator character.  This is by default the comma.
-      If *char* is "auto", then the separator is automatically determined.
+  **-separator** *char*
+   Specifies the separator character.  This is by default the comma.
+   If *char* is "auto", then the separator is automatically determined.
 
-    **-escape** *char*
-      Load the JSON information into the tree starting at *node*.  The
-      default is the root node of the tree.
+  **-escape** *char*
+   Load the JSON information into the tree starting at *node*.  The
+   default is the root node of the tree.
 
-    **-quote** *char*
-      Load the JSON information into the tree starting at *node*.  The
-      default is the root node of the tree.
+  **-quote** *char*
+   Load the JSON information into the tree starting at *node*.  The
+   default is the root node of the tree.
 
-    **-quote** *char*
-      Specifies the quote character.  This is by default the double quote.
+  **-quote** *char*
+   Specifies the quote character.  This is by default the double quote.
 
-    **-comment** *char*
-      Specifies a comment character.  Any line in the CSV file starting
-      with this character is treated as a comment and ignored.
+  **-comment** *char*
+   Specifies a comment character.  Any line in the CSV file starting
+   with this character is treated as a comment and ignored.
 
-    **-encoding** *string*
-      Specifies the encoding to use when reading the CSV file.
+  **-encoding** *string*
+   Specifies the encoding to use when reading the CSV file.
 
-   **-maxrows** *numRows*
-      Specifies the maximum number of rows to load into the table. 
-      
-   **-empty** *string*
-      Specifies a string value to use for cells when empty fields
-      are found in the CSV data.
+  **-maxrows** *numRows*
+   Specifies the maximum number of rows to load into the table. 
 
-   **-headers** *labelList*
-      Set the column labels from the list of labels in *labelList*.
+  **-empty** *string*
+   Specifies a string value to use for cells when empty fields
+   are found in the CSV data.
 
-   **-autoheaders** *boolean*
-      Set the column labels from the first row of the CSV data.  
-  
-*tableName* **export csv** ?\ *switches..*\ ?
+  **-headers** *labelList*
+   Set the column labels from the list of labels in *labelList*.
+
+  **-autoheaders** *boolean*
+   Set the column labels from the first row of the CSV data.  
+
+ *tableName* **export csv** ?\ *switches..*\ ?
 
   Exports the datatable into CSV data.  If no **-file** switch is provided,
-  the CSV output is returned.  
-  The following import switches are supported:
+  the CSV output is returned.  The following import switches are supported:
 
-  **-columnlabels** 
+   **-columnlabels** 
     Indicates to create an extra row in the CSV containing the
     column labels.
 
-  **-columns** *columnList*
+   **-columns** *columnList*
     Specifies the subset of columns from *tableName* to export.  By default
     all columns are exported.
 
-  **-file** *fileName*
+   **-file** *fileName*
     Write the CSV output to the file *fileName*.
 
-  **-quote** *char*
-    Specifies the quote character.  This is by default the double quote.
+   *-quote** *char*
+     Specifies the quote character.  This is by default the double quote.
 
-  **-rowlabels** 
+   **-rowlabels** 
     Indicates to create an extra column in the CSV containing the
     row labels.
 
-  **-rows** *rowList*
+   **-rows** *rowList*
     Specifies the subset of rows from *tableName* to export.  By default
     all rows are exported.
-    
-  **-separator** *char*
+
+   **-separator** *char*
     Specifies the separator character.  This is by default the comma.
 
-*tableName* **import mysql** ?\ *switches..*\ ?
+**mysql**
+ To use the CSV handler you must first require the package.
 
-  Imports a table from a *Mysql* database.  The following switches
-  are supported:
+   **package require blt_datatable_xml**
 
-    **-db** *dbName*
-      Specifies the name of the database.  
+ Then the following **import** and **export** commands become available.
 
-    **-host** *hostName*
-      Specifies the name or address of the *Mysql* server host.  
+ *tableName* **import mysql** ?\ *switches..*\ ?
 
-    **-user** *userName*
-      Specifies the name of the *Mysql* user.  By default, the USER
-      environment variable is used.
+   Imports a table from a *Mysql* database.  The following switches
+   are supported:
 
-    **-password** *password*
-      Specifies the password of the *Mysql* user. 
+   **-db** *dbName*
+    Specifies the name of the database.  
 
-    **-port** *portNumber*
-      Specifies the port number of the *Mysql* server.
+   **-host** *hostName*
+    Specifies the name or address of the *Mysql* server host.  
 
-    **-query** *string*
-      Specifies the SQL query to make to the *Mysql* database.
+   **-user** *userName*
+    Specifies the name of the *Mysql* user.  By default, the USER
+    environment variable is used.
 
-*tableName* **import psql** ?\ *switches..*\ ?
+   **-password** *password*
+    Specifies the password of the *Mysql* user. 
 
-  Imports a table from a *Postgresql* database.  The following switches
-  are supported:
+   **-port** *portNumber*
+    Specifies the port number of the *Mysql* server.
 
-    **-db** *dbName*
-      Specifies the name of the database.  
+   **-query** *string*
+    Specifies the SQL query to make to the *Mysql* database.
 
-    **-host** *hostName*
-      Specifies the name or address of the *Postgresql* server host.  
+**psql**
+ To use the CSV handler you must first require the package.
 
-    **-user** *userName*
-      Specifies the name of the *Postgresql* user.  By default, the `USER`
-      environment variable is used.
+   **package require blt_datatable_xml**
 
-    **-password** *password*
-      Specifies the password of the *Postgresql* user. 
+ Then the following **import** and **export** commands become available.
 
-    **-port** *portNumber*
-      Specifies the port number of the *Postgresql* server.
+ *tableName* **import psql** ?\ *switches..*\ ?
 
-    **-query** *string*
-      Specifies the SQL query to make to the *Postgresql* database.
+   Imports a table from a *Postgresql* database.  The following switches
+   are supported:
 
-    **-table** *tableName*
-      Specifies the name of the *Postgresql* table being queried.
+   **-db** *dbName*
+     Specifies the name of the database.  
 
-*tableName* **import sqlite** ?\ *switches*\... ?
+   **-host** *hostName*
+    Specifies the name or address of the *Postgresql* server host.  
 
-  Imports a table from an Sqlite database.  The following export switches are
-  supported:
+   **-user** *userName*
+     Specifies the name of the *Postgresql* user.  By default, the `USER`
+     environment variable is used.
 
-    **-file** *fileName*
-      Read from the *Sqlite* file *fileName*.
+   **-password** *password*
+     Specifies the password of the *Postgresql* user. 
 
-    **-query** *string*
-      Specifies the SQL query to make to the *Sqlite* database.
+   **-port** *portNumber*
+     Specifies the port number of the *Postgresql* server.
 
-*tableName* **import tree** *treeName* ?\ *switches..*\ ?
+   **-query** *string*
+     Specifies the SQL query to make to the *Postgresql* database.
 
-  Imports a BLT tree into the table.  *TreeName* is the name of the BLT
-  tree. 
+   **-table** *tableName*
+     Specifies the name of the *Postgresql* table being queried.
 
-    **-depth** *maxDepth*
-      Traverse *treeName* a maximum of *maxDepth* levels starting
-      from *node*.
+**sqlite**
+ To use the CSV handler you must first require the package.
 
-    **-inodes** 
-      Store the indices of the tree nodes in a column called "inode".
+   **package require blt_datatable_xml**
 
-    **-root** *node*
-      Specifies the root node of the branch to be imported. By default,
-      the root of the tree is the root node.
+ Then the following **import** and **export** commands become available.
 
-*tableName* **import vector** ?\ *destColumn* *vecName*\ ?...
+ *tableName* **import sqlite** ?\ *switches*\... ?
 
-  Imports a columns from one of more BLT vectors.  *VecName* is the name of
-  a BLT vector.  *DestColumn* may be a label, index, or tag, but may not
-  represent more than one column.  If *destColumn* does not exist, it is
-  automatically created.  All the values previously in *destColumn* are
-  deleted.  Rows may added to the table to store the vector values.
+   Imports a table from an Sqlite database.  The following export switches are
+   supported:
 
-*tableName* **import xml** ?\ *switches..*\ ?
+   **-file** *fileName*
+     Read from the *Sqlite* file *fileName*.
 
-  Imports XML into the table.  The following export switches are
-  supported:
+   **-query** *string*
+     Specifies the SQL query to make to the *Sqlite* database.
 
-    **-data** *string*
-      Read XML from the data *string*.
+**tree**
+ To use the CSV handler you must first require the package.
 
-    **-file** *fileName*
-      Read XML from the file *fileName*.
+   **package require blt_datatable_xml**
 
-    **-noattrs** 
-      Don't import XML attributes into the table.
+ Then the following **import** and **export** commands become available.
 
-    **-noelems** 
-      Don't import XML elements into the table.
+ *tableName* **import tree** *treeName* ?\ *switches..*\ ?
 
-    **-nocdata** 
-      Don't import XML character data (CDATA) into the table.
+   Imports a BLT tree into the table.  *TreeName* is the name of the BLT
+   tree. 
 
+   **-depth** *maxDepth*
+     Traverse *treeName* a maximum of *maxDepth* levels starting
+     from *node*.
+
+   **-inodes** 
+     Store the indices of the tree nodes in a column called "inode".
+
+   **-root** *node*
+     Specifies the root node of the branch to be imported. By default,
+     the root of the tree is the root node.
+
+**vector**
+ To use the CSV handler you must first require the package.
+
+   **package require blt_datatable_xml**
+
+ Then the following **import** and **export** commands become available.
+
+ *tableName* **import vector** ?\ *destColumn* *vecName*\ ?...
+
+   Imports a columns from one of more BLT vectors.  *VecName* is the name of
+   a BLT vector.  *DestColumn* may be a label, index, or tag, but may not
+   represent more than one column.  If *destColumn* does not exist, it is
+   automatically created.  All the values previously in *destColumn* are
+   deleted.  Rows may added to the table to store the vector values.
+
+**xml**
+ To use the CSV handler you must first require the package.
+
+   **package require blt_datatable_xml**
+
+ Then the following **import** and **export** commands become available.
+
+ *tableName* **import xml** ?\ *switches..*\ ?
+
+   Imports XML into the table.  The following export switches are
+   supported:
+
+   **-data** *string*
+     Read XML from the data *string*.
+
+   **-file** *fileName*
+     Read XML from the file *fileName*.
+
+   **-noattrs** 
+     Don't import XML attributes into the table.
+
+   **-noelems** 
+     Don't import XML elements into the table.
+
+   **-nocdata** 
+     Don't import XML character data (CDATA) into the table.
 
 EXAMPLE
 =======
