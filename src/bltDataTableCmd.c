@@ -356,7 +356,7 @@ typedef struct {
  *
  *      This auxillary structure houses data to be used for a callback to a
  *      TCL procedure when a table object notify event fires.  It is stored
- *      in a hash table in the Dt_Cmd structure to keep track of notifiers
+ *      in a hash table in the Cmd structure to keep track of notifiers
  *      issued by this shell.
  */
 typedef struct {
@@ -1978,7 +1978,733 @@ CopyTable(Tcl_Interp *interp, BLT_TABLE src, BLT_TABLE dst)
 }
 
 
-/************* Column Operations ****************/
+static int
+CopyRow(Tcl_Interp *interp, BLT_TABLE srcTable, BLT_TABLE destTable,
+    BLT_TABLE_ROW srcRow,               /* Row offset in the source table. */
+    BLT_TABLE_ROW destRow)              /* Row offset in the destination. */
+{
+    long i;
+
+    if ((blt_table_same_object(srcTable, destTable)) && 
+	(srcRow == destRow)) {
+	return TCL_OK;          /* Source and destination are the same. */
+    }
+    if (blt_table_num_columns(srcTable) > blt_table_num_columns(destTable)) {
+	long needed;
+
+	needed = blt_table_num_columns(srcTable) - 
+	    blt_table_num_columns(destTable);
+	if (blt_table_extend_columns(interp, destTable, needed, NULL)!=TCL_OK) {
+	    return TCL_ERROR;
+	}
+    }
+    for (i = 0; i < blt_table_num_columns(srcTable); i++) {
+	BLT_TABLE_COLUMN col;
+	BLT_TABLE_VALUE value;
+
+	col = blt_table_column(srcTable, i);
+	value = blt_table_get_value(srcTable, srcRow, col);
+	col = blt_table_column(destTable, i);
+	if (blt_table_set_value(destTable, destRow, col, value)!= TCL_OK) {
+	    return TCL_ERROR;
+	}
+    }
+    return TCL_OK;
+}           
+
+static void
+CopyRowTags(BLT_TABLE srcTable, BLT_TABLE destTable,
+    BLT_TABLE_ROW srcRow,               /* Row in the source table. */
+    BLT_TABLE_ROW destRow)              /* Row in the destination table. */
+{
+    Blt_Chain chain;
+    Blt_ChainLink link;
+
+    /* Get all tags for this particular row in the source table. */
+    chain = blt_table_get_row_tags(srcTable, srcRow);
+    for (link = Blt_Chain_FirstLink(chain); link != NULL; 
+	 link = Blt_Chain_NextLink(link)) {
+	const char *tag;
+
+	tag = Blt_Chain_GetValue(link);
+	blt_table_set_row_tag(NULL, destTable, destRow, tag);
+    }
+    Blt_Chain_Destroy(chain);
+}           
+
+
+static int
+WriteRecord(Tcl_Channel channel, Tcl_DString *dsPtr)
+{
+    int length, numWritten;
+    char *line;
+
+    length = Tcl_DStringLength(dsPtr);
+    line = Tcl_DStringValue(dsPtr);
+#if HAVE_UTF
+#ifdef notdef
+    numWritten = Tcl_WriteChars(channel, line, length);
+#endif
+    numWritten = Tcl_Write(channel, line, length);
+#else
+    numWritten = Tcl_Write(channel, line, length);
+#endif
+    if (numWritten != length) {
+	return FALSE;
+    }
+    Tcl_DStringSetLength(dsPtr, 0);
+    return TRUE;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * DumpHeader --
+ *
+ *      Prints the info associated with a column into a dynamic
+ *      string.
+ *
+ * Results:
+ *      None.
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+DumpHeader(DumpSwitches *dumpPtr, long numRows, long numCols)
+{
+    /* i rows columns ctime mtime \n */
+    Tcl_DStringAppendElement(dumpPtr->dsPtr, "i");
+
+    /* # of rows and columns may be a subset of the table. */
+    Tcl_DStringAppendElement(dumpPtr->dsPtr, Blt_Ltoa(numRows));
+    Tcl_DStringAppendElement(dumpPtr->dsPtr, Blt_Ltoa(numCols));
+
+    Tcl_DStringAppendElement(dumpPtr->dsPtr, Blt_Ltoa(0));
+    Tcl_DStringAppendElement(dumpPtr->dsPtr, Blt_Ltoa(0));
+    Tcl_DStringAppend(dumpPtr->dsPtr, "\n", 1);
+    if (dumpPtr->channel != NULL) {
+	return WriteRecord(dumpPtr->channel, dumpPtr->dsPtr);
+    }
+    return TRUE;
+}
+
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * DumpValue --
+ *
+ *      Retrieves all tags for a given row or column into a tcl list.  
+ *
+ * Results:
+ *      None.
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+DumpValue(BLT_TABLE table, DumpSwitches *dumpPtr, BLT_TABLE_ROW row, 
+	  BLT_TABLE_COLUMN col)
+{
+    const char *string;
+
+    string = blt_table_get_string(table, row, col);
+    if (string == NULL) {
+	return TRUE;
+    }
+    /* d row column value \n */
+    Tcl_DStringAppendElement(dumpPtr->dsPtr, "d");
+    Tcl_DStringAppendElement(dumpPtr->dsPtr, Blt_Ltoa(blt_table_row_index(row)));
+    Tcl_DStringAppendElement(dumpPtr->dsPtr, Blt_Ltoa(blt_table_column_index(col)));
+    Tcl_DStringAppendElement(dumpPtr->dsPtr, string);
+    Tcl_DStringAppend(dumpPtr->dsPtr, "\n", 1);
+    if (dumpPtr->channel != NULL) {
+	return WriteRecord(dumpPtr->channel, dumpPtr->dsPtr);
+    }
+    return TRUE;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * DumpColumn --
+ *
+ *      Prints the info associated with a column into a dynamic string.
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+DumpColumn(BLT_TABLE table, DumpSwitches *dumpPtr, BLT_TABLE_COLUMN col)
+{
+    Blt_Chain colTags;
+    Blt_ChainLink link;
+    const char *name;
+
+    /* c index label type tags \n */
+    Tcl_DStringAppendElement(dumpPtr->dsPtr, "c");
+    Tcl_DStringAppendElement(dumpPtr->dsPtr, 
+	Blt_Ltoa(blt_table_column_index(col)));
+    Tcl_DStringAppendElement(dumpPtr->dsPtr, blt_table_column_label(col));
+    name = blt_table_column_type_to_name(blt_table_column_type(col));
+    if (name == NULL) {
+	name = "";
+    }
+    Tcl_DStringAppendElement(dumpPtr->dsPtr, name);
+
+    colTags = blt_table_get_column_tags(table, col);
+    Tcl_DStringStartSublist(dumpPtr->dsPtr);
+    for (link = Blt_Chain_FirstLink(colTags); link != NULL;
+	 link = Blt_Chain_NextLink(link)) {
+	const char *tag;
+
+	tag = Blt_Chain_GetValue(link);
+	Tcl_DStringAppendElement(dumpPtr->dsPtr, tag);
+    }
+    Blt_Chain_Destroy(colTags);
+    Tcl_DStringEndSublist(dumpPtr->dsPtr);
+    Tcl_DStringAppend(dumpPtr->dsPtr, "\n", 1);
+    if (dumpPtr->channel != NULL) {
+	return WriteRecord(dumpPtr->channel, dumpPtr->dsPtr);
+    }
+    return TRUE;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * DumpRow --
+ *
+ *      Prints the info associated with a row into a dynamic string.
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+DumpRow(BLT_TABLE table, DumpSwitches *dumpPtr, BLT_TABLE_ROW row)
+{
+    Blt_Chain rowTags;
+    Blt_ChainLink link;
+
+    /* r index label tags \n */
+    Tcl_DStringAppendElement(dumpPtr->dsPtr, "r");
+    Tcl_DStringAppendElement(dumpPtr->dsPtr, Blt_Ltoa(blt_table_row_index(row)));
+    Tcl_DStringAppendElement(dumpPtr->dsPtr, (char *)blt_table_row_label(row));
+    Tcl_DStringStartSublist(dumpPtr->dsPtr);
+    rowTags = blt_table_get_row_tags(table, row);
+    for (link = Blt_Chain_FirstLink(rowTags); link != NULL;
+	 link = Blt_Chain_NextLink(link)) {
+	const char *tag;
+
+	tag = Blt_Chain_GetValue(link);
+	Tcl_DStringAppendElement(dumpPtr->dsPtr, tag);
+    }
+    Blt_Chain_Destroy(rowTags);
+    Tcl_DStringEndSublist(dumpPtr->dsPtr);
+    Tcl_DStringAppend(dumpPtr->dsPtr, "\n", 1);
+    if (dumpPtr->channel != NULL) {
+	return WriteRecord(dumpPtr->channel, dumpPtr->dsPtr);
+    }
+    return TRUE;
+}
+
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * DumpTable --
+ *
+ *      Dumps data from the given table based upon the row and column maps
+ *      provided which describe what rows and columns are to be dumped. The
+ *      dump information is written to the file named. If the file name starts
+ *      with an '@', then it is the name of an already opened channel to be
+ *      used.
+ *      
+ * Results:
+ *      A standard TCL result.  If the dump was successful, TCL_OK is
+ *      returned.  Otherwise, TCL_ERROR is returned and an error message is
+ *      left in the interpreter result.
+ *
+ * Side Effects:
+ *      Dump information is written to the named file.
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+DumpTable(BLT_TABLE table, DumpSwitches *dumpPtr)
+{
+    int result;
+    long numCols, numRows;
+    BLT_TABLE_COLUMN col;
+    BLT_TABLE_ROW row;
+
+    if (dumpPtr->ri.chain != NULL) {
+	numRows = Blt_Chain_GetLength(dumpPtr->ri.chain);
+    } else {
+	numRows = blt_table_num_rows(table);
+    }
+    if (dumpPtr->ci.chain != NULL) {
+	numCols = Blt_Chain_GetLength(dumpPtr->ci.chain);
+    } else {
+	numCols = blt_table_num_columns(table);
+    }
+    result = DumpHeader(dumpPtr, numRows, numCols);
+    for (col = blt_table_first_tagged_column(&dumpPtr->ci); 
+	 (result) && (col != NULL); 
+	 col = blt_table_next_tagged_column(&dumpPtr->ci)) {
+	result = DumpColumn(table, dumpPtr, col);
+    }
+    for (row = blt_table_first_tagged_row(&dumpPtr->ri); 
+	 (result) && (row != NULL); 
+	 row = blt_table_next_tagged_row(&dumpPtr->ri)) {
+	result = DumpRow(table, dumpPtr, row);
+    }
+    for (col = blt_table_first_tagged_column(&dumpPtr->ci); 
+	 (result) && (col != NULL); 
+	 col = blt_table_next_tagged_column(&dumpPtr->ci)) {
+	for (row = blt_table_first_tagged_row(&dumpPtr->ri); 
+	     (result) && (row != NULL); 
+	     row = blt_table_next_tagged_row(&dumpPtr->ri)) {
+	    result = DumpValue(table, dumpPtr, row, col);
+	}
+    }
+    return (result) ? TCL_OK : TCL_ERROR;
+}
+
+static Tcl_Obj *
+PrintValues(Tcl_Interp *interp, Cmd *cmdPtr, long numRows, 
+	    BLT_TABLE_ROW *rows, BLT_TABLE_COLUMN col, unsigned int flags)
+{
+    long i;
+    Tcl_Obj *listObjPtr;
+    
+    listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
+    for (i = 1; i < numRows; i++) {
+	Tcl_Obj *objPtr;
+	int isEmpty;
+	
+	isEmpty = !blt_table_value_exists(cmdPtr->table, rows[i], col);
+	if ((isEmpty) && (flags & SORT_NONEMPTY)) {
+	    continue;
+	}
+	if (flags & SORT_VALUES) {
+	    if (isEmpty) {
+		objPtr = Tcl_NewStringObj(cmdPtr->emptyValue, -1);
+	    } else {
+		objPtr = blt_table_get_obj(cmdPtr->table, rows[i], col);
+	    }
+	} else {
+	    objPtr = Tcl_NewLongObj(blt_table_row_index(rows[i]));
+	}
+	Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+    }
+    return listObjPtr;
+}
+
+
+static Tcl_Obj *
+PrintUniqueValues(Tcl_Interp *interp, Cmd *cmdPtr, long numRows, 
+		  BLT_TABLE_ROW *rows, BLT_TABLE_COLUMN col, unsigned int flags)
+{
+    BLT_TABLE_COMPARE_PROC *proc;
+    Tcl_Obj *listObjPtr, *objPtr;
+    long i;
+    
+    listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
+
+    /* Get the compare procedure for the column. We'll use that to sift out
+     * unique values. */
+    proc = blt_table_get_compare_proc(cmdPtr->table, col, flags);
+
+    /* Find the first non-empty value in the column.  */
+    for (i = 0; i < numRows; i++) {
+	if (blt_table_value_exists(cmdPtr->table, rows[i], col)) {
+	    break;
+	}
+    }
+    /* What if all the rows are empty? */
+    /* Is an empty row considered unique? */
+    if (i == numRows) {
+	return TCL_OK;
+    }
+    /* Append the row index or value onto the list. */
+    if (flags & SORT_VALUES) {
+	objPtr = blt_table_get_obj(cmdPtr->table, rows[i], col);
+    } else {
+	/* Convert the table offset back to a client index. */
+	objPtr = Tcl_NewLongObj(blt_table_row_index(rows[i]));
+    }
+    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+    for (i++; i < numRows; i++) {
+	if (((*proc)(cmdPtr->table, col, rows[i-1], rows[i])) == 0) {
+	    continue;
+	}
+	if (flags & SORT_VALUES) {
+	    objPtr = blt_table_get_obj(cmdPtr->table, rows[i], col);
+	} else {
+	    /* Convert the table offset back to a client index. */
+	    objPtr = Tcl_NewLongObj(blt_table_row_index(rows[i]));
+	}
+	if (objPtr != NULL) {
+	    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+	}
+    }
+    return listObjPtr;
+}
+
+static const char *
+GetTypeFromMode(int mode)
+{
+#ifdef WIN32
+   if (mode == -1) {
+       return "unknown";
+   } else if (mode & FILE_ATTRIBUTE_DIRECTORY) {
+	return "directory";
+   } else if (mode &  FILE_ATTRIBUTE_HIDDEN) {
+	return "hidden";
+   } else if (mode &  FILE_ATTRIBUTE_READONLY) {
+	return "readonly";
+   } else {
+       return "file";
+   }
+#else
+    if (S_ISREG(mode)) {
+	return "file";
+    } else if (S_ISDIR(mode)) {
+	return "directory";
+    } else if (S_ISCHR(mode)) {
+	return "characterSpecial";
+    } else if (S_ISBLK(mode)) {
+	return "blockSpecial";
+    } else if (S_ISFIFO(mode)) {
+	return "fifo";
+#ifdef S_ISLNK
+    } else if (S_ISLNK(mode)) {
+	return "link";
+#endif
+#ifdef S_ISSOCK
+    } else if (S_ISSOCK(mode)) {
+	return "socket";
+#endif
+    }
+    return "unknown";
+#endif
+}
+
+static void
+ExportToTable(Tcl_Interp *interp, BLT_TABLE table, const char *fileName, 
+	      Tcl_StatBuf *statPtr)
+{
+    BLT_TABLE_ROW row;
+    BLT_TABLE_COLUMN col;
+
+    row = blt_table_create_row(interp, table, NULL);
+    if (row == NULL) {
+	return;
+    }
+    /* name */
+    col = blt_table_get_column_by_label(table, "name");
+    if (col == NULL) {
+	col = blt_table_create_column(interp, table, "name");
+    }
+    blt_table_set_string(interp, table, row, col, fileName, -1);
+    /* type */
+    col = blt_table_get_column_by_label(table, "type");
+    if (col == NULL) {
+	col = blt_table_create_column(interp, table, "type");
+    }
+    blt_table_set_string(interp, table, row, col,
+                         GetTypeFromMode(statPtr->st_mode), -1);
+    /* size */ 
+    col = blt_table_get_column_by_label(table, "size");
+    if (col == NULL) {
+	col = blt_table_create_column(interp, table, "size");
+	blt_table_set_column_type(interp, table, col, TABLE_COLUMN_TYPE_LONG);
+    }
+    blt_table_set_long(interp, table, row, col, statPtr->st_size);
+
+    /* uid */
+    col = blt_table_get_column_by_label(table, "uid");
+    if (col == NULL) {
+	col = blt_table_create_column(interp, table, "uid"); 
+	blt_table_set_column_type(interp, table, col, TABLE_COLUMN_TYPE_LONG);
+   }
+    blt_table_set_long(interp, table, row, col, statPtr->st_uid);
+    /* gid */
+    col = blt_table_get_column_by_label(table, "gid");
+    if (col == NULL) {
+	col = blt_table_create_column(interp, table, "gid");
+	blt_table_set_column_type(interp, table, col, TABLE_COLUMN_TYPE_LONG);
+    }
+    blt_table_set_long(interp, table, row, col, statPtr->st_gid);
+    /* atime */
+    col = blt_table_get_column_by_label(table, "atime");
+    if (col == NULL) {
+	col = blt_table_create_column(interp, table, "atime");
+	blt_table_set_column_type(interp, table, col, TABLE_COLUMN_TYPE_LONG);
+    }
+    blt_table_set_long(interp, table, row, col, statPtr->st_atime);
+    /* mtime */
+    col = blt_table_get_column_by_label(table, "mtime");
+    if (col == NULL) {
+	col = blt_table_create_column(interp, table, "mtime");
+	blt_table_set_column_type(interp, table, col, TABLE_COLUMN_TYPE_LONG);
+    }
+    blt_table_set_long(interp, table, row, col, statPtr->st_mtime);
+    /* ctime */
+    col = blt_table_get_column_by_label(table, "ctime");
+    if (col == NULL) {
+	col = blt_table_create_column(interp, table, "ctime");
+	blt_table_set_column_type(interp, table, col, TABLE_COLUMN_TYPE_LONG);
+    }
+    blt_table_set_long(interp, table, row, col, statPtr->st_ctime);
+    /* perms */
+    col = blt_table_get_column_by_label(table, "mode");
+    if (col == NULL) {
+	col = blt_table_create_column(interp, table, "mode");
+	blt_table_set_column_type(interp, table, col, TABLE_COLUMN_TYPE_LONG);
+    }
+    blt_table_set_long(interp, table, row, col, statPtr->st_mode);
+    /* dev */
+    col = blt_table_get_column_by_label(table, "dev");
+    if (col == NULL) {
+	col = blt_table_create_column(interp, table, "dev");
+	blt_table_set_column_type(interp, table, col, TABLE_COLUMN_TYPE_LONG);
+    }
+    blt_table_set_long(interp, table, row, col, statPtr->st_dev);
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * AddOp --
+ *
+ *      Adds to rows from the source table onto the destination. If
+ *      the destination table doesn't already have a column, one is
+ *      automatically created.
+ * 
+ * Results:
+ *      A standard TCL result. If the tag or column index is invalid,
+ *      TCL_ERROR is returned and an error message is left in the interpreter
+ *      result.
+ *
+ * Example:
+ *
+ *      $dest add $src ?switches?
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+AddOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+{
+    Cmd *cmdPtr = clientData;
+    AddSwitches switches;
+    BLT_TABLE srcTable;
+    size_t oldLength, count;
+    int result;
+    BLT_TABLE_COLUMN srcCol;
+
+    /* Process switches following the column names. */
+    if (blt_table_open(interp, Tcl_GetString(objv[2]), &srcTable) != TCL_OK) {
+	return TCL_ERROR;
+    }
+    switches.flags = 0;
+    result = TCL_ERROR;
+    rowIterSwitch.clientData = srcTable;
+    columnIterSwitch.clientData = srcTable;
+    blt_table_iterate_all_rows(srcTable, &switches.ri);
+    blt_table_iterate_all_columns(srcTable, &switches.ci);
+    if (Blt_ParseSwitches(interp, addSwitches, objc - 3, objv + 3, 
+	&switches, BLT_SWITCH_DEFAULTS) < 0) {
+	goto error;
+    }
+    oldLength = blt_table_num_rows(cmdPtr->table);
+    count = switches.ri.numEntries;
+    if (blt_table_extend_rows(interp, cmdPtr->table, count, NULL) != TCL_OK) {
+	goto error;
+    }
+    for (srcCol = blt_table_first_tagged_column(&switches.ci); srcCol != NULL; 
+	 srcCol = blt_table_next_tagged_column(&switches.ci)) {
+	const char *label;
+	BLT_TABLE_COLUMN dstCol;
+	BLT_TABLE_ROW srcRow;
+	long i;
+
+	label = blt_table_column_label(srcCol);
+	dstCol = blt_table_get_column_by_label(cmdPtr->table, label);
+	if (dstCol == NULL) {
+	    /* If column doesn't exist in destination table, create a new
+	     * column, copying the label and the column type. */
+	    if (blt_table_extend_columns(interp, cmdPtr->table, 1, &dstCol) 
+		!= TCL_OK) {
+		goto error;
+	    }
+	    if (blt_table_set_column_label(interp, cmdPtr->table, dstCol, label)
+		!= TCL_OK) {
+		goto error;
+	    }
+	    if (blt_table_set_column_type(interp, cmdPtr->table, dstCol, 
+                blt_table_column_type(srcCol)) != TCL_OK) {
+                goto error;
+            }
+	}
+	i = oldLength;
+	for (srcRow = blt_table_first_tagged_row(&switches.ri); srcRow != NULL; 
+	     srcRow = blt_table_next_tagged_row(&switches.ri)) {
+	    BLT_TABLE_VALUE value;
+	    BLT_TABLE_ROW dstRow;
+
+	    value = blt_table_get_value(srcTable, srcRow, srcCol);
+	    if (value == NULL) {
+		continue;
+	    }
+	    dstRow = blt_table_row(cmdPtr->table, i);
+	    if (blt_table_set_value(cmdPtr->table, dstRow, dstCol, value) 
+		!= TCL_OK) {
+		goto error;
+	    }
+	    i++;
+	}
+	if ((switches.flags & COPY_NOTAGS) == 0) {
+	    CopyColumnTags(srcTable, cmdPtr->table, srcCol, dstCol);
+	}
+    }
+    result = TCL_OK;
+ error:
+    blt_table_close(srcTable);
+    Blt_FreeSwitches(addSwitches, &switches, 0);
+    return result;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * AppendOp --
+ *
+ *      Appends one or more values to the current value at the given
+ *      location. If the column or row doesn't already exist, it will
+ *      automatically be created.
+ * 
+ * Results:
+ *      A standard TCL result. If the tag or index is invalid, TCL_ERROR is
+ *      returned and an error message is left in the interpreter result.
+ *      
+ * Example:
+ *      $t append $row $column $value ?value...?
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+AppendOp(ClientData clientData, Tcl_Interp *interp, int objc,
+         Tcl_Obj *const *objv)
+{
+    Cmd *cmdPtr = clientData;
+    BLT_TABLE table;
+    BLT_TABLE_ITERATOR ri, ci;
+    BLT_TABLE_COLUMN col;
+    int i, extra;
+
+    table = cmdPtr->table;
+    if (IterateRows(interp, table, objv[2], &ri) != TCL_OK) {
+	return TCL_ERROR;
+    }
+    if (IterateColumns(interp, table, objv[3], &ci) != TCL_OK) {
+	return TCL_ERROR;
+    }
+    extra = 0;
+    for (i = 4; i < objc; i++) {
+	int length;
+
+	Tcl_GetStringFromObj(objv[i], &length);
+	extra += length;
+    }
+    if (extra == 0) {
+	return TCL_OK;
+    }
+    for (col = blt_table_first_tagged_column(&ci); col != NULL; 
+	 col = blt_table_next_tagged_column(&ci)) {
+	BLT_TABLE_ROW row;
+	
+	for (row = blt_table_first_tagged_row(&ri); row != NULL; 
+	     row = blt_table_next_tagged_row(&ri)) {
+	    int i;
+
+	    for (i = 4; i < objc; i++) {
+		const char *s;
+		int length;
+		
+		s = Tcl_GetStringFromObj(objv[i], &length);
+		if (blt_table_append_string(interp, table, row, col, s, length) 
+		    != TCL_OK) {
+		    return TCL_ERROR;
+		}
+	    }
+	}
+    }       
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * AttachOp --
+ *
+ *      $table attach newTable
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+AttachOp(ClientData clientData, Tcl_Interp *interp, int objc,
+         Tcl_Obj *const *objv)
+{
+    Cmd *cmdPtr = clientData;
+
+    if (objc == 3) {
+	const char *qualName;
+	Blt_ObjectName objName;
+	BLT_TABLE table;
+	Tcl_DString ds;
+	int result;
+
+	if (!Blt_ParseObjectName(interp, Tcl_GetString(objv[2]), &objName, 0)) {
+	    return TCL_ERROR;
+	}
+	qualName = Blt_MakeQualifiedName(&objName, &ds);
+	result = blt_table_open(interp, qualName, &table);
+	Tcl_DStringFree(&ds);
+	if (result != TCL_OK) {
+	    return TCL_ERROR;
+	}
+	if (cmdPtr->table != NULL) {
+	    Blt_HashEntry *hPtr;
+	    Blt_HashSearch iter;
+	    
+	    blt_table_close(cmdPtr->table);
+
+	    /* Free the extra bookkeeping that we're maintaining about the
+	     * current table (table traces and notifiers).  */
+	    for (hPtr = Blt_FirstHashEntry(&cmdPtr->traceTable, &iter); 
+		 hPtr != NULL; hPtr = Blt_NextHashEntry(&iter)) {
+		TraceInfo *tracePtr;
+
+		tracePtr = Blt_GetHashValue(hPtr);
+		blt_table_delete_trace(cmdPtr->table, tracePtr->trace);
+	    }
+	    Blt_DeleteHashTable(&cmdPtr->traceTable);
+	    Blt_InitHashTable(&cmdPtr->traceTable, TCL_STRING_KEYS);
+	    for (hPtr = Blt_FirstHashEntry(&cmdPtr->watchTable, &iter); 
+		hPtr != NULL; hPtr = Blt_NextHashEntry(&iter)) {
+		WatchInfo *watchPtr;
+
+		watchPtr = Blt_GetHashValue(hPtr);
+		FreeWatchInfo(watchPtr);
+	    }
+	    Blt_DeleteHashTable(&cmdPtr->watchTable);
+	    Blt_InitHashTable(&cmdPtr->watchTable, TCL_STRING_KEYS);
+	}
+	cmdPtr->table = table;
+    }
+    Tcl_SetStringObj(Tcl_GetObjResult(interp), 
+	blt_table_name(cmdPtr->table), -1);
+    return TCL_OK;
+}
 
 /*
  *---------------------------------------------------------------------------
@@ -2931,7 +3657,9 @@ ColumnMoveOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      labels.
  *      
  * Example:
- *      $t column names -duplicates ?pattern...?
+ *      $t column names 
+ *      $t column names pattern
+ *      $t column names pattern1 pattern2...
  *
  *---------------------------------------------------------------------------
  */
@@ -3523,6 +4251,8 @@ ColumnTagRangeOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      arguments can be given.  
  *
  * Example:
+ *      .t column tag names 
+ *      .t column tag names pattern
  *      .t column tag names pat1 pat2...
  *
  *---------------------------------------------------------------------------
@@ -4001,62 +4731,887 @@ ColumnOp(ClientData clientData, Tcl_Interp *interp, int objc,
     return result;
 }
 
-/************ Row Operations ***************/
-
-
+/*
+ *---------------------------------------------------------------------------
+ *
+ * CopyOp --
+ *
+ *      Copies the rows and columns from the source table given.  Any data 
+ *      in the table is first deleted.
+ *
+ *      datatable0 copy datatable1
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
 static int
-CopyRow(Tcl_Interp *interp, BLT_TABLE srcTable, BLT_TABLE destTable,
-    BLT_TABLE_ROW srcRow,               /* Row offset in the source table. */
-    BLT_TABLE_ROW destRow)              /* Row offset in the destination. */
+CopyOp(ClientData clientData, Tcl_Interp *interp, int objc,
+       Tcl_Obj *const *objv)
 {
-    long i;
+    Cmd *cmdPtr = clientData;
+    BLT_TABLE srcTable;
+    int result;
 
-    if ((blt_table_same_object(srcTable, destTable)) && 
-	(srcRow == destRow)) {
-	return TCL_OK;          /* Source and destination are the same. */
+    if (blt_table_open(interp, Tcl_GetString(objv[2]), &srcTable) != TCL_OK) {
+	return TCL_ERROR;
     }
-    if (blt_table_num_columns(srcTable) > blt_table_num_columns(destTable)) {
-	long needed;
+    result = CopyTable(interp, srcTable, cmdPtr->table);
+    blt_table_close(srcTable);
+    return result;
+}
 
-	needed = blt_table_num_columns(srcTable) - 
-	    blt_table_num_columns(destTable);
-	if (blt_table_extend_columns(interp, destTable, needed, NULL)!=TCL_OK) {
+/*
+ *---------------------------------------------------------------------------
+ *
+ * DirOp --
+ *
+ *      table dir $path ?switches?
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+DirOp(ClientData clientData, Tcl_Interp *interp, int objc,
+      Tcl_Obj *const *objv)
+{
+    Cmd *cmdPtr = clientData;
+    Tcl_Obj *listObjPtr;
+    int i, n;
+    Tcl_Obj **items;
+    DirSwitches switches;
+    const char *pattern;
+    Tcl_GlobTypeData globParams = {
+	0, TCL_GLOB_PERM_R, /* macType*/NULL, /*macCreator*/NULL
+    };
+
+    memset(&switches, 0, sizeof(switches));
+    if (Blt_ParseSwitches(interp, dirSwitches, objc - 3, objv + 3, &switches,
+	BLT_SWITCH_DEFAULTS) < 0) {
+	return TCL_ERROR;
+    }
+    globParams.type = switches.type;
+    globParams.perm = switches.perm;
+    listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
+    if (switches.pattern == NULL) {
+	pattern = "*";
+    } else {
+	pattern = switches.pattern;
+    }
+    if (Tcl_FSMatchInDirectory(interp, listObjPtr, objv[2], pattern, 
+	&globParams) != TCL_OK) {
+    }
+    if (Tcl_ListObjGetElements(interp, listObjPtr, &n, &items) != TCL_OK) {
+	return TCL_OK;
+    }
+    for (i = 0; i < n; i++) {
+	Tcl_StatBuf stat;
+	int length;
+	Tcl_Obj *objPtr, *tailPtr;
+	const char *label;
+
+	if (Tcl_FSConvertToPathType(interp, items[i]) != TCL_OK) {
 	    return TCL_ERROR;
 	}
-    }
-    for (i = 0; i < blt_table_num_columns(srcTable); i++) {
-	BLT_TABLE_COLUMN col;
-	BLT_TABLE_VALUE value;
-
-	col = blt_table_column(srcTable, i);
-	value = blt_table_get_value(srcTable, srcRow, col);
-	col = blt_table_column(destTable, i);
-	if (blt_table_set_value(destTable, destRow, col, value)!= TCL_OK) {
+	memset(&stat, 0, sizeof(Tcl_StatBuf));
+	if (Tcl_FSStat(items[i], &stat) < 0) {
+	    continue;
+	}
+	objPtr = Tcl_FSSplitPath(items[i], &length);
+	if (objPtr == NULL) {
 	    return TCL_ERROR;
+	}
+	Tcl_IncrRefCount(objPtr);
+	Tcl_ListObjIndex(NULL, objPtr, length-1, &tailPtr);
+	label = Tcl_GetString(tailPtr);
+	ExportToTable(interp, cmdPtr->table, label, &stat);
+	Tcl_DecrRefCount(objPtr);
+    }
+    Tcl_DecrRefCount(listObjPtr);
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * DumpOp --
+ *
+ * set data [$t dump -rows {} -columns {}]
+ * $t dump -file fileName -rows {} -columns {} 
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+DumpOp(ClientData clientData, Tcl_Interp *interp, int objc,
+       Tcl_Obj *const *objv)
+{
+    Cmd *cmdPtr = clientData;
+    BLT_TABLE table;
+    DumpSwitches switches;
+    int result;
+    Tcl_DString ds;
+    int closeChannel;
+    Tcl_Channel channel;
+
+    closeChannel = FALSE;
+    channel = NULL;
+    table = cmdPtr->table;
+    result = TCL_ERROR;
+    memset(&switches, 0, sizeof(switches));
+    switches.channel = channel;
+    switches.dsPtr = &ds;
+    rowIterSwitch.clientData = cmdPtr->table;
+    columnIterSwitch.clientData = cmdPtr->table;
+    blt_table_iterate_all_rows(table, &switches.ri);
+    blt_table_iterate_all_columns(table, &switches.ci);
+
+    if (Blt_ParseSwitches(interp, dumpSwitches, objc - 2, objv + 2, &switches, 
+	BLT_SWITCH_DEFAULTS) < 0) {
+	goto error;
+    }
+    if (switches.fileObjPtr != NULL) {
+	const char *fileName;
+
+	fileName = Tcl_GetString(switches.fileObjPtr);
+
+	closeChannel = TRUE;
+	if ((fileName[0] == '@') && (fileName[1] != '\0')) {
+	    int mode;
+	    
+	    channel = Tcl_GetChannel(interp, fileName+1, &mode);
+	    if (channel == NULL) {
+		goto error;
+	    }
+	    if ((mode & TCL_WRITABLE) == 0) {
+		Tcl_AppendResult(interp, "can't dump table: channel \"", 
+			fileName, "\" not opened for writing", (char *)NULL);
+		goto error;
+	    }
+	    closeChannel = FALSE;
+	} else {
+	    channel = Tcl_OpenFileChannel(interp, fileName, "w", 0666);
+	    if (channel == NULL) {
+		goto error;
+	    }
+	}
+	switches.channel = channel;
+    }
+    Tcl_DStringInit(&ds);
+    result = DumpTable(table, &switches);
+    if ((switches.channel == NULL) && (result == TCL_OK)) {
+	Tcl_DStringResult(interp, &ds);
+    }
+    Tcl_DStringFree(&ds);
+ error:
+    if (closeChannel) {
+	Tcl_Close(interp, channel);
+    }
+    Blt_FreeSwitches(dumpSwitches, &switches, 0);
+    return result;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * DupOp --
+ *
+ *      Duplicates the rows and columns from the source table given into
+ *      a new table.  
+ *
+ *      datatable0 dup ?table?
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+DuplicateOp(ClientData clientData, Tcl_Interp *interp, int objc,
+            Tcl_Obj *const *objv)
+{
+    Cmd *cmdPtr = clientData;
+    if (objc == 3) {
+	BLT_TABLE srcTable;
+	int result;
+
+	if (blt_table_open(interp, Tcl_GetString(objv[2]), &srcTable) 
+	    != TCL_OK) {
+	    return TCL_ERROR;
+	}
+	result = CopyTable(interp, srcTable, cmdPtr->table);
+	blt_table_close(srcTable);
+	return result;
+    } else {
+	Tcl_DString ds;
+	const char *instName;
+	BLT_TABLE destTable;
+
+	Tcl_DStringInit(&ds);
+	instName = GenerateName(interp, "", "", &ds);
+	if (instName == NULL) {
+	    goto error;
+	}
+	if (blt_table_create(interp, instName, &destTable) == TCL_OK) {
+	    int result;
+
+	    NewTableCmd(interp, destTable, instName);
+	    result = CopyTable(interp, cmdPtr->table, destTable);
+	    if (result != TCL_ERROR) {
+		Tcl_SetStringObj(Tcl_GetObjResult(interp), instName, -1);
+	    }
+	    Tcl_DStringFree(&ds);
+	    return result;
+	}
+    error:
+	Tcl_DStringFree(&ds);
+	return TCL_ERROR;
+    }
+    return TCL_ERROR;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * EmptyValueOp --
+ *
+ *      $t emptyvalue ?$value?
+ *
+ *      isempty($0) 
+ *---------------------------------------------------------------------------
+ */
+static int
+EmptyValueOp(ClientData clientData, Tcl_Interp *interp, int objc,
+             Tcl_Obj *const *objv)
+{
+    Cmd *cmdPtr = clientData;
+    Tcl_SetStringObj(Tcl_GetObjResult(interp), cmdPtr->emptyValue, -1);
+    if (objc == 3) {
+	if (cmdPtr->emptyValue != NULL) {
+	    Blt_Free(cmdPtr->emptyValue);
+	    cmdPtr->emptyValue = Blt_AssertStrdup(Tcl_GetString(objv[2]));
 	}
     }
     return TCL_OK;
-}           
+}
 
-static void
-CopyRowTags(BLT_TABLE srcTable, BLT_TABLE destTable,
-    BLT_TABLE_ROW srcRow,               /* Row in the source table. */
-    BLT_TABLE_ROW destRow)              /* Row in the destination table. */
+/*
+ *---------------------------------------------------------------------------
+ *
+ * ExistsOp --
+ *
+ *      $t exists $row $column
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+ExistsOp(ClientData clientData, Tcl_Interp *interp, int objc,
+         Tcl_Obj *const *objv)
 {
-    Blt_Chain chain;
-    Blt_ChainLink link;
+    Cmd *cmdPtr = clientData;
+    int bool;
+    BLT_TABLE_ROW row;
+    BLT_TABLE_COLUMN col;
 
-    /* Get all tags for this particular row in the source table. */
-    chain = blt_table_get_row_tags(srcTable, srcRow);
-    for (link = Blt_Chain_FirstLink(chain); link != NULL; 
-	 link = Blt_Chain_NextLink(link)) {
-	const char *tag;
-
-	tag = Blt_Chain_GetValue(link);
-	blt_table_set_row_tag(NULL, destTable, destRow, tag);
+    bool = FALSE;
+    row = blt_table_get_row(NULL, cmdPtr->table, objv[2]);
+    col = blt_table_get_column(NULL, cmdPtr->table, objv[3]);
+    if ((row != NULL) && (col != NULL)) {
+	bool = blt_table_value_exists(cmdPtr->table, row, col);
     }
-    Blt_Chain_Destroy(chain);
-}           
+    Tcl_SetBooleanObj(Tcl_GetObjResult(interp), bool);
+    return TCL_OK;
+}
+/*
+ *---------------------------------------------------------------------------
+ *
+ * ExportOp --
+ *
+ *      Parses the given command line and calls one of several export-specific
+ *      operations.
+ *      
+ * Results:
+ *      Returns a standard TCL result.  It is the result of operation called.
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+ExportOp(ClientData clientData, Tcl_Interp *interp, int objc,
+         Tcl_Obj *const *objv)
+{
+    Cmd *cmdPtr = clientData;
+    Blt_HashEntry *hPtr;
+    DataFormat *fmtPtr;
+    TableCmdInterpData *dataPtr;
+    const char *fmt;
+
+    dataPtr = GetTableCmdInterpData(interp);
+    if (objc == 2) {
+	Blt_HashSearch iter;
+
+	for (hPtr = Blt_FirstHashEntry(&dataPtr->fmtTable, &iter); 
+	     hPtr != NULL; hPtr = Blt_NextHashEntry(&iter)) {
+	    fmtPtr = Blt_GetHashValue(hPtr);
+	    if (fmtPtr->exportProc != NULL) {
+		Tcl_AppendElement(interp, fmtPtr->name);
+	    }
+	}
+	return TCL_OK;
+    }
+    fmt = Tcl_GetString(objv[2]);
+    hPtr = Blt_FindHashEntry(&dataPtr->fmtTable, fmt);
+    if (hPtr == NULL) {
+	LoadFormat(interp, fmt);
+	hPtr = Blt_FindHashEntry(&dataPtr->fmtTable, fmt);
+	if (hPtr == NULL) {
+	    Tcl_AppendResult(interp, "can't export \"", Tcl_GetString(objv[2]),
+			 "\": format not registered", (char *)NULL);
+	    return TCL_ERROR;
+	}
+    }
+    fmtPtr = Blt_GetHashValue(hPtr);
+    if ((fmtPtr->flags & FMT_LOADED) == 0) {
+	LoadFormat(interp, Tcl_GetString(objv[2]));
+    }
+    if (fmtPtr->exportProc == NULL) {
+	Tcl_AppendResult(interp, "no export procedure registered for \"", 
+			 fmtPtr->name, "\"", (char *)NULL);
+	return TCL_ERROR;
+    }
+    return (*fmtPtr->exportProc) (cmdPtr->table, interp, objc, objv);
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * FindOp --
+ *
+ *      Parses the given command line and calls one of several export-specific
+ *      operations.
+ *      
+ * Results:
+ *      Returns a standard TCL result.  It is the result of operation called.
+ *
+ * Example:
+ *      $t find expr ?switches?
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+FindOp(ClientData clientData, Tcl_Interp *interp, int objc,
+       Tcl_Obj *const *objv)
+{
+    Cmd *cmdPtr = clientData;
+    FindSwitches switches;
+    int result;
+
+    memset(&switches, 0, sizeof(switches));
+    rowIterSwitch.clientData = cmdPtr->table;
+    blt_table_iterate_all_rows(cmdPtr->table, &switches.iter);
+
+#ifdef notdef    
+    switches.emptyValueObjPtr = Tcl_NewStringObj(cmdPtr->emptyValue, -1);
+#endif
+    if (Blt_ParseSwitches(interp, findSwitches, objc - 3, objv + 3, 
+	&switches, BLT_SWITCH_DEFAULTS) < 0) {
+	return TCL_ERROR;
+    }
+    switches.table = cmdPtr->table;
+    Blt_InitHashTable(&switches.varTable, BLT_ONE_WORD_KEYS);
+    result = FindRows(interp, cmdPtr->table, objv[2], &switches);
+    Blt_FreeSwitches(findSwitches, &switches, 0);
+    return result;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * GetOp --
+ *
+ *      Retrieves the value from a given table for a designated row,column
+ *      location.
+ *
+ *      Normally it's an error if the column or row key is invalid or the data
+ *      slot is empty (the Tcl_Obj is NULL). But if an extra argument is
+ *      provided, then it is returned as a default value.
+ * 
+ * Results:
+ *      A standard TCL result. If the tag or index is invalid, TCL_ERROR is
+ *      returned and an error message is left in the interpreter result.
+ *      
+ * Example:
+ *      $t get row column ?defValue?
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+GetOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+{
+    Cmd *cmdPtr = clientData;
+    Tcl_Obj *objPtr;
+    BLT_TABLE_ROW row;
+    BLT_TABLE_COLUMN col;
+
+    row = blt_table_get_row(interp, cmdPtr->table, objv[2]);
+    if (row == NULL) {
+	if (objc == 5) {
+	    objPtr = objv[4];
+	    goto done;
+	}
+	return TCL_ERROR;
+    } 
+    col = blt_table_get_column(interp, cmdPtr->table, objv[3]);
+    if (col == NULL) {
+	if (objc == 5) {
+	    objPtr = objv[4];
+	    goto done;
+	}
+	return TCL_ERROR;
+    } 
+    objPtr = blt_table_get_obj(cmdPtr->table, row, col);
+    if (objPtr == NULL) {
+	if (objc == 5) {
+	    objPtr = objv[4];
+	} else {
+	    objPtr = Tcl_NewStringObj(cmdPtr->emptyValue, -1);
+	}
+    }
+ done:
+    Tcl_SetObjResult(interp, objPtr);
+    return TCL_OK;
+}
+
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * ImportOp --
+ *
+ *      Parses the given command line and calls one of several import-specific
+ *      operations.
+ *      
+ * Results:
+ *      Returns a standard TCL result.  It is the result of operation called.
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+ImportOp(ClientData clientData, Tcl_Interp *interp, int objc,
+         Tcl_Obj *const *objv)
+{
+    Cmd *cmdPtr = clientData;
+    Blt_HashEntry *hPtr;
+    DataFormat *fmtPtr;
+    TableCmdInterpData *dataPtr;
+    const char *fmt;
+
+    dataPtr = GetTableCmdInterpData(interp);
+    if (objc == 2) {
+	Blt_HashSearch iter;
+
+	for (hPtr = Blt_FirstHashEntry(&dataPtr->fmtTable, &iter); 
+	     hPtr != NULL; hPtr = Blt_NextHashEntry(&iter)) {
+	    fmtPtr = Blt_GetHashValue(hPtr);
+	    if (fmtPtr->importProc != NULL) {
+		Tcl_AppendElement(interp, fmtPtr->name);
+	    }
+	}
+	return TCL_OK;
+    }
+    fmt = Tcl_GetString(objv[2]);
+    hPtr = Blt_FindHashEntry(&dataPtr->fmtTable, fmt);
+    if (hPtr == NULL) {
+	LoadFormat(interp, fmt);
+	hPtr = Blt_FindHashEntry(&dataPtr->fmtTable, fmt);
+	if (hPtr == NULL) {
+	    Tcl_AppendResult(interp, "can't import \"", fmt,
+			     "\": format not registered", (char *)NULL);
+	    return TCL_ERROR;
+	}
+    }
+    fmtPtr = Blt_GetHashValue(hPtr);
+    if ((fmtPtr->flags & FMT_LOADED) == 0) {
+	LoadFormat(interp, Tcl_GetString(objv[2]));
+    }
+    if (fmtPtr->importProc == NULL) {
+	Tcl_AppendResult(interp, "no import procedure registered for \"", 
+		fmtPtr->name, "\"", (char *)NULL);
+	return TCL_ERROR;
+    }
+    return (*fmtPtr->importProc) (cmdPtr->table, interp, objc, objv);
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * KeysOp --
+ *
+ *      This procedure is invoked to process key operations.
+ *
+ * Results:
+ *      A standard TCL result.
+ *
+ * Side Effects:
+ *      See the user documentation.
+ *
+ * Example:
+ *      $t keys key key key key
+ *      $t keys 
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+KeysOp(ClientData clientData, Tcl_Interp *interp, int objc,
+       Tcl_Obj *const *objv)
+{
+    Cmd *cmdPtr = clientData;
+    BLT_TABLE_COLUMN *keys;
+    int numKeys;
+    BLT_TABLE table;
+    int i;
+
+    if (objc == 2) {
+	Tcl_Obj *listObjPtr;
+
+	numKeys = blt_table_get_keys(cmdPtr->table, &keys);
+	listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
+	for (i = 0; i < numKeys; i++) {
+	    BLT_TABLE_COLUMN col;
+	    Tcl_Obj *objPtr;
+	    
+	    col = keys[i];
+	    objPtr = Tcl_NewStringObj(blt_table_column_label(col), -1);
+	    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+	}
+	Tcl_SetObjResult(interp, listObjPtr);
+	return TCL_OK;
+    }
+    table = cmdPtr->table;
+    keys = Blt_AssertMalloc(sizeof(BLT_TABLE_COLUMN) * (objc - 2));
+    for (numKeys = 0, i = 2; i < objc; i++, numKeys++) {
+	BLT_TABLE_COLUMN col;
+
+	col = blt_table_get_column(interp, table, objv[i]);
+	if (col == NULL) {
+	    Blt_Free(keys);
+	    return TCL_ERROR;
+	}
+	keys[numKeys] = col;
+    }
+    blt_table_set_keys(table, numKeys, keys, 0);
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * LappendOp --
+ *
+ *
+ *      Appends one or more elements to the list at the given row, column
+ *      location. If the column or row doesn't already exist, it will
+ *      automatically be created.
+ * 
+ * Results:
+ *      A standard TCL result. If the tag or index is invalid, TCL_ERROR is
+ *      returned and an error message is left in the interpreter result.
+ *      
+ * Example:
+ *      $t append $row $column $value ?value...?
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+LappendOp(ClientData clientData, Tcl_Interp *interp, int objc,
+          Tcl_Obj *const *objv)
+{
+    Cmd *cmdPtr = clientData;
+    BLT_TABLE table;
+    BLT_TABLE_ITERATOR ri, ci;
+    BLT_TABLE_COLUMN col;
+
+    table = cmdPtr->table;
+    if (IterateRows(interp, table, objv[2], &ri) != TCL_OK) {
+	return TCL_ERROR;
+    }
+    if (IterateColumns(interp, table, objv[3], &ci) != TCL_OK) {
+	return TCL_ERROR;
+    }
+    for (col = blt_table_first_tagged_column(&ci); col != NULL; 
+	 col = blt_table_next_tagged_column(&ci)) {
+	BLT_TABLE_ROW row;
+	
+	for (row = blt_table_first_tagged_row(&ri); row != NULL; 
+	     row = blt_table_next_tagged_row(&ri)) {
+	    Tcl_Obj *listObjPtr;
+	    int i, result;
+
+	    listObjPtr = blt_table_get_obj(table, row, col);
+	    if (listObjPtr == NULL) {
+		listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
+	    }
+	    Tcl_IncrRefCount(listObjPtr);
+	    for (i = 4; i < objc; i++) {
+		Tcl_ListObjAppendElement(interp, listObjPtr, objv[i]);
+	    }
+	    result = blt_table_set_obj(interp, table, row, col, listObjPtr);
+	    Tcl_DecrRefCount(listObjPtr);
+	    if (result != TCL_OK) {
+		return TCL_ERROR;
+	    }
+	}
+    }       
+    return TCL_OK;
+}
+
+static int
+LookupOp(ClientData clientData, Tcl_Interp *interp, int objc,
+         Tcl_Obj *const *objv)
+{
+    Cmd *cmdPtr = clientData;
+    int numKeys;
+    BLT_TABLE_COLUMN *keys;
+    BLT_TABLE_ROW row;
+    BLT_TABLE table;
+    long i;
+
+    numKeys = blt_table_get_keys(cmdPtr->table, &keys);
+    if ((objc - 2) != numKeys) {
+	Tcl_AppendResult(interp, "wrong # of keys: should be \"", (char *)NULL);
+	for (i = 0; i < numKeys; i++) {
+	    Tcl_AppendResult(interp, blt_table_column_label(keys[i]), " ", 
+			     (char *)NULL);
+	}
+	Tcl_AppendResult(interp, "\"", (char *)NULL);
+	return TCL_ERROR;
+    }
+    table = cmdPtr->table;
+    if (blt_table_key_lookup(interp, table, objc-2, objv+2, &row) != TCL_OK) {
+	return TCL_ERROR;
+    }
+    i = (row == NULL) ? -1 : blt_table_row_index(row);
+    Tcl_SetLongObj(Tcl_GetObjResult(interp), i);
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * MinMaxOp --
+ *  
+ *      $t min $column
+ *      $t max $column 
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+MinMaxOp(ClientData clientData, Tcl_Interp *interp, int objc,
+         Tcl_Obj *const *objv)
+{
+    Cmd *cmdPtr = clientData;
+    BLT_TABLE table;
+    Tcl_Obj *listObjPtr;
+    const char *string;
+    char c;
+    int length;
+    int flags;
+
+#define GET_MIN         (1<<0)
+#define GET_MAX         (1<<1)
+    string = Tcl_GetStringFromObj(objv[1], &length);
+    c = string[0];
+    flags = 0;                          /* Suppress compiler warning. */
+    if ((c == 'l') && (strncmp(string, "limits", length) == 0)) {
+	flags = (GET_MIN | GET_MAX);
+    } else if ((c == 'm') && (strncmp(string, "min", length) == 0)) {
+	flags = GET_MIN;
+    } else if ((c == 'm') && (strncmp(string, "max", length) == 0)) {
+	flags = GET_MAX;
+    }
+    table = cmdPtr->table;
+    listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
+    if (objc == 2) {
+	BLT_TABLE_COLUMN col;
+
+	for (col = blt_table_first_column(table); col != NULL;
+	     col = blt_table_next_column(table, col)) {
+	    Tcl_Obj *minObjPtr, *maxObjPtr;
+
+	    if (blt_table_get_column_limits(interp, table, col, &minObjPtr, 
+					  &maxObjPtr) != TCL_OK) {
+		return TCL_ERROR;
+	    }
+	    if (flags & GET_MIN) {
+		Tcl_ListObjAppendElement(interp, listObjPtr, minObjPtr);
+	    } 
+	    if (flags & GET_MAX) {
+		Tcl_ListObjAppendElement(interp, listObjPtr, maxObjPtr);
+	    }
+	}
+    } else {
+	BLT_TABLE_ITERATOR ci;
+	BLT_TABLE_COLUMN col;
+
+	if (blt_table_iterate_columns(interp, table, objv[2], &ci) != TCL_OK) {
+	    return TCL_ERROR;
+	}
+	for (col = blt_table_first_tagged_column(&ci); col != NULL; 
+	     col = blt_table_next_tagged_column(&ci)) {
+	    Tcl_Obj *minObjPtr, *maxObjPtr;
+
+	    if (blt_table_get_column_limits(interp, table, col, &minObjPtr, 
+			&maxObjPtr) != TCL_OK) {
+		return TCL_ERROR;
+	    }
+	    if (flags & GET_MIN) {
+		Tcl_ListObjAppendElement(interp, listObjPtr, minObjPtr);
+	    } 
+	    if (flags & GET_MAX) {
+		Tcl_ListObjAppendElement(interp, listObjPtr, maxObjPtr);
+	    }
+	}
+    }
+    Tcl_SetObjResult(interp, listObjPtr);
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * NumColumnsOp --
+ *  
+ *      $t numcolumns 
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+NumColumnsOp(ClientData clientData, Tcl_Interp *interp, int objc,
+             Tcl_Obj *const *objv)
+{
+    Cmd *cmdPtr = clientData;
+    BLT_TABLE table;
+
+    table = cmdPtr->table;
+    if (objc == 3) {
+	long count;
+
+	if (Blt_GetLongFromObj(interp, objv[2], &count) != TCL_OK) {
+	    return TCL_ERROR;
+	}
+	if (count < 0) {
+	    Tcl_AppendResult(interp, "bad count \"", Blt_Itoa(count), 
+		"\": # columns can't be negative.", (char *)NULL);
+	    return TCL_ERROR;
+	}
+	if (count < blt_table_num_columns(table)) {
+	    BLT_TABLE_COLUMN col, next;
+
+	    for (col = blt_table_first_column(table); col != NULL; col = next) {
+		next = blt_table_next_column(table, col);
+		if (blt_table_column_index(col) >= count) {
+		    blt_table_delete_column(table, col);
+		}
+	    }
+	} else if (count > blt_table_num_columns(table)) {
+	    long extra;
+
+	    extra = count - blt_table_num_columns(table);
+	    blt_table_extend_columns(interp, table, extra, NULL);
+	}
+    }
+    Tcl_SetObjResult(interp, Tcl_NewLongObj(blt_table_num_columns(table)));
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * NumRowsOp --
+ *  
+ *      $t numrows
+ *      $t numcolumns 
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+NumRowsOp(ClientData clientData, Tcl_Interp *interp, int objc,
+          Tcl_Obj *const *objv)
+{
+    Cmd *cmdPtr = clientData;
+    BLT_TABLE table;
+
+    table = cmdPtr->table;
+    if (objc == 3) {
+	long count;
+
+	if (Blt_GetLongFromObj(interp, objv[2], &count) != TCL_OK) {
+	    return TCL_ERROR;
+	}
+	if (count < 0) {
+	    Tcl_AppendResult(interp, "bad count \"", Blt_Itoa(count), 
+		"\": # columns can't be negative.", (char *)NULL);
+	    return TCL_ERROR;
+	}
+	if (count < blt_table_num_rows(table)) {
+	    BLT_TABLE_ROW row, next;
+
+	    for (row = blt_table_first_row(table); row != NULL; row = next) {
+		next = blt_table_next_row(table, row);
+		if (blt_table_row_index(row) >= count) {
+		    blt_table_delete_row(table, row);
+		}
+	    }
+	} else if (count > blt_table_num_rows(table)) {
+	    long extra;
+
+	    extra = count - blt_table_num_rows(table);
+	    blt_table_extend_rows(interp, table, extra, NULL);
+	}
+    }
+    Tcl_SetObjResult(interp, Tcl_NewLongObj(blt_table_num_rows(table)));
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * RestoreOp --
+ *
+ * $t restore $string -overwrite -notags
+ * $t restorefile $fileName -overwrite -notags
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+RestoreOp(ClientData clientData, Tcl_Interp *interp, int objc,
+          Tcl_Obj *const *objv)
+{
+    Cmd *cmdPtr = clientData;
+    RestoreSwitches switches;
+    int result;
+
+    memset((char *)&switches, 0, sizeof(switches));
+    if (Blt_ParseSwitches(interp, restoreSwitches, objc - 2, objv + 2, 
+		&switches, BLT_SWITCH_DEFAULTS) < 0) {
+	return TCL_ERROR;
+    }
+    result = TCL_ERROR;
+    if ((switches.dataObjPtr != NULL) && (switches.fileObjPtr != NULL)) {
+	Tcl_AppendResult(interp, "can't set both -file and -data switches.",
+			 (char *)NULL);
+	goto error;
+    }
+    if (switches.dataObjPtr != NULL) {
+	result = blt_table_restore(interp, cmdPtr->table, 
+		Tcl_GetString(switches.dataObjPtr), switches.flags);
+    } else if (switches.fileObjPtr != NULL) {
+	result = blt_table_file_restore(interp, cmdPtr->table, 
+		Tcl_GetString(switches.fileObjPtr), switches.flags);
+    } else {
+	Tcl_AppendResult(interp, "must set either -file and -data switch.",
+			 (char *)NULL);
+    }
+ error:
+    Blt_FreeSwitches(restoreSwitches, &switches, 0);
+    return result;
+}
 
 /*
  *---------------------------------------------------------------------------
@@ -4067,8 +5622,9 @@ CopyRowTags(BLT_TABLE srcTable, BLT_TABLE destTable,
  *      selected as the source.
  * 
  * Results:
- *      A standard TCL result. If the tag or row index is invalid, TCL_ERROR
- *      is returned and an error message is left in the interpreter result.
+ *      A standard TCL result. If the tag or row index is invalid,
+ *      TCL_ERROR is returned and an error message is left in the
+ *      interpreter result.
  *
  * Example:
  *      $dest row copy $srcrow $destrow ?-table srcTable?
@@ -4126,13 +5682,14 @@ RowCopyOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * RowCreateOp --
  *
- *      Creates a single new row into the table.  The location of the new row
- *      may be specified by -before or -after switches.  By default the new
- *      row is added to to the end of the table.
+ *      Creates a single new row into the table.  The location of the new
+ *      row may be specified by -before or -after switches.  By default the
+ *      new row is added to to the end of the table.
  * 
  * Results:
- *      A standard TCL result. If the tag or row index is invalid, TCL_ERROR
- *      is returned and an error message is left in the interpreter result.
+ *      A standard TCL result. If the tag or row index is invalid,
+ *      TCL_ERROR is returned and an error message is left in the
+ *      interpreter result.
  *
  * Example:
  *      $t row create -before 0 -after 1 -label label
@@ -4904,7 +6461,6 @@ RowLabelOp(ClientData clientData, Tcl_Interp *interp, int objc,
     return TCL_OK;
 }
 
-
 /*
  *---------------------------------------------------------------------------
  *
@@ -4965,7 +6521,6 @@ RowLabelsOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     return TCL_OK;
 }
-
 
 /*
  *---------------------------------------------------------------------------
@@ -5035,7 +6590,9 @@ RowMoveOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      labels.
  *      
  * Example:
- *      $t row names pattern...
+ *      $t row names 
+ *      $t row names pattern
+ *      $t row names pattern1 pattern2...
  *
  *---------------------------------------------------------------------------
  */
@@ -5624,6 +7181,8 @@ RowTagRangeOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      Returns tag names for a given row.  If one of more pattern arguments
  *      are provided, then only those matching tags are returned.
  *
+ *      .t row tag names 
+ *      .t row tag names pattern
  *      .t row tag names pat1 pat2...
  *
  *---------------------------------------------------------------------------
@@ -6010,1208 +7569,61 @@ RowOp(ClientData clientData, Tcl_Interp *interp, int objc,
 /*
  *---------------------------------------------------------------------------
  *
- * AddOp --
+ * SetOp --
  *
- *      Adds to rows from the source table onto the destination. If
- *      the destination table doesn't already have a column, one is
- *      automatically created.
- * 
- * Results:
- *      A standard TCL result. If the tag or column index is invalid,
- *      TCL_ERROR is returned and an error message is left in the interpreter
- *      result.
- *
- * Example:
- *
- *      $dest add $src ?switches?
- *
- *---------------------------------------------------------------------------
- */
-static int
-AddOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
-{
-    Cmd *cmdPtr = clientData;
-    AddSwitches switches;
-    BLT_TABLE srcTable;
-    size_t oldLength, count;
-    int result;
-    BLT_TABLE_COLUMN srcCol;
-
-    /* Process switches following the column names. */
-    if (blt_table_open(interp, Tcl_GetString(objv[2]), &srcTable) != TCL_OK) {
-	return TCL_ERROR;
-    }
-    switches.flags = 0;
-    result = TCL_ERROR;
-    rowIterSwitch.clientData = srcTable;
-    columnIterSwitch.clientData = srcTable;
-    blt_table_iterate_all_rows(srcTable, &switches.ri);
-    blt_table_iterate_all_columns(srcTable, &switches.ci);
-    if (Blt_ParseSwitches(interp, addSwitches, objc - 3, objv + 3, 
-	&switches, BLT_SWITCH_DEFAULTS) < 0) {
-	goto error;
-    }
-    oldLength = blt_table_num_rows(cmdPtr->table);
-    count = switches.ri.numEntries;
-    if (blt_table_extend_rows(interp, cmdPtr->table, count, NULL) != TCL_OK) {
-	goto error;
-    }
-    for (srcCol = blt_table_first_tagged_column(&switches.ci); srcCol != NULL; 
-	 srcCol = blt_table_next_tagged_column(&switches.ci)) {
-	const char *label;
-	BLT_TABLE_COLUMN dstCol;
-	BLT_TABLE_ROW srcRow;
-	long i;
-
-	label = blt_table_column_label(srcCol);
-	dstCol = blt_table_get_column_by_label(cmdPtr->table, label);
-	if (dstCol == NULL) {
-	    /* If column doesn't exist in destination table, create a new
-	     * column, copying the label and the column type. */
-	    if (blt_table_extend_columns(interp, cmdPtr->table, 1, &dstCol) 
-		!= TCL_OK) {
-		goto error;
-	    }
-	    if (blt_table_set_column_label(interp, cmdPtr->table, dstCol, label)
-		!= TCL_OK) {
-		goto error;
-	    }
-	    if (blt_table_set_column_type(interp, cmdPtr->table, dstCol, 
-                blt_table_column_type(srcCol)) != TCL_OK) {
-                goto error;
-            }
-	}
-	i = oldLength;
-	for (srcRow = blt_table_first_tagged_row(&switches.ri); srcRow != NULL; 
-	     srcRow = blt_table_next_tagged_row(&switches.ri)) {
-	    BLT_TABLE_VALUE value;
-	    BLT_TABLE_ROW dstRow;
-
-	    value = blt_table_get_value(srcTable, srcRow, srcCol);
-	    if (value == NULL) {
-		continue;
-	    }
-	    dstRow = blt_table_row(cmdPtr->table, i);
-	    if (blt_table_set_value(cmdPtr->table, dstRow, dstCol, value) 
-		!= TCL_OK) {
-		goto error;
-	    }
-	    i++;
-	}
-	if ((switches.flags & COPY_NOTAGS) == 0) {
-	    CopyColumnTags(srcTable, cmdPtr->table, srcCol, dstCol);
-	}
-    }
-    result = TCL_OK;
- error:
-    blt_table_close(srcTable);
-    Blt_FreeSwitches(addSwitches, &switches, 0);
-    return result;
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * AppendOp --
- *
- *      Appends one or more values to the current value at the given
- *      location. If the column or row doesn't already exist, it will
- *      automatically be created.
+ *      Sets one or more key-value pairs for tables.  One or more tables may
+ *      be set.  If any of the columns (keys) given don't already exist, the
+ *      columns will be automatically created.  The same holds true for rows.
+ *      If a row index is beyond the end of the table (tags are always in
+ *      range), new rows are allocated.
  * 
  * Results:
  *      A standard TCL result. If the tag or index is invalid, TCL_ERROR is
  *      returned and an error message is left in the interpreter result.
  *      
  * Example:
- *      $t append $row $column $value ?value...?
+ *      $t set $row $column $value ?row column value?...
  *
  *---------------------------------------------------------------------------
  */
 static int
-AppendOp(ClientData clientData, Tcl_Interp *interp, int objc,
-         Tcl_Obj *const *objv)
+SetOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 {
     Cmd *cmdPtr = clientData;
     BLT_TABLE table;
-    BLT_TABLE_ITERATOR ri, ci;
-    BLT_TABLE_COLUMN col;
-    int i, extra;
+    int i;
 
+    if (((objc - 2) % 3) != 0) {
+	Tcl_AppendResult(interp, "wrong # args: should be \"", 
+		Tcl_GetString(objv[0]), 
+		" set ?row column value?...\"", (char *)NULL);
+	return TCL_ERROR;
+    }
     table = cmdPtr->table;
-    if (IterateRows(interp, table, objv[2], &ri) != TCL_OK) {
-	return TCL_ERROR;
-    }
-    if (IterateColumns(interp, table, objv[3], &ci) != TCL_OK) {
-	return TCL_ERROR;
-    }
-    extra = 0;
-    for (i = 4; i < objc; i++) {
-	int length;
+    for (i = 2; i < objc; i += 3) {
+	BLT_TABLE_ITERATOR ri, ci;
+	BLT_TABLE_COLUMN col;
 
-	Tcl_GetStringFromObj(objv[i], &length);
-	extra += length;
-    }
-    if (extra == 0) {
-	return TCL_OK;
-    }
-    for (col = blt_table_first_tagged_column(&ci); col != NULL; 
-	 col = blt_table_next_tagged_column(&ci)) {
-	BLT_TABLE_ROW row;
-	
-	for (row = blt_table_first_tagged_row(&ri); row != NULL; 
-	     row = blt_table_next_tagged_row(&ri)) {
-	    int i;
+	if (IterateRows(interp, table, objv[i], &ri) != TCL_OK) {
+	    return TCL_ERROR;
+	}
+	if (IterateColumns(interp, table, objv[i + 1], &ci) != TCL_OK) {
+	    return TCL_ERROR;
+	}
+	for (col = blt_table_first_tagged_column(&ci); col != NULL; 
+	     col = blt_table_next_tagged_column(&ci)) {
+	    BLT_TABLE_ROW row;
 
-	    for (i = 4; i < objc; i++) {
-		const char *s;
-		int length;
-		
-		s = Tcl_GetStringFromObj(objv[i], &length);
-		if (blt_table_append_string(interp, table, row, col, s, length) 
-		    != TCL_OK) {
+	    for (row = blt_table_first_tagged_row(&ri); row != NULL; 
+		 row = blt_table_next_tagged_row(&ri)) {
+		if (blt_table_set_obj(interp, table, row, col, objv[i + 2])
+                    != TCL_OK) {
 		    return TCL_ERROR;
 		}
 	    }
-	}
-    }       
-    return TCL_OK;
-}
-
-
-static const char *
-GetTypeFromMode(int mode)
-{
-#ifdef WIN32
-   if (mode == -1) {
-       return "unknown";
-   } else if (mode & FILE_ATTRIBUTE_DIRECTORY) {
-	return "directory";
-   } else if (mode &  FILE_ATTRIBUTE_HIDDEN) {
-	return "hidden";
-   } else if (mode &  FILE_ATTRIBUTE_READONLY) {
-	return "readonly";
-   } else {
-       return "file";
-   }
-#else
-    if (S_ISREG(mode)) {
-	return "file";
-    } else if (S_ISDIR(mode)) {
-	return "directory";
-    } else if (S_ISCHR(mode)) {
-	return "characterSpecial";
-    } else if (S_ISBLK(mode)) {
-	return "blockSpecial";
-    } else if (S_ISFIFO(mode)) {
-	return "fifo";
-#ifdef S_ISLNK
-    } else if (S_ISLNK(mode)) {
-	return "link";
-#endif
-#ifdef S_ISSOCK
-    } else if (S_ISSOCK(mode)) {
-	return "socket";
-#endif
-    }
-    return "unknown";
-#endif
-}
-
-static void
-ExportToTable(Tcl_Interp *interp, BLT_TABLE table, const char *fileName, 
-	      Tcl_StatBuf *statPtr)
-{
-    BLT_TABLE_ROW row;
-    BLT_TABLE_COLUMN col;
-
-    row = blt_table_create_row(interp, table, NULL);
-    if (row == NULL) {
-	return;
-    }
-    /* name */
-    col = blt_table_get_column_by_label(table, "name");
-    if (col == NULL) {
-	col = blt_table_create_column(interp, table, "name");
-    }
-    blt_table_set_string(interp, table, row, col, fileName, -1);
-    /* type */
-    col = blt_table_get_column_by_label(table, "type");
-    if (col == NULL) {
-	col = blt_table_create_column(interp, table, "type");
-    }
-    blt_table_set_string(interp, table, row, col,
-                         GetTypeFromMode(statPtr->st_mode), -1);
-    /* size */ 
-    col = blt_table_get_column_by_label(table, "size");
-    if (col == NULL) {
-	col = blt_table_create_column(interp, table, "size");
-	blt_table_set_column_type(interp, table, col, TABLE_COLUMN_TYPE_LONG);
-    }
-    blt_table_set_long(interp, table, row, col, statPtr->st_size);
-
-    /* uid */
-    col = blt_table_get_column_by_label(table, "uid");
-    if (col == NULL) {
-	col = blt_table_create_column(interp, table, "uid"); 
-	blt_table_set_column_type(interp, table, col, TABLE_COLUMN_TYPE_LONG);
-   }
-    blt_table_set_long(interp, table, row, col, statPtr->st_uid);
-    /* gid */
-    col = blt_table_get_column_by_label(table, "gid");
-    if (col == NULL) {
-	col = blt_table_create_column(interp, table, "gid");
-	blt_table_set_column_type(interp, table, col, TABLE_COLUMN_TYPE_LONG);
-    }
-    blt_table_set_long(interp, table, row, col, statPtr->st_gid);
-    /* atime */
-    col = blt_table_get_column_by_label(table, "atime");
-    if (col == NULL) {
-	col = blt_table_create_column(interp, table, "atime");
-	blt_table_set_column_type(interp, table, col, TABLE_COLUMN_TYPE_LONG);
-    }
-    blt_table_set_long(interp, table, row, col, statPtr->st_atime);
-    /* mtime */
-    col = blt_table_get_column_by_label(table, "mtime");
-    if (col == NULL) {
-	col = blt_table_create_column(interp, table, "mtime");
-	blt_table_set_column_type(interp, table, col, TABLE_COLUMN_TYPE_LONG);
-    }
-    blt_table_set_long(interp, table, row, col, statPtr->st_mtime);
-    /* ctime */
-    col = blt_table_get_column_by_label(table, "ctime");
-    if (col == NULL) {
-	col = blt_table_create_column(interp, table, "ctime");
-	blt_table_set_column_type(interp, table, col, TABLE_COLUMN_TYPE_LONG);
-    }
-    blt_table_set_long(interp, table, row, col, statPtr->st_ctime);
-    /* perms */
-    col = blt_table_get_column_by_label(table, "mode");
-    if (col == NULL) {
-	col = blt_table_create_column(interp, table, "mode");
-	blt_table_set_column_type(interp, table, col, TABLE_COLUMN_TYPE_LONG);
-    }
-    blt_table_set_long(interp, table, row, col, statPtr->st_mode);
-    /* dev */
-    col = blt_table_get_column_by_label(table, "dev");
-    if (col == NULL) {
-	col = blt_table_create_column(interp, table, "dev");
-	blt_table_set_column_type(interp, table, col, TABLE_COLUMN_TYPE_LONG);
-    }
-    blt_table_set_long(interp, table, row, col, statPtr->st_dev);
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * DirOp --
- *
- *      table dir $path ?switches?
- *
- *---------------------------------------------------------------------------
- */
-/*ARGSUSED*/
-static int
-DirOp(ClientData clientData, Tcl_Interp *interp, int objc,
-      Tcl_Obj *const *objv)
-{
-    Cmd *cmdPtr = clientData;
-    Tcl_Obj *listObjPtr;
-    int i, n;
-    Tcl_Obj **items;
-    DirSwitches switches;
-    const char *pattern;
-    Tcl_GlobTypeData globParams = {
-	0, TCL_GLOB_PERM_R, /* macType*/NULL, /*macCreator*/NULL
-    };
-
-    memset(&switches, 0, sizeof(switches));
-    if (Blt_ParseSwitches(interp, dirSwitches, objc - 3, objv + 3, &switches,
-	BLT_SWITCH_DEFAULTS) < 0) {
-	return TCL_ERROR;
-    }
-    globParams.type = switches.type;
-    globParams.perm = switches.perm;
-    listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
-    if (switches.pattern == NULL) {
-	pattern = "*";
-    } else {
-	pattern = switches.pattern;
-    }
-    if (Tcl_FSMatchInDirectory(interp, listObjPtr, objv[2], pattern, 
-	&globParams) != TCL_OK) {
-    }
-    if (Tcl_ListObjGetElements(interp, listObjPtr, &n, &items) != TCL_OK) {
-	return TCL_OK;
-    }
-    for (i = 0; i < n; i++) {
-	Tcl_StatBuf stat;
-	int length;
-	Tcl_Obj *objPtr, *tailPtr;
-	const char *label;
-
-	if (Tcl_FSConvertToPathType(interp, items[i]) != TCL_OK) {
-	    return TCL_ERROR;
-	}
-	memset(&stat, 0, sizeof(Tcl_StatBuf));
-	if (Tcl_FSStat(items[i], &stat) < 0) {
-	    continue;
-	}
-	objPtr = Tcl_FSSplitPath(items[i], &length);
-	if (objPtr == NULL) {
-	    return TCL_ERROR;
-	}
-	Tcl_IncrRefCount(objPtr);
-	Tcl_ListObjIndex(NULL, objPtr, length-1, &tailPtr);
-	label = Tcl_GetString(tailPtr);
-	ExportToTable(interp, cmdPtr->table, label, &stat);
-	Tcl_DecrRefCount(objPtr);
-    }
-    Tcl_DecrRefCount(listObjPtr);
-    return TCL_OK;
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * ExportOp --
- *
- *      Parses the given command line and calls one of several export-specific
- *      operations.
- *      
- * Results:
- *      Returns a standard TCL result.  It is the result of operation called.
- *
- *---------------------------------------------------------------------------
- */
-static int
-ExportOp(ClientData clientData, Tcl_Interp *interp, int objc,
-         Tcl_Obj *const *objv)
-{
-    Cmd *cmdPtr = clientData;
-    Blt_HashEntry *hPtr;
-    DataFormat *fmtPtr;
-    TableCmdInterpData *dataPtr;
-    const char *fmt;
-
-    dataPtr = GetTableCmdInterpData(interp);
-    if (objc == 2) {
-	Blt_HashSearch iter;
-
-	for (hPtr = Blt_FirstHashEntry(&dataPtr->fmtTable, &iter); 
-	     hPtr != NULL; hPtr = Blt_NextHashEntry(&iter)) {
-	    fmtPtr = Blt_GetHashValue(hPtr);
-	    if (fmtPtr->exportProc != NULL) {
-		Tcl_AppendElement(interp, fmtPtr->name);
-	    }
-	}
-	return TCL_OK;
-    }
-    fmt = Tcl_GetString(objv[2]);
-    hPtr = Blt_FindHashEntry(&dataPtr->fmtTable, fmt);
-    if (hPtr == NULL) {
-	LoadFormat(interp, fmt);
-	hPtr = Blt_FindHashEntry(&dataPtr->fmtTable, fmt);
-	if (hPtr == NULL) {
-	    Tcl_AppendResult(interp, "can't export \"", Tcl_GetString(objv[2]),
-			 "\": format not registered", (char *)NULL);
-	    return TCL_ERROR;
-	}
-    }
-    fmtPtr = Blt_GetHashValue(hPtr);
-    if ((fmtPtr->flags & FMT_LOADED) == 0) {
-	LoadFormat(interp, Tcl_GetString(objv[2]));
-    }
-    if (fmtPtr->exportProc == NULL) {
-	Tcl_AppendResult(interp, "no export procedure registered for \"", 
-			 fmtPtr->name, "\"", (char *)NULL);
-	return TCL_ERROR;
-    }
-    return (*fmtPtr->exportProc) (cmdPtr->table, interp, objc, objv);
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * KeysOp --
- *
- *      This procedure is invoked to process key operations.
- *
- * Results:
- *      A standard TCL result.
- *
- * Side Effects:
- *      See the user documentation.
- *
- * Example:
- *      $t keys key key key key
- *      $t keys 
- *
- *---------------------------------------------------------------------------
- */
-static int
-KeysOp(ClientData clientData, Tcl_Interp *interp, int objc,
-       Tcl_Obj *const *objv)
-{
-    Cmd *cmdPtr = clientData;
-    BLT_TABLE_COLUMN *keys;
-    int numKeys;
-    BLT_TABLE table;
-    int i;
-
-    if (objc == 2) {
-	Tcl_Obj *listObjPtr;
-
-	numKeys = blt_table_get_keys(cmdPtr->table, &keys);
-	listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
-	for (i = 0; i < numKeys; i++) {
-	    BLT_TABLE_COLUMN col;
-	    Tcl_Obj *objPtr;
-	    
-	    col = keys[i];
-	    objPtr = Tcl_NewStringObj(blt_table_column_label(col), -1);
-	    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-	}
-	Tcl_SetObjResult(interp, listObjPtr);
-	return TCL_OK;
-    }
-    table = cmdPtr->table;
-    keys = Blt_AssertMalloc(sizeof(BLT_TABLE_COLUMN) * (objc - 2));
-    for (numKeys = 0, i = 2; i < objc; i++, numKeys++) {
-	BLT_TABLE_COLUMN col;
-
-	col = blt_table_get_column(interp, table, objv[i]);
-	if (col == NULL) {
-	    Blt_Free(keys);
-	    return TCL_ERROR;
-	}
-	keys[numKeys] = col;
-    }
-    blt_table_set_keys(table, numKeys, keys, 0);
-    return TCL_OK;
-}
-
-
-/*
- *---------------------------------------------------------------------------
- *
- * LappendOp --
- *
- *
- *      Appends one or more elements to the list at the given row, column
- *      location. If the column or row doesn't already exist, it will
- *      automatically be created.
- * 
- * Results:
- *      A standard TCL result. If the tag or index is invalid, TCL_ERROR is
- *      returned and an error message is left in the interpreter result.
- *      
- * Example:
- *      $t append $row $column $value ?value...?
- *
- *---------------------------------------------------------------------------
- */
-static int
-LappendOp(ClientData clientData, Tcl_Interp *interp, int objc,
-          Tcl_Obj *const *objv)
-{
-    Cmd *cmdPtr = clientData;
-    BLT_TABLE table;
-    BLT_TABLE_ITERATOR ri, ci;
-    BLT_TABLE_COLUMN col;
-
-    table = cmdPtr->table;
-    if (IterateRows(interp, table, objv[2], &ri) != TCL_OK) {
-	return TCL_ERROR;
-    }
-    if (IterateColumns(interp, table, objv[3], &ci) != TCL_OK) {
-	return TCL_ERROR;
-    }
-    for (col = blt_table_first_tagged_column(&ci); col != NULL; 
-	 col = blt_table_next_tagged_column(&ci)) {
-	BLT_TABLE_ROW row;
-	
-	for (row = blt_table_first_tagged_row(&ri); row != NULL; 
-	     row = blt_table_next_tagged_row(&ri)) {
-	    Tcl_Obj *listObjPtr;
-	    int i, result;
-
-	    listObjPtr = blt_table_get_obj(table, row, col);
-	    if (listObjPtr == NULL) {
-		listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
-	    }
-	    Tcl_IncrRefCount(listObjPtr);
-	    for (i = 4; i < objc; i++) {
-		Tcl_ListObjAppendElement(interp, listObjPtr, objv[i]);
-	    }
-	    result = blt_table_set_obj(interp, table, row, col, listObjPtr);
-	    Tcl_DecrRefCount(listObjPtr);
-	    if (result != TCL_OK) {
-		return TCL_ERROR;
-	    }
-	}
-    }       
-    return TCL_OK;
-}
-
-static int
-LookupOp(ClientData clientData, Tcl_Interp *interp, int objc,
-         Tcl_Obj *const *objv)
-{
-    Cmd *cmdPtr = clientData;
-    int numKeys;
-    BLT_TABLE_COLUMN *keys;
-    BLT_TABLE_ROW row;
-    BLT_TABLE table;
-    long i;
-
-    numKeys = blt_table_get_keys(cmdPtr->table, &keys);
-    if ((objc - 2) != numKeys) {
-	Tcl_AppendResult(interp, "wrong # of keys: should be \"", (char *)NULL);
-	for (i = 0; i < numKeys; i++) {
-	    Tcl_AppendResult(interp, blt_table_column_label(keys[i]), " ", 
-			     (char *)NULL);
-	}
-	Tcl_AppendResult(interp, "\"", (char *)NULL);
-	return TCL_ERROR;
-    }
-    table = cmdPtr->table;
-    if (blt_table_key_lookup(interp, table, objc-2, objv+2, &row) != TCL_OK) {
-	return TCL_ERROR;
-    }
-    i = (row == NULL) ? -1 : blt_table_row_index(row);
-    Tcl_SetLongObj(Tcl_GetObjResult(interp), i);
-    return TCL_OK;
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * ImportOp --
- *
- *      Parses the given command line and calls one of several import-specific
- *      operations.
- *      
- * Results:
- *      Returns a standard TCL result.  It is the result of operation called.
- *
- *---------------------------------------------------------------------------
- */
-static int
-ImportOp(ClientData clientData, Tcl_Interp *interp, int objc,
-         Tcl_Obj *const *objv)
-{
-    Cmd *cmdPtr = clientData;
-    Blt_HashEntry *hPtr;
-    DataFormat *fmtPtr;
-    TableCmdInterpData *dataPtr;
-    const char *fmt;
-
-    dataPtr = GetTableCmdInterpData(interp);
-    if (objc == 2) {
-	Blt_HashSearch iter;
-
-	for (hPtr = Blt_FirstHashEntry(&dataPtr->fmtTable, &iter); 
-	     hPtr != NULL; hPtr = Blt_NextHashEntry(&iter)) {
-	    fmtPtr = Blt_GetHashValue(hPtr);
-	    if (fmtPtr->importProc != NULL) {
-		Tcl_AppendElement(interp, fmtPtr->name);
-	    }
-	}
-	return TCL_OK;
-    }
-    fmt = Tcl_GetString(objv[2]);
-    hPtr = Blt_FindHashEntry(&dataPtr->fmtTable, fmt);
-    if (hPtr == NULL) {
-	LoadFormat(interp, fmt);
-	hPtr = Blt_FindHashEntry(&dataPtr->fmtTable, fmt);
-	if (hPtr == NULL) {
-	    Tcl_AppendResult(interp, "can't import \"", fmt,
-			     "\": format not registered", (char *)NULL);
-	    return TCL_ERROR;
-	}
-    }
-    fmtPtr = Blt_GetHashValue(hPtr);
-    if ((fmtPtr->flags & FMT_LOADED) == 0) {
-	LoadFormat(interp, Tcl_GetString(objv[2]));
-    }
-    if (fmtPtr->importProc == NULL) {
-	Tcl_AppendResult(interp, "no import procedure registered for \"", 
-		fmtPtr->name, "\"", (char *)NULL);
-	return TCL_ERROR;
-    }
-    return (*fmtPtr->importProc) (cmdPtr->table, interp, objc, objv);
-}
-
-/**************** Watch Operations *******************/
-
-/*
- *---------------------------------------------------------------------------
- *
- * WatchColumnOp --
- *
- *      Creates a notifier for this instance.  Notifiers represent a bitmask
- *      of events and a command prefix to be invoked when a matching event
- *      occurs.
- *
- *      The command prefix is parsed and saved in an array of Tcl_Objs. Extra
- *      slots are allocated for the
- *
- * Results:
- *      A standard TCL result.  The name of the new notifier is returned in
- *      the interpreter result.  Otherwise, if it failed to parse a switch,
- *      then TCL_ERROR is returned and an error message is left in the
- *      interpreter result.
- *
- * Example:
- *      table0 column watch col ?flags? command arg
- *
- *---------------------------------------------------------------------------
- */
-static int
-WatchColumnOp(ClientData clientData, Tcl_Interp *interp, int objc,
-               Tcl_Obj *const *objv)
-{
-    Cmd *cmdPtr = clientData;
-    BLT_TABLE table;
-    BLT_TABLE_COLUMN col;
-    BLT_TABLE_ROWCOLUMN_SPEC spec;
-    WatchInfo *watchPtr;
-    WatchSwitches switches;
-    const char *tag, *string;
-    int count, i;
-
-    table = cmdPtr->table;
-    spec = blt_table_column_spec(table, objv[3], &string);
-    col = NULL;
-    tag = NULL;
-    if (spec == TABLE_SPEC_TAG) {
-	tag = string;
-    } else {
-	col = blt_table_get_column(interp, table, objv[3]);
-	if (col == NULL) {
-	    return TCL_ERROR;
-	}
-    }
-    count = 0;
-    for (i = 4; i < objc; i++) {
-	const char *string;
-
-	string = Tcl_GetString(objv[i]);
-	if (string[0] != '-') {
-	    break;
-	}
-	count++;
-    }
-    switches.flags = 0;
-    /* Process switches  */
-    if (Blt_ParseSwitches(interp, watchSwitches, count, objv + 4, &switches, 
-	0) < 0) {
-	return TCL_ERROR;
-    }
-    watchPtr = Blt_AssertMalloc(sizeof(WatchInfo));
-    watchPtr->cmdPtr = cmdPtr;
-    if (tag == NULL) {
-	watchPtr->notifier = blt_table_create_column_notifier(interp, 
-		cmdPtr->table, col, switches.flags, NotifyProc, 
-		NotifierDeleteProc, watchPtr);
-    } else {
-	watchPtr->notifier = blt_table_create_column_tag_notifier(interp, 
-		cmdPtr->table, tag, switches.flags, NotifyProc, 
-		NotifierDeleteProc, watchPtr);
-    }   
-    /* Stash away the command in structure and pass that to the notifier. */
-    watchPtr->cmdObjPtr = Tcl_NewListObj(objc - i, objv + i);
-    Tcl_IncrRefCount(watchPtr->cmdObjPtr);
-    if (switches.flags == 0) {
-	switches.flags = TABLE_NOTIFY_ALL_EVENTS;
-    }
-    {
-	char name[200];
-	Blt_HashEntry *hPtr;
-	int isNew;
-
-	Blt_FormatString(name, 200, "watch%d", cmdPtr->nextWatch++);
-	hPtr = Blt_CreateHashEntry(&cmdPtr->watchTable, name, &isNew);
-	assert(isNew);
-	Blt_SetHashValue(hPtr, watchPtr);
-	Tcl_SetStringObj(Tcl_GetObjResult(interp), name, -1);
+	}           
     }
     return TCL_OK;
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * WatchDeleteOp --
- *
- *      Deletes one or more notifiers.  
- *
- * Results:
- *      A standard TCL result.  If a name given doesn't represent a notifier,
- *      then TCL_ERROR is returned and an error message is left in the
- *      interpreter result.
- *
- *---------------------------------------------------------------------------
- */
-static int
-WatchDeleteOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-	       Tcl_Obj *const *objv)
-{
-    Cmd *cmdPtr = clientData;
-    int i;
-
-    for (i = 3; i < objc; i++) {
-	Blt_HashEntry *hPtr;
-	WatchInfo *watchPtr;
-
-	hPtr = Blt_FindHashEntry(&cmdPtr->watchTable, Tcl_GetString(objv[i]));
-	if (hPtr == NULL) {
-	    Tcl_AppendResult(interp, "unknown watch id \"", 
-		Tcl_GetString(objv[i]), "\"", (char *)NULL);
-	    return TCL_ERROR;
-	}
-	watchPtr = Blt_GetHashValue(hPtr);
-	Blt_DeleteHashEntry(&cmdPtr->watchTable, hPtr);
-	FreeWatchInfo(watchPtr);
-    }
-    return TCL_OK;
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * WatchInfoOp --
- *
- *      Returns the details for a given notifier.  The string id of the
- *      notifier is passed as an argument.
- *
- * Results:
- *      A standard TCL result.  If the name given doesn't represent a
- *      notifier, then TCL_ERROR is returned and an error message is left in
- *      the interpreter result.  Otherwise the details of the notifier handler
- *      are returned as a list of three elements: notifier id, flags, and
- *      command.
- *
- *---------------------------------------------------------------------------
- */
-/*ARGSUSED*/
-static int
-WatchInfoOp(ClientData clientData, Tcl_Interp *interp, int objc,
-             Tcl_Obj *const *objv)
-{
-    Cmd *cmdPtr = clientData;
-    Blt_HashEntry *hPtr;
-    WatchInfo *watchPtr;
-    Tcl_Obj *listObjPtr, *subListObjPtr, *objPtr;
-    struct _BLT_TABLE_NOTIFIER *notifierPtr;
-
-    hPtr = Blt_FindHashEntry(&cmdPtr->watchTable, Tcl_GetString(objv[3]));
-    if (hPtr == NULL) {
-	Tcl_AppendResult(interp, "unknown watch id \"", 
-		Tcl_GetString(objv[3]), "\"", (char *)NULL);
-	return TCL_ERROR;
-    }
-    watchPtr = Blt_GetHashValue(hPtr);
-    notifierPtr = watchPtr->notifier;
-
-    listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
-    Tcl_ListObjAppendElement(interp, listObjPtr, objv[3]); /* Copy watch Id */
-
-    subListObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
-    if (notifierPtr->flags & TABLE_NOTIFY_CREATE) {
-	objPtr = Tcl_NewStringObj("-create", -1);
-	Tcl_ListObjAppendElement(interp, subListObjPtr, objPtr);
-    }
-    if (notifierPtr->flags & TABLE_NOTIFY_DELETE) {
-	objPtr = Tcl_NewStringObj("-delete", -1);
-	Tcl_ListObjAppendElement(interp, subListObjPtr, objPtr);
-    }
-    if (notifierPtr->flags & TABLE_NOTIFY_WHENIDLE) {
-	objPtr = Tcl_NewStringObj("-whenidle", -1);
-	Tcl_ListObjAppendElement(interp, subListObjPtr, objPtr);
-    }
-    if (notifierPtr->flags & TABLE_NOTIFY_RELABEL) {
-	objPtr = Tcl_NewStringObj("-relabel", -1);
-	Tcl_ListObjAppendElement(interp, subListObjPtr, objPtr);
-    }
-    Tcl_ListObjAppendElement(interp, listObjPtr, subListObjPtr);
-    if (notifierPtr->flags & TABLE_NOTIFY_ROW) {
-	Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewStringObj("row",3));
-	if (notifierPtr->tag != NULL) {
-	    Tcl_ListObjAppendElement(interp, listObjPtr, 
-		Tcl_NewStringObj(notifierPtr->tag, -1));
-	} else {
-	    Tcl_ListObjAppendElement(interp, listObjPtr, 
-		Tcl_NewLongObj(blt_table_row_index(notifierPtr->row)));
-	
-	}
-    } else {
-	Tcl_ListObjAppendElement(interp, listObjPtr, 
-		Tcl_NewStringObj("column", 6));
-	if (notifierPtr->tag != NULL) {
-	    Tcl_ListObjAppendElement(interp, listObjPtr, 
-		Tcl_NewStringObj(notifierPtr->tag, -1));
-	} else {
-	    Tcl_ListObjAppendElement(interp, listObjPtr, 
-		Tcl_NewLongObj(blt_table_column_index(notifierPtr->column)));
-	}
-    }
-    Tcl_ListObjAppendElement(interp, listObjPtr, watchPtr->cmdObjPtr);
-    Tcl_SetObjResult(interp, listObjPtr);
-    return TCL_OK;
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * WatchNamesOp --
- *
- *      Returns the names of all the notifiers in use by this instance.
- *      Notifiers issues by other instances or object clients are not
- *      reported.
- *
- * Results:
- *      Always TCL_OK.  A list of notifier names is left in the interpreter
- *      result.
- *
- *---------------------------------------------------------------------------
- */
-/*ARGSUSED*/
-static int
-WatchNamesOp(ClientData clientData, Tcl_Interp *interp, int objc,
-              Tcl_Obj *const *objv)
-{
-    Cmd *cmdPtr = clientData;
-    Blt_HashEntry *hPtr;
-    Blt_HashSearch iter;
-    Tcl_Obj *listObjPtr;
-
-    listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
-    for (hPtr = Blt_FirstHashEntry(&cmdPtr->watchTable, &iter); hPtr != NULL;
-	 hPtr = Blt_NextHashEntry(&iter)) {
-	Tcl_Obj *objPtr;
-	const char *name;
-
-	name = Blt_GetHashKey(&cmdPtr->watchTable, hPtr);
-	objPtr = Tcl_NewStringObj(name, -1);
-	Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-    }
-    Tcl_SetObjResult(interp, listObjPtr);
-    return TCL_OK;
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * WatchRowOp --
- *
- *      Creates a notifier for this instance.  Notifiers represent a bitmask
- *      of events and a command prefix to be invoked when a matching event
- *      occurs.
- *
- *      The command prefix is parsed and saved in an array of Tcl_Objs. Extra
- *      slots are allocated for the
- *
- * Results:
- *      A standard TCL result.  The name of the new notifier is returned in
- *      the interpreter result.  Otherwise, if it failed to parse a switch,
- *      then TCL_ERROR is returned and an error message is left in the
- *      interpreter result.
- *
- * Example:
- *      table0 row watch row ?flags? command arg
- *
- *---------------------------------------------------------------------------
- */
-static int
-WatchRowOp(ClientData clientData, Tcl_Interp *interp, int objc,
-           Tcl_Obj *const *objv)
-{
-    Cmd *cmdPtr = clientData;
-    BLT_TABLE table;
-    WatchInfo *watchPtr;
-    WatchSwitches switches;
-    const char *tag, *string;
-    int count;
-    int i;
-    BLT_TABLE_ROW row;
-    BLT_TABLE_ROWCOLUMN_SPEC spec;
-
-    table = cmdPtr->table;
-    spec = blt_table_row_spec(table, objv[3], &string);
-    row = NULL;
-    tag = NULL;
-    if (spec == TABLE_SPEC_TAG) {
-	tag = string;
-    } else {
-	row = blt_table_get_row(interp, table, objv[3]);
-	if (row == NULL) {
-	    return TCL_ERROR;
-	}
-    }
-    count = 0;
-    for (i = 4; i < objc; i++) {
-	const char *string;
-
-	string = Tcl_GetString(objv[i]);
-	if (string[0] != '-') {
-	    break;
-	}
-	count++;
-    }
-    switches.flags = 0;
-    /* Process switches  */
-    if (Blt_ParseSwitches(interp, watchSwitches, count, objv + 4, 
-	     &switches, 0) < 0) {
-	return TCL_ERROR;
-    }
-    watchPtr = Blt_AssertMalloc(sizeof(WatchInfo));
-    watchPtr->cmdPtr = cmdPtr;
-    if (tag == NULL) {
-	watchPtr->notifier = blt_table_create_row_notifier(interp, 
-		cmdPtr->table, row, switches.flags, NotifyProc, 
-		NotifierDeleteProc, watchPtr);
-    } else {
-	watchPtr->notifier = blt_table_create_row_tag_notifier(interp, 
-		cmdPtr->table, tag, switches.flags, NotifyProc, 
-		NotifierDeleteProc, watchPtr);
-    }   
-    /* Stash away the command in structure and pass that to the notifier. */
-    watchPtr->cmdObjPtr = Tcl_NewListObj(objc - i, objv + i);
-    Tcl_IncrRefCount(watchPtr->cmdObjPtr);
-    if (switches.flags == 0) {
-	switches.flags = TABLE_NOTIFY_ALL_EVENTS;
-    }
-    {
-	char name[200];
-	Blt_HashEntry *hPtr;
-	int isNew;
-
-	Blt_FormatString(name, 200, "watch%d", cmdPtr->nextWatch++);
-	hPtr = Blt_CreateHashEntry(&cmdPtr->watchTable, name, &isNew);
-	assert(isNew);
-	Blt_SetHashValue(hPtr, watchPtr);
-	Tcl_SetStringObj(Tcl_GetObjResult(interp), name, -1);
-    }
-    return TCL_OK;
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * WatchOp --
- *
- *      Parses the given command line and calls one of several notifier
- *      specific operations.
- *      
- * Results:
- *      Returns a standard TCL result.  It is the result of operation called.
- *
- *---------------------------------------------------------------------------
- */
-static Blt_OpSpec watchOps[] =
-{
-    {"column", 1, WatchColumnOp, 5, 0, "column ?flags? command",},
-    {"delete", 1, WatchDeleteOp, 3, 0, "watchName...",},
-    {"info",   1, WatchInfoOp,   4, 4, "watchName",},
-    {"names",  1, WatchNamesOp,  3, 3, "",},
-    {"row",    1, WatchRowOp,    5, 0, "row ?flags? command",},
-};
-
-static int numWatchOps = sizeof(watchOps) / sizeof(Blt_OpSpec);
-
-static int
-WatchOp(ClientData clientData, Tcl_Interp *interp, int objc,
-         Tcl_Obj *const *objv)
-{
-    Tcl_ObjCmdProc *proc;
-    int result;
-
-    proc = Blt_GetOpFromObj(interp, numWatchOps, watchOps, BLT_OP_ARG2, objc, 
-	objv, 0);
-    if (proc == NULL) {
-	return TCL_ERROR;
-    }
-    result = (*proc)(clientData, interp, objc, objv);
-    return result;
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * NumColumnsOp --
- *  
- *      $t numcolumns 
- *
- *---------------------------------------------------------------------------
- */
-static int
-NumColumnsOp(ClientData clientData, Tcl_Interp *interp, int objc,
-             Tcl_Obj *const *objv)
-{
-    Cmd *cmdPtr = clientData;
-    BLT_TABLE table;
-
-    table = cmdPtr->table;
-    if (objc == 3) {
-	long count;
-
-	if (Blt_GetLongFromObj(interp, objv[2], &count) != TCL_OK) {
-	    return TCL_ERROR;
-	}
-	if (count < 0) {
-	    Tcl_AppendResult(interp, "bad count \"", Blt_Itoa(count), 
-		"\": # columns can't be negative.", (char *)NULL);
-	    return TCL_ERROR;
-	}
-	if (count < blt_table_num_columns(table)) {
-	    BLT_TABLE_COLUMN col, next;
-
-	    for (col = blt_table_first_column(table); col != NULL; col = next) {
-		next = blt_table_next_column(table, col);
-		if (blt_table_column_index(col) >= count) {
-		    blt_table_delete_column(table, col);
-		}
-	    }
-	} else if (count > blt_table_num_columns(table)) {
-	    long extra;
-
-	    extra = count - blt_table_num_columns(table);
-	    blt_table_extend_columns(interp, table, extra, NULL);
-	}
-    }
-    Tcl_SetObjResult(interp, Tcl_NewLongObj(blt_table_num_columns(table)));
-    return TCL_OK;
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * NumRowsOp --
- *  
- *      $t numrows
- *      $t numcolumns 
- *
- *---------------------------------------------------------------------------
- */
-static int
-NumRowsOp(ClientData clientData, Tcl_Interp *interp, int objc,
-          Tcl_Obj *const *objv)
-{
-    Cmd *cmdPtr = clientData;
-    BLT_TABLE table;
-
-    table = cmdPtr->table;
-    if (objc == 3) {
-	long count;
-
-	if (Blt_GetLongFromObj(interp, objv[2], &count) != TCL_OK) {
-	    return TCL_ERROR;
-	}
-	if (count < 0) {
-	    Tcl_AppendResult(interp, "bad count \"", Blt_Itoa(count), 
-		"\": # columns can't be negative.", (char *)NULL);
-	    return TCL_ERROR;
-	}
-	if (count < blt_table_num_rows(table)) {
-	    BLT_TABLE_ROW row, next;
-
-	    for (row = blt_table_first_row(table); row != NULL; row = next) {
-		next = blt_table_next_row(table, row);
-		if (blt_table_row_index(row) >= count) {
-		    blt_table_delete_row(table, row);
-		}
-	    }
-	} else if (count > blt_table_num_rows(table)) {
-	    long extra;
-
-	    extra = count - blt_table_num_rows(table);
-	    blt_table_extend_rows(interp, table, extra, NULL);
-	}
-    }
-    Tcl_SetObjResult(interp, Tcl_NewLongObj(blt_table_num_rows(table)));
-    return TCL_OK;
-}
-
-static Tcl_Obj *
-PrintValues(Tcl_Interp *interp, Cmd *cmdPtr, long numRows, 
-	    BLT_TABLE_ROW *rows, BLT_TABLE_COLUMN col, unsigned int flags)
-{
-    long i;
-    Tcl_Obj *listObjPtr;
-    
-    listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
-    for (i = 1; i < numRows; i++) {
-	Tcl_Obj *objPtr;
-	int isEmpty;
-	
-	isEmpty = !blt_table_value_exists(cmdPtr->table, rows[i], col);
-	if ((isEmpty) && (flags & SORT_NONEMPTY)) {
-	    continue;
-	}
-	if (flags & SORT_VALUES) {
-	    if (isEmpty) {
-		objPtr = Tcl_NewStringObj(cmdPtr->emptyValue, -1);
-	    } else {
-		objPtr = blt_table_get_obj(cmdPtr->table, rows[i], col);
-	    }
-	} else {
-	    objPtr = Tcl_NewLongObj(blt_table_row_index(rows[i]));
-	}
-	Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-    }
-    return listObjPtr;
-}
-
-
-static Tcl_Obj *
-PrintUniqueValues(Tcl_Interp *interp, Cmd *cmdPtr, long numRows, 
-		  BLT_TABLE_ROW *rows, BLT_TABLE_COLUMN col, unsigned int flags)
-{
-    BLT_TABLE_COMPARE_PROC *proc;
-    Tcl_Obj *listObjPtr, *objPtr;
-    long i;
-    
-    listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
-
-    /* Get the compare procedure for the column. We'll use that to sift out
-     * unique values. */
-    proc = blt_table_get_compare_proc(cmdPtr->table, col, flags);
-
-    /* Find the first non-empty value in the column.  */
-    for (i = 0; i < numRows; i++) {
-	if (blt_table_value_exists(cmdPtr->table, rows[i], col)) {
-	    break;
-	}
-    }
-    /* What if all the rows are empty? */
-    /* Is an empty row considered unique? */
-    if (i == numRows) {
-	return TCL_OK;
-    }
-    /* Append the row index or value onto the list. */
-    if (flags & SORT_VALUES) {
-	objPtr = blt_table_get_obj(cmdPtr->table, rows[i], col);
-    } else {
-	/* Convert the table offset back to a client index. */
-	objPtr = Tcl_NewLongObj(blt_table_row_index(rows[i]));
-    }
-    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-    for (i++; i < numRows; i++) {
-	if (((*proc)(cmdPtr->table, col, rows[i-1], rows[i])) == 0) {
-	    continue;
-	}
-	if (flags & SORT_VALUES) {
-	    objPtr = blt_table_get_obj(cmdPtr->table, rows[i], col);
-	} else {
-	    /* Convert the table offset back to a client index. */
-	    objPtr = Tcl_NewLongObj(blt_table_row_index(rows[i]));
-	}
-	if (objPtr != NULL) {
-	    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-	}
-    }
-    return listObjPtr;
 }
 
 /*
@@ -7325,89 +7737,6 @@ SortOp(ClientData clientData, Tcl_Interp *interp, int objc,
     Blt_FreeSwitches(sortSwitches, &switches, 0);
     return result;
 }
-
-/*
- *---------------------------------------------------------------------------
- *
- * MinMaxOp --
- *  
- *      $t min $column
- *      $t max $column 
- *
- *---------------------------------------------------------------------------
- */
-static int
-MinMaxOp(ClientData clientData, Tcl_Interp *interp, int objc,
-         Tcl_Obj *const *objv)
-{
-    Cmd *cmdPtr = clientData;
-    BLT_TABLE table;
-    Tcl_Obj *listObjPtr;
-    const char *string;
-    char c;
-    int length;
-    int flags;
-
-#define GET_MIN         (1<<0)
-#define GET_MAX         (1<<1)
-    string = Tcl_GetStringFromObj(objv[1], &length);
-    c = string[0];
-    flags = 0;                          /* Suppress compiler warning. */
-    if ((c == 'l') && (strncmp(string, "limits", length) == 0)) {
-	flags = (GET_MIN | GET_MAX);
-    } else if ((c == 'm') && (strncmp(string, "min", length) == 0)) {
-	flags = GET_MIN;
-    } else if ((c == 'm') && (strncmp(string, "max", length) == 0)) {
-	flags = GET_MAX;
-    }
-    table = cmdPtr->table;
-    listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
-    if (objc == 2) {
-	BLT_TABLE_COLUMN col;
-
-	for (col = blt_table_first_column(table); col != NULL;
-	     col = blt_table_next_column(table, col)) {
-	    Tcl_Obj *minObjPtr, *maxObjPtr;
-
-	    if (blt_table_get_column_limits(interp, table, col, &minObjPtr, 
-					  &maxObjPtr) != TCL_OK) {
-		return TCL_ERROR;
-	    }
-	    if (flags & GET_MIN) {
-		Tcl_ListObjAppendElement(interp, listObjPtr, minObjPtr);
-	    } 
-	    if (flags & GET_MAX) {
-		Tcl_ListObjAppendElement(interp, listObjPtr, maxObjPtr);
-	    }
-	}
-    } else {
-	BLT_TABLE_ITERATOR ci;
-	BLT_TABLE_COLUMN col;
-
-	if (blt_table_iterate_columns(interp, table, objv[2], &ci) != TCL_OK) {
-	    return TCL_ERROR;
-	}
-	for (col = blt_table_first_tagged_column(&ci); col != NULL; 
-	     col = blt_table_next_tagged_column(&ci)) {
-	    Tcl_Obj *minObjPtr, *maxObjPtr;
-
-	    if (blt_table_get_column_limits(interp, table, col, &minObjPtr, 
-			&maxObjPtr) != TCL_OK) {
-		return TCL_ERROR;
-	    }
-	    if (flags & GET_MIN) {
-		Tcl_ListObjAppendElement(interp, listObjPtr, minObjPtr);
-	    } 
-	    if (flags & GET_MAX) {
-		Tcl_ListObjAppendElement(interp, listObjPtr, maxObjPtr);
-	    }
-	}
-    }
-    Tcl_SetObjResult(interp, listObjPtr);
-    return TCL_OK;
-}
-
-/************* Trace Operations *****************/
 
 /*
  *---------------------------------------------------------------------------
@@ -7725,12 +8054,17 @@ TraceInfoOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * TraceNamesOp --
  *
- *      Returns the names of all the traces in use by this instance.  Traces
- *      created by other instances or object clients are not reported.
+ *      Returns the names of all the traces in use by this instance.
+ *      Traces created by other instances or object clients are not
+ *      reported.
  *
  * Results:
  *      Always TCL_OK.  A list of trace names is left in the interpreter
  *      result.
+ *
+ *      $t trace names
+ *      $t trace names pattern
+ *      $t trace names pattern1 pattern2...
  *
  *---------------------------------------------------------------------------
  */
@@ -7747,15 +8081,30 @@ TraceNamesOp(ClientData clientData, Tcl_Interp *interp, int objc,
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
     for (hPtr = Blt_FirstHashEntry(&cmdPtr->traceTable, &iter);
 	 hPtr != NULL; hPtr = Blt_NextHashEntry(&iter)) {
-	Tcl_Obj *objPtr;
+        const char *name;
+        int i, match;
+        
+	name = Blt_GetHashKey(&cmdPtr->watchTable, hPtr);
+        match = (objc == 3);
+        for (i = 3; i < objc; i++) {
+            const char *pattern;
 
-	objPtr = Tcl_NewStringObj(Blt_GetHashKey(&cmdPtr->traceTable, hPtr),-1);
-	Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+            pattern = Tcl_GetString(objv[i]);
+            if (Tcl_StringMatch(name, pattern)) {
+                match = TRUE;
+                break;                  /* Found match. */
+            }
+        }
+        if (match) {
+            Tcl_Obj *objPtr;
+
+            objPtr = Tcl_NewStringObj(name, -1);
+            Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+        }
     }
     Tcl_SetObjResult(interp, listObjPtr);
     return TCL_OK;
 }
-
 
 /*
  *---------------------------------------------------------------------------
@@ -7861,7 +8210,6 @@ TraceRowOp(ClientData clientData, Tcl_Interp *interp, int objc,
     return TCL_OK;
 }
 
-
 /*
  *---------------------------------------------------------------------------
  *
@@ -7883,7 +8231,7 @@ static Blt_OpSpec traceOps[] =
     {"column", 2, TraceColumnOp, 6, 6, "column how command",},
     {"delete", 1, TraceDeleteOp, 3, 0, "traceId...",},
     {"info",   1, TraceInfoOp,   4, 4, "traceId",},
-    {"names",  1, TraceNamesOp,  3, 3, "",},
+    {"names",  1, TraceNamesOp,  3, 0, "?pattern?...",},
     {"row",    1, TraceRowOp,    6, 6, "row how command",},
 };
 
@@ -7904,67 +8252,6 @@ TraceOp(ClientData clientData, Tcl_Interp *interp, int objc,
     result = (*proc)(clientData, interp, objc, objv);
     return result;
 }
-
-/*
- *---------------------------------------------------------------------------
- *
- * SetOp --
- *
- *      Sets one or more key-value pairs for tables.  One or more tables may
- *      be set.  If any of the columns (keys) given don't already exist, the
- *      columns will be automatically created.  The same holds true for rows.
- *      If a row index is beyond the end of the table (tags are always in
- *      range), new rows are allocated.
- * 
- * Results:
- *      A standard TCL result. If the tag or index is invalid, TCL_ERROR is
- *      returned and an error message is left in the interpreter result.
- *      
- * Example:
- *      $t set $row $column $value ?row column value?...
- *
- *---------------------------------------------------------------------------
- */
-static int
-SetOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
-{
-    Cmd *cmdPtr = clientData;
-    BLT_TABLE table;
-    int i;
-
-    if (((objc - 2) % 3) != 0) {
-	Tcl_AppendResult(interp, "wrong # args: should be \"", 
-		Tcl_GetString(objv[0]), 
-		" set ?row column value?...\"", (char *)NULL);
-	return TCL_ERROR;
-    }
-    table = cmdPtr->table;
-    for (i = 2; i < objc; i += 3) {
-	BLT_TABLE_ITERATOR ri, ci;
-	BLT_TABLE_COLUMN col;
-
-	if (IterateRows(interp, table, objv[i], &ri) != TCL_OK) {
-	    return TCL_ERROR;
-	}
-	if (IterateColumns(interp, table, objv[i + 1], &ci) != TCL_OK) {
-	    return TCL_ERROR;
-	}
-	for (col = blt_table_first_tagged_column(&ci); col != NULL; 
-	     col = blt_table_next_tagged_column(&ci)) {
-	    BLT_TABLE_ROW row;
-
-	    for (row = blt_table_first_tagged_row(&ri); row != NULL; 
-		 row = blt_table_next_tagged_row(&ri)) {
-		if (blt_table_set_obj(interp, table, row, col, objv[i + 2])
-                    != TCL_OK) {
-		    return TCL_ERROR;
-		}
-	    }
-	}           
-    }
-    return TCL_OK;
-}
-
 
 /*
  *---------------------------------------------------------------------------
@@ -8028,665 +8315,411 @@ UnsetOp(ClientData clientData, Tcl_Interp *interp, int objc,
 /*
  *---------------------------------------------------------------------------
  *
- * RestoreOp --
+ * WatchColumnOp --
  *
- * $t restore $string -overwrite -notags
- * $t restorefile $fileName -overwrite -notags
+ *      Creates a notifier for this instance.  Notifiers represent a bitmask
+ *      of events and a command prefix to be invoked when a matching event
+ *      occurs.
  *
- *---------------------------------------------------------------------------
- */
-/*ARGSUSED*/
-static int
-RestoreOp(ClientData clientData, Tcl_Interp *interp, int objc,
-          Tcl_Obj *const *objv)
-{
-    Cmd *cmdPtr = clientData;
-    RestoreSwitches switches;
-    int result;
-
-    memset((char *)&switches, 0, sizeof(switches));
-    if (Blt_ParseSwitches(interp, restoreSwitches, objc - 2, objv + 2, 
-		&switches, BLT_SWITCH_DEFAULTS) < 0) {
-	return TCL_ERROR;
-    }
-    result = TCL_ERROR;
-    if ((switches.dataObjPtr != NULL) && (switches.fileObjPtr != NULL)) {
-	Tcl_AppendResult(interp, "can't set both -file and -data switches.",
-			 (char *)NULL);
-	goto error;
-    }
-    if (switches.dataObjPtr != NULL) {
-	result = blt_table_restore(interp, cmdPtr->table, 
-		Tcl_GetString(switches.dataObjPtr), switches.flags);
-    } else if (switches.fileObjPtr != NULL) {
-	result = blt_table_file_restore(interp, cmdPtr->table, 
-		Tcl_GetString(switches.fileObjPtr), switches.flags);
-    } else {
-	Tcl_AppendResult(interp, "must set either -file and -data switch.",
-			 (char *)NULL);
-    }
- error:
-    Blt_FreeSwitches(restoreSwitches, &switches, 0);
-    return result;
-}
-
-static int
-WriteRecord(Tcl_Channel channel, Tcl_DString *dsPtr)
-{
-    int length, numWritten;
-    char *line;
-
-    length = Tcl_DStringLength(dsPtr);
-    line = Tcl_DStringValue(dsPtr);
-#if HAVE_UTF
-#ifdef notdef
-    numWritten = Tcl_WriteChars(channel, line, length);
-#endif
-    numWritten = Tcl_Write(channel, line, length);
-#else
-    numWritten = Tcl_Write(channel, line, length);
-#endif
-    if (numWritten != length) {
-	return FALSE;
-    }
-    Tcl_DStringSetLength(dsPtr, 0);
-    return TRUE;
-}
-
-
-/*
- *---------------------------------------------------------------------------
- *
- * DumpHeader --
- *
- *      Prints the info associated with a column into a dynamic
- *      string.
+ *      The command prefix is parsed and saved in an array of Tcl_Objs. Extra
+ *      slots are allocated for the
  *
  * Results:
- *      None.
+ *      A standard TCL result.  The name of the new notifier is returned in
+ *      the interpreter result.  Otherwise, if it failed to parse a switch,
+ *      then TCL_ERROR is returned and an error message is left in the
+ *      interpreter result.
+ *
+ * Example:
+ *      table0 column watch col ?flags? command arg
  *
  *---------------------------------------------------------------------------
  */
 static int
-DumpHeader(DumpSwitches *dumpPtr, long numRows, long numCols)
-{
-    /* i rows columns ctime mtime \n */
-    Tcl_DStringAppendElement(dumpPtr->dsPtr, "i");
-
-    /* # of rows and columns may be a subset of the table. */
-    Tcl_DStringAppendElement(dumpPtr->dsPtr, Blt_Ltoa(numRows));
-    Tcl_DStringAppendElement(dumpPtr->dsPtr, Blt_Ltoa(numCols));
-
-    Tcl_DStringAppendElement(dumpPtr->dsPtr, Blt_Ltoa(0));
-    Tcl_DStringAppendElement(dumpPtr->dsPtr, Blt_Ltoa(0));
-    Tcl_DStringAppend(dumpPtr->dsPtr, "\n", 1);
-    if (dumpPtr->channel != NULL) {
-	return WriteRecord(dumpPtr->channel, dumpPtr->dsPtr);
-    }
-    return TRUE;
-}
-
-
-/*
- *---------------------------------------------------------------------------
- *
- * DumpValue --
- *
- *      Retrieves all tags for a given row or column into a tcl list.  
- *
- * Results:
- *      None.
- *
- *---------------------------------------------------------------------------
- */
-static int
-DumpValue(BLT_TABLE table, DumpSwitches *dumpPtr, BLT_TABLE_ROW row, 
-	  BLT_TABLE_COLUMN col)
-{
-    const char *string;
-
-    string = blt_table_get_string(table, row, col);
-    if (string == NULL) {
-	return TRUE;
-    }
-    /* d row column value \n */
-    Tcl_DStringAppendElement(dumpPtr->dsPtr, "d");
-    Tcl_DStringAppendElement(dumpPtr->dsPtr, Blt_Ltoa(blt_table_row_index(row)));
-    Tcl_DStringAppendElement(dumpPtr->dsPtr, Blt_Ltoa(blt_table_column_index(col)));
-    Tcl_DStringAppendElement(dumpPtr->dsPtr, string);
-    Tcl_DStringAppend(dumpPtr->dsPtr, "\n", 1);
-    if (dumpPtr->channel != NULL) {
-	return WriteRecord(dumpPtr->channel, dumpPtr->dsPtr);
-    }
-    return TRUE;
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * DumpColumn --
- *
- *      Prints the info associated with a column into a dynamic string.
- *
- *---------------------------------------------------------------------------
- */
-static int
-DumpColumn(BLT_TABLE table, DumpSwitches *dumpPtr, BLT_TABLE_COLUMN col)
-{
-    Blt_Chain colTags;
-    Blt_ChainLink link;
-    const char *name;
-
-    /* c index label type tags \n */
-    Tcl_DStringAppendElement(dumpPtr->dsPtr, "c");
-    Tcl_DStringAppendElement(dumpPtr->dsPtr, 
-	Blt_Ltoa(blt_table_column_index(col)));
-    Tcl_DStringAppendElement(dumpPtr->dsPtr, blt_table_column_label(col));
-    name = blt_table_column_type_to_name(blt_table_column_type(col));
-    if (name == NULL) {
-	name = "";
-    }
-    Tcl_DStringAppendElement(dumpPtr->dsPtr, name);
-
-    colTags = blt_table_get_column_tags(table, col);
-    Tcl_DStringStartSublist(dumpPtr->dsPtr);
-    for (link = Blt_Chain_FirstLink(colTags); link != NULL;
-	 link = Blt_Chain_NextLink(link)) {
-	const char *tag;
-
-	tag = Blt_Chain_GetValue(link);
-	Tcl_DStringAppendElement(dumpPtr->dsPtr, tag);
-    }
-    Blt_Chain_Destroy(colTags);
-    Tcl_DStringEndSublist(dumpPtr->dsPtr);
-    Tcl_DStringAppend(dumpPtr->dsPtr, "\n", 1);
-    if (dumpPtr->channel != NULL) {
-	return WriteRecord(dumpPtr->channel, dumpPtr->dsPtr);
-    }
-    return TRUE;
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * DumpRow --
- *
- *      Prints the info associated with a row into a dynamic string.
- *
- *---------------------------------------------------------------------------
- */
-static int
-DumpRow(BLT_TABLE table, DumpSwitches *dumpPtr, BLT_TABLE_ROW row)
-{
-    Blt_Chain rowTags;
-    Blt_ChainLink link;
-
-    /* r index label tags \n */
-    Tcl_DStringAppendElement(dumpPtr->dsPtr, "r");
-    Tcl_DStringAppendElement(dumpPtr->dsPtr, Blt_Ltoa(blt_table_row_index(row)));
-    Tcl_DStringAppendElement(dumpPtr->dsPtr, (char *)blt_table_row_label(row));
-    Tcl_DStringStartSublist(dumpPtr->dsPtr);
-    rowTags = blt_table_get_row_tags(table, row);
-    for (link = Blt_Chain_FirstLink(rowTags); link != NULL;
-	 link = Blt_Chain_NextLink(link)) {
-	const char *tag;
-
-	tag = Blt_Chain_GetValue(link);
-	Tcl_DStringAppendElement(dumpPtr->dsPtr, tag);
-    }
-    Blt_Chain_Destroy(rowTags);
-    Tcl_DStringEndSublist(dumpPtr->dsPtr);
-    Tcl_DStringAppend(dumpPtr->dsPtr, "\n", 1);
-    if (dumpPtr->channel != NULL) {
-	return WriteRecord(dumpPtr->channel, dumpPtr->dsPtr);
-    }
-    return TRUE;
-}
-
-
-/*
- *---------------------------------------------------------------------------
- *
- * DumpTable --
- *
- *      Dumps data from the given table based upon the row and column maps
- *      provided which describe what rows and columns are to be dumped. The
- *      dump information is written to the file named. If the file name starts
- *      with an '@', then it is the name of an already opened channel to be
- *      used.
- *      
- * Results:
- *      A standard TCL result.  If the dump was successful, TCL_OK is
- *      returned.  Otherwise, TCL_ERROR is returned and an error message is
- *      left in the interpreter result.
- *
- * Side Effects:
- *      Dump information is written to the named file.
- *
- *---------------------------------------------------------------------------
- */
-static int
-DumpTable(BLT_TABLE table, DumpSwitches *dumpPtr)
-{
-    int result;
-    long numCols, numRows;
-    BLT_TABLE_COLUMN col;
-    BLT_TABLE_ROW row;
-
-    if (dumpPtr->ri.chain != NULL) {
-	numRows = Blt_Chain_GetLength(dumpPtr->ri.chain);
-    } else {
-	numRows = blt_table_num_rows(table);
-    }
-    if (dumpPtr->ci.chain != NULL) {
-	numCols = Blt_Chain_GetLength(dumpPtr->ci.chain);
-    } else {
-	numCols = blt_table_num_columns(table);
-    }
-    result = DumpHeader(dumpPtr, numRows, numCols);
-    for (col = blt_table_first_tagged_column(&dumpPtr->ci); 
-	 (result) && (col != NULL); 
-	 col = blt_table_next_tagged_column(&dumpPtr->ci)) {
-	result = DumpColumn(table, dumpPtr, col);
-    }
-    for (row = blt_table_first_tagged_row(&dumpPtr->ri); 
-	 (result) && (row != NULL); 
-	 row = blt_table_next_tagged_row(&dumpPtr->ri)) {
-	result = DumpRow(table, dumpPtr, row);
-    }
-    for (col = blt_table_first_tagged_column(&dumpPtr->ci); 
-	 (result) && (col != NULL); 
-	 col = blt_table_next_tagged_column(&dumpPtr->ci)) {
-	for (row = blt_table_first_tagged_row(&dumpPtr->ri); 
-	     (result) && (row != NULL); 
-	     row = blt_table_next_tagged_row(&dumpPtr->ri)) {
-	    result = DumpValue(table, dumpPtr, row, col);
-	}
-    }
-    return (result) ? TCL_OK : TCL_ERROR;
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * CopyOp --
- *
- *      Copies the rows and columns from the source table given.  Any data 
- *      in the table is first deleted.
- *
- *      datatable0 copy datatable1
- *
- *---------------------------------------------------------------------------
- */
-/*ARGSUSED*/
-static int
-CopyOp(ClientData clientData, Tcl_Interp *interp, int objc,
-       Tcl_Obj *const *objv)
-{
-    Cmd *cmdPtr = clientData;
-    BLT_TABLE srcTable;
-    int result;
-
-    if (blt_table_open(interp, Tcl_GetString(objv[2]), &srcTable) != TCL_OK) {
-	return TCL_ERROR;
-    }
-    result = CopyTable(interp, srcTable, cmdPtr->table);
-    blt_table_close(srcTable);
-    return result;
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * DupOp --
- *
- *      Duplicates the rows and columns from the source table given into
- *      a new table.  
- *
- *      datatable0 dup ?table?
- *
- *---------------------------------------------------------------------------
- */
-/*ARGSUSED*/
-static int
-DuplicateOp(ClientData clientData, Tcl_Interp *interp, int objc,
-            Tcl_Obj *const *objv)
-{
-    Cmd *cmdPtr = clientData;
-    if (objc == 3) {
-	BLT_TABLE srcTable;
-	int result;
-
-	if (blt_table_open(interp, Tcl_GetString(objv[2]), &srcTable) 
-	    != TCL_OK) {
-	    return TCL_ERROR;
-	}
-	result = CopyTable(interp, srcTable, cmdPtr->table);
-	blt_table_close(srcTable);
-	return result;
-    } else {
-	Tcl_DString ds;
-	const char *instName;
-	BLT_TABLE destTable;
-
-	Tcl_DStringInit(&ds);
-	instName = GenerateName(interp, "", "", &ds);
-	if (instName == NULL) {
-	    goto error;
-	}
-	if (blt_table_create(interp, instName, &destTable) == TCL_OK) {
-	    int result;
-
-	    NewTableCmd(interp, destTable, instName);
-	    result = CopyTable(interp, cmdPtr->table, destTable);
-	    if (result != TCL_ERROR) {
-		Tcl_SetStringObj(Tcl_GetObjResult(interp), instName, -1);
-	    }
-	    Tcl_DStringFree(&ds);
-	    return result;
-	}
-    error:
-	Tcl_DStringFree(&ds);
-	return TCL_ERROR;
-    }
-    return TCL_ERROR;
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * DumpOp --
- *
- * set data [$t dump -rows {} -columns {}]
- * $t dump -file fileName -rows {} -columns {} 
- *---------------------------------------------------------------------------
- */
-/*ARGSUSED*/
-static int
-DumpOp(ClientData clientData, Tcl_Interp *interp, int objc,
-       Tcl_Obj *const *objv)
+WatchColumnOp(ClientData clientData, Tcl_Interp *interp, int objc,
+               Tcl_Obj *const *objv)
 {
     Cmd *cmdPtr = clientData;
     BLT_TABLE table;
-    DumpSwitches switches;
-    int result;
-    Tcl_DString ds;
-    int closeChannel;
-    Tcl_Channel channel;
+    BLT_TABLE_COLUMN col;
+    BLT_TABLE_ROWCOLUMN_SPEC spec;
+    WatchInfo *watchPtr;
+    WatchSwitches switches;
+    const char *tag, *string;
+    int count, i;
 
-    closeChannel = FALSE;
-    channel = NULL;
     table = cmdPtr->table;
-    result = TCL_ERROR;
-    memset(&switches, 0, sizeof(switches));
-    switches.channel = channel;
-    switches.dsPtr = &ds;
-    rowIterSwitch.clientData = cmdPtr->table;
-    columnIterSwitch.clientData = cmdPtr->table;
-    blt_table_iterate_all_rows(table, &switches.ri);
-    blt_table_iterate_all_columns(table, &switches.ci);
-
-    if (Blt_ParseSwitches(interp, dumpSwitches, objc - 2, objv + 2, &switches, 
-	BLT_SWITCH_DEFAULTS) < 0) {
-	goto error;
-    }
-    if (switches.fileObjPtr != NULL) {
-	const char *fileName;
-
-	fileName = Tcl_GetString(switches.fileObjPtr);
-
-	closeChannel = TRUE;
-	if ((fileName[0] == '@') && (fileName[1] != '\0')) {
-	    int mode;
-	    
-	    channel = Tcl_GetChannel(interp, fileName+1, &mode);
-	    if (channel == NULL) {
-		goto error;
-	    }
-	    if ((mode & TCL_WRITABLE) == 0) {
-		Tcl_AppendResult(interp, "can't dump table: channel \"", 
-			fileName, "\" not opened for writing", (char *)NULL);
-		goto error;
-	    }
-	    closeChannel = FALSE;
-	} else {
-	    channel = Tcl_OpenFileChannel(interp, fileName, "w", 0666);
-	    if (channel == NULL) {
-		goto error;
-	    }
+    spec = blt_table_column_spec(table, objv[3], &string);
+    col = NULL;
+    tag = NULL;
+    if (spec == TABLE_SPEC_TAG) {
+	tag = string;
+    } else {
+	col = blt_table_get_column(interp, table, objv[3]);
+	if (col == NULL) {
+	    return TCL_ERROR;
 	}
-	switches.channel = channel;
     }
-    Tcl_DStringInit(&ds);
-    result = DumpTable(table, &switches);
-    if ((switches.channel == NULL) && (result == TCL_OK)) {
-	Tcl_DStringResult(interp, &ds);
+    count = 0;
+    for (i = 4; i < objc; i++) {
+	const char *string;
+
+	string = Tcl_GetString(objv[i]);
+	if (string[0] != '-') {
+	    break;
+	}
+	count++;
     }
-    Tcl_DStringFree(&ds);
- error:
-    if (closeChannel) {
-	Tcl_Close(interp, channel);
+    switches.flags = 0;
+    /* Process switches  */
+    if (Blt_ParseSwitches(interp, watchSwitches, count, objv + 4, &switches, 
+	0) < 0) {
+	return TCL_ERROR;
     }
-    Blt_FreeSwitches(dumpSwitches, &switches, 0);
-    return result;
+    watchPtr = Blt_AssertMalloc(sizeof(WatchInfo));
+    watchPtr->cmdPtr = cmdPtr;
+    if (tag == NULL) {
+	watchPtr->notifier = blt_table_create_column_notifier(interp, 
+		cmdPtr->table, col, switches.flags, NotifyProc, 
+		NotifierDeleteProc, watchPtr);
+    } else {
+	watchPtr->notifier = blt_table_create_column_tag_notifier(interp, 
+		cmdPtr->table, tag, switches.flags, NotifyProc, 
+		NotifierDeleteProc, watchPtr);
+    }   
+    /* Stash away the command in structure and pass that to the notifier. */
+    watchPtr->cmdObjPtr = Tcl_NewListObj(objc - i, objv + i);
+    Tcl_IncrRefCount(watchPtr->cmdObjPtr);
+    if (switches.flags == 0) {
+	switches.flags = TABLE_NOTIFY_ALL_EVENTS;
+    }
+    {
+	char name[200];
+	Blt_HashEntry *hPtr;
+	int isNew;
+
+	Blt_FormatString(name, 200, "watch%d", cmdPtr->nextWatch++);
+	hPtr = Blt_CreateHashEntry(&cmdPtr->watchTable, name, &isNew);
+	assert(isNew);
+	Blt_SetHashValue(hPtr, watchPtr);
+	Tcl_SetStringObj(Tcl_GetObjResult(interp), name, -1);
+    }
+    return TCL_OK;
 }
 
 /*
  *---------------------------------------------------------------------------
  *
- * EmptyValueOp --
+ * WatchDeleteOp --
  *
- *      $t emptyvalue ?$value?
+ *      Deletes one or more notifiers.  
  *
- *      isempty($0) 
+ * Results:
+ *      A standard TCL result.  If a name given doesn't represent a notifier,
+ *      then TCL_ERROR is returned and an error message is left in the
+ *      interpreter result.
+ *
  *---------------------------------------------------------------------------
  */
 static int
-EmptyValueOp(ClientData clientData, Tcl_Interp *interp, int objc,
+WatchDeleteOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+	       Tcl_Obj *const *objv)
+{
+    Cmd *cmdPtr = clientData;
+    int i;
+
+    for (i = 3; i < objc; i++) {
+	Blt_HashEntry *hPtr;
+	WatchInfo *watchPtr;
+
+	hPtr = Blt_FindHashEntry(&cmdPtr->watchTable, Tcl_GetString(objv[i]));
+	if (hPtr == NULL) {
+	    Tcl_AppendResult(interp, "unknown watch id \"", 
+		Tcl_GetString(objv[i]), "\"", (char *)NULL);
+	    return TCL_ERROR;
+	}
+	watchPtr = Blt_GetHashValue(hPtr);
+	Blt_DeleteHashEntry(&cmdPtr->watchTable, hPtr);
+	FreeWatchInfo(watchPtr);
+    }
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * WatchInfoOp --
+ *
+ *      Returns the details for a given notifier.  The string id of the
+ *      notifier is passed as an argument.
+ *
+ * Results:
+ *      A standard TCL result.  If the name given doesn't represent a
+ *      notifier, then TCL_ERROR is returned and an error message is left in
+ *      the interpreter result.  Otherwise the details of the notifier handler
+ *      are returned as a list of three elements: notifier id, flags, and
+ *      command.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+WatchInfoOp(ClientData clientData, Tcl_Interp *interp, int objc,
              Tcl_Obj *const *objv)
 {
     Cmd *cmdPtr = clientData;
-    Tcl_SetStringObj(Tcl_GetObjResult(interp), cmdPtr->emptyValue, -1);
-    if (objc == 3) {
-	if (cmdPtr->emptyValue != NULL) {
-	    Blt_Free(cmdPtr->emptyValue);
-	    cmdPtr->emptyValue = Blt_AssertStrdup(Tcl_GetString(objv[2]));
+    Blt_HashEntry *hPtr;
+    WatchInfo *watchPtr;
+    Tcl_Obj *listObjPtr, *subListObjPtr, *objPtr;
+    struct _BLT_TABLE_NOTIFIER *notifierPtr;
+
+    hPtr = Blt_FindHashEntry(&cmdPtr->watchTable, Tcl_GetString(objv[3]));
+    if (hPtr == NULL) {
+	Tcl_AppendResult(interp, "unknown watch id \"", 
+		Tcl_GetString(objv[3]), "\"", (char *)NULL);
+	return TCL_ERROR;
+    }
+    watchPtr = Blt_GetHashValue(hPtr);
+    notifierPtr = watchPtr->notifier;
+
+    listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
+    Tcl_ListObjAppendElement(interp, listObjPtr, objv[3]); /* Copy watch Id */
+
+    subListObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
+    if (notifierPtr->flags & TABLE_NOTIFY_CREATE) {
+	objPtr = Tcl_NewStringObj("-create", -1);
+	Tcl_ListObjAppendElement(interp, subListObjPtr, objPtr);
+    }
+    if (notifierPtr->flags & TABLE_NOTIFY_DELETE) {
+	objPtr = Tcl_NewStringObj("-delete", -1);
+	Tcl_ListObjAppendElement(interp, subListObjPtr, objPtr);
+    }
+    if (notifierPtr->flags & TABLE_NOTIFY_WHENIDLE) {
+	objPtr = Tcl_NewStringObj("-whenidle", -1);
+	Tcl_ListObjAppendElement(interp, subListObjPtr, objPtr);
+    }
+    if (notifierPtr->flags & TABLE_NOTIFY_RELABEL) {
+	objPtr = Tcl_NewStringObj("-relabel", -1);
+	Tcl_ListObjAppendElement(interp, subListObjPtr, objPtr);
+    }
+    Tcl_ListObjAppendElement(interp, listObjPtr, subListObjPtr);
+    if (notifierPtr->flags & TABLE_NOTIFY_ROW) {
+	Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewStringObj("row",3));
+	if (notifierPtr->tag != NULL) {
+	    Tcl_ListObjAppendElement(interp, listObjPtr, 
+		Tcl_NewStringObj(notifierPtr->tag, -1));
+	} else {
+	    Tcl_ListObjAppendElement(interp, listObjPtr, 
+		Tcl_NewLongObj(blt_table_row_index(notifierPtr->row)));
+	
+	}
+    } else {
+	Tcl_ListObjAppendElement(interp, listObjPtr, 
+		Tcl_NewStringObj("column", 6));
+	if (notifierPtr->tag != NULL) {
+	    Tcl_ListObjAppendElement(interp, listObjPtr, 
+		Tcl_NewStringObj(notifierPtr->tag, -1));
+	} else {
+	    Tcl_ListObjAppendElement(interp, listObjPtr, 
+		Tcl_NewLongObj(blt_table_column_index(notifierPtr->column)));
 	}
     }
+    Tcl_ListObjAppendElement(interp, listObjPtr, watchPtr->cmdObjPtr);
+    Tcl_SetObjResult(interp, listObjPtr);
     return TCL_OK;
 }
 
 /*
  *---------------------------------------------------------------------------
  *
- * ExistsOp --
+ * WatchNamesOp --
  *
- *      $t exists $row $column
+ *      Returns the names of all the notifiers in use by this instance.
+ *      Notifiers issues by other instances or object clients are not
+ *      reported.
+ *
+ * Results:
+ *      Always TCL_OK.  A list of notifier names is left in the interpreter
+ *      result.
+ *
+ *      $t watch names
+ *      $t watch names pattern
+ *      $t watch names pattern1 pattern2...
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+WatchNamesOp(ClientData clientData, Tcl_Interp *interp, int objc,
+              Tcl_Obj *const *objv)
+{
+    Cmd *cmdPtr = clientData;
+    Blt_HashEntry *hPtr;
+    Blt_HashSearch iter;
+    Tcl_Obj *listObjPtr;
+
+    listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
+    for (hPtr = Blt_FirstHashEntry(&cmdPtr->watchTable, &iter); hPtr != NULL;
+	 hPtr = Blt_NextHashEntry(&iter)) {
+	const char *name;
+        int i, match;
+        
+	name = Blt_GetHashKey(&cmdPtr->watchTable, hPtr);
+        match = (objc == 3);
+        for (i = 3; i < objc; i++) {
+            const char *pattern;
+
+            pattern = Tcl_GetString(objv[i]);
+            if (Tcl_StringMatch(name, pattern)) {
+                match = TRUE;
+                break;                  /* Found match. */
+            }
+        }
+        if (match) {
+            Tcl_Obj *objPtr;
+
+            objPtr = Tcl_NewStringObj(name, -1);
+            Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+        }
+    }
+    Tcl_SetObjResult(interp, listObjPtr);
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * WatchRowOp --
+ *
+ *      Creates a notifier for this instance.  Notifiers represent a bitmask
+ *      of events and a command prefix to be invoked when a matching event
+ *      occurs.
+ *
+ *      The command prefix is parsed and saved in an array of Tcl_Objs. Extra
+ *      slots are allocated for the
+ *
+ * Results:
+ *      A standard TCL result.  The name of the new notifier is returned in
+ *      the interpreter result.  Otherwise, if it failed to parse a switch,
+ *      then TCL_ERROR is returned and an error message is left in the
+ *      interpreter result.
+ *
+ * Example:
+ *      table0 row watch row ?flags? command arg
  *
  *---------------------------------------------------------------------------
  */
 static int
-ExistsOp(ClientData clientData, Tcl_Interp *interp, int objc,
-         Tcl_Obj *const *objv)
+WatchRowOp(ClientData clientData, Tcl_Interp *interp, int objc,
+           Tcl_Obj *const *objv)
 {
     Cmd *cmdPtr = clientData;
-    int bool;
+    BLT_TABLE table;
+    WatchInfo *watchPtr;
+    WatchSwitches switches;
+    const char *tag, *string;
+    int count;
+    int i;
     BLT_TABLE_ROW row;
-    BLT_TABLE_COLUMN col;
+    BLT_TABLE_ROWCOLUMN_SPEC spec;
 
-    bool = FALSE;
-    row = blt_table_get_row(NULL, cmdPtr->table, objv[2]);
-    col = blt_table_get_column(NULL, cmdPtr->table, objv[3]);
-    if ((row != NULL) && (col != NULL)) {
-	bool = blt_table_value_exists(cmdPtr->table, row, col);
+    table = cmdPtr->table;
+    spec = blt_table_row_spec(table, objv[3], &string);
+    row = NULL;
+    tag = NULL;
+    if (spec == TABLE_SPEC_TAG) {
+	tag = string;
+    } else {
+	row = blt_table_get_row(interp, table, objv[3]);
+	if (row == NULL) {
+	    return TCL_ERROR;
+	}
     }
-    Tcl_SetBooleanObj(Tcl_GetObjResult(interp), bool);
+    count = 0;
+    for (i = 4; i < objc; i++) {
+	const char *string;
+
+	string = Tcl_GetString(objv[i]);
+	if (string[0] != '-') {
+	    break;
+	}
+	count++;
+    }
+    switches.flags = 0;
+    /* Process switches  */
+    if (Blt_ParseSwitches(interp, watchSwitches, count, objv + 4, 
+	     &switches, 0) < 0) {
+	return TCL_ERROR;
+    }
+    watchPtr = Blt_AssertMalloc(sizeof(WatchInfo));
+    watchPtr->cmdPtr = cmdPtr;
+    if (tag == NULL) {
+	watchPtr->notifier = blt_table_create_row_notifier(interp, 
+		cmdPtr->table, row, switches.flags, NotifyProc, 
+		NotifierDeleteProc, watchPtr);
+    } else {
+	watchPtr->notifier = blt_table_create_row_tag_notifier(interp, 
+		cmdPtr->table, tag, switches.flags, NotifyProc, 
+		NotifierDeleteProc, watchPtr);
+    }   
+    /* Stash away the command in structure and pass that to the notifier. */
+    watchPtr->cmdObjPtr = Tcl_NewListObj(objc - i, objv + i);
+    Tcl_IncrRefCount(watchPtr->cmdObjPtr);
+    if (switches.flags == 0) {
+	switches.flags = TABLE_NOTIFY_ALL_EVENTS;
+    }
+    {
+	char name[200];
+	Blt_HashEntry *hPtr;
+	int isNew;
+
+	Blt_FormatString(name, 200, "watch%d", cmdPtr->nextWatch++);
+	hPtr = Blt_CreateHashEntry(&cmdPtr->watchTable, name, &isNew);
+	assert(isNew);
+	Blt_SetHashValue(hPtr, watchPtr);
+	Tcl_SetStringObj(Tcl_GetObjResult(interp), name, -1);
+    }
     return TCL_OK;
 }
 
 /*
  *---------------------------------------------------------------------------
  *
- * FindOp --
+ * WatchOp --
  *
- *      Parses the given command line and calls one of several export-specific
- *      operations.
+ *      Parses the given command line and calls one of several notifier
+ *      specific operations.
  *      
  * Results:
  *      Returns a standard TCL result.  It is the result of operation called.
  *
- * Example:
- *      $t find expr ?switches?
- *
  *---------------------------------------------------------------------------
  */
-static int
-FindOp(ClientData clientData, Tcl_Interp *interp, int objc,
-       Tcl_Obj *const *objv)
+static Blt_OpSpec watchOps[] =
 {
-    Cmd *cmdPtr = clientData;
-    FindSwitches switches;
-    int result;
+    {"column", 1, WatchColumnOp, 5, 0, "column ?flags? command",},
+    {"delete", 1, WatchDeleteOp, 3, 0, "watchName...",},
+    {"info",   1, WatchInfoOp,   4, 4, "watchName",},
+    {"names",  1, WatchNamesOp,  3, 0, "?pattern?...",},
+    {"row",    1, WatchRowOp,    5, 0, "row ?flags? command",},
+};
 
-    memset(&switches, 0, sizeof(switches));
-    rowIterSwitch.clientData = cmdPtr->table;
-    blt_table_iterate_all_rows(cmdPtr->table, &switches.iter);
+static int numWatchOps = sizeof(watchOps) / sizeof(Blt_OpSpec);
 
-#ifdef notdef    
-    switches.emptyValueObjPtr = Tcl_NewStringObj(cmdPtr->emptyValue, -1);
-#endif
-    if (Blt_ParseSwitches(interp, findSwitches, objc - 3, objv + 3, 
-	&switches, BLT_SWITCH_DEFAULTS) < 0) {
-	return TCL_ERROR;
-    }
-    switches.table = cmdPtr->table;
-    Blt_InitHashTable(&switches.varTable, BLT_ONE_WORD_KEYS);
-    result = FindRows(interp, cmdPtr->table, objv[2], &switches);
-    Blt_FreeSwitches(findSwitches, &switches, 0);
-    return result;
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * GetOp --
- *
- *      Retrieves the value from a given table for a designated row,column
- *      location.
- *
- *      Normally it's an error if the column or row key is invalid or the data
- *      slot is empty (the Tcl_Obj is NULL). But if an extra argument is
- *      provided, then it is returned as a default value.
- * 
- * Results:
- *      A standard TCL result. If the tag or index is invalid, TCL_ERROR is
- *      returned and an error message is left in the interpreter result.
- *      
- * Example:
- *      $t get row column ?defValue?
- *
- *---------------------------------------------------------------------------
- */
 static int
-GetOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
-{
-    Cmd *cmdPtr = clientData;
-    Tcl_Obj *objPtr;
-    BLT_TABLE_ROW row;
-    BLT_TABLE_COLUMN col;
-
-    row = blt_table_get_row(interp, cmdPtr->table, objv[2]);
-    if (row == NULL) {
-	if (objc == 5) {
-	    objPtr = objv[4];
-	    goto done;
-	}
-	return TCL_ERROR;
-    } 
-    col = blt_table_get_column(interp, cmdPtr->table, objv[3]);
-    if (col == NULL) {
-	if (objc == 5) {
-	    objPtr = objv[4];
-	    goto done;
-	}
-	return TCL_ERROR;
-    } 
-    objPtr = blt_table_get_obj(cmdPtr->table, row, col);
-    if (objPtr == NULL) {
-	if (objc == 5) {
-	    objPtr = objv[4];
-	} else {
-	    objPtr = Tcl_NewStringObj(cmdPtr->emptyValue, -1);
-	}
-    }
- done:
-    Tcl_SetObjResult(interp, objPtr);
-    return TCL_OK;
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * AttachOp --
- *
- *      $table attach newTable
- *
- *---------------------------------------------------------------------------
- */
-static int
-AttachOp(ClientData clientData, Tcl_Interp *interp, int objc,
+WatchOp(ClientData clientData, Tcl_Interp *interp, int objc,
          Tcl_Obj *const *objv)
 {
-    Cmd *cmdPtr = clientData;
+    Tcl_ObjCmdProc *proc;
+    int result;
 
-    if (objc == 3) {
-	const char *qualName;
-	Blt_ObjectName objName;
-	BLT_TABLE table;
-	Tcl_DString ds;
-	int result;
-
-	if (!Blt_ParseObjectName(interp, Tcl_GetString(objv[2]), &objName, 0)) {
-	    return TCL_ERROR;
-	}
-	qualName = Blt_MakeQualifiedName(&objName, &ds);
-	result = blt_table_open(interp, qualName, &table);
-	Tcl_DStringFree(&ds);
-	if (result != TCL_OK) {
-	    return TCL_ERROR;
-	}
-	if (cmdPtr->table != NULL) {
-	    Blt_HashEntry *hPtr;
-	    Blt_HashSearch iter;
-	    
-	    blt_table_close(cmdPtr->table);
-
-	    /* Free the extra bookkeeping that we're maintaining about the
-	     * current table (table traces and notifiers).  */
-	    for (hPtr = Blt_FirstHashEntry(&cmdPtr->traceTable, &iter); 
-		 hPtr != NULL; hPtr = Blt_NextHashEntry(&iter)) {
-		TraceInfo *tracePtr;
-
-		tracePtr = Blt_GetHashValue(hPtr);
-		blt_table_delete_trace(cmdPtr->table, tracePtr->trace);
-	    }
-	    Blt_DeleteHashTable(&cmdPtr->traceTable);
-	    Blt_InitHashTable(&cmdPtr->traceTable, TCL_STRING_KEYS);
-	    for (hPtr = Blt_FirstHashEntry(&cmdPtr->watchTable, &iter); 
-		hPtr != NULL; hPtr = Blt_NextHashEntry(&iter)) {
-		WatchInfo *watchPtr;
-
-		watchPtr = Blt_GetHashValue(hPtr);
-		FreeWatchInfo(watchPtr);
-	    }
-	    Blt_DeleteHashTable(&cmdPtr->watchTable);
-	    Blt_InitHashTable(&cmdPtr->watchTable, TCL_STRING_KEYS);
-	}
-	cmdPtr->table = table;
+    proc = Blt_GetOpFromObj(interp, numWatchOps, watchOps, BLT_OP_ARG2, objc, 
+	objv, 0);
+    if (proc == NULL) {
+	return TCL_ERROR;
     }
-    Tcl_SetStringObj(Tcl_GetObjResult(interp), 
-	blt_table_name(cmdPtr->table), -1);
-    return TCL_OK;
+    result = (*proc)(clientData, interp, objc, objv);
+    return result;
 }
 
 static Blt_OpSpec tableOps[] =
@@ -9104,7 +9137,7 @@ static Blt_OpSpec tableCmdOps[] =
     {"destroy", 1, TableDestroyOp, 3, 0, "tableName...",},
     {"exists",  1, TableExistsOp,  3, 3, "tableName",},
     {"load",    1, TableLoadOp,    4, 4, "tableName libpath",},
-    {"names",   1, TableNamesOp,   2, 3, "?pattern?...",},
+    {"names",   1, TableNamesOp,   2, 0, "?pattern?...",},
 };
 
 static int numCmdOps = sizeof(tableCmdOps) / sizeof(Blt_OpSpec);

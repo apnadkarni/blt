@@ -44,7 +44,7 @@ SYNOPSIS
 
 **blt::datatable load** *format* *libPath*
 
-**blt::datatable names** ?\ *pattern*\ ?
+**blt::datatable names** ?\ *pattern*...\ ?
 
 DESCRIPTION
 ===========
@@ -92,7 +92,7 @@ SYNTAX
   Dynamically loads the named datatable module.  This is used internally
   to load datatable modules.
 
-**blt::datatable names** ?\ *pattern*\ ?
+**blt::datatable names** ?\ *pattern*...\ ?
 
   Returns the names of all datatable objects.  if a *pattern* argument
   is given, then the only those datatables whose name matches pattern will
@@ -105,7 +105,7 @@ Row and columns in a *datatable* object may be referred by either
 their index, label, or tag.
 
  *index*
-   The number of the row or column.  Row and column inices start from 0.
+   The number of the row or column.  Row and column indices start from 0.
    The index of a row or column may change as rows or columns are add,
    deleted, moved, or sorted.
 
@@ -183,12 +183,13 @@ the command.  The operations available for datatables are listed below.
 
   Copies the column *srcColumn* into *destColumn*.  If a column
   *destColumn* doesn't already exist in *tableName*, one is created.
-  ?Switches? can be any of the following:  
+  *SrcColumn* and *destColumn* may be a label, index, or tag, but may not
+  represent more than one column.  ?Switches? can be any of the following:
 
   **-append** 
     Append the values of *srcColumn* to *destColumn*.  By default the
-    *destColumn* is overwritten by *srcColumn* (the value in *srcColumn* are
-    first removed).
+    *destColumn* is overwritten by *srcColumn* (the values in *srcColumn*
+    are first removed).
 
   **-new** 
     Always create a new column *destColumn* even if one already exists in
@@ -274,11 +275,13 @@ the command.  The operations available for datatables are listed below.
   Returns the index of the specified column.  *Column* may be a
   label, index, or tag, but may not represent more than one column.
   
-*tableName* **column indices** ?\ *pattern*...\ ?
+*tableName* **column indices** ?\ *switches*...\ ? ?\ *pattern*...\ ?
 
-  Returns the indices of the specified column.  If one or more *pattern*
-  arguments are specified, the indices of the columns whose labels
-  match one of the patterns is returned.
+  Returns the indices of the column whose labels match any *pattern*. 
+  ?Switches? can be any of the following:
+
+  **-duplicates** 
+    Return only the indices of the duplicate columns.
 
 *tableName* **column join** *srcTable* ?\ *switches*...\ ?
 
@@ -512,6 +515,17 @@ the command.  The operations available for datatables are listed below.
 
 *tableName* **dump** ?\ *switches*...\ ?
 
+  **-column** *columnList*
+    Specifies the subset of columns from *srcTable* to add.  By default
+    all columns are added.
+    
+  **-file** *fileName*
+    Don't copy row tags.
+
+  **-rows** *rowList*
+    Specifies the subset of rows from *srcTable* to add.  By default
+    all rows are added.
+
 *tableName* **duplicate** ?\ *table*\ ?
 
 *tableName* **emptyvalue** ?\ *newValue*\ ?
@@ -534,6 +548,21 @@ the command.  The operations available for datatables are listed below.
   "${*label*}" may be used to refer the values in the row.  Note that
   if a cell is empty it won't have a variable associated with it.  You
   can test for this by "[info exists var]". 
+
+  **-addtag**  *tagName*
+    Notify when rows are created, deleted, moved, or relabeled.
+
+  **-count**  *maxMatches*
+    Notify when rows are created, deleted, moved, or relabeled.
+
+  **-emptyvalue**  *string*
+    Notify when rows are created, deleted, moved, or relabeled.
+
+  **-invert**  
+    Notify when rows are created, deleted, moved, or relabeled.
+
+  **-rows** *rowList*
+    Notify when rows are created, deleted, moved, or relabeled.
 
 *tableName* **get** *row* *column* ?\ *defValue*\ ?
 
@@ -596,15 +625,28 @@ the command.  The operations available for datatables are listed below.
 
 *tableName* **restore** ?\ *switches*\ ?
 
+  **-data**  *string*
+    Notify when rows are created, deleted, moved, or relabeled.
+
+  **-file**  *fileName*
+    Notify when rows are created, deleted, moved, or relabeled.
+
+  **-notags**  
+    Notify when rows are created, deleted, moved, or relabeled.
+
+  **-overwrite**  
+    Notify when rows are created, deleted, moved, or relabeled.
+
 *tableName* **row copy** *srcRow* *destRow* ?\ *switches*...\ ?
 
-  Copies the row *srcRow* into *destRow*.  If a row
-  *destRow* doesn't already exist in *tableName*, one is created.
-  ?Switches? can be any of the following:  
+  Copies the row *srcRow* into *destRow*.  If a row *destRow* doesn't
+  already exist in *tableName*, one is created.  *SrcRow* and *destRow* may
+  be a label, index, or tag, but may not represent more than one row.
+  ?Switches? can be any of the following:
 
   **-append** 
     Append the values of *srcRow* to *destRow*.  By default the
-    *destRow* is overwritten by *srcRow* (the value in *srcRow* are
+    *destRow* is overwritten by *srcRow* (the values in *srcRow* are
     first removed).
 
   **-new** 
@@ -683,19 +725,21 @@ the command.  The operations available for datatables are listed below.
   retrievd.  *Column* may be a column label, index, or tag.
 
   Returns a list containing pairs of values and indices of the selected
-  columns. If the *-labels* flag is present, the column label is returned instead
-  of the index.
+  columns. If the *-labels* flag is present, the column label is returned
+  instead of the index.
 
 *tableName* **row index** *row* 
 
   Returns the index of the specified row.  *Row* may be a
   label, index, or tag, but may not represent more than one row.
   
-*tableName* **row indices** ?\ *pattern*...\ ?
+*tableName* **row indices** ?\ *switches*...\ ? ?\ *pattern*...\ ?
 
-  Returns the indices of the specified row.  If one or more *pattern*
-  arguments are specified, the indices of the rows whose labels
-  match one of the patterns is returned.
+  Returns the indices of the rows whose labels match any *pattern*. 
+  ?Switches? can be any of the following:
+
+  **-duplicates** 
+    Return only the indices of the duplicate row labels.
 
 *tableName* **row join** *srcTable* ?\ *switches*...\ ?
 
@@ -704,14 +748,14 @@ the command.  The operations available for datatables are listed below.
   The row tags are also copied. ?Switches? can be any of
   the following:
 
-  **-rows** *rowList*
-    Specifies the subset of rows from *srcTable* to add.  By default
-    all rows are added.
-
   **-column** *columnList*
     Specifies the subset of columns from *srcTable* to add.  By default
     all columns are added.
     
+  **-rows** *rowList*
+    Specifies the subset of rows from *srcTable* to add.  By default
+    all rows are added.
+
   **-notags** 
     Don't copy row tags.
     
@@ -832,6 +876,36 @@ the command.  The operations available for datatables are listed below.
 
 *tableName* **sort** ?\ *switches*...\ ?
 
+  **-ascii** 
+    Notify when rows are created, deleted, moved, or relabeled.
+
+  **-columns** *columnList*
+    Notify when rows are created, deleted, moved, or relabeled.
+
+  **-decreasing** 
+    Notify when rows are created, deleted, moved, or relabeled.
+
+  **-dictionary** 
+    Notify when rows are created, deleted, moved, or relabeled.
+
+  **-list** 
+    Notify when rows are created, deleted, moved, or relabeled.
+
+  **-nonempty** 
+    Notify when rows are created, deleted, moved, or relabeled.
+
+  **-rows** *rowList*
+    Notify when rows are created, deleted, moved, or relabeled.
+
+  **-nonempty** 
+    Notify when rows are created, deleted, moved, or relabeled.
+
+  **-unique** 
+    Notify when rows are created, deleted, moved, or relabeled.
+
+  **-values** 
+    Notify when rows are created, deleted, moved, or relabeled.
+
 *tableName* **trace cell** *row* *column* *how* *command*
 
    Registers a callback to *command* when the cell is created, read, written,
@@ -845,10 +919,11 @@ the command.  The operations available for datatables are listed below.
 
   Describes *traceName*.
   
-*tableName* **trace names** 
+*tableName* **trace names** ?\ *pattern*...\ ?
 
-   Returns a list of the traces currently registered. This includes
-   cell, row, and column traces.
+  Returns a list of the traces currently registered. This includes cell,
+  row, and column traces.  If one of *pattern* arguments are present, then
+  any of the trace names matching one of the patterns is returned.
    
 *tableName* **trace row** *row* *how* *command*
 
@@ -861,22 +936,63 @@ the command.  The operations available for datatables are listed below.
   
 *tableName* **watch column**  *column* ?\ *flags*\ ? *command*
 
+  **-allevents** 
+    Notify when columns are created, deleted, moved, or relabeled.
+
+  **-create** 
+    Notify when columns are created.
+
+  **-delete** 
+    Notify when columns are deleted.
+
+  **-move** 
+    Notify when columns are moved.  This included when the table is sorted.
+
+  **-relabel** 
+    Notify when columns are relabeled.
+
+  **-whenidle** 
+    Don't trigger the callback immediately.  Wait until the next idle time.
+
 *tableName* **watch delete** *watchName*...
 
 *tableName* **watch info** ?\ *watchName*\ ?
 
-*tableName* **watch names** 
+*tableName* **watch names** ?\ *pattern*...\ ?
+
+  Returns the names of the watches registered in the table.  This includes
+  both row and column watches.  If one of *pattern* arguments are present,
+  then any of the watch names matching one of the patterns is returned.
 
 *tableName* **watch row**  *row* ?\ *flags*\ ? *command*
 
-.. _`TREE FORMATS`:
+  **-allevents** 
+    Notify when rows are created, deleted, moved, or relabeled.
 
-TABLE FORMATS
-=============
+  **-create** 
+    Notify when rows are created.
 
-Handlers for various tree formats can be loaded using the TCL **package**
-mechanism.  The formats supported are `xml`, `sqlite`, `mysql`,
-`psql`, `vector`, and `tree`.
+  **-delete** 
+    Notify when rows are deleted.
+
+  **-move** 
+    Notify when rows are moved.  This included when the table is sorted.
+
+  **-relabel** 
+    Notify when rows are relabeled.
+
+  **-whenidle** 
+    Don't trigger the callback immediately.  Wait until the next idle time.
+
+
+.. _`DATATABLE FORMATS`:
+
+DATATABLE FORMATS
+=================
+
+Handlers for various datatable formats can be loaded using the TCL
+**package** mechanism.  The formats supported are `csv`, `xml`, `sqlite`,
+`mysql`, `psql`, `vector`, and `tree`.
 
 To use the XML handler you must first require the package.
 
@@ -890,165 +1006,183 @@ Then the following **import** and **export** commands become available.
   The following import switches are supported:
 
     **-file** *fileName*
-
       Read the CSV file *fileName* to load the table.
 
     **-data** *string*
-
       Read the CSV information from *string*.
 
     **-separator** *char*
-
       Specifies the separator character.  This is by default the comma.
       If *char* is "auto", then the separator is automatically determined.
 
     **-escape** *char*
-
       Load the JSON information into the tree starting at *node*.  The
       default is the root node of the tree.
 
     **-quote** *char*
-
       Load the JSON information into the tree starting at *node*.  The
       default is the root node of the tree.
 
     **-quote** *char*
-
       Specifies the quote character.  This is by default the double quote.
 
     **-comment** *char*
-
       Specifies a comment character.  Any line in the CSV file starting
       with this character is treated as a comment and ignored.
 
     **-encoding** *string*
-
       Specifies the encoding to use when reading the CSV file.
 
    **-maxrows** *numRows*
-
       Specifies the maximum number of rows to load into the table. 
       
    **-empty** *string*
-
       Specifies a string value to use for cells when empty fields
       are found in the CSV data.
 
    **-headers** *labelList*
-
       Set the column labels from the list of labels in *labelList*.
 
    **-autoheaders** *boolean*
-
       Set the column labels from the first row of the CSV data.  
   
-    
-*tableName* **export json** ?\ *switches..*\ ?
+*tableName* **export csv** ?\ *switches..*\ ?
 
-  Exports the tree as JSON data. 
-  The following export switches are supported:
+  Exports the datatable into CSV data.  If no **-file** switch is provided,
+  the CSV output is returned.  
+  The following import switches are supported:
+
+  **-columnlabels** 
+    Indicates to create an extra row in the CSV containing the
+    column labels.
+
+  **-columns** *columnList*
+    Specifies the subset of columns from *tableName* to export.  By default
+    all columns are exported.
+
+  **-file** *fileName*
+    Write the CSV output to the file *fileName*.
+
+  **-quote** *char*
+    Specifies the quote character.  This is by default the double quote.
+
+  **-rowlabels** 
+    Indicates to create an extra column in the CSV containing the
+    row labels.
+
+  **-rows** *rowList*
+    Specifies the subset of rows from *tableName* to export.  By default
+    all rows are exported.
+    
+  **-separator** *char*
+    Specifies the separator character.  This is by default the comma.
+
+*tableName* **import mysql** ?\ *switches..*\ ?
+
+  Imports a table from a *Mysql* database.  The following switches
+  are supported:
+
+    **-db** *dbName*
+      Specifies the name of the database.  
+
+    **-host** *hostName*
+      Specifies the name or address of the *Mysql* server host.  
+
+    **-user** *userName*
+      Specifies the name of the *Mysql* user.  By default, the USER
+      environment variable is used.
+
+    **-password** *password*
+      Specifies the password of the *Mysql* user. 
+
+    **-port** *portNumber*
+      Specifies the port number of the *Mysql* server.
+
+    **-query** *string*
+      Specifies the SQL query to make to the *Mysql* database.
+
+*tableName* **import psql** ?\ *switches..*\ ?
+
+  Imports a table from a *Postgresql* database.  The following switches
+  are supported:
+
+    **-db** *dbName*
+      Specifies the name of the database.  
+
+    **-host** *hostName*
+      Specifies the name or address of the *Postgresql* server host.  
+
+    **-user** *userName*
+      Specifies the name of the *Postgresql* user.  By default, the `USER`
+      environment variable is used.
+
+    **-password** *password*
+      Specifies the password of the *Postgresql* user. 
+
+    **-port** *portNumber*
+      Specifies the port number of the *Postgresql* server.
+
+    **-query** *string*
+      Specifies the SQL query to make to the *Postgresql* database.
+
+    **-table** *tableName*
+      Specifies the name of the *Postgresql* table being queried.
+
+*tableName* **import sqlite** ?\ *switches*\... ?
+
+  Imports a table from an Sqlite database.  The following export switches are
+  supported:
 
     **-file** *fileName*
+      Read from the *Sqlite* file *fileName*.
 
-      Write the tree to the JSON file *fileName*.
+    **-query** *string*
+      Specifies the SQL query to make to the *Sqlite* database.
 
-    **-data** *varName*
+*tableName* **import tree** *treeName* ?\ *switches..*\ ?
 
-      Write the tree in JSON format to the TCL variable *varName*.
+  Imports a BLT tree into the table.  *TreeName* is the name of the BLT
+  tree. 
+
+    **-depth** *maxDepth*
+      Traverse *treeName* a maximum of *maxDepth* levels starting
+      from *node*.
+
+    **-inodes** 
+      Store the indices of the tree nodes in a column called "inode".
 
     **-root** *node*
+      Specifies the root node of the branch to be imported. By default,
+      the root of the tree is the root node.
 
-      Write the tree starting from *node*.  The default is the root 
-      node of the tree.
+*tableName* **import vector** ?\ *destColumn* *vecName*\ ?...
 
-To use the XML handler you must first require the package.
-
-  **package require blt_tree_xml**
-
-Then the following **import** and **export** commands become available.
+  Imports a columns from one of more BLT vectors.  *VecName* is the name of
+  a BLT vector.  *DestColumn* may be a label, index, or tag, but may not
+  represent more than one column.  If *destColumn* does not exist, it is
+  automatically created.  All the values previously in *destColumn* are
+  deleted.  Rows may added to the table to store the vector values.
 
 *tableName* **import xml** ?\ *switches..*\ ?
 
-  Imports the XML data into the tree. 
-  The following import switches are supported:
-
-    **-all** 
-
-      Import all XML features.
-
-    **-comments** *bool*
-
-      If true, import XML comments.  The default is `0`.
+  Imports XML into the table.  The following export switches are
+  supported:
 
     **-data** *string*
-
-      Read the JSON information from *string*. It is an error
-      to set both the **-file** and **-data** switches.
-
-    **-declaration**  *bool*
-
-      If true, import XML declarations.  The default is `0`.
-
-    **-extref**  *bool*
-
-      If true, import XML external references.  The default is `0`.
+      Read XML from the data *string*.
 
     **-file** *fileName*
+      Read XML from the file *fileName*.
 
-      Read the JSON file *fileName* to load the tree. It is an error
-      to set both the **-file** and **-data** switches.
+    **-noattrs** 
+      Don't import XML attributes into the table.
 
-    **-locations**  *bool*
+    **-noelems** 
+      Don't import XML elements into the table.
 
-      If true, import XML locations.  The default is `0`.
+    **-nocdata** 
+      Don't import XML character data (CDATA) into the table.
 
-    **-root** *node*
-
-      Load the XML information into the tree starting at *node*.  The
-      default is the root node of the tree.
-
-    **-attributes**  *bool*
-
-      If true, import XML attributes.  The default is `1`.
-
-    **-namespace**  *bool*
-
-      If true, import XML namespaces.  The default is `0`.
-
-    **-cdata**  *bool*
-
-      If true, import XML character data.  The default is `1`.
-
-    **-overwrite**  *bool*
-
-      If true, overwrite tree nodes is they already exist.  
-      The default is `0`.
-
-    **-processinginstructions**  *bool*
-
-      If true, import XML processing instructions.  The default is `0`.
-
-    **-trimwhitespace**  *bool*
-
-      If true, trim white space from XML character data.  The default is `0`.
-
-*tableName* **export xml** ?\ *switches..*\ ?
-
-  Exports the tree as XML data. 
-  The following export switches are supported:
-
-    **-file** *fileName*
-
-      Write the tree to the XML file *fileName*.
-
-    **-data** *varName*
-
-      Write the tree in XML format to the TCL variable *varName*.
-
-    **-root** *node*
-
-      Write the tree starting from *node*.  The default is the root 
-      node of the tree.
 
 EXAMPLE
 =======
