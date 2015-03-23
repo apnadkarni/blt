@@ -1107,15 +1107,22 @@ MakeRows(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr)
     return TCL_OK;
 }
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * IterateRows --
+ *
+ *      This is different from the blt_table_iterate_rows routine.
+ *      If the row can't be found but looks like an index or label,
+ *      we automatically create the row.
+ *      
+ *---------------------------------------------------------------------------
+ */
 static int
 IterateRows(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr, 
 	    BLT_TABLE_ITERATOR *iterPtr)
 {
-    BLT_TABLE_ROWCOLUMN_SPEC spec;
-    const char *string;
-    
-    spec = blt_table_row_spec(table, objPtr, &string);
-    if (spec == TABLE_SPEC_UNKNOWN)  {
+    if (blt_table_iterate_rows(NULL, table, objPtr, iterPtr) != TCL_OK) {
 	/* 
 	 * We could not parse the row descriptor. If the row specification
 	 * is a label or index that doesn't exist, create the new rows and
@@ -1161,15 +1168,22 @@ MakeColumns(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr)
     return TCL_OK;
 }
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * IterateColumns --
+ *
+ *      This is different from the blt_table_iterate_columns routine.
+ *      If the column can't be found but looks like an index or label,
+ *      we automatically create the column.
+ *      
+ *---------------------------------------------------------------------------
+ */
 static int
 IterateColumns(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr, 
 	       BLT_TABLE_ITERATOR *iterPtr)
 {
-    BLT_TABLE_ROWCOLUMN_SPEC spec;
-    const char *string;
-    
-    spec = blt_table_column_spec(table, objPtr, &string);
-    if (spec == TABLE_SPEC_UNKNOWN)  {
+    if (blt_table_iterate_columns(interp, table, objPtr, iterPtr) != TCL_OK) {
 	/* 
 	 * We could not parse column descriptor.  If the column specification
 	 * is a label that doesn't exist, create a new column with that label
