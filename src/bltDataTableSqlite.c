@@ -96,8 +96,6 @@ static Blt_SwitchCustom rowIterSwitch = {
 
 static Blt_SwitchSpec exportSwitches[] = 
 {
-    {BLT_SWITCH_OBJ, "-name", "tableName", (char *)NULL,
-	Blt_Offset(ExportArgs, tableObjPtr), 0, 0},
     {BLT_SWITCH_CUSTOM, "-columns",   "columns" ,(char *)NULL,
 	Blt_Offset(ExportArgs, ci),   0, 0, &columnIterSwitch},
     {BLT_SWITCH_OBJ, "-file", "fileName", (char *)NULL,
@@ -106,6 +104,8 @@ static Blt_SwitchSpec exportSwitches[] =
 	Blt_Offset(ExportArgs, ri),   0, 0, &rowIterSwitch},
     {BLT_SWITCH_BITMASK, "-rowlabels",  "", (char *)NULL,
 	Blt_Offset(ExportArgs, flags), 0, EXPORT_ROWLABELS},
+    {BLT_SWITCH_OBJ, "-table", "tableName", (char *)NULL,
+	Blt_Offset(ExportArgs, tableObjPtr), 0, 0},
     {BLT_SWITCH_END}
 };
 

@@ -100,15 +100,12 @@ static Blt_SwitchSpec importSwitches[] =
 typedef struct {
     Blt_TreeNode root;
     BLT_TABLE_ITERATOR ri, ci;
-    BLT_TABLE_ITERATOR hIter;
 } ExportArgs;
 
 static Blt_SwitchSpec exportSwitches[] = 
 {
     {BLT_SWITCH_CUSTOM, "-columns", "columns", (char *)NULL,
 	Blt_Offset(ExportArgs, ci), 0, 0, &columnIterSwitch},
-    {BLT_SWITCH_CUSTOM, "-hierarchy", "columns", (char *)NULL,
-	Blt_Offset(ExportArgs, hIter), 0, 0, &columnIterSwitch},
     {BLT_SWITCH_CUSTOM, "-root", "node", (char *)NULL,
         Blt_Offset(ExportArgs, root), 0, 0, &nodeSwitch},
     {BLT_SWITCH_CUSTOM, "-rows", "rows", (char *)NULL,
