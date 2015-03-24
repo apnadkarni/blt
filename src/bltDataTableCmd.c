@@ -468,9 +468,9 @@ static Blt_SwitchSpec insertSwitches[] =
 	 Blt_Offset(InsertSwitches, row),   INSERT_ROW, 0, &beforeSwitch},
     {BLT_SWITCH_STRING, "-label",  "string",    (char *)NULL,
 	Blt_Offset(InsertSwitches, label),  INSERT_ROW | INSERT_COL},
-    {BLT_SWITCH_OBJ,    "-tags",   "tags",      (char *)NULL,
+    {BLT_SWITCH_OBJ,    "-tags",   "tagList",      (char *)NULL,
 	Blt_Offset(InsertSwitches, tags),   INSERT_ROW | INSERT_COL},
-    {BLT_SWITCH_CUSTOM, "-type",   "type",      (char *)NULL,
+    {BLT_SWITCH_CUSTOM, "-type",   "columnType",      (char *)NULL,
 	Blt_Offset(InsertSwitches, type),   INSERT_COL, 0, &typeSwitch},
     {BLT_SWITCH_END}
 };
@@ -500,14 +500,14 @@ typedef struct {
 
 static Blt_SwitchSpec copySwitches[] = 
 {
-    {BLT_SWITCH_BITMASK, "-notags", "", (char *)NULL,
-	Blt_Offset(CopySwitches, flags), 0, COPY_NOTAGS},
-    {BLT_SWITCH_CUSTOM, "-table", "srcTable", (char *)NULL,
-	Blt_Offset(CopySwitches, table), 0, 0, &tableSwitch},
     {BLT_SWITCH_BITMASK, "-append", "", (char *)NULL,
 	Blt_Offset(CopySwitches, flags), 0, COPY_APPEND},
     {BLT_SWITCH_BITMASK, "-new", "", (char *)NULL,
 	Blt_Offset(CopySwitches, flags), 0, COPY_NEW},
+    {BLT_SWITCH_BITMASK, "-notags", "", (char *)NULL,
+	Blt_Offset(CopySwitches, flags), 0, COPY_NOTAGS},
+    {BLT_SWITCH_CUSTOM, "-table", "srcTable", (char *)NULL,
+	Blt_Offset(CopySwitches, table), 0, 0, &tableSwitch},
     {BLT_SWITCH_END}
 };
 
@@ -535,11 +535,11 @@ typedef struct {
 
 static Blt_SwitchSpec joinSwitches[] = 
 {
+    {BLT_SWITCH_CUSTOM, "-columns",   "columnList" ,(char *)NULL,
+	Blt_Offset(JoinSwitches, ci),   JOIN_COLUMN, 0, &columnIterSwitch},
     {BLT_SWITCH_BITMASK, "-notags", "", (char *)NULL,
 	Blt_Offset(JoinSwitches, flags), JOIN_BOTH, JOIN_NOTAGS},
-    {BLT_SWITCH_CUSTOM, "-columns",   "columns" ,(char *)NULL,
-	Blt_Offset(JoinSwitches, ci),   JOIN_COLUMN, 0, &columnIterSwitch},
-    {BLT_SWITCH_CUSTOM, "-rows",      "rows", (char *)NULL,
+    {BLT_SWITCH_CUSTOM, "-rows",      "rowList", (char *)NULL,
 	Blt_Offset(JoinSwitches, ri),   JOIN_ROW, 0, &rowIterSwitch},
     {BLT_SWITCH_END}
 };
@@ -683,13 +683,13 @@ static Blt_SwitchSpec findSwitches[] =
 {
     {BLT_SWITCH_STRING, "-addtag", "tagName", (char *)NULL,
 	Blt_Offset(FindSwitches, tag), 0},
-    {BLT_SWITCH_LONG_NNEG, "-count", "number", (char *)NULL,
-	Blt_Offset(FindSwitches, maxMatches), 0},
     {BLT_SWITCH_OBJ,    "-emptyvalue", "string", (char *)NULL,
 	Blt_Offset(FindSwitches, emptyValueObjPtr), 0},
     {BLT_SWITCH_BITMASK, "-invert", "", (char *)NULL,
 	Blt_Offset(FindSwitches, flags), 0, FIND_INVERT},
-    {BLT_SWITCH_CUSTOM, "-rows", "rows", (char *)NULL,
+    {BLT_SWITCH_LONG_NNEG, "-maxrows", "numRows", (char *)NULL,
+	Blt_Offset(FindSwitches, maxMatches), 0},
+    {BLT_SWITCH_CUSTOM, "-rows", "rowList", (char *)NULL,
 	Blt_Offset(FindSwitches, iter), 0, 0, &rowIterSwitch},
     {BLT_SWITCH_END}
 };
@@ -844,84 +844,6 @@ blt_table_column_iter_switch_proc(
     }
     return TCL_OK;
 }
-
-#ifdef notdef
-/*
- *---------------------------------------------------------------------------
- *
- * ColumnsFreeProc --
- *
- *      Free the storage associated with the -rows switch.
- *
- * Results:
- *      None.
- *
- *---------------------------------------------------------------------------
- */
-/*ARGSUSED*/
-static void
-ColumnsFreeProc(ClientData clientData, char *record, int offset, int flags)
-{
-    Blt_Chain *chainPtr = (Blt_Chain *)(record + offset);
-
-    if (*chainPtr != NULL) {
-	Blt_Chain_Destroy(*chainPtr);
-	*chainPtr = NULL;
-    }
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * ColumnsSwitchProc --
- *
- *      Convert a Tcl_Obj representing an list of columns in the table.
- *
- * Results:
- *      The return value is a standard TCL result.
- *
- *---------------------------------------------------------------------------
- */
-/*ARGSUSED*/
-static int
-ColumnsSwitchProc(
-    ClientData clientData,              /* Flag indicating if the node is
-					 * considered before or after the
-					 * insertion position. */
-    Tcl_Interp *interp,                 /* Interpreter to report results. */
-    const char *switchName,             /* Not used. */
-    Tcl_Obj *objPtr,                    /* String representation */
-    char *record,                       /* Structure record */
-    int offset,                         /* Not used. */
-    int flags)                          /* Indicates whether this is a row or
-					 * column index. */
-{
-    SortSwitches *sortPtr = (SortSwitches *)record;
-    Blt_Chain *chainPtr = (Blt_Chain *)(record + offset);
-    Blt_Chain chain;
-    int i, objc;
-    Tcl_Obj **objv;
-
-    if (Tcl_ListObjGetElements(interp, objPtr, &objc, &objv) != TCL_OK) {
-	return TCL_ERROR;
-    }
-    chain = Blt_Chain_Create();
-    for (i = 0; i < objc; i++) {
-	BLT_TABLE_COLUMN col;
-
-	col = blt_table_get_column(interp, sortPtr->table, objv[i]);
-	if (col == NULL) {
-	    return TCL_ERROR;
-	}
-	Blt_Chain_Append(chain, col);
-    }
-    if (*chainPtr != NULL) {
-	Blt_Chain_Destroy(*chainPtr);
-    }
-    *chainPtr = chain;
-    return TCL_OK;
-}
-#endif
 
 /*
  *---------------------------------------------------------------------------
@@ -1110,7 +1032,7 @@ MakeRows(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr)
 /*
  *---------------------------------------------------------------------------
  *
- * IterateRows --
+ * IterateRowsWithCreate --
  *
  *      This is different from the blt_table_iterate_rows routine.
  *      If the row can't be found but looks like an index or label,
@@ -1119,8 +1041,8 @@ MakeRows(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr)
  *---------------------------------------------------------------------------
  */
 static int
-IterateRows(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr, 
-	    BLT_TABLE_ITERATOR *iterPtr)
+IterateRowsWithCreate(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr, 
+                      BLT_TABLE_ITERATOR *iterPtr)
 {
     if (blt_table_iterate_rows(NULL, table, objPtr, iterPtr) != TCL_OK) {
 	/* 
@@ -1171,7 +1093,7 @@ MakeColumns(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr)
 /*
  *---------------------------------------------------------------------------
  *
- * IterateColumns --
+ * IterateColumnsWithCreate --
  *
  *      This is different from the blt_table_iterate_columns routine.
  *      If the column can't be found but looks like an index or label,
@@ -1180,8 +1102,8 @@ MakeColumns(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr)
  *---------------------------------------------------------------------------
  */
 static int
-IterateColumns(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr, 
-	       BLT_TABLE_ITERATOR *iterPtr)
+IterateColumnsWithCreate(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr, 
+                         BLT_TABLE_ITERATOR *iterPtr)
 {
     if (blt_table_iterate_columns(interp, table, objPtr, iterPtr) != TCL_OK) {
 	/* 
@@ -1472,7 +1394,7 @@ PrintTraceInfo(Tcl_Interp *interp, TraceInfo *tiPtr, Tcl_Obj *listObjPtr)
     char string[5];
     struct _BLT_TABLE_TRACE *tracePtr;
 
-    Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewStringObj("id", 2));
+    Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewStringObj("name", 2));
     Tcl_ListObjAppendElement(interp, listObjPtr, 
 	Tcl_NewStringObj(tiPtr->hPtr->key.string, -1));
     tracePtr = tiPtr->trace;
@@ -2602,10 +2524,10 @@ AppendOp(ClientData clientData, Tcl_Interp *interp, int objc,
     int i, extra;
 
     table = cmdPtr->table;
-    if (IterateRows(interp, table, objv[2], &ri) != TCL_OK) {
+    if (IterateRowsWithCreate(interp, table, objv[2], &ri) != TCL_OK) {
 	return TCL_ERROR;
     }
-    if (IterateColumns(interp, table, objv[3], &ci) != TCL_OK) {
+    if (IterateColumnsWithCreate(interp, table, objv[3], &ci) != TCL_OK) {
 	return TCL_ERROR;
     }
     extra = 0;
@@ -3285,8 +3207,11 @@ ColumnIndexOp(ClientData clientData, Tcl_Interp *interp, int objc,
                  * doesn't exist. Duplicate labels are another story. This
                  * is too subtle a problem. Better to error on
                  * duplicates.  */
+                const char *tag;
+            
+                blt_table_column_spec(cmdPtr->table, objv[3], &tag);
                 Tcl_AppendResult(interp, "multiple columns specified by \"", 
-                                 Tcl_GetString(objv[3]), "\"", (char *)NULL);
+                                 tag, "\"", (char *)NULL);
                 return TCL_ERROR;
             }
         }
@@ -3776,7 +3701,7 @@ ColumnSetOp(ClientData clientData, Tcl_Interp *interp, int objc,
 
     table = cmdPtr->table;
     /* May set more than one row with the same values. */
-    if (IterateColumns(interp, table, objv[3], &ci) != TCL_OK) {
+    if (IterateColumnsWithCreate(interp, table, objv[3], &ci) != TCL_OK) {
 	return TCL_ERROR;
     }
     if (objc == 4) {
@@ -5104,10 +5029,6 @@ FindOp(ClientData clientData, Tcl_Interp *interp, int objc,
     memset(&switches, 0, sizeof(switches));
     rowIterSwitch.clientData = cmdPtr->table;
     blt_table_iterate_all_rows(cmdPtr->table, &switches.iter);
-
-#ifdef notdef    
-    switches.emptyValueObjPtr = Tcl_NewStringObj(cmdPtr->emptyValue, -1);
-#endif
     if (Blt_ParseSwitches(interp, findSwitches, objc - 3, objv + 3, 
 	&switches, BLT_SWITCH_DEFAULTS) < 0) {
 	return TCL_ERROR;
@@ -5327,10 +5248,10 @@ LappendOp(ClientData clientData, Tcl_Interp *interp, int objc,
     BLT_TABLE_COLUMN col;
 
     table = cmdPtr->table;
-    if (IterateRows(interp, table, objv[2], &ri) != TCL_OK) {
+    if (IterateRowsWithCreate(interp, table, objv[2], &ri) != TCL_OK) {
 	return TCL_ERROR;
     }
-    if (IterateColumns(interp, table, objv[3], &ci) != TCL_OK) {
+    if (IterateColumnsWithCreate(interp, table, objv[3], &ci) != TCL_OK) {
 	return TCL_ERROR;
     }
     for (col = blt_table_first_tagged_column(&ci); col != NULL; 
@@ -6140,8 +6061,11 @@ RowIndexOp(ClientData clientData, Tcl_Interp *interp, int objc,
                  * doesn't exist. Duplicate labels are another story. This
                  * is too subtle a problem. Better to error on
                  * duplicates.  */
+                const char *tag;
+            
+                blt_table_row_spec(cmdPtr->table, objv[3], &tag);
                 Tcl_AppendResult(interp, "multiple rows specified by \"", 
-                                 Tcl_GetString(objv[3]), "\"", (char *)NULL);
+                                 tag, "\"", (char *)NULL);
                 return TCL_ERROR;
             }
         }
@@ -6718,7 +6642,7 @@ RowSetOp(ClientData clientData, Tcl_Interp *interp, int objc,
 
     table = cmdPtr->table;
     /* May set more than one row with the same values. */
-    if (IterateRows(interp, table, objv[3], &ri) != TCL_OK) {
+    if (IterateRowsWithCreate(interp, table, objv[3], &ri) != TCL_OK) {
 	return TCL_ERROR;
     }
     if (objc == 4) {
@@ -7604,10 +7528,11 @@ SetOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	BLT_TABLE_ITERATOR ri, ci;
 	BLT_TABLE_COLUMN col;
 
-	if (IterateRows(interp, table, objv[i], &ri) != TCL_OK) {
+	if (IterateRowsWithCreate(interp, table, objv[i], &ri) != TCL_OK) {
 	    return TCL_ERROR;
 	}
-	if (IterateColumns(interp, table, objv[i + 1], &ci) != TCL_OK) {
+	if (IterateColumnsWithCreate(interp, table, objv[i + 1], &ci)
+            != TCL_OK) {
 	    return TCL_ERROR;
 	}
 	for (col = blt_table_first_tagged_column(&ci); col != NULL; 
@@ -7790,9 +7715,8 @@ TraceCellOp(ClientData clientData, Tcl_Interp *interp, int objc,
     colTag = rowTag = NULL;
     switch (rowSpec) {
     case TABLE_SPEC_RANGE:
-	Tcl_AppendResult(interp, "can't trace multiple rows \"",
-			 Tcl_GetString(objv[3]), "\": use a tag instead", 
-			 (char *)NULL);
+	Tcl_AppendResult(interp, "can't trace multiple rows \"", rowName,
+                         "\": use a tag instead", (char *)NULL);
 	return TCL_ERROR;
     case TABLE_SPEC_INDEX:
     case TABLE_SPEC_LABEL:
@@ -7803,9 +7727,8 @@ TraceCellOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     switch (colSpec) {
     case TABLE_SPEC_RANGE:
-	Tcl_AppendResult(interp, "can't trace multiple columns \"",
-			 Tcl_GetString(objv[4]), "\": use a tag instead", 
-			 (char *)NULL);
+	Tcl_AppendResult(interp, "can't trace multiple columns \"", colName,
+                         "\": use a tag instead", (char *)NULL);
 	return TCL_ERROR;
     case TABLE_SPEC_INDEX:
     case TABLE_SPEC_LABEL:
@@ -7912,9 +7835,8 @@ TraceColumnOp(ClientData clientData, Tcl_Interp *interp, int objc,
     colTag = NULL;
     switch (colSpec) {
     case TABLE_SPEC_RANGE:
-	Tcl_AppendResult(interp, "can't trace multiple columns \"",
-			 Tcl_GetString(objv[3]), "\": use a tag instead", 
-			 (char *)NULL);
+	Tcl_AppendResult(interp, "can't trace multiple columns \"", colName,
+                         "\": use a tag instead", (char *)NULL);
 	return TCL_ERROR;
     case TABLE_SPEC_INDEX:
     case TABLE_SPEC_LABEL:
@@ -8281,7 +8203,7 @@ UnsetOp(ClientData clientData, Tcl_Interp *interp, int objc,
 
     if ((objc - 2) & 1) {
 	Tcl_AppendResult(interp, "wrong # args: should be \"", 
-		Tcl_GetString(objv[0]), " unset ?row column?...", 
+		Tcl_GetString(objv[0]), " unset ?row column?...\"", 
 		(char *)NULL);
 	return TCL_ERROR;
     }

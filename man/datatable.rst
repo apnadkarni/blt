@@ -62,13 +62,13 @@ SYNTAX
 
   Creates a new datatable object. The name of the new datatable is
   returned.  If no *tableName* argument is present, then the name of the
-  datatble is automatically generated in the form "`datatable0`",
+  datatable is automatically generated in the form "`datatable0`",
   "`datatable1`", etc.  If the substring "`#auto`" is found in *tableName*,
   it is automatically substituted by a generated name.  For example, the
   name `.foo.#auto.bar` will be translated to `.foo.datatable0.bar`.
 
   A new TCL command (by the same name as the datatable) is also created.
-  Another TCL command or datatble object can not already exist as
+  Another TCL command or datatable object can not already exist as
   *tableName*.  If the TCL command is deleted, the datatable will also be
   freed.  The new datatable will be empty, no rows or columns.  Datatables
   are by default, created in the current namespace, not the global
@@ -114,13 +114,16 @@ their index, label, or tag.
    Labels can not be numbers (to distinguish them from indices). There may
    be duplicate row or column labels.
 
- *tag*
+ @*tag*
+
    A tag is a string associated with a row or column.  They are a useful of
-   grouping rows and columns.  Columns and rows can have any number of tags
-   associated with them.  There are two built-in tags: "all" and "end".
-   Every row and column have the tag "all".  The last row and column in the
-   table have the tag "end".  Row and column tags are distinct.  Tags may
-   be empty (associated with no rows or columns).
+   grouping rows and columns. Columns and rows can have any number of tags
+   associated with them.  To use a tag you prefix it with a '@'
+   character. This distinguishes tags from labels.  There are two built-in
+   tags: "all" and "end".  Every row and column have the tag "all".  The
+   last row and column in the table have the tag "end".  Row and column
+   tags are distinct. Tags may be empty (associated with no rows or
+   columns).
      
 You can also distinguish between indices, labels and tables by prefixing
 them with "index:", "label:", or "tag:".  
@@ -149,20 +152,20 @@ the command.  The operations available for datatables are listed below.
   Adds the rows from *srcTable* to the bottom of *tableName*. Columns are
   matched by their labels. New columns are automatically created. For
   example, if *tableName* doesn't have a column labeled "`foo`", one will
-  be created.  The column tags are also copied. ?Switches? can be any of
+  be created.  The column tags are also copied. *Switches* can be any of
   the following:
 
   **-columns** *columnList*
     Specifies the subset of columns from *srcTable* to add.  By default
     all columns are added.
 
+  **-notags** 
+    Don't copy column tags. 
+
   **-row** *rowList*
     Specifies the subset of rows from *srcTable* to add.  By default
     all rows are added.
     
-  **-notags** 
-    Don't copy column tags. 
-
 *tableName* **append** *row* *column* *value* ?\ *value*...\ ?
 
   Appends one or more values to the current value at *row*, *column* in
@@ -184,7 +187,7 @@ the command.  The operations available for datatables are listed below.
   Copies the column *srcColumn* into *destColumn*.  If a column
   *destColumn* doesn't already exist in *tableName*, one is created.
   *SrcColumn* and *destColumn* may be a label, index, or tag, but may not
-  represent more than one column.  ?Switches? can be any of the following:
+  represent more than one column.  *Switches* can be any of the following:
 
   **-append** 
     Append the values of *srcColumn* to *destColumn*.  By default the
@@ -206,7 +209,7 @@ the command.  The operations available for datatables are listed below.
 
   Creates a new column in *tableName*. The cells of the new column
   is initially empty. The index of the new column is returned.
-  ?Switches? can be any of the following:  
+  *Switches* can be any of the following:  
 
   **-after** *column*
     The position of the new column will be after *column*. *Column* may
@@ -253,7 +256,7 @@ the command.  The operations available for datatables are listed below.
 *tableName* **column extend** *numColumns* ?\ *switches*...\ ?
 
   Extends the table by one of more columns.  If *numColumns* is not present
-  then new 1 column is added.  ?Switches? can be any of the following:
+  then new 1 column is added.  *Switches* can be any of the following:
 
   **-labels** *list*
     Specifies the column labels for the new columns.
@@ -264,7 +267,7 @@ the command.  The operations available for datatables are listed below.
   label, index, or tag, but may not represent more than one column.
   Normally all the values of *column* are retrieved. If one or more
   *row* arguments are specified, then only the rows specified are
-  retrievd.  *Row* may be a row label, index, or tag.
+  retrieved.  *Row* may be a row label, index, or tag.
 
   Returns a list containing pairs of values and indices of the selected
   rows. If the *-labels* flag is present, the row label is returned instead
@@ -278,7 +281,7 @@ the command.  The operations available for datatables are listed below.
 *tableName* **column indices** ?\ *switches*...\ ? ?\ *pattern*...\ ?
 
   Returns the indices of the column whose labels match any *pattern*. 
-  ?Switches? can be any of the following:
+  *Switches* can be any of the following:
 
   **-duplicates** 
     Return only the indices of the duplicate columns.
@@ -287,19 +290,19 @@ the command.  The operations available for datatables are listed below.
 
   FIXME:
   Joins the columns of *srcTable* with *tableName*.
-  The column tags are also copied. ?Switches? can be any of
+  The column tags are also copied. *Switches* can be any of
   the following:
 
   **-columns** *columnList*
     Specifies the subset of columns from *srcTable* to add.  By default
     all columns are added.
 
+  **-notags** 
+    Don't copy column tags.
+    
   **-row** *rowList*
     Specifies the subset of rows from *srcTable* to add.  By default
     all rows are added.
-    
-  **-notags** 
-    Don't copy column tags.
     
 *tableName* **column label** *column* ?\ *label*\ *column*\ *label*\ ?...
 
@@ -307,19 +310,19 @@ the command.  The operations available for datatables are listed below.
   label, index, or tag, but may not represent more than one column.
   If *column* is the only argument, then the label of the column
   is returned.  If *column* and *label* pairs are specified, then
-  set the labels of the specificed columns are set.  
+  set the labels of the specified columns are set.  
   
 *tableName* **column labels** *column* ?\ *labelList*\ ?
 
   Gets or sets the all labels of the specified column.  If *labelList* is
   present, then column labels are set from the list of column labels.  
 
-*tableName* **column move** *src* *dest* ?\ *numColumns*\ ?
+*tableName* **column move** *srcColumn* *destColumn* ?\ *numColumns*\ ?
 
-  Move one or move columns in the table.  *Src* and *dest* may be a
-  label, index, or tag, but may not represent more than one column.
+  Move one or move columns in the table.  *SrcColumn* and *destColumn* may
+  be a label, index, or tag, but may not represent more than one column.
   By default only 1 column is moved, but if *numColumns* is present then
-  the more columns may be specified.  Moves cannot overlap.  
+  the more columns may be specified.  Moves cannot overlap.
   
 *tableName* **column names**  ?\ *pattern*...\ ?
 
@@ -454,19 +457,10 @@ the command.  The operations available for datatables are listed below.
 
   Fills the table with the directory listing specified by *path*. If
   *path* is a directory, then its entries are added to the table.
-  ?Switches? can be any of the following:
+  *Switches* can be any of the following:
 
-  **-hidden** 
-    Add hidden file and directory entries to the table.  
-
-  **-readable** 
-    Add readable file and directory entries to the table.
-
-  **-writable** 
-    Add writable file and directory entries to the table.
-
-  **-readonly** 
-    Add readonly (not writable) file and directory entries to the table.
+  **-directory** 
+    Add directory entries to the table.
 
   **-executable** 
     Add executable file and directory entries to the table.
@@ -474,14 +468,23 @@ the command.  The operations available for datatables are listed below.
   **-file** 
     Add file entries to the table.
 
-  **-directory** 
-    Add directory entries to the table.
+  **-hidden** 
+    Add hidden file and directory entries to the table.  
 
   **-link** 
     Add link entries to the table.
 
   **-pattern** *pattern*
     Only add entries matching *pattern* to the table.
+
+  **-readable** 
+    Add readable file and directory entries to the table.
+
+  **-readonly** 
+    Add read-only (not writable) file and directory entries to the table.
+
+  **-writable** 
+    Add writable file and directory entries to the table.
 
   The new columns are the following:
    
@@ -505,7 +508,7 @@ the command.  The operations available for datatables are listed below.
     The number representing the last access time of the entry,
 
   *mtime*
-    The number representing the last modication time of the entry,
+    The number representing the last modification time of the entry,
 
   *ctime*
     The number representing the last change time of the entry,
@@ -543,26 +546,29 @@ the command.  The operations available for datatables are listed below.
 *tableName* **find** *expression* ?\ *switches*...\ ?
 
   Finds the rows that satisfy *expression*.  *Expression* is a TCL
-  expression.  The expression is evaluated for each row in the table.
-  Variable names using column indices or labels (such as "${*index*}" and
-  "${*label*}" may be used to refer the values in the row.  Note that
-  if a cell is empty it won't have a variable associated with it.  You
-  can test for this by "[info exists var]". 
+  expression.  The expression is evaluated for each row in the table.  The
+  column values can be read via special variables. Column variable names
+  are either the column index or label.  They return the values in the row
+  for that column.  Note that if a cell is empty it doesn't have a variable
+  associated with it.  You can use **-emptyvalue** to return a known value
+  for empty cells, or you can test for empty cells by the "info exists"
+  command. 
 
   **-addtag**  *tagName*
-    Notify when rows are created, deleted, moved, or relabeled.
-
-  **-count**  *maxMatches*
-    Notify when rows are created, deleted, moved, or relabeled.
+    Add *tagName* to each returned row.
 
   **-emptyvalue**  *string*
-    Notify when rows are created, deleted, moved, or relabeled.
+    Return *string* for empty cells when evaluating column variables.
 
   **-invert**  
-    Notify when rows are created, deleted, moved, or relabeled.
+    Returns rows that where *expression* is false.
+
+  **-maxrows**  *numRows*
+    Stop when *number* rows have been found.
 
   **-rows** *rowList*
-    Notify when rows are created, deleted, moved, or relabeled.
+    Consider only the rows in *rowList*.  *RowList* is a list of
+    of row labels, indices, or tags that may refer to multiple rows.
 
 *tableName* **get** *row* *column* ?\ *defValue*\ ?
 
@@ -613,15 +619,15 @@ the command.  The operations available for datatables are listed below.
   Returns the minimum value in the table.  If *column* is present, 
   the maximum value in *column* is returned.
 
-*tableName* **numcolumns** ?\ *numColumns*\ ?
+*tableName* **numcolumns** ?\ *numColumns*?
 
   Sets or gets the number of column in *tableName*.  If *numRows* is
-  present, the table is grown or shrunk to accomodate the new size.
+  present, the table is resized to the specified number of columns.
 
 *tableName* **numrows** ?\ *numRows*\ ?
 
   Sets or gets the number of rows in *tableName*.  If *numRows* is
-  present, the table is grown or shrunk to accomodate the new size.
+  present, the table is resized to the specified number of rows.
 
 *tableName* **restore** ?\ *switches*\ ?
 
@@ -642,7 +648,7 @@ the command.  The operations available for datatables are listed below.
   Copies the row *srcRow* into *destRow*.  If a row *destRow* doesn't
   already exist in *tableName*, one is created.  *SrcRow* and *destRow* may
   be a label, index, or tag, but may not represent more than one row.
-  ?Switches? can be any of the following:
+  *Switches* can be any of the following:
 
   **-append** 
     Append the values of *srcRow* to *destRow*.  By default the
@@ -658,13 +664,13 @@ the command.  The operations available for datatables are listed below.
 
   **-table** *srcTable*
     Copy the row *srcRow* from the datatable *srcTable*.  By default
-    to *tableName* is also the source table.
+    *tableName* is the source table.
 
 *tableName* **row create** ?\ *switches*...\ ?
 
-  Creates a new row in *tableName*. The cells of the new row
-  is initially empty. The index of the new row is returned.
-  ?Switches? can be any of the following:  
+  Creates a new row in *tableName*. The cells of the new row is initially
+  empty. The index of the new row is returned.  *Switches* can be any of
+  the following:
 
   **-after** *row*
     The position of the new row will be after *row*. *Row* may
@@ -681,10 +687,6 @@ the command.  The operations available for datatables are listed below.
 
   **-tags** *tagList*
     Specifies the tags to add to the row.
-
-  **-type** *rowType*
-    Specifies the type of row. The type may be `string`, `double`,
-    `integer`, `boolean`, `time`, or , `blob`.
 
 *tableName* **row delete** *row*...
 
@@ -711,7 +713,7 @@ the command.  The operations available for datatables are listed below.
 *tableName* **row extend** *numRows* ?\ *switches*...\ ?
 
   Extends the table by one of more rows.  If *numRows* is not present
-  then new 1 row is added.  ?Switches? can be any of the following:
+  then new 1 row is added.  *Switches* can be any of the following:
 
   **-labels** *list*
     Specifies the row labels for the new rows.
@@ -736,7 +738,7 @@ the command.  The operations available for datatables are listed below.
 *tableName* **row indices** ?\ *switches*...\ ? ?\ *pattern*...\ ?
 
   Returns the indices of the rows whose labels match any *pattern*. 
-  ?Switches? can be any of the following:
+  *Switches* can be any of the following:
 
   **-duplicates** 
     Return only the indices of the duplicate row labels.
@@ -745,20 +747,20 @@ the command.  The operations available for datatables are listed below.
 
   FIXME:
   Joins the rows of *srcTable* with *tableName*.
-  The row tags are also copied. ?Switches? can be any of
+  The row tags are also copied. *Switches* can be any of
   the following:
 
   **-column** *columnList*
     Specifies the subset of columns from *srcTable* to add.  By default
     all columns are added.
     
+  **-notags** 
+    Don't copy row tags.
+    
   **-rows** *rowList*
     Specifies the subset of rows from *srcTable* to add.  By default
     all rows are added.
 
-  **-notags** 
-    Don't copy row tags.
-    
 *tableName* **row label** *row* ?\ *label*\ *row*\ *label*\ ?...
 
   Gets or sets the labels of the specified row.  *Row* may be a
@@ -884,48 +886,98 @@ the command.  The operations available for datatables are listed below.
 
 *tableName* **sort** ?\ *switches*...\ ?
 
-  **-ascii** 
-    Notify when rows are created, deleted, moved, or relabeled.
+  Sorts the table based on the columns specified.  The type comparison is
+  determined from the column type.  But you can use **-ascii** or
+  **-dictionary** switch to sort the rows.  If the **-list**,
+  **-nonempty**, **-unique**, or **-values** switches are present, a list
+  of the sort rows is returned instead of rearranging the rows in the
+  table. *Switches* can be one of the following:
+
+  **-ascii**
+    Use string comparison with Unicode code-point collation order (the name
+    is for backward-compatibility reasons.)  The string representation of
+    the values are compared.   
 
   **-columns** *columnList*
-    Notify when rows are created, deleted, moved, or relabeled.
+    Compare values in the columns in *columnList*.  This defines
+    the comparison order.
 
   **-decreasing** 
-    Notify when rows are created, deleted, moved, or relabeled.
+    Sort the rows highest to lowest. By default the rows are sorted
+    lowest to highest.
 
   **-dictionary** 
-    Notify when rows are created, deleted, moved, or relabeled.
+    Use dictionary-style comparison. This is the same as -ascii except (a)
+    case is ignored except as a tie-breaker and (b) if two strings contain
+    embedded numbers, the numbers compare as integers, not characters.  For
+    example, in -dictionary mode, bigBoy sorts between bigbang and bigboy,
+    and x10y sorts between x9y and x11y.
+
+  **-frequency** 
+    Sort the rows according to frequency of the values.
 
   **-list** 
-    Notify when rows are created, deleted, moved, or relabeled.
+    Return a list of the sorted rows instead of rearranging the rows
+    in the table.
 
   **-nonempty** 
-    Notify when rows are created, deleted, moved, or relabeled.
+    Return only non-empty values.  This only has affect when the
+    **-values** switch is set.
 
   **-rows** *rowList*
-    Notify when rows are created, deleted, moved, or relabeled.
-
-  **-nonempty** 
-    Notify when rows are created, deleted, moved, or relabeled.
+    Consider only the rows in *rowList*.  *RowList* is a list of
+    of row labels, indices, or tags that may refer to multiple rows.
+    The list of rows will be returned.
 
   **-unique** 
-    Notify when rows are created, deleted, moved, or relabeled.
+    Return a list of unique values.  
 
   **-values** 
-    Notify when rows are created, deleted, moved, or relabeled.
+    Return the row values.  By default the row indices are returned.
 
-*tableName* **trace cell** *row* *column* *how* *command*
+*tableName* **trace cell** *row* *column* *ops* *command*
 
-   Registers a callback to *command* when the cell is created, read, written,
-   or unset. *How* describes what combinations of events.
+  Registers a callback to *command* when the cell (designated by *row* and
+  *column*) value is read, written, or unset. *Row* and *column* may be a
+  label, index, or tag and may refer to multiple rows (example: `all`).
+  *Ops* indicates which operations are of interest, and consists of one or
+  more of the following letters:
 
-*tableName* **trace column** *column* *how* *command*
+  **r**
+    Invoke *command* whenever the cell value is read. 
+  **w**
+    Invoke *command* whenever the cell value is written.  
+  **c**
+    Invoke *command* whenever the cell value is created.  This happens
+    when the cell was previously empty.
+  **u** 
+    Invoke *command* whenever the cell value is unset.  
+
+*tableName* **trace column** *column* *ops* *command*
+
+  Registers a callback to *command* when any cell in the *column* is read,
+  written, or unset. *Column* may be a label, index, or tag and may refer
+  to multiple columns (example: `all`).  *Ops* indicates which operations
+  are of interest, and consists of one or more of the following letters:
+
+  **r**
+    Invoke *command* whenever the cell value is read. 
+  **w**
+    Invoke *command* whenever the cell value is written.  
+  **c**
+    Invoke *command* whenever the cell value is created.  This happens
+    when the cell was previously empty.
+  **u** 
+    Invoke *command* whenever the cell value is unset.  
 
 *tableName* **trace delete** *traceName*...
 
+  Deletes the trace associated with *traceName*.
+
 *tableName* **trace info** *traceName*
 
-  Describes *traceName*.
+  Describes *traceName*.  A list of name value pairs is returned.
+  The *name*, *row*, *column*, *flags*, and *command* are returned.
   
 *tableName* **trace names** ?\ *pattern*...\ ?
 
@@ -934,6 +986,23 @@ the command.  The operations available for datatables are listed below.
   any of the trace names matching one of the patterns is returned.
    
 *tableName* **trace row** *row* *how* *command*
+
+  Registers a callback to *command* when any cell in the *row* is read,
+  written, or unset. *Row* may be a label, index, or tag and
+  may refer to multiple rows (example: `all`).  *Ops* indicates which
+  operations are of interest, and consists of one or more of the following
+  letters:
+
+  **r**
+    Invoke *command* whenever the cell value is read. 
+  **w**
+    Invoke *command* whenever the cell value is written.  
+  **c**
+    Invoke *command* whenever the cell value is created.  This happens
+    when the cell was previously empty.
+  **u** 
+    Invoke *command* whenever the cell value is unset.  
+
 
 *tableName* **unset** *row* *column* ?\ *row*\ *column*\ ?...
 
@@ -1003,57 +1072,54 @@ Handlers for various datatable formats can be loaded using the TCL
 `mysql`, `psql`, `vector`, and `tree`.
 
 **csv**
- To use the CSV handler you must first require the package.
+ The *csv* module reads and writes comma separated values (CSV) data.
+ The package can be manually loaded as follows.
 
-   **package require blt_datatable_xml**
+   **package require blt_datatable_csv**
 
- Then the following **import** and **export** commands become available.
+ By default this package is automatically loaded when you use the *csv*
+ format in the **import** or **export** operations.
 
  *tableName* **import csv** ?\ *switches..*\ ?
 
-  Imports the CSV data into the datatable. 
-  The following import switches are supported:
+  Imports the CSV data into the datatable.  The following *import* switches
+  are supported:
 
-  **-file** *fileName*
-   Read the CSV file *fileName* to load the table.
+  **-autoheaders** 
+   Set the column labels from the first row of the CSV data.  
+
+  **-columnlabels** *labelList*
+   Set the column labels from the list of labels in *labelList*.
+
+  **-comment** *char*
+   Specifies a comment character.  Any line in the CSV file starting
+   with this character is treated as a comment and ignored.  By default
+   the comment character is "", indicating no comments.
 
   **-data** *string*
    Read the CSV information from *string*.
 
-  **-separator** *char*
-   Specifies the separator character.  This is by default the comma.
-   If *char* is "auto", then the separator is automatically determined.
-
-  **-escape** *char*
-   Load the JSON information into the tree starting at *node*.  The
-   default is the root node of the tree.
-
-  **-quote** *char*
-   Load the JSON information into the tree starting at *node*.  The
-   default is the root node of the tree.
-
-  **-quote** *char*
-   Specifies the quote character.  This is by default the double quote.
-
-  **-comment** *char*
-   Specifies a comment character.  Any line in the CSV file starting
-   with this character is treated as a comment and ignored.
+  **-emptyvalue** *string*
+   Specifies a string value to use for cells when empty fields
+   are found in the CSV data.
 
   **-encoding** *string*
    Specifies the encoding to use when reading the CSV file.
 
+  **-file** *fileName*
+   Read the CSV file from *fileName*.
+
   **-maxrows** *numRows*
    Specifies the maximum number of rows to load into the table. 
 
-  **-empty** *string*
-   Specifies a string value to use for cells when empty fields
-   are found in the CSV data.
+  **-quote** *char*
+   Specifies the quote character.  This is by default the double quote (")
+   character.
 
-  **-headers** *labelList*
-   Set the column labels from the list of labels in *labelList*.
-
-  **-autoheaders** *boolean*
-   Set the column labels from the first row of the CSV data.  
+  **-separator** *char*
+   Specifies the separator character.  By default this is the comma (,)
+   character. If *char* is "auto", then the separator is automatically
+   determined.
 
  *tableName* **export csv** ?\ *switches..*\ ?
 
@@ -1071,7 +1137,7 @@ Handlers for various datatable formats can be loaded using the TCL
    **-file** *fileName*
     Write the CSV output to the file *fileName*.
 
-   *-quote** *char*
+   **-quote** *char*
      Specifies the quote character.  This is by default the double quote.
 
    **-rowlabels** 
@@ -1083,14 +1149,17 @@ Handlers for various datatable formats can be loaded using the TCL
     all rows are exported.
 
    **-separator** *char*
-    Specifies the separator character.  This is by default the comma.
+    Specifies the separator character.  This is by default the comma (,)
+    character.
 
 **mysql**
- To use the CSV handler you must first require the package.
+ The *mysql* module reads and writes tables a Mysql database.
+ The package can be manually loaded as follows.
 
-   **package require blt_datatable_xml**
+   **package require blt_datatable_mysql**
 
- Then the following **import** and **export** commands become available.
+ By default this package is automatically loaded when you use the *mysql*
+ format in the **import** or **export** operations.
 
  *tableName* **import mysql** ?\ *switches..*\ ?
 
@@ -1117,11 +1186,14 @@ Handlers for various datatable formats can be loaded using the TCL
     Specifies the SQL query to make to the *Mysql* database.
 
 **psql**
- To use the CSV handler you must first require the package.
 
-   **package require blt_datatable_xml**
+ The *psql* module reads and writes tables a *Postgresql* database.
+ The package can be manually loaded as follows.
 
- Then the following **import** and **export** commands become available.
+   **package require blt_datatable_psql**
+
+ By default this package is automatically loaded when you use the *psql*
+ format in the **import** or **export** operations.
 
  *tableName* **import psql** ?\ *switches..*\ ?
 
@@ -1151,11 +1223,14 @@ Handlers for various datatable formats can be loaded using the TCL
      Specifies the name of the *Postgresql* table being queried.
 
 **sqlite**
- To use the CSV handler you must first require the package.
 
-   **package require blt_datatable_xml**
+ The *sqlite* module reads and writes tables a *Sqlite3* database.
+ The package can be manually loaded as follows.
 
- Then the following **import** and **export** commands become available.
+   **package require blt_datatable_sqlite**
+
+ By default this package is automatically loaded when you use the *sqlite*
+ format in the **import** or **export** operations.
 
  *tableName* **import sqlite** ?\ *switches*\... ?
 
@@ -1169,11 +1244,14 @@ Handlers for various datatable formats can be loaded using the TCL
      Specifies the SQL query to make to the *Sqlite* database.
 
 **tree**
- To use the CSV handler you must first require the package.
 
-   **package require blt_datatable_xml**
+ The *tree* module reads and writes tables a BLT tree.
+ The package can be manually loaded as follows.
 
- Then the following **import** and **export** commands become available.
+   **package require blt_datatable_tree**
+
+ By default this package is automatically loaded when you use the *tree*
+ format in the **import** or **export** operations.
 
  *tableName* **import tree** *treeName* ?\ *switches..*\ ?
 
@@ -1192,11 +1270,14 @@ Handlers for various datatable formats can be loaded using the TCL
      the root of the tree is the root node.
 
 **vector**
- To use the CSV handler you must first require the package.
 
-   **package require blt_datatable_xml**
+ The *vector* module reads and writes data from a BLT vector.
+ The package can be manually loaded as follows.
 
- Then the following **import** and **export** commands become available.
+   **package require blt_datatable_vector**
+
+ By default this package is automatically loaded when you use the *vector*
+ format in the **import** or **export** operations.
 
  *tableName* **import vector** ?\ *destColumn* *vecName*\ ?...
 
@@ -1207,15 +1288,18 @@ Handlers for various datatable formats can be loaded using the TCL
    deleted.  Rows may added to the table to store the vector values.
 
 **xml**
- To use the CSV handler you must first require the package.
+
+ The *xml* module reads and writes XML data.  The package can be manually
+ loaded as follows.
 
    **package require blt_datatable_xml**
 
- Then the following **import** and **export** commands become available.
+ By default this package is automatically loaded when you use the *xml*
+ format in the **import** or **export** operations.
 
  *tableName* **import xml** ?\ *switches..*\ ?
 
-   Imports XML into the table.  The following export switches are
+   Imports XML data into the table.  The following export switches are
    supported:
 
    **-data** *string*

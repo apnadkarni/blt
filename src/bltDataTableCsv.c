@@ -99,26 +99,30 @@ typedef struct {
     Tcl_Obj *emptyValueObjPtr;          /* If non-NULL, empty value. */
     int maxRows;			/* Stop processing after this many
 					 * rows have been found. */
+    const char **columnLabels;
+    int nextLabel;
 } ImportArgs;
 
 static Blt_SwitchSpec importSwitches[] = 
 {
+    {BLT_SWITCH_LIST,	"-columnlabels",  "labelList", (char *)NULL,
+	Blt_Offset(ImportArgs, columnLabels), 0},
     {BLT_SWITCH_STRING, "-comment",     "char", (char *)NULL,
 	Blt_Offset(ImportArgs, reqComment), 0},
     {BLT_SWITCH_OBJ,	"-data",      "string", (char *)NULL,
 	Blt_Offset(ImportArgs, dataObjPtr), 0, 0, NULL},
+    {BLT_SWITCH_OBJ,    "-emptyvalue",      "string", (char *)NULL,
+	Blt_Offset(ImportArgs, emptyValueObjPtr), 0},
     {BLT_SWITCH_OBJ,	"-encoding",  "string", (char *)NULL,
 	Blt_Offset(ImportArgs, encodingObjPtr), 0, 0, NULL},
     {BLT_SWITCH_OBJ,	"-file",      "fileName", (char *)NULL,
 	Blt_Offset(ImportArgs, fileObjPtr), 0},
-    {BLT_SWITCH_INT_NNEG, "-maxrows", "integer", (char *)NULL,
+    {BLT_SWITCH_INT_NNEG, "-maxrows", "numRows", (char *)NULL,
 	Blt_Offset(ImportArgs, maxRows), 0},
     {BLT_SWITCH_STRING, "-quote",     "char", (char *)NULL,
 	Blt_Offset(ImportArgs, reqQuote), 0},
     {BLT_SWITCH_STRING, "-separator", "char", (char *)NULL,
 	Blt_Offset(ImportArgs, reqSeparator), 0},
-    {BLT_SWITCH_OBJ,    "-empty",      "string", (char *)NULL,
-	Blt_Offset(ImportArgs, emptyValueObjPtr), 0},
     {BLT_SWITCH_END}
 };
 
@@ -663,6 +667,21 @@ ImportGetLine(Tcl_Interp *interp, ImportArgs *argsPtr, char **bufferPtr,
     return TCL_OK;
 }
 
+static const char *
+GetNextLabel(ImportArgs *argsPtr)
+{
+    const char *label;
+    
+    if (argsPtr->columnLabels == NULL) {
+	return NULL;
+    }
+    label = argsPtr->columnLabels[argsPtr->nextLabel];
+    if (label != NULL) {
+	return NULL;
+    }
+    argsPtr->nextLabel++;
+    return label;
+}
 
 static int
 ImportCsv(Tcl_Interp *interp, BLT_TABLE table, ImportArgs *argsPtr)
@@ -742,8 +761,16 @@ ImportCsv(Tcl_Interp *interp, BLT_TABLE table, ImportArgs *argsPtr)
 		    }
 		    /* End of field. Append field to row. */
 		    if (i >= blt_table_num_columns(table)) {
+			const char *label;
+			
 			if (blt_table_extend_columns(interp, table, 1, &col) 
 			    != TCL_OK) {
+			    goto error;
+			}
+			label = GetNextLabel(argsPtr);
+			if ((label != NULL) && 
+			    (blt_table_set_column_label(interp, table, col,
+							label) != TCL_OK)) {
 			    goto error;
 			}
 		    } else {
@@ -828,6 +855,7 @@ ImportCsv(Tcl_Interp *interp, BLT_TABLE table, ImportArgs *argsPtr)
 	     */
 	    if (fp != field) {
 		char *last;
+		const char *label;
 
 		last = fp;
 		/* Remove trailing spaces */
@@ -846,6 +874,12 @@ ImportCsv(Tcl_Interp *interp, BLT_TABLE table, ImportArgs *argsPtr)
 			goto error;
 		    }
 		}			
+		label = GetNextLabel(argsPtr);
+		if ((label != NULL) &&
+		    (blt_table_set_column_label(interp, table, col,
+						label) != TCL_OK)) {
+		    goto error;
+		}
 		if (((last > field) || (isQuoted)) && 
 		    (!IsEmpty(argsPtr, field, last - field))) {
 		    if (blt_table_set_string(interp, table, row, col, field, 
