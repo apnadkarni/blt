@@ -50,69 +50,69 @@ DESCRIPTION
 ===========
 
 The **datatable** command creates datatable data objects.  A *datatable*
-object is table of cells.  Row and columns both have labels that address
-the row or column.  Cells contain data.  nodes do not have to contain the
-same data keys.  It is associated with a TCL command that you can use to
-access and modify the its structure and data. 
+object is table of cells.  Row and columns both have indices and labels
+that address the row or column.  Cells may contain data or may be empty.
 
 SYNTAX
 ======
 
 **blt::datatable create** ?\ *tableName*\ ?  
 
-  Creates a new datatable object. The name of the new datatable is
+  Creates a new *datatable* object. The name of the new datatable is
   returned.  If no *tableName* argument is present, then the name of the
   datatable is automatically generated in the form "`datatable0`",
   "`datatable1`", etc.  If the substring "`#auto`" is found in *tableName*,
   it is automatically substituted by a generated name.  For example, the
   name `.foo.#auto.bar` will be translated to `.foo.datatable0.bar`.
-
-  A new TCL command (by the same name as the datatable) is also created.
-  Another TCL command or datatable object can not already exist as
-  *tableName*.  If the TCL command is deleted, the datatable will also be
-  freed.  The new datatable will be empty, no rows or columns.  Datatables
-  are by default, created in the current namespace, not the global
-  namespace, unless *tableName* contains a namespace qualifier, such as
-  "`fred::myDataTable`".
+  Datatables are by default created in the current namespace, not the
+  global namespace, unless *tableName* contains a namespace qualifier, such
+  as "`fred::myDataTable`".
+  
+  A new TCL command (by the same name as the datatable) is created that you
+  can use to access and manage the datatable object.  Another TCL command
+  or datatable object can not already exist as *tableName*.  The new
+  datatable will be empty with no rows or columns.  If the TCL command
+  *tableName* is deleted, the datatable will also be released.
 
 **blt::datatable destroy** *tableName*...
 
   Releases one of more datatables.  The TCL command associated with
-  *tableName* is also removed.  Datatables are reference counted.
-  The internal datatable data object isn't destroyed until no one else
-  is using it.
+  *tableName* is also removed.  Datatables are reference counted.  The
+  internal datatable data object isn't destroyed until no one else is using
+  it.
 
 **blt::datatable exists** *tableName*
 
-  Indicates if the named table already exists.  Returns `1` is
-  the table exists, `0` otherwise.
+  Indicates if a datatable named *tableName* already exists.  Returns "1"
+  is the datatable exists, "0" otherwise.
 
 **blt::datatable load** *format* *libPath*
 
   Dynamically loads the named datatable module.  This is used internally
-  to load datatable modules.
+  to load datatable modules for importing and exporting data.
 
 **blt::datatable names** ?\ *pattern*...\ ?
 
-  Returns the names of all datatable objects.  if a *pattern* argument
-  is given, then the only those datatables whose name matches pattern will
-  be listed.
+  Returns the names of all datatable objects.  If one or more *pattern*
+  arguments is provided, then the any datatables whose name matches *pattern*
+  will be listed.
 
 REFERENCING ROWS AND COLUMNS
 ============================
 
-Row and columns in a *datatable* object may be referred by either 
-their index, label, or tag.
+Row and columns in a *datatable* object may be referred by either their
+index, label, or tag.
 
  *index*
    The number of the row or column.  Row and column indices start from 0.
-   The index of a row or column may change as rows or columns are add,
+   The index of a row or column may change as rows or columns are added,
    deleted, moved, or sorted.
 
  *label*
    The label of the row or column.  Each row and column has a label.
-   Labels can not be numbers (to distinguish them from indices). There may
-   be duplicate row or column labels.
+   Labels should not be numbers (to distinguish them from indices). Row and
+   column labels are distinct.  There can be duplicate row or column
+   labels.
 
  @*tag*
 
@@ -125,14 +125,14 @@ their index, label, or tag.
    tags are distinct. Tags may be empty (associated with no rows or
    columns).
      
-You can also distinguish between indices, labels and tables by prefixing
-them with "index:", "label:", or "tag:".  
+If the row or column specifier is an integer then it is assumed to refer to
+a row or column index.  But you can also distinguish between indices,
+labels and tables by prefixing them with "index:", "label:", or "tag:".
 
-When specifying row or columns in datatable object commands, if the
-specifier is an integer then it is assumed to be a row or column index.
-Some datatable commands only operate on a single row or column at a
-time; if *tag* or *label* specified multiple rows or columns, then
-an error is generated.
+You can refer to multiple rows or columns in a tag (such as 'all') or
+label.  Some datatable commands only operate on a single row or column at a
+time; if *tag* or *label* refer to multiple rows or columns, then an error
+is generated.
 
 .. _`DATATABLE OPERATIONS`:
 
@@ -140,7 +140,7 @@ DATATABLE OPERATIONS
 ====================
 
 Once you create a datatable object, you can use its TCL command 
-to query or modify it.  The general form is
+to query or modify it.  The general form of the command is
 
   *tableName* *operation* ?\ *arg*\ ?...
 
@@ -244,7 +244,7 @@ the command.  The operations available for datatables are listed below.
   
 *tableName* **column empty** *column*
 
-  Returns a list of the indices of the empty rows in *column*.  *Column*
+  Returns the indices of the empty rows in *column*.  *Column*
   may be a label, index, or tag, but may not represent more than one
   column.
 
@@ -269,9 +269,9 @@ the command.  The operations available for datatables are listed below.
   *row* arguments are specified, then only the rows specified are
   retrieved.  *Row* may be a row label, index, or tag.
 
-  Returns a list containing pairs of values and indices of the selected
-  rows. If the *-labels* flag is present, the row label is returned instead
-  of the index.
+  Returns the pairs of values and indices of the selected rows. If the
+  *-labels* flag is present, the row label is returned instead of the
+  index.
 
 *tableName* **column index** *column* 
 
@@ -597,9 +597,8 @@ the command.  The operations available for datatables are listed below.
 
 *tableName* **limits** ?\ *column*\ ?
 
-  Returns a list of the minimum and maximum values in *tableName*.  If
-  *column* is present, the minimum and maximum values in *column* are
-  returned.
+  Returns the minimum and maximum values in *tableName*.  If *column* is
+  present, the minimum and maximum values in *column* are returned.
 
 *tableName* **lookup** ?\ *value...*\ ?
 
@@ -701,9 +700,8 @@ the command.  The operations available for datatables are listed below.
   
 *tableName* **row empty** *row*
 
-  Returns a list of the indices of the empty columns in *row*.  *Row*
-  may be a label, index, or tag, but may not represent more than one
-  row.
+  Returns the indices of the empty columns in *row*.  *Row* may be a label,
+  index, or tag, but may not represent more than one row.
 
 *tableName* **row exists** *row*
 
@@ -726,9 +724,9 @@ the command.  The operations available for datatables are listed below.
   *column* arguments are specified, then only the columns specified are
   retrievd.  *Column* may be a column label, index, or tag.
 
-  Returns a list containing pairs of values and indices of the selected
-  columns. If the *-labels* flag is present, the column label is returned
-  instead of the index.
+  Returns pairs of values and indices of the selected columns. If the
+  *-labels* flag is present, the column label is returned instead of the
+  index.
 
 *tableName* **row index** *row* 
 
@@ -794,11 +792,11 @@ the command.  The operations available for datatables are listed below.
 
 *tableName* **row set**  *row* ?\ *column*\ *value*\...? 
 
-  Sets the values of the specified row.  *Row* may be a label, index,
-  or tag, but may not represent more than one row.  One or more *column*
-  and *value* pairs may be specified.  *Column* may be a column label, index, or
-  tag.  It specifies the column whose value is to be set.  *Value* is the new
-  value.
+  Sets the values of the specified rows.  *Row* may be a label, index, or
+  tag, but may not represent more than one row.  One or more *column* and
+  *value* pairs may be specified.  *Column* may be a column label, index,
+  or tag.  It specifies the column whose value is to be set.  *Value* is
+  the new value.
 
 *tableName* **row tag add**  *tag* ?\ *row*\...? 
 
@@ -981,9 +979,9 @@ the command.  The operations available for datatables are listed below.
   
 *tableName* **trace names** ?\ *pattern*...\ ?
 
-  Returns a list of the traces currently registered. This includes cell,
+  Returns the names of the traces currently registered. This includes cell,
   row, and column traces.  If one of *pattern* arguments are present, then
-  any of the trace names matching one of the patterns is returned.
+  any of the trace name matching one of the patterns is returned.
    
 *tableName* **trace row** *row* *how* *command*
 
@@ -1082,8 +1080,9 @@ Handlers for various datatable formats can be loaded using the TCL
 
  *tableName* **import csv** ?\ *switches..*\ ?
 
-  Imports the CSV data into the datatable.  The following *import* switches
-  are supported:
+  Imports the CSV data into the datatable. The following import switches
+  are supported.  One of the **-file** or **-data** switches must be
+  specified, but not both.
 
   **-autoheaders** 
    Set the column labels from the first row of the CSV data.  
@@ -1103,8 +1102,8 @@ Handlers for various datatable formats can be loaded using the TCL
    Specifies a string value to use for cells when empty fields
    are found in the CSV data.
 
-  **-encoding** *string*
-   Specifies the encoding to use when reading the CSV file.
+  **-headers** *labelList*
+   Specifies the column labels from the list of labels in *labelList*.
 
   **-file** *fileName*
    Read the CSV file from *fileName*.
@@ -1124,7 +1123,8 @@ Handlers for various datatable formats can be loaded using the TCL
  *tableName* **export csv** ?\ *switches..*\ ?
 
   Exports the datatable into CSV data.  If no **-file** switch is provided,
-  the CSV output is returned.  The following import switches are supported:
+  the CSV output is returned as the result of the command.  The following
+  import switches are supported:
 
    **-columnlabels** 
     Indicates to create an extra row in the CSV containing the
@@ -1138,7 +1138,8 @@ Handlers for various datatable formats can be loaded using the TCL
     Write the CSV output to the file *fileName*.
 
    **-quote** *char*
-     Specifies the quote character.  This is by default the double quote.
+     Specifies the quote character.  This is by default the double quote (")
+     character.
 
    **-rowlabels** 
     Indicates to create an extra column in the CSV containing the
