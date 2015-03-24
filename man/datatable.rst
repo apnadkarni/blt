@@ -931,11 +931,11 @@ the command.  The operations available for datatables are listed below.
     lowest to highest.
 
   **-dictionary** 
-    Use dictionary-style comparison. This is the same as -ascii except (a)
-    case is ignored except as a tie-breaker and (b) if two strings contain
-    embedded numbers, the numbers compare as integers, not characters.  For
-    example, in -dictionary mode, bigBoy sorts between bigbang and bigboy,
-    and x10y sorts between x9y and x11y.
+    Use dictionary-style comparison. This is the same as **-ascii***
+    except (a) case is ignored except as a tie-breaker and (b) if two
+    strings contain embedded numbers, the numbers compare as integers, not
+    characters.  For example, in -dictionary mode, "bigBoy" sorts between
+    "bigbang" and "bigboy", and "x10y" sorts between "x9y" and "x11y".
 
   **-frequency** 
     Sort the rows according to frequency of the values.
@@ -943,6 +943,10 @@ the command.  The operations available for datatables are listed below.
   **-list** 
     Return a list of the sorted rows instead of rearranging the rows
     in the table.
+
+  **-nocase** 
+    Ignore care when comparing values.  This only has affect when the
+    **-ascii** switch is set.
 
   **-nonempty** 
     Return only non-empty values.  This only has affect when the

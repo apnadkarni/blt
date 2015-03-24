@@ -631,6 +631,8 @@ static Blt_SwitchSpec sortSwitches[] =
 	Blt_Offset(SortSwitches, sortFlags), 0, TABLE_SORT_FREQUENCY},
     {BLT_SWITCH_BITMASK, "-list", "", (char *)NULL,
 	Blt_Offset(SortSwitches, flags), 0, SORT_LIST},
+    {BLT_SWITCH_BITMASK, "-nocase", "", (char *)NULL,
+	Blt_Offset(SortSwitches, sortFlags), 0, TABLE_SORT_IGNORECASE},
     {BLT_SWITCH_BITMASK, "-nonempty", "", (char *)NULL,
 	Blt_Offset(SortSwitches, flags), 0, SORT_NONEMPTY|SORT_LIST},
     {BLT_SWITCH_CUSTOM, "-rows", "", (char *)NULL,

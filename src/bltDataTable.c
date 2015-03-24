@@ -2170,6 +2170,37 @@ CompareAsciiStrings(ClientData clientData, Column *colPtr, Row *rowPtr1,
 }
 
 static int
+CompareAsciiStringsIgnoreCase(ClientData clientData, Column *colPtr,
+                              Row *rowPtr1, Row *rowPtr2)
+{
+    Value *valuePtr1, *valuePtr2, *vector;
+    Table *tablePtr;
+
+    tablePtr = sortData.table;
+    valuePtr1 = valuePtr2 = NULL;
+    vector = tablePtr->corePtr->data[colPtr->offset];
+    if (vector != NULL) {
+	valuePtr1 = vector + rowPtr1->offset;
+	if (IsEmpty(valuePtr1)) {
+	    valuePtr1 = NULL;
+	}
+	valuePtr2 = vector + rowPtr2->offset;
+	if (IsEmpty(valuePtr2)) {
+	    valuePtr2 = NULL;
+	}
+    }
+    if (IsEmpty(valuePtr1)) {
+	if (IsEmpty(valuePtr2)) {
+	    return 0;
+	}
+	return 1;
+    } else if (IsEmpty(valuePtr2)) {
+	return -1;
+    }
+    return strcasecmp(valuePtr1->string, valuePtr2->string);
+}
+
+static int
 CompareIntegers(ClientData clientData, Column *colPtr, Row *rowPtr1, 
                 Row *rowPtr2)
 {
@@ -2288,7 +2319,11 @@ blt_table_get_compare_proc(Table *tablePtr, Column *colPtr, unsigned int flags)
 	    break;
 	default:
 	case TABLE_SORT_ASCII:
-	    proc = CompareAsciiStrings;
+            if (flags & TABLE_SORT_IGNORECASE) {
+                proc = CompareAsciiStringsIgnoreCase;
+            } else {
+                proc = CompareAsciiStrings;
+            }
 	    break;
 	}
     }
