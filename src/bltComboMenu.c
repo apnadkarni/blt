@@ -136,13 +136,16 @@ static const char emptyString[] = "";
 
 #define ITEM_MAP          (1<<1)        /* Item needs to be remapped  */
 #define ITEM_REDRAW       (1<<2)        /* Item needs to be redrawn. */
+#define ITEM_GEOMETRY     (1<<3)        /* Item needs its geometry to be
+                                         * recomputed. */
 #define ITEM_SELECTED     (1<<4)        /* Radiobutton/checkbutton is
 					 * selected. */
 
 /* Item state. */
 #define ITEM_NORMAL       (1<<5)        /* Draw item normally. */
 #define ITEM_DISABLED     (1<<6)        /* Item is disabled. */
-#define ITEM_STATE_MASK   ((ITEM_DISABLED)|(ITEM_NORMAL))
+#define ITEM_HIDDEN       (1<<7)        /* Item is hidden. */
+#define ITEM_STATE_MASK   ((ITEM_DISABLED)|(ITEM_NORMAL)|(ITEM_HIDDEN))
 
 /* Item type. */
 #define ITEM_BUTTON       (1<<9)        /* Item is command button. */
@@ -959,6 +962,9 @@ static Blt_ConfigSpec sortSpecs[] =
     {BLT_CONFIG_BITMASK, "-auto", "auto", "Auto", DEF_SORT_AUTO, 
 	Blt_Offset(ComboMenu, sort.flags), BLT_CONFIG_DONT_SET_DEFAULT, 
 	(Blt_CustomOption *)SORT_AUTO},
+    {BLT_CONFIG_BITMASK, "-auto", "auto", "Auto", DEF_SORT_AUTO, 
+	Blt_Offset(ComboMenu, sort.flags), BLT_CONFIG_DONT_SET_DEFAULT, 
+	(Blt_CustomOption *)SORT_AUTO},
     {BLT_CONFIG_BITMASK, "-byvalue", "byValue", "ByValue", DEF_SORT_BYVALUE, 
 	Blt_Offset(ComboMenu, sort.flags), BLT_CONFIG_DONT_SET_DEFAULT, 
 	(Blt_CustomOption *)SORT_BYVALUE},
@@ -1153,7 +1159,7 @@ NewItem(ComboMenu *comboPtr)
     link = Blt_Chain_AllocLink(sizeof(Item));
     itemPtr = Blt_Chain_GetValue(link);
     itemPtr->comboPtr = comboPtr;
-    itemPtr->flags |= (ITEM_BUTTON | ITEM_NORMAL);
+    itemPtr->flags |= (ITEM_BUTTON | ITEM_NORMAL | ITEM_GEOMETRY);
     itemPtr->link = link;
     itemPtr->index = Blt_Chain_GetLength(comboPtr->chain);
     Blt_Chain_LinkAfter(comboPtr->chain, link, NULL);
@@ -1184,7 +1190,7 @@ FirstItem(ComboMenu *comboPtr)
 	Item *itemPtr;
 
 	itemPtr = Blt_Chain_GetValue(link);
-	if ((itemPtr->flags & ITEM_DISABLED) == 0) {
+	if ((itemPtr->flags & (ITEM_DISABLED|ITEM_HIDDEN)) == 0) {
 	    return itemPtr;
 	}
     }
@@ -1201,7 +1207,7 @@ LastItem(ComboMenu *comboPtr)
 	Item *itemPtr;
 
 	itemPtr = Blt_Chain_GetValue(link);
-	if ((itemPtr->flags & ITEM_DISABLED) == 0) {
+	if ((itemPtr->flags & (ITEM_DISABLED|ITEM_HIDDEN)) == 0) {
 	    return itemPtr;
 	}
     }
@@ -1214,11 +1220,13 @@ NextItem(Item *itemPtr)
 {
     if (itemPtr != NULL) {
 	Blt_ChainLink link;
+        unsigned int hateFlags;
 
+        hateFlags = (ITEM_SEPARATOR|ITEM_DISABLED|ITEM_HIDDEN);
 	for (link = Blt_Chain_NextLink(itemPtr->link); link != NULL; 
 	     link = Blt_Chain_NextLink(link)) {
 	    itemPtr = Blt_Chain_GetValue(link);
-	    if ((itemPtr->flags & (ITEM_SEPARATOR|ITEM_DISABLED)) == 0) {
+	    if ((itemPtr->flags & hateFlags) == 0) {
 		return itemPtr;
 	    }
 	}
@@ -1231,11 +1239,13 @@ PrevItem(Item *itemPtr)
 {
     if (itemPtr != NULL) {
 	Blt_ChainLink link;
-	
+        unsigned int hateFlags;
+
+        hateFlags = (ITEM_SEPARATOR|ITEM_DISABLED|ITEM_HIDDEN);
 	for (link = Blt_Chain_PrevLink(itemPtr->link); link != NULL; 
 	     link = Blt_Chain_PrevLink(link)) {
 	    itemPtr = Blt_Chain_GetValue(link);
-	    if ((itemPtr->flags & (ITEM_SEPARATOR|ITEM_DISABLED)) == 0) {
+	    if ((itemPtr->flags & hateFlags) == 0) {
 		return itemPtr;
 	    }
 	}
@@ -1661,9 +1671,11 @@ FixMenuCoords(ComboMenu *comboPtr, int *xPtr, int *yPtr)
 static void
 ComputeItemGeometry(ComboMenu *comboPtr, Item *itemPtr)
 {
-    /* Determine the height of the item.  It's the maximum height of all it's
-     * components: left gadget (radiobutton or checkbutton), icon, text,
-     * right gadget (cascade), and accelerator. */
+    itemPtr->flags &= ~ITEM_GEOMETRY;
+    
+    /* Determine the height of the item.  It's the maximum height of all
+     * it's components: left gadget (radiobutton or checkbutton), icon,
+     * text, right gadget (cascade), and accelerator. */
     itemPtr->textWidth = itemPtr->textHeight = 0;
     itemPtr->leftIndWidth = itemPtr->leftIndHeight = 0;
     itemPtr->rightIndWidth = itemPtr->rightIndHeight = 0;
@@ -1740,9 +1752,9 @@ ComputeItemGeometry(ComboMenu *comboPtr, Item *itemPtr)
  *
  * SearchForItem --
  *
- *      Performs a binary search for the item at the given y-offset in world
- *      coordinates.  The range of items is specified by menu indices (high
- *      and low).  The item must be (visible) in the viewport.
+ *      Performs a binary search for the item at the given y-offset in
+ *      world coordinates. The range of items is specified by menu indices
+ *      (high and low). The item must be (visible) in the viewport.
  *
  * Results:
  *      Returns 0 if no item is found, other the index of the item (menu
@@ -2134,11 +2146,11 @@ WithdrawMenu(ComboMenu *comboPtr)
 static void
 ComputeComboGeometry(ComboMenu *comboPtr)
 {
-    int worldX, worldY;
     Blt_ChainLink link;
-    int w, h;
-    int reqWidth, reqHeight;
     int maxLabelWidth;
+    int reqWidth, reqHeight;
+    int w, h;
+    int worldX, worldY;
 
     comboPtr->flags &= ~LAYOUT_PENDING;
     comboPtr->worldHeight = 0;
@@ -2161,7 +2173,12 @@ ComputeComboGeometry(ComboMenu *comboPtr)
 
 	h = 0;
 	itemPtr = Blt_Chain_GetValue(link);
-	ComputeItemGeometry(comboPtr, itemPtr);
+        if (itemPtr->flags & ITEM_HIDDEN) {
+            continue;                   /* Ignore hidden items. */
+        }
+        if (itemPtr->flags & ITEM_GEOMETRY) {
+            ComputeItemGeometry(comboPtr, itemPtr);
+        }
 	if (itemPtr->leftIndWidth > comboPtr->leftIndWidth) {
 	    comboPtr->leftIndWidth = itemPtr->leftIndWidth;
 	}
@@ -2204,6 +2221,7 @@ ComputeComboGeometry(ComboMenu *comboPtr)
 	itemPtr->worldX = worldX, itemPtr->worldY = worldY;
 	worldY += itemPtr->height;
     }
+
     w = 0;
     w += comboPtr->leftIndWidth;
     if ((w > 0) && (comboPtr->iconWidth > 0)) {
@@ -2235,9 +2253,9 @@ ComputeComboGeometry(ComboMenu *comboPtr)
 	comboPtr->yScrollbarWidth = Tk_ReqWidth(comboPtr->yScrollbar);
 	w = GetBoundedWidth(comboPtr, reqWidth + comboPtr->yScrollbarWidth);
     }
-    /* Save the computed width so that we only override the menu width if the
-     * parent (combobutton/comboentry) width is greater than the normal size
-     * of the menu.  */
+    /* Save the computed width so that we only override the menu width if
+     * the parent (combobutton/comboentry) width is greater than the normal
+     * size of the menu.  */
     comboPtr->normalWidth = w;
     comboPtr->normalHeight = h;
     if ((Blt_Chain_GetLength(comboPtr->chain) == 0) && (h < 20)) {
@@ -2254,9 +2272,8 @@ ComputeComboGeometry(ComboMenu *comboPtr)
     if (h != Tk_ReqHeight(comboPtr->tkwin)) {
 	comboPtr->yOffset = 0;
     }
-
-    if ((w != Tk_ReqWidth(comboPtr->tkwin)) || 
-	(h != Tk_ReqHeight(comboPtr->tkwin))) {
+    if ((w != Tk_ReqWidth(comboPtr->tkwin)) ||
+        (h != Tk_ReqHeight(comboPtr->tkwin))) {
 	Tk_GeometryRequest(comboPtr->tkwin, w, h);
     }
     comboPtr->flags |= SCROLL_PENDING;
@@ -3226,12 +3243,8 @@ CheckVariable(Tcl_Interp *interp, Item *itemPtr)
 
 
 static int
-ConfigureItem(
-    Tcl_Interp *interp,
-    Item *itemPtr,
-    int objc,
-    Tcl_Obj *const *objv,
-    int flags)
+ConfigureItem(Tcl_Interp *interp, Item *itemPtr, int objc,
+              Tcl_Obj *const *objv, int flags)
 {
     ComboMenu *comboPtr;
 
@@ -3247,7 +3260,8 @@ ConfigureItem(
 	    CheckVariable(interp, itemPtr);
 	}
     }
-    ComputeItemGeometry(comboPtr, itemPtr);
+    itemPtr->flags |= ITEM_GEOMETRY;
+    comboPtr->flags |= LAYOUT_PENDING;
     return TCL_OK;
 }
 
@@ -3946,17 +3960,21 @@ ObjToStateProc(
 {
     Item *itemPtr = (Item *)(widgRec);
     unsigned int *flagsPtr = (unsigned int *)(widgRec + offset);
-    char *string;
+    const char *string;
     int flag;
-
+    char c;
+    
     string = Tcl_GetString(objPtr);
-    if (strcmp(string, "disabled") == 0) {
+    c = string[0];
+    if ((c == 'd') && (strcmp(string, "disabled") == 0)) {
 	flag = ITEM_DISABLED;
-    } else if (strcmp(string, "normal") == 0) {
+    } else if ((c == 'n') && (strcmp(string, "normal") == 0)) {
 	flag = ITEM_NORMAL;
+    } else if ((c == 'h') && (strcmp(string, "hidden") == 0)) {
+	flag = ITEM_HIDDEN;
     } else {
 	Tcl_AppendResult(interp, "unknown state \"", string, 
-		"\": should be active, disabled, or normal.", (char *)NULL);
+		"\": should be normal, disabled, or hidden.", (char *)NULL);
 	return TCL_ERROR;
     }
     if (itemPtr->flags & flag) {
@@ -3996,6 +4014,8 @@ StateToObjProc(
 	objPtr = Tcl_NewStringObj("normal", -1);
     } else if (state & ITEM_DISABLED) {
 	objPtr = Tcl_NewStringObj("disabled", -1);
+    } else if (state & ITEM_HIDDEN) {
+	objPtr = Tcl_NewStringObj("hidden", -1);
     } else {
 	objPtr = Tcl_NewStringObj("???", -1);
     }
@@ -4828,7 +4848,8 @@ ActivateOp(ClientData clientData, Tcl_Interp *interp, int objc,
     /* Deactivate any active item. */
     ActivateItem(comboPtr, NULL);
     comboPtr->activePtr = NULL;
-    if ((itemPtr != NULL) && ((itemPtr->flags & ITEM_DISABLED) == 0)) {
+    if ((itemPtr != NULL) &&
+        ((itemPtr->flags & (ITEM_DISABLED|ITEM_HIDDEN)) == 0)) {
 	ActivateItem(comboPtr, itemPtr);
 	comboPtr->activePtr = itemPtr;
     }
@@ -5328,8 +5349,8 @@ InvokeOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (GetItemFromObj(interp, comboPtr, objv[2], &itemPtr) != TCL_OK) {
 	return TCL_ERROR;
     }
-    if ((itemPtr == NULL) || (itemPtr->flags & ITEM_DISABLED)) {
-	return TCL_OK;          /* Item is currently disabled. */
+    if ((itemPtr == NULL) || (itemPtr->flags & (ITEM_DISABLED|ITEM_HIDDEN))) {
+	return TCL_OK;          /* Item is currently disabled or hidden. */
     }
     result = TCL_OK;
     Tcl_Preserve(itemPtr);
@@ -5963,7 +5984,7 @@ PostCascadeOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     UnpostCascade(comboPtr);
     if ((itemPtr != NULL) && (itemPtr->menuObjPtr != NULL) && 
-	((itemPtr->flags & (ITEM_CASCADE|ITEM_DISABLED)) == ITEM_CASCADE)) {
+	((itemPtr->flags & (ITEM_CASCADE|ITEM_DISABLED|ITEM_HIDDEN)) == ITEM_CASCADE)) {
 	return PostCascade(interp, comboPtr, itemPtr);
     }
     return TCL_OK;                      /* No menu to post. */
@@ -6223,8 +6244,9 @@ SelectOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (GetItemFromObj(interp, comboPtr, objv[2], &itemPtr) != TCL_OK) {
 	return TCL_ERROR;
     }
-    if ((itemPtr == NULL) || (itemPtr->flags & ITEM_DISABLED)) {
-	return TCL_OK;                  /* Item is currently disabled. */
+    if ((itemPtr == NULL) || (itemPtr->flags & (ITEM_DISABLED|ITEM_HIDDEN))) {
+	return TCL_OK;                  /* Item is currently disabled or
+                                         * hidden. */
     }
     cmd = Tcl_GetString(objv[1]);
     Tcl_Preserve(itemPtr);

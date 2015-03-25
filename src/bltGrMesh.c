@@ -927,13 +927,14 @@ FreeDataSourceProc(
  *
  * ObjToDataSourceProc --
  *
- *	Given a string representation of a data source, converts it into its
- *	equivalent data source.  A data source may be a list of numbers, a
- *	vector name, or a two element list of table name and column.
+ *	Given a string representation of a data source, converts it into
+ *	its equivalent data source.  A data source may be a list of
+ *	numbers, a vector name, or a two element list of table name and
+ *	column.
  *
  * Results:
- *	The return value is a standard TCL result.  The data source is passed
- *	back via the srcPtr.
+ *	The return value is a standard TCL result.  The data source is
+ *	passed back via the srcPtr.
  *
  *---------------------------------------------------------------------------
  */

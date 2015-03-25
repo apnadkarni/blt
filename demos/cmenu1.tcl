@@ -252,4 +252,12 @@ blt::table . \
 #blt::table configure . r0 -resize none
 #blt::table configure . r1 -resize both
 
-
+after 5000 {
+  .e.m item configure Paste -state hidden
+   after 5000 {
+     .e.m item configure Paste -state disabled
+      after 5000 {
+         .e.m item configure Paste -state normal
+      }
+   }
+}

@@ -369,46 +369,80 @@ command.  The following operations are available for combomenu widgets:
 
   **-relief** *relief* 
 
-    Specifies the relief of the menu.  The default is "raised".
+     Specifies the 3-D effect for the menu.  *Relief* indicates how the
+     menu should appear relative to the root window; for example, "raised"
+     means the menu should appear to protrude.  The default is "raised".
 
   **-restrictwidth** *option* 
 
   **-takefocus** *bool*
 
-    Provides information used when moving the focus from window to window
-    via keyboard traversal (e.g., Tab and Shift-Tab).  If *bool* is "0",
-    this means that this window should be skipped entirely during keyboard
-    traversal.  "1" means that the this window should always receive the
-    input focus.  An empty value means that the traversal scripts make the
-    decision whether to focus on the window.  The default is "".
+     Provides information used when moving the focus from window to window
+     via keyboard traversal (e.g., Tab and Shift-Tab).  If *bool* is "0",
+     this means that this window should be skipped entirely during keyboard
+     traversal.  "1" means that the this window should always receive the
+     input focus.  An empty value means that the traversal scripts make the
+     decision whether to focus on the window.  The default is "".
 
   **-textvariable** *varName* 
 
-    Specifies the name of a variable that holds the text of the last
-    selected item.  If *varName* is "", no variable is used. The default is
-    "".
+     Specifies the name of a variable that holds the text of the last
+     selected item.  If *varName* is "", no variable is used. The default
+     is "".
 
   **-unpostcommand** *string*
 
-    Specifies the command to invoke when the menu is unposted.  The
-    default is "".
+     Specifies the command to invoke when the menu is unposted.  The
+     default is "".
 
   **-width** *numPixels*
 
-    Specifies the width in the menu.  *NumPixels* is a valid screen
-    distance, such as \f(CW2\fR or \f(CW1.2i\fR.  The default is "arrow".
+     Specifies the width in the menu.  If *numPixels* is 0, the width of
+     the menu is computed from the size of its items. *NumPixels* must be a
+     valid screen distance, such as "2" or "1.2i".  The default is "0".
 
   **-xscrollbar** *widget*
 
+     Specifies the name of a scrollbar widget to use as the horizontal
+     scrollbar for this menu.  The scrollbar widget must be a child of the
+     combomenu and doesn't have to exist yet.  It at an idle point later,
+     the combomenu will attach the scrollbar to widget, effectively
+     packing the scrollbar into the menu.
+
   **-xscrollcommand** *string*
+
+     Specifies the prefix for a command used to communicate with horizontal
+     scrollbars.  Whenever the horizontal view in the widget's window
+     changes, the widget will generate a Tcl command by concatenating the
+     scroll command and two numbers. If this option is not specified, then
+     no command will be executed.  The widget's initialization script
+     will automatically set this for you.
 
   **-xscrollincrement** *numPixels*
 
+     Sets the horizontal scrolling unit (distance). The default is 20
+     pixels.
+
   **-yscrollbar** *widget*
+
+     Specifies the name of a scrollbar widget to use as the vertical
+     scrollbar for this menu.  The scrollbar widget must be a child of the
+     combomenu and doesn't have to exist yet.  It at an idle point later,
+     the combomenu will attach the scrollbar to widget, effectively
+     packing the scrollbar into the menu.
 
   **-yscrollcommand** *string*
 
+     Specifies the prefix for a command used to communicate with vertical
+     scrollbars.  Whenever the vertical view in the widget's window
+     changes, the widget will generate a Tcl command by concatenating the
+     scroll command and two numbers.  If this option is not specified, then
+     no command will be executed.  The widget's initialization script
+     will automatically set this for you.
+
   **-yscrollincrement** *numPixels*
+
+     Sets the vertical scrolling unit (distance). The default is 20 pixels.
 
 *pathName* **deactivate** 
 
@@ -557,14 +591,24 @@ command.  The following operations are available for combomenu widgets:
 
   **-state** *state*
 
-    Specifies one of two states for the item: "normal" or "disabled".  In
-    normal state the item is displayed using the **-foreground** option
-    for the menu and the **-background** option from the item or the
-    menu. Disabled state means that the item should be insensitive: the
-    default bindings will refuse to activate or invoke the item.  In this
-    state the item is displayed according to the **-disabledforeground**
-    option for the menu and the **-disabledbackground** option from the
-    item.  The default is "normal".
+    Specifies one of three states for the item: "normal", "disabled", or
+    "hidden". 
+
+    *normal*
+      In normal state the item is displayed using the **-foreground**
+      option for the menu and the **-background** option from
+      the item or the menu.
+
+    *disabled*
+      Disabled state means that the item should be insensitive: the default
+      bindings will not activate or invoke the item.  In this state
+      the item is displayed according to the **-disabledforeground** option
+      for the menu and the **-disabledbackground** option from the item.
+
+    *hidden*
+      The item is not displayed.
+
+    The default is "normal".
 
   **-style** *styleName*
 
@@ -709,25 +753,43 @@ command.  The following operations are available for combomenu widgets:
 
 *pathName* **see** *item* 
  
-   Scrolls the menu so that *item* is visible in the widget's window.
-   *Item* may be a label, index, or tag, but may not represent more than
-   one menu item.
+  Scrolls the menu so that *item* is visible in the widget's window.
+  *Item* may be a label, index, or tag, but may not represent more than one
+  menu item.
   
 *pathName* **select** *item* 
  
-   Selects *item* in the menu. The item is drawn in its selected colors.
-   *Item* may be a label, index, or tag, but may not represent more than
-   one menu item.
+  Selects *item* in the menu. The item is drawn in its selected colors.
+  *Item* may be a label, index, or tag, but may not represent more than one
+  menu item.
   
 *pathName* **size**
  
-   Returns the number of items in the menu.
+  Returns the number of items in the menu.
    
-*pathName* **sort** ? *switches* ...\ ?
- 
-  Sorts the menu based on the item labels or values.  By default menu
-  labels are compared, but you can use **-byvalue** switch to sort by their
-  values. *Switches* can be one of the following:
+*pathName* **sort cget** *option*
+
+  Returns the current value of the sort configuration option given by
+  *option*. *Option* may have any of the values accepted by the
+  **sort configure** operation. They are described below.
+
+*pathName* **sort configure** ?\ *option*\ ? ?\ *value*? ?\ *option value
+  ...*\ ?
+
+  Queries or modifies the sort configuration options.  If no *option* is
+  specified, returns a list describing all the available options for
+  *pathName* (see **Tk_ConfigureInfo** for information on the format of
+  this list).  If *option* is specified with no *value*, then this command
+  returns a list describing the one named option (this list will be
+  identical to the corresponding sublist of the value returned if no
+  *option* is specified).  If one or more *option-value* pairs are
+  specified, then this command modifies the given sort option(s) to have
+  the given value(s); in this case the command returns an empty string.
+  *Option* and *value* are described below.
+
+  **-auto** 
+    Automatically resort the menu items anytime the items are added
+    deleted, or changed.
 
   **-byvalue** 
     Sort items using their values.  By default the items are sorted
@@ -770,6 +832,10 @@ command.  The following operations are available for combomenu widgets:
 
     *command* 
       Use the command specified by **-command** option to compare items.
+
+*pathName* **sort once** 
+
+  Sorts the menu items using the current set of sort configuration values.  
 
 *pathName* **style cget** *styleName* *option*
  
