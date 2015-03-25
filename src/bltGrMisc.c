@@ -119,16 +119,20 @@ Blt_GetXY(Tcl_Interp *interp, Tk_Window tkwin, const char *string,
 	      (Tk_GetPixels(interp, tkwin, comma + 1, &y) == TCL_OK));
     *comma = ',';
     if (!result) {
-	Tcl_AppendResult(interp, ": can't parse position \"", string, "\"",
-	    (char *)NULL);
-	return TCL_ERROR;
+        if (interp != NULL) {
+            Tcl_AppendResult(interp, ": can't parse position \"", string, "\"",
+                             (char *)NULL);
+        }
+        return TCL_ERROR;
     }
     *xPtr = x, *yPtr = y;
     return TCL_OK;
 
   badFormat:
-    Tcl_AppendResult(interp, "bad position \"", string, 
+    if (interp != NULL) {
+        Tcl_AppendResult(interp, "bad position \"", string, 
 	     "\": should be \"@x,y\"", (char *)NULL);
+    }
     return TCL_ERROR;
 }
 
