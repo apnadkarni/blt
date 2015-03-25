@@ -392,10 +392,10 @@ static Blt_ConfigSpec styleConfigSpecs[] =
     {BLT_CONFIG_COLOR, "-disabledforeground", (char *)NULL, (char *)NULL, 
 	DEF_STYLE_DISABLED_FG, Blt_Offset(Style, disabledTextFg), 0},
     {BLT_CONFIG_SYNONYM, "-fg", (char *)NULL, (char *)NULL, (char *)NULL, 0, 0},
-    {BLT_CONFIG_COLOR, "-foreground", (char *)NULL, (char *)NULL, DEF_STYLE_FG, 
-	Blt_Offset(Style, normalTextFg), 0},
     {BLT_CONFIG_FONT, "-font", (char *)NULL, (char *)NULL, DEF_STYLE_FONT, 
 	Blt_Offset(Style, textFont), 0},
+    {BLT_CONFIG_COLOR, "-foreground", (char *)NULL, (char *)NULL, DEF_STYLE_FG, 
+	Blt_Offset(Style, normalTextFg), 0},
     {BLT_CONFIG_COLOR, "-indicatorfillcolor", (char *)NULL, (char *)NULL, 
 	DEF_STYLE_IND_FILL_COLOR, Blt_Offset(Style, indFillColor), 
 	BLT_CONFIG_NULL_OK},
@@ -6929,8 +6929,8 @@ static int numMenuOps = sizeof(menuOps) / sizeof(Blt_OpSpec);
 static int
 ComboMenuInstCmdProc(
     ClientData clientData,              /* Information about the widget. */
-    Tcl_Interp *interp,                 /* Interpreter to report errors back
-					 * to. */
+    Tcl_Interp *interp,                 /* Interpreter to report errors
+					 * back to. */
     int objc,                           /* # of arguments. */
     Tcl_Obj *const *objv)               /* Argument vector. */
 {
@@ -6954,9 +6954,9 @@ ComboMenuInstCmdProc(
  *
  * ComboMenuInstCmdDeletedProc --
  *
- *      This procedure can be called if the window was destroyed (tkwin will
- *      be NULL) and the command was deleted automatically.  In this case, we
- *      need to do nothing.
+ *      This procedure can be called if the window was destroyed (tkwin
+ *      will be NULL) and the command was deleted automatically.  In this
+ *      case, we need to do nothing.
  *
  *      Otherwise this routine was called because the command was deleted.
  *      Then we need to clean-up and destroy the widget.

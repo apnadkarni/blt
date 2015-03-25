@@ -252,7 +252,7 @@ typedef struct {
 					 * table. */
     Tcl_Command cmdToken;               /* Token for TCL command
 					 * representing this table. */
-    const char *emptyValue;             /* String representing an empty
+    const char *emptyString;             /* String representing an empty
 					 * value in the table. */
     Blt_HashTable *tablePtr;            /* Pointer to hash table containing
 					 * a pointer to this structure.
@@ -1181,7 +1181,7 @@ NewTableCmd(Tcl_Interp *interp, BLT_TABLE table, const char *name)
     cmdPtr = Blt_AssertCalloc(1, sizeof(Cmd));
     cmdPtr->table = table;
     cmdPtr->interp = interp;
-    cmdPtr->emptyValue = Blt_AssertStrdup("");
+    cmdPtr->emptyString = Blt_AssertStrdup("");
 
     Blt_InitHashTable(&cmdPtr->traceTable, BLT_STRING_KEYS);
     Blt_InitHashTable(&cmdPtr->watchTable, BLT_STRING_KEYS);
@@ -2210,7 +2210,7 @@ PrintValues(Tcl_Interp *interp, Cmd *cmdPtr, long numRows,
 	}
 	if (flags & SORT_VALUES) {
 	    if (isEmpty) {
-		objPtr = Tcl_NewStringObj(cmdPtr->emptyValue, -1);
+		objPtr = Tcl_NewStringObj(cmdPtr->emptyString, -1);
 	    } else {
 		objPtr = blt_table_get_obj(cmdPtr->table, rows[i], col);
 	    }
@@ -3133,7 +3133,7 @@ ColumnGetOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
 	    objPtr = blt_table_get_obj(cmdPtr->table, row, col);
 	    if (objPtr == NULL) {
-		objPtr = Tcl_NewStringObj(cmdPtr->emptyValue, -1);
+		objPtr = Tcl_NewStringObj(cmdPtr->emptyString, -1);
 	    }
 	    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
 	}
@@ -3157,7 +3157,7 @@ ColumnGetOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
 	    objPtr = blt_table_get_obj(cmdPtr->table, row, col);
 	    if (objPtr == NULL) {
-		objPtr = Tcl_NewStringObj(cmdPtr->emptyValue, -1);
+		objPtr = Tcl_NewStringObj(cmdPtr->emptyString, -1);
 	    }
 	    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
 	}
@@ -4569,7 +4569,7 @@ ColumnValuesOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	    
 	    objPtr = blt_table_get_obj(cmdPtr->table, row, col);
 	    if (objPtr == NULL) {
-		objPtr = Tcl_NewStringObj(cmdPtr->emptyValue, -1);
+		objPtr = Tcl_NewStringObj(cmdPtr->emptyString, -1);
 	    }
 	    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
 	}
@@ -4908,11 +4908,11 @@ EmptyValueOp(ClientData clientData, Tcl_Interp *interp, int objc,
              Tcl_Obj *const *objv)
 {
     Cmd *cmdPtr = clientData;
-    Tcl_SetStringObj(Tcl_GetObjResult(interp), cmdPtr->emptyValue, -1);
+    Tcl_SetStringObj(Tcl_GetObjResult(interp), cmdPtr->emptyString, -1);
     if (objc == 3) {
-	if (cmdPtr->emptyValue != NULL) {
-	    Blt_Free(cmdPtr->emptyValue);
-	    cmdPtr->emptyValue = Blt_AssertStrdup(Tcl_GetString(objv[2]));
+	if (cmdPtr->emptyString != NULL) {
+	    Blt_Free(cmdPtr->emptyString);
+	    cmdPtr->emptyString = Blt_AssertStrdup(Tcl_GetString(objv[2]));
 	}
     }
     return TCL_OK;
@@ -5092,7 +5092,7 @@ GetOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	if (objc == 5) {
 	    objPtr = objv[4];
 	} else {
-	    objPtr = Tcl_NewStringObj(cmdPtr->emptyValue, -1);
+	    objPtr = Tcl_NewStringObj(cmdPtr->emptyString, -1);
 	}
     }
  done:
@@ -5987,7 +5987,7 @@ RowGetOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
 	    objPtr = blt_table_get_obj(table, row, col);
 	    if (objPtr == NULL) {
-		objPtr = Tcl_NewStringObj(cmdPtr->emptyValue, -1);
+		objPtr = Tcl_NewStringObj(cmdPtr->emptyString, -1);
 	    }
 	    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
 	}
@@ -6011,7 +6011,7 @@ RowGetOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
 	    objPtr = blt_table_get_obj(table, row, col);
 	    if (objPtr == NULL) {
-		objPtr = Tcl_NewStringObj(cmdPtr->emptyValue, -1);
+		objPtr = Tcl_NewStringObj(cmdPtr->emptyString, -1);
 	    }
 	    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
 	}
@@ -7401,7 +7401,7 @@ RowValuesOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	    
 	    objPtr = blt_table_get_obj(cmdPtr->table, row, col);
 	    if (objPtr == NULL) {
-		objPtr = Tcl_NewStringObj(cmdPtr->emptyValue, -1);
+		objPtr = Tcl_NewStringObj(cmdPtr->emptyString, -1);
 	    }
 	    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
 	}
@@ -8762,8 +8762,8 @@ TableInstDeleteProc(ClientData clientData)
 	watchPtr = Blt_GetHashValue(hPtr);
 	FreeWatchInfo(watchPtr);
     }
-    if (cmdPtr->emptyValue != NULL) {
-	Blt_Free(cmdPtr->emptyValue);
+    if (cmdPtr->emptyString != NULL) {
+	Blt_Free(cmdPtr->emptyString);
     }
     Blt_DeleteHashTable(&cmdPtr->watchTable);
     if (cmdPtr->hPtr != NULL) {

@@ -28,17 +28,17 @@ MISSING =	arcball.rst \
 		combomenu.rst \
 		combotree.rst \
 		compare.rst \
+		contour.rst \
 		datatable.rst \
 		date.rst \
 		drawerset.rst \
-		contour.rst \
-		mesh.rst \
-		play.rst \
 		grab.rst \
 		listview.rst \
+		mesh.rst \
 		palette.rst \
 		paneset.rst \
 		picture.rst \
+		play.rst \
 		scrollset.rst \
 		sftp.rst \
 		tableview.rst \

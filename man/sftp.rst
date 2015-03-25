@@ -1,5 +1,5 @@
 ===============
-sftp
+blt::sftp
 ===============
 
 -------------------------------------------------
@@ -8,17 +8,32 @@ Transfer files to/from SFTP server.
 
 :Author: gahowlett@gmail.com
 :Date:   2012-11-28
-:Copyright: George A. Howlett.
-    See the file "license.terms" for information on usage and redistribution
-    of this file, and for a DISCLAIMER OF ALL WARRANTIES.
-:Version: BLT 4.0
+:Copyright: 2015 George A. Howlett.
+        Permission is hereby granted, free of charge, to any person
+	obtaining a copy of this software and associated documentation
+	files (the "Software"), to deal in the Software without
+	restriction, including without limitation the rights to use, copy,
+	modify, merge, publish, distribute, sublicense, and/or sell copies
+	of the Software, and to permit persons to whom the Software is
+	furnished to do so, subject to the following conditions:
+	The above copyright notice and this permission notice shall be
+	included in all copies or substantial portions of the Software.
+	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+	EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+	MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+	NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+	BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+	ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+	CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+	SOFTWARE.
+:Version: 4.0
 :Manual section: n
 :Manual group: BLT Built-In Commands
 
 .. TODO: authors and author with name <email>
 
 SYNOPSIS
-========
+--------
 
 **blt::sftp create** ?\ *sftpName*\ ?  ?\ *switches*\...? 
 
@@ -41,17 +56,17 @@ SYNTAX
 
   Creates a new sftp object.  The name of the new sftp object is returned.  If
   no *sftpName* argument is present, then the name of the sftp is
-  automatically generated in the form "``sftp0``", "``sftp1``", etc.  If the
-  substring "``#auto``" is found in *sftpName*, it is automatically
-  substituted by a generated name.  For example, the name "``.foo.#auto.bar``"
-  will be translated to "``.foo.sftp0.bar``".
+  automatically generated in the form "sftp0", "sftp1", etc.  If the
+  substring "#auto" is found in *sftpName*, it is automatically
+  substituted by a generated name.  For example, the name ".foo.#auto.bar"
+  will be translated to ".foo.sftp0.bar".
 
   A new TCL command by the same name as the sftp object is also created.
   Another TCL command or sftp object can not already exist as *sftpName*.  If
   the TCL command is deleted, the sftp will also be freed.  The new sftp will
   contain just the root node.  Sftp objects are by default, created in the
   current namespace, not the global namespace, unless *sftpName* contains a
-  namespace qualifier, such as "``fred::mySftp``".
+  namespace qualifier, such as "fred::mySftp".
 
   The following switches are available.
 
@@ -76,7 +91,7 @@ SYNTAX
   **-publickey** *file* 
 
     Specifies the location of the public key file.  The default location
-    is ``$HOME/.ssh/id_rsa.pub``.
+    is "$HOME/.ssh/id_rsa.pub".
 
   **-timeout** *seconds* 
 
@@ -84,7 +99,7 @@ SYNTAX
     **sftp** operation performed after the specfied number of seconds, the
     connection is automatically dropped. The sftp object will automatically
     reconnect (if needed) on the next operation.  If *timeout* is zero, then
-    no timeout will occur.  The default is ``0``.
+    no timeout will occur.  The default is "0".
 
 **blt::sftp destroy** *sftpName*...
 
@@ -126,7 +141,7 @@ the command.  The operations available for sftps are listed below.
 *sftpName* **auth**
 
  Returns the type of authentication used to connect to the remote SFTP server.
- The possible types are "``password``" or "``publickey``".
+ The possible types are "password" or "publickey".
 
 *sftpName* **chdir** ?\ *path*\ ?
 
@@ -166,9 +181,9 @@ the command.  The operations available for sftps are listed below.
   **-fields** *list*  
 
     Specifies the field to reported.  *List* is a TCL list that may contain
-    one of more of the following field names\: ``atime``, ``gid``, ``mode``,
-    ``mtime``, ``name``, ``size``, ``type``, ``uid``, ``longentry``,
-    ``default``, and ``all``.
+    one of more of the following field names\: "atime", "gid", "mode",
+    "mtime", "name", "size", "type", "uid", "longentry",
+    "default", and "all".
 
   **-listing** *boolean*  
 
@@ -199,9 +214,9 @@ the command.  The operations available for sftps are listed below.
 
     Specifies the field to reported.  *List* is a TCL list that can 
     contain one or more of the following field names\:
-    ``atime``, ``gid``, ``mode``, ``mtime``, ``name``, 
-    ``size``, ``type``, ``uid``, ``longentry``, ``default``, and
-    ``all``.
+    "atime", "gid", "mode", "mtime", "name", 
+    "size", "type", "uid", "longentry", "default", and
+    "all".
 
   **-cancel** *varName*  
 
@@ -211,9 +226,9 @@ the command.  The operations available for sftps are listed below.
   **-depth** *number*  
 
     Descend at most *number* levels of directories.  
-    If *number* is ``0``, then only *path* itself is loaded.
-    If *number* is ``-1``, then there is now limit. The default
-    is ``-1``.
+    If *number* is "0", then only *path* itself is loaded.
+    If *number* is "-1", then there is now limit. The default
+    is "-1".
 
   **-overwrite** *boolean*  
 
@@ -237,8 +252,8 @@ the command.  The operations available for sftps are listed below.
 
 *sftpName* **exists** *path* 
 
-  Return ``1`` is the file or directory *path* exists on the 
-  remote SFTP server and ``0`` otherwise.
+  Return "1" is the file or directory *path* exists on the 
+  remote SFTP server and "0" otherwise.
 
 *sftpName* **get** *path*  ?\ *file*\ ? ?\ *switches*\ ?
 
@@ -286,20 +301,20 @@ the command.  The operations available for sftps are listed below.
 
 *sftpName* **isdirectory** *path* 
 
-  Return ``1`` if *path* is a directory on the remote server and ``0``
+  Return "1" if *path* is a directory on the remote server and "0"
   otherwise.
 
 *sftpName* **isfile** *path* 
 
-  Return ``1`` if *path* is a file on the remote server and ``0`` otherwise.
+  Return "1" if *path* is a file on the remote server and "0" otherwise.
 
 *sftpName* **lstat** *path* *varName*
 
   Similar to the **stat** operation (see below) except that if *path* refers
   to a symbolic link the information returned is for the link rather than the
   file it refers to. *VarName* is name of a TCL variable, treated as an array
-  variable. The following elements of that variable are set\: ``atime``,
-  ``gid``, ``mode``, ``mtime``, ``size``, ``type``, and ``uid``.  Returns an
+  variable. The following elements of that variable are set\: "atime",
+  "gid", "mode", "mtime", "size", "type", and "uid".  Returns an
   empty string.
 
 *sftpName* **mkdir** *path* ?\ *switches*\ ?
@@ -328,7 +343,7 @@ the command.  The operations available for sftps are listed below.
 
 *sftpName* **owned** *path* 
 
-  Returns ``1`` if *path* is owned by the current user, 0 otherwise.
+  Returns "1" if *path* is owned by the current user, 0 otherwise.
 
 *sftpName* **put** *file* ?\ *path*\ ? ?\ *switches*\ ? 
 
@@ -404,7 +419,7 @@ the command.  The operations available for sftps are listed below.
 
 *sftpName* **readable** *path*
 
-  Returns ``1`` if *path* is readable by the current user, 0 otherwise.  It is
+  Returns "1" if *path* is readable by the current user, 0 otherwise.  It is
   an error is *path* does not exist.
 
 *sftpName* **readlink** *path*
@@ -434,20 +449,20 @@ the command.  The operations available for sftps are listed below.
 
 *sftpName* **stat** *path* *varName*
 
-  Fills *varName* with the attributes of *path\fR.  \fIVarName* is name of a
+  Fills *varName* with the attributes of *path\fR.  *VarName* is name of a
   TCL variable that is treated as an array variable. The following elements of
-  that variable are set\: ``atime``, ``gid``, ``mode``, ``mtime``, ``size``,
-  ``type``, and ``uid``.
+  that variable are set\: "atime", "gid", "mode", "mtime", "size",
+  "type", and "uid".
 
 *sftpName* **type** *path*
 
   Returns a string representing the type of *path\fR: \f(CWfile*,
-  ``directory``, ``characterSpecial``, ``blockSpecial``, ``fifo``, ``link``,
-  or ``socket``.  It is an error is *path* does not exist.
+  "directory", "characterSpecial", "blockSpecial", "fifo", "link",
+  or "socket".  It is an error is *path* does not exist.
 
 *sftpName* **writable** *path*
 
-  Returns ``1`` if *path* is writable by the current user, 0 otherwise.  It is
+  Returns "1" if *path* is writable by the current user, 0 otherwise.  It is
   an error is *path* does not exist.
 
 *sftpName* **write** *path* *string* ?\ *switches*\ ?
