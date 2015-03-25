@@ -3346,6 +3346,8 @@ GetColumnByIndex(TableView *viewPtr, const char *string, Column **colPtrPtr)
 	if (Tcl_GetInt(NULL, string + 1, &x) == TCL_OK) {
 	    colPtr = NearestColumn(viewPtr, x, FALSE);
 	}
+    } else if ((c == 'e') && (strcmp(string, "end") == 0)) {
+	colPtr = GetLastColumn(viewPtr);
     } else if ((c == 'l') && (strcmp(string, "last") == 0)) {
 	colPtr = GetLastColumn(viewPtr);
     } else if ((c == 'f') && (strcmp(string, "first") == 0)) {
@@ -3583,6 +3585,9 @@ GetRowByIndex(TableView *viewPtr, Tcl_Obj *objPtr, Row **rowPtrPtr)
     } else if ((c == 'a') && (length > 1) && 
 	       (strncmp(string, "active", length) == 0)) {
 	rowPtr = viewPtr->rowActiveTitlePtr;
+    } else if ((c == 'e') && (length > 1) && 
+	       (strncmp(string, "end", length) == 0)) {
+	rowPtr = GetLastRow(viewPtr);
     } else if ((c == 'c') && (strncmp(string, "current", length) == 0)) {
 	TableObj *objPtr;
 
