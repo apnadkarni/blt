@@ -75,13 +75,15 @@ widget's requested size by setting the combomenu's **-reqwidth** and
 MENU ITEMS
 ==========
 
-A menu item can be one of several types: "button", "cascade",
-"checkbutton", "radiobutton", and "separator". Types are specified by the
-items's **-type** configuration option.
+A menu is a widget that displays a collection of item arranged in one or
+more columns.  There exist several different types of items (specified by
+the item's **-type** option), each with different properties.  Items of
+different types may be combined in a single menu.  Menu items are not
+distinct widgets; the entire **combomenu** is one widget.
 
-If a **-command** option is specified for the item then it is evaluated as
-a TCL command whenever the item is invoked.
-  
+A menu item can be one of the following types: "button", "cascade",
+"checkbutton", "radiobutton", and "separator".
+
 Button Items
 
   The *button* is the most common type of menu item. It behaves much like a
@@ -178,13 +180,16 @@ Menu items may be referred to by either their index, label, or tag.
    Every item has the tag "all".  The last item in the menu will have the
    tag "end".  A tag may refer to multiple items.
      
-If the item specifier is an integer then it is assumed to be an index.
-Strings are first checked if they are labels and then tags.  This means
-that you shouldn't have tags and labels that are the same.  They will
-always be interpreted as labels.  Unlike labels, tags aren't seen by the
-user, so you can do whatever you want to may them unique (example:
+If an item is specified by an integer it is assumed to be an index.  It it
+is specified by a strings it is first checked if it is a label and then a
+tag.  This means that you shouldn't have tags and labels that are the same.
+They will always be interpreted as labels.  Unlike labels, tags aren't seen
+by the user, so you can do whatever you want to make them unique (example:
 "mytag::fred").
 
+If a **-command** option is specified for the item then it is evaluated as
+a TCL command whenever the item is invoked.
+  
 OPERATIONS
 ==========
 
