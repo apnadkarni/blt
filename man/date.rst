@@ -49,9 +49,12 @@ This command is used by the **blt::tableview** widget to parse timestamps.
 
 **blt::date debug** *timeStamp*
 
-  Parses the date string given printing out debugging information.
-  This is useful when you suspect that the date format is not supported.
-  *TimeStamp* is a string representing the date and or time.
+  Parses the dates and returns its date and time components.  This is
+  useful when you suspect that the timestamp format is not supported.
+  *TimeStamp* is a string representing the date and/or time. This commands
+  returns a list of "year", "month", "yday", "isleapyear", "hour", "minute"
+  "second", "isdist", "tzoffset" and their values. Note that the value for
+  "second" is a floating point number, not an integer.
 
 **blt::date format** *seconds* ?\ *switches* ...\ ?
 
@@ -77,7 +80,7 @@ This command is used by the **blt::tableview** widget to parse timestamps.
 **blt::date scan** *timeStamp*
 
   Parses the date string given and returns a double precision number
-  representin the number of seconds since the epoch (typically January 1st
+  representing the number of seconds since the epoch (typically January 1st
   1970 UTC).    *TimeStamp* is a string representing the date and or time.
   The known formats for *timeStamp* are listed in section KNOWN FORMATS. 
 
@@ -278,6 +281,14 @@ Timestamps
 EXAMPLE
 =======
 
+DIFFERENCES WITH TCL CLOCK
+==========================
+
+1. If no date is provided, **blt::date** assumes January 1st, 1970, not the
+   current date.
+2. For two digit years (such as "25") the century is always assumed to be
+   1900 not 2000.
+   
 KEYWORDS
 ========
 

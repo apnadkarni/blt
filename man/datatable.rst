@@ -270,7 +270,7 @@ the command.  The operations available for *datatables* are listed below.
 
   Returns the values from the specified column.  *Column* may be a label,
   index, or tag, but may not represent more than one column.  By default
-  all the values of *column* are retured, but if one or more *row*
+  all the values of *column* are returned, but if one or more *row*
   arguments are specified, then only the values for specified rows are
   retrieved.  *Row* may be a row label, index, or tag and may not represent
   more than one row.
@@ -356,11 +356,11 @@ the command.  The operations available for *datatables* are listed below.
   index, or tag and may refer to multiple columns (example: "all").  If one
   or more *row* *value* pairs are given then the cell at *row*, *column* is
   set to *value*.  If either *row* or *column* does not exist, the row or
-  column is automatically created. If the row or column is an index, the
-  table may be grown. If the column type is something other than *string*,
-  *value* will be converted into the correct type.  If the conversion
-  fails, an error will be returned.  See the **column type** operation for
-  a description of the different types.
+  column is automatically created. If the row or column is an index,
+  *tableName* may automatically grow. If the column type is something other
+  than *string*, *value* will be converted into the correct type.  If the
+  conversion fails, an error will be returned.  See the **column type**
+  operation for a description of the different types.
 
 *tableName* **column tag add**  *tag* ?\ *column* ...\ ? 
 
@@ -801,7 +801,7 @@ the command.  The operations available for *datatables* are listed below.
 
   Returns the values from the specified row.  *Row* may be a label, index,
   or tag, but may not represent more than one row.  By default all the
-  values of *row* are retured, but if one or more *column* arguments are
+  values of *row* are returned, but if one or more *column* arguments are
   specified, then only the values for specified columns are retrieved.
   *Column* may be a column label, index, or tag and may not represent more
   than one column.
@@ -885,11 +885,11 @@ the command.  The operations available for *datatables* are listed below.
   or tag and may refer to multiple rows (example: "all").  If one or more
   *column* *value* pairs are given then the cell at *column*, *row* is set
   to *value*.  If either *column* or *row* does not exist, the column or
-  row is automatically created. If the column or row is an index, the table
-  may be gcolumnn. If the column type is something other than *string*,
-  *value* will be converted into the correct type.  If the conversion
-  fails, an error will be returned.  See the **column type** operation for
-  a description of the different types.
+  row is automatically created. If the column or row is an index,
+  *tableName* may automatically grow. If the column type is something other
+  than *string*, *value* will be converted into the correct type.  If the
+  conversion fails, an error will be returned.  See the **column type**
+  operation for a description of the different types.
 
 *tableName* **row tag add**  *tag* ?\ *row* ...\ ? 
 
@@ -986,9 +986,10 @@ the command.  The operations available for *datatables* are listed below.
   be a label, index, or tag and may refer to multiple rows (example:
   "all"). If either *row* or *column* is and index or label and does not
   already exist, the row or column is automatically created.  If the row or
-  column is an index, the table may be grown. *Value* is the value to be
-  set.  If the column type is not *string*, *value* is converted into the
-  correct type.  If the conversion fails, an error will be returned.
+  column is an index, *tableName* may automatically grow. *Value* is the
+  value to be set.  If the column type is not *string*, *value* is
+  converted into the correct type.  If the conversion fails, an error will
+  be returned.
 
 *tableName* **sort** ?\ *switches* ...\ ?
 
@@ -1142,7 +1143,7 @@ the command.  The operations available for *datatables* are listed below.
 
   Unsets the values located at one or more *row*, *column* locations.
   *Row* and *column* may be a label, index, or tag and may refer
-  to mulitple rows or columns (example "all").  When a value
+  to multiple rows or columns (example "all").  When a value
   is unset the cell becomes empty.
   
 *tableName* **watch column**  *column* ?\ *flags* ...\ ? *command*
