@@ -2079,33 +2079,33 @@ ConvertDate(Tcl_Interp *interp, DateParser *parserPtr, double *secondsPtr)
 /* 
  * Date formats:
  *
- *	day month yyyy
- *	dd month
- *	dd - month-yyyy
- *	dd . month
- *	dd . month yyyy
- *	dd / month / yyyy
- *	month day
- *	month dd
- *	month dd yyyy
- *	month dd , yyyy
- *	month yyyy
- *	month , yyyy
- *	month - dd
- *	month - dd-yyyy
- *	month / dd / yyyy
- *	yyyy
- *	yyyy - Www
- *	yyyy - Www - D
- *	yyyy - mm
- *	yyyy - mm - dd
- *	yyyy - month
- *	yyyy - month - dd
- *	yyyy / mm / dd
- *	yyyyWww
- *	yyyyWwwD
- *	yyyymmdd
-
+ *	day month yyyy          01 January 1970
+ *	dd month                01 January
+ *	dd - month-yyyy         01-Jan-1970
+ *	dd . month              01.Jan
+ *	dd . month yyyy         01.Jan.1970
+ *	dd / month / yyyy       01/Jan/1970
+ *	month day               January 01
+ *	month dd                Jan     01
+ *	month dd yyyy           January 01 1970
+ *	month dd , yyyy         January 01, 1970
+ *	month yyyy              January 1970
+ *	month , yyyy            January, 1970
+ *	month - dd              January-01
+ *	month - dd-yyyy         January-01-1970
+ *	month / dd / yyyy       January/01/1970
+ *	yyyy                    1970
+ *	yyyy - Www              1970-W01
+ *	yyyy - Www - D          1970-W02-1
+ *	yyyy - mm               1970-01
+ *	yyyy - mm - dd          1970-01-01
+ *	yyyy - month            1970-January
+ *	yyyy - month - dd       1970-January-01
+ *	yyyy / mm / dd          1970/January/01
+ *	yyyyWww                 1970W01
+ *	yyyyWwwD                1970W011
+ *	yyyymmdd                10700101
+ *
  * mm yy
  * mm yyyy
  * mm dd yy

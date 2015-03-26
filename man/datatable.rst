@@ -79,7 +79,7 @@ SYNTAX
   Releases one of more datatables.  The TCL command associated with
   *tableName* is also removed.  Datatables are reference counted.  The
   internal datatable data object isn't destroyed until no one else is using
-  it.
+  it.  See the **attach** operation for the details on sharing datatables.
 
 **blt::datatable exists** *tableName*
 
@@ -154,15 +154,19 @@ the command.  The operations available for *datatables* are listed below.
   of the following:
 
   **-columns** *columnList*
-    Specifies the subset of columns from *srcTable* to add.  By default
-    all columns are added.
+    Specifies the subset of columns from *srcTable* to add.  *ColumnList*
+    is a list of column specifiers. Each specifier may be a column label,
+    index, or tag and may refer to multiple columns (example: "all"). By
+    default all columns are added.
 
   **-notags** 
     Don't copy column tags. 
 
   **-row** *rowList*
-    Specifies the subset of rows from *srcTable* to add.  By default
-    all rows are added.
+    Specifies the subset of rows from *srcTable* to add.  *RowList* is a
+    list of row specifiers. Each specifier may be a row label, index, or
+    tag and may refer to multiple row (example: "all").  By default all
+    rows are added.
     
 *tableName* **append** *row* *column* *value* ?\ *value* ...\ ?
 
@@ -292,21 +296,25 @@ the command.  The operations available for *datatables* are listed below.
 
 *tableName* **column join** *srcTable* ?\ *switches* ...\ ?
 
-  FIXME:
-  Joins the columns of *srcTable* with *tableName*.
-  The column tags are also copied. *Switches* can be any of
-  the following:
+  Copies the columns of *srcTable* into *tableName*. New columns are
+  created for each column in *srcTable*. Duplicate column labels may be
+  created. Column tags are also copied. *Switches* can be any of the
+  following:
 
   **-columns** *columnList*
-    Specifies the subset of columns from *srcTable* to add.  By default
-    all columns are added.
+    Specifies the subset of columns from *srcTable* to add.  By default all
+    columns are added.  *ColumnList* is a list of column specifiers. Each
+    specifier may be a column label, index, or tag and may refer to
+    multiple columns (example: "all").
 
   **-notags** 
     Don't copy column tags.
     
   **-row** *rowList*
-    Specifies the subset of rows from *srcTable* to add.  By default
-    all rows are added.
+    Specifies the subset of rows from *srcTable* to add.  *RowList* is a
+    list of row specifiers. Each specifier may be a row label, index, or
+    tag and may refer to multiple row (example: "all").  By default all
+    rows are added.
     
 *tableName* **column label** *column* ?\ *label*?  ?\ *column* *label* ...?
 
@@ -819,21 +827,25 @@ the command.  The operations available for *datatables* are listed below.
 
 *tableName* **row join** *srcTable* ?\ *switches* ...\ ?
 
-  FIXME:
-  Joins the rows of *srcTable* with *tableName*.
-  The row tags are also copied. *Switches* can be any of
-  the following:
+  Copies the rows of *srcTable* into *tableName*. New rows are
+  created for each row in *srcTable*. Duplicate row labels may be
+  created. Row tags are also copied. *Switches* can be any of the
+  following:
 
   **-rows** *rowList*
-    Specifies the subset of rows from *srcTable* to add.  By default
-    all rows are added.
+    Specifies the subset of rows from *srcTable* to add.  *RowList* is a
+    list of row specifiers. Each specifier may be a row label, index, or
+    tag and may refer to multiple row (example: "all").  By default all
+    rows are added.
 
   **-notags** 
     Don't copy row tags.
     
   **-column** *columnList*
-    Specifies the subset of columns from *srcTable* to add.  By default
-    all columns are added.
+    Specifies the subset of columns from *srcTable* to add.  *ColumnList*
+    is a list of column specifiers. Each specifier may be a column label,
+    index, or tag and may refer to multiple columns (example: "all"). By
+    default all columns are added.
     
 *tableName* **row label** *row* ?\ *label*?  ?\ *row* *label* ...?
 
@@ -972,15 +984,15 @@ the command.  The operations available for *datatables* are listed below.
 
   Sets the value at *row*, *column* in *tableName*.  *Row* and *column* may
   be a label, index, or tag and may refer to multiple rows (example:
-  "all"). If either *row* or *column* does not exist, the row or column is
-  automatically created.  If the row or column is an index, the table may
-  be grown. *Value* is the value to be set.  If the type of *column* is not
-  *string*, *value* is converted into the correct type.  If the conversion
-  fails, an error will be returned.
+  "all"). If either *row* or *column* is and index or label and does not
+  already exist, the row or column is automatically created.  If the row or
+  column is an index, the table may be grown. *Value* is the value to be
+  set.  If the column type is not *string*, *value* is converted into the
+  correct type.  If the conversion fails, an error will be returned.
 
 *tableName* **sort** ?\ *switches* ...\ ?
 
-  Sorts the table based on the columns specified.  The type comparison is
+  Sorts the table.  Column are compared in order. The type comparison is
   determined from the column type.  But you can use **-ascii** or
   **-dictionary** switch to sort the rows.  If the **-list**,
   **-nonempty**, **-unique**, or **-values** switches are present, a list
@@ -988,39 +1000,47 @@ the command.  The operations available for *datatables* are listed below.
   table. *Switches* can be one of the following:
 
   **-ascii**
-    Use string comparison with Unicode code-point collation order (the name
+    Uses string comparison with Unicode code-point collation order (the name
     is for backward-compatibility reasons.)  The string representation of
     the values are compared.   
 
   **-columns** *columnList*
-    Compare values in the columns in *columnList*.  This defines
-    the comparison order.
+    Compares the cells in order of the columns in *columnList*.
+    *ColumnList* is a list of column specifiers. Each specifier may be a
+    column label, index, or tag and may refer to multiple columns (example:
+    "all"). By default all columns are compared in their order in the
+    datatable.
 
   **-decreasing** 
-    Sort the rows highest to lowest. By default the rows are sorted
-    lowest to highest.
+    Sorts rows highest to lowest. By default rows are sorted lowest to
+    highest.
 
   **-dictionary** 
-    Use dictionary-style comparison. This is the same as **-ascii***
+    Uses dictionary-style comparison. This is the same as **-ascii**
     except (a) case is ignored except as a tie-breaker and (b) if two
     strings contain embedded numbers, the numbers compare as integers, not
-    characters.  For example, in -dictionary mode, "bigBoy" sorts between
-    "bigbang" and "bigboy", and "x10y" sorts between "x9y" and "x11y".
+    characters.  For example, in **-dictionary** mode, "bigBoy" sorts
+    between "bigbang" and "bigboy", and "x10y" sorts between "x9y" and
+    "x11y".
 
   **-frequency** 
-    Sort the rows according to frequency of the values.
+    Sorts rows according to the frequency of their values.  The rows
+    of *tableName* will not be rearranged.  A list of the row
+    indices will be returned instead.
 
   **-list** 
-    Return a list of the sorted rows instead of rearranging the rows
-    in the table.
+    Returns a list of the sorted rows instead of rearranging the rows
+    in the table.  The rows of *tableName* will not be
+    rearranged.  This switch is implied when the **-frequency**,
+    **-nonempty**, **-unique**, or **-values** switches are used.
 
   **-nocase** 
-    Ignore care when comparing values.  This only has affect when the
-    **-ascii** switch is set.
+    Ignores case when comparing values.  This only has affect when the
+    **-ascii** switch is present.
 
   **-nonempty** 
-    Return only non-empty values.  This only has affect when the
-    **-values** switch is set.
+    Sorts only non-empty cells. The rows of *tableName* will not be
+    rearranged.  A list of the row indices will be returned instead.
 
   **-rows** *rowList*
     Consider only the rows in *rowList*.  *RowList* is a list of
@@ -1028,17 +1048,20 @@ the command.  The operations available for *datatables* are listed below.
     The list of rows will be returned.
 
   **-unique** 
-    Return a list of unique values.  
+    Returns a list of the unique rows.  The rows of *tableName* will not be
+    rearranged.  A list of the row indices will be returned instead.
 
   **-values** 
-    Return the row values.  By default the row indices are returned.
+    Returns the row values instead of their indices.  The rows of
+    *tableName* will not be rearranged.  A list of the row values
+    will be returned instead.
 
 *tableName* **trace cell** *row* *column* *ops* *command*
 
-  Registers a callback to *command* when the cell (designated by *row* and
+  Registers a command to be invoked when the cell (designated by *row* and
   *column*) value is read, written, or unset. *Row* and *column* may be a
   label, index, or tag and may refer to multiple rows (example: "all").
-  *Ops* indicates which operations are of interest, and consists of one or
+ *Ops* indicates which operations are of interest, and consists of one or
   more of the following letters:
 
   **r**
@@ -1051,9 +1074,13 @@ the command.  The operations available for *datatables* are listed below.
   **u** 
     Invoke *command* whenever the cell value is unset.  
 
+  *Command* is a TCL command prefix.  The traced row index, column index
+  and the operation letter are appended to the command before it is
+  invoked.
+
 *tableName* **trace column** *column* *ops* *command*
 
-  Registers a callback to *command* when any cell in the *column* is read,
+  Registers a command to be invoked any cell in *column* is read,
   written, or unset. *Column* may be a label, index, or tag and may refer
   to multiple columns (example: "all").  *Ops* indicates which operations
   are of interest, and consists of one or more of the following letters:
@@ -1068,29 +1095,34 @@ the command.  The operations available for *datatables* are listed below.
   **u** 
     Invoke *command* whenever the cell value is unset.  
 
+  *Command* is a TCL command prefix.  The traced row index, column index
+  and the operation letter are appended to the command before it is
+  invoked.
+
 *tableName* **trace delete** *traceName*...
 
-  Deletes the trace associated with *traceName*.
+  Removes the one of more traces from *tableName*. *TraceName* is
+  the name of a trace created by the **trace cell**, **trace column**,
+  or **trace row** operations.
 
 *tableName* **trace info** *traceName*
 
-  Describes *traceName*.  A list of name value pairs is returned.
-  The *name*, *row*, *column*, *flags*, and *command* are returned.
+  Describes *traceName*.  A list of the trace's *name*, *row*, *column*,
+  *flags*, and *command* and their values is returned.
   
 *tableName* **trace names** ?\ *pattern* ...\ ?
 
   Returns the names of the traces currently registered. This includes cell,
-  row, and column traces.  If one of *pattern* arguments are present, then
-  any of the trace name matching one of the patterns is returned. *Pattern*
+  row, and column traces.  If one or more of *pattern* arguments are present
+  then any trace name matching one of the patterns is returned. *Pattern*
   is a glob-style pattern.
    
 *tableName* **trace row** *row* *how* *command*
 
-  Registers a callback to *command* when any cell in the *row* is read,
-  written, or unset. *Row* may be a label, index, or tag and
-  may refer to multiple rows (example: "all").  *Ops* indicates which
-  operations are of interest, and consists of one or more of the following
-  letters:
+  Registers a command when any cell in *row* is read, written, or
+  unset. *Row* may be a label, index, or tag and may refer to multiple rows
+  (example: "all").  *Ops* indicates which operations are of interest, and
+  consists of one or more of the following letters:
 
   **r**
     Invoke *command* whenever the cell value is read. 
@@ -1102,74 +1134,105 @@ the command.  The operations available for *datatables* are listed below.
   **u** 
     Invoke *command* whenever the cell value is unset.  
 
+  *Command* is a TCL command prefix.  The traced row index, column index
+  and the operation letter are appended to the command before it is
+  invoked.
 
 *tableName* **unset** *row* *column* ?\ *row*\ *column* ...\ ?
 
   Unsets the values located at one or more *row*, *column* locations.
-  *Row* and *column* may be a label, index, or tag.  Both may represent
-  more than mulitple rows or columns (example "all").  When a value
-  if unset, the cell is empty.
+  *Row* and *column* may be a label, index, or tag and may refer
+  to mulitple rows or columns (example "all").  When a value
+  is unset the cell becomes empty.
   
 *tableName* **watch column**  *column* ?\ *flags* ...\ ? *command*
 
+  Registers a command to be invoked when an event occurs on a column of
+  *tableName*. The events include when columns are added, deleted, moved or
+  relabeled.  *Column* may be a label, index, or tag and may refer to
+  multiple columns (example: "all").  *Flags* indicates which events are of
+  interest. They are described below.
+
   **-allevents** 
-    Notify when columns are created, deleted, moved, or relabeled.
+    Watch when columns are created, deleted, moved, or relabeled.
 
   **-create** 
-    Notify when columns are created.
+    Watch when columns are created.
 
   **-delete** 
-    Notify when columns are deleted.
+    Watch when columns are deleted.
 
   **-move** 
-    Notify when columns are moved.  This included when the table is sorted.
+    Watch when columns are moved.  This includes when the table is sorted.
 
   **-relabel** 
-    Notify when columns are relabeled.
+    Watch when columns are relabeled.
 
   **-whenidle** 
     Don't trigger the callback immediately.  Wait until the next idle time.
+
+  *Command* is a TCL command prefix.  The name of the event and column index
+  are appended to the command before it is invoked.
 
 *tableName* **watch delete** *watchName*...
 
+  Removes the one of more watches from *tableName*. *WatchName* is
+  the name of a trace created by the  **watch column** or **watch row**
+  operations.
+
 *tableName* **watch info** ?\ *watchName*\ ?
+
+  Describes *watchName*.  A list of the watch's name, one or more event
+  flags, and the row or column index is returned.
 
 *tableName* **watch names** ?\ *pattern* ...\ ?
 
-  Returns the names of the watches registered in the table.  This includes
-  both row and column watches.  If one of *pattern* arguments are present,
-  then any of the watch names matching one of the patterns is
-  returned. *Pattern* is a glob-style pattern.
-
+  Returns the names of the watches currently registered. This includes both
+  row and column watches.  If one or more of *pattern* arguments are present
+  then any watch name matching one of the patterns is returned. *Pattern*
+  is a glob-style pattern.
+   
 *tableName* **watch row**  *row* ?\ *flags*\ ? *command*
 
+  Registers a command to be invoked when an event occurs on a row of
+  *tableName*. The events include when rows are added, deleted, moved or
+  relabeled.  *Row* may be a label, index, or tag and may refer to
+  multiple rows (example: "all").  *Flags* indicates which events are of
+  interest. They are described below.
+
   **-allevents** 
-    Notify when rows are created, deleted, moved, or relabeled.
+    Watch when rows are created, deleted, moved, or relabeled.
 
   **-create** 
-    Notify when rows are created.
+    Watch when rows are created.
 
   **-delete** 
-    Notify when rows are deleted.
+    Watch when rows are deleted.
 
   **-move** 
-    Notify when rows are moved.  This included when the table is sorted.
+    Watch when rows are moved.  
 
   **-relabel** 
-    Notify when rows are relabeled.
+    Watch when rows are relabeled.
 
   **-whenidle** 
     Don't trigger the callback immediately.  Wait until the next idle time.
 
+  *Command* is a TCL command prefix.  The name of the event and column index
+  are appended to the command before it is invoked.
 
 .. _formats:
 
 DATATABLE FORMATS
 =================
 
-Handlers for various datatable formats can be loaded using the TCL
-**package** mechanism.  The formats supported are "csv", "xml", "sqlite",
-"mysql", "psql", "vector", and "tree".
+Datatables can import and export their data into various formats.
+They are loaded using the TCL **package** mechanism. Normally this
+is done automatically for you when you invoke an **import** or
+**export** operation on a datatable.
+
+The available formats are "csv", "xml", "sqlite", "mysql", "psql",
+"vector", and "tree" and are described below.
 
 **CSV** Data Format (csv)
 ^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -1235,8 +1298,10 @@ format in the **import** or **export** operations.
    column labels.
 
   **-columns** *columnList*
-   Specifies the subset of columns from *tableName* to export.  By default
-   all columns are exported.
+   Specifies the subset of columns from *tableName* to export.
+   *ColumnList* is a list of column specifiers. Each specifier may be a
+   column label, index, or tag and may refer to multiple columns (example:
+   "all"). By default all columns are exported.
 
   **-file** *fileName*
    Write the CSV output to the file *fileName*.
@@ -1250,8 +1315,10 @@ format in the **import** or **export** operations.
    row labels.
 
   **-rows** *rowList*
-   Specifies the subset of rows from *tableName* to export.  By default
-   all rows are exported.
+   Specifies the subset of rows from *tableName* to export.  *RowList* is a
+   list of row specifiers. Each specifier may be a row label, index, or tag
+   and may refer to multiple row (example: "all").  By default all rows are
+   exported.
 
   **-separator** *char*
    Specifies the separator character.  This is by default the comma (,)
@@ -1338,8 +1405,10 @@ format in the **import** or **export** operations.
  following switches are supported:
 
  **-columns** *columnList*
-  Specifies the subset of columns from *tableName* to export.  By default
-  all columns are exported.
+  Specifies the subset of columns from *tableName* to export.  *ColumnList*
+  is a list of column specifiers. Each specifier may be a column label,
+  index, or tag and may refer to multiple columns (example: "all"). By
+  default all columns are exported.
 
  **-db** *dbName*
   Specifies the name of the database.  
@@ -1358,8 +1427,10 @@ format in the **import** or **export** operations.
   Specifies the port number of the *Postgresql* server.
 
  **-rows** *rowList*
-  Specifies the subset of rows from *tableName* to export.  By default
-  all rows are exported.
+  Specifies the subset of rows from *tableName* to export.  *RowList* is a
+  list of row specifiers. Each specifier may be a row label, index, or tag
+  and may refer to multiple row (example: "all").  By default all rows are
+  exported.
 
  **-table** *tableName*
   Specifies the name of the *Postgresql* table being written.
@@ -1392,8 +1463,10 @@ format in the **import** or **export** operations.
  required. The following import switches are supported:
 
  **-columns** *columnList*
-  Specifies the subset of columns from *tableName* to export.  By default
-  all columns are exported.
+  Specifies the subset of columns from *tableName* to export.  *ColumnList*
+  is a list of column specifiers. Each specifier may be a column label,
+  index, or tag and may refer to multiple columns (example: "all"). By
+  default all columns are exported.
 
  **-file** *fileName*
   Write the *Sqlite* output to the file *fileName*.
@@ -1403,8 +1476,10 @@ format in the **import** or **export** operations.
   the *Sqlite* table.
 
  **-rows** *rowList*
-  Specifies the subset of rows from *tableName* to export.  By default
-  all rows are exported.
+  Specifies the subset of rows from *tableName* to export.  *RowList* is a
+  list of row specifiers. Each specifier may be a row label, index, or tag
+  and may refer to multiple row (example: "all").  By default all rows are
+  exported.
 
  **-table** *tableName*
   Name of the *Sqlite* table to write to.  If a *tableName* already
@@ -1442,16 +1517,20 @@ format in the **import** or **export** operations.
    BLT tree.
 
    **-columns** *columnList*
-    Specifies the subset of columns from *tableName* to export.  By default
-    all columns are exported.
+    Specifies the subset of columns from *tableName* to export.
+    *ColumnList* is a list of column specifiers. Each specifier may be a
+    column label, index, or tag and may refer to multiple columns (example:
+    "all"). By default all columns are exported.
 
    **-root** *node*
     Specifies the root node of the branch where the datatable is to be
     exported. By default the root of the tree is the root node.
 
    **-rows** *rowList*
-    Specifies the subset of rows from *tableName* to export.  By default
-    all rows are exported.
+    Specifies the subset of rows from *tableName* to export.  *RowList* is
+    a list of row specifiers. Each specifier may be a row label, index, or
+    tag and may refer to multiple row (example: "all").  By default all
+    rows are exported.
 
 **BLT Vector** Data Format (vector)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -1517,15 +1596,19 @@ format in the **import** or **export** operations.
   import switches are supported:
 
   **-columns** *columnList*
-   Specifies the subset of columns from *tableName* to export.  By default
-   all columns are exported.
+   Specifies the subset of columns from *tableName* to export.
+   *ColumnList* is a list of column specifiers. Each specifier may be a
+   column label, index, or tag and may refer to multiple columns (example:
+   "all"). By default all columns are exported.
 
   **-file** *fileName*
    Write the XML output to the file *fileName*.
 
   **-rows** *rowList*
-   Specifies the subset of rows from *tableName* to export.  By default
-   all rows are exported.
+   Specifies the subset of rows from *tableName* to export.  *RowList* is a
+   list of row specifiers. Each specifier may be a row label, index, or tag
+   and may refer to multiple row (example: "all").  By default all rows are
+   exported.
 
 EXAMPLE
 =======

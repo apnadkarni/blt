@@ -1529,7 +1529,7 @@ test date.180 {date format %N} {
 } {0 0}
 
 # Nanoseconds in an hour
-test date.180 {date format %N} { 
+test date.181 {date format %N} { 
     list [catch {
  	set d1 [blt::date scan "Jan 1, 1970 01:00"]
 	blt::date format $d1 -format "%N"
@@ -1537,7 +1537,7 @@ test date.180 {date format %N} {
 } {0 3600000000000}
 
 # Nanoseconds in a day.
-test date.180 {date format %N} { 
+test date.182 {date format %N} { 
     list [catch {
  	set d1 [blt::date scan "Jan 2, 1970"]
 	blt::date format $d1 -format "%N"
@@ -1545,7 +1545,7 @@ test date.180 {date format %N} {
 } {0 86400000000000}
 
 # Nanoseconds in a year.
-test date.180 {date format %N} { 
+test date.183 {date format %N} { 
     list [catch {
  	set d1 [blt::date scan "Jan 1, 1971"]
 	blt::date format $d1 -format "%N"
@@ -1553,7 +1553,7 @@ test date.180 {date format %N} {
 } {0 31536000000000000}
 
 # AM/PM
-test date.181 {date format %P} { 
+test date.184 {date format %P} { 
     list [catch {
  	set d1 [blt::date scan "Jan 5, 1969 13:59"]
 	blt::date format $d1 -format "%P"
@@ -1561,7 +1561,7 @@ test date.181 {date format %P} {
 } {0 pm}
 
 # AM/PM
-test date.182 {date format %p} { 
+test date.185 {date format %p} { 
     list [catch {
  	set d1 [blt::date scan "Jan 5, 1969 13:59"]
 	blt::date format $d1 -format "%p"
@@ -1569,7 +1569,7 @@ test date.182 {date format %p} {
 } {0 PM}
 
 # 12 hour clock
-test date.183 {date format %r} { 
+test date.186 {date format %r} { 
     list [catch {
  	set d1 [blt::date scan "Jan 5, 1969 13:59"]
 	blt::date format $d1 -format "%r"
@@ -1577,7 +1577,7 @@ test date.183 {date format %r} {
 } {0 {01:59:00 PM}}
 
 # 24 hour clock
-test date.184 {date format %R} { 
+test date.187 {date format %R} { 
     list [catch {
  	set d1 [blt::date scan "Jan 5, 1969 13:59"]
 	blt::date format $d1 -format "%R"
@@ -1585,7 +1585,7 @@ test date.184 {date format %R} {
 } {0 13:59}
 
 # Seconds since epoch
-test date.185 {date format %s} { 
+test date.188 {date format %s} { 
     list [catch {
  	set d1 [blt::date scan "Jan 1, 1970"]
 	blt::date format $d1 -format "%s"
@@ -1593,7 +1593,7 @@ test date.185 {date format %s} {
 } {0 0}
 
 # Seconds since epoch
-test date.186 {date format %s} { 
+test date.189 {date format %s} { 
     list [catch {
  	set d1 [blt::date scan "Jan 2, 1970"]
 	blt::date format $d1 -format "%s"
@@ -1601,7 +1601,7 @@ test date.186 {date format %s} {
 } {0 86400}
 
 # Second (00-59)
-test date.187 {date format %S} { 
+test date.190 {date format %S} { 
     list [catch {
  	set d1 [blt::date scan "Jan 1, 1970"]
 	blt::date format $d1 -format "%S"
@@ -1609,7 +1609,7 @@ test date.187 {date format %S} {
 } {0 00}
 
 # Second (00-59)
-test date.188 {date format %S} { 
+test date.191 {date format %S} { 
     list [catch {
  	set d1 [blt::date scan "Jan 1, 1970 00:00:59"]
 	blt::date format $d1 -format "%S"
@@ -1617,7 +1617,7 @@ test date.188 {date format %S} {
 } {0 59}
 
 # Second (00-59) does not contain fraction
-test date.189 {date format %S} { 
+test date.192 {date format %S} { 
     list [catch {
  	set d1 [blt::date scan "Jan 1, 1970 00:00:59.9999123"]
 	blt::date format $d1 -format "%S"
@@ -1625,7 +1625,7 @@ test date.189 {date format %S} {
 } {0 59}
 
 # Time hh:mm:ss
-test date.190 {date format %T} { 
+test date.193 {date format %T} { 
     list [catch {
  	set d1 [blt::date scan "Jan 1, 1970 01:02:03"]
 	blt::date format $d1 -format "%T"
@@ -1633,7 +1633,7 @@ test date.190 {date format %T} {
 } {0 01:02:03}
 
 # Day of week 1-7 Sunday = 1
-test date.191 {date format %u} { 
+test date.194 {date format %u} { 
     list [catch {
  	set d1 [blt::date scan "Jan 1, 1970"]
 	blt::date format $d1 -format "%u"
@@ -1641,7 +1641,7 @@ test date.191 {date format %u} {
 } {0 5}
 
 # Day of week 1-7 Sunday = 1
-test date.192 {date format %u} { 
+test date.195 {date format %u} { 
     list [catch {
  	set d1 [blt::date scan "Jan 5, 2014"]
 	blt::date format $d1 -format "%u"
@@ -1649,7 +1649,7 @@ test date.192 {date format %u} {
 } {0 1}
 
 # Week number (01-53).  Sunday is first day of week.
-test date.193 {date format %U} { 
+test date.196 {date format %U} { 
     list [catch {
  	set d1 [blt::date scan "Jan 5, 2014"]
 	blt::date format $d1 -format "%U"
@@ -1657,7 +1657,7 @@ test date.193 {date format %U} {
 } {0 02}
 
 # ISO week number (01-53).  Monday is first day of week.
-test date.194 {date format %V} { 
+test date.197 {date format %V} { 
     list [catch {
  	set d1 [blt::date scan "Jan 5, 2014"]
 	blt::date format $d1 -format "%V"
@@ -1665,7 +1665,7 @@ test date.194 {date format %V} {
 } {0 01}
 
 # Week day (0-6). Sunday is 0.
-test date.195 {date format %w} { 
+test date.198 {date format %w} { 
     list [catch {
  	set d1 [blt::date scan "Jan 5, 2014"]
 	blt::date format $d1 -format "%w"
@@ -1674,7 +1674,7 @@ test date.195 {date format %w} {
 
 # Week (00-53). Monday is the first day of week. (I don't know what this
 # is.)
-test date.196 {date format %W} { 
+test date.199 {date format %W} { 
     list [catch {
  	set d1 [blt::date scan "Jan 5, 2014"]
 	blt::date format $d1 -format "%W"
@@ -1682,7 +1682,7 @@ test date.196 {date format %W} {
 } {0 01}
 
 # Date representation mm/dd/yy
-test date.197 {date format %x} { 
+test date.200 {date format %x} { 
     list [catch {
  	set d1 [blt::date scan "Jan 5, 2014"]
 	blt::date format $d1 -format "%x"
@@ -1690,7 +1690,7 @@ test date.197 {date format %x} {
 } {0 01/05/14}
 
 # Year last 2 digits (yy)
-test date.198 {date format %y} { 
+test date.201 {date format %y} { 
     list [catch {
  	set d1 [blt::date scan "Jan 5, 2014"]
 	blt::date format $d1 -format "%y"
@@ -1698,7 +1698,7 @@ test date.198 {date format %y} {
 } {0 14}
 
 # Year 4 digits (yyyy)
-test date.199 {date format %Y} { 
+test date.202 {date format %Y} { 
     list [catch {
  	set d1 [blt::date scan "Jan 5, 2014"]
 	blt::date format $d1 -format "%Y"
@@ -1706,7 +1706,7 @@ test date.199 {date format %Y} {
 } {0 2014}
 
 # Year 5 digits (yyyyy)
-test date.200 {date format %Y} { 
+test date.203 {date format %Y} { 
     list [catch {
  	set d1 [blt::date scan "Jan 5, 12014"]
 	blt::date format $d1 -format "%Y"
@@ -1714,7 +1714,7 @@ test date.200 {date format %Y} {
 } {0 12014}
 
 # Timezone
-test date.201 {date format %z} { 
+test date.204 {date format %z} { 
     list [catch {
  	set d1 [blt::date scan "Jan 5, 2014"]
 	blt::date format $d1 -format "%z"
@@ -1722,7 +1722,7 @@ test date.201 {date format %z} {
 } {0 +0000}
 
 # Timezone (always +0000).
-test date.202 {date format %z} { 
+test date.205 {date format %z} { 
     list [catch {
  	set d1 [blt::date scan "Jan 5, 2014 PST"]
 	blt::date format $d1 -format "%z"
@@ -1730,7 +1730,7 @@ test date.202 {date format %z} {
 } {0 +0000}
 
 # Mixed.
-test date.203 {date format "abcd%aefghi"} { 
+test date.206 {date format "abcd%aefghi"} { 
     list [catch {
  	set d1 [blt::date scan "Jan 5, 2014 PST"]
 	blt::date format $d1 -format "abcd%aefghi"
@@ -1738,7 +1738,7 @@ test date.203 {date format "abcd%aefghi"} {
 } {0 abcdSunefghi}
 
 # Non-substitutions.
-test date.204 {date format "%E%f%i%J%K%L%n%q%Q%t%v%X%Z"} { 
+test date.207 {date format "%E%f%i%J%K%L%n%q%Q%t%v%X%Z"} { 
     list [catch {
  	set d1 [blt::date scan "Jan 5, 2014 PST"]
 	blt::date format $d1 -format "%E%f%i%J%K%L%n%q%Q%t%v%X%Z"
@@ -1746,11 +1746,342 @@ test date.204 {date format "%E%f%i%J%K%L%n%q%Q%t%v%X%Z"} {
 } {0 %E%f%i%J%K%L%n%q%Q%t%v%X%Z}
 
 # Non-substitutions.
-test date.204 {date format "%E%f%i%J%K%L%n%q%Q%t%v%X%Z%%s"} { 
+test date.208 {date format "%E%f%i%J%K%L%n%q%Q%t%v%X%Z%%s"} { 
     list [catch {
  	set d1 [blt::date scan "Jan 5, 2014 PST"]
 	blt::date format $d1 -format "%E%f%i%J%K%L%n%q%Q%t%v%X%Z%%s"
     } msg] $msg
 } {0 %E%f%i%J%K%L%n%q%Q%t%v%X%Z%s}
+
+
+test date.209 {date scan "dd month yyyy"} { 
+    list [catch { blt::date scan "01 January 1970" } msg] $msg
+} {0 0.0}
+
+test date.210 {date scan "dd mon yyyy"} { 
+    list [catch { blt::date scan "01 Jan 1970" } msg] $msg
+} {0 0.0}
+
+test date.211 {date scan "dd mm yyyy"} { 
+    list [catch { blt::date scan "01 01 1970" } msg] $msg
+} {0 0.0}
+
+test date.212 {date scan "dd month"} { 
+    list [catch { blt::date scan "01 January" } msg] $msg
+} {0 0.0}
+
+test date.213 {date scan "dd mon"} { 
+    list [catch { blt::date scan "01 Jan" } msg] $msg
+} {0 0.0}
+
+test date.214 {date scan "dd mm"} { 
+    list [catch { blt::date scan "01 01" } msg] $msg
+} {0 0.0}
+
+test date.215 {date scan "dd-month-yyyy"} { 
+    list [catch { blt::date scan "01-January-1970" } msg] $msg
+} {0 0.0}
+
+test date.216 {date scan "dd-mon-yyyy"} { 
+    list [catch { blt::date scan "01-Jan-1970" } msg] $msg
+} {0 0.0}
+
+test date.217 {date scan "dd-mm-yyyy"} { 
+    list [catch { blt::date scan "01-01-1970" } msg] $msg
+} {0 0.0}
+
+test date.218 {date scan "dd/month/yyyy"} { 
+    list [catch { blt::date scan "01/January/1970" } msg] $msg
+} {0 0.0}
+
+test date.219 {date scan "dd/mon/yyyy"} { 
+    list [catch { blt::date scan "01/Jan/1970" } msg] $msg
+} {0 0.0}
+
+test date.220 {date scan "dd/mm/yyyy"} { 
+    list [catch { blt::date scan "01/01/1970" } msg] $msg
+} {0 0.0}
+
+test date.221 {date scan "month dd"} { 
+    list [catch { blt::date scan "January 01" } msg] $msg
+} {0 0.0}
+
+test date.222 {date scan "mon dd"} { 
+    list [catch { blt::date scan "Jan 01" } msg] $msg
+} {0 0.0}
+
+test date.223 {date scan "mm dd"} { 
+    list [catch { blt::date scan "01 01" } msg] $msg
+} {0 0.0}
+
+
+test date.224 {date scan "month dd yyyy"} { 
+    list [catch { blt::date scan "January 01 1970" } msg] $msg
+} {0 0.0}
+
+test date.225 {date scan "mon dd yyyy"} { 
+    list [catch { blt::date scan "Jan 01 1970" } msg] $msg
+} {0 0.0}
+
+test date.226 {date scan "mm dd yyyy"} { 
+    list [catch { blt::date scan "01 01 1970" } msg] $msg
+} {0 0.0}
+
+test date.227 {date scan "dd month yyyy"} { 
+    list [catch { blt::date scan "02 January 1970" } msg] $msg
+} {0 86400.0}
+
+test date.228 {date scan "dd mon yyyy"} { 
+    list [catch { blt::date scan "02 Jan 1970" } msg] $msg
+} {0 86400.0}
+
+# Can't tell mm from dd. This if February 1st not January 2nd.
+test date.229 {date scan "dd mm yyyy"} { 
+    list [catch { blt::date scan "02 01 1970" } msg] $msg
+} {0 2678400.0}
+
+test date.230 {date scan "dd month"} { 
+    list [catch { blt::date scan "02 January" } msg] $msg
+} {0 86400.0}
+
+test date.231 {date scan "dd mon"} { 
+    list [catch { blt::date scan "02 Jan" } msg] $msg
+} {0 86400.0}
+
+# Can't tell mm from dd. This if February 1st not January 2nd.
+test date.232 {date scan "dd mm"} { 
+    list [catch { blt::date scan "02 01" } msg] $msg
+} {0 2678400.0}
+
+test date.233 {date scan "dd-month-yyyy"} { 
+    list [catch { blt::date scan "02-January-1970" } msg] $msg
+} {0 86400.0}
+
+test date.234 {date scan "dd-mon-yyyy"} { 
+    list [catch { blt::date scan "02-Jan-1970" } msg] $msg
+} {0 86400.0}
+
+# Can't tell mm from dd. This if February 1st not January 2nd.
+test date.235 {date scan "dd-mm-yyyy"} { 
+    list [catch { blt::date scan "02-01-1970" } msg] $msg
+} {0 2678400.0}
+
+test date.236 {date scan "dd/month/yyyy"} { 
+    list [catch { blt::date scan "02/January/1970" } msg] $msg
+} {0 86400.0}
+
+test date.237 {date scan "dd/mon/yyyy"} { 
+    list [catch { blt::date scan "02/Jan/1970" } msg] $msg
+} {0 86400.0}
+
+# Can't tell mm from dd. This if February 1st not January 2nd.
+test date.238 {date scan "dd/mm/yyyy"} { 
+    list [catch { blt::date scan "02/01/1970" } msg] $msg
+} {0 2678400.0}
+
+test date.239 {date scan "month dd"} { 
+    list [catch { blt::date scan "January 02" } msg] $msg
+} {0 86400.0}
+
+test date.240 {date scan "mon dd"} { 
+    list [catch { blt::date scan "Jan 02" } msg] $msg
+} {0 86400.0}
+
+test date.241 {date scan "mm dd"} { 
+    list [catch { blt::date scan "01 02" } msg] $msg
+} {0 86400.0}
+
+
+test date.242 {date scan "month dd yyyy"} { 
+    list [catch { blt::date scan "January 02 1970" } msg] $msg
+} {0 86400.0}
+
+test date.243 {date scan "mon dd yyyy"} { 
+    list [catch { blt::date scan "Jan 02 1970" } msg] $msg
+} {0 86400.0}
+
+test date.244 {date scan "mm dd yyyy"} { 
+    list [catch { blt::date scan "01 02 1970" } msg] $msg
+} {0 86400.0}
+
+test date.245 {date scan "dd month yyyy"} { 
+    list [catch { blt::date scan "31 January 1970" } msg] $msg
+} {0 2592000.0}
+
+test date.246 {date scan "dd mon yyyy"} { 
+    list [catch { blt::date scan "31 Jan 1970" } msg] $msg
+} {0 2592000.0}
+
+test date.247 {date scan "dd mm yyyy"} { 
+    list [catch { blt::date scan "31 01 1970" } msg] $msg
+} {0 2592000.0}
+
+test date.248 {date scan "dd month"} { 
+    list [catch { blt::date scan "31 January" } msg] $msg
+} {0 2592000.0}
+
+test date.249 {date scan "dd mon"} { 
+    list [catch { blt::date scan "31 Jan" } msg] $msg
+} {0 2592000.0}
+
+test date.250 {date scan "dd mm"} { 
+    list [catch { blt::date scan "31 01" } msg] $msg
+} {0 2592000.0}
+
+test date.251 {date scan "dd-month-yyyy"} { 
+    list [catch { blt::date scan "31-January-1970" } msg] $msg
+} {0 2592000.0}
+
+test date.252 {date scan "dd-mon-yyyy"} { 
+    list [catch { blt::date scan "31-Jan-1970" } msg] $msg
+} {0 2592000.0}
+
+test date.253 {date scan "dd-mm-yyyy"} { 
+    list [catch { blt::date scan "31-01-1970" } msg] $msg
+} {0 2592000.0}
+
+test date.254 {date scan "dd/month/yyyy"} { 
+    list [catch { blt::date scan "31/January/1970" } msg] $msg
+} {0 2592000.0}
+
+test date.255 {date scan "dd/mon/yyyy"} { 
+    list [catch { blt::date scan "31/Jan/1970" } msg] $msg
+} {0 2592000.0}
+
+test date.256 {date scan "dd/mm/yyyy"} { 
+    list [catch { blt::date scan "31/01/1970" } msg] $msg
+} {0 2592000.0}
+
+test date.257 {date scan "month dd"} { 
+    list [catch { blt::date scan "January 31" } msg] $msg
+} {0 2592000.0}
+
+test date.258 {date scan "mon dd"} { 
+    list [catch { blt::date scan "Jan 31" } msg] $msg
+} {0 2592000.0}
+
+test date.259 {date scan "mm dd"} { 
+    list [catch { blt::date scan "01 31" } msg] $msg
+} {0 2592000.0}
+
+test date.260 {date scan "month dd yyyy"} { 
+    list [catch { blt::date scan "January 31 1970" } msg] $msg
+} {0 2592000.0}
+
+test date.261 {date scan "mon dd yyyy"} { 
+    list [catch { blt::date scan "Jan 31 1970" } msg] $msg
+} {0 2592000.0}
+
+test date.262 {date scan "mm dd yyyy"} { 
+    list [catch { blt::date scan "01 31 1970" } msg] $msg
+} {0 2592000.0}
+
+test date.263 {date scan "month dd, yyyy"} { 
+    list [catch { blt::date scan "January 31, 1970" } msg] $msg
+} {0 2592000.0}
+
+test date.264 {date scan "mon dd, yyyy"} { 
+    list [catch { blt::date scan "Jan 31, 1970" } msg] $msg
+} {0 2592000.0}
+
+test date.265 {date scan "mm dd yyyy"} { 
+    list [catch { blt::date scan "01 31, 1970" } msg] $msg
+} {0 2592000.0}
+
+test date.266 {date scan "month yyyy"} { 
+    list [catch { blt::date scan "January 1970" } msg] $msg
+} {0 0.0}
+
+test date.267 {date scan "mon yyyy"} { 
+    list [catch { blt::date scan "Jan 1970" } msg] $msg
+} {0 0.0}
+
+test date.268 {date scan "mm yyyy"} { 
+    list [catch { blt::date scan "01 1970" } msg] $msg
+} {0 0.0}
+
+test date.269 {date scan "month, yyyy"} { 
+    list [catch { blt::date scan "January, 1970" } msg] $msg
+} {0 0.0}
+
+test date.270 {date scan "mon, yyyy"} { 
+    list [catch { blt::date scan "Jan, 1970" } msg] $msg
+} {0 0.0}
+
+test date.271 {date scan "mm, yyyy"} { 
+    list [catch { blt::date scan "01, 1970" } msg] $msg
+} {0 0.0}
+
+test date.272 {date scan "yyyy"} { 
+    list [catch { blt::date scan "1970" } msg] $msg
+} {0 0.0}
+
+# FIXME: error "week "-1" is out of range."
+test date.273 {date scan "yyyy-Www"} { 
+    list [catch { blt::date scan "1970-W00" } msg] $msg
+} {0 0.0}
+
+test date.274 {date scan "yyyy-Www-4"} { 
+    list [catch { blt::date scan "1970W014" } msg] $msg
+} {0 0.0}
+
+test date.275 {date scan "yyyy-month"} { 
+    list [catch { blt::date scan "1970-January" } msg] $msg
+} {0 0.0}
+
+test date.276 {date scan "yyyy-mon"} { 
+    list [catch { blt::date scan "1970-Jan" } msg] $msg
+} {0 0.0}
+
+test date.277 {date scan "yyyy-mm"} { 
+    list [catch { blt::date scan "1970-01" } msg] $msg
+} {0 0.0}
+
+test date.278 {date scan "yyyy-month-dd"} { 
+    list [catch { blt::date scan "1970-January-01" } msg] $msg
+} {0 0.0}
+
+test date.279 {date scan "yyyy-mon-dd"} { 
+    list [catch { blt::date scan "1970-Jan-01" } msg] $msg
+} {0 0.0}
+
+test date.280 {date scan "yyyy-mm-01"} { 
+    list [catch { blt::date scan "1970-01-01" } msg] $msg
+} {0 0.0}
+
+test date.281 {date scan "yyyy/month/dd"} { 
+    list [catch { blt::date scan "1970/January/01" } msg] $msg
+} {0 0.0}
+
+test date.282 {date scan "yyyy/mon/dd"} { 
+    list [catch { blt::date scan "1970/Jan/01" } msg] $msg
+} {0 0.0}
+
+test date.283 {date scan "yyyy/mm/01"} { 
+    list [catch { blt::date scan "1970/01/01" } msg] $msg
+} {0 0.0}
+
+test date.284 {date scan "yyyyWww"} { 
+    list [catch { blt::date scan "1970W01" } msg] $msg
+} {0 -259200.0}
+
+test date.285 {date scan "yyyyWwwd"} { 
+    list [catch { blt::date scan "1970W014" } msg] $msg
+} {0 0.0}
+
+test date.286 {date scan "yyyymmdd"} { 
+    list [catch { blt::date scan "19700101" } msg] $msg
+} {0 0.0}
+
+test date.287 {date scan "yyyymmdd"} { 
+    list [catch { blt::date scan "19700102" } msg] $msg
+} {0 86400.0}
+
+
+# FIXME: Thinks its Jan 11th 
+test date.288 {date scan "yyyymmd"} { 
+    list [catch { blt::date debug "1970011" } msg] $msg
+} {0 86400.0}
+
 
 
