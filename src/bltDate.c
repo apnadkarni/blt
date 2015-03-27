@@ -135,6 +135,11 @@ typedef struct {
 					 * identifier. */
 } IdentTable;
 
+typedef struct {
+    const char *abbr;                   /* Timezone abbreviation. */
+    int offset;				/* Offset from UTC. */
+} TzTable;
+
 #define SECONDS_SECOND        (1)
 #define SECONDS_MINUTE        (60)
 #define SECONDS_HOUR          (SECONDS_MINUTE * 60)
@@ -171,6 +176,423 @@ static const char *meridianNames[] = {
     "am",  "pm"
 };
 static int numMeridians = sizeof(meridianNames) / sizeof(const char *);
+
+
+#ifdef notdef 
+/* 
+ * Duplicate abbreviations:
+ */
+    { "amst",   UTC+500, }, /* Armenia Summer Time */
+    { "amst",   UTC-300, }, /* Amazon Summer Time */
+
+    { "amt",    UTC+400, }, /* Armenia Time */
+    { "amt",    UTC-400, }, /* Amazon Time */
+
+    { "bst",    UTC+100, }, /* British Summer Time */
+    { "bst",    UTC-300, }, /* Brazil Standard Time */
+    { "bst",   UTC-1100, }, /* Bering Summer Time */
+
+    { "cast",   UTC+800, }, /* Casey Time (Antarctica) ! */
+    { "cast",   UTC+930, }, /* Central Australian Standard */
+
+    { "cat",    UTC+200, }, /* Central Africa Time  ! */
+    { "cat",   UTC-1000, }, /* Central Alaska (until 1967) */
+
+    { "cct",    UTC+630, }, /* Cocos Islands Time (Indian ocean)  ? */
+    { "cct",    UTC+800, }, /* China Coast Time  ? */
+
+    { "ect",    UTC-500, }, /* Ecuador Time ! */
+    { "ect",    UTC-400, }, /* Eastern Caribbean Time */
+
+    { "edt",    UTC-400, }, /* Eastern Daylight Time (North America and Caribbean) ! */
+    { "edt",    UTC+1100, }, /*Eastern Daylight Time (Australia) */
+    { "fst",    UTC+200, }, /* French Summer ! */
+    { "fst",    UTC-200, }, /* Fernando de Noronha Standard Time (Brazil) */
+    { "gst",    UTC+400, }, /* Gulf Standard Time ! */
+    { "gst",   UTC+1000, }, /* Guam Standard Time */
+    { "gst",    UTC-300, }, /* Greenland Standard Time */
+    { "gst",    UTC-200, }, /* South Georgia Time (South Georgia and the South Sandwich Islands) */
+    { "idt",    UTC+300, }, /* Israel Daylight Time ! */
+    { "idt",    UTC+430, }, /* Iran Daylight Time */
+    { "idt",    UTC+630, }, /* Indian Daylight Time */
+    { "it",     UTC+330, }, /* Iran Time ??? */
+
+    { "ist",    UTC+330, }, /* India Standard Time ! */
+    { "ist",    UTC+200, }, /* Israel Standard Time */
+    { "ist",    UTC+330, }, /* Iran Standard Time */
+
+    { "nt",     UTC-330, }, /* Newfoundland Time */
+    { "nt",     UTC-1100 }, /* Nome */
+
+    { "sst",   UTC-1100, }, /* Samoa Standard Time (American Samoa) ! */
+    { "sst",    UTC+200, }, /* Swedish Summer */
+    { "sst",    UTC+100, }, /* Swedish Summer */
+    { "sst",    UTC+700, }, /* South Sumatra Time */
+    { "sst",    UTC+800, }, /* Singapore Standard Time */
+
+    { "wast",   UTC+200, }, /* West Africa Summer Time ! */
+    { "wast",   UTC+700, },  /* West Australian Standard */
+
+    { "wst",   UTC+1300, }, /* Western Samoa Time (Standard Time)! */
+    { "wst",    UTC+800, }, /* Western Standard Time (Australia) !*/
+    { "wst",    UTC+100, }, /* Western Sahara Summer Time */
+#endif
+
+#define UTC     (0)
+static TzTable bigTzTable[] = {
+    { "a",      UTC-100, }, /* Alpha Time Zone  */
+    { "acdt",  UTC+1030, }, /* Australian Central Daylight Time */
+    { "acst",   UTC+930, }, /* Australian Central Standard Time */
+    { "act",    UTC-500, }, /* Acre Time (Brazil) */
+    { "acwt",   UTC+845, }, /* Australian Central Western Time */
+    { "adt",    UTC-300, }, /* Atlantic Daylight Time (Caribbean, North America) */
+    { "aedt",  UTC+1100, }, /* Australian Eastern Daylight Time */
+    { "aest",  UTC+1000, }, /* Australian Eastern Standard Time */
+    { "aft",    UTC+430, }, /* Afghanistan Time */
+    { "ahst",  UTC-1000, }, /* Alaska-Hawaii Standard */
+    { "akdt",   UTC-800, }, /* Alaska Daylight Time */
+    { "akst",   UTC-900, }, /* Alaska Standard Time */
+    { "almt",   UTC+600, }, /* Alma-Ata Time */
+
+    { "amst",   UTC+500, }, /* Armenia Summer Time */
+    { "amst",   UTC-300, }, /* Amazon Summer Time */
+
+    { "amt",    UTC+400, }, /* Armenia Time */
+    { "amt",    UTC-400, }, /* Amazon Time */
+
+    { "anast", UTC+1200, }, /* Anadyr Summer Time (Russia) */
+    { "anat",  UTC+1200, }, /* Anadyr Time (Russia) */
+    { "aqtt",   UTC+500, }, /* Aqtobe Time (Kazakhstan) */
+    { "art",    UTC-300, }, /* Argentina Time */
+    { "ast",    UTC-400, }, /* Atlantic Standard Time (Caribbean, North America) 	 */
+    { "at",     UTC-200, }, /* Azores */
+    { "awdt",   UTC+900, }, /* Australian Western Daylight Time */
+    { "awst",   UTC+800, }, /* Australian Western Standard Time */
+    { "azost",      UTC, }, /* Azores Summer Time */
+    { "azot",   UTC-100, }, /* Azores Time */
+    { "azst",   UTC+500, }, /* Azerbaijan Summer Time */
+    { "azt",    UTC+400, }, /* Azerbaijan Time */
+    { "b",      UTC-200, }, /* Bravo Time Zone */
+    { "bdt",    UTC+600, }, /* Bangladesh Time (also see BST) */
+    { "bnt",    UTC+800, }, /* Brunei Time */
+    { "bot",    UTC-400, }, /* Bolivia Time */
+    { "brst",   UTC-200, }, /* Brasilia Summer Time */
+    { "brt",    UTC-300, }, /* Brasilia Time */
+
+    { "bst",        UTC, },	/* British Summer */
+    { "bst",    UTC+100, }, /* British Summer Time */
+
+    { "bt",     UTC+300, }, /* Baghdad, USSR Zone 2 */
+    { "btt",    UTC+600, }, /* Bhutan Time */
+    { "c",      UTC-300, }, /* Charlie Time Zone */
+    { "cadt",   UTC+930, },  /* Central Australian Daylight */
+
+    { "cast",   UTC+800, }, /* Casey Time (Antarctica) */
+    { "cast",   UTC+930, },  /* Central Australian Standard */
+
+    { "cat",    UTC+200, }, /* Central Africa Time */
+    { "cat",   UTC-1000, },	/* Central Alaska */
+
+    { "cct",    UTC+630, }, /* Cocos Islands Time */
+    { "cct",    UTC+800, }, /* China Coast, USSR Zone 7 */
+
+    { "cdt",    UTC-500, }, /* Central Daylight Time (North America & Caribbean) */
+    { "cedt",   UTC+200, }, /* Central European Daylight Time */
+    { "cest",   UTC+200, }, /* Central European Summer Time */
+    { "cet",    UTC+100, }, /* Central European Time (Standard time) */
+    { "ch",    UTC+1000, }, /*  sT Chamorro Standard Time */
+    { "chadt", UTC+1345, }, /* Chatham Island Daylight Time */
+    { "chast", UTC+1245, }, /* Chatham Island Standard Time */
+    { "chost",  UTC+900, }, /* Choibalsan Summer Time (Mongolia) */
+    { "chot",   UTC+800, }, /* Choibalsan Time (Mongolia) */
+    { "chut",  UTC+1000, }, /* Chuuk Time */
+    { "cit",    UTC+800, }, /* Central Indonesian Time (see abbreviation WITA) */
+    { "ckt",   UTC-1000, }, /* Cook Island Time */
+    { "clst",   UTC-300, }, /* Chile Summer Time */
+    { "clt",    UTC-400, }, /* Chile Standard Time */
+    { "cot",    UTC-500, }, /* Columbia Time */
+    { "cst",    UTC-600, }, /* Central Standard Time (North America & Central America) */
+    { "cvt",    UTC-100, }, /* Cape Verde Time */
+    { "cwst",   UTC+845, }, /* Central Western Australia Time (Eucla) */
+    { "cxt",    UTC+700, }, /* Christmas Island Time */
+    { "d",      UTC-400, }, /* Delta Time Zone */
+    { "davt",   UTC+700, }, /* Davis Time (Antarctica) */
+    { "ddut",  UTC+1000, }, /* Dumont D 'Urville Time */
+
+    { "e",      UTC+500, }, /* Echo Time Zone */
+    { "easst",  UTC-500, }, /* Eastern Island Summer Time */
+    { "east",   UTC-600, }, /* Eastern Island Standard Time */
+    { "eat",    UTC+300, }, /* East Africa Time */
+
+    { "ect",    UTC-500, }, /* Ecuador Time */
+    { "ect",    UTC-400, }, /* Eastern Caribbean Time */
+
+    { "edt",    UTC-400, }, /* Eastern Daylight Time (North America and Caribbean) */
+    { "edt",    UTC+1100, }, /*Eastern Daylight Time (Australia) */
+
+    { "hae",    UTC-400, }, /* Heure Avancee de l'Est (french) */
+
+    { "eetdst", UTC+300, }, /* Eastern European Daylight Time */
+
+    { "eedt",   UTC+300, }, /* Eastern European Daylight Time */
+    { "eest",   UTC+300, }, /* Eastern European Summer Time */
+    { "eet",    UTC+200, }, /* Eastern European Time */
+    { "egst",       UTC, }, /* Eastern Greenland Summer Time */
+    { "egt",    UTC-100, }, /* East Greenland Time (Svalbard & Jan Mayen) */
+    { "emt",    UTC+100, }, /* Norway Time */
+    { "nor",    UTC+100, }, /* Norway Time */
+
+    { "eit",    UTC+900, }, /* Eastern Indonesian Time (see WIT) */
+
+    { "est",    UTC-500, }, /* Eastern Standard Time (North America and Caribbean) */
+
+    { "f",      UTC-600, }, /* Foxtrot Time Zone */
+    { "fdt",    UTC-100, }, /* Fernando de Noronha Daylight Time (Brazil) */
+    { "fet",    UTC+300, }, /* Further-Eastern European Time */
+    { "fjst",  UTC+1300, }, /* Fiji Summer Time */
+    { "fjt",   UTC+1200, }, /* Fiji Time */
+    { "fkst",   UTC-300, }, /* Falkland Islands Summer Time */
+    { "fkt",    UTC-400, }, /* Falkland Islands Time */
+    { "fnt",    UTC-200, }, /* Fernando de Noronha */
+
+    { "fst",    UTC+200, }, /* French Summer */
+    { "fst",    UTC-200, }, /* Fernando de Noronha Standard Time (Brazil) */
+
+    { "fwt",    UTC+100, }, /* French Winter */
+
+    { "g",      UTC+700  }, /* Golf Time Zone */
+    { "galt",   UTC-600, }, /* Galapagos Time */
+    { "gamt",   UTC-900, }, /* Gambier Time */
+    { "get",    UTC+400, }, /* Georgia Standard Time */
+    { "gest",   UTC+500, }, /* Georgia Summer Time ??? */
+    { "gft",    UTC-300, }, /* French Guiana Time */
+    { "gilt",  UTC+1200, }, /* Gilbert Island Time */
+    { "gmt",        UTC, }, /* Greenwich Mean Time */
+    { "gt",         UTC, }, /* Greenwich Time */
+
+    { "gst",   UTC+1000, }, /* Guam Standard Time */
+    { "chst",  UTC+1000, }, /* Guam Standard Time */
+    { "gst",    UTC+400, }, /* Gulf Standard Time */
+    { "gst",    UTC-300, }, /* Greenland Standard Time */
+    { "gst",    UTC-200, }, /* South Georgia Time (South Georgia and the South Sandwich Islands) */
+
+    { "gyt",    UTC-400, }, /* Guyana Time */
+    { "gz",         UTC, }, /* Greenwichzeit */
+
+    { "h",      UTC+800, }, /* Hotel Time Zone */
+    { "haa",    UTC-300, }, /* Heure Avancée de l'Atlantique */
+    { "hac",    UTC-500, }, /* Heure Avancee du Centre */
+    { "hae",    UTC-400, }, /* Heure Avancee de l'Est */
+    { "hap",    UTC-700, }, /* Heure Avancee du Pacifique */
+    { "har",    UTC-600, }, /* Heure Avancee des Rocheuses */
+    { "hat",    UTC-230, }, /* Heure Avancee de Terre-Neuve */
+    { "hay",    UTC-800, }, /* Heure Avancee du Yukon */
+    { "hfe",    UTC+200, }, /* Heure Fancais d'Ete */
+    { "hfh",    UTC+100, }, /* Heure Fancais d'Hiver */
+    { "hg",         UTC, }, /* Heure de Greenwich */
+    { "hna",    UTC-400, }, /* Heure Normale de l'Atlantique  */
+    { "hnc",    UTC-600, }, /* Heure Normale du Centre */
+    { "hne",    UTC-500, }, /* Heure Normale de l'Est */
+    { "hnp",    UTC-800, }, /* Heure Normale du Pacifique */
+    { "hnr",    UTC-700, }, /* Heure Normale des Rocheuses */
+    { "hnt",    UTC-330, }, /* Heure Normale de Terre-Neuve */
+    { "hny",    UTC-900, }, /* Heure Normale du Yukon */
+
+                         
+    { "hadt",   UTC-900, }, /* Hawaii-Aleutian Daylight Time */
+    { "hast",  UTC-1000, }, /* Hawaii-Aleutian Standard Time */
+    { "hdt",    UTC-930, }, /* Hawaii Daylight Time */
+    { "hkt",    UTC+800, }, /* Hong Kong Time */
+    { "hoe",    UTC+100, }, /* Spain Time */
+    { "hovst",  UTC+800, }, /* Hovd Summer Time (Mongolia) */
+    { "hovt",   UTC+700, }, /* Hovd Time (Mongolia) */
+    { "hst",   UTC-1000, }, /* Hawaii Standard Time */
+
+    { "i",      UTC+900, }, /* India Time Zone */
+    { "ict",    UTC+700, }, /* Indochina Time */
+    { "idle",  UTC+1200, }, /* International Date Line East */
+    { "idlw",  UTC-1200, }, /* International Date Line West */
+
+    { "idt",    UTC+300, }, /* Israel Daylight Time */
+    { "idt",    UTC+430, }, /* Iran Daylight Time */
+    { "idt",    UTC+630, }, /* Indian Daylight Time */
+
+    { "iot",    UTC+600, }, /* Indian Chagos Time (British Indian Ocean Territory) */
+    { "irdt",   UTC+430, }, /* Iran Daylight Time */
+    { "irkst",  UTC+900, }, /* Irkutsk Summer Time */
+    { "usz7s",  UTC+900, }, /* Irkutsk Summer Time */
+    { "irkt",   UTC+800, }, /* Irkutsk Time */
+    { "irst",   UTC+330, }, /* Iran Standard Time */
+
+    { "it",     UTC+330, }, /* Iran Time ??? */
+
+    { "ist",    UTC+530, }, /* Indian Standard Time */
+    { "ist",    UTC+100, }, /* Irish Standard Time (IST is used during daylight saving time) */
+    { "ist",    UTC+200, }, /* Israel Standard Time */
+    { "ist",    UTC+330, }, /* Iran Standard Time */
+
+    { "it",     UTC+330, }, /* Iran Standard Time */
+    { "jst",    UTC+900, }, /* Japan Standard Time */
+    { "jt",     UTC+730, },  /* Java (3pm in Cronusland!) */
+    { "k",     UTC-1000, },  /* Kilo Time Zone */
+    { "kdt",    UTC+900, },  /* Korea Daylight */
+    { "kgt",    UTC+600, }, /* Kyrgyzstan Time */
+    { "kost",  UTC+1100, }, /* Kosrae Time (Micronesia) */
+    { "krast",  UTC+800, }, /* Krasnoyarsk Summer Time */
+    { "krat",   UTC+700, }, /* Krasnoyarsk Time */
+    { "kst",    UTC+900, }, /* Korea Standard Time */
+    { "kuyt",   UTC+400, }, /* Kuybyshev Time (Samara Time as of 1991) */
+    { "l",     UTC-1100, }, /* Lima Time Zone */
+    { "lhdt",  UTC+1100, }, /* Lord Howe Daylight Time */
+    { "lhst",  UTC+1030, }, /* Lord Howe Standard Time */
+    { "lint",  UTC+1400, }, /* Line Islands Time */
+    { "m",     UTC-1200, }, /* Mike Time Zone */
+    { "magst", UTC+1200, }, /* Magadan Summer Time */
+    { "magt",  UTC+1000, }, /* Magadan Time */
+    { "mart",   UTC-930, }, /* Marquesas Time */
+    { "mawt",   UTC+500, }, /* Mawson Station Time (Antarctic) */
+    { "mdt",    UTC-600, }, /* Mountain Daylight Time (North America) */
+    { "mest",   UTC+100, }, /* Middle European Summer */
+    { "met",    UTC+100, }, /* Middle European */
+    { "mewt",   UTC+100, }, /* Middle European Winter */
+    { "mht",   UTC+1200, }, /* Marshall Islands Time */
+    { "mist",  UTC+1100, }, /* Macquarie Island Station Time */
+    { "mmt",    UTC+630, }, /* Myanmar Time */
+    { "msd",    UTC+400, }, /* Moscow Summer Time */
+    { "msk",    UTC+300, }, /* Moscow Standard Time */
+    { "mst",    UTC-700, }, /* Mountain Standard Time (North America) */
+    { "mut",    UTC+400, }, /* Mauritius Time */
+    { "mvt",    UTC+500, }, /* Maldives Time */
+    { "myt",    UTC+800, }, /* Malaysia Time */
+    { "n",      UTC-100, }, /* November Time Zone */
+    { "nct",   UTC+1100, }, /* New Caledonia Time */
+    { "ndt",    UTC-230, }, /* Newfoundland Daylight Time */
+    { "nft",   UTC+1130, }, /* Norfolk Time */
+    { "novst",  UTC+700, }, /* Novosibirsk Summer Time */
+    { "novt",   UTC+600, }, /* Novosibirsk Time */
+    { "npt",    UTC+545, }, /* Nepal Time */
+    { "nrt",   UTC+1200, }, /* Nauru Time */
+    { "nst",    UTC-330, }, /* Newfoundland Standard Time */
+
+    { "nt",     UTC-330, }, /* Newfoundland Time */
+    { "nt",     UTC-1100 }, /* Nome */
+
+    { "nut",   UTC-1100, }, /* Niue Time */
+    { "nzdt",  UTC+1300, }, /* New Zealand Daylight Time */
+    { "nzst",  UTC+1200, }, /* New Zealand Standard Time */
+    { "nzt",   UTC+1200, }, /* New Zealand */
+    { "o",      UTC-200, }, /* Oscar Time Zone */
+    { "omsst",  UTC+700, }, /* Omsk Summer Time */
+    { "omst",   UTC+600, }, /* Omsk Standard Time */
+    { "orat",   UTC+500, }, /* Oral Time 	 */
+    { "p",      UTC-300, }, /* Papa Time Zone */
+    { "pdt",    UTC-700, }, /* Pacific Daylight Time (North America) */
+    { "pet",    UTC-500, }, /* Peru Time */
+    { "petst", UTC+1200, }, /* Kamchatka Summer Time */
+    { "pett",  UTC+1200, }, /* Kamchatka Time */
+    { "pgt",   UTC+1000, }, /* Papua New Guinea Time */
+    { "phot",  UTC+1300, }, /* Phoenix Island Time */
+    { "pht",    UTC+800, }, /* Philippine Time */
+    { "pkt",    UTC+500, }, /* Pakistan Standard Time */
+    { "pmdt",   UTC-200, }, /* Pierre & Miquelon Daylight Time */
+    { "pmst",   UTC-300, }, /* Pierre & Miquelon Standard Time */
+    { "pont",  UTC+1100, }, /* Pohnpei Time (Formerly Ponape) */
+    { "pst",    UTC-800, }, /* Pacific Standard Time (North America) */
+    { "pwt",    UTC+900, }, /* Palau Time */
+    { "pyst",   UTC-300, }, /* Paraguay Summer Time */
+    { "pyt",    UTC-400, }, /* Paraguay Time */
+    { "q",      UTC-400  }, /* Quebec Time Zone */
+    { "qyzt",   UTC+600, }, /* Qyzylorda Time (Kazakhstan) */
+    { "r",      UTC-500, }, /* Romeo Time Zone */
+    { "ret",    UTC+400, }, /* Reunion Time */
+    { "rott",   UTC-300, }, /* Rothera (Research Station) Time (Antarctica) */
+    { "s",      UTC-600, }, /* Sierra Time Zone */
+    { "sakst", UTC+1200, }, /* Sakhalin Summer Time */
+    { "sakt",  UTC+1000, }, /* Sakhalin Time */
+    { "samt",   UTC+400, }, /* Samara Time */
+    { "sast",   UTC+200, }, /* South Africa Standard Time */
+    { "sbt",   UTC+1100, }, /* Solomon Islands TIME */
+    { "sct",    UTC+400, }, /* Seychelles Time */
+    { "sgt",    UTC+800, }, /* Singapore Time */
+    { "slst",   UTC+530, }, /* Sri Lanka Time */
+    { "slt",    UTC+530, }, /* Sri Lanka Time */
+    { "sret",  UTC+1100, }, /* Srednekolymsk Time */
+    { "srt",    UTC-300, }, /* Suriname Time */
+
+    { "sst",    UTC+200, }, /* Swedish Summer */
+    { "sst",   UTC-1100, }, /* Samoa Standard Time (American Samoa) */
+    { "sst",    UTC+100, }, /* Swedish Summer */
+    { "sst",    UTC+700, }, /* South Sumatra Time */
+    { "sst",    UTC+800, }, /* Singapore Standard Time */
+
+    { "swt",    UTC+100, },	/* Swedish Winter */
+
+    { "syot",   UTC+300, }, /* Syowa (Research Station) Time (Antarctica) */
+    { "t",      UTC-700, }, /* Tango Time Zone */
+    { "taht",  UTC-1000, }, /* Tahiti Time */
+    { "tft",    UTC+500, }, /* French Southern And Antarctic Territories Time */
+    { "tjt",    UTC+500, }, /* Tajikistan Time */
+    { "tkt",   UTC+1300, }, /* Tokelau Time */
+    { "tlt",    UTC+900, }, /* East Timor Time (Timor-Leste Time) */
+    { "tmt",    UTC+500, }, /* Turkmenistan Time */
+    { "tot",   UTC+1300, }, /* Tonga Time */
+    { "trut",  UTC+1000, }, /* Truk Time (Micronesia) */
+    { "tvt",   UTC+1200, }, /* Tuvalu Time */
+    { "u",      UTC-800  }, /* Uniform Time Zone */
+    { "uct",        UTC, }, /* Universal Coordinated Time */
+    { "ulast",  UTC+900, }, /* Ulaanbaatar Summer Time */
+    { "ulat",   UTC+800, }, /* Ulaanbaatar Time */
+    { "ut",         UTC, }, /* Universal (Coordinated) */
+    { "utc",        UTC, }, /* Coordinated Universal Time */
+    { "uyst",   UTC-200, }, /* Uruguay Summer Time */
+    { "uyt",    UTC-300, }, /* Uruguay Standard Time */
+    { "uzt",    UTC+500, }, /* Uzbekistan Time */
+    { "v",      UTC-900, }, /* Victor Time Zone */
+    { "vet",    UTC-430, }, /* Venezuelan Standard Time */
+    { "vlast", UTC+1100, }, /* Vladivostok Summer Time */
+    { "vlat",  UTC+1000, }, /* Vladivostok Time */
+    { "volt",   UTC+400, }, /* Volgograd Time */
+    { "vut",   UTC+1100, }, /* Vanuatu Time */
+    { "w",     UTC-1000, }, /* Whiskey Time Zone */
+    { "wadt",   UTC+700, }, /* West Australian Daylight */
+    { "wakt",  UTC+1200, }, /* Wake Island Time */
+    { "wart",   UTC-400, }, /* West Argentina Time */
+
+    { "wast",   UTC+200, }, /* West Africa Summer Time */
+    { "wast",   UTC+700, },  /* West Australian Standard */
+
+    { "wat",    UTC+100, }, /* West Africa Time */
+    { "wdt",    UTC+900, }, /* Western Daylight Time (Australia) */
+    { "wedt",   UTC+100, }, /* Western European Daylight Time */
+    { "west",   UTC+100, }, /* Western European Summer Time */
+    { "wet",        UTC, }, /* Western European Time */
+    { "wft",   UTC+1200, }, /* Wallis And Futuna Time */
+    { "wgst",   UTC-200, }, /* Western Greenland Summer Time */
+    { "wgt",    UTC-300, }, /* Western Greenland Time */
+    { "wib",    UTC+700, }, /* Western Indonesian Time */
+    { "wit",    UTC+900, }, /* Eastern Indonesian Time */
+    { "wita",   UTC+800, }, /* Central Indonesian Time */
+
+    { "wst",    UTC+100, }, /* Western Sahara Summer Time */
+    { "wst",    UTC+800, }, /* Western Standard Time (Australia) */
+    { "wst",   UTC+1300, }, /* Western Samoa Time (Standard Time) */
+    { "wst",   UTC+1400, }, /* Western Samoa Time (*also used during daylight saving time) */
+
+    { "wt",     UTC+000, }, /* Western Sahara Standard Time */
+    { "x",     UTC-1100, }, /* X-ray Time Zone */
+    { "y",     UTC-1200, }, /* Yankee Time Zone */
+    { "yakst", UTC+1000, }, /* Yakutsk Summer Time */
+    { "yakt",   UTC+900, }, /* Yakutsk Time */
+    { "yap",   UTC+1000, }, /* Yap Time (Micronesia) */
+    { "ydt",    UTC-900, }, /* Yukon Daylight */
+    { "yekst",  UTC+600, }, /* Yekaterinburg Summer Time */
+    { "yekt",   UTC+500, }, /* Yekaterinburg Time */
+    { "yst",    UTC-900, }, /* Yukon Standard */
+    { "z",          UTC, }, /* Zulu Time Zone */
+    { "zp4",    UTC+400, }, /* USSR Zone 3 */
+    { "zp5",    UTC+500, }, /* USSR Zone 4 */
+    { "zp6",    UTC+600, }, /* USSR Zone 5 */
+};
 
 /*
  * The timezone table.  (Note: This table was modified to not use any floating
@@ -342,6 +764,34 @@ static Blt_SwitchSpec scanSwitches[] =
     {BLT_SWITCH_END}
 };
 #endif
+
+static int
+FindTimeZoneAbbr(const char *string, size_t length)
+{
+    int low, high;
+
+    low = 0;
+    high = numTimezones - 1;
+    while (low <= high) {
+	int median;
+	int cond;
+	
+	median = (low + high) >> 1;
+        cond = strncmp(bigTzTable[median].abbr, string, length);
+	if (cond == 0) {
+            if (strlen(bigTzTable[median].abbr) == length) {
+                return median;
+            }
+            cond = 1;
+	}
+	if (cond < 0) {
+	    high = median - 1;
+	} else if (cond > 0) {
+	    low = median + 1;
+	}
+    }
+    return -1;                       /* Can't find timezone. */
+}
 
 /* 
  *-----------------------------------------------------------------------------
