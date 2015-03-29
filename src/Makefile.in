@@ -348,7 +348,6 @@ BLT_TCL_SO_OBJS =	bltAlloc.o \
 			bltCrc32.o \
 			bltCsv.o \
 			$(DATATABLE_OBJS) \
-			bltDate.o \
 			bltDebug.o \
 			bltFileCmd.o \
 			bltHash.o \
@@ -361,6 +360,7 @@ BLT_TCL_SO_OBJS =	bltAlloc.o \
 			bltSpline.o \
 			bltSwitch.o \
 			bltTags.o \
+			bltTimeStamp.o \
 			$(TREE_OBJS) \
 			bltUtil.o \
 			bltVar.o \

@@ -41,7 +41,6 @@ FILES = \
 		$(srcdir)/combomenu.tcl \
 		$(srcdir)/combotree.tcl \
 		$(srcdir)/comboview.tcl \
-		$(srcdir)/date.tcl \
 		$(srcdir)/dnd.tcl \
 		$(srcdir)/dragdrop.tcl \
 		$(srcdir)/drawerset.tcl \
@@ -57,6 +56,7 @@ FILES = \
 		$(srcdir)/tableview.tcl \
 		$(srcdir)/tabset.tcl \
 		$(srcdir)/tclIndex \
+		$(srcdir)/timestamp.tcl \
 		$(srcdir)/treeview.tcl \
 		$(srcdir)/unixButton.tcl \
 		$(srcdir)/winButton.tcl \

@@ -93,8 +93,8 @@ extern Tcl_AppInitProc Blt_SplineCmdInitProc;
 extern Tcl_AppInitProc Blt_TreeCmdInitProc;
 #endif
 
-#ifndef NO_DATE
-extern Tcl_AppInitProc Blt_DateCmdInitProc;
+#ifndef NO_TIMESTAMP
+extern Tcl_AppInitProc Blt_TimeStampCmdInitProc;
 #endif
 
 #ifndef NO_COMPARE

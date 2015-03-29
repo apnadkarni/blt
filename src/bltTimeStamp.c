@@ -1,10 +1,10 @@
 /* -*- mode: c; c-basic-offset: 4; indent-tabs-mode: nil -*- */
 /*
- * bltDate.c --
+ * bltTimeStamp.c --
  *
- *      This module implements a date parser for the BLT toolkit.  It
+ *      This module implements a timestamp parser for the BLT toolkit.  It
  *      differs slightly from the TCL "clock" command.  It was built to
- *      programatically convert thousands of dates in files to seconds
+ *      programatically convert thousands of timestamps in files to seconds
  *      (especially dates that may include fractional seconds).
  *      
  *      For example, if the year, month, or day are not specified, it is
@@ -66,7 +66,6 @@
 
 #define TRACE_ALL \
     (TCL_TRACE_WRITES | TCL_TRACE_UNSETS | TCL_TRACE_READS | TCL_GLOBAL_ONLY)
-#define DATE_THREAD_KEY "BLT Date Command Data"
 
 #define TZOFFSET(x) \
     ((((x)/100) * SECONDS_HOUR) + (((x) % 100) * SECONDS_MINUTE))
@@ -94,7 +93,7 @@ typedef enum {
     _TZ, _DST, 
     _SLASH, _DASH, _COMMA, _COLON, _PLUS, _DOT, _QUOTE, _LPAREN, _RPAREN,
     _NUMBER, _ISO6, _ISO7, _ISO8, _UNKNOWN,
-} DateTokenId;
+} ParserTokenId;
 
 typedef struct {
     int std;
@@ -108,9 +107,9 @@ typedef struct {
 					 * token. */
     uint64_t lvalue;			/* Numeric value of token. */
     Tcl_Obj *objPtr;                    /* Points to the timezone offsets. */
-    DateTokenId id;                     /* Serial ID of token. */
+    ParserTokenId id;                   /* Serial ID of token. */
     int length;				/* Length of the string. */
-} DateToken;
+} ParserToken;
 
 typedef struct {
     Tcl_Interp *interp;			/* Interpreter associated with the
@@ -121,11 +120,11 @@ typedef struct {
     char *nextCharPtr;			/* Points to the next character
 					 * to parse.*/
     Blt_Chain tokens;			/* List of parsed tokens. */
-    DateToken *curTokenPtr;             /* Current token being
+    ParserToken *curTokenPtr;           /* Current token being
 					 * processed. */
     char buffer[BUFSIZ];		/* Buffer holding parsed string. */
     const char *tmZone;
-} DateParser;
+} TimeStampParser;
 
 #define PARSE_DATE      (1<<0)
 #define PARSE_TIME      (1<<1)
@@ -142,7 +141,7 @@ typedef struct {
 
 typedef struct {
     const char *string;                 /* Name of identifier. */
-    DateTokenId id;                     /* Serial ID of identifier. */
+    ParserTokenId id;                     /* Serial ID of identifier. */
     int value;				/* Value associated with
 					 * identifier. */
 } IdentTable;
@@ -184,7 +183,7 @@ static int numMeridians = sizeof(meridianNames) / sizeof(const char *);
 
 typedef struct {
     int numIds;
-    DateTokenId ids[6];
+    ParserTokenId ids[6];
 } Pattern;
 
 static Pattern datePatterns[] = {
@@ -223,7 +222,7 @@ static Blt_SwitchSpec formatSwitches[] =
     {BLT_SWITCH_END}
 };
 
-static Tcl_ObjCmdProc DateObjCmd;
+static Tcl_ObjCmdProc TimeStampCmd;
 
 /*
  *---------------------------------------------------------------------------
@@ -357,12 +356,12 @@ FindTimeZone(Tcl_Interp *interp, const char *string, int length)
  *-----------------------------------------------------------------------------
  */
 static void
-InitParser(Tcl_Interp *interp, DateParser *parserPtr, const char *string) 
+InitParser(Tcl_Interp *interp, TimeStampParser *parserPtr, const char *string) 
 {
     const char *p;
     char *q;
 
-    memset(parserPtr, 0, sizeof(DateParser));
+    memset(parserPtr, 0, sizeof(TimeStampParser));
     parserPtr->interp = interp;
     for (p = string, q = parserPtr->buffer; *p != '\0'; p++, q++) {
 #ifdef notdef
@@ -394,7 +393,7 @@ InitParser(Tcl_Interp *interp, DateParser *parserPtr, const char *string)
  *-----------------------------------------------------------------------------
  */
 static void
-FreeParser(DateParser *parserPtr) 
+FreeParser(TimeStampParser *parserPtr) 
 {
     Blt_Chain_Destroy(parserPtr->tokens);
     if (parserPtr->tmZone != NULL) {
@@ -462,7 +461,7 @@ ParseWarning(Tcl_Interp *interp, const char *fmt, ...)
  *-----------------------------------------------------------------------------
  */
 static void
-DeleteToken(DateParser *parserPtr, DateToken *t) 
+DeleteToken(TimeStampParser *parserPtr, ParserToken *t) 
 {
     if (t->link != NULL) {
 	Blt_Chain_DeleteLink(parserPtr->tokens, t->link);
@@ -481,13 +480,13 @@ DeleteToken(DateParser *parserPtr, DateToken *t)
  *
  *-----------------------------------------------------------------------------
  */
-static DateTokenId
-ParseNumber(DateParser *parserPtr, const char *string)
+static ParserTokenId
+ParseNumber(TimeStampParser *parserPtr, const char *string)
 {
     const char *p;
     long lvalue;
     int length, result;
-    DateToken *t;
+    ParserToken *t;
     Tcl_Obj *objPtr;
 
     p = string;
@@ -526,10 +525,10 @@ ParseNumber(DateParser *parserPtr, const char *string)
  *
  *-----------------------------------------------------------------------------
  */
-static DateTokenId
-ParseString(DateParser *parserPtr, int length, const char *string)
+static ParserTokenId
+ParseString(TimeStampParser *parserPtr, int length, const char *string)
 {
-    DateToken *t;
+    ParserToken *t;
     char c;
     int i;
     Tcl_Obj *objPtr;
@@ -627,10 +626,10 @@ ParseString(DateParser *parserPtr, int length, const char *string)
  *
  *-----------------------------------------------------------------------------
  */
-static DateTokenId
-ParseTimeZone(DateParser *parserPtr, int length, const char *string)
+static ParserTokenId
+ParseTimeZone(TimeStampParser *parserPtr, int length, const char *string)
 {
-    DateToken *t;
+    ParserToken *t;
     Tcl_Obj *objPtr;
     
     t = parserPtr->curTokenPtr;
@@ -662,8 +661,8 @@ ParseTimeZone(DateParser *parserPtr, int length, const char *string)
  *
  *-----------------------------------------------------------------------------
  */
-static DateToken *
-FirstToken(DateParser *parserPtr)
+static ParserToken *
+FirstToken(TimeStampParser *parserPtr)
 {
     Blt_ChainLink link;
 
@@ -683,8 +682,8 @@ FirstToken(DateParser *parserPtr)
  *
  *-----------------------------------------------------------------------------
  */
-static DateToken *
-LastToken(DateParser *parserPtr)
+static ParserToken *
+LastToken(TimeStampParser *parserPtr)
 {
     Blt_ChainLink link;
 
@@ -704,8 +703,8 @@ LastToken(DateParser *parserPtr)
  *
  *-----------------------------------------------------------------------------
  */
-static DateToken *
-NextToken(DateToken *t)
+static ParserToken *
+NextToken(ParserToken *t)
 {
     Blt_ChainLink link;
 
@@ -728,8 +727,8 @@ NextToken(DateToken *t)
  *
  *-----------------------------------------------------------------------------
  */
-static DateToken *
-PrevToken(DateToken *t)
+static ParserToken *
+PrevToken(ParserToken *t)
 {
     Blt_ChainLink link;
 
@@ -743,10 +742,10 @@ PrevToken(DateToken *t)
     return Blt_Chain_GetValue(link);
 }
 
-static DateToken *
-FindFirstToken(DateParser *parserPtr, int id)
+static ParserToken *
+FindFirstToken(TimeStampParser *parserPtr, int id)
 {
-    DateToken *t;
+    ParserToken *t;
     
     for (t = FirstToken(parserPtr); t != NULL; t = NextToken(t)) {
         if (t->id == id) {
@@ -756,10 +755,10 @@ FindFirstToken(DateParser *parserPtr, int id)
     return NULL;
 }
 
-static DateToken *
-FindLastToken(DateParser *parserPtr, int id)
+static ParserToken *
+FindLastToken(TimeStampParser *parserPtr, int id)
 {
-    DateToken *t;
+    ParserToken *t;
     
     for (t = LastToken(parserPtr); t != NULL; t = PrevToken(t)) {
         if (t->id == id) {
@@ -780,7 +779,7 @@ FindLastToken(DateParser *parserPtr, int id)
  *-----------------------------------------------------------------------------
  */
 static int
-NumberTokens(DateParser *parserPtr) 
+NumberTokens(TimeStampParser *parserPtr) 
 {
     return Blt_Chain_GetLength(parserPtr->tokens);
 }
@@ -795,7 +794,7 @@ NumberTokens(DateParser *parserPtr)
  *-----------------------------------------------------------------------------
  */
 static const char *
-TokenSymbol(DateToken *t) 
+TokenSymbol(ParserToken *t) 
 {
     if (t == NULL) {
 	return tokenNames[_END];
@@ -805,9 +804,9 @@ TokenSymbol(DateToken *t)
 
 
 static Tcl_Obj *
-PrintTokens(DateParser *parserPtr) 
+PrintTokens(TimeStampParser *parserPtr) 
 {
-    DateToken *t;
+    ParserToken *t;
     Tcl_Obj *listObjPtr;
     
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
@@ -830,14 +829,14 @@ PrintTokens(DateParser *parserPtr)
  *-----------------------------------------------------------------------------
  */
 static int
-GetNextToken(DateParser *parserPtr, DateTokenId *idPtr)
+GetNextToken(TimeStampParser *parserPtr, ParserTokenId *idPtr)
 {
     char *p;
-    DateTokenId id;
-    DateToken *t;
+    ParserTokenId id;
+    ParserToken *t;
     Blt_ChainLink link;
 
-    link = Blt_Chain_AllocLink(sizeof(DateToken));
+    link = Blt_Chain_AllocLink(sizeof(ParserToken));
     Blt_Chain_LinkAfter(parserPtr->tokens, link, NULL);
     t = Blt_Chain_GetValue(link);
     t->link = link;
@@ -969,9 +968,9 @@ GetNextToken(DateParser *parserPtr, DateTokenId *idPtr)
  *-----------------------------------------------------------------------------
  */
 static int
-ProcessTokens(DateParser *parserPtr)
+ProcessTokens(TimeStampParser *parserPtr)
 {
-    DateTokenId id;
+    ParserTokenId id;
 
     id = _END;
     do {
@@ -997,14 +996,14 @@ ProcessTokens(DateParser *parserPtr)
  *-----------------------------------------------------------------------------
  */
 static int
-MatchDatePattern(DateParser *parserPtr)
+MatchDatePattern(TimeStampParser *parserPtr)
 {
     int i;
 
     /* Find the first colon. */
     for (i = 0; i < numDatePatterns; i++) {
 	int j;
-	DateToken *t;
+	ParserToken *t;
 	Pattern *patPtr;
 
 	patPtr = datePatterns + i;
@@ -1013,7 +1012,7 @@ MatchDatePattern(DateParser *parserPtr)
 	}
 	for (j = 0, t = FirstToken(parserPtr); 
 	     (t != NULL) && (j < patPtr->numIds); t = NextToken(t), j++) {
-	    DateTokenId id;
+	    ParserTokenId id;
 
 	    id = patPtr->ids[j];
 	    if (t->id != id) {
@@ -1080,9 +1079,9 @@ MatchDatePattern(DateParser *parserPtr)
  *-----------------------------------------------------------------------------
  */
 static void
-ExtractDST(DateParser *parserPtr)
+ExtractDST(TimeStampParser *parserPtr)
 {
-    DateToken *t;
+    ParserToken *t;
 
     t = FindFirstToken(parserPtr, _DST);
     if (t != NULL) {
@@ -1125,9 +1124,9 @@ ExtractDST(DateParser *parserPtr)
  *-----------------------------------------------------------------------------
  */
 static int
-ExtractTimeZoneAndOffset(DateParser *parserPtr)
+ExtractTimeZoneAndOffset(TimeStampParser *parserPtr)
 {
-    DateToken *t, *zone, *end, *next;
+    ParserToken *t, *zone, *end, *next;
     int tzoffset, offset, sign, allowNNNN;
     TimeZone tz;
     
@@ -1224,7 +1223,8 @@ ExtractTimeZoneAndOffset(DateParser *parserPtr)
  *-----------------------------------------------------------------------------
  */
 static int
-ParseTimeZoneOffset(DateParser *parserPtr, DateToken *t, DateToken **nextPtr)
+ParseTimeZoneOffset(TimeStampParser *parserPtr, ParserToken *t,
+                    ParserToken **nextPtr)
 {
     int sign, offset;
 
@@ -1283,13 +1283,13 @@ ParseTimeZoneOffset(DateParser *parserPtr, DateToken *t, DateToken **nextPtr)
  *-----------------------------------------------------------------------------
  */
 static void
-ExtractWeekday(DateParser *parserPtr)
+ExtractWeekday(TimeStampParser *parserPtr)
 {
-    DateToken *t;
+    ParserToken *t;
 
     t = FindFirstToken(parserPtr, _WDAY);
     if (t != NULL) {
-        DateToken *next;
+        ParserToken *next;
 
         parserPtr->date.wday = t->lvalue - 1; /* 0-6 */
         next = NextToken(t);
@@ -1317,9 +1317,9 @@ ExtractWeekday(DateParser *parserPtr)
  *-----------------------------------------------------------------------------
  */
 static void
-ExtractYear(DateParser *parserPtr)
+ExtractYear(TimeStampParser *parserPtr)
 {
-    DateToken *t;
+    ParserToken *t;
 
     t = FindFirstToken(parserPtr, _YEAR);
     if (t != NULL) {
@@ -1351,9 +1351,9 @@ ExtractYear(DateParser *parserPtr)
  *-----------------------------------------------------------------------------
  */
 static void
-ExtractDateTimeSeparator(DateParser *parserPtr)
+ExtractDateTimeSeparator(TimeStampParser *parserPtr)
 {
-    DateToken *t;
+    ParserToken *t;
 
     /* Find the date/time separator "t" and remove it. */
     for (t = FirstToken(parserPtr); t != NULL; t = NextToken(t)) {
@@ -1363,7 +1363,7 @@ ExtractDateTimeSeparator(DateParser *parserPtr)
         }
         c = tolower(t->string[0]);
         if ((t->length == 1) && (c == 't')) {
-            DateToken *next;
+            ParserToken *next;
             /* Check if the 't' is a military timezone or a separator. */
             next = NextToken(t);
             if (parserPtr->tmZone != NULL) {
@@ -1381,7 +1381,7 @@ ExtractDateTimeSeparator(DateParser *parserPtr)
 /*
  *---------------------------------------------------------------------------
  *
- * FixDateTokens --
+ * FixParserTokens --
  *
  *	Convert 3, 4, and 8 digit number token IDs to more specific IDs.
  *	This is done for pattern matching. 
@@ -1397,9 +1397,9 @@ ExtractDateTimeSeparator(DateParser *parserPtr)
  *---------------------------------------------------------------------------
  */
 static void
-FixDateTokens(DateParser *parserPtr)
+FixParserTokens(TimeStampParser *parserPtr)
 {
-    DateToken *t, *next;
+    ParserToken *t, *next;
 
     for (t = FirstToken(parserPtr); t != NULL; t = next) {
 	next = NextToken(t);
@@ -1434,10 +1434,10 @@ FixDateTokens(DateParser *parserPtr)
     }
 }
 
-static DateToken *
-FindTimeSequence(DateToken *t, DateToken **tokens)
+static ParserToken *
+FindTimeSequence(ParserToken *t, ParserToken **tokens)
 {
-    DateToken *prev;
+    ParserToken *prev;
 
     tokens[0] = tokens[1] = tokens[2] = NULL;
 
@@ -1504,10 +1504,10 @@ FindTimeSequence(DateToken *t, DateToken **tokens)
  *---------------------------------------------------------------------------
  */
 static int
-ExtractTime(DateParser *parserPtr)
+ExtractTime(TimeStampParser *parserPtr)
 {
-    DateToken *next, *first, *last;
-    DateToken *t, *tokens[3];
+    ParserToken *next, *first, *last;
+    ParserToken *t, *tokens[3];
 
 #if DEBUG
     fprintf(stderr, "ExtractTime (%s)\n", 
@@ -1667,9 +1667,9 @@ ExtractTime(DateParser *parserPtr)
  *---------------------------------------------------------------------------
  */
 static int
-ExtractDate(DateParser *parserPtr)
+ExtractDate(TimeStampParser *parserPtr)
 {
-    DateToken *next, *t;
+    ParserToken *next, *t;
     int i, patternIndex;
     Pattern *patPtr;
 
@@ -1679,7 +1679,7 @@ ExtractDate(DateParser *parserPtr)
     /* Remove the weekday description. */
     ExtractWeekday(parserPtr);
     /*  */
-    FixDateTokens(parserPtr);
+    FixParserTokens(parserPtr);
     ExtractYear(parserPtr);
 #if DEBUG
     fprintf(stderr, "ExtractDate (%s)\n", 
@@ -1702,7 +1702,7 @@ ExtractDate(DateParser *parserPtr)
     assert(patPtr->numIds == NumberTokens(parserPtr));
     t = FirstToken(parserPtr); 
     for (i = 0; i < patPtr->numIds; i++, t = NextToken(t)) {
-	DateTokenId id;
+	ParserTokenId id;
 	
 	id = patPtr->ids[i];
 	switch (id) {
@@ -1972,7 +1972,7 @@ GetDateFromOrdinalDay(Tcl_Interp *interp, int year, int yday, int *monthPtr)
 }
 
 static Tcl_Obj *
-DateToListObj(Tcl_Interp *interp, DateParser *parserPtr)
+DateToListObj(Tcl_Interp *interp, TimeStampParser *parserPtr)
 {
     Tcl_Obj *objPtr, *listObjPtr;
     Blt_DateTime *datePtr;
@@ -2054,7 +2054,7 @@ DateToListObj(Tcl_Interp *interp, DateParser *parserPtr)
 
 #ifdef notdef
 static int
-CheckDateAgainstMktime(Tcl_Interp *interp, DateParser *parserPtr,
+CheckDateAgainstMktime(Tcl_Interp *interp, TimeStampParser *parserPtr,
                        double seconds)
 {
     Blt_DateTime *datePtr;
@@ -2101,7 +2101,7 @@ CheckDateAgainstMktime(Tcl_Interp *interp, DateParser *parserPtr,
 /*
  *-----------------------------------------------------------------------------
  *
- * ConvertDate --
+ * ComputeTime --
  *
  *      Convert a {month, day, year, hours, minutes, seconds, meridian, dst}
  *      tuple into a clock seconds value.
@@ -2115,14 +2115,14 @@ CheckDateAgainstMktime(Tcl_Interp *interp, DateParser *parserPtr,
  *-----------------------------------------------------------------------------
  */
 static int
-ConvertDate(Tcl_Interp *interp, DateParser *parserPtr, double *secondsPtr)
+ComputeTime(Tcl_Interp *interp, TimeStampParser *parserPtr, double *secondsPtr)
 {
     int isLeapYear;
     Blt_DateTime *datePtr;
 
     datePtr = &parserPtr->date;
 #ifdef notdef
-    fprintf(stderr, "ConvertDate: (%s) year=%d mon=%d mday=%d week=%d, %dh%dm%ds.%g, tz=%d\n", 
+    fprintf(stderr, "ComputeDate: (%s) year=%d mon=%d mday=%d week=%d, %dh%dm%ds.%g, tz=%d\n", 
 	    parserPtr->buffer, 
 	    datePtr->year, datePtr->mon, datePtr->mday, datePtr->week,
 	    datePtr->hour, datePtr->min, datePtr->sec, datePtr->frac,
@@ -2493,7 +2493,7 @@ ConvertDate(Tcl_Interp *interp, DateParser *parserPtr, double *secondsPtr)
 /* 
  *-----------------------------------------------------------------------------
  *
- * ParseDate --
+ * ParseTimeStamp --
  *
  *      Parses the date/time string into the number of seconds since the
  *      epoch.  The date string can be in one many formats accepted.
@@ -2522,9 +2522,9 @@ ConvertDate(Tcl_Interp *interp, DateParser *parserPtr, double *secondsPtr)
  *-----------------------------------------------------------------------------
  */
 static int
-ParseDate(Tcl_Interp *interp, const char *string, double *secondsPtr)
+ParseTimeStamp(Tcl_Interp *interp, const char *string, double *secondsPtr)
 {
-    DateParser parser;
+    TimeStampParser parser;
 
     InitParser(interp, &parser, string);
 
@@ -2541,7 +2541,7 @@ ParseDate(Tcl_Interp *interp, const char *string, double *secondsPtr)
 	(ExtractDate(&parser) != TCL_OK)) {
 	goto error;
     }
-    if (ConvertDate(interp, &parser, secondsPtr) != TCL_OK) {
+    if (ComputeTime(interp, &parser, secondsPtr) != TCL_OK) {
 	goto error;
     }
     FreeParser(&parser);
@@ -2565,8 +2565,8 @@ FormatOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     /* Process switches  */
     memset(&switches, 0, sizeof(switches));
-    if (Blt_ParseSwitches(interp, formatSwitches, objc - 3, objv + 3, &switches,
-			  BLT_SWITCH_DEFAULTS) < 0) {
+    if (Blt_ParseSwitches(interp, formatSwitches, objc - 3, objv + 3,
+                &switches, BLT_SWITCH_DEFAULTS) < 0) {
 	return TCL_ERROR;
     }
     Blt_SecondsToDate(seconds, &date);
@@ -2583,10 +2583,10 @@ FormatOp(ClientData clientData, Tcl_Interp *interp, int objc,
 }
 
 static int
-DebugOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-       Tcl_Obj *const *objv)
+DebugOp(ClientData clientData, Tcl_Interp *interp, int objc,
+        Tcl_Obj *const *objv)
 {
-    DateParser parser;
+    TimeStampParser parser;
 
     InitParser(interp, &parser, Tcl_GetString(objv[2]));
 
@@ -2628,22 +2628,22 @@ ScanOp(ClientData clientData, Tcl_Interp *interp, int objc,
 /*
  *---------------------------------------------------------------------------
  *
- * DateObjCmd --
+ * TimeStampCmd --
  *
  *---------------------------------------------------------------------------
  */
-static Blt_OpSpec dateCmdOps[] =
+static Blt_OpSpec timeStampCmdOps[] =
 {
-    {"debug",   1, DebugOp,       3, 3, "date",},
+    {"debug",   1, DebugOp,       3, 3, "timeStamp",},
     {"format",  1, FormatOp,      3, 0, "seconds ?switches?",},
-    {"scan",    1, ScanOp,        3, 3, "date",},
+    {"scan",    1, ScanOp,        3, 3, "timeStamp",},
 };
 
-static int numCmdOps = sizeof(dateCmdOps) / sizeof(Blt_OpSpec);
+static int numCmdOps = sizeof(timeStampCmdOps) / sizeof(Blt_OpSpec);
 
 /*ARGSUSED*/
 static int
-DateObjCmd(
+TimeStampCmd(
     ClientData clientData,              /* Interpreter-specific data. */
     Tcl_Interp *interp,
     int objc,
@@ -2651,8 +2651,8 @@ DateObjCmd(
 {
     Tcl_ObjCmdProc *proc;
 
-    proc = Blt_GetOpFromObj(interp, numCmdOps, dateCmdOps, BLT_OP_ARG1, objc, 
-	objv, 0);
+    proc = Blt_GetOpFromObj(interp, numCmdOps, timeStampCmdOps, BLT_OP_ARG1,
+        objc, objv, 0);
     if (proc == NULL) {
 	return TCL_ERROR;
     }
@@ -2665,11 +2665,11 @@ DateObjCmd(
  *
  * Blt_DateToSeconds --
  *
- *      Converts a date structure into the number of second since the
- *      epoch.  The date can contain fractional seconds.  The date fields
- *      year, mon, and mday are used to compute the time, while week, wday,
- *      and yday and ignored.  You must have previously converted the them
- *      to year, mon, and mday.
+ *      Converts a Blt_DateTime structure into the number of second since
+ *      the epoch.  The date can contain fractional seconds.  The date
+ *      fields year, mon, and mday are used to compute the time, while
+ *      week, wday, and yday and ignored.  You must have previously
+ *      converted the them to year, mon, and mday.
  *
  * Results:
  *      None.
@@ -2842,7 +2842,7 @@ Blt_SecondsToDate(double seconds, Blt_DateTime *datePtr)
 int
 Blt_GetTime(Tcl_Interp *interp, const char *string, double *secondsPtr)
 {
-    if (ParseDate(interp, string, secondsPtr) == TCL_OK) {
+    if (ParseTimeStamp(interp, string, secondsPtr) == TCL_OK) {
 	return TCL_OK;
     }
     return TCL_ERROR;
@@ -2861,7 +2861,7 @@ Blt_GetTime(Tcl_Interp *interp, const char *string, double *secondsPtr)
 int
 Blt_GetTimeFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, double *secondsPtr)
 {
-    if (ParseDate(interp, Tcl_GetString(objPtr), secondsPtr) == TCL_OK) {
+    if (ParseTimeStamp(interp, Tcl_GetString(objPtr), secondsPtr) == TCL_OK) {
 	return TCL_OK;
     }
     return TCL_ERROR;
@@ -3227,9 +3227,9 @@ Blt_FormatDate(Blt_DateTime *datePtr, const char *fmt, Tcl_DString *resultPtr)
 /*
  *---------------------------------------------------------------------------
  *
- * Blt_DateCmdInitProc --
+ * Blt_TimeStampCmdInitProc --
  *
- *	This procedure is invoked to initialize the "date" command.
+ *	This procedure is invoked to initialize the "timestamp" command.
  *
  * Results:
  *	None.
@@ -3240,22 +3240,22 @@ Blt_FormatDate(Blt_DateTime *datePtr, const char *fmt, Tcl_DString *resultPtr)
  *---------------------------------------------------------------------------
  */
 int
-Blt_DateCmdInitProc(Tcl_Interp *interp)
+Blt_TimeStampCmdInitProc(Tcl_Interp *interp)
 {
     static Blt_CmdSpec cmdSpec = { 
-	"date", DateObjCmd
+	"timestamp", TimeStampCmd
     };
     /*
-     * Invoke a procedure to initialize various bindings on treeview
-     * entries.  If the procedure doesn't already exist, source it from
-     * "$blt_library/treeview.tcl".  We deferred sourcing the file until
-     * now so that the variable $blt_library could be set within a script.
+     * Source in the file contains the blt::timezones array. This array
+     * contains the names of timezones and their offset.  We do it
+     * now so that the user can change entries if he/she wants.
      */
     if (Tcl_GlobalEval(interp,
-                "source [file join $blt_library date.tcl]") != TCL_OK) {
-        const char *errmsg = "\n    (while loading timezones for date command)";
+                "source [file join $blt_library timestamp.tcl]") != TCL_OK) {
+        const char *errmsg =
+            "\n    (while loading timezones for timestamp command)";
         Tcl_AddErrorInfo(interp, errmsg);
-        fprintf(stderr, "can't source date.tcl\n");
+        fprintf(stderr, "can't source timestamp.tcl\n");
         return TCL_ERROR;
     }
     return Blt_InitCmd(interp, "::blt", &cmdSpec);
