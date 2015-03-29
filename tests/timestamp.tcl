@@ -37,8 +37,8 @@ test timestamp.5 {timestamp scan 0} {
     list [catch {blt::timestamp scan 0} msg] $msg
 } {0 -62167219200.0}
 
-# One difference between "clock scan" and "blt::timestamp scan" is that
-# default timezone is always GMT, not the localtime zone.  
+# One difference between "clock scan" and "blt::timestamp scan" is that the
+# default timezone is always GMT, not the _locale timezone.
 set timestamp "Jun 21, 1968"
 set d2 [clock scan $timestamp -gmt yes]
 
@@ -605,8 +605,8 @@ set timestamp "Jan 1, 1970 03:04pm"
 set d2 [clock scan $timestamp -gmt yes]
 
 # The default year/month/day is Jan 1st 1970 (the start of the epoch).
-# This lets you use times without timestamps that act like a duration (probably
-# without the PM).
+# This lets you use times without timestamps that act like a duration
+# (probably without the PM).
 test timestamp.80 {timestamp scan "3:04PM"} {
     list [catch {
  	set d1 [blt::timestamp scan "3:04PM"]
@@ -725,9 +725,9 @@ test timestamp.93 {timestamp scan "11/23/98"} {
 set timestamp "Jan 1, 1972"
 set d2 [clock scan $timestamp -gmt yes]
 
-# "Doctor it hurts when I use 2 digit years." Normally NN.NN.NN would
-# be interpreted as a time.  This works only because the 72 isn't a valid
-# hour specification.   
+# "Doctor it hurts when I use 2 digit years." Normally NN.NN.NN would be
+# interpreted as a time.  This works only because the 72 isn't a valid hour
+# specification.
 test timestamp.94 {timestamp scan "72.01.01"} {
     list [catch {
  	set d1 [blt::timestamp scan "72.01.01"]
@@ -776,8 +776,8 @@ test timestamp.98 {timestamp scan "25/12/05"} {
 set timestamp "Dec 05, 1925"
 set d2 [clock scan $timestamp -gmt yes]
 
-# This is an example of an accepted, but ambiguous format. NN.NN.NN is 
-# normally interpreted as a time.  But since 25 isn't a valid hour 
+# This is an example of an accepted, but ambiguous format. NN.NN.NN is
+# normally interpreted as a time.  But since 25 isn't a valid hour
 # specification, it's interpreted as a timestamp.  With dots as separators
 # we assume that this is dd.mm.yy".  The year 25 is 1925 not 2025.
 test timestamp.99 {timestamp scan "25.12.05"} {
@@ -2111,9 +2111,10 @@ test timestamp.293 {timestamp scan "January 1st, 1970 EDT"} {
     list [catch { blt::timestamp scan "January 1st, 1970 EDT" } msg] $msg
 } {0 14400.0}
 
-test timestamp.294 {timestamp scan "January 1st, 1970 EST"} { 
+# This makes no sense but...
+test timestamp.294 {timestamp scan "January 1st, 1970 EST DST"} { 
     list [catch { blt::timestamp scan "January 1st, 1970 EST DST" } msg] $msg
-} {0 18000.0}
+} {0 14400.0}
 
 set d2 [clock scan "November 12, 2007 12:00:00 PST" -gmt yes]
 test timestamp.295 {timestamp scan "November 12, 2007 12:00:00 PST"} { 
@@ -2123,40 +2124,43 @@ test timestamp.295 {timestamp scan "November 12, 2007 12:00:00 PST"} {
     } msg] $msg
 } {0 0.0}
 
-test timestamp.296 {timestamp scan "2007-11-02 12:00:00 America/Los_Angeles"} { 
+set d2 [clock scan "January 01, 2015 EDT" -gmt yes]
+test timestamp.296 {timestamp scan "Jan 1st 2015 EDT"} { 
     list [catch {
-	set d1 [blt::timestamp scan "2007-11-12 12:00:00 America/Los_Angeles"]
+	set d1 [blt::timestamp scan "Jan 1st 2015 EDT"]
 	expr { $d1 - double($d2) }
-    } ] $msg
+    } msg] $msg
 } {0 0.0}
 
-test timestamp.297 {timestamp scan "Jan 1st 2015 EST"} { 
-    list [catch {
-	set d1 [blt::timestamp scan "Jan 1st 2015 EST"]
-	expr { $d1 - double($d2) }
-    } ] $msg
-} {0 0.0}
-
-test timestamp.298 {timestamp scan "Jan 1st 2015 America/New_York"} { 
+test timestamp.297 {timestamp scan "Jan 1st 2015 America/New_York"} { 
     list [catch {
 	set d1 [blt::timestamp scan "Jan 1st 2015 America/New_York"]
 	expr { $d1 - double($d2) }
     } ] $msg
 } {0 0.0}
 
-test timestamp.299 {timestamp scan "Jun 1st 2015 America/New_York"} { 
+test timestamp.298 {timestamp scan "Jan 1st 2015 America/New_York DST"} { 
     list [catch {
-	set d1 [blt::timestamp scan "Jun 1st 2015 America/New_York"]
+	set d1 [blt::timestamp scan "Jan 1st 2015 America/New_York DST"]
 	expr { $d1 - double($d2) }
-    } ] $msg
+    } msg] $msg
 } {0 0.0}
 
-test timestamp.300 {timestamp scan "Jun 1st 2015 EST5EDT"} { 
+
+test timestamp.299 {timestamp scan "Jan 1st 2015 EST5EDT"} { 
     list [catch {
-	set d1 [blt::timestamp scan "Jun 1st 2015 EST5EDT"]
+	set d1 [blt::timestamp scan "Jan 1st 2015 EST5EDT"]
 	expr { $d1 - double($d2) }
-    } ] $msg
+    } msg] $msg
 } {0 0.0}
+
+# FIXME: handle two timezones.
+test timestamp.300 {timestamp scan "2007-11-02 12:00 America/Los_Angeles PST"} { 
+    list [catch {
+	blt::timestamp scan "2007-11-12 12:00 America/Los_Angeles PST"
+    } msg] $msg
+} {0 0.0}
+
 
 
 
