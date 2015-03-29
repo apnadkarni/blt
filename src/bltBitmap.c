@@ -454,7 +454,7 @@ static int
 AsciiToData(
     Tcl_Interp *interp,                 /* Interpreter to report results
 					 * to */
-    char *elemList,                     /* List of of hex numbers
+    const char *elemList,               /* List of of hex numbers
 					 * representing bitmap data */
     int width, int height,              /* Dimension of bitmap. */
     unsigned char **bitsPtr)            /* data array (output) */
@@ -536,7 +536,7 @@ ParseListData(
 {
     char *p;
     int width, height;
-    char *string;
+    const char *string;
     int objc;
     Tcl_Obj **objv;
 
@@ -577,7 +577,7 @@ ParseListData(
     }
     /* Convert commas to blank spaces */
     string = Blt_AssertStrdup(string);
-    for (p = string; *p != '\0'; p++) {
+    for (p = (char *)string; *p != '\0'; p++) {
 	if (*p == ',') {
 	    *p = ' ';
 	}
@@ -616,7 +616,7 @@ ParseStructData(Tcl_Interp *interp, Tcl_Obj *objPtr, int *widthPtr,
     int hotX, hotY;
     char *line, *nextline;
     char *data;
-    char *string;
+    const char *string;
 
     width = height = 0;
     hotX = hotY = -1;
@@ -630,8 +630,8 @@ ParseStructData(Tcl_Interp *interp, Tcl_Obj *objPtr, int *widthPtr,
 	}
 	string = Blt_AssertStrdup(p);
     }
-    nextline = string;
-    for (line = string; nextline != NULL; line = nextline + 1) {
+    nextline = (char *)string;
+    for (line = (char *)string; nextline != NULL; line = nextline + 1) {
 	Tcl_RegExp re;
 
 	nextline = strchr(line, '\n');

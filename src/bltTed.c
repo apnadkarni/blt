@@ -313,15 +313,18 @@ static Blt_ConfigSpec configSpecs[] =
 
 
 static Tcl_FreeProc DestroyEditor;
-static Tcl_FreeProc DestroyEntry;
 static Tcl_FreeProc DestroyTableEditor;
 static Tcl_IdleProc DisplayEntry;
 static Tcl_IdleProc DisplayTableEditor;
 static Tcl_ObjCmdProc TedCmd;
+#ifdef notdef
 static Tk_EventProc EntryEventProc;
+static Tcl_FreeProc DestroyEntry;
+#endif
 static Tk_EventProc TableEditorEventProc;
 
 static void DrawEditor(Editor *editor);
+
 /*
  *---------------------------------------------------------------------------
  *
@@ -350,10 +353,11 @@ EventuallyRedraw(TableEditor *tedPtr)
     }
 }
 
+#ifdef notdef
 /*
  *---------------------------------------------------------------------------
  *
- * EventuallyRedraw --
+ * EventuallyRedrawEntry --
  *
  *	Queues a request to redraw the text window at the next idle
  *	point.
@@ -414,6 +418,7 @@ EntryEventProc(ClientData clientData, XEvent *eventPtr)
 	Tcl_EventuallyFree(repPtr, DestroyEntry);
     }
 }
+#endif
 
 /*
  *---------------------------------------------------------------------------
@@ -586,7 +591,7 @@ CreateEntry(TableEditor *tedPtr, TableEntry *tePtr)
     Blt_Chain_Append(tedPtr->chain, repPtr);
     return TCL_OK;
 }
-#endif
+
 
 /*
  *---------------------------------------------------------------------------
@@ -612,6 +617,8 @@ DestroyEntry(DestroyData data)
 	}
     }
 }
+#endif
+
 
 /*
  *---------------------------------------------------------------------------

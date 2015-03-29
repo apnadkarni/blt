@@ -1,5 +1,4 @@
 /* -*- mode: c; c-basic-offset: 4; indent-tabs-mode: nil -*- */
-
 /*
  * bltVar85.c --
  *
@@ -11,24 +10,22 @@
  *	Permission is hereby granted, free of charge, to any person
  *	obtaining a copy of this software and associated documentation
  *	files (the "Software"), to deal in the Software without
- *	restriction, including without limitation the rights to use,
- *	copy, modify, merge, publish, distribute, sublicense, and/or
- *	sell copies of the Software, and to permit persons to whom the
- *	Software is furnished to do so, subject to the following
- *	conditions:
+ *	restriction, including without limitation the rights to use, copy,
+ *	modify, merge, publish, distribute, sublicense, and/or sell copies
+ *	of the Software, and to permit persons to whom the Software is
+ *	furnished to do so, subject to the following conditions:
  *
  *	The above copyright notice and this permission notice shall be
- *	included in all copies or substantial portions of the
- *	Software.
+ *	included in all copies or substantial portions of the Software.
  *
- *	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY
- *	KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
- *	WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
- *	PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS
- *	OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR
- *	OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
- *	OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
- *	SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ *	EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ *	MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ *	NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+ *	BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ *	ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ *	CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ *	SOFTWARE.
  */
 
 #define BUILD_BLT_TCL_PROCS 1
@@ -43,9 +40,9 @@
 /* 
  * Variable resolver routines.
  *
- * The following bit of magic is from [incr Tcl].  The following
- * routine are taken from [incr Tcl] to roughly duplicate how Tcl
- * internally creates variables.
+ * The following bit of magic is from [incr Tcl].  The following routine
+ * are taken from [incr Tcl] to roughly duplicate how Tcl internally
+ * creates variables.
  *
  * Note: There is no API for the variable resolver routines in the Tcl
  *	 library.  The resolver callback is supposed to return a Tcl_Var
@@ -58,12 +55,12 @@ typedef struct TclVarHashTable {
 } TclVarHashTable;
 
 /*
- * The structure below defines a variable, which associates a string name with
- * a Tcl_Obj value. These structures are kept in procedure call frames (for
- * local variables recognized by the compiler) or in the heap (for global
- * variables and any variable not known to the compiler). For each Var
- * structure in the heap, a hash table entry holds the variable name and a
- * pointer to the Var structure.
+ * The structure below defines a variable, which associates a string name
+ * with a Tcl_Obj value. These structures are kept in procedure call frames
+ * (for local variables recognized by the compiler) or in the heap (for
+ * global variables and any variable not known to the compiler). For each
+ * Var structure in the heap, a hash table entry holds the variable name
+ * and a pointer to the Var structure.
  */
 
 typedef struct Var {

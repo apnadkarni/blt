@@ -62,7 +62,7 @@ enum WatchStates {
 
 typedef struct {
     Tcl_Interp *interp;		/* Interpreter associated with the watch */
-    char *name;			/* Watch identifier */
+    const char *name;           /* Watch identifier */
 
     /* User-configurable fields */
     enum WatchStates state;	/* Current state of watch: either
@@ -302,7 +302,7 @@ PostCmdProc(ClientData clientData, Tcl_Interp *interp, int code)
 	const char *results;
 	char **p;
 	const char *retCode;
-	char *errorCode, *errorInfo;
+	const char *errorCode, *errorInfo;
 	errorInfo = errorCode = NULL;
 
 	results = "NO INTERPRETER AVAILABLE";

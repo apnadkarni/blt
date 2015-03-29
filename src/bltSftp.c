@@ -1474,12 +1474,13 @@ GetPermsFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, unsigned int *setFlagsPtr,
 	*setFlagsPtr = mode;
 	return TCL_OK;
     } else {
-	char *p, *copy;
+	const char *copy;
+	char *p;
 	unsigned int accumSetFlags, accumClearFlags;
 
 	accumSetFlags = accumClearFlags = 0;
 	copy = Blt_AssertStrdup(string);
-	for (p = strtok(copy, ",");  p != NULL; p = strtok(NULL, ",")) {
+	for (p = strtok((char *)copy, ",");  p != NULL; p = strtok(NULL, ",")) {
 	    unsigned int bits, sticky, setid, setFlags, clearFlags, setMask;
 	    char *q, *modePtr, *operPtr;
 	    
@@ -1676,13 +1677,13 @@ CreateSocketAddress(
 static int
 AuthenticateRemote(Tcl_Interp *interp, Remote *remotePtr)
 {
-    char *authtypes, *p, *copy;
+    const char *authtypes, *p, *copy;
 
     /* Check what authentication methods are available */
     authtypes = libssh2_userauth_list(remotePtr->session, remotePtr->user, 
 	strlen(remotePtr->user));
     copy = Blt_AssertStrdup(authtypes);
-    for (p = strtok(copy, ","); p != NULL; p = strtok(NULL, ",")) {
+    for (p = strtok((char *)copy, ","); p != NULL; p = strtok(NULL, ",")) {
 	if (strcmp(p, "password") == 0) {
 	    int result;
 
@@ -1860,8 +1861,8 @@ static int
 GetRemoteUidGids(Tcl_Interp *interp, Remote *remotePtr) 
 {
     Tcl_Obj *objPtr;
-    char *p, *copy;
-    const char *string;
+    char *p;
+    const char *copy, *string;
     int length;
 
     /* This only works on servers where there is an "id" command. */
@@ -1873,11 +1874,9 @@ GetRemoteUidGids(Tcl_Interp *interp, Remote *remotePtr)
 
     /* Parse the id output string. Make a copy of the string and point to the
      * substrings inside of it. The parts are in the form: type=id(name) */
-    copy = Blt_AssertMalloc(length + 1);
-    strncpy(copy, string, (size_t)length);
-    copy[length] = '\0';
+    copy = Blt_Strndup(string, length);
     Tcl_DecrRefCount(objPtr);
-    for (p = strtok(copy, " "); p != NULL; p = strtok(NULL, " ")) {
+    for (p = strtok((char *)copy, " "); p != NULL; p = strtok(NULL, " ")) {
 	int id;
 	char *q, *name, *type;
 
@@ -4586,7 +4585,7 @@ SlinkOp(ClientData clientData, Tcl_Interp *interp, int objc,
     Remote *remotePtr = clientData;
     LIBSSH2_SFTP_ATTRIBUTES attrs;
     const char *path;
-    char *linkName;
+    const char *linkName;
     int length, linkLen;
 
     if (remotePtr->sftp == NULL) {
@@ -4611,8 +4610,8 @@ SlinkOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	Blt_Free(linkName);
 	return TCL_ERROR;
     }
-    if (libssh2_sftp_symlink_ex(remotePtr->sftp, path, length, linkName, linkLen,
-	LIBSSH2_SFTP_SYMLINK) < 0) {
+    if (libssh2_sftp_symlink_ex(remotePtr->sftp, path, length, (char *)linkName,
+                linkLen, LIBSSH2_SFTP_SYMLINK) < 0) {
 	Tcl_AppendResult(interp, "can't symlink \"", Tcl_GetString(objv[2]),
 		"\": ", RemoteError(remotePtr), (char *)NULL);
 	Blt_Free(linkName);

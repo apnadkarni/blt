@@ -630,6 +630,7 @@ FindMode(XRRScreenResources *resourcesPtr, const char *name)
     return -1;
 }
 
+#ifdef notdef
 static int 
 PrintModes(XRRScreenResources *resPtr)
 {
@@ -641,6 +642,7 @@ PrintModes(XRRScreenResources *resPtr)
     }
     return -1;
 }
+#endif
 
 static int
 SetScreenSizeOp(ClientData clientData, Tcl_Interp *interp, int objc, 

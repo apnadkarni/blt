@@ -85,6 +85,15 @@ Blt_LowerCase(char *s)
     }
 }
 
+void
+Blt_UpperCase(char *s)
+{
+    while (*s != '\0') {
+	*s = toupper(UCHAR(*s));
+	s++;
+    }
+}
+
 
 #ifndef HAVE_STRCASECMP
 static unsigned char caseTable[] =

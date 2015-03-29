@@ -481,14 +481,14 @@ DoSwitch(
 
 	case BLT_SWITCH_STRING: 
 	    {
-		char *value;
+		const char *value;
 		
 		value = Tcl_GetString(objPtr);
 		value =  (*value == '\0') ?  NULL : Blt_AssertStrdup(value);
 		if (*(char **)ptr != NULL) {
 		    Blt_Free(*(char **)ptr);
 		}
-		*(char **)ptr = value;
+		*(const char **)ptr = value;
 	    }
 #ifdef notdef
 	    {

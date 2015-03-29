@@ -1339,10 +1339,10 @@ GetSourceFromObj(
     return TCL_OK;
 }
 
-static char *
+static const char *
 ConcatArgs(int objc, Tcl_Obj *const *objv)
 {
-    char *string;
+    const char *string;
 
     if (objc == 1) {
 	string = Blt_AssertStrdup(Tcl_GetString(objv[0]));

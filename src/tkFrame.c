@@ -665,7 +665,7 @@ ConfigureFrame(
     Tcl_Obj *const *objv,	/* Arguments. */
     int flags)			/* Flags to pass to Blt_ConfigureWidget. */
 {
-    char *oldMenuName;
+    const char *oldMenuName;
 
     /*
      * Need the old menubar name for the menu code to delete it.
@@ -684,7 +684,7 @@ ConfigureFrame(
 	|| ((oldMenuName != NULL) && (framePtr->menuName == NULL))
 	|| ((oldMenuName != NULL) && (framePtr->menuName != NULL)
 	    && strcmp(oldMenuName, framePtr->menuName) != 0)) {
-	TkSetWindowMenuBar(interp, framePtr->tkwin, oldMenuName,
+	TkSetWindowMenuBar(interp, framePtr->tkwin, (char *)oldMenuName,
 	    framePtr->menuName);
     }
 #ifdef notdef

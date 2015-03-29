@@ -126,6 +126,31 @@ Blt_ReallocAbortOnError(void *ptr, size_t size, const char *fileName,
 /*
  *---------------------------------------------------------------------------
  *
+ * Blt_Strndup --
+ *
+ *      Create a copy of the string of length size from heap storage.
+ *
+ * Results:
+ *      Returns a pointer to the need string copy.
+ *
+ *---------------------------------------------------------------------------
+ */
+const char *
+Blt_Strndup(const char *string, size_t size)
+{
+    char *ptr;
+
+    ptr = (*bltMallocPtr)((size + 1) * sizeof(char));
+    if (ptr != NULL) {
+	strncpy(ptr, string, size);
+        ptr[size] = '\0';
+    }
+    return ptr;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
  * Blt_Strdup --
  *
  *      Create a copy of the string from heap storage.
@@ -135,7 +160,7 @@ Blt_ReallocAbortOnError(void *ptr, size_t size, const char *fileName,
  *
  *---------------------------------------------------------------------------
  */
-char *
+const char *
 Blt_Strdup(const char *string)
 {
     size_t size;
@@ -161,7 +186,7 @@ Blt_Strdup(const char *string)
  *
  *---------------------------------------------------------------------------
  */
-char *
+const char *
 Blt_StrdupAbortOnError(const char *string, const char *fileName, int lineNum)
 {
     size_t size;
@@ -175,6 +200,35 @@ Blt_StrdupAbortOnError(const char *string, const char *fileName, int lineNum)
 	abort();
     }
     strcpy(ptr, string);
+    return ptr;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * Blt_StrndupAbortOnError --
+ *
+ *      Create a copy of the string from heap storage.
+ *
+ * Results:
+ *      Returns a pointer to the need string copy.
+ *
+ *---------------------------------------------------------------------------
+ */
+const char *
+Blt_StrndupAbortOnError(const char *string, size_t size, const char *fileName,
+                        int lineNum)
+{
+    char *ptr;
+
+    ptr = (*bltMallocPtr)((size + 1) * sizeof(char));
+    if (ptr == NULL) {
+	Blt_Warn("line %d of %s: can't allocate string of %lu bytes\n",
+		lineNum, fileName, (unsigned long)size);
+	abort();
+    }
+    strncpy(ptr, string, size);
+    ptr[size] = '\0';
     return ptr;
 }
 

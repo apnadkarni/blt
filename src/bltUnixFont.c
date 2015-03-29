@@ -150,7 +150,7 @@ enum FontsetTypes {
 #endif
 
 typedef struct {
-    char *family;
+    const char *family;
     const char *weight;
     const char *slant;
     const char *width;
@@ -562,10 +562,10 @@ static const char *
 GetAlias(const char *family)
 {
     Blt_HashEntry *hPtr;
-    char *lower;
+    const char *lower;
 
     lower = Blt_AssertStrdup(family);
-    Blt_LowerCase(lower);
+    Blt_LowerCase((char *)lower);
     hPtr = Blt_FindHashEntry(&aliasTable, lower);
     Blt_Free(lower);
     if (hPtr != NULL) {
@@ -1356,11 +1356,11 @@ FreetypeGetFontFamilies(Tk_Window tkwin, Blt_HashTable *tablePtr)
 	result = FcPatternGetString(fsPtr->fonts[i], FC_FAMILY, 0, &family);
 	if (result == FcResultMatch) {
 	    int isNew;
-	    char *name;
+	    const char *name;
 
 	    /* Family names must be all lower case in the hash table. */
 	    name = Blt_AssertStrdup((const char *)family);
-	    Blt_LowerCase(name);
+	    Blt_LowerCase((char *)name);
 	    Blt_CreateHashEntry(tablePtr, name, &isNew);
 	    Blt_Free(name);
 	}

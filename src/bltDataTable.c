@@ -772,12 +772,7 @@ SetValueFromObj(Tcl_Interp *interp, BLT_TABLE_COLUMN_TYPE type,
     }
     s = Tcl_GetStringFromObj(objPtr, &length);
     if (length >= TABLE_VALUE_LENGTH) {
-	char *string;
-
-	string = Blt_AssertMalloc(length + 1);
-	strncpy(string, s, length);
-	string[length] = '\0';
-	valuePtr->string = string;
+	valuePtr->string = Blt_Strndup(s, length);
         valuePtr->length = length;
     } else {
 	strncpy(valuePtr->store, s, length);
@@ -851,12 +846,7 @@ SetValueFromString(Tcl_Interp *interp, BLT_TABLE_COLUMN_TYPE type,
 
     ResetValue(valuePtr);
     if (length >= TABLE_VALUE_LENGTH) {
-        char *copy;
-        
-        copy = Blt_AssertMalloc(length + 1);
-        strncpy(copy, s, length);
-        copy[length] = '\0';
-        valuePtr->string = copy;
+        valuePtr->string = Blt_Strndup(s, length);
         valuePtr->length = length;
     } else {
         strncpy(valuePtr->store, s, length);
@@ -6403,12 +6393,7 @@ blt_table_append_string(Tcl_Interp *interp, Table *tablePtr, Row *rowPtr,
     s = Tcl_GetStringFromObj(objPtr, &length);
     ResetValue(valuePtr);
     if (length >= TABLE_VALUE_LENGTH) {
-	char *string;
-
-	string = Blt_AssertMalloc(length + 1);
-	strncpy(string, s, length);
-	string[length] = '\0';
-	valuePtr->string = string;
+	valuePtr->string = Blt_Strndup(s, length + 1);
         valuePtr->length = length;
     } else {
 	strncpy(valuePtr->store, s, length);

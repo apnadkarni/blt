@@ -369,7 +369,7 @@ BLT_EXTERN void *	Blt_Calloc(size_t numElem, size_t size);
 #ifndef Blt_Strdup_DECLARED
 #define Blt_Strdup_DECLARED
 /* 61 */
-BLT_EXTERN char *	Blt_Strdup(const char *string);
+BLT_EXTERN const char *	Blt_Strdup(const char *string);
 #endif
 #ifndef Blt_MallocAbortOnError_DECLARED
 #define Blt_MallocAbortOnError_DECLARED
@@ -392,7 +392,7 @@ BLT_EXTERN void *	Blt_ReallocAbortOnError(void *ptr, size_t size,
 #ifndef Blt_StrdupAbortOnError_DECLARED
 #define Blt_StrdupAbortOnError_DECLARED
 /* 65 */
-BLT_EXTERN char *	Blt_StrdupAbortOnError(const char *ptr,
+BLT_EXTERN const char *	Blt_StrdupAbortOnError(const char *ptr,
 				const char *file, int line);
 #endif
 #ifndef Blt_DictionaryCompare_DECLARED
@@ -737,11 +737,11 @@ typedef struct BltTclIntProcs {
     VOID * (*blt_Realloc) (VOID *ptr, size_t size); /* 58 */
     void (*blt_Free) (const VOID *ptr); /* 59 */
     VOID * (*blt_Calloc) (size_t numElem, size_t size); /* 60 */
-    char * (*blt_Strdup) (const char *string); /* 61 */
+    const char * (*blt_Strdup) (const char *string); /* 61 */
     VOID * (*blt_MallocAbortOnError) (size_t size, const char *file, int line); /* 62 */
     VOID * (*blt_CallocAbortOnError) (size_t numElem, size_t size, const char *file, int line); /* 63 */
     VOID * (*blt_ReallocAbortOnError) (VOID *ptr, size_t size, const char *file, int line); /* 64 */
-    char * (*blt_StrdupAbortOnError) (const char *ptr, const char *file, int line); /* 65 */
+    const char * (*blt_StrdupAbortOnError) (const char *ptr, const char *file, int line); /* 65 */
     int (*blt_DictionaryCompare) (const char *s1, const char *s2); /* 66 */
     Blt_Uid (*blt_GetUid) (const char *string); /* 67 */
     void (*blt_FreeUid) (Blt_Uid uid); /* 68 */

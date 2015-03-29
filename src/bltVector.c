@@ -2136,7 +2136,7 @@ Blt_CreateVector2(
     VectorInterpData *dataPtr;	/* Interpreter-specific data. */
     Vector *vPtr;
     int isNew;
-    char *nameCopy;
+    const char *nameCopy;
 
     if (initialSize < 0) {
 	Tcl_AppendResult(interp, "bad vector size \"", Blt_Itoa(initialSize),
@@ -2227,7 +2227,7 @@ Blt_DeleteVectorByName(Tcl_Interp *interp, const char *name)
 {
     VectorInterpData *dataPtr;	/* Interpreter-specific data. */
     Vector *vPtr;
-    char *nameCopy;
+    const char *nameCopy;
     int result;
 
     /*
@@ -2289,7 +2289,7 @@ Blt_VectorExists2(Tcl_Interp *interp, const char *vecName)
 int
 Blt_VectorExists(Tcl_Interp *interp, const char *vecName)
 {
-    char *nameCopy;
+    const char *nameCopy;
     int result;
 
     /*
@@ -2323,7 +2323,7 @@ Blt_GetVector(Tcl_Interp *interp, const char *name, Blt_Vector **vecPtrPtr)
 {
     VectorInterpData *dataPtr;	/* Interpreter-specific data. */
     Vector *vPtr;
-    char *nameCopy;
+    const char *nameCopy;
     int result;
 
     dataPtr = Blt_Vec_GetInterpData(interp);
@@ -2479,7 +2479,7 @@ Blt_AllocVectorId(Tcl_Interp *interp, const char *name)
     VectorClient *clientPtr;
     Blt_VectorId clientId;
     int result;
-    char *nameCopy;
+    const char *nameCopy;
 
     dataPtr = Blt_Vec_GetInterpData(interp);
     /*

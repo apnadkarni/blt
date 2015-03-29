@@ -2121,8 +2121,8 @@ ObjToSeparator(
     int offset,                         /* Offset to field in structure */
     int flags)  
 {
-    char **sepPtr = (char **)(widgRec + offset);
-    char *string;
+    const char **sepPtr = (const char **)(widgRec + offset);
+    const char *string;
 
     string = Tcl_GetString(objPtr);
     if (string[0] == '\0') {

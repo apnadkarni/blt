@@ -130,7 +130,7 @@ typedef struct {
     int length;				/* Length of dynamic string. */
     int count;				/* # of fields in current record. */
     Tcl_Interp *interp;
-    char *quote;			/* Quoted string delimiter. */
+    const char *quote;			/* Quoted string delimiter. */
 } ExportSwitches;
 
 static Blt_SwitchFreeProc ColumnIterFreeProc;

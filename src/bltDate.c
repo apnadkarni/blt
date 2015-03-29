@@ -64,6 +64,10 @@
 
 #define DEBUG   0
 
+#define TRACE_ALL \
+    (TCL_TRACE_WRITES | TCL_TRACE_UNSETS | TCL_TRACE_READS | TCL_GLOBAL_ONLY)
+#define DATE_THREAD_KEY "BLT Date Command Data"
+
 #define TZOFFSET(x) \
     ((((x)/100) * SECONDS_HOUR) + (((x) % 100) * SECONDS_MINUTE))
 
@@ -77,7 +81,7 @@ static const char *tokenNames[] = {
     "end",
     "month", "wday", "yday", "day", "year", "week",
     "hours", "seconds", "minutes", "ampm", 
-    "tz_std", "tz_dst", 
+    "tz", "dst", 
     "/", "-", ",", ":", "+", ".", "'", "(", ")", 
     "number", "iso6", "iso7", "iso8", 
     "unknown"
@@ -87,20 +91,25 @@ typedef enum {
     _END,
     _MONTH, _WDAY, _YDAY, _MDAY, _YEAR, _WEEK,
     _HOUR, _SECOND, _MINUTE, _AMPM,
-    _STD, _DST,
+    _TZ, _DST, 
     _SLASH, _DASH, _COMMA, _COLON, _PLUS, _DOT, _QUOTE, _LPAREN, _RPAREN,
     _NUMBER, _ISO6, _ISO7, _ISO8, _UNKNOWN,
 } DateTokenId;
 
 typedef struct {
+    int std;
+    int dst;
+} TimeZone;
+
+typedef struct {
     Blt_ChainLink link;			/* If non-NULL, pointer this entry
 					 * in the list of tokens. */
-    Blt_Chain chain;			/* Pointer to list of tokens. */
-    const char *identifier;             /* String representing this
+    const char *string;                 /* String representing this
 					 * token. */
-    int length;				/* Length of the identifier. */
-    DateTokenId id;                     /* Serial ID of token. */
     uint64_t lvalue;			/* Numeric value of token. */
+    Tcl_Obj *objPtr;                    /* Points to the timezone offsets. */
+    DateTokenId id;                     /* Serial ID of token. */
+    int length;				/* Length of the string. */
 } DateToken;
 
 typedef struct {
@@ -112,33 +121,31 @@ typedef struct {
     char *nextCharPtr;			/* Points to the next character
 					 * to parse.*/
     Blt_Chain tokens;			/* List of parsed tokens. */
-    DateToken *currentPtr;              /* Current token being
+    DateToken *curTokenPtr;             /* Current token being
 					 * processed. */
     char buffer[BUFSIZ];		/* Buffer holding parsed string. */
+    const char *tmZone;
 } DateParser;
 
 #define PARSE_DATE      (1<<0)
 #define PARSE_TIME      (1<<1)
 #define PARSE_TZ        (1<<2)
+#define PARSE_DST       (1<<4)
+#define PARSE_OFFSET    (1<<5)
 
-#define PARSE_YDAY      (1<<3)           /* Day of year has been set. */
-#define PARSE_MDAY      (1<<4)           /* Day of month has been set. */
-#define PARSE_WDAY      (1<<5)           /* Day of week has been set. */
-#define PARSE_WEEK      (1<<6)           /* Ordinal week has been set. */
-#define PARSE_WYEAR     (1<<7)           /* Year of ordinal week has been
+#define PARSE_YDAY      (1<<6)           /* Day of year has been set. */
+#define PARSE_MDAY      (1<<7)           /* Day of month has been set. */
+#define PARSE_WDAY      (1<<8)           /* Day of week has been set. */
+#define PARSE_WEEK      (1<<8)           /* Ordinal week has been set. */
+#define PARSE_WYEAR     (1<<10)          /* Year of ordinal week has been
 					  * set. */
 
 typedef struct {
-    const char *identifier;             /* Name of identifier. */
+    const char *string;                 /* Name of identifier. */
     DateTokenId id;                     /* Serial ID of identifier. */
     int value;				/* Value associated with
 					 * identifier. */
 } IdentTable;
-
-typedef struct {
-    const char *abbr;                   /* Timezone abbreviation. */
-    int offset;				/* Offset from UTC. */
-} TzTable;
 
 #define SECONDS_SECOND        (1)
 #define SECONDS_MINUTE        (60)
@@ -162,554 +169,18 @@ static const int numDaysToMonth[2][13] = {
     { 0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334 },
     { 0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335 }
 };
-
 static const int numDaysYear[2] = { 365, 366 };
 
 static const char *weekdayNames[] = {
     "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday",  
     "Saturday"
 };
-
 static int numWeekdays = sizeof(weekdayNames) / sizeof(const char *);
 
 static const char *meridianNames[] = {
     "am",  "pm"
 };
 static int numMeridians = sizeof(meridianNames) / sizeof(const char *);
-
-
-#ifdef notdef 
-/* 
- * Duplicate abbreviations:
- */
-    { "amst",   UTC+500, }, /* Armenia Summer Time */
-    { "amst",   UTC-300, }, /* Amazon Summer Time */
-
-    { "amt",    UTC+400, }, /* Armenia Time */
-    { "amt",    UTC-400, }, /* Amazon Time */
-
-    { "bst",    UTC+100, }, /* British Summer Time */
-    { "bst",    UTC-300, }, /* Brazil Standard Time */
-    { "bst",   UTC-1100, }, /* Bering Summer Time */
-
-    { "cast",   UTC+800, }, /* Casey Time (Antarctica) ! */
-    { "cast",   UTC+930, }, /* Central Australian Standard */
-
-    { "cat",    UTC+200, }, /* Central Africa Time  ! */
-    { "cat",   UTC-1000, }, /* Central Alaska (until 1967) */
-
-    { "cct",    UTC+630, }, /* Cocos Islands Time (Indian ocean)  ? */
-    { "cct",    UTC+800, }, /* China Coast Time  ? */
-
-    { "ect",    UTC-500, }, /* Ecuador Time ! */
-    { "ect",    UTC-400, }, /* Eastern Caribbean Time */
-
-    { "edt",    UTC-400, }, /* Eastern Daylight Time (North America and Caribbean) ! */
-    { "edt",    UTC+1100, }, /*Eastern Daylight Time (Australia) */
-    { "fst",    UTC+200, }, /* French Summer ! */
-    { "fst",    UTC-200, }, /* Fernando de Noronha Standard Time (Brazil) */
-    { "gst",    UTC+400, }, /* Gulf Standard Time ! */
-    { "gst",   UTC+1000, }, /* Guam Standard Time */
-    { "gst",    UTC-300, }, /* Greenland Standard Time */
-    { "gst",    UTC-200, }, /* South Georgia Time (South Georgia and the South Sandwich Islands) */
-    { "idt",    UTC+300, }, /* Israel Daylight Time ! */
-    { "idt",    UTC+430, }, /* Iran Daylight Time */
-    { "idt",    UTC+630, }, /* Indian Daylight Time */
-    { "it",     UTC+330, }, /* Iran Time ??? */
-
-    { "ist",    UTC+330, }, /* India Standard Time ! */
-    { "ist",    UTC+200, }, /* Israel Standard Time */
-    { "ist",    UTC+330, }, /* Iran Standard Time */
-
-    { "nt",     UTC-330, }, /* Newfoundland Time */
-    { "nt",     UTC-1100 }, /* Nome */
-
-    { "sst",   UTC-1100, }, /* Samoa Standard Time (American Samoa) ! */
-    { "sst",    UTC+200, }, /* Swedish Summer */
-    { "sst",    UTC+100, }, /* Swedish Summer */
-    { "sst",    UTC+700, }, /* South Sumatra Time */
-    { "sst",    UTC+800, }, /* Singapore Standard Time */
-
-    { "wast",   UTC+200, }, /* West Africa Summer Time ! */
-    { "wast",   UTC+700, },  /* West Australian Standard */
-
-    { "wst",   UTC+1300, }, /* Western Samoa Time (Standard Time)! */
-    { "wst",    UTC+800, }, /* Western Standard Time (Australia) !*/
-    { "wst",    UTC+100, }, /* Western Sahara Summer Time */
-#endif
-
-#define UTC     (0)
-static TzTable bigTzTable[] = {
-    { "a",      UTC-100, }, /* Alpha Time Zone  */
-    { "acdt",  UTC+1030, }, /* Australian Central Daylight Time */
-    { "acst",   UTC+930, }, /* Australian Central Standard Time */
-    { "act",    UTC-500, }, /* Acre Time (Brazil) */
-    { "acwt",   UTC+845, }, /* Australian Central Western Time */
-    { "adt",    UTC-300, }, /* Atlantic Daylight Time (Caribbean, North America) */
-    { "aedt",  UTC+1100, }, /* Australian Eastern Daylight Time */
-    { "aest",  UTC+1000, }, /* Australian Eastern Standard Time */
-    { "aft",    UTC+430, }, /* Afghanistan Time */
-    { "ahst",  UTC-1000, }, /* Alaska-Hawaii Standard */
-    { "akdt",   UTC-800, }, /* Alaska Daylight Time */
-    { "akst",   UTC-900, }, /* Alaska Standard Time */
-    { "almt",   UTC+600, }, /* Alma-Ata Time */
-
-    { "amst",   UTC+500, }, /* Armenia Summer Time */
-    { "amst",   UTC-300, }, /* Amazon Summer Time */
-
-    { "amt",    UTC+400, }, /* Armenia Time */
-    { "amt",    UTC-400, }, /* Amazon Time */
-
-    { "anast", UTC+1200, }, /* Anadyr Summer Time (Russia) */
-    { "anat",  UTC+1200, }, /* Anadyr Time (Russia) */
-    { "aqtt",   UTC+500, }, /* Aqtobe Time (Kazakhstan) */
-    { "art",    UTC-300, }, /* Argentina Time */
-    { "ast",    UTC-400, }, /* Atlantic Standard Time (Caribbean, North America) 	 */
-    { "at",     UTC-200, }, /* Azores */
-    { "awdt",   UTC+900, }, /* Australian Western Daylight Time */
-    { "awst",   UTC+800, }, /* Australian Western Standard Time */
-    { "azost",      UTC, }, /* Azores Summer Time */
-    { "azot",   UTC-100, }, /* Azores Time */
-    { "azst",   UTC+500, }, /* Azerbaijan Summer Time */
-    { "azt",    UTC+400, }, /* Azerbaijan Time */
-    { "b",      UTC-200, }, /* Bravo Time Zone */
-    { "bdt",    UTC+600, }, /* Bangladesh Time (also see BST) */
-    { "bnt",    UTC+800, }, /* Brunei Time */
-    { "bot",    UTC-400, }, /* Bolivia Time */
-    { "brst",   UTC-200, }, /* Brasilia Summer Time */
-    { "brt",    UTC-300, }, /* Brasilia Time */
-
-    { "bst",        UTC, },	/* British Summer */
-    { "bst",    UTC+100, }, /* British Summer Time */
-
-    { "bt",     UTC+300, }, /* Baghdad, USSR Zone 2 */
-    { "btt",    UTC+600, }, /* Bhutan Time */
-    { "c",      UTC-300, }, /* Charlie Time Zone */
-    { "cadt",   UTC+930, },  /* Central Australian Daylight */
-
-    { "cast",   UTC+800, }, /* Casey Time (Antarctica) */
-    { "cast",   UTC+930, },  /* Central Australian Standard */
-
-    { "cat",    UTC+200, }, /* Central Africa Time */
-    { "cat",   UTC-1000, },	/* Central Alaska */
-
-    { "cct",    UTC+630, }, /* Cocos Islands Time */
-    { "cct",    UTC+800, }, /* China Coast, USSR Zone 7 */
-
-    { "cdt",    UTC-500, }, /* Central Daylight Time (North America & Caribbean) */
-    { "cedt",   UTC+200, }, /* Central European Daylight Time */
-    { "cest",   UTC+200, }, /* Central European Summer Time */
-    { "cet",    UTC+100, }, /* Central European Time (Standard time) */
-    { "ch",    UTC+1000, }, /*  sT Chamorro Standard Time */
-    { "chadt", UTC+1345, }, /* Chatham Island Daylight Time */
-    { "chast", UTC+1245, }, /* Chatham Island Standard Time */
-    { "chost",  UTC+900, }, /* Choibalsan Summer Time (Mongolia) */
-    { "chot",   UTC+800, }, /* Choibalsan Time (Mongolia) */
-    { "chut",  UTC+1000, }, /* Chuuk Time */
-    { "cit",    UTC+800, }, /* Central Indonesian Time (see abbreviation WITA) */
-    { "ckt",   UTC-1000, }, /* Cook Island Time */
-    { "clst",   UTC-300, }, /* Chile Summer Time */
-    { "clt",    UTC-400, }, /* Chile Standard Time */
-    { "cot",    UTC-500, }, /* Columbia Time */
-    { "cst",    UTC-600, }, /* Central Standard Time (North America & Central America) */
-    { "cvt",    UTC-100, }, /* Cape Verde Time */
-    { "cwst",   UTC+845, }, /* Central Western Australia Time (Eucla) */
-    { "cxt",    UTC+700, }, /* Christmas Island Time */
-    { "d",      UTC-400, }, /* Delta Time Zone */
-    { "davt",   UTC+700, }, /* Davis Time (Antarctica) */
-    { "ddut",  UTC+1000, }, /* Dumont D 'Urville Time */
-
-    { "e",      UTC+500, }, /* Echo Time Zone */
-    { "easst",  UTC-500, }, /* Eastern Island Summer Time */
-    { "east",   UTC-600, }, /* Eastern Island Standard Time */
-    { "eat",    UTC+300, }, /* East Africa Time */
-
-    { "ect",    UTC-500, }, /* Ecuador Time */
-    { "ect",    UTC-400, }, /* Eastern Caribbean Time */
-
-    { "edt",    UTC-400, }, /* Eastern Daylight Time (North America and Caribbean) */
-    { "edt",    UTC+1100, }, /*Eastern Daylight Time (Australia) */
-
-    { "hae",    UTC-400, }, /* Heure Avancee de l'Est (french) */
-
-    { "eetdst", UTC+300, }, /* Eastern European Daylight Time */
-
-    { "eedt",   UTC+300, }, /* Eastern European Daylight Time */
-    { "eest",   UTC+300, }, /* Eastern European Summer Time */
-    { "eet",    UTC+200, }, /* Eastern European Time */
-    { "egst",       UTC, }, /* Eastern Greenland Summer Time */
-    { "egt",    UTC-100, }, /* East Greenland Time (Svalbard & Jan Mayen) */
-    { "emt",    UTC+100, }, /* Norway Time */
-    { "nor",    UTC+100, }, /* Norway Time */
-
-    { "eit",    UTC+900, }, /* Eastern Indonesian Time (see WIT) */
-
-    { "est",    UTC-500, }, /* Eastern Standard Time (North America and Caribbean) */
-
-    { "f",      UTC-600, }, /* Foxtrot Time Zone */
-    { "fdt",    UTC-100, }, /* Fernando de Noronha Daylight Time (Brazil) */
-    { "fet",    UTC+300, }, /* Further-Eastern European Time */
-    { "fjst",  UTC+1300, }, /* Fiji Summer Time */
-    { "fjt",   UTC+1200, }, /* Fiji Time */
-    { "fkst",   UTC-300, }, /* Falkland Islands Summer Time */
-    { "fkt",    UTC-400, }, /* Falkland Islands Time */
-    { "fnt",    UTC-200, }, /* Fernando de Noronha */
-
-    { "fst",    UTC+200, }, /* French Summer */
-    { "fst",    UTC-200, }, /* Fernando de Noronha Standard Time (Brazil) */
-
-    { "fwt",    UTC+100, }, /* French Winter */
-
-    { "g",      UTC+700  }, /* Golf Time Zone */
-    { "galt",   UTC-600, }, /* Galapagos Time */
-    { "gamt",   UTC-900, }, /* Gambier Time */
-    { "get",    UTC+400, }, /* Georgia Standard Time */
-    { "gest",   UTC+500, }, /* Georgia Summer Time ??? */
-    { "gft",    UTC-300, }, /* French Guiana Time */
-    { "gilt",  UTC+1200, }, /* Gilbert Island Time */
-    { "gmt",        UTC, }, /* Greenwich Mean Time */
-    { "gt",         UTC, }, /* Greenwich Time */
-
-    { "gst",   UTC+1000, }, /* Guam Standard Time */
-    { "chst",  UTC+1000, }, /* Guam Standard Time */
-    { "gst",    UTC+400, }, /* Gulf Standard Time */
-    { "gst",    UTC-300, }, /* Greenland Standard Time */
-    { "gst",    UTC-200, }, /* South Georgia Time (South Georgia and the South Sandwich Islands) */
-
-    { "gyt",    UTC-400, }, /* Guyana Time */
-    { "gz",         UTC, }, /* Greenwichzeit */
-
-    { "h",      UTC+800, }, /* Hotel Time Zone */
-    { "haa",    UTC-300, }, /* Heure Avancée de l'Atlantique */
-    { "hac",    UTC-500, }, /* Heure Avancee du Centre */
-    { "hae",    UTC-400, }, /* Heure Avancee de l'Est */
-    { "hap",    UTC-700, }, /* Heure Avancee du Pacifique */
-    { "har",    UTC-600, }, /* Heure Avancee des Rocheuses */
-    { "hat",    UTC-230, }, /* Heure Avancee de Terre-Neuve */
-    { "hay",    UTC-800, }, /* Heure Avancee du Yukon */
-    { "hfe",    UTC+200, }, /* Heure Fancais d'Ete */
-    { "hfh",    UTC+100, }, /* Heure Fancais d'Hiver */
-    { "hg",         UTC, }, /* Heure de Greenwich */
-    { "hna",    UTC-400, }, /* Heure Normale de l'Atlantique  */
-    { "hnc",    UTC-600, }, /* Heure Normale du Centre */
-    { "hne",    UTC-500, }, /* Heure Normale de l'Est */
-    { "hnp",    UTC-800, }, /* Heure Normale du Pacifique */
-    { "hnr",    UTC-700, }, /* Heure Normale des Rocheuses */
-    { "hnt",    UTC-330, }, /* Heure Normale de Terre-Neuve */
-    { "hny",    UTC-900, }, /* Heure Normale du Yukon */
-
-                         
-    { "hadt",   UTC-900, }, /* Hawaii-Aleutian Daylight Time */
-    { "hast",  UTC-1000, }, /* Hawaii-Aleutian Standard Time */
-    { "hdt",    UTC-930, }, /* Hawaii Daylight Time */
-    { "hkt",    UTC+800, }, /* Hong Kong Time */
-    { "hoe",    UTC+100, }, /* Spain Time */
-    { "hovst",  UTC+800, }, /* Hovd Summer Time (Mongolia) */
-    { "hovt",   UTC+700, }, /* Hovd Time (Mongolia) */
-    { "hst",   UTC-1000, }, /* Hawaii Standard Time */
-
-    { "i",      UTC+900, }, /* India Time Zone */
-    { "ict",    UTC+700, }, /* Indochina Time */
-    { "idle",  UTC+1200, }, /* International Date Line East */
-    { "idlw",  UTC-1200, }, /* International Date Line West */
-
-    { "idt",    UTC+300, }, /* Israel Daylight Time */
-    { "idt",    UTC+430, }, /* Iran Daylight Time */
-    { "idt",    UTC+630, }, /* Indian Daylight Time */
-
-    { "iot",    UTC+600, }, /* Indian Chagos Time (British Indian Ocean Territory) */
-    { "irdt",   UTC+430, }, /* Iran Daylight Time */
-    { "irkst",  UTC+900, }, /* Irkutsk Summer Time */
-    { "usz7s",  UTC+900, }, /* Irkutsk Summer Time */
-    { "irkt",   UTC+800, }, /* Irkutsk Time */
-    { "irst",   UTC+330, }, /* Iran Standard Time */
-
-    { "it",     UTC+330, }, /* Iran Time ??? */
-
-    { "ist",    UTC+530, }, /* Indian Standard Time */
-    { "ist",    UTC+100, }, /* Irish Standard Time (IST is used during daylight saving time) */
-    { "ist",    UTC+200, }, /* Israel Standard Time */
-    { "ist",    UTC+330, }, /* Iran Standard Time */
-
-    { "it",     UTC+330, }, /* Iran Standard Time */
-    { "jst",    UTC+900, }, /* Japan Standard Time */
-    { "jt",     UTC+730, },  /* Java (3pm in Cronusland!) */
-    { "k",     UTC-1000, },  /* Kilo Time Zone */
-    { "kdt",    UTC+900, },  /* Korea Daylight */
-    { "kgt",    UTC+600, }, /* Kyrgyzstan Time */
-    { "kost",  UTC+1100, }, /* Kosrae Time (Micronesia) */
-    { "krast",  UTC+800, }, /* Krasnoyarsk Summer Time */
-    { "krat",   UTC+700, }, /* Krasnoyarsk Time */
-    { "kst",    UTC+900, }, /* Korea Standard Time */
-    { "kuyt",   UTC+400, }, /* Kuybyshev Time (Samara Time as of 1991) */
-    { "l",     UTC-1100, }, /* Lima Time Zone */
-    { "lhdt",  UTC+1100, }, /* Lord Howe Daylight Time */
-    { "lhst",  UTC+1030, }, /* Lord Howe Standard Time */
-    { "lint",  UTC+1400, }, /* Line Islands Time */
-    { "m",     UTC-1200, }, /* Mike Time Zone */
-    { "magst", UTC+1200, }, /* Magadan Summer Time */
-    { "magt",  UTC+1000, }, /* Magadan Time */
-    { "mart",   UTC-930, }, /* Marquesas Time */
-    { "mawt",   UTC+500, }, /* Mawson Station Time (Antarctic) */
-    { "mdt",    UTC-600, }, /* Mountain Daylight Time (North America) */
-    { "mest",   UTC+100, }, /* Middle European Summer */
-    { "met",    UTC+100, }, /* Middle European */
-    { "mewt",   UTC+100, }, /* Middle European Winter */
-    { "mht",   UTC+1200, }, /* Marshall Islands Time */
-    { "mist",  UTC+1100, }, /* Macquarie Island Station Time */
-    { "mmt",    UTC+630, }, /* Myanmar Time */
-    { "msd",    UTC+400, }, /* Moscow Summer Time */
-    { "msk",    UTC+300, }, /* Moscow Standard Time */
-    { "mst",    UTC-700, }, /* Mountain Standard Time (North America) */
-    { "mut",    UTC+400, }, /* Mauritius Time */
-    { "mvt",    UTC+500, }, /* Maldives Time */
-    { "myt",    UTC+800, }, /* Malaysia Time */
-    { "n",      UTC-100, }, /* November Time Zone */
-    { "nct",   UTC+1100, }, /* New Caledonia Time */
-    { "ndt",    UTC-230, }, /* Newfoundland Daylight Time */
-    { "nft",   UTC+1130, }, /* Norfolk Time */
-    { "novst",  UTC+700, }, /* Novosibirsk Summer Time */
-    { "novt",   UTC+600, }, /* Novosibirsk Time */
-    { "npt",    UTC+545, }, /* Nepal Time */
-    { "nrt",   UTC+1200, }, /* Nauru Time */
-    { "nst",    UTC-330, }, /* Newfoundland Standard Time */
-
-    { "nt",     UTC-330, }, /* Newfoundland Time */
-    { "nt",     UTC-1100 }, /* Nome */
-
-    { "nut",   UTC-1100, }, /* Niue Time */
-    { "nzdt",  UTC+1300, }, /* New Zealand Daylight Time */
-    { "nzst",  UTC+1200, }, /* New Zealand Standard Time */
-    { "nzt",   UTC+1200, }, /* New Zealand */
-    { "o",      UTC-200, }, /* Oscar Time Zone */
-    { "omsst",  UTC+700, }, /* Omsk Summer Time */
-    { "omst",   UTC+600, }, /* Omsk Standard Time */
-    { "orat",   UTC+500, }, /* Oral Time 	 */
-    { "p",      UTC-300, }, /* Papa Time Zone */
-    { "pdt",    UTC-700, }, /* Pacific Daylight Time (North America) */
-    { "pet",    UTC-500, }, /* Peru Time */
-    { "petst", UTC+1200, }, /* Kamchatka Summer Time */
-    { "pett",  UTC+1200, }, /* Kamchatka Time */
-    { "pgt",   UTC+1000, }, /* Papua New Guinea Time */
-    { "phot",  UTC+1300, }, /* Phoenix Island Time */
-    { "pht",    UTC+800, }, /* Philippine Time */
-    { "pkt",    UTC+500, }, /* Pakistan Standard Time */
-    { "pmdt",   UTC-200, }, /* Pierre & Miquelon Daylight Time */
-    { "pmst",   UTC-300, }, /* Pierre & Miquelon Standard Time */
-    { "pont",  UTC+1100, }, /* Pohnpei Time (Formerly Ponape) */
-    { "pst",    UTC-800, }, /* Pacific Standard Time (North America) */
-    { "pwt",    UTC+900, }, /* Palau Time */
-    { "pyst",   UTC-300, }, /* Paraguay Summer Time */
-    { "pyt",    UTC-400, }, /* Paraguay Time */
-    { "q",      UTC-400  }, /* Quebec Time Zone */
-    { "qyzt",   UTC+600, }, /* Qyzylorda Time (Kazakhstan) */
-    { "r",      UTC-500, }, /* Romeo Time Zone */
-    { "ret",    UTC+400, }, /* Reunion Time */
-    { "rott",   UTC-300, }, /* Rothera (Research Station) Time (Antarctica) */
-    { "s",      UTC-600, }, /* Sierra Time Zone */
-    { "sakst", UTC+1200, }, /* Sakhalin Summer Time */
-    { "sakt",  UTC+1000, }, /* Sakhalin Time */
-    { "samt",   UTC+400, }, /* Samara Time */
-    { "sast",   UTC+200, }, /* South Africa Standard Time */
-    { "sbt",   UTC+1100, }, /* Solomon Islands TIME */
-    { "sct",    UTC+400, }, /* Seychelles Time */
-    { "sgt",    UTC+800, }, /* Singapore Time */
-    { "slst",   UTC+530, }, /* Sri Lanka Time */
-    { "slt",    UTC+530, }, /* Sri Lanka Time */
-    { "sret",  UTC+1100, }, /* Srednekolymsk Time */
-    { "srt",    UTC-300, }, /* Suriname Time */
-
-    { "sst",    UTC+200, }, /* Swedish Summer */
-    { "sst",   UTC-1100, }, /* Samoa Standard Time (American Samoa) */
-    { "sst",    UTC+100, }, /* Swedish Summer */
-    { "sst",    UTC+700, }, /* South Sumatra Time */
-    { "sst",    UTC+800, }, /* Singapore Standard Time */
-
-    { "swt",    UTC+100, },	/* Swedish Winter */
-
-    { "syot",   UTC+300, }, /* Syowa (Research Station) Time (Antarctica) */
-    { "t",      UTC-700, }, /* Tango Time Zone */
-    { "taht",  UTC-1000, }, /* Tahiti Time */
-    { "tft",    UTC+500, }, /* French Southern And Antarctic Territories Time */
-    { "tjt",    UTC+500, }, /* Tajikistan Time */
-    { "tkt",   UTC+1300, }, /* Tokelau Time */
-    { "tlt",    UTC+900, }, /* East Timor Time (Timor-Leste Time) */
-    { "tmt",    UTC+500, }, /* Turkmenistan Time */
-    { "tot",   UTC+1300, }, /* Tonga Time */
-    { "trut",  UTC+1000, }, /* Truk Time (Micronesia) */
-    { "tvt",   UTC+1200, }, /* Tuvalu Time */
-    { "u",      UTC-800  }, /* Uniform Time Zone */
-    { "uct",        UTC, }, /* Universal Coordinated Time */
-    { "ulast",  UTC+900, }, /* Ulaanbaatar Summer Time */
-    { "ulat",   UTC+800, }, /* Ulaanbaatar Time */
-    { "ut",         UTC, }, /* Universal (Coordinated) */
-    { "utc",        UTC, }, /* Coordinated Universal Time */
-    { "uyst",   UTC-200, }, /* Uruguay Summer Time */
-    { "uyt",    UTC-300, }, /* Uruguay Standard Time */
-    { "uzt",    UTC+500, }, /* Uzbekistan Time */
-    { "v",      UTC-900, }, /* Victor Time Zone */
-    { "vet",    UTC-430, }, /* Venezuelan Standard Time */
-    { "vlast", UTC+1100, }, /* Vladivostok Summer Time */
-    { "vlat",  UTC+1000, }, /* Vladivostok Time */
-    { "volt",   UTC+400, }, /* Volgograd Time */
-    { "vut",   UTC+1100, }, /* Vanuatu Time */
-    { "w",     UTC-1000, }, /* Whiskey Time Zone */
-    { "wadt",   UTC+700, }, /* West Australian Daylight */
-    { "wakt",  UTC+1200, }, /* Wake Island Time */
-    { "wart",   UTC-400, }, /* West Argentina Time */
-
-    { "wast",   UTC+200, }, /* West Africa Summer Time */
-    { "wast",   UTC+700, },  /* West Australian Standard */
-
-    { "wat",    UTC+100, }, /* West Africa Time */
-    { "wdt",    UTC+900, }, /* Western Daylight Time (Australia) */
-    { "wedt",   UTC+100, }, /* Western European Daylight Time */
-    { "west",   UTC+100, }, /* Western European Summer Time */
-    { "wet",        UTC, }, /* Western European Time */
-    { "wft",   UTC+1200, }, /* Wallis And Futuna Time */
-    { "wgst",   UTC-200, }, /* Western Greenland Summer Time */
-    { "wgt",    UTC-300, }, /* Western Greenland Time */
-    { "wib",    UTC+700, }, /* Western Indonesian Time */
-    { "wit",    UTC+900, }, /* Eastern Indonesian Time */
-    { "wita",   UTC+800, }, /* Central Indonesian Time */
-
-    { "wst",    UTC+100, }, /* Western Sahara Summer Time */
-    { "wst",    UTC+800, }, /* Western Standard Time (Australia) */
-    { "wst",   UTC+1300, }, /* Western Samoa Time (Standard Time) */
-    { "wst",   UTC+1400, }, /* Western Samoa Time (*also used during daylight saving time) */
-
-    { "wt",     UTC+000, }, /* Western Sahara Standard Time */
-    { "x",     UTC-1100, }, /* X-ray Time Zone */
-    { "y",     UTC-1200, }, /* Yankee Time Zone */
-    { "yakst", UTC+1000, }, /* Yakutsk Summer Time */
-    { "yakt",   UTC+900, }, /* Yakutsk Time */
-    { "yap",   UTC+1000, }, /* Yap Time (Micronesia) */
-    { "ydt",    UTC-900, }, /* Yukon Daylight */
-    { "yekst",  UTC+600, }, /* Yekaterinburg Summer Time */
-    { "yekt",   UTC+500, }, /* Yekaterinburg Time */
-    { "yst",    UTC-900, }, /* Yukon Standard */
-    { "z",          UTC, }, /* Zulu Time Zone */
-    { "zp4",    UTC+400, }, /* USSR Zone 3 */
-    { "zp5",    UTC+500, }, /* USSR Zone 4 */
-    { "zp6",    UTC+600, }, /* USSR Zone 5 */
-};
-
-/*
- * The timezone table.  (Note: This table was modified to not use any floating
- * point constants to work around an SGI compiler bug).
- */
-static IdentTable tzTable[] = {
-    { "gmt",  _STD,    0 },	/* Greenwich Mean */
-    { "ut",   _STD,    0 },	/* Universal (Coordinated) */
-    { "utc",  _STD,    0 },
-    { "uct",  _STD,    0 },	/* Universal Coordinated Time */
-    { "wet",  _STD,    0 },	/* Western European */
-    { "bst",  _DST,    0 },	/* British Summer */
-    { "wat",  _STD,  100 },	/* West Africa */
-    { "at",   _STD,  200 },	/* Azores */
-#if     0
-    /* For completeness.  BST is also British Summer, and GST is also Guam
-     * Standard. */
-    { "bst",  _STD,  300 },	/* Brazil Standard */
-    { "gst",  _STD,  300 },	/* Greenland Standard */
-#endif
-    { "nft",  _STD,  330 },	/* Newfoundland */
-    { "nst",  _STD,  330 },	/* Newfoundland Standard */
-    { "ndt",  _DST,  330 },	/* Newfoundland Daylight */
-    { "ast",  _STD,  400 },	/* Atlantic Standard */
-    { "adt",  _DST,  400 },	/* Atlantic Daylight */
-    { "est",  _STD,  500 },	/* Eastern Standard */
-    { "edt",  _DST,  500 },	/* Eastern Daylight */
-    { "cst",  _STD,  600 },	/* Central Standard */
-    { "cdt",  _DST,  600 },	/* Central Daylight */
-    { "mst",  _STD,  700 },	/* Mountain Standard */
-    { "mdt",  _DST,  700 },	/* Mountain Daylight */
-    { "pst",  _STD,  800 },	/* Pacific Standard */
-    { "pdt",  _DST,  800 },	/* Pacific Daylight */
-    { "yst",  _STD,  900 },	/* Yukon Standard */
-    { "ydt",  _DST,  900 },	/* Yukon Daylight */
-    { "hst",  _STD, 1000 },	/* Hawaii Standard */
-    { "hdt",  _DST, 1000 },	/* Hawaii Daylight */
-    { "cat",  _STD, 1000 },	/* Central Alaska */
-    { "ahst", _STD, 1000 },	/* Alaska-Hawaii Standard */
-    { "nt",   _STD, 1100 },	/* Nome */
-    { "idlw", _STD, 1200 },	/* International Date Line West */
-    { "cet",  _STD, -100 },	/* Central European */
-    { "cest", _DST, -100 },	/* Central European Summer */
-    { "met",  _STD, -100 },	/* Middle European */
-    { "mewt", _STD, -100 },	/* Middle European Winter */
-    { "mest", _DST, -100 },	/* Middle European Summer */
-    { "swt",  _STD, -100 },	/* Swedish Winter */
-    { "sst",  _DST, -100 },	/* Swedish Summer */
-    { "fwt",  _STD, -100 },	/* French Winter */
-    { "fst",  _DST, -100 },	/* French Summer */
-    { "eet",  _STD, -200 },	/* Eastern Europe, USSR Zone 1 */
-    { "bt",   _STD, -300 },	/* Baghdad, USSR Zone 2 */
-    { "it",   _STD, -330 },	/* Iran */
-    { "zp4",  _STD, -400 },	/* USSR Zone 3 */
-    { "zp5",  _STD, -500 },	/* USSR Zone 4 */
-    { "ist",  _STD, -530 },  /* Indian Standard */
-    { "zp6",  _STD, -600 },  /* USSR Zone 5 */
-#if     0
-    /* For completeness.  NST is also Newfoundland Standard, and SST is also
-     * Swedish Summer. */
-    { "nst",  _STD, -630 },  /* North Sumatra */
-    { "sst",  _STD, -700 },  /* south Sumatra, USSR Zone 6 */
-#endif  /* 0 */ 
-    { "wast", _STD, -700 },  /* West Australian Standard */
-    { "wadt", _DST, -700 },  /* West Australian Daylight */
-    { "jt",   _STD, -730 },  /* Java (3pm in Cronusland!) */
-    { "cct",  _STD, -800 },  /* China Coast, USSR Zone 7 */
-    { "jst",  _STD, -900 },  /* Japan Standard, USSR Zone 8 */
-    { "jdt",  _DST, -900 },  /* Japan Daylight */
-    { "kst",  _STD, -900 },  /* Korea Standard */
-    { "kdt",  _DST, -900 },  /* Korea Daylight */
-    { "cast", _STD, -930 },  /* Central Australian Standard */
-    { "cadt", _DST, -930 },  /* Central Australian Daylight */
-    { "east", _STD, -1000 },  /* Eastern Australian Standard */
-    { "eadt", _DST, -1000 },  /* Eastern Australian Daylight */
-    { "gst",  _STD, -1000 },  /* Guam Standard, USSR Zone 9 */
-    { "nzt",  _STD, -1200 },  /* New Zealand */
-    { "nzst", _STD, -1200 },  /* New Zealand Standard */
-    { "nzdt", _DST, -1200 },  /* New Zealand Daylight */
-    { "idle", _STD, -1200 },  /* International Date Line East */
-    /* ADDED BY Marco Nijdam */
-    { "dst",  _DST,     0 },   /* DST on (hour is ignored) */
-    /* End ADDED */
-};
-static int numTimezones = sizeof(tzTable) / sizeof(IdentTable);
-
-/*
- * Military timezone table.
- */
-static IdentTable milTzTable[] = {
-    { "a",  _STD,    100  },
-    { "b",  _STD,    200  },
-    { "c",  _STD,    300  },
-    { "d",  _STD,    400  },
-    { "e",  _STD,    500  },
-    { "f",  _STD,    600  },
-    { "g",  _STD,    700  },
-    { "h",  _STD,    800  },
-    { "i",  _STD,    900  },
-    { "j",     0,      0  },
-    { "k",  _STD,   1000  },
-    { "l",  _STD,   1100  },
-    { "m",  _STD,   1200  },
-    { "n",  _STD,   -100  },
-    { "o",  _STD,   -200  },
-    { "p",  _STD,   -300  },
-    { "q",  _STD,   -400  },
-    { "r",  _STD,   -500  },
-    { "s",  _STD,   -600  },
-    { "t",  _STD,   -700  },
-    { "u",  _STD,   -800  },
-    { "v",  _STD,   -900  },
-    { "w",  _STD,  -1000  },
-    { "x",  _STD,  -1100  },
-    { "y",  _STD,  -1200  },
-    { "z",  _STD,      0  },
-};
 
 typedef struct {
     int numIds;
@@ -752,45 +223,122 @@ static Blt_SwitchSpec formatSwitches[] =
     {BLT_SWITCH_END}
 };
 
-#ifdef notdef
-typedef struct {
-    Tcl_Obj *fmtObjPtr;
-} ScanSwitches;
+static Tcl_ObjCmdProc DateObjCmd;
 
-static Blt_SwitchSpec scanSwitches[] = 
-{
-    {BLT_SWITCH_OBJ, "-format", "",  (char *)NULL,
-	Blt_Offset(ScanSwitches, fmtObjPtr), 0},
-    {BLT_SWITCH_END}
-};
-#endif
-
+/*
+ *---------------------------------------------------------------------------
+ *
+ * GetTimeZoneOffset --
+ *
+ *      Converts a string in the format "+/-hh:mm:ss" into the number
+ *      seconds representing the offset from UTC.  
+ *
+ * Results:
+ *      A standard TCL result.  The offset is returned via *offsetPtr*.
+ *
+ *---------------------------------------------------------------------------
+ */
 static int
-FindTimeZoneAbbr(const char *string, size_t length)
+GetTimeZoneOffset(Tcl_Interp *interp, Tcl_Obj *objPtr, int *offsetPtr)
 {
-    int low, high;
-
-    low = 0;
-    high = numTimezones - 1;
-    while (low <= high) {
-	int median;
-	int cond;
-	
-	median = (low + high) >> 1;
-        cond = strncmp(bigTzTable[median].abbr, string, length);
-	if (cond == 0) {
-            if (strlen(bigTzTable[median].abbr) == length) {
-                return median;
-            }
-            cond = 1;
-	}
-	if (cond < 0) {
-	    high = median - 1;
-	} else if (cond > 0) {
-	    low = median + 1;
-	}
+    char buffer[8];
+    const char *p;
+    int sign, hours, minutes, seconds;
+    int count;
+    
+    sign = -1;
+    p = Tcl_GetString(objPtr);
+    if ((*p == '+') || (*p == '-')) {
+        if (*p == '-') {
+            sign = -1;
+        }
+        p++;
     }
-    return -1;                       /* Can't find timezone. */
+    for (count = 0; (*p != '\0') || (count > 7); p++) {
+        if (isdigit(*p)) {
+            buffer[count] = *p;
+            count++;
+        } else if (*p != ':') {
+            break;                      /* Stop if it's not a digit or
+                                         * colon. */
+        }
+    }
+    hours = seconds = minutes = 0;
+    buffer[count] = '\0';
+    switch (count) {
+    case 6:
+        seconds = (buffer[4] - '0') * 10 + (buffer[5] - '0');
+        /* fallthru */
+    case 4:                             /* Hours and minutes */
+        minutes = (buffer[2] - '0') * 10 + (buffer[3] - '0');
+        /* fallthru */
+    case 2:                             /* Hours only */
+        hours = (buffer[0] - '0') * 10 + (buffer[1] - '0');
+        break;
+    default:
+        Tcl_AppendResult(interp, "unknown timezone string \"",
+                Tcl_GetString(objPtr), "\"", (char *)NULL);
+        return TCL_ERROR;
+    }
+    *offsetPtr = hours * 60 * 60;       /* Hours in seconds. */
+    *offsetPtr += minutes * 60;         /* Minutes in seconds. */
+    *offsetPtr += seconds;
+    *offsetPtr *= sign;
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * GetTimeZoneOffsets --
+ *
+ *      Converts a string in the format "+/-hh:mm:ss +/-hh:mm:ss" that
+ *      represent the standard and daylight offsets of the timezone.
+ *      
+ * Results:
+ *      A standard TCL result.  The offsets are returned via *zonePtr*.
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+GetTimeZoneOffsets(Tcl_Interp *interp, Tcl_Obj *objPtr, TimeZone *zonePtr)
+{
+    Tcl_Obj **objv;
+    int objc;
+    int result;
+
+    if (Tcl_ListObjGetElements(interp, objPtr, &objc, &objv) != TCL_OK) {
+        return TCL_ERROR;
+    }
+    if (objc != 2) {
+        return TCL_ERROR;
+    }
+    result = GetTimeZoneOffset(interp, objv[0], &zonePtr->std);
+    if (result == TCL_OK) {
+        result = GetTimeZoneOffset(interp, objv[1], &zonePtr->dst);
+    }
+    return TCL_OK;
+}
+
+static Tcl_Obj *
+FindTimeZone(Tcl_Interp *interp, const char *string, int length)
+{
+    const char *copy;
+    Tcl_Obj *objPtr;
+    
+    if (length < 0) {
+        length = strlen(string);
+    }
+    copy = Blt_Strndup(string, length);
+    /* Don't leave an error message if you don't find the timezone. */
+    objPtr = Tcl_GetVar2Ex(interp, "blt::timezones", copy, 0);
+    if (objPtr == NULL) {
+        /* Try it again, all uppercase. */
+        Blt_UpperCase((char *)copy);
+        objPtr = Tcl_GetVar2Ex(interp, "blt::timezones", copy, 0);
+    }
+    Blt_Free(copy);
+    return objPtr;
 }
 
 /* 
@@ -817,11 +365,13 @@ InitParser(Tcl_Interp *interp, DateParser *parserPtr, const char *string)
     memset(parserPtr, 0, sizeof(DateParser));
     parserPtr->interp = interp;
     for (p = string, q = parserPtr->buffer; *p != '\0'; p++, q++) {
+#ifdef notdef
 	if (isalpha(*p)) {
 	    *q = tolower(*p);
 	} else {
-	    *q = *p;
 	}
+#endif
+        *q = *p;
     }
     *q = '\0';
     parserPtr->nextCharPtr = parserPtr->buffer;
@@ -847,6 +397,10 @@ static void
 FreeParser(DateParser *parserPtr) 
 {
     Blt_Chain_Destroy(parserPtr->tokens);
+    if (parserPtr->tmZone != NULL) {
+        Blt_Free(parserPtr->tmZone);
+        parserPtr->tmZone = NULL;
+    }
 }
 
 /* 
@@ -908,10 +462,10 @@ ParseWarning(Tcl_Interp *interp, const char *fmt, ...)
  *-----------------------------------------------------------------------------
  */
 static void
-DeleteToken(DateToken *t) 
+DeleteToken(DateParser *parserPtr, DateToken *t) 
 {
     if (t->link != NULL) {
-	Blt_Chain_DeleteLink(t->chain, t->link);
+	Blt_Chain_DeleteLink(parserPtr->tokens, t->link);
     }
 }
 
@@ -937,7 +491,7 @@ ParseNumber(DateParser *parserPtr, const char *string)
     Tcl_Obj *objPtr;
 
     p = string;
-    t = parserPtr->currentPtr;
+    t = parserPtr->curTokenPtr;
     while (isdigit(*p)) {
 	p++;
     }
@@ -952,7 +506,7 @@ ParseNumber(DateParser *parserPtr, const char *string)
 	return _UNKNOWN;
     }
     t->lvalue = lvalue;
-    t->identifier = string;
+    t->string = string;
     t->length = p - string;
     t->id = _NUMBER;
     return _NUMBER;
@@ -963,8 +517,9 @@ ParseNumber(DateParser *parserPtr, const char *string)
  *
  * ParseString --
  *
- *	Parse the given string and tries to match against different
- *      identifiers to determine the ID.
+ *	Parses the given string and tries to match against different kinds
+ *      of identifiers to determine the ID. Months, weekdays, timezones, and
+ *      meridian can be distinctly identified.  
  *
  * Returns:
  *	Returns the appropiate token.
@@ -974,15 +529,16 @@ ParseNumber(DateParser *parserPtr, const char *string)
 static DateTokenId
 ParseString(DateParser *parserPtr, int length, const char *string)
 {
-    char c;
     DateToken *t;
-
-    t = parserPtr->currentPtr;
+    char c;
+    int i;
+    Tcl_Obj *objPtr;
+    
+    t = parserPtr->curTokenPtr;
     c = tolower(string[0]);
-    /* Month and weekday names (may be abbreviated). */
-    if (length >= 3) {
-	int i;
 
+    /* Step 1. Test of month and weekday names (may be abbreviated). */
+    if (length >= 3) {
 	/* Test for months. Allow abbreviations greater than 2 characters. */
 	for (i = 0; i < numMonths; i++) {
 	    const char *p;
@@ -990,7 +546,7 @@ ParseString(DateParser *parserPtr, int length, const char *string)
 	    p = monthNames[i];
 	    if ((c == tolower(*p)) && (strncasecmp(p, string, length) == 0)) {
 		t->lvalue = i + 1;      /* Month 1-12 */
-		t->identifier = p;
+		t->string = p;
 		t->length = 0;
 		t->id = _MONTH;
 		return _MONTH;
@@ -1004,59 +560,96 @@ ParseString(DateParser *parserPtr, int length, const char *string)
 	    if ((c == tolower(*p)) && (strncasecmp(p, string, length) == 0)) {
 		t->lvalue = i + 1;      /* Weekday 1-7 */
 		t->length = 0;
-		t->identifier = p;
+		t->string = p;
 		t->id = _WDAY;
 		return _WDAY;
 	    }
 	}
     }
-    /* Token is possibly a timezone. */
-    /* If it's a single letter (a-i,k-z), it's a military timezone. */
-    if ((length == 1) && (c != 'j') && (isalpha(c))) {
-	IdentTable *p;
 
-	p = milTzTable + (c - 'a');
-	t->identifier = p->identifier;
-	t->length = 1;
-	t->lvalue = p->value;
-	t->id = _STD;
-	return _STD;
-    } else {
-	int i;
-
-	/* Test for standard timezones. */
-	for (i = 0; i < numTimezones; i++) {
-	    IdentTable *p;
-	    
-	    p = tzTable + i;
-	    /* Test of timezomes. No abbreviations. */
-	    if ((c == p->identifier[0]) && 
-		(strncmp(p->identifier, string, length) == 0)) {
-		t->lvalue = p->value;
-		t->identifier = p->identifier;
-		t->length = 0;
-		t->id = p->id;
-		return p->id;
-	    }
-	}
-	/* Otherwise test for meridian: am or pm. */
-	if (length == 2) {
-	    /* Test of meridian. */
-	    for (i = 0; i < numMeridians; i++) {
-		const char *p;
-		
-		p = meridianNames[i];
-		if ((c == tolower(*p)) && 
-		    (strncasecmp(p, string, length) == 0)) {
-		    t->lvalue = i;
-		    t->length = 0;
-		    t->id = _AMPM;
-		    return _AMPM;
-		}
-	    }
-	}
+    /* Step 2. Test for DST string. */
+    if ((length == 3) && (strncasecmp(string, "DST", length) == 0)) {
+        t->lvalue = 0;
+        t->string = "DST";
+        t->length = 3;
+        t->id = _DST;
+        parserPtr->date.isdst = TRUE;
+        parserPtr->flags |= PARSE_DST;
+        return _DST;
     }
-    ParseError(parserPtr->interp, "unknown token \"%.*s\"", length, string);
+    
+    /* Step 3. Test for meridian: am or pm. */
+    if (length == 2) {
+        int i;
+        
+        /* Test of meridian. */
+        for (i = 0; i < numMeridians; i++) {
+            const char *p;
+            
+            p = meridianNames[i];
+            if ((c == *p) && (strncasecmp(p, string, length) == 0)) {
+                t->lvalue = i;
+                t->length = 2;
+                t->id = _AMPM;
+                return _AMPM;
+            }
+        }
+    }
+    /* Step 5. Test for timezone name. Check against because there may
+     *         have been a number, -, /, or _ next to it. */
+    objPtr = FindTimeZone(parserPtr->interp, string, length);
+    if (objPtr != NULL) {
+        t->objPtr = objPtr;
+        Tcl_IncrRefCount(objPtr);
+        t->lvalue = length;
+        t->string = string;
+        t->length = length;
+        t->id = _TZ;
+        parserPtr->tmZone = Blt_Strndup(string, length);
+        parserPtr->flags |= PARSE_TZ;
+        return _TZ;
+    }
+    t->string = string;
+    t->length = length;
+    t->id = _UNKNOWN;
+    return _UNKNOWN;
+}
+
+/* 
+ *-----------------------------------------------------------------------------
+ *
+ * ParseTimeZone --
+ *
+ *	Parses the given string and tries to match against timezones.
+ *
+ * Returns:
+ *	Returns the appropiate token.
+ *
+ *-----------------------------------------------------------------------------
+ */
+static DateTokenId
+ParseTimeZone(DateParser *parserPtr, int length, const char *string)
+{
+    DateToken *t;
+    Tcl_Obj *objPtr;
+    
+    t = parserPtr->curTokenPtr;
+
+    objPtr = FindTimeZone(parserPtr->interp, string, length);
+    if (objPtr != NULL) {
+        t->objPtr = objPtr;
+        Tcl_IncrRefCount(objPtr);
+        t->lvalue = length;
+        t->string = string;
+        t->length = length;
+        t->id = _TZ;
+        parserPtr->tmZone = Blt_Strndup(string, length);
+        parserPtr->flags |= PARSE_TZ;
+        return _TZ;
+    }
+    t->string = string;
+    t->length = length;
+    t->id = _UNKNOWN;
     return _UNKNOWN;
 }
 
@@ -1065,7 +658,7 @@ ParseString(DateParser *parserPtr, int length, const char *string)
  *
  * FirstToken --
  *
- *	Returns the first token in the chain of token.
+ *	Returns the first token in the chain of tokens.
  *
  *-----------------------------------------------------------------------------
  */
@@ -1086,7 +679,7 @@ FirstToken(DateParser *parserPtr)
  *
  * LastToken --
  *
- *	Returns the last token in the chain of token.
+ *	Returns the last token in the chain of tokens.
  *
  *-----------------------------------------------------------------------------
  */
@@ -1107,7 +700,7 @@ LastToken(DateParser *parserPtr)
  *
  * NextToken --
  *
- *	Returns the next token in the chain of token.
+ *	Returns the next token in the chain of tokens.
  *
  *-----------------------------------------------------------------------------
  */
@@ -1131,7 +724,7 @@ NextToken(DateToken *t)
  *
  * PrevToken --
  *
- *	Returns the previous token in the chain of token.
+ *	Returns the previous token in the chain of tokens.
  *
  *-----------------------------------------------------------------------------
  */
@@ -1149,6 +742,33 @@ PrevToken(DateToken *t)
     }
     return Blt_Chain_GetValue(link);
 }
+
+static DateToken *
+FindFirstToken(DateParser *parserPtr, int id)
+{
+    DateToken *t;
+    
+    for (t = FirstToken(parserPtr); t != NULL; t = NextToken(t)) {
+        if (t->id == id) {
+            return t;
+        }
+    }
+    return NULL;
+}
+
+static DateToken *
+FindLastToken(DateParser *parserPtr, int id)
+{
+    DateToken *t;
+    
+    for (t = LastToken(parserPtr); t != NULL; t = PrevToken(t)) {
+        if (t->id == id) {
+            return t;
+        }
+    }
+    return NULL;
+}
+
 
 /* 
  *-----------------------------------------------------------------------------
@@ -1221,49 +841,62 @@ GetNextToken(DateParser *parserPtr, DateTokenId *idPtr)
     Blt_Chain_LinkAfter(parserPtr->tokens, link, NULL);
     t = Blt_Chain_GetValue(link);
     t->link = link;
-    t->chain = parserPtr->tokens;
-    parserPtr->currentPtr = t;
+    parserPtr->curTokenPtr = t;
     p = parserPtr->nextCharPtr;
+
     while (isspace(*p)) {
 	p++;				/* Skip leading spaces. */
     }
-    if (*p == '/') {
-	id = _SLASH;
-	p++;
-    } else if (*p == '+') {
-	id = _PLUS;
-	p++;
-    } else if (*p == '\'') {
-	id = _QUOTE;
-	p++;
-    } else if (*p == ':') {
-	id = _COLON;
-	p++;
-    } else if (*p == '.') {
-	id = _DOT;
-	p++;
-    } else if (*p == ',') {
-	id = _COMMA;
-	p++;
-    } else if (*p == '-') {
-	id = _DASH;
-	p++;
-    } else if (*p == '(') {
-	id = _LPAREN;
-	p++;
-    } else if (*p == ')') {
-	id = _RPAREN;
-	p++;
-    } else if ((*p == 'w') && (isdigit(*(p+1))) && (isdigit(*(p+2)))) {
-	t->identifier = p;
+
+    /* Handle single character tokens. */
+    switch (*p) {
+    case '/':
+        id = _SLASH;
+        break;
+    case '+':
+        id = _PLUS;
+        break;
+    case '\'':                          /* Single quote */
+        id = _QUOTE;
+        break;
+    case ':':
+        id = _COLON;
+        break;
+    case '.':
+        id = _DOT;
+        break;
+    case ',':
+        id = _COMMA;
+        break;
+    case '-':
+        id = _DASH;
+        break;
+    case '(':
+        id = _LPAREN;
+        break;
+    case ')':
+        id = _RPAREN;
+        break;
+    default:
+        goto next;
+    }
+    *idPtr = parserPtr->curTokenPtr->id = id;
+    parserPtr->nextCharPtr = p + 1;
+    return TCL_OK;
+
+ next:
+    /* Week number Wnn. */
+    if ((*p == 'W') && (isdigit(*(p+1))) && (isdigit(*(p+2)))) {
+	t->string = p;
 	t->lvalue = (p[1] - '0') * 10 + (p[2] - '0');
-	id = _WEEK;
+	id = _WEEK;                     /* Www week number. */
 	t->length = 3;
 	p += t->length;
     } else if (isdigit(*p)) {
 	char *start;
 	char save;
-
+        char c0, c1;
+        
 	start = p;
 	while (isdigit(*p)) {
 	    p++;
@@ -1275,27 +908,43 @@ GetNextToken(DateParser *parserPtr, DateTokenId *idPtr)
 	    return TCL_ERROR;
 	}
 	*p = save;			/* Restore last chararacter. */
-	if (((p[0] == 't') && (p[1] == 'h')) ||
-	    ((p[0] == 's') && (p[1] == 't')) ||
-	    ((p[0] == 'n') && (p[1] == 'd')) ||
-	    ((p[0] == 'r') && (p[1] == 'd'))) {
+        c0 = tolower(p[0]);
+        c1 = tolower(p[1]);
+	if (((c0 == 't') && (c1 == 'h')) || /* 9th */
+	    ((c0 == 's') && (c1 == 't')) || /* 1st */
+	    ((c0 == 'n') && (c1 == 'd')) || /* 2nd */
+	    ((c0 == 'r') && (c1 == 'd'))) { /* 3rd */
 	    p += 2;
-	    id = _MDAY;
+	    id = _MDAY;                 /* Month day. */
 	}
     } else if (isalpha(*p)) {
-	char name[BUFSIZ];
-	int i;
+	char *name;
 	
-	for (i = 0; ((isalpha(*p)) || (*p == '.')) && (i < 200); p++) {
-	    if (*p != '.') {
-		name[i] = *p;
-		i++;
-	    }
+        /* Special parsing rules for timezones.  They start with a letter
+         * and may contain one or more letters, digits underscores,
+         * slashes, dashes, or periods. */
+        name = p;
+	for (/*empty*/; *p != '\0'; p++) {
+            if ((!isalnum(*p)) && (*p != '_') && (*p != '-') && (*p != '/')) {
+                break;
+            }
 	}
-	id = ParseString(parserPtr, i, name);
-	if (id == _UNKNOWN) {
-	    return TCL_ERROR;
-	}
+        id = ParseTimeZone(parserPtr, p - name, name);
+        if (id == _UNKNOWN) {
+            /* String identifiers contain only letters. */
+            p = name;
+            for (p = name; *p != '\0'; p++) {
+                if (!isalpha(*p)) {
+                    break;
+                }
+            }
+            id = ParseString(parserPtr, p - name, name);
+#ifdef notdef
+            if (id == _UNKNOWN) {
+                return TCL_ERROR;
+            }
+#endif
+        }
     } else if (*p == '\0') {
 	id = _END;
 	p++;
@@ -1303,7 +952,7 @@ GetNextToken(DateParser *parserPtr, DateTokenId *idPtr)
 	id = _UNKNOWN;
 	p++;
     }
-    *idPtr = parserPtr->currentPtr->id = id;
+    *idPtr = parserPtr->curTokenPtr->id = id;
     parserPtr->nextCharPtr = p;
     return TCL_OK;
 }
@@ -1313,7 +962,9 @@ GetNextToken(DateParser *parserPtr, DateTokenId *idPtr)
  *
  * ProcessTokens --
  *
- *	Parses the date string into a chain of tokens.
+ *	Parses the date string into a chain of tokens.  This lets us
+ *      look forward and backward as tokens to discern different 
+ *      patterns.
  *
  *-----------------------------------------------------------------------------
  */
@@ -1336,9 +987,8 @@ ProcessTokens(DateParser *parserPtr)
  *
  * MatchDatePattern --
  *
- *	After having extracted the time, timezone, etc. from the chain
- *      of tokens, try to match the remaining tokens with known date 
- *      patterns.
+ *	After having extracted the time, timezone, etc. from the chain of
+ *      tokens, try to match the remaining tokens with known date patterns.
  *
  * Returns:
  *      Return the index of the matching pattern or -1 if no pattern
@@ -1414,12 +1064,57 @@ MatchDatePattern(DateParser *parserPtr)
 /* 
  *-----------------------------------------------------------------------------
  *
- * ExtractTimezone --
+ * ExtractDST --
+ *
+ *	Finds and extracts the DST token.  This token indicates that the 
+ *      timezone should be offset by one hour for daylight time.
+ *
+ *      For example: "America/New_York  DST" is the same as "EDT"
+ *
+ * Returns:
+ *      None.
+ *
+ * Side Effects:
+ *      The DST token is remove from the list of tokens.
+ *
+ *-----------------------------------------------------------------------------
+ */
+static void
+ExtractDST(DateParser *parserPtr)
+{
+    DateToken *t;
+
+    t = FindFirstToken(parserPtr, _DST);
+    if (t != NULL) {
+        parserPtr->date.isdst = TRUE;
+        DeleteToken(parserPtr, t);
+    }
+}
+
+/* 
+ *-----------------------------------------------------------------------------
+ *
+ * ExtractTimeZoneAndOffset --
  *
  *	Searches and removes (if found) the timezone token from the parser
- *      chain.  The timezone name (different from the timezone offset) is
- *      unambiguous.  
+ *      chain.  The timezone name (different from the timezone offset)
+ *      can't be confused with other parts of the date and time.
  *
+ *      We only extract the offset is we find a timezone.  Otherwise
+ *      we'll look for it later after the time.
+ *
+ *      Need to handle the following cases.
+ *      1) "EST" or "America/New_York"    (Eastern Standard Time)
+ *      2) "UTC-0500"   
+ *      3) "America/New_York DST          (Eastern Daylight Time) OK
+ *      4) "US/Pacific PDT                (Pacific Daylight Time) 
+ *      5) -05:00                         (Eastern Standard Time)
+ *
+ *      Weird cases:
+ *      1) EST-0300                       (Pacific Standard Time)
+ *      2) EDT DST                        (invalid)
+ *      3) US/Pacific EDT                 (invalid)
+ *      
  * Returns:
  *      A standard TCL result.  Always TCL_OK.
  *
@@ -1430,21 +1125,21 @@ MatchDatePattern(DateParser *parserPtr)
  *-----------------------------------------------------------------------------
  */
 static int
-ExtractTimezone(DateParser *parserPtr)
+ExtractTimeZoneAndOffset(DateParser *parserPtr)
 {
-    DateToken *t, *tz, *end, *next;
-    int offset, sign, allowNNNN;
-
+    DateToken *t, *zone, *end, *next;
+    int tzoffset, offset, sign, allowNNNN;
+    TimeZone tz;
+    
+    if (parserPtr->flags & PARSE_DST) {
+        ExtractDST(parserPtr);
+    }
     /* Look for a timezone starting from the end of the chain of tokens. */
-    for (t = LastToken(parserPtr); t != NULL; t = PrevToken(t)) {
-	if ((t->id == _DST) || (t->id == _STD)) {
-	    break;
-	}
+    zone = FindLastToken(parserPtr, _TZ);
+    if (zone == NULL) {
+        return TCL_OK;                  /* No timezone found. */
     }
-    if (t == NULL) {
-	return TCL_OK;                  /* No timezone found. */
-    }
-    tz = t;
+    /* Process the timezone offset. */
 
     /* 
      * Check for a timezone offset following the timezone (Z07:00) 
@@ -1455,7 +1150,7 @@ ExtractTimezone(DateParser *parserPtr)
      * The NN:NN is peculiar to Go.  We can't allow NNNN because this
      * gets confused with 4 digit years.
      */
-    end = t = NextToken(t);
+    end = t = NextToken(zone);
     offset = 0;
     sign = 1;
     allowNNNN = FALSE;
@@ -1465,6 +1160,7 @@ ExtractTimezone(DateParser *parserPtr)
 	allowNNNN = TRUE;
     }
     if (t->id == _NUMBER) {
+        parserPtr->flags |= PARSE_OFFSET;
 	/* Looking for NN:NN or NNNN */
 	if ((t->length == 4) && (allowNNNN)) {
 	    offset = TZOFFSET(t->lvalue);
@@ -1485,20 +1181,50 @@ ExtractTimezone(DateParser *parserPtr)
 	} 
     }
  found:
-    parserPtr->date.tzoffset = TZOFFSET(tz->lvalue) + (sign * offset);
-    parserPtr->date.isdst = (tz->id == _DST);
+    if (GetTimeZoneOffsets(parserPtr->interp, zone->objPtr, &tz) != TCL_OK) {
+        return TCL_ERROR;
+    }
+    Tcl_DecrRefCount(zone->objPtr);
+    tzoffset = (parserPtr->date.isdst) ? -tz.dst : -tz.std;
+    parserPtr->date.tzoffset = tzoffset + (sign * offset);
     parserPtr->flags |= PARSE_TZ;
+
     /* Remove the timezone and timezone offset tokens. */
-    for (t = tz; t != end; t = next) {
+    for (t = zone; t != end; t = next) {
 	next = NextToken(t);
-	DeleteToken(t);
+	DeleteToken(parserPtr, t);
     }
     return TCL_OK;
 }
 
 
+/* 
+ *-----------------------------------------------------------------------------
+ *
+ * ParseTimeZoneOffset --
+ *
+ *	Parses the group of tokens forming a timezone offset.  The 
+ *      offset may be in any of the following forms:
+ *
+ *      +-NNNN   plus/minus + 4 digit token
+ *      +-NN:NN  plus/minus + 2 digit token + colon + 2 digit token
+ *      NN:NN    plus/minus + 2 digit token + colon + 2 digit token
+ *
+ *      The NN:NN is peculiar to Go.  We can't allow NNNN because this gets
+ *      confused with 4 digit years.  If you what to use NNNN, then
+ *      prefix is with a plus sign.
+ *      
+ * Returns:
+ *      A standard TCL result.  
+ *
+ * Side Effects:
+ *      The *tzoffset* and *isdst* fields are set if timezone tokens
+ *      are found.
+ *
+ *-----------------------------------------------------------------------------
+ */
 static int
-GetTzOffset(DateParser *parserPtr, DateToken *t, DateToken **nextPtr)
+ParseTimeZoneOffset(DateParser *parserPtr, DateToken *t, DateToken **nextPtr)
 {
     int sign, offset;
 
@@ -1530,10 +1256,10 @@ GetTzOffset(DateParser *parserPtr, DateToken *t, DateToken **nextPtr)
     }
     t = NextToken(t);
  found:
+    parserPtr->flags |= PARSE_OFFSET;
     *nextPtr = t;
     /* Subtract or add the offset to the current timezone offset. */
     parserPtr->date.tzoffset += sign * offset;
-    parserPtr->date.isdst = 0;
     parserPtr->flags |= PARSE_TZ;
     return TCL_OK;
 }
@@ -1543,13 +1269,13 @@ GetTzOffset(DateParser *parserPtr, DateToken *t, DateToken **nextPtr)
  *
  * ExtractWeekday --
  *
- *	Searches for a weekday token and removes it from the parser chain.
- *      The weekday would have been specified are a weekday name
- *              Tuesday  
- *      Also remove a following comma if one exists.
- *              Tuesday,
- * Returns:
- *      None.
+ *	Searches for a weekday token and removes it from the parser token
+ *      chain.  The weekday would have been specified as a weekday name
+ *      such as "Tuesday".  Also remove a following comma if one exists.
+ *      Tuesday. We don't use the weekday. The weekday is always computed
+ *      from the year day. No checking is done to see if these match.
+ * 
+ * Returns: None.
  *
  * Side Effects:
  *      The *wday* field is  set if a weekday token is found.
@@ -1559,18 +1285,18 @@ GetTzOffset(DateParser *parserPtr, DateToken *t, DateToken **nextPtr)
 static void
 ExtractWeekday(DateParser *parserPtr)
 {
-    DateToken *t, *next;
+    DateToken *t;
 
-    for (t = FirstToken(parserPtr); t != NULL; t = next) {
-	next = NextToken(t);
-	if (t->id == _WDAY) {
-	    parserPtr->date.wday = t->lvalue - 1; /* 0-6 */
-	    DeleteToken(t);
-	    if (next->id == _COMMA) {
-		DeleteToken(next);
-	    }
-	    break;
-	}
+    t = FindFirstToken(parserPtr, _WDAY);
+    if (t != NULL) {
+        DateToken *next;
+
+        parserPtr->date.wday = t->lvalue - 1; /* 0-6 */
+        next = NextToken(t);
+        DeleteToken(parserPtr, t);
+        if ((next->id == _COMMA) || (next->id == _DOT)) {
+            DeleteToken(parserPtr, next);
+        }
     }
 }
 
@@ -1593,45 +1319,65 @@ ExtractWeekday(DateParser *parserPtr)
 static void
 ExtractYear(DateParser *parserPtr)
 {
-    DateToken *t, *next;
+    DateToken *t;
 
-    for (t = FirstToken(parserPtr); t != NULL; t = next) {
-	next = NextToken(t);
-	if (t->id == _YEAR) {
-	    parserPtr->date.year = t->lvalue;
-	    if (t->length == 2) {
-		parserPtr->date.year += 1900;
-	    }
-	    DeleteToken(t);
-	    break;
-	}
+    t = FindFirstToken(parserPtr, _YEAR);
+    if (t != NULL) {
+        parserPtr->date.year = t->lvalue;
+        if (t->length == 2) {
+            parserPtr->date.year += 1900;
+        }
+        DeleteToken(parserPtr, t);
     }
 }
 
-static int
-ExtractSeparator(DateParser *parserPtr)
+/* 
+ *-----------------------------------------------------------------------------
+ *
+ * ParseTimeZoneOffset --
+ *
+ *	ISO format allows for the date and time to be separated by a "T".
+ *      This can get confused with the military time zone.  It's assumed
+ *      that if the "T" is the last token, it is probably a timezone
+ *      designation, not a separator.  If we find the separator, remove it.
+ *      
+ * Returns:
+ *      None.
+ *
+ * Side Effects:
+ *      The separator (as TZ token) is removed from the parser's chain
+ *      of tokens.
+ *
+ *-----------------------------------------------------------------------------
+ */
+static void
+ExtractDateTimeSeparator(DateParser *parserPtr)
 {
     DateToken *t;
 
     /* Find the date/time separator "t" and remove it. */
     for (t = FirstToken(parserPtr); t != NULL; t = NextToken(t)) {
-	if ((t->id == _STD) && 
-	    (t->length == 1) && (t->identifier[0] == 't')) {
-	    DateToken *next;
-
-	    /* Check if the 't' is a military timezone or a separator. */
-	    next = NextToken(t);
-	    if (next->id != _END) {
-		DeleteToken(t);
-	    }
-	    return TCL_OK;
+        char c;
+	if (t->id != _TZ) {
+            continue;
+        }
+        c = tolower(t->string[0]);
+        if ((t->length == 1) && (c == 't')) {
+            DateToken *next;
+            /* Check if the 't' is a military timezone or a separator. */
+            next = NextToken(t);
+            if (parserPtr->tmZone != NULL) {
+                Blt_Free(parserPtr->tmZone);
+                parserPtr->tmZone = NULL;
+            }
+            if (next->id != _END) {
+                DeleteToken(parserPtr, t);
+            }
+            return;
 	}
     }
-    return TCL_ERROR;
 }
 
-
-    
 /*
  *---------------------------------------------------------------------------
  *
@@ -1680,7 +1426,7 @@ FixDateTokens(DateParser *parserPtr)
 	case _COLON:
 	case _LPAREN:
 	case _RPAREN:
-	    DeleteToken(t);
+	    DeleteToken(parserPtr, t);
 	    break;
 	default:
 	    break;
@@ -1857,7 +1603,7 @@ ExtractTime(DateParser *parserPtr)
     }
     /* Check for the timezone offset. */
     if ((t->id == _PLUS) || (t->id == _DASH)) {
-	if (GetTzOffset(parserPtr, t, &next) != TCL_OK) {
+	if (ParseTimeZoneOffset(parserPtr, t, &next) != TCL_OK) {
 	    return TCL_ERROR;
 	}
 	t = next;
@@ -1869,7 +1615,7 @@ ExtractTime(DateParser *parserPtr)
 	if (t == last) {
 	    break;
 	}
-	DeleteToken(t);
+	DeleteToken(parserPtr, t);
     }
     parserPtr->flags |= PARSE_TIME;
     return TCL_OK;
@@ -2025,7 +1771,7 @@ ExtractDate(DateParser *parserPtr)
     }
     for (t = FirstToken(parserPtr); t != NULL; t = next) {
 	next = NextToken(t);
-	DeleteToken(t);
+	DeleteToken(parserPtr, t);
     }
     parserPtr->flags |= PARSE_DATE;
     return TCL_OK;
@@ -2034,10 +1780,10 @@ ExtractDate(DateParser *parserPtr)
 /* 
  *-----------------------------------------------------------------------------
  *
- * NumbefDaysFromStartOfYear --
+ * NumberDaysFromStartOfYear --
  *
- *	Computes the number of days from the beginning of the given
- *      year to the given date.  Note that mday is 1-31, not 0-30.
+ *	Computes the number of days from the beginning of the given year to
+ *      the given date.  Note that mday is 1-31, not 0-30.
  *
  * Returns:
  *      Returns the number of days from beginning of the given year to
@@ -2093,8 +1839,8 @@ NumberDaysFromEpoch(int year)
  * GetWeek --
  *
  *	Computes the US week number give the year, month, and day. The
- *	first week of the year contains Jan 1st.  Weeks start on Sunday
- *      and are numbered 0-52. 
+ *	first week of the year contains Jan 1st.  Weeks start on Sunday and
+ *	are numbered 0-52.
  *
  * Returns:
  *      Returns the week number for the date.  
@@ -2122,8 +1868,8 @@ GetWeek(int year, int mon, int mday)
  * GetIsoWeek --
  *
  *	Computes the ISO week number give the year, month, and day. The
- *	first week of the year contains Jan 4th.  Weeks start on Monday
- *      and are numbered 0-52. 
+ *	first week of the year contains Jan 4th.  Weeks start on Monday and
+ *	are numbered 0-52.
  *
  * Returns:
  *      Returns the week number for the date.  
@@ -2306,6 +2052,52 @@ DateToListObj(Tcl_Interp *interp, DateParser *parserPtr)
     return listObjPtr;
 }
 
+#ifdef notdef
+static int
+CheckDateAgainstMktime(Tcl_Interp *interp, DateParser *parserPtr,
+                       double seconds)
+{
+    Blt_DateTime *datePtr;
+    struct tm tm;
+    time_t ticks;
+    long sec;
+    extern char *tzname[2];
+    extern long timezone;
+    extern int daylight;
+
+    datePtr = &parserPtr->date;
+    tm.tm_sec  = datePtr->sec;          /* 0-59 */
+    tm.tm_min  = datePtr->min;          /* 0-59 */
+    tm.tm_hour = datePtr->hour;         /* 0-23 */
+    tm.tm_mday = datePtr->mday;         /* 1-31 */
+    tm.tm_mon  = datePtr->mon;          /* 0-11 */
+    tm.tm_year = datePtr->year - 1900;  /* since 1900 */
+
+    tm.tm_isdst = -1;
+    setenv("TZ", "UTC", 1);
+    if (parserPtr->tmZone != NULL) {
+        setenv("TZ", parserPtr->tmZone, 1);
+    }
+    tzset();
+    ticks = mktime(&tm);
+    setenv("TZ", "UTC", 1);
+    tzset();
+    sec = (long)seconds;
+    if ((sec - ticks) != 0) {
+        fprintf(stderr, "tmzone=%s tzname[0]=%s tzname[1]=%s timezone=%ld daylight=%d\n", parserPtr->tmZone, tzname[0], tzname[1], timezone, daylight);
+        fprintf(stderr, "sec=%d min=%d hour=%d mday=%d mon=%d year=%d\n",
+                datePtr->sec, datePtr->min, datePtr->hour, datePtr->mday,
+                datePtr->mon, datePtr->year);
+        Tcl_AppendResult(interp, "conflict w/ mktime (timezone is ",
+                (parserPtr->tmZone == NULL) ? "null" : parserPtr->tmZone,
+                         " ", tzname[0], 
+                ") difference = ", Blt_Dtoa(interp, sec - ticks), (char *)NULL);
+        return TCL_ERROR;
+    }
+    return TCL_OK;
+}
+#endif
+
 /*
  *-----------------------------------------------------------------------------
  *
@@ -2356,7 +2148,7 @@ ConvertDate(Tcl_Interp *interp, DateParser *parserPtr, double *secondsPtr)
 	if ((datePtr->week < 0) || (datePtr->week > 53)) {
 	    if (interp != NULL) {
 		ParseError(interp, "week \"%d\" is out of range.", 
-			   datePtr->week);
+			   datePtr->week + 1);
 	    }
 	    return TCL_ERROR;
 	}
@@ -2469,6 +2261,9 @@ ConvertDate(Tcl_Interp *interp, DateParser *parserPtr, double *secondsPtr)
 		datePtr->yday, &datePtr->mon);
     }
     Blt_DateToSeconds(datePtr, secondsPtr);
+#ifdef notdef
+    return CheckDateAgainstMktime(interp, parserPtr, *secondsPtr);
+#endif
     return TCL_OK;
 }
 
@@ -2700,8 +2495,20 @@ ConvertDate(Tcl_Interp *interp, DateParser *parserPtr, double *secondsPtr)
  *
  * ParseDate --
  *
- *      Parses the date string into the number of seconds since the epoch.
- *      The date string can be in one many formats accepted.
+ *      Parses the date/time string into the number of seconds since the
+ *      epoch.  The date string can be in one many formats accepted.
+ *
+ *      We're trying to parse somewhat standard timestamps, not validate
+ *      any timestamp.  This is an easier requirement.  Our purpose here is
+ *      to parse known formats quickly. For example this might be used to
+ *      process measurement data where there may be hundreds of thousands
+ *      of timestamps.  If there are invalid patterns that are also
+ *      accepted, that's OK.  We won't see them.
+ *
+ *      The idea here is to remove the unambiguous parts first an then
+ *      attack the harder patterns.  We can remove the time separator, DST,
+ *      timezone, tnime, tokens without much problem.  This leaves a smaller
+ *      number of accepted date patterns to match.
  *
  * Returns:
  *      A standard TCL result.  If the string was successfully parsed,
@@ -2727,9 +2534,9 @@ ParseDate(Tcl_Interp *interp, const char *string, double *secondsPtr)
     }
 
     /* Remove the time/date 'T' separator if one exists. */
-    ExtractSeparator(&parser);
+    ExtractDateTimeSeparator(&parser);
     /* Now parse out the timezone, time, and date. */
-    if ((ExtractTimezone(&parser) != TCL_OK) ||
+    if ((ExtractTimeZoneAndOffset(&parser) != TCL_OK) ||
 	(ExtractTime(&parser) != TCL_OK) ||
 	(ExtractDate(&parser) != TCL_OK)) {
 	goto error;
@@ -2789,9 +2596,9 @@ DebugOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
 
     /* Remove the time/date 'T' separator if one exists. */
-    ExtractSeparator(&parser);
+    ExtractDateTimeSeparator(&parser);
     /* Now parse out the timezone, time, and date. */
-    if ((ExtractTimezone(&parser) != TCL_OK) ||
+    if ((ExtractTimeZoneAndOffset(&parser) != TCL_OK) ||
 	(ExtractTime(&parser) != TCL_OK) ||
 	(ExtractDate(&parser) != TCL_OK)) {
 	goto error;
@@ -2851,31 +2658,6 @@ DateObjCmd(
     }
     return (*proc) (clientData, interp, objc, objv);
 }
-
-/*
- *---------------------------------------------------------------------------
- *
- * Blt_DateCmdInitProc --
- *
- *	This procedure is invoked to initialize the "date" command.
- *
- * Results:
- *	None.
- *
- * Side effects:
- *	Creates the new command.
- *
- *---------------------------------------------------------------------------
- */
-int
-Blt_DateCmdInitProc(Tcl_Interp *interp)
-{
-    static Blt_CmdSpec cmdSpec = { 
-	"date", DateObjCmd, 
-    };
-    return Blt_InitCmd(interp, "::blt", &cmdSpec);
-}
-
 /* Public routines. */
 
 /*
@@ -3442,3 +3224,100 @@ Blt_FormatDate(Blt_DateTime *datePtr, const char *fmt, Tcl_DString *resultPtr)
     *bp = '\0';    
 }
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * Blt_DateCmdInitProc --
+ *
+ *	This procedure is invoked to initialize the "date" command.
+ *
+ * Results:
+ *	None.
+ *
+ * Side effects:
+ *	Creates the new command.
+ *
+ *---------------------------------------------------------------------------
+ */
+int
+Blt_DateCmdInitProc(Tcl_Interp *interp)
+{
+    static Blt_CmdSpec cmdSpec = { 
+	"date", DateObjCmd
+    };
+    /*
+     * Invoke a procedure to initialize various bindings on treeview
+     * entries.  If the procedure doesn't already exist, source it from
+     * "$blt_library/treeview.tcl".  We deferred sourcing the file until
+     * now so that the variable $blt_library could be set within a script.
+     */
+    if (Tcl_GlobalEval(interp,
+                "source [file join $blt_library date.tcl]") != TCL_OK) {
+        const char *errmsg = "\n    (while loading timezones for date command)";
+        Tcl_AddErrorInfo(interp, errmsg);
+        fprintf(stderr, "can't source date.tcl\n");
+        return TCL_ERROR;
+    }
+    return Blt_InitCmd(interp, "::blt", &cmdSpec);
+}
+
+
+#ifdef notdef 
+/* 
+ * Duplicate abbreviations:
+ */
+    { "amst",    "+500", "+500", }, /* Armenia Summer Time */
+    { "amst",    "-300", "-300", }, /* Amazon Summer Time */
+
+    { "amt",     "+400", "+400", }, /* Armenia Time */
+    { "amt",     "-400", "-400", }, /* Amazon Time */
+
+    { "bst",     "+100", "+100", }, /* British Summer Time */
+    { "bst",     "-300", "-300", }, /* Brazil Standard Time */
+    { "bst",    "-1100", "-1100", }, /* Bering Summer Time */
+
+    { "cast",    "+800", "+800", }, /* Casey Time (Antarctica) ! */
+    { "cast",    "+930", "+930", }, /* Central Australian Standard */
+
+    { "cat",     "+200", "+200", }, /* Central Africa Time  ! */
+    { "cat",    "-1000", "-1000", }, /* Central Alaska (until 1967) */
+
+    { "cct",     "+630", "+630", }, /* Cocos Islands Time (Indian ocean)  ? */
+    { "cct",     "+800", "+800", }, /* China Coast Time  ? */
+
+    { "ect",     "-500", "-500", }, /* Ecuador Time ! */
+    { "ect",     "-400", "-400", }, /* Eastern Caribbean Time */
+
+    { "edt",     "-400", "-400", }, /* Eastern Daylight Time (North America and Caribbean) ! */
+    { "edt",    "+1100", "+1100", }, /*Eastern Daylight Time (Australia) */
+    { "fst",     "+200", "+200", }, /* French Summer ! */
+    { "fst",     "-200", "-200", }, /* Fernando de Noronha Standard Time (Brazil) */
+    { "gst",     "+400", "+400", }, /* Gulf Standard Time ! */
+    { "gst",    "+1000", "+1000", }, /* Guam Standard Time */
+    { "gst",     "-300", "-300", }, /* Greenland Standard Time */
+    { "gst",     "-200", "-200", }, /* South Georgia Time (South Georgia and the South Sandwich Islands) */
+    { "idt",     "+300", "+300", }, /* Israel Daylight Time ! */
+    { "idt",     "+430", "+430", }, /* Iran Daylight Time */
+    { "idt",     "+630", "+630", }, /* Indian Daylight Time */
+    { "it",      "+330", "+330", }, /* Iran Time ??? */
+
+    { "ist",     "+330", "+330", }, /* India Standard Time ! */
+    { "ist",     "+200", "+200", }, /* Israel Standard Time */
+    { "ist",     "+330", "+330", }, /* Iran Standard Time */
+
+    { "nt",      "-330", "-330", }, /* Newfoundland Time */
+    { "nt",      "-1100", "-1100", }, /* Nome */
+
+    { "sst",    "-1100", "-1100", }, /* Samoa Standard Time (American Samoa) ! */
+    { "sst",     "+200", "+200", }, /* Swedish Summer */
+    { "sst",     "+100", "+100", }, /* Swedish Summer */
+    { "sst",     "+700", "+700", }, /* South Sumatra Time */
+    { "sst",     "+800", "+800", }, /* Singapore Standard Time */
+
+    { "wast",    "+200", "+200", }, /* West Africa Summer Time ! */
+    { "wast",    "+700", "+700", }, /* West Australian Standard */
+
+    { "wst",    "+1300", "+1300", }, /* Western Samoa Time (Standard Time)! */
+    { "wst",     "+800", "+800", }, /* Western Standard Time (Australia) !*/
+    { "wst",     "+100", "+100", }, /* Western Sahara Summer Time */
+#endif

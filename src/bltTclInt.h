@@ -31,20 +31,24 @@ BLT_EXTERN void *Blt_Malloc(size_t size);
 BLT_EXTERN void *Blt_Realloc(void *ptr, size_t size);
 BLT_EXTERN void Blt_Free(const void *ptr);
 BLT_EXTERN void *Blt_Calloc(size_t numElem, size_t size);
-BLT_EXTERN char *Blt_Strdup(const char *string);
+BLT_EXTERN const char *Blt_Strdup(const char *string);
+BLT_EXTERN const char *Blt_Strndup(const char *string, size_t size);
 
 BLT_EXTERN void *Blt_MallocAbortOnError(size_t size, const char *file,int line);
 BLT_EXTERN void *Blt_CallocAbortOnError(size_t numElem, size_t size, 
 	const char *file, int line);
 BLT_EXTERN void *Blt_ReallocAbortOnError(void *ptr, size_t size, 
 	const char *file, int line);
-BLT_EXTERN char *Blt_StrdupAbortOnError(const char *ptr, const char *file, 
+BLT_EXTERN const char *Blt_StrdupAbortOnError(const char *ptr, const char *file,
 	int line);
+BLT_EXTERN const char *Blt_StrndupAbortOnError(const char *ptr, size_t size,
+        const char *file, int line);
 
 #define Blt_AssertCalloc(n,s) (Blt_CallocAbortOnError(n,s,__FILE__, __LINE__))
 #define Blt_AssertMalloc(s) (Blt_MallocAbortOnError(s,__FILE__, __LINE__))
 #define Blt_AssertRealloc(p,s) (Blt_ReallocAbortOnError(p,s,__FILE__, __LINE__))
 #define Blt_AssertStrdup(s) (Blt_StrdupAbortOnError(s,__FILE__, __LINE__))
+#define Blt_AssertStrndup(p,s) (Blt_StrdupAbortOnError(p,s,__FILE__, __LINE__))
 
 BLT_EXTERN int Blt_DictionaryCompare (const char *s1, const char *s2);
 
@@ -221,6 +225,7 @@ BLT_EXTERN int Blt_GetLongFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr,
 
 BLT_EXTERN int Blt_FormatString(char *s, size_t size, const char *fmt, ...);
 BLT_EXTERN void Blt_LowerCase(char *s);
+BLT_EXTERN void Blt_UpperCase(char *s);
 
 BLT_EXTERN int Blt_GetPlatformId(void);
 BLT_EXTERN const char *Blt_LastError(void);

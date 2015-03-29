@@ -1139,14 +1139,14 @@ DoConfig(
 
 	case BLT_CONFIG_STRING: 
 	    {
-		char *value;
+		const char *value;
 		
 		value = (objIsEmpty) ? NULL : 
 		    Blt_AssertStrdup(Tcl_GetString(objPtr));
 		if (*(char **)ptr != NULL) {
 		    Blt_Free(*(char **)ptr);
 		}
-		*(char **)ptr = value;
+		*(const char **)ptr = value;
 	    }
 	    break;
 

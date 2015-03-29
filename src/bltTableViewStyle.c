@@ -1476,8 +1476,7 @@ SetTextFromObj(ComboBoxStyle *stylePtr, Tcl_Obj *objPtr)
 	Blt_Free(stylePtr->text);
     }
     string = Tcl_GetStringFromObj(objPtr, &numBytes);
-    stylePtr->text = Blt_AssertMalloc(numBytes + 1);
-    strncpy((char *)stylePtr->text, string, numBytes);
+    stylePtr->text = Blt_Strndup(string, numBytes);
     stylePtr->textLen = numBytes;
 }
 

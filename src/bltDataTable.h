@@ -660,7 +660,7 @@ typedef struct _BLT_TABLE_NOTIFIER {
     Tcl_Interp *interp;
     BLT_TABLE_ROW row;
     BLT_TABLE_COLUMN column;
-    char *tag;
+    const char *tag;
     unsigned int flags;
 } *BLT_TABLE_NOTIFIER;
 

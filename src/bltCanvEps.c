@@ -667,8 +667,8 @@ static int
 ReadPostScript(Tcl_Interp *interp, EpsItem *itemPtr)
 {
     char *field;
-    char *dscTitle, *dscBoundingBox;
-    char *dscEndComments;
+    const char *dscTitle, *dscBoundingBox;
+    const char *dscEndComments;
     ParseInfo pi;
 
     pi.line[0] = '\0';

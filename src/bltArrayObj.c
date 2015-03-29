@@ -149,7 +149,7 @@ UpdateStringOfArray(Tcl_Obj *objPtr)    /* Array object w/ string rep to
 	Tcl_DStringAppendElement(&ds, Blt_GetHashKey(tablePtr, hp));
 	Tcl_DStringAppendElement(&ds, Tcl_GetString(elemObjPtr));
     }
-    objPtr->bytes = Blt_AssertStrdup(Tcl_DStringValue(&ds));
+    objPtr->bytes = (char *)Blt_AssertStrdup(Tcl_DStringValue(&ds));
     objPtr->length = strlen(Tcl_DStringValue(&ds));
     Tcl_DStringFree(&ds);
 }

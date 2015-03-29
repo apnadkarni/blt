@@ -45,7 +45,13 @@ SYNOPSIS
 DESCRIPTION
 ===========
 
-This command is used by the **blt::tableview** widget to parse timestamps.
+This **blt::date** command is for converting date/time timestamps to/from
+double precision numbers.  It handles timestamps with fractional seconds,
+IS08601 time formats (separated by the letter 'T'), and work week dates.
+It is not designed to be a replacement for the TCL **clock** command.
+There are differences (see the section DIFFERENCES WITH TCL CLOCK below).
+This command is used internally by the **blt::tableview** widget to parse
+timestamps where the format of the timestamp isn't known.
 
 **blt::date debug** *timeStamp*
 

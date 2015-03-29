@@ -159,11 +159,11 @@ DistanceToString(
     Tcl_FreeProc **freeProcPtr)	/* Not used. */
 {
     int value = *(int *)(widgRec + offset);
-    char *result;
+    const char *result;
 
     result = Blt_AssertStrdup(Blt_Itoa(value));
     *freeProcPtr = (Tcl_FreeProc *)Blt_Free;
-    return result;
+    return (CONST86 char *)result;
 }
 
 /*
@@ -255,13 +255,13 @@ PadToString(
     Tcl_FreeProc **freeProcPtr)	/* Not used. */
 {
     Blt_Pad *padPtr = (Blt_Pad *)(widgRec + offset);
-    char *result;
+    const char *result;
     char string[200];
 
     Blt_FormatString(string, 200, "%d %d", padPtr->side1, padPtr->side2);
     result = Blt_AssertStrdup(string);
     *freeProcPtr = (Tcl_FreeProc *)Blt_Free;
-    return result;
+    return (CONST86 char *)result;
 }
 
 /*
