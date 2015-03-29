@@ -9,7 +9,7 @@ if [file exists ../library] {
     set blt_library ../library
 }
 
-set VERBOSE 0
+set VERBOSE 1
 
 test timestamp.1 {timestamp no args} {
     list [catch {blt::timestamp} msg] $msg
@@ -2163,3 +2163,17 @@ test timestamp.300 {timestamp scan "2007-11-02 12:00 America/Los_Angeles PDT"} {
 	expr { $d1 - double($d2) }
     } msg] $msg
 } {0 0.0}
+
+
+set count 301
+foreach name [array names blt::timezones] {
+    set timestamp "2007-11-02 12:00 $name"
+    test timestamp.$count "timestamp scan $timestamp" {
+	list [catch {
+	    blt::timestamp scan $timestamp
+	    set msg 0.0
+	} msg] $msg
+    } {0 0.0}
+    incr count
+}
+    

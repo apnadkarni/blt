@@ -108,14 +108,19 @@ The second is the offset from UTC for the daylight time. If the timezone
 does not have daylight time, then the two entries are the same. For example,
 the value for the timezone "US/Hawaii" is "-10:00 -10:00".
 
-Unfortunately timezone abbreviations are not unique.  For example "BST"
+Unfortunately timezone abbreviations are not unique.  The are several
+duplicates.  For example BST matches British Summer Time (UTC+01), Brazil
+Standard Time (UTC-03), and Bering Summer Time (UTC-11).  EDT matches
+Eastern Daylight Time USA" (UTC-04) and Eastern Daylight Time Australia
+(UTC+11) EST matches Eastern Standard Time USA (UTC-05), Eastern Standard
+Time Australia (UTC+10), and Eastern Brazil Standard Time (UTC-03).
 
+If you don't find a timezone name or abbreviation in the **blt::timezones**
+array or there is an entry with the wrong offsets, you can set the array
+variable.
 
-If you find timestamps that use a timezone abbreviation not found in the
-array **blt::timezones** or has the wrong timezone offsets, you can
-add new timezone names or changing existing timezone offsets by setting
-the array variable.
-
+  ``set blt::timezones(BST) "+03:00 +02:00"``
+  
 The following are the default timezone abbreviations for known duplicates.
 Ideally your timestamps will use the offset from UTC rather than a timezone
 name or abbreviation.
@@ -123,7 +128,49 @@ name or abbreviation.
 KNOWN FORMATS
 ==================
 
+The following are examples of known timestamp formats that can be parsed by
+the **blt::timestamp** command.
 
+  - 2006-01-02T15:04:05Z07:00
+
+    The date and time are separated by 'T'.
+
+  - 2006-01-02T15:04:05.999999999Z07:00"
+
+    There are fractional seconds. 
+
+  - Mon Jan 2 15:04:05 MST 2006
+
+    The year trails the timezone.
+
+  - 02 Jan 2006 15:04 -0700
+
+    Timezone offset. 
+
+  - Thu, 21 Jun 68 00:00:00 GMT
+
+    Weekday name.
+
+  - 1997-12-17 07:37:16-08
+
+    ISO 8601/SQL standard 	
+
+  - 12/17/1997 07:37:16.00 PST
+
+    SQL traditional style.
+
+  - Wed Dec 17 07:37:16 1997 PST
+
+    POSTGRES original style.
+
+  - 17.12.1997 07:37:16.00 PST
+
+    German regional style.  Date is separate by periods.
+
+  - 2004-W53-6  
+
+    ISO 8601 work week.
+    
 PERCENT SUBSTUTIONS
 ===================
 
@@ -256,4 +303,4 @@ DIFFERENCES WITH TCL CLOCK
 KEYWORDS
 ========
 
-datatable, tableview
+timestamp, datatable
