@@ -2154,14 +2154,12 @@ test timestamp.299 {timestamp scan "Jan 1st 2015 EST5EDT"} {
     } msg] $msg
 } {0 0.0}
 
-# FIXME: handle two timezones.
-test timestamp.300 {timestamp scan "2007-11-02 12:00 America/Los_Angeles PST"} { 
+# We don't check the validity of timezones (yet). Presumably we can
+# use the tz_database America/Los_Angeles rules to test PDT.
+set d2 [clock scan "November 02, 2007 12:00 PDT" -gmt yes]
+test timestamp.300 {timestamp scan "2007-11-02 12:00 America/Los_Angeles PDT"} {
     list [catch {
-	blt::timestamp scan "2007-11-12 12:00 America/Los_Angeles PST"
+	set d1 [blt::timestamp scan "2007-11-02 12:00 America/Los_Angeles PDT"]
+	expr { $d1 - double($d2) }
     } msg] $msg
 } {0 0.0}
-
-
-
-
-

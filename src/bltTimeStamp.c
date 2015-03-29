@@ -3,7 +3,7 @@
  * bltTimeStamp.c --
  *
  *      This module implements a timestamp parser for the BLT toolkit.  It
- *      differs slightly from the TCL "clock" command.  It was built to
+ *      differs from the new TCL "clock" command.  It was built to
  *      programatically convert thousands of timestamps in files to seconds
  *      (especially dates that may include fractional seconds).
  *      
@@ -12,10 +12,9 @@
  *      current date. The may seem strange but if you are parsing
  *      time/dates from a file you don't want to get a different time value
  *      each time you parse it.  It also handles different date formats
- *      (including fractional seconds) and is faster (C implementation
- *      vs. TCL).
+ *      (including fractional seconds).
  *
- *	Copyright 1993-2004 George A Howlett.
+ *	Copyright 2010 George A Howlett.
  *
  *	Permission is hereby granted, free of charge, to any person
  *	obtaining a copy of this software and associated documentation
@@ -57,13 +56,14 @@
 #include "bltAlloc.h"
 #include "bltString.h"
 #include "bltSwitch.h"
-#include "bltChain.h"
 #include "bltInitCmd.h"
 #include "bltOp.h"
 #include <bltMath.h>
 
-#define DEBUG   0
-
+#define DEBUG           0
+#define MAXTOKENS       64              /* Specifies the maximum number of
+                                         * tokens that have been
+                                         * pre-allocated */
 #define TRACE_ALL \
     (TCL_TRACE_WRITES | TCL_TRACE_UNSETS | TCL_TRACE_READS | TCL_GLOBAL_ONLY)
 
@@ -72,7 +72,6 @@
 
 #define EPOCH           1970
 #define EPOCH_WDAY      4               /* Thursday. */
-
 #define IsLeapYear(y) \
 	((((y) % 4) == 0) && ((((y) % 100) != 0) || (((y) % 400) == 0)))
 
@@ -100,30 +99,32 @@ typedef struct {
     int dst;
 } TimeZone;
 
-typedef struct {
-    Blt_ChainLink link;			/* If non-NULL, pointer this entry
-					 * in the list of tokens. */
+typedef struct _ParserToken ParserToken;
+
+struct _ParserToken {
     const char *string;                 /* String representing this
 					 * token. */
     uint64_t lvalue;			/* Numeric value of token. */
     Tcl_Obj *objPtr;                    /* Points to the timezone offsets. */
     ParserTokenId id;                   /* Serial ID of token. */
     int length;				/* Length of the string. */
-} ParserToken;
+    ParserToken *nextPtr;
+    ParserToken *prevPtr;
+};
 
 typedef struct {
-    Tcl_Interp *interp;			/* Interpreter associated with the
-					 * parser. */
-    unsigned int flags;			/* Flags: see below. */
     Blt_DateTime date;
-    int ampm;				/* Meridian. */
-    char *nextCharPtr;			/* Points to the next character
-					 * to parse.*/
-    Blt_Chain tokens;			/* List of parsed tokens. */
+    ParserToken tokens[MAXTOKENS];      /* Pool of tokens. */
     ParserToken *curTokenPtr;           /* Current token being
 					 * processed. */
-    char buffer[BUFSIZ];		/* Buffer holding parsed string. */
-    const char *tmZone;
+    const char *buffer;                 /* Buffer holding parsed string. */
+    const char *nextCharPtr;            /* Points to the next character
+					 * to parse.*/
+    ParserToken *headPtr;               /* First token list.*/
+    ParserToken *tailPtr;               /* Last token in list. */
+    unsigned short int numTokens;
+    unsigned short int nextFreeToken;
+    unsigned int flags;			/* Flags: see below. */
 } TimeStampParser;
 
 #define PARSE_DATE      (1<<0)
@@ -269,20 +270,19 @@ GetTimeZoneOffset(Tcl_Interp *interp, Tcl_Obj *objPtr, int *offsetPtr)
         seconds = (buffer[4] - '0') * 10 + (buffer[5] - '0');
         /* fallthru */
     case 4:                             /* Hours and minutes */
-        minutes = (buffer[2] - '0') * 10 + (buffer[3] - '0');
+        minutes = (buffer[2] - '0') * 10  + (buffer[3] - '0');
         /* fallthru */
     case 2:                             /* Hours only */
-        hours = (buffer[0] - '0') * 10 + (buffer[1] - '0');
+        hours =   (buffer[0] - '0') * 10  + (buffer[1] - '0');
         break;
     default:
         Tcl_AppendResult(interp, "unknown timezone string \"",
                 Tcl_GetString(objPtr), "\"", (char *)NULL);
         return TCL_ERROR;
     }
-    *offsetPtr = hours * 60 * 60;       /* Hours in seconds. */
-    *offsetPtr += minutes * 60;         /* Minutes in seconds. */
-    *offsetPtr += seconds;
-    *offsetPtr *= sign;
+    *offsetPtr = sign * ((hours * SECONDS_HOUR) +
+                         (minutes * SECONDS_MINUTE) +
+                         seconds);
     return TCL_OK;
 }
 
@@ -323,12 +323,19 @@ static Tcl_Obj *
 FindTimeZone(Tcl_Interp *interp, const char *string, int length)
 {
     const char *copy;
+    char buffer[64];
     Tcl_Obj *objPtr;
     
     if (length < 0) {
         length = strlen(string);
     }
-    copy = Blt_Strndup(string, length);
+    if (length < 64) {
+        copy = buffer;
+        strncpy(buffer, string, length);
+        buffer[length] = '\0';
+    } else {
+        copy = Blt_Strndup(string, length);
+    }
     /* Don't leave an error message if you don't find the timezone. */
     objPtr = Tcl_GetVar2Ex(interp, "blt::timezones", copy, 0);
     if (objPtr == NULL) {
@@ -336,7 +343,9 @@ FindTimeZone(Tcl_Interp *interp, const char *string, int length)
         Blt_UpperCase((char *)copy);
         objPtr = Tcl_GetVar2Ex(interp, "blt::timezones", copy, 0);
     }
-    Blt_Free(copy);
+    if (copy != buffer) {
+        Blt_Free(copy);
+    }
     return objPtr;
 }
 
@@ -358,23 +367,8 @@ FindTimeZone(Tcl_Interp *interp, const char *string, int length)
 static void
 InitParser(Tcl_Interp *interp, TimeStampParser *parserPtr, const char *string) 
 {
-    const char *p;
-    char *q;
-
     memset(parserPtr, 0, sizeof(TimeStampParser));
-    parserPtr->interp = interp;
-    for (p = string, q = parserPtr->buffer; *p != '\0'; p++, q++) {
-#ifdef notdef
-	if (isalpha(*p)) {
-	    *q = tolower(*p);
-	} else {
-	}
-#endif
-        *q = *p;
-    }
-    *q = '\0';
-    parserPtr->nextCharPtr = parserPtr->buffer;
-    parserPtr->tokens = Blt_Chain_Create();
+    parserPtr->nextCharPtr = parserPtr->buffer = string; 
     /* Default date is the EPOCH which is 0 seconds. */
     parserPtr->date.year = EPOCH;
     parserPtr->date.mday = 1;
@@ -385,8 +379,6 @@ InitParser(Tcl_Interp *interp, TimeStampParser *parserPtr, const char *string)
  *
  * FreeParser --
  *
- *	Releases the chain of tokens in the parser.
- *
  * Returns:
  *      None.
  *
@@ -395,11 +387,7 @@ InitParser(Tcl_Interp *interp, TimeStampParser *parserPtr, const char *string)
 static void
 FreeParser(TimeStampParser *parserPtr) 
 {
-    Blt_Chain_Destroy(parserPtr->tokens);
-    if (parserPtr->tmZone != NULL) {
-        Blt_Free(parserPtr->tmZone);
-        parserPtr->tmZone = NULL;
-    }
+
 }
 
 /* 
@@ -453,7 +441,8 @@ ParseWarning(Tcl_Interp *interp, const char *fmt, ...)
  *
  * DeleteToken --
  *
- *	Removed the token from the chain of tokens.
+ *	Removes the token from the list of tokens.  We don't actually
+ *      free the memory. That happens when the parser is freed.
  *
  * Returns:
  *	None.
@@ -461,11 +450,32 @@ ParseWarning(Tcl_Interp *interp, const char *fmt, ...)
  *-----------------------------------------------------------------------------
  */
 static void
-DeleteToken(TimeStampParser *parserPtr, ParserToken *t) 
+DeleteToken(TimeStampParser *parserPtr, ParserToken *tokenPtr) 
 {
-    if (t->link != NULL) {
-	Blt_Chain_DeleteLink(parserPtr->tokens, t->link);
+    int unlinked;                       /* Indicates if the link is
+                                         * actually removed from the
+                                         * list. */
+    unlinked = FALSE;
+    if (parserPtr->headPtr == tokenPtr) {
+	parserPtr->headPtr = tokenPtr->nextPtr;
+	unlinked = TRUE;
     }
+    if (parserPtr->tailPtr == tokenPtr) {
+	parserPtr->tailPtr = tokenPtr->prevPtr;
+	unlinked = TRUE;
+    }
+    if (tokenPtr->nextPtr != NULL) {
+	tokenPtr->nextPtr->prevPtr = tokenPtr->prevPtr;
+	unlinked = TRUE;
+    }
+    if (tokenPtr->prevPtr != NULL) {
+	tokenPtr->prevPtr->nextPtr = tokenPtr->nextPtr;
+	unlinked = TRUE;
+    }
+    if (unlinked) {
+	parserPtr->numTokens--;
+    }
+    tokenPtr->prevPtr = tokenPtr->nextPtr = NULL;
 }
 
 /* 
@@ -480,17 +490,15 @@ DeleteToken(TimeStampParser *parserPtr, ParserToken *t)
  *
  *-----------------------------------------------------------------------------
  */
-static ParserTokenId
-ParseNumber(Tcl_Interp *interp, TimeStampParser *parserPtr, const char *string)
+static int
+ParseNumber(Tcl_Interp *interp, const char *string, ParserToken *tokenPtr)
 {
     const char *p;
     long lvalue;
     int length, result;
-    ParserToken *t;
     Tcl_Obj *objPtr;
 
     p = string;
-    t = parserPtr->curTokenPtr;
     while (isdigit(*p)) {
 	p++;
     }
@@ -504,13 +512,13 @@ ParseNumber(Tcl_Interp *interp, TimeStampParser *parserPtr, const char *string)
             ParseError(interp, "error parsing \"%*s\" as number", 
                        length, string);
         }
-	return _UNKNOWN;
+	return TCL_ERROR;
     }
-    t->lvalue = lvalue;
-    t->string = string;
-    t->length = p - string;
-    t->id = _NUMBER;
-    return _NUMBER;
+    tokenPtr->lvalue = lvalue;
+    tokenPtr->string = string;
+    tokenPtr->length = p - string;
+    tokenPtr->id = _NUMBER;
+    return TCL_OK;
 }
 
 /* 
@@ -527,17 +535,17 @@ ParseNumber(Tcl_Interp *interp, TimeStampParser *parserPtr, const char *string)
  *
  *-----------------------------------------------------------------------------
  */
-static ParserTokenId
-ParseString(TimeStampParser *parserPtr, int length, const char *string)
+static int
+ParseString(Tcl_Interp *interp, TimeStampParser *parserPtr, int length,
+            const char *string)
 {
-    ParserToken *t;
+    ParserToken *tokenPtr;
     char c;
     int i;
     Tcl_Obj *objPtr;
     
-    t = parserPtr->curTokenPtr;
     c = tolower(string[0]);
-
+    tokenPtr = parserPtr->curTokenPtr;
     /* Step 1. Test of month and weekday names (may be abbreviated). */
     if (length >= 3) {
 	/* Test for months. Allow abbreviations greater than 2 characters. */
@@ -546,11 +554,11 @@ ParseString(TimeStampParser *parserPtr, int length, const char *string)
 
 	    p = monthNames[i];
 	    if ((c == tolower(*p)) && (strncasecmp(p, string, length) == 0)) {
-		t->lvalue = i + 1;      /* Month 1-12 */
-		t->string = p;
-		t->length = 0;
-		t->id = _MONTH;
-		return _MONTH;
+		tokenPtr->lvalue = i + 1;      /* Month 1-12 */
+		tokenPtr->string = p;
+		tokenPtr->length = 0;
+		tokenPtr->id = _MONTH;
+		return TCL_OK;
 	    }
 	}
 	/* Test for weekdays. Allow abbreviations greater than 2 characters. */
@@ -559,24 +567,24 @@ ParseString(TimeStampParser *parserPtr, int length, const char *string)
 
 	    p = weekdayNames[i];
 	    if ((c == tolower(*p)) && (strncasecmp(p, string, length) == 0)) {
-		t->lvalue = i + 1;      /* Weekday 1-7 */
-		t->length = 0;
-		t->string = p;
-		t->id = _WDAY;
-		return _WDAY;
+		tokenPtr->lvalue = i + 1;      /* Weekday 1-7 */
+		tokenPtr->length = 0;
+		tokenPtr->string = p;
+		tokenPtr->id = _WDAY;
+		return TCL_OK;
 	    }
 	}
     }
 
     /* Step 2. Test for DST string. */
     if ((length == 3) && (strncasecmp(string, "DST", length) == 0)) {
-        t->lvalue = 0;
-        t->string = "DST";
-        t->length = 3;
-        t->id = _DST;
+        tokenPtr->lvalue = 0;
+        tokenPtr->string = "DST";
+        tokenPtr->length = 3;
+        tokenPtr->id = _DST;
         parserPtr->date.isdst = TRUE;
         parserPtr->flags |= PARSE_DST;
-        return _DST;
+        return TCL_OK;
     }
     
     /* Step 3. Test for meridian: am or pm. */
@@ -589,31 +597,30 @@ ParseString(TimeStampParser *parserPtr, int length, const char *string)
             
             p = meridianNames[i];
             if ((c == *p) && (strncasecmp(p, string, length) == 0)) {
-                t->lvalue = i;
-                t->length = 2;
-                t->id = _AMPM;
-                return _AMPM;
+                tokenPtr->lvalue = i;
+                tokenPtr->length = 2;
+                tokenPtr->id = _AMPM;
+                return TCL_OK;
             }
         }
     }
     /* Step 5. Test for timezone name. Check against because there may
      *         have been a number, -, /, or _ next to it. */
-    objPtr = FindTimeZone(parserPtr->interp, string, length);
+    objPtr = FindTimeZone(interp, string, length);
     if (objPtr != NULL) {
-        t->objPtr = objPtr;
+        tokenPtr->objPtr = objPtr;
         Tcl_IncrRefCount(objPtr);
-        t->lvalue = length;
-        t->string = string;
-        t->length = length;
-        t->id = _TZ;
-        parserPtr->tmZone = Blt_Strndup(string, length);
+        tokenPtr->lvalue = length;
+        tokenPtr->string = string;
+        tokenPtr->length = length;
+        tokenPtr->id = _TZ;
         parserPtr->flags |= PARSE_TZ;
-        return _TZ;
+        return TCL_OK;
     }
-    t->string = string;
-    t->length = length;
-    t->id = _UNKNOWN;
-    return _UNKNOWN;
+    tokenPtr->string = string;
+    tokenPtr->length = length;
+    tokenPtr->id = _UNKNOWN;
+    return TCL_ERROR;
 }
 
 /* 
@@ -628,162 +635,58 @@ ParseString(TimeStampParser *parserPtr, int length, const char *string)
  *
  *-----------------------------------------------------------------------------
  */
-static ParserTokenId
-ParseTimeZone(TimeStampParser *parserPtr, int length, const char *string)
+static int
+ParseTimeZone(Tcl_Interp *interp, TimeStampParser *parserPtr, int length,
+              const char *string)
 {
-    ParserToken *t;
+    ParserToken *tokenPtr;
     Tcl_Obj *objPtr;
     
-    t = parserPtr->curTokenPtr;
-
-    objPtr = FindTimeZone(parserPtr->interp, string, length);
+    tokenPtr = parserPtr->curTokenPtr;
+    objPtr = FindTimeZone(interp, string, length);
     if (objPtr != NULL) {
-        t->objPtr = objPtr;
+        tokenPtr->objPtr = objPtr;
         Tcl_IncrRefCount(objPtr);
-        t->lvalue = length;
-        t->string = string;
-        t->length = length;
-        t->id = _TZ;
-        parserPtr->tmZone = Blt_Strndup(string, length);
+        tokenPtr->lvalue = length;
+        tokenPtr->string = string;
+        tokenPtr->length = length;
+        tokenPtr->id = _TZ;
         parserPtr->flags |= PARSE_TZ;
-        return _TZ;
+        return TCL_OK;
     }
-    t->string = string;
-    t->length = length;
-    t->id = _UNKNOWN;
-    return _UNKNOWN;
-}
-
-/* 
- *-----------------------------------------------------------------------------
- *
- * FirstToken --
- *
- *	Returns the first token in the chain of tokens.
- *
- *-----------------------------------------------------------------------------
- */
-static ParserToken *
-FirstToken(TimeStampParser *parserPtr)
-{
-    Blt_ChainLink link;
-
-    link = Blt_Chain_FirstLink(parserPtr->tokens);
-    if (link == NULL) {
-	return NULL;
-    }
-    return Blt_Chain_GetValue(link);
-}
-
-/* 
- *-----------------------------------------------------------------------------
- *
- * LastToken --
- *
- *	Returns the last token in the chain of tokens.
- *
- *-----------------------------------------------------------------------------
- */
-static ParserToken *
-LastToken(TimeStampParser *parserPtr)
-{
-    Blt_ChainLink link;
-
-    link = Blt_Chain_LastLink(parserPtr->tokens);
-    if (link == NULL) {
-	return NULL;
-    }
-    return Blt_Chain_GetValue(link);
-}
-
-/* 
- *-----------------------------------------------------------------------------
- *
- * NextToken --
- *
- *	Returns the next token in the chain of tokens.
- *
- *-----------------------------------------------------------------------------
- */
-static ParserToken *
-NextToken(ParserToken *t)
-{
-    Blt_ChainLink link;
-
-    if (t->link == NULL) {
-	return NULL;
-    }
-    link = Blt_Chain_NextLink(t->link);
-    if (link == NULL) {
-	return NULL;
-    }
-    return Blt_Chain_GetValue(link);
-}
-
-/* 
- *-----------------------------------------------------------------------------
- *
- * PrevToken --
- *
- *	Returns the previous token in the chain of tokens.
- *
- *-----------------------------------------------------------------------------
- */
-static ParserToken *
-PrevToken(ParserToken *t)
-{
-    Blt_ChainLink link;
-
-    if (t->link == NULL) {
-	return NULL;
-    }
-    link = Blt_Chain_PrevLink(t->link);
-    if (link == NULL) {
-	return NULL;
-    }
-    return Blt_Chain_GetValue(link);
+    tokenPtr->string = string;
+    tokenPtr->length = length;
+    tokenPtr->id = _UNKNOWN;
+    return TCL_ERROR;
 }
 
 static ParserToken *
 FindFirstToken(TimeStampParser *parserPtr, int id)
 {
-    ParserToken *t;
+    ParserToken *tokenPtr;
     
-    for (t = FirstToken(parserPtr); t != NULL; t = NextToken(t)) {
-        if (t->id == id) {
-            return t;
+    for (tokenPtr = parserPtr->headPtr; tokenPtr != NULL;
+         tokenPtr = tokenPtr->nextPtr) {
+        if (tokenPtr->id == id) {
+            return tokenPtr;
         }
     }
     return NULL;
 }
-
-static ParserToken *
-FindLastToken(TimeStampParser *parserPtr, int id)
-{
-    ParserToken *t;
-    
-    for (t = LastToken(parserPtr); t != NULL; t = PrevToken(t)) {
-        if (t->id == id) {
-            return t;
-        }
-    }
-    return NULL;
-}
-
 
 /* 
  *-----------------------------------------------------------------------------
  *
  * NumberTokens --
  *
- *	Returns the number of tokens left in the chain of tokens.
+ *	Returns the number of tokens left in the list of tokens.
  *
  *-----------------------------------------------------------------------------
  */
-static int
+static INLINE int
 NumberTokens(TimeStampParser *parserPtr) 
 {
-    return Blt_Chain_GetLength(parserPtr->tokens);
+    return parserPtr->numTokens;
 }
 
 /* 
@@ -806,21 +709,75 @@ TokenSymbol(ParserToken *t)
 
 
 static Tcl_Obj *
-PrintTokens(TimeStampParser *parserPtr) 
+PrintTokens(Tcl_Interp *interp, TimeStampParser *parserPtr) 
 {
-    ParserToken *t;
+    ParserToken *tokenPtr;
     Tcl_Obj *listObjPtr;
     
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
-    for (t = FirstToken(parserPtr); t != NULL; t = NextToken(t)) {
+    for (tokenPtr = parserPtr->headPtr; tokenPtr != NULL;
+         tokenPtr = tokenPtr->nextPtr) {
 	Tcl_Obj *objPtr;
 
-	objPtr = Tcl_NewStringObj(TokenSymbol(t), -1);
-	Tcl_ListObjAppendElement(parserPtr->interp, listObjPtr, objPtr);
+	objPtr = Tcl_NewStringObj(TokenSymbol(tokenPtr), -1);
+	Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
     }
     return listObjPtr;
 }
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * AppendToken --
+ *
+ *	Inserts a link after another link.  If afterPtr is NULL, then the
+ *	new link is prepended to the beginning of the list.
+ *
+ * Results:
+ *	None.
+ *
+ *---------------------------------------------------------------------------
+ */
+static void
+AppendToken(TimeStampParser *parserPtr, ParserToken *tokenPtr)
+{
+    if (parserPtr->headPtr == NULL) {
+	parserPtr->tailPtr = parserPtr->headPtr = tokenPtr;
+    } else {
+        tokenPtr->nextPtr = NULL;
+        tokenPtr->prevPtr = parserPtr->tailPtr;
+        if (parserPtr->tailPtr != NULL) {
+            parserPtr->tailPtr->nextPtr = tokenPtr;
+        }
+        parserPtr->tailPtr = tokenPtr;
+    }
+    parserPtr->numTokens++;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * AllocToken --
+ *
+ *	Inserts a link after another link.  If afterPtr is NULL, then the
+ *	new link is appended to the end of the list.
+ *
+ * Results:
+ *	None.
+ *
+ *---------------------------------------------------------------------------
+ */
+static ParserToken *
+AllocToken(TimeStampParser *parserPtr)
+{
+    ParserToken *tokenPtr;
+
+    tokenPtr = parserPtr->tokens + parserPtr->nextFreeToken;
+    parserPtr->nextFreeToken++;
+    AppendToken(parserPtr, tokenPtr);
+    return tokenPtr;
+}
+    
 /* 
  *-----------------------------------------------------------------------------
  *
@@ -831,18 +788,13 @@ PrintTokens(TimeStampParser *parserPtr)
  *-----------------------------------------------------------------------------
  */
 static int
-GetNextToken(Tcl_Interp *interp, TimeStampParser *parserPtr, ParserTokenId *idPtr)
+GetNextToken(Tcl_Interp *interp, TimeStampParser *parserPtr)
 {
-    char *p;
-    ParserTokenId id;
-    ParserToken *t;
-    Blt_ChainLink link;
+    const char *p;
+    ParserToken *tokenPtr;
 
-    link = Blt_Chain_AllocLink(sizeof(ParserToken));
-    Blt_Chain_LinkAfter(parserPtr->tokens, link, NULL);
-    t = Blt_Chain_GetValue(link);
-    t->link = link;
-    parserPtr->curTokenPtr = t;
+    tokenPtr = AllocToken(parserPtr);
+    parserPtr->curTokenPtr = tokenPtr;
     p = parserPtr->nextCharPtr;
 
     while (isspace(*p)) {
@@ -852,75 +804,74 @@ GetNextToken(Tcl_Interp *interp, TimeStampParser *parserPtr, ParserTokenId *idPt
     /* Handle single character tokens. */
     switch (*p) {
     case '/':
-        id = _SLASH;
+        tokenPtr->id = _SLASH;
         break;
     case '+':
-        id = _PLUS;
+        tokenPtr->id = _PLUS;
         break;
     case '\'':                          /* Single quote */
-        id = _QUOTE;
+        tokenPtr->id = _QUOTE;
         break;
     case ':':
-        id = _COLON;
+        tokenPtr->id = _COLON;
         break;
     case '.':
-        id = _DOT;
+        tokenPtr->id = _DOT;
         break;
     case ',':
-        id = _COMMA;
+        tokenPtr->id = _COMMA;
         break;
     case '-':
-        id = _DASH;
+        tokenPtr->id = _DASH;
         break;
     case '(':
-        id = _LPAREN;
+        tokenPtr->id = _LPAREN;
         break;
     case ')':
-        id = _RPAREN;
+        tokenPtr->id = _RPAREN;
         break;
     default:
         goto next;
     }
-    *idPtr = parserPtr->curTokenPtr->id = id;
     parserPtr->nextCharPtr = p + 1;
     return TCL_OK;
 
  next:
     /* Week number Wnn. */
     if ((*p == 'W') && (isdigit(*(p+1))) && (isdigit(*(p+2)))) {
-	t->string = p;
-	t->lvalue = (p[1] - '0') * 10 + (p[2] - '0');
-	id = _WEEK;                     /* Www week number. */
-	t->length = 3;
-	p += t->length;
+	tokenPtr->string = p;
+	tokenPtr->lvalue = (p[1] - '0') * 10 + (p[2] - '0');
+	tokenPtr->id = _WEEK;           /* Www week number. */
+	tokenPtr->length = 3;
+	p += 3;
     } else if (isdigit(*p)) {
-	char *start;
-	char save;
-        char c0, c1;
+	const char *first;
+	char save, *q;
+        char c, d;
         
-	start = p;
+	first = p;
 	while (isdigit(*p)) {
 	    p++;
 	}
+        q = (char *)p;
 	save = *p;
-	*p = '\0';
-	id = ParseNumber(interp, parserPtr, start);
-	if (id == _UNKNOWN) {
+	*q = '\0';
+	if (ParseNumber(interp, first, tokenPtr) != TCL_OK) {
             Tcl_AppendResult(interp, "unknown token found", (char *)NULL);
 	    return TCL_ERROR;
 	}
-	*p = save;			/* Restore last chararacter. */
-        c0 = tolower(p[0]);
-        c1 = tolower(p[1]);
-	if (((c0 == 't') && (c1 == 'h')) || /* 9th */
-	    ((c0 == 's') && (c1 == 't')) || /* 1st */
-	    ((c0 == 'n') && (c1 == 'd')) || /* 2nd */
-	    ((c0 == 'r') && (c1 == 'd'))) { /* 3rd */
+	*q = save;			/* Restore last chararacter. */
+        c = tolower(p[0]);
+        d = tolower(p[1]);
+	if (((c == 't') && (d == 'h')) || /* 9th */
+	    ((c == 's') && (d == 't')) || /* 1st */
+	    ((c == 'n') && (d == 'd')) || /* 2nd */
+	    ((c == 'r') && (d == 'd'))) { /* 3rd */
 	    p += 2;
-	    id = _MDAY;                 /* Month day. */
+	    tokenPtr->id = _MDAY;       /* Month day. */
 	}
     } else if (isalpha(*p)) {
-	char *name;
+	const char *name;
 	
         /* Special parsing rules for timezones.  They start with a letter
          * and may contain one or more letters, digits underscores,
@@ -931,8 +882,7 @@ GetNextToken(Tcl_Interp *interp, TimeStampParser *parserPtr, ParserTokenId *idPt
                 break;
             }
 	}
-        id = ParseTimeZone(parserPtr, p - name, name);
-        if (id == _UNKNOWN) {
+        if (ParseTimeZone(interp, parserPtr, p - name, name) != TCL_OK) {
             /* String identifiers contain only letters. */
             p = name;
             for (p = name; *p != '\0'; p++) {
@@ -940,21 +890,15 @@ GetNextToken(Tcl_Interp *interp, TimeStampParser *parserPtr, ParserTokenId *idPt
                     break;
                 }
             }
-            id = ParseString(parserPtr, p - name, name);
-#ifdef notdef
-            if (id == _UNKNOWN) {
-                return TCL_ERROR;
-            }
-#endif
+            ParseString(interp, parserPtr, p - name, name);
         }
     } else if (*p == '\0') {
-	id = _END;
+	tokenPtr->id = _END;
 	p++;
     } else {
-	id = _UNKNOWN;
+	tokenPtr->id = _UNKNOWN;
 	p++;
     }
-    *idPtr = parserPtr->curTokenPtr->id = id;
     parserPtr->nextCharPtr = p;
     return TCL_OK;
 }
@@ -964,7 +908,7 @@ GetNextToken(Tcl_Interp *interp, TimeStampParser *parserPtr, ParserTokenId *idPt
  *
  * ProcessTokens --
  *
- *	Parses the date string into a chain of tokens.  This lets us
+ *	Parses the date string into a list of tokens.  This lets us
  *      look forward and backward as tokens to discern different 
  *      patterns.
  *
@@ -973,14 +917,16 @@ GetNextToken(Tcl_Interp *interp, TimeStampParser *parserPtr, ParserTokenId *idPt
 static int
 ProcessTokens(Tcl_Interp *interp, TimeStampParser *parserPtr)
 {
-    ParserTokenId id;
-
-    id = _END;
     do {
-	if (GetNextToken(interp, parserPtr, &id) != TCL_OK) {
+        if (parserPtr->nextFreeToken >= MAXTOKENS) {
+            Tcl_AppendResult(interp, "too many tokens found in \"",
+                             parserPtr->buffer, "\"", (char *)NULL);
+            return TCL_ERROR;
+        }
+	if (GetNextToken(interp, parserPtr) != TCL_OK) {
 	    return TCL_ERROR;
 	}
-    } while (id != _END);
+    } while (parserPtr->curTokenPtr->id != _END);
     return TCL_OK;
 }
 
@@ -989,7 +935,7 @@ ProcessTokens(Tcl_Interp *interp, TimeStampParser *parserPtr)
  *
  * MatchDatePattern --
  *
- *	After having extracted the time, timezone, etc. from the chain of
+ *	After having extracted the time, timezone, etc. from the list of
  *      tokens, try to match the remaining tokens with known date patterns.
  *
  * Returns:
@@ -999,7 +945,7 @@ ProcessTokens(Tcl_Interp *interp, TimeStampParser *parserPtr)
  *-----------------------------------------------------------------------------
  */
 static int
-MatchDatePattern(TimeStampParser *parserPtr)
+MatchDatePattern(Tcl_Interp *interp, TimeStampParser *parserPtr)
 {
     int i;
 
@@ -1013,8 +959,8 @@ MatchDatePattern(TimeStampParser *parserPtr)
 	if (patPtr->numIds != NumberTokens(parserPtr)) {
 	    continue;
 	}
-	for (j = 0, t = FirstToken(parserPtr); 
-	     (t != NULL) && (j < patPtr->numIds); t = NextToken(t), j++) {
+	for (j = 0, t = parserPtr->headPtr; 
+	     (t != NULL) && (j < patPtr->numIds); t = t->nextPtr, j++) {
 	    ParserTokenId id;
 
 	    id = patPtr->ids[j];
@@ -1026,24 +972,24 @@ MatchDatePattern(TimeStampParser *parserPtr)
 			if ((t->lvalue > 0) && (t->lvalue <= 7)) {
 			    continue;
 			}
-			ParseWarning(parserPtr->interp, 
-				"weekday \"%d\" is out of range", t->lvalue);
+			ParseWarning(interp, "weekday \"%d\" is out of range",
+                                t->lvalue);
 			break;
 
 		    case _MONTH:
 			if ((t->lvalue > 0) && (t->lvalue <= 12)) {
 			    continue;
 			}
-			ParseWarning(parserPtr->interp, 
-				"month \"%d\" is out of range", t->lvalue);
+			ParseWarning(interp, "month \"%d\" is out of range",
+                                t->lvalue);
 			break;
 
 		    case _MDAY:
 			if ((t->lvalue > 0) && (t->lvalue <= 31)) {
 			    continue;
 			}
-			ParseWarning(parserPtr->interp, 
-				"day \"%d\" is out of range", t->lvalue);
+			ParseWarning(interp, "day \"%d\" is out of range",
+                                t->lvalue);
 			break;
 
 		    case _YEAR:
@@ -1068,7 +1014,7 @@ MatchDatePattern(TimeStampParser *parserPtr)
  *
  * ExtractDST --
  *
- *	Finds and extracts the DST token.  This token indicates that the 
+ *	Finds and extracts the DST token.  This token indicates that the
  *      timezone should be offset by one hour for daylight time.
  *
  *      For example: "America/New_York  DST" is the same as "EDT"
@@ -1099,7 +1045,7 @@ ExtractDST(TimeStampParser *parserPtr)
  * ExtractTimeZoneAndOffset --
  *
  *	Searches and removes (if found) the timezone token from the parser
- *      chain.  The timezone name (different from the timezone offset)
+ *      list.  The timezone name (different from the timezone offset)
  *      can't be confused with other parts of the date and time.
  *
  *      We only extract the offset is we find a timezone.  Otherwise
@@ -1127,20 +1073,13 @@ ExtractDST(TimeStampParser *parserPtr)
  *-----------------------------------------------------------------------------
  */
 static int
-ExtractTimeZoneAndOffset(Tcl_Interp *interp, TimeStampParser *parserPtr)
+ExtractTimeZoneAndOffset(Tcl_Interp *interp, TimeStampParser *parserPtr,
+                         ParserToken *tzPtr, ParserToken **nextPtrPtr)
 {
-    ParserToken *t, *zone, *end, *next;
+    ParserToken *t, *end, *next;
     int tzoffset, offset, sign, allowNNNN;
     TimeZone tz;
     
-    if (parserPtr->flags & PARSE_DST) {
-        ExtractDST(parserPtr);
-    }
-    /* Look for a timezone starting from the end of the chain of tokens. */
-    zone = FindLastToken(parserPtr, _TZ);
-    if (zone == NULL) {
-        return TCL_OK;                  /* No timezone found. */
-    }
     /* Process the timezone offset. */
 
     /* 
@@ -1152,13 +1091,13 @@ ExtractTimeZoneAndOffset(Tcl_Interp *interp, TimeStampParser *parserPtr)
      * The NN:NN is peculiar to Go.  We can't allow NNNN because this
      * gets confused with 4 digit years.
      */
-    end = t = NextToken(zone);
+    end = t = tzPtr->nextPtr;
     offset = 0;
     sign = 1;
     allowNNNN = FALSE;
     if ((t->id == _PLUS) || (t->id == _DASH)) {
 	sign = (t->id == _DASH) ? -1 : 1;
-	t = NextToken(t);
+	t = t->nextPtr;
 	allowNNNN = TRUE;
     }
     if (t->id == _NUMBER) {
@@ -1166,14 +1105,14 @@ ExtractTimeZoneAndOffset(Tcl_Interp *interp, TimeStampParser *parserPtr)
 	/* Looking for NN:NN or NNNN */
 	if ((t->length == 4) && (allowNNNN)) {
 	    offset = TZOFFSET(t->lvalue);
-	    end = NextToken(t);
+	    end = t->nextPtr;
 	} else if (t->length < 3) {
 	    offset = t->lvalue * SECONDS_HOUR;
-	    t = NextToken(t);
+	    t = t->nextPtr;
 	    if (t->id != _COLON) {
 		goto found;             /* Only found NN */
 	    }
-	    t = NextToken(t);
+	    t = t->nextPtr;
 	    if ((t->id != _NUMBER) || (t->length > 2)) {
                 Tcl_AppendResult(interp, "bad token: expecting a number",
                         (char *)NULL);
@@ -1181,26 +1120,67 @@ ExtractTimeZoneAndOffset(Tcl_Interp *interp, TimeStampParser *parserPtr)
 					 * isn't a 2 digit number.  */
 	    }
 	    offset += t->lvalue * SECONDS_MINUTE;
-	    end = NextToken(t);
+	    end = t->nextPtr;
 	} 
     }
  found:
-    if (GetTimeZoneOffsets(interp, zone->objPtr, &tz) != TCL_OK) {
+    if (GetTimeZoneOffsets(interp, tzPtr->objPtr, &tz) != TCL_OK) {
         return TCL_ERROR;
     }
-    Tcl_DecrRefCount(zone->objPtr);
+    Tcl_DecrRefCount(tzPtr->objPtr);
     tzoffset = (parserPtr->date.isdst) ? -tz.dst : -tz.std;
     parserPtr->date.tzoffset = tzoffset + (sign * offset);
     parserPtr->flags |= PARSE_TZ;
 
     /* Remove the timezone and timezone offset tokens. */
-    for (t = zone; t != end; t = next) {
-	next = NextToken(t);
+    for (t = tzPtr; t != end; t = next) {
+	next = t->nextPtr;
 	DeleteToken(parserPtr, t);
     }
+    *nextPtrPtr = end;
     return TCL_OK;
 }
 
+/* 
+ *-----------------------------------------------------------------------------
+ *
+ * ExtractTimeZoneAndOffset --
+ *
+ *	Searches and removes (if found) the timezone tokens from the parser
+ *      list.  The timezone name (different from the timezone offset) can't
+ *      be confused with other parts of the date and time.
+ *
+ *      This handles the cases like 
+ *
+ *              2007-09-02 12:00 America/Los_Angeles PST
+ *
+ *      We let the last timezone found win.  Ideally "America/Los_Angeles"
+ *      should let us distinguish between Pacific Standard Time (USA) and
+ *      Pakistan Standard Time.  
+ *
+ *-----------------------------------------------------------------------------
+ */
+static int
+ExtractTimeZonesAndOffset(Tcl_Interp *interp, TimeStampParser *parserPtr)
+{
+    ParserToken *tokenPtr, *nextPtr;
+    
+    /* Now parse out the timezone, time, and date. */
+    for (tokenPtr = parserPtr->headPtr; tokenPtr != NULL; tokenPtr = nextPtr) {
+        if (tokenPtr->id == _TZ) {
+            int result;
+
+            result = ExtractTimeZoneAndOffset(interp, parserPtr, tokenPtr,
+                &nextPtr);
+            if (result != TCL_OK) {
+                return result;
+            }
+        } else {
+            nextPtr = tokenPtr->nextPtr;
+        }
+    }
+    return TCL_OK;
+}
 
 /* 
  *-----------------------------------------------------------------------------
@@ -1229,15 +1209,15 @@ ExtractTimeZoneAndOffset(Tcl_Interp *interp, TimeStampParser *parserPtr)
  */
 static int
 ParseTimeZoneOffset(Tcl_Interp *interp, TimeStampParser *parserPtr,
-                    ParserToken *t, ParserToken **nextPtr)
+                    ParserToken *tokenPtr, ParserToken **nextPtrPtr)
 {
     int sign, offset;
 
-    sign = (t->id == _DASH) ? 1 : -1;
+    sign = (tokenPtr->id == _DASH) ? 1 : -1;
 
     /* Verify the next token after the +/-/' is a number.  */
-    t = NextToken(t);
-    if (t->id != _NUMBER) {
+    tokenPtr = tokenPtr->nextPtr;
+    if (tokenPtr->id != _NUMBER) {
         if (interp != NULL) {
             Tcl_AppendResult(interp, "bad token in timezone: not a number",
                          (char *)NULL);
@@ -1245,23 +1225,23 @@ ParseTimeZoneOffset(Tcl_Interp *interp, TimeStampParser *parserPtr,
 	return TCL_ERROR;
     }
     /* The timezone is in the form NN:NN or NNNN. */
-    if (t->length == 4) {
-	offset = TZOFFSET(t->lvalue);
-    } else if (t->length < 3) {
-	offset = t->lvalue * SECONDS_HOUR;
-	t = NextToken(t);
-	if (t->id != _COLON) {
+    if (tokenPtr->length == 4) {
+	offset = TZOFFSET(tokenPtr->lvalue);
+    } else if (tokenPtr->length < 3) {
+	offset = tokenPtr->lvalue * SECONDS_HOUR;
+	tokenPtr = tokenPtr->nextPtr;
+	if (tokenPtr->id != _COLON) {
 	    goto found;
 	}
-	t = NextToken(t);
-	if ((t->id != _NUMBER) || (t->length > 2)) {
+	tokenPtr = tokenPtr->nextPtr;
+	if ((tokenPtr->id != _NUMBER) || (tokenPtr->length > 2)) {
             if (interp != NULL) {
                 Tcl_AppendResult(interp, "bad token in timezone: not a number",
                                  (char *)NULL);
             }
 	    return TCL_ERROR;
 	}
-	offset += t->lvalue * SECONDS_MINUTE;
+	offset += tokenPtr->lvalue * SECONDS_MINUTE;
     } else {
         if (interp != NULL) {
             Tcl_AppendResult(interp, "bad token in timezone: not a number",
@@ -1271,10 +1251,10 @@ ParseTimeZoneOffset(Tcl_Interp *interp, TimeStampParser *parserPtr,
 					 * digit number after plus or
 					 * minus. */
     }
-    t = NextToken(t);
+    tokenPtr = tokenPtr->nextPtr;
  found:
     parserPtr->flags |= PARSE_OFFSET;
-    *nextPtr = t;
+    *nextPtrPtr = tokenPtr;
     /* Subtract or add the offset to the current timezone offset. */
     parserPtr->date.tzoffset += sign * offset;
     parserPtr->flags |= PARSE_TZ;
@@ -1287,8 +1267,8 @@ ParseTimeZoneOffset(Tcl_Interp *interp, TimeStampParser *parserPtr,
  * ExtractWeekday --
  *
  *	Searches for a weekday token and removes it from the parser token
- *      chain.  The weekday would have been specified as a weekday name
- *      such as "Tuesday".  Also remove a following comma if one exists.
+ *      list.  The weekday would have been specified as a weekday name such
+ *      as "Tuesday".  Also remove a following comma if one exists.
  *      Tuesday. We don't use the weekday. The weekday is always computed
  *      from the year day. No checking is done to see if these match.
  * 
@@ -1302,17 +1282,17 @@ ParseTimeZoneOffset(Tcl_Interp *interp, TimeStampParser *parserPtr,
 static void
 ExtractWeekday(TimeStampParser *parserPtr)
 {
-    ParserToken *t;
+    ParserToken *tokenPtr;
 
-    t = FindFirstToken(parserPtr, _WDAY);
-    if (t != NULL) {
-        ParserToken *next;
+    tokenPtr = FindFirstToken(parserPtr, _WDAY);
+    if (tokenPtr != NULL) {
+        ParserToken *nextPtr;
 
-        parserPtr->date.wday = t->lvalue - 1; /* 0-6 */
-        next = NextToken(t);
-        DeleteToken(parserPtr, t);
-        if ((next->id == _COMMA) || (next->id == _DOT)) {
-            DeleteToken(parserPtr, next);
+        parserPtr->date.wday = tokenPtr->lvalue - 1; /* 0-6 */
+        nextPtr = tokenPtr->nextPtr;
+        DeleteToken(parserPtr, tokenPtr);
+        if ((nextPtr->id == _COMMA) || (nextPtr->id == _DOT)) {
+            DeleteToken(parserPtr, nextPtr);
         }
     }
 }
@@ -1322,7 +1302,7 @@ ExtractWeekday(TimeStampParser *parserPtr)
  *
  * ExtractYear --
  *
- *	Searches for a year token and removes it from the parser chain.
+ *	Searches for a year token and removes it from the parser list.
  *      This simplifies the number of possible date patterns.
  *
  * Returns:
@@ -1336,15 +1316,15 @@ ExtractWeekday(TimeStampParser *parserPtr)
 static void
 ExtractYear(TimeStampParser *parserPtr)
 {
-    ParserToken *t;
+    ParserToken *tokenPtr;
 
-    t = FindFirstToken(parserPtr, _YEAR);
-    if (t != NULL) {
-        parserPtr->date.year = t->lvalue;
-        if (t->length == 2) {
+    tokenPtr = FindFirstToken(parserPtr, _YEAR);
+    if (tokenPtr != NULL) {
+        parserPtr->date.year = tokenPtr->lvalue;
+        if (tokenPtr->length == 2) {
             parserPtr->date.year += 1900;
         }
-        DeleteToken(parserPtr, t);
+        DeleteToken(parserPtr, tokenPtr);
     }
 }
 
@@ -1362,7 +1342,7 @@ ExtractYear(TimeStampParser *parserPtr)
  *      None.
  *
  * Side Effects:
- *      The separator (as TZ token) is removed from the parser's chain
+ *      The separator (as TZ token) is removed from the parser's list
  *      of tokens.
  *
  *-----------------------------------------------------------------------------
@@ -1370,25 +1350,21 @@ ExtractYear(TimeStampParser *parserPtr)
 static void
 ExtractDateTimeSeparator(TimeStampParser *parserPtr)
 {
-    ParserToken *t;
+    ParserToken *tokenPtr;
 
     /* Find the date/time separator "t" and remove it. */
-    for (t = FirstToken(parserPtr); t != NULL; t = NextToken(t)) {
+    for (tokenPtr = parserPtr->headPtr; tokenPtr != NULL;
+         tokenPtr = tokenPtr->nextPtr) {
         char c;
-	if (t->id != _TZ) {
+
+	if (tokenPtr->id != _TZ) {
             continue;
         }
-        c = tolower(t->string[0]);
-        if ((t->length == 1) && (c == 't')) {
-            ParserToken *next;
+        c = tolower(tokenPtr->string[0]);
+        if ((tokenPtr->length == 1) && (c == 't')) {
             /* Check if the 't' is a military timezone or a separator. */
-            next = NextToken(t);
-            if (parserPtr->tmZone != NULL) {
-                Blt_Free(parserPtr->tmZone);
-                parserPtr->tmZone = NULL;
-            }
-            if (next->id != _END) {
-                DeleteToken(parserPtr, t);
+            if (tokenPtr->nextPtr->id != _END) {
+                DeleteToken(parserPtr, tokenPtr);
             }
             return;
 	}
@@ -1416,24 +1392,24 @@ ExtractDateTimeSeparator(TimeStampParser *parserPtr)
 static void
 FixParserTokens(TimeStampParser *parserPtr)
 {
-    ParserToken *t, *next;
+    ParserToken *tokenPtr, *next;
 
-    for (t = FirstToken(parserPtr); t != NULL; t = next) {
-	next = NextToken(t);
-	switch (t->id) {
+    for (tokenPtr = parserPtr->headPtr; tokenPtr != NULL; tokenPtr = next) {
+	next = tokenPtr->nextPtr;
+	switch (tokenPtr->id) {
 	case _NUMBER:
-	    if (t->length == 2) {
-		if (t->lvalue > 31) {
-		    t->id = _YEAR;
+	    if (tokenPtr->length == 2) {
+		if (tokenPtr->lvalue > 31) {
+		    tokenPtr->id = _YEAR;
 		}
-	    } else if (t->length == 3) {
-		t->id = _YDAY;
-	    } else if ((t->length == 4) || (t->length == 5)) {
-		t->id = _YEAR;
-	    } else if (t->length == 7) {
-		t->id = _ISO7;
-	    } else if (t->length == 8) {
-		t->id = _ISO8;
+	    } else if (tokenPtr->length == 3) {
+		tokenPtr->id = _YDAY;
+	    } else if ((tokenPtr->length == 4) || (tokenPtr->length == 5)) {
+		tokenPtr->id = _YEAR;
+	    } else if (tokenPtr->length == 7) {
+		tokenPtr->id = _ISO7;
+	    } else if (tokenPtr->length == 8) {
+		tokenPtr->id = _ISO8;
 	    }
 	    break;
 	case _PLUS:
@@ -1443,7 +1419,8 @@ FixParserTokens(TimeStampParser *parserPtr)
 	case _COLON:
 	case _LPAREN:
 	case _RPAREN:
-	    DeleteToken(parserPtr, t);
+            /* Remove date separator tokens. */
+	    DeleteToken(parserPtr, tokenPtr);
 	    break;
 	default:
 	    break;
@@ -1452,41 +1429,41 @@ FixParserTokens(TimeStampParser *parserPtr)
 }
 
 static ParserToken *
-FindTimeSequence(ParserToken *t, ParserToken **tokens)
+FindTimeSequence(ParserToken *tokenPtr, ParserToken **tokens)
 {
-    ParserToken *prev;
-
     tokens[0] = tokens[1] = tokens[2] = NULL;
 
     /* Find the pattern "NN [:.] NN"  or "NN [:.] NN [:.] NN". */
-    if ((t->id != _NUMBER) || (t->length > 2) || (t->lvalue > 23)) {
+    if ((tokenPtr->id != _NUMBER) || (tokenPtr->length > 2) ||
+        (tokenPtr->lvalue > 23)) {
 	return NULL;                    /* Not a valid hour spec. */
     }
-    prev = PrevToken(t);
-    if ((prev != NULL) && (prev->id == _DOT)) {
+    if ((tokenPtr->prevPtr != NULL) && (tokenPtr->prevPtr->id == _DOT)) {
 	return NULL;                    /* Previous token can't be a
 					 * dot. */
     }
-    tokens[0] = t;                      /* Save hour token */
-    t = NextToken(t);
-    if ((t->id != _COLON) && (t->id != _DOT)) {
+    tokens[0] = tokenPtr;               /* Save hour token */
+    tokenPtr = tokenPtr->nextPtr;
+    if ((tokenPtr->id != _COLON) && (tokenPtr->id != _DOT)) {
 	return NULL;                    /* Must be separated by : or . */
     }
-    t = NextToken(t);
-    if ((t->id != _NUMBER) || (t->length > 2) || (t->lvalue > 59)) {
+    tokenPtr = tokenPtr->nextPtr;
+    if ((tokenPtr->id != _NUMBER) || (tokenPtr->length > 2) ||
+        (tokenPtr->lvalue > 59)) {
 	return NULL;                    /* Not a valid minute spec. */
     }
-    tokens[1] = t;                      /* Save minute token. */
-    t = NextToken(t);
-    if ((t->id != _COLON) && (t->id != _DOT)) {
-	return t;                       /* No second spec. */
+    tokens[1] = tokenPtr;               /* Save the minute token. */
+    tokenPtr = tokenPtr->nextPtr;
+    if ((tokenPtr->id != _COLON) && (tokenPtr->id != _DOT)) {
+	return tokenPtr;                /* No second spec. */
     }
-    t = NextToken(t);
-    if ((t->id != _NUMBER) || (t->length > 2) || (t->lvalue > 60)) {
+    tokenPtr = tokenPtr->nextPtr;
+    if ((tokenPtr->id != _NUMBER) || (tokenPtr->length > 2) ||
+        (tokenPtr->lvalue > 60)) {
 	return NULL;                    /* Not a valid second spec. */
     }
-    tokens[2] = t;                      /* Save second token. */
-    return NextToken(t);
+    tokens[2] = tokenPtr;               /* Save second token. */
+    return tokenPtr->nextPtr;
 }
 
 /*
@@ -1524,57 +1501,59 @@ static int
 ExtractTime(Tcl_Interp *interp, TimeStampParser *parserPtr)
 {
     ParserToken *next, *first, *last;
-    ParserToken *t, *tokens[3];
+    ParserToken *tokenPtr, *tokens[3];
 
 #if DEBUG
     fprintf(stderr, "ExtractTime (%s)\n", 
-	    Tcl_GetString(PrintTokens(parserPtr)));
+	    Tcl_GetString(PrintTokens(interp, parserPtr)));
 #endif
     first = last = NULL;
-    for (t = FirstToken(parserPtr); t != NULL; t = NextToken(t)) {
-	first = t;
+    for (tokenPtr = parserPtr->headPtr; tokenPtr != NULL;
+         tokenPtr = tokenPtr->nextPtr) {
+	first = tokenPtr;
 	/* Assume that any 6-digit number is ISO time format (hhmmss). */
-	if ((t->id == _NUMBER) && (t->length == 6)) {
+	if ((tokenPtr->id == _NUMBER) && (tokenPtr->length == 6)) {
 	    long value;
 
-	    value = t->lvalue;
+	    value = tokenPtr->lvalue;
 	    parserPtr->date.sec = value % 100;
 	    value /= 100;
 	    parserPtr->date.min = value % 100;
 	    value /= 100;
 	    parserPtr->date.hour = value % 100;
-	    first = t;
-	    next = t = NextToken(t);
+	    first = tokenPtr;
+	    next = tokenPtr = tokenPtr->nextPtr;
 	    goto done;
 	}
-	next = FindTimeSequence(t, tokens);
+	next = FindTimeSequence(tokenPtr, tokens);
 	if (next != NULL) {
-	    first = t;
+	    first = tokenPtr;
 	    break;                      /* Found the time pattern */
 	}
     }
-    if (t == NULL) {
+    if (tokenPtr == NULL) {
 	/* Could not window a time sequence. */
-	for (t = FirstToken(parserPtr); t != NULL; t = NextToken(t)) {
-	    if ((t->id == _NUMBER) && 
-		((t->length == 6) || (t->length == 14))) {
+	for (tokenPtr = parserPtr->headPtr; tokenPtr != NULL;
+             tokenPtr = tokenPtr->nextPtr) {
+	    if ((tokenPtr->id == _NUMBER) && ((tokenPtr->length == 6) ||
+                                              (tokenPtr->length == 14))) {
 		long value;
 		/* Iso time format hhmmss */
-		value = t->lvalue;
+		value = tokenPtr->lvalue;
 		
 		parserPtr->date.sec = value % 100;
 		value /= 100;
 		parserPtr->date.min = value % 100;
 		value /= 100;
 		parserPtr->date.hour = value % 100;
-		if (t->length == 14) {
+		if (tokenPtr->length == 14) {
 		    value /= 100;
-		    t->length = 8;  /* Convert to ISO8 */
-		    t->lvalue = value;
-		    first = t = NextToken(t);
+		    tokenPtr->length = 8;  /* Convert to ISO8 */
+		    tokenPtr->lvalue = value;
+		    first = tokenPtr = tokenPtr->nextPtr;
 		} else {
-		    first = t;
-		    t = NextToken(t);
+		    first = tokenPtr;
+		    tokenPtr = tokenPtr->nextPtr;
 		}
 		goto done;
 	    }
@@ -1584,29 +1563,30 @@ ExtractTime(Tcl_Interp *interp, TimeStampParser *parserPtr)
     if (next != NULL) {
 	parserPtr->date.hour = tokens[0]->lvalue;
 	parserPtr->date.min = tokens[1]->lvalue;
-	t = next;
+	tokenPtr = next;
 	if (tokens[2] != NULL) {
 	    parserPtr->date.sec = tokens[2]->lvalue;
-	    if ((t->id == _COLON) || (t->id == _DOT) || (t->id == _COMMA)) {
-		t = NextToken(t);
-		if ((t->id == _NUMBER)) {
+	    if ((tokenPtr->id == _COLON) || (tokenPtr->id == _DOT) ||
+                (tokenPtr->id == _COMMA)) {
+		tokenPtr = tokenPtr->nextPtr;
+		if ((tokenPtr->id == _NUMBER)) {
 		    double d;
 		    
-		    d = pow(10.0, t->length);
-		    parserPtr->date.frac = (double)t->lvalue / d;
-		    t = NextToken(t);
+		    d = pow(10.0, tokenPtr->length);
+		    parserPtr->date.frac = (double)tokenPtr->lvalue / d;
+		    tokenPtr = tokenPtr->nextPtr;
 		}
 	    }
 	}
     }
  done:
     /* Look for AMPM designation. */
-    if (t->id == _AMPM) {
+    if (tokenPtr->id == _AMPM) {
 	/* 12am == 00, 12pm == 12, 13-23am/pm invalid */
 	if (parserPtr->date.hour > 12) {
 	    fprintf(stderr, "invalid am/pm, already in 24hr format\n");
 	} else {
-	    if (t->lvalue) {                /* PM */
+	    if (tokenPtr->lvalue) {     /* PM */
 		if (parserPtr->date.hour < 12) {
 		    parserPtr->date.hour += 12;
 		}
@@ -1616,23 +1596,23 @@ ExtractTime(Tcl_Interp *interp, TimeStampParser *parserPtr)
 		}
 	    }
 	}
-	t = NextToken(t);
+	tokenPtr = tokenPtr->nextPtr;
     }
     /* Check for the timezone offset. */
-    if ((t->id == _PLUS) || (t->id == _DASH)) {
-	if (ParseTimeZoneOffset(interp, parserPtr, t, &next) != TCL_OK) {
+    if ((tokenPtr->id == _PLUS) || (tokenPtr->id == _DASH)) {
+	if (ParseTimeZoneOffset(interp, parserPtr, tokenPtr, &next) != TCL_OK) {
 	    return TCL_ERROR;
 	}
-	t = next;
+	tokenPtr = next;
     }
     /* Remove the time-related tokens from the list. */
-    last = t;
-    for (t = first; t != NULL; t = next) {
-	next = NextToken(t);
-	if (t == last) {
+    last = tokenPtr;
+    for (tokenPtr = first; tokenPtr != NULL; tokenPtr = next) {
+	next = tokenPtr->nextPtr;
+	if (tokenPtr == last) {
 	    break;
 	}
-	DeleteToken(parserPtr, t);
+	DeleteToken(parserPtr, tokenPtr);
     }
     parserPtr->flags |= PARSE_TIME;
     return TCL_OK;
@@ -1686,7 +1666,7 @@ ExtractTime(Tcl_Interp *interp, TimeStampParser *parserPtr)
 static int
 ExtractDate(Tcl_Interp *interp, TimeStampParser *parserPtr)
 {
-    ParserToken *next, *t;
+    ParserToken *next, *tokenPtr;
     int i, patternIndex;
     Pattern *patPtr;
 
@@ -1700,9 +1680,9 @@ ExtractDate(Tcl_Interp *interp, TimeStampParser *parserPtr)
     ExtractYear(parserPtr);
 #if DEBUG
     fprintf(stderr, "ExtractDate (%s)\n", 
-	    Tcl_GetString(PrintTokens(parserPtr)));
+	    Tcl_GetString(PrintTokens(interp, parserPtr)));
 #endif
-    patternIndex = MatchDatePattern(parserPtr);
+    patternIndex = MatchDatePattern(interp, parserPtr);
 #if DEBUG
     fprintf(stderr, "matching pattern is %d\n", patternIndex);
 #endif
@@ -1710,7 +1690,7 @@ ExtractDate(Tcl_Interp *interp, TimeStampParser *parserPtr)
         if (interp != NULL) {
             ParseError(interp, 
 		   "no matching date pattern \"%s\" for \"%s\"", 
-		   Tcl_GetString(PrintTokens(parserPtr)),
+                       Tcl_GetString(PrintTokens(interp, parserPtr)),
 		   parserPtr->buffer);
         }
 	return TCL_ERROR;
@@ -1718,44 +1698,44 @@ ExtractDate(Tcl_Interp *interp, TimeStampParser *parserPtr)
     /* Process the list against the matching pattern. */
     patPtr = datePatterns + patternIndex;
     assert(patPtr->numIds == NumberTokens(parserPtr));
-    t = FirstToken(parserPtr); 
-    for (i = 0; i < patPtr->numIds; i++, t = NextToken(t)) {
+    tokenPtr = parserPtr->headPtr;
+    for (i = 0; i < patPtr->numIds; i++, tokenPtr = tokenPtr->nextPtr) {
 	ParserTokenId id;
 	
 	id = patPtr->ids[i];
 	switch (id) {
 	case _MONTH:                   /* 1-12 converted to 0-11 */
-	    parserPtr->date.mon = t->lvalue - 1;
+	    parserPtr->date.mon = tokenPtr->lvalue - 1;
 	    break;
 
 	case _YEAR:                    /* 0000-9999 or 00-99 */
-	    parserPtr->date.year = t->lvalue;
-	    if (t->length == 2) {
+	    parserPtr->date.year = tokenPtr->lvalue;
+	    if (tokenPtr->length == 2) {
 		parserPtr->date.year += 1900;
 	    }
 	    break;
 	case _WEEK:                    /* 1-53 converted to 0-52 */
 	    parserPtr->flags |= PARSE_WEEK;
-	    parserPtr->date.week = t->lvalue - 1;
+	    parserPtr->date.week = tokenPtr->lvalue - 1;
 	    break;
 	case _WDAY:                    /* 1-7 converted to 0-6 */
 	    parserPtr->flags |= PARSE_WDAY;
-	    parserPtr->date.wday = t->lvalue - 1;
+	    parserPtr->date.wday = tokenPtr->lvalue - 1;
 	    break;
 	case _MDAY:                    /* 1-31 */
 	    parserPtr->flags |= PARSE_MDAY;
-	    parserPtr->date.mday = t->lvalue;
+	    parserPtr->date.mday = tokenPtr->lvalue;
 	    break;
 	case _YDAY:                    /* 1-366 converted to 0-365 */
 	    parserPtr->flags |= PARSE_YDAY;
-	    parserPtr->date.yday = t->lvalue - 1;
+	    parserPtr->date.yday = tokenPtr->lvalue - 1;
 	    break;
 
 	case _ISO7:                    /* 0000-9999,1-366  */
 	    {
 		long value;
 		/* Iso date format */
-		value = t->lvalue;
+		value = tokenPtr->lvalue;
 		
 		parserPtr->date.yday = (value % 1000) - 1;
 		value /= 1000;
@@ -1768,7 +1748,7 @@ ExtractDate(Tcl_Interp *interp, TimeStampParser *parserPtr)
 	    {
 		long value;
 		/* Iso date format */
-		value = t->lvalue;
+		value = tokenPtr->lvalue;
 		
 		parserPtr->date.mday = value % 100;
 		value /= 100;
@@ -1787,9 +1767,9 @@ ExtractDate(Tcl_Interp *interp, TimeStampParser *parserPtr)
 	    break;
 	}
     }
-    for (t = FirstToken(parserPtr); t != NULL; t = next) {
-	next = NextToken(t);
-	DeleteToken(parserPtr, t);
+    for (tokenPtr = parserPtr->headPtr; tokenPtr != NULL; tokenPtr = next) {
+	next = tokenPtr->nextPtr;
+	DeleteToken(parserPtr, tokenPtr);
     }
     parserPtr->flags |= PARSE_DATE;
     return TCL_OK;
@@ -2552,8 +2532,12 @@ ParseTimeStamp(Tcl_Interp *interp, const char *string, double *secondsPtr)
     if (result == TCL_OK) {
         /* Remove the time/date 'T' separator if one exists. */
         ExtractDateTimeSeparator(&parser);
+        /* Remove the DST indicator if one exists. */
+        if (parser.flags & PARSE_DST) {
+            ExtractDST(&parser);
+        }
         /* Now parse out the timezone, time, and date. */
-        result = ExtractTimeZoneAndOffset(interp, &parser);
+        result = ExtractTimeZonesAndOffset(interp, &parser);
     }
     if (result == TCL_OK) {
 	result = ExtractTime(interp, &parser);
@@ -2613,8 +2597,12 @@ DebugOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (result == TCL_OK) {
         /* Remove the time/date 'T' separator if one exists. */
         ExtractDateTimeSeparator(&parser);
+        /* Remove the DST indicator if one exists. */
+        if (parser.flags & PARSE_DST) {
+            ExtractDST(&parser);
+        }
         /* Now parse out the timezone, time, and date. */
-        result = ExtractTimeZoneAndOffset(interp, &parser);
+        result = ExtractTimeZonesAndOffset(interp, &parser);
     }
     if (result == TCL_OK) {
 	result = ExtractTime(interp, &parser);
