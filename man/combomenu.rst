@@ -38,42 +38,45 @@ SYNOPSIS
 **blt::combomenu** *pathName* ?\ *option value* ...\ ?
 
 DESCRIPTION
-===========
+-----------
 
-The **combomenu** manages a menu and optionally vertical and hortizontal
-scrollbars.  The scrollbars are automatically exposed and hidden as needed
-with the **combomenu** widget is resized.  Whenever the **combomenu**
-window is smaller horizontally and/or vertically than the menu, the
-appropiate scrollbar is exposed.  
+The **blt::combomenu** command creates and manages *combomenu* widgets.
+The *combomenu* widget contains a menu and optional scrollbars (vertical
+and/or horizontal).  The scrollbars are automatically exposed and hidden as
+needed when the **combomenu** widget is resized by adding or exposing
+menu items.  Whenever the **combomenu** window is smaller horizontally
+and/or vertically than the actual menu, the appropiate scrollbar is
+exposed.
 
-A menu is a widget that displays a collection of item arranged in one or
-more columns.  There exist several different types of items, each with
-different properties.  Items of different types may be combined in a single
-menu.  Menu items are not distinct widgets; the entire *combomenu* is one
-widget.
+A *combomenu* is a widget that displays a menu items.  There exist several
+different types of items, each with different properties.  Items of
+different types may be combined in a single menu.  Menu items are not
+distinct widgets; the entire *combomenu* is one widget.
 
 SYNTAX
-======
+------
 
 **blt::combomenu** *pathName* ?\ *option value* ...\ ?
 
-The **combomenu** command creates a new window named *pathName* and makes
-it into a **combomenu** widget.  Additional options may be specified on the
-command line or in the option database to configure aspects of the
-combomenu such as its background color, the scrollbars, or the child
-widget. The **combomenu** command returns its *pathName* argument.  At the
-time this command is invoked, there must not exist a window named
-*pathName*, but *pathName*'s parent must exist.
+The **blt::combomenu** command creates a new window named *pathName* and
+makes it into a *combomenu* widget.  Additional options may be specified on
+the command line or in the option database to configure aspects of the
+combomenu such as its background color or scrollbars. The
+**blt::combomenu** command returns its *pathName* argument.  There must not
+already exist a window named *pathName*, but *pathName*'s parent must
+exist.
 
-The scrollbars must be children of the combomenu widget.  The scrollbars
-may be specified in the **combomenu** widget before they exist.  The normal
-size of of **combomenu** is the requested width and height of the child
-widget (where no scrollbars are necessary).  You can override the child
-widget's requested size by setting the combomenu's **-reqwidth** and
-**-reqheight** options respectively.
+Scrollbars are specified for *combomenu* by the **-xscrollbar** and
+**-yscrollbar** widget options.  The scrollbars must be children of the
+*pathName*.  The scrollbars may be specified they exist.  The normal size
+of the *combomenu* is the size to display all its menu items. You can
+specify the maximum and minimum width and height of the *combomenu* window
+using the **-width** and **-height** widget options.  Whenever the
+**combomenu** window is smaller horizontally and/or vertically than the
+actual menu, the appropiate scrollbar is automatically exposed.
 
 MENU ITEMS
-==========
+----------
 
 A menu is a widget that displays a collection of item arranged in one or
 more columns.  There exist several different types of items (specified by
@@ -81,59 +84,59 @@ the item's **-type** option), each with different properties.  Items of
 different types may be combined in a single menu.  Menu items are not
 distinct widgets; the entire **combomenu** is one widget.
 
-A menu item can be one of the following types: "button", "cascade",
-"checkbutton", "radiobutton", and "separator".
+A menu item can be one of the following types: 
 
-Button Items
+  *button*
 
-  The *button* is the most common type of menu item. It behaves much like a
-  **button** widget. 
+    The *button* is the most common type of menu item. It behaves much like a
+    **button** widget. 
 
-Cascade Items
+  *cascade*
 
-  A *cascade* item is one with an associated menu (specified by the item's
-  **-menu** option).  *Cascade* items allow the construction of cascading
-  menus.  The **postcascade** widget command can be used to post and unpost
-  the associated menu just next to of the *cascade* item.  The associated
-  menu must be a child of the menu containing the *cascade* item.  
+    A *cascade* item is one with an associated menu (specified by the
+    item's **-menu** option).  *Cascade* items allow the construction of
+    cascading menus.  The **postcascade** widget command can be used to
+    post and unpost the associated menu just next to of the *cascade* item.
+    The associated menu must be a child of the menu containing the
+    *cascade* item.
 
-Checkbutton Items
+  *checkbutton*
 
-  A *checkbutton* menu item behaves much like a **checkbutton** widget.
-  When it is invoked it toggles back and forth between the selected and
-  deselected states.  When the item is selected, a particular value is
-  stored in a particular global variable (as determined by the **-onvalue**
-  and **-variable** options for the item); when the item is deselected
-  another value (determined by the **-offvalue** option) is stored in the
-  global variable.  An indicator box is displayed to the left of the label.
-  If the item is selected then the an arrow is display in the indicator. If
-  a **-command** option is specified, then its value is evaluated as a TCL
-  command each time the item is invoked; this happens after toggling the
-  item's selected state.
+    A *checkbutton* menu item behaves much like a **checkbutton** widget.
+    When it is invoked it toggles back and forth between the selected and
+    deselected states.  When the item is selected, a particular value is
+    stored in a particular global variable (as determined by the
+    **-onvalue** and **-variable** options for the item); when the item is
+    deselected another value (determined by the **-offvalue** option) is
+    stored in the global variable.  An indicator box is displayed to the
+    left of the label.  If the item is selected then the an arrow is
+    display in the indicator. If a **-command** option is specified, then
+    its value is evaluated as a TCL command each time the item is invoked;
+    this happens after toggling the item's selected state.
 
-Radiobutton Items
+  *radiobutton* 
 
-  A *radiobutton* menu item behaves much like a **radiobutton** widget.
-  *Radiobutton* items are organized in groups of which only one item may be
-  selected at a time.  Whenever a particular item becomes selected it
-  stores a particular value into a particular global variable (as
-  determined by the **-value** and **-variable** options for the item).
-  This action causes any previously selected item in the same group to
-  deselect itself.  Once an item has become selected, any change to the
-  item's associated variable will cause the item to deselect itself.
-  Grouping of *radiobutton* items is determined by their associated
-  variables: if two items have the same associated variable then they are
-  in the same group.  An indicator circle is displayed to the left of the
-  label.  If the item is selected then the indicator's center is filled.
-  If a **-command** option is specified then its value is evaluated as a
-  Tcl command each time the item is invoked; this happens after selecting
-  the item.
+    A *radiobutton* menu item behaves much like a **radiobutton** widget.
+    *Radiobutton* items are organized in groups of which only one item may
+    be selected at a time.  Whenever a particular item becomes selected it
+    stores a particular value into a particular global variable (as
+    determined by the **-value** and **-variable** options for the item).
+    This action causes any previously selected item in the same group to
+    deselect itself.  Once an item has become selected, any change to the
+    item's associated variable will cause the item to deselect itself.
+    Grouping of *radiobutton* items is determined by their associated
+    variables: if two items have the same associated variable then they are
+    in the same group.  An indicator circle is displayed to the left of the
+    label.  If the item is selected then the indicator's center is filled.
+    If a **-command** option is specified then its value is evaluated as a
+    Tcl command each time the item is invoked; this happens after selecting
+    the item.
 
-Separator items
+  *separator*
 
-  A *separator* is an item that is displayed as a horizontal dividing line.
-  A *separator* can't be activated or invoked, and it has no behavior other
-  than its display appearance.
+    A *separator* is an item that is displayed as a horizontal dividing
+    line.  A *separator* can't be activated or invoked, and it has no
+    behavior other than its display appearance.
 
 Menu items are displayed with up to four separate fields.
 
@@ -170,37 +173,39 @@ Menu items may be referred to by either their index, label, or tag.
    item as other items are added, deleted, moved, or sorted.
 
  **label**
-   The label of the item.  Each item label.
-   Labels should not be numbers (to distinguish them from indices). 
+   The label of the item (specified by the **-label** menu item option).
+   Labels should not be numbers (to distinguish them from indices) or tags.
 
  **tag**
    A tag is a string associated with an item.  They are a useful for
    referring to groups of items. Items can have any number of tags
-   associated with them using the **-tags** option.  "all" and "end".
-   Every item has the tag "all".  The last item in the menu will have the
-   tag "end".  A tag may refer to multiple items.
+   associated with them (specified by the **-tags** menu item option).  A
+   tag may refer to multiple items.  There are two built-in tags: "all" and
+   "end".  Every item has the tag "all".  The last item in the menu will
+   have the tag "end".
      
-If an item is specified by an integer it is assumed to be an index.  It it
-is specified by a strings it is first checked if it is a label and then a
-tag.  This means that you shouldn't have tags and labels that are the same.
-They will always be interpreted as labels.  Unlike labels, tags aren't seen
-by the user, so you can do whatever you want to make them unique (example:
-"mytag::fred").
+If an item is specified by an integer it is assumed to be an index.  If it
+is specified by a string, it is first tested if it's a valid label and then
+a tag.  This means that you shouldn't have tags and labels that are the
+same.  They will always be interpreted as labels.  Unlike labels, tags
+aren't seen by the user, so you can do whatever you want to make them
+unique (example: "mytag::fred").
 
-If a **-command** option is specified for the item then it is evaluated as
-a TCL command whenever the item is invoked.
+If an item's **-command** option is specified, a TCL command a TCL command
+will be invoke whenever the item is selected (typically by clicking on the
+item).
   
 OPERATIONS
-==========
+----------
 
-All **combomenu** operations are invoked by specifying the widget's
+All *combomenu* operations are invoked by specifying the widget's
 pathname, the operation, and any arguments that pertain to that
 operation.  The general form is:
 
   *pathName operation* ?\ *arg arg ...*\ ?
 
 *Operation* and the *arg*\ s determine the exact behavior of the
-command.  The following operations are available for combomenu widgets:
+command.  The following operations are available for *combomenu* widgets:
 
 *pathName* **activate** *item* 
  
@@ -212,17 +217,17 @@ command.  The following operations are available for combomenu widgets:
 
 *pathName* **add** ?\ *option* *value* ...?
  
-  Creates a new menu item, appending it to the end of the menu.  If one or
-  more *option-value* pairs are specified, they modifies the given menu
-  item option(s) to have the given value(s).  *Option* and *value* are
-  described in the **item configure** operation.
+  Creates a new menu item, adding it to the end of the menu.  If one or
+  more *option-value* pairs are specified, they modify the given menu item
+  option(s) to have the given value(s).  *Option* and *value* are described
+  in the **item configure** operation.
 
 *pathName* **bbox** *item* 
  
-  Returns of list of four numbers describing the bounding box *item*.  The
-  numbers represent the x and y root coordinates to two corners of the
-  box. *Item* may be a label, index, or tag, but may not represent more
-  than one menu item.
+  Returns of list of four numbers describing the bounding box of *item*.
+  The numbers represent the x and y root coordinates of two opposite
+  corners of the box. *Item* may be a label, index, or tag, but may not
+  represent more than one menu item.
 
 *pathName* **cget** *option*  
 
@@ -233,16 +238,16 @@ command.  The following operations are available for combomenu widgets:
 
 *pathName* **configure** ?\ *option*\ ? ?\ *value*? ?\ *option value ...*\ ?
 
-  Query or modify the configuration options of the widget.  If no *option*
-  is specified, returns a list describing all the available options for
-  *pathName* (see **Tk_ConfigureInfo** for information on the format of
-  this list).  If *option* is specified with no *value*, then the command
-  returns a list describing the one named option (this list will be
-  identical to the corresponding sublist of the value returned if no
-  *option* is specified).  If one or more *option-value* pairs are
-  specified, then the command modifies the given widget option(s) to have
-  the given value(s); in this case the command returns an empty string.
-  *Option* and *value* are described below.
+  Queries or modifies the configuration options of the widget.  If no
+  *option* is specified, this command returns a list describing all the
+  available options for *pathName* (see **Tk_ConfigureInfo** for
+  information on the format of this list).  If *option* is specified with
+  no *value*, then a list describing the one named option (this list will
+  be identical to the corresponding sublist of the value returned if no
+  *option* is specified) is returned.  If one or more *option-value* pairs
+  are specified, then this command modifies the given widget option(s) to
+  have the given value(s); in this case the command returns an empty
+  string.  *Option* and *value* are described below.
 
   Widget configuration options may be set either by the **configure**
   operation or the Tk **option** command.  The resource class is
@@ -256,11 +261,12 @@ command.  The following operations are available for combomenu widgets:
   **-acceleratorfont** *fontName* 
 
     Specifies the font for the accelerator text.  The default is
-    "\*-Helvetica-Bold-R-Normal-\*-18-180-\*"
+    "{Sans Serif} 9".  
 
   **-acceleratorforeground** *colorName* 
 
-    Specifies the color of the accelerator text.  The default is "black".
+    Specifies the color of the accelerator text.  The default is
+    "black".
 
   **-activeacceleratorforeground** *colorName* 
 
@@ -269,80 +275,103 @@ command.  The following operations are available for combomenu widgets:
 
   **-activeforeground** *colorName* 
 
-    Specifies the active color of the label text.  The default is
-    "black".
+    Specifies the active color of the label text.  The default is 
+    "white".
 
   **-activerelief** *relief* 
 
-    Specifies the active relief of menu items.  The default is
-    "flat".
+    Specifies the active relief of menu items.  This determines the 3-D
+    effect for the menu item.  *Relief* indicates how the item should
+    appear relative to the menu window; for example, "raised" means the
+    item should appear to protrude.  The default is "flat".
     
   **-background** *background* 
 
-    Specifies the background of the menu.  The default is "white".
-    *Background* can be a color name or background.
+    Specifies the background of the menu.  *Background* may be a color name
+    or the name of a background object created by the **blt::background**
+    command.  The default is "white".
     
   **-borderwidth** *numPixels* 
 
-    Specifies the borderwidth of the menu.  The default is "1".
+    Specifies the borderwidth of the menu.  *NumPixels* is a non-negative
+    value indicating the width of the 3-D border drawn around the menu. The
+    value may have any of the forms accept able to Tk_GetPixels.  The
+    default is "1".
 
   **-checkbuttoncolor** *colorName*
 
-    Specifies the color of checkbutton items.  The default is "1".
+    Specifies the color of the check for checkbutton items.  The default is
+    "red3".
 
   **-checkbuttonfillcolor** *colorName*
 
-    Specifies the fill color of checkbutton items.  The default is "1".
+    Specifies the fill color of the box for checkbutton items. If
+    *colorName* is "", then the box color is the background color of
+    the menu item.  The default is "".
 
   **-checkbuttonoutlinecolor** *colorName*
 
-    Specifies the outline color of checkbutton items.  The default is "1".
+    Specifies the outline color of the box for checkbutton items.  If
+    *colorName* is "", then the no outline is drawn. The default is "".
 
   **-checkbuttonsize** *numPixels*
 
-    Specifies the size of the check box of checkbutton items.
-    *NumPixels* is a valid screen distance, such as \f(CW2\fR or \f(CW1.2i\fR.
-    If this option isn't specified, then it defaults to "1".
+    Specifies the size of the box of for checkbutton items.  *NumPixels* is
+    a non-negative value indicating the width and height of the check
+    box. The value may have any of the forms accept able to Tk_GetPixels.
+    The default is "12".
 
   **-command** *string* 
 
-    Specifies a command to invoke when menu is set.
-    The default is "".
+    Specifies a TCL command to invoked whenever a menu item is selected:
+    either by clicking on the menu item or using the **select** operation.
+    If *string* is "", then no command is invoked. The default is "".
 
   **-cursor** *cursorName* 
 
-    Specifies the cursor display in the menu.
-    The default is "arrow".
+    Specifies the cursor to be used for the widget. *CursorName* may have
+    any of the forms acceptable to Tk_GetCursor.  If *cursorName* is "",
+    this indicates that the widget should defer to its parent for cursor
+    specification.  The default is "".
 
   **-disabledacceleratorforeground** *colorName* 
 
-    Specifies the disabled color of the accelerator text for items in the
-    menu.  The default is "arrow".
+    Specifies the color the accelerator text for menu items when they
+    are disabled. The default is "grey90".
 
   **-disabledbackground** *background* 
 
-    Specifies the disabled color of the background for items in the menu.
-    The default is "arrow".
+    Specifies the background of menu items that are disabled.  *Background*
+    may be a color name or the name of a background object created by the
+    **blt::background** command.  The default is "white".
 
   **-disabledforeground** *colorName* 
 
-    Specifies the disabled color of the text for items in the menu.  The
-    default is "arrow".
+    Specifies the color of the text for menu items that are disabled.  The
+    default is "grey70".
 
   **-font** *colorName* 
 
-    Specifies the font of the text for items in the menu.  The
-    default is "arrow".
+    Specifies the font of labels in menu items.  The default is "{Sans
+    Serif} 11".
 
   **-foreground** *colorName* 
 
-    Specifies the color of the text for items in the menu.  The
-    default is "arrow".
+    Specifies the color of labels in menu items.  The default is "black".
 
   **-height** *numPixels* 
 
-    Specifies the height in the menu.  *NumPixels* is a valid screen
-    distance, such as \f(CW2\fR or \f(CW1.2i\fR.  The default is "arrow".
+    Specifies the height in the *combomenu*.  *NumPixels* can be single
+    value or a list.  If *numPixels* is a single value it is a non-negative
+    value indicating the height the menu. The value may have any of the
+    forms accept able to **Tk_GetPixels**, such as "200" or "2.4i".  If
+    *numPixels* is a 2 element list, then this sets the minimum and maximum
+    limits for the height of the menu. The menu will be at least the
+    minimum height and less than or equal to the maximum. If *numPixels* is
+    a 3 element list, then this specifies minimum, maximum, and nominal
+    height or the menu.  The nominal size overrides the calculated height
+    of the menu.  If *numPixels* is "", then the height of the menu is
+    calculated based on all the menu items.  The default is "".
 
   **-iconvariable** *varName* 
 
@@ -352,21 +381,35 @@ command.  The following operations are available for combomenu widgets:
 
   **-itemborderwidth** *numPixels* 
 
-    Specifies the borderwidth of items in the menu.  The default is "1".
+    Specifies the borderwidth of menu items in the menu.  *NumPixels* is a
+    non-negative value indicating the width of the 3-D border drawn around
+    the item. The value may have any of the forms acceptable to
+    **Tk_GetPixels**.  The default is "0". 
 
   **-postcommand** *string* 
 
-    Specifies the command to invoke when the menu is posted.  This
-    is command is invoked before the menu is displayed.
-    The default is "".
+    Specifies a TCL command to invoked when the menu is posted.  The
+    command will be invoked before the menu is displayed on screen.  This
+    is useful for setting the state of options that may or may not be
+    valid. If *string* is "", no command is invoked.  The default is "".
 
   **-radiobuttoncolor** *colorName*
 
+    Specifies the color of the indicator circle for radiobutton items. The
+    indicator circle is displayed when the radiobutton item is
+    selected. The default is "red3".
+
   **-radiobuttonfillcolor** *colorName*
 
-  **-radiobuttonoutlinecolor** *colorName*
+    Specifies the fill color of the circle for radiobutton items. 
+    The default is "white".
 
   **-radiobuttonsize** *numPixels*
+
+    Specifies the size of the circle for checkbutton items.  *NumPixels* is
+    a non-negative value indicating the width and height of the radiobutton
+    circle. The value may have any of the forms accept able to
+    Tk_GetPixels.  The default is "12".
 
   **-relief** *relief* 
 
@@ -376,6 +419,29 @@ command.  The following operations are available for combomenu widgets:
 
   **-restrictwidth** *option* 
 
+     Specifies how the menu width should be restricted according to the
+     parent widget that posted it. *Option* can be "min", "max", "both", or
+     "none".
+
+     max
+
+       The menu width will be the maximum of the calculated menu width and
+       the parent widget width.
+
+     min
+
+       The menu width will be the minimum of the calculated menu width and
+       the parent widget width.
+
+     both
+
+       The menu width will be the between of the calculated menu width and
+       the parent widget width.
+
+     none
+
+       Don't restrict the menu width. This is the default.
+       
   **-takefocus** *bool*
 
      Provides information used when moving the focus from window to window
@@ -393,14 +459,22 @@ command.  The following operations are available for combomenu widgets:
 
   **-unpostcommand** *string*
 
-     Specifies the command to invoke when the menu is unposted.  The
-     default is "".
+     Specifies the TCL command to invoke when the menu is unposted.  If
+     *string* is "", no command is invoked. The default is "".
 
   **-width** *numPixels*
 
-     Specifies the width in the menu.  If *numPixels* is 0, the width of
-     the menu is computed from the size of its items. *NumPixels* must be a
-     valid screen distance, such as "2" or "1.2i".  The default is "0".
+    Specifies the width in the *combomenu*.  *NumPixels* can be single
+    value or a list.  If *numPixels* is a single value it is a non-negative
+    value indicating the width the menu. The value may have any of the
+    forms accept able to **Tk_GetPixels**, such as "200" or "2.4i".  If
+    *numPixels* is a 2 element list, then this sets the minimum and maximum
+    limits for the width of the menu. The menu will be at least the
+    minimum width and less than or equal to the maximum. If *numPixels* is
+    a 3 element list, then this specifies minimum, maximum, and nominal
+    width or the menu.  The nominal size overrides the calculated width
+    of the menu.  If *numPixels* is "", then the width of the menu is
+    calculated based on all the menu items.  The default is "".
 
   **-xscrollbar** *widget*
 
@@ -774,8 +848,7 @@ command.  The following operations are available for combomenu widgets:
   *option*. *Option* may have any of the values accepted by the
   **sort configure** operation. They are described below.
 
-*pathName* **sort configure** ?\ *option*\ ? ?\ *value*? ?\ *option value
-  ...*\ ?
+*pathName* **sort configure** ?\ *option*\ ? ?\ *value*? ?\ *option value ...*\ ?
 
   Queries or modifies the sort configuration options.  If no *option* is
   specified, returns a list describing all the available options for
