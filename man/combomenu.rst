@@ -204,10 +204,11 @@ command.  The following operations are available for combomenu widgets:
 
 *pathName* **activate** *item* 
  
-  Redisplays *item* using its active colors.  This typically is used by
-  widget bindings to highlight menu items when the pointer is moved over
-  items in the menu. Any previously active item is deactivated.  *Item* may
-  be a label, index, or tag, but may not represent more than one menu item.
+  Redisplays *item* using its active colors and relief.  This typically is
+  used by widget bindings to highlight menu items when the pointer is moved
+  over items in the menu. Any previously active item is deactivated.
+  *Item* may be a label, index, or tag, but may not represent more than one
+  menu item.
 
 *pathName* **add** ?\ *option* *value* ...?
  
@@ -232,20 +233,20 @@ command.  The following operations are available for combomenu widgets:
 
 *pathName* **configure** ?\ *option*\ ? ?\ *value*? ?\ *option value ...*\ ?
 
-  Query or modify the configuration options of the widget.  If no *option* is
-  specified, returns a list describing all the available options for
-  *pathName* (see **Tk_ConfigureInfo** for information on the format of this
-  list).  If *option* is specified with no *value*, then the command returns a
-  list describing the one named option (this list will be identical to the
-  corresponding sublist of the value returned if no *option* is specified).
-  If one or more *option-value* pairs are specified, then the command
-  modifies the given widget option(s) to have the given value(s); in this case
-  the command returns an empty string.  *Option* and *value* are described
-  below.
+  Query or modify the configuration options of the widget.  If no *option*
+  is specified, returns a list describing all the available options for
+  *pathName* (see **Tk_ConfigureInfo** for information on the format of
+  this list).  If *option* is specified with no *value*, then the command
+  returns a list describing the one named option (this list will be
+  identical to the corresponding sublist of the value returned if no
+  *option* is specified).  If one or more *option-value* pairs are
+  specified, then the command modifies the given widget option(s) to have
+  the given value(s); in this case the command returns an empty string.
+  *Option* and *value* are described below.
 
-  Widget configuration options may be set either by the **configure** 
-  operation or the Tk **option** command.  The resource class
-  is "BltCombomenu".  The resource name is the name of the widget::
+  Widget configuration options may be set either by the **configure**
+  operation or the Tk **option** command.  The resource class is
+  "BltCombomenu".  The resource name is the name of the widget::
 
     option add *BltCombomenu.anchor n
     option add *BltCombomenu.Anchor e

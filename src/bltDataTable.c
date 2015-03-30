@@ -464,32 +464,31 @@ GrowColumns(Table *tablePtr, long extra)
 static int
 GrowRows(Table *tablePtr, long extra)
 {
-    if (extra > 0) {
-	long oldRows, newRows;
-	Value **vpp, **vpend;
-
-	oldRows = NumRowsAllocated(tablePtr);
-	if (!GrowHeaders(&tablePtr->corePtr->rows, extra)) {
-	    return FALSE;
-	}
-	newRows = NumRowsAllocated(tablePtr);
-
-	/* Resize all the vectors. Leave the empty vectors alone.  They are
-	 * allocated when data is added to them. */
-	for (vpp = tablePtr->corePtr->data, 
-		 vpend = vpp + NumColumnsAllocated(tablePtr); 
-	     vpp < vpend; vpp++) {
-	    if (*vpp != NULL) {
-		Value *vector, *valuePtr, *vend;
-		
-		vector = Blt_Realloc(*vpp, newRows * sizeof(Value));
-		for (valuePtr = vector + oldRows, vend = vector + newRows; 
-		     valuePtr < vend; valuePtr++) {
-		    valuePtr->string = NULL;
-		}
-		*vpp = vector;
-	    }
-	}
+    long oldRows, newRows;
+    Value **vpp, **vpend;
+    
+    assert(extra > 0);
+    oldRows = NumRowsAllocated(tablePtr);
+    if (!GrowHeaders(&tablePtr->corePtr->rows, extra)) {
+        return FALSE;
+    }
+    newRows = NumRowsAllocated(tablePtr);
+    
+    /* Resize all the vectors. Leave the empty vectors alone.  They are
+     * allocated when data is added to them. */
+    for (vpp = tablePtr->corePtr->data,
+             vpend = vpp + NumColumnsAllocated(tablePtr); 
+         vpp < vpend; vpp++) {
+        if (*vpp != NULL) {
+            Value *vector, *valuePtr, *vend;
+            
+            vector = Blt_Realloc(*vpp, newRows * sizeof(Value));
+            for (valuePtr = vector + oldRows, vend = vector + newRows; 
+                 valuePtr < vend; valuePtr++) {
+                valuePtr->string = NULL;
+            }
+            *vpp = vector;
+        }
     }
     return TRUE;
 }
@@ -538,12 +537,9 @@ ExtendRows(Table *tablePtr, long n, Blt_Chain chain)
 
     numFree = Blt_Chain_GetLength(tablePtr->corePtr->rows.freeList);
     if (n > numFree) {
-	long needed;
-
-	needed = n - numFree;
-	if (!GrowRows(tablePtr, needed)) {
-	    return FALSE;
-	}
+        if (!GrowRows(tablePtr, n - numFree)) {
+            return FALSE;
+        }
     }
     ExtendHeaders(&tablePtr->corePtr->rows, n, chain);
     tablePtr->flags |= TABLE_KEYS_DIRTY;
