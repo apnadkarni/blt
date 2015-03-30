@@ -480,12 +480,12 @@ GrowRows(Table *tablePtr, long extra)
 		 vpend = vpp + NumColumnsAllocated(tablePtr); 
 	     vpp < vpend; vpp++) {
 	    if (*vpp != NULL) {
-		Value *vector, *vp, *vend;
+		Value *vector, *valuePtr, *vend;
 		
 		vector = Blt_Realloc(*vpp, newRows * sizeof(Value));
-		for (vp = vector + oldRows, vend = vector + newRows; 
-		     vp < vend; vp++) {
-		    vp->string = NULL;
+		for (valuePtr = vector + oldRows, vend = vector + newRows; 
+		     valuePtr < vend; valuePtr++) {
+		    valuePtr->string = NULL;
 		}
 		*vpp = vector;
 	    }
@@ -2058,7 +2058,6 @@ typedef struct {
 
 static TableSortData sortData;
 
-
 static int
 CompareDictionaryStrings(ClientData clientData, Column *colPtr, Row *rowPtr1, 
                          Row *rowPtr2)
@@ -2087,7 +2086,10 @@ CompareDictionaryStrings(ClientData clientData, Column *colPtr, Row *rowPtr1,
     } else if (IsEmpty(valuePtr2)) {
 	return -1;
     }
-    return Blt_DictionaryCompare(valuePtr1->string, valuePtr2->string);
+    assert(valuePtr1 != NULL);
+    assert(valuePtr2 != NULL);
+    return Blt_DictionaryCompare(GetValueString(valuePtr1),
+                                 GetValueString(valuePtr2));
 }
 
 static int
@@ -2121,8 +2123,8 @@ CompareFrequencyRows(ClientData clientData, Column *colPtr, Row *rowPtr1,
 	return -1;
     }
     /* FIXME: Frequency only works for string types. */
-    hPtr1 = Blt_FindHashEntry(&sortData.freqTable, valuePtr1->string);
-    hPtr2 = Blt_FindHashEntry(&sortData.freqTable, valuePtr2->string);
+    hPtr1 = Blt_FindHashEntry(&sortData.freqTable, GetValueString(valuePtr1));
+    hPtr2 = Blt_FindHashEntry(&sortData.freqTable, GetValueString(valuePtr2));
     f1 = (long)Blt_GetHashValue(hPtr1);
     f2 = (long)Blt_GetHashValue(hPtr2);
     return f1 - f2;
@@ -2156,7 +2158,7 @@ CompareAsciiStrings(ClientData clientData, Column *colPtr, Row *rowPtr1,
     } else if (IsEmpty(valuePtr2)) {
 	return -1;
     }
-    return strcmp(valuePtr1->string, valuePtr2->string);
+    return strcmp(GetValueString(valuePtr1), GetValueString(valuePtr2));
 }
 
 static int
@@ -2187,7 +2189,7 @@ CompareAsciiStringsIgnoreCase(ClientData clientData, Column *colPtr,
     } else if (IsEmpty(valuePtr2)) {
 	return -1;
     }
-    return strcasecmp(valuePtr1->string, valuePtr2->string);
+    return strcasecmp(GetValueString(valuePtr1), GetValueString(valuePtr2));
 }
 
 static int

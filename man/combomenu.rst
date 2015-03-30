@@ -204,10 +204,10 @@ command.  The following operations are available for combomenu widgets:
 
 *pathName* **activate** *item* 
  
-  Redisplayes *item* using its active colors.  This normally is used by
-  widget bindings to highlight menu items as the pointer is moved over the
-  menu. Any previously active item is deactivated.  *Item* may be a label,
-  index, or tag, but may not represent more than one menu item.
+  Redisplays *item* using its active colors.  This typically is used by
+  widget bindings to highlight menu items when the pointer is moved over
+  items in the menu. Any previously active item is deactivated.  *Item* may
+  be a label, index, or tag, but may not represent more than one menu item.
 
 *pathName* **add** ?\ *option* *value* ...?
  

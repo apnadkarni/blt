@@ -45,12 +45,11 @@ namespace eval blt {
 
 # -----------------------------------------------------------------------------
 
-# Must set focus when mouse enters a menu, in order to allow
-# mixed-mode processing using both the mouse and the keyboard.
-# Don't set the focus if the event comes from a grab release,
-# though:  such an event can happen after as part of unposting
-# a cascaded chain of menus, after the focus has already been
-# restored to wherever it was before menu selection started.
+# Must set focus when mouse enters a menu, in order to allow mixed-mode
+# processing using both the mouse and the keyboard.  Don't set the focus if
+# the event comes from a grab release, though: such an event can happen
+# after as part of unposting a cascaded chain of menus, after the focus has
+# already been restored to wherever it was before menu selection started.
 
 bind BltComboMenu <Enter> { 
     blt::ComboMenu::trace "blt::ComboMenu %# <Enter> %W"
@@ -61,7 +60,7 @@ bind BltComboMenu <Enter> {
 bind BltComboMenu <Leave> { 
     blt::ComboMenu::trace "blt::ComboMenu %# %W <Leave> %s"
     if { %s == 0 } {
-	#%W activate none 
+	#%W deactivate
     }
 }
 
@@ -83,7 +82,6 @@ bind BltComboMenu <ButtonRelease-1> {
 bind BltComboMenu <B1-Motion> { 
     blt::ComboMenu::MotionEvent %W %X %Y
 }
-
 
 bind BltComboMenu <B1-Enter> {
     after cancel $blt::ComboMenu::_private(afterId)
@@ -137,11 +135,11 @@ bind BltComboMenu <KeyRelease> {
 
 # KeyPress-Return -- 
 #
-#	If the menu item selected is a cascade menu, then post the cascade.
-#	Otherwise tell the combobutton or comboentry that we've selected 
-#	something by simulating a button release.  This will unpost all the
-#	posted menus. Set the root coordinates of the event to be offscreen 
-#	so that we don't inadvertantly lie over the arrow of the button.
+#   If the menu item selected is a cascade menu, then post the cascade.
+#   Otherwise tell the combobutton or comboentry that we've selected
+#   something by simulating a button release.  This will unpost all the
+#   posted menus. Set the root coordinates of the event to be offscreen so
+#   that we don't inadvertantly lie over the arrow of the button.
 #
 bind BltComboMenu <KeyPress-Return> {
     blt::ComboMenu::SelectItem
@@ -320,11 +318,11 @@ proc ::blt::ComboMenu::FindCascades { menu } {
 #
 # ButtonPressEvent --
 #
-#	Process a button press event on the given menu.  If the
-#	the button press did not occur over a menu (cascade or not),
-#	this means the user is canceling the posting of all menus.
-#	Otherwise ignore it (we select menu items on button release
-#	events). The location is in root coordinates.
+#	Process a button press event on the given menu.  If the the button
+#	press did not occur over a menu (cascade or not), this means the
+#	user is canceling the posting of all menus.  Otherwise ignore it
+#	(we select menu items on button release events). The location is in
+#	root coordinates.
 #
 proc ::blt::ComboMenu::ButtonPressEvent { menu x y } {
     variable _private
@@ -349,14 +347,14 @@ proc ::blt::ComboMenu::ButtonPressEvent { menu x y } {
 #
 # ButtonReleaseEvent --
 #
-#	Process a button release event on the given menu.  Check if the
-#	the button release occurred over a cascade or the first menu.
-#	Cascade menus are stacked in reverse order of their posting.
-#	This is so that if menus overlap (a cascade menu is on top of
-#	a previous menu) we will find the topmost cascade. 
+#	Process a button release event on the given menu.  Check if the the
+#	button release occurred over a cascade or the first menu.  Cascade
+#	menus are stacked in reverse order of their posting.  This is so
+#	that if menus overlap (a cascade menu is on top of a previous menu)
+#	we will find the topmost cascade.
 #
-#	Once we find a menu, trim the cascade stack removing cascade
-#	menus that are no longer available. 
+#	Once we find a menu, trim the cascade stack removing cascade menus
+#	that are no longer available.
 #
 proc ::blt::ComboMenu::ButtonReleaseEvent { menu x y } {
     variable _private
@@ -411,8 +409,8 @@ proc ::blt::ComboMenu::ButtonReleaseEvent { menu x y } {
 	# This isn't the first time the menu was posted.  That happens when
 	# thea menubutton is pressed, the menu is posted, and the grab is
 	# set on the menu.  This routine gets called on the button release.
-	# Any further button releases should unpost the menu.
-	# Just not on the first release.
+	# Any further button releases should unpost the menu.  Just not on
+	# the first release.
 	$menu unpost 
 	blt::grab pop $menu
     }
@@ -422,14 +420,14 @@ proc ::blt::ComboMenu::ButtonReleaseEvent { menu x y } {
 #
 # MotionEvent --
 #
-#	Process a motion event on the given menu.  Check if the
-#	the button release occurred over a cascade or the first menu.
-#	Cascade menus are stacked in reverse order of their posting.
-#	This is so that if menus overlap (a cascade menu is on top of
-#	a previous menu) we will find the topmost cascade. 
+#	Process a motion event on the given menu.  Check if the the button
+#	release occurred over a cascade or the first menu.  Cascade menus
+#	are stacked in reverse order of their posting.  This is so that if
+#	menus overlap (a cascade menu is on top of a previous menu) we will
+#	find the topmost cascade.
 #
-#	Once we find a menu, trim the cascade stack removing cascade
-#	menus that are no longer available. 
+#	Once we find a menu, trim the cascade stack removing cascade menus
+#	that are no longer available.
 #
 proc ::blt::ComboMenu::MotionEvent { menu x y } {
     variable _private

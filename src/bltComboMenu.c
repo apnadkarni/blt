@@ -1499,8 +1499,9 @@ SortItems(ComboMenu *comboPtr)
  * ActivateItem --
  *
  *      Marks the designated item as active.  The item is redrawn with its
- *      active colors.  The previously active item is deactivated.  If the new
- *      item is NULL, then this means that no new item is to be activated.
+ *      active colors.  The previously active item is deactivated.  If the
+ *      new item is NULL, then this means that no new item is to be
+ *      activated.
  *
  * Results:
  *      None.
@@ -1531,8 +1532,8 @@ ActivateItem(ComboMenu *comboPtr, Item *itemPtr)
  * GetBoundedWidth --
  *
  *      Bounds a given width value to the limits described in the limit
- *      structure.  The initial starting value may be overridden by the nominal
- *      value in the limits.
+ *      structure.  The initial starting value may be overridden by the
+ *      nominal value in the limits.
  *
  * Results:
  *      Returns the constrained value.
@@ -5049,6 +5050,38 @@ CgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
 /*
  *---------------------------------------------------------------------------
  *
+ * DeactivateOp --
+ *
+ * Results:
+ *      Standard TCL result.
+ *
+ * Side effects:
+ *      Commands may get excecuted; variables may get set; sub-menus may
+ *      get posted.
+ *
+ *      .cm deactivate
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+DeactivateOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+             Tcl_Obj *const *objv)
+{
+    ComboMenu *comboPtr = clientData;
+    Item *itemPtr;
+
+    itemPtr = comboPtr->activePtr;
+    if (itemPtr != NULL) {
+        /* Deactivate any active item. */
+        ActivateItem(comboPtr, NULL);
+        EventuallyRedrawItem(itemPtr);
+    }
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
  * DeleteOp --
  *
  * Results:
@@ -6911,6 +6944,7 @@ static Blt_OpSpec menuOps[] =
     {"bbox",        1, BboxOp,        3, 3, "item",},
     {"cget",        2, CgetOp,        3, 3, "option",},
     {"configure",   2, ConfigureOp,   2, 0, "?option value?...",},
+    {"deactivate",  3, DeactivateOp,  2, 2, "",},
     {"delete",      3, DeleteOp,      2, 0, "items...",},
     {"deselect",    3, SelectOp,      3, 3, "item",},
     {"exists",      1, ExistsOp,      3, 3, "item",},

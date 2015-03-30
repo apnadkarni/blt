@@ -284,10 +284,10 @@ typedef struct {
 } FontAlias;
 
 static FontAlias xlfdFontAliases[] = {
-    { "math",		{"courier"}},
-    { "serif",		{"times"}},
-    { "sans serif",	{ "helvetica" }},
-    { "monospace",	{ "courier" }},
+    { "math",		{ "arial", "courier"}},
+    { "serif",		{ "bitstream vera serif", "times" }},
+    { "sans serif",	{ "bitstream vera sans", "helvetica" }},
+    { "monospace",	{ "bitstream vera sans mono", "courier" }},
     { NULL }
 };
 
