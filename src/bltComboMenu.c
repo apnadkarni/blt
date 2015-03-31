@@ -181,7 +181,6 @@ static const char emptyString[] = "";
 #define DEF_CHECKBUTTON_COLOR           STD_INDICATOR_COLOR
 #define DEF_CHECKBUTTON_SIZE            "12"
 #define DEF_RADIOBUTTON_FILL_COLOR      RGB_WHITE
-#define DEF_RADIOBUTTON_OUTLINE_COLOR   RGB_GREY50
 #define DEF_RADIOBUTTON_COLOR           STD_INDICATOR_COLOR
 #define DEF_RADIOBUTTON_SIZE            "12"
 
@@ -217,10 +216,6 @@ static const char emptyString[] = "";
 #define DEF_STYLE_DISABLED_FG       DISABLED_FOREGROUND
 #define DEF_STYLE_FG                RGB_BLACK
 #define DEF_STYLE_FONT              STD_FONT_NORMAL
-#define DEF_STYLE_IND_FILL_COLOR    (char *)NULL
-#define DEF_STYLE_IND_OUTLINE_COLOR (char *)NULL
-#define DEF_STYLE_IND_COLOR         (char *)NULL
-#define DEF_STYLE_IND_SIZE          "12"
 #define DEF_STYLE_RELIEF            "flat"
 #define DISABLED_BACKGROUND         RGB_WHITE
 #define DISABLED_FOREGROUND         RGB_GREY70
@@ -332,7 +327,8 @@ typedef struct {
     int borderWidth;
     int relief;
     int activeRelief;
-    int reqIndWidth;
+    int radioButtonSize;
+    int checkButtonSize;
 
     Blt_Bg normalBg;
     Blt_Bg activeBg;
@@ -351,9 +347,11 @@ typedef struct {
     /* Radiobuttons, checkbuttons, and cascades. */
     Blt_Picture checkbutton[3];
 
-    XColor *indOutlineColor;
-    XColor *indFillColor;
-    XColor *indColor;
+    XColor *radioButtonFillColor;
+    XColor *radioButtonColor;
+    XColor *checkButtonOutlineColor;
+    XColor *checkButtonFillColor;
+    XColor *checkButtonColor;
     
     GC activeAccelGC;
     GC disabledAccelGC;
@@ -387,6 +385,18 @@ static Blt_ConfigSpec styleConfigSpecs[] =
     {BLT_CONFIG_PIXELS_NNEG, "-borderwidth", (char *)NULL, (char *)NULL,
 	DEF_STYLE_BORDERWIDTH, Blt_Offset(Style, borderWidth),
 	BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_COLOR, "-checkbuttonfillcolor", (char *)NULL, (char *)NULL, 
+	DEF_CHECKBUTTON_FILL_COLOR, Blt_Offset(Style, checkButtonFillColor), 
+	BLT_CONFIG_NULL_OK},
+    {BLT_CONFIG_COLOR, "-checkbuttonlinecolor", (char *)NULL, (char *)NULL, 
+	DEF_CHECKBUTTON_OUTLINE_COLOR,
+        Blt_Offset(Style, checkButtonOutlineColor), BLT_CONFIG_NULL_OK},
+    {BLT_CONFIG_COLOR, "-checkbuttoncolor", (char *)NULL, (char *)NULL, 
+	DEF_CHECKBUTTON_COLOR, Blt_Offset(Style, checkButtonColor), 
+	BLT_CONFIG_NULL_OK},
+    {BLT_CONFIG_PIXELS_NNEG, "-checkbuttonsize", (char *)NULL, (char *)NULL, 
+        DEF_CHECKBUTTON_SIZE, Blt_Offset(Style, checkButtonSize), 
+	BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_COLOR, "-disabledacceleratorforeground", (char *)NULL, 
 	(char *)NULL, DEF_STYLE_DISABLED_ACCEL_FG, 
 	Blt_Offset(Style, disabledAccelFg), 0},
@@ -399,17 +409,14 @@ static Blt_ConfigSpec styleConfigSpecs[] =
 	Blt_Offset(Style, textFont), 0},
     {BLT_CONFIG_COLOR, "-foreground", (char *)NULL, (char *)NULL, DEF_STYLE_FG, 
 	Blt_Offset(Style, normalTextFg), 0},
-    {BLT_CONFIG_COLOR, "-indicatorfillcolor", (char *)NULL, (char *)NULL, 
-	DEF_STYLE_IND_FILL_COLOR, Blt_Offset(Style, indFillColor), 
+    {BLT_CONFIG_COLOR, "-radiobuttonfillcolor", (char *)NULL, (char *)NULL, 
+	DEF_RADIOBUTTON_FILL_COLOR, Blt_Offset(Style, radioButtonFillColor), 
 	BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_COLOR, "-indicatoroutlinecolor", (char *)NULL, (char *)NULL, 
-	DEF_STYLE_IND_OUTLINE_COLOR, Blt_Offset(Style, indOutlineColor), 
+    {BLT_CONFIG_COLOR, "-radiobuttoncolor", (char *)NULL, (char *)NULL, 
+        DEF_RADIOBUTTON_COLOR, Blt_Offset(Style, radioButtonColor), 
 	BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_COLOR, "-indicatorcolor", (char *)NULL, (char *)NULL, 
-	DEF_STYLE_IND_COLOR, Blt_Offset(Style, indColor), 
-	BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_PIXELS_NNEG, "-indicatorsize", (char *)NULL, (char *)NULL, 
-	DEF_STYLE_IND_SIZE, Blt_Offset(Style, reqIndWidth), 
+    {BLT_CONFIG_PIXELS_NNEG, "-radiobuttonsize", (char *)NULL, (char *)NULL, 
+        DEF_RADIOBUTTON_SIZE, Blt_Offset(Style, radioButtonSize), 
 	BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_RELIEF, "-relief", (char *)NULL, (char *)NULL, 
 	DEF_STYLE_RELIEF, Blt_Offset(Style, relief), 
@@ -438,19 +445,22 @@ typedef struct {
  */
 typedef struct  {
     ComboMenu *comboPtr;                /* Combomenu containing this item. */
-    long index;                         /* Index of the item (numbered from 0)*/
-    int worldX, worldY;                 /* Upper left world-coordinate of item
-					 * in menu. */
+    long index;                         /* Index of the item (numbered from
+                                           0)*/
+    int worldX, worldY;                 /* Upper left world-coordinate of
+					 * item in menu. */
     Style *stylePtr;                    /* Style used by this item. */
     unsigned int flags;                 /* Contains various bits of
-					 * information about the item, such as
-					 * type, state. */
+					 * information about the item, such
+					 * as type, state. */
     Blt_ChainLink link;
     int relief;
     int underline;                      /* Underlined character. */
-    int indent;                         /* # of pixels to indent the icon. */
-    Icon image;                         /* If non-NULL, image to be displayed
-					 * instead of label text. */
+    int indent;                         /* # of pixels to indent the
+                                         * icon. */
+    Icon image;                         /* If non-NULL, image to be
+					 * displayed instead of label
+					 * text. */
     Icon icon;                          /* Button, RadioButton, and
 					 * CheckButton entries. */
     const char *text;                   /* Text label to be displayed. */
@@ -459,10 +469,10 @@ typedef struct  {
 					 * clicked. */
     Tcl_Obj *dataObjPtr;                /* User-data associated with this
 					 * item. */
-    Tcl_Obj *variableObjPtr;            /* Name of TCL variable.  If non-NULL,
-					 * this variable will be set to the
-					 * value string of the selected
-					 * item. */
+    Tcl_Obj *variableObjPtr;            /* Name of TCL variable.  If
+					 * non-NULL, this variable will be
+					 * set to the value string of the
+					 * selected item. */
     Tcl_Obj *valueObjPtr;               /* Radiobutton value. */
 
     /* Checkbutton on and off values. */
@@ -780,18 +790,15 @@ static Blt_ConfigSpec comboConfigSpecs[] =
     {BLT_CONFIG_COLOR, "-checkbuttoncolor", (char *)NULL, (char *)NULL, 
 	DEF_CHECKBUTTON_COLOR, Blt_Offset(ComboMenu, checkButtonColor),0},
     {BLT_CONFIG_PIXELS_NNEG, "-checkbuttonsize", (char *)NULL, (char *)NULL, 
-	DEF_CHECKBUTTON_SIZE, Blt_Offset(ComboMenu, checkButtonReqSize), 
+        DEF_CHECKBUTTON_SIZE, Blt_Offset(ComboMenu, checkButtonReqSize), 
 	BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_COLOR, "-radiobuttonfillcolor", (char *)NULL, (char *)NULL, 
 	DEF_RADIOBUTTON_FILL_COLOR, 
 	Blt_Offset(ComboMenu, radioButtonFillColor), BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_COLOR, "-radiobuttonoutlinecolor", (char *)NULL, (char *)NULL, 
-	DEF_RADIOBUTTON_OUTLINE_COLOR, 
-	Blt_Offset(ComboMenu, radioButtonOutlineColor), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_COLOR, "-radiobuttoncolor", (char *)NULL, (char *)NULL, 
 	DEF_RADIOBUTTON_COLOR, Blt_Offset(ComboMenu, radioButtonColor),0},
     {BLT_CONFIG_PIXELS_NNEG, "-radiobuttonsize", (char *)NULL, (char *)NULL, 
-	DEF_RADIOBUTTON_SIZE, Blt_Offset(ComboMenu, radioButtonReqSize), 
+        DEF_RADIOBUTTON_SIZE, Blt_Offset(ComboMenu, radioButtonReqSize), 
 	BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_END, (char *)NULL, (char *)NULL, (char *)NULL, (char *)NULL, 
 	0, 0}
@@ -1672,7 +1679,10 @@ FixMenuCoords(ComboMenu *comboPtr, int *xPtr, int *yPtr)
 static void
 ComputeItemGeometry(ComboMenu *comboPtr, Item *itemPtr)
 {
+    Style *stylePtr;                    /* Style used by this item. */
+
     itemPtr->flags &= ~ITEM_GEOMETRY;
+    stylePtr = itemPtr->stylePtr;
     
     /* Determine the height of the item.  It's the maximum height of all
      * it's components: left gadget (radiobutton or checkbutton), icon,
@@ -1690,8 +1700,8 @@ ComputeItemGeometry(ComboMenu *comboPtr, Item *itemPtr)
 	} else if (itemPtr->text != emptyString) {
 	    unsigned int iw, ih;
 	    
-	    Blt_GetTextExtents(itemPtr->stylePtr->textFont, 0, itemPtr->text,
-		 -1, &iw, &ih);
+	    Blt_GetTextExtents(stylePtr->textFont, 0, itemPtr->text, -1,
+                        &iw, &ih);
 	    itemPtr->textWidth = iw;
 	    itemPtr->textHeight = ih;
 	}
@@ -1700,19 +1710,20 @@ ComputeItemGeometry(ComboMenu *comboPtr, Item *itemPtr)
 	    Blt_FontMetrics fm;
 	    size_t size, reqSize;
 
-	    Blt_Font_GetMetrics(itemPtr->stylePtr->textFont, &fm);
+	    Blt_Font_GetMetrics(stylePtr->textFont, &fm);
 	    size = fm.linespace;
-	    reqSize = (itemPtr->flags & ITEM_RADIOBUTTON) ?
-		    comboPtr->radioButtonReqSize : comboPtr->checkButtonReqSize;
-	    if (reqSize > 0) {
+            if (itemPtr->flags & ITEM_RADIOBUTTON) {
+                reqSize = (stylePtr->radioButtonSize > 0) ?
+                    stylePtr->radioButtonSize : comboPtr->radioButtonReqSize;
+	    } else {
+                reqSize = (stylePtr->checkButtonSize > 0) ?
+                    stylePtr->checkButtonSize : comboPtr->checkButtonReqSize;
+            }
+            if (reqSize > 0) {
 		size = reqSize;
-	    }
-	    if (itemPtr->stylePtr->reqIndWidth > 0) {
-		size = itemPtr->stylePtr->reqIndWidth;
-	    }
+	    } 
 	    itemPtr->leftIndWidth = itemPtr->leftIndHeight = size;
-	}
-
+        }
 	if (itemPtr->icon != NULL) {
 	    itemPtr->iconWidth = IconWidth(itemPtr->icon);
 	    itemPtr->iconHeight = IconHeight(itemPtr->icon);
@@ -1724,24 +1735,24 @@ ComputeItemGeometry(ComboMenu *comboPtr, Item *itemPtr)
 	    unsigned int tw, th, h;
 	    Blt_FontMetrics fm;
 
-	    Blt_Font_GetMetrics(itemPtr->stylePtr->textFont, &fm);
+	    Blt_Font_GetMetrics(stylePtr->textFont, &fm);
 	    h = fm.linespace;
-	    Blt_GetTextExtents(itemPtr->stylePtr->textFont, 0, itemPtr->text,
-		 -1, &tw, &th);
+	    Blt_GetTextExtents(stylePtr->textFont, 0, itemPtr->text, -1,
+                &tw, &th);
 	    itemPtr->textWidth = tw;
 	    itemPtr->textHeight = MAX(th, h);
 	}
 	if (itemPtr->flags & ITEM_CASCADE) {
 	    Blt_FontMetrics fm;
 
-	    Blt_Font_GetMetrics(itemPtr->stylePtr->textFont, &fm);
+	    Blt_Font_GetMetrics(stylePtr->textFont, &fm);
 	    itemPtr->rightIndWidth = fm.ascent;
 	    itemPtr->rightIndHeight = fm.ascent;;
 	} else if (itemPtr->accel != NULL) {
 	    unsigned int tw, th;
 	    
-	    Blt_GetTextExtents(itemPtr->stylePtr->accelFont, 0, itemPtr->accel,
-		 -1, &tw, &th);
+	    Blt_GetTextExtents(stylePtr->accelFont, 0, itemPtr->accel, -1,
+                &tw, &th);
 	    itemPtr->rightIndWidth = tw;
 	    itemPtr->rightIndHeight = th;
 	}
@@ -2915,10 +2926,10 @@ FirstTaggedItem(ItemIterator *iterPtr)
  *
  * GetItemFromObj --
  *
- *      Get the item associated the given index, tag, or text.  This routine
- *      is used when you want only one item.  It's an error if more than one
- *      item is specified (e.g. "all" tag).  It's also an error if the tag is
- *      empty (no items are currently tagged).
+ *      Get the item associated the given index, tag, or text.  This
+ *      routine is used when you want only one item.  It's an error if more
+ *      than one item is specified (e.g. "all" tag).  It's also an error if
+ *      the tag is empty (no items are currently tagged).
  *
  *---------------------------------------------------------------------------
  */
@@ -3050,8 +3061,8 @@ GetItemByText(ComboMenu *comboPtr, const char *string)
  *
  * GetItemIterator --
  *
- *      Converts a string representing a item index into an item pointer.  The
- *      index may be in one of the following forms:
+ *      Converts a string representing a item index into an item pointer.
+ *      The index may be in one of the following forms:
  *
  *       number         Item at index in the list of items.
  *       @x,y           Item closest to the specified X-Y screen coordinates.
@@ -4646,8 +4657,8 @@ PostAlignSwitchProc(ClientData clientData, Tcl_Interp *interp,
  *
  * PostPopupSwitchProc --
  *
- *      Converts string into x and y coordinates.  Indicates that the
- *      menu is a popup and will be popped at the given x, y coordinate.
+ *      Converts string into x and y coordinates.  Indicates that the menu
+ *      is a popup and will be popped at the given x, y coordinate.
  *
  * Results:
  *      If the string is successfully converted, TCL_OK is returned.
@@ -4679,8 +4690,8 @@ PostPopupSwitchProc(ClientData clientData, Tcl_Interp *interp,
  *
  * PostCascadeSwitchProc --
  *
- *      Converts string into x and y coordinates.  Indicates that the
- *      menu is a popup and will be popped at the given x, y coordinate.
+ *      Converts string into x and y coordinates.  Indicates that the menu
+ *      is a popup and will be popped at the given x, y coordinate.
  *
  * Results:
  *      If the string is successfully converted, TCL_OK is returned.
@@ -7081,8 +7092,8 @@ ComboMenuCmd(
      * First time in this interpreter, invoke a procedure to initialize
      * various bindings on the combomenu widget.  If the procedure doesn't
      * already exist, source it from "$blt_library/combomenu.tcl".  We
-     * deferred sourcing the file until now so that the variable $blt_library
-     * could be set within a script.
+     * deferred sourcing the file until now so that the variable
+     * $blt_library could be set within a script.
      */
     if (!Blt_CommandExists(interp, "::blt::ComboMenu::PostCascade")) {
 	if (Tcl_GlobalEval(interp, 
@@ -7166,8 +7177,8 @@ ComboViewCmd(
      * First time in this interpreter, invoke a procedure to initialize
      * various bindings on the combomenu widget.  If the procedure doesn't
      * already exist, source it from "$blt_library/combomenu.tcl".  We
-     * deferred sourcing the file until now so that the variable $blt_library
-     * could be set within a script.
+     * deferred sourcing the file until now so that the variable
+     * $blt_library could be set within a script.
      */
     if (!Blt_CommandExists(interp, "::blt::ComboView::PostMenu")) {
 	if (Tcl_GlobalEval(interp, 
@@ -7266,12 +7277,12 @@ DrawCheckButton(Item *itemPtr, Drawable drawable, int x, int y, int w, int h)
     comboPtr = itemPtr->comboPtr;
     stylePtr = itemPtr->stylePtr;
     on = (itemPtr->flags & ITEM_SELECTED);
-    fillColor = (stylePtr->indFillColor) 
-	? stylePtr->indFillColor : comboPtr->checkButtonFillColor;
-    outlineColor = (stylePtr->indOutlineColor) 
-	? stylePtr->indOutlineColor : comboPtr->checkButtonOutlineColor;
-    checkColor = (stylePtr->indColor) 
-	? stylePtr->indColor : comboPtr->checkButtonColor;
+    fillColor = (stylePtr->checkButtonFillColor) 
+	? stylePtr->checkButtonFillColor : comboPtr->checkButtonFillColor;
+    outlineColor = (stylePtr->checkButtonOutlineColor) 
+	? stylePtr->checkButtonOutlineColor : comboPtr->checkButtonOutlineColor;
+    checkColor = (stylePtr->checkButtonColor) 
+	? stylePtr->checkButtonColor : comboPtr->checkButtonColor;
     if (itemPtr->flags & ITEM_DISABLED) {
 	if (stylePtr->checkbutton[0] == NULL) {
 	    if (fillColor != NULL) {
@@ -7328,10 +7339,10 @@ DrawRadioButton(Item *itemPtr, Drawable drawable, int x, int y, int w, int h)
     } else {
 	XColor *fillColor, *circleColor;
 
-	fillColor = (stylePtr->indFillColor) 
-	    ? stylePtr->indFillColor : comboPtr->radioButtonFillColor;
-	circleColor = (stylePtr->indColor) 
-	    ? stylePtr->indColor : comboPtr->radioButtonColor;
+	fillColor = (stylePtr->radioButtonFillColor) 
+	    ? stylePtr->radioButtonFillColor : comboPtr->radioButtonFillColor;
+	circleColor = (stylePtr->radioButtonColor) 
+	    ? stylePtr->radioButtonColor : comboPtr->radioButtonColor;
 	picture = Blt_PaintRadioButton(w, h, bg, fillColor, circleColor, state);
     }
     Blt_PaintPicture(comboPtr->painter, drawable, picture, 0, 0, w, h, x, y, 0);

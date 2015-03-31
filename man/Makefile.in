@@ -30,7 +30,7 @@ MISSING =	arcball.rst \
 		compare.rst \
 		contour.rst \
 		datatable.rst \
-		date.rst \
+		timestamp.rst \
 		drawerset.rst \
 		grab.rst \
 		listview.rst \
