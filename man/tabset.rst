@@ -154,10 +154,9 @@ name, tag or text label.
 
     A tag is a string associated with a tab.  They are a useful for
     referring to groups of tabs. Tabs can have any number of tags
-    associated with them.  There are two built-in tags: "all" and "end".
-    Every tab has the tag "all".  The last tab in the widget has the tag
-    "end".  Tags may be empty (associated with no tabs).  A tag may refer
-    to multiple tabs.
+    associated with them.  There is one built-in tag is "all"".  Every tab
+    has the tag "all".  Tags may be empty (associated with no tabs).  A tag
+    may refer to multiple tabs.
 
 
 TABSET OPERATIONS
@@ -169,18 +168,17 @@ operation.  The general form is:
 
   *pathName* *operation* ?\ *arg* *arg*\ ... ?
 
-
-*Operation* and the *arg*\ s determine the exact behavior of the command.
-The following operations are available for *tabset* widgets:
+*PathName* is the name of the widget. *Operation* and the *arg*\ s
+determine the exact behavior of the command.  The following operations are
+available for *tabset* widgets:
 
 *pathName* **activate** *tab* 
 
-  Sets the active tab to the one indicated by *index*.  The active tab is
-  drawn with its *active* colors (see the **-activebackground** and
-  **-activeforeground** options) and may be retrieved with the index
-  **active**.  Only one tab may be active at a time.  If *index* is the
-  empty string, then all tabs will be drawn with their normal foreground
-  and background colors.
+  Specifies to draw *tab* with its active colors (see the
+  **-activebackground** and **-activeforeground** options) . *Tab* is
+  an index, label, or tag but may not refer to more than one tab.  Only one
+  tab may be active at a time.  If *tab* is "", then no tab will be be
+  active.
 
 *pathName* **bind** *tagName* ?*sequence*? ?*command*? 
 
@@ -202,9 +200,9 @@ The following operations are available for *tabset* widgets:
 
 *pathName* **cget** *option*
 
-  Returns the current value of the configuration option given by *option*.
-  *Option* may have any of the values accepted by the **configure**
-  operation described in the section WIDGET OPTIONS below.
+  Returns the current value of the widget configuration option given by
+  *option*.  *Option* may have any of the values accepted by the
+  **configure** operation described in the section WIDGET OPTIONS below.
 
 *pathName* **configure** ?*option*? ?*value option value ...*?
 
@@ -421,38 +419,35 @@ The following operations are available for *tabset* widgets:
 
   **-side** side
 
-    Specifies the side of the widget to place tabs. The following values
-    are valid for *side*. The default value is "top".
+    Specifies the side of the widget to place tabs.  *Side* can be any of
+    the following values.
 
-      top
+      **top**
 	Tabs are drawn along the top.
-
-      left
+      **left**
 	Tabs are drawn along the left side.
-
-      right
+      **right**
 	Tabs are drawn along the right side.
-
-      both
+      **both**
 	Tabs are drawn along the bottom side.
 
-  **-slant** *slant*
+   The default value is "top".
+
+**-slant** *tabSide*
 
     Specifies if the tabs should be slanted 45 degrees on the left and/or
-    right sides. The following values are valid for *slant*. The default is
-    "none".
+    right sides. *TabSide* can be any of the following values.
 
-      none
+      **none**
 	Tabs are drawn as a rectangle.  
-
-      left
+      **left**
 	The left side of the tab is slanted.  
-
-      right
+      **right**
 	The right side of the tab is slanted.  
-
-      both
+      **both**
 	Boths sides of the tab are slanted.
+
+    The default is "none".
 
   **-takefocus** *focus* 
 
@@ -471,60 +466,65 @@ The following operations are available for *tabset* widgets:
     on which side of the tab the text is to be displayed. The valid sides
     are "left", "right", "top", and "bottom".  The default value is "left".
 
-  **-tiers** numTiers
+  **-tiers** *numTiers*
 
     Specifies the maximum number of tiers to use to display the tabs.  The
-    default value is "1".
+    default value is "1".  
 
   **-width** *numPixels*
 
-    Specifies the requested width of the widget.  If *numPixels* is 0, then
-    the width of the widget will be calculated based on the size the tabs
-    and their pages.  The default is "0".
+    Specifies the requested width of the widget.  *NumPixels* is a
+    non-negative value and may have any of the forms accept able to
+    Tk_GetPixels.  If *numPixels* is "0", then the width of the widget will
+    be calculated based on the size the tabs and their pages.  The default
+    is "0".
 
-*pathName* **delete** *tab...*?
+*pathName* **delete** ?\ *tab* ... ?
 
-  Deletes one or more tabs from the tabset.  *Tab* may be an index, tag,
-  name, or label referring to one or more tabs.
+  Deletes one or more tabs from the tabset.  *Tab* may be an index,
+  tag, name, or label and may refer to multiple tabs.
 
 *pathName* **focus** *tab*
 
-  Specifies the tab to get the widget's focus.  The tab is displayed with a
-  dashed line around its label.
+  Specifies *tab* to get the widget's focus.  The tab is displayed with
+  a dashed line around its label. *Tab* may be an index, tag, name, or
+  label but may not reference more than one tab.
 
 *pathName* **get** *tab*
 
-  Returns the name of the tab.  The value of *index* may be in any form
-  described in the section INDICES.
+  Returns the label of the *tab*.  The value of *index* may be in any
+  form described in the section INDICES.
 
-*pathName* **index** ?*flag*? *string* 
+*pathName* **index** ?\ *flag* ? *string* 
 
   Returns the node id of the tab specified by *string*.  If *flag* is
   **-name**, then *string* is the name of a tab.  If *flag* is **-index**,
   *string* is an index such as "active" or "focus".  If *flag* isn't
   specified, it defaults to **-index**.
 
-*pathName* **insert** *position* ?*name*? ?*option value*?...
+*pathName* **insert** *position* ?\ *tabName* ? ?\ *option* *value* ... ?
 
-  Inserts a new tab into the tabset.  The new tab is inserted before the
-  tab given by *position*.  *Position* may be either a number, indicating
-  where in the list the new tab should be added, or **end**, indicating
-  that the new tab is to be added the end of the list.  *Name* is the name
-  of the tab. If *name* isn't given, then a name is generated in the form
-  "tabN".  Returns the name of the new tab.
+  Inserts a new tab into *pathName*.  The new tab is inserted before the
+  tab given by *position*.  *Position* is either a number, indicating where
+  in the list the new tab should be added, or **end**, indicating that the
+  new tab is to be added the end of the list.  *TabName* is the name of the
+  tab. If no *tab* argument is given, then a name is generated in the
+  form "tabN".  Returns the name of the new tab.
 
 *pathName* **invoke** *tab*
 
-  Selects the folder given by *tab*, displaying it in the tabset.  It also
-  invokes the Tcl command associated with the tab \ (see the tabset's
-  **-selectcommand** option or the tab's **-command** option), if there is
-  one.  It returns the return value from the Tcl command, or an empty
-  string if there is no command associated with the tab.  This command is
-  ignored if the tab's state (see the **-state** option) is disabled.
+  Selects *tab*, displaying its folder in the tabset.  In addtion the TCL
+  command associated with the tab (see the tabset's **-selectcommand**
+  option or the tab's **-command** option) is invoked, if there is one.
+  *Tab* may be an index, tag, or label but may not refer to more than one
+  tab.  This command is ignored if the tab's state (see the **-state**
+  option) is "disabled".
 
-*pathName* **move** *tab* **before**|**after** *tab*
+*pathName* **move** *tab* *how* *destTab*
 
-  Moves the tab *tab* to a new position in the tabset.
+  Moves the *tab* to a new position in the tabset. *How* is either
+  "before" or "after". It indicates whether the *tab* is moved
+  before or after *destTab*.
 
 *pathName* **nearest** *x* *y*
 
@@ -536,11 +536,9 @@ The following operations are available for *tabset* widgets:
 
   Invokes the command specified for perforations (see the
   **-perforationcommand** widget option). Typically this command places the
-  page into a top level widget. The name of the toplevel is the
-  concatonation of the *pathName*, "-", and the *tabName*.  The return
-  value is the return value from the Tcl command, or an empty string if
-  there is no command associated with the tab.  This command is ignored if
-  the tab's state (see the **-state** option) is disabled.
+  page into a top level widget. The name of the toplevel is in the form
+  "*pathName*-*tab*".  This command is ignored if the tab's state (see the
+  **-state** option) is disabled.
 
 *pathName* **scan mark** *x y*
 
@@ -573,7 +571,7 @@ The following operations are available for *tabset* widgets:
   for tab *tab*.  *Option* may have any of the values accepted by the **tab
   configure** operation described in the section TAB OPTIONS below.
 
-*pathName* **tab configure** *tab* *option*? ?*value option value ...*?
+*pathName* **tab configure** *tab* ?\ *option* ? ?\ *value* *option* ...\ ?
 
   Query or modify the configuration options of one or more tabs.  More than
   one tab can be configured if *tab* refers to multiple tabs.  If no
@@ -582,7 +580,7 @@ The following operations are available for *tabset* widgets:
 
   If *option* is specified, but not *value*, then a list describing the one
   named option is returned.  If one or more \fIoption\-value\fR pairs are
-  specified, then each named tab (specified by *nameOrIndex*) will have its
+  specified, then each named tab (specified by *tab*) will have its
   configurations option(s) set the given value(s).  In this last case, the
   empty string is returned.  
 
@@ -599,16 +597,16 @@ The following operations are available for *tabset* widgets:
 
   **-activebackground** *colorName*
 
-    Sets the active background color for *nameOrIndex*.  A tab is active
-    when the mouse is positioned over it or set by the **activate**
-    operation.  This overrides the widget's **-activebackground** option.
+    Sets the active background color for *tab*.  A tab is active when the
+    mouse is positioned over it or set by the **activate** operation.  This
+    overrides the widget's **-activebackground** option.
 
   **-activeforeground** *colorName*
 
-    Sets the default active foreground color *nameOrIndex*.  A tab is
-    "active" when the mouse is positioned over it or set by the
-    **activate** operation.  Individual tabs may override this option by
-    setting the tab's **-activeforeground** option.
+    Sets the default active foreground color *tab*.  A tab is active when
+    the mouse is positioned over it or set by the **activate** operation.
+    Individual tabs may override this option by setting the tab's
+    **-activeforeground** option.
 
   **-anchor** *anchor* 
 
@@ -622,8 +620,8 @@ The following operations are available for *tabset* widgets:
 
   **-background** *color*
 
-    Sets the background color for *nameOrIndex*.  Setting this option
-    overides the widget's **-tabbackground** option.
+    Sets the background color for *tab*.  Setting this option overides the
+    widget's **-tabbackground** option.
 
   **-bindtags** *tagList*
 
@@ -636,14 +634,14 @@ The following operations are available for *tabset* widgets:
 
   **-command** *string*
 
-    Specifies a Tcl script to be associated with *nameOrIndex*.  This
+    Specifies a Tcl script to be associated with *tab*.  This
     command is typically invoked when left mouse button is released over
     the tab.  Setting this option overrides the widget's **-selectcommand**
     option.
 
   **-data** *string*
 
-    Specifies a string to be associated with *nameOrIndex*.  This value
+    Specifies a string to be associated with *tab*.  This value
     isn't used in the widget code.  It may be used in Tcl bindings to
     associate extra data (other than the image or text) with the tab. The
     default value is "".
@@ -671,7 +669,7 @@ The following operations are available for *tabset* widgets:
 
   **-image** *imageName*
 
-    Specifies the image to be drawn in label for *nameOrIndex*.  If
+    Specifies the image to be drawn in label for *tab*.  If
     *imageName* is "", no image will be drawn.  Both text and images may
     be displayed at the same time in tab labels.  The default value is
     "".
@@ -729,41 +727,43 @@ The following operations are available for *tabset* widgets:
     is drawn as engraved and operations on the tab (such as **invoke** and
     **tab tearoff**) are ignored.  The default is "normal".
 
-  **-stipple** *bitmap*
+  **-stipple** *bitmapName*
   
     Specifies a stipple pattern to use for the background of the folder
-    when the window is torn off.  *Bitmap* specifies a bitmap to use as the
-    stipple pattern. The default is "BLT".
+    when the window is torn off.  *BitmapName* specifies a bitmap to use as
+    the stipple pattern. The default is "BLT".
 
-  **-text** *text*
+  **-text** *string*
 
     Specifies the text of the tab's label.  The exact way the text is drawn
     may be affected by other options such as **-state** or **-rotate**.
 
-  **-window** *pathName*
+  **-window** *childName*
 
-    Specifies the widget to be embedded into the tab.  *PathName* must be a
-    child of the **blt::tabset** widget.  The tabset will "pack" and manage
-    the size and placement of *pathName*.  The default value is "".
+    Specifies the widget to be embedded into the tab.  *ChildName* is the
+    pathname of a Tk widget and must be a child of the **blt::tabset**
+    widget.  The tabset will "pack" and manage the size and placement of
+    *childName*.  The default value is "".
 
-  **-windowheight** *pixels*
+  **-windowheight** *numPixels*
 
     Sets the requested height of the page.  The page is the area under the
-    tab used to display the page contents.  If *pixels* is "0", the maximum
-    height of all embedded tab windows is used.  The default is "0".
+    tab used to display the page contents.  If *numPixels* is "0", the
+    maximum height of all embedded tab windows is used.  The default is
+    "0".
 
-  **-windowwidth** *pixels*
+  **-windowwidth** *numPixels*
 
     Sets the requested width of the page.  The page is the area under the
-    tab used to display the page contents.  If *pixels* is "0", the maximum
-    width of all embedded tab windows is used.  The default is "0".
+    tab used to display the page contents.  If *numPixels* is "0", the
+    maximum width of all embedded tab windows is used.  The default is "0".
 
-*pathName* **tab names** ?*pattern*?
+*pathName* **tab names** ?\ *pattern*\ ... ?
 
   Returns the names of all the tabs matching the given pattern. If no
   *pattern* argument is provided, then all tab names are returned.
 
-*pathName* \fBtab tearoff *tab* ?*window*?
+*pathName* **tab tearoff** *tab* ?\ *window*\ ... ?
 
   Moves the widget embedded the folder *tab* (see the **-window** option),
   placing it inside of *window*.  *Window* is either the name of an new
