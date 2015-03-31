@@ -36,7 +36,7 @@ Create and manipulate tabset widgets
 SYNOPSIS
 --------
 
-**blt::tabset** *pathName *?*options*?
+**blt::tabset** *pathName* ?\ *value* *options* ... ?
 
 DESCRIPTION
 -----------
@@ -80,82 +80,88 @@ Tabs may be scrolled using the **-scrollcommand** option.  They also
 support scanning (see the **scan** operation).  Tabs also may be arranged
 along any side of the tabset window using the **-side** option.
 
+REFERRING TO TABS
+-----------------
+
 An individual tabs/folders in the tabset may be described by its index, 
 name, tag or text label.  
 
-INDICES
--------
+  **index**
 
-An index is the order of the tab in the tabset.  Indices start from zero.
-In addition to numeric indices, there are additional special indices.
-They are described below:
+    An index is the order of the tab in the tabset.  Indices start from zero.
+    In addition to numeric indices, there are additional special indices.
+    They are described below:
 
-  *number* 
+      *number* 
+	The index of the tab.  Indices start from 0.  Tab indices may
+	change as tabs are added or removed.
 
-    Unique node id of the tab.
+      **@**\ *x*\ ,\ *y*
+	Tab that covers the point in the tabset window
+	specified by *x* and *y* (in screen coordinates).  If no
+	tab covers that point, then the index is ignored.
 
-  **@\fIx**,*y*
+      **selected** 
+	The currently selected tab.  The **selected** index is 
+	typically changed by either clicking on the tab with the left mouse 
+	button or using the widget's **invoke** operation.
 
-    Tab that covers the point in the tabset window
-    specified by *x* and *y* (in screen coordinates).  If no
-    tab covers that point, then the index is ignored.
+      **active** 
+	The tab where the mouse pointer is currently located.  The label is
+	drawn using its active colors (see the **-activebackground** and
+	**-activeforeground** options).  The **active** index is typically
+	changed by moving the mouse pointer over a tab or using the widget's
+	**activate** operation. There can be only one active tab at a time.  If
+	there is no tab located under the mouse pointer, the index is ignored.
 
-  **selected** 
+      **focus** 
+        Tab that currently has the widget's focus.  This tab is displayed with a
+        dashed line around its label.  You can change this using the **focus**
+        operation. If no tab has focus, then the index is ignored.
 
-    The currently selected tab.  The **selected** index is 
-    typically changed by either clicking on the tab with the left mouse 
-    button or using the widget's **invoke** operation.
+      **down** 
+	Tab immediately below the tab that currently has focus,
+	if there is one. If there is no tab below, the current 
+	tab is returned.
 
-  **active** 
+      **left**
+        Tab immediately to the left the tab that currently has focus, if there
+        is one.  If there is no tab to the left, the current tab is returned.
 
-    The tab where the mouse pointer is currently located.  The label is
-    drawn using its active colors (see the **-activebackground** and
-    **-activeforeground** options).  The **active** index is typically
-    changed by moving the mouse pointer over a tab or using the widget's
-    **activate** operation. There can be only one active tab at a time.  If
-    there is no tab located under the mouse pointer, the index is ignored.
+      **right** 
+        Tab immediately to the right the tab that currently has focus, if there
+        is one. If there is no tab to the right, the current tab is returned.
 
-  **focus** 
+      **up** 
+        Tab immediately above, if there is one, to the tab that currently has
+        focus. If there is no tab above, the current tab is returned.
 
-   Tab that currently has the widget's focus.  This tab is displayed with a
-   dashed line around its label.  You can change this using the **focus**
-   operation. If no tab has focus, then the index is ignored.
+      **end**
+        Last tab in the tabset.  If there are no tabs in the tabset then the
+        index is ignored.
 
-  **down** 
+    Some indices may not always be available.  For example, if the mouse is not
+    over any tab, "active" does not have an index.  For most tabset operations
+    this is harmless and ignored.
 
-    Tab immediately below the tab that currently has focus,
-    if there is one. If there is no tab below, the current 
-    tab is returned.
+  **label**
 
-  **left**
+    The label of the tab.  Each tab a label.  Labels should not be numbers
+    (to distinguish them from indices). Tab labels are distinct.  There can
+    be duplicate tab labels.
 
-   Tab immediately to the left the tab that currently has focus, if there
-   is one.  If there is no tab to the left, the current tab is returned.
+  **tag**
 
-  **right** 
+    A tag is a string associated with a tab.  They are a useful for
+    referring to groups of tabs. Tabs can have any number of tags
+    associated with them.  There are two built-in tags: "all" and "end".
+    Every tab has the tag "all".  The last tab in the widget has the tag
+    "end".  Tags may be empty (associated with no tabs).  A tag may refer
+    to multiple tabs.
 
-   Tab immediately to the right the tab that currently has focus, if there
-   is one. If there is no tab to the right, the current tab is returned.
 
-  **up** 
-
-   Tab immediately above, if there is one, to the tab that currently has
-   focus. If there is no tab above, the current tab is returned.
-
-  **end**
-
-   Last tab in the tabset.  If there are no tabs in the tabset then the
-   index is ignored.
-
-Some indices may not always be available.  For example, if the mouse is not
-over any tab, "active" does not have an index.  For most tabset operations
-this is harmless and ignored.
-
-NAMES
--------
-
-OPERATIONS
-----------
+TABSET OPERATIONS
+-----------------
 
 All **blt::tabset** operations are invoked by specifying the widget's
 pathname, the operation, and any arguments that pertain to that
@@ -793,10 +799,6 @@ The following operations are available for *tabset* widgets:
   the view adjusts by *number* widget windows.  If *number* is negative
   then tabs farther to the left become visible; if it is positive then tabs
   farther to the right become visible.
-
-
-TAB OPTIONS
------------
 
 
 DEFAULT BINDINGS
