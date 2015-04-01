@@ -44,7 +44,7 @@ $table import csv -file omw.csv
 set labels [$table row values 0]
 $table column labels $labels
 $table row delete 0
-$table column type all double
+$table column type @all double
 set count 0
 
 blt::contour .g -highlightthickness 0

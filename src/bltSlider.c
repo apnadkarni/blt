@@ -5667,7 +5667,7 @@ DrawSliderControl(Slider *sliderPtr, Drawable drawable, int x, int y, int r,
     /* Background. */
     Blt_PaintBrush_SetColors(&brush, light, dark);
     Blt_PaintBrush_Region(&brush, x, y, w, h);
-    Blt_PaintBrush_SetGradient(&brush, BLT_GRADIENT_TYPE_CONICAL);
+    Blt_PaintBrush_SetGradient(&brush, BLT_GRADIENT_CONICAL);
     Blt_PaintRectangle(picture, x, y, sliderPtr->troughWidth,
 		       sliderPtr->troughHeight, r, 0, &brush);
 }

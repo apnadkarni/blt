@@ -339,7 +339,6 @@ struct _Blt_Bg {
     Blt_ChainLink link;			/* Entry in notifier list. */
 };
 
-#define BG_CENTER		(1<<2)
 #define BG_SCALE		(1<<3)
 #define FREE_TILE		(1<<4)
 
@@ -415,7 +414,7 @@ static Blt_CustomOption textureTypeOption =
     ObjToTextureTypeProc, TextureTypeToObjProc, NULL, (ClientData)0
 };
 
-static Blt_ConfigSpec solidConfigSpecs[] =
+static Blt_ConfigSpec solidSpecs[] =
 {
     {BLT_CONFIG_SYNONYM, "-background", "color", (char *)NULL, (char *)NULL, 
 	0, 0},
@@ -428,22 +427,15 @@ static Blt_ConfigSpec solidConfigSpecs[] =
     {BLT_CONFIG_END, NULL, NULL, NULL, NULL, 0, 0}
 };
 
-static Blt_ConfigSpec tileConfigSpecs[] =
+static Blt_ConfigSpec tileSpecs[] =
 {
-    {BLT_CONFIG_BITMASK, "-center", "center", "Center", DEF_CENTER,
-	Blt_Offset(TileBackground, flags), BLT_CONFIG_DONT_SET_DEFAULT, 
-	(Blt_CustomOption *)BG_CENTER},
     {BLT_CONFIG_BORDER, "-color", "color", "Color", DEF_BORDER, 
-	Blt_Offset(TileBackground, border), 0},
-    {BLT_CONFIG_BORDER, "-darkcolor", "darkColor", "DarkColor", DEF_BORDER, 
 	Blt_Offset(TileBackground, border), 0},
     {BLT_CONFIG_CUSTOM, "-filter", "filter", "Filter", DEF_RESAMPLE_FILTER, 
 	Blt_Offset(TileBackground, filter), 0, &bltFilterOption},
     {BLT_CONFIG_CUSTOM, "-image", "image", "Image", (char *)NULL,
 	Blt_Offset(TileBackground, tkImage), BLT_CONFIG_DONT_SET_DEFAULT, 
 	&imageOption},
-    {BLT_CONFIG_BORDER, "-lightcolor", "lightColor", "LightColor", DEF_BORDER, 
-	Blt_Offset(TileBackground, border), 0},
     {BLT_CONFIG_CUSTOM, "-opacity", "opacity", "Opacity", "100.0", 
 	Blt_Offset(TileBackground, alpha), BLT_CONFIG_DONT_SET_DEFAULT, 
 	&opacityOption},
@@ -460,7 +452,7 @@ static Blt_ConfigSpec tileConfigSpecs[] =
     {BLT_CONFIG_END, NULL, NULL, NULL, NULL, 0, 0}
 };
 
-static Blt_ConfigSpec gradientConfigSpecs[] =
+static Blt_ConfigSpec gradientSpecs[] =
 {
     {BLT_CONFIG_BORDER, "-background", "background", "Background", DEF_BORDER,
 	Blt_Offset(GradientBackground, border), 0},
@@ -491,7 +483,7 @@ static Blt_ConfigSpec gradientConfigSpecs[] =
     {BLT_CONFIG_END, NULL, NULL, NULL, NULL, 0, 0}
 };
 
-static Blt_ConfigSpec textureConfigSpecs[] =
+static Blt_ConfigSpec textureSpecs[] =
 {
     {BLT_CONFIG_BORDER, "-background", "background", "Background", DEF_BORDER,
 	Blt_Offset(TextureBackground, border), 0},
@@ -514,6 +506,42 @@ static Blt_ConfigSpec textureConfigSpecs[] =
 	BLT_CONFIG_DONT_SET_DEFAULT, &textureTypeOption},
     {BLT_CONFIG_END, NULL, NULL, NULL, NULL, 0, 0}
 };
+
+#ifdef notdef
+static Blt_ConfigSpec gradient2Specs[] =
+{
+    {BLT_CONFIG_BORDER, "-border", (char *)NULL, (char *)NULL,
+        DEF_BORDER, Blt_Offset(GradientBackground, border), 0},
+    {BLT_CONFIG_PIX32, "-center", (char *)NULL, (char *)NULL,
+        DEF_GRADIENT_CENTER, Blt_Offset(GradientBackground, center), 0},
+    {BLT_CONFIG_PIX32, "-from", (char *)NULL, (char *)NULL, DEF_GRADIENT_TO,
+	Blt_Offset(GradientBackground, fromColor), 0},
+    {BLT_CONFIG_CUSTOM, "-jitter", (char *)NULL, (char *)NULL,
+        DEF_GRADIENT_JITTER, Blt_Offset(GradientBackground, jitter.range), 
+	BLT_CONFIG_DONT_SET_DEFAULT, &jitterOption},
+    {BLT_CONFIG_CUSTOM, "-opacity", "opacity", "Opacity", "100.0", 
+	Blt_Offset(GradientBackground, alpha), BLT_CONFIG_DONT_SET_DEFAULT, 
+	&opacityOption},
+    {BLT_CONFIG_CUSTOM, "-relativeto", "relativeTo", "RelativeTo", 
+	DEF_REFERENCE, Blt_Offset(GradientBackground, reference), 
+	BLT_CONFIG_DONT_SET_DEFAULT, &referenceTypeOption},
+    {BLT_CONFIG_CUSTOM, "-scale", "scale", "Scale", 
+	DEF_GRADIENT_SCALE, Blt_Offset(GradientBackground, scale),
+	BLT_CONFIG_DONT_SET_DEFAULT, &scaleOption},
+    {BLT_CONFIG_CUSTOM, "-shape", (char *)NULL, (char *)NULL,
+        DEF_RADIAL_SHAPE, Blt_Offset(GradientBackground, shape), 0},
+    {BLT_CONFIG_PIX32, "-to", (char *)NULL, (char *)NULL, DEF_GRADIENT_FROM,
+	Blt_Offset(GradientBackground, gradient.toColor), 0},
+    {BLT_CONFIG_CUSTOM, "-type", "type", "type", DEF_GRADIENT_TYPE, 
+	Blt_Offset(GradientBackground, gradient.type), 
+	BLT_CONFIG_DONT_SET_DEFAULT, &gradientTypeOption},
+    {BLT_CONFIG_PIXELS, "-xorigin", "xOrigin", "XOrigin", DEF_ORIGIN_X,
+	Blt_Offset(GradientBackground, xOrigin), BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_PIXELS, "-yorigin", "yOrigin", "YOrigin", DEF_ORIGIN_Y,
+	Blt_Offset(GradientBackground, yOrigin), BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_END, NULL, NULL, NULL, NULL, 0, 0}
+};
+#endif
 
 static void NotifyClients(BackgroundObject *corePtr);
 
@@ -832,15 +860,15 @@ ObjToGradientTypeProc(
     string = Tcl_GetString(objPtr);
     c = string[0];
     if ((c == 'v') && (strcmp(string, "vertical") == 0)) {
-	*typePtr = BLT_GRADIENT_TYPE_VERTICAL;
+	*typePtr = BLT_GRADIENT_VERTICAL;
     } else if ((c == 'h') && (strcmp(string, "horizontal") == 0)) {
-	*typePtr = BLT_GRADIENT_TYPE_HORIZONTAL;
+	*typePtr = BLT_GRADIENT_HORIZONTAL;
     } else if ((c == 'r') && (strcmp(string, "radial") == 0)) {
-	*typePtr = BLT_GRADIENT_TYPE_RADIAL;
+	*typePtr = BLT_GRADIENT_RADIAL;
     } else if ((c == 'u') && (strcmp(string, "updiagonal") == 0)) {
-	*typePtr = BLT_GRADIENT_TYPE_DIAGONAL_UP;
+	*typePtr = BLT_GRADIENT_DIAGONAL_UP;
     } else if ((c == 'd') && (strcmp(string, "downdiagonal") == 0)) {
-	*typePtr = BLT_GRADIENT_TYPE_DIAGONAL_DOWN;
+	*typePtr = BLT_GRADIENT_DIAGONAL_DOWN;
     } else {
 	Tcl_AppendResult(interp, "unknown gradient type \"", string, "\"",
 			 (char *)NULL);
@@ -853,15 +881,15 @@ static const char *
 NameOfGradientType(Blt_GradientType type) 
 {
     switch (type) {
-    case BLT_GRADIENT_TYPE_VERTICAL:
+    case BLT_GRADIENT_VERTICAL:
 	return "vertical";
-    case BLT_GRADIENT_TYPE_HORIZONTAL:
+    case BLT_GRADIENT_HORIZONTAL:
 	return "horizontal";
-    case BLT_GRADIENT_TYPE_RADIAL:
+    case BLT_GRADIENT_RADIAL:
 	return "radial";
-    case BLT_GRADIENT_TYPE_DIAGONAL_UP:
+    case BLT_GRADIENT_DIAGONAL_UP:
 	return "updiagonal";
-    case BLT_GRADIENT_TYPE_DIAGONAL_DOWN:
+    case BLT_GRADIENT_DIAGONAL_DOWN:
 	return "downdiagonal";	
     default:
 	return "???";
@@ -929,12 +957,12 @@ ObjToGradientScaleProc(
     string = Tcl_GetStringFromObj(objPtr, &length);
     c = string[0];
     if ((c == 'l') && (strcmp(string, "linear") == 0)) {
-	*scalePtr = BLT_GRADIENT_SCALE_LINEAR;
+	*scalePtr = BLT_GRADIENT_LINEARSCALE;
     } else if ((c == 'l') && (length > 2) && 
 	       (strncmp(string, "logarithmic", length) == 0)) {
-	*scalePtr = BLT_GRADIENT_SCALE_LOG;
+	*scalePtr = BLT_GRADIENT_LOGSCALE;
     } else if ((c == 'a') && (strcmp(string, "atan") == 0)) {
-	*scalePtr = BLT_GRADIENT_SCALE_ATAN;
+	*scalePtr = BLT_GRADIENT_ATANSCALE;
     } else {
 	Tcl_AppendResult(interp, "unknown gradient scale \"", string, "\"",
 			 (char *)NULL);
@@ -947,11 +975,11 @@ static const char *
 NameOfGradientScale(Blt_GradientScale scale) 
 {
     switch (scale) {
-    case BLT_GRADIENT_SCALE_LINEAR:
+    case BLT_GRADIENT_LINEARSCALE:
 	return "linear";
-    case BLT_GRADIENT_SCALE_LOG:
+    case BLT_GRADIENT_LOGSCALE:
 	return "log";
-    case BLT_GRADIENT_SCALE_ATAN:
+    case BLT_GRADIENT_ATANSCALE:
 	return "atan";
     default:
 	return "?? unknown scale ??";
@@ -1157,10 +1185,14 @@ ObjToTextureTypeProc(
 
     string = Tcl_GetStringFromObj(objPtr, &length);
     c = string[0];
-    if ((c == 's') && (strncmp(string, "striped", length) == 0)) {
-	*typePtr = BLT_TEXTURE_TYPE_STRIPED;
+    if ((c == 's') && (strncmp(string, "stripes", length) == 0)) {
+	*typePtr = BLT_TEXTURE_VSTRIPES;
+    } else if ((c == 'v') && (strncmp(string, "vstripes", length) == 0)) {
+	*typePtr = BLT_TEXTURE_VSTRIPES;
+    } else if ((c == 'h') && (strncmp(string, "hstripes", length) == 0)) {
+	*typePtr = BLT_TEXTURE_HSTRIPES;
     } else if ((c == 'c') && (strncmp(string, "checkered", length) == 0)) {
-	*typePtr = BLT_TEXTURE_TYPE_CHECKERED;
+	*typePtr = BLT_TEXTURE_CHECKERS;
     } else {
 	Tcl_AppendResult(interp, "unknown texture type \"", string, "\"",
 			 (char *)NULL);
@@ -1173,10 +1205,12 @@ static const char *
 NameOfTextureType(Blt_TextureType type) 
 {
     switch (type) {
-    case BLT_TEXTURE_TYPE_STRIPED:
-	return "striped";
-    case BLT_TEXTURE_TYPE_CHECKERED:
-	return "checkered";
+    case BLT_TEXTURE_VSTRIPES:
+	return "vstrips";
+    case BLT_TEXTURE_HSTRIPES:
+	return "hstripes";
+    case BLT_TEXTURE_CHECKERS:
+	return "checkers";
     default:
 	return "???";
     }
@@ -1220,7 +1254,7 @@ GradientColorProc(Blt_PaintBrush *paintPtr, int x, int y)
     corePtr = paintPtr->clientData;
     gradPtr = &corePtr->gradient;
     switch (gradPtr->type) {
-    case BLT_GRADIENT_TYPE_RADIAL:
+    case BLT_GRADIENT_RADIAL:
 	{
 	    double dx, dy, d;
 
@@ -1230,8 +1264,8 @@ GradientColorProc(Blt_PaintBrush *paintPtr, int x, int y)
 	    t = 1.0 - (d * gradPtr->scaleFactor);
 	}
 	break;
-    case BLT_GRADIENT_TYPE_DIAGONAL_DOWN:
-    case BLT_GRADIENT_TYPE_DIAGONAL_UP:
+    case BLT_GRADIENT_DIAGONAL_DOWN:
+    case BLT_GRADIENT_DIAGONAL_UP:
 	{
 	    double cx, cy, rx;
 	    
@@ -1246,11 +1280,11 @@ GradientColorProc(Blt_PaintBrush *paintPtr, int x, int y)
 	    t = rx * gradPtr->scaleFactor;
 	}
 	break;
-    case BLT_GRADIENT_TYPE_HORIZONTAL:
+    case BLT_GRADIENT_HORIZONTAL:
 	t = (double)x * gradPtr->scaleFactor;
 	break;
     default:
-    case BLT_GRADIENT_TYPE_VERTICAL:
+    case BLT_GRADIENT_VERTICAL:
 	t = (double)y * gradPtr->scaleFactor;
 	break;
     }
@@ -1258,9 +1292,9 @@ GradientColorProc(Blt_PaintBrush *paintPtr, int x, int y)
 	t += Jitter(&corePtr->jitter);
 	t = JCLAMP(t);
     }
-    if (gradPtr->scale == BLT_GRADIENT_SCALE_LOG) {
+    if (gradPtr->scale == BLT_GRADIENT_LOGSCALE) {
 	t = log10(9.0 * t + 1.0);
-    } else if (gradPtr->scale == BLT_GRADIENT_SCALE_ATAN) {
+    } else if (gradPtr->scale == BLT_GRADIENT_ATANSCALE) {
 	t = atan(18.0 * (t-0.05) + 1.0) / M_PI_2;
     } 
     if (corePtr->palette != NULL) {
@@ -1284,10 +1318,10 @@ TextureColorProc(Blt_PaintBrush *paintPtr, int x, int y)
     corePtr = paintPtr->clientData;
     switch (corePtr->type) {
     default:
-    case BLT_TEXTURE_TYPE_STRIPED:
+    case BLT_TEXTURE_VSTRIPES:
 	t = ((y / 2) & 0x1) ? 0 : 1;
 	break;
-    case BLT_TEXTURE_TYPE_CHECKERED:
+    case BLT_TEXTURE_CHECKERS:
 	{
 	    int oddx, oddy;
 	    
@@ -1467,35 +1501,32 @@ InitGradient(GradientBackground *corePtr, int refWidth, int refHeight)
     if (corePtr->jitter.range > 0.0) {
 	JitterInit(&corePtr->jitter);
     }
-    if (corePtr->palette != NULL) {
-	Blt_Palette_SetRange(corePtr->palette, 0.0, 1.0);
-    }
     corePtr->rRange = corePtr->high.Red   - corePtr->low.Red;
     corePtr->gRange = corePtr->high.Green - corePtr->low.Green;
     corePtr->bRange = corePtr->high.Blue  - corePtr->low.Blue;
     corePtr->aRange = corePtr->high.Alpha - corePtr->low.Alpha;
     switch (gradPtr->type) {
-    case BLT_GRADIENT_TYPE_HORIZONTAL:
+    case BLT_GRADIENT_HORIZONTAL:
 	gradPtr->scaleFactor = 0.0;
 	if (refWidth > 1) {
 	    gradPtr->scaleFactor = 1.0 / (refWidth - 1);
 	} 
 	break;
     default:
-    case BLT_GRADIENT_TYPE_VERTICAL:
+    case BLT_GRADIENT_VERTICAL:
 	gradPtr->scaleFactor = 0.0;
 	if (refHeight > 1) {
 	    gradPtr->scaleFactor = 1.0 / (refHeight - 1);
 	} 
 	break;
-    case BLT_GRADIENT_TYPE_DIAGONAL_UP:
-    case BLT_GRADIENT_TYPE_DIAGONAL_DOWN:
+    case BLT_GRADIENT_DIAGONAL_UP:
+    case BLT_GRADIENT_DIAGONAL_DOWN:
 	gradPtr->xOffset = refWidth * 0.5;
 	gradPtr->yOffset = refHeight * 0.5;
 	gradPtr->length = sqrt(refWidth * refWidth + refHeight * refHeight);
 	gradPtr->cosTheta = refWidth / gradPtr->length;
 	gradPtr->sinTheta = refHeight / gradPtr->length;
-	if (gradPtr->type == BLT_GRADIENT_TYPE_DIAGONAL_DOWN) {
+	if (gradPtr->type == BLT_GRADIENT_DIAGONAL_DOWN) {
 	    gradPtr->sinTheta = -gradPtr->sinTheta;
 	}
 	gradPtr->scaleFactor = 0.0;
@@ -1503,7 +1534,7 @@ InitGradient(GradientBackground *corePtr, int refWidth, int refHeight)
 	    gradPtr->scaleFactor = 1.0 / (gradPtr->length - 1);
 	} 
 	break;
-    case BLT_GRADIENT_TYPE_RADIAL:
+    case BLT_GRADIENT_RADIAL:
 	gradPtr->xOffset = refWidth * 0.5;
 	gradPtr->yOffset = refHeight * 0.5;
 	gradPtr->length = sqrt(refWidth * refWidth + refHeight * refHeight);
@@ -1520,9 +1551,6 @@ InitTexture(TextureBackground *corePtr, int refWidth, int refHeight)
 {
     if (corePtr->jitter.range > 0.0) {
 	JitterInit(&corePtr->jitter);
-    }
-    if (corePtr->palette != NULL) {
-	Blt_Palette_SetRange(corePtr->palette, 0.0, 1.0);
     }
     corePtr->rRange = corePtr->high.Red   - corePtr->low.Red;
     corePtr->gRange = corePtr->high.Green - corePtr->low.Green;
@@ -2204,7 +2232,7 @@ SolidBackgroundDrawPolygonProc(Tk_Window tkwin, Drawable drawable,
 
 static BackgroundClass solidBackgroundClass = {
     BACKGROUND_SOLID,
-    solidConfigSpecs,
+    solidSpecs,
     NULL,				/* SolidBackgroundDestroyProc */
     SolidBackgroundConfigureProc,
     SolidBackgroundDrawRectangleProc,
@@ -2418,7 +2446,7 @@ ConfigureTileBackgroundProc(BackgroundObject *basePtr)
 
 static BackgroundClass tileBackgroundClass = {
     BACKGROUND_TILE,
-    tileConfigSpecs,
+    tileSpecs,
     DestroyTileBackgroundProc,
     ConfigureTileBackgroundProc,
     DrawTileRectangleProc,		/* DrawRectangleProc */
@@ -2583,7 +2611,7 @@ ConfigureGradientBackgroundProc(BackgroundObject *basePtr)
 
 static BackgroundClass gradientBackgroundClass = {
     BACKGROUND_GRADIENT,
-    gradientConfigSpecs,
+    gradientSpecs,
     NULL,				/* DestroyGradientBackgroundProc, */
     ConfigureGradientBackgroundProc, 
     DrawGradientRectangleProc,		/* DrawRectangleProc */
@@ -2613,8 +2641,8 @@ NewGradientBackground(void)
     }
     corePtr->classPtr = &gradientBackgroundClass;
     corePtr->reference = REFERENCE_TOPLEVEL;
-    corePtr->gradient.type = BLT_GRADIENT_TYPE_VERTICAL;
-    corePtr->gradient.scale = BLT_GRADIENT_SCALE_LINEAR;
+    corePtr->gradient.type = BLT_GRADIENT_VERTICAL;
+    corePtr->gradient.scale = BLT_GRADIENT_LINEARSCALE;
     corePtr->alpha = 255;
     return (BackgroundObject *)corePtr;
 }
@@ -2742,7 +2770,7 @@ ConfigureTextureBackgroundProc(BackgroundObject *basePtr)
 
 static BackgroundClass textureBackgroundClass = {
     BACKGROUND_TEXTURE,
-    textureConfigSpecs,			
+    textureSpecs,			
     NULL,				/* DestroyTextureBackgroundProc, */
     ConfigureTextureBackgroundProc,	
     DrawTextureRectangleProc,		

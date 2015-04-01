@@ -1865,9 +1865,6 @@ GetScreenPoints(ContourElement *elemPtr)
     vertices = Blt_AssertMalloc(sizeof(Vertex) * elemPtr->z.numValues);
     Blt_GraphExtents(elemPtr, &exts);
     rangePtr = &zAxisPtr->axisRange;
-    if (zAxisPtr->palette != NULL) {
-	Blt_Palette_SetRange(zAxisPtr->palette, rangePtr->min, rangePtr->max);
-    }
     for (i = 0; i < elemPtr->meshPtr->numVertices; i++) {
 	Point2d p;
 	double z;
@@ -4392,11 +4389,8 @@ MapProc(Graph *graphPtr, Element *basePtr)
     Blt_HashSearch iter;
     Tcl_Interp *interp;
     Axis *zAxisPtr;
-    AxisRange *rangePtr;
     
     zAxisPtr = elemPtr->zAxisPtr;
-    rangePtr = &zAxisPtr->axisRange;
-
     interp = elemPtr->obj.graphPtr->interp;
     ResetElement(elemPtr);
     elemPtr->pointPool = Blt_Pool_Create(BLT_FIXED_SIZE_ITEMS);
@@ -4425,9 +4419,6 @@ MapProc(Graph *graphPtr, Element *basePtr)
 #ifdef notdef
     MapActiveTriangles(elemPtr);
 #endif
-    if (zAxisPtr->palette != NULL) {
-	Blt_Palette_SetRange(zAxisPtr->palette, rangePtr->min, rangePtr->max);
-    }
     /* Map contour isolines. */
     for (hPtr = Blt_FirstHashEntry(&elemPtr->isoTable, &iter); hPtr != NULL;
 	 hPtr = Blt_NextHashEntry(&iter)) {

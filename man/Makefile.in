@@ -35,6 +35,7 @@ MISSING =	arcball.rst \
 		grab.rst \
 		listview.rst \
 		mesh.rst \
+		paintbrush.rst \
 		palette.rst \
 		paneset.rst \
 		picture.rst \

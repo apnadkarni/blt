@@ -105,7 +105,7 @@ Blt_GradientPicture(
     aRange = (double)(maxPtr->Alpha - minPtr->Alpha);
 
     switch (gradientPtr->type) {
-    case BLT_GRADIENT_TYPE_HORIZONTAL:
+    case BLT_GRADIENT_HORIZONTAL:
 	{
 	    Blt_Pixel *copyRowPtr, *destRowPtr, *dp;
 	    int x, y;
@@ -128,9 +128,9 @@ Blt_GradientPicture(
 		    t = JCLAMP(t);
 		}
 #ifdef notdef
-		if (gradientPtr->scale == BLT_GRADIENT_SCALE_LOG) {
+		if (gradientPtr->scale == BLT_GRADIENT_LOGSCALE) {
 		    t = log10(9.0 * t + 1.0);
-		} else if (gradientPtr->scale == BLT_GRADIENT_SCALE_ATAN) {
+		} else if (gradientPtr->scale == BLT_GRADIENT_ATANSCALE) {
 		    t = atan(18.0 * (t-0.05) + 1.0) / M_PI_2;
 		}
 #endif
@@ -154,7 +154,7 @@ Blt_GradientPicture(
 	}
 	break;
 
-    case BLT_GRADIENT_TYPE_VERTICAL:
+    case BLT_GRADIENT_VERTICAL:
 	{
 	    Blt_Pixel *destRowPtr;
 	    int y;
@@ -179,9 +179,9 @@ Blt_GradientPicture(
 		    t += Jitter(jitterPtr);
 		    t = JCLAMP(t);
 		}
-		if (gradientPtr->scale == BLT_GRADIENT_SCALE_LOG) {
+		if (gradientPtr->scale == BLT_GRADIENT_LOGSCALE) {
 		    t = log10(9.0 * t + 1.0);
-		} else if (gradientPtr->scale == BLT_GRADIENT_SCALE_ATAN) {
+		} else if (gradientPtr->scale == BLT_GRADIENT_ATANSCALE) {
 		    t = atan(18.0 * (t-0.05) + 1.0) / M_PI_2;
 		}
 		color.Red =   (unsigned char)(minPtr->Red + t * rRange);
@@ -197,8 +197,8 @@ Blt_GradientPicture(
 	}
 	break;
 	
-    case BLT_GRADIENT_TYPE_DIAGONAL_DOWN:
-    case BLT_GRADIENT_TYPE_DIAGONAL_UP:
+    case BLT_GRADIENT_DIAGONAL_DOWN:
+    case BLT_GRADIENT_DIAGONAL_UP:
 	{
 	    Blt_Pixel *destRowPtr;
 	    int y;
@@ -214,7 +214,7 @@ Blt_GradientPicture(
 			  destPtr->height * destPtr->height);
 	    cosTheta = destPtr->width / length;
 	    sinTheta = destPtr->height / length;
-	    if (gradientPtr->type == BLT_GRADIENT_TYPE_DIAGONAL_DOWN) {
+	    if (gradientPtr->type == BLT_GRADIENT_DIAGONAL_DOWN) {
 		sinTheta = -sinTheta;
 	    }
 	    scaleFactor = 0.0;
@@ -244,9 +244,9 @@ Blt_GradientPicture(
 			t += Jitter(jitterPtr);
 			t = JCLAMP(t);
 		    }
-		    if (gradientPtr->scale == BLT_GRADIENT_SCALE_LOG) {
+		    if (gradientPtr->scale == BLT_GRADIENT_LOGSCALE) {
 			t = log10(9.0 * t + 1.0);
-		    } else if (gradientPtr->scale == BLT_GRADIENT_SCALE_ATAN) {
+		    } else if (gradientPtr->scale == BLT_GRADIENT_ATANSCALE) {
 			t = atan(18.0 * (t-0.05) + 1.0) / M_PI_2;
 		    }
 		    dp->Red   = (unsigned char)(minPtr->Red + t * rRange);
@@ -259,7 +259,7 @@ Blt_GradientPicture(
 	}
 	break;
 
-    case BLT_GRADIENT_TYPE_RADIAL:
+    case BLT_GRADIENT_RADIAL:
 	{
 	    Blt_Pixel *destRowPtr;
 	    int y;
@@ -296,9 +296,9 @@ Blt_GradientPicture(
 			t += Jitter(jitterPtr);
 			t = JCLAMP(t);
 		    }
-		    if (gradientPtr->scale == BLT_GRADIENT_SCALE_LOG) {
+		    if (gradientPtr->scale == BLT_GRADIENT_LOGSCALE) {
 			t = log10(9.0 * t + 1.0);
-		    } else if (gradientPtr->scale == BLT_GRADIENT_SCALE_ATAN) {
+		    } else if (gradientPtr->scale == BLT_GRADIENT_ATANSCALE) {
 			t = atan(18.0 * (t-0.05) + 1.0) / M_PI_2;
 		    }
 		    dp->Red = (unsigned char)(minPtr->Red + t * rRange);
@@ -311,7 +311,7 @@ Blt_GradientPicture(
 	}
 	break;
 
-    case BLT_GRADIENT_TYPE_CONICAL:
+    case BLT_GRADIENT_CONICAL:
 	{
 	    Blt_Pixel *destRowPtr;
 	    int y;
@@ -345,9 +345,9 @@ Blt_GradientPicture(
 		    if (jitterPtr->range > 0.0) {
 			t += Jitter(jitterPtr);
 		    }
-		    if (gradientPtr->scale == BLT_GRADIENT_SCALE_LOG) {
+		    if (gradientPtr->scale == BLT_GRADIENT_LOGSCALE) {
 			t = log10(9.0 * t + 1.0);
-		    } else if (gradientPtr->scale == BLT_GRADIENT_SCALE_ATAN) {
+		    } else if (gradientPtr->scale == BLT_GRADIENT_ATANSCALE) {
 			t = atan(18.0 * (t-0.05) + 1.0) / M_PI_2;
 		    }
 		    t = JCLAMP(t);
@@ -361,7 +361,7 @@ Blt_GradientPicture(
 	}
 	break;
 	
-    case BLT_GRADIENT_TYPE_RECTANGULAR:
+    case BLT_GRADIENT_RECTANGULAR:
 	{
 	    Blt_Pixel *destRowPtr;
 	    int y;
@@ -391,9 +391,9 @@ Blt_GradientPicture(
 			t += Jitter(jitterPtr);
 			t = JCLAMP(t);
 		    }
-		    if (gradientPtr->scale == BLT_GRADIENT_SCALE_LOG) {
+		    if (gradientPtr->scale == BLT_GRADIENT_LOGSCALE) {
 			t = log10(9.0 * t + 1.0);
-		    } else if (gradientPtr->scale == BLT_GRADIENT_SCALE_ATAN) {
+		    } else if (gradientPtr->scale == BLT_GRADIENT_ATANSCALE) {
 			t = atan(18.0 * (t-0.05) + 1.0) / M_PI_2;
 		    }
 		    dp->Red = (unsigned char)(minPtr->Red + t * rRange);

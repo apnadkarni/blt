@@ -448,9 +448,9 @@ ClipTest (double ds, double dr, double *t1, double *t2)
  *
  * Blt_LineRectClip --
  *
- *	Clips the given line segment to a rectangular region.  The coordinates
- *	of the clipped line segment are returned.  The original coordinates
- *	are overwritten.
+ *	Clips the given line segment to a rectangular region.  The
+ *	coordinates of the clipped line segment are returned.  The original
+ *	coordinates are overwritten.
  *
  *	Reference: 
  *	  Liang, Y-D., and B. Barsky, A new concept and method for
@@ -525,19 +525,25 @@ Blt_LineRectClip(
 
 int 
 Blt_PolyRectClip(
-    Region2d *regionPtr,	/* Rectangular region clipping the polygon. */
-    Point2d *points,		/* Points of polygon to be clipped. */
-    int numPoints,		/* # of points in polygon. */
-    Point2d *clipPts)		/* (out) Points of clipped polygon. */
+    Region2d *regionPtr,                /* Rectangular region clipping the
+                                         * polygon. */
+    Point2d *points,                    /* Points of polygon to be
+                                         * clipped. */
+    int numPoints,                      /* # of points in polygon. */
+    Point2d *clipPts)                   /* (out) Points of clipped
+                                         * polygon. */
 {
-    Point2d *p;			/* First vertex of input polygon edge. */
+    Point2d *p;                         /* First vertex of input polygon
+                                         * edge. */
     Point2d *pend;
-    Point2d *q;			/* Last vertex of input polygon edge. */
+    Point2d *q;                         /* Last vertex of input polygon
+                                         * edge. */
     Point2d *r;
     int count;
 
     r = clipPts;
-    count = 0;			/* Counts # of vertices in output polygon. */
+    count = 0;                          /* Counts # of vertices in output
+                                         * polygon. */
 
     points[numPoints] = points[0];
     for (p = points, q = p + 1, pend = p + numPoints; p < pend; p++, q++) {
@@ -649,8 +655,10 @@ Blt_PolyRectClip(
  */
 Point2d
 Blt_GetProjection(
-    int x, int y,		/* Screen coordinates of the sample point. */
-    Point2d *p, Point2d *q)	/* Line segment to project point onto */
+    int x, int y,                       /* Screen coordinates of the sample
+                                         * point. */
+    Point2d *p, Point2d *q)             /* Line segment to project point
+                                         * onto */
 {
     double dx, dy;
     Point2d t;
@@ -678,7 +686,6 @@ Blt_GetProjection(
 	 * that intersects through sample X-Y coordinate with a slope
 	 * perpendicular to original line.
 	 */
-
 	/* Find midpoint of PQ. */
 	midX = (p->x + q->x) * 0.5;
 	midY = (p->y + q->y) * 0.5;
@@ -704,12 +711,96 @@ Blt_GetProjection(
 	 *    y = m1 * x + b1
 	 *
 	 */
-
 	t.x = (b2 - b1) / (m1 - m2);
 	t.y = m1 * t.x + b1;
     }
     return t;
 }
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * Blt_GetProjection2 --
+ *
+ *	Computes the projection of a point on a line.  The line (given by
+ *	x1, y1, x2, y2), is assumed the be infinite.
+ *
+ *	Compute the slope (angle) of the line and rotate it 90 degrees.
+ *	Using the slope-intercept method (we know the second line from the
+ *	sample test point and the computed slope), then find the
+ *	intersection of both lines. This will be the projection of the
+ *	sample point on the first line.
+ *
+ * Results:
+ *	Returns the coordinates of the projection on the line.
+ *
+ *---------------------------------------------------------------------------
+ */
+Point2d
+Blt_GetProjection2(
+    int x, int y,                       /* Screen coordinates of the sample
+                                         * point. */
+    double x1, double y1,
+    double x2, double y2)               /* Line segment to project point
+                                         * onto */
+{
+    double dx, dy;
+    Point2d t;
+
+    dx = x1 - x2;
+    dy = y1 - y2;
+
+    /* Test for horizontal and vertical lines */
+    if (FABS(dx) < DBL_EPSILON) {
+	t.x = x1, t.y = (double)y;
+    } else if (FABS(dy) < DBL_EPSILON) {
+	t.x = (double)x, t.y = y1;
+    } else {
+	double m1, m2;                  /* Slope of both lines */
+	double b1, b2;                  /* y-intercepts */
+	double cx, cy;                  /* Midpoint of line segment. */
+	double ax, ay, bx, by;
+
+	/* Compute the slope and intercept of PQ. */
+	m1 = (dy / dx);
+	b1 = y1 - (x1 * m1);
+
+	/* 
+	 * Compute the slope and intercept of a second line segment: one
+	 * that intersects through sample X-Y coordinate with a slope
+	 * perpendicular to original line.
+	 */
+	/* Find midpoint of PQ. */
+	cx = (x1 + x2) * 0.5;
+	cy = (y1 + y2) * 0.5;
+
+	/* Rotate the line 90 degrees */
+	ax = cx - (0.5 * dy);
+	ay = cy - (0.5 * -dx);
+	bx = cx + (0.5 * dy);
+	by = cy + (0.5 * -dx);
+
+	m2 = (ay - by) / (ax - bx);
+	b2 = y - (x * m2);
+
+	/*
+	 * Given the equations of two lines which contain the same point,
+	 *
+	 *    y = m1 * x + b1
+	 *    y = m2 * x + b2
+	 *
+	 * solve for the intersection.
+	 *
+	 *    x = (b2 - b1) / (m1 - m2)
+	 *    y = m1 * x + b1
+	 *
+	 */
+	t.x = (b2 - b1) / (m1 - m2);
+	t.y = m1 * t.x + b1;
+    }
+    return t;
+}
+
 
 typedef struct {
     double hue, sat, val;

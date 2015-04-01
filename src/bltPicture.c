@@ -5821,7 +5821,7 @@ Blt_TexturePicture(Pict *destPtr, Blt_Pixel *lowPtr, Blt_Pixel *highPtr,
     JitterInit(&jitter);
 
     switch (type) {
-    case BLT_TEXTURE_TYPE_RANDOM:
+    case BLT_TEXTURE_RANDOM:
 	{
 	    Blt_Pixel *destRowPtr;
 	    int y;
@@ -5850,7 +5850,7 @@ Blt_TexturePicture(Pict *destPtr, Blt_Pixel *lowPtr, Blt_Pixel *highPtr,
 	}
 	break;
 
-    case BLT_TEXTURE_TYPE_STRIPED:
+    case BLT_TEXTURE_VSTRIPES:
 	{
 	    Blt_Pixel *destRowPtr;
 	    int y;
@@ -5878,7 +5878,7 @@ Blt_TexturePicture(Pict *destPtr, Blt_Pixel *lowPtr, Blt_Pixel *highPtr,
 	    }
 	}
 	break;
-    case BLT_TEXTURE_TYPE_CHECKERED:
+    case BLT_TEXTURE_CHECKERS:
 	{
 	    Blt_Pixel *destRowPtr;
 	    int y;

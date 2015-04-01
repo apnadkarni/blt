@@ -1825,7 +1825,7 @@ GradientColorProc(Blt_PaintBrush *brushPtr, int x, int y)
     Blt_Pixel color;
     Graph *graphPtr;
     Point2d point;
-    double value;
+    double value, norm;
     AxisRange *rangePtr;
     
     graphPtr = elemPtr->obj.graphPtr;
@@ -1838,8 +1838,8 @@ GradientColorProc(Blt_PaintBrush *brushPtr, int x, int y)
 	return 0x0;
     }
     rangePtr = &elemPtr->zAxisPtr->axisRange;
-    color.u32 = Blt_Palette_GetAssociatedColorFromAbsoluteValue(
-	brushPtr->palette, value, rangePtr->min, rangePtr->max);
+    norm = (value - rangePtr->min) / rangePtr->range;
+    color.u32 = Blt_Palette_GetAssociatedColor(brushPtr->palette, norm);
     return color.u32;
 }
 
@@ -1857,7 +1857,6 @@ static void
 DrawGradientRectangle(Graph *graphPtr, Drawable drawable, BarElement *elemPtr, 
 		      XRectangle *rectPtr)
 {
-    AxisRange *rangePtr;
     Blt_PaintBrush brush;
     Blt_Painter painter;
     Blt_Picture bg;
@@ -1870,9 +1869,6 @@ DrawGradientRectangle(Graph *graphPtr, Drawable drawable, BarElement *elemPtr,
     if (bg == NULL) {
 	return;				/* Background is obscured. */
     }
-    rangePtr = &elemPtr->zAxisPtr->axisRange;
-    Blt_Palette_SetRange(elemPtr->zAxisPtr->palette,
-			 rangePtr->min, rangePtr->max);
     Blt_PaintBrush_Init(&brush);
     Blt_PaintBrush_SetOrigin(&brush, -rectPtr->x, -rectPtr->y); 
     Blt_PaintBrush_SetPalette(&brush, elemPtr->zAxisPtr->palette);

@@ -83,6 +83,29 @@
 	-high $color
 	-bg $color
 	-palette palette 
+
+  paintbrush create newgradient 
+        -type linear|radial|conical
+	-border colorName
+	-palette paletteName
+        -opacity percent
+        -jitter percent
+        -scale log|linear|atan
+	-startcolor colorName
+	-endcolor colorName
+        -decreasing yes|no 
+      linear 
+        -startposition nw|top left|0 0
+	-endposition sw|bottom right|1 1 
+        -angle numDegrees
+        -repeat yes|no|reverse
+      radial
+        -centerposition nw|top left|0 0
+        -shape circle|ellipse|x1 y1 x2 y2 
+        -gravity 
+      conical
+        -centerposition nw|top left|0 0
+         
   paintbrush create border 
 	-bg $color
 	-alpha $color 
@@ -103,6 +126,12 @@ typedef enum PaintBrushTypes {
     PAINTBRUSH_TILE,			/* Tiled image. */
     PAINTBRUSH_SOLID,			/* Solid color. */
     PAINTBRUSH_TEXTURE,			/* Procedural texture. */
+    PAINTBRUSH_LINEAR_GRADIENT,		/* Color gradient. */
+    PAINTBRUSH_RADIAL_GRADIENT,		/* Color gradient. */
+    PAINTBRUSH_CONICAL_GRADIENT,        /* Color gradient. */
+    PAINTBRUSH_CHECKERS_TEXTURE,        /* Color gradient. */
+    PAINTBRUSH_VERTICALSTRIPES_TEXTURE, /* Color gradient. */
+    PAINTBRUSH_HORIZONTALSTRIPES_TEXTURE, /* Color gradient. */
 } PaintBrushType;
 
 static const char *paintbrushTypes[] = {
@@ -110,6 +139,12 @@ static const char *paintbrushTypes[] = {
     "tile",
     "solid",
     "texture"
+    "lineargradient",
+    "radialgradient",
+    "conicalgradient",
+    "checkerstexture",
+    "verticalstripestexture",
+    "horizontalstripestexture",
 };
 
 typedef struct {
@@ -170,52 +205,53 @@ typedef struct {
 #define DEF_SCALE		"no"
 #define DEF_CENTER		"no"
 #define DEF_TILE		"no"
-#define DEF_TEXTURE_TYPE	"striped"
+#define DEF_TEXTURE_TYPE	"stripes"
+#define DEF_NEWGRADIENT_TYPE	"lineargradient"
 
-static Blt_OptionParseProc ObjToImageProc;
-static Blt_OptionPrintProc ImageToObjProc;
-static Blt_OptionFreeProc FreeImageProc;
+static Blt_OptionParseProc ObjToImage;
+static Blt_OptionPrintProc ImageToObj;
+static Blt_OptionFreeProc ReleaseImage;
 static Blt_CustomOption imageOption =
 {
-    ObjToImageProc, ImageToObjProc, FreeImageProc, (ClientData)0
+    ObjToImage, ImageToObj, ReleaseImage, (ClientData)0
 };
 
-static Blt_OptionParseProc ObjToGradientTypeProc;
-static Blt_OptionPrintProc GradientTypeToObjProc;
+static Blt_OptionParseProc ObjToGradientType;
+static Blt_OptionPrintProc GradientTypeToObj;
 static Blt_CustomOption gradientTypeOption =
 {
-    ObjToGradientTypeProc, GradientTypeToObjProc, NULL, (ClientData)0
+    ObjToGradientType, GradientTypeToObj, NULL, (ClientData)0
 };
 
-static Blt_OptionParseProc ObjToGradientScaleProc;
-static Blt_OptionPrintProc GradientScaleToObjProc;
+static Blt_OptionParseProc ObjToGradientScale;
+static Blt_OptionPrintProc GradientScaleToObj;
 static Blt_CustomOption scaleOption =
 {
-    ObjToGradientScaleProc, GradientScaleToObjProc, NULL, (ClientData)0
+    ObjToGradientScale, GradientScaleToObj, NULL, (ClientData)0
 };
 
-static Blt_OptionParseProc ObjToOpacityProc;
-static Blt_OptionPrintProc OpacityToObjProc;
+static Blt_OptionParseProc ObjToOpacity;
+static Blt_OptionPrintProc OpacityToObj;
 static Blt_CustomOption opacityOption =
 {
-    ObjToOpacityProc, OpacityToObjProc, NULL, (ClientData)0
+    ObjToOpacity, OpacityToObj, NULL, (ClientData)0
 };
 
-static Blt_OptionParseProc ObjToJitterProc;
-static Blt_OptionPrintProc JitterToObjProc;
+static Blt_OptionParseProc ObjToJitter;
+static Blt_OptionPrintProc JitterToObj;
 static Blt_CustomOption jitterOption =
 {
-    ObjToJitterProc, JitterToObjProc, NULL, (ClientData)0
+    ObjToJitter, JitterToObj, NULL, (ClientData)0
 };
 
-static Blt_OptionParseProc ObjToTextureTypeProc;
-static Blt_OptionPrintProc TextureTypeToObjProc;
+static Blt_OptionParseProc ObjToTextureType;
+static Blt_OptionPrintProc TextureTypeToObj;
 static Blt_CustomOption textureTypeOption =
 {
-    ObjToTextureTypeProc, TextureTypeToObjProc, NULL, (ClientData)0
+    ObjToTextureType, TextureTypeToObj, NULL, (ClientData)0
 };
 
-static Blt_ConfigSpec solidConfigSpecs[] =
+static Blt_ConfigSpec solidSpecs[] =
 {
     {BLT_CONFIG_PIX32, "-color", "color", "Color", DEF_COLOR, 
 	Blt_Offset(PaintBrushCmd, brush.solidColor), 0},
@@ -225,7 +261,7 @@ static Blt_ConfigSpec solidConfigSpecs[] =
     {BLT_CONFIG_END, NULL, NULL, NULL, NULL, 0, 0}
 };
 
-static Blt_ConfigSpec tileConfigSpecs[] =
+static Blt_ConfigSpec tileSpecs[] =
 {
     {BLT_CONFIG_CUSTOM, "-image", "image", "Image", (char *)NULL,
 	Blt_Offset(PaintBrushCmd, tkImage), BLT_CONFIG_DONT_SET_DEFAULT, 
@@ -236,7 +272,7 @@ static Blt_ConfigSpec tileConfigSpecs[] =
     {BLT_CONFIG_END, NULL, NULL, NULL, NULL, 0, 0}
 };
 
-static Blt_ConfigSpec gradientConfigSpecs[] =
+static Blt_ConfigSpec gradientSpecs[] =
 {
     {BLT_CONFIG_PIX32, "-high", "high", "High", DEF_GRADIENT_HIGH,
 	Blt_Offset(PaintBrushCmd, brush.high), 0},
@@ -257,7 +293,28 @@ static Blt_ConfigSpec gradientConfigSpecs[] =
     {BLT_CONFIG_END, NULL, NULL, NULL, NULL, 0, 0}
 };
 
-static Blt_ConfigSpec textureConfigSpecs[] =
+static Blt_ConfigSpec newGradientSpecs[] =
+{
+    {BLT_CONFIG_PIX32, "-high", "high", "High", DEF_GRADIENT_HIGH,
+	Blt_Offset(PaintBrushCmd, brush.high), 0},
+    {BLT_CONFIG_CUSTOM, "-jitter", "jitter", "Jitter", DEF_GRADIENT_JITTER, 
+	Blt_Offset(PaintBrushCmd, brush.jitter.range), 
+	BLT_CONFIG_DONT_SET_DEFAULT, &jitterOption},
+    {BLT_CONFIG_PIX32, "-low", "low", "Low", DEF_GRADIENT_LOW,
+	Blt_Offset(PaintBrushCmd, brush.low), 0},
+    {BLT_CONFIG_CUSTOM, "-opacity", "opacity", "Opacity", DEF_OPACITY, 
+	Blt_Offset(PaintBrushCmd, brush.alpha), BLT_CONFIG_DONT_SET_DEFAULT, 
+	&opacityOption},
+    {BLT_CONFIG_CUSTOM, "-scale", "scale", "Scale", DEF_GRADIENT_SCALE, 
+	Blt_Offset(PaintBrushCmd, brush.newGradient.scale),
+	BLT_CONFIG_DONT_SET_DEFAULT, &scaleOption},
+    {BLT_CONFIG_CUSTOM, "-type", "type", "type", DEF_NEWGRADIENT_TYPE, 
+	Blt_Offset(PaintBrushCmd, brush.newGradient.type), 
+	BLT_CONFIG_DONT_SET_DEFAULT, &gradientTypeOption},
+    {BLT_CONFIG_END, NULL, NULL, NULL, NULL, 0, 0}
+};
+
+static Blt_ConfigSpec textureSpecs[] =
 {
     {BLT_CONFIG_PIX32, "-high", "high", "High", DEF_GRADIENT_HIGH,
 	Blt_Offset(PaintBrushCmd, brush.high), 0},
@@ -344,10 +401,8 @@ ImageToPicture(PaintBrushCmd *cmdPtr, int *isFreePtr)
  */
 /* ARGSUSED */
 static void
-ImageChangedProc(
-    ClientData clientData,
-    int x, int y, int width, int height, /* Not used. */
-    int imageWidth, int imageHeight)	 /* Not used. */
+ImageChangedProc(ClientData clientData, int x, int y, int width, int height,
+                 int imageWidth, int imageHeight)
 {
     PaintBrushCmd *cmdPtr = clientData;
     int isNew;
@@ -373,11 +428,7 @@ ImageChangedProc(
 
 /*ARGSUSED*/
 static void
-FreeImageProc(
-    ClientData clientData,
-    Display *display,			/* Not used. */
-    char *widgRec,
-    int offset)
+ReleaseImage(ClientData clientData, Display *display, char *widgRec, int offset)
 {
     PaintBrushCmd *cmdPtr = (PaintBrushCmd *)(widgRec);
 
@@ -390,7 +441,7 @@ FreeImageProc(
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToImageProc --
+ * ObjToImage --
  *
  *	Given an image name, get the Tk image associated with it.
  *
@@ -401,7 +452,7 @@ FreeImageProc(
  */
 /*ARGSUSED*/
 static int
-ObjToImageProc(
+ObjToImage(
     ClientData clientData,		/* Not used. */
     Tcl_Interp *interp,		        /* Interpreter to send results back
 					 * to */
@@ -426,7 +477,7 @@ ObjToImageProc(
 /*
  *---------------------------------------------------------------------------
  *
- * ImageToObjProc --
+ * ImageToObj --
  *
  *	Convert the image name into a string Tcl_Obj.
  *
@@ -437,7 +488,7 @@ ObjToImageProc(
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-ImageToObjProc(
+ImageToObj(
     ClientData clientData,		/* Not used. */
     Tcl_Interp *interp,
     Tk_Window tkwin,			/* Not used. */
@@ -456,7 +507,7 @@ ImageToObjProc(
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToGradientTypeProc --
+ * ObjToGradientType --
  *
  *	Translate the given string to the gradient type it represents.
  *	Types are "horizontal", "vertical", "updiagonal", "downdiagonal", 
@@ -469,7 +520,7 @@ ImageToObjProc(
  */
 /*ARGSUSED*/
 static int
-ObjToGradientTypeProc(
+ObjToGradientType(
     ClientData clientData,		/* Not used. */
     Tcl_Interp *interp,			/* Interpreter to send results back
 					 * to */
@@ -486,17 +537,17 @@ ObjToGradientTypeProc(
     string = Tcl_GetString(objPtr);
     c = string[0];
     if ((c == 'v') && (strcmp(string, "vertical") == 0)) {
-	*typePtr = BLT_GRADIENT_TYPE_VERTICAL;
+	*typePtr = BLT_GRADIENT_VERTICAL;
     } else if ((c == 'h') && (strcmp(string, "horizontal") == 0)) {
-	*typePtr = BLT_GRADIENT_TYPE_HORIZONTAL;
+	*typePtr = BLT_GRADIENT_HORIZONTAL;
     } else if ((c == 'r') && (strcmp(string, "radial") == 0)) {
-	*typePtr = BLT_GRADIENT_TYPE_RADIAL;
+	*typePtr = BLT_GRADIENT_RADIAL;
     } else if ((c == 'u') && (strcmp(string, "updiagonal") == 0)) {
-	*typePtr = BLT_GRADIENT_TYPE_DIAGONAL_UP;
+	*typePtr = BLT_GRADIENT_DIAGONAL_UP;
     } else if ((c == 'd') && (strcmp(string, "downdiagonal") == 0)) {
-	*typePtr = BLT_GRADIENT_TYPE_DIAGONAL_DOWN;
+	*typePtr = BLT_GRADIENT_DIAGONAL_DOWN;
     } else if ((c == 'c') && (strcmp(string, "conical") == 0)) {
-	*typePtr = BLT_GRADIENT_TYPE_CONICAL;
+	*typePtr = BLT_GRADIENT_CONICAL;
     } else {
 	Tcl_AppendResult(interp, "unknown gradient type \"", string, "\"",
 			 (char *)NULL);
@@ -509,17 +560,17 @@ static const char *
 NameOfGradientType(Blt_GradientType type) 
 {
     switch (type) {
-    case BLT_GRADIENT_TYPE_VERTICAL:
+    case BLT_GRADIENT_VERTICAL:
 	return "vertical";
-    case BLT_GRADIENT_TYPE_HORIZONTAL:
+    case BLT_GRADIENT_HORIZONTAL:
 	return "horizontal";
-    case BLT_GRADIENT_TYPE_RADIAL:
+    case BLT_GRADIENT_RADIAL:
 	return "radial";
-    case BLT_GRADIENT_TYPE_DIAGONAL_UP:
+    case BLT_GRADIENT_DIAGONAL_UP:
 	return "updiagonal";
-    case BLT_GRADIENT_TYPE_DIAGONAL_DOWN:
+    case BLT_GRADIENT_DIAGONAL_DOWN:
 	return "downdiagonal";	
-    case BLT_GRADIENT_TYPE_CONICAL:
+    case BLT_GRADIENT_CONICAL:
 	return "conical";	
     default:
 	return "???";
@@ -529,7 +580,7 @@ NameOfGradientType(Blt_GradientType type)
 /*
  *---------------------------------------------------------------------------
  *
- * GradientTypeToObjProc --
+ * GradientTypeToObj --
  *
  *	Returns the string representing the current gradiant shape.
  *
@@ -540,7 +591,7 @@ NameOfGradientType(Blt_GradientType type)
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-GradientTypeToObjProc(
+GradientTypeToObj(
     ClientData clientData,		/* Not used. */
     Tcl_Interp *interp,
     Tk_Window tkwin,			/* Not used. */
@@ -556,27 +607,21 @@ GradientTypeToObjProc(
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToGradientScaleProc --
+ * ObjToGradientScale --
  *
  *	Translates the given string to the gradient scale it represents.  
  *	Valid scales are "linear", "log", "atan".
  *
  * Results:
- *	The return value is a standard TCL result.  
+ *	A standard TCL result.  If successful the field in the structure
+ *      is updated.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
-ObjToGradientScaleProc(
-    ClientData clientData,		/* Not used. */
-    Tcl_Interp *interp,			/* Interpreter to send results back
-					 * to */
-     Tk_Window tkwin,			/* Not used. */
-    Tcl_Obj *objPtr,			/* String representation of value. */
-    char *widgRec,			/* Widget record. */
-    int offset,				/* Offset to field in structure */
-    int flags)	
+ObjToGradientScale(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+                   Tcl_Obj *objPtr, char *widgRec, int offset, int flags)	
 {
     Blt_GradientScale *scalePtr = (Blt_GradientScale *)(widgRec + offset);
     const char *string;
@@ -586,12 +631,12 @@ ObjToGradientScaleProc(
     string = Tcl_GetStringFromObj(objPtr, &length);
     c = string[0];
     if ((c == 'l') && (strcmp(string, "linear") == 0)) {
-	*scalePtr = BLT_GRADIENT_SCALE_LINEAR;
+	*scalePtr = BLT_GRADIENT_LINEARSCALE;
     } else if ((c == 'l') && (length > 2) && 
 	       (strncmp(string, "logarithmic", length) == 0)) {
-	*scalePtr = BLT_GRADIENT_SCALE_LOG;
+	*scalePtr = BLT_GRADIENT_LOGSCALE;
     } else if ((c == 'a') && (strcmp(string, "atan") == 0)) {
-	*scalePtr = BLT_GRADIENT_SCALE_ATAN;
+	*scalePtr = BLT_GRADIENT_ATANSCALE;
     } else {
 	Tcl_AppendResult(interp, "unknown gradient scale \"", string, "\"",
 			 (char *)NULL);
@@ -604,11 +649,11 @@ static const char *
 NameOfGradientScale(Blt_GradientScale scale) 
 {
     switch (scale) {
-    case BLT_GRADIENT_SCALE_LINEAR:
+    case BLT_GRADIENT_LINEARSCALE:
 	return "linear";
-    case BLT_GRADIENT_SCALE_LOG:
+    case BLT_GRADIENT_LOGSCALE:
 	return "log";
-    case BLT_GRADIENT_SCALE_ATAN:
+    case BLT_GRADIENT_ATANSCALE:
 	return "atan";
     default:
 	return "?? unknown scale ??";
@@ -618,7 +663,7 @@ NameOfGradientScale(Blt_GradientScale scale)
 /*
  *---------------------------------------------------------------------------
  *
- * GradientScaleToObjProc --
+ * GradientScaleToObj --
  *
  *	Convert the scale into a string Tcl_Obj.
  *
@@ -629,7 +674,7 @@ NameOfGradientScale(Blt_GradientScale scale)
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-GradientScaleToObjProc(
+GradientScaleToObj(
     ClientData clientData,		/* Not used. */
     Tcl_Interp *interp,
     Tk_Window tkwin,			/* Not used. */
@@ -645,27 +690,20 @@ GradientScaleToObjProc(
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToOpacityProc --
+ * ObjToOpacity --
  *
- *	Convert the string representation of opacity (a percentage) to
- *	an alpha value 0..255.
+ *	Converts the string representating the percent of opacity to an
+ *	alpha value 0..255.
  *
  * Results:
- *	The return value is a standard TCL result.  
+ *	A standard TCL result.  
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
-ObjToOpacityProc(
-    ClientData clientData,		/* Not used. */
-    Tcl_Interp *interp,			/* Interpreter to send results back
-					 * to */
-    Tk_Window tkwin,			/* Not used. */
-    Tcl_Obj *objPtr,			/* String representation of value. */
-    char *widgRec,			/* Widget record. */
-    int offset,				/* Offset to field in structure */
-    int flags)	
+ObjToOpacity(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+             Tcl_Obj *objPtr, char *widgRec, int offset, int flags)	
 {
     int *alphaPtr = (int *)(widgRec + offset);
     double opacity;
@@ -675,7 +713,8 @@ ObjToOpacityProc(
     }
     if ((opacity < 0.0) || (opacity > 100.0)) {
 	Tcl_AppendResult(interp, "invalid percent opacity \"", 
-		Tcl_GetString(objPtr), "\" should be 0 to 100", (char *)NULL);
+		Tcl_GetString(objPtr), "\": number should be between 0 and 100",
+                (char *)NULL);
 	return TCL_ERROR;
     }
     opacity = (opacity / 100.0) * 255.0;
@@ -686,19 +725,19 @@ ObjToOpacityProc(
 /*
  *---------------------------------------------------------------------------
  *
- * OpacityToObjProc --
+ * OpacityToObj --
  *
  *	Convert the alpha value into a string Tcl_Obj representing a
  *	percentage.
  *
  * Results:
- *	The string representation of the filter is returned.
+ *	The string representation of the opacity percentage is returned.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-OpacityToObjProc(
+OpacityToObj(
     ClientData clientData,		/* Not used. */
     Tcl_Interp *interp,
     Tk_Window tkwin,			/* Not used. */
@@ -716,7 +755,7 @@ OpacityToObjProc(
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToJitterProc --
+ * ObjToJitter --
  *
  *	Given a string representation of the jitter value (a percentage),
  *	convert it to a number 0..1.
@@ -728,14 +767,8 @@ OpacityToObjProc(
  */
 /*ARGSUSED*/
 static int
-ObjToJitterProc(
-    ClientData clientData,		/* Not used. */
-    Tcl_Interp *interp,			/* Interpreter to send results back
-					 * to */
-    Tk_Window tkwin,			/* Not used. */
-    Tcl_Obj *objPtr,			/* String representation of value. */
-    char *widgRec,			/* Widget record. */    int offset,				/* Offset to field in structure */
-    int flags)	
+ObjToJitter(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+            Tcl_Obj *objPtr, char *widgRec, int offset, int flags)	
 {
     double *jitterPtr = (double *)(widgRec + offset);
     double jitter;
@@ -745,7 +778,8 @@ ObjToJitterProc(
     }
     if ((jitter < 0.0) || (jitter > 100.0)) {
 	Tcl_AppendResult(interp, "invalid percent jitter \"", 
-		Tcl_GetString(objPtr), "\" should be 0 to 100", (char *)NULL);
+		Tcl_GetString(objPtr), "\" number should be between 0 and 100",
+                (char *)NULL);
 	return TCL_ERROR;
     }
     *jitterPtr = jitter * 0.01;
@@ -755,24 +789,19 @@ ObjToJitterProc(
 /*
  *---------------------------------------------------------------------------
  *
- * OpacityToObjProc --
+ * JitterToObj --
  *
- *	Convert the picture filter into a string Tcl_Obj.
+ *	Convert the double jitter value to a Tcl_Obj.
  *
  * Results:
- *	The string representation of the filter is returned.
+ *	The string representation of the jitter percentage is returned.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-JitterToObjProc(
-    ClientData clientData,		/* Not used. */
-    Tcl_Interp *interp,
-    Tk_Window tkwin,			/* Not used. */
-    char *widgRec,			/* Widget record */
-    int offset,				/* Offset to field in structure */
-    int flags)	
+JitterToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+            char *widgRec, int offset, int flags)	
 {
     double *jitterPtr = (double *)(widgRec + offset);
     double jitter;
@@ -784,10 +813,10 @@ JitterToObjProc(
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToTextureTypeProc --
+ * ObjToTextureType --
  *
  *	Translate the given string to the texture type it represents.  
- *	Types are "checker", "striped"".
+ *	Types are "checker", "vstripes"", "hstripes"".
  *
  * Results:
  *	The return value is a standard TCL result.  
@@ -796,7 +825,7 @@ JitterToObjProc(
  */
 /*ARGSUSED*/
 static int
-ObjToTextureTypeProc(
+ObjToTextureType(
     ClientData clientData,		/* Not used. */
     Tcl_Interp *interp,			/* Interpreter to send results back
 					 * to */
@@ -813,12 +842,16 @@ ObjToTextureTypeProc(
 
     string = Tcl_GetStringFromObj(objPtr, &length);
     c = string[0];
-    if ((c == 's') && (strncmp(string, "striped", length) == 0)) {
-	*typePtr = BLT_TEXTURE_TYPE_STRIPED;
-    } else if ((c == 'c') && (strncmp(string, "checkered", length) == 0)) {
-	*typePtr = BLT_TEXTURE_TYPE_CHECKERED;
+    if ((c == 'h') && (strncmp(string, "hstripes", length) == 0)) {
+	*typePtr = BLT_TEXTURE_HSTRIPES;
+    } else if ((c == 's') && (strncmp(string, "stripes", length) == 0)) {
+	*typePtr = BLT_TEXTURE_VSTRIPES;
+    } else if ((c == 'v') && (strncmp(string, "vstripes", length) == 0)) {
+	*typePtr = BLT_TEXTURE_VSTRIPES;
+    } else if ((c == 'c') && (strncmp(string, "checkers", length) == 0)) {
+	*typePtr = BLT_TEXTURE_CHECKERS;
     } else if ((c == 'r') && (strncmp(string, "random", length) == 0)) {
-	*typePtr = BLT_TEXTURE_TYPE_RANDOM;
+	*typePtr = BLT_TEXTURE_RANDOM;
     } else {
 	Tcl_AppendResult(interp, "unknown texture type \"", string, "\"",
 			 (char *)NULL);
@@ -831,11 +864,13 @@ static const char *
 NameOfTextureType(Blt_TextureType type) 
 {
     switch (type) {
-    case BLT_TEXTURE_TYPE_STRIPED:
-	return "striped";
-    case BLT_TEXTURE_TYPE_CHECKERED:
-	return "checkered";
-    case BLT_TEXTURE_TYPE_RANDOM:
+    case BLT_TEXTURE_VSTRIPES:
+	return "vstripes";
+    case BLT_TEXTURE_HSTRIPES:
+	return "hstripes";
+    case BLT_TEXTURE_CHECKERS:
+	return "checkers";
+    case BLT_TEXTURE_RANDOM:
 	return "random";
     default:
 	return "???";
@@ -845,7 +880,7 @@ NameOfTextureType(Blt_TextureType type)
 /*
  *---------------------------------------------------------------------------
  *
- * TextureTypeToObjProc --
+ * TextureTypeToObj --
  *
  *	Returns the string representing the current pattern type.
  *
@@ -856,7 +891,7 @@ NameOfTextureType(Blt_TextureType type)
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-TextureTypeToObjProc(
+TextureTypeToObj(
     ClientData clientData,		/* Not used. */
     Tcl_Interp *interp,
     Tk_Window tkwin,			/* Not used. */
@@ -880,7 +915,7 @@ GradientColorProc(Blt_PaintBrush *brushPtr, int x, int y)
     cmdPtr = brushPtr->clientData;
     gradPtr = &cmdPtr->brush.gradient;
     switch (gradPtr->type) {
-    case BLT_GRADIENT_TYPE_RADIAL:
+    case BLT_GRADIENT_RADIAL:
 	{
 	    double dx, dy, d;
 
@@ -890,8 +925,8 @@ GradientColorProc(Blt_PaintBrush *brushPtr, int x, int y)
 	    t = 1.0 - (d * gradPtr->scaleFactor);
 	}
 	break;
-    case BLT_GRADIENT_TYPE_DIAGONAL_DOWN:
-    case BLT_GRADIENT_TYPE_DIAGONAL_UP:
+    case BLT_GRADIENT_DIAGONAL_DOWN:
+    case BLT_GRADIENT_DIAGONAL_UP:
 	{
 	    double cx, cy, rx;
 	    
@@ -907,7 +942,7 @@ GradientColorProc(Blt_PaintBrush *brushPtr, int x, int y)
 	}
 	break;
 
-    case BLT_GRADIENT_TYPE_CONICAL:
+    case BLT_GRADIENT_CONICAL:
 	{
 	    double d, dx, dy;
 
@@ -924,37 +959,179 @@ GradientColorProc(Blt_PaintBrush *brushPtr, int x, int y)
 	}
 	break;
 
-    case BLT_GRADIENT_TYPE_HORIZONTAL:
+    case BLT_GRADIENT_HORIZONTAL:
 	t = (double)x * gradPtr->scaleFactor;
 	break;
     default:
-    case BLT_GRADIENT_TYPE_VERTICAL:
+    case BLT_GRADIENT_VERTICAL:
 	t = (double)y * gradPtr->scaleFactor;
-	t = JCLAMP(t);
 	break;
     }
     if (brushPtr->jitter.range > 0.0) {
 	t += Jitter(&brushPtr->jitter);
 	t = JCLAMP(t);
     }
-    if (gradPtr->scale == BLT_GRADIENT_SCALE_LOG) {
+    if (gradPtr->scale == BLT_GRADIENT_LOGSCALE) {
 	t = log10(9.0 * t + 1.0);
-    } else if (gradPtr->scale == BLT_GRADIENT_SCALE_ATAN) {
+    } else if (gradPtr->scale == BLT_GRADIENT_ATANSCALE) {
 	t = atan(18.0 * (t-0.05) + 1.0) / M_PI_2;
     } 
     if (brushPtr->palette != NULL) {
 	return Blt_Palette_GetAssociatedColor(brushPtr->palette, t);
     }
-    color.Red   = (unsigned char)
-	(brushPtr->low.Red   + t * brushPtr->rRange);
-    color.Green = (unsigned char)
-	(brushPtr->low.Green + t * brushPtr->gRange);
-    color.Blue  = (unsigned char)
-	(brushPtr->low.Blue  + t * brushPtr->bRange);
-    color.Alpha = (unsigned char)
-	(brushPtr->low.Alpha + t * brushPtr->aRange);
+    color.Red   = (unsigned char)(brushPtr->low.Red   + t * brushPtr->rRange);
+    color.Green = (unsigned char)(brushPtr->low.Green + t * brushPtr->gRange);
+    color.Blue  = (unsigned char)(brushPtr->low.Blue  + t * brushPtr->bRange);
+    color.Alpha = (unsigned char)(brushPtr->low.Alpha + t * brushPtr->aRange);
     return color.u32;
 }
+
+#ifdef notdef
+static int
+LinearGradientColorProc(Blt_PaintBrush *brushPtr, int x, int y)
+{
+    double t;
+    Blt_Pixel color;
+    PaintBrushCmd *cmdPtr;
+    Blt_LinearGradient *gradPtr;
+    
+    cmdPtr = brushPtr->clientData;
+    gradPtr = &cmdPtr->brush.linear;
+    switch (gradPtr->type) {
+    case BLT_GRADIENT_HORIZONTAL:
+        t = (y - gradPtr->x1) / (gradPtr->x2 - gradPtr->x1);
+	break;
+    default:
+    case BLT_GRADIENT_VERTICAL:
+        t = (y - gradPtr->y1) / (gradPtr->y2 - gradPtr->y1);
+        break;
+    default:
+	{
+	    double d;
+	    Point2d p;
+
+            /* Get the projection of the the sample point on the infinite
+             * line described by the line segment. The distance of the
+             * projected point from the start of the line segment over the
+             * distance of the line segment is t. */
+            p = Blt_GetProjection2(x, y, gradPtr->x1, gradPtr->y1, gradPtr->x2,
+                gradPtr->y2);
+            d = hypot(p.x - gradPtr->x1, p.y - gradPtr->y1);
+            t = d / gradPtr->length;
+	}
+	break;
+    }
+    if ((t < 0.0) || (t > 1.0)) {
+        out = 1;
+        rem = fmod(t, 1.0);
+        pos = (int)(t - rem);
+        if (pos & 0x1) {
+            rev = (t < 0.0) ? 1 : 0;
+        }
+        t = rem;
+    }
+    if (brushPtr->jitter.range > 0.0) {
+	t += Jitter(&brushPtr->jitter);
+	t = JCLAMP(t);
+    }
+    if (gradPtr->scale == BLT_GRADIENT_LOGSCALE) {
+	t = log10(9.0 * t + 1.0);
+    } else if (gradPtr->scale == BLT_GRADIENT_ATANSCALE) {
+	t = atan(18.0 * (t-0.05) + 1.0) / M_PI_2;
+    } 
+    if (brushPtr->palette != NULL) {
+	return Blt_Palette_GetAssociatedColor(brushPtr->palette, t);
+    }
+    color.Red   = (unsigned char)(brushPtr->low.Red   + t * brushPtr->rRange);
+    color.Green = (unsigned char)(brushPtr->low.Green + t * brushPtr->gRange);
+    color.Blue  = (unsigned char)(brushPtr->low.Blue  + t * brushPtr->bRange);
+    color.Alpha = (unsigned char)(brushPtr->low.Alpha + t * brushPtr->aRange);
+    return color.u32;
+}
+
+static int
+RadialGradientColorProc(Blt_PaintBrush *brushPtr, int x, int y)
+{
+    double t;
+    Blt_Pixel color;
+    PaintBrushCmd *cmdPtr;
+    Blt_Gradient *gradPtr;
+    double dx, dy, d;
+
+    cmdPtr = brushPtr->clientData;
+    gradPtr = &cmdPtr->brush.radial;
+
+    dx = x - gradPtr->xOffset;
+    dy = y - gradPtr->yOffset;
+
+    /* Circular radial gradient is the distance from the sample point to
+     * the center of the gradient. */
+    d = hypot(x - gradPtr->xOffset, y - gradPtr->yOffset);
+    t = 1.0 - (d * gradPtr->scaleFactor);
+
+    /* Elliptical radial gradient is the distance from the sample point to
+     * the center of the gradient. */
+
+    if (brushPtr->jitter.range > 0.0) {
+	t += Jitter(&brushPtr->jitter);
+	t = JCLAMP(t);
+    }
+    if (gradPtr->scale == BLT_GRADIENT_LOGSCALE) {
+	t = log10(9.0 * t + 1.0);
+    } else if (gradPtr->scale == BLT_GRADIENT_ATANSCALE) {
+	t = atan(18.0 * (t-0.05) + 1.0) / M_PI_2;
+    } 
+    if (brushPtr->palette != NULL) {
+	return Blt_Palette_GetAssociatedColor(brushPtr->palette, t);
+    }
+    color.Red   = (unsigned char)(brushPtr->low.Red   + t * brushPtr->rRange);
+    color.Green = (unsigned char)(brushPtr->low.Green + t * brushPtr->gRange);
+    color.Blue  = (unsigned char)(brushPtr->low.Blue  + t * brushPtr->bRange);
+    color.Alpha = (unsigned char)(brushPtr->low.Alpha + t * brushPtr->aRange);
+    return color.u32;
+}
+
+static int
+ConicalGradientColorProc(Blt_PaintBrush *brushPtr, int x, int y)
+{
+    double t;
+    Blt_Pixel color;
+    PaintBrushCmd *cmdPtr;
+    Blt_Gradient *gradPtr;
+    double d, dx, dy;
+
+    cmdPtr = brushPtr->clientData;
+    gradPtr = &cmdPtr->brush.gradient;
+    /* Translate to the center of the reference window. */
+    dx = x - gradPtr->xOffset;
+    dy = y - gradPtr->yOffset;
+    if (dx == 0.0) {
+        d = gradPtr->angle;
+    } else {
+        d = cos(atan(dy / dx) + gradPtr->angle);
+    }
+    d = fabs(fmod(d, 360.0));
+    t = d;
+    if (brushPtr->jitter.range > 0.0) {
+	t += Jitter(&brushPtr->jitter);
+	t = JCLAMP(t);
+    }
+    if (gradPtr->scale == BLT_GRADIENT_LOGSCALE) {
+	t = log10(9.0 * t + 1.0);
+    } else if (gradPtr->scale == BLT_GRADIENT_ATANSCALE) {
+	t = atan(18.0 * (t-0.05) + 1.0) / M_PI_2;
+    } 
+    if (brushPtr->palette != NULL) {
+	return Blt_Palette_GetAssociatedColor(brushPtr->palette, t);
+    }
+    color.Red   = (unsigned char)(brushPtr->low.Red   + t * brushPtr->rRange);
+    color.Green = (unsigned char)(brushPtr->low.Green + t * brushPtr->gRange);
+    color.Blue  = (unsigned char)(brushPtr->low.Blue  + t * brushPtr->bRange);
+    color.Alpha = (unsigned char)(brushPtr->low.Alpha + t * brushPtr->aRange);
+    return color.u32;
+}
+
+#endif
 
 static int
 TextureColorProc(Blt_PaintBrush *brushPtr, int x, int y)
@@ -967,18 +1144,19 @@ TextureColorProc(Blt_PaintBrush *brushPtr, int x, int y)
     switch (cmdPtr->brush.textureType) {
     default:
 	
-    case BLT_TEXTURE_TYPE_RANDOM:
+    case BLT_TEXTURE_RANDOM:
 	t = RandomNumber(&brushPtr->random);
 	break;
 
-#ifdef notdef
-    case BLT_TEXTURE_TYPE_DIAGONAL:
-	break;
-#endif
-    case BLT_TEXTURE_TYPE_STRIPED:
+    case BLT_TEXTURE_VSTRIPES:
 	t = ((y / 2) & 0x1) ? 0 : 1;
 	break;
-    case BLT_TEXTURE_TYPE_CHECKERED:
+
+    case BLT_TEXTURE_HSTRIPES:
+	t = ((x / 2) & 0x1) ? 0 : 1;
+	break;
+
+    case BLT_TEXTURE_CHECKERS:
 	{
 	    int oddx, oddy;
 	    
@@ -1088,7 +1266,6 @@ DestroyPaintBrushCmd(PaintBrushCmd *cmdPtr)
     Blt_Free(cmdPtr);
 }
 
-
 /*
  *---------------------------------------------------------------------------
  *
@@ -1111,19 +1288,23 @@ NewPaintBrushCmd(PaintBrushCmdInterpData *dataPtr, Tcl_Interp *interp,
     switch (type) {
     case BLT_PAINTBRUSH_SOLID:
 	cmdPtr->brush.type = BLT_PAINTBRUSH_SOLID;
-	cmdPtr->configSpecs = solidConfigSpecs;
+	cmdPtr->configSpecs = solidSpecs;
 	break;
     case BLT_PAINTBRUSH_TILE:
 	cmdPtr->brush.type = BLT_PAINTBRUSH_TILE;
-	cmdPtr->configSpecs = tileConfigSpecs;
+	cmdPtr->configSpecs = tileSpecs;
 	break;
     case BLT_PAINTBRUSH_GRADIENT:
 	cmdPtr->brush.type = BLT_PAINTBRUSH_GRADIENT;
-	cmdPtr->configSpecs = gradientConfigSpecs;
+	cmdPtr->configSpecs = gradientSpecs;
+	break;
+    case BLT_PAINTBRUSH_NEWGRADIENT:
+	cmdPtr->brush.type = BLT_PAINTBRUSH_NEWGRADIENT;
+	cmdPtr->configSpecs = newGradientSpecs;
 	break;
     case BLT_PAINTBRUSH_TEXTURE:
 	cmdPtr->brush.type = BLT_PAINTBRUSH_TEXTURE;
-	cmdPtr->configSpecs = textureConfigSpecs;
+	cmdPtr->configSpecs = textureSpecs;
 	break;
     default:
 	abort();
@@ -1138,7 +1319,7 @@ NewPaintBrushCmd(PaintBrushCmdInterpData *dataPtr, Tcl_Interp *interp,
 
 static int
 ConfigurePaintBrushCmd(Tcl_Interp *interp, PaintBrushCmd *cmdPtr, int objc, 
-		  Tcl_Obj *const *objv, int flags)
+                       Tcl_Obj *const *objv, int flags)
 {
     if (Blt_ConfigureWidgetFromObj(interp, cmdPtr->tkwin, cmdPtr->configSpecs, 
 	objc, objv, (char *)cmdPtr, flags) != TCL_OK) {
@@ -1174,7 +1355,15 @@ ConfigurePaintBrushCmd(Tcl_Interp *interp, PaintBrushCmd *cmdPtr, int objc,
 }
 
 /*
- * paintbrush create type ?name? ?option values?...
+ *---------------------------------------------------------------------------
+ *
+ * CreateOp --
+ *
+ *      Creates a new paintbrush object.
+ *
+ *      paintbrush create type ?name? ?option values?...
+ *
+ *---------------------------------------------------------------------------
  */
 static int
 CreateOp(ClientData clientData, Tcl_Interp *interp, int objc, 
@@ -1190,12 +1379,12 @@ CreateOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	return TCL_ERROR;
     }
     string = Tcl_GetString(objv[3]);
-    if (string[0] == '-') {		/* Generate a unique name for the
-					 * paintbrush.  */
+    if (string[0] == '-') {		
 	int isNew;
 	char name[200];
 
-	do {
+        /* Generate a unique name for the paintbrush.  */
+        do {
 	    Blt_FormatString(name, 200, "paintbrush%d", dataPtr->nextId++);
 	    hPtr = Blt_CreateHashEntry(&dataPtr->instTable, name, &isNew);
 	} while (!isNew);
@@ -1228,7 +1417,13 @@ CreateOp(ClientData clientData, Tcl_Interp *interp, int objc,
 }    
 
 /*
- * paintbrush cget $brush ?option?...
+ *---------------------------------------------------------------------------
+ *
+ * CgetOp --
+ *
+ *      paintbrush cget $brush ?option?...
+ *
+ *---------------------------------------------------------------------------
  */
 static int
 CgetOp(ClientData clientData, Tcl_Interp *interp, int objc, 
@@ -1245,7 +1440,13 @@ CgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
 }
 
 /*
- * paintbrush configure $brush ?option?...
+ *---------------------------------------------------------------------------
+ *
+ * ConfigureOp --
+ *
+ *      paintbrush configure $brush ?option?...
+ *
+ *---------------------------------------------------------------------------
  */
 static int
 ConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc, 
@@ -1273,7 +1474,15 @@ ConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
 }
 
 /*
- * bgpattern delete $pattern... 
+ *---------------------------------------------------------------------------
+ *
+ * DeleteOp --
+ *
+ *      Deletes one or more paintbrush objects.
+ *
+ *      bgpattern delete brushName... 
+ *
+ *---------------------------------------------------------------------------
  */
 static int
 DeleteOp(ClientData clientData, Tcl_Interp *interp, int objc, 
@@ -1306,7 +1515,7 @@ DeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * NamesOp --
  *
- *	paintbrush names ?pattern?
+ *	paintbrush names ?pattern ... ?
  *
  *---------------------------------------------------------------------- 
  */
@@ -1340,7 +1549,15 @@ NamesOp(ClientData clientData, Tcl_Interp *interp, int objc,
 }
 
 /*
- * paintbrush type $brush
+ *---------------------------------------------------------------------------
+ *
+ * TypeOp --
+ *
+ *      Returns the type of the paintbrush 
+ *
+ *      paintbrush type brushName
+ *
+ *---------------------------------------------------------------------------
  */
 static int
 TypeOp(ClientData clientData, Tcl_Interp *interp, int objc, 
@@ -1356,14 +1573,21 @@ TypeOp(ClientData clientData, Tcl_Interp *interp, int objc,
     return TCL_OK;
 }
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * PaintBrushCmdProc --
+ *
+ *---------------------------------------------------------------------------
+ */
 static Blt_OpSpec paintbrushOps[] =
 {
-    {"cget",      2, CgetOp,      4, 4, "brush option",},
-    {"configure", 2, ConfigureOp, 3, 0, "brush ?option value?...",},
+    {"cget",      2, CgetOp,      4, 4, "brushName option",},
+    {"configure", 2, ConfigureOp, 3, 0, "brushName ?option value?...",},
     {"create",    2, CreateOp,    3, 0, "type ?args?",},
-    {"delete",    1, DeleteOp,    2, 0, "brush...",},
-    {"names",     1, NamesOp,     2, 3, "brush ?pattern?",},
-    {"type",      1, TypeOp,      3, 3, "brush",},
+    {"delete",    1, DeleteOp,    2, 0, "brushName...",},
+    {"names",     1, NamesOp,     2, 3, "brushName ?pattern?",},
+    {"type",      1, TypeOp,      3, 3, "brushName",},
 };
 static int numPaintBrushOps = sizeof(paintbrushOps) / sizeof(Blt_OpSpec);
 
@@ -1381,8 +1605,27 @@ PaintBrushCmdProc(ClientData clientData, Tcl_Interp *interp, int objc,
     return (*proc) (clientData, interp, objc, objv);
 }
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * PaintBrushCmdInterpDeleteProc --
+ *
+ *      Called when the interpreter is destroyed, this routine frees all
+ *      the paintbrushes previously created and still available, and then
+ *      deletes the hash table that keeps track of them. 
+ *
+ *      We have to wait for the deletion of the interpreter and not the
+ *      "blt::paintbrush" command because 1) we need all the clients of a
+ *      paintbrush to release them before we can remove the hash table and
+ *      2) we can't guarentee that "blt::paintbrush" command wil be deleted
+ *      after all the clients.
+ *
+ *---------------------------------------------------------------------------
+ */
 static void
-PaintBrushCmdDeleteProc(ClientData clientData) 
+PaintBrushCmdInterpDeleteProc(
+    ClientData clientData,              /* Interpreter-specific data. */
+    Tcl_Interp *interp)
 {
     PaintBrushCmdInterpData *dataPtr = clientData;
     Blt_HashEntry *hPtr;
@@ -1398,6 +1641,7 @@ PaintBrushCmdDeleteProc(ClientData clientData)
     }
     Blt_DeleteHashTable(&dataPtr->instTable);
     Tcl_DeleteAssocData(dataPtr->interp, PAINTBRUSH_THREAD_KEY);
+    Blt_Free(dataPtr);
 }
 
 /*
@@ -1420,13 +1664,8 @@ GetPaintBrushCmdInterpData(Tcl_Interp *interp)
 	dataPtr->interp = interp;
 	dataPtr->nextId = 1;
 
-
-	/* FIXME: Create interp delete proc to teardown the hash table and
-	 * data entry.  Must occur after all the widgets have been destroyed
-	 * (clients of the background pattern). */
-
 	Tcl_SetAssocData(interp, PAINTBRUSH_THREAD_KEY, 
-		(Tcl_InterpDeleteProc *)NULL, dataPtr);
+		PaintBrushCmdInterpDeleteProc, dataPtr);
 	Blt_InitHashTable(&dataPtr->instTable, BLT_STRING_KEYS);
     }
     return dataPtr;
@@ -1436,9 +1675,8 @@ GetPaintBrushCmdInterpData(Tcl_Interp *interp)
 int
 Blt_PaintBrushCmdInitProc(Tcl_Interp *interp)
 {
-    static Blt_CmdSpec cmdSpec = {
-	"paintbrush", PaintBrushCmdProc, PaintBrushCmdDeleteProc,
-    };
+    static Blt_CmdSpec cmdSpec = { "paintbrush", PaintBrushCmdProc, };
+
     cmdSpec.clientData = GetPaintBrushCmdInterpData(interp);
     return Blt_InitCmd(interp, "::blt", &cmdSpec);
 }
@@ -1518,9 +1756,6 @@ Blt_PaintBrush_Region(Blt_PaintBrush *brushPtr, int x, int y, int w, int h)
 	brushPtr->gRange = brushPtr->high.Green - brushPtr->low.Green;
 	brushPtr->bRange = brushPtr->high.Blue  - brushPtr->low.Blue;
 	brushPtr->aRange = brushPtr->high.Alpha - brushPtr->low.Alpha;
-	if (brushPtr->palette != NULL) {
-	    Blt_Palette_SetRange(brushPtr->palette, 0.0, 1.0);
-	}
 	if (brushPtr->jitter.range > 0.0) {
 	    JitterInit(&brushPtr->jitter);
 	}
@@ -1530,27 +1765,27 @@ Blt_PaintBrush_Region(Blt_PaintBrush *brushPtr, int x, int y, int w, int h)
 
 	gradPtr = &brushPtr->gradient;
 	switch (gradPtr->type) {
-	case BLT_GRADIENT_TYPE_HORIZONTAL:
+	case BLT_GRADIENT_HORIZONTAL:
 	    gradPtr->scaleFactor = 0.0;
 	    if (w > 1) {
 		gradPtr->scaleFactor = 1.0 / (w - 1);
 	    } 
 	    break;
 	default:
-	case BLT_GRADIENT_TYPE_VERTICAL:
+	case BLT_GRADIENT_VERTICAL:
 	    gradPtr->scaleFactor = 0.0;
 	    if (h > 1) {
 		gradPtr->scaleFactor = 1.0 / (h - 1);
 	    } 
 	    break;
-	case BLT_GRADIENT_TYPE_DIAGONAL_UP:
-	case BLT_GRADIENT_TYPE_DIAGONAL_DOWN:
+	case BLT_GRADIENT_DIAGONAL_UP:
+	case BLT_GRADIENT_DIAGONAL_DOWN:
 	    gradPtr->xOffset = w * 0.5;
 	    gradPtr->yOffset = h * 0.5;
 	    gradPtr->length = sqrt(w * w + h * h);
 	    gradPtr->cosTheta = w / gradPtr->length;
 	    gradPtr->sinTheta = h / gradPtr->length;
-	    if (gradPtr->type == BLT_GRADIENT_TYPE_DIAGONAL_DOWN) {
+	    if (gradPtr->type == BLT_GRADIENT_DIAGONAL_DOWN) {
 		gradPtr->sinTheta = -gradPtr->sinTheta;
 	    }
 	    gradPtr->scaleFactor = 0.0;
@@ -1558,7 +1793,7 @@ Blt_PaintBrush_Region(Blt_PaintBrush *brushPtr, int x, int y, int w, int h)
 		gradPtr->scaleFactor = 1.0 / (gradPtr->length - 1);
 	    } 
 	    break;
-	case BLT_GRADIENT_TYPE_RADIAL:
+	case BLT_GRADIENT_RADIAL:
 	    gradPtr->xOffset = w * 0.5;
 	    gradPtr->yOffset = h * 0.5;
 	    gradPtr->length = sqrt(w * w + h * h);
@@ -1567,7 +1802,7 @@ Blt_PaintBrush_Region(Blt_PaintBrush *brushPtr, int x, int y, int w, int h)
 		gradPtr->scaleFactor = 1.0 / ((gradPtr->length * 0.5) - 1);
 	    } 
 	    break;
-	case BLT_GRADIENT_TYPE_CONICAL:
+	case BLT_GRADIENT_CONICAL:
 	    gradPtr->xOffset = w * 0.5;
 	    gradPtr->yOffset = h * 0.5;
 	    gradPtr->angle = 45 * DEG2RAD;
@@ -1704,25 +1939,29 @@ Blt_PaintBrush_GetFromString(Tcl_Interp *interp, const char *string,
     Blt_HashEntry *hPtr;
     PaintBrushCmd *cmdPtr;
     PaintBrushCmdInterpData *dataPtr;
-    int isNew;
 
     dataPtr = GetPaintBrushCmdInterpData(interp);
-    hPtr = Blt_CreateHashEntry(&dataPtr->instTable, string, &isNew);
-    if (isNew) { 
+    hPtr = Blt_FindHashEntry(&dataPtr->instTable, string);
+    if (hPtr == NULL) { 
 	Blt_Pixel color;
-
-	/* PaintBrush doesn't already exist, see if it's a color name
-	 * (i.e. something that Tk_Get3DBorder will accept). */
+        int isNew;
+        
+	/* The paintbrush doesn't already exist, so see if it's a color
+	 * name (something that Tk_Get3DBorder will accept). If it's a
+	 * valid color, then automatically create a solid brush out of
+	 * it. */
 	if (Blt_GetPixel(interp, string, &color) != TCL_OK) {
-	    goto error;			/* Nope. It's an error. */
+	    return TCL_ERROR;           /* Nope. It's an error. */
 	} 
 	cmdPtr = NewPaintBrushCmd(dataPtr, interp, BLT_PAINTBRUSH_SOLID);
 	if (cmdPtr == NULL) {
-	    goto error;			/* Can't allocate new color. */
+	    return TCL_ERROR;           /* Can't allocate a new brush. */
 	}
 	cmdPtr->brush.solidColor.u32 = color.u32;
-	Blt_AssociateColor(&cmdPtr->brush.solidColor);
 	cmdPtr->refCount = 1;
+	Blt_AssociateColor(&cmdPtr->brush.solidColor);
+        hPtr = Blt_CreateHashEntry(&dataPtr->instTable, string, &isNew);
+        assert(isNew);
 	cmdPtr->hashPtr = hPtr;
 	cmdPtr->name = Blt_GetHashKey(&dataPtr->instTable, hPtr);
 	Blt_SetHashValue(hPtr, cmdPtr);
@@ -1731,18 +1970,8 @@ Blt_PaintBrush_GetFromString(Tcl_Interp *interp, const char *string,
 	cmdPtr->refCount++;
 	assert(cmdPtr != NULL);
     }
-    hPtr = Blt_FindHashEntry(&dataPtr->instTable, string);
-    if (hPtr == NULL) {
-	Tcl_AppendResult(dataPtr->interp, "can't find paintbrush \"", 
-		string, "\"", (char *)NULL);
-	return TCL_ERROR;
-    }
-    cmdPtr = Blt_GetHashValue(hPtr);
     *brushPtrPtr = (Blt_PaintBrush *)cmdPtr;
     return TCL_OK;
- error:
-    Blt_DeleteHashEntry(&dataPtr->instTable, hPtr);
-    return TCL_ERROR;
 }
 
 /*

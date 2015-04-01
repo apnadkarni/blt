@@ -431,7 +431,6 @@ typedef struct {
 BLT_EXTERN void Blt_Shadow_Set(Blt_Shadow *sPtr, int width, int offset, 
 	int color, int alpha);
 
-
 /*
  *---------------------------------------------------------------------------
  *
@@ -442,14 +441,20 @@ BLT_EXTERN void Blt_Shadow_Set(Blt_Shadow *sPtr, int width, int offset,
  *---------------------------------------------------------------------------
  */
 typedef enum Blt_GradientTypes {
-    BLT_GRADIENT_TYPE_VERTICAL,		
-    BLT_GRADIENT_TYPE_HORIZONTAL,
-    BLT_GRADIENT_TYPE_DIAGONAL_UP,
-    BLT_GRADIENT_TYPE_DIAGONAL_DOWN,
-    BLT_GRADIENT_TYPE_RADIAL,
-    BLT_GRADIENT_TYPE_RECTANGULAR,
-    BLT_GRADIENT_TYPE_CONICAL
+    BLT_GRADIENT_VERTICAL,		
+    BLT_GRADIENT_HORIZONTAL,
+    BLT_GRADIENT_DIAGONAL_UP,
+    BLT_GRADIENT_DIAGONAL_DOWN,
+    BLT_GRADIENT_RADIAL,
+    BLT_GRADIENT_RECTANGULAR,
+    BLT_GRADIENT_CONICAL
 } Blt_GradientType;
+
+typedef enum Blt_NewGradientTypes {
+    BLT_NEWGRADIENT_LINEAR,		
+    BLT_NEWGRADIENT_RADIAL,
+    BLT_NEWGRADIENT_CONICAL
+} Blt_NewGradientType;
 
 /*
  *---------------------------------------------------------------------------
@@ -461,9 +466,9 @@ typedef enum Blt_GradientTypes {
  *---------------------------------------------------------------------------
  */
 typedef enum Blt_GradientScales {
-    BLT_GRADIENT_SCALE_LINEAR,		
-    BLT_GRADIENT_SCALE_LOG,
-    BLT_GRADIENT_SCALE_ATAN
+    BLT_GRADIENT_LINEARSCALE,		
+    BLT_GRADIENT_LOGSCALE,
+    BLT_GRADIENT_ATANSCALE
 } Blt_GradientScale;
 
 /*
@@ -477,15 +482,62 @@ typedef enum Blt_GradientScales {
  *---------------------------------------------------------------------------
  */
 typedef struct {
-    Blt_GradientType type;		/* Determines the type of gradient. */
-    Blt_GradientScale scale;
+    Blt_GradientType type;		/* Determines the type of
+                                         * gradient. Could "be "linear",
+                                         * "radial", or "conical". */
+    Blt_GradientScale scale;            /* Indicates how to scale the
+                                         * normalized value before
+                                         * interpolating the color. Could
+                                         * be "linear", "logarithmic", or
+                                         * "atan". */
     float sinTheta, cosTheta;		/* Rotation of diagonal. */
     float xOffset, yOffset;		/* Offset to the center of the
 					 * diagonal. */
     float length;			/* Length of diagonal. */
     float scaleFactor;
-    float angle;			/* Starting angle. */
+    float angle;			/* Angle of rotation for the line
+                                         * defining the linear gradient. */
+#ifdef notdef
+    float x1, y1, x2, y1;               /* Line in relative coordinates
+                                         * (0..1) defining the linear
+                                         * gradient. */
+    float arclength;                    /* Length of line defining linear
+                                         * gradient. */
+#endif
 } Blt_Gradient;
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * Blt_NewGradient --
+ *
+ *      Represents a gradient.  It contains information to compute the
+ *      gradient color value at each point.
+ *
+ *---------------------------------------------------------------------------
+ */
+typedef struct {
+    Blt_NewGradientType type;		/* Determines the type of
+                                         * gradient. Could "be "linear",
+                                         * "radial", or "conical". */
+    Blt_GradientScale scale;            /* Indicates how to scale the
+                                         * normalized value before
+                                         * interpolating the color. Could
+                                         * be "linear", "logarithmic", or
+                                         * "atan". */
+    float sinTheta, cosTheta;		/* Rotation of diagonal. */
+    float xOffset, yOffset;		/* Offset to the center of the
+					 * diagonal. */
+    float scaleFactor;
+    float angle;			/* Angle of rotation for the line
+                                         * defining the linear gradient. */
+    float x1, y1, x2, y2;               /* Line in relative coordinates
+                                         * (0..1) defining the linear
+                                         * gradient. */
+    float length;                       /* Length of line defining linear
+                                         * gradient. */
+} Blt_NewGradient;
+
 
 BLT_EXTERN void Blt_GradientPicture(Blt_Picture picture, Blt_Pixel *highPtr, 
 	Blt_Pixel *lowPtr, Blt_Gradient *gradientPtr, Blt_Jitter *jitterPtr);
@@ -500,9 +552,10 @@ BLT_EXTERN void Blt_GradientPicture(Blt_Picture picture, Blt_Pixel *highPtr,
  *---------------------------------------------------------------------------
  */
 typedef enum Blt_TextureTypes {
-    BLT_TEXTURE_TYPE_STRIPED,		
-    BLT_TEXTURE_TYPE_CHECKERED,
-    BLT_TEXTURE_TYPE_RANDOM
+    BLT_TEXTURE_VSTRIPES,		
+    BLT_TEXTURE_HSTRIPES,		
+    BLT_TEXTURE_CHECKERS,
+    BLT_TEXTURE_RANDOM
 } Blt_TextureType;
 
 BLT_EXTERN void Blt_TexturePicture(Blt_Picture picture, Blt_Pixel *lowPtr, 
@@ -516,6 +569,7 @@ typedef enum Blt_PaintBrushTypes {
     BLT_PAINTBRUSH_SOLID,
     BLT_PAINTBRUSH_TEXTURE,
     BLT_PAINTBRUSH_GRADIENT,
+    BLT_PAINTBRUSH_NEWGRADIENT,
     BLT_PAINTBRUSH_TILE
 } Blt_PaintBrushType;
 
@@ -550,6 +604,8 @@ struct _Blt_PaintBrush {
 					 * tiling. */
     /* Gradient-specific fields. */
     Blt_Gradient gradient;
+    /* Gradient-specific fields. */
+    Blt_NewGradient newGradient;
 
     /* Texture-pattern specific fields. */
     Blt_TextureType textureType;

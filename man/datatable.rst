@@ -66,13 +66,13 @@ SYNTAX
   ".foo.datatable0.bar".  Datatables are by default created in the current
   namespace, not the global namespace, unless *tableName* contains a
   namespace qualifier, such as "fred::myDataTable". The name of the new
-  datatable is returned.
+  *datatable* is returned.
   
   A new TCL command *tableName* is created that you can use to access and
-  manage the datatable object.  Another TCL command or datatable object can
-  not already exist as *tableName*.  The new datatable will be empty with
+  manage the *datatable* object.  Another TCL command or *datatable* object can
+  not already exist as *tableName*.  The new *datatable* will be empty with
   no rows or columns.  If the TCL command *tableName* is deleted, the
-  datatable will also be released.
+  *datatable* will also be released.
 
 **blt::datatable destroy** *tableName*...
 

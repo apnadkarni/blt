@@ -1,17 +1,16 @@
 /* -*- mode: c; c-basic-offset: 4; indent-tabs-mode: nil -*- */
-
 /*
  * bltTkInt.h --
  *
  *	Copyright 1993-2004 George A Howlett.
  *
- *	Permission is hereby granted, free of charge, to any person obtaining
- *	a copy of this software and associated documentation files (the
- *	"Software"), to deal in the Software without restriction, including
- *	without limitation the rights to use, copy, modify, merge, publish,
- *	distribute, sublicense, and/or sell copies of the Software, and to
- *	permit persons to whom the Software is furnished to do so, subject to
- *	the following conditions:
+ *	Permission is hereby granted, free of charge, to any person
+ *	obtaining a copy of this software and associated documentation
+ *	files (the "Software"), to deal in the Software without
+ *	restriction, including without limitation the rights to use, copy,
+ *	modify, merge, publish, distribute, sublicense, and/or sell copies
+ *	of the Software, and to permit persons to whom the Software is
+ *	furnished to do so, subject to the following conditions:
  *
  *	The above copyright notice and this permission notice shall be
  *	included in all copies or substantial portions of the Software.
@@ -19,10 +18,11 @@
  *	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  *	EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  *	MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- *	NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
- *	LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
- *	OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
- *	WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *	NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+ *	BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ *	ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ *	CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ *	SOFTWARE.
  */
 
 #ifndef _BLT_TK_INT_H
@@ -140,7 +140,7 @@ BLT_EXTERN void Blt_UpdateScrollbar(Tcl_Interp *interp,
 #  define TK_RELIEF_SOLID		TK_RELIEF_FLAT
 #endif
 
-/*-------------------------------------------------------------------------------
+/*--------------------------------------------------------------------------
  *
  * ColorPair --
  *
@@ -169,9 +169,10 @@ BLT_EXTERN void Blt_FreeColorPair (ColorPair *pairPtr);
 /*
  *---------------------------------------------------------------------------
  *
- * 	X11/Xosdefs.h requires XNOSTDHDRS be set for some systems.  This is a
- * 	guess.  If I can't find STDC headers or unistd.h, assume that this is
- * 	non-POSIX and non-STDC environment.  (needed for Encore Umax 3.4 ?)
+ * 	X11/Xosdefs.h requires XNOSTDHDRS be set for some systems.  This is
+ * 	a guess.  If I can't find STDC headers or unistd.h, assume that
+ * 	this is non-POSIX and non-STDC environment.  (needed for Encore
+ * 	Umax 3.4 ?)
  *
  *---------------------------------------------------------------------------
  */
@@ -220,7 +221,9 @@ BLT_EXTERN const char *Blt_NameOfResize(int resize);
 BLT_EXTERN int Blt_GetXY (Tcl_Interp *interp, Tk_Window tkwin, 
 	const char *string, int *xPtr, int *yPtr);
 
-BLT_EXTERN Point2d Blt_GetProjection (int x, int y, Point2d *p, Point2d *q);
+BLT_EXTERN Point2d Blt_GetProjection(int x, int y, Point2d *p, Point2d *q);
+BLT_EXTERN Point2d Blt_GetProjection2(int x, int y, double x1, double y1,
+                                      double x2, double y2);
 
 BLT_EXTERN void Blt_DrawArrowOld(Display *display, Drawable drawable, GC gc, 
 	int x, int y, int w, int h, int borderWidth, int orientation);

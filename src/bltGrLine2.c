@@ -4020,7 +4020,7 @@ GradientColorProc(Blt_PaintBrush *brushPtr, int x, int y)
     Blt_Pixel color;
     Graph *graphPtr;
     LineElement *elemPtr = brushPtr->clientData;
-    double value;
+    double value, norm;
     Point2d point;
     AxisRange *rangePtr;
     
@@ -4034,8 +4034,8 @@ GradientColorProc(Blt_PaintBrush *brushPtr, int x, int y)
     } else {
 	return 0x0;
     }
-    color.u32 = Blt_Palette_GetAssociatedColorFromAbsoluteValue(
-	brushPtr->palette, value, rangePtr->min, rangePtr->max);
+    norm = (value - rangePtr->min) / rangePtr->range;
+    color.u32 = Blt_Palette_GetAssociatedColor(brushPtr->palette, norm);
     return color.u32;
 }
 
@@ -4091,7 +4091,6 @@ static void
 DrawGradientPolygon(Graph *graphPtr, Drawable drawable, LineElement *elemPtr, 
 		    int n, XPoint *points)
 {
-    AxisRange *rangePtr;
     Blt_PaintBrush brush;
     Blt_Painter painter;
     Blt_Picture bg;
@@ -4121,9 +4120,6 @@ DrawGradientPolygon(Graph *graphPtr, Drawable drawable, LineElement *elemPtr,
 	vertices[i].y = (float)(points[i].y - y1);
     }
     
-    rangePtr = &elemPtr->zAxisPtr->valueRange;
-    Blt_Palette_SetRange(elemPtr->zAxisPtr->palette,
-			 rangePtr->min, rangePtr->max);
     Blt_PaintBrush_Init(&brush);
     Blt_PaintBrush_SetOrigin(&brush, -x1, -y1);
     Blt_PaintBrush_SetPalette(&brush, elemPtr->zAxisPtr->palette);
