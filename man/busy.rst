@@ -38,13 +38,13 @@ SYNOPSIS
 
 **blt::busy hold** *window* ?\ *option* *value* ...\ ?
 
-**blt::busy release** *window* ?\ *window* ...\ ?
+**blt::busy release**  ?\ *window* ...\ ?
 
 **blt::busy configure** *window* ?\ *option* *value* ...\ ?
 
-**blt::busy forget**  *window* ?\ *window* ...\ ?
+**blt::busy forget**  ?\ *window* ...\ ?
 
-**blt::busy isbusy** ?\ *pattern* ...\ ?
+**blt::busy isbusy** *window* 
 
 **blt::busy names** ?\ *pattern* ...\ ?
 
@@ -157,7 +157,7 @@ The following operations are available for the **blt::busy** command:
   **active** only returns the names of windows where the busy window is
   currently active (**names** returns all busy windows).
 
-**blt::busy forget** *window* ?\ *window* ...\ ?
+**blt::busy forget** ?\ *window* ...\ ?
 
   Releases resources allocated by the busy command for *window*, including
   the busy window.  User events will again be received again by *window*.
@@ -173,9 +173,9 @@ The following operations are available for the **blt::busy** command:
 
 **blt::busy isbusy** *window*
 
-  Indicates whether *window* is currently busy.  Returns "1" if a busy
-  window exists for *window* and the busy window is currently active.
-  Other "0" is returned.
+  Indicates whether *window* is currently busy.  *Window* is the name of a
+  Tk widget. Returns "1" the window is busy and "0" otherwise.  If *window*
+  doesn't exist, then "0" is returned.
 
 **blt::busy names** ?\ *pattern* ...\ ?
 
@@ -185,12 +185,13 @@ The following operations are available for the **blt::busy** command:
   *pattern* is given, the path names of busy widgets matching *pattern* are
   returned.
 
-**blt::busy release** *window* ?\ *window* ...\ ?
+**blt::busy release** ?\ *window* ...\ ?
 
-  Restores user interactions to the widget *window* again.  This differs
-  from the **forget** operation in that the busy window is not destroyed,
-  but simply unmapped.  *Window* must be the name of a widget specified in
-  a **hold** operation, otherwise an error is reported.
+  Makes the *window* un-busy. Restores user interactions to the widget
+  *window* again.  This differs from the **forget** operation in that the
+  busy window is not destroyed, but simply unmapped.  *Window* must be the
+  name of a widget specified in a **hold** operation, otherwise an error is
+  reported.
 
 **blt::busy status** *window*
 

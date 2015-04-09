@@ -35,44 +35,6 @@
  *	SOFTWARE.
  */
 
-/*
- * This is a Tcl_Obj based replacement for the widget configuration
- * functions in Tk.
- *
- * What not use the new Tk_Option interface?
- *
- *   There were design changes in the new Tk_Option interface that make it
- *   a bit unwieldy.
- *
- *   o You have to dynamically allocate, store, and deallocate your option
- *     table. The old Tk_ConfigureSpecs table is static.
-
- *   o The Tk_FreeConfigOptions routine requires a tkwin argument.
- *     Unfortunately, most widgets save the display pointer and
- *     de-reference their tkwin when the window is destroyed.
- *
- *   o There's no TK_CONFIG_CUSTOM functionality.  This means that special
- *     options must be saved as strings by Tk_ConfigureWidget and processed
- *     later, thus losing the benefits of Tcl_Objs.  It also make error
- *     handling problematic, since you don't pick up certain errors like
- *	  
- *	    .widget configure -myoption bad -myoption good
- *        
- *     You will never see the first "bad" value.
- *
- *   o Especially compared to the former Tk_ConfigureWidget calls, the new
- *     interface seems overly complex.  If there was a big performance win,
- *     it might be worth the effort.  But let's face it, this biggest wins
- *     are in processing custom options values with thousands of elements.
- *     Most common resources (font, color, etc) have string tokens anyways.
- *
- *  On the other hand, the replacement functions in this file fell into
- *  place quite easily both from the aspect of API writer and user.  The
- *  biggest benefit is that you don't need to change lots of working code
- *  just to get the benefits of Tcl_Objs.
- * 
- */
-
 #define BUILD_BLT_TK_PROCS 1
 #include "bltInt.h"
 
@@ -1430,6 +1392,26 @@ DoConfig(
 	    }
 	    break;
 
+	case BLT_CONFIG_PAINTBRUSH: 
+	    {
+		Blt_PaintBrush brush;
+		
+		if (objIsEmpty) {
+		    brush = NULL;
+		} else {
+		    if (Blt_GetPaintBrushFromObj(interp, objPtr, &brush)
+                        != TCL_OK) {
+			return TCL_ERROR;
+		    }
+		}
+		if (*(Blt_PaintBrush *)ptr != NULL) {
+		    Blt_FreeBrush(*(Blt_PaintBrush *)ptr);
+		}
+		*(Blt_PaintBrush *)ptr = brush;
+	    }
+	    break;
+
+
 	case BLT_CONFIG_PIX32: 
 	    if (Blt_GetPixelFromObj(interp, objPtr, (Blt_Pixel *)ptr)!=TCL_OK) {
 		return TCL_ERROR;
@@ -1680,6 +1662,12 @@ FormatConfigValue(
     case BLT_CONFIG_BACKGROUND: 
 	if (*(Blt_Bg *)ptr != NULL) {
 	    string = Blt_Bg_Name(*(Blt_Bg *)ptr);
+	}
+	break;
+
+    case BLT_CONFIG_PAINTBRUSH: 
+	if (*(Blt_PaintBrush *)ptr != NULL) {
+	    string = Blt_GetBrushName(*(Blt_PaintBrush *)ptr);
 	}
 	break;
 
@@ -2296,6 +2284,13 @@ Blt_FreeOptions(
 	    if (*((Blt_Bg *)ptr) != NULL) {
 		Blt_FreeBg(*((Blt_Bg *)ptr));
 		*((Blt_Bg *)ptr) = NULL;
+	    }
+	    break;
+
+	case BLT_CONFIG_PAINTBRUSH:
+	    if (*((Blt_PaintBrush *)ptr) != NULL) {
+		Blt_FreeBrush(*((Blt_PaintBrush *)ptr));
+		*((Blt_PaintBrush *)ptr) = NULL;
 	    }
 	    break;
 

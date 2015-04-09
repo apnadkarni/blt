@@ -56,559 +56,478 @@
 
 #define JCLAMP(c)	((((c) < 0.0) ? 0.0 : ((c) > 1.0) ? 1.0 : (c)))
 
+#define REPEAT_MASK \
+    (BLT_PAINTBRUSH_REPEAT_NORMAL|BLT_PAINTBRUSH_REPEAT_OPPOSITE)
+#define ORIENT_MASK \
+    (BLT_PAINTBRUSH_ORIENT_VERTICAL|BLT_PAINTBRUSH_ORIENT_HORIZONTAL)
+#define COLOR_SCALING_MASK \
+        (BLT_PAINTBRUSH_SCALING_LINEAR|BLT_PAINTBRUSH_SCALING_LOG|BLT_PAINTBRUSH_SCALING_ATAN)
+
 #define BG_BACKGROUND_THREAD_KEY	"BLT Background Data"
 
-/* 
-   blt::background create type 
-	-image $image
-	-color $color
-	-darkcolor $color
-	-lightcolor $color
-	-resamplefilter $filter
-	-opacity $alpha
-	-xorigin $x
-	-yorigin $y
-	-tile yes
-	-center yes
-	-scale no
-	-relativeto self|toplevel|window
-	-mask image|bitmap
-
-  blt::background create tile 
-	-relativeto self|toplevel|window
-	-image $image
-	-bg $color
-  blt::background create picture 
-	-image $image
-	-filter $filterName
-	-bg $color
-  blt::background create gradient 
-	-type radial|horizontal|vertical|updiagonal|downdiagonal|conical
-	-low $color
-	-high $color
-	-bg $color
-	-palette palette 
-  blt::background create border 
-	-bg $color
-	-alpha $color 
-
-  blt::background create texture -type metal|wind|??? 
-	-bg $color
-
-  blt::background names
-  blt::background configure $tile
-  blt::background delete $tile
-*/
-
-/* 
- * Types of backgrounds: "solid", "tile", "gradient", "texture"
- */
-typedef enum BackgroundTypes {
-    BACKGROUND_GRADIENT,		/* Color gradient. */
-    BACKGROUND_TILE,			/* Tiled or resizable color picture. */
-    BACKGROUND_SOLID,			/* Solid background. */
-    BACKGROUND_TEXTURE,			/* Procedural texture. */
-} BackgroundType;
-
-static const char *backgroundTypes[] = {
-    "gradient",
-    "tile",
-    "solid",
-    "texture"
-};
-
-typedef enum ReferenceTypes {
-    REFERENCE_SELF,			/* Current window. */
-    REFERENCE_TOPLEVEL,			/* Toplevel of current window. */
-    REFERENCE_WINDOW,			/* Specifically named window. */
-    REFERENCE_NONE,		        /* Don't use reference
-					 * window. Background region will be
-					 * defined by user. */
-} ReferenceType;
+typedef struct _Blt_PaintBrush PaintBrush;
 
 typedef struct {
-    Blt_HashTable instTable;		/* Hash table of background structures
-					 * keyed by the name of the image. */
-    Tcl_Interp *interp;			/* Interpreter associated with this set
-					 * of backgrounds. */
-    int nextId;				/* Serial number of the identifier to
-					 * be used for next background
+    Blt_HashTable instTable;		/* Hash table of background
+					 * structures keyed by the name of
+					 * the image. */
+    Tcl_Interp *interp;			/* Interpreter associated with this
+					 * set of backgrounds. */
+    int nextId;				/* Serial number of the identifier
+					 * to be used for next background
 					 * created.  */
 } BackgroundInterpData;
 
-typedef struct _Background BackgroundObject;
-
-typedef void (BackgroundDestroyProc)(BackgroundObject *corePtr);
-typedef int (BackgroundConfigureProc)(BackgroundObject *corePtr);
-typedef void (BackgroundDrawRectangleProc)(Tk_Window tkwin, Drawable drawable, 
-	BackgroundObject *corePtr, int x, int y, int w, int h);
-typedef void (BackgroundDrawPolygonProc)(Tk_Window tkwin, Drawable drawable, 
-	BackgroundObject *corePtr, int numPoints, XPoint *points);
-
 typedef struct {
-    BackgroundType type;		/* Type of background: solid, tile,
-					 * texture, or gradient. */
-    Blt_ConfigSpec *configSpecs;
-    BackgroundDestroyProc *destroyProc;
-    BackgroundConfigureProc *configProc;
-    BackgroundDrawRectangleProc *drawRectangleProc;
-    BackgroundDrawPolygonProc *drawPolygonProc;
-} BackgroundClass;
-
-struct _Background {
-    const char *name;			/* Generated name of background. */
-    BackgroundClass *classPtr;
+    unsigned int flags;
     BackgroundInterpData *dataPtr;
+    Display *display;			/* Display of this background. */
     Tk_Window tkwin;			/* Main window. Used to query
 					 * background options. */
-    Display *display;			/* Display of this background. */
-    unsigned int flags;			/* See definitions below. */
+    const char *name;			/* Generated name of background. */
     Blt_HashEntry *hashPtr;		/* Hash entry in background table. */
-    Blt_Chain chain;			/* List of background tokens.  Used to
-					 * register callbacks for each client of
-					 * the background. */
-    Blt_ChainLink link;			/* Background token that is associated
-					 * with the background creation
-					 * "background create...". */
-    Tk_3DBorder border;			/* 3D Border.  May be used for all
-					 * background types. */
-    Tk_Window refWindow;		/* Refer to coordinates in this window
-					 * when determining the tile/gradient
-					 * origin. */
-    ReferenceType reference;		/* "self", "toplevel", or "window". */
-    Blt_HashTable pictTable;		/* Table of pictures cached for each
-					 * background reference. */
-    int xOrigin, yOrigin;
-    Blt_PaintBrush brush;		/* Paint brush representing the
-					 * background color. */
-};
-
-typedef struct {
-    const char *name;			/* Generated name of background. */
-    BackgroundClass *classPtr;
-    BackgroundInterpData *dataPtr;
-    Tk_Window tkwin;			/* Main window. Used to query
-					 * background options. */
-    Display *display;			/* Display of this background. */
-    unsigned int flags;			/* See definitions below. */
-    Blt_HashEntry *hashPtr;		/* Link to original client. */
-    Blt_Chain chain;			/* List of background tokens.  Used
-					 * to register callbacks for each
-					 * client of the background. */
     Blt_ChainLink link;			/* Background token that is
 					 * associated with the background
 					 * creation "background
 					 * create...". */
-    Tk_3DBorder border;			/* 3D Border.  May be used for all
-					 * background types. */
-    Tk_Window refWindow;		/* Refer to coordinates in this
-					 * window when determining the
-					 * tile/gradient origin. */
-    ReferenceType reference;		/* "self", "toplevel", or "window". */
     Blt_HashTable pictTable;		/* Table of pictures cached for
 					 * each background reference. */
-    int xOrigin, yOrigin;
-    Blt_PaintBrush brush;		/* Paint brush representing the
-					 * background color. */
-
-    /* Solid background specific fields. */
-    int alpha;				/* Transparency value. */
-} SolidBackground;
-
-typedef struct {
-    const char *name;			/* Generated name of background. */
-    BackgroundClass *classPtr;
-    BackgroundInterpData *dataPtr;
-    Tk_Window tkwin;			/* Main window. Used to query
-					 * background options. */
-    Display *display;			/* Display of this background. Used
-					 * to free configuration
-					 * options. */
-    unsigned int flags;			/* See definitions below. */
-    Blt_HashEntry *hashPtr;		/* Link to original client. */
     Blt_Chain chain;			/* List of background tokens.  Used
 					 * to register callbacks for each
 					 * client of the background. */
-    Blt_ChainLink link;			/* Background token that is
-					 * associated with the background
-					 * creation "background
-					 * create...". */
     Tk_3DBorder border;			/* 3D Border.  May be used for all
 					 * background types. */
-    Tk_Window refWindow;		/* Refer to coordinates in this
-					 * window when determining the
-					 * tile/gradient origin. */
-    ReferenceType reference;		/* "self", "toplevel", or
-					 * "window". */
-    Blt_HashTable pictTable;		/* Table of pictures cached for
-					 * each background reference. */
-    int xOrigin, yOrigin;
+    Tcl_Obj *refNameObjPtr;             /* Name of reference window. */
+    Tk_Window tkRef;                    /* Reference window to use compute
+					 * positions from relative
+					 * coordinates. */
     Blt_PaintBrush brush;		/* Paint brush representing the
 					 * background color. */
-    /* Tile specific fields. */
-    Tk_Image tkImage;			/* Original image (before
-					 * resampling). */
-    Blt_Picture tile;
-    Blt_ResampleFilter filter;		/* 1-D image filter to use to when
-					 * resizing the original
-					 * picture. */
-    int alpha;				/* Transparency value. */
-} TileBackground;
+    Blt_ConfigSpec *specs;              /* Configuration specifications
+                                         * this background. */
+} BackgroundObject;
 
-typedef struct {
-    const char *name;			/* Generated name of background. */
-    BackgroundClass *classPtr;
-    BackgroundInterpData *dataPtr;
-    Tk_Window tkwin;			/* Main window. Used to query
-					 * background options. */
-    Display *display;			/* Display of this background.*/
-    unsigned int flags;			/* See definitions below. */
-    Blt_HashEntry *hashPtr;		/* Link to original client. */
-    Blt_Chain chain;			/* List of background tokens.  Used
-					 * to register callbacks for each
-					 * client of the background. */
-    Blt_ChainLink link;			/* Background token that is
-					 * associated with the background
-					 * creation "background
-					 * create...". */
-    Tk_3DBorder border;			/* 3D Border.  May be used for all
-					 * background types. */
-    Tk_Window refWindow;		/* Refer to coordinates in this
-					 * window when determining the
-					 * tile/gradient origin. */
-    ReferenceType reference;		/* "self", "toplevel", or
-					   "window". */
-    Blt_HashTable pictTable;		/* Table of pictures cached for
-					 * each background reference. */
-    int xOrigin, yOrigin;
-    Blt_PaintBrush brush;		/* Paint brush representing the
-					 * background color. */
+#define REFERENCE_PENDING       (1<<0)
+#define REFERENCE_SELF          (1<<1)
+#define REFERENCE_TOPLEVEL      (1<<2)
+#define REFERENCE_WINDOW        (1<<3)
+#define BACKGROUND_SOLID        (1<<5)
 
-    /* Gradient background specific fields. */
-    Blt_Gradient gradient;
-    int aRange, rRange, gRange, bRange;
-    Blt_Pixel low, high;		/* Texture or gradient colors. */
-    int alpha;				/* Transparency value. */
-    Blt_Jitter jitter;
-    Blt_Palette palette;
-} GradientBackground;
-
-typedef struct {
-    const char *name;			/* Generated name of background. */
-    BackgroundClass *classPtr;
-    BackgroundInterpData *dataPtr;
-    Tk_Window tkwin;			/* Main window. Used to query
-					 * background options. */
-    Display *display;			/* Display of this background. */
-    unsigned int flags;			/* See definitions below. */
-    Blt_HashEntry *hashPtr;		/* Link to original client. */
-    Blt_Chain chain;			/* List of background tokens.  Used
-					 * to register callbacks for each
-					 * client of the background. */
-    Blt_ChainLink link;			/* Background token that is
-					 * associated with the background
-					 * creation "background
-					 * create...". */
-    Tk_3DBorder border;			/* 3D Border.  May be used for all
-					 * background types. */
-    Tk_Window refWindow;		/* Refer to coordinates in this
-					 * window when determining the
-					 * tile/gradient origin. */
-    ReferenceType reference;		/* "self", "toplevel", or
-					   "window". */
-    Blt_HashTable pictTable;		/* Table of pictures cached for
-					 * each background reference. */
-    int xOrigin, yOrigin;
-    Blt_PaintBrush brush;		/* Paint brush representing the
-					 * background color. */
-
-    /* Texture background specific fields. */
-    Blt_Pixel low, high;		/* Texture colors. */
-    int aRange, rRange, gRange, bRange;
-    int alpha;				/* Transparency value. */
-    Blt_TextureType type;
-    Blt_Jitter jitter;
-    Blt_Palette palette;
-} TextureBackground;
+#define REFERENCE_MASK \
+    (REFERENCE_SELF|REFERENCE_TOPLEVEL|REFERENCE_WINDOW)
 
 struct _Blt_Bg {
-    BackgroundObject *corePtr;	       /* Pointer to master background. */
+    BackgroundObject *corePtr;          /* Pointer to master background. */
     Blt_Bg_ChangedProc *notifyProc;
     ClientData clientData;		/* Data to be passed on notifier
 					 * callbacks.  */
     Blt_ChainLink link;			/* Entry in notifier list. */
 };
 
-#define BG_SCALE		(1<<3)
-#define FREE_TILE		(1<<4)
-
 typedef struct _Blt_Bg Bg;
 
-#define DEF_OPACITY		"100.0"
-#define DEF_ORIGIN_X		"0"
-#define DEF_ORIGIN_Y		"0"
 #define DEF_BORDER		STD_NORMAL_BACKGROUND
-#define DEF_GRADIENT_PATH	"y"
-#define DEF_GRADIENT_HIGH	"grey90"
-#define DEF_GRADIENT_JITTER	"0.0"
-#define DEF_GRADIENT_LOGSCALE	"yes"
-#define DEF_GRADIENT_LOW	"grey50"
-#define DEF_GRADIENT_TYPE	"vertical"
-#define DEF_GRADIENT_SCALE	"linear"
-#define DEF_REFERENCE		"toplevel"
-#define DEF_RESAMPLE_FILTER	"box"
-#define DEF_TEXTURE_JITTER	"0.0"
-#define DEF_SCALE		"no"
 #define DEF_CENTER		"no"
-#define DEF_TILE		"no"
+#define DEF_CHECKER_OFFCOLOR    "grey97"
+#define DEF_CHECKER_ONCOLOR     "grey90"
+#define DEF_CHECKER_STRIDE      "10"
+#define DEF_COLOR		STD_NORMAL_BACKGROUND
+#define DEF_COLOR_SCALE         "linear"
+#define DEF_CONICAL_CENTER       "c"
+#define DEF_CONICAL_DIAMETER     "0.0"
+#define DEF_CONICAL_HEIGHT       "1.0"
+#define DEF_CONICAL_ROTATE       "45.0"
+#define DEF_CONICAL_WIDTH        "1.0"
+#define DEF_DECREASING          "0"
+#define DEF_FROM                "top center"
+#define DEF_HIGH_COLOR          "grey90"
+#define DEF_JITTER              "0"
+#define DEF_LOW_COLOR           "grey50"
+#define DEF_PALETTE             (char *)NULL
+#define DEF_RADIAL_CENTER       "c"
+#define DEF_RADIAL_DIAMETER     "0.0"
+#define DEF_RADIAL_HEIGHT       "1.0"
+#define DEF_RADIAL_WIDTH        "1.0"
+#define DEF_REFERENCE		"toplevel"
+#define DEF_REFERENCE		"toplevel"
+#define DEF_REPEAT              "reversing"
+#define DEF_STRIPE_OFFCOLOR    "grey97"
+#define DEF_STRIPE_ONCOLOR     "grey90"
+#define DEF_STRIPE_ORIENT       "vertical"
+#define DEF_STRIPE_STRIDE       "2"
+#define DEF_TEXTURE_TYPE	"stripe"
+#define DEF_TO                  (char *)NULL
+#define DEF_XORIGIN		"0"
+#define DEF_YORIGIN		"0"
 
-static Blt_OptionParseProc ObjToImageProc;
-static Blt_OptionPrintProc ImageToObjProc;
-static Blt_OptionFreeProc FreeImageProc;
+static Blt_OptionParseProc ObjToImage;
+static Blt_OptionPrintProc ImageToObj;
+static Blt_OptionFreeProc FreeImage;
 static Blt_CustomOption imageOption =
 {
-    ObjToImageProc, ImageToObjProc, FreeImageProc, (ClientData)0
+    ObjToImage, ImageToObj, FreeImage, (ClientData)0
 };
 
-extern Blt_CustomOption bltFilterOption;
-
-static Blt_OptionParseProc ObjToReferenceTypeProc;
-static Blt_OptionPrintProc ReferenceTypeToObjProc;
-static Blt_CustomOption referenceTypeOption =
+static Blt_OptionParseProc ObjToColorScaling;
+static Blt_OptionPrintProc ColorScalingToObj;
+static Blt_CustomOption colorScalingOption =
 {
-    ObjToReferenceTypeProc, ReferenceTypeToObjProc, NULL, (ClientData)0
+    ObjToColorScaling, ColorScalingToObj, NULL, (ClientData)0
 };
 
-static Blt_OptionParseProc ObjToGradientTypeProc;
-static Blt_OptionPrintProc GradientTypeToObjProc;
-static Blt_CustomOption gradientTypeOption =
-{
-    ObjToGradientTypeProc, GradientTypeToObjProc, NULL, (ClientData)0
-};
-
-static Blt_OptionParseProc ObjToGradientScaleProc;
-static Blt_OptionPrintProc GradientScaleToObjProc;
-static Blt_CustomOption scaleOption =
-{
-    ObjToGradientScaleProc, GradientScaleToObjProc, NULL, (ClientData)0
-};
-
-static Blt_OptionParseProc ObjToOpacityProc;
-static Blt_OptionPrintProc OpacityToObjProc;
-static Blt_CustomOption opacityOption =
-{
-    ObjToOpacityProc, OpacityToObjProc, NULL, (ClientData)0
-};
-
-static Blt_OptionParseProc ObjToJitterProc;
-static Blt_OptionPrintProc JitterToObjProc;
+static Blt_OptionParseProc ObjToJitter;
+static Blt_OptionPrintProc JitterToObj;
 static Blt_CustomOption jitterOption =
 {
-    ObjToJitterProc, JitterToObjProc, NULL, (ClientData)0
+    ObjToJitter, JitterToObj, NULL, (ClientData)0
 };
 
-static Blt_OptionParseProc ObjToTextureTypeProc;
-static Blt_OptionPrintProc TextureTypeToObjProc;
-static Blt_CustomOption textureTypeOption =
+static Blt_OptionParseProc ObjToReference;
+static Blt_OptionPrintProc ReferenceToObj;
+static Blt_OptionFreeProc FreeReference;
+static Blt_CustomOption referenceOption =
 {
-    ObjToTextureTypeProc, TextureTypeToObjProc, NULL, (ClientData)0
+    ObjToReference, ReferenceToObj, FreeReference, (ClientData)0
 };
 
-static Blt_ConfigSpec solidSpecs[] =
+static Blt_OptionParseProc ObjToPosition;
+static Blt_OptionPrintProc PositionToObj;
+static Blt_CustomOption positionOption =
+{
+    ObjToPosition, PositionToObj, NULL, (ClientData)0
+};
+static Blt_OptionParseProc ObjToRepeat;
+static Blt_OptionPrintProc RepeatToObj;
+static Blt_CustomOption repeatOption =
+{
+    ObjToRepeat, RepeatToObj, NULL, (ClientData)0
+};
+static Blt_OptionFreeProc FreePalette;
+static Blt_OptionParseProc ObjToPalette;
+static Blt_OptionPrintProc PaletteToObj;
+static Blt_CustomOption paletteOption =
+{
+    ObjToPalette, PaletteToObj, FreePalette, (ClientData)0
+};
+
+static Blt_OptionParseProc ObjToOrient;
+static Blt_OptionPrintProc OrientToObj;
+static Blt_CustomOption orientOption =
+{
+    ObjToOrient, OrientToObj, NULL, (ClientData)0
+};
+
+static Blt_ConfigSpec bgSpecs[] =
 {
     {BLT_CONFIG_SYNONYM, "-background", "color", (char *)NULL, (char *)NULL, 
 	0, 0},
     {BLT_CONFIG_SYNONYM, "-bg", "color", (char *)NULL, (char *)NULL, 0, 0},
-    {BLT_CONFIG_BORDER, "-color", "color", "Color", DEF_BORDER, 
-	Blt_Offset(SolidBackground, border), 0},
-    {BLT_CONFIG_CUSTOM, "-opacity", "opacity", "Opacity", "100.0", 
-	Blt_Offset(SolidBackground, alpha), BLT_CONFIG_DONT_SET_DEFAULT, 
-	&opacityOption},
+    {BLT_CONFIG_BORDER, "-border", "color", "Color", DEF_BORDER, 
+	Blt_Offset(BackgroundObject, border), 0},
+    {BLT_CONFIG_CUSTOM, "-relativeto", (char *)NULL, (char *)NULL, 
+	DEF_REFERENCE, 0, BLT_CONFIG_DONT_SET_DEFAULT, &referenceOption},
     {BLT_CONFIG_END, NULL, NULL, NULL, NULL, 0, 0}
 };
 
-static Blt_ConfigSpec tileSpecs[] =
+static Blt_ConfigSpec tileBrushSpecs[] =
 {
-    {BLT_CONFIG_BORDER, "-color", "color", "Color", DEF_BORDER, 
-	Blt_Offset(TileBackground, border), 0},
-    {BLT_CONFIG_CUSTOM, "-filter", "filter", "Filter", DEF_RESAMPLE_FILTER, 
-	Blt_Offset(TileBackground, filter), 0, &bltFilterOption},
-    {BLT_CONFIG_CUSTOM, "-image", "image", "Image", (char *)NULL,
-	Blt_Offset(TileBackground, tkImage), BLT_CONFIG_DONT_SET_DEFAULT, 
-	&imageOption},
-    {BLT_CONFIG_CUSTOM, "-opacity", "opacity", "Opacity", "100.0", 
-	Blt_Offset(TileBackground, alpha), BLT_CONFIG_DONT_SET_DEFAULT, 
-	&opacityOption},
-    {BLT_CONFIG_CUSTOM, "-relativeto", "relativeTo", "RelativeTo", 
-	DEF_REFERENCE, Blt_Offset(TileBackground, reference), 
-	BLT_CONFIG_DONT_SET_DEFAULT, &referenceTypeOption},
-    {BLT_CONFIG_BITMASK, "-scale", "scale", "scale", DEF_SCALE,
-	Blt_Offset(TileBackground, flags), BLT_CONFIG_DONT_SET_DEFAULT, 
-	(Blt_CustomOption *)BG_SCALE},
-    {BLT_CONFIG_PIXELS, "-xorigin", "xOrigin", "XOrigin", DEF_ORIGIN_X,
-	Blt_Offset(TileBackground, xOrigin), BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_PIXELS, "-yorigin", "yOrigin", "YOrigin", DEF_ORIGIN_Y,
-	Blt_Offset(TileBackground, yOrigin), BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_CUSTOM, "-image", (char *)NULL, (char *)NULL, (char *)NULL,
+	Blt_Offset(Blt_TileBrush, tkImage), BLT_CONFIG_DONT_SET_DEFAULT,
+        &imageOption},
+    {BLT_CONFIG_CUSTOM, "-jitter", (char *)NULL, (char *)NULL, DEF_JITTER,
+        Blt_Offset(Blt_TileBrush, jitter.range), BLT_CONFIG_DONT_SET_DEFAULT,
+        &jitterOption},
+    {BLT_CONFIG_PIXELS, "-xoffset", (char *)NULL, (char *)NULL, DEF_XORIGIN,
+        Blt_Offset(Blt_TileBrush, xOrigin), BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_PIXELS, "-yoffset", (char *)NULL, (char *)NULL, DEF_YORIGIN,
+        Blt_Offset(Blt_TileBrush, yOrigin), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_END, NULL, NULL, NULL, NULL, 0, 0}
 };
 
-static Blt_ConfigSpec gradientSpecs[] =
+static Blt_ConfigSpec linearGradientBrushSpecs[] =
 {
-    {BLT_CONFIG_BORDER, "-background", "background", "Background", DEF_BORDER,
-	Blt_Offset(GradientBackground, border), 0},
-    {BLT_CONFIG_SYNONYM, "-bg", "background", (char *)NULL, (char *)NULL, 0, 0},
-    {BLT_CONFIG_PIX32, "-high", "high", "High", DEF_GRADIENT_HIGH,
-	Blt_Offset(GradientBackground, high), 0},
-    {BLT_CONFIG_CUSTOM, "-jitter", "jitter", "Jitter", DEF_GRADIENT_JITTER, 
-	Blt_Offset(GradientBackground, jitter.range), 
-	BLT_CONFIG_DONT_SET_DEFAULT, &jitterOption},
-    {BLT_CONFIG_PIX32, "-low", "low", "Low", DEF_GRADIENT_LOW,
-	Blt_Offset(GradientBackground, low), 0},
-    {BLT_CONFIG_CUSTOM, "-opacity", "opacity", "Opacity", "100.0", 
-	Blt_Offset(GradientBackground, alpha), BLT_CONFIG_DONT_SET_DEFAULT, 
-	&opacityOption},
-    {BLT_CONFIG_CUSTOM, "-relativeto", "relativeTo", "RelativeTo", 
-	DEF_REFERENCE, Blt_Offset(GradientBackground, reference), 
-	BLT_CONFIG_DONT_SET_DEFAULT, &referenceTypeOption},
-    {BLT_CONFIG_CUSTOM, "-scale", "scale", "Scale", 
-	DEF_GRADIENT_SCALE, Blt_Offset(GradientBackground, gradient.scale),
-	BLT_CONFIG_DONT_SET_DEFAULT, &scaleOption},
-    {BLT_CONFIG_CUSTOM, "-type", "type", "type", DEF_GRADIENT_TYPE, 
-	Blt_Offset(GradientBackground, gradient.type), 
-	BLT_CONFIG_DONT_SET_DEFAULT, &gradientTypeOption},
-    {BLT_CONFIG_PIXELS, "-xorigin", "xOrigin", "XOrigin", DEF_ORIGIN_X,
-	Blt_Offset(GradientBackground, xOrigin), BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_PIXELS, "-yorigin", "yOrigin", "YOrigin", DEF_ORIGIN_Y,
-	Blt_Offset(GradientBackground, yOrigin), BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_END, NULL, NULL, NULL, NULL, 0, 0}
-};
-
-static Blt_ConfigSpec textureSpecs[] =
-{
-    {BLT_CONFIG_BORDER, "-background", "background", "Background", DEF_BORDER,
-	Blt_Offset(TextureBackground, border), 0},
-    {BLT_CONFIG_SYNONYM, "-bg", "background", (char *)NULL, (char *)NULL, 0, 0},
-    {BLT_CONFIG_PIX32, "-high", "high", "High", DEF_GRADIENT_HIGH,
-	Blt_Offset(TextureBackground, high), 0},
-    {BLT_CONFIG_CUSTOM, "-jitter", "jitter", "Jitter", DEF_TEXTURE_JITTER, 
-	Blt_Offset(TextureBackground, jitter.range), 
-	BLT_CONFIG_DONT_SET_DEFAULT, &jitterOption},
-    {BLT_CONFIG_PIX32, "-low", "low", "Low", DEF_GRADIENT_LOW,
-	Blt_Offset(TextureBackground, low), 0},
-    {BLT_CONFIG_CUSTOM, "-opacity", "opacity", "Opacity", "100.0", 
-	Blt_Offset(TextureBackground, alpha), BLT_CONFIG_DONT_SET_DEFAULT, 
-	&opacityOption},
-    {BLT_CONFIG_CUSTOM, "-relativeto", "relativeTo", "RelativeTo", 
-	DEF_REFERENCE, Blt_Offset(TextureBackground, reference), 
-	BLT_CONFIG_DONT_SET_DEFAULT, &referenceTypeOption},
-    {BLT_CONFIG_CUSTOM, "-type", "type", "Type", 
-	DEF_REFERENCE, Blt_Offset(TextureBackground, type), 
-	BLT_CONFIG_DONT_SET_DEFAULT, &textureTypeOption},
-    {BLT_CONFIG_END, NULL, NULL, NULL, NULL, 0, 0}
-};
-
-#ifdef notdef
-static Blt_ConfigSpec gradient2Specs[] =
-{
-    {BLT_CONFIG_BORDER, "-border", (char *)NULL, (char *)NULL,
-        DEF_BORDER, Blt_Offset(GradientBackground, border), 0},
-    {BLT_CONFIG_PIX32, "-center", (char *)NULL, (char *)NULL,
-        DEF_GRADIENT_CENTER, Blt_Offset(GradientBackground, center), 0},
-    {BLT_CONFIG_PIX32, "-from", (char *)NULL, (char *)NULL, DEF_GRADIENT_TO,
-	Blt_Offset(GradientBackground, fromColor), 0},
+    {BLT_CONFIG_CUSTOM, "-colorscale", (char *)NULL, (char *)NULL,
+        DEF_COLOR_SCALE, Blt_Offset(Blt_LinearGradientBrush, flags),
+	BLT_CONFIG_DONT_SET_DEFAULT, &colorScalingOption},
+    {BLT_CONFIG_BITMASK, "-decreasing", (char *)NULL, (char *)NULL,
+        DEF_DECREASING, Blt_Offset(Blt_LinearGradientBrush, flags), 
+        BLT_CONFIG_DONT_SET_DEFAULT,
+        (Blt_CustomOption *)BLT_PAINTBRUSH_DECREASING},
+    {BLT_CONFIG_CUSTOM, "-from", (char *)NULL, (char *)NULL, DEF_FROM,
+        Blt_Offset(Blt_LinearGradientBrush, from), 
+	BLT_CONFIG_DONT_SET_DEFAULT, &positionOption},
+    {BLT_CONFIG_PIX32, "-highcolor", (char *)NULL, (char *)NULL,
+        DEF_HIGH_COLOR, Blt_Offset(Blt_LinearGradientBrush, high), 0},
     {BLT_CONFIG_CUSTOM, "-jitter", (char *)NULL, (char *)NULL,
-        DEF_GRADIENT_JITTER, Blt_Offset(GradientBackground, jitter.range), 
+        DEF_JITTER, Blt_Offset(Blt_LinearGradientBrush, jitter.range), 
 	BLT_CONFIG_DONT_SET_DEFAULT, &jitterOption},
-    {BLT_CONFIG_CUSTOM, "-opacity", "opacity", "Opacity", "100.0", 
-	Blt_Offset(GradientBackground, alpha), BLT_CONFIG_DONT_SET_DEFAULT, 
-	&opacityOption},
-    {BLT_CONFIG_CUSTOM, "-relativeto", "relativeTo", "RelativeTo", 
-	DEF_REFERENCE, Blt_Offset(GradientBackground, reference), 
-	BLT_CONFIG_DONT_SET_DEFAULT, &referenceTypeOption},
-    {BLT_CONFIG_CUSTOM, "-scale", "scale", "Scale", 
-	DEF_GRADIENT_SCALE, Blt_Offset(GradientBackground, scale),
-	BLT_CONFIG_DONT_SET_DEFAULT, &scaleOption},
-    {BLT_CONFIG_CUSTOM, "-shape", (char *)NULL, (char *)NULL,
-        DEF_RADIAL_SHAPE, Blt_Offset(GradientBackground, shape), 0},
-    {BLT_CONFIG_PIX32, "-to", (char *)NULL, (char *)NULL, DEF_GRADIENT_FROM,
-	Blt_Offset(GradientBackground, gradient.toColor), 0},
-    {BLT_CONFIG_CUSTOM, "-type", "type", "type", DEF_GRADIENT_TYPE, 
-	Blt_Offset(GradientBackground, gradient.type), 
-	BLT_CONFIG_DONT_SET_DEFAULT, &gradientTypeOption},
-    {BLT_CONFIG_PIXELS, "-xorigin", "xOrigin", "XOrigin", DEF_ORIGIN_X,
-	Blt_Offset(GradientBackground, xOrigin), BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_PIXELS, "-yorigin", "yOrigin", "YOrigin", DEF_ORIGIN_Y,
-	Blt_Offset(GradientBackground, yOrigin), BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_PIX32, "-lowcolor", (char *)NULL, (char *)NULL,
+        DEF_LOW_COLOR, Blt_Offset(Blt_LinearGradientBrush, low), 0},
+    {BLT_CONFIG_CUSTOM, "-palette", (char *)NULL, (char *)NULL,
+        DEF_PALETTE, Blt_Offset(Blt_LinearGradientBrush, palette), 
+	BLT_CONFIG_DONT_SET_DEFAULT, &paletteOption},
+    {BLT_CONFIG_CUSTOM, "-repeat", (char *)NULL, (char *)NULL,
+        DEF_REPEAT, Blt_Offset(Blt_LinearGradientBrush, flags), 
+	BLT_CONFIG_DONT_SET_DEFAULT, &repeatOption},
+    {BLT_CONFIG_CUSTOM, "-to", (char *)NULL, (char *)NULL, DEF_TO,
+        Blt_Offset(Blt_LinearGradientBrush, to), 
+	BLT_CONFIG_DONT_SET_DEFAULT, &positionOption},
+    {BLT_CONFIG_PIXELS, "-xoffset", (char *)NULL, (char *)NULL, DEF_XORIGIN,
+        Blt_Offset(Blt_LinearGradientBrush, xOrigin),
+        BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_PIXELS, "-yoffset", (char *)NULL, (char *)NULL, DEF_YORIGIN,
+        Blt_Offset(Blt_LinearGradientBrush, yOrigin),
+        BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_END, NULL, NULL, NULL, NULL, 0, 0}
 };
-#endif
+
+static Blt_ConfigSpec stripeBrushSpecs[] =
+{
+    {BLT_CONFIG_CUSTOM, "-jitter", (char *)NULL, (char *)NULL,
+        DEF_JITTER, Blt_Offset(Blt_StripeBrush, jitter.range), 
+	BLT_CONFIG_DONT_SET_DEFAULT, &jitterOption},
+    {BLT_CONFIG_PIX32, "-offcolor", (char *)NULL, (char *)NULL,
+        DEF_STRIPE_OFFCOLOR, Blt_Offset(Blt_StripeBrush, high)},
+    {BLT_CONFIG_PIX32, "-oncolor", (char *)NULL, (char *)NULL,
+        DEF_STRIPE_ONCOLOR, Blt_Offset(Blt_StripeBrush, low)},
+    {BLT_CONFIG_CUSTOM, "-orient", (char *)NULL, (char *)NULL,
+        DEF_STRIPE_ORIENT, Blt_Offset(Blt_StripeBrush, flags), 
+        BLT_CONFIG_DONT_SET_DEFAULT, &orientOption},
+    {BLT_CONFIG_PIXELS_POS, "-stride", (char *)NULL, (char *)NULL,
+        DEF_STRIPE_STRIDE, Blt_Offset(Blt_StripeBrush, stride), 
+	BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_PIXELS, "-xoffset", (char *)NULL, (char *)NULL, DEF_XORIGIN,
+        Blt_Offset(Blt_StripeBrush, xOrigin), BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_PIXELS, "-yoffset", (char *)NULL, (char *)NULL, DEF_YORIGIN,
+        Blt_Offset(Blt_StripeBrush, yOrigin), BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_END, NULL, NULL, NULL, NULL, 0, 0}
+};
+
+static Blt_ConfigSpec checkerBrushSpecs[] =
+{
+    {BLT_CONFIG_CUSTOM, "-jitter", (char *)NULL, (char *)NULL,
+        DEF_JITTER, Blt_Offset(Blt_CheckerBrush, jitter.range), 
+	BLT_CONFIG_DONT_SET_DEFAULT, &jitterOption},
+    {BLT_CONFIG_PIX32, "-offcolor", (char *)NULL, (char *)NULL,
+        DEF_CHECKER_OFFCOLOR, Blt_Offset(Blt_CheckerBrush, high)},
+    {BLT_CONFIG_PIX32, "-oncolor", (char *)NULL, (char *)NULL,
+        DEF_CHECKER_ONCOLOR, Blt_Offset(Blt_CheckerBrush, low)},
+    {BLT_CONFIG_PIXELS_POS, "-stride", (char *)NULL, (char *)NULL,
+        DEF_CHECKER_STRIDE, Blt_Offset(Blt_CheckerBrush, stride), 
+	BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_PIXELS, "-xoffset", (char *)NULL, (char *)NULL, DEF_XORIGIN,
+        Blt_Offset(Blt_CheckerBrush, xOrigin), BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_PIXELS, "-yoffset", (char *)NULL, (char *)NULL, DEF_YORIGIN,
+        Blt_Offset(Blt_CheckerBrush, yOrigin), BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_END, NULL, NULL, NULL, NULL, 0, 0}
+};
+
+static Blt_ConfigSpec radialGradientBrushSpecs[] =
+{
+    {BLT_CONFIG_CUSTOM, "-center", (char *)NULL, (char *)NULL,
+        DEF_RADIAL_CENTER, Blt_Offset(Blt_RadialGradientBrush, center), 
+	BLT_CONFIG_DONT_SET_DEFAULT, &positionOption},
+    {BLT_CONFIG_CUSTOM, "-colorscale", (char *)NULL, (char *)NULL,
+        DEF_COLOR_SCALE, Blt_Offset(Blt_RadialGradientBrush, flags),
+	BLT_CONFIG_DONT_SET_DEFAULT, &colorScalingOption},
+    {BLT_CONFIG_BITMASK, "-decreasing", (char *)NULL, (char *)NULL,
+        DEF_DECREASING, Blt_Offset(Blt_RadialGradientBrush, flags), 
+        BLT_CONFIG_DONT_SET_DEFAULT,
+        (Blt_CustomOption *)BLT_PAINTBRUSH_DECREASING},
+    {BLT_CONFIG_DOUBLE, "-diameter", (char *)NULL, (char *)NULL,
+        DEF_RADIAL_DIAMETER, Blt_Offset(Blt_RadialGradientBrush, diameter), 
+	BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_PIX32, "-highcolor", (char *)NULL, (char *)NULL,
+        DEF_HIGH_COLOR, Blt_Offset(Blt_RadialGradientBrush, high)},
+    {BLT_CONFIG_DOUBLE, "-height", (char *)NULL, (char *)NULL,
+        DEF_RADIAL_HEIGHT, Blt_Offset(Blt_RadialGradientBrush, height), 
+	BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_CUSTOM, "-jitter", (char *)NULL, (char *)NULL,
+        DEF_JITTER, Blt_Offset(Blt_RadialGradientBrush, jitter.range), 
+	BLT_CONFIG_DONT_SET_DEFAULT, &jitterOption},
+    {BLT_CONFIG_PIX32, "-lowcolor", (char *)NULL, (char *)NULL,
+        DEF_LOW_COLOR, Blt_Offset(Blt_RadialGradientBrush, low), 0},
+    {BLT_CONFIG_CUSTOM, "-palette", (char *)NULL, (char *)NULL,
+        DEF_PALETTE, Blt_Offset(Blt_RadialGradientBrush, palette), 
+	BLT_CONFIG_DONT_SET_DEFAULT, &paletteOption},
+    {BLT_CONFIG_CUSTOM, "-repeat", (char *)NULL, (char *)NULL, DEF_REPEAT,
+        Blt_Offset(Blt_RadialGradientBrush, flags),
+        BLT_CONFIG_DONT_SET_DEFAULT, &repeatOption},
+    {BLT_CONFIG_DOUBLE, "-width", (char *)NULL, (char *)NULL,
+        DEF_RADIAL_WIDTH, Blt_Offset(Blt_RadialGradientBrush, width), 
+	BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_PIXELS, "-xoffset", (char *)NULL, (char *)NULL, DEF_XORIGIN,
+        Blt_Offset(Blt_RadialGradientBrush, xOrigin),
+        BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_PIXELS, "-yoffset", (char *)NULL, (char *)NULL, DEF_YORIGIN,
+        Blt_Offset(Blt_RadialGradientBrush, yOrigin),
+        BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_END, NULL, NULL, NULL, NULL, 0, 0}
+};
+
+static Blt_ConfigSpec conicalGradientBrushSpecs[] =
+{
+    {BLT_CONFIG_CUSTOM, "-center", (char *)NULL, (char *)NULL,
+        DEF_CONICAL_CENTER, Blt_Offset(Blt_ConicalGradientBrush, center), 
+	BLT_CONFIG_DONT_SET_DEFAULT, &positionOption},
+    {BLT_CONFIG_CUSTOM, "-colorscale", (char *)NULL, (char *)NULL,
+        DEF_COLOR_SCALE, Blt_Offset(Blt_ConicalGradientBrush, flags),
+	BLT_CONFIG_DONT_SET_DEFAULT, &colorScalingOption},
+    {BLT_CONFIG_BITMASK, "-decreasing", (char *)NULL, (char *)NULL,
+        DEF_DECREASING, Blt_Offset(Blt_ConicalGradientBrush, flags), 
+        BLT_CONFIG_DONT_SET_DEFAULT,
+        (Blt_CustomOption *)BLT_PAINTBRUSH_DECREASING},
+    {BLT_CONFIG_PIX32, "-highcolor", (char *)NULL, (char *)NULL,
+        DEF_HIGH_COLOR, Blt_Offset(Blt_ConicalGradientBrush, high)},
+    {BLT_CONFIG_CUSTOM, "-jitter", (char *)NULL, (char *)NULL,
+        DEF_JITTER, Blt_Offset(Blt_ConicalGradientBrush, jitter.range), 
+	BLT_CONFIG_DONT_SET_DEFAULT, &jitterOption},
+    {BLT_CONFIG_PIX32, "-lowcolor", (char *)NULL, (char *)NULL, DEF_LOW_COLOR,
+        Blt_Offset(Blt_ConicalGradientBrush, low), 0},
+    {BLT_CONFIG_CUSTOM, "-palette", (char *)NULL, (char *)NULL, DEF_PALETTE,
+        Blt_Offset(Blt_ConicalGradientBrush, palette), 
+	BLT_CONFIG_DONT_SET_DEFAULT, &paletteOption},
+    {BLT_CONFIG_DOUBLE, "-rotate", (char *)NULL, (char *)NULL,
+        DEF_CONICAL_ROTATE, Blt_Offset(Blt_ConicalGradientBrush, angle),
+	BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_PIXELS, "-xoffset", (char *)NULL, (char *)NULL, DEF_XORIGIN,
+        Blt_Offset(Blt_ConicalGradientBrush, xOrigin),
+        BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_PIXELS, "-yoffset", (char *)NULL, (char *)NULL, DEF_YORIGIN,
+        Blt_Offset(Blt_ConicalGradientBrush, yOrigin),
+        BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_END, NULL, NULL, NULL, NULL, 0, 0}
+};
 
 static void NotifyClients(BackgroundObject *corePtr);
 
-/* 
- * Quick and dirty random number generator. 
+static Tcl_IdleProc SetReferenceWindowFromPath;
+
+/*
+ *---------------------------------------------------------------------------
  *
- * http://www.shadlen.org/ichbin/random/generators.htm#quick 
+ * ReferenceWindowEventProc --
+ *
+ *      This procedure is invoked by the Tk event handler when
+ *      StructureNotify events occur in a reference window managed by the
+ *      background.  Specifically we need to know if the reference window
+ *      was destroyed and dereference the pointer to it.
+ *
+ * Results:
+ *      None.
+ *
+ *---------------------------------------------------------------------------
  */
-#define JITTER_SEED	31337
-#define JITTER_A	1099087573U
-#define RANDOM_SCALE    2.3283064370807974e-10
-
-static void 
-RandomSeed(Blt_Random *randomPtr, unsigned int seed) {
-    randomPtr->value = seed;
-}
-
 static void
-RandomInit(Blt_Random *randomPtr) 
+ReferenceWindowEventProc(ClientData clientData, XEvent *eventPtr)
 {
-    RandomSeed(randomPtr, JITTER_SEED);
-}
+    BackgroundObject *corePtr = clientData;
 
-static INLINE double
-RandomNumber(Blt_Random *randomPtr)
-{
-#if (SIZEOF_INT == 8) 
-    /* mask the lower 32 bits on machines where int is a 64-bit quantity */
-    randomPtr->value = ((1099087573  * (randomPtr->value))) & ((unsigned int) 0xffffffff);
-#else
-    /* on machines where int is 32-bits, no need to mask */
-    randomPtr->value = (JITTER_A  * randomPtr->value);
-#endif	/* SIZEOF_INT == 8 */
-    return (double)randomPtr->value * RANDOM_SCALE;
-}
-
-static void
-JitterInit(Blt_Jitter *jitterPtr) 
-{
-    RandomInit(&jitterPtr->random);
-    jitterPtr->range = 0.1;
-    jitterPtr->offset = -0.05;		/* Jitter +/-  */
-}
-
-static INLINE double 
-Jitter(Blt_Jitter *jitterPtr) {
-    double value;
-
-    value = RandomNumber(&jitterPtr->random);
-    return (value * jitterPtr->range) + jitterPtr->offset;
-}
-
-static Blt_Picture
-ImageToPicture(TileBackground *corePtr)
-{
-    Tcl_Interp *interp;
-    Blt_Picture picture;
-    int isNew;
-
-    interp = corePtr->dataPtr->interp;
-    picture = Blt_GetPictureFromImage(interp, corePtr->tkImage, &isNew);
-    if (isNew) {
-	corePtr->flags |= FREE_TILE;
-    } else {
-	corePtr->flags &= ~FREE_TILE;
+    if ((eventPtr->type == DestroyNotify) && (corePtr->tkRef != NULL) &&
+        (eventPtr->xany.window == Tk_WindowId(corePtr->tkRef))) {
+        corePtr->tkRef = NULL;
     }
-    return picture;
+}
+
+static int 
+GetBackgroundTypeFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr,
+                         Blt_PaintBrushType *typePtr)
+{
+    const char *string;
+    char c;
+    int length;
+
+    string = Tcl_GetStringFromObj(objPtr, &length);
+    c = string[0];
+    if ((c == 't') && (length > 1) && (strncmp(string, "tile", length) == 0)) {
+	*typePtr = BLT_PAINTBRUSH_TILE;
+    } else if ((c == 'l') && (length > 1)  &&
+	       (strncmp(string, "linear", length) == 0)) {
+	*typePtr = BLT_PAINTBRUSH_LINEAR;
+    } else if ((c == 'r') && (length > 1)  &&
+	       (strncmp(string, "radial", length) == 0)) {
+	*typePtr = BLT_PAINTBRUSH_RADIAL;
+    } else if ((c == 'c') && (length > 2)  &&
+	       (strncmp(string, "conical", length) == 0)) {
+	*typePtr = BLT_PAINTBRUSH_CONICAL;
+    } else if ((c == 's') && (length > 2) &&
+               (strncmp(string, "stripe", length) == 0)) {
+	*typePtr = BLT_PAINTBRUSH_STRIPE;
+    } else if ((c == 'c') && (length > 2) &&
+               (strncmp(string, "checker", length) == 0)) {
+	*typePtr = BLT_PAINTBRUSH_CHECKER;
+    } else {
+	if (interp != NULL) {
+	    Tcl_AppendResult(interp, "unknown background type \"", string, 
+		"\"", (char *)NULL);
+	}
+	return TCL_ERROR;
+    }
+    return TCL_OK;
+}
+
+static unsigned int
+GetBackgroundColor(BackgroundObject *corePtr)
+{
+    return Blt_XColorToPixel(Tk_3DBorderColor(corePtr->border));
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * SetReferenceWindowFromPath --
+ *
+ * Results:
+ *	None.
+ *
+ *---------------------------------------------------------------------------
+ */
+/* ARGSUSED */
+static void
+SetReferenceWindowFromPath(ClientData clientData)
+{
+    BackgroundObject *corePtr = clientData;
+    Tcl_Interp *interp;
+    Tk_Window tkwin, tkMain;
+    const char *string;
+    
+    interp = corePtr->dataPtr->interp;
+    corePtr->flags &= ~REFERENCE_PENDING;
+    tkMain = Tk_MainWindow(interp);
+    string = Tcl_GetString(corePtr->refNameObjPtr);
+    tkwin = Tk_NameToWindow(interp, string, tkMain);
+    if (tkwin == NULL) {
+	Tcl_BackgroundError(interp);
+        return;
+    }
+    if (corePtr->tkRef != NULL) {
+	Tk_DeleteEventHandler(corePtr->tkRef, StructureNotifyMask,
+	      ReferenceWindowEventProc, corePtr);
+    }
+    Tk_CreateEventHandler(tkwin, StructureNotifyMask, 
+        ReferenceWindowEventProc, corePtr);
+    corePtr->tkRef = tkwin;
+}
+
+static void
+GetReferenceWindowDimensions(BackgroundObject *corePtr, Tk_Window tkwin,
+                             int *widthPtr, int *heightPtr)
+{
+    Tk_Window tkRef;
+
+    tkRef = NULL;
+    switch (corePtr->flags & REFERENCE_MASK) {
+    case REFERENCE_SELF:
+	tkRef = tkwin;                              break;
+    case REFERENCE_TOPLEVEL:
+	tkRef = Blt_Toplevel(tkwin);                break;
+    case REFERENCE_WINDOW:                      
+	tkRef = corePtr->tkRef;                     break;
+    }
+    if (tkRef != NULL) {
+        *widthPtr = Tk_Width(tkRef);
+        *heightPtr = Tk_Height(tkRef);
+    }
 }
 
 /*
@@ -623,37 +542,50 @@ ImageToPicture(TileBackground *corePtr)
  */
 /* ARGSUSED */
 static void
-ImageChangedProc(
-    ClientData clientData,
-    int x, int y, int width, int height, /* Not used. */
-    int imageWidth, int imageHeight)	 /* Not used. */
+ImageChangedProc(ClientData clientData, int x, int y, int width, int height,
+                 int imageWidth, int imageHeight)
 {
     BackgroundObject *corePtr = clientData;
+    Blt_TileBrush *brushPtr = (Blt_TileBrush *)corePtr->brush;
+    int isNew;
 
-    /* Propagate the change in the image to all the clients. */
-    NotifyClients(corePtr);
+    /* Get picture from image. */
+    if ((brushPtr->tile != NULL) &&
+        (brushPtr->flags & BLT_PAINTBRUSH_FREE_PICTURE)) {
+	Blt_FreePicture(brushPtr->tile);
+    }
+    if (Blt_Image_IsDeleted(brushPtr->tkImage)) {
+	brushPtr->tkImage = NULL;
+	return;                         /* Image was deleted. */
+    }
+    brushPtr->tile = Blt_GetPictureFromImage(corePtr->dataPtr->interp,
+        brushPtr->tkImage, &isNew);
+    if (Blt_Picture_IsAssociated(brushPtr->tile)) {
+	Blt_UnassociateColors(brushPtr->tile);
+    }
+    if (isNew) {
+	brushPtr->flags |= BLT_PAINTBRUSH_FREE_PICTURE;
+    } else {
+	brushPtr->flags &= ~BLT_PAINTBRUSH_FREE_PICTURE;
+    }
 }
 
 /*ARGSUSED*/
 static void
-FreeImageProc(
-    ClientData clientData,
-    Display *display,			/* Not used. */
-    char *widgRec,
-    int offset)
+FreeImage(ClientData clientData, Display *display, char *widgRec, int offset)
 {
-    TileBackground *corePtr = (TileBackground *)(widgRec);
+    Blt_TileBrush *brushPtr = (Blt_TileBrush *)widgRec;
 
-    if (corePtr->tkImage != NULL) {
-	Tk_FreeImage(corePtr->tkImage);
-	corePtr->tkImage = NULL;
+    if (brushPtr->tkImage != NULL) {
+	Tk_FreeImage(brushPtr->tkImage);
+	brushPtr->tkImage = NULL;
     }
 }
 
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToImageProc --
+ * ObjToImage --
  *
  *	Given an image name, get the Tk image associated with it.
  *
@@ -664,7 +596,7 @@ FreeImageProc(
  */
 /*ARGSUSED*/
 static int
-ObjToImageProc(
+ObjToImage(
     ClientData clientData,		/* Not used. */
     Tcl_Interp *interp,		        /* Interpreter to send results back
 					 * to */
@@ -674,22 +606,23 @@ ObjToImageProc(
     int offset,				/* Offset to field in structure */
     int flags)	
 {
-    TileBackground *corePtr = (TileBackground *)(widgRec);
     Tk_Image tkImage;
+    Blt_TileBrush *brushPtr = (Blt_TileBrush *)widgRec;
+    BackgroundObject *corePtr = clientData;
 
     tkImage = Tk_GetImage(interp, corePtr->tkwin, Tcl_GetString(objPtr), 
 	ImageChangedProc, corePtr);
     if (tkImage == NULL) {
 	return TCL_ERROR;
     }
-    corePtr->tkImage = tkImage;
+    brushPtr->tkImage = tkImage;
     return TCL_OK;
 }
 
 /*
  *---------------------------------------------------------------------------
  *
- * ImageToObjProc --
+ * ImageToObj --
  *
  *	Convert the image name into a string Tcl_Obj.
  *
@@ -700,7 +633,7 @@ ObjToImageProc(
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-ImageToObjProc(
+ImageToObj(
     ClientData clientData,		/* Not used. */
     Tcl_Interp *interp,
     Tk_Window tkwin,			/* Not used. */
@@ -708,129 +641,18 @@ ImageToObjProc(
     int offset,				/* Offset to field in structure */
     int flags)	
 {
-    TileBackground *corePtr = (TileBackground *)(widgRec);
+    Blt_TileBrush *brushPtr = (Blt_TileBrush *)(widgRec);
 
-    if (corePtr->tkImage == NULL) {
+    if (brushPtr->tkImage == NULL) {
 	return Tcl_NewStringObj("", -1);
     }
-    return Tcl_NewStringObj(Blt_Image_Name(corePtr->tkImage), -1);
+    return Tcl_NewStringObj(Blt_Image_Name(brushPtr->tkImage), -1);
 }
 
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToReferenceType --
- *
- *	Converts the given Tcl_Obj to a reference type.
- *
- * Results:
- *	The return value is a standard TCL result.  
- *
- *---------------------------------------------------------------------------
- */
-/*ARGSUSED*/
-static int
-ObjToReferenceTypeProc(
-    ClientData clientData,		/* Not used. */
-    Tcl_Interp *interp,		        /* Interpreter to send results back
-					 * to */
-    Tk_Window tkwin,			/* Not used. */
-    Tcl_Obj *objPtr,			/* String representation of value. */
-    char *widgRec,			/* Widget record. */
-    int offset,				/* Offset to field in structure */
-    int flags)	
-{
-    BackgroundObject *corePtr = (BackgroundObject *)(widgRec);
-    ReferenceType *referencePtr = (ReferenceType *)(widgRec + offset);
-    const char *string;
-    char c;
-    int refType;
-    int length;
-
-    string = Tcl_GetStringFromObj(objPtr, &length);
-    c = string[0];
-    if ((c == 's') && (strncmp(string, "self", length) == 0)) {
-	refType = REFERENCE_SELF;
-    } else if ((c == 't') && (strncmp(string, "toplevel", length) == 0)) {
-	refType = REFERENCE_TOPLEVEL;
-    } else if ((c == 'n') && (strncmp(string, "none", length) == 0)) {
-	refType = REFERENCE_NONE;
-    } else if (c == '.') {
-	Tk_Window tkwin, tkMain;
-
-	tkMain = Tk_MainWindow(interp);
-	tkwin = Tk_NameToWindow(interp, string, tkMain);
-	if (tkwin == NULL) {
-	    return TCL_ERROR;
-	}
-	refType = REFERENCE_WINDOW;
-	corePtr->refWindow = tkwin;
-    } else {
-	Tcl_AppendResult(interp, "unknown reference type \"", string, "\"",
-			 (char *)NULL);
-	return TCL_ERROR;
-    }
-    *referencePtr = refType;
-    return TCL_OK;
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * ReferenceTypeToObjProc --
- *
- *	Converts the background reference window type into a string Tcl_Obj.
- *
- * Results:
- *	The string representation of the reference window type is returned.
- *
- *---------------------------------------------------------------------------
- */
-/*ARGSUSED*/
-static Tcl_Obj *
-ReferenceTypeToObjProc(
-    ClientData clientData,		/* Not used. */
-    Tcl_Interp *interp,
-    Tk_Window tkwin,			/* Not used. */
-    char *widgRec,			/* Widget record */
-    int offset,				/* Offset to field in structure */
-    int flags)	
-{
-    ReferenceType reference = *(ReferenceType *)(widgRec + offset);
-    const char *string;
-
-    switch (reference) {
-    case REFERENCE_SELF:
-	string = "self";
-	break;
-
-    case REFERENCE_TOPLEVEL:
-	string = "toplevel";
-	break;
-
-    case REFERENCE_NONE:
-	string = "none";
-	break;
-
-    case REFERENCE_WINDOW:
-	{
-	    BackgroundObject *corePtr = (BackgroundObject *)(widgRec);
-
-	    string = Tk_PathName(corePtr->refWindow);
-	}
-	break;
-
-    default:
-	string = "???";
-	break;
-    }
-    return Tcl_NewStringObj(string, -1);
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * ObjToGradientTypeProc --
+ * ObjToPosition --
  *
  *	Translate the given string to the gradient type it represents.
  *	Types are "horizontal", "vertical", "updiagonal", "downdiagonal", 
@@ -843,251 +665,451 @@ ReferenceTypeToObjProc(
  */
 /*ARGSUSED*/
 static int
-ObjToGradientTypeProc(
-    ClientData clientData,		/* Not used. */
-    Tcl_Interp *interp,			/* Interpreter to send results back
-					 * to */
-    Tk_Window tkwin,			/* Not used. */
-    Tcl_Obj *objPtr,			/* String representation of value. */
-    char *widgRec,			/* Widget record. */
-    int offset,				/* Offset to field in structure */
-    int flags)	
+ObjToPosition(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+              Tcl_Obj *objPtr, char *widgRec, int offset, int flags)	
 {
-    Blt_GradientType *typePtr = (Blt_GradientType *)(widgRec + offset);
+    Point2d *pointPtr = (Point2d *)(widgRec + offset);
+    Tcl_Obj **objv;
+    int objc;
+
+    if (Tcl_ListObjGetElements(interp, objPtr, &objc, &objv) != TCL_OK) {
+        return TCL_ERROR;
+    }
+    if (objc > 2) {
+        Tcl_AppendResult(interp, "unknown position \"", Tcl_GetString(objPtr),
+                "\": should be \"top left\" or \"nw\"", (char *)NULL);
+        return TCL_ERROR;
+    }
+    pointPtr->x = 0.0;
+    pointPtr->y = 0.0;
+    if (objc == 0) {
+        pointPtr->x = 0.5;
+        pointPtr->y = 0.0;
+        return TCL_OK;
+    }
+    if (objc == 1) {
+        const char *string;
+        char c;
+        
+        string = Tcl_GetString(objv[0]);
+        c = string[0];
+        if ((c == 'n') && (strcmp(string, "nw") == 0)) {
+            pointPtr->x = 0.0;
+            pointPtr->y = 0.0;
+        } else if ((c == 's') && (strcmp(string, "sw") == 0)) {
+            pointPtr->x = 0.0;
+            pointPtr->y = 1.0;
+        } else if ((c == 's') && (strcmp(string, "se") == 0)) {
+            pointPtr->x = 1.0;
+            pointPtr->y = 1.0;
+        } else if ((c == 'n') && (strcmp(string, "ne") == 0)) {
+            pointPtr->x = 1.0;
+            pointPtr->y = 0.0;
+        } else if ((c == 'c') && (strcmp(string, "c") == 0)) {
+            pointPtr->x = 0.5;
+            pointPtr->y = 0.5;
+        } else if ((c == 'n') && (strcmp(string, "n") == 0)) {
+            pointPtr->x = 0.5;
+            pointPtr->y = 0.0;
+        } else if ((c == 's') && (strcmp(string, "s") == 0)) {
+            pointPtr->x = 0.5;
+            pointPtr->y = 1.0;
+        } else if ((c == 'e') && (strcmp(string, "e") == 0)) {
+            pointPtr->x = 1.0;
+            pointPtr->y = 0.5;
+        } else if ((c == 'w') && (strcmp(string, "w") == 0)) {
+            pointPtr->x = 0.0;
+            pointPtr->y = 0.5;
+        } else {
+            Tcl_AppendResult(interp, "unknown position \"", string,
+                "\": should be nw, n, ne, w, c, e, sw, s, or se.", (char *)NULL);
+            return TCL_ERROR;
+        }
+        return TCL_OK;
+    } 
+    if (objc == 2) {
+        const char *string;
+        char c;
+        
+        string = Tcl_GetString(objv[0]);
+        c = string[0];
+        if (Tcl_GetDoubleFromObj(NULL, objv[0], &pointPtr->x) != TCL_OK) {
+            if ((c == 't') && (strcmp(string, "top") == 0)) {
+                pointPtr->y = 0.0;
+            } else if ((c == 'b') && (strcmp(string, "bottom") == 0)) {
+                pointPtr->y = 1.0;
+            } else if ((c == 'c') && (strcmp(string, "center") == 0)) {
+                pointPtr->y = 1.0;
+            } else {
+                Tcl_AppendResult(interp, "unknown position \"", string,
+                     "\": should be top, bottom, or center.", (char *)NULL);
+                return TCL_ERROR;
+            }
+        }
+        if (Tcl_GetDoubleFromObj(NULL, objv[1], &pointPtr->y) != TCL_OK) {
+            if ((c == 'l') && (strcmp(string, "left") == 0)) {
+                pointPtr->x = 0.0;
+            } else if ((c == 'r') && (strcmp(string, "right") == 0)) {
+                pointPtr->x = 1.0;
+            } else if ((c == 'c') && (strcmp(string, "center") == 0)) {
+                pointPtr->x = 0.5;
+            } else {
+                Tcl_AppendResult(interp, "unknown position \"", string,
+                "\": should be left, right, or center.", (char *)NULL);
+                return TCL_ERROR;
+            }
+        }
+    }
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * PositionToObj --
+ *
+ *	Returns the string representing the position.
+ *
+ * Results:
+ *	The string representation of the position is returned.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static Tcl_Obj *
+PositionToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+              char *widgRec, int offset, int flags)	
+{
+    Point2d *pointPtr = (Point2d *)(widgRec + offset);
+    Tcl_Obj *objPtr, *listObjPtr;
+
+    listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
+    objPtr = Tcl_NewDoubleObj(pointPtr->x);
+    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+    objPtr = Tcl_NewDoubleObj(pointPtr->y);
+    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+    return listObjPtr;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * ObjToRepeat --
+ *
+ *	Translate the given string to the gradient type it represents.
+ *	Types are "horizontal", "vertical", "updiagonal", "downdiagonal", 
+ *	and "radial"".
+ *
+ * Results:
+ *	The return value is a standard TCL result.  
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+ObjToRepeat(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+              Tcl_Obj *objPtr, char *widgRec, int offset, int flags)	
+{
+    unsigned int *flagsPtr = (unsigned int *)(widgRec + offset);
+    int flag;
+    const char *string;
+    char c;
+
+    string = Tcl_GetString(objPtr);
+    c = string[0];
+    if ((c == 'n') && (strcmp(string, "no") == 0)) {
+        flag = 0;
+    } else if ((c == 'y') && (strcmp(string, "yes") == 0)) {
+        flag = BLT_PAINTBRUSH_REPEAT_NORMAL;
+    } else if ((c == 'r') && (strcmp(string, "reversing") == 0)) {
+        flag = BLT_PAINTBRUSH_REPEAT_OPPOSITE;
+    } else {
+        Tcl_AppendResult(interp, "unknown repeat value \"", string,
+                "\": should be yes, no, or reversing.", (char *)NULL);
+        return TCL_ERROR;
+    }
+    *flagsPtr &= ~REPEAT_MASK;
+    *flagsPtr |= flag;
+    return TCL_OK;
+} 
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * RepeatToObj --
+ *
+ *	Returns the string representing the repeat flag.
+ *
+ * Results:
+ *	The string representation of the repeat flag is returned.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static Tcl_Obj *
+RepeatToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+              char *widgRec, int offset, int flags)	
+{
+    unsigned int *flagsPtr = (unsigned int *)(widgRec + offset);
+    Tcl_Obj *objPtr;
+    
+    switch (*flagsPtr & REPEAT_MASK) {
+    case BLT_PAINTBRUSH_REPEAT_NORMAL:
+        objPtr = Tcl_NewStringObj("yes", 3);       break;
+    case BLT_PAINTBRUSH_REPEAT_OPPOSITE:
+        objPtr = Tcl_NewStringObj("reversing", 9); break;
+    default:
+        objPtr = Tcl_NewStringObj("no", 2);        break;
+    }
+    return objPtr;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * ObjToOrient --
+ *
+ *	Translate the given string to the gradient type it represents.
+ *	Types are "horizontal", "vertical", "updiagonal", "downdiagonal", 
+ *	and "radial"".
+ *
+ * Results:
+ *	The return value is a standard TCL result.  
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+ObjToOrient(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+              Tcl_Obj *objPtr, char *widgRec, int offset, int flags)	
+{
+    unsigned int *flagsPtr = (unsigned int *)(widgRec + offset);
+    int flag;
     const char *string;
     char c;
 
     string = Tcl_GetString(objPtr);
     c = string[0];
     if ((c == 'v') && (strcmp(string, "vertical") == 0)) {
-	*typePtr = BLT_GRADIENT_VERTICAL;
+        flag = BLT_PAINTBRUSH_ORIENT_VERTICAL;
     } else if ((c == 'h') && (strcmp(string, "horizontal") == 0)) {
-	*typePtr = BLT_GRADIENT_HORIZONTAL;
-    } else if ((c == 'r') && (strcmp(string, "radial") == 0)) {
-	*typePtr = BLT_GRADIENT_RADIAL;
-    } else if ((c == 'u') && (strcmp(string, "updiagonal") == 0)) {
-	*typePtr = BLT_GRADIENT_DIAGONAL_UP;
-    } else if ((c == 'd') && (strcmp(string, "downdiagonal") == 0)) {
-	*typePtr = BLT_GRADIENT_DIAGONAL_DOWN;
+        flag = BLT_PAINTBRUSH_ORIENT_HORIZONTAL;
     } else {
-	Tcl_AppendResult(interp, "unknown gradient type \"", string, "\"",
-			 (char *)NULL);
-	return TCL_ERROR;
+        Tcl_AppendResult(interp, "unknown orient value \"", string,
+                "\": should be vertical or horizontal.", (char *)NULL);
+        return TCL_ERROR;
     }
+    *flagsPtr &= ~ORIENT_MASK;
+    *flagsPtr |= flag;
     return TCL_OK;
-}
-
-static const char *
-NameOfGradientType(Blt_GradientType type) 
-{
-    switch (type) {
-    case BLT_GRADIENT_VERTICAL:
-	return "vertical";
-    case BLT_GRADIENT_HORIZONTAL:
-	return "horizontal";
-    case BLT_GRADIENT_RADIAL:
-	return "radial";
-    case BLT_GRADIENT_DIAGONAL_UP:
-	return "updiagonal";
-    case BLT_GRADIENT_DIAGONAL_DOWN:
-	return "downdiagonal";	
-    default:
-	return "???";
-    }
-}
+} 
 
 /*
  *---------------------------------------------------------------------------
  *
- * GradientTypeToObjProc --
+ * OrientToObj --
  *
- *	Returns the string representing the current gradiant shape.
+ *	Returns the string representing the orient flag.
  *
  * Results:
- *	The string representation of the shape is returned.
+ *	The string representation of the orient flag is returned.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-GradientTypeToObjProc(
-    ClientData clientData,		/* Not used. */
-    Tcl_Interp *interp,
-    Tk_Window tkwin,			/* Not used. */
-    char *widgRec,			/* Widget record */
-    int offset,				/* Offset to field in structure */
-    int flags)	
+OrientToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+              char *widgRec, int offset, int flags)	
 {
-    Blt_GradientType type = *(Blt_GradientType *)(widgRec + offset);
+    unsigned int *flagsPtr = (unsigned int *)(widgRec + offset);
+    Tcl_Obj *objPtr;
     
-    return Tcl_NewStringObj(NameOfGradientType(type), -1);
+    switch (*flagsPtr & ORIENT_MASK) {
+    case BLT_PAINTBRUSH_ORIENT_VERTICAL:
+        objPtr = Tcl_NewStringObj("vertical", 8);       break;
+    case BLT_PAINTBRUSH_ORIENT_HORIZONTAL:
+        objPtr = Tcl_NewStringObj("horizontal", 10);    break;
+    default:
+        objPtr = Tcl_NewStringObj("???", 3);            break;
+    }
+    return objPtr;
 }
-
 
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToGradientScaleProc --
+ * PaletteChangedProc
  *
- *	Translates the given string to the gradient scale it represents.  Valid
- *	paths are "linear", "log", "atan".
  *
  * Results:
- *	The return value is a standard TCL result.  
+ *      None.
+ *
+ *---------------------------------------------------------------------------
+ */
+/* ARGSUSED */
+static void
+PaletteChangedProc(Blt_Palette palette, ClientData clientData, 
+		   unsigned int flags)
+{
+     if (flags & PALETTE_DELETE_NOTIFY) {
+         PaintBrush *brushPtr = clientData;
+
+         brushPtr->palette = NULL;
+    }
+}
+
+/*ARGSUSED*/
+static void
+FreePalette(ClientData clientData, Display *display, char *widgRec, int offset)
+{
+    Blt_Palette *palPtr = (Blt_Palette *)(widgRec + offset);
+    Blt_PaintBrush brush = (Blt_PaintBrush)widgRec;
+
+    Blt_Palette_DeleteNotifier(*palPtr, brush);
+    *palPtr = NULL;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * ObjToPalette --
+ *
+ *      Convert the string representation of a palette into its token.
+ *
+ * Results:
+ *      The return value is a standard TCL result.  The palette token is
+ *      written into the widget record.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
-ObjToGradientScaleProc(
-    ClientData clientData,		/* Not used. */
-    Tcl_Interp *interp,			/* Interpreter to send results back
-					 * to */
-    Tk_Window tkwin,			/* Not used. */
-    Tcl_Obj *objPtr,			/* String representation of value. */
-    char *widgRec,			/* Widget record. */
-    int offset,				/* Offset to field in structure */
-    int flags)	
+ObjToPalette(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+             Tcl_Obj *objPtr, char *widgRec, int offset, int flags)
 {
-    Blt_GradientScale *scalePtr = (Blt_GradientScale *)(widgRec + offset);
+    Blt_Palette *palPtr = (Blt_Palette *)(widgRec + offset);
+    Blt_PaintBrush brush = (Blt_PaintBrush)(widgRec);
+    const char *string;
+    
+    string = Tcl_GetString(objPtr);
+    if ((string == NULL) || (string[0] == '\0')) {
+	FreePalette(clientData, Tk_Display(tkwin), widgRec, offset);
+	return TCL_OK;
+    }
+    if (Blt_Palette_GetFromObj(interp, objPtr, palPtr) != TCL_OK) {
+	return TCL_ERROR;
+    }
+    Blt_Palette_CreateNotifier(*palPtr, PaletteChangedProc, brush);
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * PaletteToObj --
+ *
+ *      Convert the palette token into a string.
+ *
+ * Results:
+ *      The string representing the symbol type or line style is returned.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static Tcl_Obj *
+PaletteToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+             char *widgRec, int offset, int flags)
+{
+    Blt_Palette palette = *(Blt_Palette *)(widgRec + offset);
+    if (palette == NULL) {
+	return Tcl_NewStringObj("", -1);
+    } 
+    return Tcl_NewStringObj(Blt_Palette_Name(palette), -1);
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * ObjToColorScaling --
+ *
+ *	Translates the given string to the gradient scale it represents.  
+ *	Valid scales are "linear", "log", "atan".
+ *
+ * Results:
+ *	A standard TCL result.  If successful the field in the structure
+ *      is updated.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+ObjToColorScaling(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+                  Tcl_Obj *objPtr, char *widgRec, int offset, int flags)	
+{
+    unsigned int *flagsPtr = (unsigned int *)(widgRec + offset);
     const char *string;
     int length;
     char c;
-
+    int flag;
+    
     string = Tcl_GetStringFromObj(objPtr, &length);
     c = string[0];
+    flag = 0;
     if ((c == 'l') && (strcmp(string, "linear") == 0)) {
-	*scalePtr = BLT_GRADIENT_LINEARSCALE;
+	flag = BLT_PAINTBRUSH_SCALING_LINEAR;
     } else if ((c == 'l') && (length > 2) && 
 	       (strncmp(string, "logarithmic", length) == 0)) {
-	*scalePtr = BLT_GRADIENT_LOGSCALE;
+	flag = BLT_PAINTBRUSH_SCALING_LOG;
     } else if ((c == 'a') && (strcmp(string, "atan") == 0)) {
-	*scalePtr = BLT_GRADIENT_ATANSCALE;
+	flag = BLT_PAINTBRUSH_SCALING_ATAN;
     } else {
-	Tcl_AppendResult(interp, "unknown gradient scale \"", string, "\"",
+	Tcl_AppendResult(interp, "unknown coloring scaling \"", string, "\"",
+                         ": should be linear, logarithmic or atan.",
 			 (char *)NULL);
 	return TCL_ERROR;
     }
+    *flagsPtr &= ~COLOR_SCALING_MASK;
+    *flagsPtr |= flag;
     return TCL_OK;
 }
 
-static const char *
-NameOfGradientScale(Blt_GradientScale scale) 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * ColorScalingToObj --
+ *
+ *	Convert the color scaling flag into a string Tcl_Obj.
+ *
+ * Results:
+ *	The string representation of the color scaling flag is returned.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static Tcl_Obj *
+ColorScalingToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+                  char *widgRec, int offset, int flags)	
 {
-    switch (scale) {
-    case BLT_GRADIENT_LINEARSCALE:
-	return "linear";
-    case BLT_GRADIENT_LOGSCALE:
-	return "log";
-    case BLT_GRADIENT_ATANSCALE:
-	return "atan";
+    unsigned int *flagsPtr = (unsigned int *)(widgRec + offset);
+    Tcl_Obj *objPtr;
+    
+    switch (*flagsPtr & COLOR_SCALING_MASK) {
+    case BLT_PAINTBRUSH_SCALING_LINEAR:
+	objPtr = Tcl_NewStringObj("linear", 6);         break;
+    case BLT_PAINTBRUSH_SCALING_LOG:
+	objPtr = Tcl_NewStringObj("log", 3);            break;
+    case BLT_PAINTBRUSH_SCALING_ATAN:
+	objPtr = Tcl_NewStringObj("atan", 4);           break;
     default:
-	return "?? unknown scale ??";
+	objPtr = Tcl_NewStringObj("???", 3);            break;
     }
+    return objPtr;
 }
 
 /*
  *---------------------------------------------------------------------------
  *
- * GradientScaleToObjProc --
- *
- *	Convert the scale into a string Tcl_Obj.
- *
- * Results:
- *	The string representation of the scale is returned.
- *
- *---------------------------------------------------------------------------
- */
-/*ARGSUSED*/
-static Tcl_Obj *
-GradientScaleToObjProc(
-    ClientData clientData,		/* Not used. */
-    Tcl_Interp *interp,
-    Tk_Window tkwin,			/* Not used. */
-    char *widgRec,			/* Widget record */
-    int offset,				/* Offset to field in structure */
-    int flags)	
-{
-    Blt_GradientScale scale = *(Blt_GradientScale *)(widgRec + offset);
-
-    return Tcl_NewStringObj(NameOfGradientScale(scale), -1);
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * ObjToOpacityProc --
- *
- *	Convert the string representation of opacity (a percentage) to
- *	an alpha value 0..255.
- *
- * Results:
- *	The return value is a standard TCL result.  
- *
- *---------------------------------------------------------------------------
- */
-/*ARGSUSED*/
-static int
-ObjToOpacityProc(
-    ClientData clientData,		/* Not used. */
-    Tcl_Interp *interp,			/* Interpreter to send results back
-					 * to */
-    Tk_Window tkwin,			/* Not used. */
-    Tcl_Obj *objPtr,			/* String representation of value. */
-    char *widgRec,			/* Widget record. */
-    int offset,				/* Offset to field in structure */
-    int flags)	
-{
-    int *alphaPtr = (int *)(widgRec + offset);
-    double opacity;
-
-    if (Tcl_GetDoubleFromObj(interp, objPtr, &opacity) != TCL_OK) {
-	return TCL_ERROR;
-    }
-    if ((opacity < 0.0) || (opacity > 100.0)) {
-	Tcl_AppendResult(interp, "invalid percent opacity \"", 
-		Tcl_GetString(objPtr), "\" should be 0 to 100", (char *)NULL);
-	return TCL_ERROR;
-    }
-    opacity = (opacity / 100.0) * 255.0;
-    *alphaPtr = ROUND(opacity);
-    return TCL_OK;
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * OpacityToObjProc --
- *
- *	Convert the alpha value into a string Tcl_Obj representing a
- *	percentage.
- *
- * Results:
- *	The string representation of the filter is returned.
- *
- *---------------------------------------------------------------------------
- */
-/*ARGSUSED*/
-static Tcl_Obj *
-OpacityToObjProc(
-    ClientData clientData,		/* Not used. */
-    Tcl_Interp *interp,
-    Tk_Window tkwin,			/* Not used. */
-    char *widgRec,			/* Widget record */
-    int offset,				/* Offset to field in structure */
-    int flags)	
-{
-    int *alphaPtr = (int *)(widgRec + offset);
-    double opacity;
-
-    opacity = (*alphaPtr / 255.0) * 100.0;
-    return Tcl_NewDoubleObj(opacity);
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * ObjToJitterProc --
+ * ObjToJitter --
  *
  *	Given a string representation of the jitter value (a percentage),
  *	convert it to a number 0..1.
@@ -1099,15 +1121,8 @@ OpacityToObjProc(
  */
 /*ARGSUSED*/
 static int
-ObjToJitterProc(
-    ClientData clientData,		/* Not used. */
-    Tcl_Interp *interp,			/* Interpreter to send results back
-					 * to */
-    Tk_Window tkwin,			/* Not used. */
-    Tcl_Obj *objPtr,			/* String representation of value. */
-    char *widgRec,			/* Widget record. */
-    int offset,				/* Offset to field in structure */
-    int flags)	
+ObjToJitter(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+            Tcl_Obj *objPtr, char *widgRec, int offset, int flags)	
 {
     double *jitterPtr = (double *)(widgRec + offset);
     double jitter;
@@ -1117,7 +1132,8 @@ ObjToJitterProc(
     }
     if ((jitter < 0.0) || (jitter > 100.0)) {
 	Tcl_AppendResult(interp, "invalid percent jitter \"", 
-		Tcl_GetString(objPtr), "\" should be 0 to 100", (char *)NULL);
+		Tcl_GetString(objPtr), "\" number should be between 0 and 100",
+                (char *)NULL);
 	return TCL_ERROR;
     }
     *jitterPtr = jitter * 0.01;
@@ -1127,24 +1143,19 @@ ObjToJitterProc(
 /*
  *---------------------------------------------------------------------------
  *
- * OpacityToObjProc --
+ * JitterToObj --
  *
- *	Convert the picture filter into a string Tcl_Obj.
+ *	Convert the double jitter value to a Tcl_Obj.
  *
  * Results:
- *	The string representation of the filter is returned.
+ *	The string representation of the jitter percentage is returned.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-JitterToObjProc(
-    ClientData clientData,		/* Not used. */
-    Tcl_Interp *interp,
-    Tk_Window tkwin,			/* Not used. */
-    char *widgRec,			/* Widget record */
-    int offset,				/* Offset to field in structure */
-    int flags)	
+JitterToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+            char *widgRec, int offset, int flags)	
 {
     double *jitterPtr = (double *)(widgRec + offset);
     double jitter;
@@ -1153,13 +1164,25 @@ JitterToObjProc(
     return Tcl_NewDoubleObj(jitter);
 }
 
+/*ARGSUSED*/
+static void
+FreeReference(ClientData clientData, Display *display, char *widgRec,
+              int offset)
+{
+    BackgroundObject *corePtr = (BackgroundObject *)(widgRec);
+
+    if (corePtr->refNameObjPtr != NULL) {
+        Tcl_DecrRefCount(corePtr->refNameObjPtr);
+        corePtr->refNameObjPtr = NULL;
+    }
+}
+
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToTextureTypeProc --
+ * ObjToReference --
  *
- *	Translate the given string to the texture type it represents.  
- *	Types are "checker", "striped"".
+ *	Converts the given Tcl_Obj to a reference type.
  *
  * Results:
  *	The return value is a standard TCL result.  
@@ -1168,9 +1191,9 @@ JitterToObjProc(
  */
 /*ARGSUSED*/
 static int
-ObjToTextureTypeProc(
+ObjToReference(
     ClientData clientData,		/* Not used. */
-    Tcl_Interp *interp,			/* Interpreter to send results back
+    Tcl_Interp *interp,		        /* Interpreter to send results back
 					 * to */
     Tk_Window tkwin,			/* Not used. */
     Tcl_Obj *objPtr,			/* String representation of value. */
@@ -1178,170 +1201,58 @@ ObjToTextureTypeProc(
     int offset,				/* Offset to field in structure */
     int flags)	
 {
-    char *string;
+    BackgroundObject *corePtr = (BackgroundObject *)(widgRec);
+    const char *string;
     char c;
-    Blt_TextureType *typePtr = (Blt_TextureType *)(widgRec + offset);
+    int flag;
     int length;
 
     string = Tcl_GetStringFromObj(objPtr, &length);
     c = string[0];
-    if ((c == 's') && (strncmp(string, "stripes", length) == 0)) {
-	*typePtr = BLT_TEXTURE_VSTRIPES;
-    } else if ((c == 'v') && (strncmp(string, "vstripes", length) == 0)) {
-	*typePtr = BLT_TEXTURE_VSTRIPES;
-    } else if ((c == 'h') && (strncmp(string, "hstripes", length) == 0)) {
-	*typePtr = BLT_TEXTURE_HSTRIPES;
-    } else if ((c == 'c') && (strncmp(string, "checkered", length) == 0)) {
-	*typePtr = BLT_TEXTURE_CHECKERS;
+    if ((c == 's') && (strncmp(string, "self", length) == 0)) {
+	flag = REFERENCE_SELF;
+    } else if ((c == 't') && (strncmp(string, "toplevel", length) == 0)) {
+	flag = REFERENCE_TOPLEVEL;
+    } else if (c == '.') {
+	if ((corePtr->flags & REFERENCE_PENDING) == 0) {
+	    Tcl_DoWhenIdle(SetReferenceWindowFromPath, corePtr);
+	    corePtr->flags |= REFERENCE_PENDING;
+	}           
+        flag = REFERENCE_WINDOW;
     } else {
-	Tcl_AppendResult(interp, "unknown texture type \"", string, "\"",
+	Tcl_AppendResult(interp, "unknown reference type \"", string, "\"",
 			 (char *)NULL);
 	return TCL_ERROR;
     }
+    corePtr->flags &= ~REFERENCE_MASK;
+    corePtr->flags |= flag;
+    corePtr->refNameObjPtr = objPtr;
+    Tcl_IncrRefCount(corePtr->refNameObjPtr);
     return TCL_OK;
-}
-
-static const char *
-NameOfTextureType(Blt_TextureType type) 
-{
-    switch (type) {
-    case BLT_TEXTURE_VSTRIPES:
-	return "vstrips";
-    case BLT_TEXTURE_HSTRIPES:
-	return "hstripes";
-    case BLT_TEXTURE_CHECKERS:
-	return "checkers";
-    default:
-	return "???";
-    }
 }
 
 /*
  *---------------------------------------------------------------------------
  *
- * TextureTypeToObjProc --
+ * ReferenceToObj --
  *
- *	Returns the string representing the background type.
+ *	Returns the reference window name string Tcl_Obj.
  *
  * Results:
- *	The string representation of the background type is returned.
+ *	The string representation of the reference window is returned.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-TextureTypeToObjProc(
-    ClientData clientData,		/* Not used. */
-    Tcl_Interp *interp,
-    Tk_Window tkwin,			/* Not used. */
-    char *widgRec,			/* Widget record */
-    int offset,				/* Offset to field in structure */
-    int flags)	
+ReferenceToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+               char *widgRec, int offset, int flags)	
 {
-    Blt_TextureType type = *(Blt_TextureType *)(widgRec + offset);
+    BackgroundObject *corePtr = (BackgroundObject *)(widgRec);
 
-    return Tcl_NewStringObj(NameOfTextureType(type), -1);
+    return corePtr->refNameObjPtr;
 }
 
-static int
-GradientColorProc(Blt_PaintBrush *paintPtr, int x, int y)
-{
-    double t;
-    Blt_Pixel color;
-    GradientBackground *corePtr;
-    Blt_Gradient *gradPtr;
-
-    corePtr = paintPtr->clientData;
-    gradPtr = &corePtr->gradient;
-    switch (gradPtr->type) {
-    case BLT_GRADIENT_RADIAL:
-	{
-	    double dx, dy, d;
-
-	    dx = x - gradPtr->xOffset;
-	    dy = y - gradPtr->yOffset;
-	    d = sqrt(dx * dx + dy * dy);
-	    t = 1.0 - (d * gradPtr->scaleFactor);
-	}
-	break;
-    case BLT_GRADIENT_DIAGONAL_DOWN:
-    case BLT_GRADIENT_DIAGONAL_UP:
-	{
-	    double cx, cy, rx;
-	    
-	    /* Translate to the center of the reference window. */
-	    cx = x - gradPtr->xOffset;
-	    cy = y - gradPtr->yOffset;
-	    /* Rotate x-coordinate by the slope of the diagonal. */
-	    rx = (cx * gradPtr->cosTheta) - (cy * gradPtr->sinTheta);
-	    /* Translate back.  */
-	    rx += gradPtr->length * 0.5;
-	    assert(rx >= 0 && rx < gradPtr->length);
-	    t = rx * gradPtr->scaleFactor;
-	}
-	break;
-    case BLT_GRADIENT_HORIZONTAL:
-	t = (double)x * gradPtr->scaleFactor;
-	break;
-    default:
-    case BLT_GRADIENT_VERTICAL:
-	t = (double)y * gradPtr->scaleFactor;
-	break;
-    }
-    if (corePtr->jitter.range > 0.0) {
-	t += Jitter(&corePtr->jitter);
-	t = JCLAMP(t);
-    }
-    if (gradPtr->scale == BLT_GRADIENT_LOGSCALE) {
-	t = log10(9.0 * t + 1.0);
-    } else if (gradPtr->scale == BLT_GRADIENT_ATANSCALE) {
-	t = atan(18.0 * (t-0.05) + 1.0) / M_PI_2;
-    } 
-    if (corePtr->palette != NULL) {
-	return Blt_Palette_GetAssociatedColor(corePtr->palette, t);
-    }
-    color.Red   = (unsigned char)(corePtr->low.Red   + t * corePtr->rRange);
-    color.Green = (unsigned char)(corePtr->low.Green + t * corePtr->gRange);
-    color.Blue  = (unsigned char)(corePtr->low.Blue  + t * corePtr->bRange);
-    color.Alpha = (unsigned char)(corePtr->low.Alpha + t * corePtr->aRange);
-    Blt_AssociateColor(&color);
-    return color.u32;
-}
-
-static int
-TextureColorProc(Blt_PaintBrush *paintPtr, int x, int y)
-{
-    double t;
-    Blt_Pixel color;
-    TextureBackground *corePtr;
-
-    corePtr = paintPtr->clientData;
-    switch (corePtr->type) {
-    default:
-    case BLT_TEXTURE_VSTRIPES:
-	t = ((y / 2) & 0x1) ? 0 : 1;
-	break;
-    case BLT_TEXTURE_CHECKERS:
-	{
-	    int oddx, oddy;
-	    
-	    oddx = (x / 8) & 0x01;
-	    oddy = (y / 8) & 0x01;
-	    t = ((oddy + oddx) == 1) ? 0 : 1;
-	}
-	break;
-    }
-    if (corePtr->jitter.range > 0.0) {
-	t += Jitter(&corePtr->jitter);
-	t = JCLAMP(t);
-    }
-    color.Red   = (unsigned char)(corePtr->low.Red   + t * corePtr->rRange);
-    color.Green = (unsigned char)(corePtr->low.Green + t * corePtr->gRange);
-    color.Blue  = (unsigned char)(corePtr->low.Blue  + t * corePtr->bRange);
-    color.Alpha = (unsigned char)(corePtr->low.Alpha + t * corePtr->aRange);
-    Blt_AssociateColor(&color);
-    return color.u32;
-}
 
 /*
  *---------------------------------------------------------------------------
@@ -1373,41 +1284,6 @@ NotifyClients(BackgroundObject *corePtr)
     }
 }
 
-static const char *
-NameOfBackgroundType(BackgroundObject *corePtr) 
-{
-    return backgroundTypes[corePtr->classPtr->type];
-}
-
-static int 
-GetBackgroundTypeFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, 
-			 BackgroundType *typePtr)
-{
-    const char *string;
-    char c;
-    int length;
-
-    string = Tcl_GetStringFromObj(objPtr, &length);
-    c = string[0];
-    if ((c == 't') && (length > 1) && (strncmp(string, "tile", length) == 0)) {
-	*typePtr = BACKGROUND_TILE;
-    } else if ((c == 'g') && (strncmp(string, "gradient", length) == 0)) {
-	*typePtr = BACKGROUND_GRADIENT;
-    } else if ((c == 's') && (strncmp(string, "solid", length) == 0)) {
-	*typePtr = BACKGROUND_SOLID;
-    } else if ((c == 't') && (length > 1)  &&
-	       (strncmp(string, "texture", length) == 0)) {
-	*typePtr = BACKGROUND_TEXTURE;
-    } else {
-	if (interp != NULL) {
-	    Tcl_AppendResult(interp, "unknown background \"", string, 
-		"\"", (char *)NULL);
-	}
-	return TCL_ERROR;
-    }
-    return TCL_OK;
-}
-
 static void
 ClearCache(BackgroundObject *corePtr)
 {
@@ -1423,29 +1299,55 @@ ClearCache(BackgroundObject *corePtr)
     }
 }
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * GetOrigin --
+ *
+ *	Computes the x and y offsets for the coordinates using a background
+ *      pattern referenced from a particular window.  The x and y
+ *      coordinates start as offsets from the most local window.  We add
+ *      the offsets of each successive parent window until we reach to
+ *      reference window.
+ *
+ *              +-----------------------+
+ *              |                       |
+ *              |       +---------+     |
+ *              |       |  x,y    |     |
+ *              |       |         |     |
+ *              |       +---------+     |
+ *              +-----------------------+
+ *
+ * Results:
+ *	None.
+ *
+ * Side effects:
+ *	None.
+ *
+ *---------------------------------------------------------------------------
+ */
 static void 
 GetOffsets(Tk_Window tkwin, BackgroundObject *corePtr, int x, int y, 
 	   int *xOffsetPtr, int *yOffsetPtr)
 {
-    Tk_Window refWindow;
+    Tk_Window tkRef;
 
-    if (corePtr->reference == REFERENCE_SELF) {
-	refWindow = tkwin;
-    } else if (corePtr->reference == REFERENCE_TOPLEVEL) {
-	refWindow = Blt_Toplevel(tkwin);
-    } else if (corePtr->reference == REFERENCE_WINDOW) {
-	refWindow = corePtr->refWindow;
-    } else if (corePtr->reference == REFERENCE_NONE) {
-	refWindow = NULL;
-    } else {
-	return;		/* Unknown reference window. */
+    switch (corePtr->flags & REFERENCE_MASK) {
+    case REFERENCE_SELF:
+	tkRef = tkwin;                      break;
+    case REFERENCE_TOPLEVEL:
+	tkRef = Blt_Toplevel(tkwin);        break;
+    case REFERENCE_WINDOW:
+	tkRef = corePtr->tkRef;             break;
     }
-    if ((corePtr->reference == REFERENCE_WINDOW) ||
-	(corePtr->reference == REFERENCE_TOPLEVEL)) {
+    if (tkRef == NULL) {
+        return;                         
+    }
+    if (corePtr->flags & (REFERENCE_WINDOW|REFERENCE_TOPLEVEL)) {
 	Tk_Window tkwin2;
 	
 	tkwin2 = tkwin;
-	while ((tkwin2 != refWindow) && (tkwin2 != NULL)) {
+	while ((tkwin2 != tkRef) && (tkwin2 != NULL)) {
 	    x += Tk_X(tkwin2) + Tk_Changes(tkwin2)->border_width;
 	    y += Tk_Y(tkwin2) + Tk_Changes(tkwin2)->border_width;
 	    tkwin2 = Tk_Parent(tkwin2);
@@ -1457,246 +1359,21 @@ GetOffsets(Tk_Window tkwin, BackgroundObject *corePtr, int x, int y,
 	     * window as a guide to the size of the picture.  Simply
 	     * convert to a self reference.
 	     */
-	    corePtr->reference = REFERENCE_SELF;
-	    refWindow = tkwin;
+            fprintf(stderr, "reference type is %x, refwin=%s tkwin=%s\n",
+                    corePtr->flags & REFERENCE_MASK, Tk_PathName(tkRef),
+                    Tk_PathName(tkwin));
+                    
+#ifdef notdef
+	    corePtr->flags = REFERENCE_SELF;
+	    tkRef = tkwin;
+#endif
 	    abort();
 	}
     }
-    x += corePtr->xOrigin;
-    y += corePtr->yOrigin;
     *xOffsetPtr = -x;
     *yOffsetPtr = -y;
-#ifdef notdef
-    fprintf(stderr, "Tile offsets x0=%d y0=%d x=%d,y=%d sx=%d,sy=%d\n",
-	    x0, y0, x, y, *xOffsetPtr, *yOffsetPtr);
-#endif
 }
 
-static Tk_Window
-GetReferenceWindow(BackgroundObject *corePtr, Tk_Window tkwin, int *widthPtr, 
-		   int *heightPtr)
-{
-    Tk_Window refWindow;
-
-    if (corePtr->reference == REFERENCE_SELF) {
-	refWindow = tkwin;
-    } else if (corePtr->reference == REFERENCE_TOPLEVEL) {
-	refWindow = Blt_Toplevel(tkwin);
-    } else if (corePtr->reference == REFERENCE_WINDOW) {
-	refWindow = corePtr->refWindow;
-    } else {
-	refWindow = tkwin;		/* Default to self. */
-    }
-    *widthPtr = Tk_Width(refWindow);
-    *heightPtr = Tk_Height(refWindow);
-    return refWindow;
-}
-
-static void
-InitGradient(GradientBackground *corePtr, int refWidth, int refHeight)
-{
-    Blt_Gradient *gradPtr;
-
-    gradPtr = &corePtr->gradient;
-    if (corePtr->jitter.range > 0.0) {
-	JitterInit(&corePtr->jitter);
-    }
-    corePtr->rRange = corePtr->high.Red   - corePtr->low.Red;
-    corePtr->gRange = corePtr->high.Green - corePtr->low.Green;
-    corePtr->bRange = corePtr->high.Blue  - corePtr->low.Blue;
-    corePtr->aRange = corePtr->high.Alpha - corePtr->low.Alpha;
-    switch (gradPtr->type) {
-    case BLT_GRADIENT_HORIZONTAL:
-	gradPtr->scaleFactor = 0.0;
-	if (refWidth > 1) {
-	    gradPtr->scaleFactor = 1.0 / (refWidth - 1);
-	} 
-	break;
-    default:
-    case BLT_GRADIENT_VERTICAL:
-	gradPtr->scaleFactor = 0.0;
-	if (refHeight > 1) {
-	    gradPtr->scaleFactor = 1.0 / (refHeight - 1);
-	} 
-	break;
-    case BLT_GRADIENT_DIAGONAL_UP:
-    case BLT_GRADIENT_DIAGONAL_DOWN:
-	gradPtr->xOffset = refWidth * 0.5;
-	gradPtr->yOffset = refHeight * 0.5;
-	gradPtr->length = sqrt(refWidth * refWidth + refHeight * refHeight);
-	gradPtr->cosTheta = refWidth / gradPtr->length;
-	gradPtr->sinTheta = refHeight / gradPtr->length;
-	if (gradPtr->type == BLT_GRADIENT_DIAGONAL_DOWN) {
-	    gradPtr->sinTheta = -gradPtr->sinTheta;
-	}
-	gradPtr->scaleFactor = 0.0;
-	if (gradPtr->length > 1) {
-	    gradPtr->scaleFactor = 1.0 / (gradPtr->length - 1);
-	} 
-	break;
-    case BLT_GRADIENT_RADIAL:
-	gradPtr->xOffset = refWidth * 0.5;
-	gradPtr->yOffset = refHeight * 0.5;
-	gradPtr->length = sqrt(refWidth * refWidth + refHeight * refHeight);
-	gradPtr->scaleFactor = 0.0;
-	if (gradPtr->length > 1) {
-	    gradPtr->scaleFactor = 1.0 / ((gradPtr->length * 0.5) - 1);
-	} 
-	break;
-    }
-}
-
-static void
-InitTexture(TextureBackground *corePtr, int refWidth, int refHeight)
-{
-    if (corePtr->jitter.range > 0.0) {
-	JitterInit(&corePtr->jitter);
-    }
-    corePtr->rRange = corePtr->high.Red   - corePtr->low.Red;
-    corePtr->gRange = corePtr->high.Green - corePtr->low.Green;
-    corePtr->bRange = corePtr->high.Blue  - corePtr->low.Blue;
-    corePtr->aRange = corePtr->high.Alpha - corePtr->low.Alpha;
-}
-
-#ifdef notdef
-static void 
-GetTileOffsets(Tk_Window tkwin, BackgroundObject *corePtr, Blt_Picture picture, 
-	       int x, int y, int *xOffsetPtr, int *yOffsetPtr)
-{
-    int dx, dy;
-    int x0, y0;
-    int tw, th;
-    Tk_Window refWindow;
-
-    if (corePtr->reference == REFERENCE_SELF) {
-	refWindow = tkwin;
-    } else if (corePtr->reference == REFERENCE_TOPLEVEL) {
-	refWindow = Blt_Toplevel(tkwin);
-    } else if (corePtr->reference == REFERENCE_WINDOW) {
-	refWindow = corePtr->refWindow;
-    } else if (corePtr->reference == REFERENCE_NONE) {
-	refWindow = NULL;
-    } else {
-	return;		/* Unknown reference window. */
-    }
-    if ((corePtr->reference == REFERENCE_WINDOW) ||
-	(corePtr->reference == REFERENCE_TOPLEVEL)) {
-	Tk_Window tkwin2;
-	
-	tkwin2 = tkwin;
-	while ((tkwin2 != refWindow) && (tkwin2 != NULL)) {
-	    x += Tk_X(tkwin2) + Tk_Changes(tkwin2)->border_width;
-	    y += Tk_Y(tkwin2) + Tk_Changes(tkwin2)->border_width;
-	    tkwin2 = Tk_Parent(tkwin2);
-	}
-	if (tkwin2 == NULL) {
-	    /* 
-	     * The window associated with the background isn't an ancestor
-	     * of the current window. That means we can't use the reference
-	     * window as a guide to the size of the picture.  Simply
-	     * convert to a self reference.
-	     */
-	    corePtr->reference = REFERENCE_SELF;
-	    refWindow = tkwin;
-	    abort();
-	}
-    }
-
-    x0 = corePtr->xOrigin;
-    y0 = corePtr->yOrigin;
-    tw = Blt_Picture_Width(picture);
-    th = Blt_Picture_Height(picture);
-
-    /* Compute the starting x and y offsets of the tile/gradient from the
-     * coordinates of the origin. */
-    dx = (x0 - x) % tw;
-    if (dx > 0) {
-	dx = (tw - dx);
-    } else if (dx < 0) {
-	dx = x - x0;
-    } 
-    dy = (y0 - y) % th;
-    if (dy > 0) {
-	dy = (th - dy);
-    } else if (dy < 0) {
-	dy = y - y0;
-    }
-    *xOffsetPtr = dx % tw;
-    *yOffsetPtr = dy % th;
-#ifdef notdef
-    fprintf(stderr, "Tile offsets x0=%d y0=%d x=%d,y=%d sx=%d,sy=%d\n",
-	    x0, y0, x, y, *xOffsetPtr, *yOffsetPtr);
-#endif
-}
-
-static void
-Tile(
-    Tk_Window tkwin,
-    Drawable drawable,
-    BackgroundObject *corePtr,
-    Blt_Picture picture,		/* Picture used as the tile. */
-    int x, int y, int w, int h)		/* Region of destination picture to
-					 * be tiled. */
-{
-    Blt_Painter painter;
-    int xOffset, yOffset;		/* Starting upper left corner of
-					 * region. */
-    int tileWidth, tileHeight;		/* Tile dimensions. */
-    int right, bottom, left, top;
-
-    tileWidth = Blt_Picture_Width(picture);
-    tileHeight = Blt_Picture_Height(picture);
-    GetTileOffsets(tkwin, corePtr, picture, x, y, &xOffset, &yOffset);
-
-#ifdef notdef
-    fprintf(stderr, "tile is (xo=%d,yo=%d,tw=%d,th=%d)\n", 
-	corePtr->xOrigin, corePtr->yOrigin, tileWidth, tileHeight);
-    fprintf(stderr, "region is (x=%d,y=%d,w=%d,h=%d)\n", x, y, w, h);
-    fprintf(stderr, "starting offsets at sx=%d,sy=%d\n", xOffset, yOffset);
-#endif
-
-    left = x;
-    top = y;
-    right = x + w;
-    bottom = y + h;
-    
-    painter = Blt_GetPainter(tkwin, 1.0);
-    for (y = (top - yOffset); y < bottom; y += tileHeight) {
-	int sy, dy, ih;
-
-	if (y < top) {
-	    dy = top;
-	    ih = MIN(tileHeight - yOffset, bottom - top);
-	    sy = yOffset;
-	} else {
-	    dy = y;
-	    ih = MIN(tileHeight, bottom - y);
-	    sy = 0;
-	}
-
-	for (x = (left - xOffset); x < right; x += tileWidth) {
-	    int sx, dx, iw;	
-
-	    if (x < left) {
-		dx = left;
-		iw = MIN(tileWidth - xOffset, right - left);
-		sx = xOffset;
-	    } else {
-		dx = x;
-		iw = MIN(tileWidth, right - x);
-		sx = 0;
-	    }
-
-	    Blt_PaintPicture(painter, drawable, picture, sx, sy, iw, ih, 
-			     dx, dy, /*flags*/0);
-#ifdef notdef
-	    fprintf(stderr, "drawing background (sx=%d,sy=%d,iw=%d,ih=%d) at dx=%d,dy=%d\n",
-		    sx, sy, iw, ih, dx, dy);
-#endif
-	}
-    }
-}
-#endif
 
 static void
 GetPolygonBBox(XPoint *points, int n, int *leftPtr, int *rightPtr, int *topPtr, 
@@ -2107,384 +1784,185 @@ Draw3DPolygon(
     }
 }
 
-#ifdef notdef
 /*
  *---------------------------------------------------------------------------
  *
- * SolidBackgroundDestroyProc --
+ * IsBackgroundOption --
+ *
+ *      Checks if the given option is a background option.  We need to do
+ *      this because we use separate option specs for the brush and the
+ *      background.  
+ *
+ * Results:
+ *	Return 1 is the option is a background option, 0 otherwise.
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+IsBackgroundOption(Tcl_Obj *objPtr)
+{
+    Blt_ConfigSpec *sp;
+    
+    for (sp = bgSpecs; sp->type != BLT_CONFIG_END; sp++) {
+        const char *string;
+
+        string = Tcl_GetString(objPtr);
+        if (strcmp(string, sp->switchName) == 0) {
+            return TRUE;
+        }
+    }
+    return FALSE;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * ConfigureBackground --
+ *
+ *      Configures the background object depending upon the options and
+ *      values given int the objv vector.  We first segregate the
+ *      background options and the brush options into separate vectors
+ *      because we have to make separate calls to configure each set.
  *
  * Results:
  *	None.
  *
  *---------------------------------------------------------------------------
  */
-static void
-SolidBackgroundDestroyProc(BackgroundObject *corePtr)
-{
-}
-#endif
-
 static int
-SolidBackgroundConfigureProc(BackgroundObject *basePtr)
+ConfigureBackground(Tcl_Interp *interp, BackgroundObject *corePtr, int objc,
+                    Tcl_Obj *const *objv, int flags)
 {
-    SolidBackground *corePtr = (SolidBackground *)basePtr;
-    Blt_Pixel color;
+    Tcl_Obj **bgArgs, **brushArgs;
+    int numBgArgs, numBrushArgs;
+    int i, result;
+    
+    bgArgs = Blt_AssertMalloc(sizeof(Tcl_Obj *) * objc);
+    brushArgs = Blt_AssertMalloc(sizeof(Tcl_Obj *) * objc);
+    numBgArgs = numBrushArgs = 0;
+    for (i = 0; i < objc; i += 2) {
+        if (IsBackgroundOption(objv[i])) {
+            bgArgs[numBgArgs] = objv[i];
+            numBgArgs++;
+            if ((i + 1) < objc) {
+                bgArgs[numBgArgs] = objv[i+1];
+                numBgArgs++;
+            }
+        } else {
+            brushArgs[numBrushArgs] = objv[i];
+            numBrushArgs++;
+            if ((i + 1) < objc) {
+                brushArgs[numBrushArgs] = objv[i+1];
+                numBrushArgs++;
+            }
+        }
+    }
+    imageOption.clientData = corePtr;
+    result = Blt_ConfigureWidgetFromObj(interp, corePtr->tkwin, bgSpecs,
+        numBgArgs, bgArgs, (char *)corePtr, flags);
+    if (result == TCL_OK) {
+        result = Blt_ConfigureWidgetFromObj(interp, corePtr->tkwin,
+                corePtr->specs, numBrushArgs, brushArgs,
+                (char *)corePtr->brush, flags);
+    }
+    Blt_Free(bgArgs);
+    Blt_Free(brushArgs);
+    if (result == TCL_OK) {
+        result = Blt_ConfigurePaintBrush(interp, corePtr->brush);
+    }
+    return result;
+}
 
-    color.u32 = Blt_XColorToPixel(Tk_3DBorderColor(corePtr->border));
-    color.Alpha = corePtr->alpha;
-    Blt_PaintBrush_SetColor(&corePtr->brush, color.u32);
+/*
+ *---------------------------------------------------------------------------
+ *
+ * GetValue --
+ *
+ *      Configures the background object depending upon the options and
+ *      values given int the objv vector.  We first segregate the
+ *      background options and the brush options into separate vectors
+ *      because we have to make separate calls to configure each set.
+ *
+ * Results:
+ *	None.
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+GetValue(Tcl_Interp *interp, BackgroundObject *corePtr, Tcl_Obj *objPtr)
+{
+    if (IsBackgroundOption(objPtr)) {
+        return Blt_ConfigureValueFromObj(interp, corePtr->tkwin, bgSpecs,
+                (char *)corePtr, objPtr, 0);
+    } else if (corePtr->brush != NULL) {
+        return Blt_ConfigureValueFromObj(interp, corePtr->tkwin,
+                corePtr->specs, (char *)corePtr->brush, objPtr, 0);
+    }
     return TCL_OK;
 }
 
 /*
  *---------------------------------------------------------------------------
  *
- * SolidBackgroundDrawRectangle --
+ * GetOptionLists --
+ *
+ *      Configures the background object depending upon the options and
+ *      values given int the objv vector.  We first segregate the
+ *      background options and the brush options into separate vectors
+ *      because we have to make separate calls to configure each set.
  *
  * Results:
  *	None.
  *
  *---------------------------------------------------------------------------
  */
-static void
-SolidBackgroundDrawRectangleProc(Tk_Window tkwin, Drawable drawable, 
-				 BackgroundObject *basePtr, int x, int y, 
-				 int w, int h)
-{
-    SolidBackground *corePtr = (SolidBackground *)basePtr;
-
-    if ((h <= 0) || (w <= 0)) {
-	return;
-    }
-    if (corePtr->alpha == 0xFF) {
-	XFillRectangle(Tk_Display(tkwin), drawable, 
-		     Tk_3DBorderGC(tkwin, corePtr->border, TK_3D_FLAT_GC),
-		     x, y, w, h);
-    } else if (corePtr->alpha != 0x00) {
-	Blt_Painter painter;
-	Blt_Picture picture;
-	
-	picture = Blt_DrawableToPicture(tkwin, drawable, x, y, w, h, 1.0);
-	if (picture == NULL) {
-	    return;			/* Background is obscured. */
-	}
-	Blt_PaintRectangle(picture, 0, 0, w, h, 0, 0, &corePtr->brush);
-	painter = Blt_GetPainter(tkwin, 1.0);
-	Blt_PaintPicture(painter, drawable, picture, 0, 0, w, h, x, y, 0);
-	Blt_FreePicture(picture);
-    }
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * SolidBackgroundDrawPolygonProc --
- *
- *	Draw a single color filled polygon.  If the color is completely
- *	opaque, we use the standard XFillPolygon routine.  If the 
- *	color is partially transparent, then we paint the polygon.
- *
- * Results:
- *	None.
- *
- *---------------------------------------------------------------------------
- */
-static void
-SolidBackgroundDrawPolygonProc(Tk_Window tkwin, Drawable drawable, 
-			       BackgroundObject *basePtr, int n, XPoint *points)
-{
-    SolidBackground *corePtr = (SolidBackground *)basePtr;
-
-    if (corePtr->alpha == 0xFF) {
-	XFillPolygon(Tk_Display(tkwin), drawable, 
-		     Tk_3DBorderGC(tkwin, corePtr->border, TK_3D_FLAT_GC),
-		     points, n, Complex, CoordModeOrigin);
-    } else if (corePtr->alpha != 0x00) {
-	Blt_Picture picture;
-	Blt_Painter painter;
-	int x1, x2, y1, y2;
-	int i;
-	Point2f *vertices;
-	int w, h;
-
-	/* Get polygon bounding box. */
-	GetPolygonBBox(points, n, &x1, &x2, &y1, &y2);
-	vertices = Blt_AssertMalloc(n * sizeof(Point2f));
-	/* Translate the polygon */
-	for (i = 0; i < n; i++) {
-	    vertices[i].x = (float)(points[i].x - x1);
-	    vertices[i].y = (float)(points[i].y - y1);
-	}
-	/* Grab the background rectangle containing the polygon. */
-	w = x2 - x1 + 1;
-	h = y2 - y1 + 1;
-	picture = Blt_DrawableToPicture(tkwin, drawable, x1, y1, w, h, 1.0);
-	if (picture == NULL) {
-	    return;			/* Background is obscured. */
-	}
-	Blt_PaintPolygon(picture, n, vertices, &corePtr->brush);
-	Blt_Free(vertices);
-	painter = Blt_GetPainter(tkwin, 1.0);
-	Blt_PaintPicture(painter, drawable, picture, 0, 0, w, h, x1, y1, 0);
-	Blt_FreePicture(picture);
-    }
-}
-
-static BackgroundClass solidBackgroundClass = {
-    BACKGROUND_SOLID,
-    solidSpecs,
-    NULL,				/* SolidBackgroundDestroyProc */
-    SolidBackgroundConfigureProc,
-    SolidBackgroundDrawRectangleProc,
-    SolidBackgroundDrawPolygonProc
-};
-
-/*
- *---------------------------------------------------------------------------
- *
- * NewSolidBackground --
- *
- *	Creates a new solid background.
- *
- * Results:
- *	Returns pointer to the new background.
- *
- *---------------------------------------------------------------------------
- */
-static BackgroundObject *
-NewSolidBackground(void)
-{
-    SolidBackground *corePtr;
-
-    corePtr = Blt_Calloc(1, sizeof(SolidBackground));
-    if (corePtr == NULL) {
-	return NULL;
-    }
-    corePtr->classPtr = &solidBackgroundClass;
-    corePtr->alpha = 0xFF;
-    return (BackgroundObject *)corePtr;
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * DestroyTileBackgroundProc --
- *
- * Results:
- *	None.
- *
- *---------------------------------------------------------------------------
- */
-static void
-DestroyTileBackgroundProc(BackgroundObject *basePtr)
-{
-    TileBackground *corePtr = (TileBackground *)basePtr;
-
-    if ((corePtr->tile != NULL) && (corePtr->flags & FREE_TILE)) {
-	Blt_FreePicture(corePtr->tile);
-    }
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * DrawTileRectangleProc --
- *
- * Results:
- *	None.
- *
- *---------------------------------------------------------------------------
- */
-static void
-DrawTileRectangleProc(Tk_Window tkwin, Drawable drawable, 
-		      BackgroundObject *basePtr, int x, int y, int w, int h)
-{
-    TileBackground *corePtr = (TileBackground *)basePtr;
-    Blt_Painter painter;
-
-    if ((h <= 0) || (w <= 0)) {
-	return;
-    }
-    if (corePtr->tkImage == NULL) {
-	/* No image so draw solid color background using border. */
-	Tk_Fill3DRectangle(tkwin, drawable, corePtr->border, x, y, w, h,
-		0, TK_RELIEF_FLAT);
-	return;
-    }
-    if (corePtr->flags & BG_SCALE) {
-	Blt_Picture picture;
-	int refWidth, refHeight;
-	Blt_HashEntry *hPtr;
-
-	hPtr = NULL;
-	picture = NULL;
-	refWidth = w, refHeight = h;
-	if (corePtr->reference != REFERENCE_NONE) {
-	    int isNew;
-
-	    /* See if a picture has previously been generated. There will
-	     * be a picture for each reference window. */
-	    hPtr = Blt_CreateHashEntry(&corePtr->pictTable, 
-		(char *)corePtr->refWindow, &isNew);
-	    if (!isNew) {
-		picture = Blt_GetHashValue(hPtr);
-	    } 
-	    refWidth = Tk_Width(corePtr->refWindow);
-	    refHeight = Tk_Height(corePtr->refWindow);
-	}
-	if ((picture == NULL) || 
-	    (Blt_Picture_Width(picture) != refWidth) ||
-	    (Blt_Picture_Height(picture) != refHeight)) {
-	    
-	    /* 
-	     * Either the size of the reference window has changed or one
-	     * of the background options has been reset. Resize the picture
-	     * if necessary and regenerate the background.
-	     */
-	    if (picture == NULL) {
-		picture = Blt_CreatePicture(refWidth, refHeight);
-		if (hPtr != NULL) {
-		    Blt_SetHashValue(hPtr, picture);
-		}
-	    } else {
-		Blt_ResizePicture(picture, refWidth, refHeight);
-	    }
-	    if (corePtr->tile != NULL) {
-		Blt_ResamplePicture(picture, corePtr->tile, 
-			corePtr->filter, corePtr->filter);
-	    }
-	}
-	painter = Blt_GetPainter(tkwin, 1.0);
-	Blt_PaintPicture(painter, drawable, picture, 0, 0, w, h, x, y, 0);
-    } else {
-	Blt_Painter painter;
-	Blt_Picture bg;
-	int xOffset, yOffset;		/* Starting upper left corner of
-					 * region. */
-
-	xOffset = yOffset = 0;		/* Suppress compiler warning. */
-	if (corePtr->alpha != 0xFF) {
-	    bg = Blt_DrawableToPicture(tkwin, drawable, x, y, w, h, 1.0);
-	} else {
-	    bg = Blt_CreatePicture(w, h);
-	}
-	if (bg == NULL) {
-	    return;			/* Background is obscured. */
-	}
-	GetOffsets(tkwin, basePtr, x, y, &xOffset, &yOffset);
-	Blt_PaintBrush_SetOrigin(&corePtr->brush, xOffset, yOffset);
-	Blt_PaintRectangle(bg, 0, 0, w, h, 0, 0, &corePtr->brush);
-	painter = Blt_GetPainter(tkwin, 1.0);
-	Blt_PaintPicture(painter, drawable, bg, 0, 0, w, h, x, y, 0);
-	Blt_FreePicture(bg);
-    }
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * DrawTilePolygonProc --
- *
- * Results:
- *	None.
- *
- *---------------------------------------------------------------------------
- */
-static void
-DrawTilePolygonProc(Tk_Window tkwin, Drawable drawable, 
-		    BackgroundObject *basePtr, int n, XPoint *points)
-{
-    TileBackground *corePtr = (TileBackground *)basePtr;
-    int xOffset, yOffset;		/* Starting upper left corner of
-					 * region. */
-    Blt_Picture bg;
-    Blt_Painter painter;
-    int i;
-    int w, h;
-    int x1, x2, y1, y2;
-    Point2f *vertices;
-    int refWidth, refHeight;
-
-    xOffset = yOffset = 0; 		/* Suppress compiler warning. */
-    /* Grab the rectangular background that covers the polygon. */
-    GetPolygonBBox(points, n, &x1, &x2, &y1, &y2);
-    w = x2 - x1 + 1;
-    h = y2 - y1 + 1;
-    bg = Blt_DrawableToPicture(tkwin, drawable, x1, y1, w, h, 1.0);
-    if (bg == NULL) {
-	return;				/* Background is obscured. */
-    }
-    vertices = Blt_AssertMalloc(n * sizeof(Point2f));
-    /* Translate the polygon */
-    for (i = 0; i < n; i++) {
-	vertices[i].x = (float)(points[i].x - x1);
-	vertices[i].y = (float)(points[i].y - y1);
-    }
-    GetReferenceWindow(basePtr, tkwin, &refWidth, &refHeight);
-    GetOffsets(tkwin, basePtr, x1, y1, &xOffset, &yOffset);
-    Blt_PaintBrush_SetOrigin(&corePtr->brush, xOffset, yOffset);
-    Blt_PaintPolygon(bg, n, vertices, &corePtr->brush);
-    Blt_Free(vertices);
-    painter = Blt_GetPainter(tkwin, 1.0);
-    Blt_PaintPicture(painter, drawable, bg, 0, 0, w, h, x1, y1, 0);
-    Blt_FreePicture(bg);
-}
-
 static int
-ConfigureTileBackgroundProc(BackgroundObject *basePtr) 
+GetOptionLists(Tcl_Interp *interp, BackgroundObject *corePtr)
 {
-    TileBackground *corePtr = (TileBackground *)basePtr;
-
-    if ((corePtr->tile != NULL) && (corePtr->flags & FREE_TILE)) {
-	Blt_FreePicture(corePtr->tile);
+    Tcl_Obj *objPtr, *listObjPtr;
+    Tcl_Obj **objv;
+    int i, objc;
+    
+    if (Blt_ConfigureInfoFromObj(interp, corePtr->tkwin, bgSpecs,
+                (char *)corePtr, (Tcl_Obj *)NULL, 0) != TCL_OK) {
+        return TCL_ERROR;
     }
-    corePtr->tile = ImageToPicture(corePtr);
-    corePtr->brush.alpha = corePtr->alpha;
-    Blt_PaintBrush_SetTile(&corePtr->brush, corePtr->tile);
+    listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
+    objPtr = Tcl_GetObjResult(interp);
+    if (Tcl_ListObjGetElements(interp, objPtr, &objc, &objv) != TCL_OK) {
+        return TCL_ERROR;
+    }
+    for (i = 0; i < objc; i++) {
+        Tcl_ListObjAppendElement(interp, listObjPtr, objv[i]);
+    }
+    Tcl_ResetResult(interp);
+    if (corePtr->brush != NULL) {
+        if (Blt_ConfigureInfoFromObj(interp, corePtr->tkwin, corePtr->specs,
+                (char *)corePtr->brush, (Tcl_Obj *)NULL, 0) != TCL_OK) {
+            return TCL_ERROR;
+        }
+        objPtr = Tcl_GetObjResult(interp);
+        if (Tcl_ListObjGetElements(interp, objPtr, &objc, &objv) != TCL_OK) {
+            return TCL_ERROR;
+        }
+        for (i = 0; i < objc; i++) {
+            Tcl_ListObjAppendElement(interp, listObjPtr, objv[i]);
+        }
+        Tcl_ResetResult(interp);
+    }
+    Tcl_SetObjResult(interp, listObjPtr);
     return TCL_OK;
 }
 
-static BackgroundClass tileBackgroundClass = {
-    BACKGROUND_TILE,
-    tileSpecs,
-    DestroyTileBackgroundProc,
-    ConfigureTileBackgroundProc,
-    DrawTileRectangleProc,		/* DrawRectangleProc */
-    DrawTilePolygonProc			/* DrawPolygonProc */
-};
-
 /*
  *---------------------------------------------------------------------------
  *
- * NewTileBackground --
+ * DrawBackgroundRectangle --
  *
- *	Creates a new image background.
- *
- * Results:
- *	Returns pointer to the new background.
- *
- *---------------------------------------------------------------------------
- */
-static BackgroundObject *
-NewTileBackground(void)
-{
-    TileBackground *corePtr;
-
-    corePtr = Blt_Calloc(1, sizeof(TileBackground));
-    if (corePtr == NULL) {
-	return NULL;
-    }
-    corePtr->classPtr = &tileBackgroundClass;
-    corePtr->reference = REFERENCE_TOPLEVEL;
-    corePtr->alpha = 0xFF;
-    return (BackgroundObject *)corePtr;
-}
-
-#ifdef notdef
-/*
- *---------------------------------------------------------------------------
- *
- * DestroyGradientBackgroundProc --
+ *      Draws the background as a rectangle defined by x, y, w, and h.
+ *      First paints a image using the background's brush and then draws it
+ *      to the given drawable.  If the brush isn't opaque, we first get a
+ *      snapshot of the current screen background.
  *
  * Results:
  *	None.
@@ -2492,62 +1970,50 @@ NewTileBackground(void)
  *---------------------------------------------------------------------------
  */
 static void
-DestroyGradientBackgroundProc(BackgroundObject *corePtr)
+DrawBackgroundRectangle(Tk_Window tkwin, Drawable drawable, Bg *bgPtr,
+                        int x, int y, int w, int h)
 {
-}
-#endif
-
-/*
- *---------------------------------------------------------------------------
- *
- * DrawGradientRectangleProc --
- *
- * Results:
- *	None.
- *
- *---------------------------------------------------------------------------
- */
-static void
-DrawGradientRectangleProc(Tk_Window tkwin, Drawable drawable, 
-			  BackgroundObject *basePtr, int x, int y, int w, int h)
-{
-    GradientBackground *corePtr = (GradientBackground *)basePtr;
+    BackgroundObject *corePtr = bgPtr->corePtr;
     Blt_Painter painter;
-    Tk_Window refWindow;
-    Blt_Picture bg;
+    Blt_Picture picture;
     int xOffset, yOffset;		/* Starting upper left corner of
 					 * region. */
     int refWidth, refHeight;
 
+    /* Handle the simple case where it's a solid color background. */
+    if (corePtr->flags & BACKGROUND_SOLID) {
+        Tk_Fill3DRectangle(tkwin, drawable, corePtr->border, x, y, w, h, 0,
+                           TK_RELIEF_FLAT);
+        return;
+    }
     xOffset = yOffset = 0;		/* Suppress compiler warning. */
     if ((h <= 0) || (w <= 0)) {
 	return;
     }
-    refWindow = GetReferenceWindow(basePtr, tkwin, &refWidth, &refHeight);
-    if (refWindow == NULL) {
-	return;				/* Doesn't refer to reference. */
+    GetReferenceWindowDimensions(corePtr, tkwin, &refWidth, &refHeight);
+    picture = Blt_CreatePicture(w, h);
+    if (picture == NULL) {
+	return;                         /* Can't allocate picure. */
     }
-    if (corePtr->alpha != 0xFF) {
-	bg = Blt_DrawableToPicture(tkwin, drawable, x, y, w, h, 1.0);
-    } else {
-	bg = Blt_CreatePicture(w, h);
-    }
-    if (bg == NULL) {
-	return;                         /* Background is obscured. */
-    }
-    GetOffsets(tkwin, basePtr, x, y, &xOffset, &yOffset);
-    InitGradient(corePtr, refWidth, refHeight);
-    Blt_PaintBrush_SetOrigin(&corePtr->brush, xOffset, yOffset);
-    Blt_PaintRectangle(bg, 0, 0, w, h, 0, 0, &corePtr->brush);
+    GetOffsets(tkwin, corePtr, x, y, &xOffset, &yOffset);
+    /* This defines the region of the background in local coordinate window
+     * coordinates, plus the offset of x and y. */
+    Blt_SetBrushRegion(corePtr->brush, xOffset, yOffset, refWidth, refHeight);
+    Blt_PaintRectangle(picture, 0, 0, w, h, 0, 0, corePtr->brush);
     painter = Blt_GetPainter(tkwin, 1.0);
-    Blt_PaintPicture(painter, drawable, bg, 0, 0, w, h, x, y, 0);
-    Blt_FreePicture(bg);
+    Blt_PaintPicture(painter, drawable, picture, 0, 0, w, h, x, y, 0);
+    Blt_FreePicture(picture);
 }
 
 /*
  *---------------------------------------------------------------------------
  *
- * DrawGradientPolygonProc --
+ * DrawBackgroundPolygon --
+ *
+ *      Draws the background as a polygon defined by the given vertices.
+ *      First paints a image using the background's brush and then draws it
+ *      to the given drawable.  If the brush isn't opaque, we first get a
+ *      snapshot of the current screen background.
  *
  * Results:
  *	None.
@@ -2555,10 +2021,10 @@ DrawGradientRectangleProc(Tk_Window tkwin, Drawable drawable,
  *---------------------------------------------------------------------------
  */
 static void
-DrawGradientPolygonProc(Tk_Window tkwin, Drawable drawable, 
-			BackgroundObject *basePtr, int n, XPoint *points)
+DrawBackgroundPolygon(Tk_Window tkwin, Drawable drawable, Bg *bgPtr,
+                      int numPoints, XPoint *points)
 {
-    GradientBackground *corePtr = (GradientBackground *)basePtr;
+    BackgroundObject *corePtr = bgPtr->corePtr;
     int xOffset, yOffset;		/* Starting upper left corner of
 					 * region. */
     Blt_Picture bg;
@@ -2568,240 +2034,36 @@ DrawGradientPolygonProc(Tk_Window tkwin, Drawable drawable,
     int x1, x2, y1, y2;
     Point2f *vertices;
     int refWidth, refHeight;
+    
+    /* Handle the simple case where it's a solid color background. */
+    if (corePtr->flags & BACKGROUND_SOLID) {
+        Tk_Fill3DPolygon(tkwin, drawable, corePtr->border, points, numPoints,
+                         0, TK_RELIEF_FLAT);
+        return;
+    }
 
-    /* Grab the rectangular background that covers the polygon. */
-    GetPolygonBBox(points, n, &x1, &x2, &y1, &y2);
+    /* Grab the rectangular background that contains the polygon. */
+    GetPolygonBBox(points, numPoints, &x1, &x2, &y1, &y2);
     w = x2 - x1 + 1;
     h = y2 - y1 + 1;
     bg = Blt_DrawableToPicture(tkwin, drawable, x1, y1, w, h, 1.0);
     if (bg == NULL) {
-	return;				/* Background is obscured. */
+	return;                         /* Can't allocate picture */
     }
-    vertices = Blt_AssertMalloc(n * sizeof(Point2f));
+    vertices = Blt_AssertMalloc(numPoints * sizeof(Point2f));
     /* Translate the polygon */
-    for (i = 0; i < n; i++) {
+    for (i = 0; i < numPoints; i++) {
 	vertices[i].x = (float)(points[i].x - x1);
 	vertices[i].y = (float)(points[i].y - y1);
     }
-    GetReferenceWindow(basePtr, tkwin, &refWidth, &refHeight);
-    InitGradient(corePtr, refWidth, refHeight);
-    GetOffsets(tkwin, basePtr, x1, y1, &xOffset, &yOffset);
-    Blt_PaintPolygon(bg, n, vertices, &corePtr->brush);
+    GetReferenceWindowDimensions(corePtr, tkwin, &refWidth, &refHeight);
+    GetOffsets(tkwin, corePtr, x1, y1, &xOffset, &yOffset);
+    Blt_SetBrushRegion(corePtr->brush, xOffset, yOffset, refWidth, refHeight);
+    Blt_PaintPolygon(bg, numPoints, vertices, corePtr->brush);
     Blt_Free(vertices);
     painter = Blt_GetPainter(tkwin, 1.0);
     Blt_PaintPicture(painter, drawable, bg, 0, 0, w, h, x1, y1, 0);
     Blt_FreePicture(bg);
-}
-
-static int
-ConfigureGradientBackgroundProc(BackgroundObject *basePtr)
-{
-    GradientBackground *corePtr = (GradientBackground *)basePtr;
-
-    if (corePtr->alpha != 0xFF) {
-	corePtr->low.Alpha = corePtr->alpha;
-	corePtr->high.Alpha = corePtr->alpha;
-    }
-    corePtr->brush.alpha = corePtr->alpha;
-    Blt_PaintBrush_SetColorProc(&corePtr->brush, GradientColorProc, 
-	corePtr);
-    return TCL_OK;
-}
-
-
-static BackgroundClass gradientBackgroundClass = {
-    BACKGROUND_GRADIENT,
-    gradientSpecs,
-    NULL,				/* DestroyGradientBackgroundProc, */
-    ConfigureGradientBackgroundProc, 
-    DrawGradientRectangleProc,		/* DrawRectangleProc */
-    DrawGradientPolygonProc,		/* DrawPolygonProc */
-};
-
-/*
- *---------------------------------------------------------------------------
- *
- * NewGradientBackground --
- *
- *	Creates a new gradient background.
- *
- * Results:
- *	Returns pointer to the new background.
- *
- *---------------------------------------------------------------------------
- */
-static BackgroundObject *
-NewGradientBackground(void)
-{
-    GradientBackground *corePtr;
-
-    corePtr = Blt_Calloc(1, sizeof(GradientBackground));
-    if (corePtr == NULL) {
-	return NULL;
-    }
-    corePtr->classPtr = &gradientBackgroundClass;
-    corePtr->reference = REFERENCE_TOPLEVEL;
-    corePtr->gradient.type = BLT_GRADIENT_VERTICAL;
-    corePtr->gradient.scale = BLT_GRADIENT_LINEARSCALE;
-    corePtr->alpha = 255;
-    return (BackgroundObject *)corePtr;
-}
-
-#ifdef notdef
-/*
- *---------------------------------------------------------------------------
- *
- * DestroyTextureBackgroundProc --
- *
- * Results:
- *	None.
- *
- *---------------------------------------------------------------------------
- */
-static void
-DestroyTextureBackgroundProc(BackgroundObject *corePtr)
-{
-}
-#endif
-
-/*
- *---------------------------------------------------------------------------
- *
- * DrawTextureRectangleProc --
- *
- * Results:
- *	None.
- *
- *---------------------------------------------------------------------------
- */
-static void
-DrawTextureRectangleProc(Tk_Window tkwin, Drawable drawable, 
-			 BackgroundObject *basePtr, int x, int y, int w, int h)
-{
-    TextureBackground *corePtr = (TextureBackground *)basePtr;
-    Blt_Painter painter;
-    Tk_Window refWindow;
-    Blt_Picture dest;
-    int xOffset, yOffset;		/* Starting upper left corner of
-					 * region. */
-    int refWidth, refHeight;
-
-    if ((h <= 0) || (w <= 0)) {
-	return;
-    }
-    refWindow = GetReferenceWindow(basePtr, tkwin, &refWidth, &refHeight);
-    if (refWindow == NULL) {
-	return;				/* Doesn't refer to reference. */
-    }
-    if (corePtr->alpha != 0xFF) {
-	dest = Blt_DrawableToPicture(tkwin, drawable, x, y, w, h, 1.0);
-    } else {
-	dest = Blt_CreatePicture(w, h);
-    }
-    if (dest == NULL) {
-	return;				/* Background is obscured. */
-    }
-    GetOffsets(tkwin, basePtr, x, y, &xOffset, &yOffset);
-    InitTexture(corePtr, refWidth, refHeight);
-    Blt_PaintRectangle(dest, 0, 0, w, h, 0, 0, &corePtr->brush);
-    painter = Blt_GetPainter(tkwin, 1.0);
-    Blt_PaintPicture(painter, drawable, dest, 0, 0, w, h, x, y, 0);
-    Blt_FreePicture(dest);
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * DrawTexturePolygonProc --
- *
- * Results:
- *	None.
- *
- *---------------------------------------------------------------------------
- */
-static void
-DrawTexturePolygonProc(Tk_Window tkwin, Drawable drawable, 
-		       BackgroundObject *basePtr, int n, XPoint *points)
-{
-    TextureBackground *corePtr = (TextureBackground *)basePtr;
-    int xOffset, yOffset;		/* Starting upper left corner of
-					 * region. */
-    Blt_Picture dest;
-    Blt_Painter painter;
-    int i;
-    int w, h;
-    int x1, x2, y1, y2;
-    Point2f *vertices;
-    int refWidth, refHeight;
-
-    /* Grab the rectangular background that covers the polygon. */
-    GetPolygonBBox(points, n, &x1, &x2, &y1, &y2);
-    w = x2 - x1 + 1;
-    h = y2 - y1 + 1;
-    dest = Blt_DrawableToPicture(tkwin, drawable, x1, y1, w, h, 1.0);
-    if (dest == NULL) {
-	return;				/* Background is obscured. */
-    }
-    vertices = Blt_AssertMalloc(n * sizeof(Point2f));
-    /* Translate the polygon */
-    for (i = 0; i < n; i++) {
-	vertices[i].x = (float)(points[i].x - x1);
-	vertices[i].y = (float)(points[i].y - y1);
-    }
-    GetReferenceWindow(basePtr, tkwin, &refWidth, &refHeight);
-    InitTexture(corePtr, refWidth, refHeight);
-    GetOffsets(tkwin, basePtr, x1, y1, &xOffset, &yOffset);
-    Blt_PaintPolygon(dest, n, vertices, &corePtr->brush);
-    Blt_Free(vertices);
-    painter = Blt_GetPainter(tkwin, 1.0);
-    Blt_PaintPicture(painter, drawable, dest, 0, 0, w, h, x1, y1, 0);
-    Blt_FreePicture(dest);
-}
-
-static int
-ConfigureTextureBackgroundProc(BackgroundObject *basePtr)
-{
-    TextureBackground *corePtr = (TextureBackground *)basePtr;
-
-    corePtr->brush.alpha = corePtr->alpha;
-    Blt_PaintBrush_SetColorProc(&corePtr->brush, TextureColorProc, corePtr);
-    return TCL_OK;
-}
-
-static BackgroundClass textureBackgroundClass = {
-    BACKGROUND_TEXTURE,
-    textureSpecs,			
-    NULL,				/* DestroyTextureBackgroundProc, */
-    ConfigureTextureBackgroundProc,	
-    DrawTextureRectangleProc,		
-    DrawTexturePolygonProc		
-};
-
-/*
- *---------------------------------------------------------------------------
- *
- * NewTextureBackground --
- *
- *	Creates a new texture background.
- *
- * Results:
- *	Returns pointer to the new background.
- *
- *---------------------------------------------------------------------------
- */
-static BackgroundObject *
-NewTextureBackground()
-{
-    TextureBackground *corePtr;
-
-    corePtr = Blt_Calloc(1, sizeof(TextureBackground));
-    if (corePtr == NULL) {
-	return NULL;
-    }
-    corePtr->classPtr = &textureBackgroundClass;
-    corePtr->reference = REFERENCE_TOPLEVEL;
-    corePtr->alpha = 0xFF;
-    return (BackgroundObject *)corePtr;
 }
 
 /*
@@ -2809,9 +2071,9 @@ NewTextureBackground()
  *
  * DestroyBackgroundObject --
  *
- *	Removes the client from the servers's list of clients and memory used
- *	by the client token is released.  When the last client is deleted, the
- *	server is also removed.
+ *	Removes the client from the servers's list of clients and memory
+ *	used by the client token is released.  When the last client is
+ *	deleted, the server is also removed.
  *
  * Results:
  *	None.
@@ -2821,17 +2083,24 @@ NewTextureBackground()
 static void
 DestroyBackgroundObject(BackgroundObject *corePtr)
 {
-    Blt_FreeOptions(corePtr->classPtr->configSpecs, (char *)corePtr, 
-	corePtr->display, 0);
-    if (corePtr->classPtr->destroyProc != NULL) {
-	(*corePtr->classPtr->destroyProc)(corePtr);
+    if (corePtr->brush != NULL) {
+        Blt_FreeOptions(corePtr->specs, (char *)corePtr->brush,
+                        corePtr->display, 0);
+        Blt_FreeBrush(corePtr->brush);
     }
+    Blt_FreeOptions(bgSpecs, (char *)corePtr, corePtr->display, 0);
     if (corePtr->border != NULL) {
 	Tk_Free3DBorder(corePtr->border);
     }
+    if (corePtr->flags & REFERENCE_PENDING) {
+        Tcl_CancelIdleCall(SetReferenceWindowFromPath, corePtr);
+    }
     if (corePtr->hashPtr != NULL) {
-	Blt_DeleteHashEntry(&corePtr->dataPtr->instTable, 
-		corePtr->hashPtr);
+	Blt_DeleteHashEntry(&corePtr->dataPtr->instTable, corePtr->hashPtr);
+    }
+    if (corePtr->tkRef != NULL) {
+	Tk_DeleteEventHandler(corePtr->tkRef, StructureNotifyMask,
+	      ReferenceWindowEventProc, corePtr);
     }
     ClearCache(corePtr);
     Blt_Chain_Destroy(corePtr->chain);
@@ -2842,7 +2111,7 @@ DestroyBackgroundObject(BackgroundObject *corePtr)
 /*
  *---------------------------------------------------------------------------
  *
- * CreateBackground --
+ * NewBackgroundObject --
  *
  *	Creates a new background.
  *
@@ -2852,41 +2121,51 @@ DestroyBackgroundObject(BackgroundObject *corePtr)
  *---------------------------------------------------------------------------
  */
 static BackgroundObject *
-CreateBackground(BackgroundInterpData *dataPtr, Tcl_Interp *interp, 
-		 BackgroundType type)
+NewBackgroundObject(BackgroundInterpData *dataPtr, Tcl_Interp *interp,
+                    Blt_PaintBrushType type)
 {
     BackgroundObject *corePtr;
 
+    corePtr = Blt_AssertCalloc(1, sizeof(BackgroundObject));
     switch (type) {
-    case BACKGROUND_SOLID:
-	corePtr = NewSolidBackground();
+    case BLT_PAINTBRUSH_TILE:
+        corePtr->brush = Blt_NewTileBrush();
+        corePtr->specs = tileBrushSpecs;
 	break;
-    case BACKGROUND_TILE:
-	corePtr = NewTileBackground();
+    case BLT_PAINTBRUSH_LINEAR:
+        corePtr->brush = Blt_NewLinearGradientBrush();
+        corePtr->specs = linearGradientBrushSpecs;
 	break;
-    case BACKGROUND_GRADIENT:
-	corePtr = NewGradientBackground();
+    case BLT_PAINTBRUSH_STRIPE:
+        corePtr->brush = Blt_NewStripeBrush();
+        corePtr->specs = stripeBrushSpecs;
 	break;
-    case BACKGROUND_TEXTURE:
-	corePtr = NewTextureBackground();
+    case BLT_PAINTBRUSH_CHECKER:
+        corePtr->brush = Blt_NewCheckerBrush();
+        corePtr->specs = checkerBrushSpecs;
 	break;
+    case BLT_PAINTBRUSH_RADIAL:
+        corePtr->brush = Blt_NewRadialGradientBrush();
+        corePtr->specs = radialGradientBrushSpecs;
+	break;
+    case BLT_PAINTBRUSH_CONICAL:
+        corePtr->brush = Blt_NewConicalGradientBrush();
+        corePtr->specs = conicalGradientBrushSpecs;
+	break;
+    case BLT_PAINTBRUSH_COLOR:
+	break;                          /* Do nothing. */
     default:
 	abort();
 	break;
     }
-    if (corePtr == NULL) {
-	Tcl_AppendResult(interp, "can't allocate background", (char *)NULL);
-	return NULL;
-    }
+    corePtr->flags = REFERENCE_TOPLEVEL;
     corePtr->dataPtr = dataPtr;
     Blt_InitHashTable(&corePtr->pictTable, BLT_ONE_WORD_KEYS);
     corePtr->chain = Blt_Chain_Create();
     corePtr->tkwin = Tk_MainWindow(interp);
     corePtr->display = Tk_Display(corePtr->tkwin);
-    Blt_PaintBrush_Init(&corePtr->brush);
     return corePtr;
 }
-
 
 /*
  *---------------------------------------------------------------------------
@@ -2945,50 +2224,62 @@ GetBackgroundFromObj(Tcl_Interp *interp, BackgroundInterpData *dataPtr,
 }
 
 /*
- * background create type ?option values?...
+ * background create type ?name? ?option values?...
  */
 static int
 CreateOp(ClientData clientData, Tcl_Interp *interp, int objc, 
 	 Tcl_Obj *const *objv)
 {
-    Bg *bgPtr;
     BackgroundInterpData *dataPtr = clientData;
     BackgroundObject *corePtr;
-    BackgroundType type;
-
+    Bg *bgPtr;
+    Blt_HashEntry *hPtr;
+    Blt_PaintBrushType type;
+                           
     if (GetBackgroundTypeFromObj(interp, objv[2], &type) != TCL_OK) {
 	return TCL_ERROR;
     }
-    corePtr = CreateBackground(dataPtr, interp, type);
-    if (corePtr == NULL) {
-	return TCL_ERROR;
+    hPtr = NULL;
+    if (objc > 3) {
+        const char *string;
+
+        string = Tcl_GetString(objv[3]);
+        if (string[0] != '-') {		
+            int isNew;
+
+            hPtr = Blt_CreateHashEntry(&dataPtr->instTable, string, &isNew);
+            if (!isNew) {
+                Tcl_AppendResult(interp, "a background named \"", string, 
+                                 "\" already exists.", (char *)NULL);
+                return TCL_ERROR;
+            }
+            objc--, objv++;
+        }
     }
-    if (Blt_ConfigureWidgetFromObj(interp, corePtr->tkwin, 
-	corePtr->classPtr->configSpecs, objc - 3, objv + 3, (char *)corePtr, 
-	0) != TCL_OK) {
-	DestroyBackgroundObject(corePtr);
-	return TCL_ERROR;
-    }
-    if ((*corePtr->classPtr->configProc)(corePtr) != TCL_OK) {
-	DestroyBackgroundObject(corePtr);
-	return TCL_ERROR;
-    }
-    /* Generate a unique name for the background.  */
-    {
+    if (hPtr == NULL) {
 	int isNew;
 	char name[200];
-	Blt_HashEntry *hPtr;
 
-	do {
+        /* Generate a unique name for the paintbrush.  */
+        do {
 	    Blt_FormatString(name, 200, "background%d", dataPtr->nextId++);
 	    hPtr = Blt_CreateHashEntry(&dataPtr->instTable, name, &isNew);
 	} while (!isNew);
-	assert(hPtr != NULL);
-	assert(corePtr != NULL);
-	Blt_SetHashValue(hPtr, corePtr);
-	corePtr->hashPtr = hPtr;
-	corePtr->name = Blt_GetHashKey(&dataPtr->instTable, hPtr);
+    } 
+    corePtr = NewBackgroundObject(dataPtr, interp, type);
+    if (corePtr == NULL) {
+        Blt_DeleteHashEntry(&dataPtr->instTable, hPtr);
+	return TCL_ERROR;
     }
+    Blt_SetHashValue(hPtr, corePtr);
+    corePtr->hashPtr = hPtr;
+    corePtr->name = Blt_GetHashKey(&dataPtr->instTable, hPtr);
+    if (ConfigureBackground(interp, corePtr, objc - 3, objv + 3, 0)
+        != TCL_OK) {
+	DestroyBackgroundObject(corePtr);
+	return TCL_ERROR;
+    }
+
     /* Create the container for the background. */
     bgPtr = Blt_Calloc(1, sizeof(Bg));
     if (bgPtr == NULL) {
@@ -2996,7 +2287,6 @@ CreateOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	DestroyBackgroundObject(corePtr);
 	return TCL_ERROR;
     }
-
     /* Add the container to the background object's list of clients. */
     bgPtr->link = Blt_Chain_Append(corePtr->chain, bgPtr);
     corePtr->link = bgPtr->link;
@@ -3018,8 +2308,7 @@ CgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (GetBackgroundFromObj(interp, dataPtr, objv[2], &corePtr) != TCL_OK) {
 	return TCL_ERROR;
     }
-    return Blt_ConfigureValueFromObj(interp, corePtr->tkwin, 
-	corePtr->classPtr->configSpecs, (char *)corePtr, objv[3], 0);
+    return GetValue(interp, corePtr, objv[3]);
 }
 
 /*
@@ -3038,20 +2327,12 @@ ConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     flags = BLT_CONFIG_OBJV_ONLY;
     if (objc == 3) {
-	return Blt_ConfigureInfoFromObj(interp, corePtr->tkwin, 
-		corePtr->classPtr->configSpecs, (char *)corePtr, 
-		(Tcl_Obj *)NULL, flags);
+	return GetOptionLists(interp, corePtr);
     } else if (objc == 4) {
-	return Blt_ConfigureInfoFromObj(interp, corePtr->tkwin, 
-		corePtr->classPtr->configSpecs, (char *)corePtr, objv[3], 
-		flags);
+	return GetValue(interp, corePtr, objv[3]);
     } else {
-	if (Blt_ConfigureWidgetFromObj(interp, corePtr->tkwin, 
-		corePtr->classPtr->configSpecs, objc - 3, objv + 3, 
-		(char *)corePtr, flags) != TCL_OK) {
-	    return TCL_ERROR;
-	}
-	if ((*corePtr->classPtr->configProc)(corePtr) != TCL_OK) {
+	if (ConfigureBackground(interp, corePtr, objc - 3, objv + 3, flags)
+            != TCL_OK) {
 	    return TCL_ERROR;
 	}
 	ClearCache(corePtr);
@@ -3111,6 +2392,34 @@ DeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
 }
 
 /*
+ *---------------------------------------------------------------------------
+ *
+ * ExistOp --
+ *
+ *	Indicates if the named background exists.
+ *
+ *      blt::background exists bgName
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+ExistsOp(ClientData clientData, Tcl_Interp *interp, int objc,
+         Tcl_Obj *const *objv)
+{
+    BackgroundInterpData *dataPtr = clientData;
+    BackgroundObject *corePtr;
+    int state;
+    
+    state = FALSE;
+    if (GetBackgroundFromObj(NULL, dataPtr, objv[2], &corePtr) == TCL_OK) {
+        state = TRUE;
+    }
+    Tcl_SetBooleanObj(Tcl_GetObjResult(interp), state);
+    return TCL_OK;
+}
+
+/*
  *----------------------------------------------------------------------
  *
  * NamesOp --
@@ -3161,8 +2470,10 @@ TypeOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (GetBackgroundFromObj(interp, dataPtr, objv[2], &corePtr) != TCL_OK) {
 	return TCL_ERROR;
     }
-    Tcl_SetStringObj(Tcl_GetObjResult(interp), 
-	NameOfBackgroundType(corePtr), -1);
+    if (corePtr->brush != NULL) {
+        Tcl_SetStringObj(Tcl_GetObjResult(interp),
+                     Blt_GetBrushType(corePtr->brush), -1);
+    }
     return TCL_OK;
 }
 
@@ -3170,7 +2481,8 @@ static Blt_OpSpec backgroundOps[] =
 {
     {"cget",      2, CgetOp,      4, 4, "bgName option",},
     {"configure", 2, ConfigureOp, 3, 0, "bgName ?option value?...",},
-    {"create",    2, CreateOp,    3, 0, "type ?args?",},
+    {"create",    2, CreateOp,    3, 0, "type ?name? ?args?",},
+    {"exists",    1, ExistsOp,    3, 3, "bgName",},
     {"delete",    1, DeleteOp,    2, 0, "bgName...",},
     {"names",     1, NamesOp,     2, 3, "?pattern?",},
     {"type",      1, TypeOp,      3, 3, "bgName",},
@@ -3191,6 +2503,8 @@ BackgroundCmdProc(ClientData clientData, Tcl_Interp *interp, int objc,
     return (*proc) (clientData, interp, objc, objv);
 }
 
+/* FIXME: Should clean up backgrounds on interpreter deletion not command
+ * deletion.  Could be widgets still with a reference to the background.  */
 static void
 BackgroundDeleteCmdProc(ClientData clientData) 
 {
@@ -3241,7 +2555,7 @@ GetBackgroundInterpData(Tcl_Interp *interp)
 
 	/* FIXME: Create interp delete proc to teardown the hash table and
 	 * data entry.  Must occur after all the widgets have been destroyed
-	 * (clients of the background). */
+	 * (clients of the background). See above FIXME: */
 
 	Tcl_SetAssocData(interp, BG_BACKGROUND_THREAD_KEY, 
 		(Tcl_InterpDeleteProc *)NULL, dataPtr);
@@ -3303,30 +2617,25 @@ Blt_GetBg(Tcl_Interp *interp, Tk_Window tkwin, const char *name)
     hPtr = Blt_CreateHashEntry(&dataPtr->instTable, name, &isNew);
     if (isNew) {
 	Tk_3DBorder border;
-
+        
 	/* BackgroundObject doesn't already exist, see if it's a color name
 	 * (i.e. something that Tk_Get3DBorder will accept). */
 	border = Tk_Get3DBorder(interp, tkwin, name);
 	if (border == NULL) {
 	    goto error;			/* Nope. It's an error. */
 	} 
-	corePtr = CreateBackground(dataPtr, interp, BACKGROUND_SOLID);
+	corePtr = NewBackgroundObject(dataPtr, interp, BLT_PAINTBRUSH_COLOR);
 	if (corePtr == NULL) {
 	    Tk_Free3DBorder(border);
 	    goto error;			/* Can't allocate new background. */
 	}
+        /* Configure the GC with the border color. */
 	corePtr->border = border;
 	corePtr->hashPtr = hPtr;
 	corePtr->name = Blt_GetHashKey(&dataPtr->instTable, hPtr);
+        corePtr->flags |= BACKGROUND_SOLID;
 	corePtr->link = NULL;
 	Blt_SetHashValue(hPtr, corePtr);
-	/* The tricky part here is that we don't look at configure options
-	 * because we already created the border for the solid
-	 * backrground. */
-	if ((*corePtr->classPtr->configProc)(corePtr) != TCL_OK) {
-	    DestroyBackgroundObject(corePtr);
-	    goto error;
-	}
     } else {
 	corePtr = Blt_GetHashValue(hPtr);
 	assert(corePtr != NULL);
@@ -3432,8 +2741,10 @@ Blt_FreeBg(Bg *bgPtr)
 void
 Blt_Bg_GetOrigin(Bg *bgPtr, int *xPtr, int *yPtr)
 {
-    *xPtr = bgPtr->corePtr->xOrigin;
-    *yPtr = bgPtr->corePtr->yOrigin;
+    *xPtr = 0, *yPtr = 0;
+    if (bgPtr->corePtr->brush != NULL) {
+        Blt_GetBrushOrigin(bgPtr->corePtr->brush, xPtr, yPtr);
+    }
 }
 
 /*
@@ -3451,9 +2762,9 @@ Blt_Bg_GetOrigin(Bg *bgPtr, int *xPtr, int *yPtr)
 void
 Blt_Bg_SetOrigin(Tk_Window tkwin, Bg *bgPtr, int x, int y)
 {
-    BackgroundObject *corePtr = bgPtr->corePtr;
-    corePtr->xOrigin = x;
-    corePtr->yOrigin = y;
+    if (bgPtr->corePtr->brush != NULL) {
+        Blt_SetBrushOrigin(bgPtr->corePtr->brush, x, y);
+    }
 }
 
 /*
@@ -3514,10 +2825,10 @@ Blt_Bg_Border(Bg *bgPtr)
     return bgPtr->corePtr->border;
 }
 
-Blt_PaintBrush *
+Blt_PaintBrush 
 Blt_Bg_PaintBrush(Bg *bgPtr)
 {
-    return &bgPtr->corePtr->brush;
+    return bgPtr->corePtr->brush;
 }
 
 /*
@@ -3556,16 +2867,12 @@ void
 Blt_Bg_FillRectangle(Tk_Window tkwin, Drawable drawable, Bg *bgPtr, int x, 
 		     int y, int w, int h, int borderWidth, int relief)
 {
-    BackgroundObject *corePtr;
-
     if ((h < 1) || (w < 1)) {
 	return;
     }
-    corePtr = bgPtr->corePtr;
-    (*corePtr->classPtr->drawRectangleProc)(tkwin, drawable, corePtr, 
-	x, y, w, h);
+    DrawBackgroundRectangle(tkwin, drawable, bgPtr, x, y, w, h);
     if ((relief != TK_RELIEF_FLAT) && (borderWidth > 0)) {
-	Tk_Draw3DRectangle(tkwin, drawable, corePtr->border, x, y, w, h,
+	Tk_Draw3DRectangle(tkwin, drawable, bgPtr->corePtr->border, x, y, w, h,
 		borderWidth, relief);
     }
 }
@@ -3584,18 +2891,13 @@ Blt_Bg_FillRectangle(Tk_Window tkwin, Drawable drawable, Bg *bgPtr, int x,
  */
 void
 Blt_Bg_DrawPolygon(Tk_Window tkwin, Drawable drawable, Bg *bgPtr, 
-		   XPoint *points, int n, int borderWidth, int relief)
+		   XPoint *points, int numPoints, int borderWidth, int relief)
 {
-    BackgroundObject *corePtr;
-
-#ifdef notdef
-    if (n < 3) {
+    if (numPoints < 3) {
 	return;
     }
-#endif
-    corePtr = bgPtr->corePtr;
-    Draw3DPolygon(tkwin, drawable, corePtr->border, points, n, borderWidth, 
-	relief);
+    Draw3DPolygon(tkwin, drawable, bgPtr->corePtr->border, points, numPoints,
+                  borderWidth, relief);
 }
 
 /*
@@ -3611,20 +2913,16 @@ Blt_Bg_DrawPolygon(Tk_Window tkwin, Drawable drawable, Bg *bgPtr,
  *---------------------------------------------------------------------------
  */
 void
-Blt_Bg_FillPolygon(Tk_Window tkwin, Drawable drawable, Bg *bgPtr, 
-		   XPoint *points, int n, int borderWidth, int relief)
+Blt_Bg_FillPolygon(Tk_Window tkwin, Drawable drawable, Bg *bgPtr,
+                   XPoint *points, int numPoints, int borderWidth, int relief)
 {
-    BackgroundObject *corePtr;
-
-    if (n < 3) {
+    if (numPoints < 3) {
 	return;
     }
-    corePtr = bgPtr->corePtr;
-    (*corePtr->classPtr->drawPolygonProc)(tkwin, drawable, corePtr, 
-	n, points);
+    DrawBackgroundPolygon(tkwin, drawable, bgPtr, numPoints, points);
     if ((relief != TK_RELIEF_FLAT) && (borderWidth != 0)) {
-	Draw3DPolygon(tkwin, drawable, corePtr->border, points, n,
-		borderWidth, relief);
+	Draw3DPolygon(tkwin, drawable, bgPtr->corePtr->border, points,
+                      numPoints, borderWidth, relief);
     }
 }
 
@@ -3644,24 +2942,19 @@ void
 Blt_Bg_DrawFocus(Tk_Window tkwin, Bg *bgPtr, int highlightThickness, 
 		 Drawable drawable)
 {
-    BackgroundObject *corePtr = (BackgroundObject *)bgPtr->corePtr;
-    int w, h;
+    int w, h, t;
 
     w = Tk_Width(tkwin);
     h = Tk_Height(tkwin);
+    t = highlightThickness;
     /* Top */
-    (*corePtr->classPtr->drawRectangleProc)(tkwin, drawable, corePtr, 
-	0, 0, w, highlightThickness);
+    DrawBackgroundRectangle(tkwin, drawable, bgPtr, 0, 0, w, t);
     /* Bottom */
-    (*corePtr->classPtr->drawRectangleProc)(tkwin, drawable, corePtr, 
-	0, h - highlightThickness, w, highlightThickness);
+    DrawBackgroundRectangle(tkwin, drawable, bgPtr, 0, h - t, w, t);
     /* Left */
-    (*corePtr->classPtr->drawRectangleProc)(tkwin, drawable, corePtr,
-	0, highlightThickness, highlightThickness, h - 2 * highlightThickness);
+    DrawBackgroundRectangle(tkwin, drawable, bgPtr, 0, t, t, h - 2 * t);
     /* Right */
-    (*corePtr->classPtr->drawRectangleProc)(tkwin, drawable, corePtr,
-	w - highlightThickness, highlightThickness, highlightThickness, 
-	h - 2 * highlightThickness);
+    DrawBackgroundRectangle(tkwin, drawable, bgPtr, w - t, t, t, h - 2 * t);
 }
 
 
@@ -3759,25 +3052,8 @@ Blt_Bg_UnsetClipRegion(Tk_Window tkwin, Bg *bgPtr)
     XSetClipMask(display, gc, None);
 }
 
-#ifdef notdef
-void
-Blt_Bg_GetType(Bg *bgPtr)
+unsigned int
+Blt_Bg_GetColor(Bg *bgPtr)
 {
-    return bgPtr->reference;
+    return GetBackgroundColor(bgPtr->corePtr);
 }
-
-Blt_Gradient
-Blt_Bg_GetGradient(Bg *bgPtr)
-{
-    GradientBackground *corePtr = (GradientBackground *)bgPtr->corePtr;
-    return bgPtr->gradient;
-}
-
-void
-Blt_Bg_SetColorProc(Bg *bgPtr, Blt_BgColorProc *proc, ClientData clientData)
-{
-    bgPtr->colorProc = proc;
-    bgPtr->clientData = clientData;
-}
-
-#endif

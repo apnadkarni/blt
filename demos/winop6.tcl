@@ -31,11 +31,12 @@ $l1 and 0xFF000000 -mask $l2
 $l1 or $bg -mask $l2
 #$l1 sub 0x0F000000 -mask $l2
 set bg [image create picture -width $width -height $height]
-set brush [blt::paintbrush create gradient \
-		-high yellow  \
-		-low black  \
-		-jitter 2 \
-		-scale log]
+set brush [blt::paintbrush create linear \
+	       -from n -to s \
+	       -highcolor yellow  \
+	       -lowcolor black  \
+	       -jitter 2 \
+	       -colorscale log]
 $bg draw rectangle 0 0 $width $height -color $brush
 $bg blend $bg $l1 
 

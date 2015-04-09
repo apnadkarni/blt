@@ -6573,6 +6573,7 @@ ConfigureStyle(TreeView *viewPtr, CellStyle *stylePtr)
     EventuallyRedraw(viewPtr);
 }
 
+#ifdef notdef
 /*
  *---------------------------------------------------------------------------
  *
@@ -6598,6 +6599,7 @@ ReconfigureStyles(TreeView *viewPtr)
 	(*stylePtr->classPtr->configProc)(stylePtr);
     }
 }
+#endif
 
 /*
  *---------------------------------------------------------------------------
@@ -7922,6 +7924,7 @@ DrawEntryLabel(
     return entryHeight;
 }
 
+#ifdef notdef
 static void
 DrawEntryLabel2(
     TreeView *viewPtr,                  /* Widget record. */
@@ -8017,6 +8020,7 @@ DrawEntryLabel2(
 	Blt_Free(textPtr);
     }
 }
+#endif
 
 /*
  *---------------------------------------------------------------------------
@@ -8294,6 +8298,7 @@ DrawEntryInHierarchy(TreeView *viewPtr, Entry *entryPtr, Drawable drawable)
     DrawEntryLabel(viewPtr, entryPtr, drawable, x, y, xMax - x, NULL);
 }
 
+#ifdef notdef
 /*
  *---------------------------------------------------------------------------
  *
@@ -8412,6 +8417,7 @@ DrawEntryInHierarchy2(TreeView *viewPtr, Entry *entryPtr, Drawable drawable)
     /* Draw text/image. */
     DrawEntryLabel(viewPtr, entryPtr, drawable, x, y, colWidth, NULL);
 }
+#endif
 
 static void
 DrawColumnTitle(TreeView *viewPtr, Column *colPtr, Drawable drawable, 

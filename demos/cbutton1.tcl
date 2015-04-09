@@ -42,8 +42,8 @@ set imgData {
 }
 
 #set image [image create picture -file ~/images.jpeg]
-set bg [blt::background create gradient -high  grey70 -low grey95 \
-	-jitter 10 -scale log -relativeto self]
+set bg [blt::background create linear -highcolor  grey70 -lowcolor grey95 \
+	-jitter 10 -colorscale log -relativeto self]
 
 set image ""
 

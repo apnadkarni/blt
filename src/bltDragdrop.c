@@ -1,5 +1,4 @@
 /* -*- mode: c; c-basic-offset: 4; indent-tabs-mode: nil -*- */
-
 /*
  * bltDragdrop.c --
  *
@@ -2591,7 +2590,7 @@ TargetOp(
 		}
 		return TCL_OK;
 	    } else if (objc >= 6) {
-		char *cmd;
+		const char *cmd;
 		
 		/*
 		 *  Process handler definition

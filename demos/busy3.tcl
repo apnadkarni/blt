@@ -128,7 +128,7 @@ text .f1.text -width 20 -height 4
 # The following buttons sit in the lower frame to control the demo
 #
 button .f2.holdButton -command {
-    if { [blt::busy isbusy .f1] == "" } {
+    if { ![blt::busy isbusy .f1] } {
         global activeBg
 	.f1 configure -bg $activeBg
     }
@@ -144,7 +144,7 @@ button .f2.holdButton -command {
     Shake 3000
 }
 button .f2.releaseButton -command {
-    if { [blt::busy isbusy .f1] == ".f1" } {
+    if { [blt::busy isbusy .f1] } {
         blt::busy release .f1
         blt::busy release .#menu
     }
@@ -155,6 +155,9 @@ button .f2.releaseButton -command {
 
 proc Shake { count } {
     set w .f1_Busy.s
+    if { ![winfo exists $w] } {
+	return
+    }
     incr count -3
     if { $count <= 0 } {
 	return

@@ -1,10 +1,10 @@
 
 ===============
-blt::background
+blt::paintbrush
 ===============
 
 ----------------------------------------------------------------
-Create and manage background styles for widgets.
+Create and manage paintbrushes.
 ----------------------------------------------------------------
 
 :Author: gahowlett@gmail.com
@@ -36,47 +36,49 @@ Create and manage background styles for widgets.
 SYNOPSIS
 --------
 
-**blt::background cget** *bgName* ?\ *option*\ ?
+**blt::paintbrush cget** *brushName* ?\ *option*\ ?
 
-**blt::background configure** *window* ?\ *option* *value* ...\ ?
+**blt::paintbrush configure** *window* ?\ *option* *value* ...\ ?
 
-**blt::background create** *type* ?\ *bgName*\ ? ?\ *option* *value* ...\ ?
+**blt::paintbrush create** *type* ?\ *brushName*\ ? ?\ *option* *value* ...\ ?
 
-**blt::background delete**  ?\ *bgName* ...\ ?
+**blt::paintbrush delete**  ?\ *brushName* ...\ ?
 
-**blt::background exists** *bgName*
+**blt::paintbrush names** ?\ *pattern* ...\ ?
 
-**blt::background names** ?\ *pattern* ...\ ?
-
-**blt::background type** *bgName* 
+**blt::paintbrush type** *brushName* 
 
 DESCRIPTION
 -----------
 
-The **blt::background** creates specialized backgrounds that can be used
-with the **-background** options of the BLT widgets.  
+The **blt::paintbrush** creates a paintbrush that can be used
+with the **-brush** options of the BLT widgets.  
 
 INTRODUCTION
 ------------
 
-Normally the background of a Tk widget is specified by color name
-that specifies a solid color for the background.  The **blt::background**
-command lets you defined different types of background (for example a
+Normally the paintbrush of a Tk widget is specified by color name
+that specifies a solid color for the paintbrush.  The **blt::paintbrush**
+command lets you defined different types of paintbrush (for example a
 gradient), that you can use with the BLT widgets.  This includes
 copies of the Tk widgets: **blt::tk::button**, **blt::tk::checkbutton**,
 **blt::tk::frame**, **blt::tk::label**, **blt::tk::radiobutton**, and
 **blt::tk::toplevel**.
 
-A background can have one of the following types: 
+A paintbrush can have one of the following types: 
 
   **checker**
 
-    A checker *background* object draws a checkered background.
+    A checker *paintbrush* object draws a checkered paintbrush.
+    
+  **color**
+
+    A color *paintbrush* object draws a single color.
     
   **conical**
 
-    A conical gradient *background* object draws a linear conical gradient
-    as a background. Conical gradients are specified by a gradient
+    A conical gradient *paintbrush* object draws a linear conical gradient
+    as a paintbrush. Conical gradients are specified by a gradient
     circle. Colors are interpolated along its circumference. The image is
     constructed by creating an infinite canvas and painting it with rays
     rotated around a fixed endpoint which is anchored at the center of the
@@ -90,8 +92,8 @@ A background can have one of the following types:
 
   **linear**
 
-    A linear gradient *background* object draws a linear gradient as a
-    background. Linear gradients are defined by an axis (the gradient line
+    A linear gradient *paintbrush* object draws a linear gradient as a
+    paintbrush. Linear gradients are defined by an axis (the gradient line
     segment) with each point on it interpolated to a specific color. The
     lines perpendicular to the gradient line have the same color as the
     point is crosses the gradient line.  The position and length of the
@@ -102,45 +104,45 @@ A background can have one of the following types:
 
   **radial** 
 
-    A radial gradient *background* object draws a linear radial gradient as
-    a background. Radial gradients are defined by a ellipse. Each point is
-    interpolated according to its distance from the center of the ellipse
-    and the shape of the ellipse.  The position, width, and height of the
-    ellipse is relative to the window that it refers to (see the
+    A radial gradient *paintbrush* object draws a linear radial gradient as
+    a paintbrush. Radial gradients are defined by a gradent ellipse. Each
+    point is interpolated according to its distance from the center of the
+    ellipse and the shape of the ellipse.  The position, width, and height
+    of the ellipse is relative to the window that it refers to (see the
     **-relativeto** option).
     
   **stripe**
 
-    A stripe *background* object draws a striped background.  The stripes may
+    A stripe *paintbrush* object draws a striped paintbrush.  The stripes may
     run horizontally or vertically depending upon the **--orient** option.
 
   **tile**
 
-    A tile *background* object draws a tiled background.  The tile is an
-    image that it repeated to cover the entire background.  The starting
+    A tile *paintbrush* object draws a tiled paintbrush.  The tile is an
+    image that it repeated to cover the entire paintbrush.  The starting
     position of tiles (i.e the origin) is the upper, left corner of the
     window that it refers to (see the **-relativeto** option).
 
 OPERATIONS
 ----------
 
-The following operations are available for the **blt::background** command:
+The following operations are available for the **blt::paintbrush** command:
 
-**blt::background cget** *bgName* *option*
+**blt::paintbrush cget** *brushName* *option*
 
-  Returns the current value of the *background* configuration option given
-  by *option*. *BgName* is the name of *background* object returned by the
+  Returns the current value of the *paintbrush* configuration option given
+  by *option*. *BrushName* is the name of *paintbrush* object returned by the
   **create** operation. *Option* and may have any of the values accepted by
-  the **configure** operation. They are specific to the type of background
-  for *bgName*. They are described in the **create** operations below.
+  the **configure** operation. They are specific to the type of paintbrush
+  for *brushName*. They are described in the **create** operations below.
 
-**blt::background configure** *bgName* ?\ *option* *value* ...\ ?
+**blt::paintbrush configure** *brushName* ?\ *option* *value* ...\ ?
 
-  Queries or modifies the *background* configuration options for
-  *bgName*. *BgName* is the name of *background* object returned by the
+  Queries or modifies the *paintbrush* configuration options for
+  *brushName*. *BrushName* is the name of *paintbrush* object returned by the
   **create** operation.  *Option* and *value* are specific to the type
-  of *bgName*.  If no options are specified, a list describing all of the
-  available options for *bgName* (see **Tk_ConfigureInfo** for information
+  of *brushName*.  If no options are specified, a list describing all of the
+  available options for *brushName* (see **Tk_ConfigureInfo** for information
   on the format of this list) is returned.  If *option* is specified with
   no *value*, then this command returns a list describing the one named
   option (this list will be identical to the corresponding sublist of the
@@ -150,24 +152,29 @@ The following operations are available for the **blt::background** command:
   the empty string.  *Option* and *value* can any of the values accepted by
   the **create** operation.
 
-**blt::background create checker** ?\ *bgName*\ ? ?\ *option* *value* ...\ ?
+**blt::paintbrush create checker** ?\ *option* *value* ...\ ?
 
-  Creates a checker *background* object. If no *bgName* argument is
-  present, then the name of the *background* is automatically generated in
-  the form "background0", "background1", etc. Another *background* object
-  can not already exist as *bgName*. *Option* and *value* are specific to
-  checker backgrounds and are listed below.
+  Creates a checker *paintbrush* object. Radial gradients are
+  defined by an axis (the gradient line segment) with each point on it
+  interpolated to a specific color. The lines perpendicular to the gradient
+  line have the same color as the point is crosses the gradient line.
+  
+  This command returns the name of *paintbrush* object.  The name of the
+  *paintbrush* is automatically generated in the form "paintbrush0",
+  "paintbrush1", etc.  The name of the new *paintbrush* is
+  returned. *Option* and *value* are specific to "linear" paintbrushs and
+  are listed below.
 
-  **-background** *colorName*
+  **-paintbrush** *colorName*
 
   **-border** *colorName*
 
-    Specifies the border color of the background object.  If a widget
+    Specifies the border color of the paintbrush object.  If a widget
     has a 3D relief, this specifies the colors of the bevels. 
     
   **-jitter** *percent*
 
-    Specifies the amount of randomness to add to the interpolated colors.
+    Specifies the amount of randomness to add to the intepolated colors.
     *Percent* is a real number between 0 and 100.  It is the percentage
     that colors may vary.
      
@@ -179,26 +186,19 @@ The following operations are available for the **blt::background** command:
 
     Specifies the color of even checkers. The default is "grey90".
 
-**blt::background create conical** ?\ *bgName*\ ? ?\ *option* *value* ...\ ?
+**blt::paintbrush create conical** ?\ *option* *value* ...\ ?
 
-  Creates a new conical gradient *background* object. Conical gradients are
+  Creates a new conical gradient *paintbrush* object. Conical gradients are
   defined by an axis (the gradient line segment) with each point on it
   interpolated to a specific color. The lines perpendicular to the gradient
   line have the same color as the point is crosses the gradient line.
   
-  If no *bgName* argument is present, then the name of the *background* is
-  automatically generated in the form "background0", "background1",
-  etc. Another *background* object can not already exist as *bgName*. 
-  *Option* and *value* are specific to conical backgrounds and are listed
-  below.
+  This command returns the name of *paintbrush* object.  The name of the
+  *paintbrush* is automatically generated in the form "paintbrush0",
+  "paintbrush1", etc.  The name of the new *paintbrush* is
+  returned. *Option* and *value* are specific to "linear" paintbrushs and
+  are listed below.
 
-  **-background** *colorName*
-
-  **-border** *colorName*
-
-    Specifies the border color of the background object.  If a widget
-    has a 3D relief, this specifies the colors of the bevels. 
-    
   **-colorscale** *scale*
 
     Specifies the scale when interpolating values. *Scale* can be "linear",
@@ -256,13 +256,13 @@ The following operations are available for the **blt::background** command:
 
   **-jitter** *percent*
 
-    Specifies the amount of randomness to add to the interpolated colors.
+    Specifies the amount of randomness to add to the intepolated colors.
     *Percent* is a real number between 0 and 100.  It is the percentage
     that colors may vary.
      
   **-palette** *paletteName*
 
-    Specifies a color palette to use when interpolating the background.
+    Specifies a color palette to use when interpolating the paintbrush.
     *PaletteName* is the name of a palette is created by the
     **blt::palette** command.  If *paletteName* is "", then the
     **-highcolor** and **-lowcolor** colors are interpolated.  The default
@@ -270,59 +270,38 @@ The following operations are available for the **blt::background** command:
 
   **-repeat** *string*
 
-  **-relativeto** *window*
-
-    Specifies a reference window for the linear gradient.  This is useful
-    for creating seamless gradients with many widgets.  For example if a
-    *window* is a frame then all the children packed in *window* can use
-    the background seamlessly.  *Window* can be one of the following.
-
-    **self**
-       The reference window is the window whose background is being drawn.  
-
-    **toplevel**
-       The reference window is the toplevel window whose background is
-       being drawn.  This is the default.
-       
-    *window*
-       The reference window is *window*.  *Window* is the name of a Tk
-       widget.  It must be an ancestor of the window whose background is
-       being drawn. *Window* doesn't have to exist yet. At an idle point
-       later, the background will check for the widget, If *window* is
-       destroyed, the reference window reverts to **self**.
-       
   **-xoffset** *numPixels*
 
-    Specifies the horizontal offset of the background. *NumPixels* is
+    Specifies the horizontal offset of the paintbrush. *NumPixels* is
     integer value indicating amount to the left or right to offset the
-    background.  The value may have any of the forms accept able to
+    paintbrush.  The value may have any of the forms accept able to
     Tk_GetPixels.  The default is "0".
 
   **-yoffset** *numPixels*
 
-    Specifies the vertical offset of the background. *NumPixels* is integer
-    value indicating amount up or down to offset the background.  The value
+    Specifies the vertical offset of the paintbrush. *NumPixels* is integer
+    value indicating amount up or down to offset the paintbrush.  The value
     may have any of the forms accept able to Tk_GetPixels.  The default is
     "0".
 
-**blt::background create linear** ?\ *bgName*\ ? ?\ *option* *value* ...\ ?
+**blt::paintbrush create linear** ?\ *option* *value* ...\ ?
 
-  Creates a new linear gradient *background* object. Linear gradients are
+  Creates a new linear gradient *paintbrush* object. Linear gradients are
   defined by an axis (the gradient line segment) with each point on it
   interpolated to a specific color. The lines perpendicular to the gradient
   line have the same color as the point is crosses the gradient line.
   
-  If no *bgName* argument is present, then the name of the *background* is
-  automatically generated in the form "background0", "background1",
-  etc. Another *background* object can not already exist as *bgName*.
-  *Option* and *value* are specific to linear backgrounds and are listed
-  below.
+  This command returns the name of *paintbrush* object.  The name of the
+  *paintbrush* is automatically generated in the form "paintbrush0",
+  "paintbrush1", etc.  The name of the new *paintbrush* is
+  returned. *Option* and *value* are specific to "linear" paintbrushs and
+  are listed below.
 
-  **-background** *colorName*
+  **-paintbrush** *colorName*
 
   **-border** *colorName*
 
-    Specifies the border color of the background object.  If a widget
+    Specifies the border color of the paintbrush object.  If a widget
     has a 3D relief, this specifies the colors of the bevels. 
     
   **-colorscale** *scale*
@@ -382,13 +361,13 @@ The following operations are available for the **blt::background** command:
 
   **-jitter** *percent*
 
-    Specifies the amount of randomness to add to the interpolated colors.
+    Specifies the amount of randomness to add to the intepolated colors.
     *Percent* is a real number between 0 and 100.  It is the percentage
     that colors may vary.
      
   **-palette** *paletteName*
 
-    Specifies a color palette to use when interpolating the background.
+    Specifies a color palette to use when interpolating the paintbrush.
     *PaletteName* is the name of a palette is created by the
     **blt::palette** command.  If *paletteName* is "", then the
     **-highcolor** and **-lowcolor** colors are interpolated.  The default
@@ -396,27 +375,6 @@ The following operations are available for the **blt::background** command:
 
   **-repeat** *string*
 
-  **-relativeto** *window*
-
-    Specifies a reference window for the linear gradient.  This is useful
-    for creating seamless gradients with many widgets.  For example if a
-    *window* is a frame then all the children packed in *window* can use
-    the background seamlessly.  *Window* can be one of the following.
-
-    **self**
-       The reference window is the window whose background is being drawn.  
-
-    **toplevel**
-       The reference window is the toplevel window whose background is
-       being drawn.  This is the default.
-       
-    *window*
-       The reference window is *window*.  *Window* is the name of a Tk
-       widget.  It must be an ancestor of the window whose background is
-       being drawn. *Window* doesn't have to exist yet. At an idle point
-       later, the background will check for the widget, If *window* is
-       destroyed, the reference window reverts to **self**.
-       
   **-to** *position*
 
     Specifies the ending position of linear gradient axis.  The ending
@@ -433,7 +391,7 @@ The following operations are available for the **blt::background** command:
         The position is a 2 element list. The first element can be **top**,
         **bottom**, or **center**. The second element can be **left**,
         **right**, or **center**.  The combination of the two sides
-        represent a location in the reference window. For example "top
+        represent a locationj in the reference window. For example "top
         left" is the upper left corner of the reference window.
 
     *number number*
@@ -444,37 +402,36 @@ The following operations are available for the **blt::background** command:
 
   **-xoffset** *numPixels*
 
-    Specifies the horizontal offset of the background. *NumPixels* is
+    Specifies the horizontal offset of the paintbrush. *NumPixels* is
     integer value indicating amount to the left or right to offset the
-    background.  The value may have any of the forms accept able to
+    paintbrush.  The value may have any of the forms accept able to
     Tk_GetPixels.  The default is "0".
 
   **-yoffset** *numPixels*
 
-    Specifies the vertical offset of the background. *NumPixels* is integer
-    value indicating amount up or down to offset the background.  The value
+    Specifies the vertical offset of the paintbrush. *NumPixels* is integer
+    value indicating amount up or down to offset the paintbrush.  The value
     may have any of the forms accept able to Tk_GetPixels.  The default is
     "0".
 
-**blt::background create radial** ?\ *bgName*\ ? ?\ *option* *value* ...\ ?
+**blt::paintbrush create radial** ?\ *option* *value* ...\ ?
 
-  Creates a new radial gradient *background* object. Radial gradients are
-  defined by an ellipse. Each point is interpolated according to its
-  distance from the center of the ellipse and the shape of the ellipse.
-  The position, width, and height of the ellipse is relative to the window
-  that it refers to (see the **-relativeto** option).
+  Creates a new radial gradient *paintbrush* object. Radial gradients are
+  defined by an axis (the gradient line segment) with each point on it
+  interpolated to a specific color. The lines perpendicular to the gradient
+  line have the same color as the point is crosses the gradient line.
+  
+  This command returns the name of *paintbrush* object.  The name of the
+  *paintbrush* is automatically generated in the form "paintbrush0",
+  "paintbrush1", etc.  The name of the new *paintbrush* is
+  returned. *Option* and *value* are specific to "linear" paintbrushs and
+  are listed below.
 
-  If no *bgName* argument is present, then the name of the *background* is
-  automatically generated in the form "background0", "background1",
-  etc. Another *background* object can not already exist as *bgName*.
-  *Option* and *value* are specific to radial backgrounds and are listed
-  below.
-
-  **-background** *colorName*
+  **-paintbrush** *colorName*
 
   **-border** *colorName*
 
-    Specifies the border color of the background object.  If a widget
+    Specifies the border color of the paintbrush object.  If a widget
     has a 3D relief, this specifies the colors of the bevels. 
     
   **-colorscale** *scale*
@@ -540,13 +497,13 @@ The following operations are available for the **blt::background** command:
 
   **-jitter** *percent*
 
-    Specifies the amount of randomness to add to the interpolated colors.
+    Specifies the amount of randomness to add to the intepolated colors.
     *Percent* is a real number between 0 and 100.  It is the percentage
     that colors may vary.
      
   **-palette** *paletteName*
 
-    Specifies a color palette to use when interpolating the background.
+    Specifies a color palette to use when interpolating the paintbrush.
     *PaletteName* is the name of a palette is created by the
     **blt::palette** command.  If *paletteName* is "", then the
     **-highcolor** and **-lowcolor** colors are interpolated.  The default
@@ -554,27 +511,6 @@ The following operations are available for the **blt::background** command:
 
   **-repeat** *string*
 
-  **-relativeto** *window*
-
-    Specifies a reference window for the linear gradient.  This is useful
-    for creating seamless gradients with many widgets.  For example if a
-    *window* is a frame then all the children packed in *window* can use
-    the background seamlessly.  *Window* can be one of the following.
-
-    **self**
-       The reference window is the window whose background is being drawn.  
-
-    **toplevel**
-       The reference window is the toplevel window whose background is
-       being drawn.  This is the default.
-       
-    *window*
-       The reference window is *window*.  *Window* is the name of a Tk
-       widget.  It must be an ancestor of the window whose background is
-       being drawn. *Window* doesn't have to exist yet. At an idle point
-       later, the background will check for the widget, If *window* is
-       destroyed, the reference window reverts to **self**.
-       
   **-width** *number*
 
     Specifies the width of the gradient ellipse.  This is the color
@@ -583,31 +519,36 @@ The following operations are available for the **blt::background** command:
 
   **-xoffset** *numPixels*
 
-    Specifies the horizontal offset of the background. *NumPixels* is
+    Specifies the horizontal offset of the paintbrush. *NumPixels* is
     integer value indicating amount to the left or right to offset the
-    background.  The value may have any of the forms accept able to
+    paintbrush.  The value may have any of the forms accept able to
     Tk_GetPixels.  The default is "0".
 
   **-yoffset** *numPixels*
 
-    Specifies the vertical offset of the background. *NumPixels* is integer
-    value indicating amount up or down to offset the background.  The value
+    Specifies the vertical offset of the paintbrush. *NumPixels* is integer
+    value indicating amount up or down to offset the paintbrush.  The value
     may have any of the forms accept able to Tk_GetPixels.  The default is
     "0".
 
-**blt::background create stripe** ?\ *bgName*\ ? ?\ *option* *value* ...\ ?
+**blt::paintbrush create stripe** ?\ *option* *value* ...\ ?
 
-  Creates a stripe *background* object.  If no *bgName* argument is
-  present, then the name of the *background* is automatically generated in
-  the form "background0", "background1", etc. Another *background* object
-  can not already exist as *bgName*. *Option* and *value* are specific to
-  stripe backgrounds and are listed below.
+  Creates a stripe *paintbrush* object. Radial gradients are
+  defined by an axis (the gradient line segment) with each point on it
+  interpolated to a specific color. The lines perpendicular to the gradient
+  line have the same color as the point is crosses the gradient line.
+  
+  This command returns the name of *paintbrush* object.  The name of the
+  *paintbrush* is automatically generated in the form "paintbrush0",
+  "paintbrush1", etc.  The name of the new *paintbrush* is
+  returned. *Option* and *value* are specific to "linear" paintbrushs and
+  are listed below.
 
-  **-background** *colorName*
+  **-paintbrush** *colorName*
 
   **-border** *colorName*
 
-    Specifies the border color of the background object.  If a widget
+    Specifies the border color of the paintbrush object.  If a widget
     has a 3D relief, this specifies the colors of the bevels. 
     
   **-jitter** *percent*
@@ -631,37 +572,36 @@ The following operations are available for the **blt::background** command:
 
   **-xoffset** *numPixels*
 
-    Specifies the horizontal offset of the background. *NumPixels* is
+    Specifies the horizontal offset of the paintbrush. *NumPixels* is
     integer value indicating amount to the left or right to offset the
-    background.  The value may have any of the forms accept able to
+    paintbrush.  The value may have any of the forms accept able to
     Tk_GetPixels.  The default is "0".
 
   **-yoffset** *numPixels*
 
-    Specifies the vertical offset of the background. *NumPixels* is integer
-    value indicating amount up or down to offset the background.  The value
+    Specifies the vertical offset of the paintbrush. *NumPixels* is integer
+    value indicating amount up or down to offset the paintbrush.  The value
     may have any of the forms accept able to Tk_GetPixels.  The default is
     "0".
 
-**blt::background create tile** ?\ *bgName*\ ? ?\ *option* *value* ...\ ?
+**blt::paintbrush create tile** ?\ *option* *value* ...\ ?
 
-  Creates a tile *background* object.  If no *bgName* argument is present,
-  then the name of the *background* is automatically generated in the form
-  "background0", "background1", etc. Another *background* object can not
-  already exist as *bgName*. *Option* and *value* are specific to tile
-  backgrounds and are listed below.
+  Creates a tile *paintbrush* object. The name of the *paintbrush* is
+  automatically generated in the form "paintbrush0", "paintbrush1", etc.
+  The name of the new *paintbrush* is returned. *Option* and *value* are
+  specific to "texture" paintbrushs and are listed below.
 
   **-border** *colorName*
 
-    Specifies the border color of the background object.  If a widget has a
-    3D relief, this specifies the colors of the bevels and the background
+    Specifies the border color of the paintbrush object.  If a widget has a
+    3D relief, this specifies the colors of the bevels and the paintbrush
     when there is no tiled image (see the **-image** option below).
     *ColorName* can be any name accepted by **Tk_GetColor**.  The default
     is "grey85".
 
   **-image** *imageName*
 
-    Specifies the image to use as the tile for the background.  *ImageName*
+    Specifies the image to use as the tile for the paintbrush.  *ImageName*
     must be the name of a Tk **photo** or BLT **picture** image.
 
   **-jitter** *percent*
@@ -670,101 +610,86 @@ The following operations are available for the **blt::background** command:
     *Percent* is a real number between 0 and 100.  It is the percentage
     that colors may vary.
      
-  **-relativeto** *refName*
-
-    Specifies a reference window to use of the origin the tile. *RefName*
-    is the name of a Tk widget.  This is useful for creating seamless tiles
-    with many widgets.  For example is a frame is *refName* then all the
-    children packed in *refName* can use the same tile seamlessly.  If
-    *refName* is "", then the origin is based on the widget using the tile.
-    The default is "".
-
   **-xoffset** *numPixels*
 
-    Specifies the horizontal offset of the background. *NumPixels* is
+    Specifies the horizontal offset of the paintbrush. *NumPixels* is
     integer value indicating amount to the left or right to offset the
-    background.  The value may have any of the forms accept able to
+    paintbrush.  The value may have any of the forms accept able to
     Tk_GetPixels.  The default is "0".
 
   **-yoffset** *numPixels*
 
-    Specifies the vertical offset of the background. *NumPixels* is integer
-    value indicating amount up or down to offset the background.  The value
+    Specifies the vertical offset of the paintbrush. *NumPixels* is integer
+    value indicating amount up or down to offset the paintbrush.  The value
     may have any of the forms accept able to Tk_GetPixels.  The default is
     "0".
 
-**blt::background delete** ?\ *bgName* ...\ ?
+**blt::paintbrush delete** ?\ *brushName* ...\ ?
 
-  Releases resources allocated by the background command for *window*, including
-  the background window.  User events will again be received again by *window*.
+  Releases resources allocated by the paintbrush command for *window*, including
+  the paintbrush window.  User events will again be received again by *window*.
   Resources are also released when *window* is destroyed. *Window* must be
   the name of a widget specified in the **create** operation, otherwise an
   error is reported.
 
-**blt::background exists** *bgName*
+**blt::paintbrush names** ?\ *pattern* ...\ ?
 
-  Indicates if the background *bgName* exists. *BgName* is the name of a
-  background created by the **create** operation. Returns "1" if the named
-  background exists, "0" otherwise.  
+  Returns the names of all the paintbrushs currently created.  If one or
+  more *pattern* arguments are provided, then the name of any paintbrush
+  matching *pattern* will be returned. *Pattern* is a glob-style pattern.
 
-**blt::background names** ?\ *pattern* ...\ ?
+**blt::paintbrush type** *brushName*
 
-  Returns the names of all the backgrounds.  If one or more *pattern*
-  arguments are provided, then the name of any background matching
-  *pattern* will be returned. *Pattern* is a glob-style pattern.
-
-**blt::background type** *bgName*
-
-  Returns the type of the background for *bgName*.  *BgName* is the name
-  of a background created by the **create** operation.
+  Returns the type of the paintbrush for *brushName*.  *BrushName* is the
+  name of a paintbrush created by the **create** operation.
 
 
 EXAMPLE
 -------
 
-Create a *background* object with the **blt::background** command.
+Create a *paintbrush* object with the **blt::paintbrush** command.
 
  ::
 
     package require BLT
 
-    # Create a new linear gradient background.
-    blt::background create linear myBackground \
+    # Create a new linear gradient paintbrush.
+    blt::paintbrush create linear myPaintbrush \
 	-from n -to s -lowcolor grey80 -highcolor grey95 \
-	-relativeto .frame -jitter 10
+	-jitter 10
 	
-Now we can create widgets that use the background.
+Now we can create widgets that use the paintbrush.
 
  ::
 
-    blt::tk::frame .frame -bg myBackground
-    blt::tk::label .frame.label -text "Label" -bg myBackground
-    blt::tk::button .frame.label -text "Button" -bg myBackground
-    blt::graph .frame.graph -bg myBackground
+    blt::tk::frame .frame -bg myPaintbrush
+    blt::tk::label .frame.label -text "Label" -bg myPaintbrush
+    blt::tk::button .frame.label -text "Button" -bg myPaintbrush
+    blt::graph .frame.graph -bg myPaintbrush
 
-To remove the background, use the **delete** operation.
+To remove the paintbrush, use the **delete** operation.
 
  ::
 
-    blt::background delete myBackground
+    blt::paintbrush delete myPaintbrush
      
 Please note the following:
 
-1. The backgrounds created by the **blt::background** command are only
+1. The paintbrushs created by the **blt::paintbrush** command are only
    recognized by BLT widgets.
 
 2. The reference window designated with the **-relativeto** option doesn't
-   have to already exist when you create the background.
+   have to already exist when you create the paintbrush.
 
-3. If you change a background option (such as **-highcolor**) all the
-   widgets using the background object will be notified and automatically
+3. If you change a paintbrush option (such as **-highcolor**) all the
+   widgets using the paintbrush object will be notified and automatically
    redraw themselves.
 
-4. Backgrounds are reference counted.  If you delete a background, its
+4. Paintbrushs are reference counted.  If you delete a paintbrush, its
    resources are not freed until no widget is using it.
    
 KEYWORDS
 --------
-background, window
+paintbrush, window
 
 

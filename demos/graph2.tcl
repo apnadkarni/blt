@@ -2,7 +2,6 @@
 
 package require BLT
 
-source scripts/demo.tcl
 source scripts/stipples.tcl
 
 if { ![string match "*gray*" [winfo screenvisual .]] } {
@@ -45,30 +44,35 @@ $graph configure \
     -height 4i \
     -title "Graph" \
     -background white \
-    -plotpady 0 -plotpadx 0 -plotborderwidth 0 -plotpady 0
+    -plotpady 0 \
+    -plotpadx 0 \
+    -plotborderwidth 0 \
+    -plotpady 0
 
 $graph axis configure y \
     -titlefont "arial 10" \
-    -title "Y Axis" \
+    -title "Ratio" \
     -colorbarthickness 20 \
     -loose yes
 
+$graph legend configure \
+    -relief flat \
+    -borderwidth 0
+
 if 1 {
-    set bg [blt::background create gradient -low grey40 -high grey95 \
-	-jitter 10 -scale linear -opacity 80]
-    blt::palette create red -colors {
+    blt::palette create red -colorformat name -cdata {
 	"white" "red" 
-    }
-    blt::palette create green -colors {
+    } -fade 50
+    blt::palette create green -colorformat name -cdata {
 	"white" "green" 
-    } 
-    blt::palette create bluegreen -colors {
-	{ 100% "lightblue" } { 0% "navyblue" }
+    } -fade 50
+    blt::palette create bluegreen -colorformat name -cdata {
+	"navyblue"  "lightblue" 
     } 
     $graph axis configure degrees -palette red -colorbarthickness 20
     $graph axis configure y -palette green 
-    $graph element configure line1 -mapx degrees -colormap y
-    $graph element configure line3 -colormap degrees
+    $graph element configure line1 -mapx degrees -colormap y 
+    $graph element configure line3 -colormap degrees 
     $graph element raise line1
 }
 
@@ -82,7 +86,7 @@ bind $graph <Shift-ButtonPress-3> {
     }
 }
 
-$graph configure -title "This is the \nTitle\n"
+$graph configure -title "Sine and Cosine"
 set unique 0
 proc MakeSnapshot {} {
     update idletasks

@@ -16,8 +16,8 @@ set configOptions [subst {
     Element.lineWidth		1
     Font			{ {Serif} 10 }
     Foreground			white
-    Legend.ActiveBorderWidth	2
-    Legend.ActiveRelief		raised
+    Legend.ActiveBorderWidth	0
+    Legend.ActiveRelief		flat
     Legend.Anchor		ne
     Legend.BorderWidth		0
     Legend.Font			{ Serif 14 }
@@ -64,7 +64,6 @@ set step 0.2
 
 set letters { A B C D E F G H I J K L }
 set count 0
-toplevel .top
 for { set level 30 } { $level <= 100 } { incr level 10 } {
     set color [format "#FF0d%0.2x" [expr round($level*2.55)]]
     set pen "pen$count"
@@ -72,9 +71,7 @@ for { set level 30 } { $level <= 100 } { incr level 10 } {
     set img [image create picture -width 25 -height 35]
     $img blank 0x00FFFFFF
     $img draw text [lindex $letters $count] 12 12 -color $color \
-    	-font "Arial 10" -anchor c 
-    label .top.l$level -image $img 
-    pack .top.l$level
+    	-font "Arial 8 bold" -anchor c 
     $graph pen create $pen -symbol @$img 
     set min $max
     set max [expr $max + $step]
@@ -112,7 +109,7 @@ set img [image create picture -width 25 -height 25]
 $img blank 0x00FFFFFF
 
 $img draw circle 12 12 5 -shadow 0 -linewidth 0 \
-	-color 0x8FFF0000
+	-color 0xFFFF0000
 $img draw circle 12 12 5 -shadow 0 -linewidth 1.5 \
 	-color 0xFFFF0000
 
@@ -132,10 +129,9 @@ set img [image create picture -width 25 -height 25]
 $img blank 0x00FFFFFF
 
 $img draw circle 12 12 5 -shadow 0 -linewidth 0 \
-	-color 0x8F00FF00
+	-color 0xfF00FF00
 $img draw circle 12 12 5 -shadow 0 -linewidth 1.5 \
 	-color 0xFF00FF00
-
 
 $graph element create line1 \
     -color orange \

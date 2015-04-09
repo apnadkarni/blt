@@ -381,8 +381,8 @@ struct _LineElement {
     XColor *fillBgColor;
     GC fillGC;
 
-    Blt_Bg fillBg;			/* Fill background for area under
-					 * curve. */
+    Blt_PaintBrush areaBrush;            /* Brush representing the color of
+                                          * the area under the curve. */
 
     int reqMaxSymbols;			/* Indicates the interval the draw
 					 * symbols.  Zero (and one) means
@@ -498,8 +498,8 @@ static Blt_ConfigSpec lineSpecs[] =
     {BLT_CONFIG_COLOR, "-areaforeground", "areaForeground", "AreaForeground",
 	DEF_PATTERN_FG, Blt_Offset(LineElement, fillFgColor), 
 	BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_BACKGROUND, "-areabackground", "areaBackground", 
-	"AreaBackground", DEF_PATTERN_BG, Blt_Offset(LineElement, fillBg),
+    {BLT_CONFIG_PAINTBRUSH, "-areabackground", "areaBackground", 
+	"AreaBackground", DEF_PATTERN_BG, Blt_Offset(LineElement, areaBrush),
 	 BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_LIST, "-bindtags", "bindTags", "BindTags", DEF_TAGS, 
 	Blt_Offset(LineElement, obj.tags), BLT_CONFIG_NULL_OK},
@@ -633,8 +633,8 @@ static Blt_ConfigSpec stripSpecs[] =
     {BLT_CONFIG_COLOR, "-areaforeground", "areaForeground", "areaForeground",
 	DEF_PATTERN_FG, Blt_Offset(LineElement, fillFgColor), 
 	BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_BACKGROUND, "-areabackground", "areaBackground", 
-	"areaBackground", DEF_PATTERN_BG, Blt_Offset(LineElement, fillBg), 
+    {BLT_CONFIG_PAINTBRUSH, "-areabackground", "areaBackground", 
+	"areaBackground", DEF_PATTERN_BG, Blt_Offset(LineElement, areaBrush), 
 	BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_LIST, "-bindtags", "bindTags", "BindTags", DEF_TAGS, 
 	Blt_Offset(LineElement, obj.tags), BLT_CONFIG_NULL_OK},
@@ -3262,9 +3262,11 @@ ConfigureProc(Graph *graphPtr, Element *basePtr)
     } 
     stylePtr = Blt_Chain_GetValue(link);
     stylePtr->penPtr = NORMALPEN(elemPtr);
-    if (elemPtr->fillBg != NULL) {
-	Blt_Bg_SetChangedProc(elemPtr->fillBg, BackgroundChangedProc, 
+    if (elemPtr->areaBrush != NULL) {
+#ifdef notdef
+	Blt_SetPaintBrushChangedProc(elemPtr->areaBrush, BackgroundChangedProc, 
 		elemPtr);
+#endif
     }
     /*
      * Set the outline GC for this pen: GCForeground is outline color.
@@ -3995,7 +3997,7 @@ MapProc(Graph *graphPtr, Element *basePtr)
 	}
 #endif
     }
-    if ((elemPtr->fillBg != NULL) || (elemPtr->zAxisPtr != NULL)) {
+    if ((elemPtr->areaBrush != NULL) || (elemPtr->zAxisPtr != NULL)) {
 	MapAreaUnderCurve(elemPtr);
     }
     /* Split traces based upon style.  The pen associated with the trace
@@ -4015,28 +4017,27 @@ MapProc(Graph *graphPtr, Element *basePtr)
 
 
 static int
-GradientColorProc(Blt_PaintBrush *brushPtr, int x, int y)
+GradientCalcProc(ClientData clientData, int x, int y, double *valuePtr)
 {
-    Blt_Pixel color;
     Graph *graphPtr;
-    LineElement *elemPtr = brushPtr->clientData;
-    double value, norm;
+    LineElement *elemPtr = clientData;
+    double value;
     Point2d point;
     AxisRange *rangePtr;
     
     graphPtr = elemPtr->obj.graphPtr;
     point = Blt_InvMap2D(graphPtr, x, y, &elemPtr->axes);
-    rangePtr = &elemPtr->zAxisPtr->valueRange;
+
     if (elemPtr->zAxisPtr->obj.classId == CID_AXIS_Y) {
 	value = point.y;
     } else if (elemPtr->zAxisPtr->obj.classId == CID_AXIS_X) {
 	value = point.x;
     } else {
-	return 0x0;
+	return TCL_ERROR;
     }
-    norm = (value - rangePtr->min) / rangePtr->range;
-    color.u32 = Blt_Palette_GetAssociatedColor(brushPtr->palette, norm);
-    return color.u32;
+    rangePtr = &elemPtr->zAxisPtr->valueRange;
+    *valuePtr = (value - rangePtr->min) / rangePtr->range;
+    return TCL_OK;
 }
 
 static void
@@ -4088,47 +4089,55 @@ GetPolygonBBox(XPoint *points, int n, int *leftPtr, int *rightPtr, int *topPtr,
  *---------------------------------------------------------------------------
  */
 static void
-DrawGradientPolygon(Graph *graphPtr, Drawable drawable, LineElement *elemPtr, 
-		    int n, XPoint *points)
+PaintPolygon(Graph *graphPtr, Drawable drawable, LineElement *elemPtr, 
+             int numPoints, XPoint *points)
 {
     Blt_PaintBrush brush;
     Blt_Painter painter;
-    Blt_Picture bg;
+    Blt_Picture picture;
     Point2f *vertices;
     int i;
     int w, h;
     int x1, x2, y1, y2;
 
-    if (n < 3) {
+    if (numPoints < 3) {
 	return;				/* Not enough points for polygon */
     }
-    if (elemPtr->zAxisPtr->palette == NULL) {
-	return;				/* No palette defined. */
-    }
     /* Grab the rectangular background that covers the polygon. */
-    GetPolygonBBox(points, n, &x1, &x2, &y1, &y2);
+    GetPolygonBBox(points, numPoints, &x1, &x2, &y1, &y2);
     w = x2 - x1 + 1;
     h = y2 - y1 + 1;
-    bg = Blt_DrawableToPicture(graphPtr->tkwin, drawable, x1, y1, w, h, 1.0);
-    if (bg == NULL) {
+    picture = Blt_DrawableToPicture(graphPtr->tkwin, drawable, x1, y1, w, h,
+        1.0);
+    if (picture == NULL) {
 	return;				/* Background is obscured. */
     }
-    vertices = Blt_AssertMalloc(n * sizeof(Point2f));
+    vertices = Blt_AssertMalloc(numPoints * sizeof(Point2f));
     /* Translate the polygon */
-    for (i = 0; i < n; i++) {
+    for (i = 0; i < numPoints; i++) {
 	vertices[i].x = (float)(points[i].x - x1);
 	vertices[i].y = (float)(points[i].y - y1);
     }
-    
-    Blt_PaintBrush_Init(&brush);
-    Blt_PaintBrush_SetOrigin(&brush, -x1, -y1);
-    Blt_PaintBrush_SetPalette(&brush, elemPtr->zAxisPtr->palette);
-    Blt_PaintBrush_SetColorProc(&brush, GradientColorProc, elemPtr);
-    Blt_PaintPolygon(bg, n, vertices, &brush);
+    if ((elemPtr->areaBrush == NULL) && (elemPtr->zAxisPtr != NULL)) {
+        brush = Blt_NewLinearGradientBrush();
+        Blt_SetBrushOrigin(brush, -x1, -y1);
+        if (elemPtr->zAxisPtr->palette != NULL) {
+            Blt_SetLinearGradientBrushPalette(brush,
+                elemPtr->zAxisPtr->palette);
+        }
+        Blt_SetLinearGradientBrushCalcProc(brush, GradientCalcProc, elemPtr);
+    } else {
+        brush = elemPtr->areaBrush;
+        Blt_SetBrushRegion(brush, 0, 0, w, h);
+    }
+    Blt_PaintPolygon(picture, numPoints, vertices, brush);
+    if (brush != elemPtr->areaBrush) {
+        Blt_FreeBrush(brush);
+    }
     Blt_Free(vertices);
     painter = Blt_GetPainter(graphPtr->tkwin, 1.0);
-    Blt_PaintPicture(painter, drawable, bg, 0, 0, w, h, x1, y1, 0);
-    Blt_FreePicture(bg);
+    Blt_PaintPicture(painter, drawable, picture, 0, 0, w, h, x1, y1, 0);
+    Blt_FreePicture(picture);
 }
 
 /* 
@@ -4144,30 +4153,21 @@ DrawAreaUnderCurve(Graph *graphPtr, Drawable drawable, LineElement *elemPtr)
     for (link = Blt_Chain_FirstLink(elemPtr->traces); link != NULL; 
 	 link = Blt_Chain_NextLink(link)) {
 	Trace *tracePtr;
+        XPoint *points;
+        int i;
 
 	tracePtr = Blt_Chain_GetValue(link);
-	if ((tracePtr->numFillPts > 0) && 
-	    ((elemPtr->fillBg != NULL) || (elemPtr->zAxisPtr != NULL))) {
-	    XPoint *points;
-	    int i;
-
-	    points = Blt_AssertMalloc(sizeof(XPoint) * tracePtr->numFillPts);
-	    for (i = 0; i < tracePtr->numFillPts; i++) {
-		points[i].x = tracePtr->fillPts[i].x;
-		points[i].y = tracePtr->fillPts[i].y;
-	    }
-	    if (elemPtr->zAxisPtr != NULL) {
-		if (elemPtr->zAxisPtr->palette != NULL) {
-			DrawGradientPolygon(graphPtr, drawable, elemPtr,
-				    tracePtr->numFillPts, points);
-		}
-	    } else {
-		Blt_Bg_SetOrigin(graphPtr->tkwin, elemPtr->fillBg, 0, 0);
-		Blt_Bg_FillPolygon(graphPtr->tkwin, drawable, elemPtr->fillBg, 
-			points, tracePtr->numFillPts, 0, TK_RELIEF_FLAT);
-		Blt_Free(points);
-	    }
-	}
+	if (tracePtr->numFillPts == 0) {
+            continue;
+        }
+        
+        points = Blt_AssertMalloc(sizeof(XPoint) * tracePtr->numFillPts);
+        for (i = 0; i < tracePtr->numFillPts; i++) {
+            points[i].x = tracePtr->fillPts[i].x;
+            points[i].y = tracePtr->fillPts[i].y;
+        }
+        PaintPolygon(graphPtr, drawable, elemPtr, tracePtr->numFillPts, points);
+        Blt_Free(points);
     }
 }
 
@@ -5309,7 +5309,7 @@ AreaUnderCurveToPostScript(Blt_Ps ps, LineElement *elemPtr)
 	Trace *tracePtr;
 
 	tracePtr = Blt_Chain_GetValue(link);
-	if ((tracePtr->numFillPts > 0) && (elemPtr->fillBg != NULL)) {
+	if ((tracePtr->numFillPts > 0) && (elemPtr->areaBrush != NULL)) {
 	    /* Create a path to use for both the polygon and its outline. */
 	    Blt_Ps_Append(ps, "% start fill area\n");
 	    Blt_Ps_Polyline(ps, tracePtr->numFillPts, tracePtr->fillPts);
@@ -5320,7 +5320,7 @@ AreaUnderCurveToPostScript(Blt_Ps ps, LineElement *elemPtr)
 		Blt_Ps_Append(ps, "gsave fill grestore\n");
 	    }
 	    Blt_Ps_XSetForeground(ps, tracePtr->elemPtr->fillFgColor);
-	    if (tracePtr->elemPtr->fillBg != NULL) {
+	    if (tracePtr->elemPtr->areaBrush != NULL) {
 		Blt_Ps_Append(ps, "gsave fill grestore\n");
 		/* TBA: Transparent tiling is the hard part. */
 	    } else {

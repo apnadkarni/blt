@@ -301,7 +301,6 @@ TABLEVIEW_OBJS =	bltTableView.o \
 PICTURE_OBJS =		bltPicture.o \
 			bltPictCanv.o \
 			bltPictColor.o \
-			bltPictGradient.o \
 			bltPictMmx.o \
 			bltPictText.o 
 
@@ -406,7 +405,7 @@ BLT_TK_SO_OBJS =	$(GRAPH_OBJS) \
 			bltKiosk.o \
 			bltListView.o \
 			bltOldConfig.o \
-			bltPaint.o \
+			bltPaintBrush.o \
 			bltPaneset.o \
 			bltPhoto.o \
 			$(PICTURE_OBJS) \

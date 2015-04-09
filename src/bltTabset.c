@@ -345,11 +345,11 @@ typedef struct {
 					 * active. */
     XColor *normalFg;			/* Foreground color of the button when
 					 * the button is inactive. */
-    XColor *normalBg;			/* Background color of the button when
-					 * the button is inactive. */
+    XColor *normalBgColor;              /* Background color of the button
+					 * when the button is inactive. */
     XColor *activeFg;			/* Foreground color of the button
 					 * when the button is active. */
-    XColor *activeBg;			/* Background color of the button
+    XColor *activeBgColor;              /* Background color of the button
 					 * when the button is active. */
     Tcl_Obj *cmdObjPtr;			/* Command to be executed when the the
 					 * button is invoked. */
@@ -373,12 +373,12 @@ static Blt_ConfigSpec buttonSpecs[] =
 {
     {BLT_CONFIG_COLOR, "-activebackground", "activeBackrgound", 
 	"ActiveBackground", DEF_CLOSEBUTTON_ACTIVEBACKGROUND, 
-	Blt_Offset(Button, activeBg), 0},
+	Blt_Offset(Button, activeBgColor), 0},
     {BLT_CONFIG_COLOR, "-activeforeground", "activeForergound", 
 	"ActiveForeground", DEF_CLOSEBUTTON_ACTIVEFOREGROUND, 
 	Blt_Offset(Button, activeFg), 0},
     {BLT_CONFIG_COLOR, "-background", "backrgound", "Background", 
-	DEF_CLOSEBUTTON_BACKGROUND, Blt_Offset(Button, normalBg), 0},
+	DEF_CLOSEBUTTON_BACKGROUND, Blt_Offset(Button, normalBgColor), 0},
     {BLT_CONFIG_COLOR, "-foreground", "forergound", "Foreground", 
 	DEF_CLOSEBUTTON_FOREGROUND, Blt_Offset(Button, normalFg), 0},
     {BLT_CONFIG_RELIEF, "-activerelief", "activeRelief", "ActiveRelief",
@@ -665,7 +665,7 @@ struct _Tabset {
 					 * draw around widget when it has the
 					 * focus.  <= 0 means don't draw a
 					 * highlight. */
-    XColor *highlightBg;		/* Color for drawing traversal
+    XColor *highlightBgColor;		/* Color for drawing traversal
 					 * highlight area when highlight is
 					 * off. */
     XColor *highlightColor;		/* Color for drawing traversal
@@ -799,7 +799,7 @@ static Blt_ConfigSpec configSpecs[] =
 	Blt_Offset(Tabset, reqHeight), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_COLOR, "-highlightbackground", "highlightBackground",
 	"HighlightBackground", DEF_HIGHLIGHTBACKGROUND, 
-	Blt_Offset(Tabset, highlightBg), 0},
+	Blt_Offset(Tabset, highlightBgColor), 0},
     {BLT_CONFIG_COLOR, "-highlightcolor", "highlightColor", "HighlightColor",
 	DEF_HIGHLIGHTCOLOR, Blt_Offset(Tabset, highlightColor), 0},
     {BLT_CONFIG_PIXELS_NNEG, "-highlightthickness", "highlightThickness",
@@ -6928,7 +6928,7 @@ DrawOuterBorders(Tabset *setPtr, Drawable drawable)
 	GC gc;
 
 	color = (setPtr->flags & FOCUS)
-	    ? setPtr->highlightColor : setPtr->highlightBg;
+	    ? setPtr->highlightColor : setPtr->highlightBgColor;
 	gc = Tk_GCForColor(color, drawable);
 	Tk_DrawFocusHighlight(setPtr->tkwin, gc, setPtr->highlightWidth, 
 	      drawable);
@@ -7712,10 +7712,10 @@ DrawButton(Tabset *setPtr, Tab *tabPtr)
 	bg = GETATTR(tabPtr, bg);
     }
     if (tabPtr == setPtr->activeButtonPtr) {
-	fill = butPtr->activeBg;
+	fill = butPtr->activeBgColor;
 	symbol = butPtr->activeFg;
     } else {
-	fill = butPtr->normalBg;
+	fill = butPtr->normalBgColor;
 	symbol = butPtr->normalFg;
     }
     picture = Blt_PaintDelete(CLOSE_WIDTH, CLOSE_HEIGHT, Blt_Bg_BorderColor(bg),

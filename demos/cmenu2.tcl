@@ -151,8 +151,8 @@ set imgData {
 
 set icon2 [image create picture -file images/blt98.gif]
 set icon [image create picture -data $imgData]
-set bg [blt::background create gradient -low  grey70 -high grey90 \
-	-type horizontal -jitter 20 -scale linear -relativeto self]
+set bg [blt::background create linear -lowcolor  grey70 -highcolor grey90 \
+	-from w -to e -jitter 20 -relativeto self]
 
 set image ""
 option add *ComboEntry.takeFocus 1

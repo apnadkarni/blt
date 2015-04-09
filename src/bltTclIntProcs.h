@@ -369,55 +369,66 @@ BLT_EXTERN void *	Blt_Calloc(size_t numElem, size_t size);
 #ifndef Blt_Strdup_DECLARED
 #define Blt_Strdup_DECLARED
 /* 61 */
-BLT_EXTERN const char *	Blt_Strdup(const char *string);
+BLT_EXTERN const char *	 Blt_Strdup(const char *string);
+#endif
+#ifndef Blt_Strndup_DECLARED
+#define Blt_Strndup_DECLARED
+/* 62 */
+BLT_EXTERN const char *	 Blt_Strndup(const char *string, size_t size);
 #endif
 #ifndef Blt_MallocAbortOnError_DECLARED
 #define Blt_MallocAbortOnError_DECLARED
-/* 62 */
+/* 63 */
 BLT_EXTERN void *	Blt_MallocAbortOnError(size_t size, const char *file,
 				int line);
 #endif
 #ifndef Blt_CallocAbortOnError_DECLARED
 #define Blt_CallocAbortOnError_DECLARED
-/* 63 */
+/* 64 */
 BLT_EXTERN void *	Blt_CallocAbortOnError(size_t numElem, size_t size,
 				const char *file, int line);
 #endif
 #ifndef Blt_ReallocAbortOnError_DECLARED
 #define Blt_ReallocAbortOnError_DECLARED
-/* 64 */
+/* 65 */
 BLT_EXTERN void *	Blt_ReallocAbortOnError(void *ptr, size_t size,
 				const char *file, int line);
 #endif
 #ifndef Blt_StrdupAbortOnError_DECLARED
 #define Blt_StrdupAbortOnError_DECLARED
-/* 65 */
-BLT_EXTERN const char *	Blt_StrdupAbortOnError(const char *ptr,
+/* 66 */
+BLT_EXTERN const char *	 Blt_StrdupAbortOnError(const char *ptr,
 				const char *file, int line);
+#endif
+#ifndef Blt_StrndupAbortOnError_DECLARED
+#define Blt_StrndupAbortOnError_DECLARED
+/* 67 */
+BLT_EXTERN const char *	 Blt_StrndupAbortOnError(const char *ptr,
+				size_t size, const char *file, int line);
 #endif
 #ifndef Blt_DictionaryCompare_DECLARED
 #define Blt_DictionaryCompare_DECLARED
-/* 66 */
+/* 68 */
 BLT_EXTERN int		Blt_DictionaryCompare(const char *s1, const char *s2);
 #endif
 #ifndef Blt_GetUid_DECLARED
 #define Blt_GetUid_DECLARED
-/* 67 */
+/* 69 */
 BLT_EXTERN Blt_Uid	Blt_GetUid(const char *string);
 #endif
 #ifndef Blt_FreeUid_DECLARED
 #define Blt_FreeUid_DECLARED
-/* 68 */
+/* 70 */
 BLT_EXTERN void		Blt_FreeUid(Blt_Uid uid);
 #endif
 #ifndef Blt_FindUid_DECLARED
 #define Blt_FindUid_DECLARED
-/* 69 */
+/* 71 */
 BLT_EXTERN Blt_Uid	Blt_FindUid(const char *string);
 #endif
 #ifndef Blt_CreatePipeline_DECLARED
 #define Blt_CreatePipeline_DECLARED
-/* 70 */
+/* 72 */
 BLT_EXTERN int		Blt_CreatePipeline(Tcl_Interp *interp, int objc,
 				Tcl_Obj *const *objv, Blt_Pid **pidArrayPtr,
 				int *stdinPipePtr, int *stdoutPipePtr,
@@ -425,17 +436,17 @@ BLT_EXTERN int		Blt_CreatePipeline(Tcl_Interp *interp, int objc,
 #endif
 #ifndef Blt_InitHexTable_DECLARED
 #define Blt_InitHexTable_DECLARED
-/* 71 */
+/* 73 */
 BLT_EXTERN void		Blt_InitHexTable(unsigned char *table);
 #endif
 #ifndef Blt_DStringAppendElements_DECLARED
 #define Blt_DStringAppendElements_DECLARED
-/* 72 */
+/* 74 */
 BLT_EXTERN void		Blt_DStringAppendElements(Tcl_DString *dsPtr, ...);
 #endif
 #ifndef Blt_LoadLibrary_DECLARED
 #define Blt_LoadLibrary_DECLARED
-/* 73 */
+/* 75 */
 BLT_EXTERN int		Blt_LoadLibrary(Tcl_Interp *interp,
 				const char *libPath,
 				const char *initProcName,
@@ -443,232 +454,237 @@ BLT_EXTERN int		Blt_LoadLibrary(Tcl_Interp *interp,
 #endif
 #ifndef Blt_Panic_DECLARED
 #define Blt_Panic_DECLARED
-/* 74 */
+/* 76 */
 BLT_EXTERN void		Blt_Panic(const char *fmt, ...);
 #endif
 #ifndef Blt_Warn_DECLARED
 #define Blt_Warn_DECLARED
-/* 75 */
+/* 77 */
 BLT_EXTERN void		Blt_Warn(const char *fmt, ...);
 #endif
 #ifndef Blt_GetSideFromObj_DECLARED
 #define Blt_GetSideFromObj_DECLARED
-/* 76 */
+/* 78 */
 BLT_EXTERN int		Blt_GetSideFromObj(Tcl_Interp *interp,
 				Tcl_Obj *objPtr, int *sidePtr);
 #endif
 #ifndef Blt_NameOfSide_DECLARED
 #define Blt_NameOfSide_DECLARED
-/* 77 */
+/* 79 */
 BLT_EXTERN const char *	 Blt_NameOfSide(int side);
 #endif
 #ifndef Blt_OpenFile_DECLARED
 #define Blt_OpenFile_DECLARED
-/* 78 */
+/* 80 */
 BLT_EXTERN FILE *	Blt_OpenFile(Tcl_Interp *interp,
 				const char *fileName, const char *mode);
 #endif
 #ifndef Blt_ExprDoubleFromObj_DECLARED
 #define Blt_ExprDoubleFromObj_DECLARED
-/* 79 */
+/* 81 */
 BLT_EXTERN int		Blt_ExprDoubleFromObj(Tcl_Interp *interp,
 				Tcl_Obj *objPtr, double *valuePtr);
 #endif
 #ifndef Blt_ExprIntFromObj_DECLARED
 #define Blt_ExprIntFromObj_DECLARED
-/* 80 */
+/* 82 */
 BLT_EXTERN int		Blt_ExprIntFromObj(Tcl_Interp *interp,
 				Tcl_Obj *objPtr, int *valuePtr);
 #endif
 #ifndef Blt_Itoa_DECLARED
 #define Blt_Itoa_DECLARED
-/* 81 */
+/* 83 */
 BLT_EXTERN const char *	 Blt_Itoa(int value);
 #endif
 #ifndef Blt_Ltoa_DECLARED
 #define Blt_Ltoa_DECLARED
-/* 82 */
+/* 84 */
 BLT_EXTERN const char *	 Blt_Ltoa(long value);
 #endif
 #ifndef Blt_Utoa_DECLARED
 #define Blt_Utoa_DECLARED
-/* 83 */
+/* 85 */
 BLT_EXTERN const char *	 Blt_Utoa(unsigned int value);
 #endif
 #ifndef Blt_Dtoa_DECLARED
 #define Blt_Dtoa_DECLARED
-/* 84 */
+/* 86 */
 BLT_EXTERN const char *	 Blt_Dtoa(Tcl_Interp *interp, double value);
 #endif
 #ifndef Blt_Base64_Decode_DECLARED
 #define Blt_Base64_Decode_DECLARED
-/* 85 */
+/* 87 */
 BLT_EXTERN unsigned char * Blt_Base64_Decode(Tcl_Interp *interp,
 				const char *string, size_t *lengthPtr);
 #endif
 #ifndef Blt_Base64_DecodeToBuffer_DECLARED
 #define Blt_Base64_DecodeToBuffer_DECLARED
-/* 86 */
+/* 88 */
 BLT_EXTERN Blt_DBuffer	Blt_Base64_DecodeToBuffer(Tcl_Interp *interp,
 				const char *string, size_t length);
 #endif
 #ifndef Blt_Base64_DecodeToObj_DECLARED
 #define Blt_Base64_DecodeToObj_DECLARED
-/* 87 */
+/* 89 */
 BLT_EXTERN Tcl_Obj *	Blt_Base64_DecodeToObj(Tcl_Interp *interp,
 				const char *string, size_t length);
 #endif
 #ifndef Blt_Base64_EncodeToObj_DECLARED
 #define Blt_Base64_EncodeToObj_DECLARED
-/* 88 */
+/* 90 */
 BLT_EXTERN Tcl_Obj *	Blt_Base64_EncodeToObj(const unsigned char *buffer,
 				size_t bufsize);
 #endif
 #ifndef Blt_Base64_MaxBufferLength_DECLARED
 #define Blt_Base64_MaxBufferLength_DECLARED
-/* 89 */
+/* 91 */
 BLT_EXTERN size_t	Blt_Base64_MaxBufferLength(size_t bufsize);
 #endif
 #ifndef Blt_Base64_Encode_DECLARED
 #define Blt_Base64_Encode_DECLARED
-/* 90 */
+/* 92 */
 BLT_EXTERN size_t	Blt_Base64_Encode(const unsigned char *buffer,
 				size_t bufsize, unsigned char *destBytes);
 #endif
 #ifndef Blt_Base85_MaxBufferLength_DECLARED
 #define Blt_Base85_MaxBufferLength_DECLARED
-/* 91 */
+/* 93 */
 BLT_EXTERN size_t	Blt_Base85_MaxBufferLength(size_t bufsize);
 #endif
 #ifndef Blt_Base85_Encode_DECLARED
 #define Blt_Base85_Encode_DECLARED
-/* 92 */
+/* 94 */
 BLT_EXTERN size_t	Blt_Base85_Encode(const unsigned char *buffer,
 				size_t bufsize, unsigned char *destBytes);
 #endif
 #ifndef Blt_Base16_Encode_DECLARED
 #define Blt_Base16_Encode_DECLARED
-/* 93 */
+/* 95 */
 BLT_EXTERN const char *	 Blt_Base16_Encode(const unsigned char *buffer,
 				size_t bufsize);
 #endif
 #ifndef Blt_IsBase64_DECLARED
 #define Blt_IsBase64_DECLARED
-/* 94 */
+/* 96 */
 BLT_EXTERN int		Blt_IsBase64(const char *buf, size_t length);
 #endif
 #ifndef Blt_GetDoubleFromString_DECLARED
 #define Blt_GetDoubleFromString_DECLARED
-/* 95 */
+/* 97 */
 BLT_EXTERN int		Blt_GetDoubleFromString(Tcl_Interp *interp,
 				const char *s, double *valuePtr);
 #endif
 #ifndef Blt_GetDoubleFromObj_DECLARED
 #define Blt_GetDoubleFromObj_DECLARED
-/* 96 */
+/* 98 */
 BLT_EXTERN int		Blt_GetDoubleFromObj(Tcl_Interp *interp,
 				Tcl_Obj *objPtr, double *valuePtr);
 #endif
 #ifndef Blt_GetTimeFromObj_DECLARED
 #define Blt_GetTimeFromObj_DECLARED
-/* 97 */
+/* 99 */
 BLT_EXTERN int		Blt_GetTimeFromObj(Tcl_Interp *interp,
 				Tcl_Obj *objPtr, double *secondsPtr);
 #endif
 #ifndef Blt_GetTime_DECLARED
 #define Blt_GetTime_DECLARED
-/* 98 */
+/* 100 */
 BLT_EXTERN int		Blt_GetTime(Tcl_Interp *interp, const char *string,
 				double *secondsPtr);
 #endif
 #ifndef Blt_SecondsToDate_DECLARED
 #define Blt_SecondsToDate_DECLARED
-/* 99 */
+/* 101 */
 BLT_EXTERN void		Blt_SecondsToDate(double seconds,
 				Blt_DateTime *datePtr);
 #endif
 #ifndef Blt_DateToSeconds_DECLARED
 #define Blt_DateToSeconds_DECLARED
-/* 100 */
+/* 102 */
 BLT_EXTERN void		Blt_DateToSeconds(Blt_DateTime *datePtr,
 				double *secondsPtr);
 #endif
 #ifndef Blt_FormatDate_DECLARED
 #define Blt_FormatDate_DECLARED
-/* 101 */
+/* 103 */
 BLT_EXTERN void		Blt_FormatDate(Blt_DateTime *datePtr,
 				const char *format, Tcl_DString *resultPtr);
 #endif
 #ifndef Blt_GetPositionFromObj_DECLARED
 #define Blt_GetPositionFromObj_DECLARED
-/* 102 */
+/* 104 */
 BLT_EXTERN int		Blt_GetPositionFromObj(Tcl_Interp *interp,
 				Tcl_Obj *objPtr, long *indexPtr);
 #endif
 #ifndef Blt_GetCountFromObj_DECLARED
 #define Blt_GetCountFromObj_DECLARED
-/* 103 */
+/* 105 */
 BLT_EXTERN int		Blt_GetCountFromObj(Tcl_Interp *interp,
 				Tcl_Obj *objPtr, int check, long *valuePtr);
 #endif
 #ifndef Blt_SimplifyLine_DECLARED
 #define Blt_SimplifyLine_DECLARED
-/* 104 */
+/* 106 */
 BLT_EXTERN int		Blt_SimplifyLine(Point2d *origPts, int low, int high,
 				double tolerance, int *indices);
 #endif
 #ifndef Blt_GetLong_DECLARED
 #define Blt_GetLong_DECLARED
-/* 105 */
+/* 107 */
 BLT_EXTERN int		Blt_GetLong(Tcl_Interp *interp, const char *s,
 				long *longPtr);
 #endif
 #ifndef Blt_GetLongFromObj_DECLARED
 #define Blt_GetLongFromObj_DECLARED
-/* 106 */
+/* 108 */
 BLT_EXTERN int		Blt_GetLongFromObj(Tcl_Interp *interp,
 				Tcl_Obj *objPtr, long *longPtr);
 #endif
 #ifndef Blt_FormatString_DECLARED
 #define Blt_FormatString_DECLARED
-/* 107 */
+/* 109 */
 BLT_EXTERN int		Blt_FormatString(char *s, size_t size,
 				const char *fmt, ...);
 #endif
 #ifndef Blt_LowerCase_DECLARED
 #define Blt_LowerCase_DECLARED
-/* 108 */
+/* 110 */
 BLT_EXTERN void		Blt_LowerCase(char *s);
+#endif
+#ifndef Blt_UpperCase_DECLARED
+#define Blt_UpperCase_DECLARED
+/* 111 */
+BLT_EXTERN void		Blt_UpperCase(char *s);
 #endif
 #ifndef Blt_GetPlatformId_DECLARED
 #define Blt_GetPlatformId_DECLARED
-/* 109 */
+/* 112 */
 BLT_EXTERN int		Blt_GetPlatformId(void );
 #endif
 #ifndef Blt_LastError_DECLARED
 #define Blt_LastError_DECLARED
-/* 110 */
+/* 113 */
 BLT_EXTERN const char *	 Blt_LastError(void );
 #endif
 #ifndef Blt_NaN_DECLARED
 #define Blt_NaN_DECLARED
-/* 111 */
+/* 114 */
 BLT_EXTERN double	Blt_NaN(void );
 #endif
 #ifndef Blt_AlmostEquals_DECLARED
 #define Blt_AlmostEquals_DECLARED
-/* 112 */
+/* 115 */
 BLT_EXTERN int		Blt_AlmostEquals(double x, double y);
 #endif
 #ifndef Blt_GetCachedVar_DECLARED
 #define Blt_GetCachedVar_DECLARED
-/* 113 */
+/* 116 */
 BLT_EXTERN Tcl_Var	Blt_GetCachedVar(Blt_HashTable *tablePtr,
 				const char *label, Tcl_Obj *objPtr);
 #endif
 #ifndef Blt_FreeCachedVars_DECLARED
 #define Blt_FreeCachedVars_DECLARED
-/* 114 */
+/* 117 */
 BLT_EXTERN void		Blt_FreeCachedVars(Blt_HashTable *tablePtr);
 #endif
 
@@ -738,59 +754,62 @@ typedef struct BltTclIntProcs {
     void (*blt_Free) (const VOID *ptr); /* 59 */
     VOID * (*blt_Calloc) (size_t numElem, size_t size); /* 60 */
     const char * (*blt_Strdup) (const char *string); /* 61 */
-    VOID * (*blt_MallocAbortOnError) (size_t size, const char *file, int line); /* 62 */
-    VOID * (*blt_CallocAbortOnError) (size_t numElem, size_t size, const char *file, int line); /* 63 */
-    VOID * (*blt_ReallocAbortOnError) (VOID *ptr, size_t size, const char *file, int line); /* 64 */
-    const char * (*blt_StrdupAbortOnError) (const char *ptr, const char *file, int line); /* 65 */
-    int (*blt_DictionaryCompare) (const char *s1, const char *s2); /* 66 */
-    Blt_Uid (*blt_GetUid) (const char *string); /* 67 */
-    void (*blt_FreeUid) (Blt_Uid uid); /* 68 */
-    Blt_Uid (*blt_FindUid) (const char *string); /* 69 */
-    int (*blt_CreatePipeline) (Tcl_Interp *interp, int objc, Tcl_Obj *const *objv, Blt_Pid **pidArrayPtr, int *stdinPipePtr, int *stdoutPipePtr, int *stderrPipePtr); /* 70 */
-    void (*blt_InitHexTable) (unsigned char *table); /* 71 */
-    void (*blt_DStringAppendElements) (Tcl_DString *dsPtr, ...); /* 72 */
-    int (*blt_LoadLibrary) (Tcl_Interp *interp, const char *libPath, const char *initProcName, const char *safeProcName); /* 73 */
-    void (*blt_Panic) (const char *fmt, ...); /* 74 */
-    void (*blt_Warn) (const char *fmt, ...); /* 75 */
-    int (*blt_GetSideFromObj) (Tcl_Interp *interp, Tcl_Obj *objPtr, int *sidePtr); /* 76 */
-    const char * (*blt_NameOfSide) (int side); /* 77 */
-    FILE * (*blt_OpenFile) (Tcl_Interp *interp, const char *fileName, const char *mode); /* 78 */
-    int (*blt_ExprDoubleFromObj) (Tcl_Interp *interp, Tcl_Obj *objPtr, double *valuePtr); /* 79 */
-    int (*blt_ExprIntFromObj) (Tcl_Interp *interp, Tcl_Obj *objPtr, int *valuePtr); /* 80 */
-    const char * (*blt_Itoa) (int value); /* 81 */
-    const char * (*blt_Ltoa) (long value); /* 82 */
-    const char * (*blt_Utoa) (unsigned int value); /* 83 */
-    const char * (*blt_Dtoa) (Tcl_Interp *interp, double value); /* 84 */
-    unsigned char * (*blt_Base64_Decode) (Tcl_Interp *interp, const char *string, size_t *lengthPtr); /* 85 */
-    Blt_DBuffer (*blt_Base64_DecodeToBuffer) (Tcl_Interp *interp, const char *string, size_t length); /* 86 */
-    Tcl_Obj * (*blt_Base64_DecodeToObj) (Tcl_Interp *interp, const char *string, size_t length); /* 87 */
-    Tcl_Obj * (*blt_Base64_EncodeToObj) (const unsigned char *buffer, size_t bufsize); /* 88 */
-    size_t (*blt_Base64_MaxBufferLength) (size_t bufsize); /* 89 */
-    size_t (*blt_Base64_Encode) (const unsigned char *buffer, size_t bufsize, unsigned char *destBytes); /* 90 */
-    size_t (*blt_Base85_MaxBufferLength) (size_t bufsize); /* 91 */
-    size_t (*blt_Base85_Encode) (const unsigned char *buffer, size_t bufsize, unsigned char *destBytes); /* 92 */
-    const char * (*blt_Base16_Encode) (const unsigned char *buffer, size_t bufsize); /* 93 */
-    int (*blt_IsBase64) (const char *buf, size_t length); /* 94 */
-    int (*blt_GetDoubleFromString) (Tcl_Interp *interp, const char *s, double *valuePtr); /* 95 */
-    int (*blt_GetDoubleFromObj) (Tcl_Interp *interp, Tcl_Obj *objPtr, double *valuePtr); /* 96 */
-    int (*blt_GetTimeFromObj) (Tcl_Interp *interp, Tcl_Obj *objPtr, double *secondsPtr); /* 97 */
-    int (*blt_GetTime) (Tcl_Interp *interp, const char *string, double *secondsPtr); /* 98 */
-    void (*blt_SecondsToDate) (double seconds, Blt_DateTime *datePtr); /* 99 */
-    void (*blt_DateToSeconds) (Blt_DateTime *datePtr, double *secondsPtr); /* 100 */
-    void (*blt_FormatDate) (Blt_DateTime *datePtr, const char *format, Tcl_DString *resultPtr); /* 101 */
-    int (*blt_GetPositionFromObj) (Tcl_Interp *interp, Tcl_Obj *objPtr, long *indexPtr); /* 102 */
-    int (*blt_GetCountFromObj) (Tcl_Interp *interp, Tcl_Obj *objPtr, int check, long *valuePtr); /* 103 */
-    int (*blt_SimplifyLine) (Point2d *origPts, int low, int high, double tolerance, int *indices); /* 104 */
-    int (*blt_GetLong) (Tcl_Interp *interp, const char *s, long *longPtr); /* 105 */
-    int (*blt_GetLongFromObj) (Tcl_Interp *interp, Tcl_Obj *objPtr, long *longPtr); /* 106 */
-    int (*blt_FormatString) (char *s, size_t size, const char *fmt, ...); /* 107 */
-    void (*blt_LowerCase) (char *s); /* 108 */
-    int (*blt_GetPlatformId) (void); /* 109 */
-    const char * (*blt_LastError) (void); /* 110 */
-    double (*blt_NaN) (void); /* 111 */
-    int (*blt_AlmostEquals) (double x, double y); /* 112 */
-    Tcl_Var (*blt_GetCachedVar) (Blt_HashTable *tablePtr, const char *label, Tcl_Obj *objPtr); /* 113 */
-    void (*blt_FreeCachedVars) (Blt_HashTable *tablePtr); /* 114 */
+    const char * (*blt_Strndup) (const char *string, size_t size); /* 62 */
+    VOID * (*blt_MallocAbortOnError) (size_t size, const char *file, int line); /* 63 */
+    VOID * (*blt_CallocAbortOnError) (size_t numElem, size_t size, const char *file, int line); /* 64 */
+    VOID * (*blt_ReallocAbortOnError) (VOID *ptr, size_t size, const char *file, int line); /* 65 */
+    const char * (*blt_StrdupAbortOnError) (const char *ptr, const char *file, int line); /* 66 */
+    const char * (*blt_StrndupAbortOnError) (const char *ptr, size_t size, const char *file, int line); /* 67 */
+    int (*blt_DictionaryCompare) (const char *s1, const char *s2); /* 68 */
+    Blt_Uid (*blt_GetUid) (const char *string); /* 69 */
+    void (*blt_FreeUid) (Blt_Uid uid); /* 70 */
+    Blt_Uid (*blt_FindUid) (const char *string); /* 71 */
+    int (*blt_CreatePipeline) (Tcl_Interp *interp, int objc, Tcl_Obj *const *objv, Blt_Pid **pidArrayPtr, int *stdinPipePtr, int *stdoutPipePtr, int *stderrPipePtr); /* 72 */
+    void (*blt_InitHexTable) (unsigned char *table); /* 73 */
+    void (*blt_DStringAppendElements) (Tcl_DString *dsPtr, ...); /* 74 */
+    int (*blt_LoadLibrary) (Tcl_Interp *interp, const char *libPath, const char *initProcName, const char *safeProcName); /* 75 */
+    void (*blt_Panic) (const char *fmt, ...); /* 76 */
+    void (*blt_Warn) (const char *fmt, ...); /* 77 */
+    int (*blt_GetSideFromObj) (Tcl_Interp *interp, Tcl_Obj *objPtr, int *sidePtr); /* 78 */
+    const char * (*blt_NameOfSide) (int side); /* 79 */
+    FILE * (*blt_OpenFile) (Tcl_Interp *interp, const char *fileName, const char *mode); /* 80 */
+    int (*blt_ExprDoubleFromObj) (Tcl_Interp *interp, Tcl_Obj *objPtr, double *valuePtr); /* 81 */
+    int (*blt_ExprIntFromObj) (Tcl_Interp *interp, Tcl_Obj *objPtr, int *valuePtr); /* 82 */
+    const char * (*blt_Itoa) (int value); /* 83 */
+    const char * (*blt_Ltoa) (long value); /* 84 */
+    const char * (*blt_Utoa) (unsigned int value); /* 85 */
+    const char * (*blt_Dtoa) (Tcl_Interp *interp, double value); /* 86 */
+    unsigned char * (*blt_Base64_Decode) (Tcl_Interp *interp, const char *string, size_t *lengthPtr); /* 87 */
+    Blt_DBuffer (*blt_Base64_DecodeToBuffer) (Tcl_Interp *interp, const char *string, size_t length); /* 88 */
+    Tcl_Obj * (*blt_Base64_DecodeToObj) (Tcl_Interp *interp, const char *string, size_t length); /* 89 */
+    Tcl_Obj * (*blt_Base64_EncodeToObj) (const unsigned char *buffer, size_t bufsize); /* 90 */
+    size_t (*blt_Base64_MaxBufferLength) (size_t bufsize); /* 91 */
+    size_t (*blt_Base64_Encode) (const unsigned char *buffer, size_t bufsize, unsigned char *destBytes); /* 92 */
+    size_t (*blt_Base85_MaxBufferLength) (size_t bufsize); /* 93 */
+    size_t (*blt_Base85_Encode) (const unsigned char *buffer, size_t bufsize, unsigned char *destBytes); /* 94 */
+    const char * (*blt_Base16_Encode) (const unsigned char *buffer, size_t bufsize); /* 95 */
+    int (*blt_IsBase64) (const char *buf, size_t length); /* 96 */
+    int (*blt_GetDoubleFromString) (Tcl_Interp *interp, const char *s, double *valuePtr); /* 97 */
+    int (*blt_GetDoubleFromObj) (Tcl_Interp *interp, Tcl_Obj *objPtr, double *valuePtr); /* 98 */
+    int (*blt_GetTimeFromObj) (Tcl_Interp *interp, Tcl_Obj *objPtr, double *secondsPtr); /* 99 */
+    int (*blt_GetTime) (Tcl_Interp *interp, const char *string, double *secondsPtr); /* 100 */
+    void (*blt_SecondsToDate) (double seconds, Blt_DateTime *datePtr); /* 101 */
+    void (*blt_DateToSeconds) (Blt_DateTime *datePtr, double *secondsPtr); /* 102 */
+    void (*blt_FormatDate) (Blt_DateTime *datePtr, const char *format, Tcl_DString *resultPtr); /* 103 */
+    int (*blt_GetPositionFromObj) (Tcl_Interp *interp, Tcl_Obj *objPtr, long *indexPtr); /* 104 */
+    int (*blt_GetCountFromObj) (Tcl_Interp *interp, Tcl_Obj *objPtr, int check, long *valuePtr); /* 105 */
+    int (*blt_SimplifyLine) (Point2d *origPts, int low, int high, double tolerance, int *indices); /* 106 */
+    int (*blt_GetLong) (Tcl_Interp *interp, const char *s, long *longPtr); /* 107 */
+    int (*blt_GetLongFromObj) (Tcl_Interp *interp, Tcl_Obj *objPtr, long *longPtr); /* 108 */
+    int (*blt_FormatString) (char *s, size_t size, const char *fmt, ...); /* 109 */
+    void (*blt_LowerCase) (char *s); /* 110 */
+    void (*blt_UpperCase) (char *s); /* 111 */
+    int (*blt_GetPlatformId) (void); /* 112 */
+    const char * (*blt_LastError) (void); /* 113 */
+    double (*blt_NaN) (void); /* 114 */
+    int (*blt_AlmostEquals) (double x, double y); /* 115 */
+    Tcl_Var (*blt_GetCachedVar) (Blt_HashTable *tablePtr, const char *label, Tcl_Obj *objPtr); /* 116 */
+    void (*blt_FreeCachedVars) (Blt_HashTable *tablePtr); /* 117 */
 } BltTclIntProcs;
 
 #ifdef __cplusplus
@@ -1052,217 +1071,229 @@ extern BltTclIntProcs *bltTclIntProcsPtr;
 #define Blt_Strdup \
 	(bltTclIntProcsPtr->blt_Strdup) /* 61 */
 #endif
+#ifndef Blt_Strndup
+#define Blt_Strndup \
+	(bltTclIntProcsPtr->blt_Strndup) /* 62 */
+#endif
 #ifndef Blt_MallocAbortOnError
 #define Blt_MallocAbortOnError \
-	(bltTclIntProcsPtr->blt_MallocAbortOnError) /* 62 */
+	(bltTclIntProcsPtr->blt_MallocAbortOnError) /* 63 */
 #endif
 #ifndef Blt_CallocAbortOnError
 #define Blt_CallocAbortOnError \
-	(bltTclIntProcsPtr->blt_CallocAbortOnError) /* 63 */
+	(bltTclIntProcsPtr->blt_CallocAbortOnError) /* 64 */
 #endif
 #ifndef Blt_ReallocAbortOnError
 #define Blt_ReallocAbortOnError \
-	(bltTclIntProcsPtr->blt_ReallocAbortOnError) /* 64 */
+	(bltTclIntProcsPtr->blt_ReallocAbortOnError) /* 65 */
 #endif
 #ifndef Blt_StrdupAbortOnError
 #define Blt_StrdupAbortOnError \
-	(bltTclIntProcsPtr->blt_StrdupAbortOnError) /* 65 */
+	(bltTclIntProcsPtr->blt_StrdupAbortOnError) /* 66 */
+#endif
+#ifndef Blt_StrndupAbortOnError
+#define Blt_StrndupAbortOnError \
+	(bltTclIntProcsPtr->blt_StrndupAbortOnError) /* 67 */
 #endif
 #ifndef Blt_DictionaryCompare
 #define Blt_DictionaryCompare \
-	(bltTclIntProcsPtr->blt_DictionaryCompare) /* 66 */
+	(bltTclIntProcsPtr->blt_DictionaryCompare) /* 68 */
 #endif
 #ifndef Blt_GetUid
 #define Blt_GetUid \
-	(bltTclIntProcsPtr->blt_GetUid) /* 67 */
+	(bltTclIntProcsPtr->blt_GetUid) /* 69 */
 #endif
 #ifndef Blt_FreeUid
 #define Blt_FreeUid \
-	(bltTclIntProcsPtr->blt_FreeUid) /* 68 */
+	(bltTclIntProcsPtr->blt_FreeUid) /* 70 */
 #endif
 #ifndef Blt_FindUid
 #define Blt_FindUid \
-	(bltTclIntProcsPtr->blt_FindUid) /* 69 */
+	(bltTclIntProcsPtr->blt_FindUid) /* 71 */
 #endif
 #ifndef Blt_CreatePipeline
 #define Blt_CreatePipeline \
-	(bltTclIntProcsPtr->blt_CreatePipeline) /* 70 */
+	(bltTclIntProcsPtr->blt_CreatePipeline) /* 72 */
 #endif
 #ifndef Blt_InitHexTable
 #define Blt_InitHexTable \
-	(bltTclIntProcsPtr->blt_InitHexTable) /* 71 */
+	(bltTclIntProcsPtr->blt_InitHexTable) /* 73 */
 #endif
 #ifndef Blt_DStringAppendElements
 #define Blt_DStringAppendElements \
-	(bltTclIntProcsPtr->blt_DStringAppendElements) /* 72 */
+	(bltTclIntProcsPtr->blt_DStringAppendElements) /* 74 */
 #endif
 #ifndef Blt_LoadLibrary
 #define Blt_LoadLibrary \
-	(bltTclIntProcsPtr->blt_LoadLibrary) /* 73 */
+	(bltTclIntProcsPtr->blt_LoadLibrary) /* 75 */
 #endif
 #ifndef Blt_Panic
 #define Blt_Panic \
-	(bltTclIntProcsPtr->blt_Panic) /* 74 */
+	(bltTclIntProcsPtr->blt_Panic) /* 76 */
 #endif
 #ifndef Blt_Warn
 #define Blt_Warn \
-	(bltTclIntProcsPtr->blt_Warn) /* 75 */
+	(bltTclIntProcsPtr->blt_Warn) /* 77 */
 #endif
 #ifndef Blt_GetSideFromObj
 #define Blt_GetSideFromObj \
-	(bltTclIntProcsPtr->blt_GetSideFromObj) /* 76 */
+	(bltTclIntProcsPtr->blt_GetSideFromObj) /* 78 */
 #endif
 #ifndef Blt_NameOfSide
 #define Blt_NameOfSide \
-	(bltTclIntProcsPtr->blt_NameOfSide) /* 77 */
+	(bltTclIntProcsPtr->blt_NameOfSide) /* 79 */
 #endif
 #ifndef Blt_OpenFile
 #define Blt_OpenFile \
-	(bltTclIntProcsPtr->blt_OpenFile) /* 78 */
+	(bltTclIntProcsPtr->blt_OpenFile) /* 80 */
 #endif
 #ifndef Blt_ExprDoubleFromObj
 #define Blt_ExprDoubleFromObj \
-	(bltTclIntProcsPtr->blt_ExprDoubleFromObj) /* 79 */
+	(bltTclIntProcsPtr->blt_ExprDoubleFromObj) /* 81 */
 #endif
 #ifndef Blt_ExprIntFromObj
 #define Blt_ExprIntFromObj \
-	(bltTclIntProcsPtr->blt_ExprIntFromObj) /* 80 */
+	(bltTclIntProcsPtr->blt_ExprIntFromObj) /* 82 */
 #endif
 #ifndef Blt_Itoa
 #define Blt_Itoa \
-	(bltTclIntProcsPtr->blt_Itoa) /* 81 */
+	(bltTclIntProcsPtr->blt_Itoa) /* 83 */
 #endif
 #ifndef Blt_Ltoa
 #define Blt_Ltoa \
-	(bltTclIntProcsPtr->blt_Ltoa) /* 82 */
+	(bltTclIntProcsPtr->blt_Ltoa) /* 84 */
 #endif
 #ifndef Blt_Utoa
 #define Blt_Utoa \
-	(bltTclIntProcsPtr->blt_Utoa) /* 83 */
+	(bltTclIntProcsPtr->blt_Utoa) /* 85 */
 #endif
 #ifndef Blt_Dtoa
 #define Blt_Dtoa \
-	(bltTclIntProcsPtr->blt_Dtoa) /* 84 */
+	(bltTclIntProcsPtr->blt_Dtoa) /* 86 */
 #endif
 #ifndef Blt_Base64_Decode
 #define Blt_Base64_Decode \
-	(bltTclIntProcsPtr->blt_Base64_Decode) /* 85 */
+	(bltTclIntProcsPtr->blt_Base64_Decode) /* 87 */
 #endif
 #ifndef Blt_Base64_DecodeToBuffer
 #define Blt_Base64_DecodeToBuffer \
-	(bltTclIntProcsPtr->blt_Base64_DecodeToBuffer) /* 86 */
+	(bltTclIntProcsPtr->blt_Base64_DecodeToBuffer) /* 88 */
 #endif
 #ifndef Blt_Base64_DecodeToObj
 #define Blt_Base64_DecodeToObj \
-	(bltTclIntProcsPtr->blt_Base64_DecodeToObj) /* 87 */
+	(bltTclIntProcsPtr->blt_Base64_DecodeToObj) /* 89 */
 #endif
 #ifndef Blt_Base64_EncodeToObj
 #define Blt_Base64_EncodeToObj \
-	(bltTclIntProcsPtr->blt_Base64_EncodeToObj) /* 88 */
+	(bltTclIntProcsPtr->blt_Base64_EncodeToObj) /* 90 */
 #endif
 #ifndef Blt_Base64_MaxBufferLength
 #define Blt_Base64_MaxBufferLength \
-	(bltTclIntProcsPtr->blt_Base64_MaxBufferLength) /* 89 */
+	(bltTclIntProcsPtr->blt_Base64_MaxBufferLength) /* 91 */
 #endif
 #ifndef Blt_Base64_Encode
 #define Blt_Base64_Encode \
-	(bltTclIntProcsPtr->blt_Base64_Encode) /* 90 */
+	(bltTclIntProcsPtr->blt_Base64_Encode) /* 92 */
 #endif
 #ifndef Blt_Base85_MaxBufferLength
 #define Blt_Base85_MaxBufferLength \
-	(bltTclIntProcsPtr->blt_Base85_MaxBufferLength) /* 91 */
+	(bltTclIntProcsPtr->blt_Base85_MaxBufferLength) /* 93 */
 #endif
 #ifndef Blt_Base85_Encode
 #define Blt_Base85_Encode \
-	(bltTclIntProcsPtr->blt_Base85_Encode) /* 92 */
+	(bltTclIntProcsPtr->blt_Base85_Encode) /* 94 */
 #endif
 #ifndef Blt_Base16_Encode
 #define Blt_Base16_Encode \
-	(bltTclIntProcsPtr->blt_Base16_Encode) /* 93 */
+	(bltTclIntProcsPtr->blt_Base16_Encode) /* 95 */
 #endif
 #ifndef Blt_IsBase64
 #define Blt_IsBase64 \
-	(bltTclIntProcsPtr->blt_IsBase64) /* 94 */
+	(bltTclIntProcsPtr->blt_IsBase64) /* 96 */
 #endif
 #ifndef Blt_GetDoubleFromString
 #define Blt_GetDoubleFromString \
-	(bltTclIntProcsPtr->blt_GetDoubleFromString) /* 95 */
+	(bltTclIntProcsPtr->blt_GetDoubleFromString) /* 97 */
 #endif
 #ifndef Blt_GetDoubleFromObj
 #define Blt_GetDoubleFromObj \
-	(bltTclIntProcsPtr->blt_GetDoubleFromObj) /* 96 */
+	(bltTclIntProcsPtr->blt_GetDoubleFromObj) /* 98 */
 #endif
 #ifndef Blt_GetTimeFromObj
 #define Blt_GetTimeFromObj \
-	(bltTclIntProcsPtr->blt_GetTimeFromObj) /* 97 */
+	(bltTclIntProcsPtr->blt_GetTimeFromObj) /* 99 */
 #endif
 #ifndef Blt_GetTime
 #define Blt_GetTime \
-	(bltTclIntProcsPtr->blt_GetTime) /* 98 */
+	(bltTclIntProcsPtr->blt_GetTime) /* 100 */
 #endif
 #ifndef Blt_SecondsToDate
 #define Blt_SecondsToDate \
-	(bltTclIntProcsPtr->blt_SecondsToDate) /* 99 */
+	(bltTclIntProcsPtr->blt_SecondsToDate) /* 101 */
 #endif
 #ifndef Blt_DateToSeconds
 #define Blt_DateToSeconds \
-	(bltTclIntProcsPtr->blt_DateToSeconds) /* 100 */
+	(bltTclIntProcsPtr->blt_DateToSeconds) /* 102 */
 #endif
 #ifndef Blt_FormatDate
 #define Blt_FormatDate \
-	(bltTclIntProcsPtr->blt_FormatDate) /* 101 */
+	(bltTclIntProcsPtr->blt_FormatDate) /* 103 */
 #endif
 #ifndef Blt_GetPositionFromObj
 #define Blt_GetPositionFromObj \
-	(bltTclIntProcsPtr->blt_GetPositionFromObj) /* 102 */
+	(bltTclIntProcsPtr->blt_GetPositionFromObj) /* 104 */
 #endif
 #ifndef Blt_GetCountFromObj
 #define Blt_GetCountFromObj \
-	(bltTclIntProcsPtr->blt_GetCountFromObj) /* 103 */
+	(bltTclIntProcsPtr->blt_GetCountFromObj) /* 105 */
 #endif
 #ifndef Blt_SimplifyLine
 #define Blt_SimplifyLine \
-	(bltTclIntProcsPtr->blt_SimplifyLine) /* 104 */
+	(bltTclIntProcsPtr->blt_SimplifyLine) /* 106 */
 #endif
 #ifndef Blt_GetLong
 #define Blt_GetLong \
-	(bltTclIntProcsPtr->blt_GetLong) /* 105 */
+	(bltTclIntProcsPtr->blt_GetLong) /* 107 */
 #endif
 #ifndef Blt_GetLongFromObj
 #define Blt_GetLongFromObj \
-	(bltTclIntProcsPtr->blt_GetLongFromObj) /* 106 */
+	(bltTclIntProcsPtr->blt_GetLongFromObj) /* 108 */
 #endif
 #ifndef Blt_FormatString
 #define Blt_FormatString \
-	(bltTclIntProcsPtr->blt_FormatString) /* 107 */
+	(bltTclIntProcsPtr->blt_FormatString) /* 109 */
 #endif
 #ifndef Blt_LowerCase
 #define Blt_LowerCase \
-	(bltTclIntProcsPtr->blt_LowerCase) /* 108 */
+	(bltTclIntProcsPtr->blt_LowerCase) /* 110 */
+#endif
+#ifndef Blt_UpperCase
+#define Blt_UpperCase \
+	(bltTclIntProcsPtr->blt_UpperCase) /* 111 */
 #endif
 #ifndef Blt_GetPlatformId
 #define Blt_GetPlatformId \
-	(bltTclIntProcsPtr->blt_GetPlatformId) /* 109 */
+	(bltTclIntProcsPtr->blt_GetPlatformId) /* 112 */
 #endif
 #ifndef Blt_LastError
 #define Blt_LastError \
-	(bltTclIntProcsPtr->blt_LastError) /* 110 */
+	(bltTclIntProcsPtr->blt_LastError) /* 113 */
 #endif
 #ifndef Blt_NaN
 #define Blt_NaN \
-	(bltTclIntProcsPtr->blt_NaN) /* 111 */
+	(bltTclIntProcsPtr->blt_NaN) /* 114 */
 #endif
 #ifndef Blt_AlmostEquals
 #define Blt_AlmostEquals \
-	(bltTclIntProcsPtr->blt_AlmostEquals) /* 112 */
+	(bltTclIntProcsPtr->blt_AlmostEquals) /* 115 */
 #endif
 #ifndef Blt_GetCachedVar
 #define Blt_GetCachedVar \
-	(bltTclIntProcsPtr->blt_GetCachedVar) /* 113 */
+	(bltTclIntProcsPtr->blt_GetCachedVar) /* 116 */
 #endif
 #ifndef Blt_FreeCachedVars
 #define Blt_FreeCachedVars \
-	(bltTclIntProcsPtr->blt_FreeCachedVars) /* 114 */
+	(bltTclIntProcsPtr->blt_FreeCachedVars) /* 117 */
 #endif
 
 #endif /* defined(USE_BLT_STUBS) && !defined(BUILD_BLT_TCL_PROCS) */

@@ -1171,11 +1171,11 @@ ParseRegularOpacity(Tcl_Interp *interp, PaletteCmd *cmdPtr, int objc,
 	entryPtr->max = (i+1) * step;
 	low.u32 = high.u32;
     }
-    if (cmdPtr->colors != NULL) {
-	Blt_Free(cmdPtr->colors);
+    if (cmdPtr->opacities != NULL) {
+	Blt_Free(cmdPtr->opacities);
     }
-    cmdPtr->colors = entries;
-    cmdPtr->numColors = numEntries;
+    cmdPtr->opacities = entries;
+    cmdPtr->numOpacities = numEntries;
     return TCL_OK;
  error:
     Blt_Free(entries);
@@ -1221,11 +1221,11 @@ ParseIrregularOpacity(Tcl_Interp *interp, PaletteCmd *cmdPtr, int objc,
 	low.u32 = high.u32;
 	min = max;
     }
-    if (cmdPtr->colors != NULL) {
-	Blt_Free(cmdPtr->colors);
+    if (cmdPtr->opacities != NULL) {
+	Blt_Free(cmdPtr->opacities);
     }
-    cmdPtr->colors = entries;
-    cmdPtr->numColors = numEntries;
+    cmdPtr->opacities = entries;
+    cmdPtr->numOpacities = numEntries;
     return TCL_OK;
  error:
     Blt_Free(entries);
@@ -1266,11 +1266,11 @@ ParseIntervalOpacity(Tcl_Interp *interp, PaletteCmd *cmdPtr, int objc,
 	entryPtr->min = min;
 	entryPtr->max = max;
     }
-    if (cmdPtr->colors != NULL) {
-	Blt_Free(cmdPtr->colors);
+    if (cmdPtr->opacities != NULL) {
+	Blt_Free(cmdPtr->opacities);
     }
-    cmdPtr->colors = entries;
-    cmdPtr->numColors = numEntries;
+    cmdPtr->opacities = entries;
+    cmdPtr->numOpacities = numEntries;
     return TCL_OK;
  error:
     Blt_Free(entries);
@@ -1467,65 +1467,81 @@ SearchForEntry(size_t length, PaletteInterval *entries, double value)
 
 
 static int 
-Interpolate(PaletteCmd *cmdPtr, double value, Blt_Pixel *colorPtr)
+InterpolateColor(PaletteCmd *cmdPtr, double value, Blt_Pixel *colorPtr)
 {
     Blt_Pixel color;
     PaletteInterval *entryPtr;
     double t;
 
     color.u32 = 0x00;			/* Default to empty. */
-
     if (cmdPtr->numColors == 0) {
 	return FALSE;
     }
     if (cmdPtr->colorFlags & SPACING_REGULAR) {
 	int i;
+
 	i = (int)(value * (cmdPtr->numColors));
 	if (i >= cmdPtr->numColors) {
 	    i = cmdPtr->numColors - 1;
-	}
+	} else if (i < 0) {
+            i = 0;
+        }
 	entryPtr = cmdPtr->colors + i;
-#ifdef notdef
-	if (!InRange(value, entryPtr->min, entryPtr->max)) {
-	    fprintf(stderr, "norm=%g index=%d max=%d\n", value, i,
-		    cmdPtr->numColors);
-	    fprintf(stderr, "not in range norm=%g min=%g max=%g\n", value,
-		    entryPtr->min, entryPtr->max);
-	}
-#endif
     } else {
 	entryPtr = SearchForEntry(cmdPtr->numColors, cmdPtr->colors, value);
     }
     if (entryPtr == NULL) {
-#ifndef notdef
-	fprintf(stderr, "can't interpolate: norm=%.17g\n", value);
-#endif
-	PrintEntries(cmdPtr->numColors, cmdPtr->colors);
-	abort();
 	return FALSE;
     }
     t = (value - entryPtr->min) / (entryPtr->max - entryPtr->min);
     color.u32 = ColorLerp(entryPtr, t);
+    *colorPtr = color;
+    return TRUE;
+}
 
+
+static int 
+InterpolateOpacity(PaletteCmd *cmdPtr, double value, unsigned int *alphaPtr)
+{
+    PaletteInterval *entryPtr;
+    double t;
+    
+    if (cmdPtr->opacityFlags & SPACING_REGULAR) {
+        int i;
+
+        i = (int)(value * (cmdPtr->numOpacities));
+        if (i >= cmdPtr->numOpacities) {
+            i = cmdPtr->numOpacities - 1;
+        } else if (i < 0) {
+            i = 0;
+        }
+        entryPtr = cmdPtr->opacities + i;
+    } else {
+        entryPtr = SearchForEntry(cmdPtr->numOpacities, cmdPtr->opacities,
+                                  value);
+    }
+    if (entryPtr == NULL) {
+        return FALSE;
+    }
+    t = (value - entryPtr->min) / (entryPtr->max - entryPtr->min);
+    *alphaPtr = OpacityLerp(entryPtr, t);
+    return TRUE;
+}
+
+static int 
+Interpolate(PaletteCmd *cmdPtr, double value, Blt_Pixel *colorPtr)
+{
+    Blt_Pixel color;
+
+    color.u32 = 0x00;			/* Default to empty. */
+    if (!InterpolateColor(cmdPtr, value, &color))  {
+        return FALSE;
+    }
     if (cmdPtr->numOpacities > 0) {
-	if (cmdPtr->opacityFlags & SPACING_REGULAR) {
-	    int i;
+        unsigned int alpha;
 
-	    i = (int)(value * (cmdPtr->numOpacities));
-	    if (i >= cmdPtr->numOpacities) {
-		i = cmdPtr->numOpacities - 1;
-	    }
-	    entryPtr = cmdPtr->opacities + i;
-	} else {
-	    entryPtr = SearchForEntry(cmdPtr->numOpacities, cmdPtr->opacities,
-		value);
-	    if (entryPtr != NULL) {
-		unsigned int alpha;
-		
-		t = (value - entryPtr->min) / (entryPtr->max - entryPtr->min);
-		alpha = OpacityLerp(entryPtr, t);
-		Blt_FadeColor(&color, alpha);
-	    }
+        if (InterpolateOpacity(cmdPtr, value, &alpha)) {
+            Blt_FadeColor(&color, alpha);
 	}
     }
     *colorPtr = color;
@@ -2073,6 +2089,23 @@ Blt_Palette_GetFromString(Tcl_Interp *interp, const char *string,
     }
     *palPtr = (Blt_Palette)cmdPtr;
     return TCL_OK;
+}
+
+int
+Blt_Palette_GetColor(Blt_Palette palette, double value)
+{
+    Blt_Pixel color;
+    PaletteCmd *cmdPtr = (PaletteCmd *)palette;
+
+    if ((cmdPtr->flags & LOADED) == 0) {
+	if (LoadData(NULL, cmdPtr) != TCL_OK) {
+	    return 0x0;
+	}
+    }
+    if (!InterpolateColor(cmdPtr, value, &color)) {
+	color.u32 = 0x00;
+    } 
+    return color.u32;
 }
 
 int

@@ -13,7 +13,7 @@ blt::contour .g
 set mesh [blt::mesh create cloud -x $xv -y $yv]
 .g element create sine -values $zv -mesh $mesh 
 .g element isoline steps sine $numIsolines
-.g axis configure z -palette rainbow -colorbarthickness 15 -margin y2 \
+.g axis configure z -palette rainbow -colorbarthickness 15 -margin right \
     -exterior yes -rotate -90 -title "Units"  
 .g legend configure -hide yes
 proc UpdateColors {} {

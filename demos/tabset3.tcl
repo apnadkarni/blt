@@ -5,9 +5,9 @@ package require BLT
 
 set tile [image create picture -file ~/madthinker.jpg]
 set bg [blt::background create tile -image $tile -relativeto .]
-set bg [blt::background create solid -color red]
-set bg [blt::background create texture -low  grey70 -high grey90 \
-	-type checker -relativeto self]
+set bg red
+set bg [blt::background create checker -offcolor  grey70 -oncolor grey90 \
+	-relativeto self]
 
 image create picture label1 -file ./images/mini-book1.gif
 image create picture label2 -file ./images/mini-book2.gif

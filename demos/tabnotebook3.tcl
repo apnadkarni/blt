@@ -4,8 +4,8 @@ package require BLT
 source scripts/demo.tcl
 #blt::bltdebug 100
 
-set bg [blt::background create gradient -low  grey70 -high grey90 \
-	-type radial -jitter 10 -scale linear -relativeto .]
+set bg [blt::background create radial -lowcolor  grey70 -highcolor grey90 \
+	-jitter 10 -relativeto .]
 
 image create picture label1 -file afm.png
 image create picture label2 -file ./images/mini-book2.gif

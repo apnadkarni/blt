@@ -130,7 +130,7 @@ static Blt_SwitchCustom paintbrushSwitch =
 typedef struct {
     int kerning;			/* Indicates whether to kern
 					   text. */
-    Blt_PaintBrush *brushPtr;		/* Color of text. */
+    Blt_PaintBrush brush;		/* Color of text. */
     Blt_Shadow shadow;			/*  */
     int fontSize;			/* Size of requested font. */
     Tcl_Obj *fontObjPtr;		/* Requested font.  If the name of
@@ -150,7 +150,7 @@ static Blt_SwitchSpec textSwitches[] =
     {BLT_SWITCH_CUSTOM,  "-anchor",   "anchor", (char *)NULL,
 	Blt_Offset(TextSwitches, anchor), 0, 0, &anchorSwitch},
     {BLT_SWITCH_CUSTOM,  "-color",    "colorName", (char *)NULL,
-	Blt_Offset(TextSwitches, brushPtr),  0, 0, &paintbrushSwitch},
+	Blt_Offset(TextSwitches, brush),  0, 0, &paintbrushSwitch},
     {BLT_SWITCH_OBJ,     "-font",     "fontName", (char *)NULL,
 	Blt_Offset(TextSwitches, fontObjPtr), 0},
     {BLT_SWITCH_CUSTOM,  "-justify", "left|right|center", (char *)NULL,
@@ -173,11 +173,11 @@ DLLEXPORT extern Tcl_AppInitProc Blt_picture_text_Init;
 static void
 PaintBrushFreeProc(ClientData clientData, char *record, int offset, int flags)
 {
-    Blt_PaintBrush **brushPtrPtr = (Blt_PaintBrush **)(record + offset);
+    Blt_PaintBrush *brushPtr = (Blt_PaintBrush *)(record + offset);
 
-    if (*brushPtrPtr != NULL) {
-	Blt_PaintBrush_Free(*brushPtrPtr);
-	*brushPtrPtr = NULL;
+    if (*brushPtr != NULL) {
+	Blt_FreeBrush(*brushPtr);
+	*brushPtr = NULL;
     }
 }
 
@@ -204,16 +204,16 @@ ObjToPaintBrushProc(
     int offset,				/* Offset to field in structure */
     int flags)	
 {
-    Blt_PaintBrush **brushPtrPtr = (Blt_PaintBrush **)(record + offset);
-    Blt_PaintBrush *brushPtr;
+    Blt_PaintBrush *brushPtr = (Blt_PaintBrush *)(record + offset);
+    Blt_PaintBrush brush;
 
-    if (Blt_PaintBrush_Get(interp, objPtr, &brushPtr) != TCL_OK) {
+    if (Blt_GetPaintBrushFromObj(interp, objPtr, &brush) != TCL_OK) {
 	return TCL_ERROR;
     }
-    if (*brushPtrPtr != NULL) {
-	Blt_PaintBrush_Free(*brushPtrPtr);
+    if (*brushPtr != NULL) {
+	Blt_FreeBrush(*brushPtr);
     }
-    *brushPtrPtr = brushPtr;
+    *brushPtr = brush;
     return TCL_OK;
 }
 
@@ -697,7 +697,7 @@ BlendPixels(Blt_Pixel *bgPtr, Blt_Pixel *colorPtr)
 
 static void
 BlitGlyph(Pict *destPtr, FT_GlyphSlot slot, int dx, int dy, int xx, int yy,
-	  Blt_PaintBrush *brushPtr)
+	  Blt_PaintBrush brush)
 {
     int x1, y1, x2, y2;
 #ifdef notdef
@@ -751,8 +751,7 @@ BlitGlyph(Pict *destPtr, FT_GlyphSlot slot, int dx, int dy, int xx, int yy,
 		if (pixel != 0x0) {
 		    Blt_Pixel color;
 
-		    color.u32 = Blt_PaintBrush_GetAssociatedColor(brushPtr, 
-			x, y);
+		    color.u32 = Blt_GetAssociatedColorFromBrush(brush, x, y);
 		    BlendPixels(dp, &color);
 		}
 	    }
@@ -776,8 +775,7 @@ BlitGlyph(Pict *destPtr, FT_GlyphSlot slot, int dx, int dy, int xx, int yy,
 		if (*sp != 0x0) {
 		    Blt_Pixel color;
 
-		    color.u32 = Blt_PaintBrush_GetAssociatedColor(brushPtr, 
-			x, y);
+		    color.u32 = Blt_GetAssociatedColorFromBrush(brush, x, y);
 		    Blt_FadeColor(&color, *sp);
 		    BlendPixels(dp, &color);
 		}
@@ -790,7 +788,7 @@ BlitGlyph(Pict *destPtr, FT_GlyphSlot slot, int dx, int dy, int xx, int yy,
 
 static void
 CopyGrayGlyph(Pict *destPtr, FT_GlyphSlot slot, int xx, int yy, 
-	      Blt_PaintBrush *brushPtr)
+	      Blt_PaintBrush brush)
 {
     int x1, y1, x2, y2;
 
@@ -846,8 +844,7 @@ CopyGrayGlyph(Pict *destPtr, FT_GlyphSlot slot, int xx, int yy,
 		if (*sp != 0x0) {
 		    Blt_Pixel color;
 
-		    color.u32 = Blt_PaintBrush_GetAssociatedColor(brushPtr, 
-			x, y);
+		    color.u32 = Blt_GetAssociatedColorFromBrush(brush, x, y);
 		    Blt_FadeColor(&color, *sp);
 		    dp->u32 = color.u32;
 		}
@@ -860,7 +857,7 @@ CopyGrayGlyph(Pict *destPtr, FT_GlyphSlot slot, int xx, int yy,
 
 static void
 PaintGrayGlyph(Pict *destPtr, FT_GlyphSlot slot, int xx, int yy, 
-	       Blt_PaintBrush *brushPtr)
+	       Blt_PaintBrush brush)
 {
     int x1, y1, x2, y2;
 
@@ -916,8 +913,7 @@ PaintGrayGlyph(Pict *destPtr, FT_GlyphSlot slot, int xx, int yy,
 		if (*sp != 0x0) {
 		    Blt_Pixel color;
 
-		    color.u32 = Blt_PaintBrush_GetAssociatedColor(brushPtr, 
-			x, y);
+		    color.u32 = Blt_GetAssociatedColorFromBrush(brush, x, y);
 		    Blt_FadeColor(&color, *sp);
 		    BlendPixels(dp, &color);
 		}
@@ -930,7 +926,7 @@ PaintGrayGlyph(Pict *destPtr, FT_GlyphSlot slot, int xx, int yy,
 
 static void
 CopyMonoGlyph(Pict *destPtr, FT_GlyphSlot slot, int xx, int yy,
-	  Blt_PaintBrush *brushPtr)
+	  Blt_PaintBrush brush)
 {
     int x1, y1, x2, y2;
 
@@ -984,7 +980,7 @@ CopyMonoGlyph(Pict *destPtr, FT_GlyphSlot slot, int xx, int yy,
 
 		pixel = srcRowPtr[x >> 3] & (1 << (7 - (x & 0x7)));
 		if (pixel != 0x0) {
-		    dp->u32 = Blt_PaintBrush_GetAssociatedColor(brushPtr, x, y);
+		    dp->u32 = Blt_GetAssociatedColorFromBrush(brush, x, y);
 		}
 	    }
 	    srcRowPtr += slot->bitmap.pitch;
@@ -1102,7 +1098,7 @@ CloseFont(TextFont *fontPtr)
 
 static int
 PaintText(Pict *destPtr, TextFont *fontPtr, const char *string,
-	  size_t length, int x, int y, int kerning, Blt_PaintBrush *brushPtr)
+	  size_t length, int x, int y, int kerning, Blt_PaintBrush brush)
 {
     FT_Error ftError;
     int h;
@@ -1156,7 +1152,7 @@ PaintText(Pict *destPtr, TextFont *fontPtr, const char *string,
 	switch(slot->bitmap.pixel_mode) {
 	case FT_PIXEL_MODE_MONO:
 	    CopyMonoGlyph(destPtr, slot, pen.x >> 6, yy - slot->bitmap_top, 
-		brushPtr);
+		brush);
 	    break;
 	case FT_PIXEL_MODE_LCD:
 	case FT_PIXEL_MODE_LCD_V:
@@ -1165,7 +1161,7 @@ PaintText(Pict *destPtr, TextFont *fontPtr, const char *string,
 	    fprintf(stderr, "h=%d, slot->bitmap_top=%d\n", h, slot->bitmap_top);
 #endif
 	    PaintGrayGlyph(destPtr, slot, slot->bitmap_left, 
-			   h - slot->bitmap_top, brushPtr);
+			   h - slot->bitmap_top, brush);
 	case FT_PIXEL_MODE_GRAY2:
 	case FT_PIXEL_MODE_GRAY4:
 	    break;
@@ -1212,7 +1208,7 @@ TextOp(ClientData clientData, Tcl_Interp *interp, int objc,
     switches.anchor = TK_ANCHOR_NW;
     switches.angle = 0.0;
     Blt_Shadow_Set(&switches.shadow, 0, 0, 0x0, 0xA0);
-    if (Blt_PaintBrush_GetFromString(interp, "black", &switches.brushPtr) 
+    if (Blt_GetPaintBrush(interp, "black", &switches.brush) 
 	!= TCL_OK) {
 	return TCL_ERROR;
     }
@@ -1254,7 +1250,7 @@ TextOp(ClientData clientData, Tcl_Interp *interp, int objc,
 
 		fp = layoutPtr->fragments + i;
 		PaintText(destPtr, fontPtr, fp->text, fp->count, x + fp->sx, 
-			y + fp->sy, switches.kerning, switches.brushPtr);
+			y + fp->sy, switches.kerning, switches.brush);
 	    }
 	} else {
 	    Blt_Picture tmp;
@@ -1268,7 +1264,7 @@ TextOp(ClientData clientData, Tcl_Interp *interp, int objc,
 
 		fp = layoutPtr->fragments + i;
 		PaintText(tmp, fontPtr, fp->text, fp->count, fp->sx, 
-			fp->sy, switches.kerning, switches.brushPtr);
+			fp->sy, switches.kerning, switches.brush);
 	    }
 	    rotPtr = Blt_RotatePicture(tmp, switches.angle);
 	    Blt_FreePicture(tmp);
@@ -1302,8 +1298,7 @@ TextOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	    tmpPtr = Blt_CreatePicture(w + extra, h + extra);
 	    color.u32 = 0x0;
 	    Blt_BlankPicture(tmpPtr, color.u32);
-	    Blt_PaintBrush_Init(&brush);
-	    Blt_PaintBrush_SetColor(&brush, shadowPtr->color.u32);
+	    brush = Blt_NewColorBrush(shadowPtr->color.u32);
 	    for (i = 0; i < layoutPtr->numFragments; i++) {
 		TextFragment *fp;
 
@@ -1311,7 +1306,7 @@ TextOp(ClientData clientData, Tcl_Interp *interp, int objc,
 		PaintText(tmpPtr, fontPtr, fp->text, fp->count, 
 			  fp->x + shadowPtr->width, 
 			  fp->y + shadowPtr->width, 
-			  switches.kerning, &brush);
+			  switches.kerning, brush);
 	    }
 	    Blt_BlurPicture(tmpPtr, tmpPtr, shadowPtr->width, 3);
 #ifdef notdef
@@ -1322,7 +1317,7 @@ TextOp(ClientData clientData, Tcl_Interp *interp, int objc,
 		PaintText(tmpPtr, fontPtr, fp->text, fp->count, 
 		    fp->x + shadowPtr->width - shadowPtr->offset,
 		    fp->y + shadowPtr->width - shadowPtr->offset, 
-		    switches.kerning, switches.brushPtr);
+		    switches.kerning, switches.brush);
 	    }
 #endif
 	    Blt_BlendRegion(destPtr, tmpPtr, 0, 0, tmpPtr->width, 
@@ -1330,6 +1325,7 @@ TextOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	    fprintf(stderr, "tmp width=%d height=%d, w=%d h=%d\n",
 		    tmpPtr->width, tmpPtr->height, w, h);
 	    Blt_FreePicture(tmpPtr);
+            Blt_FreeBrush(brush);
 	} else {
 	    int i;
 
@@ -1340,7 +1336,7 @@ TextOp(ClientData clientData, Tcl_Interp *interp, int objc,
 		fp = layoutPtr->fragments + i;
 		PaintText(destPtr, fontPtr, fp->text, fp->count, 
 			x + fp->x, y + fp->y, switches.kerning, 
-			switches.brushPtr);
+			switches.brush);
 	    }
 	}
 	Blt_Free(layoutPtr);

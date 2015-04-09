@@ -2422,31 +2422,35 @@ proc blt::TableView::CreateSearchDialog { w } {
     variable _private
     
     set top $w.dialog
+    if { ![blt::background exists _srchBg] } {
+        blt::background create linear _srchBg \
+            -highcolor grey97 \
+            -lowcolor grey85 \
+            -jitter 10 \
+            -colorscale log 
+    }  
     blt::tk::toplevel $top \
         -borderwidth 2 \
         -relief raised \
-        -class SearchDialog
+        -class SearchDialog \
+        -bg _srchBg
+
+    blt::background configure _srchBg -relativeto $top
+
     wm overrideredirect $top true
     wm withdraw $top
     wm protocol $top WM_DELETE { set blt::TableView::_private(search) 0 }       
 
-    set bg [blt::background create gradient \
-                -high grey97 \
-                -low grey85 \
-                -jitter 10 \
-                -scale log \
-                -relativeto $top]
-    $top configure -bg $bg
     set img blt::TableView::xbutton
     blt::tk::button $top.button -image $img -padx 0 -pady 0 \
-        -relief flat -bg $bg -overrelief flat -highlightthickness 0 \
+        -relief flat -bg _srchBg -overrelief flat -highlightthickness 0 \
         -command { set blt::TableView::_private(search) 0 }
-    blt::tk::frame $top.frame -bg $bg 
-    option add *SearchDialog.frame.BltTkLabel.background $bg 
-    option add *SearchDialog.frame.BltTkCheckbutton.background $bg 
-    option add *SearchDialog.frame.BltTkCheckbutton.highlightBackground $bg 
-    option add *SearchDialog.frame.BltTkButton.highlightBackground $bg 
-    option add *SearchDialog.frame.BltTkButton.background $bg 
+    blt::tk::frame $top.frame -bg _srchBg 
+    option add *SearchDialog.frame.BltTkLabel.background _srchBg 
+    option add *SearchDialog.frame.BltTkCheckbutton.background _srchBg 
+    option add *SearchDialog.frame.BltTkCheckbutton.highlightBackground _srchBg 
+    option add *SearchDialog.frame.BltTkButton.highlightBackground _srchBg 
+    option add *SearchDialog.frame.BltTkButton.background _srchBg 
     blt::table $top \
         0,0 $top.button -anchor e -padx 2 -pady 2 \
         1,0 $top.frame -padx 4 -pady {0 4}

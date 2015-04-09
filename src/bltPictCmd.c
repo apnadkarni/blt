@@ -2480,25 +2480,24 @@ BlankOp(
     Pict *destPtr;
     PictImage *imgPtr = clientData;
     int w, h;
-    Blt_PaintBrush brush, *brushPtr;
+    Blt_PaintBrush brush, newBrush;
 
+    newBrush = NULL;
     if (objc == 3) {
-	if (Blt_PaintBrush_Get(interp, objv[2], &brushPtr) != TCL_OK) {
+	if (Blt_GetPaintBrushFromObj(interp, objv[2], &brush) != TCL_OK) {
 	    return TCL_ERROR;
 	}
     } else {
-	Blt_PaintBrush_Init(&brush);
-	Blt_PaintBrush_SetColor(&brush, 0x00000000);
-	brushPtr = &brush;
+	brush = newBrush = Blt_NewColorBrush(0x00000000);
     }
     destPtr = imgPtr->picture;
     w = Blt_Picture_Width(destPtr);
     h = Blt_Picture_Height(destPtr);
-    Blt_PaintBrush_Region(brushPtr, 0, 0, w, h);
-    Blt_PaintRectangle(destPtr, 0, 0, w, h, 0, 0, brushPtr);
+    Blt_SetBrushRegion(brush, 0, 0, w, h);
+    Blt_PaintRectangle(destPtr, 0, 0, w, h, 0, 0, brush);
     destPtr->flags |= BLT_PIC_BLEND | BLT_PIC_ASSOCIATED_COLORS;
-    if (brushPtr != &brush) {
-	Blt_PaintBrush_Free(brushPtr);
+    if (newBrush != NULL) {
+	Blt_FreeBrush(newBrush);
     }
     Blt_NotifyImageChanged(imgPtr);
     return TCL_OK;
@@ -4776,7 +4775,7 @@ Blt_PictureCmdInitProc(Tcl_Interp *interp)
 
 static Tk_ImageType pictureImageType = {
     (char *)"picture",		
-    CreateProc,				/* Known compiler wanrning */
+    (Tk_ImageCreateProc *)CreateProc,   /* Known compiler warning */
     GetInstanceProc,		
     DisplayProc,	
     FreeInstanceProc,	

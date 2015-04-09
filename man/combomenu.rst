@@ -473,9 +473,9 @@ command.  The following operations are available for *combomenu* widgets:
 
      Specifies the name of a scrollbar widget to use as the horizontal
      scrollbar for this menu.  The scrollbar widget must be a child of the
-     combomenu and doesn't have to exist yet.  It at an idle point later,
-     the combomenu will attach the scrollbar to widget, effectively
-     packing the scrollbar into the menu.
+     combomenu and doesn't have to exist yet.  At an idle point later, the
+     combomenu will attach the scrollbar to widget, effectively packing the
+     scrollbar into the menu.
 
   **-xscrollcommand** *string*
 
@@ -498,9 +498,9 @@ command.  The following operations are available for *combomenu* widgets:
 
      Specifies the name of a scrollbar widget to use as the vertical
      scrollbar for this menu.  The scrollbar widget must be a child of the
-     combomenu and doesn't have to exist yet.  It at an idle point later,
-     the combomenu will attach the scrollbar to widget, effectively
-     packing the scrollbar into the menu.
+     combomenu and doesn't have to exist yet.  At an idle point later, the
+     combomenu will attach the scrollbar to widget, effectively packing the
+     scrollbar into the menu.
 
   **-yscrollcommand** *string*
 

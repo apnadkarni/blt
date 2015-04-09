@@ -2212,13 +2212,13 @@ proc MakeSnapshot {} {
     set im1 [image create picture]
     .graph snap $im1
     set width 410
-    set height 293
+    set height 200
     set thumb1 [image create picture -width $width -height $height -gamma 2.2]
-    $thumb1 resize $im1 -filter sinc 
+    $thumb1 resample $im1 -filter sinc -maxpect 
     image delete $im1
 
     set thumb2 [image create picture -window .graph -width $width \
-	-height $height -filter sinc -gamma 2.2 -aspect yes]
+	-height $height -filter sinc -gamma 2.2]
 
     toplevel $top
     wm title $top "Snapshot \#$unique of \"[.graph cget -title]\""
@@ -2262,13 +2262,13 @@ $graph element bind all <Leave> {
 }
 
 set table [blt::datatable create]
-$table column extend "x"
+$table column create -label "x"
 $table import vector 0 "x" 
 $table column type "x" double
 set col 0
 foreach vector [lsort -dictionary [blt::vector names ::v*]] {
     set name [string trim $vector ::]
-    $table column extend $name
+    $table column create -label $name
     $table column type $name double
     incr col
     $table import vector $col $vector 

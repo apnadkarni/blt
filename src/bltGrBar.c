@@ -1819,13 +1819,12 @@ DrawSymbolProc(Graph *graphPtr, Drawable drawable, Element *basePtr,
 }
 
 static int
-GradientColorProc(Blt_PaintBrush *brushPtr, int x, int y)
+GradientCalcProc(ClientData clientData, int x, int y, double *valuePtr)
 {
-    BarElement *elemPtr = brushPtr->clientData;
-    Blt_Pixel color;
+    BarElement *elemPtr = clientData;
     Graph *graphPtr;
     Point2d point;
-    double value, norm;
+    double value;
     AxisRange *rangePtr;
     
     graphPtr = elemPtr->obj.graphPtr;
@@ -1835,12 +1834,11 @@ GradientColorProc(Blt_PaintBrush *brushPtr, int x, int y)
     } else if (elemPtr->zAxisPtr == elemPtr->axes.x) {
 	value = point.x;
     } else {
-	return 0x0;
+	return TCL_ERROR;
     }
     rangePtr = &elemPtr->zAxisPtr->axisRange;
-    norm = (value - rangePtr->min) / rangePtr->range;
-    color.u32 = Blt_Palette_GetAssociatedColor(brushPtr->palette, norm);
-    return color.u32;
+    *valuePtr = (value - rangePtr->min) / rangePtr->range;
+    return TCL_OK;
 }
 
 /*
@@ -1869,11 +1867,12 @@ DrawGradientRectangle(Graph *graphPtr, Drawable drawable, BarElement *elemPtr,
     if (bg == NULL) {
 	return;				/* Background is obscured. */
     }
-    Blt_PaintBrush_Init(&brush);
-    Blt_PaintBrush_SetOrigin(&brush, -rectPtr->x, -rectPtr->y); 
-    Blt_PaintBrush_SetPalette(&brush, elemPtr->zAxisPtr->palette);
-    Blt_PaintBrush_SetColorProc(&brush, GradientColorProc, elemPtr);
-    Blt_PaintRectangle(bg, 0, 0, rectPtr->width, rectPtr->height, 0, 0, &brush);
+    brush = Blt_NewLinearGradientBrush();
+    Blt_SetBrushOrigin(brush, -rectPtr->x, -rectPtr->y); 
+    Blt_SetLinearGradientBrushPalette(brush, elemPtr->zAxisPtr->palette);
+    Blt_SetLinearGradientBrushCalcProc(brush, GradientCalcProc, elemPtr);
+    Blt_PaintRectangle(bg, 0, 0, rectPtr->width, rectPtr->height, 0, 0, brush);
+    Blt_FreeBrush(brush);
     painter = Blt_GetPainter(graphPtr->tkwin, 1.0);
     Blt_PaintPicture(painter, drawable, bg, 0, 0, rectPtr->width, 
 		     rectPtr->height, rectPtr->x, rectPtr->y, 0);

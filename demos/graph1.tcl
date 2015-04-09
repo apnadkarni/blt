@@ -7,9 +7,10 @@ package require BLT
 
 source scripts/demo.tcl
 
-set normalBg [blt::background create gradient -low grey60 -high grey90 \
-	-jitter 10 -scale linear]
-#set normalBg [blt::background create texture -type checkered -low grey85 -high grey98]
+set normalBg [blt::background create linear \
+		  -lowcolor grey60 -highcolor grey90 -jitter 10]
+
+#set normalBg [blt::background create checker -oncolor grey85 -offcolor grey98]
 
 #set normalBg white
 #set activeBg grey95
@@ -156,7 +157,7 @@ blt::table configure . c3 r0 r4 r5 -resize none
     -logscale yes \
     -activeforeground red3 \
     -activebackground white \
-    -title "X ayis" \
+    -title "X" \
     -exterior no
 
 .g axis configure y \
@@ -166,7 +167,7 @@ blt::table configure . c3 r0 r4 r5 -resize none
     -activebackground white \
     -scrollmin -100  \
     -rotate 0 \
-    -title "Y ayis" \
+    -title "Y" \
     -exterior no
 
 .g axis configure y2 \
@@ -223,16 +224,17 @@ proc UpdateTable { graph p1 p2 how } {
 
 set image1 [image create picture -file bitmaps/sharky.xbm]
 set image2 [image create picture -file images/buckskin.gif]
-set bg1 [blt::background create solid -color blue -opacity 30]
-set bg2 [blt::background create solid -color green -opacity 40]
-set bg3 [blt::background create solid -color pink -opacity 40]
+set bg1 [blt::paintbrush create color -color blue -opacity 30]
+set bg2 [blt::paintbrush create color -color green -opacity 40]
+set bg3 [blt::paintbrush create color -color pink -opacity 40]
+puts stderr [.g configure]
 .g element configure line1 -areabackground $bg1 -areaforeground blue 
 #.g element configure line2 -areabackground $bg2
 #.g element configure line3 -areabackground $bg3
 .g configure -title "Graph Title"
 
 .g marker create line -name "y100" -coords { -Inf 100 Inf 100 } -dashes 1 \
-	-outline green -linewidth 1
+	-outline green3 -linewidth 1
 .g configure -plotpady 10 -plotpadx 10
 
 if { $tcl_platform(platform) == "windows" } {

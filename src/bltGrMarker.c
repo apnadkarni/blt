@@ -1,5 +1,4 @@
 /* -*- mode: c; c-basic-offset: 4; indent-tabs-mode: nil -*- */
-
 /*
  * bltGrMarker.c --
  *
@@ -7,13 +6,13 @@
  *
  *	Copyright 1993-2004 George A Howlett.
  *
- *	Permission is hereby granted, free of charge, to any person obtaining
- *	a copy of this software and associated documentation files (the
- *	"Software"), to deal in the Software without restriction, including
- *	without limitation the rights to use, copy, modify, merge, publish,
- *	distribute, sublicense, and/or sell copies of the Software, and to
- *	permit persons to whom the Software is furnished to do so, subject to
- *	the following conditions:
+ *	Permission is hereby granted, free of charge, to any person
+ *	obtaining a copy of this software and associated documentation
+ *	files (the "Software"), to deal in the Software without
+ *	restriction, including without limitation the rights to use, copy,
+ *	modify, merge, publish, distribute, sublicense, and/or sell copies
+ *	of the Software, and to permit persons to whom the Software is
+ *	furnished to do so, subject to the following conditions:
  *
  *	The above copyright notice and this permission notice shall be
  *	included in all copies or substantial portions of the Software.
@@ -21,10 +20,11 @@
  *	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  *	EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  *	MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- *	NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
- *	LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
- *	OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
- *	WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *	NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+ *	BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ *	ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ *	CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ *	SOFTWARE.
  */
 
 #define BUILD_BLT_TK_PROCS 1
@@ -158,46 +158,42 @@ typedef struct {
  *
  * Marker --
  *
- *	Structure defining the generic marker.  In C++ parlance this would be
- *	the base class from which all markers are derived.
+ *	Structure defining the generic marker.  In C++ parlance this would
+ *	be the base class from which all markers are derived.
  *
- *	This structure corresponds with the specific types of markers.  Don't
- *	change this structure without changing the individual marker
+ *	This structure corresponds with the specific types of markers.
+ *	Don't change this structure without changing the individual marker
  *	structures of each type below.
  *
  * -------------------------------------------------------------------------- 
  */
 struct _Marker {
-    GraphObj obj;			/* Must be first field in marker. */
-
+    GraphObj obj;			/* Must be first field in
+                                         * marker. */
     MarkerClass *classPtr;
-
     Blt_HashEntry *hashPtr;
-
     Blt_ChainLink link;
-
-    const char *elemName;		/* Element associated with marker. Let's
-					 * you link a marker to an element. The
-					 * marker is drawn only if the element
-					 * is also visible. */
+    const char *elemName;		/* Element associated with
+					 * marker. Let's you link a marker
+					 * to an element. The marker is
+					 * drawn only if the element is
+					 * also visible. */
     Axis2d axes;
     Point2d *worldPts;		        /* Coordinate array to position
 					 * marker */
-    int numWorldPts;			/* Number of points in above array */
+    int numWorldPts;			/* # of points in above array */
     int drawUnder;			/* If non-zero, draw the marker
-					 * underneath any elements. This can be
-					 * a performance penalty because the
-					 * graph must be redraw entirely each
-					 * time the marker is redrawn. */
-
-    int clipped;			/* Indicates if the marker is totally
-					 * clipped by the plotting area. */
-
+					 * underneath any elements. This
+					 * can be a performance penalty
+					 * because the graph must be redraw
+					 * entirely each time the marker is
+					 * redrawn. */
+    int clipped;			/* Indicates if the marker is
+					 * totally clipped by the plotting
+					 * area. */
     unsigned int flags;		
-
-
-    int xOffset, yOffset;		/* Pixel offset from graph position */
-
+    int xOffset, yOffset;		/* Pixel offset from graph
+                                         * position */
     int state;
 };
 /*
@@ -208,42 +204,32 @@ struct _Marker {
  *---------------------------------------------------------------------------
  */
 typedef struct {
-    GraphObj obj;			/* Must be first field in marker. */
-
+    GraphObj obj;			/* Must be first field in
+                                         * marker. */
     MarkerClass *classPtr;
-
     Blt_HashEntry *hashPtr;
-
     Blt_ChainLink link;
-
     const char *elemName;		/* Element associated with
 					 * marker. Let's you link a marker
 					 * to an element. The marker is
 					 * drawn only if the element is
 					 * also visible. */
     Axis2d axes;
-
     Point2d *worldPts;			/* Coordinate array to position
 					 * marker. */
     int numWorldPts;			/* # of points in above array. */
-
     int drawUnder;			/* If non-zero, draw the marker
 					 * underneath any elements. This
 					 * can be a performance penalty
 					 * because the graph must be redraw
 					 * entirely each time the marker is
 					 * redrawn. */
-
     int clipped;			/* Indicates if the marker is
 					 * totally clipped by the plotting
 					 * area. */
-
     unsigned int flags;		
-
-
     int xOffset, yOffset;		/* Pixel offset from graph
 					 * position */
-
     int state;
 
     /* Fields specific to bitmap markers. */
@@ -251,7 +237,7 @@ typedef struct {
     Pixmap srcBitmap;			/* Original bitmap. May be further
 					 * scaled or rotated. */
     float reqAngle;			/* Requested rotation of the
-					   bitmap */
+                                         * bitmap */
     float angle;			/* Normalized rotation (0..360
 					 * degrees) */
     Tk_Anchor anchor;			/* If only one X-Y coordinate is
@@ -351,7 +337,8 @@ static MarkerClass bitmapMarkerClass = {
  *---------------------------------------------------------------------------
  */
 typedef struct {
-    GraphObj obj;			/* Must be first field in marker. */
+    GraphObj obj;			/* Must be first field in
+                                         * marker. */
     MarkerClass *classPtr;
     Blt_HashEntry *hashPtr;
     Blt_ChainLink link;
@@ -364,14 +351,12 @@ typedef struct {
     Point2d *worldPts;			/* Coordinate array to position
 					 * marker. */
     int numWorldPts;			/* # of points in above array. */
-
     int drawUnder;			/* If non-zero, draw the marker
 					 * underneath any elements. This
 					 * can be a performance penalty
 					 * because the graph must be redraw
 					 * entirely each time the marker is
 					 * redrawn. */
-
     int clipped;			/* Indicates if the marker is
 					 * totally clipped by the plotting
 					 * area. */
@@ -392,7 +377,6 @@ typedef struct {
     Blt_Picture scaled;			/* Pixmap containing the scaled
 					 * image */
     GC gc;
-
 } ImageMarker;
 
 static Blt_ConfigSpec imageConfigSpecs[] =
@@ -458,61 +442,52 @@ static MarkerClass imageMarkerClass = {
  *---------------------------------------------------------------------------
  */
 typedef struct {
-    GraphObj obj;			/* Must be first field in marker. */
-
+    GraphObj obj;			/* Must be first field in
+                                         * marker. */
     MarkerClass *classPtr;
-
     Blt_HashEntry *hashPtr;
-
     Blt_ChainLink link;
-
-    const char *elemName;		/* Element associated with marker. Let's
-					 * you link a marker to an element. The
-					 * marker is drawn only if the element
-					 * is also visible. */
+    const char *elemName;		/* Element associated with
+					 * marker. Let's you link a marker
+					 * to an element. The marker is
+					 * drawn only if the element is
+					 * also visible. */
     Axis2d axes;
-
     Point2d *worldPts;			/* Coordinate array to position
 					 * marker. */
-
-    int numWorldPts;			/* Number of points in above array */
-
+    int numWorldPts;			/* # of points in above array */
     int drawUnder;			/* If non-zero, draw the marker
-					 * underneath any elements. This can be
-					 * a performance penalty because the
-					 * graph must be redraw entirely each
-					 * time the marker is redrawn. */
-
-    int clipped;			/* Indicates if the marker is totally
-					 * clipped by the plotting area. */
-
+					 * underneath any elements. This
+					 * can be a performance penalty
+					 * because the graph must be redraw
+					 * entirely each time the marker is
+					 * redrawn. */
+    int clipped;			/* Indicates if the marker is
+					 * totally clipped by the plotting
+					 * area. */
     unsigned int flags;		
-
-
-    int xOffset, yOffset;		/* Pixel offset from graph position */
-
+    int xOffset, yOffset;		/* Pixel offset from graph
+                                         * position */
     int state;
-
     XColor *fillColor;
-    XColor *outlineColor;		/* Foreground and background colors */
-
+    XColor *outlineColor;		/* Foreground and background
+                                         * colors */
     int lineWidth;			/* Line width. */
     int capStyle;			/* Cap style. */
     int joinStyle;			/* Join style.*/
     Blt_Dashes dashes;			/* Dash list values (max 11) */
-
     GC gc;				/* Private graphic context */
-
     Segment2d *segments;		/* Malloc'ed array of points.
-					 * Represents individual line segments
-					 * (2 points per segment) comprising the
-					 * mapped line.  The segments may not
-					 * necessarily be connected after
-					 * clipping. */
+					 * Represents individual line
+					 * segments (2 points per segment)
+					 * comprising the mapped line.  The
+					 * segments may not necessarily be
+					 * connected after clipping. */
     int numSegments;			/* # segments in the above array. */
     int xor;
-    int xorState;			/* State of the XOR drawing. Indicates
-					 * if the marker is currently drawn. */
+    int xorState;			/* State of XOR drawing. Indicates
+					 * if the marker is currently
+					 * drawn. */
 } LineMarker;
 
 static Blt_ConfigSpec lineConfigSpecs[] =
@@ -590,84 +565,75 @@ static MarkerClass lineMarkerClass = {
  *---------------------------------------------------------------------------
  */
 typedef struct {
-    GraphObj obj;			/* Must be first field in marker. */
-
+    GraphObj obj;			/* Must be first field in
+                                         * marker. */
     MarkerClass *classPtr;
-
     Blt_HashEntry *hashPtr;
-
     Blt_ChainLink link;
-
-    const char *elemName;		/* Element associated with marker. Let's
-					 * you link a marker to an element. The
-					 * marker is drawn only if the element
-					 * is also visible. */
+    const char *elemName;		/* Element associated with
+					 * marker. Let's you link a marker
+					 * to an element. The marker is
+					 * drawn only if the element is
+					 * also visible. */
     Axis2d axes;
-
     Point2d *worldPts;			/* Coordinate array to position
 					 * marker. */
-
-    int numWorldPts;			/* Number of points in above array */
-
+    int numWorldPts;			/* # of points in above array */
     int drawUnder;			/* If non-zero, draw the marker
-					 * underneath any elements. This can be
-					 * a performance penalty because the
-					 * graph must be redraw entirely each
-					 * time the marker is redrawn. */
-
+					 * underneath any elements. This
+					 * can be a performance penalty
+					 * because the graph must be redraw
+					 * entirely each time the marker is
+					 * redrawn. */
     int clipped;			/* Indicates if the marker is totally
 					 * clipped by the plotting area. */
-
     unsigned int flags;		
-
-
-    int xOffset, yOffset;		/* Pixel offset from graph position */
-
+    int xOffset, yOffset;		/* Pixel offset from graph
+                                         * position */
     int state;
-
     Point2d *screenPts;			/* Array of points representing the
-					 * polygon in screen coordinates. It's
-					 * not used for drawing, but to generate
-					 * the outlinePts and fillPts arrays
+					 * polygon in screen
+					 * coordinates. It's not used for
+					 * drawing, but to generate the
+					 * outlinePts and fillPts arrays
 					 * that are the coordinates of the
-					 * possibly clipped outline and filled
-					 * polygon. */
-
+					 * possibly clipped outline and
+					 * filled polygon. */
     ColorPair outline;
     ColorPair fill;
-
     Pixmap stipple;			/* Stipple pattern to fill the
 					 * polygon. */
     int lineWidth;			/* Width of polygon outline. */
     int capStyle;
     int joinStyle;
-    Blt_Dashes dashes;			/* List of dash values.  Indicates how
-					 * to draw the dashed line.  If no dash
-					 * values are provided, or the first
-					 * value is zero, then the line is drawn
-					 * solid. */
-
-    GC outlineGC;			/* Graphics context to draw the outline
-					 * of the polygon. */
-    GC fillGC;				/* Graphics context to draw the filled
-					 * polygon. */
-
-    Point2d *fillPts;			/* Malloc'ed array of points used to
-					 * draw the filled polygon. These points
-					 * may form a degenerate polygon after
+    Blt_Dashes dashes;			/* List of dash values.  Indicates
+					 * how to draw the dashed line.  If
+					 * no dash values are provided, or
+					 * the first value is zero, then
+					 * the line is drawn solid. */
+    GC outlineGC;			/* Graphics context to draw the
+					 * outline of the polygon. */
+    GC fillGC;				/* Graphics context to draw the
+					 * filled polygon. */
+    Point2d *fillPts;			/* Malloc'ed array of points used
+					 * to draw the filled
+					 * polygon. These points may form a
+					 * degenerate polygon after
 					 * clipping. */
     int numFillPts;			/* # points in the above array. */
     Segment2d *outlinePts;		/* Malloc'ed array of points.
-					 * Represents individual line segments
-					 * (2 points per segment) comprising the
-					 * outline of the polygon.  The segments
-					 * may not necessarily be closed or
+					 * Represents individual line
+					 * segments (2 points per segment)
+					 * comprising the outline of the
+					 * polygon.  The segments may not
+					 * necessarily be closed or
 					 * connected after clipping. */
     int numOutlinePts;			/* # points in the above array. */
     int xor;
-    int xorState;			/* State of the XOR drawing. Indicates
-					 * if the marker is visible. We have to
-					 * drawn it again to erase it. */
+    int xorState;			/* State of XOR drawing. Indicates
+					 * if the marker is visible. We
+					 * have to drawn it again to erase
+					 * it. */
 } PolygonMarker;
 
 static Blt_ConfigSpec polygonConfigSpecs[] =
@@ -746,41 +712,45 @@ static MarkerClass polygonMarkerClass = {
  *---------------------------------------------------------------------------
  */
 typedef struct {
-    GraphObj obj;			/* Must be first field in marker. */
+    GraphObj obj;			/* Must be first field in
+                                         * marker. */
     MarkerClass *classPtr;
     Blt_HashEntry *hashPtr;
     Blt_ChainLink link;
-    const char *elemName;		/* Element associated with marker. Let's
-					 * you link a marker to an element. The
-					 * marker is drawn only if the element
-					 * is also visible. */
+    const char *elemName;		/* Element associated with
+					 * marker. Let's you link a marker
+					 * to an element. The marker is
+					 * drawn only if the element is
+					 * also visible. */
     Axis2d axes;
     Point2d *worldPts;			/* Coordinate array to position
 					 * marker. */
     int numWorldPts;			/* # of points in above array */
     int drawUnder;			/* If non-zero, draw the marker
-					 * underneath any elements. This can be
-					 * a performance penalty because the
-					 * graph must be redraw entirely each
-					 * time the marker is redrawn. */
-    int clipped;			/* Indicates if the marker is totally
-					 * clipped by the plotting area. */
+					 * underneath any elements. This
+					 * can be a performance penalty
+					 * because the graph must be redraw
+					 * entirely each time the marker is
+					 * redrawn. */
+    int clipped;			/* Indicates if the marker is
+					 * totally clipped by the plotting
+					 * area. */
     unsigned int flags;		
-
-
-    int xOffset, yOffset;		/* Pixel offset from graph position */
+    int xOffset, yOffset;		/* Pixel offset from graph
+                                         * position */
     int state;
 
     /* Fields specific to text markers. */
 #ifdef notdef
     const char *textVarName;		/* Name of variable (malloc'ed) or
-					 * NULL. If non-NULL, graph displays the
-					 * contents of this variable. */
+					 * NULL. If non-NULL, graph
+					 * displays the contents of this
+					 * variable. */
 #endif
     const char *string;			/* Text string to be display.  The
 					 * string make contain newlines. */
-    Tk_Anchor anchor;			/* Indicates how to translate the given
-					 * marker position. */
+    Tk_Anchor anchor;			/* Indicates how to translate the
+					 * given marker position. */
     Point2d anchorPt;			/* Translated anchor point. */
     int width, height;			/* Dimension of bounding box. */
     TextStyle style;			/* Text attributes (font, fg, anchor,
@@ -874,53 +844,46 @@ static MarkerClass textMarkerClass = {
  *---------------------------------------------------------------------------
  */
 typedef struct {
-    GraphObj obj;			/* Must be first field in marker. */
-
+    GraphObj obj;			/* Must be first field in
+                                         * marker. */
     MarkerClass *classPtr;
-
     Blt_HashEntry *hashPtr;
-
     Blt_ChainLink link;
-
-    const char *elemName;		/* Element associated with marker. Let's
-					 * you link a marker to an element. The
-					 * marker is drawn only if the element
-					 * is also visible. */
+    const char *elemName;		/* Element associated with
+					 * marker. Let's you link a marker
+					 * to an element. The marker is
+					 * drawn only if the element is
+					 * also visible. */
     Axis2d axes;
-
     Point2d *worldPts;			/* Coordinate array to position
 					 * marker */
-
     int numWorldPts;			/* # of points in above array */
-
     int drawUnder;			/* If non-zero, draw the marker
-					 * underneath any elements. This can be
-					 * a performance penalty because the
-					 * graph must be redraw entirely each
-					 * time the marker is redrawn. */
-
-    int clipped;			/* Indicates if the marker is totally
-					 * clipped by the plotting area. */
-
+					 * underneath any elements. This
+					 * can be a performance penalty
+					 * because the graph must be redraw
+					 * entirely each time the marker is
+					 * redrawn. */
+    int clipped;			/* Indicates if the marker is
+					 * totally clipped by the plotting
+					 * area. */
     unsigned int flags;		
-
-
-    int xOffset, yOffset;		/* Pixel offset from graph position */
-
+    int xOffset, yOffset;		/* Pixel offset from graph
+                                         * position */
     int state;
 
     /* Fields specific to window markers. */
 
     const char *childName;		/* Name of child widget. */
     Tk_Window child;			/* Window to display. */
-    int reqWidth, reqHeight;		/* If non-zero, this overrides the size
-					 * requested by the child widget. */
-
-    Tk_Anchor anchor;			/* Indicates how to translate the given
-					 * marker position. */
-
+    int reqWidth, reqHeight;		/* If non-zero, this overrides the
+					 * size requested by the child
+					 * widget. */
+    Tk_Anchor anchor;			/* Indicates how to translate the
+					 * given marker position. */
     Point2d anchorPt;			/* Translated anchor point. */
-    int width, height;			/* Current size of the child window. */
+    int width, height;			/* Current size of the child
+                                         * window. */
 
 } WindowMarker;
 
@@ -1023,8 +986,8 @@ static Tcl_FreeProc FreeMarker;
  *
  *	With the marker removed from the marker list and hashtable, there
  *	should be no way for a command to use the marker.  The only thing
- *	to worry about are event callbacks from picked objects.  They should
- *	be checking the deleted flag.
+ *	to worry about are event callbacks from picked objects.  They
+ *	should be checking the deleted flag.
  *
  *---------------------------------------------------------------------------
  */
@@ -1040,12 +1003,12 @@ FreeMarker(DestroyData data)
  * BoxesDontOverlap --
  *
  *	Tests if the bounding box of a marker overlaps the plotting area in
- *	any way.  If so, the marker will be drawn.  Just do a min/max test on
- *	the extents of both boxes.
+ *	any way.  If so, the marker will be drawn.  Just do a min/max test
+ *	on the extents of both boxes.
  *
- *	Note: It's assumed that the extents of the bounding box lie 
- *	      within the area.  So for a 10x10 rectangle, bottom and
- *	      left would be 9.
+ *	Note: It's assumed that the extents of the bounding box lie within
+ *	      the area.  So for a 10x10 rectangle, bottom and left would be
+ *	      9.
  *
  * Results:
  *	Returns 0 is the marker is visible in the plotting area, and 1
@@ -1073,10 +1036,10 @@ BoxesDontOverlap(Graph *graphPtr, Region2d *extsPtr)
  *
  * GetCoordinate --
  *
- * 	Convert the expression string into a floating point value. The * only
- * 	reason we use this routine instead of Blt_ExprDouble is to * handle
- * 	"elastic" bounds.  That is, convert the strings "-Inf", * "Inf" into
- * 	-(DBL_MAX) and DBL_MAX respectively.
+ * 	Convert the expression string into a floating point value. The *
+ * 	only reason we use this routine instead of Blt_ExprDouble is to *
+ * 	handle "elastic" bounds.  That is, convert the strings "-Inf", *
+ * 	"Inf" into -(DBL_MAX) and DBL_MAX respectively.
  *
  * Results:
  *	The return value is a standard TCL result.  The value of the
@@ -1089,7 +1052,8 @@ GetCoordinate(
     Tcl_Interp *interp,			/* Interpreter to return results */
     Tcl_Obj *objPtr,			/* Numeric expression string to
 					 * parse */
-    double *valuePtr)			/* Real-valued result of expression */
+    double *valuePtr)			/* Real-valued result of
+                                         * expression */
 {
     char c;
     const char *expr;
@@ -1114,16 +1078,17 @@ GetCoordinate(
  *
  * PrintCoordinate --
  *
- * 	Convert the floating point value into its string representation.  The
- * 	only reason this routine is used in instead of sprintf, is to handle
- * 	the "elastic" bounds.  That is, convert the values DBL_MAX and
- * 	-(DBL_MAX) into "+Inf" and "-Inf" respectively.
+ * 	Convert the floating point value into its string representation.
+ * 	The only reason this routine is used in instead of sprintf, is to
+ * 	handle the "elastic" bounds.  That is, convert the values DBL_MAX
+ * 	and -(DBL_MAX) into "+Inf" and "-Inf" respectively.
  *
  * Results:
- *	The return value is a standard TCL result.  The string of the *
+ *	The return value is a standard TCL result.  The string of the
  *	expression is passed back via string.
  *
- * -------------------------------------------------------------------------- */
+ *-------------------------------------------------------------------------- 
+ */
 static Tcl_Obj *
 PrintCoordinate(double x)
 {
@@ -1144,24 +1109,21 @@ PrintCoordinate(double x)
  *	The TCL coordinate list is converted to their floating point
  *	values. It will then replace the current marker coordinates.
  *
- *	Since different marker types require different number of coordinates
- *	this must be checked here.
+ *	Since different marker types require different number of
+ *	coordinates this must be checked here.
  *
  * Results:
  *	The return value is a standard TCL result.
  *
  * Side effects:
- *	If the marker coordinates are reset, the graph is eventually redrawn
- *	with at the new marker coordinates.
+ *	If the marker coordinates are reset, the graph is eventually
+ *	redrawn with at the new marker coordinates.
  *
  *---------------------------------------------------------------------------
  */
 static int
-ParseCoordinates(
-    Tcl_Interp *interp,
-    Marker *markerPtr,
-    int objc,
-    Tcl_Obj *const *objv)
+ParseCoordinates(Tcl_Interp *interp, Marker *markerPtr, int objc,
+                 Tcl_Obj *const *objv)
 {
     int numWorldPts;
     int minArgs, maxArgs;
@@ -1242,11 +1204,8 @@ ParseCoordinates(
 
 /*ARGSUSED*/
 static void
-FreeCoordsProc(
-    ClientData clientData,		/* Not used. */
-    Display *display,			/* Not used. */
-    char *widgRec,
-    int offset)
+FreeCoordsProc(ClientData clientData, Display *display, char *widgRec,
+               int offset)
 {
     Marker *markerPtr = (Marker *)widgRec;
     Point2d **pointsPtr = (Point2d **)(widgRec + offset);
@@ -1264,31 +1223,25 @@ FreeCoordsProc(
  * ObjToCoordsProc --
  *
  *	Given a TCL list of numeric expression representing the element
- *	values, convert into an array of floating point values. In addition,
- *	the minimum and maximum values are saved.  Since elastic values are
- *	allow (values which translate to the min/max of the graph), we must
- *	try to get the non-elastic minimum and maximum.
+ *	values, convert into an array of floating point values. In
+ *	addition, the minimum and maximum values are saved.  Since elastic
+ *	values are allow (values which translate to the min/max of the
+ *	graph), we must try to get the non-elastic minimum and maximum.
  *
  * Results:
- *	The return value is a standard TCL result.  The vector is
- *	passed back via the vecPtr.
+ *	The return value is a standard TCL result.  The vector is passed
+ *	back via the vecPtr.
  *
  * -------------------------------------------------------------------------- 
  */
 /*ARGSUSED*/
 static int
-ObjToCoordsProc(
-    ClientData clientData,	/* Not used. */
-    Tcl_Interp *interp,		/* Interpreter to return results */
-    Tk_Window tkwin,		/* Not used. */
-    Tcl_Obj *objPtr,		/* TCL list of numeric expressions */
-    char *widgRec,		/* Marker record */
-    int offset,			/* Not used. */
-    int flags)			/* Not used. */
+ObjToCoordsProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+                Tcl_Obj *objPtr, char *widgRec, int offset, int flags)
 {
     Marker *markerPtr = (Marker *)widgRec;
-    int objc;
     Tcl_Obj **objv;
+    int objc;
 
     if (Tcl_ListObjGetElements(interp, objPtr, &objc, &objv) != TCL_OK) {
 	return TCL_ERROR;
@@ -1313,13 +1266,8 @@ ObjToCoordsProc(
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-CoordsToObjProc(
-    ClientData clientData,	/* Not used. */
-    Tcl_Interp *interp,
-    Tk_Window tkwin,		/* Not used. */
-    char *widgRec,		/* Marker record */
-    int offset,			/* Not used. */
-    int flags)			/* Not used. */
+CoordsToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+                char *widgRec, int offset, int flags)
 {
     Marker *markerPtr = (Marker *)widgRec;
     Tcl_Obj *listObjPtr;
@@ -1336,12 +1284,8 @@ CoordsToObjProc(
 
 /*LINTLIBRARY*/
 static int
-GetColorPair(
-    Tcl_Interp *interp,
-    Tk_Window tkwin,
-    Tcl_Obj *fgObjPtr, Tcl_Obj *bgObjPtr,
-    ColorPair *pairPtr,
-    int allowDefault)
+GetColorPair(Tcl_Interp *interp, Tk_Window tkwin, Tcl_Obj *fgObjPtr,
+             Tcl_Obj *bgObjPtr, ColorPair *pairPtr, int allowDefault)
 {
     XColor *fgColor, *bgColor;
     const char *string;
@@ -1403,11 +1347,8 @@ Blt_FreeColorPair(ColorPair *pairPtr)
 }
 
 static void
-FreeColorPairProc(
-    ClientData clientData,		/* Not used. */
-    Display *display,			/* Not used. */
-    char *widgRec,
-    int offset)
+FreeColorPairProc(ClientData clientData, Display *display, char *widgRec,
+                  int offset)
 {
     ColorPair *pairPtr = (ColorPair *)(widgRec + offset);
 
@@ -1429,20 +1370,14 @@ FreeColorPairProc(
  */
 /*ARGSUSED*/
 static int
-ObjToColorPairProc(
-    ClientData clientData,		/* Not used. */
-    Tcl_Interp *interp,			/* Interpreter to return results */
-    Tk_Window tkwin,			/* Not used. */
-    Tcl_Obj *objPtr,			/* String representing color */
-    char *widgRec,			/* Widget record */
-    int offset,				/* Offset to field in structure */
-    int flags)				/* Not used. */
+ObjToColorPairProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+                   Tcl_Obj *objPtr, char *widgRec, int offset, int flags)
 {
     ColorPair *pairPtr = (ColorPair *)(widgRec + offset);
-    long longValue = (long)clientData;
-    int bool;
-    int objc;
     Tcl_Obj **objv;
+    int state;
+    int objc;
+    long longValue = (long)clientData;
 
     if (Tcl_ListObjGetElements(interp, objPtr, &objc, &objv) != TCL_OK) {
 	return TCL_ERROR;
@@ -1456,14 +1391,14 @@ ObjToColorPairProc(
 	Blt_FreeColorPair(pairPtr);
 	return TCL_OK;
     }
-    bool = (int)longValue;
+    state = (int)longValue;
     if (objc == 1) {
-	if (GetColorPair(interp, tkwin, objv[0], NULL, pairPtr, bool) 
+	if (GetColorPair(interp, tkwin, objv[0], NULL, pairPtr, state) 
 	    != TCL_OK) {
 	    return TCL_ERROR;
 	}
     } else {
-	if (GetColorPair(interp, tkwin, objv[0], objv[1], pairPtr, bool) 
+	if (GetColorPair(interp, tkwin, objv[0], objv[1], pairPtr, state) 
 	    != TCL_OK) {
 	    return TCL_ERROR;
 	}
@@ -1509,22 +1444,17 @@ NameOfColor(XColor *colorPtr)
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-ColorPairToObjProc(
-    ClientData clientData,		/* Not used. */
-    Tcl_Interp *interp,
-    Tk_Window tkwin,			/* Not used. */
-    char *widgRec,			/* Element information record */
-    int offset,				/* Offset to field in structure */
-    int flags)				/* Not used. */
+ColorPairToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+                   char *widgRec, int offset, int flags)
 {
     ColorPair *pairPtr = (ColorPair *)(widgRec + offset);
-    Tcl_Obj *listObjPtr;
+    Tcl_Obj *listObjPtr, *objPtr;
 
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
-    Tcl_ListObjAppendElement(interp, listObjPtr, 
-		Tcl_NewStringObj(NameOfColor(pairPtr->fgColor), -1));
-    Tcl_ListObjAppendElement(interp, listObjPtr,
-		Tcl_NewStringObj(NameOfColor(pairPtr->bgColor), -1));
+    objPtr = Tcl_NewStringObj(NameOfColor(pairPtr->fgColor), -1);
+    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+    objPtr = Tcl_NewStringObj(NameOfColor(pairPtr->bgColor), -1);
+    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
     return listObjPtr;
 }
 
@@ -1541,10 +1471,8 @@ ColorPairToObjProc(
  */
 /* ARGSUSED */
 static void
-ImageChangedProc(
-    ClientData clientData,
-    int x, int y, int w, int h,		/* Not used. */
-    int imageWidth, int imageHeight)	/* Not used. */
+ImageChangedProc(ClientData clientData, int x, int y, int w, int h,
+                 int imageWidth, int imageHeight)	
 {
     Graph *graphPtr;
     ImageMarker *imPtr = clientData;
@@ -1573,11 +1501,8 @@ ImageChangedProc(
 
 /*ARGSUSED*/
 static void
-FreePictImageProc(
-    ClientData clientData,
-    Display *display,			/* Not used. */
-    char *widgRec,
-    int offset)
+FreePictImageProc(ClientData clientData, Display *display, char *widgRec,
+                  int offset)
 {
     ImageMarker *imPtr = (ImageMarker *)widgRec;
 
@@ -1606,14 +1531,8 @@ FreePictImageProc(
  */
 /*ARGSUSED*/
 static int
-ObjToPictImageProc(
-    ClientData clientData,		/* Not used. */
-    Tcl_Interp *interp,			/* Interpreter to return results */
-    Tk_Window tkwin,			/* Not used. */
-    Tcl_Obj *objPtr,			/* String representation of value. */
-    char *widgRec,			/* Widget record. */
-    int offset,				/* Offset to field in structure */
-    int flags)	
+ObjToPictImageProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+                   Tcl_Obj *objPtr, char *widgRec, int offset, int flags)	
 {
     Blt_Picture *picturePtr = (Blt_Picture *)(widgRec + offset);
     Graph *graphPtr;
@@ -1658,13 +1577,8 @@ ObjToPictImageProc(
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-PictImageToObjProc(
-    ClientData clientData,		/* Not used. */
-    Tcl_Interp *interp,
-    Tk_Window tkwin,			/* Not used. */
-    char *widgRec,			/* Widget record */
-    int offset,				/* Offset to field in structure */
-    int flags)	
+PictImageToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+                   char *widgRec, int offset, int flags)	
 {
     ImageMarker *imPtr = (ImageMarker *)(widgRec);
     
@@ -1699,9 +1613,10 @@ IsElementHidden(Marker *markerPtr)
  *
  * HMap --
  *
- *	Maps the given graph coordinate value to its axis, returning a window
- *	position.  This is a slight variation on the normal Blt_HMap routine.
- *	It treats -Inf as the minimum axis value and Inf as the maximum.
+ *	Maps the given graph coordinate value to its axis, returning a
+ *	window position.  This is a slight variation on the normal Blt_HMap
+ *	routine.  It treats -Inf as the minimum axis value and Inf as the
+ *	maximum.
  *
  * Results:
  *	Returns a floating point number representing the window coordinate
@@ -1738,13 +1653,14 @@ HMap(Axis *axisPtr, double x)
  *
  * VMap --
  *
- *	Map the given graph coordinate value to its axis, returning a window
- *	position.  This is a slight variation on the normal Blt_VMap routine.
- *	It treats -Inf as the minimum axis value and Inf as the maximum.
+ *	Map the given graph coordinate value to its axis, returning a
+ *	window position.  This is a slight variation on the normal Blt_VMap
+ *	routine.  It treats -Inf as the minimum axis value and Inf as the
+ *	maximum.
  *
  * Results:
- *	Returns a double precision number representing the window coordinate
- *	position on the given axis.
+ *	Returns a double precision number representing the window
+ *	coordinate position on the given axis.
  *
  *---------------------------------------------------------------------------
  */
@@ -1781,16 +1697,17 @@ VMap(Axis *axisPtr, double y)
  *	graph. This data structure is used to clip the points and line
  *	segments of markers.
  *
- *	The clip region is the plotting area plus such arbitrary extra space.
- *	The reason we clip with a bounding box larger than the plot area is so
- *	that symbols will be drawn even if their center point isn't in the
- *	plotting area.
+ *	The clip region is the plotting area plus such arbitrary extra
+ *	space.  The reason we clip with a bounding box larger than the plot
+ *	area is so that symbols will be drawn even if their center point
+ *	isn't in the plotting area.
  *
  * Results:
  *	None.
  *
  * Side Effects:
- *	The bounding box is filled with the dimensions of the plotting area.
+ *	The bounding box is filled with the dimensions of the plotting
+ *	area.
  *
  *---------------------------------------------------------------------------
  */
@@ -1829,8 +1746,8 @@ GraphExtents(Marker *markerPtr, Region2d *r)
  */
 static Point2d
 MapPoint(
-    Point2d *pointPtr,		/* Graph X-Y coordinate. */
-    Axis2d *axesPtr)		/* Specifies which axes to use */
+    Point2d *pointPtr,                  /* Graph X-Y coordinate. */
+    Axis2d *axesPtr)                    /* Specifies which axes to use */
 {
     Point2d result;
     Graph *graphPtr = axesPtr->y->obj.graphPtr;
@@ -1853,23 +1770,17 @@ CreateMarker(Graph *graphPtr, const char *name, ClassId classId)
     /* Create the new marker based upon the given type */
     switch (classId) {
     case CID_MARKER_BITMAP:
-	markerPtr = CreateBitmapProc(); /* bitmap */
-	break;
+	markerPtr = CreateBitmapProc();         break;
     case CID_MARKER_LINE:
-	markerPtr = CreateLineProc();	/* line */
-	break;
+	markerPtr = CreateLineProc();           break;
     case CID_MARKER_IMAGE:
-	markerPtr = CreateImageProc();	/* image */
-	break;
+	markerPtr = CreateImageProc();		break;
     case CID_MARKER_TEXT:
-	markerPtr = CreateTextProc();	/* text */
-	break;
+	markerPtr = CreateTextProc();		break;
     case CID_MARKER_POLYGON:
-	markerPtr = CreatePolygonProc(); /* polygon */
-	break;
+	markerPtr = CreatePolygonProc();	break;
     case CID_MARKER_WINDOW:
-	markerPtr = CreateWindowProc(); /* window */
-	break;
+	markerPtr = CreateWindowProc(); 	break;
     default:
 	return NULL;
     }
@@ -1887,14 +1798,14 @@ CreateMarker(Graph *graphPtr, const char *name, ClassId classId)
  *
  * DestroyMarker --
  *
- *	Free the resources allocated for the marker but not the marker itself.
- *	Also mark it as deleted. No one should be using the structure except to
- *	examine the delete flag.
+ *	Free the resources allocated for the marker but not the marker
+ *	itself.  Also mark it as deleted. No one should be using the
+ *	structure except to examine the delete flag.
  *
- *	When the marker is removed from the marker list and hashtable, there
- *	will be no way to select the marker from a command.  The only thing
- *	to worry about are event callbacks from picked objects and they should
- *	be checking the deleted flag.
+ *	When the marker is removed from the marker list and hashtable,
+ *	there will be no way to select the marker from a command.  The only
+ *	thing to worry about are event callbacks from picked objects and
+ *	they should be checking the deleted flag.
  *
  *---------------------------------------------------------------------------
  */
@@ -1946,8 +1857,8 @@ DestroyMarker(Marker *markerPtr)
  *	marker.
  *
  * Results:
- *	A standard TCL result.  If TCL_ERROR is returned, then interp->result
- *	contains an error message.
+ *	A standard TCL result.  If TCL_ERROR is returned, then
+ *	interp->result contains an error message.
  *
  * Side effects:
  *	Configuration information, such as bitmap pixmap, colors, rotation,
@@ -1981,8 +1892,8 @@ ConfigureBitmapProc(Marker *markerPtr)
     }
 
     if (bmPtr->fillColor != NULL) {
-	/* Opaque bitmap: both foreground and background (fill) colors
-	 * are used. */
+	/* Opaque bitmap: both foreground and background (fill) colors are
+	 * used. */
 	gcValues.background = bmPtr->fillColor->pixel;
 	gcMask |= GCBackground;
     } else {
@@ -1992,10 +1903,10 @@ ConfigureBitmapProc(Marker *markerPtr)
     }
 
     /* 
-     * This is technically a shared GC, but we're going to set/change the clip
-     * origin anyways before we draw the bitmap.  This relies on the fact that
-     * no other client will be allocated this GC with the GCClipMask set to
-     * this particular bitmap.
+     * This is technically a shared GC, but we're going to set/change the
+     * clip origin anyways before we draw the bitmap.  This relies on the
+     * fact that no other client will be allocated this GC with the
+     * GCClipMask set to this particular bitmap.
      */
     newGC = Tk_GetGC(graphPtr->tkwin, gcMask, &gcValues);
     if (bmPtr->gc != NULL) {
@@ -2041,9 +1952,9 @@ PrintPolyPoint(char *mesg, Point2d *points, int numPoints)
  *
  * MapBitmapProc --
  *
- * 	This procedure gets called each time the layout of the graph changes.
- * 	The x, y window coordinates of the bitmap marker are saved in the
- * 	marker structure.
+ * 	This procedure gets called each time the layout of the graph
+ * 	changes.  The x, y window coordinates of the bitmap marker are
+ * 	saved in the marker structure.
  *
  *	Additionly, if no background color was specified, the
  *	GCTileStipXOrigin and GCTileStipYOrigin attributes are set in the
@@ -2053,8 +1964,9 @@ PrintPolyPoint(char *mesg, Point2d *points, int numPoints)
  *	None.
  *
  * Side effects:
- *	Window coordinates are saved and if no background color was set, the
- *	GC stipple origins are changed to calculated window coordinates.
+ *	Window coordinates are saved and if no background color was set,
+ *	the GC stipple origins are changed to calculated window
+ *	coordinates.
  *
  *---------------------------------------------------------------------------
  */
@@ -2078,8 +1990,8 @@ MapBitmapProc(Marker *markerPtr)
 	bmPtr->destBitmap = None;
     }
     /* 
-     * Collect the coordinates.  The number of coordinates will determine the
-     * calculations to be made.
+     * Collect the coordinates.  The number of coordinates will determine
+     * the calculations to be made.
      * 
      *	   x1 y1	A single pair of X-Y coordinates.  They represent
      *			the anchor position of the bitmap.  
@@ -2127,8 +2039,9 @@ MapBitmapProc(Marker *markerPtr)
     extents.bottom = anchorPt.y + destHeight - 1;
     markerPtr->clipped = BoxesDontOverlap(graphPtr, &extents);
     if (markerPtr->clipped) {
-	return;				/* Bitmap is offscreen. Don't generate
-					 * rotated or scaled bitmaps. */
+	return;				/* Bitmap is offscreen. Don't
+					 * generate rotated or scaled
+					 * bitmaps. */
     }
 
     /*  
@@ -2178,9 +2091,9 @@ MapBitmapProc(Marker *markerPtr)
 	int n;
 
 	/* 
-	 * Compute a polygon to represent the background area of the bitmap.
-	 * This is needed for backgrounds of arbitrarily rotated bitmaps.  We
-	 * also use it to print a background in PostScript.
+	 * Compute a polygon to represent the background area of the
+	 * bitmap.  This is needed for backgrounds of arbitrarily rotated
+	 * bitmaps.  We also use it to print a background in PostScript.
 	 */
 	Blt_GetBoundingBox(srcWidth, srcHeight, bmPtr->angle, &rotWidth, 
 			   &rotHeight, polygon);
@@ -2188,8 +2101,8 @@ MapBitmapProc(Marker *markerPtr)
 	yScale = (double)destHeight / rotHeight;
 	
 	/* 
-	 * Adjust each point of the polygon. Both scale it to the new size and
-	 * translate it to the actual screen position of the bitmap.
+	 * Adjust each point of the polygon. Both scale it to the new size
+	 * and translate it to the actual screen position of the bitmap.
 	 */
 	tx = extents.left + destWidth * 0.5;
 	ty = extents.top + destHeight * 0.5;
@@ -2214,8 +2127,8 @@ MapBitmapProc(Marker *markerPtr)
  *
  * PointInBitmapProc --
  *
- *	Indicates if the given point is over the bitmap marker.  The area of
- *	the bitmap is the rectangle.
+ *	Indicates if the given point is over the bitmap marker.  The area
+ *	of the bitmap is the rectangle.
  *
  * Results:
  *	Returns 1 is the point is over the bitmap marker, 0 otherwise.
@@ -2235,8 +2148,8 @@ PointInBitmapProc(Marker *markerPtr, Point2d *samplePtr)
 	int i;
 
 	/*  
-	 * Generate the bounding polygon (isolateral) for the bitmap and see
-	 * if the point is inside of it.
+	 * Generate the bounding polygon (isolateral) for the bitmap and
+	 * see if the point is inside of it.
 	 */
 	for (i = 0; i < bmPtr->numOutlinePts; i++) {
 	    points[i].x = bmPtr->outline[i].x + bmPtr->anchorPt.x;
@@ -2271,8 +2184,8 @@ RegionInBitmapProc(Marker *markerPtr, Region2d *extsPtr, int enclosed)
 	int i;
 	
 	/*  
-	 * Generate the bounding polygon (isolateral) for the bitmap and see
-	 * if the point is inside of it.
+	 * Generate the bounding polygon (isolateral) for the bitmap and
+	 * see if the point is inside of it.
 	 */
 	for (i = 0; i < bmPtr->numOutlinePts; i++) {
 	    points[i].x = bmPtr->outline[i].x + bmPtr->anchorPt.x;
@@ -2325,8 +2238,8 @@ DrawBitmapProc(Marker *markerPtr, Drawable drawable)
     if ((bmPtr->fillColor == NULL) || (rangle != 0.0)) {
 
 	/* 
-	 * If the bitmap is rotated and a filled background is required, then
-	 * a filled polygon is drawn before the bitmap.
+	 * If the bitmap is rotated and a filled background is required,
+	 * then a filled polygon is drawn before the bitmap.
 	 */
 	if (bmPtr->fillColor != NULL) {
 	    int i;
@@ -2405,8 +2318,8 @@ BitmapToPostscriptProc(Marker *markerPtr, Blt_Ps ps)
  *	None.
  *
  * Side effects:
- *	Bitmap attributes (GCs, colors, bitmap, etc) get destroyed.  Memory is
- *	released, X resources are freed, and the graph is redrawn.
+ *	Bitmap attributes (GCs, colors, bitmap, etc) get destroyed.  Memory
+ *	is released, X resources are freed, and the graph is redrawn.
  *
  *---------------------------------------------------------------------------
  */
@@ -2463,8 +2376,8 @@ CreateBitmapProc(void)
  *	marker.
  *
  * Results:
- *	A standard TCL result.  If TCL_ERROR is returned, then interp->result
- *	contains an error message.
+ *	A standard TCL result.  If TCL_ERROR is returned, then
+ *	interp->result contains an error message.
  *
  * Side effects:
  *	Configuration information, such as image pixmap, colors, rotation,
@@ -2505,20 +2418,21 @@ ConfigureImageProc(Marker *markerPtr)
  *
  * MapImageProc --
  *
- * 	This procedure gets called each time the layout of the graph changes.
- * 	The x, y window coordinates of the image marker are saved in the
- * 	marker structure.
+ * 	This procedure gets called each time the layout of the graph
+ * 	changes.  The x, y window coordinates of the image marker are saved
+ * 	in the marker structure.
  *
  *	In addition, if no background color was specified, the
- *	GCTileStipXOrigin and GCTileStipYOrigin attributes will not set in the
- *	private GC.
+ *	GCTileStipXOrigin and GCTileStipYOrigin attributes will not set in
+ *	the private GC.
  *
  * Results:
  *	None.
  *
  * Side effects:
- *	Window coordinates are saved and if no background color was set, the
- *	GC stipple origins are changed to calculated window coordinates.
+ *	Window coordinates are saved and if no background color was set,
+ *	the GC stipple origins are changed to calculated window
+ *	coordinates.
  *
  *---------------------------------------------------------------------------
  */
@@ -2588,8 +2502,9 @@ MapImageProc(Marker *markerPtr)
 
     markerPtr->clipped = BoxesDontOverlap(graphPtr, &extents);
     if (markerPtr->clipped) {
-	return;				/* Image is offscreen. Don't generate
-					 * rotated or scaled images. */
+	return;				/* Image is offscreen. Don't
+					 * generate rotated or scaled
+					 * images. */
     }
 
     /* Determine the extents of the subimage inside of the destination
@@ -2635,8 +2550,8 @@ MapImageProc(Marker *markerPtr)
  *
  * PointInWindowProc --
  *
- *	Indicates if the given point is over the window marker.  The area of
- *	the window is the rectangle.
+ *	Indicates if the given point is over the window marker.  The area
+ *	of the window is the rectangle.
  *
  * Results:
  *	Returns 1 is the point is over the window marker, 0 otherwise.
@@ -2746,14 +2661,15 @@ ImageToPostscriptProc(Marker *markerPtr, Blt_Ps ps)
  *
  * FreeImageProc --
  *
- *	Destroys the structure containing the attributes of the image marker.
+ *	Destroys the structure containing the attributes of the image
+ *	marker.
  *
  * Results:
  *	None.
  *
  * Side effects:
- *	Image attributes (GCs, colors, image, etc) get destroyed.  Memory is
- *	released, X resources are freed, and the graph is redrawn.
+ *	Image attributes (GCs, colors, image, etc) get destroyed.  Memory
+ *	is released, X resources are freed, and the graph is redrawn.
  *
  *---------------------------------------------------------------------------
  */
@@ -2805,16 +2721,17 @@ CreateImageProc(void)
  * ConfigureTextProc --
  *
  *	This procedure is called to process an objv/objc list, plus the Tk
- *	option database, in order to configure (or reconfigure) a text marker.
+ *	option database, in order to configure (or reconfigure) a text
+ *	marker.
  *
  * Results:
- *	A standard TCL result.  If TCL_ERROR is returned, then interp->result
- *	contains an error message.
+ *	A standard TCL result.  If TCL_ERROR is returned, then
+ *	interp->result contains an error message.
  *
  * Side effects:
- *	Configuration information, such as text string, colors, font, etc. get
- *	set for markerPtr; old resources get freed, if there were any.  The
- *	marker is eventually redisplayed.
+ *	Configuration information, such as text string, colors, font,
+ *	etc. get set for markerPtr; old resources get freed, if there were
+ *	any.  The marker is eventually redisplayed.
  *
  *---------------------------------------------------------------------------
  */
@@ -2855,16 +2772,16 @@ ConfigureTextProc(Marker *markerPtr)
  *
  * MapTextProc --
  *
- *	Calculate the layout position for a text marker.  Positional information
- *	is saved in the marker.  If the text is rotated, a bitmap containing the
- *	text is created.
+ *	Calculate the layout position for a text marker.  Positional
+ *	information is saved in the marker.  If the text is rotated, a
+ *	bitmap containing the text is created.
  *
  * Results:
  *	None.
  *
  * Side effects:
- *	If no background color has been specified, the GC stipple origins are
- *	changed to current window coordinates. For both rotated and
+ *	If no background color has been specified, the GC stipple origins
+ *	are changed to current window coordinates. For both rotated and
  *	non-rotated text, if any old bitmap is leftover, it is freed.
  *
  *---------------------------------------------------------------------------
@@ -2925,8 +2842,8 @@ PointInTextProc(Marker *markerPtr, Point2d *samplePtr)
 	int i;
 
 	/* 
-	 * Figure out the bounding polygon (isolateral) for the text and see
-	 * if the point is inside of it.
+	 * Figure out the bounding polygon (isolateral) for the text and
+	 * see if the point is inside of it.
 	 */
 	for (i = 0; i < 5; i++) {
 	    points[i].x = tmPtr->outline[i].x + tmPtr->anchorPt.x;
@@ -2960,8 +2877,8 @@ RegionInTextProc(Marker *markerPtr, Region2d *extsPtr, int enclosed)
 	int i;
 	
 	/*  
-	 * Generate the bounding polygon (isolateral) for the bitmap and see
-	 * if the point is inside of it.
+	 * Generate the bounding polygon (isolateral) for the bitmap and
+	 * see if the point is inside of it.
 	 */
 	for (i = 0; i < 4; i++) {
 	    points[i].x = tmPtr->outline[i].x + tmPtr->anchorPt.x;
@@ -3010,8 +2927,8 @@ DrawTextProc(Marker *markerPtr, Drawable drawable)
 	int i;
 
 	/*
-	 * Simulate the rotated background of the bitmap by filling a bounding
-	 * polygon with the background color.
+	 * Simulate the rotated background of the bitmap by filling a
+	 * bounding polygon with the background color.
 	 */
 	for (i = 0; i < 4; i++) {
 	    points[i].x = (short int)(tmPtr->outline[i].x + tmPtr->anchorPt.x);
@@ -3055,8 +2972,8 @@ TextToPostscriptProc(Marker *markerPtr, Blt_Ps ps)
 	int i;
 
 	/*
-	 * Simulate the rotated background of the bitmap by filling a bounding
-	 * polygon with the background color.
+	 * Simulate the rotated background of the bitmap by filling a
+	 * bounding polygon with the background color.
 	 */
 	for (i = 0; i < 4; i++) {
 	    points[i].x = tmPtr->outline[i].x + tmPtr->anchorPt.x;
@@ -3074,14 +2991,16 @@ TextToPostscriptProc(Marker *markerPtr, Blt_Ps ps)
  *
  * FreeTextProc --
  *
- *	Destroys the structure containing the attributes of the text marker.
+ *	Destroys the structure containing the attributes of the text
+ *	marker.
  *
  * Results:
  *	None.
  *
  * Side effects:
  *	Text attributes (GCs, colors, stipple, font, etc) get destroyed.
- *	Memory is released, X resources are freed, and the graph is redrawn.
+ *	Memory is released, X resources are freed, and the graph is
+ *	redrawn.
  *
  *---------------------------------------------------------------------------
  */
@@ -3146,8 +3065,8 @@ static Tk_GeomMgr winMarkerMgrInfo =
  *	marker.
  *
  * Results:
- *	A standard TCL result.  If TCL_ERROR is returned, then interp->result
- *	contains an error message.
+ *	A standard TCL result.  If TCL_ERROR is returned, then
+ *	interp->result contains an error message.
  *
  * Side effects:
  *	Configuration information, such as window pathname, placement,
@@ -3349,7 +3268,7 @@ WindowToPostscriptProc(Marker *markerPtr, Blt_Ps ps)
  *
  * FreeWindowProc --
  *
- *	Destroys the structure containing the attributes of the window *
+ *	Destroys the structure containing the attributes of the window
  *	marker.
  *
  * Results:
@@ -3403,8 +3322,8 @@ CreateWindowProc(void)
  *
  * ChildEventProc --
  *
- *	This procedure is invoked whenever StructureNotify events occur for a
- *	window that's managed as part of a graph window marker. This
+ *	This procedure is invoked whenever StructureNotify events occur for
+ *	a window that's managed as part of a graph window marker. This
  *	procedure's only purpose is to clean up when windows are deleted.
  *
  * Results:
@@ -3431,8 +3350,8 @@ ChildEventProc(ClientData clientData, XEvent *eventPtr)
  *
  * ChildGeometryProc --
  *
- *	This procedure is invoked whenever a window that's associated with a
- *	window item changes its requested dimensions.
+ *	This procedure is invoked whenever a window that's associated with
+ *	a window item changes its requested dimensions.
  *
  * Results:
  *	None.
@@ -3462,9 +3381,9 @@ ChildGeometryProc(ClientData clientData, Tk_Window tkwin)
  *
  * ChildCustodyProc --
  *
- *	This procedure is invoked when an embedded window has been stolen by
- *	another geometry manager.  The information and memory associated with
- *	the widget is released.
+ *	This procedure is invoked when an embedded window has been stolen
+ *	by another geometry manager.  The information and memory associated
+ *	with the widget is released.
  *
  * Results:
  *	None.
@@ -3485,8 +3404,8 @@ ChildCustodyProc(ClientData clientData, Tk_Window tkwin)
     graphPtr = markerPtr->obj.graphPtr;
     DestroyMarker(markerPtr);
     /*
-     * Not really needed. We should get an Expose event when the child window
-     * is unmapped.
+     * Not really needed. We should get an Expose event when the child
+     * window is unmapped.
      */
     Blt_EventuallyRedrawGraph(graphPtr);
 }
@@ -3497,8 +3416,8 @@ ChildCustodyProc(ClientData clientData, Tk_Window tkwin)
  * MapLineProc --
  *
  *	Calculate the layout position for a line marker.  Positional
- *	information is saved in the marker.  The line positions are stored in
- *	an array of points (malloc'ed).
+ *	information is saved in the marker.  The line positions are stored
+ *	in an array of points (malloc'ed).
  *
  * Results:
  *	None.
@@ -3524,10 +3443,10 @@ MapLineProc(Marker *markerPtr)
     GraphExtents(markerPtr, &extents);
 
     /* 
-     * Allow twice the number of world coordinates. The line will represented
-     * as series of line segments, not one continous polyline.  This is
-     * because clipping against the plot area may chop the line into several
-     * disconnected segments.
+     * Allow twice the number of world coordinates. The line will
+     * represented as series of line segments, not one continous polyline.
+     * This is because clipping against the plot area may chop the line
+     * into several disconnected segments.
      */
     segments = Blt_AssertMalloc(markerPtr->numWorldPts * sizeof(Segment2d));
     srcPtr = markerPtr->worldPts;
@@ -3591,7 +3510,8 @@ RegionInLineProc(Marker *markerPtr, Region2d *extsPtr, int enclosed)
 		return FALSE;
 	    }
 	}
-	return TRUE;			/* All points inside bounding box. */
+	return TRUE;                    /* All points inside bounding
+                                         * box. */
     } else {
 	int count;
 	Point2d *pp, *pend;
@@ -3607,8 +3527,8 @@ RegionInLineProc(Marker *markerPtr, Region2d *extsPtr, int enclosed)
 		count++;
 	    }
 	}
-	return (count > 0);		/* At least 1 segment passes through
-					 * region. */
+	return (count > 0);		/* At least 1 segment passes
+					 * through region. */
     }
 }
 
@@ -3641,11 +3561,12 @@ DrawLineProc(Marker *markerPtr, Drawable drawable)
  * ConfigureLineProc --
  *
  *	This procedure is called to process an objv/objc list, plus the Tk
- *	option database, in order to configure (or reconfigure) a line marker.
+ *	option database, in order to configure (or reconfigure) a line
+ *	marker.
  *
  * Results:
- *	A standard TCL result.  If TCL_ERROR is returned, then interp->result
- *	contains an error message.
+ *	A standard TCL result.  If TCL_ERROR is returned, then
+ *	interp->result contains an error message.
  *
  * Side effects:
  *	Configuration information, such as line width, colors, dashes,
@@ -3729,9 +3650,9 @@ ConfigureLineProc(Marker *markerPtr)
  *
  * LineToPostscriptProc --
  *
- *	Prints postscript commands to display the connect line.  Dashed lines
- *	need to be handled specially, especially if a background color is
- *	designated.
+ *	Prints postscript commands to display the connect line.  Dashed
+ *	lines need to be handled specially, especially if a background
+ *	color is designated.
  *
  * Results:
  *	None.
@@ -3832,7 +3753,8 @@ CreateLineProc(void)
  * MapPolygonProc --
  *
  *	Calculate the layout position for a polygon marker.  Positional
- *	information is saved in the polygon in an array of points (malloc'ed).
+ *	information is saved in the polygon in an array of points
+ *	(malloc'ed).
  *
  * Results:
  *	None.
@@ -3908,15 +3830,16 @@ MapPolygonProc(Marker *markerPtr)
 
 	/* 
 	 * Generate line segments representing the polygon outline.  The
-	 * resulting outline may or may not be closed from viewport clipping.
+	 * resulting outline may or may not be closed from viewport
+	 * clipping.
 	 */
 	outlinePts = Blt_Malloc(numScreenPts * sizeof(Segment2d));
 	if (outlinePts == NULL) {
 	    return;			/* Can't allocate point array */
 	}
 	/* 
-	 * Note that this assumes that the point array contains an extra point
-	 * that closes the polygon.
+	 * Note that this assumes that the point array contains an extra
+	 * point that closes the polygon.
 	 */
 	segPtr = outlinePts;
 	for (sp = screenPts, send = sp + (numScreenPts - 1); sp < send; sp++) {
@@ -3966,6 +3889,92 @@ RegionInPolygonProc(Marker *markerPtr, Region2d *extsPtr, int enclosed)
     return FALSE;
 }
 
+#ifdef notdef
+
+static int
+GradientCalcProc(ClientData clientData, int x, int y, double *valuePtr)
+{
+    Graph *graphPtr;
+    PolygonMarker *markerPtr = clientData;
+    double value;
+    Point2d point;
+    AxisRange *rangePtr;
+    
+    /* 
+     * Compute length of the difference in the y direction.
+     * Find the vertical segment of the polygon that intersects 
+     * y y 
+     */
+    graphPtr = elemPtr->obj.graphPtr;
+    point = Blt_InvMap2D(graphPtr, x, y, &elemPtr->axes);
+    rangePtr = &elemPtr->zAxisPtr->valueRange;
+    if (elemPtr->zAxisPtr->obj.classId == CID_AXIS_Y) {
+	value = point.y;
+    } else if (elemPtr->zAxisPtr->obj.classId == CID_AXIS_X) {
+	value = point.x;
+    } else {
+	return TCL_ERROR;
+    }
+    *valuePtr = (value - rangePtr->min) / rangePtr->range;
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * DrawGradientPolygon --
+ *
+ * Results:
+ *	None.
+ *
+ *---------------------------------------------------------------------------
+ */
+static void
+DrawGradientPolygon(Graph *graphPtr, Drawable drawable,
+                    PolygonMarker *markerPtr, int n, XPoint *points)
+{
+    Blt_PaintBrush brush;
+    Blt_Painter painter;
+    Blt_Picture bg;
+    Point2f *vertices;
+    int i;
+    int w, h;
+    int x1, x2, y1, y2;
+
+    if (n < 3) {
+	return;				/* Not enough points for polygon */
+    }
+    if (markerPtr->palette == NULL) {
+	return;				/* No palette defined. */
+    }
+    /* Grab the rectangular background that covers the polygon. */
+    GetPolygonBBox(points, n, &x1, &x2, &y1, &y2);
+    w = x2 - x1 + 1;
+    h = y2 - y1 + 1;
+    bg = Blt_DrawableToPicture(graphPtr->tkwin, drawable, x1, y1, w, h, 1.0);
+    if (bg == NULL) {
+	return;				/* Background is obscured. */
+    }
+    vertices = Blt_AssertMalloc(n * sizeof(Point2f));
+    /* Translate the polygon */
+    for (i = 0; i < n; i++) {
+	vertices[i].x = (float)(points[i].x - x1);
+	vertices[i].y = (float)(points[i].y - y1);
+    }
+    
+    brush = Blt_NewLinearGradientBrush();
+    Blt_SetBrushOrigin(brush, -x1, -y1);
+    Blt_SetLinearGradientBrushPalette(brush, markerPtr->palette);
+    Blt_SetLinearGradientBrushCalcProc(brush, GradientCalcProc, markerPtr);
+    Blt_PaintPolygon(bg, n, vertices, brush);
+    Blt_FreeBrush(brush);
+    Blt_Free(vertices);
+    painter = Blt_GetPainter(graphPtr->tkwin, 1.0);
+    Blt_PaintPicture(painter, drawable, bg, 0, 0, w, h, x1, y1, 0);
+    Blt_FreePicture(bg);
+}
+#endif
+
 static void
 DrawPolygonProc(Marker *markerPtr, Drawable drawable)
 {
@@ -3988,7 +3997,6 @@ DrawPolygonProc(Marker *markerPtr, Drawable drawable)
 	    dp->y = (short int)sp->y;
 	    dp++;
 	}
-
 	XFillPolygon(graphPtr->display, drawable, pmPtr->fillGC, points, 
 		pmPtr->numFillPts, Complex, CoordModeOrigin);
 	Blt_Free(points);
@@ -4020,11 +4028,11 @@ PolygonToPostscriptProc(Marker *markerPtr, Blt_Ps ps)
 	/* Create a path to use for both the polygon and its outline. */
 	Blt_Ps_Polyline(ps, pmPtr->numFillPts, pmPtr->fillPts);
 
-	/* If the background fill color was specified, draw the polygon in a
-	 * solid fashion with that color.  */
+	/* If the background fill color was specified, draw the polygon in
+	 * a solid fashion with that color.  */
 	if (pmPtr->fill.bgColor != NULL) {
-	    /* Draw the solid background as the background layer of the opaque
-	     * stipple  */
+	    /* Draw the solid background as the background layer of the
+	     * opaque stipple */
 	    Blt_Ps_XSetBackground(ps, pmPtr->fill.bgColor);
 	    /* Retain the path. We'll need it for the foreground layer. */
 	    Blt_Ps_Append(ps, "gsave fill grestore\n");
@@ -4048,8 +4056,8 @@ PolygonToPostscriptProc(Marker *markerPtr, Blt_Ps ps)
 
 	/*  
 	 * Define on-the-fly a PostScript macro "DashesProc" that will be
-	 * executed for each call to the Polygon drawing routine.  If the line
-	 * isn't dashed, simply make this an empty definition.
+	 * executed for each call to the Polygon drawing routine.  If the
+	 * line isn't dashed, simply make this an empty definition.
 	 */
 	if ((pmPtr->outline.bgColor != NULL) && (LineIsDashed(pmPtr->dashes))) {
 	    Blt_Ps_Append(ps, "/DashesProc {\ngsave\n    ");
@@ -4074,13 +4082,13 @@ PolygonToPostscriptProc(Marker *markerPtr, Blt_Ps ps)
  *	marker.
  *
  * Results:
- *	A standard TCL result.  If TCL_ERROR is returned, then interp->result
- *	contains an error message.
+ *	A standard TCL result.  If TCL_ERROR is returned, then
+ *	interp->result contains an error message.
  *
  * Side effects:
- *	Configuration information, such as polygon color, dashes, fillstyle,
- *	etc. get set for markerPtr; old resources get freed, if there were
- *	any.  The marker is eventually redisplayed.
+ *	Configuration information, such as polygon color, dashes,
+ *	fillstyle, etc. get set for markerPtr; old resources get freed, if
+ *	there were any.  The marker is eventually redisplayed.
  *
  * -------------------------------------------------------------------------- 
  */
@@ -4454,7 +4462,7 @@ ConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	    return TCL_ERROR;
 	}
     }
-    numNames = i;				/* # of element names specified */
+    numNames = i;                       /* # of element names specified */
     numOpts = objc - i;			/* # of options specified */
     options = objv + numNames;		/* Start of options in objv  */
     
@@ -4504,8 +4512,8 @@ ConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * Results:
  *	The return value is a pointer to a structure describing the new
- *	element.  If an error occurred, then the return value is NULL and an
- *	error message is left in interp->result.
+ *	element.  If an error occurred, then the return value is NULL and
+ *	an error message is left in interp->result.
  *
  * Side effects:
  *	Memory is allocated, etc.
@@ -4583,8 +4591,8 @@ CreateOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (!isNew) {
 	Marker *oldPtr;
 	/*
-	 * Marker by the same name already exists.  Delete the old marker and
-	 * it's list entry.  But save the hash entry.
+	 * Marker by the same name already exists.  Delete the old marker
+	 * and it's list entry.  But save the hash entry.
 	 */
 	oldPtr = Blt_GetHashValue(hPtr);
 	oldPtr->hashPtr = NULL;
@@ -4593,7 +4601,8 @@ CreateOp(ClientData clientData, Tcl_Interp *interp, int objc,
     Blt_SetHashValue(hPtr, markerPtr);
     markerPtr->hashPtr = hPtr;
     /* Unlike elements, new markers are drawn on top of old markers. */
-    markerPtr->link = Blt_Chain_Prepend(graphPtr->markers.displayList,markerPtr);
+    markerPtr->link =
+        Blt_Chain_Prepend(graphPtr->markers.displayList,markerPtr); 
     if (markerPtr->drawUnder) {
 	graphPtr->flags |= CACHE_DIRTY;
     }
@@ -4668,8 +4677,9 @@ GetOp(ClientData clientData, Tcl_Interp *interp, int objc,
 
 	objPtr = Blt_GetCurrentItem(graphPtr->bindTable);
 	if ((objPtr == NULL) || (objPtr->deleted)) {
-	    return TCL_OK;		/* No marker is currently picked or the
-					 * current marker has been destroyed. */
+	    return TCL_OK;		/* No marker is currently picked or
+					 * the current marker has been
+					 * destroyed. */
 	}
 	if ((objPtr->classId >= CID_MARKER_BITMAP) &&
 	    (objPtr->classId <= CID_MARKER_WINDOW))	    {
@@ -4684,10 +4694,10 @@ GetOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * RelinkOp --
  *
- *	Reorders the marker (given by the first name) before/after the another
- *	marker (given by the second name) in the marker display list.  If no
- *	second name is given, the marker is placed at the beginning/end of the
- *	list.
+ *	Reorders the marker (given by the first name) before/after the
+ *	another marker (given by the second name) in the marker display
+ *	list.  If no second name is given, the marker is placed at the
+ *	beginning/end of the list.
  *
  * Results:
  *	A standard TCL result.
@@ -4712,7 +4722,7 @@ RelinkOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	return TCL_ERROR;
     }
     /* Right now it's assumed that all markers are always in the display
-       list. */
+     * list. */
     link = markerPtr->link;
     Blt_Chain_UnlinkLink(graphPtr->markers.displayList, markerPtr->link);
 
@@ -4853,11 +4863,12 @@ ExistsOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * TypeOp --
  *
- *	Returns a symbolic name for the type of the marker whose ID is given.
+ *	Returns a symbolic name for the type of the marker whose ID is
+ *	given.
  *
  * Results:
- *	A standard TCL result. interp->result will contain the symbolic type
- *	of the marker.
+ *	A standard TCL result. interp->result will contain the symbolic
+ *	type of the marker.
  *
  *---------------------------------------------------------------------------
  */
@@ -4874,13 +4885,20 @@ TypeOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	return TCL_ERROR;
     }
     switch (markerPtr->obj.classId) {
-    case CID_MARKER_BITMAP:	type = "bitmap";	break;
-    case CID_MARKER_IMAGE:	type = "image";		break;
-    case CID_MARKER_LINE:	type = "line";		break;
-    case CID_MARKER_POLYGON:	type = "polygon";	break;
-    case CID_MARKER_TEXT:	type = "text";		break;
-    case CID_MARKER_WINDOW:	type = "window";	break;
-    default:			type = "???";		break;
+    case CID_MARKER_BITMAP:
+        type = "bitmap";	break;
+    case CID_MARKER_IMAGE:
+        type = "image";		break;
+    case CID_MARKER_LINE:
+        type = "line";		break;
+    case CID_MARKER_POLYGON:
+        type = "polygon";	break;
+    case CID_MARKER_TEXT:
+        type = "text";		break;
+    case CID_MARKER_WINDOW:
+        type = "window";	break;
+    default:
+        type = "???";		break;
     }
     Tcl_SetStringObj(Tcl_GetObjResult(interp), type, -1);
     return TCL_OK;
@@ -4893,9 +4911,9 @@ TypeOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * Blt_MarkerOp --
  *
- *	This procedure is invoked to process the TCL command that corresponds
- *	to a widget managed by this module.  See the user documentation for
- *	details on what it does.
+ *	This procedure is invoked to process the TCL command that
+ *	corresponds to a widget managed by this module.  See the user
+ *	documentation for details on what it does.
  *
  * Results:
  *	A standard TCL result.
@@ -4981,8 +4999,8 @@ Blt_MarkersToPostScript(Graph *graphPtr, Blt_Ps ps, int under)
  *
  * Blt_DrawMarkers --
  *
- *	Calls the individual drawing routines (based on marker type) for each
- *	marker in the display list.
+ *	Calls the individual drawing routines (based on marker type) for
+ *	each marker in the display list.
  *
  *	A marker will not be drawn if
  *
@@ -5080,8 +5098,8 @@ Blt_DestroyMarkers(Graph *graphPtr)
 
 	markerPtr = Blt_GetHashValue(hPtr);
 	/*
-	 * Dereferencing the pointer to the hash table prevents the hash table
-	 * entry from being automatically deleted.
+	 * Dereferencing the pointer to the hash table prevents the hash
+	 * table entry from being automatically deleted.
 	 */
 	markerPtr->hashPtr = NULL;
 	DestroyMarker(markerPtr);
@@ -5111,11 +5129,11 @@ Blt_NearestMarker(
 	if ((markerPtr->numWorldPts == 0) ||
 	    (markerPtr->flags & (HIDDEN|MAP_ITEM))) {
 	    continue;			/* Don't consider markers that are
-					 * pending to be mapped. Even if the
-					 * marker has already been mapped, the
-					 * coordinates could be invalid now.
-					 * Better to pick no marker than the
-					 * wrong marker. */
+					 * pending to be mapped. Even if
+					 * the marker has already been
+					 * mapped, the coordinates could be
+					 * invalid now.  Better to pick no
+					 * marker than the wrong marker. */
 
 	}
 	if ((markerPtr->elemName != NULL) && (IsElementHidden(markerPtr))) {
@@ -5158,9 +5176,10 @@ Blt_MakeMarkerTag(Graph *graphPtr, const char *tagName)
  *
  * Side effects:
  *	Information in linePtr is set up for one or two arrowheads.  the
- *	firstArrowPtr and lastArrowPtr polygons are allocated and initialized,
- *	if need be, and the end points of the line are adjusted so that a
- *	thick line doesn't stick out past the arrowheads.
+ *	firstArrowPtr and lastArrowPtr polygons are allocated and
+ *	initialized, if need be, and the end points of the line are
+ *	adjusted so that a thick line doesn't stick out past the
+ *	arrowheads.
  *
  *---------------------------------------------------------------------------
  */
@@ -5168,18 +5187,18 @@ Blt_MakeMarkerTag(Graph *graphPtr, const char *tagName)
 	/* ARGSUSED */
 static int
 ConfigureArrows(canvas, linePtr)
-    Tk_Canvas canvas;			/* Canvas in which arrows will be
-					 * displayed (interp and tkwin fields
-					 * are needed). */
+     Tk_Canvas canvas;			/* Canvas in which arrows will be
+					 * displayed (interp and tkwin
+					 * fields are needed). */
     LineItem *linePtr;			/* Item to configure for arrows. */
 {
     double *poly, *coordPtr;
     double dx, dy, length, sinTheta, cosTheta, temp;
-    double fracHeight;			/* Line width as fraction of arrowhead
-					 * width. */
+    double fracHeight;			/* Line width as fraction of
+					 * arrowhead width. */
     double backup;			/* Distance to backup end points so
-					 * the line ends in the middle of the
-					 * arrowhead. */
+					 * the line ends in the middle of
+					 * the arrowhead. */
     double vertX, vertY;		/* Position of arrowhead vertex. */
     double shapeA, shapeB, shapeC;	/* Adjusted coordinates (see
 					 * explanation below). */
@@ -5207,8 +5226,8 @@ ConfigureArrows(canvas, linePtr)
 
     /*
      * The code below makes a tiny increase in the shape parameters for the
-     * line.  This is a bit of a hack, but it seems to result in displays that
-     * more closely approximate the specified parameters.  Without the
+     * line.  This is a bit of a hack, but it seems to result in displays
+     * that more closely approximate the specified parameters.  Without the
      * adjustment, the arrows come out smaller than expected.
      */
 
@@ -5218,8 +5237,8 @@ ConfigureArrows(canvas, linePtr)
 
     /*
      * If there's an arrowhead on the first point of the line, compute its
-     * polygon and adjust the first point of the line so that the line doesn't
-     * stick out past the leading edge of the arrowhead.
+     * polygon and adjust the first point of the line so that the line
+     * doesn't stick out past the leading edge of the arrowhead.
      */
 
     fracHeight = (width/2.0)/shapeC;
@@ -5256,8 +5275,9 @@ ConfigureArrows(canvas, linePtr)
 	poly[7] = poly[9]*fracHeight + vertY*(1.0-fracHeight);
 
 	/*
-	 * Polygon done.  Now move the first point towards the second so that
-	 * the corners at the end of the line are inside the arrowhead.
+	 * Polygon done.  Now move the first point towards the second so
+	 * that the corners at the end of the line are inside the
+	 * arrowhead.
 	 */
 
 	linePtr->coordPtr[0] = poly[0] - backup*cosTheta;

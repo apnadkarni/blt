@@ -16,7 +16,7 @@ set labels [$table row values 0]
 $table column labels $labels
 $table row delete 0
 # The rest of the table contains all numbers.
-$table column type all double
+$table column type @all double
 
 # Get the max and max of the 1nd column
 set allmin [$table min 1]

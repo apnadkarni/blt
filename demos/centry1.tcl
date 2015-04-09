@@ -10,10 +10,11 @@ set imgData {
 set icon [image create picture -file images/mini-book1.gif]
 #set icon [image create picture -file images/blt98.gif]
 #set image [image create picture -file ~/images.jpeg]
-set activebg [blt::background create gradient -high  grey70 -low grey85 \
-	-jitter 10 -scale log -relativeto self]
-set bg [blt::background create gradient -high  grey80 -low grey95 \
-	-jitter 10 -scale log -relativeto self]
+set activebg [blt::background create linear \
+		  -highcolor  grey70 -lowcolor grey85 \
+		  -jitter 10 -colorscale log]
+set bg [blt::background create linear -highcolor  grey80 -lowcolor grey95 \
+	    -jitter 10 -colorscale log -relativeto self]
 
 set image ""
 option add *ComboEntry.takeFocus 1

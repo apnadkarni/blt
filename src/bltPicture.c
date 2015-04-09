@@ -216,12 +216,12 @@ Blt_CopyPictureBits(Blt_Picture dest, Blt_Picture src, int x, int y, int w,
 #define JITTER_A	1099087573U
 #define RANDOM_SCALE    2.3283064370807974e-10
 
-static void 
+static INLINE void 
 RandomSeed(Blt_Random *randomPtr, unsigned int seed) {
     randomPtr->value = seed;
 }
 
-static void
+static INLINE void
 RandomInit(Blt_Random *randomPtr) 
 {
     RandomSeed(randomPtr, JITTER_SEED);
@@ -240,7 +240,7 @@ RandomNumber(Blt_Random *randomPtr)
     return (double)randomPtr->value * RANDOM_SCALE;
 }
 
-static void
+static INLINE void
 JitterInit(Blt_Jitter *jitterPtr) 
 {
     RandomInit(&jitterPtr->random);
@@ -5801,114 +5801,12 @@ Blt_TilePicture(
 		    tw = (right - dx);
 		}
 #ifdef notdef
-		fprintf(stder, "drawing pattern (%d,%d,%d,%d) at %d,%d\n",
+		fprintf(stderr, "drawing pattern (%d,%d,%d,%d) at %d,%d\n",
 			sx, sy, tw, th, dx, dy);
 #endif
 		Blt_BlendRegion(destPtr, srcPtr, sx, sy, tw, th, dx, dy);
 	    }
 	}
-    }
-}
-
-
-void
-Blt_TexturePicture(Pict *destPtr, Blt_Pixel *lowPtr, Blt_Pixel *highPtr, 
-		   Blt_TextureType type)
-{
-    Blt_Jitter jitter;
-
-    jitter.range = 0.1;
-    JitterInit(&jitter);
-
-    switch (type) {
-    case BLT_TEXTURE_RANDOM:
-	{
-	    Blt_Pixel *destRowPtr;
-	    int y;
-
-	    destRowPtr = destPtr->bits;
-	    for (y = 0; y < destPtr->height; y++) {
-		Blt_Pixel *dp, *dend;
-		Blt_Pixel color;
-
-		color = ((y / 2) & 0x1) ? *lowPtr : *highPtr;
-		if (0) {
-		    double t;
-		    t = 0.8;
-		    t += Jitter(&jitter);
-		    t = JCLAMP(t);
-		    color.Blue  = (unsigned char)(color.Blue + t * 255.0);
-		    color.Red   = (unsigned char)(color.Red + t * 255.0);
-		    color.Green = (unsigned char)(color.Green + t * 255.0);
-		}
-		for (dp = destRowPtr, dend = dp + destPtr->width; dp < dend; 
-		     dp++) {
-		    dp->u32 = color.u32;
-		}
-		destRowPtr += destPtr->pixelsPerRow;
-	    }
-	}
-	break;
-
-    case BLT_TEXTURE_VSTRIPES:
-	{
-	    Blt_Pixel *destRowPtr;
-	    int y;
-
-	    destRowPtr = destPtr->bits;
-	    for (y = 0; y < destPtr->height; y++) {
-		Blt_Pixel *dp, *dend;
-		Blt_Pixel color;
-
-		color = ((y / 2) & 0x1) ? *lowPtr : *highPtr;
-		if (0) {
-		    double t;
-		    t = 0.8;
-		    t += Jitter(&jitter);
-		    t = JCLAMP(t);
-		    color.Blue  = (unsigned char)(color.Blue + t * 255.0);
-		    color.Red   = (unsigned char)(color.Red + t * 255.0);
-		    color.Green = (unsigned char)(color.Green + t * 255.0);
-		}
-		for (dp = destRowPtr, dend = dp + destPtr->width; dp < dend; 
-		     dp++) {
-		    dp->u32 = color.u32;
-		}
-		destRowPtr += destPtr->pixelsPerRow;
-	    }
-	}
-	break;
-    case BLT_TEXTURE_CHECKERS:
-	{
-	    Blt_Pixel *destRowPtr;
-	    int y;
-
-	    destRowPtr = destPtr->bits;
-	    for (y = 0; y < destPtr->height; y++) {
-		Blt_Pixel *dp, *dend;
-		Blt_Pixel color;
-		int x;
-
-		if (0) {
-		    double t;
-		    t = 0.8;
-		    t += Jitter(&jitter);
-		    t = JCLAMP(t);
-		    color.Blue  = (unsigned char)(color.Blue + t * 255.0);
-		    color.Red   = (unsigned char)(color.Red + t * 255.0);
-		    color.Green = (unsigned char)(color.Green + t * 255.0);
-		}
-		for (x = 0, dp = destRowPtr, dend = dp + destPtr->width; 
-		     dp < dend; dp++, x++) {
-
-		    color = (((x / 8) & 1) && (((y / 8) & 1) == 0)) 
-			? *lowPtr : *highPtr;
-		    dp->u32 = color.u32;
-		}
-		destRowPtr += destPtr->pixelsPerRow;
-	    }
-	}
-	break;
     }
 }
 

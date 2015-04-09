@@ -133,25 +133,27 @@ static Blt_SwitchCustom colorSwitch = {
 };
 
 static Blt_SwitchParseProc ObjToPaintBrushProc;
-static Blt_SwitchFreeProc PaintBrushFreeProc;
+static Blt_SwitchFreeProc FreePaintBrushProc;
 static Blt_SwitchCustom paintbrushSwitch =
 {
-    ObjToPaintBrushProc, NULL, PaintBrushFreeProc, (ClientData)0,
+    ObjToPaintBrushProc, NULL, FreePaintBrushProc, (ClientData)0,
 };
 
 typedef struct {
-    Blt_PaintBrush *brushPtr;	 /* Outline and fill colors for the circle. */
+    Blt_PaintBrush brush;               /* Outline and fill colors for the
+                                         * circle. */
     Blt_Shadow shadow;
     int antialiased;
-    float lineWidth;		/* Width of outline.  If zero, indicates to
-				 * draw a solid circle. */
+    float lineWidth;                    /* Width of outline.  If zero,
+                                         * indicates to draw a solid
+                                         * circle. */
     int blend;
 } CircleSwitches;
 
 static Blt_SwitchSpec circleSwitches[] = 
 {
     {BLT_SWITCH_CUSTOM, "-color", "color", (char *)NULL,
-	Blt_Offset(CircleSwitches, brushPtr),    0, 0, &paintbrushSwitch},
+	Blt_Offset(CircleSwitches, brush),    0, 0, &paintbrushSwitch},
     {BLT_SWITCH_BOOLEAN, "-antialiased", "bool", (char *)NULL,
 	Blt_Offset(CircleSwitches, antialiased), 0},
     {BLT_SWITCH_BOOLEAN, "-blend", "bool", (char *)NULL,
@@ -164,7 +166,7 @@ static Blt_SwitchSpec circleSwitches[] =
 };
 
 typedef struct {
-    Blt_PaintBrush *brushPtr;		/* Outline and fill colors for the
+    Blt_PaintBrush brush;		/* Outline and fill colors for the
 					 * circle. */
     Blt_Pixel fill;			/* Fill color of circle. */
     Blt_Pixel outline;			/* Outline color of circle. */
@@ -176,10 +178,11 @@ typedef struct {
     int blend;
 } CircleSwitches2;
 
+#ifdef notdef
 static Blt_SwitchSpec circleSwitches2[] = 
 {
     {BLT_SWITCH_CUSTOM, "-color", "color", (char *)NULL,
-	Blt_Offset(CircleSwitches2, brushPtr),    0, 0, &paintbrushSwitch},
+	Blt_Offset(CircleSwitches2, brush),    0, 0, &paintbrushSwitch},
     {BLT_SWITCH_CUSTOM, "-fill", "fill", (char *)NULL,
 	Blt_Offset(CircleSwitches2, fill),    0, 0, &colorSwitch},
     {BLT_SWITCH_CUSTOM, "-outline", "outline", (char *)NULL,
@@ -194,6 +197,7 @@ static Blt_SwitchSpec circleSwitches2[] =
 	Blt_Offset(CircleSwitches2, shadow), 0, 0, &shadowSwitch},
     {BLT_SWITCH_END}
 };
+#endif
 
 typedef struct {
     Blt_Pixel fill, outline;	 /* Outline and fill colors for the circle. */
@@ -229,12 +233,12 @@ typedef struct {
 } LineSwitches;
 
 typedef struct {
-    Blt_PaintBrush *brushPtr;		/* Fill color of polygon. */
+    Blt_PaintBrush brush;		/* Fill color of polygon. */
     int antialiased;
     Blt_Shadow shadow;
-    int lineWidth;			/* Width of outline. Default is 1, If
-					 * zero, indicates to draw a solid
-					 * polygon. */
+    int lineWidth;			/* Width of outline. Default is 1,
+					 * If zero, indicates to draw a
+					 * solid polygon. */
     Array coords;
     Array x, y;
 
@@ -245,7 +249,7 @@ static Blt_SwitchSpec polygonSwitches[] =
     {BLT_SWITCH_BOOLEAN, "-antialiased", "bool", (char *)NULL,
 	Blt_Offset(PolygonSwitches, antialiased), 0},
     {BLT_SWITCH_CUSTOM, "-color", "color", (char *)NULL,
-	Blt_Offset(PolygonSwitches, brushPtr),    0, 0, &paintbrushSwitch},
+	Blt_Offset(PolygonSwitches, brush),    0, 0, &paintbrushSwitch},
     {BLT_SWITCH_CUSTOM, "-coords", "{x0 y0 x1 y1 ... xn yn}", (char *)NULL,
 	Blt_Offset(PolygonSwitches, coords), 0, 0, &arraySwitch},
     {BLT_SWITCH_CUSTOM, "-x", "{x0 x1 ... xn}", (char *)NULL,
@@ -275,7 +279,7 @@ static Blt_SwitchSpec lineSwitches[] =
 };
 
 typedef struct {
-    Blt_PaintBrush *brushPtr;		/* Color of rectangle. */
+    Blt_PaintBrush brush;		/* Color of rectangle. */
     Blt_Shadow shadow;
     int lineWidth;			/* Width of outline. If zero,
 					 * indicates to draw a solid
@@ -287,7 +291,7 @@ typedef struct {
 static Blt_SwitchSpec rectangleSwitches[] = 
 {
     {BLT_SWITCH_CUSTOM, "-color", "color", (char *)NULL,
-	Blt_Offset(RectangleSwitches, brushPtr),    0, 0, &paintbrushSwitch},
+	Blt_Offset(RectangleSwitches, brush),    0, 0, &paintbrushSwitch},
     {BLT_SWITCH_BOOLEAN, "-antialiased", "bool", (char *)NULL,
 	Blt_Offset(RectangleSwitches, antialiased), 0},
     {BLT_SWITCH_INT_NNEG, "-radius", "number", (char *)NULL,
@@ -301,7 +305,7 @@ static Blt_SwitchSpec rectangleSwitches[] =
 
 typedef struct {
     int kerning;
-    Blt_PaintBrush *brushPtr;			/* Color of text. */
+    Blt_PaintBrush brush;			/* Color of text. */
     Blt_Shadow shadow;
     int fontSize;
     Tcl_Obj *fontObjPtr;
@@ -315,7 +319,7 @@ static Blt_SwitchSpec textSwitches[] =
     {BLT_SWITCH_CUSTOM,  "-anchor",   "anchor", (char *)NULL,
 	Blt_Offset(TextSwitches, anchor), 0, 0, &anchorSwitch},
     {BLT_SWITCH_CUSTOM,  "-color",    "colorName", (char *)NULL,
-	Blt_Offset(TextSwitches, brushPtr),  0, 0, &paintbrushSwitch},
+	Blt_Offset(TextSwitches, brush),  0, 0, &paintbrushSwitch},
     {BLT_SWITCH_OBJ,     "-font",     "fontName", (char *)NULL,
 	Blt_Offset(TextSwitches, fontObjPtr), 0},
     {BLT_SWITCH_CUSTOM,  "-justify", "left|right|center", (char *)NULL,
@@ -375,16 +379,26 @@ ColorSwitchProc(
     return TCL_OK;
 }
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * FreePaintBrushProc --
+ *
+ * Results:
+ *	None.
+ *
+ *---------------------------------------------------------------------------
+ */
 /*ARGSUSED*/
 static void
-PaintBrushFreeProc(ClientData clientData, char *record, int offset, int flags)
+FreePaintBrushProc(ClientData clientData, char *record, int offset, int flags)
 {
-    Blt_PaintBrush **brushPtrPtr = (Blt_PaintBrush **)(record + offset);
+    Blt_PaintBrush *brushPtr = (Blt_PaintBrush *)(record + offset);
 
-    if (*brushPtrPtr != NULL) {
-	Blt_PaintBrush_Free(*brushPtrPtr);
-	*brushPtrPtr = NULL;
+    if (*brushPtr != NULL) {
+        Blt_FreeBrush(*brushPtr);
     }
+    *brushPtr = NULL;
 }
 
 
@@ -402,28 +416,24 @@ PaintBrushFreeProc(ClientData clientData, char *record, int offset, int flags)
  */
 /*ARGSUSED*/
 static int
-ObjToPaintBrushProc(
-    ClientData clientData,		/* Not used. */
-    Tcl_Interp *interp,			/* Interpreter to send results. */
-    const char *switchName,		/* Not used. */
-    Tcl_Obj *objPtr,			/* String representation */
-    char *record,			/* Structure record */
-    int offset,				/* Offset to field in structure */
-    int flags)	
+ObjToPaintBrushProc(ClientData clientData, Tcl_Interp *interp,
+                    const char *switchName, Tcl_Obj *objPtr, char *record,
+                    int offset, int flags)	
 {
-    Blt_PaintBrush **brushPtrPtr = (Blt_PaintBrush **)(record + offset);
-    Blt_PaintBrush *brushPtr;
+    Blt_PaintBrush *brushPtr = (Blt_PaintBrush *)(record + offset);
+    Blt_PaintBrush brush;
 
-    if (Blt_PaintBrush_Get(interp, objPtr, &brushPtr) != TCL_OK) {
+    if (Blt_GetPaintBrushFromObj(interp, objPtr, &brush) != TCL_OK) {
 	return TCL_ERROR;
     }
-    if (*brushPtrPtr != NULL) {
-	Blt_PaintBrush_Free(*brushPtrPtr);
+    if (*brushPtr != NULL) {
+        Blt_FreeBrush(*brushPtr);
     }
-    *brushPtrPtr = brushPtr;
+    *brushPtr = brush;
     return TCL_OK;
 }
 
+#ifdef notdef
 /*
  *
  *  x,y------+
@@ -479,48 +489,11 @@ MergePictures(Pict *destPtr, Pict *srcPtr)
 	}
 	srcRowPtr += srcPtr->pixelsPerRow;
 	destRowPtr += destPtr->pixelsPerRow;
-    }
+
 }
-
-static Pict *
-BgPicture(Pict *srcPtr, int sx, int sy, int w, int h)
-{
-    Pict *destPtr;
-    Blt_Pixel *srcRowPtr, *destRowPtr;
-    size_t numBytes;
-    int y;
-
-    w = MIN(w, srcPtr->width - sx);
-    h = MIN(h, srcPtr->height - sy);
-    destPtr = Blt_CreatePicture(w*4, h*4);
-    srcRowPtr = srcPtr->bits + (sy * srcPtr->width) + sx;
-    destRowPtr = destPtr->bits;
-    numBytes = sizeof(Blt_Pixel) * destPtr->pixelsPerRow;
-    for (y = 0; y < h; y++) {
-	Blt_Pixel *dp, *sp, *send;
-	Blt_Pixel *nextRowPtr;
-
-	for (dp = destRowPtr, sp = srcRowPtr, send = sp + w; sp < send; sp++) {
-	    Blt_Pixel p;
-
-	    p.u32 = sp->u32;
-	    dp[0].u32 = dp[1].u32 = dp[2].u32 = dp[3].u32 = p.u32;
-	    dp += 4;
-	}
-
-	nextRowPtr = destRowPtr + destPtr->pixelsPerRow;
-	memcpy(nextRowPtr, destRowPtr, numBytes);
-	nextRowPtr += destPtr->pixelsPerRow;
-	memcpy(nextRowPtr, destRowPtr, numBytes);
-	nextRowPtr += destPtr->pixelsPerRow;
-	memcpy(nextRowPtr, destRowPtr, numBytes);
-	nextRowPtr += destPtr->pixelsPerRow;
-	destRowPtr = nextRowPtr;
-	srcRowPtr += srcPtr->pixelsPerRow;
-    }
-    return destPtr;
-}
-
+#endif
+    
+#ifdef notdef
 static void
 MarkPicture(Pict *srcPtr)
 {
@@ -539,11 +512,13 @@ MarkPicture(Pict *srcPtr)
 	srcRowPtr += srcPtr->pixelsPerRow;
     }
 }
-
+#endif
+ 
 #if DRAWTEXT
+#ifdef notdef
 static void MeasureText(FtFont *fontPtr, const char *string, size_t length,
 			size_t *widthPtr, size_t *heightPtr);
-
+#endif
 static size_t GetTextWidth(FtFont *fontPtr, const char *string, size_t length, 
 			   int kerning);
 #endif /*DRAWTEXT*/
@@ -1094,6 +1069,7 @@ PaintLineSegment(
 
 #include "bltPaintDraw.c"
 
+#ifdef notdef
 static void 
 PaintLineSegment2(
     Pict *destPtr,
@@ -1227,7 +1203,7 @@ PaintLineSegment2(
     }
     destPtr->flags |= (BLT_PIC_BLEND | BLT_PIC_ASSOCIATED_COLORS);
 }
-
+#endif
 
 static void 
 PaintPolyline(
@@ -1288,6 +1264,7 @@ FtError(FT_Error ftError)
     return "unknown Freetype error";
 }
 
+#ifdef notdef
 static void
 MeasureText(FtFont *fontPtr, const char *string, size_t length,
 	    size_t *widthPtr, size_t *heightPtr)
@@ -1349,7 +1326,8 @@ MeasureText(FtFont *fontPtr, const char *string, size_t length,
 	    (unsigned long)*heightPtr);
 #endif
 }
-
+#endif
+ 
 static size_t
 GetTextWidth(FtFont *fontPtr, const char *string, size_t length, int kerning)
 {
@@ -1407,12 +1385,10 @@ GetTextWidth(FtFont *fontPtr, const char *string, size_t length, int kerning)
 }
 
 
+#ifdef notdef
 static void
-BlitGlyph(Pict *destPtr, 
-    FT_GlyphSlot slot, 
-    int dx, int dy,
-    int xx, int yy,
-    Blt_PaintBrush *brushPtr)
+BlitGlyph(Pict *destPtr, FT_GlyphSlot slot, int dx, int dy, int xx, int yy,
+          Blt_PaintBrush brush)
 {
     int x1, y1, x2, y2;
 #ifdef notdef
@@ -1478,8 +1454,7 @@ BlitGlyph(Pict *destPtr,
 		if (pixel != 0x0) {
 		    Blt_Pixel color;
 
-		    color.u32 = Blt_PaintBrush_GetAssociatedColor(brushPtr, 
-			x, y);
+		    color.u32 = Blt_GetAssociatedColorFromBrush(brush, x, y);
 		    BlendPixels(dp, &color);
 		}
 	    }
@@ -1503,8 +1478,7 @@ BlitGlyph(Pict *destPtr,
 		if (*sp != 0x0) {
 		    Blt_Pixel color;
 
-		    color.u32 = Blt_PaintBrush_GetAssociatedColor(brushPtr, 
-			x, y);
+		    color.u32 = Blt_GetAssociatedColorFromBrush(brush, x, y);
 		    Blt_FadeColor(&color, *sp);
 		    BlendPixels(dp, &color);
 		}
@@ -1514,13 +1488,12 @@ BlitGlyph(Pict *destPtr,
 	}
     }
 }
+#endif
 
+#ifdef notdef
 static void
-CopyGrayGlyph(
-    Pict *destPtr, 
-    FT_GlyphSlot slot, 
-    int xx, int yy, 
-    Blt_PaintBrush *brushPtr)
+CopyGrayGlyph(Pict *destPtr, FT_GlyphSlot slot, int xx, int yy,
+              Blt_PaintBrush brush)
 {
     int x1, y1, x2, y2;
 
@@ -1589,8 +1562,7 @@ CopyGrayGlyph(
 		    int t;
 		    Blt_Pixel color;
 
-		    color.u32 = Blt_PaintBrush_GetAssociatedColor(brushPtr, 
-			x, y);
+		    color.u32 = Blt_GetAssociatedColorFromBrush(brush, x, y);
 		    color.Alpha = imul8x8(*sp, color.Alpha, t);
 		    dp->u32 = color.u32;
 		}
@@ -1600,13 +1572,11 @@ CopyGrayGlyph(
 	}
     }
 }
+#endif
 
 static void
-PaintGrayGlyph(
-    Pict *destPtr, 
-    FT_GlyphSlot slot, 
-    int xx, int yy, 
-    Blt_PaintBrush *brushPtr)
+PaintGrayGlyph(Pict *destPtr, FT_GlyphSlot slot, int xx, int yy,
+               Blt_PaintBrush brush)
 {
     int x1, y1, x2, y2;
 
@@ -1669,8 +1639,7 @@ PaintGrayGlyph(
 		if (*sp != 0x0) {
 		    Blt_Pixel color;
 
-		    color.u32 = Blt_PaintBrush_GetAssociatedColor(brushPtr, 
-			x, y);
+		    color.u32 = Blt_GetAssociatedColorFromBrush(brush, x, y);
 		    Blt_FadeColor(&color, *sp);
 		    BlendPixels(dp, &color);
 		}
@@ -1683,7 +1652,7 @@ PaintGrayGlyph(
 
 static void
 CopyMonoGlyph(Pict *destPtr, FT_GlyphSlot slot, int xx, int yy,
-	  Blt_PaintBrush *brushPtr)
+              Blt_PaintBrush brush)
 {
     int x1, y1, x2, y2;
 
@@ -1748,7 +1717,7 @@ CopyMonoGlyph(Pict *destPtr, FT_GlyphSlot slot, int xx, int yy,
 
 		pixel = srcRowPtr[x >> 3] & (1 << (7 - (x & 0x7)));
 		if (pixel != 0x0) {
-		    dp->u32 = Blt_PaintBrush_GetAssociatedColor(brushPtr, x, y);
+		    dp->u32 = Blt_GetAssociatedColorFromBrush(brush, x, y);
 		}
 	    }
 	    srcRowPtr += slot->bitmap.pitch;
@@ -1885,14 +1854,8 @@ CloseFont(FtFont *fontPtr)
 
 
 static int
-PaintText(
-    Pict *destPtr,
-    FtFont *fontPtr, 
-    const char *string,
-    size_t length,
-    int x, int y,			/* Anchor coordinates of text. */
-    int kerning,
-    Blt_PaintBrush *brushPtr)
+PaintText(Pict *destPtr, FtFont *fontPtr, const char *string, size_t length,
+          int x, int y, int kerning, Blt_PaintBrush brush)
 {
 #if DRAWTEXT
     FT_Error ftError;
@@ -1982,7 +1945,7 @@ PaintText(
 	switch(slot->bitmap.pixel_mode) {
 	case FT_PIXEL_MODE_MONO:
 	    CopyMonoGlyph(destPtr, slot, pen.x >> 6, yy - slot->bitmap_top, 
-		brushPtr);
+		brush);
 	    break;
 	case FT_PIXEL_MODE_LCD:
 	case FT_PIXEL_MODE_LCD_V:
@@ -1998,7 +1961,7 @@ PaintText(
 		if ((xx < destPtr->width) && ((xx + slot->bitmap.width) >= 0) &&
 		    (yy < destPtr->height) && ((yy + slot->bitmap.rows) >= 0)) {
 		    PaintGrayGlyph(destPtr, slot, slot->bitmap_left, 
-				   h - slot->bitmap_top, brushPtr);
+				   h - slot->bitmap_top, brush);
 		}
 	    }
 	case FT_PIXEL_MODE_GRAY2:
@@ -2034,13 +1997,11 @@ PaintTextShadow(
     h = (height + offset*2);
     blur = Blt_CreatePicture(w, h);
     Blt_BlankPicture(blur, 0x0);
-    Blt_PaintBrush_Init(&brush);
-    Blt_PaintBrush_SetColor(&brush, 0xA0000000);
+    brush = Blt_NewColorBrush(0xA00000000);
 
-    PaintText(blur, fontPtr, string, x+offset/2, y+offset/2, 0, &brush);
-
-    PaintText(blur, interp, string, x+offset/2, y+offset/2, 
-	      switchPtr->brushPtr);
+    PaintText(blur, fontPtr, string, x+offset/2, y+offset/2, 0, brush);
+    Blt_FreeBrush(brush);
+    PaintText(blur, interp, string, x+offset/2, y+offset/2, switchPtr->brush);
     Blt_BlurPicture(blur, blur, offset, 3);
     Blt_BlendRegion(picture, blur, 0, 0, w, h, x+offset/2, y+offset/2);
     Blt_FreePicture(blur);
@@ -2048,6 +2009,7 @@ PaintTextShadow(
 #endif
 #endif /*HAVE_FT2BUILD_H*/
 
+#ifdef notdef
 static void 
 xPaintArc(Pict *destPtr, int x1, int y1, int x2, int y2, int lineWidth, 
 	  Blt_Pixel *colorPtr)
@@ -2105,7 +2067,9 @@ xPaintArc(Pict *destPtr, int x1, int y1, int x2, int y2, int lineWidth,
 	}
     }
 }
+#endif
 
+#ifdef notdef
 static Point2d
 PolygonArea(int numPoints, Point2d *points, double *areaPtr)
 {
@@ -2133,7 +2097,9 @@ PolygonArea(int numPoints, Point2d *points, double *areaPtr)
     *areaPtr = area;
     return c;
 }
+#endif
 
+#ifdef notdef
 static void
 BlendLine(Pict *destPtr, int x1, int x2, int y, Blt_Pixel *colorPtr)  
 {
@@ -2152,10 +2118,10 @@ BlendLine(Pict *destPtr, int x1, int x2, int y, Blt_Pixel *colorPtr)
 	BlendPixels(dp, colorPtr);
     }
 }
+#endif
 
 static void
-BrushHorizontalLine(Pict *destPtr, int x1, int x2, int y, 
-		    Blt_PaintBrush *brushPtr)  
+BrushHorizontalLine(Pict *destPtr, int x1, int x2, int y, Blt_PaintBrush brush)
 {
     Blt_Pixel *dp;
     int x;
@@ -2169,7 +2135,7 @@ BrushHorizontalLine(Pict *destPtr, int x1, int x2, int y,
     for (x = x1; x <= x2; x++, dp++) {
 	Blt_Pixel color;
 
-	color.u32 = Blt_PaintBrush_GetAssociatedColor(brushPtr, x, y);
+	color.u32 = Blt_GetAssociatedColorFromBrush(brush, x, y);
 	BlendPixels(dp, &color);
     }
 }
@@ -2289,7 +2255,7 @@ cinsert(AET *tablePtr, size_t n, Point2f *points, int i, int y)
 
 void
 Blt_PaintPolygon(Pict *destPtr, int numVertices, Point2f *vertices, 
-		 Blt_PaintBrush *brushPtr)
+		 Blt_PaintBrush brush)
 {
     int y, k;
     int top, bot;
@@ -2372,7 +2338,7 @@ Blt_PaintPolygon(Pict *destPtr, int numVertices, Point2f *vertices,
 		right = destPtr->width - 1;
 	    }
 	    if (left <= right) {
-		BrushHorizontalLine(destPtr, left, right, y, brushPtr);
+		BrushHorizontalLine(destPtr, left, right, y, brush);
 	    }
 	    p->x += p->dx;		/* increment edge coords */
 	    q->x += q->dx;
@@ -2416,9 +2382,10 @@ TranslatePolygon(size_t numVertices, Point2f *vertices, float x, float y,
     }
 }
 
+#ifdef notdef
 static void
 PaintPolygonAA(Pict *destPtr, size_t numVertices, Point2f *vertices, 
-	       Region2f *regionPtr, Blt_PaintBrush *brushPtr)
+	       Region2f *regionPtr, Blt_PaintBrush brush)
 {
     Blt_Picture big, tmp;
     Point2f *v;
@@ -2450,7 +2417,7 @@ PaintPolygonAA(Pict *destPtr, size_t numVertices, Point2f *vertices,
     h = (y2 - y1 + 2) * 4;
     big = Blt_CreatePicture(w, h);
     Blt_BlankPicture(big, 0x0);
-    Blt_PaintPolygon(big, numVertices, v, brushPtr);
+    Blt_PaintPolygon(big, numVertices, v, brush);
     Blt_Free(v);
     w = (x2 - x1 + 2);
     h = (y2 - y1 + 2);
@@ -2462,6 +2429,7 @@ PaintPolygonAA(Pict *destPtr, size_t numVertices, Point2f *vertices,
 		    (int)floor(regionPtr->top)-1);
     Blt_FreePicture(tmp);
 }
+#endif
 
 static void
 PaintPolygonShadow(Pict *destPtr, size_t numVertices, Point2f *vertices, 
@@ -2499,10 +2467,10 @@ PaintPolygonShadow(Pict *destPtr, size_t numVertices, Point2f *vertices,
     h = (y2 - y1 + shadowPtr->offset*8);
     tmp = Blt_CreatePicture(w, h);
     Blt_BlankPicture(tmp, 0x0);
-    Blt_PaintBrush_Init(&brush);
-    Blt_PaintBrush_SetColor(&brush, shadowPtr->color.u32);
+    brush = Blt_NewColorBrush(shadowPtr->color.u32);
     GetPolygonBoundingBox(numVertices, v, &r2);
-    Blt_PaintPolygon(tmp, numVertices, v, &brush);
+    Blt_PaintPolygon(tmp, numVertices, v, brush);
+    Blt_FreeBrush(brush);
     if (v != vertices) {
 	Blt_Free(v);
     }
@@ -2519,7 +2487,7 @@ PaintPolygonShadow(Pict *destPtr, size_t numVertices, Point2f *vertices,
 
 static void
 PaintPolygonAA2(Pict *destPtr, size_t numVertices, Point2f *vertices, 
-		Region2f *regionPtr, Blt_PaintBrush *brushPtr, 
+		Region2f *regionPtr, Blt_PaintBrush brush, 
 		Blt_Shadow *shadowPtr)
 {
     Blt_Picture big, tmp;
@@ -2541,7 +2509,7 @@ PaintPolygonAA2(Pict *destPtr, size_t numVertices, Point2f *vertices,
     if ((shadowPtr != NULL) && (shadowPtr->width > 0)) {
 	PaintPolygonShadow(big, numVertices, vertices, &r2, shadowPtr);
     }
-    Blt_PaintPolygon(big, numVertices, vertices, brushPtr);
+    Blt_PaintPolygon(big, numVertices, vertices, brush);
     tmp = Blt_CreatePicture(destPtr->width, destPtr->height);
     Blt_ResamplePicture(tmp, big, bltBoxFilter, bltBoxFilter);
     Blt_FreePicture(big);
@@ -2556,7 +2524,7 @@ DrawCircle2(Blt_Picture picture, int x, int y, int radius,
 {
     int filled;
 
-    filled = (switchesPtr->brushPtr != NULL);
+    filled = (switchesPtr->brush != NULL);
     if (switchesPtr->antialiased) {
 	int numSamples = 4; 
 	Pict *bigPtr, *tmpPtr;
@@ -2729,15 +2697,15 @@ DrawCircleShadow(Blt_Picture picture, int x, int y, float r,
 	    r, lineWidth, shadowPtr->offset, shadowPtr->width, w, h);
 #endif
     Blt_BlankPicture(tmpPtr, 0x0);
-    Blt_PaintBrush_Init(&brush);
-    Blt_PaintBrush_SetColor(&brush, shadowPtr->color.u32);
+    brush = Blt_NewColorBrush(shadowPtr->color.u32);
     PaintCircle4(tmpPtr, 
 		 r + shadowPtr->offset, /* x */
 		 r + shadowPtr->offset, /* y */
 		 r,                     /* radius */
 		 lineWidth, 
-		 &brush, 
+		 brush, 
 		 TRUE);
+    Blt_FreeBrush(brush);
     if (blend) {
 	Blt_BlurPicture(tmpPtr, tmpPtr, shadowPtr->width, 3);
 	Blt_BlendRegion(picture, tmpPtr, 0, 0, w, h, 
@@ -2753,9 +2721,9 @@ DrawCircleShadow(Blt_Picture picture, int x, int y, float r,
 
 static void
 DrawCircle(Blt_Picture picture, int x, int y, int r, float lineWidth, 
-	   Blt_PaintBrush *brushPtr, int blend)
+	   Blt_PaintBrush brush, int blend)
 {
-    PaintCircle4(picture, x, y, r, lineWidth, brushPtr, blend);
+    PaintCircle4(picture, x, y, r, lineWidth, brush, blend);
 }
 
 
@@ -2785,7 +2753,7 @@ Blt_Picture_CircleOp(ClientData clientData, Tcl_Interp *interp, int objc,
     Blt_Picture picture = clientData;
     CircleSwitches switches;
     int x, y, radius;
-    Blt_PaintBrush *brushPtr;
+    Blt_PaintBrush brush;
 
     if (objc < 5) {
 	Tcl_AppendResult(interp, "wrong # of coordinates for circle",
@@ -2799,10 +2767,10 @@ Blt_Picture_CircleOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     /* Process switches  */
     switches.lineWidth = 0.0;
-    if (Blt_PaintBrush_GetFromString(interp, "white", &brushPtr) != TCL_OK) {
+    if (Blt_GetPaintBrush(interp, "white", &brush) != TCL_OK) {
 	return TCL_ERROR;
     }
-    switches.brushPtr = brushPtr;
+    switches.brush = brush;
     switches.blend = 1;
     switches.antialiased = 0;
     Blt_Shadow_Set(&switches.shadow, 0, 0, 0x0, 0xFF);
@@ -2814,14 +2782,15 @@ Blt_Picture_CircleOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	DrawCircleShadow(picture, x, y, radius, switches.lineWidth, 
 		switches.blend, &switches.shadow);
     }
-    Blt_PaintBrush_Region(switches.brushPtr, x - radius, y - radius, 
+    Blt_SetBrushRegion(switches.brush, x - radius, y - radius, 
 	radius + radius, radius + radius);
-    DrawCircle(picture, x, y, radius, switches.lineWidth, switches.brushPtr, 
+    DrawCircle(picture, x, y, radius, switches.lineWidth, switches.brush, 
 	       switches.blend);
     Blt_FreeSwitches(circleSwitches, (char *)&switches, 0);
     return TCL_OK;
 }
 
+#ifdef notdef
 
 static Blt_Picture
 CircleShadowLayer(int r, CircleSwitches2 *switchesPtr)
@@ -2842,7 +2811,7 @@ CircleShadowLayer(int r, CircleSwitches2 *switchesPtr)
 	    w, h, x, y);
 #endif
     PaintCircle4(destPtr, x, y, r, switchesPtr->lineWidth, 
-		 switchesPtr->brushPtr, 0);
+		 switchesPtr->brush, 0);
     Blt_BlurPicture(destPtr, destPtr, shadowPtr->width, 3);
     destPtr->flags &= ~BLT_PIC_ASSOCIATED_COLORS;
     return destPtr;
@@ -2860,12 +2829,14 @@ CircleLayer(int radius, CircleSwitches2 *switchesPtr)
     destPtr = Blt_CreatePicture(w, h);
     Blt_BlankPicture(destPtr, 0x0);
     PaintCircle4(destPtr, x, y, radius, switchesPtr->lineWidth, 
-		 switchesPtr->brushPtr, 0);
+		 switchesPtr->brush, 0);
     destPtr->flags &= ~BLT_PIC_ASSOCIATED_COLORS;
     return destPtr;
 }
+#endif
 
 
+#ifdef notdef
 /*
  *---------------------------------------------------------------------------
  *
@@ -2896,7 +2867,7 @@ CircleOp2(
     int x, y, r;
     Blt_Picture outline, fill, shadow;
     Pict *mergePtr;
-    Blt_PaintBrush *brushPtr;
+    Blt_PaintBrush brush;
 
     if (objc < 5) {
 	Tcl_AppendResult(interp, "wrong # of coordinates for circle",
@@ -2910,10 +2881,10 @@ CircleOp2(
     }
     /* Process switches  */
     switches.lineWidth = 0.0;
-    if (Blt_PaintBrush_GetFromString(interp, "white", &brushPtr) != TCL_OK) {
+    if (Blt_GetPaintBrush(interp, "white", &brush) != TCL_OK) {
 	return TCL_ERROR;
     }
-    switches.brushPtr = brushPtr;
+    switches.brush = brush;
     switches.blend = 0;
     switches.antialiased = 0;
     Blt_Shadow_Set(&switches.shadow, 0, 0, 0x0, 0xFF);
@@ -2949,6 +2920,7 @@ CircleOp2(
     Blt_FreeSwitches(circleSwitches, (char *)&switches, 0);
     return TCL_OK;
 }
+#endif
 
 /*
  *---------------------------------------------------------------------------
@@ -3114,13 +3086,13 @@ Blt_Picture_PolygonOp(ClientData clientData, Tcl_Interp *interp, int objc,
     size_t numVertices;
     Point2f *vertices;
     Region2f r;
-    Blt_PaintBrush *brushPtr;
+    Blt_PaintBrush brush;
 
-    if (Blt_PaintBrush_GetFromString(interp, "black", &brushPtr) != TCL_OK) {
+    if (Blt_GetPaintBrush(interp, "black", &brush) != TCL_OK) {
 	return TCL_ERROR;
     }
     memset(&switches, 0, sizeof(switches));
-    switches.brushPtr = brushPtr;
+    switches.brush = brush;
     if (Blt_ParseSwitches(interp, polygonSwitches, objc - 3, objv + 3, 
 		&switches, BLT_SWITCH_DEFAULTS) < 0) {
 	return TCL_ERROR;
@@ -3211,16 +3183,16 @@ Blt_Picture_PolygonOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	    (r.top < destPtr->height) && (r.bottom >= 0)) {
 	    if (switches.antialiased) {
 		PaintPolygonAA2(destPtr, numVertices, vertices, &r, 
-			switches.brushPtr, &switches.shadow);
+			switches.brush, &switches.shadow);
 	    } else {
 		if (switches.shadow.width > 0) {
 		    PaintPolygonShadow(destPtr, numVertices, vertices, &r, 
 				       &switches.shadow);
 		}
-		Blt_PaintBrush_Region(switches.brushPtr, r.left, r.top, 
+		Blt_SetBrushRegion(switches.brush, r.left, r.top, 
 				 r.right - r.left, r.bottom - r.top);
 		Blt_PaintPolygon(destPtr, numVertices, vertices, 
-			switches.brushPtr);
+			switches.brush);
 	    }
 	}
 	Blt_Free(vertices);
@@ -3249,34 +3221,35 @@ Blt_Picture_RectangleOp(ClientData clientData, Tcl_Interp *interp, int objc,
     Blt_Picture picture = clientData;
     RectangleSwitches switches;
     PictRegion r;
-    Blt_PaintBrush *brushPtr;
+    Blt_PaintBrush brush;
     
     if (Blt_GetBBoxFromObjv(interp, 4, objv + 3, &r) != TCL_OK) {
 	return TCL_ERROR;
     }
-    if (Blt_PaintBrush_GetFromString(interp, "black", &brushPtr) != TCL_OK) {
+    if (Blt_GetPaintBrush(interp, "black", &brush) != TCL_OK) {
 	return TCL_ERROR;
     }
     memset(&switches, 0, sizeof(switches));
     /* Process switches  */
-    switches.brushPtr = brushPtr;
+    switches.brush = brush;
     switches.lineWidth = 0;
     if (Blt_ParseSwitches(interp, rectangleSwitches, objc - 7, objv + 7, 
 	&switches, BLT_SWITCH_DEFAULTS) < 0) {
 	return TCL_ERROR;
     }
-    Blt_PaintBrush_Region(switches.brushPtr, r.x, r.y, r.w, r.h);
+    Blt_SetBrushRegion(switches.brush, r.x, r.y, r.w, r.h);
     if (switches.shadow.width > 0) {
 	PaintRectangleShadow(picture, r.x, r.y, r.w, r.h, switches.radius, 
 		switches.lineWidth, &switches.shadow);
     }
     Blt_PaintRectangle(picture, r.x, r.y, r.w, r.h, switches.radius, 
-	switches.lineWidth, switches.brushPtr);
+	switches.lineWidth, switches.brush);
     Blt_FreeSwitches(rectangleSwitches, (char *)&switches, 0);
     return TCL_OK;
 }
 
 
+#ifdef notdef
 static void
 PaintTextLayout(Pict *destPtr, FtFont *fontPtr, TextLayout *layoutPtr, 
 		int x, int y, TextSwitches *switchesPtr)
@@ -3286,9 +3259,10 @@ PaintTextLayout(Pict *destPtr, FtFont *fontPtr, TextLayout *layoutPtr,
     for (fp = layoutPtr->fragments, fend = fp + layoutPtr->numFragments;
 	 fp < fend; fp++) {
 	PaintText(destPtr, fontPtr, fp->text, fp->count, x + fp->sx, 
-		y + fp->sy, switchesPtr->kerning, switchesPtr->brushPtr);
+		y + fp->sy, switchesPtr->kerning, switchesPtr->brush);
     }
 }
+#endif
 
 /*
  *---------------------------------------------------------------------------
@@ -3326,7 +3300,7 @@ Blt_Picture_TextOp(ClientData clientData, Tcl_Interp *interp, int objc,
     switches.anchor = TK_ANCHOR_NW;
     switches.angle = 0.0;
     Blt_Shadow_Set(&switches.shadow, 0, 0, 0x0, 0xA0);
-    if (Blt_PaintBrush_GetFromString(interp, "black", &switches.brushPtr) 
+    if (Blt_GetPaintBrush(interp, "black", &switches.brush) 
 	!= TCL_OK) {
 	return TCL_ERROR;
     }
@@ -3368,7 +3342,7 @@ Blt_Picture_TextOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	    for (fp = layoutPtr->fragments, fend = fp + layoutPtr->numFragments;
 		fp < fend; fp++) {
 		PaintText(destPtr, fontPtr, fp->text, fp->count, x + fp->sx, 
-			y + fp->sy, switches.kerning, switches.brushPtr);
+			y + fp->sy, switches.kerning, switches.brush);
 	    }
 	} else {
 	    Blt_Picture tmp;
@@ -3382,7 +3356,7 @@ Blt_Picture_TextOp(ClientData clientData, Tcl_Interp *interp, int objc,
 
 		fp = layoutPtr->fragments + i;
 		PaintText(tmp, fontPtr, fp->text, fp->count, fp->sx, 
-			fp->sy, switches.kerning, switches.brushPtr);
+			fp->sy, switches.kerning, switches.brush);
 	    }
 	    rotPtr = Blt_RotatePicture(tmp, switches.angle);
 	    Blt_FreePicture(tmp);
@@ -3417,8 +3391,7 @@ Blt_Picture_TextOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	    color.u32 = shadowPtr->color.u32;
 	    color.Alpha = 0x0;
 	    Blt_BlankPicture(tmpPtr, color.u32);
-	    Blt_PaintBrush_Init(&brush);
-	    Blt_PaintBrush_SetColor(&brush, shadowPtr->color.u32);
+	    brush = Blt_NewColorBrush(shadowPtr->color.u32);
 	    for (i = 0; i < layoutPtr->numFragments; i++) {
 		TextFragment *fp;
 
@@ -3426,8 +3399,9 @@ Blt_Picture_TextOp(ClientData clientData, Tcl_Interp *interp, int objc,
 		PaintText(tmpPtr, fontPtr, fp->text, fp->count, 
 			  fp->x + shadowPtr->width, 
 			  fp->y + shadowPtr->width, 
-			  switches.kerning, &brush);
+			  switches.kerning, brush);
 	    }
+            Blt_FreeBrush(brush);
 	    Blt_BlurPicture(tmpPtr, tmpPtr, shadowPtr->width, 3);
 	    Blt_BlendRegion(destPtr, tmpPtr, 0, 0, tmpPtr->width, 
 			    tmpPtr->height, x, y);
@@ -3438,7 +3412,7 @@ Blt_Picture_TextOp(ClientData clientData, Tcl_Interp *interp, int objc,
 		PaintText(destPtr, fontPtr, fp->text, fp->count, 
 		    x + fp->x + shadowPtr->width - shadowPtr->offset,
 		    y + fp->y + shadowPtr->width - shadowPtr->offset, 
-		    switches.kerning, switches.brushPtr);
+		    switches.kerning, switches.brush);
 	    }
 	    Blt_FreePicture(tmpPtr);
 	} else {
@@ -3450,7 +3424,7 @@ Blt_Picture_TextOp(ClientData clientData, Tcl_Interp *interp, int objc,
 		fp = layoutPtr->fragments + i;
 		PaintText(destPtr, fontPtr, fp->text, fp->count, 
 			x + fp->x, y + fp->y, switches.kerning, 
-			switches.brushPtr);
+			switches.brush);
 	    }
 	}
 	Blt_Free(layoutPtr);
@@ -3464,6 +3438,7 @@ Blt_Picture_TextOp(ClientData clientData, Tcl_Interp *interp, int objc,
     return TCL_OK;
 }
 
+#ifdef notdef
 static void 
 Polyline2(Pict *destPtr, int x1, int y1, int x2, int y2, Blt_Pixel *colorPtr)
 {
@@ -3589,7 +3564,7 @@ Polyline2(Pict *destPtr, int x1, int y1, int x2, int y2, Blt_Pixel *colorPtr)
 	}
     }
 }
-
+#endif
 
 Blt_Picture
 Blt_PaintCheckbox(int w, int h, XColor *fillColorPtr, XColor *outlineColorPtr, 
@@ -3602,16 +3577,15 @@ Blt_PaintCheckbox(int w, int h, XColor *fillColorPtr, XColor *outlineColorPtr,
 
     destPtr = Blt_CreatePicture(w, h);
     Blt_Shadow_Set(&shadow, 1, 1, 0x0, 0xA0);
-    Blt_PaintBrush_Init(&brush);
-    Blt_BlankPicture(destPtr, 0x0);
+    brush = Blt_NewColorBrush(0x00000000);
     x = y = 0;
     if (fillColorPtr != NULL) {
-	Blt_PaintBrush_SetColor(&brush, Blt_XColorToPixel(fillColorPtr));
-	Blt_PaintRectangle(destPtr, x+1, y+1, w-2, h-2, 0, 0, &brush);
+	Blt_SetColorBrushColor(brush, Blt_XColorToPixel(fillColorPtr));
+	Blt_PaintRectangle(destPtr, x+1, y+1, w-2, h-2, 0, 0, brush);
     }
     if (outlineColorPtr != NULL) {
-	Blt_PaintBrush_SetColor(&brush, Blt_XColorToPixel(outlineColorPtr));
-	Blt_PaintRectangle(destPtr, x, y, w, h, 0, 1, &brush);
+	Blt_SetColorBrushColor(brush, Blt_XColorToPixel(outlineColorPtr));
+	Blt_PaintRectangle(destPtr, x, y, w, h, 0, 1, brush);
     }
     x += 2, y += 2;
     w -= 5, h -= 5;
@@ -3634,10 +3608,10 @@ Blt_PaintCheckbox(int w, int h, XColor *fillColorPtr, XColor *outlineColorPtr,
 	shadow.color.u32 = 0x5F000000;
 	r.left = x, r.right = x + w;
 	r.top = y, r.bottom = y + h;
-	Blt_PaintBrush_Init(&brush);
-	Blt_PaintBrush_SetColor(&brush, Blt_XColorToPixel(checkColorPtr));
-	PaintPolygonAA2(destPtr, 7, points, &r, &brush, &shadow);
+	Blt_SetColorBrushColor(brush, Blt_XColorToPixel(checkColorPtr));
+	PaintPolygonAA2(destPtr, 7, points, &r, brush, &shadow);
     }
+    Blt_FreeBrush(brush);
     destPtr->flags |= BLT_PIC_BLEND | BLT_PIC_ASSOCIATED_COLORS;
     return destPtr;
 }
@@ -3658,8 +3632,7 @@ Blt_PaintRadioButtonOld(
     Blt_Shadow shadow;
 
     /* Process switches  */
-    Blt_PaintBrush_Init(&brush);
-    Blt_PaintBrush_SetColor(&brush, Blt_XColorToPixel(fillColorPtr));
+    brush = Blt_NewColorBrush(Blt_XColorToPixel(fillColorPtr));
     bg.u32 = Blt_XColorToPixel(bgColorPtr);
     Blt_Shadow_Set(&shadow, 1, 2, 0x0, 0xFF);
     w &= ~1;
@@ -3672,19 +3645,20 @@ Blt_PaintRadioButtonOld(
     if (shadow.width > 0) {
 	DrawCircleShadow(destPtr, x, y, r, 0.0, TRUE, &shadow);
     }
-    DrawCircle(destPtr, x, y, r, 0.0, &brush, TRUE);
+    DrawCircle(destPtr, x, y, r, 0.0, brush, TRUE);
     if (fill.u32 != outline.u32) {
-	Blt_PaintBrush_SetColor(&brush, Blt_XColorToPixel(outlineColorPtr));
-	DrawCircle(destPtr, x, y, r, 1.0, &brush, TRUE);
+	Blt_SetColorBrushColor(brush, Blt_XColorToPixel(outlineColorPtr));
+	DrawCircle(destPtr, x, y, r, 1.0, brush, TRUE);
     }
     if (on) {
 	r -= 2;
 	if (r < 1) {
 	    r = 2;
 	}
-	Blt_PaintBrush_SetColor(&brush, Blt_XColorToPixel(indicatorColorPtr));
-	DrawCircle(destPtr, x, y, r, 0.0, &brush, TRUE);
+	Blt_SetColorBrushColor(brush, Blt_XColorToPixel(indicatorColorPtr));
+	DrawCircle(destPtr, x, y, r, 0.0, brush, TRUE);
     }
+    Blt_FreeBrush(brush);
     return destPtr;
 }
 
@@ -3764,7 +3738,7 @@ Blt_PaintRadioButton(
 {
     Pict *destPtr;
     int x, y, r;
-    Blt_PaintBrush brush, *brushPtr;
+    Blt_PaintBrush brush, newBrush;
     unsigned int normal, light, dark;
 
     destPtr = Blt_CreatePicture(w, h);
@@ -3772,9 +3746,9 @@ Blt_PaintRadioButton(
     h = Blt_Picture_Height(destPtr);
 
     /* Process switches  */
-    brushPtr = Blt_Bg_PaintBrush(bg);
-    Blt_PaintBrush_Region(brushPtr, 0, 0, w, h); 
-    Blt_PaintRectangle(destPtr, 0, 0, w, h, 0, 0, brushPtr);
+    newBrush = Blt_Bg_PaintBrush(bg);
+    Blt_SetBrushRegion(newBrush, 0, 0, w, h); 
+    Blt_PaintRectangle(destPtr, 0, 0, w, h, 0, 0, newBrush);
 
     GetShadowColors(bg, &normal, &light, &dark);
     w &= ~1;
@@ -3782,14 +3756,13 @@ Blt_PaintRadioButton(
     y = h / 2 + 1;
     w -= 4, h -= 4;
     r = (w+1) / 2;
-    Blt_PaintBrush_Init(&brush);
-    Blt_PaintBrush_SetColor(&brush, dark);
-    DrawCircle(destPtr, x-1, y-1, r, 0.0, &brush, TRUE);
-    Blt_PaintBrush_SetColor(&brush, light);
-    DrawCircle(destPtr, x+1, y+1, r, 0.0, &brush, TRUE);
+    brush = Blt_NewColorBrush(dark);
+    DrawCircle(destPtr, x-1, y-1, r, 0.0, brush, TRUE);
+    Blt_SetColorBrushColor(brush, light);
+    DrawCircle(destPtr, x+1, y+1, r, 0.0, brush, TRUE);
     /*Blt_BlurPicture(destPtr, destPtr, 1, 3); */
-    Blt_PaintBrush_SetColor(&brush, Blt_XColorToPixel(fillColorPtr));
-    DrawCircle(destPtr, x, y, r, 0.0, &brush, TRUE);
+    Blt_SetColorBrushColor(brush, Blt_XColorToPixel(fillColorPtr));
+    DrawCircle(destPtr, x, y, r, 0.0, brush, TRUE);
     if (on) {
 	int r1;
 
@@ -3797,9 +3770,10 @@ Blt_PaintRadioButton(
 	if (r1 < 1) {
 	    r1 = 2;
 	}
-	Blt_PaintBrush_SetColor(&brush, Blt_XColorToPixel(indicatorColorPtr));
-	DrawCircle(destPtr, x, y, r1, 0.0, &brush, TRUE);
+	Blt_SetColorBrushColor(brush, Blt_XColorToPixel(indicatorColorPtr));
+	DrawCircle(destPtr, x, y, r1, 0.0, brush, TRUE);
     }
+    Blt_FreeBrush(brush);
     return destPtr;
 }
 
@@ -3818,8 +3792,7 @@ Blt_PaintDelete(
     int x, y, r;
     Blt_PaintBrush brush;
 
-    Blt_PaintBrush_Init(&brush);
-    Blt_PaintBrush_SetColor(&brush, Blt_XColorToPixel(fillColorPtr));
+    brush = Blt_NewColorBrush(Blt_XColorToPixel(fillColorPtr));
     Blt_Shadow_Set(&shadow, 1, 2, 0x0, 0xA0);
     x = y = 0;
     reg.left = x, reg.right = x + w;
@@ -3834,7 +3807,7 @@ Blt_PaintDelete(
 	DrawCircleShadow(picture, x, y, r, 0.0, TRUE, &shadow);
     }
 #endif
-    DrawCircle(picture, x, y, r, 0.0, &brush, FALSE);
+    DrawCircle(picture, x, y, r, 0.0, brush, FALSE);
 
     points[0].x = x - 2;
     points[0].y = y - 3;
@@ -3845,8 +3818,8 @@ Blt_PaintDelete(
     points[3].x = x + 3;
     points[3].y = y + 2;
 
-    Blt_PaintBrush_SetColor(&brush, Blt_XColorToPixel(symbolColorPtr));
-    PaintPolygonAA2(picture, 4, points, &reg, &brush, NULL);
+    Blt_SetColorBrushColor(brush, Blt_XColorToPixel(symbolColorPtr));
+    PaintPolygonAA2(picture, 4, points, &reg, brush, NULL);
 
     points[0].x = x + 3;
     points[0].y = y - 2;
@@ -3857,6 +3830,7 @@ Blt_PaintDelete(
     points[3].x = x - 2;
     points[3].y = y + 3;
 
-    PaintPolygonAA2(picture, 4, points, &reg, &brush, NULL);
+    PaintPolygonAA2(picture, 4, points, &reg, brush, NULL);
+    Blt_FreeBrush(brush);
     return picture;
 }

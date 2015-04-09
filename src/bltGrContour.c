@@ -4388,9 +4388,7 @@ MapProc(Graph *graphPtr, Element *basePtr)
     Blt_HashEntry *hPtr;
     Blt_HashSearch iter;
     Tcl_Interp *interp;
-    Axis *zAxisPtr;
     
-    zAxisPtr = elemPtr->zAxisPtr;
     interp = elemPtr->obj.graphPtr->interp;
     ResetElement(elemPtr);
     elemPtr->pointPool = Blt_Pool_Create(BLT_FIXED_SIZE_ITEMS);

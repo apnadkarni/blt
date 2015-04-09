@@ -3,8 +3,8 @@
 package require BLT
 source scripts/demo.tcl
 
-set normalBg [blt::background create texture -high grey95 -low grey90]
-set activeBg [blt::background create texture -high red1 -low red2]
+set normalBg [blt::background create stripe -oncolor grey95 -offcolor grey90]
+set activeBg [blt::background create stripe -oncolor grey90 -offcolor grey85]
 
 #
 # General widget class resource attributes
@@ -110,7 +110,7 @@ blt::tk::button .newButton -command {
 }
 
 blt::tk::button .holdButton -command {
-    if { [blt::busy isbusy .f1] == "" } {
+    if { ![blt::busy isbusy .f1] } {
         global activeBg
 	.f1 configure -bg $activeBg
     }
@@ -119,7 +119,9 @@ blt::tk::button .holdButton -command {
 }
 
 blt::tk::button .releaseButton -command {
-    if { [blt::busy isbusy .f1] == ".f1" } {
+    puts stderr "release test [blt::busy isbusy .f1]"
+    if { [blt::busy isbusy .f1] } {
+	puts stderr "release .f1"
         blt::busy release .f1
     }
     global normalBg

@@ -494,9 +494,9 @@ SetAxisRange(AxisRange *rangePtr, double min, double max)
  *      Determines if a value lies within a given range.
  *
  *      The value is normalized and compared against the interval [0..1],
- *      where 0.0 is the minimum and 1.0 is the maximum.  DBL_EPSILON is the
- *      smallest number that can be represented on the host machine, such that
- *      (1.0 + epsilon) != 1.0.
+ *      where 0.0 is the minimum and 1.0 is the maximum.  DBL_EPSILON is
+ *      the smallest number that can be represented on the host machine,
+ *      such that (1.0 + epsilon) != 1.0.
  *
  *      Please note, *max* can't equal *min*.
  *
@@ -551,11 +551,7 @@ ReleaseAxis(Axis *axisPtr)
 
 /*ARGSUSED*/
 static void
-FreeAxis(
-    ClientData clientData,              /* Not used. */
-    Display *display,                   /* Not used. */
-    char *widgRec,
-    int offset)
+FreeAxis(ClientData clientData, Display *display, char *widgRec, int offset)
 {
     Axis **axisPtrPtr = (Axis **)(widgRec + offset);
 
@@ -573,22 +569,15 @@ FreeAxis(
  *      Converts the name of an axis to a pointer to its axis structure.
  *
  * Results:
- *      The return value is a standard TCL result.  The axis flags are written
- *      into the widget record.
+ *      The return value is a standard TCL result.  The axis flags are
+ *      written into the widget record.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
-ObjToAxis(
-    ClientData clientData,              /* Class identifier of the type of
-					 * axis we are looking for. */
-    Tcl_Interp *interp,                 /* Interpreter to report results. */
-    Tk_Window tkwin,                    /* Used to look up pointer to graph. */
-    Tcl_Obj *objPtr,                    /* String representing new value. */
-    char *widgRec,                      /* Pointer to structure record. */
-    int offset,                         /* Offset to field in structure */
-    int flags)  
+ObjToAxis(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+           Tcl_Obj *objPtr, char *widgRec, int offset, int flags)
 {
     ClassId classId = (ClassId)clientData;
     Axis **axisPtrPtr = (Axis **)(widgRec + offset);
@@ -632,13 +621,8 @@ ObjToAxis(
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-AxisToObj(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,                 /* Not used. */
-    Tk_Window tkwin,                    /* Not used. */
-    char *widgRec,                      /* Pointer to structure record .*/
-    int offset,                         /* Offset to field in structure */
-    int flags)                          /* Not used. */
+AxisToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+          char *widgRec, int offset, int flags)
 {
     Axis *axisPtr = *(Axis **)(widgRec + offset);
     const char *name;
@@ -663,7 +647,7 @@ AxisToObj(
 /*ARGSUSED*/
 static int
 ObjToScale(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-		   Tcl_Obj *objPtr, char *widgRec, int offset, int flags)
+           Tcl_Obj *objPtr, char *widgRec, int offset, int flags)
 {
     Axis *axisPtr = (Axis *)(widgRec);
     char c;
@@ -700,7 +684,7 @@ ObjToScale(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*ARGSUSED*/
 static Tcl_Obj *
 ScaleToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-	       char *widgRec, int offset, int flags)
+           char *widgRec, int offset, int flags)
 {
     Axis *axisPtr = (Axis *)(widgRec);
     Tcl_Obj *objPtr;
@@ -738,7 +722,7 @@ ScaleToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*ARGSUSED*/
 static int
 ObjToTimeScale(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-		   Tcl_Obj *objPtr, char *widgRec, int offset, int flags)
+               Tcl_Obj *objPtr, char *widgRec, int offset, int flags)
 {
     Axis *axisPtr = (Axis *)(widgRec);
     int state;
@@ -765,7 +749,7 @@ ObjToTimeScale(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*ARGSUSED*/
 static Tcl_Obj *
 TimeScaleToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-		char *widgRec, int offset, int flags)
+               char *widgRec, int offset, int flags)
 {
     Axis *axisPtr = (Axis *)(widgRec);
     return Tcl_NewBooleanObj(axisPtr->scale == SCALE_TIME);
@@ -786,7 +770,7 @@ TimeScaleToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*ARGSUSED*/
 static int
 ObjToLogScale(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-		   Tcl_Obj *objPtr, char *widgRec, int offset, int flags)
+              Tcl_Obj *objPtr, char *widgRec, int offset, int flags)
 {
     Axis *axisPtr = (Axis *)(widgRec);
     int state;
@@ -813,7 +797,7 @@ ObjToLogScale(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 /*ARGSUSED*/
 static Tcl_Obj *
 LogScaleToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-		char *widgRec, int offset, int flags)
+              char *widgRec, int offset, int flags)
 {
     Axis *axisPtr = (Axis *)(widgRec);
     return Tcl_NewBooleanObj(axisPtr->scale == SCALE_LOG);
@@ -821,11 +805,7 @@ LogScaleToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 
 /*ARGSUSED*/
 static void
-FreeFormat(
-    ClientData clientData,              /* Not used. */
-    Display *display,                   /* Not used. */
-    char *widgRec,
-    int offset)                         /* Not used. */
+FreeFormat(ClientData clientData, Display *display, char *widgRec, int offset)
 {
     Axis *axisPtr = (Axis *)(widgRec);
 
@@ -845,21 +825,15 @@ FreeFormat(
  *      Convert the name of virtual axis to an pointer.
  *
  * Results:
- *      The return value is a standard TCL result.  The axis flags are written
- *      into the widget record.
+ *      The return value is a standard TCL result.  The axis flags are
+ *      written into the widget record.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
-ObjToFormat(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,                 /* Interpreter to report results. */
-    Tk_Window tkwin,                    /* Not used. */
-    Tcl_Obj *objPtr,                    /* String representing new value. */
-    char *widgRec,                      /* Pointer to structure record. */
-    int offset,                         /* Not used. */
-    int flags)                          /* Not used. */
+ObjToFormat(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+            Tcl_Obj *objPtr, char *widgRec, int offset, int flags)
 {
     Axis *axisPtr = (Axis *)(widgRec);
     const char **argv;
@@ -896,13 +870,8 @@ ObjToFormat(
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-FormatToObj(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,                 /* Not used. */
-    Tk_Window tkwin,                    /* Not used. */
-    char *widgRec,                      /* Widget record */
-    int offset,                         /* Not used. */
-    int flags)                          /* Not used. */
+FormatToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+            char *widgRec, int offset, int flags)
 {
     Axis *axisPtr = (Axis *)(widgRec);
     Tcl_Obj *objPtr;
@@ -928,21 +897,15 @@ FormatToObj(
  *      form.
  *
  * Results:
- *      The return value is a standard TCL result.  The symbol type is written
- *      into the widget record.
+ *      The return value is a standard TCL result.  The symbol type is
+ *      written into the widget record.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
-ObjToLimit(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,                 /* Interpreter to send results. */
-    Tk_Window tkwin,                    /* Not used. */
-    Tcl_Obj *objPtr,                    /* String representing new value. */
-    char *widgRec,                      /* Pointer to structure record. */
-    int offset,                         /* Offset to field in structure */
-    int flags)                          /* Not used. */
+ObjToLimit(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+           Tcl_Obj *objPtr, char *widgRec, int offset, int flags)
 {
     double *limitPtr = (double *)(widgRec + offset);
     const char *string;
@@ -970,13 +933,8 @@ ObjToLimit(
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-LimitToObj(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,                 /* Not used. */
-    Tk_Window tkwin,                    /* Not used. */
-    char *widgRec,                      /* */
-    int offset,                         /* Offset to field in structure */
-    int flags)                          /* Not used. */
+LimitToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+           char *widgRec, int offset, int flags)
 {
     double limit = *(double *)(widgRec + offset);
     Tcl_Obj *objPtr;
@@ -1005,14 +963,8 @@ LimitToObj(
  */
 /*ARGSUSED*/
 static int
-ObjToMargin(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,                 /* Interpreter to send results. */
-    Tk_Window tkwin,                    /* Not used. */
-    Tcl_Obj *objPtr,                    /* String representing new value. */
-    char *widgRec,                      /* Pointer to structure record. */
-    int offset,                         /* Offset to field in structure */
-    int flags)                          /* Not used. */
+ObjToMargin(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+           Tcl_Obj *objPtr, char *widgRec, int offset, int flags)
 {
     Axis *axisPtr = (Axis *)(widgRec);
     Graph *graphPtr;
@@ -1026,7 +978,8 @@ ObjToMargin(
 	/* Clear the axis class if it's not currently used by an element.*/
 	Blt_GraphSetObjectClass(&axisPtr->obj, CID_NONE);
     }
-    /* Remove the axis from the margin's use list and clear its use flag. */
+    /* Remove the axis from the margin's use list and clear its use
+     * flag. */
     if (axisPtr->link != NULL) {
 	Blt_Chain_UnlinkLink(axisPtr->marginPtr->axes, axisPtr->link);
     }
@@ -1077,13 +1030,8 @@ ObjToMargin(
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-MarginToObj(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,                 /* Not used. */
-    Tk_Window tkwin,                    /* Not used. */
-    char *widgRec,                      /* */
-    int offset,                         /* Offset to field in structure */
-    int flags)                          /* Not used. */
+MarginToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+           char *widgRec, int offset, int flags)
 {
     Axis *axisPtr = (Axis *)(widgRec);
     
@@ -1095,11 +1043,7 @@ MarginToObj(
 
 /*ARGSUSED*/
 static void
-FreeTicks(
-    ClientData clientData,              /* Either AUTO_MAJOR or AUTO_MINOR. */
-    Display *display,                   /* Not used. */
-    char *widgRec,
-    int offset)
+FreeTicks(ClientData clientData, Display *display, char *widgRec, int offset)
 {
     Axis *axisPtr = (Axis *)widgRec;
     TickGrid *ptr = (TickGrid *)(widgRec + offset);
@@ -1126,14 +1070,8 @@ FreeTicks(
  */
 /*ARGSUSED*/
 static int
-ObjToTicks(
-    ClientData clientData,              /* Either AUTO_MAJOR or AUTO_MINOR. */
-    Tcl_Interp *interp,                 /* Interpreter to send results. */
-    Tk_Window tkwin,                    /* Not used. */
-    Tcl_Obj *objPtr,                    /* String representing new value. */
-    char *widgRec,                      /* Pointer to structure record. */
-    int offset,                         /* Offset to field in structure */
-    int flags)                          /* Not used. */
+ObjToTicks(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+           Tcl_Obj *objPtr, char *widgRec, int offset, int flags)
 {
     Axis *axisPtr = (Axis *)widgRec;
     Tcl_Obj **objv;
@@ -1193,13 +1131,8 @@ ObjToTicks(
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-TicksToObj(
-    ClientData clientData,              /* Either AUTO_MAJOR or AUTO_MINOR. */
-    Tcl_Interp *interp,
-    Tk_Window tkwin,                    /* Not used. */
-    char *widgRec,                      /* */
-    int offset,                         /* Offset to field in structure */
-    int flags)                          /* Not used. */
+TicksToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+           char *widgRec, int offset, int flags)
 {
     Axis *axisPtr = (Axis *)widgRec;
     Tcl_Obj *listObjPtr;
@@ -1241,14 +1174,8 @@ TicksToObj(
  */
 /*ARGSUSED*/
 static int
-ObjToLoose(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,                 /* Interpreter to send results. */
-    Tk_Window tkwin,                    /* Not used. */
-    Tcl_Obj *objPtr,                    /* String representing new value. */
-    char *widgRec,                      /* Pointer to structure record. */
-    int offset,                         /* Not used. */
-    int flags)                          /* Not used. */
+ObjToLoose(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+           Tcl_Obj *objPtr, char *widgRec, int offset, int flags)
 {
     Axis *axisPtr = (Axis *)(widgRec);
     Tcl_Obj **objv;
@@ -1298,13 +1225,8 @@ ObjToLoose(
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-LooseToObj(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,
-    Tk_Window tkwin,                    /* Not used. */
-    char *widgRec,                      /* Widget record */
-    int offset,                         /* Not used. */
-    int flags)                          /* Not used. */
+LooseToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+           char *widgRec, int offset, int flags)
 {
     Axis *axisPtr = (Axis *)widgRec;
     Tcl_Obj *listObjPtr;
@@ -1361,11 +1283,7 @@ PaletteChangedProc(Blt_Palette palette, ClientData clientData,
 
 /*ARGSUSED*/
 static void
-FreePalette(
-    ClientData clientData,              /* Not used. */
-    Display *display,                   /* Not used. */
-    char *widgRec,
-    int offset)
+FreePalette(ClientData clientData, Display *display, char *widgRec, int offset)
 {
     Blt_Palette *palPtr = (Blt_Palette *)(widgRec + offset);
     Axis *axisPtr = (Axis *)widgRec;
@@ -1389,15 +1307,8 @@ FreePalette(
  */
 /*ARGSUSED*/
 static int
-ObjToPalette(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,                 /* Interpreter to send results back
-					 * to */
-    Tk_Window tkwin,                    /* Not used. */
-    Tcl_Obj *objPtr,                    /* String representing symbol type */
-    char *widgRec,                      /* Element information record */
-    int offset,                         /* Offset to field in structure */
-    int flags)                          /* Not used. */
+ObjToPalette(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+             Tcl_Obj *objPtr, char *widgRec, int offset, int flags)
 {
     Blt_Palette *palPtr = (Blt_Palette *)(widgRec + offset);
     Axis *axisPtr = (Axis *)widgRec;
@@ -1429,13 +1340,8 @@ ObjToPalette(
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-PaletteToObj(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,
-    Tk_Window tkwin,
-    char *widgRec,                      /* Element information record */
-    int offset,                         /* Offset to field in structure */
-    int flags)                          /* Not used. */
+PaletteToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+             char *widgRec, int offset, int flags)
 {
     Blt_Palette palette = *(Blt_Palette *)(widgRec + offset);
     if (palette == NULL) {
@@ -3081,11 +2987,10 @@ GetAxisScrollInfo(Tcl_Interp *interp, int objc, Tcl_Obj *const *objv,
 }
 
 static int
-GradientColorProc(Blt_PaintBrush *brushPtr, int x, int y)
+GradientCalcProc(ClientData clientData, int x, int y, double *valuePtr)
 {
-    Axis *axisPtr = brushPtr->clientData;
-    Blt_Pixel color;
-    double norm, value;
+    Axis *axisPtr = clientData;
+    double value;
     Graph *graphPtr;
 
     graphPtr = axisPtr->obj.graphPtr;
@@ -3104,11 +3009,10 @@ GradientColorProc(Blt_PaintBrush *brushPtr, int x, int y)
 	    value = Blt_InvHMap(axisPtr, x + axisPtr->screenMin);
 	}
     } else {
-	return 0x0;
+	return TCL_ERROR;
     }
-    norm = (value - axisPtr->valueRange.min) / axisPtr->valueRange.range;
-    color.u32 = Blt_Palette_GetAssociatedColor(brushPtr->palette, norm);
-    return color.u32;
+    *valuePtr = (value - axisPtr->valueRange.min) / axisPtr->valueRange.range;
+    return TCL_OK;
 }
 
 /*
@@ -3124,19 +3028,23 @@ GradientColorProc(Blt_PaintBrush *brushPtr, int x, int y)
 static Blt_Picture
 ColorbarToPicture(Axis *axisPtr, int w, int h)
 {
+    Graph *graphPtr;
     Blt_Picture picture;
 
     if (axisPtr->palette == NULL) {
 	return NULL;                    /* No palette defined. */
     }
+    graphPtr = axisPtr->obj.graphPtr;
     picture = Blt_CreatePicture(w, h);
     if (picture != NULL) {
 	Blt_PaintBrush brush;
 
-	Blt_PaintBrush_Init(&brush);
-	Blt_PaintBrush_SetPalette(&brush, axisPtr->palette);
-	Blt_PaintBrush_SetColorProc(&brush, GradientColorProc, axisPtr);
-	Blt_PaintRectangle(picture, 0, 0, w, h, 0, 0, &brush);
+        Blt_BlankPicture(picture, Blt_Bg_GetColor(graphPtr->normalBg));
+	brush = Blt_NewLinearGradientBrush();
+	Blt_SetLinearGradientBrushPalette(brush, axisPtr->palette);
+	Blt_SetLinearGradientBrushCalcProc(brush, GradientCalcProc, axisPtr);
+	Blt_PaintRectangle(picture, 0, 0, w, h, 0, 0, brush);
+        Blt_FreeBrush(brush);
 	return picture;
     }
     return NULL;
@@ -5839,6 +5747,9 @@ Blt_DrawAxisLimits(Graph *graphPtr, Drawable drawable)
 	if (axisPtr->numFormats == 0) {
 	    continue;
 	}
+        if (axisPtr->marginPtr == NULL) {
+            continue;
+        }
 	minPtr = maxPtr = NULL;
 	minFmt = maxFmt = axisPtr->limitsFormats[0];
 	if (axisPtr->numFormats > 1) {

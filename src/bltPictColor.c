@@ -898,8 +898,13 @@ Blt_NameOfPixel(Blt_Pixel *pixelPtr)
 {
     static char string[10];
 
-    Blt_FormatString(string, 10, "%02x%02x%02x%02x", pixelPtr->Alpha,
-	    pixelPtr->Red, pixelPtr->Green, pixelPtr->Blue);
+    if (pixelPtr->Alpha == 0xFF) {
+        Blt_FormatString(string, 8, "#%02x%02x%02x", pixelPtr->Red,
+                         pixelPtr->Green, pixelPtr->Blue);
+    } else {
+        Blt_FormatString(string, 11, "0x%02x%02x%02x%02x", pixelPtr->Alpha,
+                         pixelPtr->Red, pixelPtr->Green, pixelPtr->Blue);
+    }
     return string;
 }
 

@@ -758,8 +758,8 @@ if { [file exists ../library] } {
     set blt_library ../library
 }
 
-set bg [blt::background create gradient -low  grey100 -high grey90 \
-	-jitter 20 -scale log -relativeto toplevel]
+set bg [blt::background create linear -lowcolor  grey100 -highcolor grey90 \
+	-jitter 20 -colorscale log]
 set bg white
 set myIcon ""
 blt::comboentry .e \

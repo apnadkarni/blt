@@ -30,18 +30,20 @@ $layer2 and $layer1
 $layer3 copy $layer1
 $layer3 select $layer1 0x01000000 0xFFFFFFFF
 #$layer3 and 0x00FFFF00
-set brush1 [blt::paintbrush create gradient \
-		-high green4  \
-		-low green2  \
+set brush1 [blt::paintbrush create linear \
+		-from n -to s \
+		-highcolor green4  \
+		-lowcolor green2  \
 		-jitter 10 \
-		-scale log]
+		-colorscale log]
 $bg2 draw rectangle 0 0 $width $height -color $brush1 
 $layer1 and $bg2 
-set brush2 [blt::paintbrush create gradient \
-		-high blue4  \
-		-low blue1  \
+set brush2 [blt::paintbrush create linear \
+		-from n -to s \
+		-highcolor blue4  \
+		-lowcolor blue1  \
 		-jitter 10 \
-		-scale log]
+		-colorscale log]
 $bg draw rectangle 0 0 $width $height -color $brush2
 #$layer1 or 0xFF000000
 #$layer1 blend $bg $layer1 
