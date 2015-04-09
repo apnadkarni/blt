@@ -470,30 +470,41 @@ the command.  The operations available for vectors are listed below.
   that *vecName* is reset with the new values.  The format of *exprString*
   is described above for the **blt::vector expr** operation.
 
-*vecName* **fft** *vecName* ?\ *switches* ... ?
+*vecName* **fft** *destName* ?\ *switches* ... ?
+
+  Returns the discrete Fourier transform (DFT) of *vecName*, computed with
+  a fast Fourier transform (FFT) algorithm. The vector *destName* will hold
+  the real-valued results.
+  
+  **-imagpart** *vecName*
+   Specifies the vector to store the imaginary part transform.
+
+  **-noconstant**
+   Specifies the a value for empty points.  By default, a NaN is
+   written for each empty point.  *Value* is a real number.
+
+  **-spectrum** 
+    Computes the modulus of the transforms, scaled by 1/N^2 
+    or 1/(N * Wss) for windowed data.
+
+  **-bartlett** 
+   Specifies the starting index of values to export.  *Index* is vector
+   index. The default is to export values from 0.
+
+  **-delta** *number*
+   Specifies the ending index of values to export.  *Index* is vector
+   index. The default is to export values to the end of the vector.
+
+  **-frequencies** *vecName*
+   Specifies the vector to store the frequencies of the transform.
 
 *vecName* **frequency** *destName* *numBins*
 
    Fills *destName* with the frequency of values found in *vecName*.
+   *DestName* is the name a vector created by the **create** operation.
    *NumBins* is an non-zero integer specifying the number of bins to use
    when computing the frequency.  Bins represent regular intervals of
    values from the minimum to the maximum vector value.
-
-*vecName* **import** *format* ?\ *switches* ... ?
-
-  Imports binary data into *vecName*. *Format* is either "double" or
-  "float".  Either a **-data** or **-file** switch is required.
-  
-  **-data** *varName*
-   Reads the binary input from a TCL variable *varName*. 
-
-  **-empty** *value*
-   Specifies the a value for empty points.  By default, a NaN is
-   represents an empty point.  *Value* is a real number.
-
-  **-file** *path*
-   Reads the binary input from a file *path*. It is an error if
-   the *path* can not be read.
 
 *vecName* **indices** *what*
 
@@ -538,8 +549,11 @@ the command.  The operations available for vectors are listed below.
 
 *vecName* **merge** ?\ *srcName* ...?
 
-  Merges one or more vectors into a single vector.  The resulting vector is
-  formed by adding the points of each source vector one index at a time.
+  Merges one or more vectors into *vecName*.  *SrcName* is the name a
+  vector created by the **create** operation.  All *srcName* vectors must
+  be the same length.  The length of *vecName* will be grown to hold all
+  the points from each *srcName* vector.  The points are merged one at a
+  time for each index, by adding the points for each vector *srcName*,
 
 *vecName* **minimum**
 
@@ -548,8 +562,10 @@ the command.  The operations available for vectors are listed below.
 *vecName* **normalize** ?\ *destName*\ ?
 
   Normalizes the vector to have values between 0 and 1.  If a *destName*
-  argument is present, then is a vector where the normalized values will be
-  written Otherwise the list of normalized values is returned.
+  exists, it is the name a vector created by the **create** operation.
+  *DestName* will be resized if necessary to hold the normalized values.
+  If no *destName* argument is present, then this command will return the
+  normalized values.
 
 *vecName* **notify** *keyword*
 

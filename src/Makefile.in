@@ -364,6 +364,7 @@ BLT_TCL_SO_OBJS =	bltAlloc.o \
 			bltUtil.o \
 			bltVar.o \
 			bltVecCmd.o \
+			bltVecFft.o \
 			bltVecMath.o \
 			bltVector.o \
 			bltWatch.o \
