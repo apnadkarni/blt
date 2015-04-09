@@ -1,5 +1,4 @@
 /* -*- mode: c; c-basic-offset: 4; indent-tabs-mode: nil -*- */
-
 /*
  * bltVecMath.c --
  *
@@ -11,24 +10,22 @@
  *	Permission is hereby granted, free of charge, to any person
  *	obtaining a copy of this software and associated documentation
  *	files (the "Software"), to deal in the Software without
- *	restriction, including without limitation the rights to use,
- *	copy, modify, merge, publish, distribute, sublicense, and/or
- *	sell copies of the Software, and to permit persons to whom the
- *	Software is furnished to do so, subject to the following
- *	conditions:
+ *	restriction, including without limitation the rights to use, copy,
+ *	modify, merge, publish, distribute, sublicense, and/or sell copies
+ *	of the Software, and to permit persons to whom the Software is
+ *	furnished to do so, subject to the following conditions:
  *
  *	The above copyright notice and this permission notice shall be
- *	included in all copies or substantial portions of the
- *	Software.
+ *	included in all copies or substantial portions of the Software.
  *
- *	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY
- *	KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
- *	WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
- *	PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS
- *	OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR
- *	OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
- *	OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
- *	SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ *	EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ *	MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ *	NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+ *	BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ *	ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ *	CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ *	SOFTWARE.
  */
 
 #include "bltVecInt.h"
@@ -56,16 +53,16 @@
 /*
  * Three types of math functions:
  *
- *	ComponentProc		Function is applied in multiple calls to
- *				each component of the vector.
- *	VectorProc		Entire vector is passed, each component is
+ *	PointProc		Function is applied in multiple calls to
+ *				each point of the vector.
+ *	VectorProc		Entire vector is passed, each point is
  *				modified.
  *	ScalarProc		Entire vector is passed, single scalar value
  *				is returned.
  */
 
-typedef double (ComponentOneArgProc)(double value);
-typedef double (ComponentNoArgsProc)(void);
+typedef double (PointProc1)(double value);
+typedef double (PointProc0)(void);
 typedef int (VectorProc)(Vector *vPtr);
 typedef double (ScalarProc)(Vector *vPtr);
 
@@ -224,7 +221,8 @@ Sort(Vector *vPtr)
     int i;
     size_t sortLength;
 
-    Blt_Vec_SortMap(&vPtr, 1, &sortLength, &map);
+    sortLength = vPtr->length;
+    Blt_Vec_SortMap(&vPtr, 1, &map);
     values = Blt_AssertMalloc(sizeof(double) * sortLength);
     for(i = 0; i < sortLength; i++) {
 	values[i] = vPtr->valueArr[map[i]];
@@ -491,7 +489,8 @@ Median(Blt_Vector *vectorPtr)
 	return -DBL_MAX;
     }
     /* FIXME: compute number of nonempty slots.  */
-    Blt_Vec_SortMap(&vPtr, 1, &sortLength, &map);
+    sortLength = vPtr->length;
+    Blt_Vec_SortMap(&vPtr, 1, &map);
     mid = (sortLength - 1) / 2;
 
     /*  
@@ -521,7 +520,8 @@ Q1(Blt_Vector *vectorPtr)
 	return -DBL_MAX;
     } 
     /* FIXME: compute number of nonempty slots.  */
-    Blt_Vec_SortMap(&vPtr, 1, &sortLength, &map);
+    sortLength = vPtr->length;
+    Blt_Vec_SortMap(&vPtr, 1, &map);
 
     if (sortLength < 4) {
 	q1 = vPtr->valueArr[map[0]];
@@ -559,7 +559,8 @@ Q3(Blt_Vector *vectorPtr)
 	return -DBL_MAX;
     } 
     /* FIXME: compute number of nonempty slots.  */
-    Blt_Vec_SortMap(&vPtr, 1, &sortLength, &map);
+    sortLength = vPtr->length;
+    Blt_Vec_SortMap(&vPtr, 1, &map);
 
     if (sortLength < 4) {
 	q3 = vPtr->valueArr[map[sortLength - 1]];
@@ -758,15 +759,15 @@ MathError(
  * ParseString --
  *
  *	Given a string (such as one coming from command or variable
- *	substitution), make a Value based on the string.  The value
- *	will be a floating-point or integer, if possible, or else it
- *	will just be a copy of the string.
+ *	substitution), make a Value based on the string.  The value will be
+ *	a floating-point or integer, if possible, or else it will just be a
+ *	copy of the string.
  *
  * Results:
- *	TCL_OK is returned under normal circumstances, and TCL_ERROR
- *	is returned if a floating-point overflow or underflow occurred
- *	while reading in a number.  The value at *valuePtr is modified
- *	to hold a number, if possible.
+ *	TCL_OK is returned under normal circumstances, and TCL_ERROR is
+ *	returned if a floating-point overflow or underflow occurred while
+ *	reading in a number.  The value at *valuePtr is modified to hold a
+ *	number, if possible.
  *
  * Side effects:
  *	None.
@@ -776,10 +777,11 @@ MathError(
 
 static int
 ParseString(
-    Tcl_Interp *interp,		/* Where to store error message. */
-    const char *string,		/* String to turn into value. */
-    Value *valuePtr)		/* Where to store value information.
-				 * Caller must have initialized pv field. */
+    Tcl_Interp *interp,                 /* Where to store error message. */
+    const char *string,                 /* String to turn into value. */
+    Value *valuePtr)                    /* Where to store value
+                                         * information.  Caller must have
+                                         * initialized pv field. */
 {
     const char *endPtr;
     double value;
@@ -833,19 +835,19 @@ ParseString(
  * ParseMathFunction --
  *
  *	This procedure is invoked to parse a math function from an
- *	expression string, carry out the function, and return the
- *	value computed.
+ *	expression string, carry out the function, and return the value
+ *	computed.
  *
  * Results:
- *	TCL_OK is returned if all went well and the function's value
- *	was computed successfully.  If the name doesn't match any
- *	known math function, returns TCL_RETURN. And if a format error
- *	was found, TCL_ERROR is returned and an error message is left
- *	in interp->result.
+ *	TCL_OK is returned if all went well and the function's value was
+ *	computed successfully.  If the name doesn't match any known math
+ *	function, returns TCL_RETURN. And if a format error was found,
+ *	TCL_ERROR is returned and an error message is left in
+ *	interp->result.
  *
- *	After a successful return piPtr will be updated to point to
- *	the character just after the function call, the token is set
- *	to VALUE, and the value is stored in valuePtr.
+ *	After a successful return piPtr will be updated to point to the
+ *	character just after the function call, the token is set to VALUE,
+ *	and the value is stored in valuePtr.
  *
  * Side effects:
  *	Embedded commands could have arbitrary side-effects.
@@ -854,26 +856,27 @@ ParseString(
  */
 static int
 ParseMathFunction(
-    Tcl_Interp *interp,		/* Interpreter to use for error reporting. */
-    const char *start,		/* Start of string to parse */
-    ParseInfo *piPtr,		/* Describes the state of the parse.
-				 * piPtr->nextPtr must point to the
-				 * first character of the function's
-				 * name. */
-    Value *valuePtr)		/* Where to store value, if that is
-				 * what's parsed from string.  Caller
-				 * must have initialized pv field
-				 * correctly. */
+    Tcl_Interp *interp,                 /* Interpreter to use for error
+                                         * reporting. */
+    const char *start,                  /* Start of string to parse */
+    ParseInfo *piPtr,                   /* Describes the state of the
+                                         * parse.  piPtr->nextPtr must
+                                         * point to the first character of
+                                         * the function's name. */
+    Value *valuePtr)                    /* Where to store value, if that is
+                                         * what's parsed from string.
+                                         * Caller must have initialized pv
+                                         * field correctly. */
 {
     Blt_HashEntry *hPtr;
-    MathFunction *mathPtr;	/* Info about math function. */
+    MathFunction *mathPtr;              /* Info about math function. */
     char *p;
-    VectorInterpData *dataPtr;	/* Interpreter-specific data. */
+    VectorInterpData *dataPtr;          /* Interpreter-specific data. */
     GenericMathProc *proc;
 
     /*
-     * Find the end of the math function's name and lookup the
-     * record for the function.
+     * Find the end of the math function's name and lookup the record for
+     * the function.
      */
     p = (char *)start;
     while (isspace(UCHAR(*p))) {
@@ -884,31 +887,33 @@ ParseMathFunction(
 	p++;
     }
     if (*p != '(') {
-	return TCL_RETURN;	/* Must start with open parenthesis */
+	return TCL_RETURN;              /* Must start with open
+                                         * parenthesis */
     }
     dataPtr = valuePtr->vPtr->dataPtr;
     *p = '\0';
     hPtr = Blt_FindHashEntry(&dataPtr->mathProcTable, piPtr->nextPtr);
     *p = '(';
     if (hPtr == NULL) {
-	return TCL_RETURN;	/* Name doesn't match any known function */
+	return TCL_RETURN;              /* Name doesn't match any known
+                                         * function */
     }
     /* Pick up the single value as the argument to the function */
     piPtr->token = OPEN_PAREN;
     piPtr->nextPtr = p + 1;
     valuePtr->pv.next = valuePtr->pv.buffer;
     if (NextValue(interp, piPtr, -1, valuePtr) != TCL_OK) {
-	return TCL_ERROR;	/* Parse error */
+	return TCL_ERROR;               /* Parse error */
     }
     if (piPtr->token != CLOSE_PAREN) {
 	Tcl_AppendResult(interp, "unmatched parentheses in expression \"",
 	    piPtr->expr, "\"", (char *)NULL);
-	return TCL_ERROR;	/* Missing right parenthesis */
+	return TCL_ERROR;               /* Missing right parenthesis */
     }
     mathPtr = Blt_GetHashValue(hPtr);
     proc = mathPtr->proc;
     if ((*proc) (mathPtr->clientData, interp, valuePtr->vPtr) != TCL_OK) {
-	return TCL_ERROR;	/* Function invocation error */
+	return TCL_ERROR;               /* Function invocation error */
     }
     piPtr->token = VALUE;
     return TCL_OK;
@@ -919,18 +924,17 @@ ParseMathFunction(
  *
  * NextToken --
  *
- *	Lexical analyzer for expression parser:  parses a single value,
+ *	Lexical analyzer for expression parser: parses a single value,
  *	operator, or other syntactic element from an expression string.
  *
  * Results:
  *	TCL_OK is returned unless an error occurred while doing lexical
- *	analysis or executing an embedded command.  In that case a
- *	standard TCL error is returned, using interp->result to hold
- *	an error message.  In the event of a successful return, the token
- *	and field in piPtr is updated to refer to the next symbol in
- *	the expression string, and the expr field is advanced past that
- *	token;  if the token is a value, then the value is stored at
- *	valuePtr.
+ *	analysis or executing an embedded command.  In that case a standard
+ *	TCL error is returned, using interp->result to hold an error
+ *	message.  In the event of a successful return, the token and field
+ *	in piPtr is updated to refer to the next symbol in the expression
+ *	string, and the expr field is advanced past that token; if the
+ *	token is a value, then the value is stored at valuePtr.
  *
  * Side effects:
  *	None.
@@ -939,12 +943,14 @@ ParseMathFunction(
  */
 static int
 NextToken(
-    Tcl_Interp *interp,		/* Interpreter to use for error reporting. */
-    ParseInfo *piPtr,		/* Describes the state of the parse. */
-    Value *valuePtr)		/* Where to store value, if that is
-				 * what's parsed from string.  Caller
-				 * must have initialized pv field
-				 * correctly. */
+    Tcl_Interp *interp,                 /* Interpreter to use for error
+                                         * reporting. */
+    ParseInfo *piPtr,                   /* Describes the state of the
+                                         * parser. */
+    Value *valuePtr)                    /* Where to store value, if that is
+                                         * what's parsed from string.
+                                         * Caller must have initialized pv
+                                         * field correctly. */
 {
     const char *p;
     const char *endPtr;
@@ -961,11 +967,11 @@ NextToken(
 	return TCL_OK;
     }
     /*
-     * Try to parse the token as a floating-point number. But check
-     * that the first character isn't a "-" or "+", which "strtod"
-     * will happily accept as an unary operator.  Otherwise, we might
-     * accidently treat a binary operator as unary by mistake, which
-     * will eventually cause a syntax error.
+     * Try to parse the token as a floating-point number. But check that
+     * the first character isn't a "-" or "+", which "strtod" will happily
+     * accept as an unary operator.  Otherwise, we might accidently treat a
+     * binary operator as unary by mistake, which will eventually cause a
+     * syntax error.
      */
     if ((*p != '-') && (*p != '+')) {
 	double value;
@@ -981,7 +987,7 @@ NextToken(
 	    piPtr->nextPtr = endPtr;
 
 	    /*
-	     * Save the single floating-point value as an 1-component vector.
+	     * Save the single floating-point value as an 1-point vector.
 	     */
 	    if (Blt_Vec_ChangeLength(interp, valuePtr->vPtr, 1) != TCL_OK) {
 		return TCL_ERROR;
@@ -1171,11 +1177,12 @@ NextToken(
  *	Parse a "value" from the remainder of the expression in piPtr.
  *
  * Results:
- *	Normally TCL_OK is returned.  The value of the expression is returned
- *	in *valuePtr.  If an error occurred, then interp->result contains an
- *	error message and TCL_ERROR is returned.  InfoPtr->token will be left
- *	pointing to the token AFTER the expression, and piPtr->nextPtr will
- *	point to the character just after the terminating token.
+ *	Normally TCL_OK is returned.  The value of the expression is
+ *	returned in *valuePtr.  If an error occurred, then interp->result
+ *	contains an error message and TCL_ERROR is returned.
+ *	InfoPtr->token will be left pointing to the token AFTER the
+ *	expression, and piPtr->nextPtr will point to the character just
+ *	after the terminating token.
  *
  * Side effects:
  *	None.
@@ -1760,7 +1767,7 @@ NextValue(
 		    }
 		    if (opnd2[i] == 0.0) {
 			Tcl_AppendResult(interp,
-				"can't divide by 0.0 vector component",
+				"can't divide by 0.0 vector point",
 				(char *)NULL);
 			goto error;
 		    }
@@ -1935,16 +1942,16 @@ NextValue(
  *
  * EvaluateExpression --
  *
- *	This procedure provides top-level functionality shared by procedures
- *	like Tcl_ExprInt, Tcl_ExprDouble, etc.
+ *	This procedure provides top-level functionality shared by
+ *	procedures like Tcl_ExprInt, Tcl_ExprDouble, etc.
  *
  * Results:
- *	The result is a standard TCL return value.  If an error occurs then an
- *	error message is left in interp->result.  The value of the expression
- *	is returned in *valuePtr, in whatever form it ends up in (could be
- *	string or integer or double).  Caller may need to convert result.
- *	Caller is also responsible for freeing string memory in *valuePtr, if
- *	any was allocated.
+ *	The result is a standard TCL return value.  If an error occurs then
+ *	an error message is left in interp->result.  The value of the
+ *	expression is returned in *valuePtr, in whatever form it ends up in
+ *	(could be string or integer or double).  Caller may need to convert
+ *	result.  Caller is also responsible for freeing string memory in
+ *	*valuePtr, if any was allocated.
  *
  * Side effects:
  *	None.
@@ -1986,8 +1993,8 @@ EvaluateExpression(
  *
  * Math Functions --
  *
- *	This page contains the procedures that implement all of the built-in
- *	math functions for expressions.
+ *	This page contains the procedures that implement all of the
+ *	built-in math functions for expressions.
  *
  * Results:
  *	Each procedure returns TCL_OK if it succeeds and places result
@@ -2000,14 +2007,14 @@ EvaluateExpression(
  *---------------------------------------------------------------------------
  */
 static int
-ComponentFunc(
-    ClientData clientData,		/* Contains address of procedure that
-					 * takes one double argument and
-					 * returns a double result. */
+PointFunc(
+    ClientData clientData,		/* Contains address of procedure
+					 * that takes one double argument
+					 * and returns a double result. */
     Tcl_Interp *interp,
     Vector *vPtr)
 {
-    ComponentOneArgProc *procPtr = (ComponentOneArgProc *) clientData;
+    PointProc1 *procPtr = (PointProc1 *) clientData;
     int i;
     double *values;
 
@@ -2033,8 +2040,8 @@ ComponentFunc(
  *
  * Math Functions --
  *
- *	This page contains the procedures that implement all of the built-in
- *	math functions for expressions.
+ *	This page contains the procedures that implement all of the
+ *	built-in math functions for expressions.
  *
  * Results:
  *	Each procedure returns TCL_OK if it succeeds and places result
@@ -2047,14 +2054,14 @@ ComponentFunc(
  *---------------------------------------------------------------------------
  */
 static int
-ComponentNoArgsFunc(
-    ClientData clientData,		/* Contains address of procedure that
-					 * takes one double argument and
-					 * returns a double result. */
+PointNoArgsFunc(
+    ClientData clientData,              /* Contains address of procedure
+					 * that takes one double argument
+					 * and returns a double result. */
     Tcl_Interp *interp,
     Vector *vPtr)
 {
-    ComponentNoArgsProc *procPtr = (ComponentNoArgsProc *) clientData;
+    PointProc0 *procPtr = (PointProc0 *) clientData;
     int i;
     double *values;
 
@@ -2099,44 +2106,44 @@ VectorFunc(ClientData clientData, Tcl_Interp *interp, Vector *vPtr)
 
 static MathFunction mathFunctions[] =
 {
-    {"abs",     ComponentFunc, Fabs},
-    {"acos",	ComponentFunc, acos},
-    {"asin",	ComponentFunc, asin},
-    {"asinh",	ComponentFunc, asinh},
-    {"atan",	ComponentFunc, atan},
-    {"adev",	ScalarFunc,    AvgDeviation},
-    {"ceil",	ComponentFunc, ceil},
-    {"cos",	ComponentFunc, cos},
-    {"cosh",	ComponentFunc, cosh},
-    {"exp",	ComponentFunc, exp},
-    {"floor",	ComponentFunc, floor},
-    {"kurtosis",ScalarFunc,    Kurtosis},
-    {"length",	ScalarFunc,    Length},
-    {"log",	ComponentFunc, log},
-    {"log10",	ComponentFunc, log10},
-    {"max",	ScalarFunc,    Blt_VecMax},
-    {"mean",	ScalarFunc,    Mean},
-    {"median",	ScalarFunc,    Median},
-    {"min",	ScalarFunc,    Blt_VecMin},
-    {"norm",	VectorFunc,    Norm},
-    {"nonempty",ScalarFunc,    Count},
-    {"nonzero",	ScalarFunc,    Nonzeros},
-    {"q1",	ScalarFunc,    Q1},
-    {"q2",	ScalarFunc,    Mean},
-    {"q3",	ScalarFunc,    Q3},
-    {"prod",	ScalarFunc,    Product},
-    {"random",	ComponentNoArgsFunc, drand48},
-    {"round",	ComponentFunc, Round},
-    {"sdev",	ScalarFunc,    StdDeviation},
-    {"sin",	ComponentFunc, sin},
-    {"sinh",	ComponentFunc, sinh},
-    {"skew",	ScalarFunc,    Skew},
-    {"sort",	VectorFunc,    Sort},
-    {"sqrt",	ComponentFunc, sqrt},
-    {"sum",	ScalarFunc,    Sum},
-    {"tan",	ComponentFunc, tan},
-    {"tanh",	ComponentFunc, tanh},
-    {"var",	ScalarFunc,    Variance},
+    {"abs",     PointFunc,      Fabs},
+    {"acos",	PointFunc,      acos},
+    {"asin",	PointFunc,      asin},
+    {"asinh",	PointFunc,      asinh},
+    {"atan",	PointFunc,      atan},
+    {"adev",	ScalarFunc,     AvgDeviation},
+    {"ceil",	PointFunc,      ceil},
+    {"cos",	PointFunc,      cos},
+    {"cosh",	PointFunc,      cosh},
+    {"exp",	PointFunc,      exp},
+    {"floor",	PointFunc,      floor},
+    {"kurtosis",ScalarFunc,     Kurtosis},
+    {"length",	ScalarFunc,     Length},
+    {"log",	PointFunc,      log},
+    {"log10",	PointFunc,      log10},
+    {"max",	ScalarFunc,     Blt_VecMax},
+    {"mean",	ScalarFunc,     Mean},
+    {"median",	ScalarFunc,     Median},
+    {"min",	ScalarFunc,     Blt_VecMin},
+    {"norm",	VectorFunc,     Norm},
+    {"nonempty",ScalarFunc,     Count},
+    {"nonzero",	ScalarFunc,     Nonzeros},
+    {"q1",	ScalarFunc,     Q1},
+    {"q2",	ScalarFunc,     Mean},
+    {"q3",	ScalarFunc,     Q3},
+    {"prod",	ScalarFunc,     Product},
+    {"random",	PointNoArgsFunc ,drand48},
+    {"round",	PointFunc,      Round},
+    {"sdev",	ScalarFunc,     StdDeviation},
+    {"sin",	PointFunc,      sin},
+    {"sinh",	PointFunc,      sinh},
+    {"skew",	ScalarFunc,     Skew},
+    {"sort",	VectorFunc,     Sort},
+    {"sqrt",	PointFunc,      sqrt},
+    {"sum",	ScalarFunc,     Sum},
+    {"tan",	PointFunc,      tan},
+    {"tanh",	PointFunc,      tanh},
+    {"var",	ScalarFunc,     Variance},
     {(char *)NULL,},
 };
 
@@ -2178,8 +2185,9 @@ InstallIndexProc(
     const char *string,
     Blt_VectorIndexProc *procPtr)	/* Pointer to function to be called
 					 * when the vector finds the named
-					 * index.  If NULL, this indicates to
-					 * remove the index from the table. */
+					 * index.  If NULL, this indicates
+					 * to remove the index from the
+					 * table. */
 {
     Blt_HashEntry *hPtr;
     int dummy;

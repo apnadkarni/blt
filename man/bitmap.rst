@@ -36,9 +36,9 @@ Define a new bitmap from a Tcl script
 SYNOPSIS
 --------
 
-**blt::bitmap define** *bitmapName* *data* ?*option value*?...
+**blt::bitmap define** *bitmapName* *data* ?\ *option* *value* ... ?
 
-**blt::bitmap compose** *bitmapName* *text* ?*option value*?...
+**blt::bitmap compose** *bitmapName* *text* ?\ *option* *value* ... ?
 
 **blt::bitmap exists** *bitmapName*
 
@@ -81,7 +81,7 @@ OPERATIONS
 
 The following operations are available for **blt::bitmap**:
 
-**blt::bitmap compose** *bitmapName* *text* *?*option value*?...
+**blt::bitmap compose** *bitmapName* *text* ?\ *option* *value* ... ?
 
   Creates a bitmap *bitmapName* from the text string *text*.
   A bitmap *bitmapName* can not already exist.  
@@ -89,15 +89,14 @@ The following operations are available for **blt::bitmap**:
 
   **-font** *fontName* 
 
-    Specifies a font to use when drawing text into the bitmap.
-    If this option isn't specified then *fontName* defaults to 
-    "{San Serif} 12".
+    Specifies a font to use when drawing text into the bitmap.  *FontName*
+    can be in any form accepted by the Tk **font** command. The default is
+    "{San Serif} 9".
 
   **-rotate** *theta*
 
-    Specifies the angle of rotation of the text in the bitmap.
-    *Theta* is a real number representing the angle in degrees.
-    It defaults to "0.0" degrees.
+    Specifies the angle of rotation of the text in the bitmap.  *Theta* is
+    a real number representing the angle in degrees.  The default is "0.0".
 
   **-scale** *value*
 
@@ -112,7 +111,7 @@ The following operations are available for **blt::bitmap**:
   Returns a list of both the dimensions of the bitmap *bitmapName* and its
   source data.
 
-**blt::bitmap define** *bitmapName* *data* *?*option value*?...
+**blt::bitmap define** *bitmapName* *data* ?\ *option* *value* ... ?
 
   Associates *bitmapName* with in-memory bitmap data so that
   *bitmapName* can be used in later calls to **Tk_GetBitmap**.  The
@@ -129,18 +128,16 @@ The following operations are available for **blt::bitmap**:
 
   **-rotate** *theta*
 
-      Specifies how many degrees to rotate the bitmap.
-      *Theta* is a real number representing the angle.
-      The default is "0.0" degrees.
+      Specifies how many degrees to rotate the bitmap.  *Theta* is a real
+      number representing the angle.  The default is "0.0" degrees.
 
   **-scale** *value*
 
-      Specifies how to scale the bitmap.
-      *Value* is a real number representing the scale.  A scale
-      of 1.0 indicates no scaling is necessary, while 2.0 would
-      double the size of the bitmap.  There is no way to specify
-      differents scales for the width and height of the bitmap.
-      The default scale is "1.0".
+      Specifies how to scale the bitmap.  *Value* is a real number
+      representing the scale.  A scale of 1.0 indicates no scaling is
+      necessary, while 2.0 would double the size of the bitmap.  There is
+      no way to specify differents scales for the width and height of the
+      bitmap.  The default scale is "1.0".
 
 **blt::bitmap exists** *bitmapName*
 
@@ -244,12 +241,11 @@ to bitmaps that you create, but any bitmap.
     blt::bitmap data rot_text
     blt::bitmap source rot_text
 
-The **exists** operation indicates if a bitmap by that name is
-defined.  You can query the dimensions of the bitmap using the
-**width** and **height** operations. The **data** operation
-returns the list of the data used to create the bitmap.  
-For example, you could query the data of a bitmap and **send**
-it across the network to another Tk application.
+The **exists** operation indicates if a bitmap by that name is defined.
+You can query the dimensions of the bitmap using the **width** and
+**height** operations. The **data** operation returns the list of the data
+used to create the bitmap.  For example, you could query the data of a
+bitmap and **send** it across the network to another Tk application.
 
  ::
 

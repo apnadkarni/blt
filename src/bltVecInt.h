@@ -209,8 +209,8 @@ BLT_EXTERN Vector *Blt_Vec_ParseElement(Tcl_Interp *interp,
 
 BLT_EXTERN void Blt_Vec_Free(Vector *vPtr);
 
-BLT_EXTERN void Blt_Vec_SortMap(Vector **vectors, int numVectors, 
-	size_t *sortLengthPtr, size_t **sortMapPtr);
+BLT_EXTERN void Blt_Vec_SortMap(Vector **vectors, int numVectors,
+        size_t **mapPtr);
 
 BLT_EXTERN int Blt_Vec_LookupName(VectorInterpData *dataPtr, 
 	const char *vecName, Vector **vPtrPtr);
