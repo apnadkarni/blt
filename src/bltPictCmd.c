@@ -2258,6 +2258,76 @@ PixelsSwitchProc(
 	PIXELS_NNEG, pixelsPtr);
 }
 
+typedef struct {
+    const char *name;
+    Blt_BlendingMode mode;
+} BlendSpec;
+
+static BlendSpec blendSpecs[] = {
+    { "colorburn",      BLT_BLEND_COLORBURN }, 
+    { "colordodge",     BLT_BLEND_COLORDODGE },
+    { "darken",         BLT_BLEND_DARKEN },
+    { "difference",     BLT_BLEND_DIFFERENCE },	
+    { "divide",         BLT_BLEND_DIVIDE },
+    { "exclusion",      BLT_BLEND_EXCLUSION },
+    { "hardlight",      BLT_BLEND_HARDLIGHT },
+    { "hardmix",        BLT_BLEND_HARDMIX },
+    { "lighten",        BLT_BLEND_LIGHTEN },			
+    { "linearburn",     BLT_BLEND_LINEARBURN },
+    { "lineardodge",    BLT_BLEND_LINEARDODGE },
+    { "linearlight",    BLT_BLEND_LINEARLIGHT },
+    { "multiply",       BLT_BLEND_MULTIPLY },
+    { "normal",         BLT_BLEND_NORMAL },
+    { "overlay",        BLT_BLEND_OVERLAY },
+    { "pinlight",       BLT_BLEND_PINLIGHT },
+    { "screen",         BLT_BLEND_SCREEN },
+    { "softlight",      BLT_BLEND_SOFTLIGHT },
+    { "softlight2",     BLT_BLEND_SOFTLIGHT2 },
+    { "subtract",       BLT_BLEND_SUBTRACT },
+    { "vividlight",     BLT_BLEND_VIVIDLIGHT }
+};
+static int numBlendModes = sizeof(blendSpecs) / sizeof(BlendSpec);
+
+static int
+GetBlendModeFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr,
+                    Blt_BlendingMode *modePtr)
+{
+    const char *string;
+    int low, high;
+    char c;
+    
+    low = 0;
+    high = numBlendModes - 1;
+    string = Tcl_GetString(objPtr);
+    c = string[0];
+    while (low <= high) {
+	BlendSpec *specPtr;
+	int compare;
+	int median;
+	
+	median = (low + high) >> 1;
+	specPtr = blendSpecs + median;
+
+	/* Test the first character */
+	compare = c - specPtr->name[0];
+	if (compare == 0) {
+	    /* Now test the entire string */
+	    compare = strcmp(string, specPtr->name);
+	}
+	if (compare < 0) {
+	    high = median - 1;
+	} else if (compare > 0) {
+	    low = median + 1;
+	} else {
+	    *modePtr = specPtr->mode;		/* Op found. */
+            return TCL_OK;
+	}
+    }
+    Tcl_AppendResult(interp, "can't find blend mode \"", string, "\"",
+                     (char *)NULL);
+    return TCL_ERROR;                   /* Can't find blend mode */
+}
+
 /*
  *---------------------------------------------------------------------------
  *
@@ -2283,43 +2353,9 @@ BlendingModeSwitchProc(
     int flags)				/* Not used. */
 {
     Blt_BlendingMode *modePtr = (Blt_BlendingMode *)(record + offset);
-    const char *string;
-    int length;
-    char c;
-
-    string = Tcl_GetStringFromObj(objPtr, &length);
-    c = string[0];
-    if ((c == 'n') && (strncmp(string, "normal", length) == 0)) {
-	*modePtr = BLT_BLEND_NORMAL;
-    } else if ((c == 'm') && (strncmp(string, "multiply", length) == 0)) {
-	*modePtr = BLT_BLEND_MULTIPLY;
-    } else if ((c == 's') && (strncmp(string, "screen", length) == 0)) {
-	*modePtr = BLT_BLEND_SCREEN;
-    } else if ((c == 'd') && (length > 1) && 
-	       (strncmp(string, "darken", length) == 0)) {
-	*modePtr = BLT_BLEND_DARKEN;
-    } else if ((c == 'l') && (strncmp(string, "lighten", length) == 0)) {
-	*modePtr = BLT_BLEND_LIGHTEN;
-    } else if ((c == 'd') && (length > 1) && 
-	       (strncmp(string, "difference", length) == 0)) {
-	*modePtr = BLT_BLEND_DIFFERENCE;
-    } else if ((c == 'h') && (strncmp(string, "hardlight", length) == 0)) {
-	*modePtr = BLT_BLEND_HARDLIGHT;
-    } else if ((c == 's') && (strncmp(string, "softlight", length) == 0)) {
-	*modePtr = BLT_BLEND_SOFTLIGHT;
-    } else if ((c == 'c') && (length > 5) && 
-	       (strncmp(string, "colordodge", length) == 0)) {
-	*modePtr = BLT_BLEND_COLORDODGE;
-    } else if ((c == 'c') && (length > 5) && 
-	       (strncmp(string, "colorburn", length) == 0)) {
-	*modePtr = BLT_BLEND_COLORBURN;
-    } else if ((c == 'o') && (strncmp(string, "overlay", length) == 0)) {
-	*modePtr = BLT_BLEND_OVERLAY;
-    } else {
-	Tcl_AppendResult(interp, "unknown blending mode \"", string, "\": ",
-		"should be normal, mulitply, screen, darken, lighten, ",
-		"or difference", (char *) NULL);
-	return TCL_ERROR;
+    
+    if (GetBlendModeFromObj(interp, objPtr, modePtr) != TCL_OK) {
+        return TCL_ERROR;
     }
     return TCL_OK;
 }
@@ -3225,13 +3261,7 @@ GetOp(
 	pixel.Green = (mul255(sp->Green) + bias) / sp->Alpha;
 	pixel.Blue  = (mul255(sp->Blue)  + bias) / sp->Alpha;
     }
-    {
-	char string[11];
-
-	Blt_FormatString(string, 11, "0x%02x%02x%02x%02x", pixel.Alpha, pixel.Red, 
-		 pixel.Green, pixel.Blue);
-	Tcl_SetObjResult(interp, Tcl_NewStringObj(string, 10));
-    }
+    Tcl_SetObjResult(interp, Tcl_NewStringObj(Blt_NameOfPixel(&pixel), -1));
     return TCL_OK;
 }
 
@@ -4015,6 +4045,11 @@ QuantizeOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     if (Tcl_GetIntFromObj(interp, objv[3], &numColors) != TCL_OK) {
 	return TCL_ERROR;
+    }
+    if (numColors < 2) {
+        Tcl_AppendResult(interp, "Invalid # of color \"",
+                Tcl_GetString(objv[3]), "\": should be >= 2", (char *)NULL);
+        return TCL_ERROR;
     }
     dest = Blt_QuantizePicture(src, numColors);
     if (dest == NULL) {

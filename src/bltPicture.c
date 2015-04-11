@@ -674,13 +674,9 @@ Blt_FadeColor(Blt_Pixel *colorPtr, unsigned int alpha)
     colorPtr->Blue  = imul8x8(colorPtr->Blue, alpha, t);
     colorPtr->Alpha = imul8x8(colorPtr->Alpha, alpha, t);
 }
-
 void
 Blt_AssociateColor(Blt_Pixel *colorPtr)
 {
-#ifdef notdef
-    if ((colorPtr->Alpha != 0xFF) && (colorPtr->Alpha != 0x00)) {
-#endif
     if (colorPtr->Alpha != 0xFF) {
 	int t;
 		    
@@ -829,6 +825,251 @@ BlendRegion(Pict *destPtr, Pict *srcPtr, int sx, int sy, int w, int h,
     }
 }
 
+#ifdef notdef
+((uint8)((B == 0) ? B:max(0, (255 - ((255 - A) << 8 ) / B))))
+#endif
+
+static INLINE int
+ColorBurn(int src, int dst)
+{
+    int c;
+    
+    if (src == 0) {
+        return src;
+    }
+    c = 255 - (((255 - dst) << 8) / src);
+    if (c < 0) {
+        return 0;
+    }
+    return c;
+}
+
+#ifdef notdef
+((uint8)((B == 255) ? B:min(255, ((A << 8 ) / (255 - B)))))
+#endif
+
+/* 
+ * r = dst / (1 - src);
+ *
+ *      dst/255.0 / (1 - src/255.0);
+ *
+ *      dst / (255 - src)
+ */
+static INLINE int
+ColorDodge(int src, int dst)
+{
+    int c;
+    
+    if (src == 0xFF) {
+        return src;
+    }
+    c = (dst * 255) / (255 - src);
+    if (c > 0xFF) {
+        return 0xFF;
+    }
+    return c;
+}
+
+#ifdef notdef
+#define ChannelBlend_Normal(A,B)     ((uint8)(A))
+#define ChannelBlend_Lighten(A,B)    ((uint8)((B > A) ? B:A))
+#define ChannelBlend_Darken(A,B)     ((uint8)((B > A) ? A:B))
+#define ChannelBlend_Multiply(A,B)   ((uint8)((A * B) / 255))
+#define ChannelBlend_Average(A,B)    ((uint8)((A + B) / 2))
+#define ChannelBlend_Add(A,B)        ((uint8)(min(255, (A + B))))
+#define ChannelBlend_Subtract(A,B)   ((uint8)((A + B < 255) ? 0:(A + B - 255)))
+#define ChannelBlend_Difference(A,B) ((uint8)(abs(A - B)))
+#define ChannelBlend_Negation(A,B)   ((uint8)(255 - abs(255 - A - B)))
+#define ChannelBlend_Screen(A,B)     ((uint8)(255 - (((255 - A) * (255 - B)) >> 8)))
+#define ChannelBlend_Exclusion(A,B)  ((uint8)(A + B - 2 * A * B / 255))
+#define ChannelBlend_Overlay(A,B)    ((uint8)((B < 128) ? (2 * A * B / 255):(255 - 2 * (255 - A) * (255 - B) / 255)))
+#define ChannelBlend_SoftLight(A,B)  ((uint8)((B < 128)?(2*((A>>1)+64))*((float)B/255):(255-(2*(255-((A>>1)+64))*(float)(255-B)/255))))
+#define ChannelBlend_HardLight(A,B)  (ChannelBlend_Overlay(B,A))
+#define ChannelBlend_ColorDodge(A,B) ((uint8)((B == 255) ? B:min(255, ((A << 8 ) / (255 - B)))))
+#define ChannelBlend_ColorBurn(A,B)  ((uint8)((B == 0) ? B:max(0, (255 - ((255 - A) << 8 ) / B))))
+#define ChannelBlend_LinearDodge(A,B)(ChannelBlend_Add(A,B))
+#define ChannelBlend_LinearBurn(A,B) (ChannelBlend_Subtract(A,B))
+#define ChannelBlend_LinearLight(A,B)((uint8)(B < 128)?ChannelBlend_LinearBurn(A,(2 * B)):ChannelBlend_LinearDodge(A,(2 * (B - 128))))
+#define ChannelBlend_VividLight(A,B) ((uint8)(B < 128)?ChannelBlend_ColorBurn(A,(2 * B)):ChannelBlend_ColorDodge(A,(2 * (B - 128))))
+#define ChannelBlend_PinLight(A,B)   ((uint8)(B < 128)?ChannelBlend_Darken(A,(2 * B)):ChannelBlend_Lighten(A,(2 * (B - 128))))
+#define ChannelBlend_HardMix(A,B)    ((uint8)((ChannelBlend_VividLight(A,B) < 128) ? 0:255))
+#define ChannelBlend_Reflect(A,B)    ((uint8)((B == 255) ? B:min(255, (A * A / (255 - B)))))
+#define ChannelBlend_Glow(A,B)       (ChannelBlend_Reflect(B,A))
+#define ChannelBlend_Phoenix(A,B)    ((uint8)(min(A,B) - max(A,B) + 255))
+#define ChannelBlend_Alpha(A,B,O)    ((uint8)(O * A + (1 - O) * B))
+#define ChannelBlend_AlphaF(A,B,F,O) (ChannelBlend_Alpha(F(A,B),A,O))
+
+#define ColorBlend_Buffer(T,A,B,M)      (T)[0] = ChannelBlend_##M((A)[0], (B)[0]),                                        (T)[1] = ChannelBlend_##M((A)[1], (B)[1]),
+                                        (T)[2] = ChannelBlend_##M((A)[2], (B)[2])
+
+#define ColorBlend_Normal(T,A,B)        (ColorBlend_Buffer(T,A,B,Normal))
+#define ColorBlend_Lighten(T,A,B)       (ColorBlend_Buffer(T,A,B,Lighten))
+#define ColorBlend_Darken(T,A,B)        (ColorBlend_Buffer(T,A,B,Darken))
+#define ColorBlend_Multiply(T,A,B)      (ColorBlend_Buffer(T,A,B,Multiply))
+#define ColorBlend_Average(T,A,B)       (ColorBlend_Buffer(T,A,B,Average))
+#define ColorBlend_Add(T,A,B)           (ColorBlend_Buffer(T,A,B,Add))
+#define ColorBlend_Subtract(T,A,B)      (ColorBlend_Buffer(T,A,B,Subtract))
+#define ColorBlend_Difference(T,A,B)    (ColorBlend_Buffer(T,A,B,Difference))
+#define ColorBlend_Negation(T,A,B)      (ColorBlend_Buffer(T,A,B,Negation))
+#define ColorBlend_Screen(T,A,B)        (ColorBlend_Buffer(T,A,B,Screen))
+#define ColorBlend_Exclusion(T,A,B)     (ColorBlend_Buffer(T,A,B,Exclusion))
+#define ColorBlend_Overlay(T,A,B)       (ColorBlend_Buffer(T,A,B,Overlay))
+#define ColorBlend_SoftLight(T,A,B)     (ColorBlend_Buffer(T,A,B,SoftLight))
+#define ColorBlend_HardLight(T,A,B)     (ColorBlend_Buffer(T,A,B,HardLight))
+#define ColorBlend_ColorDodge(T,A,B)    (ColorBlend_Buffer(T,A,B,ColorDodge))
+#define ColorBlend_ColorBurn(T,A,B)     (ColorBlend_Buffer(T,A,B,ColorBurn))
+#define ColorBlend_LinearDodge(T,A,B)   (ColorBlend_Buffer(T,A,B,LinearDodge))
+#define ColorBlend_LinearBurn(T,A,B)    (ColorBlend_Buffer(T,A,B,LinearBurn))
+#define ColorBlend_LinearLight(T,A,B)   (ColorBlend_Buffer(T,A,B,LinearLight))
+#define ColorBlend_VividLight(T,A,B)    (ColorBlend_Buffer(T,A,B,VividLight))
+#define ColorBlend_PinLight(T,A,B)      (ColorBlend_Buffer(T,A,B,PinLight))
+#define ColorBlend_HardMix(T,A,B)       (ColorBlend_Buffer(T,A,B,HardMix))
+#define ColorBlend_Reflect(T,A,B)       (ColorBlend_Buffer(T,A,B,Reflect))
+#define ColorBlend_Glow(T,A,B)          (ColorBlend_Buffer(T,A,B,Glow))
+#define ColorBlend_Phoenix(T,A,B)       (ColorBlend_Buffer(T,A,B,Phoenix))
+#endif
+    
+static INLINE int
+HardLight(int src, int dst)
+{
+    int t;
+    
+    if (dst < 128) {
+        return 2 * imul8x8(src, dst, t);
+    } else {
+        return 255 - (2 * imul8x8(255-src, 255-dst, t));
+    }        
+}
+
+static INLINE int
+Overlay(int src, int dst)
+{
+    int t;
+    
+    if (src < 128) {
+        return 2 * imul8x8(src, dst, t);
+    } else {
+        return 255 - (2 * (imul8x8(255-src, 255-dst, t)));
+    }        
+}
+
+static INLINE int
+SoftLight(int src, int dst)
+{
+    if (dst < 128) {
+        return (2 * ((src >> 1) + 64)) * ((double)dst / 255.0);
+    } else {
+        return 255 - (2 * (255 - ((src >> 1) + 64)) * ((255 - dst) / 255.0));
+    }
+}
+
+static INLINE int
+SoftLight2(int src, int dst)
+{
+    double s, d, x;
+
+    d = dst / 255.0;
+    s = src / 255.0;
+    x = round(255 * ((1 - s) * s * d + s * (1 - (1 - d) * (1 - s))));
+    return (int)x;
+}
+                                            
+
+#ifdef notef
+((uint8)(B < 128)?ChannelBlend_ColorBurn(A,(2 * B)):ChannelBlend_ColorDodge(A,(2 * (B - 128))))
+#endif
+
+static INLINE int
+VividLight(int src, int dst)
+{
+    if (src < 128) {
+        return ColorBurn(2 * src, dst);
+    } else {
+        return ColorDodge(2 * (src - 128), dst);
+    }        
+}
+
+static INLINE int
+Add(int src, int dst)
+{
+    int c;
+
+    c = src + dst;
+    if (c > 0xFF) {
+        return 0xFF;
+    }
+    return c;
+}
+
+static INLINE int
+Subtract(int src, int dst)
+{
+    int c;
+
+    c = dst + src;
+    if (c < 255) {
+        return 0;
+    }
+    return c - 255;
+}
+
+static INLINE int
+LinearDodge(int src, int dst)
+{
+    return Add(src, dst);
+}
+
+static INLINE int
+LinearBurn(int src, int dst)
+{
+    int c;
+
+    c = src + dst;
+    if (c < 255) {
+        return 0;
+    }
+    return c - 255;
+}
+
+static INLINE int
+LinearLight(int src, int dst)
+{
+    if (src < 128) {
+        return LinearBurn(2 * src, dst);
+    } else {
+        return LinearDodge(2 * (src - 128), dst);
+    }
+}
+
+static INLINE int
+PinLight(int src, int dst)
+{
+    if (src < 128) {
+        return MIN(2 * src, dst);
+    } else {
+        return MAX(2 * (src - 128),   dst);
+    }
+}
+
+static INLINE int
+Divide(int src, int dst)
+{
+    if (src == 0) {
+        return 0;
+    } else {
+        return (int)((dst / (double)src) + 0.5) * 255;
+    }
+}
+
+static INLINE int
+Exclusion(int src, int dst)
+{
+    int t;
+    
+    return (src + dst - 2 * imul8x8(src, dst, t));    
+}
+
+
 static void
 BlendRegionArea2(
     Pict *destPtr,			/* (in/out) Background picture.
@@ -855,190 +1096,380 @@ BlendRegionArea2(
     destRowPtr = destPtr->bits + ((dy * destPtr->pixelsPerRow) + dx);
     srcRowPtr  = srcPtr->bits + ((sy * srcPtr->pixelsPerRow) + sx);
 
-    for (y = 0; y < h; y++) {
-	Blt_Pixel *sp, *send, *dp;
+    switch (mode) {
+    case BLT_BLEND_NORMAL:              /* C = F */
+        for (y = 0; y < h; y++) {
+            Blt_Pixel *sp, *send, *dp;
 
-	dp = destRowPtr;
-	for (sp = srcRowPtr, send = sp + w; sp < send; sp++, dp++) {
-	    int r, g, b, a;
-	    double fa, z;
+            dp = destRowPtr;
+            for (sp = srcRowPtr, send = sp + w; sp < send; sp++, dp++) {
+                dp->u32 = sp->u32;
+            }
+            srcRowPtr += srcPtr->pixelsPerRow;
+            destRowPtr += destPtr->pixelsPerRow;
+        }
+        break;
 
-	    /*
-	     * C = ((1 - Fa) * B) + ((1 - Ba) * F) + (Fa * Ba * BLEND(F,B));
-	     */
-	    {
-		int fgBeta, bgBeta;
+    case BLT_BLEND_MULTIPLY:            /* C = F * B */
+        for (y = 0; y < h; y++) {
+            Blt_Pixel *sp, *send, *dp;
 
-		bgBeta = dp->Alpha ^ 0xFF;
-		fgBeta = sp->Alpha ^ 0xFF;
-		r = (fgBeta * dp->Red)   + (bgBeta * sp->Red);
-		g = (fgBeta * dp->Green) + (bgBeta * sp->Green);
-		b = (fgBeta * dp->Blue)  + (bgBeta * sp->Blue);
-		a = (fgBeta * dp->Alpha) + (bgBeta * sp->Alpha);
-	    }
-	    switch (mode) {
-	    case BLT_BLEND_NORMAL: /* C = F */
-		r += dp->Alpha * sp->Red;
-		g += dp->Alpha * sp->Green;
-		b += dp->Alpha * sp->Blue;
-		a += dp->Alpha * sp->Alpha;
-		break;
-		
-	    case BLT_BLEND_MULTIPLY: /* C = F * B */
-		r += dp->Red * sp->Red;
-		g += dp->Green * sp->Green;
-		b += dp->Blue * sp->Blue;
-		a += dp->Alpha * sp->Alpha;
-		break;
-		
-	    case BLT_BLEND_COLORDODGE:	/* C = B / (1 - F) */
-		if (sp->Alpha > 0) {
-		    fa = 1.0 / sp->Alpha;
-		    z = (sp->Alpha * dp->Red) / (1.0 - (sp->Red * fa));
-		    r += (int)(z + 0.5);
-		    z = (sp->Alpha * dp->Green) / (1.0 - (sp->Green * fa));
-		    g += (int)(z + 0.5) ;
-		    z = (sp->Alpha * dp->Blue) / (1.0 - (sp->Blue * fa));
-		    b += (int)(z + 0.5);
-		    a += dp->Alpha * sp->Alpha;
-		} else {
-		    r += dp->Alpha * sp->Red;
-		    g += dp->Alpha * sp->Green;
-		    b += dp->Alpha * sp->Blue;
-		    a += dp->Alpha * sp->Alpha;
-		}
-		break;
-		
-	    case BLT_BLEND_COLORBURN:	/* C = B / F; */
-		if (sp->Alpha > 0) {
-		    fa = 1.0 / sp->Alpha;
-		    z = 511.0 * ((dp->Alpha * sp->Red * fa) - 
-				 ((sp->Alpha * dp->Red) / (sp->Red + 1)));
-		    r += (int)(z + 0.5);
-		    z = 511.0 * ((dp->Alpha * sp->Green * fa) - 
-				 ((sp->Alpha * dp->Green) / (sp->Green + 1)));
-		    g += (int)(z + 0.5);
-		    z = 511.0 * ((dp->Alpha * sp->Blue * fa) - 
-				 ((sp->Alpha * dp->Blue) / (sp->Blue + 1)));
-		    b += (int)(z + 0.5);
-		    a += dp->Alpha * sp->Alpha;
-		} else {
-		    r += dp->Alpha * sp->Red;
-		    g += dp->Alpha * sp->Green;
-		    b += dp->Alpha * sp->Blue;
-		    a += dp->Alpha * sp->Alpha;
-		}
-		break;
-		
-	    case BLT_BLEND_OVERLAY:	/* Multiplies or screens depending
+            dp = destRowPtr;
+            for (sp = srcRowPtr, send = sp + w; sp < send; sp++, dp++) {
+                int t;
+
+		dp->Red   = imul8x8(dp->Red, sp->Red, t);
+		dp->Green = imul8x8(dp->Green, sp->Green, t);
+		dp->Blue  = imul8x8(dp->Blue, sp->Blue, t);
+                dp->Alpha = imul8x8(dp->Alpha, sp->Alpha, t);
+            }
+            srcRowPtr += srcPtr->pixelsPerRow;
+            destRowPtr += destPtr->pixelsPerRow;
+        }
+        break;
+        
+    case BLT_BLEND_COLORDODGE:          /* C = B / (1 - F) */
+        for (y = 0; y < h; y++) {
+            Blt_Pixel *sp, *send, *dp;
+
+            dp = destRowPtr;
+            for (sp = srcRowPtr, send = sp + w; sp < send; sp++, dp++) {
+                int t;
+
+                dp->Red   = ColorDodge(sp->Red, dp->Red);
+                dp->Green = ColorDodge(sp->Green, dp->Green);
+                dp->Blue  = ColorDodge(sp->Blue, dp->Blue);
+                dp->Alpha = imul8x8(sp->Alpha, dp->Alpha, t);
+            }
+            srcRowPtr += srcPtr->pixelsPerRow;
+            destRowPtr += destPtr->pixelsPerRow;
+        }
+        break;
+
+    case BLT_BLEND_COLORBURN:           /* C = B / F; */
+        for (y = 0; y < h; y++) {
+            Blt_Pixel *sp, *send, *dp;
+
+            dp = destRowPtr;
+            for (sp = srcRowPtr, send = sp + w; sp < send; sp++, dp++) {
+                int t;
+
+                dp->Red   = ColorBurn(sp->Red, dp->Red);
+                dp->Green = ColorBurn(sp->Green, dp->Green);
+                dp->Blue  = ColorBurn(sp->Blue, dp->Blue);
+                dp->Alpha = imul8x8(sp->Alpha, dp->Alpha, t);
+            }
+            srcRowPtr += srcPtr->pixelsPerRow;
+            destRowPtr += destPtr->pixelsPerRow;
+        }
+        break;
+
+    case BLT_BLEND_OVERLAY:             /* Multiplies or screens depending
 					 * upon background color. */
-		if (dp->Red < 128) {
-		    r += dp->Red * sp->Red;
-		} else {
-		    r += ((sp->Alpha * dp->Red) + (dp->Alpha * sp->Red) - 
-			  (sp->Red * dp->Red));
-		}
-		if (dp->Green < 128) {
-		    g += dp->Green * sp->Green;
-		} else {
-		    g += ((sp->Alpha * dp->Green) + (dp->Alpha * sp->Green) - 
-			  (sp->Green * dp->Green));
-		}
-		if (dp->Blue < 128) {
-		    b += dp->Blue * sp->Blue;
-		} else {
-		    b += ((sp->Alpha * dp->Blue) + (dp->Alpha * sp->Blue) - 
-			  (sp->Blue * dp->Blue));
-		}
-		a += dp->Alpha * sp->Alpha;
-		break;
-		
-	    case BLT_BLEND_SCREEN: /* C = 1 - ((1 - F) * B) */
-		r += ((sp->Alpha * dp->Red) + (dp->Alpha * sp->Red) - 
-		      (sp->Red * dp->Red));
-		g += ((sp->Alpha * dp->Green) + (dp->Alpha * sp->Green) - 
-		      (sp->Green * dp->Green));
-		b += ((sp->Alpha * dp->Blue) + (dp->Alpha * sp->Blue) - 
-		      (sp->Blue * dp->Blue));
-		a += dp->Alpha * sp->Alpha;
-		break;
-		
-	    case BLT_BLEND_DARKEN:	/* C = min(F,B) */
-		r += MIN(dp->Alpha * sp->Red,   sp->Alpha * dp->Red);
-		g += MIN(dp->Alpha * sp->Green, sp->Alpha * dp->Green);
-		b += MIN(dp->Alpha * sp->Blue,  sp->Alpha * dp->Blue);
-		a += dp->Alpha * sp->Alpha;
-		break;
-		
-	    case BLT_BLEND_LIGHTEN:	/* C = max(F,B) */
-		r += MAX(dp->Alpha * sp->Red,   sp->Alpha * dp->Red);
-		g += MAX(dp->Alpha * sp->Green, sp->Alpha * dp->Green);
-		b += MAX(dp->Alpha * sp->Blue,  sp->Alpha * dp->Blue);
-		a += dp->Alpha * sp->Alpha;
-		break;
-		
-	    case BLT_BLEND_DIFFERENCE: /* C = |F - B| */
-		/* C = |(F * Ba) - (B * Fa)| */
-		r += ABS((dp->Alpha * sp->Red) -   (sp->Alpha * dp->Red));
-		g += ABS((dp->Alpha * sp->Green) - (sp->Alpha * dp->Green));
-		b += ABS((dp->Alpha * sp->Blue) -  (sp->Alpha * dp->Blue));
-		a += dp->Alpha * sp->Alpha;
-		break;
-	    case BLT_BLEND_HARDLIGHT:
-		if (sp->Red > 127) {
-		    r += ((sp->Alpha * dp->Red) + (dp->Alpha * sp->Red) - 
-			  (sp->Red * dp->Red));
-		} else {
-		    r += dp->Red * sp->Red;
-		}
-		if (sp->Green > 127) {
-		    g += ((sp->Alpha * dp->Green) + 
-			  (dp->Alpha * sp->Green) - 
-			  (sp->Green * dp->Green));
-		} else {
-		    g += dp->Green * sp->Green;
-		}
-		if (sp->Blue > 127) {
-		    b += ((sp->Alpha * dp->Blue) + (dp->Alpha * sp->Blue) - 
-			  (sp->Blue * dp->Blue));
-		} else {
-		    b += dp->Blue * sp->Blue;
-		}
-		a += MIN(sp->Alpha, dp->Alpha);
-		break;
-	    case BLT_BLEND_SOFTLIGHT:
-		fa = 1.0 / sp->Alpha;
-		if (sp->Red > 127) {
-		    z = (sp->Alpha * dp->Red) / (1.0 - (sp->Red * fa));
-		} else {
-		    z = 511.0 * ((dp->Alpha * sp->Red * fa) - 
-			((sp->Alpha * dp->Red) / (sp->Red + 1)));
-		}
-		r += (int)(z + 0.5);
-		if (sp->Green > 127) {
-		    z = (sp->Alpha * dp->Green) / (1.0 - (sp->Green * fa));
-		} else {
-		    z = 511.0 * ((dp->Alpha * sp->Green * fa) - 
-			((sp->Alpha * dp->Green) / (sp->Green + 1)));
-		}
-		g += (int)(z + 0.5);
-		if (sp->Blue > 127) {
-		    z = (sp->Alpha * dp->Blue) / (1.0 - (sp->Blue * fa));
-		} else {
-		    z = 511.0 * ((dp->Alpha * sp->Blue * fa) - 
-				 ((sp->Alpha * dp->Blue) / (sp->Blue + 1)));
-		}
-		b += (int)(z + 0.5);
-		a += sp->Alpha * dp->Alpha;
-		break;
-	    }
-	    dp->Red   = (r >= 65025) ? 255 : ((r < 0) ? 0 : div255(r));
-	    dp->Green = (g >= 65025) ? 255 : ((g < 0) ? 0 : div255(g));
-	    dp->Blue  = (b >= 65025) ? 255 : ((b < 0) ? 0 : div255(b));
-	    dp->Alpha = (a >= 65025) ? 255 : ((a < 0) ? 0 : div255(a));
-	}
-	srcRowPtr += srcPtr->pixelsPerRow;
-	destRowPtr += destPtr->pixelsPerRow;
+        for (y = 0; y < h; y++) {
+            Blt_Pixel *sp, *send, *dp;
+
+            dp = destRowPtr;
+            for (sp = srcRowPtr, send = sp + w; sp < send; sp++, dp++) {
+                int t;
+
+                dp->Red   = Overlay(sp->Red,   dp->Red);
+                dp->Green = Overlay(sp->Green, dp->Green);
+                dp->Blue  = Overlay(sp->Blue,  dp->Blue);
+                dp->Alpha = imul8x8(sp->Alpha, dp->Alpha, t);
+            }
+            srcRowPtr += srcPtr->pixelsPerRow;
+            destRowPtr += destPtr->pixelsPerRow;
+        }
+        break;
+
+    case BLT_BLEND_SCREEN:              /* C = 1 - ((1 - F) * B) */
+        for (y = 0; y < h; y++) {
+            Blt_Pixel *sp, *send, *dp;
+
+            dp = destRowPtr;
+            for (sp = srcRowPtr, send = sp + w; sp < send; sp++, dp++) {
+                int t;
+
+                dp->Red   = (255 - (imul8x8(255-sp->Red,   255-dp->Red, t)));
+                dp->Green = (255 - (imul8x8(255-sp->Green, 255-dp->Green, t)));
+                dp->Blue  = (255 - (imul8x8(255-sp->Blue,  255-dp->Blue, t)));
+                dp->Alpha = imul8x8(dp->Alpha, sp->Alpha, t);
+            }
+            srcRowPtr += srcPtr->pixelsPerRow;
+            destRowPtr += destPtr->pixelsPerRow;
+        }
+        break;
+        
+    case BLT_BLEND_DARKEN:              /* C = min(F,B) */
+        for (y = 0; y < h; y++) {
+            Blt_Pixel *sp, *send, *dp;
+
+            dp = destRowPtr;
+            for (sp = srcRowPtr, send = sp + w; sp < send; sp++, dp++) {
+                int t;
+
+		dp->Red   = MIN(sp->Red,   dp->Red);
+		dp->Green = MIN(sp->Green, dp->Green);
+		dp->Blue  = MIN(sp->Blue,  dp->Blue);
+                dp->Alpha = imul8x8(dp->Alpha, sp->Alpha, t);
+            }
+            srcRowPtr += srcPtr->pixelsPerRow;
+            destRowPtr += destPtr->pixelsPerRow;
+        }
+        break;
+        
+    case BLT_BLEND_LIGHTEN:             /* C = max(F,B) */
+        for (y = 0; y < h; y++) {
+            Blt_Pixel *sp, *send, *dp;
+
+            dp = destRowPtr;
+            for (sp = srcRowPtr, send = sp + w; sp < send; sp++, dp++) {
+                int t;
+
+		dp->Red   = MIN(sp->Red,   dp->Red);
+		dp->Green = MIN(sp->Green, dp->Green);
+		dp->Blue  = MIN(sp->Blue,  dp->Blue);
+                dp->Alpha = imul8x8(dp->Alpha, sp->Alpha, t);
+            }
+            srcRowPtr += srcPtr->pixelsPerRow;
+            destRowPtr += destPtr->pixelsPerRow;
+        }
+        break;
+        
+    case BLT_BLEND_DIFFERENCE:          /* C = |F - B| */
+        for (y = 0; y < h; y++) {
+            Blt_Pixel *sp, *send, *dp;
+
+            dp = destRowPtr;
+            for (sp = srcRowPtr, send = sp + w; sp < send; sp++, dp++) {
+                int t;
+
+		dp->Red   = ABS(sp->Red   - dp->Red);
+		dp->Green = ABS(sp->Green - dp->Green);
+		dp->Blue  = ABS(sp->Blue  - dp->Blue);
+                dp->Alpha = imul8x8(sp->Alpha, dp->Alpha, t);
+            }
+            srcRowPtr += srcPtr->pixelsPerRow;
+            destRowPtr += destPtr->pixelsPerRow;
+        }
+        break;
+        
+    case BLT_BLEND_HARDLIGHT:
+        for (y = 0; y < h; y++) {
+            Blt_Pixel *sp, *send, *dp;
+
+            dp = destRowPtr;
+            for (sp = srcRowPtr, send = sp + w; sp < send; sp++, dp++) {
+                int t;
+
+                dp->Red   = HardLight(sp->Red, dp->Red);
+                dp->Green = HardLight(sp->Green, dp->Green);
+                dp->Blue  = HardLight(sp->Blue, dp->Blue);
+                dp->Alpha = imul8x8(sp->Alpha, dp->Alpha, t);
+            }
+            srcRowPtr += srcPtr->pixelsPerRow;
+            destRowPtr += destPtr->pixelsPerRow;
+        }
+        break;
+        
+    case BLT_BLEND_SOFTLIGHT:
+        for (y = 0; y < h; y++) {
+            Blt_Pixel *sp, *send, *dp;
+
+            dp = destRowPtr;
+            for (sp = srcRowPtr, send = sp + w; sp < send; sp++, dp++) {
+                int t;
+
+                dp->Red   = SoftLight(sp->Red, dp->Red);
+                dp->Green = SoftLight(sp->Green, dp->Green);
+                dp->Blue  = SoftLight(sp->Blue, dp->Blue);
+                dp->Alpha = imul8x8(sp->Alpha, dp->Alpha, t);
+            }
+            srcRowPtr += srcPtr->pixelsPerRow;
+            destRowPtr += destPtr->pixelsPerRow;
+        }
+        break;
+        
+    case BLT_BLEND_SOFTLIGHT2:
+        for (y = 0; y < h; y++) {
+            Blt_Pixel *sp, *send, *dp;
+
+            dp = destRowPtr;
+            for (sp = srcRowPtr, send = sp + w; sp < send; sp++, dp++) {
+                int t;
+
+                dp->Red   = SoftLight2(sp->Red, dp->Red);
+                dp->Green = SoftLight2(sp->Green, dp->Green);
+                dp->Blue  = SoftLight2(sp->Blue, dp->Blue);
+                dp->Alpha = imul8x8(sp->Alpha, dp->Alpha, t);
+            }
+            srcRowPtr += srcPtr->pixelsPerRow;
+            destRowPtr += destPtr->pixelsPerRow;
+        }
+        break;
+        
+    case BLT_BLEND_VIVIDLIGHT:
+        for (y = 0; y < h; y++) {
+            Blt_Pixel *sp, *send, *dp;
+
+            dp = destRowPtr;
+            for (sp = srcRowPtr, send = sp + w; sp < send; sp++, dp++) {
+                int t;
+
+                dp->Red   = VividLight(sp->Red, dp->Red);
+                dp->Green = VividLight(sp->Green, dp->Green);
+                dp->Blue  = VividLight(sp->Blue, dp->Blue);
+                dp->Alpha = imul8x8(sp->Alpha, dp->Alpha, t);
+            }
+            srcRowPtr += srcPtr->pixelsPerRow;
+            destRowPtr += destPtr->pixelsPerRow;
+        }
+        break;
+        
+    case BLT_BLEND_LINEARDODGE:
+        for (y = 0; y < h; y++) {
+            Blt_Pixel *sp, *send, *dp;
+
+            dp = destRowPtr;
+            for (sp = srcRowPtr, send = sp + w; sp < send; sp++, dp++) {
+                int t;
+
+                dp->Red   = LinearDodge(sp->Red, dp->Red);
+                dp->Green = LinearDodge(sp->Green, dp->Green);
+                dp->Blue  = LinearDodge(sp->Blue, dp->Blue);
+                dp->Alpha = imul8x8(sp->Alpha, dp->Alpha, t);
+            }
+            srcRowPtr += srcPtr->pixelsPerRow;
+            destRowPtr += destPtr->pixelsPerRow;
+        }
+        break;
+        
+    case BLT_BLEND_LINEARBURN:
+        for (y = 0; y < h; y++) {
+            Blt_Pixel *sp, *send, *dp;
+
+            dp = destRowPtr;
+            for (sp = srcRowPtr, send = sp + w; sp < send; sp++, dp++) {
+                int t;
+
+                dp->Red   = LinearBurn(sp->Red, dp->Red);
+                dp->Green = LinearBurn(sp->Green, dp->Green);
+                dp->Blue  = LinearBurn(sp->Blue, dp->Blue);
+                dp->Alpha = imul8x8(sp->Alpha, dp->Alpha, t);
+            }
+            srcRowPtr += srcPtr->pixelsPerRow;
+            destRowPtr += destPtr->pixelsPerRow;
+        }
+        break;
+        
+    case BLT_BLEND_LINEARLIGHT:
+        for (y = 0; y < h; y++) {
+            Blt_Pixel *sp, *send, *dp;
+
+            dp = destRowPtr;
+            for (sp = srcRowPtr, send = sp + w; sp < send; sp++, dp++) {
+                int t;
+
+                dp->Red   = LinearLight(sp->Red, dp->Red);
+                dp->Green = LinearLight(sp->Green, dp->Green);
+                dp->Blue  = LinearLight(sp->Blue, dp->Blue);
+                dp->Alpha = imul8x8(sp->Alpha, dp->Alpha, t);
+            }
+            srcRowPtr += srcPtr->pixelsPerRow;
+            destRowPtr += destPtr->pixelsPerRow;
+        }
+        break;
+
+    case BLT_BLEND_PINLIGHT:
+        for (y = 0; y < h; y++) {
+            Blt_Pixel *sp, *send, *dp;
+
+            dp = destRowPtr;
+            for (sp = srcRowPtr, send = sp + w; sp < send; sp++, dp++) {
+                int t;
+
+                dp->Red   = PinLight(sp->Red, dp->Red);
+                dp->Green = PinLight(sp->Green, dp->Green);
+                dp->Blue  = PinLight(sp->Blue, dp->Blue);
+                dp->Alpha = imul8x8(sp->Alpha, dp->Alpha, t);
+            }
+            srcRowPtr += srcPtr->pixelsPerRow;
+            destRowPtr += destPtr->pixelsPerRow;
+        }
+        break;
+        
+    case BLT_BLEND_DIVIDE:
+        for (y = 0; y < h; y++) {
+            Blt_Pixel *sp, *send, *dp;
+
+            dp = destRowPtr;
+            for (sp = srcRowPtr, send = sp + w; sp < send; sp++, dp++) {
+                int t;
+                
+                dp->Red   = Divide(sp->Red, dp->Red);
+                dp->Green = Divide(sp->Green, dp->Green);
+                dp->Blue  = Divide(sp->Blue, dp->Blue);
+                dp->Alpha = imul8x8(sp->Alpha, dp->Alpha, t);
+            }
+            srcRowPtr += srcPtr->pixelsPerRow;
+            destRowPtr += destPtr->pixelsPerRow;
+        }
+        break;
+
+    case BLT_BLEND_EXCLUSION:
+        for (y = 0; y < h; y++) {
+            Blt_Pixel *sp, *send, *dp;
+
+            dp = destRowPtr;
+            for (sp = srcRowPtr, send = sp + w; sp < send; sp++, dp++) {
+                int t;
+
+                dp->Red   = Exclusion(sp->Red, dp->Red);
+                dp->Green = Exclusion(sp->Green, dp->Green);
+                dp->Blue  = Exclusion(sp->Blue, dp->Blue);
+                dp->Alpha = imul8x8(sp->Alpha, dp->Alpha, t);
+            }
+            srcRowPtr += srcPtr->pixelsPerRow;
+            destRowPtr += destPtr->pixelsPerRow;
+        }
+        break;
+        
+    case BLT_BLEND_HARDMIX:
+        for (y = 0; y < h; y++) {
+            Blt_Pixel *sp, *send, *dp;
+
+            dp = destRowPtr;
+            for (sp = srcRowPtr, send = sp + w; sp < send; sp++, dp++) {
+                int t;
+
+                dp->Red   = PinLight(sp->Red, dp->Red);
+                dp->Green = PinLight(sp->Green, dp->Green);
+                dp->Blue  = PinLight(sp->Blue, dp->Blue);
+                dp->Alpha = imul8x8(sp->Alpha, dp->Alpha, t);
+            }
+            srcRowPtr += srcPtr->pixelsPerRow;
+            destRowPtr += destPtr->pixelsPerRow;
+        }
+        break;
+
+    case BLT_BLEND_SUBTRACT:
+        for (y = 0; y < h; y++) {
+            Blt_Pixel *sp, *send, *dp;
+
+            dp = destRowPtr;
+            for (sp = srcRowPtr, send = sp + w; sp < send; sp++, dp++) {
+                int t;
+
+                dp->Red   = Subtract(sp->Red, dp->Red);
+                dp->Green = Subtract(sp->Green, dp->Green);
+                dp->Blue  = Subtract(sp->Blue, dp->Blue);
+                dp->Alpha = imul8x8(sp->Alpha, dp->Alpha, t);
+            }
+            srcRowPtr += srcPtr->pixelsPerRow;
+            destRowPtr += destPtr->pixelsPerRow;
+        }
+        break;
     }
 }
 
@@ -6472,3 +6903,4 @@ Blt_EmbossPicture(
     return destPtr;
 }
 #endif
+

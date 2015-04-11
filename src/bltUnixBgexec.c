@@ -251,8 +251,8 @@ static SignalToken signalTokens[] =
 #ifdef TCL_THREADS
 static Tcl_Mutex *mutexPtr = NULL;
 #endif
-static Blt_Chain activePipelines;	/* List of active pipelines and their
-					 * ptyexec structures. */
+static Blt_Chain activePipelines;	/* List of active pipelines and
+					 * their ptyexec structures. */
 
 /*
  * Sink buffer:

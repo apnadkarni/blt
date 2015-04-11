@@ -41,19 +41,19 @@ SYNOPSIS
 DESCRIPTION
 -----------
 
-The **blt::bgexec** command executes programs in the background,
-allowing Tk to handle events.  A global Tcl variable *varName* is
-set when the program has completed.
+The **blt::bgexec** command executes programs in the background, allowing
+Tk to handle events.  A global Tcl variable *varName* is set when the
+program has completed.
 
 INTRODUCTION
 ------------
 
-TCL's **exec** command is very useful for gathering information from
-the operating system.  It runs a program and returns the output as its 
-result.  This works well for TCL-only applications. But
-for Tk applications, a problem occurs when the program takes time to
-process.  Let's say we want the get the disk usage of a
-directory.  We'll use the Unix program "du" to get the summary.
+TCL's **exec** command is very useful for gathering information from the
+operating system.  It runs a program and returns the output as its result.
+This works well for TCL-only applications. But for Tk applications, a
+problem occurs when the program takes time to process.  Let's say we want
+the get the disk usage of a directory.  We'll use the Unix program "du" to
+get the summary.
 
  ::
 
@@ -119,10 +119,23 @@ or double dashes (--).  The following options are available for
     would use the "unicode" encoding. The default is that no tranlation is
     performed.
 
+  **-detach** *boolean*
+
+    Indicates that the detached program should not be killed when the
+    calling TCL interpreter exits.  By default all detached programs are
+    killed when the TCL interpreter ends.
+
+  **-echo** *boolean*
+
+    Indicates that the program's stderr channel should be echoed to the
+    terminal's stderr.
+    
   **-error** *varName* 
 
     Specifies that a global variable *varName* is to be set with the contents
     of stderr after the program has completed.
+
+  **-ignoreexitcode** *boolean*
 
   **-keepnewline** *boolean*
 
@@ -162,12 +175,6 @@ or double dashes (--).  The following options are available for
     will be delivered.  This can be useful when you want to process the
     output on a line-by-line basis.  The default value is "false".
 
-  **-output** *varName*
-
-    Specifies that a global variable *varName* is to be set with the output
-    of the program, once it has completed.  If this option is not set, no
-    output will be accumulated.
-
   **-onerror** *command*
 
     Specifies the start of a Tcl command that will be executed whenever new
@@ -180,6 +187,28 @@ or double dashes (--).  The following options are available for
     data is available from standard output. The data is appended to the
     command as an extra argument before it is executed.
 
+  **-output** *varName*
+
+    Specifies that a global variable *varName* is to be set with the output
+    of the program, once it has completed.  If this option is not set, no
+    output will be accumulated.
+
+  **-poll** *interval* 
+
+    Specifies the time to wait before checking if the program has
+    terminated.  Typically a program will close its stdout and stderr
+    channels right before it terminates.  But for programs that close
+    stdout early, **blt::bgexec** will wait for the program to finish.
+    *Interval* is the number of milliseconds to wait before checking if the
+    program has terminated.  The default is "1000".
+
+  **-pty** *boolean* 
+
+    For Unix programs only, this flags indicates to use a pseudo-terminal
+    and runs the program in a session (see **setsid**). The advantages
+    are 1) output is not buffered and 2) child processes of the the program
+    and killed when the program is terminated.
+    
   **-update** *varName* 
 
     Deprecated. This option is replaced by **-lasterror**.
@@ -189,23 +218,6 @@ or double dashes (--).  The following options are available for
     This marks the end of the options.  The following argument will
     be considered the name of a program even if it starts with 
     a dash "-".
-
-PREEMPTION
-----------
-
-Because **blt::bgexec** allows Tk to handle events while a program is
-running, it's possible for an application to preempt itself with further
-user-interactions.  Let's say your application has a button that runs the
-disk usage example.  And while the "du" program is running, the user
-accidently presses the button again.  A second **blt::bgexec** program will
-preempt the first.  What this means is that the first program can not
-finish until the second program has completed.
-
-Care must be taken to prevent an application from preempting itself by
-blocking further user-interactions (such as button clicks).  The
-**blt::busy** command is very useful for just these situations.  See the
-**blt::busy** manual for details.
-
 
 EXAMPLE
 ----------------------
@@ -294,16 +306,23 @@ command.
 	...
      tkwait variable myStatus
 
-DIFFERENCES WITH TK EXEC
-------------------------
+PREEMPTION
+----------
 
- 1. The variable name argument must always by given to **blt::bgexec**.
+Because **blt::bgexec** allows Tk to handle events while a program is
+running, it's possible for an application to preempt itself with further
+user-interactions.  Let's say your application has a button that runs the
+disk usage example.  And while the "du" program is running, the user
+accidently presses the button again.  A second **blt::bgexec** program will
+preempt the first.  What this means is that the first program can not
+finish until the second program has completed.
 
- 2. The presence of data on stderr does not return an error.  Only
-    if the program returns a non-zero exit code, will **blt::bgexec**
-    return an error.
-    
- 
+Care must be taken to prevent an application from preempting itself by
+blocking further user-interactions (such as button clicks).  The
+**blt::busy** command is very useful for just these situations.  See the
+**blt::busy** manual for details.
+
+
 VERSUS TK FILEEVENT
 -------------------
 
@@ -354,6 +373,16 @@ Finally, since data collection is handled in C code, **blt::bgexec** is
 faster. You get back to the Tk event loop more quickly, making your
 application seem more responsive.
 
+DIFFERENCES WITH TK EXEC
+------------------------
+
+ 1. The variable name argument must always by given to **blt::bgexec**.
+
+ 2. The presence of data on stderr does not return an error.  Only
+    if the program returns a non-zero exit code, will **blt::bgexec**
+    return an error.
+    
+ 
 SEE ALSO
 --------
 

@@ -54,7 +54,7 @@ ways: through a TCL array variable, a TCL command, or the C API.
 INTRODUCTION
 ------------
 
-A vector is an ordered set of real numbers.  The points of a vector are
+A *vector* is an ordered set of real numbers.  The points of a *vector* are
 indexed by integers.
 
 Vectors are common data structures for many applications.  For example, a
@@ -69,62 +69,42 @@ the data.
 VECTOR INDICES
 --------------
 
-Vectors are indexed by integers.  You can access the individual vector
-values (points) via its array variable or TCL command.  The string
-representing the index can be an integer, a numeric expression, a range, or
-a special keyword.
+Individual points in the *vector* can be accessed via the *vector*'s array
+variable or TCL command.  You can reference points in the vector either by
+its integer, expression, a range, or a special keyword.
 
-The index must lie within the current range of the vector, otherwise an an
-error message is returned.  Normally the indices of a vector are start
-from 0.  But you can use the **offset** operation to change a vector's
-indices on-the-fly.
+ *number*
 
- ::
+  The index is a integer that must lie within the current range of the
+  vector, otherwise an an error message is returned.  Normally the indices
+  of a vector are start from 0, but you can use the **offset** operation to
+  change a vector's indices.
 
-    puts $vecName(0)
-    vecName offset -5
-    puts $vecName(-5)
+ *expr*
 
-You can also use numeric expressions as indices.  The result of the
-expression must be an integer value.
+  As a convenience, you can also use numeric expressions with indices (such
+  as "$i+3").  The result of the expression must be an integer value.
 
- ::
+ *keyword*
+ 
+  The following special non-numeric indices are available.
 
-     set n 21
-     set vecName($n+3) 50.2
+  **min**
+     is the index of the point that has the minimum value.
+  **max**
+     is the index of the point that has the maximum value.
+  **end**
+     is the index of the last point in the vector.
+  **++end**
+     Adds a new point to the vector.  It is the index of the new
+     last point int the vector. 
 
-The following special non-numeric indices are available: "min", "max",
-"end", and "++end".
+ *first*:\ *last*
 
-  ::
-
-    puts "min = $vecName($min)"
-    set vecName(end) -1.2
-
-The indices "min" and "max" will return the minimum and maximum values of
-the vector.  The index "end" returns the value of the last point in the
-vector.  The index "++end" is used to append new value onto the vector.  It
-automatically extends the vector by one point and sets its value.
-
-  ::
-
-    # Append an new point to the end
-    set vecName(++end) 3.2
-
-A range of indices can be indicated by a colon (:).  
-
-  ::
-
-    # Set the first six points to 1.0
-    set vecName(0:5) 1.0
-
-If no index is supplied the first or last point is assumed.
-
-  ::
-
-    # Print the values of all the points
-    puts $vecName(:)
-
+  A range of indices can be indicated by a colon (:).  *First* and *last*
+  are integer indices.  *Last* must be greater than or equal to *first*. 
+  If *first* isn't supplied the first point is assumed. If *last* isn't
+  supplied the last point is assumed.
 
 VECTOR COMMAND OPERATIONS
 -------------------------
@@ -275,7 +255,7 @@ VECTOR COMMAND OPERATIONS
   **random**
 
    Returns a vector of non-negative values uniformly distributed between
-   [0.0, 1.0) using \fIdrand48**.  The seed comes from the internal clock
+   [0.0, 1.0) using **drand48**.  The seed comes from the internal clock
    of the machine or may be set manual with the srandom function.
 
   **round**
@@ -284,7 +264,7 @@ VECTOR COMMAND OPERATIONS
 
   **srandom**
 
-   Initializes the random number generator using \fIsrand48\fR.  The high
+   Initializes the random number generator using **srand48**.  The high
    order 32-bits are set using the integral portion of the first vector
    point. All other points are ignored.  The low order 16-bits are
    set to an arbitrary value.
@@ -350,7 +330,8 @@ VECTOR COMMAND OPERATIONS
   The last set returns a vector of the same length as the argument.
 
   **norm** 
-    Scales the values of the vector to lie in the range [0.0..1.0].
+   Scales the normalized values of the vector (values lie in the range
+   [0.0..1.0]).
 
   **sort**
     Returns the vector points sorted in ascending order.
@@ -361,19 +342,19 @@ VECTOR COMMAND OPERATIONS
 VECTOR INSTANCE OPERATIONS
 --------------------------
 
-You can also use the vector's TCL command to query or modify it.  The
+After you create a vector using the **create** operation, you can use the
+vector's new TCL command to query or modify the vector instance.  The
 general form is
 
-  *vecName* *operation* \fR?*arg*?...
+  *vecName* *operation* ?\ *arg* ... ?
 
 Both *operation* and its arguments determine the exact behavior of
 the command.  The operations available for vectors are listed below.
 
-*vecName* **append** *item* ?*item*?...
+*vecName* **append** ?\ *item* ... ?
 
-  Appends the point values from *item* to *vecName*.
-  *Item* can be either the name of a vector or a list of numeric
-  values.
+  Appends one or more lists or vectors to *vecName*.  *Item* can be either
+  the name of a vector or a list of numbers.
 
 *vecName* **binread** *channelName* ?\ *length*\ ? ?\ *switches* ... ? 
 
@@ -480,16 +461,13 @@ the command.  The operations available for vectors are listed below.
    Specifies the vector to store the imaginary part transform.
 
   **-noconstant**
-   Specifies the a value for empty points.  By default, a NaN is
-   written for each empty point.  *Value* is a real number.
 
   **-spectrum** 
     Computes the modulus of the transforms, scaled by 1/N^2 
     or 1/(N * Wss) for windowed data.
 
   **-bartlett** 
-   Specifies the starting index of values to export.  *Index* is vector
-   index. The default is to export values from 0.
+   Specifies the use a Bartlett Window.
 
   **-delta** *number*
    Specifies the ending index of values to export.  *Index* is vector
@@ -525,6 +503,29 @@ the command.  The operations available for vectors are listed below.
      Returns the indices of non-empty point values.
 
 *vecName* **inversefft** *vecName* *vecName*
+
+  Returns the discrete Fourier transform (DFT) of *vecName*, computed with
+  a fast Fourier transform (FFT) algorithm. The vector *destName* will hold
+  the real-valued results.
+  
+  **-imagpart** *vecName*
+   Specifies the vector to store the imaginary part transform.
+
+  **-noconstant**
+
+  **-spectrum** 
+    Computes the modulus of the transforms, scaled by 1/N^2 
+    or 1/(N * Wss) for windowed data.
+
+  **-bartlett** 
+   Specifies the use a Bartlett Window.
+
+  **-delta** *number*
+   Specifies the ending index of values to export.  *Index* is vector
+   index. The default is to export values to the end of the vector.
+
+  **-frequencies** *vecName*
+   Specifies the vector to store the frequencies of the transform.
 
 *vecName* **length** ?\ *newSize*\ ?
 
@@ -702,7 +703,7 @@ the command.  The operations available for vectors are listed below.
 *vecName* **value unset** ?\ *index* ... ?
 
   Unsets the value at the point in the vector indexed by *index*. *Index*
-  is a vector index. The value of the point becomes NaN.
+  is a *vector* index. The value of the point becomes NaN.
 
 *vecName* **values** ?\ *switches* ... \?
 
@@ -714,13 +715,13 @@ the command.  The operations available for vectors are listed below.
    written for each empty point.  *Value* is a real number.
 
   **-format** *fmtString*
-   Specifies how format each value in the vector.
-   *FmtString* is a **printf**\ -like format string. There can be
-   only one specifiers in *fmtString*.
+   Specifies how to format each value in the vector.  *FmtString* is a
+   **printf**\ -like format string. There can be only one specifier in
+   *fmtString*.
 
   **-from** *index*
    Specifies the starting index of values to print.  *Index* is vector
-   index. The default is to print values from 0.
+   index. The default is 0.
 
   **-to** *index*
    Specifies the ending index of values to print.  *Index* is vector
@@ -760,7 +761,7 @@ identified by the vector name.
 
 **Blt_CreateVector**\ (Tcl_Interp *\ *interp*, char *\ *vecName*, int *length*, Blt_Vector \*\*\ *vecPtrPtr*)
 
-  Creates a new vector *vecName*\fR with a length of *length*.
+  Creates a new vector *vecName* with a length of *length*.
   **Blt_CreateVector** creates both a new TCL command and array variable
   *vecName*.  Neither a command nor variable named *vecName* can already
   exist.  A pointer to the vector is placed into *vecPtrPtr*.
@@ -768,7 +769,7 @@ identified by the vector name.
   Returns TCL_OK if the vector is successfully created.  If
   *length* is negative, a TCL variable or command *vecName* already
   exists, or memory cannot be allocated for the vector, then
-  TCL_ERROR is returned and \fIinterp->result\fR will contain an
+  TCL_ERROR is returned and *interp->result* will contain an
   error message.
 
 **Blt_DeleteVectorByName**\ (Tcl_Interp *\ *interp*, char *\ *vecName*)
@@ -780,7 +781,7 @@ identified by the vector name.
 
   Returns TCL_OK if the vector is successfully deleted.  If
   *vecName* is not the name a vector, then TCL_ERROR is returned
-  and \fIinterp->result\fR will contain an error message.
+  and *interp->result* will contain an error message.
 
 **Blt_DeleteVector**\ (Blt_Vector *\ *vecPtr*) 
 
@@ -793,7 +794,7 @@ identified by the vector name.
 
   Returns TCL_OK if the vector is successfully deleted.  If
   *vecName* is not the name a vector, then TCL_ERROR is returned
-  and \fIinterp->result\fR will contain an error message.
+  and *interp->result* will contain an error message.
 
 **Blt_GetVector**\ (Tcl_Interp *\ *interp*, char *\ *vecName*, Blt_Vector \*\*\ *vecPtrPtr*)
 
@@ -803,7 +804,7 @@ identified by the vector name.
 
   Returns TCL_OK if the vector is successfully retrieved.  If
   *vecName* is not the name of a vector, then TCL_ERROR is returned
-  and \fIinterp->result\fR will contain an error message.  
+  and *interp->result* will contain an error message.  
 
 **Blt_ResetVector**\ (Blt_Vector *\ *vecPtr*, double *\ *dataArr*, int *numValues*, int *arraySize, Tcl_FreeProc *\ *freeProc*) 
 
@@ -812,7 +813,7 @@ identified by the vector name.
   its clients. *DataArr* is the array of doubles which represents the
   vector data. *NumValues* is the number of elements in the
   array. *ArraySize* is the actual size of the array (the array may be
-  bigger than the number of values stored in it). \fIFreeProc\fP indicates
+  bigger than the number of values stored in it). *FreeProc* indicates
   how the storage for the vector point array (*dataArr*) was allocated.
   It is used to determine how to reallocate memory when the vector is
   resized or destroyed.  It must be TCL_DYNAMIC,
@@ -827,7 +828,7 @@ identified by the vector name.
   Returns TCL_OK if the vector is successfully resized.  If
   *newSize* is negative, a vector *vecName* does not exist, or memory
   cannot be allocated for the vector, then TCL_ERROR is returned
-  and \fIinterp->result\fR will contain an error message.
+  and *interp->result* will contain an error message.
 
 **Blt_ResizeVector**\ (Blt_Vector *\ *vecPtr*, int *newSize*)
 
@@ -854,7 +855,7 @@ identified by the vector name.
   vector is updated or destroyed.
 
   Returns a client identifier if successful.  If *vecName* is not the name
-  of a vector, then "NULL" is returned and \fIinterp->result\fR will
+  of a vector, then "NULL" is returned and *interp->result* will
   contain an error message.
 
 **Blt_GetVectorById**\ (Tcl_Interp *\ *interp*, Blt_VectorId *clientId*, Blt_Vector \*\*\ *vecPtrPtr*) 
@@ -879,7 +880,7 @@ identified by the vector name.
   updated or destroyed.
 
   If your application needs to be notified when a vector changes, it can
-  allocate a unique \fIclient identifier\fR for itself.  Using this
+  allocate a unique client identifier for itself.  Using this
   identifier, you can then register a call-back to be made whenever the
   vector is updated or destroyed.  By default, the call-backs are made at
   the next idle point.  This can be changed to occur at the time the vector
@@ -887,7 +888,7 @@ identified by the vector name.
   any vector.  When the client application is done with the vector, it
   should free the identifier.
 
-  The call-back routine must of the following type.
+  The callback routine must of the following type.
 
   ::
 
@@ -1044,7 +1045,7 @@ lists the points of a vector between two indices.
 
 You can search for a particular value using the **search**
 operation.  It returns a list of indices of the points with the
-same value.  If no point has the same value, it returns \f(CW""\fR.
+same value.  If no point has the same value, it returns "".
 
   ::
 

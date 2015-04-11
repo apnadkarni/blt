@@ -388,10 +388,10 @@ static Blt_SwitchCustom encodingSwitch =
 
 static Blt_SwitchSpec switchSpecs[] = 
 {
-    {BLT_SWITCH_CUSTOM,  "-decodeoutput",	"encoding", (char *)NULL,
-	Blt_Offset(Bgexec, out.encoding),   0, 0, &encodingSwitch}, 
     {BLT_SWITCH_CUSTOM,  "-decodeerror",	"encoding", (char *)NULL,
 	 Blt_Offset(Bgexec, err.encoding),  0, 0, &encodingSwitch},
+    {BLT_SWITCH_CUSTOM,  "-decodeoutput",	"encoding", (char *)NULL,
+	Blt_Offset(Bgexec, out.encoding),   0, 0, &encodingSwitch}, 
     {BLT_SWITCH_BOOLEAN, "-detach",		"bool", (char *)NULL,
 	Blt_Offset(Bgexec, flags),	    0, DONTKILL},
     {BLT_SWITCH_BOOLEAN, "-echo",		"bool",  (char *)NULL,
@@ -1920,8 +1920,9 @@ BgexecCmdProc(
     }
     if (isDetached) {	
 	Tcl_Obj *listObjPtr;
-	/* If detached, return a list of the child process ids instead of the
-	 * output of the pipeline. */
+
+	/* If detached, return a list of the child process ids instead of
+	 * the output of the pipeline. */
 	listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
 	for (i = 0; i < numProcs; i++) {
 	    Tcl_Obj *objPtr;
