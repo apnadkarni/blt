@@ -476,6 +476,8 @@ the command.  The operations available for vectors are listed below.
   **-frequencies** *vecName*
    Specifies the vector to store the frequencies of the transform.
 
+  Reference:  This was contributed by Andrea Spinelli (spinellia@acm.org).
+  
 *vecName* **frequency** *destName* *numBins*
 
    Fills *destName* with the frequency of values found in *vecName*.
