@@ -256,6 +256,7 @@ HSVToPixel(double hue, double sat, double val, Blt_Pixel *colorPtr)
     }
 }
 
+#ifdef notdef
 static void
 PrintEntries(size_t numEntries, PaletteInterval *entries)
 {
@@ -269,6 +270,7 @@ PrintEntries(size_t numEntries, PaletteInterval *entries)
                 entryPtr->max);
     }
 }
+#endif
 
 static int 
 CompareEntries(const void *a, const void *b)
@@ -420,6 +422,7 @@ GetStepFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, double *stepPtr)
                 "\"", string, "\"", (char *) NULL);
         return TCL_ERROR;
     }
+    *stepPtr = value;
     return TCL_OK;
 }
 
@@ -579,16 +582,16 @@ GetHSVFromObjv(Tcl_Interp *interp, PaletteCmd *cmdPtr, Tcl_Obj **objv,
  *
  *	Valid spacing values are:
  *
- *      -spacing regular                Uniform spacing of entries.  Each
- *                                      entry consists of 1 or 3 color values.
- *      -spacing irregular              Nonuniform spacing of entries. Each
- *                                      entry will also contain a value 
- *                                      (absolute or relative) indicating
- *                                      the location of entry.
- *      -spacing interval               Each entry describes an interval
- *                                      consisting of the min value and
- *                                      associated color and the max value
- *                                      and its associate color.
+ *      regular                Uniform spacing of entries.  Each
+ *                              entry consists of 1 or 3 color values.
+ *      irregular              Nonuniform spacing of entries. Each
+ *                             entry will also contain a value 
+ *                             (absolute or relative) indicating
+ *                             the location of entry.
+ *      interval               Each entry describes an interval
+ *                             consisting of the min value and
+ *                             associated color and the max value
+ *                             and its associate color.
  *
  * Results:
  *	A standard TCL result.
@@ -988,7 +991,7 @@ ParseIntervalColorNames(Tcl_Interp *interp, PaletteCmd *cmdPtr, int objc,
 	Blt_Pixel low, high;
 	double min, max;
 	
-	if (GetStepFromObj(interp, objv[i], &min) != TCL_OK) {
+        if (GetStepFromObj(interp, objv[i], &min) != TCL_OK) {
 	    goto error;
 	}
 	if (Blt_GetPixelFromObj(interp, objv[i+1], &low) != TCL_OK) {

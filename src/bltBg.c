@@ -516,6 +516,7 @@ GetReferenceWindowDimensions(BackgroundObject *corePtr, Tk_Window tkwin,
     Tk_Window tkRef;
 
     tkRef = NULL;
+    *heightPtr = *widthPtr = 0;
     switch (corePtr->flags & REFERENCE_MASK) {
     case REFERENCE_SELF:
 	tkRef = tkwin;                              break;
@@ -1328,6 +1329,7 @@ GetOffsets(Tk_Window tkwin, BackgroundObject *corePtr, int x, int y,
 {
     Tk_Window tkRef;
 
+    tkRef = NULL;
     switch (corePtr->flags & REFERENCE_MASK) {
     case REFERENCE_SELF:
 	tkRef = tkwin;                      break;
@@ -1970,11 +1972,7 @@ DrawBackgroundRectangle(Tk_Window tkwin, Drawable drawable, Bg *bgPtr,
                         int x, int y, int w, int h)
 {
     BackgroundObject *corePtr = bgPtr->corePtr;
-    Blt_Painter painter;
-    Blt_Picture picture;
-    int xOffset, yOffset;		/* Starting upper left corner of
-					 * region. */
-    int refWidth, refHeight;
+    int rw, rh;
 
     /* Handle the simple case where it's a solid color background. */
     if (corePtr->flags & BACKGROUND_SOLID) {
@@ -1982,23 +1980,29 @@ DrawBackgroundRectangle(Tk_Window tkwin, Drawable drawable, Bg *bgPtr,
                            TK_RELIEF_FLAT);
         return;
     }
-    xOffset = yOffset = 0;		/* Suppress compiler warning. */
     if ((h <= 0) || (w <= 0)) {
 	return;
     }
-    GetReferenceWindowDimensions(corePtr, tkwin, &refWidth, &refHeight);
-    picture = Blt_CreatePicture(w, h);
-    if (picture == NULL) {
-	return;                         /* Can't allocate picure. */
+    GetReferenceWindowDimensions(corePtr, tkwin, &rw, &rh);
+    if ((rw > 0) && (rh > 0)) {
+        Blt_Picture picture;
+        Blt_Painter painter;
+        int xOffset, yOffset;		/* Starting upper left corner of
+					 * region. */
+
+        picture = Blt_CreatePicture(w, h);
+        if (picture == NULL) {
+            return;                         /* Can't allocate picure. */
+        }
+        GetOffsets(tkwin, corePtr, x, y, &xOffset, &yOffset);
+        /* This defines the region of the background in local coordinate window
+         * coordinates, plus the offset of x and y. */
+        Blt_SetBrushRegion(corePtr->brush, xOffset, yOffset, rw, rh);
+        Blt_PaintRectangle(picture, 0, 0, w, h, 0, 0, corePtr->brush);
+        painter = Blt_GetPainter(tkwin, 1.0);
+        Blt_PaintPicture(painter, drawable, picture, 0, 0, w, h, x, y, 0);
+        Blt_FreePicture(picture);
     }
-    GetOffsets(tkwin, corePtr, x, y, &xOffset, &yOffset);
-    /* This defines the region of the background in local coordinate window
-     * coordinates, plus the offset of x and y. */
-    Blt_SetBrushRegion(corePtr->brush, xOffset, yOffset, refWidth, refHeight);
-    Blt_PaintRectangle(picture, 0, 0, w, h, 0, 0, corePtr->brush);
-    painter = Blt_GetPainter(tkwin, 1.0);
-    Blt_PaintPicture(painter, drawable, picture, 0, 0, w, h, x, y, 0);
-    Blt_FreePicture(picture);
 }
 
 /*
@@ -2021,15 +2025,12 @@ DrawBackgroundPolygon(Tk_Window tkwin, Drawable drawable, Bg *bgPtr,
                       int numPoints, XPoint *points)
 {
     BackgroundObject *corePtr = bgPtr->corePtr;
-    int xOffset, yOffset;		/* Starting upper left corner of
-					 * region. */
     Blt_Picture bg;
-    Blt_Painter painter;
     int i;
     int w, h;
     int x1, x2, y1, y2;
     Point2f *vertices;
-    int refWidth, refHeight;
+    int rw, rh;
     
     /* Handle the simple case where it's a solid color background. */
     if (corePtr->flags & BACKGROUND_SOLID) {
@@ -2037,14 +2038,13 @@ DrawBackgroundPolygon(Tk_Window tkwin, Drawable drawable, Bg *bgPtr,
                          0, TK_RELIEF_FLAT);
         return;
     }
-
     /* Grab the rectangular background that contains the polygon. */
     GetPolygonBBox(points, numPoints, &x1, &x2, &y1, &y2);
     w = x2 - x1 + 1;
     h = y2 - y1 + 1;
     bg = Blt_DrawableToPicture(tkwin, drawable, x1, y1, w, h, 1.0);
     if (bg == NULL) {
-	return;                         /* Can't allocate picture */
+        return;                         /* Can't allocate picture */
     }
     vertices = Blt_AssertMalloc(numPoints * sizeof(Point2f));
     /* Translate the polygon */
@@ -2052,13 +2052,19 @@ DrawBackgroundPolygon(Tk_Window tkwin, Drawable drawable, Bg *bgPtr,
 	vertices[i].x = (float)(points[i].x - x1);
 	vertices[i].y = (float)(points[i].y - y1);
     }
-    GetReferenceWindowDimensions(corePtr, tkwin, &refWidth, &refHeight);
-    GetOffsets(tkwin, corePtr, x1, y1, &xOffset, &yOffset);
-    Blt_SetBrushRegion(corePtr->brush, xOffset, yOffset, refWidth, refHeight);
-    Blt_PaintPolygon(bg, numPoints, vertices, corePtr->brush);
+    GetReferenceWindowDimensions(corePtr, tkwin, &rw, &rh);
+    if ((rw > 0) && (rh > 0)) {
+        Blt_Painter painter;
+        int xOffset, yOffset;		/* Starting upper left corner of
+					 * region. */
+
+        GetOffsets(tkwin, corePtr, x1, y1, &xOffset, &yOffset);
+        Blt_SetBrushRegion(corePtr->brush, xOffset, yOffset, rw, rh);
+        Blt_PaintPolygon(bg, numPoints, vertices, corePtr->brush);
+        painter = Blt_GetPainter(tkwin, 1.0);
+        Blt_PaintPicture(painter, drawable, bg, 0, 0, w, h, x1, y1, 0);
+    }
     Blt_Free(vertices);
-    painter = Blt_GetPainter(tkwin, 1.0);
-    Blt_PaintPicture(painter, drawable, bg, 0, 0, w, h, x1, y1, 0);
     Blt_FreePicture(bg);
 }
 

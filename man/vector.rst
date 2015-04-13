@@ -4,7 +4,7 @@ blt::vector
 ===============
 
 ----------------------------------------------------------------
-Vector data type for TCL
+Vector data object
 ----------------------------------------------------------------
 
 :Author: gahowlett@gmail.com
@@ -54,8 +54,8 @@ ways: through a TCL array variable, a TCL command, or the C API.
 INTRODUCTION
 ------------
 
-A *vector* is an ordered set of real numbers.  The points of a *vector* are
-indexed by integers.
+A *vector* is an ordered set of real numbers representing points of the
+vector.  The points are indexed by integers.
 
 Vectors are common data structures for many applications.  For example, a
 graph may use two vectors to represent the X-Y coordinates of the data
@@ -97,7 +97,7 @@ its integer, expression, a range, or a special keyword.
      is the index of the last point in the vector.
   **++end**
      Adds a new point to the vector.  It is the index of the new
-     last point int the vector. 
+     last point in the vector. 
 
  *first*:\ *last*
 
@@ -255,8 +255,8 @@ VECTOR COMMAND OPERATIONS
   **random**
 
    Returns a vector of non-negative values uniformly distributed between
-   [0.0, 1.0) using **drand48**.  The seed comes from the internal clock
-   of the machine or may be set manual with the srandom function.
+   [0.0, 1.0) using **drand48**.  The seed comes from the internal clock of
+   the machine or may be set manually with the **srandom** function.
 
   **round**
 
@@ -543,7 +543,7 @@ the command.  The operations available for vectors are listed below.
 *vecName* **linspace** *first* *last* ?\ *numSteps*\ ?
 
   Generates linearly spaced vector values. *First* and *last* are numbers
-  representing the minumum and maximum values.  *NumSteps* is the number of
+  representing the minimum and maximum values.  *NumSteps* is the number of
   points to generate.  *VecName* will be resized to *numSteps* points. If
   no *numSteps* argument is given, then the length of *vecName* is used as
   the number of points. 
@@ -608,11 +608,11 @@ the command.  The operations available for vectors are listed below.
 *vecName* **populate** *destName* ?\ *density*\ ?
 
   Creates a vector *destName* which is a superset of *vecName*.  *DestName*
-  will include all the points of *vecName*, in addition the interval
-  between each of the original points will contain a *density* number of
-  new points, whose values are evenly distributed between the original
-  points values.  This is useful for generating abscissas to be
-  interpolated along a spline.
+  in the name of an output vector that will include all the points of
+  *vecName*, in addition the interval between each of the original points
+  will contain a *density* number of new points, whose values are evenly
+  distributed between the original points values.  This is useful for
+  generating abscissas to be interpolated along a spline.
 
 *vecName* **print** *fmtString* ?\ *switches* ... ?
 
@@ -662,8 +662,8 @@ the command.  The operations available for vectors are listed below.
 
 *vecName* **set** *item*
 
-  Resets the points of the vector to *item*. *Item* can be either a
-  list of numbes or a vector name.
+  Sets the points of *vecName* to *item*. *Item* can be either a list of
+  numbers or a vector name.
 
 *vecName* **simplify** *x* *y* ?\ *tolerance*\ ?
 
@@ -677,7 +677,7 @@ the command.  The operations available for vectors are listed below.
 
   X* and *y* are the names input vectors representing the curve to be
   simplified.  The lengths of both vectors must be the same.  *Tolerance*
-  is a real number representing the tolerence. The default is "1.0".
+  is a real number representing the tolerance. The default is "1.0".
 
   Reference: David Douglas and Thomas Peucker, "Algorithms for the
   reduction of the number of points required to represent a digitized line
@@ -1145,7 +1145,7 @@ called to get the pointer to the vector.  Otherwise the routine
 to it. Just like the TCL interface, both a new TCL command and array
 variable are created when a new vector is created. It doesn't make any
 difference what the initial size of the vector is since it will be reset
-shortly. The vector is updated when **lt_ResetVector** is called.
+shortly. The vector is updated when **Blt_ResetVector** is called.
 Blt_ResetVector makes the changes visible to the TCL interface and other
 vector clients (such as a graph widget).
 

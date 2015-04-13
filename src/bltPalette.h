@@ -60,4 +60,6 @@ BLT_EXTERN const char *Blt_Palette_Name(Blt_Palette palette);
 BLT_EXTERN Blt_Palette Blt_Palette_TwoColorPalette(int low, int high);
 BLT_EXTERN void Blt_Palette_Free(Blt_Palette palette);
 
+BLT_EXTERN int Blt_Palette_GetRGBColor(Blt_Palette palette, double value);
+
 #endif /*_BLT_PALETTE_H*/
