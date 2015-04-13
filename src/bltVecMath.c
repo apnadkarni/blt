@@ -871,7 +871,7 @@ ParseMathFunction(
     Blt_HashEntry *hPtr;
     MathFunction *mathPtr;              /* Info about math function. */
     char *p;
-    VectorInterpData *dataPtr;          /* Interpreter-specific data. */
+    VectorCmdInterpData *dataPtr;          /* Interpreter-specific data. */
     GenericMathProc *proc;
 
     /*
@@ -2237,7 +2237,7 @@ Blt_ExprVector(
     char *string,			/* Expression to evaluate. */
     Blt_Vector *vector)			/* Where to store result. */
 {
-    VectorInterpData *dataPtr;		/* Interpreter-specific data. */
+    VectorCmdInterpData *dataPtr;       /* Interpreter-specific data. */
     Vector *vPtr = (Vector *)vector;
     Value value;
 

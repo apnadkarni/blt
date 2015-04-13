@@ -140,6 +140,7 @@ BLT_EXTERN void Blt_UpdateScrollbar(Tcl_Interp *interp,
 #  define TK_RELIEF_SOLID		TK_RELIEF_FLAT
 #endif
 
+
 /*--------------------------------------------------------------------------
  *
  * ColorPair --

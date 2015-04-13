@@ -231,8 +231,7 @@ typedef struct {
     int high;
     int low;
     Blt_Jitter jitter;
-    int logScale;
-    int atanScale;
+    ScaleType scale;
 } PictFadeSettings;
 
 /* Prototypes of picture routines */
@@ -359,7 +358,7 @@ BLT_EXTERN void Blt_ZoomVertically(Blt_Picture dest, Blt_Picture src,
 BLT_EXTERN void Blt_BlendRegion(Blt_Picture dest, Blt_Picture src, 
 	int sx, int sy, int w, int h, int dx, int dy);
 
-BLT_EXTERN void Blt_BlendPicturesByMode(Blt_Picture dest, Blt_Picture src, 
+BLT_EXTERN void Blt_ColorBlendPictures(Blt_Picture dest, Blt_Picture src, 
 	Blt_BlendingMode mode);
 
 BLT_EXTERN void Blt_FadePicture(Blt_Picture picture, int x, int y, int w, int h,
@@ -442,5 +441,17 @@ BLT_EXTERN void Blt_Shadow_Set(Blt_Shadow *sPtr, int width, int offset,
 BLT_EXTERN Blt_Picture Blt_EmbossPicture(Blt_Picture picture, double azimuth, 
 	double elevation, unsigned short width45);
 BLT_EXTERN void Blt_FadeColor(Blt_Pixel *colorPtr, unsigned int alpha);
+
+BLT_EXTERN int Blt_Dissolve2(Blt_Picture dest, Blt_Picture src, long start,
+        int numSteps);
+BLT_EXTERN void Blt_CrossFade(Blt_Picture dest, Blt_Picture from,
+        Blt_Picture to, double opacity);
+BLT_EXTERN void Blt_FadeFromColor(Blt_Picture dest, Blt_Picture to,
+        Blt_Pixel *colorPtr, double opacity);
+BLT_EXTERN void Blt_FadeToColor(Blt_Picture dest, Blt_Picture from,
+        Blt_Pixel *colorPtr, double opacity);
+BLT_EXTERN void Blt_WipePictures(Blt_Picture dest, Blt_Picture from,
+        Blt_Picture to, int orientation, double position);
+
 
 #endif /*_BLT_PICTURE_H*/

@@ -818,8 +818,10 @@ Blt_GetPixel(Tcl_Interp *interp, const char *string, Blt_Pixel *pixelPtr)
 	/* Hexidecimal number prefixed by 0x. */
 	value = strtoul(string + 2, &term, 16); 
 	if ((term == (string + 1)) || (*term != '\0')) {
-	    Tcl_AppendResult(interp, "expected color value but got \"", string,
-		"\"", (char *) NULL);
+            if (interp != NULL) {
+                Tcl_AppendResult(interp, "expected color value but got \"",
+                                 string, "\"", (char *) NULL);
+            }
 	    return TCL_ERROR;
 	}
 	pixelPtr->u32 = value;
@@ -830,15 +832,19 @@ Blt_GetPixel(Tcl_Interp *interp, const char *string, Blt_Pixel *pixelPtr)
 
 	n = strlen(string + 1);
 	if ((n > 12) && (n < 3) && ((n % 3) != 0)) {
-	    Tcl_AppendResult(interp, "bad color specification \"", string,
+            if (interp != NULL) {
+                Tcl_AppendResult(interp, "bad color specification \"", string,
 			     "\"", (char *)NULL);
+            }
 	    return TCL_ERROR;
 	}
 	n /= 3;
 	sprintf(fmt, "%%%dx%%%dx%%%dx", n, n, n);
 	if (sscanf(string + 1, fmt, &r, &g, &b) != 3) {
-	    Tcl_AppendResult(interp, "bad color specification \"", string,
+            if (interp != NULL) {
+                Tcl_AppendResult(interp, "bad color specification \"", string,
 			     "\"", (char *)NULL);
+            }
 	    return TCL_ERROR;
 	}
 	pixelPtr->Red   = r;
@@ -882,8 +888,10 @@ Blt_GetPixel(Tcl_Interp *interp, const char *string, Blt_Pixel *pixelPtr)
 	    }
 	}
     }
-    Tcl_AppendResult(interp, "bad color specification \"", string,
-	"\"", (char *)NULL);
+    if (interp != NULL) {
+        Tcl_AppendResult(interp, "bad color specification \"", string,
+                         "\"", (char *)NULL);
+    }
     return TCL_ERROR;
 }
 

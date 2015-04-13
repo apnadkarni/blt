@@ -64,7 +64,7 @@ BltTkProcs bltTkProcs = {
     Blt_ZoomHorizontally, /* 48 */
     Blt_ZoomVertically, /* 49 */
     Blt_BlendRegion, /* 50 */
-    Blt_BlendPicturesByMode, /* 51 */
+    Blt_ColorBlendPictures, /* 51 */
     Blt_FadePicture, /* 52 */
     Blt_CopyPictureBits, /* 53 */
     Blt_GammaCorrectPicture, /* 54 */
@@ -96,9 +96,14 @@ BltTkProcs bltTkProcs = {
     Blt_Shadow_Set, /* 80 */
     Blt_EmbossPicture, /* 81 */
     Blt_FadeColor, /* 82 */
-    Blt_PictureRegisterFormat, /* 83 */
-    Blt_GetNthPicture, /* 84 */
-    Blt_FindPictureFormat, /* 85 */
+    Blt_Dissolve2, /* 83 */
+    Blt_CrossFade, /* 84 */
+    Blt_FadeFromColor, /* 85 */
+    Blt_FadeToColor, /* 86 */
+    Blt_WipePictures, /* 87 */
+    Blt_PictureRegisterFormat, /* 88 */
+    Blt_GetNthPicture, /* 89 */
+    Blt_FindPictureFormat, /* 90 */
 };
 
 /* !END!: Do not edit above this line. */

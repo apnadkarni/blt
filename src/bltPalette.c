@@ -2092,7 +2092,7 @@ Blt_Palette_GetFromString(Tcl_Interp *interp, const char *string,
 }
 
 int
-Blt_Palette_GetColor(Blt_Palette palette, double value)
+Blt_Palette_GetRGBColor(Blt_Palette palette, double value)
 {
     Blt_Pixel color;
     PaletteCmd *cmdPtr = (PaletteCmd *)palette;

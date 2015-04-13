@@ -6634,12 +6634,6 @@ FirstMajorTick(Axis *axisPtr)
     tick.isValid = FALSE;
     tick.value = Blt_NaN();
     switch (ticksPtr->scaleType) {
-    case SCALE_LOG:
-    case SCALE_LINEAR:
-	/* The number of major ticks and the step has been computed in
-	 * LinearAxis. */
-	tick.value = ticksPtr->initial;
-	break;
     case SCALE_CUSTOM:                  /* User defined minor ticks */
 	tick.value = ticksPtr->values[0];
 	break;
@@ -6664,6 +6658,13 @@ FirstMajorTick(Axis *axisPtr)
 	default:
 	    break;
 	}
+	tick.value = ticksPtr->initial;
+	break;
+    case SCALE_LOG:
+    case SCALE_LINEAR:
+    default:
+	/* The number of major ticks and the step has been computed in
+	 * LinearAxis. */
 	tick.value = ticksPtr->initial;
 	break;
     }
@@ -6692,16 +6693,20 @@ NextMajorTick(Axis *axisPtr)
     d = 0.0;                            /* Suppress compiler warning. */
     switch (ticksPtr->scaleType) {
     case SCALE_LINEAR:
+    default:
 	d = ticksPtr->index * ticksPtr->step;
 	d = UROUND(d, ticksPtr->step);
 	break;
+
     case SCALE_LOG:
 	d = ticksPtr->range * logTable[ticksPtr->index];
 	break;
+
     case SCALE_CUSTOM:                  /* User defined minor ticks */
 	tick.value = ticksPtr->values[ticksPtr->index];
 	tick.isValid = TRUE;
 	return tick;
+
     case SCALE_TIME:
 	switch (ticksPtr->timeUnits) {
 	case TIME_YEARS:
@@ -6773,6 +6778,7 @@ NextMajorTick(Axis *axisPtr)
 	    break;
 	}
 	break;
+
     }
     tick.value = ticksPtr->initial + d;
     tick.isValid = TRUE;
@@ -6795,14 +6801,18 @@ FirstMinorTick(Axis *axisPtr)
     d = 0.0;                            /* Suppress compiler warning. */
     switch (ticksPtr->scaleType) {
     case SCALE_LINEAR:
+    default:
 	d = ticksPtr->step * ticksPtr->range;
 	break;
+
     case SCALE_CUSTOM:                  /* User defined minor ticks */
 	d = ticksPtr->values[0] * ticksPtr->range;
 	break;
+
     case SCALE_LOG:
 	d = logTable[0] * ticksPtr->range;
 	break;
+
     case SCALE_TIME:
 	switch (ticksPtr->timeUnits) {
 	case TIME_YEARS:
@@ -6892,14 +6902,18 @@ NextMinorTick(Axis *axisPtr)
     d = 0.0;                            /* Suppress compiler warning. */
     switch (ticksPtr->scaleType) {
     case SCALE_LINEAR:
+    default:
 	d = ticksPtr->range * (ticksPtr->index + 1) * ticksPtr->step;
 	break;
+
     case SCALE_CUSTOM:                  /* User defined minor ticks */
 	d = ticksPtr->range * ticksPtr->values[ticksPtr->index];
 	break;
+
     case SCALE_LOG:
 	d = ticksPtr->range * logTable[ticksPtr->index];
 	break;
+
     case SCALE_TIME:
 	switch (ticksPtr->timeUnits) {
 	case TIME_YEARS:

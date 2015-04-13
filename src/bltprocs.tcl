@@ -56,8 +56,39 @@ namespace eval genProcs {
     #
     #	The directory where the generated files should be placed.
 
-    variable outDir .
+    variable outDir "/tmp"
+    variable moduleName "UNKNOWN"
+    variable hookName ""
 }
+
+if {[llength $argv] < 2} {
+    puts stderr "usage: $argv0 outDir declFile ?declFile...?"
+    exit 1
+}
+
+for { set i 0 } { $i < $argc } { incr i 2 } {
+    set option [lindex $argv $i]
+    set value  [lindex $argv [expr $i+1]]
+    switch -- "$option" {
+	"-module" {
+	    set genProcs::moduleName $value
+	}
+	-outdir {
+	    set genProcs::outDir $value
+	}
+	-hook {
+	    set genProcs::hookName $value
+	}
+	"--" {
+	    set files [lrange $argv [expr $i+1] end]
+	    break
+	}
+	default {
+	    error "unknown option \"$option\""
+	}
+    }
+}
+
 
 # genProcs::library --
 #
@@ -201,6 +232,13 @@ proc genProcs::export {args} {
 #	None.
 
 proc genProcs::rewriteFile {file text} {
+    variable libraryName
+    variable moduleName
+    variable hookName
+    
+    set upName [string toupper $libraryName]
+    set upMod  [string toupper $moduleName]
+    set ext [file ext $file]
     if {![file exists $file]} {
 	set f [open ${file} w]
 	close $f
@@ -210,6 +248,16 @@ proc genProcs::rewriteFile {file text} {
     set in [open ${file} r]
     set out [open ${file}.new w]
     puts $out "/* -*- mode: c; c-basic-offset: 4; indent-tabs-mode: nil -*- */"
+    if { $ext == ".c" } {
+	puts $out "#define BUILD_${upName}_${upMod}_PROCS 1"
+	puts $out "#include <bltInt.h>"
+	if { $hookName != "" } {
+	    set first [string index $hookName 0]
+	    set rest  [string range $hookName 1 end]
+	    set title "[string toupper $first]$rest"
+	    puts $out "\nextern $title $hookName;"
+	}
+    }
     while {![eof $in]} {
 	set line [gets $in]
 	if {[string match "*!BEGIN!*" $line]} {
@@ -899,17 +947,19 @@ proc genProcs::emitDeclarations {name textVar} {
 
 proc genProcs::emitMacros {name textVar} {
     variable libraryName
+    variable moduleName
     upvar $textVar text
 
     set upName [string toupper $libraryName]
+    set upMod  [string toupper $moduleName]
     append text "\n#if defined(USE_${upName}_STUBS) &&\
-	    !defined(BUILD_${upName}_XXX_PROCS)\n"
+	    !defined(BUILD_${upName}_${upMod}_PROCS)\n"
     append text "\n/*\n * Inline function declarations:\n */\n\n"
 
     forAllProcs $name makeMacro 0 text
 
     append text "\n#endif /* defined(USE_${upName}_STUBS) &&\
-	    !defined(BUILD_${upName}_XXX_PROCS) */\n"
+	    !defined(BUILD_${upName}_${upMod}_PROCS) */\n"
     return
 }
 
@@ -1051,22 +1101,12 @@ proc genProcs::emitInits {} {
 # Results:
 #	None.
 
-proc genProcs::init {} {
-    global argv argv0
-    variable outDir
+proc genProcs::init { files } {
     variable interfaces
 
-    if {[llength $argv] < 2} {
-	puts stderr "usage: $argv0 outDir declFile ?declFile...?"
-	exit 1
-    }
-
-    set outDir [lindex $argv 0]
-
-    foreach file [lrange $argv 1 end] {
+    foreach file $files {
 	source $file
     }
-
     foreach name [lsort [array names interfaces]] {
 	puts "Emitting $name"
 	emitHeader $name
@@ -1096,4 +1136,4 @@ if {[string length [namespace which lassign]] == 0} {
     }
 }
 
-genProcs::init
+genProcs::init $files

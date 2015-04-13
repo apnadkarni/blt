@@ -194,6 +194,8 @@ static Blt_HashTable procTable;
 					 * drawing. */
 #define SHARPEN			(1<<12) /* Sharpen the image. */
 
+#define INUSE			(1<<13) /* Image is in use. */
+
 /*
  * PictImage -- 
  *
@@ -440,6 +442,18 @@ static Blt_SwitchCustom blendModeSwitch = {
     BlendingModeSwitchProc, NULL, NULL, (ClientData)0
 };
 
+static Blt_SwitchParseProc DirectionSwitchProc;
+static Blt_SwitchCustom directionSwitch =
+{
+    DirectionSwitchProc, NULL, NULL, (ClientData)0
+};
+
+static Blt_SwitchParseProc ScaleSwitchProc;
+static Blt_SwitchCustom scaleSwitch =
+{
+    ScaleSwitchProc, NULL, NULL, (ClientData)0
+};
+
 typedef struct {
     int invert;				/* Flag. */
     Tcl_Obj *maskObjPtr;
@@ -469,17 +483,30 @@ static Blt_SwitchSpec dupSwitches[] =
 
 typedef struct {
     PictRegion from, to;
-    Blt_BlendingMode mode;		/* Blending mode. */
 } BlendSwitches;
 
 static Blt_SwitchSpec blendSwitches[] = 
 {
-    {BLT_SWITCH_CUSTOM, "-mode", "blendingmode", (char *)NULL,
-	Blt_Offset(BlendSwitches, mode), 0, 0, &blendModeSwitch},
     {BLT_SWITCH_CUSTOM, "-from", "bbox", (char *)NULL,
 	Blt_Offset(BlendSwitches,from), 0, 0, &bboxSwitch},
     {BLT_SWITCH_CUSTOM, "-to",   "bbox",  (char *)NULL,
 	Blt_Offset(BlendSwitches, to),  0, 0, &bboxSwitch},
+    {BLT_SWITCH_END}
+};
+
+typedef struct {
+    PictRegion from, to;
+    Blt_BlendingMode mode;		/* Blending mode. */
+} ColorBlendSwitches;
+
+static Blt_SwitchSpec colorBlendSwitches[] = 
+{
+    {BLT_SWITCH_CUSTOM, "-mode", "blendingMode", (char *)NULL,
+	Blt_Offset(ColorBlendSwitches, mode), 0, 0, &blendModeSwitch},
+    {BLT_SWITCH_CUSTOM, "-from", "bbox", (char *)NULL,
+	Blt_Offset(ColorBlendSwitches,from), 0, 0, &bboxSwitch},
+    {BLT_SWITCH_CUSTOM, "-to",   "bbox",  (char *)NULL,
+	Blt_Offset(ColorBlendSwitches, to),  0, 0, &bboxSwitch},
     {BLT_SWITCH_END}
 };
 
@@ -518,6 +545,7 @@ static Blt_SwitchSpec copySwitches[] =
 
 typedef struct {
     int blur;
+    int scale;
     float size;
     PictFadeSettings fade;
     Blt_Pixel bgColor;
@@ -536,10 +564,8 @@ static Blt_SwitchSpec reflectSwitches[] = {
 	Blt_Offset(ReflectSwitches, fade.high), 0, 0},
     {BLT_SWITCH_BOOLEAN, "-jitter", "bool", (char *)NULL,
 	Blt_Offset(ReflectSwitches, fade.jitter), 0, 0},
-    {BLT_SWITCH_BOOLEAN, "-logscale", "bool", (char *)NULL,
-	Blt_Offset(ReflectSwitches, fade.logScale), 0, 0},
-    {BLT_SWITCH_BOOLEAN, "-atanscale", "bool", (char *)NULL,
-	Blt_Offset(ReflectSwitches, fade.atanScale), 0, 0},
+    {BLT_SWITCH_CUSTOM, "-scale", "bool", (char *)NULL,
+       Blt_Offset(ReflectSwitches, fade.scale), 0, 0, &scaleSwitch},
     {BLT_SWITCH_FLOAT, "-ratio", "", (char *)NULL,
 	Blt_Offset(ReflectSwitches, size), 0, 0},
     {BLT_SWITCH_END}
@@ -557,7 +583,7 @@ static Blt_SwitchSpec resampleSwitches[] = {
 	Blt_Offset(ResampleSwitches, filter), 0, 0, &filterSwitch},
     {BLT_SWITCH_CUSTOM, "-from",   "bbox", (char *)NULL,
 	Blt_Offset(ResampleSwitches, from), 0, 0, &bboxSwitch},
-    {BLT_SWITCH_CUSTOM, "-height",  "int", (char *)NULL,
+    {BLT_SWITCH_CUSTOM, "-height",  "numPixels", (char *)NULL,
 	Blt_Offset(ResampleSwitches, height),  0, 0, &pixelsSwitch},
     {BLT_SWITCH_CUSTOM, "-hfilter", "filter", (char *)NULL,
 	Blt_Offset(ResampleSwitches, hFilter), 0, 0, &filterSwitch},
@@ -591,6 +617,107 @@ typedef struct {
 static Blt_SwitchSpec projectSwitches[] = {
     {BLT_SWITCH_CUSTOM, "-bg",      "color", (char *)NULL,
 	Blt_Offset(ProjectSwitches, bg),             0, 0, &colorSwitch},
+    {BLT_SWITCH_END}
+};
+
+typedef struct {
+    PictImage *imgPtr;
+    Blt_Picture from, to;               /* From and to pictures. */
+    Blt_Picture picture;                /* Holds the result. */
+    Blt_Pixel fromColor;                /* Defaults to white. */
+    Blt_Pixel toColor;                  /* Defaults to black. */
+    Tcl_TimerToken timerToken;
+    int scale;
+    int interval;                       /* # of milliseconds delay between
+                                         * steps. */
+    int numSteps;                       /* # of steps. */
+    int count;                          /* Current step. */
+    Tcl_Interp *interp;                 /* Interpreter used to set
+                                         * variable.  */
+    Tcl_Obj *varNameObjPtr;             /* If non-NULL, contains name of
+                                         * variable to set when transition
+                                         * is completed. */
+} CrossFade;
+
+static Blt_SwitchSpec crossFadeSwitches[] = 
+{
+    {BLT_SWITCH_INT_NNEG, "-goto", "step", (char *)NULL,
+	Blt_Offset(CrossFade, count), 0},
+    {BLT_SWITCH_INT_NNEG, "-delay", "milliseconds", (char *)NULL,
+	Blt_Offset(CrossFade, interval), 0},
+    {BLT_SWITCH_CUSTOM, "-scale", "step", (char *)NULL,
+        Blt_Offset(CrossFade, scale), 0, 0, &scaleSwitch},
+    {BLT_SWITCH_INT_POS, "-steps", "numSteps", (char *)NULL,
+	Blt_Offset(CrossFade, numSteps), 0},
+    {BLT_SWITCH_OBJ, "-variable", "varName", (char *)NULL,
+	Blt_Offset(CrossFade, varNameObjPtr), 0},
+    {BLT_SWITCH_END}
+};
+
+typedef struct {
+    PictImage *imgPtr;
+    Blt_Picture from, to;
+    Blt_Picture picture;                /* Holds the result. */
+    Blt_Pixel fromColor;                /* Defaults to white. */
+    Blt_Pixel toColor;                  /* Defaults to black. */
+    Tcl_TimerToken timerToken;
+    int interval;                       /* # of milliseconds delay between
+                                         * steps. */
+    int numSteps;                       /* # of steps. */
+    long last;                          /* Last position in dissolve. */
+    
+    Tcl_Interp *interp;                 /* Interpreter used to set
+                                         * variable.  */
+    Tcl_Obj *varNameObjPtr;             /* If non-NULL, contains name of
+                                         * variable to set when transition
+                                         * is completed. */
+} Dissolve;
+
+static Blt_SwitchSpec dissolveSwitches[] = 
+{
+    {BLT_SWITCH_INT_NNEG, "-delay", "milliseconds", (char *)NULL,
+	Blt_Offset(Dissolve, interval), 0},
+    {BLT_SWITCH_INT_POS, "-steps", "numSteps", (char *)NULL,
+	Blt_Offset(Dissolve, numSteps), 0},
+    {BLT_SWITCH_OBJ, "-variable", "varName", (char *)NULL,
+	Blt_Offset(Dissolve, varNameObjPtr), 0},
+    {BLT_SWITCH_END}
+};
+
+typedef struct {
+    PictImage *imgPtr;
+    Blt_Picture from, to;
+    Blt_Picture picture;                /* Hold the result. */
+    Blt_Pixel fromColor;                /* Defaults to white. */
+    Blt_Pixel toColor;                  /* Defaults to black. */
+    Tcl_TimerToken timerToken;
+    int scale;
+    int direction;
+    int interval;                       /* # of milliseconds delay between
+                                         * steps. */
+    int numSteps;                       /* # of steps. */
+    int count;                          /* Current step. */
+    Tcl_Interp *interp;                 /* Interpreter used to set
+                                         * variable.  */
+    Tcl_Obj *varNameObjPtr;             /* If non-NULL, contains name of
+                                         * variable to set when transition
+                                         * is completed. */
+} Wipe;
+
+static Blt_SwitchSpec wipeSwitches[] = 
+{
+    {BLT_SWITCH_CUSTOM, "-direction", "n|s|e|w", (char *)NULL,
+        Blt_Offset(Wipe, direction), 0, 0, &directionSwitch},
+    {BLT_SWITCH_INT_NNEG, "-goto", "step", (char *)NULL,
+	Blt_Offset(Wipe, count), 0},
+    {BLT_SWITCH_INT_NNEG, "-delay", "milliseconds", (char *)NULL,
+	Blt_Offset(Wipe, interval), 0},
+    {BLT_SWITCH_CUSTOM, "-scale", "step", (char *)NULL,
+        Blt_Offset(Wipe, scale), 0, 0, &scaleSwitch},
+    {BLT_SWITCH_INT_POS, "-steps", "numSteps", (char *)NULL,
+	Blt_Offset(Wipe, numSteps), 0},
+    {BLT_SWITCH_OBJ, "-variable", "varName", (char *)NULL,
+	Blt_Offset(Wipe, varNameObjPtr), 0},
     {BLT_SWITCH_END}
 };
 
@@ -702,7 +829,9 @@ ReplacePicture(PictImage *imgPtr, Blt_Picture picture)
 	Blt_Picture old;
 
 	old = Blt_Chain_GetValue(link);
-	Blt_FreePicture(old);
+        if (old != picture) {
+            Blt_FreePicture(old);
+        }
     }
     Blt_Chain_SetValue(link, picture);
     imgPtr->picture = picture;
@@ -1150,6 +1279,7 @@ WindowToPicture(Tcl_Interp *interp, PictImage *imgPtr, Tcl_Obj *objPtr)
     imgPtr->flags |= IMPORTED_WINDOW;
     return TCL_OK;
 }
+
 
 /*
  *---------------------------------------------------------------------------
@@ -1656,6 +1786,83 @@ WindowToObj(
     }
     return Tcl_NewStringObj(imgPtr->name, -1);
 }
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * DirectionSwitchProc --
+ *
+ *	Translate the given string to the gradient type it represents.
+ *	Types are "horizontal", "vertical", "updiagonal", "downdiagonal", 
+ *	and "radial"".
+ *
+ * Results:
+ *	The return value is a standard TCL result.  
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+DirectionSwitchProc(ClientData clientData, Tcl_Interp *interp,
+                    const char *switchName, Tcl_Obj *objPtr, char *record,
+                    int offset, int flags)	
+{
+    int *dirPtr = (int *)(record + offset);
+    const char *string;
+
+    string = Tcl_GetString(objPtr);
+    if (strcmp(string, "n") == 0) {
+        *dirPtr = TK_ANCHOR_N;
+    } else if (strcmp(string, "s") == 0) {
+        *dirPtr = TK_ANCHOR_S;
+    } else if (strcmp(string, "e") == 0) {
+        *dirPtr = TK_ANCHOR_E;
+    } else if (strcmp(string, "w") == 0) {
+        *dirPtr = TK_ANCHOR_W;
+    } else {
+        Tcl_AppendResult(interp, "unknown direction \"", string,
+                "\": should be n, s, e, or w.", (char *)NULL);
+        return TCL_ERROR;
+    }
+    return TCL_OK;
+} 
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * ScaleSwitchProc --
+ *
+ * Results:
+ *	The return value is a standard TCL result.  
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+ScaleSwitchProc(ClientData clientData, Tcl_Interp *interp,
+                const char *switchName, Tcl_Obj *objPtr, char *record,
+                int offset, int flags)	
+{
+    int *scalePtr = (int *)(record + offset);
+    const char *string;
+    int length;
+    char c;
+    
+    string = Tcl_GetStringFromObj(objPtr, &length);
+    c = string[0];
+    if ((c == 'l') && (strcmp(string, "linear") == 0)) {
+	*scalePtr = SCALE_LINEAR;
+    } else if ((c == 'l') && (length > 2) && 
+	       (strncmp(string, "logarithmic", length) == 0)) {
+	*scalePtr = SCALE_LOG;
+    } else {
+	Tcl_AppendResult(interp, "unknown scale \"", string, "\"",
+                         ": should be linear or logarithmic.",
+			 (char *)NULL);
+	return TCL_ERROR;
+    }
+    return TCL_OK;
+} 
 
 /*
  *---------------------------------------------------------------------------
@@ -2375,7 +2582,7 @@ NextImage(PictImage *imgPtr)
 }
 
 static void
-TimerProc(ClientData clientData)
+AnimateTimerProc(ClientData clientData)
 {
     PictImage *imgPtr = clientData;
     int delay;
@@ -2385,9 +2592,126 @@ TimerProc(ClientData clientData)
     if (imgPtr->interval > 0) {
 	delay = imgPtr->interval;
     }
-    imgPtr->timerToken = Tcl_CreateTimerHandler(delay, TimerProc, imgPtr);
+    imgPtr->timerToken = Tcl_CreateTimerHandler(delay, AnimateTimerProc, imgPtr);
 }
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * CrossFadeTimerProc --
+ *
+ *---------------------------------------------------------------------------
+ */
+static void
+CrossFadeTimerProc(ClientData clientData)
+{
+    CrossFade *fadePtr = clientData;
+    
+    fadePtr->count++;
+    if (fadePtr->count <= fadePtr->numSteps) {
+        double opacity;
+
+        opacity = fadePtr->count / (double)fadePtr->numSteps;
+        if (fadePtr->scale == SCALE_LOG) {
+            opacity = log10(9.0 * opacity + 1.0);
+        }
+        if (fadePtr->from == NULL) {
+            Blt_FadeFromColor(fadePtr->picture, fadePtr->to,
+                              &fadePtr->fromColor, opacity);
+        } else if (fadePtr->to == NULL) {
+            Blt_FadeToColor(fadePtr->picture, fadePtr->from,
+                              &fadePtr->toColor, opacity);
+        } else {
+            Blt_CrossFade(fadePtr->picture, fadePtr->from, fadePtr->to,
+                          opacity);
+        }
+        Blt_NotifyImageChanged(fadePtr->imgPtr);
+        fadePtr->timerToken = Tcl_CreateTimerHandler(fadePtr->interval, 
+		CrossFadeTimerProc, fadePtr);
+    } else {
+        fadePtr->imgPtr->flags &= ~INUSE;
+        if (fadePtr->varNameObjPtr != NULL) {
+            Tcl_Obj *objPtr;
+
+            objPtr = Tcl_NewIntObj(TRUE);
+            Tcl_ObjSetVar2(fadePtr->interp, fadePtr->varNameObjPtr, NULL,
+                           objPtr, TCL_GLOBAL_ONLY | TCL_LEAVE_ERR_MSG);
+        }
+        Blt_FreeSwitches(crossFadeSwitches, fadePtr, 0);
+        Blt_Free(fadePtr);
+    }
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * DissolveTimerProc --
+ *
+ *---------------------------------------------------------------------------
+ */
+static void
+DissolveTimerProc(ClientData clientData)
+{
+    Dissolve *disPtr = clientData;
+    
+    if (disPtr->last > 0) {
+        disPtr->last = Blt_Dissolve2(disPtr->picture, disPtr->to,
+                disPtr->last, disPtr->numSteps);
+        Blt_NotifyImageChanged(disPtr->imgPtr);
+        disPtr->timerToken = Tcl_CreateTimerHandler(disPtr->interval, 
+		DissolveTimerProc, disPtr);
+    } else {
+        disPtr->imgPtr->flags &= ~INUSE;
+        if (disPtr->varNameObjPtr != NULL) {
+            Tcl_Obj *objPtr;
+
+            objPtr = Tcl_NewIntObj(TRUE);
+            Tcl_ObjSetVar2(disPtr->interp, disPtr->varNameObjPtr, NULL,
+                           objPtr, TCL_GLOBAL_ONLY | TCL_LEAVE_ERR_MSG);
+        }
+        Blt_FreeSwitches(dissolveSwitches, disPtr, 0);
+        Blt_Free(disPtr);
+    }
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * WipeTimerProc --
+ *
+ *---------------------------------------------------------------------------
+ */
+static void
+WipeTimerProc(ClientData clientData)
+{
+    Wipe *wipePtr = clientData;
+    
+    wipePtr->count++;
+    if (wipePtr->count <= wipePtr->numSteps) {
+        double position;
+
+        position = wipePtr->count / (double)wipePtr->numSteps;
+        if (wipePtr->scale == SCALE_LOG) {
+            position = log10(9.0 * position + 1.0);
+        }
+        Blt_WipePictures(wipePtr->picture, wipePtr->from, wipePtr->to,
+                        wipePtr->direction, position);
+        Blt_NotifyImageChanged(wipePtr->imgPtr);
+        wipePtr->timerToken = Tcl_CreateTimerHandler(wipePtr->interval, 
+		WipeTimerProc, wipePtr);
+    } else {
+        wipePtr->imgPtr->flags &= ~INUSE;
+        if (wipePtr->varNameObjPtr != NULL) {
+            Tcl_Obj *objPtr;
+
+            objPtr = Tcl_NewIntObj(TRUE);
+            Tcl_ObjSetVar2(wipePtr->interp, wipePtr->varNameObjPtr, NULL,
+                           objPtr, TCL_GLOBAL_ONLY | TCL_LEAVE_ERR_MSG);
+        }
+        Blt_FreeSwitches(wipeSwitches, wipePtr, 0);
+        Blt_Free(wipePtr);
+    }
+}
 
 /*
  *---------------------------------------------------------------------------
@@ -2400,12 +2724,8 @@ TimerProc(ClientData clientData)
  */
 /*ARGSUSED*/
 static int 
-ArithOp(
-    ClientData clientData,		/* Information about picture cmd. */
-    Tcl_Interp *interp,			/* Interpreter to report errors back
-					 * to. */
-    int objc,				/* Not used. */
-    Tcl_Obj *const *objv)
+ArithOp(ClientData clientData, Tcl_Interp *interp, int objc,
+        Tcl_Obj *const *objv)
 {
     Blt_Picture src, mask;
     Blt_PictureArithOps op;
@@ -2507,11 +2827,8 @@ ArithOp(
  *---------------------------------------------------------------------------
  */
 static int
-BlankOp(
-    ClientData clientData,		/* Information about picture cmd. */
-    Tcl_Interp *interp,			/* Current interpreter. */
-    int objc,				/* Number of arguments. */
-    Tcl_Obj *const *objv)		/* Argument objects. */
+BlankOp(ClientData clientData, Tcl_Interp *interp, int objc,
+        Tcl_Obj *const *objv)
 {
     Pict *destPtr;
     PictImage *imgPtr = clientData;
@@ -2548,12 +2865,8 @@ BlankOp(
  */
 /*ARGSUSED*/
 static int 
-BlendOp(
-    ClientData clientData,		/* Information about picture cmd. */
-    Tcl_Interp *interp,			/* Interpreter to report errors back
-					 * to. */
-    int objc,				/* Not used. */
-    Tcl_Obj *const *objv)
+BlendOp(ClientData clientData, Tcl_Interp *interp, int objc,
+        Tcl_Obj *const *objv)
 {
     BlendSwitches switches;
     Blt_Picture fg, bg, tmp;
@@ -2564,7 +2877,6 @@ BlendOp(
 	(Blt_GetPictureFromObj(interp, objv[3], &fg) != TCL_OK)) {
 	return TCL_ERROR;
     }
-    switches.mode = BLT_BLEND_NORMAL;
     switches.from.x = switches.from.y = 0;
     switches.from.w = Blt_Picture_Width(bg);
     switches.from.h = Blt_Picture_Height(bg);
@@ -2598,21 +2910,17 @@ BlendOp(
 /*
  *---------------------------------------------------------------------------
  *
- * Blend2Op --
+ * ColorBlendOp --
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int 
-Blend2Op(
-    ClientData clientData,		/* Information about picture cmd. */
-    Tcl_Interp *interp,			/* Interpreter to report errors back
-					 * to. */
-    int objc,				/* Not used. */
-    Tcl_Obj *const *objv)
+ColorBlendOp(ClientData clientData, Tcl_Interp *interp, int objc,
+             Tcl_Obj *const *objv)
 {
     Blt_Picture fg, bg, dst;
-    BlendSwitches switches;
+    ColorBlendSwitches switches;
     PictImage *imgPtr = clientData;
 
     if ((Blt_GetPictureFromObj(interp, objv[2], &bg) != TCL_OK) ||
@@ -2620,7 +2928,7 @@ Blend2Op(
 	return TCL_ERROR;
     }
     switches.mode = BLT_BLEND_NORMAL;
-    if (Blt_ParseSwitches(interp, blendSwitches, objc - 4, objv + 4, 
+    if (Blt_ParseSwitches(interp, colorBlendSwitches, objc - 4, objv + 4, 
 	&switches, BLT_SWITCH_DEFAULTS) < 0) {
 	return TCL_ERROR;
     }
@@ -2628,7 +2936,7 @@ Blend2Op(
     Blt_ResizePicture(dst, Blt_Picture_Width(bg), Blt_Picture_Height(bg));
     Blt_CopyPictureBits(dst, bg, 0, 0, Blt_Picture_Width(bg), 
 	Blt_Picture_Height(bg), 0, 0);
-    Blt_BlendPicturesByMode(dst, fg, switches.mode); 
+    Blt_ColorBlendPictures(dst, fg, switches.mode); 
     Blt_NotifyImageChanged(imgPtr);
     return TCL_OK;
 }
@@ -2642,15 +2950,11 @@ Blend2Op(
  */
 /*ARGSUSED*/
 static int 
-BlurOp(
-    ClientData clientData,		/* Information about picture cmd. */
-    Tcl_Interp *interp,			/* Interpreter to report errors back
-					 * to. */
-    int objc,				/* Not used. */
-    Tcl_Obj *const *objv)
+BlurOp(ClientData clientData, Tcl_Interp *interp, int objc,
+       Tcl_Obj *const *objv)
 {
     Blt_Picture src, dst;
-    PictImage *imgPtr;
+    PictImage *imgPtr = clientData;
     int r;				/* Radius of the blur. */
 
     if (Blt_GetPictureFromObj(interp, objv[2], &src) != TCL_OK) {
@@ -2664,7 +2968,6 @@ BlurOp(
 			 (char *)NULL);
 	return TCL_ERROR;
     }
-    imgPtr = clientData;
     dst = PictureFromPictImage(imgPtr);
     Blt_BlurPicture(dst, src, r, 3);
     Blt_NotifyImageChanged(imgPtr);
@@ -2680,17 +2983,14 @@ BlurOp(
  *
  * Results:
  *	Returns a standard TCL return value.  If TCL_OK, the value of the
- *	picture configuration option specified is returned in the interpreter
- *	result.  Otherwise an error message is returned.
+ *	picture configuration option specified is returned in the
+ *	interpreter result.  Otherwise an error message is returned.
  * 
  *---------------------------------------------------------------------------
  */
 static int
-CgetOp(
-    ClientData clientData,		/* Information about picture cmd. */
-    Tcl_Interp *interp,			/* Current interpreter. */
-    int objc,				/* Not used. */
-    Tcl_Obj *const *objv)		/* Argument objects. */
+CgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
+       Tcl_Obj *const *objv)
 {
     PictImage *imgPtr = clientData;
     
@@ -2713,11 +3013,8 @@ CgetOp(
  *---------------------------------------------------------------------------
  */
 static int
-ConfigureOp(
-    ClientData clientData,		/* Information about picture cmd. */
-    Tcl_Interp *interp,			/* Current interpreter. */
-    int objc,				/* Number of arguments. */
-    Tcl_Obj *const *objv)		/* Argument objects. */
+ConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
+            Tcl_Obj *const *objv)
 {
     PictImage *imgPtr;
     Tk_Window tkwin;
@@ -2751,12 +3048,8 @@ ConfigureOp(
  */
 /*ARGSUSED*/
 static int 
-ConvolveOp(
-    ClientData clientData,		/* Information about picture cmd. */
-    Tcl_Interp *interp,			/* Interpreter to report errors back
-					 * to. */
-    int objc,				/* Not used. */
-    Tcl_Obj *const *objv)
+ConvolveOp(ClientData clientData, Tcl_Interp *interp, int objc,
+           Tcl_Obj *const *objv)
 {
     Blt_Picture src;
     ConvolveSwitches switches;
@@ -2797,11 +3090,8 @@ ConvolveOp(
  *---------------------------------------------------------------------------
  */
 static int
-CopyOp(
-    ClientData clientData,		/* Information about picture cmd. */
-    Tcl_Interp *interp,			/* Current interpreter. */
-    int objc,				/* Number of arguments. */
-    Tcl_Obj *const *objv)		/* Argument objects. */
+CopyOp(ClientData clientData, Tcl_Interp *interp, int objc,
+       Tcl_Obj *const *objv)
 {
     Blt_Picture src, dst;
     CopySwitches switches;
@@ -2858,11 +3148,8 @@ CopyOp(
  *---------------------------------------------------------------------------
  */
 static int
-CropOp(
-    ClientData clientData,		/* Information about picture cmd. */
-    Tcl_Interp *interp,			/* Current interpreter. */
-    int objc,				/* Number of arguments. */
-    Tcl_Obj *const *objv)		/* Argument objects. */
+CropOp(ClientData clientData, Tcl_Interp *interp, int objc,
+       Tcl_Obj *const *objv)
 {
     PictRegion from;
     Blt_Picture src, dst;
@@ -2885,6 +3172,117 @@ CropOp(
     return TCL_OK;
 }
 
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * CrossFadeOp --
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int 
+CrossFadeOp(ClientData clientData, Tcl_Interp *interp, int objc,
+            Tcl_Obj *const *objv)
+{
+    PictImage *imgPtr = clientData;
+    int w, h;
+    CrossFade *fadePtr;
+    double opacity;
+    
+    if (imgPtr->flags & INUSE) {
+        Tcl_AppendResult(interp, "what? image \"", imgPtr->name,
+                         "\" is busy.", (char *)NULL);
+            return TCL_ERROR;
+    }
+    fadePtr = Blt_AssertCalloc(1, sizeof(CrossFade));
+    fadePtr->numSteps = 10;
+    fadePtr->fromColor.u32 = 0xFFFFFFFF;
+    fadePtr->toColor.u32 = 0xFF000000;
+    fadePtr->interp = interp;
+    fadePtr->imgPtr = imgPtr;
+    fadePtr->count = 1;
+    if (Blt_GetPixelFromObj(NULL, objv[2], &fadePtr->fromColor) != TCL_OK) {
+        if (Blt_GetPictureFromObj(interp, objv[2], &fadePtr->from) != TCL_OK) {
+            return TCL_ERROR;
+        }
+    }
+    if (Blt_GetPixelFromObj(NULL, objv[3], &fadePtr->toColor) != TCL_OK) {
+        if (Blt_GetPictureFromObj(interp, objv[3], &fadePtr->to) != TCL_OK) {
+            return TCL_ERROR;
+        }
+    }
+    if (Blt_ParseSwitches(interp, crossFadeSwitches, objc - 4, objv + 4,
+                          fadePtr, BLT_SWITCH_DEFAULTS) < 0) {
+	return TCL_ERROR;
+    }
+    if (fadePtr->from == imgPtr->picture) {
+        Tcl_AppendResult(interp, "from picture can not be \"", imgPtr->name,
+                         "\"", (char *)NULL);
+            return TCL_ERROR;
+    }
+    if (fadePtr->to == imgPtr->picture) {
+        Tcl_AppendResult(interp, "to picture can not be \"", imgPtr->name,
+                         "\"", (char *)NULL);
+            return TCL_ERROR;
+    }
+    if (fadePtr->from == NULL) {
+        if (fadePtr->to == NULL) {
+            Tcl_AppendResult(interp, "either from or to must ",
+                             "be a picture image.", (char *)NULL);
+            return TCL_ERROR;
+        }
+        w = Blt_Picture_Width(fadePtr->to);
+        h = Blt_Picture_Height(fadePtr->to);
+    } else if (fadePtr->to == NULL) {
+        w = Blt_Picture_Width(fadePtr->from);
+        h = Blt_Picture_Height(fadePtr->from);
+    } else {
+        w = Blt_Picture_Width(fadePtr->from);
+        h = Blt_Picture_Height(fadePtr->from);
+        if ((w != Blt_Picture_Width(fadePtr->to)) ||
+            (h != Blt_Picture_Height(fadePtr->to))) {
+            Tcl_AppendResult(interp, "from and to picture ",
+                             "must be the same size.", (char *)NULL);
+            return TCL_ERROR;
+        }
+    }
+    fadePtr->picture = Blt_CreatePicture(w, h);
+    if (fadePtr->count > fadePtr->numSteps) {
+        fadePtr->count = fadePtr->numSteps;
+    } 
+    opacity = (double)fadePtr->count / (double)fadePtr->numSteps;
+    if (fadePtr->scale == SCALE_LOG) {
+        opacity = log10(9.0 * opacity + 1.0);
+    }
+    if (fadePtr->from == NULL) {
+        Blt_FadeFromColor(fadePtr->picture, fadePtr->to, &fadePtr->fromColor,
+                opacity);
+    } else if (fadePtr->to == NULL) {
+        Blt_FadeToColor(fadePtr->picture, fadePtr->from, &fadePtr->toColor,
+                opacity);
+    } else {
+        Blt_CrossFade(fadePtr->picture, fadePtr->from, fadePtr->to, opacity);
+    }
+    ReplacePicture(fadePtr->imgPtr, fadePtr->picture);
+    Blt_NotifyImageChanged(imgPtr);
+    if (fadePtr->interval > 0) {
+        imgPtr->flags |= INUSE;
+        fadePtr->timerToken = Tcl_CreateTimerHandler(fadePtr->interval, 
+                CrossFadeTimerProc, fadePtr);
+    } else {
+        Blt_Free(fadePtr);
+    }
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * DrawOp --
+ *
+ *---------------------------------------------------------------------------
+ */
 static Blt_OpSpec drawOps[] = {
     {"circle",    1, Blt_Picture_CircleOp,    4, 0, "x y r ?switches?",},
     {"ellipse",   1, Blt_Picture_EllipseOp,   5, 0, "x y a b ?switches?",},
@@ -2894,22 +3292,10 @@ static Blt_OpSpec drawOps[] = {
     {"text",      1, Blt_Picture_TextOp,      6, 0, "string x y ?switches?",},
 };
 static int numDrawOps = sizeof(drawOps) / sizeof(Blt_OpSpec);
-
-/*
- *---------------------------------------------------------------------------
- *
- * DrawOp --
- *
- *---------------------------------------------------------------------------
- */
 /*ARGSUSED*/
 static int 
-DrawOp(
-    ClientData clientData,		/* Contains reference to picture
-					 * object. */
-    Tcl_Interp *interp,
-    int objc,				/* Not used. */
-    Tcl_Obj *const *objv)
+DrawOp(ClientData clientData, Tcl_Interp *interp, int objc,
+       Tcl_Obj *const *objv)
 {
     PictImage *imgPtr = clientData;
     Blt_Picture picture;
@@ -2928,6 +3314,97 @@ DrawOp(
     }
     return result;
 }
+
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * DissolveOp --
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int 
+DissolveOp(ClientData clientData, Tcl_Interp *interp, int objc,
+           Tcl_Obj *const *objv)
+{
+    PictImage *imgPtr = clientData;
+    int w, h;
+    Dissolve *disPtr;
+    
+    if (imgPtr->flags & INUSE) {
+        Tcl_AppendResult(interp, "image \"", imgPtr->name,
+                         "\" is busy.", (char *)NULL);
+            return TCL_ERROR;
+    }
+    disPtr = Blt_AssertCalloc(1, sizeof(Dissolve));
+    disPtr->interval = 50;             /* 50 milliseconds. */
+    disPtr->numSteps = 10;
+    disPtr->fromColor.u32 = 0xFFFFFFFF;
+    disPtr->toColor.u32 = 0xFF000000;
+    disPtr->interp = interp;
+    disPtr->imgPtr = imgPtr;
+    disPtr->last = 1;
+
+    if (Blt_GetPixelFromObj(NULL, objv[2], &disPtr->fromColor) != TCL_OK) {
+        if (Blt_GetPictureFromObj(interp, objv[2], &disPtr->from) != TCL_OK) {
+            return TCL_ERROR;
+        }
+    }
+    if (Blt_GetPixelFromObj(NULL, objv[3], &disPtr->toColor) != TCL_OK) {
+        if (Blt_GetPictureFromObj(interp, objv[3], &disPtr->to) != TCL_OK) {
+            return TCL_ERROR;
+        }
+    }
+    if (Blt_ParseSwitches(interp, dissolveSwitches, objc - 4, objv + 4,
+                          disPtr, BLT_SWITCH_DEFAULTS) < 0) {
+	return TCL_ERROR;
+    }
+    if (disPtr->from == imgPtr->picture) {
+        Tcl_AppendResult(interp, "\"from\" picture can not be \"", imgPtr->name,
+                         "\".", (char *)NULL);
+            return TCL_ERROR;
+    }
+    if (disPtr->to == imgPtr->picture) {
+        Tcl_AppendResult(interp, "\"to\" picture can not be \"", imgPtr->name,
+                         "\".", (char *)NULL);
+            return TCL_ERROR;
+    }
+    if (disPtr->from == NULL) {
+        if (disPtr->to == NULL) {
+            Tcl_AppendResult(interp, "either \"from\" or \"to\" must ",
+                             "be a picture image.", (char *)NULL);
+            return TCL_ERROR;
+        }
+        w = Blt_Picture_Width(disPtr->to);
+        h = Blt_Picture_Height(disPtr->to);
+    } else if (disPtr->to == NULL) {
+        w = Blt_Picture_Width(disPtr->from);
+        h = Blt_Picture_Height(disPtr->from);
+    } else {
+        w = Blt_Picture_Width(disPtr->from);
+        h = Blt_Picture_Height(disPtr->from);
+        if ((w != Blt_Picture_Width(disPtr->to)) ||
+            (h != Blt_Picture_Height(disPtr->to))) {
+            Tcl_AppendResult(interp, "from and to picture ",
+                             "must be the same size.", (char *)NULL);
+            return TCL_ERROR;
+        }
+    }
+    imgPtr->flags |= INUSE;
+    disPtr->picture = Blt_CreatePicture(w, h);
+    if (disPtr->from != NULL) {
+        Blt_CopyPictureBits(disPtr->picture, disPtr->from, 0, 0, w, h, 0, 0);
+    } else {
+        Blt_BlankPicture(disPtr->picture, disPtr->fromColor.u32);
+    } 
+    ReplacePicture(disPtr->imgPtr, disPtr->picture);
+    Blt_NotifyImageChanged(imgPtr);
+    disPtr->timerToken = Tcl_CreateTimerHandler(disPtr->interval, 
+                DissolveTimerProc, disPtr);
+    return TCL_OK;
+}
+
 
 /*
  *---------------------------------------------------------------------------
@@ -2948,11 +3425,7 @@ DrawOp(
  *---------------------------------------------------------------------------
  */
 static int
-DupOp(
-    ClientData clientData,		/* Information about picture cmd. */
-    Tcl_Interp *interp,			/* Current interpreter. */
-    int objc,				/* Number of arguments. */
-    Tcl_Obj *const *objv)		/* Argument objects. */
+DupOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 {
     Blt_Picture picture;
     DupSwitches switches;
@@ -3017,11 +3490,8 @@ DupOp(
  *---------------------------------------------------------------------------
  */
 static int
-EmbossOp(
-    ClientData clientData,		/* Information about picture cmd. */
-    Tcl_Interp *interp,			/* Current interpreter. */
-    int objc,				/* Not used. */
-    Tcl_Obj *const *objv)		/* Argument objects. */
+EmbossOp(ClientData clientData, Tcl_Interp *interp, int objc,
+         Tcl_Obj *const *objv)
 {
     Blt_Picture src, dst;
     PictImage *imgPtr = clientData;
@@ -3058,11 +3528,8 @@ EmbossOp(
  *---------------------------------------------------------------------------
  */
 static int
-ExportOp(
-    ClientData clientData,		/* Information about picture cmd. */
-    Tcl_Interp *interp,			/* Current interpreter. */
-    int objc,				/* Number of arguments. */
-    Tcl_Obj *const *objv)		/* Argument objects. */
+ExportOp(ClientData clientData, Tcl_Interp *interp, int objc,
+         Tcl_Obj *const *objv)
 {
     Blt_HashEntry *hPtr;
     Blt_PictFormat *fmtPtr;
@@ -3119,12 +3586,8 @@ ExportOp(
  */
 /*ARGSUSED*/
 static int 
-FadeOp(
-    ClientData clientData,		/* Information about picture cmd. */
-    Tcl_Interp *interp,			/* Interpreter to report errors back
-					 * to. */
-    int objc,				/* Not used. */
-    Tcl_Obj *const *objv)
+FadeOp(ClientData clientData, Tcl_Interp *interp, int objc,
+       Tcl_Obj *const *objv)
 {
     Blt_Picture src;
     PictImage *imgPtr = clientData;
@@ -3162,11 +3625,8 @@ FadeOp(
  *---------------------------------------------------------------------------
  */
 static int
-FlipOp(
-    ClientData clientData,		/* Information about picture cmd. */
-    Tcl_Interp *interp,			/* Current interpreter. */
-    int objc,				/* Not used. */
-    Tcl_Obj *const *objv)		/* Argument objects. */
+FlipOp(ClientData clientData, Tcl_Interp *interp, int objc,
+       Tcl_Obj *const *objv)
 {
     PictImage *imgPtr = clientData;
     const char *string;
@@ -3227,11 +3687,7 @@ GammaOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *---------------------------------------------------------------------------
  */
 static int
-GetOp(
-    ClientData clientData,		/* Information about picture cmd. */
-    Tcl_Interp *interp,			/* Current interpreter. */
-    int objc,				/* Not used. */
-    Tcl_Obj *const *objv)		/* Argument objects. */
+GetOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 {
     PictImage *imgPtr = clientData;
     Blt_Pixel *sp, pixel;
@@ -3274,12 +3730,8 @@ GetOp(
  */
 /*ARGSUSED*/
 static int 
-GreyscaleOp(
-    ClientData clientData,		/* Information about picture cmd. */
-    Tcl_Interp *interp,			/* Interpreter to report errors back
-					 * to. */
-    int objc,				/* Not used. */
-    Tcl_Obj *const *objv)
+GreyscaleOp(ClientData clientData, Tcl_Interp *interp, int objc,
+            Tcl_Obj *const *objv)
 {
     Blt_Picture src, dst;
     PictImage *imgPtr = clientData;
@@ -3303,11 +3755,8 @@ GreyscaleOp(
  *---------------------------------------------------------------------------
  */
 static int
-HeightOp(
-    ClientData clientData,		/* Information about picture cmd. */
-    Tcl_Interp *interp,			/* Current interpreter. */
-    int objc,				/* # of arguments. */
-    Tcl_Obj *const *objv)		/* Argument vector. */
+HeightOp(ClientData clientData, Tcl_Interp *interp, int objc,
+         Tcl_Obj *const *objv)
 {
     PictImage *imgPtr = clientData;
     int h;
@@ -3353,11 +3802,8 @@ HeightOp(
  *---------------------------------------------------------------------------
  */
 static int
-ImportOp(
-    ClientData clientData,		/* Information about picture cmd. */
-    Tcl_Interp *interp,			/* Current interpreter. */
-    int objc,				/* Number of arguments. */
-    Tcl_Obj *const *objv)		/* Argument objects. */
+ImportOp(ClientData clientData, Tcl_Interp *interp, int objc,
+         Tcl_Obj *const *objv)
 {
     Blt_Chain chain;
     Blt_HashEntry *hPtr;
@@ -3447,11 +3893,8 @@ ImportOp(
  *---------------------------------------------------------------------------
  */
 static int
-InfoOp(
-    ClientData clientData,		/* Information about picture cmd. */
-    Tcl_Interp *interp,			/* Current interpreter. */
-    int objc,				/* Not used. */
-    Tcl_Obj *const *objv)		/* Not used. */
+InfoOp(ClientData clientData, Tcl_Interp *interp, int objc,
+       Tcl_Obj *const *objv)
 {
     PictImage *imgPtr = clientData;
     int numColors, state;
@@ -3596,7 +4039,7 @@ ListAnimateOp(ClientData clientData, Tcl_Interp *interp, int objc,
 
 	    delay = Blt_Picture_Delay(imgPtr->picture);
 	    imgPtr->timerToken = 
-		Tcl_CreateTimerHandler(delay, TimerProc, imgPtr);
+		Tcl_CreateTimerHandler(delay, AnimateTimerProc, imgPtr);
 	}	
     } else if (Tcl_GetIntFromObj(interp, objv[2], &interval) == TCL_OK) {
 	imgPtr->interval = interval;
@@ -3604,7 +4047,7 @@ ListAnimateOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	    Tcl_DeleteTimerHandler(imgPtr->timerToken);
 	}
 	imgPtr->timerToken = Tcl_CreateTimerHandler(imgPtr->interval, 
-		TimerProc, imgPtr);
+		AnimateTimerProc, imgPtr);
     } else {
 	return TCL_ERROR;
     }
@@ -4086,8 +4529,7 @@ ReflectOp(ClientData clientData, Tcl_Interp *interp, int objc,
     memset(&switches, 0, sizeof(switches));
     switches.fade.side = SIDE_BOTTOM;
     switches.fade.jitter.range = 0.1;
-    switches.fade.logScale = FALSE;
-    switches.fade.atanScale = FALSE;
+    switches.fade.scale = SCALE_LINEAR;
     switches.fade.low = 0;
     switches.fade.high = 0xFF;
     switches.blur = 1;
@@ -4347,11 +4789,8 @@ SelectOp(ClientData clientData, Tcl_Interp *interp, int objc,
  */
 /*ARGSUSED*/
 static int 
-SharpenOp(
-    ClientData clientData,		/* Information about picture cmd. */
-    Tcl_Interp *interp,			/* Not used. */
-    int objc,				/* Not used. */
-    Tcl_Obj *const *objv)		/* Not used. */
+SharpenOp(ClientData clientData, Tcl_Interp *interp, int objc,
+          Tcl_Obj *const *objv)
 {
     PictImage *imgPtr = clientData;
     
@@ -4483,11 +4922,8 @@ SnapOp(ClientData clientData, Tcl_Interp *interp, int objc,
  */
 /*ARGSUSED*/
 static int 
-TranspOp(
-    ClientData clientData,		/* Information about picture cmd. */
-    Tcl_Interp *interp,			/* Not used. */
-    int objc,				/* Not used. */
-    Tcl_Obj *const *objv)		/* Not used. */
+TranspOp(ClientData clientData, Tcl_Interp *interp, int objc,
+         Tcl_Obj *const *objv)
 {
     PictImage *imgPtr = clientData;
     Blt_Pixel bg;
@@ -4510,11 +4946,8 @@ TranspOp(
  *---------------------------------------------------------------------------
  */
 static int
-WidthOp(
-    ClientData clientData,		/* Information about picture cmd. */
-    Tcl_Interp *interp,			/* Current interpreter. */
-    int objc,				/* # of arguments. */
-    Tcl_Obj *const *objv)		/* Argument vector. */
+WidthOp(ClientData clientData, Tcl_Interp *interp, int objc,
+        Tcl_Obj *const *objv)
 {
     PictImage *imgPtr = clientData;
     int w;
@@ -4542,6 +4975,86 @@ WidthOp(
 /*
  *---------------------------------------------------------------------------
  *
+ * WipeOp --
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int 
+WipeOp(ClientData clientData, Tcl_Interp *interp, int objc,
+            Tcl_Obj *const *objv)
+{
+    PictImage *imgPtr = clientData;
+    int w, h;
+    Wipe *wipePtr;
+    double position;
+    
+    if (imgPtr->flags & INUSE) {
+        Tcl_AppendResult(interp, "image \"", imgPtr->name,
+                         "\" is busy.", (char *)NULL);
+            return TCL_ERROR;
+    }
+    wipePtr = Blt_AssertCalloc(1, sizeof(Wipe));
+    wipePtr->numSteps = 10;
+    wipePtr->fromColor.u32 = 0xFFFFFFFF;
+    wipePtr->toColor.u32 = 0xFF000000;
+    wipePtr->interp = interp;
+    wipePtr->imgPtr = imgPtr;
+    wipePtr->count = 1;
+    wipePtr->direction = TK_ANCHOR_E;
+    if (Blt_GetPictureFromObj(interp, objv[2], &wipePtr->from) != TCL_OK) {
+        return TCL_ERROR;
+    }
+    if (Blt_GetPictureFromObj(interp, objv[3], &wipePtr->to) != TCL_OK) {
+        return TCL_ERROR;
+    }
+    if (Blt_ParseSwitches(interp, wipeSwitches, objc - 4, objv + 4,
+                wipePtr, BLT_SWITCH_DEFAULTS) < 0) {
+	return TCL_ERROR;
+    }
+    if (wipePtr->from == imgPtr->picture) {
+        Tcl_AppendResult(interp, "from picture can not be \"", imgPtr->name,
+                "\"", (char *)NULL);
+            return TCL_ERROR;
+    }
+    if (wipePtr->to == imgPtr->picture) {
+        Tcl_AppendResult(interp, "to picture can not be \"", imgPtr->name,
+                         "\"", (char *)NULL);
+            return TCL_ERROR;
+    }
+    w = Blt_Picture_Width(wipePtr->from);
+    h = Blt_Picture_Height(wipePtr->from);
+    if ((w != Blt_Picture_Width(wipePtr->to)) ||
+        (h != Blt_Picture_Height(wipePtr->to))) {
+        Tcl_AppendResult(interp, "from and to picture ",
+                         "must be the same size.", (char *)NULL);
+        return TCL_ERROR;
+    }
+    wipePtr->picture = Blt_CreatePicture(w, h);
+    if (wipePtr->count > wipePtr->numSteps) {
+        wipePtr->count = wipePtr->numSteps;
+    } 
+    position = (double)wipePtr->count / (double)wipePtr->numSteps;
+    if (wipePtr->scale == SCALE_LOG) {
+        position = log10(9.0 * position + 1.0);
+    }
+    Blt_WipePictures(wipePtr->picture, wipePtr->from, wipePtr->to,
+                wipePtr->direction, position);
+    ReplacePicture(wipePtr->imgPtr, wipePtr->picture);
+    Blt_NotifyImageChanged(imgPtr);
+    if (wipePtr->interval > 0) {
+        imgPtr->flags |= INUSE;
+        wipePtr->timerToken = Tcl_CreateTimerHandler(wipePtr->interval, 
+                WipeTimerProc, wipePtr);
+    } else {
+        Blt_Free(wipePtr);
+    }
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
  * Picture instance sub-command specification:
  *
  *	- Name of the sub-command.
@@ -4556,59 +5069,59 @@ WidthOp(
  */
 static Blt_OpSpec pictInstOps[] =
 {
-    {"add",       2, ArithOp,     3, 0, "image|color",},
-    {"and",       3, ArithOp,     3, 0, "image|color",},
-    {"blank",     3, BlankOp,     2, 3, "?color?",},
-    {"ble2nd",    4, Blend2Op,    4, 0, "bg fg ?switches?",},
-    {"blend",     4, BlendOp,     4, 0, "bg fg ?switches?",},
+    {"add",       2, ArithOp,     3, 0, "pictOrColor",},
+    {"and",       3, ArithOp,     3, 0, "pictOrColor",},
+    {"blank",     3, BlankOp,     2, 3, "?colorSpec?",},
+    {"blend",     4, BlendOp,     4, 0, "bg fg ?switches ...?",},
     {"blur",      3, BlurOp,      4, 4, "src width",},
     {"cget",      2, CgetOp,      3, 3, "option",},
-    {"configure", 4, ConfigureOp, 2, 0, "?option value?...",},
-    {"convolve",  4, ConvolveOp,  3, 0, "src ?switches?",},
-    {"copy",      3, CopyOp,      3, 0, "srcPict ?switches?",},
-    {"crop",      2, CropOp,      2, 0, "bbox",},
-    {"draw",      2, DrawOp,	  2, 0, "?args?",},
-    {"dup",       2, DupOp,       2, 0, "?switches?",},
-    {"emboss",    2, EmbossOp,    3, 5, "src",},
-    {"export",    2, ExportOp,    2, 0, "format ?switches?...",},
+    {"colorblend",3, ColorBlendOp,4, 0, "bg fg ?switches ...?",},
+    {"configure", 4, ConfigureOp, 2, 0, "?option value ...?",},
+    {"convolve",  4, ConvolveOp,  3, 0, "srcName ?switches ...?",},
+    {"copy",      3, CopyOp,      3, 0, "srcName ?switches ...?",},
+    {"crop",      4, CropOp,      2, 0, "bbox",},
+    {"crossfade", 4, CrossFadeOp, 4, 0, "from to ?switches ...?",},
+    {"dissolve",  2, DissolveOp,  4, 0, "from to ?switches ...?",},
+    {"draw",      2, DrawOp,	  2, 0, "?args ...?",},
+    {"dup",       2, DupOp,       2, 0, "?switches ...?",},
+    {"emboss",    2, EmbossOp,    3, 5, "srcName",},
+    {"export",    2, ExportOp,    2, 0, "format ?switches ...?",},
     {"fade",      2, FadeOp,      4, 4, "src factor",},
     {"flip",      2, FlipOp,      3, 0, "x|y",},
     {"gamma",     2, GammaOp,     3, 3, "value",},
     {"get",       2, GetOp,       4, 4, "x y",},
     {"greyscale", 3, GreyscaleOp, 3, 3, "src",},
     {"height",    1, HeightOp,    2, 3, "?newHeight?",},
-    {"import",    2, ImportOp,    2, 0, "format ?switches?...",},
+    {"import",    2, ImportOp,    2, 0, "format ?switches ...?",},
     {"info",      2, InfoOp,      2, 2, "info",},
-    {"list",      1, ListOp,      2, 0, "args...",},
-    {"max",	  2, ArithOp,     3, 0, "image|color",},
-    {"min",	  2, ArithOp,     3, 0, "image|color",},
+    {"list",      1, ListOp,      2, 0, "?args ...?",},
+    {"max",	  2, ArithOp,     3, 0, "pictOrColor",},
+    {"min",	  2, ArithOp,     3, 0, "pictOrColor",},
     {"multiply",  2, MultiplyOp,  3, 3, "float",},
-    {"nand",      2, ArithOp,     3, 0, "image|color",},
-    {"nor",       2, ArithOp,     3, 0, "image|color",},
-    {"or",        1, ArithOp,     3, 0, "image|color ?switches?",},
-    {"project",   2, ProjectOp,   5, 0, "src coords coords ?switches...?",},
-    {"put",       2, PutOp,       2, 0, "color ?window?...",},
+    {"nand",      2, ArithOp,     3, 0, "pictOrColor",},
+    {"nor",       2, ArithOp,     3, 0, "pictOrColor",},
+    {"or",        1, ArithOp,     3, 0, "pictOrColor ?switches ...?",},
+    {"project",   2, ProjectOp,   5, 0, "src coords coords ?switches ...?",},
+    {"put",       2, PutOp,       2, 0, "x y color",},
     {"quantize",  1, QuantizeOp,  4, 4, "src numColors",},
-    {"reflect",   3, ReflectOp,   3, 0, "src ?switches?",},
-    {"resample",  3, ResampleOp,  3, 0, "src ?switches?",},
+    {"reflect",   3, ReflectOp,   3, 0, "src ?switches ...?",},
+    {"resample",  3, ResampleOp,  3, 0, "src ?switches ...?",},
     {"rotate",    2, RotateOp,    4, 4, "src angle",},
-    {"select",    2, SelectOp,    4, 5, "src color ?color?",},
+    {"select",    2, SelectOp,    4, 5, "src ?color ...?",},
     {"sharpen",   2, SharpenOp,   2, 0, "",},
-    {"snap",      2, SnapOp,      3, 0, "window ?switches?",},
-    {"subtract",  2, ArithOp,     3, 0, "image|color",},
-    {"transp",    2, TranspOp,    3, 3, "bgcolor",},
-    {"width",     1, WidthOp,     2, 3, "?newWidth?",},
-    {"xor",       1, ArithOp,     3, 0, "image|color ?switches?",},
+    {"snap",      2, SnapOp,      3, 0, "window ?switches ...?",},
+    {"subtract",  2, ArithOp,     3, 0, "pictOrColor",},
+    {"transp",    6, TranspOp,    3, 3, "bgcolor",},
+    {"width",     3, WidthOp,     2, 3, "?newWidth?",},
+    {"wipe",      3, WipeOp,      4, 0, "from to ?switches ...?",},
+    {"xor",       1, ArithOp,     3, 0, "pictOrColor ?switches ...?",},
 };
 
 static int numPictInstOps = sizeof(pictInstOps) / sizeof(Blt_OpSpec);
 
 static int
-PictureInstCmdProc(
-    ClientData clientData,		/* Information about picture cmd. */
-    Tcl_Interp *interp,			/* Current interpreter. */
-    int objc,				/* Number of arguments. */
-    Tcl_Obj *const *objv)		/* Argument objects. */
+PictureInstCmdProc(ClientData clientData, Tcl_Interp *interp, int objc,
+                   Tcl_Obj *const *objv)
 {
     Tcl_ObjCmdProc *proc;
 
@@ -4650,24 +5163,22 @@ PictureInstCmdDeletedProc(ClientData clientData) /* Pointer to record. */
  * PictureLoadOp --
  *
  *	Loads the dynamic library representing the converters for the named
- *	format.  Designed to be called by "package require", not directly by the
- *	user.
+ *	format.  Designed to be called by "package require", not directly
+ *	by the user.
  *	
  * Results:
- *	A standard TCL result.  Return TCL_OK is the converter was successfully
- *	loaded, TCL_ERROR otherwise.
+ *	A standard TCL result.  Return TCL_OK is the converter was
+ *	successfully loaded, TCL_ERROR otherwise.
  *
- * blt::datatable load fmt libpath lib
+ * 
+ *      blt::datatable load fmt libPath lib
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
-PictureLoadOp(
-    ClientData clientData,		/* Not used. */
-    Tcl_Interp *interp,
-    int objc,				/* Not used. */
-    Tcl_Obj *const *objv)
+PictureLoadOp(ClientData clientData, Tcl_Interp *interp, int objc,
+              Tcl_Obj *const *objv)
 {
     Blt_HashEntry *hPtr;
     Tcl_DString lib;

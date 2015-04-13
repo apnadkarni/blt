@@ -202,14 +202,12 @@ The following operations are available for the **blt::paintbrush** command:
   **-colorscale** *scale*
 
     Specifies the scale when interpolating values. *Scale* can be "linear",
-    "logarithmic", or "atan".
+    or "logarithmic"".
 
     **linear**
 	Colors are interpolated on a linear scale between 0.0 and 1.0.
     **logarithmic**
 	Colors are interpolated using the log of the value.
-    **atan**
-	Colors are interpolated using the arctangent of the value.
     
   **-decreasing**
 
@@ -307,14 +305,12 @@ The following operations are available for the **blt::paintbrush** command:
   **-colorscale** *scale*
 
     Specifies the scale when interpolating values. *Scale* can be "linear",
-    "logarithmic", or "atan".
+    or "logarithmic"".
 
     **linear**
 	Colors are interpolated on a linear scale between 0.0 and 1.0.
     **logarithmic**
 	Colors are interpolated using the log of the value.
-    **atan**
-	Colors are interpolated using the arctangent of the value.
     
   **-decreasing**
 
@@ -437,14 +433,12 @@ The following operations are available for the **blt::paintbrush** command:
   **-colorscale** *scale*
 
     Specifies the scale when interpolating values. *Scale* can be "linear",
-    "logarithmic", or "atan".
+    or "logarithmic"".
 
     **linear**
 	Colors are interpolated on a linear scale between 0.0 and 1.0.
     **logarithmic**
 	Colors are interpolated using the log of the value.
-    **atan**
-	Colors are interpolated using the arctangent of the value.
     
   **-decreasing**
 

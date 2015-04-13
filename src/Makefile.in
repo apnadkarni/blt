@@ -690,6 +690,7 @@ BLT_TCL_HEADERS = \
 BLT_TK_INT_HEADERS = \
 		$(srcdir)/bltTkInt.h \
 		$(srcdir)/bltFont.h \
+		$(srcdir)/bltPaintBrush.h \
 		$(srcdir)/bltBg.h \
 		$(srcdir)/bltBind.h \
 		$(srcdir)/bltAfm.h \
@@ -707,19 +708,23 @@ build-tcl-stubs:
 	$(RM) bltTclInt.decls bltTcl.decls
 	tclsh $(srcdir)/bltdecls.tcl -interface bltTclInt -- \
 		$(BLT_TCL_INT_HEADERS)
-	tclsh $(srcdir)/bltprocs.tcl /tmp bltTclInt.decls
+	tclsh $(srcdir)/bltprocs.tcl -module Tcl -- \
+		bltTclInt.decls
 	tclsh $(srcdir)/bltdecls.tcl -interface bltTcl -hooks bltTclInt -- \
 		$(BLT_TCL_HEADERS)
-	tclsh $(srcdir)/bltprocs.tcl /tmp bltTcl.decls
+	tclsh $(srcdir)/bltprocs.tcl -module Tcl  -hook bltTclIntProcs -- \
+		bltTcl.decls
 
 build-tk-stubs:
 	$(RM) bltTkInt.decls bltTk.decls
 	tclsh $(srcdir)/bltdecls.tcl -interface bltTkInt -- \
 		$(BLT_TK_INT_HEADERS)
-	tclsh $(srcdir)/bltprocs.tcl /tmp bltTkInt.decls
+	tclsh $(srcdir)/bltprocs.tcl -module Tk -- \
+		bltTkInt.decls
 	tclsh $(srcdir)/bltdecls.tcl -interface bltTk -hooks bltTkInt -- \
 		$(BLT_TK_HEADERS)
-	tclsh $(srcdir)/bltprocs.tcl /tmp bltTk.decls
+	tclsh $(srcdir)/bltprocs.tcl -module Tk -hook bltTkIntProcs -- \
+		bltTk.decls
 
 install: install-demos install-libs install-headers install-packages
 

@@ -825,10 +825,6 @@ BlendRegion(Pict *destPtr, Pict *srcPtr, int sx, int sy, int w, int h,
     }
 }
 
-#ifdef notdef
-((uint8)((B == 0) ? B:max(0, (255 - ((255 - A) << 8 ) / B))))
-#endif
-
 static INLINE int
 ColorBurn(int src, int dst)
 {
@@ -843,10 +839,6 @@ ColorBurn(int src, int dst)
     }
     return c;
 }
-
-#ifdef notdef
-((uint8)((B == 255) ? B:min(255, ((A << 8 ) / (255 - B)))))
-#endif
 
 /* 
  * r = dst / (1 - src);
@@ -975,10 +967,6 @@ SoftLight2(int src, int dst)
 }
                                             
 
-#ifdef notef
-((uint8)(B < 128)?ChannelBlend_ColorBurn(A,(2 * B)):ChannelBlend_ColorDodge(A,(2 * (B - 128))))
-#endif
-
 static INLINE int
 VividLight(int src, int dst)
 {
@@ -1071,7 +1059,7 @@ Exclusion(int src, int dst)
 
 
 static void
-BlendRegionArea2(
+ColorBlendRegion(
     Pict *destPtr,			/* (in/out) Background picture.
 					 * Composite overwrites region in
 					 * background. */
@@ -1474,10 +1462,10 @@ BlendRegionArea2(
 }
 
 void
-Blt_BlendPicturesByMode(Pict *destPtr, Pict *srcPtr, Blt_BlendingMode mode)
+Blt_ColorBlendPictures(Pict *destPtr, Pict *srcPtr, Blt_BlendingMode mode)
 {
-    BlendRegionArea2(destPtr, srcPtr, mode, 0, 0, srcPtr->width, 
-	srcPtr->height, 0, 0);
+    ColorBlendRegion(destPtr, srcPtr, mode, 0, 0, srcPtr->width, 
+                     srcPtr->height, 0, 0);
 }
 
 /*
@@ -3375,10 +3363,8 @@ Blt_FadePictureWithGradient(Pict *srcPtr, PictFadeSettings *settingsPtr)
 	    
 	    /* 1..0 */
 	    t = 1.0 - ((double)y / (srcPtr->height - 1));
-	    if (settingsPtr->logScale) {
+	    if (settingsPtr->scale == SCALE_LOG) {
 		t = log10(9.0 * t + 1.0);
-	    } else if (settingsPtr->atanScale) {
-		t = atan(18.0 * (t-0.05) + 1.0) / M_PI_2;
 	    }
 	    alpha = settingsPtr->low + 
 		(int)(((settingsPtr->high - settingsPtr->low) * t) + 0.5);
@@ -6903,4 +6889,323 @@ Blt_EmbossPicture(
     return destPtr;
 }
 #endif
+
+
+/* A Digital Dissolve Effect
+   by Mike Morton
+   from "Graphics Gems", Academic Press, 1990
+
+   user must provide copy() function.
+*/
+
+/*
+ * Code fragment to advance from one element to the next.
+ *
+ * int reg;				current sequence element
+ * reg = 1;				start in any non-zero state
+ * if (reg & 1)				is the bottom bit set?
+ * 	reg = (reg >>1) ^ MASK;		yes: toss out 1 bit; XOR in mask
+ * else reg = reg >>1;			no: toss out 0 bit 
+ */
+
+static size_t randMasks[32] = {
+    /* Mask				Bit Width	Maximum */ 
+    0x0,				/* 1			*/
+    0x03,				/* 2		      3 */
+    0x06,				/* 3		      7 */
+    0x0C,				/* 4		     15 */
+    0x14,				/* 5		     31 */
+    0x30,				/* 6		     63 */
+    0x60,				/* 7		    127 */
+    0xB8,				/* 8		    255 */
+    0x0110,				/* 9,		    511 */
+    0x0240,				/* 10,		   1023 */
+    0x0500,				/* 11,		   2047 */
+    0x0CA0,				/* 12		   4095 */
+    0x1B00,				/* 13		   8191 */
+    0x3500,				/* 14		  16383 */
+    0x6000,				/* 15		  32767 */
+    0xB400,				/* 16		  65535 */
+    0x00012000,				/* 17		 131071 */
+    0x00020400,				/* 18		 262143 */
+    0x00072000,				/* 19		 524287 */
+    0x00090000,				/* 20		1048575 */
+    0x00140000,				/* 21		2097151 */
+    0x00300000,				/* 22		4194303 */
+    0x00400000,				/* 23		8388607 */
+    0x00D80000,				/* 24	       16777215 */
+    0x01200000,				/* 25	       33554431 */
+    0x03880000,				/* 26	       67108863 */
+    0x07200000,				/* 27	      134217747 */
+    0x09000000,				/* 28	      268435455 */
+    0x14000000,				/* 29	      536870911 */
+    0x32800000,				/* 30	     1073741823 */
+    0x48000000,				/* 31	     2147483647 */
+    0xA3000000,				/* 32	     4294967295 */
+};
+    
+/* Computes the number of bits needed for mask of n elements. */
+static int
+BitWidth(size_t n)	       /* find "bit-width" needed to represent N */
+{
+    int width = 0;		/* initially, no bits needed to represent N */
+
+    while (n != 0) {		/* loop 'til N has been whittled down to 0 */
+	n >>= 1;		/* shift N right 1 bit (NB: N is unsigned) */
+	width++;		/* and remember how wide N is */
+    }				/* end of loop shrinking N down to nothing */
+    return width;		/* return bit positions counted */
+} 
+
+/* Fast version of the dissolve algorithm */
+int
+Blt_Dissolve2(Pict *destPtr, Pict *srcPtr, long start, int numSteps) 
+{
+    int rowWidth2, colWidth2;		/* Bit width of rows and columns */
+    int regWidth;			/* "width" of sequence generator */
+    long mask;				/* Mask to XOR with to create
+					 * sequence */
+    int rowShift;			/* Shift distance to get row from
+					 * element */
+    int colMask;			/* Mask to extract column from
+					 * element */
+    size_t element;			/* One element of random
+					 * sequence */
+    long count;
+
+    count = (srcPtr->height * srcPtr->width) / numSteps;
+    
+    /* Find the mask to produce all rows and columns. */
+    rowWidth2 = BitWidth(srcPtr->height); 
+    colWidth2 = BitWidth(srcPtr->width);  
+    regWidth = rowWidth2 + colWidth2;  
+
+    mask = randMasks[regWidth - 1];		
+
+    /* Find values to extract row and col numbers from each element. */
+    rowShift = colWidth2;	     
+    colMask = (1 << colWidth2) - 1; 
+
+    /* bottom bits (col) */
+
+    /* Now cycle through all sequence elements. */
+    element = start;			/* 1st element (could be any
+					 * nonzero) */
+    while (count >= 0) {
+	size_t x, y;
+	
+	x = element >> rowShift;
+	y = element & colMask;
+	if ((y < srcPtr->height) && (x < srcPtr->width))	{
+            Blt_Pixel *sp, *dp;
+            
+            sp = Blt_Picture_Pixel(srcPtr, x, y);
+            dp = Blt_Picture_Pixel(destPtr, x, y);
+            dp->u32 = sp->u32;
+            count--;
+	}
+	/* Compute the next sequence element */
+	if (element & 1) {		
+	    element = (element >>1) ^ mask; 
+	} else {
+	    element = (element >>1);	
+	}
+        if (element == 1) {
+            element = 0;
+            break;
+        }
+    } 
+    {
+        Blt_Pixel *sp, *dp;
+            
+        sp = Blt_Picture_Pixel(srcPtr, 0, 0);
+        dp = Blt_Picture_Pixel(destPtr, 0, 0);
+        dp->u32 = sp->u32;
+    }
+    return element;
+}				 
+
+/* Crossfade from into to leaving result in destination */
+void
+Blt_CrossFade(Pict *destPtr, Pict *fromPtr, Pict *toPtr, double opacity) 
+{
+    int alpha, beta;
+    Blt_Pixel *fromRowPtr, *toRowPtr, *destRowPtr;
+    int y;
+
+    alpha = (int)(opacity * 255);
+    beta = alpha ^ 0xFF; /* beta = 1 - alpha */
+
+    fromRowPtr = fromPtr->bits;
+    toRowPtr = toPtr->bits;
+    destRowPtr = destPtr->bits;
+    for (y = 0; y < destPtr->height; y++) {
+	Blt_Pixel *sp1, *sp2, *dp, *send;
+
+	sp1 = fromRowPtr, sp2 = toRowPtr, dp = destRowPtr;
+	for (send = sp1 + destPtr->width; sp1 < send; sp1++, sp2++, dp++) {
+            int r, g, b, t1, t2;
+            
+            r = imul8x8(beta, sp1->Red, t1) + imul8x8(alpha, sp2->Red, t2);
+            g = imul8x8(beta, sp1->Green, t1) + imul8x8(alpha, sp2->Green, t2);
+            b = imul8x8(beta, sp1->Blue, t1) + imul8x8(alpha, sp2->Blue, t2);
+            dp->Red   = UCLAMP(r);
+            dp->Green = UCLAMP(g);
+            dp->Blue  = UCLAMP(b);
+            dp->Alpha = 0xFF;
+	}
+	fromRowPtr += fromPtr->pixelsPerRow;
+	toRowPtr   += toPtr->pixelsPerRow;
+	destRowPtr += destPtr->pixelsPerRow;
+    }
+}				 
+
+/* Crossfade from into to leaving result in destination */
+void
+Blt_FadeToColor(Pict *destPtr, Pict *fromPtr, Blt_Pixel *colorPtr,
+                double opacity) 
+{
+    int alpha, beta;
+    Blt_Pixel *fromRowPtr, *destRowPtr;
+    int y;
+    Blt_Pixel color;
+    int t;
+    
+    alpha = (int)(opacity * 255);
+    beta = alpha ^ 0xFF; /* beta = 1 - alpha */
+
+    fromRowPtr = fromPtr->bits;
+    destRowPtr = destPtr->bits;
+    color.Red = imul8x8(alpha, colorPtr->Red, t);
+    color.Green = imul8x8(alpha, colorPtr->Green, t);
+    color.Blue = imul8x8(alpha, colorPtr->Blue, t);
+    for (y = 0; y < destPtr->height; y++) {
+	Blt_Pixel *sp, *dp, *send;
+
+	sp = fromRowPtr, dp = destRowPtr;
+	for (send = sp + destPtr->width; sp < send; sp++, dp++) {
+            int r, g, b, t;
+            
+            r = imul8x8(beta, sp->Red, t) + color.Red;
+            g = imul8x8(beta, sp->Green, t) + color.Blue;
+            b = imul8x8(beta, sp->Blue, t) + color.Green;
+            dp->Red   = UCLAMP(r);
+            dp->Green = UCLAMP(g);
+            dp->Blue  = UCLAMP(b);
+            dp->Alpha = 0xFF;
+	}
+	fromRowPtr += fromPtr->pixelsPerRow;
+	destRowPtr += destPtr->pixelsPerRow;
+    }
+}				 
+
+/* Crossfade from into to leaving result in destination */
+void
+Blt_FadeFromColor(Pict *destPtr, Pict *toPtr, Blt_Pixel *colorPtr,
+                  double opacity) 
+{
+    int alpha, beta;
+    Blt_Pixel *toRowPtr, *destRowPtr;
+    int y;
+    Blt_Pixel color;
+    int t;
+    
+    alpha = (int)(opacity * 255);
+    beta = alpha ^ 0xFF; /* beta = 1 - alpha */
+
+    toRowPtr = toPtr->bits;
+    destRowPtr = destPtr->bits;
+    color.Red = imul8x8(beta, colorPtr->Red, t);
+    color.Green = imul8x8(beta, colorPtr->Green, t);
+    color.Blue = imul8x8(beta, colorPtr->Blue, t);
+    for (y = 0; y < destPtr->height; y++) {
+	Blt_Pixel *sp, *dp, *send;
+
+	sp = toRowPtr, dp = destRowPtr;
+	for (send = sp + destPtr->width; sp < send; sp++, dp++) {
+            int r, g, b, t;
+            
+            r = color.Red + imul8x8(alpha, sp->Red, t);
+            g = color.Green + imul8x8(alpha, sp->Green, t);
+            b = color.Blue + imul8x8(alpha, sp->Blue, t);
+            dp->Red   = UCLAMP(r);
+            dp->Green = UCLAMP(g);
+            dp->Blue  = UCLAMP(b);
+            dp->Alpha = 0xFF;
+	}
+	toRowPtr += toPtr->pixelsPerRow;
+	destRowPtr += destPtr->pixelsPerRow;
+    }
+}				 
+
+void
+Blt_WipePictures(Pict *destPtr, Pict *fromPtr, Pict *toPtr, int direction,
+                 double position) 
+{
+    switch (direction) {
+    case TK_ANCHOR_E:
+        {
+            int x;
+            
+            x = (int)(position * (fromPtr->width - 1));
+            if (x >= fromPtr->width) {
+                x = fromPtr->width;
+            } else if (x < 0) {
+                x = 0;
+            }
+            Blt_CopyPictureBits(destPtr, toPtr, 0, 0, x, fromPtr->height, 0, 0);
+            Blt_CopyPictureBits(destPtr, fromPtr, x, 0, fromPtr->width - x,
+                                fromPtr->height, x, 0);
+        }
+        break;
+
+    case TK_ANCHOR_W:
+        {
+            int x;
+            
+            x = (int)((1 - position) * (fromPtr->width - 1));
+            if (x >= fromPtr->width) {
+                x = fromPtr->width;
+            } else if (x < 0) {
+                x = 0;
+            }
+            Blt_CopyPictureBits(destPtr, fromPtr, 0, 0, x, fromPtr->height, 0,0);
+            Blt_CopyPictureBits(destPtr, toPtr, x, 0, fromPtr->width - x,
+                                fromPtr->height, x, 0);
+        }
+        break;
+
+    case TK_ANCHOR_N:
+        {
+            int y;
+            
+            y = (int)((1 - position) * (fromPtr->height - 1));
+            if (y >= fromPtr->width) {
+                y = fromPtr->width;
+            } else if (y < 0) {
+                y = 0;
+            }
+            Blt_CopyPictureBits(destPtr, fromPtr, 0, 0, fromPtr->width, y, 0, 0);
+            Blt_CopyPictureBits(destPtr, toPtr, 0, y, fromPtr->width,
+                                fromPtr->height - y, 0, y);
+        }
+        break;
+
+    case TK_ANCHOR_S:
+        {
+            int y;
+            
+            y = (int)(position * (fromPtr->height - 1));
+            if (y >= fromPtr->width) {
+                y = fromPtr->width;
+            } else if (y < 0) {
+                y = 0;
+            }
+            Blt_CopyPictureBits(destPtr, fromPtr, 0, 0, fromPtr->width, y, 0, 0);
+            Blt_CopyPictureBits(destPtr, toPtr, 0, y, fromPtr->width,
+                                fromPtr->height - y, 0, y);
+        }
+        break;
+    }
+}				 
 

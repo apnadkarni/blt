@@ -116,10 +116,6 @@ typedef struct {
     double value;
 } Tick;
 
-typedef enum  _AxisScaleType {
-    SCALE_LINEAR, SCALE_LOG, SCALE_TIME, SCALE_CUSTOM
-}  AxisScaleType;
-
 #define IsLogScale(axisPtr) ((axisPtr)->scale == SCALE_LOG)
 #define IsTimeScale(axisPtr) ((axisPtr)->scale == SCALE_TIME)
 
@@ -137,7 +133,7 @@ typedef struct {
     double initial;			/* Initial value */
     double step;                        /* Size of interval */
     double range;                       /* Range of entire sweep. */
-    AxisScaleType scaleType;            /* Scale type. */
+    ScaleType scaleType;                /* Scale type. */
     time_t numDaysFromInitial;          /* Number of days from the initial
 					 * tick. */
     int numSteps;			/* Number of intervals. */
@@ -191,7 +187,7 @@ struct _Axis {
     const char *detail;
     int refCount;                       /* Number of elements referencing
 					 * this axis. */
-    AxisScaleType scale;                /* How to scale the axis: linear,
+    ScaleType scale;                    /* How to scale the axis: linear,
 					 * logrithmic, or time. */
     int decreasing;			/* If non-zero, display the range
 					 * of values on the axis in

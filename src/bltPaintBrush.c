@@ -493,7 +493,7 @@ static Blt_PaintBrushClass conicalGradientBrushClass = {
 
 
 #define COLOR_SCALING_MASK \
-        (BLT_PAINTBRUSH_SCALING_LINEAR|BLT_PAINTBRUSH_SCALING_LOG|BLT_PAINTBRUSH_SCALING_ATAN)
+        (BLT_PAINTBRUSH_SCALING_LINEAR|BLT_PAINTBRUSH_SCALING_LOG)
 
 /* 
  * Quick and dirty random number generator. 
@@ -1047,7 +1047,7 @@ PaletteToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  * ObjToColorScaling --
  *
  *	Translates the given string to the gradient scale it represents.  
- *	Valid scales are "linear", "log", "atan".
+ *	Valid scales are "linear" or "logarithmic".
  *
  * Results:
  *	A standard TCL result.  If successful the field in the structure
@@ -1074,11 +1074,9 @@ ObjToColorScaling(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
     } else if ((c == 'l') && (length > 2) && 
 	       (strncmp(string, "logarithmic", length) == 0)) {
 	flag = BLT_PAINTBRUSH_SCALING_LOG;
-    } else if ((c == 'a') && (strcmp(string, "atan") == 0)) {
-	flag = BLT_PAINTBRUSH_SCALING_ATAN;
     } else {
 	Tcl_AppendResult(interp, "unknown coloring scaling \"", string, "\"",
-                         ": should be linear, logarithmic or atan.",
+                         ": should be linear or logarithmic.",
 			 (char *)NULL);
 	return TCL_ERROR;
     }
@@ -1112,8 +1110,6 @@ ColorScalingToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
 	objPtr = Tcl_NewStringObj("linear", 6);         break;
     case BLT_PAINTBRUSH_SCALING_LOG:
 	objPtr = Tcl_NewStringObj("log", 3);            break;
-    case BLT_PAINTBRUSH_SCALING_ATAN:
-	objPtr = Tcl_NewStringObj("atan", 4);           break;
     default:
 	objPtr = Tcl_NewStringObj("???", 3);            break;
     }
@@ -1459,8 +1455,6 @@ LinearGradientBrushColorProc(Blt_PaintBrush brush, int x, int y)
     }
     if (gradPtr->flags & BLT_PAINTBRUSH_SCALING_LOG) {
 	t = log10(9.0 * t + 1.0);
-    } else if (gradPtr->flags & BLT_PAINTBRUSH_SCALING_ATAN) {
-	t = atan(18.0 * (t-0.05) + 1.0) / M_PI_2;
     } 
     if (gradPtr->flags & BLT_PAINTBRUSH_DECREASING) {
         t = 1.0 - t;
@@ -1899,8 +1893,6 @@ RadialGradientBrushColorProc(Blt_PaintBrush brush, int x, int y)
     }
     if (gradPtr->flags & BLT_PAINTBRUSH_SCALING_LOG) {
 	t = log10(9.0 * t + 1.0);
-    } else if (gradPtr->flags & BLT_PAINTBRUSH_SCALING_ATAN) {
-	t = atan(18.0 * (t-0.05) + 1.0) / M_PI_2;
     } 
     if (gradPtr->flags & BLT_PAINTBRUSH_DECREASING) {
         t = 1.0 - t;
@@ -2011,8 +2003,6 @@ ConicalGradientBrushColorProc(Blt_PaintBrush brush, int x, int y)
     }
     if (gradPtr->flags & BLT_PAINTBRUSH_SCALING_LOG) {
 	t = log10(9.0 * t + 1.0);
-    } else if (gradPtr->flags & BLT_PAINTBRUSH_SCALING_ATAN) {
-	t = atan(18.0 * (t-0.05) + 1.0) / M_PI_2;
     } 
     if (gradPtr->flags & BLT_PAINTBRUSH_DECREASING) {
         t = 1.0 - t;

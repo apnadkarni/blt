@@ -162,7 +162,7 @@ static Blt_ConfigSpec configSpecs[] =
 	DEF_BUSY_CURSOR, Blt_Offset(Busy, cursor), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_INT, "-darken", "darken", "Darken", DEF_BUSY_DARKEN, 
 	Blt_Offset(Busy, darken), 0},
-    {BLT_CONFIG_INT_NNEG, "-interval", "interval", "Interval", 
+    {BLT_CONFIG_INT_NNEG, "-delay", "delay", "Delay", 
 	DEF_BUSY_INTERVAL, Blt_Offset(Busy, interval), 0},
     {BLT_CONFIG_CUSTOM, "-image", "image", "Image", (char *)NULL, 
 	Blt_Offset(Busy, layer), BLT_CONFIG_NULL_OK, &pictImageOption},

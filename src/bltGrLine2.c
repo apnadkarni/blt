@@ -3485,12 +3485,14 @@ static void
 ReducePoints(MapInfo *mapPtr, double tolerance)
 {
     int i, np;
-    Point2d *screenPts;
+    Point2d *screenPts, *origPts;
     int *map, *simple;
 
     simple    = Blt_AssertMalloc(tracePtr->numPoints * sizeof(int));
     map	      = Blt_AssertMalloc(tracePtr->numPoints * sizeof(int));
     screenPts = Blt_AssertMalloc(tracePtr->numPoints * sizeof(Point2d));
+    origPts = Blt_AssertMalloc(tracePtr->numPoints * sizeof(Point2d));
+
     np = Blt_SimplifyLine(origPts, 0, tracePtr->numScreenPts - 1, 
 	tolerance, simple);
     for (i = 0; i < np; i++) {

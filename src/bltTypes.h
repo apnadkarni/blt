@@ -148,4 +148,17 @@ typedef struct {
 	(((x0) <= (int)((r)->x + (r)->width - 1)) && ((x0) >= (int)(r)->x) && \
 	 ((y0) <= (int)((r)->y + (r)->height - 1)) && ((y0) >= (int)(r)->y))
 
+/*
+ *----------------------------------------------------------------------
+ *
+ * ScaleType --
+ *
+ *      Type of scaling: linear, logarithmic, atan, time or custom.
+ *
+ *----------------------------------------------------------------------
+ */
+typedef enum  ScaleTypes {
+    SCALE_LINEAR, SCALE_LOG, SCALE_TIME, SCALE_CUSTOM
+} ScaleType;
+
 #endif /*_BLT_TYPES_H*/

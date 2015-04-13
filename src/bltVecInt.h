@@ -56,7 +56,7 @@ typedef struct {
     Blt_HashTable indexProcTable;
     Tcl_Interp *interp;
     unsigned int nextId;
-} VectorInterpData;
+} VectorCmdInterpData;
 
 /*
  * Vector --
@@ -101,7 +101,7 @@ typedef struct {
 				 * It points to the hash key allocated for the
 				 * entry in the vector hash table. */
 
-    VectorInterpData *dataPtr;
+    VectorCmdInterpData *dataPtr;
     Tcl_Interp *interp;		/* Interpreter associated with the
 				 * vector */
 
@@ -185,12 +185,12 @@ BLT_EXTERN void Blt_Vec_InstallMathFunctions(Blt_HashTable *tablePtr);
 
 BLT_EXTERN void Blt_Vec_UninstallMathFunctions(Blt_HashTable *tablePtr);
 
-BLT_EXTERN VectorInterpData *Blt_Vec_GetInterpData (Tcl_Interp *interp);
+BLT_EXTERN VectorCmdInterpData *Blt_Vec_GetInterpData (Tcl_Interp *interp);
 
 BLT_EXTERN double Blt_Vec_Max(Vector *vecObjPtr);
 BLT_EXTERN double Blt_Vec_Min(Vector *vecObjPtr);
 
-BLT_EXTERN Vector *Blt_Vec_New(VectorInterpData *dataPtr);
+BLT_EXTERN Vector *Blt_Vec_New(VectorCmdInterpData *dataPtr);
 
 BLT_EXTERN int Blt_Vec_Duplicate(Vector *destPtr, Vector *srcPtr);
 
@@ -204,7 +204,7 @@ BLT_EXTERN int Blt_Vec_ChangeLength(Tcl_Interp *interp, Vector *vPtr,
 	int length);
 
 BLT_EXTERN Vector *Blt_Vec_ParseElement(Tcl_Interp *interp, 
-	VectorInterpData *dataPtr, const char *start, const char **endPtr, 
+	VectorCmdInterpData *dataPtr, const char *start, const char **endPtr, 
 	int flags);
 
 BLT_EXTERN void Blt_Vec_Free(Vector *vPtr);
@@ -212,10 +212,10 @@ BLT_EXTERN void Blt_Vec_Free(Vector *vPtr);
 BLT_EXTERN void Blt_Vec_SortMap(Vector **vectors, int numVectors,
         size_t **mapPtr);
 
-BLT_EXTERN int Blt_Vec_LookupName(VectorInterpData *dataPtr, 
-	const char *vecName, Vector **vPtrPtr);
+BLT_EXTERN int Blt_Vec_Find(VectorCmdInterpData *dataPtr, const char *vecName,
+        Vector **vPtrPtr);
 
-BLT_EXTERN Vector *Blt_Vec_Create(VectorInterpData *dataPtr, 
+BLT_EXTERN Vector *Blt_Vec_Create(VectorCmdInterpData *dataPtr, 
 	const char *name, const char *cmdName, const char *varName, 
 	int *newPtr);
 
