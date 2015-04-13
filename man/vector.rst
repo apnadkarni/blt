@@ -660,11 +660,24 @@ the command.  The operations available for vectors are listed below.
   Resets the points of the vector to *item*. *Item* can be either a
   list of numbes or a vector name.
 
-*vecName* **simplify** 
+*vecName* **simplify** *x* *y* ?\ *tolerance*\ ?
 
   Reduces the number of points in the vector using the Douglas-Peucker line
-  simplification algorithm.
-  
+  simplification algorithm, first selecting a single line from start to end
+  and then finding the largest deviation from this straight line, and if it
+  is greater than *tolerance*, the point is added, splitting the original
+  line into two new line segments. This repeats recursively for each new
+  line segment created.  The indices of the reduces set of points is
+  returned.
+
+  X* and *y* are the names input vectors representing the curve to be
+  simplified.  The lengths of both vectors must be the same.  *Tolerance*
+  is a real number representing the tolerence. The default is "1.0".
+
+  Reference: David Douglas and Thomas Peucker, "Algorithms for the
+  reduction of the number of points required to represent a digitized line
+  or its caricature", The Canadian Cartographer 10(2), 112–122, 1973.
+   
 *vecName* **sort** ?\ *switches* ... ? ?\ *destName* ... ?
 
   Sorts the points of *vecName*. If one of more *destName* arguments are
@@ -694,6 +707,11 @@ the command.  The operations available for vectors are listed below.
    Returns a list of the values from the sorted points.  For each point
    the will be as many values as vectors. The points of *vecName* and
    *destName* are not rearranged.
+
+*vecName* **value get** *index* 
+
+  Returns the value at the point in the vector indexed by *index*. *Index*
+  is a vector index. 
 
 *vecName* **value set** *index* *value*
 
@@ -813,22 +831,21 @@ identified by the vector name.
   its clients. *DataArr* is the array of doubles which represents the
   vector data. *NumValues* is the number of elements in the
   array. *ArraySize* is the actual size of the array (the array may be
-  bigger than the number of values stored in it). *FreeProc* indicates
-  how the storage for the vector point array (*dataArr*) was allocated.
-  It is used to determine how to reallocate memory when the vector is
-  resized or destroyed.  It must be TCL_DYNAMIC,
-  TCL_STATIC, TCL_VOLATILE, or a pointer to a function to
-  free the memory allocated for the vector array. If *freeProc* is
-  TCL_VOLATILE, it indicates that *dataArr* must be copied and
-  saved.  If *freeProc* is TCL_DYNAMIC, it indicates that *dataArr*
-  was dynamically allocated and that TCL should free *dataArr* if
+  bigger than the number of values stored in it). *FreeProc* indicates how
+  the storage for the vector point array (*dataArr*) was allocated.  It is
+  used to determine how to reallocate memory when the vector is resized or
+  destroyed.  It must be TCL_DYNAMIC, TCL_STATIC, TCL_VOLATILE, or a
+  pointer to a function to free the memory allocated for the vector
+  array. If *freeProc* is TCL_VOLATILE, it indicates that *dataArr* must be
+  copied and saved.  If *freeProc* is TCL_DYNAMIC, it indicates that
+  *dataArr* was dynamically allocated and that TCL should free *dataArr* if
   necessary.  "Static" indicates that nothing should be done to release
   storage for *dataArr*.
 
-  Returns TCL_OK if the vector is successfully resized.  If
-  *newSize* is negative, a vector *vecName* does not exist, or memory
-  cannot be allocated for the vector, then TCL_ERROR is returned
-  and *interp->result* will contain an error message.
+  Returns TCL_OK if the vector is successfully resized.  If *newSize* is
+  negative, a vector *vecName* does not exist, or memory cannot be
+  allocated for the vector, then TCL_ERROR is returned and *interp->result*
+  will contain an error message.
 
 **Blt_ResizeVector**\ (Blt_Vector *\ *vecPtr*, int *newSize*)
 
