@@ -476,7 +476,7 @@ the command.  The operations available for vectors are listed below.
   **-frequencies** *vecName*
    Specifies the vector to store the frequencies of the transform.
 
-  Reference:  This was contributed by Andrea Spinelli (spinellia@acm.org).
+  Reference: This was contributed by Andrea Spinelli (spinellia@acm.org).
   
 *vecName* **frequency** *destName* *numBins*
 
@@ -529,6 +529,8 @@ the command.  The operations available for vectors are listed below.
   **-frequencies** *vecName*
    Specifies the vector to store the frequencies of the transform.
 
+  Reference: This was contributed by Andrea Spinelli (spinellia@acm.org).
+
 *vecName* **length** ?\ *newSize*\ ?
 
   Queries or resets the number of points in *vecName*.  *NewSize* is a
@@ -544,7 +546,7 @@ the command.  The operations available for vectors are listed below.
   representing the minumum and maximum values.  *NumSteps* is the number of
   points to generate.  *VecName* will be resized to *numSteps* points. If
   no *numSteps* argument is given, then the length of *vecName* is used as
-  the number of points.
+  the number of points. 
   
 *vecName* **maximum**
 
@@ -596,20 +598,21 @@ the command.  The operations available for vectors are listed below.
   **pending**
    Returns "1" if a client notification is pending, and "0" otherwise.
 
-*vecName* **offset** ?\ *value*\ ?
+*vecName* **offset** ?\ *count*\ ?
 
-  Shifts the indices of the vector by the amount specified by *value*.
-  *Value* is an integer number.  If no *value* argument is 
+  Offsets the indices of the vector by the amount specified by *count*.
+  *Count* is an integer number.  For example if *count* is "-5", the index
+  of the first point in the vector is "-5".  If no *count* argument is
   given, the current offset is returned.
 
 *vecName* **populate** *destName* ?\ *density*\ ?
 
   Creates a vector *destName* which is a superset of *vecName*.  *DestName*
   will include all the points of *vecName*, in addition the interval
-  between each of the original points will contain a *density* number
-  of new points, whose values are evenly distributed between the
-  original points values.  This is useful for generating abscissas to
-  be interpolated along a spline.
+  between each of the original points will contain a *density* number of
+  new points, whose values are evenly distributed between the original
+  points values.  This is useful for generating abscissas to be
+  interpolated along a spline.
 
 *vecName* **print** *fmtString* ?\ *switches* ... ?
 
