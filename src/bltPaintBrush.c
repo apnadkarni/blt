@@ -2173,7 +2173,9 @@ Blt_NewLinearGradientBrush()
     brushPtr->classPtr = &linearGradientBrushClass;
     brushPtr->refCount = 1;
     brushPtr->alpha = 0xFF;
-    brushPtr->to.x = 1.0;
+    brushPtr->from.x = 0.5;
+    brushPtr->from.y = 0.0;
+    brushPtr->to.x = 0.5;
     brushPtr->to.y = 1.0;
     JitterInit(&brushPtr->jitter);
     return (Blt_PaintBrush)brushPtr;

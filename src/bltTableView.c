@@ -12089,6 +12089,7 @@ AddColumnsWhenIdleProc(ClientData clientData)
     long i;
     unsigned long count, oldNumColumns, newNumColumns;
 
+    viewPtr->flags &= ~COLUMNS_PENDING;
     if (viewPtr->flags & COLUMNS_DELETED) {
 	Tcl_CancelIdleCall(DeleteColumnsWhenIdleProc, viewPtr);
 	DeleteColumnsWhenIdleProc(viewPtr);
@@ -12204,13 +12205,14 @@ AddRowsWhenIdleProc(ClientData clientData)
     long i;
     unsigned long count, newNumRows, oldNumRows;
 
+    viewPtr->flags &= ~ROWS_PENDING;
     if (viewPtr->flags & ROWS_DELETED) {
 	Tcl_CancelIdleCall(DeleteRowsWhenIdleProc, viewPtr);
 	DeleteRowsWhenIdleProc(viewPtr);
     }
     oldNumRows = viewPtr->numRows;
     newNumRows = blt_table_num_rows(viewPtr->table);
-    assert(newNumRows > oldNumRows);
+    assert(newNumRows >= oldNumRows);
     viewPtr->rows = Blt_AssertRealloc(viewPtr->rows, sizeof(Row *)*newNumRows);
     count = oldNumRows;
     for (i = 0; i < newNumRows; i++) {
