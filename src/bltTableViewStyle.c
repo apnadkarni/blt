@@ -2697,7 +2697,7 @@ TextBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
 
     /* Draw the focus ring if this cell has focus. */
     if ((viewPtr->flags & FOCUS) && (viewPtr->focusPtr == cellPtr)) {
-	XDrawRectangle(viewPtr->display, drawable, gc, x+2, y+2, colWidth - 5, 
+	XDrawRectangle(viewPtr->display, drawable, gc, x+1, y+1, colWidth - 4, 
 		       rowHeight - 4);
     }
     x += CELL_PADX + FOCUS_PAD;
@@ -3208,7 +3208,7 @@ CheckBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
 
     /* Draw the focus ring if this cell has focus. */
     if ((viewPtr->flags & FOCUS) && (viewPtr->focusPtr == cellPtr)) {
-	XDrawRectangle(viewPtr->display, drawable, gc, x+2, y+2, colWidth - 5, 
+	XDrawRectangle(viewPtr->display, drawable, gc, x+1, y+1, colWidth - 4, 
 		       rowHeight - 4);
     }
     x += CELL_PADX + FOCUS_PAD;
@@ -3455,8 +3455,8 @@ NewComboBoxStyle(TableView *viewPtr, Blt_HashEntry *hPtr)
     stylePtr->classPtr = &comboBoxStyleClass;
     stylePtr->viewPtr = viewPtr;
     stylePtr->gap = STYLE_GAP;
-    stylePtr->arrowRelief = TK_RELIEF_SOLID;
-    stylePtr->activeRelief = TK_RELIEF_SOLID;
+    stylePtr->arrowRelief = TK_RELIEF_RAISED;
+    stylePtr->activeRelief = TK_RELIEF_RAISED;
     stylePtr->arrowBW = 1;
     stylePtr->arrowWidth = ARROW_WIDTH;
     stylePtr->borderWidth = 1;
@@ -3788,7 +3788,7 @@ ComboBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
 
     /* Draw the focus ring if this cell has focus. */
     if ((viewPtr->flags & FOCUS) && (viewPtr->focusPtr == cellPtr)) {
-	XDrawRectangle(viewPtr->display, drawable, gc, x+2, y+2, colWidth - 5, 
+	XDrawRectangle(viewPtr->display, drawable, gc, x+1, y+1, colWidth - 4, 
 		       rowHeight - 4);
     }
     x += CELL_PADX + FOCUS_PAD;
@@ -4324,7 +4324,7 @@ ImageBoxStyleDrawProc(Cell *cellPtr, Drawable drawable, CellStyle *cellStylePtr,
 
     /* Draw the focus ring if this cell has focus. */
     if ((viewPtr->flags & FOCUS) && (viewPtr->focusPtr == cellPtr)) {
-	XDrawRectangle(viewPtr->display, drawable, gc, x+2, y+2, colWidth - 5, 
+	XDrawRectangle(viewPtr->display, drawable, gc, x+1, y+1, colWidth - 4, 
 		       rowHeight - 4);
     }
 
@@ -4772,7 +4772,7 @@ PushButtonStyleDrawProc(Cell *cellPtr, Drawable drawable,
 
     /* Draw the focus ring if this cell has focus. */
     if ((viewPtr->flags & FOCUS) && (viewPtr->focusPtr == cellPtr)) {
-	XDrawRectangle(viewPtr->display, drawable, gc, x+2, y+2, colWidth - 5, 
+	XDrawRectangle(viewPtr->display, drawable, gc, x+1, y+1, colWidth - 4, 
 		       rowHeight - 4);
     }
 

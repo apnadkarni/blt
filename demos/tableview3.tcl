@@ -259,7 +259,7 @@ blt::tk::scrollbar $view.menu.ybar
 $view.menu add -text directory -value directory
 $view.menu add -text file -value file
 
-#$view column configure type -style combo 
+$view column configure type -style combo 
 
 $view filter configure -menu $view.filter 
 
