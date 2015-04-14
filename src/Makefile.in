@@ -766,7 +766,6 @@ install-packages: $(blt_tcl_pkg_so) $(blt_tk_pkg_so) $(blt_tcl_pkgs) $(blt_tk_pk
 install-headers:
 	$(INSTALL) -d $(DESTDIR)$(incdir)
 	for i in $(headers) ; do \
-	    $(RM) $(DESTDIR)$(incdir)/$$i ; \
 	    $(INSTALL_DATA) -m 0444 $$i $(DESTDIR)$(incdir) ; \
 	done
 

@@ -1163,21 +1163,11 @@ proc blt::TableView::BuildFiltersMenu { w col } {
             -icon $_private(icon) \
             -style mystyle \
             -command [list blt::TableView::Top10ByFrequencyFilter $w] 
-    } 
-    set bot10 $menu.bot10
-    if { ![winfo exists $bot10] } {
-        blt::combomenu $bot10 \
-            -textvariable blt::TableView::_private(textvariable) \
-            -iconvariable blt::TableView::_private(iconvariable) \
-            -command [list blt::TableView::UpdateFilter $w]
-        if { ![$bot10 style exists mystyle] } {
-            $bot10 style create mystyle -font "Arial 9 italic"
-        }
-        $bot10 add -text "Bottom 10 by value" \
+        $top10 add -text "Bottom 10 by value" \
             -icon $_private(icon) \
             -style mystyle \
             -command [list blt::TableView::Bottom10ByValueFilter $w] 
-        $bot10 add -text "Bottom 10 by frequency" \
+        $top10 add -text "Bottom 10 by frequency" \
             -icon $_private(icon) \
             -style mystyle \
             -command [list blt::TableView::Bottom10ByFrequencyFilter $w] 
@@ -1209,10 +1199,6 @@ proc blt::TableView::BuildFiltersMenu { w col } {
         -icon $_private(icon)
     $menu add -type cascade -text "Top 10" \
         -menu $top10 \
-        -style mystyle \
-        -icon $_private(icon)
-    $menu add -type cascade -text "Bottom 10" \
-        -menu $bot10 \
         -style mystyle \
         -icon $_private(icon)
     $menu add -type cascade -text "Custom" \
