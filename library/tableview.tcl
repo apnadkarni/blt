@@ -1412,9 +1412,9 @@ proc blt::TableView::ApplyFilters { w } {
     set table [$w cget -table]
     set rows [GetColumnFilterRows $w -1]
     if { $rows == "@all" } {
-        eval $w row expose all
+        eval $w row expose @all
     } else {
-        eval $w row hide all
+        eval $w row hide @all
         eval $w row expose $rows
     }
 }
@@ -1587,6 +1587,9 @@ proc blt::TableView::EqualsNumberSearch { w } {
     blt::tk::button $f.cancel \
         -text "Cancel" \
         -command { set blt::TableView::_private(search) 0 }
+    bind $f.entry <KeyPress-Return> {
+        set blt::TableView::_private(search) 1
+    }
     blt::table $f \
         0,0 $f.label -cspan 2 -anchor w -pady 4 \
         1,0 $f.entry -cspan 2 -fill x -padx 0.1i \
@@ -1647,6 +1650,9 @@ proc blt::TableView::NotEqualsNumberSearch { w } {
     blt::tk::button $f.cancel \
         -text "Cancel" \
         -command { set blt::TableView::_private(search) 0 }
+    bind $f.entry <KeyPress-Return> {
+        set blt::TableView::_private(search) 1
+    }
     blt::table $f \
         0,0 $f.label -cspan 2 -anchor w -pady 4 \
         1,0 $f.entry -cspan 2 -fill x -padx 0.1i \
@@ -1703,6 +1709,9 @@ proc blt::TableView::GreaterThanNumberSearch { w } {
     blt::tk::button $f.cancel \
         -text "Cancel" \
         -command { set blt::TableView::_private(search) 0 }
+    bind $f.entry <KeyPress-Return> {
+        set blt::TableView::_private(search) 1
+    }
     blt::table $f \
         0,0 $f.label -cspan 2 -anchor w -pady 4 \
         1,0 $f.entry -cspan 2 -fill x -padx 0.1i \
@@ -1749,6 +1758,9 @@ proc blt::TableView::GreaterThanOrEqualToNumberSearch { w } {
     blt::tk::button $f.cancel \
         -text "Cancel" \
         -command { set blt::TableView::_private(search) 0 }
+    bind $f.entry <KeyPress-Return> {
+        set blt::TableView::_private(search) 1
+    }
     blt::table $f \
         0,0 $f.label -cspan 2 -anchor w -pady 4 \
         1,0 $f.entry -cspan 2 -fill x -padx 0.1i \
@@ -1796,6 +1808,9 @@ proc blt::TableView::LessThanNumberSearch { w } {
     blt::tk::button $f.cancel \
         -text "Cancel" \
         -command { set blt::TableView::_private(search) 0 }
+    bind $f.entry <KeyPress-Return> {
+        set blt::TableView::_private(search) 1
+    }
     blt::table $f \
         0,0 $f.label -cspan 2 -anchor w -pady 4 \
         1,0 $f.entry -cspan 2 -fill x -padx 0.1i \
@@ -1843,6 +1858,9 @@ proc blt::TableView::LessThanOrEqualToNumberSearch { w } {
     blt::tk::button $f.cancel \
         -text "Cancel" \
         -command { set blt::TableView::_private(search) 0 }
+    bind $f.entry <KeyPress-Return> {
+        set blt::TableView::_private(search) 1
+    }
     blt::table $f \
         0,0 $f.label -cspan 2 -anchor w -pady 4 \
         1,0 $f.entry -cspan 2 -fill x -padx 0.1i \
@@ -1963,6 +1981,9 @@ proc blt::TableView::EqualsTextSearch { w } {
     blt::tk::button $f.cancel \
         -text "Cancel" \
         -command { set blt::TableView::_private(search) 0 } 
+    bind $f.entry <KeyPress-Return> {
+        set blt::TableView::_private(search) 1
+    }
     blt::table $f \
         0,0 $f.label -cspan 2 -anchor w -pady 4 \
         1,0 $f.entry -cspan 2 -fill x -padx 0.1i \
@@ -2035,6 +2056,9 @@ proc blt::TableView::NotEqualsTextSearch { w } {
     blt::tk::button $f.cancel \
         -text "Cancel" \
         -command { set blt::TableView::_private(search) 0 }
+    bind $f.entry <KeyPress-Return> {
+        set blt::TableView::_private(search) 1
+    }
     blt::table $f \
         0,0 $f.label -cspan 2 -anchor w -pady 4 \
         1,0 $f.entry -cspan 2 -fill x -padx 0.1i \
@@ -2104,6 +2128,9 @@ proc blt::TableView::BeginsWithTextSearch { w } {
     blt::tk::button $f.cancel \
         -text "Cancel" \
         -command { set blt::TableView::_private(search) 0 }
+    bind $f.entry <KeyPress-Return> {
+        set blt::TableView::_private(search) 1
+    }
     blt::table $f \
         0,0 $f.label -cspan 2 -anchor w -pady 4 \
         1,0 $f.entry -cspan 2 -fill x -padx 0.1i \
@@ -2170,6 +2197,9 @@ proc blt::TableView::EndsWithTextSearch { w } {
     blt::tk::button $f.cancel \
         -text "Cancel" \
         -command { set blt::TableView::_private(search) 0 }
+    bind $f.entry <KeyPress-Return> {
+        set blt::TableView::_private(search) 1
+    }
     blt::table $f \
         0,0 $f.label -cspan 2 -anchor w -pady 4 \
         1,0 $f.entry -cspan 2 -fill x -padx 0.1i \
@@ -2234,6 +2264,9 @@ proc blt::TableView::ContainsTextSearch { w } {
     blt::tk::button $f.cancel \
         -text "Cancel" \
         -command { set blt::TableView::_private(search) 0 }
+    bind $f.entry <KeyPress-Return> {
+        set blt::TableView::_private(search) 1
+    }
     blt::table $f \
         0,0 $f.label -cspan 2 -anchor w -pady 4 \
         1,0 $f.entry -cspan 2 -fill x -padx 0.1i \
@@ -2293,6 +2326,9 @@ proc blt::TableView::NotContainsTextSearch { w } {
     blt::tk::button $top.frame.cancel \
         -text "Cancel" \
         -command { set blt::TableView::_private(search) 0 }
+    bind $f.entry <KeyPress-Return> {
+        set blt::TableView::_private(search) 1
+    }
     blt::table $top.frame \
         0,0 $top.frame.label -cspan 2 -anchor w -pady 4 \
         1,0 $top.frame.entry -cspan 2 -fill x -padx 0.1i \

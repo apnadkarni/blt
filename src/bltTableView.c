@@ -3702,13 +3702,9 @@ GetRows(Tcl_Interp *interp, TableView *viewPtr, Tcl_Obj *objPtr,
     } else {
 	BLT_TABLE_ITERATOR iter;
 	BLT_TABLE_ROW row;
-        const char *string;
-        
-        string = Tcl_GetString(objPtr);
-        if (strcmp("all", string) == 0) {
-            blt_table_iterate_all_rows(viewPtr->table, &iter);
-        } else if (blt_table_iterate_rows(interp, viewPtr->table, objPtr,
-                &iter) != TCL_OK){
+
+        if (blt_table_iterate_rows(interp, viewPtr->table, objPtr, &iter)
+            != TCL_OK){
 	    Blt_Chain_Destroy(chain);
 	    return TCL_ERROR;
 	}
@@ -3745,13 +3741,9 @@ GetColumns(Tcl_Interp *interp, TableView *viewPtr, Tcl_Obj *objPtr,
     } else {
 	BLT_TABLE_ITERATOR iter;
 	BLT_TABLE_COLUMN col;
-        const char *string;
-        
-        string = Tcl_GetString(objPtr);
-        if (strcmp("all", string) == 0) {
-            blt_table_iterate_all_columns(viewPtr->table, &iter);
-        } else if (blt_table_iterate_columns(interp, viewPtr->table, objPtr,
-                &iter) != TCL_OK){
+
+        if (blt_table_iterate_columns(interp, viewPtr->table, objPtr, &iter)
+            != TCL_OK){
 	    Blt_Chain_Destroy(chain);
 	    return TCL_ERROR;
 	}
@@ -3780,7 +3772,6 @@ IterateRowsObjv(Tcl_Interp *interp, TableView *viewPtr, int objc,
 	BLT_TABLE_ROW row;
 	int isNew;
 	Row *rowPtr;
-        const char *string;
         
 	if (GetRow(NULL, viewPtr, objv[i], &rowPtr) == TCL_OK) {
 	    if (rowPtr != NULL) {
@@ -3789,14 +3780,11 @@ IterateRowsObjv(Tcl_Interp *interp, TableView *viewPtr, int objc,
 		if (isNew) {
 		    Blt_Chain_Append(chain, rowPtr);
 		}
+                continue;
 	    }
-	    continue;
 	}
-        string = Tcl_GetString(objv[i]);
-        if (strcmp("all", string) == 0) {
-            blt_table_iterate_all_rows(viewPtr->table, &iter);
-        } else if (blt_table_iterate_rows(interp, viewPtr->table, objv[i],
-                &iter) != TCL_OK){
+        if (blt_table_iterate_rows(interp, viewPtr->table, objv[i], &iter)
+            != TCL_OK){
 	    Blt_DeleteHashTable(&rowTable);
 	    Blt_Chain_Destroy(chain);
 	    return NULL;
@@ -3831,7 +3819,6 @@ IterateColumnsObjv(Tcl_Interp *interp, TableView *viewPtr, int objc,
 	BLT_TABLE_COLUMN col;
 	int isNew;
 	Column *colPtr;
-        const char *string;
         
 	if (GetColumn(NULL, viewPtr, objv[i], &colPtr) == TCL_OK) {
 	    if (colPtr != NULL) {
@@ -3840,14 +3827,11 @@ IterateColumnsObjv(Tcl_Interp *interp, TableView *viewPtr, int objc,
 		if (isNew) {
 		    Blt_Chain_Append(chain, colPtr);
 		}
+                continue;
 	    }
-	    continue;
 	}
-        string = Tcl_GetString(objv[i]);
-        if (strcmp("all", string) == 0) {
-            blt_table_iterate_all_columns(viewPtr->table, &iter);
-        } else if (blt_table_iterate_columns(interp, viewPtr->table, objv[i],
-                &iter) != TCL_OK){
+        if (blt_table_iterate_columns(interp, viewPtr->table, objv[i], &iter)
+            != TCL_OK){
 	    Blt_DeleteHashTable(&colTable);
 	    Blt_Chain_Destroy(chain);
 	    return NULL;

@@ -363,7 +363,6 @@ proc ::blt::ComboMenu::ButtonReleaseEvent { menu x y } {
     set bool $_private(ignoreRelease)
     set _private(ignoreRelease) 0
     if { $bool } {
-	puts stderr "ignoring release event"
 	return
     }
     # Examine each of the cascaded menus first.

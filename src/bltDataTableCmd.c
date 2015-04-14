@@ -1052,7 +1052,9 @@ IterateRowsWithCreate(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr,
 	 * is a label or index that doesn't exist, create the new rows and
 	 * try to load the iterator again.
 	 */
+#ifdef notdef
         fprintf(stderr, "making row %s\n", Tcl_GetString(objPtr));
+#endif
 	if (MakeRows(interp, table, objPtr) != TCL_OK) {
 	    return TCL_ERROR;
 	}
@@ -1114,7 +1116,9 @@ IterateColumnsWithCreate(Tcl_Interp *interp, BLT_TABLE table, Tcl_Obj *objPtr,
 	 * is a label that doesn't exist, create a new column with that label
 	 * and try to load the iterator again.
 	 */
+#ifdef notdef
         fprintf(stderr, "making column %s\n", Tcl_GetString(objPtr));
+#endif
 	if (MakeColumns(interp, table, objPtr) != TCL_OK) {
 	    return TCL_ERROR;
 	}
