@@ -1883,10 +1883,11 @@ echo ""
 #
 #--------------------------------------------------------------------
 src_Makefile="src/Makefile"
-
+doc_Makefile="doc/Makefile"
 case ${BLT_PLATFORM} in
   "win")
     src_Makefile="src/Makefile:src/Makefile-mingw.in"
+    doc_Makefile="doc/Makefile:doc/Makefile-mingw.in"
     ;;
   "macosx")
     src_Makefile="src/Makefile:src/Makefile-macosx.in"
