@@ -36,31 +36,22 @@ Parse and format dates and timestamps.
 SYNOPSIS
 --------
 
-**blt::timestamp debug** *timeStamp*
-
 **blt::timestamp format** *seconds* ?\ *switches* ...\ ?
+
+**blt::timestamp parse** *timeStamp*
 
 **blt::timestamp scan** *timeStamp* 
 
 DESCRIPTION
-===========
+-----------
 
 This **blt::timestamp** command is for converting date/time timestamps to/from
 double precision numbers.  It handles timestamps with fractional seconds,
 IS08601 time formats (separated by the letter 'T'), and work week dates.
 It is not designed to be a replacement for the TCL **clock** command.
-There are differences (see the section DIFFERENCES WITH TCL CLOCK below).
+There are differences (see the section `DIFFERENCES WITH TCL CLOCK`_ below).
 This command is used internally by the **blt::datatable** data object to
 parse timestamps where the format of the timestamp isn't known.
-
-**blt::timestamp debug** *timeStamp*
-
-  Parses the dates and returns its date and time components.  This is
-  useful when you suspect that the timestamp format is not supported.
-  *TimeStamp* is a string representing the date and/or time. This commands
-  returns a list of "year", "month", "yday", "isleapyear", "hour", "minute"
-  "second", "isdist", "tzoffset" and their values. Note that the value for
-  "second" is a floating point number, not an integer.
 
 **blt::timestamp format** *seconds* ?\ *switches* ...\ ?
 
@@ -74,24 +65,33 @@ parse timestamps where the format of the timestamp isn't known.
     Specifies how to format the date.  *SubstString* is a string with
     various percent (%) sequences that are substituted with the desired
     value.  Most of the standand **clock** substitutions are available.
-    See the section PERCENT SUBSTITUTIONS for a description of all the
+    See the section `PERCENT SUBSTITUTIONS`_ for a description of all the
     available sequences. The default format is "%a %b %d %H:%M:%S %z %Y". 
 
   **-timezone** *zoneName*
     Specifies that formatting is to be done according to the rules for
     the time zone specified by *zoneName*.  *ZoneName* may be a
-    timezone abbreviation or offset. See the section TIME ZONES for a
+    timezone abbreviation or offset. See the section `TIME ZONES`_ for a
     description of available names.
+
+**blt::timestamp parse** *timeStamp*
+
+  Parses the dates and returns its date and time components.  This is
+  useful when you suspect that the timestamp format is not supported.
+  *TimeStamp* is a string representing the date and/or time. This commands
+  returns a list of key/value pairs.  The keys are "year", "month", "yday",
+  "isleapyear", "hour", "minute" "second", "isdist", "tzoffset". Note that
+  the value for "second" is a floating point number, not an integer.
 
 **blt::timestamp scan** *timeStamp*
 
   Parses the date string given and returns a double precision number
   representing the number of seconds since the epoch (typically January 1st
   1970 UTC).    *TimeStamp* is a string representing the date and or time.
-  The known formats for *timeStamp* are listed in section KNOWN FORMATS. 
+  The known formats for *timeStamp* are listed in section `KNOWN FORMATS`_. 
 
 TIME ZONES
-==========
+----------
 
 The **blt::timestamp** command recognizes many different timezone names and
 abbreviations.  If uses a TCL array variable **blt::timezones** to search
@@ -126,7 +126,7 @@ Ideally your timestamps will use the offset from UTC rather than a timezone
 name or abbreviation.
 
 KNOWN FORMATS
-==================
+-------------
 
 The following are examples of known timestamp formats that can be parsed by
 the **blt::timestamp** command.
@@ -165,142 +165,146 @@ the **blt::timestamp** command.
 
   - 17.12.1997 07:37:16.00 PST
 
-    German regional style.  Date is separate by periods.
+    German regional style.  The date is separated by periods.
 
   - 2004-W53-6  
 
     ISO 8601 work week.
     
-PERCENT SUBSTUTIONS
-===================
+PERCENT SUBSTITUTIONS
+---------------------
 
-  %%
+The following substitutions may be used to format a timestamp.
+
+  **%%**
 	  Single percent sign (%)
 
-  %a
+  **%a**
 	  Abbreviated weekday. Example: "Sun".
 
-  %A
+  **%A**
 	  Weekday. Example: "Sunday".
 
-  %b
+  **%b**
 	  Abbreviated month. Example: "Jan".
 
-  %h
+  **%h**
 	  Month. Example: "January".
 
-  %B
+  **%B**
 	  Month. Example: "Month".
 
-  %c
+  **%c**
 	  Date and time. Example: "Thu Mar 3 23:05:25 2005".
 
-  %C
+  **%C**
 	  Century without last 2 digits. Example: "20".
 
-  %d
+  **%d**
 	  Day of month, 2 digits. Example: "01".
 
-  %D
+  **%D**
 	  mm/dd/yy format. Example: "01/01/1970".
 
-  %e
+  **%e**
 	  Day of month, space padded. Example: " 1".
 
-  %F
+  **%F**
 	  Full date yyyy-mm-dd. Example: "1970-01-01".
 
-  %g
+  **%g**
 	  Last 2 digits of ISO week year. Example: "70".
 
-  %G
+  **%G**
 	  ISO week year. Example: "1970".
 
-  %H
+  **%H**
 	  Hour (0-23). Example: "0".
 
-  %I
+  **%I**
 	  Hour (0-12). Example: "0".
 
-  %j
+  **%j**
 	  Day of year. Example: "0".
 
-  %k
+  **%k**
 	  Hour (0-23), space padded. Example: " 1".
 
-  %l
+  **%l**
 	  Hour (1-12), space padded. Example: " 1".
 
-  %m
+  **%m**
 	  Month (01-12). Example: "01".
 
-  %M
+  **%M**
 	  Minute (00-59). Example: "00".
 
-  %N
+  **%N**
 	  Nanoseconds (000000000..999999999). Example: "00000000000000".
 
-  %P
+  **%P**
 	  AM or PM.  Example "AM".
 
-  %p
+  **%p**
 	  am or pm. Example "am".
 
-  %R
+  **%R**
 	  24 hour clock time (hh:mm). Example "23:59".
 
-  %r
+  **%r**
 	  12 hour clock time (hh:mm:ss AM or PM). Example: "01:59:00 AM".
 
-  %s
+  **%s**
 	  Seconds since epoch, (may contain fraction). Example "".
 
-  %S
+  **%S**
 	  Seconds (00-59). Example: "00".
 
-  %T
-	  The time as "%H:%M:%S". Example: "".
+  **%T**
+	  The time as "**%H**:**%M**:**%S**". Example: "".
 
-  %w
+  **%w**
 	  Day of week (0-6). Example: "0".
 
-  %u
+  **%u**
 	  Day of week (1-7). Example "1".
 
-  %U
+  **%U**
 	  Week number (0-53). Sunday is first day of week. Example "".
 
-  %W
+  **%W**
 	  Week number (0-53)					"00"
 
-  %V
+  **%V**
 	  ISO Week number. Monday is first day of week.	Example: "".
 
-  %x
+  **%x**
 	  Date representation mm/dd/yy. Example: "".
 
-  %y
+  **%y**
 	  Year, last 2 digits. Example: "70".
 
-  %Y
+  **%Y**
 	  Year. Example: "1970".
 
-  %z
+  **%z**
 	  Numeric timezone (+hhmm). Example: "+0000".
 
 
 EXAMPLE
-=======
+-------
 
 DIFFERENCES WITH TCL CLOCK
-==========================
+--------------------------
 
-1. If no date is provided, **blt::timestamp** assumes January 1st, 1970, not the
-   current date.
-2. For two digit years (such as "25") the century is always assumed to be
-   1900 not 2000.
+1. If no date is given (only the time), the **scan** and **parse**
+   operations assume January 1st, 1970, not the current date.
+2. If no timezone is given, the **scan** and **parse** operations assume
+   GMT, not the local timezone.
+3. For two-digit years (such as "25") the century is always assumed to be
+   1900 not 2000. Don't use two-digit years.
    
 KEYWORDS
-========
+--------
 
 timestamp, datatable

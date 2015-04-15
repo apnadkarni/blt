@@ -603,7 +603,7 @@ the command.  The operations available for *datatables* are listed below.
 *tableName* **export** *dataFormat* ?\ *switches* ...\ ?
 
   Exports *tableName* into another format. *DataFormat* is one of the
-  different formats_ are described in the section **DATATABLE FORMATS**
+  different formats_ are described in the section `DATATABLE FORMATS`_
   below. *Switches* are specific to *dataFormat*.
 
 *tableName* **find** *rowExpr* ?\ *switches* ...\ ?
@@ -645,7 +645,7 @@ the command.  The operations available for *datatables* are listed below.
 *tableName* **import** *dataFormat* ?\ *switches* ...\ ?
 
   Import data into *tableName* from another format. *DataFormat* is one of
-  the different formats_ are described in the section **DATATABLE FORMATS**
+  the different formats_ are described in the section `DATATABLE FORMATS`_
   below. *Switches* are specific to *dataFormat*.
 
 *tableName* **keys** *column* ?\ *column* ...\ ?

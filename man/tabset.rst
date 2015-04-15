@@ -80,8 +80,8 @@ Tabs may be scrolled using the **-scrollcommand** option.  They also
 support scanning (see the **scan** operation).  Tabs also may be arranged
 along any side of the tabset window using the **-side** option.
 
-REFERRING TO TABS
------------------
+REFERENCING TABS
+----------------
 
 An individual tabs/folders in the tabset may be described by its index, 
 name, tag or text label.  
@@ -202,7 +202,7 @@ available for *tabset* widgets:
 
   Returns the current value of the widget configuration option given by
   *option*.  *Option* may have any of the values accepted by the
-  **configure** operation described in the section WIDGET OPTIONS below.
+  **configure** operation described below.
 
 *pathName* **configure** ?*option*? ?*value option value ...*?
 
@@ -493,7 +493,7 @@ available for *tabset* widgets:
 *pathName* **get** *tab*
 
   Returns the label of the *tab*.  The value of *index* may be in any
-  form described in the section INDICES.
+  form described in the section `INDICES`_.
 
 *pathName* **index** ?\ *flag* ? *string* 
 
@@ -569,7 +569,7 @@ available for *tabset* widgets:
 
   Returns the current value of the configuration option given by *option*
   for tab *tab*.  *Option* may have any of the values accepted by the **tab
-  configure** operation described in the section TAB OPTIONS below.
+  configure** operation described below.
 
 *pathName* **tab configure** *tab* ?\ *option* ? ?\ *value* *option* ...\ ?
 
@@ -803,7 +803,6 @@ available for *tabset* widgets:
 
 DEFAULT BINDINGS
 ----------------
-
 
 BLT automatically generates class bindings that supply tabsets their
 default behaviors. The following event sequences are set by default 
