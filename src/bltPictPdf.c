@@ -129,6 +129,7 @@ typedef struct {
 } PdfImportSwitches;
 
 #define PDF_CROP		(1<<0)
+#define EXPORT_ALPHA            (1<<1)
 
 typedef struct {
     unsigned int width, height;		/* Dimensions of the image. */
@@ -158,9 +159,11 @@ static Blt_SwitchCustom padSwitch = {
 
 static Blt_SwitchSpec exportSwitches[] = 
 {
-    {BLT_SWITCH_CUSTOM,  "-bg",		"color", (char *)NULL,
+    {BLT_SWITCH_BITMASK, "-alpha", "", (char *)NULL,
+	Blt_Offset(PdfExportSwitches, flags),   0, EXPORT_ALPHA},
+    {BLT_SWITCH_CUSTOM,  "-background",		"color", (char *)NULL,
 	Blt_Offset(PdfExportSwitches, bg),	   0, 0, &colorSwitch},
-    {BLT_SWITCH_OBJ,     "-data",	"data", (char *)NULL,
+    {BLT_SWITCH_OBJ,     "-data",	"varName", (char *)NULL,
 	Blt_Offset(PdfExportSwitches, dataObjPtr),  0},
     {BLT_SWITCH_OBJ,     "-file",	"fileName", (char *)NULL,
 	Blt_Offset(PdfExportSwitches, fileObjPtr),  0},
@@ -173,14 +176,14 @@ static Blt_SwitchSpec exportSwitches[] =
 
 static Blt_SwitchSpec importSwitches[] =
 {
-    {BLT_SWITCH_BOOLEAN,  "-crop",	"bool", (char *)NULL,
-	Blt_Offset(PdfImportSwitches, crop), 0},
     {BLT_SWITCH_OBJ,     "-data",	"data", (char *)NULL,
 	Blt_Offset(PdfImportSwitches, dataObjPtr),  0},
     {BLT_SWITCH_INT,      "-dpi",	"number", (char *)NULL,
 	Blt_Offset(PdfImportSwitches, dpi), 0},
     {BLT_SWITCH_OBJ,     "-file",	"fileName", (char *)NULL,
 	Blt_Offset(PdfImportSwitches, fileObjPtr),  0},
+    {BLT_SWITCH_BITMASK,  "-nocrop",	"", (char *)NULL,
+        Blt_Offset(PdfImportSwitches, crop), 0, FALSE},
     {BLT_SWITCH_STRING,  "-papersize",	"string", (char *)NULL,
 	Blt_Offset(PdfImportSwitches, paperSize),   0},
     {BLT_SWITCH_END}
@@ -992,9 +995,9 @@ AddComments(Pdf *pdfPtr, const char **comments)
 
 static int 
 PictureToPdf(Tcl_Interp *interp, Blt_Picture original, Pdf *pdfPtr, 
-	      PdfExportSwitches *switchesPtr)
+             PdfExportSwitches *exportPtr)
 {
-    PageSetup *setupPtr = &switchesPtr->setup;
+    PageSetup *setupPtr = &exportPtr->setup;
     Picture *srcPtr;
     char date[200];
     const char *colorSpace, *version;
@@ -1123,17 +1126,16 @@ PictureToPdf(Tcl_Interp *interp, Blt_Picture original, Pdf *pdfPtr,
 		       length);
 
     Blt_ClassifyPicture(srcPtr);
-#ifdef notdef
-    if (!Blt_Picture_IsOpaque(srcPtr)) {
+    if ((!Blt_Picture_IsOpaque(srcPtr)) &&
+        ((exportPtr->flags & EXPORT_ALPHA) == 0)) {
 	Blt_Picture background;
 	
 	background = Blt_CreatePicture(srcPtr->width, srcPtr->height);
-	Blt_BlankPicture(background, switchesPtr->bg.u32);
+	Blt_BlankPicture(background, exportPtr->bg.u32);
 	Blt_BlendRegion(background, srcPtr, 0, 0, srcPtr->width, srcPtr->height,
 			0, 0);
 	srcPtr = background;
     }
-#endif
     if (srcPtr->flags & BLT_PIC_ASSOCIATED_COLORS) {
 	Blt_UnassociateColors(srcPtr);
     }
@@ -1227,7 +1229,7 @@ PictureToPdf(Tcl_Interp *interp, Blt_Picture original, Pdf *pdfPtr,
 		       length);
     Blt_Free(imgData);
 
-    if (!Blt_Picture_IsOpaque(srcPtr)) {
+    if ((!Blt_Picture_IsOpaque(srcPtr)) && (exportPtr->flags & EXPORT_ALPHA)) {
 	unsigned char *maskData, *dp;
 	Blt_Pixel *srcRowPtr;
 	int y;

@@ -77,7 +77,6 @@ Pixel color values can be described in any of the following forms:
     server's color database file, such as red or "PeachPuff".
 
   #\ *RGB*  #\ *RRGGBB* #\ *RRRGGGBBB*  #\ *RRRRGGGGBBBB*		
-
     A numeric specification of the red, green, and blue intensities to use
     to display the color. Each R, G, or B represents a single hexadecimal
     digit.  The four forms permit colors to be specified with 4-bit, 8-bit,
@@ -86,7 +85,6 @@ Pixel color values can be described in any of the following forms:
     example, #3a7 is the same as #3000a0007000.
 
   0x\ *AARRGGBB*		
-
     A numeric specification of the alpha, red, green, and blue intensities
     to use to display the color. Each A, R, G, or B represents a single
     hexadecimal digit. The alpha value represents the transparency of the
@@ -111,7 +109,7 @@ the command.  The operations available for pictures are listed below.
   specification.  Color components are clamped to 255.
        
   **-invert** *boolean*
-     Indicates to invert mask.  The only has affect is the **-mask** switch
+     Indicates to invert mask.  This only has affect is the **-mask** switch
      is set.
 
   **-mask** *mask*
@@ -125,7 +123,7 @@ the command.  The operations available for pictures are listed below.
   or a color specification.  The resulting image is saved in *imageName*.
   
   **-invert** *boolean*
-     Indicates to invert mask.  The only has affect is the **-mask** switch
+     Indicates to invert mask.  This only has affect is the **-mask** switch
      is set.
 
   **-mask** *mask*
@@ -150,7 +148,6 @@ the command.  The operations available for pictures are listed below.
   available.
 
   **-from** *bbox*
-
     Specifies the region in the *bgName* image to be blended. *Bbox* is a
     list in the form "*x1* *y1* *x2* *y2*" or "*x1* *y1*".  The first form
     describes the subregion to be blended.  The second indicates to copy
@@ -158,7 +155,6 @@ the command.  The operations available for pictures are listed below.
     to the lower right corner.
 
   **-to** *bbox*
-
     Specifies the region in the *fgName* image to be blended. *Bbox* is a
     list in the form "*x1* *y1* *x2* *y2*" or "*x1* *y1*".  The first form
     describes the subregion to be blended.  The second indicates to copy
@@ -185,29 +181,24 @@ the command.  The operations available for pictures are listed below.
   may be the same as *imageName*.  The following switches are available.
 
   **-mode** *mode*
-
     Specifies the blend mode to use. The default is "normal".  *Mode* can
     be one of the following:
 
     **colorburn**
-
       Selects the color component and darkens the *bgImage* color to reflect
       the *fgImage* color by increasing the contrast between the two. 
     
     **colordodge**
-
       Selects the color component and brightens the *bgImage* color to
       reflect the *fgColor* color by decreasing contrast. Blending with
       black produces no change.
 
     **darken**
-
       Selects the darker color components between *bgImage* and *fgImage*.
       Pixels lighter than the *fgImage* color are replaced, and pixels
       darker than the *fgImage* color do not change.
     
     **difference**
-
       Subtracts the color components; either the *fgImage* color from the
       *bgImage* color or the *bgImage* color from the *fgImage* color,
       depending on which has the greater brightness value. Blending with
@@ -215,13 +206,11 @@ the command.  The operations available for pictures are listed below.
       produces no change.
 
     **exclusion**
-
       Creates an effect similar to but lower in contrast than the
       **difference** mode. Blending with white inverts the base color
       values. Blending with black produces no change.
 
     **hardlight**
-
       Multiplies or screens the colors, depending on the *fgImage*
       color. The effect is similar to shining a harsh spotlight on the
       image. If the *fgImage* color (light source) is lighter than 50%
@@ -232,7 +221,6 @@ the command.  The operations available for pictures are listed below.
       white results in pure black or white.
 
     **hardmix**
-
       Adds the color components of the *fgImage* color to the RGB values of
       the *bgImage* color. If the resulting sum for a channel is 255 or
       greater, it receives a value of 255; if less than 255, a value
@@ -241,23 +229,19 @@ the command.  The operations available for pictures are listed below.
       additive colors (red, green, or blue), white, or black.
 
     **lighten**
-
       Selects the lighter color components between *bgImage* and *fgImage*.
       Pixels darker than the *fgImage* color are replaced, and pixels
       lighter than the *fgImage* color do not change.
     
     **linearburn**
-
       Darkens the *bgImage* color to reflect the *fgImage* color by decreasing
       the brightness.  Blending with white produces no change.
     
     **lineardodge**
-
       Lightens the *bgImage* color to reflect the *fgImage* color by
       increasing the brightness.  Blending with black produces no change.
 
     **linearlight**
-
       Burns or dodges the colors by decreasing or increasing the
       brightness, depending on the *fgImage* color. If the *fgImage* color
       (light source) is lighter than 50% gray, the image is lightened by
@@ -269,14 +253,12 @@ the command.  The operations available for pictures are listed below.
       the same as *fgImage*.
       
     **multiply**
-
       Multiplies each color component in *bgImage* with *fgImage*. The
       resulting color is always a darker color. Pixels lighter than the
       *fgImage* color are replaced, and pixels darker than the *fgImage*
       color do not change.
     
     **screen**
-
       Multiplies the inverse of each color component of *bgImage* and
       *fgImage*.  The resulting color is always a lighter color. Screening
       with black leaves the color unchanged. Screening with white produces
@@ -284,7 +266,6 @@ the command.  The operations available for pictures are listed below.
       slides on top of each other.
 
     **softlight**
-
       Darkens or lightens the colors, depending on the *fgImage* color. The
       effect is similar to shining a diffused spotlight on the image. If
       the *fgImage* color (light source) is lighter than 50% gray, the
@@ -294,12 +275,10 @@ the command.  The operations available for pictures are listed below.
       lighter area, but does not result in pure black or white.
     
     **subtract**
-
       Subtracts the *fgImage* color from the *bgImage* color.  Any
       resulting negative values are clipped to zero.
     
     **overlay**
-
       Multiplies or screens the colors, depending on the *bgImage*
       color. Patterns or colors overlay the existing pixels while
       preserving the highlights and shadows of the *bgImage* color. The
@@ -307,7 +286,6 @@ the command.  The operations available for pictures are listed below.
       to reflect the lightness or darkness of the original color.
 
     **pinlight**
-
       Replaces the colors, depending on the *fgImage* color. If the
       *fgImage* color (light source) is lighter than 50% gray, pixels
       darker than the *fgImage* color are replaced, and pixels lighter than
@@ -317,7 +295,6 @@ the command.  The operations available for pictures are listed below.
       useful for adding special effects to an image.
 
     **vividlight**
-
       Burns or dodges the colors by increasing or decreasing the contrast,
       depending on the *fgImage* color. If the *fgImage* color (light
       source) is lighter than 50% gray, the image is lightened by
@@ -325,7 +302,6 @@ the command.  The operations available for pictures are listed below.
       gray, the image is darkened by increasing the contrast.
 
   **-from** *bbox*
-
     Specifies the region in the *srcName* image to be copied. *Bbox* is
     a list in the form "*x1* *y1* *x2* *y2*" or "*x1*
     *y1*".  The first describes the subregion to be copied.  The second
@@ -334,7 +310,6 @@ the command.  The operations available for pictures are listed below.
     of *fgImage*.
 
   **-to** *bbox*
-
     Specifies the region in the *bgImage* image to be
     blended. *Bbox* is a list in the form "*x1* *y1* *x2*
     *y2*" or "*x1* *y1*".  The first describes the subregion to
@@ -357,13 +332,11 @@ the command.  The operations available for pictures are listed below.
   below.
 
   **-autoscale** *bool*
-
     When the dimensions of the image change, automatically resize the
     image to match the new dimensions.  The **-filter** and **-maxpect**
     also control how the image is resized.
 
   **-data** *string*
-
     Specifies the contents of the image as a string.  The string should
     contain binary data or base64-encoded data.  The format of the string
     must be one of those for which there is an image file format handler
@@ -371,7 +344,6 @@ the command.  The operations available for pictures are listed below.
     **-file** options are specified.
 
   **-dither** *bool*
-
     Indicates to dither the picture.  Dithering scatters different colored
     pixels in an image to make it appear as though there are intermediate
     colors in images with a limited color palette. Dithering propagates
@@ -381,19 +353,16 @@ the command.  The operations available for pictures are listed below.
     Algorithm" in SIGGRAPH'01.
 
   **-file** *fileName*
-
     *FileName* gives the name of a file that is to be read to supply
     data for the picture image.  The file format must be one of those for
     which there is an image file format handler that can read data.
 
   **-filter** *filterName*
-
     Specifies the use *filterName* when resizing the image.  This option
     matters only when **-autoscale** is on. The valid filter names are
     specified in the **resample** operation below.
 
   **-gamma** *number*
-
     Specifies that the colors allocated for displaying this image in a
     window should be corrected for a non-linear display with the specified
     gamma exponent value.  (The intensity produced by most CRT displays is
@@ -403,42 +372,36 @@ the command.  The operations available for pictures are listed below.
     general, values greater than one will make the image lighter, and
     values less than one will make it darker.
 
-  **-height** *pixels*
-
-    Specifies the height of the image, in pixels.  This option is useful
-    primarily in situations where the user wishes to build up the contents
-    of the image piece by piece.  A value of zero (the default) allows the
-    image to expand or shrink vertically to fit the data stored in it.
+  **-height** *numPixels*
+    Specifies the height of the image, in pixels.  *NumPixels* may have any
+    of the forms acceptable to **Tk_GetPixels**, such as "200" or
+    "2.4i". This option let you specify an image a particular size and then
+    draw into it. If *numPixels* is 0, the image will expand or shrink
+    vertically to fit the data stored in it.  The default is 0.
 
   **-maxpect** *bool*
-
     When resizing the image, maintain the aspect ratio of the original picture.
 
   **-rotate** *angle*
-
-    Rotate the image by *angle*. *Angle* is the number of degrees
+    Rotates the image by *angle*. *Angle* is the number of degrees
     to rotate the image.
 
   **-sharpen** *bool*
+    Automatically sharpens the image.
 
-    Automatically sharpen the image.
-
-  **-width** *pixels*
-
-    Specifies the width of the image, in pixels.  This option is useful
-    primarily in situations where the user wishes to build up the contents
-    of the image piece by piece.  A value of zero (the default) allows the
-    image to expand or shrink horizontally to fit the data stored in it.
+  **-width** *numPixels*
+    Specifies the width of the image in pixels.  *NumPixels* may have any
+    of the forms acceptable to **Tk_GetPixels**, such as "200" or
+    "2.4i". This option let you specify an image of a particular size and
+    then draw into it. If *numPixels* is 0, the image will expand or shrink
+    horizontally to fit the data stored in it.  The default is 0.
 
   **-window** *windowName*
-
     Specifies a window of a file that is to be read to supply data for the
     picture image.  The format *windowName* is either a Tk window name
     or a hexadecimal number (e.g. "0x000000002100") if the window is
     an external window.  It is an error if *windowName* is obscured.
     You should raise it beforehand.
-
-*imageName* **convolve** *srcName* ?\ *switches* ... ?
 
 *imageName* **copy** *srcName* ?\ *switches* ... ?
 
@@ -510,8 +473,8 @@ the command.  The operations available for pictures are listed below.
      "10".
 
    **-variable** *varName*
-      Specifies the name of a TCL variable that will be set when the
-      transition has completed.
+     Specifies the name of a TCL variable that will be set when the
+     transition has completed.
 
 *imageName* **dissolve** *from* *to* ?\ *switches* ... ?
 
@@ -543,8 +506,8 @@ the command.  The operations available for pictures are listed below.
      "10".
      
    **-variable** *varName*
-      Specifies the name of a TCL variable that will be set when the
-      transition has completed.
+     Specifies the name of a TCL variable that will be set when the
+     transition has completed.
 
 *imageName* **draw** ?\ *args* ... ?
 
@@ -554,7 +517,6 @@ the command.  The operations available for pictures are listed below.
   *imageName*. The following switches are available.
 
   **-region** *bbox*
-
     Instead of duplicating all of *imageName*, this specifies a sub-region
     to be duplicated. *Bbox* is a list in the form "*x1* *y1* *x2* *y2*" or
     "*x1* *y1*".  The first form describes two opposite corners of the
@@ -634,8 +596,10 @@ the command.  The operations available for pictures are listed below.
 *imageName* **height** ?\ *numPixels*\ ?
 
   Gets or sets the height of the picture.  If no *numPixels* argument is
-  present, the height of the picture in pixels is returned.  *NumPixels* is
-  a non-zero, positive integer specifying the new height of the image.
+  present, the height of the picture in pixels is returned.  *NumPixels*
+  may have any of the forms acceptable to **Tk_GetPixels**, such as "200"
+  or "2.4i".
+
 
 *imageName* **import** *imageFormat* ?\ *switches* ... ?
 
@@ -744,7 +708,7 @@ the command.  The operations available for pictures are listed below.
   is saved in *imageName*.
 
   **-invert** *boolean*
-     Indicates to invert mask.  The only has affect is the **-mask** switch
+     Indicates to invert mask.  This only has affect is the **-mask** switch
      is set.
 
   **-mask** *mask*
@@ -759,7 +723,7 @@ the command.  The operations available for pictures are listed below.
   is saved in *imageName*.
 
   **-invert** *boolean*
-     Indicates to invert mask.  The only has affect is the **-mask** switch
+     Indicates to invert mask.  This only has affect is the **-mask** switch
      is set.
 
   **-mask** *mask*
@@ -781,7 +745,7 @@ the command.  The operations available for pictures are listed below.
   saved in *imageName*.
 
   **-invert** *boolean*
-     Indicates to invert mask.  The only has affect is the **-mask** switch
+     Indicates to invert mask.  This only has affect is the **-mask** switch
      is set.
 
   **-mask** *mask*
@@ -803,7 +767,7 @@ the command.  The operations available for pictures are listed below.
   in *imageName*.
 
   **-invert** *boolean*
-     Indicates to invert mask.  The only has affect is the **-mask** switch
+     Indicates to invert mask.  This only has affect is the **-mask** switch
      is set.
 
   **-mask** *mask*
@@ -811,6 +775,8 @@ the command.  The operations available for pictures are listed below.
     *Mask* is either the name of a *picture* image. 
 
 *imageName* **project** *srcName* *coords* *coords* ?\ *switches* ... ?
+
+  Projects *srcName* into a quadrilateral.
 
 *imageName* **put** *x* *y* *colorSpec* 
 
@@ -832,18 +798,19 @@ the command.  The operations available for pictures are listed below.
    
 *imageName* **reflect** *srcName* ?\ *switches* ... ?
 
-  Reflects *srcName* with the resulting image saved in *imageName*.
-  *SrcName* is the name of another image created by the **image create
-  picture** command.    *Switches* may be any of the following.
+  Creates a reflection of *srcName* with the resulting image saved in
+  *imageName*.  *SrcName* is the name of another *picture* image and may
+  not be the same as *imageName*. *Switches* may be any of the following.
 
   **-background** *colorSpec*
 
   **-blur** *blurRadius*
-  
-  **-colorscale** *scale*
+    Specifies the radius of the blur.  If *blurRadius* is 0, no blurring
+    of the reflection is performed.  The default is 0.
 
-    Specifies the scale when interpolating values. *Scale* can be "linear",
-    or "logarithmic"".
+  **-colorscale** *scale*
+    Specifies the scale when interpolating color values. *Scale* can be
+    "linear", or "logarithmic"".
 
     **linear**
 	Colors are interpolated on a linear scale between 0.0 and 1.0.
@@ -855,17 +822,16 @@ the command.  The operations available for pictures are listed below.
   **-high** *opacity*
 
   **-jitter** *percent*
-
     Specifies the amount of randomness to add to the interpolated colors.
     *Percent* is a real number between 0 and 100.  It is the percentage
     that colors may vary.
   
   **-ratio** *number*
-  
-  **-side** *side*
+    Specifies the ratio between the *srcName* and the reflection.
 
-    Specifies the side of *srcName* to be reflected.  Side can be "bottom",
-    "top".  "Left" and "right" are not implemented yet.
+  **-side** *side*
+    Specifies the side of *srcName* to be reflected.  Side can be "bottom"
+    or "top".  "Left" and "right" are not implemented yet.
 
 
 *imageName* **resample** *srcName* ?\ *switches* ... ?
@@ -886,64 +852,48 @@ the command.  The operations available for pictures are listed below.
   *Switches* may be any of the following.
   
   **-filter** *filterName*
-
     Specifies the image filter to use for both the horizontal and
     vertical resampling.  *FilterName* can be any one of the following.
 
     **bell**
-      BellFilter (support is 1.5).
+      BellFilter The support is 1.5.
 
     **bessel**
-      BesselFilter (support is 3.2383)
+      BesselFilter The support is 3.2383.
 
     **box**
       This filter sums up all the samples in the filter area with an equal
-      weight. Box is the fastest filtering method. 
+      weight. Box is the fastest filtering method.  The support is 0.5.
 
     **bspline**
-      BSplineFilter,		     2.0	 },
+      BSplineFilter. The support is 2.0.
 
     **catrom**
       Samples are weighted by a hermite curve that has a negative lobe near
       its border. This filter will increase contrast at edges in the image,
-      sharpening the image.
-
-    **gauss8**
-      GaussianFilter,	     8.0	 },
+      sharpening the image. The support is 2.0.
 
     **gaussian**
       The gauss filter uses a sloped curve, weighting the sampling gently
       at the top of the peak and toward the edge of the sampled area. This
       filtering method is often used to control the soft staircase artifact
-      effect.
-
-    **gi**
-      GiFilter,		     4.0	 },
-
-    **gi8**
-      GiFilter,		     8.0	 },
+      effect.  The support is 1.25.
 
     **lanczos3**
       The lanczos filter uses a narrower, less bell-shaped curve than the
       gaussian filter. The curve can go into negative values near the
-      edges.
+      edges.  The support is 3.0.
 
     **mitchell**
       The mitchell filter uses a narrower bell-shaped curve than the
       Gaussian filter. The curve can go into negative values near the
-      edges.
+      edges.  The support is 2.0.
 
     **sinc**
       Samples are weighted by a filter that looks similar to Catmull-Rom
       and has a negative lobe near its border. This filter will
       increase contrast at the edges in the image and give very sharp
-      images.
-
-    **sinc8**
-      SincFilter,		     8.0	 },
-
-    **sinc12**
-      SincFilter,		     12.0	 }, 
+      images.  The support is 4.0.
 
     **tent**
       Same as **triangle**.
@@ -951,17 +901,15 @@ the command.  The operations available for pictures are listed below.
     **triangle**
       The triangle filter uses a linear curve that affects the pixels so
       that the least filtering happens at the edges of the sampled area.
-
+      The support is 1.0.
 
   **-from** *bbox*
-
     Specifies a region in the *srcName* to be resampled.  By default
     the all of *srcName* is resampled.
 
   **-height** *numPixels*
-
     Specifies the height of the resampled image.  *NumPixels* may have any
-    of the forms accept able to **Tk_GetPixels**, such as "200" or "2.4i".
+    of the forms acceptable to **Tk_GetPixels**, such as "200" or "2.4i".
     If *numPixels* is "0", then the height of *imageName* will not change.
     
   **-hfilter** *filterName*
@@ -970,7 +918,7 @@ the command.  The operations available for pictures are listed below.
     switch.
      
   **-maxpect** 
-    Forces the *imageName* to retain the aspect ratio as *srcName*.
+    Forces the *imageName* to retain the same aspect ratio as *srcName*.
     The maximum of **-width** and **-height** is used.
 
   **-vfilter** *filterName*
@@ -1046,7 +994,7 @@ the command.  The operations available for pictures are listed below.
   saved in *imageName*.
 
   **-invert** *boolean*
-    Indicates to invert mask.  The only has affect is the **-mask** switch
+    Indicates to invert mask.  This only has affect is the **-mask** switch
     is set.
 
   **-mask** *mask*
@@ -1056,8 +1004,9 @@ the command.  The operations available for pictures are listed below.
 *imageName* **width** *pixels* 
 
   Gets or sets the width of the picture.  If no *numPixels* argument is
-  present, the width of the picture in pixels is returned.  *NumPixels* is
-  a non-zero, positive integer specifying the new width of the image.
+  present, the width of the picture in pixels is returned.  *NumPixels*
+  may have any of the forms acceptable to **Tk_GetPixels**, such as "200"
+  or "2.4i".
 
 *imageName* **wipe** *from* *to* ?\ *switches* ... ?
 
@@ -1085,8 +1034,8 @@ the command.  The operations available for pictures are listed below.
      "10".
      
    **-variable** *varName*
-      Specifies the name of a TCL variable that will be set when the
-      transition has completed.
+     Specifies the name of a TCL variable that will be set when the
+     transition has completed.
 
 
 *imageName* **xor** *pictOrColor* ?\ *switches* ... ?
@@ -1097,12 +1046,13 @@ the command.  The operations available for pictures are listed below.
   *imageName*. *Switches* can be one of the following.
 
   **-invert** 
-     Indicates to invert mask.  The only has affect is the **-mask** switch
-     is set.
+    Indicates to invert the mask.  This only has affect is the **-mask**
+    switch is set.
 
   **-mask** *mask*
     Only change the non-zero pixels of *mask* in *imageName*.
-    *Mask* is the name of a *picture* image. 
+    *Mask* is the name of a *picture* image. If the **-invert** switch
+    is set, then the zero pixels of mask will be changed.
 
 PICTURE FORMATS
 ---------------
@@ -1163,8 +1113,9 @@ The available formats are "bmp", "jpg", "png", "gif", "tif", "tga", "ico",
       is "white".
 
     **-data** *varName*
-      Sets the TCL variable with the binary BMP data. *VarName* is the name
-      of a global TCL variable.  It will contain a byte array object.
+      Specifies the name of TCL variable to be set with the binary BMP
+      data. *VarName* is the name of a global TCL variable.  It will
+      contain a byte array object.
 
     **-file** *fileName*
       Write the BMP output to the file *fileName*.
@@ -1215,8 +1166,9 @@ The available formats are "bmp", "jpg", "png", "gif", "tif", "tga", "ico",
       of key value pairs.
 
     **-data** *varName*
-      Sets the TCL variable with the binary GIF data. *VarName* is the name
-      of a global TCL variable.  It will contain a byte array object.
+      Specifies the name of TCL variable to be set with the binary GIF
+      data. *VarName* is the name of a global TCL variable.  It will
+      contain a byte array object.
 
     **-delay** *milliseconds*
      Specifies the delay between images for the animated GIF.
@@ -1249,7 +1201,6 @@ The available formats are "bmp", "jpg", "png", "gif", "tif", "tga", "ico",
      Read the JPEG information from *string*.
 
     **-dct** *method*
-
       Specifies the discrete cosine transform method. *Method* must be one
       of the following.
 
@@ -1277,8 +1228,9 @@ The available formats are "bmp", "jpg", "png", "gif", "tif", "tga", "ico",
       contains transparent pixels.  *ColorSpec* is a color specification.
 
     **-data** *varName*
-      Sets the TCL variable with the binary JPEG data. *VarName* is the name
-      of a global TCL variable.  It will contain a byte array object.
+      Specifies the name of TCL variable to be set with the binary JPEG
+      data. *VarName* is the name of a global TCL variable.  It will
+      contain a byte array object.
 
     **-file** *fileName*
       Write the JPEG output to the file *fileName*.
@@ -1374,8 +1326,9 @@ The available formats are "bmp", "jpg", "png", "gif", "tif", "tga", "ico",
       specification. The default background color is "white".
 
     **-data** *varName*
-      Sets the TCL variable with the binary NETPBM data. *VarName* is the name
-      of a global TCL variable.  It will contain a byte array object.
+      Specifies the name of TCL variable to be set with the binary PBM
+      data. *VarName* is the name of a global TCL variable.  It will
+      contain a byte array object.
 
     **-file** *fileName*
       Write the PBM output to the file *fileName*.
@@ -1385,6 +1338,79 @@ The available formats are "bmp", "jpg", "png", "gif", "tif", "tga", "ico",
       exported. *Index* is a non-negative number.  The default is 0, which is
       the first picture.
 
+**pdf**
+^^^^^^^
+
+  The *pdf* module reads and writes Adobe's Portable Document format (PDF)
+  data.  The PDF format supports 24-bit pixels with an alpha channel.  The
+  package can be manually loaded as follows.
+
+    **package require blt_picture_pdf**
+
+  By default this package is automatically loaded when you use the *pdf*
+  format in the **import** or **export** operations.
+
+  *imageName* **import pdf** ?\ *switches* ... ?
+
+    Imports PDF data into *imageName*.  This command requires that the
+    **ghostscript** interpreter **gs** be in your PATH.  One of the
+    **-file** or **-data** switches below must be set.  The following
+    import switches are supported:
+
+    **-data** *string*
+     Reads the PDF information from *string*.
+
+    **-dpi** *number*
+     Specifies the dots per index (DPI) when converting the PDF input.
+     The default is "100".
+
+    **-file** *fileName*
+     Reads the PDF file from *fileName*.
+
+    **-nocrop** 
+     Indicates to not crop the image at the BoundingBox.  The can
+     add a border around the image.  The default is to crop the data.
+
+    **-papersize** *string*
+     Specifies the paper size. *String* is . The default is "letter".
+
+  *imageName* **export pdf** ?\ *switches* ... ?
+
+    Exports *imageName* into PDF data.  If no **-file** or **-data** switch
+    is provided, this command returns the binary PDF output as a string.  
+    If *imageName* contains non-opaque pixels, *imageName* will be blended
+    in with the background color specified by the **-background** switch
+    or the PDF output will contain a SoftMask depending on the **-alpha**
+    switch.
+
+    The following switches are supported:
+
+    **-alpha**
+      Indicates to create PDF data with an SoftMask for the 8-bit alpha
+      channel.  This option affects only non-opaque pixels in *imageName*.
+      By default non-opaque pixels are blended with a background color (see
+      the **-background** option).
+
+    **-background** *colorSpec*
+      Specifies the color of the background.  This is used if *imageName*
+      contains non-opaque pixels. *ColorSpec* is a color specification. The
+      default background color is "white".
+
+    **-comments** *string*
+      Specifies comments to be included in the PDF data. *String* is a TCL
+      list of key value pairs.
+
+    **-data** *varName*
+      Specifies the name of TCL variable to be set with the PDF
+      data. *VarName* is the name of a global TCL variable.  
+
+    **-file** *fileName*
+      Writes the PDF output to the file *fileName*.
+
+    **-index** *numPicture*
+      Specifies the picture in the list of pictures of *imageName* to be
+      exported. *Index* is a non-negative number.  The default is 0, which is
+      the first picture.
 
 **png**
 ^^^^^^^
@@ -1424,8 +1450,9 @@ The available formats are "bmp", "jpg", "png", "gif", "tif", "tga", "ico",
       of key value pairs.
 
     **-data** *varName*
-      Sets the TCL variable with the binary PNG data. *VarName* is the name
-      of a global TCL variable.  It will contain a byte array object.
+      Specifies the name of TCL variable to be set with the binary PNG
+      data. *VarName* is the name of a global TCL variable.  It will
+      contain a byte array object.
 
     **-file** *fileName*
       Write the PNG output to the file *fileName*.
@@ -1455,9 +1482,9 @@ The available formats are "bmp", "jpg", "png", "gif", "tif", "tga", "ico",
      Read the TGA file from *fileName*.
 
     **-info** *varName*
-     Sets the TCL variable *varName* with a list of metadata from the TGA
-     data.  *VarName* is the name of a global TCL variable.  The list will
-     contain key/value pairs.  
+     Specifies the name of TCL variable *varName* that will be set with a
+     list of metadata from the TGA data examined.  *VarName* is the name of
+     a global TCL variable.  The list will contain key/value pairs.
      
   *imageName* **export tga** ?\ *switches* ... ?
 
@@ -1492,8 +1519,9 @@ The available formats are "bmp", "jpg", "png", "gif", "tif", "tga", "ico",
       than of 80 characters.
 
     **-data** *varName*
-      Sets the TCL variable with the binary TGA data. *VarName* is the name
-      of a global TCL variable.  It will contain a byte array object.
+      Specifies the name of TCL variable to be set with the binary TGA
+      data. *VarName* is the name of a global TCL variable.  It will
+      contain a byte array object.
 
     **-file** *fileName*
       Write the TGA output to the file *fileName*.
@@ -1553,8 +1581,7 @@ The available formats are "bmp", "jpg", "png", "gif", "tif", "tga", "ico",
     **-background** *colorSpec*
       Specifies the color of the background.  This is used if *imageName*
       contains non-opaque pixels and the **-alpha** switch is not set.
-      *ColorSpec* is a color specification. The default background color
-      is "white".
+      *ColorSpec* is a color specification. The default is "white".
 
     **-compress** *compressType*
 
@@ -1565,25 +1592,25 @@ The available formats are "bmp", "jpg", "png", "gif", "tif", "tga", "ico",
         Lempel-Ziv & Welch
 
       **ojpeg**
-       6.0 JPEG
+        6.0 JPEG
   
       **peg**
         JPEG DCT compression.
 
       **next**
-       NeXT 2-bit RLE.
+        NeXT 2-bit RLE.
 
       **packbits**
-       Macintosh RLE.
+        Macintosh RLE.
 
       **thunderscan**
-       ThunderScan RLE
+        ThunderScan RLE
 
       **pixarfilm**
         Pixar companded 10bit LZW
 
       **pixarlog**
-       Pixar companded 11bit ZIP
+        Pixar companded 11bit ZIP
 
       **deflate**
         Deflate compression.
@@ -1601,8 +1628,9 @@ The available formats are "bmp", "jpg", "png", "gif", "tif", "tga", "ico",
         SGI Log 24-bit packed
 
     **-data** *varName*
-      Sets the TCL variable with the binary TIFF data. *VarName* is the name
-      of a global TCL variable.  It will contain a byte array object.
+      Specifies the name of TCL variable to be set with the binary TIFF
+      data. *VarName* is the name of a global TCL variable.  It will
+      contain a byte array object.
 
     **-file** *fileName*
       Writes the TIFF output to the file *fileName*.
@@ -1612,6 +1640,121 @@ The available formats are "bmp", "jpg", "png", "gif", "tif", "tga", "ico",
       exported. *Index* is a non-negative number.  The default is 0, which is
       the first picture.
 
+
+**xbm**
+^^^^^^^
+
+  The *xbm* module reads and writes X Bitmap format (XBM) data.
+  The XBM format supports 1-bit pixels.  The values of the pixels
+  are either 0 or 1. The package can be manually loaded as follows.
+
+    **package require blt_picture_xbm**
+
+  By default this package is automatically loaded when you use the *xbm*
+  format in the **import** or **export** operations.
+
+  *imageName* **import xbm** ?\ *switches* ... ?
+
+    Imports XBM data into *imageName*.  One of the **-file** or **-data**
+    switches below must be set.  The following import switches are supported:
+
+    **-background** *colorSpec*
+      Specifies the color of the background.  These are 0 pixels in the
+      bitmap. The default is "black".
+
+    **-data** *string*
+     Reads the XBM information from *string*.
+
+    **-file** *fileName*
+     Reads the XBM file from *fileName*.
+
+    **-foreground** *colorSpec*
+      Specifies the color of the foreground.  These are 1 pixels in the
+      bitmap. The default is "white".
+
+    **-maskdata** *string*
+     Reads the XBM information from *string* representing the bitmap mask.
+
+    **-maskfile** *fileName*
+     Reads the XBM file from *fileName* representing the bitmap mask.
+
+  *imageName* **export xbm** ?\ *switches* ... ?
+
+    Exports *imageName* into XBM data.  If no **-file** or **-data** switch
+    is provided, this command returns the XBM output as a string.  If
+    *imageName* contains more than 2 colors, it will be dithered to 2 colors.
+
+    The following switches are supported:
+
+    **-background** *colorSpec*
+      Specifies the color of the background.  This is used if *imageName*
+      contains non-opaque pixels. *ColorSpec* is a color specification. The
+      default is "white".
+
+    **-data** *varName*
+      Specifies the name of TCL variable to be set with the XBM
+      data. *VarName* is the name of a global TCL variable.  
+
+    **-file** *fileName*
+      Writes the XBM output to the file *fileName*.
+
+    **-index** *numPicture*
+      Specifies the picture in the list of pictures of *imageName* to be
+      exported. *Index* is a non-negative number.  The default is 0, which is
+      the first picture.
+
+**xpm**
+^^^^^^^
+
+  The *xpm* module reads and writes X Pixmap format (XPM) data.
+  The XPM format supports 8-bit pixels.  
+  The package can be manually loaded as follows.
+
+    **package require blt_picture_xpm**
+
+  By default this package is automatically loaded when you use the *xpm*
+  format in the **import** or **export** operations.
+
+  *imageName* **import xpm** ?\ *switches* ... ?
+
+    Imports XPM data into *imageName*.  One of the **-file** or **-data**
+    switches below must be set.  The following import switches are supported:
+
+    **-data** *string*
+     Reads the XPM information from *string*.
+
+    **-file** *fileName*
+     Reads the XPM file from *fileName*.
+
+  *imageName* **export xpm** ?\ *switches* ... ?
+
+    Exports *imageName* into XPM data.  If no **-file** or **-data** switch
+    is provided, this command returns the XPM output as a string.  If
+    *imageName* contains more than 2 colors, it will be dithered to 2 colors.
+
+    The following switches are supported:
+
+    **-background** *colorSpec*
+      Specifies the color of the background.  This is used if *imageName*
+      contains non-opaque pixels. *ColorSpec* is a color specification. The
+      default is "white".
+
+    **-data** *varName*
+      Specifies the name of TCL variable to be set with the XPM
+      data. *VarName* is the name of a global TCL variable.  
+
+    **-file** *fileName*
+      Writes the XPM output to the file *fileName*.
+
+    **-index** *numPicture*
+      Specifies the picture in the list of pictures of *imageName* to be
+      exported. *Index* is a non-negative number.  The default is 0, which is
+      the first picture.
+
+    **-noquantize** 
+      Indicates to not reduce the number of colors in *imageName* before
+      outputing the XPM data.  The default is to reduce the number of
+      colors by quantizing *imageName*.
 
 KEYWORDS
 --------

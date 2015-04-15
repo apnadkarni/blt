@@ -91,11 +91,11 @@ static Blt_SwitchCustom colorSwitch = {
 
 static Blt_SwitchSpec importSwitches[] = 
 {
-    {BLT_SWITCH_CUSTOM, "-bg", "color", (char *)NULL,
+    {BLT_SWITCH_CUSTOM, "-background", "color", (char *)NULL,
 	Blt_Offset(XbmImportSwitches, bg), 0, 0, &colorSwitch},
     {BLT_SWITCH_OBJ, "-data", "data", (char *)NULL,
 	Blt_Offset(XbmImportSwitches, dataObjPtr), 0},
-    {BLT_SWITCH_CUSTOM, "-fg", "color", (char *)NULL,
+    {BLT_SWITCH_CUSTOM, "-foreground", "color", (char *)NULL,
 	Blt_Offset(XbmImportSwitches, fg), 0, 0, &colorSwitch},
     {BLT_SWITCH_OBJ, "-file", "fileName", (char *)NULL,
 	Blt_Offset(XbmImportSwitches, fileObjPtr), 0},
@@ -110,7 +110,7 @@ static Blt_SwitchSpec exportSwitches[] =
 {
     {BLT_SWITCH_CUSTOM, "-bg", "color", (char *)NULL,
 	Blt_Offset(XbmExportSwitches, bg), 0, 0, &colorSwitch},
-    {BLT_SWITCH_OBJ, "-data", "data", (char *)NULL,
+    {BLT_SWITCH_OBJ, "-data", "varName", (char *)NULL,
 	Blt_Offset(XbmExportSwitches, dataObjPtr), 0},
     {BLT_SWITCH_OBJ, "-file", "fileName", (char *)NULL,
 	Blt_Offset(XbmExportSwitches, fileObjPtr), 0},

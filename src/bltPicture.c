@@ -630,38 +630,31 @@ Blt_GreyscalePicture(Pict *srcPtr)
     return destPtr;
 }
 
-/*
- * A* = (A - da)
- * r * A*
- *
- * r * A 
- * (r * A)/A * A*
- * (r * A)/A * (A - da)
- * r/A * (A - da)
- * rA - (r*da)/ A
- */
 void 
-Blt_FadePicture(Pict *pictPtr, int x, int y, int w, int h, double factor)
+Blt_FadePicture(Pict *srcPtr, int x, int y, int w, int h, double factor)
 {
     Blt_Pixel *srcRowPtr;
     int alpha;
 
-    alpha = (int)((1.0 - factor) * 255.0 + 0.5);
-    if (pictPtr->flags & BLT_PIC_ASSOCIATED_COLORS) {
-	Blt_UnassociateColors(pictPtr);
+    if ((srcPtr->flags & BLT_PIC_ASSOCIATED_COLORS) == 0) {
+	Blt_AssociateColors(srcPtr);
     }
-    srcRowPtr = pictPtr->bits + ((y * pictPtr->pixelsPerRow) + x);
+    alpha = (int)((1.0 - factor) * 255.0 + 0.5);
+    srcRowPtr = srcPtr->bits + ((y * srcPtr->pixelsPerRow) + x);
     for (y = 0; y < h; y++) {
 	Blt_Pixel *sp, *send;
 
 	for (sp = srcRowPtr, send = sp + w; sp < send; sp++) {
 	    int t;
 
+	    sp->Red   = imul8x8(sp->Red,   alpha, t);
+	    sp->Green = imul8x8(sp->Green, alpha, t);
+	    sp->Blue  = imul8x8(sp->Blue,  alpha, t);
 	    sp->Alpha = imul8x8(sp->Alpha, alpha, t);
 	}
-	srcRowPtr += pictPtr->pixelsPerRow;
+	srcRowPtr += srcPtr->pixelsPerRow;
     }
-    pictPtr->flags |= BLT_PIC_BLEND;
+    srcPtr->flags |= BLT_PIC_BLEND;
 }
 
 void
