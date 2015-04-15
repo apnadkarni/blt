@@ -173,7 +173,7 @@ typedef struct {
     int flags;				/* Flag. */
     Blt_Pixel bg;
     int index;
-    const char *label;			/* Label to be displayed as the id
+    const char *jobName;                /* Label to be displayed as the id
 					 * of the image. */
     const char *comments;		/* Comments to be displayed as the
 					 * extension of the image. */
@@ -184,7 +184,6 @@ typedef struct {
 
 #define EXPORT_ALPHA	(1<<0)		/* Export the alpha channel. */
 #define EXPORT_RLE	(1<<1)		/* Run length encode the image. */
-#define EXPORT_EXT	(1<<2)		/* Export an extension section. */
 
 static Blt_SwitchSpec exportSwitches[] = 
 {
@@ -192,20 +191,18 @@ static Blt_SwitchSpec exportSwitches[] =
 	Blt_Offset(TgaWriter, flags),   0, EXPORT_ALPHA},
     {BLT_SWITCH_STRING, "-author", "string", (char *)NULL,
 	Blt_Offset(TgaWriter, author),   0},
-    {BLT_SWITCH_CUSTOM, "-bg", "color", (char *)NULL,
+    {BLT_SWITCH_CUSTOM, "-background", "color", (char *)NULL,
 	Blt_Offset(TgaWriter, bg),         0, 0, &colorSwitch},
     {BLT_SWITCH_STRING, "-comments", "string", (char *)NULL,
 	Blt_Offset(TgaWriter, comments),   0},
-    {BLT_SWITCH_OBJ, "-data",  "data", (char *)NULL,
+    {BLT_SWITCH_OBJ, "-data",  "varName", (char *)NULL,
 	Blt_Offset(TgaWriter, dataObjPtr), 0},
     {BLT_SWITCH_OBJ, "-file",  "fileName", (char *)NULL,
 	Blt_Offset(TgaWriter, fileObjPtr), 0},
     {BLT_SWITCH_INT_NNEG, "-index", "int", (char *)NULL,
 	Blt_Offset(TgaWriter, index), 0},
-    {BLT_SWITCH_STRING, "-label",  "string", (char *)NULL,
-	Blt_Offset(TgaWriter, label), 0},
-    {BLT_SWITCH_BITMASK, "-extensions", "", (char *)NULL,
-	Blt_Offset(TgaWriter, flags),   0, EXPORT_EXT},
+    {BLT_SWITCH_STRING, "-job",  "string", (char *)NULL,
+	Blt_Offset(TgaWriter, jobName), 0},
     {BLT_SWITCH_BITMASK, "-rle", "", (char *)NULL,
 	Blt_Offset(TgaWriter, flags),   0, EXPORT_RLE},
     {BLT_SWITCH_STRING, "-software", "string", (char *)NULL,
@@ -1200,9 +1197,9 @@ TgaPutHeader(Tga *tgaPtr, TgaWriter *writerPtr)
     bp[OFF_BITSPERPIXEL] = tgaPtr->bitsPerPixel;
     bp[OFF_ATTRIBUTES] = (tgaPtr->numAlphaBits) | (tgaPtr->originBits << 4);
     /* Id */
-    if (writerPtr->label != NULL) {
+    if (writerPtr->jobName != NULL) {
 	bp = Blt_DBuffer_Extend(tgaPtr->dbuffer, tgaPtr->numBytesId + 1);
-	strcpy((char *)bp, writerPtr->label);
+	strcpy((char *)bp, writerPtr->jobName);
     }
 }
 
@@ -1466,8 +1463,8 @@ TgaPutExtension(Tga *tgaPtr, TgaWriter *writerPtr)
     TgaSetShort(bp + OFF_TIME_MIN,   tm.tm_min);
     TgaSetShort(bp + OFF_TIME_SEC,   tm.tm_sec);
 
-    if (writerPtr->label != NULL) {
-	strncpy((char *)bp + OFF_JOB_NAME, writerPtr->label,
+    if (writerPtr->jobName != NULL) {
+	strncpy((char *)bp + OFF_JOB_NAME, writerPtr->jobName,
 		TGA_JOBNAME_SIZE);
     }
     if (writerPtr->software != NULL) {

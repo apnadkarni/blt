@@ -312,18 +312,21 @@ FindSwitchSpec(
  *	A standard TCL return value.
  *
  * Side effects:
- *	WidgRec is modified as indicated by specPtr and value.  The old value
- *	is recycled, if that is appropriate for the value type.
+ *	WidgRec is modified as indicated by specPtr and value.  The old
+ *	value is recycled, if that is appropriate for the value type.
  *
  *---------------------------------------------------------------------------
  */
 static int
 DoSwitch(
-    Tcl_Interp *interp,		/* Interpreter for error reporting. */
-    Blt_SwitchSpec *sp,		/* Specifier to apply. */
-    Tcl_Obj *objPtr,		/* Value to use to fill in record. */
-    void *record)		/* Record whose fields are to be modified.
-				 * Values must be properly initialized. */
+    Tcl_Interp *interp,                 /* Interpreter for error
+                                         * reporting. */
+    Blt_SwitchSpec *sp,                 /* Specifier to apply. */
+    Tcl_Obj *objPtr,                    /* Value to use to fill in
+                                         * record. */
+    void *record)                       /* Record whose fields are to be
+                                         * modified.  Values must be
+                                         * properly initialized. */
 {
     do {
 	char *ptr;

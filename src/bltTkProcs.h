@@ -311,7 +311,7 @@ BLT_EXTERN void		Blt_ColorBlendPictures(Blt_Picture dest,
 #define Blt_FadePicture_DECLARED
 /* 52 */
 BLT_EXTERN void		Blt_FadePicture(Blt_Picture picture, int x, int y,
-				int w, int h, int alpha);
+				int w, int h, double factor);
 #endif
 #ifndef Blt_CopyPictureBits_DECLARED
 #define Blt_CopyPictureBits_DECLARED
@@ -611,7 +611,7 @@ typedef struct BltTkProcs {
     void (*blt_ZoomVertically) (Blt_Picture dest, Blt_Picture src, Blt_ResampleFilter filter); /* 49 */
     void (*blt_BlendRegion) (Blt_Picture dest, Blt_Picture src, int sx, int sy, int w, int h, int dx, int dy); /* 50 */
     void (*blt_ColorBlendPictures) (Blt_Picture dest, Blt_Picture src, Blt_BlendingMode mode); /* 51 */
-    void (*blt_FadePicture) (Blt_Picture picture, int x, int y, int w, int h, int alpha); /* 52 */
+    void (*blt_FadePicture) (Blt_Picture picture, int x, int y, int w, int h, double factor); /* 52 */
     void (*blt_CopyPictureBits) (Blt_Picture dest, Blt_Picture src, int sx, int sy, int w, int h, int dx, int dy); /* 53 */
     void (*blt_GammaCorrectPicture) (Blt_Picture dest, Blt_Picture src, float gamma); /* 54 */
     void (*blt_SharpenPicture) (Blt_Picture dest, Blt_Picture src); /* 55 */

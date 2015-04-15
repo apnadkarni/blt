@@ -4471,7 +4471,7 @@ DrawComboEntry(ComboEntry *comboPtr, Drawable drawable, int width, int height)
 	    w = Blt_Picture_Width(src);
 	    h = Blt_Picture_Height(src);
 	    dst = Blt_ClonePicture(src);
-	    Blt_FadePicture(dst, 0, 0, w, h, 100);
+	    Blt_FadePicture(dst, 0, 0, w, h, 100 / 255.0);
 	    Blt_PaintPicture(painter, drawable, dst, 0, 0, iw, ih,ix,iy,0);
 	    Blt_FreePicture(dst);
 	} else {

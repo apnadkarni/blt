@@ -461,10 +461,10 @@ typedef struct {
 
 static Blt_SwitchSpec arithSwitches[] = 
 {
+    {BLT_SWITCH_BITMASK, "-invert", "", (char *)NULL,
+        Blt_Offset(ArithSwitches, invert), 0, TRUE},
     {BLT_SWITCH_OBJ,     "-mask",   "mask", (char *)NULL,
 	Blt_Offset(ArithSwitches, maskObjPtr), 0},
-    {BLT_SWITCH_BOOLEAN, "-invert", "bool", (char *)NULL,
-	Blt_Offset(ArithSwitches, invert), 0},
     {BLT_SWITCH_END}
 };
 
@@ -801,6 +801,14 @@ Blt_GetNthPicture(Blt_Chain chain, size_t index)
 	return NULL;
     }
     return Blt_Chain_GetValue(link);
+}
+
+static INLINE void
+CopyPicture(Pict *destPtr, Pict *srcPtr)
+{
+    Blt_ResizePicture(destPtr, srcPtr->width, srcPtr->height);
+    Blt_CopyPictureBits(destPtr, srcPtr, 0, 0, srcPtr->width, srcPtr->height,
+                        0, 0);
 }
 
 static Blt_Picture
@@ -2582,7 +2590,7 @@ NextImage(PictImage *imgPtr)
 }
 
 static void
-AnimateTimerProc(ClientData clientData)
+ListTimerProc(ClientData clientData)
 {
     PictImage *imgPtr = clientData;
     int delay;
@@ -2592,7 +2600,7 @@ AnimateTimerProc(ClientData clientData)
     if (imgPtr->interval > 0) {
 	delay = imgPtr->interval;
     }
-    imgPtr->timerToken = Tcl_CreateTimerHandler(delay, AnimateTimerProc, imgPtr);
+    imgPtr->timerToken = Tcl_CreateTimerHandler(delay, ListTimerProc, imgPtr);
 }
 
 /*
@@ -2893,9 +2901,8 @@ BlendOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	fg = tmp = Blt_ClonePicture(fg);
     }
     if (dst != bg) {
-	Blt_ResizePicture(dst, Blt_Picture_Width(bg), Blt_Picture_Height(bg));
-	Blt_CopyPictureBits(dst, bg, 0, 0, 
-			    Blt_Picture_Width(bg), Blt_Picture_Height(bg), 0, 0);
+        CopyPicture(dst, bg);           /* Make a copy of the
+                                         * background. */
     }
     Blt_BlendRegion(dst, fg, switches.from.x, switches.from.y, 
 		    switches.from.w, switches.from.h, 
@@ -2933,9 +2940,7 @@ ColorBlendOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	return TCL_ERROR;
     }
     dst = PictureFromPictImage(imgPtr);
-    Blt_ResizePicture(dst, Blt_Picture_Width(bg), Blt_Picture_Height(bg));
-    Blt_CopyPictureBits(dst, bg, 0, 0, Blt_Picture_Width(bg), 
-	Blt_Picture_Height(bg), 0, 0);
+    CopyPicture(dst, bg);
     Blt_ColorBlendPictures(dst, fg, switches.mode); 
     Blt_NotifyImageChanged(imgPtr);
     return TCL_OK;
@@ -3591,21 +3596,27 @@ FadeOp(ClientData clientData, Tcl_Interp *interp, int objc,
 {
     Blt_Picture src;
     PictImage *imgPtr = clientData;
-    int w, h, alpha;
+    int w, h;
+    double percent;
 
     if (Blt_GetPictureFromObj(interp, objv[2], &src) != TCL_OK) {
 	return TCL_ERROR;
     }
-    if (Tcl_GetIntFromObj(interp, objv[3], &alpha) != TCL_OK) {
+    if (Tcl_GetDoubleFromObj(interp, objv[3], &percent) != TCL_OK) {
 	return TCL_ERROR;
+    }
+    if ((percent < 0.0) || (percent > 100.0)) {
+        Tcl_AppendResult(interp, "bad fade percentage \"",
+                Tcl_GetString(objv[3]), "\" should be between 0 and 100.",
+                (char *)NULL);
+        return TCL_ERROR;
     }
     w = Blt_Picture_Width(src);
     h = Blt_Picture_Height(src);
     if (imgPtr->picture != src) {
-	Blt_ResizePicture(imgPtr->picture, w, h);
-	Blt_CopyPictureBits(imgPtr->picture, src, 0, 0, w, h, 0, 0);
+	CopyPicture(imgPtr->picture, src);
     }
-    Blt_FadePicture(imgPtr->picture, 0, 0, w, h, alpha);
+    Blt_FadePicture(imgPtr->picture, 0, 0, w, h, percent * 0.01);
     Blt_NotifyImageChanged(imgPtr);
     return TCL_OK;
 }
@@ -3641,6 +3652,16 @@ FlipOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	Tcl_AppendResult(interp, "bad flip argument \"", string, 
 		"\": should be x or y", (char *)NULL);
 	return TCL_ERROR;
+    }
+    if (objc > 2) {
+        Blt_Picture src;
+        
+        if (Blt_GetPictureFromObj(interp, objv[2], &src) != TCL_OK) {
+            return TCL_ERROR;
+        }
+        if (src != imgPtr->picture) {
+            CopyPicture(imgPtr->picture, src);
+        }
     }
     Blt_FlipPicture(imgPtr->picture, isVertical);
     Blt_NotifyImageChanged(imgPtr);
@@ -4010,53 +4031,6 @@ GetImageIndex(Tcl_Interp *interp, PictImage *imgPtr, Tcl_Obj *objPtr,
 /*
  *---------------------------------------------------------------------------
  *
- * ListAnimateOp --
- *
- *	$im list animate $delay
- *	$im list animate stop
- *	$im list animate start
- *
- *---------------------------------------------------------------------------
- */
-/*ARGSUSED*/
-static int 
-ListAnimateOp(ClientData clientData, Tcl_Interp *interp, int objc, 
-	      Tcl_Obj *const *objv)
-{
-    PictImage *imgPtr = clientData;
-    const char *string;
-    int interval;
-    
-    string = Tcl_GetString(objv[2]);
-    if (strcmp(string, "stop") == 0) {
-	if (imgPtr->timerToken != 0) {
-	    Tcl_DeleteTimerHandler(imgPtr->timerToken);
-	    imgPtr->timerToken = 0;
-	}
-    } else if (strcmp(string, "start") == 0) {
-	if (imgPtr->timerToken == 0) {
-	    int delay;
-
-	    delay = Blt_Picture_Delay(imgPtr->picture);
-	    imgPtr->timerToken = 
-		Tcl_CreateTimerHandler(delay, AnimateTimerProc, imgPtr);
-	}	
-    } else if (Tcl_GetIntFromObj(interp, objv[2], &interval) == TCL_OK) {
-	imgPtr->interval = interval;
-	if (imgPtr->timerToken != 0) {
-	    Tcl_DeleteTimerHandler(imgPtr->timerToken);
-	}
-	imgPtr->timerToken = Tcl_CreateTimerHandler(imgPtr->interval, 
-		AnimateTimerProc, imgPtr);
-    } else {
-	return TCL_ERROR;
-    }
-    return TCL_OK;
-}
-
-/*
- *---------------------------------------------------------------------------
- *
  * ListAppendOp --
  *
  *	$im list append $img...
@@ -4171,6 +4145,35 @@ ListDeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
     imgPtr->index = 0;
     imgPtr->picture = Blt_Chain_FirstValue(imgPtr->chain);
     Blt_NotifyImageChanged(imgPtr);
+    return TCL_OK;
+}
+
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * ListDelayOp --
+ *
+ *	imageName list delay ?milliseconds?
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int 
+ListDelayOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+	      Tcl_Obj *const *objv)
+{
+    PictImage *imgPtr = clientData;
+    
+    if (objc > 3) {
+        int delay;
+
+        if (Tcl_GetIntFromObj(interp, objv[3], &delay) != TCL_OK) {
+            return TCL_ERROR;
+        }
+        imgPtr->interval = delay;
+    }
+    Tcl_SetIntObj(Tcl_GetObjResult(interp), imgPtr->interval);
     return TCL_OK;
 }
 
@@ -4331,16 +4334,67 @@ ListReplaceOp(ClientData clientData, Tcl_Interp *interp, int objc,
     return TCL_OK;
 }
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * ListStartOp --
+ *
+ *	imageName list stop
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int 
+ListStartOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+	      Tcl_Obj *const *objv)
+{
+    PictImage *imgPtr = clientData;
+    int delay;
+    
+    if (imgPtr->timerToken != 0) {
+        return TCL_OK;
+    }
+    delay = Blt_Picture_Delay(imgPtr->picture);
+    imgPtr->timerToken = Tcl_CreateTimerHandler(delay, ListTimerProc, imgPtr);
+    return TCL_OK;
+}
+
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * ListStopOp --
+ *
+ *	imageName list stop
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int 
+ListStopOp(ClientData clientData, Tcl_Interp *interp, int objc,
+           Tcl_Obj *const *objv)
+{
+    PictImage *imgPtr = clientData;
+    
+    if (imgPtr->timerToken != 0) {
+        Tcl_DeleteTimerHandler(imgPtr->timerToken);
+        imgPtr->timerToken = 0;
+    }
+    return TCL_OK;
+}
+
 static Blt_OpSpec listOps[] =
 {
-    {"animate",   2, ListAnimateOp,   3, 3, "oper",},
     {"append",    2, ListAppendOp,    3, 0, "?image...?",},
     {"current",   1, ListCurrentOp,   3, 4, "?index?",},
-    {"delete",    1, ListDeleteOp,    4, 5, "first ?last?",},
+    {"delay",     4, ListDelayOp,     3, 3, "?milliseconds?",},
+    {"delete",    4, ListDeleteOp,    4, 5, "first ?last?",},
     {"length",    1, ListLengthOp,    3, 3, "",},
     {"next",      1, ListNextOp,      3, 3, "",},
     {"previous",  1, ListPreviousOp,  3, 3, "",},
     {"replace",   1, ListReplaceOp,   5, 0, "first last ?image...?",},
+    {"start",     3, ListStartOp,     3, 3, "",},
+    {"stop",      3, ListStopOp,      3, 3, "",},
 };
 
 static int numListOps = sizeof(listOps) / sizeof(Blt_OpSpec);
@@ -4916,30 +4970,6 @@ SnapOp(ClientData clientData, Tcl_Interp *interp, int objc,
 /*
  *---------------------------------------------------------------------------
  *
- * TranspOp --
- *
- *---------------------------------------------------------------------------
- */
-/*ARGSUSED*/
-static int 
-TranspOp(ClientData clientData, Tcl_Interp *interp, int objc,
-         Tcl_Obj *const *objv)
-{
-    PictImage *imgPtr = clientData;
-    Blt_Pixel bg;
-
-    if (Blt_GetPixelFromObj(interp, objv[2], &bg)!= TCL_OK) {
-	return TCL_ERROR;
-    }
-    Blt_SubtractColor(imgPtr->picture, &bg);
-    Blt_NotifyImageChanged(imgPtr);
-    return TCL_OK;
-}
-
-
-/*
- *---------------------------------------------------------------------------
- *
  * WidthOp --
  *	Returns the current width of the picture.
  *
@@ -5111,7 +5141,6 @@ static Blt_OpSpec pictInstOps[] =
     {"sharpen",   2, SharpenOp,   2, 0, "",},
     {"snap",      2, SnapOp,      3, 0, "window ?switches ...?",},
     {"subtract",  2, ArithOp,     3, 0, "pictOrColor",},
-    {"transp",    6, TranspOp,    3, 3, "bgcolor",},
     {"width",     3, WidthOp,     2, 3, "?newWidth?",},
     {"wipe",      3, WipeOp,      4, 0, "from to ?switches ...?",},
     {"xor",       1, ArithOp,     3, 0, "pictOrColor ?switches ...?",},

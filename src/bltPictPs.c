@@ -164,7 +164,7 @@ static Blt_SwitchCustom padSwitch = {
 
 static Blt_SwitchSpec exportSwitches[] = 
 {
-    {BLT_SWITCH_CUSTOM,  "-bg",		"color", (char *)NULL,
+    {BLT_SWITCH_CUSTOM,  "-background",	"color", (char *)NULL,
 	Blt_Offset(PsExportSwitches, bg),	   0, 0, &colorSwitch},
     {BLT_SWITCH_OBJ,     "-data",	"data", (char *)NULL,
 	Blt_Offset(PsExportSwitches, dataObjPtr),  0},
@@ -197,8 +197,8 @@ static Blt_SwitchSpec exportSwitches[] =
 
 static Blt_SwitchSpec importSwitches[] =
 {
-    {BLT_SWITCH_BOOLEAN,  "-crop",	"bool", (char *)NULL,
-	Blt_Offset(PsImportSwitches, crop), 0},
+    {BLT_SWITCH_BITMASK,  "-crop",	"", (char *)NULL,
+        Blt_Offset(PsImportSwitches, crop), 0, TRUE},
     {BLT_SWITCH_OBJ,     "-data",	"data", (char *)NULL,
 	Blt_Offset(PsImportSwitches, dataObjPtr),  0},
     {BLT_SWITCH_INT,      "-dpi",	"number", (char *)NULL,

@@ -644,7 +644,7 @@ the command.  The operations available for *datatables* are listed below.
   
 *tableName* **import** *dataFormat* ?\ *switches* ...\ ?
 
-  Import data into *tableName* into another format. *DataFormat* is one of
+  Import data into *tableName* from another format. *DataFormat* is one of
   the different formats_ are described in the section **DATATABLE FORMATS**
   below. *Switches* are specific to *dataFormat*.
 
@@ -1225,7 +1225,7 @@ the command.  The operations available for *datatables* are listed below.
 .. _formats:
 
 DATATABLE FORMATS
-=================
+-----------------
 
 Datatables can import and export their data into various formats.
 They are loaded using the TCL **package** mechanism. Normally this

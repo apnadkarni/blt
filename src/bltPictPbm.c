@@ -85,7 +85,6 @@ typedef struct {
     Tcl_Obj *dataObjPtr;
     Tcl_Obj *fileObjPtr;
     int imageIndex;
-    float gamma;
 } PbmImportSwitches;
 
 typedef struct {
@@ -125,8 +124,6 @@ static Blt_SwitchSpec importSwitches[] =
 	Blt_Offset(PbmImportSwitches, fileObjPtr), 0},
     {BLT_SWITCH_INT_NNEG, "-index", "int", (char *)NULL,
 	Blt_Offset(PbmImportSwitches, imageIndex), 0},
-    {BLT_SWITCH_FLOAT, "-gamma", "number", (char *)NULL,
-	Blt_Offset(PbmImportSwitches, gamma), 0},
     {BLT_SWITCH_END}
 };
 
@@ -137,13 +134,13 @@ static Blt_SwitchCustom colorSwitch = {
 
 static Blt_SwitchSpec exportSwitches[] = 
 {
-    {BLT_SWITCH_OBJ,     "-data",  "data", (char *)NULL,
+    {BLT_SWITCH_CUSTOM,  "-background",	   "color", (char *)NULL,
+	Blt_Offset(PbmExportSwitches, bg), 0, 0, &colorSwitch},
+    {BLT_SWITCH_OBJ,     "-data",  "varName", (char *)NULL,
 	Blt_Offset(PbmExportSwitches, dataObjPtr), 0},
     {BLT_SWITCH_OBJ,     "-file",  "fileName", (char *)NULL,
 	Blt_Offset(PbmExportSwitches, fileObjPtr), 0},
-    {BLT_SWITCH_CUSTOM,  "-bg",	   "color", (char *)NULL,
-	Blt_Offset(PbmExportSwitches, bg),         0, 0, &colorSwitch},
-    {BLT_SWITCH_INT_NNEG, "-index", "int", (char *)NULL,
+    {BLT_SWITCH_INT_NNEG, "-index", "numPixture", (char *)NULL,
 	Blt_Offset(PbmExportSwitches, index), 0},
     {BLT_SWITCH_END}
 };
@@ -709,9 +706,6 @@ PbmToPictures(Tcl_Interp *interp, const char *fileName, Blt_DBuffer dbuffer,
 	Blt_Picture picture;
 
 	picture = PbmImage(&pbm);
-	if ((picture != NULL) && (switchesPtr->gamma != 1.0)) {
-	    Blt_GammaCorrectPicture(picture, picture, switchesPtr->gamma);
-	}
 	Blt_Chain_Append(chain, picture);
     }
     if (message.numWarnings > 0) {
@@ -832,7 +826,6 @@ ReadPbm(Tcl_Interp *interp, const char *fileName, Blt_DBuffer dbuffer)
 
     memset(&switches, 0, sizeof(switches));
     switches.imageIndex = 1;
-    switches.gamma = 1.0;
     return PbmToPictures(interp, fileName, dbuffer, &switches);
 }
 
@@ -867,8 +860,6 @@ ImportPbm(Tcl_Interp *interp, int objc, Tcl_Obj *const *objv,
 
     memset(&switches, 0, sizeof(switches));
     switches.imageIndex = 1;
-    switches.gamma = 1.0;
-
     if (Blt_ParseSwitches(interp, importSwitches, objc - 3, objv + 3, 
 	&switches, BLT_SWITCH_DEFAULTS) < 0) {
 	Blt_FreeSwitches(importSwitches, (char *)&switches, 0);
