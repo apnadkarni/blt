@@ -1157,7 +1157,7 @@ GifCreatePictureFromData(Blt_DBuffer dbuffer, Gif *gifPtr)
     if ((xOffset > 0) || (yOffset > 0) || (gifPtr->transparentColorFlag)) {
 	Blt_BlankPicture(destPtr, 0x0);
     }
-    destPtr->delay = gifPtr->delayTime * 10;  /* Convert to milliseconds. */
+    destPtr->delay = gifPtr->delayTime * 10;  /* Convert from milliseconds. */
     if (destPtr->delay == 0) {
 	destPtr->delay = 100;
     }

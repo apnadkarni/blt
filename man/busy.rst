@@ -3,9 +3,9 @@
 blt::busy
 ===============
 
-----------------------------------------------------------------
+-------------------------------------------------------------
 Make Tk widgets busy, temporarily blocking user interactions.
-----------------------------------------------------------------
+-------------------------------------------------------------
 
 :Author: gahowlett@gmail.com
 :Date:   2012-11-28
@@ -316,6 +316,7 @@ the busy command.
 
 KEYWORDS
 --------
+
 busy, keyboard events, pointer events, window, cursor
 
 

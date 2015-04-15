@@ -2996,10 +2996,7 @@ DrawTriangles(Graph *graphPtr, Drawable drawable, ContourElement *elemPtr,
 	DrawTriangle(elemPtr, elemPtr->picture, elemPtr->triangles + i, x, y);
     }
     if (InRange(elemPtr->opacity, 0.0, 100.0)) {
-	int alpha;
-
-	alpha = 255 - (int) (255.0 * (elemPtr->opacity * 0.01) + 0.5);
-	Blt_FadePicture(elemPtr->picture, 0, 0, w, h, alpha);
+	Blt_FadePicture(elemPtr->picture, 0, 0, w, h, elemPtr->opacity * 0.01);
     }
     Blt_PaintPictureWithBlend(elemPtr->painter, drawable, elemPtr->picture, 
 	0, 0, w, h, exts.left, exts.top, 0);

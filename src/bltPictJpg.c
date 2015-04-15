@@ -100,7 +100,7 @@ typedef struct {
 typedef struct {
     Tcl_Obj *dataObjPtr;
     Tcl_Obj *fileObjPtr;
-    int fast;
+    int method;                         /* DCT method. */
 } JpgImportSwitches;
 
 static Blt_SwitchParseProc ColorSwitchProc;
@@ -109,22 +109,34 @@ static Blt_SwitchCustom colorSwitch = {
     ColorSwitchProc, NULL, NULL, (ClientData)0
 };
 
+static Blt_SwitchParseProc DctSwitchProc;
+
+static Blt_SwitchCustom dctSwitch = {
+    DctSwitchProc, NULL, NULL, (ClientData)0
+};
+
+static Blt_SwitchParseProc PercentSwitchProc;
+
+static Blt_SwitchCustom percentSwitch = {
+    PercentSwitchProc, NULL, NULL, (ClientData)0
+};
+
 static Blt_SwitchSpec exportSwitches[] = 
 {
-    {BLT_SWITCH_CUSTOM,	   "-bg",          "color", (char *)NULL,
+    {BLT_SWITCH_CUSTOM,	   "-background", "color", (char *)NULL,
 	Blt_Offset(JpgExportSwitches, bg), 0, 0, &colorSwitch},
-    {BLT_SWITCH_OBJ,       "-data",        "data", (char *)NULL,
+    {BLT_SWITCH_OBJ,       "-data",        "varName", (char *)NULL,
 	Blt_Offset(JpgExportSwitches, dataObjPtr),0},
     {BLT_SWITCH_OBJ,       "-file",        "fileName", (char *)NULL,
 	Blt_Offset(JpgExportSwitches, fileObjPtr),0},
-    {BLT_SWITCH_INT_NNEG,  "-quality",     "int", (char *)NULL,
-	Blt_Offset(JpgExportSwitches, quality), 0},
-    {BLT_SWITCH_INT_NNEG,  "-smooth",      "int", (char *)NULL,
-	Blt_Offset(JpgExportSwitches, smoothing),0},
-    {BLT_SWITCH_BITMASK,   "-progressive", "", (char *)NULL,
-	Blt_Offset(JpgExportSwitches, flags), 0, PIC_PROGRESSIVE},
     {BLT_SWITCH_INT_NNEG, "-index", "int", (char *)NULL,
 	Blt_Offset(JpgExportSwitches, index), 0},
+    {BLT_SWITCH_CUSTOM,  "-quality",     "percent", (char *)NULL,
+        Blt_Offset(JpgExportSwitches, quality), 0, 0, &percentSwitch},
+    {BLT_SWITCH_INT_NNEG,  "-smooth",      "percent", (char *)NULL,
+        Blt_Offset(JpgExportSwitches, smoothing), 0, 0, &percentSwitch},
+    {BLT_SWITCH_BITMASK,   "-progressive", "", (char *)NULL,
+	Blt_Offset(JpgExportSwitches, flags), 0, PIC_PROGRESSIVE},
     {BLT_SWITCH_END}
 };
 
@@ -132,8 +144,8 @@ static Blt_SwitchSpec importSwitches[] =
 {
     {BLT_SWITCH_OBJ, "-data", "data", (char *)NULL,
 	Blt_Offset(JpgImportSwitches, dataObjPtr), 0},
-    {BLT_SWITCH_INT, "-fast", "int", (char *)NULL,
-	Blt_Offset(JpgImportSwitches, fast), 0},
+    {BLT_SWITCH_CUSTOM, "-dct", "method", (char *)NULL,
+       Blt_Offset(JpgImportSwitches, method), 0, 0, &dctSwitch},
     {BLT_SWITCH_OBJ, "-file", "fileName", (char *)NULL,
 	Blt_Offset(JpgImportSwitches, fileObjPtr), 0},
     {BLT_SWITCH_END}
@@ -199,6 +211,77 @@ ColorSwitchProc(
     }
     return TCL_OK;
 }
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * DctSwitchProc --
+ *
+ *	Convert a Tcl_Obj representing a DCT method.
+ *
+ * Results:
+ *	The return value is a standard TCL result.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+DctSwitchProc(ClientData clientData, Tcl_Interp *interp, const char *switchName,
+              Tcl_Obj *objPtr, char *record, int offset, int flags)	
+{
+    int *methodPtr = (int *)(record + offset);
+    const char *string;
+    char c;
+    
+    string = Tcl_GetString(objPtr);
+    c = string[0];
+    if ((c == 'f') && (strcmp(string, "fast") == 0)) {
+        *methodPtr = JDCT_IFAST;
+    } else if ((c == 'f') && (strcmp(string, "slow") == 0)) {
+        *methodPtr = JDCT_ISLOW;
+    } else if ((c == 'f') && (strcmp(string, "float") == 0)) {
+        *methodPtr = JDCT_FLOAT;
+    } else {
+        Tcl_AppendResult(interp, "bad DCT method \"", string, "\" should be ",
+                         " fast, slow, or float.", (char *)NULL);
+        return TCL_ERROR;
+    }
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * PercentSwitchProc --
+ *
+ *	Convert a Tcl_Obj representing an integer percentage 0 to 100.
+ *
+ * Results:
+ *	The return value is a standard TCL result.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+PercentSwitchProc(ClientData clientData, Tcl_Interp *interp,
+                  const char *switchName, Tcl_Obj *objPtr, char *record,
+                  int offset, int flags)	
+{
+    int *percentPtr = (int *)(record + offset);
+    double value;
+    
+    if (Tcl_GetDoubleFromObj(interp, objPtr, &value) != TCL_OK) {
+        return TCL_ERROR;
+    }
+    if ((value < 0.0) || (value > 100.0)) {
+        Tcl_AppendResult(interp, "bad percent value \"", Tcl_GetString(objPtr),
+                         "\" should be between 0 and 100.", (char *)NULL);
+        return TCL_ERROR;
+    }
+    *percentPtr = (int)(value + 0.5);
+    return TCL_OK;
+}
+
 
 static void
 JpgErrorProc(j_common_ptr commPtr)
@@ -442,7 +525,7 @@ JpgToPicture(
     /* Step 1: allocate and initialize JPEG decompression object */
 
     /* We set up the normal JPEG error routines, then override error_exit. */
-    cinfo.dct_method = (switchesPtr->fast) ? JDCT_IFAST : JDCT_ISLOW;
+    cinfo.dct_method = switchesPtr->method;
     cinfo.err = jpeg_std_error(&error.pub);
     error.pub.error_exit = JpgErrorProc;
     error.pub.output_message = JpgMessageProc;
@@ -791,6 +874,7 @@ ImportJpg(Tcl_Interp *interp, int objc, Tcl_Obj *const *objv,
     JpgImportSwitches switches;
 
     memset(&switches, 0, sizeof(switches));
+    switches.method = JDCT_ISLOW;       /* Default method. */
     if (Blt_ParseSwitches(interp, importSwitches, objc - 3, objv + 3, 
 	&switches, BLT_SWITCH_DEFAULTS) < 0) {
 	Blt_FreeSwitches(importSwitches, (char *)&switches, 0);

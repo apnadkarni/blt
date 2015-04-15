@@ -3,9 +3,9 @@
 blt::bgexec
 ===============
 
-----------------------------------------------------------------
+--------------------------------------------------------
 Run programs in the background while handling Tk events.
-----------------------------------------------------------------
+--------------------------------------------------------
 
 :Author: gahowlett@gmail.com
 :Date:   2012-11-28
@@ -220,7 +220,7 @@ or double dashes (--).  The following options are available for
     a dash "-".
 
 EXAMPLE
-----------------------
+-------
 
 Here is the disk usage example again, this time using **blt::bgexec**.  The
 syntax to invoke "du" is exactly the same as the previous example, when we

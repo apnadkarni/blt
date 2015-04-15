@@ -362,7 +362,7 @@ BLT_EXTERN void Blt_ColorBlendPictures(Blt_Picture dest, Blt_Picture src,
 	Blt_BlendingMode mode);
 
 BLT_EXTERN void Blt_FadePicture(Blt_Picture picture, int x, int y, int w, int h,
-	int alpha);
+	double factor);
 
 BLT_EXTERN void Blt_CopyPictureBits(Blt_Picture dest, Blt_Picture src, 
 	int sx, int sy, int w, int h, int dx, int dy);

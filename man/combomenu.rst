@@ -2,9 +2,9 @@
 blt::combomenu
 ===============
 
--------------------------------------------------
-Create and manipulate combomenu widgets
--------------------------------------------------
+----------------------------------------
+Create and manipulate combomenu widgets.
+----------------------------------------
 
 :Author: gahowlett@gmail.com
 :Date:   2012-11-28
@@ -752,7 +752,7 @@ command.  The following operations are available for *combomenu* widgets:
 
     Specifies the type of the menu item.  *Itemtype* can be "button",
     "cascade", "checkbutton", "radiobutton", or "separator". These
-    menu types are described in the section MENU ITEMS.
+    menu types are described in the section `MENU ITEMS`_.
     The default is "button".
 
   **-underline** *charIndex* 

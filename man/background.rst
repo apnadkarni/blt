@@ -3,9 +3,9 @@
 blt::background
 ===============
 
-----------------------------------------------------------------
+------------------------------------------------
 Create and manage background styles for widgets.
-----------------------------------------------------------------
+------------------------------------------------
 
 :Author: gahowlett@gmail.com
 :Date:   2012-11-28
@@ -98,7 +98,7 @@ A background can have one of the following types:
     line segment is relative to the window that it refers to (see the
     **-relativeto** option).  If a perpendicular line is outside the line
     segment, its color may be the low or high color of the gradient, it
-    may be repeated, or reversed (depending on the **--repeat** option).
+    may be repeated, or reversed (depending on the **-repeat** option).
 
   **radial** 
 
@@ -112,7 +112,7 @@ A background can have one of the following types:
   **stripe**
 
     A stripe *background* object draws a striped background.  The stripes may
-    run horizontally or vertically depending upon the **--orient** option.
+    run horizontally or vertically depending upon the **-orient** option.
 
   **tile**
 

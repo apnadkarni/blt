@@ -2584,7 +2584,7 @@ FormatOp(ClientData clientData, Tcl_Interp *interp, int objc,
 }
 
 static int
-DebugOp(ClientData clientData, Tcl_Interp *interp, int objc,
+ParseOp(ClientData clientData, Tcl_Interp *interp, int objc,
         Tcl_Obj *const *objv)
 {
     int result;
@@ -2640,8 +2640,8 @@ ScanOp(ClientData clientData, Tcl_Interp *interp, int objc,
  */
 static Blt_OpSpec timeStampCmdOps[] =
 {
-    {"debug",   1, DebugOp,       3, 3, "timeStamp",},
     {"format",  1, FormatOp,      3, 0, "seconds ?switches?",},
+    {"parse",   1, ParseOp,       3, 3, "timeStamp",},
     {"scan",    1, ScanOp,        3, 3, "timeStamp",},
 };
 
