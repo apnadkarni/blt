@@ -2,9 +2,9 @@
 blt::scrollset
 ===============
 
--------------------------------------------------
-Create and manipulate scrollset widgets
--------------------------------------------------
+----------------------------------------
+Create and manipulate scrollset widgets.
+----------------------------------------
 
 :Author: gahowlett@gmail.com
 :Date:   2012-11-28

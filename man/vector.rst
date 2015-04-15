@@ -3,9 +3,9 @@
 blt::vector
 ===============
 
-----------------------------------------------------------------
-Vector data object
-----------------------------------------------------------------
+-------------------
+Vector data object.
+-------------------
 
 :Author: gahowlett@gmail.com
 :Date:   2012-11-28
@@ -1232,4 +1232,5 @@ write your own C code to manage vectors.
 
 KEYWORDS
 --------
+
 vector, graph, widget

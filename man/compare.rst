@@ -2,9 +2,9 @@
 blt::utils::compare
 ===================
 
--------------------------------------------------
-Utility commands to compare strings and numbers
--------------------------------------------------
+------------------------------------------------
+Utility commands to compare strings and numbers.
+------------------------------------------------
 
 :Author: gahowlett@gmail.com
 :Date:   2012-11-28

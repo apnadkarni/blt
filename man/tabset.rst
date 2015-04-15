@@ -3,9 +3,9 @@
 blt::tabset
 ===============
 
-----------------------------------------------------------------
-Create and manipulate tabset widgets
-----------------------------------------------------------------
+-------------------------------------
+Create and manipulate tabset widgets.
+-------------------------------------
 
 :Author: gahowlett@gmail.com
 :Date:   2012-11-28
@@ -1029,4 +1029,5 @@ option.
 
 KEYWORDS
 --------
+
 tabset, widget

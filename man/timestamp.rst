@@ -2,9 +2,9 @@
 blt::timestamp
 ===================
 
--------------------------------------------------
+--------------------------------------
 Parse and format dates and timestamps.
--------------------------------------------------
+--------------------------------------
 
 :Author: gahowlett@gmail.com
 :Date:   2012-11-28
@@ -58,7 +58,7 @@ parse timestamps where the format of the timestamp isn't known.
   Formats the time that is expressed in seconds into a date/time format.
   *Seconds* is a double precision number that represents the number of
   seconds since the epoch (typically January 1st 1970 UTC).  If no
-  **--format** switch is given, the default format is used. For example
+  **-format** switch is given, the default format is used. For example
   if *seconds* is "0.0", the result would be "Thu Jan 01 00:00:00 +0000 1970".
 
   **-format** *substString*

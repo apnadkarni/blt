@@ -2,9 +2,9 @@
 blt::combomenu
 ===============
 
--------------------------------------------------
-Create and manipulate combomenu widgets
--------------------------------------------------
+----------------------------------------
+Create and manipulate combomenu widgets.
+----------------------------------------
 
 :Author: gahowlett@gmail.com
 :Date:   2012-11-28

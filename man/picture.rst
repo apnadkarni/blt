@@ -3,9 +3,9 @@
 picture
 ===============
 
-----------------------------------------------------------------
-Full color image type
-----------------------------------------------------------------
+----------------------
+Full color image type.
+----------------------
 
 :Author: gahowlett@gmail.com
 :Date:   2012-11-28
@@ -1154,7 +1154,7 @@ The available formats are "bmp", "jpg", "png", "gif", "tif", "tga", "ico",
       Indicates to create BMP data with an 8-bit alpha channel.  This
       option affects only non-opaque pixels in *imageName*.  By default
       non-opaque pixels are blended with a background color (see the
-      **--background** option).
+      **-background** option).
 
     **-background** *colorSpec*
       Specifies the color of the background.  This is used if *imageName*
@@ -1474,7 +1474,7 @@ The available formats are "bmp", "jpg", "png", "gif", "tif", "tga", "ico",
       Indicates to create TGA data with an 8-bit alpha channel.  This
       option affects only non-opaque pixels in *imageName*.  By default
       non-opaque pixels are blended with a background color (see the
-      **--background** option).
+      **-background** option).
 
     **-author** *string*
       Specifies a string for the author's name to included in the TGA data. 
