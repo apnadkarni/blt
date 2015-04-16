@@ -1,20 +1,19 @@
 /* -*- mode: c; c-basic-offset: 4; indent-tabs-mode: nil -*- */
-
 /*
  * bltPictPbm.c --
  *
- * This module implements PBM file format conversion routines for the picture
- * image type in the BLT toolkit.
+ * This module implements PBM file format conversion routines for the
+ * picture image type in the BLT toolkit.
  *
  *	Copyright 2003-2005 George A Howlett.
  *
- *	Permission is hereby granted, free of charge, to any person obtaining
- *	a copy of this software and associated documentation files (the
- *	"Software"), to deal in the Software without restriction, including
- *	without limitation the rights to use, copy, modify, merge, publish,
- *	distribute, sublicense, and/or sell copies of the Software, and to
- *	permit persons to whom the Software is furnished to do so, subject to
- *	the following conditions:
+ *	Permission is hereby granted, free of charge, to any person
+ *	obtaining a copy of this software and associated documentation
+ *	files (the "Software"), to deal in the Software without
+ *	restriction, including without limitation the rights to use, copy,
+ *	modify, merge, publish, distribute, sublicense, and/or sell copies
+ *	of the Software, and to permit persons to whom the Software is
+ *	furnished to do so, subject to the following conditions:
  *
  *	The above copyright notice and this permission notice shall be
  *	included in all copies or substantial portions of the Software.
@@ -22,10 +21,11 @@
  *	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  *	EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  *	MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- *	NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
- *	LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
- *	OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
- *	WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *	NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+ *	BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ *	ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ *	CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ *	SOFTWARE.
  *
  */
 
@@ -69,14 +69,14 @@ typedef struct {
 } PbmMessage;
 
 typedef struct {
-    unsigned int version;	/* Version of PBM file */
-    unsigned int maxval;	/* Maximum intensity allowed. */
-    unsigned int width, height;	/* Dimensions of the image. */
-    unsigned int bitsPerPixel;	/* # bits per pixel. */
-    unsigned int isRaw;		/* Indicates if the image format is raw or
-				 * plain. */
-    Blt_DBuffer dbuffer;	/* */
-    unsigned char *data;	/* Start of raw data */
+    unsigned int version;               /* Version of PBM file */
+    unsigned int maxval;                /* Maximum intensity allowed. */
+    unsigned int width, height;         /* Dimensions of the image. */
+    unsigned int bitsPerPixel;          /* # bits per pixel. */
+    unsigned int isRaw;                 /* Indicates if the image format is
+                                         * raw or plain. */
+    Blt_DBuffer dbuffer;                /* */
+    unsigned char *data;                /* Start of raw data */
     unsigned int bytesPerRow;
     Blt_Picture picture;
 } Pbm;
@@ -98,12 +98,12 @@ typedef struct {
 
 enum PbmVersions {
     PBM_UNKNOWN,
-    PBM_PLAIN,			/* Monochrome: 1-bit per pixel */
-    PGM_PLAIN,			/* 8-bits per pixel */
-    PPM_PLAIN,			/* 24-bits per pixel */
-    PBM_RAW,			/* 1-bit per pixel */
-    PGM_RAW,			/* 8/16-bits per pixel */
-    PPM_RAW			/* 24/48 bits per pixel */
+    PBM_PLAIN,                          /* Monochrome: 1-bit per pixel */
+    PGM_PLAIN,                          /* 8-bits per pixel */
+    PPM_PLAIN,                          /* 24-bits per pixel */
+    PBM_RAW,                            /* 1-bit per pixel */
+    PGM_RAW,                            /* 8/16-bits per pixel */
+    PPM_RAW                             /* 24/48 bits per pixel */
 };
     
 static const char *pbmFormat[] = {
@@ -122,7 +122,7 @@ static Blt_SwitchSpec importSwitches[] =
 	Blt_Offset(PbmImportSwitches, dataObjPtr), 0},
     {BLT_SWITCH_OBJ,   "-file",  "fileName", (char *)NULL,
 	Blt_Offset(PbmImportSwitches, fileObjPtr), 0},
-    {BLT_SWITCH_INT_NNEG, "-index", "int", (char *)NULL,
+    {BLT_SWITCH_INT, "-index", "int", (char *)NULL,
 	Blt_Offset(PbmImportSwitches, imageIndex), 0},
     {BLT_SWITCH_END}
 };
@@ -904,11 +904,10 @@ ImportPbm(Tcl_Interp *interp, int objc, Tcl_Obj *const *objv,
 }
 
 static int
-ExportPbm(Tcl_Interp *interp, unsigned int index, Blt_Chain chain, int objc, 
+ExportPbm(Tcl_Interp *interp, int index, Blt_Chain chain, int objc, 
 	  Tcl_Obj *const *objv)
 {
     Blt_DBuffer dbuffer;
-    Blt_Picture picture;
     PbmExportSwitches switches;
     int result;
 
@@ -924,18 +923,35 @@ ExportPbm(Tcl_Interp *interp, unsigned int index, Blt_Chain chain, int objc,
 		"use only one -file or -data switch.", (char *)NULL);
 	return TCL_ERROR;
     }
-    /* FIXME: handle -all option.  */
-    picture = Blt_GetNthPicture(chain, switches.index);
-    if (picture == NULL) {
-	Tcl_AppendResult(interp, "bad picture index.", (char *)NULL);
-	return TCL_ERROR;
-    }
-    result = TCL_ERROR;			/* Suppress compiler warning. */
+    result = TCL_ERROR;             /* Suppress compiler warning. */
     dbuffer = Blt_DBuffer_Create();
-    if (PictureToPbm(interp, picture, dbuffer, &switches) != TCL_OK) {
-	Tcl_AppendResult(interp, "can't convert \"", 
-			 Tcl_GetString(objv[2]), "\"", (char *)NULL);
-	goto error;
+    if (switches.index < 0) {
+        Blt_ChainLink link;
+        
+        for (link = Blt_Chain_FirstLink(chain); link != NULL;
+             link = Blt_Chain_NextLink(link)) {
+            Blt_Picture picture;
+
+            picture = Blt_Chain_GetValue(link);
+            if (PictureToPbm(interp, picture, dbuffer, &switches) != TCL_OK) {
+                Tcl_AppendResult(interp, "can't convert \"", 
+                                 Tcl_GetString(objv[2]), "\"", (char *)NULL);
+                goto error;
+            }
+        }
+    } else {
+        Blt_Picture picture;
+
+        picture = Blt_GetNthPicture(chain, switches.index);
+        if (picture == NULL) {
+            Tcl_AppendResult(interp, "bad picture index.", (char *)NULL);
+            goto error;
+        }
+        if (PictureToPbm(interp, picture, dbuffer, &switches) != TCL_OK) {
+            Tcl_AppendResult(interp, "can't convert \"", 
+                             Tcl_GetString(objv[2]), "\"", (char *)NULL);
+            goto error;
+        }
     }
     /* Write the PBM data to file or convert it to a base64 string. */
     if (switches.fileObjPtr != NULL) {

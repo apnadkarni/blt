@@ -46,7 +46,7 @@ The **picture** is an image type for Tk. It is for full color images
 picture is eight bits and there is an 8-bit alpha channel.  Image data for
 a picture image can be obtained from a file or a string, or it can be
 supplied from C code through a procedural interface.  Many image formats
-are supported (JPG, GIF, TGA, BMP, TIF, ICO, PDF, PS, etc) as well as a
+are supported (JPEG, GIF, TGA, BMP, TIFF, ICO, PDF, PS, etc.) as well as a
 number of operations that can be performed on the image such as resizing
 (through resampling).
 
@@ -443,14 +443,16 @@ the command.  The operations available for pictures are listed below.
   coordinates are clamped to reside within the image.  For example if *x2*
   is "10000" and the image width is 50, the value will be clamped to 49.
 
-*imageName* **crossfade** *from* *to* ?\ *switches* ... ?
+*imageName* **crossfade** *fromImage* *toImage* ?\ *switches* ... ?
 
-   Cross fades *to* into *from*, saving the result in *imageName*. *From*
-   and *to* can be either the name of a picture (it can not be *imageName*)
-   or a color specification.  For example if *to* is "black", this image
-   will fade to black.  *From* and *to* cannot both be colors. *ImageName*
-   will first be a copy of *from*.  It is progressively changed by fading
-   the *from* and adding *to* until *imageName* is a copy of *to*.
+   Cross fades *toImage* into *fromImage*, saving the result in
+   *imageName*. *FromImage* and *toImage* can be either the name of a
+   picture (it can not be *imageName*) or a color specification.  For
+   example if *toImage* is "black", this image will fade to black.
+   *FromImage* and *toImage* cannot both be colors. *ImageName* will first
+   be a copy of *fromImage*.  It is progressively changed by fading the
+   *fromImage* and adding *toImage* until *imageName* is a copy of
+   *toImage*.
 
    If **-delay** is greater than zero, the transition automatically starts
    after this command completes at an idle point. Care must be taken not to
@@ -476,14 +478,14 @@ the command.  The operations available for pictures are listed below.
      Specifies the name of a TCL variable that will be set when the
      transition has completed.
 
-*imageName* **dissolve** *from* *to* ?\ *switches* ... ?
+*imageName* **dissolve** *fromImage* *toImage* ?\ *switches* ... ?
 
-   Transitions from *from* to *to* using by dissolving *to* into *from* and
-   saving the result in *imageName*. *From* and *to* can be either the name
-   of a picture (it can not be *imageName*) or a color specification.
-   *From* and *to* cannot both be colors. *ImageName* starts as a copy of
-   *from*.  It is progressively changed by randomly copying pixels from
-   *to* into it. 
+   Transitions from *fromImage* to *toImage* by dissolving *toImage*
+   into *fromImage* and saving the result in *imageName*. *FromImage* and
+   *toImage* can be either the name of a picture (it can not be
+   *imageName*) or a color specification.  *FromImage* and *toImage* cannot
+   both be colors. *ImageName* starts as a copy of *fromImage*.  It is
+   progressively changed by randomly copying pixels from *toImage* into it.
 
    Reference: "A Digital "Dissolve" Effect" by Mike Morton in "Graphics
    Gems V", pp. 221-232, Academic Press, 1994.
@@ -1008,14 +1010,15 @@ the command.  The operations available for pictures are listed below.
   may have any of the forms acceptable to **Tk_GetPixels**, such as "200"
   or "2.4i".
 
-*imageName* **wipe** *from* *to* ?\ *switches* ... ?
+*imageName* **wipe** *fromImage* *toImage* ?\ *switches* ... ?
 
-   Transitions from *from* to *to* using by wiping. *To* is *to* into
-   *from* and saving the result in *imageName*. *From* and *to* can be
-   either the name of a picture (it can not be *imageName*) or a color
-   specification.  *From* and *to* cannot both be colors. *ImageName*
-   starts as a copy of *from*.  It is progressively changed by randomly
-   copying pixels from *to* into it.
+   Transitions from *fromImage* to *toImage* by wiping. *toImage* is
+   *toImage* into *fromImage* and saving the result in
+   *imageName*. *FromImage* and *toImage* can be either the name of a
+   picture (it can not be *imageName*) or a color specification.
+   *FromImage* and *toImage* cannot both be colors. *ImageName* starts as a
+   copy of *fromImage*.  It is progressively changed by randomly copying
+   pixels from *toImage* into it.
 
    This transition will start after this command completes, when an idle
    point is reached. Care must be taken not to change *imageName* while the
@@ -1062,8 +1065,9 @@ They are loaded using the TCL **package** mechanism. Normally this
 is done automatically for you when you invoke an **import** or
 **export** operation on a picture.
 
-The available formats are "bmp", "jpg", "png", "gif", "tif", "tga", "ico",
-"pbm", "ps", "pdf", "photo", "xbm", and "xpm" and are described below.
+The available formats are **bmp**, **gif**, **ico**, **jpg**, **pdf**,
+**photo**, **png**, **pbm**, **ps**, **tga**, **tif**, **xbm**, and **xpm**
+and are described below.
 
 **bmp**
 ^^^^^^^
@@ -1073,6 +1077,7 @@ The available formats are "bmp", "jpg", "png", "gif", "tif", "tga", "ico",
   The 32-bit format supports 8-bit RGB components with an 8-bit alpha
   channel.  The package can be manually loaded as follows.
 
+
     **package require blt_picture_bmp**
 
   By default this package is automatically loaded when you use the *bmp*
@@ -1080,8 +1085,9 @@ The available formats are "bmp", "jpg", "png", "gif", "tif", "tga", "ico",
 
   *imageName* **import bmp** ?\ *switches* ... ?
 
-    Imports BMP data into *imageName*.  One of the **-file** or **-data**
-    switches below must be set.  The following import switches are supported:
+    Imports BMP data into *imageName*.  Either the **-file** or **-data**
+    switch (described below) is required. The following import switches are
+    supported:
 
     **-data** *string*
      Read the BMP information from *string*.
@@ -1122,8 +1128,8 @@ The available formats are "bmp", "jpg", "png", "gif", "tif", "tga", "ico",
 
     **-index** *numPicture*
       Specifies the picture in the list of pictures of *imageName* to be
-      exported. *Index* is a non-negative number.  The default is 0, which is
-      the first picture.
+      exported. *NumPicture* is a non-negative number.  The default is 0,
+      which is the first picture.
 
 **gif**
 ^^^^^^^^^
@@ -1138,8 +1144,9 @@ The available formats are "bmp", "jpg", "png", "gif", "tif", "tga", "ico",
 
   *imageName* **import gif** ?\ *switches* ... ?
 
-    Imports GIF data into *imageName*.  One of the **-file** or **-data**
-    switches below must be set.  The following import switches are supported:
+    Imports GIF data into *imageName*.  Either the **-file** or **-data**
+    switch (described below) is required.  The following import switches
+    are supported:
 
     **-data** *string*
      Read the GIF information from *string*.
@@ -1178,8 +1185,69 @@ The available formats are "bmp", "jpg", "png", "gif", "tif", "tga", "ico",
 
     **-index** *numPicture*
       Specifies the picture in the list of pictures of *imageName* to be
-      exported. *Index* is a non-negative number.  The default is 0, which is
-      the first picture.
+      exported. *NumPicture* is a non-negative number.  The default is 0,
+      which is the first picture.
+
+**ico**
+^^^^^^^
+
+  The *ico* module reads and writes the image file format for computer
+  icons in Microsoft Windows (ICO). ICO files contain one or more small
+  images at multiple sizes and color depths, such that they may be scaled
+  appropriately. The package can be manually loaded as follows.
+
+    **package require blt_picture_ico**
+
+  By default this package is automatically loaded when you use the *ico*
+  format in the **import** or **export** operations.
+
+  *imageName* **import ico** ?\ *switches* ... ?
+
+    Imports ICO data into *imageName*.  Either the **-file** or **-data**
+    switch (described below) is required. The following import switches are
+    supported:
+
+    **-data** *string*
+     Read the ICO information from *string*.
+
+    **-file** *fileName*
+     Read the ICO file from *fileName*.
+
+  *imageName* **export ico** ?\ *switches* ... ?
+
+    Exports *imageName* into ICO data.  If no **-file** or **-data** switch
+    is provided, this command returns the ICO output as a base64 string.  If
+    *imageName* is greyscale, then the ICO output will be 1 8-bit component
+    per pixel, otherwise it will contain 3 8-bit components per pixel.  If
+    any pixel in *imageName* is not opaque, then an extra alpha component is
+    output.
+
+    The following switches are supported:
+
+    **-alpha**
+      Indicates to create ICO data with an 8-bit alpha channel.  This
+      option affects only non-opaque pixels in *imageName*.  By default
+      non-opaque pixels are blended with a background color (see the
+      **-background** option).
+
+    **-background** *colorSpec*
+      Specifies the color of the background.  This is used if *imageName*
+      contains non-opaque pixels and the **-alpha** switch is not set.
+      *ColorSpec* is a color specification. The default background color
+      is "white".
+
+    **-data** *varName*
+      Specifies the name of TCL variable to be set with the binary ICO
+      data. *VarName* is the name of a global TCL variable.  It will
+      contain a byte array object.
+
+    **-file** *fileName*
+      Write the ICO output to the file *fileName*.
+
+    **-index** *numPicture*
+      Specifies the picture in the list of pictures of *imageName* to be
+      exported. *NumPicture* is a non-negative number.  The default is 0,
+      which is the first picture.
 
 **jpg**
 ^^^^^^^
@@ -1194,8 +1262,9 @@ The available formats are "bmp", "jpg", "png", "gif", "tif", "tga", "ico",
 
   *imageName* **import jpg** ?\ *switches* ... ?
 
-    Imports JPEG data into *imageName*.  One of the **-file** or **-data**
-    switches below must be set.  The following import switches are supported:
+    Imports JPEG data into *imageName*.  Either the **-file** or **-data**
+    switch (described below) is required.  The following import switches are
+    supported:
 
     **-data** *string*
      Read the JPEG information from *string*.
@@ -1237,8 +1306,8 @@ The available formats are "bmp", "jpg", "png", "gif", "tif", "tga", "ico",
 
     **-index** *numPicture*
       Specifies the picture in the list of pictures of *imageName* to be
-      exported. *Index* is a non-negative number.  The default is 0, which is
-      the first picture.
+      exported. *NumPicture* is a non-negative number.  The default is 0,
+      which is the first picture.
 
     **-quality** *percent*
       Specifies the percent quality.  *Percent* must be a number between
@@ -1268,8 +1337,8 @@ The available formats are "bmp", "jpg", "png", "gif", "tif", "tga", "ico",
     switch is required.  The following import switches are supported:
 
     **-image** *photoName*
-     Reads the photo information from image *photoName*. *PhotoName* must
-     be the name of a Tk photo image.
+      Reads the photo information from image *photoName*. *PhotoName* must
+      be the name of a Tk photo image.
 
   *imageName* **export photo** ?\ *switches* ... ?
 
@@ -1277,21 +1346,21 @@ The available formats are "bmp", "jpg", "png", "gif", "tif", "tga", "ico",
     required.  The following import switches are supported:
 
     **-image** *photoName*
-     Write the picture information to the photo image *photoName*.
-     *PhotoName* must be the name of a Tk photo image.
+      Write the picture information to the photo image *photoName*.
+      *PhotoName* must be the name of a Tk photo image.
 
     **-index** *numPicture*
       Specifies the picture in the list of pictures of *imageName* to be
-      exported. *Index* is a non-negative number.  The default is 0, which is
-      the first picture.
+      exported. *NumPicture* is a non-negative number.  IThe default is 0,
+      which is the first picture.
 
 **pbm**
 ^^^^^^^
 
   The *pbm* module reads and writes the NETPBM format.  These include the
   Portable Pixmap (PPM), Portable Bitmap (PBM) and Portable Greymap (PGM)
-  data.  The NETPBM format supports 8, 15, 16, 24, and 32 bit pixels.  The
-  32-bit format supports 8-bit RGB components with an 8-bit alpha channel.
+  data.  The NETPBM format supports multiple images in a single output.
+
   The package can be manually loaded as follows.
 
     **package require blt_picture_pbm**
@@ -1301,8 +1370,9 @@ The available formats are "bmp", "jpg", "png", "gif", "tif", "tga", "ico",
 
   *imageName* **import pbm** ?\ *switches* ... ?
 
-    Imports NETPBM data into *imageName*.  One of the **-file** or **-data**
-    switches below must be set.  The following import switches are supported:
+    Imports NETPBM data into *imageName*.  Either the **-file** or
+    **-data** switch (described below) is required. The following import
+    switches are supported:
 
     **-data** *string*
      Read the NETPBM information from *string*.
@@ -1335,8 +1405,8 @@ The available formats are "bmp", "jpg", "png", "gif", "tif", "tga", "ico",
 
     **-index** *numPicture*
       Specifies the picture in the list of pictures of *imageName* to be
-      exported. *Index* is a non-negative number.  The default is 0, which is
-      the first picture.
+      exported. If *numPicture* is a negative, all pictures will be
+      exported.  The default is 0, which is the first picture.
 
 **pdf**
 ^^^^^^^
@@ -1353,9 +1423,9 @@ The available formats are "bmp", "jpg", "png", "gif", "tif", "tga", "ico",
   *imageName* **import pdf** ?\ *switches* ... ?
 
     Imports PDF data into *imageName*.  This command requires that the
-    **ghostscript** interpreter **gs** be in your PATH.  One of the
-    **-file** or **-data** switches below must be set.  The following
-    import switches are supported:
+    **ghostscript** interpreter **gs** be in your PATH.  Either the
+    **-file** or **-data** switch (described below) is required. The
+    following import switches are supported:
 
     **-data** *string*
      Reads the PDF information from *string*.
@@ -1409,8 +1479,8 @@ The available formats are "bmp", "jpg", "png", "gif", "tif", "tga", "ico",
 
     **-index** *numPicture*
       Specifies the picture in the list of pictures of *imageName* to be
-      exported. *Index* is a non-negative number.  The default is 0, which is
-      the first picture.
+      exported. *NumPicture* is a non-negative number.  The default is 0,
+      which is the first picture.
 
 **png**
 ^^^^^^^
@@ -1425,8 +1495,9 @@ The available formats are "bmp", "jpg", "png", "gif", "tif", "tga", "ico",
 
   *imageName* **import png** ?\ *switches* ... ?
 
-    Imports PNG data into *imageName*.  One of the **-file** or **-data**
-    switches below must be set.  The following import switches are supported:
+    Imports PNG data into *imageName*.  Either the **-file** or **-data**
+    switch (described below) is required.  The following import switches are
+    supported:
 
     **-data** *string*
      Read the PNG information from *string*.
@@ -1457,6 +1528,113 @@ The available formats are "bmp", "jpg", "png", "gif", "tif", "tga", "ico",
     **-file** *fileName*
       Write the PNG output to the file *fileName*.
 
+**ps**
+^^^^^^^
+
+  The *ps* module reads and writes Adobe's PostScript format (PS) data.
+  The PS format supports 24-bit pixels.  The package can be manually loaded
+  as follows.
+
+    **package require blt_picture_ps**
+
+  By default this package is automatically loaded when you use the *ps*
+  format in the **import** or **export** operations.
+
+  *imageName* **import ps** ?\ *switches* ... ?
+
+    Imports PS data into *imageName*. This command requires that the
+    **ghostscript** interpreter **gs** be in your PATH.  Either the
+    **-file** or **-data** switch (described below) is required. The
+    following import switches are supported:
+
+    **-data** *string*
+     Reads the PS information from *string*.
+
+    **-dpi** *number*
+     Specifies the dots per index (DPI) when converting the PS input.
+     The default is "100".
+
+    **-file** *fileName*
+     Reads the PS file from *fileName*.
+
+    **-nocrop** 
+     Indicates to not crop the image at the BoundingBox.  The can
+     add a border around the image.  The default is to crop the data.
+
+    **-papersize** *string*
+     Specifies the paper size. *String* is . The default is "letter".
+
+  *imageName* **export ps** ?\ *switches* ... ?
+
+    Exports *imageName* into PS data.  If no **-file** or **-data** switch
+    is provided, this command returns the PS output as a string.  If
+    *imageName* contains non-opaque pixels, *imageName* will be blended in
+    with the background color specified by the **-background** switch.  The
+    following switches are supported.
+
+    **-background** *colorSpec*
+      Specifies the color of the background.  This is used if *imageName*
+      contains non-opaque pixels. *ColorSpec* is a color specification. The
+      default background color is "white".
+
+    **-center** 
+      Indicates to center the image on the page.
+
+    **-comments** *string*
+      Specifies comments to be included in the PS data. 
+
+    **-data** *varName*
+      Specifies the name of TCL variable to be set with the PS
+      data. *VarName* is the name of a global TCL variable.  
+
+    **-file** *fileName*
+      Writes the PS output to the file *fileName*.
+
+    **-greyscale** 
+      Indicates to convert the image to greyscale before exporting to PS.
+
+    **-index** *numPicture*
+      Specifies the picture in the list of pictures of *imageName* to be
+      exported. *NumPicture* is a non-negative number.  The default is 0,
+      which is the first picture.
+
+    **-landscape**
+      Indicates to rotate the image 90 degrees. The the x-coordinates of
+      the image run along the long dimension of the page.
+
+    **-level** *pslevel*
+      Specifies the PostScript level.
+
+    **-maxpect** 
+      Indicates to scale the image so that it fills the PostScript page.
+      The aspect ratio of the picture is still retained.  
+
+    **-padx** *numPica*
+      Specifies the horizontal padding for the left and right page borders.
+      The borders are exterior to the image.  *NumPixels* can be a list of
+      one or two screen distances.  If *numPica* has two elements, the left
+      border is padded by the first distance and the right border by the
+      second.  If *numPica* has just one distance, both the left and right
+      borders are padded evenly. The default is "1i".
+
+    **-pady** *numPica*
+      Specifies the vertical padding for the top and bottom page
+      borders. The borders are exterior to the image.  *NumPica* can be a
+      list of one or two page distances.  If *numPica* has two elements,
+      the top border is padded by the first distance and the bottom border
+      by the second.  If *numPica* has just one distance, both the top and
+      bottom borders are padded evenly.  The default is "1i".
+
+    **-paperheight** *numPica*
+      Specifies the height of the PostScript page.  This can be used to
+      select between different page sizes (letter, A4, etc).  The default
+      height is "11.0i".
+
+    **-paperwidth** *numPica*
+      Specifies the width of the PostScript page.  This can be used to
+      select between different page sizes (letter, A4, etc).  The default
+      width is "8.5i".
+
 **tga**
 ^^^^^^^
 
@@ -1472,8 +1650,9 @@ The available formats are "bmp", "jpg", "png", "gif", "tif", "tga", "ico",
 
   *imageName* **import tga** ?\ *switches* ... ?
 
-    Imports TGA data into *imageName*.  One of the **-file** or **-data**
-    switches below must be set.  The following import switches are supported:
+    Imports TGA data into *imageName*.  Either the **-file** or **-data**
+    switch (described below) is required.  The following import switches
+    are supported:
 
     **-data** *string*
      Read the TGA information from *string*.
@@ -1528,8 +1707,8 @@ The available formats are "bmp", "jpg", "png", "gif", "tif", "tga", "ico",
 
     **-index** *numPicture*
       Specifies the picture in the list of pictures of *imageName* to be
-      exported. *Index* is a non-negative number.  The default is 0, which is
-      the first picture.
+      exported. *NumPicture* is a non-negative number.  The default is 0,
+      which is the first picture.
 
     **-job** *string*
       Specifies a job name (image name) to be included an ID for the TGA
@@ -1558,8 +1737,9 @@ The available formats are "bmp", "jpg", "png", "gif", "tif", "tga", "ico",
 
   *imageName* **import tif** ?\ *switches* ... ?
 
-    Imports TIFF data into *imageName*.  One of the **-file** or **-data**
-    switches below must be set.  The following import switches are supported:
+    Imports TIFF data into *imageName*.  Either the **-file** or **-data**
+    switch (described below) is required. The following import switches are
+    supported:
 
     **-data** *string*
      Reads the TIFF information from *string*.
@@ -1637,8 +1817,8 @@ The available formats are "bmp", "jpg", "png", "gif", "tif", "tga", "ico",
 
     **-index** *numPicture*
       Specifies the picture in the list of pictures of *imageName* to be
-      exported. *Index* is a non-negative number.  The default is 0, which is
-      the first picture.
+      exported. *NumPicture* is a non-negative number.  The default is 0,
+      which is the first picture.
 
 
 **xbm**
@@ -1655,8 +1835,9 @@ The available formats are "bmp", "jpg", "png", "gif", "tif", "tga", "ico",
 
   *imageName* **import xbm** ?\ *switches* ... ?
 
-    Imports XBM data into *imageName*.  One of the **-file** or **-data**
-    switches below must be set.  The following import switches are supported:
+    Imports XBM data into *imageName*.  Either the **-file** or **-data**
+    switch (described below) is required. The following import switches are
+    supported:
 
     **-background** *colorSpec*
       Specifies the color of the background.  These are 0 pixels in the
@@ -1700,8 +1881,8 @@ The available formats are "bmp", "jpg", "png", "gif", "tif", "tga", "ico",
 
     **-index** *numPicture*
       Specifies the picture in the list of pictures of *imageName* to be
-      exported. *Index* is a non-negative number.  The default is 0, which is
-      the first picture.
+      exported. *NumPicture* is a non-negative number.  The default is 0,
+      which is the first picture.
 
 **xpm**
 ^^^^^^^
@@ -1717,8 +1898,9 @@ The available formats are "bmp", "jpg", "png", "gif", "tif", "tga", "ico",
 
   *imageName* **import xpm** ?\ *switches* ... ?
 
-    Imports XPM data into *imageName*.  One of the **-file** or **-data**
-    switches below must be set.  The following import switches are supported:
+    Imports XPM data into *imageName*.  Either the **-file** or **-data**
+    switch (described below) is required.  The following import switches are
+    supported:
 
     **-data** *string*
      Reads the XPM information from *string*.
@@ -1748,8 +1930,8 @@ The available formats are "bmp", "jpg", "png", "gif", "tif", "tga", "ico",
 
     **-index** *numPicture*
       Specifies the picture in the list of pictures of *imageName* to be
-      exported. *Index* is a non-negative number.  The default is 0, which is
-      the first picture.
+      exported. *NumPicture* is a non-negative number.  The default is 0,
+      which is the first picture.
 
     **-noquantize** 
       Indicates to not reduce the number of colors in *imageName* before

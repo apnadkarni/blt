@@ -197,14 +197,14 @@ static Blt_SwitchSpec exportSwitches[] =
 
 static Blt_SwitchSpec importSwitches[] =
 {
-    {BLT_SWITCH_BITMASK,  "-crop",	"", (char *)NULL,
-        Blt_Offset(PsImportSwitches, crop), 0, TRUE},
     {BLT_SWITCH_OBJ,     "-data",	"data", (char *)NULL,
 	Blt_Offset(PsImportSwitches, dataObjPtr),  0},
     {BLT_SWITCH_INT,      "-dpi",	"number", (char *)NULL,
 	Blt_Offset(PsImportSwitches, dpi), 0},
     {BLT_SWITCH_OBJ,     "-file",	"fileName", (char *)NULL,
 	Blt_Offset(PsImportSwitches, fileObjPtr),  0},
+    {BLT_SWITCH_BITMASK,  "-nocrop",	"", (char *)NULL,
+        Blt_Offset(PsImportSwitches, crop), 0, FALSE},
     {BLT_SWITCH_STRING,  "-papersize",	"string", (char *)NULL,
 	Blt_Offset(PsImportSwitches, paperSize),   0},
     {BLT_SWITCH_END}

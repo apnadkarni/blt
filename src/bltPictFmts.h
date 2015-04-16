@@ -90,7 +90,7 @@ typedef Tcl_Obj *(Blt_PictureWriteProc)(Tcl_Interp *interp,
 typedef Blt_Chain (Blt_PictureImportProc)(Tcl_Interp *interp, int objc, 
 	Tcl_Obj *const *objv, const char **fileNamePtr);
 
-typedef int (Blt_PictureExportProc)(Tcl_Interp *interp, unsigned int index,
+typedef int (Blt_PictureExportProc)(Tcl_Interp *interp, int index,
 	Blt_Chain chain, int objc, Tcl_Obj *const *objv);
 
 BLT_EXTERN int Blt_PictureRegisterFormat(Tcl_Interp *interp, 

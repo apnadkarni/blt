@@ -299,7 +299,7 @@ typedef struct {
 					 * default colormap, or an
 					 * allocated private map. */
     int depth;				/* Depth of the display. */
-    unsigned int index;			/* Index of the picture in the
+    int index;                          /* Index of the picture in the
 					 * list. */
     float gamma;			/* Gamma correction value */
 } PictCacheKey;
