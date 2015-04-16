@@ -4504,18 +4504,46 @@ ProjectOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * PutOp --
  *
+ *      Changes the color of the pixel at the given coordinates. 
+ *
  * Results:
  *	Returns a standard TCL return value.
  *
  * Side effects:
  *	None.
  *
+ *      imageName put x y color
+ *
  *---------------------------------------------------------------------------
  */
 static int
 PutOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 {
-
+    Blt_Pixel *dp;
+    Blt_Pixel pixel;
+    PictImage *imgPtr = clientData;
+    int x, y;
+    
+    if ((Tcl_GetIntFromObj(interp, objv[2], &x) != TCL_OK) ||
+	(Tcl_GetIntFromObj(interp, objv[3], &y) != TCL_OK)) {
+	return TCL_ERROR;
+    }
+    if ((x < 0) || (x >= Blt_Picture_Width(imgPtr->picture))) {
+        Tcl_AppendResult(interp, "bad x coordinate \"", Tcl_GetString(objv[2]),
+                "\" coordinate is outside picture.", (char *)NULL);
+        return TCL_ERROR;
+    }
+    if ((y < 0) || (y >= Blt_Picture_Height(imgPtr->picture))) {
+        Tcl_AppendResult(interp, "bad y coordinate \"", Tcl_GetString(objv[3]),
+                "\" coordinate is outside picture.", (char *)NULL);
+        return TCL_ERROR;
+    }
+    if (Blt_GetPixelFromObj(interp, objv[4], &pixel) != TCL_OK) {
+	return TCL_ERROR;
+    }
+    dp = Blt_Picture_Pixel(imgPtr->picture, x, y);
+    dp->u32 = pixel.u32;
+    Blt_NotifyImageChanged(imgPtr);
     return TCL_OK;
 }
 
@@ -4524,7 +4552,7 @@ PutOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *
  * QuantizeOp --
  *
- *	$dest quantize $src 256
+ *	imageName quantize srcName numColors
  *
  *---------------------------------------------------------------------------
  */

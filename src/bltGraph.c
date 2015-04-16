@@ -112,26 +112,28 @@ static Blt_CustomOption mapElementsOption = {
 BLT_EXTERN Blt_CustomOption bltLinePenOption;
 BLT_EXTERN Blt_CustomOption bltBarPenOption;
 BLT_EXTERN Blt_CustomOption bltBarModeOption;
+BLT_EXTERN Blt_SwitchCustom bltXAxisSwitch;
+BLT_EXTERN Blt_SwitchCustom bltYAxisSwitch;
 
 #define DEF_ASPECT_RATIO                "0.0"
 #define DEF_BAR_BASELINE                "0.0"
-#define DEF_BAR_MODE            "normal"
-#define DEF_BAR_WIDTH           "0.9"
-#define DEF_BACKGROUND          STD_NORMAL_BACKGROUND
-#define DEF_BORDERWIDTH         STD_BORDERWIDTH
-#define DEF_BUFFER_ELEMENTS     "yes"
+#define DEF_BAR_MODE                    "normal"
+#define DEF_BAR_WIDTH                   "0.9"
+#define DEF_BACKGROUND                  STD_NORMAL_BACKGROUND
+#define DEF_BORDERWIDTH                 STD_BORDERWIDTH
+#define DEF_BUFFER_ELEMENTS             "yes"
 #define DEF_BUFFER_GRAPH                "1"
-#define DEF_CURSOR              "crosshair"
+#define DEF_CURSOR                      "crosshair"
 #define DEF_FONT                        "{Sans Serif} 12"
 #define DEF_HALO                        "2m"
-#define DEF_HALO_BAR            "0.1i"
-#define DEF_HEIGHT              "4i"
+#define DEF_HALO_BAR                    "0.1i"
+#define DEF_HEIGHT                      "4i"
 #define DEF_HIGHLIGHT_BACKGROUND        STD_NORMAL_BACKGROUND
-#define DEF_HIGHLIGHT_COLOR     RGB_BLACK
-#define DEF_HIGHLIGHT_WIDTH     "2"
-#define DEF_INVERT_XY           "0"
-#define DEF_JUSTIFY             "center"
-#define DEF_MARGIN_SIZE         "0"
+#define DEF_HIGHLIGHT_COLOR             RGB_BLACK
+#define DEF_HIGHLIGHT_WIDTH             "2"
+#define DEF_INVERT_XY                   "0"
+#define DEF_JUSTIFY                     "center"
+#define DEF_MARGIN_SIZE                 "0"
 #define DEF_MARGIN_VAR          (char *)NULL
 #define DEF_PLOT_BACKGROUND     RGB_WHITE
 #define DEF_PLOT_BORDERWIDTH    "1"
@@ -277,13 +279,19 @@ static Blt_SwitchCustom elementSwitch = {
 
 typedef struct {
     Element *elemPtr;
+    Axis *xAxisPtr;
+    Axis *yAxisPtr;
     Graph *graphPtr;
 } TransformArgs;
 
 static Blt_SwitchSpec transformSpecs[] = 
 {
     {BLT_SWITCH_CUSTOM, "-element",  "elemName", (char *)NULL,
-     Blt_Offset(TransformArgs, elemPtr),  0, 0, &elementSwitch},
+        Blt_Offset(TransformArgs, elemPtr),  0, 0, &elementSwitch},
+    {BLT_SWITCH_CUSTOM, "-mapx",  "axisName", (char *)NULL,
+        Blt_Offset(TransformArgs, xAxisPtr),  0, 0, &bltXAxisSwitch},
+    {BLT_SWITCH_CUSTOM, "-mapy",  "axisName", (char *)NULL,
+        Blt_Offset(TransformArgs, yAxisPtr),  0, 0, &bltYAxisSwitch},
     {BLT_SWITCH_END}
 };
 
@@ -1327,18 +1335,27 @@ InvtransformOp(Graph *graphPtr, Tcl_Interp *interp, int objc,
     }
     args.elemPtr = NULL;
     args.graphPtr = graphPtr;
+    bltXAxisSwitch.clientData = graphPtr;
+    bltYAxisSwitch.clientData = graphPtr;
     if (Blt_ParseSwitches(interp, transformSpecs, objc - 4, objv + 4, &args, 
 	BLT_SWITCH_DEFAULTS) < 0) {
 	return TCL_ERROR;
     }
+    /* Default: Use the first x and y axes. */
+    axes.x = Blt_GetFirstAxis(graphPtr->margins[MARGIN_X].axes);
+    axes.y = Blt_GetFirstAxis(graphPtr->margins[MARGIN_Y].axes);
+    /* Override if individual axis is specified. */
+    if (args.xAxisPtr != NULL) {
+        axes.x = args.xAxisPtr;
+    } 
+    if (args.yAxisPtr != NULL) {
+        axes.y = args.yAxisPtr;
+    } 
+    /* Override if element is specified. */
     if (args.elemPtr == NULL) {
-	/*  Pick the first pair of axes */
-	axes.x = Blt_GetFirstAxis(graphPtr->margins[MARGIN_X].axes);
-	axes.y = Blt_GetFirstAxis(graphPtr->margins[MARGIN_Y].axes);
-	point = Blt_InvMap2D(graphPtr, x, y, &axes);
-    } else {
-	point = Blt_InvMap2D(graphPtr, x, y, &args.elemPtr->axes);
+        axes = args.elemPtr->axes;
     }
+    point = Blt_InvMap2D(graphPtr, x, y, &axes);
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
     Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewDoubleObj(point.x));
     Tcl_ListObjAppendElement(interp, listObjPtr, Tcl_NewDoubleObj(point.y));
@@ -1381,18 +1398,28 @@ TransformOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     }
     args.elemPtr = NULL;
     args.graphPtr = graphPtr;
+    bltXAxisSwitch.clientData = graphPtr;
+    bltYAxisSwitch.clientData = graphPtr;
     if (Blt_ParseSwitches(interp, snapSpecs, objc - 4, objv + 4, &args, 
 	BLT_SWITCH_DEFAULTS) < 0) {
 	return TCL_ERROR;
     }
+    /* Default: Use the first x and y axes. */
+    axes.x = Blt_GetFirstAxis(graphPtr->margins[MARGIN_X].axes);
+    axes.y = Blt_GetFirstAxis(graphPtr->margins[MARGIN_Y].axes);
+    /* Override if individual axis is specified. */
+    if (args.xAxisPtr != NULL) {
+        axes.x = args.xAxisPtr;
+    } 
+    if (args.yAxisPtr != NULL) {
+        axes.y = args.yAxisPtr;
+    } 
+    /* Override if element is specified. */
     if (args.elemPtr == NULL) {
-	/*  Pick the first pair of axes */
-	axes.x = Blt_GetFirstAxis(graphPtr->margins[MARGIN_X].axes);
-	axes.y = Blt_GetFirstAxis(graphPtr->margins[MARGIN_Y].axes);
-	point = Blt_Map2D(graphPtr, x, y, &axes);
-    } else {
-	point = Blt_Map2D(graphPtr, x, y, &args.elemPtr->axes);
+        axes = args.elemPtr->axes;
     }
+    point = Blt_Map2D(graphPtr, x, y, &axes);
+
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
     Tcl_ListObjAppendElement(interp, listObjPtr, 
 	Tcl_NewIntObj(ROUND(point.x)));
@@ -1632,9 +1659,11 @@ ObjToFormat(
     string = Tcl_GetString(objPtr);
     c = string[0];
     if ((c == 'p') && (strcmp(string, "picture") == 0)) {
-	*formatPtr = FORMAT_PHOTO;
+	*formatPtr = FORMAT_PICTURE;
     } else if ((c == 'p') && (strcmp(string, "photo") == 0)) {
 	*formatPtr = FORMAT_PHOTO;
+    } else if ((c == 'i') && (strcmp(string, "image") == 0)) {
+	*formatPtr = FORMAT_PICTURE;
 #ifdef WIN32
     } else if ((c == 'e') && (strcmp(string, "emf") == 0)) {
 	*formatPtr = FORMAT_EMF;
@@ -1644,10 +1673,10 @@ ObjToFormat(
     } else {
 #ifdef WIN32
 	Tcl_AppendResult(interp, "bad format \"", string, 
-		 "\": should be picture, photo, emf, or wmf.", (char *)NULL);
+		 "\": should be image, emf, or wmf.", (char *)NULL);
 #else
 	Tcl_AppendResult(interp, "bad format \"", string, 
-		 "\": should be picture or photo.", (char *)NULL);
+		 "\": should be image.", (char *)NULL);
 #endif /* WIN32 */
 	return TCL_ERROR;
     }

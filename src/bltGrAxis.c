@@ -156,6 +156,18 @@ Blt_CustomOption bltAxisOption = {
     ObjToAxis, AxisToObj, FreeAxis, (ClientData)CID_NONE
 };
 
+static Blt_SwitchParseProc XAxisSwitch;
+static Blt_SwitchParseProc YAxisSwitch;
+static Blt_SwitchFreeProc FreeAxisSwitch;
+Blt_SwitchCustom bltXAxisSwitch =
+{
+    XAxisSwitch, NULL, FreeAxisSwitch, (ClientData)0
+};
+Blt_SwitchCustom bltYAxisSwitch =
+{
+    YAxisSwitch, NULL, FreeAxisSwitch, (ClientData)0
+};
+
 static Blt_OptionParseProc ObjToScale;
 static Blt_OptionPrintProc ScaleToObj;
 static Blt_CustomOption scaleOption = {
@@ -606,6 +618,112 @@ ObjToAxis(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
     *axisPtrPtr = axisPtr;
     return TCL_OK;
 }
+
+
+/*
+ *-----------------------------------------------------------------------------
+ * Custom option parse and print procedures
+ *-----------------------------------------------------------------------------
+ */
+
+/*ARGSUSED*/
+static void
+FreeAxisSwitch(ClientData clientData, char *record, int offset, int flags)
+{
+    Axis **axisPtrPtr = (Axis **)(record + offset);
+
+    if (*axisPtrPtr != NULL) {
+	ReleaseAxis(*axisPtrPtr);
+	*axisPtrPtr = NULL;
+    }
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * XAxisSwitch --
+ *
+ *      Converts the name of an axis to a pointer to its axis structure.
+ *
+ * Results:
+ *      The return value is a standard TCL result.  The axis flags are
+ *      written into the widget record.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+XAxisSwitch(ClientData clientData, Tcl_Interp *interp, const char *switchName,
+           Tcl_Obj *objPtr, char *record, int offset, int flags)
+{
+    Axis **axisPtrPtr = (Axis **)(record + offset);
+    Axis *axisPtr;
+    Graph *graphPtr = clientData;
+
+    if (flags & BLT_SWITCH_NULL_OK) {
+	const char *string;
+
+	string  = Tcl_GetString(objPtr);
+	if (string[0] == '\0') {
+	    ReleaseAxis(*axisPtrPtr);
+	    *axisPtrPtr = NULL;
+	    return TCL_OK;
+	}
+    }
+    if (GetAxisByClass(interp, graphPtr, objPtr, CID_AXIS_X, &axisPtr)
+        != TCL_OK) {
+	return TCL_ERROR;
+    }
+    if (*axisPtrPtr != NULL) {
+	ReleaseAxis(*axisPtrPtr);
+    }
+    *axisPtrPtr = axisPtr;
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * YAxisSwitch --
+ *
+ *      Converts the name of an axis to a pointer to its axis structure.
+ *
+ * Results:
+ *      The return value is a standard TCL result.  The axis flags are
+ *      written into the widget record.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+YAxisSwitch(ClientData clientData, Tcl_Interp *interp, const char *switchName,
+           Tcl_Obj *objPtr, char *record, int offset, int flags)
+{
+    Axis **axisPtrPtr = (Axis **)(record + offset);
+    Axis *axisPtr;
+    Graph *graphPtr = clientData;
+
+    if (flags & BLT_SWITCH_NULL_OK) {
+	const char *string;
+
+	string  = Tcl_GetString(objPtr);
+	if (string[0] == '\0') {
+	    ReleaseAxis(*axisPtrPtr);
+	    *axisPtrPtr = NULL;
+	    return TCL_OK;
+	}
+    }
+    if (GetAxisByClass(interp, graphPtr, objPtr, CID_AXIS_Y, &axisPtr)
+        != TCL_OK) {
+	return TCL_ERROR;
+    }
+    if (*axisPtrPtr != NULL) {
+	ReleaseAxis(*axisPtrPtr);
+    }
+    *axisPtrPtr = axisPtr;
+    return TCL_OK;
+}
+
 
 /*
  *---------------------------------------------------------------------------
