@@ -9,20 +9,20 @@ if [file exists ../library] {
     set blt_library ../library
 }
 
-set VERBOSE 1
+set VERBOSE 0
 
 test timestamp.1 {timestamp no args} {
     list [catch {blt::timestamp} msg] $msg
 } {1 {wrong # args: should be one of...
-  blt::timestamp debug timeStamp
   blt::timestamp format seconds ?switches?
+  blt::timestamp parse timeStamp
   blt::timestamp scan timeStamp}}
 
 test timestamp.2 {timestamp bad arg} {
     list [catch {blt::timestamp badArg} msg] $msg
 } {1 {bad operation "badArg": should be one of...
-  blt::timestamp debug timeStamp
   blt::timestamp format seconds ?switches?
+  blt::timestamp parse timeStamp
   blt::timestamp scan timeStamp}}
 
 test timestamp.3 {timestamp scan no arg} {
