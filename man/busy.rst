@@ -36,19 +36,19 @@ Make Tk widgets busy, temporarily blocking user interactions.
 SYNOPSIS
 --------
 
-**blt::busy hold** *window* ?\ *option* *value* ...\ ?
+**blt::busy hold** *windowName* ?\ *option* *value* ...\ ?
 
-**blt::busy release**  ?\ *window* ...\ ?
+**blt::busy release**  ?\ *windowName* ...\ ?
 
-**blt::busy configure** *window* ?\ *option* *value* ...\ ?
+**blt::busy configure** *windowName* ?\ *option* *value* ...\ ?
 
-**blt::busy forget**  ?\ *window* ...\ ?
+**blt::busy forget**  ?\ *windowName* ...\ ?
 
-**blt::busy isbusy** *window* 
+**blt::busy isbusy** *windowName* 
 
 **blt::busy names** ?\ *pattern* ...\ ?
 
-**blt::busy status** *window* 
+**blt::busy status** *windowName* 
 
 DESCRIPTION
 -----------
@@ -82,10 +82,10 @@ easier and far much more efficient than recursively traversing the
 widget hierarchy, disabling each widget and re-configuring its cursor.
 
 The **blt::busy** command isn't a replacement for the Tk **grab** command.
-There are times where the **blt::busy** command can be used instead of Tk's
-**grab** command.  Unlike **grab** which restricts all user interactions to
-one widget, with the busy command you can have more than one widget active
-(for example, a "cancel" dialog and a "help" button).
+There are times where the **blt::busy** command can be better used instead
+of Tk's **grab** command.  Unlike **grab** which restricts all user
+interactions to one widget, with the busy command you can have more than
+one widget active (for example, a "cancel" dialog and a "help" button).
 
 
 OPERATIONS
@@ -93,11 +93,11 @@ OPERATIONS
 
 The following operations are available for the **blt::busy** command:
 
-**blt::busy hold** *window* ?\ *option* *value* ...\ ?
+**blt::busy hold** *windowName* ?\ *option* *value* ...\ ?
 
-  Makes the widget *window* (and its descendants in the Tk window
-  hierarchy) busy.  *Window* must be a valid path name of a Tk widget.  The
-  busy window is mapped the next time idle tasks are processed, and the
+  Makes the widget *windowName* (and its descendants in the Tk window
+  hierarchy) busy.  *windowName* must be a valid path name of a Tk widget.
+  The busy window is mapped the next time idle tasks are processed, and the
   widget and its descendants will be blocked from user interactions. All
   events in the widget window and its descendants are ignored.  Normally
   **update** should be called immediately afterward to insure that the
@@ -105,32 +105,28 @@ The following operations are available for the **blt::busy** command:
   processing. The following configuration options are valid:
 
   **-cursor** *cursorName*
-
     Specifies the cursor to be displayed when the widget is made busy.
     *CursorName* can be in any form accepted by **Tk_GetCursor**.  The
     default cursor is "watch".
 
   **-darken** *percent*
-
-   Specifies the amount darken or lighten the opaque busy window. The
-   **-opaque** option must be set.  The default is "30".
+    Specifies the amount darken or lighten the opaque busy window. The
+    **-opaque** option must be set.  The default is "30".
 
   **-image** *imageName*
-
-   Draws the given image centered over the opaque busy window.
+    Draws the given image centered over the opaque busy window.
 
   **-opaque** *boolean*
+    Indicates if an opaque busy window should be used.  This window is a
+    snapshot of the current window lightened or darkened by the specified
+    amount (see the **-darken** option). The default is "0".
 
-   Indicates if an opaque busy window should be used.  This window is a
-   snapshot of the current window lightened or darkened by the specified
-   amount (see the **-darken** option). The default is "0".
-
-**blt::busy configure** *window* ?\ *option* *value* ...\ ?
+**blt::busy configure** *windowName* ?\ *option* *value* ...\ ?
 
   Queries or modifies the **blt::busy** command configuration options for
-  *window*. *Window* must be the path name of a widget previously made busy
-  by the **hold** operation.  If no options are specified, a list
-  describing all of the available options for *window* (see
+  *windowName*. *WindowName* must be the path name of a widget previously
+  made busy by the **hold** operation.  If no options are specified, a list
+  describing all of the available options for *windowName* (see
   **Tk_ConfigureInfo** for information on the format of this list) is
   returned.  If *option* is specified with no *value*, then the command
   returns a list describing the one named option (this list will be
@@ -140,9 +136,9 @@ The following operations are available for the **blt::busy** command:
   the given value(s); in this case the command returns the empty string.
   *Option* may have any of the values accepted by the **hold** operation.
 
-  Please note that the option database is referenced through *window*.  For
-  example, if the widget ".frame" is to be made busy, the busy cursor can
-  be specified for it by either **option** command:
+  Please note that the option database is referenced through *windowName*.
+  For example, if the widget ".frame" is to be made busy, the busy cursor
+  can be specified for it by either **option** command:
 
   ::
 
@@ -153,29 +149,29 @@ The following operations are available for the **blt::busy** command:
 
   Returns the pathnames of all widgets that are currently busy (active).
   If a *pattern* is given, the path names of busy widgets matching
-  *pattern* are returned.  This differs from the **names** operation in that
-  **active** only returns the names of windows where the busy window is
-  currently active (**names** returns all busy windows).
+  *pattern* are returned.  This differs from the **names** operation in
+  that **active** only returns the names of windows where the busy window
+  is currently active (**names** returns all busy windows).
 
-**blt::busy forget** ?\ *window* ...\ ?
+**blt::busy forget** ?\ *windowName* ...\ ?
 
-  Releases resources allocated by the busy command for *window*, including
-  the busy window.  User events will again be received again by *window*.
-  Resources are also released when *window* is destroyed. *Window* must be
-  the name of a widget specified in the **hold** operation, otherwise an
-  error is reported.
+  Releases resources allocated by the busy command for *windowName*,
+  including the busy window.  User events will again be received again by
+  *windowName*.  Resources are also released when *windowName* is
+  destroyed. *WindowName* must be the name of a widget specified in the
+  **hold** operation, otherwise an error is reported.
 
-**blt::busy check** *window*
+**blt::busy check** *windowName*
 
-  Checks if *window* or any of its ancestors are currently busy.  If
-  *window* is presently busy (it can not receive user interactions) "1" is
-  returned, otherwise "0".
+  Checks if *windowName* or any of its ancestors are currently busy.  If
+  *windowName* is presently busy (it can not receive user interactions) "1"
+  is returned, otherwise "0".
 
-**blt::busy isbusy** *window*
+**blt::busy isbusy** *windowName*
 
-  Indicates whether *window* is currently busy.  *Window* is the name of a
-  Tk widget. Returns "1" the window is busy and "0" otherwise.  If *window*
-  doesn't exist, then "0" is returned.
+  Indicates whether *windowName* is currently busy.  *WindowName* is the
+  name of a Tk widget. Returns "1" the window is busy and "0" otherwise.
+  If *windowName* doesn't exist, then "0" is returned.
 
 **blt::busy names** ?\ *pattern* ...\ ?
 
@@ -185,20 +181,21 @@ The following operations are available for the **blt::busy** command:
   *pattern* is given, the path names of busy widgets matching *pattern* are
   returned.
 
-**blt::busy release** ?\ *window* ...\ ?
+**blt::busy release** ?\ *windowName* ...\ ?
 
-  Makes the *window* un-busy. Restores user interactions to the widget
-  *window* again.  This differs from the **forget** operation in that the
-  busy window is not destroyed, but simply unmapped.  *Window* must be the
-  name of a widget specified in a **hold** operation, otherwise an error is
-  reported.
+  Makes *windowName* un-busy. Restores user interactions to the widget
+  *windowName* again.  This differs from the **forget** operation in that
+  the busy window is not destroyed, but simply unmapped.  *WindowName* must
+  be the name of a widget specified in a **hold** operation, otherwise an
+  error is reported.
 
-**blt::busy status** *window*
+**blt::busy status** *windowName*
 
-  Indicates the busy status of *window*.  If *window* has a busy window and
-  the busy window is currently active (user interactions are blocked),
-  "active" is returned.  If *window* has a busy window, but is not active,
-  then "inactive" is returned.  Otherwise "none" is returned.
+  Indicates the busy status of *windowName*.  If *windowName* has a busy
+  window and the busy window is currently active (user interactions are
+  blocked), "active" is returned.  If *windowName* has a busy window, but
+  is not active, then "inactive" is returned.  Otherwise "none" is
+  returned.
 
 BINDINGS
 --------
