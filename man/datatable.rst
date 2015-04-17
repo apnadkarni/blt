@@ -370,11 +370,11 @@ the command.  The operations available for *datatables* are listed below.
   to *tableName* but refers to no columns.  This is useful for creating
   empty column tags.
 
-*tableName* **column tag delete**  *tag* ?\ *column* *column* ...\ ? 
+*tableName* **column tag delete**  *column* ?\ *tag* ...\ ? 
   
-  Removes the tag from *column*.  *Tag* is an arbitrary string but can't be
-  one of the built-in tags ("all" or "end"). The built-in tags "all" and
-  "end" can't be deleted.
+  Removes one or more tags from *column*.  *Tag* is an arbitrary string but
+  can't be one of the built-in tags ("all" or "end"). The built-in tags
+  "all" and "end" can't be deleted.
 
 *tableName* **column tag exists**  *tag* ?\ *column* ...\ ? 
 
@@ -899,11 +899,11 @@ the command.  The operations available for *datatables* are listed below.
   *tableName* but refers to no rows.  This is useful for creating empty row
   tags.
 
-*tableName* **row tag delete**  *tag* ?\ *row* *row* ...\ ? 
+*tableName* **row tag delete**  *row* ?\ *tag* ...\ ? 
   
-  Removes the tag from *row*.  *Tag* is an arbitrary string but can't be
-  one of the built-in tags ("all" or "end"). The built-in tags "all" and
-  "end" can't be deleted.
+  Removes one or more tags from *row*.  *Tag* is an arbitrary string but
+  can't be one of the built-in tags ("all" or "end"). The built-in tags
+  "all" and "end" can't be deleted.
 
 *tableName* **row tag exists**  *tag* ?\ *row* ...\ ? 
 

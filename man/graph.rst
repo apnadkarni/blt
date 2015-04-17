@@ -1073,18 +1073,19 @@ The following operations are available for elements.
 
   Returns the current value of the element configuration option given by
   *option*.  *Option* may be any of the options described below for the
-  element **configure** operation.
+  element **configure** operation.  *ElemName* is an element name or a tag
+  but may not reference multiple elements.
 
 *pathName* **element closest** *x* *y* ?\ *option* *value* ... ? ?\ *elemName* ... ?
 
   Searches for the data point closest to the window coordinates *x* and
   *y*.  By default, all elements are searched.  Hidden elements (see the
   **-hide** option is false) are ignored.  You can limit the search by
-  specifying only the elements you want to be considered.  *ElemName* must
-  be the name of an element that can not be hidden.  It returns a key-value
-  list containing the name of the closest element, the index of the closest
-  data point, and the graph-coordinates of the point.  Returns "",
-  if no data point within the threshold distance can be found. The
+  specifying only the elements you want to be considered.  *ElemName* is an
+  element name or a tag and may refer to more than one element.  It returns
+  a key-value list containing the name of the closest element, the index of
+  the closest data point, and the graph-coordinates of the point.  Returns
+  "", if no data point within the threshold distance can be found. The
   following *option*-*value* pairs are available.
 
 
@@ -1107,18 +1108,13 @@ The following operations are available for elements.
     option isn't specified, then it defaults to the value of the graph's
     **-halo** option.
 
-  **-interpolate**  *string*
+  **-interpolate**  *boolean*
 
     Indicates whether to consider projections that lie along the line
     segments connecting data points when searching for the closest point.
-    The default value is "0". The values for *string* are described below.
-
-    "no" 
-      Search only for the closest data point.
-    "yes"
-      Search includes projections that lie along the
-      line segments connecting the data points.  
-
+    If *boolean* is "0", search only for the closest data point.  If
+    *boolean* is "1", the search includes projections that lie along the
+    line segments connecting the data points.  The default value is "0".
 
 *pathName* **element configure** *elemName* ?\ *elemName* ... ? ?\ *option*
  *value* ... ?
@@ -1374,7 +1370,9 @@ The following operations are available for elements.
 
   Deactivates all the elements matching *pattern*.  Elements whose names
   match any of the patterns given are redrawn using their normal colors.
-
+  *ElemName* is an element name or a tag and may refer to more than one
+  element.
+  
 *pathName* **element delete** ?\ *elemName* ... ?
 
   Deletes one or more elements.  
@@ -1383,23 +1381,145 @@ The following operations are available for elements.
 
   Returns "1" if an element *elemName* exists and "0" otherwise.
 
+*pathName* **element find** *elemName* *x1* *y1* *x2* *y2*
+
+*pathName* **element get** *elemName* 
+
+*pathName* **element lower** ?\ *elemName* ... ?
+
+  Lowers *elemName* in the stacking order so that it will be drawn below
+  other elements in *pathName*.  *ElemName* is an element name or a tag and
+  may refer to more than one element.
+
 *pathName* **element names** ?\ *pattern* ... ?
 
   Returns the names of all the elements in the graph.  If one or more
   *pattern* arguments are provided, then the name of any element matching
   *pattern* will be returned. *Pattern* is a glob-style pattern.
 
+*pathName* **element nearest** *x* *y* ?\ *option* *value* ... ? ?\ *elemName* ... ?
+
+  Searches for the data point closest to the window coordinates *x* and
+  *y*.  By default, all elements are searched.  Hidden elements (see the
+  **-hide** option is false) are ignored.  You can limit the search by
+  specifying only the elements you want to be considered.  *ElemName* is
+  the name of an element or a tag that may refer to multiple elements.  It
+  returns a key-value list containing the name of the closest element, the
+  index of the closest data point, and the graph-coordinates of the point.
+  Returns "", if no data point within the threshold distance can be
+  found. The following *option*-*value* pairs are available.
+
+
+  **-along**  *direction*
+
+    Search for the closest element using the following criteria:
+
+    "x"
+      Find closest element vertically from the given X-coordinate. 
+    "y"
+      Find the closest element horizontally from the given Y-coordinate. 
+    "both"
+      Find the closest element for the given point (using both the X and Y
+      coordinates).  
+
+  **-halo**  *pixels*
+
+    Specifies a threshold distance where selected data points are ignored.
+    *Pixels* is a valid screen distance, such as "2" or "1.2i".  If this
+    option isn't specified, then it defaults to the value of the graph's
+    **-halo** option.
+
+  **-interpolate**  *boolean*
+
+    Indicates whether to consider projections that lie along the line
+    segments connecting data points when searching for the closest point.
+    If *boolean* is "0", search only for the closest data point.  If
+    *boolean* is "1", the search includes projections that lie along the
+    line segments connecting the data points.  The default value is "0".
+
+*pathName* **element raise** ?\ *elemName* ... ?
+
+  Raises *elemName* in the stacking order so that it is drawn on top of
+  other elements in *pathName*.  *ElemName* is an element name or a tag and
+  may refer to more than one element.
+
 *pathName* **element show** ?\ *elemNameList*\ ?  
 
-  Queries or modifies the element display list.  The element display list
-  designates the elements drawn and in what order. *ELemNameList* is a list
-  of elements to be displayed in the order they are named.  If there is no
-  *elemNameList* argument, the current display list is returned.
+  Queries or modifies the stacking order of elements in *pathName*.  If no
+  *elemNameList* argument is given, this command returns the names of
+  elements in order in which they are drawn (lowest to highest).  This list
+  also determines what elements are considered when scaling axes.
+  *ElemNameList* is a list of elements. Elements later in the list will be
+  drawn over elements eariler in the list.
+
+*pathName* **element tag add** *tag* ?\ *elemName* ...\ ? 
+
+  Adds the tag to one or more elements in *pathName* *ElemName* is an
+  element name or a tag. *Tag* is an arbitrary string but can't be a
+  built-in tag (like "all"). It is not an error if *elemName* already has
+  the tag. If no *elemName* arguments are present, *tag* is added to
+  *pathName* but refers to no elements.  This is useful for creating empty
+  element tags.
+
+*pathName* **element tag delete**  *tag* ?\ *elemName* ...\ ? 
+  
+  Removes the tag from one or more elements in *pathName*.  *ElemName* is
+  an element name or a tag.  *Tag* is an arbitrary string but can't be a
+  built-in tag (like "all"). The built-in tag "all" and can't be
+  deleted.
+
+*pathName* **element tag exists**  *tag* ?\ *elemName* ...\ ? 
+
+  Indicates if any element in *pathName* has the tag.  *Tag* is an
+  arbitrary string.  Returns "1" if the tag exists, "0" otherwise.  By
+  default all elements are searched. But if one or more *elemName*
+  arguments are present, then if the tag is found in any *elemName*, "1" is
+  returned. *ElemName* may be an element name or a tag and may refer to
+  multiple columns (example: "all").
+
+*pathName* **element tag forget**  ?\ *tag* ...\ ? 
+
+  Remove one or more tags from all the elements in *pathName*. *Tag* is an
+  arbitrary string but can't be one of the built-in tags ("all").
+
+*pathName* **element tag get** *elemName* ?\ *pattern* ...\ ? 
+
+  Returns the tags for *elemName*. *ElemName* may be an element name of or
+  a tag, but may not represent more than one element. By default all tags
+  for *elemName* are returned.  But if one or more *pattern* arguments are
+  present, then any tag that matching one of the patterns will be returned.
+  *Pattern* is a glob-style pattern.
+
+*pathName* **element tag names** ?\ *pattern* ...\ ? 
+
+  Returns the names of elements in *pathName*. By default all element names
+  are returned. But if one or more *pattern* arguments are present, then
+  any name matching one of the patterns will be returned. *Pattern* is a
+  glob-style pattern.
+
+*pathName* **element tag search** ?\ *tag* ...\ ? 
+
+  Returns the names of elements that have one or more *tag*. *Tag* is an
+  arbitrary string.
+
+*pathName* **element tag set** *elemName* ?\ *tag* ...\?
+
+  Adds one or more tags to *elemName*. *ElemName* is the name of an element
+  in *pathName* or a tag that may refer to multiple elements (example:
+  "all"). *Tag* is an arbitrary string but can't be one of the built-in
+  tags ("all").
+
+*pathName* **element tag unset** *elemName* ?\ *tag*... ?
+
+  Remove one or more tags from *elemName*. *ElemName* is the name of an
+  element in *pathName*.  *Tag* is an arbitrary string but can't be one of
+  the built-in tags ("all").
 
 *pathName* **element type** *elemName*
  
   Returns the type of *elemName*.  The possible element types are
-  "bar", "line" and "contour".
+  "bar", "line" and "contour". *ElemName* is an element name or a tag but
+  may not reference multiple elements.
 
 LEGEND
 ~~~~~~

@@ -3621,17 +3621,18 @@ TagNamesOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 /*
  *---------------------------------------------------------------------------
  *
- * TagIndicesOp --
+ * TagSearchOp --
  *
- *	Returns the indices associated with the given tags.  The indices
- *	returned will represent the union of tabs for all the given tags.
+ *	Returns the names of element associated with the given tags.  The
+ *	name returned will represent the union of tabs for all the given
+ *	tags.
  *
- *	.g element tag elements tag1 tag2 tag3...
+ *	.g element tag search tag1 tag2 tag3...
  *
  *---------------------------------------------------------------------------
  */
 static int
-TagIndicesOp(Graph *graphPtr, Tcl_Interp *interp, int objc, 
+TagSearchOp(Graph *graphPtr, Tcl_Interp *interp, int objc, 
 	     Tcl_Obj *const *objv)
 {
     Blt_HashTable selected;
@@ -3784,15 +3785,15 @@ TagUnsetOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  */
 static Blt_OpSpec tagOps[] =
 {
-    {"add",      1, TagAddOp,      5, 0, "elem ?tag...?",},
-    {"delete",   1, TagDeleteOp,   5, 0, "elem ?tag...?",},
-    {"exists",   2, TagExistsOp,   5, 0, "elem ?tag...?",},
-    {"forget",   1, TagForgetOp,   4, 0, "?tag...?",},
-    {"get",      1, TagGetOp,      5, 0, "elem ?pattern...?",},
-    {"indices",  1, TagIndicesOp,  4, 0, "?tag...?",},
-    {"names",    1, TagNamesOp,    4, 0, "?elem...?",},
-    {"set",      1, TagSetOp,      5, 0, "elem ?tag...",},
-    {"unset",    1, TagUnsetOp,    5, 0, "elem ?tag...",},
+    {"add",      1, TagAddOp,      5, 0, "tag ?elemName ...?",},
+    {"delete",   1, TagDeleteOp,   5, 0, "elemName ?tag ...?",},
+    {"exists",   1, TagExistsOp,   5, 0, "elemName ?tag ...?",},
+    {"forget",   1, TagForgetOp,   4, 0, "?tag ...?",},
+    {"get",      1, TagGetOp,      5, 0, "elemName ?pattern ...?",},
+    {"names",    1, TagNamesOp,    4, 0, "?elemName ...?",},
+    {"search",   3, TagSearchOp,   4, 0, "?tag ...?",},
+    {"set",      3, TagSetOp,      5, 0, "elemName ?tag ...?",},
+    {"unset",    1, TagUnsetOp,    5, 0, "elemName ?tag ...?",},
 };
 
 static int numTagOps = sizeof(tagOps) / sizeof(Blt_OpSpec);
