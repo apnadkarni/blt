@@ -264,7 +264,7 @@ an example.
      tk_focusNext .
      rename tkFocusOK tkFocusOK.orig
      proc tkFocusOK { w }  {
-         if { [blt::busy check $w] } {
+         if { [blt::busy isbusy $w] } {
 	     return 0
 	 }
 	 return [tkFocusOK.orig $w]
@@ -313,6 +313,14 @@ invoke the **forget** operation to free any resources it allocated.
 
 Destroying the widget will also clean up any resources allocated by
 the busy command.
+
+DIFFERENCES WITH PREVIOUS VERSIONS
+----------------------------------
+
+1. The **isbusy** operation no longer takes a pattern argument and returns
+   a list of matches window names.  It now takes a single busy window
+   argument and returns 1 if busy, 0 otherwise.  This is the same as the
+   previous **check** operation.
 
 KEYWORDS
 --------
