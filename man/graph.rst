@@ -41,8 +41,8 @@ DESCRIPTION
 
 The **blt::graph** command creates a graph for plotting two-dimensional
 data (X\-Y coordinates). It has many configurable components: coordinate
-axes, elements, legend, grid lines, cross hairs, etc.  They allow you to
-customize the graph.
+axes, elements, legend, cross hairs, etc.  They allow you to customize the
+graph.
 
 INTRODUCTION
 ------------
@@ -544,12 +544,11 @@ GRAPH OPERATIONS
 GRAPH COMPONENTS
 ----------------
 
-A graph is composed of several components: coordinate axes, data
-elements, legend, grid, cross hairs, postscript, and annotation
-markers. Instead of one big set of configuration options and
-operations, the graph is partitioned, where each component has its own
-configuration options and operations that specifically control that
-aspect or part of the graph. 
+A graph is composed of several components: coordinate axes, data elements,
+legend, cross hairs, postscript, and annotation markers. Instead of one big
+set of configuration options and operations, the graph is partitioned,
+where each component has its own configuration options and operations that
+specifically control that aspect or part of the graph.
 
 AXES
 ~~~~
@@ -977,30 +976,36 @@ The following operations are available for cross hairs:
   *option* is set to *value*.  The following options are available for
   cross hairs.
 
-
-  **-color**  *color* 
+  **-color**  *colorName* 
     Sets the color of the cross hairs.  The default is "black".
 
   **-dashes**  *dashList*
-
-    Sets the dash style of the cross hairs. *DashList* is a list of up to
-    11 numbers that alternately represent the lengths of the dashes and
-    gaps on the cross hair lines.  Each number must be between 1 and 255.
-    If *dashList* is "", the cross hairs will be solid lines.
+    Sets the dash style of the cross hairs lines. *DashList* is a list of
+    up to 11 numbers that alternately represent the lengths of the dashes
+    and gaps on the cross hair lines.  Each number must be between 1
+    and 255.  If *dashList* is "", the cross hairs will be solid lines.
 
   **-hide**  *boolean*
-
     Indicates whether cross hairs are drawn. If *boolean* is true, cross
     hairs are not drawn.  The default is "yes".
 
-  **-linewidth**  *pixels*
-    Set the width of the cross hair lines.  The default is "1".
+  **-linewidth**  *numPixels*
+    Set the line width of the cross hairs.  The default is "1".
 
-  **-position**  *pos* 
-
-    Specifies the screen position where the cross hairs intersect.  *Pos*
-    must be in the form "\fI@x,y\fR", where *x* and *y* are the window
+  **-position**  *position* 
+    Specifies the screen position where the cross hairs intersect.  *Position*
+    must be in the form "@*x*,*y*", where *x* and *y* are the screen
     coordinates of the intersection.
+
+  **-x**  *screenX* 
+    Specifies the x-coordinate of screen position where the cross hairs
+    intersect.  *ScreenX* is an integer representing a screen
+    coordinate (relative to *pathName*).
+
+  **-y**  *screenY* 
+    Specifies the y-coordinate of screen position where the cross hairs
+    intersect.  *ScreenY* is an integer representing a screen coordinate
+    (relative to *pathName*).
 
   Cross hairs configuration options may be also be set by the **option**
   command.  The resource name and class are "crosshairs" and "Crosshairs"
@@ -1634,8 +1639,8 @@ for all elements by simply reconfiguring this pen.
     .g pen configure "activeLine" -color green
 
 
-You can create and use several pens. To create a pen, invoke the pen
-component and its create operation.
+You can create and use several pens. To create a pen, invoke the **pen
+create** operation.
 
 ::
   
@@ -1661,7 +1666,7 @@ This says that any data point with a weight between 2.0 and 3.0 is to be
 drawn using the pen "myPen".  All other points are drawn with the element's
 default attributes.
 
-The following operations are available for pen components.
+The following operations are available for pens.
 
 *pathName* **pen cget** *penName* *option*
 
@@ -2734,27 +2739,30 @@ The **blt::graph** command creates a new graph.
  ::
 
     # Create a new graph.  Plotting area is black.
-    graph .g -plotbackground black
+
+    blt::graph .g -plotbackground black
 
 A new Tcl command ".g" is also created.  This command can be used
 to query and modify the graph.  For example, to change the title of
 the graph to "My Plot", you use the new command and the graph's
 **configure** operation.
 
-::
+ ::
 
     # Change the title.
+
     .g configure -title "My Plot"
 
 A graph has several components. To access a particular component you
 use the component's name. For example, to add data elements, you use
-the new command and the **element** component.
+the new command and the **element create** operation.
 
-::
+ ::
 
     # Create a new element named "line1"
-    .g element create line1 \\
-	    -xdata { 0.2 0.4 0.6 0.8 1.0 1.2 1.4 1.6 1.8 2.0 } \\
+
+    .g element create line1 \
+	    -xdata { 0.2 0.4 0.6 0.8 1.0 1.2 1.4 1.6 1.8 2.0 } \
 	    -ydata { 26.18 50.46 72.85 93.31 111.86 128.47 143.14 
 		    155.85 166.60 175.38 }
 
@@ -2762,10 +2770,11 @@ The element's X-Y coordinates are specified using lists of
 numbers.  Alternately, BLT vectors could be used to hold the X\-Y
 coordinates.
 
-::
+ ::
 
     # Create two vectors and add them to the graph.
-    vector xVec yVec
+
+    blt::vector xVec yVec
     xVec set { 0.2 0.4 0.6 0.8 1.0 1.2 1.4 1.6 1.8 2.0 }
     yVec set { 26.18 50.46 72.85 93.31 111.86 128.47 143.14 155.85 
 	    166.60 175.38 }
@@ -2774,9 +2783,10 @@ coordinates.
 The advantage of using vectors is that when you modify one, the graph
 is automatically redrawn to reflect the new values.
 
-::
+ ::
 
     # Change the y coordinate of the first point.
+
     set yVector(0) 25.18
 
 An element named "e1" is now created in ".b".  It 
@@ -2785,11 +2795,14 @@ use this list to control in what order elements are displayed.
 To query or reset the element display list, you use the element's 
 **show** operation.
 
-::
+ ::
 
     # Get the current display list 
+
     set elemList [.b element show]
+
     # Remove the first element so it won't be displayed.
+
     .b element show [lrange $elemList 0 end]
 
 The element will be displayed by as many bars as there are data points
@@ -2799,9 +2812,10 @@ attributes (colors, stipple, etc).  The width of each bar is by
 default one unit.  You can change this with using the **-barwidth**
 option.
 
-::
+ ::
 
-    # Change the X\-Y coordinates of the first point.
+    # Change the X-Y coordinates of the first point.
+
     set xVec(0) 0.18
     set yVec(0) 25.18
 
@@ -2810,43 +2824,46 @@ default, the element's label in the legend will be also "line1".
 You can change the label, or specify no legend entry, again using the
 element's **configure** operation.
 
-::
+ ::
 
     # Don't display "line1" in the legend.
+
     .g element configure line1 -label ""
 
 You can configure more than just the element's label.  An element has
 many attributes such as symbol type and size, dashed or solid lines,
 colors, line width, etc.
 
-::
+ ::
 
-    .g element configure line1 -symbol square -color red \\
-	    -dashes { 2 4 2 } -linewidth 2 -pixels 2c
+    .g element configure line1 -symbol square -color red \
+        -dashes { 2 4 2 } -linewidth 2 -pixels 2c
 
 Four coordinate axes are automatically created: "x", "x2",
 "y", and "y2".  And by default, elements are mapped onto the
 axes "x" and "y".  This can be changed with the **-mapx**
 and **-mapy** options.
 
-::
+ ::
 
     # Map "line1" on the alternate Y-axis "y2".
+
     .g element configure line1 -mapy y2
 
-Axes can be configured in many ways too.  For example, you change the
-scale of the Y-axis from linear to log using the **axis** component.
+Axes can be configured in many ways too.  For example, you change the scale
+of the Y-axis from linear to log using the **axis configure** operation.
 
-::
+ ::
 
     # Y-axis is log scale.
+
     .g axis configure y -logscale yes
 
 One important way axes are used is to zoom in on a particular data
 region.  Zooming is done by simply specifying new axis limits using
 the **-min** and **-max** configuration options.
 
-::
+ ::
 
     .g axis configure x -min 1.0 -max 1.5
     .g axis configure y -min 12.0 -max 55.15
@@ -2856,9 +2873,10 @@ some user interaction (such as pressing the mouse button), using the
 **bind** command.  To convert between screen and graph coordinates,
 use the **invtransform** operation.
 
-::
+ ::
 
     # Click the button to set a new minimum 
+
     bind .g <ButtonPress-1> { 
 	%W axis configure x -min [%W axis invtransform x %x]
 	%W axis configure x -min [%W axis invtransform x %y]
@@ -2868,28 +2886,31 @@ By default, the limits of the axis are determined from data values.
 To reset back to the default limits, set the **-min** and
 **-max** options to the empty value.
 
-::
+ ::
 
     # Reset the axes to autoscale again.
+
     .g axis configure x -min {} -max {}
     .g axis configure y -min {} -max {}
 
-By default, the legend is drawn in the right margin.  You can
-change this or any legend configuration options using the
-**legend** component.
+By default, the legend is drawn in the right margin.  You can change this
+or any legend configuration options using the **legend configure**
+operation.
 
-::
+ ::
 
     # Configure the legend font, color, and relief
-    .g legend configure -position left -relief raised \\
-	    -font fixed -fg blue
+
+    .g legend configure -position left -relief raised \
+        -font fixed -fg blue
 
 To prevent the legend from being displayed, turn on the **-hide**
 option.
 
-::
+ ::
 
     # Don't display the legend.
+
     .g legend configure -hide yes\fR
 
 The **blt::graph** widget has simple drawing procedures called markers.
@@ -2897,13 +2918,14 @@ They can be used to highlight or annotate data in the graph. The types
 of markers available are bitmaps, images, polygons, lines, or windows.
 Markers can be used, for example, to mark or brush points.  In this
 example, is a text marker that labels the data first point.  Markers
-are created using the **marker** component.
+are created using the **marker create** operation.
 
-::
+ ::
 
     # Create a label for the first data point of "line1".
-    .g marker create text -name first_marker -coords { 0.2 26.18 } \\
-	    -text "start" -anchor se -xoffset -10 -yoffset -10
+
+    .g marker create text -name first_marker -coords { 0.2 26.18 } \
+        -text "start" -anchor se -xoffset -10 -yoffset -10
 
 This creates a text marker named "first_marker".  It will display
 the text "start" near the coordinates of the first data point.  The
@@ -2913,20 +2935,24 @@ the data point isn't covered by the marker.  By default,
 markers are drawn last, on top of data.  You can change this with the
 **-under** option.
 
-::
+ ::
 
     # Draw the label before elements are drawn.
+
     .g marker configure first_marker -under yes
 
 You can add cross hairs or grid lines using the **crosshairs** and
-**grid** components.
+**axis** operations.
 
-::
+ ::
 
-    # Display both cross hairs and grid lines.
+    # Display both cross hairs and grid lines on the X axis.
+
     .g crosshairs configure -hide no -color red
-    .g grid configure -hide no -dashes { 2 2 }
+    .g axis configure x -gridlines yes -griddashes { 2 2 }
+
     # Set up a binding to reposition the crosshairs.
+
     bind .g <Motion> {
 	.g crosshairs configure -position @%x,%y
     }
@@ -2935,12 +2961,13 @@ The crosshairs are repositioned as the mouse pointer is moved
 in the graph.  The pointer X-Y coordinates define the center
 of the crosshairs.
 
-Finally, to get hardcopy of the graph, use the **postscript**
-component.
+Finally, to get hardcopy of the graph, use the **postscript output**
+operation.
 
-::
+ ::
 
     # Print the graph into file "file.ps"
+
     .g postscript output file.ps -maxpect yes -decorations no
 
 This generates a file "file.ps" containing the encapsulated PostScript of
@@ -3009,35 +3036,30 @@ There may be cases where the graph needs to be drawn and updated as quickly
 as possible.  If drawing speed becomes a big problem, here are a few tips
 to speed up displays.
 
- 1.
-   Try to minimize the number of data points.  The more data points
-    the looked at, the more work the graph must do.
+ 1. Try to minimize the number of data points.  The more data points the
+    looked at, the more work the graph must do.
 
- 2.
-   If your data is generated as floating point values, the time required
-   to convert the data values to and from ASCII strings can be
-   significant, especially when there any many data points.  You can
-   avoid the redundant string-to-decimal conversions using the C API to
-   BLT vectors.
+ 2. If your data is generated as floating point values, the time required
+    to convert the data values to and from ASCII strings can be
+    significant, especially when there any many data points.  You can avoid
+    the redundant string-to-decimal conversions using the C API to BLT
+    vectors.
 
- 3.
-   Data elements without symbols are drawn faster than with symbols.  Set
-   the data element's **-symbol** option to "none".  If you need to draw
-   symbols, try using the simple symbols such as "splus" and "scross".
+ 3. Data elements without symbols are drawn faster than with symbols.  Set
+    the data element's **-symbol** option to "none".  If you need to draw
+    symbols, try using the simple symbols such as "splus" and "scross".
 
- 4.
-   Don't stipple or dash the element.  Solid lines are much faster.
+ 4. Don't stipple or dash the element.  Solid lines are much faster.
 
- 5.
-  If you update data elements frequently, try turning off the widget's
-  **-bufferelements** option.  When the graph is first displayed, it draws
-  data elements into an internal pixmap.  The pixmap acts as a cache, so
-  that when the graph needs to be redrawn again, and the data elements or
-  coordinate axes haven't changed, the pixmap is simply copied to the
-  screen.  This is especially useful when you are using markers to
-  highlight points and regions on the graph.  But if the graph is updated
-  frequently, changing either the element data or coordinate axes, the
-  buffering becomes redundant.
+ 5. If you update data elements frequently, try turning off the widget's
+    **-bufferelements** option.  When the graph is first displayed, it draws
+    data elements into an internal pixmap.  The pixmap acts as a cache, so
+    that when the graph needs to be redrawn again, and the data elements or
+    coordinate axes haven't changed, the pixmap is simply copied to the
+    screen.  This is especially useful when you are using markers to highlight
+    points and regions on the graph.  But if the graph is updated frequently,
+    changing either the element data or coordinate axes, the buffering becomes
+    redundant.
 
 LIMITATIONS
 -----------

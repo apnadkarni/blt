@@ -1,5 +1,4 @@
 /* -*- mode: c; c-basic-offset: 4; indent-tabs-mode: nil -*- */
-
 /*
  * bltGrHairs.c --
  *
@@ -10,24 +9,22 @@
  *	Permission is hereby granted, free of charge, to any person
  *	obtaining a copy of this software and associated documentation
  *	files (the "Software"), to deal in the Software without
- *	restriction, including without limitation the rights to use,
- *	copy, modify, merge, publish, distribute, sublicense, and/or
- *	sell copies of the Software, and to permit persons to whom the
- *	Software is furnished to do so, subject to the following
- *	conditions:
+ *	restriction, including without limitation the rights to use, copy,
+ *	modify, merge, publish, distribute, sublicense, and/or sell copies
+ *	of the Software, and to permit persons to whom the Software is
+ *	furnished to do so, subject to the following conditions:
  *
  *	The above copyright notice and this permission notice shall be
- *	included in all copies or substantial portions of the
- *	Software.
+ *	included in all copies or substantial portions of the Software.
  *
- *	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY
- *	KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
- *	WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
- *	PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS
- *	OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR
- *	OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
- *	OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
- *	SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ *	EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ *	MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ *	NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+ *	BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ *	ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ *	CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ *	SOFTWARE.
  */
 
 #define BUILD_BLT_TK_PROCS 1
@@ -49,56 +46,115 @@
  *
  * Crosshairs
  *
- *	Contains the line segments positions and graphics context used
- *	to simulate crosshairs (by XORing) on the graph.
+ *	Contains the line segments positions and graphics context used to
+ *	simulate crosshairs by XORing a line on the graph.
  *
  *---------------------------------------------------------------------------
  */
-
 struct _Crosshairs {
-
-    XPoint hotSpot;		/* Hot spot for crosshairs */
-    int visible;		/* Internal state of crosshairs. If non-zero,
-				 * crosshairs are displayed. */
-    int hidden;			/* If non-zero, crosshairs are not displayed.
-				 * This is not necessarily consistent with the
-				 * internal state variable.  This is true when
-				 * the hot spot is off the graph.  */
-    Blt_Dashes dashes;		/* Dashstyle of the crosshairs. This represents
-				 * an array of alternatingly drawn pixel
-				 * values. If NULL, the hairs are drawn as a
-				 * solid line */
-    int lineWidth;		/* Width of the simulated crosshair lines */
-    XSegment segArr[2];		/* Positions of line segments representing the
-				 * simulated crosshairs. */
-    XColor *colorPtr;		/* Foreground color of crosshairs */
-    GC gc;			/* Graphics context for crosshairs. Set to
-				 * GXxor to not require redraws of graph */
+    unsigned int flags;                 /* HIDDEN and ACTIVE. */
+    int x, y;                           /* Hot spot for crosshairs */
+    int lineWidth;                      /* Width of the crosshair lines */
+    Blt_Dashes dashes;                  /* Dash-style of the
+        				 * crosshairs. This represents an
+        				 * array of alternatingly drawn
+        				 * pixel values. If NULL, the hairs
+        				 * are drawn as a solid line */
+    XSegment segArr[2];                 /* Positions of line segments
+                                         * representing the crosshairs. */
+    XColor *colorPtr;                   /* Foreground color of
+                                         * crosshairs */
+    GC gc;                              /* Graphics context for
+                                         * crosshairs. Set to GXxor to not
+                                         * require redraws of graph */
 };
 
-#define DEF_HAIRS_DASHES	(char *)NULL
-#define DEF_HAIRS_FOREGROUND	RGB_BLACK
-#define DEF_HAIRS_LINE_WIDTH	"0"
-#define DEF_HAIRS_HIDE		"yes"
-#define DEF_HAIRS_POSITION	(char *)NULL
+#define DEF_DASHES              (char *)NULL
+#define DEF_FOREGROUND          RGB_BLACK
+#define DEF_LINE_WIDTH          "0"
+#define DEF_HIDE		"yes"
+#define DEF_POSITION            (char *)NULL
+#define DEF_X                   (char *)NULL
+#define DEF_Y                   (char *)NULL
 
-BLT_EXTERN Blt_CustomOption bltPointOption;
+static Blt_OptionParseProc ObjToPosition;
+static Blt_OptionPrintProc PositionToObj;
+Blt_CustomOption positionOption =
+{
+    ObjToPosition, PositionToObj, NULL, (ClientData)0
+};
 
 static Blt_ConfigSpec configSpecs[] =
 {
-    {BLT_CONFIG_COLOR, "-color", "color", "Color", DEF_HAIRS_FOREGROUND, 
+    {BLT_CONFIG_COLOR, "-color", "color", "Color", DEF_FOREGROUND, 
 	Blt_Offset(Crosshairs, colorPtr), 0},
-    {BLT_CONFIG_DASHES, "-dashes", "dashes", "Dashes", DEF_HAIRS_DASHES, 
+    {BLT_CONFIG_DASHES, "-dashes", "dashes", "Dashes", DEF_DASHES, 
 	Blt_Offset(Crosshairs, dashes), BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_BOOLEAN, "-hide", "hide", "Hide", DEF_HAIRS_HIDE, 
-	Blt_Offset(Crosshairs, hidden), BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_BITMASK, "-hide", "hide", "Hide", DEF_HIDE, 
+       Blt_Offset(Crosshairs, flags), BLT_CONFIG_DONT_SET_DEFAULT,
+       (Blt_CustomOption *)HIDDEN},
     {BLT_CONFIG_PIXELS_NNEG, "-linewidth", "lineWidth", "Linewidth",
-	DEF_HAIRS_LINE_WIDTH, Blt_Offset(Crosshairs, lineWidth),
+	DEF_LINE_WIDTH, Blt_Offset(Crosshairs, lineWidth),
 	BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_CUSTOM, "-position", "position", "Position", 
-	DEF_HAIRS_POSITION, Blt_Offset(Crosshairs, hotSpot), 0, &bltPointOption},
+    {BLT_CONFIG_CUSTOM, "-position", "position", "Position", DEF_POSITION,
+        0, 0, &positionOption},
+    {BLT_CONFIG_INT, "-x", "x", "X", DEF_X, Blt_Offset(Crosshairs, x), 0},
+    {BLT_CONFIG_INT, "-y", "y", "Y", DEF_Y, Blt_Offset(Crosshairs, y), 0},
     {BLT_CONFIG_END, NULL, NULL, NULL, NULL, 0, 0}
 };
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * ObjToPosition --
+ *
+ *	Convert the string representation of a legend XY position into
+ *	window coordinates.  The form of the string must be "@x,y" or none.
+ *
+ * Results:
+ *	A standard TCL result.  The symbol type is written into the widget
+ *	record.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+ObjToPosition(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+           Tcl_Obj *objPtr, char *widgRec, int offset, int flags)
+{
+    Crosshairs *chPtr = (Crosshairs *)widgRec;
+    int x, y;
+
+    if (Blt_GetXY(interp, tkwin, Tcl_GetString(objPtr), &x, &y) != TCL_OK) {
+	return TCL_ERROR;
+    }
+    chPtr->x = x, chPtr->y = y;
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * PositionToObj --
+ *
+ *	Convert the window coordinates into a string.
+ *
+ * Results:
+ *	The string representing the coordinate position is returned.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static Tcl_Obj *
+PositionToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+           char *widgRec, int offset, int flags) 
+{
+    Crosshairs *chPtr = (Crosshairs *)widgRec;
+    char string[200];
+    
+    Blt_FormatString(string, 200, "@%d,%d", chPtr->x, chPtr->y);
+    return Tcl_NewStringObj(string, -1);
+}
 
 /*
  *---------------------------------------------------------------------------
@@ -120,10 +176,10 @@ static Blt_ConfigSpec configSpecs[] =
 static void
 TurnOffHairs(Tk_Window tkwin, Crosshairs *chPtr)
 {
-    if (Tk_IsMapped(tkwin) && (chPtr->visible)) {
+    if (Tk_IsMapped(tkwin) && (chPtr->flags & ACTIVE)) {
 	XDrawSegments(Tk_Display(tkwin), Tk_WindowId(tkwin), chPtr->gc,
 	    chPtr->segArr, 2);
-	chPtr->visible = FALSE;
+	chPtr->flags &= ~ACTIVE;
     }
 }
 
@@ -146,13 +202,13 @@ TurnOffHairs(Tk_Window tkwin, Crosshairs *chPtr)
 static void
 TurnOnHairs(Graph *graphPtr, Crosshairs *chPtr)
 {
-    if (Tk_IsMapped(graphPtr->tkwin) && (!chPtr->visible)) {
-	if (!PointInGraph(graphPtr, chPtr->hotSpot.x, chPtr->hotSpot.y)) {
+    if (Tk_IsMapped(graphPtr->tkwin) && ((chPtr->flags & ACTIVE) == 0)) {
+	if (!PointInGraph(graphPtr, chPtr->x, chPtr->y)) {
 	    return;		/* Coordinates are off the graph */
 	}
 	XDrawSegments(graphPtr->display, Tk_WindowId(graphPtr->tkwin),
 	    chPtr->gc, chPtr->segArr, 2);
-	chPtr->visible = TRUE;
+	chPtr->flags |= ACTIVE;
     }
 }
 
@@ -187,7 +243,6 @@ Blt_ConfigureCrosshairs(Graph *graphPtr)
      * configuration changes the size, style, or position of the lines.
      */
     TurnOffHairs(graphPtr->tkwin, chPtr);
-
     gcValues.function = GXxor;
 
     if (graphPtr->plotBg == NULL) {
@@ -217,14 +272,14 @@ Blt_ConfigureCrosshairs(Graph *graphPtr)
     /*
      * Are the new coordinates on the graph?
      */
-    chPtr->segArr[0].x2 = chPtr->segArr[0].x1 = chPtr->hotSpot.x;
+    chPtr->segArr[0].x2 = chPtr->segArr[0].x1 = chPtr->x;
     chPtr->segArr[0].y1 = graphPtr->bottom;
     chPtr->segArr[0].y2 = graphPtr->top;
-    chPtr->segArr[1].y2 = chPtr->segArr[1].y1 = chPtr->hotSpot.y;
+    chPtr->segArr[1].y2 = chPtr->segArr[1].y1 = chPtr->y;
     chPtr->segArr[1].x1 = graphPtr->left;
     chPtr->segArr[1].x2 = graphPtr->right;
 
-    if (!chPtr->hidden) {
+    if ((chPtr->flags & HIDDEN) == 0) {
 	TurnOnHairs(graphPtr, chPtr);
     }
 }
@@ -232,7 +287,7 @@ Blt_ConfigureCrosshairs(Graph *graphPtr)
 void
 Blt_EnableCrosshairs(Graph *graphPtr)
 {
-    if (!graphPtr->crosshairs->hidden) {
+    if ((graphPtr->crosshairs->flags & HIDDEN) == 0) {
 	TurnOnHairs(graphPtr, graphPtr->crosshairs);
     }
 }
@@ -240,7 +295,7 @@ Blt_EnableCrosshairs(Graph *graphPtr)
 void
 Blt_DisableCrosshairs(Graph *graphPtr)
 {
-    if (!graphPtr->crosshairs->hidden) {
+    if ((graphPtr->crosshairs->flags & HIDDEN) == 0) {
 	TurnOffHairs(graphPtr->tkwin, graphPtr->crosshairs);
     }
 }
@@ -317,8 +372,8 @@ Blt_CreateCrosshairs(Graph *graphPtr)
     Crosshairs *chPtr;
 
     chPtr = Blt_AssertCalloc(1, sizeof(Crosshairs));
-    chPtr->hidden = TRUE;
-    chPtr->hotSpot.x = chPtr->hotSpot.y = -1;
+    chPtr->flags = HIDDEN;
+    chPtr->x = chPtr->y = -1;
     graphPtr->crosshairs = chPtr;
 
     if (Blt_ConfigureComponentFromObj(graphPtr->interp, graphPtr->tkwin,
@@ -414,9 +469,9 @@ OnOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     Graph *graphPtr = clientData;
     Crosshairs *chPtr = graphPtr->crosshairs;
 
-    if (chPtr->hidden) {
+    if (chPtr->flags & HIDDEN) {
 	TurnOnHairs(graphPtr, chPtr);
-	chPtr->hidden = FALSE;
+	chPtr->flags &= ~HIDDEN;
     }
     return TCL_OK;
 }
@@ -443,9 +498,9 @@ OffOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     Graph *graphPtr = clientData;
     Crosshairs *chPtr = graphPtr->crosshairs;
 
-    if (!chPtr->hidden) {
+    if ((chPtr->flags & HIDDEN) == 0) {
 	TurnOffHairs(graphPtr->tkwin, chPtr);
-	chPtr->hidden = TRUE;
+	chPtr->flags |= HIDDEN;
     }
     return TCL_OK;
 }
@@ -473,11 +528,12 @@ ToggleOp(ClientData clientData, Tcl_Interp *interp, int objc,
     Graph *graphPtr = clientData;
     Crosshairs *chPtr = graphPtr->crosshairs;
 
-    chPtr->hidden = (chPtr->hidden == 0);
-    if (chPtr->hidden) {
-	TurnOffHairs(graphPtr->tkwin, chPtr);
-    } else {
+    if (chPtr->flags & HIDDEN) {
+        chPtr->flags &= ~HIDDEN;
 	TurnOnHairs(graphPtr, chPtr);
+    } else {
+        chPtr->flags |= HIDDEN;
+	TurnOffHairs(graphPtr->tkwin, chPtr);
     }
     return TCL_OK;
 }
