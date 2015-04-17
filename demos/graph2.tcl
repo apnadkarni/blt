@@ -31,8 +31,12 @@ set data {
 set image [image create picture -data $data]
 
 set graph [blt::graph .g]
+if 0 {
 blt::table . \
     0,0 $graph -fill both 
+} else {
+    pack $graph -fill both -expand yes
+}
 
 source scripts/graph2.tcl
 

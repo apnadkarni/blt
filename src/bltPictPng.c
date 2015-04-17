@@ -689,7 +689,7 @@ PictureToPng(Tcl_Interp *interp, Blt_Picture picture, Blt_DBuffer dbuffer,
  }
 
  static int
- ExportPng(Tcl_Interp *interp, unsigned int index, Blt_Chain chain, int objc, 
+ ExportPng(Tcl_Interp *interp, int index, Blt_Chain chain, int objc, 
 	   Tcl_Obj *const *objv)
  {
      PngExportSwitches switches;

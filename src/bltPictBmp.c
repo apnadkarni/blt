@@ -1599,8 +1599,8 @@ ImportBmp(
 }
 
 static int
-ExportBmp(Tcl_Interp *interp, unsigned int index, Blt_Chain chain, 
-	  int objc, Tcl_Obj *const *objv)
+ExportBmp(Tcl_Interp *interp, int index, Blt_Chain chain, int objc,
+          Tcl_Obj *const *objv)
 {
     Blt_DBuffer dbuffer;
     Blt_Picture picture;

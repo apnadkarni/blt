@@ -189,8 +189,6 @@ static Blt_ConfigSpec configSpecs[] =
 	DEF_CURSOR, Blt_Offset(Graph, cursor), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_STRING, "-data", "data", "Data", 
 	(char *)NULL, Blt_Offset(Graph, data), BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_STRING, "-datacommand", "dataCommand", "DataCommand", 
-	(char *)NULL, Blt_Offset(Graph, dataCmd), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_SYNONYM, "-fg", "foreground", (char *)NULL, (char *)NULL, 0, 0},
     {BLT_CONFIG_FONT, "-font", "font", "Font",
 	DEF_FONT, Blt_Offset(Graph, titleTextStyle.font), 0},
@@ -320,7 +318,7 @@ static Blt_SwitchSpec snapSpecs[] = {
     {BLT_SWITCH_END}
 };
 
-static Tcl_IdleProc DisplayGraph;
+static Tcl_IdleProc DisplayProc;
 static Tcl_FreeProc DestroyGraph;
 static Tk_EventProc GraphEventProc;
 Tcl_ObjCmdProc Blt_GraphInstCmdProc;
@@ -410,7 +408,7 @@ Blt_UpdateGraph(ClientData clientData)
 
     graphPtr->flags |= REDRAW_WORLD;
     if ((graphPtr->tkwin != NULL) && !(graphPtr->flags & REDRAW_PENDING)) {
-	Tcl_DoWhenIdle(DisplayGraph, graphPtr);
+	Tcl_DoWhenIdle(DisplayProc, graphPtr);
 	graphPtr->flags |= REDRAW_PENDING;
     }
 }
@@ -435,7 +433,7 @@ void
 Blt_EventuallyRedrawGraph(Graph *graphPtr) 
 {
     if ((graphPtr->tkwin != NULL) && !(graphPtr->flags & REDRAW_PENDING)) {
-	Tcl_DoWhenIdle(DisplayGraph, graphPtr);
+	Tcl_DoWhenIdle(DisplayProc, graphPtr);
 	graphPtr->flags |= REDRAW_PENDING;
     }
 }
@@ -500,7 +498,7 @@ GraphEventProc(ClientData clientData, XEvent *eventPtr)
 	    Tcl_DeleteCommandFromToken(graphPtr->interp, graphPtr->cmdToken);
 	}
 	if (graphPtr->flags & REDRAW_PENDING) {
-	    Tcl_CancelIdleCall(DisplayGraph, graphPtr);
+	    Tcl_CancelIdleCall(DisplayProc, graphPtr);
 	}
 	Tcl_EventuallyFree(graphPtr, DestroyGraph);
     } else if (eventPtr->type == ConfigureNotify) {
@@ -2008,12 +2006,12 @@ static Blt_OpSpec graphOps[] =
     {"line",         2, LineOp,            2, 0, "oper ?args?",},
     {"marker",       1, Blt_MarkerOp,      2, 0, "oper ?args?",},
     {"pen",          2, Blt_PenOp,         2, 0, "oper ?args?",},
-    {"play",         2, Blt_PlaybackOp,    2, 0, "oper ?args?",},
     {"postscript",   2, Blt_PostScriptOp,  2, 0, "oper ?args?",},
 #ifndef NO_PRINTER
     {"print1",       6, Print1Op,          2, 3, "?printerName?",},
     {"print2",       6, Print2Op,          2, 3, "?printerName?",},
 #endif /*NO_PRINTER*/
+    {"region",       1, Blt_GraphRegionOp, 2, 0, "oper ?args?",},
     {"snap",         1, SnapOp,            3, 0, "?switches? name",},
     {"transform",    1, TransformOp,       4, 0, "x y ?switches?",},
     {"x2axis",       2, X2AxisOp,          2, 0, "oper ?args?",},
@@ -2221,49 +2219,42 @@ ContourCmd(ClientData clientData, Tcl_Interp *interp, int objc,
 static void
 DrawMargins(Graph *graphPtr, Drawable drawable)
 {
-    XRectangle rects[4];
     int site;
+    int w, h;
 
     /*
      * Draw the four outer rectangles which encompass the plotting
      * surface. This clears the surrounding area and clips the plot.
      */
-    rects[0].x = rects[0].y = rects[3].x = rects[1].x = 0;
-    rects[0].width = rects[3].width = (short int)graphPtr->width;
-    rects[0].height = (short int)graphPtr->top;
-    rects[3].y = graphPtr->bottom;
-    rects[3].height = graphPtr->height - graphPtr->bottom;
-    rects[2].y = rects[1].y = graphPtr->top;
-    rects[1].width = graphPtr->left;
-    rects[2].height = rects[1].height = graphPtr->bottom - graphPtr->top;
-    rects[2].x = graphPtr->right;
-    rects[2].width = graphPtr->width - graphPtr->right;
-
-    Blt_Bg_FillRectangle(graphPtr->tkwin, drawable, graphPtr->normalBg, 
-	rects[0].x, rects[0].y, rects[0].width, rects[0].height, 
-	0, TK_RELIEF_FLAT);
-    Blt_Bg_FillRectangle(graphPtr->tkwin, drawable, graphPtr->normalBg, 
-	rects[1].x, rects[1].y, rects[1].width, rects[1].height, 
-	0, TK_RELIEF_FLAT);
-    Blt_Bg_FillRectangle(graphPtr->tkwin, drawable, graphPtr->normalBg, 
-	rects[2].x, rects[2].y, rects[2].width, rects[2].height, 
-	0, TK_RELIEF_FLAT);
-    Blt_Bg_FillRectangle(graphPtr->tkwin, drawable, graphPtr->normalBg, 
-	rects[3].x, rects[3].y, rects[3].width, rects[3].height, 
-	0, TK_RELIEF_FLAT);
+    if ((graphPtr->width > 0) && (graphPtr->top > 0)) {
+        Blt_Bg_FillRectangle(graphPtr->tkwin, drawable, graphPtr->normalBg, 
+                0, 0, graphPtr->width, graphPtr->top, 0, TK_RELIEF_FLAT);
+    }
+    h = graphPtr->bottom - graphPtr->top;
+    if ((graphPtr->left > 0) && (h > 0)) {
+        Blt_Bg_FillRectangle(graphPtr->tkwin, drawable, graphPtr->normalBg, 
+                0, graphPtr->top, graphPtr->left, h, 0, TK_RELIEF_FLAT);
+    }        
+    w = graphPtr->width - graphPtr->right;
+    if ((w > 0) && (h > 0)) {
+        Blt_Bg_FillRectangle(graphPtr->tkwin, drawable, graphPtr->normalBg, 
+                graphPtr->right, graphPtr->top, w, h, 0, TK_RELIEF_FLAT);
+    }        
+    h = graphPtr->height - graphPtr->bottom;
+    if ((graphPtr->width > 0) && (h > 0)) {
+        Blt_Bg_FillRectangle(graphPtr->tkwin, drawable, graphPtr->normalBg, 
+                0, graphPtr->bottom, graphPtr->width, h, 0, TK_RELIEF_FLAT);
+    }        
+    w = (graphPtr->right  - graphPtr->left) + (2 * graphPtr->plotBW);
+    h = (graphPtr->bottom - graphPtr->top)  + (2 * graphPtr->plotBW);
 
     /* Draw 3D border around the plotting area */
-
-    if (graphPtr->plotBW > 0) {
-	int x, y, w, h;
-
-	x = graphPtr->left - graphPtr->plotBW;
-	y = graphPtr->top - graphPtr->plotBW;
-	w = (graphPtr->right - graphPtr->left) + (2*graphPtr->plotBW);
-	h = (graphPtr->bottom - graphPtr->top) + (2*graphPtr->plotBW);
-	Blt_Bg_DrawRectangle(graphPtr->tkwin, drawable, 
-		graphPtr->normalBg, x, y, w, h, graphPtr->plotBW, 
-		graphPtr->plotRelief);
+    if ((w > 0) && (h > 0) && (graphPtr->plotBW > 0)) {
+        Blt_Bg_DrawRectangle(graphPtr->tkwin, drawable, 
+                graphPtr->normalBg,
+                graphPtr->left - graphPtr->plotBW,
+                graphPtr->top - graphPtr->plotBW,
+                w, h, graphPtr->plotBW, graphPtr->plotRelief);
     }
     site = Blt_Legend_Site(graphPtr);
     if (site & LEGEND_MARGIN_MASK) {
@@ -2343,17 +2334,21 @@ static void
 DrawPlot(Graph *graphPtr, Drawable drawable)
 {
     int site;
-
+    int x, y, w, h;
+    
     DrawMargins(graphPtr, drawable);
 
-    /* Draw the background of the plotting area with 3D border. */
-    Blt_Bg_FillRectangle(graphPtr->tkwin, drawable, graphPtr->plotBg,
-	graphPtr->left   - graphPtr->plotBW, 
-	graphPtr->top    - graphPtr->plotBW, 
-	graphPtr->right  - graphPtr->left + 1 + 2 * graphPtr->plotBW,
-	graphPtr->bottom - graphPtr->top  + 1 + 2 * graphPtr->plotBW, 
-	graphPtr->plotBW, graphPtr->plotRelief);
+    x = graphPtr->left -   graphPtr->plotBW;
+    y = graphPtr->top    - graphPtr->plotBW;
+    w = graphPtr->right  - graphPtr->left + 1 + 2 * graphPtr->plotBW;
+    h = graphPtr->bottom - graphPtr->top  + 1 + 2 * graphPtr->plotBW;
 
+    if ((w > 0) && (h > 0)) {
+        /* Draw the background of the plotting area with 3D border. */
+        Blt_Bg_FillRectangle(graphPtr->tkwin, drawable, graphPtr->plotBg,
+                             x, y, w, h,
+                             graphPtr->plotBW, graphPtr->plotRelief);
+    }
     /* Draw the elements, markers, legend, and axis limits. */
     Blt_DrawAxes(graphPtr, drawable);
     Blt_DrawGrids(graphPtr, drawable);
@@ -2394,6 +2389,7 @@ Blt_MapGraph(Graph *graphPtr)
 void
 Blt_DrawGraph(Graph *graphPtr, Drawable drawable)
 {
+#ifdef notdef
     DrawPlot(graphPtr, drawable);
     /* Draw markers above elements */
     Blt_DrawMarkers(graphPtr, drawable, MARKER_ABOVE);
@@ -2404,6 +2400,7 @@ Blt_DrawGraph(Graph *graphPtr, Drawable drawable)
 	(Blt_Legend_IsRaised(graphPtr))) {
 	Blt_DrawLegend(graphPtr, drawable);
     }
+#endif
     /* Draw 3D border just inside of the focus highlight ring. */
     if ((graphPtr->borderWidth > 0) && (graphPtr->relief != TK_RELIEF_FLAT)) {
 	Blt_Bg_DrawRectangle(graphPtr->tkwin, drawable, 
@@ -2451,7 +2448,7 @@ UpdateMarginTraces(Graph *graphPtr)
 /*
  *---------------------------------------------------------------------------
  *
- * DisplayGraph --
+ * DisplayProc --
  *
  *      This procedure is invoked to display a graph widget.
  *
@@ -2464,7 +2461,7 @@ UpdateMarginTraces(Graph *graphPtr)
  *---------------------------------------------------------------------------
  */
 static void
-DisplayGraph(ClientData clientData)
+DisplayProc(ClientData clientData)
 {
     Graph *graphPtr = clientData;
     Pixmap drawable;
@@ -2478,7 +2475,7 @@ DisplayGraph(ClientData clientData)
     }
     tkwin = graphPtr->tkwin;
 #ifdef notdef
-    fprintf(stderr, "Calling DisplayGraph(%s)\n", Tk_PathName(tkwin));
+    fprintf(stderr, "Calling DisplayProc(%s)\n", Tk_PathName(tkwin));
 #endif
     if ((Tk_Width(tkwin) <= 1) || (Tk_Height(tkwin) <= 1)) {
 	/* Don't bother computing the layout until the size of the window
@@ -2527,8 +2524,7 @@ DisplayGraph(ClientData clientData)
 	}
 	/* Copy the pixmap to the one used for drawing the entire graph. */
 	XCopyArea(graphPtr->display, graphPtr->cache, drawable,
-		graphPtr->drawGC, 0, 0, Tk_Width(graphPtr->tkwin),
-		Tk_Height(graphPtr->tkwin), 0, 0);
+            graphPtr->drawGC, 0, 0, graphPtr->width, graphPtr->height, 0, 0);
     } else {
 	DrawPlot(graphPtr, drawable);
     }

@@ -291,9 +291,9 @@ command.  The following operations are available for *combomenu* widgets:
   **-borderwidth** *numPixels* 
 
     Specifies the borderwidth of the menu.  *NumPixels* is a non-negative
-    value indicating the width of the 3-D border drawn around the menu. The
-    value may have any of the forms accept able to **Tk_GetPixels**.  The
-    default is "1".
+    value indicating the width of the 3-D border drawn around the menu.
+    *NumPixels* may have any of the forms acceptable to **Tk_GetPixels**.
+    The default is "1".
 
   **-checkbuttoncolor** *colorName*
 

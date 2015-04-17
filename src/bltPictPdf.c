@@ -1408,8 +1408,8 @@ ImportPdf(Tcl_Interp *interp, int objc, Tcl_Obj *const *objv,
 }
 
 static int
-ExportPdf(Tcl_Interp *interp, unsigned int index, Blt_Chain chain, int objc, 
-	  Tcl_Obj *const *objv)
+ExportPdf(Tcl_Interp *interp, int index, Blt_Chain chain, int objc,
+          Tcl_Obj *const *objv)
 {
     PdfExportSwitches switches;
     Pdf *pdfPtr;

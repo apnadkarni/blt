@@ -39,10 +39,10 @@ SYNOPSIS
 DESCRIPTION
 -----------
 
-The **blt::graph** command creates a graph for plotting two-dimensional data
-(X\-Y coordinates). It has many configurable components: coordinate axes,
-elements, legend, grid lines, cross hairs, etc.  They allow you to
-customize the look and feel of the graph.
+The **blt::graph** command creates a graph for plotting two-dimensional
+data (X\-Y coordinates). It has many configurable components: coordinate
+axes, elements, legend, grid lines, cross hairs, etc.  They allow you to
+customize the graph.
 
 INTRODUCTION
 ------------
@@ -55,8 +55,8 @@ default, a legend is displayed in the right margin.  A title is displayed
 in top margin.
 
 The **blt::graph** widget is composed of several components: coordinate
-axes, data elements, legend, cross hairs, pens, postscript, and
-annotation markers.
+axes, data elements, legend, cross hairs, pens, postscript, and annotation
+markers.
 
 **axis**
 
@@ -164,7 +164,7 @@ GRAPH OPERATIONS
   *value*.  The following options are valid.
 
 
-  **-aspect** *ratio*
+  **-aspect** *aspectRatio*
     Force a fixed aspect ratio of width/height, a floating point number.
 
   **-background** *colorName*
@@ -175,13 +175,19 @@ GRAPH OPERATIONS
 
   **-borderwidth** *numPixels*
     Specifies the width of the 3-D border around the outside edge of the
-    widget.  The widget's **-relief** option determines if the border is to
-    be drawn.  The default is "2".
+    widget.  *NumPixels* may have any of the forms acceptable to
+    **Tk_GetPixels**.  The widget's **-relief** option determines if the
+    border is to be drawn.  The default is "2".
 
   **-bottommargin** *numPixels*
-    If non-zero, overrides the computed size of the margin extending below
-    the X-coordinate axis.  If *numPixels* is "0", the automatically computed
-    size is used.  The default is "0".
+    Specifies the height of the bottom margin extending below the
+    X-coordinate axis.  *NumPixels* may have any of the forms acceptable to
+    **Tk_GetPixels**.  If *numPixels* is "0", the height automatically
+    computed.  The default is "0".
+
+  **-bottomvariable** *varName*
+    Specifies a TCL variable to be set with the size of the bottom margin.
+    Whenever the graph is resized, *varName* will be set with the new value.
 
   **-bufferelements** *boolean*
     Indicates whether an internal pixmap to buffer the display of data
@@ -194,50 +200,88 @@ GRAPH OPERATIONS
   **-cursor** *cursor*
     Specifies the widget's cursor.  The default cursor is "crosshair".
 
+  **-data** *string*
+    Sets an arbritrary string.  This isn't used by the widget but may be
+    useful for associating data with the graph.  The default is "".
+
   **-font**  *fontName* 
     Specifies the font of the graph title. The default is "{San Serif} 9".
 
+  **-foreground** *colorName*
+    Specifies the color of the graph's title. *ColorName* is be a color name.
+    The default is "black".
+
   **-halo** *numPixels* 
-    Specifies a maximum distance to consider when searching for the
-    closest data point (see the element's **closest** operation below).
-    Data points further than *numPixels* away are ignored.  The default is
+    Specifies a maximum distance to consider when searching for the closest
+    data point (see the element's **closest** operation below).  Data
+    points further than *numPixels* away are ignored.  *NumPixels* may have
+    any of the forms acceptable to **Tk_GetPixels**.  The default is
     "0.5i".
 
   **-height**  *numPixels*
-    Specifies the requested height of widget.  The default is "4i".
+    Specifies the height of widget. *NumPixels* may have any of the forms
+    acceptable to **Tk_GetPixels**. The default is "4i".
+
+  **-highlightbackground** *colorName*
+    Specifies the color of the traversal highlight region when the
+    graph does not have the input focus.  *ColorName* may be a color name
+    or the name of a background object created by the **blt::background**
+    command.  The default is "grey85".
+
+  **-highlightcolor** *colorName*
+    Specifies the color of the traversal highlight region when the
+    graph has input focus.   *ColorName* may be a color name
+    or the name of a background object created by the **blt::background**
+    command. The default is "black".
+
+  **-highlightthickness** *numPixels*
+    Specifies a non-negative value for the width of the highlight rectangle
+    to drawn around the outside of the widget.  *NumPixels* may have any of
+    the forms acceptable to **Tk_GetPixels**.  If *numPixels* is "0.0", no
+    focus highlight is drawn around the widget.  The default is "2".
 
   **-invertxy**  *boolean*
-
-    Indicates whether the placement X-axis and Y-axis should be inverted.
-    If *boolean* is true, the X and Y axes are swapped.  The default is
-    "0".
+    Indicates whether the location X-axis and Y-axis should be exchanged.
+    If *boolean* is true, the X axis runs vertically and Y axis
+    horizontally.  The default is "0".
 
   **-justify**  *justifyName*
-
-    Specifies how the title should be justified.  This matters only when
-    the title contains more than one line of text. *JustifyName* must be
-    "left", "right", or "center".  The default is "center".
+    Specifies how the title should be justified when the title contains
+    more than one line of text.  *JustifyName* must be "left", "right", or
+    "center".  The default is "center".
 
   **-leftmargin**  *numPixels*
+    Specifies the width of the left margin to the left the plot area.
+    *NumPixels* may have any of the forms acceptable to **Tk_GetPixels**.
+    If *numPixels* is "0", the width automatically computed.  The default
+    is "0".
 
-    If non-zero, overrides the computed size of the margin extending from
-    the left edge of the window to the Y-coordinate axis.  If *numPixels*
-    is "0", the automatically computed size is used.  The default is "0".
+  **-leftvariable** *varName*
+    Specifies a TCL variable to be set with the size of the left margin.
+    Whenever the graph is resized, *varName* will be set with the new value.
 
+  **-mapelements** *how*
+    Specifies what elements to consider when computing the extents of the
+    data for each axis. *How* can be one of the following.
+
+    **all**
+       Consider all elements regardless if they are hidden on not.
+
+    **visible**
+       Consider elements that are not hidden.  When an element is hidden,
+       the graph will be automatically rescaled.
+       
   **-plotbackground**  *colorName*
-
     Specifies the background color of the plotting area.  *ColorName* may
     be a color name or the name of a background object created by the
     **blt::background** command. The default is "white".
 
   **-plotborderwidth**  *numPixels*
-
     Specifies the width of the 3-D border around the plotting area.  The
     widget's **-plotrelief** option determines if a border is drawn.  The
     default is "2".
 
   **-plotpadx**  *numPixels*
-
     Specifies the amount of padding to be added to the left and right sides
     of the plotting area.  *NumPixels* can be a list of one or two screen
     distances.  If *numPixels* has two elements, the left side of the
@@ -246,7 +290,6 @@ GRAPH OPERATIONS
     right sides are padded evenly.  The default is "8".
 
   **-plotpady**  *numPixels*
-
     Sets the amount of padding to be added to the top and bottom of the
     plotting area.  *NumPixels* can be a list of one or two screen
     distances.  If *numPixels* has two elements, the top of the plotting
@@ -254,8 +297,19 @@ GRAPH OPERATIONS
     *numPixels* is just one distance, both the top and bottom are padded
     evenly.  The default is "8".
 
-  **-plotrelief**  *reliefName*
+  **-plotheight**  *numPixels*
+    Specifies the height of the plot area. *NumPixels* may have any of the
+    forms acceptable to **Tk_GetPixels**. If *numPixels* is "0", the height
+    of the plot area is computed from the availble space in the widget.
+    The default is "0".
 
+  **-plotwidth**  *numPixels*
+    Specifies the width of the plot area. *NumPixels* may have any of the
+    forms acceptable to **Tk_GetPixels**. If *numPixels* is "0", the width
+    of the plot area is computed from the availble space in the widget.
+    The default is "0".
+
+  **-plotrelief**  *reliefName*
     Specifies the 3-D effect for the plotting area.  *ReliefName* specifies
     how the interior of the plotting area should appear relative to rest of
     the graph; for example, "raised" means the plot should appear to
@@ -263,41 +317,56 @@ GRAPH OPERATIONS
     default is "sunken".
 
   **-relief**  *reliefName*
-
     Specifies the 3-D effect for the graph widget.  *ReliefName* specifies
-    how the graph should appear relative to widget it is packed into; for
+    how the graph should appear relative to widget it is packed int. For
     example, "raised" means the graph should appear to protrude.  The
     default is "flat".
 
   **-rightmargin**  *numPixels*
+    Specifies the width of the right margin to the right the plot area.
+    *NumPixels* may have any of the forms acceptable to **Tk_GetPixels**.
+    If *numPixels* is "0", the width automatically computed.  The default
+    is "0".
 
-    If non-zero, overrides the computed size of the margin extending from
-    the plotting area to the right edge of the window. By default, the
-    legend is drawn in this margin.  If *numPixels* is "0", the
-    automatically computed size is used.  The default is "0".
+  **-rightvariable** *varName*
+    Specifies a TCL variable to be set with the size of the right margin.
+    Whenever the graph is resized, *varName* will be set with the new value.
+
+  **-stackaxes** *boolean*
+    Indicates to stack axes one on top of the other if there are more than
+    one axis in a margin. The default is "0".
+
+  **-stretchtofit** *boolean*
+    Indicates to stretch the axes to fit the available size of the window.
+    This changes the aspect ratio of the graph.
+    The default is "1".
 
   **-takefocus** *focusValue* 
-
-    Provides information used when moving the focus from window to window
-    via keyboard traversal (e.g., Tab and Shift-Tab).  If *focusValue* is
-    "0", this means that this window should be skipped entirely during
-    keyboard traversal.  "1" means that the this window should always
-    receive the input focus.  An empty value means that the traversal
-    scripts make the decision whether to focus on the window.  The default
-    is "".
+    Specifies how the widget should be handled when movin focus from window
+    to window via keyboard traversal (e.g., Tab and Shift-Tab).  If
+    *focusValue* is "0", this means that this window should be skipped
+    entirely during keyboard traversal. If *focusValue* is "1" this means
+    that the this window should always receive the input focus.  An empty
+    value "" means that the traversal scripts make the decision whether to
+    focus on the window.  The default is "".
 
   **-title**  *titleString* 
-    Sets the title of the graph to *titleString*. If *titleString* is ""
-    then no title will be displayed.
+    Specifies the title of the graph. If *titleString* is "" then no title
+    will be displayed.  The default is "".
 
   **-topmargin**  *numPixels* 
+    Specifies the height of the top margin extending above the plot area.
+    *NumPixels* may have any of the forms acceptable to **Tk_GetPixels**.
+    If *numPixels* is "0", the height automatically computed.  The default
+    is "0".
 
-    If non-zero, overrides the computed size of the margin above the x2
-    axis.  If *numPixels* is "0", the automatically computed size is used.
-    The default is "0".
+  **-topvariable** *varName*
+    Specifies a TCL variable to be set with the size of the top margin.
+    Whenever the graph is resized, *varName* will be set with the new value.
 
   **-width**  *numPixels*
-    Specifies the requested width of the widget.  The default is "5i".
+    Specifies the width of widget. *NumPixels* may have any of the forms
+    acceptable to **Tk_GetPixels**. The default is "5i".
 
 *pathName* **crosshairs** *operation* \fR?*arg*?
 
@@ -312,6 +381,12 @@ GRAPH OPERATIONS
   Returns the size of a particular item in the graph.  *Item* must be
   either "leftmargin", "rightmargin", "topmargin", "bottommargin",
   "plotwidth", or "plotheight".
+
+*pathName* **inside** *screenX* *sceeenY*
+
+  Returns "1" if *screenX* and *screenY* are is inside the plotting area of
+  the graph and "0" otherwise. *ScreenX* and *screenY* are integers
+  representing a coordinate on the screen.
 
 *pathName* **invtransform** *screenX* *screenY* ?\ *switches* ... ?
 
@@ -330,12 +405,6 @@ GRAPH OPERATIONS
   **-mapy**  *axisName* 
     Specifies the name of the Y-axis used to transform *screenY*.
     
-*pathName* **inside** *screenX* *sceeenY*
-
-  Returns "1" if *screenX* and *screenY* are is inside the plotting area of
-  the graph and "0" otherwise. *ScreenX* and *screenY* are integers
-  representing a coordinate on the screen.
-
 *pathName* **legend** *operation* ?\ *arg* ... ?
 
   See the `LEGEND`_ section.
@@ -349,6 +418,51 @@ GRAPH OPERATIONS
 *pathName* **marker** *operation* \fR?*arg*?...
 
   See the `MARKERS`_ section.
+
+*pathName* **pen** *operation* ?\ *arg* ... ?
+
+  See the `PENS`_ section.
+
+*pathName* **region cget** ?\ *option*\ ?
+
+  Returns the current value of the playback configuration option given by
+  *option*.  *Option* may be any option described below for the **play
+  configure** operation.
+
+*pathName* **region configure**  ?\ *option* *value* ... ?
+
+  Queries or modifies the playback configuration options.  If *option*
+  isn't specified, a list describing the current playback options for
+  *pathName* is returned.  If *option* is specified, but not *value*, then
+  a list describing *option* is returned.  If one or more *option* and
+  *value* pairs are specified, then for each pair, the option *option* is
+  set to *value*.  The following options are valid.
+
+  **-enable** *boolean*
+    Indicates to display only the region of data defined by the **-from**
+    and **-to** data point indices.  If *boolean* is true, then the
+    region will be displayed.  Otherwise, the entire set of data points
+    is plotted.
+
+  **-elements** *list*
+    Specifies the elements to display only the region of data points.
+    If *list* is "", all elements are affected.
+    
+  **-from** *fromIndex*
+    Specifies the index of the first data point to be played. *FromIndex*
+    is a non-negative integer.  Data point indices start from 0.  The
+    default is the index of the first data point "0".
+
+  **-to** *toIndex*
+    Specifies the index of the last data point to be played. *ToIndex*
+    is a non-negative integer.  Data point indices start from 0.  The
+    default is the index of the last data point.
+
+*pathName* **region maxpoints** 
+
+   Returns the maximum number of points of the selected elements
+   (designated by the **-elements** option).  This is a convenience
+   function to determine the limit of the data point indices.
 
 *pathName* **postscript** *operation* ?\ *arg* ... ?
 
@@ -501,8 +615,16 @@ are drawn, by changing the major tick interval or the number of minor
 ticks.  You can define non-uniform tick intervals, such as for time-series
 plots.
 
+  Axis configuration options may be also be set by the **option** command.
+  The resource class is "Axis".  The resource names are the names of the
+  axes (such as "x" or "x2").
 
-*pathName* **axis** bind *tagName* ?*sequence*?  ?*command*?
+  ::
+
+     option add *Graph.Axis.Color blue option add *Graph.x.LogScale true
+     option add *Graph.x2.LogScale false
+
+*pathName* **axis bind** *tagName* ?\ *sequence*\ ?  ?\ *command*\ ?
 
   Associates *command* with *tagName* such that whenever the event sequence
   given by *sequence* occurs for an axis with this tag, *command* will be
@@ -523,75 +645,66 @@ plots.
 *pathName* **axis cget** *axisName* *option*
 
   Returns the current value of the option given by *option* for *axisName*.
-  *Option* may be any option described below for the axis **configure**
-  operation.
+  *AxisName* is the name of an axis (such as "x").  *Option* may be any
+  option described below for the axis **configure** operation.
 
-*pathName* **axis configure** *axisName* \fR?*axisName*?... ?\fIoption
- value\fR?...
+*pathName* **axis configure** *axisName* ?\ *option* *value* ... ?
 
-  Queries or modifies the configuration options of *axisName*.  Several
-  axes can be changed.  If *option* isn't specified, a list describing all
-  the current options for *axisName* is returned.  If *option* is
-  specified, but not *value*, then a list describing *option* is returned.
-  If one or more *option* and *value* pairs are specified, then for each
-  pair, the axis option *option* is set to *value*.  The following options
-  are valid for axes.
-
-  Axis configuration options may be also be set by the **option** command.
-  The resource class is "Axis".  The resource names are the names of the
-  axes (such as "x" or "x2").
-
-  ::
-
-     option add *Graph.Axis.Color blue option add *Graph.x.LogScale true
-     option add *Graph.x2.LogScale false
+  Queries or modifies the configuration options of *axisName*.  *AxisName*
+  is the name of an axis (such as "x").  If *option* isn't specified, a
+  list describing all the current options for *axisName* is returned.  If
+  *option* is specified, but not *value*, then a list describing *option*
+  is returned.  If one or more *option* and *value* pairs are specified,
+  then for each pair, the axis option *option* is set to *value*.  The
+  following options are valid for axes.
 
   **-bindtags** *tagList*
 
-    Specifies the binding tags for the axis.  *TagList* is a list of
-    binding tag names.  The tags and their order will determine how events
-    for axes are handled.  Each tag in the list matching the current event
-    sequence will have its Tcl command executed.  Implicitly the name of
-    the element is always the first tag in the list.  The default value is
-    "all".
+    Specifies the binding tags for the axis.  *TagList* is a list of tag
+    names.  The tags and their order will determine how events for axes are
+    handled.  Each tag in the list matching the current event sequence will
+    have its Tcl command executed.  Implicitly the name of the element is
+    always the first tag in the list.  The default value is "all".
 
   **-color** *colorName*
-
     Sets the color of the axis and tick labels.  The default is "black".
 
-  **-command** *prefix*
+  **-command** *cmdPrefix*
 
     Specifies a Tcl command to be invoked when formatting the axis tick
-    labels. *Prefix* is a string containing the name of a Tcl proc and any
-    extra arguments for the procedure.  This command is invoked for each
-    major tick on the axis.  Two additional arguments are passed to the
-    procedure: the pathname of the widget and the current the numeric value
-    of the tick.  The procedure returns the formatted tick label.  If
-    "" is returned, no label will appear next to the tick.  You can
-    get the standard tick labels again by setting *prefix* to "".
-    The default is "".
+    labels. *CmdPrefix* is a string containing the name of a Tcl proc and
+    any extra arguments for the procedure.  This command is invoked for
+    each major tick on the axis.  Two additional arguments are passed to
+    the procedure: the *pathName* and the current the numeric value of the
+    tick.  The procedure returns the formatted tick label.  If "" is
+    returned, no label will appear next to the tick.  You can get the
+    standard tick labels again by setting *cmdPrefix* to "".  The default
+    is "".
 
-    Please note that this procedure is invoked while the graph is redrawn.
-    You may query configuration options.  But do not them, because this can
-    have unexpected results.
+    Please note that modifying graph configuration options in the procedure
+    may have have unexpected results.
+
+  **-decreasing** *boolean*
+
+    Indicates whether the values along the axis are monotonically
+    increasing or decreasing.  If *boolean* is true the axis values will be
+    decreasing.  The default is "0".
 
   **-descending** *boolean*
 
-    Indicates whether the values along the axis are monotonically
-    increasing or decreasing.  If *boolean* is true, the axis values will
-    be decreasing.  The default is "0".
+    Same as the **-descending** option above.
 
   **-hide** *boolean*
-
-    Indicates if the axis is displayed. If *boolean* is false the axis will
-    be displayed. Any element mapped to the axis is displayed regardless.
-    The default value is "0".
+    Indicates if the axis is hidden. If *boolean* is true the axis will not
+    be displayed on screen.  Element mapped to the *axisName* will
+    displayed regardless if the axis is displayed.  The default value is
+    "0".
 
   **-justify** *justifyName*
 
-    Specifies how the axis title should be justified.  This matters only
-    when the axis title contains more than one line of text. *JustifyName*
-    must be "left", "right", or "center".  The default is "center".
+    Specifies how the axis title should be justified when the axis title
+    contains more than one line of text. *JustifyName* must be "left",
+    "right", or "center".  The default is "center".
 
   **-limits** *formatString*
 
@@ -601,18 +714,22 @@ plots.
     or two format descriptions.  If one description is supplied, both the
     minimum and maximum limits are formatted in the same way.  If two, the
     first designates the format for the minimum limit, the second for the
-    maximum.  If "" is given as either description, then the that
-    limit will not be displayed.  The default is "".
+    maximum.  If "" is given as either description, then the that limit
+    will not be displayed.  The default is "".
 
-  **-linewidth** *pixels*
+  **-linewidth** *numPixels*
 
-    Sets the width of the axis and tick lines.  The default is "1" pixel.
+    Specifies the width of the axis and tick lines.  If *numPixels* is "0",
+    then no axis is displayed. The default is "1" pixel.
 
   **-logscale** *boolean*
 
-    Indicates whether the scale of the axis is logarithmic or linear.  If
-    *boolean* is true, the axis is logarithmic.  The default scale is
-    linear.
+    Indicates whether the scale of the axis is logarithmic.  If *boolean*
+    is true, the axis is logarithmic, otherwise it is linear.  The default
+    scale is linear.
+
+    This option is deprecated in favor or the **-scale** option.
+
 
   **-loose** *boolean*
 
@@ -622,69 +739,84 @@ plots.
     axes are displayed tightly.  If *boolean* is true, the axis range is
     "loose".  The default is "0".
 
-  **-majorticks** *majorList*
+  **-majorticks** *tickList*
 
     Specifies where to display major axis ticks.  You can use this option
-    to display ticks at non-uniform intervals.  *MajorList* is a list of
-    axis coordinates designating the location of major ticks.  No minor
-    ticks are drawn.  If *majorList* is "", major ticks will be
+    to display ticks at non-uniform intervals.  *TickList* is a list of
+    coordinates along the axis designating where major ticks will be drawn.
+    No minor ticks are drawn.  If *tickList* is "", major ticks will be
     automatically computed. The default is "".
 
-  **-max** *value*
+  **-max** *maxValue*
 
-    Sets the maximum limit of *axisName*.  Any data point greater than
-    *value* is not displayed.  If *value* is "", the maximum limit
-    is calculated using the largest data value.  The default is "".
+    Specifies the maximum limit of *axisName*, clipping elements using
+    *axisName*.  Any data point greater than *maxValue* is not displayed.
+    If *maxValue* is "", the maximum limit is calculated using the largest
+    value of all the elements mapped to *axisName*.  The default is "".
 
-  **-min** *value*
+  **-min** *minValue*
 
-   Sets the minimum limit of *axisName*. Any data point less than *value*
-   is not displayed.  If *value* is "", the minimum limit is
-   calculated using the smallest data value.  The default is "".
+    Specifies the minimum limit of *axisName*, clipping elements using
+    *axisName*. Any data point less than *minValue* is not displayed.  If
+    *minValue* is "", the minimum limit is calculated using the smallest
+    value of all the elements mapped to *axisName*.  The default is "".
 
-  **-minorticks** *minorList*
+  **-minorticks** *tickList*
 
     Specifies where to display minor axis ticks.  You can use this option
-    to display minor ticks at non-uniform intervals. *MinorList* is a list
+    to display minor ticks at non-uniform intervals. *TickList* is a list
     of real values, ranging from 0.0 to 1.0, designating the placement of a
     minor tick.  No minor ticks are drawn if the **-majortick** option is
-    also set.  If *minorList* is "", minor ticks will be
-    automatically computed. The default is "".
+    also set.  If *tickList* is "" then the minor ticks are automatically
+    computed. The default is "".
 
-  **-rotate** *theta*
+  **-rotate** *numDegrees*
 
-   Specifies the how many degrees to rotate the axis tick labels.  *Theta*
-   is a real value representing the number of degrees to rotate the tick
-   labels.  The default is "0.0" degrees.
+   Specifies the how many degrees to rotate the axis tick labels.
+   *NumDegrees* is a real value representing the number of degrees to
+   rotate the tick labels.  The default is "0.0".
+
+  **-scale** *scaleValue*
+   Specifies the scale of *axisName*. *ScaleValue* can be one of the following.
+
+    **linear**
+      Indicates that the scale of the axis is linear.  
+
+    **log**
+      Indicates that the scale of the axis is logarithmic.  
+
+    **time**
+      Indicates that the axis scale is time.  The data values
+      on the axis are in assumed to be in seconds.
 
   **-scrollcommand** *command*
+ 
+    Specify the prefix for a command used to communicate with scrollbars
+    for this axis.
 
-   Specify the prefix for a command used to communicate with scrollbars for
-   this axis, such as \fI.sbar set\fP.
+  **-scrollmax** *maxValue*
 
-  **-scrollmax** *value*
+    Sets the maximum limit of the axis scroll region.  If *maxValue* is "",
+    the maximum limit is calculated using the largest data value.  The
+    default is "".
 
-   Sets the maximum limit of the axis scroll region.  If *value* is
-   "", the maximum limit is calculated using the largest data
-   value.  The default is "".
+  **-scrollmin** *minValue*
 
-  **-scrollmin** *value*
-
-   Sets the minimum limit of axis scroll region.  If *value* is "",
-   the minimum limit is calculated using the smallest data value.  The
-   default is "".
+    Sets the minimum limit of axis scroll region.  If *minValue* is "", the
+    minimum limit is calculated using the smallest data value.  The default
+    is "".
 
   **-showticks** *boolean*
 
-   Indicates whether axis ticks should be drawn. If *boolean* is true,
-   ticks are drawn.  If false, only the axis line is drawn. The default is
-   "1".
+    Indicates whether axis ticks should be drawn. If *boolean* is true,
+    ticks are drawn.  If false, only the axis line is drawn. The default is
+    "1".
 
-  **-stepsize** *value*
+  **-stepsize** *stepValue*
 
-   Specifies the interval between major axis ticks.  If *value* isn't a
-   valid interval (must be less than the axis range), the request is
-   ignored and the step size is automatically calculated.
+    Specifies the interval between major axis ticks.  If *stepValue* isn't
+    a valid interval (it must be less than the axis range), the request is
+    ignored and the step size is automatically calculated.
 
   **-subdivisions** *number*
 
@@ -694,20 +826,27 @@ plots.
 
   **-tickfont** *fontName*
 
-    Specifies the font for axis tick labels. The default is
-    \f(CW*-Courier-Bold-R-Normal-*-100-*\fR.
+    Specifies the font for axis tick labels. The default is "{Sans Serif}
+    9".
 
-  **-ticklength** *pixels*
+  **-ticklength** *numPixels*
 
-    Sets the length of major and minor ticks (minor ticks are half the
-    length of major ticks). If *pixels* is less than zero, the axis will be
-    inverted with ticks drawn pointing towards the plot.  The default is
-    "0.1i".
+    Specifies the length of major and minor ticks (minor ticks are half the
+    length of major ticks). *NumPixels* may have any of the forms
+    acceptable to **Tk_GetPixels**.  If *numPixels* is less than zero, the
+    ticks drawn pointing towards the plot.  The default is "0.1i".
 
-  **-title** *text*
+  **-timescale** *boolean*
 
-    Sets the title of the axis. If *text* is "", no axis title will
-    be displayed.
+    Indicates whether the scale of the axis is logarithmic.  If *boolean*
+    is true, the axis is time. The default is "0"
+
+    This option is deprecated in favor or the **-scale** option.
+
+  **-title** *titleString*
+
+    Specifies the title of *axisName*. If *titleString* is "", no axis
+    title will be displayed.  The default is the *axisName*.
 
   **-titlealternate** *boolean*
 
@@ -716,15 +855,13 @@ plots.
     the axis either to the right (horizontal axes) or above (vertical axes)
     the axis.  The default is "0".
 
-  **-titlecolor** *color*
+  **-titlecolor** *colorName*
 
-    Sets the color of the axis title. The default is "black".
+    Specifies the color of the axis title. The default is "black".
 
   **-titlefont** *fontName*
 
-    Specifies the font for axis title. The default is
-    \f(CW*-Helvetica-Bold-R-Normal-*-14-140-*\fR.
-
+    Specifies the font for axis title. The default is "{Sans Serif} 9".
 
 *pathName* **axis create** *axisName* ?\ *option* *value* ... ?
 
@@ -734,8 +871,9 @@ plots.
 
 *pathName* **axis delete** ?\ *axisName*\ ... ?
 
-  Deletes the named axes. An axis is not really deleted until it is not
-  longer in use, so it's safe to delete axes mapped to elements.
+  Deletes the one or more axes. Axes are reference counted. *AxisName* is
+  not really deleted until it is not longer in use, so it's safe to delete
+  axes mapped to elements.
 
 *pathName* **axis invtransform** *axisName* *value*
 
@@ -745,18 +883,20 @@ plots.
 
 *pathName* **axis limits** *axisName*
 
-  Returns a list of the minimum and maximum limits for *axisName*.  The
-  order of the list is \f(CWmin max\fR.
+  Returns a list of the minimum and maximum values for *axisName*.  The
+  minumum and maximum values are determined from all the elements that are
+  mapped to *axisName*.
 
 *pathName* **axis names** ?\ *pattern* ... ?
 
-  Returns a list of axes matching zero or more patterns.  If no *pattern*
-  argument is give, the names of all axes are returned.
+  Returns the names of all the axes in the graph.  If one or more *pattern*
+  arguments are provided, then the name of any axis matching *pattern* will
+  be returned. *Pattern* is a glob-style pattern.
 
-*pathName* **axis transform** \fIaxisName value\fR
+*pathName* **axis transform** *axisName* *value*
 
-  Transforms the coordinate *value* to a screen coordinate by mapping the
-  it to *axisName*.  Returns the transformed screen coordinate.
+  Transforms *value* to a screen coordinate by mapping the it to
+  *axisName*.  Returns the transformed screen coordinate.
 
 *pathName* **axis view** *axisName*
 
@@ -821,13 +961,13 @@ redrawing the entire graph.
 
 The following operations are available for cross hairs:
 
-*pathName* **crosshairs**  cget *option*
+*pathName* **crosshairs cget** *option*
 
   Returns the current value of the cross hairs configuration option given
   by *option*.  *Option* may be any option described below for the cross
   hairs **configure** operation.
 
-*pathName* **crosshairs**  configure \fR?\fIoption value\fR?...  
+*pathName* **crosshairs configure** ?\ *option* *value* ... ?
 
   Queries or modifies the configuration options of the cross hairs.  If
   *option* isn't specified, a list describing all the current options for
@@ -884,7 +1024,6 @@ The following operations are available for cross hairs:
   Toggles the current state of the cross hairs, alternately mapping and
   unmapping the cross hairs.
 
-
 ELEMENTS
 ~~~~~~~~
 
@@ -907,7 +1046,7 @@ The following operations are available for elements.
   and *index* is a number representing the index of the data point. If no
   indices are present then all data points become active.
 
-*pathName* **element bind** *tagName* ?*sequence*?  ?*command*? 
+*pathName* **element bind** *tagName* ?\ *sequence*\ ?  ?\ *command*\ ? 
 
   Associates *command* with *tagName* such that whenever the event sequence
   given by *sequence* occurs for an element with this tag, *command* will
@@ -918,12 +1057,12 @@ The following operations are available for elements.
 
   If all arguments are specified then a new binding is created, replacing
   any existing binding for the same *sequence* and *tagName*.  If the first
-  character of *command* is \f(CW+\fR then *command* augments an existing
-  binding rather than replacing it.  If no *command* argument is provided
-  then the command currently associated with *tagName* and *sequence* (it's
-  an error occurs if there's no such binding) is returned.  If both
-  *command* and *sequence* are missing then a list of all the event
-  sequences for which bindings have been defined for *tagName*.
+  character of *command* is "+" then *command* augments an existing binding
+  rather than replacing it.  If no *command* argument is provided then the
+  command currently associated with *tagName* and *sequence* (it's an error
+  if there's no such binding) is returned.  If both *command* and
+  *sequence* are missing then a list of all the event sequences for which
+  bindings have been defined for *tagName*.
 
 *pathName* **element cget** *elemName* *option*
 
@@ -941,7 +1080,7 @@ The following operations are available for elements.
   list containing the name of the closest element, the index of the closest
   data point, and the graph-coordinates of the point.  Returns "",
   if no data point within the threshold distance can be found. The
-  following *option\fR-\fIvalue* pairs are available.
+  following *option*-*value* pairs are available.
 
 
   **-along**  *direction*
@@ -993,14 +1132,14 @@ The following operations are available for elements.
     Specifies pen to use to draw active element.  If *penName* is "", no
     active elements will be drawn.  The default is "activeLine".
 
-  **-areabackground**  *color* 
+  **-areabackground**  *colorName* 
 
     Specifies the background color of the area under the curve. The
-    background area color is drawn only for bitmaps (see the **-areapattern**
-    option).  If *color* is "", the background is transparent.  The default
-    is "black".
+    background area color is drawn only for bitmaps (see the
+    **-areapattern** option).  If *colorName* is "", the background is
+    transparent.  The default is "black".
 
-  **-areaforeground**  *color* 
+  **-areaforeground**  *colorName* 
 
     Specifies the foreground color of the area under the curve.  The default
     is "black".
@@ -1095,10 +1234,10 @@ The following operations are available for elements.
     Sets the width of the outline bordering each symbol.  If *numPixels* is
     "0", no outline will be drawn. The default is "1".
 
-  **-pixels**  *pixels*
+  **-pixels**  *numPixels*
 
-    Sets the size of symbols.  If *pixels* is "0", no symbols will be drawn.
-    The default is "0.125i".
+    Sets the size of symbols.  If *NumPixels* is "0", no symbols will be
+    drawn.  The default is "0.125i".
 
   **-scalesymbols**  *boolean* 
 
@@ -1111,10 +1250,10 @@ The following operations are available for elements.
     scales.  If *boolean* is false, the element's symbols are drawn at the
     designated size, regardless of axis scales.  The default is "0".
 
-  **-smooth**  *smooth* 
+  **-smooth**  *smoothValue* 
 
     Specifies how connecting line segments are drawn between data points.
-    *Smooth* can be either "linear", "step", "natural", or "quadratic".
+    *SmoothValue* can be one of the following.
 
     **linear**
       A single line segment is drawn, connecting both data points. 
@@ -1144,13 +1283,44 @@ The following operations are available for elements.
     only symbol attributes. Line attributes, such as line width, dashes,
     etc. are ignored.
 
-  **-symbol**  *symbol* 
+  **-symbol**  *symbolName* 
 
-    Specifies the symbol for data points.  *Symbol* can be either "square",
-    "circle", "diamond", "plus", "cross", "splus", "scross", "triangle", ""
-    (where no symbol is drawn), or a bitmap.  Bitmaps are specified as
-    "*source* ?*mask*?", where *source* is the name of the bitmap, and *mask*
-    is the bitmap's optional mask.  The default is "circle".
+    Specifies the symbol for data points.  *SymbolName* can be one of
+    the following.
+
+    **arrow**
+       Draw an arrow symbol.  This is basically an inverted triangle. The
+       symbol has fill and outline colors.
+
+    **circle**
+       Draw a circle symbol.  The symbol has fill and outline colors.
+
+    **diamond**
+       Draw a diamond symbol.  The symbol has fill and outline colors.
+
+    **plus**
+       Draw a plus symbol.  The symbol has fill and outline colors.
+
+    **cross**
+       Draw a cross symbol.  The symbol has fill and outline colors.
+
+    **scross**
+       Draw an cross symbol as two lines.  The symbol only has an outline
+       color.
+
+    **splus**
+       Draw an plus symbol as two lines.  The symbol only has an outline
+       color.
+
+    **square**
+       Draw a square symbol.  The symbol has fill and outline colors.
+
+    **triangle**
+       Draw a triangle symbol.  The symbol has fill and outline colors.
+
+    *imageName*
+       Draw an image *imageName*.  The image may contain transparent
+       pixels.  
 
   **-trace**  *direction* 
 
@@ -1210,8 +1380,9 @@ The following operations are available for elements.
 
 *pathName* **element names** ?\ *pattern* ... ?
 
-  Returns the elements matching one or more pattern.  If no *pattern* is
-  given, the names of all elements is returned.
+  Returns the names of all the elements in the graph.  If one or more
+  *pattern* arguments are provided, then the name of any element matching
+  *pattern* will be returned. *Pattern* is a glob-style pattern.
 
 *pathName* **element show** ?\ *elemNameList*\ ?  
 
@@ -1275,161 +1446,161 @@ The following operations are valid for the legend.
   *option* is set to *value*.  The following options are valid for the
   legend. 
 
-**-activebackground**  *colorName*
+  **-activebackground**  *colorName*
 
-  Sets the background color for active legend entries.  All legend entries
-  marked active (see the legend **activate** operation) are drawn using
-  this background color.
+    Sets the background color for active legend entries.  All legend entries
+    marked active (see the legend **activate** operation) are drawn using
+    this background color.
 
-**-activeborderwidth**  *pixels*
+  **-activeborderwidth**  *pixels*
 
-  Sets the width of the 3-D border around the outside edge of the active
-  legend entries.  The default is "2".
+    Sets the width of the 3-D border around the outside edge of the active
+    legend entries.  The default is "2".
 
-**-activeforeground**  *colorName*
+  **-activeforeground**  *colorName*
 
-  Sets the foreground color for active legend entries.  All legend entries
-  marked as active (see the legend **activate** operation) are drawn using
-  this foreground color.
+    Sets the foreground color for active legend entries.  All legend entries
+    marked as active (see the legend **activate** operation) are drawn using
+    this foreground color.
 
-**-activerelief**  *relief* 
+  **-activerelief**  *relief* 
 
-  Specifies the 3-D effect desired for active legend entries.  *Relief*
-  denotes how the interior of the entry should appear relative to the
-  legend; for example, "raised" means the entry should appear to protrude
-  from the legend, relative to the surface of the legend.  The default is
-  "flat".
+    Specifies the 3-D effect desired for active legend entries.  *Relief*
+    denotes how the interior of the entry should appear relative to the
+    legend; for example, "raised" means the entry should appear to protrude
+    from the legend, relative to the surface of the legend.  The default is
+    "flat".
 
-**-anchor**  *anchor*
+  **-anchor**  *anchor*
 
-  Tells how to position the legend relative to the positioning point for
-  the legend.  This is dependent on the value of the **-position** option.
-  The default is "center".
+    Tells how to position the legend relative to the positioning point for
+    the legend.  This is dependent on the value of the **-position** option.
+    The default is "center".
 
-   **left**  **right**
-    The anchor describes how to position the legend vertically.  
+     **left**  **right**
+      The anchor describes how to position the legend vertically.  
 
-   **top**  **bottom**
-    The anchor describes how to position the legend horizontally.  
+     **top**  **bottom**
+      The anchor describes how to position the legend horizontally.  
 
-  **@***x***,***y*
+    **@***x***,***y*
 
-    The anchor specifies how to position the legend relative to the
-    positioning point. For example, if *anchor* is "center" then the legend
-    is centered on the point; if *anchor* is "n" then the legend will be
-    drawn such that the top center point of the rectangular region occupied
-    by the legend will be at the positioning point.
+      The anchor specifies how to position the legend relative to the
+      positioning point. For example, if *anchor* is "center" then the legend
+      is centered on the point; if *anchor* is "n" then the legend will be
+      drawn such that the top center point of the rectangular region occupied
+      by the legend will be at the positioning point.
 
-  **plotarea**
+    **plotarea**
 
-    The anchor specifies how to position the legend relative to the
-    plotting area. For example, if *anchor* is "center" then the legend is
-    centered in the plotting area; if *anchor* is "ne" then the legend will
-    be drawn such that occupies the upper right corner of the plotting
-    area.
+      The anchor specifies how to position the legend relative to the
+      plotting area. For example, if *anchor* is "center" then the legend is
+      centered in the plotting area; if *anchor* is "ne" then the legend will
+      be drawn such that occupies the upper right corner of the plotting
+      area.
 
 
-**-background**  *colorName*
+  **-background**  *colorName*
 
-  Sets the background color of the legend. If *colorName* is "", the legend
-  background with be transparent.
+    Sets the background color of the legend. If *colorName* is "", the legend
+    background with be transparent.
 
-**-bindtags**  *tagList*
+  **-bindtags**  *tagList*
 
-  Specifies the binding tags for legend entries.  *TagList* is a list of
-  binding tag names.  The tags and their order will determine how events
-  are handled for legend entries.  Each tag in the list matching the
-  current event sequence will have its Tcl command executed. The default
-  value is "all".
+    Specifies the binding tags for legend entries.  *TagList* is a list of
+    binding tag names.  The tags and their order will determine how events
+    are handled for legend entries.  Each tag in the list matching the
+    current event sequence will have its Tcl command executed. The default
+    value is "all".
 
-**-borderwidth**  *numPixels*
+  **-borderwidth**  *numPixels*
 
-  Sets the width of the 3-D border around the outside edge of the legend
-  (if such border is being drawn; the **relief** option determines this).
-  The default is "2" pixels.
+    Sets the width of the 3-D border around the outside edge of the legend
+    (if such border is being drawn; the **relief** option determines this).
+    The default is "2" pixels.
 
-**-font**  *fontName* 
+  **-font**  *fontName* 
 
-  *FontName* specifies a font to use when drawing the labels of each
-  element into the legend.  The default is "{San Serif} 9".
+    *FontName* specifies a font to use when drawing the labels of each
+    element into the legend.  The default is "{San Serif} 9".
 
-**-foreground** *colorName*
+  **-foreground** *colorName*
 
-  Sets the foreground color of the text drawn for the element's label.  The
-  default is "black".
+    Sets the foreground color of the text drawn for the element's label.  The
+    default is "black".
 
-**-hide**  *boolean*
+  **-hide**  *boolean*
 
-  Indicates whether the legend should be displayed. If *boolean* is true,
-  the legend will not be drawn.  The default is "no".
+    Indicates whether the legend should be displayed. If *boolean* is true,
+    the legend will not be drawn.  The default is "no".
 
-**-ipadx**  *numPixels* 
+  **-ipadx**  *numPixels* 
 
-  Sets the amount of internal padding to be added to the width of each
-  legend entry.  *NumPixels* can be a list of one or two screen distances.
-  If *numPixels* has two elements, the left side of the legend entry is
-  padded by the first distance and the right side by the second.  If
-  *numPixels* is just one distance, both the left and right sides are
-  padded evenly.  The default is "2".
+    Sets the amount of internal padding to be added to the width of each
+    legend entry.  *NumPixels* can be a list of one or two screen distances.
+    If *numPixels* has two elements, the left side of the legend entry is
+    padded by the first distance and the right side by the second.  If
+    *numPixels* is just one distance, both the left and right sides are
+    padded evenly.  The default is "2".
 
-**-ipady**  *numPixels*
+  **-ipady**  *numPixels*
 
-  Sets an amount of internal padding to be added to the height of each
-  legend entry.  *NumPixels* can be a list of one or two screen distances.  If
-  *numPixels* has two elements, the top of the entry is padded by the first
-  distance and the bottom by the second.  If *numPixels* is just one distance,
-  both the top and bottom of the entry are padded evenly.  The default is
-  "2".
+    Sets an amount of internal padding to be added to the height of each
+    legend entry.  *NumPixels* can be a list of one or two screen distances.  If
+    *numPixels* has two elements, the top of the entry is padded by the first
+    distance and the bottom by the second.  If *numPixels* is just one distance,
+    both the top and bottom of the entry are padded evenly.  The default is
+    "2".
 
-**-padx**  *numPixels*
+  **-padx**  *numPixels*
 
-  Sets the padding to the left and right exteriors of the legend.
-  *NumPixels* can be a list of one or two screen distances.  If *numPixels*
-  has two elements, the left side of the legend is padded by the first
-  distance and the right side by the second.  If *numPixels* has just one
-  distance, both the left and right sides are padded evenly.  The default
-  is "4".
+    Sets the padding to the left and right exteriors of the legend.
+    *NumPixels* can be a list of one or two screen distances.  If *numPixels*
+    has two elements, the left side of the legend is padded by the first
+    distance and the right side by the second.  If *numPixels* has just one
+    distance, both the left and right sides are padded evenly.  The default
+    is "4".
 
-**-pady**  *numPixels*
+  **-pady**  *numPixels*
 
-  Sets the padding above and below the legend.  *NumPixels* can be a list
-  of one or two screen distances.  If *NumPixels* has two elements, the
-  area above the legend is padded by the first distance and the area below
-  by the second.  If *numPixels* is just one distance, both the top and
-  bottom areas are padded evenly.  The default is "0".
+    Sets the padding above and below the legend.  *NumPixels* can be a list
+    of one or two screen distances.  If *NumPixels* has two elements, the
+    area above the legend is padded by the first distance and the area below
+    by the second.  If *numPixels* is just one distance, both the top and
+    bottom areas are padded evenly.  The default is "0".
 
-**-position**  *pos*
+  **-position**  *pos*
 
-  Specifies where the legend is drawn. The **-anchor** option also affects
-  where the legend is positioned.  If *pos* is "left", "left", "top", or
-  "bottom", the legend is drawn in the specified margin.  If *pos* is
-  "plotarea", then the legend is drawn inside the plotting area at a
-  particular anchor.  If *pos* is in the form "\fI@x,y\fR", where *x* and
-  *y* are the window coordinates, the legend is drawn in the plotting area
-  at the specified coordinates.  The default is "right".
+    Specifies where the legend is drawn. The **-anchor** option also affects
+    where the legend is positioned.  If *pos* is "left", "left", "top", or
+    "bottom", the legend is drawn in the specified margin.  If *pos* is
+    "plotarea", then the legend is drawn inside the plotting area at a
+    particular anchor.  If *pos* is in the form "\fI@x,y\fR", where *x* and
+    *y* are the window coordinates, the legend is drawn in the plotting area
+    at the specified coordinates.  The default is "right".
 
-**-raised**  *boolean*
+  **-raised**  *boolean*
 
-  Indicates whether the legend is above or below the data elements.  This
-  matters only if the legend is in the plotting area.  If *boolean* is
-  true, the legend will be drawn on top of any elements that may overlap
-  it. The default is "no".
+    Indicates whether the legend is above or below the data elements.  This
+    matters only if the legend is in the plotting area.  If *boolean* is
+    true, the legend will be drawn on top of any elements that may overlap
+    it. The default is "no".
 
-**-relief**  *relief*
+  **-relief**  *relief*
 
-  Specifies the 3-D effect for the border around the legend.  *Relief*
-  specifies how the interior of the legend should appear relative to the
-  graph; for example, "raised" means the legend should appear to protrude
-  from the graph, relative to the surface of the graph.  The default is
-  "sunken".
+    Specifies the 3-D effect for the border around the legend.  *Relief*
+    specifies how the interior of the legend should appear relative to the
+    graph; for example, "raised" means the legend should appear to protrude
+    from the graph, relative to the surface of the graph.  The default is
+    "sunken".
 
-Legend configuration options may also be set by the **option** command.
-The resource name and class are "legend" and "Legend" respectively.
+  Legend configuration options may also be set by the **option** command.
+  The resource name and class are "legend" and "Legend" respectively.
 
-::
+  ::
 
-    option add *Graph.legend.Foreground blue
-    option add *Graph.Legend.Relief     raised
+      option add *Graph.legend.Foreground blue
+      option add *Graph.Legend.Relief     raised
 
 *pathName* **legend deactivate** *pattern*...
 
@@ -1508,75 +1679,75 @@ The following operations are available for pen components.
   pen option *option* is set to *value*.  The following options are valid
   for pens.
 
-**-color**  *colorName* 
+  **-color**  *colorName* 
 
-  Sets the color of the traces connecting the data points.  
+    Sets the color of the traces connecting the data points.  
 
-**-dashes**  *dashList*
+  **-dashes**  *dashList*
 
-  Sets the dash style of element line. *DashList* is a list of up to 11
-  numbers that alternately represent the lengths of the dashes and gaps on
-  the element line.  Each number must be between 1 and 255.  If *dashList*
-  is "", the lines will be solid.
+    Sets the dash style of element line. *DashList* is a list of up to 11
+    numbers that alternately represent the lengths of the dashes and gaps on
+    the element line.  Each number must be between 1 and 255.  If *dashList*
+    is "", the lines will be solid.
 
-**-fill**  *colorName* 
+  **-fill**  *colorName* 
 
-  Sets the interior color of symbols.  If *colorName* is "", then the
-  interior of the symbol is transparent.  If *colorName* is "defcolor",
-  then the color will be the same as the **-color** option.  The default is
-  "defcolor".
+    Sets the interior color of symbols.  If *colorName* is "", then the
+    interior of the symbol is transparent.  If *colorName* is "defcolor",
+    then the color will be the same as the **-color** option.  The default is
+    "defcolor".
 
-**-linewidth**  *numPixels* 
+  **-linewidth**  *numPixels* 
 
-  Sets the width of the connecting lines between data points.  If
-  *numPixels* is "0", no connecting lines will be drawn between symbols.
-  The default is "0".
+    Sets the width of the connecting lines between data points.  If
+    *numPixels* is "0", no connecting lines will be drawn between symbols.
+    The default is "0".
 
-**-offdash**  *colorName*
+  **-offdash**  *colorName*
 
-  Sets the color of the stripes when traces are dashed (see the **-dashes**
-  option).  If *colorName* is "", then the "off" pixels will represent gaps
-  instead of stripes.  If *colorName* is "defcolor", then the color will be
-  the same as the **-color** option.  The default is "defcolor".
+    Sets the color of the stripes when traces are dashed (see the **-dashes**
+    option).  If *colorName* is "", then the "off" pixels will represent gaps
+    instead of stripes.  If *colorName* is "defcolor", then the color will be
+    the same as the **-color** option.  The default is "defcolor".
 
-**-outline**  *colorName* 
+  **-outline**  *colorName* 
 
-  Sets the color or the outline around each symbol.  If *colorName* is "",
-  then no outline is drawn. If *colorName* is "defcolor", then the color
-  will be the same as the **-color** option.  The default is "defcolor".
+    Sets the color or the outline around each symbol.  If *colorName* is "",
+    then no outline is drawn. If *colorName* is "defcolor", then the color
+    will be the same as the **-color** option.  The default is "defcolor".
 
-**-outlinewidth**  *numPixels* 
+  **-outlinewidth**  *numPixels* 
 
-  Sets the width of the outline bordering each symbol.  If *numPixels* is
-  "0", no outline will be drawn. The default is "1".
+    Sets the width of the outline bordering each symbol.  If *numPixels* is
+    "0", no outline will be drawn. The default is "1".
 
-**-pixels**  *numPixels*
+  **-pixels**  *numPixels*
 
-  Sets the size of symbols.  If *numPixels* is "0", no symbols will be
-  drawn.  The default is "0.125i".
+    Sets the size of symbols.  If *numPixels* is "0", no symbols will be
+    drawn.  The default is "0.125i".
 
-**-symbol**  *symbol* 
+  **-symbol**  *symbol* 
 
-  Specifies the symbol for data points.  *Symbol* can be either "square",
-  "circle", "diamond", "plus", "cross", "splus", "scross", "triangle", ""
-  (where no symbol is drawn), or a bitmap.  Bitmaps are specified as
-  "*source* ?*mask*?", where *source* is the name of the bitmap, and *mask*
-  is the bitmap's optional mask.  The default is "circle".
+    Specifies the symbol for data points.  *Symbol* can be either "square",
+    "circle", "diamond", "plus", "cross", "splus", "scross", "triangle", ""
+    (where no symbol is drawn), or a bitmap.  Bitmaps are specified as
+    "*source* ?*mask*?", where *source* is the name of the bitmap, and *mask*
+    is the bitmap's optional mask.  The default is "circle".
 
-**-type**  *elemType* 
+  **-type**  *elemType* 
 
-  Specifies the type of element the pen is to be used with.  This option
-  should only be employed when creating the pen.  This is for those that
-  wish to mix different types of elements (bars and lines) on the same
-  graph.  The default type is "line".
+    Specifies the type of element the pen is to be used with.  This option
+    should only be employed when creating the pen.  This is for those that
+    wish to mix different types of elements (bars and lines) on the same
+    graph.  The default type is "line".
 
-Pen configuration options may be also be set by the **option** command.
-The resource class is "Pen".  The resource names are the names of the pens.
+  Pen configuration options may be also be set by the **option** command.
+  The resource class is "Pen".  The resource names are the names of the pens.
 
-::
+  ::
 
-     option add *Graph.Pen.Color  blue
-     option add *Graph.activeLine.color  green
+       option add *Graph.Pen.Color  blue
+       option add *Graph.activeLine.color  green
 
 
 *pathName* **pen create**  *penName*  ?\ *option* *value* ... ?
@@ -1592,8 +1763,9 @@ The resource class is "Pen".  The resource names are the names of the pens.
 
 *pathName* **pen names** ?\ *pattern* ... ?
 
-  Returns a list of pens matching zero or more patterns.  If no *pattern*
-  argument is give, the names of all pens are returned.
+  Returns the names of all the pens in the graph.  If one or more
+  *pattern* arguments are provided, then the name of any pen matching
+  *pattern* will be returned. *Pattern* is a glob-style pattern.
 
 POSTSCRIPT
 ~~~~~~~~~~
@@ -1623,116 +1795,116 @@ The following postscript operations are available.
   postscript option *option* is set to *value*.  The following postscript
   options are available.
 
-**-center**  *boolean*
+  **-center**  *boolean*
 
-  Indicates whether the plot should be centered on the PostScript page.  If
-  *boolean* is false, the plot will be placed in the upper left corner of
-  the page.  The default is "1".
+    Indicates whether the plot should be centered on the PostScript page.  If
+    *boolean* is false, the plot will be placed in the upper left corner of
+    the page.  The default is "1".
 
-**-colormap**  *varName*
+  **-colormap**  *varName*
 
-  *VarName* must be the name of a global array variable that specifies a
-  color mapping from the X color name to PostScript.  Each element of
-  *varName* must consist of PostScript code to set a particular color value
-  (e.g. "1.0 1.0 0.0 setrgbcolor"").  When generating color information in
-  PostScript, the array variable *varName* is checked if an element of the
-  name as the color exists. If so, it uses its value as the PostScript
-  command to set the color.  If this option hasn't been specified, or if
-  there isn't an entry in *varName* for a given color, then it uses the
-  red, green, and blue intensities from the X color.
+    *VarName* must be the name of a global array variable that specifies a
+    color mapping from the X color name to PostScript.  Each element of
+    *varName* must consist of PostScript code to set a particular color value
+    (e.g. "1.0 1.0 0.0 setrgbcolor"").  When generating color information in
+    PostScript, the array variable *varName* is checked if an element of the
+    name as the color exists. If so, it uses its value as the PostScript
+    command to set the color.  If this option hasn't been specified, or if
+    there isn't an entry in *varName* for a given color, then it uses the
+    red, green, and blue intensities from the X color.
 
-**-colormode**  *mode*
+  **-colormode**  *mode*
 
-  Specifies how to output color information.  *Mode* must be either "color"
-  (for full color output), "gray" (convert all colors to their gray-scale
-  equivalents) or "mono" (convert foreground colors to black and background
-  colors to white).  The default mode is "color".
+    Specifies how to output color information.  *Mode* must be either "color"
+    (for full color output), "gray" (convert all colors to their gray-scale
+    equivalents) or "mono" (convert foreground colors to black and background
+    colors to white).  The default mode is "color".
 
-**-fontmap**  *varName*
+  **-fontmap**  *varName*
 
-  *VarName* must be the name of a global array variable that specifies a
-  font mapping from the X font name to PostScript.  Each element of
-  *varName* must consist of a Tcl list with one or two elements; the name
-  and point size of a PostScript font.  When outputting PostScript commands
-  for a particular font, the array variable *varName* is checked to see if
-  an element by the specified font exists.  If there is such an element,
-  then the font information contained in that element is used in the
-  PostScript output.  (If the point size is omitted from the list, the
-  point size of the X font is used).  Otherwise the X font is examined in
-  an attempt to guess what PostScript font to use.  This works only for
-  fonts whose foundry property is *Adobe* (such as Times, Helvetica,
-  Courier, etc.).  If all of this fails then the font defaults to
-  "Helvetica-Bold".
+    *VarName* must be the name of a global array variable that specifies a
+    font mapping from the X font name to PostScript.  Each element of
+    *varName* must consist of a Tcl list with one or two elements; the name
+    and point size of a PostScript font.  When outputting PostScript commands
+    for a particular font, the array variable *varName* is checked to see if
+    an element by the specified font exists.  If there is such an element,
+    then the font information contained in that element is used in the
+    PostScript output.  (If the point size is omitted from the list, the
+    point size of the X font is used).  Otherwise the X font is examined in
+    an attempt to guess what PostScript font to use.  This works only for
+    fonts whose foundry property is *Adobe* (such as Times, Helvetica,
+    Courier, etc.).  If all of this fails then the font defaults to
+    "Helvetica-Bold".
 
-**-decorations**  *boolean*
+  **-decorations**  *boolean*
 
-  Indicates whether PostScript commands to generate color backgrounds and
-  3-D borders will be output.  If *boolean* is false, the background will
-  be white and no 3-D borders will be generated. The default is "1".
+    Indicates whether PostScript commands to generate color backgrounds and
+    3-D borders will be output.  If *boolean* is false, the background will
+    be white and no 3-D borders will be generated. The default is "1".
 
-**-height**  *numPica*
+  **-height**  *numPica*
 
-  Sets the height of the plot.  This lets you print the graph with a height
-  different from the one drawn on the screen.  If *numPica* is 0, the
-  height is the same as the widget's height.  The default is "0".
+    Sets the height of the plot.  This lets you print the graph with a height
+    different from the one drawn on the screen.  If *numPica* is 0, the
+    height is the same as the widget's height.  The default is "0".
 
-**-landscape**  *boolean*
+  **-landscape**  *boolean*
 
-  If *boolean* is true, this specifies the printed area is to be rotated 90
-  degrees.  In non-rotated output the X-axis of the printed area runs along
-  the short dimension of the page ("portrait" orientation); in rotated
-  output the X-axis runs along the long dimension of the page
-  ("landscape" orientation).  Defaults to "0".
+    If *boolean* is true, this specifies the printed area is to be rotated 90
+    degrees.  In non-rotated output the X-axis of the printed area runs along
+    the short dimension of the page ("portrait" orientation); in rotated
+    output the X-axis runs along the long dimension of the page
+    ("landscape" orientation).  Defaults to "0".
 
-**-maxpect**  *boolean*
+  **-maxpect**  *boolean*
 
-  Indicates to scale the plot so that it fills the PostScript page.  The
-  aspect ratio of the graph is still retained.  The default is "0".
+    Indicates to scale the plot so that it fills the PostScript page.  The
+    aspect ratio of the graph is still retained.  The default is "0".
 
-**-padx**  *numPica*
+  **-padx**  *numPica*
 
-  Sets the horizontal padding for the left and right page borders.  The
-  borders are exterior to the plot.  *NumPica* can be a list of one or two
-  page distances.  If *numPica* has two elements, the left border is padded
-  by the first distance and the right border by the second.  If *numPica* has
-  just one distance, both the left and right borders are padded evenly.
-  The default is "1i".
+    Sets the horizontal padding for the left and right page borders.  The
+    borders are exterior to the plot.  *NumPica* can be a list of one or two
+    page distances.  If *numPica* has two elements, the left border is padded
+    by the first distance and the right border by the second.  If *numPica* has
+    just one distance, both the left and right borders are padded evenly.
+    The default is "1i".
 
-**-pady**  *numPica* 
+  **-pady**  *numPica* 
 
-  Sets the vertical padding for the top and bottom page borders. The
-  borders are exterior to the plot.  *NumPica* can be a list of one or two
-  page distances.  If *numPica* has two elements, the top border is padded
-  by the first distance and the bottom border by the second.  If *numPica*
-  has just one distance, both the top and bottom borders are padded evenly.
-  The default is "1i".
+    Sets the vertical padding for the top and bottom page borders. The
+    borders are exterior to the plot.  *NumPica* can be a list of one or two
+    page distances.  If *numPica* has two elements, the top border is padded
+    by the first distance and the bottom border by the second.  If *numPica*
+    has just one distance, both the top and bottom borders are padded evenly.
+    The default is "1i".
 
-**-paperheight**  *numPica*
+  **-paperheight**  *numPica*
 
-  Sets the height of the postscript page.  This can be used to select
-  between different page sizes (letter, A4, etc).  The default height is
-  "11.0i".
+    Sets the height of the postscript page.  This can be used to select
+    between different page sizes (letter, A4, etc).  The default height is
+    "11.0i".
 
-**-paperwidth**  *numPica*
+  **-paperwidth**  *numPica*
 
-  Sets the width of the postscript page.  This can be used to select
-  between different page sizes (letter, A4, etc).  The default width is
-  "8.5i".
+    Sets the width of the postscript page.  This can be used to select
+    between different page sizes (letter, A4, etc).  The default width is
+    "8.5i".
 
-**-width**  *numPica*
+  **-width**  *numPica*
 
-  Sets the width of the plot.  This lets you generate a plot of a width
-  different from that of the widget.  If *numPica* is 0, the width is the
-  same as the widget's width.  The default is "0".
+    Sets the width of the plot.  This lets you generate a plot of a width
+    different from that of the widget.  If *numPica* is 0, the width is the
+    same as the widget's width.  The default is "0".
 
-Postscript configuration options may be also be set by the **option**
-command.  The resource name and class are "postscript" and "Postscript"
-respectively.
+  Postscript configuration options may be also be set by the **option**
+  command.  The resource name and class are "postscript" and "Postscript"
+  respectively.
 
-::
+  ::
 
-    option add *Graph.postscript.Decorations false
-    option add *Graph.Postscript.Landscape   true
+      option add *Graph.postscript.Decorations false
+      option add *Graph.Postscript.Landscape   true
 
 
 *pathName* **postscript output** ?\ *fileName*\ ? ?\ *option* *value* ... ?
@@ -2511,8 +2683,9 @@ The following operations are available for markers.
 
 *pathName* **marker names** ?\ *pattern* ... ?  
 
-  Returns the names of all the markers that currently exist.  If *pattern*
-  is supplied, only those markers whose names match it will be returned.
+  Returns the names of all the markers in the graph.  If one or more
+  *pattern* arguments are provided, then the name of any marker matching
+  *pattern* will be returned. *Pattern* is a glob-style pattern.
 
 *pathName* **marker type** *markerName* 
 
@@ -2877,14 +3050,16 @@ points may exceed the limits of some printers (See PostScript Language
 Reference Manual, page 568).  The work-around is to break the polygon
 into separate pieces.
 
-DIFFERENCE WITH PREVIOUS VERSIONS
----------------------------------
+DIFFERENCES WITH PREVIOUS VERSIONS
+----------------------------------
 
 1. There no longer a grid component.  Grid settings are part of the
    the axis now.
-2. There is no longer a -tile option for the graph.
-3. There is no longer a **-areatile** option.
-
+2. There is no longer a **-tile** option for the graph. The **-background** option with a **blt::background** does this now.
+3. There is no longer a **-areatile** option. The blt::background does this.
+4. There is no longer a "@bitmap" symbol type.  There are images now.
+5. The axis, element, marker, and pen configure operations no longer take
+   multiple items as arguments. Elements have tags now.
 
 KEYWORDS
 --------

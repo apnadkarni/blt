@@ -768,7 +768,7 @@ ImportTif(Tcl_Interp *interp, int objc, Tcl_Obj *const *objv,
 }
 
 static int
-ExportTif(Tcl_Interp *interp, unsigned int index, Blt_Chain chain, int objc, 
+ExportTif(Tcl_Interp *interp, int index, Blt_Chain chain, int objc, 
 	  Tcl_Obj *const *objv)
 {
     Blt_DBuffer dbuffer;

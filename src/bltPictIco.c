@@ -1692,8 +1692,8 @@ ImportIco(
 }
 
 static int
-ExportIco(Tcl_Interp *interp, unsigned int index, Blt_Chain chain, 
-	  int objc, Tcl_Obj *const *objv)
+ExportIco(Tcl_Interp *interp, int index, Blt_Chain chain, int objc,
+          Tcl_Obj *const *objv)
 {
     Blt_DBuffer dbuffer;
     Blt_Picture picture;

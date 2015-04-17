@@ -227,7 +227,6 @@ set image2 [image create picture -file images/buckskin.gif]
 set bg1 [blt::paintbrush create color -color blue -opacity 30]
 set bg2 [blt::paintbrush create color -color green -opacity 40]
 set bg3 [blt::paintbrush create color -color pink -opacity 40]
-puts stderr [.g configure]
 .g element configure line1 -areabackground $bg1 -areaforeground blue 
 #.g element configure line2 -areabackground $bg2
 #.g element configure line3 -areabackground $bg3
@@ -945,7 +944,6 @@ proc LegendOptions { w } {
     $m add -type radiobutton -text "yellow"
     $m item configure all -variable legend(-background) \
 	-command { .g legend configure -background $legend(-background) }
-    puts stderr [$m item configure "black"]
     foreach option { borderwidth selectrelief relief 
 	selectbackground background selectborderwidth padx pady 
 	selectforeground activebackground

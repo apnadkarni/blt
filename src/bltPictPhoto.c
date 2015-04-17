@@ -159,7 +159,7 @@ ImportPhoto(
 }
 
 static int
-ExportPhoto(Tcl_Interp *interp, unsigned int index, Blt_Chain chain, int objc, 
+ExportPhoto(Tcl_Interp *interp, int index, Blt_Chain chain, int objc, 
 	    Tcl_Obj *const *objv)
 {
     int result;

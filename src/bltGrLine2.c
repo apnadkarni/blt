@@ -84,8 +84,10 @@
 #define NOTPLAYING(g,i) \
     (((g)->play.enabled) && (((i) < (g)->play.t1) || ((i) > (g)->play.t2)))
 
-#define PLAYING(g,i) \
-    ((!(g)->play.enabled) || (((i) >= (g)->play.t1) && ((i) <= (g)->play.t2)))
+#define PLAYING(t,i) \
+    ((!(t)->elemPtr->obj.graphPtr->play.enabled) || \
+     (((i) >= (t)->elemPtr->obj.graphPtr->play.t1) && \
+      ((i) <= (t)->elemPtr->obj.graphPtr->play.t2)))
 
 #define DRAWN(t,f)     (((f) & (t)->drawFlags) == (t)->drawFlags)
 
@@ -2817,9 +2819,7 @@ NearestPoint(
 					 * searching for the nearest point */
 {
     Blt_ChainLink link;
-    Graph *graphPtr;
 
-    graphPtr = elemPtr->obj.graphPtr;
     /*
      * Instead of testing each data point in graph coordinates, look at the
      * points of each trace (mapped screen coordinates). The advantages are
@@ -2839,7 +2839,7 @@ NearestPoint(
 	    if ((p->flags & KNOT) == 0) {
 		continue;
 	    }
-	    if (!PLAYING(graphPtr, p->index)) {
+	    if (!PLAYING(tracePtr, p->index)) {
 		continue;
 	    }
 	    dx = (double)(p->x - nearestPtr->x);
@@ -2899,7 +2899,7 @@ NearestSegment(
 	    Point2d p1, p2, b;
 	    double d;
 
-	    if (!PLAYING(graphPtr, p->index)) {
+	    if (!PLAYING(tracePtr, p->index)) {
 		continue;
 	    }
 	    p1.x = p->x, p1.y = p->y;
@@ -3008,7 +3008,7 @@ FindProc(Graph *graphPtr, Element *basePtr, int x, int y, int r)
 	    if ((p->flags & KNOT) == 0) {
 		continue;
 	    }
-	    if (!PLAYING(graphPtr, p->index)) {
+	    if (!PLAYING(tracePtr, p->index)) {
 		continue;
 	    }
 	    dx = (double)(x - p->x);
@@ -4225,7 +4225,7 @@ DrawPolyline(Graph *graphPtr, Drawable drawable, Trace *tracePtr,
 
     count = 0;
     for (p = tracePtr->head; p != NULL; p = p->next) {
-	if (!PLAYING(graphPtr, p->index)) {
+	if (!PLAYING(tracePtr, p->index)) {
 	    continue;
 	}
 	points[count].x = Round(p->x);
@@ -4272,7 +4272,7 @@ DrawPolyline(Graph *graphPtr, Drawable drawable, Trace *tracePtr,
     points = Blt_AssertMalloc((numMax + 1) * sizeof(XPoint));
     count = 0;				/* Counter for points */
     for (p = tracePtr->head; p != NULL; p = p->next) {
-	if (!PLAYING(graphPtr, p->index)) {
+	if (!PLAYING(tracePtr, p->index)) {
 	    continue;
 	}
 	points[count].x = Round(p->x);
@@ -4326,7 +4326,8 @@ DrawErrorBars(Graph *graphPtr, Drawable drawable, Trace *tracePtr,
 	if ((s->flags & penPtr->errorFlags) == 0) {
 	    continue;
 	}
-	if ((!PLAYING(graphPtr, s->index)) || (!DRAWN(tracePtr, s->flags))) {
+	if ((!PLAYING(tracePtr, s->index)) ||
+            (!DRAWN(tracePtr, s->flags))) {
 	    continue;
 	}
 	segments[count].x1 = (short int)Round(s->x1);
@@ -4370,7 +4371,7 @@ DrawValues(Graph *graphPtr, Drawable drawable, Trace *tracePtr, LinePen *penPtr)
 	double x, y;
 	char string[200];
 
-	if (!PLAYING(graphPtr, p->index)) {
+	if (!PLAYING(tracePtr, p->index)) {
 	    continue;
 	}
 	if (!DRAWN(tracePtr, p->flags)) {
@@ -4422,7 +4423,7 @@ DrawPointSymbols(Graph *graphPtr, Drawable drawable, Trace *tracePtr,
 	if (!DRAWN(tracePtr, p->flags)) {
 	    continue;
 	}
-	if (!PLAYING(graphPtr, p->index)) {
+	if (!PLAYING(tracePtr, p->index)) {
 	    continue;
 	}
 	points[count].x = Round(p->x);
@@ -4494,7 +4495,7 @@ DrawCircleSymbols(Graph *graphPtr, Drawable drawable, Trace *tracePtr,
 	if (!DRAWN(tracePtr, p->flags)) {
 	    continue;
 	}
-	if (!PLAYING(graphPtr, p->index)) {
+	if (!PLAYING(tracePtr, p->index)) {
 	    continue;
 	}
 	rx = Round(p->x);
@@ -4544,7 +4545,7 @@ DrawCircleSymbols(Graph *graphPtr, Drawable drawable, Trace *tracePtr,
 	if (!DRAWN(tracePtr, p->flags)) {
 	    continue;
 	}
-	if (!PLAYING(graphPtr, p->index)) {
+	if (!PLAYING(tracePtr, p->index)) {
 	    continue;
 	}
 	arcs[count].x = Round(p->x - r);
@@ -4619,7 +4620,7 @@ DrawSquareSymbols(Graph *graphPtr, Drawable drawable, Trace *tracePtr,
 	if (!DRAWN(tracePtr, p->flags)) {
 	    continue;
 	}
-	if (!PLAYING(graphPtr, p->index)) {
+	if (!PLAYING(tracePtr, p->index)) {
 	    continue;
 	}
 	rectangles[count].x = Round(p->x - r);
@@ -4700,7 +4701,7 @@ DrawSkinnyCrossPlusSymbols(Graph *graphPtr, Drawable drawable, Trace *tracePtr,
 	if (!DRAWN(tracePtr, p->flags)) {
 	    continue;
 	}
-	if (!PLAYING(graphPtr, p->index)) {
+	if (!PLAYING(tracePtr, p->index)) {
 	    continue;
 	}
 	rx = Round(p->x);
@@ -4782,7 +4783,7 @@ DrawCrossPlusSymbols(Graph *graphPtr, Drawable drawable, Trace *tracePtr,
 	if (!DRAWN(tracePtr, p->flags)) {
 	    continue;
 	}
-	if (!PLAYING(graphPtr, p->index)) {
+	if (!PLAYING(tracePtr, p->index)) {
 	    continue;
 	}
 	rx = Round(p->x);
@@ -4851,7 +4852,7 @@ DrawTriangleArrowSymbols(Graph *graphPtr, Drawable drawable, Trace *tracePtr,
 	if (!DRAWN(tracePtr, p->flags)) {
 	    continue;
 	}
-	if (!PLAYING(graphPtr, p->index)) {
+	if (!PLAYING(tracePtr, p->index)) {
 	    continue;
 	}
 	rx = Round(p->x);
@@ -4903,7 +4904,7 @@ DrawDiamondSymbols(Graph *graphPtr, Drawable drawable, Trace *tracePtr,
 	if (!DRAWN(tracePtr, p->flags)) {
 	    continue;
 	}
-	if (!PLAYING(graphPtr, p->index)) {
+	if (!PLAYING(tracePtr, p->index)) {
 	    continue;
 	}
 	rx = Round(p->x);
@@ -4940,7 +4941,7 @@ DrawImageSymbols(Graph *graphPtr, Drawable drawable, Trace *tracePtr,
 	if (!DRAWN(tracePtr, p->flags)) {
 	    continue;
 	}
-	if (!PLAYING(graphPtr, p->index)) {
+	if (!PLAYING(tracePtr, p->index)) {
 	    continue;
 	}
 	x = Round(p->x) - dx;
@@ -5214,7 +5215,6 @@ SetLineAttributes(Blt_Ps ps, LinePen *penPtr)
 static void 
 ErrorBarsToPostScript(Blt_Ps ps, Trace *tracePtr, LinePen *penPtr)
 {
-    Graph *graphPtr = tracePtr->elemPtr->obj.graphPtr;
     TraceSegment *s;
 
     SetLineAttributes(ps, penPtr);
@@ -5224,7 +5224,7 @@ ErrorBarsToPostScript(Blt_Ps ps, Trace *tracePtr, LinePen *penPtr)
 	if (!DRAWN(tracePtr, s->flags)) {
 	    continue;
 	}
-	if (!PLAYING(graphPtr, s->index)) {
+	if (!PLAYING(tracePtr, s->index)) {
 	    continue;
 	}
 	Blt_Ps_Format(ps, "  %g %g moveto %g %g lineto\n", 
@@ -5237,7 +5237,6 @@ ErrorBarsToPostScript(Blt_Ps ps, Trace *tracePtr, LinePen *penPtr)
 static void
 ValuesToPostScript(Blt_Ps ps, Trace *tracePtr, LinePen *penPtr)
 {
-    Graph *graphPtr = tracePtr->elemPtr->obj.graphPtr;
     TracePoint *p;
     const char *fmt;
     
@@ -5252,7 +5251,7 @@ ValuesToPostScript(Blt_Ps ps, Trace *tracePtr, LinePen *penPtr)
 	if (!DRAWN(tracePtr, p->flags)) {
 	    continue;
 	}
-	if (!PLAYING(graphPtr, p->index)) {
+	if (!PLAYING(tracePtr, p->index)) {
 	    continue;
 	}
 	x = tracePtr->elemPtr->x.values[p->index];
@@ -5273,7 +5272,6 @@ ValuesToPostScript(Blt_Ps ps, Trace *tracePtr, LinePen *penPtr)
 static void
 PolylineToPostScript(Blt_Ps ps, Trace *tracePtr, LinePen *penPtr)
 {
-    Graph *graphPtr = tracePtr->elemPtr->obj.graphPtr;
     Point2d *points;
     TracePoint *p;
     int count;
@@ -5282,7 +5280,7 @@ PolylineToPostScript(Blt_Ps ps, Trace *tracePtr, LinePen *penPtr)
     points = Blt_AssertMalloc(tracePtr->numPoints * sizeof(Point2d));
     count = 0;
     for (p = tracePtr->head; p != NULL; p = p->next) {
-	if (!PLAYING(graphPtr, p->index)) {
+	if (!PLAYING(tracePtr, p->index)) {
 	    continue;
 	}
 	points[count].x = p->x;

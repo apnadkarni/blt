@@ -611,7 +611,7 @@ ImportXpm(
 }
 
 static int
-ExportXpm(Tcl_Interp *interp, unsigned int index, Blt_Chain chain, int objc, 
+ExportXpm(Tcl_Interp *interp, int index, Blt_Chain chain, int objc, 
 	  Tcl_Obj *const *objv)
 {
     Blt_DBuffer buffer;

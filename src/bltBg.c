@@ -1974,14 +1974,14 @@ DrawBackgroundRectangle(Tk_Window tkwin, Drawable drawable, Bg *bgPtr,
     BackgroundObject *corePtr = bgPtr->corePtr;
     int rw, rh;
 
+    if ((h <= 0) || (w <= 0)) {
+	return;
+    }
     /* Handle the simple case where it's a solid color background. */
     if (corePtr->flags & BACKGROUND_SOLID) {
         Tk_Fill3DRectangle(tkwin, drawable, corePtr->border, x, y, w, h, 0,
                            TK_RELIEF_FLAT);
         return;
-    }
-    if ((h <= 0) || (w <= 0)) {
-	return;
     }
     GetReferenceWindowDimensions(corePtr, tkwin, &rw, &rh);
     if ((rw > 0) && (rh > 0)) {
@@ -1989,7 +1989,6 @@ DrawBackgroundRectangle(Tk_Window tkwin, Drawable drawable, Bg *bgPtr,
         Blt_Painter painter;
         int xOffset, yOffset;		/* Starting upper left corner of
 					 * region. */
-
         picture = Blt_CreatePicture(w, h);
         if (picture == NULL) {
             return;                         /* Can't allocate picure. */
@@ -2086,8 +2085,10 @@ static void
 DestroyBackgroundObject(BackgroundObject *corePtr)
 {
     if (corePtr->brush != NULL) {
-        Blt_FreeOptions(corePtr->specs, (char *)corePtr->brush,
+        if (corePtr->specs != NULL) {
+            Blt_FreeOptions(corePtr->specs, (char *)corePtr->brush,
                         corePtr->display, 0);
+        }
         Blt_FreeBrush(corePtr->brush);
     }
     Blt_FreeOptions(bgSpecs, (char *)corePtr, corePtr->display, 0);
@@ -2124,11 +2125,19 @@ DestroyBackgroundObject(BackgroundObject *corePtr)
  */
 static BackgroundObject *
 NewBackgroundObject(BackgroundInterpData *dataPtr, Tcl_Interp *interp,
-                    Blt_PaintBrushType type)
+                    Blt_PaintBrushType type, Tk_3DBorder border)
 {
     BackgroundObject *corePtr;
 
     corePtr = Blt_AssertCalloc(1, sizeof(BackgroundObject));
+    corePtr->flags = REFERENCE_TOPLEVEL;
+    Blt_InitHashTable(&corePtr->pictTable, BLT_ONE_WORD_KEYS);
+    corePtr->chain = Blt_Chain_Create();
+    corePtr->tkwin = Tk_MainWindow(interp);
+    corePtr->display = Tk_Display(corePtr->tkwin);
+    corePtr->dataPtr = dataPtr;
+    corePtr->border = border;
+
     switch (type) {
     case BLT_PAINTBRUSH_TILE:
         corePtr->brush = Blt_NewTileBrush();
@@ -2155,17 +2164,18 @@ NewBackgroundObject(BackgroundInterpData *dataPtr, Tcl_Interp *interp,
         corePtr->specs = conicalGradientBrushSpecs;
 	break;
     case BLT_PAINTBRUSH_COLOR:
-	break;                          /* Do nothing. */
+        { 
+            Blt_Pixel color;
+            
+            color.u32 = GetBackgroundColor(corePtr);
+            corePtr->brush = Blt_NewColorBrush(color.u32);
+            corePtr->flags |= BACKGROUND_SOLID;
+        }
+	break;                          
     default:
 	abort();
 	break;
     }
-    corePtr->flags = REFERENCE_TOPLEVEL;
-    corePtr->dataPtr = dataPtr;
-    Blt_InitHashTable(&corePtr->pictTable, BLT_ONE_WORD_KEYS);
-    corePtr->chain = Blt_Chain_Create();
-    corePtr->tkwin = Tk_MainWindow(interp);
-    corePtr->display = Tk_Display(corePtr->tkwin);
     return corePtr;
 }
 
@@ -2268,7 +2278,7 @@ CreateOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	    hPtr = Blt_CreateHashEntry(&dataPtr->instTable, name, &isNew);
 	} while (!isNew);
     } 
-    corePtr = NewBackgroundObject(dataPtr, interp, type);
+    corePtr = NewBackgroundObject(dataPtr, interp, type, NULL);
     if (corePtr == NULL) {
         Blt_DeleteHashEntry(&dataPtr->instTable, hPtr);
 	return TCL_ERROR;
@@ -2276,8 +2286,7 @@ CreateOp(ClientData clientData, Tcl_Interp *interp, int objc,
     Blt_SetHashValue(hPtr, corePtr);
     corePtr->hashPtr = hPtr;
     corePtr->name = Blt_GetHashKey(&dataPtr->instTable, hPtr);
-    if (ConfigureBackground(interp, corePtr, objc - 3, objv + 3, 0)
-        != TCL_OK) {
+    if (ConfigureBackground(interp, corePtr, objc - 3, objv + 3, 0) != TCL_OK) {
 	DestroyBackgroundObject(corePtr);
 	return TCL_ERROR;
     }
@@ -2626,16 +2635,15 @@ Blt_GetBg(Tcl_Interp *interp, Tk_Window tkwin, const char *name)
 	if (border == NULL) {
 	    goto error;			/* Nope. It's an error. */
 	} 
-	corePtr = NewBackgroundObject(dataPtr, interp, BLT_PAINTBRUSH_COLOR);
+	corePtr = NewBackgroundObject(dataPtr, interp, BLT_PAINTBRUSH_COLOR,
+                border);
 	if (corePtr == NULL) {
 	    Tk_Free3DBorder(border);
 	    goto error;			/* Can't allocate new background. */
 	}
         /* Configure the GC with the border color. */
-	corePtr->border = border;
 	corePtr->hashPtr = hPtr;
 	corePtr->name = Blt_GetHashKey(&dataPtr->instTable, hPtr);
-        corePtr->flags |= BACKGROUND_SOLID;
 	corePtr->link = NULL;
 	Blt_SetHashValue(hPtr, corePtr);
     } else {
@@ -2849,6 +2857,11 @@ void
 Blt_Bg_DrawRectangle(Tk_Window tkwin, Drawable drawable, Bg *bgPtr, int x, 
 		     int y, int w, int h, int borderWidth, int relief)
 {
+    if ((h < 1) || (w < 1)) {
+        fprintf(stderr, "Blt_Bg_DrawRectangle %s x=%d y=%d w=%d h=%d\n",
+                Tk_PathName(tkwin), x, y, w, h);
+	return;
+    }
     Tk_Draw3DRectangle(tkwin, drawable, bgPtr->corePtr->border, x, y, w, h, 
 	borderWidth, relief);
 }
@@ -2870,6 +2883,8 @@ Blt_Bg_FillRectangle(Tk_Window tkwin, Drawable drawable, Bg *bgPtr, int x,
 		     int y, int w, int h, int borderWidth, int relief)
 {
     if ((h < 1) || (w < 1)) {
+        fprintf(stderr, "Blt_Bg_FillRectangle %s x=%d y=%d w=%d h=%d\n",
+                Tk_PathName(tkwin), x, y, w, h);
 	return;
     }
     DrawBackgroundRectangle(tkwin, drawable, bgPtr, x, y, w, h);

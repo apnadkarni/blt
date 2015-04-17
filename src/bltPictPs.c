@@ -1184,7 +1184,7 @@ ImportPs(Tcl_Interp *interp, int objc, Tcl_Obj *const *objv,
 }
 
 static int
-ExportPs(Tcl_Interp *interp, unsigned int index, Blt_Chain chain, int objc, 
+ExportPs(Tcl_Interp *interp, int index, Blt_Chain chain, int objc, 
 	 Tcl_Obj *const *objv)
 {
     PsExportSwitches switches;

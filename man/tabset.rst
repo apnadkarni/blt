@@ -317,7 +317,6 @@ available for *tabset* widgets:
     their pages.  The default is "0".
 
   **-highlightbackground**  *colorName*
-
     Sets the color to display in the traversal highlight region when the
     tabset does not have the input focus.
 

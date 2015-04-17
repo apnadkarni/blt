@@ -2307,7 +2307,7 @@ ImportGif(Tcl_Interp *interp, int objc, Tcl_Obj *const *objv,
 }
 
 static int
-ExportGif(Tcl_Interp *interp, unsigned int index, Blt_Chain chain, int objc, 
+ExportGif(Tcl_Interp *interp, int index, Blt_Chain chain, int objc, 
 	  Tcl_Obj *const *objv)
 {
     Blt_DBuffer dbuffer;

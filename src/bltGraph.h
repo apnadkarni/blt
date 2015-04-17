@@ -232,22 +232,14 @@ struct _Pen {
  *
  */
 typedef struct {
-    int first, last;			/* The two time points defining the
+    int enabled;
+    int from, to;			/* The two time points defining the
 					 * section of points to be
 					 * displayed.  -1 indicates to use
 					 * the default value.  */
-    int t1, t2;
-    unsigned int flags;
-    int direction;			/* Direction of the playback. */
-    int interval;			/* Interval to delay before next
-					 * graph. */
-    int enabled;
-    int offset;				/* Current location of playback. */
-    Tcl_TimerToken timerToken;		/* Token for timer handler which
-					 * polls for the exit status of
-					 * each sub-process. If zero,
-					 * there's no timer handler
-					 * queued. */
+    int t1, t2;                         /* The first and last time points
+                                         * in increasing order. */
+    Blt_Chain elements;
 } Playback;
 
 /*
@@ -481,7 +473,6 @@ struct _Graph {
 					 * various ways: aligned, overlap,
 					 * infront, or stacked. */
     int maxSetSize;
-    const char *dataCmd;		/* New data callback? */
 
     /* Contour graph-specific fields. */
     Blt_HashTable palTable;		/* Table of color palettes to be
@@ -608,6 +599,7 @@ struct _Graph {
 #define STACK_AXES              (1<<20)
 #define INVERTED                (1<<21)
 #define STRETCH_TO_FIT		(1<<22)
+#define REGION_ENABLED          (1<<23)
 
 /*
  * ---------------------- Forward declarations ------------------------
@@ -729,7 +721,7 @@ BLT_EXTERN int Blt_ElementOp(Graph *graphPtr, Tcl_Interp *interp, int objc,
 	Tcl_Obj *const *objv, ClassId classId);
 
 BLT_EXTERN Tcl_ObjCmdProc Blt_CrosshairsOp;
-BLT_EXTERN Tcl_ObjCmdProc Blt_PlaybackOp;
+BLT_EXTERN Tcl_ObjCmdProc Blt_GraphRegionOp;
 BLT_EXTERN Tcl_ObjCmdProc Blt_MarkerOp;
 BLT_EXTERN Tcl_ObjCmdProc Blt_PenOp;
 BLT_EXTERN Tcl_ObjCmdProc Blt_PostScriptOp;

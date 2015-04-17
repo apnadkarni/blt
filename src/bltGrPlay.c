@@ -2,7 +2,7 @@
 /*
  * bltGrPlay.c --
  *
- * This module implements playback for the BLT graph widget.
+ * This module implements regions for the BLT graph widget.
  *
  *	Copyright 1993-2004 George A Howlett.
  *
@@ -50,56 +50,81 @@
 #include "bltGrAxis.h"
 #include "bltGrLegd.h"
 
-#define LOOP		1
-#define HOLD		2
+#define DEF_REGION_FROM		"-1"
+#define DEF_REGION_TO		"-1"
+#define DEF_REGION_ENABLED	"0"
 
-#define FORWARD		0
-#define BACK		1
-#define BOTH		2
-
-#define DEF_PLAY_START		"-1"
-#define DEF_PLAY_END		"-1"
-#define DEF_PLAY_LOOP		"0"
-#define DEF_PLAY_DIRECTION	"forward"
-#define DEF_PLAY_DELAY		"0"
-#define DEF_PLAY_ENABLED	"0"
-#define DEF_PLAY_OFFSET		"0"
-
-static Blt_OptionParseProc ObjToDirection;
-static Blt_OptionPrintProc DirectionToObj;
-static Blt_CustomOption directionOption =
+static Blt_OptionFreeProc FreeElements;
+static Blt_OptionParseProc ObjToElements;
+static Blt_OptionPrintProc ElementsToObj;
+Blt_CustomOption elementsOption =
 {
-    ObjToDirection, DirectionToObj, NULL, (ClientData)0
+    ObjToElements, ElementsToObj, FreeElements, (ClientData)0
 };
 
 static Blt_ConfigSpec configSpecs[] =
 {
-    {BLT_CONFIG_INT, "-first", "first", "First", DEF_PLAY_START, 
-	Blt_Offset(Playback, first), BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_INT, "-last", "last", "Last", DEF_PLAY_END, 
-	Blt_Offset(Playback, last), BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_BITMASK, "-loop", "loop", "loop", 
-	DEF_PLAY_LOOP, Blt_Offset(Playback, flags), 
-	BLT_CONFIG_DONT_SET_DEFAULT, (Blt_CustomOption *)LOOP},
     {BLT_CONFIG_BOOLEAN, "-enable", "enable", "enable", 
-	DEF_PLAY_ENABLED, Blt_Offset(Playback, enabled), 
+	DEF_REGION_ENABLED, Blt_Offset(Playback, enabled), 
 	BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_INT_NNEG, "-delay", "delay", "delay", DEF_PLAY_DELAY, 
-	Blt_Offset(Playback, interval), BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_CUSTOM, "-direction", "direction", "Direction", 
-	DEF_PLAY_DIRECTION, Blt_Offset(Playback, direction), 
-	BLT_CONFIG_DONT_SET_DEFAULT, &directionOption},
-    {BLT_CONFIG_INT_NNEG, "-offset", "offset", "offset", DEF_PLAY_OFFSET, 
-	Blt_Offset(Playback, offset), BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_INT, "-from", "from", "From", DEF_REGION_FROM, 
+	Blt_Offset(Playback, from), BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_INT, "-to", "to", "To", DEF_REGION_TO, 
+	Blt_Offset(Playback, to), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_END, NULL, NULL, NULL, NULL, 0, 0}
 };
+
+
+static void
+EnableElements(Blt_Chain chain)
+{
+    Blt_ChainLink link;
+    
+    for (link = Blt_Chain_FirstLink(chain); link != NULL;
+         link = Blt_Chain_NextLink(link)) {
+        Element *elemPtr;
+        
+        elemPtr = Blt_Chain_GetValue(link);
+        elemPtr->flags |= REGION_ENABLED;
+    }
+}
+
+static void
+DisableElements(Blt_Chain chain)
+{
+    Blt_ChainLink link;
+    
+    for (link = Blt_Chain_FirstLink(chain); link != NULL;
+         link = Blt_Chain_NextLink(link)) {
+        Element *elemPtr;
+        
+        elemPtr = Blt_Chain_GetValue(link);
+        elemPtr->flags &= ~REGION_ENABLED;
+    }
+}
+
+/*ARGSUSED*/
+static void
+FreeElements(ClientData clientData, Display *display, char *widgRec,
+             int offset)
+{
+    Blt_Chain *chainPtr = (Blt_Chain *)(widgRec + offset);
+
+    if (*chainPtr != NULL) {
+        DisableElements(*chainPtr);
+        Blt_Chain_Destroy(*chainPtr);
+        *chainPtr = NULL;
+    }
+}
 
 /*
  *---------------------------------------------------------------------------
  *
- * ObjToDirection --
+ * ObjToElements --
  *
- *	Given a string name, get the direction associated with it.
+ *	Converts a TCL list of element names into a chain of Element 
+ *      pointers.  This is used to define a subset of elements that
+ *      have a region displayed.
  *
  * Results:
  *	The return value is a standard TCL result.  
@@ -108,137 +133,104 @@ static Blt_ConfigSpec configSpecs[] =
  */
 /*ARGSUSED*/
 static int
-ObjToDirection(
-    ClientData clientData,		/* Not used. */
-    Tcl_Interp *interp,		        /* Interpreter to report results. */
-    Tk_Window tkwin,			/* Not used. */
-    Tcl_Obj *objPtr,			/* String representation of value. */
-    char *widgRec,			/* Widget record. */
-    int offset,				/* Offset to field in structure */
-    int flags)				/* Not used. */
+ObjToElements(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+              Tcl_Obj *objPtr, char *widgRec, int offset, int flags)
 {
-    int *dirPtr = (int *)(widgRec + offset);
-    const char *string;
-    char c;
-    int length;
+    Blt_Chain *chainPtr = (Blt_Chain *)(widgRec + offset);
+    Graph *graphPtr = clientData;
+    Tcl_Obj **objv;
+    int objc;
+    Blt_Chain chain;
 
-    string = Tcl_GetStringFromObj(objPtr, &length);
-    c = string[0];
-    if ((c == 'f') && (strncmp(string, "forward", length) == 0)) {
-	*dirPtr = FORWARD;
-    } else if ((c == 'b') && (length > 1) && 
-	       (strncmp(string, "back", length) == 0)) {
-	*dirPtr = BACK;
-    } else if ((c == 'b') && (length > 1) && 
-	       (strncmp(string, "both", length) == 0)) {
-	*dirPtr = BOTH;
-    } else {
-	Tcl_AppendResult(interp, "unknown direction \"", string, 
-		"\": should be forward, back, or both.", (char *)NULL);
-	return TCL_ERROR;
+    if (Tcl_ListObjGetElements(interp, objPtr, &objc, &objv) != TCL_OK) {
+        return TCL_ERROR;
     }
+    chain = NULL;
+    if (objc > 0) {
+        int i;
+
+        chain = Blt_Chain_Create();
+        for (i = 0; i < objc; i++) {
+            Element *elemPtr;
+            
+            if (Blt_GetElement(interp, graphPtr, objPtr, &elemPtr) != TCL_OK) {
+                Blt_Chain_Destroy(chain);
+                return TCL_ERROR;
+            }
+            Blt_Chain_Append(chain, elemPtr);
+        }
+    }
+    FreeElements(clientData, graphPtr->display, widgRec, offset);
+    *chainPtr = chain;
     return TCL_OK;
 }
 
 /*
  *---------------------------------------------------------------------------
  *
- * DirectionToObj --
+ * ElementsToObj --
  *
- *	Convert the direction into a string Tcl_Obj.
+ *	Converts the chain of Element pointers to a TCL list of element
+ *	names.
  *
  * Results:
- *	The string representation of the direction is returned.
+ *	The return value is a string (TCL list).
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-DirectionToObj(
-    ClientData clientData,		/* Not used. */
-    Tcl_Interp *interp,			/* Not used. */
-    Tk_Window tkwin,			/* Not used. */
-    char *widgRec,			/* Widget record */
-    int offset,				/* Offset to field in structure */
-    int flags)				/* Not used. */
+ElementsToObj(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+              char *widgRec, int offset, int flags)
 {
-    int direction = *(int *)(widgRec + offset);
+    Blt_Chain *chainPtr = (Blt_Chain *)(widgRec + offset);
+    Tcl_Obj *listObjPtr;
+    Blt_ChainLink link;
 
-    switch (direction) {
-    case BACK:
-	return Tcl_NewStringObj("back", -1);
-    case FORWARD:
-	return Tcl_NewStringObj("forward", -1);
-    case BOTH:
-	return Tcl_NewStringObj("both", -1);
+    listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
+    for (link = Blt_Chain_FirstLink(*chainPtr); link != NULL;
+         link = Blt_Chain_NextLink(link)) {
+        Element *elemPtr;
+        Tcl_Obj *objPtr;
+
+        elemPtr = Blt_Chain_GetValue(link);
+        objPtr = Tcl_NewStringObj(elemPtr->obj.name, -1);
+	Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
     }
-    return Tcl_NewStringObj("???", -1);
+    return listObjPtr;
 }
-
-#ifdef notdef
-static void
-TimerProc(ClientData clientData)
-{
-    Graph *graphPtr = clientData;
-    Playback *playPtr;
-    int delay;
-
-    playPtr = &graphPtr->play;
-    delay = 0;
-    if (playPtr->interval > 0) {
-	delay = playPtr->interval;
-    }
-    /* Issue callback to let graph change it's timepoints. */
-    if (playPtr->flags & HOLD) {
-	playPtr->timerToken = Tcl_CreateTimerHandler(delay, TimerProc, 
-		graphPtr);
-    }
-}
-#endif
 
 static int
 ConfigurePlayback(Graph *graphPtr, Tcl_Interp *interp, int objc, 
 		  Tcl_Obj *const *objv, int flags)
 {
     Playback *playPtr = &graphPtr->play;
-
+    
     if (Blt_ConfigureWidgetFromObj(interp, graphPtr->tkwin, configSpecs, 
-	objc, objv, (char *)playPtr, flags) != TCL_OK) {
+        objc, objv, (char *)playPtr, flags) != TCL_OK) {
 	return TCL_ERROR;
     }
-    if (playPtr->first > playPtr->last) {
-	playPtr->t1 = playPtr->last;
-	playPtr->t2 = playPtr->first;
+    if (playPtr->enabled) {
+        if (playPtr->elements != NULL) {
+            DisableElements(graphPtr->elements.displayList);
+            EnableElements(playPtr->elements);
+        } else {
+            EnableElements(graphPtr->elements.displayList);
+        }
     } else {
-	playPtr->t1 = playPtr->first;
-	playPtr->t2 = playPtr->last;
+        DisableElements(graphPtr->elements.displayList);
+    }
+    if (playPtr->from > playPtr->to) {
+	playPtr->t1 = playPtr->to;
+	playPtr->t2 = playPtr->from;
+    } else {
+	playPtr->t1 = playPtr->from;
+	playPtr->t2 = playPtr->to;
     }
     if (playPtr->t2 < 0) {
 	playPtr->t2 = UINT_MAX;
     }
     return TCL_OK;
-}
-
-void
-Blt_HoldPlayback(Graph *graphPtr)
-{
-    Playback *playPtr = &graphPtr->play;
-
-    if (playPtr->flags & HOLD) {
-	playPtr->flags &= ~HOLD;
-	Blt_EventuallyRedrawGraph(graphPtr);
-    }
-}
-
-void
-Blt_ContinuePlayback(Graph *graphPtr)
-{
-    Playback *playPtr = &graphPtr->play;
-
-    if ((playPtr->flags & HOLD) == 0) {
-	playPtr->flags |= HOLD;
-	/* Let the next interval occur. */
-    }
 }
 
 /*
@@ -257,10 +249,6 @@ Blt_DestroyPlayback(Graph *graphPtr)
     Playback *playPtr = &graphPtr->play;
 
     Blt_FreeOptions(configSpecs, (char *)playPtr, graphPtr->display, 0);
-    if (playPtr->timerToken != (Tcl_TimerToken)0) {
-	Tcl_DeleteTimerHandler(playPtr->timerToken);
-	playPtr->timerToken = 0;
-    }
 }
 
 /*
@@ -282,11 +270,9 @@ Blt_CreatePlayback(Graph *graphPtr)
     Playback *playPtr;
 
     playPtr = &graphPtr->play;
-    playPtr->flags = 0;
-    playPtr->first = -1;
-    playPtr->last = -1;
-    playPtr->interval = 0;
-    playPtr->timerToken = NULL;
+    playPtr->from = -1;
+    playPtr->to = -1;
+    playPtr->elements = NULL;
     if (ConfigurePlayback(graphPtr, graphPtr->interp, 0, NULL, 0) != TCL_OK) {
 	return TCL_ERROR;
     }
@@ -314,7 +300,7 @@ CgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
     Playback *playPtr = &graphPtr->play;
     
     return Blt_ConfigureValueFromObj(interp, graphPtr->tkwin, configSpecs,
-				     (char *)playPtr, objv[3], 0);
+            (char *)playPtr, objv[3], 0);
 }
 
 /*
@@ -350,20 +336,19 @@ ConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	BLT_CONFIG_OBJV_ONLY) != TCL_OK) {
 	return TCL_ERROR;
     }
-    if (Blt_ConfigModified(configSpecs, "-first", "-last", "-offset", "-enable",
-			   (char *)NULL)) {
-	graphPtr->flags |= REDRAW_WORLD | CACHE_DIRTY;
-	Blt_EventuallyRedrawGraph(graphPtr);
-    }
+    graphPtr->flags |= REDRAW_WORLD | CACHE_DIRTY;
+    Blt_EventuallyRedrawGraph(graphPtr);
     return TCL_OK;
 }
 
 /*
  *---------------------------------------------------------------------------
  *
- * MaxtimeOp --
+ * MaxPointsOp --
  *
- *	Queries configuration attributes of the playback.
+ *      Returns the maximum number of points of the selected elements
+ *      (designated by the -elements option).  This is a convenience
+ *      function to determine the limit of the data point indices.  
  *
  * Results:
  *	A standard TCL result.
@@ -372,17 +357,23 @@ ConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
  */
 /* ARGSUSED */
 static int
-MaxtimeOp(ClientData clientData, Tcl_Interp *interp, int objc,
+MaxPointsOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	  Tcl_Obj *const *objv)
 {
     Graph *graphPtr = clientData;
     Blt_ChainLink link;
+    Blt_Chain chain;
+    Playback *playPtr = &graphPtr->play;
     int maxNumPts;
 
-    /* Draw with respect to the stacking order. */
     maxNumPts = 0;
-    for (link = Blt_Chain_LastLink(graphPtr->elements.displayList); 
-	 link != NULL; link = Blt_Chain_PrevLink(link)) {
+    if (playPtr->elements != NULL) {
+        chain = playPtr->elements;
+    } else {
+        chain = graphPtr->elements.displayList;
+    }
+    for (link = Blt_Chain_LastLink(chain); link != NULL;
+         link = Blt_Chain_PrevLink(link)) {
 	Element *elemPtr;
 
 	elemPtr = Blt_Chain_GetValue(link);
@@ -401,27 +392,27 @@ MaxtimeOp(ClientData clientData, Tcl_Interp *interp, int objc,
 
 static Blt_OpSpec playOps[] =
 {
-    {"cget",      2, CgetOp, 4, 4, "option",},
+    {"cget",      2, CgetOp,      4, 4, "option",},
     {"configure", 2, ConfigureOp, 3, 0, "?options...?",},
-    {"maxtime",   1, MaxtimeOp, 3, 3, "",},
+    {"maxpoints", 1, MaxPointsOp, 3, 3, "",},
 };
 static int numPlayOps = sizeof(playOps) / sizeof(Blt_OpSpec);
 
 /*
  *---------------------------------------------------------------------------
  *
- * Blt_PlaybackOp --
+ * Blt_GraphRegionOp --
  *
  *	Used to configure the playback.  Playback
  *
  * Results:
  *	The return value is a standard TCL result.
  *
- *	.g playback configure -first 0 -last 10
+ *	.g playback configure -from 0 -to 10
  *---------------------------------------------------------------------------
  */
 int
-Blt_PlaybackOp(ClientData clientData, Tcl_Interp *interp, int objc,
+Blt_GraphRegionOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	       Tcl_Obj *const *objv)
 {
     Tcl_ObjCmdProc *proc;
