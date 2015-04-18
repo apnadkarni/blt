@@ -224,24 +224,24 @@ typedef struct {
 
 static Blt_SwitchSpec notifySwitches[] = 
 {
+    {BLT_SWITCH_BITMASK, "-allevents", "", (char *)NULL,
+	Blt_Offset(NotifySwitches, mask), 0, TREE_NOTIFY_ALL},
     {BLT_SWITCH_BITMASK, "-create", "",  (char *)NULL,
 	Blt_Offset(NotifySwitches, mask), 0, TREE_NOTIFY_CREATE},
     {BLT_SWITCH_BITMASK, "-delete", "",  (char *)NULL,
 	Blt_Offset(NotifySwitches, mask), 0, TREE_NOTIFY_DELETE},
     {BLT_SWITCH_BITMASK, "-move", "",	(char *)NULL,
 	Blt_Offset(NotifySwitches, mask), 0, TREE_NOTIFY_MOVE},
-    {BLT_SWITCH_BITMASK, "-sort", "",	(char *)NULL,
-	Blt_Offset(NotifySwitches, mask), 0, TREE_NOTIFY_SORT},
+    {BLT_SWITCH_CUSTOM,  "-node",  "node", (char *)NULL,
+	Blt_Offset(NotifySwitches, node),    0, 0, &nodeSwitch},
     {BLT_SWITCH_BITMASK, "-relabel", "", (char *)NULL,
 	Blt_Offset(NotifySwitches, mask), 0, TREE_NOTIFY_RELABEL},
-    {BLT_SWITCH_BITMASK, "-allevents", "", (char *)NULL,
-	Blt_Offset(NotifySwitches, mask), 0, TREE_NOTIFY_ALL},
+    {BLT_SWITCH_BITMASK, "-sort", "",	(char *)NULL,
+	Blt_Offset(NotifySwitches, mask), 0, TREE_NOTIFY_SORT},
+    {BLT_SWITCH_STRING,  "-tag", "string", (char *)NULL,
+	Blt_Offset(NotifySwitches, tag), 0},
     {BLT_SWITCH_BITMASK, "-whenidle", "", (char *)NULL,
 	Blt_Offset(NotifySwitches, mask), 0, TREE_NOTIFY_WHENIDLE},
-    {BLT_SWITCH_CUSTOM,    "-node",  "node", (char *)NULL,
-	Blt_Offset(NotifySwitches, node),    0, 0, &nodeSwitch},
-    {BLT_SWITCH_STRING, "-tag", "string", (char *)NULL,
-	Blt_Offset(NotifySwitches, tag), 0},
     {BLT_SWITCH_END}
 };
 
@@ -644,11 +644,14 @@ static Blt_SwitchSpec pathCreateSwitches[] =
 };
 
 typedef struct {
+    Blt_TreeNode root;			/* Starting node of path. */
     Tcl_Obj *pathSepObjPtr;		/* Path separator. */
 } PathPrintSwitches;
 
 static Blt_SwitchSpec pathPrintSwitches[] = 
 {
+    {BLT_SWITCH_CUSTOM,  "-from",  "node", (char *)NULL,
+	Blt_Offset(PathPrintSwitches, root),  0, 0, &nodeSwitch},
     {BLT_SWITCH_OBJ, "-separator", "char", (char *)NULL,
 	Blt_Offset(PathPrintSwitches, pathSepObjPtr), 0}, 
     {BLT_SWITCH_END}
@@ -4043,13 +4046,13 @@ KeysOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	}
     }
     {
-	Blt_HashSearch tagSearch;
+	Blt_HashSearch iter;
 	Blt_HashEntry *hPtr;
 	Tcl_Obj *listObjPtr;
 
 	listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
-	for (hPtr = Blt_FirstHashEntry(&keyTable, &tagSearch); hPtr != NULL;
-	     hPtr = Blt_NextHashEntry(&tagSearch)) {
+	for (hPtr = Blt_FirstHashEntry(&keyTable, &iter); hPtr != NULL;
+	     hPtr = Blt_NextHashEntry(&iter)) {
 	    Tcl_Obj *objPtr;
 	    
 	    objPtr = Tcl_NewStringObj(Blt_GetHashKey(&keyTable, hPtr), -1);
@@ -4732,7 +4735,7 @@ static int
 PathPrintOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, 
 	     Tcl_Obj *const *objv)
 {
-    Blt_TreeNode node, root;
+    Blt_TreeNode node;
     int flags;
     Tcl_DString ds;
     PathPrintSwitches switches;
@@ -4747,19 +4750,19 @@ PathPrintOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc,
     if (switches.pathSepObjPtr != NULL) {
 	Tcl_IncrRefCount(switches.pathSepObjPtr);
     }
+    switches.root = Blt_Tree_RootNode(cmdPtr->tree);
     if (Blt_ParseSwitches(interp, pathPrintSwitches, objc - 4, objv + 4, 
 	&switches, BLT_SWITCH_DEFAULTS) < 0) {
 	return TCL_ERROR;
     }
     Tcl_DStringInit(&ds);
-    root = Blt_Tree_RootNode(cmdPtr->tree);
     flags = 0;
     pathSeparator = NULL;
     if (switches.pathSepObjPtr != NULL) {
 	flags = TREE_INCLUDE_ROOT;
 	pathSeparator = Tcl_GetString(switches.pathSepObjPtr);
     }
-    Blt_Tree_NodeRelativePath(root, node, pathSeparator, flags, &ds);
+    Blt_Tree_NodeRelativePath(switches.root, node, pathSeparator, flags, &ds);
     Tcl_DStringResult(interp, &ds);
     Blt_FreeSwitches(pathPrintSwitches, (char *)&switches, 0);
     return TCL_OK;
@@ -6371,53 +6374,53 @@ NamesOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 static Blt_OpSpec treeOps[] =
 {
     {"ancestor",    2, AncestorOp,    4, 4, "node1 node2",},
-    {"append",      4, AppendOp,      4, 0, "node key ?value...?",},
-    {"apply",       4, ApplyOp,       3, 0, "node ?switches?",},
-    {"attach",      2, AttachOp,      3, 0, "tree ?switches?",},
+    {"append",      4, AppendOp,      4, 0, "node key ?value ...?",},
+    {"apply",       4, ApplyOp,       3, 0, "node ?switches ...?",},
+    {"attach",      2, AttachOp,      3, 0, "tree ?switches ...?",},
     {"children",    2, ChildrenOp,    3, 5, "node ?first? ?last?",},
-    {"copy",        2, CopyOp,        4, 0, "parent ?tree? node ?switches?",},
+    {"copy",        2, CopyOp,        4, 0, "parent ?tree? node ?switches ...?",},
     {"degree",      3, DegreeOp,      3, 0, "node",},
-    {"delete",      3, DeleteOp,      2, 0, "?node...?",},
+    {"delete",      3, DeleteOp,      2, 0, "?node ...?",},
     {"depth",       3, DepthOp,       2, 3, "?node?",},
-    {"dir",         2, DirOp,         4, 0, "node path ?switches?",},
-    {"dump",        3, DumpOp,        3, 0, "node ?switches?",},
+    {"dir",         2, DirOp,         4, 0, "node path ?switches ...?",},
+    {"dump",        3, DumpOp,        3, 0, "node ?switches ...?",},
     {"dup",         3, DupOp,         2, 3, "node",},
-    {"exists",      3, ExistsOp,      3, 4, "node ?key?",},
-    {"export",      3, ExportOp,      2, 0, "format ?switches?",},
-    {"find",        4, FindOp,        3, 0, "node ?switches?",},
+    {"exists",      3, ExistsOp,      3, 4, "node ?fileName?",},
+    {"export",      3, ExportOp,      2, 0, "format ?switches ...?",},
+    {"find",        4, FindOp,        3, 0, "node ?switches ...?",},
     {"findchild",   5, FindChildOp,   4, 4, "node label",},
     {"firstchild",  3, FirstChildOp,  3, 3, "node",},
-    {"get",         1, GetOp,         3, 5, "node ?key? ?defValue?",},
-    {"import",      2, ImportOp,      2, 0, "format ?switches?",},
+    {"get",         1, GetOp,         3, 5, "node ?fieldName? ?defValue?",},
+    {"import",      2, ImportOp,      2, 0, "format ?switches ...?",},
     {"index",       3, IndexOp,       3, 3, "label|list",},
-    {"insert",      3, InsertOp,      3, 0, "parent ?switches?",},
+    {"insert",      3, InsertOp,      3, 0, "parent ?switches ...?",},
     {"isancestor",  3, IsAncestorOp,  4, 4, "node1 node2",},
     {"isbefore",    3, IsBeforeOp,    4, 4, "node1 node2",},
     {"isleaf",      3, IsLeafOp,      3, 3, "node",},
     {"isroot",      3, IsRootOp,      3, 3, "node",},
     {"keys",        1, KeysOp,        3, 0, "node ?node...?",},
     {"label",       3, LabelOp,       3, 4, "node ?newLabel?",},
-    {"lappend",     3, LappendOp,     4, 0, "node key ?value...?",},
+    {"lappend",     3, LappendOp,     4, 0, "node fieldName ?value ...?",},
     {"lastchild",   3, LastChildOp,   3, 3, "node",},
-    {"move",        1, MoveOp,        4, 0, "node newParent ?switches?",},
-    {"names",       2, NamesOp,       3, 4, "node ?key?",},
+    {"move",        1, MoveOp,        4, 0, "node newParent ?switches ...?",},
+    {"names",       2, NamesOp,       3, 4, "node ?fieldName?",},
     {"next",        4, NextOp,        3, 3, "node",},
     {"nextsibling", 5, NextSiblingOp, 3, 3, "node",},
-    {"notify",      2, NotifyOp,      2, 0, "args...",},
+    {"notify",      2, NotifyOp,      2, 0, "args ...",},
     {"parent",      3, ParentOp,      3, 3, "node",},
-    {"path",        3, PathOp,        3, 0, "path ?args?",},
+    {"path",        3, PathOp,        3, 0, "path ?args ...?",},
     {"position",    2, PositionOp,    3, 0, "?switches? node...",},
     {"previous",    5, PreviousOp,    3, 3, "node",},
     {"prevsibling", 5, PrevSiblingOp, 3, 3, "node",},
-    {"restore",     2, RestoreOp,     3, 0, "node ?switches?",},
+    {"restore",     2, RestoreOp,     3, 0, "node ?switches ...?",},
     {"root",        2, RootOp,        2, 2, "",},
-    {"set",         2, SetOp,         3, 0, "node ?key value...?",},
+    {"set",         2, SetOp,         3, 0, "node ?fieldName value ...?",},
     {"size",        2, SizeOp,        3, 3, "node",},
-    {"sort",        2, SortOp,        3, 0, "node ?flags...?",},
-    {"tag",         2, TagOp,         3, 0, "args...",},
-    {"trace",       2, TraceOp,       2, 0, "args...",},
-    {"type",        2, TypeOp,        4, 4, "node key",},
-    {"unset",       1, UnsetOp,       3, 0, "node ?key...?",},
+    {"sort",        2, SortOp,        3, 0, "node ?flags ...?",},
+    {"tag",         2, TagOp,         3, 0, "args ...",},
+    {"trace",       2, TraceOp,       2, 0, "args ...",},
+    {"type",        2, TypeOp,        4, 4, "node fieldName",},
+    {"unset",       1, UnsetOp,       3, 0, "node ?fieldName ...?",},
 };
 
 static int numTreeOps = sizeof(treeOps) / sizeof(Blt_OpSpec);
