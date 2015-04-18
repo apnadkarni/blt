@@ -7,7 +7,7 @@ blt::bitmap
 Define a new bitmap from a Tcl script.
 --------------------------------------
 
-:Author: gahowlett@gmail.com
+:Author: George A. Howlett <gahowlett@gmail.com>
 :Date:   2012-11-28
 :Copyright: 2015 George A. Howlett.
         Permission is hereby granted, free of charge, to any person
@@ -82,24 +82,20 @@ OPERATIONS
 The following operations are available for **blt::bitmap**:
 
 **blt::bitmap compose** *bitmapName* *text* ?\ *option* *value* ... ?
-
   Creates a bitmap *bitmapName* from the text string *text*.
   A bitmap *bitmapName* can not already exist.  
   The following options are available.
 
   **-font** *fontName* 
-
     Specifies a font to use when drawing text into the bitmap.  *FontName*
     can be in any form accepted by the Tk **font** command. The default is
     "{San Serif} 9".
 
-  **-rotate** *theta*
-
-    Specifies the angle of rotation of the text in the bitmap.  *Theta* is
+  **-rotate** *numDegrees*
+    Specifies the angle of rotation of the text in the bitmap.  *NumDegrees* is
     a real number representing the angle in degrees.  The default is "0.0".
 
   **-scale** *value*
-
     Specifies the scale of the bitmap.  *Value* is a real number
     representing the scale.  A scale of 1.0 indicates no scaling is
     necessary, while 2.0 would double the size of the bitmap.  There is no
@@ -107,12 +103,10 @@ The following operations are available for **blt::bitmap**:
     bitmap.  The default scale is "1.0".
 
 **blt::bitmap data** *bitmapName* 
-
   Returns a list of both the dimensions of the bitmap *bitmapName* and its
   source data.
 
 **blt::bitmap define** *bitmapName* *data* ?\ *option* *value* ... ?
-
   Associates *bitmapName* with in-memory bitmap data so that
   *bitmapName* can be used in later calls to **Tk_GetBitmap**.  The
   *bitmapName* argument is the name of the bitmap; it must not
@@ -126,13 +120,11 @@ The following operations are available for **blt::bitmap**:
   do not need to be prefixed with "0x".  The following options are
   available.
 
-  **-rotate** *theta*
-
-      Specifies how many degrees to rotate the bitmap.  *Theta* is a real
+  **-rotate** *numDegrees*
+      Specifies how many degrees to rotate the bitmap.  *NumDegrees* is a real
       number representing the angle.  The default is "0.0" degrees.
 
   **-scale** *value*
-
       Specifies how to scale the bitmap.  *Value* is a real number
       representing the scale.  A scale of 1.0 indicates no scaling is
       necessary, while 2.0 would double the size of the bitmap.  There is
@@ -140,20 +132,16 @@ The following operations are available for **blt::bitmap**:
       bitmap.  The default scale is "1.0".
 
 **blt::bitmap exists** *bitmapName*
-
   Returns "1" if a bitmap *bitmapName* exists, otherwise "0". 
 
 **blt::bitmap height** *bitmapName* 
-
   Returns the height in pixels of the bitmap *bitmapName*.
 
 **blt::bitmap source** *bitmapName*
-
   Returns the source data of the bitmap *bitmapName*. The source data is a 
   list of the hexadecimal values.  
 
 **blt::bitmap width** *bitmapName*
-
   Returns the width in pixels of the bitmap *bitmapName*.
 
 EXAMPLE

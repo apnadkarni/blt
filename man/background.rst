@@ -7,7 +7,7 @@ blt::background
 Create and manage background styles for widgets.
 ------------------------------------------------
 
-:Author: gahowlett@gmail.com
+:Author: George A. Howlett <gahowlett@gmail.com>
 :Date:   2012-11-28
 :Copyright: 2015 George A. Howlett.
         Permission is hereby granted, free of charge, to any person
@@ -38,15 +38,15 @@ SYNOPSIS
 
 **blt::background cget** *bgName* ?\ *option*\ ?
 
-**blt::background configure** *window* ?\ *option* *value* ...\ ?
+**blt::background configure** *window* ?\ *option* *value* ... ?
 
-**blt::background create** *type* ?\ *bgName*\ ? ?\ *option* *value* ...\ ?
+**blt::background create** *type* ?\ *bgName*\ ? ?\ *option* *value* ... ?
 
-**blt::background delete**  ?\ *bgName* ...\ ?
+**blt::background delete**  ?\ *bgName* ... ?
 
 **blt::background exists** *bgName*
 
-**blt::background names** ?\ *pattern* ...\ ?
+**blt::background names** ?\ *pattern* ... ?
 
 **blt::background type** *bgName* 
 
@@ -54,27 +54,25 @@ DESCRIPTION
 -----------
 
 The **blt::background** creates specialized backgrounds that can be used
-with the **-background** options of the BLT widgets.  
+with the **-background** options of the BLT widgets.
 
 INTRODUCTION
 ------------
 
-Normally the background of a Tk widget is specified by color name
-that specifies a solid color for the background.  The **blt::background**
+Normally the background of a Tk widget is specified by color name that
+specifies a solid color for the background.  The **blt::background**
 command lets you defined different types of background (for example a
-gradient), that you can use with the BLT widgets.  This includes
-copies of the Tk widgets: **blt::tk::button**, **blt::tk::checkbutton**,
+gradient), that you can use with the BLT widgets.  This includes copies of
+the Tk widgets: **blt::tk::button**, **blt::tk::checkbutton**,
 **blt::tk::frame**, **blt::tk::label**, **blt::tk::radiobutton**, and
 **blt::tk::toplevel**.
 
 A background can have one of the following types: 
 
   **checker**
-
     A checker *background* object draws a checkered background.
     
   **conical**
-
     A conical gradient *background* object draws a linear conical gradient
     as a background. Conical gradients are specified by a gradient
     circle. Colors are interpolated along its circumference. The image is
@@ -89,7 +87,6 @@ A background can have one of the following types:
     that it refers to (see the **-relativeto** option).
 
   **linear**
-
     A linear gradient *background* object draws a linear gradient as a
     background. Linear gradients are defined by an axis (the gradient line
     segment) with each point on it interpolated to a specific color. The
@@ -101,7 +98,6 @@ A background can have one of the following types:
     may be repeated, or reversed (depending on the **-repeat** option).
 
   **radial** 
-
     A radial gradient *background* object draws a linear radial gradient as
     a background. Radial gradients are defined by a ellipse. Each point is
     interpolated according to its distance from the center of the ellipse
@@ -110,12 +106,10 @@ A background can have one of the following types:
     **-relativeto** option).
     
   **stripe**
-
     A stripe *background* object draws a striped background.  The stripes may
     run horizontally or vertically depending upon the **-orient** option.
 
   **tile**
-
     A tile *background* object draws a tiled background.  The tile is an
     image that it repeated to cover the entire background.  The starting
     position of tiles (i.e the origin) is the upper, left corner of the
@@ -127,15 +121,13 @@ OPERATIONS
 The following operations are available for the **blt::background** command:
 
 **blt::background cget** *bgName* *option*
-
   Returns the current value of the *background* configuration option given
   by *option*. *BgName* is the name of *background* object returned by the
   **create** operation. *Option* and may have any of the values accepted by
   the **configure** operation. They are specific to the type of background
   for *bgName*. They are described in the **create** operations below.
 
-**blt::background configure** *bgName* ?\ *option* *value* ...\ ?
-
+**blt::background configure** *bgName* ?\ *option* *value* ... ?
   Queries or modifies the *background* configuration options for
   *bgName*. *BgName* is the name of *background* object returned by the
   **create** operation.  *Option* and *value* are specific to the type
@@ -150,8 +142,7 @@ The following operations are available for the **blt::background** command:
   the empty string.  *Option* and *value* can any of the values accepted by
   the **create** operation.
 
-**blt::background create checker** ?\ *bgName*\ ? ?\ *option* *value* ...\ ?
-
+**blt::background create checker** ?\ *bgName*\ ? ?\ *option* *value* ... ?
   Creates a checker *background* object. If no *bgName* argument is
   present, then the name of the *background* is automatically generated in
   the form "background0", "background1", etc. Another *background* object
@@ -161,26 +152,21 @@ The following operations are available for the **blt::background** command:
   **-background** *colorName*
 
   **-border** *colorName*
-
     Specifies the border color of the background object.  If a widget
     has a 3D relief, this specifies the colors of the bevels. 
     
   **-jitter** *percent*
-
     Specifies the amount of randomness to add to the interpolated colors.
     *Percent* is a real number between 0 and 100.  It is the percentage
     that colors may vary.
      
   **-offcolor** *colorName*
-
     Specifies the color of odd checkers.  The default is "grey90".
 
   **-oncolor** *colorName*
-
     Specifies the color of even checkers. The default is "grey90".
 
-**blt::background create conical** ?\ *bgName*\ ? ?\ *option* *value* ...\ ?
-
+**blt::background create conical** ?\ *bgName*\ ? ?\ *option* *value* ... ?
   Creates a new conical gradient *background* object. Conical gradients are
   defined by an axis (the gradient line segment) with each point on it
   interpolated to a specific color. The lines perpendicular to the gradient
@@ -195,12 +181,10 @@ The following operations are available for the **blt::background** command:
   **-background** *colorName*
 
   **-border** *colorName*
-
     Specifies the border color of the background object.  If a widget
     has a 3D relief, this specifies the colors of the bevels. 
     
   **-colorscale** *scale*
-
     Specifies the scale when interpolating values. *Scale* can be "linear",
     or "logarithmic"".
 
@@ -210,30 +194,28 @@ The following operations are available for the **blt::background** command:
 	Colors are interpolated using the log of the value.
     
   **-decreasing**
-
     Indicates that the colors are interpolated from high to low.  By
     default colors are interpolated from low to high.
 
   **-center** *position*
+    Specifies the center of the conical gradient.  The center
+    position is a relative location in the reference window.  *Position*
+    can be one of the following forms.
 
-     Specifies the center of the conical gradient.  The center
-     position is a relative location in the reference window.  *Position*
-     can be one of the following forms.
-
-     *anchor*
+    *anchor*
         The position is an anchor position: **nw**, **n**, **ne**,
 	**w**, **c**, **e**, **sw**, **s**, or **sw**.  *Anchor*
 	represents a location in the reference window.  For example "nw"
 	is the upper left corner of the reference window.
 
-     *side side*
+    *side side*
         The position is a 2 element list. The first element can be **top**,
         **bottom**, or **center**. The second element can be **left**,
         **right**, or **center**.  The combination of the two sides
         represent the locations in the reference window. For example "top
         left" is the upper left corner of the reference window.
 
-     *number number*
+    *number number*
         The position is a list of 2 numbers. *Number* is a real number from
 	0 to 1. The number represent relative x and y positions in the
 	reference window.  For example "0 0" is the upper left corner of
@@ -241,25 +223,21 @@ The following operations are available for the **blt::background** command:
 	
 	
   **-highcolor** *colorName*
-
     Specifies the high color of the gradient.  This is the color
     when the gradient value is 1.  This option can be overridden
     by the **-palette** option. The default is "grey90".
 
   **-lowcolor** *colorName*
-
     Specifies the low color of the gradient.  This is the color 
     when the gradient value is 0.  This option can be overridden
     by the **-palette** option.  The default is "grey50".
 
   **-jitter** *percent*
-
     Specifies the amount of randomness to add to the interpolated colors.
     *Percent* is a real number between 0 and 100.  It is the percentage
     that colors may vary.
      
   **-palette** *paletteName*
-
     Specifies a color palette to use when interpolating the background.
     *PaletteName* is the name of a palette is created by the
     **blt::palette** command.  If *paletteName* is "", then the
@@ -269,7 +247,6 @@ The following operations are available for the **blt::background** command:
   **-repeat** *string*
 
   **-relativeto** *window*
-
     Specifies a reference window for the linear gradient.  This is useful
     for creating seamless gradients with many widgets.  For example if a
     *window* is a frame then all the children packed in *window* can use
@@ -290,21 +267,18 @@ The following operations are available for the **blt::background** command:
        destroyed, the reference window reverts to **self**.
        
   **-xoffset** *numPixels*
-
     Specifies the horizontal offset of the background. *NumPixels* is
     integer value indicating amount to the left or right to offset the
     background.  The value may have any of the forms accept able to
     Tk_GetPixels.  The default is "0".
 
   **-yoffset** *numPixels*
-
     Specifies the vertical offset of the background. *NumPixels* is integer
     value indicating amount up or down to offset the background.  The value
     may have any of the forms accept able to Tk_GetPixels.  The default is
     "0".
 
-**blt::background create linear** ?\ *bgName*\ ? ?\ *option* *value* ...\ ?
-
+**blt::background create linear** ?\ *bgName*\ ? ?\ *option* *value* ... ?
   Creates a new linear gradient *background* object. Linear gradients are
   defined by an axis (the gradient line segment) with each point on it
   interpolated to a specific color. The lines perpendicular to the gradient
@@ -319,12 +293,10 @@ The following operations are available for the **blt::background** command:
   **-background** *colorName*
 
   **-border** *colorName*
-
     Specifies the border color of the background object.  If a widget
     has a 3D relief, this specifies the colors of the bevels. 
     
   **-colorscale** *scale*
-
     Specifies the scale when interpolating values. *Scale* can be "linear",
     or "logarithmic"".
 
@@ -334,30 +306,28 @@ The following operations are available for the **blt::background** command:
 	Colors are interpolated using the log of the value.
     
   **-decreasing**
-
     Indicates that the colors are interpolated from high to low.  By
     default colors are interpolated from low to high.
 
   **-from** *position*
+    Specifies the starting position of linear gradient axis.  The starting
+    position is a relative location in the reference window.  *Position*
+    can be one of the following forms.
 
-     Specifies the starting position of linear gradient axis.  The starting
-     position is a relative location in the reference window.  *Position*
-     can be one of the following forms.
-
-     *anchor*
+    *anchor*
         The position is an anchor position: **nw**, **n**, **ne**,
 	**w**, **c**, **e**, **sw**, **s**, or **sw**.  *Anchor*
 	represents a location in the reference window.  For example "nw"
 	is the upper left corner of the reference window.
 
-     *side side*
+    *side side*
         The position is a 2 element list. The first element can be **top**,
         **bottom**, or **center**. The second element can be **left**,
         **right**, or **center**.  The combination of the two sides
         represent the locations in the reference window. For example "top
         left" is the upper left corner of the reference window.
 
-     *number number*
+    *number number*
         The position is a list of 2 numbers. *Number* is a real number from
 	0 to 1. The number represent relative x and y positions in the
 	reference window.  For example "0 0" is the upper left corner of
@@ -365,25 +335,21 @@ The following operations are available for the **blt::background** command:
 	
 	
   **-highcolor** *colorName*
-
     Specifies the high color of the gradient.  This is the color
     when the gradient value is 1.  This option can be overridden
     by the **-palette** option. The default is "grey90".
 
   **-lowcolor** *colorName*
-
     Specifies the low color of the gradient.  This is the color 
     when the gradient value is 0.  This option can be overridden
     by the **-palette** option.  The default is "grey50".
 
   **-jitter** *percent*
-
     Specifies the amount of randomness to add to the interpolated colors.
     *Percent* is a real number between 0 and 100.  It is the percentage
     that colors may vary.
      
   **-palette** *paletteName*
-
     Specifies a color palette to use when interpolating the background.
     *PaletteName* is the name of a palette is created by the
     **blt::palette** command.  If *paletteName* is "", then the
@@ -393,7 +359,6 @@ The following operations are available for the **blt::background** command:
   **-repeat** *string*
 
   **-relativeto** *window*
-
     Specifies a reference window for the linear gradient.  This is useful
     for creating seamless gradients with many widgets.  For example if a
     *window* is a frame then all the children packed in *window* can use
@@ -414,7 +379,6 @@ The following operations are available for the **blt::background** command:
        destroyed, the reference window reverts to **self**.
        
   **-to** *position*
-
     Specifies the ending position of linear gradient axis.  The ending
     position is a relative location in the reference window.  *Position*
     can be one of the following.
@@ -439,21 +403,18 @@ The following operations are available for the **blt::background** command:
 	the reference window.
 
   **-xoffset** *numPixels*
-
     Specifies the horizontal offset of the background. *NumPixels* is
     integer value indicating amount to the left or right to offset the
     background.  The value may have any of the forms accept able to
     Tk_GetPixels.  The default is "0".
 
   **-yoffset** *numPixels*
-
     Specifies the vertical offset of the background. *NumPixels* is integer
     value indicating amount up or down to offset the background.  The value
     may have any of the forms accept able to Tk_GetPixels.  The default is
     "0".
 
-**blt::background create radial** ?\ *bgName*\ ? ?\ *option* *value* ...\ ?
-
+**blt::background create radial** ?\ *bgName*\ ? ?\ *option* *value* ... ?
   Creates a new radial gradient *background* object. Radial gradients are
   defined by an ellipse. Each point is interpolated according to its
   distance from the center of the ellipse and the shape of the ellipse.
@@ -469,12 +430,10 @@ The following operations are available for the **blt::background** command:
   **-background** *colorName*
 
   **-border** *colorName*
-
     Specifies the border color of the background object.  If a widget
     has a 3D relief, this specifies the colors of the bevels. 
     
   **-colorscale** *scale*
-
     Specifies the scale when interpolating values. *Scale* can be "linear",
     or "logarithmic".
 
@@ -484,12 +443,10 @@ The following operations are available for the **blt::background** command:
 	Colors are interpolated using the log of the value.
     
   **-decreasing**
-
     Indicates that the colors are interpolated from high to low.  By
     default colors are interpolated from low to high.
 
   **-center** *position*
-
      Specifies the center of the conical gradient.  The center
      position is a relative location in the reference window.  *Position*
      can be one of the following forms.
@@ -514,32 +471,27 @@ The following operations are available for the **blt::background** command:
 	the reference window.
 	
   **-height** *number*
-
     Specifies the height of the gradient ellipse.  This is the color
     when the gradient value is 1.  This option can be overridden
     by the **-palette** option. The default is "grey90".
 
 
   **-highcolor** *colorName*
-
     Specifies the high color of the gradient.  This is the color
     when the gradient value is 1.  This option can be overridden
     by the **-palette** option. The default is "grey90".
 
   **-lowcolor** *colorName*
-
     Specifies the low color of the gradient.  This is the color 
     when the gradient value is 0.  This option can be overridden
     by the **-palette** option.  The default is "grey50".
 
   **-jitter** *percent*
-
     Specifies the amount of randomness to add to the interpolated colors.
     *Percent* is a real number between 0 and 100.  It is the percentage
     that colors may vary.
      
   **-palette** *paletteName*
-
     Specifies a color palette to use when interpolating the background.
     *PaletteName* is the name of a palette is created by the
     **blt::palette** command.  If *paletteName* is "", then the
@@ -549,7 +501,6 @@ The following operations are available for the **blt::background** command:
   **-repeat** *string*
 
   **-relativeto** *window*
-
     Specifies a reference window for the linear gradient.  This is useful
     for creating seamless gradients with many widgets.  For example if a
     *window* is a frame then all the children packed in *window* can use
@@ -570,27 +521,23 @@ The following operations are available for the **blt::background** command:
        destroyed, the reference window reverts to **self**.
        
   **-width** *number*
-
     Specifies the width of the gradient ellipse.  This is the color
     when the gradient value is 1.  This option can be overridden
     by the **-palette** option. The default is "grey90".
 
   **-xoffset** *numPixels*
-
     Specifies the horizontal offset of the background. *NumPixels* is
     integer value indicating amount to the left or right to offset the
     background.  The value may have any of the forms accept able to
     Tk_GetPixels.  The default is "0".
 
   **-yoffset** *numPixels*
-
     Specifies the vertical offset of the background. *NumPixels* is integer
     value indicating amount up or down to offset the background.  The value
     may have any of the forms accept able to Tk_GetPixels.  The default is
     "0".
 
-**blt::background create stripe** ?\ *bgName*\ ? ?\ *option* *value* ...\ ?
-
+**blt::background create stripe** ?\ *bgName*\ ? ?\ *option* *value* ... ?
   Creates a stripe *background* object.  If no *bgName* argument is
   present, then the name of the *background* is automatically generated in
   the form "background0", "background1", etc. Another *background* object
@@ -600,45 +547,37 @@ The following operations are available for the **blt::background** command:
   **-background** *colorName*
 
   **-border** *colorName*
-
     Specifies the border color of the background object.  If a widget
     has a 3D relief, this specifies the colors of the bevels. 
     
   **-jitter** *percent*
-
     Specifies the amount of randomness to add to the colors.  *Percent* is
     a real number between 0 and 100.  It is the percentage that colors may
     vary.
      
   **-offcolor** *colorName*
-
     Specifies the color of odd stripes.  The default is "grey90".
 
   **-oncolor** *colorName*
-
     Specifies the color of even stripes. The default is "grey90".
 
   **-orient** *orient*
-
     Specifies the orientation of the stripes.  *Orient* may be "vertical"
     of "horizontal".  The default is "vertical".
 
   **-xoffset** *numPixels*
-
     Specifies the horizontal offset of the background. *NumPixels* is
     integer value indicating amount to the left or right to offset the
     background.  The value may have any of the forms accept able to
     Tk_GetPixels.  The default is "0".
 
   **-yoffset** *numPixels*
-
     Specifies the vertical offset of the background. *NumPixels* is integer
     value indicating amount up or down to offset the background.  The value
     may have any of the forms accept able to Tk_GetPixels.  The default is
     "0".
 
-**blt::background create tile** ?\ *bgName*\ ? ?\ *option* *value* ...\ ?
-
+**blt::background create tile** ?\ *bgName*\ ? ?\ *option* *value* ... ?
   Creates a tile *background* object.  If no *bgName* argument is present,
   then the name of the *background* is automatically generated in the form
   "background0", "background1", etc. Another *background* object can not
@@ -646,7 +585,6 @@ The following operations are available for the **blt::background** command:
   backgrounds and are listed below.
 
   **-border** *colorName*
-
     Specifies the border color of the background object.  If a widget has a
     3D relief, this specifies the colors of the bevels and the background
     when there is no tiled image (see the **-image** option below).
@@ -654,18 +592,15 @@ The following operations are available for the **blt::background** command:
     is "grey85".
 
   **-image** *imageName*
-
     Specifies the image to use as the tile for the background.  *ImageName*
     must be the name of a Tk **photo** or BLT **picture** image.
 
   **-jitter** *percent*
-
     Specifies the amount of randomness to add to the image's colors.
     *Percent* is a real number between 0 and 100.  It is the percentage
     that colors may vary.
      
   **-relativeto** *refName*
-
     Specifies a reference window to use of the origin the tile. *RefName*
     is the name of a Tk widget.  This is useful for creating seamless tiles
     with many widgets.  For example is a frame is *refName* then all the
@@ -674,21 +609,18 @@ The following operations are available for the **blt::background** command:
     The default is "".
 
   **-xoffset** *numPixels*
-
     Specifies the horizontal offset of the background. *NumPixels* is
     integer value indicating amount to the left or right to offset the
     background.  The value may have any of the forms accept able to
     Tk_GetPixels.  The default is "0".
 
   **-yoffset** *numPixels*
-
     Specifies the vertical offset of the background. *NumPixels* is integer
     value indicating amount up or down to offset the background.  The value
     may have any of the forms accept able to Tk_GetPixels.  The default is
     "0".
 
-**blt::background delete** ?\ *bgName* ...\ ?
-
+**blt::background delete** ?\ *bgName* ... ?
   Releases resources allocated by the background command for *window*, including
   the background window.  User events will again be received again by *window*.
   Resources are also released when *window* is destroyed. *Window* must be
@@ -696,19 +628,16 @@ The following operations are available for the **blt::background** command:
   error is reported.
 
 **blt::background exists** *bgName*
-
   Indicates if the background *bgName* exists. *BgName* is the name of a
   background created by the **create** operation. Returns "1" if the named
   background exists, "0" otherwise.  
 
-**blt::background names** ?\ *pattern* ...\ ?
-
+**blt::background names** ?\ *pattern* ... ?
   Returns the names of all the backgrounds.  If one or more *pattern*
   arguments are provided, then the name of any background matching
   *pattern* will be returned. *Pattern* is a glob-style pattern.
 
 **blt::background type** *bgName*
-
   Returns the type of the background for *bgName*.  *BgName* is the name
   of a background created by the **create** operation.
 

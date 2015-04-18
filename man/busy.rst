@@ -7,7 +7,7 @@ blt::busy
 Make Tk widgets busy, temporarily blocking user interactions.
 -------------------------------------------------------------
 
-:Author: gahowlett@gmail.com
+:Author: George A. Howlettt <gahowlett@gmail.com>
 :Date:   2012-11-28
 :Copyright: 2015 George A. Howlett.
         Permission is hereby granted, free of charge, to any person
@@ -36,50 +36,48 @@ Make Tk widgets busy, temporarily blocking user interactions.
 SYNOPSIS
 --------
 
-**blt::busy hold** *windowName* ?\ *option* *value* ...\ ?
+**blt::busy hold** *windowName* ?\ *option* *value* ... ?
 
-**blt::busy release**  ?\ *windowName* ...\ ?
+**blt::busy release**  ?\ *windowName* ... ?
 
-**blt::busy configure** *windowName* ?\ *option* *value* ...\ ?
+**blt::busy configure** *windowName* ?\ *option* *value* ... ?
 
-**blt::busy forget**  ?\ *windowName* ...\ ?
+**blt::busy forget**  ?\ *windowName* ... ?
 
 **blt::busy isbusy** *windowName* 
 
-**blt::busy names** ?\ *pattern* ...\ ?
+**blt::busy names** ?\ *pattern* ... ?
 
 **blt::busy status** *windowName* 
 
 DESCRIPTION
 -----------
 
-The **blt::busy** command provides a simple means to block
-keyboard, button, and pointer events from Tk widgets, while overriding
-the widget's cursor with a configurable busy cursor.
+The **blt::busy** command provides a simple means to block keyboard,
+button, and pointer events from Tk widgets, while overriding the widget's
+cursor with a configurable busy cursor.
 
 INTRODUCTION
 ------------
 
-There are many times in applications where you want to temporarily
-restrict what actions the user can take.  For example, an application
-could have a "run" button that when pressed causes some processing to
-occur.  But while the application is busy processing, you probably don't
-want the the user to be able to click the "run" button again.  You
-may also want restrict the user from other tasks such as clicking a
-"print" button.
+There are many times in applications where you want to temporarily restrict
+what actions the user can take.  For example, an application could have a
+"run" button that when pressed causes some processing to occur.  But while
+the application is busy processing, you probably don't want the the user to
+be able to click the "run" button again.  You may also want restrict the
+user from other tasks such as clicking a "print" button.
 
-The **blt::busy** command lets you make Tk widgets busy. This means
-that user interactions such as button clicks, moving the mouse, typing
-at the keyboard, etc. are ignored by the widget.  You can set a
-special cursor (like a watch) that overrides the widget's normal
-cursor, providing feedback that the application (widget) is
-temporarily busy.
+The **blt::busy** command lets you make Tk widgets busy. This means that
+user interactions such as button clicks, moving the mouse, typing at the
+keyboard, etc. are ignored by the widget.  You can set a special cursor
+(like a watch) that overrides the widget's normal cursor, providing
+feedback that the application (widget) is temporarily busy.
 
 When a widget is made busy, the widget and all of its descendents will
-ignore events.  It's easy to make an entire panel of widgets busy. You
-can simply make the toplevel widget (such as ".") busy.  This is
-easier and far much more efficient than recursively traversing the
-widget hierarchy, disabling each widget and re-configuring its cursor.
+ignore events.  It's easy to make an entire panel of widgets busy. You can
+simply make the toplevel widget (such as ".") busy.  This is easier and far
+much more efficient than recursively traversing the widget hierarchy,
+disabling each widget and re-configuring its cursor.
 
 The **blt::busy** command isn't a replacement for the Tk **grab** command.
 There are times where the **blt::busy** command can be better used instead
@@ -93,8 +91,7 @@ OPERATIONS
 
 The following operations are available for the **blt::busy** command:
 
-**blt::busy hold** *windowName* ?\ *option* *value* ...\ ?
-
+**blt::busy hold** *windowName* ?\ *option* *value* ... ?
   Makes the widget *windowName* (and its descendants in the Tk window
   hierarchy) busy.  *windowName* must be a valid path name of a Tk widget.
   The busy window is mapped the next time idle tasks are processed, and the
@@ -121,8 +118,7 @@ The following operations are available for the **blt::busy** command:
     snapshot of the current window lightened or darkened by the specified
     amount (see the **-darken** option). The default is "0".
 
-**blt::busy configure** *windowName* ?\ *option* *value* ...\ ?
-
+**blt::busy configure** *windowName* ?\ *option* *value* ... ?
   Queries or modifies the **blt::busy** command configuration options for
   *windowName*. *WindowName* must be the path name of a widget previously
   made busy by the **hold** operation.  If no options are specified, a list
@@ -145,16 +141,14 @@ The following operations are available for the **blt::busy** command:
 	"option add *frame.busyCursor gumby"
 	"option add *Frame.BusyCursor gumby"
 
-**blt::busy active**  ?\ *pattern* ...\ ?
-
+**blt::busy active**  ?\ *pattern* ... ?
   Returns the pathnames of all widgets that are currently busy (active).
   If a *pattern* is given, the path names of busy widgets matching
   *pattern* are returned.  This differs from the **names** operation in
   that **active** only returns the names of windows where the busy window
   is currently active (**names** returns all busy windows).
 
-**blt::busy forget** ?\ *windowName* ...\ ?
-
+**blt::busy forget** ?\ *windowName* ... ?
   Releases resources allocated by the busy command for *windowName*,
   including the busy window.  User events will again be received again by
   *windowName*.  Resources are also released when *windowName* is
@@ -162,27 +156,23 @@ The following operations are available for the **blt::busy** command:
   **hold** operation, otherwise an error is reported.
 
 **blt::busy check** *windowName*
-
   Checks if *windowName* or any of its ancestors are currently busy.  If
   *windowName* is presently busy (it can not receive user interactions) "1"
   is returned, otherwise "0".
 
 **blt::busy isbusy** *windowName*
-
   Indicates whether *windowName* is currently busy.  *WindowName* is the
   name of a Tk widget. Returns "1" the window is busy and "0" otherwise.
   If *windowName* doesn't exist, then "0" is returned.
 
-**blt::busy names** ?\ *pattern* ...\ ?
-
+**blt::busy names** ?\ *pattern* ... ?
   Returns the pathnames of all widgets that have previously been made busy
   (i.e. a busy window is allocated and associated with the widget).  It
   makes no difference if the window is currently busy or not.  If a
   *pattern* is given, the path names of busy widgets matching *pattern* are
   returned.
 
-**blt::busy release** ?\ *windowName* ...\ ?
-
+**blt::busy release** ?\ *windowName* ... ?
   Makes *windowName* un-busy. Restores user interactions to the widget
   *windowName* again.  This differs from the **forget** operation in that
   the busy window is not destroyed, but simply unmapped.  *WindowName* must
@@ -190,7 +180,6 @@ The following operations are available for the **blt::busy** command:
   error is reported.
 
 **blt::busy status** *windowName*
-
   Indicates the busy status of *windowName*.  If *windowName* has a busy
   window and the busy window is currently active (user interactions are
   blocked), "active" is returned.  If *windowName* has a busy window, but

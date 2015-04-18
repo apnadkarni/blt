@@ -7,7 +7,7 @@ blt::spline
 Fit curves with spline interpolation.
 -------------------------------------
 
-:Author: gahowlett@gmail.com
+:Author: George A. Howlett <gahowlett@gmail.com>
 :Date:   2012-11-28
 :Copyright: 2015 George A. Howlett.
         Permission is hereby granted, free of charge, to any person
@@ -77,7 +77,6 @@ OPERATIONS
 ----------
 
 **blt::spline natural** *x* *y* *sx* *sy*
-
   Computes a cubic spline from the data points represented by the vectors
   *x* and *y* and interpolates new points using vector *sx* as
   the x-coordinates.  The resulting y-coordinates are written to a new
@@ -92,7 +91,6 @@ OPERATIONS
   already exist, a new vector will be created.
 
 **blt::spline quadratic** *x* *y* *sx* *sy*
-
   Computes a quadratic spline from the data points represented by the
   vectors *x* and *y* and interpolates new points using vector
   *sx* as the x-coordinates.  The resulting y-coordinates are written

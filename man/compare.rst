@@ -6,7 +6,7 @@ blt::utils::compare
 Utility commands to compare strings and numbers.
 ------------------------------------------------
 
-:Author: gahowlett@gmail.com
+:Author: George A. Howlett <gahowlett@gmail.com>
 :Date:   2012-11-28
 :Copyright: 2015 George A. Howlett.
         Permission is hereby granted, free of charge, to any person
@@ -36,12 +36,12 @@ Utility commands to compare strings and numbers.
 SYNOPSIS
 --------
 
-**blt::utils::number** *oper* ?\ *arg* *arg* ...\ ?
+**blt::utils::number** *oper* ?\ *arg* ... ?
 
-**blt::utils::string** *oper* ?\ *arg* *arg* ...\ ?
+**blt::utils::string** *oper* ?\ *arg* ... ?
 
 DESCRIPTION
-===========
+-----------
 
 These utility commands are used by the **treeview** widget to filter rows.
 The **number** operations handle cases where the floating point numbers are
@@ -49,63 +49,54 @@ almost equal. The **string** operations provide switches to compactly
 handle different cases.
 
 SYNTAX
-======
+------
 
-**blt::utils::number** *operation*  ?\ *arg* *arg* ...\ ?
-
+**blt::utils::number** *operation*  ?\ *arg* ... ?
   Compares floating point numbers. Both *operation* and its arguments
   determine the exact behavior of the command.  The operations available
-  for datatables are listed below in **NUMBER COMPARISONS**.
+  for datatables are listed below in `NUMBER COMPARISONS`_.
 
-**blt::utils::string** *operation*  ?\ *arg* *arg* ...\ ?
-
+**blt::utils::string** *operation*  ?\ *arg* ... ?
   Compares strings. Both *operation* and its arguments
   determine the exact behavior of the command.  The operations available
-  for datatables are listed below in **STRING COMPARISONS**.
+  for datatables are listed below in `STRING COMPARISONS`_.
 
 
 NUMBER COMPARISONS
-==================
+------------------
 
 **blt::utils::number between** *number* *first* *last*
-
   Indicates if *number* is between *first* and *last*.  *Number*, *first*,
   and *last* are floating point numbers.  If *number* is greater than or
   equal to *first* and *number* is less than of equal to *last* "1" is
   returned.  Otherwise "0".
 
 **blt::utils::number eq** *number1* *number2* 
-
   Indicates if *number1* is equal to *number2*.  *Number1*
   and *number2* are floating point numbers.  If *number1* is 
   equal to *number2* "1" is returned, otherwise "0".
 
 **blt::utils::number ge** *number1* *number2* 
-
   Indicates if *number1* is equal to *number2*.  *Number1*
   and *number2* are floating point numbers.  If *number1* is 
   greater than or equal to *number2* "1" is returned, otherwise "0".
 
 **blt::utils::number gt** *number1* *number2* 
-
   Indicates if *number1* is equal to *number2*.  *Number1*
   and *number2* are floating point numbers.  If *number1* is 
   greater than *number2* "1" is returned, otherwise "0".
 
 **blt::utils::number le** *number1* *number2* 
-
   Indicates if *number1* is equal to *number2*.  *Number1*
   and *number2* are floating point numbers.  If *number1* is 
   less than or equal to *number2* "1" is returned, otherwise "0".
 
 **blt::utils::number lt** *number1* *number2* 
-
   Indicates if *number1* is equal to *number2*.  *Number1*
   and *number2* are floating point numbers.  If *number1* is 
   less than *number2* "1" is returned, otherwise "0".
 
 **blt::utils::number inlist** *number* *numList* ?\ *switches ...* ?
-
   Indicates if *number* is equal to one of the numbers in *numList*.
   *Number* is a floating point. *NumList* is a list or floating point
   numbers.  If *number* is in the list "1" is returned, otherwise "0".
@@ -119,10 +110,9 @@ NUMBER COMPARISONS
     lowest).  
 
 STRING COMPARISONS
-==================
+------------------
 
-**blt::utils::string begins** *string* *pattern* ?\ *switches* ...\ ?
-
+**blt::utils::string begins** *string* *pattern* ?\ *switches* ... ?
   Indicates if *string* begins with the string *pattern*.  *String* and
   *pattern* are ordinary TCL strings.  If *string* is begins with *pattern*
   "1" is returned, otherwise "0". *Switches* can be any of the following.
@@ -132,11 +122,10 @@ STRING COMPARISONS
     *pattern*.
 
   **-trim** 
-   Trims leading whitespace from *string* before determining if *string*
-   starts with *pattern*.
+    Trims leading whitespace from *string* before determining if *string*
+    starts with *pattern*.
 
-**blt::utils::string between** *string* *first* *last** ?\ *switches* ...\ ?
-
+**blt::utils::string between** *string* *first* *last** ?\ *switches* ... ?
   Indicates if *string* is between *first* and *last*.  *String*, *first*
   and *last* are ordinary TCL strings.  If *string* is greater than or
   equal to *first* and *string* is less than or equal to *last* "1" is
@@ -156,8 +145,7 @@ STRING COMPARISONS
     characters.  For example, in -dictionary mode, "bigBoy" sorts between
     "bigbang" and "bigboy", and "x10y" sorts between "x9y" and "x11y".
 
-**blt::utils::string contains** *string* *pattern* ?\ *switches* ...\ ?
-
+**blt::utils::string contains** *string* *pattern* ?\ *switches* ... ?
   Indicates if *string* is contains *pattern*.  *String* and *pattern* are
   ordinary TCL strings.  If *string* is contains *pattern* "1" is returned,
   otherwise "0". *Switches* can be any of the following.
@@ -167,11 +155,10 @@ STRING COMPARISONS
     *pattern*.
 
   **-trim** 
-   Trims leading whitespace for *string* before determining if *string*
-   starts with *pattern*.
+    Trims leading whitespace for *string* before determining if *string*
+    starts with *pattern*.
 
-**blt::utils::string ends** *string* *pattern* ?\ *switches* ...\ ?
-
+**blt::utils::string ends** *string* *pattern* ?\ *switches* ... ?
   Indicates if *string* ends with the string *pattern*.  *String* and
   *pattern* are ordinary TCL strings.  If *string* is ends with *pattern*
   "1" is returned, otherwise "0". *Switches* can be any of the following.
@@ -181,11 +168,10 @@ STRING COMPARISONS
     *pattern*.
 
   **-trim** 
-   Trims trailing whitespace from *string* before determining if *string*
-   ends with *pattern*.
+    Trims trailing whitespace from *string* before determining if *string*
+    ends with *pattern*.
 
-**blt::utils::string equals** *string1* *string2* ?\ *switches* ...\ ?
-
+**blt::utils::string equals** *string1* *string2* ?\ *switches* ... ?
   Indicates if *string1* equals *string2*.  *String1* and *string2* are
   ordinary TCL strings.  If *string1* is equals *string2* "1" is returned,
   otherwise "0". *Switches* can be any of the following.
@@ -195,11 +181,10 @@ STRING COMPARISONS
     *string2*.
 
   **-trim** 
-   Trims leading and trailing whitespace from *string* before determining
-   if *string1* equals *string2*.
+    Trims leading and trailing whitespace from *string* before determining
+    if *string1* equals *string2*.
 
-**blt::utils::string inlist** *string* *strList* ?\ *switches ...* ?
-
+**blt::utils::string inlist** *string* *strList* ?\ *switches* ... ?
   Indicates if *string* is equal to one of the strings in *strList*.
   *String* is an ordinary TCL string. *StrList* is a list or TCL strings.
   If *string* is in the list "1" is returned, otherwise "0".
@@ -213,9 +198,9 @@ STRING COMPARISONS
     lowest).  
 
 EXAMPLE
-=======
+-------
 
 KEYWORDS
-========
+--------
 
 datatable, tableview

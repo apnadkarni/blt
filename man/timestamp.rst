@@ -54,7 +54,6 @@ This command is used internally by the **blt::datatable** data object to
 parse timestamps where the format of the timestamp isn't known.
 
 **blt::timestamp format** *seconds* ?\ *switches* ...\ ?
-
   Formats the time that is expressed in seconds into a date/time format.
   *Seconds* is a double precision number that represents the number of
   seconds since the epoch (typically January 1st 1970 UTC).  If no
@@ -75,7 +74,6 @@ parse timestamps where the format of the timestamp isn't known.
     description of available names.
 
 **blt::timestamp parse** *timeStamp*
-
   Parses the dates and returns its date and time components.  This is
   useful when you suspect that the timestamp format is not supported.
   *TimeStamp* is a string representing the date and/or time. This commands
@@ -84,7 +82,6 @@ parse timestamps where the format of the timestamp isn't known.
   the value for "second" is a floating point number, not an integer.
 
 **blt::timestamp scan** *timeStamp*
-
   Parses the date string given and returns a double precision number
   representing the number of seconds since the epoch (typically January 1st
   1970 UTC).    *TimeStamp* is a string representing the date and or time.

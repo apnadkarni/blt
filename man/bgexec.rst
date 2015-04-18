@@ -7,7 +7,7 @@ blt::bgexec
 Run programs in the background while handling Tk events.
 --------------------------------------------------------
 
-:Author: gahowlett@gmail.com
+:Author: George A. Howlett <gahowlett@gmail.com>
 :Date:   2012-11-28
 :Copyright: 2015 George A. Howlett.
         Permission is hereby granted, free of charge, to any person
@@ -36,7 +36,7 @@ Run programs in the background while handling Tk events.
 SYNOPSIS
 --------
 
-**blt::bgexec** *varName* ?\ *option value* ...\ ? *program* ?\ *arg*\ ...?
+**blt::bgexec** *varName* ?\ *option value* ... ? *program* ?\ *arg*  ... ?
 
 DESCRIPTION
 -----------
@@ -77,7 +77,7 @@ SYNTAX
 
 The **blt::bgexec** command takes the following form:
 
-**blt::bgexec** *varName* ?\ *option* *value*\ ... ? *program* ?\ *arg*\ ... ?
+  **blt::bgexec** *varName* ?\ *option* *value* ... ? *program* ?\ *arg* ... ?
 
 *VarName* is the name of a global variable which is set when program* has
 finished executing.  The exit status of will be stored in *varName*.  The
@@ -100,7 +100,6 @@ or double dashes (--).  The following options are available for
 **blt::bgexec**:
 
   **-decodeerror** *encodingName* 
-
     Specifies the encoding of the stderr channel.  This affects only data
     returned to the Tcl interpreter.  No translation is done on file
     redirection.
@@ -110,7 +109,6 @@ or double dashes (--).  The following options are available for
     performed.
 
   **-decodeoutput** *encodingName* 
-
     Specifies the encoding of the stdout channels.  This affects only data
     returned to the Tcl interpreter.  No translation is done on file
     redirection.
@@ -120,53 +118,45 @@ or double dashes (--).  The following options are available for
     performed.
 
   **-detach** *boolean*
-
     Indicates that the detached program should not be killed when the
     calling TCL interpreter exits.  By default all detached programs are
     killed when the TCL interpreter ends.
 
   **-echo** *boolean*
-
     Indicates that the program's stderr channel should be echoed to the
     terminal's stderr.
     
   **-error** *varName* 
-
     Specifies that a global variable *varName* is to be set with the contents
     of stderr after the program has completed.
 
   **-ignoreexitcode** *boolean*
 
   **-keepnewline** *boolean*
-
     Specifies that a trailing newline should be retained in the output. If
     *boolean* is true, the trailing newline is truncated from the output of
     the **-onoutput** and **-output** variables.  The default value is
     "true".
 
   **-killsignal** *signal*
-
     Specifies the signal to be sent to the program when terminating. This is
     available only under Unix.  *Signal* can either be a number (typically
     1-32) or a mnemonic (such as SIGINT). If *signal* is the empty string,
     then no signal is sent.  The default signal is "9" (SIGKILL).
 
   **-lasterror** *varName*
-
     Specifies a variable *varName* that is updated whenever data becomes
     available from standard error of the program.  *VarName* is a global
     variable. Unlike the **-error** option, data is available as soon as
     it arrives.
 
   **-lastoutput** *varName* 
-
     Specifies a variable *varName* that is updated whenever data becomes
     available from standard output of the program.  *VarName* is a global
     variable. Unlike the **-output** option, data is available as soon as
     it arrives.
 
   **-linebuffered** *boolean*
-
     Specifies that updates should be made on a line-by-line basis.  Normally
     when new data is available **blt::bgexec** will set the variable
     (**-lastoutput** and **-lasterror** options) or invoke the command
@@ -176,45 +166,38 @@ or double dashes (--).  The following options are available for
     output on a line-by-line basis.  The default value is "false".
 
   **-onerror** *command*
-
     Specifies the start of a Tcl command that will be executed whenever new
     data is available from standard error. The data is appended to the
     command as an extra argument before it is executed.
 
   **-onoutput** *command* 
-
     Specifies the start of a Tcl command that will be executed whenever new
     data is available from standard output. The data is appended to the
     command as an extra argument before it is executed.
 
   **-output** *varName*
-
     Specifies that a global variable *varName* is to be set with the output
     of the program, once it has completed.  If this option is not set, no
     output will be accumulated.
 
-  **-poll** *interval* 
-
+  **-poll** *milliseconds* 
     Specifies the time to wait before checking if the program has
     terminated.  Typically a program will close its stdout and stderr
     channels right before it terminates.  But for programs that close
     stdout early, **blt::bgexec** will wait for the program to finish.
-    *Interval* is the number of milliseconds to wait before checking if the
+    *Milliseconds* is the number of milliseconds to wait before checking if the
     program has terminated.  The default is "1000".
 
   **-pty** *boolean* 
-
     For Unix programs only, this flags indicates to use a pseudo-terminal
     and runs the program in a session (see **setsid**). The advantages
     are 1) output is not buffered and 2) child processes of the the program
     and killed when the program is terminated.
     
   **-update** *varName* 
-
     Deprecated. This option is replaced by **-lasterror**.
 
   **--**
-
     This marks the end of the options.  The following argument will
     be considered the name of a program even if it starts with 
     a dash "-".
@@ -245,12 +228,14 @@ is done by calling **TerminateProcess**. It makes no
 difference what "myStatus" is set to.
 
   ::
+
      set myStatus {}
 
 There are several **blt::bgexec** options to collect different types of
 information.
 
   ::
+
      global myStatus myOutput myErrs
      blt::bgexec myStatus -output myOutput -error myErrs du -s $dir
 

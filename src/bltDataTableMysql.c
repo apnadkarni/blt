@@ -130,22 +130,22 @@ static Blt_SwitchCustom rowIterSwitch = {
 
 static Blt_SwitchSpec exportSwitches[] = 
 {
-    {BLT_SWITCH_OBJ, "-name", "tableName", (char *)NULL,
-	Blt_Offset(ExportArgs, tableObjPtr), 0, 0},
+    {BLT_SWITCH_CUSTOM, "-columns",   "columns" ,(char *)NULL,
+	Blt_Offset(ExportArgs, ci),   0, 0, &columnIterSwitch},
     {BLT_SWITCH_STRING, "-db",       "dbName", (char *)NULL,
 	Blt_Offset(ExportArgs, db), 0, 0},
     {BLT_SWITCH_STRING, "-host",     "hostName", (char *)NULL,
 	Blt_Offset(ExportArgs, host), 0, 0},
-    {BLT_SWITCH_STRING, "-user",     "userName", (char *)NULL,
-	Blt_Offset(ExportArgs, user), 0, 0},
     {BLT_SWITCH_STRING, "-password", "password", (char *)NULL,
 	Blt_Offset(ExportArgs, pw), 0, 0},
     {BLT_SWITCH_INT_NNEG, "-port",     "number", (char *)NULL,
 	Blt_Offset(ExportArgs, port), 0, 0},
-    {BLT_SWITCH_CUSTOM, "-columns",   "columns" ,(char *)NULL,
-	Blt_Offset(ExportArgs, ci),   0, 0, &columnIterSwitch},
     {BLT_SWITCH_CUSTOM, "-rows",      "rows", (char *)NULL,
 	Blt_Offset(ExportArgs, ri),   0, 0, &rowIterSwitch},
+    {BLT_SWITCH_OBJ, "-table", "tableName", (char *)NULL,
+	Blt_Offset(ExportArgs, tableObjPtr), 0, 0},
+    {BLT_SWITCH_STRING, "-user",     "userName", (char *)NULL,
+	Blt_Offset(ExportArgs, user), 0, 0},
     {BLT_SWITCH_END}
 };
 
