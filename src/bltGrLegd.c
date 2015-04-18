@@ -2937,15 +2937,15 @@ SelectionOp(Graph *graphPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 
 static Blt_OpSpec legendOps[] =
 {
-    {"activate",     1, ActivateOp,      3, 4, "?elem?",},
-    {"bind",         1, BindOp,          3, 6, "elem sequence command",},
+    {"activate",     1, ActivateOp,      3, 4, "?elemName?",},
+    {"bind",         1, BindOp,          3, 6, "elemName sequence command",},
     {"cget",         2, CgetOp,          4, 4, "option",},
     {"configure",    2, ConfigureOp,     3, 0, "?option value?...",},
     {"curselection", 2, CurselectionOp,  3, 3, "",},
     {"deactivate",   1, DeactivateOp,    3, 3, "",},
-    {"focus",        1, FocusOp,         4, 4, "elem",},
-    {"get",          1, GetOp,           4, 4, "elem",},
-    {"icon",         1, IconOp,          5, 5, "elem image",},
+    {"focus",        1, FocusOp,         4, 4, "elemName",},
+    {"get",          1, GetOp,           4, 4, "elemName",},
+    {"icon",         1, IconOp,          5, 5, "elemName imageName",},
     {"selection",    1, SelectionOp,     3, 0, "args"},
 };
 static int numLegendOps = sizeof(legendOps) / sizeof(Blt_OpSpec);

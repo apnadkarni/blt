@@ -461,3 +461,29 @@ Blt_GetParentWindow(Display *display, Window window)
     hWnd = GetParent(hWnd);
     return (Window)hWnd;
 }
+
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ *  Blt_GetWindowStack --
+ *
+ *	Returns a list of the child windows according to their stacking
+ *	order.  The window handles are ordered from top to bottom.
+ *
+ *---------------------------------------------------------------------------
+ */
+Blt_Chain
+Blt_GetWindowStack(Display *display, ClientData clientData)
+{
+    HWND parent = clientData;
+    Blt_Chain chain;
+    HWND hWnd;
+
+    chain = Blt_Chain_Create();
+    for (hWnd = GetTopWindow(parent); hWnd != NULL;
+	hWnd = GetNextWindow(hWnd, GW_HWNDNEXT)) {
+	Blt_Chain_Append(chain, (ClientData)hWnd);
+    }
+    return chain;
+}

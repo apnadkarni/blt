@@ -508,3 +508,39 @@ Blt_GetWindowFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, Window *windowPtr)
     return TCL_OK;
 }
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ *  Blt_GetChildWindows --
+ *
+ *	Returns a list of the child windows according to their stacking
+ *	order.  The window handles are ordered from top to bottom.
+ *
+ *---------------------------------------------------------------------------
+ */
+Blt_Chain
+Blt_GetChildWindows(Display *display, Window window)
+{
+    Window *children;
+    unsigned int numChildren;
+    Window parent, root;
+
+    if (XQueryTree(display, window, &parent, &root, &children, &numChildren)) {
+	if (numChildren > 0) {
+	    Blt_Chain chain;
+	    size_t i;
+	    
+	    chain = Blt_Chain_Create();
+	    for (i = 0; i < numChildren; i++) {
+		/*
+		 *  XQuery returns windows in bottom to top order.  We'll
+		 *  reverse the order.
+		 */
+		Blt_Chain_Prepend(chain, (ClientData)children[i]);
+	    }
+	    XFree((char *)children);
+	    return chain;
+	}
+    }
+    return NULL;
+}

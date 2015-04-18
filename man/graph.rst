@@ -4,7 +4,7 @@ blt::graph
 ===============
 
 -------------------------------------------
-2D graph for plotting X\-Y coordinate data.
+2D graph for plotting X-Y coordinate data.
 -------------------------------------------
 
 :Author: George A. Howlett <gahowlett@gmail.com>, Sani Nassif
@@ -40,7 +40,7 @@ DESCRIPTION
 -----------
 
 The **blt::graph** command creates a graph for plotting two-dimensional
-data (X\-Y coordinates). It has many configurable components: coordinate
+data (X-Y coordinates). It has many configurable components: coordinate
 axes, elements, legend, cross hairs, etc.  They allow you to customize the
 graph.
 
@@ -48,7 +48,7 @@ INTRODUCTION
 ------------
 
 The **blt::graph** command creates a new window for plotting
-two-dimensional data (X\-Y coordinates).  Data points are plotted in a
+two-dimensional data (X-Y coordinates).  Data points are plotted in a
 rectangular plotting area displayed in the center of the new window.
 Coordinate axes are drawn in the margins around the plotting area.  By
 default, a legend is displayed in the right margin.  A title is displayed
@@ -142,7 +142,7 @@ GRAPH OPERATIONS
 
   See the `AXES`_ section.
 
-*pathName* **bar** *elemName* \fR?\fIoption value\fR?...
+*pathName* **bar** *elemName* ?\ *option* *value* ... ?
 
   Creates a new bar element *elemName*.  It's an error if an element
   *elemName* already exists.  See the manual for **blt::barchart** for
@@ -261,11 +261,16 @@ GRAPH OPERATIONS
     Whenever the graph is resized, *varName* will be set with the new value.
 
   **-mapelements** *how*
-    Specifies what elements to consider when computing the extents of the
-    data for each axis. *How* can be one of the following.
+    Specifies what elements to consider when scaling axes. By default the
+    extents of elements in the display list are used to compute the scale
+    of the axes.  *How* can be one of the following.
 
     **all**
-       Consider all elements regardless if they are hidden on not.
+       Consider all elements.
+
+    **default**
+       Consider elements in the display list (see the **element show**
+       operation) even if they are hidden. This is the default.
 
     **visible**
        Consider elements that are not hidden.  When an element is hidden,
@@ -368,11 +373,11 @@ GRAPH OPERATIONS
     Specifies the width of widget. *NumPixels* may have any of the forms
     acceptable to **Tk_GetPixels**. The default is "5i".
 
-*pathName* **crosshairs** *operation* \fR?*arg*?
+*pathName* **crosshairs** *operation* ?*\ arg* ... ?
 
   See the `CROSSHAIRS`_ section.
 
-*pathName* **element** *operation* \fR?*arg*?...
+*pathName* **element** *operation* ?*\ arg* ... ?
 
   See the  `ELEMENTS`_ section.
 
@@ -415,7 +420,7 @@ GRAPH OPERATIONS
   for line elements.  This is the default element type for **blt::graph**
   widgets. See the `ELEMENTS`_ section.
 
-*pathName* **marker** *operation* \fR?*arg*?...
+*pathName* **marker** *operation* ?*\ arg* ... ?
 
   See the `MARKERS`_ section.
 
@@ -623,9 +628,11 @@ plots.
      option add *Graph.Axis.Color blue option add *Graph.x.LogScale true
      option add *Graph.x2.LogScale false
 
-*pathName* **axis bind** *tagName* ?\ *sequence*\ ?  ?\ *command*\ ?
+*pathName* **axis activate** *axisName* 
 
-  Associates *command* with *tagName* such that whenever the event sequence
+*pathName* **axis bind** *bindTag* ?\ *sequence*\ ?  ?\ *command*\ ?
+
+  Associates *command* with *bindTag* such that whenever the event sequence
   given by *sequence* occurs for an axis with this tag, *command* will be
   invoked.  The syntax is similar to the **bind** command except that it
   operates on graph axes, rather than widgets. See the **bind** manual
@@ -633,13 +640,13 @@ plots.
   on *command* before invoking it.
 
   If all arguments are specified then a new binding is created, replacing
-  any existing binding for the same *sequence* and *tagName*.  If the first
+  any existing binding for the same *sequence* and *bindTag*.  If the first
   character of *command* is "+" then *command* augments an existing binding
   rather than replacing it.  If no *command* argument is provided then the
-  command currently associated with *tagName* and *sequence* (it's an error
+  command currently associated with *bindTag* and *sequence* (it's an error
   occurs if there's no such binding) is returned.  If both *command* and
   *sequence* are missing then a list of all the event sequences for which
-  bindings have been defined for *tagName*.
+  bindings have been defined for *bindTag*.
 
 *pathName* **axis cget** *axisName* *option*
 
@@ -657,16 +664,33 @@ plots.
   then for each pair, the axis option *option* is set to *value*.  The
   following options are valid for axes.
 
-  **-bindtags** *tagList*
+  **-activebackground** *colorName*
 
-    Specifies the binding tags for the axis.  *TagList* is a list of tag
-    names.  The tags and their order will determine how events for axes are
-    handled.  Each tag in the list matching the current event sequence will
-    have its Tcl command executed.  Implicitly the name of the element is
-    always the first tag in the list.  The default value is "all".
+  **-activeforeground** *colorName*
+
+  **-activerelief** *relief*
+
+  **-autorange** *windowSize*
+
+  **-background** *colorName*
+
+  **-bindtags** *tagsList*
+
+    Specifies the binding tags for the axis.  *TagsList* is a list of
+    binding tags.  The tags and their order will determine how events for
+    axes are handled.  Each tag in the list matching the current event
+    sequence will have its Tcl command executed.  Implicitly the name of
+    the axis is always the first tag in the list.  The default value is
+    "all".
+
+  **-borderwidth** *numPixels*
+
+  **-checklimits** *boolean*
 
   **-color** *colorName*
     Sets the color of the axis and tick labels.  The default is "black".
+
+  **-colorbarthickness** *numPixels*
 
   **-command** *cmdPrefix*
 
@@ -693,6 +717,26 @@ plots.
 
     Same as the **-descending** option above.
 
+  **-exterior** *boolean*
+
+  **-foreground** *colorName*
+
+  **-grid** *boolean*
+
+  **-gridcolor** *colorName*
+
+  **-griddashes** *dashList*
+
+  **-gridlinewidth** *numPixels*
+
+  **-gridminor** *boolean*
+
+  **-gridminorcolor** *colorName*
+
+  **-gridminordashes** *dashList*
+
+  **-gridminorlinewidth** *numPixels*
+
   **-hide** *boolean*
     Indicates if the axis is hidden. If *boolean* is true the axis will not
     be displayed on screen.  Element mapped to the *axisName* will
@@ -705,7 +749,13 @@ plots.
     contains more than one line of text. *JustifyName* must be "left",
     "right", or "center".  The default is "center".
 
-  **-limits** *formatString*
+  **-labeloffset** *boolean*
+
+  **-limitscolor** *colorName*
+
+  **-limitsfont** *fontName*
+
+  **-limitsformat** *formatString*
 
     Specifies a printf-like description to format the minimum and maximum
     limits of the axis.  The limits are displayed at the top/bottom or
@@ -722,7 +772,6 @@ plots.
     then no axis is displayed. The default is "1" pixel.
 
   **-logscale** *boolean*
-
     Indicates whether the scale of the axis is logarithmic.  If *boolean*
     is true, the axis is logarithmic, otherwise it is linear.  The default
     scale is linear.
@@ -731,7 +780,6 @@ plots.
 
 
   **-loose** *boolean*
-
     Indicates whether the limits of the axis should fit the data points
     tightly, at the outermost data points, or loosely, at the outer tick
     intervals.  If the axis limit is set with the -min or -max option, the
@@ -745,6 +793,8 @@ plots.
     coordinates along the axis designating where major ticks will be drawn.
     No minor ticks are drawn.  If *tickList* is "", major ticks will be
     automatically computed. The default is "".
+
+  **-margin** *marginName*
 
   **-max** *maxValue*
 
@@ -768,6 +818,10 @@ plots.
     minor tick.  No minor ticks are drawn if the **-majortick** option is
     also set.  If *tickList* is "" then the minor ticks are automatically
     computed. The default is "".
+
+  **-palette** *paletteName*
+
+  **-relief** *relief*
 
   **-rotate** *numDegrees*
 
@@ -793,6 +847,12 @@ plots.
     Specify the prefix for a command used to communicate with scrollbars
     for this axis.
 
+  **-scrollincrement** *numPixels*
+
+    Sets the maximum limit of the axis scroll region.  If *maxValue* is "",
+    the maximum limit is calculated using the largest data value.  The
+    default is "".
+
   **-scrollmax** *maxValue*
 
     Sets the maximum limit of the axis scroll region.  If *maxValue* is "",
@@ -804,6 +864,8 @@ plots.
     Sets the minimum limit of axis scroll region.  If *minValue* is "", the
     minimum limit is calculated using the smallest data value.  The default
     is "".
+
+  **-shiftby** *number*
 
   **-showticks** *boolean*
 
@@ -817,11 +879,15 @@ plots.
     a valid interval (it must be less than the axis range), the request is
     ignored and the step size is automatically calculated.
 
-  **-subdivisions** *number*
+  **-subdivisions** *numDivisions*
 
     Indicates how many minor axis ticks are to be drawn.  For example, if
-    *number* is two, only one minor tick is drawn.  If *number* is one, no
-    minor ticks are displayed.  The default is "2".
+    *numDivisons* is two, only one minor tick is drawn.  If *numDivisions*
+    is one, no minor ticks are displayed.  The default is "2".
+
+  **-tickanchor** *anchorName*
+
+  **-tickdefault** *numMajorTicks*
 
   **-tickfont** *fontName*
 
@@ -837,7 +903,7 @@ plots.
 
   **-timescale** *boolean*
 
-    Indicates whether the scale of the axis is logarithmic.  If *boolean*
+    Indicates whether the scale of the axis scale is time.  If *boolean*
     is true, the axis is time. The default is "0"
 
     This option is deprecated in favor or the **-scale** option.
@@ -862,17 +928,25 @@ plots.
 
     Specifies the font for axis title. The default is "{Sans Serif} 9".
 
+  **-weight** *number*
+
 *pathName* **axis create** *axisName* ?\ *option* *value* ... ?
 
   Creates a new axis by the name *axisName*.  No axis by the same name can
   already exist. *Option* and *value* are described in above in the **axis
   configure** operation.
 
+*pathName* **axis deactivate** *axisName* 
+
 *pathName* **axis delete** ?\ *axisName*\ ... ?
 
   Deletes the one or more axes. Axes are reference counted. *AxisName* is
   not really deleted until it is not longer in use, so it's safe to delete
   axes mapped to elements.
+
+*pathName* **axis focus** ?\ *axisName*\ ?
+
+*pathName* **axis get** *axisName* *value*
 
 *pathName* **axis invtransform** *axisName* *value*
 
@@ -886,6 +960,8 @@ plots.
   minumum and maximum values are determined from all the elements that are
   mapped to *axisName*.
 
+*pathName* **axis margin** *axisName*
+
 *pathName* **axis names** ?\ *pattern* ... ?
 
   Returns the names of all the axes in the graph.  If one or more *pattern*
@@ -896,6 +972,8 @@ plots.
 
   Transforms *value* to a screen coordinate by mapping the it to
   *axisName*.  Returns the transformed screen coordinate.
+
+*pathName* **axis type** *axisName*
 
 *pathName* **axis view** *axisName*
 
@@ -934,7 +1012,7 @@ with the **use** operation.  For all other operations, use the general
 
 *pathName* *axis* **cget**  *option*
 
-*pathName* *axis* **configure**  \fR?\fIoption value\fR?...
+*pathName* *axis* **configure**  ?\ *option* *value* ... ?
 
 *pathName* *axis* **invtransform** *value*
 
@@ -1048,26 +1126,31 @@ The following operations are available for elements.
 
   Specifies the data points of element *elemName* to be drawn using active
   foreground and background colors.  *ElemName* is the name of the element
-  and *index* is a number representing the index of the data point. If no
-  indices are present then all data points become active.
+  or a tag and may refer to more than one element. If one or more *index*
+  arguments are present, they are the indices of the data points to be
+  activated. By default all data points of *elemName* will become active.
 
-*pathName* **element bind** *tagName* ?\ *sequence*\ ?  ?\ *command*\ ? 
+*pathName* **element bind** *bindTag* ?\ *sequence*\ ?  ?\ *command*\ ? 
 
-  Associates *command* with *tagName* such that whenever the event sequence
-  given by *sequence* occurs for an element with this tag, *command* will
-  be invoked.  The syntax is similar to the **bind** command except that it
-  operates on graph elements, rather than widgets. See the **bind** manual
-  entry for complete details on *sequence* and the substitutions performed
-  on *command* before invoking it.
+  Associates *command* with *bindTag* such that whenever the event sequence
+  given by *sequence* occurs for an element with this binding tag,
+  *command* will be invoked.  The syntax is similar to the **bind** command
+  except that it operates on graph elements, rather than widgets. See the
+  **bind** manual entry for complete details on *sequence* and the
+  substitutions performed on *command* before invoking it. *BindTag* is an
+  arbitrary string that matches one of the binding tags (see the
+  **-bindtags** option) in *elemName*.
 
-  If all arguments are specified then a new binding is created, replacing
-  any existing binding for the same *sequence* and *tagName*.  If the first
-  character of *command* is "+" then *command* augments an existing binding
-  rather than replacing it.  If no *command* argument is provided then the
-  command currently associated with *tagName* and *sequence* (it's an error
-  if there's no such binding) is returned.  If both *command* and
-  *sequence* are missing then a list of all the event sequences for which
-  bindings have been defined for *tagName*.
+  If both *sequence* and *command* arguments are present, then a new
+  binding is created. If a binding for *sequence* and *bindTag* already
+  exists it is replaced. But if the first character of *command* is "+"
+  then *command* augments an existing binding rather than replacing it.
+
+  If no *command* argument is present then this returns the command
+  currently associated with *bindTag* and *sequence* (it's an error if
+  there's no such binding).  If both *command* and *sequence* are missing
+  then a list of all the event sequences for which bindings have been
+  defined for *bindTag*.
 
 *pathName* **element cget** *elemName* *option*
 
@@ -1093,18 +1176,20 @@ The following operations are available for elements.
 
     Search for the closest element using the following criteria:
 
-    "x"
+    **x**
       Find closest element vertically from the given X-coordinate. 
-    "y"
+
+    **y**
       Find the closest element horizontally from the given Y-coordinate. 
-    "both"
+
+    **both**
       Find the closest element for the given point (using both the X and Y
       coordinates).  
 
-  **-halo**  *pixels*
+  **-halo**  *numPixels*
 
     Specifies a threshold distance where selected data points are ignored.
-    *Pixels* is a valid screen distance, such as "2" or "1.2i".  If this
+    *NumPixels* is a valid screen distance, such as "2" or "1.2i".  If this
     option isn't specified, then it defaults to the value of the graph's
     **-halo** option.
 
@@ -1116,25 +1201,35 @@ The following operations are available for elements.
     *boolean* is "1", the search includes projections that lie along the
     line segments connecting the data points.  The default value is "0".
 
-*pathName* **element configure** *elemName* ?\ *elemName* ... ? ?\ *option*
- *value* ... ?
+*pathName* **element configure** *elemName* ?\ *option* *value* ... ?
 
-  Queries or modifies the configuration options for elements.  Several
-  elements can be modified at the same time. If *option* isn't specified, a
-  list describing all the current options for *elemName* is returned.  If
-  *option* is specified, but not *value*, then a list describing the option
-  *option* is returned.  If one or more *option* and *value* pairs are
-  specified, then for each pair, the element option *option* is set to
-  *value*.  The following options are valid for elements.
+  Queries or modifies the configuration options for *elemName*.  If no
+  *option* and *value* are arguments are present, this command returns a
+  list describing all the current options for *elemName*.  If *option* is
+  specified, but not *value*, then a list describing *option* is returned.
+  In both cases, *ElemName* is an element name or a tag but may refer to
+  multiple elements.
 
+  If one or more *option* and *value* pairs are specified, then for each
+  pair, the element option *option* is set to *value*. *ElemName* is an
+  element name or a tag and may refer to more than one element.
+
+  The following options are valid for elements.
 
   **-activepen**  *penName*
 
-    Specifies pen to use to draw active element.  If *penName* is "", no
+    Specifies pen to use to draw active element.  *PenName* is the name of
+    a pen created by the **pen create** operation. If *penName* is "", no
     active elements will be drawn.  The default is "activeLine".
+
+  **-activeforeground**  *colorName* 
+
+    Specifies the foreground color of the element when it is active.  The
+    default is "black".
 
   **-areabackground**  *colorName* 
 
+  FIXME:
     Specifies the background color of the area under the curve. The
     background area color is drawn only for bitmaps (see the
     **-areapattern** option).  If *colorName* is "", the background is
@@ -1147,6 +1242,7 @@ The following operations are available for elements.
 
   **-areapattern**  *pattern* 
 
+  FIXME:
     Specifies how to fill the area under the curve.  *Pattern* may be the
     name of a Tk bitmap, "solid", or "".  If "solid", then the area under the
     curve is drawn with the color designated by the **-areaforeground**
@@ -1157,16 +1253,18 @@ The following operations are available for elements.
 
   **-bindtags**  *tagList*
 
-    Specifies the binding tags for the element.  *TagList* is a list of
-    binding tag names.  The tags and their order will determine how events
-    are handled for elements.  Each tag in the list matching the current
-    event sequence will have its Tcl command executed.  Implicitly the name
-    of the element is always the first tag in the list.  The default value is
-    "all".
+    Specifies the binding tags for *elemName*.  *TagList* is a list of
+    binding tags.  The tags and their order will determine how events are
+    handled for *elemName*.  Each tag in the list matching the current
+    event sequence will have its TCL command executed.  Implicitly the name
+    of the element is always the first tag in the list.  The default value
+    is "all".
 
   **-color**  *colorName* 
 
     Sets the color of the traces connecting the data points.  
+
+  **-colormap**  *axisName* 
 
   **-dashes**  *dashList*
 
@@ -1175,10 +1273,52 @@ The following operations are available for elements.
     the element line.  Each number must be between 1 and 255.  If *dashList*
     is "", the lines will be solid.
 
-  **-data**  *coordList*
+  **-data**  *coordsList*
 
-    Specifies the X-Y coordinates of the data.  *CoordList* is a list of
-    number representing the X-Y coordinate pairs of each data point.
+    Specifies the X-Y coordinates of the data.  *CoordsList* is a list of
+    numbers representing the X-Y coordinate pairs of each data point.
+
+  **-errorbars**  *how*
+
+     Specifies how to represent error bars on the graph.
+
+     **x**
+        Display error bars  or the x-axis.
+
+     **xhigh**
+        Display error bars  or the x-axis.
+
+     **xlow**
+        Display error bars  or the x-axis.
+
+     **y**
+        Display error bars  or the y-axis.
+
+     **yhigh**
+        Display error bars  or the x-axis.
+
+     **ylow**
+        Display error bars  or the x-axis.
+
+     **both**
+        Display error bars  or the y-axis.
+
+  **-errorbarcolor**  *colorName*
+
+    Specifies the color of the error bars.  If *colorName* is "defcolor",
+    then the color will be the same as the **-color** option.  The default
+    is "defcolor".
+
+  **-errorbarlinewidth**  *numPixels*
+
+    Sets the width of the lines for error bars.  If *numPixels* is "0", no
+    connecting error bars will be drawn.  The default is "1".
+
+  **-errorbarcapwidth**  *numPixels*
+
+    Specifies the width of the cap for error bars.  If *numPixels* is "0",
+    then the cap width is computed from the symbol size. The default is
+    "0".
 
   **-fill**  *colorName* 
 
@@ -1197,6 +1337,8 @@ The following operations are available for elements.
     element will have no entry in the legend.  The default label is the
     element's name.
 
+  **-legendrelief**  *relief* 
+
   **-linewidth**  *numPixels* 
 
     Sets the width of the connecting lines between data points.  If
@@ -1213,32 +1355,40 @@ The following operations are available for elements.
     Selects the Y-axis to map the element's Y-coordinates onto.  *AxisName*
     must be the name of an axis. The default is "y".
 
+  **-maxsymbols**  *numSymbols*
+    Specifies the maximum number of symbols to use when displaying *elemName*.
+    If *numSymbols* is "0", then there will be a symbol for every data point
+    in *elemName*.
+
   **-offdash**  *colorName*
 
-    Sets the color of the stripes when traces are dashed (see the **-dashes**
-    option).  If *colorName* is "", then the "off" pixels will represent gaps
-    instead of stripes.  If *colorName* is "defcolor", then the color will be
-    the same as the **-color** option.  The default is "defcolor".
+    Sets the color of the stripes when traces are dashed (see the
+    **-dashes** option).  If *colorName* is "", then the "off" pixels will
+    represent gaps instead of stripes.  If *colorName* is "defcolor", then
+    the color will be the same as the **-color** option.  The default is
+    "defcolor".
 
   **-outline**  *colorName* 
 
-    Sets the color or the outline around each symbol.  If *colorName* is "",
-    then no outline is drawn. If *colorName* is "defcolor", then the color
-    will be the same as the **-color** option.  The default is "defcolor".
+    Sets the color of the outline for symbols.  If *colorName* is "", then
+    no outline is drawn. If *colorName* is "defcolor", then the color will
+    be the same as the **-color** option.  The default is "defcolor".
+
+  **-outlinewidth**  *numPixels* 
+
+    Sets the width of the outline for symbols.  If *numPixels* is "0", no
+    outline will be drawn. The default is "1".
 
   **-pen**  *penName*
 
     Specifies the pen to use for *elemName*.
 
-  **-outlinewidth**  *numPixels* 
-
-    Sets the width of the outline bordering each symbol.  If *numPixels* is
-    "0", no outline will be drawn. The default is "1".
-
   **-pixels**  *numPixels*
 
-    Sets the size of symbols.  If *NumPixels* is "0", no symbols will be
-    drawn.  The default is "0.125i".
+    Sets the size of the symbols for *elemName*.  If *NumPixels* is "0", no
+    symbols will be drawn.  The default is "0.125i".
+
+  **-reduce**  *tolerance*
 
   **-scalesymbols**  *boolean* 
 
@@ -1256,33 +1406,55 @@ The following operations are available for elements.
     Specifies how connecting line segments are drawn between data points.
     *SmoothValue* can be one of the following.
 
+    **catrom**
+      This is the same as **natural**.
+
+    **cubic**
+      Multiple segments are generated between data points using a cubic
+      spline.  The abisscas (X-coordinates) must be monotonically
+      increasing.
+
     **linear**
       A single line segment is drawn, connecting both data points. 
+
+    ***natural**
+      This is the same as **cubic**.
+
+    **none**
+      This is the same as **linear**.
+
+    **parametriccubic**
+      This is similar to **cubic** but abscissas (X-coordinates) do not
+      need to be monotonically increasing.  The location on the splice is
+      roughly computed by arc length.  
+
+    **parametricquadratic**
+      This is similar to **quadratic** but abscissas (X-coordinates) do not
+      need to be monotonically increasing.  The location on the splice is
+      roughly computed by arc length.  
+
+    **quadratic**
+      Multiple segments are generated between data points using a quadratic
+      spline. The abisscas (X-coordinates) must be monotonically
+      increasing.
 
     **step**
       Two line segments are drawn. The first is a horizontal line segment
       that steps the next X-coordinate.  The second is a vertical line,
       moving to the next Y-coordinate.
 
-    ***natural**
-      Multiple segments are generated between data points using a cubic
-      spline.
+  **-state**  *what* 
 
-    **quadratic**
-      Multiple segments are generated between data points using a quadratic
-      spline.
-
-
-  **-styles**  *styleList* 
+  **-styles**  *stylesList* 
 
     Specifies what pen to use based on the range of weights given.
-    *StyleList* is a list of style specifications. Each style specification,
-    in turn, is a list consisting of a pen name, and optionally a minimum and
-    maximum range.  Data points whose weight (see the **-weight** option)
-    falls in this range, are drawn with this pen.  If no range is specified
-    it defaults to the index of the pen in the list.  Note that this affects
-    only symbol attributes. Line attributes, such as line width, dashes,
-    etc. are ignored.
+    *StylesList* is a list of style specifications. Each style
+    specification, in turn, is a list consisting of a pen name, and
+    optionally a minimum and maximum range.  Data points whose weight (see
+    the **-weight** option) falls in this range, are drawn with this pen.
+    If no range is specified it defaults to the index of the pen in the
+    list.  Note that this affects only symbol attributes. Line attributes,
+    such as line width, dashes, etc. are ignored.
 
   **-symbol**  *symbolName* 
 
@@ -1333,6 +1505,16 @@ The following operations are available for elements.
     increasing.  If *direction* is "both", connecting lines will be draw
     between all data points.  The default is "both".
 
+  **-valueanchor**  *anchor* 
+
+  **-valuecolor**  *colorName* 
+
+  **-valuefont**  *fontName* 
+
+  **-valueformat**  *formatString* 
+
+  **-valuerotate**  *numDegrees* 
+
   **-weights**  *data* 
 
     Specifies the weights of the individual data points.  This, 
@@ -1341,15 +1523,57 @@ The following operations are available for elements.
     vector or a list of numeric expressions representing the weights for
     each data point.
 
+  **-x**  *data* 
+    Same as the **-xdata** option.
+
   **-xdata**  *data* 
+    Specifies the X-coordinates of the data.  *XVec* is the name of a BLT
+    vector or a list of numeric expressions.
+
+  **-xerror**  *data* 
 
     Specifies the X-coordinates of the data.  *XVec* is the name of a BLT
     vector or a list of numeric expressions.
+
+  **-xhigh**  *data* 
+
+    Specifies the X-coordinates of the data.  *XVec* is the name of a BLT
+    vector or a list of numeric expressions.
+
+  **-xlow**  *data* 
+
+    Specifies the X-coordinates of the data.  *XVec* is the name of a BLT
+    vector or a list of numeric expressions.
+
+  **-y**  *data* 
+    Same as the **-ydata** option.
 
   **-ydata**  *data* 
 
     Specifies the Y-coordinates of the data.  *Data* is the name of a BLT
     vector or a list of numeric expressions.
+
+  **-yerror**  *data* 
+
+    Specifies the X-coordinates of the data.  *XVec* is the name of a BLT
+    vector or a list of numeric expressions.
+
+  **-yhigh**  *data* 
+
+    Specifies the X-coordinates of the data.  *XVec* is the name of a BLT
+    vector or a list of numeric expressions.
+
+  **-ylow**  *data* 
+
+    Specifies the X-coordinates of the data.  *XVec* is the name of a BLT
+    vector or a list of numeric expressions.
+
+*pathName* **element create** *elemName* ?\ *option* *value* ... ?
+
+  Creates a new element *elemName*.  It's an error if an element named
+  *elemName* already exists.  If additional arguments are present, they
+  specify options valid for the element. See the **configure** operation
+  for a description of *option* and *value*.
 
   Element configuration options may also be set by the **option** command.
   The resource class is "Element". The resource name is the name of the
@@ -1360,12 +1584,6 @@ The following operations are available for elements.
        option add *Graph.Element.symbol line
        option add *Graph.e1.symbol line
 
-*pathName* **element create** *elemName* ?\ *option* *value* ... ?
-
-  Creates a new element *elemName*.  It's an error is an element *elemName*
-  already exists.  If additional arguments are present, they specify
-  options valid for the element **configure** operation.
-
 *pathName* **element deactivate** ?\ *elemName* ... ?
 
   Deactivates all the elements matching *pattern*.  Elements whose names
@@ -1375,13 +1593,29 @@ The following operations are available for elements.
   
 *pathName* **element delete** ?\ *elemName* ... ?
 
-  Deletes one or more elements.  
+  Deletes one or more elements in *pathName*.  *ElemName* is an element
+  name or a tag and may refer to more than one element.
 
 *pathName* **element exists** *elemName*
 
-  Returns "1" if an element *elemName* exists and "0" otherwise.
-
+  Returns "1" if the element *elemName* exists and "0" otherwise.
+  *ElemName* is an element name or a tag but may not reference multiple
+  elements.
+  
 *pathName* **element find** *elemName* *x1* *y1* *x2* *y2*
+
+  Finds the data points of *elemName* that are contained in the rectangular
+  region defined by the given screen coordinates. *X1*, *y1* and *x2*, *y2*
+  represent opposite corners of the rectangle.  The indices of the data
+  points within the region are returned.
+
+*pathName* **element find** *elemName* *centerX* *centerY* *numPixels* 
+
+  Finds the data points of *elemName* that are contained within a circular
+  region. *CenterX* and *centerY* are the screen coordinates for the center
+  of the circle.  *NumPixels* is the radius of the circle.  It is a valid
+  screen distance, such as "2" or "1.2i".  The indices of the data points
+  within the circle are returned.
 
 *pathName* **element get** *elemName* 
 
@@ -1397,45 +1631,45 @@ The following operations are available for elements.
   *pattern* arguments are provided, then the name of any element matching
   *pattern* will be returned. *Pattern* is a glob-style pattern.
 
-*pathName* **element nearest** *x* *y* ?\ *option* *value* ... ? ?\ *elemName* ... ?
+*pathName* **element nearest** *screenX* *screenY* ?\ *option* *value* ... ? ?\ *elemName* ... ?
 
-  Searches for the data point closest to the window coordinates *x* and
-  *y*.  By default, all elements are searched.  Hidden elements (see the
-  **-hide** option is false) are ignored.  You can limit the search by
-  specifying only the elements you want to be considered.  *ElemName* is
-  the name of an element or a tag that may refer to multiple elements.  It
-  returns a key-value list containing the name of the closest element, the
-  index of the closest data point, and the graph-coordinates of the point.
-  Returns "", if no data point within the threshold distance can be
-  found. The following *option*-*value* pairs are available.
-
+  Searches for the data point closest to the given screen
+  coordinate. *ScreenX* and *screenY* are screen coordinates (relative to
+  *pathName*).  Hidden elements (see the **-hide** option) and points
+  outside of a threshold distance (see the **-halo** option) are ignored.
+  If no *elemName* arguments are given then all elements are searched.  If
+  there are one or more *elemName* arguments they are the elements to be
+  searched.  *ElemName* is the name of an element or a tag that may refer
+  to multiple elements.  If a closes element is found, this command returns
+  a list of key-value pairs containing 1) the name of the closest
+  element, 2) the index of the closest data point, and 3) the
+  graph-coordinates of the point.  If no element is found, the empty string
+  "" is returned.  The following options are valid.
 
   **-along**  *direction*
+    Searches for the closest element using the following criteria:
 
-    Search for the closest element using the following criteria:
+    **x**
+      Find the closest element along the x-axis (vertically from *screenX*). 
 
-    "x"
-      Find closest element vertically from the given X-coordinate. 
-    "y"
-      Find the closest element horizontally from the given Y-coordinate. 
-    "both"
-      Find the closest element for the given point (using both the X and Y
-      coordinates).  
+    **y**
+      Find the closest element along the y-axis (horizontally from *screenY*). 
 
-  **-halo**  *pixels*
+    **both**
+      Find the closest element from the point *screenX*,\ *screenY*.  This is
+      the default.
 
-    Specifies a threshold distance where selected data points are ignored.
-    *Pixels* is a valid screen distance, such as "2" or "1.2i".  If this
-    option isn't specified, then it defaults to the value of the graph's
-    **-halo** option.
+  **-halo**  *numPixels*
+    Specifies a threshold distance beyond which data points are ignored.
+    *NumPixels* is a valid screen distance, such as "2" or "1.2i".  If this
+    option isn't specified, then it defaults to the value of the graph
+    widget's **-halo** option.
 
   **-interpolate**  *boolean*
-
-    Indicates whether to consider projections that lie along the line
-    segments connecting data points when searching for the closest point.
-    If *boolean* is "0", search only for the closest data point.  If
-    *boolean* is "1", the search includes projections that lie along the
-    line segments connecting the data points.  The default value is "0".
+    Indicates to consider points that lie on the line segments between
+    points.  If *boolean* is true, the search includes projections that lie
+    along the line segments connecting data points. If *boolean* is false,
+    search only for the closest data point.  The default value is "0".
 
 *pathName* **element raise** ?\ *elemName* ... ?
 
@@ -1445,12 +1679,15 @@ The following operations are available for elements.
 
 *pathName* **element show** ?\ *elemNameList*\ ?  
 
-  Queries or modifies the stacking order of elements in *pathName*.  If no
+  Sets or gets the stacking order of elements in *pathName*.  If no
   *elemNameList* argument is given, this command returns the names of
   elements in order in which they are drawn (lowest to highest).  This list
-  also determines what elements are considered when scaling axes.
-  *ElemNameList* is a list of elements. Elements later in the list will be
-  drawn over elements eariler in the list.
+  also determines what elements are used to compute the axes scale.
+
+  Elements that are later in the list will be drawn over elements the occur
+  earlier.  Each item in *elemNameList* is a the name of an element or a
+  tag (the tag may refer to more than one element). It there are duplicate
+  elements in the list, only the first occurance is relevant.
 
 *pathName* **element tag add** *tag* ?\ *elemName* ...\ ? 
 
@@ -1492,15 +1729,15 @@ The following operations are available for elements.
 
 *pathName* **element tag names** ?\ *pattern* ...\ ? 
 
-  Returns the names of elements in *pathName*. By default all element names
-  are returned. But if one or more *pattern* arguments are present, then
-  any name matching one of the patterns will be returned. *Pattern* is a
-  glob-style pattern.
+  Returns the names of element tags in *pathName*. By default all element
+  tags are returned. But if one or more *pattern* arguments are present,
+  then any tag matching one of the patterns will be returned. *Pattern* is
+  a glob-style pattern.
 
 *pathName* **element tag search** ?\ *tag* ...\ ? 
 
-  Returns the names of elements that have one or more *tag*. *Tag* is an
-  arbitrary string.
+  Returns the names of elements that have one or more the named tags. *Tag*
+  is an arbitrary string.
 
 *pathName* **element tag set** *elemName* ?\ *tag* ...\?
 
@@ -1512,8 +1749,8 @@ The following operations are available for elements.
 *pathName* **element tag unset** *elemName* ?\ *tag*... ?
 
   Remove one or more tags from *elemName*. *ElemName* is the name of an
-  element in *pathName*.  *Tag* is an arbitrary string but can't be one of
-  the built-in tags ("all").
+  element or a tag and may refer to more than one element. *Tag* is an
+  arbitrary string.  You can't use the built-in tag "all".
 
 *pathName* **element type** *elemName*
  
@@ -1529,17 +1766,26 @@ the element's symbol and label.  The legend can appear in any margin (the
 default location is in the right margin).  It can also be positioned
 anywhere within the plotting area.
 
+  Legend configuration options may also be set by the **option** command.
+  The resource name and class are "legend" and "Legend" respectively.
+
+  ::
+
+      option add *Graph.legend.Foreground blue
+      option add *Graph.Legend.Relief     raised
+
+
 The following operations are valid for the legend.
 
-*pathName* **legend activate** ?\ *pattern*  ... ?
+*pathName* **legend activate** ?\ *elemName*\ ?
 
   Selects legend entries to be drawn using the active legend colors and
   relief.  All entries whose element names match *pattern* are selected.
   To be selected, the element name must match only one *pattern*.
 
-*pathName* **legend bind** *tagName* ?\ *sequence*\ ?  ?\ *command*\ ? 
+*pathName* **legend bind** *bindTag* ?\ *sequence*\ ?  ?\ *command*\ ? 
 
-  Associates *command* with *tagName* such that whenever the event sequence
+  Associates *command* with *bindTag* such that whenever the event sequence
   given by *sequence* occurs for a legend entry with this tag, *command*
   will be invoked.  Implicitly the element names in the entry are tags.
   The syntax is similar to the **bind** command except that it operates on
@@ -1548,13 +1794,13 @@ The following operations are valid for the legend.
   *command* before invoking it.
 
   If all arguments are specified then a new binding is created, replacing
-  any existing binding for the same *sequence* and *tagName*.  If the first
-  character of *command* is \f(CW+\fR then *command* augments an existing
-  binding rather than replacing it.  If no *command* argument is provided
-  then the command currently associated with *tagName* and *sequence* (it's
-  an error occurs if there's no such binding) is returned.  If both
-  *command* and *sequence* are missing then a list of all the event
-  sequences for which bindings have been defined for *tagName*.
+  any existing binding for the same *sequence* and *bindTag*.  If the first
+  character of *command* is "+" then *command* augments an existing binding
+  rather than replacing it.  If no *command* argument is provided then the
+  command currently associated with *bindTag* and *sequence* (it's an error
+  occurs if there's no such binding) is returned.  If both *command* and
+  *sequence* are missing then a list of all the event sequences for which
+  bindings have been defined for *bindTag*.
 
 *pathName* **legend cget** *option*
 
@@ -1577,7 +1823,7 @@ The following operations are valid for the legend.
     marked active (see the legend **activate** operation) are drawn using
     this background color.
 
-  **-activeborderwidth**  *pixels*
+  **-activeborderwidth**  *numPixels*
 
     Sets the width of the 3-D border around the outside edge of the active
     legend entries.  The default is "2".
@@ -1602,14 +1848,13 @@ The following operations are valid for the legend.
     the legend.  This is dependent on the value of the **-position** option.
     The default is "center".
 
-     **left**  **right**
+    **left**  **right**
       The anchor describes how to position the legend vertically.  
 
-     **top**  **bottom**
+    **top**  **bottom**
       The anchor describes how to position the legend horizontally.  
 
-    **@***x***,***y*
-
+    **@**\ *x*\ **,**\ *y*
       The anchor specifies how to position the legend relative to the
       positioning point. For example, if *anchor* is "center" then the legend
       is centered on the point; if *anchor* is "n" then the legend will be
@@ -1617,7 +1862,6 @@ The following operations are valid for the legend.
       by the legend will be at the positioning point.
 
     **plotarea**
-
       The anchor specifies how to position the legend relative to the
       plotting area. For example, if *anchor* is "center" then the legend is
       centered in the plotting area; if *anchor* is "ne" then the legend will
@@ -1626,12 +1870,10 @@ The following operations are valid for the legend.
 
 
   **-background**  *colorName*
-
     Sets the background color of the legend. If *colorName* is "", the legend
     background with be transparent.
 
   **-bindtags**  *tagList*
-
     Specifies the binding tags for legend entries.  *TagList* is a list of
     binding tag names.  The tags and their order will determine how events
     are handled for legend entries.  Each tag in the list matching the
@@ -1639,18 +1881,25 @@ The following operations are valid for the legend.
     value is "all".
 
   **-borderwidth**  *numPixels*
-
     Sets the width of the 3-D border around the outside edge of the legend
     (if such border is being drawn; the **relief** option determines this).
     The default is "2" pixels.
 
-  **-font**  *fontName* 
+  **-columns**  *numColumns* 
 
+  **-command**  *cmdString* 
+
+  **-exportselection**  *boolean* 
+
+  **-focusdashes**  *dashList* 
+
+  **-focusforeground**  *colorName* 
+
+  **-font**  *fontName* 
     *FontName* specifies a font to use when drawing the labels of each
     element into the legend.  The default is "{San Serif} 9".
 
   **-foreground** *colorName*
-
     Sets the foreground color of the text drawn for the element's label.  The
     default is "black".
 
@@ -1677,6 +1926,10 @@ The following operations are valid for the legend.
     both the top and bottom of the entry are padded evenly.  The default is
     "2".
 
+  **-nofocusselectbackground**  *colorName*
+
+  **-nofocusselectforeground**  *colorName*
+
   **-padx**  *numPixels*
 
     Sets the padding to the left and right exteriors of the legend.
@@ -1700,7 +1953,7 @@ The following operations are valid for the legend.
     where the legend is positioned.  If *pos* is "left", "left", "top", or
     "bottom", the legend is drawn in the specified margin.  If *pos* is
     "plotarea", then the legend is drawn inside the plotting area at a
-    particular anchor.  If *pos* is in the form "\fI@x,y\fR", where *x* and
+    particular anchor.  If *pos* is in the form "@*x*,*y*", where *x* and
     *y* are the window coordinates, the legend is drawn in the plotting area
     at the specified coordinates.  The default is "right".
 
@@ -1719,13 +1972,27 @@ The following operations are valid for the legend.
     from the graph, relative to the surface of the graph.  The default is
     "sunken".
 
-  Legend configuration options may also be set by the **option** command.
-  The resource name and class are "legend" and "Legend" respectively.
+  **-rows**  *numRows*
 
-  ::
+  **-selectbackground**  *colorName*
 
-      option add *Graph.legend.Foreground blue
-      option add *Graph.Legend.Relief     raised
+  **-selectcommand**  *cmdString*
+
+  **-selectforeground**  *colorName*
+
+  **-selectmode**  *modeName*
+
+  **-selectrelief**  *relief*
+
+  **-takefocus**  *how*
+
+  **-title**  *titleString*
+
+  **-titlecolor**  *colorName*
+
+  **-titlefont**  *fontName*
+
+*pathName* **legend curselection** 
 
 *pathName* **legend deactivate** *pattern*...
 
@@ -1733,12 +2000,32 @@ The following operations are valid for the legend.
   relief.  All entries whose element names match *pattern* are selected.
   To be selected, the element name must match only one *pattern*.
 
+*pathName* **legend focus** 
+
 *pathName* **legend get** *pos*
 
   Returns the name of the element whose entry is at the screen position
-  *pos* in the legend.  *Pos* must be in the form "\fI@x,y\fR", where *x*
+  *pos* in the legend.  *Pos* must be in the form "@*x*,*y*", where *x*
   and *y* are window coordinates.  If the given coordinates do not lie over
   a legend entry, "" is returned.
+
+*pathName* **legend icon** *elemName* *imageName*
+
+*pathName* **legend selection archor** *elemName*
+
+*pathName* **legend selection clear** *firstElem* ?\ *lastElem*\ ?
+
+*pathName* **legend selection clearall** 
+
+*pathName* **legend selection includes** *elemName*
+
+*pathName* **legend selection mark** *elemName*
+
+*pathName* **legend selection present** *elemName*
+
+*pathName* **legend selection set**  *firstElem* ?\ *lastElem*\ ?
+
+*pathName* **legend selection toggle**  *firstElem* ?\ *lastElem*\ ?
 
 PENS
 ~~~~
@@ -1794,15 +2081,14 @@ The following operations are available for pens.
   *Option* may be any option described below for the pen **configure**
   operation.
 
-*pathName* **pen configure**  *penName* ?\ *penName* ... ? ?\ *option* *value* ... ?
+*pathName* **pen configure**  *penName* ?\ *option* *value* ... ?
 
-  Queries or modifies the configuration options of *penName*. Several pens
-  can be modified at once.  If *option* isn't specified, a list describing
-  the current options for *penName* is returned.  If *option* is specified,
-  but not *value*, then a list describing *option* is returned.  If one or
-  more *option* and *value* pairs are specified, then for each pair, the
-  pen option *option* is set to *value*.  The following options are valid
-  for pens.
+  Queries or modifies the configuration options of *penName*.  If *option*
+  isn't specified, a list describing the current options for *penName* is
+  returned.  If *option* is specified, but not *value*, then a list
+  describing *option* is returned.  If one or more *option* and *value*
+  pairs are specified, then for each pair, the pen option *option* is set
+  to *value*.  The following options are valid for pens.
 
   **-color**  *colorName* 
 
@@ -1814,6 +2100,48 @@ The following operations are available for pens.
     numbers that alternately represent the lengths of the dashes and gaps on
     the element line.  Each number must be between 1 and 255.  If *dashList*
     is "", the lines will be solid.
+
+  **-errorbars**  *how*
+
+     Specifies how to represent error bars on the graph.
+
+     **x**
+        Display error bars  or the x-axis.
+
+     **xhigh**
+        Display error bars  or the x-axis.
+
+     **xlow**
+        Display error bars  or the x-axis.
+
+     **y**
+        Display error bars  or the y-axis.
+
+     **yhigh**
+        Display error bars  or the x-axis.
+
+     **ylow**
+        Display error bars  or the x-axis.
+
+     **both**
+        Display error bars  or the y-axis.
+
+  **-errorbarcolor**  *colorName*
+
+    Specifies the color of the error bars.  If *colorName* is "defcolor",
+    then the color will be the same as the **-color** option.  The default
+    is "defcolor".
+
+  **-errorbarlinewidth**  *numPixels*
+
+    Sets the width of the lines for error bars.  If *numPixels* is "0", no
+    connecting error bars will be drawn.  The default is "1".
+
+  **-errorbarcapwidth**  *numPixels*
+
+    Specifies the width of the cap for error bars.  If *numPixels* is "0",
+    then the cap width is computed from the symbol size. The default is
+    "0".
 
   **-fill**  *colorName* 
 
@@ -1851,6 +2179,8 @@ The following operations are available for pens.
     Sets the size of symbols.  If *numPixels* is "0", no symbols will be
     drawn.  The default is "0.125i".
 
+  **-showvalues**  *boolean* 
+  
   **-symbol**  *symbol* 
 
     Specifies the symbol for data points.  *Symbol* can be either "square",
@@ -1866,6 +2196,22 @@ The following operations are available for pens.
     wish to mix different types of elements (bars and lines) on the same
     graph.  The default type is "line".
 
+  **-valueanchor**  *anchor* 
+
+  **-valuecolor**  *colorName* 
+
+  **-valuefont**  *fontName* 
+
+  **-valueformat**  *formatString* 
+
+  **-valuerotate**  *numDegrees* 
+
+*pathName* **pen create**  *penName*  ?\ *option* *value* ... ?
+
+  Creates a new pen by the name *penName*.  No pen by the same name can
+  already exist. *Option* and *value* are described in above in the pen
+  **configure** operation.
+
   Pen configuration options may be also be set by the **option** command.
   The resource class is "Pen".  The resource names are the names of the pens.
 
@@ -1875,15 +2221,10 @@ The following operations are available for pens.
        option add *Graph.activeLine.color  green
 
 
-*pathName* **pen create**  *penName*  ?\ *option* *value* ... ?
-
-  Creates a new pen by the name *penName*.  No pen by the same name can
-  already exist. *Option* and *value* are described in above in the pen
-  **configure** operation.
-
 *pathName* **pen delete** ?\ *penName* ... ?
 
-  Deletes the named pens. A pen is not really deleted until it is not
+  Deletes one or more pens. *PenName* is the name of a pen created by the
+  **pen create** operation.  A pen is not really deleted until it is not
   longer in use, so it's safe to delete pens mapped to elements.
 
 *pathName* **pen names** ?\ *pattern* ... ?
@@ -1891,6 +2232,8 @@ The following operations are available for pens.
   Returns the names of all the pens in the graph.  If one or more
   *pattern* arguments are provided, then the name of any pen matching
   *pattern* will be returned. *Pattern* is a glob-style pattern.
+
+*pathName* **pen type** *penName*
 
 POSTSCRIPT
 ~~~~~~~~~~
@@ -1945,6 +2288,14 @@ The following postscript operations are available.
     equivalents) or "mono" (convert foreground colors to black and background
     colors to white).  The default mode is "color".
 
+  **-comments**  *list*
+
+  **-decorations**  *boolean*
+
+    Indicates whether PostScript commands to generate color backgrounds and
+    3-D borders will be output.  If *boolean* is false, the background will
+    be white and no 3-D borders will be generated. The default is "1".
+
   **-fontmap**  *varName*
 
     *VarName* must be the name of a global array variable that specifies a
@@ -1961,11 +2312,9 @@ The following postscript operations are available.
     Courier, etc.).  If all of this fails then the font defaults to
     "Helvetica-Bold".
 
-  **-decorations**  *boolean*
+  **-footer**  *formatString*
 
-    Indicates whether PostScript commands to generate color backgrounds and
-    3-D borders will be output.  If *boolean* is false, the background will
-    be white and no 3-D borders will be generated. The default is "1".
+  **-greyscale**  *boolean*
 
   **-height**  *numPica*
 
@@ -1981,10 +2330,7 @@ The following postscript operations are available.
     output the X-axis runs along the long dimension of the page
     ("landscape" orientation).  Defaults to "0".
 
-  **-maxpect**  *boolean*
-
-    Indicates to scale the plot so that it fills the PostScript page.  The
-    aspect ratio of the graph is still retained.  The default is "0".
+  **-level**  *psLevel*
 
   **-padx**  *numPica*
 
@@ -2110,9 +2456,9 @@ The following operations are available for markers.
   control how markers are displayed since markers are drawn in the order of
   this display list.
 
-*pathName* **marker**  bind *tagName* ?\ *sequence*\ ?  ?\ *command*\ ? 
+*pathName* **marker** bind *bindTag* ?\ *sequence*\ ?  ?\ *command*\ ? 
 
-  Associates *command* with *tagName* such that whenever the event sequence
+  Associates *command* with *bindTag* such that whenever the event sequence
   given by *sequence* occurs for a marker with this tag, *command* will be
   invoked.  The syntax is similar to the **bind** command except that it
   operates on graph markers, rather than widgets. See the **bind** manual
@@ -2120,13 +2466,13 @@ The following operations are available for markers.
   on *command* before invoking it.
 
   If all arguments are specified then a new binding is created, replacing
-  any existing binding for the same *sequence* and *tagName*.  If the first
+  any existing binding for the same *sequence* and *bindTag*.  If the first
   character of *command* is "+" then *command* augments an existing binding
   rather than replacing it.  If no *command* argument is provided then the
-  command currently associated with *tagName* and *sequence* (it's an error
+  command currently associated with *bindTag* and *sequence* (it's an error
   occurs if there's no such binding) is returned.  If both *command* and
   *sequence* are missing then a list of all the event sequences for which
-  bindings have been defined for *tagName*.
+  bindings have been defined for *bindTag*.
 
 *pathName* **marker cget** *markerName* *option*
 
@@ -2167,13 +2513,15 @@ The following operations are available for markers.
   the normal marker name.  If the name provided is already used for another
   marker, the new marker will replace the old.
 
-*pathName* **marker create bitmap** \fR?\fIoption value\fR?...
+*pathName* **marker create bitmap** ?\ *option* *value* ... ?
 
   There may be many *option*-*value* pairs, each sets a configuration
   options for the marker.  These same *option*-*value* pairs may be
   used with the marker's **configure** operation.
 
   The following options are specific to bitmap markers:
+
+  **-anchor**  *anchorName*
 
   **-background**  *colorName*
 
@@ -2192,12 +2540,12 @@ The following operations are available for markers.
     Specifies the bitmap to be displayed.  If *bitmapName* is "", the marker
     will not be displayed.  The default is "".
 
-  **-coords**  *coordList*
+  **-coords**  *coordsList*
 
-    Specifies the coordinates of the marker.  *CoordList* is a list of 2 or
-    4 numbers.  If *coordList* has four numbers, they represent the corners
+    Specifies the coordinates of the marker.  *CoordsList* is a list of 2 or
+    4 numbers.  If *coordsList* has four numbers, they represent the corners
     of the bitmap. The bitmap will be stretched to fit the region.
-    If *coordList* has two number, they represent the upper left corner
+    If *coordsList* has two number, they represent the upper left corner
     of bitmap.  The bitmap will have its noraml size.
 
   **-element**  *elemName*
@@ -2255,6 +2603,8 @@ The following operations are available for markers.
     rotated and then placed according to its anchor position.  The default
     rotation is "0.0".
 
+  **-state**  *state*
+
   **-under**  *boolean*
 
     Indicates whether the marker is drawn below/above data elements.  If
@@ -2264,8 +2614,9 @@ The following operations are available for markers.
 
   **-xoffset**  *numPixels*
 
-    Specifies a screen distance to offset the marker horizontally.  *Pixels*
-    is a valid screen distance, such as "2" or "1.2i".  The default is "0".
+    Specifies a screen distance to offset the marker horizontally.
+    *NumPixels* is a valid screen distance, such as "2" or "1.2i".  The
+    default is "0".
 
   **-yoffset**  *numPixels*
 
@@ -2299,15 +2650,15 @@ The following operations are available for markers.
     of the marker is always the first tag in the list.  The default value
     is "all".
 
-  **-coords**  *coordList*
+  **-coords**  *coordsList*
 
-    Specifies the coordinates of the marker.  *CoordList* is a list of
+    Specifies the coordinates of the marker.  *CoordsList* is a list of
     graph coordinates.  The number of coordinates required is dependent on
     the type of marker.  Text, image, and window markers need only two
     coordinates (an X-Y coordinate).  Bitmap markers can take either two or
     four coordinates (if four, they represent the corners of the
     bitmap). Line markers need at least four coordinates, polygons at least
-    six.  If *coordList* is "", the marker will not be displayed.  The
+    six.  If *coordsList* is "", the marker will not be displayed.  The
     default is "".
 
   **-element**  *elemName*
@@ -2316,6 +2667,8 @@ The following operations are available for markers.
     if the element is also currently displayed (see the element's **show**
     operation).  If *elemName* is "", the marker is always drawn.  The
     default is "".
+
+  **-filter**  *filterName*
 
   **-hide**  *boolean* 
 
@@ -2343,6 +2696,8 @@ The following operations are available for markers.
     used by another marker.  If this option isn't specified, the marker's
     name is uniquely generated.
 
+  **-state**  *state*
+
   **-under**  *boolean*
 
     Indicates whether the marker is drawn below/above data elements.  If
@@ -2352,15 +2707,15 @@ The following operations are available for markers.
 
   **-xoffset**  *numPixels*
 
-    Specifies a screen distance to offset the marker horizontally.  *Pixels*
-    is a valid screen distance, such as "2" or "1.2i".  The default is "0".
+    Specifies a screen distance to offset the marker horizontally.
+    *NumPixels* is a valid screen distance, such as "2" or "1.2i".  The
+    default is "0".
 
   **-yoffset**  *numPixels*
 
     Specifies a screen distance to offset the markers vertically.
     *NumPixels* is a valid screen distance, such as "2" or "1.2i".  The
     default is "0".
-
 
 *pathName* **marker create line** ?\ *option* *value* ... ?
 
@@ -2370,35 +2725,6 @@ The following operations are available for markers.
 
   The following options are specific to line markers:
 
-  **-dashes**  *dashList*
-
-    Sets the dash style of the line. *DashList* is a list of up to 11 numbers
-    that alternately represent the lengths of the dashes and gaps on the
-    line.  Each number must be between 1 and 255.  If *dashList* is "", the
-    marker line will be solid.
-
-  **-fill**  *colorName*
-
-    Sets the background color of the line.  This color is used with striped
-    lines (see the **-dashes** option). If *colorName* is the empty string,
-    no background color is drawn (the line will be dashed, not striped).  The
-    default background color is "".
-
-  **-linewidth**  *numPixels*
-
-    Sets the width of the lines.  The default width is "0".
-
-  **-outline**  *colorName*
-
-    Sets the foreground color of the line. The default value is "black".
-
-  **-stipple**  *bitmapName*
-
-    Specifies a stipple pattern used to draw the line, rather than a solid
-    line.  *BitmapName* specifies a bitmap to use as the stipple pattern.  If
-    *bitmapName* is "", then the line is drawn in a solid fashion. The
-    default is "".
-
   **-bindtags**  *tagList*
 
     Specifies the binding tags for the marker.  *TagList* is a list of
@@ -2407,15 +2733,26 @@ The following operations are available for markers.
     sequence will have its Tcl command executed.  Implicitly the name of the
     marker is always the first tag in the list.  The default value is "all".
 
-  **-coords**  *coordList*
+  **-cap**  *capStyle*
 
-    Specifies the coordinates of the marker.  *CoordList* is a list of graph
+  **-coords**  *coordsList*
+
+    Specifies the coordinates of the marker.  *CoordsList* is a list of graph
     coordinates.  The number of coordinates required is dependent on the type
     of marker.  Text, image, and window markers need only two coordinates (an
     X-Y coordinate).  Bitmap markers can take either two or four coordinates
     (if four, they represent the corners of the bitmap). Line markers need at
-    least four coordinates, polygons at least six.  If *coordList* is "", the
+    least four coordinates, polygons at least six.  If *coordsList* is "", the
     marker will not be displayed.  The default is "".
+
+  **-dashes**  *dashList*
+
+    Sets the dash style of the line. *DashList* is a list of up to 11 numbers
+    that alternately represent the lengths of the dashes and gaps on the
+    line.  Each number must be between 1 and 255.  If *dashList* is "", the
+    marker line will be solid.
+
+  **-dashoffset**  *numPixels*
 
   **-element**  *elemName*
 
@@ -2424,10 +2761,23 @@ The following operations are available for markers.
     operation).  If *elemName* is "", the marker is always drawn.  The
     default is "".
 
+  **-fill**  *colorName*
+
+    Sets the background color of the line.  This color is used with striped
+    lines (see the **-dashes** option). If *colorName* is the empty string,
+    no background color is drawn (the line will be dashed, not striped).  The
+    default background color is "".
+
   **-hide**  *boolean* 
 
     Indicates whether the marker is drawn. If *boolean* is true, the marker
     is not drawn.  The default is "no".
+
+  **-join**  *joinStyle*
+
+  **-linewidth**  *numPixels*
+
+    Sets the width of the lines.  The default width is "0".
 
   **-mapx**  *axisName* 
 
@@ -2445,6 +2795,17 @@ The following operations are available for markers.
     used by another marker.  If this option isn't specified, the marker's
     name is uniquely generated.
 
+  **-outline**  *colorName*
+
+    Sets the foreground color of the line. The default value is "black".
+
+  **-stipple**  *bitmapName*
+
+    Specifies a stipple pattern used to draw the line, rather than a solid
+    line.  *BitmapName* specifies a bitmap to use as the stipple pattern.  If
+    *bitmapName* is "", then the line is drawn in a solid fashion. The
+    default is "".
+
   **-under**  *boolean*
 
     Indicates whether the marker is drawn below/above data elements.  If
@@ -2454,8 +2815,9 @@ The following operations are available for markers.
 
   **-xoffset**  *numPixels*
 
-    Specifies a screen distance to offset the marker horizontally.  *Pixels*
-    is a valid screen distance, such as "2" or "1.2i".  The default is "0".
+    Specifies a screen distance to offset the marker horizontally.
+    *NumPixels* is a valid screen distance, such as "2" or "1.2i".  The
+    default is "0".
 
   **-yoffset**  *numPixels*
 
@@ -2470,34 +2832,6 @@ The following operations are available for markers.
   with the **marker configure** command to change the marker's
   configuration.  The following options are supported for polygon markers:
 
-  **-dashes**  *dashList*
-
-    Sets the dash style of the outline of the polygon. *DashList* is a list
-    of up to 11 numbers that alternately represent the lengths of the dashes
-    and gaps on the outline.  Each number must be between 1 and 255. If
-    *dashList* is "", the outline will be a solid line.
-
-  **-fill**  *colorName*
-    Sets the fill color of the polygon.  If *colorName* is "", then the
-    interior of the polygon is transparent.  The default is "white".
-
-  **-linewidth**  *numPixels*
-    Sets the width of the outline of the polygon. If *numPixels* is "0", no
-    outline is drawn. The default is "0".
-
-  **-outline**  *colorName*
-
-    Sets the color of the outline of the polygon.  If the polygon is stippled
-    (see the **-stipple** option), then this represents the foreground color
-    of the stipple.  The default is "black".
-
-  **-stipple**  *bitmapName*
-
-    Specifies that the polygon should be drawn with a stippled pattern rather
-    than a solid color. *BitmapName* specifies a bitmap to use as the stipple
-    pattern.  If *bitmapName* is "", then the polygon is filled with a solid
-    color (if the marker's **-fill** option is set).  The default is "".
-
   **-bindtags**  *tagList*
 
     Specifies the binding tags for the marker.  *TagList* is a list of
@@ -2506,15 +2840,24 @@ The following operations are available for markers.
     sequence will have its Tcl command executed.  Implicitly the name of the
     marker is always the first tag in the list.  The default value is "all".
 
-  **-coords**  *coordList*
+  **-cap** *capStyle*
 
-    Specifies the coordinates of the marker.  *CoordList* is a list of graph
+  **-coords**  *coordsList*
+
+    Specifies the coordinates of the marker.  *CoordsList* is a list of graph
     coordinates.  The number of coordinates required is dependent on the type
     of marker.  Text, image, and window markers need only two coordinates (an
     X-Y coordinate).  Bitmap markers can take either two or four coordinates
     (if four, they represent the corners of the bitmap). Line markers need at
-    least four coordinates, polygons at least six.  If *coordList* is "", the
+    least four coordinates, polygons at least six.  If *coordsList* is "", the
     marker will not be displayed.  The default is "".
+
+  **-dashes**  *dashList*
+
+    Sets the dash style of the outline of the polygon. *DashList* is a list
+    of up to 11 numbers that alternately represent the lengths of the dashes
+    and gaps on the outline.  Each number must be between 1 and 255. If
+    *dashList* is "", the outline will be a solid line.
 
   **-element**  *elemName*
 
@@ -2523,10 +2866,20 @@ The following operations are available for markers.
     operation).  If *elemName* is "", the marker is always drawn.  The
     default is "".
 
+  **-fill**  *colorName*
+    Sets the fill color of the polygon.  If *colorName* is "", then the
+    interior of the polygon is transparent.  The default is "white".
+
   **-hide**  *boolean* 
 
     Indicates whether the marker is drawn. If *boolean* is true, the marker
     is not drawn.  The default is "no".
+
+  **-join**  *joinStyle* 
+
+  **-linewidth**  *numPixels*
+    Sets the width of the outline of the polygon. If *numPixels* is "0", no
+    outline is drawn. The default is "0".
 
   **-mapx**  *axisName* 
 
@@ -2544,6 +2897,21 @@ The following operations are available for markers.
     used by another marker.  If this option isn't specified, the marker's
     name is uniquely generated.
 
+  **-outline**  *colorName*
+
+    Sets the color of the outline of the polygon.  If the polygon is stippled
+    (see the **-stipple** option), then this represents the foreground color
+    of the stipple.  The default is "black".
+
+  **-state**  *state*
+
+  **-stipple**  *bitmapName*
+
+    Specifies that the polygon should be drawn with a stippled pattern rather
+    than a solid color. *BitmapName* specifies a bitmap to use as the stipple
+    pattern.  If *bitmapName* is "", then the polygon is filled with a solid
+    color (if the marker's **-fill** option is set).  The default is "".
+
   **-under**  *boolean*
 
     Indicates whether the marker is drawn below/above data elements.  If
@@ -2553,8 +2921,11 @@ The following operations are available for markers.
 
   **-xoffset**  *numPixels*
 
-    Specifies a screen distance to offset the marker horizontally.  *Pixels*
-    is a valid screen distance, such as "2" or "1.2i".  The default is "0".
+    Specifies a screen distance to offset the marker horizontally.
+    *NumPixels* is a valid screen distance, such as "2" or "1.2i".  The
+    default is "0".
+
+  **-xor**  *boolean*
 
   **-yoffset**  *numPixels*
 
@@ -2583,10 +2954,30 @@ The following operations are available for markers.
 
     Same as the **-fill** option.
 
-  **-font**  *fontName*
+  **-bindtags**  *tagList*
 
-    Specifies the font of the text.  The default is
-    \f(CW*-Helvetica-Bold-R-Normal-*-120-*\fR.
+    Specifies the binding tags for the marker.  *TagList* is a list of
+    binding tag names.  The tags and their order will determine how events
+    for markers are handled.  Each tag in the list matching the current event
+    sequence will have its Tcl command executed.  Implicitly the name of the
+    marker is always the first tag in the list.  The default value is "all".
+
+  **-coords**  *coordsList*
+
+    Specifies the coordinates of the marker.  *CoordsList* is a list of graph
+    coordinates.  The number of coordinates required is dependent on the type
+    of marker.  Text, image, and window markers need only two coordinates (an
+    X-Y coordinate).  Bitmap markers can take either two or four coordinates
+    (if four, they represent the corners of the bitmap). Line markers need at
+    least four coordinates, polygons at least six.  If *coordsList* is "", the
+    marker will not be displayed.  The default is "".
+
+  **-element**  *elemName*
+
+    Links the marker with the element *elemName*.  The marker is drawn only
+    if the element is also currently displayed (see the element's **show**
+    operation).  If *elemName* is "", the marker is always drawn.  The
+    default is "".
 
   **-fill**  *colorName*
 
@@ -2594,15 +2985,40 @@ The following operations are available for markers.
     string, no background will be transparent.  The default background color
     is "".
 
+  **-font**  *fontName*
+
+    Specifies the font of the text.  The default is "{Sans Serif} 9".
+
   **-foreground**  *colorName*
 
     Same as the marker's **-outline** option.
+
+  **-hide**  *boolean* 
+
+    Indicates whether the marker is drawn. If *boolean* is true, the marker
+    is not drawn.  The default is "no".
 
   **-justify**  *justifyName*
 
     Specifies how the text should be justified.  This matters only when the
     marker contains more than one line of text. *JustifyName* must be "left",
     "right", or "center".  The default is "center".
+
+  **-mapx**  *axisName* 
+
+    Specifies the X-axis to map the marker's X-coordinates onto.  *AxisName*
+    must the name of an axis.  The default is "x".
+
+  **-mapy**  *axisName*
+
+    Specifies the Y-axis to map the marker's Y-coordinates onto.  *AxisName*
+    must the name of an axis.  The default is "y".
+
+  **-name**  *string*
+
+    Changes the name for the marker.  The name *string* can not already be
+    used by another marker.  If this option isn't specified, the marker's
+    name is uniquely generated.
 
   **-outline**  *colorName*
 
@@ -2636,52 +3052,6 @@ The following operations are available for markers.
     Specifies the text of the marker.  The exact way the text is displayed
     may be affected by other options such as **-anchor** or **-rotate**.
 
-  **-bindtags**  *tagList*
-
-    Specifies the binding tags for the marker.  *TagList* is a list of
-    binding tag names.  The tags and their order will determine how events
-    for markers are handled.  Each tag in the list matching the current event
-    sequence will have its Tcl command executed.  Implicitly the name of the
-    marker is always the first tag in the list.  The default value is "all".
-
-  **-coords**  *coordList*
-
-    Specifies the coordinates of the marker.  *CoordList* is a list of graph
-    coordinates.  The number of coordinates required is dependent on the type
-    of marker.  Text, image, and window markers need only two coordinates (an
-    X-Y coordinate).  Bitmap markers can take either two or four coordinates
-    (if four, they represent the corners of the bitmap). Line markers need at
-    least four coordinates, polygons at least six.  If *coordList* is "", the
-    marker will not be displayed.  The default is "".
-
-  **-element**  *elemName*
-
-    Links the marker with the element *elemName*.  The marker is drawn only
-    if the element is also currently displayed (see the element's **show**
-    operation).  If *elemName* is "", the marker is always drawn.  The
-    default is "".
-
-  **-hide**  *boolean* 
-
-    Indicates whether the marker is drawn. If *boolean* is true, the marker
-    is not drawn.  The default is "no".
-
-  **-mapx**  *axisName* 
-
-    Specifies the X-axis to map the marker's X-coordinates onto.  *AxisName*
-    must the name of an axis.  The default is "x".
-
-  **-mapy**  *axisName*
-
-    Specifies the Y-axis to map the marker's Y-coordinates onto.  *AxisName*
-    must the name of an axis.  The default is "y".
-
-  **-name**  *string*
-
-    Changes the name for the marker.  The name *string* can not already be
-    used by another marker.  If this option isn't specified, the marker's
-    name is uniquely generated.
-
   **-under**  *boolean*
 
     Indicates whether the marker is drawn below/above data elements.  If
@@ -2691,8 +3061,9 @@ The following operations are available for markers.
 
   **-xoffset**  *numPixels*
 
-    Specifies a screen distance to offset the marker horizontally.  *Pixels*
-    is a valid screen distance, such as "2" or "1.2i".  The default is "0".
+    Specifies a screen distance to offset the marker horizontally.
+    *NumPixels* is a valid screen distance, such as "2" or "1.2i".  The
+    default is "0".
 
   **-yoffset**  *numPixels*
 
@@ -2700,10 +3071,10 @@ The following operations are available for markers.
     *NumPixels* is a valid screen distance, such as "2" or "1.2i".  The
     default is "0".
 
-*pathName* **marker create window** \fR?\fIoption value\fR?...
+*pathName* **marker create window** ?\ *option* *value* ... ?
 
-  There may be many *option\fR-\fIvalue* pairs, each sets a configuration
-  option for the marker.  These same *option\fR-\fIvalue* pairs may be used
+  There may be many *option*-*value* pairs, each sets a configuration
+  option for the marker.  These same *option*-*value* pairs may be used
   with the marker's **configure** command.
 
   The following options are specific to window markers:
@@ -2717,23 +3088,6 @@ The following operations are available for markers.
     occupied by the widget will be at the positioning point.  This option
     defaults to "center".
 
-  **-height**  *numPixels*
-
-    Specifies the height to assign to the marker's window.  If this option
-    isn't specified, or if it is specified as "", then the window is given
-    whatever height the widget requests internally.
-
-  **-width**  *numPixels*
-
-    Specifies the width to assign to the marker's window.  If this option
-    isn't specified, or if it is specified as "", then the window is given
-    whatever width the widget requests internally.
-
-  **-window**  *pathName*
-
-    Specifies the widget to be managed by the graph.  *PathName* must be a
-    child of the **blt::graph** widget.
-
   **-bindtags**  *tagList*
 
     Specifies the binding tags for the marker.  *TagList* is a list of
@@ -2742,14 +3096,14 @@ The following operations are available for markers.
     sequence will have its Tcl command executed.  Implicitly the name of the
     marker is always the first tag in the list.  The default value is "all".
 
-  **-coords**  *coordList*
+  **-coords**  *coordsList*
 
-    Specifies the coordinates of the marker.  *CoordList* is a list of graph
+    Specifies the coordinates of the marker.  *CoordsList* is a list of graph
     coordinates.  The number of coordinates required is dependent on the type
     of marker.  Text, image, and window markers need only two coordinates (an
     X-Y coordinate).  Bitmap markers can take either two or four coordinates
     (if four, they represent the corners of the bitmap). Line markers need at
-    least four coordinates, polygons at least six.  If *coordList* is "", the
+    least four coordinates, polygons at least six.  If *coordsList* is "", the
     marker will not be displayed.  The default is "".
 
   **-element**  *elemName*
@@ -2758,6 +3112,12 @@ The following operations are available for markers.
     if the element is also currently displayed (see the element's **show**
     operation).  If *elemName* is "", the marker is always drawn.  The
     default is "".
+
+  **-height**  *numPixels*
+
+    Specifies the height to assign to the marker's window.  If this option
+    isn't specified, or if it is specified as "", then the window is given
+    whatever height the widget requests internally.
 
   **-hide**  *boolean* 
 
@@ -2780,6 +3140,8 @@ The following operations are available for markers.
     used by another marker.  If this option isn't specified, the marker's
     name is uniquely generated.
 
+  **-state**  *state*
+
   **-under**  *boolean*
 
     Indicates whether the marker is drawn below/above data elements.  If
@@ -2787,9 +3149,20 @@ The following operations are available for markers.
     symbols and lines.  Otherwise, the marker is drawn on top of the element.
     The default is "0".
 
+  **-width**  *numPixels*
+
+    Specifies the width to assign to the marker's window.  If this option
+    isn't specified, or if it is specified as "", then the window is given
+    whatever width the widget requests internally.
+
+  **-window**  *pathName*
+
+    Specifies the widget to be managed by the graph.  *PathName* must be a
+    child of the **blt::graph** widget.
+
   **-xoffset**  *numPixels*
 
-    Specifies a screen distance to offset the marker horizontally.  *Pixels*
+    Specifies a screen distance to offset the marker horizontally.  *NumPixels*
     is a valid screen distance, such as "2" or "1.2i".  The default is "0".
 
   **-yoffset**  *numPixels*
@@ -2806,11 +3179,21 @@ The following operations are available for markers.
 
   Returns "1" if the marker *markerName* exists and "0" otherwise.
 
+*pathName* **marker find enclosed**  *x1* *y1* *x2* *y2*
+
+*pathName* **marker find overlapping**  *x1* *y1* *x2* *y2*
+
+*pathName* **marker get** *markerName*
+
+*pathName* **marker lower** *markerName* ?\ *afterName*\ ?
+
 *pathName* **marker names** ?\ *pattern* ... ?  
 
   Returns the names of all the markers in the graph.  If one or more
   *pattern* arguments are provided, then the name of any marker matching
   *pattern* will be returned. *Pattern* is a glob-style pattern.
+
+*pathName* **marker raise** *markerName* ?\ *beforeName*\ ?
 
 *pathName* **marker type** *markerName* 
 
@@ -2886,9 +3269,8 @@ the new command and the **element create** operation.
 	    -ydata { 26.18 50.46 72.85 93.31 111.86 128.47 143.14 
 		    155.85 166.60 175.38 }
 
-The element's X-Y coordinates are specified using lists of
-numbers.  Alternately, BLT vectors could be used to hold the X\-Y
-coordinates.
+The element's X-Y coordinates are specified using lists of numbers.
+Alternately, BLT vectors could be used to hold the X-Y coordinates.
 
  ::
 
@@ -2909,11 +3291,10 @@ is automatically redrawn to reflect the new values.
 
     set yVector(0) 25.18
 
-An element named "e1" is now created in ".b".  It 
-is automatically added to the display list of elements.  You can
-use this list to control in what order elements are displayed.
-To query or reset the element display list, you use the element's 
-**show** operation.
+An element named "e1" is now created in ".b".  It is automatically added to
+the display list of elements.  You can use this list to control in what
+order elements are displayed.  To query or reset the element display list,
+you use the element's **show** operation.
 
  ::
 
@@ -2925,12 +3306,11 @@ To query or reset the element display list, you use the element's
 
     .b element show [lrange $elemList 0 end]
 
-The element will be displayed by as many bars as there are data points
-(in this case there are ten).  The bars will be drawn centered at the
-x-coordinate of the data point.  All the bars will have the same
-attributes (colors, stipple, etc).  The width of each bar is by
-default one unit.  You can change this with using the **-barwidth**
-option.
+The element will be displayed by as many bars as there are data points (in
+this case there are ten).  The bars will be drawn centered at the
+x-coordinate of the data point.  All the bars will have the same attributes
+(colors, stipple, etc).  The width of each bar is by default one unit.  You
+can change this with using the **-barwidth** option.
 
  ::
 
@@ -2959,10 +3339,9 @@ colors, line width, etc.
     .g element configure line1 -symbol square -color red \
         -dashes { 2 4 2 } -linewidth 2 -pixels 2c
 
-Four coordinate axes are automatically created: "x", "x2",
-"y", and "y2".  And by default, elements are mapped onto the
-axes "x" and "y".  This can be changed with the **-mapx**
-and **-mapy** options.
+Four coordinate axes are automatically created: "x", "x2", "y", and "y2".
+And by default, elements are mapped onto the axes "x" and "y".  This can be
+changed with the **-mapx** and **-mapy** options.
 
  ::
 
@@ -2979,19 +3358,19 @@ of the Y-axis from linear to log using the **axis configure** operation.
 
     .g axis configure y -logscale yes
 
-One important way axes are used is to zoom in on a particular data
-region.  Zooming is done by simply specifying new axis limits using
-the **-min** and **-max** configuration options.
+One important way axes are used is to zoom in on a particular data region.
+Zooming is done by simply specifying new axis limits using the **-min** and
+**-max** configuration options.
 
  ::
 
     .g axis configure x -min 1.0 -max 1.5
     .g axis configure y -min 12.0 -max 55.15
 
-To zoom interactively, you link the **axis**  configure\fR operations with
+To zoom interactively, you link the **axis configure** operations with
 some user interaction (such as pressing the mouse button), using the
-**bind** command.  To convert between screen and graph coordinates,
-use the **invtransform** operation.
+**bind** command.  To convert between screen and graph coordinates, use the
+**invtransform** operation.
 
  ::
 
@@ -3031,7 +3410,7 @@ option.
 
     # Don't display the legend.
 
-    .g legend configure -hide yes\fR
+    .g legend configure -hide yes
 
 The **blt::graph** widget has simple drawing procedures called markers.
 They can be used to highlight or annotate data in the graph. The types
@@ -3197,11 +3576,20 @@ DIFFERENCES WITH PREVIOUS VERSIONS
 
 1. There no longer a grid component.  Grid settings are part of the
    the axis now.
-2. There is no longer a **-tile** option for the graph. The **-background** option with a **blt::background** does this now.
-3. There is no longer a **-areatile** option. The blt::background does this.
-4. There is no longer a "@bitmap" symbol type.  There are images now.
-5. The axis, element, marker, and pen configure operations no longer take
+2. There is no longer a **-tile** option for the graph. The **-background**
+   option with a **blt::background** does this now.
+3. There is no longer an **-areatile** element option. The blt::background
+   does this.
+4. There is no longer an **-areapattern** element option. The
+   blt::background does this.
+5. There is no longer a "@bitmap" symbol type.  There are images now.
+6. The axis, element, marker, and pen configure operations no longer take
    multiple items as arguments. Elements have tags now.
+7. The axis **-limits** axis option is replaced by the **-limitsformat**
+   option.
+8. There is no longer a **-maxpect**  postscript option.
+
+
 
 KEYWORDS
 --------

@@ -389,6 +389,9 @@ static Blt_ConfigSpec imageConfigSpecs[] =
 	Blt_Offset(ImageMarker, worldPts), BLT_CONFIG_NULL_OK, &coordsOption},
     {BLT_CONFIG_STRING, "-element", "element", "Element", DEF_MARKER_ELEMENT, 
 	Blt_Offset(ImageMarker, elemName), BLT_CONFIG_NULL_OK},
+    {BLT_CONFIG_CUSTOM, "-filter", "filter", "Filter", 
+	DEF_MARKER_FILTER, Blt_Offset(ImageMarker, filter), 
+	BLT_CONFIG_NULL_OK | BLT_CONFIG_DONT_SET_DEFAULT, &bltFilterOption},
     {BLT_CONFIG_BITMASK, "-hide", "hide", "Hide", DEF_MARKER_HIDE,	
 	Blt_Offset(ImageMarker, flags), BLT_CONFIG_DONT_SET_DEFAULT,
 	(Blt_CustomOption *)HIDDEN},
@@ -400,9 +403,6 @@ static Blt_ConfigSpec imageConfigSpecs[] =
 	Blt_Offset(ImageMarker, axes.y), 0, &bltYAxisOption},
     {BLT_CONFIG_STRING, "-name", (char *)NULL, (char *)NULL, DEF_MARKER_NAME, 
 	Blt_Offset(ImageMarker, obj.name), BLT_CONFIG_NULL_OK},
-    {BLT_CONFIG_CUSTOM, "-resamplefilter", "resampleFilter", "ResampleFilter", 
-	DEF_MARKER_FILTER, Blt_Offset(ImageMarker, filter), 
-	BLT_CONFIG_NULL_OK | BLT_CONFIG_DONT_SET_DEFAULT, &bltFilterOption},
     {BLT_CONFIG_STATE, "-state", "state", "State", DEF_MARKER_STATE, 
 	Blt_Offset(ImageMarker, state), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_BOOLEAN, "-under", "under", "Under", DEF_MARKER_UNDER, 
@@ -650,14 +650,14 @@ static Blt_ConfigSpec polygonConfigSpecs[] =
 	Blt_Offset(PolygonMarker, elemName), BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_CUSTOM, "-fill", "fill", "Fill", DEF_MARKER_FILL_COLOR, 
 	Blt_Offset(PolygonMarker, fill), BLT_CONFIG_NULL_OK, &colorPairOption},
+    {BLT_CONFIG_BITMASK, "-hide", "hide", "Hide", DEF_MARKER_HIDE, 
+	Blt_Offset(PolygonMarker, flags), BLT_CONFIG_DONT_SET_DEFAULT,
+	(Blt_CustomOption *)HIDDEN},
     {BLT_CONFIG_JOIN_STYLE, "-join", "join", "Join", DEF_MARKER_JOIN_STYLE, 
 	Blt_Offset(PolygonMarker, joinStyle), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_PIXELS_NNEG, "-linewidth", "lineWidth", "LineWidth",
 	DEF_MARKER_LINE_WIDTH, Blt_Offset(PolygonMarker, lineWidth),
 	BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_BITMASK, "-hide", "hide", "Hide", DEF_MARKER_HIDE, 
-	Blt_Offset(PolygonMarker, flags), BLT_CONFIG_DONT_SET_DEFAULT,
-	(Blt_CustomOption *)HIDDEN},
     {BLT_CONFIG_CUSTOM, "-mapx", "mapX", "MapX", DEF_MARKER_MAP_X, 
 	Blt_Offset(PolygonMarker, axes.x), 0, &bltXAxisOption},
     {BLT_CONFIG_CUSTOM, "-mapy", "mapY", "MapY", DEF_MARKER_MAP_Y, 
@@ -783,12 +783,12 @@ static Blt_ConfigSpec textConfigSpecs[] =
 	Blt_Offset(TextMarker, style.font), 0},
     {BLT_CONFIG_COLOR, "-foreground", "foreground", "Foreground",
 	DEF_MARKER_FOREGROUND, Blt_Offset(TextMarker, style.color), 0},
-    {BLT_CONFIG_JUSTIFY, "-justify", "justify", "Justify",
-	DEF_MARKER_JUSTIFY, Blt_Offset(TextMarker, style.justify),
-	BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_BITMASK, "-hide", "hide", "Hide", DEF_MARKER_HIDE, 
 	Blt_Offset(TextMarker, flags), BLT_CONFIG_DONT_SET_DEFAULT, 
 	(Blt_CustomOption *)HIDDEN},
+    {BLT_CONFIG_JUSTIFY, "-justify", "justify", "Justify",
+	DEF_MARKER_JUSTIFY, Blt_Offset(TextMarker, style.justify),
+	BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_CUSTOM, "-mapx", "mapX", "MapX", DEF_MARKER_MAP_X, 
 	Blt_Offset(TextMarker, axes.x), 0, &bltXAxisOption},
     {BLT_CONFIG_CUSTOM, "-mapy", "mapY", "MapY", DEF_MARKER_MAP_Y, 
@@ -4736,9 +4736,9 @@ RelinkOp(ClientData clientData, Tcl_Interp *interp, int objc,
 
     /* Link the marker at its new position. */
     string = Tcl_GetString(objv[2]);
-    if (string[0] == 'l') {
+    if ((string[0] == 'l') || (string[0] == 'a')) { /* Lower/after */
 	Blt_Chain_LinkAfter(graphPtr->markers.displayList, link, place);
-    } else {
+    } else if ((string[0] == 'r') || (string[0] == 'b')) { /* Raise/before */
 	Blt_Chain_LinkBefore(graphPtr->markers.displayList, link, place);
     }
     if (markerPtr->drawUnder) {
@@ -4926,18 +4926,20 @@ TypeOp(ClientData clientData, Tcl_Interp *interp, int objc,
 
 static Blt_OpSpec markerOps[] =
 {
-    {"bind",      1, BindOp,   3, 6, "marker sequence command",},
-    {"cget",      2, CgetOp,   5, 5, "marker option",},
-    {"configure", 2, ConfigureOp, 4, 0,"marker ?marker?... ?option value?...",},
-    {"create",    2, CreateOp, 4, 0, "type ?option value?...",},
-    {"delete",    1, DeleteOp, 3, 0, "?marker?...",},
-    {"exists",    1, ExistsOp, 4, 4, "marker",},
+    {"after",     1, RelinkOp, 4, 5, "markerName ?afterName?",},
+    {"before",    1, RelinkOp, 4, 5, "markerName ?beforeName?",},
+    {"bind",      1, BindOp,   3, 6, "bindTag sequence command",},
+    {"cget",      2, CgetOp,   5, 5, "markerName option",},
+    {"configure", 2, ConfigureOp, 4, 0,"markerName ?option value ...?",},
+    {"create",    2, CreateOp, 4, 0, "markerType ?option value ...?",},
+    {"delete",    1, DeleteOp, 3, 0, "?markerName ...?",},
+    {"exists",    1, ExistsOp, 4, 4, "markerName",},
     {"find",      1, FindOp,   8, 8, "enclosed|overlapping x1 y1 x2 y2",},
-    {"get",       1, GetOp,    4, 4, "name",},
-    {"lower",     1, RelinkOp, 4, 5, "marker ?afterMarker?",},
+    {"get",       1, GetOp,    4, 4, "markerName",},
+    {"lower",     1, RelinkOp, 4, 5, "markerName ?afterName?",},
     {"names",     1, NamesOp,  3, 0, "?pattern?...",},
-    {"raise",     1, RelinkOp, 4, 5, "marker ?beforeMarker?",},
-    {"type",      1, TypeOp,   4, 4, "marker",},
+    {"raise",     1, RelinkOp, 4, 5, "markerName ?beforeName?",},
+    {"type",      1, TypeOp,   4, 4, "markerName",},
 };
 static int numMarkerOps = sizeof(markerOps) / sizeof(Blt_OpSpec);
 
