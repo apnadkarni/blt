@@ -2397,39 +2397,39 @@ the marker.  By default, markers are the last items drawn, so that data
 elements will appear in behind them.  You can change this by configuring
 the **-under** option.
 
-  BITMAP MARKERS
+**Bitmap Markers**
 
-    A bitmap marker displays a bitmap.  The size of the bitmap is
-    controlled by the number of coordinates specified.  If two coordinates,
-    they specify the position of the top-left corner of the bitmap.  The
-    bitmap retains its normal width and height.  If four coordinates, the
-    first and second pairs of coordinates represent the corners of the
-    bitmap.  The bitmap will be stretched or reduced as necessary to fit
-    into the bounding rectangle.
+  A bitmap marker displays a bitmap.  The size of the bitmap is controlled
+  by the number of coordinates specified.  If two coordinates, they specify
+  the position of the top-left corner of the bitmap.  The bitmap retains
+  its normal width and height.  If four coordinates, the first and second
+  pairs of coordinates represent the corners of the bitmap.  The bitmap
+  will be stretched or reduced as necessary to fit into the bounding
+  rectangle.
 
-  IMAGE MARKERS
+**Image Markers**
 
-    A image marker displays an image.  
+  A image marker displays an image.  
 
-  LINE MARKERS
+**Line Markers**
 
-    A line marker displays one or more connected line segments.  
+  A line marker displays one or more connected line segments.  
 
-  POLYGON MARKERS
+**Polygon Markers**
 
-    A polygon marker displays a closed region described as two or more
-    connected line segments.  It is assumed the first and last points are
-    connected.  
+  A polygon marker displays a closed region described as two or more
+  connected line segments.  It is assumed the first and last points are
+  connected.
 
-  TEXT MARKERS
+**Text Markers**
 
-    A text marker displays a string of characters on one or more lines of
-    text.  Embedded newlines cause line breaks.  They may be used to
-    annotate regions of the graph.  
+  A text marker displays a string of characters on one or more lines of
+  text.  Embedded newlines cause line breaks.  They may be used to annotate
+  regions of the graph.
 
-  WINDOW MARKERS
+**Window Markers**
 
-    A window marker displays a widget at a given position.  
+  A window marker displays a widget at a given position.  
 
 Markers, in contrast to elements, don't affect the scaling of the
 coordinate axes.  They can also have *elastic* coordinates (specified by
@@ -2439,22 +2439,6 @@ remains in the lower left corner of the plotting area, by using the
 coordinates "-Inf","-Inf".
 
 The following operations are available for markers.
-
-*pathName* **marker after**  *markerName* ?\ *afterName*\ ?
-
-  Changes the order of the markers, drawing the first marker after the
-  second.  If no *afterName* argument is specified, the marker is placed at
-  the end of the display list.  This command can be used to control how
-  markers are displayed since markers are drawn in the order of this
-  display list.
-
-*pathName* **marker before** *markerName* ?\ *beforeName*\ ?
-
-  Changes the order of the markers, drawing the first marker before the
-  second.  If no *beforeName* argument is specified, the marker is placed
-  at the beginning of the display list.  This command can be used to
-  control how markers are displayed since markers are drawn in the order of
-  this display list.
 
 *pathName* **marker** bind *bindTag* ?\ *sequence*\ ?  ?\ *command*\ ? 
 
@@ -2489,35 +2473,27 @@ The following operations are available for markers.
   pairs are specified, then for each pair, the marker option *option* is
   set to *value*.
 
-  The following options are valid for all markers.  Each type of marker
-  also has its own type-specific options.  They are described in the
-  sections below.
-
-  Marker configuration options may also be set by the **option** command.
-  The resource class is either "BitmapMarker", "ImageMarker", "LineMarker",
-  "PolygonMarker", "TextMarker", or "WindowMarker", depending on the type of
-  marker.  The resource name is the name of the marker.
-
-  ::
-
-      option add *Graph.TextMarker.Foreground white
-      option add *Graph.BitmapMarker.Foreground white
-      option add *Graph.m1.Background     blue
-
-*pathName* **marker create**  *markerType* ?\ *option* *value* ... ?
-
-  Creates a marker of the selected type. *MarkerType* may be either "text",
-  "line", "bitmap", "image", "polygon", or "window".  This command returns
-  the marker name, used as the *markerName* argument in the other
-  marker-related commands.  If the **-name** option is used, this overrides
-  the normal marker name.  If the name provided is already used for another
-  marker, the new marker will replace the old.
+  Each type of marker also has its own type-specific options.  They are
+  described in the **marker create** operation for each type below.
 
 *pathName* **marker create bitmap** ?\ *option* *value* ... ?
 
-  There may be many *option*-*value* pairs, each sets a configuration
-  options for the marker.  These same *option*-*value* pairs may be
-  used with the marker's **configure** operation.
+  Creates a bitmap marker. This command returns the marker name in the form
+  "marker0","marker1", etc.  You can use the **-name** option to specify
+  you own name for the marker.  
+
+  Bitmap marker configuration options may also be set by the **option**
+  command.  The resource class is "BitmapMarker".  The resource name is the
+  name of the marker.
+
+  ::
+
+      option add *Graph.BitmapMarker.Foreground white
+      option add *Graph.m1.Background     blue
+
+  There may be many *option*-*value* pairs.  Each sets a configuration
+  options for the marker.  These same *option*-*value* pairs may be used
+  with the marker's **configure** operation.
 
   The following options are specific to bitmap markers:
 
@@ -2626,6 +2602,18 @@ The following operations are available for markers.
 
 *pathName* **marker create image** ?\ *option* *value* ... ?
 
+  Creates an image marker. This command returns the marker name in the form
+  "marker0","marker1", etc.  You can use the **-name** option to specify
+  you own name for the marker.  
+
+  Image marker configuration options may also be set by the **option**
+  command.  The resource class is "ImageMarker".  The resource name is the
+  name of the marker.
+
+  ::
+
+      option add *Graph.ImageMarker.image image1
+
   There may be many *option*-*value* pairs, each sets a configuration
   option for the marker.  These same *option*-*value* pairs may be used
   with the marker's **configure** operation.
@@ -2718,6 +2706,18 @@ The following operations are available for markers.
     default is "0".
 
 *pathName* **marker create line** ?\ *option* *value* ... ?
+
+  Creates a line marker. This command returns the marker name in the form
+  "marker0","marker1", etc.  You can use the **-name** option to specify
+  you own name for the marker.  
+
+  Line marker configuration options may also be set by the **option**
+  command.  The resource class is "LineMarker".  The resource name is the
+  name of the marker.
+
+  ::
+
+      option add *Graph.LineMarker.fill blue
 
   There may be many *option*-*value* pairs, each sets a configuration
   option for the marker.  These same *option*-*value* pairs may be used
@@ -2827,6 +2827,18 @@ The following operations are available for markers.
 
 *pathName* **marker create polygon** ?\ *option* *value* ... ?
 
+  Creates a polygon marker. This command returns the marker name in the form
+  "marker0","marker1", etc.  You can use the **-name** option to specify
+  you own name for the marker.  
+
+  Polygon marker configuration options may also be set by the **option**
+  command.  The resource class is "PolygonMarker".  The resource name is
+  the name of the marker.
+
+  ::
+
+      option add *Graph.PolygonMarker.fill blue
+
   There may be many *option*-*value* pairs, each sets a configuration
   option for the marker.  These same *option*-*value* pairs may be used
   with the **marker configure** command to change the marker's
@@ -2933,8 +2945,19 @@ The following operations are available for markers.
     *NumPixels* is a valid screen distance, such as "2" or "1.2i".  The
     default is "0".
 
-
 *pathName* **marker create text** ?\ *option* *value* ... ?
+
+  Creates a text marker. This command returns the marker name in the form
+  "marker0","marker1", etc.  You can use the **-name** option to specify
+  you own name for the marker.  
+
+  Text marker configuration options may also be set by the **option**
+  command.  The resource class is "TextMarker".  The resource name is the
+  name of the marker.
+
+  ::
+
+      option add *Graph.TextMarker.fill blue
 
   There may be many *option*-*value* pairs, each sets a configuration
   option for the text marker.  These same *option*-*value* pairs may be
@@ -3073,6 +3096,18 @@ The following operations are available for markers.
 
 *pathName* **marker create window** ?\ *option* *value* ... ?
 
+  Creates a window marker. This command returns the marker name in the form
+  "marker0","marker1", etc.  You can use the **-name** option to specify
+  you own name for the marker.  
+
+  Window marker configuration options may also be set by the **option**
+  command.  The resource class is "WindowMarker".  The resource name is the
+  name of the marker.
+
+  ::
+
+      option add *Graph.WindowMarker.anchor sw
+
   There may be many *option*-*value* pairs, each sets a configuration
   option for the marker.  These same *option*-*value* pairs may be used
   with the marker's **configure** command.
@@ -3173,11 +3208,12 @@ The following operations are available for markers.
 
 *pathName* **marker delete** ?\ *markerName* ... ?
 
-  Removes one of more markers.  
+  Removes one of more markers from *pathName*.  *MarkerName* is the name of
+  a marker.
 
 *pathName* **marker exists**  *markerName* 
 
-  Returns "1" if the marker *markerName* exists and "0" otherwise.
+  Returns "1" if *markerName* exists and "0" otherwise.
 
 *pathName* **marker find enclosed**  *x1* *y1* *x2* *y2*
 
@@ -3185,7 +3221,12 @@ The following operations are available for markers.
 
 *pathName* **marker get** *markerName*
 
-*pathName* **marker lower** *markerName* ?\ *afterName*\ ?
+*pathName* **marker lower** *markerName* ?\ *beforeName*\ ?
+
+  Lowers *markerName* so that it will be drawn below other markers in
+  *pathName*. If a *beforeName* argument is present, *markerName* will be
+  positioned just below it.  Both *markerName* and *beforeName* are marker
+  names. By default, markers are drawn in the order they were created.
 
 *pathName* **marker names** ?\ *pattern* ... ?  
 
@@ -3193,13 +3234,17 @@ The following operations are available for markers.
   *pattern* arguments are provided, then the name of any marker matching
   *pattern* will be returned. *Pattern* is a glob-style pattern.
 
-*pathName* **marker raise** *markerName* ?\ *beforeName*\ ?
+*pathName* **marker raise** *markerName* ?\ *afterName*\ ?
+
+  Raises *markerName* so that it will be drawn above other markers in
+  *pathName*. If a *afterName* argument is present, *markerName* will be
+  positioned just above it.  Both *markerName* and *afterName* are marker
+  names. By default, markers are drawn in the order they were created.
 
 *pathName* **marker type** *markerName* 
 
   Returns the type of the marker given by *markerName*, such as "line" or
-  "text".  If *markerName* is not a valid a marker identifier, "" is
-  returned.
+  "text".  If *markerName* is not a valid, "" is returned.
 
 
 COMPONENT BINDINGS
