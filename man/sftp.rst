@@ -1,31 +1,42 @@
-===============
+=========
 blt::sftp
-===============
+=========
 
 -----------------------------------
 Transfer files to/from SFTP server.
 -----------------------------------
 
+
 :Author: George A. Howlett <gahowlett@gmail.com>
 :Date:   2012-11-28
-:Copyright: 2015 George A. Howlett.
-        Permission is hereby granted, free of charge, to any person
-	obtaining a copy of this software and associated documentation
-	files (the "Software"), to deal in the Software without
-	restriction, including without limitation the rights to use, copy,
-	modify, merge, publish, distribute, sublicense, and/or sell copies
-	of the Software, and to permit persons to whom the Software is
-	furnished to do so, subject to the following conditions:
-	The above copyright notice and this permission notice shall be
-	included in all copies or substantial portions of the Software.
-	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-	EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-	MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-	NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
-	BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
-	ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-	CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-	SOFTWARE.
+:Copyright: 2015 George A. Howlett. All rights reserved.  Redistribution
+            and use in source and binary forms, with or without
+            modification, are permitted provided that the following
+            conditions are met: 1) Redistributions of source code must
+            retain the above copyright notice, this list of conditions and
+            the following disclaimer. 2) Redistributions in binary form
+            must reproduce the above copyright notice, this list of
+            conditions and the following disclaimer in the documentation
+            and/or other materials provided with the distribution. 3)
+            Neither the name of the authors nor the names of its
+            contributors may be used to endorse or promote products derived
+            from this software without specific prior written permission. 4)
+	    Products derived from this software may not be called "BLT"
+	    nor may "BLT" appear in their names without specific prior
+	    written permission from the author. 
+            THIS SOFTWARE IS PROVIDED ''AS IS'' AND ANY EXPRESS OR IMPLIED
+            WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+            WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+            PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE AUTHORS OR
+            COPYRIGHT HOLDERS BE LIABLE FOR ANY DIRECT, INDIRECT,
+            INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+            (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+            OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+            INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+            WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+            NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
+            THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
+            DAMAGE.
 :Version: 4.0
 :Manual section: n
 :Manual group: BLT Built-In Commands
@@ -40,15 +51,15 @@ SYNOPSIS
 **blt::sftp names**  ?\ *pattern*\ ?
 
 DESCRIPTION
-===========
+-----------
 
-The **sftp** command creates sftp objects.  A sftp object
+The **blt::sftp** command creates sftp objects.  A sftp object
 lets you connect to a SFTP server to transfer files, get
 a directory listing etc.  Most operations that you can perform with a
 sftp client program, you can do programmatically with a sftp object.
 
 SYNTAX
-======
+------
 
 **blt::sftp create** ?\ *sftpName*\ ? ?\ *switches* ... ?  
   Creates a new sftp object.  The name of the new sftp object is returned.
@@ -102,15 +113,15 @@ SYNTAX
   *Pattern* is a glob-style pattern to match.  Matching is done in a
   fashion similar to that TCL **glob** command.
 
-PATHS
-=====
+REMOTE PATHS
+------------
 
 Paths on the remote SFTP server may be relative or absolute. Initially the
 current working directory is the home directory of the user account on the
 SFTP server.
 
 SFTP OPERATIONS
-===============
+---------------
 
 Once you create a *sftp* object, you can use its TCL command to perform
 operations associated with the connection.  The general form is
@@ -326,7 +337,6 @@ command.  The operations available for *sftp* objects are listed below.
     Discontinue transferring the file the specified number of seconds.
 
 *sftpName* **groups** ?\ *gid*\ ?
-
   Returns a list of the groups of which the remote user is a member.  The
   list will contain pairs of the numeric group id and group name. If a
   *gid* argument is present, then only the group name associated with that
@@ -532,10 +542,10 @@ command.  The operations available for *sftp* objects are listed below.
     seconds.
 
 EXAMPLE
-=======
+-------
 
 
 KEYWORDS
-========
+--------
 
 sftp, datatable, tree
