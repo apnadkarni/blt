@@ -66,9 +66,9 @@ SYNTAX
   A new TCL command (by the same name as the tree) is also created.
   Another TCL command or tree object can not already exist as *treeName*.
   If the TCL command is deleted, the tree will also be freed.  The new tree
-  will contain just the root node.  Trees are by default, created in the
-  current namespace, not the global namespace, unless *treeName* contains a
-  namespace qualifier, such as "fred::myTree".
+  will contain just a root node.  Note that trees are by default, created
+  in the current namespace, not the global namespace, unless *treeName*
+  contains a namespace qualifier, such as "fred::myTree".
 
 **blt::tree destroy** ?\ *treeName* ... ?
   Releases one of more trees.  The TCL command associated with *treeName* is
@@ -87,13 +87,12 @@ SYNTAX
 REFERENCING TREE NODES
 ----------------------
 
-Nodes in a tree object may be referred in either of two ways: by id or by
-tag.
+Nodes in a tree object may be referenced in two ways: by id or by tag.
 
 **id**
-  Each node has a unique serial number or id that is assigned to that
-  node when it's created. The id of an node never changes and id numbers
-  are not re-used.
+  Each node has a unique serial number that is assigned to that node when
+  it's created. The number identifies the node.  It never changes 
+  and id numbers are not re-used.
 
 **tag**
   A node may also have any number of tags associated with it.  A tag is
@@ -102,27 +101,29 @@ tag.
   isn't.  The same tag may be associated with many different nodes.
   This is commonly done to group nodes in various interesting ways.
 
-  There are two built-in tags: The tag "all" is implicitly associated with
-  every node in the tree.  It may be used to invoke operations on all the
-  nodes in the tree.  The tag "root" is managed automatically by the tree
-  object. It applies to the node currently set as root.
+  There are two built-in tags
+
+   **all**
+     Every node in the tree implicitly has this tag.  It may be used to
+     invoke operations on all the nodes in the tree.
+
+   **root**
+     The tag "root" is managed automatically by the tree object. It applies
+     to the node currently set as root.
 
 When specifying nodes in tree object commands, if the specifier is an
-integer then it is assumed to refer to the single node with that id.  If
-the specifier is not an integer, then it is assumed to refer to all of the
-nodes in the tree that have a tag matching the specifier.  The symbol
-*node* is used below to indicate that an argument specifies either an id
-that selects a single node or a tag that selects zero or more nodes.  Many
-tree commands only operate on a single node at a time; if *node* is
-specified in a way that names multiple items, then an error "refers to more
-than one node" is generated.
+integer, it is assumed to refer to the single node with that id.  If the
+specifier is not an integer, then it refers to any node that with that tag.
 
-You can also specify node in relation to another node by appending one or
-more modifiers to the node id or tag.  A modifier refers to a node in
-relation to the specified node.  For example, "root->firstchild"
-selects the first subtree of the root node.
+The symbol *node* is used below to for arguments that specify a node either
+by its id or a tag that selects zero or more nodes.  Many tree commands
+only operate on a single node at a time; if *node* is specified in a way
+that names multiple items, then an error "refers to more than one node" is
+generated.
 
-The following modifiers are available:
+Nodes can also have modifiers.  They specify a relationship to the node.
+For example, "root->firstchild" selects the first subtree of the root node.
+The node modifiers are listed below.  
 
   **firstchild**
      Selects the first child of the node.  
@@ -150,10 +151,12 @@ The following modifiers are available:
    quotes indicates to always search for a node by its label (for example, 
    even if the node is labeled "parent").
 
-It's an error the node can't be found.  For example, **lastchild** and
-**firstchild** will generate errors if the node has no children.  The
-exception to this is the **index** operation.  You can use **index** to
-test if a modifier is valid.
+Modifies can can be chained. For example "10->parent->firstchild" looks for
+the node with an id of 10, then its parent, and then the parent's first
+child node.  It's an error the node can't be found.  For example,
+**lastchild** and **firstchild** will generate errors if the node has no
+children.  The exception to this is the **index** operation.  You can use
+**index** to test if a modifier is valid.
 
 TREE OPERATIONS
 ---------------
@@ -180,28 +183,30 @@ command.  The operations available for trees are listed below.
 
 *treeName* **apply** *node* ?\ *switches* ... ?
   Runs commands for all nodes matching the criteria given by *switches* for
-  the subtree designated by *node*.  By default all nodes match, but you can
-  set switches to narrow the match.  This operation differs from **find** in
-  two ways: 1) TCL commands can be invoked both pre- and post-traversal of a
-  node and 2) the tree is always traversed in depth first order.
+  the subtree designated by *node*.  By default all nodes match, but you
+  can set switches to narrow the match.  This operation differs from
+  **find** in two ways: 1) TCL commands can be invoked both pre- and
+  post-traversal of a node and 2) the tree is always traversed in depth
+  first order.
 
-  The **-exact**, **-glob**, and **-regexp** switches indicate both what kind
-  of pattern matching to perform and the pattern.  By default each pattern
-  will be compared with the node label.  You can set more than one of these
-  switches.  If any of the patterns match (logical or), the node matches.  If
-  the **-key** switch is used, it designates the data field to be matched.
-  The valid switches are below.
+  The **-exact**, **-glob**, and **-regexp** switches indicate both what
+  kind of pattern matching to perform and the pattern.  By default each
+  pattern will be compared with the node label.  You can set more than one
+  of these switches.  If any of the patterns match (logical or), the node
+  matches.  If the **-key** switch is used, it designates the data field to
+  be matched.  *Switches* may be any of the following.
 
-  **-depth** *number*
-    Descend at most *number* (a non-negative integer) levels If *number* is
-    "1" this means only apply the tests to the children of *node*.
+  **-depth** *numLevels*
+    Descend at most *numLevels* (a non-negative integer) levels. For
+    example, if *numLevels* is "1", this means only test to the children of
+    *node*.
 
   **-exact** *string*
-    Matches each node using *string*.  The node must match *string* exactly.
+    Matches each node with the label *string*.  
 
-  **-glob** *string*
-    Test each node to *string* using global pattern matching.  Matching is
-    done in a fashion similar to that used by the C-shell.
+  **-glob** *pattern*
+    Test each node label and *pattern* using global pattern matching.
+    Matching is done in a fashion similar to that used by the C-shell.
 
   **-invert**
     Select non-matching nodes.  Any node that *doesn't* match the given
@@ -251,44 +256,43 @@ command.  The operations available for trees are listed below.
 *treeName* **attach** *treeObject* ?\ *switches* ... ?
   Attaches to an existing tree object *treeObject*.  The current tree
   associated with *treeName* is discarded.  In addition, the current set of
-  tags, notifier events, and traces are removed. The valid *switches* are
-  listed below:
+  tags, notifier events, and traces are removed. *Switches* may be any of
+  the following.
 
   **-newtags** 
     By default, the tree will share the tags of the attached tree. If this
     flag is present, the tree will start with an empty tag table.
 
 *treeName* **children** *node*
-  Returns a list of children for *node*.  If *node* is a leaf,
-  then an empty string is returned.
+  Returns a list of children for *node*.  If *node* is a leaf, then "" is
+  returned.
 
-*treeName* **copy** *parent* ?\ *tree*\ ? *node* ?\ *switches*  ... ?
-  Copies *node* into *parent*. Both nodes *node* and *parent* must already
-  exist. The id of the new node is returned. You can also copy nodes from
-  another tree.  If a *tree* argument is present, it indicates the name of the
-  source tree.  The valid *switches* are listed below:
+*treeName* **copy** *parentNode* ?\ *srcTree*\ ? *srcNode* ?\ *switches*  ... ?
+  Makes a copy of *srcNode* in *parentNode*. Both nodes *srcNode* and
+  *parentNode* must already exist. The id of the new node is returned. You
+  can also copy nodes from another tree.  If a *srcTree* argument is present,
+  it indicates the name of the source tree.  *Switches* may be any of
+  the following.
 
   **-label** *nodeLabel*
-    FIXME:
-    Label *destNode* as *nodeLabe*.  By default, *destNode* has
-    the same label as *srcNode*.
+    Label the new node as *nodeLabel*.  By default, the new node will
+    have the same label as *srcNode*.
 
   **-overwrite**
     Overwrite nodes that already exist.  Normally new nodes are always created,
-    even if there already exists a node by the same name.  This switch
-    indicates to add or overwrite the node's data fields.
+    even if there already exists a node by the same label in *parentNode*.
 
   **-recurse**
-    Recursively copy all the subtrees of *srcNode* as well.  In this case,
-    *srcNode* can't be an ancestor of *destNode* as it would result in a
-    cyclic copy.
+    Recursively copy all the branch under *srcNode* as well.  In this case,
+    *srcNode* can't be an ancestor of *parentNode* as it would result in a
+    cycle.
 
   **-tags**
-    Copy tag inforation.  Normally the following node is copied: its label and
-    data fields.  This indicates to copy tags as well.
+    Copy tags from *srcNode* to the new node.  The default is to not
+    copy tags.
 
 *treeName* **degree** *node* 
-  Returns the number of children for *node*.
+  Returns the number of children of *node*.
 
 *treeName* **delete** ?\ *node* ... ?
   Recursively deletes one or more nodes from the tree.  The node and all its
@@ -297,12 +301,13 @@ command.  The operations available for trees are listed below.
   traces on the nodes are released.
 
 *treeName* **depth** *node* 
-  Returns the depth of the node.  The depth is the number of steps from the
-  node to the root of the tree.  The depth of the root node is "0".
+  Returns the depth of the node.  The depth is the number of levels from the
+  node to the root of the tree.  The depth of the root node is 0.
 
 *treeName* **dir** *node* *path* ?\ *switches* ... ?
-  Loads the directory entry *path* into the tree at
-  node *node*. The following switches are available:
+  Loads the directory listing of *path* into the tree at node *node*.
+  
+  The following switches are available:
 
   **-fields** *list* 
 
@@ -313,8 +318,10 @@ command.  The operations available for trees are listed below.
     Only load files and directories that are readable by the user.
 
   **-writable**
+    Only load files and directories that are writable by the user.
 
   **-executable**
+    Only load files and directories that are executable by the user.
 
   **-directory**
     Only load directories.
@@ -328,7 +335,7 @@ command.  The operations available for trees are listed below.
 
   **-recurse** 
     If *path* is a directory, recusively load files and subdirectories
-    into the tree.  New tree nodes are created for each file and subdirectory.
+    into the tree.  New nodes are created for each file and subdirectory.
 
 *treeName* **dump** *node* ?\ *switches* ... ?
   Returns a list of the paths and respective data for *node* and its
@@ -352,13 +359,10 @@ command.  The operations available for trees are listed below.
   Indicates if *node* exists in the tree.  If a *fieldName* argument is
   present then the command also indicates if the named data field exists.
 
-*treeName* **export** 
-  Returns a list of all the formats with registered data handlers.
-
-*treeName* **export** *format* ?\ *switches*  ... ?
-  Exports the tree contents into *format*. *Format* is the format of
-  the exported data.  See `TREE FORMATS`_ for what file formats
-  are available.
+*treeName* **export** *dataFormat* ?\ *switches*  ... ?
+  Exports the tree contents into *dataFormat*. *DataFormat* is the format
+  of the exported data.  See `TREE FORMATS`_ for what file formats are
+  available.
 
 *treeName* **find** *node* ?\ *switches* ... ? 
   Finds for all nodes matching the criteria given by *switches* for the
@@ -375,7 +379,7 @@ command.  The operations available for trees are listed below.
   switch.  The possible orderings are **preorder**, **postorder**,
   **inorder**, and **breadthfirst**.  The default is **postorder**.
 
-  The valid switches are listed below:
+  *Switches* may be any of the following.
 
   **-addtag** *tag* 
     Add the tag *tag* to each selected node.  
@@ -383,27 +387,37 @@ command.  The operations available for trees are listed below.
   **-count** *number*
     Stop processing after *number* (a positive integer) matches. 
 
-  **-depth** *number*
-    Descend at most *number* (a non-negative integer) levels
-    If *number* is "1" this means only apply the tests
-    to the children of *node*.
+  **-depth** *numLeves*
+    Descend at most *numLevels* (a non-negative integer) levels For
+    example, if *numLeves* is "1" this means only apply the tests to the
+    children of *node*.
 
   **-exact** *string*
-    Matches each node using *string*.  The node must match *string*
-    exactly.
+    Matches each node with the label *string*.  
 
   **-excludes** *nodeList*
-    Excludes any node in the list *nodeList* from the search.  
-    The subnodes of an excluded node are still examined.
+    Exclude any node in the list *nodeList* from the search.  *NodeList* is
+    a list of node ids.  The subnodes of an excluded node are still
+    examined.
 
-  **-exec** *command*
-    Invoke *command* for each matching node.  Before *command* is invoked,
-    the id of the node is appended.  You can control processing by the
-    return value of *command*.  If *command* generates an error, processing
-    stops and the **find** operation returns an error.  But if *command*
-    returns **break**, then processing stops, no error is generated.  If
-    *command* returns **continue**, then processing stops on that subtree
-    and continues on the next.
+  **-exec** *cmdPrefix*
+
+    Invokes a TCL command *cmdPrefix* for each matching node.  Before
+    *cmdPrefix* is invoked, the node id is appended.  The return code
+    of *cmdPrefix* controls how processing continues.
+
+    **ok**
+      Processing continues normally.
+    
+    **error**
+      If  *cmdPrefix* generates an error, processing stops and the
+      **find** operation returns with an error.
+
+    **break**
+      Processing stops, but no error is generated.
+
+    **continue**
+      Processing stops on that subtree and continues on the next.
 
   **-glob** *string*
     Test each node to *string* using global pattern matching.  Matching is
@@ -480,7 +494,7 @@ command.  The operations available for trees are listed below.
 
 *treeName* **insert** *parent* ?\ *switches* ... ? 
   Inserts a new node into parent node *parent*.  The id of the new node is
-  returned. The following switches are available:
+  returned. *Switches* may be any of the following.
 
   **-after** *child* 
     Position *node* after *child*.  The node *child* must be a 
@@ -545,9 +559,9 @@ command.  The operations available for trees are listed below.
   then "-1" is returned.
 
 *treeName* **move** *node* *newParent* ?\ *switches* ... ?
-  Moves *node* into *newParent*. *Node* is appended to the
-  list children of *newParent*.  *Node* can not be an ancestor
-  of *newParent*.  The valid flags for *switches* are described below.
+  Moves *node* into *newParent*. *Node* is appended to the list children of
+  *newParent*.  *Node* can not be an ancestor of *newParent*.  *Switches*
+  may be any of the following.
 
   **-after** *child* 
     Position *node* after *child*.  The node *child* must be a 
@@ -584,8 +598,8 @@ command.  The operations available for trees are listed below.
   changed (according to *switches*). Two arguments are appended to
   *command* and *args* before it's invoked: the id of the node and a string
   representing the type of event that occured.  One of more switches can be
-  set to indicate the events that are of interest.  The valid switches are
-  as follows:
+  set to indicate the events that are of interest.  *Switches* may be any of
+  the following.
 
   **-create** 
     Invoke *command* whenever a new node has been added.
@@ -718,8 +732,8 @@ command.  The operations available for trees are listed below.
   a sublist of key value pairs representing the node's data, and 3) a list of
   tags for the node.  Nodes are created starting from *node*. Nodes can be
   listed in any order.  If a node's path describes ancestor nodes that do not
-  already exist, they are automatically created.  The valid *switches* are
-  listed below:
+  already exist, they are automatically created.  *Switches* may be any of
+  the following.
 
   **-overwrite**
     Overwrite nodes that already exist.  Normally nodes are always created,
