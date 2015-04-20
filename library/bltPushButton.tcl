@@ -1,6 +1,6 @@
 # -*- mode: c; c-basic-offset: 4; indent-tabs-mode: nil -*- 
 #
-# button.tcl --
+# bltPushButton.tcl --
 #
 # This file defines the default bindings for Tk label, button,
 # checkbutton, and radiobutton widgets and provides procedures
@@ -68,13 +68,13 @@ namespace eval blt {
 
 switch -glob -- [tk windowingsystem] {
     "classic" - "aqua" {
-	source [file join $blt_library macButton.tcl]
+	source [file join $blt_library bltMacButton.tcl]
     }
     "x11" {
-	source [file join $blt_library unixButton.tcl]
+	source [file join $blt_library bltUnixButton.tcl]
     }
     "win*" {
-	source [file join $blt_library winButton.tcl]
+	source [file join $blt_library bltWinButton.tcl]
     }
 }
 
