@@ -1424,17 +1424,11 @@ GetPolygonBBox(XPoint *points, int n, int *leftPtr, int *rightPtr, int *topPtr,
 /* 
  * The following routines are directly from tk3d.c.  
  *
- *       tk3d.c --
+ * Copyright (c) 1990-1994 The Regents of the University of California.
+ * Copyright (c) 1994-1997 Sun Microsystems, Inc.
  *
- *	This module provides procedures to draw borders in
- *	the three-dimensional Motif style.
- *
- *      Copyright (c) 1990-1994 The Regents of the University of California.
- *      Copyright (c) 1994-1997 Sun Microsystems, Inc.
- *
- *      See the file "license.terms" for information on usage and
- *      redistribution of this file, and for a DISCLAIMER OF ALL
- *      WARRANTIES.
+ *   See the file "license.terms" for information on usage and
+ *   redistribution of this file, and for a DISCLAIMER OF ALL WARRANTIES.
  *
  *  They fix a problem in the Intersect procedure when the polygon is big
  *  (e.q 1600x1200).  The computation overflows the 32-bit integers used.

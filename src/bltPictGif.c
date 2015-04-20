@@ -5,80 +5,90 @@
  * This module implements GIF file format conversion routines for the picture
  * image type in the BLT toolkit.
  *
- *	Copyright 2003-2005 George A Howlett.
+ * Copyright 2015 George A. Howlett. All rights reserved.  
  *
- *	Permission is hereby granted, free of charge, to any person obtaining
- *	a copy of this software and associated documentation files (the
- *	"Software"), to deal in the Software without restriction, including
- *	without limitation the rights to use, copy, modify, merge, publish,
- *	distribute, sublicense, and/or sell copies of the Software, and to
- *	permit persons to whom the Software is furnished to do so, subject to
- *	the following conditions:
+ *   Redistribution and use in source and binary forms, with or without
+ *   modification, are permitted provided that the following conditions are
+ *   met:
  *
- *	The above copyright notice and this permission notice shall be
- *	included in all copies or substantial portions of the Software.
+ *   1) Redistributions of source code must retain the above copyright
+ *      notice, this list of conditions and the following disclaimer.
+ *   2) Redistributions in binary form must reproduce the above copyright
+ *      notice, this list of conditions and the following disclaimer in the
+ *      documentation and/or other materials provided with the
+ *      distribution.
+ *   3) Neither the name of the authors nor the names of its contributors
+ *      may be used to endorse or promote products derived from this
+ *      software without specific prior written permission.
+ *   4) Products derived from this software may not be called "BLT" nor may
+ *      "BLT" appear in their names without specific prior written
+ *      permission from the author.
  *
- *	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- *	EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- *	MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- *	NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
- *	LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
- *	OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
- *	WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *   THIS SOFTWARE IS PROVIDED ''AS IS'' AND ANY EXPRESS OR IMPLIED
+ *   WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ *   MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ *   DISCLAIMED. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+ *   LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ *   CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ *   SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR
+ *   BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+ *   WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
+ *   OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
+ *   IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * The GIF reader is from converters/other/giftopnm.c in the netpbm
  * (version 10.19) distribution.
  *
- *	Copyright 1990, 1991, 1993, David Koblas.  (koblas@netcom.com)
- *	Permission to use, copy, modify, and distribute this software and its
- *	documentation for any purpose and without fee is hereby granted,
- *	provided that the above copyright notice appear in all copies and that
- *	both that copyright notice and this permission notice appear in
- *	supporting documentation.  This software is provided "as is" without
- *	express or implied warranty.
+ * Copyright 1990, 1991, 1993, David Koblas.  (koblas@netcom.com)
+ *
+ *   Permission to use, copy, modify, and distribute this software and its
+ *   documentation for any purpose and without fee is hereby granted,
+ *   provided that the above copyright notice appear in all copies and that
+ *   both that copyright notice and this permission notice appear in
+ *   supporting documentation.  This software is provided "as is" without
+ *   express or implied warranty.
  *
  * The GIF writer is in part derived from converters/other/pamtogif.c in 
  * the netpbm (version 10.19) distribution.  
  *
- *	Original version, named 'ppmgif' was by Jef Poskanzer in 1989, based
- *	on GIFENCOD by David Rowley <mgardi@watdscu.waterloo.edu>.A Lempel-Zim
- *	compression based on "compress".
+ * Original version, named 'ppmgif' was by Jef Poskanzer in 1989, based on
+ * GIFENCOD by David Rowley <mgardi@watdscu.waterloo.edu>.A Lempel-Zim
+ * compression based on "compress".
  *
- *	Switched to use libnetpbm PAM facilities (ergo process PAM images) and
- *	renamed 'pamtogif' by Bryan Henderson November 2006.
+ * Switched to use libnetpbm PAM facilities (ergo process PAM images) and
+ * renamed 'pamtogif' by Bryan Henderson November 2006.
  *
+ * Copyright (C) 1989 by Jef Poskanzer.
  *
- *	Copyright (C) 1989 by Jef Poskanzer.
+ *   Permission to use, copy, modify, and distribute this software and its
+ *   documentation for any purpose and without fee is hereby granted,
+ *   provided that the above copyright notice appear in all copies and that
+ *   both that copyright notice and this permission notice appear in
+ *   supporting documentation.  This software is provided "as is" without
+ *   express or implied warranty.
  *
- *	Permission to use, copy, modify, and distribute this software and its
- *	documentation for any purpose and without fee is hereby granted,
- *	provided that the above copyright notice appear in all copies and that
- *	both that copyright notice and this permission notice appear in
- *	supporting documentation.  This software is provided "as is" without
- *	express or implied warranty.
- *
- *	The Graphics Interchange Format(c) is the Copyright property of
- *	CompuServe Incorporated.  GIF(sm) is a Service Mark property of
- *	CompuServe Incorporated.
+ *   The Graphics Interchange Format(c) is the Copyright property of
+ *   CompuServe Incorporated.  GIF(sm) is a Service Mark property of
+ *   CompuServe Incorporated.
  *
  * The compression routines also use the following
  *
  *	GIFCOMPR.C       - GIF Image compression routines
  *
- *	Lempel-Ziv compression based on 'compress'.  GIF modifications by *
- *	David Rowley (mgardi@watdcsu.waterloo.edu)
+ * Lempel-Ziv compression based on 'compress'.  GIF modifications by *
+ * David Rowley (mgardi@watdcsu.waterloo.edu)
  *
- *	GIF Image compression - modified 'compress'
+ *  GIF Image compression - modified 'compress'
  *
- *	Based on: compress.c - File compression ala IEEE Computer, June 1984.
+ *  Based on: compress.c - File compression ala IEEE Computer, June 1984.
  *
- *	By Authors:  
- *		Spencer W. Thomas       (decvax!harpo!utah-cs!utah-gr!thomas)
- *              Jim McKie               (decvax!mcvax!jim)
- *              Steve Davies            (decvax!vax135!petsd!peora!srd)
- *              Ken Turkowski           (decvax!decwrl!turtlevax!ken)
- *              James A. Woods          (decvax!ihnp4!ames!jaw)
- *              Joe Orost               (decvax!vax135!petsd!joe)
+ *  By Authors:  
+ *     Spencer W. Thomas       (decvax!harpo!utah-cs!utah-gr!thomas)
+ *     Jim McKie               (decvax!mcvax!jim)
+ *     Steve Davies            (decvax!vax135!petsd!peora!srd)
+ *     Ken Turkowski           (decvax!decwrl!turtlevax!ken)
+ *     James A. Woods          (decvax!ihnp4!ames!jaw)
+ *     Joe Orost               (decvax!vax135!petsd!joe)
  *
  */
 

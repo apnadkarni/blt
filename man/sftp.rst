@@ -6,37 +6,9 @@ blt::sftp
 Transfer files to/from SFTP server.
 -----------------------------------
 
-
 :Author: George A. Howlett <gahowlett@gmail.com>
 :Date:   2012-11-28
-:Copyright: 2015 George A. Howlett. All rights reserved.  Redistribution
-            and use in source and binary forms, with or without
-            modification, are permitted provided that the following
-            conditions are met: 1) Redistributions of source code must
-            retain the above copyright notice, this list of conditions and
-            the following disclaimer. 2) Redistributions in binary form
-            must reproduce the above copyright notice, this list of
-            conditions and the following disclaimer in the documentation
-            and/or other materials provided with the distribution. 3)
-            Neither the name of the authors nor the names of its
-            contributors may be used to endorse or promote products derived
-            from this software without specific prior written permission. 4)
-	    Products derived from this software may not be called "BLT"
-	    nor may "BLT" appear in their names without specific prior
-	    written permission from the author. 
-            THIS SOFTWARE IS PROVIDED ''AS IS'' AND ANY EXPRESS OR IMPLIED
-            WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-            WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-            PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE AUTHORS OR
-            COPYRIGHT HOLDERS BE LIABLE FOR ANY DIRECT, INDIRECT,
-            INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-            (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
-            OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
-            INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
-            WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-            NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
-            THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
-            DAMAGE.
+:Copyright: 2015 George A. Howlett. 
 :Version: 4.0
 :Manual section: n
 :Manual group: BLT Built-In Commands
@@ -53,10 +25,18 @@ SYNOPSIS
 DESCRIPTION
 -----------
 
-The **blt::sftp** command creates sftp objects.  A sftp object
-lets you connect to a SFTP server to transfer files, get
-a directory listing etc.  Most operations that you can perform with a
-sftp client program, you can do programmatically with a sftp object.
+The **blt::sftp** command creates sftp objects.  A sftp object lets you
+connect to a SFTP server to transfer files, get a directory listing etc.
+Most operations that you can perform with a sftp client program can be done
+programmatically with a sftp object.
+
+The  **blt::sftp** command requires the **blt_sftp** package.
+
+ ::
+    
+    package require BLT
+    package require blt_sftp
+
 
 SYNTAX
 ------
@@ -392,8 +372,8 @@ command.  The operations available for *sftp* objects are listed below.
   Returns a decimal string giving the time at which file name was last
   modified. If *time* is specified, it is a modification time to set for the
   file. The time is measured in the standard POSIX fashion as seconds from a
-  fixed starting time (often January 1, 1970).  If the file does not exist or
-  its modified time cannot be queried or set then an error is generated.
+  fixed starting time (often January 1, 1970).  It's an error if the
+  file does not exist on the server or its modified time cannot be queried.
 
 *sftpName* **normalize** *path* 
   Returns a unique normalized path representation for *path*.
@@ -463,12 +443,12 @@ command.  The operations available for *sftp* objects are listed below.
 
 *sftpName* **readable** *path*
   Returns "1" if *path* is readable by the current user, 0 otherwise.  It is
-  an error is *path* does not exist.
+  an error if *path* does not exist on the server.
 
 *sftpName* **readlink** *path*
   Returns the value of the symbolic link given by *path* (i.e. the name of the
-  file it points to).  If *path* is not a symbolic link or its value cannot be
-  read, then an error is returned.
+  file it points to).  It's an error if *path* is not a symbolic link or
+  its value cannot be read.
 
 *sftpName* **rename** *old* *new* ?\ *-force*\ ?
   Renames or moves the file or directory *old* to *new*.  
@@ -478,11 +458,11 @@ command.  The operations available for *sftp* objects are listed below.
 
 *sftpName* **size** *path* 
   Returns the size of in bytes of *path*. It is an error if *path*
-  does not exist.
+  does not exist on the server.
 
 *sftpName* **slink** *path* *link*
   Creates a symbolic link on the remote *link* that links to *path*.
-  It is an error if *path* does not exist.
+  It is an error if *path* does not exist on the server.
 
 *sftpName* **stat** *path* *varName*
   Fills *varName* with the attributes of *path*.  *VarName* is name of a
@@ -512,13 +492,13 @@ command.  The operations available for *sftp* objects are listed below.
     The numeric user id of *path*.
       
 *sftpName* **type** *path*
-  Returns a string representing the type of *path*: "file",
-  "directory", "characterSpecial", "blockSpecial", "fifo", "link",
-  or "socket".  It is an error is *path* does not exist.
+  Returns a string representing the type of *path*: "file", "directory",
+  "characterSpecial", "blockSpecial", "fifo", "link", or "socket".  It is
+  an error if *path* does not exist on the server.
 
 *sftpName* **writable** *path*
   Returns "1" if *path* is writable by the current user, 0 otherwise.  It is
-  an error is *path* does not exist.
+  an error if *path* does not exist on the server.
 
 *sftpName* **write** *path* *string* ?\ *switches* ... ?
   Writes *string* to a file on the remote SFTP server.  *Path* is a file on
@@ -533,9 +513,9 @@ command.  The operations available for *sftp* objects are listed below.
     If *varName* is set, the **write** operation is discontinued.
 
   **-progress** *cmdPrefix*  
-   Specifies a TCL command to be invoked periodically as *path* is 
-   being transferred.  Two arguments are appended to *cmdPrefix*:
-   the number of bytes written and the size of the local file.
+    Specifies a TCL command to be invoked periodically as *path* is 
+    being transferred.  Two arguments are appended to *cmdPrefix*:
+    the number of bytes written and the size of the local file.
 
   **-timeout** *seconds*   
     Discontinue transferring the file after the specified number of
@@ -544,8 +524,55 @@ command.  The operations available for *sftp* objects are listed below.
 EXAMPLE
 -------
 
+The following example creates a BLT Datatable and loads the remote
+directory listing into it.  This example assumes that we have a ssh public
+key set up for myhost.org.
+
+ ::
+    
+    package require BLT
+    package require blt_sftp
+
+    set table [blt::datatable create]
+    set sftp [blt::sftp create -host myhost.org]
+    $sftp dirlist ~ -table $table -fields all
+
+    blt::sftp destroy $sftp
 
 KEYWORDS
 --------
 
 sftp, datatable, tree
+
+COPYRIGHT
+---------
+
+2015 George A. Howlett. All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
+
+ 1) Redistributions of source code must retain the above copyright
+    notice, this list of conditions and the following disclaimer.
+ 2) Redistributions in binary form must reproduce the above copyright
+    notice, this list of conditions and the following disclaimer in
+    the documentation and/or other materials provided with the distribution.
+ 3) Neither the name of the authors nor the names of its contributors may
+    be used to endorse or promote products derived from this software
+    without specific prior written permission.
+ 4) Products derived from this software may not be called "BLT" nor may
+    "BLT" appear in their names without specific prior written permission
+    from the author.
+
+THIS SOFTWARE IS PROVIDED ''AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES,
+INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY
+AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY DIRECT, INDIRECT,
+INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
+THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
