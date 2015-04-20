@@ -5025,11 +5025,11 @@ DrawersetCmdProc(
     /*
      * Invoke a procedure to initialize various bindings on treeview
      * entries.  If the procedure doesn't already exist, source it from
-     * "$blt_library/drawerset.tcl".  We deferred sourcing the file until
+     * "$blt_library/bltDrawerset.tcl".  We deferred sourcing the file until
      * now so that the variable $blt_library could be set within a script.
      */
     if (!Blt_CommandExists(interp, "::blt::Drawerset::Initialize")) {
-	char cmd[] = "source [file join $blt_library drawerset.tcl]\n";
+	char cmd[] = "source [file join $blt_library bltDrawerset.tcl]\n";
 
 	if (Tcl_GlobalEval(interp, cmd) != TCL_OK) {
 	    char info[200];

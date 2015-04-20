@@ -1572,10 +1572,11 @@ Interpolate(PaletteCmd *cmdPtr, double value, Blt_Pixel *colorPtr)
 static int
 DefaultPalettes(Tcl_Interp *interp, PaletteCmdInterpData *dataPtr)
 {
-#ifdef notdef
-    static char cmd[] = "source [file join $blt_library palette.tcl]";
+#ifndef notdef
+    static char cmd[] = "source [file join $blt_library bltPalette.tcl]";
 #else
-    static char cmd[] = "if { [catch {source [file join $blt_library palette.tcl]}] != 0} { global errorInfo; puts stderr errorInfo=$errorInfo }";
+    static char cmd[] =
+        "if { [catch {source [file join $blt_library bltPalette.tcl]}] != 0} { global errorInfo; puts stderr errorInfo=$errorInfo }";
 #endif
     if (Tcl_GlobalEval(interp, cmd) != TCL_OK) {
 	char info[2000];

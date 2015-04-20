@@ -2862,12 +2862,12 @@ MenubarCmd(
     /*
      * First time in this interpreter, set up procs and initialize various
      * bindings for the widget.  If the proc doesn't already exist, source it
-     * from "$blt_library/menubar.tcl".  We've deferred sourcing this file
+     * from "$blt_library/bltMenubar.tcl".  We've deferred sourcing this file
      * until now so that the user could reset the variable $blt_library from
      * within her script.
      */
     if (!Blt_CommandExists(interp, "::blt::Menubar::PostMenu")) {
-	static char cmd[] = "source [file join $blt_library menubar.tcl]";
+	static char cmd[] = "source [file join $blt_library bltMenubar.tcl]";
 
 	if (Tcl_GlobalEval(interp, cmd) != TCL_OK) {
 	    char info[200];

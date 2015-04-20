@@ -7102,13 +7102,13 @@ ComboMenuCmd(
     /*
      * First time in this interpreter, invoke a procedure to initialize
      * various bindings on the combomenu widget.  If the procedure doesn't
-     * already exist, source it from "$blt_library/combomenu.tcl".  We
+     * already exist, source it from "$blt_library/bltComboMenu.tcl".  We
      * deferred sourcing the file until now so that the variable
      * $blt_library could be set within a script.
      */
     if (!Blt_CommandExists(interp, "::blt::ComboMenu::PostCascade")) {
 	if (Tcl_GlobalEval(interp, 
-		"source [file join $blt_library combomenu.tcl]") != TCL_OK) {
+		"source [file join $blt_library bltComboMenu.tcl]") != TCL_OK) {
 	    char info[200];
 
 	    Blt_FormatString(info, 200, "\n    (while loading bindings for %.50s)", 
@@ -7187,13 +7187,13 @@ ComboViewCmd(
     /*
      * First time in this interpreter, invoke a procedure to initialize
      * various bindings on the combomenu widget.  If the procedure doesn't
-     * already exist, source it from "$blt_library/combomenu.tcl".  We
+     * already exist, source it from "$blt_library/bltComboView.tcl".  We
      * deferred sourcing the file until now so that the variable
      * $blt_library could be set within a script.
      */
     if (!Blt_CommandExists(interp, "::blt::ComboView::PostMenu")) {
 	if (Tcl_GlobalEval(interp, 
-		"source [file join $blt_library comboview.tcl]") != TCL_OK) {
+		"source [file join $blt_library bltComboView.tcl]") != TCL_OK) {
 	    char info[200];
 
 	    Blt_FormatString(info, 200, "\n    (while loading bindings for %.50s)", 

@@ -12638,12 +12638,12 @@ TableViewCmdProc(
     /*
      * Invoke a procedure to initialize various bindings on tableview
      * entries.  If the procedure doesn't already exist, source it from
-     * "$blt_library/tableview.tcl".  We deferred sourcing the file until
+     * "$blt_library/TableView.tcl".  We deferred sourcing the file until
      * now so that the variable $blt_library could be set within a script.
      */
     if (!Blt_CommandExists(interp, "::blt::TableView::Initialize")) {
 	if (Tcl_GlobalEval(interp, 
-		"source [file join $blt_library tableview.tcl]") != TCL_OK) {
+		"source [file join $blt_library bltTableView.tcl]") != TCL_OK) {
 	    char info[200];
 
 	    Blt_FormatString(info, 200, 

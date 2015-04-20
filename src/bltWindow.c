@@ -301,7 +301,7 @@ UnlinkWindow(TkWindow *winPtr)
  *             ancestor.  Otherwise, Tk becomes confused about which
  *             Toplevel turns on focus for the window.  Right now this is
  *             done at the TCL layer.  For example, see blt::CreateTearoff
- *             in tabset.tcl.
+ *             in bltTabset.tcl.
  *
  * Results:
  *	None.
@@ -354,7 +354,7 @@ Blt_RelinkWindow(
  *              ancestor.  Otherwise, Tk becomes confused about which
  *              Toplevel turns on focus for the window.  Right now this is
  *              done at the TCL layer.  For example, see blt::CreateTearoff
- *              in tabset.tcl.
+ *              in bltTabset.tcl.
  *
  * Results:
  *	None.

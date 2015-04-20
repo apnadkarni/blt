@@ -5694,14 +5694,13 @@ PanesetCmd(
 	return TCL_ERROR;
     }
     /*
-     * Invoke a procedure to initialize various bindings on treeview entries.
-     * If the procedure doesn't already exist, source it from
-     * "$blt_library/paneset.tcl".  We deferred sourcing the file until now so
-     * that the variable $blt_library could be set within a script.
+     * Invoke a procedure to initialize various bindings on treeview
+     * entries.  If the procedure doesn't already exist, source it from
+     * "$blt_library/bltPaneset.tcl".  We deferred sourcing the file until
+     * now so that the variable $blt_library could be set within a script.
      */
     if (!Blt_CommandExists(interp, "::blt::Paneset::Initialize")) {
-	char cmd[200];
-	Blt_FormatString(cmd, 200, "source [file join $blt_library paneset.tcl]\n");
+	const char cmd[] = "source [file join $blt_library bltPaneset.tcl]\n";
 	if (Tcl_GlobalEval(interp, cmd) != TCL_OK) {
 	    char info[200];
 	    
@@ -5764,14 +5763,14 @@ FilmstripCmd(
 	return TCL_ERROR;
     }
     /*
-     * Invoke a procedure to initialize various bindings on treeview entries.
-     * If the procedure doesn't already exist, source it from
-     * "$blt_library/paneset.tcl".  We deferred sourcing the file until now so
-     * that the variable $blt_library could be set within a script.
+     * Invoke a procedure to initialize various bindings on treeview
+     * entries.  If the procedure doesn't already exist, source it from
+     * "$blt_library/bltFilmstrip.tcl".  We deferred sourcing the file
+     * until now so that the variable $blt_library could be set within a
+     * script.
      */
     if (!Blt_CommandExists(interp, "::blt::Filmstrip::Initialize")) {
-	char cmd[200];
-	Blt_FormatString(cmd, 200, "source [file join $blt_library filmstrip.tcl]\n");
+	const char cmd[] = "source [file join $blt_library bltFilmstrip.tcl]";
 	if (Tcl_GlobalEval(interp, cmd) != TCL_OK) {
 	    char info[200];
 

@@ -1795,13 +1795,14 @@ ScrollsetCmd(ClientData clientData, Tcl_Interp *interp, int objc,
     Tk_CreateEventHandler(setPtr->shangle, mask, WindowEventProc, setPtr);
 
     /*
-     * First time in this interpreter, load in a procedure to initialize various
-     * bindings on the scrollset widget.  We deferred sourcing the file until
-     * now so that the variable $blt_library can be set within a script.
+     * First time in this interpreter, load in a procedure to initialize
+     * various bindings on the scrollset widget.  We deferred sourcing the
+     * file until now so that the variable $blt_library can be set within a
+     * script.
      */
     if (!Blt_CommandExists(interp, "::blt::Scrollset::ConfigureScrollbars")) {
 	if (Tcl_GlobalEval(interp, 
-		"source [file join $blt_library scrollset.tcl]") != TCL_OK) {
+		"source [file join $blt_library bltScrollset.tcl]") != TCL_OK) {
 	    char info[200];
 	    Blt_FormatString(info, 200, "\n    (while loading bindings for %.50s)", 
 		    Tcl_GetString(objv[0]));

@@ -7618,12 +7618,13 @@ ComboTreeObjCmdProc(
 
     /*
      * Source in the initialization script for treeview entries from
-     * "$blt_library/treeview.tcl".  We deferred sourcing the file until now
-     * so that the variable $blt_library could be set within a script.
+     * "$blt_library/bltComboTree.tcl".  We deferred sourcing the file
+     * until now so that the variable $blt_library could be set within a
+     * script.
      */
     if (!Blt_CommandExists(interp, "::blt::ComboTree::Initialize")) {
 	static char cmd[] = { 
-	    "source [file join $blt_library combotree.tcl]" 
+	    "source [file join $blt_library bltComboTree.tcl]" 
 	};
 	if (Tcl_GlobalEval(interp, cmd) != TCL_OK) {
 	    char info[200];

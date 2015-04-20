@@ -1428,7 +1428,7 @@ ConfigureSource(
 	    srcPtr->token.borderWidth + 2);
     }
     if (!Blt_CommandExists(interp, "::blt::Drag&DropInit")) {
-	static char cmd[] = "source [file join $blt_library dragdrop.tcl]";
+	static char cmd[] = "source [file join $blt_library bltDragDrop.tcl]";
 
 	if (Tcl_GlobalEval(interp, cmd) != TCL_OK) {
 	    Tcl_AddErrorInfo(interp,

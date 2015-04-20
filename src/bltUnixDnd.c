@@ -2074,7 +2074,7 @@ ConfigureDnd(Tcl_Interp *interp, Dnd *dndPtr)
     int button, result;
 
     if (!Blt_CommandExists(interp, "::blt::DndInit")) {
-	static char cmd[] = "source [file join $blt_library dnd.tcl]";
+	static char cmd[] = "source [file join $blt_library bltDnd.tcl]";
 	/* 
 	 * If the "DndInit" routine hasn't been sourced, do it now.
 	 */

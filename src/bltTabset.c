@@ -7383,8 +7383,8 @@ TabsetCmd(
      * the variable "blt_library" within the script.
      */
     if (!Blt_CommandExists(interp, "::blt::Tabset::Init")) {
-	static char initCmd[] = 
-	    "source [file join $blt_library tabset.tcl]";
+	static char initCmd[] =
+            "source [file join $blt_library bltTabset.tcl]";
  
 	if (Tcl_GlobalEval(interp, initCmd) != TCL_OK) {
 	    char info[200];

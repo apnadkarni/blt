@@ -35,31 +35,31 @@ endif
 
 FILES = \
 		$(srcdir)/bltCanvEps.pro \
+		$(srcdir)/bltComboButton.tcl \
+		$(srcdir)/bltComboEntry.tcl \
+		$(srcdir)/bltComboMenu.tcl \
+		$(srcdir)/bltComboTree.tcl \
+		$(srcdir)/bltComboView.tcl \
+		$(srcdir)/bltDnd.tcl \
+		$(srcdir)/bltDragDrop.tcl \
+		$(srcdir)/bltDrawerset.tcl \
+		$(srcdir)/bltFilmstrip.tcl \
 		$(srcdir)/bltGraph.pro \
-		$(srcdir)/combobutton.tcl \
-		$(srcdir)/comboentry.tcl \
-		$(srcdir)/combomenu.tcl \
-		$(srcdir)/combotree.tcl \
-		$(srcdir)/comboview.tcl \
-		$(srcdir)/dnd.tcl \
-		$(srcdir)/dragdrop.tcl \
-		$(srcdir)/drawerset.tcl \
-		$(srcdir)/filmstrip.tcl \
-		$(srcdir)/graph.tcl \
-		$(srcdir)/listview.tcl \
-		$(srcdir)/macButton.tcl \
-		$(srcdir)/palette.tcl \
-		$(srcdir)/paneset.tcl \
-		$(srcdir)/pushbutton.tcl \
-		$(srcdir)/scrollbar.tcl \
-		$(srcdir)/scrollset.tcl \
-		$(srcdir)/tableview.tcl \
-		$(srcdir)/tabset.tcl \
+		$(srcdir)/bltGraph.tcl \
+		$(srcdir)/bltListView.tcl \
+		$(srcdir)/bltMacButton.tcl \
+		$(srcdir)/bltPalette.tcl \
+		$(srcdir)/bltPaneset.tcl \
+		$(srcdir)/bltPushButton.tcl \
+		$(srcdir)/bltScrollbar.tcl \
+		$(srcdir)/bltScrollset.tcl \
+		$(srcdir)/bltTableView.tcl \
+		$(srcdir)/bltTabset.tcl \
+		$(srcdir)/bltTimeStamp.tcl \
+		$(srcdir)/bltTreeView.tcl \
+		$(srcdir)/bltUnixButton.tcl \
+		$(srcdir)/bltWinButton.tcl \
 		$(srcdir)/tclIndex \
-		$(srcdir)/timestamp.tcl \
-		$(srcdir)/treeview.tcl \
-		$(srcdir)/unixButton.tcl \
-		$(srcdir)/winButton.tcl \
 		$(cursors) \
 		pkgIndex.tcl
 

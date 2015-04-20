@@ -514,13 +514,12 @@ ScrollbarWidgetCmd(ClientData clientData, Tcl_Interp *interp, int objc,
     /*
      * First time in this interpreter, invoke a procedure to initialize
      * various bindings on the combomenu widget.  If the procedure doesn't
-     * already exist, source it from "$blt_library/scrollbar.tcl".  We
-     * deferred sourcing the file until now so that the variable $blt_library
-     * could be set within a script.
+     * already exist, source it from "$blt_library/bltScrollbar.tcl".  We
+     * deferred sourcing the file until now so that the variable
+     * $blt_library could be set within a script.
      */
     if (!Blt_CommandExists(interp, "::blt::TkScrollbar::ScrollButtonDown")) {
-	static char cmd[] = "source [file join $blt_library scrollbar.tcl]";
-
+	const char cmd[] = "source [file join $blt_library bltScrollbar.tcl]";
 	if (Tcl_GlobalEval(interp, cmd) != TCL_OK) {
 	    char info[200];
 	    Blt_FormatString(info, 200, "\n    (while loading bindings for %.50s)", 

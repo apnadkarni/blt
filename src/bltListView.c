@@ -6213,13 +6213,13 @@ ListViewCmd(
     /*
      * First time in this interpreter, invoke a procedure to initialize
      * various bindings on the listview widget.  If the procedure doesn't
-     * already exist, source it from "$blt_library/listview.tcl".  We
+     * already exist, source it from "$blt_library/bltListView.tcl".  We
      * deferred sourcing the file until now so that the variable $blt_library
      * could be set within a script.
      */
     if (!Blt_CommandExists(interp, "::blt::ListView::AutoScroll")) {
 	if (Tcl_GlobalEval(interp, 
-		"source [file join $blt_library listview.tcl]") != TCL_OK) {
+		"source [file join $blt_library bltListView.tcl]") != TCL_OK) {
 	    char info[200];
 	    Blt_FormatString(info, 200, "\n    (while loading bindings for %.50s)", 
 		    Tcl_GetString(objv[0]));

@@ -3265,11 +3265,11 @@ Blt_TimeStampCmdInitProc(Tcl_Interp *interp)
     };
     /*
      * Source in the file contains the blt::timezones array. This array
-     * contains the names of timezones and their offset.  We do it
-     * now so that the user can change entries if he/she wants.
+     * contains the names of timezones and their offset.  We do it now so
+     * that the user can change entries if he/she wants.
      */
     if (Tcl_GlobalEval(interp,
-                "source [file join $blt_library timestamp.tcl]") != TCL_OK) {
+                "source [file join $blt_library bltTimeStamp.tcl]") != TCL_OK) {
         const char *errmsg =
             "\n    (while loading timezones for timestamp command)";
         Tcl_AddErrorInfo(interp, errmsg);

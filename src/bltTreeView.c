@@ -15121,12 +15121,12 @@ TreeViewCmdProc(
     /*
      * Invoke a procedure to initialize various bindings on treeview
      * entries.  If the procedure doesn't already exist, source it from
-     * "$blt_library/treeview.tcl".  We deferred sourcing the file until
+     * "$blt_library/bltTreeView.tcl".  We deferred sourcing the file until
      * now so that the variable $blt_library could be set within a script.
      */
     if (!Blt_CommandExists(interp, "::blt::TreeView::Initialize")) {
 	if (Tcl_GlobalEval(interp, 
-		"source [file join $blt_library treeview.tcl]") != TCL_OK) {
+		"source [file join $blt_library bltTreeView.tcl]") != TCL_OK) {
 	    char info[200];
 
 	    Blt_FormatString(info, 200, "\n    (while loading bindings for %.50s)", 
@@ -15173,9 +15173,7 @@ TreeViewCmdProc(
 
     /*
      * Invoke a procedure to initialize various bindings on treeview
-     * entries.  If the procedure doesn't already exist, source it from
-     * "$blt_library/treeview.tcl".  We deferred sourcing the file until
-     * now so that the variable $blt_library could be set within a script.
+     * entries.  
      */
     initObjv[0] = Tcl_NewStringObj("::blt::TreeView::Initialize", -1);
     initObjv[1] = objv[1];
