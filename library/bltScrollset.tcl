@@ -1,6 +1,6 @@
 # -*- mode: tcl; indent-tabs-mode: nil -*- 
 #
-# scrollset.tcl
+# bltScrollset.tcl
 #
 # Bindings for the BLT scrollset widget
 #

@@ -1,6 +1,6 @@
 # -*- mode: tcl; indent-tabs-mode: nil -*- 
 #
-# listview.tcl
+# bltListView.tcl
 #
 # Bindings for the BLT listview widget.
 #

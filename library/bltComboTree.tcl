@@ -1,7 +1,6 @@
-
-# ======================================================================
+# -*- mode: c; c-basic-offset: 4; indent-tabs-mode: nil -*- 
 #
-# combotree.tcl
+# bltComboTree.tcl
 #
 # Bindings for the BLT combotree widget
 #

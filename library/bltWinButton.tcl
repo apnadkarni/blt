@@ -1,6 +1,6 @@
 # -*- mode: tcl; indent-tabs-mode: nil -*- 
 #
-# winButton.tcl
+# bltWinButton.tcl
 #
 # Bindings for the BLT button widget for Windows platforms.
 #

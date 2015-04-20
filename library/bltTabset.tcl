@@ -1,8 +1,8 @@
 # -*- mode: tcl; indent-tabs-mode: nil -*- 
 #
-# tabset.tcl
+# bltTabset.tcl
 #
-# Bindings for the BLT tabset widget
+# Bindings for the BLT tabset widget.
 #
 # Copyright 2015 George A. Howlett. All rights reserved.  
 #

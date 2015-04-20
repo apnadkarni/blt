@@ -1,6 +1,6 @@
 # -*- mode: tcl; indent-tabs-mode: nil -*- 
 #
-# drawerset.tcl
+# bltDrawerset.tcl
 #
 # Bindings for the BLT drawerset widget
 #

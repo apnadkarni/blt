@@ -1,6 +1,6 @@
 # -*- mode: tcl; indent-tabs-mode: nil -*- 
 #
-# macButton.tcl
+# bltMacButton.tcl
 #
 # Bindings for the BLT button widget for MacIntosh platforms.
 #

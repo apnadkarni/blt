@@ -1,8 +1,8 @@
 # -*- mode: tcl; indent-tabs-mode: nil -*- 
 #
-# treeview.tcl
+# bltTreeView.tcl
 #
-# Bindings for the BLT treeview widget
+# Bindings for the BLT treeview widget.
 #
 # Copyright 2015 George A. Howlett. All rights reserved.  
 #

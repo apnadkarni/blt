@@ -1,6 +1,6 @@
 # -*- mode: tcl; indent-tabs-mode: nil -*- 
 #
-# filmstrip.tcl
+# bltFilmstrip.tcl
 #
 # Bindings for the BLT filmstrip widget.
 #

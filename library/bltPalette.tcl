@@ -1,6 +1,6 @@
 # -*- mode: tcl; indent-tabs-mode: nil -*- 
 #
-# palette.tcl
+# bltPalette.tcl
 #
 # Pre-defined color palettes for the BLT
 #

@@ -1,6 +1,6 @@
 # -*- mode: tcl; indent-tabs-mode: nil -*- 
 #
-# tableview.tcl
+# bltTableView.tcl
 #
 #   Event bindings for the BLT tableview widget.
 #

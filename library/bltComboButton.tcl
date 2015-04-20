@@ -1,6 +1,6 @@
 # -*- mode: c; c-basic-offset: 4; indent-tabs-mode: nil -*- 
 #
-# combobutton.tcl
+# bltComboButton.tcl
 #
 # Copyright 2015 George A. Howlett. All rights reserved.  
 #

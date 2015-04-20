@@ -1,6 +1,6 @@
 # -*- mode: tcl; indent-tabs-mode: nil -*- 
 #
-# unixButton.tcl
+# bltUnixButton.tcl
 #
 # Bindings for the BLT button widget for Unix platforms.
 #

@@ -1,5 +1,6 @@
 # -*- mode: c; c-basic-offset: 4; indent-tabs-mode: nil -*- 
-# scrollbar.tcl --
+#
+# bltScrollbar.tcl --
 #
 # This file defines the default bindings for Tk scrollbar widgets.
 # It also provides procedures that help in implementing the bindings.
