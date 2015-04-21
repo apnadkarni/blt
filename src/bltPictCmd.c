@@ -464,6 +464,12 @@ static Blt_SwitchCustom scaleSwitch =
     ScaleSwitchProc, NULL, NULL, (ClientData)0
 };
 
+static Blt_SwitchParseProc PercentSwitchProc;
+static Blt_SwitchCustom percentSwitch =
+{
+    PercentSwitchProc, NULL, NULL, (ClientData)0
+};
+
 typedef struct {
     int invert;				/* Flag. */
     Tcl_Obj *maskObjPtr;
@@ -555,29 +561,34 @@ static Blt_SwitchSpec copySwitches[] =
 
 typedef struct {
     int blur;
-    int scale;
-    float size;
-    PictFadeSettings fade;
+    int side;
+    double high;
+    double low;
     Blt_Pixel bgColor;
+    Blt_Jitter jitter;
+    ScaleType scale;
+    float size;                         /* Ratio */
 } ReflectSwitches;
 
 static Blt_SwitchSpec reflectSwitches[] = {
-    {BLT_SWITCH_SIDE, "-side", "side", (char *)NULL,
-	Blt_Offset(ReflectSwitches, fade.side), 0, 0},
-    {BLT_SWITCH_INT, "-blur", "level", (char *)NULL,
-	Blt_Offset(ReflectSwitches, blur), 0, 0},
+    {BLT_SWITCH_CUSTOM, "-background", "color", (char *)NULL,
+	Blt_Offset(ReflectSwitches, bgColor), 0, 0, &colorSwitch},
     {BLT_SWITCH_CUSTOM, "-bg", "color", (char *)NULL,
 	Blt_Offset(ReflectSwitches, bgColor), 0, 0, &colorSwitch},
-    {BLT_SWITCH_INT, "-low", "alpha", (char *)NULL,
-	Blt_Offset(ReflectSwitches, fade.low), 0, 0},
-    {BLT_SWITCH_INT, "-high", "alpha", (char *)NULL,
-	Blt_Offset(ReflectSwitches, fade.high), 0, 0},
-    {BLT_SWITCH_BOOLEAN, "-jitter", "bool", (char *)NULL,
-	Blt_Offset(ReflectSwitches, fade.jitter), 0, 0},
-    {BLT_SWITCH_CUSTOM, "-scale", "bool", (char *)NULL,
-       Blt_Offset(ReflectSwitches, fade.scale), 0, 0, &scaleSwitch},
+    {BLT_SWITCH_INT, "-blur", "level", (char *)NULL,
+	Blt_Offset(ReflectSwitches, blur), 0, 0},
+    {BLT_SWITCH_CUSTOM, "-low", "alpha", (char *)NULL,
+        Blt_Offset(ReflectSwitches, low), 0, 0, &percentSwitch},
+    {BLT_SWITCH_CUSTOM, "-high", "alpha", (char *)NULL,
+        Blt_Offset(ReflectSwitches, high), 0, 0, &percentSwitch},
+    {BLT_SWITCH_CUSTOM, "-jitter", "percent", (char *)NULL,
+        Blt_Offset(ReflectSwitches, jitter.range), 0, 0, &percentSwitch},
     {BLT_SWITCH_FLOAT, "-ratio", "", (char *)NULL,
 	Blt_Offset(ReflectSwitches, size), 0, 0},
+    {BLT_SWITCH_CUSTOM, "-scale", "how", (char *)NULL,
+       Blt_Offset(ReflectSwitches, scale), 0, 0, &scaleSwitch},
+    {BLT_SWITCH_SIDE, "-side", "side", (char *)NULL,
+	Blt_Offset(ReflectSwitches, side), 0, 0},
     {BLT_SWITCH_END}
 };
 
@@ -625,8 +636,10 @@ typedef struct {
 } ProjectSwitches;
 
 static Blt_SwitchSpec projectSwitches[] = {
-    {BLT_SWITCH_CUSTOM, "-bg",      "color", (char *)NULL,
-	Blt_Offset(ProjectSwitches, bg),             0, 0, &colorSwitch},
+    {BLT_SWITCH_CUSTOM, "-background", "color", (char *)NULL,
+	Blt_Offset(ProjectSwitches, bg), 0, 0, &colorSwitch},
+    {BLT_SWITCH_CUSTOM, "-bg",         "color", (char *)NULL,
+	Blt_Offset(ProjectSwitches, bg), 0, 0, &colorSwitch},
     {BLT_SWITCH_END}
 };
 
@@ -1313,14 +1326,9 @@ WindowToPicture(Tcl_Interp *interp, PictImage *imgPtr, Tcl_Obj *objPtr)
  */
 /*ARGSUSED*/
 static int
-ColorSwitchProc(
-    ClientData clientData,		/* Not used. */
-    Tcl_Interp *interp,			/* Interpreter to send results. */
-    const char *switchName,		/* Not used. */
-    Tcl_Obj *objPtr,			/* String representation */
-    char *record,			/* Structure record */
-    int offset,				/* Offset to field in structure */
-    int flags)	
+ColorSwitchProc(ClientData clientData, Tcl_Interp *interp,
+                const char *switchName, Tcl_Obj *objPtr, char *record,
+                int offset, int flags)	
 {
     Blt_Pixel *pixelPtr = (Blt_Pixel *)(record + offset);
     const char *string;
@@ -1335,6 +1343,42 @@ ColorSwitchProc(
     }
     return TCL_OK;
 }
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * JitterSwitchProc --
+ *
+ *	Given a string representation of the jitter value (a percentage),
+ *	convert it to a number 0..1.
+ *
+ * Results:
+ *	The return value is a standard TCL result.  
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+PercentSwitchProc(ClientData clientData, Tcl_Interp *interp,
+                const char *switchName, Tcl_Obj *objPtr, char *record,
+                int offset, int flags)	
+{
+    double *pctPtr = (double *)(record + offset);
+    double value;
+
+    if (Tcl_GetDoubleFromObj(interp, objPtr, &value) != TCL_OK) {
+	return TCL_ERROR;
+    }
+    if ((value < 0.0) || (value > 100.0)) {
+	Tcl_AppendResult(interp, "invalid percentage \"", 
+		Tcl_GetString(objPtr), "\" number should be between 0 and 100",
+                (char *)NULL);
+	return TCL_ERROR;
+    }
+    *pctPtr = value * 0.01;
+    return TCL_OK;
+}
+
 
 /*
  *---------------------------------------------------------------------------
@@ -4619,11 +4663,11 @@ ReflectOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	return TCL_ERROR;
     }
     memset(&switches, 0, sizeof(switches));
-    switches.fade.side = SIDE_BOTTOM;
-    switches.fade.jitter.range = 0.1;
-    switches.fade.scale = SCALE_LINEAR;
-    switches.fade.low = 0;
-    switches.fade.high = 0xFF;
+    switches.side = SIDE_BOTTOM;
+    switches.jitter.range = 0.1;
+    switches.scale = SCALE_LINEAR;
+    switches.low = 0.0;
+    switches.high = 1.0;
     switches.blur = 1;
     switches.bgColor.u32 = 0x0;
 
@@ -4634,7 +4678,7 @@ ReflectOp(ClientData clientData, Tcl_Interp *interp, int objc,
     w = srcPtr->width, h = srcPtr->height;
     dw = srcPtr->width, dh = srcPtr->height;
     destPtr = NULL;			/* Suppress compiler warning. */
-    switch (switches.fade.side) {
+    switch (switches.side) {
     case SIDE_BOTTOM:
 	h = srcPtr->height / 2;
 	dh = srcPtr->height + h;
@@ -4658,7 +4702,6 @@ ReflectOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	dw = srcPtr->width + w;
 	break;
     }
-
     if (switches.blur > 0) { 
 	tmpPtr = destPtr;
 	destPtr = Blt_CreatePicture(w, h);
@@ -4666,10 +4709,12 @@ ReflectOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	Blt_FreePicture(tmpPtr);
     }
     tmpPtr = destPtr;
-    destPtr = Blt_ReflectPicture2(tmpPtr, switches.fade.side);
+    destPtr = Blt_ReflectPicture2(tmpPtr, switches.side);
     Blt_FreePicture(tmpPtr);
-    JitterInit(&switches.fade.jitter);
-    Blt_FadePictureWithGradient(destPtr, &switches.fade);
+    JitterInit(&switches.jitter);
+    Blt_FadePictureWithGradient(destPtr, switches.side, switches.low,
+                                switches.high, switches.scale,
+                                &switches.jitter);
     if (switches.bgColor.u32 != 0) {
 	tmpPtr = destPtr;
 	destPtr = Blt_CreatePicture(destPtr->width, destPtr->height);
@@ -4681,7 +4726,7 @@ ReflectOp(ClientData clientData, Tcl_Interp *interp, int objc,
     tmpPtr = destPtr;
     destPtr = Blt_CreatePicture(dw, dh);
 
-    switch (switches.fade.side) {
+    switch (switches.side) {
     case SIDE_BOTTOM:
 	Blt_CopyPictureBits(destPtr, srcPtr, 0, 0, srcPtr->width, 
 		srcPtr->height, 0, 0);

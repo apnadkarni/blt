@@ -236,14 +236,6 @@ typedef struct {
     Blt_Random random;
 } Blt_Jitter;
 
-typedef struct {
-    int side;
-    int high;
-    int low;
-    Blt_Jitter jitter;
-    ScaleType scale;
-} PictFadeSettings;
-
 /* Prototypes of picture routines */
 
 BLT_EXTERN void Blt_ApplyPictureToPicture(Blt_Picture dest, Blt_Picture src,
@@ -400,8 +392,8 @@ BLT_EXTERN void Blt_MapColors(Blt_Picture dest, Blt_Picture src,
 BLT_EXTERN Blt_ColorLookupTable Blt_GetColorLookupTable(
 	struct _Blt_Chain *chainPtr, int numReqColors);
 
-BLT_EXTERN void Blt_FadePictureWithGradient(Blt_Picture picture, 
-	PictFadeSettings *settingsPtr);
+BLT_EXTERN void Blt_FadePictureWithGradient(Blt_Picture picture, int side,
+        double low, double high, int scale, Blt_Jitter *jitterPtr);
 
 BLT_EXTERN Blt_Picture Blt_ReflectPicture2(Blt_Picture picture, int side);
 

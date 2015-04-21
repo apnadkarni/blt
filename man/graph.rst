@@ -85,7 +85,7 @@ markers.
 SYNTAX
 ------
 
-**blt::graph** *pathName* ?\ *option* *value* ... ?
+  **blt::graph** *pathName* ?\ *option* *value* ... ?
 
 The **blt::graph** command creates a new window *pathName* and makes it
 into a *graph* widget.  At the time this command is invoked, there must not
@@ -138,7 +138,6 @@ GRAPH OPERATIONS
   describing *option* is returned.  If one or more *option* and *value*
   pairs are specified, then for each pair, the option *option* is set to
   *value*.  The following options are valid.
-
 
   **-aspect** *aspectRatio*
     Force a fixed aspect ratio of width/height, a floating point number.
@@ -437,7 +436,6 @@ GRAPH OPERATIONS
   See the `POSTSCRIPT`_ section.
 
 *pathName* **snap**  ?\ *switches* ... ? *imageName*
-
   Takes a snapshot of the graph, saving the output in *imageName*.  The
   graph can be off-screen or obscured by other windows.  The following
   switches are available.
@@ -1326,7 +1324,8 @@ The following operations are available for elements.
       that steps the next X-coordinate.  The second is a vertical line,
       moving to the next Y-coordinate.
 
-  **-state**  *what* 
+  **-state**  *state* 
+    Specifies the state of the marker. *State* can be "normal" or "disabled".
 
   **-styles**  *stylesList* 
     Specifies what pen to use based on the range of weights given.
@@ -2064,7 +2063,6 @@ The following operations are available for pens.
   **-valuerotate**  *numDegrees* 
 
 *pathName* **pen create**  *penName*  ?\ *option* *value* ... ?
-
   Creates a new pen by the name *penName*.  No pen by the same name can
   already exist. *Option* and *value* are described in above in the pen
   **configure** operation.
@@ -2079,13 +2077,11 @@ The following operations are available for pens.
 
 
 *pathName* **pen delete** ?\ *penName* ... ?
-
   Deletes one or more pens. *PenName* is the name of a pen created by the
   **pen create** operation.  A pen is not really deleted until it is not
   longer in use, so it's safe to delete pens mapped to elements.
 
 *pathName* **pen names** ?\ *pattern* ... ?
-
   Returns the names of all the pens in the graph.  If one or more
   *pattern* arguments are provided, then the name of any pen matching
   *pattern* will be returned. *Pattern* is a glob-style pattern.
@@ -2105,13 +2101,11 @@ interpreter.
 The following postscript operations are available.
 
 *pathName* **postscript cget** *option* 
-
   Returns the current value of the postscript option given by *option*.
   *Option* may be any option described below for the postscript
   **configure** operation.
 
 *pathName* **postscript  configure** ?\ *option* *value* ... ?
-
   Queries or modifies the configuration options for PostScript generation.
   If *option* isn't specified, a list describing the current postscript
   options for *pathName* is returned.  If *option* is specified, but not
@@ -2143,6 +2137,7 @@ The following postscript operations are available.
     colors to white).  The default mode is "color".
 
   **-comments**  *list*
+    Specifies comments to be added to the PostScript output.
 
   **-decorations**  *boolean*
     Indicates whether PostScript commands to generate color backgrounds and
@@ -2165,9 +2160,11 @@ The following postscript operations are available.
     "Helvetica-Bold".
 
   **-footer**  *formatString*
-
+    Specifies a footer to displayed at the bottom of the page.
+    
   **-greyscale**  *boolean*
-
+    Writes the image out in greyscale.
+    
   **-height**  *numPica*
     Sets the height of the plot.  This lets you print the graph with a height
     different from the one drawn on the screen.  If *numPica* is 0, the
@@ -2224,12 +2221,11 @@ The following postscript operations are available.
 
 
 *pathName* **postscript output** ?\ *fileName*\ ? ?\ *option* *value* ... ?
-
   Outputs a file of encapsulated PostScript.  If a *fileName* argument
-  isn't present, the command returns the PostScript. If any *option-value*
-  pairs are present, they set configuration options controlling how the
-  PostScript is generated.  *Option* and *value* can be anything accepted
-  by the postscript **configure** operation above.
+  isn't present, the command returns the PostScript. If any
+  *option*-*value* pairs are present, they set configuration options
+  controlling how the PostScript is generated.  *Option* and *value* can be
+  anything accepted by the postscript **configure** operation above.
 
 MARKERS
 ~~~~~~~
@@ -2412,6 +2408,7 @@ The following operations are available for markers.
     rotation is "0.0".
 
   **-state**  *state*
+    Specifies the state of the marker. *State* can be "normal" or "disabled".
 
   **-under**  *boolean*
     Indicates whether the marker is drawn below/above data elements.  If
@@ -2505,6 +2502,7 @@ The following operations are available for markers.
     name is uniquely generated.
 
   **-state**  *state*
+    Specifies the state of the marker. *State* can be "normal" or "disabled".
 
   **-under**  *boolean*
     Indicates whether the marker is drawn below/above data elements.  If
@@ -2714,6 +2712,7 @@ The following operations are available for markers.
     foreground color of the stipple.  The default is "black".
 
   **-state**  *state*
+    Specifies the state of the marker. *State* can be "normal" or "disabled".
 
   **-stipple**  *bitmapName*
     Specifies that the polygon should be drawn with a stippled pattern
@@ -2945,7 +2944,8 @@ The following operations are available for markers.
     name is uniquely generated.
 
   **-state**  *state*
-
+    Specifies the state of the marker. *State* can be "normal" or "disabled".
+    
   **-under**  *boolean*
     Indicates whether the marker is drawn below/above data elements.  If
     *boolean* is true, the marker is be drawn underneath the data element
@@ -2972,44 +2972,47 @@ The following operations are available for markers.
     default is "0".
 
 *pathName* **marker delete** ?\ *markerName* ... ?
-
   Removes one of more markers from *pathName*.  *MarkerName* is a marker
   name returned by the **marker create** operation.
 
 *pathName* **marker exists**  *markerName* 
-
   Returns "1" if *markerName* exists and "0" otherwise.
 
 *pathName* **marker find enclosed**  *x1* *y1* *x2* *y2*
+  Finds all the markers that are completely enclosed within
+  the  rectangular region given by *x1*, *y1*, *x2*, and *y2*.
+  *X1*, *y1* and *x2*, *y2 are opposite corners of the region.
 
 *pathName* **marker find overlapping**  *x1* *y1* *x2* *y2*
-
+  Finds all the markers that overlap or are enclosed within
+  the  rectangular region given by *x1*, *y1*, *x2*, and *y2*.
+  *X1*, *y1* and *x2*, *y2 are opposite corners of the region.
+  
 *pathName* **marker get** *markerName*
-
+  Converts the special marker specifier to it name.  This is
+  used currently to convert "current" to the name of the currently
+  picked marker.
+  
 *pathName* **marker lower** *markerName* ?\ *beforeName*\ ?
-
   Lowers *markerName* so that it will be drawn below other markers in
   *pathName*. If a *beforeName* argument is present, *markerName* will be
   positioned just below it.  Both *markerName* and *beforeName* are marker
   names. By default, markers are drawn in the order they were created.
 
 *pathName* **marker names** ?\ *pattern* ... ?  
-
   Returns the names of all the markers in the graph.  If one or more
   *pattern* arguments are provided, then the name of any marker matching
-  *pattern* will be returned. *Pattern* is a glob-style pattern.
+  *pattern* will be returned. *Pattern* is a **glob**\ -style pattern.
 
 *pathName* **marker raise** *markerName* ?\ *afterName*\ ?
-
   Raises *markerName* so that it will be drawn above other markers in
-  *pathName*. If a *afterName* argument is present, *markerName* will be
+  *pathName*. If an *afterName* argument is present, *markerName* will be
   positioned just above it.  Both *markerName* and *afterName* are marker
   names. By default, markers are drawn in the order they were created.
 
 *pathName* **marker type** *markerName* 
-
-  Returns the type of *markerName*, such as "line" or "text".  If
-  *markerName* is not a valid, "" is returned.
+  Returns the type of *markerName* (for example "image").  *MarkerName* is
+  the name of a marker. If *markerName* isn't valid, "" is returned.
 
 
 COMPONENT BINDINGS
@@ -3055,10 +3058,9 @@ The **blt::graph** command creates a new graph.
 
     blt::graph .g -plotbackground black
 
-A new Tcl command ".g" is also created.  This command can be used
-to query and modify the graph.  For example, to change the title of
-the graph to "My Plot", you use the new command and the graph's
-**configure** operation.
+A new Tcl command ".g" is also created.  This command can be used to query
+and modify the graph.  For example, to change the title of the graph to "My
+Plot", you use the new command and the graph's **configure** operation.
 
  ::
 
@@ -3066,9 +3068,9 @@ the graph to "My Plot", you use the new command and the graph's
 
     .g configure -title "My Plot"
 
-A graph has several components. To access a particular component you
-use the component's name. For example, to add data elements, you use
-the new command and the **element create** operation.
+A graph has several components. To access a particular component you use
+the component's name. For example, to add data elements, you use the new
+command and the **element create** operation.
 
  ::
 
@@ -3092,8 +3094,8 @@ Alternately, BLT vectors could be used to hold the X-Y coordinates.
 	    166.60 175.38 }
     .g element create line1 -xdata xVec -ydata yVec
 
-The advantage of using vectors is that when you modify one, the graph
-is automatically redrawn to reflect the new values.
+The advantage of using vectors is that when you modify one, the graph is
+automatically redrawn to reflect the new values.
 
  ::
 
@@ -3140,9 +3142,9 @@ element's **configure** operation.
 
     .g element configure line1 -label ""
 
-You can configure more than just the element's label.  An element has
-many attributes such as symbol type and size, dashed or solid lines,
-colors, line width, etc.
+You can configure more than just the element's label.  An element has many
+attributes such as symbol type and size, dashed or solid lines, colors,
+line width, etc.
 
  ::
 
@@ -3177,9 +3179,9 @@ Zooming is done by simply specifying new axis limits using the **-min** and
     .g axis configure x -min 1.0 -max 1.5
     .g axis configure y -min 12.0 -max 55.15
 
-To zoom interactively, you link the **axis configure** operations with
-some user interaction (such as pressing the mouse button), using the
-**bind** command.  To convert between screen and graph coordinates, use the
+To zoom interactively, you link the **axis configure** operations with some
+user interaction (such as pressing the mouse button), using the **bind**
+command.  To convert between screen and graph coordinates, use the
 **invtransform** operation.
 
  ::

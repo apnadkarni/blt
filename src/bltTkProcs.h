@@ -372,7 +372,8 @@ BLT_EXTERN Blt_ColorLookupTable Blt_GetColorLookupTable(
 #define Blt_FadePictureWithGradient_DECLARED
 /* 62 */
 BLT_EXTERN void		Blt_FadePictureWithGradient(Blt_Picture picture,
-				PictFadeSettings *settingsPtr);
+				int side, double low, double high, int scale,
+				Blt_Jitter *jitterPtr);
 #endif
 #ifndef Blt_ReflectPicture2_DECLARED
 #define Blt_ReflectPicture2_DECLARED
@@ -621,7 +622,7 @@ typedef struct BltTkProcs {
     int (*blt_ResetPicture) (Tcl_Interp *interp, const char *imageName, Blt_Picture picture); /* 59 */
     void (*blt_MapColors) (Blt_Picture dest, Blt_Picture src, Blt_ColorLookupTable clut); /* 60 */
     Blt_ColorLookupTable (*blt_GetColorLookupTable) (struct _Blt_Chain *chainPtr, int numReqColors); /* 61 */
-    void (*blt_FadePictureWithGradient) (Blt_Picture picture, PictFadeSettings *settingsPtr); /* 62 */
+    void (*blt_FadePictureWithGradient) (Blt_Picture picture, int side, double low, double high, int scale, Blt_Jitter *jitterPtr); /* 62 */
     Blt_Picture (*blt_ReflectPicture2) (Blt_Picture picture, int side); /* 63 */
     void (*blt_SubtractColor) (Blt_Picture picture, Blt_Pixel *colorPtr); /* 64 */
     Blt_Picture (*blt_PhotoToPicture) (Tk_PhotoHandle photo); /* 65 */

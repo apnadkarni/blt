@@ -3354,40 +3354,40 @@ Blt_ReflectPicture(Pict *srcPtr, int side)
  *---------------------------------------------------------------------------
  */
 void
-Blt_FadePictureWithGradient(Pict *srcPtr, PictFadeSettings *settingsPtr)
+Blt_FadePictureWithGradient(Pict *srcPtr, int side, double low, double high,
+                            int scale, Blt_Jitter *jitterPtr)
 {
     Blt_Pixel *srcRowPtr;
     int alpha;
     int y;
-
+    
     if (srcPtr->flags & BLT_PIC_ASSOCIATED_COLORS) {
 	Blt_UnassociateColors(srcPtr);
     }
     srcRowPtr = srcPtr->bits;
-    switch (settingsPtr->side) {
+
+    switch (side) {
     case SIDE_BOTTOM:
 	for (y = 0; y < srcPtr->height; y++) {
 	    Blt_Pixel *sp, *send;
 	    double t;
-	    
+            int alpha;
+            
 	    /* 1..0 */
 	    t = 1.0 - ((double)y / (srcPtr->height - 1));
-	    if (settingsPtr->scale == SCALE_LOG) {
+	    if (scale == SCALE_LOG) {
 		t = log10(9.0 * t + 1.0);
 	    }
-	    alpha = settingsPtr->low + 
-		(int)(((settingsPtr->high - settingsPtr->low) * t) + 0.5);
 	    for (sp = srcRowPtr, send = sp + srcPtr->width; sp < send; sp++) {
 		int a, t1;
-
-		if (settingsPtr->jitter.range > 0.0) {
-		    double j;
-
-		    j = t + Jitter(&settingsPtr->jitter);
-		    j = JCLAMP(j);
-		    alpha = settingsPtr->low + (int)(((settingsPtr->high - 
-					  settingsPtr->low) * t) + 0.5);
+                double m;
+                
+                m = t;
+		if (jitterPtr->range > 0.0) {
+		    m += Jitter(jitterPtr);
+		    m = JCLAMP(m);
 		}
+                alpha = (int)((low + ((high - low) * m)) * 255.0 + 0.5);
 		a = imul8x8(sp->Alpha, alpha, t1);
 		sp->Alpha = UCLAMP(a);
 	    }
@@ -3402,19 +3402,19 @@ Blt_FadePictureWithGradient(Pict *srcPtr, PictFadeSettings *settingsPtr)
 
 	    /* 0..1 */
 	    t = 1.0 - ((double)y / (srcPtr->height - 1));
-	    alpha = settingsPtr->low + 
-		(int)(((settingsPtr->high - settingsPtr->low) * t) + 0.5);
+	    if (scale == SCALE_LOG) {
+		t = log10(9.0 * t + 1.0);
+	    }
 	    for (sp = srcRowPtr, send = sp + srcPtr->width; sp < send; sp++) {
 		int a, t1;
-
-		if (settingsPtr->jitter.range > 0.0) {
-		    double j;
-
-		    j = t + Jitter(&settingsPtr->jitter);
-		    j = JCLAMP(j);
-		    alpha = settingsPtr->low + (int)(((settingsPtr->high - 
-			settingsPtr->low) * t) + 0.5);
+                double m;
+                
+                m = t;
+		if (jitterPtr->range > 0.0) {
+		    m += Jitter(jitterPtr);
+		    m = JCLAMP(m);
 		}
+                alpha = (int)((low + ((high - low) * m)) * 255.0 + 0.5);
 		a = imul8x8(sp->Alpha, alpha, t1);
 		sp->Alpha = UCLAMP(a);
 	    }
@@ -3434,18 +3434,15 @@ Blt_FadePictureWithGradient(Pict *srcPtr, PictFadeSettings *settingsPtr)
 
 		/* 0..1 */
 		t = (double)x / (srcPtr->width - 1);
-		if (settingsPtr->jitter.range > 0.0) {
-		    double j;
-
-		    j = t + Jitter(&settingsPtr->jitter);
-		    j = JCLAMP(j);
-		    alpha = settingsPtr->low + (int)(((settingsPtr->high - 
-			settingsPtr->low) * t) + 0.5);
-		} else {
-		    alpha = settingsPtr->low + (int)(((settingsPtr->high - 
-			settingsPtr->low) * t) + 0.5);
+                if (scale == SCALE_LOG) {
+                    t = log10(9.0 * t + 1.0);
+                }
+		if (jitterPtr->range > 0.0) {
+		    t += Jitter(jitterPtr);
+		    t = JCLAMP(t);
 		}
-		a = imul8x8(sp->Alpha, alpha, t1);
+                alpha = (int)((low + ((high - low) * t)) * 255.0 + 0.5);
+                a = imul8x8(sp->Alpha, alpha, t1);
 		sp->Alpha = UCLAMP(a);
 	    }
 	    srcRowPtr += srcPtr->pixelsPerRow;
@@ -3464,17 +3461,14 @@ Blt_FadePictureWithGradient(Pict *srcPtr, PictFadeSettings *settingsPtr)
 
 		/* 1..0 */
 		t = 1.0 - ((double)x / (srcPtr->width - 1));
-		if (settingsPtr->jitter.range > 0.0) {
-		    double j;
-
-		    j = t + Jitter(&settingsPtr->jitter);
-		    j = JCLAMP(j);
-		    alpha = settingsPtr->low + (int)(((settingsPtr->high - 
-					  settingsPtr->low) * t) + 0.5);
-		} else {
-		    alpha = settingsPtr->low + (int)(((settingsPtr->high - 
-				      settingsPtr->low) * t) + 0.5);
+                if (scale == SCALE_LOG) {
+                    t = log10(9.0 * t + 1.0);
+                }
+		if (jitterPtr->range > 0.0) {
+		    t += Jitter(jitterPtr);
+		    t = JCLAMP(t);
 		}
+                alpha = (int)((low + ((high - low) * t)) * 255.0 + 0.5);
 		a = imul8x8(sp->Alpha, alpha, t1);
 		sp->Alpha = UCLAMP(a);
 	    }

@@ -1,13 +1,13 @@
 
-===============
+=======
 picture
-===============
+=======
 
 ----------------------
 Full color image type.
 ----------------------
 
-:Author: gahowlett@gmail.com
+:Author: George A Howlett <gahowlett@gmail.com>
 :Date:   2012-11-28
 :Copyright: 2015 George A. Howlett.
 :Version: 4.0
@@ -115,7 +115,8 @@ the command.  The operations available for pictures are listed below.
   Blanks the image. By default, the entire image is set to be transparent
   and the background of whatever window it is displayed in will show
   through.  If a *colorSpec* argument is given then the image will be
-  filled with that color.
+  filled with that color.  *ColorSpec* is a color name or the name
+  of a paintbrush created by the **blt::paintbrush** command.
 
 *imageName* **blend** *bgName* *fgName*  ?\ *switches* ... ?
   Blends or composites *fgImage* over *bgImage* using one the alpha
@@ -417,70 +418,70 @@ the command.  The operations available for pictures are listed below.
   is "10000" and the image width is 50, the value will be clamped to 49.
 
 *imageName* **crossfade** *fromImage* *toImage* ?\ *switches* ... ?
-   Cross fades *toImage* into *fromImage*, saving the result in
-   *imageName*. *FromImage* and *toImage* can be either the name of a
-   picture (it can not be *imageName*) or a color specification.  For
-   example if *toImage* is "black", this image will fade to black.
-   *FromImage* and *toImage* cannot both be colors. *ImageName* will first
-   be a copy of *fromImage*.  It is progressively changed by fading the
-   *fromImage* and adding *toImage* until *imageName* is a copy of
-   *toImage*.
+  Cross fades *toImage* into *fromImage*, saving the result in
+  *imageName*. *FromImage* and *toImage* can be either the name of a
+  picture (it can not be *imageName*) or a color specification.  For
+  example if *toImage* is "black", this image will fade to black.
+  *FromImage* and *toImage* cannot both be colors. *ImageName* will first
+  be a copy of *fromImage*.  It is progressively changed by fading the
+  *fromImage* and adding *toImage* until *imageName* is a copy of
+  *toImage*.
 
-   If **-delay** is greater than zero, the transition automatically starts
-   after this command completes at an idle point. Care must be taken not to
-   the change *imageName* while the transition is occurring. The results
-   will be unexpected. You can specify a TCL variable that is automatically
-   set when the transition has completed. See the **-variable** switch.
-   The rate of transition is determined by both the **-delay** and
-   **-steps** switches.  *Switches* may be any of the following.
+  If **-delay** is greater than zero, the transition automatically starts
+  after this command completes at an idle point. Care must be taken not to
+  the change *imageName* while the transition is occurring. The results
+  will be unexpected. You can specify a TCL variable that is automatically
+  set when the transition has completed. See the **-variable** switch.
+  The rate of transition is determined by both the **-delay** and
+  **-steps** switches.  *Switches* may be any of the following.
 
-   **-goto** *step*
-     Specifies the current step of the transition.  The default is 1.
+  **-goto** *step*
+    Specifies the current step of the transition.  The default is 1.
 
-   **-delay** *milliseconds*
-     Specifies the delay between steps in the transition in milliseconds.
-     If *milliseconds* is 0, then no automatic changes will occur.
-     The default is "0".
+  **-delay** *milliseconds*
+    Specifies the delay between steps in the transition in milliseconds.
+    If *milliseconds* is 0, then no automatic changes will occur.
+    The default is "0".
 
-   **-steps** *numSteps*
-     Specifies how may steps the transition should take.  The default is
-     "10".
+  **-steps** *numSteps*
+    Specifies how may steps the transition should take.  The default is
+    "10".
 
-   **-variable** *varName*
-     Specifies the name of a TCL variable that will be set when the
-     transition has completed.
+  **-variable** *varName*
+    Specifies the name of a TCL variable that will be set when the
+    transition has completed.
 
 *imageName* **dissolve** *fromImage* *toImage* ?\ *switches* ... ?
-   Transitions from *fromImage* to *toImage* by dissolving *toImage*
-   into *fromImage* and saving the result in *imageName*. *FromImage* and
-   *toImage* can be either the name of a picture (it can not be
-   *imageName*) or a color specification.  *FromImage* and *toImage* cannot
-   both be colors. *ImageName* starts as a copy of *fromImage*.  It is
-   progressively changed by randomly copying pixels from *toImage* into it.
+  Transitions from *fromImage* to *toImage* by dissolving *toImage*
+  into *fromImage* and saving the result in *imageName*. *FromImage* and
+  *toImage* can be either the name of a picture (it can not be
+  *imageName*) or a color specification.  *FromImage* and *toImage* cannot
+  both be colors. *ImageName* starts as a copy of *fromImage*.  It is
+  progressively changed by randomly copying pixels from *toImage* into it.
 
-   Reference: "A Digital "Dissolve" Effect" by Mike Morton in "Graphics
-   Gems V", pp. 221-232, Academic Press, 1994.
+  Reference: "A Digital "Dissolve" Effect" by Mike Morton in "Graphics
+  Gems V", pp. 221-232, Academic Press, 1994.
 
 
-   This transition will start after this command completes, when an idle
-   point is reached. Care must be taken not to change *imageName* while the
-   transition is occurring. The results may be unexpected. You can specify a
-   TCL variable that will be automatically set when the transition has
-   completed. See the **-variable** switch.  The rate of transition is
-   determined by both the **-delay** and **-steps** switches.
-   *Switches* may be any of the following.
+  This transition will start after this command completes, when an idle
+  point is reached. Care must be taken not to change *imageName* while the
+  transition is occurring. The results may be unexpected. You can specify a
+  TCL variable that will be automatically set when the transition has
+  completed. See the **-variable** switch.  The rate of transition is
+  determined by both the **-delay** and **-steps** switches.
+  *Switches* may be any of the following.
 
-   **-delay** *milliseconds*
-     Specifies the delay between steps in the transition in milliseconds.
-     The default is "0". 
+  **-delay** *milliseconds*
+    Specifies the delay between steps in the transition in milliseconds.
+    The default is "0". 
 
-   **-steps** *numSteps*
-     Specifies how may steps the transition should take.  The default is
-     "10".
+  **-steps** *numSteps*
+    Specifies how may steps the transition should take.  The default is
+    "10".
      
-   **-variable** *varName*
-     Specifies the name of a TCL variable that will be set when the
-     transition has completed.
+  **-variable** *varName*
+    Specifies the name of a TCL variable that will be set when the
+    transition has completed.
 
 *imageName* **draw** ?\ *args* ... ?
 
@@ -744,6 +745,8 @@ the command.  The operations available for pictures are listed below.
   not be the same as *imageName*. *Switches* may be any of the following.
 
   **-background** *colorSpec*
+    Specifies the background color of reflection.  If *colorSpec* is
+    "", then the background is transparent.
 
   **-blur** *blurRadius*
     Specifies the radius of the blur.  If *blurRadius* is 0, no blurring
@@ -758,22 +761,27 @@ the command.  The operations available for pictures are listed below.
     **logarithmic**
 	Colors are interpolated using the log of the value.
     
-  **-low** *opacity*
+  **-low** *percentOpacity*
+    Specifies the starting percent opacity of the reflection.
+    *PercentOpacity* is a real number between 0 and 100.  It is the
+    percentage that opacity may vary.
 
-  **-high** *opacity*
+  **-high** *percentOpacity*
+    Specifies the ending percent opacity of the reflection.
+    *PercentOpacity* is a real number between 0 and 100.  It is the
+    percentage that opacity may vary.
 
-  **-jitter** *percent*
+  **-jitter** *percentJitter*
     Specifies the amount of randomness to add to the interpolated colors.
-    *Percent* is a real number between 0 and 100.  It is the percentage
-    that colors may vary.
+    *PercentJitter* is a real number between 0 and 100.  It is the
+    percentage that colors may vary.
   
   **-ratio** *number*
     Specifies the ratio between the *srcName* and the reflection.
 
   **-side** *side*
     Specifies the side of *srcName* to be reflected.  Side can be "bottom"
-    or "top".  "Left" and "right" are not implemented yet.
-
+    "top", "left" or "right".
 
 *imageName* **resample** *srcName* ?\ *switches* ... ?
   Resizes *srcName* with the resulting image saved in *imageName*.
