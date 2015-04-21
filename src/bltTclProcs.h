@@ -1141,10 +1141,10 @@ BLT_EXTERN int		Blt_Tree_DeleteNode(Blt_Tree tree, Blt_TreeNode node);
 BLT_EXTERN int		Blt_Tree_MoveNode(Blt_Tree tree, Blt_TreeNode node,
 				Blt_TreeNode parent, Blt_TreeNode before);
 #endif
-#ifndef Blt_Tree_GetNode_DECLARED
-#define Blt_Tree_GetNode_DECLARED
+#ifndef Blt_Tree_GetNodeFromIndex_DECLARED
+#define Blt_Tree_GetNodeFromIndex_DECLARED
 /* 182 */
-BLT_EXTERN Blt_TreeNode	 Blt_Tree_GetNode(Blt_Tree tree, long inode);
+BLT_EXTERN Blt_TreeNode	 Blt_Tree_GetNodeFromIndex(Blt_Tree tree, long inode);
 #endif
 #ifndef Blt_Tree_FindChild_DECLARED
 #define Blt_Tree_FindChild_DECLARED
@@ -1575,66 +1575,90 @@ BLT_EXTERN int		Blt_Tree_RegisterFormat(Tcl_Interp *interp,
 BLT_EXTERN Blt_TreeTagEntry * Blt_Tree_RememberTag(Blt_Tree tree,
 				const char *name);
 #endif
+#ifndef Blt_Tree_GetNodeFromObj_DECLARED
+#define Blt_Tree_GetNodeFromObj_DECLARED
+/* 250 */
+BLT_EXTERN int		Blt_Tree_GetNodeFromObj(Tcl_Interp *interp,
+				Blt_Tree tree, Tcl_Obj *objPtr,
+				Blt_TreeNode *nodePtr);
+#endif
+#ifndef Blt_Tree_GetNodeIterator_DECLARED
+#define Blt_Tree_GetNodeIterator_DECLARED
+/* 251 */
+BLT_EXTERN int		Blt_Tree_GetNodeIterator(Tcl_Interp *interp,
+				Blt_Tree tree, Tcl_Obj *objPtr,
+				Blt_TreeIterator *iterPtr);
+#endif
+#ifndef Blt_Tree_FirstTaggedNode_DECLARED
+#define Blt_Tree_FirstTaggedNode_DECLARED
+/* 252 */
+BLT_EXTERN Blt_TreeNode	 Blt_Tree_FirstTaggedNode(Blt_TreeIterator *iterPtr);
+#endif
+#ifndef Blt_Tree_NextTaggedNode_DECLARED
+#define Blt_Tree_NextTaggedNode_DECLARED
+/* 253 */
+BLT_EXTERN Blt_TreeNode	 Blt_Tree_NextTaggedNode(Blt_TreeIterator *iterPtr);
+#endif
 #ifndef Blt_VecMin_DECLARED
 #define Blt_VecMin_DECLARED
-/* 250 */
+/* 254 */
 BLT_EXTERN double	Blt_VecMin(Blt_Vector *vPtr);
 #endif
 #ifndef Blt_VecMax_DECLARED
 #define Blt_VecMax_DECLARED
-/* 251 */
+/* 255 */
 BLT_EXTERN double	Blt_VecMax(Blt_Vector *vPtr);
 #endif
 #ifndef Blt_AllocVectorId_DECLARED
 #define Blt_AllocVectorId_DECLARED
-/* 252 */
+/* 256 */
 BLT_EXTERN Blt_VectorId	 Blt_AllocVectorId(Tcl_Interp *interp,
 				const char *vecName);
 #endif
 #ifndef Blt_SetVectorChangedProc_DECLARED
 #define Blt_SetVectorChangedProc_DECLARED
-/* 253 */
+/* 257 */
 BLT_EXTERN void		Blt_SetVectorChangedProc(Blt_VectorId clientId,
 				Blt_VectorChangedProc *proc,
 				ClientData clientData);
 #endif
 #ifndef Blt_FreeVectorId_DECLARED
 #define Blt_FreeVectorId_DECLARED
-/* 254 */
+/* 258 */
 BLT_EXTERN void		Blt_FreeVectorId(Blt_VectorId clientId);
 #endif
 #ifndef Blt_GetVectorById_DECLARED
 #define Blt_GetVectorById_DECLARED
-/* 255 */
+/* 259 */
 BLT_EXTERN int		Blt_GetVectorById(Tcl_Interp *interp,
 				Blt_VectorId clientId,
 				Blt_Vector **vecPtrPtr);
 #endif
 #ifndef Blt_NameOfVectorId_DECLARED
 #define Blt_NameOfVectorId_DECLARED
-/* 256 */
+/* 260 */
 BLT_EXTERN const char *	 Blt_NameOfVectorId(Blt_VectorId clientId);
 #endif
 #ifndef Blt_NameOfVector_DECLARED
 #define Blt_NameOfVector_DECLARED
-/* 257 */
+/* 261 */
 BLT_EXTERN const char *	 Blt_NameOfVector(Blt_Vector *vecPtr);
 #endif
 #ifndef Blt_VectorNotifyPending_DECLARED
 #define Blt_VectorNotifyPending_DECLARED
-/* 258 */
+/* 262 */
 BLT_EXTERN int		Blt_VectorNotifyPending(Blt_VectorId clientId);
 #endif
 #ifndef Blt_CreateVector_DECLARED
 #define Blt_CreateVector_DECLARED
-/* 259 */
+/* 263 */
 BLT_EXTERN int		Blt_CreateVector(Tcl_Interp *interp,
 				const char *vecName, int size,
 				Blt_Vector **vecPtrPtr);
 #endif
 #ifndef Blt_CreateVector2_DECLARED
 #define Blt_CreateVector2_DECLARED
-/* 260 */
+/* 264 */
 BLT_EXTERN int		Blt_CreateVector2(Tcl_Interp *interp,
 				const char *vecName, const char *cmdName,
 				const char *varName, int initialSize,
@@ -1642,60 +1666,60 @@ BLT_EXTERN int		Blt_CreateVector2(Tcl_Interp *interp,
 #endif
 #ifndef Blt_GetVector_DECLARED
 #define Blt_GetVector_DECLARED
-/* 261 */
+/* 265 */
 BLT_EXTERN int		Blt_GetVector(Tcl_Interp *interp,
 				const char *vecName, Blt_Vector **vecPtrPtr);
 #endif
 #ifndef Blt_GetVectorFromObj_DECLARED
 #define Blt_GetVectorFromObj_DECLARED
-/* 262 */
+/* 266 */
 BLT_EXTERN int		Blt_GetVectorFromObj(Tcl_Interp *interp,
 				Tcl_Obj *objPtr, Blt_Vector **vecPtrPtr);
 #endif
 #ifndef Blt_VectorExists_DECLARED
 #define Blt_VectorExists_DECLARED
-/* 263 */
+/* 267 */
 BLT_EXTERN int		Blt_VectorExists(Tcl_Interp *interp,
 				const char *vecName);
 #endif
 #ifndef Blt_ResetVector_DECLARED
 #define Blt_ResetVector_DECLARED
-/* 264 */
+/* 268 */
 BLT_EXTERN int		Blt_ResetVector(Blt_Vector *vecPtr, double *dataArr,
 				int n, int arraySize, Tcl_FreeProc *freeProc);
 #endif
 #ifndef Blt_ResizeVector_DECLARED
 #define Blt_ResizeVector_DECLARED
-/* 265 */
+/* 269 */
 BLT_EXTERN int		Blt_ResizeVector(Blt_Vector *vecPtr, int n);
 #endif
 #ifndef Blt_DeleteVectorByName_DECLARED
 #define Blt_DeleteVectorByName_DECLARED
-/* 266 */
+/* 270 */
 BLT_EXTERN int		Blt_DeleteVectorByName(Tcl_Interp *interp,
 				const char *vecName);
 #endif
 #ifndef Blt_DeleteVector_DECLARED
 #define Blt_DeleteVector_DECLARED
-/* 267 */
+/* 271 */
 BLT_EXTERN int		Blt_DeleteVector(Blt_Vector *vecPtr);
 #endif
 #ifndef Blt_ExprVector_DECLARED
 #define Blt_ExprVector_DECLARED
-/* 268 */
+/* 272 */
 BLT_EXTERN int		Blt_ExprVector(Tcl_Interp *interp, char *expr,
 				Blt_Vector *vecPtr);
 #endif
 #ifndef Blt_InstallIndexProc_DECLARED
 #define Blt_InstallIndexProc_DECLARED
-/* 269 */
+/* 273 */
 BLT_EXTERN void		Blt_InstallIndexProc(Tcl_Interp *interp,
 				const char *indexName,
 				Blt_VectorIndexProc *procPtr);
 #endif
 #ifndef Blt_VectorExists2_DECLARED
 #define Blt_VectorExists2_DECLARED
-/* 270 */
+/* 274 */
 BLT_EXTERN int		Blt_VectorExists2(Tcl_Interp *interp,
 				const char *vecName);
 #endif
@@ -1890,7 +1914,7 @@ typedef struct BltTclProcs {
     Blt_TreeNode (*blt_Tree_CreateNodeWithId) (Blt_Tree tree, Blt_TreeNode parent, const char *name, long inode, long position); /* 179 */
     int (*blt_Tree_DeleteNode) (Blt_Tree tree, Blt_TreeNode node); /* 180 */
     int (*blt_Tree_MoveNode) (Blt_Tree tree, Blt_TreeNode node, Blt_TreeNode parent, Blt_TreeNode before); /* 181 */
-    Blt_TreeNode (*blt_Tree_GetNode) (Blt_Tree tree, long inode); /* 182 */
+    Blt_TreeNode (*blt_Tree_GetNodeFromIndex) (Blt_Tree tree, long inode); /* 182 */
     Blt_TreeNode (*blt_Tree_FindChild) (Blt_TreeNode parent, const char *name); /* 183 */
     Blt_TreeNode (*blt_Tree_NextNode) (Blt_TreeNode root, Blt_TreeNode node); /* 184 */
     Blt_TreeNode (*blt_Tree_PrevNode) (Blt_TreeNode root, Blt_TreeNode node); /* 185 */
@@ -1958,27 +1982,31 @@ typedef struct BltTclProcs {
     long (*blt_Tree_Depth) (Blt_Tree tree); /* 247 */
     int (*blt_Tree_RegisterFormat) (Tcl_Interp *interp, const char *fmtName, Blt_TreeImportProc *importProc, Blt_TreeExportProc *exportProc); /* 248 */
     Blt_TreeTagEntry * (*blt_Tree_RememberTag) (Blt_Tree tree, const char *name); /* 249 */
-    double (*blt_VecMin) (Blt_Vector *vPtr); /* 250 */
-    double (*blt_VecMax) (Blt_Vector *vPtr); /* 251 */
-    Blt_VectorId (*blt_AllocVectorId) (Tcl_Interp *interp, const char *vecName); /* 252 */
-    void (*blt_SetVectorChangedProc) (Blt_VectorId clientId, Blt_VectorChangedProc *proc, ClientData clientData); /* 253 */
-    void (*blt_FreeVectorId) (Blt_VectorId clientId); /* 254 */
-    int (*blt_GetVectorById) (Tcl_Interp *interp, Blt_VectorId clientId, Blt_Vector **vecPtrPtr); /* 255 */
-    const char * (*blt_NameOfVectorId) (Blt_VectorId clientId); /* 256 */
-    const char * (*blt_NameOfVector) (Blt_Vector *vecPtr); /* 257 */
-    int (*blt_VectorNotifyPending) (Blt_VectorId clientId); /* 258 */
-    int (*blt_CreateVector) (Tcl_Interp *interp, const char *vecName, int size, Blt_Vector **vecPtrPtr); /* 259 */
-    int (*blt_CreateVector2) (Tcl_Interp *interp, const char *vecName, const char *cmdName, const char *varName, int initialSize, Blt_Vector **vecPtrPtr); /* 260 */
-    int (*blt_GetVector) (Tcl_Interp *interp, const char *vecName, Blt_Vector **vecPtrPtr); /* 261 */
-    int (*blt_GetVectorFromObj) (Tcl_Interp *interp, Tcl_Obj *objPtr, Blt_Vector **vecPtrPtr); /* 262 */
-    int (*blt_VectorExists) (Tcl_Interp *interp, const char *vecName); /* 263 */
-    int (*blt_ResetVector) (Blt_Vector *vecPtr, double *dataArr, int n, int arraySize, Tcl_FreeProc *freeProc); /* 264 */
-    int (*blt_ResizeVector) (Blt_Vector *vecPtr, int n); /* 265 */
-    int (*blt_DeleteVectorByName) (Tcl_Interp *interp, const char *vecName); /* 266 */
-    int (*blt_DeleteVector) (Blt_Vector *vecPtr); /* 267 */
-    int (*blt_ExprVector) (Tcl_Interp *interp, char *expr, Blt_Vector *vecPtr); /* 268 */
-    void (*blt_InstallIndexProc) (Tcl_Interp *interp, const char *indexName, Blt_VectorIndexProc *procPtr); /* 269 */
-    int (*blt_VectorExists2) (Tcl_Interp *interp, const char *vecName); /* 270 */
+    int (*blt_Tree_GetNodeFromObj) (Tcl_Interp *interp, Blt_Tree tree, Tcl_Obj *objPtr, Blt_TreeNode *nodePtr); /* 250 */
+    int (*blt_Tree_GetNodeIterator) (Tcl_Interp *interp, Blt_Tree tree, Tcl_Obj *objPtr, Blt_TreeIterator *iterPtr); /* 251 */
+    Blt_TreeNode (*blt_Tree_FirstTaggedNode) (Blt_TreeIterator *iterPtr); /* 252 */
+    Blt_TreeNode (*blt_Tree_NextTaggedNode) (Blt_TreeIterator *iterPtr); /* 253 */
+    double (*blt_VecMin) (Blt_Vector *vPtr); /* 254 */
+    double (*blt_VecMax) (Blt_Vector *vPtr); /* 255 */
+    Blt_VectorId (*blt_AllocVectorId) (Tcl_Interp *interp, const char *vecName); /* 256 */
+    void (*blt_SetVectorChangedProc) (Blt_VectorId clientId, Blt_VectorChangedProc *proc, ClientData clientData); /* 257 */
+    void (*blt_FreeVectorId) (Blt_VectorId clientId); /* 258 */
+    int (*blt_GetVectorById) (Tcl_Interp *interp, Blt_VectorId clientId, Blt_Vector **vecPtrPtr); /* 259 */
+    const char * (*blt_NameOfVectorId) (Blt_VectorId clientId); /* 260 */
+    const char * (*blt_NameOfVector) (Blt_Vector *vecPtr); /* 261 */
+    int (*blt_VectorNotifyPending) (Blt_VectorId clientId); /* 262 */
+    int (*blt_CreateVector) (Tcl_Interp *interp, const char *vecName, int size, Blt_Vector **vecPtrPtr); /* 263 */
+    int (*blt_CreateVector2) (Tcl_Interp *interp, const char *vecName, const char *cmdName, const char *varName, int initialSize, Blt_Vector **vecPtrPtr); /* 264 */
+    int (*blt_GetVector) (Tcl_Interp *interp, const char *vecName, Blt_Vector **vecPtrPtr); /* 265 */
+    int (*blt_GetVectorFromObj) (Tcl_Interp *interp, Tcl_Obj *objPtr, Blt_Vector **vecPtrPtr); /* 266 */
+    int (*blt_VectorExists) (Tcl_Interp *interp, const char *vecName); /* 267 */
+    int (*blt_ResetVector) (Blt_Vector *vecPtr, double *dataArr, int n, int arraySize, Tcl_FreeProc *freeProc); /* 268 */
+    int (*blt_ResizeVector) (Blt_Vector *vecPtr, int n); /* 269 */
+    int (*blt_DeleteVectorByName) (Tcl_Interp *interp, const char *vecName); /* 270 */
+    int (*blt_DeleteVector) (Blt_Vector *vecPtr); /* 271 */
+    int (*blt_ExprVector) (Tcl_Interp *interp, char *expr, Blt_Vector *vecPtr); /* 272 */
+    void (*blt_InstallIndexProc) (Tcl_Interp *interp, const char *indexName, Blt_VectorIndexProc *procPtr); /* 273 */
+    int (*blt_VectorExists2) (Tcl_Interp *interp, const char *vecName); /* 274 */
 } BltTclProcs;
 
 #ifdef __cplusplus
@@ -2720,9 +2748,9 @@ extern BltTclProcs *bltTclProcsPtr;
 #define Blt_Tree_MoveNode \
 	(bltTclProcsPtr->blt_Tree_MoveNode) /* 181 */
 #endif
-#ifndef Blt_Tree_GetNode
-#define Blt_Tree_GetNode \
-	(bltTclProcsPtr->blt_Tree_GetNode) /* 182 */
+#ifndef Blt_Tree_GetNodeFromIndex
+#define Blt_Tree_GetNodeFromIndex \
+	(bltTclProcsPtr->blt_Tree_GetNodeFromIndex) /* 182 */
 #endif
 #ifndef Blt_Tree_FindChild
 #define Blt_Tree_FindChild \
@@ -2992,89 +3020,105 @@ extern BltTclProcs *bltTclProcsPtr;
 #define Blt_Tree_RememberTag \
 	(bltTclProcsPtr->blt_Tree_RememberTag) /* 249 */
 #endif
+#ifndef Blt_Tree_GetNodeFromObj
+#define Blt_Tree_GetNodeFromObj \
+	(bltTclProcsPtr->blt_Tree_GetNodeFromObj) /* 250 */
+#endif
+#ifndef Blt_Tree_GetNodeIterator
+#define Blt_Tree_GetNodeIterator \
+	(bltTclProcsPtr->blt_Tree_GetNodeIterator) /* 251 */
+#endif
+#ifndef Blt_Tree_FirstTaggedNode
+#define Blt_Tree_FirstTaggedNode \
+	(bltTclProcsPtr->blt_Tree_FirstTaggedNode) /* 252 */
+#endif
+#ifndef Blt_Tree_NextTaggedNode
+#define Blt_Tree_NextTaggedNode \
+	(bltTclProcsPtr->blt_Tree_NextTaggedNode) /* 253 */
+#endif
 #ifndef Blt_VecMin
 #define Blt_VecMin \
-	(bltTclProcsPtr->blt_VecMin) /* 250 */
+	(bltTclProcsPtr->blt_VecMin) /* 254 */
 #endif
 #ifndef Blt_VecMax
 #define Blt_VecMax \
-	(bltTclProcsPtr->blt_VecMax) /* 251 */
+	(bltTclProcsPtr->blt_VecMax) /* 255 */
 #endif
 #ifndef Blt_AllocVectorId
 #define Blt_AllocVectorId \
-	(bltTclProcsPtr->blt_AllocVectorId) /* 252 */
+	(bltTclProcsPtr->blt_AllocVectorId) /* 256 */
 #endif
 #ifndef Blt_SetVectorChangedProc
 #define Blt_SetVectorChangedProc \
-	(bltTclProcsPtr->blt_SetVectorChangedProc) /* 253 */
+	(bltTclProcsPtr->blt_SetVectorChangedProc) /* 257 */
 #endif
 #ifndef Blt_FreeVectorId
 #define Blt_FreeVectorId \
-	(bltTclProcsPtr->blt_FreeVectorId) /* 254 */
+	(bltTclProcsPtr->blt_FreeVectorId) /* 258 */
 #endif
 #ifndef Blt_GetVectorById
 #define Blt_GetVectorById \
-	(bltTclProcsPtr->blt_GetVectorById) /* 255 */
+	(bltTclProcsPtr->blt_GetVectorById) /* 259 */
 #endif
 #ifndef Blt_NameOfVectorId
 #define Blt_NameOfVectorId \
-	(bltTclProcsPtr->blt_NameOfVectorId) /* 256 */
+	(bltTclProcsPtr->blt_NameOfVectorId) /* 260 */
 #endif
 #ifndef Blt_NameOfVector
 #define Blt_NameOfVector \
-	(bltTclProcsPtr->blt_NameOfVector) /* 257 */
+	(bltTclProcsPtr->blt_NameOfVector) /* 261 */
 #endif
 #ifndef Blt_VectorNotifyPending
 #define Blt_VectorNotifyPending \
-	(bltTclProcsPtr->blt_VectorNotifyPending) /* 258 */
+	(bltTclProcsPtr->blt_VectorNotifyPending) /* 262 */
 #endif
 #ifndef Blt_CreateVector
 #define Blt_CreateVector \
-	(bltTclProcsPtr->blt_CreateVector) /* 259 */
+	(bltTclProcsPtr->blt_CreateVector) /* 263 */
 #endif
 #ifndef Blt_CreateVector2
 #define Blt_CreateVector2 \
-	(bltTclProcsPtr->blt_CreateVector2) /* 260 */
+	(bltTclProcsPtr->blt_CreateVector2) /* 264 */
 #endif
 #ifndef Blt_GetVector
 #define Blt_GetVector \
-	(bltTclProcsPtr->blt_GetVector) /* 261 */
+	(bltTclProcsPtr->blt_GetVector) /* 265 */
 #endif
 #ifndef Blt_GetVectorFromObj
 #define Blt_GetVectorFromObj \
-	(bltTclProcsPtr->blt_GetVectorFromObj) /* 262 */
+	(bltTclProcsPtr->blt_GetVectorFromObj) /* 266 */
 #endif
 #ifndef Blt_VectorExists
 #define Blt_VectorExists \
-	(bltTclProcsPtr->blt_VectorExists) /* 263 */
+	(bltTclProcsPtr->blt_VectorExists) /* 267 */
 #endif
 #ifndef Blt_ResetVector
 #define Blt_ResetVector \
-	(bltTclProcsPtr->blt_ResetVector) /* 264 */
+	(bltTclProcsPtr->blt_ResetVector) /* 268 */
 #endif
 #ifndef Blt_ResizeVector
 #define Blt_ResizeVector \
-	(bltTclProcsPtr->blt_ResizeVector) /* 265 */
+	(bltTclProcsPtr->blt_ResizeVector) /* 269 */
 #endif
 #ifndef Blt_DeleteVectorByName
 #define Blt_DeleteVectorByName \
-	(bltTclProcsPtr->blt_DeleteVectorByName) /* 266 */
+	(bltTclProcsPtr->blt_DeleteVectorByName) /* 270 */
 #endif
 #ifndef Blt_DeleteVector
 #define Blt_DeleteVector \
-	(bltTclProcsPtr->blt_DeleteVector) /* 267 */
+	(bltTclProcsPtr->blt_DeleteVector) /* 271 */
 #endif
 #ifndef Blt_ExprVector
 #define Blt_ExprVector \
-	(bltTclProcsPtr->blt_ExprVector) /* 268 */
+	(bltTclProcsPtr->blt_ExprVector) /* 272 */
 #endif
 #ifndef Blt_InstallIndexProc
 #define Blt_InstallIndexProc \
-	(bltTclProcsPtr->blt_InstallIndexProc) /* 269 */
+	(bltTclProcsPtr->blt_InstallIndexProc) /* 273 */
 #endif
 #ifndef Blt_VectorExists2
 #define Blt_VectorExists2 \
-	(bltTclProcsPtr->blt_VectorExists2) /* 270 */
+	(bltTclProcsPtr->blt_VectorExists2) /* 274 */
 #endif
 
 #endif /* defined(USE_BLT_STUBS) && !defined(BUILD_BLT_TCL_PROCS) */

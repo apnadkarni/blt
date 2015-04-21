@@ -195,7 +195,7 @@ BltTclProcs bltTclProcs = {
     Blt_Tree_CreateNodeWithId, /* 179 */
     Blt_Tree_DeleteNode, /* 180 */
     Blt_Tree_MoveNode, /* 181 */
-    Blt_Tree_GetNode, /* 182 */
+    Blt_Tree_GetNodeFromIndex, /* 182 */
     Blt_Tree_FindChild, /* 183 */
     Blt_Tree_NextNode, /* 184 */
     Blt_Tree_PrevNode, /* 185 */
@@ -263,27 +263,31 @@ BltTclProcs bltTclProcs = {
     Blt_Tree_Depth, /* 247 */
     Blt_Tree_RegisterFormat, /* 248 */
     Blt_Tree_RememberTag, /* 249 */
-    Blt_VecMin, /* 250 */
-    Blt_VecMax, /* 251 */
-    Blt_AllocVectorId, /* 252 */
-    Blt_SetVectorChangedProc, /* 253 */
-    Blt_FreeVectorId, /* 254 */
-    Blt_GetVectorById, /* 255 */
-    Blt_NameOfVectorId, /* 256 */
-    Blt_NameOfVector, /* 257 */
-    Blt_VectorNotifyPending, /* 258 */
-    Blt_CreateVector, /* 259 */
-    Blt_CreateVector2, /* 260 */
-    Blt_GetVector, /* 261 */
-    Blt_GetVectorFromObj, /* 262 */
-    Blt_VectorExists, /* 263 */
-    Blt_ResetVector, /* 264 */
-    Blt_ResizeVector, /* 265 */
-    Blt_DeleteVectorByName, /* 266 */
-    Blt_DeleteVector, /* 267 */
-    Blt_ExprVector, /* 268 */
-    Blt_InstallIndexProc, /* 269 */
-    Blt_VectorExists2, /* 270 */
+    Blt_Tree_GetNodeFromObj, /* 250 */
+    Blt_Tree_GetNodeIterator, /* 251 */
+    Blt_Tree_FirstTaggedNode, /* 252 */
+    Blt_Tree_NextTaggedNode, /* 253 */
+    Blt_VecMin, /* 254 */
+    Blt_VecMax, /* 255 */
+    Blt_AllocVectorId, /* 256 */
+    Blt_SetVectorChangedProc, /* 257 */
+    Blt_FreeVectorId, /* 258 */
+    Blt_GetVectorById, /* 259 */
+    Blt_NameOfVectorId, /* 260 */
+    Blt_NameOfVector, /* 261 */
+    Blt_VectorNotifyPending, /* 262 */
+    Blt_CreateVector, /* 263 */
+    Blt_CreateVector2, /* 264 */
+    Blt_GetVector, /* 265 */
+    Blt_GetVectorFromObj, /* 266 */
+    Blt_VectorExists, /* 267 */
+    Blt_ResetVector, /* 268 */
+    Blt_ResizeVector, /* 269 */
+    Blt_DeleteVectorByName, /* 270 */
+    Blt_DeleteVector, /* 271 */
+    Blt_ExprVector, /* 272 */
+    Blt_InstallIndexProc, /* 273 */
+    Blt_VectorExists2, /* 274 */
 };
 
 /* !END!: Do not edit above this line. */

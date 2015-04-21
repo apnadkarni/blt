@@ -724,6 +724,29 @@ static Blt_SwitchSpec childrenSwitches[] = {
     {BLT_SWITCH_END}
 };
 
+typedef struct {
+    int mask;
+    const char *command;
+} FindSwitches;
+
+static Blt_SwitchSpec findSwitches[] = {
+    {BLT_SWITCH_BITMASK, "-name", "pattern", (char *)NULL,
+	Blt_Offset(ChildrenSwitches, mask), 0, ENTRY_MASK},
+    {BLT_SWITCH_BITMASK, "-full", "pattern", (char *)NULL,
+	Blt_Offset(ChildrenSwitches, mask), 0, ENTRY_MASK},
+    {BLT_SWITCH_BITMASK, "-exact", "", (char *)NULL,
+	Blt_Offset(ChildrenSwitches, mask), 0, ENTRY_MASK},
+    {BLT_SWITCH_BITMASK, "-glob", "", (char *)NULL,
+	Blt_Offset(ChildrenSwitches, mask), 0, ENTRY_MASK},
+    {BLT_SWITCH_BITMASK, "-regexp", "", (char *)NULL,
+	Blt_Offset(ChildrenSwitches, mask), 0, ENTRY_MASK},
+    {BLT_SWITCH_BITMASK, "-nonmatching", "", (char *)NULL,
+	Blt_Offset(ChildrenSwitches, mask), 0, ENTRY_MASK},
+    {BLT_SWITCH_BITMASK, "-exec", "command", (char *)NULL,
+	Blt_Offset(ChildrenSwitches, mask), 0, ENTRY_MASK},
+    {BLT_SWITCH_END}
+};
+
 /* Forward Declarations */
 static Blt_BindAppendTagsProc AppendTagsProc;
 static Blt_BindPickProc PickItem;
@@ -4128,7 +4151,7 @@ GetEntryIterator(TreeView *viewPtr, Tcl_Obj *objPtr, TagIterator *iterPtr)
 	(Blt_GetLongFromObj(viewPtr->interp, objPtr, &inode) == TCL_OK)) {
 	Blt_TreeNode node;
 
-	node = Blt_Tree_GetNode(viewPtr->tree, inode);
+	node = Blt_Tree_GetNodeFromIndex(viewPtr->tree, inode);
 	if (node == NULL) {
 	    Tcl_AppendResult(viewPtr->interp, "can't find node \"", 
 			     Tcl_GetString(objPtr), "\"", (char *)NULL);
@@ -4226,7 +4249,7 @@ GetEntryFromObj2(Tcl_Interp *interp, TreeView *viewPtr, Tcl_Obj *objPtr,
 	(Blt_GetLongFromObj(interp, objPtr, &inode) == TCL_OK)) {
 	Blt_TreeNode node;
 
-	node = Blt_Tree_GetNode(viewPtr->tree, inode);
+	node = Blt_Tree_GetNodeFromIndex(viewPtr->tree, inode);
 	if (node != NULL) {
 	    *entryPtrPtr = NodeToEntry(viewPtr, node);
 	}
@@ -4258,7 +4281,7 @@ GetEntryFromObj(Tcl_Interp *interp, TreeView *viewPtr, Tcl_Obj *objPtr,
 /*
  *---------------------------------------------------------------------------
  *
- * static GetEntry --
+ * GetEntry --
  *
  *      Returns an entry based upon its index.
  *
@@ -4839,7 +4862,7 @@ TreeEventProc(ClientData clientData, Blt_TreeNotifyEvent *eventPtr)
     Blt_TreeNode node;
     TreeView *viewPtr = clientData; 
 
-    node = Blt_Tree_GetNode(eventPtr->tree, eventPtr->inode);
+    node = Blt_Tree_GetNodeFromIndex(eventPtr->tree, eventPtr->inode);
     switch (eventPtr->type) {
     case TREE_NOTIFY_CREATE:
 	return CreateEntry(viewPtr, node, 0, NULL, 0);
@@ -9137,7 +9160,7 @@ BindOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	(Blt_GetLongFromObj(viewPtr->interp, objv[2], &inode) == TCL_OK)) {
 	Blt_TreeNode node;
 
-	node = Blt_Tree_GetNode(viewPtr->tree, inode);
+	node = Blt_Tree_GetNodeFromIndex(viewPtr->tree, inode);
 	object = NodeToEntry(viewPtr, node);
     } else if (GetEntryFromSpecialId(viewPtr, string, &entryPtr) == TCL_OK) {
 	if (entryPtr != NULL) {

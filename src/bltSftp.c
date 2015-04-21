@@ -738,13 +738,8 @@ TreeNodeSwitchParseProc(
 {
     Blt_TreeNode *nodePtr = (Blt_TreeNode *)(record + offset);
     Blt_Tree tree  = clientData;
-    long inode;
 
-    if (Tcl_GetLongFromObj(interp, objPtr, &inode) != TCL_OK) {
-	return TCL_ERROR;
-    }
-    *nodePtr = Blt_Tree_GetNode(tree, inode);
-    return TCL_OK;
+    return Blt_Tree_GetNodeFromObj(interp, tree, objPtr, nodePtr);
 }
 
 

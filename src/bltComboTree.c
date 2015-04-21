@@ -2054,7 +2054,7 @@ GetEntryIterator(
 	if (Blt_GetLongFromObj(interp, objPtr, &inode) != TCL_OK) {
 	    return TCL_ERROR;
 	}
-	node = Blt_Tree_GetNode(comboPtr->tree, inode);
+	node = Blt_Tree_GetNodeFromIndex(comboPtr->tree, inode);
 	if (node != NULL) {
 	    iterPtr->first = NodeToEntry(comboPtr, node);
 	}
@@ -3886,7 +3886,7 @@ TreeEventProc(ClientData clientData, Blt_TreeNotifyEvent *eventPtr)
     Blt_TreeNode node;
     ComboTree *comboPtr = clientData; 
 
-    node = Blt_Tree_GetNode(eventPtr->tree, eventPtr->inode);
+    node = Blt_Tree_GetNodeFromIndex(eventPtr->tree, eventPtr->inode);
     switch (eventPtr->type) {
     case TREE_NOTIFY_CREATE:
 	return CreateEntry(comboPtr, node, 0, NULL, 0);
@@ -5475,7 +5475,7 @@ BindOp(ComboTree *comboPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 	if (Blt_GetLongFromObj(comboPtr->interp, objv[2], &inode) != TCL_OK) {
 	    return TCL_ERROR;
 	}
-	node = Blt_Tree_GetNode(comboPtr->tree, inode);
+	node = Blt_Tree_GetNodeFromIndex(comboPtr->tree, inode);
 	object = NodeToEntry(comboPtr, node);
     } else if (GetEntryFromObj(interp, comboPtr, objv[2], &entryPtr)==TCL_OK) {
 	if (entryPtr != NULL) {

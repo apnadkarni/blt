@@ -285,6 +285,18 @@ struct _Blt_TreeTrace {
     Blt_TreeTraceProc *proc;
 };
 
+typedef enum _Blt_TreeIterTypes {
+    ITER_TYPE_SINGLE, ITER_TYPE_ALL, ITER_TYPE_TAG,
+} Blt_TreeIterType;
+
+typedef struct {
+    Blt_TreeIterType type;
+    Blt_TreeNode current;
+    Blt_TreeNode root;
+    Blt_HashSearch cursor;
+} Blt_TreeIterator;
+
+
 /*
  * Structure definition for information used to keep track of searches through
  * hash tables:
@@ -314,7 +326,7 @@ BLT_EXTERN int Blt_Tree_DeleteNode(Blt_Tree tree, Blt_TreeNode node);
 BLT_EXTERN int Blt_Tree_MoveNode(Blt_Tree tree, Blt_TreeNode node, 
 	Blt_TreeNode parent, Blt_TreeNode before);
 
-BLT_EXTERN Blt_TreeNode Blt_Tree_GetNode(Blt_Tree tree, long inode);
+BLT_EXTERN Blt_TreeNode Blt_Tree_GetNodeFromIndex(Blt_Tree tree, long inode);
 
 BLT_EXTERN Blt_TreeNode Blt_Tree_FindChild(Blt_TreeNode parent, 
 	const char *name);
@@ -519,6 +531,16 @@ BLT_EXTERN int Blt_Tree_RegisterFormat(Tcl_Interp *interp, const char *fmtName,
 
 BLT_EXTERN Blt_TreeTagEntry *Blt_Tree_RememberTag(Blt_Tree tree, 
 	const char *name);
+
+BLT_EXTERN int Blt_Tree_GetNodeFromObj(Tcl_Interp *interp, Blt_Tree tree,
+        Tcl_Obj *objPtr, Blt_TreeNode *nodePtr);
+
+BLT_EXTERN int Blt_Tree_GetNodeIterator(Tcl_Interp *interp, Blt_Tree tree,
+        Tcl_Obj *objPtr, Blt_TreeIterator *iterPtr);
+
+BLT_EXTERN Blt_TreeNode Blt_Tree_FirstTaggedNode(Blt_TreeIterator *iterPtr);
+BLT_EXTERN Blt_TreeNode Blt_Tree_NextTaggedNode(Blt_TreeIterator *iterPtr);
+
 
 #endif /* _BLT_TREE_H */
 

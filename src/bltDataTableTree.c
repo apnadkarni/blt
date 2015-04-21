@@ -263,17 +263,8 @@ NodeSwitchProc(ClientData clientData, Tcl_Interp *interp,
     Blt_Tree tree = clientData;
     Blt_TreeNode *nodePtr = (Blt_TreeNode *)(record + offset);
     Blt_TreeNode node;
-    long inode;
     
-    /* FIXME: 
-     *	 2. Export *GetNode tag parsing routines from bltTreeCmd.c,
-     *	    instead of using node id to select the root node.
-     */
-    if (Blt_GetLongFromObj(interp, objPtr, &inode) != TCL_OK) {
-        return TCL_ERROR;
-    }
-    node = Blt_Tree_GetNode(tree, inode);
-    if (node == NULL) {
+    if (Blt_Tree_GetNodeFromObj(interp, tree, objPtr, &node) != TCL_OK) {
         return TCL_ERROR;
     }
     *nodePtr = node;

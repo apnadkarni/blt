@@ -116,109 +116,109 @@ test tree.24 {tree0} {
     list [catch {tree0} msg] $msg
 } {1 {wrong # args: should be one of...
   tree0 ancestor node1 node2
-  tree0 append node key ?value...?
-  tree0 apply node ?switches?
-  tree0 attach tree ?switches?
+  tree0 append node key ?value ...?
+  tree0 apply node ?switches ...?
+  tree0 attach tree ?switches ...?
   tree0 children node ?first? ?last?
-  tree0 copy parent ?tree? node ?switches?
+  tree0 copy parent ?tree? node ?switches ...?
   tree0 degree node
-  tree0 delete ?node...?
+  tree0 delete ?node ...?
   tree0 depth ?node?
-  tree0 dir node path ?switches?
-  tree0 dump node ?switches?
+  tree0 dir node path ?switches ...?
+  tree0 dump node ?switches ...?
   tree0 dup node
-  tree0 exists node ?key?
-  tree0 export format ?switches?
-  tree0 find node ?switches?
+  tree0 exists node ?fileName?
+  tree0 export format ?switches ...?
+  tree0 find node ?switches ...?
   tree0 findchild node label
   tree0 firstchild node
-  tree0 get node ?key? ?defValue?
-  tree0 import format ?switches?
+  tree0 get node ?fieldName? ?defValue?
+  tree0 import format ?switches ...?
   tree0 index label|list
-  tree0 insert parent ?switches?
+  tree0 insert parent ?switches ...?
   tree0 isancestor node1 node2
   tree0 isbefore node1 node2
   tree0 isleaf node
   tree0 isroot node
   tree0 keys node ?node...?
   tree0 label node ?newLabel?
-  tree0 lappend node key ?value...?
+  tree0 lappend node fieldName ?value ...?
   tree0 lastchild node
-  tree0 move node newParent ?switches?
-  tree0 names node ?key?
+  tree0 move node newParent ?switches ...?
+  tree0 names node ?fieldName?
   tree0 next node
   tree0 nextsibling node
-  tree0 notify args...
+  tree0 notify args ...
   tree0 parent node
-  tree0 path path ?args?
-  tree0 position ?switches? node...
+  tree0 path path ?args ...?
+  tree0 position ?switches ...? node...
   tree0 previous node
   tree0 prevsibling node
-  tree0 restore node ?switches?
+  tree0 restore node ?switches ...?
   tree0 root 
-  tree0 set node ?key value...?
+  tree0 set node ?fieldName value ...?
   tree0 size node
-  tree0 sort node ?flags...?
-  tree0 tag args...
-  tree0 trace args...
-  tree0 type node key
-  tree0 unset node ?key...?}}
+  tree0 sort node ?switches ...?
+  tree0 tag args ...
+  tree0 trace args ...
+  tree0 type node fieldName
+  tree0 unset node ?fieldName ...?}}
 
 test tree.25 {tree0 badOp} {
     list [catch {tree0 badOp} msg] $msg
 } {1 {bad operation "badOp": should be one of...
   tree0 ancestor node1 node2
-  tree0 append node key ?value...?
-  tree0 apply node ?switches?
-  tree0 attach tree ?switches?
+  tree0 append node key ?value ...?
+  tree0 apply node ?switches ...?
+  tree0 attach tree ?switches ...?
   tree0 children node ?first? ?last?
-  tree0 copy parent ?tree? node ?switches?
+  tree0 copy parent ?tree? node ?switches ...?
   tree0 degree node
-  tree0 delete ?node...?
+  tree0 delete ?node ...?
   tree0 depth ?node?
-  tree0 dir node path ?switches?
-  tree0 dump node ?switches?
+  tree0 dir node path ?switches ...?
+  tree0 dump node ?switches ...?
   tree0 dup node
-  tree0 exists node ?key?
-  tree0 export format ?switches?
-  tree0 find node ?switches?
+  tree0 exists node ?fileName?
+  tree0 export format ?switches ...?
+  tree0 find node ?switches ...?
   tree0 findchild node label
   tree0 firstchild node
-  tree0 get node ?key? ?defValue?
-  tree0 import format ?switches?
+  tree0 get node ?fieldName? ?defValue?
+  tree0 import format ?switches ...?
   tree0 index label|list
-  tree0 insert parent ?switches?
+  tree0 insert parent ?switches ...?
   tree0 isancestor node1 node2
   tree0 isbefore node1 node2
   tree0 isleaf node
   tree0 isroot node
   tree0 keys node ?node...?
   tree0 label node ?newLabel?
-  tree0 lappend node key ?value...?
+  tree0 lappend node fieldName ?value ...?
   tree0 lastchild node
-  tree0 move node newParent ?switches?
-  tree0 names node ?key?
+  tree0 move node newParent ?switches ...?
+  tree0 names node ?fieldName?
   tree0 next node
   tree0 nextsibling node
-  tree0 notify args...
+  tree0 notify args ...
   tree0 parent node
-  tree0 path path ?args?
-  tree0 position ?switches? node...
+  tree0 path path ?args ...?
+  tree0 position ?switches ...? node...
   tree0 previous node
   tree0 prevsibling node
-  tree0 restore node ?switches?
+  tree0 restore node ?switches ...?
   tree0 root 
-  tree0 set node ?key value...?
+  tree0 set node ?fieldName value ...?
   tree0 size node
-  tree0 sort node ?flags...?
-  tree0 tag args...
-  tree0 trace args...
-  tree0 type node key
-  tree0 unset node ?key...?}}
+  tree0 sort node ?switches ...?
+  tree0 tag args ...
+  tree0 trace args ...
+  tree0 type node fieldName
+  tree0 unset node ?fieldName ...?}}
 
 test tree.26 {tree0 insert (wrong # args)} {
     list [catch {tree0 insert} msg] $msg
-} {1 {wrong # args: should be "tree0 insert parent ?switches?"}}
+} {1 {wrong # args: should be "tree0 insert parent ?switches ...?"}}
 
 test tree.27 {tree0 insert badParent} {
     list [catch {tree0 insert badParent} msg] $msg
@@ -521,7 +521,7 @@ test tree.100 {tree0 depth myTag))} {
 
 test tree.101 {tree0 dump (missing arg)))} {
     list [catch {tree0 dump} msg] $msg
-} {1 {wrong # args: should be "tree0 dump node ?switches?"}}
+} {1 {wrong # args: should be "tree0 dump node ?switches ...?"}}
 
 test tree.102 {tree0 dump root} {
     list [catch {tree0 dump root} msg] $msg
@@ -767,7 +767,7 @@ test tree.157 {tree0 isleaf badTag} {
 
 test tree.158 {tree0 set (missing arg)} {
     list [catch {tree0 set} msg] $msg
-} {1 {wrong # args: should be "tree0 set node ?key value...?"}}
+} {1 {wrong # args: should be "tree0 set node ?fieldName value ...?"}}
 
 test tree.159 {tree0 set 0 (missing arg)} {
     list [catch {tree0 set 0} msg] $msg
@@ -909,7 +909,7 @@ test tree.178 {tree0 restore stuff} {
 
 test tree.179 {tree0 restore (missing arg)} {
     list [catch {tree0 restore} msg] $msg
-} {1 {wrong # args: should be "tree0 restore node ?switches?"}}
+} {1 {wrong # args: should be "tree0 restore node ?switches ...?"}}
 
 test tree.180 {tree0 restore 0 badSwitch} {
     list [catch {tree0 restore 0 badSwitch} msg] $msg
@@ -1004,7 +1004,7 @@ test tree.192 {delete all all} {
 
 test tree.193 {tree0 apply (missing arg)} {
     list [catch {tree0 apply} msg] $msg
-} {1 {wrong # args: should be "tree0 apply node ?switches?"}}
+} {1 {wrong # args: should be "tree0 apply node ?switches ...?"}}
 
 test tree.194 {tree0 apply 0} {
     list [catch {tree0 apply 0} msg] $msg
@@ -1120,7 +1120,7 @@ test tree.205 {tree0 apply root -postcommand -regexp node.*} {
 
 test tree.206 {tree0 find (missing arg)} {
     list [catch {tree0 find} msg] $msg
-} {1 {wrong # args: should be "tree0 find node ?switches?"}}
+} {1 {wrong # args: should be "tree0 find node ?switches ...?"}}
 
 test tree.207 {tree0 find 0} {
     list [catch {tree0 find 0} msg] $msg
@@ -1265,7 +1265,7 @@ test tree.240 {tree0 find 0 -tag badTag} {
 
 test tree.241 {tree0 tag (missing args)} {
     list [catch {tree0 tag} msg] $msg
-} {1 {wrong # args: should be "tree0 tag args..."}}
+} {1 {wrong # args: should be "tree0 tag args ..."}}
 
 test tree.242 {tree0 tag badOp} {
     list [catch {tree0 tag badOp} msg] $msg
@@ -1407,14 +1407,14 @@ test tree.266 {tree0 ancestor 7 9} {
 
 test tree.267 {tree0 path (missing arg)} {
     list [catch {tree0 path} msg] $msg
-} {1 {wrong # args: should be "tree0 path path ?args?"}}
+} {1 {wrong # args: should be "tree0 path path ?args ...?"}}
 
 test tree.268 {tree0 path badArg} {
     list [catch {tree0 path badArg} msg] $msg
 } {1 {bad operation "badArg": should be one of...
-  tree0 path create path ?switches?
-  tree0 path parse path ?switches?
-  tree0 path print node ?switches?
+  tree0 path create path ?switches ...?
+  tree0 path parse path ?switches ...?
+  tree0 path print node ?switches ...?
   tree0 path separator ?string?}}
 
 test tree.268 {tree0 path print root} {
@@ -1437,6 +1437,7 @@ test tree.272 {tree0 path print 0 badSwitch} {
     list [catch {tree0 path print 0 badSwitch} msg] $msg
 } {1 {unknown switch "badSwitch"
 following switches are available:
+   -from node
    -separator char}}
 
 
@@ -1497,11 +1498,11 @@ test tree.282 {tree0 tag delete root 0} {
 
 test tree.283 {tree0 move} {
     list [catch {tree0 move} msg] $msg
-} {1 {wrong # args: should be "tree0 move node newParent ?switches?"}}
+} {1 {wrong # args: should be "tree0 move node newParent ?switches ...?"}}
 
 test tree.284 {tree0 move 0} {
     list [catch {tree0 move 0} msg] $msg
-} {1 {wrong # args: should be "tree0 move node newParent ?switches?"}}
+} {1 {wrong # args: should be "tree0 move node newParent ?switches ...?"}}
 
 test tree.285 {tree0 move 0 0} {
     list [catch {tree0 move 0 0} msg] $msg
@@ -1546,7 +1547,7 @@ test tree.292 {tree0 move 1 17} {
 
 test tree.293 {tree0 attach} {
     list [catch {tree0 attach} msg] $msg
-} {1 {wrong # args: should be "tree0 attach tree ?switches?"}}
+} {1 {wrong # args: should be "tree0 attach tree ?switches ...?"}}
 
 test tree.294 {tree0 attach tree2 badArg} {
     list [catch {tree0 attach tree2 badArg} msg] $msg
@@ -1708,7 +1709,7 @@ test tree.316 {tree0 find root -key key1 -glob 12*} {
 
 test tree.317 {tree0 sort} {
     list [catch {tree0 sort} msg] $msg
-} {1 {wrong # args: should be "tree0 sort node ?flags...?"}}
+} {1 {wrong # args: should be "tree0 sort node ?switches ...?"}}
 
 test tree.318 {tree0 sort all} {
     list [catch {tree0 sort all} msg] $msg
@@ -1935,15 +1936,14 @@ test tree.358 {test unset trace} {
 test tree.359 {tree0 notify} {
     list [catch {tree0 notify} msg] $msg
 } {1 {wrong # args: should be one of...
-  tree0 notify create ?flags? command
-  tree0 notify delete notifyId...
-  tree0 notify info notifyId
+  tree0 notify create ?switches ...? command
+  tree0 notify delete ?notifyName ... ?
+  tree0 notify info notifyName
   tree0 notify names }}
-
 
 test tree.360 {tree0 notify create} {
     list [catch {tree0 notify create} msg] $msg
-} {1 {wrong # args: should be "tree0 notify create ?flags? command"}}
+} {1 {wrong # args: should be "tree0 notify create ?switches ...? command"}}
 
 test tree.361 {tree0 notify create -allevents} {
     list [catch {tree0 notify create -allevents Doit} msg] $msg
@@ -1959,7 +1959,7 @@ test tree.363 {tree0 notify info badId} {
 
 test tree.364 {tree0 notify info} {
     list [catch {tree0 notify info} msg] $msg
-} {1 {wrong # args: should be "tree0 notify info notifyId"}}
+} {1 {wrong # args: should be "tree0 notify info notifyName"}}
 
 test tree.365 {tree0 notify names} {
     list [catch {tree0 notify names} msg] $msg
@@ -2038,11 +2038,11 @@ test tree.374 {test delete notify} {
 
 test tree.375 {tree0 copy} {
     list [catch {tree0 copy} msg] $msg
-} {1 {wrong # args: should be "tree0 copy parent ?tree? node ?switches?"}}
+} {1 {wrong # args: should be "tree0 copy parent ?tree? node ?switches ...?"}}
 
 test tree.376 {tree0 copy root} {
     list [catch {tree0 copy root} msg] $msg
-} {1 {wrong # args: should be "tree0 copy parent ?tree? node ?switches?"}}
+} {1 {wrong # args: should be "tree0 copy parent ?tree? node ?switches ...?"}}
 
 test tree.377 {tree0 copy root 14} {
     list [catch {tree0 copy root 14} msg] $msg

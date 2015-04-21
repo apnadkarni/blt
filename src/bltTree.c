@@ -1835,7 +1835,7 @@ RestoreNode5(Tcl_Interp *interp, int argc, const char **argv,
 	if (hPtr != NULL) {
 	    parentPtr = Blt_GetHashValue(hPtr);
 	} else {
-	    parentPtr = Blt_Tree_GetNode(treePtr, pid);
+	    parentPtr = Blt_Tree_GetNodeFromIndex(treePtr, pid);
 	    if (parentPtr == NULL) {
 		/* 
 		 * Normally the parent node should already exist in the tree,
@@ -1897,7 +1897,7 @@ RestoreNode5(Tcl_Interp *interp, int argc, const char **argv,
 	}
 
 	if (nodePtr == NULL) {
-	    nodePtr = Blt_Tree_GetNode(treePtr, id);
+	    nodePtr = Blt_Tree_GetNodeFromIndex(treePtr, id);
 	    if (nodePtr == NULL) {
 		nodePtr = Blt_Tree_CreateNodeWithId(treePtr, parentPtr, 
 			names[numNames - 1], id, -1);
@@ -2288,7 +2288,7 @@ Blt_Tree_DeleteNode(Tree *treePtr, Node *nodePtr)
 }
 
 Blt_TreeNode
-Blt_Tree_GetNode(Tree *treePtr, long inode)
+Blt_Tree_GetNodeFromIndex(Tree *treePtr, long inode)
 {
     TreeObject *corePtr = treePtr->corePtr;
     Blt_HashEntry *hPtr;
@@ -2674,7 +2674,7 @@ TraceIdleEventProc(ClientData clientData)
 
     /* Get the node from the inode since the node may be been deleted in the
      * time between the idle proc was issued and invoked. */
-    nodePtr = Blt_Tree_GetNode(tracePtr->treePtr, eventPtr->inode);
+    nodePtr = Blt_Tree_GetNodeFromIndex(tracePtr->treePtr, eventPtr->inode);
     if (nodePtr != NULL) {
 	int result;
 
@@ -4748,4 +4748,295 @@ Blt_Tree_Restore(
     }
     return TCL_OK;
 }
+
+
+static int
+IsNodeId(const char *string)
+{
+    long value;
+
+    return (Blt_GetLong(NULL, string, &value) == TCL_OK);
+}
+
+static Blt_TreeNode 
+ParseModifiers(Tcl_Interp *interp, Blt_Tree tree, Blt_TreeNode node,
+	       char *modifiers)
+{
+    char *p, *token;
+
+    p = modifiers;
+    do {
+	p += 2;                         /* Skip the initial "->" */
+	token = strstr(p, "->");
+	if (token != NULL) {
+	    *token = '\0';
+	}
+	if (IsNodeId(p)) {
+	    long inode;
+	    
+	    if (Blt_GetLong(interp, p, &inode) != TCL_OK) {
+		node = NULL;
+	    } else {
+		node = Blt_Tree_GetNodeFromIndex(tree, inode);
+	    }
+	} else if ((*p == 'p') && (strcmp(p, "parent") == 0)) {
+	    node = Blt_Tree_ParentNode(node);
+	} else if ((*p == 'f') && (strcmp(p, "firstchild") == 0)) {
+	    node = Blt_Tree_FirstChild(node);
+	} else if ((*p == 'l') && (strcmp(p, "lastchild") == 0)) {
+	    node = Blt_Tree_LastChild(node);
+	} else if ((*p == 'n') && (strcmp(p, "next") == 0)) {
+	    node = Blt_Tree_NextNode(NULL, node);
+	} else if ((*p == 'n') && (strcmp(p, "nextsibling") == 0)) {
+	    node = Blt_Tree_NextSibling(node);
+	} else if ((*p == 'p') && (strcmp(p, "previous") == 0)) {
+	    node = Blt_Tree_PrevNode(NULL, node);
+	} else if ((*p == 'p') && (strcmp(p, "prevsibling") == 0)) {
+	    node = Blt_Tree_PrevSibling(node);
+	} else {
+	    int length;
+
+	    length = strlen(p);
+	    if (length > 0) {
+		char *endp;
+
+		endp = p + length - 1;
+		if ((*p == '"') && (*endp == '"')) {
+		    *endp = '\0';
+		    node = Blt_Tree_FindChild(node, p + 1);
+		    *endp = '"';
+		} else {
+		    node = Blt_Tree_FindChild(node, p);
+		}		
+	    }
+	}
+	if (node == NULL) {
+	    goto error;
+	}
+	if (token != NULL) {
+	    *token = '-';               /* Repair the string */
+	}
+	p = token;
+    } while (token != NULL);
+    return node;
+ error:
+    if (token != NULL) {
+	*token = '-';                   /* Repair the string */
+    }
+    return NULL;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * Blt_Tree_GetNodeFromObj --
+ *
+ *---------------------------------------------------------------------------
+ */
+int 
+Blt_Tree_GetNodeFromObj(Tcl_Interp *interp, Blt_Tree tree, Tcl_Obj *objPtr, 
+                        Blt_TreeNode *nodePtr)
+{
+    Blt_TreeNode node;
+    char *string;
+    char *p;
+    char save;
+
+    node = NULL;                        /* Suppress compiler warnings. */
+    save = '\0';
+
+    string = Tcl_GetString(objPtr);
+
+    /* Check if modifiers are present. */
+    p = strstr(string, "->");
+    if (p != NULL) {
+	save = *p;
+	*p = '\0';
+    }
+    if (IsNodeId(string)) {
+	long inode;
+
+	if (p != NULL) {
+	    if (Blt_GetLong(interp, string, &inode) != TCL_OK) {
+		goto error;
+	    }
+	} else {
+	    if (Blt_GetLongFromObj(interp, objPtr, &inode) != TCL_OK) {
+		goto error;
+	    }
+	}
+	node = Blt_Tree_GetNodeFromIndex(tree, inode);
+    }  else if (tree != NULL) {
+	if (strcmp(string, "all") == 0) {
+	    if (Blt_Tree_Size(Blt_Tree_RootNode(tree)) > 1) {
+		if (interp != NULL) {
+		    Tcl_AppendResult(interp, "more than one node tagged as \"", 
+				     string, "\"", (char *)NULL);
+		}
+		goto error;
+	    }
+	    node = Blt_Tree_RootNode(tree);
+	} else if (strcmp(string, "root") == 0) {
+	    node = Blt_Tree_RootNode(tree);
+	} else {
+	    Blt_HashTable *tablePtr;
+	    Blt_HashSearch cursor;
+	    Blt_HashEntry *hPtr;
+
+	    node = NULL;
+	    tablePtr = Blt_Tree_TagHashTable(tree, string);
+	    if (tablePtr == NULL) {
+		if (interp != NULL) {
+		    Tcl_AppendResult(interp, "can't find tag or id \"", string, 
+			"\" in ", Blt_Tree_Name(tree), (char *)NULL);
+		}
+		goto error;
+	    } else if (tablePtr->numEntries > 1) {
+		if (interp != NULL) {
+		    Tcl_AppendResult(interp, "more than one node tagged as \"", 
+			 string, "\"", (char *)NULL);
+		}
+		goto error;
+	    } else if (tablePtr->numEntries > 0) {
+		hPtr = Blt_FirstHashEntry(tablePtr, &cursor);
+		node = Blt_GetHashValue(hPtr);
+		if (p != NULL) {
+		    *p = save;
+		}
+	    }
+	}
+    }
+    if (node != NULL) {
+	if (p != NULL) {
+	    node = ParseModifiers(interp, tree, node, p);
+	    if (node == NULL) {
+		if (interp != NULL) {
+		    *p = save;          /* Need entire string. */
+		    Tcl_AppendResult(interp, "can't find tag or id \"", string, 
+			     "\" in ", Blt_Tree_Name(tree), (char *)NULL);
+		}
+		goto error;
+	    }
+	}
+	if (p != NULL) {
+	    *p = save;
+	}
+	*nodePtr = node;
+	return TCL_OK;
+    } 
+    if (interp != NULL) {
+	Tcl_AppendResult(interp, "can't find tag or id \"", string, "\" in ", 
+			 Blt_Tree_Name(tree), (char *)NULL);
+    }
+ error:
+    if (p != NULL) {
+	*p = save;
+    }
+    return TCL_ERROR;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * Blt_Tree_GetNodeIterator --
+ *
+ *	Returns the id of the first node tagged by the given tag in objPtr.
+ *	It basically hides much of the cumbersome special case details.
+ *	For example, the special tags "root" and "all" always exist, so
+ *	they don't have entries in the tag hashtable.  If it's a hashed tag
+ *	(not "root" or "all"), we have to save the place of where we are in
+ *	the table for the next call to NextTaggedNode.
+ *
+ *---------------------------------------------------------------------------
+ */
+int
+Blt_Tree_GetNodeIterator(Tcl_Interp *interp, Blt_Tree tree, Tcl_Obj *objPtr,
+                         Blt_TreeIterator *iterPtr)
+{
+    const char *string;
+    Blt_TreeNode node;
+    
+    string = Tcl_GetString(objPtr);
+    iterPtr->type = ITER_TYPE_SINGLE;
+    iterPtr->root = Blt_Tree_RootNode(tree);
+
+    /* Process strings with modifiers or digits as simple ids, not tags. */
+    if (Blt_Tree_GetNodeFromObj(NULL, tree, objPtr, &node) == TCL_OK) {
+        iterPtr->current = node;
+	return TCL_OK;
+    }
+    if (strcmp(string, "all") == 0) {
+        iterPtr->type = ITER_TYPE_ALL;
+	iterPtr->current = iterPtr->root;
+	return TCL_OK;
+    } else if (strcmp(string, "root") == 0)  {
+	iterPtr->current = iterPtr->root;
+	return TCL_OK;
+    } else {
+        Blt_HashTable *tablePtr;
+
+	tablePtr = Blt_Tree_TagHashTable(tree, string);
+	if (tablePtr != NULL) {
+	    Blt_HashEntry *hPtr;
+	    
+	    iterPtr->type = ITER_TYPE_TAG;
+	    hPtr = Blt_FirstHashEntry(tablePtr, &iterPtr->cursor); 
+	    if (hPtr == NULL) {
+		iterPtr->current = NULL;
+		return TCL_OK;
+	    }
+	    iterPtr->current = Blt_GetHashValue(hPtr);
+	    return TCL_OK;
+	}
+    }
+    if (interp != NULL) {
+        Tcl_AppendResult(interp, "can't find tag or id \"", string, "\" in ", 
+                         Blt_Tree_Name(tree), (char *)NULL);
+    }
+    return TCL_ERROR;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * Blt_Tree_FirstTaggedNode --
+ *
+ *---------------------------------------------------------------------------
+ */
+Blt_TreeNode 
+Blt_Tree_FirstTaggedNode(Blt_TreeIterator *iterPtr)
+{
+    return iterPtr->current;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * Blt_Tree_FirstTaggedNode --
+ *
+ *---------------------------------------------------------------------------
+ */
+Blt_TreeNode 
+Blt_Tree_NextTaggedNode(Blt_TreeIterator *iterPtr)
+{
+    switch (iterPtr->type) {
+    case ITER_TYPE_SINGLE:
+        return NULL;
+    case ITER_TYPE_TAG:
+        {
+            Blt_HashEntry *hPtr;
+
+            hPtr = Blt_NextHashEntry(&iterPtr->cursor);
+            if (hPtr == NULL) {
+                return NULL;
+            }
+            return Blt_GetHashValue(hPtr);
+        }
+    case ITER_TYPE_ALL:
+	iterPtr->current = Blt_Tree_NextNode(NULL, iterPtr->current);
+        return iterPtr->current;
+    }
+    return NULL;
+}
+
 
