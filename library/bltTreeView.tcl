@@ -1015,11 +1015,11 @@ bind BltTreeView <Shift-KeyPress-Down> {
 }
 
 bind BltTreeView <KeyPress-Prior> {
-    blt::TreeView::MovePage %W top
+    blt::TreeView::MovePage %W view.first
 }
 
 bind BltTreeView <KeyPress-Next> {
-    blt::TreeView::MovePage %W bottom
+    blt::TreeView::MovePage %W view.last
 }
 
 bind BltTreeView <KeyPress-Left> {

@@ -239,11 +239,11 @@ typedef struct {
 } TreeViewObj;
 
 typedef struct {
-    int tagType;
-    TreeView *viewPtr;
-    Blt_HashSearch cursor;
+    Blt_TreeIterator iter;
     Entry *entryPtr;
-} TagIterator;
+    TreeView *viewPtr;
+    int tagType;
+} EntryIterator;
 
 /*
  * Icon --

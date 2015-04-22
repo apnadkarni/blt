@@ -705,9 +705,6 @@ static Tcl_ObjCmdProc TreeObjCmd;
 static Tcl_ObjCmdProc TreeInstObjCmd;
 static Blt_TreeNotifyEventProc TreeEventProc;
 
-typedef int (TreeCmdProc)(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc,
-	Tcl_Obj *const *objv);
-
 #ifdef notdef
 static int
 IsTag(Blt_Tree tree, const char *string)
@@ -2368,12 +2365,10 @@ LoadFormat(Tcl_Interp *interp, const char *fmt)
  *---------------------------------------------------------------------------
  */
 static int
-ApplyOp(
-    TreeCmd *cmdPtr,
-    Tcl_Interp *interp,
-    int objc,
-    Tcl_Obj *const *objv)
+ApplyOp(ClientData clientData, Tcl_Interp *interp, int objc,
+        Tcl_Obj *const *objv)
 {
+    TreeCmd *cmdPtr = clientData;
     int result;
     Blt_TreeNode node;
     ApplySwitches switches;
@@ -2418,8 +2413,10 @@ ApplyOp(
 
 /*ARGSUSED*/
 static int
-AncestorOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+AncestorOp(ClientData clientData, Tcl_Interp *interp, int objc,
+           Tcl_Obj *const *objv)
 {
+    TreeCmd *cmdPtr = clientData;
     long i, d1, d2, minDepth;
     Blt_TreeNode node1, node2;
 
@@ -2489,8 +2486,10 @@ AncestorOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *---------------------------------------------------------------------------
  */
 static int
-AppendOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+AppendOp(ClientData clientData, Tcl_Interp *interp, int objc,
+         Tcl_Obj *const *objv)
 {
+    TreeCmd *cmdPtr = clientData;
     Blt_TreeNode node;
     Blt_TreeIterator iter;
     const char *key;
@@ -2525,12 +2524,10 @@ AppendOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *---------------------------------------------------------------------------
  */
 static int
-AttachOp(
-    TreeCmd *cmdPtr,
-    Tcl_Interp *interp,
-    int objc,
-    Tcl_Obj *const *objv)
+AttachOp(ClientData clientData, Tcl_Interp *interp, int objc,
+         Tcl_Obj *const *objv)
 {
+    TreeCmd *cmdPtr = clientData;
     const char *treeName;
     AttachSwitches switches;
 
@@ -2559,12 +2556,10 @@ AttachOp(
  *---------------------------------------------------------------------------
  */
 static int
-ChildrenOp(
-    TreeCmd *cmdPtr,
-    Tcl_Interp *interp,
-    int objc,
-    Tcl_Obj *const *objv)
+ChildrenOp(ClientData clientData, Tcl_Interp *interp, int objc,
+           Tcl_Obj *const *objv)
 {
+    TreeCmd *cmdPtr = clientData;
     Blt_TreeNode node;
     
     if (Blt_Tree_GetNodeFromObj(interp, cmdPtr->tree, objv[2], &node)
@@ -2717,8 +2712,10 @@ CopyNodes(
  */
 /*ARGSUSED*/
 static int
-CopyOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+CopyOp(ClientData clientData, Tcl_Interp *interp, int objc,
+       Tcl_Obj *const *objv)
 {
+    TreeCmd *cmdPtr = clientData;
     TreeCmd *srcPtr, *destPtr;
     Blt_Tree srcTree, destTree;
     Blt_TreeNode copyNode;
@@ -2831,8 +2828,10 @@ CopyOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  */
 /*ARGSUSED*/
 static int
-DegreeOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+DegreeOp(ClientData clientData, Tcl_Interp *interp, int objc,
+         Tcl_Obj *const *objv)
 {
+    TreeCmd *cmdPtr = clientData;
     Blt_TreeNode node;
 
     if (Blt_Tree_GetNodeFromObj(interp, cmdPtr->tree, objv[2], &node)
@@ -2862,8 +2861,10 @@ DegreeOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *---------------------------------------------------------------------------
  */
 static int
-DeleteOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+DeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
+         Tcl_Obj *const *objv)
 {
+    TreeCmd *cmdPtr = clientData;
     int i;
     char *string;
 
@@ -2947,8 +2948,10 @@ DeleteOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  */
 /*ARGSUSED*/
 static int
-DepthOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+DepthOp(ClientData clientData, Tcl_Interp *interp, int objc,
+        Tcl_Obj *const *objv)
 {
+    TreeCmd *cmdPtr = clientData;
     Blt_TreeNode node;
 
     if (objc == 2) {
@@ -2976,8 +2979,10 @@ DepthOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  */
 /*ARGSUSED*/
 static int
-DumpOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+DumpOp(ClientData clientData, Tcl_Interp *interp, int objc,
+       Tcl_Obj *const *objv)
 {
+    TreeCmd *cmdPtr = clientData;
     Blt_TreeNode root;
     DumpSwitches switches;
     int result;
@@ -3038,8 +3043,9 @@ DumpOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  */
 /*ARGSUSED*/
 static int
-DupOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+DupOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 {
+    TreeCmd *cmdPtr = clientData;
     TreeCmd *srcPtr, *destPtr;
     Blt_TreeNode node;
     
@@ -3064,8 +3070,10 @@ DupOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *---------------------------------------------------------------------------
  */
 static int
-ExistsOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+ExistsOp(ClientData clientData, Tcl_Interp *interp, int objc,
+         Tcl_Obj *const *objv)
 {
+    TreeCmd *cmdPtr = clientData;
     Blt_TreeNode node;
     int bool;
     
@@ -3095,8 +3103,10 @@ ExistsOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *---------------------------------------------------------------------------
  */
 static int
-ExportOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+ExportOp(ClientData clientData, Tcl_Interp *interp, int objc,
+         Tcl_Obj *const *objv)
 {
+    TreeCmd *cmdPtr = clientData;
     Blt_HashEntry *hPtr;
     DataFormat *fmtPtr;
     TreeCmdInterpData *dataPtr;
@@ -3144,8 +3154,10 @@ ExportOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *---------------------------------------------------------------------------
  */
 static int
-FindOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+FindOp(ClientData clientData, Tcl_Interp *interp, int objc,
+       Tcl_Obj *const *objv)
 {
+    TreeCmd *cmdPtr = clientData;
     Blt_TreeNode node;
     FindSwitches switches;
     int result;
@@ -3202,8 +3214,10 @@ FindOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  */
 /*ARGSUSED*/
 static int
-FindChildOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+FindChildOp(ClientData clientData, Tcl_Interp *interp, int objc,
+            Tcl_Obj *const *objv)
 {
+    TreeCmd *cmdPtr = clientData;
     Blt_TreeNode parent, child;
     long inode;
 
@@ -3229,8 +3243,10 @@ FindChildOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  */
 /*ARGSUSED*/
 static int
-FirstChildOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+FirstChildOp(ClientData clientData, Tcl_Interp *interp, int objc,
+             Tcl_Obj *const *objv)
 {
+    TreeCmd *cmdPtr = clientData;
     Blt_TreeNode node;
     long inode;
 
@@ -3255,8 +3271,9 @@ FirstChildOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv
  *---------------------------------------------------------------------------
  */
 static int
-GetOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+GetOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 {
+    TreeCmd *cmdPtr = clientData;
     Blt_TreeNode node;
 
     if (Blt_Tree_GetNodeFromObj(interp, cmdPtr->tree, objv[2], &node)
@@ -3517,8 +3534,9 @@ TreeReadDirectory(Tcl_Interp *interp, TreeCmd *cmdPtr, Tcl_Obj *dirObjPtr,
  */
 /*ARGSUSED*/
 static int
-DirOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+DirOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 {
+    TreeCmd *cmdPtr = clientData;
     Blt_TreeNode parent;
     DirSwitches switches;
     int result;
@@ -3550,8 +3568,10 @@ DirOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  */
 /*ARGSUSED*/
 static int
-ImportOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+ImportOp(ClientData clientData, Tcl_Interp *interp, int objc,
+         Tcl_Obj *const *objv)
 {
+    TreeCmd *cmdPtr = clientData;
     Blt_HashEntry *hPtr;
     DataFormat *fmtPtr;
     TreeCmdInterpData *dataPtr;
@@ -3599,8 +3619,10 @@ ImportOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  */
 /*ARGSUSED*/
 static int
-IndexOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+IndexOp(ClientData clientData, Tcl_Interp *interp, int objc,
+        Tcl_Obj *const *objv)
 {
+    TreeCmd *cmdPtr = clientData;
     Blt_TreeNode node;
     long inode;
 
@@ -3649,8 +3671,10 @@ IndexOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *---------------------------------------------------------------------------
  */
 static int
-InsertOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+InsertOp(ClientData clientData, Tcl_Interp *interp, int objc,
+         Tcl_Obj *const *objv)
 {
+    TreeCmd *cmdPtr = clientData;
     Blt_TreeNode parent, child;
     InsertSwitches switches;
 
@@ -3753,9 +3777,10 @@ InsertOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  */
 /*ARGSUSED*/
 static int
-IsAncestorOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, 
+IsAncestorOp(ClientData clientData, Tcl_Interp *interp, int objc, 
 	     Tcl_Obj *const *objv)
 {
+    TreeCmd *cmdPtr = clientData;
     Blt_TreeNode node, parent;
     int isAncestor;
 
@@ -3780,8 +3805,10 @@ IsAncestorOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc,
  */
 /*ARGSUSED*/
 static int
-IsBeforeOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+IsBeforeOp(ClientData clientData, Tcl_Interp *interp, int objc,
+           Tcl_Obj *const *objv)
 {
+    TreeCmd *cmdPtr = clientData;
     Blt_TreeNode node1, node2;
     int isBefore;
 
@@ -3806,8 +3833,10 @@ IsBeforeOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  */
 /*ARGSUSED*/
 static int
-IsLeafOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+IsLeafOp(ClientData clientData, Tcl_Interp *interp, int objc,
+         Tcl_Obj *const *objv)
 {
+    TreeCmd *cmdPtr = clientData;
     Blt_TreeNode node;
 
     if (Blt_Tree_GetNodeFromObj(interp, cmdPtr->tree, objv[2], &node)
@@ -3828,8 +3857,10 @@ IsLeafOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  */
 /*ARGSUSED*/
 static int
-IsRootOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+IsRootOp(ClientData clientData, Tcl_Interp *interp, int objc,
+         Tcl_Obj *const *objv)
 {
+    TreeCmd *cmdPtr = clientData;
     Blt_TreeNode node;
     int isRoot;
 
@@ -3852,8 +3883,10 @@ IsRootOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *---------------------------------------------------------------------------
  */
 static int
-KeysOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+KeysOp(ClientData clientData, Tcl_Interp *interp, int objc,
+       Tcl_Obj *const *objv)
 {
+    TreeCmd *cmdPtr = clientData;
     Blt_HashTable keyTable;
     int i;
 
@@ -3905,8 +3938,10 @@ KeysOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *---------------------------------------------------------------------------
  */
 static int
-LabelOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+LabelOp(ClientData clientData, Tcl_Interp *interp, int objc,
+        Tcl_Obj *const *objv)
 {
+    TreeCmd *cmdPtr = clientData;
     Blt_TreeNode node;
 
     if (Blt_Tree_GetNodeFromObj(interp, cmdPtr->tree, objv[2], &node)
@@ -3929,8 +3964,10 @@ LabelOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *---------------------------------------------------------------------------
  */
 static int
-LappendOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+LappendOp(ClientData clientData, Tcl_Interp *interp, int objc,
+          Tcl_Obj *const *objv)
 {
+    TreeCmd *cmdPtr = clientData;
     Blt_TreeNode node;
     Blt_TreeIterator iter;
     const char *key;
@@ -3963,8 +4000,10 @@ LappendOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  */
 /*ARGSUSED*/
 static int
-LastChildOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+LastChildOp(ClientData clientData, Tcl_Interp *interp, int objc,
+            Tcl_Obj *const *objv)
 {
+    TreeCmd *cmdPtr = clientData;
     Blt_TreeNode node;
     long inode;
 
@@ -3993,8 +4032,10 @@ LastChildOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *---------------------------------------------------------------------------
  */
 static int
-MoveOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+MoveOp(ClientData clientData, Tcl_Interp *interp, int objc,
+       Tcl_Obj *const *objv)
 {
+    TreeCmd *cmdPtr = clientData;
     Blt_TreeNode root, parent, node;
     Blt_TreeNode before;
     MoveSwitches switches;
@@ -4098,8 +4139,10 @@ MoveOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  */
 /*ARGSUSED*/
 static int
-NextOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+NextOp(ClientData clientData, Tcl_Interp *interp, int objc,
+       Tcl_Obj *const *objv)
 {
+    TreeCmd *cmdPtr = clientData;
     Blt_TreeNode node;
     long inode;
 
@@ -4122,9 +4165,10 @@ NextOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  */
 /*ARGSUSED*/
 static int
-NextSiblingOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, 
+NextSiblingOp(ClientData clientData, Tcl_Interp *interp, int objc, 
 	      Tcl_Obj *const *objv)
 {
+    TreeCmd *cmdPtr = clientData;
     Blt_TreeNode node;
     long inode;
 
@@ -4150,9 +4194,10 @@ NextSiblingOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc,
  *---------------------------------------------------------------------------
  */
 static int
-NotifyCreateOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, 
+NotifyCreateOp(ClientData clientData, Tcl_Interp *interp, int objc, 
 	       Tcl_Obj *const *objv)
 {
+    TreeCmd *cmdPtr = clientData;
     Notifier *notifyPtr;
     NotifySwitches switches;
     int i;
@@ -4207,9 +4252,10 @@ NotifyCreateOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc,
  *---------------------------------------------------------------------------
  */
 static int
-NotifyDeleteOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, 
+NotifyDeleteOp(ClientData clientData, Tcl_Interp *interp, int objc, 
 	       Tcl_Obj *const *objv)
 {
+    TreeCmd *cmdPtr = clientData;
     int i;
 
     for (i = 3; i < objc; i++) {
@@ -4240,9 +4286,10 @@ NotifyDeleteOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc,
 
 /*ARGSUSED*/
 static int
-NotifyInfoOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, 
+NotifyInfoOp(ClientData clientData, Tcl_Interp *interp, int objc, 
 	     Tcl_Obj *const *objv)
 {
+    TreeCmd *cmdPtr = clientData;
     Notifier *notifyPtr;
     Blt_HashEntry *hPtr;
     Tcl_DString ds;
@@ -4295,12 +4342,10 @@ NotifyInfoOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc,
  */
 /*ARGSUSED*/
 static int
-NotifyNamesOp(
-    TreeCmd *cmdPtr,
-    Tcl_Interp *interp,
-    int objc,			/* Not used. */
-    Tcl_Obj *const *objv)	/* Not used. */
+NotifyNamesOp(ClientData clientData, Tcl_Interp *interp, int objc,
+              Tcl_Obj *const *objv)
 {
+    TreeCmd *cmdPtr = clientData;
     Blt_HashEntry *hPtr;
     Blt_HashSearch iter;
     Tcl_Obj *listObjPtr;
@@ -4337,9 +4382,10 @@ static Blt_OpSpec notifyOps[] =
 static int numNotifyOps = sizeof(notifyOps) / sizeof(Blt_OpSpec);
 
 static int
-NotifyOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+NotifyOp(ClientData clientData, Tcl_Interp *interp, int objc,
+         Tcl_Obj *const *objv)
 {
-    TreeCmdProc *proc;
+    Tcl_ObjCmdProc *proc;
     int result;
 
     proc = Blt_GetOpFromObj(interp, numNotifyOps, notifyOps, BLT_OP_ARG2, objc, 
@@ -4347,15 +4393,17 @@ NotifyOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     if (proc == NULL) {
 	return TCL_ERROR;
     }
-    result = (*proc) (cmdPtr, interp, objc, objv);
+    result = (*proc) (clientData, interp, objc, objv);
     return result;
 }
 
 
 /*ARGSUSED*/
 static int
-ParentOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+ParentOp(ClientData clientData, Tcl_Interp *interp, int objc,
+         Tcl_Obj *const *objv)
 {
+    TreeCmd *cmdPtr = clientData;
     Blt_TreeNode node;
     long inode;
 
@@ -4383,9 +4431,10 @@ ParentOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  */
 /*ARGSUSED*/
 static int
-PathCreateOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, 
+PathCreateOp(ClientData clientData, Tcl_Interp *interp, int objc, 
 	      Tcl_Obj *const *objv)
 {
+    TreeCmd *cmdPtr = clientData;
     Blt_TreeNode parent;
     long inode;
     Blt_TreeNode child;
@@ -4479,8 +4528,10 @@ PathCreateOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc,
  */
 /*ARGSUSED*/
 static int
-PathParseOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+PathParseOp(ClientData clientData, Tcl_Interp *interp, int objc,
+            Tcl_Obj *const *objv)
 {
+    TreeCmd *cmdPtr = clientData;
     Blt_TreeNode parent;
     long inode;
     Blt_TreeNode child;
@@ -4573,9 +4624,10 @@ PathParseOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  */
 /*ARGSUSED*/
 static int
-PathPrintOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, 
+PathPrintOp(ClientData clientData, Tcl_Interp *interp, int objc, 
 	     Tcl_Obj *const *objv)
 {
+    TreeCmd *cmdPtr = clientData;
     Blt_TreeNode node;
     int flags;
     Tcl_DString ds;
@@ -4623,9 +4675,11 @@ PathPrintOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc,
  */
 /*ARGSUSED*/
 static int
-PathSeparatorOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, 
+PathSeparatorOp(ClientData clientData, Tcl_Interp *interp, int objc, 
 	     Tcl_Obj *const *objv)
 {
+    TreeCmd *cmdPtr = clientData;
+
     if (objc == 4) { 
 	int length;
 
@@ -4670,17 +4724,18 @@ static Blt_OpSpec pathOps[] =
 static int numPathOps = sizeof(pathOps) / sizeof(Blt_OpSpec);
 
 static int
-PathOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+PathOp(ClientData clientData, Tcl_Interp *interp, int objc,
+       Tcl_Obj *const *objv)
 {
-    TreeCmdProc *proc;
+    Tcl_ObjCmdProc *proc;
     int result;
 
-    proc = Blt_GetOpFromObj(interp, numPathOps, pathOps, BLT_OP_ARG2, objc, objv,
-	0);
+    proc = Blt_GetOpFromObj(interp, numPathOps, pathOps, BLT_OP_ARG2, objc,
+                            objv, 0);
     if (proc == NULL) {
 	return TCL_ERROR;
     }
-    result = (*proc) (cmdPtr, interp, objc, objv);
+    result = (*proc) (clientData, interp, objc, objv);
     return result;
 }
 
@@ -4705,8 +4760,10 @@ ComparePositions(Blt_TreeNode *n1Ptr, Blt_TreeNode *n2Ptr)
  */
 /*ARGSUSED*/
 static int
-PositionOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+PositionOp(ClientData clientData, Tcl_Interp *interp, int objc,
+           Tcl_Obj *const *objv)
 {
+    TreeCmd *cmdPtr = clientData;
     PositionSwitches switches;
     Blt_TreeNode *nodeArr, *nodePtr;
     Blt_TreeNode lastParent;
@@ -4826,8 +4883,10 @@ PositionOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  */
 /*ARGSUSED*/
 static int
-PreviousOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+PreviousOp(ClientData clientData, Tcl_Interp *interp, int objc,
+           Tcl_Obj *const *objv)
 {
+    TreeCmd *cmdPtr = clientData;
     Blt_TreeNode node;
     long inode;
 
@@ -4843,9 +4902,10 @@ PreviousOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 
 /*ARGSUSED*/
 static int
-PrevSiblingOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, 
+PrevSiblingOp(ClientData clientData, Tcl_Interp *interp, int objc, 
 	      Tcl_Obj *const *objv)
 {
+    TreeCmd *cmdPtr = clientData;
     Blt_TreeNode node;
     long inode;
 
@@ -4874,8 +4934,10 @@ PrevSiblingOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc,
  */
 /*ARGSUSED*/
 static int
-RestoreOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+RestoreOp(ClientData clientData, Tcl_Interp *interp, int objc,
+          Tcl_Obj *const *objv)
 {
+    TreeCmd *cmdPtr = clientData;
     Blt_TreeNode root;                  /* Root node of restored
 					 * subtree. */
     RestoreSwitches switches;
@@ -4924,8 +4986,10 @@ RestoreOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  */
 /*ARGSUSED*/
 static int
-RootOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+RootOp(ClientData clientData, Tcl_Interp *interp, int objc,
+       Tcl_Obj *const *objv)
 {
+    TreeCmd *cmdPtr = clientData;
     Blt_TreeNode root;
 
     root = Blt_Tree_RootNode(cmdPtr->tree);
@@ -4941,8 +5005,9 @@ RootOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *---------------------------------------------------------------------------
  */
 static int
-SetOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+SetOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 {
+    TreeCmd *cmdPtr = clientData;
     Blt_TreeNode node;
     Blt_TreeIterator iter;
 
@@ -4968,8 +5033,10 @@ SetOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  */
 /*ARGSUSED*/
 static int
-SizeOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+SizeOp(ClientData clientData, Tcl_Interp *interp, int objc,
+       Tcl_Obj *const *objv)
 {
+    TreeCmd *cmdPtr = clientData;
     Blt_TreeNode node;
 
     if (Blt_Tree_GetNodeFromObj(interp, cmdPtr->tree, objv[2], &node)
@@ -4990,8 +5057,10 @@ SizeOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *---------------------------------------------------------------------------
  */
 static int
-TagAddOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+TagAddOp(ClientData clientData, Tcl_Interp *interp, int objc,
+         Tcl_Obj *const *objv)
 {
+    TreeCmd *cmdPtr = clientData;
     const char *string;
     long nodeId;
 
@@ -5044,8 +5113,10 @@ TagAddOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *---------------------------------------------------------------------------
  */
 static int
-TagDeleteOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+TagDeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
+            Tcl_Obj *const *objv)
 {
+    TreeCmd *cmdPtr = clientData;
     const char *string;
     Blt_HashTable *tablePtr;
     long nodeId;
@@ -5098,8 +5169,10 @@ TagDeleteOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *---------------------------------------------------------------------------
  */
 static int
-TagDumpOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+TagDumpOp(ClientData clientData, Tcl_Interp *interp, int objc,
+          Tcl_Obj *const *objv)
 {
+    TreeCmd *cmdPtr = clientData;
     Blt_TreeNode root;
     Tcl_DString ds;
     int i;
@@ -5139,8 +5212,10 @@ TagDumpOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  */
 /*ARGSUSED*/
 static int
-TagExistsOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+TagExistsOp(ClientData clientData, Tcl_Interp *interp, int objc,
+            Tcl_Obj *const *objv)
 {
+    TreeCmd *cmdPtr = clientData;
     int bool;
     const char *tagName;
 
@@ -5170,8 +5245,10 @@ TagExistsOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  */
 /*ARGSUSED*/
 static int
-TagForgetOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+TagForgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
+            Tcl_Obj *const *objv)
 {
+    TreeCmd *cmdPtr = clientData;
     int i;
 
     for (i = 3; i < objc; i++) {
@@ -5202,8 +5279,10 @@ TagForgetOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *---------------------------------------------------------------------------
  */
 static int
-TagGetOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+TagGetOp(ClientData clientData, Tcl_Interp *interp, int objc,
+         Tcl_Obj *const *objv)
 {
+    TreeCmd *cmdPtr = clientData;
     Blt_TreeNode node; 
     Tcl_Obj *listObjPtr;
    
@@ -5305,12 +5384,10 @@ TagGetOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *---------------------------------------------------------------------------
  */
 static int
-TagNamesOp(
-    TreeCmd *cmdPtr,
-    Tcl_Interp *interp,
-    int objc,
-    Tcl_Obj *const *objv)
+TagNamesOp(ClientData clientData, Tcl_Interp *interp, int objc,
+           Tcl_Obj *const *objv)
 {
+    TreeCmd *cmdPtr = clientData;
     Tcl_Obj *listObjPtr, *objPtr;
 
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
@@ -5392,12 +5469,10 @@ TagNamesOp(
  *---------------------------------------------------------------------------
  */
 static int
-TagNodesOp(
-    TreeCmd *cmdPtr,
-    Tcl_Interp *interp,
-    int objc,
-    Tcl_Obj *const *objv)
+TagNodesOp(ClientData clientData, Tcl_Interp *interp, int objc,
+           Tcl_Obj *const *objv)
 {
+    TreeCmd *cmdPtr = clientData;
     Blt_HashTable nodeTable;
     int i;
 	
@@ -5479,8 +5554,10 @@ TagNodesOp(
  *---------------------------------------------------------------------------
  */
 static int
-TagSetOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+TagSetOp(ClientData clientData, Tcl_Interp *interp, int objc,
+         Tcl_Obj *const *objv)
 {
+    TreeCmd *cmdPtr = clientData;
     Blt_TreeNode node;
     int i;
 
@@ -5524,8 +5601,10 @@ TagSetOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *---------------------------------------------------------------------------
  */
 static int
-TagUnsetOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+TagUnsetOp(ClientData clientData, Tcl_Interp *interp, int objc,
+           Tcl_Obj *const *objv)
 {
+    TreeCmd *cmdPtr = clientData;
     Blt_TreeNode node;
     int i;
 
@@ -5562,9 +5641,9 @@ static Blt_OpSpec tagOps[] = {
 static int numTagOps = sizeof(tagOps) / sizeof(Blt_OpSpec);
 
 static int
-TagOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+TagOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 {
-    TreeCmdProc *proc;
+    Tcl_ObjCmdProc *proc;
     int result;
 
     proc = Blt_GetOpFromObj(interp, numTagOps, tagOps, BLT_OP_ARG2, objc, objv, 
@@ -5572,7 +5651,7 @@ TagOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     if (proc == NULL) {
 	return TCL_ERROR;
     }
-    result = (*proc) (cmdPtr, interp, objc, objv);
+    result = (*proc) (clientData, interp, objc, objv);
     return result;
 }
 
@@ -5587,9 +5666,10 @@ TagOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  */
 /*ARGSUSED*/
 static int
-TraceCreateOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, 
+TraceCreateOp(ClientData clientData, Tcl_Interp *interp, int objc, 
 	      Tcl_Obj *const *objv)
 {
+    TreeCmd *cmdPtr = clientData;
     Blt_TreeNode node;
     TraceInfo *tracePtr;
     const char *key, *command;
@@ -5659,9 +5739,10 @@ TraceCreateOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc,
  *---------------------------------------------------------------------------
  */
 static int
-TraceDeleteOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc,
+TraceDeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	      Tcl_Obj *const *objv)
 {
+    TreeCmd *cmdPtr = clientData;
     int i;
 
     for (i = 3; i < objc; i++) {
@@ -5696,9 +5777,10 @@ TraceDeleteOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc,
  */
 /*ARGSUSED*/
 static int
-TraceNamesOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, 
+TraceNamesOp(ClientData clientData, Tcl_Interp *interp, int objc, 
 	     Tcl_Obj *const *objv)
 {
+    TreeCmd *cmdPtr = clientData;
     Blt_HashEntry *hPtr;
     Blt_HashSearch iter;
 
@@ -5718,8 +5800,10 @@ TraceNamesOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc,
  */
 /*ARGSUSED*/
 static int
-TraceInfoOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+TraceInfoOp(ClientData clientData, Tcl_Interp *interp, int objc,
+            Tcl_Obj *const *objv)
 {
+    TreeCmd *cmdPtr = clientData;
     TraceInfo *tracePtr;
     struct _Blt_TreeTrace *tokenPtr;
     Blt_HashEntry *hPtr;
@@ -5764,17 +5848,18 @@ TraceInfoOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 static Blt_OpSpec traceOps[] =
 {
     {"create", 1, TraceCreateOp, 7, 0, "node key how command ?-whenidle?",},
-    {"delete", 1, TraceDeleteOp, 3, 0, "id...",},
-    {"info",   1, TraceInfoOp,   4, 4, "id",},
+    {"delete", 1, TraceDeleteOp, 3, 0, "traceName ...",},
+    {"info",   1, TraceInfoOp,   4, 4, "traceName",},
     {"names",  1, TraceNamesOp,  3, 3, "",},
 };
 
 static int numTraceOps = sizeof(traceOps) / sizeof(Blt_OpSpec);
 
 static int
-TraceOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+TraceOp(ClientData clientData, Tcl_Interp *interp, int objc,
+        Tcl_Obj *const *objv)
 {
-    TreeCmdProc *proc;
+    Tcl_ObjCmdProc *proc;
     int result;
 
     proc = Blt_GetOpFromObj(interp, numTraceOps, traceOps, BLT_OP_ARG2, objc, 
@@ -5782,21 +5867,23 @@ TraceOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     if (proc == NULL) {
 	return TCL_ERROR;
     }
-    result = (*proc) (cmdPtr, interp, objc, objv);
+    result = (*proc) (clientData, interp, objc, objv);
     return result;
 }
 
 /*
  *---------------------------------------------------------------------------
  *
- * GetOp --
+ * TypeOp --
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
-TypeOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+TypeOp(ClientData clientData, Tcl_Interp *interp, int objc,
+       Tcl_Obj *const *objv)
 {
+    TreeCmd *cmdPtr = clientData;
     Blt_TreeNode node;
     Tcl_Obj *valueObjPtr;
     const char *string;
@@ -5828,12 +5915,10 @@ TypeOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *---------------------------------------------------------------------------
  */
 static int
-UnsetOp(
-    TreeCmd *cmdPtr,
-    Tcl_Interp *interp,
-    int objc,
-    Tcl_Obj *const *objv)
+UnsetOp(ClientData clientData, Tcl_Interp *interp, int objc,
+        Tcl_Obj *const *objv)
 {
+    TreeCmd *cmdPtr = clientData;
     Blt_TreeNode node;
     long nodeId;
 
@@ -6074,8 +6159,10 @@ SortApplyProc(
  *---------------------------------------------------------------------------
  */
 static int
-SortOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+SortOp(ClientData clientData, Tcl_Interp *interp, int objc,
+       Tcl_Obj *const *objv)
 {
+    TreeCmd *cmdPtr = clientData;
     Blt_TreeNode top;
     SortSwitches switches;
     int result;
@@ -6160,8 +6247,10 @@ SortOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *---------------------------------------------------------------------------
  */
 static int
-NamesOp(TreeCmd *cmdPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+NamesOp(ClientData clientData, Tcl_Interp *interp, int objc,
+        Tcl_Obj *const *objv)
 {
+    TreeCmd *cmdPtr = clientData;
     Blt_TreeNode node;
     Tcl_Obj *listObjPtr;
     
@@ -6273,17 +6362,17 @@ TreeInstObjCmd(
     int objc,                           /* Number of arguments. */
     Tcl_Obj *const *objv)               /* Vector of argument strings. */
 {
-    TreeCmdProc *proc;
+    Tcl_ObjCmdProc *proc;
     TreeCmd *cmdPtr = clientData;
     int result;
 
-    proc = Blt_GetOpFromObj(interp, numTreeOps, treeOps, BLT_OP_ARG1, objc, objv,
-	0);
+    proc = Blt_GetOpFromObj(interp, numTreeOps, treeOps, BLT_OP_ARG1, objc,
+                            objv, 0);
     if (proc == NULL) {
 	return TCL_ERROR;
     }
     Tcl_Preserve(cmdPtr);
-    result = (*proc) (cmdPtr, interp, objc, objv);
+    result = (*proc) (clientData, interp, objc, objv);
     Tcl_Release(cmdPtr);
     return result;
 }
@@ -6329,11 +6418,8 @@ TreeInstDeleteProc(ClientData clientData)
  */
 /*ARGSUSED*/
 static int
-TreeCreateOp(
-    ClientData clientData,              /* Interpreter-specific data. */
-    Tcl_Interp *interp,
-    int objc,
-    Tcl_Obj *const *objv)
+TreeCreateOp(ClientData clientData, Tcl_Interp *interp, int objc,
+             Tcl_Obj *const *objv)
 {
     const char *name;
     TreeCmd *cmdPtr;
@@ -6358,11 +6444,8 @@ TreeCreateOp(
  */
 /*ARGSUSED*/
 static int
-TreeDestroyOp(
-    ClientData clientData,              /* Interpreter-specific data. */
-    Tcl_Interp *interp,
-    int objc,
-    Tcl_Obj *const *objv)
+TreeDestroyOp(ClientData clientData, Tcl_Interp *interp, int objc,
+              Tcl_Obj *const *objv)
 {
     TreeCmdInterpData *tdPtr = clientData;
     int i;
@@ -6392,11 +6475,8 @@ TreeDestroyOp(
  */
 /*ARGSUSED*/
 static int
-TreeNamesOp(
-    ClientData clientData,              /* Interpreter-specific data. */
-    Tcl_Interp *interp,
-    int objc,
-    Tcl_Obj *const *objv)
+TreeNamesOp(ClientData clientData, Tcl_Interp *interp, int objc,
+            Tcl_Obj *const *objv)
 {
     TreeCmdInterpData *tdPtr = clientData;
     Blt_HashEntry *hPtr;
@@ -6432,11 +6512,8 @@ TreeNamesOp(
 
 /*ARGSUSED*/
 static int
-TreeLoadOp(
-    ClientData clientData,              /* Interpreter-specific data. */
-    Tcl_Interp *interp,
-    int objc,                           /* Not used. */
-    Tcl_Obj *const *objv)
+TreeLoadOp(ClientData clientData, Tcl_Interp *interp, int objc,
+           Tcl_Obj *const *objv)
 {
     Blt_HashEntry *hPtr;
     TreeCmdInterpData *dataPtr = clientData;
