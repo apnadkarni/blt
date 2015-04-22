@@ -124,8 +124,8 @@ Both *operation* and its arguments determine the exact behavior of
 the command.  The operations available are described in the
 `TREEVIEW OPERATIONS`_ section.
 
-REFERENCE NODES
----------------
+REFERENCING NODES
+-----------------
 
 Tree nodes can be refererenced in the same ways the **blt::tree** command:
 by id or by tag (see the **blt::tree** manual for details). In addition the
@@ -205,6 +205,30 @@ by id or by tag (see the **blt::tree** manual for details). In addition the
     part of the entryd covers that point, then the closest node to that
     point is used.
 
+REFERENCING COLUMNS
+-------------------
+
+  **active**
+    This is the node where the mouse pointer is currently located.  When a
+    node is active, it is drawn using its active icon (see the
+    **-activeicon** option).  The **active** id is changes when
+    you move the mouse pointer over another node or by using the **entry
+    activate** operation. Note that there can be only one active node at a
+    time.
+
+  **current**
+    The is the node where the mouse pointer is currently located.  Unlike
+
+  **treeView**
+    The is the node where the mouse pointer is currently located.  Unlike
+
+  *index*
+    The index of the column.  Columns are number from zero. Add and deleting
+    columns may change the indices of other columns.
+
+  *name*
+     The name of the column.
+     
 DATA FIELDS
 -----------
 

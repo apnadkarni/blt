@@ -72,16 +72,108 @@
 #include "bltTreeView.h"
 #include "bltOp.h"
 
-#define TEXTBOX_FOCUS	(1<<0)
-#define TEXTBOX_REDRAW	(1<<1)
+#define PIXMAPX(t, wx) ((wx) - (t)->xOffset)
+#define PIXMAPY(t, wy) ((wy) - (t)->yOffset)
 
-static Tcl_IdleProc DisplayTextbox;
-static Tcl_FreeProc DestroyTextbox;
-static Tcl_TimerProc BlinkCursorProc;
-static Tcl_ObjCmdProc TextboxCmd;
+#define SCREENX(t, wx) ((wx) - (t)->xOffset + (t)->borderWidth)
+#define SCREENY(t, wy) ((wy) - (t)->yOffset + (t)->borderWidth)
+
+#define WORLDX(t, sx)  ((sx) - (t)->borderWidth + (t)->xOffset)
+#define WORLDY(t, sy)  ((sy) - (t)->borderWidth + (t)->yOffset)
+
+#define VPORTWIDTH(t)  \
+    (Tk_Width((t)->tkwin) - 2 * (t)->borderWidth - (t)->yScrollbarWidth)
+#define VPORTHEIGHT(t) \
+    (Tk_Height((t)->tkwin) - 2 * (t)->borderWidth - (t)->xScrollbarHeight)
+
+#define TEXTBOX_FOCUS	(1<<0)
+#define MAXSCROLLBARTHICKNESS   100
+
+#define REDRAW_PENDING          (1<<0)  /* Indicates that the widget will
+					 * be redisplayed at the next idle
+					 * point. */
+#define LAYOUT_PENDING          (1<<1)  /* Indicates that the widget's
+					 * layout is scheduled to be
+					 * recomputed at the next
+					 * redraw. */
+#define UPDATE_PENDING          (1<<2)  /* Indicates that a component
+					 * (window or scrollbar) has
+					 * changed and that and update is
+					 * pending.  */
+#define FOCUS                   (1<<3)  /* Indicates that the combomenu
+					 * currently has focus. */
+#define DROPDOWN                (1<<4)  /* Indicates the combomenu is a
+					 * drop down menu as opposed to a
+					 * popup.  */
+#define POSTED                  (1<<5)  /* Indicates the combomenu is
+					 * currently posted. */
+
+#define SCROLLX                 (1<<6)
+#define SCROLLY                 (1<<7)
+#define SCROLL_PENDING          (SCROLLX|SCROLLY)
+
+#define INSTALL_XSCROLLBAR      (1<<8)  /* Indicates that the x scrollbar
+					 * is scheduled to be installed at
+					 * the next idle point. */
+#define INSTALL_YSCROLLBAR      (1<<9)  /* Indicates that the y scrollbar
+					 * is scheduled to be installed at
+					 * the next idle point. */
+#define RESTRICT_MIN            (1<<10) /* Indicates to constrain the width
+					 * of the menu to the minimum size
+					 * of the parent widget that posted
+					 * the menu. */
+#define RESTRICT_MAX            (1<<11) /* Indicates to constrain the width
+					 * of the menu of the maximum size
+					 * of the parent widget that posted
+					 * the menu. */
+#define RESTRICT_NONE           (0)
+#define INITIALIZED             (1<<22)
+
+
+#define DEF_BACKGROUND		RGB_WHITE
+#define DEF_BORDERWIDTH	STD_BORDERWIDTH
+#ifdef WIN32
+#define DEF_BUTTON_BACKGROUND  RGB_GREY85
+#else
+#define DEF_BUTTON_BACKGROUND           RGB_GREY90
+#endif
+#define DEF_BUTTON_BORDERWIDTH          "2"
+#define DEF_BUTTON_RELIEF               "raised"
+#define DEF_CURSOR                      (char *)NULL
+#define DEF_EXPORT_SELECTION            "no"
+#define DEF_NORMAL_BACKGROUND           STD_NORMAL_BACKGROUND
+#define DEF_NORMAL_FG_MONO              STD_ACTIVE_FG_MONO
+#define DEF_POSTCOMMAND                 ((char *)NULL)
+#define DEF_RELIEF                      "solid"
+#define DEF_SCROLLBAR                   ((char *)NULL)
+#define DEF_SCROLL_CMD                  ((char *)NULL)
+#define DEF_SCROLL_INCR                 "2"
+#define DEF_SELECT_BACKGROUND           RGB_LIGHTBLUE0
+#define DEF_SELECT_BG_MONO              STD_SELECT_BG_MONO
+#define DEF_SELECT_BORDERWIDTH          "1"
+#define DEF_SELECT_FG_MONO              STD_SELECT_FG_MONO
+#define DEF_SELECT_FOREGROUND           STD_SELECT_FOREGROUND
+#define DEF_SELECT_RELIEF               "flat"
+#define DEF_UNPOSTCOMMAND               ((char *)NULL)
+#define DEF_WIDTH                       "0"
+
+typedef struct {
+    unsigned int flags;                 /* Various flags: see below. */
+    int x1, y1, x2, y2;                 /* Coordinates of area representing
+					 * the parent that posted this
+					 * editor.  */
+    Tk_Window tkwin;                    /* Parent window that posted this
+					 * editor. */
+    int editorWidth, editorHeight;
+    int lastEditorWidth;
+    int align;
+    Tcl_Obj *cmdObjPtr;                 /* Command to be executed after
+                                         * completing edits. */
+    Tcl_Obj *textObjPtr;                /* Imported text string. */
+} PostInfo;
 
 /*
- * Textbox --
+ * TextEditor --
  *
  *	This structure is shared by entries when their labels are edited
  *	via the keyboard.  It maintains the location of the insertion
@@ -183,7 +275,7 @@ typedef struct {
     int flags;                          /* Various flags; see below for
 					 * definitions. */
 
-    /* Textbox-specific fields */
+    /* TextEditor-specific fields */
     TreeView *viewPtr;
     int x, y;                           /* Position of window. */
 
@@ -227,7 +319,7 @@ typedef struct {
     Icon icon;
     int gap;
     char *string;
-    TextLayout *textPtr;
+    TextLayout *layoutPtr;
     Blt_Font font;
     GC gc;
 
@@ -239,88 +331,182 @@ typedef struct {
     int buttonBW;
     Tk_3DBorder buttonBorder;
     int buttonRelief;
-} Textbox;
+    PostInfo post;
+    
+    int xScrollUnits, yScrollUnits;
 
-#define DEF_TEXTBOX_BACKGROUND		RGB_WHITE
-#define DEF_TEXTBOX_BORDERWIDTH	STD_BORDERWIDTH
-#ifdef WIN32
-#define DEF_TEXTBOX_BUTTON_BACKGROUND  RGB_GREY85
-#else
-#define DEF_TEXTBOX_BUTTON_BACKGROUND  RGB_GREY90
-#endif
-#define DEF_TEXTBOX_BUTTON_BORDERWIDTH	"2"
-#define DEF_TEXTBOX_BUTTON_RELIEF	"raised"
-#define DEF_TEXTBOX_CURSOR		(char *)NULL
-#define DEF_TEXTBOX_EXPORT_SELECTION	"no"
-#define DEF_TEXTBOX_NORMAL_BACKGROUND 	STD_NORMAL_BACKGROUND
-#define DEF_TEXTBOX_NORMAL_FG_MONO	STD_ACTIVE_FG_MONO
-#define DEF_TEXTBOX_RELIEF		"solid"
-#define DEF_TEXTBOX_SELECT_BACKGROUND 	RGB_LIGHTBLUE0
-#define DEF_TEXTBOX_SELECT_BG_MONO  	STD_SELECT_BG_MONO
-#define DEF_TEXTBOX_SELECT_BORDERWIDTH "1"
-#define DEF_TEXTBOX_SELECT_FOREGROUND 	STD_SELECT_FOREGROUND
-#define DEF_TEXTBOX_SELECT_FG_MONO  	STD_SELECT_FG_MONO
-#define DEF_TEXTBOX_SELECT_RELIEF	"flat"
+    /* Names of scrollbars to embed into the widget window. */
+    Tcl_Obj *xScrollbarObjPtr, *yScrollbarObjPtr;
 
-/* Textbox Procedures */
-static Blt_ConfigSpec textboxConfigSpecs[] =
+    /* Commands to control horizontal and vertical scrollbars. */
+    Tcl_Obj *xScrollCmdObjPtr, *yScrollCmdObjPtr;
+
+    Tk_Window xScrollbar;               /* Horizontal scrollbar to be used
+					 * if necessary. If NULL, no
+					 * x-scrollbar is used. */
+    Tk_Window yScrollbar;               /* Vertical scrollbar to be used if
+					 * necessary. If NULL, no
+					 * y-scrollbar is used. */
+    short int yScrollbarWidth, xScrollbarHeight;
+} TextEditor;
+
+static Blt_SwitchParseProc PostPopupSwitchProc;
+static Blt_SwitchCustom postPopupSwitch = {
+    PostPopupSwitchProc, NULL, NULL, 0,
+};
+
+static Blt_SwitchParseProc PostCascadeSwitchProc;
+static Blt_SwitchCustom postCascadeSwitch = {
+    PostCascadeSwitchProc, NULL, NULL, 0,
+};
+static Blt_SwitchParseProc PostBoxSwitchProc;
+static Blt_SwitchCustom postBoxSwitch = {
+    PostBoxSwitchProc, NULL, NULL, 0, 
+};
+static Blt_SwitchParseProc PostAlignSwitchProc;
+static Blt_SwitchCustom postAlignSwitch = {
+    PostAlignSwitchProc, NULL, NULL, 0, 
+};
+static Blt_SwitchParseProc PostWindowSwitchProc;
+static Blt_SwitchCustom postWindowSwitch = {
+    PostWindowSwitchProc, NULL, NULL, 0, 
+};
+
+typedef struct {
+    unsigned int flags;                 /* Various flags: see below. */
+    int x1, y1, x2, y2;                 /* Coordinates of area representing
+					 * the parent that posted this
+					 * menu.  */
+    Tk_Window tkwin;                    /* Parent window that posted this
+					 * menu. */
+} PostSwitches;
+
+#define ALIGN_LEFT      (0)             /* Menu is aligned to the center of
+					 * the parent. */
+#define ALIGN_CENTER    (1)             /* Menu is aligned on the left side
+					 * of the parent.  */
+#define ALIGN_RIGHT     (2)             /* Menu is aligned on the right
+					 * side of the parent. */
+
+#define POST_PARENT     (0)             /* Use parent geometry for location
+					 * of button. */
+#define POST_POPUP      (1)             /* x,y location of the menu in root
+					 * coordinates. This menu is a
+					 * popup.*/
+#define POST_CASCADE    (2)             /* x,y location of the menu in root
+					 * coordinates. This menu is a
+					 * cascade.*/
+#define POST_WINDOW     (3)             /* Window representing the
+					 * parent. */
+#define POST_REGION     (4)             /* Bounding box representing the
+					 * parent area. The x1, y2, x2, y2
+					 * coordinates are in root
+					 * coordinates. */
+
+static Blt_SwitchSpec postSwitches[] = 
+{
+    {BLT_SWITCH_CUSTOM, "-align", "left|right|center", (char *)NULL,
+	Blt_Offset(TextEditor, post.align), 0, 0, &postAlignSwitch},
+    {BLT_SWITCH_CUSTOM, "-box", "x1 y1 x2 y2", (char *)NULL,
+	0, 0, 0, &postBoxSwitch},
+    {BLT_SWITCH_CUSTOM, "-cascade", "x y", (char *)NULL,
+	0, 0, 0, &postCascadeSwitch},
+    {BLT_SWITCH_CUSTOM, "-popup", "x y", (char *)NULL,
+	0, 0, 0, &postPopupSwitch},
+    {BLT_SWITCH_OBJ, "-text", "string", (char *)NULL,
+	Blt_Offset(TextEditor, post.text), 0},
+    {BLT_SWITCH_OBJ, "-command", "cmdPrefix", (char *)NULL,
+	Blt_Offset(TextEditor, post.cmdObjPtr), 0},
+    {BLT_SWITCH_CUSTOM, "-window", "path", (char *)NULL,
+	Blt_Offset(TextEditor, post.tkwin), 0, 0, &postWindowSwitch},
+    {BLT_SWITCH_END}
+};
+
+/* TextEditor Procedures */
+static Blt_ConfigSpec configSpecs[] =
 {
     {BLT_CONFIG_BORDER, "-background", "background", "Background",
-	DEF_TEXTBOX_BACKGROUND, Blt_Offset(Textbox, border), 0},
+	DEF_BACKGROUND, Blt_Offset(TextEditor, border), 0},
     {BLT_CONFIG_SYNONYM, "-bd", "borderWidth", (char *)NULL, (char *)NULL, 0,0},
     {BLT_CONFIG_SYNONYM, "-bg", "background", (char *)NULL, (char *)NULL, 0,0},
     {BLT_CONFIG_ACTIVE_CURSOR, "-cursor", "cursor", "Cursor",
-	DEF_TEXTBOX_CURSOR, Blt_Offset(Textbox, cursor), 
+	DEF_CURSOR, Blt_Offset(TextEditor, cursor), 
 	BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_PIXELS_NNEG, "-borderwidth", "borderWidth", "BorderWidth",
-	DEF_TEXTBOX_BORDERWIDTH, Blt_Offset(Textbox, borderWidth),
+	DEF_BORDERWIDTH, Blt_Offset(TextEditor, borderWidth),
 	BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_BORDER, "-buttonbackground", "buttonBackground", 
-	"ButtonBackground", DEF_TEXTBOX_BUTTON_BACKGROUND,
-	Blt_Offset(Textbox, buttonBorder), 0},
+	"ButtonBackground", DEF_BUTTON_BACKGROUND,
+	Blt_Offset(TextEditor, buttonBorder), 0},
     {BLT_CONFIG_RELIEF, "-buttonrelief", "buttonRelief", "ButtonRelief",
-	DEF_TEXTBOX_BUTTON_RELIEF, Blt_Offset(Textbox, buttonRelief),
+	DEF_BUTTON_RELIEF, Blt_Offset(TextEditor, buttonRelief),
 	BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_PIXELS_NNEG, "-buttonborderwidth", "buttonBorderWidth", 
-	"ButtonBorderWidth", DEF_TEXTBOX_BUTTON_BORDERWIDTH, 
-	Blt_Offset(Textbox, buttonBW),
+	"ButtonBorderWidth", DEF_BUTTON_BORDERWIDTH, 
+	Blt_Offset(TextEditor, buttonBW),
 	BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_BOOLEAN, "-exportselection", "exportSelection",
-	"ExportSelection", DEF_TEXTBOX_EXPORT_SELECTION, 
-	Blt_Offset(Textbox, exportSelection), 
+	"ExportSelection", DEF_EXPORT_SELECTION, 
+	Blt_Offset(TextEditor, exportSelection), 
 	BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_RELIEF, "-relief", "relief", "Relief", DEF_TEXTBOX_RELIEF, 
-	Blt_Offset(Textbox, relief), BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_RELIEF, "-relief", "relief", "Relief", DEF_RELIEF, 
+	Blt_Offset(TextEditor, relief), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_BORDER, "-selectbackground", "selectBackground", "Background",
-	DEF_TEXTBOX_SELECT_BG_MONO, Blt_Offset(Textbox, selBorder),
+	DEF_SELECT_BG_MONO, Blt_Offset(TextEditor, selBorder),
 	BLT_CONFIG_MONO_ONLY},
     {BLT_CONFIG_BORDER, "-selectbackground", "selectBackground", "Background",
-	DEF_TEXTBOX_SELECT_BACKGROUND, Blt_Offset(Textbox, selBorder),
+	DEF_SELECT_BACKGROUND, Blt_Offset(TextEditor, selBorder),
 	BLT_CONFIG_COLOR_ONLY},
     {BLT_CONFIG_PIXELS_NNEG, "-selectborderwidth", "selectBorderWidth", 
-	"BorderWidth", DEF_TEXTBOX_SELECT_BORDERWIDTH, 
-	Blt_Offset(Textbox, selBW), BLT_CONFIG_DONT_SET_DEFAULT},
+	"BorderWidth", DEF_SELECT_BORDERWIDTH, 
+	Blt_Offset(TextEditor, selBW), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_COLOR, "-selectforeground", "selectForeground", "Foreground",
 
-	DEF_TEXTBOX_SELECT_FG_MONO, Blt_Offset(Textbox, selFgColor),
+	DEF_SELECT_FG_MONO, Blt_Offset(TextEditor, selFgColor),
 	BLT_CONFIG_MONO_ONLY},
     {BLT_CONFIG_COLOR, "-selectforeground", "selectForeground", "Foreground",
-	DEF_TEXTBOX_SELECT_FOREGROUND, Blt_Offset(Textbox, selFgColor),
+	DEF_SELECT_FOREGROUND, Blt_Offset(TextEditor, selFgColor),
 	BLT_CONFIG_COLOR_ONLY},
     {BLT_CONFIG_RELIEF, "-selectrelief", "selectRelief", "Relief",
-	DEF_TEXTBOX_SELECT_RELIEF, Blt_Offset(Textbox, selRelief),
+	DEF_SELECT_RELIEF, Blt_Offset(TextEditor, selRelief),
 	BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_OBJ, "-xscrollbar", "xScrollbar", "Scrollbar", 
+	DEF_SCROLLBAR, Blt_Offset(TextEditor, xScrollbarObjPtr), 
+	BLT_CONFIG_NULL_OK},
+    {BLT_CONFIG_OBJ, "-xscrollcommand", "xScrollCommand", "ScrollCommand",
+	DEF_SCROLL_CMD, Blt_Offset(TextEditor, xScrollCmdObjPtr), 
+	BLT_CONFIG_NULL_OK},
+    {BLT_CONFIG_PIXELS_POS, "-xscrollincrement", "xScrollIncrement",
+	"ScrollIncrement", DEF_SCROLL_INCR, 
+	 Blt_Offset(TextEditor, xScrollUnits), BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_OBJ, "-yscrollbar", "yScrollbar", "Scrollbar", 
+	DEF_SCROLLBAR, Blt_Offset(TextEditor, yScrollbarObjPtr), 
+	BLT_CONFIG_NULL_OK},
+    {BLT_CONFIG_OBJ, "-yscrollcommand", "yScrollCommand", "ScrollCommand",
+	DEF_SCROLL_CMD, Blt_Offset(TextEditor, yScrollCmdObjPtr), 
+	BLT_CONFIG_NULL_OK},
+    {BLT_CONFIG_PIXELS_POS, "-yscrollincrement", "yScrollIncrement",
+	"ScrollIncrement", DEF_SCROLL_INCR, 
+	 Blt_Offset(TextEditor, yScrollUnits),BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_OBJ, "-takefocus", "takeFocus", "TakeFocus",
+	DEF_TAKE_FOCUS, Blt_Offset(TextEditor, takeFocusObjPtr), 
+	BLT_CONFIG_NULL_OK},
+    {BLT_CONFIG_OBJ, "-unpostcommand", "unpostCommand", "UnpostCommand", 
+	DEF_UNPOSTCOMMAND, Blt_Offset(TextEditor, unpostCmdObjPtr), 
+	BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_END, (char *)NULL, (char *)NULL, (char *)NULL, (char *)NULL, 
 	0, 0}
 };
 
-static Tk_LostSelProc TextboxLostSelectionProc;
-static Tk_SelectionProc TextboxSelectionProc;
-static Tk_EventProc TextboxEventProc;
 
-typedef int (TextboxCmdProc)(Textbox *tbPtr, Tcl_Interp *interp, int objc, 
-	Tcl_Obj *const *objv);
+static Tcl_IdleProc DisplayProc;
+static Tcl_FreeProc DestroyTextEditor;
+static Tcl_TimerProc BlinkCursorProc;
+static Tcl_ObjCmdProc TextEditorCmd;
 
+static Tk_LostSelProc LostSelectionProc;
+static Tk_SelectionProc SelectionProc;
+static Tk_EventProc EventProc;
 
 /*
  *---------------------------------------------------------------------------
@@ -339,13 +525,155 @@ typedef int (TextboxCmdProc)(Textbox *tbPtr, Tcl_Interp *interp, int objc,
  *---------------------------------------------------------------------------
  */
 static void
-EventuallyRedraw(Textbox *tbPtr)
+EventuallyRedraw(TextEditor *textPtr)
 {
-    if ((tbPtr->tkwin != NULL) && 
-	((tbPtr->flags & TEXTBOX_REDRAW) == 0)) {
-	tbPtr->flags |= TEXTBOX_REDRAW;
-	Tcl_DoWhenIdle(DisplayTextbox, tbPtr);
+    if ((textPtr->tkwin != NULL) && 
+	((textPtr->flags & REDRAW_PENDING) == 0)) {
+	textPtr->flags |= REDRAW_PENDING;
+	Tcl_DoWhenIdle(DisplayProc, textPtr);
     }
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * PostWindowSwitchProc --
+ *
+ *      Converts a window name into Tk window.
+ *
+ * Results:
+ *      If the string is successfully converted, TCL_OK is returned.
+ *      Otherwise, TCL_ERROR is returned and an error message is left
+ *      in interpreter's result field.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+PostWindowSwitchProc(ClientData clientData, Tcl_Interp *interp,
+		    const char *switchName, Tcl_Obj *objPtr, char *record,
+		    int offset, int flags)
+{
+    TextEditor *textPtr = (TextEditor *)record;
+    Tk_Window tkwin;
+    const char *string;
+
+    tkwin = NULL;
+    string = Tcl_GetString(objPtr);
+    if (string[0] == '\0') {
+	tkwin = NULL;
+    } else {
+	tkwin = Tk_NameToWindow(interp, string, textPtr->tkwin);
+	if (tkwin == NULL) {
+	    return TCL_ERROR;
+	}
+    }
+    textPtr->post.flags = POST_WINDOW;
+    textPtr->post.tkwin = tkwin;
+    return TCL_OK;
+}
+
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * PostAlignSwitchProc --
+ *
+ *      Converts string into x and y coordinates.
+ *
+ * Results:
+ *      If the string is successfully converted, TCL_OK is returned.
+ *      Otherwise, TCL_ERROR is returned and an error message is left
+ *      in interpreter's result field.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+PostAlignSwitchProc(ClientData clientData, Tcl_Interp *interp,
+		    const char *switchName, Tcl_Obj *objPtr, char *record,
+		    int offset, int flags)
+{
+    TextEditor *textPtr = (TextEditor *)record;
+    int align;
+    
+    if (GetAlignFromObj(interp, objPtr, &align) != TCL_OK) {
+	return TCL_ERROR;
+    }
+    textPtr->post.align = align;
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * PostPopupSwitchProc --
+ *
+ *      Converts string into x and y coordinates.  Indicates that the menu
+ *      is a popup and will be popped at the given x, y coordinate.
+ *
+ * Results:
+ *      If the string is successfully converted, TCL_OK is returned.
+ *      Otherwise, TCL_ERROR is returned and an error message is left
+ *      in interpreter's result field.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+PostPopupSwitchProc(ClientData clientData, Tcl_Interp *interp,
+		    const char *switchName, Tcl_Obj *objPtr, char *record,
+		    int offset, int flags)
+{
+    TextEditor *textPtr = (TextEditor *)record;
+    int x, y;
+    
+    if (GetCoordsFromObj(interp, objPtr, &x, &y) != TCL_OK) {
+	return TCL_ERROR;
+    }
+    textPtr->post.x1 = textPtr->post.x2 = x;
+    textPtr->post.y1 = textPtr->post.y2 = y;
+    textPtr->post.flags = POST_POPUP;
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * PostBoxSwitchProc --
+ *
+ *      Converts string into x1, y1, x2, and y2 coordinates.
+ *
+ * Results:
+ *      If the string is successfully converted, TCL_OK is returned.
+ *      Otherwise, TCL_ERROR is returned and an error message is left
+ *      in interpreter's result field.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+PostBoxSwitchProc(
+    ClientData clientData,              /* Not used. */
+    Tcl_Interp *interp,                 /* Not used. */
+    const char *switchName,             /* Not used. */
+    Tcl_Obj *objPtr,                    /* String representation */
+    char *record,                       /* Structure record */
+    int offset,                         /* Offset to field in structure */
+    int flags)                          /* Not used. */
+{
+    TextEditor *textPtr = (TextEditor *)record;
+    Box2d box;
+    
+    if (GetBoxFromObj(interp, objPtr, &box) != TCL_OK) {
+	return TCL_ERROR;
+    }
+    textPtr->post.x1 = box.x1;
+    textPtr->post.y1 = box.y1;
+    textPtr->post.x2 = box.x2;
+    textPtr->post.y2 = box.y2;
+    textPtr->post.flags = POST_REGION;
+    return TCL_OK;
 }
 
 /*
@@ -403,25 +731,25 @@ GetEntryIcon(TreeView *viewPtr, Entry *entryPtr)
 static void
 BlinkCursorProc(ClientData clientData)
 {
-    Textbox *tbPtr = clientData;
+    TextEditor *textPtr = clientData;
     int interval;
 
-    if (!(tbPtr->flags & TEXTBOX_FOCUS) || (tbPtr->offTime == 0)) {
+    if (!(textPtr->flags & TEXTBOX_FOCUS) || (textPtr->offTime == 0)) {
 	return;
     }
-    if (tbPtr->active) {
-	tbPtr->cursorOn ^= 1;
-	interval = (tbPtr->cursorOn) ? tbPtr->onTime : tbPtr->offTime;
-	tbPtr->timerToken = 
-	    Tcl_CreateTimerHandler(interval, BlinkCursorProc, tbPtr);
-	EventuallyRedraw(tbPtr);
+    if (textPtr->active) {
+	textPtr->cursorOn ^= 1;
+	interval = (textPtr->cursorOn) ? textPtr->onTime : textPtr->offTime;
+	textPtr->timerToken = 
+	    Tcl_CreateTimerHandler(interval, BlinkCursorProc, textPtr);
+	EventuallyRedraw(textPtr);
     }
 }
 
 /*
  *---------------------------------------------------------------------------
  *
- * TextboxEventProc --
+ * EventProc --
  *
  * 	This procedure is invoked by the Tk dispatcher for various events
  * 	on treeview widgets.
@@ -436,56 +764,56 @@ BlinkCursorProc(ClientData clientData)
  *---------------------------------------------------------------------------
  */
 static void
-TextboxEventProc(ClientData clientData, XEvent *eventPtr)
+EventProc(ClientData clientData, XEvent *eventPtr)
 {
-    Textbox *tbPtr = clientData;
+    TextEditor *textPtr = clientData;
 
     if (eventPtr->type == Expose) {
 	if (eventPtr->xexpose.count == 0) {
-	    EventuallyRedraw(tbPtr);
+	    EventuallyRedraw(textPtr);
 	}
     } else if (eventPtr->type == ConfigureNotify) {
-	EventuallyRedraw(tbPtr);
+	EventuallyRedraw(textPtr);
     } else if ((eventPtr->type == FocusIn) || (eventPtr->type == FocusOut)) {
 	if (eventPtr->xfocus.detail == NotifyInferior) {
 	    return;
 	}
 	if (eventPtr->type == FocusIn) {
-	    tbPtr->flags |= TEXTBOX_FOCUS;
+	    textPtr->flags |= TEXTBOX_FOCUS;
 	} else {
-	    tbPtr->flags &= ~TEXTBOX_FOCUS;
+	    textPtr->flags &= ~TEXTBOX_FOCUS;
 	}
-	Tcl_DeleteTimerHandler(tbPtr->timerToken);
-	if ((tbPtr->active) && (tbPtr->flags & TEXTBOX_FOCUS)) {
-	    tbPtr->cursorOn = TRUE;
-	    if (tbPtr->offTime != 0) {
-		tbPtr->timerToken = Tcl_CreateTimerHandler(tbPtr->onTime, 
-		   BlinkCursorProc, tbPtr);
+	Tcl_DeleteTimerHandler(textPtr->timerToken);
+	if ((textPtr->active) && (textPtr->flags & TEXTBOX_FOCUS)) {
+	    textPtr->cursorOn = TRUE;
+	    if (textPtr->offTime != 0) {
+		textPtr->timerToken = Tcl_CreateTimerHandler(textPtr->onTime, 
+		   BlinkCursorProc, textPtr);
 	    }
 	} else {
-	    tbPtr->cursorOn = FALSE;
-	    tbPtr->timerToken = (Tcl_TimerToken) NULL;
+	    textPtr->cursorOn = FALSE;
+	    textPtr->timerToken = (Tcl_TimerToken) NULL;
 	}
-	EventuallyRedraw(tbPtr);
+	EventuallyRedraw(textPtr);
     } else if (eventPtr->type == DestroyNotify) {
-	if (tbPtr->tkwin != NULL) {
-	    tbPtr->tkwin = NULL;
+	if (textPtr->tkwin != NULL) {
+	    textPtr->tkwin = NULL;
 	}
-	if (tbPtr->flags & TEXTBOX_REDRAW) {
-	    Tcl_CancelIdleCall(DisplayTextbox, tbPtr);
+	if (textPtr->flags & REDRAW_PENDING) {
+	    Tcl_CancelIdleCall(DisplayProc, textPtr);
 	}
-	if (tbPtr->timerToken != NULL) {
-	    Tcl_DeleteTimerHandler(tbPtr->timerToken);
+	if (textPtr->timerToken != NULL) {
+	    Tcl_DeleteTimerHandler(textPtr->timerToken);
 	}
-	tbPtr->viewPtr->comboWin = NULL;
-	Tcl_EventuallyFree(tbPtr, DestroyTextbox);
+	textPtr->viewPtr->comboWin = NULL;
+	Tcl_EventuallyFree(textPtr, DestroyTextEditor);
     }
 }
 
 /*
  *---------------------------------------------------------------------------
  *
- * TextboxLostSelectionProc --
+ * LostSelectionProc --
  *
  *	This procedure is called back by Tk when the selection is grabbed
  *	away from a Text widget.
@@ -500,42 +828,131 @@ TextboxEventProc(ClientData clientData, XEvent *eventPtr)
  *---------------------------------------------------------------------------
  */
 static void
-TextboxLostSelectionProc(ClientData clientData)
+LostSelectionProc(ClientData clientData)
 {
-    Textbox *tbPtr = clientData;
+    TextEditor *textPtr = clientData;
 
-    if ((tbPtr->selFirst >= 0) && (tbPtr->exportSelection)) {
-	tbPtr->selFirst = tbPtr->selLast = -1;
-	EventuallyRedraw(tbPtr);
+    if ((textPtr->selFirst >= 0) && (textPtr->exportSelection)) {
+	textPtr->selFirst = textPtr->selLast = -1;
+	EventuallyRedraw(textPtr);
     }
 }
 
+static void
+UnmanageScrollbar(TextEditor *textPtr, Tk_Window scrollbar)
+{
+    if (scrollbar != NULL) {
+	Tk_DeleteEventHandler(scrollbar, StructureNotifyMask,
+	      ScrollbarEventProc, textPtr);
+	Tk_ManageGeometry(scrollbar, (Tk_GeomMgr *)NULL, textPtr);
+	if (Tk_IsMapped(scrollbar)) {
+	    Tk_UnmapWindow(scrollbar);
+	}
+    }
+}
+
+static void
+ManageScrollbar(TextEditor *textPtr, Tk_Window scrollbar)
+{
+    if (scrollbar != NULL) {
+	Tk_CreateEventHandler(scrollbar, StructureNotifyMask, 
+		ScrollbarEventProc, textPtr);
+	Tk_ManageGeometry(scrollbar, &comboMgrInfo, textPtr);
+    }
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * InstallScrollbar --
+ *
+ *      Convert the string representation of a color into a XColor pointer.
+ *
+ * Results:
+ *      The return value is a standard TCL result.  The color pointer is
+ *      written into the widget record.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static void
+InstallScrollbar(
+    Tcl_Interp *interp,                 /* Interpreter to send results back
+					 * to */
+    TextEditor *textPtr,
+    Tcl_Obj *objPtr,                    /* String representing scrollbar
+					 * window. */
+    Tk_Window *tkwinPtr)
+{
+    Tk_Window tkwin;
+
+    if (objPtr == NULL) {
+	*tkwinPtr = NULL;
+	return;
+    }
+    tkwin = Tk_NameToWindow(interp, Tcl_GetString(objPtr), textPtr->tkwin);
+    if (tkwin == NULL) {
+	Tcl_BackgroundError(interp);
+	return;
+    }
+    if (Tk_Parent(tkwin) != textPtr->tkwin) {
+	Tcl_AppendResult(interp, "scrollbar \"", Tk_PathName(tkwin), 
+			 "\" must be a child of combomenu.", (char *)NULL);
+	Tcl_BackgroundError(interp);
+	return;
+    }
+    ManageScrollbar(textPtr, tkwin);
+    *tkwinPtr = tkwin;
+    return;
+}
+
+static void
+InstallXScrollbar(ClientData clientData)
+{
+    TextEditor *textPtr = clientData;
+
+    textPtr->flags &= ~INSTALL_XSCROLLBAR;
+    InstallScrollbar(textPtr->interp, textPtr, textPtr->xScrollbarObjPtr,
+		     &textPtr->xScrollbar);
+}
+
+static void
+InstallYScrollbar(ClientData clientData)
+{
+    TextEditor *textPtr = clientData;
+
+    textPtr->flags &= ~INSTALL_YSCROLLBAR;
+    InstallScrollbar(textPtr->interp, textPtr, textPtr->yScrollbarObjPtr,
+		     &textPtr->yScrollbar);
+}
+
+
 static int
-PointerToIndex(Textbox *tbPtr, int x, int y)
+PointerToIndex(TextEditor *textPtr, int x, int y)
 {
     Blt_Font font;
     Blt_FontMetrics fontMetrics;
     TextFragment *fragPtr;
-    TextLayout *textPtr;
+    TextLayout *layoutPtr;
     int i;
     int numBytes;
     int total;
     TreeView *viewPtr;
 
-    viewPtr = tbPtr->viewPtr;
-    if ((tbPtr->string == NULL) || (tbPtr->string[0] == '\0')) {
+    viewPtr = textPtr->viewPtr;
+    if ((textPtr->string == NULL) || (textPtr->string[0] == '\0')) {
 	return 0;
     }
-    x -= tbPtr->selBW;
-    y -= tbPtr->selBW;
+    x -= textPtr->selBW;
+    y -= textPtr->selBW;
 
-    textPtr = tbPtr->textPtr;
+    layoutPtr = textPtr->layoutPtr;
 
     /* Bound the y-coordinate within the window. */
     if (y < 0) {
 	y = 0;
-    } else if (y >= textPtr->height) {
-	y = textPtr->height - 1;
+    } else if (y >= layoutPtr->height) {
+	y = layoutPtr->height - 1;
     }
     /* 
      * Compute the line that contains the y-coordinate. 
@@ -543,9 +960,9 @@ PointerToIndex(Textbox *tbPtr, int x, int y)
      * FIXME: This assumes that segments are distributed 
      *	     line-by-line.  This may change in the future.
      */
-    font = CHOOSE(viewPtr->font, tbPtr->font);
+    font = CHOOSE(viewPtr->font, textPtr->font);
     Blt_Font_GetMetrics(font, &fontMetrics);
-    fragPtr = textPtr->fragments;
+    fragPtr = layoutPtr->fragments;
     total = 0;
     for (i = (y / fontMetrics.linespace); i > 0; i--) {
 	total += fragPtr->count;
@@ -553,7 +970,7 @@ PointerToIndex(Textbox *tbPtr, int x, int y)
     }
     if (x < 0) {
 	numBytes = 0;
-    } else if (x >= textPtr->width) {
+    } else if (x >= layoutPtr->width) {
 	numBytes = fragPtr->count;
     } else {
 	int newX;
@@ -587,11 +1004,11 @@ PointerToIndex(Textbox *tbPtr, int x, int y)
 }
 
 static int
-IndexToPointer(Textbox *tbPtr)
+IndexToPointer(TextEditor *textPtr)
 {
     int x, y;
     int maxLines;
-    TextLayout *textPtr;
+    TextLayout *layoutPtr;
     TreeView *viewPtr;
     Blt_FontMetrics fontMetrics;
     int numBytes;
@@ -600,96 +1017,96 @@ IndexToPointer(Textbox *tbPtr)
     Blt_Font font;
     int i;
 
-    viewPtr = tbPtr->viewPtr;
-    textPtr = tbPtr->textPtr;
-    font = CHOOSE(viewPtr->font, tbPtr->font);
+    viewPtr = textPtr->viewPtr;
+    layoutPtr = textPtr->layoutPtr;
+    font = CHOOSE(viewPtr->font, textPtr->font);
     Blt_Font_GetMetrics(font, &fontMetrics);
-    maxLines = (textPtr->height / fontMetrics.linespace) - 1;
+    maxLines = (layoutPtr->height / fontMetrics.linespace) - 1;
 
     sum = 0;
-    x = y = tbPtr->borderWidth;
-    if (tbPtr->icon != NULL) {
-	x += IconWidth(tbPtr->icon) + 2 * tbPtr->gap;
+    x = y = textPtr->borderWidth;
+    if (textPtr->icon != NULL) {
+	x += IconWidth(textPtr->icon) + 2 * textPtr->gap;
     }
-    fragPtr = textPtr->fragments;
+    fragPtr = layoutPtr->fragments;
     for (i = 0; i <= maxLines; i++) {
 	/* Total the number of bytes on each line.  Include newlines. */
 	numBytes = fragPtr->count + 1;
-	if ((sum + numBytes) > tbPtr->insertPos) {
-	    x += Blt_TextWidth(font, fragPtr->text, tbPtr->insertPos - sum);
+	if ((sum + numBytes) > textPtr->insertPos) {
+	    x += Blt_TextWidth(font, fragPtr->text, textPtr->insertPos - sum);
 	    break;
 	}
 	y += fontMetrics.linespace;
 	sum += numBytes;
 	fragPtr++;
     }
-    tbPtr->cursorX = x;
-    tbPtr->cursorY = y;
-    tbPtr->cursorHeight = fontMetrics.linespace;
-    tbPtr->cursorWidth = 3;
+    textPtr->cursorX = x;
+    textPtr->cursorY = y;
+    textPtr->cursorHeight = fontMetrics.linespace;
+    textPtr->cursorWidth = 3;
     return TCL_OK;
 }
 
 static void
-UpdateLayout(Textbox *tbPtr)
+UpdateLayout(TextEditor *textPtr)
 {
     TreeView *viewPtr;
     TextStyle ts;
     int width, height;
-    TextLayout *textPtr;
+    TextLayout *layoutPtr;
     int gap, offset;
     int iw, ih;
     Blt_Font font;
 
-    viewPtr = tbPtr->viewPtr;
+    viewPtr = textPtr->viewPtr;
     offset = gap = iw = ih = 0;
-    if (tbPtr->icon != NULL) {
-	iw = IconWidth(tbPtr->icon) + 4;
-	ih = IconHeight(tbPtr->icon);
-	gap = tbPtr->gap;
+    if (textPtr->icon != NULL) {
+	iw = IconWidth(textPtr->icon) + 4;
+	ih = IconHeight(textPtr->icon);
+	gap = textPtr->gap;
     }
 
     /* The layout is based upon the current font. */
     Blt_Ts_InitStyle(ts);
-    font = CHOOSE(viewPtr->font, tbPtr->font);
+    font = CHOOSE(viewPtr->font, textPtr->font);
     Blt_Ts_SetFont(ts, font);
-    textPtr = Blt_Ts_CreateLayout(tbPtr->string, -1, &ts);
-    if (tbPtr->textPtr != NULL) {
-	Blt_Free(tbPtr->textPtr);
+    layoutPtr = Blt_Ts_CreateLayout(textPtr->string, -1, &ts);
+    if (textPtr->layoutPtr != NULL) {
+	Blt_Free(textPtr->layoutPtr);
     }
-    tbPtr->textPtr = textPtr;
+    textPtr->layoutPtr = layoutPtr;
 
-    width = iw + textPtr->width + gap * 2;
-    height = MAX(ih, textPtr->height);
-    if ((tbPtr->colPtr == &viewPtr->treeColumn) && (!viewPtr->flatView)) {
+    width = iw + layoutPtr->width + gap * 2;
+    height = MAX(ih, layoutPtr->height);
+    if ((textPtr->colPtr == &viewPtr->treeColumn) && (!viewPtr->flatView)) {
 	int level;
 	
-	level = DEPTH(viewPtr, tbPtr->entryPtr->node);
+	level = DEPTH(viewPtr, textPtr->entryPtr->node);
 	offset = -(ICONWIDTH(level) + 2);
     }
 
-    if (width <= (tbPtr->colPtr->width + offset)) {
-	width = (tbPtr->colPtr->width + offset);
+    if (width <= (textPtr->colPtr->width + offset)) {
+	width = (textPtr->colPtr->width + offset);
     } 
-    if (height < tbPtr->entryPtr->height) {
-	height = tbPtr->entryPtr->height;
+    if (height < textPtr->entryPtr->height) {
+	height = textPtr->entryPtr->height;
     }
-    tbPtr->width = width + (2 * tbPtr->borderWidth);
-    tbPtr->height = height + (2 * tbPtr->borderWidth);
-    IndexToPointer(tbPtr);
-    Tk_MoveResizeWindow(tbPtr->tkwin, tbPtr->x, tbPtr->y, 
-	      tbPtr->width, tbPtr->height);
-    Tk_MapWindow(tbPtr->tkwin);
-    XRaiseWindow(tbPtr->display, Tk_WindowId(tbPtr->tkwin));
+    textPtr->width = width + (2 * textPtr->borderWidth);
+    textPtr->height = height + (2 * textPtr->borderWidth);
+    IndexToPointer(textPtr);
+    Tk_MoveResizeWindow(textPtr->tkwin, textPtr->x, textPtr->y, 
+	      textPtr->width, textPtr->height);
+    Tk_MapWindow(textPtr->tkwin);
+    XRaiseWindow(textPtr->display, Tk_WindowId(textPtr->tkwin));
 }
 
 static void
-InsertText(Textbox *tbPtr, char *insertText, int insertPos, int numBytes)
+InsertText(TextEditor *textPtr, char *insertText, int insertPos, int numBytes)
 {
     int oldSize, newSize;
     char *oldText, *newText;
 
-    oldText = tbPtr->string;
+    oldText = textPtr->string;
     oldSize = (int)strlen(oldText);
     newSize = oldSize + numBytes + 1;
     newText = Blt_AssertMalloc(sizeof(char) * newSize);
@@ -707,32 +1124,32 @@ InsertText(Textbox *tbPtr, char *insertText, int insertPos, int numBytes)
      * need to be updated.  Simply move the indices down by the number of
      * characters added.
      */
-    if (tbPtr->selFirst >= insertPos) {
-	tbPtr->selFirst += numBytes;
+    if (textPtr->selFirst >= insertPos) {
+	textPtr->selFirst += numBytes;
     }
-    if (tbPtr->selLast > insertPos) {
-	tbPtr->selLast += numBytes;
+    if (textPtr->selLast > insertPos) {
+	textPtr->selLast += numBytes;
     }
-    if ((tbPtr->selAnchor > insertPos) || (tbPtr->selFirst >= insertPos)) {
-	tbPtr->selAnchor += numBytes;
+    if ((textPtr->selAnchor > insertPos) || (textPtr->selFirst >= insertPos)) {
+	textPtr->selAnchor += numBytes;
     }
-    if (tbPtr->string != NULL) {
-	Blt_Free(tbPtr->string);
+    if (textPtr->string != NULL) {
+	Blt_Free(textPtr->string);
     }
-    tbPtr->string = newText;
-    tbPtr->insertPos = insertPos + numBytes;
-    UpdateLayout(tbPtr);
+    textPtr->string = newText;
+    textPtr->insertPos = insertPos + numBytes;
+    UpdateLayout(textPtr);
 }
 
 static int
-DeleteText(Textbox *tbPtr, int firstPos, int lastPos)
+DeleteText(TextEditor *textPtr, int firstPos, int lastPos)
 {
     char *oldText, *newText;
     int oldSize, newSize;
     int numBytes;
     char *p;
 
-    oldText = tbPtr->string;
+    oldText = textPtr->string;
     if (firstPos > lastPos) {
 	return TCL_OK;
     }
@@ -766,46 +1183,46 @@ DeleteText(Textbox *tbPtr, int firstPos, int lastPos)
      *			many characters.
      *
      */
-    if (tbPtr->selFirst >= firstPos) {
-	if (tbPtr->selFirst >= lastPos) {
-	    tbPtr->selFirst -= numBytes;
+    if (textPtr->selFirst >= firstPos) {
+	if (textPtr->selFirst >= lastPos) {
+	    textPtr->selFirst -= numBytes;
 	} else {
-	    tbPtr->selFirst = firstPos;
+	    textPtr->selFirst = firstPos;
 	}
     }
-    if (tbPtr->selLast >= firstPos) {
-	if (tbPtr->selLast >= lastPos) {
-	    tbPtr->selLast -= numBytes;
+    if (textPtr->selLast >= firstPos) {
+	if (textPtr->selLast >= lastPos) {
+	    textPtr->selLast -= numBytes;
 	} else {
-	    tbPtr->selLast = firstPos;
+	    textPtr->selLast = firstPos;
 	}
     }
-    if (tbPtr->selLast <= tbPtr->selFirst) {
-	tbPtr->selFirst = tbPtr->selLast = -1; /* Cut away the entire
+    if (textPtr->selLast <= textPtr->selFirst) {
+	textPtr->selFirst = textPtr->selLast = -1; /* Cut away the entire
 						* selection. */ 
     }
-    if (tbPtr->selAnchor >= firstPos) {
-	if (tbPtr->selAnchor >= lastPos) {
-	    tbPtr->selAnchor -= numBytes;
+    if (textPtr->selAnchor >= firstPos) {
+	if (textPtr->selAnchor >= lastPos) {
+	    textPtr->selAnchor -= numBytes;
 	} else {
-	    tbPtr->selAnchor = firstPos;
+	    textPtr->selAnchor = firstPos;
 	}
     }
-    if (tbPtr->insertPos >= firstPos) {
-	if (tbPtr->insertPos >= lastPos) {
-	    tbPtr->insertPos -= numBytes;
+    if (textPtr->insertPos >= firstPos) {
+	if (textPtr->insertPos >= lastPos) {
+	    textPtr->insertPos -= numBytes;
 	} else {
-	    tbPtr->insertPos = firstPos;
+	    textPtr->insertPos = firstPos;
 	}
     }
-    tbPtr->string = newText;
-    UpdateLayout(tbPtr);
-    EventuallyRedraw(tbPtr);
+    textPtr->string = newText;
+    UpdateLayout(textPtr);
+    EventuallyRedraw(textPtr);
     return TCL_OK;
 }
 
 static int
-AcquireText(TreeView *viewPtr, Textbox *tbPtr, Entry *entryPtr, Column *colPtr)
+AcquireText(TreeView *viewPtr, TextEditor *textPtr, Entry *entryPtr, Column *colPtr)
 {
     CellStyle *stylePtr;
     int x, y;
@@ -840,30 +1257,30 @@ AcquireText(TreeView *viewPtr, Textbox *tbPtr, Entry *entryPtr, Column *colPtr)
 	}
 	icon = stylePtr->icon;
     }
-    if (tbPtr->textPtr != NULL) {
-	Blt_Free(tbPtr->textPtr);
-	tbPtr->textPtr = NULL;
+    if (textPtr->layoutPtr != NULL) {
+	Blt_Free(textPtr->layoutPtr);
+	textPtr->layoutPtr = NULL;
     }
-    if (tbPtr->string != NULL) {
-	Blt_Free(tbPtr->string);
+    if (textPtr->string != NULL) {
+	Blt_Free(textPtr->string);
     }
     if (string == NULL) {
 	string = "";
     }
-    tbPtr->icon = icon;
-    tbPtr->entryPtr = entryPtr;
-    tbPtr->colPtr = colPtr;
-    tbPtr->x = x - tbPtr->borderWidth;
-    tbPtr->y = y - tbPtr->borderWidth;
+    textPtr->icon = icon;
+    textPtr->entryPtr = entryPtr;
+    textPtr->colPtr = colPtr;
+    textPtr->x = x - textPtr->borderWidth;
+    textPtr->y = y - textPtr->borderWidth;
     
-    tbPtr->gap = stylePtr->gap;
-    tbPtr->string = Blt_AssertStrdup(string);
-    tbPtr->gc = stylePtr->normalGC;
-    tbPtr->font = stylePtr->font;
-    tbPtr->selFirst = tbPtr->selLast = -1;
-    UpdateLayout(tbPtr);
-    Tk_MapWindow(tbPtr->tkwin);
-    EventuallyRedraw(tbPtr);
+    textPtr->gap = stylePtr->gap;
+    textPtr->string = Blt_AssertStrdup(string);
+    textPtr->gc = stylePtr->normalGC;
+    textPtr->font = stylePtr->font;
+    textPtr->selFirst = textPtr->selLast = -1;
+    UpdateLayout(textPtr);
+    Tk_MapWindow(textPtr->tkwin);
+    EventuallyRedraw(textPtr);
     return TCL_OK;
 }
 
@@ -889,7 +1306,7 @@ AcquireText(TreeView *viewPtr, Textbox *tbPtr, Entry *entryPtr, Column *colPtr)
  *---------------------------------------------------------------------------
  */
 static int
-GetIndexFromObj(Tcl_Interp *interp, Textbox *tbPtr, Tcl_Obj *objPtr, 
+GetIndexFromObj(Tcl_Interp *interp, TextEditor *textPtr, Tcl_Obj *objPtr, 
 		int *indexPtr)
 {
     int textPos;
@@ -897,46 +1314,46 @@ GetIndexFromObj(Tcl_Interp *interp, Textbox *tbPtr, Tcl_Obj *objPtr,
     char *string;
 
     string = Tcl_GetString(objPtr);
-    if ((tbPtr->string == NULL) || (tbPtr->string[0] == '\0')) {
+    if ((textPtr->string == NULL) || (textPtr->string[0] == '\0')) {
 	*indexPtr = 0;
 	return TCL_OK;
     }
     c = string[0];
     if ((c == 'a') && (strcmp(string, "anchor") == 0)) {
-	textPos = tbPtr->selAnchor;
+	textPos = textPtr->selAnchor;
     } else if ((c == 'e') && (strcmp(string, "end") == 0)) {
-	textPos = strlen(tbPtr->string);
+	textPos = strlen(textPtr->string);
     } else if ((c == 'i') && (strcmp(string, "insert") == 0)) {
-	textPos = tbPtr->insertPos;
+	textPos = textPtr->insertPos;
     } else if ((c == 'n') && (strcmp(string, "next") == 0)) {
-	textPos = tbPtr->insertPos;
-	if (textPos < (int)strlen(tbPtr->string)) {
+	textPos = textPtr->insertPos;
+	if (textPos < (int)strlen(textPtr->string)) {
 	    textPos++;
 	}
     } else if ((c == 'l') && (strcmp(string, "last") == 0)) {
-	textPos = tbPtr->insertPos;
+	textPos = textPtr->insertPos;
 	if (textPos > 0) {
 	    textPos--;
 	}
     } else if ((c == 's') && (strcmp(string, "sel.first") == 0)) {
-	if (tbPtr->selFirst < 0) {
+	if (textPtr->selFirst < 0) {
 	    textPos = -1;
 	} else {
-	    textPos = tbPtr->selFirst;
+	    textPos = textPtr->selFirst;
 	}
     } else if ((c == 's') && (strcmp(string, "sel.last") == 0)) {
-	if (tbPtr->selLast < 0) {
+	if (textPtr->selLast < 0) {
 	    textPos = -1;
 	} else {
-	    textPos = tbPtr->selLast;
+	    textPos = textPtr->selLast;
 	}
     } else if (c == '@') {
 	int x, y;
 
-	if (Blt_GetXY(interp, tbPtr->tkwin, string, &x, &y) != TCL_OK) {
+	if (Blt_GetXY(interp, textPtr->tkwin, string, &x, &y) != TCL_OK) {
 	    return TCL_ERROR;
 	}
-	textPos = PointerToIndex(tbPtr, x, y);
+	textPos = PointerToIndex(textPtr, x, y);
     } else if (isdigit((int)c)) {
 	int number;
 	int maxChars;
@@ -945,13 +1362,13 @@ GetIndexFromObj(Tcl_Interp *interp, Textbox *tbPtr, Tcl_Obj *objPtr,
 	    return TCL_ERROR;
 	}
 	/* Don't allow the index to point outside the label. */
-	maxChars = Tcl_NumUtfChars(tbPtr->string, -1);
+	maxChars = Tcl_NumUtfChars(textPtr->string, -1);
 	if (number < 0) {
 	    textPos = 0;
 	} else if (number > maxChars) {
-	    textPos = strlen(tbPtr->string);
+	    textPos = strlen(textPtr->string);
 	} else {
-	    textPos = Tcl_UtfAtIndex(tbPtr->string, number) - tbPtr->string;
+	    textPos = Tcl_UtfAtIndex(textPtr->string, number) - textPtr->string;
 	}
     } else {
 	if (interp != NULL) {
@@ -981,32 +1398,31 @@ GetIndexFromObj(Tcl_Interp *interp, Textbox *tbPtr, Tcl_Obj *objPtr,
  *---------------------------------------------------------------------------
  */
 static int
-SelectText(Textbox *tbPtr, int textPos)
+SelectText(TextEditor *textPtr, int textPos)
 {
     int selFirst, selLast;
 
     /*
      * Grab the selection if we don't own it already.
      */
-    if ((tbPtr->exportSelection) && (tbPtr->selFirst == -1)) {
-	Tk_OwnSelection(tbPtr->tkwin, XA_PRIMARY, 
-			TextboxLostSelectionProc, tbPtr);
+    if ((textPtr->exportSelection) && (textPtr->selFirst == -1)) {
+	Tk_OwnSelection(textPtr->tkwin, XA_PRIMARY, LostSelectionProc, textPtr);
     }
     /*  If the anchor hasn't been set yet, assume the beginning of the text*/
-    if (tbPtr->selAnchor < 0) {
-	tbPtr->selAnchor = 0;
+    if (textPtr->selAnchor < 0) {
+	textPtr->selAnchor = 0;
     }
-    if (tbPtr->selAnchor <= textPos) {
-	selFirst = tbPtr->selAnchor;
+    if (textPtr->selAnchor <= textPos) {
+	selFirst = textPtr->selAnchor;
 	selLast = textPos;
     } else {
 	selFirst = textPos;
-	selLast = tbPtr->selAnchor;
+	selLast = textPtr->selAnchor;
     }
-    if ((tbPtr->selFirst != selFirst) || (tbPtr->selLast != selLast)) {
-	tbPtr->selFirst = selFirst;
-	tbPtr->selLast = selLast;
-	EventuallyRedraw(tbPtr);
+    if ((textPtr->selFirst != selFirst) || (textPtr->selLast != selLast)) {
+	textPtr->selFirst = selFirst;
+	textPtr->selLast = selLast;
+	EventuallyRedraw(textPtr);
     }
     return TCL_OK;
 }
@@ -1014,7 +1430,7 @@ SelectText(Textbox *tbPtr, int textPos)
 /*
  *---------------------------------------------------------------------------
  *
- * TextboxSelectionProc --
+ * SelectionProc --
  *
  *	This procedure is called back by Tk when the selection is requested
  *	by someone.  It returns part or all of the selection in a buffer
@@ -1032,7 +1448,7 @@ SelectText(Textbox *tbPtr, int textPos)
  *---------------------------------------------------------------------------
  */
 static int
-TextboxSelectionProc(
+SelectionProc(
     ClientData clientData,              /* Information about the widget. */
     int offset,                         /* Offset within selection of first
 					 * character to be returned. */
@@ -1042,48 +1458,48 @@ TextboxSelectionProc(
 					 * at buffer, not including
 					 * terminating NULL character. */
 {
-    Textbox *tbPtr = clientData;
+    TextEditor *textPtr = clientData;
     int size;
 
-    size = (int)strlen(tbPtr->string + offset);
+    size = (int)strlen(textPtr->string + offset);
     /*
      * Return the string currently in the textbox.
      */
-    strncpy(buffer, tbPtr->string + offset, maxBytes);
+    strncpy(buffer, textPtr->string + offset, maxBytes);
     buffer[maxBytes] = '\0';
     return (size > maxBytes) ? maxBytes : size;
 }
 
 
 static void
-DestroyTextbox(DestroyData data)
+DestroyTextEditor(DestroyData data)
 {
-    Textbox *tbPtr = (Textbox *)data;
+    TextEditor *textPtr = (TextEditor *)data;
 
-    Blt_FreeOptions(textboxConfigSpecs, (char *)tbPtr, 
-	tbPtr->display, 0);
+    Blt_FreeOptions(configSpecs, (char *)textPtr, textPtr->display, 0);
 
-    if (tbPtr->string != NULL) {
-	Blt_Free(tbPtr->string);
+    if (textPtr->string != NULL) {
+	Blt_Free(textPtr->string);
     }
-    if (tbPtr->textPtr != NULL) {
-	Blt_Free(tbPtr->textPtr);
+    if (textPtr->layoutPtr != NULL) {
+	Blt_Free(textPtr->layoutPtr);
     }
-    if (tbPtr->timerToken != NULL) {
-	Tcl_DeleteTimerHandler(tbPtr->timerToken);
+    if (textPtr->timerToken != NULL) {
+	Tcl_DeleteTimerHandler(textPtr->timerToken);
     }
-    if (tbPtr->tkwin != NULL) {
-	Tk_DeleteSelHandler(tbPtr->tkwin, XA_PRIMARY, XA_STRING);
+    if (textPtr->tkwin != NULL) {
+	Tk_DeleteSelHandler(textPtr->tkwin, XA_PRIMARY, XA_STRING);
     }
-    Blt_Free(tbPtr);
+    Blt_Free(textPtr);
 }
 
 static void
-ConfigureTextbox(Textbox *tbPtr)
+ConfigureTextEditor(TextEditor *textPtr)
 {
+    int updateNeeded;
 #ifdef notdef
     GC newGC;
-    Textbox *tbPtr = viewPtr->tbPtr;
+    TextEditor *textPtr = viewPtr->textPtr;
     XGCValues gcValues;
     unsigned long gcMask;
 
@@ -1091,30 +1507,65 @@ ConfigureTextbox(Textbox *tbPtr)
      * GC for edit window.
      */
     gcMask = 0;
-    newGC = Tk_GetGC(tbPtr->tkwin, gcMask, &gcValues);
-    if (tbPtr->gc != NULL) {
-	Tk_FreeGC(tbPtr->display, tbPtr->gc);
+    newGC = Tk_GetGC(textPtr->tkwin, gcMask, &gcValues);
+    if (textPtr->gc != NULL) {
+	Tk_FreeGC(textPtr->display, textPtr->gc);
     }
-    tbPtr->gc = newGC;
-    tbPtr->width = tbPtr->textPtr->width + 
-	2 * (tbPtr->borderWidth + tbPtr->highlightWidth);
-    tbPtr->height = tbPtr->textPtr->height + 
-	2 * (tbPtr->borderWidth + tbPtr->highlightWidth);
+    textPtr->gc = newGC;
+    textPtr->width = textPtr->layoutPtr->width + 
+	2 * (textPtr->borderWidth + textPtr->highlightWidth);
+    textPtr->height = textPtr->layoutPtr->height + 
+	2 * (textPtr->borderWidth + textPtr->highlightWidth);
     
-    if (Tk_IsMapped(tbPtr->tkwin)) {
-	if ((tbPtr->height != Tk_Height(tbPtr->tkwin)) ||
-	    (tbPtr->width != Tk_Width(tbPtr->tkwin))) {
-	    Tk_ResizeWindow(tbPtr->tkwin, tbPtr->width, tbPtr->height);
+    if (Tk_IsMapped(textPtr->tkwin)) {
+	if ((textPtr->height != Tk_Height(textPtr->tkwin)) ||
+	    (textPtr->width != Tk_Width(textPtr->tkwin))) {
+	    Tk_ResizeWindow(textPtr->tkwin, textPtr->width, textPtr->height);
 	}
     }
 #endif
+    updateNeeded = FALSE;
+    /* Install the embedded scrollbars as needed.  We defer installing the
+     * scrollbars so the scrollbar widgets don't have to exist when they are
+     * specified by the -xscrollbar and -yscrollbar options respectively. The
+     * down-side is that errors found in the scrollbar name will be
+     * backgrounded. */
+    if (Blt_ConfigModified(configSpecs, "-xscrollbar", (char *)NULL)) {
+	if (textPtr->xScrollbar != NULL) {
+	    UnmanageScrollbar(textPtr, textPtr->xScrollbar);
+	    textPtr->xScrollbar = NULL;
+	}
+	if ((textPtr->flags & INSTALL_XSCROLLBAR) == 0) {
+	    Tcl_DoWhenIdle(InstallXScrollbar, textPtr);
+	    textPtr->flags |= INSTALL_XSCROLLBAR;
+	}           
+	updateNeeded = TRUE;
+    }
+    if (Blt_ConfigModified(configSpecs, "-yscrollbar", (char *)NULL)) {
+	if (textPtr->yScrollbar != NULL) {
+	    UnmanageScrollbar(textPtr, textPtr->yScrollbar);
+	    textPtr->yScrollbar = NULL;
+	}
+	if ((textPtr->flags & INSTALL_YSCROLLBAR) == 0) {
+	    Tcl_DoWhenIdle(InstallYScrollbar, textPtr);
+	    textPtr->flags |= INSTALL_YSCROLLBAR;
+	}           
+	updateNeeded = TRUE;
+    }
+    if (updateNeeded) {
+	if ((textPtr->flags & UPDATE_PENDING) == 0) {
+	    Tcl_DoWhenIdle(ConfigureScrollbarsProc, textPtr);
+	    textPtr->flags |= UPDATE_PENDING;
+	}           
+    }
+    return TCL_OK;
 }
 
 int
-Blt_TreeView_CreateTextbox(TreeView *viewPtr, Entry *entryPtr, Column *colPtr)
+Blt_TreeView_CreateTextEditor(TreeView *viewPtr, Entry *entryPtr, Column *colPtr)
 {
     Tk_Window tkwin;
-    Textbox *tbPtr;
+    TextEditor *textPtr;
 
     if (viewPtr->comboWin != NULL) {
 	Tk_DestroyWindow(viewPtr->comboWin);
@@ -1129,51 +1580,51 @@ Blt_TreeView_CreateTextbox(TreeView *viewPtr, Entry *entryPtr, Column *colPtr)
 
     Tk_SetClass(tkwin, "BltTreeViewEditor"); 
 
-    tbPtr = Blt_AssertCalloc(1, sizeof(Textbox));
+    textPtr = Blt_AssertCalloc(1, sizeof(TextEditor));
 
-    tbPtr->interp = viewPtr->interp;
-    tbPtr->display = Tk_Display(tkwin);
-    tbPtr->tkwin = tkwin;
-    tbPtr->borderWidth = 1;
-    tbPtr->relief = TK_RELIEF_SOLID;
-    tbPtr->selRelief = TK_RELIEF_FLAT;
-    tbPtr->selBW = 1;
-    tbPtr->selAnchor = -1;
-    tbPtr->selFirst = tbPtr->selLast = -1;
-    tbPtr->onTime = 600;
-    tbPtr->active = TRUE;
-    tbPtr->offTime = 300;
-    tbPtr->viewPtr = viewPtr;
-    tbPtr->buttonRelief = TK_RELIEF_SUNKEN;
-    tbPtr->buttonBW = 1;
+    textPtr->interp = viewPtr->interp;
+    textPtr->display = Tk_Display(tkwin);
+    textPtr->tkwin = tkwin;
+    textPtr->borderWidth = 1;
+    textPtr->relief = TK_RELIEF_SOLID;
+    textPtr->selRelief = TK_RELIEF_FLAT;
+    textPtr->selBW = 1;
+    textPtr->selAnchor = -1;
+    textPtr->selFirst = textPtr->selLast = -1;
+    textPtr->onTime = 600;
+    textPtr->active = TRUE;
+    textPtr->offTime = 300;
+    textPtr->viewPtr = viewPtr;
+    textPtr->buttonRelief = TK_RELIEF_SUNKEN;
+    textPtr->buttonBW = 1;
     viewPtr->comboWin = tkwin;
-    Blt_SetWindowInstanceData(tkwin, tbPtr);
-    Tk_CreateSelHandler(tkwin, XA_PRIMARY, XA_STRING, 
-	TextboxSelectionProc, tbPtr, XA_STRING);
+    Blt_SetWindowInstanceData(tkwin, textPtr);
+    Tk_CreateSelHandler(tkwin, XA_PRIMARY, XA_STRING, SelectionProc, textPtr,
+                        XA_STRING);
     Tk_CreateEventHandler(tkwin, ExposureMask | StructureNotifyMask |
-	FocusChangeMask, TextboxEventProc, tbPtr);
+	FocusChangeMask, EventProc, textPtr);
     Tcl_CreateObjCommand(viewPtr->interp, Tk_PathName(tkwin), 
-	TextboxCmd, tbPtr, NULL);
-    if (Blt_ConfigureWidgetFromObj(viewPtr->interp, tkwin, textboxConfigSpecs, 0, 
-	(Tcl_Obj **)NULL, (char *)tbPtr, 0) != TCL_OK) {
+	TextEditorCmd, textPtr, NULL);
+    if (Blt_ConfigureWidgetFromObj(viewPtr->interp, tkwin, configSpecs, 0, 
+	(Tcl_Obj **)NULL, (char *)textPtr, 0) != TCL_OK) {
 	Tk_DestroyWindow(tkwin);
 	return TCL_ERROR;
     }
-    AcquireText(viewPtr, tbPtr, entryPtr, colPtr);
-    tbPtr->insertPos = strlen(tbPtr->string);
+    AcquireText(viewPtr, textPtr, entryPtr, colPtr);
+    textPtr->insertPos = strlen(textPtr->string);
     
-    Tk_MoveResizeWindow(tkwin, tbPtr->x, tbPtr->y, tbPtr->width, tbPtr->height);
+    Tk_MoveResizeWindow(tkwin, textPtr->x, textPtr->y, textPtr->width, textPtr->height);
     Tk_MapWindow(tkwin);
     Tk_MakeWindowExist(tkwin);
-    XRaiseWindow(tbPtr->display, Tk_WindowId(tkwin));
-    EventuallyRedraw(tbPtr);
+    XRaiseWindow(textPtr->display, Tk_WindowId(tkwin));
+    EventuallyRedraw(textPtr);
     return TCL_OK;
 }
 
 static void
-DisplayTextbox(ClientData clientData)
+DisplayProc(ClientData clientData)
 {
-    Textbox *tbPtr = clientData;
+    TextEditor *textPtr = clientData;
     Pixmap drawable;
     int i;
     int x1, x2;
@@ -1188,58 +1639,58 @@ DisplayTextbox(ClientData clientData)
     int buttonX, buttonY, buttonWidth, buttonHeight;
 #endif
 
-    viewPtr = tbPtr->viewPtr;
-    tbPtr->flags &= ~TEXTBOX_REDRAW;
-    if (!Tk_IsMapped(tbPtr->tkwin)) {
+    viewPtr = textPtr->viewPtr;
+    textPtr->flags &= ~REDRAW_PENDING;
+    if (!Tk_IsMapped(textPtr->tkwin)) {
 	return;
     }
-    if (tbPtr->colPtr == NULL) {
+    if (textPtr->colPtr == NULL) {
 	return;
     }
-    drawable = Blt_GetPixmap(tbPtr->display, Tk_WindowId(tbPtr->tkwin), 
-	Tk_Width(tbPtr->tkwin), Tk_Height(tbPtr->tkwin), 
-	Tk_Depth(tbPtr->tkwin));
+    drawable = Blt_GetPixmap(textPtr->display, Tk_WindowId(textPtr->tkwin), 
+	Tk_Width(textPtr->tkwin), Tk_Height(textPtr->tkwin), 
+	Tk_Depth(textPtr->tkwin));
 
-    Blt_Fill3DRectangle(tbPtr->tkwin, drawable, tbPtr->border, 0, 0,
-	Tk_Width(tbPtr->tkwin), Tk_Height(tbPtr->tkwin), 
-	tbPtr->borderWidth, tbPtr->relief);
+    Blt_Fill3DRectangle(textPtr->tkwin, drawable, textPtr->border, 0, 0,
+	Tk_Width(textPtr->tkwin), Tk_Height(textPtr->tkwin), 
+	textPtr->borderWidth, textPtr->relief);
 
-    x = tbPtr->borderWidth + tbPtr->gap;
-    y = tbPtr->borderWidth;
+    x = textPtr->borderWidth + textPtr->gap;
+    y = textPtr->borderWidth;
 
 #ifdef notdef
-    buttonX = Tk_Width(tbPtr->tkwin) - 
-	(tbPtr->borderWidth + tbPtr->gap + 1);
-    buttonY = tbPtr->borderWidth + 1;
+    buttonX = Tk_Width(textPtr->tkwin) - 
+	(textPtr->borderWidth + textPtr->gap + 1);
+    buttonY = textPtr->borderWidth + 1;
 #endif
 
-    if (tbPtr->icon != NULL) {
-	y += (tbPtr->height - IconHeight(tbPtr->icon)) / 2;
-	Tk_RedrawImage(IconBits(tbPtr->icon), 0, 0, 
-		       IconWidth(tbPtr->icon), 
-		       IconHeight(tbPtr->icon), 
+    if (textPtr->icon != NULL) {
+	y += (textPtr->height - IconHeight(textPtr->icon)) / 2;
+	Tk_RedrawImage(IconBits(textPtr->icon), 0, 0, 
+		       IconWidth(textPtr->icon), 
+		       IconHeight(textPtr->icon), 
 		       drawable, x, y);
-	x += IconWidth(tbPtr->icon) + tbPtr->gap;
+	x += IconWidth(textPtr->icon) + textPtr->gap;
     }
     
-    font = CHOOSE(viewPtr->font, tbPtr->font);
+    font = CHOOSE(viewPtr->font, textPtr->font);
     Blt_Font_GetMetrics(font, &fontMetrics);
-    fragPtr = tbPtr->textPtr->fragments;
+    fragPtr = textPtr->layoutPtr->fragments;
     count = 0;
-    y = tbPtr->borderWidth;
-    if (tbPtr->height > fontMetrics.linespace) {
-	y += (tbPtr->height - fontMetrics.linespace) / 2;
+    y = textPtr->borderWidth;
+    if (textPtr->height > fontMetrics.linespace) {
+	y += (textPtr->height - fontMetrics.linespace) / 2;
     }
-    for (i = 0; i < tbPtr->textPtr->numFragments; i++, fragPtr++) {
+    for (i = 0; i < textPtr->layoutPtr->numFragments; i++, fragPtr++) {
 	int leftPos, rightPos;
 
 	leftPos = count;
 	count += fragPtr->count;
 	rightPos = count;
-	if ((rightPos < tbPtr->selFirst) || (leftPos > tbPtr->selLast)) {
+	if ((rightPos < textPtr->selFirst) || (leftPos > textPtr->selLast)) {
 	    /* No part of the text fragment is selected. */
-	    Blt_Font_Draw(Tk_Display(tbPtr->tkwin), drawable, tbPtr->gc, font, 
-		Tk_Depth(tbPtr->tkwin), 0.0f, fragPtr->text, fragPtr->count, 
+	    Blt_Font_Draw(Tk_Display(textPtr->tkwin), drawable, textPtr->gc, font, 
+		Tk_Depth(textPtr->tkwin), 0.0f, fragPtr->text, fragPtr->count, 
 		x + fragPtr->x, y + fragPtr->y);
 	    continue;
 	}
@@ -1255,11 +1706,11 @@ DisplayTextbox(ClientData clientData)
 	selStart = leftPos;
 	selEnd = rightPos;
 	/* First adjust selected region for current line. */
-	if (tbPtr->selFirst > leftPos) {
-	    selStart = tbPtr->selFirst;
+	if (textPtr->selFirst > leftPos) {
+	    selStart = textPtr->selFirst;
 	}
-	if (tbPtr->selLast < rightPos) {
-	    selEnd = tbPtr->selLast;
+	if (textPtr->selLast < rightPos) {
+	    selEnd = textPtr->selLast;
 	}
 	selLength = (selEnd - selStart);
 	x1 = x;
@@ -1267,7 +1718,7 @@ DisplayTextbox(ClientData clientData)
 	if (selStart > leftPos) {       /* Normal text preceding the
 					 * selection */
 	    numChars = (selStart - leftPos);
-	    Blt_Font_Measure(font, tbPtr->string + leftPos, numChars, 10000, 
+	    Blt_Font_Measure(font, textPtr->string + leftPos, numChars, 10000, 
 		DEF_TEXT_FLAGS, &x1);
 	    x1 += x;
 	}
@@ -1278,59 +1729,64 @@ DisplayTextbox(ClientData clientData)
 		DEF_TEXT_FLAGS, &x2);
 	    x2 += x;
 	    width = (x2 - x1) + 1;
-	    Blt_Fill3DRectangle(tbPtr->tkwin, drawable, tbPtr->selBorder,
+	    Blt_Fill3DRectangle(textPtr->tkwin, drawable, textPtr->selBorder,
 		x1, y + fragPtr->y - fontMetrics.ascent, 
 		width, fontMetrics.linespace,
-		tbPtr->selBW, tbPtr->selRelief);
+		textPtr->selBW, textPtr->selRelief);
 	}
-	Blt_Font_Draw(Tk_Display(tbPtr->tkwin), drawable, tbPtr->gc, font, 
-		Tk_Depth(tbPtr->tkwin), 0.0f, fragPtr->text, fragPtr->count, 
+	Blt_Font_Draw(Tk_Display(textPtr->tkwin), drawable, textPtr->gc, font, 
+		Tk_Depth(textPtr->tkwin), 0.0f, fragPtr->text, fragPtr->count, 
 		fragPtr->x + x, fragPtr->y + y);
     }
-    if ((tbPtr->flags & TEXTBOX_FOCUS) && (tbPtr->cursorOn)) {
+    if ((textPtr->flags & TEXTBOX_FOCUS) && (textPtr->cursorOn)) {
 	int left, top, right, bottom;
 
-	IndexToPointer(tbPtr);
-	left = tbPtr->cursorX + 1;
+	IndexToPointer(textPtr);
+	left = textPtr->cursorX + 1;
 	right = left + 1;
-	top = tbPtr->cursorY;
-	if (tbPtr->height > fontMetrics.linespace) {
-	    top += (tbPtr->height - fontMetrics.linespace) / 2;
+	top = textPtr->cursorY;
+	if (textPtr->height > fontMetrics.linespace) {
+	    top += (textPtr->height - fontMetrics.linespace) / 2;
 	}
-	bottom = top + tbPtr->cursorHeight - 1;
-	XDrawLine(tbPtr->display, drawable, tbPtr->gc, left, top, left,
+	bottom = top + textPtr->cursorHeight - 1;
+	XDrawLine(textPtr->display, drawable, textPtr->gc, left, top, left,
 		bottom);
-	XDrawLine(tbPtr->display, drawable, tbPtr->gc, left - 1, top, right,
+	XDrawLine(textPtr->display, drawable, textPtr->gc, left - 1, top, right,
 		top);
-	XDrawLine(tbPtr->display, drawable, tbPtr->gc, left - 1, bottom, 
+	XDrawLine(textPtr->display, drawable, textPtr->gc, left - 1, bottom, 
 		right, bottom);
     }
-    Blt_Draw3DRectangle(tbPtr->tkwin, drawable, tbPtr->border, 0, 0,
-	Tk_Width(tbPtr->tkwin), Tk_Height(tbPtr->tkwin), 
-	tbPtr->borderWidth, tbPtr->relief);
-    XCopyArea(tbPtr->display, drawable, Tk_WindowId(tbPtr->tkwin),
-	tbPtr->gc, 0, 0, Tk_Width(tbPtr->tkwin), 
-	Tk_Height(tbPtr->tkwin), 0, 0);
-    Tk_FreePixmap(tbPtr->display, drawable);
+    Blt_Draw3DRectangle(textPtr->tkwin, drawable, textPtr->border, 0, 0,
+	Tk_Width(textPtr->tkwin), Tk_Height(textPtr->tkwin), 
+	textPtr->borderWidth, textPtr->relief);
+    XCopyArea(textPtr->display, drawable, Tk_WindowId(textPtr->tkwin),
+	textPtr->gc, 0, 0, Tk_Width(textPtr->tkwin), 
+	Tk_Height(textPtr->tkwin), 0, 0);
+    Tk_FreePixmap(textPtr->display, drawable);
 }
 
 /*ARGSUSED*/
 static int
-ApplyOp(Textbox *tbPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+ApplyOp(ClientData clientData, Tcl_Interp *interp, int objc,
+        Tcl_Obj *const *objv)
 {
+    TextEditor *textPtr = clientData;
     int result;
 
-    result = Blt_TreeView_SetEntryValue(interp, tbPtr->viewPtr, tbPtr->entryPtr,
-	tbPtr->colPtr, tbPtr->string);
-    Tk_DestroyWindow(tbPtr->tkwin);
+    result = Blt_TreeView_SetEntryValue(interp, textPtr->viewPtr, textPtr->entryPtr,
+	textPtr->colPtr, textPtr->string);
+    Tk_DestroyWindow(textPtr->tkwin);
     return result;
 }
 
 /*ARGSUSED*/
 static int
-CancelOp(Textbox *tbPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+CancelOp(ClientData clientData, Tcl_Interp *interp, int objc,
+         Tcl_Obj *const *objv)
 {
-    Tk_DestroyWindow(tbPtr->tkwin);
+    TextEditor *textPtr = clientData;
+
+    Tk_DestroyWindow(textPtr->tkwin);
     return TCL_OK;
 }
 
@@ -1343,10 +1799,13 @@ CancelOp(Textbox *tbPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  */
 /*ARGSUSED*/
 static int
-CgetOp(Textbox *tbPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+CgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
+       Tcl_Obj *const *objv)
 {
-    return Blt_ConfigureValueFromObj(interp, tbPtr->tkwin, 
-	textboxConfigSpecs, (char *)tbPtr, objv[2], 0);
+    TextEditor *textPtr = clientData;
+
+    return Blt_ConfigureValueFromObj(interp, textPtr->tkwin, 
+	configSpecs, (char *)textPtr, objv[2], 0);
 }
 
 /*
@@ -1372,22 +1831,24 @@ CgetOp(Textbox *tbPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *---------------------------------------------------------------------------
  */
 static int
-ConfigureOp(Textbox *tbPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+ConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
+            Tcl_Obj *const *objv)
 {
+    TextEditor *textPtr = clientData;
+
     if (objc == 2) {
-	return Blt_ConfigureInfoFromObj(interp, tbPtr->tkwin, 
-		textboxConfigSpecs, (char *)tbPtr, (Tcl_Obj *)NULL, 0);
+	return Blt_ConfigureInfoFromObj(interp, textPtr->tkwin, configSpecs,
+                (char *)textPtr, (Tcl_Obj *)NULL, 0);
     } else if (objc == 3) {
-	return Blt_ConfigureInfoFromObj(interp, tbPtr->tkwin, 
-		textboxConfigSpecs, (char *)tbPtr, objv[3], 0);
+	return Blt_ConfigureInfoFromObj(interp, textPtr->tkwin, configSpecs,
+                (char *)textPtr, objv[3], 0);
     }
-    if (Blt_ConfigureWidgetFromObj(interp, tbPtr->tkwin, 
-	textboxConfigSpecs, objc - 2, objv + 2, (char *)tbPtr, 
-	BLT_CONFIG_OBJV_ONLY) != TCL_OK) {
+    if (Blt_ConfigureWidgetFromObj(interp, textPtr->tkwin, configSpecs,
+        objc - 2, objv + 2, (char *)textPtr, BLT_CONFIG_OBJV_ONLY) != TCL_OK) {
 	return TCL_ERROR;
     }
-    ConfigureTextbox(tbPtr);
-    EventuallyRedraw(tbPtr);
+    ConfigureTextEditor(textPtr);
+    EventuallyRedraw(textPtr);
     return TCL_OK;
 }
 
@@ -1409,25 +1870,27 @@ ConfigureOp(Textbox *tbPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  */
 /*ARGSUSED*/
 static int
-DeleteOp(Textbox *tbPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+DeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
+         Tcl_Obj *const *objv)
 {
+    TextEditor *textPtr = clientData;
     int firstPos, lastPos;
 
-    if (tbPtr->entryPtr == NULL) {
+    if (textPtr->entryPtr == NULL) {
 	return TCL_OK;
     }
-    if (GetIndexFromObj(interp, tbPtr, objv[2], &firstPos) != TCL_OK) {
+    if (GetIndexFromObj(interp, textPtr, objv[2], &firstPos) != TCL_OK) {
 	return TCL_ERROR;
     }
     lastPos = firstPos;
     if ((objc == 4) && 
-	(GetIndexFromObj(interp, tbPtr, objv[3], &lastPos) != TCL_OK)) {
+	(GetIndexFromObj(interp, textPtr, objv[3], &lastPos) != TCL_OK)) {
 	return TCL_ERROR;
     }
     if (firstPos > lastPos) {
 	return TCL_OK;
     }
-    return DeleteText(tbPtr, firstPos, lastPos);
+    return DeleteText(textPtr, firstPos, lastPos);
 }
 
 
@@ -1456,17 +1919,19 @@ DeleteOp(Textbox *tbPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  */
 /*ARGSUSED*/
 static int
-IcursorOp(Textbox *tbPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+IcursorOp(ClientData clientData, Tcl_Interp *interp, int objc,
+          Tcl_Obj *const *objv)
 {
+    TextEditor *textPtr = clientData;
     int textPos;
 
-    if (GetIndexFromObj(interp, tbPtr, objv[2], &textPos) != TCL_OK) {
+    if (GetIndexFromObj(interp, textPtr, objv[2], &textPos) != TCL_OK) {
 	return TCL_ERROR;
     }
-    if (tbPtr->colPtr != NULL) {
-	tbPtr->insertPos = textPos;
-	IndexToPointer(tbPtr);
-	EventuallyRedraw(tbPtr);
+    if (textPtr->colPtr != NULL) {
+	textPtr->insertPos = textPos;
+	IndexToPointer(textPtr);
+	EventuallyRedraw(textPtr);
     }
     return TCL_OK;
 }
@@ -1497,17 +1962,19 @@ IcursorOp(Textbox *tbPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  */
 /*ARGSUSED*/
 static int
-IndexOp(Textbox *tbPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+IndexOp(ClientData clientData, Tcl_Interp *interp, int objc,
+        Tcl_Obj *const *objv)
 {
+    TextEditor *textPtr = clientData;
     int textPos;
 
-    if (GetIndexFromObj(interp, tbPtr, objv[2], &textPos) != TCL_OK) {
+    if (GetIndexFromObj(interp, textPtr, objv[2], &textPos) != TCL_OK) {
 	return TCL_ERROR;
     }
-    if ((tbPtr->colPtr != NULL) && (tbPtr->string != NULL)) {
+    if ((textPtr->colPtr != NULL) && (textPtr->string != NULL)) {
 	int numChars;
 
-	numChars = Tcl_NumUtfChars(tbPtr->string, textPos);
+	numChars = Tcl_NumUtfChars(textPtr->string, textPos);
 	Tcl_SetIntObj(Tcl_GetObjResult(interp), numChars);
     }
     return TCL_OK;
@@ -1524,119 +1991,300 @@ IndexOp(Textbox *tbPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
  *	None.
  *
  * Side effects:
- *	New information gets added to tbPtr; it will be redisplayed soon,
+ *	New information gets added to textPtr; it will be redisplayed soon,
  *	but not necessarily immediately.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
-InsertOp(Textbox *tbPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+InsertOp(ClientData clientData, Tcl_Interp *interp, int objc,
+         Tcl_Obj *const *objv)
 {
+    TextEditor *textPtr = clientData;
     int extra;
     int insertPos;
     char *string;
 
-    if (tbPtr->entryPtr == NULL) {
+    if (textPtr->entryPtr == NULL) {
 	return TCL_ERROR;
     }
-    if (GetIndexFromObj(interp, tbPtr, objv[2], &insertPos) != TCL_OK) {
+    if (GetIndexFromObj(interp, textPtr, objv[2], &insertPos) != TCL_OK) {
 	return TCL_ERROR;
     }
     string = Tcl_GetStringFromObj(objv[3], &extra);
     if (extra == 0) {                   /* Nothing to insert. Move the
 					 * cursor anyways. */
-	tbPtr->insertPos = insertPos;
+	textPtr->insertPos = insertPos;
     } else {
-	InsertText(tbPtr, string, insertPos, extra);
+	InsertText(textPtr, string, insertPos, extra);
     }
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * PostOp --
+ *
+ *      Posts this editor at the given root window coordinates.
+ *
+ *
+ *      pathName post -text textString -align align 
+ *      pathName post -window button -align align 
+ *      pathName post -bbox "x1 y1 x2 y2" -align align
+ *      pathName post -cascade "x1 y1" 
+ *      pathName post (assume parent) -align bottom (default alignment is left).
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+PostOp(ClientData clientData, Tcl_Interp *interp, int objc,
+	Tcl_Obj *const *objv)
+{
+    TextEditor *textPtr = clientData;
+    int x, y;
+
+    memset(&textPtr->post, 0, sizeof(PostInfo));
+    textPtr->post.tkwin     = Tk_Parent(textPtr->tkwin);
+    textPtr->post.editorWidth = textPtr->normalWidth;
+    /* Process switches  */
+    if (Blt_ParseSwitches(interp, postSwitches, objc - 2, objv + 2, textPtr,
+	BLT_SWITCH_DEFAULTS) < 0) {
+	return TCL_ERROR;
+    }
+    textPtr->flags |= DROPDOWN;
+    switch (textPtr->post.flags) {
+    case POST_PARENT:
+    case POST_WINDOW:
+	{
+	    Tk_Window tkwin;
+	    int x, y, w, h;
+	    int rootX, rootY;
+	    
+	    tkwin = textPtr->post.tkwin;
+	    w = Tk_Width(tkwin);
+	    h = Tk_Height(tkwin);
+	    x = Tk_X(tkwin);
+	    y = Tk_Y(tkwin);
+	    Tk_GetRootCoords(Tk_Parent(tkwin), &rootX, &rootY);
+	    x += rootX;
+	    y += rootY;
+	    textPtr->post.x1 = x;
+	    textPtr->post.y1 = y;
+	    textPtr->post.x2 = x + w;
+	    textPtr->post.y2 = y + h;
+	}
+	break;
+    case POST_REGION:
+    case POST_CASCADE:
+	break;
+    case POST_POPUP:
+	textPtr->flags &= ~DROPDOWN;
+	break;
+    }
+    textPtr->post.editorWidth = textPtr->post.x2 - textPtr->post.x1;
+    textPtr->post.editorHeight = textPtr->post.y2 - textPtr->post.y1;
+    if ((textPtr->post.editorWidth != textPtr->post.lastEditorWidth) ||
+	(textPtr->flags & LAYOUT_PENDING)) {
+	ComputeEditorGeometry(textPtr);
+    }
+    textPtr->post.lastEditorWidth = textPtr->post.editorWidth;
+    x = 0;                              /* Suppress compiler warning; */
+    y = textPtr->post.y2;
+    switch (textPtr->post.align) {
+    case ALIGN_LEFT:
+	x = textPtr->post.x1;
+	break;
+    case ALIGN_CENTER:
+	{
+	    int w;
+
+	    w = textPtr->post.x2 - textPtr->post.x1;
+	    x = textPtr->post.x1 + (w - textPtr->normalWidth) / 2; 
+	}
+	break;
+    case ALIGN_RIGHT:
+	x = textPtr->post.x2 - textPtr->normalWidth;
+	break;
+    }
+    FixEditorCoords(textPtr, &x, &y);
+    /*
+     * If there is a post command for the editor, execute it.  This may
+     * change the size of the editor, so be sure to recompute the editor's
+     * geometry if needed.
+     */
+    if (textPtr->postCmdObjPtr != NULL) {
+	int result;
+
+	Tcl_IncrRefCount(textPtr->postCmdObjPtr);
+	result = Tcl_EvalObjEx(interp, textPtr->postCmdObjPtr, TCL_EVAL_GLOBAL);
+	Tcl_DecrRefCount(textPtr->postCmdObjPtr);
+	if (result != TCL_OK) {
+	    return result;
+	}
+	/*
+	 * The post commands could have deleted the editor, which means we
+	 * are dead and should go away.
+	 */
+	if (textPtr->tkwin == NULL) {
+	    return TCL_OK;
+	}
+	if (textPtr->flags & LAYOUT_PENDING) {
+	    ComputeEditorGeometry(textPtr);
+	}
+    }
+
+    /*
+     * Adjust the position of the editor if necessary to keep it visible on the
+     * screen.  There are two special tricks to make this work right:
+     *
+     * 1. If a virtual root window manager is being used then
+     *    the coordinates are in the virtual root window of
+     *    textPtr's parent;  since the editor uses override-redirect
+     *    mode it will be in the *real* root window for the screen,
+     *    so we have to map the coordinates from the virtual root
+     *    (if any) to the real root.  Can't get the virtual root
+     *    from the editor itself (it will never be seen by the wm)
+     *    so use its parent instead (it would be better to have an
+     *    an option that names a window to use for this...).
+     * 2. The editor may not have been mapped yet, so its current size
+     *    might be the default 1x1.  To compute how much space it
+     *    needs, use its requested size, not its actual size.
+     *
+     * Note that this code assumes square screen regions and all positive
+     * coordinates. This does not work on a Mac with multiple monitors. But
+     * then again, Tk has other problems with this.
+     */
+    {
+	int rootX, rootY, rootWidth, rootHeight;
+	int sw, sh;
+	Tk_Window parent;
+
+	parent = Tk_Parent(textPtr->tkwin);
+	Blt_SizeOfScreen(textPtr->tkwin, &sw, &sh);
+	Tk_GetVRootGeometry(parent, &rootX, &rootY, &rootWidth, &rootHeight);
+	x += rootX;
+	y += rootY;
+	if (x < 0) {
+	    x = 0;
+	}
+	if (y < 0) {
+	    y = 0;
+	}
+	if ((x + textPtr->width) > sw) {
+	    x = sw - textPtr->width;
+	}
+	if ((y + textPtr->height) > sh) {
+	    y = sh - textPtr->height;
+	}
+	Tk_MoveToplevelWindow(textPtr->tkwin, x, y);
+	Tk_MapWindow(textPtr->tkwin);
+	Blt_MapToplevelWindow(textPtr->tkwin);
+	Blt_RaiseToplevelWindow(textPtr->tkwin);
+#ifdef notdef
+	TkWmRestackToplevel(textPtr->tkwin, Above, NULL);
+#endif
+    }
+    if (textPtr->activePtr == NULL) {
+	ActivateItem(textPtr, textPtr->firstPtr);
+    }
+    textPtr->flags |= POSTED;
     return TCL_OK;
 }
 
 /*ARGSUSED*/
 static int
-SelectionAdjustOp(Textbox *tbPtr, Tcl_Interp *interp, int objc, 
+SelectionAdjustOp(ClientData clientData, Tcl_Interp *interp, int objc, 
 		  Tcl_Obj *const *objv)
 {
+    TextEditor *textPtr = clientData;
     int textPos;
     int half1, half2;
 
-    if (GetIndexFromObj(interp, tbPtr, objv[3], &textPos) != TCL_OK) {
+    if (GetIndexFromObj(interp, textPtr, objv[3], &textPos) != TCL_OK) {
 	return TCL_ERROR;
     }
-    half1 = (tbPtr->selFirst + tbPtr->selLast) / 2;
-    half2 = (tbPtr->selFirst + tbPtr->selLast + 1) / 2;
+    half1 = (textPtr->selFirst + textPtr->selLast) / 2;
+    half2 = (textPtr->selFirst + textPtr->selLast + 1) / 2;
     if (textPos < half1) {
-	tbPtr->selAnchor = tbPtr->selLast;
+	textPtr->selAnchor = textPtr->selLast;
     } else if (textPos > half2) {
-	tbPtr->selAnchor = tbPtr->selFirst;
+	textPtr->selAnchor = textPtr->selFirst;
     }
-    return SelectText(tbPtr, textPos);
+    return SelectText(textPtr, textPos);
 }
 
 /*ARGSUSED*/
 static int
-SelectionClearOp(Textbox *tbPtr, Tcl_Interp *interp, int objc, 
+SelectionClearOp(ClientData clientData, Tcl_Interp *interp, int objc, 
 		 Tcl_Obj *const *objv)
 {
-    if (tbPtr->selFirst != -1) {
-	tbPtr->selFirst = tbPtr->selLast = -1;
-	EventuallyRedraw(tbPtr);
+    TextEditor *textPtr = clientData;
+
+    if (textPtr->selFirst != -1) {
+	textPtr->selFirst = textPtr->selLast = -1;
+	EventuallyRedraw(textPtr);
     }
     return TCL_OK;
 }
 
 /*ARGSUSED*/
 static int
-SelectionFromOp(Textbox *tbPtr, Tcl_Interp *interp, int objc, 
+SelectionFromOp(ClientData clientData, Tcl_Interp *interp, int objc, 
 		Tcl_Obj *const *objv)
 {
+    TextEditor *textPtr = clientData;
     int textPos;
 
-    if (GetIndexFromObj(interp, tbPtr, objv[3], &textPos) != TCL_OK) {
+    if (GetIndexFromObj(interp, textPtr, objv[3], &textPos) != TCL_OK) {
 	return TCL_ERROR;
     }
-    tbPtr->selAnchor = textPos;
+    textPtr->selAnchor = textPos;
     return TCL_OK;
 }
 
 /*ARGSUSED*/
 static int
-SelectionPresentOp(Textbox *tbPtr, Tcl_Interp *interp, int objc, 
+SelectionPresentOp(ClientData clientData, Tcl_Interp *interp, int objc, 
 		   Tcl_Obj *const *objv)
 {
-    Tcl_SetBooleanObj(Tcl_GetObjResult(interp), (tbPtr->selFirst != -1));
+    TextEditor *textPtr = clientData;
+
+    Tcl_SetBooleanObj(Tcl_GetObjResult(interp), (textPtr->selFirst != -1));
     return TCL_OK;
 }
 
 /*ARGSUSED*/
 static int
-SelectionRangeOp(Textbox *tbPtr, Tcl_Interp *interp, int objc,
+SelectionRangeOp(ClientData clientData, Tcl_Interp *interp, int objc,
 		 Tcl_Obj *const *objv)
 {
+    TextEditor *textPtr = clientData;
     int selFirst, selLast;
 
-    if (GetIndexFromObj(interp, tbPtr, objv[3], &selFirst) != TCL_OK) {
+    if (GetIndexFromObj(interp, textPtr, objv[3], &selFirst) != TCL_OK) {
 	return TCL_ERROR;
     }
-    if (GetIndexFromObj(interp, tbPtr, objv[4], &selLast) != TCL_OK) {
+    if (GetIndexFromObj(interp, textPtr, objv[4], &selLast) != TCL_OK) {
 	return TCL_ERROR;
     }
-    tbPtr->selAnchor = selFirst;
-    return SelectText(tbPtr, selLast);
+    textPtr->selAnchor = selFirst;
+    return SelectText(textPtr, selLast);
 }
 
 /*ARGSUSED*/
 static int
-SelectionToOp(Textbox *tbPtr, Tcl_Interp *interp, int objc, 
+SelectionToOp(ClientData clientData, Tcl_Interp *interp, int objc, 
 	      Tcl_Obj *const *objv)
 {
+    TextEditor *textPtr = clientData;
     int textPos;
 
-    if (GetIndexFromObj(interp, tbPtr, objv[3], &textPos) != TCL_OK) {
+    if (GetIndexFromObj(interp, textPtr, objv[3], &textPos) != TCL_OK) {
 	return TCL_ERROR;
     }
-    return SelectText(tbPtr, textPos);
+    return SelectText(textPtr, textPos);
 }
 
 
@@ -1669,9 +2317,10 @@ static int numSelectionOps = sizeof(selectionOps) / sizeof(Blt_OpSpec);
  *	  "to"		- sets the index of the un-anchored end.
  */
 static int
-SelectionOp(Textbox *tbPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+SelectionOp(ClientData clientData, Tcl_Interp *interp, int objc,
+            Tcl_Obj *const *objv)
 {
-    TextboxCmdProc *proc;
+    Tcl_ObjCmdProc *proc;
     int result;
 
     proc = Blt_GetOpFromObj(interp, numSelectionOps, selectionOps, BLT_OP_ARG2, 
@@ -1679,14 +2328,52 @@ SelectionOp(Textbox *tbPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     if (proc == NULL) {
 	return TCL_ERROR;
     }
-    result = (*proc) (tbPtr, interp, objc, objv);
+    result = (*proc) (clientData, interp, objc, objv);
     return result;
 }
 
 /*
  *---------------------------------------------------------------------------
  *
- * TextboxCmd --
+ * UnpostOp --
+ *
+ *      Unposts this text editor.
+ *
+ *      pathName unpost 
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+UnpostOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+	 Tcl_Obj *const *objv)
+{
+    TextEditor *textPtr = clientData;
+
+    if (!WithdrawMenu(textPtr)) {
+	return TCL_OK;          /* This menu is already unposted. */
+    }
+    /*
+     * If there is a unpost command for the menu, execute it.  
+     */
+    if (textPtr->unpostCmdObjPtr != NULL) {
+	int result;
+
+	Tcl_IncrRefCount(textPtr->unpostCmdObjPtr);
+	result = Tcl_EvalObjEx(interp, textPtr->unpostCmdObjPtr, 
+		TCL_EVAL_GLOBAL);
+	Tcl_DecrRefCount(textPtr->unpostCmdObjPtr);
+	if (result != TCL_OK) {
+	    return TCL_ERROR;
+	}
+    }
+    textPtr->flags &= ~POSTED;
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * TextEditorCmd --
  *
  *	This procedure handles entry operations.
  *
@@ -1710,11 +2397,10 @@ static Blt_OpSpec comboOps[] =
 static int numComboOps = sizeof(comboOps) / sizeof(Blt_OpSpec);
 
 static int
-TextboxCmd(ClientData clientData, Tcl_Interp *interp, int objc, 
+TextEditorCmd(ClientData clientData, Tcl_Interp *interp, int objc, 
 	   Tcl_Obj *const *objv)
 {
-    Textbox *tbPtr = clientData;
-    TextboxCmdProc *proc;
+    Tcl_ObjCmdProc *proc;
     int result;
 
     proc = Blt_GetOpFromObj(interp, numComboOps, comboOps, BLT_OP_ARG1, objc, 
@@ -1722,7 +2408,7 @@ TextboxCmd(ClientData clientData, Tcl_Interp *interp, int objc,
     if (proc == NULL) {
 	return TCL_ERROR;
     }
-    result = (*proc) (tbPtr, interp, objc, objv);
+    result = (*proc) (clientData, interp, objc, objv);
     return result;
 }
 

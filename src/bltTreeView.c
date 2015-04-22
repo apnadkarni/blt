@@ -78,6 +78,21 @@
 #include "bltInitCmd.h"
 #include "bltTreeView.h"
 
+#define PIXMAPX(t, wx) ((wx) - (t)->xOffset)
+#define PIXMAPY(t, wy) ((wy) - (t)->yOffset)
+
+#define SCREENX(t, wx) ((wx) - (t)->xOffset + (t)->borderWidth)
+#define SCREENY(t, wy) ((wy) - (t)->yOffset + (t)->borderWidth)
+
+#define WORLDX(t, sx)  ((sx) - (t)->borderWidth + (t)->xOffset)
+#define WORLDY(t, sy)  ((sy) - (t)->borderWidth + (t)->yOffset)
+
+#define VPORTWIDTH(t)  \
+    (Tk_Width((t)->tkwin) - 2 * (t)->borderWidth - (t)->yScrollbarWidth)
+#define VPORTHEIGHT(t) \
+    (Tk_Height((t)->tkwin) - 2 * (t)->borderWidth - (t)->xScrollbarHeight)
+
+
 #define BUTTON_IPAD             1
 #define BUTTON_PAD              2
 #define BUTTON_SIZE             7
@@ -731,11 +746,11 @@ typedef struct {
 #define NEAREST_ROOT    (1<<0)          /* X and Y are root coordinates.  */
 #define NEAREST_TITLE   (1<<1)          /* Return only in title. */
 
-static Blt_SwitchSpec childrenSwitches[] = {
+static Blt_SwitchSpec nearestSwitches[] = {
     {BLT_SWITCH_BITMASK, "-root", "", (char *)NULL,
-	Blt_Offset(ChildrenSwitches, flags), 0, NEAREST_ROOT},
+	Blt_Offset(NearestSwitches, flags), 0, NEAREST_ROOT},
     {BLT_SWITCH_BITMASK, "-title", "", (char *)NULL,
-	Blt_Offset(ChildrenSwitches, flags), 0, NEAREST_TITLE},
+	Blt_Offset(NearestSwitches, flags), 0, NEAREST_TITLE},
     {BLT_SWITCH_END}
 };
 
@@ -1613,7 +1628,9 @@ NearestColumn(TreeView *viewPtr, int x, int y, ClientData *contextPtr)
      * Determine if the pointer is over the rightmost portion of the
      * column.  This activates the rule.
      */
-    x = WORLDX(viewPtr, x);             /* Convert to world coordinates. */
+    *contextPtr = 0;
+    x = WORLDX(viewPtr, x);             /* Convert from screen to world
+                                         * coordinates. */
     for(link = Blt_Chain_FirstLink(viewPtr->columns); link != NULL;
 	link = Blt_Chain_NextLink(link)) {
 	Column *colPtr;
@@ -10555,7 +10572,7 @@ ColumnNamesOp(ClientData clientData, Tcl_Interp *interp, int objc,
         int found;
         int i;
 
-	colPtr = Blt_GetHashValue(hPtr);
+	colPtr = Blt_Chain_GetValue(link);
 	found = FALSE;
 	for (i = 3; i < objc; i++) {
 	    const char *pattern;
@@ -10594,8 +10611,8 @@ ColumnNearestOp(ClientData clientData, Tcl_Interp *interp, int objc,
     int x, y;                   /* Screen coordinates of the test point. */
     Column *colPtr;
     ClientData hint;
-    int checkTitle;
-
+    NearestSwitches switches;
+    
     if (Tk_GetPixelsFromObj(interp, viewPtr->tkwin, objv[3], &x) != TCL_OK) {
 	return TCL_ERROR;
     } 
