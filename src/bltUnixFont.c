@@ -72,16 +72,16 @@
  * seems fair when weighing the benefit of high-quality antialiased rotated
  * fonts.
  *
- * Font rotation is done via the freetype font matrix for outline fonts.  For
- * bitmap fonts we fall back on drawing the text into a bitmap and rotate the
- * bitmap.  This requires depth-aware versions of Tk_DrawChars, since Xft is
- * drawing into a drawable of a different depth (depth is 1).
+ * Font rotation is done via the freetype font matrix for outline fonts.
+ * For bitmap fonts we fall back on drawing the text into a bitmap and
+ * rotate the bitmap.  This requires depth-aware versions of Tk_DrawChars,
+ * since Xft is drawing into a drawable of a different depth (depth is 1).
  * 
  * The best tactic is to 1) not use bitmapped fonts if better outline fonts
- * are available and 2) provide our own font handling routines that allow font
- * rotation and font aliasing.  The font aliases allow us to use a font name
- * like "Sans Serif" that translates into a good font for that platform and
- * set of fonts available (Xft or Xlfd font).
+ * are available and 2) provide our own font handling routines that allow
+ * font rotation and font aliasing.  The font aliases allow us to use a
+ * font name like "Sans Serif" that translates into a good font for that
+ * platform and set of fonts available (Xft or Xlfd font).
  */
  
 #define DEBUG_FONT_SELECTION	0
@@ -311,10 +311,25 @@ static void FreetypeGetFontFamilies(Tk_Window tkwin, Blt_HashTable *tablePtr);
 static int xft_initialized = FALSE;
 
 static FontAlias xftFontAliases[] = {
-    { "math",	    { "arial",  "nimbus sans l condensed", "courier"}},
-    { "serif",      { "times new roman", "nimbus roman no9 l" "times" }},
-    { "sans serif", { "arial", "nimbus sans l", "helvetica" }},
-    { "monospace",  { "courier new", "nimbus mono l", "courier" }},
+    { "math",	    {
+            "arial",
+            "nimbus sans l condensed",
+            "courier"}},
+    { "serif",      {
+            "bitstream vera serif",
+            "times new roman",
+            "nimbus roman no9 l"
+            "times" }},
+    { "sans serif", {
+            "bitstream vera sans",
+            "arial",
+            "nimbus sans l",
+            "helvetica" }},
+    { "monospace",  {
+            "bitstream vera sans mono",
+            "courier new",
+            "nimbus mono l",
+            "courier" }},
     { "symbol",     { "standard symbols l", "symbol" }},
     { NULL }
 };
@@ -415,13 +430,13 @@ ParseXLFD(const char *fontName, int *argcPtr, char ***argvPtr)
 
     /*
      * An XLFD of the form -adobe-times-medium-r-*-12-*-* is pretty common,
-     * but it is (strictly) malformed, because the first * is eliding both the
-     * Setwidth and the Addstyle fields. If the Addstyle field is a number,
-     * then assume the above incorrect form was used and shift all the rest of
-     * the fields right by one, so the number gets interpreted as a pixelsize.
-     * This fix is so that we don't get a million reports that "it works under
-     * X (as a native font name), but gives a syntax error under Windows (as a
-     * parsed set of attributes)".
+     * but it is (strictly) malformed, because the first * is eliding both
+     * the Setwidth and the Addstyle fields. If the Addstyle field is a
+     * number, then assume the above incorrect form was used and shift all
+     * the rest of the fields right by one, so the number gets interpreted
+     * as a pixelsize.  This fix is so that we don't get a million reports
+     * that "it works under X (as a native font name), but gives a syntax
+     * error under Windows (as a parsed set of attributes)".
      */
 
     if ((count > XLFD_ADD_STYLE) && (field[XLFD_ADD_STYLE] != NULL)) {
@@ -448,14 +463,14 @@ ParseXLFD(const char *fontName, int *argcPtr, char ***argvPtr)
  *
  * SearchForFontSpec --
  *
- *      Performs a binary search on the array of font specification to find a
- *      partial, anchored match for the given option string.
+ *      Performs a binary search on the array of font specification to find
+ *      a partial, anchored match for the given option string.
  *
  * Results:
- *	If the string matches unambiguously the index of the specification in
- *	the array is returned.  If the string does not match, even as an
- *	abbreviation, any operation, -1 is returned.  If the string matches,
- *	but ambiguously -2 is returned.
+ *	If the string matches unambiguously the index of the specification
+ *	in the array is returned.  If the string does not match, even as an
+ *	abbreviation, any operation, -1 is returned.  If the string
+ *	matches, but ambiguously -2 is returned.
  *
  *---------------------------------------------------------------------------
  */
@@ -502,8 +517,8 @@ SearchForFontSpec(FontSpec *table, int numSpecs, const char *string, int length)
 }
 
 static FontSpec *
-FindSpec(Tcl_Interp *interp, FontSpec *tablePtr, int numSpecs, const char *string,
-	 int length)
+FindSpec(Tcl_Interp *interp, FontSpec *tablePtr, int numSpecs,
+         const char *string, int length)
 {
     int n;
     
@@ -1142,29 +1157,31 @@ static void
 TkDrawProc(
     Display *display,		/* Display on which to draw. */
     Drawable drawable,		/* Window or pixmap in which to draw. */
-    GC gc,			/* Graphics context for drawing characters. */
+    GC gc,			/* Graphics context for drawing
+                                   characters. */
     _Blt_Font *fontPtr,		/* Font in which characters will be drawn;
 				 * must be the same as font used in GC. */
     int depth,			/* Not used. */
     float angle,		/* Not used. */
-    const char *text,		/* UTF-8 string to be displayed.  Need not be
-				 * '\0' terminated.  All Tk meta-characters
-				 * (tabs, control characters, and newlines)
-				 * should be stripped out of the string that
-				 * is passed to this function.  If they are
-				 * not stripped out, they will be displayed as
-				 * regular printing characters. */
-    int numBytes,			/* Number of bytes in string. */
-    int x, int y)		/* Coordinates at which to place origin of
-				 * string when drawing. */
+    const char *text,		/* UTF-8 string to be displayed.  Need not
+				 * be '\0' terminated.  All Tk
+				 * meta-characters (tabs, control
+				 * characters, and newlines) should be
+				 * stripped out of the string that is
+				 * passed to this function.  If they are
+				 * not stripped out, they will be displayed
+				 * as regular printing characters. */
+    int numBytes,                /* # of bytes in string. */
+    int x, int y)                /* Coordinates at which to place origin of
+                                  * string when drawing. */
 {
     if (fontPtr->rgn != NULL) {
 	TkSetRegion(display, gc, fontPtr->rgn);
-	Tk_DrawChars(display, drawable, gc, fontPtr->clientData, text, numBytes, 
+	Tk_DrawChars(display, drawable, gc, fontPtr->clientData, text, numBytes,
 		x, y);
 	XSetClipMask(display, gc, None);
     } else {
-	Tk_DrawChars(display, drawable, gc, fontPtr->clientData, text, numBytes, 
+	Tk_DrawChars(display, drawable, gc, fontPtr->clientData, text, numBytes,
 		x, y);
     }
 }
@@ -1205,13 +1222,13 @@ TkFreeProc(_Blt_Font *fontPtr)
  *
  * TkUnderlineProc --
  *
- *	This procedure draws an underline for a given range of characters in a
- *	given string.  It doesn't draw the characters (which are assumed to
- *	have been displayed previously); it just draws the underline.  This
- *	procedure would mainly be used to quickly underline a few characters
- *	without having to construct an underlined font.  To produce properly
- *	underlined text, the appropriate underlined font should be constructed
- *	and used.
+ *	This procedure draws an underline for a given range of characters
+ *	in a given string.  It doesn't draw the characters (which are
+ *	assumed to have been displayed previously); it just draws the
+ *	underline.  This procedure would mainly be used to quickly
+ *	underline a few characters without having to construct an
+ *	underlined font.  To produce properly underlined text, the
+ *	appropriate underlined font should be constructed and used.
  *
  * Results:
  *	None.
@@ -1230,9 +1247,10 @@ TkUnderlineProc(
 					 * drawing line. */
     _Blt_Font *fontPtr,			/* Font used in GC; must have been
 					 * allocated by Tk_GetFont().  Used
-					 * for character dimensions, etc. */
-    const char *text,			/* String containing characters to be
-					 * underlined or overstruck. */
+					 * for character dimensions,
+					 * etc. */
+    const char *text,			/* String containing characters to
+					 * be underlined or overstruck. */
     int textLen,			/* Unused. */
     int x, int y,			/* Coordinates at which first
 					 * character of string is drawn. */
@@ -1284,39 +1302,41 @@ static Blt_FontClass freetypeFontClass = {
  */
 typedef struct {
     const char *name;			/* Name of the font (malloc-ed). */
-    int refCount;			/* Reference count for this structure.
-					 * When refCount reaches zero, it
-					 * means to free the resources
-					 * associated with this structure. */
+    int refCount;			/* Reference count for this
+					 * structure.  When refCount
+					 * reaches zero, it means to free
+					 * the resources associated with
+					 * this structure. */
     Blt_HashEntry *hashPtr;		/* Pointer to this entry in global
-					 * font hash table. Used to remove the
-					 * entry * from the table. */
+					 * font hash table. Used to remove
+					 * the entry * from the table. */
     Font fid;				/* Font id used to fake out
 					 * Tk_FontId. */
     FcPattern *pattern;			/* Pattern matching the current
 					 * non-rotated font. Used to create
 					 * rotated fonts by duplicating the
-					 * pattern and adding  a rotation
+					 * pattern and adding a rotation
 					 * matrix. */
 
-    Blt_HashTable fontTable;		/* Hash table containing an Xft font
-					 * for each angle it's used at. Will
-					 * always contain a 0 degree
-					 * entry. */
+    Blt_HashTable fontTable;		/* Hash table containing an Xft
+					 * font for each angle it's used
+					 * at. Will always contain a 0
+					 * degree entry. */
 
-    /* Information specific to the display/drawable being used. The drawables
-     * are changed as the drawable changes for each drawing request.
-     * Typically this will change for each pixmap. */
+    /* Information specific to the display/drawable being used. The
+     * drawables are changed as the drawable changes for each drawing
+     * request.  Typically this will change for each pixmap. */
 
-    Drawable drawable;			/* Drawable associated with draw. */
+    Drawable drawable;			/* Drawable associated with
+                                           draw. */
     XftDraw *draw;			/* Current Xft drawable. */
     int drawDepth;			/* Depth of current drawable. */
 
     XftColor color;			/* Color to be displayed.  We don't
-					 * actually allocate this color, since
-					 * we assume it's been already
-					 * allocated by the standard Tk
-					 * procedures. */
+					 * actually allocate this color,
+					 * since we assume it's been
+					 * already allocated by the
+					 * standard Tk procedures. */
 
     /* Saved Information from the Tk_Window used to created the initial
      * font. */
@@ -1387,8 +1407,8 @@ FreetypeGetFontFamilies(Tk_Window tkwin, Blt_HashTable *tablePtr)
  *
  * Results:
  *	Return value is TCL_ERROR if string was not a fully specified XLFD.
- *	Otherwise, fills font attribute buffer with the values parsed from the
- *	XLFD and returns TCL_OK.
+ *	Otherwise, fills font attribute buffer with the values parsed from
+ *	the XLFD and returns TCL_OK.
  *
  * Side effects:
  *	None.
@@ -1591,8 +1611,8 @@ FreetypeGetAttributesFromFontObj(Tk_Window tkwin, Tcl_Interp *interp,
  *
  * Results:
  *	Return value is TCL_ERROR if string was not a fully specified XLFD.
- *	Otherwise, fills font attribute buffer with the values parsed from the
- *	XLFD and returns TCL_OK.
+ *	Otherwise, fills font attribute buffer with the values parsed from
+ *	the XLFD and returns TCL_OK.
  *
  * Side effects:
  *	None.
@@ -1861,9 +1881,9 @@ FreetypeSetFontParams(Tk_Window tkwin, FreetypeFontset *setPtr, XftFont *xftPtr)
     }
     if ((setPtr->underlinePos + setPtr->underlineHeight) > xftPtr->descent) {
 	/*
-	 * If this set of values would cause the bottom of the underline bar
-	 * to stick below the descent of the font, jack the underline up a bit
-	 * higher.
+	 * If this set of values would cause the bottom of the underline
+	 * bar to stick below the descent of the font, jack the underline
+	 * up a bit higher.
 	 */
 	setPtr->underlineHeight = xftPtr->descent - setPtr->underlinePos;
 	if (setPtr->underlineHeight == 0) {
@@ -1903,8 +1923,8 @@ FreetypeNewFont(Tcl_Interp *interp, Tk_Window tkwin, const char *fontName,
     setPtr->pattern = xftPtr->pattern;
     setPtr->refCount = 1;
     /* 
-     * Initialize the Xft font table for this font.  Add the initial Xft font
-     * for the case of 0 degrees rotation.
+     * Initialize the Xft font table for this font.  Add the initial Xft
+     * font for the case of 0 degrees rotation.
      */
     Blt_InitHashTable(&setPtr->fontTable, BLT_ONE_WORD_KEYS);
     hPtr = Blt_CreateHashEntry(&setPtr->fontTable, (char *)0L, &isNew);
@@ -1929,23 +1949,25 @@ FreetypeNewFont(Tcl_Interp *interp, Tk_Window tkwin, const char *fontName,
  *
  *      Tk's Font Selection Rules:
  *
- *	When font description font is used, the system attempts to parse the
- *	description according to each of the above five rules, in the order
- *	specified.  Cases [1] and [2] must match the name of an existing named
- *	font or of a system font.  Cases [3], [4], and [5] are accepted on all
- *	platforms and the closest available font will be used.  In some
- *	situations it may not be possible to find any close font (e.g., the
- *	font family was a garbage value); in that case, some system-dependant
- *	default font is chosen.  If the font description does not match any of
- *	the above patterns, an error is generated.
+ *	When font description font is used, the system attempts to parse
+ *	the description according to each of the above five rules, in the
+ *	order specified.  Cases [1] and [2] must match the name of an
+ *	existing named font or of a system font.  Cases [3], [4], and [5]
+ *	are accepted on all platforms and the closest available font will
+ *	be used.  In some situations it may not be possible to find any
+ *	close font (e.g., the font family was a garbage value); in that
+ *	case, some system-dependant default font is chosen.  If the font
+ *	description does not match any of the above patterns, an error is
+ *	generated.
  *
  * [1] fontname
- *	The name of a named font, created using the font create command.  When
- *	a widget uses a named font, it is guaranteed that this will never
- *	cause an error, as long as the named font exists, no mat- ter what
- *	potentially invalid or meaningless set of attributes the named font
- *	has.  If the named font cannot be displayed with exactly the specified
- *	attributes, some other close font will be substituted automatically.
+ *	The name of a named font, created using the font create command.
+ *	When a widget uses a named font, it is guaranteed that this will
+ *	never cause an error, as long as the named font exists, no mat- ter
+ *	what potentially invalid or meaningless set of attributes the named
+ *	font has.  If the named font cannot be displayed with exactly the
+ *	specified attributes, some other close font will be substituted
+ *	automatically.
  *	
  *	[Query the named font (using "font configure") and generate an Xft
  *	font with the same attributes.  It's assumed that these names don't
@@ -1962,12 +1984,12 @@ FreetypeNewFont(Tcl_Interp *interp, Tk_Window tkwin, const char *fontName,
  *	generate an Xft font with the same attributes.]
  *
  * [3] family ?size? ?style? ?style ...? 
- *	A properly formed list whose first element is the desired font family
- *	and whose optional second element is the desired size.  The
- *	interpretation of the size attribute follows the same rules described
- *	for -size in FONT OPTIONS below.  Any additional optional arguments
- *	following the size are font styles.  Possible values for the style
- *	arguments are as follows:
+ *	A properly formed list whose first element is the desired font
+ *	family and whose optional second element is the desired size.  The
+ *	interpretation of the size attribute follows the same rules
+ *	described for -size in FONT OPTIONS below.  Any additional optional
+ *	arguments following the size are font styles.  Possible values for
+ *	the style arguments are as follows:
  *
  *	   normal, bold, roman, italic, underline, overstrike 
  *
@@ -1976,24 +1998,24 @@ FreetypeNewFont(Tcl_Interp *interp, Tk_Window tkwin, const char *fontName,
  * [4] X-font names (XLFD)
  *	A Unix-centric font name of the form -foundry-family-weight
  *	slant-setwidth-addstyle-pixel-point-resx-resy-spacing-width
- *	charset-encoding.  The ``*'' character may be used to skip indi vidual
- *	fields that the user does not care about.  There must be exactly one
- *	``*'' for each field skipped, except that a ``*'' at the end of the
- *	XLFD skips any remaining fields; the shortest valid XLFD is simply
- *	``*'', signifying all fields as defaults.  Any fields that were
- *	skipped are given default values.  For compatibility, an XLFD always
- *	chooses a font of the specified pixel size (not point size); although
- *	this interpretation is not strictly correct, all existing applications
- *	using XLFDs assumed that one ``point'' was in fact one pixel and would
- *	display incorrectly (generally larger) if the correct size font were
- *	actually used.
+ *	charset-encoding.  The ``*'' character may be used to skip indi
+ *	vidual fields that the user does not care about.  There must be
+ *	exactly one ``*'' for each field skipped, except that a ``*'' at
+ *	the end of the XLFD skips any remaining fields; the shortest valid
+ *	XLFD is simply ``*'', signifying all fields as defaults.  Any
+ *	fields that were skipped are given default values.  For
+ *	compatibility, an XLFD always chooses a font of the specified pixel
+ *	size (not point size); although this interpretation is not strictly
+ *	correct, all existing applications using XLFDs assumed that one
+ *	``point'' was in fact one pixel and would display incorrectly
+ *	(generally larger) if the correct size font were actually used.
  *
  *	[Parse the font description and generate a corresponding Xft font.]
  *
  * [5] option value ?option value ...?
- *	A properly formed list of option-value pairs that specify the desired
- *	attributes of the font, in the same format used when defining a named
- *	font.
+ *	A properly formed list of option-value pairs that specify the
+ *	desired attributes of the font, in the same format used when
+ *	defining a named font.
  *
  *	[Parse the option-value list and generate a corresponding Xft font.]
  *
@@ -2017,8 +2039,8 @@ FreetypeGetPattern(Tcl_Interp *interp, Tk_Window tkwin, Tcl_Obj *objPtr)
 	/* 
 	 * Case 1: XLFD font description or Tk attribute list.   
 	 *
-	 *   If the font description starts with a '-', it could be either an
-	 *   old fashion XLFD font description or a Tk font attribute
+	 *   If the font description starts with a '-', it could be either
+	 *   an old fashion XLFD font description or a Tk font attribute
 	 *   option-value list.
 	 */
 	pattern = FreetypeParseTkFontAttributeList(NULL, tkwin, objPtr);
@@ -2056,15 +2078,15 @@ FreetypeGetPattern(Tcl_Interp *interp, Tk_Window tkwin, Tcl_Obj *objPtr)
 	 */
 	if ((Tcl_ListObjGetElements(NULL, objPtr, &objc, &objv) != TCL_OK) || 
 	    (objc < 1)) {
-	    return NULL;		/* Can't split into a list or list is
-					 * empty. */
+	    return NULL;		/* Can't split into a list or list
+					 * is empty. */
 	}
 	if (objc == 1) {
 	    /* 
 	     * Case 3a: Tk font object name.
 	     *
-	     *   Assuming that Tk font object names won't contain whitespace,
-	     *   see if its a font object.
+	     *   Assuming that Tk font object names won't contain
+	     *   whitespace, see if it's a font object.
 	     */
 
 	    pattern = FreetypeGetAttributesFromFontObj(tkwin, interp, objv[0]);
@@ -2294,13 +2316,14 @@ FreetypeTextWidthProc(Blt_Font font, const char *string, int numBytes)
  *	the Postscript font is appended to dsPtr.
  *
  * Side effects:
- *	If the font does not exist on the printer, the print job will fail at
- *	print time.  Given a "reasonable" Postscript printer, the following
- *	Tk_Font font families should print correctly:
+ *	If the font does not exist on the printer, the print job will fail
+ *	at print time.  Given a "reasonable" Postscript printer, the
+ *	following Tk_Font font families should print correctly:
  *
  *	    Avant Garde, Arial, Bookman, Courier, Courier New, Geneva,
  *	    Helvetica, Monaco, New Century Schoolbook, New York, Palatino,
- *	    Symbol, Times, Times New Roman, Zapf Chancery, and Zapf Dingbats.
+ *	    Symbol, Times, Times New Roman, Zapf Chancery, and Zapf
+ *	    Dingbats.
  *
  *	Any other Xft font families may not print correctly because the
  *	computed Postscript font name may be incorrect.
@@ -2349,13 +2372,13 @@ FreetypePostscriptNameProc(_Blt_Font *fontPtr, Tcl_DString *resultPtr)
  *
  * FreetypeUnderlineProc --
  *
- *	This procedure draws an underline for a given range of characters in a
- *	given string.  It doesn't draw the characters (which are assumed to
- *	have been displayed previously); it just draws the underline.  This
- *	procedure would mainly be used to quickly underline a few characters
- *	without having to construct an underlined font.  To produce properly
- *	underlined text, the appropriate underlined font should be constructed
- *	and used.
+ *	This procedure draws an underline for a given range of characters
+ *	in a given string.  It doesn't draw the characters (which are
+ *	assumed to have been displayed previously); it just draws the
+ *	underline.  This procedure would mainly be used to quickly
+ *	underline a few characters without having to construct an
+ *	underlined font.  To produce properly underlined text, the
+ *	appropriate underlined font should be constructed and used.
  *
  * Results:
  *	None.
@@ -2393,7 +2416,7 @@ FreetypeUnderlineProc(
     int accum, threshold, index, next;
     int clipped;
 
-    /* Compute the width of an ellipsis and verify that we're not bigger 
+    /* Compute the width of an ellipsis and verify that we're not bigger
      * than it. */
     elWidth = Blt_TextWidth(fontPtr, "...", 3);
     if (maxLength < 0) {
@@ -2405,8 +2428,8 @@ FreetypeUnderlineProc(
     numBytes = 1;
 #endif /* !HAVE_UTF */
     /* Compute the length of the string, stopping when we've surpassed our
-     * threshold. Also save the first and last coordinates of the substring to
-     * be underlined. */
+     * threshold. Also save the first and last coordinates of the substring
+     * to be underlined. */
     clipX = lastX = -1, firstX = 0;
     accum = next = 0;
     clipped = FALSE;
@@ -2428,8 +2451,8 @@ FreetypeUnderlineProc(
 #endif /* HAVE_UTF */
 	next = Blt_TextWidth(fontPtr, s, numBytes);
 	if ((next + accum) <= threshold) {
-	    clipX = accum + next;	/* Remember the last length where text
-					 * plus the ellipsis fit */
+	    clipX = accum + next;	/* Remember the last length where
+					 * text plus the ellipsis fit */
 	}
 	if ((next + accum) > maxLength) {
 	    clipped = TRUE;
@@ -2466,11 +2489,12 @@ FreetypeCanRotateProc(_Blt_Font *fontPtr, float angle)
     }
 
     /* 
-     * I don't know if this is correct.  Some PCF fonts don't rotate properly.
-     * The chararcter positions are rotated but the glyph itself is drawn with
-     * no rotation.  The standard Adobe Helvetica font is a good example of
-     * this.  So I need to bail on those fonts.  I check if scalable=True in
-     * the Xft font pattern to determine if the font will rotate properly.
+     * I don't know if this is correct.  Some PCF fonts don't rotate
+     * properly.  The chararcter positions are rotated but the glyph itself
+     * is drawn with no rotation.  The standard Adobe Helvetica font is a
+     * good example of this.  So I need to bail on those fonts.  I check if
+     * scalable=True in the Xft font pattern to determine if the font will
+     * rotate properly.
      */
     result = FcPatternGetBool(setPtr->pattern, FC_SCALABLE, 0, &boolean);
     if ((result == FcResultMatch) && (!boolean)) {
@@ -2497,10 +2521,11 @@ FreetypeCanRotateProc(_Blt_Font *fontPtr, float angle)
 	/* 
 	 * XftFontMatch only sets *result* on complete match failures.  So
 	 * initialize it here for a successful match. We'll accept partial
-	 * matches. 
+	 * matches.
 	 */
 	result = FcResultMatch; 
-	match = XftFontMatch(setPtr->display, setPtr->screenNum, pattern,&result);
+	match = XftFontMatch(setPtr->display, setPtr->screenNum, pattern,
+                &result);
 	if ((match != NULL) && (result == FcResultMatch)) {
 	    XftFont *xftPtr;
 	
@@ -2526,7 +2551,8 @@ FreetypeCanRotateProc(_Blt_Font *fontPtr, float angle)
 static void
 FreetypeDrawProc(
     Display *display,			/* Display on which to draw. */
-    Drawable drawable,			/* Window or pixmap in which to draw. */
+    Drawable drawable,			/* Window or pixmap in which to
+                                         * draw. */
     GC gc,				/* Graphics context for drawing
 					 * characters. */
     _Blt_Font *fontPtr,			/* Font in which characters will be
@@ -2534,18 +2560,20 @@ FreetypeDrawProc(
 					 * used in *GC. */
     int depth,
     float angle,
-    const char *source,			/* UTF-8 string to be displayed.  Need
-					 * not be '\0' terminated.  All Tk
-					 * meta-characters (tabs, control
-					 * characters, and newlines) should be
-					 * stripped out of the string that is
-					 * passed to this function.  If they
-					 * are not stripped out, they will be
+    const char *source,			/* UTF-8 string to be displayed.
+					 * Need not be '\0' terminated.
+					 * All Tk meta-characters (tabs,
+					 * control characters, and
+					 * newlines) should be stripped out
+					 * of the string that is passed to
+					 * this function.  If they are not
+					 * stripped out, they will be
 					 * displayed as regular printing
 					 * characters. */
     int numBytes,			/* # of bytes in string. */
     int x, int y)			/* Coordinates at which to place
-					 * origin of string when drawing. */
+					 * origin of string when
+					 * drawing. */
 {
     XftFont *xftPtr;
     FreetypeFontset *setPtr = fontPtr->clientData;
@@ -2679,15 +2707,15 @@ FreetypeFreeProc(_Blt_Font *fontPtr)
  *	corresponding Tk_Font that represents the font.
  *
  * Results:
- *	The return value is token for the font, or NULL if an error prevented
- *	the font from being created.  If NULL is returned, an error message
- *	will be left in the interp's result.
+ *	The return value is token for the font, or NULL if an error
+ *	prevented the font from being created.  If NULL is returned, an
+ *	error message will be left in the interp's result.
  *
  * Side effects:
- *	The font is added to an internal database with a reference count.  For
- *	each call to this procedure, there should eventually be a call to
- *	Tk_FreeFont() or Tk_FreeFontFromObj() so that the database is cleaned
- *	up when fonts aren't in use anymore.
+ *	The font is added to an internal database with a reference count.
+ *	For each call to this procedure, there should eventually be a call
+ *	to Tk_FreeFont() or Tk_FreeFontFromObj() so that the database is
+ *	cleaned up when fonts aren't in use anymore.
  *
  *---------------------------------------------------------------------------
  */
@@ -2695,11 +2723,11 @@ Blt_Font
 Blt_GetFontFromObj(
     Tcl_Interp *interp,			/* Interp for database and error
 					 * return. */
-    Tk_Window tkwin,			/* For display on which font will be
-					 * used. */
-    Tcl_Obj *objPtr)			/* String describing font, as: named
-					 * font, native format, or parseable
-					 * string. */
+    Tk_Window tkwin,			/* For display on which font will
+					 * be used. */
+    Tcl_Obj *objPtr)			/* String describing font, as:
+					 * named font, native format, or
+					 * parseable string. */
 {
     _Blt_Font *fontPtr; 
     
@@ -2757,9 +2785,9 @@ Blt_AllocFontFromObj(
 					 * return. */
     Tk_Window tkwin,			/* For screen on which font will be
 					 * used. */
-    Tcl_Obj *objPtr)			/* Object describing font, as: named
-					 * font, native format, or parseable
-					 * string. */
+    Tcl_Obj *objPtr)			/* Object describing font, as:
+					 * named font, native format, or
+					 * parseable string. */
 {
     return Blt_GetFontFromObj(interp, tkwin, objPtr);
 }
@@ -2773,15 +2801,15 @@ Blt_AllocFontFromObj(
  *	corresponding Tk_Font that represents the font.
  *
  * Results:
- *	The return value is token for the font, or NULL if an error prevented
- *	the font from being created.  If NULL is returned, an error message
- *	will be left in interp's result object.
+ *	The return value is token for the font, or NULL if an error
+ *	prevented the font from being created.  If NULL is returned, an
+ *	error message will be left in interp's result object.
  *
  * Side effects:
- * 	The font is added to an internal database with a reference count.  For
- * 	each call to this procedure, there should eventually be a call to
- * 	Blt_Font_Free so that the database is cleaned up when fonts aren't in
- * 	use anymore.
+ * 	The font is added to an internal database with a reference count.
+ * 	For each call to this procedure, there should eventually be a call
+ * 	to Blt_Font_Free so that the database is cleaned up when fonts
+ * 	aren't in use anymore.
  *
  *---------------------------------------------------------------------------
  */
@@ -2792,9 +2820,9 @@ Blt_GetFont(
 					 * return. */
     Tk_Window tkwin,			/* For screen on which font will be
 					 * used. */
-    const char *string)			/* Object describing font, as: named
-					 * font, native format, or parseable
-					 * string. */
+    const char *string)			/* Object describing font, as:
+					 * named font, native format, or
+					 * parseable string. */
 {
     Blt_Font font;
     Tcl_Obj *objPtr;

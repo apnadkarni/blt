@@ -78,21 +78,6 @@
 #include "bltInitCmd.h"
 #include "bltTreeView.h"
 
-#define PIXMAPX(t, wx) ((wx) - (t)->xOffset)
-#define PIXMAPY(t, wy) ((wy) - (t)->yOffset)
-
-#define SCREENX(t, wx) ((wx) - (t)->xOffset + (t)->borderWidth)
-#define SCREENY(t, wy) ((wy) - (t)->yOffset + (t)->borderWidth)
-
-#define WORLDX(t, sx)  ((sx) - (t)->borderWidth + (t)->xOffset)
-#define WORLDY(t, sy)  ((sy) - (t)->borderWidth + (t)->yOffset)
-
-#define VPORTWIDTH(t)  \
-    (Tk_Width((t)->tkwin) - 2 * (t)->borderWidth - (t)->yScrollbarWidth)
-#define VPORTHEIGHT(t) \
-    (Tk_Height((t)->tkwin) - 2 * (t)->borderWidth - (t)->xScrollbarHeight)
-
-
 #define BUTTON_IPAD             1
 #define BUTTON_PAD              2
 #define BUTTON_SIZE             7
