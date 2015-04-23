@@ -59,6 +59,10 @@ BLT_EXTERN void Blt_DBuffer_Free(Blt_DBuffer buffer);
 BLT_EXTERN unsigned char *Blt_DBuffer_Extend(Blt_DBuffer buffer, size_t extra);
 BLT_EXTERN int Blt_DBuffer_AppendData(Blt_DBuffer buffer, 
 	const unsigned char *bytes, size_t extra);
+BLT_EXTERN int Blt_DBuffer_DeleteData(DBuffer *srcPtr, size_t index,
+        size_t numBytes);
+BLT_EXTERN int Blt_DBuffer_InsertData(Blt_DBuffer buffer, 
+        const unsigned char *bytes, size_t extra, size_t index);
 BLT_EXTERN int Blt_DBuffer_Concat(Blt_DBuffer dest, Blt_DBuffer src);
 BLT_EXTERN int Blt_DBuffer_Resize(Blt_DBuffer buffer, size_t length);
 BLT_EXTERN int Blt_DBuffer_SetLength(Blt_DBuffer buffer, size_t length);

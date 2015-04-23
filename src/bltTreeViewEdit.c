@@ -400,6 +400,7 @@ typedef struct {
 					 * definitions. */
 
     /* TextEditor-specific fields */
+    Blt_DBuffer dbuffer;                /* Buffer used to hold the text. */
     Blt_Bg normalBg;
     Blt_Bg activeBg;
 
@@ -943,79 +944,6 @@ CleanText(TextEditor *editPtr)
 } 
 
 static void
-DeleteText(TextEditor *editPtr, CharIndex firstIndex, CharIndex lastIndex)
-{
-    ByteOffset first, last;
-    int i, j;
-
-    /* Kill the selection */
-    editPtr->selFirst = editPtr->selLast = -1;
-    /* Fix the insertion cursor index if necessary. */
-    if (editPtr->insertIndex >= firstIndex) {
-	if (editPtr->insertIndex >= lastIndex) {
-	    editPtr->insertIndex -= (lastIndex - firstIndex);
-	} else {
-	    editPtr->insertIndex = firstIndex;
-	}
-    }
-    editPtr->numChars -= lastIndex - firstIndex;
-    /* Remove the requested character range from the actual text */
-    first = CharIndexToByteOffset(editPtr->text, firstIndex);
-    last  = CharIndexToByteOffset(editPtr->text, lastIndex);
-    for (i = first, j = last; j < editPtr->numBytes; i++, j++) {
-	editPtr->text[i] = editPtr->text[j];
-    }
-    editPtr->numBytes -= last - first;
-    editPtr->text[editPtr->numBytes] = '\0';
-    CleanText(editPtr);
-    if (editPtr->textVarObjPtr != NULL) {
-	UpdateTextVariable(editPtr->interp, editPtr);
-    }
-    editPtr->flags |= (MODIFIED | LAYOUT_PENDING | SCROLL_PENDING);
-}
-
-static int
-InsertText(TextEditor *editPtr, CharIndex index, int numBytes, 
-	   const char *insertText)
-{
-    char *text;
-    ByteOffset offset;
-    int numChars;
-
-    /* Create a larger buffer to hold the text. */
-    text = Blt_Malloc(editPtr->numBytes + numBytes);
-    if (text == NULL) {
-	return TCL_ERROR;
-    }
-    numChars = Tcl_NumUtfChars(insertText, numBytes);
-    /* Copy the old + extra to the new text. */
-    offset = CharIndexToByteOffset(editPtr->text, index);
-    memcpy(text, editPtr->text, offset);
-    memcpy(text + offset, insertText, numBytes);
-    memcpy(text + offset + numBytes, editPtr->text + offset, 
-	   editPtr->numBytes - offset);
-    editPtr->numBytes += numBytes;
-    if (editPtr->text != emptyString) {
-	Blt_Free(editPtr->text);
-    }
-    editPtr->text = text;
-    editPtr->numChars += numChars;
-
-    /* If the cursor index is after the insert index, then move the
-     * cursor down by the number of characters inserted. */
-    if (editPtr->insertIndex >= index) {
-	editPtr->insertIndex += numChars;
-    }
-    editPtr->selFirst = editPtr->selLast = -1;
-    CleanText(editPtr);
-    if (editPtr->textVarObjPtr != NULL) {
-	UpdateTextVariable(editPtr->interp, editPtr);
-    }
-    editPtr->flags |= (MODIFIED | LAYOUT_PENDING | SCROLL_PENDING);
-    return TCL_OK;
-}
-
-static void
 SetTextFromObj(TextEditor *editPtr, Tcl_Obj *objPtr) 
 {
     int numBytes;
@@ -1274,24 +1202,20 @@ EventProc(ClientData clientData, XEvent *eventPtr)
 static void
 UnmanageScrollbar(TextEditor *editPtr, Tk_Window scrollbar)
 {
-    if (scrollbar != NULL) {
-	Tk_DeleteEventHandler(scrollbar, StructureNotifyMask,
-	      ScrollbarEventProc, editPtr);
-	Tk_ManageGeometry(scrollbar, (Tk_GeomMgr *)NULL, editPtr);
-	if (Tk_IsMapped(scrollbar)) {
-	    Tk_UnmapWindow(scrollbar);
-	}
+    Tk_DeleteEventHandler(scrollbar, StructureNotifyMask,
+                ScrollbarEventProc, editPtr);
+    Tk_ManageGeometry(scrollbar, (Tk_GeomMgr *)NULL, editPtr);
+    if (Tk_IsMapped(scrollbar)) {
+        Tk_UnmapWindow(scrollbar);
     }
 }
 
 static void
 ManageScrollbar(TextEditor *editPtr, Tk_Window scrollbar)
 {
-    if (scrollbar != NULL) {
-	Tk_CreateEventHandler(scrollbar, StructureNotifyMask, 
-		ScrollbarEventProc, editPtr);
-	Tk_ManageGeometry(scrollbar, &comboMgrInfo, editPtr);
-    }
+    Tk_CreateEventHandler(scrollbar, StructureNotifyMask, 
+                          ScrollbarEventProc, editPtr);
+    Tk_ManageGeometry(scrollbar, &editorMgrInfo, editPtr);
 }
 
 /*
@@ -1334,7 +1258,9 @@ InstallScrollbar(
 	Tcl_BackgroundError(interp);
 	return;
     }
-    ManageScrollbar(editPtr, tkwin);
+    if (tkwin != NULL) {
+        ManageScrollbar(editPtr, tkwin);
+    }
     *tkwinPtr = tkwin;
     return;
 }
@@ -2073,7 +1999,7 @@ PointerToIndex(TextEditor *editPtr, int x, int y)
 }
 
 static int
-IndexToPointer(TextEditor *editPtr)
+SetCursorPosition(TextEditor *editPtr, CharIndex index)
 {
     int x, y;
     int maxLines;
@@ -2098,19 +2024,27 @@ IndexToPointer(TextEditor *editPtr)
 	x += IconWidth(editPtr->icon) + 2 * editPtr->gap;
     }
     fragPtr = layoutPtr->fragments;
-    for (i = 0; i <= maxLines; i++) {
-	/* Total the number of bytes on each line.  Include newlines. */
-	numBytes = fragPtr->count + 1;
-	if ((sum + numBytes) > editPtr->insertPos) {
-	    x += Blt_TextWidth(font, fragPtr->text, editPtr->insertPos - sum);
-	    break;
-	}
-	y += fontMetrics.linespace;
-	sum += numBytes;
-	fragPtr++;
+    for (linePtr = editPtr->lines, endPtr = editPtr->line + editPtr->numLines;
+         linePtr < endPtr; linePtr) {
+
+        if ((linePtr->char1 >= index) && (linePtr->char2 < index)) {
+            break;                      /* This is line containing the 
+                                         * cursor. */
+        }
     }
-    editPtr->cursorX = x;
-    editPtr->cursorY = y;
+    if (linePtr == endPtr) {
+        return;                         /* Outside of range. */
+    }
+    /* Find the start of the line. */
+    /* Find the start and end of the line as text offsets. */
+    charLength = index - linePtr->char1;
+    numBytes = CharIndexToByteOffset(linePtr->text, charIndex);
+    textOffset = Blt_Font_Measure(editPtr->font, linePtr->text,
+        numBytes, linePtr->worldX + editPtr->xOffset, TEXT_FLAGS,
+        &numPixels);
+
+    editPtr->cursorX = linePtr->worldX + numPixels;
+    editPtr->cursorY = linePtr->worldY;
     editPtr->cursorHeight = fontMetrics.linespace;
     editPtr->cursorWidth = 3;
     return TCL_OK;
@@ -2170,122 +2104,116 @@ UpdateLayout(TextEditor *editPtr)
 }
 
 static void
-InsertText(TextEditor *editPtr, char *insertText, int insertPos, int numBytes)
+InsertText(TextEditor *editPtr, char *text, int numBytes, int index)
 {
     int oldSize, newSize;
     char *oldText, *newText;
+    int numChars;
+    const char *string;
 
-    oldText = editPtr->string;
-    oldSize = (int)strlen(oldText);
-    newSize = oldSize + numBytes + 1;
-    newText = Blt_AssertMalloc(sizeof(char) * newSize);
-    if (insertPos == oldSize) {	/* Append */
-	Blt_FormatString(newText, newSize, "%s%s", oldText, insertText);
-    } else if (insertPos == 0) {/* Prepend */
-	Blt_FormatString(newText, newSize, "%s%s", insertText, oldText);
-    } else {			/* Insert into existing. */
-	Blt_FormatString(newText, newSize, "%.*s%s%s", insertPos, oldText, 
-			 insertText, oldText + insertPos);
+    string = Blt_DBuffer_String(editPtr->dbuffer);
+    offset = CharIndexToByteOffset(string, index);
+    if (offset == oldSize) {            /* Append */
+        result = Blt_DBuffer_AppendData(editPtr->dbuffer, text, numBytes);
+    } else if (offset == 0) {           /* Prepend */
+        result = Blt_DBuffer_InsertData(editPtr->dbuffer, text, numBytes, 0);
+    } else {                            /* Insert into existing. */
+        result = Blt_DBuffer_InsertData(editPtr->dbuffer, numBytes, offset);
     }
-
+    if (!result) {
+        return;
+    }
     /* 
      * All indices from the start of the insertion to the end of the string
      * need to be updated.  Simply move the indices down by the number of
      * characters added.
      */
-    if (editPtr->selFirst >= insertPos) {
-	editPtr->selFirst += numBytes;
+    string = Blt_DBuffer_String(editPtr->dbuffer);
+    numChars = Tcl_NumUtfChars(string, index);
+    if (editPtr->selFirst >= index) {
+	editPtr->selFirst += numChars;
     }
-    if (editPtr->selLast > insertPos) {
-	editPtr->selLast += numBytes;
+    if (editPtr->selLast > index) {
+	editPtr->selLast += numChars;
     }
-    if ((editPtr->selAnchor > insertPos) || (editPtr->selFirst >= insertPos)) {
-	editPtr->selAnchor += numBytes;
+    if ((editPtr->selAnchor > index) || (editPtr->selFirst >= index)) {
+	editPtr->selAnchor += numChars;
     }
-    if (editPtr->string != NULL) {
-	Blt_Free(editPtr->string);
-    }
-    editPtr->string = newText;
-    editPtr->insertPos = insertPos + numBytes;
-    UpdateLayout(editPtr);
+    editPtr->insertIndex = index + numChars;
+    editPtr->flags |= LAYOUT_PENDING;
+    editPtr->numChars += numChars;
+    EventuallyRedraw(editPtr);
 }
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * DeleteText --
+ *
+ *	Deletes the characters designate by first and last. Last is
+ *      included in the deletion.
+ *
+ *      Since deleting characters compacts the character array, we need to
+ *      update the various character indices according.  It depends where
+ *      the index occurs in relation to range of deleted characters:
+ *
+ *	 before		Ignore.
+ *      within		Move the index back to the start of the deletion.
+ *	 after		Subtract off the deleted number of characters,
+ *			since the array has been compressed by that
+ *			many characters.
+ *
+ * Results:
+ *	If the string is successfully converted, TCL_OK is returned.  The
+ *	pointer to the node is returned via itemPtrPtr.  Otherwise, TCL_ERROR
+ *	is returned and an error message is left in interpreter's result
+ *	field.
+ *
+ *---------------------------------------------------------------------------
+ */
 static int
-DeleteText(TextEditor *editPtr, int firstPos, int lastPos)
+DeleteText(TextEditor *editPtr, CharIndex firstIndex, CharIndex lastIndex)
 {
-    char *oldText, *newText;
-    int oldSize, newSize;
-    int numBytes;
-    char *p;
-
-    oldText = editPtr->string;
-    if (firstPos > lastPos) {
-	return TCL_OK;
+    size_t numChars;
+    
+    numChars = lastIndex - firstIndex + 1;
+    if (!Blt_DBuffer_DeleteData(editPtr->dbuffer, firstIndex, numChars)) {
+        return TCL_ERROR;
     }
-    lastPos++;                          /* Now is the position after the
-					 * last character. */
-
-    numBytes = lastPos - firstPos;
-    oldSize = strlen(oldText) + 1;
-    newSize = oldSize - numBytes + 1;
-    newText = Blt_AssertMalloc(sizeof(char) * newSize);
-    p = newText;
-    if (firstPos > 0) {
-	strncpy(p, oldText, firstPos);
-	p += firstPos;
-    }
-    *p = '\0';
-    if (lastPos < oldSize) {
-	strcpy(p, oldText + lastPos);
-    }
-    Blt_Free(oldText);
-
-    /*
-     * Since deleting characters compacts the character array, we need to
-     * update the various character indices according.  It depends where
-     * the index occurs in relation to range of deleted characters:
-     *
-     *	 before		Ignore.
-     *   within		Move the index back to the start of the deletion.
-     *	 after		Subtract off the deleted number of characters,
-     *			since the array has been compressed by that
-     *			many characters.
-     *
-     */
-    if (editPtr->selFirst >= firstPos) {
-	if (editPtr->selFirst >= lastPos) {
-	    editPtr->selFirst -= numBytes;
+    if (editPtr->selFirst >= firstIndex) {
+	if (editPtr->selFirst >= lastIndex) {
+	    editPtr->selFirst -= numChars;
 	} else {
-	    editPtr->selFirst = firstPos;
+	    editPtr->selFirst = firstIndex;
 	}
     }
-    if (editPtr->selLast >= firstPos) {
-	if (editPtr->selLast >= lastPos) {
-	    editPtr->selLast -= numBytes;
+    if (editPtr->selLast >= firstIndex) {
+	if (editPtr->selLast >= lastIndex) {
+	    editPtr->selLast -= numChars;
 	} else {
-	    editPtr->selLast = firstPos;
+	    editPtr->selLast = firstIndex;
 	}
     }
     if (editPtr->selLast <= editPtr->selFirst) {
 	editPtr->selFirst = editPtr->selLast = -1; /* Cut away the entire
-						* selection. */ 
+                                                    * selection. */ 
     }
-    if (editPtr->selAnchor >= firstPos) {
-	if (editPtr->selAnchor >= lastPos) {
-	    editPtr->selAnchor -= numBytes;
+    if (editPtr->selAnchor >= firstIndex) {
+	if (editPtr->selAnchor >= lastIndex) {
+	    editPtr->selAnchor -= numChars;
 	} else {
-	    editPtr->selAnchor = firstPos;
+	    editPtr->selAnchor = firstIndex;
 	}
     }
-    if (editPtr->insertPos >= firstPos) {
-	if (editPtr->insertPos >= lastPos) {
-	    editPtr->insertPos -= numBytes;
+    if (editPtr->insertIndex >= firstIndex) {
+	if (editPtr->insertIndex >= lastIndex) {
+	    editPtr->insertIndex -= numChars;
 	} else {
-	    editPtr->insertPos = firstPos;
+	    editPtr->insertIndex = firstIndex;
 	}
     }
-    editPtr->string = newText;
-    UpdateLayout(editPtr);
+    editPtr->flags |= LAYOUT_PENDING;
+    editPtr->numChars -= numChars;
     EventuallyRedraw(editPtr);
     return TCL_OK;
 }
@@ -2479,7 +2407,7 @@ GetIndexFromObj(Tcl_Interp *interp, TextEditor *editPtr, Tcl_Obj *objPtr,
  *---------------------------------------------------------------------------
  */
 static int
-SelectText(TextEditor *editPtr, int textPos)
+SelectText(TextEditor *editPtr, CharIndex index)
 {
     int selFirst, selLast;
 
@@ -2489,15 +2417,16 @@ SelectText(TextEditor *editPtr, int textPos)
     if ((editPtr->exportSelection) && (editPtr->selFirst == -1)) {
 	Tk_OwnSelection(editPtr->tkwin, XA_PRIMARY, LostSelectionProc, editPtr);
     }
-    /*  If the anchor hasn't been set yet, assume the beginning of the text*/
+    /*  If the anchor hasn't been set yet, assume the beginning of the
+     * text*/
     if (editPtr->selAnchor < 0) {
 	editPtr->selAnchor = 0;
     }
-    if (editPtr->selAnchor <= textPos) {
+    if (editPtr->selAnchor <= index) {
 	selFirst = editPtr->selAnchor;
-	selLast = textPos;
+	selLast = index;
     } else {
-	selFirst = textPos;
+	selFirst = index;
 	selLast = editPtr->selAnchor;
     }
     if ((editPtr->selFirst != selFirst) || (editPtr->selLast != selLast)) {
@@ -2906,8 +2835,8 @@ ConfigureEditor(Tcl_Interp *interp, TextEditor *editPtr, int objc,
 }
 
 
-int
-Blt_TreeView_CreateTextEditor(TreeView *viewPtr, Entry *entryPtr, Column *colPtr)
+static int
+NewTextEditor(TreeView *viewPtr, Entry *entryPtr, Column *colPtr)
 {
     Tk_Window tkwin;
     TextEditor *editPtr;
@@ -2958,7 +2887,8 @@ Blt_TreeView_CreateTextEditor(TreeView *viewPtr, Entry *entryPtr, Column *colPtr
     AcquireText(viewPtr, editPtr, entryPtr, colPtr);
     editPtr->insertPos = strlen(editPtr->string);
     
-    Tk_MoveResizeWindow(tkwin, editPtr->x, editPtr->y, editPtr->width, editPtr->height);
+    Tk_MoveResizeWindow(tkwin, editPtr->x, editPtr->y, editPtr->width,
+                        editPtr->height);
     Tk_MapWindow(tkwin);
     Tk_MakeWindowExist(tkwin);
     XRaiseWindow(editPtr->display, Tk_WindowId(tkwin));
@@ -2971,12 +2901,12 @@ Blt_TreeView_CreateTextEditor(TreeView *viewPtr, Entry *entryPtr, Column *colPtr
  *
  * DrawTextLine --
  *
- * 	Draw the editable text associated with the entry.  The widget may be
- * 	scrolled so the text may be clipped.  We use a temporary pixmap to
- * 	draw the visible portion of the text.
+ * 	Draw the editable text associated with the entry.  The widget may
+ * 	be scrolled so the text may be clipped.  We use a temporary pixmap
+ * 	to draw the visible portion of the text.
  *
- *	We assume that text strings will be small for the most part.  The bad
- *	part of this is that we measure the text string 5 times.
+ *	We assume that text strings will be small for the most part.  The
+ *	bad part of this is that we measure the text string 5 times.
  *
  * Results:
  *	A standard TCL result.
@@ -2987,8 +2917,8 @@ Blt_TreeView_CreateTextEditor(TreeView *viewPtr, Entry *entryPtr, Column *colPtr
  *---------------------------------------------------------------------------
  */
 static void
-DrawTextLine(TextEditor *editPtr, Drawable drawable, Line *linePtr,
-          int x, int y, int w, int h) 
+DrawTextLine(TextEditor *editPtr, Drawable drawable, TextLine *linePtr,
+             int w, int h) 
 {
     Blt_FontMetrics fm;
     Pixmap pixmap;
@@ -3177,50 +3107,137 @@ DrawTextLine(TextEditor *editPtr, Drawable drawable, Line *linePtr,
     Tk_FreePixmap(editPtr->display, pixmap);
 }
 
+static void
+DrawTextArea(TextEditor *editPtr, Drawable drawable, TextLine *linePtr,
+          int x, int y, int w, int h) 
+{
+    Pixmap pixmap;
+    Blt_Bg bg;
+    GC gc;
+    TextLine *linePtr, *endPtr;
+    
+    bg = editPtr->inFocusBg;
+    gc = editPtr->textGC;
+    w = VPORTWIDTH(editPtr);
+    h = VPORTHEIGHT(editPtr);
+    /*
+     * Create a pixmap the size of visible text area. This will be used for
+     * clipping the scrolled text string.
+     */
+    pixmap = Blt_GetPixmap(editPtr->display, Tk_WindowId(editPtr->tkwin),
+	w, h, Tk_Depth(editPtr->tkwin));
+
+    if (editPtr->flags & FOCUS) {
+	bg = editPtr->inFocusBg;
+	gc = editPtr->textGC;
+    } else {
+	bg = editPtr->outFocusBg;
+	gc = editPtr->textGC;
+    }
+    /* Text background. */
+    { 
+	int xOrigin, yOrigin;
+
+	Blt_Bg_GetOrigin(bg, &xOrigin, &yOrigin);
+	Blt_Bg_SetOrigin(editPtr->tkwin, bg, xOrigin + x, yOrigin + y);
+	Blt_Bg_FillRectangle(editPtr->tkwin, pixmap, bg, 0, 0, w, h, 
+		0, TK_RELIEF_FLAT);
+	Blt_Bg_SetOrigin(editPtr->tkwin, bg, xOrigin, yOrigin);
+    }	
+    /* Find the starting line */
+    for (linePtr = ediPtr->lines, endPtr = editPtr->line + editPtr->numLines;
+         linePtr < endPtr; linePtr) {
+        int sy;
+
+        sy = SCREENY(editPtr, linePtr->worldY);
+        if ((sy >= y) && (sy < (y + h))) {
+            break;                      /* This is the first line is in the
+                                         * viewport. */
+        }
+    }
+    for (/*empty*/; linePtr < endPtr; linePtr++) {
+        int sy;
+
+        sy = SCREENY(editPtr, linePtr->worldY);
+        if (sy >= (y + h)) {
+            break;                      /* This line starts beyond the end
+                                         * of the viewport. */
+        }
+        DrawTextLine(editPtr, pixmap, linePtr, w, h);
+    }
+    XCopyArea(editPtr->display, pixmap, drawable, gc, 0, 0, w, h, x, y);
+    Tk_FreePixmap(editPtr->display, pixmap);
+}
 
 static void
 DisplayProc(ClientData clientData)
 {
     TextEditor *editPtr = clientData;
     Pixmap drawable;
-    int i;
-    int x1, x2;
-    int count, numChars;
-    int selStart, selEnd, selLength;
-    int x, y;
-    TextFragment *fragPtr;
-    Blt_FontMetrics fontMetrics;
-    Blt_Font font;
-    TreeView *viewPtr;
-#ifdef notdef
-    int buttonX, buttonY, buttonWidth, buttonHeight;
-#endif
+    int x, y, w, h;
 
-    viewPtr = editPtr->viewPtr;
     editPtr->flags &= ~REDRAW_PENDING;
+    if (editPtr->tkwin == NULL) {
+	return;                         /* Window has been destroyed
+					 * (should not get here) */
+    }
+#ifdef notdef
+    fprintf(stderr, "Calling DisplayProc(%s) w=%d h=%d\n", 
+	    Tk_PathName(editPtr->tkwin), Tk_Width(editPtr->tkwin),
+	    Tk_Height(editPtr->tkwin));
+#endif
+    if (editPtr->flags & LAYOUT_PENDING) {
+	ComputeGeometry(editPtr);
+    }
+    if ((Tk_Width(editPtr->tkwin) <= 1) || (Tk_Height(editPtr->tkwin) <= 1)) {
+	/* Don't bother computing the layout until the window size is
+	 * something reasonable. */
+	return;
+    }
     if (!Tk_IsMapped(editPtr->tkwin)) {
+	/* The editor's window isn't displayed, so don't bother drawing
+	 * anything.  By getting this far, we've at least computed the
+	 * coordinates of the editor's new layout.  */
 	return;
     }
-    if (editPtr->colPtr == NULL) {
-	return;
+    if (editPtr->flags & SCROLL_PENDING) {
+	int vw, vh;                     /* Viewport width and height. */
+	/* 
+	 * The view port has changed. The visible items need to be recomputed
+	 * and the scrollbars updated.
+	 */
+	ComputeVisibleLines(editPtr);
+	vw = VPORTWIDTH(editPtr);
+	vh = VPORTHEIGHT(editPtr);
+	if ((editPtr->xScrollCmdObjPtr) && (editPtr->flags & SCROLLX)) {
+	    Blt_UpdateScrollbar(editPtr->interp, editPtr->xScrollCmdObjPtr,
+		editPtr->xOffset, editPtr->xOffset+vw, editPtr->worldWidth);
+	}
+	if ((editPtr->yScrollCmdObjPtr) && (editPtr->flags & SCROLLY)) {
+	    Blt_UpdateScrollbar(editPtr->interp, editPtr->yScrollCmdObjPtr,
+		editPtr->yOffset, editPtr->yOffset+vh, editPtr->worldHeight);
+	}
+	editPtr->flags &= ~SCROLL_PENDING;
     }
-    drawable = Blt_GetPixmap(editPtr->display, Tk_WindowId(editPtr->tkwin), 
-	Tk_Width(editPtr->tkwin), Tk_Height(editPtr->tkwin), 
-	Tk_Depth(editPtr->tkwin));
+    /*
+     * Create a pixmap the size of the window for double buffering.
+     */
+    w = Tk_Width(editPtr->tkwin);
+    h = Tk_Height(editPtr->tkwin);
+    Blt_SizeOfScreen(editPtr->tkwin, &screenWidth, &screenHeight);
+    w = CLAMP(w, 1, screenWidth);
+    h = CLAMP(h, 1, screenHeight);
 
+    /* Create pixmap the size of the widget. */
+    drawable = Blt_GetPixmap(editPtr->display, Tk_WindowId(editPtr->tkwin), 
+	w, h, Tk_Depth(editPtr->tkwin));
     Blt_Fill3DRectangle(editPtr->tkwin, drawable, editPtr->border, 0, 0,
-	Tk_Width(editPtr->tkwin), Tk_Height(editPtr->tkwin), 
-	editPtr->borderWidth, editPtr->relief);
+	w, h, editPtr->borderWidth, editPtr->relief);
 
     x = editPtr->borderWidth + editPtr->gap;
     y = editPtr->borderWidth;
 
-#ifdef notdef
-    buttonX = Tk_Width(editPtr->tkwin) - 
-	(editPtr->borderWidth + editPtr->gap + 1);
-    buttonY = editPtr->borderWidth + 1;
-#endif
-
+    /* Draw the icon on the left side of the text area. */
     if (editPtr->icon != NULL) {
 	y += (editPtr->height - IconHeight(editPtr->icon)) / 2;
 	Tk_RedrawImage(IconBits(editPtr->icon), 0, 0, 
@@ -3229,93 +3246,10 @@ DisplayProc(ClientData clientData)
 		       drawable, x, y);
 	x += IconWidth(editPtr->icon) + editPtr->gap;
     }
+    DrawTextArea(editPtr, drawable, x, y, w, h);
     
-    font = CHOOSE(viewPtr->font, editPtr->font);
-    Blt_Font_GetMetrics(font, &fontMetrics);
-    fragPtr = editPtr->layoutPtr->fragments;
-    count = 0;
-    y = editPtr->borderWidth;
-    if (editPtr->height > fontMetrics.linespace) {
-	y += (editPtr->height - fontMetrics.linespace) / 2;
-    }
-    for (i = 0; i < editPtr->layoutPtr->numFragments; i++, fragPtr++) {
-	int leftPos, rightPos;
-
-	leftPos = count;
-	count += fragPtr->count;
-	rightPos = count;
-	if ((rightPos < editPtr->selFirst) || (leftPos > editPtr->selLast)) {
-	    /* No part of the text fragment is selected. */
-	    Blt_Font_Draw(Tk_Display(editPtr->tkwin), drawable, editPtr->gc, font, 
-		Tk_Depth(editPtr->tkwin), 0.0f, fragPtr->text, fragPtr->count, 
-		x + fragPtr->x, y + fragPtr->y);
-	    continue;
-	}
-
-	/*
-	 *  A text fragment can have up to 3 regions:
-	 *
-	 *	1. Text before the start the selection
-	 *	2. Selected text itself (drawn in a raised border)
-	 *	3. Text following the selection.
-	 */
-
-	selStart = leftPos;
-	selEnd = rightPos;
-	/* First adjust selected region for current line. */
-	if (editPtr->selFirst > leftPos) {
-	    selStart = editPtr->selFirst;
-	}
-	if (editPtr->selLast < rightPos) {
-	    selEnd = editPtr->selLast;
-	}
-	selLength = (selEnd - selStart);
-	x1 = x;
-
-	if (selStart > leftPos) {       /* Normal text preceding the
-					 * selection */
-	    numChars = (selStart - leftPos);
-	    Blt_Font_Measure(font, editPtr->string + leftPos, numChars, 10000, 
-		DEF_TEXT_FLAGS, &x1);
-	    x1 += x;
-	}
-	if (selLength > 0) {            /* The selection itself */
-	    int width;
-
-	    Blt_Font_Measure(font, fragPtr->text + selStart, selLength, 10000, 
-		DEF_TEXT_FLAGS, &x2);
-	    x2 += x;
-	    width = (x2 - x1) + 1;
-	    Blt_Fill3DRectangle(editPtr->tkwin, drawable, editPtr->selBorder,
-		x1, y + fragPtr->y - fontMetrics.ascent, 
-		width, fontMetrics.linespace,
-		editPtr->selBW, editPtr->selRelief);
-	}
-	Blt_Font_Draw(Tk_Display(editPtr->tkwin), drawable, editPtr->gc, font, 
-		Tk_Depth(editPtr->tkwin), 0.0f, fragPtr->text, fragPtr->count, 
-		fragPtr->x + x, fragPtr->y + y);
-    }
-    if ((editPtr->flags & FOCUS) && (editPtr->cursorOn)) {
-	int left, top, right, bottom;
-
-	IndexToPointer(editPtr);
-	left = editPtr->cursorX + 1;
-	right = left + 1;
-	top = editPtr->cursorY;
-	if (editPtr->height > fontMetrics.linespace) {
-	    top += (editPtr->height - fontMetrics.linespace) / 2;
-	}
-	bottom = top + editPtr->cursorHeight - 1;
-	XDrawLine(editPtr->display, drawable, editPtr->gc, left, top, left,
-		bottom);
-	XDrawLine(editPtr->display, drawable, editPtr->gc, left - 1, top, right,
-		top);
-	XDrawLine(editPtr->display, drawable, editPtr->gc, left - 1, bottom, 
-		right, bottom);
-    }
-    Blt_Draw3DRectangle(editPtr->tkwin, drawable, editPtr->border, 0, 0,
-	Tk_Width(editPtr->tkwin), Tk_Height(editPtr->tkwin), 
-	editPtr->borderWidth, editPtr->relief);
+    /* Draw the close button on the right side of the text area. */
+    
     XCopyArea(editPtr->display, drawable, Tk_WindowId(editPtr->tkwin),
 	editPtr->gc, 0, 0, Tk_Width(editPtr->tkwin), 
 	Tk_Height(editPtr->tkwin), 0, 0);
@@ -3431,23 +3365,24 @@ DeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
          Tcl_Obj *const *objv)
 {
     TextEditor *editPtr = clientData;
-    int firstPos, lastPos;
+    CharIndex first, last;
 
-    if (editPtr->entryPtr == NULL) {
-	return TCL_OK;
-    }
-    if (GetIndexFromObj(interp, editPtr, objv[2], &firstPos) != TCL_OK) {
+    if (GetIndexFromObj(interp, editPtr, objv[2], &first) != TCL_OK) {
 	return TCL_ERROR;
     }
-    lastPos = firstPos;
+    last = first;
     if ((objc == 4) && 
-	(GetIndexFromObj(interp, editPtr, objv[3], &lastPos) != TCL_OK)) {
+	(GetIndexFromObj(interp, editPtr, objv[3], &last) != TCL_OK)) {
 	return TCL_ERROR;
     }
-    if (firstPos > lastPos) {
+    if (first > last) {
 	return TCL_OK;
     }
-    return DeleteText(editPtr, firstPos, lastPos);
+    if (!DeleteText(editPtr, first, last)) {
+        Tcl_AppendResult(interp, "can't delete text", (char *)NULL);
+        return TCL_ERROR;
+    }
+    return TCL_OK;
 }
 
 
@@ -3480,16 +3415,18 @@ IcursorOp(ClientData clientData, Tcl_Interp *interp, int objc,
           Tcl_Obj *const *objv)
 {
     TextEditor *editPtr = clientData;
-    int textPos;
+    CharIndex index;
 
-    if (GetIndexFromObj(interp, editPtr, objv[2], &textPos) != TCL_OK) {
+    if (GetIndexFromObj(interp, editPtr, objv[2], &index) != TCL_OK) {
 	return TCL_ERROR;
     }
-    if (editPtr->colPtr != NULL) {
-	editPtr->insertPos = textPos;
-	IndexToPointer(editPtr);
-	EventuallyRedraw(editPtr);
+    if ((index < 0) || (index > editPtr->numChars)) {
+        Tcl_AppendResult(interp, "invalid index \"", Tcl_GetString(objv[2]),
+                         "\"", (char *)NULL);
+        return TCL_ERROR;
     }
+    editPtr->insertIndex = index;
+    EventuallyRedraw(editPtr);
     return TCL_OK;
 }
 
@@ -3559,22 +3496,19 @@ InsertOp(ClientData clientData, Tcl_Interp *interp, int objc,
          Tcl_Obj *const *objv)
 {
     TextEditor *editPtr = clientData;
-    int extra;
-    int insertPos;
-    char *string;
+    int length;
+    CharIndex index;
+    const char *string;
 
-    if (editPtr->entryPtr == NULL) {
+    if (GetIndexFromObj(interp, editPtr, objv[2], &index) != TCL_OK) {
 	return TCL_ERROR;
     }
-    if (GetIndexFromObj(interp, editPtr, objv[2], &insertPos) != TCL_OK) {
-	return TCL_ERROR;
-    }
-    string = Tcl_GetStringFromObj(objv[3], &extra);
-    if (extra == 0) {                   /* Nothing to insert. Move the
+    string = Tcl_GetStringFromObj(objv[3], &length);
+    if (length == 0) {                   /* Nothing to insert. Move the
 					 * cursor anyways. */
-	editPtr->insertPos = insertPos;
+	editPtr->insertIndex = index;
     } else {
-	InsertText(editPtr, string, insertPos, extra);
+	InsertText(editPtr, string, length, index);
     }
     return TCL_OK;
 }
@@ -3929,6 +3863,129 @@ UnpostOp(ClientData clientData, Tcl_Interp *interp, int objc,
     return TCL_OK;
 }
 
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * WithdrawOp --
+ *
+ *      Hides the menu but doesn't call the unpost command. Technically
+ *      the menu is still posted.
+ *
+ *  pathName withdraw 
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+WithdrawOp(ClientData clientData, Tcl_Interp *interp, int objc, 
+	 Tcl_Obj *const *objv)
+{
+    TextEditor *editPtr = clientData;
+
+    WithdrawMenu(editPtr);
+    return TCL_OK;      
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * XViewOp --
+ *
+ *      Called by the scrollbar to set view horizontally in the 
+ *      widget.
+ *
+ *  pathName xview firstFrac lastFrac
+ *  pathName xview firstFrac lastFrac
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+XViewOp(ClientData clientData, Tcl_Interp *interp, int objc,
+	Tcl_Obj *const *objv)
+{
+    TextEditor *editPtr = clientData;
+    int w;
+
+    w = VPORTWIDTH(editPtr);
+    if (objc == 2) {
+	double fract;
+	Tcl_Obj *listObjPtr, *objPtr;
+
+	/* Report first and last fractions */
+	listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
+	/*
+	 * Note: we are bounding the fractions between 0.0 and 1.0 to support
+	 * the "canvas"-style of scrolling.
+	 */
+	fract = (double)editPtr->xOffset / (editPtr->worldWidth+1);
+	objPtr = Tcl_NewDoubleObj(FCLAMP(fract));
+	Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+	fract = (double)(editPtr->xOffset + w) / (editPtr->worldWidth+1);
+	objPtr = Tcl_NewDoubleObj(FCLAMP(fract));
+	Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+	Tcl_SetObjResult(interp, listObjPtr);
+	return TCL_OK;
+    }
+    if (Blt_GetScrollInfoFromObj(interp, objc - 2, objv + 2, &editPtr->xOffset,
+	editPtr->worldWidth, w, editPtr->xScrollUnits, 
+	BLT_SCROLL_MODE_HIERBOX) != TCL_OK) {
+	return TCL_ERROR;
+    }
+    editPtr->flags |= SCROLL_PENDING;
+    EventuallyRedraw(editPtr);
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * YViewOp --
+ *
+ *      Called by the scrollbar to set view vertically in the 
+ *      widget.
+ *
+ *  pathName xview firstFrac lastFrac
+ *  pathName xview firstFrac lastFrac
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+YViewOp(ClientData clientData, Tcl_Interp *interp, int objc,
+	Tcl_Obj *const *objv)
+{
+    TextEditor *editPtr = clientData;
+    int height;
+
+    height = VPORTHEIGHT(editPtr);
+    if (objc == 2) {
+	double fract;
+	Tcl_Obj *listObjPtr, *objPtr;
+
+	/* Report first and last fractions */
+	listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **)NULL);
+	/*
+	 * Note: we are bounding the fractions between 0.0 and 1.0 to support
+	 * the "canvas"-style of scrolling.
+	 */
+	fract = (double)editPtr->yOffset / (editPtr->worldHeight+1);
+	objPtr = Tcl_NewDoubleObj(FCLAMP(fract));
+	Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+	fract = (double)(editPtr->yOffset + height) /(editPtr->worldHeight+1);
+	objPtr = Tcl_NewDoubleObj(FCLAMP(fract));
+	Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+	Tcl_SetObjResult(interp, listObjPtr);
+	return TCL_OK;
+    }
+    if (Blt_GetScrollInfoFromObj(interp, objc - 2, objv + 2, &editPtr->yOffset,
+	editPtr->worldHeight, height, editPtr->yScrollUnits, 
+	BLT_SCROLL_MODE_HIERBOX) != TCL_OK) {
+	return TCL_ERROR;
+    }
+    editPtr->flags |= SCROLL_PENDING;
+    EventuallyRedraw(editPtr);
+    return TCL_OK;
+}
+
 /*
  *---------------------------------------------------------------------------
  *
@@ -3947,11 +4004,17 @@ static Blt_OpSpec comboOps[] =
     {"cancel",    2, CancelOp,    2, 2, "",},
     {"cget",      2, CgetOp,      3, 3, "value",},
     {"configure", 2, ConfigureOp, 2, 0, "?option value...?",},
-    {"delete",    1, DeleteOp,    3, 4, "first ?last?"},
+    {"delete",    1, DeleteOp,    3, 4, "firstIndex ?lastIndex?"},
     {"icursor",   2, IcursorOp,   3, 3, "index"},
     {"index",     3, IndexOp,     3, 3, "index"},
     {"insert",    3, InsertOp,    4, 4, "index string"},
+    {"invoke",    3, InvokeOp,    3, 3, "",},
+    {"post",      4, PostOp,      2, 0, "switches...",},
     {"selection", 1, SelectionOp, 2, 0, "args"},
+    {"unpost",    1, UnpostOp,    2, 2, "",},
+    {"withdraw",  1, WithdrawOp,  2, 2, "",},
+    {"xview",     2, XViewOp,     2, 5, "?moveto fract? ?scroll number what?",},
+    {"yview",     2, YViewOp,     2, 5, "?moveto fract? ?scroll number what?",},
 };
 static int numComboOps = sizeof(comboOps) / sizeof(Blt_OpSpec);
 

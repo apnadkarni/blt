@@ -246,6 +246,50 @@ Blt_DBuffer_AppendData(DBuffer *srcPtr, const unsigned char *data,
     return TRUE;
 }
 
+int
+Blt_DBuffer_InsertData(DBuffer *srcPtr, const unsigned char *data, 
+		       size_t numBytes, size_t index)
+{
+    unsigned char *bp;
+    size_t oldLength, newLength;
+    size_t i, j;
+    
+    oldLength = Blt_DBuffer_Length(srcPtr);
+    bp = Blt_DBuffer_Extend(srcPtr, numBytes);
+    if (bp == NULL) {
+	return FALSE;
+    }
+    newLength = Blt_DBuffer_Length(srcPtr);
+    /* Create a hole at the end. */
+    bp = Blt_DBuffer_Bytes(srcPtr);
+    for (i = oldLength - 1, j = newLength - 1; i >= 0; i--, j--) {
+        bp[j] = bp[i];
+    }
+    memcpy(bp + index, data, numBytes);
+    return TRUE;
+}
+
+int
+Blt_DBuffer_DeleteData(DBuffer *srcPtr, size_t index, size_t numBytes)
+{
+    unsigned char *bp;
+    size_t newLength;
+    size_t i, j;
+    
+    if ((index < 0) || (index + numBytes) > Blt_DBuffer_Length(srcPtr)) {
+        return FALSE;
+    }
+    /* Create a hole at the end. */
+    bp = Blt_DBuffer_Bytes(srcPtr);
+    assert((index >= 0) && ((index + numBytes) <= Blt_DBuffer_Length(srcPtr)));
+    newLength = Blt_DBuffer_Length(srcPtr) - numBytes;
+    for (i = index, j = index + numBytes; i < numBytes; i++, j++) {
+        bp[i] = bp[j];
+    }
+    Blt_DBuffer_SetLength(srcPtr, newLength);
+    return TRUE;
+}
+
 void
 Blt_DBuffer_VarAppend(DBuffer *srcPtr, ...)
 {
