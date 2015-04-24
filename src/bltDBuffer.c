@@ -212,6 +212,22 @@ Blt_DBuffer_StringObj(DBuffer *srcPtr)
     return Tcl_NewStringObj((char *)srcPtr->bytes, srcPtr->length);
 }
 
+unsigned char *
+Blt_DBuffer_SetFromObj(DBuffer *srcPtr, Tcl_Obj *objPtr)
+{
+    const char *string;
+    int length;
+    unsigned char *bp;
+    
+    string = Tcl_GetStringFromObj(objPtr, &length);
+    if (!Blt_DBuffer_Resize(srcPtr, length)) {
+	return NULL;
+    }
+    bp = Blt_DBuffer_String(srcPtr);
+    memcpy(bp, string, length);
+    return bp;
+}
+
 /* 
  * Blt_DBuffer_String --
  *	
