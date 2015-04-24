@@ -124,6 +124,7 @@ BLT_EXTERN Tcl_AppInitProc Blt_TedCmdInitProc;
 
 BLT_EXTERN Tcl_AppInitProc Blt_GrabCmdInitProc;
 BLT_EXTERN Tcl_AppInitProc Blt_ComboButtonInitProc;
+BLT_EXTERN Tcl_AppInitProc Blt_ComboEditorInitProc;
 BLT_EXTERN Tcl_AppInitProc Blt_ComboEntryInitProc;
 BLT_EXTERN Tcl_AppInitProc Blt_ComboMenuInitProc;
 BLT_EXTERN Tcl_AppInitProc Blt_ComboTreeInitProc;
