@@ -223,7 +223,7 @@ typedef struct {
     int worldX, worldY;
     CharIndex char1, char2;             /* Starting and ending character
                                          * indices. */
-    ByteOffset offset1, offset2;        /* Starting and ending byte
+    ByteOffset byte1, byte2;        /* Starting and ending byte
                                          * offsets. */
 } TextLine;
 
@@ -2778,11 +2778,11 @@ ComputeGeometry(TextEditor *editPtr)
             linePtr->char1 = lastChar;
             linePtr->char2 = linePtr->char1 + Tcl_NumUtfChars(start, count);
             linePtr->worldY = maxHeight + fm.ascent;
-            linePtr->offset1 = lastByte;
-            linePtr->offset2 = linePtr->offset1 + count;
+            linePtr->byte1 = lastByte;
+            linePtr->byte2 = linePtr->byte1 + count;
 	    maxHeight += lineHeight;
             lastChar = linePtr->char2 + 1;
-            lastByte = linePtr->offset2 + 1;
+            lastByte = linePtr->byte2 + 1;
 	    linePtr++;
 	    numLines++;
 	    start = p + 1;	/* Start the text on the next line */
@@ -2805,8 +2805,8 @@ ComputeGeometry(TextEditor *editPtr)
 	linePtr->worldY = maxHeight + fm.ascent;
         linePtr->char1 = lastChar;
         linePtr->char2 = linePtr->char1 + Tcl_NumUtfChars(start, count);
-        linePtr->offset1 = lastByte;
-        linePtr->offset2 = linePtr->offset1 + count;
+        linePtr->byte1 = lastByte;
+        linePtr->byte2 = linePtr->byte1 + count;
 	maxHeight += lineHeight;
 	numLines++;
     }
@@ -3250,11 +3250,11 @@ DrawTextLine(TextEditor *editPtr, Drawable drawable, TextLine *linePtr,
     /*
      *	Text is drawn in (up to) three segments.
      *
-     *	  1) Any text before the start the selection.  2) The selected text
-     *	  (drawn with a flat border) 3) Any text following the selection.
-     *	  This step will draw the text string if there is no selection.
+     *   1) Any text before the start the selection.  
+     *   2) The selected text (drawn with a flat border) 
+     *   3) Any text following the selection. This step will draw the 
+     *      text string if there is no selection.
      */
-
     selFirstByteOffset = CharIndexToByteOffset(editPtr->screenText,
         editPtr->selFirst);
     selLastByteOffset  = CharIndexToByteOffset(editPtr->screenText,
@@ -3262,7 +3262,7 @@ DrawTextLine(TextEditor *editPtr, Drawable drawable, TextLine *linePtr,
 
     /* Step 1. Draw any text preceding the selection that's still visible
      *         in the viewport. */
-    if ((textWidth > 0) && (textOffset < linePtr->offset2) &&
+    if ((textWidth > 0) && (textOffset < linePtr->byte2) &&
         (editPtr->selFirst >= linePtr->char1)) {
 	int numPixels, len, numBytes;
 	ByteOffset offset;
@@ -3284,7 +3284,7 @@ DrawTextLine(TextEditor *editPtr, Drawable drawable, TextLine *linePtr,
     }
     /* Step 2. Draw the selection itself, if it's visible in the
      *         viewport. Otherwise step 1 drew as much as we need. */
-    if ((textWidth > 0) && (textOffset < linePtr->offset2) &&
+    if ((textWidth > 0) && (textOffset < linePtr->byte2) &&
         (editPtr->selFirst < linePtr->char1)) {	
 	Blt_Bg bg;
 	int numBytes, numPixels;
@@ -3292,7 +3292,7 @@ DrawTextLine(TextEditor *editPtr, Drawable drawable, TextLine *linePtr,
 	/* The background of the selection rectangle is different depending
 	 * whether the widget has focus or not. */
 	bg = editPtr->selectBg;
-        numBytes = linePtr->offset2 - textOffset;
+        numBytes = linePtr->byte2 - textOffset;
 	numBytes = Blt_Font_Measure(editPtr->font, 
 		editPtr->screenText + textOffset, numBytes, textWidth, 
                 TEXT_FLAGS, &numPixels);
@@ -3308,14 +3308,8 @@ DrawTextLine(TextEditor *editPtr, Drawable drawable, TextLine *linePtr,
     /* Step 3.  Draw any text following the selection that's visible
      *		in the viewport. In the case of no selection, we draw
      *		the entire text string. */
-    if ((textWidth > 0) && (textOffset < linePtr->offset2)) {
-	ByteOffset offset;
-
-	offset = lastOffset;
-	if (offset < editPtr->firstOffset) {
-	    offset = editPtr->firstOffset;
-	}
-        numBytes = linePtr->endOffset - textOffset;
+    if ((textWidth > 0) && (textOffset < linePtr->byte2)) {
+        numBytes = linePtr->byte2 - textOffset;
 	numBytes = Blt_Font_Measure(editPtr->font, 
 		editPtr->screenText + textOffset, numBytes, textWidth, 
                 TEXT_FLAGS, &numPixels);
