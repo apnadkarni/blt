@@ -223,8 +223,9 @@ Blt_DBuffer_SetFromObj(DBuffer *srcPtr, Tcl_Obj *objPtr)
     if (!Blt_DBuffer_Resize(srcPtr, length)) {
 	return NULL;
     }
-    bp = Blt_DBuffer_String(srcPtr);
+    bp = Blt_DBuffer_Bytes(srcPtr);
     memcpy(bp, string, length);
+    srcPtr->length = length;
     return bp;
 }
 
@@ -267,8 +268,8 @@ Blt_DBuffer_InsertData(DBuffer *srcPtr, const unsigned char *data,
 		       size_t numBytes, size_t index)
 {
     unsigned char *bp;
-    size_t oldLength, newLength;
-    size_t i, j;
+    size_t oldLength, newLength, trailing;
+    size_t i, j, k;
     
     oldLength = Blt_DBuffer_Length(srcPtr);
     bp = Blt_DBuffer_Extend(srcPtr, numBytes);
@@ -276,9 +277,11 @@ Blt_DBuffer_InsertData(DBuffer *srcPtr, const unsigned char *data,
 	return FALSE;
     }
     newLength = Blt_DBuffer_Length(srcPtr);
-    /* Create a hole at the end. */
+    /* Create a hole by moving the data to the end. */
     bp = Blt_DBuffer_Bytes(srcPtr);
-    for (i = oldLength - 1, j = newLength - 1; i >= 0; i--, j--) {
+    trailing = oldLength - index;
+    for (i = oldLength - 1, j = newLength - 1, k = 0; k < trailing;
+         i--, j--, k++) {
         bp[j] = bp[i];
     }
     memcpy(bp + index, data, numBytes);
@@ -289,17 +292,18 @@ int
 Blt_DBuffer_DeleteData(DBuffer *srcPtr, size_t index, size_t numBytes)
 {
     unsigned char *bp;
-    size_t newLength;
-    size_t i, j;
+    size_t oldLength, newLength, trailing;
+    size_t i, j, k;
     
-    if ((index < 0) || (index + numBytes) > Blt_DBuffer_Length(srcPtr)) {
+    oldLength = Blt_DBuffer_Length(srcPtr);
+    if ((index < 0) || ((index + numBytes) > oldLength)) {
         return FALSE;
     }
-    /* Create a hole at the end. */
     bp = Blt_DBuffer_Bytes(srcPtr);
-    assert((index >= 0) && ((index + numBytes) <= Blt_DBuffer_Length(srcPtr)));
-    newLength = Blt_DBuffer_Length(srcPtr) - numBytes;
-    for (i = index, j = index + numBytes; i < numBytes; i++, j++) {
+    assert((index >= 0) && ((index + numBytes) <= oldLength));
+    newLength = oldLength - numBytes;
+    trailing = newLength - index;
+    for (i = index, j = index + numBytes, k = 0; k < trailing; i++, j++, k++) {
         bp[i] = bp[j];
     }
     Blt_DBuffer_SetLength(srcPtr, newLength);

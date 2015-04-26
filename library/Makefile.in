@@ -36,6 +36,7 @@ endif
 FILES = \
 		$(srcdir)/bltCanvEps.pro \
 		$(srcdir)/bltComboButton.tcl \
+		$(srcdir)/bltComboEditor.tcl \
 		$(srcdir)/bltComboEntry.tcl \
 		$(srcdir)/bltComboMenu.tcl \
 		$(srcdir)/bltComboTree.tcl \

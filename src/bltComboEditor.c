@@ -45,7 +45,6 @@
 	icon?, text, row, column position, fg, bg button?
 	based upon style.
   grab set
-  SetIcon
   SetText
   SetBg
   SetFg
@@ -79,8 +78,8 @@
 #define CHILD_EVENT_MASK (ExposureMask|StructureNotifyMask)
 
 #define IPAD		4		/* Internal pad between components. */
-#define XPAD		1
-#define YPAD		1		/* Internal pad between components. */
+#define XPAD		4
+#define YPAD		4		/* Internal pad between components. */
 #define ICWIDTH		2		/* External pad between border and
 					 * arrow. */
 #define BUTTON_WIDTH	16
@@ -96,8 +95,8 @@
 #define SCREENX(t, wx) ((wx) - (t)->xOffset + (t)->borderWidth)
 #define SCREENY(t, wy) ((wy) - (t)->yOffset + (t)->borderWidth)
 
-#define WORLDX(t, sx)  ((sx) - (t)->borderWidth + (t)->xOffset)
-#define WORLDY(t, sy)  ((sy) - (t)->borderWidth + (t)->yOffset)
+#define WORLDX(t, sx)  ((sx) - (t)->borderWidth - XPAD + (t)->xOffset)
+#define WORLDY(t, sy)  ((sy) - (t)->borderWidth - YPAD + (t)->yOffset)
 
 #define VPORTWIDTH(t)  \
     (Tk_Width((t)->tkwin) - 2 * (t)->borderWidth - (t)->yScrollbarWidth)
@@ -153,9 +152,7 @@
 					 * Depending upon the timer
 					 * interval, it may be drawn or not
 					 * drawn. */
-#define CLRBUTTON	        (1<<15)	/* Display the clear button on the
-					 * right when text has been
-					 * entered. */
+#define BUTTON                  (1<<15)	/* Display button on the right. */
 #define ICURSOR_ON              (1<<16)	/* The insertion cursor is currently
 					 * visible on screen. */
 #define FOCUS                   (1<<17)	/* The widget has focus. */
@@ -177,7 +174,7 @@
 #define DEF_BUTTON_COMMAND		(char *)NULL
 #define DEF_BUTTON_FOREGROUND		RGB_LIGHTBLUE2
 #define DEF_BUTTON_RELIEF		"flat"
-#define DEF_CLRBUTTON                   "0"
+#define DEF_BUTTON                      "0"
 #define DEF_CURSOR                      (char *)NULL
 #define DEF_EXPORT_SELECTION            "no"
 #define DEF_FONT                        STD_FONT_NORMAL
@@ -187,11 +184,11 @@
 #define DEF_HEIGHT                      "0"
 #define DEF_NORMAL_BACKGROUND           STD_NORMAL_BACKGROUND
 #define DEF_CMD                         ((char *)NULL)
-#define DEF_ICON                        ((char *)NULL)
 #define DEF_NORMAL_FG                   STD_ACTIVE_FOREGROUND
 #define DEF_NORMAL_FG_MONO              STD_ACTIVE_FG_MONO
 #define DEF_POSTCOMMAND                 ((char *)NULL)
 #define DEF_SHOW                        (char *)NULL
+#define DEF_TAKE_FOCUS                  "1"
 #define DEF_TEXT_NORMAL_BG              RGB_WHITE
 #define DEF_TEXT_NORMAL_FG              RGB_BLACK
 #define DEF_TEXT                        (char *)NULL
@@ -199,7 +196,7 @@
 #define DEF_SCROLLBAR                   ((char *)NULL)
 #define DEF_SCROLL_CMD                  ((char *)NULL)
 #define DEF_SCROLL_INCR                 "2"
-#define DEF_SELECT_BACKGROUND           RGB_LIGHTBLUE0
+#define DEF_SELECT_BACKGROUND           RGB_SKYBLUE4
 #define DEF_SELECT_BG_MONO              STD_SELECT_BG_MONO
 #define DEF_SELECT_BORDERWIDTH          "1"
 #define DEF_SELECT_FG_MONO              STD_SELECT_FG_MONO
@@ -221,15 +218,11 @@ typedef int ByteOffset;			/* Offset in bytes from the start
 typedef struct {
     const char *text;                   /* Pointer to start of line. */
     int numBytes;                       /* Number of bytes in line. */
-    int width;                          /* Width of the line in pixels. */
+    int width, height;                  /* Width of the line in pixels. */
     int worldX, worldY;
     CharIndex char1, char2;             /* Starting and ending character
                                          * indices. */
-    ByteOffset byte1, byte2;        /* Starting and ending byte
-                                         * offsets. */
 } TextLine;
-
-static char emptyString[] = "";
 
 typedef struct _EditRecord {
     struct _EditRecord *nextPtr;
@@ -241,35 +234,6 @@ typedef struct _EditRecord {
     int numChars;			/* # of characters in text string. */
     char text[1];
 } EditRecord;
-
-/*
- * Icon --
- *
- *	Since instances of the same Tk image can be displayed in different
- *	windows with possibly different color palettes, Tk internally
- *	stores each instance in a linked list.  But if the instances are
- *	used in the same widget and therefore use the same color palette,
- *	this adds a lot of overhead, especially when deleting instances
- *	from the linked list.
- *
- *	For the editor widget, we never need more than a single instance of
- *	an image, regardless of how many times it's used.  Cache the image,
- *	maintaining a reference count for each image used in the widget.
- *	It's likely that the comboview widget will use many instances of
- *	the same image.
- */
-
-typedef struct _Icon {
-    Tk_Image tkImage;			/* Tk image being cached. */
-    short int width, height;		/* Dimensions of the cached image. */
-} *Icon;
-
-#define IconHeight(i)	((i)->height)
-#define IconWidth(i)	((i)->width)
-#define IconImage(i)	((i)->tkImage)
-#define IconName(i)	(Blt_Image_Name((i)->tkImage))
-#define IconBits(i)	((i)->tkImage)
-
 
 /*
  * Button --
@@ -317,7 +281,7 @@ typedef struct {
 } PostInfo;
 
 /*
- * TextEditor --
+ * ComboEditor --
  *
  *	This structure is shared by entries when their labels are edited
  *	via the keyboard.  It maintains the location of the insertion
@@ -331,7 +295,7 @@ typedef struct {
  *	character into a multi-byte sequence.  To find the respective
  *	character position
  *
- *		n = Tcl_NumUtfChars(string, index);
+ *		n = 
  *
  *	where n is the resulting character number.
  */
@@ -360,7 +324,7 @@ typedef struct {
     Tcl_Interp *interp;                 /* Interpreter associated with
 					 * widget.  Used to delete widget
 					 * command. */
-    Tcl_Command cmdToken;              /* Token for frame's widget
+    Tcl_Command cmdToken;               /* Token for frame's widget
 					 * command. */
     char *className;                    /* Class name for widget (from
 					 * configuration option).
@@ -419,7 +383,7 @@ typedef struct {
     int flags;                          /* Various flags; see below for
 					 * definitions. */
 
-    /* TextEditor-specific fields */
+    /* ComboEditor-specific fields */
     Blt_DBuffer dbuffer;                /* Buffer used to hold the text. */
     Blt_Bg normalBg;
     Blt_Bg activeBg;
@@ -449,16 +413,15 @@ typedef struct {
     int selRelief;			/* Relief of selected
 					 * items. Currently is always
 					 * raised. */
-    int selBW;				/* Border width of a selected
+    int selBorderWidth;                 /* Border width of a selected
                                          * text.*/
-    XColor *selFgColor;			/* Text color of a selected
+    XColor *selectFg;			/* Text color of a selected
                                          * text. */
     GC selectGC;
-    Tcl_Obj *selCmdObjPtr;
-
     Blt_Bg selectBg;
+    Tcl_Obj *selectCmdObjPtr;
 
-    Button clearButton;
+    Button button;
 
     /*
      * Scanning Information:
@@ -480,35 +443,6 @@ typedef struct {
 					 * text in the viewport. */
     int viewWidth;			/* Width of the viewport. */
     
-    /* 
-     * Entry entry:
-     *
-     * The entry contains optionally an icon and a text string. The
-     * rectangle surrounding an entry may have a 3D border.
-     */
-    Icon icon;				/* If non-NULL, image to be
-					 * displayed in entry. Its value
-					 * may be overridden by the
-					 * -iconvariable option. */
-    Tcl_Obj *iconVarObjPtr;		/* Name of TCL variable.  If
-					 * non-NULL, this variable contains
-					 * the name of an image
-					 * representing the icon.  This
-					 * overrides the value of the above
-					 * field. */
-    Icon image;				/* If non-NULL, image to be
-					 * displayed instead of text in the
-					 * entry. */
-    char *text;				/* Text string to be displayed in
-					 * the entry if an image has no
-					 * been designated. Its value is
-					 * overridden by the -textvariable
-					 * option. */
-    char *screenText;			/* Text string to be displayed on
-					 * the screen.  If the -show option
-					 * is used this string may consist
-					 * of different characters from the
-					 * above string.*/
     Tcl_Obj *textVarObjPtr;		/* Name of TCL variable.  If
 					 * non-NULL, this variable contains
 					 * the text string to * be
@@ -540,26 +474,24 @@ typedef struct {
     int insertWidth;			/* Total width of insert cursor. */
     CharIndex insertIndex;		/* Character index of the insertion
 					 * cursor.  */
+
+
+    int insertLine;                     /* Line with insertion cursor. */
     int prefTextWidth;			/* Desired width of text, measured
 					 * in average characters. */
-    int prefIconWidth;			/* Desired width of icon, measured
-					 * in pixels. */
 
-    short int iconWidth, iconHeight;    /* Size of the icon. */
     int worldWidth, worldHeight;        /* Size of the world. */
-    int textWidth, textHeight;
+    short int textWidth, textHeight;
+    short int cursorHeight, cursorWidth;
+    int normalWidth, normalHeight;
+    int xOffset, yOffset;               /* Scroll offsets. */
 
-    ByteOffset firstOffset, lastOffset;	/* Byte offset of first and last
-					 * characters visible in
-					 * viewport. */
-    int firstX, lastX;			/* x-coordinates of first and last
-					 * characters visible in
-					 * viewport. */ 
     Tcl_Obj *cmdObjPtr;			/* If non-NULL, command to be
 					 * executed when this menu is
 					 * posted. */
     Tcl_Obj *menuObjPtr;	
     Tk_Window menuWin;
+
     Tcl_Obj *postCmdObjPtr;		/* If non-NULL, command to be
 					 * executed when this menu is
 					 * posted. */
@@ -589,30 +521,19 @@ typedef struct {
     short int yScrollbarWidth, xScrollbarHeight;
     Blt_Limits reqWidth, reqHeight;     /* Requested width and height of
                                          * the widget. */
-    int gap;
     TextLine *lines;
+    int gap;
     int numLines;
-    int xOffset, yOffset;               /* Scroll offsets. */
+    int firstLine, lastLine;
     int cursorX, cursorY;               /* Location of cursor. */
-    int cursorHeight, cursorWidth;
-    int normalWidth, normalHeight;
-    int leader;
-    int justify;
+    int leader, justify;
     int x, y;
-} TextEditor;
+} ComboEditor;
 
-static Blt_OptionFreeProc FreeIconProc;
-static Blt_OptionParseProc ObjToIconProc;
-static Blt_OptionPrintProc IconToObjProc;
-static Blt_CustomOption iconOption = {
-    ObjToIconProc, IconToObjProc, FreeIconProc, (ClientData)0
-};
-
-static Blt_OptionFreeProc FreeTextProc;
 static Blt_OptionParseProc ObjToTextProc;
 static Blt_OptionPrintProc TextToObjProc;
 static Blt_CustomOption textOption = {
-    ObjToTextProc, TextToObjProc, FreeTextProc, (ClientData)0
+    ObjToTextProc, TextToObjProc, NULL, (ClientData)0
 };
 
 static Blt_OptionFreeProc FreeTextVarProc;
@@ -652,119 +573,112 @@ static Blt_ConfigSpec configSpecs[] =
 {
     {BLT_CONFIG_BACKGROUND, "-activebackground", "activeBackground", 
 	"ActiveBackground", DEF_ACTIVE_BG, 
-	Blt_Offset(TextEditor, activeBg), 0},
+	Blt_Offset(ComboEditor, activeBg), 0},
     {BLT_CONFIG_COLOR, "-activeforeground", "activeForeground", 
 	"ActiveForeground", DEF_ACTIVE_FG, 
-	Blt_Offset(TextEditor, activeColor), 0},
+	Blt_Offset(ComboEditor, activeColor), 0},
     {BLT_CONFIG_BACKGROUND, "-background", "background", "Background", 
-	DEF_NORMAL_BACKGROUND, Blt_Offset(TextEditor, normalBg), 0 },
+	DEF_NORMAL_BACKGROUND, Blt_Offset(ComboEditor, normalBg), 0 },
     {BLT_CONFIG_SYNONYM, "-bd", "borderWidth", (char *)NULL, (char *)NULL, 0,0},
     {BLT_CONFIG_SYNONYM, "-bg", "background", (char *)NULL, (char *)NULL, 0,0},
     {BLT_CONFIG_ACTIVE_CURSOR, "-cursor", "cursor", "Cursor",
-	DEF_CURSOR, Blt_Offset(TextEditor, cursor), 
+	DEF_CURSOR, Blt_Offset(ComboEditor, cursor), 
 	BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_PIXELS_NNEG, "-borderwidth", "borderWidth", "BorderWidth",
-	DEF_BORDERWIDTH, Blt_Offset(TextEditor, borderWidth),
+	DEF_BORDERWIDTH, Blt_Offset(ComboEditor, borderWidth),
 	BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_BITMASK, "-clearbutton", "clearButton", "ClearButton", 
-	DEF_CLRBUTTON, Blt_Offset(TextEditor, flags), 
-	BLT_CONFIG_DONT_SET_DEFAULT , 
-	(Blt_CustomOption *)CLRBUTTON},
+    {BLT_CONFIG_BITMASK, "-button", "button", "Button", DEF_BUTTON,
+        Blt_Offset(ComboEditor, flags), BLT_CONFIG_DONT_SET_DEFAULT ,
+        (Blt_CustomOption *)BUTTON},
     {BLT_CONFIG_OBJ, "-clearcommand", "clearCommand", "ClearCommand", 
-	DEF_BUTTON_COMMAND, Blt_Offset(TextEditor, clearButton.cmdObjPtr), 
+	DEF_BUTTON_COMMAND, Blt_Offset(ComboEditor, button.cmdObjPtr), 
 	BLT_CONFIG_NULL_OK  },
     {BLT_CONFIG_OBJ, "-command", "command", "Command", 
-	DEF_CMD, Blt_Offset(TextEditor, cmdObjPtr), 
+	DEF_CMD, Blt_Offset(ComboEditor, cmdObjPtr), 
 	BLT_CONFIG_NULL_OK , },
     {BLT_CONFIG_ACTIVE_CURSOR, "-cursor", "cursor", "Cursor",
-	DEF_CURSOR, Blt_Offset(TextEditor, cursor), 
+	DEF_CURSOR, Blt_Offset(ComboEditor, cursor), 
 	BLT_CONFIG_NULL_OK , },
     {BLT_CONFIG_BITMASK, "-exportselection", "exportSelection", 
-	"ExportSelection", DEF_EXPORT_SELECTION, Blt_Offset(TextEditor, flags),
+	"ExportSelection", DEF_EXPORT_SELECTION, Blt_Offset(ComboEditor, flags),
 	BLT_CONFIG_DONT_SET_DEFAULT , 
 	(Blt_CustomOption *)EXPORT_SELECTION},
     {BLT_CONFIG_SYNONYM, "-fg", "foreground", (char *)NULL, (char *)NULL, 0, 
 	0},
     {BLT_CONFIG_FONT, "-font", "font", "Font", DEF_FONT, 
-	Blt_Offset(TextEditor, font), 0, },
+	Blt_Offset(ComboEditor, font), 0, },
     {BLT_CONFIG_COLOR, "-foreground", "foreground", "Foreground", 
-	DEF_NORMAL_FG, Blt_Offset(TextEditor, normalColor), 0, },
+	DEF_NORMAL_FG, Blt_Offset(ComboEditor, normalColor), 0, },
     {BLT_CONFIG_PIXELS_NNEG, "-height", "height", "Height", DEF_HEIGHT, 
-	Blt_Offset(TextEditor, reqHeight), 
+	Blt_Offset(ComboEditor, reqHeight), 
 	BLT_CONFIG_DONT_SET_DEFAULT , },
-    {BLT_CONFIG_CUSTOM, "-icon", "icon", "Icon", DEF_ICON, 
-	Blt_Offset(TextEditor, icon), BLT_CONFIG_NULL_OK , 
-	&iconOption},
     {BLT_CONFIG_COLOR, "-insertbackground", "insertBackground", 
 	"InsertBackground", DEF_INSERT_COLOR, 
-	Blt_Offset(TextEditor, insertColor), 0},
+	Blt_Offset(ComboEditor, insertColor), 0},
     {BLT_CONFIG_INT, "-insertofftime", "insertOffTime", "OffTime",
-	DEF_INSERT_OFFTIME, Blt_Offset(TextEditor, insertOffTime), 
+	DEF_INSERT_OFFTIME, Blt_Offset(ComboEditor, insertOffTime), 
 	BLT_CONFIG_DONT_SET_DEFAULT },
     {BLT_CONFIG_INT, "-insertontime", "insertOnTime", "OnTime",
-	DEF_INSERT_ONTIME, Blt_Offset(TextEditor, insertOnTime), 
+	DEF_INSERT_ONTIME, Blt_Offset(ComboEditor, insertOnTime), 
 	BLT_CONFIG_DONT_SET_DEFAULT },
     {BLT_CONFIG_OBJ, "-postcommand", "postCommand", "PostCommand", 
-	DEF_CMD, Blt_Offset(TextEditor, postCmdObjPtr), 
+	DEF_CMD, Blt_Offset(ComboEditor, postCmdObjPtr), 
 	BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_RELIEF, "-relief", "relief", "Relief", DEF_RELIEF, 
-	Blt_Offset(TextEditor, relief), BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_BORDER, "-selectbackground", "selectBackground", "Background",
-	DEF_SELECT_BG_MONO, Blt_Offset(TextEditor, selectBg),
-	BLT_CONFIG_MONO_ONLY},
-    {BLT_CONFIG_BORDER, "-selectbackground", "selectBackground", "Background",
-	DEF_SELECT_BACKGROUND, Blt_Offset(TextEditor, selectBg),
-	BLT_CONFIG_COLOR_ONLY},
+	Blt_Offset(ComboEditor, relief), BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_BACKGROUND, "-selectbackground", "selectBackground", "Background",
+	DEF_SELECT_BACKGROUND, Blt_Offset(ComboEditor, selectBg), 0},
     {BLT_CONFIG_PIXELS_NNEG, "-selectborderwidth", "selectBorderWidth", 
 	"BorderWidth", DEF_SELECT_BORDERWIDTH, 
-	Blt_Offset(TextEditor, selBW), BLT_CONFIG_DONT_SET_DEFAULT},
+	Blt_Offset(ComboEditor, selBorderWidth), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_COLOR, "-selectforeground", "selectForeground", "Foreground",
-	DEF_SELECT_FG_MONO, Blt_Offset(TextEditor, selFgColor),
+	DEF_SELECT_FG_MONO, Blt_Offset(ComboEditor, selectFg),
 	BLT_CONFIG_MONO_ONLY},
     {BLT_CONFIG_COLOR, "-selectforeground", "selectForeground", "Foreground",
-	DEF_SELECT_FOREGROUND, Blt_Offset(TextEditor, selFgColor),
+	DEF_SELECT_FOREGROUND, Blt_Offset(ComboEditor, selectFg),
 	BLT_CONFIG_COLOR_ONLY},
     {BLT_CONFIG_RELIEF, "-selectrelief", "selectRelief", "Relief",
-	DEF_SELECT_RELIEF, Blt_Offset(TextEditor, selRelief),
+	DEF_SELECT_RELIEF, Blt_Offset(ComboEditor, selRelief),
 	BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_STRING, "-show", "show", "Show", DEF_SHOW, 
-	Blt_Offset(TextEditor, cipher), 
+	Blt_Offset(ComboEditor, cipher), 
 	BLT_CONFIG_NULL_OK | BLT_CONFIG_DONT_SET_DEFAULT },
-    {BLT_CONFIG_CUSTOM, "-text", "text", "Text", DEF_TEXT, 
-	Blt_Offset(TextEditor, text), 0, &textOption},
+    {BLT_CONFIG_STRING, "-takefocus", "takeFocus", "TakeFocus", DEF_TAKE_FOCUS, 
+	Blt_Offset(ComboEditor, takeFocus), BLT_CONFIG_NULL_OK},
+    {BLT_CONFIG_CUSTOM, "-text", "text", "Text", DEF_TEXT, 0, 0, &textOption},
     {BLT_CONFIG_BACKGROUND, "-textbackground", "textBackground", "Background", 
-	DEF_TEXT_NORMAL_BG, Blt_Offset(TextEditor, textBg), 0},
+	DEF_TEXT_NORMAL_BG, Blt_Offset(ComboEditor, textBg), 0},
     {BLT_CONFIG_COLOR, "-textforeground", "textForeground", "TextForeground",
-	DEF_TEXT_NORMAL_FG, Blt_Offset(TextEditor, textFg), 0},
+	DEF_TEXT_NORMAL_FG, Blt_Offset(ComboEditor, textFg), 0},
     {BLT_CONFIG_CUSTOM, "-textvariable", "textVariable", "TextVariable", 
-	DEF_TEXT_VARIABLE, Blt_Offset(TextEditor, textVarObjPtr), 
+	DEF_TEXT_VARIABLE, Blt_Offset(ComboEditor, textVarObjPtr), 
 	BLT_CONFIG_NULL_OK , &textVarOption},
     {BLT_CONFIG_PIXELS_NNEG, "-textwidth", "textWidth", "TextWidth",
-	DEF_WIDTH, Blt_Offset(TextEditor, prefTextWidth), 
+	DEF_WIDTH, Blt_Offset(ComboEditor, prefTextWidth), 
 	BLT_CONFIG_DONT_SET_DEFAULT },
     {BLT_CONFIG_PIXELS_NNEG, "-width", "width", "Width",
-	DEF_WIDTH, Blt_Offset(TextEditor, reqWidth), 
+	DEF_WIDTH, Blt_Offset(ComboEditor, reqWidth), 
 	BLT_CONFIG_DONT_SET_DEFAULT },
     {BLT_CONFIG_OBJ, "-xscrollbar", "xScrollbar", "Scrollbar", 
-	DEF_SCROLLBAR, Blt_Offset(TextEditor, xScrollbarObjPtr), 
+	DEF_SCROLLBAR, Blt_Offset(ComboEditor, xScrollbarObjPtr), 
 	BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_OBJ, "-xscrollcommand", "xScrollCommand", "ScrollCommand",
-	DEF_SCROLL_CMD, Blt_Offset(TextEditor, xScrollCmdObjPtr), 
+	DEF_SCROLL_CMD, Blt_Offset(ComboEditor, xScrollCmdObjPtr), 
 	BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_PIXELS_POS, "-xscrollincrement", "xScrollIncrement",
 	"ScrollIncrement", DEF_SCROLL_INCR, 
-	 Blt_Offset(TextEditor, xScrollUnits), BLT_CONFIG_DONT_SET_DEFAULT},
+	 Blt_Offset(ComboEditor, xScrollUnits), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_OBJ, "-yscrollbar", "yScrollbar", "Scrollbar", 
-	DEF_SCROLLBAR, Blt_Offset(TextEditor, yScrollbarObjPtr), 
+	DEF_SCROLLBAR, Blt_Offset(ComboEditor, yScrollbarObjPtr), 
 	BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_OBJ, "-yscrollcommand", "yScrollCommand", "ScrollCommand",
-	DEF_SCROLL_CMD, Blt_Offset(TextEditor, yScrollCmdObjPtr), 
+	DEF_SCROLL_CMD, Blt_Offset(ComboEditor, yScrollCmdObjPtr), 
 	BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_PIXELS_POS, "-yscrollincrement", "yScrollIncrement",
 	"ScrollIncrement", DEF_SCROLL_INCR, 
-	 Blt_Offset(TextEditor, yScrollUnits),BLT_CONFIG_DONT_SET_DEFAULT},
+	 Blt_Offset(ComboEditor, yScrollUnits),BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_OBJ, "-unpostcommand", "unpostCommand", "UnpostCommand", 
-	DEF_UNPOSTCOMMAND, Blt_Offset(TextEditor, unpostCmdObjPtr), 
+	DEF_UNPOSTCOMMAND, Blt_Offset(ComboEditor, unpostCmdObjPtr), 
 	BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_END, (char *)NULL, (char *)NULL, (char *)NULL, (char *)NULL, 
 	0, 0}
@@ -822,22 +736,24 @@ typedef struct {
 static Blt_SwitchSpec postSwitches[] = 
 {
     {BLT_SWITCH_CUSTOM, "-align", "left|right|center", (char *)NULL,
-	Blt_Offset(TextEditor, post.align), 0, 0, &postAlignSwitch},
+	Blt_Offset(ComboEditor, post.align), 0, 0, &postAlignSwitch},
     {BLT_SWITCH_CUSTOM, "-box", "x1 y1 x2 y2", (char *)NULL,
 	0, 0, 0, &postBoxSwitch},
     {BLT_SWITCH_OBJ, "-text", "string", (char *)NULL,
-	Blt_Offset(TextEditor, post.textObjPtr), 0},
+	Blt_Offset(ComboEditor, post.textObjPtr), 0},
     {BLT_SWITCH_OBJ, "-command", "cmdPrefix", (char *)NULL,
-	Blt_Offset(TextEditor, post.cmdObjPtr), 0},
+	Blt_Offset(ComboEditor, post.cmdObjPtr), 0},
+    {BLT_SWITCH_CUSTOM, "-popup", "x y", (char *)NULL,
+	0, 0, 0, &postPopupSwitch},
     {BLT_SWITCH_CUSTOM, "-window", "path", (char *)NULL,
-	Blt_Offset(TextEditor, post.tkwin), 0, 0, &postWindowSwitch},
+	Blt_Offset(ComboEditor, post.tkwin), 0, 0, &postWindowSwitch},
     {BLT_SWITCH_END}
 };
 
 static Tcl_IdleProc DisplayProc;
 static Tcl_IdleProc SelectCmdProc;
 static Tcl_TimerProc BlinkCursorTimerProc;
-static Tcl_ObjCmdProc ComboEditorCmd;
+static Tcl_ObjCmdProc ComboEditorCmdProc;
 static Tcl_ObjCmdProc EditorInstCmdProc;
 
 static Tk_LostSelProc LostSelectionProc;
@@ -845,18 +761,19 @@ static Tk_SelectionProc SelectionProc;
 static Tk_EventProc EditorEventProc;
 static Tk_EventProc ScrollbarEventProc;
 static Tcl_FreeProc FreeEditorProc;
-static Tk_ImageChangedProc IconChangedProc;
 
 static Tk_GeomRequestProc ScrollbarGeometryProc;
 static Tk_GeomLostSlaveProc ScrollbarCustodyProc;
 static Tk_GeomMgr editorMgrInfo = {
-    (char *)"comboeditor",                /* Name of geometry manager used by
+    (char *)"comboeditor",              /* Name of geometry manager used by
 					 * winfo. */
     ScrollbarGeometryProc,              /* Procedure to for new geometry
 					 * requests. */
     ScrollbarCustodyProc,               /* Procedure when scrollbar is taken
 					 * away. */
 };
+
+static void ComputeGeometry(ComboEditor *editPtr);
 
 /*
  *---------------------------------------------------------------------------
@@ -875,7 +792,7 @@ static Tk_GeomMgr editorMgrInfo = {
  *---------------------------------------------------------------------------
  */
 static void
-EventuallyRedraw(TextEditor *editPtr)
+EventuallyRedraw(ComboEditor *editPtr)
 {
     if ((editPtr->tkwin != NULL) && 
 	((editPtr->flags & REDRAW_PENDING) == 0)) {
@@ -885,7 +802,7 @@ EventuallyRedraw(TextEditor *editPtr)
 }
 
 static int
-InvokeCommand(Tcl_Interp *interp, TextEditor *editPtr) 
+InvokeCommand(Tcl_Interp *interp, ComboEditor *editPtr) 
 {
     int result;
 
@@ -918,7 +835,7 @@ InvokeCommand(Tcl_Interp *interp, TextEditor *editPtr)
 static void
 InvokeCmdProc(ClientData clientData) 
 {
-    TextEditor *editPtr = clientData;
+    ComboEditor *editPtr = clientData;
 
     editPtr->flags &= ~INVOKE_PENDING;
     if (editPtr->cmdObjPtr != NULL) {
@@ -946,7 +863,7 @@ InvokeCmdProc(ClientData clientData)
  *---------------------------------------------------------------------------
  */
 static void
-EventuallyInvokeCmd(TextEditor *editPtr) 
+EventuallyInvokeCmd(ComboEditor *editPtr) 
 {
     if ((editPtr->flags & INVOKE_PENDING) == 0) {
 	editPtr->flags |= INVOKE_PENDING;
@@ -972,7 +889,7 @@ EventuallyInvokeCmd(TextEditor *editPtr)
  *---------------------------------------------------------------------------
  */
 static void
-EventuallyInvokeSelectCmd(TextEditor *editPtr) 
+EventuallyInvokeSelectCmd(ComboEditor *editPtr) 
 {
     if ((editPtr->flags & SELECT_PENDING) == 0) {
 	editPtr->flags |= SELECT_PENDING;
@@ -982,7 +899,7 @@ EventuallyInvokeSelectCmd(TextEditor *editPtr)
 
 
 static void
-SetTextFromObj(TextEditor *editPtr, Tcl_Obj *objPtr) 
+SetTextFromObj(ComboEditor *editPtr, Tcl_Obj *objPtr) 
 {
     const char *string;
 
@@ -1022,7 +939,7 @@ GetInterpResult(Tcl_Interp *interp)
  *---------------------------------------------------------------------------
  */
 static int
-GetBoundedWidth(TextEditor *editPtr, int w)     
+GetBoundedWidth(ComboEditor *editPtr, int w)     
 {
     /* Check widgets for requested width values. */
     if (editPtr->reqWidth.flags & LIMITS_NOM_SET) {
@@ -1065,7 +982,7 @@ GetBoundedWidth(TextEditor *editPtr, int w)
  *---------------------------------------------------------------------------
  */
 static int
-GetBoundedHeight(TextEditor *editPtr, int h)    
+GetBoundedHeight(ComboEditor *editPtr, int h)    
 {
     /* Check widgets for requested height values. */
     if (editPtr->reqHeight.flags & LIMITS_NOM_SET) {
@@ -1086,10 +1003,9 @@ GetBoundedHeight(TextEditor *editPtr, int h)
 /*
  *---------------------------------------------------------------------------
  *
- * GetBoxFromObj --
+ * GetAlignFromObj --
  *
- *      Converts string into x and y coordinates.  Indicates that the
- *      menu is a popup and will be popped at the given x, y coordinate.
+ *      Converts string into alignment value.  
  *
  * Results:
  *      If the string is successfully converted, TCL_OK is returned.
@@ -1127,8 +1043,7 @@ GetAlignFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, int *alignPtr)
  *
  * GetBoxFromObj --
  *
- *      Converts string into x and y coordinates.  Indicates that the
- *      menu is a popup and will be popped at the given x, y coordinate.
+ *      Converts string into bounding box coordinates.  
  *
  * Results:
  *      If the string is successfully converted, TCL_OK is returned.
@@ -1207,35 +1122,6 @@ GetCoordsFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, int *xPtr, int *yPtr)
     return TCL_OK;
 }
 
-static int
-GetIconFromObj(Tcl_Interp *interp, TextEditor *editPtr, Tcl_Obj *objPtr, 
-	       Icon *iconPtr)
-{
-    Tk_Image tkImage;
-    const char *iconName;
-
-    iconName = Tcl_GetString(objPtr);
-    if (iconName[0] == '\0') {
-	*iconPtr = NULL;
-	return TCL_OK;
-    }
-    tkImage = Tk_GetImage(interp, editPtr->tkwin, iconName, IconChangedProc, 
-	editPtr);
-    if (tkImage != NULL) {
-	struct _Icon *ip;
-	int width, height;
-
-	ip = Blt_AssertMalloc(sizeof(struct _Icon));
-	Tk_SizeOfImage(tkImage, &width, &height);
-	ip->tkImage = tkImage;
-	ip->width = width;
-	ip->height = height;
-	*iconPtr = ip;
-	return TCL_OK;
-    }
-    return TCL_ERROR;
-}
-
 /*
  *---------------------------------------------------------------------------
  * 
@@ -1261,8 +1147,8 @@ TextVarTraceProc(
     const char *name2,			/* Second part of variable's name. */
     int flags)				/* Describes what just happened. */
 {
-    TextEditor *editPtr = clientData;
-
+    ComboEditor *editPtr = clientData;
+    
     assert(editPtr->textVarObjPtr != NULL);
     if (flags & TCL_INTERP_DESTROYED) {
 	return NULL;			/* Interpreter is going away. */
@@ -1272,7 +1158,10 @@ TextVarTraceProc(
      */
     if (flags & TCL_TRACE_UNSETS) {
 	if (flags & TCL_TRACE_DESTROYED) {
-	    Tcl_SetVar(interp, name1, editPtr->text, TCL_GLOBAL_ONLY);
+            const char *string;
+
+            string = Blt_DBuffer_String(editPtr->dbuffer);
+	    Tcl_SetVar(interp, name1, string, TCL_GLOBAL_ONLY);
 	    Tcl_TraceVar(interp, name1, TRACE_VAR_FLAGS, TextVarTraceProc, 
 		clientData);
 	}
@@ -1303,14 +1192,14 @@ TextVarTraceProc(
 }
 
 static int
-UpdateTextVariable(Tcl_Interp *interp, TextEditor *editPtr) 
+UpdateTextVariable(Tcl_Interp *interp, ComboEditor *editPtr) 
 {
     Tcl_Obj *resultObjPtr, *objPtr;
     const char *varName;
 
-    objPtr = Tcl_NewStringObj(editPtr->text, editPtr->numBytes);
     varName = Tcl_GetString(editPtr->textVarObjPtr); 
     Tcl_UntraceVar(interp, varName, TRACE_VAR_FLAGS, TextVarTraceProc,editPtr);
+    objPtr = Blt_DBuffer_StringObj(editPtr->dbuffer);
     Tcl_IncrRefCount(objPtr);
     resultObjPtr = Tcl_ObjSetVar2(interp, editPtr->textVarObjPtr, NULL, 
 	objPtr, TCL_GLOBAL_ONLY | TCL_LEAVE_ERR_MSG);
@@ -1323,7 +1212,7 @@ UpdateTextVariable(Tcl_Interp *interp, TextEditor *editPtr)
 }
 
 static void
-FreeUndoRecords(TextEditor *editPtr)
+FreeUndoRecords(ComboEditor *editPtr)
 {
     EditRecord *recPtr, *nextPtr;
 
@@ -1335,7 +1224,7 @@ FreeUndoRecords(TextEditor *editPtr)
 }
 
 static void
-FreeRedoRecords(TextEditor *editPtr)
+FreeRedoRecords(ComboEditor *editPtr)
 {
     EditRecord *recPtr, *nextPtr;
 
@@ -1347,7 +1236,7 @@ FreeRedoRecords(TextEditor *editPtr)
 }
 
 static void
-RecordEdit(TextEditor *editPtr, int type, CharIndex index, const char *text, 
+RecordEdit(ComboEditor *editPtr, int type, CharIndex index, const char *text, 
 	   int numBytes)
 {
     EditRecord *recPtr;
@@ -1364,67 +1253,35 @@ RecordEdit(TextEditor *editPtr, int type, CharIndex index, const char *text,
 }
 
 static void
-CleanText(TextEditor *editPtr)
+CleanText(ComboEditor *editPtr)
 {
-    char *p, *q, *pend;
-
-    if (editPtr->screenText != NULL) {
-	Blt_Free(editPtr->screenText);
+    char *p, *q, *pend, *start;
+    int length;
+    Tcl_Obj *objPtr;
+    
+    /* Convert tabs and newlines to spaces, just to maintain the same
+     * character index and byte offsets between the screen text and actual
+     * text. */
+    objPtr = Blt_DBuffer_StringObj(editPtr->dbuffer);
+    p = Tcl_GetStringFromObj(objPtr, &length);
+    q = start = (char *)Blt_DBuffer_Bytes(editPtr->dbuffer);
+    for (pend = p + length; p < pend; p++, q++) {
+        if ((*p == '\t') || (*p == ' ')) {
+            while (((*p == ' ') || (*p == '\t')) && (p < pend)) {
+                p++;                    /* Skip whitesapce. */
+            }
+            *q = ' ';
+        } else {
+            *q = *p;
+        }
     }
-    if (editPtr->cipher != NULL) {
-	int i, charSize;
-	Tcl_UniChar dummy;
-
-	charSize = Tcl_UtfToUniChar(editPtr->cipher, &dummy);
-	editPtr->numScreenBytes = editPtr->numChars * charSize;
-	editPtr->screenText = Blt_AssertMalloc(editPtr->numScreenBytes + 1);
-	for (p = editPtr->screenText, i = 0; i < editPtr->numChars; 
-	     i++, p += charSize) {
-	    strncpy(p, editPtr->cipher, charSize);
-	}
-	editPtr->screenText[editPtr->numScreenBytes] = '\0';
-    } else {
-        /* Convert tabs and newlines to spaces, just to maintain the same
-         * character index and byte offsets between the screen text and
-         * actual text. */
-	editPtr->numScreenBytes = editPtr->numBytes;
-	editPtr->screenText = Blt_AssertMalloc(editPtr->numScreenBytes + 1);
-	for (p = editPtr->text, q = editPtr->screenText, 
-		 pend = p + editPtr->numBytes; p < pend; p++, q++) {
-	    if ((*p == '\n') || (*p == '\t')) {
-		*q = ' ';
-	    } else {
-		*q = *p;
-	    }
-	}
-    }
+    editPtr->numBytes = q - start;
+    Blt_DBuffer_SetLength(editPtr->dbuffer, editPtr->numBytes);
+    Tcl_DecrRefCount(objPtr);
 } 
 
-/*
- *---------------------------------------------------------------------------
- *
- * IconChangedProc
- *
- * Results:
- *	None.
- *
- *---------------------------------------------------------------------------
- */
-/* ARGSUSED */
 static void
-IconChangedProc(
-    ClientData clientData,
-    int x, int y, int w, int h,		/* Not used. */
-    int imageWidth, int imageHeight)	/* Not used. */
-{
-    TextEditor *editPtr = clientData;
-
-    editPtr->flags |= (LAYOUT_PENDING | SCROLL_PENDING);
-    EventuallyRedraw(editPtr);
-}
-
-static void
-BlinkCursor(TextEditor *editPtr)
+BlinkCursor(ComboEditor *editPtr)
 {
     int time;
 
@@ -1459,15 +1316,13 @@ BlinkCursor(TextEditor *editPtr)
 static void
 BlinkCursorTimerProc(ClientData clientData)
 {
-    TextEditor *editPtr = clientData;
+    ComboEditor *editPtr = clientData;
 
     if (editPtr->insertOffTime == 0) {
 	return;
     }
-    if (editPtr->flags & ICURSOR) {
-	BlinkCursor(editPtr);
-	EventuallyRedraw(editPtr);
-    }
+    BlinkCursor(editPtr);
+    EventuallyRedraw(editPtr);
 }
 
 /*
@@ -1475,8 +1330,8 @@ BlinkCursorTimerProc(ClientData clientData)
  *
  * EditorEventProc --
  *
- * 	This procedure is invoked by the Tk dispatcher for various events on
- * 	comboentry widgets.
+ * 	This procedure is invoked by the Tk dispatcher for various events
+ * 	on comboeditor widgets.
  *
  * Results:
  *	None.
@@ -1490,7 +1345,7 @@ BlinkCursorTimerProc(ClientData clientData)
 static void
 EditorEventProc(ClientData clientData, XEvent *eventPtr)
 {
-    TextEditor *editPtr = clientData;
+    ComboEditor *editPtr = clientData;
 
     if (eventPtr->type == Expose) {
 	if (eventPtr->xexpose.count == 0) {
@@ -1548,8 +1403,8 @@ EditorEventProc(ClientData clientData, XEvent *eventPtr)
  *
  * ScrollbarEventProc --
  *
- *      This procedure is invoked by the Tk event handler when StructureNotify
- *      events occur in a scrollbar managed by the widget.
+ *      This procedure is invoked by the Tk event handler when
+ *      StructureNotify events occur in a scrollbar managed by the widget.
  *
  * Results:
  *      None.
@@ -1558,16 +1413,13 @@ EditorEventProc(ClientData clientData, XEvent *eventPtr)
  */
 static void
 ScrollbarEventProc(
-    ClientData clientData,              /* Pointer to Entry structure for
-					 * widget referred to by eventPtr. */
+    ClientData clientData,              /* Pointer to structure for widget
+					 * referred to by eventPtr. */
     XEvent *eventPtr)                   /* Describes what just happened. */
 {
-    TextEditor *editPtr = clientData;
+    ComboEditor *editPtr = clientData;
 
-    if (eventPtr->type == ConfigureNotify) {
-	editPtr->flags |= LAYOUT_PENDING;
-	EventuallyRedraw(editPtr);
-    } else if (eventPtr->type == DestroyNotify) {
+    if (eventPtr->type == DestroyNotify) {
 	if ((editPtr->yScrollbar != NULL) &&
 	    (eventPtr->xany.window == Tk_WindowId(editPtr->yScrollbar))) {
 	    editPtr->yScrollbar = NULL;
@@ -1575,9 +1427,9 @@ ScrollbarEventProc(
 		(eventPtr->xany.window == Tk_WindowId(editPtr->xScrollbar))) {
 	    editPtr->xScrollbar = NULL;
 	} 
-	editPtr->flags |= LAYOUT_PENDING;
-	EventuallyRedraw(editPtr);
     }
+    editPtr->flags |= LAYOUT_PENDING;
+    EventuallyRedraw(editPtr);
 }
 
 /*
@@ -1585,26 +1437,26 @@ ScrollbarEventProc(
  *
  * ScrollbarCustodyProc --
  *
- *      This procedure is invoked when a scrollbar has been stolen by another
- *      geometry manager.
+ *      This procedure is invoked when a scrollbar has been stolen by
+ *      another geometry manager.
  *
  * Results:
  *      None.
  *
  * Side effects:
-  *     Arranges for the combomenu to have its layout re-arranged at the next
- *      idle point.
+ *     Arranges for the combomenu to have its layout re-arranged at the
+ *      next idle point.
  *
  *---------------------------------------------------------------------------
  */
 /* ARGSUSED */
 static void
 ScrollbarCustodyProc(
-    ClientData clientData,              /* Information about the combomenu. */
-    Tk_Window tkwin)                    /* Scrollbar stolen by another geometry
-					 * manager. */
+    ClientData clientData,              /* Information about the editor. */
+    Tk_Window tkwin)                    /* Scrollbar stolen by another
+					 * geometry manager. */
 {
-    TextEditor *editPtr = (TextEditor *)clientData;
+    ComboEditor *editPtr = (ComboEditor *)clientData;
 
     if (tkwin == editPtr->yScrollbar) {
 	editPtr->yScrollbar = NULL;
@@ -1625,8 +1477,8 @@ ScrollbarCustodyProc(
  *
  * ScrollbarGeometryProc --
  *
- *      This procedure is invoked by Tk_GeometryRequest for scrollbars managed
- *      by the combomenu.
+ *      This procedure is invoked by Tk_GeometryRequest for scrollbars
+ *      managed by the combomenu.
  *
  * Results:
  *      None.
@@ -1635,15 +1487,16 @@ ScrollbarCustodyProc(
  *      Arranges for the combomenu to have its layout re-computed and
  *      re-arranged at the next idle point.
  *
- * -------------------------------------------------------------------------- */
+ *-------------------------------------------------------------------------- 
+ */
 /* ARGSUSED */
 static void
 ScrollbarGeometryProc(
-    ClientData clientData,              /* TextEditor widget record.  */
+    ClientData clientData,              /* ComboEditor widget record.  */
     Tk_Window tkwin)                    /* Scrollbar whose geometry has
 					 * changed. */
 {
-    TextEditor *editPtr = (TextEditor *)clientData;
+    ComboEditor *editPtr = (ComboEditor *)clientData;
 
     editPtr->flags |= LAYOUT_PENDING;
     EventuallyRedraw(editPtr);
@@ -1651,10 +1504,10 @@ ScrollbarGeometryProc(
 
 
 static void
-UnmanageScrollbar(TextEditor *editPtr, Tk_Window scrollbar)
+UnmanageScrollbar(ComboEditor *editPtr, Tk_Window scrollbar)
 {
     Tk_DeleteEventHandler(scrollbar, StructureNotifyMask,
-                ScrollbarEventProc, editPtr);
+        ScrollbarEventProc, editPtr);
     Tk_ManageGeometry(scrollbar, (Tk_GeomMgr *)NULL, editPtr);
     if (Tk_IsMapped(scrollbar)) {
         Tk_UnmapWindow(scrollbar);
@@ -1662,10 +1515,10 @@ UnmanageScrollbar(TextEditor *editPtr, Tk_Window scrollbar)
 }
 
 static void
-ManageScrollbar(TextEditor *editPtr, Tk_Window scrollbar)
+ManageScrollbar(ComboEditor *editPtr, Tk_Window scrollbar)
 {
     Tk_CreateEventHandler(scrollbar, StructureNotifyMask, 
-                          ScrollbarEventProc, editPtr);
+        ScrollbarEventProc, editPtr);
     Tk_ManageGeometry(scrollbar, &editorMgrInfo, editPtr);
 }
 
@@ -1674,7 +1527,7 @@ ManageScrollbar(TextEditor *editPtr, Tk_Window scrollbar)
  *
  * InstallScrollbar --
  *
- *      Convert the string representation of a color into a XColor pointer.
+ *      Installs the scrollbar.
  *
  * Results:
  *      The return value is a standard TCL result.  The color pointer is
@@ -1685,27 +1538,28 @@ ManageScrollbar(TextEditor *editPtr, Tk_Window scrollbar)
 /*ARGSUSED*/
 static void
 InstallScrollbar(
-    Tcl_Interp *interp,                 /* Interpreter to send results back
-					 * to */
-    TextEditor *editPtr,
-    Tcl_Obj *objPtr,                    /* String representing scrollbar
-					 * window. */
-    Tk_Window *tkwinPtr)
+    Tcl_Interp *interp,                 /* Interpreter to report errors*/
+    ComboEditor *editPtr,                /* Text editor to install
+                                         * scrollbar. */
+    Tcl_Obj *objPtr,                    /* Scrollbar name. */
+    Tk_Window *tkwinPtr)                /* Returns tkwin of scrollbar.  */
 {
     Tk_Window tkwin;
-
+    const char *string;
+    
     if (objPtr == NULL) {
 	*tkwinPtr = NULL;
 	return;
     }
-    tkwin = Tk_NameToWindow(interp, Tcl_GetString(objPtr), editPtr->tkwin);
+    string = Tcl_GetString(objPtr);
+    tkwin = Tk_NameToWindow(interp, string, editPtr->tkwin);
     if (tkwin == NULL) {
 	Tcl_BackgroundError(interp);
 	return;
     }
     if (Tk_Parent(tkwin) != editPtr->tkwin) {
 	Tcl_AppendResult(interp, "scrollbar \"", Tk_PathName(tkwin), 
-			 "\" must be a child of combomenu.", (char *)NULL);
+			 "\" must be a child of comboeditor.", (char *)NULL);
 	Tcl_BackgroundError(interp);
 	return;
     }
@@ -1719,7 +1573,7 @@ InstallScrollbar(
 static void
 InstallXScrollbar(ClientData clientData)
 {
-    TextEditor *editPtr = clientData;
+    ComboEditor *editPtr = clientData;
 
     editPtr->flags &= ~INSTALL_XSCROLLBAR;
     InstallScrollbar(editPtr->interp, editPtr, editPtr->xScrollbarObjPtr,
@@ -1729,7 +1583,7 @@ InstallXScrollbar(ClientData clientData)
 static void
 InstallYScrollbar(ClientData clientData)
 {
-    TextEditor *editPtr = clientData;
+    ComboEditor *editPtr = clientData;
 
     editPtr->flags &= ~INSTALL_YSCROLLBAR;
     InstallScrollbar(editPtr->interp, editPtr, editPtr->yScrollbarObjPtr,
@@ -1756,7 +1610,7 @@ InstallYScrollbar(ClientData clientData)
 static void
 LostSelectionProc(ClientData clientData)
 {
-    TextEditor *editPtr = clientData;
+    ComboEditor *editPtr = clientData;
 
     if ((editPtr->selFirst >= 0) && (editPtr->flags & EXPORT_SELECTION)) {
 	editPtr->selFirst = editPtr->selLast = -1;
@@ -1792,7 +1646,7 @@ LostSelectionProc(ClientData clientData)
  *---------------------------------------------------------------------------
  */
 static int
-SelectText(TextEditor *editPtr, CharIndex index)
+SelectText(ComboEditor *editPtr, CharIndex index)
 {
     CharIndex first, last;
 
@@ -1818,7 +1672,7 @@ SelectText(TextEditor *editPtr, CharIndex index)
 	editPtr->selFirst = first;
 	editPtr->selLast = last;
 	EventuallyRedraw(editPtr);
-	if (editPtr->selCmdObjPtr != NULL) {
+	if (editPtr->selectCmdObjPtr != NULL) {
 	    EventuallyInvokeSelectCmd(editPtr);
 	}
     }
@@ -1846,17 +1700,17 @@ SelectText(TextEditor *editPtr, CharIndex index)
 static void
 SelectCmdProc(ClientData clientData) 
 {
-    TextEditor *editPtr = clientData;
+    ComboEditor *editPtr = clientData;
 
     editPtr->flags &= ~SELECT_PENDING;
-    if (editPtr->selCmdObjPtr != NULL) {
+    if (editPtr->selectCmdObjPtr != NULL) {
 	int result;
 
 	Tcl_Preserve(editPtr);
-	Tcl_IncrRefCount(editPtr->selCmdObjPtr);
-	result = Tcl_EvalObjEx(editPtr->interp, editPtr->selCmdObjPtr,
+	Tcl_IncrRefCount(editPtr->selectCmdObjPtr);
+	result = Tcl_EvalObjEx(editPtr->interp, editPtr->selectCmdObjPtr,
                                TCL_EVAL_GLOBAL);
-	Tcl_DecrRefCount(editPtr->selCmdObjPtr);
+	Tcl_DecrRefCount(editPtr->selectCmdObjPtr);
 	Tcl_Release(editPtr);
 	if (result != TCL_OK) {
 	    Tcl_BackgroundError(editPtr->interp);
@@ -1887,30 +1741,32 @@ SelectCmdProc(ClientData clientData)
 static int
 SelectionProc(
     ClientData clientData,		/* Information about the widget. */
-    int offset,				/* Offset within the selection of the
-					 * first character to be returned. */
+    int offset,				/* Offset within the selection of
+					 * the first character to be
+					 * returned. */
     char *buffer,			/* Location in which to place
 					 * selection. */
     int maxBytes)			/* Maximum # of bytes to place in
 					 * the buffer, not including
 					 * terminating NULL character. */
 {
-    TextEditor *editPtr = clientData;
+    ComboEditor *editPtr = clientData;
     int size;
 
     size = 0;
     if (editPtr->selFirst >= 0) {
 	ByteOffset first, last;
+        const char *string;
 
-	first = CharIndexToByteOffset(editPtr->screenText,editPtr->selFirst);
-	last = CharIndexToByteOffset(editPtr->screenText, editPtr->selLast);
+        string = Blt_DBuffer_String(editPtr->dbuffer);
+	first = CharIndexToByteOffset(string, editPtr->selFirst);
+	last  = CharIndexToByteOffset(string, editPtr->selLast);
 	size = last - first - offset;
 	assert(size >= 0);
 	if (size > maxBytes) {
 	    size = maxBytes;
 	}
-	memcpy(buffer, Blt_DBuffer_String(editPtr->dbuffer) + first + offset,
-               size);
+	memcpy(buffer, string + first + offset, size);
 	buffer[size] = '\0';
     }
     return size;
@@ -1925,7 +1781,7 @@ FreeTextVarProc(ClientData clientData, Display *display, char *widgRec,
     Tcl_Obj **objPtrPtr = (Tcl_Obj **)(widgRec + offset);
 
     if (*objPtrPtr != NULL) {
-	TextEditor *editPtr = (TextEditor *)(widgRec);
+	ComboEditor *editPtr = (ComboEditor *)(widgRec);
 	const char *varName;
 
 	varName = Tcl_GetString(*objPtrPtr);
@@ -1944,8 +1800,7 @@ FreeTextVarProc(ClientData clientData, Display *display, char *widgRec,
  *	Convert the variable to a traced variable.
  *
  * Results:
- *	The return value is a standard TCL result.  The color pointer is
- *	written into the widget record.
+ *	The return value is a standard TCL result.  
  *
  *---------------------------------------------------------------------------
  */
@@ -1954,7 +1809,7 @@ static int
 ObjToTextVarProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
                  Tcl_Obj *objPtr, char *widgRec, int offset, int flags)	
 {
-    TextEditor *editPtr = (TextEditor *)(widgRec);
+    ComboEditor *editPtr = (ComboEditor *)(widgRec);
     Tcl_Obj **objPtrPtr = (Tcl_Obj **)(widgRec + offset);
     const char *varName;
     Tcl_Obj *valueObjPtr;
@@ -1992,10 +1847,7 @@ ObjToTextVarProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
  *
  * TextVarToObjProc --
  *
- *	Return the name of the style.
- *
- * Results:
- *	The name representing the style is returned.
+ *	Return the name of the variable.
  *
  *---------------------------------------------------------------------------
  */
@@ -2012,104 +1864,6 @@ TextVarToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
     return objPtr;
 }
 
-static void
-FreeIcon(TextEditor *editPtr, Icon icon)
-{
-    Tk_FreeImage(IconImage(icon));
-    Blt_Free(icon);
-}
-
-
-/*ARGSUSED*/
-static void
-FreeIconProc(ClientData clientData, Display *display, char *widgRec, int offset)
-{
-    Icon icon = *(Icon *)(widgRec + offset);
-
-    if (icon != NULL) {
-	TextEditor *editPtr = (TextEditor *)widgRec;
-
-	FreeIcon(editPtr, icon);
-    }
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * ObjToIconProc --
- *
- *	Convert a image into a hashed icon.
- *
- * Results:
- *	If the string is successfully converted, TCL_OK is returned.
- *	Otherwise, TCL_ERROR is returned and an error message is left in
- *	interpreter's result field.
- *
- *---------------------------------------------------------------------------
- */
-/*ARGSUSED*/
-static int
-ObjToIconProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-              Tcl_Obj *objPtr, char *widgRec, int offset, int flags)	
-{
-    TextEditor *editPtr = (TextEditor *)widgRec;
-    Icon *iconPtr = (Icon *)(widgRec + offset);
-    Icon icon;
-
-    if (GetIconFromObj(interp, editPtr, objPtr, &icon) != TCL_OK) {
-	return TCL_ERROR;
-    }
-    if (*iconPtr != NULL) {
-	FreeIcon(editPtr, *iconPtr);
-    }
-    *iconPtr = icon;
-    return TCL_OK;
-}
-
-/*
- *---------------------------------------------------------------------------
- *
- * IconToObjProc --
- *
- *	Converts the icon into its string representation (its name).
- *
- * Results:
- *	The name of the icon is returned.
- *
- *---------------------------------------------------------------------------
- */
-/*ARGSUSED*/
-static Tcl_Obj *
-IconToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
-              char *widgRec, int offset, int flags)	
-{
-    Icon icon = *(Icon *)(widgRec + offset);
-    Tcl_Obj *objPtr;
-
-    if (icon == NULL) {
-	objPtr = Tcl_NewStringObj("", 0);
-    } else {
-	objPtr =Tcl_NewStringObj(Blt_Image_Name(IconImage(icon)), -1);
-    }
-    return objPtr;
-}
-
-/*ARGSUSED*/
-static void
-FreeTextProc(ClientData clientData, Display *display, char *widgRec,
-             int offset)
-{
-    TextEditor *editPtr = (TextEditor *)(widgRec);
-
-    if (editPtr->text != emptyString) {
-	Blt_Free(editPtr->text);
-	Blt_Free(editPtr->screenText);
-	editPtr->text = emptyString;
-	editPtr->screenText = NULL;
-	editPtr->numScreenBytes = editPtr->numBytes = 0;
-    }
-}
-
 /*
  *---------------------------------------------------------------------------
  *
@@ -2124,24 +1878,11 @@ FreeTextProc(ClientData clientData, Display *display, char *widgRec,
  */
 /*ARGSUSED*/
 static int
-ObjToTextProc(
-    ClientData clientData,	/* Not used. */
-    Tcl_Interp *interp,		/* Interpreter to send results back to */
-    Tk_Window tkwin,		/* Not used. */
-    Tcl_Obj *objPtr,		/* String representing style. */
-    char *widgRec,		/* Widget record */
-    int offset,			/* Offset to field in structure */
-    int flags)	
+ObjToTextProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+              Tcl_Obj *objPtr, char *widgRec, int offset, int flags)	
 {
-    TextEditor *editPtr = (TextEditor *)(widgRec);
+    ComboEditor *editPtr = (ComboEditor *)(widgRec);
 
-    if (editPtr->text != emptyString) {
-	Blt_Free(editPtr->text);
-	Blt_Free(editPtr->screenText);
-	editPtr->text = emptyString;
-	editPtr->screenText = NULL;
-	editPtr->numScreenBytes = editPtr->numBytes = 0;
-    }
     SetTextFromObj(editPtr, objPtr);
     if (editPtr->textVarObjPtr != NULL) {
 	if (UpdateTextVariable(interp, editPtr) != TCL_OK) {
@@ -2168,9 +1909,9 @@ static Tcl_Obj *
 TextToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
               char *widgRec, int offset, int flags)	
 {
-    TextEditor *editPtr = (TextEditor *)(widgRec);
+    ComboEditor *editPtr = (ComboEditor *)(widgRec);
 
-    return Tcl_NewStringObj(editPtr->text, editPtr->numBytes);
+    return Blt_DBuffer_StringObj(editPtr->dbuffer);
 }
     
 
@@ -2194,7 +1935,7 @@ PostWindowSwitchProc(ClientData clientData, Tcl_Interp *interp,
 		    const char *switchName, Tcl_Obj *objPtr, char *record,
 		    int offset, int flags)
 {
-    TextEditor *editPtr = (TextEditor *)record;
+    ComboEditor *editPtr = (ComboEditor *)record;
     Tk_Window tkwin;
     const char *string;
 
@@ -2234,7 +1975,7 @@ PostAlignSwitchProc(ClientData clientData, Tcl_Interp *interp,
 		    const char *switchName, Tcl_Obj *objPtr, char *record,
 		    int offset, int flags)
 {
-    TextEditor *editPtr = (TextEditor *)record;
+    ComboEditor *editPtr = (ComboEditor *)record;
     int align;
     
     if (GetAlignFromObj(interp, objPtr, &align) != TCL_OK) {
@@ -2254,8 +1995,8 @@ PostAlignSwitchProc(ClientData clientData, Tcl_Interp *interp,
  *
  * Results:
  *      If the string is successfully converted, TCL_OK is returned.
- *      Otherwise, TCL_ERROR is returned and an error message is left
- *      in interpreter's result field.
+ *      Otherwise, TCL_ERROR is returned and an error message is left in
+ *      interpreter's result field.
  *
  *---------------------------------------------------------------------------
  */
@@ -2265,7 +2006,7 @@ PostPopupSwitchProc(ClientData clientData, Tcl_Interp *interp,
 		    const char *switchName, Tcl_Obj *objPtr, char *record,
 		    int offset, int flags)
 {
-    TextEditor *editPtr = (TextEditor *)record;
+    ComboEditor *editPtr = (ComboEditor *)record;
     int x, y;
     
     if (GetCoordsFromObj(interp, objPtr, &x, &y) != TCL_OK) {
@@ -2293,16 +2034,11 @@ PostPopupSwitchProc(ClientData clientData, Tcl_Interp *interp,
  */
 /*ARGSUSED*/
 static int
-PostBoxSwitchProc(
-    ClientData clientData,              /* Not used. */
-    Tcl_Interp *interp,                 /* Not used. */
-    const char *switchName,             /* Not used. */
-    Tcl_Obj *objPtr,                    /* String representation */
-    char *record,                       /* Structure record */
-    int offset,                         /* Offset to field in structure */
-    int flags)                          /* Not used. */
+PostBoxSwitchProc(ClientData clientData, Tcl_Interp *interp,
+                  const char *switchName, Tcl_Obj *objPtr, char *record,
+                  int offset, int flags)
 {
-    TextEditor *editPtr = (TextEditor *)record;
+    ComboEditor *editPtr = (ComboEditor *)record;
     Box2d box;
     
     if (GetBoxFromObj(interp, objPtr, &box) != TCL_OK) {
@@ -2316,64 +2052,128 @@ PostBoxSwitchProc(
     return TCL_OK;
 }
 
-static int
-SetCursorPosition(TextEditor *editPtr, CharIndex index)
+static TextLine *
+FindLineFromIndex(ComboEditor *editPtr, CharIndex index)
 {
-    Blt_FontMetrics fontMetrics;
-    int numBytes, numChars, numPixels;
-    int x, y;
-    TextLine *linePtr, *endPtr;
-    
-    Blt_Font_GetMetrics(editPtr->font, &fontMetrics);
-    x = y = editPtr->borderWidth;
-    if (editPtr->icon != NULL) {
-	x += IconWidth(editPtr->icon) + 2 * editPtr->gap;
-    }
-    for (linePtr = editPtr->lines, endPtr = linePtr + editPtr->numLines;
-         linePtr < endPtr; linePtr++) {
+    int low, high;
 
-        if ((linePtr->char1 >= index) && (linePtr->char2 < index)) {
-            break;                      /* This is line containing the 
-                                         * cursor. */
-        }
+    low = 0;
+    high = editPtr->numLines - 1;
+    while (low <= high) {
+	TextLine *linePtr;
+	int median;
+	
+	median = (low + high) >> 1;
+	linePtr = editPtr->lines + median;
+	if (index < linePtr->char1) {
+	    high = median - 1;
+	} else if (index > linePtr->char2) {
+	    low = median + 1;
+	} else {
+	    return linePtr;
+	}
     }
-    if (linePtr == endPtr) {
+    return NULL;                        /* Can't find value. */
+}
+
+static TextLine *
+FindLineFromCoord(ComboEditor *editPtr, int worldY)
+{
+    int low, high;
+
+    low = 0;
+    high = editPtr->numLines - 1;
+    while (low <= high) {
+	TextLine *linePtr;
+	int median;
+	
+	median = (low + high) >> 1;
+	linePtr = editPtr->lines + median;
+	if (worldY < linePtr->worldY) {
+	    high = median - 1;
+	} else if (worldY >= (linePtr->worldY + linePtr->height)) {
+	    low = median + 1;
+	} else {
+	    return linePtr;
+	}
+    }
+    return NULL;                        /* Can't find value. */
+}
+
+static CharIndex
+CoordinatesToIndex(ComboEditor *editPtr, int x, int y)
+{
+    TextLine *linePtr;
+    int worldX, worldY;
+    int numBytes, numPixels;
+    
+    if (editPtr->flags & GEOMETRY) {
+        ComputeGeometry(editPtr);
+    }
+    /* Convert the screen coordinates into world coordinates */
+    worldX = WORLDX(editPtr, x);
+    worldY = WORLDY(editPtr, y);
+    linePtr = FindLineFromCoord(editPtr, worldY);
+    if (linePtr == NULL) {
+        return -1;                      /* Outside of range. */
+    }
+    /* Find the start of the line in terms of bytes offsets. */
+    numBytes = Blt_Font_Measure(editPtr->font, linePtr->text, linePtr->numBytes,
+        worldX + linePtr->worldX, 0, &numPixels);
+    if (numBytes >= linePtr->numBytes) {
+        return linePtr->char2;
+    }
+    return linePtr->char1 + Tcl_NumUtfChars(linePtr->text, numBytes);
+}
+
+static int
+IndexToCoordinates(ComboEditor *editPtr, CharIndex index, int *xPtr, int *yPtr)
+{
+    int numBytes, numChars, numPixels;
+    TextLine *linePtr;
+    
+    if (editPtr->flags & GEOMETRY) {
+        ComputeGeometry(editPtr);
+    }
+    linePtr = FindLineFromIndex(editPtr, index);
+    if (linePtr == NULL) {
         return TCL_OK;                  /* Outside of range. */
     }
     /* Find the start of the line. */
     /* Find the start and end of the line as text offsets. */
     numChars = index - linePtr->char1;
     numBytes = CharIndexToByteOffset(linePtr->text, numChars);
-    Blt_Font_Measure(editPtr->font, linePtr->text,
-        numBytes, linePtr->worldX + editPtr->xOffset, TEXT_FLAGS,
-        &numPixels);
+    Blt_Font_Measure(editPtr->font, linePtr->text, numBytes,
+        linePtr->worldX + editPtr->xOffset, TEXT_FLAGS, &numPixels);
 
-    editPtr->cursorX = linePtr->worldX + numPixels;
-    editPtr->cursorY = linePtr->worldY;
-    editPtr->cursorHeight = fontMetrics.linespace;
-    editPtr->cursorWidth = 3;
+    *xPtr = linePtr->worldX + numPixels;
+    *yPtr = linePtr->worldY;
     return TCL_OK;
 }
 
 static void
-InsertText(TextEditor *editPtr, const unsigned char *text, int numBytes,
-           int index)
+InsertText(ComboEditor *editPtr, const char *text, int numBytes,
+           CharIndex index)
 {
     int numChars;
     int result;
     const char *string;
     ByteOffset offset;
     
+    if (editPtr->flags & GEOMETRY) {
+        ComputeGeometry(editPtr);
+    }
     string = Blt_DBuffer_String(editPtr->dbuffer);
-
     offset = CharIndexToByteOffset(string, index);
     if (offset == Blt_DBuffer_Length(editPtr->dbuffer)) { /* Append */
-        result = Blt_DBuffer_AppendData(editPtr->dbuffer, text, numBytes);
+        result = Blt_DBuffer_AppendData(editPtr->dbuffer,
+                (const unsigned char *)text, numBytes);
     } else if (offset == 0) {           /* Prepend */
-        result = Blt_DBuffer_InsertData(editPtr->dbuffer, text, numBytes, 0);
+        result = Blt_DBuffer_InsertData(editPtr->dbuffer,
+                (const unsigned char *)text, numBytes, 0);
     } else {                            /* Insert into existing. */
-        result = Blt_DBuffer_InsertData(editPtr->dbuffer, text, numBytes,
-                index);
+        result = Blt_DBuffer_InsertData(editPtr->dbuffer,
+                (const unsigned char *)text, numBytes, offset);
     }
     if (!result) {
         return;
@@ -2383,8 +2183,7 @@ InsertText(TextEditor *editPtr, const unsigned char *text, int numBytes,
      * need to be updated.  Simply move the indices down by the number of
      * characters added.
      */
-    string = Blt_DBuffer_String(editPtr->dbuffer);
-    numChars = Tcl_NumUtfChars(string, index);
+    numChars = Tcl_NumUtfChars(text, numBytes);
     if (editPtr->selFirst >= index) {
 	editPtr->selFirst += numChars;
     }
@@ -2394,10 +2193,11 @@ InsertText(TextEditor *editPtr, const unsigned char *text, int numBytes,
     if ((editPtr->selAnchor > index) || (editPtr->selFirst >= index)) {
 	editPtr->selAnchor += numChars;
     }
-    editPtr->insertIndex = index + numChars;
-    editPtr->flags |= LAYOUT_PENDING;
+    if (editPtr->insertIndex >= index) {
+	editPtr->insertIndex += numChars;
+    }        
+    editPtr->flags |= LAYOUT_PENDING | GEOMETRY;
     editPtr->numChars += numChars;
-    EventuallyRedraw(editPtr);
 }
 
 /*
@@ -2427,26 +2227,37 @@ InsertText(TextEditor *editPtr, const unsigned char *text, int numBytes,
  *---------------------------------------------------------------------------
  */
 static int
-DeleteText(TextEditor *editPtr, CharIndex firstIndex, CharIndex lastIndex)
+DeleteText(ComboEditor *editPtr, CharIndex firstIndex, CharIndex lastIndex)
 {
-    size_t numChars;
-    
-    numChars = lastIndex - firstIndex + 1;
-    if (!Blt_DBuffer_DeleteData(editPtr->dbuffer, firstIndex, numChars)) {
-        return TCL_ERROR;
+    int numChars, numBytes;
+    ByteOffset first, last;
+    const char *string;
+
+    if (editPtr->flags & GEOMETRY) {
+        ComputeGeometry(editPtr);
     }
+    string = Blt_DBuffer_String(editPtr->dbuffer);
+    first = CharIndexToByteOffset(string, firstIndex);
+    last  = CharIndexToByteOffset(string, lastIndex);
+    numBytes = last - first;
+    if (!Blt_DBuffer_DeleteData(editPtr->dbuffer, first, numBytes)) {
+        return FALSE;
+    }
+    numChars = lastIndex - firstIndex;
     if (editPtr->selFirst >= firstIndex) {
-	if (editPtr->selFirst >= lastIndex) {
-	    editPtr->selFirst -= numChars;
-	} else {
-	    editPtr->selFirst = firstIndex;
+        if (editPtr->selFirst < lastIndex) {
+	    editPtr->selFirst = firstIndex;/* Selection starts inside of
+                                            * deleted text. */
+        } else {
+	    editPtr->selFirst -= numChars; /* Selection starts after
+                                            * deleted text. */
 	}
     }
-    if (editPtr->selLast >= firstIndex) {
-	if (editPtr->selLast >= lastIndex) {
-	    editPtr->selLast -= numChars;
-	} else {
+    if (editPtr->selLast > firstIndex) {
+	if (editPtr->selLast <= lastIndex) {
 	    editPtr->selLast = firstIndex;
+	} else {
+	    editPtr->selLast -= numChars;
 	}
     }
     if (editPtr->selLast <= editPtr->selFirst) {
@@ -2467,10 +2278,89 @@ DeleteText(TextEditor *editPtr, CharIndex firstIndex, CharIndex lastIndex)
 	    editPtr->insertIndex = firstIndex;
 	}
     }
-    editPtr->flags |= LAYOUT_PENDING;
+    editPtr->flags |= LAYOUT_PENDING | GEOMETRY;
     editPtr->numChars -= numChars;
     EventuallyRedraw(editPtr);
-    return TCL_OK;
+    return TRUE;
+}
+
+static CharIndex 
+GetWordStart(ComboEditor *editPtr, CharIndex index)
+{
+    CharIndex first;
+    TextLine *linePtr;
+    const char *cp, *string;
+
+    linePtr = FindLineFromIndex(editPtr, index);
+    if (linePtr == NULL) {
+        return -1;
+    }
+    string = Blt_DBuffer_String(editPtr->dbuffer);
+    cp = Tcl_UtfAtIndex(string, index);
+    for (first = index; first >= linePtr->char1; first--) {
+        Tcl_UniChar ch;
+        
+        Tcl_UtfToUniChar(cp, &ch);
+        if (!Tcl_UniCharIsWordChar(ch)) {
+            break;
+        }
+        cp = Tcl_UtfPrev(cp, string);
+    }
+    if (first != index) {
+        first++;
+    }
+    return first;
+}
+
+static CharIndex 
+GetWordEnd(ComboEditor *editPtr, CharIndex index)
+{
+    CharIndex last;
+    TextLine *linePtr;
+    const char *cp, *string;
+
+    linePtr = FindLineFromIndex(editPtr, index);
+    if (linePtr == NULL) {
+        return -1;
+    }
+    string = Blt_DBuffer_String(editPtr->dbuffer);
+    cp = Tcl_UtfAtIndex(string, index);
+    for (last = index; last <= linePtr->char2; last++) {
+        Tcl_UniChar ch;
+        
+        cp += Tcl_UtfToUniChar(cp, &ch);
+        if (!Tcl_UniCharIsWordChar(ch)) {
+            break;
+        }
+    }
+    if (last == index) {
+        last++;
+    }
+    return last;
+}
+
+static CharIndex 
+GetLineStart(ComboEditor *editPtr, CharIndex index)
+{
+    TextLine *linePtr;
+    
+    linePtr = FindLineFromIndex(editPtr, index);
+    if (linePtr == NULL) {
+        return -1;
+    }
+    return linePtr->char1;
+}
+
+static CharIndex 
+GetLineEnd(ComboEditor *editPtr, CharIndex index)
+{
+    TextLine *linePtr;
+    
+    linePtr = FindLineFromIndex(editPtr, index);
+    if (linePtr == NULL) {
+        return -1;
+    }
+    return linePtr->char2;
 }
 
 /*
@@ -2499,6 +2389,10 @@ DeleteText(TextEditor *editPtr, CharIndex firstIndex, CharIndex lastIndex)
  *       "sel.last"	Indicates the character just  after the last one 
  *			in the selection.  It is an error to use this form 
  *			if  the  selection isn't in the entry window.
+ *      "word.start"    
+ *      "word.end"
+ *      "line.start"
+ "      "line.end"
  *       @x             X-coordinate in the entry's window;  the character 
  *			spanning that x-coordinate is used.  For example, 
  *			"@0" indicates the left-most character in the window.
@@ -2512,7 +2406,7 @@ DeleteText(TextEditor *editPtr, CharIndex firstIndex, CharIndex lastIndex)
  *---------------------------------------------------------------------------
  */
 static int
-GetIndexFromObj(Tcl_Interp *interp, TextEditor *editPtr, Tcl_Obj *objPtr,
+GetIndexFromObj(Tcl_Interp *interp, ComboEditor *editPtr, Tcl_Obj *objPtr,
                 CharIndex *indexPtr)
 {
     char *string;
@@ -2521,7 +2415,7 @@ GetIndexFromObj(Tcl_Interp *interp, TextEditor *editPtr, Tcl_Obj *objPtr,
 
     if (Tcl_GetIntFromObj((Tcl_Interp *)NULL, objPtr, &index) == TCL_OK) {
 	/* Convert the character index into a byte offset. */
-	if (editPtr->screenText == NULL) {
+	if (Blt_DBuffer_Length(editPtr->dbuffer) == 0) {
 	    *indexPtr = 0;
 	    return TCL_OK;
 	}
@@ -2545,6 +2439,36 @@ GetIndexFromObj(Tcl_Interp *interp, TextEditor *editPtr, Tcl_Obj *objPtr,
 	*indexPtr = editPtr->numChars;
     } else if ((c == 'i') && (strcmp(string, "insert") == 0)) {
 	*indexPtr = editPtr->insertIndex;
+    } else if ((c == 'd') && (strcmp(string, "down") == 0)) {
+        index = editPtr->insertIndex;
+        if (editPtr->insertLine < (editPtr->numLines - 1)) {
+            TextLine *linePtr;
+            int numChars;
+            
+            linePtr = editPtr->insertLine + editPtr->lines;
+            numChars = editPtr->insertIndex - linePtr->char1;
+            linePtr++;
+            index = linePtr->char1 + numChars;
+            if (index >= linePtr->char2) {
+                index = linePtr->char2;
+            }
+        }
+        *indexPtr = index;
+    } else if ((c == 'u') && (strcmp(string, "up") == 0)) {
+        index = editPtr->insertIndex;
+        if (editPtr->insertLine > 0) {
+            TextLine *linePtr;
+            int numChars;
+            
+            linePtr = editPtr->insertLine + editPtr->lines;
+            numChars = editPtr->insertIndex - linePtr->char1;
+            linePtr--;
+            index = linePtr->char1 + numChars;
+            if (index >= linePtr->char2) {
+                index = linePtr->char2;
+            }
+        }
+        *indexPtr = index;
     } else if ((c == 'n') && (strcmp(string, "next") == 0)) {
 	index = editPtr->insertIndex;
 	if (index < editPtr->numChars) {
@@ -2557,23 +2481,41 @@ GetIndexFromObj(Tcl_Interp *interp, TextEditor *editPtr, Tcl_Obj *objPtr,
 	    index--;
 	}
 	*indexPtr = index;
+    } else if ((c == 'l') && (strcmp(string, "line.start") == 0)) {
+        index = editPtr->insertIndex;
+        if (editPtr->insertIndex != -1) {
+            index = GetLineStart(editPtr, index);
+        }
+	*indexPtr = index;
+    } else if ((c == 'l') && (strcmp(string, "line.end") == 0)) {
+        index = editPtr->insertIndex;
+        if (editPtr->insertIndex != -1) {
+            index = GetLineEnd(editPtr, index);
+        }
+	*indexPtr = index;
+    } else if ((c == 'w') && (strcmp(string, "word.start") == 0)) {
+        index = editPtr->insertIndex;
+        if (editPtr->insertIndex != -1) {
+            index = GetWordStart(editPtr, index);
+        }
+	*indexPtr = index;
+    } else if ((c == 'w') && (strcmp(string, "word.end") == 0)) {
+        index = editPtr->insertIndex;
+        if (editPtr->insertIndex != -1) {
+            index = GetWordEnd(editPtr, index);
+        }
+	*indexPtr = index;
     } else if ((c == 's') && (strcmp(string, "sel.first") == 0)) {
 	*indexPtr = (int)editPtr->selFirst;
     } else if ((c == 's') && (strcmp(string, "sel.last") == 0)) {
 	*indexPtr = (int)editPtr->selLast;
     } else if (c == '@') {
-	int x, dummy, numBytes;
-
-	if (Tcl_GetInt(interp, string+1, &x) != TCL_OK) {
+	int x, y;
+        
+	if (Blt_GetXY(interp, editPtr->tkwin, string, &x, &y) != TCL_OK) {
 	    return TCL_ERROR;
 	}
-	/* Convert screen position to character index */
-	x -= editPtr->borderWidth + editPtr->iconWidth;
-	x += editPtr->scrollX;
-	numBytes = Blt_Font_Measure(editPtr->font, editPtr->screenText, 
-		editPtr->numScreenBytes, x, TK_PARTIAL_OK|TK_AT_LEAST_ONE, 
-		&dummy);
-	*indexPtr = Tcl_NumUtfChars(editPtr->screenText, numBytes);
+        *indexPtr = CoordinatesToIndex(editPtr, x, y);
     } else {
 	Tcl_AppendResult(interp, "unknown index \"", string, "\"",(char *)NULL);
 	return TCL_ERROR;
@@ -2589,9 +2531,8 @@ GetIndexFromObj(Tcl_Interp *interp, TextEditor *editPtr, Tcl_Obj *objPtr,
  *---------------------------------------------------------------------------
  */
 static void
-DestroyButton(TextEditor *editPtr, Button *butPtr)
+DestroyButton(ComboEditor *editPtr, Button *butPtr)
 {
-    iconOption.clientData = editPtr;
     Blt_FreeOptions(buttonSpecs, (char *)butPtr, editPtr->display, 0);
     if (butPtr->activePicture != NULL) {
 	Blt_FreePicture(butPtr->activePicture);
@@ -2626,22 +2567,21 @@ DestroyButton(TextEditor *editPtr, Button *butPtr)
 static int
 ConfigureButton(
     Tcl_Interp *interp,			/* Interpreter to report errors. */
-    TextEditor *editPtr,		/* Information about widget; may or
+    ComboEditor *editPtr,		/* Information about widget; may or
 					 * may not already have values for
 					 * some fields. */
     int objc,
     Tcl_Obj *const *objv,
     int flags)
 {
-    Button *butPtr = &editPtr->clearButton;
+    Button *butPtr = &editPtr->button;
 
-    iconOption.clientData = editPtr;
     if (Blt_ConfigureWidgetFromObj(interp, editPtr->tkwin, buttonSpecs, 
 	objc, objv, (char *)butPtr, flags) != TCL_OK) {
 	return TCL_ERROR;
     }
     butPtr->width = butPtr->height = 0;
-    if (editPtr->flags & CLRBUTTON) {
+    if (editPtr->flags & BUTTON) {
 	butPtr->width = BUTTON_WIDTH + 2 * butPtr->borderWidth;
 	butPtr->height = BUTTON_HEIGHT + 2 * butPtr->borderWidth;
     }
@@ -2652,7 +2592,7 @@ ConfigureButton(
 static void
 ConfigureScrollbarsProc(ClientData clientData)
 {
-    TextEditor *editPtr = clientData;
+    ComboEditor *editPtr = clientData;
     Tcl_Interp *interp;
 
     interp = editPtr->interp;
@@ -2660,7 +2600,7 @@ ConfigureScrollbarsProc(ClientData clientData)
      * Execute the initialization procedure on this widget.
      */
     editPtr->flags &= ~UPDATE_PENDING;
-    if (Tcl_VarEval(interp, "::blt::TextEditor::ConfigureScrollbars ", 
+    if (Tcl_VarEval(interp, "::blt::ComboEditor::ConfigureScrollbars ", 
 	Tk_PathName(editPtr->tkwin), (char *)NULL) != TCL_OK) {
 	Tcl_BackgroundError(interp);
     }
@@ -2669,14 +2609,13 @@ ConfigureScrollbarsProc(ClientData clientData)
 static void
 DestroyEditor(DestroyData data)
 {
-    TextEditor *editPtr = (TextEditor *)data;
+    ComboEditor *editPtr = (ComboEditor *)data;
 
-    iconOption.clientData = editPtr;
     Blt_FreeOptions(configSpecs, (char *)editPtr, editPtr->display, 0);
 
     FreeUndoRecords(editPtr);
     FreeRedoRecords(editPtr);
-    DestroyButton(editPtr, &editPtr->clearButton);
+    DestroyButton(editPtr, &editPtr->button);
 
     if (editPtr->insertTimerToken != NULL) {
 	Tcl_DeleteTimerHandler(editPtr->insertTimerToken);
@@ -2704,7 +2643,9 @@ DestroyEditor(DestroyData data)
     if (editPtr->insertGC != NULL) {
 	Tk_FreeGC(editPtr->display, editPtr->insertGC);
     }
-    Tcl_DeleteCommandFromToken(editPtr->interp, editPtr->cmdToken);
+    if (editPtr->cmdToken != NULL) {
+        Tcl_DeleteCommandFromToken(editPtr->interp, editPtr->cmdToken);
+    }
     Blt_Free(editPtr);
 }
 
@@ -2723,7 +2664,7 @@ DestroyEditor(DestroyData data)
  *---------------------------------------------------------------------------
  */
 static void
-ComputeGeometry(TextEditor *editPtr)
+ComputeGeometry(ComboEditor *editPtr)
 {
     TextLine *linePtr, *endPtr;
     Blt_FontMetrics fm;
@@ -2733,8 +2674,13 @@ ComputeGeometry(TextEditor *editPtr)
     int numLines;
     const char *p, *tendPtr, *start;
     const char *text;
-    int lastByte, lastChar;
+    int lastChar;
     
+#ifdef notdef
+    fprintf(stderr, "Calling ComputeGeometry(%s) w=%d h=%d\n", 
+	    Tk_PathName(editPtr->tkwin), Tk_Width(editPtr->tkwin),
+	    Tk_Height(editPtr->tkwin));
+#endif
     editPtr->flags &= ~GEOMETRY;
     text = Blt_DBuffer_String(editPtr->dbuffer);
     tendPtr = text + Blt_DBuffer_Length(editPtr->dbuffer);
@@ -2762,7 +2708,7 @@ ComputeGeometry(TextEditor *editPtr)
     lineHeight = fm.linespace + editPtr->leader;
 
     linePtr = editPtr->lines;
-    lastByte = lastChar = 0;
+    lastChar = 0;
     for (p = start = text; p < tendPtr; p++) {
 	if (*p == '\n') {
             int numPixels;
@@ -2780,12 +2726,10 @@ ComputeGeometry(TextEditor *editPtr)
 	    linePtr->numBytes = count;
             linePtr->char1 = lastChar;
             linePtr->char2 = linePtr->char1 + Tcl_NumUtfChars(start, count);
-            linePtr->worldY = maxHeight + fm.ascent;
-            linePtr->byte1 = lastByte;
-            linePtr->byte2 = linePtr->byte1 + count;
+            linePtr->worldY = maxHeight;
+            linePtr->height = lineHeight;
 	    maxHeight += lineHeight;
             lastChar = linePtr->char2 + 1;
-            lastByte = linePtr->byte2 + 1;
 	    linePtr++;
 	    numLines++;
 	    start = p + 1;	/* Start the text on the next line */
@@ -2805,11 +2749,10 @@ ComputeGeometry(TextEditor *editPtr)
 	linePtr->text = start;
         linePtr->numBytes = count;
 	linePtr->width = numPixels;
-	linePtr->worldY = maxHeight + fm.ascent;
+	linePtr->worldY = maxHeight;
         linePtr->char1 = lastChar;
         linePtr->char2 = linePtr->char1 + Tcl_NumUtfChars(start, count);
-        linePtr->byte1 = lastByte;
-        linePtr->byte2 = linePtr->byte1 + count;
+        linePtr->height = lineHeight;
 	maxHeight += lineHeight;
 	numLines++;
     }
@@ -2834,13 +2777,14 @@ ComputeGeometry(TextEditor *editPtr)
 }
 
 static int
-ConfigureEditor(Tcl_Interp *interp, TextEditor *editPtr, int objc,
+ConfigureEditor(Tcl_Interp *interp, ComboEditor *editPtr, int objc,
                 Tcl_Obj *const *objv, int flags)
 {
     unsigned int gcMask;
     XGCValues gcValues;
     GC newGC;
     int updateNeeded;
+    Blt_FontMetrics fontMetrics;
     
     if (Blt_ConfigureWidgetFromObj(interp, editPtr->tkwin, configSpecs, objc, 
 		objv, (char *)editPtr, editPtr->mask | flags) != TCL_OK) {
@@ -2859,7 +2803,7 @@ ConfigureEditor(Tcl_Interp *interp, TextEditor *editPtr, int objc,
 
     /* Selection foreground. */
     gcMask = GCForeground | GCFont;
-    gcValues.foreground = editPtr->selFgColor->pixel;
+    gcValues.foreground = editPtr->selectFg->pixel;
     gcValues.font = Blt_Font_Id(editPtr->font);
     newGC = Tk_GetGC(editPtr->tkwin, gcMask, &gcValues);
     if (editPtr->selectGC != NULL) {
@@ -2876,6 +2820,10 @@ ConfigureEditor(Tcl_Interp *interp, TextEditor *editPtr, int objc,
     }
     editPtr->insertGC = newGC;
     ComputeGeometry(editPtr);
+
+    Blt_Font_GetMetrics(editPtr->font, &fontMetrics);
+    editPtr->cursorHeight = fontMetrics.linespace;
+    editPtr->cursorWidth = 3;
 
     updateNeeded = FALSE;
 
@@ -2937,20 +2885,19 @@ ConfigureEditor(Tcl_Interp *interp, TextEditor *editPtr, int objc,
 static void
 FreeEditorProc(DestroyData dataPtr)	/* Pointer to the widget record. */
 {
-    TextEditor *editPtr = (TextEditor *)dataPtr;
+    ComboEditor *editPtr = (ComboEditor *)dataPtr;
 
-    iconOption.clientData = editPtr;
     Blt_FreeOptions(configSpecs, (char *)editPtr, editPtr->display, 
 	editPtr->mask);
     if (editPtr->textGC != NULL) {
 	Tk_FreeGC(editPtr->display, editPtr->textGC);
     }
+    if (editPtr->dbuffer != NULL) {
+        Blt_DBuffer_Destroy(editPtr->dbuffer);
+    }
     FreeUndoRecords(editPtr);
     FreeRedoRecords(editPtr);
-    DestroyButton(editPtr, &editPtr->clearButton);
-    if (editPtr->screenText != NULL) {
-	Blt_Free(editPtr->screenText);
-    }
+    DestroyButton(editPtr, &editPtr->button);
     if (editPtr->selectGC != NULL) {
 	Tk_FreeGC(editPtr->display, editPtr->selectGC);
     }
@@ -2968,35 +2915,36 @@ FreeEditorProc(DestroyData dataPtr)	/* Pointer to the widget record. */
     if (editPtr->insertTimerToken != NULL) {
 	Tcl_DeleteTimerHandler(editPtr->insertTimerToken);
     }
-    Tcl_DeleteCommandFromToken(editPtr->interp, editPtr->cmdToken);
+    if (editPtr->cmdToken != NULL) {
+        Tcl_DeleteCommandFromToken(editPtr->interp, editPtr->cmdToken);
+    }
     Blt_Free(editPtr);
 }
 
-static TextEditor *
+static ComboEditor *
 NewEditor(Tcl_Interp *interp, Tk_Window tkwin)
 {
-    TextEditor *editPtr;
+    ComboEditor *editPtr;
 
-#ifdef notdef
-    Tk_MakeWindowExist(tkwin);
-#endif
-    Tk_SetClass(tkwin, "BltTreeViewEditor"); 
-    editPtr = Blt_AssertCalloc(1, sizeof(TextEditor));
-
+    Tk_SetClass(tkwin, "BltComboEditor"); 
+    editPtr = Blt_AssertCalloc(1, sizeof(ComboEditor));
+    editPtr->dbuffer = Blt_DBuffer_Create();
     editPtr->interp = interp;
     editPtr->display = Tk_Display(tkwin);
     editPtr->tkwin = tkwin;
     editPtr->borderWidth = 1;
     editPtr->relief = TK_RELIEF_SOLID;
     editPtr->selRelief = TK_RELIEF_FLAT;
-    editPtr->selBW = 1;
+    editPtr->selBorderWidth = 1;
     editPtr->selAnchor = -1;
     editPtr->selFirst = editPtr->selLast = -1;
     editPtr->insertOnTime = 600;
     editPtr->insertOffTime = 300;
-    editPtr->flags |= ACTIVE;
-    editPtr->clearButton.relief = TK_RELIEF_SUNKEN;
-    editPtr->clearButton.borderWidth = 1;
+    editPtr->flags |= ACTIVE | GEOMETRY | LAYOUT_PENDING;
+    editPtr->button.relief = TK_RELIEF_SUNKEN;
+    editPtr->button.borderWidth = 1;
+    Blt_ResetLimits(&editPtr->reqWidth);
+    Blt_ResetLimits(&editPtr->reqHeight);
     Blt_SetWindowInstanceData(tkwin, editPtr);
     Tk_CreateSelHandler(tkwin, XA_PRIMARY, XA_STRING, SelectionProc, editPtr,
                         XA_STRING);
@@ -3009,17 +2957,11 @@ NewEditor(Tcl_Interp *interp, Tk_Window tkwin)
 	return NULL;
     }
     editPtr->insertIndex = 0;
-    Tk_MoveResizeWindow(tkwin, editPtr->x, editPtr->y, editPtr->width,
-                        editPtr->height);
-    Tk_MapWindow(tkwin);
-    Tk_MakeWindowExist(tkwin);
-    XRaiseWindow(editPtr->display, Tk_WindowId(tkwin));
-    EventuallyRedraw(editPtr);
     return editPtr;
 }
 
 static int
-WithdrawEditor(TextEditor *editPtr)
+WithdrawEditor(ComboEditor *editPtr)
 {
     if (!Tk_IsMapped(editPtr->tkwin)) {
 	return FALSE;                 /* This editor is already withdrawn. */
@@ -3032,7 +2974,7 @@ WithdrawEditor(TextEditor *editPtr)
 
 
 static inline int
-GetWidth(TextEditor *editPtr)
+GetWidth(ComboEditor *editPtr)
 {
     int w;
 
@@ -3047,7 +2989,7 @@ GetWidth(TextEditor *editPtr)
 }
 
 static inline int
-GetHeight(TextEditor *editPtr)
+GetHeight(ComboEditor *editPtr)
 {
     int h;
 
@@ -3062,7 +3004,7 @@ GetHeight(TextEditor *editPtr)
 }
 
 static void
-FixEditorCoords(TextEditor *editPtr, int *xPtr, int *yPtr)
+FixEditorCoords(ComboEditor *editPtr, int *xPtr, int *yPtr)
 {
     int x, y, w, h;
     int sw, sh;
@@ -3116,32 +3058,26 @@ FixEditorCoords(TextEditor *editPtr, int *xPtr, int *yPtr)
  *---------------------------------------------------------------------------
  */
 static void
-ComputeLayout(TextEditor *editPtr)
+ComputeLayout(ComboEditor *editPtr)
 {
-    Button *butPtr = &editPtr->clearButton;
+    Button *butPtr = &editPtr->button;
     unsigned int w, h;
     int reqWidth, reqHeight;
     
-    /* Determine the height of the editor.  It's the maximum height of all
-     * it's components: icon, label, and clear button. */
+#ifdef notdef
+    fprintf(stderr, "Calling ComputeLayout(%s) w=%d h=%d\n", 
+	    Tk_PathName(editPtr->tkwin), Tk_Width(editPtr->tkwin),
+	    Tk_Height(editPtr->tkwin));
+#endif
+    editPtr->flags &= ~LAYOUT_PENDING;
 
-    editPtr->iconWidth  = editPtr->iconHeight  = 0;
+    /* Determine the height of the editor.  It's the maximum height of all
+     * it's components: text area and button. */
+
     editPtr->textWidth  = editPtr->textHeight  = 0;
     editPtr->normalWidth  = editPtr->normalHeight  = 0;
     butPtr->width = butPtr->height = 0;
     editPtr->width = editPtr->height = 0;
-
-    if (editPtr->icon != NULL) {
-	editPtr->iconWidth  = IconWidth(editPtr->icon) + IPAD;
-	editPtr->iconHeight = IconHeight(editPtr->icon) + 2 * YPAD;
-    }
-    if (editPtr->prefIconWidth > 0) {
-	editPtr->iconWidth = editPtr->prefIconWidth + IPAD;
-    }
-    editPtr->width += editPtr->iconWidth;
-    if (editPtr->height < editPtr->iconHeight) {
-	editPtr->height = editPtr->iconHeight;
-    }
 
     if (editPtr->flags & GEOMETRY) {
         ComputeGeometry(editPtr);
@@ -3153,16 +3089,13 @@ ComputeLayout(TextEditor *editPtr)
     } else {
         editPtr->width += editPtr->worldWidth;
     }
-    editPtr->width += IPAD;
+    editPtr->height += editPtr->worldHeight;
 
-    if (editPtr->height < editPtr->worldHeight) {
-	editPtr->height = editPtr->worldHeight;
-    }
-    if (editPtr->flags & CLRBUTTON) {
-	Button *butPtr = &editPtr->clearButton;
+    if (editPtr->flags & BUTTON) {
+	Button *butPtr = &editPtr->button;
 
 	butPtr->height = BUTTON_HEIGHT;
-	butPtr->width = BUTTON_WIDTH;
+	butPtr->width  = BUTTON_WIDTH;
 	butPtr->width  += 2 * (butPtr->borderWidth + butPtr->pad);
 	butPtr->height += 2 * (butPtr->borderWidth + butPtr->pad);
 	if (butPtr->height > editPtr->height) {
@@ -3170,14 +3103,15 @@ ComputeLayout(TextEditor *editPtr)
 	}
 	editPtr->width += butPtr->width;
     }
-    editPtr->width  += 2 * editPtr->borderWidth + IPAD;
-    editPtr->height += 2 * (editPtr->borderWidth + YPAD);
+
+    editPtr->width  += 2 * editPtr->borderWidth;
+    editPtr->height += 2 * editPtr->borderWidth;
 
     /* Figure out the requested size of the widget.  This will also tell us
      * if we need scrollbars. */
  
-    reqWidth  = editPtr->worldWidth  + 2 * editPtr->borderWidth;
-    reqHeight = editPtr->worldHeight + 2 * editPtr->borderWidth;
+    reqWidth  = editPtr->worldWidth  + 2 * (editPtr->borderWidth + XPAD);
+    reqHeight = editPtr->worldHeight + 2 * (editPtr->borderWidth + YPAD);
 
     w = GetBoundedWidth(editPtr, reqWidth);
     h = GetBoundedHeight(editPtr, reqHeight);
@@ -3214,8 +3148,11 @@ ComputeLayout(TextEditor *editPtr)
 	Tk_GeometryRequest(editPtr->tkwin, w, h);
     }
     editPtr->flags |= SCROLL_PENDING;
-    editPtr->flags &= ~LAYOUT_PENDING;
-
+#ifdef notdef
+    fprintf(stderr, "Leaving ComputeLayout(%s) w=%d h=%d, rw=%d, rh=%d\n", 
+	    Tk_PathName(editPtr->tkwin), w, h, Tk_ReqWidth(editPtr->tkwin),
+	    Tk_ReqHeight(editPtr->tkwin));
+#endif
 }
 
 /*
@@ -3239,87 +3176,95 @@ ComputeLayout(TextEditor *editPtr)
  *---------------------------------------------------------------------------
  */
 static void
-DrawTextLine(TextEditor *editPtr, Drawable drawable, TextLine *linePtr,
+DrawTextLine(ComboEditor *editPtr, Drawable drawable, TextLine *linePtr,
              int w, int h) 
 {
-    Blt_FontMetrics fm;
-    Pixmap pixmap;
-    int insertX;
-    int textX, textY;
     Blt_Bg bg;
+    Blt_FontMetrics fm;
     GC gc;
-    int numPixels;
+    const char *textStart;
+    int bytesLeft, pixelsLeft;
+    int numBytes, numPixels;
+    int dx;
+    int firstChar;
+    int insertX, insertY;
+    int textX, textY;
     int x, y;
-    int textOffset, xOffset, textWidth;
     
+#ifdef notdef
+    fprintf(stderr, "DrawTextLine(%s, %.*s) w=%d h=%d\n", 
+	    Tk_PathName(editPtr->tkwin), linePtr->numBytes,linePtr->text, w, h);
+#endif
     if ((h < 2) || (w < 2)) {
 	return;
     }
-    if (editPtr->textHeight <= 0) {
-	return;
-    }
     Blt_Font_GetMetrics(editPtr->font, &fm);
-    textY = fm.ascent;
 
 #ifdef WIN32
     assert(drawable != None);
 #endif
-    /*
-     * Create a pixmap the size of visible text area. This will be used for
-     * clipping the scrolled text string.
-     */
-    pixmap = Blt_GetPixmap(editPtr->display, Tk_WindowId(editPtr->tkwin),
-	w, h, Tk_Depth(editPtr->tkwin));
 
     bg = editPtr->textBg;
     gc = editPtr->textGC;
+    w -= 2 * XPAD;
+    h -= 2 * YPAD;
     x = linePtr->worldX - editPtr->xOffset;
     y = linePtr->worldY - editPtr->yOffset;
-    
+    x += XPAD;
+    y += YPAD;
+    textY = y + fm.ascent;
+    textX = x;
     /* Text background. */
     { 
 	int xOrigin, yOrigin;
 
 	Blt_Bg_GetOrigin(bg, &xOrigin, &yOrigin);
 	Blt_Bg_SetOrigin(editPtr->tkwin, bg, xOrigin + x, yOrigin + y);
-	Blt_Bg_FillRectangle(editPtr->tkwin, pixmap, bg, 0, 0, w, h, 
-		0, TK_RELIEF_FLAT);
+	Blt_Bg_FillRectangle(editPtr->tkwin, drawable, bg, x, y, w,
+                linePtr->height, 0, TK_RELIEF_FLAT);
 	Blt_Bg_SetOrigin(editPtr->tkwin, bg, xOrigin, yOrigin);
     }	
 
     /* 
-     * The viewport starts somewhere over the first visible character, but
-     * not necessarily at the start of the character.  Subtract the
-     * viewport offset from the start of the first character.  This is zero
-     * or a negative x-coordinate, indicating where start drawing the text
-     * so that it's properly clipped by the temporary pixmap. */
+     * The viewport starts at the first visible character, but not
+     * necessarily at the start of the character.  Subtract the viewport
+     * offset from the start of the first character.  This is zero or a
+     * negative x-coordinate, indicating where start drawing the text so
+     * that it's properly clipped by the temporary pixmap. */
 
     insertX = -1;
 
-    /* Find the start and end of the line as text offsets. */
-    textOffset = Blt_Font_Measure(editPtr->font, linePtr->text,
-        linePtr->numBytes, linePtr->worldX + editPtr->xOffset, TEXT_FLAGS,
-        &numPixels);
-    xOffset = editPtr->xOffset - numPixels; /* Pixel offset to the first
-                                             * character */
-    textX      = x - xOffset;
-    textWidth  = w - xOffset;
-    if (((editPtr->flags & (FOCUS|ICURSOR_ON)) == (FOCUS|ICURSOR_ON)) &&
-        (editPtr->selFirst == -1) &&
-        (editPtr->insertIndex >= linePtr->char1) && 
-	(editPtr->insertIndex < linePtr->char2)) {
+    /* The viewport is scrolled horizontally. Find the how many pixels
+     * from the start of the line are off-screen.  This also gives us
+     * how many bytes are off-screen. */
+    numBytes = Blt_Font_Measure(editPtr->font, linePtr->text, linePtr->numBytes,
+                linePtr->worldX + editPtr->xOffset, 0, &numPixels);
+    dx = editPtr->xOffset - numPixels;
+    textX -= dx;                        /* Move back the starting
+                                         * position. */
+    pixelsLeft = w + dx;                /* And widen the line to include
+                                         * the partial character. */
+    firstChar = linePtr->char1 += Tcl_NumUtfChars(linePtr->text, numBytes);
+    bytesLeft = linePtr->numBytes - numBytes;
+    textStart = linePtr->text + numBytes;
+
+    if ((editPtr->flags & ICURSOR_ON) && 
+        (editPtr->insertIndex >= firstChar) && 
+	(editPtr->insertIndex <= linePtr->char2)) {
         int numBytes;
 
-	insertX = textX;
-        /* The insertion cursor in on this line. Get the pixel offset to
+        /* The insertion cursor is on this line. Get the pixel offset to
          * the cursor by measuring the text to the location of the cursor.
          * First convert the cursor index to a byte offset. */
-        numBytes = CharIndexToByteOffset(linePtr->text, 
-                editPtr->insertIndex - linePtr->char1);
-        insertX += Blt_TextWidth(editPtr->font, linePtr->text, numBytes);
-	if (insertX > textWidth) {
-	    insertX = -1;
+	insertX = textX;
+        numBytes = CharIndexToByteOffset(textStart,
+                editPtr->insertIndex - firstChar);
+        insertX += Blt_TextWidth(editPtr->font, textStart, numBytes);
+        insertY = linePtr->worldY - editPtr->yOffset + YPAD;
+	if ((insertX - 4) > pixelsLeft) {
+	    insertX = -1;               /* Out of the viewport. */
 	}
+        editPtr->insertLine = linePtr - editPtr->lines;
     }
 
     /*
@@ -3330,96 +3275,101 @@ DrawTextLine(TextEditor *editPtr, Drawable drawable, TextLine *linePtr,
      *   3) Any text following the selection. This step will draw the 
      *      text string if there is no selection.
      */
-    /* Step 1. Draw any text preceding the selection that's still visible
-     *         in the viewport. */
-    if ((textWidth > 0) && (textOffset < linePtr->byte2) &&
-        (editPtr->selFirst >= linePtr->char1)) {
-	int numPixels, numBytes;
-	ByteOffset offset;
 
-	offset = linePtr->numBytes;
-	if (editPtr->selLast < linePtr->char2) {
-            offset = CharIndexToByteOffset(editPtr->screenText,
-                editPtr->selLast);
-	}
-        numBytes = offset - textOffset;
-	numBytes = Blt_Font_Measure(editPtr->font, linePtr->text + textOffset,
-                numBytes, textWidth, TEXT_FLAGS, &numPixels);
-	Blt_Font_Draw(editPtr->display, pixmap, gc, editPtr->font, 
-		Tk_Depth(editPtr->tkwin), 0.0f, 
-		linePtr->text + textOffset, numBytes, textX, textY);
+    /* 
+     * Step 1. If the selection starts on this line, draw any text
+     *         preceding the selection that's still visible in the
+     *         viewport. 
+     */
+    if ((pixelsLeft > 0) && (bytesLeft > 0) &&
+        (editPtr->selFirst > firstChar) &&
+        (editPtr->selFirst < linePtr->char2)) {	
+	int numPixels, numBytes;
+
+        numBytes = CharIndexToByteOffset(textStart,
+                editPtr->selFirst - firstChar);
+	numBytes = Blt_Font_Measure(editPtr->font, textStart,
+                numBytes, pixelsLeft, TEXT_FLAGS, &numPixels);
+	Blt_Font_Draw(editPtr->display, drawable, gc, editPtr->font, 
+		Tk_Depth(editPtr->tkwin), 0.0f, textStart, numBytes,
+                textX, textY);
 	textX += numPixels;
-        textWidth -= numPixels;
-        textOffset += numBytes;
+        pixelsLeft -= numPixels;
+        bytesLeft  -= numBytes;
+        textStart  += numBytes;
+        firstChar  += Tcl_NumUtfChars(linePtr->text, numBytes);
     }
-    /* Step 2. Draw the selection itself, if it's visible in the
-     *         viewport. Otherwise step 1 drew as much as we need. */
-    if ((textWidth > 0) && (textOffset < linePtr->byte2) &&
-        (editPtr->selFirst < linePtr->char1)) {	
-	Blt_Bg bg;
+
+    /* 
+     * Step 2. Draw the selection if it's visible in the viewport.
+     */
+    if ((pixelsLeft > 0) && (bytesLeft > 0) &&
+        (editPtr->selFirst < linePtr->char2) &&
+        (editPtr->selLast >= firstChar)) {	
 	int numBytes, numPixels;
 
-	/* The background of the selection rectangle is different depending
-	 * whether the widget has focus or not. */
-	bg = editPtr->selectBg;
-        numBytes = linePtr->byte2 - textOffset;
-	numBytes = Blt_Font_Measure(editPtr->font, 
-		editPtr->screenText + textOffset, numBytes, textWidth, 
-                TEXT_FLAGS, &numPixels);
-	Blt_Bg_FillRectangle(editPtr->tkwin, pixmap, bg, textX, 0, 
-		numPixels, h, 0, TK_RELIEF_FLAT);
-	Blt_Font_Draw(editPtr->display, pixmap, editPtr->selectGC, 
+        numBytes = CharIndexToByteOffset(textStart,
+                editPtr->selLast - firstChar);
+        if (numBytes > bytesLeft) {
+            numBytes = bytesLeft;
+        }
+	numBytes = Blt_Font_Measure(editPtr->font, textStart, numBytes,
+                pixelsLeft, TEXT_FLAGS, &numPixels);
+	Blt_Bg_FillRectangle(editPtr->tkwin, drawable, editPtr->selectBg,
+                textX, y, numPixels, linePtr->height, editPtr->selBorderWidth,
+                editPtr->selRelief);
+	Blt_Font_Draw(editPtr->display, drawable, editPtr->selectGC, 
 		editPtr->font, Tk_Depth(editPtr->tkwin), 0.0f, 
-		editPtr->screenText + textOffset, numBytes, textX, textY);
+		textStart, numBytes, textX, textY);
 	textX += numPixels;
-        textWidth -= numPixels;
-        textOffset += numBytes;
+        pixelsLeft -= numPixels;
+        bytesLeft  -= numBytes;
+        textStart  += numBytes;
     }
-    /* Step 3.  Draw any text following the selection that's visible
-     *		in the viewport. In the case of no selection, we draw
-     *		the entire text string. */
-    if ((textWidth > 0) && (textOffset < linePtr->byte2)) {
+
+    /* 
+     * Step 3.  Draw any text following the selection that's visible in the
+     *		viewport. In the case of no selection, this draws the
+     *		entire line.
+     */
+    if ((pixelsLeft > 0) && (bytesLeft > 0)) {
         int numBytes, numPixels;
         
-        numBytes = linePtr->byte2 - textOffset;
-	numBytes = Blt_Font_Measure(editPtr->font, 
-		editPtr->screenText + textOffset, numBytes, textWidth, 
-                TEXT_FLAGS, &numPixels);
-	Blt_Font_Draw(editPtr->display, pixmap, gc, 
-		editPtr->font, Tk_Depth(editPtr->tkwin), 0.0f, 
-		editPtr->screenText + textOffset, numBytes, 
-		textX, textY);
+	numBytes = Blt_Font_Measure(editPtr->font, textStart, bytesLeft,
+                pixelsLeft, TEXT_FLAGS, &numPixels);
+	Blt_Font_Draw(editPtr->display, drawable, gc, editPtr ->font,
+                Tk_Depth(editPtr->tkwin), 0.0f, textStart, numBytes,
+                textX, textY);
     }
     /* Draw the insertion cursor, if one is needed. */
     if (insertX >= 0) {
 	int y1, y2;
 
-	y1 = 1;
-	y2 = h - 2;
-	XDrawLine(editPtr->display, pixmap, editPtr->insertGC, insertX, y1, 
+	y1 = insertY + 1;
+	y2 = insertY + linePtr->height - 2;
+	XDrawLine(editPtr->display, drawable, editPtr->insertGC, insertX, y1, 
 		insertX, y2);
-#ifdef notdef
-	XDrawLine(editPtr->display, pixmap, editPtr->insertGC, insertX + 1, 
+#ifndef notdef
+	XDrawLine(editPtr->display, drawable, editPtr->insertGC, insertX + 1, 
 		y1, insertX + 1, y2);
 #endif
     }
-    XCopyArea(editPtr->display, pixmap, drawable, gc, 0, 0, w, h, 
-	x, y);
-    Tk_FreePixmap(editPtr->display, pixmap);
 }
 
 static void
-DrawTextArea(TextEditor *editPtr, Drawable drawable, int x, int y, int w, int h)
+DrawTextArea(ComboEditor *editPtr, Drawable drawable, int x, int y, int w,
+             int h)
 {
     Pixmap pixmap;
     Blt_Bg bg;
     GC gc;
-    TextLine *linePtr, *endPtr;
+    int i;
     
     bg = editPtr->textBg;
     gc = editPtr->textGC;
     w = VPORTWIDTH(editPtr);
     h = VPORTHEIGHT(editPtr);
+
     /*
      * Create a pixmap the size of visible text area. This will be used for
      * clipping the scrolled text string.
@@ -3437,40 +3387,85 @@ DrawTextArea(TextEditor *editPtr, Drawable drawable, int x, int y, int w, int h)
 		0, TK_RELIEF_FLAT);
 	Blt_Bg_SetOrigin(editPtr->tkwin, bg, xOrigin, yOrigin);
     }	
-    /* Find the starting line */
-    for (linePtr = editPtr->lines, endPtr = editPtr->lines + editPtr->numLines;
-         linePtr < endPtr; linePtr++) {
-        int sy;
-
-        sy = SCREENY(editPtr, linePtr->worldY);
-        if ((sy >= y) && (sy < (y + h))) {
-            break;                      /* This is the first line is in the
-                                         * viewport. */
-        }
-    }
-    for (/*empty*/; linePtr < endPtr; linePtr++) {
-        int sy;
-
-        sy = SCREENY(editPtr, linePtr->worldY);
-        if (sy >= (y + h)) {
-            break;                      /* This line starts beyond the end
-                                         * of the viewport. */
-        }
-        DrawTextLine(editPtr, pixmap, linePtr, w, h);
+    for (i = editPtr->firstLine; i < editPtr->lastLine; i++) {
+        DrawTextLine(editPtr, pixmap, editPtr->lines + i, w, h);
     }
     XCopyArea(editPtr->display, pixmap, drawable, gc, 0, 0, w, h, x, y);
     Tk_FreePixmap(editPtr->display, pixmap);
 }
 
 static void
-ComputeVisibleLines(TextEditor *editPtr)
+ComputeVisibleLines(ComboEditor *editPtr)
 {
+    TextLine *linePtr; 
+    
+    linePtr = FindLineFromCoord(editPtr, editPtr->yOffset);
+    assert(linePtr != NULL);
+    editPtr->firstLine = linePtr - editPtr->lines;
+    linePtr = FindLineFromCoord(editPtr, editPtr->yOffset + editPtr->height);
+    if (linePtr != NULL) {
+        editPtr->lastLine = linePtr - editPtr->lines;
+    } else {
+        editPtr->lastLine = editPtr->numLines;
+    }
+}
+
+static void
+UpdateScrollbarLocations(ComboEditor *editPtr)
+{
+    /* Manage the geometry of the scrollbars. */
+    if (editPtr->yScrollbarWidth > 0) {
+	int x, y;
+	int yScrollbarHeight;
+
+	x = Tk_Width(editPtr->tkwin) - editPtr->borderWidth -
+	    editPtr->yScrollbarWidth;
+	y = editPtr->borderWidth;
+	yScrollbarHeight = Tk_Height(editPtr->tkwin) - 
+	    editPtr->xScrollbarHeight - 2 * editPtr->borderWidth;
+	if ((Tk_Width(editPtr->yScrollbar) != editPtr->yScrollbarWidth) ||
+	    (Tk_Height(editPtr->yScrollbar) != yScrollbarHeight) ||
+	    (x != Tk_X(editPtr->yScrollbar)) || 
+	    (y != Tk_Y(editPtr->yScrollbar))) {
+	    Tk_MoveResizeWindow(editPtr->yScrollbar, x, y, 
+		editPtr->yScrollbarWidth, yScrollbarHeight);
+	}
+	if (!Tk_IsMapped(editPtr->yScrollbar)) {
+	    Tk_MapWindow(editPtr->yScrollbar);
+	}
+    } else if ((editPtr->yScrollbar != NULL) &&
+	       (Tk_IsMapped(editPtr->yScrollbar))) {
+	Tk_UnmapWindow(editPtr->yScrollbar);
+    }
+    if (editPtr->xScrollbarHeight > 0) {
+	int x, y;
+	int xScrollbarWidth;
+
+	x = editPtr->borderWidth;
+	y = Tk_Height(editPtr->tkwin) - editPtr->xScrollbarHeight - 
+	    editPtr->borderWidth;
+	xScrollbarWidth = Tk_Width(editPtr->tkwin) - 
+	    editPtr->yScrollbarWidth - 2 * editPtr->borderWidth;
+	if ((Tk_Width(editPtr->xScrollbar) != xScrollbarWidth) ||
+	    (Tk_Height(editPtr->xScrollbar) != editPtr->xScrollbarHeight) ||
+	    (x != Tk_X(editPtr->xScrollbar)) || 
+	    (y != Tk_Y(editPtr->xScrollbar))) {
+	    Tk_MoveResizeWindow(editPtr->xScrollbar, x, y, xScrollbarWidth,
+		editPtr->xScrollbarHeight);
+	}
+	if (!Tk_IsMapped(editPtr->xScrollbar)) {
+	    Tk_MapWindow(editPtr->xScrollbar);
+	}
+    } else if ((editPtr->xScrollbar != NULL) && 
+	       (Tk_IsMapped(editPtr->xScrollbar))) {
+	Tk_UnmapWindow(editPtr->xScrollbar);
+    }
 }
 
 static void
 DisplayProc(ClientData clientData)
 {
-    TextEditor *editPtr = clientData;
+    ComboEditor *editPtr = clientData;
     Pixmap drawable;
     int x, y, w, h;
     int screenWidth, screenHeight;
@@ -3486,9 +3481,11 @@ DisplayProc(ClientData clientData)
 	    Tk_Height(editPtr->tkwin));
 #endif
     if (editPtr->flags & LAYOUT_PENDING) {
-	ComputeGeometry(editPtr);
+	ComputeLayout(editPtr);
     }
-    if ((Tk_Width(editPtr->tkwin) <= 1) || (Tk_Height(editPtr->tkwin) <= 1)) {
+    w = Tk_Width(editPtr->tkwin);
+    h = Tk_Height(editPtr->tkwin);
+    if ((w <= 1) || (h <= 1)) {
 	/* Don't bother computing the layout until the window size is
 	 * something reasonable. */
 	return;
@@ -3516,13 +3513,12 @@ DisplayProc(ClientData clientData)
 	    Blt_UpdateScrollbar(editPtr->interp, editPtr->yScrollCmdObjPtr,
 		editPtr->yOffset, editPtr->yOffset+vh, editPtr->worldHeight);
 	}
+        UpdateScrollbarLocations(editPtr);
 	editPtr->flags &= ~SCROLL_PENDING;
     }
     /*
      * Create a pixmap the size of the window for double buffering.
      */
-    w = Tk_Width(editPtr->tkwin);
-    h = Tk_Height(editPtr->tkwin);
     Blt_SizeOfScreen(editPtr->tkwin, &screenWidth, &screenHeight);
     w = CLAMP(w, 1, screenWidth);
     h = CLAMP(h, 1, screenHeight);
@@ -3530,21 +3526,12 @@ DisplayProc(ClientData clientData)
     /* Create pixmap the size of the widget. */
     drawable = Blt_GetPixmap(editPtr->display, Tk_WindowId(editPtr->tkwin), 
 	w, h, Tk_Depth(editPtr->tkwin));
-    Blt_Fill3DRectangle(editPtr->tkwin, drawable, editPtr->border, 0, 0,
+    Blt_Bg_FillRectangle(editPtr->tkwin, drawable, editPtr->normalBg, 0, 0,
 	w, h, editPtr->borderWidth, editPtr->relief);
 
     x = editPtr->borderWidth + editPtr->gap;
     y = editPtr->borderWidth;
 
-    /* Draw the icon on the left side of the text area. */
-    if (editPtr->icon != NULL) {
-	y += (editPtr->height - IconHeight(editPtr->icon)) / 2;
-	Tk_RedrawImage(IconBits(editPtr->icon), 0, 0, 
-		       IconWidth(editPtr->icon), 
-		       IconHeight(editPtr->icon), 
-		       drawable, x, y);
-	x += IconWidth(editPtr->icon) + editPtr->gap;
-    }
     DrawTextArea(editPtr, drawable, x, y, w, h);
     
     /* Draw the close button on the right side of the text area. */
@@ -3560,9 +3547,138 @@ static int
 ApplyOp(ClientData clientData, Tcl_Interp *interp, int objc,
         Tcl_Obj *const *objv)
 {
-    TextEditor *editPtr = clientData;
-    int result = TCL_OK;
+#ifdef notdef
+    ComboEditor *editPtr = clientData;
 
+#endif
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * ButtonCgetOp --
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+ButtonCgetOp(ComboEditor *editPtr, Tcl_Interp *interp, int objc, 
+	     Tcl_Obj *const *objv)
+{
+    return Blt_ConfigureValueFromObj(interp, editPtr->tkwin, buttonSpecs,
+	(char *)&editPtr->button, objv[2], 0);
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * ButtonConfigureOp --
+ *
+ * 	This procedure is called to process an objv/objc list, plus the Tk
+ * 	option database, in order to configure (or reconfigure) the widget.
+ *
+ * Results:
+ *	A standard TCL result.  If TCL_ERROR is returned, then interp->result
+ *	contains an error message.
+ *
+ * Side Effects:
+ *	Configuration information, such as text string, colors, font,
+ *	etc. get set for editPtr; old resources get freed, if there were
+ *	any.  The widget is redisplayed.
+ *
+ *	.ce button configure ?optio value?
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+ButtonConfigureOp(ComboEditor *editPtr, Tcl_Interp *interp, int objc, 
+		  Tcl_Obj *const *objv)
+{
+    if (objc == 2) {
+	return Blt_ConfigureInfoFromObj(interp, editPtr->tkwin, buttonSpecs,
+	    (char *)&editPtr->button, (Tcl_Obj *)NULL, 0);
+    } else if (objc == 3) {
+	return Blt_ConfigureInfoFromObj(interp, editPtr->tkwin, buttonSpecs,
+	    (char *)&editPtr->button, objv[2], 0);
+    }
+    if (ConfigureButton(interp, editPtr, objc - 3, objv + 3, 
+		BLT_CONFIG_OBJV_ONLY) != TCL_OK) {
+	return TCL_ERROR;
+    }
+    EventuallyRedraw(editPtr);
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * ButtonInvokeOp --
+ *
+ * 	This procedure is called to invoke a button command.
+ *
+ *	  .t button invoke
+ *
+ * Results:
+ *	A standard TCL result.  If TCL_ERROR is returned, then
+ *	interp->result contains an error message.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+ButtonInvokeOp(ComboEditor *editPtr, Tcl_Interp *interp, int objc, 
+	       Tcl_Obj *const *objv)
+{
+    if (editPtr->button.cmdObjPtr != NULL) {
+	Tcl_Obj *cmdObjPtr;
+	int result;
+
+	cmdObjPtr = Tcl_DuplicateObj(editPtr->button.cmdObjPtr);
+	Tcl_IncrRefCount(cmdObjPtr);
+	result = Tcl_EvalObjEx(interp, cmdObjPtr, TCL_EVAL_GLOBAL);
+	Tcl_DecrRefCount(cmdObjPtr);
+	if (result != TCL_OK) {
+	    return TCL_ERROR;
+	}
+    }
+    EventuallyRedraw(editPtr);
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * ButtonOp --
+ *
+ *	This procedure handles tab operations.
+ *
+ * Results:
+ *	A standard TCL result.
+ *
+ *---------------------------------------------------------------------------
+ */
+static Blt_OpSpec buttonOps[] =
+{
+    {"cget",       2, ButtonCgetOp,      4, 4, "option",},
+    {"configure",  2, ButtonConfigureOp, 3, 0, "?option value?...",},
+    {"invoke",     1, ButtonInvokeOp,    3, 3, "",},
+};
+static int numButtonOps = sizeof(buttonOps) / sizeof(Blt_OpSpec);
+
+static int
+ButtonOp(ComboEditor *editPtr, Tcl_Interp *interp, int objc, 
+	 Tcl_Obj *const *objv)
+{
+    Tcl_ObjCmdProc *proc;
+    int result;
+
+    proc = Blt_GetOpFromObj(interp, numButtonOps, buttonOps, 
+	BLT_OP_ARG2, objc, objv, 0);
+    if (proc == NULL) {
+	return TCL_ERROR;
+    }
+    result = (*proc) (editPtr, interp, objc, objv);
     return result;
 }
 
@@ -3571,7 +3687,7 @@ static int
 CancelOp(ClientData clientData, Tcl_Interp *interp, int objc,
          Tcl_Obj *const *objv)
 {
-    TextEditor *editPtr = clientData;
+    ComboEditor *editPtr = clientData;
 
     Tk_DestroyWindow(editPtr->tkwin);
     return TCL_OK;
@@ -3589,7 +3705,7 @@ static int
 CgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
        Tcl_Obj *const *objv)
 {
-    TextEditor *editPtr = clientData;
+    ComboEditor *editPtr = clientData;
 
     return Blt_ConfigureValueFromObj(interp, editPtr->tkwin, 
 	configSpecs, (char *)editPtr, objv[2], 0);
@@ -3621,7 +3737,7 @@ static int
 ConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
             Tcl_Obj *const *objv)
 {
-    TextEditor *editPtr = clientData;
+    ComboEditor *editPtr = clientData;
 
     if (objc == 2) {
 	return Blt_ConfigureInfoFromObj(interp, editPtr->tkwin, configSpecs,
@@ -3659,7 +3775,7 @@ static int
 DeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
          Tcl_Obj *const *objv)
 {
-    TextEditor *editPtr = clientData;
+    ComboEditor *editPtr = clientData;
     CharIndex first, last;
 
     if (GetIndexFromObj(interp, editPtr, objv[2], &first) != TCL_OK) {
@@ -3680,6 +3796,51 @@ DeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
     return TCL_OK;
 }
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * GetOp --
+ *	Returns the current text string in the widget.
+ *
+ * Results:
+ *	Standard TCL result.
+ *
+ *	pathName get ?firstIndex lastIndex?
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+GetOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+{
+    ComboEditor *editPtr = clientData;
+    Tcl_Obj *objPtr;
+    
+    if (objc == 4) {
+        CharIndex firstChar, lastChar;
+        ByteOffset firstByte, lastByte;
+        const char *string;
+        
+        if (GetIndexFromObj(interp, editPtr, objv[2], &firstChar) != TCL_OK) {
+            return TCL_ERROR;
+        }
+        if (GetIndexFromObj(interp, editPtr, objv[3], &lastChar) != TCL_OK) {
+            return TCL_ERROR;
+        }
+        string = Blt_DBuffer_String(editPtr->dbuffer);
+        firstByte = Tcl_NumUtfChars(string, firstChar);
+        lastByte = Tcl_NumUtfChars(string, lastChar);
+        objPtr = Tcl_NewStringObj(string + firstByte, lastByte - firstByte);
+    } else if (objc == 2) {
+        objPtr = Blt_DBuffer_StringObj(editPtr->dbuffer);
+    } else {
+        Tcl_AppendResult(interp, "wrong # of arguments: should be \"",
+                Tcl_GetString(objv[0]), " get ?firstIndex lastIndex?",
+                         (char *)NULL);
+        return TCL_ERROR;
+    }
+    Tcl_SetObjResult(interp, objPtr);
+    return TCL_OK;
+}
 
 /*
  *---------------------------------------------------------------------------
@@ -3709,22 +3870,36 @@ static int
 IcursorOp(ClientData clientData, Tcl_Interp *interp, int objc,
           Tcl_Obj *const *objv)
 {
-    TextEditor *editPtr = clientData;
+    ComboEditor *editPtr = clientData;
     CharIndex index;
 
     if (GetIndexFromObj(interp, editPtr, objv[2], &index) != TCL_OK) {
 	return TCL_ERROR;
     }
-    if ((index < 0) || (index > editPtr->numChars)) {
-        Tcl_AppendResult(interp, "invalid index \"", Tcl_GetString(objv[2]),
-                         "\"", (char *)NULL);
-        return TCL_ERROR;
+    if (index < 0) {
+        editPtr->insertIndex = -1;
+        return TCL_OK;
+    }
+    if (index >= editPtr->numChars) {
+        index = editPtr->numChars;
     }
     editPtr->insertIndex = index;
     EventuallyRedraw(editPtr);
     return TCL_OK;
 }
 
+
+/*ARGSUSED*/
+static int
+IdentifyOp(ClientData clientData, Tcl_Interp *interp, int objc,
+           Tcl_Obj *const *objv)
+{
+#ifdef notdef
+    ComboEditor *editPtr = clientData;
+
+#endif
+    return TCL_OK;
+}
 
 /*
  *---------------------------------------------------------------------------
@@ -3754,7 +3929,7 @@ static int
 IndexOp(ClientData clientData, Tcl_Interp *interp, int objc,
         Tcl_Obj *const *objv)
 {
-    TextEditor *editPtr = clientData;
+    ComboEditor *editPtr = clientData;
     CharIndex index;
 
     if (GetIndexFromObj(interp, editPtr, objv[2], &index) != TCL_OK) {
@@ -3778,6 +3953,7 @@ IndexOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *	New information gets added to editPtr; it will be redisplayed soon,
  *	but not necessarily immediately.
  *
+ *      pathName insert index string
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
@@ -3785,7 +3961,7 @@ static int
 InsertOp(ClientData clientData, Tcl_Interp *interp, int objc,
          Tcl_Obj *const *objv)
 {
-    TextEditor *editPtr = clientData;
+    ComboEditor *editPtr = clientData;
     int length;
     CharIndex index;
     const char *string;
@@ -3795,11 +3971,12 @@ InsertOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     string = Tcl_GetStringFromObj(objv[3], &length);
     if (length == 0) {                   /* Nothing to insert. Move the
-					 * cursor anyways. */
+                                          * cursor anyways. */
 	editPtr->insertIndex = index;
     } else {
-	InsertText(editPtr, (const unsigned char *)string, length, index);
+	InsertText(editPtr, string, length, index);
     }
+    EventuallyRedraw(editPtr);
     return TCL_OK;
 }
 
@@ -3823,7 +4000,7 @@ static int
 InvokeOp(ClientData clientData, Tcl_Interp *interp, int objc, 
 	 Tcl_Obj *const *objv)
 {
-    TextEditor *editPtr = clientData;
+    ComboEditor *editPtr = clientData;
     int result;
 
     result = TCL_OK;
@@ -3855,7 +4032,7 @@ static int
 PostOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	Tcl_Obj *const *objv)
 {
-    TextEditor *editPtr = clientData;
+    ComboEditor *editPtr = clientData;
     int x, y;
 
     memset(&editPtr->post, 0, sizeof(PostInfo));
@@ -3999,7 +4176,50 @@ PostOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	TkWmRestackToplevel(editPtr->tkwin, Above, NULL);
 #endif
     }
+    if (editPtr->flags & ICURSOR) {
+        BlinkCursor(editPtr);
+    }
     editPtr->flags |= POSTED;
+    return TCL_OK;
+}
+
+static int
+SeeOp(ComboEditor *editPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+{
+    CharIndex index;
+    TextLine *linePtr;
+    int numBytes, numChars, numPixels;
+    
+    if (GetIndexFromObj(interp, editPtr, objv[2], &index) != TCL_OK) {
+	return TCL_ERROR;
+    }
+    if (index == -1) {
+	return TCL_OK;
+    }
+    linePtr = FindLineFromIndex(editPtr, index);
+    if (linePtr == NULL) {
+        return TCL_OK;
+    }
+    if (linePtr->worldY < editPtr->yOffset) {
+        editPtr->yOffset = linePtr->worldY;
+    } else if ((linePtr->worldY + linePtr->height) >=
+               (editPtr->yOffset + editPtr->height)) {
+        editPtr->yOffset = linePtr->worldY + editPtr->height - linePtr->height;
+    }
+    numChars = index - linePtr->char1;
+    numBytes = CharIndexToByteOffset(Blt_DBuffer_String(editPtr->dbuffer),
+                numChars);
+    /* Measure to the first character. */
+    numBytes = Blt_Font_Measure(editPtr->font, linePtr->text, numBytes,
+                linePtr->worldX, 0, &numPixels);
+    linePtr->text += numBytes;
+    if (numPixels < editPtr->xOffset) {
+        editPtr->xOffset = numPixels;
+    } else if (numPixels > (editPtr->xOffset + editPtr->width)) {
+        editPtr->xOffset = numPixels + editPtr->width - 20;
+    }
+    editPtr->flags |= SCROLL_PENDING;
+    EventuallyRedraw(editPtr);
     return TCL_OK;
 }
 
@@ -4008,7 +4228,7 @@ static int
 SelectionAdjustOp(ClientData clientData, Tcl_Interp *interp, int objc, 
 		  Tcl_Obj *const *objv)
 {
-    TextEditor *editPtr = clientData;
+    ComboEditor *editPtr = clientData;
     int textPos;
     int half1, half2;
 
@@ -4030,7 +4250,7 @@ static int
 SelectionClearOp(ClientData clientData, Tcl_Interp *interp, int objc, 
 		 Tcl_Obj *const *objv)
 {
-    TextEditor *editPtr = clientData;
+    ComboEditor *editPtr = clientData;
 
     if (editPtr->selFirst != -1) {
 	editPtr->selFirst = editPtr->selLast = -1;
@@ -4044,13 +4264,13 @@ static int
 SelectionFromOp(ClientData clientData, Tcl_Interp *interp, int objc, 
 		Tcl_Obj *const *objv)
 {
-    TextEditor *editPtr = clientData;
-    int textPos;
+    ComboEditor *editPtr = clientData;
+    CharIndex index;
 
-    if (GetIndexFromObj(interp, editPtr, objv[3], &textPos) != TCL_OK) {
+    if (GetIndexFromObj(interp, editPtr, objv[3], &index) != TCL_OK) {
 	return TCL_ERROR;
     }
-    editPtr->selAnchor = textPos;
+    editPtr->selAnchor = index;
     return TCL_OK;
 }
 
@@ -4059,7 +4279,7 @@ static int
 SelectionPresentOp(ClientData clientData, Tcl_Interp *interp, int objc, 
 		   Tcl_Obj *const *objv)
 {
-    TextEditor *editPtr = clientData;
+    ComboEditor *editPtr = clientData;
     int state;
 
     state = (editPtr->selFirst != -1);
@@ -4072,7 +4292,7 @@ static int
 SelectionRangeOp(ClientData clientData, Tcl_Interp *interp, int objc,
 		 Tcl_Obj *const *objv)
 {
-    TextEditor *editPtr = clientData;
+    ComboEditor *editPtr = clientData;
     int selFirst, selLast;
 
     if (GetIndexFromObj(interp, editPtr, objv[3], &selFirst) != TCL_OK) {
@@ -4091,7 +4311,7 @@ static int
 SelectionToOp(ClientData clientData, Tcl_Interp *interp, int objc, 
 	      Tcl_Obj *const *objv)
 {
-    TextEditor *editPtr = clientData;
+    ComboEditor *editPtr = clientData;
     int textPos;
 
     if (GetIndexFromObj(interp, editPtr, objv[3], &textPos) != TCL_OK) {
@@ -4103,12 +4323,12 @@ SelectionToOp(ClientData clientData, Tcl_Interp *interp, int objc,
 
 static Blt_OpSpec selectionOps[] =
 {
-    {"adjust", 1, SelectionAdjustOp, 4, 4, "index",},
-    {"clear", 1, SelectionClearOp, 3, 3, "",},
-    {"from", 1, SelectionFromOp, 4, 4, "index"},
+    {"adjust",  1, SelectionAdjustOp, 4, 4, "index",},
+    {"clear",   1, SelectionClearOp, 3, 3, "",},
+    {"from",    1, SelectionFromOp, 4, 4, "index"},
     {"present", 1, SelectionPresentOp, 3, 3, ""},
-    {"range", 1, SelectionRangeOp, 5, 5, "start end",},
-    {"to", 1, SelectionToOp, 4, 4, "index"},
+    {"range",   1, SelectionRangeOp, 5, 5, "start end",},
+    {"to",      1, SelectionToOp, 4, 4, "index"},
 };
 
 static int numSelectionOps = sizeof(selectionOps) / sizeof(Blt_OpSpec);
@@ -4160,7 +4380,7 @@ static int
 UnpostOp(ClientData clientData, Tcl_Interp *interp, int objc, 
 	 Tcl_Obj *const *objv)
 {
-    TextEditor *editPtr = clientData;
+    ComboEditor *editPtr = clientData;
 
     if (!WithdrawEditor(editPtr)) {
 	return TCL_OK;          /* This menu is already unposted. */
@@ -4200,7 +4420,7 @@ static int
 WithdrawOp(ClientData clientData, Tcl_Interp *interp, int objc, 
 	 Tcl_Obj *const *objv)
 {
-    TextEditor *editPtr = clientData;
+    ComboEditor *editPtr = clientData;
 
     WithdrawEditor(editPtr);
     return TCL_OK;      
@@ -4223,7 +4443,7 @@ static int
 XViewOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	Tcl_Obj *const *objv)
 {
-    TextEditor *editPtr = clientData;
+    ComboEditor *editPtr = clientData;
     int w;
 
     w = VPORTWIDTH(editPtr);
@@ -4273,7 +4493,7 @@ static int
 YViewOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	Tcl_Obj *const *objv)
 {
-    TextEditor *editPtr = clientData;
+    ComboEditor *editPtr = clientData;
     int height;
 
     height = VPORTHEIGHT(editPtr);
@@ -4321,16 +4541,20 @@ YViewOp(ClientData clientData, Tcl_Interp *interp, int objc,
 static Blt_OpSpec editorOps[] =
 {
     {"apply",     1, ApplyOp,     2, 2, "",},
+    {"button",    1, ButtonOp,    2, 0, "args",},
     {"cancel",    2, CancelOp,    2, 2, "",},
     {"cget",      2, CgetOp,      3, 3, "value",},
     {"configure", 2, ConfigureOp, 2, 0, "?option value...?",},
     {"delete",    1, DeleteOp,    3, 4, "firstIndex ?lastIndex?"},
+    {"get",       1, GetOp,       2, 2, "?firstIndex lastIndex?"},
     {"icursor",   2, IcursorOp,   3, 3, "index"},
+    {"identify",  2, IdentifyOp,  4, 4, "x y"},
     {"index",     3, IndexOp,     3, 3, "index"},
     {"insert",    3, InsertOp,    4, 4, "index string"},
     {"invoke",    3, InvokeOp,    3, 3, "",},
     {"post",      4, PostOp,      2, 0, "switches...",},
-    {"selection", 1, SelectionOp, 2, 0, "args"},
+    {"see",       3, SeeOp,       3, 3, "index"},
+    {"selection", 3, SelectionOp, 2, 0, "args"},
     {"unpost",    1, UnpostOp,    2, 2, "",},
     {"withdraw",  1, WithdrawOp,  2, 2, "",},
     {"xview",     2, XViewOp,     2, 5, "?moveto fract? ?scroll number what?",},
@@ -4377,7 +4601,7 @@ EditorInstCmdProc(ClientData clientData, Tcl_Interp *interp, int objc,
 static void
 EditorInstCmdDeletedProc(ClientData clientData)
 {
-    TextEditor *editPtr = clientData;   /* Pointer to widget record. */
+    ComboEditor *editPtr = clientData;   /* Pointer to widget record. */
 
     if (editPtr->tkwin != NULL) {
 	Tk_Window tkwin;
@@ -4407,14 +4631,14 @@ EditorInstCmdDeletedProc(ClientData clientData)
  */
 /* ARGSUSED */
 static int
-ComboEditorCmd(
+ComboEditorCmdProc(
     ClientData clientData,              /* Main window associated with
 					 * interpreter. */
     Tcl_Interp *interp,                 /* Current interpreter. */
     int objc,                           /* Number of arguments. */
     Tcl_Obj *const *objv)               /* Argument strings. */
 {
-    TextEditor *editPtr;
+    ComboEditor *editPtr;
     Tk_Window tkwin;
     XSetWindowAttributes attrs;
     char *path;
@@ -4426,6 +4650,7 @@ ComboEditorCmd(
 		(char *)NULL);
 	return TCL_ERROR;
     }
+#ifndef notdef
     /*
      * First time in this interpreter, invoke a procedure to initialize
      * various bindings on the combomenu widget.  If the procedure doesn't
@@ -4433,7 +4658,7 @@ ComboEditorCmd(
      * deferred sourcing the file until now so that the variable
      * $blt_library could be set within a script.
      */
-    if (!Blt_CommandExists(interp, "::blt::ComboEditor::PostCascade")) {
+    if (!Blt_CommandExists(interp, "::blt::ComboEditor::ConfigureScrollbars")) {
 	if (Tcl_GlobalEval(interp, 
   	    "source [file join $blt_library bltComboEditor.tcl]") != TCL_OK) {
 	    char info[200];
@@ -4444,6 +4669,7 @@ ComboEditorCmd(
 	    return TCL_ERROR;
 	}
     }
+#endif
     path = Tcl_GetString(objv[1]);
 #define TOP_LEVEL_SCREEN ""
     tkwin = Tk_CreateWindowFromPath(interp, Tk_MainWindow(interp), path, 
@@ -4466,9 +4692,12 @@ ComboEditorCmd(
     attrs.backing_store = WhenMapped;
     attrs.save_under = True;
     mask = (CWOverrideRedirect | CWSaveUnder | CWBackingStore);
-    Tk_ChangeWindowAttributes(tkwin, mask, &attrs);
-
+#ifndef notdef
     Tk_MakeWindowExist(tkwin);
+    XRaiseWindow(editPtr->display, Tk_WindowId(tkwin));
+    Tk_ChangeWindowAttributes(tkwin, mask, &attrs);
+#endif
+
     Tcl_SetObjResult(interp, objv[1]);
     return TCL_OK;
 }
@@ -4477,7 +4706,7 @@ int
 Blt_ComboEditorInitProc(Tcl_Interp *interp)
 {
     static Blt_CmdSpec cmdSpec = {
-        "comboeditor", ComboEditorCmd
+        "comboeditor", ComboEditorCmdProc
     };
     return Blt_InitCmd(interp, "::blt", &cmdSpec);
 }
