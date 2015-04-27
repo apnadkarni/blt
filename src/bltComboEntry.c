@@ -3649,6 +3649,7 @@ SelectionOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc,
     result = (*proc) (comboPtr, interp, objc, objv);
     return result;
 }
+
 /*
  *---------------------------------------------------------------------------
  *

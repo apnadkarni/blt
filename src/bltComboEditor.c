@@ -224,9 +224,13 @@ typedef struct {
                                          * indices. */
 } TextLine;
 
+typedef enum RecordTypes {
+    INSERT_OP, DELETE_OP
+} RecordType;
+
 typedef struct _EditRecord {
     struct _EditRecord *nextPtr;
-    int type;
+    RecordType type;
     CharIndex insertIndex;		/* Current index of the cursor. */
     CharIndex index;			/* Character index where text was
 					   inserted. */
@@ -476,7 +480,6 @@ typedef struct {
 					 * cursor.  */
 
 
-    int insertLine;                     /* Line with insertion cursor. */
     int prefTextWidth;			/* Desired width of text, measured
 					 * in average characters. */
 
@@ -1236,8 +1239,8 @@ FreeRedoRecords(ComboEditor *editPtr)
 }
 
 static void
-RecordEdit(ComboEditor *editPtr, int type, CharIndex index, const char *text, 
-	   int numBytes)
+RecordEdit(ComboEditor *editPtr, RecordType type, CharIndex index,
+           const char *text, int numBytes)
 {
     EditRecord *recPtr;
 
@@ -1250,6 +1253,9 @@ RecordEdit(ComboEditor *editPtr, int type, CharIndex index, const char *text,
     memcpy(recPtr->text, text, numBytes);
     recPtr->nextPtr = editPtr->undoPtr;
     editPtr->undoPtr = recPtr;
+    fprintf(stderr, "Record Type: type=%d index=%d insert=%d numChar=%d numBytes=%d text=%.*s\n",
+            recPtr->type, recPtr->index, recPtr->insertIndex, recPtr->numChars,
+            recPtr->numBytes, recPtr->numBytes, recPtr->text);
 }
 
 static void
@@ -2440,12 +2446,14 @@ GetIndexFromObj(Tcl_Interp *interp, ComboEditor *editPtr, Tcl_Obj *objPtr,
     } else if ((c == 'i') && (strcmp(string, "insert") == 0)) {
 	*indexPtr = editPtr->insertIndex;
     } else if ((c == 'd') && (strcmp(string, "down") == 0)) {
+        TextLine *linePtr;
+        
         index = editPtr->insertIndex;
-        if (editPtr->insertLine < (editPtr->numLines - 1)) {
-            TextLine *linePtr;
+        linePtr = FindLineFromIndex(editPtr, editPtr->insertIndex);
+        if ((linePtr != NULL) &&
+            ((linePtr - editPtr->lines) < (editPtr->numLines - 1))) {
             int numChars;
             
-            linePtr = editPtr->insertLine + editPtr->lines;
             numChars = editPtr->insertIndex - linePtr->char1;
             linePtr++;
             index = linePtr->char1 + numChars;
@@ -2455,12 +2463,13 @@ GetIndexFromObj(Tcl_Interp *interp, ComboEditor *editPtr, Tcl_Obj *objPtr,
         }
         *indexPtr = index;
     } else if ((c == 'u') && (strcmp(string, "up") == 0)) {
+        TextLine *linePtr;
+        
         index = editPtr->insertIndex;
-        if (editPtr->insertLine > 0) {
-            TextLine *linePtr;
+        linePtr = FindLineFromIndex(editPtr, editPtr->insertIndex);
+        if ((linePtr != NULL) && ((linePtr - editPtr->lines) > 0)) {
             int numChars;
             
-            linePtr = editPtr->insertLine + editPtr->lines;
             numChars = editPtr->insertIndex - linePtr->char1;
             linePtr--;
             index = linePtr->char1 + numChars;
@@ -2491,6 +2500,8 @@ GetIndexFromObj(Tcl_Interp *interp, ComboEditor *editPtr, Tcl_Obj *objPtr,
         index = editPtr->insertIndex;
         if (editPtr->insertIndex != -1) {
             index = GetLineEnd(editPtr, index);
+            fprintf(stderr, "GetLineEnd insert=%d index=%d\n",
+                    editPtr->insertIndex, index);
         }
 	*indexPtr = index;
     } else if ((c == 'w') && (strcmp(string, "word.start") == 0)) {
@@ -2605,50 +2616,6 @@ ConfigureScrollbarsProc(ClientData clientData)
 	Tcl_BackgroundError(interp);
     }
 }
-
-static void
-DestroyEditor(DestroyData data)
-{
-    ComboEditor *editPtr = (ComboEditor *)data;
-
-    Blt_FreeOptions(configSpecs, (char *)editPtr, editPtr->display, 0);
-
-    FreeUndoRecords(editPtr);
-    FreeRedoRecords(editPtr);
-    DestroyButton(editPtr, &editPtr->button);
-
-    if (editPtr->insertTimerToken != NULL) {
-	Tcl_DeleteTimerHandler(editPtr->insertTimerToken);
-    }
-    if (editPtr->flags & REDRAW_PENDING) {
-        Tcl_CancelIdleCall(DisplayProc, editPtr);
-    }
-    if (editPtr->flags & SELECT_PENDING) {
-        Tcl_CancelIdleCall(SelectCmdProc, editPtr);
-    }
-    if (editPtr->flags & INVOKE_PENDING) {
-        Tcl_CancelIdleCall(InvokeCmdProc, editPtr);
-    }
-    if (editPtr->tkwin != NULL) {
-	Tk_DeleteSelHandler(editPtr->tkwin, XA_PRIMARY, XA_STRING);
-	Tk_DeleteEventHandler(editPtr->tkwin, EVENT_MASK, EditorEventProc,
-                editPtr);
-    }
-    if (editPtr->textGC != NULL) {
-	Tk_FreeGC(editPtr->display, editPtr->textGC);
-    }
-    if (editPtr->selectGC != NULL) {
-	Tk_FreeGC(editPtr->display, editPtr->selectGC);
-    }
-    if (editPtr->insertGC != NULL) {
-	Tk_FreeGC(editPtr->display, editPtr->insertGC);
-    }
-    if (editPtr->cmdToken != NULL) {
-        Tcl_DeleteCommandFromToken(editPtr->interp, editPtr->cmdToken);
-    }
-    Blt_Free(editPtr);
-}
-
 
 /*
  *---------------------------------------------------------------------------
@@ -3264,7 +3231,6 @@ DrawTextLine(ComboEditor *editPtr, Drawable drawable, TextLine *linePtr,
 	if ((insertX - 4) > pixelsLeft) {
 	    insertX = -1;               /* Out of the viewport. */
 	}
-        editPtr->insertLine = linePtr - editPtr->lines;
     }
 
     /*
@@ -3563,9 +3529,11 @@ ApplyOp(ClientData clientData, Tcl_Interp *interp, int objc,
  */
 /*ARGSUSED*/
 static int
-ButtonCgetOp(ComboEditor *editPtr, Tcl_Interp *interp, int objc, 
+ButtonCgetOp(ClientData clientData, Tcl_Interp *interp, int objc, 
 	     Tcl_Obj *const *objv)
 {
+    ComboEditor *editPtr = clientData;
+
     return Blt_ConfigureValueFromObj(interp, editPtr->tkwin, buttonSpecs,
 	(char *)&editPtr->button, objv[2], 0);
 }
@@ -3592,9 +3560,11 @@ ButtonCgetOp(ComboEditor *editPtr, Tcl_Interp *interp, int objc,
  *---------------------------------------------------------------------------
  */
 static int
-ButtonConfigureOp(ComboEditor *editPtr, Tcl_Interp *interp, int objc, 
+ButtonConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc, 
 		  Tcl_Obj *const *objv)
 {
+    ComboEditor *editPtr = clientData;
+
     if (objc == 2) {
 	return Blt_ConfigureInfoFromObj(interp, editPtr->tkwin, buttonSpecs,
 	    (char *)&editPtr->button, (Tcl_Obj *)NULL, 0);
@@ -3627,9 +3597,11 @@ ButtonConfigureOp(ComboEditor *editPtr, Tcl_Interp *interp, int objc,
  */
 /*ARGSUSED*/
 static int
-ButtonInvokeOp(ComboEditor *editPtr, Tcl_Interp *interp, int objc, 
+ButtonInvokeOp(ClientData clientData, Tcl_Interp *interp, int objc, 
 	       Tcl_Obj *const *objv)
 {
+    ComboEditor *editPtr = clientData;
+
     if (editPtr->button.cmdObjPtr != NULL) {
 	Tcl_Obj *cmdObjPtr;
 	int result;
@@ -3667,7 +3639,7 @@ static Blt_OpSpec buttonOps[] =
 static int numButtonOps = sizeof(buttonOps) / sizeof(Blt_OpSpec);
 
 static int
-ButtonOp(ComboEditor *editPtr, Tcl_Interp *interp, int objc, 
+ButtonOp(ClientData clientData, Tcl_Interp *interp, int objc, 
 	 Tcl_Obj *const *objv)
 {
     Tcl_ObjCmdProc *proc;
@@ -3678,7 +3650,7 @@ ButtonOp(ComboEditor *editPtr, Tcl_Interp *interp, int objc,
     if (proc == NULL) {
 	return TCL_ERROR;
     }
-    result = (*proc) (editPtr, interp, objc, objv);
+    result = (*proc) (clientData, interp, objc, objv);
     return result;
 }
 
@@ -3777,7 +3749,9 @@ DeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
 {
     ComboEditor *editPtr = clientData;
     CharIndex first, last;
-
+    ByteOffset byte1, byte2;
+    const char *string;
+    
     if (GetIndexFromObj(interp, editPtr, objv[2], &first) != TCL_OK) {
 	return TCL_ERROR;
     }
@@ -3789,6 +3763,11 @@ DeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (first > last) {
 	return TCL_OK;
     }
+    string = Blt_DBuffer_String(editPtr->dbuffer);
+    byte1 = CharIndexToByteOffset(string, first);
+    byte2 = CharIndexToByteOffset(string, last);
+    fprintf(stderr, "Delete text first=%d last=%d\n", first, last);
+    RecordEdit(editPtr, DELETE_OP, first, string, byte2 - byte1);
     if (!DeleteText(editPtr, first, last)) {
         Tcl_AppendResult(interp, "can't delete text", (char *)NULL);
         return TCL_ERROR;
@@ -3877,6 +3856,7 @@ IcursorOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	return TCL_ERROR;
     }
     if (index < 0) {
+        fprintf(stderr, "index=%d\n", index);
         editPtr->insertIndex = -1;
         return TCL_OK;
     }
@@ -3974,6 +3954,7 @@ InsertOp(ClientData clientData, Tcl_Interp *interp, int objc,
                                           * cursor anyways. */
 	editPtr->insertIndex = index;
     } else {
+        RecordEdit(editPtr, INSERT_OP, index, string, length);
 	InsertText(editPtr, string, length, index);
     }
     EventuallyRedraw(editPtr);
@@ -4183,9 +4164,129 @@ PostOp(ClientData clientData, Tcl_Interp *interp, int objc,
     return TCL_OK;
 }
 
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * RedoOp --
+ *
+ *	Inserts a new item into the comboentry at the given index.
+ *
+ * Results:
+ *	NULL is always returned.
+ *
+ * Side effects:
+ *	The comboentry gets a new item.
+ *
+ *   .cb insert index string
+ *
+ *---------------------------------------------------------------------------
+ */
 static int
-SeeOp(ComboEditor *editPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+RedoOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 {
+    ComboEditor *editPtr = clientData;
+
+    if (editPtr->redoPtr != NULL) {
+	EditRecord *recPtr;
+
+	recPtr = editPtr->redoPtr;
+	if (recPtr->type == INSERT_OP) {
+	    InsertText(editPtr, recPtr->text, recPtr->numBytes, recPtr->index);
+	} else if (recPtr->type == DELETE_OP) {
+            CharIndex last;
+
+            last = recPtr->index + recPtr->numChars;
+	    DeleteText(editPtr, recPtr->index, last);
+	} else {
+	    Tcl_AppendResult(interp, "unknown record type \"", 
+			     Blt_Itoa(recPtr->type), "\"", (char *)NULL);
+	    return TCL_ERROR;
+	}
+	editPtr->insertIndex = recPtr->insertIndex;
+	editPtr->redoPtr = recPtr->nextPtr;
+	recPtr->nextPtr = editPtr->undoPtr;
+	editPtr->undoPtr = recPtr;
+	EventuallyRedraw(editPtr);
+    }
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * ScanOp --
+ *
+ *	Implements the quick scan.
+ *
+ *---------------------------------------------------------------------------
+ */
+/*ARGSUSED*/
+static int
+ScanOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+{
+    ComboEditor *editPtr = clientData;
+
+    int oper;
+    int x;
+
+#define SCAN_MARK	1
+#define SCAN_DRAGTO	2
+    {
+	char *string;
+	char c;
+	int length;
+	
+	string = Tcl_GetStringFromObj(objv[2], &length);
+	c = string[0];
+	if ((c == 'm') && (strncmp(string, "mark", length) == 0)) {
+	    oper = SCAN_MARK;
+	} else if ((c == 'd') && (strncmp(string, "dragto", length) == 0)) {
+	    oper = SCAN_DRAGTO;
+	} else {
+	    Tcl_AppendResult(interp, "bad scan operation \"", string,
+		"\": should be either \"mark\" or \"dragto\"", (char *)NULL);
+	    return TCL_ERROR;
+	}
+    }
+    if (objc == 3) {
+	if (oper == SCAN_MARK) {
+	    Tcl_SetIntObj(Tcl_GetObjResult(interp), editPtr->scanAnchor);
+	}
+	return TCL_OK;
+    }
+    if (Blt_GetPixelsFromObj(interp, editPtr->tkwin, objv[3], PIXELS_ANY, &x) 
+	 != TCL_OK) {
+	return TCL_ERROR;
+    }
+    if (oper == SCAN_MARK) {
+	editPtr->scanAnchor = x;
+	editPtr->scanX = editPtr->scrollX;
+    } else {
+	int worldX, xMax;
+	int dx;
+
+	dx = editPtr->scanAnchor - x;
+	worldX = editPtr->scanX + (10 * dx);
+	xMax = editPtr->viewWidth - ICWIDTH;
+
+	if (worldX < 0) {
+	    worldX = 0;
+	} else if ((worldX + xMax) >= editPtr->textWidth) {
+	    worldX = editPtr->textWidth; /* - (8 * xMax / 10); */
+	}
+	editPtr->scrollX = worldX;
+	editPtr->flags |= SCROLL_PENDING;
+	EventuallyRedraw(editPtr);
+    }
+    return TCL_OK;
+}
+
+static int
+SeeOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
+{
+    ComboEditor *editPtr = clientData;
+
     CharIndex index;
     TextLine *linePtr;
     int numBytes, numChars, numPixels;
@@ -4363,6 +4464,55 @@ SelectionOp(ClientData clientData, Tcl_Interp *interp, int objc,
     }
     result = (*proc) (clientData, interp, objc, objv);
     return result;
+}
+
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * UndoOp --
+ *
+ *	Inserts a new item into the comboentry at the given index.
+ *
+ * Results:
+ *	NULL is always returned.
+ *
+ * Side effects:
+ *	The comboentry gets a new item.
+ *
+ *   .cb insert index string
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+UndoOp(ClientData clientData, Tcl_Interp *interp, int objc,
+       Tcl_Obj *const *objv)
+{
+    ComboEditor *editPtr = clientData;
+
+    if (editPtr->undoPtr != NULL) {
+	EditRecord *recPtr;
+
+	recPtr = editPtr->undoPtr;
+	if (recPtr->type == INSERT_OP) {
+            CharIndex last;
+
+            last = recPtr->index + recPtr->numChars;
+	    DeleteText(editPtr, recPtr->index, last);
+	} else if (recPtr->type == DELETE_OP) {
+	    InsertText(editPtr, recPtr->text, recPtr->numBytes, recPtr->index);
+	} else {
+	    Tcl_AppendResult(interp, "unknown record type \"", 
+			     Blt_Itoa(recPtr->type), "\"", (char *)NULL);
+	    return TCL_ERROR;
+	}
+	editPtr->insertIndex = recPtr->insertIndex;
+	editPtr->undoPtr = recPtr->nextPtr;
+	recPtr->nextPtr = editPtr->redoPtr;
+	editPtr->redoPtr = recPtr;
+	EventuallyRedraw(editPtr);
+    }
+    return TCL_OK;
 }
 
 /*
@@ -4553,8 +4703,11 @@ static Blt_OpSpec editorOps[] =
     {"insert",    3, InsertOp,    4, 4, "index string"},
     {"invoke",    3, InvokeOp,    3, 3, "",},
     {"post",      4, PostOp,      2, 0, "switches...",},
+    {"redo",      1, RedoOp,      2, 2, "",},
+    {"scan",      2, ScanOp,      3, 4, "dragto|mark x",},
     {"see",       3, SeeOp,       3, 3, "index"},
     {"selection", 3, SelectionOp, 2, 0, "args"},
+    {"undo",      3, UndoOp,      2, 2, "",},
     {"unpost",    1, UnpostOp,    2, 2, "",},
     {"withdraw",  1, WithdrawOp,  2, 2, "",},
     {"xview",     2, XViewOp,     2, 5, "?moveto fract? ?scroll number what?",},
