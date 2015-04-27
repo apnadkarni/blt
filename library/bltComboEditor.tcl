@@ -43,7 +43,6 @@ namespace eval blt {
 	    b1			""
 	    lastFocus		{}
 	    mouseMoved		0
-	    postingButton	{}
 	    trace		0
 	    lastX		-1
 	    x			-1
@@ -82,15 +81,6 @@ bind BltComboEditor <ButtonPress-1> {
     %W icursor @%x,%y
     %W selection clear
     %W selection from insert
-}
-
-bind BltTextEntry <ButtonRelease-1> {
-    blt::ComboEditor::trace "ComboEditor %W at %X,%Y <ButtonRelease-1>"
-    after cancel $blt::ComboEditor::_private(afterId)
-    if { [%W identify -root %X %Y]  == "button" } {
-	blt::ComboEditor::trace "button invoke"
-	%W button invoke
-    }
 }
 
 bind BltComboEditor <B1-Motion> {
@@ -162,40 +152,39 @@ bind BltComboEditor <Control-1> {
     %W icursor @%x,%y
 }
 
-
-# Go to beginning of line (Ctrl+A).
+# Ctrl+A
+#   Position insertion cursor at beginning of current line (the line
+#   where the insertion cursor current resides).  
 bind BltComboEditor <Control-a> {
     %W icursor line.start
     %W see insert
 }
 
-# Back one character (Ctrl+B).
+# Ctrl+A
+#   Select all characters. Position insertion cursor at the end.
+bind BltComboEditor <Control-a> {
+    %W selection range from 0 end
+    %W icursor end
+}
+
+# Ctrl+B
+#   Position the insertion cursor before the previous character.
 bind BltComboEditor <Control-KeyPress-b> {
     %W icursor previous
     %W see insert
 }
 
-# Forward one character (Ctrl+F).
-bind BltComboEditor <Control-f> {
-    %W icursor next
-    %W see insert
-}
-
-# Paste
-bind BltComboEditor <Control-v> {
-    %W insert insert [selection get]
-}
-
-
-# Copy selection to clipboard (Ctrl+C).
+# Ctrl+C
+#   Copy the selected characters to clipboard.
 bind BltComboEditor <Control-c> {
     if { [%W selection present] } {
 	clipboard clear -displayof %W
-	clipboard append -displayof %W [selection get]
+	clipboard append -displayof %W [$W selection get]
     }
 }
 
-# Delete next character (Ctrl+D).
+# Ctrl+D
+#   Deletes the next character (from the insertion cursor).
 bind BltComboEditor <Control-d> {
     if { [%W selection present] } {
 	%W delete sel.first sel.last
@@ -204,13 +193,23 @@ bind BltComboEditor <Control-d> {
     }
 }
 
-# Goto to end of line (Ctrl+E)
+# Ctrl+E
+#   Position the insertion cursor at the end of the current line (the line
+#   where the insertion cursor current resides). 
 bind BltComboEditor <Control-e> {
     %W icursor line.end
     %W see insert
 }
 
-# Delete last character (Ctrl+H).
+# Ctrl+F
+#   Position the insertion cursor before the next character.
+bind BltComboEditor <Control-f> {
+    %W icursor next
+    %W see insert
+}
+
+# Ctrl+H
+#   Delete the character previous to the insertion cursor.  
 bind BltComboEditor <Control-h> {
     if { [%W selection present] } {
 	%W delete sel.first sel.last
@@ -220,75 +219,101 @@ bind BltComboEditor <Control-h> {
     }
 }
 
-# Kill to end of line (Ctrl+K).
+# Ctrl+K
+#   Deletes all characters to newline.  If there are no characters
+#   before the end of the line, the newline is deleted.
 bind BltComboEditor <Control-KeyPress-k> {
-    %W delete insert line.end
+    if { [%W get insert line.end] == "" } {
+        %W delete insert next
+    } else {
+	%W delete insert line.end
+    }
     %W see insert
 }
 
-# Down one line (Ctrl+N).  
+# Ctrl+N
+#   Position the insertion cursor on the next line down.  If we're
+#   already on the last line, nothing happens.  The cursor will be
+#   the same number of characters over in the next line, unless the
+#   line does not have that many characters.  Then the cursor will
+#   be at the end of the next line.
 bind BltComboEditor <Control-KeyPress-n> {
-    if { [%W selection present] } {
-	%W icursor sel.last
-	%W selection clear
-    } 
     %W icursor down
     %W see insert
 }
 
-# Up one line (Ctrl+P).
+# Ctrl+P
+#   Position the insertion cursor on the previous line up.  If we're
+#   already on the first line, nothing happens.  The cursor will be
+#   the same number of characters over in the previous line, unless the
+#   line does not have that many characters.  Then the cursor will
+#   be at the end of the previous line.
 bind BltComboEditor <Control-KeyPress-p> {
-    if { [%W selection present] } {
-	%W icursor sel.last
-	%W selection clear
-    } 
     %W icursor up
     %W see insert
 }
 
-# Transpose current and last characters (Ctrl+T).
+# Ctrl+T
+#   Transpose current and last characters.
 bind BltComboEditor <Control-t> {
     set index [%W index insert]
     if { $index != 0 && $index != [%W index end] } {
-	set a [string index [%W get] [%W index previous]]
-	set b [string index [%W get] [%W index insert]]
+	set a [%W get previous insert]
+	set b [%W get insert next]
 	%W delete previous next
 	%W insert insert "$b$a"
     }
 }
 
-# Cut text and copy to clipboard (Ctrl+X).
+# Ctrl+V
+#   Insert text from the clipboard at the current position.
+bind BltComboEditor <Control-v> {
+    %W insert insert [selection get]
+}
+
+# Ctrl+X
+#   Copies the selected characters to the clipboard and then deletes them
+#   from the text.
 bind BltComboEditor <Control-x> {
     if { [%W selection present] } {
 	clipboard clear -displayof %W
-	clipboard append -displayof %W [selection get]
+	clipboard append -displayof %W [%W selection get]
 	%W delete sel.first sel.last
     }
 }
-
-# Redo last edit (Ctrl+Y).
+# Ctrl+Y
+#   Redo the last edit.
 bind BltComboEditor <Control-y> {
     %W redo
     %W see insert
 }
-
-# Undo last edit (Ctrl+Z).
+# Ctrl+Z
+#   Undo the last edit.
 bind BltComboEditor <Control-z> {
     %W undo
     %W see insert
 }
 
+# Return
+#   Insert a newline into the text at the current location.
 bind BltComboEditor <KeyPress-Return> {
     %W insert insert "\n"
 }
 
+# Escape
+#   Cancel the editor. Return break.
 bind BltComboEditor <Escape> {
     %W unpost
 }
+
+# Keypad Return
+#   Insert a newline into the text at the current location.
 bind BltComboEditor <KP_Enter> {
     %W insert insert "\n"
 }
 
+# BackSpace
+#   Same at Ctrl+H
 bind BltComboEditor <BackSpace> {
     if {[%W selection present]} {
 	%W delete sel.first sel.last
@@ -298,6 +323,8 @@ bind BltComboEditor <BackSpace> {
     }
 }
 
+# Delete
+#   Same as Ctrl+D. 
 bind BltComboEditor <Delete> {
     if {[%W selection present]} {
 	%W delete sel.first sel.last
@@ -306,47 +333,43 @@ bind BltComboEditor <Delete> {
     }
 }
 
+# Down Arrow
+#   Same as Ctrl+N. 
 bind BltComboEditor <KeyPress-Down> {
-    if { [%W selection present] } {
-	%W icursor sel.last
-	%W selection clear
-    } 
     %W icursor down
     %W see insert
 }
 
+# Up Arrow
+#   Same as Ctrl+P. 
 bind BltComboEditor <KeyPress-Up> {
-    if { [%W selection present] } {
-	%W icursor sel.last
-	%W selection clear
-    } 
     %W icursor up
     %W see insert
 }
 
+# Left Arrow
+#   Same as Ctrl+B. 
 bind BltComboEditor <KeyPress-Left> {
-    if { [%W selection present] } {
-	%W icursor sel.last
-	%W selection clear
-    } 
     %W icursor previous
     %W see insert
 }
 
+# Right Arrow
+#   Same as Ctrl+F.
 bind BltComboEditor <KeyPress-Right> {
-    if { [%W selection present] } {
-	%W icursor sel.last
-	%W selection clear
-    } 
     %W icursor next
     %W see insert
 }
 
+# Home
+#   Position the insertion cursor before the first character.
 bind BltComboEditor <Home> {
     %W icursor 0
     %W see insert
 }
 
+# End
+#   Position the insertion cursor after the last character.
 bind BltComboEditor <End> {
     %W icursor end
     %W see insert
@@ -488,29 +511,43 @@ bind BltComboEditor <KeyPress> {
 
 # Additional emacs-like bindings:
 
-
+# Alt-B
+#   Position the insertion cursor before the current word.
 bind BltComboEditor <Alt-b> {
-    %W icursor [string wordstart [%W get] [%W index previous]]
+    %W icursor word.end
+    %W icursor word.start
     %W see insert
 }
 
+# Alt-D
+#   Deletes character from the insertion cursor to the end of the current
+#   word.
 bind BltComboEditor <Alt-d> {
-    %W delete insert [string wordend [%W get] [%W index insert]]
+    %W delete insert word.end
     %W see insert
 }
 
+# Alt-F
+#   Position the insertion cursor before the next word.
 bind BltComboEditor <Alt-f> {
-    %W icursor [string wordend [%W get] [%W index insert]]
+    %W icursor word.start
+    %W icursor word.end
     %W see insert
 }
 
+# Alt-Backspace
+#   Deletes the characters from the insertion cursor to the beginning
+#   of the current word.
 bind BltComboEditor <Alt-BackSpace> {
-    %W delete [string wordstart [%W get] [%W index previous]] insert
+    %W delete word.start insert
     %W see insert
 }
 
+# Alt-Backspace
+#   Deletes the characters from the insertion cursor to the end
+#   of the current word.
 bind BltComboEditor <Alt-Delete> {
-    %W delete insert [string wordend [%W get] [%W index insert]]
+    %W delete insert word.end
     %W see insert
 }
 
@@ -581,127 +618,6 @@ proc ::blt::ComboEditor::AutoScan {w} {
     set _private(afterId) [after 50 [list blt::ComboEditor::AutoScan $w]]
 }
 
-# PostMenu --
-#
-#	Given a menubutton, this procedure does all the work of posting
-#	its associated menu and unposting any other menu that is currently
-#	posted.
-#
-# Arguments:
-# w -			The name of the menubutton widget whose menu
-#			is to be posted.
-# x, y -		Root coordinates of cursor, used for positioning
-#			option menus.  If not specified, then the center
-#			of the menubutton is used for an option menu.
-
-proc ::blt::ComboEditor::PostMenu { w } {
-    variable _private
-
-    trace "proc PostMenu $w, state=[$w cget -state]"
-    if { [$w cget -state] == "disabled" } {
-	return
-    }
-    if { [$w cget -state] == "posted" } {
-	UnpostMenu $w
-	return
-    } 
-    set menu [$w cget -menu]
-    if { $menu == "" } {
-	return
-    }
-    set cur $_private(postingButton)
-    if { $cur != "" } {
-	#
-	UnpostMenu $cur
-    }
-    set _private(cursor) [$w cget -cursor]
-    $w configure -cursor arrow
-    
-    set _private(postingButton) $w
-    set _private(lastFocus) [focus]
-    $menu activate none
-    #blt::ComboEditor::GenerateMenuSelect $menu
-
-
-    # If this looks like an option menubutton then post the menu so
-    # that the current entry is on top of the mouse.  Otherwise post
-    # the menu just below the menubutton, as for a pull-down.
-
-    update idletasks
-    if { [catch { $w post } msg] != 0 } {
-	# Error posting menu (e.g. bogus -postcommand). Unpost it and
-	# reflect the error.
-	global errorInfo
-	set savedInfo $errorInfo
-	#
-	UnpostMenu $w 
-	error $msg $savedInfo
-    }
-
-    focus $menu
-    set value [$w get]
-    set index [$menu index $value]
-    if { $index != -1 } {
-	$menu see $index
-	$menu activate $index
-    }
-    if { [winfo viewable $menu] } {
-	trace "setting global grab on $menu"
-	bind $menu <Unmap> [list blt::ComboEditor::UnpostMenu $w]
-	blt::grab push $menu -global 
-    }
-}
-
-# ::blt::ComboEditor::UnpostMenu --
-#
-# This procedure unposts a given menu, plus all of its ancestors up
-# to (and including) a menubutton, if any.  It also restores various
-# values to what they were before the menu was posted, and releases
-# a grab if there's a menubutton involved.  Special notes:
-# 1. It's important to unpost all menus before releasing the grab, so
-#    that any Enter-Leave events (e.g. from menu back to main
-#    application) have mode NotifyGrab.
-# 2. Be sure to enclose various groups of commands in "catch" so that
-#    the procedure will complete even if the menubutton or the menu
-#    or the grab window has been deleted.
-#
-# Arguments:
-# menu -		Name of a menu to unpost.  Ignored if there
-#			is a posted menubutton.
-
-proc ::blt::ComboEditor::UnpostMenu { w } {
-    variable _private
-
-    trace "proc UnpostMenu $w"
-    catch { 
-	# Restore focus right away (otherwise X will take focus away when the
-	# menu is unmapped and under some window managers (e.g. olvwm) we'll
-	# lose the focus completely).
-	focus $_private(lastFocus) 
-    }
-    set _private(lastFocus) ""
-
-    # Unpost menu(s) and restore some stuff that's dependent on what was
-    # posted.
-
-    $w unpost
-    set _private(postingButton) {}
-    if { [info exists _private(cursor)] } {
-	$w configure -cursor $_private(cursor)
-    }
-    if { [$w cget -state] != "disabled" } {
-	#$w configure -state normal
-    }
-    set menu [$w cget -menu]
-    if { $menu == "" } {
-	return
-    }
-    trace MENU=$menu
-    # Release grab, if any, and restore the previous grab, if there
-    # was one.
-    blt::grab pop $menu
-}
-
 proc ::blt::ComboEditor::GenerateMenuSelect {menu} {
     if 0 {
     variable _private
@@ -732,453 +648,8 @@ proc ::blt::ComboEditor::HandleButtonPress { w x y } {
     }
 }
 
-########################################################################
-bind BltTextEntry <Enter> {
-    focus %W
-    puts stderr "focus=[focus]"
-    grab -local %W
-    # Do nothing
-}
-
-bind BltTextEntry <Leave> {
-    %W activate off
-}
-
-# Standard Motif bindings:
-
-bind BltTextEntry <Motion> {
-    %W activate [%W identify %x %y] 
-}
-
-bind BltTextEntry <ButtonPress-1> {
-    focus %W
-    %W icursor [%W closest %x]
-    %W selection clear
-    %W selection from insert
-}
-
-bind BltTextEntry <ButtonRelease-1> {
-    blt::ComboEditor::trace "ComboEditor %W at %X,%Y <ButtonRelease-1> state=[%W cget -state]"
-    after cancel $blt::ComboEditor::_private(afterId)
-    if { [%W identify -root %X %Y]  == "button" } {
-	blt::ComboEditor::trace "button invoke"
-	%W button invoke
-    }
-}
-
-bind BltTextEntry <B1-Motion> {
-    %W selection to [%W closest %x]
-}
-
-bind BltTextEntry <B1-Enter> {
-    after cancel $blt::ComboEditor::_private(afterId)
-    set blt::ComboEditor::_private(afterId) -1
-}
-
-bind BltTextEntry <B1-Leave> {
-    blt::ComboEditor::trace "ComboEditor B1-Leave"
-    if { $blt::ComboEditor::_private(b1) == "text" } {
-	set blt::ComboEditor::_private(lastX) %x
-	blt::ComboEditor::AutoScan %W
-    }
-}
-
-bind BltTextEntry <Double-1> {
-    blt::ComboEditor::trace "Double-1"
-    %W icursor [%W closest %x]
-    %W selection range \
-	[string wordstart [%W get] [%W index previous]] \
-	[string wordend   [%W get] [%W index insert]]
-    %W icursor sel.last
-    %W see insert
-}
-
-bind BltTextEntry <Triple-1> {
-    blt::ComboEditor::trace "Triple-1"
-    %W selection range 0 end
-    %W icursor sel.last
-}
-
-bind BltTextEntry <Shift-1> {
-    %W selection adjust @%x
-}
-
-bind BltTextEntry <ButtonPress-2> {
-    %W scan mark %x
-}
-
-bind BltTextEntry <ButtonRelease-2> {
-    if { abs([%W scan mark] - %x) <= 3 } {
-	catch { 
-	    %W insert insert [selection get]
-	    %W see insert
-	}
-    }
-}
-
-bind BltTextEntry <B2-Motion> {
-    %W scan dragto %x
-}
-
-bind BltTextEntry <Control-1> {
-    %W icursor @%x
-}
-
-bind BltTextEntry <KeyPress-Left> {
-    if { [%W selection present] } {
-	%W icursor sel.last
-	%W selection clear
-    } 
-    %W icursor left
-    %W see insert
-}
-
-bind BltTextEntry <KeyPress-Right> {
-    if { [%W selection present] } {
-	%W icursor sel.last
-	%W selection clear
-    } 
-    %W icursor right
-    %W see insert
-}
-
-bind BltTextEntry <Shift-Left> {
-    if {![%W selection present]} {
-	%W selection range previous insert 
-    } else {
-	%W selection adjust previous
-    }
-    %W icursor previous
-    %W see insert
-}
-
-bind BltTextEntry <Shift-Right> {
-    if {![%W selection present]} {
-	%W selection range insert next
-    } else {
-	%W selection adjust next
-    }
-    %W icursor next
-    %W see insert
-}
-
-bind BltTextEntry <Shift-Control-Left> {
-    set previous [string wordstart [%W get] [%W index previous]]
-    if {![%W selection present]} {
-	%W selection range $previous insert 
-    } else {
-	%W selection adjust $previous
-    }
-    %W icursor $previous
-    %W see insert
-}
-
-bind BltTextEntry <Shift-Control-Right> {
-    set next [string wordend [%W get] [%W index insert]]
-    if {![%W selection present]} {
-	%W selection range insert $next
-    } else {
-	%W selection adjust $next
-    }
-    %W icursor $next
-    %W see insert
-}
-
-bind BltTextEntry <Home> {
-    %W icursor 0
-    %W see insert
-}
-
-bind BltTextEntry <Shift-Home> {
-    if {![%W selection present]} {
-	%W selection range 0 insert
-    } else {
-	%W selection adjust 0
-    }
-    %W icursor 0
-    %W see insert
-}
-
-bind BltTextEntry <End> {
-    %W icursor end
-    %W see insert
-}
-
-bind BltTextEntry <Shift-End> {
-    if {![%W selection present]} {
-	%W selection range insert end
-    } else {
-	%W selection adjust end
-    }
-    %W icursor end
-    %W see insert
-}
-
-bind BltTextEntry <Delete> {
-    if {[%W selection present]} {
-	%W delete sel.first sel.last
-    } else {
-	%W delete insert next
-    }
-}
-
-bind BltTextEntry <BackSpace> {
-    if {[%W selection present]} {
-	%W delete sel.first sel.last
-    } else {
-	%W delete previous insert 
-	%W see insert
-    }
-}
-
-bind BltTextEntry <Control-space> {
-    %W selection from insert
-}
-
-bind BltTextEntry <Select> {
-    %W selection from insert
-}
-
-bind BltTextEntry <Control-Shift-space> {
-    %W selection adjust insert
-}
-
-bind BltTextEntry <Shift-Select> {
-    %W selection adjust insert
-}
-
-bind BltTextEntry <Control-slash> {
-    %W selection range 0 end
-}
-
-bind BltTextEntry <Control-backslash> {
-    %W selection clear
-}
-
-bind BltTextEntry <Control-z> {
-    %W undo
-    %W see insert
-}
-
-bind BltTextEntry <Control-Z> {
-    %W redo
-    %W see insert
-}
-
-bind BltTextEntry <Control-y> {
-    %W redo
-    %W see insert
-}
-
-bind BltTextEntry <<Cut>> {
-    if { [%W selection present] } {
-	clipboard clear -displayof %W
-	clipboard append -displayof %W [selection get]
-	%W delete sel.first sel.last
-    }
-}
-
-bind BltTextEntry <<Copy>> {
-    if { [%W selection present] } {
-	clipboard clear -displayof %W
-	clipboard append -displayof %W [selection get]
-    }
-}
-
-bind BltTextEntry <<Paste>> {
-    %W insert insert [selection get]
-    %W see insert
-}
-
-bind BltTextEntry <<Clear>> {
-    %W delete sel.first sel.last
-}
-
-bind Entry <<PasteSelection>> {
-    if { $tk_strictMotif || 
-	 ![info exists blt::ComboEditor::_private(mouseMoved)] || 
-	 !$blt::ComboEditor::_private(mouseMoved)} {
-	tk::EntryPaste %W %x
-    }
-}
-
-# Paste
-bind BltTextEntry <Control-v> {
-    %W insert insert [selection get]
-}
-
-# Cut
-bind BltTextEntry <Control-x> {
-    if { [%W selection present] } {
-	clipboard clear -displayof %W
-	clipboard append -displayof %W [selection get]
-	%W delete sel.first sel.last
-    }
-}
-# Copy
-bind BltTextEntry <Control-c> {
-    if { [%W selection present] } {
-	clipboard clear -displayof %W
-	clipboard append -displayof %W [selection get]
-    }
-}
-
-bind BltTextEntry <Return> {
-    %W invoke 
-}
-
-bind BltTextEntry <KeyPress> {
-    if { [string compare %A {}] == 0 } {
-	continue
-    }
-    if { [%W selection present] } {
-	%W delete sel.first sel.last
-    }
-    %W insert insert %A
-    %W see insert
-}
-
-# Additional emacs-like bindings:
-
-bind BltTextEntry <Control-a> {
-    %W icursor 0
-    %W see insert
-}
-
-bind BltTextEntry <Control-b> {
-    %W icursor previous 
-    %W see insert
-}
-
-bind BltTextEntry <Control-d> {
-    if { [%W selection present] } {
-	%W delete sel.first sel.last
-    } else {
-	%W delete insert next
-    }
-}
-
-bind BltTextEntry <Control-e> {
-    %W icursor end
-    %W see insert
-}
-
-bind BltTextEntry <Control-f> {
-    %W icursor next
-    %W see insert
-}
-
-bind BltTextEntry <Control-h> {
-    if { [%W selection present] } {
-	%W delete sel.first sel.last
-    } else {
-	%W delete previous insert 
-	%W see insert
-    }
-}
-
-bind BltTextEntry <Control-k> {
-    %W delete insert end
-}
-
-bind BltTextEntry <Control-t> {
-    set index [%W index insert]
-    if { $index != 0 && $index != [%W index end] } {
-	set a [string index [%W get] [%W index previous]]
-	set b [string index [%W get] [%W index insert]]
-	%W delete previous next
-	%W insert insert "$b$a"
-    }
-}
-
-bind BltTextEntry <Alt-b> {
-    %W icursor [string wordstart [%W get] [%W index previous]]
-    %W see insert
-}
-
-bind BltTextEntry <Alt-d> {
-    %W delete insert [string wordend [%W get] [%W index insert]]
-    %W see insert
-}
-
-bind BltTextEntry <Alt-f> {
-    %W icursor [string wordend [%W get] [%W index insert]]
-    %W see insert
-}
-
-bind BltTextEntry <Alt-BackSpace> {
-    %W delete [string wordstart [%W get] [%W index previous]] insert
-    %W see insert
-}
-
-bind BltTextEntry <Alt-Delete> {
-    %W delete insert [string wordend [%W get] [%W index insert]]
-    %W see insert
-}
-
-####
-bind BltTextEntry <Meta-b> {
-    %W icursor [string wordstart [%W get] [%W index previous]]
-    %W see insert
-}
-
-bind BltTextEntry <Meta-d> {
-    %W delete insert [string wordend [%W get] [%W index insert]]
-    %W see insert
-}
-
-bind BltTextEntry <Meta-f> {
-    %W icursor [string wordend [%W get] [%W index insert]]
-    %W see insert
-}
-
-bind BltTextEntry <Meta-BackSpace> {
-    %W delete [string wordstart [%W get] [%W index previous]] insert
-    %W see insert
-}
-
-bind BltTextEntry <Meta-Delete> {
-    %W delete insert [string wordend [%W get] [%W index insert]]
-    %W see insert
-}
-
-
-# Ignore all Alt, Meta, and Control keypresses unless explicitly bound.
-# Otherwise, if a widget binding for one of these is defined, the
-# <KeyPress> class binding will also fire and insert the character,
-# which is wrong.  Ditto for Escape, Return, and Tab.
-
-bind BltTextEntry <Alt-KeyPress> {
-    # Do nothing.
-}
-bind BltTextEntry <Meta-KeyPress> { 
-    blt::ComboEditor::trace %K 
-}
-bind BltTextEntry <Control-KeyPress> {
-    # Do nothing.
-}
-bind BltTextEntry <Escape> {
-    # Do nothing.
-}
-bind BltTextEntry <KP_Enter> {
-    # Do nothing.
-}
-bind BltTextEntry <Tab> {
-    # Do nothing.
-}
-switch -- [tk windowingsystem] {
-    "classic" - "aqua"  {
-	bind BltTextEntry <Command-KeyPress> {
-	    # Do nothing.
-	}
-    }
-}
-
 catch { 
     itk::usual ComboEditor {
-	keep -background -cursor 
-    }
-    itk::usual TextEntry {
 	keep -background -cursor 
     }
 }
