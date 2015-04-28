@@ -3022,7 +3022,7 @@ NewEditor(Tcl_Interp *interp, Tk_Window tkwin)
     editPtr->selFirst = editPtr->selLast = -1;
     editPtr->selRelief = TK_RELIEF_FLAT;
     editPtr->tkwin = tkwin;
-    editPtr->xScrollUnits = editPtr->yScrollUnits = 1;
+    editPtr->xScrollUnits = editPtr->yScrollUnits = 4;
     Blt_ResetLimits(&editPtr->reqWidth);
     Blt_ResetLimits(&editPtr->reqHeight);
     Blt_SetWindowInstanceData(tkwin, editPtr);

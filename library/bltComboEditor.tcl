@@ -44,7 +44,6 @@ namespace eval blt {
 	    lastFocus		{}
 	    mouseMoved		0
 	    trace		0
-	    lastX		-1
 	    x			-1
 	    y			-1
 	}
@@ -101,8 +100,9 @@ bind BltComboEditor <B1-Enter> {
 
 bind BltComboEditor <B1-Leave> {
     blt::ComboEditor::trace "ComboEditor B1-Leave"
-    if { $blt::ComboEditor::_private(b1) == "text" } {
-	set blt::ComboEditor::_private(lastX) %x
+    if { [%W identify %x %y] != "button" } {
+	set blt::ComboEditor::_private(y) %x
+	set blt::ComboEditor::_private(x) %y
 	blt::ComboEditor::AutoScan %W
     }
 }
@@ -610,7 +610,8 @@ switch -- [tk windowingsystem] {
 proc ::blt::ComboEditor::AutoScan {w} {
     variable _private
 
-    set x $_private(lastX)
+    set x $_private(x)
+    set y $_private(y)
     if { ![winfo exists $w] } {
 	return
     }
@@ -618,6 +619,11 @@ proc ::blt::ComboEditor::AutoScan {w} {
 	$w xview scroll 2 units
     } elseif { $x < 0 } {
 	$w xview scroll -2 units
+    }
+    if { $y >= [winfo height $w] } {
+	$w yview scroll 2 units
+    } elseif { $y < 0 } {
+	$w yview scroll -2 units
     }
     set _private(afterId) [after 50 [list blt::ComboEditor::AutoScan $w]]
 }
