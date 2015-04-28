@@ -113,7 +113,11 @@ bind BltComboEditor <Double-1> {
 	::blt::ComboEditor::HandleButtonPress %W %x %y
     } else {
 	%W icursor @%x,%y
-	%W selection range word.start word.end
+	if { [%W get insert next] == " " } {
+	    %W selection range space.start space.end
+	} else {
+	    %W selection range word.start word.end
+	}	    
 	%W icursor sel.last
     }
 }
@@ -163,7 +167,7 @@ bind BltComboEditor <Control-a> {
 # Ctrl+A
 #   Select all characters. Position insertion cursor at the end.
 bind BltComboEditor <Control-a> {
-    %W selection range from 0 end
+    %W selection range 0 end
     %W icursor end
 }
 
@@ -511,15 +515,15 @@ bind BltComboEditor <KeyPress> {
 
 # Additional emacs-like bindings:
 
-# Alt-B
+# Alt+B
 #   Position the insertion cursor before the current word.
 bind BltComboEditor <Alt-b> {
-    %W icursor word.end
+    %W icursor space.start
     %W icursor word.start
     %W see insert
 }
 
-# Alt-D
+# Alt+D
 #   Deletes character from the insertion cursor to the end of the current
 #   word.
 bind BltComboEditor <Alt-d> {
@@ -527,15 +531,15 @@ bind BltComboEditor <Alt-d> {
     %W see insert
 }
 
-# Alt-F
+# Alt+F
 #   Position the insertion cursor before the next word.
 bind BltComboEditor <Alt-f> {
-    %W icursor word.start
+    %W icursor space.end
     %W icursor word.end
     %W see insert
 }
 
-# Alt-Backspace
+# Alt+Backspace
 #   Deletes the characters from the insertion cursor to the beginning
 #   of the current word.
 bind BltComboEditor <Alt-BackSpace> {

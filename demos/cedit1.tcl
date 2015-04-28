@@ -12,7 +12,8 @@ created equal."
 
 blt::comboeditor .e -text $text -exportselection yes \
     -xscrollbar .e.xs \
-    -yscrollbar .e.ys 
+    -yscrollbar .e.ys \
+    -height 1i
 
 blt::tk::scrollbar .e.xs
 blt::tk::scrollbar .e.ys

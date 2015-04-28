@@ -92,16 +92,16 @@
 #define PIXMAPX(t, wx) ((wx) - (t)->xOffset)
 #define PIXMAPY(t, wy) ((wy) - (t)->yOffset)
 
-#define SCREENX(t, wx) ((wx) - (t)->xOffset + (t)->borderWidth)
-#define SCREENY(t, wy) ((wy) - (t)->yOffset + (t)->borderWidth)
+#define SCREENX(t, wx) ((wx) - (t)->xOffset + (t)->borderWidth + XPAD)
+#define SCREENY(t, wy) ((wy) - (t)->yOffset + (t)->borderWidth + YPAD)
 
 #define WORLDX(t, sx)  ((sx) - (t)->borderWidth - XPAD + (t)->xOffset)
 #define WORLDY(t, sy)  ((sy) - (t)->borderWidth - YPAD + (t)->yOffset)
 
 #define VPORTWIDTH(t)  \
-    (Tk_Width((t)->tkwin) - 2 * (t)->borderWidth - (t)->yScrollbarWidth)
+    (Tk_Width((t)->tkwin) - 2*((t)->borderWidth+XPAD) - (t)->yScrollbarWidth)
 #define VPORTHEIGHT(t) \
-    (Tk_Height((t)->tkwin) - 2 * (t)->borderWidth - (t)->xScrollbarHeight)
+    (Tk_Height((t)->tkwin) - 2*((t)->borderWidth+YPAD) - (t)->xScrollbarHeight)
 
 #define MAXSCROLLBARTHICKNESS   100
 
@@ -546,6 +546,8 @@ static Blt_CustomOption textVarOption = {
     ObjToTextVarProc, TextVarToObjProc, FreeTextVarProc, (ClientData)0
 };
 
+extern Blt_CustomOption bltLimitsOption;
+
 static Blt_ConfigSpec buttonSpecs[] =
 {
     {BLT_CONFIG_COLOR, "-activebackground", "activeBackrgound", 
@@ -612,9 +614,9 @@ static Blt_ConfigSpec configSpecs[] =
 	Blt_Offset(ComboEditor, font), 0, },
     {BLT_CONFIG_COLOR, "-foreground", "foreground", "Foreground", 
 	DEF_NORMAL_FG, Blt_Offset(ComboEditor, normalColor), 0, },
-    {BLT_CONFIG_PIXELS_NNEG, "-height", "height", "Height", DEF_HEIGHT, 
-	Blt_Offset(ComboEditor, reqHeight), 
-	BLT_CONFIG_DONT_SET_DEFAULT , },
+    {BLT_CONFIG_CUSTOM, "-height", "height", "Height", DEF_HEIGHT, 
+	Blt_Offset(ComboEditor, reqHeight), BLT_CONFIG_DONT_SET_DEFAULT,
+	&bltLimitsOption},
     {BLT_CONFIG_COLOR, "-insertbackground", "insertBackground", 
 	"InsertBackground", DEF_INSERT_COLOR, 
 	Blt_Offset(ComboEditor, insertColor), 0},
@@ -659,9 +661,12 @@ static Blt_ConfigSpec configSpecs[] =
     {BLT_CONFIG_PIXELS_NNEG, "-textwidth", "textWidth", "TextWidth",
 	DEF_WIDTH, Blt_Offset(ComboEditor, prefTextWidth), 
 	BLT_CONFIG_DONT_SET_DEFAULT },
-    {BLT_CONFIG_PIXELS_NNEG, "-width", "width", "Width",
-	DEF_WIDTH, Blt_Offset(ComboEditor, reqWidth), 
-	BLT_CONFIG_DONT_SET_DEFAULT },
+    {BLT_CONFIG_OBJ, "-unpostcommand", "unpostCommand", "UnpostCommand", 
+	DEF_UNPOSTCOMMAND, Blt_Offset(ComboEditor, unpostCmdObjPtr), 
+	BLT_CONFIG_NULL_OK},
+    {BLT_CONFIG_CUSTOM, "-width", "width", "Width", DEF_WIDTH, 
+	Blt_Offset(ComboEditor, reqWidth), BLT_CONFIG_DONT_SET_DEFAULT,
+	&bltLimitsOption},
     {BLT_CONFIG_OBJ, "-xscrollbar", "xScrollbar", "Scrollbar", 
 	DEF_SCROLLBAR, Blt_Offset(ComboEditor, xScrollbarObjPtr), 
 	BLT_CONFIG_NULL_OK},
@@ -680,9 +685,6 @@ static Blt_ConfigSpec configSpecs[] =
     {BLT_CONFIG_PIXELS_POS, "-yscrollincrement", "yScrollIncrement",
 	"ScrollIncrement", DEF_SCROLL_INCR, 
 	 Blt_Offset(ComboEditor, yScrollUnits),BLT_CONFIG_DONT_SET_DEFAULT},
-    {BLT_CONFIG_OBJ, "-unpostcommand", "unpostCommand", "UnpostCommand", 
-	DEF_UNPOSTCOMMAND, Blt_Offset(ComboEditor, unpostCmdObjPtr), 
-	BLT_CONFIG_NULL_OK},
     {BLT_CONFIG_END, (char *)NULL, (char *)NULL, (char *)NULL, (char *)NULL, 
 	0, 0}
 };
@@ -1253,9 +1255,6 @@ RecordEdit(ComboEditor *editPtr, RecordType type, CharIndex index,
     memcpy(recPtr->text, text, numBytes);
     recPtr->nextPtr = editPtr->undoPtr;
     editPtr->undoPtr = recPtr;
-    fprintf(stderr, "Record Type: type=%d index=%d insert=%d numChar=%d numBytes=%d text=%.*s\n",
-            recPtr->type, recPtr->index, recPtr->insertIndex, recPtr->numChars,
-            recPtr->numBytes, recPtr->numBytes, recPtr->text);
 }
 
 static void
@@ -2290,6 +2289,15 @@ DeleteText(ComboEditor *editPtr, CharIndex firstIndex, CharIndex lastIndex)
     return TRUE;
 }
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * GetWordStart --
+ *
+ *      Returns the index of the beginning of the word.  Index must
+ *      point to a word.
+ *---------------------------------------------------------------------------
+ */
 static CharIndex 
 GetWordStart(ComboEditor *editPtr, CharIndex index)
 {
@@ -2318,6 +2326,15 @@ GetWordStart(ComboEditor *editPtr, CharIndex index)
     return first;
 }
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * GetWordEnd --
+ *
+ *      Returns the index of the end of the word.  Index must
+ *      point to a word.
+ *---------------------------------------------------------------------------
+ */
 static CharIndex 
 GetWordEnd(ComboEditor *editPtr, CharIndex index)
 {
@@ -2345,6 +2362,81 @@ GetWordEnd(ComboEditor *editPtr, CharIndex index)
     return last;
 }
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * GetSpaceStart --
+ *
+ *---------------------------------------------------------------------------
+ */
+static CharIndex 
+GetSpaceStart(ComboEditor *editPtr, CharIndex index)
+{
+    CharIndex first;
+    TextLine *linePtr;
+    const char *cp, *string;
+
+    linePtr = FindLineFromIndex(editPtr, index);
+    if (linePtr == NULL) {
+        return -1;
+    }
+    string = Blt_DBuffer_String(editPtr->dbuffer);
+    cp = Tcl_UtfAtIndex(string, index);
+    for (first = index; first >= linePtr->char1; first--) {
+        Tcl_UniChar ch;
+        
+        Tcl_UtfToUniChar(cp, &ch);
+        if (!Tcl_UniCharIsSpace(ch)) {
+            break;
+        }
+        cp = Tcl_UtfPrev(cp, string);
+    }
+    if (first != index) {
+        first++;
+    }
+    return first;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * GetSpaceEnd --
+ *
+ *---------------------------------------------------------------------------
+ */
+static CharIndex 
+GetSpaceEnd(ComboEditor *editPtr, CharIndex index)
+{
+    CharIndex last;
+    TextLine *linePtr;
+    const char *cp, *string;
+
+    linePtr = FindLineFromIndex(editPtr, index);
+    if (linePtr == NULL) {
+        return -1;
+    }
+    string = Blt_DBuffer_String(editPtr->dbuffer);
+    cp = Tcl_UtfAtIndex(string, index);
+    for (last = index; last <= linePtr->char2; last++) {
+        Tcl_UniChar ch;
+        
+        cp += Tcl_UtfToUniChar(cp, &ch);
+        if (!Tcl_UniCharIsSpace(ch)) {
+            break;
+        }
+    }
+    return last;
+}
+            
+/*
+ *---------------------------------------------------------------------------
+ *
+ * GetLineStart --
+ *
+ *      Returns the index of the beginning of the line. 
+ *
+ *---------------------------------------------------------------------------
+ */
 static CharIndex 
 GetLineStart(ComboEditor *editPtr, CharIndex index)
 {
@@ -2357,6 +2449,15 @@ GetLineStart(ComboEditor *editPtr, CharIndex index)
     return linePtr->char1;
 }
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * GetLineEnd --
+ *
+ *      Returns the index of the end of the line. 
+ *
+ *---------------------------------------------------------------------------
+ */
 static CharIndex 
 GetLineEnd(ComboEditor *editPtr, CharIndex index)
 {
@@ -2395,6 +2496,7 @@ GetLineEnd(ComboEditor *editPtr, CharIndex index)
  *       "sel.last"	Indicates the character just  after the last one 
  *			in the selection.  It is an error to use this form 
  *			if  the  selection isn't in the entry window.
+ *      "whitespace"
  *      "word.start"    
  *      "word.end"
  *      "line.start"
@@ -2500,8 +2602,18 @@ GetIndexFromObj(Tcl_Interp *interp, ComboEditor *editPtr, Tcl_Obj *objPtr,
         index = editPtr->insertIndex;
         if (editPtr->insertIndex != -1) {
             index = GetLineEnd(editPtr, index);
-            fprintf(stderr, "GetLineEnd insert=%d index=%d\n",
-                    editPtr->insertIndex, index);
+        }
+	*indexPtr = index;
+    } else if ((c == 's') && (strcmp(string, "space.start") == 0)) {
+        index = editPtr->insertIndex;
+        if (editPtr->insertIndex != -1) {
+            index = GetSpaceStart(editPtr, index);
+        }
+	*indexPtr = index;
+    } else if ((c == 's') && (strcmp(string, "space.end") == 0)) {
+        index = editPtr->insertIndex;
+        if (editPtr->insertIndex != -1) {
+            index = GetSpaceEnd(editPtr, index);
         }
 	*indexPtr = index;
     } else if ((c == 'w') && (strcmp(string, "word.start") == 0)) {
@@ -2895,21 +3007,22 @@ NewEditor(Tcl_Interp *interp, Tk_Window tkwin)
 
     Tk_SetClass(tkwin, "BltComboEditor"); 
     editPtr = Blt_AssertCalloc(1, sizeof(ComboEditor));
-    editPtr->dbuffer = Blt_DBuffer_Create();
-    editPtr->interp = interp;
-    editPtr->display = Tk_Display(tkwin);
-    editPtr->tkwin = tkwin;
     editPtr->borderWidth = 1;
-    editPtr->relief = TK_RELIEF_SOLID;
-    editPtr->selRelief = TK_RELIEF_FLAT;
-    editPtr->selBorderWidth = 1;
-    editPtr->selAnchor = -1;
-    editPtr->selFirst = editPtr->selLast = -1;
-    editPtr->insertOnTime = 600;
-    editPtr->insertOffTime = 300;
-    editPtr->flags |= ACTIVE | GEOMETRY | LAYOUT_PENDING;
-    editPtr->button.relief = TK_RELIEF_SUNKEN;
     editPtr->button.borderWidth = 1;
+    editPtr->button.relief = TK_RELIEF_SUNKEN;
+    editPtr->dbuffer = Blt_DBuffer_Create();
+    editPtr->display = Tk_Display(tkwin);
+    editPtr->flags |= ACTIVE | GEOMETRY | LAYOUT_PENDING;
+    editPtr->insertOffTime = 300;
+    editPtr->insertOnTime = 600;
+    editPtr->interp = interp;
+    editPtr->relief = TK_RELIEF_SOLID;
+    editPtr->selAnchor = -1;
+    editPtr->selBorderWidth = 1;
+    editPtr->selFirst = editPtr->selLast = -1;
+    editPtr->selRelief = TK_RELIEF_FLAT;
+    editPtr->tkwin = tkwin;
+    editPtr->xScrollUnits = editPtr->yScrollUnits = 1;
     Blt_ResetLimits(&editPtr->reqWidth);
     Blt_ResetLimits(&editPtr->reqHeight);
     Blt_SetWindowInstanceData(tkwin, editPtr);
@@ -3071,8 +3184,8 @@ ComputeLayout(ComboEditor *editPtr)
 	editPtr->width += butPtr->width;
     }
 
-    editPtr->width  += 2 * editPtr->borderWidth;
-    editPtr->height += 2 * editPtr->borderWidth;
+    editPtr->width  += 2 * (editPtr->borderWidth + XPAD);
+    editPtr->height += 2 * (editPtr->borderWidth + YPAD);
 
     /* Figure out the requested size of the widget.  This will also tell us
      * if we need scrollbars. */
@@ -3082,7 +3195,6 @@ ComputeLayout(ComboEditor *editPtr)
 
     w = GetBoundedWidth(editPtr, reqWidth);
     h = GetBoundedHeight(editPtr, reqHeight);
-
     if ((reqWidth > w) && (editPtr->xScrollbar != NULL)) {
 	editPtr->xScrollbarHeight = Tk_ReqHeight(editPtr->xScrollbar);
 	h = GetBoundedHeight(editPtr, reqHeight + editPtr->xScrollbarHeight);
@@ -3173,12 +3285,8 @@ DrawTextLine(ComboEditor *editPtr, Drawable drawable, TextLine *linePtr,
 
     bg = editPtr->textBg;
     gc = editPtr->textGC;
-    w -= 2 * XPAD;
-    h -= 2 * YPAD;
     x = linePtr->worldX - editPtr->xOffset;
     y = linePtr->worldY - editPtr->yOffset;
-    x += XPAD;
-    y += YPAD;
     textY = y + fm.ascent;
     textX = x;
     /* Text background. */
@@ -3227,7 +3335,7 @@ DrawTextLine(ComboEditor *editPtr, Drawable drawable, TextLine *linePtr,
         numBytes = CharIndexToByteOffset(textStart,
                 editPtr->insertIndex - firstChar);
         insertX += Blt_TextWidth(editPtr->font, textStart, numBytes);
-        insertY = linePtr->worldY - editPtr->yOffset + YPAD;
+        insertY = linePtr->worldY - editPtr->yOffset;
 	if ((insertX - 4) > pixelsLeft) {
 	    insertX = -1;               /* Out of the viewport. */
 	}
@@ -3334,7 +3442,7 @@ DrawTextArea(ComboEditor *editPtr, Drawable drawable, int x, int y, int w,
     bg = editPtr->textBg;
     gc = editPtr->textGC;
     w = VPORTWIDTH(editPtr);
-    h = VPORTHEIGHT(editPtr);
+    h = VPORTHEIGHT(editPtr) + 1;
 
     /*
      * Create a pixmap the size of visible text area. This will be used for
@@ -3356,6 +3464,8 @@ DrawTextArea(ComboEditor *editPtr, Drawable drawable, int x, int y, int w,
     for (i = editPtr->firstLine; i < editPtr->lastLine; i++) {
         DrawTextLine(editPtr, pixmap, editPtr->lines + i, w, h);
     }
+    x += editPtr->borderWidth + XPAD;
+    y += editPtr->borderWidth + YPAD;
     XCopyArea(editPtr->display, pixmap, drawable, gc, 0, 0, w, h, x, y);
     Tk_FreePixmap(editPtr->display, pixmap);
 }
@@ -3368,9 +3478,9 @@ ComputeVisibleLines(ComboEditor *editPtr)
     linePtr = FindLineFromCoord(editPtr, editPtr->yOffset);
     assert(linePtr != NULL);
     editPtr->firstLine = linePtr - editPtr->lines;
-    linePtr = FindLineFromCoord(editPtr, editPtr->yOffset + editPtr->height);
+    linePtr = FindLineFromCoord(editPtr, editPtr->yOffset+VPORTHEIGHT(editPtr));
     if (linePtr != NULL) {
-        editPtr->lastLine = linePtr - editPtr->lines;
+        editPtr->lastLine = linePtr - editPtr->lines + 1;
     } else {
         editPtr->lastLine = editPtr->numLines;
     }
@@ -3492,7 +3602,7 @@ DisplayProc(ClientData clientData)
     /* Create pixmap the size of the widget. */
     drawable = Blt_GetPixmap(editPtr->display, Tk_WindowId(editPtr->tkwin), 
 	w, h, Tk_Depth(editPtr->tkwin));
-    Blt_Bg_FillRectangle(editPtr->tkwin, drawable, editPtr->normalBg, 0, 0,
+    Blt_Bg_FillRectangle(editPtr->tkwin, drawable, editPtr->textBg, 0, 0,
 	w, h, editPtr->borderWidth, editPtr->relief);
 
     x = editPtr->borderWidth + editPtr->gap;
@@ -3767,7 +3877,7 @@ DeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
     byte1 = CharIndexToByteOffset(string, first);
     byte2 = CharIndexToByteOffset(string, last);
     fprintf(stderr, "Delete text first=%d last=%d\n", first, last);
-    RecordEdit(editPtr, DELETE_OP, first, string, byte2 - byte1);
+    RecordEdit(editPtr, DELETE_OP, first, string + byte1, byte2 - byte1);
     if (!DeleteText(editPtr, first, last)) {
         Tcl_AppendResult(interp, "can't delete text", (char *)NULL);
         return TCL_ERROR;
@@ -4304,8 +4414,10 @@ SeeOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     if (linePtr->worldY < editPtr->yOffset) {
         editPtr->yOffset = linePtr->worldY;
     } else if ((linePtr->worldY + linePtr->height) >=
-               (editPtr->yOffset + editPtr->height)) {
-        editPtr->yOffset = linePtr->worldY + editPtr->height - linePtr->height;
+               (editPtr->yOffset + VPORTHEIGHT(editPtr))) {
+        /* Put the line on the bottom. */
+        editPtr->yOffset = linePtr->worldY -
+            (VPORTHEIGHT(editPtr) - linePtr->height);
     }
     numChars = index - linePtr->char1;
     numBytes = CharIndexToByteOffset(Blt_DBuffer_String(editPtr->dbuffer),
@@ -4316,8 +4428,8 @@ SeeOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     linePtr->text += numBytes;
     if (numPixels < editPtr->xOffset) {
         editPtr->xOffset = numPixels;
-    } else if (numPixels > (editPtr->xOffset + editPtr->width)) {
-        editPtr->xOffset = numPixels + editPtr->width - 20;
+    } else if (numPixels > (editPtr->xOffset + VPORTWIDTH(editPtr))) {
+        editPtr->xOffset = numPixels + VPORTWIDTH(editPtr) + 20;
     }
     editPtr->flags |= SCROLL_PENDING;
     EventuallyRedraw(editPtr);
@@ -4330,20 +4442,23 @@ SelectionAdjustOp(ClientData clientData, Tcl_Interp *interp, int objc,
 		  Tcl_Obj *const *objv)
 {
     ComboEditor *editPtr = clientData;
-    int textPos;
-    int half1, half2;
+    CharIndex index;
+    CharIndex half1, half2;
 
-    if (GetIndexFromObj(interp, editPtr, objv[3], &textPos) != TCL_OK) {
+    if (GetIndexFromObj(interp, editPtr, objv[3], &index) != TCL_OK) {
 	return TCL_ERROR;
     }
     half1 = (editPtr->selFirst + editPtr->selLast) / 2;
     half2 = (editPtr->selFirst + editPtr->selLast + 1) / 2;
-    if (textPos < half1) {
+    if (index < half1) {
 	editPtr->selAnchor = editPtr->selLast;
-    } else if (textPos > half2) {
+    } else if (index > half2) {
 	editPtr->selAnchor = editPtr->selFirst;
     }
-    return SelectText(editPtr, textPos);
+    if (index >= 0) {
+        SelectText(editPtr, index);
+    }
+    return TCL_OK;
 }
 
 /*ARGSUSED*/
@@ -4371,7 +4486,9 @@ SelectionFromOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (GetIndexFromObj(interp, editPtr, objv[3], &index) != TCL_OK) {
 	return TCL_ERROR;
     }
-    editPtr->selAnchor = index;
+    if (index >= 0) {
+        editPtr->selAnchor = index;
+    }
     return TCL_OK;
 }
 
@@ -4394,16 +4511,18 @@ SelectionRangeOp(ClientData clientData, Tcl_Interp *interp, int objc,
 		 Tcl_Obj *const *objv)
 {
     ComboEditor *editPtr = clientData;
-    int selFirst, selLast;
+    int first, last;
 
-    if (GetIndexFromObj(interp, editPtr, objv[3], &selFirst) != TCL_OK) {
+    if (GetIndexFromObj(interp, editPtr, objv[3], &first) != TCL_OK) {
 	return TCL_ERROR;
     }
-    if (GetIndexFromObj(interp, editPtr, objv[4], &selLast) != TCL_OK) {
+    if (GetIndexFromObj(interp, editPtr, objv[4], &last) != TCL_OK) {
 	return TCL_ERROR;
     }
-    editPtr->selAnchor = selFirst;
-    SelectText(editPtr, selLast);
+    if ((first >= 0) && (last >= 0)) {
+        editPtr->selAnchor = first;
+        SelectText(editPtr, last);
+    }
     return TCL_OK;
 }
 
@@ -4413,12 +4532,15 @@ SelectionToOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	      Tcl_Obj *const *objv)
 {
     ComboEditor *editPtr = clientData;
-    int textPos;
+    CharIndex index;
 
-    if (GetIndexFromObj(interp, editPtr, objv[3], &textPos) != TCL_OK) {
+    if (GetIndexFromObj(interp, editPtr, objv[3], &index) != TCL_OK) {
 	return TCL_ERROR;
     }
-    return SelectText(editPtr, textPos);
+    if (index >= 0) {
+        SelectText(editPtr, index);
+    }
+    return TCL_OK;
 }
 
 
@@ -4696,7 +4818,7 @@ static Blt_OpSpec editorOps[] =
     {"cget",      2, CgetOp,      3, 3, "value",},
     {"configure", 2, ConfigureOp, 2, 0, "?option value...?",},
     {"delete",    1, DeleteOp,    3, 4, "firstIndex ?lastIndex?"},
-    {"get",       1, GetOp,       2, 2, "?firstIndex lastIndex?"},
+    {"get",       1, GetOp,       2, 4, "?firstIndex lastIndex?"},
     {"icursor",   2, IcursorOp,   3, 3, "index"},
     {"identify",  2, IdentifyOp,  4, 4, "x y"},
     {"index",     3, IndexOp,     3, 3, "index"},
