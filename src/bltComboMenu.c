@@ -6920,18 +6920,18 @@ NewComboMenu(Tcl_Interp *interp, Tk_Window tkwin)
     ComboMenu *comboPtr;
 
     comboPtr = Blt_AssertCalloc(1, sizeof(ComboMenu));
-    comboPtr->tkwin = tkwin;
-    comboPtr->display = Tk_Display(tkwin);
-    comboPtr->interp = interp;
-    comboPtr->flags |= LAYOUT_PENDING | SCROLL_PENDING;
-    comboPtr->relief = TK_RELIEF_SOLID;
-    comboPtr->xScrollUnits = 2;
-    comboPtr->yScrollUnits = 2;
     comboPtr->borderWidth = 1;
     comboPtr->chain = Blt_Chain_Create();
+    comboPtr->display = Tk_Display(tkwin);
+    comboPtr->flags |= LAYOUT_PENDING | SCROLL_PENDING;
+    comboPtr->interp = interp;
     comboPtr->painter = Blt_GetPainter(tkwin, 1.0);
-    comboPtr->sort.type = SORT_DICTIONARY;
+    comboPtr->relief = TK_RELIEF_SOLID;
     comboPtr->sort.flags = 0;
+    comboPtr->sort.type = SORT_DICTIONARY;
+    comboPtr->tkwin = tkwin;
+    comboPtr->xScrollUnits = 2;
+    comboPtr->yScrollUnits = 2;
     Blt_ResetLimits(&comboPtr->reqWidth);
     Blt_ResetLimits(&comboPtr->reqHeight);
     Blt_InitHashTable(&comboPtr->iconTable,  BLT_STRING_KEYS);
