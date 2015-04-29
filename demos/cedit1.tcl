@@ -19,14 +19,17 @@ blt::comboeditor .e -text $text -exportselection yes \
     -xscrollbar .e.xs \
     -yscrollbar .e.ys \
     -height 1i \
-    -width 2i 
+    -width 2i \
+    -justify left 
 
 blt::tk::scrollbar .e.xs
 blt::tk::scrollbar .e.ys
 text .t
 pack .t
-.e select range 1 3
-.e insert 4 "\nextra\ncharacters\n"
+set n [string length "Four score and seven years ago our fathers brought forth on this"]
+.e select range 1 96
+.e icursor [expr $n + 1]
+#.e insert 4 "\nextra\ncharacters\n"
 focus .e
 after 500 {
     set rootx [winfo rootx .]

@@ -82,6 +82,10 @@ bind BltComboEditor <ButtonPress-1> {
     %W selection from insert
 }
 
+bind BltComboEditor <ButtonRelease-1> {
+    after cancel $blt::ComboEditor::_private(afterId)
+}
+
 bind BltComboEditor <B1-Motion> {
     if { $blt::ComboEditor::_private(b1) != "button" } {
 	if { abs($blt::ComboEditor::_private(x) - %x) > 3 ||
@@ -301,7 +305,8 @@ bind BltComboEditor <Control-z> {
 # Return
 #   Insert a newline into the text at the current location.
 bind BltComboEditor <KeyPress-Return> {
-    %W insert insert "\n"
+    %W unpost
+    %W invoke
 }
 
 # Escape
@@ -309,6 +314,13 @@ bind BltComboEditor <KeyPress-Return> {
 bind BltComboEditor <Escape> {
     %W unpost
 }
+
+# Ctrl+Return
+#   Insert a newline into the text at the current location.
+bind BltComboEditor <Control-KeyPress-Return> {
+    %W insert insert "\n"
+}
+
 
 # Keypad Return
 #   Insert a newline into the text at the current location.

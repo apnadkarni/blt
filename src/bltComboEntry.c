@@ -2851,6 +2851,7 @@ DeleteOp(ComboEntry *comboPtr, Tcl_Interp *interp, int objc,
     if (comboPtr->flags & (READONLY|DISABLED)) {
 	return TCL_OK;			/* Writing is currently disabled. */
     }
+
     if (GetTextIndex(interp, comboPtr, objv[2], &first) != TCL_OK) {
 	return TCL_ERROR;
     }
