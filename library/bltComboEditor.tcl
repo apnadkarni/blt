@@ -66,11 +66,11 @@ bind BltComboEditor <Leave> {
 
 # Standard Motif bindings:
 
+# If we're over the editor, clear the selection and set the anchor of the
+# new one.
 bind BltComboEditor <ButtonPress-1> {
     blt::ComboEditor::trace "ButtonPress-1"
-    if { [%W index @%x,%y]  == -1 } {
-	#%W unpost
-    } else {
+    if { [%W index @%x,%y]  != -1 } {
 	focus %W
 	set blt::ComboEditor::_private(x) %x
 	set blt::ComboEditor::_private(y) %y
@@ -80,6 +80,7 @@ bind BltComboEditor <ButtonPress-1> {
     }
 }
 
+# Turn off the auto-scan.  If we're not over the editor, cancel the session.
 bind BltComboEditor <ButtonRelease> {
     blt::ComboEditor::trace "ButtonRelease-1"
     after cancel $blt::ComboEditor::_private(afterId)
@@ -88,22 +89,24 @@ bind BltComboEditor <ButtonRelease> {
     } 
 }
 
+# If the pointer moved, update the selection.
 bind BltComboEditor <B1-Motion> {
-    if { $blt::ComboEditor::_private(b1) != "button" } {
-	if { abs($blt::ComboEditor::_private(x) - %x) > 3 ||
-	     abs($blt::ComboEditor::_private(y) - %y) > 3 } {
-	    %W selection to @%x,%y
-	    set blt::ComboEditor::_private(x) %x
-	    set blt::ComboEditor::_private(y) %y
-	}
+    if { abs($blt::ComboEditor::_private(x) - %x) > 3 ||
+	 abs($blt::ComboEditor::_private(y) - %y) > 3 } {
+	%W selection to @%x,%y
+	%W icursor sel.last
+	set blt::ComboEditor::_private(x) %x
+	set blt::ComboEditor::_private(y) %y
     }
 }
 
+# Turn off the auto-scan.
 bind BltComboEditor <B1-Enter> {
     after cancel $blt::ComboEditor::_private(afterId)
     set blt::ComboEditor::_private(afterId) -1
 }
 
+# Turn on the auto-scan.
 bind BltComboEditor <B1-Leave> {
     blt::ComboEditor::trace "ComboEditor B1-Leave"
     set blt::ComboEditor::_private(y) %x
@@ -111,7 +114,8 @@ bind BltComboEditor <B1-Leave> {
     blt::ComboEditor::AutoScan %W
 }
 
-bind BltComboEditor <Double-1> {
+# Select the whitespace or word at the x-y coordinate position.
+bind BltComboEditor <Double-ButtonPress-1> {
     blt::ComboEditor::trace "Double-1"
     %W icursor @%x,%y
     if { [%W get insert next] == " " } {
@@ -122,14 +126,16 @@ bind BltComboEditor <Double-1> {
     %W icursor sel.last
 }
 
-bind BltComboEditor <Triple-1> {
+# Select all the text on the  line including the insertion cursor.
+bind BltComboEditor <Triple-ButtonPress-1> {
     blt::ComboEditor::trace "Triple-1"
     %W icursor @%x,%y
     %W selection range line.start line.end
     %W icursor sel.last
 }
 
-bind BltComboEditor <Shift-1> {
+# Adjust the selection but leave the insertion cursor alone.
+bind BltComboEditor <Shift-ButtonPress-1> {
     %W selection adjust @%x,%y
 }
 
@@ -150,7 +156,8 @@ bind BltComboEditor <B2-Motion> {
     %W scan dragto %x
 }
 
-bind BltComboEditor <Control-1> {
+# Move the insertion cursor, but leave the selection alone.
+bind BltComboEditor <Control-ButtonPress-1> {
     %W icursor @%x,%y
 }
 
@@ -158,6 +165,9 @@ bind BltComboEditor <Control-1> {
 #   Position insertion cursor at beginning of current line (the line
 #   where the insertion cursor current resides).  
 bind BltComboEditor <Control-a> {
+    if {[%W selection present]} {
+	%W selection clear
+    }
     %W icursor line.start
     %W see insert
 }
@@ -199,6 +209,9 @@ bind BltComboEditor <Control-d> {
 #   Position the insertion cursor at the end of the current line (the line
 #   where the insertion cursor current resides). 
 bind BltComboEditor <Control-e> {
+    if {[%W selection present]} {
+	%W selection clear
+    }
     %W icursor line.end
     %W see insert
 }
@@ -206,6 +219,9 @@ bind BltComboEditor <Control-e> {
 # Ctrl+F
 #   Position the insertion cursor before the next character.
 bind BltComboEditor <Control-f> {
+    if {[%W selection present]} {
+	%W selection clear
+    }
     %W icursor next
     %W see insert
 }
@@ -234,23 +250,30 @@ bind BltComboEditor <Control-KeyPress-k> {
 }
 
 # Ctrl+N
-#   Position the insertion cursor on the next line down.  If we're
-#   already on the last line, nothing happens.  The cursor will be
-#   the same number of characters over in the next line, unless the
-#   line does not have that many characters.  Then the cursor will
-#   be at the end of the next line.
+
+#   Position the insertion cursor on the next line down.  If we're already
+#   on the last line, nothing happens.  The cursor will be the same number
+#   of characters from the start of the next line, unless the line does not
+#   have that many characters.  Then the cursor will be at the end of the
+#   next line.
 bind BltComboEditor <Control-KeyPress-n> {
+    if {[%W selection present]} {
+	%W selection clear
+    }
     %W icursor down
     %W see insert
 }
 
 # Ctrl+P
 #   Position the insertion cursor on the previous line up.  If we're
-#   already on the first line, nothing happens.  The cursor will be
-#   the same number of characters over in the previous line, unless the
-#   line does not have that many characters.  Then the cursor will
-#   be at the end of the previous line.
+#   already on the first line, nothing happens.  The cursor will be the
+#   same number of characters from the start in the previous line, unless
+#   the line does not have that many characters.  Then the cursor will be
+#   at the end of the previous line.
 bind BltComboEditor <Control-KeyPress-p> {
+    if {[%W selection present]} {
+	%W selection clear
+    }
     %W icursor up
     %W see insert
 }
@@ -286,12 +309,18 @@ bind BltComboEditor <Control-x> {
 # Ctrl+Y
 #   Redo the last edit.
 bind BltComboEditor <Control-y> {
+    if {[%W selection present]} {
+	%W selection clear
+    }
     %W redo
     %W see insert
 }
 # Ctrl+Z
 #   Undo the last edit.
 bind BltComboEditor <Control-z> {
+    if {[%W selection present]} {
+	%W selection clear
+    }
     %W undo
     %W see insert
 }
@@ -329,8 +358,8 @@ bind BltComboEditor <BackSpace> {
 	%W delete sel.first sel.last
     } else {
 	%W delete previous insert 
-	%W see insert
     }
+    %W see insert
 }
 
 # Delete
@@ -346,6 +375,9 @@ bind BltComboEditor <Delete> {
 # Down Arrow
 #   Same as Ctrl+N. 
 bind BltComboEditor <KeyPress-Down> {
+    if {[%W selection present]} {
+	%W selection clear
+    }
     %W icursor down
     %W see insert
 }
@@ -353,6 +385,9 @@ bind BltComboEditor <KeyPress-Down> {
 # Up Arrow
 #   Same as Ctrl+P. 
 bind BltComboEditor <KeyPress-Up> {
+    if {[%W selection present]} {
+	%W selection clear
+    }
     %W icursor up
     %W see insert
 }
@@ -360,6 +395,9 @@ bind BltComboEditor <KeyPress-Up> {
 # Left Arrow
 #   Same as Ctrl+B. 
 bind BltComboEditor <KeyPress-Left> {
+    if {[%W selection present]} {
+	%W selection clear
+    }
     %W icursor previous
     %W see insert
 }
@@ -367,6 +405,9 @@ bind BltComboEditor <KeyPress-Left> {
 # Right Arrow
 #   Same as Ctrl+F.
 bind BltComboEditor <KeyPress-Right> {
+    if {[%W selection present]} {
+	%W selection clear
+    }
     %W icursor next
     %W see insert
 }
@@ -374,6 +415,9 @@ bind BltComboEditor <KeyPress-Right> {
 # Home
 #   Position the insertion cursor before the first character.
 bind BltComboEditor <Home> {
+    if {[%W selection present]} {
+	%W selection clear
+    }
     %W icursor 0
     %W see insert
 }
@@ -381,74 +425,86 @@ bind BltComboEditor <Home> {
 # End
 #   Position the insertion cursor after the last character.
 bind BltComboEditor <End> {
+    if {[%W selection present]} {
+	%W selection clear
+    }
     %W icursor end
     %W see insert
 }
 
-
+# Shift + Left 
+#   Adjust the selection by one character (previous).
 bind BltComboEditor <Shift-Left> {
-    if {![%W selection present]} {
-	%W selection range previous insert 
-    } else {
+    if {[%W selection present]} {
 	%W selection adjust previous
+    } else {
+	%W selection range previous insert 
     }
     %W icursor previous
     %W see insert
 }
 
+# Shift + Right 
+#   Adjust the selection by one character (next).
 bind BltComboEditor <Shift-Right> {
-    if {![%W selection present]} {
-	%W selection range insert next
-    } else {
+    if {[%W selection present]} {
 	%W selection adjust next
+    } else {
+	%W selection range insert next
     }
     %W icursor next
     %W see insert
 }
 
+# Shift + Control + Left 
+#   Adjust the selection by one word (last word).
 bind BltComboEditor <Shift-Control-Left> {
-    set previous [string wordstart [%W get] [%W index previous]]
-    if {![%W selection present]} {
-	%W selection range $previous insert 
+    %W icursor space.start
+    if {[%W selection present]} {
+	%W selection adjust word.start
     } else {
-	%W selection adjust $previous
+	%W selection range word.start insert 
     }
-    %W icursor $previous
+    %W icursor word.start
     %W see insert
 }
 
+# Shift + Control + Right 
+#   Adjust the selection by one word (next word).
 bind BltComboEditor <Shift-Control-Right> {
-    set next [string wordend [%W get] [%W index insert]]
-    if {![%W selection present]} {
-	%W selection range insert $next
+    %W icursor space.end
+    if {[%W selection present]} {
+	%W selection adjust word.end
     } else {
-	%W selection adjust $next
+	%W selection range insert word.end
     }
-    %W icursor $next
+    %W icursor word.end
     %W see insert
 }
 
+# Shift + Home 
+#   Adjust the selection to the beginning of the text.
 bind BltComboEditor <Shift-Home> {
-    if {![%W selection present]} {
-	%W selection range 0 insert
-    } else {
+    if {[%W selection present]} {
 	%W selection adjust 0
+    } else {
+	%W selection range 0 insert
     }
     %W icursor 0
     %W see insert
 }
 
-
+# Shift + End 
+#   Adjust the selection to the end of the text.
 bind BltComboEditor <Shift-End> {
-    if {![%W selection present]} {
-	%W selection range insert end
-    } else {
+    if {[%W selection present]} {
 	%W selection adjust end
+    } else {
+	%W selection range insert end
     }
     %W icursor end
     %W see insert
 }
-
 
 bind BltComboEditor <Control-space> {
     %W selection from insert
@@ -498,16 +554,6 @@ bind BltComboEditor <<Clear>> {
     %W delete sel.first sel.last
 }
 
-
-bind Entry <<PasteSelection>> {
-    if { $tk_strictMotif || 
-	 ![info exists blt::ComboEditor::_private(mouseMoved)] || 
-	 !$blt::ComboEditor::_private(mouseMoved)} {
-	tk::EntryPaste %W %x
-    }
-}
-
-
 bind BltComboEditor <KeyPress> {
     if { [string compare %A {}] == 0 } {
 	continue
@@ -524,6 +570,9 @@ bind BltComboEditor <KeyPress> {
 # Alt+B
 #   Position the insertion cursor before the current word.
 bind BltComboEditor <Alt-b> {
+    if {[%W selection present]} {
+	%W selection clear
+    }
     %W icursor space.start
     %W icursor word.start
     %W see insert
@@ -533,6 +582,9 @@ bind BltComboEditor <Alt-b> {
 #   Deletes character from the insertion cursor to the end of the current
 #   word.
 bind BltComboEditor <Alt-d> {
+    if {[%W selection present]} {
+	%W selection clear
+    }
     %W delete insert word.end
     %W see insert
 }
@@ -540,6 +592,9 @@ bind BltComboEditor <Alt-d> {
 # Alt+F
 #   Position the insertion cursor before the next word.
 bind BltComboEditor <Alt-f> {
+    if {[%W selection present]} {
+	%W selection clear
+    }
     %W icursor space.end
     %W icursor word.end
     %W see insert
@@ -549,15 +604,23 @@ bind BltComboEditor <Alt-f> {
 #   Deletes the characters from the insertion cursor to the beginning
 #   of the current word.
 bind BltComboEditor <Alt-BackSpace> {
-    %W delete word.start insert
+    if {[%W selection present]} {
+	%W delete sel.first sel.last
+    } else {
+	%W delete word.start insert
+    }
     %W see insert
 }
 
-# Alt-Backspace
+# Alt-Delete
 #   Deletes the characters from the insertion cursor to the end
 #   of the current word.
 bind BltComboEditor <Alt-Delete> {
-    %W delete insert word.end
+    if {[%W selection present]} {
+	%W delete sel.first sel.last
+    } else {
+	%W delete insert word.end
+    }
     %W see insert
 }
 

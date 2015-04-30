@@ -21,6 +21,7 @@ blt::comboeditor .e -exportselection yes \
     -xscrollbar .e.xs \
     -yscrollbar .e.ys \
     -height 1i \
+    -insertofftime 0 \
     -width 2i \
     -justify left 
 

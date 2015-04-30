@@ -153,6 +153,7 @@
 #define DEF_EXPORT_SELECTION            "no"
 #define DEF_FONT                        STD_FONT_NORMAL
 #define DEF_HEIGHT                      "0"
+#define DEF_INSERT_BORDERWIDTH          "4"
 #define DEF_INSERT_COLOR                STD_NORMAL_FOREGROUND
 #define DEF_INSERT_OFFTIME              "300"
 #define DEF_INSERT_ONTIME               "600"
@@ -514,12 +515,15 @@ static Blt_ConfigSpec configSpecs[] =
 	Blt_Offset(ComboEditor, reqHeight), BLT_CONFIG_DONT_SET_DEFAULT,
 	&bltLimitsOption},
     {BLT_CONFIG_COLOR, "-insertbackground", "insertBackground", 
-	"InsertBackground", DEF_INSERT_COLOR, 
-	Blt_Offset(ComboEditor, insertColor), 0},
-    {BLT_CONFIG_INT, "-insertofftime", "insertOffTime", "OffTime",
+	"InsertBackground", DEF_INSERT_COLOR,
+        Blt_Offset(ComboEditor, insertColor), 0},
+    {BLT_CONFIG_PIXELS_NNEG, "-insertborderwidth", "insertBorderWidth", 
+	"InsertBorderWidth", DEF_INSERT_BORDERWIDTH,
+        Blt_Offset(ComboEditor, insertWidth), BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_INT_NNEG, "-insertofftime", "insertOffTime", "OffTime",
 	DEF_INSERT_OFFTIME, Blt_Offset(ComboEditor, insertOffTime), 
 	BLT_CONFIG_DONT_SET_DEFAULT },
-    {BLT_CONFIG_INT, "-insertontime", "insertOnTime", "OnTime",
+    {BLT_CONFIG_INT_NNEG, "-insertontime", "insertOnTime", "OnTime",
 	DEF_INSERT_ONTIME, Blt_Offset(ComboEditor, insertOnTime), 
 	BLT_CONFIG_DONT_SET_DEFAULT },
     {BLT_CONFIG_JUSTIFY, "-justify", "justify", "Justify", DEF_JUSTIFY, 
@@ -1017,17 +1021,25 @@ BlinkCursor(ComboEditor *editPtr)
     int time;
 
     if (editPtr->flags & READONLY) {
+        editPtr->flags &= ~ICURSOR;
         return;
     }
-    if (editPtr->flags & ICURSOR_ON) {
+    time = 0;
+    if (editPtr->insertOnTime == 0) {
+        editPtr->flags &= ~ICURSOR_ON;
+    } else if (editPtr->insertOffTime == 0) {
+        editPtr->flags |= ICURSOR_ON;
+    } else if (editPtr->flags & ICURSOR_ON) {
 	editPtr->flags &= ~ICURSOR_ON;
 	time = editPtr->insertOffTime;
     } else {
 	editPtr->flags |= ICURSOR_ON;
 	time = editPtr->insertOnTime;
     }
-    editPtr->insertTimerToken = Tcl_CreateTimerHandler(time, 
-	BlinkCursorTimerProc, editPtr);
+    if (time > 0) {
+        editPtr->insertTimerToken = Tcl_CreateTimerHandler(time, 
+                BlinkCursorTimerProc, editPtr);
+    }
 }
 
 /*
@@ -1052,9 +1064,6 @@ BlinkCursorTimerProc(ClientData clientData)
 {
     ComboEditor *editPtr = clientData;
 
-    if (editPtr->insertOffTime == 0) {
-	return;
-    }
     BlinkCursor(editPtr);
     EventuallyRedraw(editPtr);
 }
@@ -1107,9 +1116,7 @@ EditorEventProc(ClientData clientData, XEvent *eventPtr)
 	    } else {
 		editPtr->flags |= ICURSOR_ON;
 	    }
-	    if (editPtr->insertOffTime != 0) {
-		BlinkCursor(editPtr);
-	    }
+            BlinkCursor(editPtr);
 	}
 	EventuallyRedraw(editPtr);
     } else if (eventPtr->type == DestroyNotify) {
@@ -2418,7 +2425,7 @@ ComputeGeometry(ComboEditor *editPtr)
 	    break;
 	}
     }
-    editPtr->worldWidth = maxWidth + 4;
+    editPtr->worldWidth = maxWidth + (2 * editPtr->insertWidth);
     editPtr->worldHeight = maxHeight - editPtr->leader;
     if (editPtr->yOffset > (editPtr->worldHeight - VPORTHEIGHT(editPtr))) {
         editPtr->yOffset = editPtr->worldHeight - VPORTHEIGHT(editPtr);
@@ -2595,6 +2602,7 @@ NewEditor(Tcl_Interp *interp, Tk_Window tkwin)
     editPtr->flags |= ACTIVE | GEOMETRY | LAYOUT_PENDING;
     editPtr->insertOffTime = 300;
     editPtr->insertOnTime = 600;
+    editPtr->insertWidth = 2;
     editPtr->interp = interp;
     editPtr->relief = TK_RELIEF_SOLID;
     editPtr->justify = TK_JUSTIFY_LEFT;
@@ -2888,7 +2896,7 @@ DrawTextLine(ComboEditor *editPtr, Drawable drawable, TextLine *linePtr,
         numPixels = Blt_TextWidth(editPtr->font, textStart, numBytes);
         insertX = textX + numPixels;
         insertY = linePtr->worldY - editPtr->yOffset;
-	if ((insertX - 4) > pixelsLeft) {
+	if ((insertX - (2 *editPtr->insertWidth)) > pixelsLeft) {
 	    insertX = -1;               /* Out of the viewport. */
 	}
     }
@@ -2971,16 +2979,12 @@ DrawTextLine(ComboEditor *editPtr, Drawable drawable, TextLine *linePtr,
     }
     /* Draw the insertion cursor, if one is needed. */
     if (insertX >= 0) {
-	int y1, y2;
+	int w, h;
 
-	y1 = insertY + 1;
-	y2 = insertY + linePtr->height - 2;
- 	XDrawLine(editPtr->display, drawable, editPtr->insertGC, insertX, y1, 
-		insertX, y2);
-#ifndef notdef
-	XDrawLine(editPtr->display, drawable, editPtr->insertGC, insertX + 1, 
-		y1, insertX + 1, y2);
-#endif
+        w = editPtr->insertWidth;
+	h = linePtr->height - 2;
+ 	XFillRectangle(editPtr->display, drawable, editPtr->insertGC,
+                insertX, insertY+1, w, h);
     }
 }
 
@@ -3672,9 +3676,7 @@ PostOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	TkWmRestackToplevel(editPtr->tkwin, Above, NULL);
 #endif
     }
-    if (editPtr->flags & ICURSOR) {
-        BlinkCursor(editPtr);
-    }
+    BlinkCursor(editPtr);
     editPtr->flags |= POSTED;
     return TCL_OK;
 }
@@ -3999,6 +4001,15 @@ SelectionOp(ClientData clientData, Tcl_Interp *interp, int objc,
     return result;
 }
 
+static int
+SizeOp(ClientData clientData, Tcl_Interp *interp, int objc,
+       Tcl_Obj *const *objv)
+{
+    ComboEditor *editPtr = clientData;
+
+    Tcl_SetIntObj(Tcl_GetObjResult(interp), editPtr->numChars);
+    return TCL_OK;
+}
 
 /*
  *---------------------------------------------------------------------------
@@ -4234,16 +4245,17 @@ static Blt_OpSpec editorOps[] =
     {"index",     3, IndexOp,     3, 3, "index"},
     {"insert",    3, InsertOp,    4, 4, "index string"},
     {"invoke",    3, InvokeOp,    2, 2, "",},
-    {"post",      4, PostOp,      2, 0, "?switches ...?",},
+    {"post",      1, PostOp,      2, 0, "?switches ...?",},
     {"redo",      1, RedoOp,      2, 2, "",},
     {"scan",      2, ScanOp,      3, 4, "dragto|mark x",},
     {"see",       3, SeeOp,       3, 3, "index"},
     {"selection", 3, SelectionOp, 2, 0, "args"},
+    {"size",      2, SizeOp,      2, 2, ""},
     {"undo",      3, UndoOp,      2, 2, "",},
-    {"unpost",    1, UnpostOp,    2, 2, "",},
+    {"unpost",    3, UnpostOp,    2, 2, "",},
     {"withdraw",  1, WithdrawOp,  2, 2, "",},
-    {"xview",     2, XViewOp,     2, 5, "?moveto fract? ?scroll number what?",},
-    {"yview",     2, YViewOp,     2, 5, "?moveto fract? ?scroll number what?",},
+    {"xview",     1, XViewOp,     2, 5, "?moveto fract? ?scroll number what?",},
+    {"yview",     1, YViewOp,     2, 5, "?moveto fract? ?scroll number what?",},
 };
 static int numEditorOps = sizeof(editorOps) / sizeof(Blt_OpSpec);
 
