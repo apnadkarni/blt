@@ -40,8 +40,6 @@
 /*
  * blt::comboeditor -
  * 
- * 1. Find operation search for text.  Returns a list of the 
- *    first and last indices if match is found.
  * 2. Add resize shangle
  * 3. Fix right/center justified deletes?
  * 4. Fix bindings with re/ to selections
@@ -73,11 +71,11 @@
 #define EVENT_MASK	 (ExposureMask|StructureNotifyMask|FocusChangeMask)
 #define CHILD_EVENT_MASK (ExposureMask|StructureNotifyMask)
 
-#define IPAD		4		/* Internal pad between components. */
+#define IPAD		4            /* Internal pad between components. */
 #define XPAD		4
-#define YPAD		4		/* Internal pad between components. */
-#define ICWIDTH		2		/* External pad between border and
-					 * arrow. */
+#define YPAD		4            /* Internal pad between components. */
+#define ICWIDTH		2            /* External pad between border and
+                                      * arrow. */
 #define CharIndexToByteOffset(s, n)	(Tcl_UtfAtIndex(s, n) - s)
 #define CLAMP(x,min,max) ((((x) < (min)) ? (min) : ((x) > (max)) ? (max) : (x)))
 #define FCLAMP(x)       ((((x) < 0.0) ? 0.0 : ((x) > 1.0) ? 1.0 : (x)))
@@ -145,7 +143,6 @@
 #define RESTRICT_NONE           (0)
 #define INITIALIZED             (1<<22)
 #define READONLY                (1<<23)	/* The widget is is read only. */
-
 
 #define DEF_ACTIVE_BG                   RGB_SKYBLUE4
 #define DEF_ACTIVE_FG                   RGB_WHITE
