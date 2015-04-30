@@ -1,6 +1,10 @@
 
 package require BLT
 
+proc GotText { text } {
+    puts stderr "text is $text"
+}
+
 set text \
 "Four score and seven years ago our fathers brought forth on this
 continent, a new nation, conceived in Liberty, and dedicated to the
@@ -13,9 +17,7 @@ field, as a final resting place for those who here gave their lives that
 that nation might live. It is altogether fitting and proper that we should
 do this. 
 "
-
-
-blt::comboeditor .e -text $text -exportselection yes \
+blt::comboeditor .e -exportselection yes \
     -xscrollbar .e.xs \
     -yscrollbar .e.ys \
     -height 1i \
@@ -32,9 +34,9 @@ set n [string length "Four score and seven years ago our fathers brought forth o
 #.e insert 4 "\nextra\ncharacters\n"
 focus .e
 after 500 {
-    set rootx [winfo rootx .]
-    set rooty [winfo rooty .]
-    .e post -popup [list $rootx $rooty]
+    set rootx [expr [winfo rootx .] + 100]
+    set rooty [expr [winfo rooty .] + 100]
+    .e post -popup [list $rootx $rooty] -text $text -command GotText
     update
     grab .e 
     focus -force .e

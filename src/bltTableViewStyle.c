@@ -167,6 +167,7 @@
 #define DEF_TEXTBOX_COMMAND		(char *)NULL
 #define DEF_TEXTBOX_CURSOR		(char *)NULL
 #define DEF_TEXTBOX_EDIT		"0"
+#define DEF_TEXTBOX_EDITOR		(char *)NULL
 #define DEF_TEXTBOX_FONT		STD_FONT_NORMAL
 #define DEF_TEXTBOX_RELIEF		"flat"
 #define DEF_TEXTBOX_SIDE		"left"
@@ -330,8 +331,8 @@ typedef struct {
     GC colRuleGC;                       /* Graphics context of the row's
 					 * rule. */
     /* TextBox-specific fields */
-    Tcl_Obj *editCmdObjPtr;		/* If non-NULL, TCL procedure
-					 * called to allow the user to edit
+    Tcl_Obj *editorObjPtr;		/* If non-NULL, Name of editor
+					 * widget to allow the user to edit
 					 * the text string. */
     int side;
 } TextBoxStyle;
@@ -815,6 +816,8 @@ static Blt_ConfigSpec textBoxStyleSpecs[] =
     {BLT_CONFIG_BITMASK, "-edit", "edit", "Edit", DEF_TEXTBOX_EDIT, 
 	Blt_Offset(TextBoxStyle, flags), BLT_CONFIG_DONT_SET_DEFAULT,
 	(Blt_CustomOption *)EDIT},
+    {BLT_CONFIG_OBJ, "-editor", "editor", "Editor", DEF_TEXTBOX_EDITOR, 
+	Blt_Offset(TextBoxStyle, editorObjPtr), BLT_CONFIG_DONT_SET_DEFAULT},
     {BLT_CONFIG_SYNONYM, "-fg", "foreground", (char *)NULL, (char *)NULL, 
 	0, 0},
     {BLT_CONFIG_FONT, "-font", "font", "Font", DEF_TEXTBOX_FONT,

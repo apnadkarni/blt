@@ -11177,7 +11177,7 @@ StyleOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *      A standard TCL result.  If TCL_ERROR is returned, then interp->result
  *      contains an error message.
  *
- *      .t type cell
+ *      pathName type cell
  *
  *---------------------------------------------------------------------------
  */
@@ -11190,7 +11190,7 @@ TypeOp(TableView *viewPtr, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
     Column *colPtr;
     Row *rowPtr;
 
-    if (GetCellFromObj(interp, viewPtr, objv[3], &cellPtr) != TCL_OK) {
+    if (GetCellFromObj(interp, viewPtr, objv[2], &cellPtr) != TCL_OK) {
 	return TCL_ERROR;
     }
     if (cellPtr == NULL) {

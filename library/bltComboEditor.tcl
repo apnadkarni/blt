@@ -57,7 +57,6 @@ namespace eval blt {
 }
 
 bind BltComboEditor <Enter> {
-    puts stderr "window=%W"
     # Do nothing
 }
 
@@ -67,23 +66,26 @@ bind BltComboEditor <Leave> {
 
 # Standard Motif bindings:
 
-bind BltComboEditor <Motion> {
-    if { [%W identify %x %y] == "button" } {
-	%W button activate
+bind BltComboEditor <ButtonPress-1> {
+    blt::ComboEditor::trace "ButtonPress-1"
+    if { [%W index @%x,%y]  == -1 } {
+	#%W unpost
+    } else {
+	focus %W
+	set blt::ComboEditor::_private(x) %x
+	set blt::ComboEditor::_private(y) %y
+	%W icursor @%x,%y
+	%W selection clear
+	%W selection from insert
     }
 }
 
-bind BltComboEditor <ButtonPress-1> {
-    focus %W
-    set blt::ComboEditor::_private(x) %x
-    set blt::ComboEditor::_private(y) %y
-    %W icursor @%x,%y
-    %W selection clear
-    %W selection from insert
-}
-
-bind BltComboEditor <ButtonRelease-1> {
+bind BltComboEditor <ButtonRelease> {
+    blt::ComboEditor::trace "ButtonRelease-1"
     after cancel $blt::ComboEditor::_private(afterId)
+    if { [%W index @%x,%y]  == -1 } {
+	%W unpost
+    } 
 }
 
 bind BltComboEditor <B1-Motion> {
@@ -104,35 +106,27 @@ bind BltComboEditor <B1-Enter> {
 
 bind BltComboEditor <B1-Leave> {
     blt::ComboEditor::trace "ComboEditor B1-Leave"
-    if { [%W identify %x %y] != "button" } {
-	set blt::ComboEditor::_private(y) %x
-	set blt::ComboEditor::_private(x) %y
-	blt::ComboEditor::AutoScan %W
-    }
+    set blt::ComboEditor::_private(y) %x
+    set blt::ComboEditor::_private(x) %y
+    blt::ComboEditor::AutoScan %W
 }
 
 bind BltComboEditor <Double-1> {
     blt::ComboEditor::trace "Double-1"
-    if { [%W identify %x %y] == "button" } {
-	::blt::ComboEditor::HandleButtonPress %W %x %y
+    %W icursor @%x,%y
+    if { [%W get insert next] == " " } {
+	%W selection range space.start space.end
     } else {
-	%W icursor @%x,%y
-	if { [%W get insert next] == " " } {
-	    %W selection range space.start space.end
-	} else {
-	    %W selection range word.start word.end
-	}	    
-	%W icursor sel.last
-    }
+	%W selection range word.start word.end
+    }	    
+    %W icursor sel.last
 }
 
 bind BltComboEditor <Triple-1> {
     blt::ComboEditor::trace "Triple-1"
-    if { [%W identify %x %y] != "button" } {
-	%W icursor @%x,%y
-	%W selection range line.start line.end
-	%W icursor sel.last
-    }
+    %W icursor @%x,%y
+    %W selection range line.start line.end
+    %W icursor sel.last
 }
 
 bind BltComboEditor <Shift-1> {
@@ -597,7 +591,7 @@ bind BltComboEditor <Meta-Delete> {
 # Ignore all Alt, Meta, and Control keypresses unless explicitly bound.
 # Otherwise, if a widget binding for one of these is defined, the
 # <KeyPress> class binding will also fire and insert the character,
-# which is wrong.  Ditto for Escape, Return, and Tab.
+# which is wrong.  Ditto for Tab.
 
 bind BltComboEditor <Alt-KeyPress> {
     # Do nothing.
@@ -638,36 +632,6 @@ proc ::blt::ComboEditor::AutoScan {w} {
 	$w yview scroll -2 units
     }
     set _private(afterId) [after 50 [list blt::ComboEditor::AutoScan $w]]
-}
-
-proc ::blt::ComboEditor::GenerateMenuSelect {menu} {
-    if 0 {
-    variable _private
-    if { $_private(activeComboMenu) != $menu ||
-	 $_private(activeItem) != [$menu index active] } {
-	set _private(activeComboMenu) $menu
-	set _private(activeItem) [$menu index active]
-	event generate $menu <<MenuSelect>>
-    }
-    }
-}
-
-proc ::blt::ComboEditor::HandleButtonPress { w x y } {
-    variable _private
-
-    trace "blt::ComboEditor::HandleButtonPress $w state=[$w cget -state]"
-    set _private(b1) [$w identify $x $y]
-    if { [$w cget -state] == "posted" } {
-	UnpostMenu $w
-    } elseif { $_private(b1) == "arrow" } {
-	PostMenu $w
-    } else {
-	trace "else: priv(v1)=$_private(b1) state=[$w cget -state]"
-	focus $w
-	$w icursor [$w closest $x]
-	$w selection clear
-	$w selection from insert
-    }
 }
 
 catch { 

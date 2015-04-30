@@ -327,11 +327,11 @@ proc ::blt::ComboMenu::FindCascades { menu } {
 #
 # ButtonPressEvent --
 #
-#	Process a button press event on the given menu.  If the the button
-#	press did not occur over a menu (cascade or not), this means the
-#	user is canceling the posting of all menus.  Otherwise ignore it
-#	(we select menu items on button release events). The location is in
-#	root coordinates.
+#    Process a button press event on the given menu.  If the the button
+#    press did not occur over a menu (cascade or not), this means the user
+#    is canceling the posting of all menus.  Otherwise ignore it (we select
+#    menu items on button release events). The location is in root
+#    coordinates.
 #
 proc ::blt::ComboMenu::ButtonPressEvent { menu x y } {
     variable _private
@@ -415,7 +415,7 @@ proc ::blt::ComboMenu::ButtonReleaseEvent { menu x y } {
     }
     if { $popOnRelease } {
 	# This isn't the first time the menu was posted.  That happens when
-	# thea menubutton is pressed, the menu is posted, and the grab is
+	# the menubutton is pressed, the menu is posted, and the grab is
 	# set on the menu.  This routine gets called on the button release.
 	# Any further button releases should unpost the menu.  Just not on
 	# the first release.
