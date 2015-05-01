@@ -784,29 +784,6 @@ GetExternalEntityRefProc(XML_Parser parser, const XML_Char *context,
     return result;
 }
 
-static INLINE void
-ExportData(XmlWriter *writerPtr, const char *string, size_t numBytes)
-{
-    Blt_DBuffer_AppendData(writerPtr->dbuffer, (const unsigned char *)string,
-                           numBytes);
-}
-
-static void
-IndentLine(XmlWriter *writerPtr, Blt_TreeNode node)
-{
-    long depth;
-    
-    if ((writerPtr->flags & EXPORT_ROOT) || (writerPtr->root != node)) {
-        ExportData(writerPtr, "\n", 1);
-    }
-    depth = Blt_Tree_NodeDepth(node);
-    if ((writerPtr->flags & EXPORT_ROOT) == 0) {
-        depth--;
-    }
-    Blt_DBuffer_Format(writerPtr->dbuffer, "%*.s", writerPtr->indent * depth,
-                       "");
-}
-
 static int
 ImportXmlFile(Tcl_Interp *interp, Blt_Tree tree, Blt_TreeNode parent, 
               Tcl_Obj *objPtr, unsigned int flags) 
@@ -988,6 +965,30 @@ ImportXmlProc(Tcl_Interp *interp, Blt_Tree tree, int objc, Tcl_Obj *const *objv)
 
 #endif /* HAVE_LIBEXPAT */
 
+static INLINE void
+XmlExportData(XmlWriter *writerPtr, const char *string, size_t numBytes)
+{
+    Blt_DBuffer_AppendData(writerPtr->dbuffer, (const unsigned char *)string,
+                           numBytes);
+}
+
+static void
+XmlIndentLine(XmlWriter *writerPtr, Blt_TreeNode node)
+{
+    long depth;
+    
+    if ((writerPtr->flags & EXPORT_ROOT) || (writerPtr->root != node)) {
+        XmlExportData(writerPtr, "\n", 1);
+    }
+    depth = Blt_Tree_NodeDepth(node);
+    if ((writerPtr->flags & EXPORT_ROOT) == 0) {
+        depth--;
+    }
+    Blt_DBuffer_Format(writerPtr->dbuffer, "%*.s", writerPtr->indent * depth,
+                       "");
+}
+
+
 static int
 XmlFlush(XmlWriter *writerPtr) 
 {
@@ -1019,38 +1020,38 @@ XmlPutEscapeString(const char *from, size_t length, XmlWriter *writerPtr)
 	switch (*p) {
 	case '\'': 
 	    if (p > from) {
-		ExportData(writerPtr, from, p - from);
+		XmlExportData(writerPtr, from, p - from);
 	    }
 	    from = ++p;
-	    ExportData(writerPtr, "&apos;", 6);
+	    XmlExportData(writerPtr, "&apos;", 6);
 	    break;
 	case '&':  
 	    if (p > from) {
-		ExportData(writerPtr, from, p - from);
+		XmlExportData(writerPtr, from, p - from);
 	    }
 	    from = ++p;
-	    ExportData(writerPtr, "&amp;", 5);
+	    XmlExportData(writerPtr, "&amp;", 5);
 	    break;
 	case '>':  
 	    if (p > from) {
-		ExportData(writerPtr, from, p - from);
+		XmlExportData(writerPtr, from, p - from);
 	    }
 	    from = ++p;
-	    ExportData(writerPtr, "&gt;", 4);
+	    XmlExportData(writerPtr, "&gt;", 4);
 	    break; 
 	case '<':  
 	    if (p > from) {
-		ExportData(writerPtr, from, p - from);
+		XmlExportData(writerPtr, from, p - from);
 	    }
 	    from = ++p;
-	    ExportData(writerPtr, "&lt;", 4);
+	    XmlExportData(writerPtr, "&lt;", 4);
 	    break; 
 	case '"':  
 	    if (p > from) {
-		ExportData(writerPtr, from, p - from);
+		XmlExportData(writerPtr, from, p - from);
 	    }
 	    from = ++p;
-	    ExportData(writerPtr, "&quot;", 6);
+	    XmlExportData(writerPtr, "&quot;", 6);
 	    break;
 	default:  
 	    p++;
@@ -1058,7 +1059,7 @@ XmlPutEscapeString(const char *from, size_t length, XmlWriter *writerPtr)
 	}
     }	
     if (p > from) {
-	ExportData(writerPtr, from, p - from);
+	XmlExportData(writerPtr, from, p - from);
     }
 }
 
@@ -1072,12 +1073,12 @@ XmlOpenStartElement(XmlWriter *writerPtr, Blt_TreeNode node)
     }
     writerPtr->flags &= ~LAST_END_TAG;
     /* Always indent starting element tags */
-    IndentLine(writerPtr, node);
+    XmlIndentLine(writerPtr, node);
     label = Blt_Tree_NodeLabel(node);
     if (writerPtr->root == node) {
         if (writerPtr->flags & EXPORT_ROOT) {
             if (label[0] == '\0') {
-                ExportData(writerPtr, "<root", 5);
+                XmlExportData(writerPtr, "<root", 5);
             } else {
                 Blt_DBuffer_Format(writerPtr->dbuffer, "<%s", label);
             }                
@@ -1091,7 +1092,7 @@ static int
 XmlCloseStartElement(XmlWriter *writerPtr, Blt_TreeNode node)
 {
     if ((writerPtr->root != node) || (writerPtr->flags & EXPORT_ROOT)) {
-        ExportData(writerPtr, ">", 1);
+        XmlExportData(writerPtr, ">", 1);
     }
     if (writerPtr->channel != NULL) {
 	return XmlFlush(writerPtr);
@@ -1105,19 +1106,19 @@ XmlEndElement(XmlWriter *writerPtr, Blt_TreeNode node)
     const char *label;
     
     if (writerPtr->flags & LAST_END_TAG) {
-        IndentLine(writerPtr, node);
+        XmlIndentLine(writerPtr, node);
     }
     writerPtr->flags |= LAST_END_TAG;
     label = Blt_Tree_NodeLabel(node);
     if (writerPtr->root == node) {
         if (writerPtr->flags & EXPORT_ROOT) {
             if (label[0] == '\0') {
-                ExportData(writerPtr, "</root>\n", 8);
+                XmlExportData(writerPtr, "</root>\n", 8);
             } else {
                 Blt_DBuffer_Format(writerPtr->dbuffer, "</%s>\n", label);
             }
         } else {
-            ExportData(writerPtr, "\n", 1);
+            XmlExportData(writerPtr, "\n", 1);
         }
     } else {
         Blt_DBuffer_Format(writerPtr->dbuffer, "</%s>", label);
@@ -1141,7 +1142,7 @@ XmlAppendAttribute(XmlWriter *writerPtr, const char *attrName,
     }
     Blt_DBuffer_Format(writerPtr->dbuffer, " %s=\"", attrName);
     XmlPutEscapeString(value, valueLen, writerPtr);
-    ExportData(writerPtr, "\"", 1);
+    XmlExportData(writerPtr, "\"", 1);
 }
 
 static void
@@ -1203,7 +1204,7 @@ static int
 XmlExport(Blt_Tree tree, XmlWriter *writerPtr)
 {
     if (writerPtr->flags & EXPORT_DECLARATION) {
-        ExportData(writerPtr, "<?xml version='1.0' encoding='utf-8'?>", 38);
+        XmlExportData(writerPtr, "<?xml version='1.0' encoding='utf-8'?>", 38);
     }
     if (XmlExportElement(tree, writerPtr->root, writerPtr) != TCL_OK) {
 	return TCL_ERROR;
