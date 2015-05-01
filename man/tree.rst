@@ -894,8 +894,9 @@ To use the JSON handler you must first require the package.
 Then the following **import** and **export** commands become available.
 
 *treeName* **import json** ?\ *switches* ... ?
-  Imports the JSON data into the tree. 
-  The following import switches are supported.
+  Imports the JSON data into the tree.  Either the **-file** or **-data**
+  switch must be specified, but not both.  *Switches* can be any of the
+  following.
 
   **-file** *fileName*
     Read the JSON file *fileName* to load the tree.
@@ -908,7 +909,8 @@ Then the following **import** and **export** commands become available.
     default is the root node of the tree.
 
 *treeName* **export json** ?\ *switches* ... ?
-  Exports the tree as JSON data. 
+  Exports the tree as JSON data. If no **-file** or **-data** switch
+  is provided, the XML output is returned as the result of this command.
   The following export switches are supported.
 
   **-file** *fileName*
@@ -931,8 +933,9 @@ To use the XML handler you must first require the package.
 Then the following **import** and **export** commands become available.
 
 *treeName* **import xml** ?\ *switches* ... ?
-  Imports the XML data into the tree.  The following import switches are
-  supported.
+  Imports the XML data into the tree. Either the **-file** or **-data**
+  switch must be specified, but not both.  *Switches* can be any of the
+  following.
 
   **-all** 
     Import all XML features.
@@ -981,18 +984,28 @@ Then the following **import** and **export** commands become available.
     If true, trim white space from XML character data.  The default is "0".
 
 *treeName* **export xml** ?\ *switches* ... ?
-  Exports the tree as XML data.  The following export switches are
-  supported.
-
-  **-file** *fileName*
-    Write the tree to the XML file *fileName*.
+  Exports the tree as XML data. If no **-file** or **-data** switch is
+  provided, the XML output is returned as the result of this command.
+  *Switches* can be any of the following.
 
   **-data** *varName*
-    Write the tree in XML format to the TCL variable *varName*.
+    Writes XML to the TCL variable *varName*.
 
+  **-declaration** 
+    Adds an XML version and encoding declaration at the top of the XML data.
+
+  **-file** *fileName*
+    Writes XML to the file *fileName*.
+
+  **-hideroot** 
+    Indicates to not output a tag for the root node. 
+
+  **-indent** *numChars*
+    Specifies the number of characters to indent for each level of XML tag.
+    The default is "1".
+    
   **-root** *node*
-    Write the tree starting from *node*.  The default is the root 
-    node of the tree.
+    Specifies the topmost node.  By default it is the root of *treeName*.
 
 EXAMPLE
 -------
