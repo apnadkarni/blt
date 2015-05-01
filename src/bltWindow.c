@@ -523,6 +523,7 @@ Blt_DeleteWindowInstanceData(Tk_Window tkwin)
 
 
 #ifdef HAVE_RANDR
+
 #include <X11/Xlib.h>
 #include <X11/Xlibint.h>
 #include <X11/Xproto.h>
