@@ -965,6 +965,15 @@ ImportXmlProc(Tcl_Interp *interp, Blt_Tree tree, int objc, Tcl_Obj *const *objv)
 
 #endif /* HAVE_LIBEXPAT */
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * XmlExportData --
+ *
+ *	Appends a string into the buffer storing XML output.
+ *
+ *---------------------------------------------------------------------------
+ */
 static INLINE void
 XmlExportData(XmlWriter *writerPtr, const char *string, size_t numBytes)
 {
@@ -972,6 +981,18 @@ XmlExportData(XmlWriter *writerPtr, const char *string, size_t numBytes)
                            numBytes);
 }
 
+/*
+ *---------------------------------------------------------------------------
+ *
+ * XmlIndentLine --
+ *
+ *	Adds a newline and indent to line to the proper indent level based
+ *      on the depth of the given node and the indentation increment.  If
+ *      we are not exporting the root node, don't add an extra newline.
+ *      Also adjust the depth if we aren't exporting the root node,
+ *
+ *---------------------------------------------------------------------------
+ */
 static void
 XmlIndentLine(XmlWriter *writerPtr, Blt_TreeNode node)
 {
@@ -988,7 +1009,18 @@ XmlIndentLine(XmlWriter *writerPtr, Blt_TreeNode node)
                        "");
 }
 
-
+/*
+ *---------------------------------------------------------------------------
+ *
+ * XmlFlush --
+ *
+ *	Writes any data stored in the buffer to the file channel.  If we're
+ *      writing XML output to a file, we only store pieces of the XML in the
+ *      buffer and write the buffer the file when we encounter an start of
+ *      end tag.  The buffer is also reset.
+ *
+ *---------------------------------------------------------------------------
+ */
 static int
 XmlFlush(XmlWriter *writerPtr) 
 {
