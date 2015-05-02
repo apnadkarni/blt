@@ -75,6 +75,18 @@ install: all
 
 .SUFFIXES: .n .mann .3 .man3
 
+.rst.n: 
+	$(RM) man/$@
+	rst2man.py $< > man/$@
+
+.rst.pdf: 
+	$(RM) pdf/$@
+	rst2pdf $< -o pdf/$@
+
+.rst.html: 
+	$(RM) pdf/$@
+	rst2html.py $< > html/$@
+
 .man3.3: $(srcdir)/man.macros
 	$(RM) $@
 	sed -e "/man\.macros/r $(srcdir)/man.macros" -e '/man\.macros/d'  -e 's/BLT_VERSION/$(version)/' $< > $@
