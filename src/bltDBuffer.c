@@ -264,6 +264,22 @@ Blt_DBuffer_AppendData(DBuffer *srcPtr, const unsigned char *data,
 }
 
 int
+Blt_DBuffer_AppendString(DBuffer *srcPtr, const char *string, int numBytes)
+{
+    unsigned char *bp;
+
+    if (numBytes < 0) {
+        numBytes = strlen(string);
+    }
+    bp = Blt_DBuffer_Extend(srcPtr, numBytes);
+    if (bp == NULL) {
+	return FALSE;
+    }
+    memcpy(bp, string, numBytes);
+    return TRUE;
+}
+
+int
 Blt_DBuffer_InsertData(DBuffer *srcPtr, const unsigned char *data, 
 		       size_t numBytes, size_t index)
 {
@@ -342,7 +358,7 @@ Blt_DBuffer_Format(DBuffer *srcPtr, const char *fmt, ...)
     }
     va_end(args);
     length = strlen(string);
-    Blt_DBuffer_AppendData(srcPtr, (unsigned char *)string, length);
+    Blt_DBuffer_AppendString(srcPtr, string, length);
     return length;
 }
 

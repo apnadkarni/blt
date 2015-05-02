@@ -343,10 +343,7 @@ Blt_Ps_VarAppend(PostScript *psPtr, ...)
 void
 Blt_Ps_AppendBytes(PostScript *psPtr, const char *bytes, int length)
 {
-    if (length < 0) {
-	length = strlen(bytes);
-    }
-    Blt_DBuffer_AppendData(psPtr->dbuffer, (unsigned char *)bytes, length);
+    Blt_DBuffer_AppendString(psPtr->dbuffer, bytes, length);
 }
 
 void

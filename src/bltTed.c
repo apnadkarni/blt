@@ -983,19 +983,19 @@ LayoutGrid(TableEditor *tedPtr)
 	tedPtr->segArr = NULL;
     }
     tedPtr->numSegs = 0;
-    if ((tablePtr->numRows == 0) || (tablePtr->numColumns == 0)) {
+    if ((NumRows(tablePtr) == 0) || (NumColumns(tablePtr) == 0)) {
 	return;
     }
-    needed = tablePtr->numRows + tablePtr->numColumns + 2;
+    needed = NumRows(tablePtr) + NumColumns(tablePtr) + 2;
     segArr = Blt_Calloc(needed, sizeof(XSegment));
     if (segArr == NULL) {
 	return;
     }
-    link = Blt_Chain_FirstLink(tablePtr->cols.chain);
+    link = Blt_Chain_FirstLink(tablePtr->columns.chain);
     rcPtr = Blt_Chain_GetValue(link);
     startX = rcPtr->offset - tedPtr->gridLineWidth;
 
-    link = Blt_Chain_LastLink(tablePtr->cols.chain);
+    link = Blt_Chain_LastLink(tablePtr->columns.chain);
     rcPtr = Blt_Chain_GetValue(link);
     endX = rcPtr->offset + rcPtr->size - 1;
 
@@ -1023,7 +1023,7 @@ LayoutGrid(TableEditor *tedPtr)
     segArr[count].y1 = segArr[count].y2 = endY;
     count++;
 
-    for (link = Blt_Chain_FirstLink(tablePtr->cols.chain);
+    for (link = Blt_Chain_FirstLink(tablePtr->columns.chain);
 	link != NULL; link = Blt_Chain_NextLink(link)) {
 	rcPtr = Blt_Chain_GetValue(link);
 	segArr[count].y1 = startY;
@@ -1063,19 +1063,19 @@ LayoutPads(TableEditor *tedPtr)
 	tedPtr->padRectArr = NULL;
     }
     tedPtr->numPadRects = 0;
-    if ((tablePtr->numRows == 0) || (tablePtr->numColumns == 0)) {
+    if ((NumRows(tablePtr) == 0) || (NumColumns(tablePtr) == 0)) {
 	return;
     }
-    needed = 2 * (tablePtr->numRows + tablePtr->numColumns);
+    needed = 2 * (NumRows(tablePtr) + NumColumns(tablePtr));
     rects = Blt_Calloc(needed, sizeof(XRectangle));
     if (rects == NULL) {
 	return;
     }
-    link = Blt_Chain_FirstLink(tablePtr->cols.chain);
+    link = Blt_Chain_FirstLink(tablePtr->columns.chain);
     rcPtr = Blt_Chain_GetValue(link);
     startX = rcPtr->offset;
 
-    link = Blt_Chain_LastLink(tablePtr->cols.chain);
+    link = Blt_Chain_LastLink(tablePtr->columns.chain);
     rcPtr = Blt_Chain_GetValue(link);
     endX = (rcPtr->offset + rcPtr->size);
 
@@ -1107,7 +1107,7 @@ LayoutPads(TableEditor *tedPtr)
 	    rectPtr++, count++;
 	}
     }
-    for (link = Blt_Chain_FirstLink(tablePtr->cols.chain);
+    for (link = Blt_Chain_FirstLink(tablePtr->columns.chain);
 	link != NULL; link = Blt_Chain_NextLink(link)) {
 	rcPtr = Blt_Chain_GetValue(link);
 	if (rcPtr->pad.side1 > 0) {
@@ -1194,14 +1194,14 @@ LayoutControlEntries(TableEditor *tedPtr)
     }
     tedPtr->numCntlRects = 0;
 
-    needed = (tablePtr->numRows + tablePtr->numColumns);
+    needed = (NumRows(tablePtr) + NumColumns(tablePtr));
     rects = Blt_Calloc(needed, sizeof(XRectangle));
     if (rects == NULL) {
 	return;
     }
     /* Draw any entry windows */
     count = 0;
-    for (link = Blt_Chain_FirstLink(tablePtr->cols.chain);
+    for (link = Blt_Chain_FirstLink(tablePtr->columns.chain);
 	link != NULL; link = Blt_Chain_NextLink(link)) {
 	rcPtr = Blt_Chain_GetValue(link);
 	tePtr = rcPtr->control;
@@ -1248,7 +1248,7 @@ LayoutButtons(TableEditor *tedPtr)
     int count;
 
     tablePtr = tedPtr->tablePtr;
-    if ((tablePtr->numRows == 0) || (tablePtr->numColumns == 0)) {
+    if ((NumRows(tablePtr) == 0) || (NumColumns(tablePtr) == 0)) {
 	if (tedPtr->rects != NULL) {
 	    Blt_Free(tedPtr->rects);
 	}
@@ -1256,7 +1256,7 @@ LayoutButtons(TableEditor *tedPtr)
 	tedPtr->numRects = 0;
 	return;			/* Nothing to display, empty table */
     }
-    needed = 2 * (tablePtr->numRows + tablePtr->numColumns);
+    needed = 2 * (NumRows(tablePtr) + NumColumns(tablePtr));
     rects = Blt_Calloc(needed, sizeof(XRectangle));
     if (rects == NULL) {
 	return;			/* Can't allocate rectangles */
@@ -1276,7 +1276,7 @@ LayoutButtons(TableEditor *tedPtr)
 	rects[count].height = rcPtr->size - 2;
 	count++;
     }
-    for (link = Blt_Chain_FirstLink(tablePtr->cols.chain);
+    for (link = Blt_Chain_FirstLink(tablePtr->columns.chain);
 	link != NULL; link = Blt_Chain_NextLink(link)) {
 	rcPtr = Blt_Chain_GetValue(link);
 	rects[count].x = rcPtr->offset - rcPtr->pad.side1;
@@ -1633,7 +1633,7 @@ SelectOp(
 	    RowColumn *rcPtr;
 
 	    last = tePtr->column.rcPtr->index + tePtr->column.span - 1;
-	    link = Blt_Chain_GetNthLink(tablePtr->cols.chain, last);
+	    link = Blt_Chain_GetNthLink(tablePtr->columns.chain, last);
 	    rcPtr = Blt_Chain_GetValue(link);
 
 	    /* Calculate the span rectangle */

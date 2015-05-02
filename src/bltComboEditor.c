@@ -1813,8 +1813,7 @@ InsertText(ComboEditor *editPtr, const char *text, int numBytes,
     string = Blt_DBuffer_String(editPtr->dbuffer);
     offset = CharIndexToByteOffset(string, index);
     if (offset == Blt_DBuffer_Length(editPtr->dbuffer)) { /* Append */
-        result = Blt_DBuffer_AppendData(editPtr->dbuffer,
-                (const unsigned char *)text, numBytes);
+        result = Blt_DBuffer_AppendString(editPtr->dbuffer, text, numBytes);
     } else if (offset == 0) {           /* Prepend */
         result = Blt_DBuffer_InsertData(editPtr->dbuffer,
                 (const unsigned char *)text, numBytes, 0);

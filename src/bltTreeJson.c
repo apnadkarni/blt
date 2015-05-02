@@ -320,8 +320,7 @@ GetQuotedString(JsonReader *readerPtr)
 			value = (value << 4) | c;
 		    }
 		    numBytes = Tcl_UniCharToUtf(value, buf);
-		    Blt_DBuffer_AppendData(readerPtr->word, 
-			(unsigned char *)buf, numBytes);
+		    Blt_DBuffer_AppendString(readerPtr->word, buf, numBytes);
 		    continue;
 		}
 	    default:
@@ -727,7 +726,7 @@ JsonFormat(JsonWriter *writerPtr, const char *fmt, ...)
 	length += 3;
     }
     va_end(args);
-    Blt_DBuffer_AppendData(writerPtr->dBuffer, (unsigned char *)string, length);
+    Blt_DBuffer_AppendString(writerPtr->dBuffer, string, length);
 }
 
 static int

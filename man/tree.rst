@@ -38,19 +38,19 @@ SYNTAX
 ------
 
 **blt::tree create** ?\ *treeName*\ ?  
-  Creates a new tree object.  The name of the new tree is returned.  If no
-  *treeName* argument is present, then the name of the tree is
+  Creates a new tree object.  The name of the new tree object is returned.
+  If no *treeName* argument is present, then the name of the tree is
   automatically generated in the form "tree0", "tree1", etc.  If the
   substring "#auto" is found in *treeName*, it is automatically substituted
   by a generated name.  For example, the name ".foo.#auto.bar" will be
   translated to ".foo.tree0.bar".
 
-  A new TCL command (by the same name as the tree) is also created.
-  Another TCL command or tree object can not already exist as *treeName*.
-  If the TCL command is deleted, the tree will also be freed.  The new tree
-  will contain just a root node.  Note that trees are by default, created
-  in the current namespace, not the global namespace, unless *treeName*
-  contains a namespace qualifier, such as "fred::myTree".
+  A new TCL command (by the same name as the tree) is created.  Another TCL
+  command or tree object can not already exist as *treeName*.  If the TCL
+  command is deleted, the tree will also be freed.  The new tree will
+  contain just a root node.  Note that trees are by default, created in the
+  current namespace, not the global namespace, unless *treeName* contains a
+  namespace qualifier, such as "fred::myTree".
 
 **blt::tree destroy** ?\ *treeName* ... ?
   Releases one of more trees.  The TCL command associated with *treeName* is
@@ -69,7 +69,8 @@ SYNTAX
 REFERENCING TREE NODES
 ----------------------
 
-Nodes in a tree object may be referenced in two ways: by id or by tag.
+A tree object is a hierarchy of nodes. The nodes may be referenced in two
+ways: by id or by tag.
 
 **id**
   Each node has a unique serial number that is assigned to that node when

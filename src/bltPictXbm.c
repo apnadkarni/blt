@@ -678,7 +678,7 @@ ImportXbm(Tcl_Interp *interp, int objc, Tcl_Obj *const *objv,
 	int numBytes;
 
 	string = Tcl_GetStringFromObj(switches.dataObjPtr, &numBytes);
-	Blt_DBuffer_AppendData(buffer, (unsigned char *)string, numBytes);
+	Blt_DBuffer_AppendString(buffer, string, numBytes);
 	string = "data buffer";
 	*fileNamePtr = NULL;
     } else {
@@ -700,7 +700,7 @@ ImportXbm(Tcl_Interp *interp, int objc, Tcl_Obj *const *objv,
 
 	string = Tcl_GetStringFromObj(switches.maskDataObjPtr, &numBytes);
 	buffer = Blt_DBuffer_Create();
-	Blt_DBuffer_AppendData(buffer, (unsigned char *)string, numBytes);
+	Blt_DBuffer_AppendString(buffer, string, numBytes);
     } else if (switches.maskFileObjPtr != NULL) {
 	string = Tcl_GetString(switches.maskFileObjPtr);
 	buffer = Blt_DBuffer_Create();

@@ -63,8 +63,8 @@ struct _Editor {
     EditorDestroyProc *destroyProc;
 };
 
-#define numRows		rows.chain->numLinks
-#define numColumns	cols.chain->numLinks
+#define NumRows(t)		((t)->rows.chain->numLinks)
+#define NumColumns(t)           ((t)->columns.chain->numLinks)
 
 /*
  * Limits --
@@ -338,7 +338,7 @@ struct _Table {
 
     int eTablePad, eEntryPad;
 
-    PartitionInfo cols;
+    PartitionInfo columns;
     PartitionInfo rows;		/* Manages row and column partitions */
 
     Dim2d container;		/* Last known dimenion of the container. */

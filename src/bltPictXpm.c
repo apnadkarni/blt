@@ -603,7 +603,7 @@ ImportXpm(
 	int numBytes;
 
 	string = Tcl_GetStringFromObj(switches.dataObjPtr, &numBytes);
-	Blt_DBuffer_AppendData(buffer, (unsigned char *)string, numBytes);
+	Blt_DBuffer_AppendString(buffer, string, numBytes);
 	string = "data buffer";
 	*fileNamePtr = NULL;
     } else {
