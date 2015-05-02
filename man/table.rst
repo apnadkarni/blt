@@ -16,7 +16,7 @@ Arranges widgets in a table
 SYNOPSIS
 --------
 
-**blt::table** *tableName* ?\ *pathName* *index* *option* *value* ... ?
+**blt::table** *tableName* ?\ *row*\ ,\ *column* *pathName* *option* *value* ... ?
 
 **blt::table arrange** *tableName*
 
@@ -144,7 +144,8 @@ The following operations are available for the *table* geometry manager.
   numeric expressions that are recursively evaluated.  If a table geometry
   manager doesn't exist for *tableName*, one is created.  *PathName* is the
   path name of the window, that must already exist, to be arranged inside
-  of *tableName*. *Option* and *value* are described below.
+  of *tableName*. *PathName* doesn't have to be a child of *tableName*,
+  but it is more efficent if it is.  *Option* and *value* are described below.
 
   **-anchor** *anchor* 
     Anchors *pathName* to a particular edge of the cell(s) it resides.
@@ -158,7 +159,7 @@ The following operations are available for the *table* geometry manager.
 
   **-columnspan** *numColumns*
     Specifies the number of columns *pathName* will span.  The default is
-    "1".
+    "1".  
 
   **-columncontrol** *control*
     Specifies how the width of *pathName* should control the width of the
@@ -177,6 +178,9 @@ The following operations are available for the *table* geometry manager.
 
     The default is "normal".
 
+  **-cspan** *numColumns*
+     Same as **-columnspan**.
+
   **-fill** *fillName*
     Specifies if *pathName* should be stretched to fill any free space
     in the span surrounding *pathName*. *FillName* is one of the following.
@@ -194,6 +198,9 @@ The following operations are available for the *table* geometry manager.
       The widget does not grow along with the span.  
 
     The default is "none".
+
+  **-height** *numPixels* 
+     Same as **-reqheight**.
 
   **-ipadx** *numPixels* 
     Sets how much horizontal padding to add internally on the left and
@@ -258,6 +265,12 @@ The following operations are available for the *table* geometry manager.
 
     The default is "normal".
 
+  **-rspan** *numColumns*
+     Same as **-rowspan**.
+
+  **-width** *numPixels* 
+     Same as **-reqwidth**.
+     
 **blt::table arrange** *tableName*
   Computes the layout of the table.  Normally, the *table*
   geometry manager will wait until the next idle point, before calculating
@@ -337,6 +350,11 @@ The following operations are available for the *table* geometry manager.
 
     The default is "none".
 
+  **-weight** *number*
+    Specifies the weight that should be given to *columnIndex* when there
+    is extra room.  A higher number indicates that this column should
+    be preferred.
+    
   **-width** *width*
     Specifies the limits within that the width of the column may expand or
     shrink.  *Width* is a list of bounding values.  See the section
@@ -423,6 +441,24 @@ The following operations are available for the *table* geometry manager.
     of the *tableName* window.  If *boolean* is false, *tableName* will not
     be resized.  *TableName* will be its requested size.  The default is
     "1".
+
+  **-reqheight** *height*
+    Specifies the limits of the requested height for *tableName*.  *Height*
+    is a list of bounding values.  See the `SPECIFYING SIZES`_ section for
+    a description of this list.  By default, the height of *tableName* is
+    its the computed size based on the rows in the table with its internal
+    padding (see the **-ipady** option).  The bounds specified by *height*
+    either override the height completely, or bound the height between two
+    sizes.  The default is """".
+
+  **-reqwidth** *width*
+    Specifies the limits of the requested width for *tableName*.  *Width*
+    is a list of bounding values.  See the `SPECIFYING SIZES`_ section for
+    a description of this list.  By default, the width of *tableName* is
+    the computed size based on the columns in the table with its internal
+    padding (set the **-ipadx** option).  The bounds specified by *width*
+    either override the width completely, or bound the height between two
+    sizes.  The default is "".
 
 **blt::table configure** *tableName* *item* ?\ *option* *value* ... ?
   Queries or modifies the configuration options for *tableName*.
@@ -554,6 +590,11 @@ The following operations are available for the *table* geometry manager.
 
     The default is "none".
     
+  **-weight** *number*
+    Specifies the weight that should be given to *rowIndex* when there
+    is extra room.  A higher number indicates that this row should
+    be preferred.
+
 **blt::table row delete** *tableName* ? *firstIndex* ?\ *lastIndex*\ ?
   Deletes one or more rows from the table. *FirstIndex* and *lastIndex* are
   row indices. If no *lastIndex* argument is given,
@@ -870,7 +911,8 @@ arranged in the same container ".", but using different geometry managers.
 
  ::
 
-    blt::table .f1
+    blt::table . \
+      0,0 .f1 
 	...
     pack .f2
 	...
