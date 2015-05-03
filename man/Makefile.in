@@ -76,6 +76,7 @@ install: all
 .SUFFIXES: .n .mann .3 .man3
 
 .rst.n: 
+	$(MKDIR_P) man
 	$(RM) man/$@
 	rst2man.py $< > man/$@
 
