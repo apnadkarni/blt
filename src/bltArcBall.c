@@ -35,7 +35,7 @@
  *   OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  *   IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * The quaterion implementation is from 
+ * The quaternion implementation is from 
  *
  *   Shoemake, Ken, Arcball Rotation Control, Graphics Gems IV, p. 175-192, 
  *   code: p. 178-191, arcball.
@@ -65,7 +65,7 @@ typedef struct {
 #define ARCBALL_THREAD_KEY "BLT Arcball Command Data"
 
 typedef struct {
-    double x, y, z, w;
+    double w, x, y, z;
 } Quaternion;
 
 typedef struct {
@@ -188,6 +188,73 @@ GetMatrixFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, HMatrix A)
 	}
     }
     return TCL_OK;
+}
+
+static void
+EulerToQuaternion(EulerAngles *e, Quaternion *q)
+{
+    double x, y, z, w, c1, c2, c3, s1, s2, s3;
+    double a1, a2, a3;
+
+    a1 = e->x * DEG2RAD;
+    a2 = e->y * DEG2RAD;
+    a3 = e->z * DEG2RAD;
+
+    c1 = cos(a1 * 0.5), s1 = sin(a1 * 0.5);
+    c2 = cos(a2 * 0.5), s2 = sin(a2 * 0.5);
+    c3 = cos(a3 * 0.5), s3 = sin(a3 * 0.5);
+    
+    w = c1 * c2 * c3 - s1 * s2 * s3;
+    x = c1 * c2 * s3 + s1 * s2 * c3;
+    y = s1 * c2 * c3 + c1 * s2 * s3;
+    z = c1 * s2 * c3 - s1 * c2 * s3;       
+
+    q->w = w;
+    q->x = y;
+    q->y = z;
+    q->z = x;
+}
+
+static void
+QuaternionToEuler(Quaternion *q, EulerAngles *eulerPtr)
+{
+    double test, sqx, sqy, sqz, sqw, unit;
+    double qx, qy, qz, qw;
+    double a1, a2, a3;
+    
+    qw = q->w;
+    qx = q->z;
+    qy = q->x;
+    qz = q->y;
+    
+    sqw = qw*qw;
+    sqx = qx*qx;
+    sqy = qy*qy;
+    sqz = qz*qz;
+
+    /* If normalised is one, otherwise is correction factor. */
+    unit = sqx + sqy + sqz + sqw; 
+    test = qx*qy + qz*qw;
+    if (test > (0.49999 * unit)) {        /* Singularity at north pole. */
+        eulerPtr->x = 2 * atan2(qx,qw);
+        eulerPtr->y = M_PI_2;
+        eulerPtr->z = 0;
+        return;
+    }
+    if (test < (-0.49999 * unit)) {       /* Singularity at south pole. */
+        eulerPtr->x = -2 * atan2(qx,qw);
+        eulerPtr->y = -M_PI_2;
+        eulerPtr->z = 0;
+        return;
+    }
+
+    a1 = atan2(2*qy*qw-2*qx*qz , sqx - sqy - sqz + sqw);
+    a2 = asin(2*test/unit);
+    a3 = atan2(2*qx*qw-2*qy*qz , -sqx + sqy - sqz + sqw);
+
+    eulerPtr->x = a1 * RAD2DEG;
+    eulerPtr->y = a2 * RAD2DEG;
+    eulerPtr->z = a3 * RAD2DEG;
 }
 
 #ifdef notdef
@@ -536,7 +603,9 @@ GetEulerAnglesFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, EulerAngles *e)
  *
  * EulerOp --
  *
- * 	Sets/gets the current quaternion in terms of euler angles.
+ * 	Sets/gets the current quaternion in terms of euler angles.  Note
+ *      that this assumes z is up.  The order in which the angles are
+ *      applied is z, y, x;
  *
  * Results:
  *	A standard TCL result.  A list of three numbers representing
@@ -554,39 +623,53 @@ EulerOp(ClientData clientData, Tcl_Interp *interp, int objc,
     ArcBall *arcPtr = clientData;
 
     if (objc == 3) {
+#ifdef notdef
 	EulerAngles euler;
-	Quaternion q1, q2, q3;
-	double theta, phi, psi;
+	Quaternion q1, q2, q3, q32;
+	double a1, a2, a3;
 
 	if (GetEulerAnglesFromObj(interp, objv[2], &euler) != TCL_OK) {
 	    return TCL_ERROR;
 	}
-	theta = euler.x * DEG2RAD;
-	phi   = euler.y * DEG2RAD;
-	psi   = euler.z * DEG2RAD;
-	
-	q1.w = cos(theta * 0.5);
-	q1.x = sin(theta * 0.5);
-	q1.y = 0.0;
-	q1.z = 0.0;
-	
-	q2.w = cos(phi * 0.5);
+
+	a1 = euler.x * DEG2RAD;
+	a2 = euler.y * DEG2RAD;
+	a3 = euler.z * DEG2RAD;
+
+        /* 3 */
+	q3.w = cos(a1 * 0.5);
+	q3.x = sin(a1 * 0.5);
+	q3.y = 0.0;
+	q3.z = 0.0;
+	/* 2 */
+	q2.w = cos(a2 * 0.5);
 	q2.x = 0.0;
-	q2.y = sin(phi * 0.5);
+	q2.y = sin(a2 * 0.5);
 	q2.z = 0.0;
-	
-	CombineRotations(&q1, &q2, &q3);
-	
-	q1.w = cos(psi * 0.5);
+	/* 1 */
+	q1.w = cos(a3 * 0.5);
 	q1.x = 0.0;
 	q1.y = 0.0;
-	q1.z = sin(psi * 0.5);
-	
-	CombineRotations(&q3, &q1, &arcPtr->q);
+	q1.z = sin(a3 * 0.5);
+
+	CombineRotations(&q3, &q2, &q32);
+	CombineRotations(&q32, &q1, &arcPtr->q);
+#else
+	EulerAngles euler;
+
+	if (GetEulerAnglesFromObj(interp, objv[2], &euler) != TCL_OK) {
+	    return TCL_ERROR;
+	}
+        EulerToQuaternion(&euler, &arcPtr->q);
+#endif
+        
     } else {
+        EulerAngles euler;
+	Tcl_Obj *objPtr, *listObjPtr;
+
+#ifdef notdef
 	HMatrix A;
 	double phi, cosPhi;
-	Tcl_Obj *objPtr, *listObjPtr;
 	double x, y, z;
 
 	QuaternionToMatrix(&arcPtr->q, A);
@@ -613,18 +696,24 @@ EulerOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	    try = A[1][0];
 	    z  = atan2(try, trx) * RAD2DEG;
 	}
+        euler.x = x;
+        euler.y = y;
+        euler.z = z;
+#else 
+        QuaternionToEuler(&arcPtr->q, &euler);
+#endif
 	/* Clamp all angles to range */
 #define CLAMP(x)	(((x) < 0.0) ? 0.0 : ((x) > 360.0) ? 360.0 : (x))
-	x = CLAMP(x);
-	y = CLAMP(y);
-	z = CLAMP(z);
+	euler.x = CLAMP(euler.x);
+	euler.y = CLAMP(euler.y);
+	euler.z = CLAMP(euler.z);
 
 	listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
-	objPtr = Tcl_NewDoubleObj(x);
+	objPtr = Tcl_NewDoubleObj(euler.x);
 	Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-	objPtr = Tcl_NewDoubleObj(y);
+	objPtr = Tcl_NewDoubleObj(euler.y);
 	Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
-	objPtr = Tcl_NewDoubleObj(z);
+	objPtr = Tcl_NewDoubleObj(euler.z);
 	Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
 	Tcl_SetObjResult(interp, listObjPtr);
     }
@@ -732,7 +821,7 @@ QuaternionOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * ResetOp --
  *
- * 	Resets the quaterion to identity.  Used also the initialize the
+ * 	Resets the quaternion to identity.  Used also the initialize the
  * 	quaternion.
  *
  * Results:

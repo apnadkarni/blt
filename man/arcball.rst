@@ -91,14 +91,20 @@ modify it.  The general form is
 Both *operation* and its arguments determine the exact behavior of the
 command.  The operations available for arcballs are listed below.
 
-*arcballName* **euler** ?\ *angles*\ ?
-  Gets or sets the quaternion in terms of euler angles. *Angles* is
-  a list of 3 numbers representing the x, y, and z euler angles.
+*arcballName* **euler** ?\ *eulerAngles*\ ?
+  Gets or sets the quaternion in terms of euler angles. *EulerAngles* is a
+  list of 3 numbers representing the x, y, and z rotation in degrees.
 
-*arcballName* **matrix** ?\ *matrix*\ ?
-  Gets or sets the rotation matrix from the current quaternion. *Matrix*
-  is a list of 9 numbers, representing the 3-by-3 rotation matrix.  The
-  matrix is ordered row-major.
+  In the conversion from euler angles to the quaternion you should note
+  that the two following assumptions:
+
+  1. The order in which the angles are applied is z, y, z.
+  2. The z-axis points up.
+
+*arcballName* **matrix** ?\ *rotationMatrix*\ ?
+  Gets or sets the quaternion in terms of a rotation matrix.
+  *RotationMatrix* is a list of 9 numbers, representing the 3-by-3 rotation
+  matrix.  The matrix is ordered row-major.
 
 *arcballName* **quaternion** ?\ *quaternion*\ ?
   Gets or sets the quaternion associated with the *arcball*. *Quaternion*
@@ -112,10 +118,9 @@ command.  The operations available for arcballs are listed below.
   the bounds of the *arcball*.
 
 *arcballName* **rotate** *x1* *y1* *x2* *y2*
-  Rotates the *arcball* given the screen coordinates. *X1* and *y1* are
-  the starting x-y coordinates of the rotation.  *X2* and *y2* are
-  the ending coordinates.  The resulting quaternion is resulted as
-  a list of 4 numbers.
+  Rotates the *arcball* given the screen coordinates. *X1* and *y1* are the
+  starting x-y coordinates of the rotation.  *X2* and *y2* are the ending
+  coordinates.  The rotated quaternion is returned as a list of 4 numbers.
 
 EXAMPLE
 -------
@@ -182,7 +187,7 @@ command.
 KEYWORDS
 --------
 
-arcball, widget
+arcball
 
 COPYRIGHT
 ---------
