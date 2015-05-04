@@ -64,6 +64,9 @@ typedef struct {
 
 #define ARCBALL_THREAD_KEY "BLT Arcball Command Data"
 
+#define DEF_WIDTH       "100"
+#define DEF_HEIGHT      "100"
+
 typedef struct {
     double w, x, y, z;
 } Quaternion;
@@ -83,7 +86,21 @@ typedef struct {
     Point3d click, drag;		
     Quaternion q;
     double xScale, yScale;  
+    int width, height;
+    Tk_Window tkwin;
 } ArcBall;
+
+static Blt_ConfigSpec arcSpecs[] =
+{
+    {BLT_CONFIG_PIXELS_NNEG, "-height", (char *)NULL, (char *)NULL, 
+        DEF_HEIGHT, Blt_Offset(ArcBall, height), BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_PIXELS_NNEG, "-width", (char *)NULL, (char *)NULL, 
+        DEF_WIDTH, Blt_Offset(ArcBall, width), BLT_CONFIG_DONT_SET_DEFAULT},
+    {BLT_CONFIG_END}
+};
+
+static Tcl_ObjCmdProc ArcBallInstObjCmd;
+static Tcl_CmdDeleteProc ArcBallInstDeleteProc;
 
 /*
  * Arcball sphere constants:
@@ -191,14 +208,14 @@ GetMatrixFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, HMatrix A)
 }
 
 static void
-EulerToQuaternion(EulerAngles *e, Quaternion *q)
+EulerToQuaternion(EulerAngles *eulerPtr, Quaternion *q)
 {
     double x, y, z, w, c1, c2, c3, s1, s2, s3;
     double a1, a2, a3;
 
-    a1 = e->x * DEG2RAD;
-    a2 = e->y * DEG2RAD;
-    a3 = e->z * DEG2RAD;
+    a1 = eulerPtr->x * DEG2RAD;
+    a2 = eulerPtr->y * DEG2RAD;
+    a3 = eulerPtr->z * DEG2RAD;
 
     c1 = cos(a1 * 0.5), s1 = sin(a1 * 0.5);
     c2 = cos(a2 * 0.5), s2 = sin(a2 * 0.5);
@@ -476,26 +493,37 @@ GetArcBallFromObj(ArcBallCmdInterpData *dataPtr, Tcl_Interp *interp,
 }
 
 static void 
-SetArcBallBounds(ArcBall *arcPtr, double w, double h)
+SetArcBallBounds(ArcBall *arcPtr)
 {
-    if (w <= 1.0 ) {
-	w = 2.0;
+    if (arcPtr->width <= 1.0 ) {
+	arcPtr->width = 2.0;
     }
-    if (h <= 1.0 ) {
-	h = 2.0;
+    if (arcPtr->height <= 1.0 ) {
+	arcPtr->height = 2.0;
     }
     /* Set adjustment factor for width/height */
-    arcPtr->xScale = 1.0 / ((w - 1.0) * 0.5);
-    arcPtr->yScale = 1.0 / ((h - 1.0) * 0.5);
+    arcPtr->xScale = 1.0 / ((arcPtr->width - 1.0) * 0.5);
+    arcPtr->yScale = 1.0 / ((arcPtr->height - 1.0) * 0.5);
 }
 
 static ArcBall *
-NewArcBall(double w, double h)
+NewArcBall(Tcl_Interp *interp, ArcBallCmdInterpData *dataPtr, const char *name)
 {
     ArcBall *arcPtr;
-
+    int isNew;
+    
     arcPtr = Blt_Calloc(1, sizeof(ArcBall));
-    SetArcBallBounds (arcPtr, w, h);
+    arcPtr->width = arcPtr->height = 100;
+    arcPtr->dataPtr = dataPtr;
+    arcPtr->interp = interp;
+    arcPtr->cmdToken = Tcl_CreateObjCommand(interp, (char *)name, 
+        ArcBallInstObjCmd, arcPtr, ArcBallInstDeleteProc);
+    arcPtr->tablePtr = &dataPtr->arcballTable;
+    arcPtr->hashPtr = Blt_CreateHashEntry(arcPtr->tablePtr,
+        (char *)arcPtr, &isNew);
+    assert(isNew);
+    Blt_SetHashValue(arcPtr->hashPtr, arcPtr);
+    arcPtr->tkwin = Tk_MainWindow(interp);
     return arcPtr;
 }
 
@@ -535,12 +563,14 @@ PointOnSphere(ArcBall *arcPtr, double x, double y, Point3d *p)
     }
 }
 
+
 /* Mouse down: Supply mouse position in x and y */
 static void 
 ClickArcBall(ArcBall *arcPtr, double x, double y)
 {
     PointOnSphere (arcPtr, x, y, &arcPtr->click);
 }
+
 
 /* Mouse drag, calculate rotation: Supply mouse position in x and y */
 static void 
@@ -595,6 +625,69 @@ GetEulerAnglesFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, EulerAngles *e)
 	return TCL_ERROR;
     }
     e->x = x, e->y = y, e->z = z;
+    return TCL_OK;
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * CgetOp --
+ *
+ * Results:
+ *      Standard TCL result.
+ *
+ * Side effects:
+ *      Commands may get excecuted; variables may get set; sub-menus may
+ *      get posted.
+ *
+ *      arcballName cget option
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+CgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
+       Tcl_Obj *const *objv)
+{
+    ArcBall *arcPtr = clientData;
+
+    return Blt_ConfigureValueFromObj(interp, arcPtr->tkwin, arcSpecs,
+                (char *)arcPtr, objv[2], 0);
+}
+
+/*
+ *---------------------------------------------------------------------------
+ *
+ * ConfigureOp --
+ *
+ * Results:
+ *      Standard TCL result.
+ *
+ * Side effects:
+ *      Commands may get excecuted; variables may get set; sub-menus may
+ *      get posted.
+ *
+ *      arcballName configure ?option value?...
+ *
+ *---------------------------------------------------------------------------
+ */
+static int
+ConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
+	    Tcl_Obj *const *objv)
+{
+    ArcBall *arcPtr = clientData;
+
+    if (objc == 2) {
+	return Blt_ConfigureInfoFromObj(interp, arcPtr->tkwin, arcSpecs,
+                (char *)arcPtr, (Tcl_Obj *)NULL,  BLT_CONFIG_OBJV_ONLY);
+    } else if (objc == 3) {
+	return Blt_ConfigureInfoFromObj(interp, arcPtr->tkwin, arcSpecs,
+		(char *)arcPtr, objv[2], BLT_CONFIG_OBJV_ONLY);
+    }
+    if (Blt_ConfigureWidgetFromObj(interp, arcPtr->tkwin, arcSpecs, objc - 2,
+        objv + 2, (char *)arcPtr, BLT_CONFIG_OBJV_ONLY) != TCL_OK) {
+	return TCL_ERROR;
+    }
+    SetArcBallBounds(arcPtr);
     return TCL_OK;
 }
 
@@ -872,7 +965,9 @@ ResizeOp(ClientData clientData, Tcl_Interp *interp, int objc,
 			 Tcl_GetString(objv[3]), (char *)NULL);
 	return TCL_ERROR;
     }
-    SetArcBallBounds(arcPtr, w, h);
+    arcPtr->width = w;
+    arcPtr->height = h;
+    SetArcBallBounds(arcPtr);
     return TCL_OK;
 }
 
@@ -942,6 +1037,8 @@ RotateOp(ClientData clientData, Tcl_Interp *interp, int objc,
  */
 static Blt_OpSpec arcBallOps[] =
 {
+    {"cget",        2, CgetOp,        3, 3, "option",},
+    {"configure",   2, ConfigureOp,   2, 0, "?option value ... ?",},
     {"euler",       1, EulerOp,       2, 3, "?angles?",},
     {"matrix",      1, MatrixOp,      2, 3, "?matrix?",},
     {"quaternion",  1, QuaternionOp,  2, 3, "?quat?",},
@@ -1073,9 +1170,8 @@ ArcBallCreateOp(ClientData clientData, Tcl_Interp *interp, int objc,
     ArcBallCmdInterpData *dataPtr = clientData;
     const char *name;
     Tcl_DString ds;
-    int isNew;
     ArcBall *arcPtr;
-
+    
     name = NULL;
     if (objc == 3) {
 	name = Tcl_GetString(objv[2]);
@@ -1107,28 +1203,13 @@ ArcBallCreateOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	} 
     } 
     if (name != NULL) {
-	int w, h;
-
-	if ((Tcl_GetIntFromObj(interp, objv[2], &w) != TCL_OK) ||
-	    (Tcl_GetIntFromObj(interp, objv[3], &h) != TCL_OK)) {
-	    goto error;
-	}
-	if ((w < 1) || (h < 1)) {
-	    Tcl_AppendResult(interp, "bad screen size ", 
-			     Tcl_GetString(objv[2]), " x ", 
-			     Tcl_GetString(objv[3]), (char *)NULL);
-	    goto error;
-	}
-	arcPtr = NewArcBall(w, h);
+	arcPtr = NewArcBall(interp, dataPtr, name);
 	assert(arcPtr);
-	arcPtr->dataPtr = dataPtr;
-	arcPtr->interp = interp;
-	arcPtr->cmdToken = Tcl_CreateObjCommand(interp, (char *)name, 
-		ArcBallInstObjCmd, arcPtr, ArcBallInstDeleteProc);
-	arcPtr->tablePtr = &dataPtr->arcballTable;
-	arcPtr->hashPtr = Blt_CreateHashEntry(arcPtr->tablePtr,
-		(char *)arcPtr, &isNew);
-	Blt_SetHashValue(arcPtr->hashPtr, arcPtr);
+        if (Blt_ConfigureWidgetFromObj(interp, arcPtr->tkwin, arcSpecs,
+                objc - 2, objv + 2, (char *)arcPtr, 0) != TCL_OK) {
+            return TCL_ERROR;
+        }
+        SetArcBallBounds(arcPtr);
 	Tcl_SetStringObj(Tcl_GetObjResult(interp), name, -1);
 	Tcl_DStringFree(&ds);
 	return TCL_OK;
@@ -1220,7 +1301,7 @@ ArcBallNamesOp(ClientData clientData, Tcl_Interp *interp, int objc,
  */
 static Blt_OpSpec arcBallCmdOps[] =
 {
-    {"create",  1, ArcBallCreateOp,  4, 5, "?name? w h",},
+    {"create",  1, ArcBallCreateOp,  4, 0, "?name? ?option value ...?",},
     {"destroy", 1, ArcBallDestroyOp, 3, 0, "name...",},
     {"names",   1, ArcBallNamesOp,   2, 3, "?pattern?...",},
 };

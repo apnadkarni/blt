@@ -53,7 +53,7 @@ they are more numerically stable and may be more efficient.
 SYNTAX
 ------
 
-**blt::arcball create** ?\ *arcballName*\ ?  *width* *height*
+**blt::arcball create** ?\ *arcballName*\ ?  ?\ *option value* ... ?
   Creates a new arcball object.  The name of the new arcball object is returned.
   If no *arcballName* argument is present, then the name of the arcball is
   automatically generated in the form "arcball0", "arcball", etc.  If the
@@ -68,8 +68,9 @@ SYNTAX
   namespace, unless *arcballName* contains a namespace qualifier, such as
   "fred::myArcball".
 
-  *Width* and *height* represent the bounds of the *arcball*.  This is
-  the size of the rotated area.
+  If one or more *option-value* pairs are specified, they modifies the given
+  arcball option(s) to have the given value(s). *Option* and *value* are
+  described in the **configure** operation below.
 
 **blt::arcball destroy** ?\ *arcballName* ... ?
   Frees one of more arcballs.  The TCL command associated with *arcballName*
@@ -91,6 +92,31 @@ modify it.  The general form is
 Both *operation* and its arguments determine the exact behavior of the
 command.  The operations available for arcballs are listed below.
 
+*arcballName* **cget** *option*  
+  Returns the current value of the arcball configuration option given by
+  *option*. *Option* may have any of the values accepted by the
+  **configure** operation. They are described below.
+
+*arcballName* **configure** ?\ *option*\ ? ?\ *value*? ?\ *option value ...*\ ?
+  Queries or modifies the configuration options of the arcball.  If no
+  *option* is specified, this command returns a list describing all the
+  available options for *arcballName* (see **Tk_ConfigureInfo** for
+  information on the format of this list).  If *option* is specified with
+  no *value*, then a list describing the one named option (this list will
+  be identical to the corresponding sublist of the value returned if no
+  *option* is specified) is returned.  If one or more *option-value* pairs
+  are specified, then this command modifies the given widget option(s) to
+  have the given value(s); in this case the command returns an empty
+  string.  *Option* and *value* are described below.
+
+  **-height** *numPixels* 
+    Specifies the height of the viewing area.  *NumPixels* may have any of
+    the forms acceptable to **Tk_GetPixels**.  The default is "100".
+
+  **-width** *numPixels* 
+    Specifies the width of the viewing area.  *NumPixels* may have any of
+    the forms acceptable to **Tk_GetPixels**.  The default is "100".
+
 *arcballName* **euler** ?\ *eulerAngles*\ ?
   Gets or sets the quaternion in terms of euler angles. *EulerAngles* is a
   list of 3 numbers representing the x, y, and z rotation in degrees.
@@ -98,7 +124,7 @@ command.  The operations available for arcballs are listed below.
   In the conversion from euler angles to the quaternion you should note
   that the two following assumptions:
 
-  1. The order in which the angles are applied is z, y, z.
+  1. The order in which the angles are applied is z, y, x.
   2. The z-axis points up.
 
 *arcballName* **matrix** ?\ *rotationMatrix*\ ?
@@ -115,7 +141,8 @@ command.  The operations available for arcballs are listed below.
 
 *arcballName* **resize** *width* *height*
   Sets new dimensions for the *arcball*.  These dimensions represent
-  the bounds of the *arcball*.
+  the bounds of the *arcball*.  Both *width* and *height* may have
+  any of the forms acceptable to **Tk_GetPixels**, such as "1.2i".
 
 *arcballName* **rotate** *x1* *y1* *x2* *y2*
   Rotates the *arcball* given the screen coordinates. *X1* and *y1* are the
@@ -125,13 +152,13 @@ command.  The operations available for arcballs are listed below.
 EXAMPLE
 -------
 
-You create an arcball with the **blt::arcball** command.  It takes
-as arguments the width and height of the viewing area.  You can
-resize the area with the **resize** operation.
+You create an arcball with the **blt::arcball** command.  There are
+optionally arguments to set the width and height of the viewing area.
+You can also resize the area with the **resize** operation.
 
  ::
 
-   set arcball [blt::arcball create 100 100]
+   set arcball [blt::arcball create -width 100 -height 100]
 
 This creates a new TCL command that we save in the variable "arcball".
 You can use this command to set the arcball's quaternion.  You can set
@@ -148,12 +175,12 @@ the quaternion with the **euler**, **matrix**, or **quaternion** operations.
 
 
 If the viewing area size changes you have to update the *arcball* object
-using the **resize** operation.
+using the **configure** or **resize** operations.
 
  ::
 
    bind .widget <Configure> {
-       $arcball resize [winfo width %W] [winfo height %W]
+       $arcball configure -width [winfo width %W] -height [winfo height %W]
    }
 
 
