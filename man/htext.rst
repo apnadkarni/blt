@@ -32,10 +32,10 @@ The **blt::htext** command returns its *pathName*.
 The *htext* widget is hybrid of a non-editable text widget and a geometry
 manager (e.g. the packer).  It displays text (optionally read from file) in
 a window.  Text can be scrolled either horizontally or vertically using the
-*htext* window as a viewport.  In addition, Tcl commands can be embedded
+*htext* window as a viewport.  In addition, TCL commands can be embedded
 into the text which are evaluated as the text is parsed.  Text between
 special double characters (percent signs "%%") is immediately passed to the
-Tcl interpreter for evaluation.
+TCL interpreter for evaluation.
 
 Furthermore, any widget or widget hierarchy can be packed in-line and made
 to appear on the current line of the text.  Widgets are packed using the
@@ -61,7 +61,7 @@ FILE FORMAT
 
 The format of *htext* text file is an ASCII text.  Text enclosed by special
 double characters (by default, percent signs "%%") is interpreted and
-executed as Tcl commands.  The special character may be specified by the
+executed as TCL commands.  The special character may be specified by the
 **-specialchar** option.  In the following example of a *htext* file, a
 button widget is appended to the text between the words "a" and "which".
 The *pathName* of the *htext* widget is ".ht".
@@ -72,7 +72,7 @@ The *pathName* of the *htext* widget is ".ht".
     But this will become a %% 
       button .ht.button -text "button" -fg red
       .ht append .ht.button 
-    %% which can invoke a Tcl command.
+    %% which can invoke a TCL command.
 
 INDICES
 -------
@@ -113,7 +113,7 @@ An index must have one of the following forms:
 VARIABLES
 ---------
 
-The following global Tcl variables are maintained when an 
+The following global TCL variables are maintained when an 
 **htext** file is parsed.  
 
 **htext(widget)**
@@ -132,7 +132,7 @@ files and/or lines.
 SYNTAX
 ------
 
-The **blt::htext** command creates a new Tcl command whose
+The **blt::htext** command creates a new TCL command whose
 name is *pathName*.  This command may be used to invoke various
 operations on the widget.  It has the following general form:
 
@@ -285,7 +285,7 @@ The following operations are available for *htext* widgets:
   **-specialchar** *number*
     Specifies the ASCII value of the special double character delimiters.
     In *htext* files, the text between these special characters is
-    evaluated as a block of Tcl commands. The default special character is
+    evaluated as a block of TCL commands. The default special character is
     the "0x25" (percent sign).
 
   **-text** *text*

@@ -14,8 +14,6 @@ Vector data object.
 :Manual section: n
 :Manual group: BLT Built-In Commands
 
-.. TODO: authors and author with name <email>
-
 SYNOPSIS
 --------
 
@@ -304,6 +302,9 @@ VECTOR COMMAND OPERATIONS
 
 
 **blt::vector names** ?\ *pattern* ... ?
+  Returns the names of all the BLT vectors.  If one or more *pattern*
+  arguments are provided, then the name of any vector matching
+  *pattern* will be returned. *Pattern* is a glob-style pattern.
 
 VECTOR INSTANCE OPERATIONS
 --------------------------
@@ -353,19 +354,19 @@ the command.  The operations available for vectors are listed below.
   element with a new index.  This command removes the index and value
   strings from the array.  This is useful when the vector is large.
 
-*vecName* **count** *what*
-  Returns the number of points in the vector. *What* specifies the
-  points to count. *What* can one of the following:
+*vecName* **count** *valueType*
+  Returns the number of points in the vector. *ValueType* specifies the
+  the type of points to count. *ValueType* is one of the following:
 
   **empty**
      Counts the number of empty points (i.e. where the value is NaN).
      
-  **nonzero**
-     Counts the number of non-zero point values.
-  
   **nonempty**
      Counts the number of non-empty point values.
 
+  **nonzero**
+     Counts the number of non-zero point values.
+  
   **zero**
      Counts the number of zero point values.
 
@@ -442,20 +443,20 @@ the command.  The operations available for vectors are listed below.
   when computing the frequency.  Bins represent regular intervals of
   values from the minimum to the maximum vector value.
 
-*vecName* **indices** *what*
-  Returns the indices of points in the vector. *What* specifies the
-  type of points to consider. *What* can one of the following:
+*vecName* **indices** *valueType*
+  Returns the indices of points in the vector. *ValueType* specifies the
+  type of points to consider. *ValueType* is one of the following:
 
   **empty**
      Returns the indices of the empty points (i.e. where the value
      is NaN).
      
-  **nonzero**
-     Returns the indices non-zero point values.
-  
   **nonempty**
      Returns the indices of non-empty point values.
 
+  **nonzero**
+     Returns the indices non-zero point values.
+  
   **zero**
      Returns the indices of non-empty point values.
 
@@ -636,8 +637,8 @@ the command.  The operations available for vectors are listed below.
 
   **-indices** 
    Returns the indices of the sorted points instead of their values.
-   Returns a list of the indices from the sorted points. 
-   The points of *vecName* and *destName* are not rearranged.
+   Returns a list of the indices from the sorted points.  The points of
+   *vecName* and *destName* are not rearranged.
 
   **-reverse** *
    Same as the **-decreasing** switch above.

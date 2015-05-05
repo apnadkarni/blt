@@ -334,7 +334,7 @@ command.  The following operations are available for *comboeditor* widgets:
   **-xscrollcommand** *cmdPrefix*
     Specifies the prefix for a command used to communicate with horizontal
     scrollbars.  Whenever the horizontal view in the widget's window
-    changes, the widget will generate a Tcl command by concatenating the
+    changes, the widget will generate a TCL command by concatenating the
     scroll command and two numbers. If this option is not specified, then
     no command will be executed.  The widget's initialization script
     will automatically set this for you.
@@ -356,7 +356,7 @@ command.  The following operations are available for *comboeditor* widgets:
   **-yscrollcommand** *cmdPrefix*
     Specifies the prefix for a command used to communicate with vertical
     scrollbars.  Whenever the vertical view in the widget's window
-    changes, the widget will generate a Tcl command by concatenating the
+    changes, the widget will generate a TCL command by concatenating the
     scroll command and two numbers.  If this option is not specified, then
     no command will be executed.  The widget's initialization script
     will automatically set this for you.
@@ -406,7 +406,7 @@ command.  The following operations are available for *comboeditor* widgets:
   The position of the *comboeditor* may be adjusted to guarantee that the
   entire widget is visible on the screen.  This command normally returns an
   empty string.  If the **-postcommand** option has been specified, then
-  its value is executed as a Tcl script before posting the editor and the
+  its value is executed as a TCL script before posting the editor and the
   result of that script is returned as the result of the post widget
   command.  If an error returns while executing the command, then the error
   is returned without posting the editor.

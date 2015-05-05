@@ -4,7 +4,7 @@ blt::bitmap
 ===============
 
 --------------------------------------
-Define a new bitmap from a Tcl script.
+Define a new bitmap from a TCL script.
 --------------------------------------
 
 :Author: George A. Howlett <gahowlett@gmail.com>
@@ -13,8 +13,6 @@ Define a new bitmap from a Tcl script.
 :Version: 4.0
 :Manual section: n
 :Manual group: BLT Built-In Commands
-
-.. TODO: authors and author with name <email>
 
 SYNOPSIS
 --------
@@ -38,7 +36,7 @@ DESCRIPTION
 -----------
 
 The **blt::bitmap** command lets you create new bitmaps directly from your
-Tcl script.  The bitmap can be specified as a list of data or a text string
+TCL script.  The bitmap can be specified as a list of data or a text string
 which is converted into a bitmap.  You can arbitrarily scale or rotate the
 bitmap too.
 
@@ -51,7 +49,7 @@ widgets, they're used for stippling.  But Tk let's you can create new
 bitmaps only by reading the bitmap data from a file.  This makes bitmaps
 cumbersome to manage, especially in packaging the program as a **wish**
 script, since each bitmap must be its own file.  It would be nicer if you
-could create new bitmaps directly from your Tcl script.
+could create new bitmaps directly from your TCL script.
 
 The **blt::bitmap** command lets you do just that.  You can specify the
 bitmap as in various formats (such as the X11 bitmap format).  You can also

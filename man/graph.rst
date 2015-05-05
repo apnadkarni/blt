@@ -96,7 +96,7 @@ See the **configure** operation below for the exact details about what
 *option* and *value* pairs are valid.
 
 If successful, **blt::graph** returns the path name of the widget.  It also
-creates a new Tcl command by the same name.  You can use this command to
+creates a new TCL command by the same name.  You can use this command to
 invoke various operations that query or modify the graph.  The general form
 is:
 
@@ -569,7 +569,7 @@ This is the list of axes to be drawn in this margin.
 
 You can configure axes in many ways. The axis scale can be linear or
 logarithmic.  The values along the axis can either monotonically increase
-or decrease.  If you need custom tick labels, you can specify a Tcl
+or decrease.  If you need custom tick labels, you can specify a TCL
 procedure to format the label any way you wish.  You can control how ticks
 are drawn, by changing the major tick interval or the number of minor
 ticks.  You can define non-uniform tick intervals, such as for time-series
@@ -631,7 +631,7 @@ The resource class is "Axis".  The resource names are the names of the axes
     Specifies the binding tags for the axis.  *TagsList* is a list of
     binding tags.  The tags and their order will determine how events for
     axes are handled.  Each tag in the list matching the current event
-    sequence will have its Tcl command executed.  Implicitly the name of
+    sequence will have its TCL command executed.  Implicitly the name of
     the axis is always the first tag in the list.  The default value is
     "all".
 
@@ -645,8 +645,8 @@ The resource class is "Axis".  The resource names are the names of the axes
   **-colorbarthickness** *numPixels*
 
   **-command** *cmdPrefix*
-    Specifies a Tcl command to be invoked when formatting the axis tick
-    labels. *CmdPrefix* is a string containing the name of a Tcl proc and
+    Specifies a TCL command to be invoked when formatting the axis tick
+    labels. *CmdPrefix* is a string containing the name of a TCL proc and
     any extra arguments for the procedure.  This command is invoked for
     each major tick on the axis.  Two additional arguments are passed to
     the procedure: the *pathName* and the current the numeric value of the
@@ -1722,7 +1722,7 @@ The following operations are valid for the legend.
     Specifies the binding tags for legend entries.  *TagList* is a list of
     binding tag names.  The tags and their order will determine how events
     are handled for legend entries.  Each tag in the list matching the
-    current event sequence will have its Tcl command executed. The default
+    current event sequence will have its TCL command executed. The default
     value is "all".
 
   **-borderwidth**  *numPixels*
@@ -2147,7 +2147,7 @@ The following postscript operations are available.
   **-fontmap**  *varName*
     *VarName* must be the name of a global array variable that specifies a
     font mapping from the X font name to PostScript.  Each element of
-    *varName* must consist of a Tcl list with one or two elements; the name
+    *varName* must consist of a TCL list with one or two elements; the name
     and point size of a PostScript font.  When outputting PostScript commands
     for a particular font, the array variable *varName* is checked to see if
     an element by the specified font exists.  If there is such an element,
@@ -2347,7 +2347,7 @@ The following operations are available for markers.
     Specifies the binding tags for the marker.  *TagList* is a list of
     binding tag names.  The tags and their order will determine how events
     for markers are handled.  Each tag in the list matching the current
-    event sequence will have its Tcl command executed.  Implicitly the name
+    event sequence will have its TCL command executed.  Implicitly the name
     of the marker is always the first tag in the list.  The default value
     is "all".
 
@@ -2458,7 +2458,7 @@ The following operations are available for markers.
     Specifies the binding tags for the marker.  *TagList* is a list of
     binding tag names.  The tags and their order will determine how events
     for markers are handled.  Each tag in the list matching the current
-    event sequence will have its Tcl command executed.  Implicitly the name
+    event sequence will have its TCL command executed.  Implicitly the name
     of the marker is always the first tag in the list.  The default value
     is "all".
 
@@ -2545,7 +2545,7 @@ The following operations are available for markers.
     Specifies the binding tags for the marker.  *TagList* is a list of
     binding tag names.  The tags and their order will determine how events
     for markers are handled.  Each tag in the list matching the current
-    event sequence will have its Tcl command executed.  Implicitly the name
+    event sequence will have its TCL command executed.  Implicitly the name
     of the marker is always the first tag in the list.  The default value
     is "all".
 
@@ -2651,7 +2651,7 @@ The following operations are available for markers.
     Specifies the binding tags for the marker.  *TagList* is a list of
     binding tag names.  The tags and their order will determine how events
     for markers are handled.  Each tag in the list matching the current
-    event sequence will have its Tcl command executed.  Implicitly the name
+    event sequence will have its TCL command executed.  Implicitly the name
     of the marker is always the first tag in the list.  The default value
     is "all".
 
@@ -2773,7 +2773,7 @@ The following operations are available for markers.
     Specifies the binding tags for the marker.  *TagList* is a list of
     binding tag names.  The tags and their order will determine how events
     for markers are handled.  Each tag in the list matching the current
-    event sequence will have its Tcl command executed.  Implicitly the name
+    event sequence will have its TCL command executed.  Implicitly the name
     of the marker is always the first tag in the list.  The default value
     is "all".
 
@@ -2901,7 +2901,7 @@ The following operations are available for markers.
     Specifies the binding tags for the marker.  *TagList* is a list of
     binding tag names.  The tags and their order will determine how events
     for markers are handled.  Each tag in the list matching the current
-    event sequence will have its Tcl command executed.  Implicitly the name
+    event sequence will have its TCL command executed.  Implicitly the name
     of the marker is always the first tag in the list.  The default value
     is "all".
 
@@ -3058,7 +3058,7 @@ The **blt::graph** command creates a new graph.
 
     blt::graph .g -plotbackground black
 
-A new Tcl command ".g" is also created.  This command can be used to query
+A new TCL command ".g" is also created.  This command can be used to query
 and modify the graph.  For example, to change the title of the graph to "My
 Plot", you use the new command and the graph's **configure** operation.
 
@@ -3300,7 +3300,7 @@ the X-Y data coordinates of an element as vectors and manipulate the vector
 from C.  The graph will be redrawn automatically after the vectors are
 updated.
 
-From Tcl, create the vectors and configure the element to use them.
+From TCL, create the vectors and configure the element to use them.
 
 ::
 
@@ -3321,7 +3321,7 @@ redrawn automatically.
     Blt_Vector *xVec, *yVec;
     double x[50], y[50];
 
-    /* Get the BLT vectors "X" and "Y" (created above from Tcl) */
+    /* Get the BLT vectors "X" and "Y" (created above from TCL) */
     if ((Blt_GetVector(interp, "X", &xVec) != TCL_OK) ||
 	(Blt_GetVector(interp, "Y", &yVec) != TCL_OK)) {
 	return TCL_ERROR;

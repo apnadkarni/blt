@@ -1443,7 +1443,6 @@ Blt_Vec_Duplicate(Vector *destPtr, Vector *srcPtr)
     return TCL_OK;
 }
 
-
 /*
  *---------------------------------------------------------------------------
  *
@@ -1455,6 +1454,7 @@ Blt_Vec_Duplicate(Vector *destPtr, Vector *srcPtr)
  *	A standard TCL result.  interp->result will contain a list of
  *	all the names of the vector instances.
  *
+ *      blt::vector names ?pattern ...?
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
@@ -1467,41 +1467,33 @@ VectorNamesOp(
 {
     VectorCmdInterpData *dataPtr = clientData;
     Tcl_Obj *listObjPtr;
+    Blt_HashEntry *hPtr;
+    Blt_HashSearch cursor;
 
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
-    if (objc == 2) {
-	Blt_HashEntry *hPtr;
-	Blt_HashSearch cursor;
+    for (hPtr = Blt_FirstHashEntry(&dataPtr->vectorTable, &cursor);
+         hPtr != NULL; hPtr = Blt_NextHashEntry(&cursor)) {
+        const char *name;
+        int i;
+        int match;
+        
+        name = Blt_GetHashKey(&dataPtr->vectorTable, hPtr);
+        match = (objc == 2);
+        for (i = 2; i < objc; i++) {
+            char *pattern;
 
-	for (hPtr = Blt_FirstHashEntry(&dataPtr->vectorTable, &cursor);
-	     hPtr != NULL; hPtr = Blt_NextHashEntry(&cursor)) {
-	    char *name;
+            pattern = Tcl_GetString(objv[i]);
+            if (Tcl_StringMatch(name, pattern)) {
+                match = TRUE;
+                break;
+            }
+        }
+        if (match) {
+            Tcl_Obj *objPtr;
 
-	    name = Blt_GetHashKey(&dataPtr->vectorTable, hPtr);
-	    Tcl_ListObjAppendElement(interp, listObjPtr, 
-		Tcl_NewStringObj(name, -1));
-	}
-    } else {
-	Blt_HashEntry *hPtr;
-	Blt_HashSearch cursor;
-
-	for (hPtr = Blt_FirstHashEntry(&dataPtr->vectorTable, &cursor);
-	     hPtr != NULL; hPtr = Blt_NextHashEntry(&cursor)) {
-	    char *name;
-	    int i;
-
-	    name = Blt_GetHashKey(&dataPtr->vectorTable, hPtr);
-	    for (i = 2; i < objc; i++) {
-		char *pattern;
-
-		pattern = Tcl_GetString(objv[i]);
-		if (Tcl_StringMatch(name, pattern)) {
-		    Tcl_ListObjAppendElement(interp, listObjPtr, 
-				Tcl_NewStringObj(name, -1));
-		    break;
-		}
-	    }
-	}
+            objPtr = Tcl_NewStringObj(name, -1);
+            Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+        }
     }
     Tcl_SetObjResult(interp, listObjPtr);
     return TCL_OK;

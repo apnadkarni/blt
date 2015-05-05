@@ -13,8 +13,6 @@ Create and manipulate scrollset widgets.
 :Manual section: n
 :Manual group: BLT Built-In Commands
 
-.. TODO: authors and author with name <email>
-
 SYNOPSIS
 --------
 
@@ -168,7 +166,7 @@ The following operations are available for scrollset widgets:
   **-xscrollcommand** *cmdPrefix*  
     Specifies the prefix for a command used to communicate with horizontal
     scrollbars.  Whenever the horizontal view in the widget's window changes,
-    the widget will generate a Tcl command by concatenating the scroll command
+    the widget will generate a TCL command by concatenating the scroll command
     and two numbers.  If this option is not specified, then no command will be
     executed.
 
@@ -187,7 +185,7 @@ The following operations are available for scrollset widgets:
   **-yscrollcommand** *cmdPrefix*  
     Specifies the prefix for a command used to communicate with vertical
     scrollbars.  Whenever the vertical view in the widget's window changes, the
-    widget will generate a Tcl command by concatenating the scroll command and
+    widget will generate a TCL command by concatenating the scroll command and
     two numbers.  If this option is not specified, then no command will be
     executed.
 
@@ -283,7 +281,7 @@ You create a scrollset widget with the **scrollset** command.
     # Create a new scrollset
     blt::scrollset .ss  
 
-A new Tcl command ".ss" is also created.  This command can be
+A new TCL command ".ss" is also created.  This command can be
 used to query and modify the scrollset.  For example, you can specify
 the scrollbars and child widget to use with the scrollset's 
 **configure** operation.

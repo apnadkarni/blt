@@ -94,11 +94,11 @@ created by the **blt::tree** command using the **-tree** configuration
 option.  *treeview* widgets can share the same tree object, possibly
 displaying different views of the same data.
 
-A tree object has both a Tcl and C API.  You can insert or delete nodes
+A tree object has both a TCL and C API.  You can insert or delete nodes
 using *treeview* widget or **tree** command operations, but also from C
 code.  For example, you can load the tree from your C code while still
-managing and displaying the tree from Tcl. The widget is automatically
-notified whenever the tree is modified via C or Tcl.
+managing and displaying the tree from TCL. The widget is automatically
+notified whenever the tree is modified via C or TCL.
 
 SYNTAX
 ------
@@ -114,7 +114,7 @@ See the widget's **configure** operation below for the exact details about
 what *option* and *value* pairs are valid.
 
 If successful, **treeview** returns the path name of the widget.  It also
-creates a new Tcl command by the same name.  You can use this command to
+creates a new TCL command by the same name.  You can use this command to
 invoke various operations that query or modify the widget.  The general
 form is:
 
@@ -245,7 +245,7 @@ hidden, or, moved.
 ENTRY BINDINGS
 --------------
 
-You can bind Tcl commands to be invoked when events occur on nodes
+You can bind TCL commands to be invoked when events occur on nodes
 (much like Tk canvas items).  You can bind a node using its id or
 its *bindtags*.  Bindtags are simply names that associate a
 binding with one or more nodes.  There is a built-in tag "all"
@@ -385,7 +385,7 @@ command.  The following operation are available for *treeview* widgets:
   below.
 
 *pathName* **close** ?\ **-recurse**\ ? *entryName* ... ?
-  Closes the entry specified by *entryName*.  In addition, if a Tcl
+  Closes the entry specified by *entryName*.  In addition, if a TCL
   script was specified by the **-closecommand** option, it is
   invoked.  If the entry is already closed, this command has no effect.
   If the **-recurse** flag is present, each child node is
@@ -427,7 +427,7 @@ command.  The following operation are available for *treeview* widgets:
     Specifies the binding tags *columnName*.  *TagList* is a list of binding
     tag names.  The tags and their order will determine how events are
     handled for columns.  Each tag in the list matching the current event
-    sequence will have its Tcl command executed.  The default value is
+    sequence will have its TCL command executed.  The default value is
     "all".
 
   **-borderwidth** *numPixels*
@@ -559,7 +559,7 @@ command.  The following operation are available for *treeview* widgets:
   is "0", the new column will be the left most column.
 
 *pathName* **column invoke** *columnName*
-  Invokes the Tcl command associated with *columnName*, if there is one
+  Invokes the TCL command associated with *columnName*, if there is one
   (see the column's **-command** option).  This command is ignored if the
   column's **-state** option set to "disabled".
 
@@ -630,7 +630,7 @@ command.  The following operation are available for *treeview* widgets:
     default is "2".
 
   **-closecommand** *string*
-    Specifies a Tcl script to be invoked when a node is closed.  You can
+    Specifies a TCL script to be invoked when a node is closed.  You can
     overrider this for individual entries using the entry's
     **-closecommand** option. The default is "".  Percent substitutions are
     performed on *string* before it is executed.  The following
@@ -734,7 +734,7 @@ command.  The following operation are available for *treeview* widgets:
     option), don't share its tags too.  The default is "0".
 
   **-opencommand** *string*
-    Specifies a Tcl script to be invoked when a node is open.  You can
+    Specifies a TCL script to be invoked when a node is open.  You can
     override this for individual entries with the entry's **-opencommand**
     configuration option.  The default is "".  Percent substitutions are
     performed on *string* before it is executed.  The following
@@ -787,7 +787,7 @@ command.  The following operation are available for *treeview* widgets:
     selected entries. The default is "0".
 
   **-selectcommand** *string*
-    Specifies a Tcl script to invoked when the set of selected nodes
+    Specifies a TCL script to invoked when the set of selected nodes
     changes.  The default is "".
 
   **-selectforeground** *colorName*
@@ -803,7 +803,7 @@ command.  The following operation are available for *treeview* widgets:
     Specifies the character sequence to use when spliting the path
     components.  The separator may be several characters wide (such as
     "::") Consecutive separators in a pathname are treated as one.  If
-    *string* is the empty string, the pathnames are Tcl lists.  Each
+    *string* is the empty string, the pathnames are TCL lists.  Each
     element is a path component.  The default is "".
 
   **-showtitles** *boolean*
@@ -836,7 +836,7 @@ command.  The following operation are available for *treeview* widgets:
   **-xscrollcommand** *string*
     Specifies the prefix for a command used to communicate with horizontal
     scrollbars.  Whenever the horizontal view in the widget's window
-    changes, the widget will generate a Tcl command by concatenating the
+    changes, the widget will generate a TCL command by concatenating the
     scroll command and two numbers.  If this option is not specified, then
     no command will be executed.
 
@@ -846,7 +846,7 @@ command.  The following operation are available for *treeview* widgets:
   **-yscrollcommand** *string*
     Specifies the prefix for a command used to communicate with vertical
     scrollbars.  Whenever the vertical view in the widget's window changes,
-    the widget will generate a Tcl command by concatenating the scroll
+    the widget will generate a TCL command by concatenating the scroll
     command and two numbers.  If this option is not specified, then no
     command will be executed.
 
@@ -896,7 +896,7 @@ command.  The following operation are available for *treeview* widgets:
     Specifies the binding tags for entries.  *TagList* is a list of binding
     tag names.  The tags and their order will determine how events are
     handled for entries.  Each tag in the list matching the current event
-    sequence will have its Tcl command executed.  The default value is
+    sequence will have its TCL command executed.  The default value is
     "all".
 
   **-button** *how*
@@ -906,7 +906,7 @@ command.  The following operation are available for *treeview* widgets:
     the default.
 
   **-closecommand** *commandString*
-    Specifies a Tcl script to be invoked when the node is closed.  This
+    Specifies a TCL script to be invoked when the node is closed.  This
     overrides the global **-closecommand** option for this entry.  The
     default is "".  Percent substitutions are performed on *commandString*
     before it is executed.  The following substitutions are valid:
@@ -951,7 +951,7 @@ command.  The following operation are available for *treeview* widgets:
     name of the node. The default is "".
 
   **-opencommand** *commandString*
-    Specifies a Tcl script to be invoked when the entry is opened.  This
+    Specifies a TCL script to be invoked when the entry is opened.  This
     overrides the widget's **-opencommand** option for this node.  The
     default is "".  Percent substitutions are performed on *commandString*
     before it is executed.  The following substitutions are valid:
@@ -1155,7 +1155,7 @@ command.  The following operation are available for *treeview* widgets:
   Inserts one or more nodes at *position*.  *Position* is the location
   (number or "end") where the new nodes are added to the parent node.
   *Path* is the pathname of the new node.  Pathnames can be formated either
-  as a Tcl list (each element is a path component) or as a string separated
+  as a TCL list (each element is a path component) or as a string separated
   by a special character sequence (using the **-separator** option).
   Pathnames are normally absolute, but the **-at** switch lets you select a
   relative starting point.  Its value is the id of the starting node.
@@ -1188,12 +1188,12 @@ command.  The following operation are available for *treeview* widgets:
   Returns the id of the node entry closest to the given X-Y screen
   coordinate.  If the coordinate is not directly over any node, then the
   empty string is returned.  If the argument *varName* is present, this is
-  a Tcl variable that is set to either "button", "label", "label", or ""
+  a TCL variable that is set to either "button", "label", "label", or ""
   depending what part of the entry the coordinate lies.
 
 *pathName* **open** ?\ **-recurse**\ ? *tagOrId* ...
   Opens the one or more nodes specified by *tagOrId*.  If a node is not
-  already open, the Tcl script specified by the **-opencommand** option is
+  already open, the TCL script specified by the **-opencommand** option is
   invoked. If the **-recurse** flag is present, then each descendant is
   recursively opened.
 
@@ -1349,7 +1349,7 @@ command.  The following operation are available for *treeview* widgets:
   according to this column.  If *column* is "" then no sort is performed.
 
   **-command** *string*
-  Specifies a Tcl procedure to be called when sorting nodes.  The procedure
+  Specifies a TCL procedure to be called when sorting nodes.  The procedure
   is called with three arguments: the pathname of the widget and the fields
   of two entries.  The procedure returns 1 if the first node is greater
   than the second, -1 is the second is greater, and 0 if equal.
@@ -1377,13 +1377,13 @@ command.  The following operation are available for *treeview* widgets:
   **real**
     Compares fields as floating point numbers.
   *command*
-    Use the Tcl proc specified by the **-command** option to compare
+    Use the TCL proc specified by the **-command** option to compare
     entries when sorting.  If no command is specified, the sort reverts to
     "ascii" sorting.
 
 *pathName* **sort once** ?\ *flags*\ ? *tagOrId* ...
   Sorts the children for each entries specified by *tagOrId*.  By default,
-  entries are sorted by name, but you can specify a Tcl proc to do your own
+  entries are sorted by name, but you can specify a TCL proc to do your own
   comparisons.
 
   **-recurse**
@@ -1851,7 +1851,7 @@ The **treeview** command creates a new widget.
 
     treeview .tv -bg white
 
-A new Tcl command ".tv" is also created.  This command can be used to query
+A new TCL command ".tv" is also created.  This command can be used to query
 and modify the *treeview* widget.  For example, to change the background
 color of the table to "green", you use the new command and the widget's
 **configure** operation.
@@ -2110,7 +2110,7 @@ option.
     .tv configure -selectmode "multiple"
 
 You can be notified when the list of selected entries changes.  The
-widget's **-selectcommand** specifies a Tcl procedure that is called
+widget's **-selectcommand** specifies a TCL procedure that is called
 whenever the selection changes.
 
   ::
@@ -2150,7 +2150,7 @@ and **close** operations respectively.
     .tv open $id
     .tv close $id
 
-When an entry is opened, a Tcl procedure can be automatically invoked.
+When an entry is opened, a TCL procedure can be automatically invoked.
 The **-opencommand** option specifies this procedure.  This
 procedure can lazily insert entries as needed.
 

@@ -4,7 +4,7 @@ blt::debug
 ==========
 
 ------------------------------------------------
-Print Tcl commands before execution
+Print TCL commands before execution
 ------------------------------------------------
 
 :Author: George A. Howlett <gahowlett@gmail.com>

@@ -14,8 +14,6 @@ Full color image type.
 :Manual section: n
 :Manual group: BLT Built-In Commands
 
-.. TODO: authors and author with name <email>
-
 SYNOPSIS
 --------
 

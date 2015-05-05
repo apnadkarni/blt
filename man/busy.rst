@@ -14,8 +14,6 @@ Make Tk widgets busy, temporarily blocking user interactions.
 :Manual section: n
 :Manual group: BLT Built-In Commands
 
-.. TODO: authors and author with name <email>
-
 SYNOPSIS
 --------
 
@@ -151,9 +149,9 @@ The following operations are available for the **blt::busy** command:
 **blt::busy names** ?\ *pattern* ... ?
   Returns the pathnames of all widgets that have previously been made busy
   (i.e. a busy window is allocated and associated with the widget).  It
-  makes no difference if the window is currently busy or not.  If a
-  *pattern* is given, the path names of busy widgets matching *pattern* are
-  returned.
+  makes no difference if the window is currently busy or not.  If one or
+  more *pattern* arguments are present, then the pathname of any busy window
+  matching *pattern* will be returned. *Pattern* is a **glob**\-style pattern.
 
 **blt::busy release** ?\ *windowName* ... ?
   Makes *windowName* un-busy. Restores user interactions to the widget

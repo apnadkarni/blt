@@ -14,8 +14,6 @@ Create and manipulate tabset widgets.
 :Manual section: n
 :Manual group: BLT Built-In Commands
 
-.. TODO: authors and author with name <email>
-
 SYNOPSIS
 --------
 
@@ -332,7 +330,7 @@ available for *tabset* widgets:
 
   **-perforationcommand** *string*
 
-    Specifies a Tcl script to be invoked to tear off the current page in
+    Specifies a TCL script to be invoked to tear off the current page in
     the tabset. This command is typically invoked when left mouse button is
     released over the tab perforation.  The default action is to tear-off
     the page and place it into a new toplevel window.
@@ -364,7 +362,7 @@ available for *tabset* widgets:
 
     Specifies the prefix for a command for communicating with scrollbars.
     Whenever the view in the widget's window changes, the widget will
-    generate a Tcl command by concatenating the scroll command and two
+    generate a TCL command by concatenating the scroll command and two
     numbers.  If this option is not specified, then no command will be
     executed.
 
@@ -383,7 +381,7 @@ available for *tabset* widgets:
 
   **-selectcommand** *string*
 
-    Specifies a default Tcl script to be associated with tabs.  This
+    Specifies a default TCL script to be associated with tabs.  This
     command is typically invoked when left mouse button is released over
     the tab.  Individual tabs may override this with the tab's **-command**
     option. The default value is "".
@@ -610,13 +608,13 @@ available for *tabset* widgets:
     Specifies the binding tags for this tab.  *TagList* is a list of
     binding tag names.  The tags and their order will determine how
     commands for events in tabs are invoked.  Each tag in the list matching
-    the event sequence will have its Tcl command executed.  Implicitly the
+    the event sequence will have its TCL command executed.  Implicitly the
     name of the tab is always the first tag in the list.  The default value
     is "all".
 
   **-command** *string*
 
-    Specifies a Tcl script to be associated with *tab*.  This
+    Specifies a TCL script to be associated with *tab*.  This
     command is typically invoked when left mouse button is released over
     the tab.  Setting this option overrides the widget's **-selectcommand**
     option.
@@ -624,7 +622,7 @@ available for *tabset* widgets:
   **-data** *string*
 
     Specifies a string to be associated with *tab*.  This value
-    isn't used in the widget code.  It may be used in Tcl bindings to
+    isn't used in the widget code.  It may be used in TCL bindings to
     associate extra data (other than the image or text) with the tab. The
     default value is "".
 
@@ -838,7 +836,7 @@ for tabsets (via the class bind tag "Tabset"):
 **<ButtonRelease-1>**
 
   Clicking with the left mouse button on a tab causes the tab to be
-  selected and its Tcl script (see the **-command** or **-selectcommand**
+  selected and its TCL script (see the **-command** or **-selectcommand**
   options) to be invoked.  The folder and any embedded widget (if one is
   specified) is automatically mapped.
 
@@ -888,7 +886,7 @@ You create a tabset widget with the **blt::tabset** command.
      # Create a new tabset
      tabset .ts -relief sunken -borderwidth 2 
 
-A new Tcl command ".ts" is also created.  This command can be
+A new TCL command ".ts" is also created.  This command can be
 used to query and modify the tabset.  For example, to change the
 default font used by all the tab labels, you use the new command and
 the tabset's **configure** operation.
@@ -968,7 +966,7 @@ of its own.  Clicking again on the right mouse button puts it back into
 the folder.
 
 If you want to share a page between two different folders, the
-**-command** option lets you specify a Tcl command to be invoked
+**-command** option lets you specify a TCL command to be invoked
 whenever the folder is selected.  You can reset the **-window**
 option for the tab whenever it's clicked.
 

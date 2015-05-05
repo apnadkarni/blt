@@ -13,8 +13,6 @@ Create and manipulate combomenu widgets.
 :Manual section: n
 :Manual group: BLT Built-In Commands
 
-.. TODO: authors and author with name <email>
-
 SYNOPSIS
 --------
 
@@ -110,7 +108,7 @@ A menu item can be one of the following types:
     in the same group.  An indicator circle is displayed to the left of the
     label.  If the item is selected then the indicator's center is filled
     with a solid color.  If a **-command** option is specified then its value
-    is evaluated as a Tcl command when the item is invoked; this happens
+    is evaluated as a TCL command when the item is invoked; this happens
     after selecting the item.
 
   **separator**
@@ -422,7 +420,7 @@ command.  The following operations are available for *combomenu* widgets:
   **-xscrollcommand** *string*
     Specifies the prefix for a command used to communicate with horizontal
     scrollbars.  Whenever the horizontal view in the widget's window
-    changes, the widget will generate a Tcl command by concatenating the
+    changes, the widget will generate a TCL command by concatenating the
     scroll command and two numbers. If this option is not specified, then
     no command will be executed.  The widget's initialization script
     will automatically set this for you.
@@ -444,7 +442,7 @@ command.  The following operations are available for *combomenu* widgets:
   **-yscrollcommand** *string*
     Specifies the prefix for a command used to communicate with vertical
     scrollbars.  Whenever the vertical view in the widget's window
-    changes, the widget will generate a Tcl command by concatenating the
+    changes, the widget will generate a TCL command by concatenating the
     scroll command and two numbers.  If this option is not specified, then
     no command will be executed.  The widget's initialization script
     will automatically set this for you.
@@ -714,7 +712,7 @@ command.  The following operations are available for *combomenu* widgets:
   The position of the *combomenu* may be adjusted to guarantee that the
   entire widget is visible on the screen.  This command normally returns an
   empty string.  If the **-postcommand** option has been specified, then
-  its value is executed as a Tcl script before posting the menu and the
+  its value is executed as a TCL script before posting the menu and the
   result of that script is returned as the result of the post widget
   command.  If an error returns while executing the command, then the error
   is returned without posting the menu.
@@ -811,7 +809,7 @@ command.  The following operations are available for *combomenu* widgets:
 
   **-command** *string*
     Specifies *string* as a TCL command to use for comparing items.  To
-    compare two items, evaluate a Tcl script consisting of command with the
+    compare two items, evaluate a TCL script consisting of command with the
     two item appended as additional arguments.  The script should return an
     integer less than, equal to, or greater than zero if the first item
     is to be considered less than, equal to, or greater than the second,

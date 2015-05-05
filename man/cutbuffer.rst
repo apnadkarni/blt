@@ -13,8 +13,6 @@ Manipulate X11 cut buffer properties
 :Manual section: n
 :Manual group: BLT Built-In Commands
 
-.. TODO: authors and author with name <email>
-
 SYNOPSIS
 --------
 

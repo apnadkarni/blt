@@ -26,9 +26,9 @@ TCL COMMANDS
 The following commands are added to the interpreter from the BLT library:
 
 **blt::bgexec** 
-  Like Tcl's **exec** command, **blt::bgexec** runs a pipeline of Unix
+  Like TCL's **exec** command, **blt::bgexec** runs a pipeline of Unix
   commands in the background.  Unlike TCL **exec**, the output of the last
-  process is collected and a global Tcl variable is set upon its
+  process is collected and a global TCL variable is set upon its
   completion.  **blt::bgexec** can be used with **tkwait** to wait for Unix
   commands to finish while still handling expose events.  Intermediate
   output is also available while the pipeline is active.
@@ -39,8 +39,8 @@ The following commands are added to the interpreter from the BLT library:
   Cells may contain data or may be empty.
 
 **blt::debug** 
-  A simple Tcl command tracing facility useful for debugging Tcl code.
-  Displays each Tcl command before and after substitution along its level
+  A simple TCL command tracing facility useful for debugging TCL code.
+  Displays each TCL command before and after substitution along its level
   in the interpreter on standard error.
 
 **blt::mesh** 
@@ -73,13 +73,13 @@ The following commands are added to the interpreter from the BLT library:
 
 **blt::vector** 
   Creates a vector of floating point values.  The vector's components can
-  be manipulated in three ways: through a Tcl array variable, a Tcl
+  be manipulated in three ways: through a TCL array variable, a TCL
   command, or the C API.
 
 **blt::watch** 
-  Arranges for Tcl procedures to be called before and/or after the
-  execution of every Tcl command. This command may be used in the logging,
-  profiling, or tracing of Tcl code.
+  Arranges for TCL procedures to be called before and/or after the
+  execution of every TCL command. This command may be used in the logging,
+  profiling, or tracing of TCL code.
 
 TK COMMANDS
 ------------
@@ -98,8 +98,8 @@ TK COMMANDS
 **blt::beep** 
 
 **blt::bitmap** 
-  Reads and writes bitmaps from Tcl.  New X bitmaps can be defined on-the-fly
-  from Tcl, obviating the need to copy around bitmap files.  Other options
+  Reads and writes bitmaps from TCL.  New X bitmaps can be defined on-the-fly
+  from TCL, obviating the need to copy around bitmap files.  Other options
   query loaded X bitmap's dimensions and data.
 
 **blt::busy** 
@@ -141,7 +141,7 @@ TK COMMANDS
 
 **blt::htext** 
   A simple hypertext widget.  Combines text and Tk widgets into a single
-  scroll-able window.  Tcl commands can be embedded into text, which are
+  scroll-able window.  TCL commands can be embedded into text, which are
   invoked as the text is parsed.  In addition, Tk widgets can be
   appended to the window at the current point in the text.  **blt::htext**
   can be also used to create scrolled windows of Tk widgets.
@@ -196,12 +196,12 @@ TK COMMANDS
 VARIABLES
 ---------
 
-The following Tcl variables are either set or used by BLT at various times
+The following TCL variables are either set or used by BLT at various times
 in its execution:
 
 **blt_library**
   This variable contains the name of a directory containing a library of
-  Tcl scripts and other files related to BLT.  Currently, this directory
+  TCL scripts and other files related to BLT.  Currently, this directory
   contains the **blt::drag&drop** protocol scripts and the PostScript
   prolog used by **blt::graph** and **blt::barchart**.  The value of this
   variable is taken from the **BLT_LIBRARY** environment variable, if one
@@ -222,7 +222,7 @@ ADDING BLT TO YOUR APPLICATIONS
 -------------------------------
 
 It's easy to add BLT to an existing Tk application.  BLT requires no
-patches or edits to the Tcl or Tk libraries.  To add BLT, simply add the
+patches or edits to the TCL or Tk libraries.  To add BLT, simply add the
 following code snippet to your application's tkAppInit.c file.
 
   ::
@@ -240,7 +240,7 @@ command
 
      package require BLT
 
-from your Tcl script.
+from your TCL script.
 
 KEYWORDS
 --------

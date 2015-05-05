@@ -2439,7 +2439,7 @@ ExistsOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * NamesOp --
  *
- *	paint names ?pattern?
+ *	blt::background names ?pattern ... ?
  *
  *---------------------------------------------------------------------- 
  */
@@ -2457,16 +2457,23 @@ NamesOp(ClientData clientData, Tcl_Interp *interp, int objc,
     for (hPtr = Blt_FirstHashEntry(&dataPtr->instTable, &iter);
 	 hPtr != NULL; hPtr = Blt_NextHashEntry(&iter)) {
 	BackgroundObject *corePtr;
-	Tcl_Obj *objPtr;
-	
+        int match;
+        int i;
+        
 	corePtr = Blt_GetHashValue(hPtr);
-	if (objc == 3) {
-	    if (!Tcl_StringMatch(corePtr->name, Tcl_GetString(objv[2]))) {
-		continue;
+        match = (objc == 2);
+        for (i = 2; i < objc; i++) {
+	    if (Tcl_StringMatch(corePtr->name, Tcl_GetString(objv[i]))) {
+                match = TRUE;
+                break;
 	    }
 	}
-	objPtr = Tcl_NewStringObj(corePtr->name, -1);
-	Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+        if (match) {
+            Tcl_Obj *objPtr;
+
+            objPtr = Tcl_NewStringObj(corePtr->name, -1);
+            Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+        }
     }
     Tcl_SetObjResult(interp, listObjPtr);
     return TCL_OK;

@@ -14,8 +14,6 @@ Run programs in the background while handling Tk events.
 :Manual section: n
 :Manual group: BLT Built-In Commands
 
-.. TODO: authors and author with name <email>
-
 SYNOPSIS
 --------
 
@@ -25,7 +23,7 @@ DESCRIPTION
 -----------
 
 The **blt::bgexec** command executes programs in the background, allowing
-Tk to handle events.  A global Tcl variable *varName* is set when the
+Tk to handle events.  A global TCL variable *varName* is set when the
 program has completed.
 
 INTRODUCTION
@@ -52,7 +50,7 @@ events.
 The **blt::bgexec** command performs the same functions as **exec**, but
 also allows Tk to handle events.  You can execute a long-running program
 and the Tk widgets will behave normally.  When the program finishes, its
-output and the exit status are written to Tcl variables.  This makes it
+output and the exit status are written to TCL variables.  This makes it
 easy to monitor and save the output of a program.
 
 SYNTAX
@@ -84,19 +82,19 @@ or double dashes (--).  The following options are available for
 
   **-decodeerror** *encodingName* 
     Specifies the encoding of the stderr channel.  This affects only data
-    returned to the Tcl interpreter.  No translation is done on file
+    returned to the TCL interpreter.  No translation is done on file
     redirection.
 
-    For example if data is to be converted from Unicode for use in Tcl, you
+    For example if data is to be converted from Unicode for use in TCL, you
     would use the "unicode" encoding. The default is that no tranlation is
     performed.
 
   **-decodeoutput** *encodingName* 
     Specifies the encoding of the stdout channels.  This affects only data
-    returned to the Tcl interpreter.  No translation is done on file
+    returned to the TCL interpreter.  No translation is done on file
     redirection.
 
-    For example if data is to be converted from Unicode for use in Tcl, you
+    For example if data is to be converted from Unicode for use in TCL, you
     would use the "unicode" encoding. The default is that no tranlation is
     performed.
 
@@ -149,12 +147,12 @@ or double dashes (--).  The following options are available for
     output on a line-by-line basis.  The default value is "false".
 
   **-onerror** *command*
-    Specifies the start of a Tcl command that will be executed whenever new
+    Specifies the start of a TCL command that will be executed whenever new
     data is available from standard error. The data is appended to the
     command as an extra argument before it is executed.
 
   **-onoutput** *command* 
-    Specifies the start of a Tcl command that will be executed whenever new
+    Specifies the start of a TCL command that will be executed whenever new
     data is available from standard output. The data is appended to the
     command as an extra argument before it is executed.
 
@@ -230,7 +228,7 @@ The **-output** and **-error** variables are set only
 after the program completes.  But if the program takes a long time, to
 run you may want to receive its partial output.  You can gather data
 as it becomes available using the **-onoutput** option.  It
-specifies a Tcl command prefix.  Whenever new data is available, this
+specifies a TCL command prefix.  Whenever new data is available, this
 command is executed, with the data appended as an argument to the
 command.
 
@@ -306,7 +304,7 @@ save the file handle.
      global fileId 
      set fileId [open "|du -s $dir" r]
 
-Next register a Tcl code snippet with **fileevent** to be run whenever
+Next register a TCL code snippet with **fileevent** to be run whenever
 output is available on the file handle.  The code snippet will read from
 the file handle and save the output in a variable.
 
@@ -323,7 +321,7 @@ the file handle and save the output in a variable.
      }
 
 The biggest advantage of **blt::bgexec** is that, unlike **fileevent**, it
-requires no additional Tcl code to run a program.  It's simpler and less
+requires no additional TCL code to run a program.  It's simpler and less
 error prone.  You don't have to worry about non-blocking I/O.  It's handled
 tranparently for you.
 

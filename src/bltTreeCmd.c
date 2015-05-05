@@ -4338,6 +4338,7 @@ NotifyInfoOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * NotifyNamesOp --
  *
+ *      treeName notify names ?pattern ...?
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
@@ -4353,12 +4354,27 @@ NotifyNamesOp(ClientData clientData, Tcl_Interp *interp, int objc,
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
     for (hPtr = Blt_FirstHashEntry(&cmdPtr->notifyTable, &iter);
 	 hPtr != NULL; hPtr = Blt_NextHashEntry(&iter)) {
-	Tcl_Obj *objPtr;
-	char *notifyName;
+	int i;
+	int match;
+        const char *name;
 
-	notifyName = Blt_GetHashKey(&cmdPtr->notifyTable, hPtr);
-	objPtr = Tcl_NewStringObj(notifyName, -1);
-	Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+	name = Blt_GetHashKey(&cmdPtr->notifyTable, hPtr);
+	match = (objc == 3);
+	for (i = 3; i < objc; i++) {
+	    char *pattern;
+
+	    pattern = Tcl_GetString(objv[i]);
+	    if (Tcl_StringMatch(name, pattern)) {
+		match = TRUE;
+		break;
+	    }
+	}
+	if (match) {
+	    Tcl_Obj *objPtr;
+
+	    objPtr = Tcl_NewStringObj(name, -1);
+	    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+	}
     }
     Tcl_SetObjResult(interp, listObjPtr);
     return TCL_OK;
@@ -4374,9 +4390,9 @@ NotifyNamesOp(ClientData clientData, Tcl_Interp *interp, int objc,
 static Blt_OpSpec notifyOps[] =
 {
     {"create", 1, NotifyCreateOp, 4, 0, "?switches ...? command",},
-    {"delete", 1, NotifyDeleteOp, 3, 0, "?notifyName ... ?",},
+    {"delete", 1, NotifyDeleteOp, 3, 0, "?notifyName ...?",},
     {"info",   1, NotifyInfoOp,   4, 4, "notifyName",},
-    {"names",  1, NotifyNamesOp,  3, 3, "",},
+    {"names",  1, NotifyNamesOp,  3, 0, "?pattern ...?",},
 };
 
 static int numNotifyOps = sizeof(notifyOps) / sizeof(Blt_OpSpec);
@@ -5773,6 +5789,7 @@ TraceDeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * TraceNamesOp --
  *
+ *      treeName trace names ?pattern ...?
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
@@ -5783,11 +5800,34 @@ TraceNamesOp(ClientData clientData, Tcl_Interp *interp, int objc,
     TreeCmd *cmdPtr = clientData;
     Blt_HashEntry *hPtr;
     Blt_HashSearch iter;
-
+    Tcl_Obj *listObjPtr;
+    
+    listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
     for (hPtr = Blt_FirstHashEntry(&cmdPtr->traceTable, &iter);
 	 hPtr != NULL; hPtr = Blt_NextHashEntry(&iter)) {
-	Tcl_AppendElement(interp, Blt_GetHashKey(&cmdPtr->traceTable, hPtr));
+	int match;
+        const char *name;
+	int i;
+
+	name = Blt_GetHashKey(&cmdPtr->traceTable, hPtr);
+	match = (objc == 3);
+	for (i = 3; i < objc; i++) {
+	    char *pattern;
+
+	    pattern = Tcl_GetString(objv[i]);
+	    if (Tcl_StringMatch(name, pattern)) {
+		match = TRUE;
+		break;
+	    }
+	}
+	if (match) {
+	    Tcl_Obj *objPtr;
+
+	    objPtr = Tcl_NewStringObj(name, -1);
+	    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+	}
     }
+    Tcl_SetObjResult(interp, listObjPtr);
     return TCL_OK;
 }
 
@@ -5850,7 +5890,7 @@ static Blt_OpSpec traceOps[] =
     {"create", 1, TraceCreateOp, 7, 0, "node key how command ?-whenidle?",},
     {"delete", 1, TraceDeleteOp, 3, 0, "traceName ...",},
     {"info",   1, TraceInfoOp,   4, 4, "traceName",},
-    {"names",  1, TraceNamesOp,  3, 3, "",},
+    {"names",  1, TraceNamesOp,  3, 0, "?pattern ...?",},
 };
 
 static int numTraceOps = sizeof(traceOps) / sizeof(Blt_OpSpec);
@@ -6244,6 +6284,8 @@ SortOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  *	Returns the names of values for a node or array value.
  *
+ *      treeName names
+ *      treeName names fieldName
  *---------------------------------------------------------------------------
  */
 static int
@@ -6471,6 +6513,7 @@ TreeDestroyOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  * TreeNamesOp --
  *
+ *      blt::tree names ?pattern ...?
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
@@ -6492,18 +6535,24 @@ TreeNamesOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	TreeCmd *cmdPtr;
 	const char *qualName;
 	Tcl_Obj *objPtr;
-
+        int match;
+        int i;
+        
 	cmdPtr = Blt_GetHashValue(hPtr);
 	objName.name = Tcl_GetCommandName(interp, cmdPtr->cmdToken);
 	objName.nsPtr = Blt_GetCommandNamespace(cmdPtr->cmdToken);
 	qualName = Blt_MakeQualifiedName(&objName, &ds);
-	if (objc == 3) {
-	    if (!Tcl_StringMatch(qualName, Tcl_GetString(objv[2]))) {
-		continue;
+        match = (objc == 3);
+        for (i = 3; i < objc; i++) {
+	    if (Tcl_StringMatch(qualName, Tcl_GetString(objv[i]))) {
+                match = TRUE;
+                break;
 	    }
 	}
-	objPtr = Tcl_NewStringObj(qualName, -1);
-	Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+        if (match) {
+            objPtr = Tcl_NewStringObj(qualName, -1);
+            Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
+        }
     }
     Tcl_SetObjResult(interp, listObjPtr);
     Tcl_DStringFree(&ds);

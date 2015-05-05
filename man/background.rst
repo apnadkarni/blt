@@ -14,8 +14,6 @@ Create and manage background styles for widgets.
 :Manual section: n
 :Manual group: BLT Built-In Commands
 
-.. TODO: authors and author with name <email>
-
 SYNOPSIS
 --------
 

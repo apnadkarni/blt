@@ -13,8 +13,6 @@ Utility commands to compare strings and numbers.
 :Manual section: n
 :Manual group: BLT Built-In Commands
 
-.. TODO: authors and author with name <email>
-
 SYNOPSIS
 --------
 

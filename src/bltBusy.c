@@ -1602,32 +1602,43 @@ IsBusyOp(
  *	Returns a TCL list of the names of the widget with busy windows
  *	attached to them, regardless if the widget is currently busy or not.
  *
+ *
+ *      blt::busy names ?pattern ... ?
  *---------------------------------------------------------------------------
  */
 static int
-NamesOp(
-    ClientData clientData,		/* Interpreter-specific data. */
-    Tcl_Interp *interp,			/* Interpreter to report errors to */
-    int objc,
-    Tcl_Obj *const *objv)
+NamesOp(ClientData clientData, Tcl_Interp *interp, int objc,
+        Tcl_Obj *const *objv)
 {
     Blt_HashEntry *hPtr;
     Blt_HashSearch iter;
     BusyInterpData *dataPtr = clientData;
     Tcl_Obj *listObjPtr;
-    const char *pattern;
 
     listObjPtr = Tcl_NewListObj(0, (Tcl_Obj **) NULL);
-    pattern = (objc > 2) ? Tcl_GetString(objv[2]) : NULL;
     for (hPtr = Blt_FirstHashEntry(&dataPtr->busyTable, &iter);
 	hPtr != NULL; hPtr = Blt_NextHashEntry(&iter)) {
 	Busy *busyPtr;
+	int match;
+        const char *name;
+	int i;
 
 	busyPtr = Blt_GetHashValue(hPtr);
-	if ((pattern == NULL) ||
-	    (Tcl_StringMatch(Tk_PathName(busyPtr->tkRef), pattern))) {
+	name = Tk_PathName(busyPtr->tkRef);
+	match = (objc == 3);
+	for (i = 3; i < objc; i++) {
+	    char *pattern;
+
+	    pattern = Tcl_GetString(objv[i]);
+	    if (Tcl_StringMatch(name, pattern)) {
+		match = TRUE;
+		break;
+	    }
+	}
+	if (match) {
 	    Tcl_Obj *objPtr;
-	    objPtr = Tcl_NewStringObj(Tk_PathName(busyPtr->tkRef), -1);
+
+	    objPtr = Tcl_NewStringObj(name, -1);
 	    Tcl_ListObjAppendElement(interp, listObjPtr, objPtr);
 	}
     }
@@ -1737,7 +1748,7 @@ static Blt_OpSpec busyOps[] =
     {"forget",    1, ForgetOp,    2, 0, "?window?...",},
     {"hold",      1, HoldOp,      3, 0, "window ?options?... ?window options?...",},
     {"isbusy",    1, IsBusyOp,    3, 3, "window",},
-    {"names",     1, NamesOp,     2, 3, "?pattern?",},
+    {"names",     1, NamesOp,     2, 0, "?pattern ... ?",},
     {"release",   1, ReleaseOp,   2, 0, "?window?...",},
     {"status",    1, StatusOp,    3, 3, "window",},
     {"windows",   1, NamesOp,     2, 3, "?pattern?",},

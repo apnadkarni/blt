@@ -22,7 +22,7 @@ SYNOPSIS
 
 **blt::tree load** *format* *libPath*
 
-**blt::tree names** ?\ *pattern*\ ?
+**blt::tree names** ?\ *pattern* ... ?
 
 DESCRIPTION
 -----------
@@ -61,10 +61,10 @@ SYNTAX
   Dynamically loads the named tree module.  This is used internally
   to load tree modules for importing and exporting data.
 
-**blt::tree names** ?\ *pattern*\ ?
-  Returns the names of all tree objects.  if a *pattern* argument
-  is given, then the only those trees whose name matches pattern will
-  be listed.
+**blt::tree names** ?\ *pattern*\ ... ?
+  Returns the names of all the BLT trees.  If one or more *pattern*
+  arguments are provided, then the name of any tree matching *pattern* will
+  be returned. *Pattern* is a **glob**\ -style pattern.
 
 REFERENCING TREE NODES
 ----------------------
