@@ -4,7 +4,7 @@ blt::vector
 ===========
 
 -------------------
-Vector data object.
+Vector data object
 -------------------
 
 :Author: George A. Howlett <gahowlett@gmail.com>
@@ -1064,7 +1064,7 @@ to it. Just like the TCL interface, both a new TCL command and array
 variable are created when a new vector is created. It doesn't make any
 difference what the initial size of the vector is since it will be reset
 shortly. The vector is updated when **Blt_ResetVector** is called.
-Blt_ResetVector makes the changes visible to the TCL interface and other
+**Blt_ResetVector** makes the changes visible to the TCL interface and other
 vector clients (such as a graph widget).
 
   ::
