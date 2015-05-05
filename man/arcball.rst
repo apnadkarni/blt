@@ -40,7 +40,7 @@ INTRODUCTION
 
 The arcball is a tool to rotate objects with the mouse naturally.  It
 provides an intuitive user interface for complex 3D object rotations via a
-simple, virtual sphere – the screen space analogy to the "arcball" input
+simple, virtual sphere; the screen space analogy to the "arcball" input
 device.  The basic principle is to create a sphere around the object, and
 allow the user to click a point on the sphere and drag that point to a
 different location on the screen, having the object rotate to follow it.
