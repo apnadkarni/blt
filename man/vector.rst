@@ -344,6 +344,8 @@ the command.  The operations available for vectors are listed below.
    letter indicates the type: "i" for signed, "u" for unsigned, "r" or
    real.  The default format is "r16".
 
+  Reference: This was contributed by Harold Kirsch.
+
 *vecName* **clear** 
   Clears the element indices from the array variable associated with
   *vecName*.  This doesn't affect the points of the vector.  By
