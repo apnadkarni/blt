@@ -4182,7 +4182,7 @@ ColumnConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
  * Results:
  *	Returns a standard TCL result.
  *
- *      blt::table column delete container firstIndex lastIndex
+ *      blt::table column delete tableName firstIndex lastIndex
  *
  *---------------------------------------------------------------------------
  */
@@ -4214,6 +4214,7 @@ ColumnDeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
         return TCL_OK;                  /* No range defined. */
     }
     piPtr = &tablePtr->columns;
+    numMatches = 0;
     for (link = firstPtr->link; link != NULL; link = next) {
         RowColumn *rcPtr;
         
@@ -4248,7 +4249,7 @@ ColumnDeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *	returned and a list of widgets managed by the table is left in
  *	interp->result.
  *
- *      blt::table extents container columnIndex
+ *      blt::table extents tableName columnIndex
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
@@ -4258,7 +4259,7 @@ ColumnExtentsOp(ClientData clientData, Tcl_Interp *interp, int objc,
 {
     TableInterpData *dataPtr = clientData;
     Table *tablePtr;
-    RowColumn *rcPtr;
+    RowColumn *colPtr;
     RowColumn *r1Ptr, *r2Ptr, *c1Ptr, *c2Ptr;
     Tcl_Obj *listObjPtr;
     int x, y, w, h;
@@ -4266,12 +4267,12 @@ ColumnExtentsOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (Blt_GetTableFromObj(dataPtr, interp, objv[3], &tablePtr) != TCL_OK) {
 	return TCL_ERROR;
     }
-    if (GetColumnFromObj(interp, tablePtr, objv[4], &rcPtr) != TCL_OK) {
+    if (GetColumnFromObj(interp, tablePtr, objv[4], &colPtr) != TCL_OK) {
         return TCL_ERROR;
     }
-    r1Ptr = r2Ptr = rcPtr;
-    c1Ptr = GetRowColumn(&tablePtr->columns, 0);
-    c2Ptr = GetRowColumn(&tablePtr->columns, NumColumns(tablePtr) - 1);
+    c1Ptr = c2Ptr = colPtr;
+    r1Ptr = GetRowColumn(&tablePtr->rows, 0);
+    r2Ptr = GetRowColumn(&tablePtr->rows, NumRows(tablePtr) - 1);
     x = c1Ptr->offset;
     y = r1Ptr->offset;
     w = c2Ptr->offset + c2Ptr->size - x;
@@ -4295,7 +4296,7 @@ ColumnExtentsOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  *	Returns the column index given a screen coordinate.
  *
- *	blt::table column find container x
+ *	blt::table column find tableName x
  *
  *---------------------------------------------------------------------------
  */
@@ -4332,7 +4333,7 @@ ColumnFindOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  *	Returns the options of the column in the table.
  *
- *      blt::table column info container columnIndex
+ *      blt::table column info tableName columnIndex
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
@@ -4383,7 +4384,7 @@ ColumnInfoOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  *	Inserts a span of columns into the table.
  *
- *      blt::table column insert container ?switches ...?
+ *      blt::table column insert tableName ?switches ...?
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
@@ -4438,7 +4439,7 @@ ColumnInsertOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  *	Joins the specified span of columns together into a partition.
  *
- *      blt::table column join container firstIndex lastIndex
+ *      blt::table column join tableName firstIndex lastIndex
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
@@ -4514,7 +4515,7 @@ ColumnJoinOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *	that span this column/column will be automatically corrected to
  *	include the new columns.
  *
- *      blt::table column split container colIndex numDivisions
+ *      blt::table column split tableName colIndex numDivisions
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
@@ -4585,15 +4586,15 @@ ColumnSplitOp(ClientData clientData, Tcl_Interp *interp, int objc,
 
 static Blt_OpSpec columnOps[] =
 {
-    {"cget",       2, ColumnCgetOp,      6, 6, "container columnIndex option",},
-    {"configure",  2, ColumnConfigureOp, 4, 0, "container columnIndex ?option value ... ?",},
-    {"delete", 1, ColumnDeleteOp, 4, 0, "container firstIndex ?lastIndex?",},
-    {"extents", 1, ColumnExtentsOp,   5, 5, "container columnIndex",},
-    {"find", 1, ColumnFindOp,      6, 6, "container x y",},
-    {"info", 3, ColumnInfoOp,      5, 5, "container columnIndex",},
-    {"insert", 3, ColumnInsertOp,    5, 0, "container ?switches ...?",},
-    {"join", 1, ColumnJoinOp,      6, 6, "container firstColumn lastColumn",},
-    {"split", 2, ColumnSplitOp,     5, 6, "container columnIndex ?numColumns?",},
+    {"cget",       2, ColumnCgetOp,      6, 6, "tableName columnIndex option",},
+    {"configure",  2, ColumnConfigureOp, 4, 0, "tableName columnIndex ?option value ... ?",},
+    {"delete", 1, ColumnDeleteOp, 4, 0, "tableName firstIndex ?lastIndex?",},
+    {"extents", 1, ColumnExtentsOp,   5, 5, "tableName columnIndex",},
+    {"find", 1, ColumnFindOp,      6, 6, "tableName x y",},
+    {"info", 3, ColumnInfoOp,      5, 5, "tableName columnIndex",},
+    {"insert", 3, ColumnInsertOp,    5, 0, "tableName ?switches ...?",},
+    {"join", 1, ColumnJoinOp,      6, 6, "tableName firstColumn lastColumn",},
+    {"split", 2, ColumnSplitOp,     5, 6, "tableName columnIndex ?numColumns?",},
 };
 
 static int numColumnOps = sizeof(columnOps) / sizeof(Blt_OpSpec);
@@ -4835,7 +4836,7 @@ ForgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *	Returns a standard TCL result.  A list of the widget attributes is
  *	left in interp->result.
  *
- *      blt::table info container pathName
+ *      blt::table info tableName pathName
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
@@ -5120,7 +5121,7 @@ RowConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *	Returns a standard TCL result.
  *
  *
- *      blt::table row delete container firstIndex lastIndex
+ *      blt::table row delete tableName firstIndex lastIndex
  *
  *---------------------------------------------------------------------------
  */
@@ -5152,6 +5153,7 @@ RowDeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
         return TCL_OK;                  /* No range defined. */
     }
     piPtr = &tablePtr->rows;
+    numMatches = 0;
     for (link = firstPtr->link; link != NULL; link = next) {
         RowColumn *rcPtr;
         
@@ -5186,7 +5188,7 @@ RowDeleteOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *	returned and a list of widgets managed by the table is left in
  *	interp->result.
  *
- *      blt::table extents container rowIndex
+ *      blt::table extents tableName rowIndex
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
@@ -5196,7 +5198,7 @@ RowExtentsOp(ClientData clientData, Tcl_Interp *interp, int objc,
 {
     TableInterpData *dataPtr = clientData;
     Table *tablePtr;
-    RowColumn *rcPtr;
+    RowColumn *rowPtr;
     RowColumn *r1Ptr, *r2Ptr, *c1Ptr, *c2Ptr;
     Tcl_Obj *listObjPtr;
     int x, y, w, h;
@@ -5204,10 +5206,10 @@ RowExtentsOp(ClientData clientData, Tcl_Interp *interp, int objc,
     if (Blt_GetTableFromObj(dataPtr, interp, objv[3], &tablePtr) != TCL_OK) {
 	return TCL_ERROR;
     }
-    if (GetRowFromObj(interp, tablePtr, objv[4], &rcPtr) != TCL_OK) {
+    if (GetRowFromObj(interp, tablePtr, objv[4], &rowPtr) != TCL_OK) {
         return TCL_ERROR;
     }
-    r1Ptr = r2Ptr = rcPtr;
+    r1Ptr = r2Ptr = rowPtr;
     c1Ptr = GetRowColumn(&tablePtr->columns, 0);
     c2Ptr = GetRowColumn(&tablePtr->columns, NumColumns(tablePtr) - 1);
     x = c1Ptr->offset;
@@ -5236,7 +5238,7 @@ RowExtentsOp(ClientData clientData, Tcl_Interp *interp, int objc,
  * Results:
  *	Returns a standard TCL result.
  *
- *	blt::table row find container y
+ *	blt::table row find tableName y
  *
  *---------------------------------------------------------------------------
  */
@@ -5277,7 +5279,7 @@ RowFindOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *	Returns a standard TCL result.  A list of the widget attributes is
  *	left in interp->result.
  *
- *      blt::table row info container rowIndex
+ *      blt::table row info tableName rowIndex
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
@@ -5328,7 +5330,7 @@ RowInfoOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  *	Inserts a span of rows into the table.
  *
- *      blt::table row insert container ?switches ...? 
+ *      blt::table row insert tableName ?switches ...? 
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
@@ -5384,7 +5386,7 @@ RowInsertOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *
  *	Joins the specified span of rows/columns together into a partition.
  *
- *      blt::table row join container firstIndex lastIndex
+ *      blt::table row join tableName firstIndex lastIndex
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
@@ -5460,7 +5462,7 @@ RowJoinOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *	span this row/column will be automatically corrected to include the
  *	new rows.
  *
- *      blt::table row splot container rowIndex numDivisions
+ *      blt::table row splot tableName rowIndex numDivisions
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
@@ -5532,15 +5534,15 @@ RowSplitOp(ClientData clientData, Tcl_Interp *interp, int objc,
 
 static Blt_OpSpec rowOps[] =
 {
-    {"cget",       2, RowCgetOp,      6, 6, "container rowIndex option"},
-    {"configure",  2, RowConfigureOp, 5, 0, "container rowIndex ?option value ... ?"},
-    {"delete",     1, RowDeleteOp,    4, 0, "container firstIndex ?lastIndex?"},
-    {"extents",    1, RowExtentsOp,   5, 5, "container rowIndex"},
-    {"find",       1, RowFindOp,      6, 6, "container x y"},
-    {"info",       3, RowInfoOp,      5, 5, "container rowIndex"},
-    {"insert",     3, RowInsertOp,    5, 7, "container ?switches ...?",},
-    {"join",       1, RowJoinOp,      6, 6, "container firstRow lastRow"},
-    {"split",      2, RowSplitOp,     5, 6, "container rowIndex ?numRows?"},
+    {"cget",       2, RowCgetOp,      6, 6, "tableName rowIndex option"},
+    {"configure",  2, RowConfigureOp, 5, 0, "tableName rowIndex ?option value ... ?"},
+    {"delete",     1, RowDeleteOp,    4, 0, "tableName firstIndex ?lastIndex?"},
+    {"extents",    1, RowExtentsOp,   5, 5, "tableName rowIndex"},
+    {"find",       1, RowFindOp,      6, 6, "tableName x y"},
+    {"info",       3, RowInfoOp,      5, 5, "tableName rowIndex"},
+    {"insert",     3, RowInsertOp,    5, 7, "tableName ?switches ...?",},
+    {"join",       1, RowJoinOp,      6, 6, "tableName firstRow lastRow"},
+    {"split",      2, RowSplitOp,     5, 6, "tableName rowIndex ?numRows?"},
 };
 
 static int numRowOps = sizeof(rowOps) / sizeof(Blt_OpSpec);
@@ -5749,18 +5751,18 @@ SearchOp(ClientData clientData, Tcl_Interp *interp, int objc,
  */
 static Blt_OpSpec tableOps[] =
 {
-    {"arrange",    1, ArrangeOp,   3, 3, "container",},
-    {"cget",       2, CgetOp,      4, 5, "container ?row|column|widget? option",},
+    {"arrange",    1, ArrangeOp,   3, 3, "tableName",},
+    {"cget",       2, CgetOp,      4, 5, "tableName ?row|column|widget? option",},
     {"column",     3, ColumnOp,    2, 0, "args ...",},
-    {"configure",  4, ConfigureOp, 3, 0, "container ?row|column|widget?... ?option value?...",},
+    {"configure",  4, ConfigureOp, 3, 0, "tableName ?row|column|widget?... ?option value?...",},
     {"containers", 4, NamesOp,     2, 4, "?switch? ?arg?",},
-    {"find",       2, FindOp,      5, 5, "container x y",},
+    {"find",       2, FindOp,      5, 5, "tableName x y",},
     {"forget",     2, ForgetOp,    3, 0, "pathName ?pathName?...",},
-    {"info",       3, InfoOp,      3, 0, "container pathName",},
+    {"info",       3, InfoOp,      3, 0, "tableName pathName",},
     {"names",      1, NamesOp,     2, 4, "?switch? ?arg?",},
     {"row",        1, RowOp,       2, 0, "args ...",},
-    {"save",       2, SaveOp,      3, 3, "container",},
-    {"search",     2, SearchOp,    3, 0, "container ?switch arg?...",},
+    {"save",       2, SaveOp,      3, 3, "tableName",},
+    {"search",     2, SearchOp,    3, 0, "tableName ?switch arg?...",},
 };
 
 static int numTableOps = sizeof(tableOps) / sizeof(Blt_OpSpec);
