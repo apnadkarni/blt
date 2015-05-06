@@ -3041,10 +3041,10 @@ LinspaceOp(ClientData clientData, Tcl_Interp *interp, int objc,
     int numSteps;
     double first, last;
     
-    if (Blt_GetDoubleFromObj(interp, objv[2], &first) != TCL_OK) {
+    if (Tcl_GetDoubleFromObj(interp, objv[2], &first) != TCL_OK) {
 	return TCL_ERROR;
     }
-    if (Blt_GetDoubleFromObj(interp, objv[3], &last) != TCL_OK) {
+    if (Tcl_GetDoubleFromObj(interp, objv[3], &last) != TCL_OK) {
 	return TCL_ERROR;
     }
     numSteps = destPtr->length;		/* By default, generate one step

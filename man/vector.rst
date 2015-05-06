@@ -3,21 +3,21 @@
 blt::vector
 ===========
 
--------------------
+------------------
 Vector data object
--------------------
+------------------
 
 :Author: George A. Howlett
-:Date:   2012-11-28
 :Copyright: 2015 George A. Howlett.
 :Version: 4.0
 :Manual section: n
-:Manual group: BLT Built-In Commands
+:Manual group: BLT built-in commands
 
-.. include:: toc.rst
+.. contents:: Table of Contents
+
 
 SYNOPSIS
---------
+========
 
 **blt::vector create** *vecName* ?\ *vecName* ... ? ?\ *switches* ... ? 
 
@@ -28,14 +28,14 @@ SYNOPSIS
 **blt::vector names** ?\ *pattern* ... ?
 
 DESCRIPTION
------------
+===========
 
 The **blt::vector** command creates an array of floating point values
 representing 1-D points.  The vector's points can be manipulated in three
 ways: through a TCL array variable, a TCL command, or the C API.
 
 INTRODUCTION
-------------
+============
 
 A *vector* is an ordered set of real numbers representing points of the
 vector.  The points are indexed by integers.
@@ -50,7 +50,7 @@ in multiple graphs, where each graph presents a different view or scale of
 the data.
 
 VECTOR INDICES
---------------
+==============
 
 Individual points in the *vector* can be accessed via the *vector*'s array
 variable or TCL command.  You can reference points in the vector either by
@@ -86,7 +86,7 @@ its integer, expression, a range, or a special keyword.
   supplied the last point is assumed.
 
 VECTOR COMMAND OPERATIONS
--------------------------
+=========================
 
 **blt::vector create** *vecName*\ ... ?\ *switches* ... ? 
   Creates a new vector *vecName*.  The **create** operation can be invoked
@@ -352,7 +352,7 @@ VECTOR COMMAND OPERATIONS
   *pattern* will be returned. *Pattern* is a glob-style pattern.
 
 VECTOR INSTANCE OPERATIONS
---------------------------
+==========================
 
 After you create a vector using the **create** operation, you can use the
 vector's new TCL command to query or modify the vector instance.  The
@@ -740,7 +740,7 @@ the command.  The operations available for vectors are listed below.
   any current variable mapping the vector may have. 
 
 C LANGUAGE API
---------------
+==============
 
 You can create, modify, and destroy vectors from C code, using library
 routines.  You need to include the header file "blt.h". It contains
@@ -934,7 +934,7 @@ identified by the vector name.
   The new index is installed into the vector.
 
 EXAMPLE
--------
+=======
 
 You create vectors using the **blt::vector** command and its **create**
 operation.
@@ -1100,7 +1100,7 @@ corresponding TCL command are destroyed.
     blt::vector destroy x
 
 C API EXAMPLE
--------------
+=============
 
 The following example opens a file of binary data and stores it in an array
 of doubles. The array size is computed from the size of the file. If the
@@ -1156,7 +1156,7 @@ vector clients (such as a graph widget).
 
 
 DIFFERENCES WITH TCL ARRAYS
----------------------------
+===========================
 
 You could try to use TCL's associative arrays as vectors.  TCL arrays are
 easy to use.  You can access individual elements randomly by specifying the
@@ -1179,10 +1179,10 @@ lie in the fact they are implemented as hash tables.
  +
   The C programming interface is unwieldy.  Normally with vectors, you
   would like to view the TCL array as you do a C array, as an array of
-  floats or doubles.  But with hash tables, you must convert both the
-  index and value to and from decimal strings, just to access
-  an element in the array.  This makes it cumbersome to perform operations on
-  the array as a whole.
+  floats or doubles.  But with hash tables, you must convert both the index
+  and value to and from decimal strings, just to access an element in the
+  array.  This makes it cumbersome to perform operations on the array as a
+  whole.
 
 The **blt::vector** command tries to overcome these disadvantages while
 still retaining the ease of use of TCL arrays.  The **blt::vector** command
@@ -1196,12 +1196,12 @@ you need greater performance, or customized behavior, you can write your
 own C code to manage vectors.
 
 KEYWORDS
---------
+========
 
 vector, graph, widget
 
 COPYRIGHT
----------
+=========
 
 2015 George A. Howlett. All rights reserved.
 
