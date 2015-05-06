@@ -67,23 +67,24 @@
 typedef struct {
     Display *display;			/* Display of busy window */
     Tcl_Interp *interp;			/* Interpreter where "busy" command
-					 * was created. It's used to key the
-					 * searches in the window
+					 * was created. It's used to key
+					 * the searches in the window
 					 * hierarchy. See the "windows"
 					 * command. */
     Tk_Window tkBusy;			/* Busy window: Transparent window
-					 * used to block delivery of events to
-					 * windows underneath it. */
+					 * used to block delivery of events
+					 * to windows underneath it. */
     Tk_Window tkParent;			/* Parent window of the busy
 					 * window. It may be the reference
 					 * window (if the reference is a
-					 * toplevel) or a mutual ancestor of
-					 * the reference window */
+					 * toplevel) or a mutual ancestor
+					 * of the reference window */
     Tk_Window tkRef;			/* Reference window of the busy
-					 * window.  It's is used to manage the
-					 * size and position of the busy
-					 * window. */
-    int x, y;				/* Position of the reference window */
+					 * window.  It's is used to manage
+					 * the size and position of the
+					 * busy window. */
+    int x, y;				/* Position of the reference
+                                           window */
     int width, height;			/* Size of the reference
 					 * window. Retained to know if the
 					 * reference window has been
@@ -94,28 +95,27 @@ typedef struct {
 					 * entry out of the global hash
 					 * table. */
     Blt_HashTable *tablePtr;
-    const char *text;			/* Text to be displayed in the snapshot
-					 * window. */
+    const char *text;			/* Text to be displayed in the
+					 * snapshot window. */
     Blt_Picture original;		/* Original snapshot of reference
-					 * window used as background of opaque
-					 * busy window. */
-
+					 * window used as background of
+					 * opaque busy window. */
     Blt_Picture snapshot;		/* Snapshot of reference window
 					 * used as background of opaque
-					 * busy window. This may be a pointer
-					 * to *original* or a resampled 
-					 * picture. */
-
+					 * busy window. This may be a
+					 * pointer to *original* or a
+					 * resampled picture. */
     Blt_Bg bg;				/* Default background to use if 1)
 					 * busy window is opaque and 2) a
 					 * snapshot of the reference window
-					 * can't be obtained (possibly because
-					 * the reference window was
+					 * can't be obtained (possibly
+					 * because the reference window was
 					 * obscurred. */
     unsigned int flags;
     int darken;
-    Blt_Picture layer;			/* Image to be blended/layered at the 
-					 * the center of the busy window. */
+    Blt_Picture layer;			/* Image to be blended/layered at
+					 * the the center of the busy
+					 * window. */
     Tk_Image tkImage;
     Blt_ChainLink link;			/* Points to current image in
 					 * sequence (chain) of images. */
@@ -125,25 +125,26 @@ typedef struct {
 
 } Busy;
 
-#define REDRAW_PENDING	(1<<0)		/* Indicates a DoWhenIdle handler has
-					 * already been queued to redraw this
-					 * window. */
-#define RESIZE_PENDING	(1<<1)		/* Indicates a DoWhenIdle handler has
-					 * already been queued to redraw this
-					 * window. */
-#define ACTIVE		(1<<2)		/* Indicates whether the busy window
-					 * should be displayed. This can be
-					 * different from what Tk_IsMapped
-					 * says because the a sibling
-					 * reference window may be unmapped,
-					 * forcing the busy window to be also
-					 * hidden. */
-#define SNAPSHOT	(1<<3)		/* Indicates whether the busy window
-					 * is a snapshot of the parent. */
-#define IMAGE_PHOTO	(1<<4)		/* Indicates that the image was 
-					 * a photo. */
-#define IMAGE_SEQUENCE	(1<<5)		/* Indicates that the image is
-					 * a picture sequence. */
+#define REDRAW_PENDING	(1<<0)		/* Indicates a DoWhenIdle handler
+					 * has already been queued to
+					 * redraw this window. */
+#define RESIZE_PENDING	(1<<1)		/* Indicates a DoWhenIdle handler
+					 * has already been queued to
+					 * redraw this window. */
+#define ACTIVE		(1<<2)		/* Indicates whether the busy
+					 * window should be displayed. This
+					 * can be different from what
+					 * Tk_IsMapped says because the a
+					 * sibling reference window may be
+					 * unmapped, forcing the busy
+					 * window to be also hidden. */
+#define SNAPSHOT	(1<<3)		/* Indicates whether the busy
+					 * window is a snapshot of the
+					 * parent. */
+#define IMAGE_PHOTO	(1<<4)		/* Indicates that the image was a
+					 * photo. */
+#define IMAGE_SEQUENCE	(1<<5)		/* Indicates that the image is a
+					 * picture sequence. */
 
 #ifdef WIN32
 #define DEF_BUSY_CURSOR "wait"
@@ -184,8 +185,8 @@ static Blt_ConfigSpec configSpecs[] =
 
 typedef struct {
     Blt_HashTable busyTable;		/* Hash table of busy window
-					 * structures keyed by the address of
-					 * thereference Tk window */
+					 * structures keyed by the address
+					 * of thereference Tk window */
     Tk_Window tkMain;
     Tcl_Interp *interp;
 } BusyInterpData;
@@ -219,9 +220,9 @@ BLT_EXTERN Blt_Chain Blt_GetPicturesFromPictureImage(Tcl_Interp *interp,
  *
  * EventuallyRedraw --
  *
- *	Tells the Tk dispatcher to call the busy display routine at the next
- *	idle point.  This request is made only if the window is displayed and
- *	no other redraw request is pending.
+ *	Tells the Tk dispatcher to call the busy display routine at the
+ *	next idle point.  This request is made only if the window is
+ *	displayed and no other redraw request is pending.
  *
  * Results: None.
  *
@@ -253,10 +254,8 @@ EventuallyRedraw(Busy *busyPtr)
  */
 /* ARGSUSED */
 static void
-ImageChangedProc(
-    ClientData clientData,
-    int x, int y, int w, int h,		/* Not used. */
-    int imageWidth, int imageHeight)	/* Not used. */
+ImageChangedProc(ClientData clientData, int x, int y, int w, int h,
+                 int imageWidth, int imageHeight)
 {
     Busy *busyPtr = clientData;
     int isPhoto;
@@ -281,11 +280,8 @@ ImageChangedProc(
 
 /*ARGSUSED*/
 static void
-FreeImageProc(
-    ClientData clientData,
-    Display *display,			/* Not used. */
-    char *widgRec,
-    int offset)
+FreeImageProc(ClientData clientData, Display *display, char *widgRec,
+              int offset)
 {
     Busy *busyPtr = (Busy *)widgRec;
 
@@ -315,14 +311,8 @@ FreeImageProc(
  */
 /*ARGSUSED*/
 static int
-ObjToImageProc(
-    ClientData clientData,		/* Not used. */
-    Tcl_Interp *interp,			/* Interpreter to return results */
-    Tk_Window tkwin,			/* Not used. */
-    Tcl_Obj *objPtr,			/* String representation of value. */
-    char *widgRec,			/* Widget record. */
-    int offset,				/* Offset to field in structure */
-    int flags)	
+ObjToImageProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+               Tcl_Obj *objPtr, char *widgRec, int offset, int flags)	
 {
     Busy *busyPtr = (Busy *)widgRec;
     Tk_Image tkImage;
@@ -374,13 +364,8 @@ ObjToImageProc(
  */
 /*ARGSUSED*/
 static Tcl_Obj *
-ImageToObjProc(
-    ClientData clientData,		/* Not used. */
-    Tcl_Interp *interp,
-    Tk_Window tkwin,			/* Not used. */
-    char *widgRec,			/* Widget record */
-    int offset,				/* Offset to field in structure */
-    int flags)	
+ImageToObjProc(ClientData clientData, Tcl_Interp *interp, Tk_Window tkwin,
+               char *widgRec, int offset, int flags)	
 {
     Busy *busyPtr = (Busy *)(widgRec);
     
@@ -419,8 +404,8 @@ GetBusyWindowCoordinates(Busy *busyPtr, int *xPtr, int *yPtr)
  * SnapBackground --
  *
  *	Displays the busy window. If the busy window is transparent, then
- *	the window is simply mapped and the cursor is updated.  If the
- *	busy window is transparent, then background is snapped.
+ *	the window is simply mapped and the cursor is updated.  If the busy
+ *	window is transparent, then background is snapped.
  *
  * Results:
  *	None.
@@ -433,9 +418,7 @@ SnapBackground(Busy *busyPtr)
     Blt_Picture picture;
     
     if (busyPtr->original != NULL) {
-	/* 
-	 * If a snapshot of this window already exists, just resize it.
-	 */
+	/* If a snapshot of this window already exists, just resize it. */
 	picture = Blt_CreatePicture(busyPtr->width, busyPtr->height);
 	Blt_ResamplePicture(picture, busyPtr->original, bltMitchellFilter,
 			    bltMitchellFilter);
@@ -443,9 +426,7 @@ SnapBackground(Busy *busyPtr)
 	Tk_Window tkwin;
 	Blt_Pixel color;
 
-	/* 
-	 * Create a snapshot of the reference window.
-	 */
+	/* Create a snapshot of the reference window. */
 	tkwin = Blt_Toplevel(busyPtr->tkRef);
 	Blt_RaiseToplevelWindow(tkwin);
 	picture = Blt_DrawableToPicture(busyPtr->tkRef, 
@@ -507,8 +488,8 @@ SnapBackground(Busy *busyPtr)
  * ShowBusyWindow --
  *
  *	Displays the busy window. If the busy window is transparent, then
- *	the window is simply mapped and the cursor is updated.  If the
- *	busy window is transparent, then background is snapped.
+ *	the window is simply mapped and the cursor is updated.  If the busy
+ *	window is transparent, then background is snapped.
  *
  * Results:
  *	None.
@@ -529,9 +510,9 @@ ShowBusyWindow(Busy *busyPtr)
     if (busyPtr->tkBusy != NULL) {
 	Tk_MapWindow(busyPtr->tkBusy);
 	/* 
-	 * Always raise the busy window just in case new sibling windows have
-	 * been created in the meantime. Can't use Tk_RestackWindow because it
-	 * doesn't work under Win32.
+	 * Always raise the busy window just in case new sibling windows
+	 * have been created in the meantime. Can't use Tk_RestackWindow
+	 * because it doesn't work under Win32.
 	 */
 	XRaiseWindow(busyPtr->display, Tk_WindowId(busyPtr->tkBusy));
     }
@@ -539,13 +520,14 @@ ShowBusyWindow(Busy *busyPtr)
     {
 	POINT point;
 	/*
-	 * In Win32 cursors aren't associated with windows.  Tk fakes this by
-	 * watching <Motion> events on its windows.  Tk will automatically
-	 * change the cursor when the pointer enters the Busy window.  But
-	 * Windows doesn't immediately change the cursor; it waits for the
-	 * cursor position to change or a system call.  We need to change the
-	 * cursor before the application starts processing, so set the cursor
-	 * position redundantly back to the current position.
+	 * In Win32 cursors aren't associated with windows.  Tk fakes this
+	 * by watching <Motion> events on its windows.  Tk will
+	 * automatically change the cursor when the pointer enters the Busy
+	 * window.  But Windows doesn't immediately change the cursor; it
+	 * waits for the cursor position to change or a system call.  We
+	 * need to change the cursor before the application starts
+	 * processing, so set the cursor position redundantly back to the
+	 * current position.
 	 */
 	GetCursorPos(&point);
 	SetCursorPos(point.x, point.y);
@@ -582,13 +564,14 @@ HideBusyWindow(Busy *busyPtr)
     {
 	POINT point;
 	/*
-	 * Under Win32, cursors aren't associated with windows.  Tk fakes this
-	 * by watching Motion events on its windows.  So Tk will automatically
-	 * change the cursor when the pointer enters the Busy window.  But
-	 * Windows doesn't immediately change the cursor: it waits for the
-	 * cursor position to change or a system call.  We need to change the
-	 * cursor before the application starts processing, so set the cursor
-	 * position redundantly back to the current position.
+	 * Under Win32, cursors aren't associated with windows.  Tk fakes
+	 * this by watching Motion events on its windows.  So Tk will
+	 * automatically change the cursor when the pointer enters the Busy
+	 * window.  But Windows doesn't immediately change the cursor: it
+	 * waits for the cursor position to change or a system call.  We
+	 * need to change the cursor before the application starts
+	 * processing, so set the cursor position redundantly back to the
+	 * current position.
 	 */
 	GetCursorPos(&point);
 	SetCursorPos(point.x, point.y);
@@ -611,9 +594,9 @@ HideBusyWindow(Busy *busyPtr)
  *
  * BusyEventProc --
  *
- *	This procedure is invoked by the Tk dispatcher for events on the busy
- *	window itself.  We're only concerned with DestroyNotify events and
- *	ConfigureNotify events for opaque busy windows.
+ *	This procedure is invoked by the Tk dispatcher for events on the
+ *	busy window itself.  We're only concerned with DestroyNotify events
+ *	and ConfigureNotify events for opaque busy windows.
  *
  * Results:
  *	None.
@@ -656,9 +639,10 @@ BusyEventProc(
  * BusyCustodyProc --
  *
  *	This procedure is invoked when the busy window has been stolen by
- *	another geometry manager.  The information and memory associated with
- *	the busy window is released. I don't know why anyone would try to pack
- *	a busy window, but this should keep everything sane, if it is.
+ *	another geometry manager.  The information and memory associated
+ *	with the busy window is released. I don't know why anyone would try
+ *	to pack a busy window, but this should keep everything sane, if it
+ *	is.
  *
  * Results:
  *	None.
@@ -670,9 +654,7 @@ BusyEventProc(
  */
 /* ARGSUSED */
 static void
-BusyCustodyProc(
-    ClientData clientData,		/* Information about the busy window. */
-    Tk_Window tkwin)			/* Not used. */
+BusyCustodyProc(ClientData clientData, Tk_Window tkwin)
 {
     Busy *busyPtr = clientData;
 
@@ -709,11 +691,7 @@ BusyCustodyProc(
  */
 /* ARGSUSED */
 static void
-BusyGeometryProc(
-    ClientData clientData,		/* Information about window that got new
-					 * preferred geometry.  */
-    Tk_Window tkwin)			/* Other Tk-related information about
-					 * the window. */
+BusyGeometryProc(ClientData clientData, Tk_Window tkwin)
 {
     /* Should never get here */
 }
@@ -723,9 +701,9 @@ BusyGeometryProc(
  *
  * RefWinEventProc --
  *
- *	This procedure is invoked by the Tk dispatcher for the following events
- *	on the reference window.  If the reference and parent windows are the
- *	same, only the first event is important.
+ *	This procedure is invoked by the Tk dispatcher for the following
+ *	events on the reference window.  If the reference and parent
+ *	windows are the same, only the first event is important.
  *
  *	   1) ConfigureNotify  - The reference window has been resized or
  *				 moved.  Move and resize the busy window
@@ -746,18 +724,18 @@ BusyGeometryProc(
  *	None.
  *
  * Side effects:
- *	When the reference window gets deleted, internal structures get cleaned
- *	up.  When it gets resized, the busy window is resized accordingly. If
- *	it's displayed, the busy window is displayed. And when it's hidden, the
- *	busy window is unmapped.
+ *	When the reference window gets deleted, internal structures get
+ *	cleaned up.  When it gets resized, the busy window is resized
+ *	accordingly. If it's displayed, the busy window is displayed. And
+ *	when it's hidden, the busy window is unmapped.
  *
  *---------------------------------------------------------------------------
  */
 static void
 RefWinEventProc(
     ClientData clientData,		/* Busy window record */
-    XEvent *eventPtr)			/* Event that triggered the call to this
-					 * routine */
+    XEvent *eventPtr)			/* Event that triggered the call to
+					 * this routine */
 {
     Busy *busyPtr = clientData;
 
@@ -765,14 +743,13 @@ RefWinEventProc(
     case ReparentNotify:
     case DestroyNotify:
 
-	/* Remove the entry to this busy window right now so that busy commands
-	 * can't reference this window. */
+	/* Remove the entry to this busy window right now so that busy
+	 * commands can't reference this window. */
 	Blt_DeleteHashEntry(busyPtr->tablePtr, busyPtr->hashPtr);
 	busyPtr->hashPtr = NULL;
 
-	/*
-	 * Arrange for the busy structure to be removed at a proper time.
-	 */
+	/* Arrange for the busy structure to be removed at a proper
+         * time. */
 	busyPtr->tkRef = NULL;
 	if (busyPtr->tkBusy != NULL) {
 	    Tk_DestroyWindow(busyPtr->tkBusy);
@@ -786,8 +763,8 @@ RefWinEventProc(
     case MapNotify:
 	if ((busyPtr->tkParent != busyPtr->tkRef) && 
 	    (busyPtr->flags & ACTIVE)) {
-	    /* Need to resize busy window and possibly re-snap the reference
-	     * window. */
+	    /* Need to resize busy window and possibly re-snap the
+	     * reference window. */
 	    ShowBusyWindow(busyPtr);
 	}
 	break;
@@ -881,24 +858,24 @@ ConfigureBusy(
  * NewBusy --
  *
  *	Creates a child transparent window that obscures its parent window
- *	thereby effectively blocking device events.  The size and position of
- *	the busy window is exactly that of the reference window.
+ *	thereby effectively blocking device events.  The size and position
+ *	of the busy window is exactly that of the reference window.
  *
  *	We want to create sibling to the window to be blocked.  If the busy
- *	window is a child of the window to be blocked, Enter/Leave events can
- *	sneak through.  Futhermore under WIN32, messages of transparent
- *	windows are sent directly to the parent.  The only exception to this
- *	are toplevels, since we can't make a sibling.  Fortunately, toplevel
- *	windows rarely receive events that need blocking.
+ *	window is a child of the window to be blocked, Enter/Leave events
+ *	can sneak through.  Futhermore under WIN32, messages of transparent
+ *	windows are sent directly to the parent.  The only exception to
+ *	this are toplevels, since we can't make a sibling.  Fortunately,
+ *	toplevel windows rarely receive events that need blocking.
  *
  * Results:
  *	Returns a pointer to the new busy window structure.
  *
  * Side effects:
  *	When the busy window is eventually displayed, it will screen device
- *	events (in the area of the reference window) from reaching its parent
- *	window and its children.  User feed back can be achieved by changing
- *	the cursor.
+ *	events (in the area of the reference window) from reaching its
+ *	parent window and its children.  User feed back can be achieved by
+ *	changing the cursor.
  *
  *---------------------------------------------------------------------------
  */
@@ -961,24 +938,24 @@ NewBusy(Tcl_Interp *interp, Tk_Window tkRef)
  * InitializeBusy --
  *
  *	Creates a child transparent window that obscures its parent window
- *	thereby effectively blocking device events.  The size and position of
- *	the busy window is exactly that of the reference window.
+ *	thereby effectively blocking device events.  The size and position
+ *	of the busy window is exactly that of the reference window.
  *
  *	We want to create sibling to the window to be blocked.  If the busy
- *	window is a child of the window to be blocked, Enter/Leave events can
- *	sneak through.  Futhermore under WIN32, messages of transparent
- *	windows are sent directly to the parent.  The only exception to this
- *	are toplevels, since we can't make a sibling.  Fortunately, toplevel
- *	windows rarely receive events that need blocking.
+ *	window is a child of the window to be blocked, Enter/Leave events
+ *	can sneak through.  Futhermore under WIN32, messages of transparent
+ *	windows are sent directly to the parent.  The only exception to
+ *	this are toplevels, since we can't make a sibling.  Fortunately,
+ *	toplevel windows rarely receive events that need blocking.
  *
  * Results:
  *	Returns a pointer to the new busy window structure.
  *
  * Side effects:
  *	When the busy window is eventually displayed, it will screen device
- *	events (in the area of the reference window) from reaching its parent
- *	window and its children.  User feed back can be achieved by changing
- *	the cursor.
+ *	events (in the area of the reference window) from reaching its
+ *	parent window and its children.  User feed back can be achieved by
+ *	changing the cursor.
  *
  *---------------------------------------------------------------------------
  */
@@ -994,10 +971,10 @@ InitializeBusy(Busy *busyPtr)
     if (winPtr->flags & TK_REPARENTED) {
 	/*
 	 * This works around a bug in the implementation of menubars for
-	 * non-MacIntosh window systems (Win32 and X11).  Tk doesn't reset the
-	 * pointers to the parent window when the menu is reparented
-	 * (winPtr->parentPtr points to the wrong window). We get around this
-	 * by determining the parent via the native API calls.
+	 * non-MacIntosh window systems (Win32 and X11).  Tk doesn't reset
+	 * the pointers to the parent window when the menu is reparented
+	 * (winPtr->parentPtr points to the wrong window). We get around
+	 * this by determining the parent via the native API calls.
 	 */
 #ifdef WIN32
 	{
@@ -1049,8 +1026,8 @@ InitializeBusy(Busy *busyPtr)
     /* Only worry if the busy window is destroyed.  */
     Tk_CreateEventHandler(busyPtr->tkBusy, mask, BusyEventProc, busyPtr);
     /*
-     * Indicate that the busy window's geometry is being managed.  This will
-     * also notify us if the busy window is ever packed.
+     * Indicate that the busy window's geometry is being managed.  This
+     * will also notify us if the busy window is ever packed.
      */
     Tk_ManageGeometry(busyPtr->tkBusy, &busyMgrInfo, busyPtr);
     if (busyPtr->cursor != None) {
@@ -1066,15 +1043,16 @@ InitializeBusy(Busy *busyPtr)
  *
  * DestroyBusy --
  *
- *	This procedure is called from the Tk event dispatcher. It releases X
- *	resources and memory used by the busy window and updates the internal
- *	hash table.
+ *	This procedure is called from the Tk event dispatcher. It releases
+ *	X resources and memory used by the busy window and updates the
+ *	internal hash table.
  *
  * Results:
  *	None.
  *
  * Side effects:
- *	Memory and resources are released and the Tk event handler is removed.
+ *	Memory and resources are released and the Tk event handler is
+ *	removed.
  *
  *---------------------------------------------------------------------------
  */
@@ -1125,14 +1103,14 @@ DestroyBusy(DestroyData data)		/* Busy window structure record */
  * GetBusy --
  *
  *	Returns the busy window structure associated with the reference
- *	window, keyed by its path name.  The clientData argument is the main
- *	window of the interpreter, used to search for the reference window in
- *	its own window hierarchy.
+ *	window, keyed by its path name.  The clientData argument is the
+ *	main window of the interpreter, used to search for the reference
+ *	window in its own window hierarchy.
  *
  * Results:
  *	If path name represents a reference window with a busy window, a
- *	pointer to the busy window structure is returned. Otherwise, NULL is
- *	returned and an error message is left in interp->result.
+ *	pointer to the busy window structure is returned. Otherwise, NULL
+ *	is returned and an error message is left in interp->result.
  *
  *---------------------------------------------------------------------------
  */
@@ -1177,9 +1155,9 @@ GetBusy(
  *	children.
  *
  * Results:
- *	Returns a standard TCL result. If path name represents a busy window,
- *	it is unmapped and TCL_OK is returned. Otherwise, TCL_ERROR is
- *	returned and an error message is left in interp->result.
+ *	Returns a standard TCL result. If path name represents a busy
+ *	window, it is unmapped and TCL_OK is returned. Otherwise, TCL_ERROR
+ *	is returned and an error message is left in interp->result.
  *
  * Side effects:
  *	The busy window is created and displayed, blocking events from the
@@ -1253,9 +1231,7 @@ HoldBusy(
  */
 /* ARGSUSED */
 static void
-BusyInterpDeleteProc(
-    ClientData clientData,	/* Interpreter-specific data. */
-    Tcl_Interp *interp)
+BusyInterpDeleteProc(ClientData clientData, Tcl_Interp *interp)
 {
     BusyInterpData *dataPtr = clientData;
     Blt_HashEntry *hPtr;
@@ -1290,11 +1266,8 @@ BusyInterpDeleteProc(
  *---------------------------------------------------------------------------
  */
 static int
-ActiveOp(
-    ClientData clientData,		/* Interpreter-specific data. */
-    Tcl_Interp *interp,			/* Interpreter to report errors to */
-    int objc,
-    Tcl_Obj *const *objv)
+ActiveOp(ClientData clientData, Tcl_Interp *interp, int objc,
+         Tcl_Obj *const *objv)
 {
     Blt_HashEntry *hPtr;
     Blt_HashSearch iter;
@@ -1332,11 +1305,8 @@ ActiveOp(
  */
 /* ARGSUSED*/
 static int
-CgetOp(
-    ClientData clientData,		/* Interpreter-specific data. */
-    Tcl_Interp *interp,			/* Interpreter to report errors to */
-    int objc,
-    Tcl_Obj *const *objv)		/* Widget pathname and option switch */
+CgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
+       Tcl_Obj *const *objv)
 {
     BusyInterpData *dataPtr = clientData;
     Busy *busyPtr;
@@ -1363,11 +1333,8 @@ CgetOp(
  */
 /*ARGSUSED*/
 static int
-CheckOp(
-    ClientData clientData,		/* Interpreter-specific data. */
-    Tcl_Interp *interp,			/* Interpreter to report errors to */
-    int objc,				/* Not used. */
-    Tcl_Obj *const *objv)
+CheckOp(ClientData clientData, Tcl_Interp *interp, int objc,
+        Tcl_Obj *const *objv)
 {
     Blt_HashEntry *hPtr;
     BusyInterpData *dataPtr = clientData;
@@ -1403,23 +1370,19 @@ CheckOp(
  *	configure (or reconfigure) a busy window.
  *
  * Results:
- *	The return value is a standard TCL result.  If TCL_ERROR is returned,
- *	then interp->result contains an error message.
+ *	The return value is a standard TCL result.  If TCL_ERROR is
+ *	returned, then interp->result contains an error message.
  *
  * Side effects:
  *	Configuration information get set for busyPtr; old resources get
- *	freed, if there were any.  The busy window destroyed and recreated in
- *	a new parent window.
+ *	freed, if there were any.  The busy window destroyed and recreated
+ *	in a new parent window.
  *
  *---------------------------------------------------------------------------
  */
 static int
-ConfigureOp(
-    ClientData clientData,		/* Interpreter-specific data. */
-    Tcl_Interp *interp,			/* Interpreter to report errors to */
-    int objc,
-    Tcl_Obj *const *objv)		/* Reference window path name and
-					 * options */
+ConfigureOp(ClientData clientData, Tcl_Interp *interp, int objc,
+            Tcl_Obj *const *objv)
 {
     BusyInterpData *dataPtr = clientData;
     Busy *busyPtr;
@@ -1449,13 +1412,14 @@ ConfigureOp(
  * ForgetOp --
  *
  *	Destroys the busy window associated with the reference window and
- *	arranges for internal resources to the released when they're not being
- *	used anymore.
+ *	arranges for internal resources to the released when they're not
+ *	being used anymore.
  *
  * Results:
- *	Returns a standard TCL result. If path name represents a busy window,
- *	it is destroyed and TCL_OK is returned. Otherwise, TCL_ERROR is
- *	returned and an error message is left in interp->result.
+ *	Returns a standard TCL result. If path name represents a busy
+ *	window, it is destroyed and TCL_OK is returned. Otherwise,
+ *	TCL_ERROR is returned and an error message is left in
+ *	interp->result.
  *
  * Side effects:
  *	The busy window is removed.  Other related memory and resources are
@@ -1465,11 +1429,8 @@ ConfigureOp(
  */
 /*ARGSUSED*/
 static int
-ForgetOp(
-    ClientData clientData,		/* Interpreter-specific data. */
-    Tcl_Interp *interp,			/* Not used. */
-    int objc,
-    Tcl_Obj *const *objv)
+ForgetOp(ClientData clientData, Tcl_Interp *interp, int objc,
+         Tcl_Obj *const *objv)
 {
     BusyInterpData *dataPtr = clientData;
     int i;
@@ -1486,8 +1447,8 @@ ForgetOp(
 	    Blt_DeleteHashEntry(busyPtr->tablePtr, busyPtr->hashPtr);
 	    busyPtr->hashPtr = NULL;
 
-	    /* Destroy the busy window. This in turn frees the busy structure
-	     * allocated. */
+	    /* Destroy the busy window. This in turn frees the busy
+	     * structure allocated. */
 	    if (busyPtr->tkBusy != NULL) {
 		Tk_DestroyWindow(busyPtr->tkBusy);
 	    }
@@ -1517,11 +1478,8 @@ ForgetOp(
  *---------------------------------------------------------------------------
  */
 static int
-HoldOp(
-    ClientData clientData,		/* Interpreter-specific data. */
-    Tcl_Interp *interp,			/* Interpreter to report errors to */
-    int objc,
-    Tcl_Obj *const *objv)		/* Window name and option pairs */
+HoldOp(ClientData clientData, Tcl_Interp *interp, int objc,
+       Tcl_Obj *const *objv)
 {
     BusyInterpData *dataPtr = clientData;
     int i;
@@ -1533,9 +1491,8 @@ HoldOp(
     }
     for (i = 1; i < objc; i++) {
 	int count;
-	/*
-	 * Find the end of the option-value pairs for this window.
-	 */
+
+	/* Find the end of the option-value pairs for this window. */
 	for (count = i + 1; count < objc; count += 2) {
 	    string = Tcl_GetString(objv[count]);
 	    if (string[0] != '-') {
@@ -1558,12 +1515,12 @@ HoldOp(
  *
  * IsBusyOp --
  *
- *	Returns the status of the busy window; whether it's blocking events or
- *	not.
+ *	Returns the status of the busy window; whether it's blocking events
+ *	or not.
  *
  * Results:
- *	Returns a standard TCL result. If path name represents a busy window,
- *	the status is returned via interp->result and TCL_OK is
+ *	Returns a standard TCL result. If path name represents a busy
+ *	window, the status is returned via interp->result and TCL_OK is
  *	returned. Otherwise, TCL_ERROR is returned and an error message is
  *	left in interp->result.
  *
@@ -1571,11 +1528,8 @@ HoldOp(
  */
 /*ARGSUSED*/
 static int
-IsBusyOp(
-    ClientData clientData,		/* Interpreter-specific data. */
-    Tcl_Interp *interp,			/* Interpreter to report error to */
-    int objc,				/* Not used. */
-    Tcl_Obj *const *objv)
+IsBusyOp(ClientData clientData, Tcl_Interp *interp, int objc,
+         Tcl_Obj *const *objv)
 {
     BusyInterpData *dataPtr = clientData;
     Busy *busyPtr;
@@ -1594,13 +1548,14 @@ IsBusyOp(
  *
  * NamesOp --
  *
- *	Reports the names of all widgets with busy windows attached to them,
- *	matching a given pattern.  If no pattern is given, all busy widgets
- *	are listed.
+ *	Reports the names of all widgets with busy windows attached to
+ *	them, matching a given pattern.  If no pattern is given, all busy
+ *	widgets are listed.
  *
  * Results:
  *	Returns a TCL list of the names of the widget with busy windows
- *	attached to them, regardless if the widget is currently busy or not.
+ *	attached to them, regardless if the widget is currently busy or
+ *	not.
  *
  *
  *      blt::busy names ?pattern ... ?
@@ -1656,23 +1611,20 @@ NamesOp(ClientData clientData, Tcl_Interp *interp, int objc,
  *	received by the parent window and its children.
  *
  * Results:
- *	Returns a standard TCL result. If path name represents a busy window,
- *	it is unmapped and TCL_OK is returned. Otherwise, TCL_ERROR is
- *	returned and an error message is left in interp->result.
+ *	Returns a standard TCL result. If path name represents a busy
+ *	window, it is unmapped and TCL_OK is returned. Otherwise, TCL_ERROR
+ *	is returned and an error message is left in interp->result.
  *
  * Side effects:
- *	The busy window is hidden, allowing the parent window and its children
- *	to receive events again.
+ *	The busy window is hidden, allowing the parent window and its
+ *	children to receive events again.
  *
  *---------------------------------------------------------------------------
  */
 /*ARGSUSED*/
 static int
-ReleaseOp(
-    ClientData clientData,		/* Interpreter-specific data. */
-    Tcl_Interp *interp,			/* Not used. */
-    int objc,
-    Tcl_Obj *const *objv)
+ReleaseOp(ClientData clientData, Tcl_Interp *interp, int objc,
+          Tcl_Obj *const *objv)
 {
     BusyInterpData *dataPtr = clientData;
     Busy *busyPtr;
@@ -1690,12 +1642,12 @@ ReleaseOp(
  *
  * StatusOp --
  *
- *	Returns the status of the busy window; whether it's blocking events or
- *	not.
+ *	Returns the status of the busy window; whether it's blocking events
+ *	or not.
  *
  * Results:
- *	Returns a standard TCL result. If path name represents a busy window,
- *	the status is returned via interp->result and TCL_OK is
+ *	Returns a standard TCL result. If path name represents a busy
+ *	window, the status is returned via interp->result and TCL_OK is
  *	returned. Otherwise, TCL_ERROR is returned and an error message is
  *	left in interp->result.
  *
@@ -1703,11 +1655,8 @@ ReleaseOp(
  */
 /*ARGSUSED*/
 static int
-StatusOp(
-    ClientData clientData,		/* Interpreter-specific data. */
-    Tcl_Interp *interp,			/* Interpreter to report error to */
-    int objc,				/* Not used. */
-    Tcl_Obj *const *objv)
+StatusOp(ClientData clientData, Tcl_Interp *interp, int objc,
+         Tcl_Obj *const *objv)
 {
     BusyInterpData *dataPtr = clientData;
     Busy *busyPtr;
@@ -1760,8 +1709,8 @@ static int numBusyOps = sizeof(busyOps) / sizeof(Blt_OpSpec);
  *
  * BusyCmdProc --
  *
- *	This procedure is invoked to process the "busy" TCL command.  See the
- *	user documentation for details on what it does.
+ *	This procedure is invoked to process the "busy" TCL command.  See
+ *	the user documentation for details on what it does.
  *
  * Results:
  *	A standard TCL result.
@@ -1772,12 +1721,8 @@ static int numBusyOps = sizeof(busyOps) / sizeof(Blt_OpSpec);
  *---------------------------------------------------------------------------
  */
 static int
-BusyCmdProc(
-    ClientData clientData,		/* Interpreter-specific data. */
-    Tcl_Interp *interp,			/* Interpreter associated with
-					 * command */
-    int objc,
-    Tcl_Obj *const *objv)
+BusyCmdProc(ClientData clientData, Tcl_Interp *interp, int objc,
+            Tcl_Obj *const *objv)
 {
     Tcl_ObjCmdProc *proc;
     int result;
@@ -1846,8 +1791,8 @@ DisplayBusy(ClientData clientData)
     fprintf(stderr, "Calling DisplayBusy(%s)\n", Tk_PathName(tkwin));
 #endif
     if ((Tk_Width(tkwin) <= 1) || (Tk_Height(tkwin) <= 1)) {
-	/* Don't bother computing the layout until the size of the window is
-	 * something reasonable. */
+	/* Don't bother computing the layout until the size of the window
+	 * is something reasonable. */
 	return;
     }
     busyPtr->width = Tk_Width(tkwin);

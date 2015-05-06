@@ -2983,21 +2983,21 @@ SequenceOp(ClientData clientData, Tcl_Interp *interp, int objc,
     double start, stop, step;
     int i, numSteps;
 
-    if (Blt_ExprDoubleFromObj(interp, objv[2], &start) != TCL_OK) {
+    if (Tcl_GetDoubleFromObj(interp, objv[2], &start) != TCL_OK) {
 	return TCL_ERROR;
     }
     string = Tcl_GetString(objv[3]);
     step = 1.0;
-    stop = 0.0;                         /* Suppress compiler warning. */
+    stop = 0.0;
     numSteps = 0;
     if ((string[0] == 'e') && (strcmp(string, "end") == 0)) {
 	numSteps = vPtr->length;
-    } else if (Blt_ExprDoubleFromObj(interp, objv[3], &stop) != TCL_OK) {
+    } else if (Tcl_GetDoubleFromObj(interp, objv[3], &stop) != TCL_OK) {
 	return TCL_ERROR;
     }
     step = 1.0;				/* By default, increment is 1.0 */
     if ((objc > 4) && 
-	(Blt_ExprDoubleFromObj(interp, objv[4], &step) != TCL_OK)) {
+	(Tcl_GetDoubleFromObj(interp, objv[4], &step) != TCL_OK)) {
 	return TCL_ERROR;
     }
     if (numSteps == 0) {
@@ -3041,14 +3041,14 @@ LinspaceOp(ClientData clientData, Tcl_Interp *interp, int objc,
     int numSteps;
     double start, stop;
     
-    if (Blt_GetDoubleFromObj(interp, objv[2], &start) != TCL_OK) {
+    if (Blt_GetDoubleFromObj(interp, objv[2], &min) != TCL_OK) {
 	return TCL_ERROR;
     }
-    if (Blt_GetDoubleFromObj(interp, objv[3], &stop) != TCL_OK) {
+    if (Blt_GetDoubleFromObj(interp, objv[3], &max) != TCL_OK) {
 	return TCL_ERROR;
     }
     numSteps = destPtr->length;		/* By default, generate one step
-					 * per element in the vector. */
+					 * for each entry in the vector. */
     if ((objc > 4) && 
 	(Tcl_GetIntFromObj(interp, objv[4], &numSteps) != TCL_OK)) {
 	return TCL_ERROR;
@@ -3061,9 +3061,9 @@ LinspaceOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	if (Blt_Vec_SetLength(interp, destPtr, numSteps) != TCL_OK) {
 	    return TCL_ERROR;
 	}
-	step = (stop - start) / (double)(numSteps - 1);
+	step = (max - min) / (double)(numSteps - 1);
 	for (i = 0; i < numSteps; i++) { 
-	    destPtr->valueArr[i] = start + (step * i);
+	    destPtr->valueArr[i] = min + (step * i);
 	}
 	if (destPtr->flush) {
 	    Blt_Vec_FlushCache(destPtr);

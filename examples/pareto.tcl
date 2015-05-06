@@ -44,8 +44,8 @@ set count 0
 set sum 0
 set ydata 0
 set xdata 0
-set bg [blt::bgpattern create solid -color orange -opacity 70]
-set areabg [blt::bgpattern create solid -color blue -opacity 20]
+set b [blt::paintbrush create color -color orange1 -opacity 70]
+set areab [blt::paintbrush create color -color blue -opacity 20]
 foreach { label value color } $data {
     incr count
     .b element create $label \
@@ -54,7 +54,7 @@ foreach { label value color } $data {
 	-fg $color \
 	-relief raised \
 	-borderwidth 1 \
-	-bg $bg 
+	-bg $b 
 
     set labels($count) $label
     # Get the total number of defects.
@@ -66,7 +66,7 @@ foreach { label value color } $data {
 # Configure the coordinates of the accumulated defects, 
 # now that we know what they are.
 .b line configure accum -xdata $xdata -ydata $ydata \
-	-areabackground $areabg 
+	-areabackground $areab 
 .b element lower accum
 # Add text markers to label the percentage of total at each point.
 foreach x $xdata y $ydata {

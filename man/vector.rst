@@ -87,57 +87,56 @@ VECTOR COMMAND OPERATIONS
 -------------------------
 
 **blt::vector create** *vecName*\ ... ?\ *switches* ... ? 
- Creates a new vector *vecName*.  The **create** operation can be invoked
- in one of three forms:
+  Creates a new vector *vecName*.  The **create** operation can be invoked
+  in one of three forms:
 
-  **blt::vector create** ?\ *vecName*\ ?
-    This creates a new vector *vecName* which initially has no points.
-    If no *vecName* argument is given, then a name is generated in the
-    form "vector0", "vector1", etc.
+   **blt::vector create** ?\ *vecName*\ ?
+     This creates a new vector *vecName* which initially has no points.
+     If no *vecName* argument is given, then a name is generated in the
+     form "vector0", "vector1", etc.
 
-  **blt::vector create** *vecName*\ (*size*)
-    Creates a new vector *vecName* and sets the number of points.  The
-    points will be indexed starting from zero. The default value for the
-    points is "0.0".
+   **blt::vector create** *vecName*\ (*size*)
+     Creates a new vector *vecName* and sets the number of points.  The
+     points will be indexed starting from zero. The default value for the
+     points is "0.0".
 
-  **blt::vector create** *vecName*\ (*first*:*last*)
-    Creates a new vector *vecName* and sets the number of points.  The
-    points will be indexed *first* through *last*.  *First* and *last*
-    can be any integer value so long as *first* is less than *last*. The
-    default value for the points is "0.0".
+   **blt::vector create** *vecName*\ (*first*:*last*)
+     Creates a new vector *vecName* and sets the number of points.  The
+     points will be indexed *first* through *last*.  *First* and *last*
+     can be any integer value so long as *first* is less than *last*. The
+     default value for the points is "0.0".
 
- Vector names must start with a letter and consist of letters, digits, or
- underscores.  You can automatically generate vector names using the
- "#auto" vector name.
+  Vector names must start with a letter and consist of letters, digits, or
+  underscores.  You can automatically generate vector names using the
+  "#auto" vector name.
 
- Both a TCL command and array variable *vecName* are also created.  The
- name *vecName* must be unique, so another TCL command or array variable
- can not already exist in that scope.  You can access the points of the
- vector using its variable.  If you change a value in the array, or unset
- an array element, the vector is updated to reflect the changes.  When the
- variable *vecName* is unset, the vector and its TCL command are also
- destroyed.
+  Both a TCL command and array variable *vecName* are also created.  The
+  name *vecName* must be unique, so another TCL command or array variable
+  can not already exist in that scope.  You can access the points of the
+  vector using its variable.  If you change a value in the array, or unset
+  an array element, the vector is updated to reflect the changes.  When the
+  variable *vecName* is unset, the vector and its TCL command are also
+  destroyed.
 
- Switches can be any of the following:
+  Switches can be any of the following:
 
- **-variable** *varName*
-    Specifies the name of a TCL variable to be mapped to the vector. If
-    the variable already exists, it is first deleted, then recreated. 
-    If *varName* is the empty string, then no variable will be mapped.
-    You can always map a variable back to the vector using the vector's 
-    **variable** operation.
+  **-command** *cmdName*
+     Maps a TCL command to the vector. The vector can be accessed using
+     *cmdName* and one of the vector instance operations.  A TCL command by
+     that name cannot already exist.  If *cmdName* is the empty string, no
+     command mapping will be made.
 
- **-command** *cmdName*
-    Maps a TCL command to the vector. The vector can be accessed using 
-    *cmdName* and one of the vector instance operations.  
-    A TCL command by that name cannot already exist.
-    If *cmdName* is the empty string, no command mapping
-    will be made.
+  **-variable** *varName*
+     Specifies the name of a TCL variable to be mapped to the vector. If
+     the variable already exists, it is first deleted, then recreated. 
+     If *varName* is the empty string, then no variable will be mapped.
+     You can always map a variable back to the vector using the vector's 
+     **variable** operation.
 
- **-watchunset** *boolean*
-   Indicates if the vector should automatically be destroyed if the
-   variable associated with the vector is unset.  If *boolean* is true,
-   the vector will be destroyed. The default is 0.
+  **-watchunset** *boolean*
+    Indicates if the vector should automatically be destroyed if the
+    variable associated with the vector is unset.  If *boolean* is true,
+    the vector will be destroyed. The default is 0.
 
 **blt::vector destroy** ?\ *vecName* ... ?
   Deletes one or more vectors.  Both the TCL command and array variable
@@ -496,12 +495,13 @@ the command.  The operations available for vectors are listed below.
   to "0.0".  If no *newSize* argument is present, the current length
   of the vector is returned.
 
-*vecName* **linspace** *first* *last* ?\ *numSteps*\ ?
-  Generates linearly spaced vector values. *First* and *last* are numbers
-  representing the minimum and maximum values.  *NumSteps* is the number of
-  points to generate.  *VecName* will be resized to *numSteps* points. If
-  no *numSteps* argument is given, then the length of *vecName* is used as
-  the number of points. 
+*vecName* **linspace** *firstValue* *lastValue* ?\ *numSteps*\ ?
+  Generates linearly spaced vector values. *FirstValue* and *lastValue* are
+  numbers representing the minimum and maximum values.  If *firstValue* is
+  greater than *lastValue* the values will be decreasing.  *NumSteps* is
+  the number of points to generate.  *VecName* will be resized to
+  *numSteps* points. If no *numSteps* argument is given, then the current
+  length of *vecName* is used as the number of points.
   
 *vecName* **maximum**
   Returns the maximum value in the vector.
@@ -539,7 +539,7 @@ the command.  The operations available for vectors are listed below.
     whenever the vector is updated.
 
   **now**
-   If any client notifications is currently pending, they are notified
+   If any client notifications are currently pending, they are notified
    immediately.
 
   **cancel**
@@ -580,12 +580,14 @@ the command.  The operations available for vectors are listed below.
   Generates a random value for each point in *vecName*.  *Seed* is a
   integer value that specifies the seed of the random number generator.
 
-*vecName* **range** *firstIndex* ?\ *lastIndex* ... ?
+*vecName* **range** ?\ *firstIndex* *lastIndex* \?
   Returns a list of numeric values representing the vector points
   between two indices. Both *firstIndex* and *lastIndex* are indices
   representing the range of points to be returned. If *lastIndex* is
   less than *firstIndex*, the points are listed in reverse order.
-
+  If the *firstIndex* and *lastIndex* arguments are omitted, then
+  the entire vector is returned.
+  
 *vecName* **search** *value* ?\ *value*\ ?  
   Searches for a value or range of values among the points of *vecName*.
   If one *value* argument is given, a list of indices of the points which
@@ -613,10 +615,10 @@ the command.  The operations available for vectors are listed below.
   and then finding the largest deviation from this straight line, and if it
   is greater than *tolerance*, the point is added, splitting the original
   line into two new line segments. This repeats recursively for each new
-  line segment created.  The indices of the reduces set of points is
+  line segment created.  The indices of the reduced set of points is
   returned.
 
-  X* and *y* are the names input vectors representing the curve to be
+  *X* and *y* are the names input vectors representing the curve to be
   simplified.  The lengths of both vectors must be the same.  *Tolerance*
   is a real number representing the tolerance. The default is "1.0".
 
@@ -896,11 +898,10 @@ operation.
     # Create a new vector. 
     blt::vector create y(50)
 
-This creates a new vector named "y".  It has fifty points, by
-default, initialized to "0.0".  In addition, both a TCL command
-and array variable, both named "y", are created.  You can use
-either the command or variable to query or modify points of the
-vector.
+This creates a new vector named "y".  It has fifty points, by default,
+initialized to "0.0".  In addition, both a TCL command and array variable,
+both named "y", are created.  You can use either the command or variable to
+query or modify points of the vector.
 
   ::
 
@@ -908,56 +909,55 @@ vector.
     set y(0) 9.25
     puts "y has [y length] points"
 
-The array "y" can be used to read or set individual points of
-the vector.  Vector points are indexed from zero.  The array index
-must be a number less than the number of points.  For example,
-it's an error if you try to set the 51st element of "y".
+The array "y" can be used to read or set individual points of the vector.
+Vector points are indexed from zero.  The array index must be a number less
+than the number of points.  For example, it's an error if you try to set
+the 51st element of "y".
 
   ::
 
     # This is an error. The vector only has 50 points.
     set y(50) 0.02
 
-You can also specify a range of indices using a colon (:) to separate
-the first and last indices of the range.
+You can also specify a range of indices using a colon (:) to separate the
+first and last indices of the range.
 
   ::
 
     # Set the first six points of y 
     set y(0:5) 25.2
 
-If you don't include an index, then it will default to the first
-and/or last point of the vector.
+If you don't include an index, then it will default to the first and/or
+last point of the vector.
 
   ::
 
     # Print out all the points of y 
     puts "y = $y(:)"
 
-There are special non-numeric indices.  The index "end", specifies
-the last point of the vector.  It's an error to use this index if
-the vector is empty (length is zero).  The index "++end" can be
-used to extend the vector by one point and initialize it to a specific 
-value.  You can't read from the array using this index, though.
+There are special non-numeric indices.  The index "end", specifies the last
+point of the vector.  It's an error to use this index if the vector is
+empty (length is zero).  The index "++end" can be used to extend the vector
+by one point and initialize it to a specific value.  You can't read from
+the array using this index, though.
 
   ::
 
     # Extend the vector by one point.
     set y(++end) 0.02
 
-The other special indices are "min" and "max".  They return the
-current smallest and largest points of the vector.  
+The other special indices are "min" and "max".  They return the current
+smallest and largest points of the vector.
 
   ::
 
     # Print the bounds of the vector
     puts "min=$y(min) max=$y(max)"
 
-To delete points from a vector, simply unset the corresponding
-array element. In the following example, the first point of
-"y" is deleted.  All the remaining points of "y" will be
-moved down by one index as the length of the vector is reduced by
-one.
+To delete points from a vector, simply unset the corresponding array
+element. In the following example, the first point of "y" is deleted.  All
+the remaining points of "y" will be moved down by one index as the length
+of the vector is reduced by one.
 
   ::
 
@@ -973,51 +973,50 @@ The vector's TCL command can also be used to query or set the vector.
     blt::vector create x
     x set { 0.02 0.04 0.06 0.08 0.10 0.12 0.14 0.16 0.18 0.20 }
 
-Here we've created a vector "x" without a initial length specification.
-In this case, the length is zero.  The **set** operation resets the vector,
-extending it and setting values for each new point.  
+Here we've created a vector "x" without a initial length specification.  In
+this case, the length is zero.  The **set** operation resets the vector,
+extending it and setting values for each new point.
 
-There are several operations for vectors.  The **range** operation
-lists the points of a vector between two indices.
+There are several operations for vectors.  The **range** operation lists
+the points of a vector between two indices.
 
   ::
 
     # List the points 
     puts "x = [x range 0 end]"
 
-You can search for a particular value using the **search**
-operation.  It returns a list of indices of the points with the
-same value.  If no point has the same value, it returns "".
+You can search for a particular value using the **search** operation.  It
+returns a list of indices of the points with the same value.  If no point
+has the same value, it returns "".
 
   ::
 
     # Find the index of the biggest point
     set indices [x search $x(max)]
 
-Other operations copy, append, or sort vectors.  You can append
-vectors or new values onto an existing vector with the **append**
-operation.
+Other operations copy, append, or sort vectors.  You can append vectors or
+new values onto an existing vector with the **append** operation.
 
   ::
 
     # Append assorted vectors and values to x
     x append x2 x3 { 2.3 4.5 } x4
 
-The **sort** operation sorts the vector.  If any additional vectors
-are specified, they are rearranged in the same order as the vector.
-For example, you could use it to sort data points represented by x and
-y vectors.
+The **sort** operation sorts the vector.  If any additional vectors are
+specified, they are rearranged in the same order as the vector.  For
+example, you could use it to sort data points represented by x and y
+vectors.
 
   ::
 
     # Sort the data points
     x sort y
 
-The vector "x" is sorted while the points of "y" are rearranged so that
-the original x,y coordinate pairs are retained.
+The vector "x" is sorted while the points of "y" are rearranged so that the
+original x,y coordinate pairs are retained.
 
-The **expr** operation lets you perform arithmetic on vectors.  
-The result is stored in the vector.
+The **expr** operation lets you perform arithmetic on vectors.  The result
+is stored in the vector.
 
   ::
 
@@ -1142,13 +1141,13 @@ lie in the fact they are implemented as hash tables.
 The **blt::vector** command tries to overcome these disadvantages while
 still retaining the ease of use of TCL arrays.  The **blt::vector** command
 creates both a new TCL command and associate array which are linked to the
-vector points.  You can randomly access vector points though the
-elements of array.  Not have all indices are generated for the array, so
-printing the array (using the **parray** procedure) does not print out all
-the point values.  You can use the **blt::vector** command to access
-the array as a whole.  You can copy, append, or sort vector using its
-command.  If you need greater performance, or customized behavior, you can
-write your own C code to manage vectors.
+vector points.  You can randomly access vector points though the elements
+of array.  Not have all indices are generated for the array, so printing
+the array (using the TCL **parray** procedure) does not print out all the
+point values.  You can use the **blt::vector** command to access the array
+as a whole.  You can copy, append, or sort vector using its command.  If
+you need greater performance, or customized behavior, you can write your
+own C code to manage vectors.
 
 KEYWORDS
 --------
