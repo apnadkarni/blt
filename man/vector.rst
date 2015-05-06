@@ -259,8 +259,8 @@ VECTOR COMMAND OPERATIONS
 
     **round**\ (*vecName*)
       Returns the rounded number for each point of the vector.
-      The numbers are rounded to the nearest integer, but rounded halfway
-      cases away from zero . For example, rounding of 0.5 is 1.0, and
+      The numbers are rounded to the nearest integer, but rounds halfway
+      cases away from zero. For example, rounding of 0.5 is 1.0, and
       rounding of -0.5 is -1.0.
 
     **sin**\ (*vecName*)
@@ -389,7 +389,7 @@ the command.  The operations available for vectors are listed below.
    letter indicates the type: "i" for signed, "u" for unsigned, "r" or
    real.  The default format is "r16".
 
-  Reference: This was contributed by Harold Kirsch.
+  Reference: The binary reader was contributed by Harold Kirsch.
 
 *vecName* **clear** 
   Clears the element indices from the array variable associated with
