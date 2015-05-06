@@ -7,12 +7,14 @@ blt::vector
 Vector data object
 -------------------
 
-:Author: George A. Howlett <gahowlett@gmail.com>
+:Author: George A. Howlett
 :Date:   2012-11-28
 :Copyright: 2015 George A. Howlett.
 :Version: 4.0
 :Manual section: n
 :Manual group: BLT Built-In Commands
+
+.. include:: toc.rst
 
 SYNOPSIS
 --------
@@ -156,48 +158,47 @@ VECTOR COMMAND OPERATIONS
   The valid operators are listed below, grouped in decreasing order
   of precedence:
 
-  **-**  **!**
-    Unary minus and logical NOT.  The unary minus flips the sign of each
-    point in the vector.  The logical not operator returns a vector of
-    whose values are 0.0 or 1.0.  For each non-zero point 1.0 is returned,
-    0.0 otherwise.
+    **-**  **!**
+      Unary minus and logical NOT.  The unary minus flips the sign of each
+      point in the vector.  The logical not operator returns a vector of
+      whose values are 0.0 or 1.0.  For each non-zero point 1.0 is returned,
+      0.0 otherwise.
 
-  **^**
-    Exponentiation.  
+    **^**
+      Exponentiation.  
 
-  **/**  **%**
+    **/**  **%**
+      Multiply, divide, remainder.  
 
-    Multiply, divide, remainder.  
- 
-  **+**  **-**
-    Add and subtract.  
+    **+**  **-**
+      Add and subtract.  
 
-  **<<**  **>>**
-    Left and right shift.  Circularly shifts the values of the vector 
-    (not implemented yet).
+    **<<**  **>>**
+      Left and right shift.  Circularly shifts the values of the vector 
+      (not implemented yet).
 
-  **>**  **<**  **<=**  **>=**
-   Boolean less, greater, less than or equal, and greater than or equal.
-   Each operator returns a vector of ones and zeros.  If the condition is true, 
-   1.0 is the point value, 0.0 otherwise.
+    **>**  **<**  **<=**  **>=**
+     Boolean less, greater, less than or equal, and greater than or equal.
+     Each operator returns a vector of ones and zeros.  If the condition is
+     true, 1.0 is the point value, 0.0 otherwise.
 
-  **==**  **!=**
-   Boolean equal and not equal.
-   Each operator returns a vector of ones and zeros.  If the condition is true, 
-   1.0 is the point value, 0.0 otherwise.
+    **==**  **!=**
+     Boolean equal and not equal.  Each operator returns a vector of ones
+     and zeros.  If the condition is true, 1.0 is the point value, 0.0
+     otherwise.
 
-  **|**
-    Bit-wise OR.  (Not implemented).
+    **|**
+      Bit-wise OR.  (Not implemented).
 
-  **&&**
-    Logical AND.  Produces a 1 result if both operands are non-zero, 0
-    otherwise.
+    **&&**
+      Logical AND.  Produces a 1 result if both operands are non-zero, 0
+      otherwise.
 
-  **||**
-    Logical OR.  Produces a 0 result if both operands are zero, 1 otherwise.
+    **||**
+      Logical OR.  Produces a 0 result if both operands are zero, 1 otherwise.
 
-  *x* **?** *y* **:** *z*
-    If-then-else, as in C.  (Not implemented yet).
+    *x* **?** *y* **:** *z*
+      If-then-else, as in C.  (Not implemented yet).
 
   See the C manual for more details on the results produced by each
   operator.  All of the binary operators group left-to-right within the
@@ -206,98 +207,143 @@ VECTOR COMMAND OPERATIONS
   Several mathematical functions are supported for vectors.  Each of the
   following functions invokes the math library function of the same name;
   see the manual entries for the library functions for details on what they
-  do.  The operation is applied to all elements of the vector returning the
+  do.  The operation is applied to all points of the vector returning the
   results.
 
-    **acos**,	**cos**,	**hypot**,	**sinh**,
-    **asin**,	**cosh**,	**log**,	**sqrt**,
-    **atan**,	**exp**,	**log10**,	**tan**, 
-    **ceil**,	**floor**,	**sin**,	**tanh** 
+    **abs**\ (*vecName*)
+      Returns the absolute value of each floating-point number in the vector.
 
-  Additional functions are:
+    **acos**\ (*vecName*)
+      Returns the arc cosine function of each number in the vector.
 
-  **abs**
-    Returns the absolute value of each point.
+    **asin**\ (*vecName*)
+      Returns the arc sine function of each number in the vector.
 
-  **random**
-   Returns a vector of non-negative values uniformly distributed between
-   [0.0, 1.0) using **drand48**.  The seed comes from the internal clock of
-   the machine or may be set manually with the **srandom** function.
+    **asinh**\ (*vecName*)
+      Returns the hyperbolic arc sine function of each number in the vector.
 
-  **round**
-   Rounds each point of the vector.
+    **atan**\ (*vecName*)
+      Returns the arc tangent function of each number in the vector.
 
-  **srandom**
-   Initializes the random number generator using **srand48**.  The high
-   order 32-bits are set using the integral portion of the first vector
-   point. All other points are ignored.  The low order 16-bits are
-   set to an arbitrary value.
+    **ceil**\ (*vecName*)
+      Returns the smallest integral value not less than the floating-point
+      number for each number in the vector.
+
+    **cos**\ (*vecName*)
+      Returns the cosine function of each number in the vector.
+
+    **cosh**\ (*vecName*)
+      Returns the hyperbolic cosine function of each number in the vector.
+
+    **exp**\ (*vecName*)
+      Returns the value of e (the base of natural logarithms) raised to the
+      point of the floating point number for each number in the vector.
+
+    **floor**\ (*vecName*)
+      Returns the largest integral value not greater than the floating-point
+      number for each number in the vector.
+
+    **log**\ (*vecName*)
+      Returns the natural logarithm of each floating-point number in the
+      vector. If the number is a NaN, a NaN is returned. 
+
+    **log10**\ (*vecName*)
+      Returns the base 10 logarithm of each floating-point number in the
+      vector. If the number is a NaN, a NaN is returned. 
+
+    **random**\ (*vecName*)
+      Returns a vector of non-negative values uniformly distributed between
+      [0.0, 1.0) using **drand48**.  The seed comes from the internal clock of
+      the machine or may be set manually with the **random** operation.  The
+      length of the returned vector is the same as the length of *vecName*.
+
+    **round**\ (*vecName*)
+      Returns the rounded number for each point of the vector.
+      The numbers are rounded to the nearest integer, but rounded halfway
+      cases away from zero . For example, rounding of 0.5 is 1.0, and
+      rounding of -0.5 is -1.0.
+
+    **sin**\ (*vecName*)
+      Returns the sine function of each number in the vector.
+
+    **sinh**\ (*vecName*)
+      Returns the hyperbolic sine function of each number in the vector.
+
+    **sqrt**\ (*vecName*)
+      Returns the square root of each floating-point number in the vector. If
+      the number is a NaN, a NaN is returned.
+
+    **tan**\ (*vecName*)
+      Returns the tangent function of each number in the vector.
+
+    **tanh**\ (*vecName*)
+      Returns the hyperbolic tangent function of each number in the vector.
 
   The following functions return a single value.
 
-  **adev** 
-    Returns the average deviation (defined as the sum of the absolute values 
-    of the differences between point and the mean, divided by the length
-    of the vector).
+    **adev**\ (*vecName*)
+      Returns the average deviation (defined as the sum of the absolute values 
+      of the differences between point and the mean, divided by the length
+      of the vector).
 
-  **kurtosis**
-   Returns the degree of peakedness (fourth moment) of the vector.
+    **kurtosis**\ (*vecName*)
+     Returns the degree of peakedness (fourth moment) of the vector.
 
-  **length**
-   Returns the number of points in the vector.
+    **length**\ (*vecName*)
+     Returns the number of points in the vector.
 
-  **max**
-    Returns the vector's maximum value.
+    **max**\ (*vecName*)
+      Returns the vector's maximum value.
 
-  **mean**
-    Returns the mean value of the vector.
+    **mean**\ (*vecName*)
+      Returns the mean value of the vector.
 
-  **median**
-    Returns the median of the vector.
+    **median**\ (*vecName*)
+      Returns the median of the vector.
 
-  **min**
-    Returns the vector's minimum value.
+    **min**\ (*vecName*)
+      Returns the vector's minimum value.
 
-  **nonempty**
-    Returns the number of non-empty points in the vector.  
+    **nonempty**\ (*vecName*)
+      Returns the number of non-empty points in the vector.  
 
-  **nonzero**
-    Returns the number of non-zero points in the vector.  This does not
-    include empty values.
+    **nonzero**\ (*vecName*)
+      Returns the number of non-zero points in the vector.  This does not
+      include empty values.
 
-  **q1**
-    Returns the first quartile of the vector.
+    **q1**\ (*vecName*)
+      Returns the first quartile of the vector.
 
-  **q3**
-    Returns the third quartile of the vector.
+    **q3**\ (*vecName*)
+      Returns the third quartile of the vector.
 
-  **prod** 
-    Returns the product of the points.
+    **prod**\ (*vecName*)
+      Returns the product of the points.
 
-  **sdev** 
-    Returns the standard deviation (defined as the square root of the variance)
-    of the vector.
+    **sdev**\ (*vecName*) 
+      Returns the standard deviation (defined as the square root of the variance)
+      of the vector.
 
-  **skew** 
-    Returns the skewness (or third moment) of the vector.  This characterizes
-    the degree of asymmetry of the vector about the mean.
+    **skew**\ (*vecName*) 
+      Returns the skewness (or third moment) of the vector.  This characterizes
+      the degree of asymmetry of the vector about the mean.
 
-  **sum** 
-    Returns the sum of the points.
+    **sum**\ (*vecName*) 
+      Returns the sum of the points.
 
-  **var**
-    Returns the variance of the vector. The sum of the squared differences 
-    between each point and the mean is computed.  The variance is 
-    the sum divided by the length of the vector minus 1.
+    **var**\ (*vecName*)
+      Returns the variance of the vector. The sum of the squared differences 
+      between each point and the mean is computed.  The variance is 
+      the sum divided by the length of the vector minus 1.
 
   The last set returns a vector of the same length as the argument.
 
-  **norm** 
-   Scales the normalized values of the vector (values lie in the range
-   [0.0..1.0]).
+    **norm**\ (*vecName*) 
+     Scales the normalized values of the vector (values lie in the range
+     [0.0..1.0]).
 
-  **sort**
-    Returns the vector points sorted in ascending order.
+    **sort**\ (*vecName*)
+      Returns the vector points sorted in ascending order.
 
 
 **blt::vector names** ?\ *pattern* ... ?
@@ -1185,3 +1231,5 @@ DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
 THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+	       
