@@ -3039,12 +3039,12 @@ LinspaceOp(ClientData clientData, Tcl_Interp *interp, int objc,
 {
     Vector *destPtr = clientData;
     int numSteps;
-    double start, stop;
+    double first, last;
     
-    if (Blt_GetDoubleFromObj(interp, objv[2], &min) != TCL_OK) {
+    if (Tcl_GetDoubleFromObj(interp, objv[2], &first) != TCL_OK) {
 	return TCL_ERROR;
     }
-    if (Blt_GetDoubleFromObj(interp, objv[3], &max) != TCL_OK) {
+    if (Tcl_GetDoubleFromObj(interp, objv[3], &last) != TCL_OK) {
 	return TCL_ERROR;
     }
     numSteps = destPtr->length;		/* By default, generate one step
@@ -3061,9 +3061,9 @@ LinspaceOp(ClientData clientData, Tcl_Interp *interp, int objc,
 	if (Blt_Vec_SetLength(interp, destPtr, numSteps) != TCL_OK) {
 	    return TCL_ERROR;
 	}
-	step = (max - min) / (double)(numSteps - 1);
+	step = (last - first) / (double)(numSteps - 1);
 	for (i = 0; i < numSteps; i++) { 
-	    destPtr->valueArr[i] = min + (step * i);
+	    destPtr->valueArr[i] = first + (step * i);
 	}
 	if (destPtr->flush) {
 	    Blt_Vec_FlushCache(destPtr);

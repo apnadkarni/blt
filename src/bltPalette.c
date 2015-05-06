@@ -441,7 +441,7 @@ GetOpacity(Tcl_Interp *interp, Tcl_Obj *objPtr, Blt_Pixel *pixelPtr)
 {
     double value;
 
-    if (Blt_GetDoubleFromObj(interp, objPtr, &value) != TCL_OK) {
+    if (Tcl_GetDoubleFromObj(interp, objPtr, &value) != TCL_OK) {
 	return TCL_ERROR;
     }
     if ((value < 0.0) || (value > 1.0)) {
@@ -470,7 +470,7 @@ AutoTestRGBs(Tcl_Interp *interp, PaletteCmd *cmdPtr, int numComponents,
 	for (i = 0; i < objc; i++) {
 	    double x;
 	    
-	    if (Blt_GetDoubleFromObj(interp, objv[i], &x) != TCL_OK) {
+	    if (Tcl_GetDoubleFromObj(interp, objv[i], &x) != TCL_OK) {
 		return TCL_ERROR;
 	    }
 	    if (x > max) {
@@ -484,7 +484,7 @@ AutoTestRGBs(Tcl_Interp *interp, PaletteCmd *cmdPtr, int numComponents,
 	    
 	    for (j = 1; j < 4; j++) {
 		double x;
-		if (Blt_GetDoubleFromObj(interp, objv[i+j], &x) != TCL_OK) {
+		if (Tcl_GetDoubleFromObj(interp, objv[i+j], &x) != TCL_OK) {
 		    return TCL_ERROR;
 		}
 		if (x > max) {
@@ -503,7 +503,7 @@ AutoTestRGBs(Tcl_Interp *interp, PaletteCmd *cmdPtr, int numComponents,
 		int index;
 
 		index = i + indices[j];
-		if (Blt_GetDoubleFromObj(interp, objv[index], &x) != TCL_OK) {
+		if (Tcl_GetDoubleFromObj(interp, objv[index], &x) != TCL_OK) {
 		    return TCL_ERROR;
 		}
 		if (x > max) {
@@ -531,7 +531,7 @@ GetRGBFromObjv(Tcl_Interp *interp, PaletteCmd *cmdPtr, Tcl_Obj **objv,
     double r, g, b;
     Blt_Pixel color;
 
-    if (Blt_GetDoubleFromObj(interp, objv[0], &r) != TCL_OK) {
+    if (Tcl_GetDoubleFromObj(interp, objv[0], &r) != TCL_OK) {
 	return TCL_ERROR;
     }
     if (r < 0.0) { 
@@ -539,7 +539,7 @@ GetRGBFromObjv(Tcl_Interp *interp, PaletteCmd *cmdPtr, Tcl_Obj **objv,
     } else if (r > cmdPtr->maxColorValue) {
 	r = cmdPtr->maxColorValue;
     }
-    if (Blt_GetDoubleFromObj(interp, objv[1], &g) != TCL_OK) {
+    if (Tcl_GetDoubleFromObj(interp, objv[1], &g) != TCL_OK) {
 	return TCL_ERROR;
     }
     if (g < 0.0) { 
@@ -547,7 +547,7 @@ GetRGBFromObjv(Tcl_Interp *interp, PaletteCmd *cmdPtr, Tcl_Obj **objv,
     } else if (g > cmdPtr->maxColorValue) {
 	g = cmdPtr->maxColorValue;
     }
-    if (Blt_GetDoubleFromObj(interp, objv[2], &b) != TCL_OK) {
+    if (Tcl_GetDoubleFromObj(interp, objv[2], &b) != TCL_OK) {
 	return TCL_ERROR;
     }
     if (b < 0.0) { 
@@ -569,13 +569,13 @@ GetHSVFromObjv(Tcl_Interp *interp, PaletteCmd *cmdPtr, Tcl_Obj **objv,
 {
     double h, s, v;
 
-    if (Blt_GetDoubleFromObj(interp, objv[0], &h) != TCL_OK) {
+    if (Tcl_GetDoubleFromObj(interp, objv[0], &h) != TCL_OK) {
 	return TCL_ERROR;
     }
-    if (Blt_GetDoubleFromObj(interp, objv[1], &s) != TCL_OK) {
+    if (Tcl_GetDoubleFromObj(interp, objv[1], &s) != TCL_OK) {
 	return TCL_ERROR;
     }
-    if (Blt_GetDoubleFromObj(interp, objv[2], &v) != TCL_OK) {
+    if (Tcl_GetDoubleFromObj(interp, objv[2], &v) != TCL_OK) {
 	return TCL_ERROR;
     }
     HSVToPixel(h, s, v, colorPtr);

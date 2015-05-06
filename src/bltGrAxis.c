@@ -3094,7 +3094,7 @@ GetAxisScrollInfo(Tcl_Interp *interp, int objc, Tcl_Obj *const *objv,
 
 	assert(objc == 2);
 	/* moveto fraction */
-	if (Blt_GetDoubleFromObj(interp, objv[1], &fract) != TCL_OK) {
+	if (Tcl_GetDoubleFromObj(interp, objv[1], &fract) != TCL_OK) {
 	    return TCL_ERROR;
 	}
 	offset = fract;

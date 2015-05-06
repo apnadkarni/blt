@@ -21,30 +21,47 @@ MAN_N =		BLT.n barchart.n beep.n bgexec.n bitmap.n \
 	 	table.n tabset.n tile.n tree.n treeview.n vector.n \
 		watch.n winop.n
 
-MISSING =	arcball.rst \
+SRC = 		BLT.rst \
+		arcball.rst \
 		background.rst \
-		combobutton.rst \
-		comboentry.rst \
+		beep.rst \
+		bgexec.rst \
+		bitmap.rst \
+		busy.rst \
+		comboeditor.rst \
 		combomenu.rst \
-		combotree.rst \
 		compare.rst \
-		contour.rst \
+		cutbuffer.rst \
 		datatable.rst \
+		debug.rst \
+		eps.rst \
+		graph.rst \
+		htext.rst \
+		paintbrush.rst \
+		picture.rst \
+		scrollset.rst \
+		sftp.rst \
+		spline.rst \
+		table.rst \
+		tabset.rst \
 		timestamp.rst \
+		tree.rst \
+		treeview.rst \
+		vector.rst \
+		watch.rst \
+		winop.rst
+
+MISSING =	combobutton.rst \
+		comboentry.rst \
+		combotree.rst \
+		contour.rst \
 		drawerset.rst \
 		grab.rst \
 		listview.rst \
 		mesh.rst \
-		paintbrush.rst \
 		palette.rst \
 		paneset.rst \
-		picture.rst \
-		play.rst \
-		scrollset.rst \
-		sftp.rst \
 		tableview.rst \
-		tabset.rst \
-		treeview.rst 
 
 MAN_3 =		Blt_Tree.3 Blt_TreeGetNode.3 \
 		Blt_TreeCreate.3 Blt_TreeGetToken.3 \
