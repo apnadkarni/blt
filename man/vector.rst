@@ -668,9 +668,10 @@ the command.  The operations available for vectors are listed below.
   simplified.  The lengths of both vectors must be the same.  *Tolerance*
   is a real number representing the tolerance. The default is "1.0".
 
-  Reference: David Douglas and Thomas Peucker, "Algorithms for the
-  reduction of the number of points required to represent a digitized line
-  or its caricature", The Canadian Cartographer 10(2), 112–122, 1973.
+  Reference:: David Douglas and Thomas Peucker, "Algorithms for the
+	      reduction of the number of points required to represent a
+	      digitized line or its caricature", The Canadian Cartographer
+	      10(2), 112–122, 1973.
    
 *vecName* **sort** ?\ *switches* ... ? ?\ *destName* ... ?
   Sorts the points of *vecName*. If one of more *destName* arguments are

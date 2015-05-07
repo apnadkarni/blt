@@ -4288,7 +4288,7 @@ DrawEntry(ComboEntry *comboPtr, Drawable drawable, int x, int y, int w, int h)
         gc = comboPtr->textOutFocusGC;
     }
     /* Text background. */
-    { 
+    if ((w > 0) && (h > 0)) {
         int xOrigin, yOrigin;
 
         Blt_Bg_GetOrigin(bg, &xOrigin, &yOrigin);
@@ -4392,11 +4392,13 @@ DrawEntry(ComboEntry *comboPtr, Drawable drawable, int x, int y, int w, int h)
         numBytes = Blt_Font_Measure(comboPtr->font, 
                 comboPtr->screenText + first, last - first, w, 
                 TEXT_FLAGS, &numPixels);
-        Blt_Bg_FillRectangle(comboPtr->tkwin, pixmap, bg, textX, 0, 
+        if ((numPixels > 0) && (h > 0)) {
+            Blt_Bg_FillRectangle(comboPtr->tkwin, pixmap, bg, textX, 0, 
                 numPixels, h, 0, TK_RELIEF_FLAT);
-        Blt_Font_Draw(comboPtr->display, pixmap, comboPtr->selectGC, 
+            Blt_Font_Draw(comboPtr->display, pixmap, comboPtr->selectGC, 
                 comboPtr->font, Tk_Depth(comboPtr->tkwin), 0.0f, 
                 comboPtr->screenText + first, numBytes, textX, textY);
+        }
         textX += numPixels;
     }
     /* Step 3.  Draw any text following the selection that's visible
