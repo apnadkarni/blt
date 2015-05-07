@@ -87,16 +87,17 @@ typedef struct {
 /* 
  * GrabEntry --
  *
- *      A GrabEntry represents a window that has been grabbed.  There can be
- *      several instances of grabs, but there will be only one grab entry per
- *      window.  The number of grabs for a window is tracked by a reference
- *      count.
+ *      A GrabEntry represents a window that has been grabbed.  There can
+ *      be several instances of grabs, but there will be only one grab
+ *      entry per window.  The number of grabs for a window is tracked by a
+ *      reference count.
  */
 typedef struct {
     Tk_Window tkwin;                    /* Window that has been grabbed. */
     GrabCmdInterpData *dataPtr;
-    int refCount;                       /* How many times this entry has been
-                                         * grabbed (i.e. on the stack). */
+    int refCount;                       /* How many times this entry has
+                                         * been grabbed (i.e. on the
+                                         * stack). */
     Blt_HashEntry *hashPtr;
 } GrabEntry;
 
@@ -135,10 +136,11 @@ static Tk_EventProc GrabEntryEventProc;
  *
  * FreeGrabEntry --
  *
- *      Releases a grab entry for the given window.  When the reference count
- *      is zero, this means that this entry is no longer on the stack and may
- *      be safely deleted.  The event handler on the entry's window is 
- *      deleted and the entry is removed from the hash table of grab entries.
+ *      Releases a grab entry for the given window.  When the reference
+ *      count is zero, this means that this entry is no longer on the stack
+ *      and may be safely deleted.  The event handler on the entry's window
+ *      is deleted and the entry is removed from the hash table of grab
+ *      entries.
  *
  * Results:
  *      None.
@@ -173,9 +175,9 @@ FreeGrabEntry(GrabEntry *entryPtr)
  * GetGrabEntry --
  *
  *      Returns a grab entry for the given window.  If this is the first
- *      time the window has been grabbed, the structure is created and
- *      a event handler is created to watch the window.  We keep track
- *      of how many times this entry is on the instance stack. 
+ *      time the window has been grabbed, the structure is created and a
+ *      event handler is created to watch the window.  We keep track of how
+ *      many times this entry is on the instance stack.
  *
  * Results:
  *      Returns a pointer to the grab entry.
@@ -214,8 +216,9 @@ GetGrabEntry(GrabCmdInterpData *dataPtr, Tk_Window tkwin)
  *
  * PopGrab --
  *
- *      Destroys the given instance of a grab.  The designated window is 
- *      ungrabbed and the grab instance information is popped off the stack.
+ *      Destroys the given instance of a grab.  The designated window is
+ *      ungrabbed and the grab instance information is popped off the
+ *      stack.
  *
  * Results:
  *      None.
@@ -320,9 +323,10 @@ DumpStack(GrabCmdInterpData *dataPtr)
  * ReleaseStack --
  *
  *      This routine is called when we find that the grab has been released
- *      by the Tk "grab" command.  We assume that the current stack is 
+ *      by the Tk "grab" command.  We assume that the current stack is
  *      useless and remove all entries.  This routine is also called when
- *      the interpreter associated with Blt "grab" command has been deleted.
+ *      the interpreter associated with Blt "grab" command has been
+ *      deleted.
  *
  * Results:
  *      None.
@@ -354,8 +358,8 @@ ReleaseStack(GrabCmdInterpData *dataPtr)
  * PruneDeadInstances --
  *
  *      When a window is destroyed, this routine removes all grab instances
- *      from the stack.  The grab entry itself also removed (this is done by
- *      decrementing the reference count on the entry).
+ *      from the stack.  The grab entry itself also removed (this is done
+ *      by decrementing the reference count on the entry).
  *
  * Results:
  *      None.
@@ -383,8 +387,8 @@ PruneDeadInstances(GrabEntry *entryPtr)
         }
         grabPtr->entryPtr->tkwin = NULL; /* Indicate the window has been
                                           * destroyed so FreeGrabEntry
-                                          * doesn't try to do something with
-                                          * it. */
+                                          * doesn't try to do something
+                                          * with it. */
         FreeGrabEntry(entryPtr);
         if (grabPtr->link != NULL) {
             /* Remove the grab from the stack. */
@@ -412,7 +416,7 @@ PruneDeadInstances(GrabEntry *entryPtr)
 /* ARGSUSED */
 static void
 GrabCmdInterpDeleteProc(
-    ClientData clientData,      /* Interpreter-specific data. */
+    ClientData clientData,              /* Interpreter-specific data. */
     Tcl_Interp *interp)
 {
     Blt_ChainLink link, next;
@@ -449,10 +453,9 @@ GrabCmdInterpDeleteProc(
  *
  * GrabEntryEventProc --
  *
- *      This procedure is invoked by the Tk dispatcher for various
- *      events on the grabbed windows.  If the window has been destroyed,
- *      remove all grab instances of the window and the grab entry for the
- *      window.
+ *      This procedure is invoked by the Tk dispatcher for various events
+ *      on the grabbed windows.  If the window has been destroyed, remove
+ *      all grab instances of the window and the grab entry for the window.
  *
  * Results:
  *      None.
@@ -506,19 +509,19 @@ GetGrabCmdInterpData(Tcl_Interp *interp)
  *
  * FixCurrent --
  *
- *      This procedure is called whenever the grab command is invoked.
- *      It verifies that the current grab on the top of the stack is still 
- *      the grab Tk is using (the grab could have been changed by the Tk 
- *      "grab" command).  If there is no current grab (grab release was
- *      called), then assume the stack is useless and dump the stack. 
+ *      This procedure is called whenever the grab command is invoked.  It
+ *      verifies that the current grab on the top of the stack is still the
+ *      grab Tk is using (the grab could have been changed by the Tk "grab"
+ *      command).  If there is no current grab (grab release was called),
+ *      then assume the stack is useless and dump the stack.
  *
  *      If a new grab is current, different from the one on the top of the
  *      stack, replace the top grab when the current.
  *
- *      The most likely scenario is that there is already a current grab (using
- *      the Tk "grab" command) and new we want to push a new grab onto the
- *      stack where the stack is empty.  The current grab is first put on the
- *      stack.
+ *      The most likely scenario is that there is already a current grab
+ *      (using the Tk "grab" command) and new we want to push a new grab
+ *      onto the stack where the stack is empty.  The current grab is first
+ *      put on the stack.
  *
  * Results:
  *      None.
@@ -574,12 +577,8 @@ FixCurrent(Tcl_Interp *interp, GrabCmdInterpData *dataPtr)
 }
 
 static int
-CurrentOp(
-    ClientData clientData,              /* Global data associated with
-                                         * interpreter. */
-    Tcl_Interp *interp,                 /* Current interpreter. */
-    int objc,                           /* Number of arguments. */
-    Tcl_Obj *const *objv)               /* Argument objects. */
+CurrentOp(ClientData clientData, Tcl_Interp *interp, int objc,
+          Tcl_Obj *const *objv)
 {
     GrabCmdInterpData *dataPtr = clientData;
     Grab *grabPtr;
@@ -622,12 +621,8 @@ CurrentOp(
 }
 
 static int
-DebugOp(
-    ClientData clientData,              /* Global data associated with
-                                         * interpreter. */
-    Tcl_Interp *interp,                 /* Current interpreter. */
-    int objc,                           /* Number of arguments. */
-    Tcl_Obj *const *objv)               /* Argument objects. */
+DebugOp(ClientData clientData, Tcl_Interp *interp, int objc,
+        Tcl_Obj *const *objv)
 {
     GrabCmdInterpData *dataPtr = clientData;
     int state;
@@ -640,12 +635,8 @@ DebugOp(
 }
 
 static int
-EmptyOp(
-    ClientData clientData,              /* Global data associated with
-                                         * interpreter. */
-    Tcl_Interp *interp,                 /* Current interpreter. */
-    int objc,                           /* Number of arguments. */
-    Tcl_Obj *const *objv)               /* Argument objects. */
+EmptyOp(ClientData clientData, Tcl_Interp *interp, int objc,
+        Tcl_Obj *const *objv)
 {
     Grab *grabPtr;
     GrabCmdInterpData *dataPtr = clientData;
@@ -658,12 +649,8 @@ EmptyOp(
 }
 
 static int
-ListOp(
-    ClientData clientData,              /* Global data associated with
-                                         * interpreter. */
-    Tcl_Interp *interp,                 /* Current interpreter. */
-    int objc,                           /* Number of arguments. */
-    Tcl_Obj *const *objv)               /* Argument objects. */
+ListOp(ClientData clientData, Tcl_Interp *interp, int objc,
+       Tcl_Obj *const *objv)
 {
     Blt_ChainLink link;
     GrabCmdInterpData *dataPtr = clientData;
@@ -689,12 +676,8 @@ ListOp(
 
 
 static int
-PopOp(
-    ClientData clientData,              /* Global data associated with
-                                         * interpreter. */
-    Tcl_Interp *interp,                 /* Current interpreter. */
-    int objc,                           /* Number of arguments. */
-    Tcl_Obj *const *objv)               /* Argument objects. */
+PopOp(ClientData clientData, Tcl_Interp *interp, int objc,
+      Tcl_Obj *const *objv)
 {
     GrabCmdInterpData *dataPtr = clientData;
     Grab *grabPtr;
@@ -741,12 +724,8 @@ PopOp(
 }
 
 static int
-PushOp(
-    ClientData clientData,              /* Global data associated with
-                                         * interpreter. */
-    Tcl_Interp *interp,                 /* Current interpreter. */
-    int objc,                           /* Number of arguments. */
-    Tcl_Obj *const *objv)               /* Argument objects. */
+PushOp(ClientData clientData, Tcl_Interp *interp, int objc,
+       Tcl_Obj *const *objv)
 {
     const char *pathName;
     Tk_Window tkwin;
@@ -775,12 +754,8 @@ PushOp(
 }
 
 static int
-ReleaseOp(
-    ClientData clientData,              /* Global data associated with
-                                         * interpreter. */
-    Tcl_Interp *interp,                 /* Current interpreter. */
-    int objc,                           /* Number of arguments. */
-    Tcl_Obj *const *objv)               /* Argument objects. */
+ReleaseOp(ClientData clientData, Tcl_Interp *interp, int objc,
+          Tcl_Obj *const *objv)
 {
     GrabCmdInterpData *dataPtr = clientData;
     Grab *grabPtr;
@@ -825,12 +800,7 @@ ReleaseOp(
  *---------------------------------------------------------------------------
  */
 static int
-SetOp(
-    ClientData clientData,              /* Global data associated with
-                                         * interpreter. */
-    Tcl_Interp *interp,                 /* Current interpreter. */
-    int objc,                           /* Number of arguments. */
-    Tcl_Obj *const *objv)               /* Argument objects. */
+SetOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 {
     Grab *grabPtr;
     GrabCmdInterpData *dataPtr = clientData;
@@ -875,12 +845,8 @@ SetOp(
 }
 
 static int
-StatusOp(
-    ClientData clientData,              /* Global data associated with
-                                         * interpreter. */
-    Tcl_Interp *interp,                 /* Current interpreter. */
-    int objc,                           /* Number of arguments. */
-    Tcl_Obj *const *objv)               /* Argument objects. */
+StatusOp(ClientData clientData, Tcl_Interp *interp, int objc,
+         Tcl_Obj *const *objv)
 {
     Blt_ChainLink link;
     GrabCmdInterpData *dataPtr = clientData;
@@ -908,12 +874,7 @@ StatusOp(
 }
 
 static int
-TopOp(
-    ClientData clientData,              /* Global data associated with
-                                         * interpreter. */
-    Tcl_Interp *interp,                 /* Current interpreter. */
-    int objc,                           /* Number of arguments. */
-    Tcl_Obj *const *objv)               /* Argument objects. */
+TopOp(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *const *objv)
 {
     GrabCmdInterpData *dataPtr = clientData;
     Grab *grabPtr;
@@ -945,12 +906,8 @@ static Blt_OpSpec grabOps[] =
 static int numGrabOps = sizeof(grabOps) / sizeof(Blt_OpSpec);
 
 static int
-GrabCmd(
-    ClientData clientData,              /* Main window associated with
-                                         * interpreter. */
-    Tcl_Interp *interp,                 /* Current interpreter. */
-    int objc,                           /* # of arguments. */
-    Tcl_Obj *const *objv)               /* Argument objects. */
+GrabCmd(ClientData clientData, Tcl_Interp *interp, int objc,
+        Tcl_Obj *const *objv)
 {
     Tcl_ObjCmdProc *proc;
     GrabCmdInterpData *dataPtr = clientData;
@@ -984,8 +941,8 @@ GrabCmd(
  *
  * Blt_GrabCmdInitProc --
  *
- *      This procedure is invoked to initialize the "grab" command. 
- *      You should be able to replace the Tk grab command with this one.
+ *      This procedure is invoked to initialize the "grab" command.  You
+ *      should be able to replace the Tk grab command with this one.
  *
  * Results:
  *      None.
